@@ -10,9 +10,9 @@ let S={zones:[],nodes:[],connections:[]},sel=null,cm=null;
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
 const yamlEd=$('yaml-editor'),svgC=$('svg-canvas'),svgCont=$('svg-container'),lZ=$('lZ'),lC=$('lC'),lN=$('lN'),resH=$('resize-handle'),lPanel=$('left-panel');
 function mk(t,a){const e=document.createElementNS(NS,t);if(a)for(const[k,v]of Object.entries(a))e.setAttribute(k,v);return e}
-let vb={x:-50,y:-50,w:1200,h:800},isPan=!1,ps={x:0,y:0},pvs={x:0,y:0},drag=null;
+let vb={x:-50,y:-50,w:1200,h:800},isPan=!1,ps={x:0,y:0},pvs={x:0,y:0},panSc={a:1,d:1},drag=null;
 function aVB(){svgC.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`)}
-function s2s(cx,cy){const r=svgCont.getBoundingClientRect();return{x:vb.x+(cx-r.left)*vb.w/r.width,y:vb.y+(cy-r.top)*vb.h/r.height}}
+function s2s(cx,cy){const ctm=svgC.getScreenCTM();if(!ctm)return{x:cx,y:cy};const inv=ctm.inverse();return{x:inv.a*cx+inv.c*cy+inv.e,y:inv.b*cx+inv.d*cy+inv.f}}
 function render(){rZones();rNodes();rConns();uInfo()}
 // Derive a visible label/stroke color from zone color
 function zLabelCol(col){
@@ -227,7 +227,7 @@ function onMM(e){if(drag){e.preventDefault();const pt=s2s(e.clientX,e.clientY),d
   c.bend=Math.round(proj);
   if(c.bend===0)delete c.bend;
   render();
-}}else if(isPan){e.preventDefault();const r=svgCont.getBoundingClientRect();vb.x=pvs.x-(e.clientX-ps.x)*vb.w/r.width;vb.y=pvs.y-(e.clientY-ps.y)*vb.h/r.height;aVB()}}
+}}else if(isPan){e.preventDefault();vb.x=pvs.x-(e.clientX-ps.x)*panSc.a;vb.y=pvs.y-(e.clientY-ps.y)*panSc.d;aVB()}}
 function onMU(){if(drag){sync();if(sel){if(sel.t==='z')spZ(sel.id);else if(sel.t==='n')spN(sel.id);else if(sel.t==='c')spC(sel.idx)}drag=null}if(isPan){isPan=!1;svgCont.classList.remove('panning')}}
 function aFit(zid){const z=S.zones.find(z=>z.id===zid);if(!z)return;
   const cn=S.nodes.filter(n=>n.zone===zid);
@@ -239,8 +239,10 @@ function aFit(zid){const z=S.zones.find(z=>z.id===zid);if(!z)return;
   const zx=+z.x||0,zy=+z.y||0,zw=+z.width||400,zh=+z.height||300;
   z.x=Math.round(Math.min(zx,a-pd));z.y=Math.round(Math.min(zy,b-tp));
   z.width=Math.round(Math.max(zx+zw,c+pd)-z.x);z.height=Math.round(Math.max(zy+zh,d+pd)-z.y)}
-function onCD(e){if(cm&&!e.target.closest('.node-group')){xCM();render();return}if(e.target===svgC||e.target===$('svg-world')||['lZ','lC','lN'].includes(e.target.id)){if(!e.target.closest('.zone-group')&&!e.target.closest('.node-group'))clrSel();e.preventDefault();isPan=!0;ps.x=e.clientX;ps.y=e.clientY;pvs.x=vb.x;pvs.y=vb.y;svgCont.classList.add('panning')}}
-function onWh(e){e.preventDefault();const r=svgCont.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,f=e.deltaY>0?1.1:0.9;const bx=vb.x+(mx/r.width)*vb.w,by=vb.y+(my/r.height)*vb.h;vb.w=Math.max(200,Math.min(10000,vb.w*f));vb.h=Math.max(150,Math.min(7500,vb.h*f));vb.x=bx-(mx/r.width)*vb.w;vb.y=by-(my/r.height)*vb.h;aVB();uInfo()}
+function onCD(e){if(cm&&!e.target.closest('.node-group')){xCM();render();return}if(e.target===svgC||e.target===$('svg-world')||['lZ','lC','lN'].includes(e.target.id)){if(!e.target.closest('.zone-group')&&!e.target.closest('.node-group'))clrSel();e.preventDefault();isPan=!0;ps.x=e.clientX;ps.y=e.clientY;pvs.x=vb.x;pvs.y=vb.y;
+  const ctm=svgC.getScreenCTM();panSc=ctm?{a:ctm.inverse().a,d:ctm.inverse().d}:{a:1,d:1};
+  svgCont.classList.add('panning')}}
+function onWh(e){e.preventDefault();const anc=s2s(e.clientX,e.clientY),r=svgCont.getBoundingClientRect(),mx=(e.clientX-r.left)/r.width,my=(e.clientY-r.top)/r.height,f=e.deltaY>0?1.1:0.9;vb.w=Math.max(200,Math.min(10000,vb.w*f));vb.h=Math.max(150,Math.min(7500,vb.h*f));vb.x=anc.x-mx*vb.w;vb.y=anc.y-my*vb.h;aVB();uInfo()}
 function fitV(){if(!S.zones.length&&!S.nodes.length){vb={x:-50,y:-50,w:1200,h:800};aVB();return}let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity;for(const z of S.zones){a=Math.min(a,+z.x||0);b=Math.min(b,+z.y||0);c=Math.max(c,(+z.x||0)+(+z.width||400));d=Math.max(d,(+z.y||0)+(+z.height||300))}for(const n of S.nodes){a=Math.min(a,+n.x||0);b=Math.min(b,+n.y||0);c=Math.max(c,(+n.x||0)+(+n.width||140));d=Math.max(d,(+n.y||0)+(+n.height||60))}const p=60;vb.x=a-p;vb.y=b-p;vb.w=(c-a)+p*2;vb.h=(d-b)+p*2;const cr=svgCont.getBoundingClientRect(),ac=cr.width/cr.height,av=vb.w/vb.h;if(av>ac){const nh=vb.w/ac;vb.y-=(nh-vb.h)/2;vb.h=nh}else{const nw=vb.h*ac;vb.x-=(nw-vb.w)/2;vb.w=nw}aVB();uInfo()}
 function sync(){yamlEd.value=serYAML(S)}
 function applyY(){try{const p=parseYAML(yamlEd.value);S.zones=p.zones||[];S.nodes=p.nodes||[];S.connections=p.connections||[];clrSel();render();toast('反映しました')}catch(e){toast('YAML解析エラー: '+e.message,1)}}
