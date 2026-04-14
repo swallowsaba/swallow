@@ -72,6 +72,9 @@ body{font-family:var(--font-ui);background:var(--bg-primary);color:var(--text-pr
 .zone-group:hover .rh,.node-group:hover .rh{opacity:1}
 .conn-cp{fill:var(--accent);stroke:#fff;stroke-width:1.5;cursor:grab;opacity:.35;transition:opacity .15s;r:6}
 .conn-cp:hover,.conn-cp.active{opacity:1;r:7}.conn-group:hover .conn-cp{opacity:.7}
+.conn-ep{fill:#fff;stroke:var(--accent);stroke-width:2;cursor:crosshair;opacity:0;transition:opacity .15s;r:5}
+.conn-ep:hover{opacity:1;r:6;fill:var(--warning)}.conn-group:hover .conn-ep{opacity:.6}
+.conn-ep.active{opacity:1;fill:var(--warning)}
 /* Props Panel */
 #pp{position:absolute;right:12px;top:8px;width:260px;background:var(--panel-bg);border:1px solid var(--border-color);border-radius:10px;box-shadow:var(--shadow);z-index:50;display:none;max-height:calc(100% - 20px);overflow-y:auto}
 #pp.open{display:block}
@@ -120,6 +123,9 @@ body{font-family:var(--font-ui);background:var(--bg-primary);color:var(--text-pr
   <button class="tb grn" id="btn-an"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>ノード追加</button>
   <button class="tb grn" id="btn-ac"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="15 8 19 12 15 16"/></svg>接続追加</button>
   <div class="spacer"></div>
+  <button class="tb" id="btn-undo" title="元に戻す (Ctrl+Z)"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>戻す</button>
+  <button class="tb" id="btn-redo" title="やり直す (Ctrl+Y)"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>進む</button>
+  <div class="sep"></div>
   <button class="tb" id="btn-fit"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>Fit</button>
   <div class="sep"></div>
   <button class="tb" id="btn-theme"><svg viewBox="0 0 24 24" id="ti"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>テーマ</button>

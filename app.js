@@ -95,7 +95,7 @@ function rNodes(){lN.innerHTML='';for(const n of S.nodes){
   const x=+n.x||0,y=+n.y||0,w=+n.width||140,h=+n.height||60,col=n.color||'rgba(52,152,219,0.8)';
   const iS=sel&&sel.t==='n'&&sel.id===n.id;
   g.appendChild(mk('rect',{class:'node-rect'+(iS?' sel':''),x,y,width:w,height:h,fill:col,stroke:iS?'#fff':nodeStroke(col)}));
-  const lb=mk('text',{class:'node-label',x:x+w/2,y:y+h/2,'text-anchor':'middle','dominant-baseline':'central'});
+  const lb=mk('text',{class:'node-label',x:x+w/2,y:y+h/2,'text-anchor':'middle','dominant-baseline':'central',fill:n.textColor||'#fff'});
   lb.textContent=n.label||n.id;g.appendChild(lb);
   addCornerHandles(g,x,y,w,h,'n',n.id);
   g.addEventListener('mousedown',e=>onND(e,n.id));
@@ -116,14 +116,15 @@ function rConns(){
   const pairMap={};
   for(let i=0;i<S.connections.length;i++){const c=S.connections[i];const fs=Array.isArray(c.from)?c.from:[c.from],ts=Array.isArray(c.to)?c.to:[c.to];
   for(const f of fs)for(const t of ts){const pk=[f,t].sort().join('::');if(!pairMap[pk])pairMap[pk]=[];pairMap[pk].push({fi:f,ti:t,c,idx:i})}}
-  const labels=[],cps=[];
+  const labels=[],cps=[],eps=[];
   for(const pk of Object.keys(pairMap)){const group=pairMap[pk];for(let gi=0;gi<group.length;gi++){const{fi,ti,c,idx}=group[gi];
   const autoOff=group.length>1?(gi-(group.length-1)/2)*40:0;
   const totalOff=autoOff+(+c.bend||0);
-  const res=dConnLine(fi,ti,c,idx,totalOff);if(res){cps.push(res.cp);if(res.label)labels.push(res.label)}}}
+  const res=dConnLine(fi,ti,c,idx,totalOff);if(res){cps.push(res.cp);if(res.eps)eps.push(...res.eps);if(res.label)labels.push(res.label)}}}
   resolveLabels(labels);
   for(const lb of labels){const tl=lb.tw;lC.appendChild(mk('rect',{class:'conn-bg',x:lb.x-tl/2,y:lb.y-9,width:tl,height:18}));const t=mk('text',{class:'conn-lbl',x:lb.x,y:lb.y,'text-anchor':'middle','dominant-baseline':'central',fill:lb.col});t.textContent=lb.text;lC.appendChild(t)}
   for(const cp of cps)lC.appendChild(cp);
+  for(const ep of eps)lC.appendChild(ep);
 }
 
 function dConnLine(fid,tid,c,idx,offset){
@@ -134,30 +135,46 @@ function dConnLine(fid,tid,c,idx,offset){
   const ddx=tcx-fcx,ddy=tcy-fcy,len=Math.sqrt(ddx*ddx+ddy*ddy)||1;
   const nnx=-ddy/len,nny=ddx/len;
   const cg=mk('g',{class:'conn-group'});
-  let lx,ly,cpx_vis,cpy_vis;
+  let lx,ly,fpx,fpy,tpx,tpy;
   if(offset===0){
     const fp=eI(fcx,fcy,fe.w,fe.h,tcx,tcy),tp=eI(tcx,tcy,te.w,te.h,fcx,fcy);
+    fpx=fp.x;fpy=fp.y;tpx=tp.x;tpy=tp.y;
     cg.appendChild(mk('line',{class:'conn-hit',x1:fp.x,y1:fp.y,x2:tp.x,y2:tp.y}));
     const ln=mk('line',{class:'conn-line'+(iS?' sel':''),x1:fp.x,y1:fp.y,x2:tp.x,y2:tp.y,stroke:col,'marker-end':`url(#${mid})`});
     if(c.bidirectional)ln.setAttribute('marker-start',`url(#${mid})`);cg.appendChild(ln);
-    lx=(fp.x+tp.x)/2;ly=(fp.y+tp.y)/2;cpx_vis=lx;cpy_vis=ly-18;
+    lx=(fp.x+tp.x)/2;ly=(fp.y+tp.y)/2;
   }else{
     const cpx=(fcx+tcx)/2+nnx*offset,cpy=(fcy+tcy)/2+nny*offset;
     const fp=eI(fcx,fcy,fe.w,fe.h,cpx,cpy),tp=eI(tcx,tcy,te.w,te.h,cpx,cpy);
+    fpx=fp.x;fpy=fp.y;tpx=tp.x;tpy=tp.y;
     const d=`M ${fp.x} ${fp.y} Q ${cpx} ${cpy} ${tp.x} ${tp.y}`;
     cg.appendChild(mk('path',{class:'conn-hit',d}));
     const ln=mk('path',{class:'conn-line'+(iS?' sel':''),d,stroke:col,'marker-end':`url(#${mid})`});
     if(c.bidirectional)ln.setAttribute('marker-start',`url(#${mid})`);cg.appendChild(ln);
-    lx=0.25*fp.x+0.5*cpx+0.25*tp.x;ly=0.25*fp.y+0.5*cpy+0.25*tp.y;cpx_vis=lx;cpy_vis=ly-18;
+    lx=0.25*fp.x+0.5*cpx+0.25*tp.x;ly=0.25*fp.y+0.5*cpy+0.25*tp.y;
   }
-  // Click events on group
   cg.addEventListener('click',e=>{e.stopPropagation();selC(idx)});
+  // Bend control point (above label)
+  const cpx_vis=lx,cpy_vis=ly-18;
   const cp=mk('circle',{class:'conn-cp'+(iS?' active':''),cx:cpx_vis,cy:cpy_vis,r:6});
-  cp.addEventListener('mousedown',e=>{e.stopPropagation();e.preventDefault();sel={t:'c',idx};render();spC(idx);const pt=s2s(e.clientX,e.clientY);drag={t:'cb',idx,sx:pt.x,sy:pt.y,fcx,fcy,tcx,tcy,nnx,nny}});
+  cp.addEventListener('mousedown',e=>{e.stopPropagation();e.preventDefault();
+    sel={t:'c',idx};
+    const pt=s2s(e.clientX,e.clientY);
+    drag={t:'cb',idx,sx:pt.x,sy:pt.y,fcx,fcy,tcx,tcy,nnx,nny,origBend:+c.bend||0};
+  });
+  // Endpoint circles for reconnection (from/to)
+  const epFrom=mk('circle',{class:'conn-ep'+(iS?' active':''),cx:fpx,cy:fpy,r:5});
+  epFrom.addEventListener('mousedown',e=>{e.stopPropagation();e.preventDefault();
+    sel={t:'c',idx};drag={t:'ep',idx,end:'from',sx:e.clientX,sy:e.clientY};
+  });
+  const epTo=mk('circle',{class:'conn-ep'+(iS?' active':''),cx:tpx,cy:tpy,r:5});
+  epTo.addEventListener('mousedown',e=>{e.stopPropagation();e.preventDefault();
+    sel={t:'c',idx};drag={t:'ep',idx,end:'to',sx:e.clientX,sy:e.clientY};
+  });
   lC.appendChild(cg);
   const lt=(c.protocol||'')+(c.port?':'+c.port:'');
-  if(!lt)return{cp,label:null};
-  return{cp,label:{x:lx,y:ly,text:lt,col,tw:lt.length*6.5+10,th:18}};
+  if(!lt)return{cp,eps:[epFrom,epTo],label:null};
+  return{cp,eps:[epFrom,epTo],label:{x:lx,y:ly,text:lt,col,tw:lt.length*6.5+10,th:18}};
 }
 
 function resolveLabels(labels){for(let iter=0;iter<20;iter++){let moved=!1;for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++){const a=labels[i],b=labels[j];const ow=Math.min(a.x+a.tw/2,b.x+b.tw/2)-Math.max(a.x-a.tw/2,b.x-b.tw/2);const oh=Math.min(a.y+a.th/2,b.y+b.th/2)-Math.max(a.y-a.th/2,b.y-b.th/2);if(ow>0&&oh>0){const s=oh/2+2;if(a.y<=b.y){a.y-=s;b.y+=s}else{a.y+=s;b.y-=s}moved=!0}}if(!moved)break}}
@@ -174,7 +191,7 @@ function selC(idx){if(cm)return;sel={t:'c',idx};render();spC(idx)}
 // Connection mode: select node or zone
 function handleConnSel(id){
   if(!cm.from){cm.from=id;$('cbanner').textContent='接続先をクリック (from: '+id+')';render()}
-  else{S.connections.push({from:cm.from,to:id,protocol:'TCP',port:80,bidirectional:!1});xCM();sync();render();selC(S.connections.length-1);toast('接続を追加しました')}
+  else{pushUndo();S.connections.push({from:cm.from,to:id,protocol:'TCP',port:80,bidirectional:!1});xCM();sync();render();selC(S.connections.length-1);toast('接続を追加しました')}
 }
 
 // === Props Panel ===
@@ -202,6 +219,7 @@ function spN(id){const n=S.nodes.find(n=>n.id===id);if(!n)return;$('ppt').textCo
 <div class="ppf"><label class="ppl">ID</label><input class="ppi" data-p="id" value="${esc(n.id)}"></div>
 <div class="ppf"><label class="ppl">Label</label><input class="ppi" data-p="label" value="${esc(n.label||'')}"></div>
 ${colorFieldHtml('Color','cpick','color','calpha',n.color||'')}
+${colorFieldHtml('Font Color','tcpick','textColor','tcalpha',n.textColor||'#ffffff')}
 <div class="ppf"><label class="ppl">Zone</label><select class="pps" data-p="zone"><option value="">(なし)</option>${zo}</select></div>
 <div class="ppr"><div class="ppf"><label class="ppl">X</label><input class="ppi" type="number" data-p="x" value="${+n.x||0}"></div><div class="ppf"><label class="ppl">Y</label><input class="ppi" type="number" data-p="y" value="${+n.y||0}"></div></div>
 <div class="ppr"><div class="ppf"><label class="ppl">W</label><input class="ppi" type="number" data-p="width" value="${+n.width||140}"></div><div class="ppf"><label class="ppl">H</label><input class="ppi" type="number" data-p="height" value="${+n.height||60}"></div></div>`;
@@ -247,17 +265,19 @@ function bZ(initId){let cid=initId;const ppb=$('ppb');ppb.querySelectorAll('.ppi
   else if('x y width height'.includes(p)){z[p]=+inp.value||0;if(z.parent)aFitUp(z.parent)}
   else z[p]=inp.value;
   sync();render()})});
-  $('ppd').addEventListener('click',()=>{S.zones.forEach(cz=>{if(cz.parent===cid)delete cz.parent});S.zones=S.zones.filter(z=>z.id!==cid);S.nodes.forEach(n=>{if(n.zone===cid)delete n.zone});S.connections=S.connections.filter(c=>c.from!==cid&&c.to!==cid);clrSel();sync();render();toast('削除しました')})}
+  $('ppd').addEventListener('click',()=>{pushUndo();S.zones.forEach(cz=>{if(cz.parent===cid)delete cz.parent});S.zones=S.zones.filter(z=>z.id!==cid);S.nodes.forEach(n=>{if(n.zone===cid)delete n.zone});S.connections=S.connections.filter(c=>c.from!==cid&&c.to!==cid);clrSel();sync();render();toast('削除しました')})}
 
 function bN(initId){let cid=initId;const ppb=$('ppb');ppb.querySelectorAll('.ppi,.pps,.ppci,input[type=range]').forEach(inp=>{inp.addEventListener('input',()=>{const n=S.nodes.find(n=>n.id===cid);if(!n)return;const p=inp.dataset.p;
   if(p==='cpick'||p==='calpha'){n.color=syncColorField(ppb,'cpick','color','calpha')}
+  else if(p==='tcpick'||p==='tcalpha'){n.textColor=syncColorField(ppb,'tcpick','textColor','tcalpha')}
   else if(p==='color'){n.color=inp.value}
+  else if(p==='textColor'){n.textColor=inp.value||undefined;if(!inp.value)delete n.textColor}
   else if(p==='id'){const old=n.id;n.id=inp.value;S.connections.forEach(c=>{if(c.from===old)c.from=inp.value;if(c.to===old)c.to=inp.value;if(Array.isArray(c.from))c.from=c.from.map(f=>f===old?inp.value:f);if(Array.isArray(c.to))c.to=c.to.map(t=>t===old?inp.value:t)});sel.id=inp.value;cid=inp.value}
   else if(p==='zone'){n.zone=inp.value||undefined;if(!inp.value)delete n.zone}
   else if('x y width height'.includes(p)){n[p]=+inp.value||0;if(n.zone)aFitUp(n.zone)}
   else n[p]=inp.value;
   sync();render()})});
-  $('ppd').addEventListener('click',()=>{S.connections=S.connections.filter(c=>{const f=Array.isArray(c.from)?c.from:[c.from],t=Array.isArray(c.to)?c.to:[c.to];return!f.includes(cid)&&!t.includes(cid)});S.nodes=S.nodes.filter(n=>n.id!==cid);clrSel();sync();render();toast('削除しました')})}
+  $('ppd').addEventListener('click',()=>{pushUndo();S.connections=S.connections.filter(c=>{const f=Array.isArray(c.from)?c.from:[c.from],t=Array.isArray(c.to)?c.to:[c.to];return!f.includes(cid)&&!t.includes(cid)});S.nodes=S.nodes.filter(n=>n.id!==cid);clrSel();sync();render();toast('削除しました')})}
 
 function bC(idx){const ppb=$('ppb');ppb.querySelectorAll('.ppi,.pps,.ppchki,.ppci,input[type=range]').forEach(inp=>{const ev=inp.type==='checkbox'?'change':'input';inp.addEventListener(ev,()=>{const c=S.connections[idx];if(!c)return;const p=inp.dataset.p;
   if(p==='bidirectional')c.bidirectional=inp.checked;
@@ -267,7 +287,7 @@ function bC(idx){const ppb=$('ppb');ppb.querySelectorAll('.ppi,.pps,.ppchki,.ppc
   else if(p==='ccolor'){c.color=inp.value||undefined;if(!inp.value)delete c.color}
   else c[p]=inp.value;
   sync();render()})});
-  $('ppd').addEventListener('click',()=>{S.connections.splice(idx,1);clrSel();sync();render();toast('削除しました')})}
+  $('ppd').addEventListener('click',()=>{pushUndo();S.connections.splice(idx,1);clrSel();sync();render();toast('削除しました')})}
 
 // === Add ===
 function addZ(){xCM();const id='zone-'+(S.zones.length+1);const vc=viewCenter();
@@ -322,7 +342,23 @@ function applyResize(obj,dir,dx,dy,ox,oy,ow,oh,minW,minH){
   obj.x=Math.round(nx);obj.y=Math.round(ny);obj.width=Math.round(nw);obj.height=Math.round(nh);
 }
 
-function onMM(e){if(drag){e.preventDefault();const pt=s2s(e.clientX,e.clientY),dx=pt.x-drag.sx,dy=pt.y-drag.sy;
+// === Edge panning ===
+const EDGE_ZONE=40,EDGE_SPEED=8;
+function edgePan(e){
+  const r=svgCont.getBoundingClientRect();
+  const ctm=svgC.getScreenCTM();if(!ctm)return;const inv=ctm.inverse();
+  const spd=EDGE_SPEED*Math.abs(inv.a);
+  let moved=!1;
+  if(e.clientX-r.left<EDGE_ZONE){vb.x-=spd;moved=!0}
+  if(r.right-e.clientX<EDGE_ZONE){vb.x+=spd;moved=!0}
+  if(e.clientY-r.top<EDGE_ZONE){vb.y-=spd;moved=!0}
+  if(r.bottom-e.clientY<EDGE_ZONE){vb.y+=spd;moved=!0}
+  if(moved)aVB();
+}
+
+function onMM(e){if(drag){e.preventDefault();
+  edgePan(e);
+  const pt=s2s(e.clientX,e.clientY),dx=pt.x-drag.sx,dy=pt.y-drag.sy;
   if(drag.t==='z'&&drag.cn){const z=S.zones.find(z=>z.id===drag.id);if(!z)return;z.x=Math.round(drag.ox+dx);z.y=Math.round(drag.oy+dy);
     if(drag.cz)for(const co of drag.cz){const cz=S.zones.find(z=>z.id===co.id);if(cz){cz.x=Math.round(co.x+dx);cz.y=Math.round(co.y+dy)}}
     for(const co of drag.cn){const n=S.nodes.find(n=>n.id===co.id);if(n){n.x=Math.round(co.x+dx);n.y=Math.round(co.y+dy)}}
@@ -330,10 +366,41 @@ function onMM(e){if(drag){e.preventDefault();const pt=s2s(e.clientX,e.clientY),d
   else if(drag.t==='n'){const n=S.nodes.find(n=>n.id===drag.id);if(!n)return;n.x=Math.round(drag.ox+dx);n.y=Math.round(drag.oy+dy);if(n.zone)aFitUp(n.zone);render()}
   else if(drag.t==='rsz'){const z=S.zones.find(z=>z.id===drag.id);if(!z)return;applyResize(z,drag.dir,dx,dy,drag.ox,drag.oy,drag.ow,drag.oh,100,60);if(z.parent)aFitUp(z.parent);render()}
   else if(drag.t==='rsn'){const n=S.nodes.find(n=>n.id===drag.id);if(!n)return;applyResize(n,drag.dir,dx,dy,drag.ox,drag.oy,drag.ow,drag.oh,60,30);if(n.zone)aFitUp(n.zone);render()}
-  else if(drag.t==='cb'){const c=S.connections[drag.idx];if(!c)return;const mx=(drag.fcx+drag.tcx)/2,my=(drag.fcy+drag.tcy)/2;const vx=pt.x-mx,vy=pt.y-my;c.bend=Math.round(vx*drag.nnx+vy*drag.nny);if(c.bend===0)delete c.bend;render()}
+  else if(drag.t==='cb'){
+    const c=S.connections[drag.idx];if(!c)return;
+    const mx=(drag.fcx+drag.tcx)/2,my=(drag.fcy+drag.tcy)/2;
+    const vx=pt.x-mx,vy=pt.y-my;
+    const proj=vx*drag.nnx+vy*drag.nny;
+    // Use absolute projection (not delta) since we project mouse pos directly
+    c.bend=Math.round(proj);if(c.bend===0)delete c.bend;render()}
+  else if(drag.t==='ep'){
+    // Endpoint reconnection: just render a visual indicator (handled on mouseup)
+    render();
+  }
 }else if(isPan){e.preventDefault();vb.x=pvs.x-(e.clientX-ps.x)*panSc.a;vb.y=pvs.y-(e.clientY-ps.y)*panSc.d;aVB()}}
 
-function onMU(){if(drag){sync();if(sel){if(sel.t==='z')spZ(sel.id);else if(sel.t==='n')spN(sel.id);else if(sel.t==='c')spC(sel.idx)}drag=null}if(isPan){isPan=!1;svgCont.classList.remove('panning')}}
+function onMU(e){if(drag){
+  if(drag.t==='ep'&&e){
+    // Find entity under mouse for reconnection
+    const pt=s2s(e.clientX,e.clientY);const c=S.connections[drag.idx];
+    if(c){
+      let hit=null;
+      // Check nodes
+      for(const n of S.nodes){const nx=+n.x||0,ny=+n.y||0,nw=+n.width||140,nh=+n.height||60;
+        if(pt.x>=nx&&pt.x<=nx+nw&&pt.y>=ny&&pt.y<=ny+nh){hit=n.id;break}}
+      // Check zones
+      if(!hit)for(const z of S.zones){const zx=+z.x||0,zy=+z.y||0,zw=+z.width||400,zh=+z.height||300;
+        if(pt.x>=zx&&pt.x<=zx+zw&&pt.y>=zy&&pt.y<=zy+zh){hit=z.id}}
+      if(hit){
+        const other=drag.end==='from'?c.to:c.from;
+        if(hit!==other){c[drag.end]=hit;toast((drag.end==='from'?'始点':'終点')+'を変更しました')}
+      }
+    }
+  }
+  pushUndo();sync();
+  if(sel){if(sel.t==='z')spZ(sel.id);else if(sel.t==='n')spN(sel.id);else if(sel.t==='c')spC(sel.idx)}
+  drag=null}
+  if(isPan){isPan=!1;svgCont.classList.remove('panning')}}
 
 function aFit(zid){const z=S.zones.find(z=>z.id===zid);if(!z)return;
   const cn=S.nodes.filter(n=>n.zone===zid),cz=getChildZones(zid);
@@ -372,6 +439,14 @@ function fitV(){if(!S.zones.length&&!S.nodes.length){vb={x:-50,y:-50,w:1200,h:80
   const cr=svgCont.getBoundingClientRect(),ac=cr.width/cr.height,av=vb.w/vb.h;
   if(av>ac){const nh=vb.w/ac;vb.y-=(nh-vb.h)/2;vb.h=nh}else{const nw=vb.h*ac;vb.x-=(nw-vb.w)/2;vb.w=nw}
   aVB();syncZoomSlider();uInfo()}
+
+// === Undo/Redo ===
+const undoStack=[],redoStack=[];const MAX_UNDO=50;
+function snapshot(){return JSON.stringify({zones:S.zones,nodes:S.nodes,connections:S.connections})}
+function restoreSnap(snap){const d=JSON.parse(snap);S.zones=d.zones;S.nodes=d.nodes;S.connections=d.connections}
+function pushUndo(){undoStack.push(snapshot());if(undoStack.length>MAX_UNDO)undoStack.shift();redoStack.length=0}
+function undo(){if(!undoStack.length){toast('これ以上戻せません',1);return}redoStack.push(snapshot());restoreSnap(undoStack.pop());sync();clrSel();render();toast('元に戻しました')}
+function redo(){if(!redoStack.length){toast('これ以上進めません',1);return}undoStack.push(snapshot());restoreSnap(redoStack.pop());sync();clrSel();render();toast('やり直しました')}
 
 // === Sync/IO ===
 function sync(){yamlEd.value=serYAML(S)}
@@ -526,24 +601,28 @@ connections:
 
 // === Init ===
 function init(){
-  yamlEd.value=DY;applyY();aVB();setTimeout(fitV,50);
-  $('btn-load').addEventListener('click',loadF);$('btn-apply').addEventListener('click',applyY);
+  yamlEd.value=DY;pushUndo();applyY();aVB();setTimeout(fitV,50);
+  $('btn-load').addEventListener('click',loadF);$('btn-apply').addEventListener('click',()=>{pushUndo();applyY()});
   $('btn-save').addEventListener('click',saveF);$('btn-fit').addEventListener('click',fitV);
-  $('btn-theme').addEventListener('click',togTh);$('btn-az').addEventListener('click',addZ);
-  $('btn-an').addEventListener('click',addN);$('btn-ac').addEventListener('click',()=>{cm?xCM():eCM()});
+  $('btn-theme').addEventListener('click',togTh);$('btn-az').addEventListener('click',()=>{pushUndo();addZ()});
+  $('btn-an').addEventListener('click',()=>{pushUndo();addN()});$('btn-ac').addEventListener('click',()=>{cm?xCM():eCM()});
+  $('btn-undo').addEventListener('click',undo);$('btn-redo').addEventListener('click',redo);
   $('file-input').addEventListener('change',onFS);$('ppc').addEventListener('click',clrSel);
   $('save-ok').addEventListener('click',doSave);$('save-cancel').addEventListener('click',()=>$('save-dlg').classList.remove('open'));
   $('save-fname').addEventListener('keydown',e=>{if(e.key==='Enter')doSave();if(e.key==='Escape')$('save-dlg').classList.remove('open')});
   zoomSlider.addEventListener('input',onZoomSlider);
   svgC.addEventListener('mousedown',onCD);svgCont.addEventListener('wheel',onWh,{passive:!1});
   document.addEventListener('mousemove',e=>{onMM(e);if(isRP)lPanel.style.width=Math.max(200,Math.min(700,e.clientX))+'px'});
-  document.addEventListener('mouseup',()=>{onMU();if(isRP){isRP=!1;resH.classList.remove('active');document.body.style.cursor='';document.body.style.userSelect=''}});
+  document.addEventListener('mouseup',e=>{onMU(e);if(isRP){isRP=!1;resH.classList.remove('active');document.body.style.cursor='';document.body.style.userSelect=''}});
   resH.addEventListener('mousedown',e=>{e.preventDefault();isRP=!0;resH.classList.add('active');document.body.style.cursor='col-resize';document.body.style.userSelect='none'});
   document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();return}
+    if((e.ctrlKey||e.metaKey)&&e.key==='y'){e.preventDefault();redo();return}
     if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveF()}
-    if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();applyY()}
+    if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();pushUndo();applyY()}
     if(e.key==='Escape'){if($('save-dlg').classList.contains('open')){$('save-dlg').classList.remove('open');return}if(cm)xCM();clrSel();render()}
     if(e.key==='Delete'&&sel&&!$('save-dlg').classList.contains('open')){
+      pushUndo();
       if(sel.t==='z'){const id=sel.id;S.zones.forEach(cz=>{if(cz.parent===id)delete cz.parent});S.zones=S.zones.filter(z=>z.id!==id);S.nodes.forEach(n=>{if(n.zone===id)delete n.zone});S.connections=S.connections.filter(c=>c.from!==id&&c.to!==id);clrSel();sync();render();toast('削除しました')}
       else if(sel.t==='n'){const id=sel.id;S.connections=S.connections.filter(c=>{const f=Array.isArray(c.from)?c.from:[c.from],t=Array.isArray(c.to)?c.to:[c.to];return!f.includes(id)&&!t.includes(id)});S.nodes=S.nodes.filter(n=>n.id!==id);clrSel();sync();render();toast('削除しました')}
       else if(sel.t==='c'){S.connections.splice(sel.idx,1);clrSel();sync();render();toast('削除しました')}
