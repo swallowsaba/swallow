@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ガントチャート</title>
+<style>
+:root{--b1:#111215;--b2:#1a1b1f;--b3:#222327;--bh:#303138;--t1:#e2e2e6;--t2:#9a9aa0;--t3:#606068;--bd:#2e2f35;--ac:#42b983;--dn:#e74c3c;--wn:#f39c12;--inf:#3498db}
+[data-theme=light]{--b1:#f7f8fa;--b2:#fff;--b3:#f0f1f3;--bh:#dddee2;--t1:#2c2c30;--t2:#6b6b72;--t3:#a0a0a8;--bd:#e0e0e5}
+*{margin:0;padding:0;box-sizing:border-box}html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,'Segoe UI','Hiragino Sans',sans-serif;background:var(--b1);color:var(--t1);display:flex;flex-direction:column;font-size:13px}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+button{font-family:inherit;cursor:pointer}
+#tb{display:flex;align-items:center;gap:4px;padding:4px 10px;background:var(--b2);border-bottom:1px solid var(--bd);flex-shrink:0;flex-wrap:wrap;min-height:36px}
+.btn{padding:3px 8px;border:1px solid var(--bd);background:var(--b3);color:var(--t1);border-radius:4px;font-size:11px;white-space:nowrap}.btn:hover{border-color:var(--ac)}.bp{background:var(--ac);color:#fff;border-color:var(--ac)}
+.sep{width:1px;height:18px;background:var(--bd);margin:0 3px}
+.ct{font-size:9px;padding:2px 5px;border-radius:3px;border:1px solid var(--bd);background:var(--b3);color:var(--t2);cursor:pointer}.ct.on{border-color:var(--ac);color:var(--ac)}
+#main{display:flex;flex:1;overflow:hidden;min-height:0}
+#yp{width:300px;min-width:120px;display:flex;flex-direction:column;border-right:1px solid var(--bd);background:var(--b2);flex-shrink:0}
+#yh{padding:5px 8px;background:var(--b3);border-bottom:1px solid var(--bd);font-size:11px;font-weight:600}
+#ye{flex:1;width:100%;background:transparent;color:inherit;border:none;padding:8px;font-family:'SF Mono',Consolas,monospace;font-size:11px;line-height:1.5;resize:none;outline:none;tab-size:2}
+.rz{width:6px;cursor:col-resize;background:var(--bd);flex-shrink:0}.rz:hover{background:var(--ac)}
+#gp{flex:1;overflow:auto}
+#gw{display:flex;min-height:100%}
+#tl{width:300px;min-width:120px;background:var(--b2);flex-shrink:0;position:sticky;left:0;z-index:20}
+#tlh{height:50px;display:flex;align-items:stretch;background:var(--b3);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:21;font-size:9px;font-weight:600;color:var(--t2)}
+.hc{display:flex;align-items:center;justify-content:center;padding:0 3px;border-right:1px solid var(--bd);overflow:hidden}.hc.nm{flex:1;justify-content:flex-start;padding-left:6px}
+.tr{height:32px;display:flex;align-items:center;border-bottom:1px solid var(--bd);font-size:11px}.tr:hover{background:var(--bh)}.tr:nth-child(even){background:var(--b3)}.tr:nth-child(even):hover{background:var(--bh)}
+.tr.l0{background:rgba(66,185,131,.1)!important;font-weight:700}.tr.l1{font-weight:600}
+.tr.dov{border-top:2px solid var(--ac)!important}.tr.dra{opacity:.3}
+.tc{display:flex;align-items:center;height:100%;padding:0 3px;border-right:1px solid var(--bd);overflow:hidden;white-space:nowrap;flex-shrink:0}.tc.nm{flex:1;gap:2px}
+.tn{overflow:hidden;text-overflow:ellipsis;flex:1;cursor:pointer}.tn:hover{color:var(--ac)}
+.badge{font-size:7px;padding:0 3px;border-radius:3px;font-weight:600;flex-shrink:0;line-height:14px;color:#fff}
+.ta2{display:none;gap:1px;margin-left:auto;flex-shrink:0}.tr:hover .ta2{display:flex}
+.ta2 button{background:none;border:none;font-size:10px;padding:0}
+.coll{cursor:pointer;font-size:10px;color:var(--t2);flex-shrink:0;width:14px;text-align:center;user-select:none}
+.prb{font-size:8px;font-weight:600;padding:1px 4px;border-radius:8px;color:#fff}
+.ied{background:var(--b3);border:1px solid var(--ac);border-radius:3px;padding:1px 3px;font-size:10px;color:var(--t1);outline:none;font-family:inherit;width:100%}
+#tp{flex:1;position:relative;flex-shrink:0}
+#thd{height:50px;background:var(--b3);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:10;display:flex;flex-direction:column}
+#mr{display:flex;height:22px}#dr{display:flex;height:28px}
+.mc{border-right:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--t2)}
+.dc{display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--t3);flex-shrink:0;border-right:1px solid rgba(128,128,128,.05)}.dc.we{background:rgba(128,128,128,.04)}.dc.hd{background:rgba(231,76,60,.06);color:var(--dn)}.dc.td{background:rgba(66,185,131,.1);color:var(--ac);font-weight:700}
+#cb{position:relative}.cr{height:32px;position:relative;border-bottom:1px solid var(--bd);display:flex}
+.cdc{flex-shrink:0;height:100%;border-right:1px solid rgba(128,128,128,.03)}.cdc.we{background:rgba(128,128,128,.04)}.cdc.hd{background:rgba(231,76,60,.06)}
+.bar{position:absolute;height:20px;top:6px;border-radius:3px;cursor:grab;display:flex;align-items:center;font-size:9px;color:#fff;font-weight:500;z-index:5;min-width:4px;overflow:hidden}.bar:hover{filter:brightness(1.15);z-index:6}
+.bbg{position:absolute;inset:0;border-radius:3px}.bpr{position:absolute;left:0;top:0;height:100%;border-radius:3px}
+.bl{position:relative;z-index:1;padding:0 5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
+.rh{position:absolute;top:0;width:8px;height:100%;cursor:ew-resize;z-index:2}.rh.rl{left:0}.rh.rr{right:0}
+.bar.gb{height:12px;top:10px;border-radius:2px;overflow:visible}
+.bar.gb::before,.bar.gb::after{content:'';position:absolute;bottom:-4px;width:7px;height:7px;background:inherit;clip-path:polygon(0 0,100% 0,50% 100%)}.bar.gb::before{left:0}.bar.gb::after{right:0}
+.depb{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:16px;height:14px;border-radius:3px;background:rgba(255,255,255,.25);color:#fff;font-size:9px;cursor:pointer;display:none;align-items:center;justify-content:center;font-weight:700;border:1px solid rgba(255,255,255,.3);z-index:7}.bar:hover .depb{display:flex}.depb:hover{background:var(--ac)}
+#tdy{position:absolute;top:0;width:2px;background:var(--dn);z-index:15;pointer-events:none}
+#tdy::after{content:'Today';position:absolute;top:2px;left:6px;font-size:8px;color:var(--dn);font-weight:700;white-space:nowrap;background:var(--b1);padding:1px 4px;border-radius:2px}
+.dropi{position:absolute;left:0;right:0;height:3px;background:var(--ac);z-index:20;pointer-events:none;border-radius:2px;box-shadow:0 0 6px var(--ac);display:none}
+.dind{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:8px;background:var(--ac);color:#fff;font-size:13px;font-weight:600;z-index:2000;box-shadow:0 4px 16px rgba(0,0,0,.3);text-align:center;display:none}
+.toast{position:fixed;bottom:10px;right:20px;padding:7px 14px;border-radius:6px;font-size:12px;z-index:2000;font-weight:500;display:none;color:#fff}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000}
+.md{background:var(--b2);border:1px solid var(--bd);border-radius:8px;padding:18px 22px;min-width:420px;max-width:520px;max-height:90vh;overflow-y:auto}
+.md h3{margin-bottom:12px;font-size:15px}.md label{display:block;margin-bottom:2px;font-size:10px;color:var(--t2);font-weight:600}
+.md input,.md select{width:100%;padding:5px 8px;border:1px solid var(--bd);border-radius:4px;background:var(--b3);color:var(--t1);font-size:12px;margin-bottom:8px;outline:none;font-family:inherit}
+.md input:focus,.md select:focus{border-color:var(--ac)}.md .fr{display:flex;gap:8px}.md .fr>div{flex:1}.md .ma{display:flex;gap:6px;justify-content:flex-end;margin-top:12px}
+.cr3{display:flex;gap:6px;align-items:center;margin-bottom:8px}.cr3 input[type=color]{width:32px;height:26px;border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:0}.cr3 input[type=range]{flex:1;accent-color:var(--ac)}.cr3 .cp{width:26px;height:26px;border-radius:4px;border:1px solid var(--bd)}
+.acb{position:absolute;display:flex;gap:2px;z-index:9}.acb>div{width:18px;height:18px;border-radius:4px;background:var(--b3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;opacity:.5;color:var(--t2)}.acb>div:hover{opacity:1}
+#sb{padding:3px 12px;background:var(--b2);border-top:1px solid var(--bd);font-size:10px;color:var(--t3);display:flex;justify-content:space-between;flex-shrink:0}
+input[type=file]{display:none}
+</style>
+</head>
+<body data-theme="dark">
+<div id="tb"><b style="color:var(--ac);margin-right:4px">⬡</b><b style="margin-right:8px">ガントチャート</b>
+<button class="btn" id="loadBtn">📂読込</button><button class="btn bp" id="applyBtn">▶反映</button><button class="btn" id="saveBtn">💾保存</button><span class="sep"></span>
+<button class="btn" id="addBtn">＋追加</button><button class="btn" id="holBtn">📅休日</button><button class="btn" id="msBtn">◆MS</button><span class="sep"></span>
+<button class="ct on" data-c="assignee">担当</button><button class="ct on" data-c="sd">開始</button><button class="ct on" data-c="ed">終了</button><button class="ct on" data-c="dur">工数</button><button class="ct on" data-c="prg">進捗</button><span class="sep"></span>
+<span style="font-size:10px;color:var(--t2)">倍率</span><input type="range" id="zoom" min="10" max="60" value="26" style="width:60px;accent-color:var(--ac)"><span id="zv" style="font-size:10px;color:var(--t2)">26</span>
+<div style="flex:1"></div><button class="btn" id="thBtn">☽</button></div>
+<div id="main"><div id="yp"><div id="yh">YAML</div><textarea id="ye" spellcheck="false"></textarea></div><div class="rz" id="rz1"></div>
+<div id="gp"><div id="gw"><div id="tl"><div id="tlh"></div><div id="tlb"></div></div><div class="rz" id="rz2" style="position:sticky;z-index:22"></div>
+<div id="tp"><div id="thd"><div id="mr"></div><div id="dr"></div></div><div id="cb"><div class="dropi" id="dropi"></div></div><svg id="svg" style="position:absolute;top:0;left:0;pointer-events:none;z-index:8"><defs><marker id="ah" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><path d="M0,0 L10,3.5 L0,7 Z" fill="var(--t3)"/></marker></defs></svg><div id="tdy"></div></div></div></div></div>
+<div id="sb"><span id="stt"></span><span id="sdt"></span></div>
+<div class="dind" id="dind"></div><div class="toast" id="toastEl"></div>
+<div class="mo" id="modal"><div class="md" id="mdc" onclick="event.stopPropagation()"></div></div>
+<input type="file" id="fi" accept=".yaml,.yml">
+<script src="app.js"></script>
+</body></html>
