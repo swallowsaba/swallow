@@ -128,11 +128,18 @@ function renderWorkflowVisualizer(container, wf, opts){
   wf.statuses.forEach(function(s){positions[s] = getNodePos(wf.id, s, wf)});
   var maxX = 0, maxY = 0;
   Object.keys(positions).forEach(function(k){
-    if (positions[k].x > maxX) maxX = positions[k].x;
-    if (positions[k].y > maxY) maxY = positions[k].y;
+    var px = positions[k] && !isNaN(positions[k].x) ? positions[k].x : 0;
+    var py = positions[k] && !isNaN(positions[k].y) ? positions[k].y : 0;
+    // Also fix the position itself if NaN
+    if (positions[k] && isNaN(positions[k].x)) positions[k].x = 60;
+    if (positions[k] && isNaN(positions[k].y)) positions[k].y = 60;
+    if (px > maxX) maxX = px;
+    if (py > maxY) maxY = py;
   });
   var svgW = Math.max(1200, maxX + 300);
   var svgH = Math.max(600, maxY + 200);
+  if (isNaN(svgW)) svgW = 1200;
+  if (isNaN(svgH)) svgH = 600;
 
   var svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
   svg.setAttribute("width", svgW);
@@ -254,10 +261,10 @@ function renderWorkflowVisualizer(container, wf, opts){
       // Grow SVG if dragging near edge
       var svg2 = document.getElementById("wfvSvg");
       if (svg2){
-        var curW = parseInt(svg2.getAttribute("width"));
-        var curH = parseInt(svg2.getAttribute("height"));
-        if (pos.x + 250 > curW) svg2.setAttribute("width", pos.x + 400);
-        if (pos.y + 150 > curH) svg2.setAttribute("height", pos.y + 250);
+        var curW = parseInt(svg2.getAttribute("width")) || 1200;
+        var curH = parseInt(svg2.getAttribute("height")) || 600;
+        if (!isNaN(pos.x) && pos.x + 250 > curW) svg2.setAttribute("width", pos.x + 400);
+        if (!isNaN(pos.y) && pos.y + 150 > curH) svg2.setAttribute("height", pos.y + 250);
       }
 
       // Update edges (lightweight: only update path d= for connected edges)

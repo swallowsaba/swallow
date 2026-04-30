@@ -174,7 +174,23 @@ function prjInit(){
    PROJECT SWITCHER UI (topbar)
    ============================================================ */
 function prjRenderSwitcher(){
-  // Remove existing
+  // Update sidebar project widget
+  var sbProj = document.getElementById("sbProj");
+  if (sbProj){
+    var p = getActiveProject();
+    if (p){
+      var iconEl = sbProj.querySelector(".sb-proj-icon");
+      var nameEl = document.getElementById("sbProjName");
+      var metaEl = sbProj.querySelector(".sb-proj-meta");
+      if (iconEl) iconEl.textContent = p.icon || "📋";
+      if (nameEl) nameEl.textContent = p.name;
+      if (metaEl) metaEl.textContent = "▼ " + (PRJ.projects.length>1 ? PRJ.projects.length+" projects" : "Software project");
+    }
+    // Wire click to dropdown
+    sbProj.onclick = prjShowDropdown;
+  }
+
+  // Remove existing topbar switcher
   var old = document.getElementById("prjSwitcher");
   if (old) old.remove();
 
@@ -195,16 +211,26 @@ function prjRenderSwitcher(){
   topbar.insertBefore(sw, topbar.firstChild);
 }
 
-function prjShowDropdown(){
+function prjShowDropdown(e){
   // Toggle dropdown
   var existing = document.getElementById("prjDropdown");
   if (existing){existing.remove();return}
 
-  var sw = document.getElementById("prjSwitcher");
-  var rect = sw.getBoundingClientRect();
+  // Determine anchor: sidebar item or topbar switcher
+  var anchor = (e && e.currentTarget) || document.getElementById("prjSwitcher") || document.getElementById("sbProj");
+  if (!anchor) return;
+  var rect = anchor.getBoundingClientRect();
   var dd = document.createElement("div");
   dd.id = "prjDropdown";
-  dd.style.cssText = "position:fixed;top:"+(rect.bottom+4)+"px;left:"+rect.left+"px;background:var(--b1);border:1px solid var(--bd);border-radius:6px;box-shadow:0 8px 24px rgba(9,30,66,.25);z-index:5000;min-width:280px;max-width:380px;font-size:13px;padding:6px";
+  // Position below or to right of anchor
+  var top = rect.bottom + 4;
+  var left = rect.left;
+  // If clicked on sidebar (narrow), position to the right
+  if (anchor.id === "sbProj"){
+    top = rect.top;
+    left = rect.right + 4;
+  }
+  dd.style.cssText = "position:fixed;top:"+top+"px;left:"+left+"px;background:var(--b1);border:1px solid var(--bd);border-radius:6px;box-shadow:0 8px 24px rgba(9,30,66,.25);z-index:5000;min-width:280px;max-width:380px;font-size:13px;padding:6px";
 
   var html = '<div style="padding:6px 12px;font-size:10px;text-transform:uppercase;color:var(--t2);font-weight:700;letter-spacing:.5px">プロジェクト ('+PRJ.projects.length+')</div>';
   PRJ.projects.forEach(function(p){
@@ -252,7 +278,11 @@ function prjShowDropdown(){
   // Close on click outside
   setTimeout(function(){
     var closer = function(ev){
-      if (!dd.contains(ev.target) && ev.target.id !== "prjSwitcher" && !document.getElementById("prjSwitcher").contains(ev.target)){
+      var sw = document.getElementById("prjSwitcher");
+      var sb = document.getElementById("sbProj");
+      var insideSwitcher = sw && sw.contains(ev.target);
+      var insideSidebar = sb && sb.contains(ev.target);
+      if (!dd.contains(ev.target) && !insideSwitcher && !insideSidebar){
         dd.remove();
         document.removeEventListener("mousedown", closer);
       }
@@ -371,6 +401,41 @@ function prjCreateDlg(){
     PRJ.activeProjectId = newPrj.id;
     prjSave();
     prjRestoreToTS(newPrj);
+
+    // Initialize Gantt data for the new project
+    if (typeof S !== "undefined"){
+      var t0 = new Date();
+      S.data = {
+        project: {
+          name: name,
+          start_date: t0.toISOString().substr(0,10),
+          end_date: new Date(t0.getTime() + 30*86400000).toISOString().substr(0,10)
+        },
+        tasks: []
+      };
+      if (typeof flatAll === "function") S.flat = [];
+      if (typeof yS === "function" && document.getElementById("ye")){
+        document.getElementById("ye").value = yS(S.data);
+      }
+    }
+
+    // Add sample ticket if empty (for "empty" and "defaults" modes)
+    if (initMode !== "copy" && (!newPrj.data.tickets || newPrj.data.tickets.length === 0)){
+      // Ensure user is set
+      if (!TS.currentUser && TS.users && TS.users.length){
+        TS.currentUser = TS.users[0];
+      }
+      if (TS.currentUser){
+        createTicket({
+          title: "サンプルチケット ("+name+")",
+          description: "このプロジェクトの最初のチケットです。自由に編集・削除してください。",
+          priority: "medium",
+          status: "todo",
+          type: "task"
+        });
+      }
+    }
+
     closeModal();
     prjRenderSwitcher();
     if (typeof switchView === "function") switchView(TS.currentView || "gantt");

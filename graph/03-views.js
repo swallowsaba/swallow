@@ -1,7 +1,7 @@
 /* ===== Ticket View ===== */
 function renderTicketView(){
   var v = document.getElementById("ticketView");
-  v.innerHTML = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">🎫 Issues</div></div><div class="page-toolbar"><input class="tb-input" id="ticketSearch" placeholder="検索 / JQL: status = todo AND priority = high" value="'+escHtml(TS.filter)+'" style="flex:1;max-width:480px"><button class="btn bp" id="ticketAdd">+ Create</button><button class="btn secondary" id="ticketTpl">⚡ From Template</button><button class="btn secondary" id="ticketImport">📥 Import</button><button class="btn secondary" id="ticketExport">📤 Export</button></div><div class="tv-body"><div class="tv-list" id="ticketList"></div><div class="tv-detail" id="ticketDetail" style="display:none"></div></div>';
+  v.innerHTML = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">🎫 チケット</div></div><div class="page-toolbar"><input class="tb-input" id="ticketSearch" placeholder="検索 / JQL: status = todo AND priority = high" value="'+escHtml(TS.filter)+'" style="flex:1;max-width:480px"><button class="btn bp" id="ticketAdd">+ Create</button><button class="btn secondary" id="ticketTpl">⚡ From Template</button><button class="btn secondary" id="ticketImport">📥 Import</button><button class="btn secondary" id="ticketExport">📤 Export</button></div><div class="tv-body"><div class="tv-list" id="ticketList"></div><div class="tv-detail" id="ticketDetail" style="display:none"></div></div>';
   var listEl = document.getElementById("ticketList");
   var results = searchTickets(TS.filter);
   // Build hierarchy: parents first, then children indented
@@ -442,7 +442,7 @@ function renderKanbanView(){
   ensureBoardConfig();
   var visibleStatusIds = TS.boardConfig.columns;
   var hiddenCount = TS.statuses.length - visibleStatusIds.length;
-  v.innerHTML = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">📋 Board</div></div><div class="page-toolbar"><input class="tb-input" id="kbSearch" placeholder="Filter board..." value="'+escHtml(TS.filter)+'" style="flex:1;max-width:380px"><button class="btn bp" id="kbAdd">+ Create</button><button class="btn secondary" id="kbColMgr" title="列の管理">⚙ 列管理</button><span style="font-size:12px;color:var(--t2);margin-left:auto">カードをドラッグでステータス変更</span></div><div class="kb-cols" id="kbCols"></div>';
+  v.innerHTML = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">📋 Board</div></div><div class="page-toolbar"><input class="tb-input" id="kbSearch" placeholder="チケットを検索..." value="'+escHtml(TS.filter)+'" style="flex:1;max-width:380px"><button class="btn bp" id="kbAdd">+ Create</button><button class="btn secondary" id="kbColMgr" title="列の管理">⚙ 列管理</button><span style="font-size:12px;color:var(--t2);margin-left:auto">カードをドラッグでステータス変更</span></div><div class="kb-cols" id="kbCols"></div>';
   var kc = document.getElementById("kbCols");
   var tickets = searchTickets(TS.filter);
 
@@ -526,7 +526,8 @@ function renderKanbanView(){
       var ticket = TS.tickets.find(function(x){return x.key===k});
       if (!ticket) return;
       if (ticket.status === st.id){renderKanbanView();return}
-      // Try workflow engine first
+      // Workflow is optional: if defined and matched, use it; otherwise direct status change
+      var wfStrict = TS.boardConfig && TS.boardConfig.strictWorkflow;
       if (typeof getAvailableTransitions==="function" && TS.workflows && TS.workflows.length){
         var trans = getAvailableTransitions(ticket).filter(function(tr){return tr.to===st.id});
         if (trans.length){
@@ -535,7 +536,11 @@ function renderKanbanView(){
           if (needsDialog){
             for (var i=0;i<(tr.conditions||[]).length;i++){
               var cond=tr.conditions[i];var fn=WF_CONDITIONS[cond.type||cond];
-              if (fn){var cr=fn.check(ticket,tr,{});if(!cr.ok){toast("条件NG: "+cr.msg,1);renderKanbanView();return}}
+              if (fn){var cr=fn.check(ticket,tr,{});if(!cr.ok){
+                if (wfStrict){toast("条件NG: "+cr.msg,1);renderKanbanView();return}
+                // Non-strict: bypass and just update
+                updateTicket(k, {status: st.id});renderKanbanView();return;
+              }}
             }
             if ((tr.validators||[]).length){
               showTransitionDlg(ticket, tr);
@@ -543,14 +548,20 @@ function renderKanbanView(){
             }
           }
           var r = executeTransition(k, tr.id, {});
-          if (!r.ok){toast(r.msg||"遷移失敗",1)}
-          else {toast("'"+tr.name+"' 実行")}
+          if (!r.ok){
+            if (wfStrict){toast(r.msg||"遷移失敗",1)}
+            else {updateTicket(k, {status: st.id})}
+          } else {toast("'"+tr.name+"' 実行")}
           renderKanbanView();
           return;
         } else {
-          toast("ワークフロー上 "+ticket.status+"→"+st.id+" の遷移は定義されていません",1);
-          renderKanbanView();
-          return;
+          // No workflow transition defined for this status change
+          if (wfStrict){
+            toast("ワークフロー上 "+ticket.status+"→"+st.id+" の遷移は定義されていません",1);
+            renderKanbanView();
+            return;
+          }
+          // Lenient mode (default): allow direct status change
         }
       }
       updateTicket(k, {status: st.id});renderKanbanView();
@@ -719,6 +730,9 @@ function kbColMgrDlg(){
   ensureBoardConfig();
   var html = '<h3>⚙ Board列の管理</h3>';
   html += '<div style="font-size:12px;color:var(--t2);margin-bottom:14px">表示する列のチェックボックスをON/OFF。WIP制限は0で無効。</div>';
+  // Workflow strict mode toggle
+  var strict = !!(TS.boardConfig && TS.boardConfig.strictWorkflow);
+  html += '<div style="background:var(--b2);padding:10px 12px;border-radius:4px;margin-bottom:14px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0"><input type="checkbox" id="cmgrStrict"'+(strict?" checked":"")+'><span style="font-size:13px;color:var(--t1);font-weight:600">ワークフロー厳格モード</span></label><div style="font-size:11px;color:var(--t2);margin-top:4px;margin-left:24px">ON: ワークフローで定義された遷移のみ許可。OFF（既定）: 任意のステータスへドラッグ移動可能。</div></div>';
   html += '<div style="max-height:50vh;overflow:auto;border:1px solid var(--bd);border-radius:4px">';
   html += '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:var(--b2)"><th style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">表示</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">ステータス</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">カテゴリ</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">WIP制限</th></tr></thead><tbody>';
   TS.statuses.forEach(function(st){
@@ -739,6 +753,7 @@ function kbColMgrDlg(){
       if (cb.checked) newCols.push(cb.dataset.cmgrId);
     });
     TS.boardConfig.columns = newCols;
+    TS.boardConfig.strictWorkflow = document.getElementById("cmgrStrict").checked;
     document.querySelectorAll("[data-cmgr-wip]").forEach(function(inp){
       var v = parseInt(inp.value) || 0;
       if (v > 0) TS.boardConfig.wipLimits[inp.dataset.cmgrWip] = v;
@@ -757,7 +772,7 @@ function renderBacklogView(){
   var notDone = TS.tickets.filter(function(t){return t.status!=="done"&&!t.sprintId});
   var inSprints = {};
   TS.sprints.forEach(function(sp){inSprints[sp.id] = TS.tickets.filter(function(t){return t.sprintId===sp.id})});
-  var html = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">📚 Backlog</div></div><div class="page-toolbar"><button class="btn bp" id="blAddSp">+ Sprint</button><button class="btn secondary" id="blAddTk">+ Issue</button></div><div class="page-body" style="overflow:auto">';
+  var html = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">📚 Backlog</div></div><div class="page-toolbar"><button class="btn bp" id="blAddSp">+ Sprint</button><button class="btn secondary" id="blAddTk">+ チケット</button></div><div class="page-body" style="overflow:auto">';
   TS.sprints.forEach(function(sp){
     var items = inSprints[sp.id] || [];
     var totalSp = items.reduce(function(a,t){return a+(t.storyPoint||0)},0);

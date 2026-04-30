@@ -162,11 +162,62 @@ function createTicket(data){
     gitRefs: data.gitRefs || []
   };
   TS.tickets.push(t);
+  // Auto-create Gantt task and link, unless one was provided or _skipGantt is set
+  if (!t.ganttTaskId && !data._skipGantt && typeof S !== "undefined" && S.data){
+    autoCreateGanttForTicket(t);
+  }
   audit("create","ticket",t.key,t.title);
   if (t.assignee && t.assignee !== (TS.currentUser?TS.currentUser.id:""))
     notify(t.assignee, t.key+" があなたにアサインされました: "+t.title, t.key);
   saveTS();
   return t;
+}
+
+/* Helper: create a Gantt task linked to the ticket */
+function autoCreateGanttForTicket(t){
+  if (typeof S === "undefined" || !S.data) return;
+  if (!S.data.tasks) S.data.tasks = [];
+  // Ensure project dates are set so render() doesn't NaN
+  if (!S.data.project || typeof S.data.project === "string"){
+    var pn = (typeof S.data.project === "string") ? S.data.project : ((typeof getActiveProject === "function" && getActiveProject()) ? getActiveProject().name : "Project");
+    S.data.project = {name: pn};
+  }
+  if (!S.data.project.start_date){
+    var t0 = new Date();
+    S.data.project.start_date = t0.toISOString().substr(0,10);
+    S.data.project.end_date = new Date(t0.getTime() + 30*86400000).toISOString().substr(0,10);
+  }
+  // Generate gantt id from ticket key (e.g. SAMPLE-3 -> sample_3)
+  var gid = t.key.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  // Ensure unique
+  var orig = gid, n = 2;
+  while (typeof S.flat !== "undefined" && S.flat && S.flat.find(function(x){return x.id===gid})){
+    gid = orig+"_"+n; n++;
+  }
+  // Default dates: today to today+ (storyPoint or 3) days
+  var today = new Date();
+  var sd = today.toISOString().substr(0,10);
+  var dur = t.storyPoint || 3;
+  var ed = new Date(today.getTime() + dur*86400000);
+  var edStr = (t.dueDate || ed.toISOString().substr(0,10));
+  var ganttTask = {
+    id: gid,
+    name: t.title,
+    sd: sd,
+    ed: edStr,
+    progress: t.status === "done" ? 100 : (t.status === "inprogress" ? 50 : 0),
+    assignee: t.assignee || "",
+    color: ""
+  };
+  S.data.tasks.push(ganttTask);
+  t.ganttTaskId = gid;
+  // Refresh flat list and re-render
+  if (typeof flatAll === "function") S.flat = flatAll(S.data.tasks);
+  if (typeof yS === "function" && document.getElementById("ye")){
+    document.getElementById("ye").value = yS(S.data);
+  }
+  if (typeof resG === "function") resG(S.flat||[]);
+  if (typeof render === "function") render();
 }
 
 function updateTicket(key, patch){
@@ -179,6 +230,27 @@ function updateTicket(key, patch){
   audit("update","ticket",key,Object.keys(patch).join(","));
   if (patch.assignee && patch.assignee !== oldAsg && patch.assignee !== (TS.currentUser?TS.currentUser.id:""))
     notify(patch.assignee, key+" があなたにアサインされました: "+t.title, key);
+  // Sync to Gantt
+  if (t.ganttTaskId && typeof S !== "undefined" && S.flat){
+    var g = S.flat.find(function(x){return x.id===t.ganttTaskId});
+    if (g){
+      var changed = false;
+      if (patch.title !== undefined && g.name !== patch.title){g.name = patch.title; changed = true}
+      if (patch.assignee !== undefined && g.assignee !== patch.assignee){g.assignee = patch.assignee; changed = true}
+      if (patch.dueDate !== undefined && g.ed !== patch.dueDate){g.ed = patch.dueDate; changed = true}
+      if (patch.status !== undefined){
+        var newProgress = patch.status === "done" ? 100 : (patch.status === "inprogress" ? 50 : 0);
+        if (g.progress !== newProgress){g.progress = newProgress; changed = true}
+      }
+      if (changed){
+        if (typeof yS === "function" && document.getElementById("ye")){
+          document.getElementById("ye").value = yS(S.data);
+        }
+        if (typeof resG === "function") resG(S.flat);
+        if (typeof render === "function") render();
+      }
+    }
+  }
   saveTS();
   return true;
 }
@@ -187,6 +259,36 @@ function deleteTicket(key){
   if (!hasPerm("ticket.delete")){toast("権限がありません",1);return false}
   var idx = TS.tickets.findIndex(function(x){return x.key===key});
   if (idx<0) return false;
+  var t = TS.tickets[idx];
+  // Also delete linked Gantt task
+  if (t.ganttTaskId && typeof S !== "undefined" && S.data && S.data.tasks){
+    var gid = t.ganttTaskId;
+    var rmF = function(ts){
+      for (var i=0;i<ts.length;i++){
+        if (ts[i].id===gid){ts.splice(i,1);return true}
+        if (ts[i].children && rmF(ts[i].children)) return true;
+      }
+      return false;
+    };
+    rmF(S.data.tasks);
+    // Also remove dependencies pointing to it
+    var rd = function(ts){
+      for (var i=0;i<ts.length;i++){
+        if (ts[i].depends_on){
+          ts[i].depends_on = ts[i].depends_on.filter(function(d){return d!==gid});
+          if (!ts[i].depends_on.length) delete ts[i].depends_on;
+        }
+        if (ts[i].children) rd(ts[i].children);
+      }
+    };
+    rd(S.data.tasks);
+    if (typeof flatAll === "function") S.flat = flatAll(S.data.tasks);
+    if (typeof yS === "function" && document.getElementById("ye")){
+      document.getElementById("ye").value = yS(S.data);
+    }
+    if (typeof resG === "function") resG(S.flat||[]);
+    if (typeof render === "function") render();
+  }
   TS.tickets.splice(idx,1);
   // Remove backlinks
   TS.tickets.forEach(function(t){

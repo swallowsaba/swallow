@@ -157,7 +157,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 
 /* ===== Gantt-specific (preserved) ===== */
 #ganttView{display:flex;flex:1;overflow:hidden;min-height:0}
-#yp{width:280px;min-width:120px;display:flex;flex-direction:column;border-right:1px solid var(--bd);background:var(--b2);flex-shrink:0}
+#yp{width:280px;min-width:120px;display:none;flex-direction:column;border-right:1px solid var(--bd);background:var(--b2);flex-shrink:0}
+#yp.show{display:flex}
 #yh{padding:8px 12px;background:var(--b1);border-bottom:1px solid var(--bd);font-size:12px;font-weight:600;color:var(--t1)}
 #ye{flex:1;width:100%;background:var(--b2);color:var(--t1);border:none;padding:10px;font-family:'SF Mono',Consolas,monospace;font-size:11px;line-height:1.5;resize:none;outline:none;tab-size:2}
 .rz{width:6px;cursor:col-resize;background:transparent;flex-shrink:0;transition:background .15s}
@@ -167,14 +168,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none}
 #tl{width:340px;min-width:140px;background:var(--b1);flex-shrink:0;position:sticky;left:0;z-index:20;border-right:1px solid var(--bd)}
 #tlh{height:48px;display:flex;align-items:stretch;background:var(--b2);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:21;font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px}
 .hc{display:flex;align-items:center;justify-content:flex-start;padding:0 8px;border-right:1px solid var(--bd);overflow:hidden}.hc.nm{flex:1}
-.tr{height:36px;display:flex;align-items:center;border-bottom:1px solid var(--bd);font-size:13px;color:var(--t1);background:var(--b1)}
+.tr{height:38px;display:flex;align-items:center;border-bottom:1px solid var(--bd);font-size:14px;color:var(--t1);background:var(--b1)}
 .tr:hover{background:var(--b2)}
-.tr.l0{background:var(--ac-bg)!important;font-weight:600}
-.tr.l1{background:var(--b2);font-weight:500}
+.tr.l0{background:var(--ac-bg)!important;font-weight:700;font-size:14px;border-bottom:1px solid var(--ac);height:42px}
+.tr.l1{background:var(--b2);font-weight:600;font-size:14px;border-bottom:1px solid var(--bd-strong);height:40px}
+.tr.l2{background:var(--b1);font-weight:400}
 .tr.dov{box-shadow:inset 0 2px 0 var(--ac)}.tr.dra{opacity:.4}
 .tc{display:flex;align-items:center;height:100%;padding:0 8px;border-right:1px solid var(--bd);overflow:hidden;white-space:nowrap;flex-shrink:0;color:var(--t1)}
 .tc.nm{flex:1;gap:4px}
-.tn{overflow:hidden;text-overflow:ellipsis;flex:1;cursor:pointer;color:var(--t1)}.tn:hover{color:var(--ac);text-decoration:underline}
+.tn{overflow:hidden;text-overflow:ellipsis;flex:1;cursor:pointer;color:var(--t1);font-size:14px}.tn:hover{color:var(--ac);text-decoration:underline}
+.tr.l0 .tn{font-size:15px;font-weight:700;color:var(--ac)}
+.tr.l1 .tn{font-size:14px;font-weight:600}
+.tr.l2 .tn,.tr.l3 .tn{font-size:13px;color:var(--t1)}
+.tr.l1 .tc.nm::before{content:"";display:block;width:3px;height:18px;background:var(--ac);border-radius:2px;margin-right:6px;flex-shrink:0}
+.tr.l2 .tc.nm::before{content:"└";color:var(--t3);margin-right:4px;font-size:14px;flex-shrink:0}
+.tr.l3 .tc.nm::before{content:"  └";color:var(--t3);margin-right:4px;font-size:13px;flex-shrink:0;white-space:pre}
 .badge{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:700;flex-shrink:0;line-height:14px;text-transform:uppercase;letter-spacing:.3px}
 .ta2{display:none;gap:2px;margin-left:auto;flex-shrink:0;align-items:center}.tr:hover .ta2{display:flex}
 .ta2 button{padding:2px 4px;font-size:11px;color:var(--t2);border-radius:3px}.ta2 button:hover{background:var(--b3);color:var(--t1)}
@@ -601,7 +609,7 @@ input[type=file]{display:none}
     <div class="sb-item" data-v="sprint"><span class="sb-icon">🏃</span><span class="sb-label">Sprints</span></div>
     <div class="sb-item" data-v="template"><span class="sb-icon">⚡</span><span class="sb-label">Templates</span></div>
     <div class="sb-section sb-label">トラッキング</div>
-    <div class="sb-item" data-v="ticket"><span class="sb-icon">🎫</span><span class="sb-label">Issues</span></div>
+    <div class="sb-item" data-v="ticket"><span class="sb-icon">🎫</span><span class="sb-label">チケット</span></div>
     <div class="sb-section sb-label">管理</div>
     <div class="sb-item" data-v="workflow"><span class="sb-icon">🔀</span><span class="sb-label">Status Flows</span></div>
     <div class="sb-item" data-v="audit"><span class="sb-icon">📜</span><span class="sb-label">Audit log</span></div>
@@ -646,6 +654,7 @@ input[type=file]{display:none}
       <button class="btn secondary" id="addBtn">+ Add task</button>
       <button class="btn" id="holBtn">📅 休日</button>
       <button class="btn" id="msBtn">◆ MS</button>
+      <button class="btn" id="yamlToggle" title="YAMLエディタの表示/非表示">📝 YAML</button>
       <span class="sep"></span>
       <button class="ct on" data-c="assignee">担当</button>
       <button class="ct on" data-c="sd">開始</button>
@@ -737,12 +746,33 @@ prop(ct.id,dragDelta||0)}
 function getVis(){var hid={};function mark(pid){for(var i=0;i<S.flat.length;i++){var t=S.flat[i];if(t.id===pid&&t.ch){for(var j=0;j<t.ch.length;j++){hid[t.ch[j]]=1;mark(t.ch[j])}}}}var ck=Object.keys(S.collapsed);for(var i=0;i<ck.length;i++)if(S.collapsed[ck[i]])mark(ck[i]);return S.flat.filter(function(t){return!hid[t.id]})}
 /* Sync */
 function sync(){var ys=yS(S.data);document.getElementById("ye").value=ys;S.data=yP(ys);S.cH=(S.data.project.custom_holidays||[]).map(String);S.flat=flatAll(S.data.tasks||[]);resG(S.flat);if(typeof syncGanttToTickets==="function")syncGanttToTickets();render()}
-function applyYaml(){try{var d=yP(document.getElementById("ye").value);if(!d||!d.project){toast("project定義が必要",1);return}S.data=d;S.cH=(d.project.custom_holidays||[]).map(String);S.flat=flatAll(d.tasks||[]);resG(S.flat);if(typeof syncGanttToTickets==="function")syncGanttToTickets();render();toast("反映完了")}catch(e){console.error(e);toast("YAMLエラー",1)}}
+function applyYaml(){try{var raw=document.getElementById("ye").value.trim();if(!raw){var pn=(typeof getActiveProject==="function"&&getActiveProject())?getActiveProject().name:"Project";var t0=new Date();S.data={project:{name:pn,start_date:t0.toISOString().substr(0,10),end_date:new Date(t0.getTime()+30*86400000).toISOString().substr(0,10)},tasks:[]};S.cH=[];S.flat=[];resG(S.flat);render();toast("空のYAML→空Timelineで反映");return}var d=yP(raw);if(!d){toast("YAMLパースエラー",1);return}if(!d.project){d.project={name:(typeof getActiveProject==="function"&&getActiveProject()?getActiveProject().name:"Project")};}else if(typeof d.project==="string"){d.project={name:d.project}}if(!d.project.start_date){var t1=new Date();d.project.start_date=t1.toISOString().substr(0,10);d.project.end_date=new Date(t1.getTime()+30*86400000).toISOString().substr(0,10)}if(!d.tasks)d.tasks=[];S.data=d;S.cH=(d.project.custom_holidays||[]).map(String);S.flat=flatAll(d.tasks||[]);resG(S.flat);if(typeof syncGanttToTickets==="function")syncGanttToTickets();render();toast("反映完了")}catch(e){console.error(e);toast("YAMLエラー: "+e.message,1)}}
 function toast(m,err){var t=document.getElementById("toastEl");t.textContent=m;t.style.background=err?"#e74c3c":"#42b983";t.style.display="block";setTimeout(function(){t.style.display="none"},2000)}
 /* Render */
-function render(){var vis=getVis();var d=S.data;if(!d||!d.project)return;var dw=S.dw,vc=S.vc;var pStart=fD(tD(d.project.start_date));var tDays=dD(d.project.start_date,d.project.end_date)+1;var today=fD(new Date());var RH=32,totalW=tDays*dw,totalH=vis.length*RH;
-var tlh=document.getElementById("tlh");tlh.innerHTML='<div class="hc" style="width:36px">\u2195</div><div class="hc nm">\u30bf\u30b9\u30af\u540d</div>';
-if(vc.assignee)tlh.innerHTML+='<div class="hc" style="width:50px">\u62c5\u5f53</div>';if(vc.sd)tlh.innerHTML+='<div class="hc" style="width:56px">\u958b\u59cb</div>';if(vc.ed)tlh.innerHTML+='<div class="hc" style="width:56px">\u7d42\u4e86</div>';if(vc.dur)tlh.innerHTML+='<div class="hc" style="width:32px">\u5de5\u6570</div>';if(vc.prg)tlh.innerHTML+='<div class="hc" style="width:38px">\u9032\u6357</div>';
+function render(){var vis=getVis();var d=S.data;if(!d){return}if(!d.project)d.project={};if(!d.project.start_date){var today=new Date();d.project.start_date=today.toISOString().substr(0,10);d.project.end_date=new Date(today.getTime()+30*86400000).toISOString().substr(0,10)}var dw=S.dw,vc=S.vc;var pStart=fD(tD(d.project.start_date));var tDays=Math.max(1,dD(d.project.start_date,d.project.end_date)+1);var today=fD(new Date());var RH=32,totalW=tDays*dw,totalH=Math.max(RH,vis.length*RH);
+// Column widths (resizable via drag on column edges)
+if(!S.colW)S.colW={nm:0,assignee:80,sd:72,ed:72,dur:48,prg:54};
+function tlcResizer(colKey){var hr=document.createElement("div");hr.className="tlc-resizer";hr.style.cssText="width:4px;height:100%;cursor:col-resize;background:transparent;flex-shrink:0;position:relative;z-index:5";hr.onmousedown=function(e){e.preventDefault();e.stopPropagation();var sx=e.clientX,sw=S.colW[colKey]||80;var mm=function(ev){var nw=Math.max(40,sw+(ev.clientX-sx));S.colW[colKey]=nw;render()};var mu=function(){document.removeEventListener("mousemove",mm);document.removeEventListener("mouseup",mu)};document.addEventListener("mousemove",mm);document.addEventListener("mouseup",mu)};return hr.outerHTML}
+var tlh=document.getElementById("tlh");
+var tlhHtml='<div class="hc" style="width:36px">\u2195</div><div class="hc nm" style="position:relative">\u30bf\u30b9\u30af\u540d'+tlcResizer("nm")+'</div>';
+if(vc.assignee)tlhHtml+='<div class="hc" style="width:'+(S.colW.assignee||80)+'px;position:relative">\u62c5\u5f53'+tlcResizer("assignee")+'</div>';
+if(vc.sd)tlhHtml+='<div class="hc" style="width:'+(S.colW.sd||72)+'px;position:relative">\u958b\u59cb'+tlcResizer("sd")+'</div>';
+if(vc.ed)tlhHtml+='<div class="hc" style="width:'+(S.colW.ed||72)+'px;position:relative">\u7d42\u4e86'+tlcResizer("ed")+'</div>';
+if(vc.dur)tlhHtml+='<div class="hc" style="width:'+(S.colW.dur||48)+'px;position:relative">\u5de5\u6570'+tlcResizer("dur")+'</div>';
+if(vc.prg)tlhHtml+='<div class="hc" style="width:'+(S.colW.prg||54)+'px;position:relative">\u9032\u6357'+tlcResizer("prg")+'</div>';
+tlh.innerHTML=tlhHtml;
+// Wire up resizer mousedowns (since outerHTML strips listeners)
+tlh.querySelectorAll(".tlc-resizer").forEach(function(hr,idx){
+  var keys=["nm"];
+  if(vc.assignee)keys.push("assignee");
+  if(vc.sd)keys.push("sd");
+  if(vc.ed)keys.push("ed");
+  if(vc.dur)keys.push("dur");
+  if(vc.prg)keys.push("prg");
+  var ck=keys[idx];
+  hr.onmousedown=function(e){e.preventDefault();e.stopPropagation();var sx=e.clientX,sw=ck==="nm"?(tlh.querySelector(".hc.nm").offsetWidth):(S.colW[ck]||80);var mm=function(ev){var nw=Math.max(40,sw+(ev.clientX-sx));if(ck==="nm"){tlh.querySelector(".hc.nm").style.flex="0 0 "+nw+"px";document.querySelectorAll("#tlb .tc.nm").forEach(function(c){c.style.flex="0 0 "+nw+"px"});S.colW.nm=nw}else{S.colW[ck]=nw;render()}};var mu=function(){document.removeEventListener("mousemove",mm);document.removeEventListener("mouseup",mu)};document.addEventListener("mousemove",mm);document.addEventListener("mouseup",mu)};
+});
+if(S.colW.nm){tlh.querySelector(".hc.nm").style.flex="0 0 "+S.colW.nm+"px"}
 var tlb=document.getElementById("tlb");tlb.innerHTML="";
 for(var idx=0;idx<vis.length;idx++){(function(t,idx){
 var r=document.createElement("div");r.className="tr l"+Math.min(t.lv,2);
@@ -753,7 +783,7 @@ var ub=document.createElement("button");ub.textContent="\u25b2";ub.style.cssText
 var db=document.createElement("button");db.textContent="\u25bc";db.style.cssText="background:none;border:none;color:var(--t3);font-size:8px;padding:0;cursor:pointer";db.onclick=function(e){e.stopPropagation();doMove(vis,idx,idx+1)};
 var gsp=document.createElement("span");gsp.textContent="\u2807";gsp.style.cssText="font-size:9px;color:var(--t3);cursor:grab";
 gc.appendChild(ub);gc.appendChild(gsp);gc.appendChild(db);r.appendChild(gc);
-var nc=document.createElement("div");nc.className="tc nm";var ind=document.createElement("span");ind.style.width=(t.lv*10)+"px";ind.style.flexShrink="0";nc.appendChild(ind);
+var nc=document.createElement("div");nc.className="tc nm";if(S.colW.nm)nc.style.flex="0 0 "+S.colW.nm+"px";var ind=document.createElement("span");ind.style.width=(t.lv*18)+"px";ind.style.flexShrink="0";nc.appendChild(ind);
 if(t.hasC){var col=document.createElement("span");col.className="coll";col.textContent=S.collapsed[t.id]?"\u25b6":"\u25bc";col.onclick=function(e){e.stopPropagation();S.collapsed[t.id]=!S.collapsed[t.id];render()};nc.appendChild(col)}else{var sp=document.createElement("span");sp.style.width="14px";sp.style.flexShrink="0";nc.appendChild(sp)}
 var bg=document.createElement("span");bg.className="badge";bg.style.background=t.lv===0?"#42b983":t.lv===1?"#3498db":"var(--b3)";if(t.lv>=2)bg.style.color="var(--t2)";bg.textContent=t.type==="\u5927\u9805\u76ee"?"\u5927":t.type==="\u4e2d\u9805\u76ee"?"\u4e2d":"\u5c0f";nc.appendChild(bg);
 var tn=document.createElement("span");tn.className="tn";tn.textContent=t.name;tn.title="\u30af\u30ea\u30c3\u30af\u3067\u7de8\u96c6";tn.onclick=function(e){e.stopPropagation();editDlg(t.id)};nc.appendChild(tn);
@@ -764,11 +794,11 @@ var b1=document.createElement("button");b1.textContent="\ud83d\udd17";b1.title="
 var b2=document.createElement("button");b2.textContent="+";b2.title="\u5b50\u8ffd\u52a0";b2.style.color="var(--ac)";b2.onclick=function(e){e.stopPropagation();addDlg(t.id)};ta.appendChild(b2);
 var b3=document.createElement("button");b3.textContent="\u2715";b3.title="\u524a\u9664";b3.style.color="var(--dn)";b3.onclick=function(e){e.stopPropagation();delTask(t.id)};ta.appendChild(b3);
 nc.appendChild(ta);r.appendChild(nc);
-if(vc.assignee)addEC(r,t,"assignee",50,"text",t.assignee);
-if(vc.sd)addEC(r,t,"sd",56,"date",shortDate(t.sd));
-if(vc.ed)addEC(r,t,"ed",56,"date",shortDate(t.ed));
-if(vc.dur)addEC(r,t,"dur",32,"number",t.dur||"");
-if(vc.prg){var pc=document.createElement("div");pc.className="tc";pc.style.width="38px";pc.style.cursor="pointer";pc.ondblclick=function(e){e.stopPropagation();doIE(pc,t,"progress","number")};var pb=document.createElement("span");pb.className="prb";pb.textContent=(t.progress||0)+"%";pb.style.background=prgC(t.progress);pc.appendChild(pb);r.appendChild(pc)}
+if(vc.assignee)addEC(r,t,"assignee",(S.colW.assignee||80),"text",t.assignee);
+if(vc.sd)addEC(r,t,"sd",(S.colW.sd||72),"date",shortDate(t.sd));
+if(vc.ed)addEC(r,t,"ed",(S.colW.ed||72),"date",shortDate(t.ed));
+if(vc.dur)addEC(r,t,"dur",(S.colW.dur||48),"number",t.dur||"");
+if(vc.prg){var pc=document.createElement("div");pc.className="tc";pc.style.width=(S.colW.prg||54)+"px";pc.style.cursor="pointer";pc.ondblclick=function(e){e.stopPropagation();doIE(pc,t,"progress","number")};var pb=document.createElement("span");pb.className="prb";pb.textContent=(t.progress||0)+"%";pb.style.background=prgC(t.progress);pc.appendChild(pb);r.appendChild(pc)}
 r.addEventListener("dragover",function(e){e.preventDefault();r.classList.add("dov")});r.addEventListener("dragleave",function(){r.classList.remove("dov")});
 (function(ti2){r.addEventListener("drop",function(e){e.preventDefault();r.classList.remove("dov");var fi=parseInt(e.dataTransfer.getData("text/plain"));if(!isNaN(fi)&&fi!==ti2)doMove(vis,fi,ti2)})})(idx);
 if(S.depSrc){r.style.cursor="pointer";r.onclick=function(){handleDep(t)}}
@@ -833,7 +863,7 @@ function showModal(h){var m=document.getElementById("modal");document.getElement
 function closeModal(){document.getElementById("modal").style.display="none"}
 /* Add */
 function addDlg(parentId){var ps=S.flat.filter(function(t){return t.hasC||t.type!=="\u5c0f\u9805\u76ee"});var po='<option value="">(\u30eb\u30fc\u30c8)</option>';for(var i=0;i<ps.length;i++){var sel=ps[i].id===parentId?" selected":"";po+='<option value="'+ps[i].id+'"'+sel+'>'+"\u3000".repeat(ps[i].lv)+ps[i].name+'</option>'}showModal('<h3>\uff0b \u30bf\u30b9\u30af\u8ffd\u52a0</h3><label>ID</label><input id="mi" placeholder="task_id"><label>\u30bf\u30b9\u30af\u540d</label><input id="mn"><label>\u30bf\u30a4\u30d7</label><select id="mt"><option>\u5927\u9805\u76ee</option><option>\u4e2d\u9805\u76ee</option><option selected>\u5c0f\u9805\u76ee</option></select><label>\u89aa</label><select id="mp">'+po+'</select><label>\u62c5\u5f53</label><input id="mas"><div class="fr"><div><label>\u958b\u59cb\u65e5</label><input id="ms2" type="date"></div><div><label>\u7d42\u4e86\u65e5</label><input id="me2" type="date"></div></div><div class="fr"><div><label>\u5de5\u6570</label><input id="mdu" type="number" min="1"></div><div><label>\u9032\u6357(%)</label><input id="mpr" type="number" min="0" max="100" value="0"></div></div><label>\u8272</label><div class="cr3"><input type="color" id="mcH" value="#42b983"><input type="range" id="mcA" min="0" max="100" value="100"><span style="font-size:10px;color:var(--t2)">100%</span></div><div class="ma"><button class="btn" onclick="closeModal()">\u30ad\u30e3\u30f3\u30bb\u30eb</button><button class="btn bp" onclick="doAdd()">\u8ffd\u52a0</button></div>')}
-function doAdd(){var id=document.getElementById("mi").value.trim(),nm=document.getElementById("mn").value.trim();if(!id||!nm){toast("ID\u3068\u540d\u524d\u304c\u5fc5\u8981",1);return}if(typeof urCapture==="function")urCapture("Ganttタスク追加",true);var tp=document.getElementById("mt").value,pid=document.getElementById("mp").value;var nt={id:id,name:nm,type:tp};var asg=document.getElementById("mas").value.trim();if(asg)nt.assignee=asg;var sd=document.getElementById("ms2").value;if(sd)nt.start_date=sd;var ed=document.getElementById("me2").value;if(ed)nt.end_date=ed;var dur=parseInt(document.getElementById("mdu").value);if(!isNaN(dur)&&dur>0)nt.duration=dur;nt.progress=parseInt(document.getElementById("mpr").value)||0;var ch=pC(document.getElementById("mcH").value);ch.a=(parseInt(document.getElementById("mcA").value)||100)/100;nt.color=rS(ch);if(tp!=="\u5c0f\u9805\u76ee")nt.children=[];if(pid){var ins=function(ts){for(var i=0;i<ts.length;i++){if(ts[i].id===pid){if(!ts[i].children)ts[i].children=[];ts[i].children.push(nt);return true}if(ts[i].children&&ins(ts[i].children))return true}return false};ins(S.data.tasks)}else S.data.tasks.push(nt);closeModal();sync();toast("\u8ffd\u52a0")}
+function doAdd(){var id=document.getElementById("mi").value.trim(),nm=document.getElementById("mn").value.trim();if(!nm){toast("\u540d\u524d\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044",1);return}if(!id){id="task_"+Date.now()}if(S.flat.find(function(x){return x.id===id})){toast("ID '"+id+"' \u306f\u65e2\u306b\u5b58\u5728\u3057\u307e\u3059",1);return}if(typeof urCapture==="function")urCapture("Ganttタスク追加",true);var tp=document.getElementById("mt").value,pid=document.getElementById("mp").value;var nt={id:id,name:nm,type:tp};var asg=document.getElementById("mas").value.trim();if(asg)nt.assignee=asg;var sd=document.getElementById("ms2").value;if(sd)nt.start_date=sd;var ed=document.getElementById("me2").value;if(ed)nt.end_date=ed;var dur=parseInt(document.getElementById("mdu").value);if(!isNaN(dur)&&dur>0)nt.duration=dur;nt.progress=parseInt(document.getElementById("mpr").value)||0;var ch=pC(document.getElementById("mcH").value);ch.a=(parseInt(document.getElementById("mcA").value)||100)/100;nt.color=rS(ch);if(tp!=="\u5c0f\u9805\u76ee")nt.children=[];if(pid){var ins=function(ts){for(var i=0;i<ts.length;i++){if(ts[i].id===pid){if(!ts[i].children)ts[i].children=[];ts[i].children.push(nt);return true}if(ts[i].children&&ins(ts[i].children))return true}return false};ins(S.data.tasks)}else S.data.tasks.push(nt);closeModal();sync();toast("\u8ffd\u52a0")}
 /* Edit */
 function editDlg(id){var t=null;for(var i=0;i<S.flat.length;i++)if(S.flat[i].id===id){t=S.flat[i];break}if(!t)return;var ats=S.flat.filter(function(x){return x.id!==id});var dO="";for(var i=0;i<ats.length;i++){var sel2=t.dep&&t.dep.indexOf(ats[i].id)>=0?" selected":"";dO+='<option value="'+ats[i].id+'"'+sel2+'>'+ats[i].name+'</option>'}var rgba=pC(t.color),hex=tHx(rgba),aV=Math.round(rgba.a*100);var dlR=t.dl?pC(t.dl.color):{r:231,g:76,b:60,a:0.7},dlH=tHx(dlR),dlA=Math.round(dlR.a*100);var tpSel='<option'+(t.type==="\u5927\u9805\u76ee"?" selected":"")+'>\u5927\u9805\u76ee</option><option'+(t.type==="\u4e2d\u9805\u76ee"?" selected":"")+'>\u4e2d\u9805\u76ee</option><option'+(t.type==="\u5c0f\u9805\u76ee"?" selected":"")+'>\u5c0f\u9805\u76ee</option>';showModal('<h3>\u270e '+t.name+'</h3><label>\u540d\u524d</label><input id="mn" value="'+t.name+'"><label>\u30bf\u30a4\u30d7</label><select id="mtp">'+tpSel+'</select><label>\u62c5\u5f53</label><input id="mas" value="'+(t.assignee||"")+'"><div class="fr"><div><label>\u958b\u59cb\u65e5</label><input id="ms2" type="date" value="'+(t.sd||"")+'"></div><div><label>\u7d42\u4e86\u65e5</label><input id="me2" type="date" value="'+(t.ed||"")+'"></div></div><div class="fr"><div><label>\u5de5\u6570</label><input id="mdu" type="number" min="1" value="'+(t.dur||"")+'"></div><div><label>\u9032\u6357(%)</label><input id="mpr" type="number" min="0" max="100" value="'+(t.progress||0)+'"></div></div><label>\u30d0\u30fc\u8272</label><div class="cr3"><input type="color" id="mcH" value="'+hex+'"><input type="range" id="mcA" min="0" max="100" value="'+aV+'"><span style="font-size:10px;color:var(--t2)">'+aV+'%</span><div class="cp" style="background:'+rS(rgba)+'"></div></div><label>\u4f9d\u5b58\u30bf\u30b9\u30af</label><select id="mD" multiple style="height:60px">'+dO+'</select><label>DL\u65e5\u4ed8</label><input id="mdd" type="date" value="'+(t.dl?t.dl.date:"")+'"><label>DL\u8272</label><div class="cr3"><input type="color" id="mdcH" value="'+dlH+'"><input type="range" id="mdcA" min="0" max="100" value="'+dlA+'"><span style="font-size:10px;color:var(--t2)">'+dlA+'%</span></div><div class="ma"><button class="btn" onclick="closeModal()">\u30ad\u30e3\u30f3\u30bb\u30eb</button><button class="btn bp" onclick="doSave(\''+id+'\')">\u4fdd\u5b58</button></div>')}
 function doSave(id){var t=null;for(var i=0;i<S.flat.length;i++)if(S.flat[i].id===id){t=S.flat[i];break}if(!t)return;if(typeof urCapture==="function")urCapture("Ganttタスク編集",true);t.name=document.getElementById("mn").value;t.type=document.getElementById("mtp").value;t.assignee=document.getElementById("mas").value.trim();var sd=document.getElementById("ms2").value;if(sd)t.sd=sd;var ed=document.getElementById("me2").value;if(ed)t.ed=ed;var dur=parseInt(document.getElementById("mdu").value);if(!isNaN(dur)&&dur>0)t.dur=dur;t.progress=parseInt(document.getElementById("mpr").value)||0;var ch=pC(document.getElementById("mcH").value);ch.a=(parseInt(document.getElementById("mcA").value)||100)/100;t.color=rS(ch);var sel=document.getElementById("mD");t.dep=[];for(var i=0;i<sel.options.length;i++)if(sel.options[i].selected)t.dep.push(sel.options[i].value);var dld=document.getElementById("mdd").value;if(dld){var dc=pC(document.getElementById("mdcH").value);dc.a=(parseInt(document.getElementById("mdcA").value)||70)/100;t.dl={date:dld,color:rS(dc)}}else t.dl=null;if(t._r){t._r.name=t.name;t._r.type=t.type;t._r.assignee=t.assignee||undefined;if(t.sd)t._r.start_date=t.sd;if(t.ed)t._r.end_date=t.ed;if(t.dur)t._r.duration=t.dur;t._r.progress=t.progress;t._r.color=t.color;if(t.dep.length)t._r.depends_on=t.dep.slice();else delete t._r.depends_on;if(t.dl)t._r.deadline={date:t.dl.date,color:t.dl.color};else delete t._r.deadline}closeModal();propDep(t);resG(S.flat);sync();toast("\u66f4\u65b0")}
@@ -866,6 +896,7 @@ document.getElementById("applyBtn").onclick=applyYaml;
 document.getElementById("saveBtn").onclick=function(){var b=new Blob([document.getElementById("ye").value],{type:"text/yaml"});var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="gantt.yaml";a.click();toast("\u4fdd\u5b58")};
 document.getElementById("addBtn").onclick=function(){addDlg("")};
 document.getElementById("holBtn").onclick=holDlg;
+(function(){var btn=document.getElementById("yamlToggle");if(btn){btn.onclick=function(){var yp=document.getElementById("yp");if(yp){yp.classList.toggle("show");btn.classList.toggle("bp",yp.classList.contains("show"))}}}})();
 document.getElementById("msBtn").onclick=msDlg;
 document.getElementById("zoom").oninput=function(){S.dw=+this.value;document.getElementById("zv").textContent=this.value;render()};
 document.getElementById("thBtn").onclick=function(){var b=document.body;if(b.dataset.theme==="dark"){b.removeAttribute("data-theme");this.textContent="☀";this.title="Switch to dark"}else{b.dataset.theme="dark";this.textContent="☽";this.title="Switch to light"}};
@@ -1035,11 +1066,62 @@ function createTicket(data){
     gitRefs: data.gitRefs || []
   };
   TS.tickets.push(t);
+  // Auto-create Gantt task and link, unless one was provided or _skipGantt is set
+  if (!t.ganttTaskId && !data._skipGantt && typeof S !== "undefined" && S.data){
+    autoCreateGanttForTicket(t);
+  }
   audit("create","ticket",t.key,t.title);
   if (t.assignee && t.assignee !== (TS.currentUser?TS.currentUser.id:""))
     notify(t.assignee, t.key+" があなたにアサインされました: "+t.title, t.key);
   saveTS();
   return t;
+}
+
+/* Helper: create a Gantt task linked to the ticket */
+function autoCreateGanttForTicket(t){
+  if (typeof S === "undefined" || !S.data) return;
+  if (!S.data.tasks) S.data.tasks = [];
+  // Ensure project dates are set so render() doesn't NaN
+  if (!S.data.project || typeof S.data.project === "string"){
+    var pn = (typeof S.data.project === "string") ? S.data.project : ((typeof getActiveProject === "function" && getActiveProject()) ? getActiveProject().name : "Project");
+    S.data.project = {name: pn};
+  }
+  if (!S.data.project.start_date){
+    var t0 = new Date();
+    S.data.project.start_date = t0.toISOString().substr(0,10);
+    S.data.project.end_date = new Date(t0.getTime() + 30*86400000).toISOString().substr(0,10);
+  }
+  // Generate gantt id from ticket key (e.g. SAMPLE-3 -> sample_3)
+  var gid = t.key.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  // Ensure unique
+  var orig = gid, n = 2;
+  while (typeof S.flat !== "undefined" && S.flat && S.flat.find(function(x){return x.id===gid})){
+    gid = orig+"_"+n; n++;
+  }
+  // Default dates: today to today+ (storyPoint or 3) days
+  var today = new Date();
+  var sd = today.toISOString().substr(0,10);
+  var dur = t.storyPoint || 3;
+  var ed = new Date(today.getTime() + dur*86400000);
+  var edStr = (t.dueDate || ed.toISOString().substr(0,10));
+  var ganttTask = {
+    id: gid,
+    name: t.title,
+    sd: sd,
+    ed: edStr,
+    progress: t.status === "done" ? 100 : (t.status === "inprogress" ? 50 : 0),
+    assignee: t.assignee || "",
+    color: ""
+  };
+  S.data.tasks.push(ganttTask);
+  t.ganttTaskId = gid;
+  // Refresh flat list and re-render
+  if (typeof flatAll === "function") S.flat = flatAll(S.data.tasks);
+  if (typeof yS === "function" && document.getElementById("ye")){
+    document.getElementById("ye").value = yS(S.data);
+  }
+  if (typeof resG === "function") resG(S.flat||[]);
+  if (typeof render === "function") render();
 }
 
 function updateTicket(key, patch){
@@ -1052,6 +1134,27 @@ function updateTicket(key, patch){
   audit("update","ticket",key,Object.keys(patch).join(","));
   if (patch.assignee && patch.assignee !== oldAsg && patch.assignee !== (TS.currentUser?TS.currentUser.id:""))
     notify(patch.assignee, key+" があなたにアサインされました: "+t.title, key);
+  // Sync to Gantt
+  if (t.ganttTaskId && typeof S !== "undefined" && S.flat){
+    var g = S.flat.find(function(x){return x.id===t.ganttTaskId});
+    if (g){
+      var changed = false;
+      if (patch.title !== undefined && g.name !== patch.title){g.name = patch.title; changed = true}
+      if (patch.assignee !== undefined && g.assignee !== patch.assignee){g.assignee = patch.assignee; changed = true}
+      if (patch.dueDate !== undefined && g.ed !== patch.dueDate){g.ed = patch.dueDate; changed = true}
+      if (patch.status !== undefined){
+        var newProgress = patch.status === "done" ? 100 : (patch.status === "inprogress" ? 50 : 0);
+        if (g.progress !== newProgress){g.progress = newProgress; changed = true}
+      }
+      if (changed){
+        if (typeof yS === "function" && document.getElementById("ye")){
+          document.getElementById("ye").value = yS(S.data);
+        }
+        if (typeof resG === "function") resG(S.flat);
+        if (typeof render === "function") render();
+      }
+    }
+  }
   saveTS();
   return true;
 }
@@ -1060,6 +1163,36 @@ function deleteTicket(key){
   if (!hasPerm("ticket.delete")){toast("権限がありません",1);return false}
   var idx = TS.tickets.findIndex(function(x){return x.key===key});
   if (idx<0) return false;
+  var t = TS.tickets[idx];
+  // Also delete linked Gantt task
+  if (t.ganttTaskId && typeof S !== "undefined" && S.data && S.data.tasks){
+    var gid = t.ganttTaskId;
+    var rmF = function(ts){
+      for (var i=0;i<ts.length;i++){
+        if (ts[i].id===gid){ts.splice(i,1);return true}
+        if (ts[i].children && rmF(ts[i].children)) return true;
+      }
+      return false;
+    };
+    rmF(S.data.tasks);
+    // Also remove dependencies pointing to it
+    var rd = function(ts){
+      for (var i=0;i<ts.length;i++){
+        if (ts[i].depends_on){
+          ts[i].depends_on = ts[i].depends_on.filter(function(d){return d!==gid});
+          if (!ts[i].depends_on.length) delete ts[i].depends_on;
+        }
+        if (ts[i].children) rd(ts[i].children);
+      }
+    };
+    rd(S.data.tasks);
+    if (typeof flatAll === "function") S.flat = flatAll(S.data.tasks);
+    if (typeof yS === "function" && document.getElementById("ye")){
+      document.getElementById("ye").value = yS(S.data);
+    }
+    if (typeof resG === "function") resG(S.flat||[]);
+    if (typeof render === "function") render();
+  }
   TS.tickets.splice(idx,1);
   // Remove backlinks
   TS.tickets.forEach(function(t){
@@ -1220,7 +1353,7 @@ function switchView(v){
 /* ===== Ticket View ===== */
 function renderTicketView(){
   var v = document.getElementById("ticketView");
-  v.innerHTML = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">🎫 Issues</div></div><div class="page-toolbar"><input class="tb-input" id="ticketSearch" placeholder="検索 / JQL: status = todo AND priority = high" value="'+escHtml(TS.filter)+'" style="flex:1;max-width:480px"><button class="btn bp" id="ticketAdd">+ Create</button><button class="btn secondary" id="ticketTpl">⚡ From Template</button><button class="btn secondary" id="ticketImport">📥 Import</button><button class="btn secondary" id="ticketExport">📤 Export</button></div><div class="tv-body"><div class="tv-list" id="ticketList"></div><div class="tv-detail" id="ticketDetail" style="display:none"></div></div>';
+  v.innerHTML = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">🎫 チケット</div></div><div class="page-toolbar"><input class="tb-input" id="ticketSearch" placeholder="検索 / JQL: status = todo AND priority = high" value="'+escHtml(TS.filter)+'" style="flex:1;max-width:480px"><button class="btn bp" id="ticketAdd">+ Create</button><button class="btn secondary" id="ticketTpl">⚡ From Template</button><button class="btn secondary" id="ticketImport">📥 Import</button><button class="btn secondary" id="ticketExport">📤 Export</button></div><div class="tv-body"><div class="tv-list" id="ticketList"></div><div class="tv-detail" id="ticketDetail" style="display:none"></div></div>';
   var listEl = document.getElementById("ticketList");
   var results = searchTickets(TS.filter);
   // Build hierarchy: parents first, then children indented
@@ -1661,7 +1794,7 @@ function renderKanbanView(){
   ensureBoardConfig();
   var visibleStatusIds = TS.boardConfig.columns;
   var hiddenCount = TS.statuses.length - visibleStatusIds.length;
-  v.innerHTML = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">📋 Board</div></div><div class="page-toolbar"><input class="tb-input" id="kbSearch" placeholder="Filter board..." value="'+escHtml(TS.filter)+'" style="flex:1;max-width:380px"><button class="btn bp" id="kbAdd">+ Create</button><button class="btn secondary" id="kbColMgr" title="列の管理">⚙ 列管理</button><span style="font-size:12px;color:var(--t2);margin-left:auto">カードをドラッグでステータス変更</span></div><div class="kb-cols" id="kbCols"></div>';
+  v.innerHTML = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">📋 Board</div></div><div class="page-toolbar"><input class="tb-input" id="kbSearch" placeholder="チケットを検索..." value="'+escHtml(TS.filter)+'" style="flex:1;max-width:380px"><button class="btn bp" id="kbAdd">+ Create</button><button class="btn secondary" id="kbColMgr" title="列の管理">⚙ 列管理</button><span style="font-size:12px;color:var(--t2);margin-left:auto">カードをドラッグでステータス変更</span></div><div class="kb-cols" id="kbCols"></div>';
   var kc = document.getElementById("kbCols");
   var tickets = searchTickets(TS.filter);
 
@@ -1745,7 +1878,8 @@ function renderKanbanView(){
       var ticket = TS.tickets.find(function(x){return x.key===k});
       if (!ticket) return;
       if (ticket.status === st.id){renderKanbanView();return}
-      // Try workflow engine first
+      // Workflow is optional: if defined and matched, use it; otherwise direct status change
+      var wfStrict = TS.boardConfig && TS.boardConfig.strictWorkflow;
       if (typeof getAvailableTransitions==="function" && TS.workflows && TS.workflows.length){
         var trans = getAvailableTransitions(ticket).filter(function(tr){return tr.to===st.id});
         if (trans.length){
@@ -1754,7 +1888,11 @@ function renderKanbanView(){
           if (needsDialog){
             for (var i=0;i<(tr.conditions||[]).length;i++){
               var cond=tr.conditions[i];var fn=WF_CONDITIONS[cond.type||cond];
-              if (fn){var cr=fn.check(ticket,tr,{});if(!cr.ok){toast("条件NG: "+cr.msg,1);renderKanbanView();return}}
+              if (fn){var cr=fn.check(ticket,tr,{});if(!cr.ok){
+                if (wfStrict){toast("条件NG: "+cr.msg,1);renderKanbanView();return}
+                // Non-strict: bypass and just update
+                updateTicket(k, {status: st.id});renderKanbanView();return;
+              }}
             }
             if ((tr.validators||[]).length){
               showTransitionDlg(ticket, tr);
@@ -1762,14 +1900,20 @@ function renderKanbanView(){
             }
           }
           var r = executeTransition(k, tr.id, {});
-          if (!r.ok){toast(r.msg||"遷移失敗",1)}
-          else {toast("'"+tr.name+"' 実行")}
+          if (!r.ok){
+            if (wfStrict){toast(r.msg||"遷移失敗",1)}
+            else {updateTicket(k, {status: st.id})}
+          } else {toast("'"+tr.name+"' 実行")}
           renderKanbanView();
           return;
         } else {
-          toast("ワークフロー上 "+ticket.status+"→"+st.id+" の遷移は定義されていません",1);
-          renderKanbanView();
-          return;
+          // No workflow transition defined for this status change
+          if (wfStrict){
+            toast("ワークフロー上 "+ticket.status+"→"+st.id+" の遷移は定義されていません",1);
+            renderKanbanView();
+            return;
+          }
+          // Lenient mode (default): allow direct status change
         }
       }
       updateTicket(k, {status: st.id});renderKanbanView();
@@ -1938,6 +2082,9 @@ function kbColMgrDlg(){
   ensureBoardConfig();
   var html = '<h3>⚙ Board列の管理</h3>';
   html += '<div style="font-size:12px;color:var(--t2);margin-bottom:14px">表示する列のチェックボックスをON/OFF。WIP制限は0で無効。</div>';
+  // Workflow strict mode toggle
+  var strict = !!(TS.boardConfig && TS.boardConfig.strictWorkflow);
+  html += '<div style="background:var(--b2);padding:10px 12px;border-radius:4px;margin-bottom:14px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0"><input type="checkbox" id="cmgrStrict"'+(strict?" checked":"")+'><span style="font-size:13px;color:var(--t1);font-weight:600">ワークフロー厳格モード</span></label><div style="font-size:11px;color:var(--t2);margin-top:4px;margin-left:24px">ON: ワークフローで定義された遷移のみ許可。OFF（既定）: 任意のステータスへドラッグ移動可能。</div></div>';
   html += '<div style="max-height:50vh;overflow:auto;border:1px solid var(--bd);border-radius:4px">';
   html += '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:var(--b2)"><th style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">表示</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">ステータス</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">カテゴリ</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">WIP制限</th></tr></thead><tbody>';
   TS.statuses.forEach(function(st){
@@ -1958,6 +2105,7 @@ function kbColMgrDlg(){
       if (cb.checked) newCols.push(cb.dataset.cmgrId);
     });
     TS.boardConfig.columns = newCols;
+    TS.boardConfig.strictWorkflow = document.getElementById("cmgrStrict").checked;
     document.querySelectorAll("[data-cmgr-wip]").forEach(function(inp){
       var v = parseInt(inp.value) || 0;
       if (v > 0) TS.boardConfig.wipLimits[inp.dataset.cmgrWip] = v;
@@ -1976,7 +2124,7 @@ function renderBacklogView(){
   var notDone = TS.tickets.filter(function(t){return t.status!=="done"&&!t.sprintId});
   var inSprints = {};
   TS.sprints.forEach(function(sp){inSprints[sp.id] = TS.tickets.filter(function(t){return t.sprintId===sp.id})});
-  var html = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">📚 Backlog</div></div><div class="page-toolbar"><button class="btn bp" id="blAddSp">+ Sprint</button><button class="btn secondary" id="blAddTk">+ Issue</button></div><div class="page-body" style="overflow:auto">';
+  var html = '<div class="page-header"><div class="page-bc"><a>プロジェクト</a> / <a>サンプル</a></div><div class="page-title">📚 Backlog</div></div><div class="page-toolbar"><button class="btn bp" id="blAddSp">+ Sprint</button><button class="btn secondary" id="blAddTk">+ チケット</button></div><div class="page-body" style="overflow:auto">';
   TS.sprints.forEach(function(sp){
     var items = inSprints[sp.id] || [];
     var totalSp = items.reduce(function(a,t){return a+(t.storyPoint||0)},0);
@@ -2874,11 +3022,18 @@ function renderWorkflowVisualizer(container, wf, opts){
   wf.statuses.forEach(function(s){positions[s] = getNodePos(wf.id, s, wf)});
   var maxX = 0, maxY = 0;
   Object.keys(positions).forEach(function(k){
-    if (positions[k].x > maxX) maxX = positions[k].x;
-    if (positions[k].y > maxY) maxY = positions[k].y;
+    var px = positions[k] && !isNaN(positions[k].x) ? positions[k].x : 0;
+    var py = positions[k] && !isNaN(positions[k].y) ? positions[k].y : 0;
+    // Also fix the position itself if NaN
+    if (positions[k] && isNaN(positions[k].x)) positions[k].x = 60;
+    if (positions[k] && isNaN(positions[k].y)) positions[k].y = 60;
+    if (px > maxX) maxX = px;
+    if (py > maxY) maxY = py;
   });
   var svgW = Math.max(1200, maxX + 300);
   var svgH = Math.max(600, maxY + 200);
+  if (isNaN(svgW)) svgW = 1200;
+  if (isNaN(svgH)) svgH = 600;
 
   var svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
   svg.setAttribute("width", svgW);
@@ -3000,10 +3155,10 @@ function renderWorkflowVisualizer(container, wf, opts){
       // Grow SVG if dragging near edge
       var svg2 = document.getElementById("wfvSvg");
       if (svg2){
-        var curW = parseInt(svg2.getAttribute("width"));
-        var curH = parseInt(svg2.getAttribute("height"));
-        if (pos.x + 250 > curW) svg2.setAttribute("width", pos.x + 400);
-        if (pos.y + 150 > curH) svg2.setAttribute("height", pos.y + 250);
+        var curW = parseInt(svg2.getAttribute("width")) || 1200;
+        var curH = parseInt(svg2.getAttribute("height")) || 600;
+        if (!isNaN(pos.x) && pos.x + 250 > curW) svg2.setAttribute("width", pos.x + 400);
+        if (!isNaN(pos.y) && pos.y + 150 > curH) svg2.setAttribute("height", pos.y + 250);
       }
 
       // Update edges (lightweight: only update path d= for connected edges)
@@ -4977,7 +5132,7 @@ function renderTemplateEditor(v){
   // Editor: split into canvas + side panel
   html += '<div class="tpl-editor-body">';
   html += '<div class="tpl-canvas-wrap"><div class="tpl-canvas" id="tplCanvas" style="background:var(--b2);background-image:radial-gradient(circle, var(--bd) 1px, transparent 1px);background-size:20px 20px"></div></div>';
-  html += '<div class="tpl-sidebar"><h4 style="padding:14px 16px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);font-weight:700;border-bottom:1px solid var(--bd);background:var(--b2);margin:0">タスク一覧 ('+(t.nodes||[]).length+')</h4><div id="tplNodeList" style="padding:8px"></div></div>';
+  html += '<div class="tpl-sidebar"><h4 style="padding:14px 16px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);font-weight:700;border-bottom:1px solid var(--bd);background:var(--b2);margin:0">チケット一覧 ('+(t.nodes||[]).length+')</h4><div id="tplNodeList" style="padding:8px"></div></div>';
   html += '</div>';
 
   v.innerHTML = html;
@@ -6514,7 +6669,7 @@ function showShortcutHelp(){
   html += '<table style="width:100%;font-size:13px;border-collapse:collapse">';
   var rows = [
     ["ナビゲーション", null],
-    ["g i",  "Issues 画面へ"],
+    ["g i",  "チケット画面へ"],
     ["g b",  "Backlog 画面へ"],
     ["g k",  "Board (Kanban) 画面へ"],
     ["g p",  "Sprints 画面へ"],
@@ -6530,7 +6685,7 @@ function showShortcutHelp(){
     ["Ctrl+Z",   "取り消し (Undo)"],
     ["Ctrl+Y",   "やり直し (Redo)"],
     ["Ctrl+Shift+Z", "やり直し (Redo)"],
-    ["Issues 画面内", null],
+    ["チケット画面内", null],
     ["j",    "次のチケット"],
     ["k",    "前のチケット"],
     ["x",    "選択中の行を一括選択にトグル"],
@@ -7802,7 +7957,23 @@ function prjInit(){
    PROJECT SWITCHER UI (topbar)
    ============================================================ */
 function prjRenderSwitcher(){
-  // Remove existing
+  // Update sidebar project widget
+  var sbProj = document.getElementById("sbProj");
+  if (sbProj){
+    var p = getActiveProject();
+    if (p){
+      var iconEl = sbProj.querySelector(".sb-proj-icon");
+      var nameEl = document.getElementById("sbProjName");
+      var metaEl = sbProj.querySelector(".sb-proj-meta");
+      if (iconEl) iconEl.textContent = p.icon || "📋";
+      if (nameEl) nameEl.textContent = p.name;
+      if (metaEl) metaEl.textContent = "▼ " + (PRJ.projects.length>1 ? PRJ.projects.length+" projects" : "Software project");
+    }
+    // Wire click to dropdown
+    sbProj.onclick = prjShowDropdown;
+  }
+
+  // Remove existing topbar switcher
   var old = document.getElementById("prjSwitcher");
   if (old) old.remove();
 
@@ -7823,16 +7994,26 @@ function prjRenderSwitcher(){
   topbar.insertBefore(sw, topbar.firstChild);
 }
 
-function prjShowDropdown(){
+function prjShowDropdown(e){
   // Toggle dropdown
   var existing = document.getElementById("prjDropdown");
   if (existing){existing.remove();return}
 
-  var sw = document.getElementById("prjSwitcher");
-  var rect = sw.getBoundingClientRect();
+  // Determine anchor: sidebar item or topbar switcher
+  var anchor = (e && e.currentTarget) || document.getElementById("prjSwitcher") || document.getElementById("sbProj");
+  if (!anchor) return;
+  var rect = anchor.getBoundingClientRect();
   var dd = document.createElement("div");
   dd.id = "prjDropdown";
-  dd.style.cssText = "position:fixed;top:"+(rect.bottom+4)+"px;left:"+rect.left+"px;background:var(--b1);border:1px solid var(--bd);border-radius:6px;box-shadow:0 8px 24px rgba(9,30,66,.25);z-index:5000;min-width:280px;max-width:380px;font-size:13px;padding:6px";
+  // Position below or to right of anchor
+  var top = rect.bottom + 4;
+  var left = rect.left;
+  // If clicked on sidebar (narrow), position to the right
+  if (anchor.id === "sbProj"){
+    top = rect.top;
+    left = rect.right + 4;
+  }
+  dd.style.cssText = "position:fixed;top:"+top+"px;left:"+left+"px;background:var(--b1);border:1px solid var(--bd);border-radius:6px;box-shadow:0 8px 24px rgba(9,30,66,.25);z-index:5000;min-width:280px;max-width:380px;font-size:13px;padding:6px";
 
   var html = '<div style="padding:6px 12px;font-size:10px;text-transform:uppercase;color:var(--t2);font-weight:700;letter-spacing:.5px">プロジェクト ('+PRJ.projects.length+')</div>';
   PRJ.projects.forEach(function(p){
@@ -7880,7 +8061,11 @@ function prjShowDropdown(){
   // Close on click outside
   setTimeout(function(){
     var closer = function(ev){
-      if (!dd.contains(ev.target) && ev.target.id !== "prjSwitcher" && !document.getElementById("prjSwitcher").contains(ev.target)){
+      var sw = document.getElementById("prjSwitcher");
+      var sb = document.getElementById("sbProj");
+      var insideSwitcher = sw && sw.contains(ev.target);
+      var insideSidebar = sb && sb.contains(ev.target);
+      if (!dd.contains(ev.target) && !insideSwitcher && !insideSidebar){
         dd.remove();
         document.removeEventListener("mousedown", closer);
       }
@@ -7999,6 +8184,41 @@ function prjCreateDlg(){
     PRJ.activeProjectId = newPrj.id;
     prjSave();
     prjRestoreToTS(newPrj);
+
+    // Initialize Gantt data for the new project
+    if (typeof S !== "undefined"){
+      var t0 = new Date();
+      S.data = {
+        project: {
+          name: name,
+          start_date: t0.toISOString().substr(0,10),
+          end_date: new Date(t0.getTime() + 30*86400000).toISOString().substr(0,10)
+        },
+        tasks: []
+      };
+      if (typeof flatAll === "function") S.flat = [];
+      if (typeof yS === "function" && document.getElementById("ye")){
+        document.getElementById("ye").value = yS(S.data);
+      }
+    }
+
+    // Add sample ticket if empty (for "empty" and "defaults" modes)
+    if (initMode !== "copy" && (!newPrj.data.tickets || newPrj.data.tickets.length === 0)){
+      // Ensure user is set
+      if (!TS.currentUser && TS.users && TS.users.length){
+        TS.currentUser = TS.users[0];
+      }
+      if (TS.currentUser){
+        createTicket({
+          title: "サンプルチケット ("+name+")",
+          description: "このプロジェクトの最初のチケットです。自由に編集・削除してください。",
+          priority: "medium",
+          status: "todo",
+          type: "task"
+        });
+      }
+    }
+
     closeModal();
     prjRenderSwitcher();
     if (typeof switchView === "function") switchView(TS.currentView || "gantt");

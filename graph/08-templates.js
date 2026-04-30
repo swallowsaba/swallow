@@ -497,7 +497,7 @@ function renderTemplateEditor(v){
   // Editor: split into canvas + side panel
   html += '<div class="tpl-editor-body">';
   html += '<div class="tpl-canvas-wrap"><div class="tpl-canvas" id="tplCanvas" style="background:var(--b2);background-image:radial-gradient(circle, var(--bd) 1px, transparent 1px);background-size:20px 20px"></div></div>';
-  html += '<div class="tpl-sidebar"><h4 style="padding:14px 16px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);font-weight:700;border-bottom:1px solid var(--bd);background:var(--b2);margin:0">タスク一覧 ('+(t.nodes||[]).length+')</h4><div id="tplNodeList" style="padding:8px"></div></div>';
+  html += '<div class="tpl-sidebar"><h4 style="padding:14px 16px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);font-weight:700;border-bottom:1px solid var(--bd);background:var(--b2);margin:0">チケット一覧 ('+(t.nodes||[]).length+')</h4><div id="tplNodeList" style="padding:8px"></div></div>';
   html += '</div>';
 
   v.innerHTML = html;

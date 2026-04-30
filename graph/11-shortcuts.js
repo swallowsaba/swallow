@@ -48,7 +48,7 @@ function showShortcutHelp(){
   html += '<table style="width:100%;font-size:13px;border-collapse:collapse">';
   var rows = [
     ["ナビゲーション", null],
-    ["g i",  "Issues 画面へ"],
+    ["g i",  "チケット画面へ"],
     ["g b",  "Backlog 画面へ"],
     ["g k",  "Board (Kanban) 画面へ"],
     ["g p",  "Sprints 画面へ"],
@@ -64,7 +64,7 @@ function showShortcutHelp(){
     ["Ctrl+Z",   "取り消し (Undo)"],
     ["Ctrl+Y",   "やり直し (Redo)"],
     ["Ctrl+Shift+Z", "やり直し (Redo)"],
-    ["Issues 画面内", null],
+    ["チケット画面内", null],
     ["j",    "次のチケット"],
     ["k",    "前のチケット"],
     ["x",    "選択中の行を一括選択にトグル"],
