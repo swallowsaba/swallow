@@ -1,0 +1,590 @@
+networks:
+  - id: external
+    label: External Network
+    type: subnet
+    kind: physical
+    cidr: 203.0.113.0/24
+    color: "rgba(231,76,60,0.10)"
+    x: 20
+    y: 20
+    width: 900
+    height: 160
+  - id: dmz
+    label: DMZ (VLAN100)
+    type: vlan
+    kind: physical
+    cidr: 10.1.0.0/24
+    gateway: 10.1.0.1
+    cidr_v6: "2001:db8:1::/64"
+    gateway_v6: "2001:db8:1::1"
+    vlan_id: 100
+    color: "rgba(52,152,219,0.12)"
+    x: 20
+    y: 210
+    width: 900
+    height: 280
+  - id: internal
+    label: Internal (VLAN200)
+    type: vlan
+    kind: physical
+    cidr: 10.2.0.0/24
+    gateway: 10.2.0.1
+    vlan_id: 200
+    color: "rgba(46,204,113,0.10)"
+    x: 20
+    y: 520
+    width: 480
+    height: 300
+  - id: db-segment
+    label: DB Segment (VLAN300)
+    type: vlan
+    kind: physical
+    cidr: 10.3.0.0/24
+    gateway: 10.3.0.1
+    cidr_v6: "2001:db8:3::/64"
+    gateway_v6: "2001:db8:3::1"
+    vlan_id: 300
+    color: "rgba(241,196,15,0.12)"
+    x: 510
+    y: 560
+    width: 410
+    height: 230
+  - id: overlay-vxlan
+    label: Overlay (VXLAN — IPv6 only)
+    type: vpn-overlay
+    kind: virtual
+    cidr_v6: "fd00:99::/48"
+    gateway_v6: "fd00:99::1"
+    color: "rgba(163,113,247,0.08)"
+    x: 20
+    y: 840
+    width: 900
+    height: 120
+
+devices:
+  - id: fw01
+    label: Edge Firewall
+    type: firewall
+    model: Palo Alto PA-3260
+    status: running
+    x: 420
+    y: 60
+    width: 130
+    height: 70
+    interfaces:
+      - id: eth1
+        ip: 203.0.113.1/24
+        network: external
+        mac: "aa:00:00:00:00:01"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+      - id: eth2
+        ip: 10.1.0.1/24
+        ipv6: "2001:db8:1::1/64"
+        network: dmz
+        mac: "aa:00:00:00:00:02"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+      - id: mgmt
+        ip: 192.168.99.1/24
+        network: ""
+        mac: "aa:00:00:00:00:ff"
+        speed: 1000
+        port_type: mgmt
+        status: up
+  - id: core-sw01
+    label: Core L3 Switch
+    type: l3switch
+    model: Cisco Nexus 9300
+    status: running
+    x: 420
+    y: 250
+    width: 200
+    height: 70
+    interfaces:
+      - id: gi1/0/1
+        ip: 10.1.0.2/24
+        ipv6: "2001:db8:1::2/64"
+        network: dmz
+        mac: "bb:00:00:00:00:01"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+      - id: gi1/0/2
+        ip: 10.1.0.4/24
+        network: dmz
+        mac: "bb:00:00:00:00:05"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+      - id: gi1/0/24
+        ip: 10.2.0.1/24
+        network: internal
+        mac: "bb:00:00:00:00:02"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+      - id: gi1/0/25
+        ip: 10.2.0.3/24
+        network: internal
+        mac: "bb:00:00:00:00:06"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+      - id: gi1/0/48
+        ip: 10.3.0.1/24
+        ipv6: "2001:db8:3::1/64"
+        network: db-segment
+        mac: "bb:00:00:00:00:03"
+        speed: 40000
+        port_type: qsfp-plus
+        status: up
+      - id: peer-link
+        ip: 10.255.0.1/30
+        network: ""
+        mac: "bb:00:00:00:00:04"
+        speed: 40000
+        port_type: qsfp-plus
+        status: up
+    vpc:
+      enabled: true
+      peer: core-sw02
+      domain: 1
+      keepalive: 10.255.0.1
+  - id: core-sw02
+    label: Core L3 Switch 2
+    type: l3switch
+    model: Cisco Nexus 9300
+    status: running
+    x: 660
+    y: 250
+    width: 200
+    height: 70
+    interfaces:
+      - id: gi1/0/1
+        ip: 10.1.0.3/24
+        network: dmz
+        mac: "bc:00:00:00:00:01"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+      - id: gi1/0/2
+        ip: 10.1.0.5/24
+        network: dmz
+        mac: "bc:00:00:00:00:05"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+      - id: gi1/0/24
+        ip: 10.2.0.2/24
+        network: internal
+        mac: "bc:00:00:00:00:02"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+      - id: gi1/0/48
+        ip: 10.3.0.2/24
+        network: db-segment
+        mac: "bc:00:00:00:00:03"
+        speed: 40000
+        port_type: qsfp-plus
+        status: up
+      - id: peer-link
+        ip: 10.255.0.2/30
+        network: ""
+        mac: "bc:00:00:00:00:04"
+        speed: 40000
+        port_type: qsfp-plus
+        status: up
+    vpc:
+      enabled: true
+      peer: core-sw01
+      domain: 1
+      keepalive: 10.255.0.2
+
+servers:
+  - id: web01
+    label: Web-01
+    type: virtual
+    os: Ubuntu 24.04
+    cpu: 4
+    memory: 8192
+    status: running
+    x: 100
+    y: 380
+    width: 130
+    height: 65
+    interfaces:
+      - id: eth0
+        ip: 10.1.0.10/24
+        ipv6: "2001:db8:1::10/64"
+        network: dmz
+        mac: "de:ad:00:00:01:01"
+        speed: 1000
+        port_type: rj45
+        status: up
+    gateway: 10.1.0.1
+    gateway_v6: "2001:db8:1::1"
+  - id: web02
+    label: Web-02
+    type: virtual
+    os: Ubuntu 24.04
+    cpu: 4
+    memory: 8192
+    status: running
+    x: 750
+    y: 380
+    width: 130
+    height: 65
+    interfaces:
+      - id: eth0
+        ip: 10.1.0.11/24
+        network: dmz
+        mac: "de:ad:00:00:01:02"
+        speed: 1000
+        port_type: rj45
+        status: up
+    gateway: 10.1.0.1
+  - id: app01
+    label: App-01
+    type: virtual
+    os: RHEL 9
+    cpu: 8
+    memory: 16384
+    status: running
+    x: 100
+    y: 640
+    width: 130
+    height: 65
+    interfaces:
+      - id: eth0
+        ip: 10.2.0.10/24
+        network: internal
+        mac: "de:ad:00:00:02:01"
+        speed: 1000
+        port_type: rj45
+        status: up
+    gateway: 10.2.0.1
+  - id: app02
+    label: App-02
+    type: virtual
+    os: RHEL 9
+    cpu: 8
+    memory: 16384
+    status: running
+    x: 300
+    y: 640
+    width: 130
+    height: 65
+    interfaces:
+      - id: eth0
+        ip: 10.2.0.11/24
+        network: internal
+        mac: "de:ad:00:00:02:02"
+        speed: 1000
+        port_type: rj45
+        status: up
+    gateway: 10.2.0.1
+  - id: db01
+    label: DB Primary
+    type: physical
+    os: Ubuntu 22.04
+    cpu: 16
+    memory: 65536
+    status: running
+    x: 560
+    y: 640
+    width: 150
+    height: 70
+    interfaces:
+      - id: eth0
+        ip: 10.3.0.10/24
+        ipv6: "2001:db8:3::10/64"
+        network: db-segment
+        mac: "de:ad:00:00:03:01"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+      - id: eth1
+        ip: 10.3.0.11/24
+        ipv6: "2001:db8:3::11/64"
+        network: db-segment
+        mac: "de:ad:00:00:03:02"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+    bonding:
+      enabled: true
+      mode: active-backup
+      bond_name: bond0
+      members: [eth0, eth1]
+      primary: eth0
+      bond_ip: 10.3.0.10/24
+      bond_ipv6: "2001:db8:3::10/64"
+    gateway: 10.3.0.1
+    gateway_v6: "2001:db8:3::1"
+  - id: db02
+    label: DB Replica
+    type: physical
+    os: Ubuntu 22.04
+    cpu: 16
+    memory: 65536
+    status: running
+    x: 750
+    y: 640
+    width: 150
+    height: 70
+    interfaces:
+      - id: eth0
+        ip: 10.3.0.20/24
+        network: db-segment
+        mac: "de:ad:00:00:03:03"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
+    gateway: 10.3.0.1
+
+services:
+  - id: nginx-web01
+    label: Nginx
+    type: reverse_proxy
+    server: web01
+    status: running
+    port: 443
+    protocol: HTTPS
+    config:
+      upstream: [tomcat-app01, tomcat-app02]
+      method: round-robin
+    depends_on: [tomcat-app01, tomcat-app02]
+  - id: nginx-web02
+    label: Nginx
+    type: reverse_proxy
+    server: web02
+    status: running
+    port: 443
+    protocol: HTTPS
+    config:
+      upstream: [tomcat-app01, tomcat-app02]
+      method: round-robin
+    depends_on: [tomcat-app01, tomcat-app02]
+  - id: tomcat-app01
+    label: Tomcat
+    type: app_server
+    server: app01
+    status: running
+    port: 8080
+    protocol: HTTP
+    config:
+      runtime: Java 21
+      workers: 200
+    depends_on: [pg-primary]
+  - id: tomcat-app02
+    label: Tomcat
+    type: app_server
+    server: app02
+    status: running
+    port: 8080
+    protocol: HTTP
+    config:
+      runtime: Java 21
+      workers: 200
+    depends_on: [pg-primary]
+  - id: pg-primary
+    label: PostgreSQL
+    type: database
+    server: db01
+    status: running
+    port: 5432
+    protocol: TCP
+    config:
+      engine: PostgreSQL 16
+      role: primary
+      replication_to: [pg-replica]
+    depends_on: []
+  - id: pg-replica
+    label: PostgreSQL
+    type: database
+    server: db02
+    status: running
+    port: 5432
+    protocol: TCP
+    config:
+      engine: PostgreSQL 16
+      role: replica
+    depends_on: [pg-primary]
+
+connections:
+  - id: link-fw-sw
+    from: {device: fw01, interface: eth2}
+    to: {device: core-sw01, interface: gi1/0/1}
+    type: fiber
+    speed: 10000
+    status: up
+    traffic: high
+    direction: bidirectional
+  - id: link-sw1-sw2-peer
+    from: {device: core-sw01, interface: peer-link}
+    to: {device: core-sw02, interface: peer-link}
+    type: port-channel
+    speed: 40000
+    status: up
+    traffic: medium
+    direction: bidirectional
+  - id: link-sw1-web01
+    from: {device: core-sw01, interface: gi1/0/1}
+    to: {server: web01, interface: eth0}
+    type: ethernet
+    speed: 1000
+    status: up
+    traffic: medium
+    direction: bidirectional
+  - id: link-sw2-web02
+    from: {device: core-sw02, interface: gi1/0/1}
+    to: {server: web02, interface: eth0}
+    type: ethernet
+    speed: 1000
+    status: up
+    traffic: medium
+    direction: bidirectional
+  - id: link-sw1-app01
+    from: {device: core-sw01, interface: gi1/0/24}
+    to: {server: app01, interface: eth0}
+    type: ethernet
+    speed: 1000
+    status: up
+    traffic: medium
+    direction: bidirectional
+  - id: link-sw1-app02
+    from: {device: core-sw01, interface: gi1/0/25}
+    to: {server: app02, interface: eth0}
+    type: ethernet
+    speed: 1000
+    status: up
+    traffic: low
+    direction: bidirectional
+  - id: link-sw1-db01
+    from: {device: core-sw01, interface: gi1/0/48}
+    to: {server: db01, interface: eth0}
+    type: fiber
+    speed: 10000
+    status: up
+    traffic: high
+    direction: bidirectional
+  - id: link-sw2-db02
+    from: {device: core-sw02, interface: gi1/0/48}
+    to: {server: db02, interface: eth0}
+    type: fiber
+    speed: 10000
+    status: up
+    traffic: low
+    direction: forward
+
+routing_tables:
+  - device: fw01
+    routes:
+      - destination: 0.0.0.0/0
+        next_hop: 203.0.113.254
+        interface: eth1
+        metric: 1
+        type: static
+        status: active
+      - destination: 10.1.0.0/24
+        next_hop: 0.0.0.0
+        interface: eth2
+        metric: 0
+        type: connected
+        status: active
+      - destination: 10.2.0.0/24
+        next_hop: 10.1.0.2
+        interface: eth2
+        metric: 10
+        type: static
+        status: active
+      - destination: 10.3.0.0/24
+        next_hop: 10.1.0.2
+        interface: eth2
+        metric: 10
+        type: static
+        status: active
+  - device: core-sw01
+    routes:
+      - destination: 0.0.0.0/0
+        next_hop: 10.1.0.1
+        interface: gi1/0/1
+        metric: 1
+        type: static
+        status: active
+      - destination: 10.1.0.0/24
+        next_hop: 0.0.0.0
+        interface: gi1/0/1
+        metric: 0
+        type: connected
+        status: active
+      - destination: 10.2.0.0/24
+        next_hop: 0.0.0.0
+        interface: gi1/0/24
+        metric: 0
+        type: connected
+        status: active
+      - destination: 10.3.0.0/24
+        next_hop: 0.0.0.0
+        interface: gi1/0/48
+        metric: 0
+        type: connected
+        status: active
+
+policies:
+  - device: fw01
+    rules:
+      - id: allow-https-in
+        action: allow
+        src: 0.0.0.0/0
+        dst: 10.1.0.0/24
+        protocol: tcp
+        dst_port: 443
+        log: true
+        status: enabled
+      - id: allow-internal
+        action: allow
+        src: 10.0.0.0/8
+        dst: 10.0.0.0/8
+        protocol: any
+        log: false
+        status: enabled
+      - id: deny-all
+        action: deny
+        src: 0.0.0.0/0
+        dst: 0.0.0.0/0
+        protocol: any
+        log: true
+        status: enabled
+
+scenarios:
+  - id: web-access
+    label: 外部→Web閲覧フロー
+    steps:
+      - from: external
+        to: nginx-web01
+        protocol: HTTPS
+        port: 443
+        description: クライアントがHTTPSアクセス
+      - from: nginx-web01
+        to: tomcat-app01
+        protocol: HTTP
+        port: 8080
+        description: Nginxがリバプロでバックエンドへ
+      - from: tomcat-app01
+        to: pg-primary
+        protocol: TCP
+        port: 5432
+        description: AppがDBに問い合わせ
+  - id: db-replication
+    label: DBレプリケーション
+    steps:
+      - from: pg-primary
+        to: pg-replica
+        protocol: TCP
+        port: 5432
+        description: WALストリーミングレプリケーション

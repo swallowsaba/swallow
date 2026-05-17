@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NetSim / YAML — Server & Network Simulator</title>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c232c;--panel:#161b22;
+  --border:#30363d;--border-hi:#3d444d;
+  --text:#e6edf3;--text-dim:#8d96a0;--text-mute:#6e7681;
+  --accent:#58a6ff;--accent2:#79c0ff;
+  --green:#3fb950;--green-dim:#238636;
+  --red:#f85149;--red-dim:#da3633;
+  --orange:#d29922;--orange-dim:#9e6a03;
+  --grey:#6e7681;--purple:#a371f7;--yellow:#e3b341;
+  --blue:#388bfd;--cyan:#39c5cf;
+  --shadow:0 4px 16px rgba(0,0,0,.4);
+  --shadow-hi:0 8px 32px rgba(0,0,0,.6);
+  --mono:"SFMono-Regular","Consolas","Menlo",monospace;
+  --sans:"Hiragino Sans","Yu Gothic UI","Meiryo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+html.light{
+  --bg:#fafbfc;--bg2:#ffffff;--bg3:#f0f3f6;--panel:#ffffff;
+  --border:#d0d7de;--border-hi:#afb8c1;
+  --text:#1f2328;--text-dim:#57606a;--text-mute:#8c959f;
+  --accent:#0969da;--accent2:#218bff;
+  --green:#1a7f37;--green-dim:#116329;
+  --red:#cf222e;--red-dim:#a40e26;
+  --orange:#bf8700;--orange-dim:#9a6700;
+  --grey:#6e7781;--purple:#8250df;--yellow:#bf8700;
+  --blue:#0550ae;--cyan:#1b7c83;
+  --shadow:0 4px 16px rgba(0,0,0,.08);
+  --shadow-hi:0 8px 32px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;width:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;user-select:none;-webkit-user-select:none}
+
+#toolbar{display:flex;align-items:stretch;gap:0;padding:0 8px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap;min-height:54px;z-index:10;position:relative}
+#toolbar .brand{font-weight:800;font-size:15px;letter-spacing:0.5px;padding:0 14px;display:flex;align-items:center;background:linear-gradient(135deg,var(--accent),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+#toolbar .tgroup{display:flex;align-items:stretch;gap:2px;padding:6px 8px;border-left:1px solid var(--border);position:relative}
+#toolbar .tgroup::before{content:attr(data-title);position:absolute;top:-1px;left:8px;font-size:9px;color:var(--text-mute);letter-spacing:0.5px;text-transform:uppercase;pointer-events:none}
+#toolbar .tgroup.no-label::before{content:none}
+#toolbar button.tbtn{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:0 10px;height:38px;min-width:56px;border-radius:6px;cursor:pointer;font-size:11px;font-family:var(--sans);transition:background .12s,border-color .12s,transform .08s,box-shadow .12s;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1;margin-top:8px;font-weight:500}
+#toolbar button.tbtn .ico{font-size:15px;line-height:1}
+#toolbar button.tbtn .lbl{font-size:10px;color:var(--text-dim);font-weight:600}
+#toolbar button.tbtn:hover{background:var(--bg);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+#toolbar button.tbtn:hover .lbl{color:var(--text)}
+#toolbar button.tbtn:active{transform:translateY(1px)}
+#toolbar button.tbtn.primary{background:linear-gradient(180deg,var(--green),var(--green-dim));border-color:var(--green);color:#fff}
+#toolbar button.tbtn.primary .lbl{color:rgba(255,255,255,0.85)}
+#toolbar button.tbtn.primary:hover{filter:brightness(1.1);box-shadow:0 0 8px rgba(63,185,80,0.3)}
+#toolbar button.tbtn.accent{background:linear-gradient(180deg,var(--accent),var(--blue));border-color:var(--accent);color:#fff}
+#toolbar button.tbtn.accent .lbl{color:rgba(255,255,255,0.85)}
+#toolbar button.tbtn.accent:hover{filter:brightness(1.1)}
+#toolbar select.tsel{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:0 6px;border-radius:6px;height:38px;cursor:pointer;font-size:11px;margin-top:8px;font-family:var(--sans)}
+#toolbar select.tsel:hover{border-color:var(--accent)}
+#toolbar .tlabel{display:flex;flex-direction:column;justify-content:center;font-size:9px;color:var(--text-mute);padding:0 4px;margin-top:8px;letter-spacing:0.5px;text-transform:uppercase}
+
+/* Floating menu (for + Dev, + Svc selectors) */
+.fmenu{position:absolute;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-hi);padding:6px;z-index:1100;min-width:200px;display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.fmenu.hidden{display:none}
+.fmenu-item{padding:8px 10px;cursor:pointer;border-radius:5px;display:flex;align-items:center;gap:8px;font-size:12px;background:var(--bg3);border:1px solid transparent;transition:all .12s}
+.fmenu-item:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-1px)}
+.fmenu-item .fico{font-size:16px}
+.fmenu-title{grid-column:1/-1;padding:4px 6px;font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);margin-bottom:2px}
+
+#statusbar{display:flex;align-items:center;gap:6px;padding:4px 10px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;flex-wrap:wrap;height:28px}
+.stat-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:var(--bg3);border:1px solid var(--border)}
+.stat-badge .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.stat-badge.run .dot{background:var(--green)}
+.stat-badge.stop .dot{background:var(--grey)}
+.stat-badge.err .dot{background:var(--red)}
+.stat-badge.maint .dot{background:var(--orange)}
+.stat-badge .num{font-weight:700;color:var(--text)}
+.stat-badge .lbl{color:var(--text-dim)}
+
+#main{display:flex;height:calc(100vh - 54px - 28px);position:relative}
+#yaml-pane{width:360px;min-width:200px;max-width:60%;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:relative}
+#yaml-pane .pane-head{padding:6px 10px;font-size:11px;color:var(--text-dim);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+#yaml-editor{flex:1;background:var(--bg);color:var(--text);border:none;outline:none;resize:none;padding:10px;font-family:var(--mono);font-size:12px;line-height:1.5;tab-size:2;white-space:pre;overflow:auto;user-select:text;-webkit-user-select:text}
+#yaml-resize{position:absolute;top:0;right:-3px;width:6px;height:100%;cursor:ew-resize;z-index:5}
+#yaml-resize:hover{background:var(--accent);opacity:0.3}
+
+#canvas-pane{flex:1;position:relative;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;min-width:0}
+#svg-wrap{flex:1;position:relative;overflow:hidden;min-height:0}
+#svg{width:100%;height:100%;display:block;background:radial-gradient(circle at 20px 20px,rgba(255,255,255,0.02) 1px,transparent 1px),var(--bg);background-size:40px 40px;cursor:grab}
+html.light #svg{background:radial-gradient(circle at 20px 20px,rgba(0,0,0,0.04) 1px,transparent 1px),var(--bg);background-size:40px 40px}
+#svg.panning{cursor:grabbing}
+#svg.connecting{cursor:crosshair}
+
+#zoom-wrap{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 6px;box-shadow:var(--shadow);z-index:5}
+#zoom-wrap button{background:var(--bg3);border:1px solid var(--border);color:var(--text);width:24px;height:24px;border-radius:4px;cursor:pointer;padding:0;font-size:13px}
+#zoom-wrap button:hover{background:var(--bg)}
+#zoom-slider{writing-mode:vertical-lr;-webkit-appearance:slider-vertical;width:6px;height:120px}
+#zoom-val{font-size:10px;color:var(--text-dim)}
+
+#prop-panel{position:absolute;right:60px;top:14px;width:300px;max-height:calc(100% - 40px);background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);z-index:6;display:flex;flex-direction:column;overflow:hidden}
+#prop-panel.hidden{display:none}
+#prop-panel .ph-head{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:12px;background:var(--bg3)}
+#prop-panel .ph-head .close{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;padding:0 4px}
+#prop-panel .ph-body{padding:10px 12px;overflow-y:auto;flex:1;font-size:12px}
+.field{margin-bottom:8px}
+.field label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:3px;font-weight:500}
+.field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:4px;font-family:var(--mono);font-size:11px;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field-row{display:flex;gap:6px}
+.field-row .field{flex:1}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.field textarea{font-family:var(--mono);resize:vertical;min-height:50px}
+.iface-table{width:100%;border-collapse:collapse;font-size:10px;font-family:var(--mono)}
+.iface-table th{background:var(--bg3);padding:3px 4px;text-align:left;border:1px solid var(--border);color:var(--text-dim);font-weight:500}
+.iface-table td{padding:2px 3px;border:1px solid var(--border)}
+.iface-table input,.iface-table select{width:100%;padding:1px 3px;font-size:10px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:2px}
+.iface-table button{padding:1px 5px;font-size:10px;background:var(--bg3);border:1px solid var(--border);color:var(--text);cursor:pointer;border-radius:3px}
+.sub-section{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)}
+.sub-section h4{margin:0 0 6px 0;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.btn-row button{flex:1;padding:5px 8px;font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer}
+.btn-row button:hover{background:var(--bg)}
+.btn-row button.del{background:var(--red-dim);border-color:var(--red);color:#fff}
+.btn-row button.del:hover{background:var(--red)}
+
+#log-wrap{border-top:1px solid var(--border);background:var(--bg2);height:160px;display:flex;flex-direction:column;position:relative;flex-shrink:0}
+#log-wrap.collapsed{height:28px}
+#log-resize{position:absolute;top:-3px;left:0;right:0;height:6px;cursor:ns-resize;z-index:5}
+#log-resize:hover{background:var(--accent);opacity:0.3}
+.log-head{padding:4px 10px;display:flex;align-items:center;gap:6px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;flex-shrink:0;height:28px}
+.log-head .title{font-weight:600;color:var(--text-dim)}
+.log-head button{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:2px 6px;font-size:10px;border-radius:3px;cursor:pointer}
+.log-head button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.log-body{flex:1;overflow-y:auto;font-family:var(--mono);font-size:11px;padding:4px 8px;user-select:text;-webkit-user-select:text}
+#log-wrap.collapsed .log-body{display:none}
+.log-entry{padding:1px 0;white-space:pre-wrap;word-break:break-word}
+.log-entry .ts{color:var(--text-mute)}
+.log-entry.info .lvl{color:var(--accent2)}
+.log-entry.warn{color:var(--orange)}
+.log-entry.warn .lvl{color:var(--orange);font-weight:600}
+.log-entry.error{color:var(--red)}
+.log-entry.error .lvl{color:var(--red);font-weight:600}
+
+#ctx-menu{position:fixed;background:var(--panel);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-hi);padding:4px 0;z-index:1000;min-width:200px;font-size:12px}
+#ctx-menu.hidden{display:none}
+.ctx-item{padding:6px 14px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.ctx-item:hover{background:var(--accent);color:#fff}
+.ctx-item.disabled{color:var(--text-mute);cursor:not-allowed}
+.ctx-item.disabled:hover{background:transparent;color:var(--text-mute)}
+.ctx-sep{height:1px;background:var(--border);margin:4px 0}
+.ctx-item .icon{width:14px;display:inline-block;text-align:center}
+
+#dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1500;display:flex;align-items:center;justify-content:center}
+#dialog-overlay.hidden{display:none}
+.dialog{background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-hi);padding:18px 20px;min-width:380px;max-width:600px;max-height:80vh;overflow-y:auto}
+.dialog h3{margin:0 0 14px 0;font-size:14px}
+.dialog .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.dialog .actions button{padding:6px 14px;border-radius:4px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);color:var(--text)}
+.dialog .actions button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.dialog table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
+.dialog table th,.dialog table td{border:1px solid var(--border);padding:3px 6px;text-align:left}
+.dialog table th{background:var(--bg3)}
+
+#tooltip{position:fixed;background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:6px 9px;font-size:11px;pointer-events:none;z-index:2000;max-width:260px;box-shadow:var(--shadow);white-space:pre-wrap}
+#tooltip.hidden{display:none}
+
+.element{cursor:move}
+.element.selected > .body{stroke:var(--accent);stroke-width:2.5;filter:drop-shadow(0 0 6px var(--accent))}
+.handle{fill:var(--accent);stroke:var(--bg);stroke-width:1;cursor:nwse-resize}
+.network-rect{stroke:var(--border-hi);stroke-width:1.5;stroke-dasharray:8 4}
+.network-label{fill:var(--text-dim);font-family:var(--sans);font-size:11px;font-weight:600}
+.device-body,.server-body{stroke:var(--border-hi);stroke-width:1.5}
+.device-body{fill:var(--bg3)}
+.server-body{fill:var(--bg2)}
+.element-label{fill:var(--text);font-family:var(--sans);font-size:11px;font-weight:600;text-anchor:middle;pointer-events:none}
+.element-sublabel{fill:var(--text-dim);font-family:var(--sans);font-size:9px;text-anchor:middle;pointer-events:none}
+
+@keyframes pulse-green{0%,100%{opacity:0.5}50%{opacity:1}}
+@keyframes blink-red{0%,100%{opacity:0.3}50%{opacity:1}}
+.led-running{animation:pulse-green 2s ease-in-out infinite;fill:var(--green)}
+.led-stopped{fill:var(--grey);opacity:0.6}
+.led-error{animation:blink-red 0.5s ease-in-out infinite;fill:var(--red)}
+.led-maintenance{fill:var(--orange);opacity:0.9}
+
+.element.status-stopped .body{opacity:0.45}
+.element.status-error .body{stroke:var(--red)}
+.element.status-maintenance .body{stroke:var(--orange);stroke-dasharray:4 3}
+
+.svc-mini{cursor:pointer}
+.svc-mini .svc-rect{stroke-width:1;stroke:var(--border-hi)}
+.svc-mini.running .svc-rect{fill:var(--green-dim);stroke:var(--green)}
+.svc-mini.stopped .svc-rect{fill:var(--bg3);stroke:var(--grey)}
+.svc-mini.error .svc-rect{fill:var(--red-dim);stroke:var(--red)}
+.svc-mini.maintenance .svc-rect{fill:var(--orange-dim);stroke:var(--orange)}
+.svc-mini-label{fill:#fff;font-size:7px;font-family:var(--mono);font-weight:700;text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+
+.conn{fill:none;pointer-events:none}
+.conn-hit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke;cursor:pointer}
+.conn.ethernet{stroke:var(--green);stroke-width:2}
+.conn.fiber{stroke:var(--yellow);stroke-width:3}
+.conn.trunk{stroke:var(--cyan);stroke-width:2}
+.conn.port-channel{stroke:var(--purple);stroke-width:2.5}
+.conn.vpn{stroke:var(--purple);stroke-width:2;stroke-dasharray:6 4}
+.conn.vxlan{stroke:var(--cyan);stroke-width:2;stroke-dasharray:2 3}
+.conn.down{stroke:var(--grey) !important;opacity:0.4;stroke-dasharray:3 3}
+@keyframes flap{0%,100%{stroke:var(--green)}50%{stroke:var(--orange)}}
+.conn.flapping{animation:flap 0.5s linear infinite}
+.conn-label{fill:var(--text-dim);font-size:9px;font-family:var(--mono);text-anchor:middle;pointer-events:none}
+
+.packet{fill:var(--accent);stroke:#fff;stroke-width:1.5;filter:drop-shadow(0 0 4px var(--accent))}
+.packet.blocked{fill:var(--red);filter:drop-shadow(0 0 4px var(--red))}
+
+@keyframes ripple{0%{r:8;opacity:0.8}100%{r:80;opacity:0}}
+.ripple{fill:none;stroke:var(--red);stroke-width:2;animation:ripple 0.9s ease-out forwards;pointer-events:none}
+
+@keyframes hipass{0%{stroke:var(--accent);stroke-width:3.5}100%{stroke:var(--border-hi);stroke-width:1.5}}
+.element.passing > .body{animation:hipass 0.5s ease-out}
+
+@keyframes shake{0%,100%{transform:translate(0,0)}25%{transform:translate(-3px,0)}75%{transform:translate(3px,0)}}
+.element.blocked-anim > .body{animation:shake 0.3s ease-in-out 2}
+
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-hi)}
+
+.color-field{display:flex;gap:4px;align-items:center}
+.color-field input[type="color"]{width:30px;height:24px;padding:0;border:1px solid var(--border);border-radius:3px;cursor:pointer}
+.color-field input[type="range"]{flex:1;height:24px}
+.color-field input[type="text"]{width:120px;font-size:10px}
+
+.tag{display:inline-block;padding:1px 5px;border-radius:8px;font-size:9px;background:var(--bg3);color:var(--text-dim);margin-right:3px;font-family:var(--mono)}
+.tag.up{background:var(--green-dim);color:#fff}
+.tag.down{background:var(--grey);color:#fff}
+.tag.err{background:var(--red-dim);color:#fff}
+
+.bond-bracket{fill:none;stroke:var(--cyan);stroke-width:1.5;stroke-dasharray:2 2}
+.block-x{stroke:var(--red);stroke-width:3;fill:none;pointer-events:none}
+.no-route{fill:var(--red);font-family:var(--mono);font-size:11px;font-weight:700;text-anchor:middle;pointer-events:none}
+
+/* Interface ports - port boxes shown on element edges */
+.iface-port{cursor:move;stroke-width:1;transition:filter 0.1s}
+.iface-port-hit{fill:transparent;cursor:move}
+.port-rj45{fill:#5a6470;stroke:#1a1f24}
+.port-sfp{fill:#3b82f6;stroke:#0f3460}
+.port-sfp-plus{fill:#f59e0b;stroke:#4a2e00}
+.port-qsfp{fill:#a855f7;stroke:#3a1f50}
+.port-qsfp-plus{fill:#a855f7;stroke:#3a1f50}
+.port-qsfp28{fill:#ef4444;stroke:#5a1f25}
+.port-console{fill:#06b6d4;stroke:#0a3a3f}
+.port-mgmt{fill:#10b981;stroke:#0a4a3a}
+.iface-port.linked{stroke:var(--green);stroke-width:1.8}
+.iface-port.down{opacity:0.3;stroke:var(--grey)}
+.iface-port:hover{stroke:var(--accent);stroke-width:2.2;filter:drop-shadow(0 0 4px var(--accent))}
+.iface-port-label{font-size:8px;fill:var(--text-dim);font-family:var(--mono);text-anchor:middle;pointer-events:none;font-weight:600}
+.iface-port-type{font-size:8px;fill:var(--accent);font-family:var(--mono);text-anchor:middle;pointer-events:none;font-weight:700}
+html.light .port-rj45{fill:#9aa0a6}
+html.light .iface-port-label{fill:var(--text-dim)}
+
+/* Port type label - inside the port, full text */
+.port-type-badge{font-size:7px;fill:#fff;text-anchor:middle;dominant-baseline:middle;pointer-events:none;font-family:var(--mono);font-weight:700;letter-spacing:-0.2px}
+
+/* Bonding visualization - more visible bracket connecting bonded ports */
+.bond-link{fill:none;stroke:var(--cyan);stroke-width:2.5;stroke-dasharray:4 2;pointer-events:none;stroke-linecap:round}
+.bond-label-bg{fill:var(--panel);stroke:var(--cyan);stroke-width:1}
+.bond-label{fill:var(--cyan);font-size:9px;font-family:var(--mono);font-weight:700;text-anchor:middle;pointer-events:none;dominant-baseline:middle}
+
+/* vPC visualization - peer-link between two devices */
+.vpc-link{stroke:var(--purple);stroke-width:3;stroke-dasharray:6 3;fill:none;pointer-events:none;stroke-linecap:round}
+.vpc-label-bg{fill:var(--panel);stroke:var(--purple);stroke-width:1}
+.vpc-label{fill:var(--purple);font-size:9px;font-weight:700;text-anchor:middle;dominant-baseline:middle;font-family:var(--mono);pointer-events:none}
+
+/* Moving arrow blips - travel along connection path continuously */
+.flow-blip{pointer-events:none;filter:drop-shadow(0 0 3px currentColor)}
+.flow-blip.col-ethernet{fill:var(--green);color:var(--green)}
+.flow-blip.col-fiber{fill:var(--yellow);color:var(--yellow)}
+.flow-blip.col-trunk{fill:var(--cyan);color:var(--cyan)}
+.flow-blip.col-port-channel{fill:var(--purple);color:var(--purple)}
+.flow-blip.col-vpn{fill:var(--purple);color:var(--purple)}
+.flow-blip.col-vxlan{fill:var(--cyan);color:var(--cyan)}
+
+/* Physical vs Virtual network distinction */
+.network-rect.kind-physical{stroke-dasharray:8 4;stroke-width:2}
+.network-rect.kind-virtual{stroke-dasharray:2 2;stroke-width:1.5}
+.network-rect.kind-virtual ~ .net-virtual-overlay{display:block}
+.net-kind-badge-bg{rx:7;ry:7;stroke:var(--border);stroke-width:0.5}
+.net-kind-badge-bg.physical{fill:rgba(63,185,80,0.15);stroke:var(--green)}
+.net-kind-badge-bg.virtual{fill:rgba(163,113,247,0.15);stroke:var(--purple)}
+.net-kind-badge{font-size:8px;font-family:var(--mono);font-weight:700;text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+.net-kind-badge.physical{fill:var(--green)}
+.net-kind-badge.virtual{fill:var(--purple)}
+
+/* Scenario editor styles */
+.scen-list{max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:5px;padding:4px;margin-bottom:8px}
+.scen-row{display:flex;align-items:center;gap:6px;padding:6px;background:var(--bg3);border-radius:4px;margin-bottom:4px}
+.scen-row:hover{background:var(--bg)}
+.scen-row .scen-id{flex:1;font-family:var(--mono);font-size:11px;color:var(--text)}
+.scen-row button{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:2px 8px;border-radius:3px;cursor:pointer;font-size:10px}
+.scen-row button:hover{border-color:var(--accent);color:var(--accent)}
+.scen-row button.run{color:var(--green);border-color:var(--green)}
+.scen-row button.del{color:var(--red);border-color:var(--red)}
+.scen-step-grid{display:grid;grid-template-columns:1fr 1fr 80px 70px 24px;gap:4px;align-items:end;margin-bottom:4px;padding:4px;background:var(--bg);border-radius:3px}
+.scen-step-grid input,.scen-step-grid select{padding:3px 5px;font-size:11px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:3px;font-family:var(--mono);outline:none}
+
+/* Traffic flow animation - persistent dash animation on overlay layer */
+@keyframes flowDash{to{stroke-dashoffset:-32}}
+@keyframes flowDashRev{to{stroke-dashoffset:32}}
+.traffic-flow{fill:none;pointer-events:none;opacity:0.85;stroke-linecap:round}
+.traffic-flow.dir-fwd{animation:flowDash linear infinite}
+.traffic-flow.dir-bwd{animation:flowDashRev linear infinite}
+.traffic-flow.lvl-idle{display:none}
+.traffic-flow.lvl-low{stroke-width:2;stroke-dasharray:5 10;animation-duration:3s;opacity:0.65}
+.traffic-flow.lvl-medium{stroke-width:3;stroke-dasharray:8 8;animation-duration:1.6s;opacity:0.8}
+.traffic-flow.lvl-high{stroke-width:5;stroke-dasharray:12 6;animation-duration:0.7s;opacity:0.95}
+.traffic-flow.col-ethernet{stroke:var(--green)}
+.traffic-flow.col-fiber{stroke:var(--yellow)}
+.traffic-flow.col-trunk{stroke:var(--cyan)}
+.traffic-flow.col-port-channel{stroke:var(--purple)}
+.traffic-flow.col-vpn{stroke:var(--purple)}
+.traffic-flow.col-vxlan{stroke:var(--cyan)}
+
+/* Base connection stroke widths by traffic */
+.conn.lvl-low{stroke-width:2}
+.conn.lvl-medium{stroke-width:3}
+.conn.lvl-high{stroke-width:5}
+
+/* Waypoint handles */
+.waypoint-handle{fill:var(--accent);stroke:#fff;stroke-width:1.5;cursor:move;r:5}
+.waypoint-handle:hover{fill:var(--orange);r:7}
+.waypoint-add{fill:rgba(88,166,255,0.25);stroke:var(--accent);stroke-width:1;stroke-dasharray:2 2;cursor:copy;r:4;opacity:0.6}
+.waypoint-add:hover{fill:var(--accent);opacity:1;r:6}
+
+/* Direction arrow markers (defined inline in SVG defs) styled via stroke color of parent */
+.arrow-head{fill:var(--text)}
+
+/* Connection direction indicator - small chevron on the line */
+.dir-chevron{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.dir-chevron.col-ethernet{stroke:var(--green)}
+.dir-chevron.col-fiber{stroke:var(--yellow)}
+.dir-chevron.col-trunk{stroke:var(--cyan)}
+.dir-chevron.col-port-channel{stroke:var(--purple)}
+.dir-chevron.col-vpn{stroke:var(--purple)}
+.dir-chevron.col-vxlan{stroke:var(--cyan)}
+
+/* Toast notification - bottom right */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:8px;font-size:13px;z-index:3000;box-shadow:var(--shadow-hi);transform:translateX(140%);transition:transform .25s ease;max-width:340px;border-left:3px solid var(--accent);font-family:var(--sans)}
+#toast.show{transform:translateX(0)}
+#toast.err{border-left-color:var(--red)}
+#toast.warn{border-left-color:var(--orange)}
+#toast.ok{border-left-color:var(--green)}
+#toast.hidden{display:none}
+
+/* Keyboard shortcut hint - bottom left */
+#ks-hint{position:fixed;bottom:20px;left:20px;background:var(--panel);border:1px solid var(--accent);color:var(--text);padding:8px 14px;border-radius:6px;font-size:12px;z-index:2500;font-family:var(--mono);box-shadow:var(--shadow);max-width:480px;line-height:1.4}
+#ks-hint.hidden{display:none}
+#ks-hint kbd{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-family:var(--mono);font-size:10px;margin:0 2px;color:var(--accent)}
+
+/* CLI Console - terminal */
+.cli-terminal{background:#0a0e14;color:#c9d1d9;font-family:var(--mono);font-size:12px;padding:12px;border-radius:6px;height:340px;display:flex;flex-direction:column;border:1px solid var(--border)}
+.cli-out{flex:1;overflow-y:auto;white-space:pre-wrap;line-height:1.5;user-select:text;-webkit-user-select:text}
+.cli-out .cli-prompt{color:var(--green)}
+.cli-out .cli-cmd{color:var(--accent2)}
+.cli-out .cli-err{color:var(--red)}
+.cli-out .cli-ok{color:var(--green)}
+.cli-out .cli-info{color:var(--yellow)}
+.cli-input-row{display:flex;gap:6px;align-items:center;margin-top:6px;border-top:1px solid #1a2030;padding-top:6px}
+.cli-input-row .cli-ps{color:var(--green);font-family:var(--mono);font-size:12px}
+.cli-input-row input{flex:1;background:transparent;border:none;outline:none;color:#c9d1d9;font-family:var(--mono);font-size:12px}
+
+/* Packet capture - scrollable log */
+.pcap-log{background:#0a0e14;color:#c9d1d9;font-family:var(--mono);font-size:11px;padding:8px;border-radius:6px;height:300px;overflow-y:auto;border:1px solid var(--border);user-select:text;-webkit-user-select:text}
+.pcap-row{display:grid;grid-template-columns:60px 80px 110px 110px 60px 50px 1fr;gap:8px;padding:2px 0;border-bottom:1px solid #1a2030;line-height:1.5}
+.pcap-row.head{font-weight:700;color:var(--text-dim);position:sticky;top:0;background:#0a0e14;padding-bottom:4px}
+.pcap-row .col-proto{color:var(--accent2)}
+.pcap-row.dir-rev .col-proto{color:var(--purple)}
+.pcap-status{display:flex;gap:8px;align-items:center;font-size:11px;color:var(--text-dim);margin-bottom:6px}
+.pcap-pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);animation:pcapPulse 1s infinite}
+@keyframes pcapPulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* Inline section dividers in property panel for grouping */
+.field-section-title{font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:0.8px;margin:10px 0 4px;padding-bottom:3px;border-bottom:1px solid var(--border);font-weight:700}
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <div class="brand">⚡ NetSim<br><span style="font-size:9px;font-weight:500;letter-spacing:1px">YAML SIMULATOR</span></div>
+
+  <div class="tgroup" data-title="ファイル">
+    <button id="btn-load" class="tbtn" title="YAMLファイルを開く"><span class="ico">📂</span><span class="lbl">開く</span></button>
+    <button id="btn-save" class="tbtn" title="YAML保存 (Ctrl+S)"><span class="ico">💾</span><span class="lbl">保存</span></button>
+    <button id="btn-apply" class="tbtn primary" title="YAML編集内容を反映 (Ctrl+Enter)"><span class="ico">⟳</span><span class="lbl">反映</span></button>
+    <input type="file" id="file-input" accept=".yaml,.yml,.txt" style="display:none" />
+  </div>
+
+  <div class="tgroup" data-title="追加">
+    <button id="btn-add-network" class="tbtn" title="ネットワークを追加"><span class="ico">▭</span><span class="lbl">NW</span></button>
+    <button id="btn-add-device" class="tbtn" title="NW機器を追加 (ルータ/SW/FW/LB等)"><span class="ico">⊟</span><span class="lbl">NW機器</span></button>
+    <button id="btn-add-server" class="tbtn" title="サーバを追加"><span class="ico">▤</span><span class="lbl">サーバ</span></button>
+    <button id="btn-add-service" class="tbtn" title="サービスを追加"><span class="ico">●</span><span class="lbl">サービス</span></button>
+    <button id="btn-add-connection" class="tbtn" title="接続を作成"><span class="ico">↔</span><span class="lbl">接続</span></button>
+  </div>
+
+  <div class="tgroup" data-title="シミュレーション">
+    <button id="btn-sim-play" class="tbtn" title="再生 (Space)"><span class="ico">▶</span><span class="lbl">再生</span></button>
+    <button id="btn-sim-pause" class="tbtn" title="一時停止"><span class="ico">⏸</span><span class="lbl">一時停止</span></button>
+    <button id="btn-sim-stop" class="tbtn" title="停止"><span class="ico">⏹</span><span class="lbl">停止</span></button>
+    <div style="display:flex;flex-direction:column;justify-content:center;margin-top:8px">
+      <span style="font-size:9px;color:var(--text-mute);text-transform:uppercase">速度</span>
+      <select id="sim-speed" class="tsel" style="height:18px;margin-top:0;padding:0 4px">
+        <option value="0.5">x0.5</option><option value="1" selected>x1</option><option value="2">x2</option><option value="5">x5</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="tgroup" data-title="シナリオ">
+    <div style="display:flex;flex-direction:column;justify-content:center;margin-top:8px">
+      <span style="font-size:9px;color:var(--text-mute);text-transform:uppercase">対象</span>
+      <select id="scenario-select" class="tsel" style="min-width:160px;height:18px;margin-top:0;padding:0 4px"></select>
+    </div>
+    <button id="btn-run-scenario" class="tbtn accent" title="シナリオ実行 (F5)"><span class="ico">⚡</span><span class="lbl">実行</span></button>
+    <button id="btn-manage-scenario" class="tbtn" title="シナリオを追加/編集"><span class="ico">+</span><span class="lbl">管理</span></button>
+  </div>
+
+  <div class="tgroup" data-title="操作">
+    <button id="btn-undo" class="tbtn" title="元に戻す (Ctrl+Z)"><span class="ico">↶</span><span class="lbl">戻す</span></button>
+    <button id="btn-redo" class="tbtn" title="やり直し (Ctrl+Y)"><span class="ico">↷</span><span class="lbl">やり直し</span></button>
+  </div>
+
+  <div class="tgroup" data-title="表示">
+    <button id="btn-fit" class="tbtn" title="全体表示"><span class="ico">⊡</span><span class="lbl">全体</span></button>
+    <button id="btn-theme" class="tbtn" title="ライト/ダーク切替"><span class="ico">🌓</span><span class="lbl">テーマ</span></button>
+  </div>
+</div>
+
+<!-- Floating popup menus (for device/service type selection) -->
+<div id="dev-menu" class="fmenu hidden"></div>
+<div id="svc-menu" class="fmenu hidden"></div>
+
+<div id="statusbar">
+  <span class="stat-badge run"><span class="dot"></span><span class="num" id="stat-running">0</span><span class="lbl">稼働中</span></span>
+  <span class="stat-badge stop"><span class="dot"></span><span class="num" id="stat-stopped">0</span><span class="lbl">停止中</span></span>
+  <span class="stat-badge err"><span class="dot"></span><span class="num" id="stat-error">0</span><span class="lbl">エラー</span></span>
+  <span class="stat-badge maint"><span class="dot"></span><span class="num" id="stat-maint">0</span><span class="lbl">保守</span></span>
+  <span class="stat-badge"><span class="lbl">NW機器</span><span class="num" id="stat-devices">0</span></span>
+  <span class="stat-badge"><span class="lbl">サーバ</span><span class="num" id="stat-servers">0</span></span>
+  <span class="stat-badge"><span class="lbl">サービス</span><span class="num" id="stat-services">0</span></span>
+  <span class="stat-badge"><span class="lbl">接続</span><span class="num" id="stat-connections">0</span></span>
+  <span style="margin-left:auto;color:var(--text-mute);font-size:11px" id="status-msg"></span>
+</div>
+
+<div id="main">
+  <div id="yaml-pane">
+    <div class="pane-head"><span>YAML定義</span><span id="yaml-status" style="color:var(--green);font-size:10px">●</span></div>
+    <textarea id="yaml-editor" spellcheck="false" autocomplete="off"></textarea>
+    <div id="yaml-resize"></div>
+  </div>
+  <div id="canvas-pane">
+    <div id="svg-wrap">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+        <defs id="svg-defs"></defs>
+        <g id="layer-networks"></g>
+        <g id="layer-connections"></g>
+        <g id="layer-traffic"></g>
+        <g id="layer-elements"></g>
+        <g id="layer-overlays"></g>
+        <g id="layer-packets"></g>
+      </svg>
+      <div id="zoom-wrap">
+        <button id="zoom-in">+</button>
+        <input type="range" id="zoom-slider" min="10" max="500" value="100" />
+        <button id="zoom-out">−</button>
+        <span id="zoom-val">100%</span>
+      </div>
+      <div id="prop-panel" class="hidden">
+        <div class="ph-head"><span id="ph-title">プロパティ</span><button class="close" id="ph-close">×</button></div>
+        <div class="ph-body" id="ph-body"></div>
+      </div>
+    </div>
+    <div id="log-wrap">
+      <div id="log-resize"></div>
+      <div class="log-head">
+        <span class="title">📋 シミュレーションログ</span>
+        <button id="log-filter-info" class="active" data-lvl="info">INFO</button>
+        <button id="log-filter-warn" class="active" data-lvl="warn">WARN</button>
+        <button id="log-filter-error" class="active" data-lvl="error">ERROR</button>
+        <button id="log-clear">クリア</button>
+        <button id="log-toggle" style="margin-left:auto">▼</button>
+      </div>
+      <div class="log-body" id="log-body"></div>
+    </div>
+  </div>
+</div>
+
+<div id="ctx-menu" class="hidden"></div>
+<div id="dialog-overlay" class="hidden"><div class="dialog" id="dialog"></div></div>
+<div id="tooltip" class="hidden"></div>
+<div id="toast" class="hidden"></div>
+<div id="ks-hint" class="hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
