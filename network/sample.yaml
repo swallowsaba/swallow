@@ -191,6 +191,13 @@ devices:
         speed: 40000
         port_type: qsfp-plus
         status: up
+      - id: gi1/0/49
+        ip: 10.3.0.4/24
+        network: db-segment
+        mac: "bc:00:00:00:00:07"
+        speed: 10000
+        port_type: sfp-plus
+        status: up
       - id: peer-link
         ip: 10.255.0.2/30
         network: ""
@@ -467,13 +474,23 @@ connections:
   - id: link-sw1-db01
     from: {device: core-sw01, interface: gi1/0/48}
     to: {server: db01, interface: eth0}
-    type: fiber
+    type: port-channel
     speed: 10000
     status: up
     traffic: high
     direction: bidirectional
-  - id: link-sw2-db02
+    vpc_id: 10
+  - id: link-sw2-db01-bond
     from: {device: core-sw02, interface: gi1/0/48}
+    to: {server: db01, interface: eth1}
+    type: port-channel
+    speed: 10000
+    status: up
+    traffic: low
+    direction: bidirectional
+    vpc_id: 10
+  - id: link-sw2-db02
+    from: {device: core-sw02, interface: gi1/0/49}
     to: {server: db02, interface: eth0}
     type: fiber
     speed: 10000
@@ -514,6 +531,32 @@ routing_tables:
         next_hop: 10.1.0.1
         interface: gi1/0/1
         metric: 1
+        type: static
+        status: active
+      - destination: 10.1.0.0/24
+        next_hop: 0.0.0.0
+        interface: gi1/0/1
+        metric: 0
+        type: connected
+        status: active
+      - destination: 10.2.0.0/24
+        next_hop: 0.0.0.0
+        interface: gi1/0/24
+        metric: 0
+        type: connected
+        status: active
+      - destination: 10.3.0.0/24
+        next_hop: 0.0.0.0
+        interface: gi1/0/48
+        metric: 0
+        type: connected
+        status: active
+  - device: core-sw02
+    routes:
+      - destination: 0.0.0.0/0
+        next_hop: 10.255.0.1
+        interface: peer-link
+        metric: 5
         type: static
         status: active
       - destination: 10.1.0.0/24

@@ -264,10 +264,69 @@ html.light .iface-port-label{fill:var(--text-dim)}
 .bond-label-bg{fill:var(--panel);stroke:var(--cyan);stroke-width:1}
 .bond-label{fill:var(--cyan);font-size:9px;font-family:var(--mono);font-weight:700;text-anchor:middle;pointer-events:none;dominant-baseline:middle}
 
-/* vPC visualization - peer-link between two devices */
+/* vPC visualization - Cisco-style domain region with peer-link + keepalive */
+.vpc-domain-region{pointer-events:none}
+.vpc-peer-link{stroke:var(--purple);stroke-width:2.5;fill:none;pointer-events:none;stroke-linecap:round}
+.vpc-keepalive{stroke:var(--purple);stroke-width:1;stroke-dasharray:2 3;fill:none;pointer-events:none;opacity:0.7}
 .vpc-link{stroke:var(--purple);stroke-width:3;stroke-dasharray:6 3;fill:none;pointer-events:none;stroke-linecap:round}
-.vpc-label-bg{fill:var(--panel);stroke:var(--purple);stroke-width:1}
+.vpc-label-bg{fill:var(--panel);stroke:var(--purple);stroke-width:1.5}
 .vpc-label{fill:var(--purple);font-size:9px;font-weight:700;text-anchor:middle;dominant-baseline:middle;font-family:var(--mono);pointer-events:none}
+.vpc-device-highlight{animation:vpcGlow 2.5s ease-in-out infinite}
+@keyframes vpcGlow{0%,100%{opacity:0.55}50%{opacity:0.95}}
+.vpc-domain-badge text{user-select:none}
+.vpc-member-bracket{pointer-events:none}
+
+/* Simulation: persistent error marker at failure point */
+.sim-error-mark{pointer-events:none}
+.sim-error-mark .sim-error-x{stroke:var(--red);stroke-width:5;stroke-linecap:round;filter:drop-shadow(0 0 6px var(--red))}
+.sim-error-mark .sim-error-ring{fill:none;stroke:var(--red);stroke-width:3;animation:errPulse 1.2s ease-out infinite}
+@keyframes errPulse{0%{r:18;opacity:1}100%{r:42;opacity:0}}
+.sim-error-mark .sim-error-label{fill:var(--red);font-size:11px;font-weight:800;font-family:var(--mono);text-anchor:middle}
+.sim-error-mark .sim-error-label-bg{fill:var(--panel);stroke:var(--red);stroke-width:1.5}
+
+/* Communication simulator dialog */
+.sim-hop-list{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:6px;max-height:200px;overflow-y:auto;font-family:var(--mono);font-size:11px}
+.sim-hop{display:flex;align-items:center;gap:8px;padding:4px 6px;border-bottom:1px dashed var(--border)}
+.sim-hop:last-child{border-bottom:none}
+.sim-hop .hop-num{background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.sim-hop .hop-ok .hop-num{background:var(--green)}
+.sim-hop .hop-fail .hop-num{background:var(--red)}
+.sim-result{padding:8px 12px;border-radius:5px;margin:8px 0;font-weight:600;font-size:12px}
+.sim-result.ok{background:rgba(63,185,80,0.15);color:var(--green);border:1px solid var(--green)}
+.sim-result.fail{background:rgba(248,81,73,0.15);color:var(--red);border:1px solid var(--red)}
+
+/* Template dialog */
+.tpl-card{display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;margin-bottom:6px;cursor:pointer;transition:all 0.15s}
+.tpl-card:hover{background:var(--bg3);border-color:var(--accent);transform:translateX(2px)}
+.tpl-card .tpl-ico{font-size:28px;flex-shrink:0;width:40px;text-align:center}
+.tpl-card .tpl-info{flex:1}
+.tpl-card .tpl-title{font-weight:700;font-size:13px;color:var(--text);margin-bottom:2px}
+.tpl-card .tpl-desc{font-size:11px;color:var(--text-mute);line-height:1.4}
+
+/* Conn down marker - the X */
+.conn-down-mark{pointer-events:none;filter:drop-shadow(0 0 3px var(--red))}
+
+/* MAC collision indicator on port */
+.iface-port.mac-collision{stroke:var(--orange);stroke-width:2.2;stroke-dasharray:2 1}
+@keyframes macWarn{0%,100%{opacity:1}50%{opacity:0.5}}
+.iface-port.mac-collision{animation:macWarn 1.5s ease-in-out infinite}
+
+.tbtn.primary{background:linear-gradient(180deg, var(--accent), var(--accent2));color:#fff;border-color:var(--accent2);font-weight:600}
+.tbtn.primary:hover{filter:brightness(1.1)}
+
+/* Global animation kill-switch — toggled via animation toggle button */
+body.no-animations *,
+body.no-animations *::before,
+body.no-animations *::after{
+  animation: none !important;
+  transition: none !important;
+}
+body.no-animations .traffic-flow,
+body.no-animations .flow-blip,
+body.no-animations .vpc-device-highlight,
+body.no-animations .pcap-pulse{
+  display: none !important;
+}
 
 /* Moving arrow blips - travel along connection path continuously */
 .flow-blip{pointer-events:none;filter:drop-shadow(0 0 3px currentColor)}
@@ -419,6 +478,13 @@ html.light .iface-port-label{fill:var(--text-dim)}
     </div>
     <button id="btn-run-scenario" class="tbtn accent" title="シナリオ実行 (F5)"><span class="ico">⚡</span><span class="lbl">実行</span></button>
     <button id="btn-manage-scenario" class="tbtn" title="シナリオを追加/編集"><span class="ico">+</span><span class="lbl">管理</span></button>
+    <button id="btn-comm-sim" class="tbtn primary" title="通信テスト: 任意の2点間で疎通確認"><span class="ico">🎯</span><span class="lbl">通信テスト</span></button>
+  </div>
+
+  <div class="tgroup" data-title="トポロジー">
+    <button id="btn-tpl" class="tbtn" title="トポロジーテンプレートを生成"><span class="ico">📐</span><span class="lbl">テンプレート</span></button>
+    <button id="btn-mac-audit" class="tbtn" title="MACアドレスの重複/未割当をチェック"><span class="ico">🔍</span><span class="lbl">MAC監査</span></button>
+    <button id="btn-anim-toggle" class="tbtn" title="アニメーションON/OFF (CPU軽量化)"><span class="ico">⏸</span><span class="lbl">アニメ</span></button>
   </div>
 
   <div class="tgroup" data-title="操作">
@@ -497,6 +563,9 @@ html.light .iface-port-label{fill:var(--text-dim)}
 <div id="toast" class="hidden"></div>
 <div id="ks-hint" class="hidden"></div>
 
-<script src="app.js"></script>
+<script src="js/core.js"></script>
+<script src="js/render.js"></script>
+<script src="js/dialogs.js"></script>
+<script src="js/sim.js"></script>
 </body>
 </html>
