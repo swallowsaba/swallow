@@ -314,6 +314,16 @@ html.light .iface-port-label{fill:var(--text-dim)}
 .tbtn.primary{background:linear-gradient(180deg, var(--accent), var(--accent2));color:#fff;border-color:var(--accent2);font-weight:600}
 .tbtn.primary:hover{filter:brightness(1.1)}
 
+/* STP visualization overlay */
+.stp-crown{pointer-events:none}
+.stp-blocked{pointer-events:none}
+.stp-crown text{user-select:none}
+
+.element.annotation .annotation-bg{filter:drop-shadow(2px 3px 4px rgba(0,0,0,0.25))}
+.element.annotation.selected .annotation-bg{stroke:var(--accent);stroke-width:2}
+.element.annotation:hover .annotation-bg{stroke:rgba(0,0,0,0.5)}
+.element.annotation{cursor:move}
+
 /* Global animation kill-switch — toggled via animation toggle button */
 body.no-animations *,
 body.no-animations *::before,
@@ -485,6 +495,8 @@ body.no-animations .pcap-pulse{
     <button id="btn-tpl" class="tbtn" title="トポロジーテンプレートを生成"><span class="ico">📐</span><span class="lbl">テンプレート</span></button>
     <button id="btn-mac-audit" class="tbtn" title="MACアドレスの重複/未割当をチェック"><span class="ico">🔍</span><span class="lbl">MAC監査</span></button>
     <button id="btn-anim-toggle" class="tbtn" title="アニメーションON/OFF (CPU軽量化)"><span class="ico">⏸</span><span class="lbl">アニメ</span></button>
+    <button id="btn-stp-toggle" class="tbtn" title="STP状態表示: 👑Root Bridge と ⊘BLK ポートをハイライト"><span class="ico">🌳</span><span class="lbl">STP表示</span></button>
+    <button id="btn-add-annotation" class="tbtn" title="図上にメモ(付箋)を追加"><span class="ico">📝</span><span class="lbl">メモ</span></button>
   </div>
 
   <div class="tgroup" data-title="操作">
@@ -528,6 +540,7 @@ body.no-animations .pcap-pulse{
         <g id="layer-connections"></g>
         <g id="layer-traffic"></g>
         <g id="layer-elements"></g>
+        <g id="layer-annotations"></g>
         <g id="layer-overlays"></g>
         <g id="layer-packets"></g>
       </svg>

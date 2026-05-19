@@ -26,7 +26,7 @@ function renderPropertyForm(kind, obj){
     addSelectField(body, "ステータス", ["running","stopped","error","maintenance"], obj.status||"running",
       (v)=>{ setStatus(kind, cid, v); });
   }
-  if(kind === "network" || kind === "device" || kind === "server"){
+  if(kind === "network" || kind === "device" || kind === "server" || kind === "annotation"){
     const row = ch("div", { class:"field-grid" }, body);
     addField(row, "X", "number", obj.x||0, v=>{ obj.x = +v; renderAndSync(); });
     addField(row, "Y", "number", obj.y||0, v=>{ obj.y = +v; renderAndSync(); });
@@ -38,6 +38,7 @@ function renderPropertyForm(kind, obj){
   if(kind === "server") renderServerProps(body, obj);
   if(kind === "service") renderServiceProps(body, obj);
   if(kind === "connection") renderConnectionProps(body, obj);
+  if(kind === "annotation") renderAnnotationProps(body, obj);
 
   const row = ch("div", { class:"btn-row" }, body);
   ch("button", { text:"削除", class:"del", on:{ click:()=>deleteElement(kind, cid) } }, row);
@@ -107,11 +108,28 @@ function addColorField(parent, label, value, onChange){
   text.addEventListener("change", ()=>onChange(text.value));
 }
 
+function renderAnnotationProps(body, obj){
+  const f = ch("div", { class:"field" }, body);
+  ch("label", { text:"テキスト (改行可)" }, f);
+  const ta = ch("textarea", { rows:"4" }, f);
+  ta.value = obj.text || "";
+  ta.style.width = "100%";
+  ta.style.minHeight = "60px";
+  ta.style.background = "var(--bg)";
+  ta.style.color = "var(--text)";
+  ta.style.border = "1px solid var(--border)";
+  ta.style.borderRadius = "3px";
+  ta.style.padding = "4px";
+  ta.style.fontFamily = "var(--mono)";
+  ta.addEventListener("input", ()=>{ obj.text = ta.value; renderAndSync(); });
+  addField(body, "フォントサイズ", "number", obj.fontSize||12, v=>{ obj.fontSize = Math.max(8,+v||12); renderAndSync(); });
+  addColorField(body, "背景色", obj.color||"rgba(255,235,100,0.85)", v=>{ obj.color=v; renderAndSync(); });
+}
+
 function renderNetworkProps(body, obj){
   addSelectField(body, "種別 (Type)", ["vlan","vpc","subnet","vpn-overlay"], obj.type||"subnet",
     v=>{
       obj.type=v;
-      // Auto-derive kind if not explicitly set
       if(!obj._kindManual){
         obj.kind = (v === "vxlan" || v === "vpn-overlay") ? "virtual" : "physical";
       }
@@ -1180,13 +1198,25 @@ function showDependencyTree(id){
 function openCliConsole(kind, id){
   const obj = Cfg.byId(kindToCol(kind), id);
   if(!obj) return;
-  const prompt = (obj.label||id).toLowerCase().replace(/[^a-z0-9-]/g,"") + (kind==="device"?"#":"$");
+  // CLI mode state: "user" (>), "priv" (#), "config" (config)#, "config-if" (config-if)#, "config-vlan" (config-vlan)#
+  // 'configContext' holds the current iface/vlan being configured
+  const state = { mode: kind==="device" ? "priv" : "user", configContext: null };
+  function buildPrompt(){
+    const base = (obj.label||id).toLowerCase().replace(/[^a-z0-9-]/g,"");
+    if(state.mode === "user")        return `${base}> `;
+    if(state.mode === "priv")        return `${base}# `;
+    if(state.mode === "config")      return `${base}(config)# `;
+    if(state.mode === "config-if")   return `${base}(config-if)# `;
+    if(state.mode === "config-vlan") return `${base}(config-vlan)# `;
+    return `${base}# `;
+  }
   openDialog(`💻 Console — ${obj.label||id} (${obj.type||kind})`, (body)=>{
     const term = ch("div",{class:"cli-terminal"},body);
     const out = ch("div",{class:"cli-out"},term);
     const inrow = ch("div",{class:"cli-input-row"},term);
-    ch("span",{class:"cli-ps",text:prompt+" "},inrow);
-    const input = ch("input",{type:"text",autocomplete:"off",spellcheck:"false",placeholder:"help と入力でコマンド一覧"},inrow);
+    const psSpan = ch("span",{class:"cli-ps",text:buildPrompt()},inrow);
+    const input = ch("input",{type:"text",autocomplete:"off",spellcheck:"false",placeholder:"help, enable, configure terminal, ..."},inrow);
+    function refreshPrompt(){ psSpan.textContent = buildPrompt(); }
     function println(text, cls){
       const line = ch("div",{text:text},out);
       if(cls) line.className = cls;
@@ -1196,18 +1226,18 @@ function openCliConsole(kind, id){
     println(`*** ${obj.label||id} Console ***`, "cli-info");
     println(`Type: ${obj.type||""}  Status: ${obj.status||"running"}`, "cli-info");
     if(obj.model) println(`Model: ${obj.model}`, "cli-info");
-    println("Type 'help' for command list.", "cli-info");
+    println("Type 'help' for commands.  'enable' → privileged.  'configure terminal' → config mode.", "cli-info");
     println("");
 
-    // Execute command
     function exec(line){
-      println(prompt+" "+line, "cli-cmd");
+      println(buildPrompt()+line, "cli-cmd");
       const cmd = line.trim();
       if(!cmd) return;
       const args = cmd.split(/\s+/);
       const head = args[0].toLowerCase();
       try {
-        cliExec(obj, kind, head, args, println);
+        cliExec(obj, kind, head, args, println, state);
+        refreshPrompt();
       } catch(e){
         println("Error: "+e.message, "cli-err");
       }
@@ -1238,27 +1268,230 @@ function openCliConsole(kind, id){
   });
 }
 
-function cliExec(obj, kind, cmd, args, println){
+function cliExec(obj, kind, cmd, args, println, state){
   const id = obj.id;
   const helpText = [
     "Available commands:",
-    "  help                          - show this help",
-    "  show running-config           - show full configuration",
-    "  show interfaces               - list interfaces",
-    "  show ip route                 - routing table (devices only)",
-    "  show ip interface brief       - interface summary",
-    "  show arp                      - ARP cache",
-    "  show version                  - device info",
-    "  show service                  - services on this server",
-    "  show policy                   - FW policies (firewall only)",
-    "  ping <ip|host>                - ping a destination",
-    "  traceroute <ip|host>          - trace route",
-    "  enable/disable interface <id> - bring interface up/down",
-    "  shutdown                      - stop this device",
-    "  no shutdown                   - start this device",
-    "  clear                         - clear screen",
-    "  exit                          - close console"
+    "  help                            - show this help",
+    "  enable / disable                - toggle privileged mode",
+    "  configure terminal              - enter config mode",
+    "  exit / end                      - leave current mode",
+    "  show running-config             - show full configuration",
+    "  show interfaces [brief]         - list interfaces",
+    "  show ip route                   - routing table (devices)",
+    "  show ip interface brief         - interface summary",
+    "  show arp                        - ARP cache",
+    "  show version                    - device info",
+    "  show vlan                       - VLAN table",
+    "  show spanning-tree              - STP roles/states",
+    "  show mac address-table          - MAC table (switches)",
+    "  show lldp neighbors             - LLDP neighbors",
+    "  show cdp neighbors              - CDP neighbors",
+    "  show etherchannel summary       - port-channels (bonding/vPC)",
+    "  show ip ospf neighbor           - OSPF neighbors (simulated)",
+    "  show ip bgp summary             - BGP peers (simulated)",
+    "  show service                    - services on server",
+    "  show policy                     - FW policies",
+    "",
+    "  In (config)# mode:",
+    "    interface <id>                - configure an interface",
+    "    vlan <id>                     - create/edit VLAN",
+    "    hostname <name>               - change hostname",
+    "    ip route DEST MASK NH         - add static route",
+    "",
+    "  In (config-if)# mode:",
+    "    ip address X.X.X.X /N         - set IPv4",
+    "    ipv6 address X::Y/N           - set IPv6",
+    "    shutdown / no shutdown        - admin down/up",
+    "    description <text>            - port description",
+    "    speed <mbps>                  - port speed",
+    "    switchport access vlan <id>   - assign VLAN",
+    "    mac-address <mac>             - set MAC",
+    "",
+    "  ping <ip|host>                  - ping a destination",
+    "  traceroute <ip|host>            - trace route",
+    "  enable/disable interface <id>   - bring iface up/down (priv)",
+    "  shutdown / no shutdown          - stop/start this device (priv)",
+    "  write memory                    - save config snapshot",
+    "  reload                          - restore config snapshot",
+    "  clear                           - clear screen",
+    "  exit                            - close console"
   ];
+  // === Configuration mode handling (state-aware) ===
+  if(state){
+    // Mode transitions: enable/disable/exit/end/configure
+    if(cmd === "enable" && state.mode === "user"){ state.mode = "priv"; return; }
+    if(cmd === "disable" && state.mode === "priv"){ state.mode = "user"; return; }
+    if(cmd === "end"){ state.mode = "priv"; state.configContext = null; return; }
+    if(cmd === "exit"){
+      if(state.mode === "config-if" || state.mode === "config-vlan"){
+        state.mode = "config"; state.configContext = null; return;
+      }
+      if(state.mode === "config"){ state.mode = "priv"; return; }
+      if(state.mode === "priv"){ state.mode = "user"; return; }
+      // user mode → close
+      closeDialog(); return;
+    }
+    if((cmd === "configure" || cmd === "conf") && state.mode === "priv"){
+      const sub = (args[1]||"").toLowerCase();
+      if(sub === "terminal" || sub === "t" || sub === ""){
+        state.mode = "config";
+        println("Enter configuration commands, one per line.  End with CNTL/Z (or 'end').");
+        return;
+      }
+    }
+    // In (config)# mode
+    if(state.mode === "config"){
+      // interface <id> → enter (config-if)#
+      if(cmd === "interface" || cmd === "int"){
+        const ifId = args[1];
+        if(!ifId){ println("% Incomplete command — interface <id>","cli-err"); return; }
+        const iface = (obj.interfaces||[]).find(i=>i.id===ifId || i.id.toLowerCase()===ifId.toLowerCase());
+        if(!iface){ println(`% Interface ${ifId} not found`,"cli-err"); return; }
+        state.mode = "config-if";
+        state.configContext = iface.id;
+        return;
+      }
+      // vlan <id> → enter (config-vlan)#
+      if(cmd === "vlan"){
+        const vid = parseInt(args[1],10);
+        if(isNaN(vid)){ println("% VLAN id required","cli-err"); return; }
+        // Find or create a network entry with this VLAN
+        let net = (App.config.networks||[]).find(n=>n.vlan_id===vid);
+        if(!net){
+          pushUndo();
+          net = { id: "vlan"+vid, label:`VLAN${vid}`, type:"vlan", kind:"physical", vlan_id: vid, x:200, y:200, width:400, height:120 };
+          App.config.networks.push(net);
+          renderAndSync();
+          println(`(VLAN ${vid} created)`,"cli-info");
+        }
+        state.mode = "config-vlan";
+        state.configContext = net.id;
+        return;
+      }
+      if(cmd === "hostname"){
+        if(!args[1]){ println("% Hostname required","cli-err"); return; }
+        pushUndo();
+        obj.label = args[1];
+        renderAndSync();
+        println(`(hostname set to ${args[1]})`,"cli-info");
+        return;
+      }
+      if(cmd === "ip" && args[1] === "route"){
+        // ip route DEST MASK NEXTHOP [metric]
+        const dest = args[2], mask = args[3], nh = args[4];
+        if(!dest || !mask || !nh){ println("% Usage: ip route DEST MASK NEXTHOP [metric]","cli-err"); return; }
+        // Convert mask to /N (simple cases)
+        const maskBits = (m)=>{ if(m.startsWith("/"))return parseInt(m.slice(1),10);
+          const oct=m.split(".").map(n=>parseInt(n,10));
+          let b=0; for(const o of oct){ b += (o.toString(2).match(/1/g)||[]).length; } return b; };
+        const cidr = dest + "/" + maskBits(mask);
+        pushUndo();
+        let rt = (App.config.routing_tables||[]).find(r=>r.device===obj.id);
+        if(!rt){ rt = { device:obj.id, routes:[] }; App.config.routing_tables.push(rt); }
+        rt.routes.push({ destination: cidr, next_hop: nh, interface: args[5]||"", metric: +args[6]||1, type:"static", status:"active" });
+        renderAndSync();
+        println(`(static route added: ${cidr} via ${nh})`,"cli-info");
+        return;
+      }
+      // Fall through to other cmds
+    }
+    // In (config-if)# mode
+    if(state.mode === "config-if"){
+      const iface = (obj.interfaces||[]).find(i=>i.id===state.configContext);
+      if(!iface){ state.mode = "config"; state.configContext = null; return; }
+      if(cmd === "shutdown"){ pushUndo(); iface.status = "down"; renderAndSync(); return; }
+      if(cmd === "no" && args[1] === "shutdown"){ pushUndo(); iface.status = "up"; renderAndSync(); return; }
+      if(cmd === "ip" && args[1] === "address"){
+        const ip = args[2], mask = args[3];
+        if(!ip){ println("% Usage: ip address X.X.X.X /N  (or X.X.X.X 255.255.255.0)","cli-err"); return; }
+        let val = ip;
+        if(mask){
+          const bits = mask.startsWith("/") ? parseInt(mask.slice(1),10)
+            : mask.split(".").reduce((b,o)=>b+((+o).toString(2).match(/1/g)||[]).length, 0);
+          val = ip + "/" + bits;
+        }
+        pushUndo();
+        iface.ip = val; renderAndSync();
+        println(`(ip address ${val} set on ${iface.id})`,"cli-info");
+        return;
+      }
+      if(cmd === "ipv6" && args[1] === "address"){
+        pushUndo();
+        iface.ipv6 = args[2] || ""; renderAndSync();
+        println(`(ipv6 address ${args[2]} set)`,"cli-info");
+        return;
+      }
+      if(cmd === "description"){
+        pushUndo();
+        iface.description = args.slice(1).join(" ");
+        renderAndSync();
+        return;
+      }
+      if(cmd === "speed"){
+        pushUndo();
+        iface.speed = parseInt(args[1],10) || 1000;
+        renderAndSync();
+        return;
+      }
+      if(cmd === "switchport" && args[1] === "access" && args[2] === "vlan"){
+        const vid = parseInt(args[3],10);
+        if(!isNaN(vid)){
+          const net = (App.config.networks||[]).find(n=>n.vlan_id===vid);
+          if(net){
+            pushUndo();
+            iface.network = net.id; renderAndSync();
+            println(`(${iface.id} assigned to VLAN ${vid})`,"cli-info");
+          } else println(`% VLAN ${vid} does not exist (create it first with 'vlan ${vid}')`,"cli-err");
+        }
+        return;
+      }
+      if(cmd === "mac-address"){
+        pushUndo();
+        iface.mac = args[1] || genUniqueMac();
+        renderAndSync();
+        return;
+      }
+    }
+    // In (config-vlan)# mode
+    if(state.mode === "config-vlan"){
+      const net = Cfg.byId("networks", state.configContext);
+      if(!net){ state.mode = "config"; state.configContext = null; return; }
+      if(cmd === "name"){
+        pushUndo();
+        net.label = args.slice(1).join(" ");
+        renderAndSync();
+        return;
+      }
+    }
+    // write memory / copy running-config startup-config — snapshot
+    if((cmd === "write" && (args[1]||"") === "memory") ||
+       (cmd === "copy" && args[1] === "running-config" && args[2] === "startup-config")){
+      pushUndo();
+      obj._config_snapshot = JSON.parse(JSON.stringify({
+        interfaces: obj.interfaces || [],
+        gateway: obj.gateway, gateway_v6: obj.gateway_v6,
+        bonding: obj.bonding, vpc: obj.vpc, label: obj.label
+      }));
+      obj._snapshot_time = new Date().toISOString();
+      renderAndSync();
+      println("Building configuration...","cli-info");
+      println("[OK]","cli-info");
+      return;
+    }
+    if(cmd === "reload" && state.mode === "priv"){
+      if(!obj._config_snapshot){
+        println("% No saved config to reload from. Use 'write memory' first.","cli-err");
+        return;
+      }
+      pushUndo();
+      Object.assign(obj, obj._config_snapshot);
+      renderAndSync();
+      println(`(configuration restored from snapshot ${obj._snapshot_time})`,"cli-info");
+      return;
+    }
+  }
+
   switch(cmd){
     case "help":
     case "?":
@@ -1358,6 +1591,173 @@ function cliExec(obj, kind, cmd, args, println){
             (e.remotePort||"-")
           );
         }
+      } else if(sub === "vlan"){
+        // show vlan [brief]
+        const vlans = {};
+        for(const net of (App.config.networks||[])){
+          if(net.vlan_id) vlans[net.vlan_id] = vlans[net.vlan_id] || { name: net.label||net.id, ports:[] };
+        }
+        // Collect ports per VLAN from switch's interfaces
+        if(kind === "device"){
+          for(const i of (obj.interfaces||[])){
+            if(i.network){
+              const net = Cfg.byId("networks", i.network);
+              if(net && net.vlan_id){
+                vlans[net.vlan_id].ports.push(i.id);
+              }
+            }
+          }
+        }
+        // Always include VLAN 1
+        if(!vlans[1]) vlans[1] = { name:"default", ports:[] };
+        println("VLAN Name                             Status    Ports");
+        println("---- -------------------------------- --------- ------------------------------");
+        const sorted = Object.keys(vlans).map(Number).sort((a,b)=>a-b);
+        for(const v of sorted){
+          const d = vlans[v];
+          println(
+            String(v).padEnd(5) +
+            (d.name||"").padEnd(33) +
+            "active    " +
+            (d.ports.length ? d.ports.join(", ") : "")
+          );
+        }
+      } else if(sub === "spanning-tree" || sub === "stp"){
+        if(kind !== "device"){ println("(spanning-tree only on devices/switches)","cli-err"); return; }
+        const stpData = computeStpForSwitch(obj);
+        for(const v of stpData.vlans){
+          println(`VLAN${String(v.vlan).padStart(4,'0')}`);
+          println(`  Spanning tree enabled protocol rstp`);
+          println(`  Root ID    Priority    ${v.rootPriority}`);
+          println(`             Address     ${v.rootMac}`);
+          if(v.isRoot) println(`             This bridge is the root`);
+          else        println(`             Cost        ${v.rootCost}`);
+          println(`  Bridge ID  Priority    ${v.bridgePriority}`);
+          println(`             Address     ${v.bridgeMac}`);
+          println("");
+          println("Interface           Role Sts Cost      Prio.Nbr  Type");
+          println("------------------- ---- --- --------- --------- --------");
+          for(const p of v.ports){
+            println(
+              (p.iface||"").padEnd(20) +
+              (p.role||"").padEnd(5) +
+              (p.state||"").padEnd(4) +
+              (String(p.cost||"4")).padEnd(10) +
+              (p.prio||"128.1").padEnd(10) +
+              "P2p"
+            );
+          }
+          println("");
+        }
+      } else if(sub === "etherchannel"){
+        // show etherchannel summary
+        println("Flags:  D - down        P - bundled in port-channel");
+        println("        I - stand-alone s - suspended");
+        println("        H - Hot-standby (LACP only)");
+        println("        R - Layer3      S - Layer2");
+        println("        U - in use      f - failed to allocate aggregator");
+        println("");
+        println("Group  Port-channel  Protocol    Ports");
+        println("------+-------------+-----------+----------------------------------------------");
+        let group = 1;
+        // Show bonding on this device/server
+        if(obj.bonding && obj.bonding.enabled){
+          const flags = (obj.bonding.members||[]).map(mid=>{
+            const m = (obj.interfaces||[]).find(i=>i.id===mid);
+            return `${mid}(${m && m.status==="up"?"P":"D"})`;
+          }).join(" ");
+          println(
+            String(group).padEnd(7) +
+            (obj.bonding.bond_name||"Po1").padEnd(14) +
+            (obj.bonding.mode==="802.3ad"?"LACP       ":"Manual     ") +
+            flags
+          );
+          group++;
+        }
+        // Show vPC member port-channels (connections with vpc_id involving this device)
+        const vpcGroups = {};
+        for(const c of (App.config.connections||[])){
+          if(!c.vpc_id) continue;
+          let myIf = null;
+          if(c.from.device === id) myIf = c.from.interface;
+          else if(c.to.device === id) myIf = c.to.interface;
+          if(myIf){
+            vpcGroups[c.vpc_id] = vpcGroups[c.vpc_id] || [];
+            vpcGroups[c.vpc_id].push(myIf);
+          }
+        }
+        for(const vid in vpcGroups){
+          println(
+            String(group).padEnd(7) +
+            `Po${vid}`.padEnd(14) +
+            "LACP-vPC   " +
+            vpcGroups[vid].map(p=>`${p}(P)`).join(" ")
+          );
+          group++;
+        }
+        if(group === 1) println("(no port-channels configured)");
+      } else if(sub === "ip" && (args[2]||"").toLowerCase() === "ospf" && (args[3]||"").toLowerCase() === "neighbor"){
+        if(kind !== "device"){ println("(OSPF only on devices)","cli-err"); return; }
+        // Simulate OSPF neighbors: any directly-connected device on same subnet
+        println("Neighbor ID     Pri   State           Dead Time   Address         Interface");
+        const seen = new Set();
+        for(const c of (App.config.connections||[])){
+          if(c.status==="down") continue;
+          let me, peer;
+          if(c.from && c.from.device===id){ me=c.from; peer=c.to; }
+          else if(c.to && c.to.device===id){ me=c.to; peer=c.from; }
+          else continue;
+          if(!peer || !peer.device) continue;  // OSPF only between routers/switches
+          const peerObj = Cfg.byId("devices", peer.device);
+          if(!peerObj || (peerObj.status && peerObj.status !== "running")) continue;
+          const peerIf = (peerObj.interfaces||[]).find(i=>i.id===peer.interface);
+          if(!peerIf || peerIf.status !== "up") continue;
+          const peerIp = peerIf.ip ? ipOnly(peerIf.ip) : "";
+          if(!peerIp) continue;
+          if(seen.has(peer.device)) continue;
+          seen.add(peer.device);
+          println(
+            (peer.device).padEnd(16) +
+            "1     " +
+            "FULL/DR         " +
+            "00:00:39    " +
+            peerIp.padEnd(16) +
+            (me.interface||"")
+          );
+        }
+        if(!seen.size) println("(no OSPF neighbors)");
+      } else if(sub === "ip" && (args[2]||"").toLowerCase() === "bgp" && (args[3]||"").toLowerCase() === "summary"){
+        if(kind !== "device"){ println("(BGP only on devices)","cli-err"); return; }
+        const ourIp = elementPrimaryIp("device", id) || "0.0.0.0";
+        println(`BGP router identifier ${ourIp}, local AS number ${obj.bgp_asn||65000}`);
+        println("BGP table version is 1");
+        println("");
+        println("Neighbor        V    AS MsgRcvd MsgSent  TblVer  InQ OutQ Up/Down  State/PfxRcd");
+        // Simulate BGP peers: directly connected devices on different subnets (or as configured)
+        const seen = new Set();
+        for(const c of (App.config.connections||[])){
+          if(c.status==="down") continue;
+          let me, peer;
+          if(c.from && c.from.device===id){ me=c.from; peer=c.to; }
+          else if(c.to && c.to.device===id){ me=c.to; peer=c.from; }
+          else continue;
+          if(!peer || !peer.device) continue;
+          const peerObj = Cfg.byId("devices", peer.device);
+          if(!peerObj || (peerObj.status && peerObj.status !== "running")) continue;
+          if(peerObj.type !== "router" && peerObj.type !== "firewall" && peerObj.type !== "l3switch") continue;
+          const peerIf = (peerObj.interfaces||[]).find(i=>i.id===peer.interface);
+          if(!peerIf || peerIf.status !== "up" || !peerIf.ip) continue;
+          if(seen.has(peer.device)) continue;
+          seen.add(peer.device);
+          const pAsn = peerObj.bgp_asn || 65001;
+          println(
+            ipOnly(peerIf.ip).padEnd(16) +
+            "4 ".padEnd(3) +
+            String(pAsn).padStart(5) + " " +
+            "    12      11       1    0    0 00:08:42        2"
+          );
+        }
+        if(!seen.size) println("(no BGP peers)");
       } else if(sub === "ip" && (args[2]||"").toLowerCase() === "route"){
         if(kind !== "device"){ println("(routing only available on devices)","cli-err"); return; }
         const rt = (App.config.routing_tables||[]).find(r=>r.device===id);
@@ -1592,7 +1992,7 @@ function promptTraceroute(srcKind, srcId){
 }
 
 /* ====== GNS3-LIKE: PACKET CAPTURE ====== */
-const PCAP = { sessions: {} };
+var PCAP = { sessions: {} };
 function openPacketCapture(connId){
   const c = Cfg.byId("connections", connId); if(!c) return;
   // Session for this connection
@@ -2015,7 +2415,7 @@ function openCommSimulator(){
 }
 
 /* ====== TOPOLOGY TEMPLATES (spine-leaf, etc) ====== */
-const TOPOLOGY_TEMPLATES = [
+var TOPOLOGY_TEMPLATES = [
   { id:"spine-leaf", icon:"🌳", title:"スパイン・リーフ",
     desc:"データセンタ向け2層トポロジー。ボーダー(任意)→スパイン→リーフ→ホスト の構成。",
     builder: buildSpineLeaf },

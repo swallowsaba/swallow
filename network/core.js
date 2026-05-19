@@ -2,20 +2,20 @@
 "use strict";
 
 /* ====== UTILITIES ====== */
-const $ = (s,r)=>(r||document).querySelector(s);
-const $$ = (s,r)=>Array.from((r||document).querySelectorAll(s));
-const NS = "http://www.w3.org/2000/svg";
-const ce = (tag,attrs,parent)=>{const el=document.createElementNS(NS,tag);if(attrs)for(const k in attrs){if(k==="text")el.textContent=attrs[k];else el.setAttribute(k,attrs[k]);}if(parent)parent.appendChild(el);return el;};
-const ch = (tag,attrs,parent)=>{const el=document.createElement(tag);if(attrs)for(const k in attrs){if(k==="text")el.textContent=attrs[k];else if(k==="html")el.innerHTML=attrs[k];else if(k==="on")for(const e in attrs[k])el.addEventListener(e,attrs[k][e]);else if(k==="style")Object.assign(el.style,attrs[k]);else el.setAttribute(k,attrs[k]);}if(parent)parent.appendChild(el);return el;};
-const clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
-const uid = (p)=>p+"-"+Math.random().toString(36).slice(2,8);
-const pad2 = n=>n<10?"0"+n:""+n;
-const pad3 = n=>n<10?"00"+n:n<100?"0"+n:""+n;
-const nowStamp = ()=>{const d=new Date();return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}.${pad3(d.getMilliseconds())}`;};
-const escapeHtml = s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+var $ = (s,r)=>(r||document).querySelector(s);
+var $$ = (s,r)=>Array.from((r||document).querySelectorAll(s));
+var NS = "http://www.w3.org/2000/svg";
+var ce = (tag,attrs,parent)=>{const el=document.createElementNS(NS,tag);if(attrs)for(const k in attrs){if(k==="text")el.textContent=attrs[k];else el.setAttribute(k,attrs[k]);}if(parent)parent.appendChild(el);return el;};
+var ch = (tag,attrs,parent)=>{const el=document.createElement(tag);if(attrs)for(const k in attrs){if(k==="text")el.textContent=attrs[k];else if(k==="html")el.innerHTML=attrs[k];else if(k==="on")for(const e in attrs[k])el.addEventListener(e,attrs[k][e]);else if(k==="style")Object.assign(el.style,attrs[k]);else el.setAttribute(k,attrs[k]);}if(parent)parent.appendChild(el);return el;};
+var clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+var uid = (p)=>p+"-"+Math.random().toString(36).slice(2,8);
+var pad2 = n=>n<10?"0"+n:""+n;
+var pad3 = n=>n<10?"00"+n:n<100?"0"+n:""+n;
+var nowStamp = ()=>{const d=new Date();return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}.${pad3(d.getMilliseconds())}`;};
+var escapeHtml = s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 
 /* ====== TOAST ====== */
-let _toastTimer = null;
+var _toastTimer = null;
 function toast(msg, kind){
   if(App && App.suppressToast) return;  // suppression flag (e.g. during sim)
   const t = $("#toast"); if(!t) return;
@@ -34,7 +34,7 @@ function toast(msg, kind){
 }
 
 /* ====== YAML PARSER/SERIALIZER ====== */
-const YAML = (() => {
+var YAML = (() => {
   function parse(text){
     const raw = text.split(/\r?\n/);
     const lines = [];
@@ -293,7 +293,7 @@ const YAML = (() => {
 })();
 
 /* ====== DEFAULT YAML ====== */
-const DEFAULT_YAML = `networks:
+var DEFAULT_YAML = `networks:
   - id: external
     label: External Network
     type: subnet
@@ -929,7 +929,7 @@ scenarios:
 `;
 
 /* ====== APP STATE ====== */
-const App = {
+var App = {
   config: {},
   selected: null,
   view: { x:0, y:0, scale:1 },
@@ -943,11 +943,11 @@ const App = {
   suppressToast: false,
 };
 
-const Cfg = {
+var Cfg = {
   c(){ return App.config; },
   ensure(){
     const c = App.config;
-    for(const k of ["networks","devices","servers","services","connections","routing_tables","vpn_tunnels","policies","scenarios"])
+    for(const k of ["networks","devices","servers","services","connections","routing_tables","vpn_tunnels","policies","scenarios","annotations"])
       if(!Array.isArray(c[k])) c[k] = [];
   },
   byId(kind,id){ return (this.c()[kind]||[]).find(x=>x.id===id); },
@@ -965,11 +965,11 @@ const Cfg = {
     return null;
   }
 };
-const kindToCol = (k)=>({network:"networks",device:"devices",server:"servers",service:"services",connection:"connections"})[k];
-const kindLabel = (k)=>({device:"デバイス",server:"サーバ",service:"サービス",connection:"接続",network:"ネットワーク"})[k]||k;
+var kindToCol = (k)=>({network:"networks",device:"devices",server:"servers",service:"services",connection:"connections",annotation:"annotations"})[k];
+var kindLabel = (k)=>({device:"デバイス",server:"サーバ",service:"サービス",connection:"接続",network:"ネットワーク"})[k]||k;
 
 /* ====== LOG ====== */
-const Log = {
+var Log = {
   add(level, msg){
     const entry = { ts: nowStamp(), level, msg };
     App.logs.push(entry);

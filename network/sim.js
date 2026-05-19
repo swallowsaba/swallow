@@ -139,6 +139,117 @@ function findConnectionForIface(elId, ifaceId, visited){
   return usable[0] || null;
 }
 
+// === CML2/GNS3 parity: simulate Spanning-Tree per-VLAN STP state for a switch ===
+// Determines root bridge by lowest MAC across switches in each VLAN,
+// and assigns each port a role (Root / Desg / Altn) and state (FWD / BLK)
+function computeStpForSwitch(switchDevice){
+  // Collect all VLANs present on this switch (from interface.network → network.vlan_id)
+  const vlanSet = new Set();
+  vlanSet.add(1);  // default VLAN
+  for(const i of (switchDevice.interfaces||[])){
+    if(i.network){
+      const net = Cfg.byId("networks", i.network);
+      if(net && net.vlan_id) vlanSet.add(net.vlan_id);
+    }
+  }
+  const vlans = [];
+  for(const vid of [...vlanSet].sort((a,b)=>a-b)){
+    // Get all switches participating in this VLAN
+    const participantIds = new Set();
+    for(const d of (App.config.devices||[])){
+      if(d.type !== "l2switch" && d.type !== "l3switch") continue;
+      for(const i of (d.interfaces||[])){
+        if(i.network){
+          const net = Cfg.byId("networks", i.network);
+          if(net && net.vlan_id === vid){ participantIds.add(d.id); break; }
+        }
+      }
+    }
+    if(vid === 1){
+      // All switches participate in VLAN 1 by default
+      for(const d of (App.config.devices||[])){
+        if(d.type === "l2switch" || d.type === "l3switch") participantIds.add(d.id);
+      }
+    }
+    // Get bridge MAC for each (= MAC of first up interface)
+    function bridgeMac(d){
+      for(const i of (d.interfaces||[])){
+        if(i.mac && i.status === "up") return normalizeMac(i.mac);
+      }
+      return "00:00:00:00:00:00";
+    }
+    const participants = [...participantIds].map(pid=>{
+      const d = Cfg.byId("devices", pid);
+      return d ? { id:pid, dev:d, priority:(d.stp_priority||32768)+vid, mac:bridgeMac(d) } : null;
+    }).filter(Boolean);
+    // Find root: lowest (priority, then mac)
+    participants.sort((a,b)=>(a.priority-b.priority) || a.mac.localeCompare(b.mac));
+    const root = participants[0];
+    if(!root){ vlans.push({ vlan:vid, ports:[], isRoot:false, rootPriority:0, rootMac:"-", rootCost:0, bridgePriority:32768+vid, bridgeMac:bridgeMac(switchDevice) }); continue; }
+    const isRoot = root.id === switchDevice.id;
+    // For each interface on switchDevice that participates in this VLAN, determine STP role
+    const ports = [];
+    for(const i of (switchDevice.interfaces||[])){
+      if(!i.network && vid !== 1) continue;
+      const net = i.network ? Cfg.byId("networks", i.network) : null;
+      if(vid !== 1 && (!net || net.vlan_id !== vid)) continue;
+      if(vid === 1 && net && net.vlan_id && net.vlan_id !== 1) continue;
+      // Find connection on this interface
+      const conn = (App.config.connections||[]).find(c=>{
+        if(c.status === "down") return false;
+        return (c.from.device===switchDevice.id && c.from.interface===i.id) ||
+               (c.to.device===switchDevice.id && c.to.interface===i.id);
+      });
+      let role, state;
+      if(i.status !== "up"){
+        role = "Disa"; state = "DIS";  // disabled
+      } else if(!conn){
+        role = "Desg"; state = "FWD";  // no neighbor → designated forwarding
+      } else if(isRoot){
+        role = "Desg"; state = "FWD";  // root bridge → all ports designated
+      } else {
+        // Determine if this is the root port (closest to root) or alternate
+        // Simple heuristic: the port towards lowest-MAC neighbor is root
+        // For more accurate STP we'd do BFS, but this approximation works
+        const peerId = (conn.from.device===switchDevice.id ? conn.to.device : conn.from.device);
+        if(peerId === root.id){
+          role = "Root"; state = "FWD";
+        } else {
+          // Check if this neighbor is also a switch participating in same VLAN
+          const peerSw = Cfg.byId("devices", peerId);
+          if(peerSw && (peerSw.type === "l2switch" || peerSw.type === "l3switch")){
+            // Block alternate paths to break loops — simplification: block if not root port
+            // and there's already a root port designated for this switch
+            const hasRootPort = ports.some(p=>p.role==="Root");
+            if(hasRootPort){ role = "Altn"; state = "BLK"; }
+            else { role = "Root"; state = "FWD"; }
+          } else {
+            // host/router neighbor → designated
+            role = "Desg"; state = "FWD";
+          }
+        }
+      }
+      ports.push({
+        iface: i.id,
+        role, state,
+        cost: i.speed >= 10000 ? 2 : (i.speed >= 1000 ? 4 : 19),
+        prio: "128." + (ports.length+1)
+      });
+    }
+    vlans.push({
+      vlan: vid,
+      isRoot,
+      rootPriority: root.priority,
+      rootMac: root.mac,
+      rootCost: isRoot ? 0 : 4,
+      bridgePriority: (switchDevice.stp_priority||32768) + vid,
+      bridgeMac: bridgeMac(switchDevice),
+      ports
+    });
+  }
+  return { vlans };
+}
+
 // === CML2/GNS3 parity: build MAC address-table for a switch by inspecting connected peers ===
 function buildMacTable(switchDevice){
   const entries = [];
@@ -730,7 +841,7 @@ function addNewNetwork(){
 }
 
 // Device type picker — floating menu
-const DEVICE_TYPES = [
+var DEVICE_TYPES = [
   { type:"router",       label:"ルータ",      icon:"🔵", desc:"L3ルーティング" },
   { type:"l3switch",     label:"L3スイッチ",  icon:"🟣", desc:"L3スイッチング" },
   { type:"l2switch",     label:"L2スイッチ",  icon:"🟦", desc:"L2スイッチング" },
@@ -795,7 +906,7 @@ function addNewServer(){
 }
 
 // Service type picker — floating menu with server selector
-const SERVICE_TYPES = [
+var SERVICE_TYPES = [
   { type:"web_server",    label:"Web Server",     icon:"🌐", port:80 },
   { type:"reverse_proxy", label:"Reverse Proxy",  icon:"🔁", port:443 },
   { type:"forward_proxy", label:"Forward Proxy",  icon:"🔀", port:3128 },
@@ -870,6 +981,25 @@ function addNewServiceOnServer(svcType, serverId){
   Log.info(`サービス追加: ${id} on ${serverId}`);
 }
 function addNewService(){ showServiceTypeMenu($("#btn-add-service")); }
+
+function addNewAnnotation(){
+  pushUndo(); Cfg.ensure();
+  if(!Array.isArray(App.config.annotations)) App.config.annotations = [];
+  const id = uid("ann");
+  App.config.annotations.push({
+    id,
+    text: "ここに説明を入力 (ダブルクリックで編集)",
+    x: App.view.x + 100,
+    y: App.view.y + 80,
+    width: 220,
+    height: 50,
+    color: "rgba(255,235,100,0.85)",
+    fontSize: 12
+  });
+  selectElement("annotation", id);
+  renderAndSync();
+  toast("メモを追加: ダブルクリックで文言を編集", "ok");
+}
 
 function startConnectMode(){
   App.connectMode = { step:1, from:null };
@@ -998,6 +1128,25 @@ function attachEventHandlers(){
     btnAnim.addEventListener("click", toggleAnimations);
     updateAnimToggleUI();
   }
+  // STP visualization toggle
+  if(typeof App.stpVisible === "undefined"){
+    App.stpVisible = (typeof localStorage !== "undefined" && localStorage.getItem("netsim-stp-visible") === "on");
+  }
+  const btnStp = $("#btn-stp-toggle");
+  if(btnStp){
+    btnStp.addEventListener("click", function(){
+      App.stpVisible = !App.stpVisible;
+      if(typeof localStorage !== "undefined") localStorage.setItem("netsim-stp-visible", App.stpVisible ? "on" : "off");
+      btnStp.classList.toggle("primary", App.stpVisible);
+      btnStp.querySelector(".lbl").textContent = App.stpVisible ? "STP非表示" : "STP表示";
+      render();
+      toast("STP状態 "+(App.stpVisible?"表示":"非表示"), "ok");
+    });
+    btnStp.classList.toggle("primary", App.stpVisible);
+    if(App.stpVisible) btnStp.querySelector(".lbl").textContent = "STP非表示";
+  }
+  const btnAnn = $("#btn-add-annotation");
+  if(btnAnn) btnAnn.addEventListener("click", addNewAnnotation);
   // Apply persisted animation state to body class
   if(!App.animationsEnabled) document.body.classList.add("no-animations");
 

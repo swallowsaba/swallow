@@ -4,6 +4,8 @@ function render(){
   $("#layer-networks").innerHTML = "";
   $("#layer-connections").innerHTML = "";
   $("#layer-elements").innerHTML = "";
+  const annLayer = $("#layer-annotations");
+  if(annLayer) annLayer.innerHTML = "";
   // overlays/packets not cleared here
   ensureArrowMarkers();
   Cfg.ensure();
@@ -12,7 +14,150 @@ function render(){
   renderVpcOverlay();
   for(const d of App.config.devices) renderDevice(d);
   for(const s of App.config.servers) renderServer(s);
+  for(const a of (App.config.annotations||[])) renderAnnotation(a);
+  if(App.stpVisible) renderStpOverlay();
   applyViewBox();
+}
+
+/* ====== STP VISUALIZATION OVERLAY ======
+ * Shows root-bridge crowns and blocked-port indicators on the canvas.
+ * Toggled by App.stpVisible (default off). Wired to the "STP表示" toolbar button.
+ */
+function renderStpOverlay(){
+  const layer = $("#layer-connections");
+  if(!layer) return;
+  // Determine all switches
+  const switches = (App.config.devices||[]).filter(d => d.type === "l2switch" || d.type === "l3switch");
+  if(!switches.length) return;
+  // Identify root bridges from any VLAN: a switch is "root for some VLAN" if STP says so
+  const rootBridges = {};
+  const blockedPorts = {};  // { switchId: { ifaceId: {vlan:..., reason:...} } }
+  for(const sw of switches){
+    try {
+      const stpData = (typeof computeStpForSwitch === "function") ? computeStpForSwitch(sw) : null;
+      if(!stpData) continue;
+      for(const v of stpData.vlans){
+        if(v.isRoot) rootBridges[sw.id] = rootBridges[sw.id] || [];
+        if(v.isRoot && !rootBridges[sw.id].includes(v.vlan)) rootBridges[sw.id].push(v.vlan);
+        // Find blocked / alternate / discarding ports
+        for(const p of (v.ports||[])){
+          const role = (p.role||"").toLowerCase();
+          if(role.startsWith("altn") || role.startsWith("bloc") || role.startsWith("disc") ||
+             (p.state||"").toUpperCase() === "BLK" || (p.state||"").toUpperCase() === "BLOCK"){
+            blockedPorts[sw.id] = blockedPorts[sw.id] || {};
+            blockedPorts[sw.id][p.iface] = blockedPorts[sw.id][p.iface] || { vlans:[] };
+            if(!blockedPorts[sw.id][p.iface].vlans.includes(v.vlan)){
+              blockedPorts[sw.id][p.iface].vlans.push(v.vlan);
+            }
+          }
+        }
+      }
+    } catch(e){ /* keep going */ }
+  }
+  // 1. Root bridge crowns
+  for(const swId in rootBridges){
+    const sw = Cfg.byId("devices", swId);
+    if(!sw) continue;
+    const w = sw.width || 130, h = sw.height || 70;
+    const cx = (sw.x||0) + w/2;
+    const cy = (sw.y||0) - 12;
+    const g = ce("g", { class:"stp-crown", "pointer-events":"none" }, layer);
+    // Gold rounded background
+    const lblTxt = "👑 ROOT " + (rootBridges[swId].length > 1 ? `(${rootBridges[swId].length} VLAN)` : `V${rootBridges[swId][0]}`);
+    const lblW = lblTxt.length * 6.5 + 12;
+    ce("rect", {
+      x: cx - lblW/2, y: cy - 8,
+      width: lblW, height: 16, rx: 8, ry: 8,
+      fill: "#f59e0b", stroke: "#fff", "stroke-width": 1.5,
+      style:"filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4))"
+    }, g);
+    ce("text", {
+      x: cx, y: cy,
+      "text-anchor":"middle", "dominant-baseline":"middle",
+      "font-size": 10, "font-family":"var(--mono)", "font-weight":"700",
+      fill: "#fff", text: lblTxt
+    }, g);
+  }
+  // 2. Blocked port indicators — small yellow ⊘ near each blocked iface port
+  for(const swId in blockedPorts){
+    const sw = Cfg.byId("devices", swId);
+    if(!sw) continue;
+    const w = sw.width || 130, h = sw.height || 70;
+    for(const ifaceId in blockedPorts[swId]){
+      const iface = (sw.interfaces||[]).find(i=>i.id===ifaceId);
+      if(!iface) continue;
+      // Find port position similar to renderPorts logic — fallback: estimate
+      let px = (sw.x||0) + w - 6, py = (sw.y||0) + h/2;
+      try {
+        const positions = (typeof computePortPositions === "function") ? computePortPositions(sw, "device") : null;
+        if(positions && positions[ifaceId]){
+          px = (sw.x||0) + positions[ifaceId].x;
+          py = (sw.y||0) + positions[ifaceId].y;
+        }
+      } catch(e){}
+      const g = ce("g", { class:"stp-blocked",
+        transform:`translate(${px},${py})`, "pointer-events":"none" }, layer);
+      // ⊘ icon: yellow circle with a slash
+      ce("circle", { cx:0, cy:-12, r:6, fill:"#f59e0b", stroke:"#fff", "stroke-width":1.5 }, g);
+      ce("line", { x1:-4, y1:-16, x2:4, y2:-8,
+        stroke:"#fff", "stroke-width":2, "stroke-linecap":"round" }, g);
+      // Tooltip-attachable small text
+      const lbl = "BLK";
+      ce("text", { x: 11, y: -10, text: lbl, "font-size":8, "font-family":"var(--mono)",
+        "font-weight":"700", fill:"#f59e0b" }, g);
+    }
+  }
+}
+
+function renderAnnotation(a){
+  const layer = $("#layer-annotations") || $("#layer-elements");
+  const g = ce("g", {
+    "class":"element annotation"+(App.selected&&App.selected.kind==="annotation"&&App.selected.id===a.id?" selected":""),
+    "data-kind":"annotation", "data-id":a.id,
+    "transform":`translate(${a.x||0},${a.y||0})`
+  }, layer);
+  const w = a.width || 180, h = a.height || 40;
+  const color = a.color || "rgba(255,235,100,0.85)";
+  // Sticky-note rectangle
+  ce("rect", {
+    "class":"annotation-bg",
+    x:0, y:0, width:w, height:h, rx:4, ry:4,
+    fill: color, stroke:"rgba(0,0,0,0.25)", "stroke-width":1
+  }, g);
+  // "Sticky" pin in top-right corner
+  ce("circle", { cx: w-8, cy: 8, r: 3, fill:"rgba(0,0,0,0.4)", "pointer-events":"none" }, g);
+  // Multi-line text rendering
+  const fs = a.fontSize || 12;
+  const lines = String(a.text || "").split(/\r?\n/);
+  let yy = fs + 4;
+  for(const line of lines){
+    ce("text", {
+      x: 8, y: yy, text: line,
+      "font-size": fs, "font-family":"var(--mono)",
+      fill:"#333", "pointer-events":"none"
+    }, g);
+    yy += fs + 2;
+  }
+  // Resize handle (bottom-right)
+  if(App.selected && App.selected.kind === "annotation" && App.selected.id === a.id){
+    ce("rect", {
+      "class":"resize-handle ann-resize handle",
+      x: w-8, y: h-8, width:8, height:8,
+      fill:"var(--accent)", stroke:"#fff","stroke-width":1,"cursor":"nwse-resize"
+    }, g);
+  }
+  // Use the generic element handler for drag + resize + context menu
+  attachElementHandlers(g, "annotation", a.id);
+  // Also: double-click → focus textarea
+  g.addEventListener("dblclick", (e)=>{
+    e.stopPropagation();
+    selectElement("annotation", a.id);
+    openPropertyPanel();
+    setTimeout(()=>{
+      const ta = document.querySelector("#panel-property textarea");
+      if(ta){ ta.focus(); ta.select(); }
+    }, 50);
+  });
 }
 
 function applyViewBox(){
@@ -1071,7 +1216,7 @@ function resolveEndpoint(ep){
 }
 
 /* ====== INTERACTION ====== */
-let dragState = null;
+var dragState = null;
 
 function attachElementHandlers(g, kind, id){
   g.addEventListener("mousedown", (e)=>onElMouseDown(e, kind, id));
