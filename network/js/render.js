@@ -471,128 +471,96 @@ function formatPortTooltip(iface){
   return s;
 }
 
-// Draw visible bonding bracket connecting bonded ports — works for ports on any side
-// Compute the bond0 box rectangle (absolute coords). Position is stored in obj.bonding.box {dx,dy}.
-function bondBoxRect(obj, kind){
-  if(!obj || !obj.bonding || !obj.bonding.enabled) return null;
-  const w = obj.width || (kind==="server"?130:120);
-  const h = obj.height || (kind==="server"?70:70);
-  const bw = 72, bh = 28;
-  // Default: centered horizontally, touching the server's bottom border (no gap)
-  const box = obj.bonding.box || { dx: w/2 - bw/2, dy: h - 2 };
-  if(!obj.bonding.box) obj.bonding.box = box;
-  return {
-    x: (obj.x||0) + box.dx,
-    y: (obj.y||0) + box.dy,
-    w: bw, h: bh,
-    cx: (obj.x||0) + box.dx + bw/2,
-    cy: (obj.y||0) + box.dy + bh/2
-  };
-}
-
-// Anchor point on the bond0 box where connection lines attach
-function bondBoxAnchor(obj, kind){
-  const r = bondBoxRect(obj, kind);
-  if(!r) return null;
-  return { x: r.cx, y: r.cy, w: r.w, h: r.h, rect: r };
-}
-
 function renderBondOverlay(g, obj, kind){
   if(!obj.bonding || !obj.bonding.enabled) return;
   const members = obj.bonding.members || [];
   if(members.length < 1) return;
   const w = obj.width || (kind==="server"?130:120);
   const h = obj.height || (kind==="server"?70:70);
-  const rect = bondBoxRect(obj, kind);
-  if(!rect) return;
 
-  // Bond effective status for coloring
-  const effStatus = (typeof bondEffectiveStatus === "function") ? bondEffectiveStatus(obj) : "up";
-  const active = (typeof bondActiveMember === "function") ? bondActiveMember(obj) : null;
-  let boxColor = "var(--cyan,#06b6d4)";
-  let boxBg = "rgba(6,182,212,0.18)";
-  if(effStatus === "down"){ boxColor = "var(--red)"; boxBg = "rgba(248,81,73,0.18)"; }
-  else if(effStatus === "degraded"){ boxColor = "var(--orange)"; boxBg = "rgba(245,158,11,0.18)"; }
+  // Resolve member physical port positions (cables attach to these real ports)
+  const positions = computePortPositions(obj, kind);
+  const memberPorts = [];
+  for(const mid of members){
+    const idx = (obj.interfaces||[]).findIndex(i=>i.id===mid);
+    if(idx>=0 && positions[idx]){
+      const m = obj.interfaces[idx];
+      memberPorts.push({ id:mid, pos:positions[idx], up:(m.status||"up")==="up" });
+    }
+  }
+  if(!memberPorts.length) return;
 
-  // The bond0 box is positioned adjacent to the server (no connecting stem line).
-  const relX = rect.x - (obj.x||0);
-  const relY = rect.y - (obj.y||0);
-  const boxG = ce("g", { "class":"bond-box", "data-bond-owner":obj.id, "data-bond-kind":kind }, g);
-  ce("rect", {
-    "class":"bond-box-rect",
-    x: relX, y: relY, width: rect.w, height: rect.h, rx:6, ry:6,
-    fill: boxBg, stroke: boxColor, "stroke-width": 2,
-    style:"cursor:move"
-  }, boxG);
-  // Bond name + mode
-  const modeShort = (obj.bonding.mode||"active-backup").replace("active-backup","A/B").replace("802.3ad","LACP").replace("balance-","bal-");
-  ce("text", {
-    x: relX + rect.w/2, y: relY + 9,
-    "text-anchor":"middle", "dominant-baseline":"middle",
-    "font-size":10, "font-family":"var(--mono)", "font-weight":"800",
-    fill: boxColor, text: (obj.bonding.bond_name||"bond0")
-  }, boxG);
-  ce("text", {
-    x: relX + rect.w/2, y: relY + 20,
-    "text-anchor":"middle", "dominant-baseline":"middle",
-    "font-size":7, "font-family":"var(--mono)",
-    fill: boxColor, text: "["+modeShort+"]"+(effStatus==="degraded"?" ⚠":effStatus==="down"?" ✗":"")
-  }, boxG);
+  // Bond status
+  const effStatus = (typeof bondEffectiveStatus==="function") ? bondEffectiveStatus(obj) : "up";
+  const active = (typeof bondActiveMember==="function") ? bondActiveMember(obj) : null;
+  let color = "var(--cyan,#06b6d4)";
+  if(effStatus==="down") color = "var(--red)";
+  else if(effStatus==="degraded") color = "var(--orange)";
 
-  // 3) Member status pips inside/below the box — show each member up/down + active
-  const pipY = relY + rect.h + 6;
-  const pipGap = 16;
-  const startX = relX + rect.w/2 - ((members.length-1)*pipGap)/2;
-  for(let mi=0; mi<members.length; mi++){
-    const mid = members[mi];
-    const m = (obj.interfaces||[]).find(i=>i.id===mid);
-    const up = m && m.status === "up";
-    const isActive = (mid === active);
-    const px = startX + mi*pipGap;
-    // pip circle
+  // 1) Highlight each member port: active=green, standby=grey, down=red
+  for(const mp of memberPorts){
+    const p = mp.pos;
+    const r = Math.max(8, ((p.w||10)+(p.h||10))/2 * 0.8);
+    let ring = mp.up ? (mp.id===active ? "var(--green)" : "var(--text-mute)") : "var(--red)";
     ce("circle", {
-      cx: px, cy: pipY, r: isActive ? 5 : 4,
-      fill: up ? (isActive ? "var(--green)" : "var(--text-mute)") : "var(--red)",
-      stroke: isActive ? "#fff" : "none", "stroke-width": isActive ? 1.5 : 0,
-      "class": isActive && effStatus==="degraded" ? "bond-pip-active" : ""
-    }, boxG);
-    // member name below pip
-    ce("text", {
-      x: px, y: pipY + 11,
-      "text-anchor":"middle", "font-size":6, "font-family":"var(--mono)",
-      fill: up ? (isActive?"var(--green)":"var(--text-mute)") : "var(--red)",
-      text: mid
-    }, boxG);
-    // ACTIVE marker
-    if(isActive){
-      ce("text", { x: px, y: pipY - 8, "text-anchor":"middle",
-        "font-size":6, "font-weight":"800", fill:"var(--green)", text:"▲" }, boxG);
+      cx:p.cx, cy:p.cy, r:r, fill:"none",
+      stroke:ring, "stroke-width":2,
+      "stroke-dasharray": mp.up ? "" : "2 1.5",
+      "pointer-events":"none",
+      "class": (mp.id===active && effStatus==="degraded") ? "bond-pip-active" : ""
+    }, g);
+    // Active marker (small ▲)
+    if(mp.id===active && mp.up){
+      ce("text", { x:p.cx, y:p.cy - r - 3, "text-anchor":"middle",
+        "font-size":7, "font-weight":"800", fill:"var(--green)",
+        "pointer-events":"none", text:"ACTIVE" }, g);
     }
   }
 
-  // Drag handler on the box
-  boxG.addEventListener("mousedown", (e)=>{
-    if(e.button !== 0) return;
-    if(App.connectMode) return;
-    e.stopPropagation();
-    const pt = svgPoint(e);
-    dragState = {
-      mode: "bondbox",
-      obj, kind,
-      startX: pt.x, startY: pt.y,
-      origBox: { dx: obj.bonding.box.dx, dy: obj.bonding.box.dy }
-    };
-  });
+  // 2) Bracket grouping the member ports → converge toward the badge anchor on the body edge
+  // Anchor: midpoint of member ports, pulled to nearest body edge
+  let mx=0, my=0;
+  for(const mp of memberPorts){ mx+=mp.pos.cx; my+=mp.pos.cy; }
+  mx/=memberPorts.length; my/=memberPorts.length;
+  // Badge sits just inside the body, near the members (always touching body since it's within/at edge)
+  // Determine dominant side of members
+  const side = memberPorts[0].pos.side || "right";
+  let badgeX, badgeY, badgeW=92, badgeH=30;
+  if(side==="bottom"){ badgeX = clamp(mx-badgeW/2, 2, w-badgeW-2); badgeY = h-badgeH-2; }
+  else if(side==="top"){ badgeX = clamp(mx-badgeW/2, 2, w-badgeW-2); badgeY = 2; }
+  else if(side==="left"){ badgeX = 2; badgeY = clamp(my-badgeH/2, 2, h-badgeH-2); }
+  else { badgeX = w-badgeW-2; badgeY = clamp(my-badgeH/2, 2, h-badgeH-2); }
+
+  // Light grouping lines from each member port to badge center (internal, dashed, subtle)
+  const bcx = badgeX+badgeW/2, bcy = badgeY+badgeH/2;
+  for(const mp of memberPorts){
+    ce("line", { x1:mp.pos.cx, y1:mp.pos.cy, x2:bcx, y2:bcy,
+      stroke:color, "stroke-width":1, "stroke-dasharray":"2 2", opacity:0.4,
+      "pointer-events":"none" }, g);
+  }
+
+  // 3) Bond status badge — always attached to (inside) the server body edge, never separated
+  const badgeG = ce("g", { "class":"bond-badge", "pointer-events":"none" }, g);
+  ce("rect", { x:badgeX, y:badgeY, width:badgeW, height:badgeH, rx:5, ry:5,
+    fill:"var(--panel)", stroke:color, "stroke-width":1.8, opacity:0.97 }, badgeG);
+  const statusIcon = effStatus==="up" ? "●" : (effStatus==="degraded" ? "◐" : "✕");
+  const modeShort = (obj.bonding.mode||"active-backup").replace("active-backup","A/B").replace("802.3ad","LACP").replace("balance-","bal-");
+  ce("text", { x:badgeX+6, y:badgeY+11, "font-size":9, "font-family":"var(--mono)",
+    "font-weight":"800", fill:color, text:`${statusIcon} ${obj.bonding.bond_name||"bond0"}` }, badgeG);
+  ce("text", { x:badgeX+badgeW-5, y:badgeY+11, "text-anchor":"end",
+    "font-size":7, "font-family":"var(--mono)", fill:color, text:`[${modeShort}]` }, badgeG);
+  // IP line
+  const ipTxt = obj.bonding.bond_ip || "(IP未設定!)";
+  ce("text", { x:badgeX+6, y:badgeY+23, "font-size":8, "font-family":"var(--mono)",
+    fill: obj.bonding.bond_ip ? "var(--text)" : "var(--red)", text: ipTxt }, badgeG);
+
   // Tooltip
-  boxG.addEventListener("mouseenter",(e)=>showTooltip(e,
-    `Bond: ${obj.bonding.bond_name||"bond0"}\nMode: ${obj.bonding.mode||"active-backup"}\nMembers: ${members.join(", ")}\nActive: ${active||"(all)"}\nStatus: ${effStatus}\nIP: ${obj.bonding.bond_ip||"(未設定!)"}\n(ドラッグで移動可能)`));
-  boxG.addEventListener("mouseleave", hideTooltip);
-  boxG.addEventListener("mousemove", moveTooltip);
+  badgeG.addEventListener("mouseenter",(e)=>showTooltip(e,
+    `Bond: ${obj.bonding.bond_name||"bond0"}\nMode: ${obj.bonding.mode||"active-backup"}\nMembers: ${members.join(", ")}\nActive: ${active||"(all)"}\nStatus: ${effStatus}\nIP: ${obj.bonding.bond_ip||"(未設定!)"}`));
+  badgeG.addEventListener("mouseleave", hideTooltip);
+  badgeG.setAttribute("pointer-events","all");
 }
 
-// vPC peer-link: render as a Cisco-style "vPC Domain" — two switches unified inside
-// a translucent purple region with bold banner, with peer-link + peer-keepalive,
-// plus member port-channel brackets for connections that share vpc_id
 function renderVpcOverlay(){
   const layer = $("#layer-connections");
   const drawn = new Set();
@@ -960,22 +928,6 @@ function ensureArrowMarkers(){
 
 // Compute polyline path through optional waypoints/bend
 function buildConnectionPath(a, b, conn){
-  // If an endpoint is a bond box, clip its anchor to the box border facing the other endpoint
-  function clipToBox(endpoint, other){
-    if(!endpoint.bondBox) return endpoint;
-    const r = endpoint.bondBox;
-    const cx = r.cx, cy = r.cy;
-    const dx = other.x - cx, dy = other.y - cy;
-    if(dx === 0 && dy === 0) return endpoint;
-    // Find intersection of ray (cx,cy)->(other) with the box rectangle border
-    const hw = r.w/2, hh = r.h/2;
-    const scaleX = dx !== 0 ? hw / Math.abs(dx) : Infinity;
-    const scaleY = dy !== 0 ? hh / Math.abs(dy) : Infinity;
-    const s = Math.min(scaleX, scaleY);
-    return { ...endpoint, x: cx + dx*s, y: cy + dy*s };
-  }
-  a = clipToBox(a, b);
-  b = clipToBox(b, a);
   // waypoints (array of {x,y}) take precedence; else bend
   const wp = Array.isArray(conn.waypoints) ? conn.waypoints : null;
   if(wp && wp.length){
@@ -1096,7 +1048,7 @@ function renderConnection(c){
   const b = resolveEndpoint(c.to);
   if(!a||!b) return;
   const status = effectiveConnStatus(c);
-  const isDown = status === "down" || status === "err-disabled" || status === "device-down" || status === "device-error";
+  let isDown = status === "down" || status === "err-disabled" || status === "device-down" || status === "device-error";
   let traffic = c.traffic || "idle";
   const direction = c.direction || "forward";
   const type = c.type || "ethernet";
@@ -1106,7 +1058,31 @@ function renderConnection(c){
   // active member is a NON-primary backup (i.e. the primary actually failed).
   let failoverActive = false;
   let bondStandby = false;
-  if(!isDown){
+  let bondMemberDownButUp = false;  // this member's cable is down, but the bond survives via others
+  // First, handle the case where THIS cable's bond member is down but the bond is still up.
+  for(const ep of [c.from, c.to]){
+    if(!ep) continue;
+    const elObj = ep.device ? Cfg.byId("devices", ep.device) : (ep.server ? Cfg.byId("servers", ep.server) : null);
+    if(!elObj || !elObj.bonding || !elObj.bonding.enabled) continue;
+    const members = elObj.bonding.members || [];
+    if(!members.includes(ep.interface)) continue;
+    const memberIf = (elObj.interfaces||[]).find(i=>i.id===ep.interface);
+    const memberDown = memberIf && (memberIf.status === "down" || memberIf.status === "err-disabled");
+    const bondEff = (typeof bondEffectiveStatus === "function") ? bondEffectiveStatus(elObj) : "up";
+    if(memberDown && bondEff !== "down"){
+      // The bond is still UP via another member. This member's cable is just inactive —
+      // show it dimmed (standby-down), NOT as a connectivity error.
+      bondMemberDownButUp = true;
+    }
+  }
+  if(bondMemberDownButUp){
+    // Downgrade: not a hard error. Render as dim standby instead of red-X error.
+    isDown = false;
+    bondStandby = true;
+    traffic = "idle";
+  }
+
+  if(!isDown && !bondMemberDownButUp){
     for(const ep of [c.from, c.to]){
       if(!ep) continue;
       const elObj = ep.device ? Cfg.byId("devices", ep.device) : (ep.server ? Cfg.byId("servers", ep.server) : null);
@@ -1116,16 +1092,12 @@ function renderConnection(c){
       const active = (typeof bondActiveMember === "function") ? bondActiveMember(elObj) : null;
       const primary = elObj.bonding.primary || members[0];
       if(active === ep.interface){
-        // This member currently carries traffic
         if(active !== primary){
-          // Real failover: primary failed, traffic moved to this backup
           failoverActive = true;
           const bondLevel = bondConfiguredTraffic(elObj);
           if(bondLevel) traffic = bondLevel;
         }
-        // else: primary is active → normal active line, NO failover indicator
       } else {
-        // This member is up but NOT the active one → standby (no traffic shown)
         bondStandby = true;
         traffic = "idle";
       }
@@ -1376,16 +1348,8 @@ function resolveEndpoint(ep){
   if(!obj) return null;
   const w = obj.width || (kind==="server"?130:120);
   const h = obj.height || (kind==="server"?65:70);
-  // If interface specified...
+  // If interface specified, return port outer position (cables attach to the real physical port)
   if(ep.interface){
-    // BOND: if this iface is a bond member, the line emanates from the bond0 box EDGE (not center)
-    if(obj.bonding && obj.bonding.enabled && (obj.bonding.members||[]).includes(ep.interface)){
-      const r = bondBoxRect(obj, kind);
-      if(r){
-        // Default anchor = box center; the connection builder will clip to the edge toward the peer.
-        return { x: r.cx, y: r.cy, kind, obj, bondAnchor:true, bondBox:r };
-      }
-    }
     const idx = (obj.interfaces||[]).findIndex(i=>i.id === ep.interface);
     if(idx >= 0){
       const pp = computePortPositions(obj, kind);
@@ -1471,17 +1435,6 @@ function getContainedElements(network){
 
 function onMouseMove(e){
   if(!dragState) return;
-  if(dragState.mode === "bondbox"){
-    const pt = svgPoint(e);
-    const obj = dragState.obj;
-    obj.bonding.box = {
-      dx: dragState.origBox.dx + (pt.x - dragState.startX),
-      dy: dragState.origBox.dy + (pt.y - dragState.startY)
-    };
-    dragState.moved = true;
-    render();
-    return;
-  }
   if(dragState.mode === "port"){
     const pt = svgPoint(e);
     const obj = dragState.obj;
