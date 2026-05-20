@@ -401,6 +401,11 @@ function renderInterfaceTable(body, obj, kind){
     const iface = obj.interfaces[i];
     const isBondVirtual = iface.virtual || iface.type === "bond";
     const isBondMember = obj.bonding && obj.bonding.enabled && (obj.bonding.members||[]).includes(iface.id);
+    // CONSOLIDATE: don't render the bond0 virtual interface as a separate card here.
+    // All bond configuration (including the bond IP) lives in the single "NICボンディング" section below.
+    if(isBondVirtual) continue;
+    // Bond members must not carry their own IP — clear any stale IP
+    if(isBondMember){ if(iface.ip) iface.ip = ""; if(iface.ipv6) iface.ipv6 = ""; }
     const linked = (App.config.connections||[]).some(c=>
       ((c.from && (c.from.device===obj.id||c.from.server===obj.id) && c.from.interface===iface.id) ||
        (c.to && (c.to.device===obj.id||c.to.server===obj.id) && c.to.interface===iface.id))
@@ -456,29 +461,47 @@ function renderInterfaceTable(body, obj, kind){
       on:{ click:()=>{
         if(!confirm(`Interface "${iface.id}" を削除しますか? (接続も切れます)`)) return;
         pushUndo();
+        // Remove any connections attached to this interface
+        const before = (App.config.connections||[]).length;
+        App.config.connections = (App.config.connections||[]).filter(c=>{
+          const fromMatch = c.from && (c.from.device===obj.id||c.from.server===obj.id) && c.from.interface===iface.id;
+          const toMatch   = c.to   && (c.to.device===obj.id||c.to.server===obj.id)   && c.to.interface===iface.id;
+          return !(fromMatch || toMatch);
+        });
+        const removed = before - App.config.connections.length;
         obj.interfaces.splice(i,1);
         renderAndSync(); openPropertyPanel();
-        toast(`Interface ${iface.id} を削除`, "ok");
+        toast(`Interface ${iface.id} を削除` + (removed?` (接続 ${removed} 本も削除)`:""), "ok");
       }}
     }, hd);
 
-    // Row 1: ID + IP
-    const r1 = ch("div", { style:{display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:"6px",marginBottom:"5px"} }, card);
+    // Row 1: ID + IP  (bond members show NO IP — they inherit from bond0)
+    const r1 = ch("div", { style:{display:"grid",gridTemplateColumns: isBondMember?"1fr":"1fr 1.6fr",gap:"6px",marginBottom:"5px"} }, card);
     const r1a = ch("div",{},r1);
     ch("label",{text:"ID",style:lblStyle},r1a);
     const idIn = ch("input",{type:"text",value:iface.id||"",placeholder:"eth0, gi1/0/1...",style:fldStyle},r1a);
     idIn.addEventListener("change",()=>{ iface.id=idIn.value.trim(); renderAndSync(); });
-    const r1b = ch("div",{},r1);
-    ch("label",{text:"IPv4 / CIDR",style:lblStyle},r1b);
-    const ipIn = ch("input",{type:"text",value:iface.ip||"",placeholder:"10.0.0.1/24 (任意)",style:fldStyle},r1b);
-    ipIn.addEventListener("change",()=>{ iface.ip=ipIn.value; renderAndSync(); });
+    if(!isBondMember){
+      const r1b = ch("div",{},r1);
+      ch("label",{text:"IPv4 / CIDR",style:lblStyle},r1b);
+      const ipIn = ch("input",{type:"text",value:iface.ip||"",placeholder:"10.0.0.1/24 (任意)",style:fldStyle},r1b);
+      ipIn.addEventListener("change",()=>{ iface.ip=ipIn.value; renderAndSync(); });
 
-    // Row 1.5: IPv6
-    const r15 = ch("div", { style:{display:"grid",gridTemplateColumns:"1fr",gap:"6px",marginBottom:"5px"} }, card);
-    const r15a = ch("div",{},r15);
-    ch("label",{text:"IPv6 / CIDR",style:lblStyle},r15a);
-    const ip6In = ch("input",{type:"text",value:iface.ipv6||"",placeholder:"2001:db8::1/64 (任意 — IPv4と併用可)",style:fldStyle},r15a);
-    ip6In.addEventListener("change",()=>{ iface.ipv6=ip6In.value; renderAndSync(); });
+      // Row 1.5: IPv6
+      const r15 = ch("div", { style:{display:"grid",gridTemplateColumns:"1fr",gap:"6px",marginBottom:"5px"} }, card);
+      const r15a = ch("div",{},r15);
+      ch("label",{text:"IPv6 / CIDR",style:lblStyle},r15a);
+      const ip6In = ch("input",{type:"text",value:iface.ipv6||"",placeholder:"2001:db8::1/64 (任意 — IPv4と併用可)",style:fldStyle},r15a);
+      ip6In.addEventListener("change",()=>{ iface.ipv6=ip6In.value; renderAndSync(); });
+    } else {
+      // Bond member notice
+      ch("div", {
+        html:`🔗 <b>${escapeHtml(obj.bonding.bond_name||"bond0")}</b> のメンバーです。IPは bond0 (下のボンディング設定) に集約されるため、ここでは設定しません。`,
+        style:{ fontSize:"10px", color:"var(--cyan,#06b6d4)", lineHeight:"1.4",
+          padding:"6px 8px", background:"rgba(6,182,212,0.08)",
+          border:"1px solid var(--cyan,#06b6d4)", borderRadius:"4px", marginBottom:"5px" }
+      }, card);
+    }
 
     // Row 2: Network + MAC
     const r2 = ch("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px",marginBottom:"5px"}},card);
@@ -679,10 +702,14 @@ function renderBondingSection(parent, obj, kind){
         obj.bonding.members = obj.bonding.members || [];
         if(cb.checked){
           if(!obj.bonding.members.includes(iface.id)) obj.bonding.members.push(iface.id);
+          // Bonded members must not carry their own IP — clear it (moves to bond0)
+          if(iface.ip) iface.ip = "";
+          if(iface.ipv6) iface.ipv6 = "";
         } else {
           obj.bonding.members = obj.bonding.members.filter(x=>x!==iface.id);
           if(obj.bonding.primary === iface.id) obj.bonding.primary = obj.bonding.members[0]||"";
         }
+        if(typeof ensureBond0Interface === "function") ensureBond0Interface(obj);
         renderAndSync(); openPropertyPanel();
       });
     }

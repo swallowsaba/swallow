@@ -602,16 +602,12 @@ servers:
     height: 70
     interfaces:
       - id: eth0
-        ip: 10.3.0.10/24
-        ipv6: "2001:db8:3::10/64"
         network: db-segment
         mac: "de:ad:00:00:03:01"
         speed: 10000
         port_type: sfp-plus
         status: up
       - id: eth1
-        ip: 10.3.0.11/24
-        ipv6: "2001:db8:3::11/64"
         network: db-segment
         mac: "de:ad:00:00:03:02"
         speed: 10000
@@ -1170,6 +1166,17 @@ function ensureBond0Interface(obj){
   if(!obj || !obj.bonding || !obj.bonding.enabled) return null;
   const bondName = obj.bonding.bond_name || "bond0";
   obj.interfaces = obj.interfaces || [];
+  // Clear IPs from physical members — IP belongs to the logical bond only
+  for(const mid of (obj.bonding.members||[])){
+    const m = obj.interfaces.find(i => i.id === mid);
+    if(m){
+      // If bond_ip not yet set, adopt the first member's IP as the bond IP
+      if(!obj.bonding.bond_ip && m.ip) obj.bonding.bond_ip = m.ip;
+      if(!obj.bonding.bond_ipv6 && m.ipv6) obj.bonding.bond_ipv6 = m.ipv6;
+      m.ip = "";
+      m.ipv6 = "";
+    }
+  }
   let bondIf = obj.interfaces.find(i => i.id === bondName);
   if(!bondIf){
     bondIf = {
@@ -1186,7 +1193,6 @@ function ensureBond0Interface(obj){
     };
     obj.interfaces.push(bondIf);
   } else {
-    // Sync from bonding config (bond IP/members are authoritative on bonding object)
     if(obj.bonding.bond_ip !== undefined) bondIf.ip = obj.bonding.bond_ip;
     if(obj.bonding.bond_ipv6 !== undefined) bondIf.ipv6 = obj.bonding.bond_ipv6;
     bondIf.bond_members = (obj.bonding.members||[]).slice();
