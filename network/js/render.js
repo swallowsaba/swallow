@@ -992,13 +992,39 @@ function renderConnection(c){
   if(!a||!b) return;
   const status = effectiveConnStatus(c);
   const isDown = status === "down" || status === "err-disabled" || status === "device-down" || status === "device-error";
-  const traffic = c.traffic || "idle";
+  let traffic = c.traffic || "idle";
   const direction = c.direction || "forward";
   const type = c.type || "ethernet";
+
+  // === Bond failover detection ===
+  // If this link's endpoint is a bond member, determine if it's carrying failover traffic.
+  let failoverActive = false;
+  if(!isDown){
+    for(const ep of [c.from, c.to]){
+      if(!ep) continue;
+      const elObj = ep.device ? Cfg.byId("devices", ep.device) : (ep.server ? Cfg.byId("servers", ep.server) : null);
+      if(!elObj || !elObj.bonding || !elObj.bonding.enabled) continue;
+      const members = elObj.bonding.members || [];
+      if(!members.includes(ep.interface)) continue;
+      // Is the bond degraded (some member down)?
+      const effStatus = (typeof bondEffectiveStatus === "function") ? bondEffectiveStatus(elObj) : null;
+      if(effStatus === "degraded"){
+        // Is THIS link's member the currently active one?
+        const active = (typeof bondActiveMember === "function") ? bondActiveMember(elObj) : null;
+        if(active === ep.interface){
+          failoverActive = true;
+          // Bump traffic so the failover link visibly carries load
+          if(traffic === "idle" || traffic === "low") traffic = "high";
+        }
+      }
+    }
+  }
+
   const built = buildConnectionPath(a, b, c);
   const downCls = isDown ? " down" : "";
   const flapCls = status === "flapping" ? " flapping" : "";
-  const cls = "conn "+type+downCls+flapCls+" lvl-"+(isDown?"idle":traffic);
+  const failCls = failoverActive ? " bond-failover" : "";
+  const cls = "conn "+type+downCls+flapCls+failCls+" lvl-"+(isDown?"idle":traffic);
 
   const g = ce("g", { "class":"conn-group","data-kind":"connection","data-id":c.id }, $("#layer-connections"));
 
@@ -1061,12 +1087,16 @@ function renderConnection(c){
   if(isFlapping){
     lbl = (lbl ? lbl+" · " : "") + "⚡ FLAPPING";
   }
+  if(failoverActive){
+    lbl = (lbl ? lbl+" · " : "") + "⇄ FAILOVER";
+  }
   if(lbl){
     const lblW = Math.max(28, lbl.length * 6.5 + 10);
     let lblFill = "var(--bg)";
     let lblStroke = "var(--border)";
     if(isDown){ lblFill = "rgba(248,81,73,0.15)"; lblStroke = "var(--red)"; }
     else if(isFlapping){ lblFill = "rgba(245,158,11,0.18)"; lblStroke = "var(--orange)"; }
+    else if(failoverActive){ lblFill = "rgba(6,182,212,0.18)"; lblStroke = "var(--cyan,#06b6d4)"; }
     ce("rect", { x:midX-lblW/2, y:midY-8, width:lblW, height:14, rx:4, ry:4,
       fill:lblFill, stroke:lblStroke,"stroke-width": isFlapping ? 1.5 : 0.5,
       "class": isFlapping ? "flap-label-bg" : "", "pointer-events":"none" }, g);
@@ -1074,6 +1104,7 @@ function renderConnection(c){
       x:midX, y:midY+0.5, "dominant-baseline":"middle", text:lbl }, g);
     if(isDown) txt.setAttribute("style","fill:var(--red);font-weight:700");
     else if(isFlapping) txt.setAttribute("style","fill:var(--orange);font-weight:800");
+    else if(failoverActive) txt.setAttribute("style","fill:var(--cyan,#06b6d4);font-weight:800");
   }
 
   // Visible X mark on the down side(s) of the connection

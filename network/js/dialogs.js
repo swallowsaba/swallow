@@ -151,6 +151,20 @@ function renderDeviceProps(body, obj){
   addSelectField(body, "種別", ["router","l3switch","l2switch","firewall","loadbalancer","waf"], obj.type||"router",
     v=>{ obj.type=v; renderAndSync(); openPropertyPanel(); });
   addField(body, "Model", "text", obj.model||"", v=>{ obj.model=v; renderAndSync(); });
+
+  // Routing / ARP table quick-access buttons
+  const tblBar = ch("div", { style:{display:"flex",gap:"6px",margin:"8px 0"} }, body);
+  ch("button", { text:"🗺 ルーティングテーブル編集",
+    style:{flex:"1",padding:"6px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
+      background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",fontWeight:"600"},
+    on:{ click:()=>showRoutingTable(obj.id) }
+  }, tblBar);
+  ch("button", { text:"📇 ARPテーブル編集",
+    style:{flex:"1",padding:"6px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
+      background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",fontWeight:"600"},
+    on:{ click:()=>showArpTable("device", obj.id) }
+  }, tblBar);
+
   renderInterfaceTable(body, obj, "device");
   // NAT
   const sec2 = ch("div", { class:"sub-section" }, body);
@@ -172,6 +186,13 @@ function renderServerProps(body, obj){
   addField(row, "Memory (MB)", "number", obj.memory||1024, v=>{ obj.memory=+v; renderAndSync(); });
   addField(body, "Gateway (IPv4)", "text", obj.gateway||"", v=>{ obj.gateway=v; renderAndSync(); });
   addField(body, "Gateway (IPv6)", "text", obj.gateway_v6||"", v=>{ obj.gateway_v6=v; renderAndSync(); });
+  // ARP table button (servers have ARP too)
+  const arpBar = ch("div", { style:{margin:"8px 0"} }, body);
+  ch("button", { text:"📇 ARPテーブル編集",
+    style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
+      background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",fontWeight:"600"},
+    on:{ click:()=>showArpTable("server", obj.id) }
+  }, arpBar);
   renderInterfaceTable(body, obj, "server");
 }
 
@@ -680,14 +701,43 @@ function renderBondingSection(parent, obj, kind){
     pSel.addEventListener("change",()=>{ obj.bonding.primary=pSel.value; renderAndSync(); });
   }
   const r3b = ch("div",{},row3);
-  ch("label",{text:"Bond IPv4 (例: 10.0.0.10/24)",style:lblStyle},r3b);
-  const bipIn = ch("input",{type:"text",value:obj.bonding.bond_ip||"",placeholder:"10.0.0.10/24",style:fldStyle},r3b);
-  bipIn.addEventListener("change",()=>{ obj.bonding.bond_ip=bipIn.value; renderAndSync(); });
+  const bondIpEmpty = !obj.bonding.bond_ip;
+  ch("label",{
+    text: bondIpEmpty ? "⚠ Bond IPv4 (必須!)" : "✓ Bond IPv4 (例: 10.0.0.10/24)",
+    style:{ ...lblStyle, color: bondIpEmpty ? "var(--red)" : "var(--green)", fontWeight:"700" }
+  },r3b);
+  const bipIn = ch("input",{type:"text",value:obj.bonding.bond_ip||"",placeholder:"10.0.0.10/24 (必須)",
+    style:{ ...fldStyle, border: bondIpEmpty ? "2px solid var(--red)" : "1px solid var(--green)" }},r3b);
+  bipIn.addEventListener("change",()=>{
+    obj.bonding.bond_ip=bipIn.value;
+    // Sync to bond0 virtual interface
+    if(typeof ensureBond0Interface === "function") ensureBond0Interface(obj);
+    renderAndSync(); openPropertyPanel();
+  });
   // Bond IPv6 row
   const r3c = ch("div",{style:{marginTop:"6px"}},sec);
-  ch("label",{text:"Bond IPv6 (例: 2001:db8::10/64)",style:lblStyle},r3c);
+  ch("label",{text:"Bond IPv6 (任意: 2001:db8::10/64)",style:lblStyle},r3c);
   const b6In = ch("input",{type:"text",value:obj.bonding.bond_ipv6||"",placeholder:"2001:db8::10/64",style:fldStyle},r3c);
-  b6In.addEventListener("change",()=>{ obj.bonding.bond_ipv6=b6In.value; renderAndSync(); });
+  b6In.addEventListener("change",()=>{
+    obj.bonding.bond_ipv6=b6In.value;
+    if(typeof ensureBond0Interface === "function") ensureBond0Interface(obj);
+    renderAndSync();
+  });
+  // Mandatory IP warning banner
+  if(bondIpEmpty){
+    ch("div", {
+      text:"⚠ ボンディング有効時は Bond IPv4 の設定が必須です。物理メンバーIFではなく、この論理 Bond IP に通信が集約されます。",
+      style:{ marginTop:"6px", padding:"6px 8px", fontSize:"10px", lineHeight:"1.4",
+        background:"rgba(248,81,73,0.12)", border:"1px solid var(--red)", borderRadius:"4px", color:"var(--red)" }
+    }, sec);
+  } else {
+    // Show the bond0 logical interface summary
+    ch("div", {
+      html:`🔗 論理インターフェース <b style="font-family:var(--mono)">${escapeHtml(obj.bonding.bond_name||"bond0")}</b> = ${(obj.bonding.members||[]).map(escapeHtml).join(" + ")} → <b style="font-family:var(--mono);color:var(--cyan,#06b6d4)">${escapeHtml(obj.bonding.bond_ip)}</b>`,
+      style:{ marginTop:"6px", padding:"6px 8px", fontSize:"10px", lineHeight:"1.5",
+        background:"rgba(6,182,212,0.1)", border:"1px solid var(--cyan,#06b6d4)", borderRadius:"4px", color:"var(--text)" }
+    }, sec);
+  }
 }
 
 function renderVpcSection(parent, obj){
@@ -863,58 +913,190 @@ function openDialog(title, contentFn){
 function closeDialog(){ $("#dialog-overlay").classList.add("hidden"); }
 
 function showRoutingTable(deviceId){
-  const rt = (App.config.routing_tables||[]).find(r=>r.device===deviceId);
-  openDialog(`Routing Table — ${deviceId}`, (body)=>{
-    if(!rt || !rt.routes || !rt.routes.length){
-      ch("p", { text:"(no routes defined)" }, body);
-      return;
+  const dev = Cfg.byId("devices", deviceId);
+  openDialog(`ルーティングテーブル — ${deviceId}`, (body)=>{
+    function refresh(){
+      body.innerHTML = "";
+      // Find or create the routing table entry
+      let rt = (App.config.routing_tables||[]).find(r=>r.device===deviceId);
+      ch("p", {
+        text:"スタティックルートを追加・編集・削除できます。宛先ネットワーク (CIDR)、ネクストホップ、出力インターフェースを指定してください。",
+        style:{margin:"0 0 10px 0",fontSize:"11px",color:"var(--text-dim)",lineHeight:"1.5"}
+      }, body);
+
+      if(rt && rt.routes && rt.routes.length){
+        const tbl = ch("table", { style:{fontSize:"11px"} }, body);
+        const tr = ch("tr", {}, ch("thead", {}, tbl));
+        for(const h of ["宛先","Next Hop","IF","Metric","Type","状態",""]) ch("th", { text:h }, tr);
+        const tb = ch("tbody", {}, tbl);
+        for(let ri=0; ri<rt.routes.length; ri++){
+          const r = rt.routes[ri];
+          const row = ch("tr", {}, tb);
+          ch("td", { text:r.destination||"" }, row);
+          ch("td", { text:r.next_hop||"-" }, row);
+          ch("td", { text:r.interface||"" }, row);
+          ch("td", { text:String(r.metric==null?"":r.metric) }, row);
+          ch("td", { text:r.type||"static" }, row);
+          const td = ch("td", {}, row);
+          ch("span", { class:"tag "+(r.status==="active"?"up":"down"), text:r.status||"active" }, td);
+          const actTd = ch("td", {}, row);
+          ch("button", { text:"×",
+            style:{background:"transparent",border:"1px solid var(--red)",color:"var(--red)",padding:"1px 6px",fontSize:"10px",cursor:"pointer",borderRadius:"3px"},
+            on:{ click:()=>{
+              pushUndo();
+              rt.routes.splice(ri,1);
+              renderAndSync(); refresh();
+              toast("ルートを削除", "ok");
+            }}
+          }, actTd);
+        }
+      } else {
+        ch("div", { text:"(ルート未定義)", style:{padding:"10px",textAlign:"center",color:"var(--text-mute)"} }, body);
+      }
+
+      // Add-route form
+      ch("h4", { text:"＋ ルート追加", style:{margin:"12px 0 6px",fontSize:"12px",color:"var(--accent)"} }, body);
+      const form = ch("div", { style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px"} }, body);
+      let dest="", nh="", iface="", metric=1, rtype="static";
+      const f1 = ch("div",{},form);
+      ch("label",{text:"宛先 CIDR (例 10.5.0.0/24, 0.0.0.0/0)",style:{fontSize:"10px",color:"var(--text-dim)"}},f1);
+      const destIn = ch("input",{type:"text",placeholder:"10.5.0.0/24",style:{width:"100%",padding:"4px",fontSize:"11px",fontFamily:"var(--mono)"}},f1);
+      const f2 = ch("div",{},form);
+      ch("label",{text:"Next Hop (例 10.1.0.1)",style:{fontSize:"10px",color:"var(--text-dim)"}},f2);
+      const nhIn = ch("input",{type:"text",placeholder:"10.1.0.1",style:{width:"100%",padding:"4px",fontSize:"11px",fontFamily:"var(--mono)"}},f2);
+      const f3 = ch("div",{},form);
+      ch("label",{text:"出力インターフェース",style:{fontSize:"10px",color:"var(--text-dim)"}},f3);
+      const ifSel = ch("select",{style:{width:"100%",padding:"4px",fontSize:"11px"}},f3);
+      ch("option",{value:"",text:"-- 選択 --"},ifSel);
+      for(const it of (dev&&dev.interfaces||[])) ch("option",{value:it.id,text:it.id},ifSel);
+      const f4 = ch("div",{},form);
+      ch("label",{text:"Metric",style:{fontSize:"10px",color:"var(--text-dim)"}},f4);
+      const metricIn = ch("input",{type:"number",value:"1",style:{width:"100%",padding:"4px",fontSize:"11px"}},f4);
+
+      return; // refresh ends; buttons added by outer
     }
-    const tbl = ch("table", {}, body);
-    const tr = ch("tr", {}, ch("thead", {}, tbl));
-    for(const h of ["Destination","Next Hop","Interface","Metric","Type","Status"]) ch("th", { text:h }, tr);
-    const tb = ch("tbody", {}, tbl);
-    for(const r of rt.routes){
-      const row = ch("tr", {}, tb);
-      ch("td", { text:r.destination||"" }, row);
-      ch("td", { text:r.next_hop||"" }, row);
-      ch("td", { text:r.interface||"" }, row);
-      ch("td", { text:String(r.metric==null?"":r.metric) }, row);
-      ch("td", { text:r.type||"" }, row);
-      const td = ch("td", {}, row);
-      ch("span", { class:"tag "+(r.status==="active"?"up":"down"), text:r.status||"active" }, td);
-    }
+    refresh();
+    // store refresh on body for button access
+    body._refresh = refresh;
+    return {
+      buttons:[
+        { text:"閉じる", action: closeDialog },
+        { text:"＋ ルート追加", primary:true, action:()=>{
+          // Read the form inputs from the DOM
+          const inputs = body.querySelectorAll("input, select");
+          // inputs order: destIn, nhIn, ifSel, metricIn
+          const destIn = inputs[0], nhIn = inputs[1], ifSel = inputs[2], metricIn = inputs[3];
+          if(!destIn || !destIn.value.trim()){ toast("宛先CIDRは必須です","err"); return; }
+          let rt = (App.config.routing_tables||[]).find(r=>r.device===deviceId);
+          if(!rt){
+            rt = { device: deviceId, routes: [] };
+            App.config.routing_tables = App.config.routing_tables || [];
+            App.config.routing_tables.push(rt);
+          }
+          pushUndo();
+          rt.routes.push({
+            destination: destIn.value.trim(),
+            next_hop: (nhIn.value||"").trim() || "0.0.0.0",
+            interface: ifSel.value || "",
+            metric: +metricIn.value || 1,
+            type: "static",
+            status: "active"
+          });
+          renderAndSync();
+          toast("ルートを追加", "ok");
+          body._refresh();
+        }}
+      ]
+    };
   });
 }
 
 function showArpTable(kind, id){
   const obj = Cfg.byId(kindToCol(kind), id);
-  openDialog(`ARP Table — ${id}`, (body)=>{
-    if(!obj || !obj.interfaces){ ch("p", { text:"(no interfaces)" }, body); return; }
-    const tbl = ch("table", {}, body);
-    const head = ch("tr", {}, ch("thead", {}, tbl));
-    for(const h of ["IP","MAC","Interface"]) ch("th", { text:h }, head);
-    const tb = ch("tbody", {}, tbl);
-    let count = 0;
-    for(const i of obj.interfaces){
-      if(!i.ip) continue;
-      for(const c of (App.config.connections||[])){
-        let me, peer;
-        if(c.from && (c.from.device===id||c.from.server===id) && c.from.interface===i.id){ me=c.from; peer=c.to; }
-        else if(c.to && (c.to.device===id||c.to.server===id) && c.to.interface===i.id){ me=c.to; peer=c.from; }
-        else continue;
-        const pk = peer.device ? "device" : "server";
-        const pObj = Cfg.byId(kindToCol(pk), peer.device||peer.server);
-        if(!pObj) continue;
-        const pIf = (pObj.interfaces||[]).find(x=>x.id===peer.interface);
-        if(!pIf) continue;
+  openDialog(`ARP テーブル — ${id}`, (body)=>{
+    function refresh(){
+      body.innerHTML = "";
+      if(!obj || !obj.interfaces){ ch("p", { text:"(no interfaces)" }, body); return; }
+      ch("p", {
+        text:"動的ARP (接続から自動学習) と静的ARP (手動追加) を表示します。",
+        style:{margin:"0 0 8px 0",fontSize:"11px",color:"var(--text-dim)"}
+      }, body);
+      const tbl = ch("table", { style:{fontSize:"11px"} }, body);
+      const head = ch("tr", {}, ch("thead", {}, tbl));
+      for(const h of ["IP Address","MAC Address","Interface","Type",""]) ch("th", { text:h }, head);
+      const tb = ch("tbody", {}, tbl);
+      let count = 0;
+      // Dynamic entries (learned from connections)
+      for(const i of obj.interfaces){
+        if(!i.ip && !i.ipv6) continue;
+        for(const c of (App.config.connections||[])){
+          if(c.status === "down") continue;
+          let me, peer;
+          if(c.from && (c.from.device===id||c.from.server===id) && c.from.interface===i.id){ me=c.from; peer=c.to; }
+          else if(c.to && (c.to.device===id||c.to.server===id) && c.to.interface===i.id){ me=c.to; peer=c.from; }
+          else continue;
+          const pk = peer.device ? "device" : "server";
+          const pObj = Cfg.byId(kindToCol(pk), peer.device||peer.server);
+          if(!pObj) continue;
+          const pIf = (pObj.interfaces||[]).find(x=>x.id===peer.interface);
+          if(!pIf) continue;
+          const row = ch("tr", {}, tb);
+          ch("td", { text:(pIf.ip||pIf.ipv6||"").split("/")[0] }, row);
+          ch("td", { text:pIf.mac||"-" }, row);
+          ch("td", { text:i.id }, row);
+          ch("td", { text:"dynamic", style:{color:"var(--text-mute)"} }, row);
+          ch("td", {}, row);
+          count++;
+        }
+      }
+      // Static entries
+      obj.arp_static = obj.arp_static || [];
+      for(let ai=0; ai<obj.arp_static.length; ai++){
+        const a = obj.arp_static[ai];
         const row = ch("tr", {}, tb);
-        ch("td", { text:(pIf.ip||"").split("/")[0] }, row);
-        ch("td", { text:pIf.mac||"-" }, row);
-        ch("td", { text:i.id }, row);
+        ch("td", { text:a.ip||"" }, row);
+        ch("td", { text:a.mac||"" }, row);
+        ch("td", { text:a.interface||"-" }, row);
+        ch("td", { text:"static", style:{color:"var(--accent)",fontWeight:"700"} }, row);
+        const actTd = ch("td", {}, row);
+        ch("button", { text:"×",
+          style:{background:"transparent",border:"1px solid var(--red)",color:"var(--red)",padding:"1px 6px",fontSize:"10px",cursor:"pointer",borderRadius:"3px"},
+          on:{ click:()=>{ pushUndo(); obj.arp_static.splice(ai,1); renderAndSync(); refresh(); toast("静的ARP削除","ok"); }}
+        }, actTd);
         count++;
       }
+      if(count === 0) ch("p", { text:"(ARPエントリなし)", style:{color:"var(--text-mute)",padding:"8px"} }, body);
+
+      // Add static ARP form
+      ch("h4", { text:"＋ 静的ARP追加", style:{margin:"12px 0 6px",fontSize:"12px",color:"var(--accent)"} }, body);
+      const form = ch("div", { style:{display:"grid",gridTemplateColumns:"1fr 1fr 0.8fr",gap:"6px"} }, body);
+      const f1=ch("div",{},form); ch("label",{text:"IP",style:{fontSize:"10px",color:"var(--text-dim)"}},f1);
+      const ipIn=ch("input",{type:"text",placeholder:"10.1.0.50",style:{width:"100%",padding:"4px",fontSize:"11px",fontFamily:"var(--mono)"}},f1);
+      const f2=ch("div",{},form); ch("label",{text:"MAC",style:{fontSize:"10px",color:"var(--text-dim)"}},f2);
+      const macIn=ch("input",{type:"text",placeholder:"52:54:00:..",style:{width:"100%",padding:"4px",fontSize:"11px",fontFamily:"var(--mono)"}},f2);
+      const f3=ch("div",{},form); ch("label",{text:"IF",style:{fontSize:"10px",color:"var(--text-dim)"}},f3);
+      const ifSel=ch("select",{style:{width:"100%",padding:"4px",fontSize:"11px"}},f3);
+      ch("option",{value:"",text:"--"},ifSel);
+      for(const it of (obj.interfaces||[])) ch("option",{value:it.id,text:it.id},ifSel);
     }
-    if(count === 0) ch("p", { text:"(no ARP entries)", style:{color:"var(--text-mute)"} }, body);
+    refresh();
+    body._refresh = refresh;
+    return {
+      buttons:[
+        { text:"閉じる", action: closeDialog },
+        { text:"＋ 静的ARP追加", primary:true, action:()=>{
+          const inputs = body.querySelectorAll("input, select");
+          const ipIn = inputs[0], macIn = inputs[1], ifSel = inputs[2];
+          if(!ipIn || !ipIn.value.trim() || !macIn.value.trim()){ toast("IP と MAC は必須です","err"); return; }
+          pushUndo();
+          obj.arp_static = obj.arp_static || [];
+          obj.arp_static.push({ ip:ipIn.value.trim(), mac:macIn.value.trim(), interface:ifSel.value||"" });
+          renderAndSync();
+          toast("静的ARPを追加","ok");
+          body._refresh();
+        }}
+      ]
+    };
   });
 }
 

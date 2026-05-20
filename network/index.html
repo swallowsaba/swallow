@@ -226,6 +226,13 @@ html.light #svg{background:radial-gradient(circle at 20px 20px,rgba(0,0,0,0.04) 
 }
 .flap-label-bg{ animation: flapLabelBg 0.7s ease-in-out infinite; }
 .flap-label{ font-weight:800; animation: flapLabel 0.7s ease-in-out infinite; }
+
+/* Bond failover - surviving link carries traffic, cyan pulse */
+@keyframes bondFailover{
+  0%,100%{ stroke:var(--cyan,#06b6d4); stroke-width:3; filter:drop-shadow(0 0 3px var(--cyan,#06b6d4)); }
+  50%    { stroke:#22d3ee; stroke-width:4.5; filter:drop-shadow(0 0 8px var(--cyan,#06b6d4)); }
+}
+.conn.bond-failover{ animation: bondFailover 0.9s ease-in-out infinite; }
 .conn-label{fill:var(--text-dim);font-size:9px;font-family:var(--mono);text-anchor:middle;pointer-events:none}
 
 .packet{fill:var(--accent);stroke:#fff;stroke-width:1.5;filter:drop-shadow(0 0 4px var(--accent))}
