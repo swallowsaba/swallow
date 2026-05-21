@@ -522,14 +522,13 @@ function renderBondOverlay(g, obj, kind){
   let mx=0, my=0;
   for(const mp of memberPorts){ mx+=mp.pos.cx; my+=mp.pos.cy; }
   mx/=memberPorts.length; my/=memberPorts.length;
-  // Badge sits just inside the body, near the members (always touching body since it's within/at edge)
-  // Determine dominant side of members
+  // Badge sits just OUTSIDE the server body border (touching, never inside, never separated)
   const side = memberPorts[0].pos.side || "right";
   let badgeX, badgeY, badgeW=92, badgeH=30;
-  if(side==="bottom"){ badgeX = clamp(mx-badgeW/2, 2, w-badgeW-2); badgeY = h-badgeH-2; }
-  else if(side==="top"){ badgeX = clamp(mx-badgeW/2, 2, w-badgeW-2); badgeY = 2; }
-  else if(side==="left"){ badgeX = 2; badgeY = clamp(my-badgeH/2, 2, h-badgeH-2); }
-  else { badgeX = w-badgeW-2; badgeY = clamp(my-badgeH/2, 2, h-badgeH-2); }
+  if(side==="bottom"){ badgeX = clamp(mx-badgeW/2, 0, w-badgeW); badgeY = h; }
+  else if(side==="top"){ badgeX = clamp(mx-badgeW/2, 0, w-badgeW); badgeY = -badgeH; }
+  else if(side==="left"){ badgeX = -badgeW; badgeY = clamp(my-badgeH/2, 0, h-badgeH); }
+  else { badgeX = w; badgeY = clamp(my-badgeH/2, 0, h-badgeH); }
 
   // Light grouping lines from each member port to badge center (internal, dashed, subtle)
   const bcx = badgeX+badgeW/2, bcy = badgeY+badgeH/2;
@@ -1042,6 +1041,37 @@ function effectiveConnStatus(c){
   return c.status || "up";
 }
 
+// === Unified bond member cable state ===
+// Returns null if this cable is not attached to a bond member; otherwise a clear role.
+// roles: "active" | "failover" | "standby" | "standby-down" | "down"
+function bondCableState(c){
+  for(const ep of [c.from, c.to]){
+    if(!ep) continue;
+    const obj = ep.device ? Cfg.byId("devices", ep.device) : (ep.server ? Cfg.byId("servers", ep.server) : null);
+    if(!obj || !obj.bonding || !obj.bonding.enabled) continue;
+    const members = obj.bonding.members || [];
+    if(!members.includes(ep.interface)) continue;
+    const memberIf = (obj.interfaces||[]).find(i=>i.id===ep.interface);
+    const memberUp = memberIf && (memberIf.status||"up") === "up";
+    const eff = (typeof bondEffectiveStatus === "function") ? bondEffectiveStatus(obj) : "up";
+    const active = (typeof bondActiveMember === "function") ? bondActiveMember(obj) : null;
+    const primary = obj.bonding.primary || members[0];
+    // Whole bond down → real outage
+    if(eff === "down") return { role:"down", isDown:true, traffic:"idle" };
+    // This member's own link is down, but the bond survives via another member
+    if(!memberUp) return { role:"standby-down", isDown:false, traffic:"idle" };
+    // This member currently carries the bond's traffic
+    if(ep.interface === active){
+      let lvl = (typeof bondConfiguredTraffic === "function") ? bondConfiguredTraffic(obj) : "medium";
+      if(!lvl || lvl === "idle") lvl = "medium"; // active bond link always shows visible flow
+      return { role: (active !== primary) ? "failover" : "active", isDown:false, traffic: lvl };
+    }
+    // Up but not the active member → standby backup path (no traffic)
+    return { role:"standby", isDown:false, traffic:"idle" };
+  }
+  return null;
+}
+
 function renderConnection(c){
   if(!c.from || !c.to) return;
   const a = resolveEndpoint(c.from);
@@ -1053,55 +1083,15 @@ function renderConnection(c){
   const direction = c.direction || "forward";
   const type = c.type || "ethernet";
 
-  // === Bond member link role detection ===
-  // active-backup: exactly ONE member is active. Failover indicator shows ONLY when the
-  // active member is a NON-primary backup (i.e. the primary actually failed).
+  // === Bond member cable state (single source of truth) ===
   let failoverActive = false;
   let bondStandby = false;
-  let bondMemberDownButUp = false;  // this member's cable is down, but the bond survives via others
-  // First, handle the case where THIS cable's bond member is down but the bond is still up.
-  for(const ep of [c.from, c.to]){
-    if(!ep) continue;
-    const elObj = ep.device ? Cfg.byId("devices", ep.device) : (ep.server ? Cfg.byId("servers", ep.server) : null);
-    if(!elObj || !elObj.bonding || !elObj.bonding.enabled) continue;
-    const members = elObj.bonding.members || [];
-    if(!members.includes(ep.interface)) continue;
-    const memberIf = (elObj.interfaces||[]).find(i=>i.id===ep.interface);
-    const memberDown = memberIf && (memberIf.status === "down" || memberIf.status === "err-disabled");
-    const bondEff = (typeof bondEffectiveStatus === "function") ? bondEffectiveStatus(elObj) : "up";
-    if(memberDown && bondEff !== "down"){
-      // The bond is still UP via another member. This member's cable is just inactive —
-      // show it dimmed (standby-down), NOT as a connectivity error.
-      bondMemberDownButUp = true;
-    }
-  }
-  if(bondMemberDownButUp){
-    // Downgrade: not a hard error. Render as dim standby instead of red-X error.
-    isDown = false;
-    bondStandby = true;
-    traffic = "idle";
-  }
-
-  if(!isDown && !bondMemberDownButUp){
-    for(const ep of [c.from, c.to]){
-      if(!ep) continue;
-      const elObj = ep.device ? Cfg.byId("devices", ep.device) : (ep.server ? Cfg.byId("servers", ep.server) : null);
-      if(!elObj || !elObj.bonding || !elObj.bonding.enabled) continue;
-      const members = elObj.bonding.members || [];
-      if(!members.includes(ep.interface)) continue;
-      const active = (typeof bondActiveMember === "function") ? bondActiveMember(elObj) : null;
-      const primary = elObj.bonding.primary || members[0];
-      if(active === ep.interface){
-        if(active !== primary){
-          failoverActive = true;
-          const bondLevel = bondConfiguredTraffic(elObj);
-          if(bondLevel) traffic = bondLevel;
-        }
-      } else {
-        bondStandby = true;
-        traffic = "idle";
-      }
-    }
+  const bondState = bondCableState(c);
+  if(bondState){
+    isDown = bondState.isDown;
+    traffic = bondState.traffic;
+    failoverActive = bondState.role === "failover";
+    bondStandby = bondState.role === "standby" || bondState.role === "standby-down";
   }
 
   const built = buildConnectionPath(a, b, c);
