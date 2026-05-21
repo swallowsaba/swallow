@@ -471,6 +471,38 @@ function formatPortTooltip(iface){
   return s;
 }
 
+// Compute the bond0 enclosing box rectangle (absolute SVG coords + relative-to-group).
+// Shared by renderBondOverlay (drawing) and resolveEndpoint (cable anchoring).
+function bondBoxRect(obj, kind){
+  if(!obj || !obj.bonding || !obj.bonding.enabled) return null;
+  const members = obj.bonding.members || [];
+  if(members.length < 1) return null;
+  const positions = computePortPositions(obj, kind);
+  const memberPorts = [];
+  for(const mid of members){
+    const idx = (obj.interfaces||[]).findIndex(i=>i.id===mid);
+    if(idx>=0 && positions[idx]) memberPorts.push(positions[idx]);
+  }
+  if(!memberPorts.length) return null;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  for(const p of memberPorts){
+    const pw=p.w||12, ph=p.h||12;
+    minX=Math.min(minX,p.x); minY=Math.min(minY,p.y);
+    maxX=Math.max(maxX,p.x+pw); maxY=Math.max(maxY,p.y+ph);
+  }
+  const side = memberPorts[0].side || (kind==="server"?"top":"bottom");
+  const pad=7, labelH=26, minBoxW=96;
+  let bx=minX-pad, by=minY-pad, bw=(maxX-minX)+pad*2, bh=(maxY-minY)+pad*2;
+  if(side==="top"){ by-=labelH; bh+=labelH+3; }
+  else if(side==="bottom"){ bh+=labelH+3; by-=3; }
+  else if(side==="left"){ bx-=(minBoxW-bw>0?(minBoxW-bw):40); bw=Math.max(bw,minBoxW); }
+  else { bw=Math.max(bw,minBoxW); }
+  if((side==="top"||side==="bottom") && bw<minBoxW){ const cx=bx+bw/2; bx=cx-minBoxW/2; bw=minBoxW; }
+  const ox=(obj.x||0), oy=(obj.y||0);
+  return { bx, by, bw, bh, side,
+    absX:ox+bx, absY:oy+by, absCx:ox+bx+bw/2, absCy:oy+by+bh/2, w:bw, h:bh };
+}
+
 function renderBondOverlay(g, obj, kind){
   if(!obj.bonding || !obj.bonding.enabled) return;
   const members = obj.bonding.members || [];
@@ -497,42 +529,10 @@ function renderBondOverlay(g, obj, kind){
   if(effStatus==="down") color = "var(--red)";
   else if(effStatus==="degraded") color = "var(--orange)";
 
-  // Bounding box that ENCLOSES the member port squares
-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  for(const mp of memberPorts){
-    const p = mp.pos;
-    const pw = p.w||12, ph = p.h||12;
-    minX=Math.min(minX, p.x); minY=Math.min(minY, p.y);
-    maxX=Math.max(maxX, p.x+pw); maxY=Math.max(maxY, p.y+ph);
-  }
-  const side = memberPorts[0].pos.side || (kind==="server"?"top":"bottom");
-  const pad = 7;
-  const labelH = 26;          // space reserved for the bond0 label + IP
-  const minBoxW = 96;         // ensure room for label text
-
-  let bx = minX - pad, by = minY - pad;
-  let bw = (maxX - minX) + pad*2, bh = (maxY - minY) + pad*2;
-
-  // Extend the box AWAY from the server body to hold the label, and slightly INTO the body
-  // edge so it visibly attaches to the server outer frame.
-  if(side==="top"){          // ports on top edge of server → label above
-    by -= labelH; bh += labelH;
-    bh += 3; // overlap into body edge so it touches
-  } else if(side==="bottom"){ // ports on bottom edge → label below
-    bh += labelH;
-    by -= 3; bh += 3;
-  } else if(side==="left"){
-    bx -= (minBoxW - bw > 0 ? (minBoxW-bw) : 40); bw = Math.max(bw, minBoxW);
-  } else { // right
-    bw = Math.max(bw, minBoxW);
-  }
-  // Ensure minimum width and center horizontally over ports for top/bottom
-  if(side==="top" || side==="bottom"){
-    if(bw < minBoxW){
-      const cx = (bx + bw/2);
-      bx = cx - minBoxW/2; bw = minBoxW;
-    }
-  }
+  // Enclosing box (shared computation)
+  const rect = bondBoxRect(obj, kind);
+  if(!rect) return;
+  const bx=rect.bx, by=rect.by, bw=rect.bw, bh=rect.bh, side=rect.side;
 
   // 1) The enclosing bond0 container (rounded rect) — drawn behind the ports
   const boxG = ce("g", { "class":"bond-container", "pointer-events":"none" }, g);
@@ -932,6 +932,20 @@ function ensureArrowMarkers(){
 
 // Compute polyline path through optional waypoints/bend
 function buildConnectionPath(a, b, conn){
+  // If an endpoint emanates from a bond box, clip its anchor to the box border facing the peer
+  function clipToBox(endpoint, other){
+    if(!endpoint.bondBox) return endpoint;
+    const r = endpoint.bondBox;
+    const cx = r.absCx, cy = r.absCy, hw = r.w/2, hh = r.h/2;
+    const dx = other.x - cx, dy = other.y - cy;
+    if(dx === 0 && dy === 0) return endpoint;
+    const sx = dx!==0 ? hw/Math.abs(dx) : Infinity;
+    const sy = dy!==0 ? hh/Math.abs(dy) : Infinity;
+    const s = Math.min(sx, sy);
+    return Object.assign({}, endpoint, { x: cx + dx*s, y: cy + dy*s });
+  }
+  const a2 = clipToBox(a, b), b2 = clipToBox(b, a);
+  a = a2; b = b2;
   // waypoints (array of {x,y}) take precedence; else bend
   const wp = Array.isArray(conn.waypoints) ? conn.waypoints : null;
   if(wp && wp.length){
@@ -1345,6 +1359,13 @@ function resolveEndpoint(ep){
   const h = obj.height || (kind==="server"?65:70);
   // If interface specified, return port outer position (cables attach to the real physical port)
   if(ep.interface){
+    // BOND: if this iface is a bonded member, the cable emanates from the bond0 BOX, not the port.
+    if(obj.bonding && obj.bonding.enabled && (obj.bonding.members||[]).includes(ep.interface)){
+      const r = bondBoxRect(obj, kind);
+      if(r){
+        return { x: r.absCx, y: r.absCy, kind, obj, bondBox:r };
+      }
+    }
     const idx = (obj.interfaces||[]).findIndex(i=>i.id === ep.interface);
     if(idx >= 0){
       const pp = computePortPositions(obj, kind);
