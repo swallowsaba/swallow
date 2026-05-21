@@ -151,6 +151,9 @@ html.light #svg{background:radial-gradient(circle at 20px 20px,rgba(0,0,0,0.04) 
 
 #dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1500;display:flex;align-items:center;justify-content:center}
 #dialog-overlay.hidden{display:none}
+/* Floating mode: no dim, clicks pass through to the canvas; only the dialog itself is interactive */
+#dialog-overlay.floating{background:transparent;display:block;pointer-events:none}
+#dialog-overlay.floating .dialog{pointer-events:auto;box-shadow:0 8px 32px rgba(0,0,0,0.55)}
 .dialog{background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-hi);padding:18px 20px;min-width:380px;max-width:600px;max-height:80vh;overflow-y:auto}
 .dialog h3{margin:0 -20px 14px -20px;padding:6px 20px 10px 20px;font-size:14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,0.04), transparent);cursor:move;user-select:none;position:relative}
 .dialog h3::before{content:"⋮⋮";position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-mute);letter-spacing:-2px}
