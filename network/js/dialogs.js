@@ -725,7 +725,13 @@ function renderBondingSection(parent, obj, kind){
       const o = ch("option",{value:m,text:m},pSel);
       if(m===obj.bonding.primary) o.selected = true;
     }
-    pSel.addEventListener("change",()=>{ obj.bonding.primary=pSel.value; renderAndSync(); });
+    pSel.addEventListener("change",()=>{
+      obj.bonding.primary = pSel.value;
+      if(typeof ensureBond0Interface === "function") ensureBond0Interface(obj);
+      renderAndSync();
+      openPropertyPanel();   // refresh the panel so the new primary is reflected
+      toast("Primary を "+pSel.value+" に変更", "ok");
+    });
   }
   const r3b = ch("div",{},row3);
   const bondIpEmpty = !obj.bonding.bond_ip;
@@ -1556,6 +1562,14 @@ function cliExec(obj, kind, cmd, args, println, state){
     "  show lldp neighbors             - LLDP neighbors",
     "  show cdp neighbors              - CDP neighbors",
     "  show etherchannel summary       - port-channels (bonding/vPC)",
+    "  show standby / vrrp / glbp      - FHRP gateway redundancy state",
+    "  show cluster                    - server clustering (Active/Standby)",
+    "  show lb                         - load-balancer VIP pools",
+    "  show gslb                       - GSLB DNS records",
+    "  show ip eigrp neighbors         - EIGRP neighbors",
+    "  show ip eigrp topology          - EIGRP DUAL (Successor/FS)",
+    "  show access-lists               - ACL entries",
+    "  show policy-map                 - QoS policy-maps",
     "  show ip ospf neighbor           - OSPF neighbors (simulated)",
     "  show ip bgp summary             - BGP peers (simulated)",
     "  show service                    - services on server",
@@ -1964,6 +1978,117 @@ function cliExec(obj, kind, cmd, args, println, state){
           group++;
         }
         if(group === 1) println("(no port-channels configured)");
+      } else if(sub === "cluster"){
+        // show cluster — server clustering state
+        const cls = (typeof buildClusters==="function") ? buildClusters() : {};
+        const mine = Object.values(cls).filter(c=> c.members.some(m=>m.server===id));
+        if(!mine.length){ println("(this server is not in a cluster)"); return; }
+        for(const c of mine){
+          println(`Cluster: ${c.name}   VIP: ${c.vip||"(none)"}   Disk: ${c.disk}`);
+          println(`  Status: ${c.status}`);
+          println(`  Active node:  ${c.active||"(none)"}`+(c.active===id?" (local)":""));
+          println(`  Standby node: ${c.standby||"(none)"}`);
+          println("  Members:");
+          for(const m of c.members){
+            println(`    ${m.server.padEnd(16)} prio ${String(m.priority).padEnd(4)} ${m.up?"UP":"DOWN"}`);
+          }
+          println("");
+        }
+      } else if(sub === "lb" || (sub==="load-balancing") || (sub==="server" && (args[2]||"")==="farm")){
+        if(kind !== "device"){ println("(load balancing on LB devices)","cli-err"); return; }
+        const st = (typeof buildLbState==="function") ? buildLbState(obj) : [];
+        if(!st.length){ println("(no load-balancer VIPs configured)"); return; }
+        for(const v of st){
+          println(`VIP ${v.vip}:${v.port||"*"}  algorithm=${v.algorithm}  healthy=${v.healthy}/${v.total}`);
+          for(const m of v.members){
+            println(`    ${m.server.padEnd(16)} weight ${String(m.weight).padEnd(3)} port ${String(m.port||"-").padEnd(6)} ${m.up?"UP":"DOWN"}`);
+          }
+          println("");
+        }
+      } else if(sub === "gslb"){
+        if(kind !== "device"){ println("(GSLB on devices)","cli-err"); return; }
+        const st = (typeof buildGslbState==="function") ? buildGslbState(obj) : [];
+        if(!st.length){ println("(no GSLB domains configured)"); return; }
+        for(const d of st){
+          println(`Domain ${d.fqdn}  (DNS ${d.algorithm})`);
+          for(const r of d.records){
+            println(`    ${r.site_ip.padEnd(18)} weight ${String(r.weight).padEnd(3)} ${r.up?"UP":"DOWN"}`);
+          }
+          println("");
+        }
+      } else if(sub === "standby" || (sub==="vrrp") || (sub==="glbp")){
+        // show standby / show vrrp / show glbp — FHRP state
+        if(kind !== "device"){ println("(FHRP only on devices)","cli-err"); return; }
+        const want = sub === "standby" ? "hsrp" : sub;
+        const states = buildFhrpState(obj).filter(s=> s.proto===want);
+        if(!states.length){ println(`(no ${sub.toUpperCase()} groups configured)`); return; }
+        for(const s of states){
+          const grpLabel = s.proto==="vrrp" ? "VRRP" : s.proto==="glbp" ? "GLBP" : "HSRP";
+          println(`${s.iface} - Group ${s.group} (${grpLabel})`);
+          println(`  State is ${s.state}`);
+          println(`  Virtual IP address is ${s.vip}`);
+          println(`  Virtual MAC address is ${s.vmac}`);
+          println(`  Priority ${s.priority}` + (s.preempt?" (preempt enabled)":""));
+          println(`  Active router is ${s.activeDevice}` + (s.activeDevice===obj.id?" (local)":""));
+          println(`  Standby router is ${s.standbyDevice}`);
+          println("");
+        }
+      } else if(sub === "ip" && (args[2]||"").toLowerCase()==="eigrp" && (args[3]||"").toLowerCase()==="neighbors"){
+        if(kind !== "device"){ println("(EIGRP only on devices)","cli-err"); return; }
+        if(!obj.eigrp || !obj.eigrp.enabled){ println("(EIGRP not enabled)"); return; }
+        println(`EIGRP-IPv4 Neighbors for AS(${obj.eigrp.as})`);
+        println("H   Address                 Interface       Hold  Uptime    SRTT   RTO  Q  Seq");
+        let h=0;
+        const lldp = (typeof buildLldpNeighbors==="function")?buildLldpNeighbors(obj):[];
+        let any=false;
+        for(const l of lldp){
+          const peer = Cfg.byId("devices", l.neighbor);
+          if(!peer || !peer.eigrp || !peer.eigrp.enabled || peer.eigrp.as!==obj.eigrp.as) continue;
+          const addr = elementPrimaryIp("device", peer.id, "v4") || "-";
+          println(`${String(h++).padEnd(4)}${addr.padEnd(24)}${(l.localPort||"").padEnd(16)}14    00:12:34  10     200  0  12`);
+          any=true;
+        }
+        if(!any) println("(no EIGRP neighbors)");
+      } else if(sub === "ip" && (args[2]||"").toLowerCase()==="eigrp" && (args[3]||"").toLowerCase()==="topology"){
+        if(kind !== "device"){ println("(EIGRP only on devices)","cli-err"); return; }
+        const topo = buildEigrpTopology(obj);
+        println(`EIGRP-IPv4 Topology Table for AS(${(obj.eigrp&&obj.eigrp.as)||"?"})`);
+        println("Codes: P - Passive, A - Active, U - Update, ...");
+        println("       (Successor = best Feasible Distance; FS = Feasible Successor)");
+        println("");
+        if(!topo.length){ println("(no EIGRP topology — enable EIGRP on neighbors)"); return; }
+        for(const e of topo){
+          println(`P ${e.dest}, ${1+e.feasibleSuccessors.length} successors, FD is ${e.successor.fd}`);
+          println(`    via ${e.successor.nextHop} (${e.successor.fd}/${e.successor.rd}), ${e.successor.iface}  [Successor]`);
+          for(const fs of e.feasibleSuccessors){
+            println(`    via ${fs.nextHop} (${fs.fd}/${fs.rd}), ${fs.iface}  [FS]`);
+          }
+        }
+      } else if(sub === "access-lists" || (sub==="access" && (args[2]||"")==="lists") || (sub==="ip" && (args[2]||"").toLowerCase()==="access-lists")){
+        if(kind !== "device"){ println("(ACLs on devices)","cli-err"); return; }
+        const acls = obj.acls||[];
+        if(!acls.length){ println("(no access-lists configured)"); return; }
+        for(const a of acls){
+          println(`IP access list ${a.id}`);
+          for(const e of (a.entries||[]).slice().sort((x,y)=>(x.seq||0)-(y.seq||0))){
+            const portTxt = e.dst_port!=null?` eq ${e.dst_port}`:"";
+            println(`    ${e.seq||10} ${e.action} ${e.proto||"ip"} ${e.src||"any"}${e.src_wild?(" "+e.src_wild):""} ${e.dst||"any"}${e.dst_wild?(" "+e.dst_wild):""}${portTxt}`);
+          }
+        }
+      } else if(sub === "policy-map" || (sub==="qos")){
+        if(kind !== "device"){ println("(QoS on devices)","cli-err"); return; }
+        const rep = buildQosReport(obj);
+        if(!rep.length){ println("(no QoS policy-maps configured)"); return; }
+        for(const pm of rep){
+          println(`Policy Map ${pm.name}`);
+          for(const c of pm.classes){
+            println(`  Class ${c.name}`);
+            if(c.match!=="-")     println(`    match: ${c.match}`);
+            if(c.dscp!=="-")      println(`    set dscp ${c.dscp}`);
+            if(c.bandwidth!=="-") println(`    bandwidth ${c.bandwidth}`);
+            if(c.priority)        println(`    priority`);
+          }
+        }
       } else if(sub === "ip" && (args[2]||"").toLowerCase() === "ospf" && (args[3]||"").toLowerCase() === "neighbor"){
         if(kind !== "device"){ println("(OSPF only on devices)","cli-err"); return; }
         // Simulate OSPF neighbors: any directly-connected device on same subnet

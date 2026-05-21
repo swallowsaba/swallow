@@ -1218,16 +1218,19 @@ function bondActiveMember(obj){
   if(!obj || !obj.bonding || !obj.bonding.enabled) return null;
   const mode = obj.bonding.mode || "active-backup";
   const members = obj.bonding.members || [];
+  // active-backup: prefer the primary if it is up
   if(mode === "active-backup"){
     const prim = obj.bonding.primary || members[0];
     const pm = (obj.interfaces||[]).find(i=>i.id===prim);
-    if(pm && pm.status === "up") return prim;
-    for(const mid of members){
-      const m = (obj.interfaces||[]).find(i=>i.id===mid);
-      if(m && m.status === "up") return mid;
-    }
+    if(pm && (pm.status||"up") === "up") return prim;
   }
-  return null; // for non-active-backup, all members carry traffic
+  // All modes (LACP/balance-rr, or active-backup after primary failure):
+  // return the first up member as the representative carrier.
+  for(const mid of members){
+    const m = (obj.interfaces||[]).find(i=>i.id===mid);
+    if(m && (m.status||"up") === "up") return mid;
+  }
+  return null; // no member is up → bond is down
 }
 // Detect MAC collisions across all interfaces. Returns array of { mac, locations: [{kind,id,iface}, ...] }
 function findMacCollisions(){

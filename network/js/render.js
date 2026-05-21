@@ -1073,10 +1073,36 @@ function effectiveConnStatus(c){
   return c.status || "up";
 }
 
-// === Unified bond member cable state ===
-// "1本論理リンク" model: only the ACTIVE member's cable is drawn (as the logical bond link).
-// Non-active members are hidden (abstracted into the bond). The logical link stays animated
-// regardless of which physical member currently carries traffic.
+// Pick the ONE connection that represents the logical bond link for this element.
+// Always resolves to a real, existing cable (so the logical link never disappears):
+//   1) the active member's cable, else 2) any up member's cable,
+//   3) the primary's cable, 4) any member cable.
+function bondRepresentativeCable(obj){
+  if(!obj || !obj.bonding || !obj.bonding.enabled) return null;
+  const members = obj.bonding.members || [];
+  const memberCable = {};
+  for(const c of (App.config.connections||[])){
+    for(const ep of [c.from, c.to]){
+      if(ep && (ep.device===obj.id||ep.server===obj.id) && members.includes(ep.interface)){
+        if(!memberCable[ep.interface]) memberCable[ep.interface] = c.id;
+      }
+    }
+  }
+  const active = (typeof bondActiveMember==="function") ? bondActiveMember(obj) : null;
+  if(active && memberCable[active]) return memberCable[active];
+  for(const mid of members){
+    const m = (obj.interfaces||[]).find(i=>i.id===mid);
+    if(m && (m.status||"up")==="up" && memberCable[mid]) return memberCable[mid];
+  }
+  const primary = obj.bonding.primary || members[0];
+  if(memberCable[primary]) return memberCable[primary];
+  for(const mid of members) if(memberCable[mid]) return memberCable[mid];
+  return null;
+}
+
+// === Unified bond member cable state (single logical link) ===
+// Exactly ONE cable per bond (the representative) is drawn as the logical link.
+// It is always a real existing cable, so the line never vanishes on member failure.
 function bondCableState(c){
   for(const ep of [c.from, c.to]){
     if(!ep) continue;
@@ -1084,21 +1110,21 @@ function bondCableState(c){
     if(!obj || !obj.bonding || !obj.bonding.enabled) continue;
     const members = obj.bonding.members || [];
     if(!members.includes(ep.interface)) continue;
+    const rep = bondRepresentativeCable(obj);
+    // Non-representative member cables are hidden (abstracted into the single logical link)
+    if(c.id !== rep) return { role:"hidden", isDown:false, traffic:"idle", hidden:true };
+    // This IS the representative logical link
     const eff = (typeof bondEffectiveStatus === "function") ? bondEffectiveStatus(obj) : "up";
     const active = (typeof bondActiveMember === "function") ? bondActiveMember(obj) : null;
     const primary = obj.bonding.primary || members[0];
-    // Whole bond down → show ONE representative link as down (primary), hide the rest
     if(eff === "down"){
-      return { role:"down", isDown:true, traffic:"idle", hidden: (ep.interface !== primary) };
+      // All members down → the logical link is genuinely down
+      return { role:"down", isDown:true, traffic:"idle", hidden:false };
     }
-    // The active member = the single logical link. Always solid + animated.
-    if(ep.interface === active){
-      let lvl = (typeof bondConfiguredTraffic === "function") ? bondConfiguredTraffic(obj) : "medium";
-      if(!lvl || lvl === "idle") lvl = "medium";
-      return { role: (active !== primary) ? "failover" : "active", isDown:false, traffic: lvl, hidden:false };
-    }
-    // Non-active member → hidden (its physical cable is abstracted away by the bond)
-    return { role:"standby", isDown:false, traffic:"idle", hidden:true };
+    let lvl = (typeof bondConfiguredTraffic === "function") ? bondConfiguredTraffic(obj) : "medium";
+    if(!lvl || lvl === "idle") lvl = "medium";
+    const isFailover = (ep.interface === active && active !== primary);
+    return { role: isFailover ? "failover" : "active", isDown:false, traffic: lvl, hidden:false };
   }
   return null;
 }

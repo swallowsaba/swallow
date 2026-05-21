@@ -3,6 +3,356 @@
 function getRoutingTable(deviceId){
   return (App.config.routing_tables||[]).find(r=>r.device===deviceId);
 }
+
+function ipToNum(ip){
+  if(!ip) return 0;
+  const p = ip.split("."); if(p.length!==4) return 0;
+  return ((+p[0])<<24>>>0) + ((+p[1])<<16) + ((+p[2])<<8) + (+p[3]);
+}
+
+/* =========================================================================
+ * FHRP — First Hop Redundancy Protocols (HSRP / VRRP / GLBP)
+ * Routers in a group share a Virtual IP (and Virtual MAC). One router is
+ * Active/Master (forwards for the VIP); others are Standby/Backup.
+ * Election: highest priority wins; tie → highest real IP.
+ * Config on a device interface: iface.fhrp = { proto, group, priority, vip, preempt }
+ * ========================================================================= */
+function fhrpVirtualMac(proto, group){
+  const g = (group||0) & 0xff;
+  if(proto === "vrrp")  return "00:00:5e:00:01:" + g.toString(16).padStart(2,"0");
+  if(proto === "glbp")  return "00:07:b4:00:00:" + g.toString(16).padStart(2,"0");
+  return "00:00:0c:07:ac:" + g.toString(16).padStart(2,"0"); // HSRPv1
+}
+function buildFhrpGroups(){
+  const groups = {};
+  for(const d of (App.config.devices||[])){
+    for(const i of (d.interfaces||[])){
+      const f = i.fhrp;
+      if(!f || !f.proto || !f.vip) continue;
+      const key = f.proto + ":" + (f.group||0) + ":" + f.vip;
+      groups[key] = groups[key] || { proto:f.proto, group:f.group||0, vip:f.vip,
+        vmac: fhrpVirtualMac(f.proto, f.group||0), members:[] };
+      groups[key].members.push({
+        device: d.id, iface: i.id,
+        priority: (f.priority==null ? 100 : f.priority),
+        preempt: !!f.preempt,
+        realIp: (i.ip||"").split("/")[0],
+        up: (d.status||"running")==="running" && (i.status||"up")==="up"
+      });
+    }
+  }
+  for(const k in groups){
+    const g = groups[k];
+    let act = null;
+    for(const m of g.members.filter(m=>m.up)){
+      if(!act){ act = m; continue; }
+      if(m.priority > act.priority ||
+         (m.priority === act.priority && ipToNum(m.realIp) > ipToNum(act.realIp))) act = m;
+    }
+    g.active = act;
+    g.activeRole = g.proto === "vrrp" ? "Master" : "Active";
+    g.standbyRole = g.proto === "vrrp" ? "Backup" : "Standby";
+  }
+  return groups;
+}
+function fhrpActiveForVip(vip){
+  const groups = buildFhrpGroups();
+  for(const k in groups){
+    if(groups[k].vip === vip && groups[k].active) return groups[k].active.device;
+  }
+  return null;
+}
+function buildFhrpState(device){
+  const groups = buildFhrpGroups();
+  const out = [];
+  for(const k in groups){
+    const g = groups[k];
+    const mine = g.members.find(m=>m.device===device.id);
+    if(!mine) continue;
+    const isActive = g.active && g.active.device===device.id;
+    const standby = g.members.filter(m=>m.up && (!g.active||m.device!==g.active.device))
+                     .sort((a,b)=> b.priority-a.priority || ipToNum(b.realIp)-ipToNum(a.realIp))[0];
+    out.push({
+      proto:g.proto, group:g.group, iface:mine.iface, vip:g.vip, vmac:g.vmac,
+      priority:mine.priority, preempt:mine.preempt,
+      state: !mine.up ? "Init" : (isActive ? g.activeRole : (g.active ? g.standbyRole : "Init")),
+      activeDevice: g.active ? g.active.device : "(none)",
+      standbyDevice: standby ? standby.device : "(none)"
+    });
+  }
+  return out;
+}
+
+/* =========================================================================
+ * EIGRP — DUAL. Successor = lowest Feasible Distance (FD).
+ * Feasible Successor satisfies Feasibility Condition: neighbor RD < successor FD.
+ * Metric (classic): 256 * (10^7/min_bw_kbps + cumulative_delay/10)
+ * Config: device.eigrp = { enabled, as, router_id }
+ * ========================================================================= */
+function eigrpIfaceMetric(iface){
+  const bwKbps = ((iface && iface.speed) || 100) * 1000;
+  const delay = (iface && iface.delay) || 10;
+  const bwTerm = Math.floor(1e7 / Math.max(1, bwKbps));
+  return 256 * (bwTerm + delay);
+}
+function subnetOf(cidr){
+  if(!cidr || !cidr.includes("/")) return null;
+  try {
+    const [ip, bitsStr] = cidr.split("/");
+    const bits = +bitsStr;
+    const n = ipToNum(ip);
+    const mask = bits===0 ? 0 : (0xffffffff << (32-bits)) >>> 0;
+    const net = (n & mask) >>> 0;
+    return [(net>>>24)&0xff,(net>>>16)&0xff,(net>>>8)&0xff,net&0xff].join(".")+"/"+bits;
+  } catch(e){ return null; }
+}
+function buildEigrpTopology(device){
+  if(!device.eigrp || !device.eigrp.enabled) return [];
+  const as = device.eigrp.as;
+  const results = {};
+  const lldp = (typeof buildLldpNeighbors==="function") ? buildLldpNeighbors(device) : [];
+  for(const l of lldp){
+    const peer = Cfg.byId("devices", l.neighbor);
+    if(!peer || !peer.eigrp || !peer.eigrp.enabled || peer.eigrp.as !== as) continue;
+    const localIf = (device.interfaces||[]).find(x=>x.id===l.localPort);
+    if(!localIf || (localIf.status||"up")!=="up") continue;
+    const linkMetric = eigrpIfaceMetric(localIf);
+    for(const pif of (peer.interfaces||[])){
+      const net = (pif.ip||"").includes("/") ? subnetOf(pif.ip) : null;
+      if(!net) continue;
+      const rd = eigrpIfaceMetric(pif);
+      const fd = linkMetric + rd;
+      results[net] = results[net] || { dest:net, paths:[] };
+      results[net].paths.push({ via:peer.id, nextHop:(pif.ip||"").split("/")[0], iface:l.localPort, fd, rd });
+    }
+  }
+  const out = [];
+  for(const k in results){
+    const r = results[k];
+    r.paths.sort((a,b)=>a.fd-b.fd);
+    const succ = r.paths[0];
+    const fs = r.paths.slice(1).filter(p=>p.rd < succ.fd);
+    out.push({ dest:r.dest, successor:succ, feasibleSuccessors:fs, allPaths:r.paths });
+  }
+  return out;
+}
+
+/* =========================================================================
+ * RSTP / MSTP — port roles & states (extends existing STP)
+ * RSTP roles: Root, Designated, Alternate (discarding), Backup (discarding).
+ * MSTP: maps VLANs to instances (MSTI), each runs its own RSTP.
+ * Config: switch.stp = { mode, priority, mst_instances:[{id,vlans,priority}] }
+ * ========================================================================= */
+function stpModeOf(sw){ return (sw.stp && sw.stp.mode) || "rstp"; }
+function rstpPortRole(sw, ifaceId){
+  if(typeof computeStpForSwitch !== "function") return null;
+  try {
+    const stp = computeStpForSwitch(sw);
+    for(const v of (stp.vlans||[])){
+      for(const p of (v.ports||[])){
+        if(p.iface !== ifaceId) continue;
+        const role = (p.role||"").toLowerCase();
+        let rstpRole, state;
+        if(role.startsWith("root")){ rstpRole="Root"; state="FWD"; }
+        else if(role.startsWith("desig")){ rstpRole="Designated"; state="FWD"; }
+        else if(role.startsWith("altn")||role.startsWith("block")||role.startsWith("disc")){ rstpRole="Alternate"; state="BLK"; }
+        else if(role.startsWith("backup")){ rstpRole="Backup"; state="BLK"; }
+        else { rstpRole = p.role||"-"; state = (p.state||"FWD"); }
+        return { vlan:v.vlan, role:rstpRole, state, isRoot:v.isRoot };
+      }
+    }
+  } catch(e){}
+  return null;
+}
+function buildMstInstances(sw){
+  if(stpModeOf(sw) !== "mstp") return null;
+  const insts = (sw.stp && sw.stp.mst_instances) || [];
+  const out = [{ id:0, vlans:"(remaining)", priority:(sw.stp&&sw.stp.priority)||32768 }];
+  for(const m of insts) out.push({ id:m.id, vlans:m.vlans||"", priority:m.priority||32768 });
+  return out;
+}
+
+/* =========================================================================
+ * ACL — packet filter (first match wins; implicit deny at end)
+ * Config: device.acls=[{id, entries:[{seq,action,proto,src,src_wild,dst,dst_wild,dst_port}]}]
+ * Applied: iface.acl_in / iface.acl_out (acl id)
+ * ========================================================================= */
+function ipInWildcard(ip, base, wild){
+  if(!ip || !base) return false;
+  if(base.includes("/")) return inSubnet(ip, base);
+  const ipn = ipToNum(ip), basen = ipToNum(base);
+  const w = wild ? ipToNum(wild) : 0;
+  return ((ipn ^ basen) & (~w >>> 0)) === 0;
+}
+function aclMatchEntry(e, pkt){
+  if(e.proto && e.proto !== "ip" && e.proto !== pkt.proto) return false;
+  if(e.src && e.src !== "any" && !ipInWildcard(pkt.src, e.src, e.src_wild)) return false;
+  if(e.dst && e.dst !== "any" && !ipInWildcard(pkt.dst, e.dst, e.dst_wild)) return false;
+  if(e.dst_port != null && pkt.dstPort != null && +e.dst_port !== +pkt.dstPort) return false;
+  return true;
+}
+function evalAcl(device, aclId, pkt){
+  const acl = (device.acls||[]).find(a=>a.id===aclId);
+  if(!acl) return { permit:true, matched:null };
+  const entries = (acl.entries||[]).slice().sort((a,b)=>(a.seq||0)-(b.seq||0));
+  for(const e of entries){
+    if(aclMatchEntry(e, pkt)) return { permit:e.action==="permit", matched:e };
+  }
+  return { permit:false, matched:{ action:"deny", implicit:true } };
+}
+
+/* ====== QoS — DiffServ classification (report/visualization) ====== */
+function buildQosReport(device){
+  const out = [];
+  const q = device.qos;
+  if(!q || !Array.isArray(q.policies)) return out;
+  for(const p of q.policies){
+    out.push({ name:p.name, classes:(p.classes||[]).map(c=>({
+      name:c.name, match:c.match||"-", dscp:c.dscp||"-",
+      bandwidth:c.bandwidth_pct!=null?(c.bandwidth_pct+"%"):"-", priority:!!c.priority
+    }))});
+  }
+  return out;
+}
+
+/* =========================================================================
+ * SERVER CLUSTERING (Active/Standby, shared-disk / mirror-disk)
+ * Multiple servers form a cluster sharing a virtual service IP (cluster VIP).
+ * Active node owns the VIP; on Active failure, a Standby takes over (failover).
+ * Config on a server: server.cluster = { name, vip, priority, role_pref, disk:"shared"|"mirror" }
+ * Servers with the same cluster.name form one cluster.
+ * ========================================================================= */
+function buildClusters(){
+  const clusters = {};
+  for(const s of (App.config.servers||[])){
+    const c = s.cluster;
+    if(!c || !c.name) continue;
+    clusters[c.name] = clusters[c.name] || {
+      name:c.name, vip:c.vip||"", disk:c.disk||"shared", members:[]
+    };
+    if(c.vip && !clusters[c.name].vip) clusters[c.name].vip = c.vip;
+    clusters[c.name].members.push({
+      server:s.id,
+      priority:(c.priority==null?100:c.priority),
+      up:(s.status||"running")==="running",
+      heartbeatIf:c.heartbeat_if||null
+    });
+  }
+  // Elect Active node per cluster: highest priority among up members (tie → id order)
+  for(const k in clusters){
+    const cl = clusters[k];
+    let act=null;
+    for(const m of cl.members.filter(m=>m.up)){
+      if(!act){ act=m; continue; }
+      if(m.priority>act.priority || (m.priority===act.priority && m.server<act.server)) act=m;
+    }
+    cl.active = act ? act.server : null;
+    // Standby = next highest up member
+    const standby = cl.members.filter(m=>m.up && (!act||m.server!==act.server))
+                      .sort((a,b)=>b.priority-a.priority || (a.server<b.server?-1:1))[0];
+    cl.standby = standby ? standby.server : null;
+    cl.status = act ? (cl.members.every(m=>m.up) ? "healthy" : "degraded") : "down";
+  }
+  return clusters;
+}
+// Which server currently owns a cluster VIP (the active node)
+function clusterActiveForVip(vip){
+  const cs = buildClusters();
+  for(const k in cs){ if(cs[k].vip===vip && cs[k].active) return cs[k].active; }
+  return null;
+}
+function clusterOf(serverId){
+  const s = Cfg.byId("servers", serverId);
+  if(!s || !s.cluster || !s.cluster.name) return null;
+  return buildClusters()[s.cluster.name] || null;
+}
+
+/* =========================================================================
+ * SERVER LOAD BALANCING (L4/L7) + GSLB (DNS round-robin)
+ * A loadbalancer device has VIP(s) each fronting a pool of real servers.
+ * Algorithms: round-robin, least-connections, weighted, ip-hash.
+ * Only "healthy" (running, optional health-check port up) members receive traffic.
+ * Config on a loadbalancer device: device.lb = { vips:[{ vip, port, algorithm,
+ *   pool:[{ server, weight, port }] }] }
+ * GSLB: device.gslb = { domains:[{ fqdn, algorithm, records:[{ site_ip, weight }] }] }
+ * ========================================================================= */
+function lbHealthyMembers(vipCfg){
+  const out = [];
+  for(const m of (vipCfg.pool||[])){
+    const s = Cfg.byId("servers", m.server);
+    if(!s) continue;
+    const up = (s.status||"running")==="running";
+    out.push({ server:m.server, weight:(m.weight==null?1:m.weight),
+      port:m.port||vipCfg.port, up });
+  }
+  return out;
+}
+// Pick a backend per the algorithm. `conns` optional map server→activeConns.
+function lbSelectBackend(vipCfg, key, conns){
+  const healthy = lbHealthyMembers(vipCfg).filter(m=>m.up);
+  if(!healthy.length) return null;
+  const algo = vipCfg.algorithm || "round-robin";
+  if(algo === "least-connections" && conns){
+    return healthy.slice().sort((a,b)=>(conns[a.server]||0)-(conns[b.server]||0))[0];
+  }
+  if(algo === "ip-hash" && key){
+    let h=0; for(let i=0;i<key.length;i++) h=(h*31+key.charCodeAt(i))>>>0;
+    return healthy[h % healthy.length];
+  }
+  if(algo === "weighted"){
+    const total = healthy.reduce((s,m)=>s+m.weight,0);
+    let r = (lbSelectBackend._rr = ((lbSelectBackend._rr||0)+1)) % total;
+    for(const m of healthy){ if(r < m.weight) return m; r -= m.weight; }
+    return healthy[0];
+  }
+  // round-robin (default)
+  const idx = (lbSelectBackend._rr = ((lbSelectBackend._rr||0)+1)) % healthy.length;
+  return healthy[idx];
+}
+function buildLbState(device){
+  if(!device.lb || !Array.isArray(device.lb.vips)) return [];
+  return device.lb.vips.map(v=>{
+    const members = lbHealthyMembers(v);
+    return {
+      vip:v.vip, port:v.port, algorithm:v.algorithm||"round-robin",
+      total:members.length, healthy:members.filter(m=>m.up).length,
+      members
+    };
+  });
+}
+// GSLB: resolve a domain to a site IP via DNS round-robin / weighted, skipping down sites
+function gslbResolve(device, fqdn){
+  if(!device.gslb || !Array.isArray(device.gslb.domains)) return null;
+  const dom = device.gslb.domains.find(d=>d.fqdn===fqdn);
+  if(!dom) return null;
+  const healthy = (dom.records||[]).filter(r=>{
+    if(!r.health_server) return true;
+    const s = Cfg.byId("servers", r.health_server);
+    return !s || (s.status||"running")==="running";
+  });
+  if(!healthy.length) return null;
+  const algo = dom.algorithm || "round-robin";
+  if(algo === "weighted"){
+    const total = healthy.reduce((s,r)=>s+(r.weight||1),0);
+    let x = (gslbResolve._rr = ((gslbResolve._rr||0)+1)) % total;
+    for(const r of healthy){ const w=r.weight||1; if(x<w) return r.site_ip; x-=w; }
+  }
+  const idx = (gslbResolve._rr = ((gslbResolve._rr||0)+1)) % healthy.length;
+  return healthy[idx].site_ip;
+}
+function buildGslbState(device){
+  if(!device.gslb || !Array.isArray(device.gslb.domains)) return [];
+  return device.gslb.domains.map(d=>({
+    fqdn:d.fqdn, algorithm:d.algorithm||"round-robin",
+    records:(d.records||[]).map(r=>{
+      let up = true;
+      if(r.health_server){ const s=Cfg.byId("servers",r.health_server); up = !s || (s.status||"running")==="running"; }
+      return { site_ip:r.site_ip, weight:r.weight||1, up };
+    })
+  }));
+}
+
+
 function findRouteFor(deviceId, destIp){
   const rt = getRoutingTable(deviceId);
   if(!rt) return null;
@@ -504,6 +854,40 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
       return { ok:true, path };
     }
 
+    // Load balancer: if this device owns the destination VIP, select a healthy backend
+    // and continue routing toward it (real LB behavior — VIP fronts a server pool).
+    if(cur.kind === "device" && curObj.lb && Array.isArray(curObj.lb.vips)){
+      const vipCfg = curObj.lb.vips.find(v=> ipOnly(v.vip) === destIp && (dstPort==null || v.port==null || +v.port===+dstPort));
+      if(vipCfg){
+        const backend = (typeof lbSelectBackend==="function") ? lbSelectBackend(vipCfg, srcIp) : null;
+        if(!backend){
+          return { ok:false, path,
+            reason:`LB ${curObj.id} VIP ${destIp}: no healthy backend (全プールダウン)`,
+            blockedAt:{ kind:"device", id:curObj.id } };
+        }
+        const bSrv = Cfg.byId("servers", backend.server);
+        const bIp = bSrv ? elementPrimaryIp("server", bSrv.id, destFam) : null;
+        if(bIp){
+          // Re-target the flow to the selected real server
+          path[path.length-1].lbPick = backend.server;
+          destIp = bIp;  // continue resolving toward the chosen backend
+        }
+      }
+    }
+
+    // ACL inbound filter on the ingress device interface (standard first-match, implicit deny)
+    if(cur.kind === "device" && hop > 0 && cur.ingressIface){
+      const inIf = (curObj.interfaces||[]).find(i=>i.id===cur.ingressIface);
+      if(inIf && inIf.acl_in){
+        const res = evalAcl(curObj, inIf.acl_in, { proto, src:srcIp, dst:destIp, dstPort });
+        if(!res.permit){
+          return { ok:false, path,
+            reason:`BLOCKED by ACL ${inIf.acl_in} (in) on ${curObj.id} ${inIf.id}`,
+            blockedAt:{ kind:"device", id:curObj.id } };
+        }
+      }
+    }
+
     // Firewall policy at this device
     if(cur.kind === "device" && curObj.type === "firewall" && hop > 0){
       const pol = getFwPolicies(curObj.id);
@@ -610,7 +994,7 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
       return { ok:true, path };
     }
 
-    cur = { kind:next.peerKind, obj:peerObj };
+    cur = { kind:next.peerKind, obj:peerObj, ingressIface: next.peerIf && next.peerIf.id };
   }
   return { ok:false, path, reason:"max hops exceeded" };
 }
