@@ -6,13 +6,23 @@ function getRoutingTable(deviceId){
 function findRouteFor(deviceId, destIp){
   const rt = getRoutingTable(deviceId);
   if(!rt) return null;
-  let best=null, bestBits=-1;
+  const dev = Cfg.byId("devices", deviceId);
+  let best=null, bestBits=-1, bestMetric=Infinity;
   for(const r of (rt.routes||[])){
     if(r.status!=="active") continue;
     if(!destIp || !r.destination) continue;
-    if(inSubnet(destIp, r.destination)){
-      const bits = cidrBits(r.destination);
-      if(bits > bestBits){ best=r; bestBits=bits; }
+    if(!inSubnet(destIp, r.destination)) continue;
+    // Real-network behavior: a route is withdrawn when its egress interface goes down.
+    // Skip such routes so a higher-metric backup route (floating static) can take over.
+    if(r.interface && dev){
+      const eif = (dev.interfaces||[]).find(i=>i.id===r.interface);
+      if(eif && (eif.status==="down" || eif.status==="err-disabled")) continue;
+    }
+    const bits = cidrBits(r.destination);
+    const metric = (r.metric==null ? 1 : r.metric);
+    // Longest-prefix-match first; among equal prefixes, lowest metric wins (admin distance / cost)
+    if(bits > bestBits || (bits===bestBits && metric < bestMetric)){
+      best=r; bestBits=bits; bestMetric=metric;
     }
   }
   return best;

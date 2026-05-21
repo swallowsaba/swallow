@@ -478,7 +478,7 @@ function renderBondOverlay(g, obj, kind){
   const w = obj.width || (kind==="server"?130:120);
   const h = obj.height || (kind==="server"?70:70);
 
-  // Resolve member physical port positions (cables attach to these real ports)
+  // Member physical port positions (relative to the element group g)
   const positions = computePortPositions(obj, kind);
   const memberPorts = [];
   for(const mid of members){
@@ -490,74 +490,79 @@ function renderBondOverlay(g, obj, kind){
   }
   if(!memberPorts.length) return;
 
-  // Bond status
+  // Bond status + colors
   const effStatus = (typeof bondEffectiveStatus==="function") ? bondEffectiveStatus(obj) : "up";
   const active = (typeof bondActiveMember==="function") ? bondActiveMember(obj) : null;
   let color = "var(--cyan,#06b6d4)";
   if(effStatus==="down") color = "var(--red)";
   else if(effStatus==="degraded") color = "var(--orange)";
 
-  // 1) Highlight each member port: active=green, standby=grey, down=red
+  // Bounding box that ENCLOSES the member port squares
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   for(const mp of memberPorts){
     const p = mp.pos;
-    const r = Math.max(8, ((p.w||10)+(p.h||10))/2 * 0.8);
-    let ring = mp.up ? (mp.id===active ? "var(--green)" : "var(--text-mute)") : "var(--red)";
-    ce("circle", {
-      cx:p.cx, cy:p.cy, r:r, fill:"none",
-      stroke:ring, "stroke-width":2,
-      "stroke-dasharray": mp.up ? "" : "2 1.5",
-      "pointer-events":"none",
-      "class": (mp.id===active && effStatus==="degraded") ? "bond-pip-active" : ""
-    }, g);
-    // Active marker (small ▲)
-    if(mp.id===active && mp.up){
-      ce("text", { x:p.cx, y:p.cy - r - 3, "text-anchor":"middle",
-        "font-size":7, "font-weight":"800", fill:"var(--green)",
-        "pointer-events":"none", text:"ACTIVE" }, g);
+    const pw = p.w||12, ph = p.h||12;
+    minX=Math.min(minX, p.x); minY=Math.min(minY, p.y);
+    maxX=Math.max(maxX, p.x+pw); maxY=Math.max(maxY, p.y+ph);
+  }
+  const side = memberPorts[0].pos.side || (kind==="server"?"top":"bottom");
+  const pad = 7;
+  const labelH = 26;          // space reserved for the bond0 label + IP
+  const minBoxW = 96;         // ensure room for label text
+
+  let bx = minX - pad, by = minY - pad;
+  let bw = (maxX - minX) + pad*2, bh = (maxY - minY) + pad*2;
+
+  // Extend the box AWAY from the server body to hold the label, and slightly INTO the body
+  // edge so it visibly attaches to the server outer frame.
+  if(side==="top"){          // ports on top edge of server → label above
+    by -= labelH; bh += labelH;
+    bh += 3; // overlap into body edge so it touches
+  } else if(side==="bottom"){ // ports on bottom edge → label below
+    bh += labelH;
+    by -= 3; bh += 3;
+  } else if(side==="left"){
+    bx -= (minBoxW - bw > 0 ? (minBoxW-bw) : 40); bw = Math.max(bw, minBoxW);
+  } else { // right
+    bw = Math.max(bw, minBoxW);
+  }
+  // Ensure minimum width and center horizontally over ports for top/bottom
+  if(side==="top" || side==="bottom"){
+    if(bw < minBoxW){
+      const cx = (bx + bw/2);
+      bx = cx - minBoxW/2; bw = minBoxW;
     }
   }
 
-  // 2) Bracket grouping the member ports → converge toward the badge anchor on the body edge
-  // Anchor: midpoint of member ports, pulled to nearest body edge
-  let mx=0, my=0;
-  for(const mp of memberPorts){ mx+=mp.pos.cx; my+=mp.pos.cy; }
-  mx/=memberPorts.length; my/=memberPorts.length;
-  // Badge sits just OUTSIDE the server body border (touching, never inside, never separated)
-  const side = memberPorts[0].pos.side || "right";
-  let badgeX, badgeY, badgeW=92, badgeH=30;
-  if(side==="bottom"){ badgeX = clamp(mx-badgeW/2, 0, w-badgeW); badgeY = h; }
-  else if(side==="top"){ badgeX = clamp(mx-badgeW/2, 0, w-badgeW); badgeY = -badgeH; }
-  else if(side==="left"){ badgeX = -badgeW; badgeY = clamp(my-badgeH/2, 0, h-badgeH); }
-  else { badgeX = w; badgeY = clamp(my-badgeH/2, 0, h-badgeH); }
+  // 1) The enclosing bond0 container (rounded rect) — drawn behind the ports
+  const boxG = ce("g", { "class":"bond-container", "pointer-events":"none" }, g);
+  ce("rect", { x:bx, y:by, width:bw, height:bh, rx:7, ry:7,
+    fill:"rgba(6,182,212,0.07)", stroke:color, "stroke-width":1.8,
+    "stroke-dasharray": effStatus==="down" ? "5 3" : "" }, boxG);
 
-  // Light grouping lines from each member port to badge center (internal, dashed, subtle)
-  const bcx = badgeX+badgeW/2, bcy = badgeY+badgeH/2;
-  for(const mp of memberPorts){
-    ce("line", { x1:mp.pos.cx, y1:mp.pos.cy, x2:bcx, y2:bcy,
-      stroke:color, "stroke-width":1, "stroke-dasharray":"2 2", opacity:0.4,
-      "pointer-events":"none" }, g);
-  }
-
-  // 3) Bond status badge — always attached to (inside) the server body edge, never separated
-  const badgeG = ce("g", { "class":"bond-badge", "pointer-events":"none" }, g);
-  ce("rect", { x:badgeX, y:badgeY, width:badgeW, height:badgeH, rx:5, ry:5,
-    fill:"var(--panel)", stroke:color, "stroke-width":1.8, opacity:0.97 }, badgeG);
+  // 2) Label: "● bond0 [mode]" and IP — placed in the reserved label area
   const statusIcon = effStatus==="up" ? "●" : (effStatus==="degraded" ? "◐" : "✕");
   const modeShort = (obj.bonding.mode||"active-backup").replace("active-backup","A/B").replace("802.3ad","LACP").replace("balance-","bal-");
-  ce("text", { x:badgeX+6, y:badgeY+11, "font-size":9, "font-family":"var(--mono)",
-    "font-weight":"800", fill:color, text:`${statusIcon} ${obj.bonding.bond_name||"bond0"}` }, badgeG);
-  ce("text", { x:badgeX+badgeW-5, y:badgeY+11, "text-anchor":"end",
-    "font-size":7, "font-family":"var(--mono)", fill:color, text:`[${modeShort}]` }, badgeG);
-  // IP line
+  let labelY;
+  if(side==="top") labelY = by + 10;            // label near top of box
+  else if(side==="bottom") labelY = by + bh - 15; // label near bottom of box
+  else labelY = by + 11;
+  ce("text", { x:bx+6, y:labelY, "font-size":9, "font-family":"var(--mono)",
+    "font-weight":"800", fill:color, text:`${statusIcon} ${obj.bonding.bond_name||"bond0"} [${modeShort}]` }, boxG);
   const ipTxt = obj.bonding.bond_ip || "(IP未設定!)";
-  ce("text", { x:badgeX+6, y:badgeY+23, "font-size":8, "font-family":"var(--mono)",
-    fill: obj.bonding.bond_ip ? "var(--text)" : "var(--red)", text: ipTxt }, badgeG);
+  ce("text", { x:bx+6, y:labelY+11, "font-size":8, "font-family":"var(--mono)",
+    fill: obj.bonding.bond_ip ? "var(--text-dim)" : "var(--red)", text: ipTxt }, boxG);
 
-  // Tooltip
-  badgeG.addEventListener("mouseenter",(e)=>showTooltip(e,
-    `Bond: ${obj.bonding.bond_name||"bond0"}\nMode: ${obj.bonding.mode||"active-backup"}\nMembers: ${members.join(", ")}\nActive: ${active||"(all)"}\nStatus: ${effStatus}\nIP: ${obj.bonding.bond_ip||"(未設定!)"}`));
-  badgeG.addEventListener("mouseleave", hideTooltip);
-  badgeG.setAttribute("pointer-events","all");
+  // 3) Tiny ACTIVE marker above the active member port (so the live NIC is obvious)
+  for(const mp of memberPorts){
+    if(mp.id===active && mp.up){
+      const p = mp.pos;
+      const my = (side==="top") ? (p.y + (p.h||12) + 7) : (p.y - 5);
+      ce("text", { x:p.cx, y:my, "text-anchor":"middle",
+        "font-size":6.5, "font-weight":"800", fill:"var(--green)",
+        "pointer-events":"none", text:"ACTIVE" }, boxG);
+    }
+  }
 }
 
 function renderVpcOverlay(){
@@ -785,10 +790,10 @@ function renderDevice(d){
   drawDeviceIcon(g, d.type, w, h);
   ce("text", { "class":"element-label", x:w/2, y:h-7, text:d.label||d.id }, g);
   renderStatusLed(g, w-9, 9, d.status);
+  // Bonding container (drawn BEFORE ports so member ports appear inside/on top of it)
+  renderBondOverlay(g, d, "device");
   // Interface ports (bottom edge for devices)
   renderPorts(g, d, "device");
-  // Bonding bracket (if applicable)
-  renderBondOverlay(g, d, "device");
   if(App.selected && App.selected.kind==="device" && App.selected.id===d.id){
     g.classList.add("selected");
     addResizeHandles(g, w, h);
@@ -845,10 +850,10 @@ function renderServer(s){
   }
 
   renderStatusLed(g, w-9, 9, s.status);
+  // Bonding container (drawn BEFORE ports so member ports appear inside/on top of it)
+  renderBondOverlay(g, s, "server");
   // Interface ports (top edge for servers)
   renderPorts(g, s, "server");
-  // Bonding bracket
-  renderBondOverlay(g, s, "server");
 
   if(App.selected && App.selected.kind==="server" && App.selected.id===s.id){
     g.classList.add("selected");
@@ -1163,7 +1168,7 @@ function renderConnection(c){
     lbl = (lbl ? lbl+" · " : "") + "⚡ FLAPPING";
   }
   if(failoverActive){
-    lbl = (lbl ? lbl+" · " : "") + "⇄ FAILOVER";
+    lbl = (lbl ? lbl+" · " : "") + "⇄ FAILOVER (通信中)";
   }
   if(lbl){
     const lblW = Math.max(28, lbl.length * 6.5 + 10);
@@ -1171,7 +1176,7 @@ function renderConnection(c){
     let lblStroke = "var(--border)";
     if(isDown){ lblFill = "rgba(248,81,73,0.15)"; lblStroke = "var(--red)"; }
     else if(isFlapping){ lblFill = "rgba(245,158,11,0.18)"; lblStroke = "var(--orange)"; }
-    else if(failoverActive){ lblFill = "rgba(6,182,212,0.18)"; lblStroke = "var(--cyan,#06b6d4)"; }
+    else if(failoverActive){ lblFill = "rgba(63,185,80,0.18)"; lblStroke = "var(--green)"; }
     ce("rect", { x:midX-lblW/2, y:midY-8, width:lblW, height:14, rx:4, ry:4,
       fill:lblFill, stroke:lblStroke,"stroke-width": isFlapping ? 1.5 : 0.5,
       "class": isFlapping ? "flap-label-bg" : "", "pointer-events":"none" }, g);
@@ -1179,7 +1184,7 @@ function renderConnection(c){
       x:midX, y:midY+0.5, "dominant-baseline":"middle", text:lbl }, g);
     if(isDown) txt.setAttribute("style","fill:var(--red);font-weight:700");
     else if(isFlapping) txt.setAttribute("style","fill:var(--orange);font-weight:800");
-    else if(failoverActive) txt.setAttribute("style","fill:var(--cyan,#06b6d4);font-weight:800");
+    else if(failoverActive) txt.setAttribute("style","fill:var(--green);font-weight:800");
   }
 
   // Visible X mark on the down side(s) of the connection
