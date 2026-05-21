@@ -307,16 +307,12 @@ servers:
     height: 70
     interfaces:
       - id: eth0
-        ip: 10.3.0.10/24
-        ipv6: "2001:db8:3::10/64"
         network: db-segment
         mac: "de:ad:00:00:03:01"
         speed: 10000
         port_type: sfp-plus
         status: up
       - id: eth1
-        ip: 10.3.0.11/24
-        ipv6: "2001:db8:3::11/64"
         network: db-segment
         mac: "de:ad:00:00:03:02"
         speed: 10000

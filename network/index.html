@@ -227,14 +227,14 @@ html.light #svg{background:radial-gradient(circle at 20px 20px,rgba(0,0,0,0.04) 
 .flap-label-bg{ animation: flapLabelBg 0.7s ease-in-out infinite; }
 .flap-label{ font-weight:800; animation: flapLabel 0.7s ease-in-out infinite; }
 
-/* Bond failover - surviving link carries traffic, cyan pulse */
+/* Bond failover - surviving link now actively carries traffic (healthy, communicating) */
 @keyframes bondFailover{
-  0%,100%{ stroke:var(--cyan,#06b6d4); stroke-width:3; filter:drop-shadow(0 0 3px var(--cyan,#06b6d4)); }
-  50%    { stroke:#22d3ee; stroke-width:4.5; filter:drop-shadow(0 0 8px var(--cyan,#06b6d4)); }
+  0%,100%{ stroke:var(--green); stroke-width:3;   filter:drop-shadow(0 0 3px var(--green)); }
+  50%    { stroke:#4ade80;       stroke-width:4;   filter:drop-shadow(0 0 7px var(--green)); }
 }
-.conn.bond-failover{ animation: bondFailover 0.9s ease-in-out infinite; }
-/* Standby bond member link — dim, no traffic (backup path, not carrying) */
-.conn.bond-standby{ opacity:0.4; stroke-dasharray:5 4; }
+.conn.bond-failover{ stroke:var(--green) !important; stroke-dasharray:none !important; animation: bondFailover 1.1s ease-in-out infinite; }
+/* Standby / failed member link — subtle, de-emphasized (bond abstracts it away; NOT a cut) */
+.conn.bond-standby{ opacity:0.18; stroke-dasharray:3 5; stroke-width:1.2 !important; }
 
 /* Bond box (draggable bond0 visualization) */
 .bond-box-rect{ transition: none; }
