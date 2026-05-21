@@ -794,6 +794,17 @@ function renderVpcSection(parent, obj){
     obj.vpc.enabled = tg.checked;
     if(tg.checked){
       if(!obj.vpc.domain) obj.vpc.domain = 1;
+    } else {
+      // Disabling → clear the reciprocal config on the peer so no phantom domain remains
+      const peerId = obj.vpc.peer;
+      if(peerId){
+        const peer = Cfg.byId("devices", peerId);
+        if(peer && peer.vpc && peer.vpc.peer === obj.id){
+          peer.vpc.enabled = false;
+          peer.vpc.peer = "";
+        }
+      }
+      obj.vpc.peer = "";
     }
     renderAndSync(); openPropertyPanel();
     toast(`vPC ${tg.checked?"有効化":"無効化"}`, "ok");
@@ -818,15 +829,32 @@ function renderVpcSection(parent, obj){
     if(sw.id===obj.vpc.peer) o.selected = true;
   }
   pSel.addEventListener("change",()=>{
-    obj.vpc.peer = pSel.value;
-    const peer = Cfg.byId("devices", pSel.value);
-    if(peer){
-      peer.vpc = peer.vpc || {};
-      peer.vpc.enabled = true;
-      peer.vpc.peer = obj.id;
-      peer.vpc.domain = obj.vpc.domain || 1;
+    pushUndo();
+    const oldPeerId = obj.vpc.peer;
+    const newPeerId = pSel.value;
+    // Clear the OLD peer's reciprocal vPC config if it pointed back to us
+    if(oldPeerId && oldPeerId !== newPeerId){
+      const oldPeer = Cfg.byId("devices", oldPeerId);
+      if(oldPeer && oldPeer.vpc && oldPeer.vpc.peer === obj.id){
+        oldPeer.vpc.enabled = false;
+        oldPeer.vpc.peer = "";
+      }
+    }
+    obj.vpc.peer = newPeerId;
+    if(newPeerId){
+      const peer = Cfg.byId("devices", newPeerId);
+      if(peer){
+        peer.vpc = peer.vpc || {};
+        peer.vpc.enabled = true;
+        peer.vpc.peer = obj.id;
+        peer.vpc.domain = obj.vpc.domain || 1;
+      }
+    } else {
+      // Peer cleared (-- 選択 --) → no domain for this device
+      obj.vpc.enabled = false;
     }
     renderAndSync();
+    openPropertyPanel();
   });
   const r2 = ch("div",{},row);
   ch("label",{text:"Domain ID",style:lblStyle},r2);
@@ -1402,6 +1430,16 @@ function openVpcDialog(id){
         pushUndo();
         obj.vpc.enabled = tg.checked;
         if(tg.checked && !obj.vpc.domain) obj.vpc.domain = 1;
+        if(!tg.checked){
+          const peerId = obj.vpc.peer;
+          if(peerId){
+            const peer = Cfg.byId("devices", peerId);
+            if(peer && peer.vpc && peer.vpc.peer === obj.id){
+              peer.vpc.enabled = false; peer.vpc.peer = "";
+            }
+          }
+          obj.vpc.peer = "";
+        }
         renderAndSync();
         if(App.selected && App.selected.kind==="device" && App.selected.id===id) openPropertyPanel();
         refresh();
@@ -1418,15 +1456,28 @@ function openVpcDialog(id){
       addSelectField(body, "Peer Device",
         ["",...allSwitches.map(s=>s.id)], obj.vpc.peer||"",
         v=>{
+          pushUndo();
+          const oldPeerId = obj.vpc.peer;
+          if(oldPeerId && oldPeerId !== v){
+            const oldPeer = Cfg.byId("devices", oldPeerId);
+            if(oldPeer && oldPeer.vpc && oldPeer.vpc.peer === obj.id){
+              oldPeer.vpc.enabled = false; oldPeer.vpc.peer = "";
+            }
+          }
           obj.vpc.peer = v;
-          const peer = Cfg.byId("devices", v);
-          if(peer){
-            peer.vpc = peer.vpc || {};
-            peer.vpc.enabled = true;
-            peer.vpc.peer = obj.id;
-            peer.vpc.domain = obj.vpc.domain || 1;
+          if(v){
+            const peer = Cfg.byId("devices", v);
+            if(peer){
+              peer.vpc = peer.vpc || {};
+              peer.vpc.enabled = true;
+              peer.vpc.peer = obj.id;
+              peer.vpc.domain = obj.vpc.domain || 1;
+            }
+          } else {
+            obj.vpc.enabled = false;
           }
           renderAndSync();
+          refresh();
         });
       addField(body, "Domain ID", "number", obj.vpc.domain||1,
         v=>{ obj.vpc.domain=+v||1; renderAndSync(); });
