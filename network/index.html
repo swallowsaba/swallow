@@ -233,6 +233,14 @@ html.light #svg{background:radial-gradient(circle at 20px 20px,rgba(0,0,0,0.04) 
   50%    { stroke:#22d3ee; stroke-width:4.5; filter:drop-shadow(0 0 8px var(--cyan,#06b6d4)); }
 }
 .conn.bond-failover{ animation: bondFailover 0.9s ease-in-out infinite; }
+/* Standby bond member link — dim, no traffic (backup path, not carrying) */
+.conn.bond-standby{ opacity:0.4; stroke-dasharray:5 4; }
+
+/* Bond box (draggable bond0 visualization) */
+.bond-box-rect{ transition: none; }
+.bond-stem{ pointer-events:none; }
+@keyframes bondPipActive{ 0%,100%{ opacity:1; } 50%{ opacity:0.4; } }
+.bond-pip-active{ animation: bondPipActive 0.8s ease-in-out infinite; }
 .conn-label{fill:var(--text-dim);font-size:9px;font-family:var(--mono);text-anchor:middle;pointer-events:none}
 
 .packet{fill:var(--accent);stroke:#fff;stroke-width:1.5;filter:drop-shadow(0 0 4px var(--accent))}
@@ -278,7 +286,8 @@ html.light #svg{background:radial-gradient(circle at 20px 20px,rgba(0,0,0,0.04) 
 .port-console{fill:#06b6d4;stroke:#0a3a3f}
 .port-mgmt{fill:#10b981;stroke:#0a4a3a}
 .iface-port.linked{stroke:var(--green);stroke-width:1.8}
-.iface-port.down{opacity:0.3;stroke:var(--grey)}
+.iface-port.up{stroke:var(--green);stroke-width:1.6;filter:saturate(1.2) brightness(1.1)}
+.iface-port.down{opacity:0.28;stroke:var(--red) !important;stroke-width:1.6;stroke-dasharray:2 1.5}
 .iface-port:hover{stroke:var(--accent);stroke-width:2.2;filter:drop-shadow(0 0 4px var(--accent))}
 .iface-port-label{font-size:8px;fill:var(--text-dim);font-family:var(--mono);text-anchor:middle;pointer-events:none;font-weight:600}
 .iface-port-type{font-size:8px;fill:var(--accent);font-family:var(--mono);text-anchor:middle;pointer-events:none;font-weight:700}
