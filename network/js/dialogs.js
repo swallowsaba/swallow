@@ -891,29 +891,38 @@ function renameId(kind, oldId, newId){
 }
 
 /* ====== DIALOGS ====== */
-function openDialog(title, contentFn){
+function openDialog(title, contentFn, opts){
+  opts = opts || {};
+  const floating = !!opts.floating;
   const overlay = $("#dialog-overlay");
   const d = $("#dialog");
   d.innerHTML = "";
-  // Reset position from previous drag
+  // Floating mode: transparent overlay that lets clicks reach the canvas behind it,
+  // and the dialog opens near a corner instead of centered+dimmed.
+  overlay.classList.toggle("floating", floating);
   d.style.position = "absolute";
-  d.style.left = "";
-  d.style.top = "";
   d.style.transform = "";
   d.style.margin = "";
+  if(floating){
+    // Open at a sensible default spot (top-right area) unless previously moved
+    d.style.left = (window.innerWidth - 460) + "px";
+    d.style.top  = "80px";
+  } else {
+    d.style.left = "";
+    d.style.top = "";
+  }
   const h3 = ch("h3", { text:title, style:{ cursor:"move", userSelect:"none" } }, d);
   // Drag-to-move handler on the title bar
   let dragData = null;
   h3.addEventListener("mousedown", (e)=>{
     if(e.button !== 0) return;
     const rect = d.getBoundingClientRect();
-    // On first drag, switch from CSS-centered to absolute positioning
     if(!d.style.left || d.style.left === ""){
       d.style.left = rect.left + "px";
       d.style.top  = rect.top  + "px";
-      d.style.transform = "none";
-      d.style.margin = "0";
     }
+    d.style.transform = "none";
+    d.style.margin = "0";
     dragData = { startX: e.clientX, startY: e.clientY,
                  origLeft: parseFloat(d.style.left), origTop: parseFloat(d.style.top) };
     e.preventDefault();
@@ -922,7 +931,6 @@ function openDialog(title, contentFn){
     if(!dragData) return;
     const dx = e.clientX - dragData.startX;
     const dy = e.clientY - dragData.startY;
-    // Clamp to viewport
     const newL = Math.max(0, Math.min(window.innerWidth - 60, dragData.origLeft + dx));
     const newT = Math.max(0, Math.min(window.innerHeight - 60, dragData.origTop  + dy));
     d.style.left = newL + "px";
@@ -943,7 +951,11 @@ function openDialog(title, contentFn){
   }
   overlay.classList.remove("hidden");
 }
-function closeDialog(){ $("#dialog-overlay").classList.add("hidden"); }
+function closeDialog(){
+  const overlay = $("#dialog-overlay");
+  overlay.classList.add("hidden");
+  overlay.classList.remove("floating");
+}
 
 function showRoutingTable(deviceId){
   const dev = Cfg.byId("devices", deviceId);
@@ -2804,7 +2816,7 @@ function openCommSimulator(){
         }}
       ]
     };
-  });
+  }, { floating:true });
 }
 
 /* ====== TOPOLOGY TEMPLATES (spine-leaf, etc) ====== */

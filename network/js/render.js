@@ -582,6 +582,17 @@ function renderVpcOverlay(){
   const layer = $("#layer-connections");
   const drawn = new Set();
 
+  // Helper: point on a rectangle's edge facing a target point
+  function edgePoint(obj, w, h, tx, ty){
+    const cx=(obj.x||0)+w/2, cy=(obj.y||0)+h/2;
+    const dx=tx-cx, dy=ty-cy;
+    if(dx===0&&dy===0) return {x:cx,y:cy};
+    const sx = dx!==0 ? (w/2)/Math.abs(dx) : Infinity;
+    const sy = dy!==0 ? (h/2)/Math.abs(dy) : Infinity;
+    const s = Math.min(sx,sy);
+    return { x:cx+dx*s, y:cy+dy*s };
+  }
+
   // === Pass 1: vPC domain region + peer-link + keepalive ===
   for(const d of (App.config.devices||[])){
     if(!d.vpc || !d.vpc.enabled || !d.vpc.peer) continue;
@@ -597,153 +608,139 @@ function renderVpcOverlay(){
     const cx2 = (peer.x||0) + pw/2, cy2 = (peer.y||0) + ph/2;
     const g = ce("g", { class:"vpc-overlay","data-vpc-pair": pairKey }, layer);
 
-    // (a) Translucent domain background — encloses both devices
-    const minX = Math.min(d.x||0, peer.x||0) - 16;
-    const maxX = Math.max((d.x||0)+dw, (peer.x||0)+pw) + 16;
-    const minY = Math.min(d.y||0, peer.y||0) - 26;
-    const maxY = Math.max((d.y||0)+dh, (peer.y||0)+ph) + 14;
+    // (a) Translucent domain background enclosing both peers
+    const minX = Math.min(d.x||0, peer.x||0) - 18;
+    const maxX = Math.max((d.x||0)+dw, (peer.x||0)+pw) + 18;
+    const minY = Math.min(d.y||0, peer.y||0) - 30;
+    const maxY = Math.max((d.y||0)+dh, (peer.y||0)+ph) + 16;
     ce("rect", {
       "class":"vpc-domain-region",
-      x:minX, y:minY, width:maxX-minX, height:maxY-minY,
-      rx:14, ry:14,
-      fill:"rgba(163,113,247,0.06)",
-      stroke:"var(--purple)", "stroke-width":1.5,
-      "stroke-dasharray":"6 4", "pointer-events":"none"
+      x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:16, ry:16,
+      fill:"rgba(163,113,247,0.07)", stroke:"var(--purple)", "stroke-width":1.6,
+      "stroke-dasharray":"7 5", "pointer-events":"none"
     }, g);
 
-    // (b) Big banner at top — "vPC Domain N"
-    const banner = ch("g", {}, g); // visual group; we'll use ce for SVG
-    const bannerY = minY + 4;
-    const bannerText = `vPC Domain ${d.vpc.domain||1}`;
-    const bWidth = bannerText.length * 6.5 + 24;
-    const bX = (minX + maxX) / 2 - bWidth / 2;
-    ce("rect", { x:bX, y:bannerY, width:bWidth, height:18, rx:9, ry:9,
+    // (b) Domain badge at top-LEFT corner (does not overlap the peer-link in the middle)
+    const badgeText = `⛓ vPC Domain ${d.vpc.domain||1} — 論理1台`;
+    const bWidth = badgeText.length * 6.0 + 18;
+    ce("rect", { x:minX+8, y:minY-9, width:bWidth, height:18, rx:9, ry:9,
       fill:"var(--purple)", stroke:"#fff", "stroke-width":1.5, "pointer-events":"none" }, g);
-    ce("text", { x:bX+bWidth/2, y:bannerY+9, text: bannerText,
+    ce("text", { x:minX+8+bWidth/2, y:minY+1, text: badgeText,
       "text-anchor":"middle", "dominant-baseline":"middle",
-      "font-size":11, "font-family":"var(--mono)", "font-weight":"700",
+      "font-size":10, "font-family":"var(--mono)", "font-weight":"700",
       fill:"#fff", "pointer-events":"none" }, g);
 
-    // (c) Peer-link — bold triple parallel lines between the two switches
-    const dx = cx2 - cx1, dy = cy2 - cy1, len = Math.hypot(dx,dy)||1;
-    const nx = -dy/len, ny = dx/len; // unit normal
-    function plLine(off){
-      ce("line", {
-        "class":"vpc-peer-link",
-        x1: cx1 + nx*off, y1: cy1 + ny*off,
-        x2: cx2 + nx*off, y2: cy2 + ny*off
-      }, g);
+    // (c) PEER-LINK — bold double line between the facing EDGES of the two switches
+    const e1 = edgePoint(d, dw, dh, cx2, cy2);
+    const e2 = edgePoint(peer, pw, ph, cx1, cy1);
+    const dx = e2.x - e1.x, dy = e2.y - e1.y, len = Math.hypot(dx,dy)||1;
+    const nx = -dy/len, ny = dx/len;
+    function plLine(off, cls){
+      ce("line", { "class":cls,
+        x1:e1.x+nx*off, y1:e1.y+ny*off, x2:e2.x+nx*off, y2:e2.y+ny*off }, g);
     }
-    plLine(-5); plLine(0); plLine(5);
-    // Peer-link label
-    const mx = (cx1+cx2)/2, my = (cy1+cy2)/2;
-    const plLbl = "PEER-LINK";
-    const plW = plLbl.length * 5.5 + 12;
-    ce("rect", { x: mx-plW/2, y: my-9, width: plW, height:14, rx:7, ry:7,
-      fill:"var(--panel)", stroke:"var(--purple)", "stroke-width":1.5 }, g);
-    ce("text", { x: mx, y: my-2, text: plLbl,
-      "text-anchor":"middle", "dominant-baseline":"middle",
-      "font-size":9, "font-family":"var(--mono)", "font-weight":"700",
+    plLine(-3.5, "vpc-peer-link"); plLine(3.5, "vpc-peer-link");
+    const mx=(e1.x+e2.x)/2, my=(e1.y+e2.y)/2;
+    const plLbl = "Peer-Link";
+    const plW = plLbl.length*6+14;
+    ce("rect", { x:mx-plW/2, y:my-9, width:plW, height:15, rx:7, ry:7,
+      fill:"var(--panel)", stroke:"var(--purple)", "stroke-width":1.5, "pointer-events":"none" }, g);
+    ce("text", { x:mx, y:my-1, text:plLbl, "text-anchor":"middle", "dominant-baseline":"middle",
+      "font-size":9.5, "font-family":"var(--mono)", "font-weight":"700",
       fill:"var(--purple)", "pointer-events":"none" }, g);
 
-    // (d) Peer-keepalive — separate thin dotted line below
-    const kaOff = 14;
-    ce("line", {
-      "class":"vpc-keepalive",
-      x1: cx1 + nx*kaOff, y1: cy1 + ny*kaOff,
-      x2: cx2 + nx*kaOff, y2: cy2 + ny*kaOff
-    }, g);
-    // Keepalive label
-    const kaX = mx + nx*kaOff, kaY = my + ny*kaOff;
-    const kaLbl = "Keepalive";
-    const kaW = kaLbl.length * 5 + 10;
-    ce("rect", { x: kaX-kaW/2, y: kaY-6, width: kaW, height:10, rx:5, ry:5,
-      fill:"var(--panel)", stroke:"var(--purple)", "stroke-width":0.8 }, g);
-    ce("text", { x: kaX, y: kaY-1, text: kaLbl,
-      "text-anchor":"middle", "dominant-baseline":"middle",
-      "font-size":7, "font-family":"var(--mono)",
-      fill:"var(--purple)", "pointer-events":"none" }, g);
+    // (d) KEEPALIVE — thin dotted line, clearly offset and labeled (separate mgmt heartbeat)
+    const kaOff = 15;
+    ce("line", { "class":"vpc-keepalive",
+      x1:e1.x+nx*kaOff, y1:e1.y+ny*kaOff, x2:e2.x+nx*kaOff, y2:e2.y+ny*kaOff }, g);
+    const kaX=mx+nx*kaOff, kaY=my+ny*kaOff;
+    const kaLbl="❤ Keepalive";
+    const kaW=kaLbl.length*5.2+10;
+    ce("rect", { x:kaX-kaW/2, y:kaY-6, width:kaW, height:11, rx:5, ry:5,
+      fill:"var(--panel)", stroke:"var(--purple)", "stroke-width":0.8, "pointer-events":"none" }, g);
+    ce("text", { x:kaX, y:kaY-0.5, text:kaLbl, "text-anchor":"middle", "dominant-baseline":"middle",
+      "font-size":7.5, "font-family":"var(--mono)", fill:"var(--purple)", "pointer-events":"none" }, g);
 
-    // (e) Small vPC tag inside each device at top-right corner (subtle, in-domain marker)
-    function placeTag(dev, w, h){
-      const bx = (dev.x||0) + w - 22;
-      const by = (dev.y||0) - 10;
-      ce("rect", { x:bx, y:by, width:22, height:10, rx:5, ry:5,
+    // (e) "vPC peer" tag on each switch top-right
+    function placeTag(dev, w){
+      const bx=(dev.x||0)+w-30, by=(dev.y||0)-9;
+      ce("rect", { x:bx, y:by, width:30, height:11, rx:5, ry:5,
         fill:"var(--purple)", stroke:"#fff", "stroke-width":1, "pointer-events":"none" }, g);
-      ce("text", { x:bx+11, y:by+5,
-        "text-anchor":"middle", "dominant-baseline":"middle",
+      ce("text", { x:bx+15, y:by+5.5, "text-anchor":"middle", "dominant-baseline":"middle",
         "font-size":7, "font-family":"var(--mono)", "font-weight":"700",
-        fill:"#fff", text: "vPC", "pointer-events":"none" }, g);
+        fill:"#fff", text:"vPC peer", "pointer-events":"none" }, g);
     }
-    placeTag(d, dw, dh);
-    placeTag(peer, pw, ph);
+    placeTag(d, dw); placeTag(peer, pw);
 
-    // Tooltip for the whole domain
     g.addEventListener("mouseenter", (e)=>showTooltip(e,
-      `vPC Domain ${d.vpc.domain||1}\nPeers: ${d.id} ↔ ${peer.id}\nKeepalive: ${d.vpc.keepalive||"-"} / ${peer.vpc?peer.vpc.keepalive:"-"}\nThis is a logically-unified switch pair.`));
+      `vPC Domain ${d.vpc.domain||1}\n${d.id} と ${peer.id} は論理的に1台のスイッチとして動作\nPeer-Link: 制御・データ同期\nKeepalive: ${d.vpc.keepalive||"-"} ↔ ${peer.vpc?peer.vpc.keepalive:"-"} (障害検知用ハートビート)`));
     g.addEventListener("mouseleave", hideTooltip);
     g.addEventListener("mousemove", moveTooltip);
   }
 
-  // === Pass 2: vPC member port-channel brackets ===
-  // Group connections by vpc_id where the SAME host connects to BOTH vPC peers
+  // === Pass 2: vPC member port-channels (switch-side bracket, NOT a floating line) ===
+  // vPC is configured on the SWITCH side: the two peer switch ports present ONE
+  // logical port-channel to a dual-homed host. We draw a brace tying those two
+  // switch ports together with a "vPC <id>" badge — the clearest representation.
   const byVpcId = {};
   for(const c of (App.config.connections||[])){
     if(!c.vpc_id) continue;
-    byVpcId[c.vpc_id] = byVpcId[c.vpc_id] || [];
-    byVpcId[c.vpc_id].push(c);
+    (byVpcId[c.vpc_id] = byVpcId[c.vpc_id] || []).push(c);
   }
   for(const vpcId in byVpcId){
     const grp = byVpcId[vpcId];
-    if(grp.length < 2) continue;  // Need at least 2 cables to form a vPC member
-    // Find the "host" side — the common endpoint
-    function hostId(c, side){
-      const ep = c[side];
-      return ep ? (ep.server || ep.device) : null;
-    }
-    // Determine which side has the common element
+    if(grp.length < 2) continue;
+    function hostId(c, side){ const ep=c[side]; return ep ? (ep.server||ep.device) : null; }
     const fromIds = new Set(grp.map(c=>hostId(c,"from")));
     const toIds = new Set(grp.map(c=>hostId(c,"to")));
-    let hostSide = null, switchSide = null;
-    if(fromIds.size === 1) { hostSide = "from"; switchSide = "to"; }
-    else if(toIds.size === 1) { hostSide = "to"; switchSide = "from"; }
+    let hostSide, switchSide;
+    if(fromIds.size===1){ hostSide="from"; switchSide="to"; }
+    else if(toIds.size===1){ hostSide="to"; switchSide="from"; }
     else continue;
-    const hostKey = hostSide === "from" ? [...fromIds][0] : [...toIds][0];
-    // Compute average of switch-side endpoints (vPC peer side)
-    let switchX = 0, switchY = 0, n = 0;
-    let hostX = 0, hostY = 0;
-    for(const c of grp){
-      const a = resolveEndpoint(c.from);
-      const b = resolveEndpoint(c.to);
-      if(!a || !b) continue;
-      const switchEp = switchSide === "from" ? a : b;
-      const hostEp = hostSide === "from" ? a : b;
-      switchX += switchEp.x; switchY += switchEp.y; n++;
-      hostX = hostEp.x; hostY = hostEp.y;
-    }
-    if(!n) continue;
-    switchX /= n; switchY /= n;
+    const hostKey = hostSide==="from" ? [...fromIds][0] : [...toIds][0];
 
-    // Draw a thicker "bundled" overlay path from host to convergence point near switches
-    // The convergence point is between host and switch midpoint
-    const cgX = (hostX + switchX) / 2;
-    const cgY = (hostY + switchY) / 2;
+    // Collect the two switch-side endpoints (the vPC member ports)
+    const swPts = [];
+    let hostPt = null;
+    for(const c of grp){
+      const a = resolveEndpoint(c.from), b = resolveEndpoint(c.to);
+      if(!a||!b) continue;
+      swPts.push(switchSide==="from" ? a : b);
+      hostPt = hostSide==="from" ? a : b;
+    }
+    if(swPts.length < 2 || !hostPt) continue;
+
     const g = ce("g", { class:"vpc-member-bracket","data-vpc-id":vpcId }, layer);
-    // Bracket arc — thick translucent purple line from host to convergence, then split to switches
+    // Brace connecting the two switch ports, bowed toward the host
+    const s1=swPts[0], s2=swPts[1];
+    const midX=(s1.x+s2.x)/2, midY=(s1.y+s2.y)/2;
+    // control point bowed toward the host
+    const towardHostX = midX + (hostPt.x-midX)*0.18;
+    const towardHostY = midY + (hostPt.y-midY)*0.18;
     ce("path", {
-      d: `M ${hostX} ${hostY} L ${cgX} ${cgY}`,
-      stroke: "var(--purple)", "stroke-width": 6, opacity: 0.25,
-      fill:"none", "stroke-linecap":"round", "pointer-events":"none"
+      d:`M ${s1.x} ${s1.y} Q ${towardHostX} ${towardHostY} ${s2.x} ${s2.y}`,
+      stroke:"var(--purple)", "stroke-width":2.5, opacity:0.65, fill:"none",
+      "stroke-linecap":"round", "stroke-dasharray":"1 0", "pointer-events":"none"
     }, g);
-    // Label at convergence
-    const memLbl = `vPC ${vpcId}`;
-    const memW = memLbl.length * 6 + 10;
-    ce("rect", { x: cgX - memW/2, y: cgY - 8, width: memW, height: 14, rx:7, ry:7,
+    // Badge "vPC <id> → host" at the bow apex
+    const apX = midX + (hostPt.x-midX)*0.30;
+    const apY = midY + (hostPt.y-midY)*0.30;
+    const memLbl = `vPC ${vpcId} → ${hostKey}`;
+    const memW = memLbl.length*5.6+12;
+    ce("rect", { x:apX-memW/2, y:apY-8, width:memW, height:15, rx:7, ry:7,
       fill:"var(--purple)", stroke:"#fff", "stroke-width":1, "pointer-events":"none" }, g);
-    ce("text", { x: cgX, y: cgY, text: memLbl,
+    ce("text", { x:apX, y:apY-0.5, text:memLbl,
       "text-anchor":"middle", "dominant-baseline":"middle",
-      "font-size":9, "font-family":"var(--mono)", "font-weight":"700",
+      "font-size":8.5, "font-family":"var(--mono)", "font-weight":"700",
       fill:"#fff", "pointer-events":"none" }, g);
+    // small dots on the two member ports
+    for(const sp of [s1,s2]) ce("circle", { cx:sp.x, cy:sp.y, r:3.5,
+      fill:"var(--purple)", stroke:"#fff", "stroke-width":1, "pointer-events":"none" }, g);
+
+    g.addEventListener("mouseenter", (e)=>showTooltip(e,
+      `vPC ${vpcId}: ${hostKey} は2台のピアスイッチへ二重接続\n物理2本が1つの論理ポートチャネルとして動作\n(片方のスイッチ障害でも通信継続)`));
+    g.addEventListener("mouseleave", hideTooltip);
+    g.addEventListener("mousemove", moveTooltip);
   }
 }
 
