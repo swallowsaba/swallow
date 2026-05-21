@@ -471,12 +471,14 @@ function formatPortTooltip(iface){
   return s;
 }
 
-// Compute the bond0 enclosing box rectangle (absolute SVG coords + relative-to-group).
-// Shared by renderBondOverlay (drawing) and resolveEndpoint (cable anchoring).
+// Compute the bond0 box rectangle. The box sits ADJACENT to the server (its outer border
+// flush against the server's outer border), and the member ports straddle the shared boundary.
 function bondBoxRect(obj, kind){
   if(!obj || !obj.bonding || !obj.bonding.enabled) return null;
   const members = obj.bonding.members || [];
   if(members.length < 1) return null;
+  const w = obj.width || (kind==="server"?130:120);
+  const h = obj.height || (kind==="server"?70:70);
   const positions = computePortPositions(obj, kind);
   const memberPorts = [];
   for(const mid of members){
@@ -484,20 +486,31 @@ function bondBoxRect(obj, kind){
     if(idx>=0 && positions[idx]) memberPorts.push(positions[idx]);
   }
   if(!memberPorts.length) return null;
-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
   for(const p of memberPorts){
-    const pw=p.w||12, ph=p.h||12;
-    minX=Math.min(minX,p.x); minY=Math.min(minY,p.y);
-    maxX=Math.max(maxX,p.x+pw); maxY=Math.max(maxY,p.y+ph);
+    minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x+(p.w||12));
+    minY=Math.min(minY,p.y); maxY=Math.max(maxY,p.y+(p.h||12));
   }
   const side = memberPorts[0].side || (kind==="server"?"top":"bottom");
-  const pad=7, labelH=26, minBoxW=96;
-  let bx=minX-pad, by=minY-pad, bw=(maxX-minX)+pad*2, bh=(maxY-minY)+pad*2;
-  if(side==="top"){ by-=labelH; bh+=labelH+3; }
-  else if(side==="bottom"){ bh+=labelH+3; by-=3; }
-  else if(side==="left"){ bx-=(minBoxW-bw>0?(minBoxW-bw):40); bw=Math.max(bw,minBoxW); }
-  else { bw=Math.max(bw,minBoxW); }
-  if((side==="top"||side==="bottom") && bw<minBoxW){ const cx=bx+bw/2; bx=cx-minBoxW/2; bw=minBoxW; }
+  const minBoxW=104, boxH=38, minBoxH=48, boxW=104, pad=10;
+  let bx,by,bw,bh;
+  if(side==="top"){            // box ABOVE server; bottom edge flush with server top (y=0)
+    bw = Math.max(maxX-minX+pad*2, minBoxW);
+    bx = (minX+maxX)/2 - bw/2;
+    bh = boxH; by = -boxH;
+  } else if(side==="bottom"){  // box BELOW server; top edge flush with server bottom (y=h)
+    bw = Math.max(maxX-minX+pad*2, minBoxW);
+    bx = (minX+maxX)/2 - bw/2;
+    bh = boxH; by = h;
+  } else if(side==="left"){    // box LEFT of server; right edge flush with server left (x=0)
+    bh = Math.max(maxY-minY+pad*2, minBoxH);
+    by = (minY+maxY)/2 - bh/2;
+    bw = boxW; bx = -boxW;
+  } else {                     // right
+    bh = Math.max(maxY-minY+pad*2, minBoxH);
+    by = (minY+maxY)/2 - bh/2;
+    bw = boxW; bx = w;
+  }
   const ox=(obj.x||0), oy=(obj.y||0);
   return { bx, by, bw, bh, side,
     absX:ox+bx, absY:oy+by, absCx:ox+bx+bw/2, absCy:oy+by+bh/2, w:bw, h:bh };
@@ -540,27 +553,27 @@ function renderBondOverlay(g, obj, kind){
     fill:"rgba(6,182,212,0.07)", stroke:color, "stroke-width":1.8,
     "stroke-dasharray": effStatus==="down" ? "5 3" : "" }, boxG);
 
-  // 2) Label: "● bond0 [mode]" and IP — placed in the reserved label area
+  // 2) Label: "● bond0 [mode]" and IP — placed away from the straddle edge so ports stay readable
   const statusIcon = effStatus==="up" ? "●" : (effStatus==="degraded" ? "◐" : "✕");
   const modeShort = (obj.bonding.mode||"active-backup").replace("active-backup","A/B").replace("802.3ad","LACP").replace("balance-","bal-");
-  let labelY;
-  if(side==="top") labelY = by + 10;            // label near top of box
-  else if(side==="bottom") labelY = by + bh - 15; // label near bottom of box
-  else labelY = by + 11;
-  ce("text", { x:bx+6, y:labelY, "font-size":9, "font-family":"var(--mono)",
+  let labelY, labelX = bx+6;
+  if(side==="top") labelY = by + 12;              // top box: label near its top (above ports)
+  else if(side==="bottom") labelY = by + bh - 16; // bottom box: label near its bottom (below ports)
+  else labelY = by + 13;
+  ce("text", { x:labelX, y:labelY, "font-size":9, "font-family":"var(--mono)",
     "font-weight":"800", fill:color, text:`${statusIcon} ${obj.bonding.bond_name||"bond0"} [${modeShort}]` }, boxG);
   const ipTxt = obj.bonding.bond_ip || "(IP未設定!)";
-  ce("text", { x:bx+6, y:labelY+11, "font-size":8, "font-family":"var(--mono)",
+  ce("text", { x:labelX, y:labelY+11, "font-size":8, "font-family":"var(--mono)",
     fill: obj.bonding.bond_ip ? "var(--text-dim)" : "var(--red)", text: ipTxt }, boxG);
 
-  // 3) Tiny ACTIVE marker above the active member port (so the live NIC is obvious)
+  // 3) Per-member status dot + ACTIVE marker inside the box (so each NIC's state is visible)
   for(const mp of memberPorts){
+    const p = mp.pos;
     if(mp.id===active && mp.up){
-      const p = mp.pos;
-      const my = (side==="top") ? (p.y + (p.h||12) + 7) : (p.y - 5);
+      const my = (side==="top") ? (by + bh - 4) : (side==="bottom") ? (by + 4) : (p.cy);
       ce("text", { x:p.cx, y:my, "text-anchor":"middle",
         "font-size":6.5, "font-weight":"800", fill:"var(--green)",
-        "pointer-events":"none", text:"ACTIVE" }, boxG);
+        "pointer-events":"none", text:"▲ACTIVE" }, boxG);
     }
   }
 }
@@ -1061,8 +1074,9 @@ function effectiveConnStatus(c){
 }
 
 // === Unified bond member cable state ===
-// Returns null if this cable is not attached to a bond member; otherwise a clear role.
-// roles: "active" | "failover" | "standby" | "standby-down" | "down"
+// "1本論理リンク" model: only the ACTIVE member's cable is drawn (as the logical bond link).
+// Non-active members are hidden (abstracted into the bond). The logical link stays animated
+// regardless of which physical member currently carries traffic.
 function bondCableState(c){
   for(const ep of [c.from, c.to]){
     if(!ep) continue;
@@ -1070,23 +1084,21 @@ function bondCableState(c){
     if(!obj || !obj.bonding || !obj.bonding.enabled) continue;
     const members = obj.bonding.members || [];
     if(!members.includes(ep.interface)) continue;
-    const memberIf = (obj.interfaces||[]).find(i=>i.id===ep.interface);
-    const memberUp = memberIf && (memberIf.status||"up") === "up";
     const eff = (typeof bondEffectiveStatus === "function") ? bondEffectiveStatus(obj) : "up";
     const active = (typeof bondActiveMember === "function") ? bondActiveMember(obj) : null;
     const primary = obj.bonding.primary || members[0];
-    // Whole bond down → real outage
-    if(eff === "down") return { role:"down", isDown:true, traffic:"idle" };
-    // This member's own link is down, but the bond survives via another member
-    if(!memberUp) return { role:"standby-down", isDown:false, traffic:"idle" };
-    // This member currently carries the bond's traffic
+    // Whole bond down → show ONE representative link as down (primary), hide the rest
+    if(eff === "down"){
+      return { role:"down", isDown:true, traffic:"idle", hidden: (ep.interface !== primary) };
+    }
+    // The active member = the single logical link. Always solid + animated.
     if(ep.interface === active){
       let lvl = (typeof bondConfiguredTraffic === "function") ? bondConfiguredTraffic(obj) : "medium";
-      if(!lvl || lvl === "idle") lvl = "medium"; // active bond link always shows visible flow
-      return { role: (active !== primary) ? "failover" : "active", isDown:false, traffic: lvl };
+      if(!lvl || lvl === "idle") lvl = "medium";
+      return { role: (active !== primary) ? "failover" : "active", isDown:false, traffic: lvl, hidden:false };
     }
-    // Up but not the active member → standby backup path (no traffic)
-    return { role:"standby", isDown:false, traffic:"idle" };
+    // Non-active member → hidden (its physical cable is abstracted away by the bond)
+    return { role:"standby", isDown:false, traffic:"idle", hidden:true };
   }
   return null;
 }
@@ -1102,15 +1114,17 @@ function renderConnection(c){
   const direction = c.direction || "forward";
   const type = c.type || "ethernet";
 
-  // === Bond member cable state (single source of truth) ===
+  // === Bond member cable state (single logical link model) ===
   let failoverActive = false;
   let bondStandby = false;
   const bondState = bondCableState(c);
   if(bondState){
+    // Hidden member cables are not drawn — the bond shows as ONE logical link (the active member)
+    if(bondState.hidden) return;
     isDown = bondState.isDown;
     traffic = bondState.traffic;
     failoverActive = bondState.role === "failover";
-    bondStandby = bondState.role === "standby" || bondState.role === "standby-down";
+    bondStandby = false;
   }
 
   const built = buildConnectionPath(a, b, c);
