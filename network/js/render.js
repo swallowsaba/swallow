@@ -482,21 +482,28 @@ function renderPorts(g, obj, kind){
       "class":"iface-port-hit",
       x:hitX, y:hitY, width:hitW, height:hitH
     }, g);
-    hit.addEventListener("mouseenter",(e)=>showTooltip(e, formatPortTooltip(iface)));
-    hit.addEventListener("mouseleave",hideTooltip);
+    hit.addEventListener("mouseenter",(e)=>{ App._hoverPort = { kind, id:obj.id, iface:iface.id }; showTooltip(e, formatPortTooltip(iface)); });
+    hit.addEventListener("mouseleave",()=>{ if(App._hoverPort && App._hoverPort.id===obj.id && App._hoverPort.iface===iface.id) App._hoverPort = null; hideTooltip(); });
     hit.addEventListener("mousemove",moveTooltip);
     hit.addEventListener("mousedown",(e)=>{
       if(e.button !== 0) return;
       if(App.connectMode) return;  // in connect-mode, suppress drag-to-reposition
       e.stopPropagation();
-      // Begin port drag - update port_position on move
-      dragState = {
-        mode: "port",
-        obj, kind,
-        ifaceIdx: i,
-        moved: false,
-        origPos: iface.port_position ? JSON.parse(JSON.stringify(iface.port_position)) : null
-      };
+      if(e.shiftKey){
+        // Shift+drag = reposition the port around the device border (legacy behavior)
+        dragState = {
+          mode: "port", obj, kind, ifaceIdx: i, moved: false,
+          origPos: iface.port_position ? JSON.parse(JSON.stringify(iface.port_position)) : null
+        };
+      } else {
+        // Plain drag = draw a connection wire from this interface to a target interface
+        const pos = (computePortPositions(obj, kind)[i]) || {cx:0,cy:0,outX:0,outY:0};
+        wireDrag = {
+          fromKind:kind, fromId:obj.id, fromIface:iface.id,
+          sx:(obj.x||0)+(pos.outX!=null?pos.outX:pos.cx), sy:(obj.y||0)+(pos.outY!=null?pos.outY:pos.cy),
+          moved:false
+        };
+      }
     });
     hit.addEventListener("click",(e)=>{
       e.stopPropagation();
@@ -505,7 +512,7 @@ function renderPorts(g, obj, kind){
         handleConnectClick(kind, obj.id, iface.id);
         return;
       }
-      if(!dragState || !dragState.moved){
+      if((!dragState || !dragState.moved) && (!wireDrag || !wireDrag.moved)){
         selectElement(kind, obj.id); openPropertyPanel();
       }
     });
@@ -838,6 +845,18 @@ function drawDeviceIcon(g, type, w, h){
       ce("text", { x:cx, y:cy+1, text:"W","text-anchor":"middle","dominant-baseline":"middle",
         "font-size":"11","fill":"var(--purple)","font-weight":"700","font-family":"monospace" }, g);
       break;
+    case "cloud":
+    case "saas":
+    case "internet": {
+      const col = type==="saas" ? "var(--purple)" : (type==="internet" ? "var(--cyan)" : "var(--orange)");
+      // cloud shape
+      ce("path", { d:`M ${cx-13} ${cy+5} Q ${cx-17} ${cy-2} ${cx-9} ${cy-3} Q ${cx-8} ${cy-10} ${cx} ${cy-8} Q ${cx+7} ${cy-12} ${cx+10} ${cy-4} Q ${cx+17} ${cy-3} ${cx+13} ${cy+5} Z`,
+        fill:"rgba(255,255,255,0.06)", stroke:col, "stroke-width":1.5 }, g);
+      const glyph = type==="saas" ? "SaaS" : (type==="internet" ? "🌐" : "☁");
+      ce("text", { x:cx, y:cy+2, text:glyph, "text-anchor":"middle","dominant-baseline":"middle",
+        "font-size": type==="saas"?"7":"10","fill":col,"font-weight":"700","font-family":"monospace" }, g);
+      break;
+    }
     default:
       ce("rect", { x:cx-12, y:cy-10, width:24, height:20, rx:3, ry:3,
         fill:"rgba(140,140,140,0.2)", stroke:"var(--grey)","stroke-width":1.5 }, g);
@@ -1483,6 +1502,29 @@ function resolveEndpoint(ep){
 
 /* ====== INTERACTION ====== */
 var dragState = null;
+// Drag-to-connect state (rubber-band wiring from one interface port to another)
+var wireDrag = null;
+// Create a connection between two specific interfaces (used by drag-to-connect)
+function createConnectionBetween(fromKind, fromId, fromIface, toKind, toId, toIface){
+  if((fromKind!=="device"&&fromKind!=="server")||(toKind!=="device"&&toKind!=="server")){
+    toast("接続はデバイス/サーバ間で作成できます","warn"); return;
+  }
+  if(fromKind===toKind && fromId===toId && fromIface===toIface){
+    toast("同じインターフェース同士は接続できません","warn"); return;
+  }
+  // prevent duplicate link on the same iface pair
+  const dup = (App.config.connections||[]).some(c=>{
+    const a=c.from||{}, b=c.to||{};
+    const aMatch=(a.device===fromId||a.server===fromId)&&a.interface===fromIface;
+    const bMatch=(b.device===toId||b.server===toId)&&b.interface===toIface;
+    const aMatch2=(a.device===toId||a.server===toId)&&a.interface===toIface;
+    const bMatch2=(b.device===fromId||b.server===fromId)&&b.interface===fromIface;
+    return (aMatch&&bMatch)||(aMatch2&&bMatch2);
+  });
+  if(dup){ toast("そのインターフェース間には既に接続があります","warn"); return; }
+  addConnection({ kind:fromKind, id:fromId, iface:fromIface }, { kind:toKind, id:toId, iface:toIface });
+  toast(`接続を作成: ${fromId}/${fromIface} ↔ ${toId}/${toIface}`, "ok");
+}
 
 function attachElementHandlers(g, kind, id){
   g.addEventListener("mousedown", (e)=>onElMouseDown(e, kind, id));
@@ -1549,6 +1591,19 @@ function getContainedElements(network){
 }
 
 function onMouseMove(e){
+  // Wire-drag (drag-to-connect from an interface port)
+  if(wireDrag){
+    wireDrag.moved = true;
+    const pt = svgPoint(e);
+    let rb = $("#wire-rubber");
+    const layer = $("#layer-overlays") || $("#layer-connections");
+    if(!rb && layer){
+      rb = ce("path", { id:"wire-rubber", fill:"none", stroke:"var(--accent)",
+        "stroke-width":2.5, "stroke-dasharray":"6 4", "pointer-events":"none", opacity:"0.9" }, layer);
+    }
+    if(rb) rb.setAttribute("d", `M ${wireDrag.sx} ${wireDrag.sy} L ${pt.x} ${pt.y}`);
+    return;
+  }
   if(!dragState) return;
   if(dragState.mode === "port"){
     const pt = svgPoint(e);
@@ -1638,6 +1693,19 @@ function onMouseMove(e){
 }
 
 function onMouseUp(){
+  // Complete a wire-drag: if released over a different interface port, create a connection
+  if(wireDrag){
+    const rb = $("#wire-rubber"); if(rb) rb.remove();
+    const wd = wireDrag; wireDrag = null;
+    if(wd.moved && App._hoverPort){
+      const tp = App._hoverPort;
+      const sameIface = tp.kind===wd.fromKind && tp.id===wd.fromId && tp.iface===wd.fromIface;
+      if(!sameIface){
+        createConnectionBetween(wd.fromKind, wd.fromId, wd.fromIface, tp.kind, tp.id, tp.iface);
+      }
+    }
+    return;
+  }
   if(!dragState) return;
   if(dragState.mode === "port"){
     if(dragState.moved){

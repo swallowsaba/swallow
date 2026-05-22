@@ -934,6 +934,8 @@ var App = {
   simulation: { running:false, paused:false, speed:1, rafId:null, abort:false },
   connectMode: null,
   logs: [],
+  commLogs: [],
+  activeLogTab: "comm",
   logFilters: { info:true, warn:true, error:true },
   animationsEnabled: (typeof localStorage !== "undefined" && localStorage.getItem("netsim-animations")) !== "off",
   suppressToast: false,
@@ -998,6 +1000,52 @@ var Log = {
   },
   clear(){ App.logs = []; $("#log-body").innerHTML = ""; }
 };
+
+/* ====== COMMUNICATION LOG — the MAIN log: packet flows, ping, sim results ====== */
+var CommLog = {
+  add(status, msg, detail){
+    const entry = { ts: nowStamp(), status, msg, detail: detail||"" };
+    App.commLogs = App.commLogs || [];
+    App.commLogs.push(entry);
+    if(App.commLogs.length > 500) App.commLogs.shift();
+    this.render(entry);
+  },
+  ok(m, d){ this.add("ok", m, d); },
+  blocked(m, d){ this.add("blocked", m, d); },
+  info(m, d){ this.add("info", m, d); },
+  render(entry){
+    const body = $("#comm-log-body"); if(!body) return;
+    const div = ch("div", { class:"log-entry comm-"+entry.status });
+    const icon = entry.status==="ok" ? "✅" : (entry.status==="blocked" ? "⛔" : "•");
+    const lvl = entry.status==="ok" ? "OK" : (entry.status==="blocked" ? "BLOCKED" : "INFO");
+    let html = `<span class="ts">[${entry.ts}]</span> <span class="lvl">${icon} [${lvl}]</span> ${escapeHtml(entry.msg)}`;
+    if(entry.detail) html += ` <span class="path-arrow">${escapeHtml(entry.detail)}</span>`;
+    div.innerHTML = html;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+  },
+  refresh(){
+    const body = $("#comm-log-body"); if(!body) return;
+    body.innerHTML = "";
+    for(const e of (App.commLogs||[])) this.render(e);
+  },
+  clear(){ App.commLogs = []; const b=$("#comm-log-body"); if(b) b.innerHTML = ""; }
+};
+// Format a computePath result as a one-line communication-log entry
+function logCommResult(srcLabel, dstLabel, proto, port, res){
+  const portTxt = port!=null ? (":"+port) : "";
+  const flow = `${srcLabel} → ${dstLabel}${portTxt} (${(proto||"ip").toUpperCase()})`;
+  if(res && res.ok){
+    const hops = (res.path||[]).map(p=>p.id).join(" → ");
+    let extra = "";
+    if(res.k8s) extra = ` [K8s ${res.k8s.service}→Pod ${res.k8s.pod}]`;
+    else if(res.portInfo) extra = ` [${res.portInfo}]`;
+    CommLog.ok(flow, `経路: ${hops}${extra}`);
+  } else {
+    const where = res && res.blockedAt ? ` @${res.blockedAt.id}` : "";
+    CommLog.blocked(flow + where, res ? (res.reason||"到達不可") : "到達不可");
+  }
+}
 
 /* ====== IP UTILS (IPv4 + IPv6 dual-stack) ====== */
 function ipFamily(ip){

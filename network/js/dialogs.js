@@ -291,6 +291,19 @@ function renderServerProps(body, obj){
     on:{ click:()=>showServerPorts(obj.id) }
   }, arpBar);
 
+  // Container networking (container hosts) / Hypervisor (physical/virtual hosts)
+  const virtBar = ch("div", { style:{margin:"6px 0",display:"flex",gap:"6px"} }, body);
+  ch("button", { text:"🐳 コンテナNW",
+    style:{flex:"1",padding:"6px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
+      background:"var(--bg3)",border:"1px solid var(--cyan)",color:"var(--cyan)",fontWeight:"600"},
+    on:{ click:()=>showContainerManager(obj.id) }
+  }, virtBar);
+  ch("button", { text:"🖥 仮想基盤(vCenter)",
+    style:{flex:"1",padding:"6px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
+      background:"var(--bg3)",border:"1px solid var(--purple)",color:"var(--purple)",fontWeight:"600"},
+    on:{ click:()=>showHypervisorManager(obj.id) }
+  }, virtBar);
+
   // Services hosted on THIS server — list + add (configure services from the selected server)
   const svcSec = ch("div", { class:"sub-section" }, body);
   const svcHead = ch("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},svcSec);
@@ -476,6 +489,259 @@ function showServerPorts(id){
           on:{click:()=>{ const pv=arPort.value===""?null:+arPort.value; obj.firewall.rules.push({port:pv,proto:arProto.value,action:arAct.value}); renderAndSync(); refresh(); }}},arRow);
       }
       ch("div",{text:"💡 待ち受けていないポート宛は『接続拒否』、ホストFWで遮断したポートは『FW遮断』として通信テストで検出されます。",style:{fontSize:"10px",color:"var(--text-mute)",padding:"8px 4px",lineHeight:"1.4"}},body);
+    }
+    refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
+}
+
+// Container manager — networks + containers + published ports (container networking)
+function showContainerManager(id){
+  const obj = Cfg.byId("servers", id);
+  if(!obj) return;
+  obj.container_networks = obj.container_networks || [];
+  obj.containers = obj.containers || [];
+  openDialog(`🐳 コンテナネットワーク — ${obj.label||id}`, (body)=>{
+    const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
+    function refresh(){
+      body.innerHTML = "";
+      // --- Container networks ---
+      const s1=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"コンテナネットワーク"},s1);
+      (obj.container_networks||[]).forEach((n,i)=>{
+        const row=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"4px"}},s1);
+        const nm=ch("input",{type:"text",value:n.name||"",placeholder:"net名",style:Object.assign({flex:"1"},fStyle)},row);
+        nm.addEventListener("change",()=>{ n.name=nm.value; renderAndSync(); });
+        const dv=ch("select",{style:fStyle},row);
+        ["bridge","overlay","host","macvlan"].forEach(d=>ch("option",{value:d,text:d},dv)); dv.value=n.driver||"bridge";
+        dv.addEventListener("change",()=>{ n.driver=dv.value; renderAndSync(); });
+        const sn=ch("input",{type:"text",value:n.subnet||"",placeholder:"172.18.0.0/16",style:Object.assign({flex:"1"},fStyle)},row);
+        sn.addEventListener("change",()=>{ n.subnet=sn.value; renderAndSync(); });
+        ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px",fontSize:"10px"},
+          on:{click:()=>{ obj.container_networks.splice(i,1); renderAndSync(); refresh(); }}},row);
+      });
+      ch("button",{text:"+ ネットワーク追加",style:{padding:"4px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700",marginTop:"2px"},
+        on:{click:()=>{ obj.container_networks.push({name:"bridge"+(obj.container_networks.length),driver:"bridge",subnet:"172.18.0.0/16"}); renderAndSync(); refresh(); }}},s1);
+
+      // --- Containers ---
+      const s2=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"コンテナ"},s2);
+      const netNames=(obj.container_networks||[]).map(n=>n.name);
+      (obj.containers||[]).forEach((c,i)=>{
+        const card=ch("div",{style:{border:"1px solid var(--border)",borderRadius:"5px",padding:"6px",marginBottom:"6px",background:"var(--bg2)"}},s2);
+        const hd=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center"}},card);
+        ch("span",{text:(c.status||"running")==="running"?"🟢":"⚪",style:{fontSize:"11px"}},hd);
+        const nm=ch("input",{type:"text",value:c.name||"",placeholder:"name",style:Object.assign({width:"100px"},fStyle)},hd);
+        nm.addEventListener("change",()=>{ c.name=nm.value; renderAndSync(); });
+        const img=ch("input",{type:"text",value:c.image||"",placeholder:"image (nginx:latest)",style:Object.assign({flex:"1"},fStyle)},hd);
+        img.addEventListener("change",()=>{ c.image=img.value; renderAndSync(); });
+        ch("button",{text:(c.status||"running")==="running"?"停止":"起動",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
+          on:{click:()=>{ c.status=(c.status||"running")==="running"?"stopped":"running"; renderAndSync(); refresh(); }}},hd);
+        ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{ obj.containers.splice(i,1); renderAndSync(); refresh(); }}},hd);
+        // network attachment
+        const netRow=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginTop:"4px"}},card);
+        ch("span",{text:"NW:",style:{fontSize:"10px",color:"var(--text-dim)"}},netRow);
+        const netSel=ch("select",{style:fStyle},netRow);
+        ch("option",{value:"",text:"-"},netSel);
+        for(const nn of netNames) ch("option",{value:nn,text:nn},netSel);
+        netSel.value=(c.networks&&c.networks[0]&&c.networks[0].net)||"";
+        const ipIn=ch("input",{type:"text",value:(c.networks&&c.networks[0]&&c.networks[0].ip)||"",placeholder:"172.18.0.2",style:Object.assign({width:"110px"},fStyle)},netRow);
+        function saveNet(){ c.networks=[{net:netSel.value,ip:ipIn.value}]; renderAndSync(); }
+        netSel.addEventListener("change",saveNet); ipIn.addEventListener("change",saveNet);
+        // port mappings
+        const pmHead=ch("div",{style:{fontSize:"10px",color:"var(--text-dim)",marginTop:"4px"}},card);
+        pmHead.textContent="ポート公開 (host:container):";
+        (c.port_mappings||[]).forEach((pm,pi)=>{
+          const pr=ch("div",{style:{display:"flex",gap:"4px",alignItems:"center",fontSize:"10px",fontFamily:"var(--mono)",marginTop:"2px"}},card);
+          ch("span",{text:`${pm.host_port} : ${pm.container_port} / ${pm.proto||"tcp"}`,style:{flex:"1"}},pr);
+          ch("button",{text:"✕",style:{padding:"0 5px",cursor:"pointer",fontSize:"9px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+            on:{click:()=>{ c.port_mappings.splice(pi,1); renderAndSync(); refresh(); }}},pr);
+        });
+        const addPm=ch("div",{style:{display:"flex",gap:"4px",marginTop:"3px"}},card);
+        const hp=ch("input",{type:"number",placeholder:"host",style:Object.assign({width:"56px"},fStyle)},addPm);
+        const cp=ch("input",{type:"number",placeholder:"cont",style:Object.assign({width:"56px"},fStyle)},addPm);
+        ch("button",{text:"+ 公開",style:{padding:"1px 8px",cursor:"pointer",fontSize:"10px",background:"var(--green)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+          on:{click:()=>{ if(!hp.value||!cp.value){toast("ポートを入力","err");return;} c.port_mappings=c.port_mappings||[]; c.port_mappings.push({host_port:+hp.value,container_port:+cp.value,proto:"tcp"}); renderAndSync(); refresh(); }}},addPm);
+      });
+      ch("button",{text:"+ コンテナ追加",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
+        on:{click:()=>{ obj.containers.push({name:"ctr"+(obj.containers.length+1),image:"nginx:latest",status:"running",networks:[],port_mappings:[]}); renderAndSync(); refresh(); }}},s2);
+      ch("div",{text:"💡 公開ポート(host_port)はサーバの待ち受けポートとして通信シミュレーションの宛先になります。",style:{fontSize:"10px",color:"var(--text-mute)",padding:"6px 2px"}},body);
+    }
+    refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
+}
+
+// Hypervisor / vCenter manager — ESXi host with VMs, vSwitches/port groups, datastores
+function showHypervisorManager(id){
+  const obj = Cfg.byId("servers", id);
+  if(!obj) return;
+  obj.hypervisor = obj.hypervisor || { type:"esxi", vms:[], vswitches:[], datastores:[] };
+  const hv = obj.hypervisor;
+  openDialog(`🖥 仮想基盤 (vCenter/ESXi) — ${obj.label||id}`, (body)=>{
+    const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
+    function refresh(){
+      body.innerHTML = "";
+      // host summary
+      const hsum=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"ハイパーバイザ"},hsum);
+      const hr=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center"}},hsum);
+      ch("span",{text:"種別:",style:{fontSize:"10px",color:"var(--text-dim)"}},hr);
+      const tSel=ch("select",{style:fStyle},hr);
+      ["esxi","kvm","hyper-v","proxmox"].forEach(x=>ch("option",{value:x,text:x},tSel)); tSel.value=hv.type||"esxi";
+      tSel.addEventListener("change",()=>{ hv.type=tSel.value; renderAndSync(); });
+      // capacity
+      addField(hr,"","",""); // spacer noop
+      // vSwitches / port groups
+      const sw=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"仮想スイッチ / ポートグループ"},sw);
+      (hv.vswitches||[]).forEach((vs,i)=>{
+        const row=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"3px"}},sw);
+        const nm=ch("input",{type:"text",value:vs.name||"",placeholder:"vSwitch0",style:Object.assign({width:"110px"},fStyle)},row);
+        nm.addEventListener("change",()=>{ vs.name=nm.value; renderAndSync(); });
+        const pg=ch("input",{type:"text",value:(vs.portgroups||[]).join(", "),placeholder:"PG-Web, PG-DB",style:Object.assign({flex:"1"},fStyle)},row);
+        pg.addEventListener("change",()=>{ vs.portgroups=pg.value.split(",").map(x=>x.trim()).filter(Boolean); renderAndSync(); });
+        ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{ hv.vswitches.splice(i,1); renderAndSync(); refresh(); }}},row);
+      });
+      ch("button",{text:"+ vSwitch追加",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+        on:{click:()=>{ hv.vswitches.push({name:"vSwitch"+(hv.vswitches.length),portgroups:["VM Network"]}); renderAndSync(); refresh(); }}},sw);
+      // VMs
+      const vmsec=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"仮想マシン (VM)"},vmsec);
+      const pgOptions=[].concat(...(hv.vswitches||[]).map(v=>v.portgroups||[]));
+      (hv.vms||[]).forEach((vm,i)=>{
+        const card=ch("div",{style:{border:"1px solid var(--border)",borderRadius:"5px",padding:"6px",marginBottom:"5px",background:"var(--bg2)"}},vmsec);
+        const hd=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center"}},card);
+        ch("span",{text:(vm.power||"on")==="on"?"🟢":"⚪"},hd);
+        const nm=ch("input",{type:"text",value:vm.name||"",placeholder:"vm名",style:Object.assign({width:"110px"},fStyle)},hd);
+        nm.addEventListener("change",()=>{ vm.name=nm.value; renderAndSync(); });
+        const cpu=ch("input",{type:"number",value:vm.vcpu||2,title:"vCPU",style:Object.assign({width:"44px"},fStyle)},hd);
+        cpu.addEventListener("change",()=>{ vm.vcpu=+cpu.value; renderAndSync(); });
+        ch("span",{text:"vCPU",style:{fontSize:"9px",color:"var(--text-dim)"}},hd);
+        const ram=ch("input",{type:"number",value:vm.ram_gb||4,title:"RAM(GB)",style:Object.assign({width:"44px"},fStyle)},hd);
+        ram.addEventListener("change",()=>{ vm.ram_gb=+ram.value; renderAndSync(); });
+        ch("span",{text:"GB",style:{fontSize:"9px",color:"var(--text-dim)"}},hd);
+        ch("button",{text:(vm.power||"on")==="on"?"停止":"起動",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
+          on:{click:()=>{ vm.power=(vm.power||"on")==="on"?"off":"on"; renderAndSync(); refresh(); }}},hd);
+        ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{ hv.vms.splice(i,1); renderAndSync(); refresh(); }}},hd);
+        const r2=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginTop:"4px"}},card);
+        ch("span",{text:"IP:",style:{fontSize:"10px",color:"var(--text-dim)"}},r2);
+        const ip=ch("input",{type:"text",value:vm.ip||"",placeholder:"10.10.0.5",style:Object.assign({width:"120px"},fStyle)},r2);
+        ip.addEventListener("change",()=>{ vm.ip=ip.value; renderAndSync(); });
+        ch("span",{text:"PG:",style:{fontSize:"10px",color:"var(--text-dim)"}},r2);
+        const pgSel=ch("select",{style:fStyle},r2);
+        ch("option",{value:"",text:"-"},pgSel);
+        for(const pg of pgOptions) ch("option",{value:pg,text:pg},pgSel);
+        pgSel.value=vm.portgroup||"";
+        pgSel.addEventListener("change",()=>{ vm.portgroup=pgSel.value; renderAndSync(); });
+      });
+      ch("button",{text:"+ VM追加",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
+        on:{click:()=>{ hv.vms.push({name:"vm"+(hv.vms.length+1),vcpu:2,ram_gb:4,power:"on",ip:"",portgroup:(pgOptions[0]||"")}); renderAndSync(); refresh(); }}},vmsec);
+      // datastores
+      const ds=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"データストア"},ds);
+      const dsIn=ch("input",{type:"text",value:(hv.datastores||[]).map(d=>typeof d==="string"?d:(d.name+":"+(d.capacity_gb||"?")+"GB")).join(", "),placeholder:"datastore1:500GB, ...",style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},ds);
+      dsIn.addEventListener("change",()=>{ hv.datastores=dsIn.value.split(",").map(x=>x.trim()).filter(Boolean); renderAndSync(); });
+      // capacity summary
+      const usedCpu=(hv.vms||[]).reduce((s,v)=>s+(+v.vcpu||0),0);
+      const usedRam=(hv.vms||[]).reduce((s,v)=>s+(+v.ram_gb||0),0);
+      ch("div",{text:`割当: ${(hv.vms||[]).length} VM / ${usedCpu} vCPU / ${usedRam} GB RAM`,
+        style:{fontSize:"11px",color:"var(--text-dim)",padding:"8px 2px",fontFamily:"var(--mono)"}},body);
+      ch("div",{text:"💡 VMにIPを設定すると、そのVMが通信シミュレーションの到達先になります(ホスト経由)。",style:{fontSize:"10px",color:"var(--text-mute)",padding:"2px"}},body);
+    }
+    refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
+}
+
+// Kubernetes cluster manager — nodes, pods, services (ClusterIP/NodePort/LoadBalancer)
+function showK8sManager(){
+  App.config.k8s = App.config.k8s || { clusters:[] };
+  openDialog("☸ Kubernetes クラスタ管理", (body)=>{
+    const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
+    let activeIdx = 0;
+    function refresh(){
+      body.innerHTML = "";
+      const clusters = App.config.k8s.clusters;
+      const top=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"8px"}},body);
+      ch("span",{text:"クラスタ:",style:{fontSize:"11px"}},top);
+      const cSel=ch("select",{style:fStyle},top);
+      clusters.forEach((c,i)=>{ const o=ch("option",{value:String(i),text:c.name||("cluster"+i)},cSel); if(i===activeIdx)o.selected=true; });
+      cSel.addEventListener("change",()=>{ activeIdx=+cSel.value; refresh(); });
+      ch("button",{text:"+ クラスタ",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+        on:{click:()=>{ clusters.push({name:"k8s-"+(clusters.length+1),pod_cidr:"10.244.0.0/16",service_cidr:"10.96.0.0/12",nodes:[],namespaces:["default"],pods:[],services:[],ingresses:[]}); activeIdx=clusters.length-1; renderAndSync(); refresh(); }}},top);
+      if(!clusters.length){ ch("div",{text:"クラスタを追加してください。",style:{color:"var(--text-mute)",fontSize:"11px",padding:"10px"}},body); return; }
+      const cl=clusters[activeIdx]; if(!cl){ activeIdx=0; return refresh(); }
+
+      const cfg=ch("div",{class:"sub-section"},body);
+      const cr=ch("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"6px"}},cfg);
+      const f1=ch("div",{},cr); ch("label",{text:"クラスタ名",style:{fontSize:"9px",color:"var(--text-dim)"}},f1);
+      const nm=ch("input",{type:"text",value:cl.name||"",style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f1); nm.addEventListener("change",()=>{cl.name=nm.value;renderAndSync();});
+      const f2=ch("div",{},cr); ch("label",{text:"Pod CIDR",style:{fontSize:"9px",color:"var(--text-dim)"}},f2);
+      const pc=ch("input",{type:"text",value:cl.pod_cidr||"",style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f2); pc.addEventListener("change",()=>{cl.pod_cidr=pc.value;renderAndSync();});
+      const f3=ch("div",{},cr); ch("label",{text:"Service CIDR",style:{fontSize:"9px",color:"var(--text-dim)"}},f3);
+      const sc=ch("input",{type:"text",value:cl.service_cidr||"",style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f3); sc.addEventListener("change",()=>{cl.service_cidr=sc.value;renderAndSync();});
+      ch("label",{text:"ノード (サーバ, カンマ区切り)",style:{fontSize:"9px",color:"var(--text-dim)",display:"block",marginTop:"4px"}},cfg);
+      const ndIn=ch("input",{type:"text",value:(cl.nodes||[]).join(", "),placeholder:"web01, app01",style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},cfg);
+      ndIn.addEventListener("change",()=>{ cl.nodes=ndIn.value.split(",").map(x=>x.trim()).filter(Boolean); renderAndSync(); });
+
+      const ps=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"Pods"},ps);
+      (cl.pods||[]).forEach((pod,i)=>{
+        const row=ch("div",{style:{display:"flex",gap:"5px",alignItems:"center",marginBottom:"3px",flexWrap:"wrap"}},ps);
+        ch("span",{text:(pod.status||"Running")==="Running"?"🟢":"⚪"},row);
+        const nmI=ch("input",{type:"text",value:pod.name||"",placeholder:"pod名",style:Object.assign({width:"90px"},fStyle)},row); nmI.addEventListener("change",()=>{pod.name=nmI.value;renderAndSync();});
+        const lblI=ch("input",{type:"text",value:Object.entries(pod.labels||{}).map(([k,v])=>k+"="+v).join(","),placeholder:"app=web",style:Object.assign({width:"100px"},fStyle)},row);
+        lblI.addEventListener("change",()=>{ const o={}; lblI.value.split(",").forEach(kv=>{const[a,b]=kv.split("=");if(a&&b)o[a.trim()]=b.trim();}); pod.labels=o; renderAndSync(); });
+        const ipI=ch("input",{type:"text",value:pod.ip||"",placeholder:"10.244.0.5",style:Object.assign({width:"95px"},fStyle)},row); ipI.addEventListener("change",()=>{pod.ip=ipI.value;renderAndSync();});
+        const ndSel=ch("select",{style:fStyle},row); ch("option",{value:"",text:"node"},ndSel);
+        for(const n of (cl.nodes||[])) ch("option",{value:n,text:n},ndSel); ndSel.value=pod.node||"";
+        ndSel.addEventListener("change",()=>{pod.node=ndSel.value;renderAndSync();});
+        ch("button",{text:(pod.status||"Running")==="Running"?"停止":"起動",style:{padding:"1px 5px",cursor:"pointer",fontSize:"9px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
+          on:{click:()=>{ pod.status=(pod.status||"Running")==="Running"?"Stopped":"Running"; renderAndSync(); refresh(); }}},row);
+        ch("button",{text:"✕",style:{padding:"1px 5px",cursor:"pointer",fontSize:"9px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{ cl.pods.splice(i,1); renderAndSync(); refresh(); }}},row);
+      });
+      ch("button",{text:"+ Pod追加",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+        on:{click:()=>{ const n=(cl.pods=cl.pods||[]).length+1; cl.pods.push({name:"pod-"+n,namespace:"default",node:(cl.nodes||[])[0]||"",ip:"10.244.0."+(n+1),labels:{app:"web"},status:"Running",containers:[]}); renderAndSync(); refresh(); }}},ps);
+
+      const ss=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"Services"},ss);
+      (cl.services||[]).forEach((svc,i)=>{
+        const card=ch("div",{style:{border:"1px solid var(--border)",borderRadius:"5px",padding:"6px",marginBottom:"5px",background:"var(--bg2)"}},ss);
+        const hd=ch("div",{style:{display:"flex",gap:"5px",alignItems:"center",flexWrap:"wrap"}},card);
+        const nmI=ch("input",{type:"text",value:svc.name||"",placeholder:"svc名",style:Object.assign({width:"90px"},fStyle)},hd); nmI.addEventListener("change",()=>{svc.name=nmI.value;renderAndSync();});
+        const tySel=ch("select",{style:fStyle},hd); ["ClusterIP","NodePort","LoadBalancer"].forEach(x=>ch("option",{value:x,text:x},tySel)); tySel.value=svc.type||"ClusterIP";
+        tySel.addEventListener("change",()=>{svc.type=tySel.value;renderAndSync();refresh();});
+        const selI=ch("input",{type:"text",value:Object.entries(svc.selector||{}).map(([k,v])=>k+"="+v).join(","),placeholder:"selector app=web",style:Object.assign({width:"110px"},fStyle)},hd);
+        selI.addEventListener("change",()=>{ const o={}; selI.value.split(",").forEach(kv=>{const[a,b]=kv.split("=");if(a&&b)o[a.trim()]=b.trim();}); svc.selector=o; renderAndSync(); });
+        ch("button",{text:"✕",style:{padding:"1px 5px",cursor:"pointer",fontSize:"9px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{ cl.services.splice(i,1); renderAndSync(); refresh(); }}},hd);
+        const r2=ch("div",{style:{display:"flex",gap:"5px",alignItems:"center",marginTop:"4px",flexWrap:"wrap"}},card);
+        ch("span",{text:"ClusterIP:",style:{fontSize:"9px",color:"var(--text-dim)"}},r2);
+        const cipI=ch("input",{type:"text",value:svc.cluster_ip||"",placeholder:"10.96.0.10",style:Object.assign({width:"95px"},fStyle)},r2); cipI.addEventListener("change",()=>{svc.cluster_ip=cipI.value;renderAndSync();});
+        if(svc.type==="LoadBalancer"){ ch("span",{text:"ExternalIP:",style:{fontSize:"9px",color:"var(--text-dim)"}},r2);
+          const exI=ch("input",{type:"text",value:svc.external_ip||"",placeholder:"203.0.113.5",style:Object.assign({width:"95px"},fStyle)},r2); exI.addEventListener("change",()=>{svc.external_ip=exI.value;renderAndSync();}); }
+        const pmHead=ch("div",{style:{fontSize:"9px",color:"var(--text-dim)",marginTop:"4px"}},card); pmHead.textContent="ポート (port → targetPort [: nodePort]):";
+        (svc.ports||[]).forEach((pp,pi)=>{
+          const pr=ch("div",{style:{display:"flex",gap:"4px",alignItems:"center",fontSize:"10px",fontFamily:"var(--mono)",marginTop:"2px"}},card);
+          ch("span",{text:`${pp.port} → ${pp.target_port||pp.port}${pp.node_port?(" : NodePort "+pp.node_port):""} /${pp.proto||"tcp"}`,style:{flex:"1"}},pr);
+          ch("button",{text:"✕",style:{padding:"0 5px",cursor:"pointer",fontSize:"9px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+            on:{click:()=>{ svc.ports.splice(pi,1); renderAndSync(); refresh(); }}},pr);
+        });
+        const addP=ch("div",{style:{display:"flex",gap:"4px",marginTop:"3px"}},card);
+        const po=ch("input",{type:"number",placeholder:"port",style:Object.assign({width:"54px"},fStyle)},addP);
+        const tp=ch("input",{type:"number",placeholder:"target",style:Object.assign({width:"54px"},fStyle)},addP);
+        const npI=(svc.type==="NodePort"||svc.type==="LoadBalancer")?ch("input",{type:"number",placeholder:"nodePort",style:Object.assign({width:"64px"},fStyle)},addP):null;
+        ch("button",{text:"+ポート",style:{padding:"1px 8px",cursor:"pointer",fontSize:"10px",background:"var(--green)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+          on:{click:()=>{ if(!po.value){toast("portを入力","err");return;} svc.ports=svc.ports||[]; svc.ports.push({port:+po.value,target_port:+(tp.value||po.value),node_port:npI&&npI.value?+npI.value:null,proto:"tcp"}); renderAndSync(); refresh(); }}},addP);
+      });
+      ch("button",{text:"+ Service追加",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
+        on:{click:()=>{ const n=(cl.services=cl.services||[]).length+1; cl.services.push({name:"svc-"+n,namespace:"default",type:"ClusterIP",cluster_ip:"10.96.0."+(n+9),selector:{app:"web"},ports:[{port:80,target_port:8080,node_port:null,proto:"tcp"}]}); renderAndSync(); refresh(); }}},ss);
+      ch("div",{text:"💡 ClusterIP/LoadBalancer宛、またはノードIP:NodePort宛の通信は、kube-proxyがセレクタ一致の稼働Podへ振り分けます(通信テストで確認可)。",style:{fontSize:"10px",color:"var(--text-mute)",padding:"8px 2px",lineHeight:"1.4"}},body);
     }
     refresh();
     return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
@@ -1913,6 +2179,7 @@ function cliExec(obj, kind, cmd, args, println, state){
     "  show etherchannel summary       - port-channels (bonding/vPC)",
     "  show standby / vrrp / glbp      - FHRP gateway redundancy state",
     "  show cluster                    - server clustering (Active/Standby)",
+    "  show k8s                        - Kubernetes クラスタ/Service/Pod",
     "  show ports / netstat            - server listening ports + host FW",
     "  show lb                         - load-balancer VIP pools",
     "  show gslb                       - GSLB DNS records",
@@ -2328,6 +2595,19 @@ function cliExec(obj, kind, cmd, args, println, state){
           group++;
         }
         if(group === 1) println("(no port-channels configured)");
+      } else if(sub === "k8s" || sub === "kubernetes" || (sub==="get" && (args[2]||"")==="svc")){
+        const rep = (typeof buildK8sReport==="function") ? buildK8sReport() : [];
+        if(!rep.length){ println("(Kubernetesクラスタ未定義)"); return; }
+        for(const c of rep){
+          println(`Cluster ${c.name}  pod-cidr ${c.pod_cidr}  svc-cidr ${c.service_cidr}`);
+          println(`  Nodes: ${c.nodes.join(", ")||"(none)"}   Pods: ${c.pods}   Services: ${c.services}`);
+          for(const s of c.services_detail){
+            println(`  SVC ${s.name}.${s.ns} [${s.type}] ClusterIP=${s.cluster_ip||"-"} ExternalIP=${s.external_ip}`);
+            println(`      ports: ${s.ports}`);
+            println(`      endpoints: ${s.endpoints.join(", ")||"(none — selector不一致/Pod停止)"}`);
+          }
+          println("");
+        }
       } else if(sub === "cluster"){
         // show cluster — server clustering state
         const cls = (typeof buildClusters==="function") ? buildClusters() : {};
@@ -3169,6 +3449,7 @@ function openCommSimulator(){
           const port = +portIn.value || 80;
           const p = computePath(srcKind, srcObj, dstIp, proto, port);
           showResult(p, srcRes, dstRes, dstIp);
+          logCommResult((srcRes&&srcRes.obj&&(srcRes.obj.label||srcRes.obj.id))||srcKind, dstIp, proto, port, p);
           setTimeout(()=>{ App.suppressToast = false; }, 100);
         }}
       ]

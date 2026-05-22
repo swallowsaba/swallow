@@ -418,7 +418,146 @@ function buildServerPorts(server){
   for(const lp of (server.listen_ports||[])){
     add(lp.port, (lp.proto||"tcp").toLowerCase(), "manual", "LISTEN");
   }
+  // 3) Container published ports (host_port → container:container_port) on container hosts
+  for(const c of (server.containers||[])){
+    const running = (c.status||"running") === "running";
+    for(const pm of (c.port_mappings||[])){
+      if(pm.host_port == null) continue;
+      add(pm.host_port, (pm.proto||"tcp").toLowerCase(), "container:"+(c.name||c.id||"?"), running ? "LISTEN" : "DOWN");
+    }
+  }
+  // 4) Kubernetes NodePort services exposed on this node
+  if(typeof k8sNodePortsForNode === "function"){
+    for(const np of k8sNodePortsForNode(server.id)){
+      add(np.node_port, (np.proto||"tcp").toLowerCase(), "k8s-NodePort:"+np.service, "LISTEN");
+    }
+  }
   return ports;
+}
+
+/* ====== CONTAINER NETWORKING ======
+ * A container host (server.type==="container" or server.containers set) runs containers
+ * attached to container networks (bridge/overlay). Containers can publish ports to the host.
+ * Model:
+ *   server.container_networks = [{ name, driver:"bridge"|"overlay"|"host"|"macvlan", subnet }]
+ *   server.containers = [{ name, image, status, networks:[{net, ip}],
+ *                          port_mappings:[{host_port, container_port, proto}] }]
+ */
+function buildContainerNetReport(server){
+  const nets = (server.container_networks||[]).map(n=>({ name:n.name, driver:n.driver||"bridge", subnet:n.subnet||"-",
+    members:(server.containers||[]).filter(c=>(c.networks||[]).some(x=>x.net===n.name)).map(c=>c.name) }));
+  return nets;
+}
+function containerByName(server, name){ return (server.containers||[]).find(c=>(c.name||c.id)===name); }
+
+/* =========================================================================
+ * KUBERNETES NETWORKING
+ * Model (App.config.k8s = { clusters:[...] }):
+ *   cluster = { name, pod_cidr, service_cidr, nodes:[serverId...], namespaces:[...],
+ *     pods:[{ name, namespace, node, ip, labels:{app}, status, containers:[{name,image,ports:[]}] }],
+ *     services:[{ name, namespace, type:"ClusterIP"|"NodePort"|"LoadBalancer",
+ *                 cluster_ip, external_ip, selector:{app}, ports:[{port,target_port,node_port,proto}] }],
+ *     ingresses:[{ name, namespace, rules:[{host,path,service,port}] }] }
+ * Behaviour modelled: label-selector → endpoints, ClusterIP/NodePort/LoadBalancer routing
+ * (kube-proxy round-robin), pod reachability, NodePort exposed on every node.
+ * ========================================================================= */
+function k8sClusters(){ return (App.config.k8s && App.config.k8s.clusters) || []; }
+function k8sFindClusterByNode(serverId){
+  return k8sClusters().find(c=>(c.nodes||[]).includes(serverId)) || null;
+}
+function labelsMatch(podLabels, selector){
+  if(!selector) return false;
+  podLabels = podLabels||{};
+  for(const k in selector){ if(podLabels[k] !== selector[k]) return false; }
+  return Object.keys(selector).length>0;
+}
+// Endpoints (running pods) backing a service
+function k8sServiceEndpoints(cluster, svc){
+  return (cluster.pods||[]).filter(p=>(p.status||"Running")==="Running" && labelsMatch(p.labels, svc.selector));
+}
+// kube-proxy style round-robin selection of a backend pod for a service
+function k8sSelectPod(cluster, svc){
+  const eps = k8sServiceEndpoints(cluster, svc);
+  if(!eps.length) return null;
+  const idx = (k8sSelectPod._rr = ((k8sSelectPod._rr||0)+1)) % eps.length;
+  return eps[idx];
+}
+// Find a service by its ClusterIP across all clusters
+function k8sFindByClusterIP(ip){
+  for(const c of k8sClusters()){
+    for(const s of (c.services||[])){ if(ipOnly(s.cluster_ip)===ip) return { cluster:c, svc:s }; }
+  }
+  return null;
+}
+// Find a service by external/LoadBalancer IP
+function k8sFindByExternalIp(ip){
+  for(const c of k8sClusters()){
+    for(const s of (c.services||[])){ if(s.external_ip && ipOnly(s.external_ip)===ip) return { cluster:c, svc:s }; }
+  }
+  return null;
+}
+// NodePort services exposed on a given node (server) → listening ports
+function k8sNodePortsForNode(serverId){
+  const out = [];
+  const c = k8sFindClusterByNode(serverId);
+  if(!c) return out;
+  for(const s of (c.services||[])){
+    if(s.type !== "NodePort" && s.type !== "LoadBalancer") continue;
+    for(const p of (s.ports||[])){
+      if(p.node_port) out.push({ node_port:p.node_port, proto:(p.proto||"tcp"), service:s.name, target_port:p.target_port||p.port });
+    }
+  }
+  return out;
+}
+// Resolve a K8s destination (ClusterIP or NodePort on a node) to a backend pod + its node.
+// Returns { pod, node, svc, cluster } or null.
+function k8sResolveToPod(destIp, dstPort, arrivingNodeId){
+  // ClusterIP service?
+  const byCip = k8sFindByClusterIP(destIp);
+  if(byCip){
+    const pod = k8sSelectPod(byCip.cluster, byCip.svc);
+    if(pod) return { pod, node:pod.node, svc:byCip.svc, cluster:byCip.cluster };
+    return { pod:null, svc:byCip.svc, cluster:byCip.cluster };
+  }
+  // LoadBalancer external IP?
+  const byExt = k8sFindByExternalIp(destIp);
+  if(byExt){
+    const pod = k8sSelectPod(byExt.cluster, byExt.svc);
+    if(pod) return { pod, node:pod.node, svc:byExt.svc, cluster:byExt.cluster };
+    return { pod:null, svc:byExt.svc, cluster:byExt.cluster };
+  }
+  // NodePort: arriving at a node IP on a node_port
+  if(arrivingNodeId && dstPort!=null){
+    const c = k8sFindClusterByNode(arrivingNodeId);
+    if(c){
+      for(const s of (c.services||[])){
+        if(s.type!=="NodePort" && s.type!=="LoadBalancer") continue;
+        if((s.ports||[]).some(p=>+p.node_port===+dstPort)){
+          const pod = k8sSelectPod(c, s);
+          if(pod) return { pod, node:pod.node, svc:s, cluster:c, viaNodePort:true };
+          return { pod:null, svc:s, cluster:c, viaNodePort:true };
+        }
+      }
+    }
+  }
+  // Direct pod IP?
+  for(const c of k8sClusters()){
+    const pod = (c.pods||[]).find(p=>ipOnly(p.ip)===destIp);
+    if(pod) return { pod, node:pod.node, cluster:c, direct:true };
+  }
+  return null;
+}
+function buildK8sReport(){
+  return k8sClusters().map(c=>({
+    name:c.name, pod_cidr:c.pod_cidr, service_cidr:c.service_cidr,
+    nodes:c.nodes||[], pods:(c.pods||[]).length, services:(c.services||[]).length,
+    services_detail:(c.services||[]).map(s=>({
+      name:s.name, ns:s.namespace||"default", type:s.type, cluster_ip:s.cluster_ip,
+      external_ip:s.external_ip||"-",
+      ports:(s.ports||[]).map(p=>`${p.port}${p.node_port?(":"+p.node_port+"(NodePort)"):""}→${p.target_port||p.port}`).join(", "),
+      endpoints:k8sServiceEndpoints(c,s).map(p=>p.name)
+    }))
+  }));
 }
 // Host firewall verdict for an inbound connection to (proto, port)
 function hostFirewallVerdict(server, proto, port){
@@ -911,8 +1050,28 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
   const visited = new Set([srcObj.id]);
   const maxHops = 30;
   let cur = { kind:srcKind, obj:srcObj };
+
+  // Kubernetes: if destIp is a Service ClusterIP or LoadBalancer external IP, kube-proxy
+  // selects a backend pod and the traffic is delivered to that pod's NODE.
+  let k8sPick = null;
+  if(typeof k8sFindByClusterIP === "function"){
+    const cip = k8sFindByClusterIP(destIp) || k8sFindByExternalIp(destIp);
+    if(cip){
+      const pod = k8sSelectPod(cip.cluster, cip.svc);
+      if(!pod){
+        return { ok:false, path, reason:`K8s Service ${cip.svc.name}: 有効なPodエンドポイントなし (selector不一致 or 全Pod停止)` };
+      }
+      k8sPick = { svc:cip.svc, pod, cluster:cip.cluster };
+      // target the pod's node so routing reaches it; map service port → target_port
+      const node = Cfg.byId("servers", pod.node);
+      if(node){
+        const nodeIp = elementPrimaryIp("server", node.id, ipFamily(destIp)) || elementPrimaryIp("server", node.id, "v4");
+        if(nodeIp) destIp = nodeIp;
+      }
+    }
+  }
+
   const destFam = ipFamily(destIp);
-  // Pick a source address of matching family (so policies match cleanly)
   const srcIp = elementPrimaryIp(srcKind, srcObj.id, destFam);
 
   // Helper: does iface have an address (in either family) matching destIp's subnet?
@@ -943,6 +1102,13 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
     const hasDest = (curObj.interfaces||[]).some(ifaceHasDestIp)
       || bondIp4 === destIp || bondIp6 === destIp;
     if(hasDest && hop > 0){
+      // Kubernetes: delivered to the selected pod's node → success with pod info
+      if(k8sPick && cur.kind === "server" && cur.obj.id === k8sPick.pod.node){
+        path.push({ kind:"pod", id:k8sPick.pod.name, ...center(cur.obj) });
+        return { ok:true, path, k8s:{ service:k8sPick.svc.name, pod:k8sPick.pod.name,
+          node:k8sPick.pod.node, podIp:k8sPick.pod.ip },
+          portInfo:`Service ${k8sPick.svc.name} → Pod ${k8sPick.pod.name} (${k8sPick.pod.ip})` };
+      }
       // Arrived at the destination. If it's a server and a port was specified,
       // verify a service is listening and the host firewall permits it.
       if(cur.kind === "server" && dstPort != null){
@@ -952,6 +1118,16 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
             blockedAt:{ kind:"server", id:curObj.id }, portState:verdict.state };
         }
         return { ok:true, path, portState:verdict.state, portInfo:verdict.reason };
+      }
+      // External cloud/SaaS endpoint with declared ports → verify the port is offered
+      if(cur.kind === "device" && curObj.external && Array.isArray(curObj.external_ports) && dstPort != null){
+        const ok = curObj.external_ports.some(p=>+p.port===+dstPort);
+        if(!ok){
+          return { ok:false, path,
+            reason:`${curObj.id} (${curObj.fqdn||"external"}): ポート ${proto}/${dstPort} は提供されていません`,
+            blockedAt:{ kind:"device", id:curObj.id } };
+        }
+        return { ok:true, path, portInfo:`${curObj.fqdn||curObj.id} ${proto}/${dstPort} OK` };
       }
       return { ok:true, path };
     }
@@ -1110,6 +1286,14 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
       if(peerObj.status && peerObj.status !== "running"){
         return { ok:false, path, reason:`${peerObj.id} is ${peerObj.status}`, blockedAt:{kind:next.peerKind,id:peerObj.id} };
       }
+      // Kubernetes pod delivery at the pod's node (reached as a peer)
+      if(k8sPick && next.peerKind === "server" && peerObj.id === k8sPick.pod.node){
+        path.push({ kind:"server", id:peerObj.id, ...center(peerObj) });
+        path.push({ kind:"pod", id:k8sPick.pod.name, ...center(peerObj) });
+        return { ok:true, path, k8s:{ service:k8sPick.svc.name, pod:k8sPick.pod.name,
+          node:k8sPick.pod.node, podIp:k8sPick.pod.ip },
+          portInfo:`Service ${k8sPick.svc.name} → Pod ${k8sPick.pod.name} (${k8sPick.pod.ip})` };
+      }
       if(next.peerKind === "server" && dstPort != null){
         const verdict = serverAcceptsPort(peerObj, proto, dstPort);
         // include the arrival node in the path for clarity
@@ -1161,6 +1345,7 @@ function executeStep(step, onComplete){
   Log.info(`▸ ${step.from} → ${step.to} (${step.protocol||"?"}:${step.port||"?"})${step.description?" — "+step.description:""}`);
 
   const path = computePath(srcKind, srcObj, dstIp, step.protocol, step.port);
+  logCommResult(step.from, step.to, step.protocol, step.port, path);
   if(!path.ok){
     Log.error(`✗ ${path.reason}`);
     animatePacket(path.path, true, ()=>onComplete(false));
@@ -1348,6 +1533,7 @@ function doPing(srcKind, srcId, targetId){
   const dstIp = elementPrimaryIp(tKind, targetId);
   Log.info(`Pinging ${targetId} [${dstIp}] from ${srcId}...`);
   const res = computePath(srcKind, srcObj, dstIp, "icmp", null);
+  logCommResult((srcObj.label||srcObj.id), dstIp, "icmp", null, res);
   if(res.ok){
     const t = 1 + Math.floor(Math.random()*4);
     Log.info(`Reply from ${dstIp}: time=${t}ms TTL=64`);
@@ -1380,8 +1566,72 @@ var DEVICE_TYPES = [
   { type:"l2switch",     label:"L2スイッチ",  icon:"🟦", desc:"L2スイッチング" },
   { type:"firewall",     label:"ファイアウォール", icon:"🛡", desc:"FW/IPS" },
   { type:"loadbalancer", label:"ロードバランサ", icon:"⚖", desc:"L4/L7 LB" },
-  { type:"waf",          label:"WAF",         icon:"🟪", desc:"Web ApplicationFW" }
+  { type:"waf",          label:"WAF",         icon:"🟪", desc:"Web ApplicationFW" },
+  { type:"internet",     label:"インターネット", icon:"🌐", desc:"インターネット境界" },
+  { type:"cloud",        label:"クラウド (AWS等)", icon:"☁", desc:"外部クラウドサービス" },
+  { type:"saas",         label:"外部SaaS",     icon:"🟪", desc:"外部SaaSエンドポイント" }
 ];
+
+/* ====== EXTERNAL SERVICE CATALOG (AWS / SaaS presets) ======
+ * Adding one creates an "external" cloud/saas device with a public endpoint
+ * (FQDN + IP + listening ports), reachable in the communication simulator.
+ */
+var EXTERNAL_CATALOG = [
+  { group:"AWS", provider:"cloud", items:[
+    { key:"aws-s3",        label:"Amazon S3",        fqdn:"s3.amazonaws.com",            ip:"52.216.0.10",  ports:[443] },
+    { key:"aws-rds",       label:"Amazon RDS",       fqdn:"rds.amazonaws.com",           ip:"52.94.0.20",   ports:[3306,5432] },
+    { key:"aws-dynamodb",  label:"DynamoDB",         fqdn:"dynamodb.amazonaws.com",      ip:"52.94.0.40",   ports:[443] },
+    { key:"aws-ec2",       label:"EC2 Endpoint",     fqdn:"ec2.amazonaws.com",           ip:"52.94.0.50",   ports:[443] },
+    { key:"aws-cloudfront",label:"CloudFront (CDN)", fqdn:"cloudfront.net",              ip:"13.224.0.10",  ports:[443,80] },
+    { key:"aws-sqs",       label:"SQS",              fqdn:"sqs.amazonaws.com",           ip:"52.94.0.60",   ports:[443] }
+  ]},
+  { group:"SaaS", provider:"saas", items:[
+    { key:"salesforce", label:"Salesforce",   fqdn:"login.salesforce.com", ip:"104.16.0.10", ports:[443] },
+    { key:"m365",       label:"Microsoft 365",fqdn:"office.com",           ip:"40.96.0.10",  ports:[443] },
+    { key:"github",     label:"GitHub",       fqdn:"github.com",           ip:"140.82.0.10", ports:[443,22] },
+    { key:"slack",      label:"Slack",        fqdn:"slack.com",            ip:"104.16.0.20", ports:[443] },
+    { key:"google",     label:"Google APIs",  fqdn:"googleapis.com",       ip:"142.250.0.10",ports:[443] },
+    { key:"stripe",     label:"Stripe API",   fqdn:"api.stripe.com",       ip:"54.187.0.10", ports:[443] }
+  ]},
+  { group:"汎用", provider:"internet", items:[
+    { key:"internet",   label:"インターネット (任意)", fqdn:"*",            ip:"8.8.8.8",     ports:[53,80,443] }
+  ]}
+];
+function openExternalServiceCatalog(){
+  openDialog("☁ 外部サービス / クラウド連携を追加", (body)=>{
+    ch("p",{text:"AWS・外部SaaS等の外部エンドポイントをトポロジに追加します。公開FQDN/IP・待受ポートを持ち、通信シミュレーションの宛先になります。追加後、FWやルータと接続してください。",
+      style:{margin:"0 0 10px",fontSize:"11px",color:"var(--text-dim)",lineHeight:"1.5"}},body);
+    for(const grp of EXTERNAL_CATALOG){
+      ch("h4",{text:grp.group,style:{margin:"10px 0 4px",fontSize:"12px",color:"var(--accent)"}},body);
+      const grid=ch("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px"}},body);
+      for(const it of grp.items){
+        const btn=ch("button",{style:{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:"2px",padding:"8px",fontSize:"12px",cursor:"pointer",
+          background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"5px",color:"var(--text)",textAlign:"left"}},grid);
+        ch("div",{text:(grp.provider==="saas"?"🟪 ":grp.provider==="internet"?"🌐 ":"☁ ")+it.label,style:{fontWeight:"700"}},btn);
+        ch("div",{html:`<span style="font-size:10px;opacity:0.7;font-family:var(--mono)">${it.fqdn} · ${it.ip}<br>ports: ${it.ports.join(", ")}</span>`},btn);
+        btn.addEventListener("click",()=>{ closeDialog(); addExternalEndpoint(grp.provider, it); });
+      }
+    }
+    return { buttons:[{text:"閉じる",action:closeDialog}] };
+  });
+}
+function addExternalEndpoint(provider, item){
+  pushUndo(); Cfg.ensure();
+  const id = uid(item.key||"ext");
+  // public interface with the endpoint IP, and listening services for each port
+  const dev = {
+    id, label:item.label, type:provider, status:"running", external:true,
+    x: 60 + Math.random()*60, y: 60 + Math.random()*60,
+    fqdn:item.fqdn,
+    interfaces:[{ id:"public0", ip:item.ip+"/32", status:"up" }],
+    external_ports: (item.ports||[]).map(p=>({ port:p, proto:"tcp" }))
+  };
+  App.config.devices.push(dev);
+  selectElement("device", id);
+  renderAndSync(); updateStatusBar();
+  toast(`外部サービス「${item.label}」を追加 (${item.fqdn})`, "ok");
+  Log.info(`外部サービス追加: ${id} ${item.fqdn} ${item.ip}`);
+}
 function showDeviceTypeMenu(anchorBtn){
   const menu = $("#dev-menu"); menu.innerHTML = "";
   ch("div",{class:"fmenu-title",text:"NW機器を追加 — タイプを選択"},menu);
@@ -1393,6 +1643,13 @@ function showDeviceTypeMenu(anchorBtn){
        <div style="font-size:10px;opacity:0.8">${escapeHtml(dt.desc)}</div>`},it);
     it.addEventListener("click",()=>{ hideFloatingMenus(); addNewDeviceOfType(dt.type); });
   }
+  // Catalog shortcut for ready-made AWS/SaaS endpoints
+  const cat = ch("div",{class:"fmenu-item",title:"AWS/SaaS等の外部サービスをプリセットから追加",style:{borderTop:"1px solid var(--border)",marginTop:"4px",paddingTop:"6px"}},menu);
+  ch("span",{class:"fico",text:"☁"},cat);
+  ch("div",{style:{display:"flex",flexDirection:"column"}, html:
+    `<div style="font-weight:600">外部サービスカタログ...</div>
+     <div style="font-size:10px;opacity:0.8">AWS / SaaS プリセット</div>`},cat);
+  cat.addEventListener("click",()=>{ hideFloatingMenus(); openExternalServiceCatalog(); });
   positionFloating(menu, anchorBtn);
   menu.classList.remove("hidden");
 }
@@ -1566,8 +1823,28 @@ function addNewServiceOnServer(svcType, serverId){
   Log.info(`サービス追加: ${id} on ${serverId}`);
 }
 function addNewService(){ showServiceTypeMenu($("#btn-add-service")); }
-// Add a service to a SPECIFIC server (from the server's property panel / context menu)
-function addServiceToServer(serverId){ showServiceTypeMenu($("#btn-add-service"), serverId); }
+// Add a service to a SPECIFIC server. Uses a robust dialog picker (not the floating
+// menu) to avoid the document click-to-close race that made it intermittently unresponsive.
+function addServiceToServer(serverId){
+  const srv = Cfg.byId("servers", serverId);
+  if(!srv){ toast("サーバが見つかりません","err"); return; }
+  openDialog(`サービス追加 — ${srv.label||serverId}`, (body)=>{
+    ch("p",{text:"追加するサービスタイプを選択してください。",style:{margin:"0 0 10px",fontSize:"12px",color:"var(--text-dim)"}},body);
+    const grid = ch("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px"}},body);
+    for(const st of effectiveServiceTypes()){
+      const it = ch("button",{style:{display:"flex",alignItems:"center",gap:"8px",padding:"8px",fontSize:"12px",cursor:"pointer",
+        background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"5px",color:"var(--text)",textAlign:"left"}},grid);
+      ch("span",{text:st.icon||"⚪",style:{fontSize:"16px"}},it);
+      ch("div",{html:`<div style="font-weight:600">${escapeHtml(st.label)}</div><div style="font-size:10px;opacity:0.7">${st.type==="custom"?"カスタム定義":("Port "+st.port)}</div>`},it);
+      it.addEventListener("click",()=>{
+        closeDialog();
+        if(st.type === "custom") promptCustomServiceType(serverId);
+        else addNewServiceOnServer(st, serverId);
+      });
+    }
+    return { buttons:[{text:"キャンセル",action:closeDialog}] };
+  });
+}
 
 function addNewAnnotation(){
   pushUndo(); Cfg.ensure();
@@ -1713,6 +1990,7 @@ function attachEventHandlers(){
   bind("#btn-comm-sim","click", openCommSimulator);
   bind("#btn-tpl","click", openTopologyTemplates);
   bind("#btn-segments","click", showSegmentManager);
+  bind("#btn-k8s","click", showK8sManager);
   bind("#btn-mac-audit","click", openMacAudit);
   const btnAnim = $("#btn-anim-toggle");
   if(btnAnim){
@@ -1822,18 +2100,31 @@ function attachEventHandlers(){
   document.addEventListener("mouseup", ()=>{ if(yamlResize) yamlResize = null; });
 
   // Log pane
-  $("#log-toggle").addEventListener("click", ()=>{
+  bind("#log-toggle","click", ()=>{
     $("#log-wrap").classList.toggle("collapsed");
     $("#log-toggle").textContent = $("#log-wrap").classList.contains("collapsed") ? "▲" : "▼";
   });
-  $("#log-clear").addEventListener("click", ()=>Log.clear());
+  function switchLogTab(tab){
+    App.activeLogTab = tab;
+    const comm = tab === "comm";
+    $("#comm-log-body").classList.toggle("hidden", !comm);
+    $("#log-body").classList.toggle("hidden", comm);
+    $("#sys-filters").classList.toggle("hidden", comm);
+    const tc=$("#logtab-comm"), ts=$("#logtab-sys");
+    if(tc) tc.classList.toggle("active", comm);
+    if(ts) ts.classList.toggle("active", !comm);
+  }
+  bind("#logtab-comm","click", ()=>switchLogTab("comm"));
+  bind("#logtab-sys","click", ()=>switchLogTab("sys"));
+  bind("#log-clear","click", ()=>{ if(App.activeLogTab==="comm") CommLog.clear(); else Log.clear(); });
   for(const lvl of ["info","warn","error"]){
-    $(`#log-filter-${lvl}`).addEventListener("click", (e)=>{
+    bind(`#log-filter-${lvl}`,"click", (e)=>{
       App.logFilters[lvl] = !App.logFilters[lvl];
       e.target.classList.toggle("active", App.logFilters[lvl]);
       Log.refresh();
     });
   }
+  switchLogTab("comm");
   // Log resize
   let logResize = null;
   $("#log-resize").addEventListener("mousedown", (e)=>{
