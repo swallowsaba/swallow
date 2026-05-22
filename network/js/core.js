@@ -1283,35 +1283,72 @@ function ensureBond0Interface(obj){
   return bondIf;
 }
 // Effective bond status: UP if any up member exists
+// A bond member is USABLE only if its interface is up AND it has a working physical
+// cable (a connection exists whose peer endpoint and link are up). A member with no
+// cable, or a down cable, cannot carry traffic and must not count as a live member.
+function bondMemberUsable(obj, mid){
+  const m = (obj.interfaces||[]).find(i=>i.id===mid);
+  if(!m || (m.status||"up") !== "up") return false;
+  // find a connection attached to this member
+  for(const c of (App.config.connections||[])){
+    let mineEp=null, peerEp=null;
+    if(c.from && (c.from.device===obj.id||c.from.server===obj.id) && c.from.interface===mid){ mineEp=c.from; peerEp=c.to; }
+    else if(c.to && (c.to.device===obj.id||c.to.server===obj.id) && c.to.interface===mid){ mineEp=c.to; peerEp=c.from; }
+    if(!mineEp || !peerEp) continue;
+    // explicit cable down?
+    if(c.status === "down") continue;
+    // peer device/server must be running
+    const peerObj = peerEp.device ? Cfg.byId("devices", peerEp.device) : (peerEp.server ? Cfg.byId("servers", peerEp.server) : null);
+    if(!peerObj) continue;
+    if(peerObj.status && peerObj.status !== "running" && peerObj.status !== "up") continue;
+    // peer interface must be up (if specified)
+    if(peerEp.interface){
+      const pif = (peerObj.interfaces||[]).find(i=>i.id===peerEp.interface);
+      if(pif && (pif.status||"up") !== "up") continue;
+    }
+    return true; // found at least one working cable on this member
+  }
+  return false; // interface up but no working cable → not usable
+}
+
 function bondEffectiveStatus(obj){
   if(!obj || !obj.bonding || !obj.bonding.enabled) return null;
   const members = obj.bonding.members || [];
-  const upMembers = members.filter(mid=>{
-    const m = (obj.interfaces||[]).find(i=>i.id===mid);
-    return m && m.status === "up";
-  });
-  if(upMembers.length === members.length) return "up";
-  if(upMembers.length === 0) return "down";
-  return "degraded"; // some up, some down
+  if(!members.length) return "down";
+  const usable = members.filter(mid=>bondMemberUsable(obj, mid));
+  if(usable.length === members.length) return "up";
+  if(usable.length === 0) return "down";
+  return "degraded"; // some usable, some not
+}
+
+function bondActiveMember(obj){
+  if(!obj || !obj.bonding || !obj.bonding.enabled) return null;
+  const mode = obj.bonding.mode || "active-backup";
+  const members = obj.bonding.members || [];
+  // active-backup: prefer the primary if it is usable (iface up AND cable working)
+  if(mode === "active-backup"){
+    const prim = obj.bonding.primary || members[0];
+    if(bondMemberUsable(obj, prim)) return prim;
+  }
+  // All modes: first usable member as the representative carrier
+  for(const mid of members){
+    if(bondMemberUsable(obj, mid)) return mid;
+  }
+  return null; // no usable member → bond is down
 }
 // Which bond member is currently "active" (for active-backup) — primary if up, else first up member
 function bondActiveMember(obj){
   if(!obj || !obj.bonding || !obj.bonding.enabled) return null;
   const mode = obj.bonding.mode || "active-backup";
   const members = obj.bonding.members || [];
-  // active-backup: prefer the primary if it is up
   if(mode === "active-backup"){
     const prim = obj.bonding.primary || members[0];
-    const pm = (obj.interfaces||[]).find(i=>i.id===prim);
-    if(pm && (pm.status||"up") === "up") return prim;
+    if(bondMemberUsable(obj, prim)) return prim;
   }
-  // All modes (LACP/balance-rr, or active-backup after primary failure):
-  // return the first up member as the representative carrier.
   for(const mid of members){
-    const m = (obj.interfaces||[]).find(i=>i.id===mid);
-    if(m && (m.status||"up") === "up") return mid;
+    if(bondMemberUsable(obj, mid)) return mid;
   }
-  return null; // no member is up → bond is down
+  return null;
 }
 // Detect MAC collisions across all interfaces. Returns array of { mac, locations: [{kind,id,iface}, ...] }
 function findMacCollisions(){
