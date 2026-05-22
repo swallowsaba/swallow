@@ -290,6 +290,34 @@ function renderServerProps(body, obj){
       background:"var(--bg3)",border:"1px solid var(--orange)",color:"var(--orange)",fontWeight:"600"},
     on:{ click:()=>showServerPorts(obj.id) }
   }, arpBar);
+
+  // Services hosted on THIS server — list + add (configure services from the selected server)
+  const svcSec = ch("div", { class:"sub-section" }, body);
+  const svcHead = ch("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},svcSec);
+  ch("h4", { text:"サービス", style:{margin:0} }, svcHead);
+  ch("button", { text:"+ サービス追加",
+    style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",borderRadius:"4px",
+      background:"var(--accent)",border:"none",color:"#fff",fontWeight:"700"},
+    on:{ click:()=>addServiceToServer(obj.id) }
+  }, svcHead);
+  const hosted = (App.config.services||[]).filter(s=>s.server===obj.id);
+  if(!hosted.length){
+    ch("div",{text:"(このサーバにサービスはありません)",style:{color:"var(--text-mute)",fontSize:"11px",padding:"4px 2px"}},svcSec);
+  }
+  for(const sv of hosted){
+    const row = ch("div",{style:{display:"flex",alignItems:"center",gap:"6px",padding:"4px 6px",fontSize:"11px",borderBottom:"1px solid var(--border)"}},svcSec);
+    const st = (sv.status||"running")==="running";
+    ch("span",{text:st?"●":"○",style:{color:st?"var(--green)":"var(--red)"}},row);
+    ch("span",{text:sv.label||sv.id,style:{flex:"1",fontWeight:"600"}},row);
+    ch("span",{text:`${sv.protocol||"TCP"}/${sv.port||"-"}`,style:{fontFamily:"var(--mono)",color:"var(--text-dim)",fontSize:"10px"}},row);
+    ch("button",{text:"設定",style:{padding:"1px 7px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"3px"},
+      on:{click:()=>selectElement("service", sv.id)}},row);
+    ch("button",{text:st?"停止":"起動",style:{padding:"1px 7px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid "+(st?"var(--red)":"var(--green)"),color:(st?"var(--red)":"var(--green)"),borderRadius:"3px"},
+      on:{click:()=>{ sv.status = st?"stopped":"running"; renderAndSync(); openPropertyPanel(); }}},row);
+    ch("button",{text:"✕",style:{padding:"1px 6px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+      on:{click:()=>{ App.config.services=App.config.services.filter(x=>x.id!==sv.id); renderAndSync(); openPropertyPanel(); toast("サービス削除","ok"); }}},row);
+  }
+
   renderInterfaceTable(body, obj, "server");
 }
 

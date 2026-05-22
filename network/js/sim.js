@@ -1452,9 +1452,17 @@ var SERVICE_TYPES = [
   { type:"monitoring",    label:"Monitoring",     icon:"📊", port:9090 },
   { type:"logging",       label:"Logging",        icon:"📋", port:5601 },
   { type:"vpn_server",    label:"VPN Server",     icon:"🔒", port:1194 },
-  { type:"custom",        label:"Custom",         icon:"⚪", port:0 }
+  { type:"custom",        label:"Custom (新規作成)", icon:"⚪", port:0 }
 ];
-function showServiceTypeMenu(anchorBtn){
+// Effective service types = built-ins + user-defined custom types saved in the config
+function effectiveServiceTypes(){
+  const custom = (App.config && App.config.custom_service_types) || [];
+  // custom types appear before the "Custom (新規作成)" entry
+  const builtins = SERVICE_TYPES.filter(s=>s.type!=="custom");
+  const customEntry = SERVICE_TYPES.find(s=>s.type==="custom");
+  return [...builtins, ...custom, customEntry];
+}
+function showServiceTypeMenu(anchorBtn, targetServerId){
   const srvs = App.config.servers || [];
   if(!srvs.length){
     toast("先にサーバを追加してください", "warn");
@@ -1462,16 +1470,60 @@ function showServiceTypeMenu(anchorBtn){
   }
   const menu = $("#svc-menu"); menu.innerHTML = "";
   ch("div",{class:"fmenu-title",text:"サービスを追加 — タイプを選択"},menu);
-  for(const st of SERVICE_TYPES){
+  for(const st of effectiveServiceTypes()){
     const it = ch("div",{class:"fmenu-item",title:st.label+" (Port "+st.port+")"},menu);
-    ch("span",{class:"fico",text:st.icon},it);
+    ch("span",{class:"fico",text:st.icon||"⚪"},it);
     ch("div",{style:{display:"flex",flexDirection:"column"}, html:
       `<div style="font-weight:600">${escapeHtml(st.label)}</div>
-       <div style="font-size:10px;opacity:0.8">Port ${st.port}</div>`},it);
-    it.addEventListener("click",()=>{ hideFloatingMenus(); promptServiceServer(st); });
+       <div style="font-size:10px;opacity:0.8">${st.type==="custom"?"カスタム定義":("Port "+st.port)}</div>`},it);
+    it.addEventListener("click",()=>{
+      hideFloatingMenus();
+      if(st.type === "custom"){ promptCustomServiceType(targetServerId); }
+      else if(targetServerId){ addNewServiceOnServer(st, targetServerId); }
+      else { promptServiceServer(st); }
+    });
   }
   positionFloating(menu, anchorBtn);
   menu.classList.remove("hidden");
+}
+// Create a new custom service type, save it so it appears in the menu next time
+function promptCustomServiceType(targetServerId){
+  openDialog("⚪ カスタムサービスを定義", (body)=>{
+    const f1=ch("div",{class:"field"},body);
+    ch("label",{text:"サービス名"},f1);
+    const nameIn=ch("input",{type:"text",value:"",placeholder:"例: Elasticsearch"},f1);
+    const f2=ch("div",{class:"field"},body);
+    ch("label",{text:"ポート番号"},f2);
+    const portIn=ch("input",{type:"number",value:"",placeholder:"例: 9200"},f2);
+    const f3=ch("div",{class:"field"},body);
+    ch("label",{text:"プロトコル"},f3);
+    const prSel=ch("select",{},f3);
+    ["TCP","UDP","HTTP","HTTPS"].forEach(p=>ch("option",{value:p,text:p},prSel));
+    const f4=ch("div",{class:"field"},body);
+    ch("label",{text:"アイコン (絵文字, 任意)"},f4);
+    const icoIn=ch("input",{type:"text",value:"⚪",style:{width:"60px"}},f4);
+    return { buttons:[
+      { text:"キャンセル", action:closeDialog },
+      { text:"定義して追加", primary:true, action:()=>{
+        const name=(nameIn.value||"").trim();
+        const port=+portIn.value;
+        if(!name||!port){ toast("名前とポートを入力してください","err"); return; }
+        App.config.custom_service_types = App.config.custom_service_types || [];
+        // dedup by name
+        let st = App.config.custom_service_types.find(s=>s.label===name);
+        if(!st){
+          st = { type:"custom:"+name.toLowerCase().replace(/\s+/g,"-"), label:name,
+                 icon:icoIn.value||"⚪", port, protocol:prSel.value };
+          App.config.custom_service_types.push(st);
+          toast(`カスタムサービス「${name}」をメニューに追加`, "ok");
+        } else { st.port=port; st.protocol=prSel.value; st.icon=icoIn.value||"⚪"; }
+        closeDialog();
+        if(targetServerId) addNewServiceOnServer(st, targetServerId);
+        else promptServiceServer(st);
+        renderAndSync();
+      }}
+    ]};
+  });
 }
 function promptServiceServer(svcType){
   const srvs = App.config.servers || [];
@@ -1484,7 +1536,6 @@ function promptServiceServer(svcType){
     const f = ch("div",{class:"field"},body);
     ch("label",{text:"ホストサーバ"},f);
     const sel = ch("select",{},f);
-    // If a server is currently selected, default to it
     let defaultId = srvs[0].id;
     if(App.selected && App.selected.kind === "server") defaultId = App.selected.id;
     for(const s of srvs){
@@ -1501,11 +1552,12 @@ function promptServiceServer(svcType){
 }
 function addNewServiceOnServer(svcType, serverId){
   pushUndo(); Cfg.ensure();
-  const id = uid(svcType.type.split("_")[0]||"svc");
+  const id = uid((svcType.type||"svc").split(/[_:]/)[0]||"svc");
+  const proto = svcType.protocol || (svcType.port===443?"HTTPS":(svcType.port===80?"HTTP":"TCP"));
   App.config.services.push({
     id, label: svcType.label, type: svcType.type,
     server: serverId, status:"running",
-    port: svcType.port, protocol: svcType.port===443?"HTTPS":(svcType.port===80?"HTTP":"TCP"),
+    port: svcType.port, protocol: proto,
     config:{}, depends_on:[]
   });
   selectElement("service", id);
@@ -1514,6 +1566,8 @@ function addNewServiceOnServer(svcType, serverId){
   Log.info(`サービス追加: ${id} on ${serverId}`);
 }
 function addNewService(){ showServiceTypeMenu($("#btn-add-service")); }
+// Add a service to a SPECIFIC server (from the server's property panel / context menu)
+function addServiceToServer(serverId){ showServiceTypeMenu($("#btn-add-service"), serverId); }
 
 function addNewAnnotation(){
   pushUndo(); Cfg.ensure();
@@ -1576,9 +1630,16 @@ function init(){
 }
 
 function attachEventHandlers(){
+  // Null-safe binder: a single missing element must NOT abort wiring of the rest.
+  function bind(id, ev, fn){
+    const el = (id[0]==="#") ? $(id) : document.getElementById(id);
+    if(!el){ console.warn("[attachEventHandlers] element not found:", id); return null; }
+    el.addEventListener(ev, fn);
+    return el;
+  }
   // Toolbar
-  $("#btn-load").addEventListener("click", ()=>$("#file-input").click());
-  $("#file-input").addEventListener("change", (e)=>{
+  bind("#btn-load","click", ()=>$("#file-input").click());
+  bind("#file-input","change", (e)=>{
     const f = e.target.files[0];
     if(!f) return;
     const r = new FileReader();
@@ -1594,7 +1655,7 @@ function attachEventHandlers(){
     e.target.value = "";
   });
 
-  $("#btn-apply").addEventListener("click", ()=>{
+  bind("#btn-apply","click", ()=>{
     pushUndo();
     if(syncConfigFromYaml()){
       render(); updateStatusBar(); refreshScenarioSelect();
@@ -1602,7 +1663,7 @@ function attachEventHandlers(){
     }
   });
 
-  $("#btn-save").addEventListener("click", ()=>{
+  bind("#btn-save","click", ()=>{
     const fname = prompt("ファイル名:", "netsim-config.yaml");
     if(!fname) return;
     const txt = $("#yaml-editor").value;
@@ -1614,13 +1675,13 @@ function attachEventHandlers(){
     Log.info("保存: "+fname);
   });
 
-  $("#btn-add-network").addEventListener("click", addNewNetwork);
-  $("#btn-add-device").addEventListener("click", addNewDevice);
-  $("#btn-add-server").addEventListener("click", addNewServer);
-  $("#btn-add-service").addEventListener("click", addNewService);
-  $("#btn-add-connection").addEventListener("click", startConnectMode);
+  bind("#btn-add-network","click", addNewNetwork);
+  bind("#btn-add-device","click", addNewDevice);
+  bind("#btn-add-server","click", addNewServer);
+  bind("#btn-add-service","click", addNewService);
+  bind("#btn-add-connection","click", startConnectMode);
 
-  $("#btn-sim-play").addEventListener("click", ()=>{
+  bind("#btn-sim-play","click", ()=>{
     if(App.simulation.paused){
       App.simulation.paused = false;
       Log.info("シミュレーション再開");
@@ -1629,35 +1690,30 @@ function attachEventHandlers(){
       if(sel) runScenario(sel);
     }
   });
-  $("#btn-sim-pause").addEventListener("click", ()=>{
+  bind("#btn-sim-pause","click", ()=>{
     if(App.simulation.running){
       App.simulation.paused = !App.simulation.paused;
       Log.info(App.simulation.paused ? "一時停止" : "再開");
     }
   });
-  $("#btn-sim-stop").addEventListener("click", ()=>{
+  bind("#btn-sim-stop","click", ()=>{
     stopSimulation();
     Log.info("シミュレーション停止");
   });
-  $("#sim-speed").addEventListener("change", (e)=>{
+  bind("#sim-speed","change", (e)=>{
     App.simulation.speed = parseFloat(e.target.value);
     Log.info(`シミュレーション速度: x${App.simulation.speed}`);
   });
-  $("#btn-run-scenario").addEventListener("click", ()=>{
+  bind("#btn-run-scenario","click", ()=>{
     const sel = $("#scenario-select").value;
     if(sel) runScenario(sel);
     else toast("シナリオが選択されていません。「管理」から作成してください", "warn");
   });
-  const mgr = $("#btn-manage-scenario");
-  if(mgr) mgr.addEventListener("click", openScenarioManager);
-  const btnCommSim = $("#btn-comm-sim");
-  if(btnCommSim) btnCommSim.addEventListener("click", openCommSimulator);
-  const btnTpl = $("#btn-tpl");
-  if(btnTpl) btnTpl.addEventListener("click", openTopologyTemplates);
-  const btnSeg = $("#btn-segments");
-  if(btnSeg) btnSeg.addEventListener("click", showSegmentManager);
-  const btnMac = $("#btn-mac-audit");
-  if(btnMac) btnMac.addEventListener("click", openMacAudit);
+  bind("#btn-manage-scenario","click", openScenarioManager);
+  bind("#btn-comm-sim","click", openCommSimulator);
+  bind("#btn-tpl","click", openTopologyTemplates);
+  bind("#btn-segments","click", showSegmentManager);
+  bind("#btn-mac-audit","click", openMacAudit);
   const btnAnim = $("#btn-anim-toggle");
   if(btnAnim){
     btnAnim.addEventListener("click", toggleAnimations);

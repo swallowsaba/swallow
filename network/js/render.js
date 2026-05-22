@@ -9,14 +9,69 @@ function render(){
   // overlays/packets not cleared here
   ensureArrowMarkers();
   Cfg.ensure();
+  gConnSegments = [];
   for(const n of App.config.networks) renderNetwork(n);
   for(const c of App.config.connections) renderConnection(c);
+  renderCrossoverHops();
   renderVpcOverlay();
   for(const d of App.config.devices) renderDevice(d);
   for(const s of App.config.servers) renderServer(s);
   for(const a of (App.config.annotations||[])) renderAnnotation(a);
   if(App.stpVisible) renderStpOverlay();
   applyViewBox();
+}
+
+// Collected straight connection segments for the current render pass (for crossover hops)
+var gConnSegments = [];
+
+// Draw a small "jump" (bridge arc) wherever two connection lines cross, so it is
+// visually clear the lines pass OVER each other and are not electrically joined.
+function renderCrossoverHops(){
+  const layer = $("#layer-connections");
+  const segs = gConnSegments;
+  const R = 6; // hop radius
+  const hops = [];
+  function segInt(s1, s2){
+    // Intersection of two segments; returns point or null. Ignores shared endpoints.
+    const x1=s1.x1,y1=s1.y1,x2=s1.x2,y2=s1.y2, x3=s2.x1,y3=s2.y1,x4=s2.x2,y4=s2.y2;
+    const d=(x2-x1)*(y4-y3)-(y2-y1)*(x4-x3);
+    if(Math.abs(d) < 1e-6) return null; // parallel
+    const t=((x3-x1)*(y4-y3)-(y3-y1)*(x4-x3))/d;
+    const u=((x3-x1)*(y2-y1)-(y3-y1)*(x2-x1))/d;
+    const eps=0.04;
+    if(t<=eps||t>=1-eps||u<=eps||u>=1-eps) return null; // crossing must be interior to BOTH
+    return { x:x1+t*(x2-x1), y:y1+t*(y2-y1), seg:s1 };
+  }
+  for(let i=0;i<segs.length;i++){
+    for(let j=i+1;j<segs.length;j++){
+      if(segs[i].id === segs[j].id) continue; // same connection
+      const p = segInt(segs[i], segs[j]);
+      if(p){
+        // dedup near-identical crossing points
+        if(!hops.some(h=>Math.abs(h.x-p.x)<2 && Math.abs(h.y-p.y)<2)){
+          // hop is drawn on the LATER-drawn (topmost) segment: segs[i] (drawn first) is under,
+          // so we bridge segs[j]; but visually we bridge the one we draw last. Use segs[i] dir.
+          hops.push({ x:p.x, y:p.y, dx:segs[i].x2-segs[i].x1, dy:segs[i].y2-segs[i].y1 });
+        }
+      }
+    }
+  }
+  if(!hops.length) return;
+  const g = ce("g", { class:"crossover-hops", "pointer-events":"none" }, layer);
+  for(const h of hops){
+    const len = Math.hypot(h.dx,h.dy)||1;
+    const ux = h.dx/len, uy = h.dy/len;       // direction of the under-passing segment
+    // arc endpoints along that segment, bulging perpendicular
+    const ax = h.x - ux*R, ay = h.y - uy*R;
+    const bx = h.x + ux*R, by = h.y + uy*R;
+    const nx = -uy, ny = ux;                   // perpendicular (bulge direction)
+    const cx = h.x + nx*R*1.6, cy = h.y + ny*R*1.6;
+    // mask out the line under the bridge, then draw the hop arc
+    ce("path", { d:`M ${ax} ${ay} Q ${cx} ${cy} ${bx} ${by}`,
+      stroke:"var(--bg)", "stroke-width":4.5, fill:"none", "stroke-linecap":"round" }, g);
+    ce("path", { d:`M ${ax} ${ay} Q ${cx} ${cy} ${bx} ${by}`,
+      stroke:"var(--text-dim)", "stroke-width":1.6, fill:"none", "stroke-linecap":"round", opacity:0.9 }, g);
+  }
 }
 
 /* ====== STP VISUALIZATION OVERLAY ======
@@ -1151,6 +1206,13 @@ function renderConnection(c){
   }
 
   const built = buildConnectionPath(a, b, c);
+  // Record straight segments (skip curved/bend connections) for crossover-hop rendering
+  if(!isDown && (!c.bend || c.bend===0)){
+    const pts = built.points || [];
+    for(let i=0;i<pts.length-1;i++){
+      gConnSegments.push({ id:c.id, x1:pts[i].x, y1:pts[i].y, x2:pts[i+1].x, y2:pts[i+1].y });
+    }
+  }
   const downCls = isDown ? " down" : "";
   const flapCls = status === "flapping" ? " flapping" : "";
   const failCls = failoverActive ? " bond-failover" : "";
@@ -1780,6 +1842,15 @@ function getContextItems(kind, id){
     if(kind === "device" && (obj.type === "l3switch" || obj.type === "l2switch")){
       items.push({ icon:"🟣", label: (obj.vpc && obj.vpc.enabled) ? "vPC設定 (有効)" : "vPC設定 (無効)",
         action:()=>openVpcDialog(id) });
+    }
+    if(kind === "server"){
+      items.push({ sep:true });
+      items.push({ icon:"➕", label:"サービス追加...", action:()=>addServiceToServer(id) });
+      const hosted = (App.config.services||[]).filter(s=>s.server===id);
+      for(const sv of hosted){
+        items.push({ icon:(sv.status==="running"?"●":"○"), label:`サービス設定: ${sv.label||sv.id}`,
+          action:()=>{ selectElement("service", sv.id); openPropertyPanel(); } });
+      }
     }
     items.push({ sep:true });
     items.push({ icon:"🔍", label:"このデバイスからPing", action:()=>promptPing(kind,id) });
