@@ -177,6 +177,16 @@ function renderDeviceProps(body, obj){
     }, fwBar);
   }
 
+  // Policy-Based Routing — for L3-capable devices
+  if(obj.type === "router" || obj.type === "l3switch" || obj.type === "firewall"){
+    const pbrBar = ch("div", { style:{margin:"8px 0"} }, body);
+    ch("button", { text:"🧭 ポリシーベースルーティング(PBR)編集",
+      style:{width:"100%",padding:"7px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
+        background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",fontWeight:"700"},
+      on:{ click:()=>showPbrEditor(obj.id) }
+    }, pbrBar);
+  }
+
   // NAT
   const sec2 = ch("div", { class:"sub-section" }, body);
   ch("h4", { text:"NAT設定" }, sec2);
@@ -215,10 +225,10 @@ function showFirewallPolicy(id){
         aSel.value=r.action||"deny";
         aSel.addEventListener("change",()=>{ r.action=aSel.value; renderAndSync(); refresh(); });
         // src
-        const srcIn=ch("input",{type:"text",value:r.src||"0.0.0.0/0",style:fStyle},row);
+        const srcIn=ch("input",{type:"text",value:r.src||"0.0.0.0/0",list:"fw-seg-list",style:fStyle},row);
         srcIn.addEventListener("change",()=>{ r.src=srcIn.value; renderAndSync(); });
         // dst
-        const dstIn=ch("input",{type:"text",value:r.dst||"0.0.0.0/0",style:fStyle},row);
+        const dstIn=ch("input",{type:"text",value:r.dst||"0.0.0.0/0",list:"fw-seg-list",style:fStyle},row);
         dstIn.addEventListener("change",()=>{ r.dst=dstIn.value; renderAndSync(); });
         // proto
         const prSel=ch("select",{style:fStyle},row);
@@ -245,6 +255,10 @@ function showFirewallPolicy(id){
       // implicit deny indicator
       ch("div",{text:"⊘ (暗黙のdeny — 上記いずれにも一致しない通信は全て遮断)",
         style:{fontSize:"10px",color:"var(--red)",padding:"6px 2px",fontFamily:"var(--mono)"}},body);
+      // segment-name suggestions
+      const dl=ch("datalist",{id:"fw-seg-list"},body);
+      for(const n of segmentRefOptions()) ch("option",{value:n},dl);
+      ["any","0.0.0.0/0","::/0"].forEach(v=>ch("option",{value:v},dl));
 
       // add rule
       ch("button",{text:"+ ルール追加",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700",marginTop:"4px"},
@@ -277,6 +291,91 @@ function renderServerProps(body, obj){
     on:{ click:()=>showServerPorts(obj.id) }
   }, arpBar);
   renderInterfaceTable(body, obj, "server");
+}
+
+// Named-segment manager — define named segments mapping to one or more CIDRs (v4/v6)
+function showSegmentManager(){
+  App.config.segments = App.config.segments || [];
+  openDialog("🏷 ネットワークセグメント管理", (body)=>{
+    function refresh(){
+      body.innerHTML = "";
+      ch("div",{text:"セグメントに名前を付けると、FWポリシー・PBR で IP/CIDR の代わりに名前で制御できます。1つのセグメントに複数CIDR(v4/v6混在可)を割当可能。",
+        style:{fontSize:"10px",color:"var(--text-dim)",padding:"4px 2px 8px",lineHeight:"1.4"}},body);
+      const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
+      (App.config.segments||[]).forEach((s,i)=>{
+        const card=ch("div",{style:{border:"1px solid var(--border)",borderRadius:"5px",padding:"8px",marginBottom:"6px",background:"var(--bg2)"}},body);
+        const hd=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"4px"}},card);
+        const swatch=ch("input",{type:"color",value:s.color||"#a371f7",style:{width:"28px",height:"24px",padding:"0",border:"none",background:"none",cursor:"pointer"}},hd);
+        swatch.addEventListener("change",()=>{ s.color=swatch.value; renderAndSync(); });
+        const nameIn=ch("input",{type:"text",value:s.name||"",placeholder:"セグメント名 (例: DMZ)",style:Object.assign({flex:"1",fontWeight:"700"},fStyle)},hd);
+        nameIn.addEventListener("change",()=>{ s.name=nameIn.value.trim(); renderAndSync(); });
+        ch("button",{text:"🗑",style:{padding:"3px 8px",fontSize:"11px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{ App.config.segments.splice(i,1); renderAndSync(); refresh(); }}},hd);
+        ch("label",{text:"CIDR (カンマ区切り, v4/v6可)",style:{fontSize:"9px",color:"var(--text-dim)",display:"block",marginTop:"2px"}},card);
+        const cidrIn=ch("input",{type:"text",value:(s.cidrs||[]).join(", "),placeholder:"10.1.0.0/24, 2001:db8:1::/64",style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},card);
+        cidrIn.addEventListener("change",()=>{ s.cidrs=cidrIn.value.split(",").map(x=>x.trim()).filter(Boolean); renderAndSync(); });
+      });
+      ch("button",{text:"+ セグメント追加",style:{width:"100%",padding:"7px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700",marginTop:"4px"},
+        on:{click:()=>{ App.config.segments.push({name:"segment-"+(App.config.segments.length+1),cidrs:[],color:"#a371f7"}); renderAndSync(); refresh(); }}},body);
+    }
+    refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
+}
+function segmentRefOptions(){ return (App.config.segments||[]).map(s=>s.name).filter(Boolean); }
+
+// Policy-Based Routing editor (per device)
+function showPbrEditor(id){
+  const dev = Cfg.byId("devices", id);
+  if(!dev) return;
+  dev.pbr = dev.pbr || [];
+  const ifaceIds = (dev.interfaces||[]).map(i=>i.id);
+  openDialog(`🧭 ポリシーベースルーティング — ${dev.label||id}`, (body)=>{
+    function refresh(){
+      body.innerHTML = "";
+      ch("div",{text:"送信元/条件に基づき通常の宛先ルーティングを上書きします。上から順に評価し最初に一致したルールを適用。送信元・宛先には『セグメント名』も指定可。",
+        style:{fontSize:"10px",color:"var(--text-dim)",padding:"4px 2px 8px",lineHeight:"1.4"}},body);
+      const fStyle={padding:"3px 5px",fontSize:"10.5px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
+      const cols="30px 1fr 1fr 46px 48px 1.3fr 60px 44px";
+      const head=ch("div",{style:{display:"grid",gridTemplateColumns:cols,gap:"4px",fontSize:"9px",color:"var(--text-dim)",fontWeight:"700",padding:"2px 0",borderBottom:"1px solid var(--border)"}},body);
+      ["Seq","送信元","宛先","Proto","Port","Next-Hop / IF","状態","削除"].forEach(h=>ch("span",{text:h},head));
+      dev.pbr.sort((a,b)=>(a.seq||0)-(b.seq||0));
+      dev.pbr.forEach((r,i)=>{
+        const row=ch("div",{style:{display:"grid",gridTemplateColumns:cols,gap:"4px",alignItems:"center",padding:"3px 0",borderBottom:"1px solid var(--border)",opacity:(r.status==="disabled"?"0.5":"1")}},body);
+        const seqIn=ch("input",{type:"number",value:r.seq||((i+1)*10),style:Object.assign({width:"28px"},fStyle)},row);
+        seqIn.addEventListener("change",()=>{ r.seq=+seqIn.value||0; renderAndSync(); refresh(); });
+        const srcIn=ch("input",{type:"text",value:r.src||"any",list:"seg-list",style:fStyle},row);
+        srcIn.addEventListener("change",()=>{ r.src=srcIn.value; renderAndSync(); });
+        const dstIn=ch("input",{type:"text",value:r.dst||"any",list:"seg-list",style:fStyle},row);
+        dstIn.addEventListener("change",()=>{ r.dst=dstIn.value; renderAndSync(); });
+        const prSel=ch("select",{style:fStyle},row);
+        ["any","tcp","udp","icmp"].forEach(pp=>ch("option",{value:pp,text:pp},prSel)); prSel.value=r.proto||"any";
+        prSel.addEventListener("change",()=>{ r.proto=prSel.value; renderAndSync(); });
+        const ptIn=ch("input",{type:"number",value:r.dst_port!=null?r.dst_port:"",placeholder:"any",style:fStyle},row);
+        ptIn.addEventListener("change",()=>{ r.dst_port=ptIn.value===""?null:+ptIn.value; renderAndSync(); });
+        const nhWrap=ch("div",{style:{display:"flex",gap:"3px"}},row);
+        const nhIn=ch("input",{type:"text",value:r.next_hop||"",placeholder:"next-hop IP",style:Object.assign({flex:"1",minWidth:"0"},fStyle)},nhWrap);
+        nhIn.addEventListener("change",()=>{ r.next_hop=nhIn.value; renderAndSync(); });
+        const ifSel=ch("select",{style:Object.assign({width:"50px"},fStyle)},nhWrap);
+        ch("option",{value:"",text:"IF"},ifSel);
+        for(const id2 of ifaceIds) ch("option",{value:id2,text:id2},ifSel);
+        ifSel.value=r.egress_iface||"";
+        ifSel.addEventListener("change",()=>{ r.egress_iface=ifSel.value||null; renderAndSync(); });
+        const stSel=ch("select",{style:fStyle},row);
+        ch("option",{value:"enabled",text:"有効"},stSel);ch("option",{value:"disabled",text:"無効"},stSel); stSel.value=r.status||"enabled";
+        stSel.addEventListener("change",()=>{ r.status=stSel.value; renderAndSync(); refresh(); });
+        ch("button",{text:"✕",style:{padding:"1px 5px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{ dev.pbr.splice(i,1); renderAndSync(); refresh(); }}},row);
+      });
+      const dl=ch("datalist",{id:"seg-list"},body);
+      for(const n of segmentRefOptions()) ch("option",{value:n},dl);
+      ch("option",{value:"any"},dl);
+      ch("button",{text:"+ PBRルール追加",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700",marginTop:"6px"},
+        on:{click:()=>{ dev.pbr.push({seq:(dev.pbr.length+1)*10,src:"any",dst:"any",proto:"any",dst_port:null,next_hop:"",egress_iface:null,status:"enabled"}); renderAndSync(); refresh(); }}},body);
+    }
+    refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
 }
 
 // Server port / host-firewall manager: see listening sockets, open/close ports, set FW rules

@@ -457,13 +457,32 @@ function evaluatePolicy(pol, srcIp, dstIp, proto, dstPort){
   if(!pol || !pol.rules) return { action:"allow" };
   for(const r of pol.rules){
     if(r.status && r.status !== "enabled") continue;
-    if(r.src && r.src !== "0.0.0.0/0" && srcIp && !inSubnet(srcIp, r.src)) continue;
-    if(r.dst && r.dst !== "0.0.0.0/0" && dstIp && !inSubnet(dstIp, r.dst)) continue;
+    // src/dst may be a named segment OR a raw CIDR ("any"/0.0.0.0/0/::/0 = match all)
+    if(r.src && srcIp && !matchRef(srcIp, r.src)) continue;
+    if(r.dst && dstIp && !matchRef(dstIp, r.dst)) continue;
     if(r.protocol && r.protocol !== "any" && proto && r.protocol.toLowerCase() !== proto.toLowerCase()) continue;
     if(r.dst_port && dstPort && +r.dst_port !== +dstPort) continue;
     return { action: r.action, rule: r };
   }
   return { action:"deny", rule:{ id:"implicit-deny" } };
+}
+
+/* ====== POLICY-BASED ROUTING (PBR) ======
+ * Route by source/criteria (not just destination). Configured on a device:
+ *   device.pbr = [{ seq, src, dst, proto, dst_port, next_hop, egress_iface, status }]
+ * First matching rule wins; sets an override next-hop IP for forwarding.
+ */
+function pbrLookup(device, srcIp, dstIp, proto, dstPort){
+  const rules = (device.pbr||[]).slice().sort((a,b)=>(a.seq||0)-(b.seq||0));
+  for(const r of rules){
+    if(r.status && r.status !== "enabled") continue;
+    if(r.src && srcIp && !matchRef(srcIp, r.src)) continue;
+    if(r.dst && dstIp && !matchRef(dstIp, r.dst)) continue;
+    if(r.proto && r.proto !== "any" && proto && r.proto.toLowerCase() !== proto.toLowerCase()) continue;
+    if(r.dst_port != null && dstPort != null && +r.dst_port !== +dstPort) continue;
+    return r;
+  }
+  return null;
 }
 
 function elementPrimaryIp(kind, id, family){
@@ -987,8 +1006,25 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
     // Find egress link
     let next = null;
     if(cur.kind === "device"){
-      const rt = getRoutingTable(curObj.id);
-      if(rt){
+      // Policy-Based Routing: if a PBR rule matches, forward toward its next-hop / egress iface
+      const pbr = (typeof pbrLookup==="function") ? pbrLookup(curObj, srcIp, destIp, proto, dstPort) : null;
+      if(pbr){
+        if(pbr.egress_iface){
+          next = findConnectionForIface(curObj.id, pbr.egress_iface, visited);
+        }
+        if(!next && pbr.next_hop){
+          // route toward the PBR next-hop IP: find the egress link whose far end / subnet has it
+          next = findEgressLink(cur.kind, curObj, ipOnly(pbr.next_hop), visited);
+        }
+        if(next){
+          path[path.length-1].pbr = { seq:pbr.seq, next_hop:pbr.next_hop, egress:pbr.egress_iface, src:pbr.src, dst:pbr.dst };
+        }
+        // If PBR matched but no usable next-hop, fall through to normal routing.
+      }
+      const rt = next ? null : getRoutingTable(curObj.id);
+      if(next){
+        /* PBR already chose the egress */
+      } else if(rt){
         const route = findRouteFor(curObj.id, destIp);
         if(route){
           next = findConnectionForIface(curObj.id, route.interface, visited);
@@ -1618,6 +1654,8 @@ function attachEventHandlers(){
   if(btnCommSim) btnCommSim.addEventListener("click", openCommSimulator);
   const btnTpl = $("#btn-tpl");
   if(btnTpl) btnTpl.addEventListener("click", openTopologyTemplates);
+  const btnSeg = $("#btn-segments");
+  if(btnSeg) btnSeg.addEventListener("click", showSegmentManager);
   const btnMac = $("#btn-mac-audit");
   if(btnMac) btnMac.addEventListener("click", openMacAudit);
   const btnAnim = $("#btn-anim-toggle");

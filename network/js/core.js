@@ -1099,6 +1099,39 @@ function ifaceAddresses(iface){
   if(iface.ipv6) a.push(iface.ipv6);
   return a;
 }
+
+/* ====== NAMED SEGMENTS — give a name to one or more CIDRs (v4/v6) ======
+ * App.config.segments = [{ name, cidrs:["10.1.0.0/24","2001:db8:1::/64"], color, description }]
+ * Rules (FW / ACL / PBR) can reference a segment NAME instead of a raw CIDR.
+ */
+function resolveSegmentCidrs(ref){
+  if(!ref) return [];
+  const segs = (App.config && App.config.segments) || [];
+  const seg = segs.find(s=>s.name===ref);
+  if(seg) return seg.cidrs || [];
+  return [ref]; // not a known segment → treat as a literal CIDR/IP
+}
+// True if ip falls within the referenced segment-name or CIDR. "any"/0.0.0.0/0/::/0 → always true
+function matchRef(ip, ref){
+  if(!ref || ref==="any" || ref==="0.0.0.0/0" || ref==="::/0") return true;
+  if(!ip) return true;
+  const cidrs = resolveSegmentCidrs(ref);
+  if(!cidrs.length) return true;
+  for(const c of cidrs){
+    if(c==="any" || c==="0.0.0.0/0" || c==="::/0") return true;
+    if(inSubnet(ip, c)) return true;
+  }
+  return false;
+}
+// Which named segment(s) an IP belongs to (for display)
+function segmentsForIp(ip){
+  const out = [];
+  for(const s of ((App.config&&App.config.segments)||[])){
+    for(const c of (s.cidrs||[])){ if(inSubnet(ip,c)){ out.push(s.name); break; } }
+  }
+  return out;
+}
+
 // Pick first address on an interface matching the family ("v4" or "v6")
 function ifaceAddrByFamily(iface, family){
   for(const a of ifaceAddresses(iface)){
