@@ -166,6 +166,17 @@ function renderDeviceProps(body, obj){
   }, tblBar);
 
   renderInterfaceTable(body, obj, "device");
+
+  // Firewall policy editor — for firewall / WAF devices
+  if(obj.type === "firewall" || obj.type === "waf"){
+    const fwBar = ch("div", { style:{margin:"8px 0"} }, body);
+    ch("button", { text:"🛡 ファイアウォールポリシー編集",
+      style:{width:"100%",padding:"7px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
+        background:"var(--bg3)",border:"1px solid var(--red)",color:"var(--red)",fontWeight:"700"},
+      on:{ click:()=>showFirewallPolicy(obj.id) }
+    }, fwBar);
+  }
+
   // NAT
   const sec2 = ch("div", { class:"sub-section" }, body);
   ch("h4", { text:"NAT設定" }, sec2);
@@ -175,6 +186,73 @@ function renderDeviceProps(body, obj){
     v=>{ obj.nat=obj.nat||{}; obj.nat.inside=v.split(",").map(s=>s.trim()).filter(Boolean); renderAndSync(); });
   addField(sec2, "Outside (カンマ区切)", "text", (nat.outside||[]).join(","),
     v=>{ obj.nat=obj.nat||{}; obj.nat.outside=v.split(",").map(s=>s.trim()).filter(Boolean); renderAndSync(); });
+}
+
+// Firewall policy editor — ordered rules (first match wins, implicit deny at end)
+function showFirewallPolicy(id){
+  const dev = Cfg.byId("devices", id);
+  if(!dev) return;
+  App.config.policies = App.config.policies || [];
+  let pol = App.config.policies.find(p=>p.device===id);
+  if(!pol){ pol = { device:id, rules:[] }; App.config.policies.push(pol); }
+  openDialog(`🛡 ファイアウォールポリシー — ${dev.label||id}`, (body)=>{
+    function refresh(){
+      body.innerHTML = "";
+      ch("div",{text:"ルールは上から順に評価され、最初に一致したものが適用されます (first-match)。どれにも一致しない場合は末尾の暗黙deny。",
+        style:{fontSize:"10px",color:"var(--text-dim)",padding:"4px 2px 8px",lineHeight:"1.4"}},body);
+      const fStyle={padding:"3px 5px",fontSize:"10.5px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
+      // Header
+      const head=ch("div",{style:{display:"grid",gridTemplateColumns:"18px 60px 1fr 1fr 56px 50px 60px 70px",gap:"4px",fontSize:"9px",color:"var(--text-dim)",fontWeight:"700",padding:"2px 0",borderBottom:"1px solid var(--border)"}},body);
+      ["#","動作","送信元","宛先","Proto","Port","状態","操作"].forEach(h=>ch("span",{text:h},head));
+
+      (pol.rules||[]).forEach((r,i)=>{
+        const row=ch("div",{style:{display:"grid",gridTemplateColumns:"18px 60px 1fr 1fr 56px 50px 60px 70px",gap:"4px",alignItems:"center",padding:"3px 0",borderBottom:"1px solid var(--border)",
+          opacity:(r.status==="disabled"?"0.5":"1")}},body);
+        ch("span",{text:String(i+1),style:{fontSize:"10px",color:"var(--text-dim)"}},row);
+        // action
+        const aSel=ch("select",{style:Object.assign({},fStyle,{color:r.action==="allow"?"var(--green)":"var(--red)",fontWeight:"700"})},row);
+        ch("option",{value:"allow",text:"allow"},aSel);ch("option",{value:"deny",text:"deny"},aSel);
+        aSel.value=r.action||"deny";
+        aSel.addEventListener("change",()=>{ r.action=aSel.value; renderAndSync(); refresh(); });
+        // src
+        const srcIn=ch("input",{type:"text",value:r.src||"0.0.0.0/0",style:fStyle},row);
+        srcIn.addEventListener("change",()=>{ r.src=srcIn.value; renderAndSync(); });
+        // dst
+        const dstIn=ch("input",{type:"text",value:r.dst||"0.0.0.0/0",style:fStyle},row);
+        dstIn.addEventListener("change",()=>{ r.dst=dstIn.value; renderAndSync(); });
+        // proto
+        const prSel=ch("select",{style:fStyle},row);
+        ["any","tcp","udp","icmp"].forEach(pp=>ch("option",{value:pp,text:pp},prSel));
+        prSel.value=r.protocol||"any";
+        prSel.addEventListener("change",()=>{ r.protocol=prSel.value; renderAndSync(); });
+        // port
+        const ptIn=ch("input",{type:"number",value:r.dst_port!=null?r.dst_port:"",placeholder:"any",style:fStyle},row);
+        ptIn.addEventListener("change",()=>{ r.dst_port=ptIn.value===""?null:+ptIn.value; renderAndSync(); });
+        // status
+        const stSel=ch("select",{style:fStyle},row);
+        ch("option",{value:"enabled",text:"有効"},stSel);ch("option",{value:"disabled",text:"無効"},stSel);
+        stSel.value=r.status||"enabled";
+        stSel.addEventListener("change",()=>{ r.status=stSel.value; renderAndSync(); refresh(); });
+        // ops: up/down/delete
+        const ops=ch("div",{style:{display:"flex",gap:"2px"}},row);
+        ch("button",{text:"▲",style:{padding:"1px 4px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
+          on:{click:()=>{ if(i>0){ const t=pol.rules[i-1]; pol.rules[i-1]=pol.rules[i]; pol.rules[i]=t; renderAndSync(); refresh(); } }}},ops);
+        ch("button",{text:"▼",style:{padding:"1px 4px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
+          on:{click:()=>{ if(i<pol.rules.length-1){ const t=pol.rules[i+1]; pol.rules[i+1]=pol.rules[i]; pol.rules[i]=t; renderAndSync(); refresh(); } }}},ops);
+        ch("button",{text:"✕",style:{padding:"1px 4px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{ pol.rules.splice(i,1); renderAndSync(); refresh(); }}},ops);
+      });
+      // implicit deny indicator
+      ch("div",{text:"⊘ (暗黙のdeny — 上記いずれにも一致しない通信は全て遮断)",
+        style:{fontSize:"10px",color:"var(--red)",padding:"6px 2px",fontFamily:"var(--mono)"}},body);
+
+      // add rule
+      ch("button",{text:"+ ルール追加",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700",marginTop:"4px"},
+        on:{click:()=>{ pol.rules.push({ id:"rule-"+(pol.rules.length+1), action:"allow", src:"0.0.0.0/0", dst:"0.0.0.0/0", protocol:"any", dst_port:null, status:"enabled", log:false }); renderAndSync(); refresh(); }}},body);
+    }
+    refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
 }
 
 function renderServerProps(body, obj){
@@ -187,13 +265,94 @@ function renderServerProps(body, obj){
   addField(body, "Gateway (IPv4)", "text", obj.gateway||"", v=>{ obj.gateway=v; renderAndSync(); });
   addField(body, "Gateway (IPv6)", "text", obj.gateway_v6||"", v=>{ obj.gateway_v6=v; renderAndSync(); });
   // ARP table button (servers have ARP too)
-  const arpBar = ch("div", { style:{margin:"8px 0"} }, body);
-  ch("button", { text:"📇 ARPテーブル編集",
-    style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
+  const arpBar = ch("div", { style:{margin:"8px 0",display:"flex",gap:"6px"} }, body);
+  ch("button", { text:"📇 ARP",
+    style:{flex:"1",padding:"6px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
       background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",fontWeight:"600"},
     on:{ click:()=>showArpTable("server", obj.id) }
   }, arpBar);
+  ch("button", { text:"🔌 ポート/FW",
+    style:{flex:"1",padding:"6px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
+      background:"var(--bg3)",border:"1px solid var(--orange)",color:"var(--orange)",fontWeight:"600"},
+    on:{ click:()=>showServerPorts(obj.id) }
+  }, arpBar);
   renderInterfaceTable(body, obj, "server");
+}
+
+// Server port / host-firewall manager: see listening sockets, open/close ports, set FW rules
+function showServerPorts(id){
+  const obj = Cfg.byId("servers", id);
+  if(!obj) return;
+  obj.firewall = obj.firewall || { enabled:false, default_inbound:"allow", rules:[] };
+  obj.listen_ports = obj.listen_ports || [];
+  openDialog(`🔌 ポート / ホストFW — ${obj.label||id}`, (body)=>{
+    function refresh(){
+      body.innerHTML = "";
+      // --- Listening sockets (live, derived) ---
+      const s1 = ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"待ち受けポート (LISTEN)"},s1);
+      const sockets = (typeof buildServerPorts==="function") ? buildServerPorts(obj) : [];
+      if(!sockets.length) ch("div",{text:"(待ち受けポートなし)",style:{color:"var(--text-mute)",fontSize:"11px"}},s1);
+      for(const sk of sockets){
+        const stateColor = sk.state==="LISTEN"?"var(--green)":(sk.state==="DOWN"?"var(--orange)":"var(--text-mute)");
+        const rowEl = ch("div",{style:{display:"flex",alignItems:"center",gap:"8px",padding:"3px 6px",fontSize:"11px",fontFamily:"var(--mono)",borderBottom:"1px solid var(--border)"}},s1);
+        ch("span",{text:sk.proto+"/"+sk.port,style:{minWidth:"70px",fontWeight:"700"}},rowEl);
+        ch("span",{text:sk.state,style:{color:stateColor,minWidth:"54px"}},rowEl);
+        ch("span",{text:sk.source,style:{color:"var(--text-dim)",flex:"1"}},rowEl);
+        if(sk.source==="manual"){
+          ch("button",{text:"✕",style:{padding:"1px 6px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+            on:{click:()=>{ obj.listen_ports=obj.listen_ports.filter(l=>!(+l.port===sk.port && (l.proto||"tcp").toLowerCase()===sk.proto)); renderAndSync(); refresh(); }}},rowEl);
+        }
+      }
+      // add manual listen port
+      const addRow = ch("div",{style:{display:"flex",gap:"6px",marginTop:"6px"}},s1);
+      const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"};
+      const pIn=ch("input",{type:"number",placeholder:"port",style:Object.assign({width:"80px"},fStyle)},addRow);
+      const prSel=ch("select",{style:fStyle},addRow);
+      ch("option",{value:"tcp",text:"tcp"},prSel); ch("option",{value:"udp",text:"udp"},prSel);
+      ch("button",{text:"+ ポート開放",style:{padding:"4px 10px",fontSize:"11px",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+        on:{click:()=>{ const pv=+pIn.value; if(!pv){toast("ポート番号を入力","err");return;} obj.listen_ports.push({port:pv,proto:prSel.value}); renderAndSync(); refresh(); toast(`${prSel.value}/${pv} を開放`,"ok"); }}},addRow);
+
+      // --- Host firewall ---
+      const s2 = ch("div",{class:"sub-section"},body);
+      const hHead=ch("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},s2);
+      ch("h4",{text:"ホストファイアウォール (受信制御)",style:{margin:0}},hHead);
+      const tgL=ch("label",{style:{display:"flex",gap:"4px",alignItems:"center",cursor:"pointer",fontSize:"11px"}},hHead);
+      const tg=ch("input",{type:"checkbox"},tgL); tg.checked=!!obj.firewall.enabled;
+      ch("span",{text:obj.firewall.enabled?"有効":"無効"},tgL);
+      tg.addEventListener("change",()=>{ obj.firewall.enabled=tg.checked; renderAndSync(); refresh(); });
+      if(obj.firewall.enabled){
+        const defRow=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",margin:"6px 0",fontSize:"11px"}},s2);
+        ch("span",{text:"デフォルト受信:"},defRow);
+        const defSel=ch("select",{style:fStyle},defRow);
+        ch("option",{value:"allow",text:"allow (許可)"},defSel);
+        ch("option",{value:"deny",text:"deny (遮断)"},defSel);
+        defSel.value=obj.firewall.default_inbound||"allow";
+        defSel.addEventListener("change",()=>{ obj.firewall.default_inbound=defSel.value; renderAndSync(); refresh(); });
+        // rules
+        ch("div",{text:"ルール (上から順に評価):",style:{fontSize:"10px",color:"var(--text-dim)",marginTop:"4px"}},s2);
+        (obj.firewall.rules||[]).forEach((r,i)=>{
+          const rr=ch("div",{style:{display:"flex",alignItems:"center",gap:"6px",padding:"3px 6px",fontSize:"11px",fontFamily:"var(--mono)"}},s2);
+          ch("span",{text:`${i+1}.`,style:{color:"var(--text-dim)"}},rr);
+          ch("span",{text:`${r.proto||"any"}/${r.port!=null?r.port:"any"}`,style:{minWidth:"80px"}},rr);
+          ch("span",{text:r.action,style:{color:r.action==="allow"?"var(--green)":"var(--red)",fontWeight:"700",minWidth:"50px"}},rr);
+          ch("button",{text:"✕",style:{padding:"1px 6px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+            on:{click:()=>{ obj.firewall.rules.splice(i,1); renderAndSync(); refresh(); }}},rr);
+        });
+        const arRow=ch("div",{style:{display:"flex",gap:"6px",marginTop:"6px",flexWrap:"wrap"}},s2);
+        const arPort=ch("input",{type:"number",placeholder:"port",style:Object.assign({width:"70px"},fStyle)},arRow);
+        const arProto=ch("select",{style:fStyle},arRow);
+        ch("option",{value:"any",text:"any"},arProto);ch("option",{value:"tcp",text:"tcp"},arProto);ch("option",{value:"udp",text:"udp"},arProto);
+        const arAct=ch("select",{style:fStyle},arRow);
+        ch("option",{value:"allow",text:"allow"},arAct);ch("option",{value:"deny",text:"deny"},arAct);
+        ch("button",{text:"+ ルール追加",style:{padding:"4px 10px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+          on:{click:()=>{ const pv=arPort.value===""?null:+arPort.value; obj.firewall.rules.push({port:pv,proto:arProto.value,action:arAct.value}); renderAndSync(); refresh(); }}},arRow);
+      }
+      ch("div",{text:"💡 待ち受けていないポート宛は『接続拒否』、ホストFWで遮断したポートは『FW遮断』として通信テストで検出されます。",style:{fontSize:"10px",color:"var(--text-mute)",padding:"8px 4px",lineHeight:"1.4"}},body);
+    }
+    refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
 }
 
 function renderServiceProps(body, obj){
@@ -1627,6 +1786,7 @@ function cliExec(obj, kind, cmd, args, println, state){
     "  show etherchannel summary       - port-channels (bonding/vPC)",
     "  show standby / vrrp / glbp      - FHRP gateway redundancy state",
     "  show cluster                    - server clustering (Active/Standby)",
+    "  show ports / netstat            - server listening ports + host FW",
     "  show lb                         - load-balancer VIP pools",
     "  show gslb                       - GSLB DNS records",
     "  show ip eigrp neighbors         - EIGRP neighbors",
@@ -2078,6 +2238,25 @@ function cliExec(obj, kind, cmd, args, println, state){
             println(`    ${r.site_ip.padEnd(18)} weight ${String(r.weight).padEnd(3)} ${r.up?"UP":"DOWN"}`);
           }
           println("");
+        }
+      } else if(sub === "ports" || sub === "netstat" || (sub==="listen")){
+        // show ports / netstat — server listening sockets + host firewall
+        if(kind !== "server"){ println("(ポート確認はサーバで実行)","cli-err"); return; }
+        const socks = (typeof buildServerPorts==="function") ? buildServerPorts(obj) : [];
+        println("Proto  Local Port   State    Service");
+        if(!socks.length) println("(待ち受けポートなし)");
+        for(const s of socks){
+          println(`${(s.proto||"tcp").padEnd(6)} ${String(s.port).padEnd(12)} ${(s.state||"").padEnd(8)} ${s.source||""}`);
+        }
+        if(obj.firewall && obj.firewall.enabled){
+          println("");
+          println(`Host Firewall: ENABLED (default inbound: ${obj.firewall.default_inbound||"allow"})`);
+          (obj.firewall.rules||[]).forEach((r,i)=>{
+            println(`  ${i+1}. ${(r.proto||"any")}/${r.port!=null?r.port:"any"} → ${r.action}`);
+          });
+        } else {
+          println("");
+          println("Host Firewall: disabled");
         }
       } else if(sub === "standby" || (sub==="vrrp") || (sub==="glbp")){
         // show standby / show vrrp / show glbp — FHRP state

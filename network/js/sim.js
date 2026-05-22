@@ -380,6 +380,79 @@ function findRouteFor(deviceId, destIp){
 function getFwPolicies(deviceId){
   return (App.config.policies||[]).find(p=>p.device===deviceId);
 }
+
+/* =========================================================================
+ * SERVER PORT STATE — listening ports + host firewall (inbound port control)
+ * A server "listens" on the ports of its RUNNING services (automatic), plus any
+ * port explicitly opened. A host firewall can allow/deny inbound ports.
+ * Config on a server:
+ *   server.firewall = { enabled, default_inbound:"allow"|"deny",
+ *                       rules:[{ port, proto, action:"allow"|"deny" }] }
+ *   server.listen_ports = [{ port, proto }]   // manual extra listeners
+ * ========================================================================= */
+function transportProto(appProto){
+  const p = (appProto||"tcp").toLowerCase();
+  const udp = ["dns-udp","dhcp","snmp","syslog","ntp","tftp","udp"];
+  // DNS uses both; treat as tcp by default but accept udp matches via "any"
+  if(udp.includes(p)) return "udp";
+  return "tcp"; // http/https/ftp/ssh/smtp/pop/imap/mysql/postgres/... → tcp
+}
+function buildServerPorts(server){
+  // Effective listening sockets on this server
+  const ports = [];
+  const seen = new Set();
+  function add(port, proto, src, state){
+    const key = proto+"/"+port;
+    if(seen.has(key)) return;
+    seen.add(key);
+    ports.push({ port:+port, proto:proto, source:src, state });
+  }
+  // 1) From running services hosted on this server (use TRANSPORT protocol)
+  for(const sv of (App.config.services||[])){
+    if(sv.server !== server.id) continue;
+    if(!sv.port) continue;
+    const running = (sv.status||"running") === "running";
+    add(sv.port, transportProto(sv.protocol), "service:"+sv.id, running ? "LISTEN" : "DOWN");
+  }
+  // 2) Manually opened listener ports
+  for(const lp of (server.listen_ports||[])){
+    add(lp.port, (lp.proto||"tcp").toLowerCase(), "manual", "LISTEN");
+  }
+  return ports;
+}
+// Host firewall verdict for an inbound connection to (proto, port)
+function hostFirewallVerdict(server, proto, port){
+  const fw = server.firewall;
+  if(!fw || !fw.enabled) return { allowed:true, rule:null };
+  const pl = (proto||"tcp").toLowerCase();
+  for(const r of (fw.rules||[])){
+    if(r.proto && r.proto.toLowerCase() !== "any" && r.proto.toLowerCase() !== pl) continue;
+    if(r.port != null && +r.port !== +port) continue;
+    return { allowed: (r.action==="allow"), rule:r };
+  }
+  const def = (fw.default_inbound||"allow");
+  return { allowed: def==="allow", rule:{ id:"default-"+def, action:def } };
+}
+// Does the server accept an inbound connection to (proto, port)? Returns {ok, reason, state}
+function serverAcceptsPort(server, proto, port){
+  if(port == null) return { ok:true, reason:"(no port specified — ICMP/host reachability)" };
+  // Host firewall first (a closed firewall blocks before reaching the socket)
+  const fwv = hostFirewallVerdict(server, proto, port);
+  if(!fwv.allowed){
+    return { ok:false, reason:`ホストFWで遮断 (${(proto||"tcp")}/${port} ${fwv.rule?fwv.rule.id||fwv.rule.action:"deny"})`, state:"FW-BLOCK" };
+  }
+  // Is something listening on that port?
+  const ports = buildServerPorts(server);
+  const sock = ports.find(p=> p.port===+port && (p.proto===(proto||"tcp").toLowerCase() || p.proto==="any"));
+  if(!sock){
+    return { ok:false, reason:`接続拒否: ${(proto||"tcp")}/${port} で待ち受けているサービスなし (port closed)`, state:"REFUSED" };
+  }
+  if(sock.state !== "LISTEN"){
+    return { ok:false, reason:`サービス停止中: ${(proto||"tcp")}/${port} (${sock.source})`, state:"DOWN" };
+  }
+  return { ok:true, reason:`${(proto||"tcp")}/${port} LISTEN (${sock.source})`, state:"LISTEN" };
+}
+
 function evaluatePolicy(pol, srcIp, dstIp, proto, dstPort){
   if(!pol || !pol.rules) return { action:"allow" };
   for(const r of pol.rules){
@@ -851,6 +924,16 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
     const hasDest = (curObj.interfaces||[]).some(ifaceHasDestIp)
       || bondIp4 === destIp || bondIp6 === destIp;
     if(hasDest && hop > 0){
+      // Arrived at the destination. If it's a server and a port was specified,
+      // verify a service is listening and the host firewall permits it.
+      if(cur.kind === "server" && dstPort != null){
+        const verdict = serverAcceptsPort(curObj, proto, dstPort);
+        if(!verdict.ok){
+          return { ok:false, path, reason:`${curObj.id}: ${verdict.reason}`,
+            blockedAt:{ kind:"server", id:curObj.id }, portState:verdict.state };
+        }
+        return { ok:true, path, portState:verdict.state, portInfo:verdict.reason };
+      }
       return { ok:true, path };
     }
 
@@ -990,6 +1073,16 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
     if(peerHasDest){
       if(peerObj.status && peerObj.status !== "running"){
         return { ok:false, path, reason:`${peerObj.id} is ${peerObj.status}`, blockedAt:{kind:next.peerKind,id:peerObj.id} };
+      }
+      if(next.peerKind === "server" && dstPort != null){
+        const verdict = serverAcceptsPort(peerObj, proto, dstPort);
+        // include the arrival node in the path for clarity
+        path.push({ kind:"server", id:peerObj.id, ...center(peerObj) });
+        if(!verdict.ok){
+          return { ok:false, path, reason:`${peerObj.id}: ${verdict.reason}`,
+            blockedAt:{ kind:"server", id:peerObj.id }, portState:verdict.state };
+        }
+        return { ok:true, path, portState:verdict.state, portInfo:verdict.reason };
       }
       return { ok:true, path };
     }
