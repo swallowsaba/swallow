@@ -1181,21 +1181,24 @@ function bondCableState(c){
     if(!obj || !obj.bonding || !obj.bonding.enabled) continue;
     const members = obj.bonding.members || [];
     if(!members.includes(ep.interface)) continue;
-    const rep = bondRepresentativeCable(obj);
-    // Non-representative member cables are hidden (abstracted into the single logical link)
-    if(c.id !== rep) return { role:"hidden", isDown:false, traffic:"idle", hidden:true };
-    // This IS the representative logical link
     const eff = (typeof bondEffectiveStatus === "function") ? bondEffectiveStatus(obj) : "up";
     const active = (typeof bondActiveMember === "function") ? bondActiveMember(obj) : null;
     const primary = obj.bonding.primary || members[0];
-    if(eff === "down"){
-      // All members down → the logical link is genuinely down
-      return { role:"down", isDown:true, traffic:"idle", hidden:false };
+    const memberIf = (obj.interfaces||[]).find(i=>i.id===ep.interface);
+    const memberUp = memberIf && (memberIf.status||"up") === "up";
+    // Whole bond down → this physical link is down too
+    if(eff === "down") return { role:"down", isDown:true, traffic:"idle", hidden:false };
+    // The ACTIVE member carries the live logical link → solid + animated
+    if(ep.interface === active){
+      let lvl = (typeof bondConfiguredTraffic === "function") ? bondConfiguredTraffic(obj) : "medium";
+      if(!lvl || lvl === "idle") lvl = "medium";
+      const isFailover = (active !== primary);
+      return { role: isFailover ? "failover" : "active", isDown:false, traffic: lvl, hidden:false };
     }
-    let lvl = (typeof bondConfiguredTraffic === "function") ? bondConfiguredTraffic(obj) : "medium";
-    if(!lvl || lvl === "idle") lvl = "medium";
-    const isFailover = (ep.interface === active && active !== primary);
-    return { role: isFailover ? "failover" : "active", isDown:false, traffic: lvl, hidden:false };
+    // Non-active member: DRAW the physical link (so redundancy is visible / topology not broken),
+    // but de-emphasized. Distinguish a healthy standby from a failed member's link.
+    if(!memberUp) return { role:"standby-down", isDown:false, traffic:"idle", hidden:false };
+    return { role:"standby", isDown:false, traffic:"idle", hidden:false };
   }
   return null;
 }
@@ -1211,17 +1214,17 @@ function renderConnection(c){
   const direction = c.direction || "forward";
   const type = c.type || "ethernet";
 
-  // === Bond member cable state (single logical link model) ===
+  // === Bond member cable state ===
+  // All physical member links are drawn (so bonding redundancy is visible and the topology
+  // stays logically complete). The ACTIVE link is solid+animated; standby links are faint.
   let failoverActive = false;
   let bondStandby = false;
   const bondState = bondCableState(c);
   if(bondState){
-    // Hidden member cables are not drawn — the bond shows as ONE logical link (the active member)
-    if(bondState.hidden) return;
     isDown = bondState.isDown;
     traffic = bondState.traffic;
     failoverActive = bondState.role === "failover";
-    bondStandby = false;
+    bondStandby = (bondState.role === "standby" || bondState.role === "standby-down");
   }
 
   const built = buildConnectionPath(a, b, c);
