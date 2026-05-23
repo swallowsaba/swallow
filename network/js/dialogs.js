@@ -139,12 +139,66 @@ function renderNetworkProps(body, obj){
     ["physical","virtual"],
     obj.kind || (obj.type==="vxlan"||obj.type==="vpn-overlay"?"virtual":"physical"),
     v=>{ obj.kind = v; obj._kindManual = true; renderAndSync(); toast(`Network kind: ${v}`, "ok"); });
-  addField(body, "IPv4 CIDR", "text", obj.cidr||"", v=>{ obj.cidr=v; renderAndSync(); });
+
+  // ---- IPv4 CIDR with suggestions (existing networks + common ranges) + free-CIDR proposal ----
+  const cidrField = ch("div",{class:"field"},body);
+  ch("label",{text:"IPv4 CIDR"},cidrField);
+  const cidrWrap = ch("div",{style:{display:"flex",gap:"6px"}},cidrField);
+  const cidrIn = ch("input",{type:"text",value:obj.cidr||"",list:"net-cidr-suggest",placeholder:"例: 10.0.1.0/24",style:{flex:"1"}},cidrWrap);
+  cidrIn.addEventListener("change",()=>{ obj.cidr=cidrIn.value; renderAndSync(); });
+  ch("button",{text:"空き提案",title:"既存と重複しない次の/24を提案",
+    style:{padding:"4px 8px",fontSize:"10px",cursor:"pointer",background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"4px",whiteSpace:"nowrap"},
+    on:{click:()=>{ const c=suggestFreeCidr(); cidrIn.value=c; obj.cidr=c; renderAndSync(); toast("空きCIDRを提案: "+c,"ok"); }}},cidrWrap);
+  // datalist: existing network CIDRs + common private ranges
+  const dl = ch("datalist",{id:"net-cidr-suggest"},cidrField);
+  const seen=new Set();
+  for(const n of (App.config.networks||[])){
+    if(n.id!==obj.id && n.cidr && !seen.has(n.cidr)){ seen.add(n.cidr); ch("option",{value:n.cidr,text:(n.label||n.id)},dl); }
+  }
+  ["10.0.0.0/24","10.0.1.0/24","10.1.0.0/24","172.16.0.0/24","192.168.0.0/24","192.168.1.0/24","192.168.10.0/24"].forEach(c=>{ if(!seen.has(c)){ seen.add(c); ch("option",{value:c},dl); } });
+
   addField(body, "IPv4 Gateway", "text", obj.gateway||"", v=>{ obj.gateway=v; renderAndSync(); });
-  addField(body, "IPv6 CIDR", "text", obj.cidr_v6||"", v=>{ obj.cidr_v6=v; renderAndSync(); });
+
+  // ---- IPv6 CIDR with suggestions ----
+  const v6Field = ch("div",{class:"field"},body);
+  ch("label",{text:"IPv6 CIDR"},v6Field);
+  const v6In = ch("input",{type:"text",value:obj.cidr_v6||"",list:"net-cidr6-suggest",placeholder:"例: 2001:db8:1::/64",style:{width:"100%",boxSizing:"border-box"}},v6Field);
+  v6In.addEventListener("change",()=>{ obj.cidr_v6=v6In.value; renderAndSync(); });
+  const dl6 = ch("datalist",{id:"net-cidr6-suggest"},v6Field);
+  const seen6=new Set();
+  for(const n of (App.config.networks||[])){
+    if(n.id!==obj.id && n.cidr_v6 && !seen6.has(n.cidr_v6)){ seen6.add(n.cidr_v6); ch("option",{value:n.cidr_v6,text:(n.label||n.id)},dl6); }
+  }
+  ["2001:db8:1::/64","2001:db8:2::/64","fd00::/64"].forEach(c=>{ if(!seen6.has(c)){ seen6.add(c); ch("option",{value:c},dl6); } });
+
   addField(body, "IPv6 Gateway", "text", obj.gateway_v6||"", v=>{ obj.gateway_v6=v; renderAndSync(); });
   addField(body, "VLAN ID", "number", obj.vlan_id==null?"":obj.vlan_id, v=>{ obj.vlan_id = v?+v:null; renderAndSync(); });
   addColorField(body, "色", obj.color||"rgba(100,150,250,0.15)", v=>{ obj.color=v; renderAndSync(); });
+
+  // ---- Existing networks list (for reference) ----
+  const others = (App.config.networks||[]).filter(n=>n.id!==obj.id);
+  if(others.length){
+    const sec = ch("div",{class:"sub-section"},body);
+    ch("h4",{text:"既存ネットワーク一覧",style:{margin:"0 0 4px"}},sec);
+    for(const n of others){
+      const row=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",padding:"3px 4px",fontSize:"10.5px",borderBottom:"1px solid var(--border)",fontFamily:"var(--mono)"}},sec);
+      ch("span",{text:(n.label||n.id),style:{flex:"1",fontWeight:"600",fontFamily:"var(--font)"}},row);
+      ch("span",{text:n.cidr||n.cidr_v6||"-",style:{color:"var(--text-dim)"}},row);
+      if(n.vlan_id) ch("span",{text:"VLAN"+n.vlan_id,style:{color:"var(--accent2)",fontSize:"9px"}},row);
+    }
+  }
+}
+
+// Suggest the next free 10.0.x.0/24 (or 172.16.x / 192.168.x) not overlapping existing networks
+function suggestFreeCidr(){
+  const used = new Set((App.config.networks||[]).map(n=>n.cidr).filter(Boolean));
+  for(const base of ["10.0.","10.1.","172.16.","192.168."]){
+    for(let i=0;i<256;i++){
+      const c = `${base}${i}.0/24`;
+      if(!used.has(c)) return c;
+    }
+  }
+  return "10.0.0.0/24";
 }
 
 function renderDeviceProps(body, obj){
@@ -208,61 +262,78 @@ function showFirewallPolicy(id){
   openDialog(`🛡 ファイアウォールポリシー — ${dev.label||id}`, (body)=>{
     function refresh(){
       body.innerHTML = "";
-      ch("div",{text:"ルールは上から順に評価され、最初に一致したものが適用されます (first-match)。どれにも一致しない場合は末尾の暗黙deny。",
-        style:{fontSize:"10px",color:"var(--text-dim)",padding:"4px 2px 8px",lineHeight:"1.4"}},body);
-      const fStyle={padding:"3px 5px",fontSize:"10.5px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
-      // Header
-      const head=ch("div",{style:{display:"grid",gridTemplateColumns:"18px 60px 1fr 1fr 56px 50px 60px 70px",gap:"4px",fontSize:"9px",color:"var(--text-dim)",fontWeight:"700",padding:"2px 0",borderBottom:"1px solid var(--border)"}},body);
-      ["#","動作","送信元","宛先","Proto","Port","状態","操作"].forEach(h=>ch("span",{text:h},head));
+      ch("div",{text:"ルールは上から順に評価され、最初に一致したものが適用されます (first-match)。どれにも一致しない場合は末尾の暗黙deny。送信元/宛先にはセグメント名も指定可。",
+        style:{fontSize:"10px",color:"var(--text-dim)",padding:"4px 2px 10px",lineHeight:"1.4"}},body);
+      const fStyle={padding:"5px 7px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"4px",fontFamily:"var(--mono)",boxSizing:"border-box"};
+      const lblStyle={fontSize:"9px",color:"var(--text-dim)",display:"block",marginBottom:"2px",fontWeight:"700"};
+
+      if(!(pol.rules||[]).length){
+        ch("div",{text:"ルールがありません。「+ ルール追加」で作成してください。",style:{color:"var(--text-mute)",fontSize:"11px",padding:"8px 2px"}},body);
+      }
 
       (pol.rules||[]).forEach((r,i)=>{
-        const row=ch("div",{style:{display:"grid",gridTemplateColumns:"18px 60px 1fr 1fr 56px 50px 60px 70px",gap:"4px",alignItems:"center",padding:"3px 0",borderBottom:"1px solid var(--border)",
-          opacity:(r.status==="disabled"?"0.5":"1")}},body);
-        ch("span",{text:String(i+1),style:{fontSize:"10px",color:"var(--text-dim)"}},row);
-        // action
-        const aSel=ch("select",{style:Object.assign({},fStyle,{color:r.action==="allow"?"var(--green)":"var(--red)",fontWeight:"700"})},row);
-        ch("option",{value:"allow",text:"allow"},aSel);ch("option",{value:"deny",text:"deny"},aSel);
+        const card=ch("div",{style:{border:"1px solid var(--border)",borderLeft:"3px solid "+(r.action==="allow"?"var(--green)":"var(--red)"),
+          borderRadius:"6px",padding:"8px 10px",marginBottom:"8px",background:"var(--bg2)",opacity:(r.status==="disabled"?"0.55":"1")}},body);
+        // header row: number + action + status + ops
+        const hd=ch("div",{style:{display:"flex",gap:"8px",alignItems:"center",marginBottom:"8px"}},card);
+        ch("span",{text:"#"+(i+1),style:{fontSize:"11px",color:"var(--text-dim)",fontWeight:"700",minWidth:"24px"}},hd);
+        const aSel=ch("select",{style:Object.assign({},fStyle,{color:r.action==="allow"?"var(--green)":"var(--red)",fontWeight:"700",flex:"0 0 90px"})},hd);
+        ch("option",{value:"allow",text:"✓ allow"},aSel);ch("option",{value:"deny",text:"✕ deny"},aSel);
         aSel.value=r.action||"deny";
         aSel.addEventListener("change",()=>{ r.action=aSel.value; renderAndSync(); refresh(); });
-        // src
-        const srcIn=ch("input",{type:"text",value:r.src||"0.0.0.0/0",list:"fw-seg-list",style:fStyle},row);
-        srcIn.addEventListener("change",()=>{ r.src=srcIn.value; renderAndSync(); });
-        // dst
-        const dstIn=ch("input",{type:"text",value:r.dst||"0.0.0.0/0",list:"fw-seg-list",style:fStyle},row);
-        dstIn.addEventListener("change",()=>{ r.dst=dstIn.value; renderAndSync(); });
-        // proto
-        const prSel=ch("select",{style:fStyle},row);
-        ["any","tcp","udp","icmp"].forEach(pp=>ch("option",{value:pp,text:pp},prSel));
-        prSel.value=r.protocol||"any";
-        prSel.addEventListener("change",()=>{ r.protocol=prSel.value; renderAndSync(); });
-        // port
-        const ptIn=ch("input",{type:"number",value:r.dst_port!=null?r.dst_port:"",placeholder:"any",style:fStyle},row);
-        ptIn.addEventListener("change",()=>{ r.dst_port=ptIn.value===""?null:+ptIn.value; renderAndSync(); });
-        // status
-        const stSel=ch("select",{style:fStyle},row);
+        const stSel=ch("select",{style:Object.assign({},fStyle,{flex:"0 0 76px"})},hd);
         ch("option",{value:"enabled",text:"有効"},stSel);ch("option",{value:"disabled",text:"無効"},stSel);
         stSel.value=r.status||"enabled";
         stSel.addEventListener("change",()=>{ r.status=stSel.value; renderAndSync(); refresh(); });
-        // ops: up/down/delete
-        const ops=ch("div",{style:{display:"flex",gap:"2px"}},row);
-        ch("button",{text:"▲",style:{padding:"1px 4px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
+        const ops=ch("div",{style:{display:"flex",gap:"3px",marginLeft:"auto"}},hd);
+        ch("button",{text:"▲",title:"上へ",style:{padding:"2px 7px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
           on:{click:()=>{ if(i>0){ const t=pol.rules[i-1]; pol.rules[i-1]=pol.rules[i]; pol.rules[i]=t; renderAndSync(); refresh(); } }}},ops);
-        ch("button",{text:"▼",style:{padding:"1px 4px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
+        ch("button",{text:"▼",title:"下へ",style:{padding:"2px 7px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
           on:{click:()=>{ if(i<pol.rules.length-1){ const t=pol.rules[i+1]; pol.rules[i+1]=pol.rules[i]; pol.rules[i]=t; renderAndSync(); refresh(); } }}},ops);
-        ch("button",{text:"✕",style:{padding:"1px 4px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+        ch("button",{text:"🗑",title:"削除",style:{padding:"2px 7px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
           on:{click:()=>{ pol.rules.splice(i,1); renderAndSync(); refresh(); }}},ops);
+
+        // fields grid: src / dst / proto / port
+        const grid=ch("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}},card);
+        const fSrc=ch("div",{},grid); ch("label",{text:"送信元 (IP/CIDR/セグメント名)",style:lblStyle},fSrc);
+        const srcIn=ch("input",{type:"text",value:r.src||"0.0.0.0/0",list:"fw-seg-list",style:Object.assign({width:"100%"},fStyle)},fSrc);
+        srcIn.addEventListener("change",()=>{ r.src=srcIn.value; renderAndSync(); });
+        const fDst=ch("div",{},grid); ch("label",{text:"宛先 (IP/CIDR/セグメント名)",style:lblStyle},fDst);
+        const dstIn=ch("input",{type:"text",value:r.dst||"0.0.0.0/0",list:"fw-seg-list",style:Object.assign({width:"100%"},fStyle)},fDst);
+        dstIn.addEventListener("change",()=>{ r.dst=dstIn.value; renderAndSync(); });
+        const fPr=ch("div",{},grid); ch("label",{text:"プロトコル",style:lblStyle},fPr);
+        const prSel=ch("select",{style:Object.assign({width:"100%"},fStyle)},fPr);
+        ["any","tcp","udp","icmp"].forEach(pp=>ch("option",{value:pp,text:pp.toUpperCase()},prSel));
+        prSel.value=r.protocol||"any";
+        const fPt=ch("div",{},grid); ch("label",{text:"宛先ポート (空欄=any)",style:lblStyle},fPt);
+        const ptIn=ch("input",{type:"number",min:"0",max:"65535",value:r.dst_port!=null?r.dst_port:"",placeholder:"例: 443 (空欄=全ポート)",style:Object.assign({width:"100%"},fStyle)},fPt);
+        // port is meaningless for icmp/any → disable + hint
+        function syncPortEnable(){
+          const noPort = (prSel.value==="icmp" || prSel.value==="any");
+          ptIn.disabled = noPort;
+          ptIn.style.opacity = noPort ? "0.4" : "1";
+          if(noPort){ ptIn.value=""; r.dst_port=null; }
+        }
+        syncPortEnable();
+        prSel.addEventListener("change",()=>{ r.protocol=prSel.value; syncPortEnable(); renderAndSync(); });
+        ptIn.addEventListener("change",()=>{ r.dst_port = (ptIn.value===""? null : +ptIn.value); renderAndSync(); });
+        // common-port quick buttons
+        const quick=ch("div",{style:{display:"flex",gap:"4px",flexWrap:"wrap",marginTop:"6px"}},card);
+        ch("span",{text:"よく使うポート:",style:{fontSize:"9px",color:"var(--text-dim)",alignSelf:"center"}},quick);
+        [["HTTP",80],["HTTPS",443],["SSH",22],["DNS",53],["MySQL",3306],["PostgreSQL",5432]].forEach(([nm,pt])=>{
+          ch("button",{text:`${nm}(${pt})`,style:{padding:"1px 6px",fontSize:"9px",cursor:"pointer",background:"var(--bg3)",border:"1px solid var(--border)",color:"var(--text-dim)",borderRadius:"3px"},
+            on:{click:()=>{ if(prSel.value==="any"||prSel.value==="icmp"){ r.protocol="tcp"; } r.dst_port=pt; renderAndSync(); refresh(); }}},quick);
+        });
       });
-      // implicit deny indicator
-      ch("div",{text:"⊘ (暗黙のdeny — 上記いずれにも一致しない通信は全て遮断)",
+
+      ch("div",{text:"⊘ 暗黙のdeny — 上記いずれにも一致しない通信は全て遮断されます",
         style:{fontSize:"10px",color:"var(--red)",padding:"6px 2px",fontFamily:"var(--mono)"}},body);
-      // segment-name suggestions
       const dl=ch("datalist",{id:"fw-seg-list"},body);
       for(const n of segmentRefOptions()) ch("option",{value:n},dl);
       ["any","0.0.0.0/0","::/0"].forEach(v=>ch("option",{value:v},dl));
 
-      // add rule
-      ch("button",{text:"+ ルール追加",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700",marginTop:"4px"},
-        on:{click:()=>{ pol.rules.push({ id:"rule-"+(pol.rules.length+1), action:"allow", src:"0.0.0.0/0", dst:"0.0.0.0/0", protocol:"any", dst_port:null, status:"enabled", log:false }); renderAndSync(); refresh(); }}},body);
+      ch("button",{text:"+ ルール追加",style:{width:"100%",padding:"8px",fontSize:"12px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"5px",fontWeight:"700",marginTop:"4px"},
+        on:{click:()=>{ pol.rules.push({ id:"rule-"+(pol.rules.length+1), action:"allow", src:"0.0.0.0/0", dst:"0.0.0.0/0", protocol:"tcp", dst_port:null, status:"enabled", log:false }); renderAndSync(); refresh(); }}},body);
     }
     refresh();
     return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };

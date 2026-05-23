@@ -891,6 +891,100 @@ function buildMacTable(switchDevice){
   return entries;
 }
 
+/* ====== MAC FLAPPING SIMULATION ======
+ * Real switches "flap" when the SAME MAC address is learned on multiple ports — caused by
+ * an L2 loop (redundant links without STP/bonding) or a duplicate MAC. The control plane
+ * thrashes its CAM table, a broadcast storm builds, CPU climbs, and the L2 domain gradually
+ * degrades (intermittent loss → heavy loss → effectively down).
+ *
+ * App.macFlap = { [switchId]: { macs:{mac:[ports]}, loop:bool, severity:0..100, since } }
+ */
+function detectMacFlaps(){
+  const report = [];
+  for(const sw of (App.config.devices||[])){
+    if(sw.type!=="l2switch" && sw.type!=="l3switch") continue;
+    const entries = buildMacTable(sw);
+    // group ports by MAC
+    const byMac = {};
+    for(const e of entries){ (byMac[e.mac]=byMac[e.mac]||new Set()).add(e.port); }
+    const flapMacs = {};
+    for(const mac in byMac){ if(byMac[mac].size >= 2) flapMacs[mac] = [...byMac[mac]]; }
+    // L2 loop: two switches joined by >=2 active links not in a bond, with STP off
+    const stpOff = !sw.stp || sw.stp.mode==="off" || sw.stp.enabled===false;
+    let loop = false;
+    const peerLinks = {};
+    for(const c of (App.config.connections||[])){
+      if(c.status==="down") continue;
+      let me=null,peer=null;
+      if(c.from&&c.from.device===sw.id){me=c.from;peer=c.to;}
+      else if(c.to&&c.to.device===sw.id){me=c.to;peer=c.from;}
+      else continue;
+      const pid = peer&&(peer.device||peer.server); if(!pid) continue;
+      // ignore bonded member links (intentional redundancy)
+      const myIf=(sw.interfaces||[]).find(i=>i.id===me.interface);
+      const bonded = sw.bonding&&sw.bonding.enabled&&(sw.bonding.members||[]).includes(me.interface);
+      (peerLinks[pid]=peerLinks[pid]||[]).push({bonded});
+    }
+    for(const pid in peerLinks){
+      const links=peerLinks[pid];
+      const nonBond=links.filter(l=>!l.bonded).length;
+      if(nonBond>=2 && stpOff) loop=true;
+    }
+    if(Object.keys(flapMacs).length || loop){
+      report.push({ switchId:sw.id, label:sw.label||sw.id, macs:flapMacs, loop });
+    }
+  }
+  return report;
+}
+// Recompute flap state + escalate severity over time. Called on each sim tick.
+function updateMacFlapState(){
+  App.macFlap = App.macFlap || {};
+  const report = detectMacFlaps();
+  const active = new Set(report.map(r=>r.switchId));
+  // escalate active, decay inactive
+  for(const r of report){
+    const st = App.macFlap[r.switchId] || { severity:0, since:Date.now() };
+    st.macs = r.macs; st.loop = r.loop;
+    const inc = r.loop ? 14 : 6; // loops escalate faster than a single duplicate MAC
+    st.severity = Math.min(100, st.severity + inc);
+    App.macFlap[r.switchId] = st;
+  }
+  for(const id in App.macFlap){
+    if(!active.has(id)){
+      App.macFlap[id].severity = Math.max(0, App.macFlap[id].severity - 20);
+      if(App.macFlap[id].severity<=0) delete App.macFlap[id];
+    }
+  }
+  return report;
+}
+function macFlapSeverity(switchId){
+  return (App.macFlap && App.macFlap[switchId]) ? App.macFlap[switchId].severity : 0;
+}
+// drop probability at a flapping switch (0..~0.9), grows with severity
+function macFlapDropProb(switchId){
+  const sev = macFlapSeverity(switchId);
+  if(sev<=0) return 0;
+  return Math.min(0.9, sev/120); // 50→0.42, 100→0.83
+}
+function macFlapStage(sev){
+  if(sev<=0) return "正常";
+  if(sev<25) return "学習ゆらぎ(軽微)";
+  if(sev<50) return "CAMテーブル不安定・断続的パケットロス";
+  if(sev<75) return "ブロードキャストストーム発生・CPU上昇";
+  return "L2ドメイン崩壊寸前(ほぼ通信不可)";
+}
+// Emit escalating symptom logs (called on tick when flapping present)
+function logMacFlapSymptoms(report){
+  for(const r of report){
+    const sev = macFlapSeverity(r.switchId);
+    const macList = Object.keys(r.macs||{});
+    let msg = `${r.label}: MACフラッピング`;
+    if(r.loop) msg += "(L2ループ検出)";
+    if(macList.length) msg += ` MAC ${macList[0]}${macList.length>1?(" 他"+(macList.length-1)):""} が複数ポートで学習`;
+    CommLog.blocked(msg, `段階: ${macFlapStage(sev)} (severity ${sev})`);
+  }
+}
+
 // === CML2/GNS3 parity: list direct LLDP neighbors ===
 function buildLldpNeighbors(device){
   const entries = [];
@@ -1095,6 +1189,16 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
     const curObj = cur.obj;
     if(curObj.status && curObj.status !== "running"){
       return { ok:false, path, reason: `${cur.kind} ${curObj.id} is ${curObj.status}`, blockedAt:{kind:cur.kind,id:curObj.id} };
+    }
+    // MAC flapping / broadcast storm: a switch under flapping drops packets with a
+    // probability that grows as the condition worsens (progressive degradation).
+    if(cur.kind === "device" && typeof macFlapDropProb === "function"){
+      const dp = macFlapDropProb(curObj.id);
+      if(dp > 0 && Math.random() < dp){
+        const sev = macFlapSeverity(curObj.id);
+        return { ok:false, path, reason:`${curObj.id}: MACフラッピングによりパケット破棄 (${macFlapStage(sev)})`,
+          blockedAt:{ kind:"device", id:curObj.id }, macFlap:true };
+      }
     }
     // Arrived check — destIp matches any address on any interface (or the bond addr)
     const bondIp4 = curObj.bonding && curObj.bonding.enabled ? ipOnly(curObj.bonding.bond_ip) : null;
@@ -1903,7 +2007,31 @@ function init(){
   render();
   setTimeout(()=>{ fitView(); }, 60);
   attachEventHandlers();
+  startMacFlapMonitor();
   Log.info("NetSim 起動完了");
+}
+
+// Periodically scan for MAC flapping and escalate the simulated degradation.
+// While a flap/loop persists the L2 domain gradually worsens; warnings stream to the comm log.
+var _macFlapTimer = null;
+function startMacFlapMonitor(){
+  if(_macFlapTimer) clearInterval(_macFlapTimer);
+  let prevActive = false;
+  _macFlapTimer = setInterval(()=>{
+    const report = updateMacFlapState();
+    const active = report.length > 0;
+    if(active){
+      logMacFlapSymptoms(report);
+      render(); // redraw to update flap badges/animation
+    } else if(prevActive){
+      // condition cleared → recovered
+      CommLog.info("MACフラッピング解消: L2ドメインが安定しました");
+      render();
+    }
+    prevActive = active;
+    // keep status bar fresh
+    if(typeof updateStatusBar==="function") updateStatusBar();
+  }, 2500);
 }
 
 function attachEventHandlers(){

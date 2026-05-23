@@ -489,14 +489,20 @@ function renderPorts(g, obj, kind){
       if(e.button !== 0) return;
       if(App.connectMode) return;  // in connect-mode, suppress drag-to-reposition
       e.stopPropagation();
-      if(e.shiftKey){
-        // Shift+drag = reposition the port around the device border (legacy behavior)
+      // Is this interface already wired? (has a connection attached)
+      const isConnected = (App.config.connections||[]).some(c=>{
+        const a=c.from||{}, b=c.to||{};
+        return ((a.device===obj.id||a.server===obj.id) && a.interface===iface.id) ||
+               ((b.device===obj.id||b.server===obj.id) && b.interface===iface.id);
+      });
+      // Reposition when: Shift held, OR the port is already connected (free move).
+      // Wire-draw when: plain drag on an UNCONNECTED port (drag-to-connect gesture).
+      if(e.shiftKey || isConnected){
         dragState = {
           mode: "port", obj, kind, ifaceIdx: i, moved: false,
           origPos: iface.port_position ? JSON.parse(JSON.stringify(iface.port_position)) : null
         };
       } else {
-        // Plain drag = draw a connection wire from this interface to a target interface
         const pos = (computePortPositions(obj, kind)[i]) || {cx:0,cy:0,outX:0,outY:0};
         wireDrag = {
           fromKind:kind, fromId:obj.id, fromIface:iface.id,
@@ -874,9 +880,25 @@ function renderDevice(d){
   drawDeviceIcon(g, d.type, w, h);
   ce("text", { "class":"element-label", x:w/2, y:h-7, text:d.label||d.id }, g);
   renderStatusLed(g, w-9, 9, d.status);
-  // Bonding container (drawn BEFORE ports so member ports appear inside/on top of it)
+  // MAC flapping warning badge (severity-scaled)
+  if(typeof macFlapSeverity === "function"){
+    const sev = macFlapSeverity(d.id);
+    if(sev > 0){
+      const fb = ce("g", { class:"macflap-badge" }, g);
+      const col = sev<50 ? "var(--orange)" : "var(--red)";
+      ce("rect", { x:w/2-34, y:-16, width:68, height:13, rx:3, ry:3, fill:col, opacity: (0.5+0.5*Math.min(1,sev/100)) }, fb);
+      ce("text", { x:w/2, y:-6, "text-anchor":"middle", "font-size":"7.5", fill:"#fff", "font-weight":"700",
+        text:"⚠ MAC FLAP "+Math.round(sev)+"%" }, fb);
+      // pulsing ring intensifies with severity
+      const ring = ce("rect", { x:1.5, y:1.5, width:w-3, height:h-3, rx:6, ry:6, fill:"none",
+        stroke:col, "stroke-width": (1+sev/40).toFixed(1), opacity:"0.8" }, g);
+      if(App.animationsEnabled !== false){
+        const an = ce("animate", { attributeName:"opacity", values:"0.8;0.15;0.8",
+          dur:(Math.max(0.4, 1.6 - sev/80))+"s", repeatCount:"indefinite" }, ring);
+      }
+    }
+  }
   renderBondOverlay(g, d, "device");
-  // Interface ports (bottom edge for devices)
   renderPorts(g, d, "device");
   if(App.selected && App.selected.kind==="device" && App.selected.id===d.id){
     g.classList.add("selected");
@@ -909,34 +931,67 @@ function drawServerIcon(g, type, x, y){
 }
 
 function renderServer(s){
+  // Hosted VMs (hypervisor) and containers — render as mini-badges; expand box to fit
+  const vms = (s.hypervisor && Array.isArray(s.hypervisor.vms)) ? s.hypervisor.vms : [];
+  const ctrs = Array.isArray(s.containers) ? s.containers : [];
+  const guests = vms.length + ctrs.length;
+  const baseW = s.width||130, baseH = s.height||65;
+  const w = Math.max(baseW, guests>0 ? 150 : baseW);
+  const perRow = Math.max(1, Math.floor((w-12)/46));
+  const guestRows = guests>0 ? Math.ceil(guests/perRow) : 0;
+  const guestZoneH = guestRows>0 ? (guestRows*16 + 14) : 0;
+  const svcCount = (App.config.services||[]).filter(sv=>sv.server===s.id).length;
+  const h = baseH + guestZoneH;
+
   const g = ce("g", {
     "class":"element server status-"+(s.status||"running"),
     "data-kind":"server","data-id":s.id,
     "transform":`translate(${s.x||0},${s.y||0})`
   }, $("#layer-elements"));
-  const w = s.width||130, h = s.height||65;
   ce("rect", { "class":"body server-body", x:0, y:0, width:w, height:h, rx:6, ry:6 }, g);
   drawServerIcon(g, s.type, 9, 9);
   ce("text", { "class":"element-label", x:w/2, y:16, text:s.label||s.id, "font-size":"11" }, g);
-  ce("text", { "class":"element-sublabel", x:w/2, y:28, text:s.os||"" }, g);
+  ce("text", { "class":"element-sublabel", x:w/2, y:28, text:(s.hypervisor?("⬡ "+(s.hypervisor.type||"esxi")):(s.os||"")) }, g);
 
-  // Services
+  // Services (kept near the divider above the guest zone)
   const services = (App.config.services||[]).filter(sv=>sv.server===s.id);
-  const startY = h - 16;
+  const svcStartY = baseH - 16;
   const colCount = Math.max(1, Math.floor((w-12)/22));
   for(let i=0; i<services.length; i++){
     const sv = services[i];
-    const col = i % colCount;
-    const row = Math.floor(i / colCount);
-    const x = 6 + col*22;
-    const y = startY - row*14;
-    renderServiceMini(g, sv, x, y, 20, 12);
+    const col = i % colCount, row = Math.floor(i / colCount);
+    renderServiceMini(g, sv, 6 + col*22, svcStartY - row*14, 20, 12);
+  }
+
+  // Guest zone: VMs (🖥) and containers (🐳)
+  if(guests>0){
+    const zoneTop = baseH;
+    ce("line", { x1:4, y1:zoneTop-2, x2:w-4, y2:zoneTop-2, stroke:"var(--border)", "stroke-width":0.7, "stroke-dasharray":"2 2" }, g);
+    ce("text", { x:6, y:zoneTop+8, text:(vms.length?("VM×"+vms.length):"")+(vms.length&&ctrs.length?"  ":"")+(ctrs.length?("CT×"+ctrs.length):""),
+      "font-size":"7.5", fill:"var(--text-dim)" }, g);
+    let idx=0;
+    const drawGuest=(name, on, kind)=>{
+      const col = idx % perRow, row = Math.floor(idx / perRow);
+      const gx = 6 + col*46, gy = zoneTop + 12 + row*16;
+      const gg = ce("g", { "class":"guest-mini", transform:`translate(${gx},${gy})` }, g);
+      ce("rect", { x:0, y:0, width:43, height:13, rx:2.5, ry:2.5,
+        fill: on?"rgba(63,185,80,0.15)":"rgba(120,120,120,0.12)",
+        stroke: on?"var(--green)":"var(--grey)", "stroke-width":0.7 }, gg);
+      ce("circle", { cx:5, cy:6.5, r:2.2, fill: on?"var(--green)":"var(--grey)" }, gg);
+      ce("text", { x:10, y:9, text:(kind==="vm"?"🖥":"🐳"), "font-size":"7" }, gg);
+      ce("text", { x:19, y:9, text:(name||"").slice(0,7), "font-size":"7", fill:"var(--text)", "font-family":"var(--mono)" }, gg);
+      gg.addEventListener("mouseenter",(e)=>showTooltip(e, `${kind==="vm"?"VM":"Container"}: ${name}\n状態: ${on?"稼働":"停止"}`));
+      gg.addEventListener("mouseleave",hideTooltip);
+      gg.addEventListener("mousemove",moveTooltip);
+      gg.addEventListener("click",(e)=>{ e.stopPropagation(); if(kind==="vm") showHypervisorManager(s.id); else showContainerManager(s.id); });
+      idx++;
+    };
+    for(const vm of vms) drawGuest(vm.name||vm.id, (vm.power||"on")==="on", "vm");
+    for(const c of ctrs) drawGuest(c.name||c.id, (c.status||"running")==="running", "ctr");
   }
 
   renderStatusLed(g, w-9, 9, s.status);
-  // Bonding container (drawn BEFORE ports so member ports appear inside/on top of it)
   renderBondOverlay(g, s, "server");
-  // Interface ports (top edge for servers)
   renderPorts(g, s, "server");
 
   if(App.selected && App.selected.kind==="server" && App.selected.id===s.id){
