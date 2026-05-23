@@ -315,6 +315,7 @@ html.light .iface-port-label{fill:var(--text-dim)}
 /* vPC visualization - Cisco-style domain region with peer-link + keepalive */
 .vpc-domain-region{pointer-events:none}
 .crossover-hops{pointer-events:none}
+.vm-host-link{pointer-events:none}
 .vpc-peer-link{stroke:var(--purple);stroke-width:2.5;fill:none;pointer-events:none;stroke-linecap:round}
 .vpc-keepalive{stroke:var(--purple);stroke-width:1;stroke-dasharray:2 3;fill:none;pointer-events:none;opacity:0.7}
 .vpc-link{stroke:var(--purple);stroke-width:3;stroke-dasharray:6 3;fill:none;pointer-events:none;stroke-linecap:round}
@@ -544,6 +545,7 @@ body.no-animations .pcap-pulse{
     <button id="btn-tpl" class="tbtn" title="トポロジーテンプレートを生成"><span class="ico">📐</span><span class="lbl">テンプレート</span></button>
     <button id="btn-segments" class="tbtn" title="ネットワークセグメントに名前を付けて管理"><span class="ico">🏷</span><span class="lbl">セグメント</span></button>
     <button id="btn-k8s" class="tbtn" title="Kubernetesクラスタ (Pod/Service/Ingress) を管理"><span class="ico">☸</span><span class="lbl">K8s</span></button>
+    <button id="btn-aws" class="tbtn" title="AWS VPC / サブネット / セキュリティグループを管理"><span class="ico">☁</span><span class="lbl">AWS</span></button>
     <button id="btn-mac-audit" class="tbtn" title="MACアドレスの重複/未割当をチェック"><span class="ico">🔍</span><span class="lbl">MAC監査</span></button>
     <button id="btn-anim-toggle" class="tbtn" title="アニメーションON/OFF (CPU軽量化)"><span class="ico">⏸</span><span class="lbl">アニメ</span></button>
     <button id="btn-stp-toggle" class="tbtn" title="STP状態表示: 👑Root Bridge と ⊘BLK ポートをハイライト"><span class="ico">🌳</span><span class="lbl">STP表示</span></button>
@@ -636,6 +638,5 @@ body.no-animations .pcap-pulse{
 <script src="js/render.js"></script>
 <script src="js/dialogs.js"></script>
 <script src="js/sim.js"></script>
-
 </body>
 </html>

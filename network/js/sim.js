@@ -697,6 +697,34 @@ function forwardProxyOn(serverId, dstPort, srcIp){
   return null;
 }
 
+/* ====== AWS SECURITY GROUPS ======
+ * server.aws = { vpc, subnet, security_groups:["sg-1",...] }
+ * A security group is stateful allow-list of inbound rules. If a server is assigned SGs,
+ * inbound traffic must match at least one rule (proto/port/source) or it is denied.
+ */
+function awsFindSecurityGroup(name){
+  for(const v of ((App.config.aws&&App.config.aws.vpcs)||[])){
+    const sg=(v.security_groups||[]).find(g=>g.name===name);
+    if(sg) return sg;
+  }
+  return null;
+}
+function awsSecurityGroupVerdict(server, proto, port, srcIp){
+  const aws = server.aws;
+  if(!aws || !aws.security_groups || !aws.security_groups.length) return { ok:true };
+  for(const sgName of aws.security_groups){
+    const sg=awsFindSecurityGroup(sgName);
+    if(!sg) continue;
+    for(const r of (sg.inbound||[])){
+      if(r.proto && r.proto!=="any" && proto && r.proto.toLowerCase()!==proto.toLowerCase()) continue;
+      if(r.port!=null && port!=null && +r.port!==+port) continue;
+      if(r.source && srcIp && !matchRef(srcIp, r.source)) continue;
+      return { ok:true, sg:sgName, rule:r };
+    }
+  }
+  return { ok:false, reason:`AWS Security Group により遮断 (${aws.security_groups.join(",")}: ${proto}/${port} 未許可)` };
+}
+
 function elementPrimaryIp(kind, id, family){
   // family is optional: "v4" | "v6". If unspecified, prefer v4, fall back to v6.
   if(kind === "service"){
@@ -1339,6 +1367,13 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
       // Arrived at the destination. If it's a server and a port was specified,
       // verify a service is listening and the host firewall permits it.
       if(cur.kind === "server" && dstPort != null){
+        // AWS Security Group inbound check (if the server is assigned SGs)
+        if(typeof awsSecurityGroupVerdict === "function"){
+          const sgv = awsSecurityGroupVerdict(curObj, proto, dstPort, srcIp);
+          if(!sgv.ok){
+            return { ok:false, path, reason:`${curObj.id}: ${sgv.reason}`, blockedAt:{ kind:"server", id:curObj.id } };
+          }
+        }
         const verdict = serverAcceptsPort(curObj, proto, dstPort);
         if(!verdict.ok){
           return { ok:false, path, reason:`${curObj.id}: ${verdict.reason}`,
@@ -1575,6 +1610,13 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
           portInfo:`Service ${k8sPick.svc.name} → Pod ${k8sPick.pod.name} (${k8sPick.pod.ip})` };
       }
       if(next.peerKind === "server" && dstPort != null){
+        if(typeof awsSecurityGroupVerdict === "function"){
+          const sgv = awsSecurityGroupVerdict(peerObj, proto, dstPort, srcIp);
+          if(!sgv.ok){
+            path.push({ kind:"server", id:peerObj.id, ...center(peerObj) });
+            return { ok:false, path, reason:`${peerObj.id}: ${sgv.reason}`, blockedAt:{ kind:"server", id:peerObj.id } };
+          }
+        }
         const verdict = serverAcceptsPort(peerObj, proto, dstPort);
         // include the arrival node in the path for clarity
         path.push({ kind:"server", id:peerObj.id, ...center(peerObj) });
@@ -1979,20 +2021,45 @@ function addNewDevice(){
 }
 
 function addNewServer(){
-  pushUndo(); Cfg.ensure();
-  const id = uid("srv");
-  App.config.servers.push({
-    id, label:"New Server", type:"virtual", os:"Linux",
-    cpu:2, memory:4096, status:"running",
-    x: App.view.x + 200, y: App.view.y + 200, width:130, height:65,
-    interfaces:[
-      { id:"eth0", ip:"10.0.0.10/24", network:"", mac: genUniqueMac(), speed:1000, port_type:"rj45", status:"up" }
-    ]
+  // Let the user choose what kind of server/host to create
+  openDialog("サーバ作成 — 種別を選択", (body)=>{
+    ch("p",{text:"作成するサーバの種別を選択してください。",style:{margin:"0 0 10px",fontSize:"12px",color:"var(--text-dim)"}},body);
+    const grid=ch("div",{style:{display:"grid",gridTemplateColumns:"1fr",gap:"8px"}},body);
+    const opts=[
+      { kind:"physical", icon:"🖳", title:"物理サーバ", desc:"通常のベアメタル/単体サーバ。" },
+      { kind:"esxi",     icon:"⬡",  title:"ESXiホスト (仮想基盤)", desc:"VMをホストする仮想基盤。作成後VMを追加できます。" },
+      { kind:"container",icon:"🐳", title:"コンテナホスト", desc:"Docker等のコンテナを動かすホスト。" }
+    ];
+    for(const o of opts){
+      const btn=ch("button",{style:{display:"flex",alignItems:"center",gap:"10px",padding:"10px",cursor:"pointer",
+        background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"6px",color:"var(--text)",textAlign:"left"}},grid);
+      ch("span",{text:o.icon,style:{fontSize:"20px"}},btn);
+      ch("div",{html:`<div style="font-weight:700">${o.title}</div><div style="font-size:10px;opacity:0.7">${o.desc}</div>`},btn);
+      btn.addEventListener("click",()=>{ closeDialog(); createServerOfKind(o.kind); });
+    }
+    return { buttons:[{text:"キャンセル",action:closeDialog}] };
   });
+}
+function createServerOfKind(kind){
+  pushUndo(); Cfg.ensure();
+  const id = uid(kind==="esxi"?"esxi":(kind==="container"?"cnthost":"srv"));
+  const base = {
+    id, label: kind==="esxi"?"ESXi Host":(kind==="container"?"Container Host":"New Server"),
+    type: kind==="esxi"?"hypervisor":(kind==="container"?"container":"server"),
+    os: kind==="esxi"?"VMware ESXi":"Linux",
+    cpu: kind==="esxi"?32:2, memory: kind==="esxi"?131072:4096, status:"running",
+    x: App.view.x + 200, y: App.view.y + 200, width:130, height:65,
+    interfaces:[{ id:"eth0", ip:"10.0.0.10/24", network:"", mac: genUniqueMac(), speed:1000, port_type:"rj45", status:"up" }]
+  };
+  if(kind==="esxi"){ base.hypervisor = { type:"esxi", vms:[], vswitches:[{name:"vSwitch0",portgroups:["VM Network"]}], datastores:["datastore1:1TB"] }; }
+  if(kind==="container"){ base.containers=[]; base.container_networks=[{name:"bridge0",driver:"bridge",subnet:"172.18.0.0/16"}]; }
+  App.config.servers.push(base);
   selectElement("server", id);
   renderAndSync(); updateStatusBar();
-  toast("サーバを追加: "+id, "ok");
-  Log.info("サーバ追加: "+id);
+  const lbl = kind==="esxi"?"ESXiホスト":(kind==="container"?"コンテナホスト":"物理サーバ");
+  toast(lbl+"を追加: "+id, "ok");
+  Log.info("サーバ追加("+lbl+"): "+id);
+  if(kind==="esxi"){ setTimeout(()=>{ if(typeof showHypervisorManager==="function") showHypervisorManager(id); }, 50); }
 }
 
 // Service type picker — floating menu with server selector
@@ -2315,6 +2382,7 @@ function attachEventHandlers(){
   bind("#btn-tpl","click", openTopologyTemplates);
   bind("#btn-segments","click", showSegmentManager);
   bind("#btn-k8s","click", showK8sManager);
+  bind("#btn-aws","click", showAwsManager);
   bind("#btn-mac-audit","click", openMacAudit);
   const btnAnim = $("#btn-anim-toggle");
   if(btnAnim){

@@ -1271,7 +1271,7 @@ function migrateLegacyVms(host){
       id, label: vm.name||id, host: host.id, vm:true, type:"virtual",
       os: vm.os||"linux", status: (vm.power==="off"?"stopped":"running"),
       power: vm.power||"on", vcpu: vm.vcpu||2, ram_gb: vm.ram_gb||4,
-      portgroup: vm.portgroup||"", x:(host.x||0)+20, y:(host.y||0)+40,
+      portgroup: vm.portgroup||"", x:(host.x||0)+160, y:(host.y||0)+80, width:130, height:65,
       interfaces:[iface], gateway: vm.gateway||""
     });
   }

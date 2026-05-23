@@ -16,6 +16,7 @@ function render(){
   renderVpcOverlay();
   for(const d of App.config.devices) renderDevice(d);
   for(const s of App.config.servers) renderServer(s);
+  renderVmHostLinks();
   for(const a of (App.config.annotations||[])) renderAnnotation(a);
   if(App.stpVisible) renderStpOverlay();
   applyViewBox();
@@ -23,6 +24,22 @@ function render(){
 
 // Collected straight connection segments for the current render pass (for crossover hops)
 var gConnSegments = [];
+
+// Draw a faint dotted "hosted-on" link from each VM to its hypervisor host
+function renderVmHostLinks(){
+  const layer = $("#layer-connections");
+  if(!layer) return;
+  const cen = (o)=>({ x:(o.x||0)+(o.width||130)/2, y:(o.y||0)+(o.height||65)/2 });
+  for(const s of (App.config.servers||[])){
+    if(!s.host) continue;
+    const host = Cfg.byId("servers", s.host);
+    if(!host) continue;
+    const a = cen(s), b = cen(host);
+    const g = ce("g", { class:"vm-host-link", "pointer-events":"none" }, layer);
+    ce("line", { x1:a.x, y1:a.y, x2:b.x, y2:b.y, stroke:"var(--purple)",
+      "stroke-width":1.2, "stroke-dasharray":"3 4", opacity:"0.5" }, g);
+  }
+}
 
 // Draw a small "jump" (bridge arc) wherever two connection lines cross, so it is
 // visually clear the lines pass OVER each other and are not electrically joined.
@@ -931,13 +948,9 @@ function drawServerIcon(g, type, x, y){
 }
 
 function renderServer(s){
-  // VM servers (pinned to a host) are NOT drawn as standalone boxes — they appear
-  // as guest badges inside their hypervisor host.
-  if(s.host && Cfg.byId("servers", s.host)) return;
-  // Hosted VMs (servers pinned here) and containers — render as mini-badges; expand box to fit
-  const vmGuests = (typeof vmServersOf==="function") ? vmServersOf(s.id) : [];
+  // Containers render as mini-badges; VMs are full standalone server nodes (see below).
   const ctrs = Array.isArray(s.containers) ? s.containers : [];
-  const guests = vmGuests.length + ctrs.length;
+  const guests = ctrs.length;
   const baseW = s.width||130, baseH = s.height||65;
   const w = Math.max(baseW, guests>0 ? 150 : baseW);
   const perRow = Math.max(1, Math.floor((w-12)/46));
@@ -954,7 +967,8 @@ function renderServer(s){
   ce("rect", { "class":"body server-body", x:0, y:0, width:w, height:h, rx:6, ry:6 }, g);
   drawServerIcon(g, s.type, 9, 9);
   ce("text", { "class":"element-label", x:w/2, y:16, text:s.label||s.id, "font-size":"11" }, g);
-  ce("text", { "class":"element-sublabel", x:w/2, y:28, text:(s.hypervisor?("⬡ "+(s.hypervisor.type||"esxi")):(s.os||"")) }, g);
+  ce("text", { "class":"element-sublabel", x:w/2, y:28,
+    text:(s.hypervisor?("⬡ "+(s.hypervisor.type||"esxi")):(s.host?("🖥 VM @"+s.host):(s.os||""))) }, g);
 
   // Services (kept near the divider above the guest zone)
   const services = (App.config.services||[]).filter(sv=>sv.server===s.id);
@@ -966,14 +980,14 @@ function renderServer(s){
     renderServiceMini(g, sv, 6 + col*22, svcStartY - row*14, 20, 12);
   }
 
-  // Guest zone: VMs (🖥) and containers (🐳)
+  // Guest zone: containers (🐳) only — VMs are standalone server nodes now
   if(guests>0){
     const zoneTop = baseH;
     ce("line", { x1:4, y1:zoneTop-2, x2:w-4, y2:zoneTop-2, stroke:"var(--border)", "stroke-width":0.7, "stroke-dasharray":"2 2" }, g);
-    ce("text", { x:6, y:zoneTop+8, text:(vmGuests.length?("VM×"+vmGuests.length):"")+(vmGuests.length&&ctrs.length?"  ":"")+(ctrs.length?("CT×"+ctrs.length):""),
-      "font-size":"7.5", fill:"var(--text-dim)" }, g);
+    ce("text", { x:6, y:zoneTop+8, text:"CT×"+ctrs.length, "font-size":"7.5", fill:"var(--text-dim)" }, g);
     let idx=0;
-    const drawGuest=(name, on, kind, vmId)=>{
+    for(const c of ctrs){
+      const on=(c.status||"running")==="running";
       const col = idx % perRow, row = Math.floor(idx / perRow);
       const gx = 6 + col*46, gy = zoneTop + 12 + row*16;
       const gg = ce("g", { "class":"guest-mini", transform:`translate(${gx},${gy})` }, g);
@@ -981,23 +995,11 @@ function renderServer(s){
         fill: on?"rgba(63,185,80,0.15)":"rgba(120,120,120,0.12)",
         stroke: on?"var(--green)":"var(--grey)", "stroke-width":0.7 }, gg);
       ce("circle", { cx:5, cy:6.5, r:2.2, fill: on?"var(--green)":"var(--grey)" }, gg);
-      ce("text", { x:10, y:9, text:(kind==="vm"?"🖥":"🐳"), "font-size":"7" }, gg);
-      ce("text", { x:19, y:9, text:(name||"").slice(0,7), "font-size":"7", fill:"var(--text)", "font-family":"var(--mono)" }, gg);
-      gg.addEventListener("mouseenter",(e)=>showTooltip(e, `${kind==="vm"?"VM":"Container"}: ${name}\n状態: ${on?"稼働":"停止"}${kind==="vm"?"\nクリック=選択 / ダブルクリック=詳細設定":""}`));
-      gg.addEventListener("mouseleave",hideTooltip);
-      gg.addEventListener("mousemove",moveTooltip);
-      gg.addEventListener("click",(e)=>{ e.stopPropagation();
-        if(kind==="vm" && vmId){ selectElement("server", vmId); }
-        else if(kind==="vm"){ showHypervisorManager(s.id); }
-        else showContainerManager(s.id); });
-      gg.addEventListener("dblclick",(e)=>{ e.stopPropagation();
-        if(kind==="vm" && vmId){ selectElement("server", vmId); openPropertyPanel(); }
-        else if(kind==="vm"){ showHypervisorManager(s.id); }
-        else showContainerManager(s.id); });
+      ce("text", { x:10, y:9, text:"🐳", "font-size":"7" }, gg);
+      ce("text", { x:19, y:9, text:(c.name||c.id||"").slice(0,7), "font-size":"7", fill:"var(--text)", "font-family":"var(--mono)" }, gg);
+      gg.addEventListener("click",(e)=>{ e.stopPropagation(); showContainerManager(s.id); });
       idx++;
-    };
-    for(const vm of vmGuests) drawGuest(vm.label||vm.id, (vm.status||"running")==="running", "vm", vm.id);
-    for(const c of ctrs) drawGuest(c.name||c.id, (c.status||"running")==="running", "ctr", null);
+    }
   }
 
   renderStatusLed(g, w-9, 9, s.status);

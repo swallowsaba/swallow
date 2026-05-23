@@ -462,6 +462,26 @@ function renderServerProps(body, obj){
       on:{click:()=>{ App.config.services=App.config.services.filter(x=>x.id!==sv.id); renderAndSync(); openPropertyPanel(); toast("サービス削除","ok"); }}},row);
   }
 
+  // AWS placement (VPC / Subnet / Security Groups) — if any VPC is defined
+  if(App.config.aws && (App.config.aws.vpcs||[]).length){
+    obj.aws = obj.aws || {};
+    const awsSec = ch("div",{class:"sub-section"},body);
+    ch("h4",{text:"☁ AWS 配置"},awsSec);
+    const vpcNames = App.config.aws.vpcs.map(v=>v.name);
+    addSelectField(awsSec, "VPC", ["",...vpcNames], obj.aws.vpc||"", v=>{ obj.aws.vpc=v; renderAndSync(); openPropertyPanel(); });
+    const vpc = App.config.aws.vpcs.find(v=>v.name===obj.aws.vpc);
+    if(vpc){
+      addSelectField(awsSec, "サブネット", ["",...(vpc.subnets||[]).map(s=>s.name)], obj.aws.subnet||"", v=>{ obj.aws.subnet=v; renderAndSync(); });
+      ch("label",{text:"セキュリティグループ (複数選択可)",style:{fontSize:"9px",color:"var(--text-dim)",display:"block",margin:"4px 0 2px"}},awsSec);
+      for(const sg of (vpc.security_groups||[])){
+        const l=ch("label",{style:{display:"flex",gap:"5px",alignItems:"center",fontSize:"11px",cursor:"pointer",padding:"1px 0"}},awsSec);
+        const c=ch("input",{type:"checkbox"},l); c.checked=(obj.aws.security_groups||[]).includes(sg.name);
+        c.addEventListener("change",()=>{ obj.aws.security_groups=obj.aws.security_groups||[]; if(c.checked){ if(!obj.aws.security_groups.includes(sg.name)) obj.aws.security_groups.push(sg.name);} else { obj.aws.security_groups=obj.aws.security_groups.filter(x=>x!==sg.name);} renderAndSync(); });
+        ch("span",{text:`${sg.name} (inbound: ${(sg.inbound||[]).map(r=>r.proto+"/"+(r.port||"*")).join(", ")||"none"})`},l);
+      }
+    }
+  }
+
   renderInterfaceTable(body, obj, "server");
 }
 
@@ -785,9 +805,11 @@ function showHypervisorManager(id){
         on:{click:()=>{
           pushUndo();
           const id=uid("vm");
+          const n = vmServersOf(obj.id).length;
           App.config.servers.push({ id, label:id, host:obj.id, vm:true, type:"virtual", os:"linux",
             status:"running", power:"on", vcpu:2, ram_gb:4, portgroup:(pgOptions[0]||""),
-            x:(obj.x||0)+20, y:(obj.y||0)+40, interfaces:[{id:"eth0",status:"up"}], gateway:"" });
+            x:(obj.x||0)+160+ (n%3)*150, y:(obj.y||0)+ Math.floor(n/3)*100, width:130, height:65,
+            interfaces:[{id:"eth0",status:"up"}], gateway:"" });
           renderAndSync(); refresh();
         }}},vmsec);
       // datastores
@@ -802,6 +824,83 @@ function showHypervisorManager(id){
       ch("div",{text:`割当: ${vmsForCap.length} VM / ${usedCpu} vCPU / ${usedRam} GB RAM`,
         style:{fontSize:"11px",color:"var(--text-dim)",padding:"8px 2px",fontFamily:"var(--mono)"}},body);
       ch("div",{text:"💡 VMはサーバとして通信シミュレーションの送信元/到達先になります。IF/IP未配線でもホスト経由で同一PG/サブネットに到達します。",style:{fontSize:"10px",color:"var(--text-mute)",padding:"2px",lineHeight:"1.4"}},body);
+    }
+    refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
+}
+
+// AWS environment manager — VPC / Subnet / Security Group / Internet Gateway
+function showAwsManager(){
+  App.config.aws = App.config.aws || { vpcs:[] };
+  openDialog("☁ AWS 環境管理 (VPC / Subnet / Security Group)", (body)=>{
+    const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
+    let active=0;
+    function refresh(){
+      body.innerHTML="";
+      const vpcs=App.config.aws.vpcs;
+      const top=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"8px"}},body);
+      ch("span",{text:"VPC:",style:{fontSize:"11px"}},top);
+      const sel=ch("select",{style:fStyle},top);
+      vpcs.forEach((v,i)=>{const o=ch("option",{value:String(i),text:`${v.name} (${v.cidr})`},sel);if(i===active)o.selected=true;});
+      sel.addEventListener("change",()=>{active=+sel.value;refresh();});
+      ch("button",{text:"+ VPC",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+        on:{click:()=>{ vpcs.push({id:uid("vpc"),name:"vpc-"+(vpcs.length+1),cidr:"10.0.0.0/16",region:"ap-northeast-1",igw:true,subnets:[],security_groups:[]}); active=vpcs.length-1; renderAndSync(); refresh(); }}},top);
+      if(!vpcs.length){ ch("div",{text:"VPCを追加してください。",style:{color:"var(--text-mute)",fontSize:"11px",padding:"10px"}},body); return; }
+      const vpc=vpcs[active]; if(!vpc){active=0;return refresh();}
+
+      // VPC settings
+      const cfg=ch("div",{class:"sub-section"},body);
+      const cr=ch("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"6px"}},cfg);
+      const f1=ch("div",{},cr);ch("label",{text:"VPC名",style:{fontSize:"9px",color:"var(--text-dim)"}},f1);
+      const nm=ch("input",{type:"text",value:vpc.name,style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f1);nm.addEventListener("change",()=>{vpc.name=nm.value;renderAndSync();});
+      const f2=ch("div",{},cr);ch("label",{text:"CIDR",style:{fontSize:"9px",color:"var(--text-dim)"}},f2);
+      const cd=ch("input",{type:"text",value:vpc.cidr,style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f2);cd.addEventListener("change",()=>{vpc.cidr=cd.value;renderAndSync();});
+      const f3=ch("div",{},cr);ch("label",{text:"リージョン",style:{fontSize:"9px",color:"var(--text-dim)"}},f3);
+      const rg=ch("input",{type:"text",value:vpc.region,style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f3);rg.addEventListener("change",()=>{vpc.region=rg.value;renderAndSync();});
+      const igwL=ch("label",{style:{display:"flex",gap:"4px",alignItems:"center",fontSize:"11px",marginTop:"6px",cursor:"pointer"}},cfg);
+      const igwC=ch("input",{type:"checkbox"},igwL);igwC.checked=!!vpc.igw;igwC.addEventListener("change",()=>{vpc.igw=igwC.checked;renderAndSync();});
+      ch("span",{text:"Internet Gateway (IGW) アタッチ"},igwL);
+
+      // Subnets
+      const s1=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"サブネット"},s1);
+      (vpc.subnets||[]).forEach((sn,i)=>{
+        const row=ch("div",{style:{display:"flex",gap:"5px",alignItems:"center",marginBottom:"3px",flexWrap:"wrap"}},s1);
+        const n=ch("input",{type:"text",value:sn.name||"",placeholder:"subnet名",style:Object.assign({width:"100px"},fStyle)},row);n.addEventListener("change",()=>{sn.name=n.value;renderAndSync();});
+        const c=ch("input",{type:"text",value:sn.cidr||"",placeholder:"10.0.1.0/24",style:Object.assign({width:"110px"},fStyle)},row);c.addEventListener("change",()=>{sn.cidr=c.value;renderAndSync();});
+        const az=ch("input",{type:"text",value:sn.az||"",placeholder:"az-a",style:Object.assign({width:"56px"},fStyle)},row);az.addEventListener("change",()=>{sn.az=az.value;renderAndSync();});
+        const pubL=ch("label",{style:{display:"flex",gap:"3px",alignItems:"center",fontSize:"10px",cursor:"pointer"}},row);
+        const pub=ch("input",{type:"checkbox"},pubL);pub.checked=!!sn.public;pub.addEventListener("change",()=>{sn.public=pub.checked;renderAndSync();});
+        ch("span",{text:"public"},pubL);
+        ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},on:{click:()=>{vpc.subnets.splice(i,1);renderAndSync();refresh();}}},row);
+      });
+      ch("button",{text:"+ サブネット",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+        on:{click:()=>{ const n=(vpc.subnets=vpc.subnets||[]).length; vpc.subnets.push({name:(n%2?"private":"public")+"-"+(n+1),cidr:`10.0.${n+1}.0/24`,az:"az-"+String.fromCharCode(97+(n%3)),public:n%2===0}); renderAndSync(); refresh(); }}},s1);
+
+      // Security Groups
+      const s2=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"セキュリティグループ"},s2);
+      (vpc.security_groups||[]).forEach((sg,i)=>{
+        const card=ch("div",{style:{border:"1px solid var(--border)",borderRadius:"5px",padding:"6px",marginBottom:"6px",background:"var(--bg2)"}},s2);
+        const hd=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center"}},card);
+        const n=ch("input",{type:"text",value:sg.name||"",placeholder:"sg名",style:Object.assign({flex:"1",fontWeight:"700"},fStyle)},hd);n.addEventListener("change",()=>{sg.name=n.value;renderAndSync();});
+        ch("button",{text:"🗑",style:{padding:"2px 8px",cursor:"pointer",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},on:{click:()=>{vpc.security_groups.splice(i,1);renderAndSync();refresh();}}},hd);
+        // inbound rules
+        ch("div",{text:"インバウンド許可ルール (proto / port / source)",style:{fontSize:"9px",color:"var(--text-dim)",margin:"4px 0 2px"}},card);
+        (sg.inbound||[]).forEach((r,ri)=>{
+          const rr=ch("div",{style:{display:"flex",gap:"4px",alignItems:"center",marginBottom:"2px"}},card);
+          const pr=ch("select",{style:fStyle},rr);["tcp","udp","icmp","any"].forEach(x=>ch("option",{value:x,text:x},pr));pr.value=r.proto||"tcp";pr.addEventListener("change",()=>{r.proto=pr.value;renderAndSync();});
+          const pt=ch("input",{type:"number",value:r.port!=null?r.port:"",placeholder:"port",style:Object.assign({width:"60px"},fStyle)},rr);pt.addEventListener("change",()=>{r.port=pt.value===""?null:+pt.value;renderAndSync();});
+          const sc=ch("input",{type:"text",value:r.source||"0.0.0.0/0",placeholder:"source",style:Object.assign({flex:"1"},fStyle)},rr);sc.addEventListener("change",()=>{r.source=sc.value;renderAndSync();});
+          ch("button",{text:"✕",style:{padding:"0 5px",cursor:"pointer",fontSize:"9px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},on:{click:()=>{sg.inbound.splice(ri,1);renderAndSync();refresh();}}},rr);
+        });
+        ch("button",{text:"+ インバウンド",style:{padding:"2px 8px",fontSize:"9px",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700",marginTop:"2px"},
+          on:{click:()=>{sg.inbound=sg.inbound||[];sg.inbound.push({proto:"tcp",port:443,source:"0.0.0.0/0"});renderAndSync();refresh();}}},card);
+      });
+      ch("button",{text:"+ セキュリティグループ",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
+        on:{click:()=>{ vpc.security_groups=vpc.security_groups||[]; vpc.security_groups.push({name:"sg-"+(vpc.security_groups.length+1),inbound:[{proto:"tcp",port:443,source:"0.0.0.0/0"}],outbound:[{proto:"any",port:null,dest:"0.0.0.0/0"}]}); renderAndSync(); refresh(); }}},s2);
+      ch("div",{text:"💡 サーバのプロパティでVPC/サブネット/SGを割り当てると、SGのインバウンド許可がそのサーバへの通信制御として適用されます。",style:{fontSize:"10px",color:"var(--text-mute)",padding:"8px 2px",lineHeight:"1.4"}},body);
     }
     refresh();
     return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
@@ -3657,7 +3756,16 @@ var TOPOLOGY_TEMPLATES = [
     builder: build3Tier },
   { id:"hub-spoke", icon:"☀", title:"ハブ&スポーク",
     desc:"中央ルータ1台に複数の支社/拠点が接続される構成。",
-    builder: buildHubSpoke }
+    builder: buildHubSpoke },
+  { id:"k8s-single", icon:"☸", title:"Kubernetes — 単一クラスタ",
+    desc:"1 master + N workers。ClusterIP/NodePortサービス付き。kube-proxyで通信検証可能。",
+    builder: buildK8sSingle },
+  { id:"k8s-ha", icon:"☸", title:"Kubernetes — HA(マルチマスター)",
+    desc:"3 master + LB + N workers の高可用構成。control-plane冗長化。",
+    builder: buildK8sHA },
+  { id:"k8s-multi", icon:"☸", title:"Kubernetes — マルチクラスタ",
+    desc:"複数の独立クラスタ(prod/staging等)を同時生成。",
+    builder: buildK8sMulti }
 ];
 
 function openTopologyTemplates(){
@@ -3703,6 +3811,26 @@ function openTemplateOptions(tpl){
       addField(body, "支社 (Spoke) 台数", "number", opts.spokes, v=>opts.spokes=Math.max(1,+v));
       addField(body, "支社あたりホスト数", "number", opts.hosts_per_spoke, v=>opts.hosts_per_spoke=Math.max(0,+v));
       addField(body, "ID Prefix", "text", opts.prefix, v=>opts.prefix=v||"hs");
+    } else if(tpl.id === "k8s-single"){
+      opts = { masters:1, workers:3, app_replicas:3, svc_type:"NodePort", cluster_name:"prod", prefix:"k8s", base_x:1100, base_y:50 };
+      addField(body, "Master 台数", "number", opts.masters, v=>opts.masters=Math.max(1,+v));
+      addField(body, "Worker 台数", "number", opts.workers, v=>opts.workers=Math.max(1,+v));
+      addField(body, "アプリPodレプリカ数", "number", opts.app_replicas, v=>opts.app_replicas=Math.max(1,+v));
+      addSelectField(body, "公開Service種別", ["ClusterIP","NodePort","LoadBalancer"], opts.svc_type, v=>opts.svc_type=v);
+      addField(body, "クラスタ名", "text", opts.cluster_name, v=>opts.cluster_name=v||"prod");
+      addField(body, "ID Prefix", "text", opts.prefix, v=>opts.prefix=v||"k8s");
+    } else if(tpl.id === "k8s-ha"){
+      opts = { masters:3, workers:3, app_replicas:4, cluster_name:"ha-prod", prefix:"k8sha", base_x:1100, base_y:50 };
+      addField(body, "Master 台数 (control-plane)", "number", opts.masters, v=>opts.masters=Math.max(3,+v));
+      addField(body, "Worker 台数", "number", opts.workers, v=>opts.workers=Math.max(1,+v));
+      addField(body, "アプリPodレプリカ数", "number", opts.app_replicas, v=>opts.app_replicas=Math.max(1,+v));
+      addField(body, "クラスタ名", "text", opts.cluster_name, v=>opts.cluster_name=v||"ha-prod");
+      addField(body, "ID Prefix", "text", opts.prefix, v=>opts.prefix=v||"k8sha");
+    } else if(tpl.id === "k8s-multi"){
+      opts = { clusters:2, workers_each:2, prefix:"mc", base_x:1100, base_y:50 };
+      addField(body, "クラスタ数", "number", opts.clusters, v=>opts.clusters=Math.max(2,+v));
+      addField(body, "クラスタあたりWorker数", "number", opts.workers_each, v=>opts.workers_each=Math.max(1,+v));
+      addField(body, "ID Prefix", "text", opts.prefix, v=>opts.prefix=v||"mc");
     }
     return {
       buttons:[
@@ -3975,6 +4103,107 @@ function buildHubSpoke(opts){
     }
   }
   return stats;
+}
+
+/* ====== KUBERNETES TEMPLATES ====== */
+// Helper: create a switch + N node servers wired to it, return {switchId, nodeIds}
+function _k8sFabric(prefix, nNodes, base_x, base_y, label){
+  const stats = { devices:0, servers:0, links:0 };
+  const swId = `${prefix}-sw`;
+  App.config.devices.push({ id:swId, label:`${label} sw`, type:"l2switch", status:"running",
+    x:base_x, y:base_y, width:130, height:60, interfaces:Array.from({length:nNodes+2},(_,i)=>({id:"g"+i,status:"up"})) });
+  stats.devices++;
+  const nodeIds=[];
+  for(let i=0;i<nNodes;i++){
+    const id=`${prefix}-node${i+1}`;
+    App.config.servers.push({ id, label:id, type:"server", os:"linux", status:"running",
+      x:base_x - 60 + i*150, y:base_y+130, width:120, height:60,
+      interfaces:[{ id:"eth0", ip:`10.${100+(base_y%50)}.0.${10+i}/24`, status:"up" }] });
+    App.config.connections.push({ id:uid("link"), from:{server:id,interface:"eth0"}, to:{device:swId,interface:"g"+i}, type:"ethernet", status:"up" });
+    stats.servers++; stats.links++;
+    nodeIds.push(id);
+  }
+  return { swId, nodeIds, stats };
+}
+function buildK8sSingle(opts){
+  const { masters, workers, app_replicas, svc_type, cluster_name, prefix, base_x, base_y } = opts;
+  App.config.k8s = App.config.k8s || { clusters:[] };
+  const total = masters + workers;
+  const fab = _k8sFabric(prefix, total, base_x, base_y, cluster_name);
+  const stats = fab.stats;
+  const masterIds = fab.nodeIds.slice(0, masters);
+  const workerIds = fab.nodeIds.slice(masters);
+  // label master/worker
+  for(const id of masterIds){ const s=Cfg.byId("servers",id); s.label=id+" (master)"; s.type="server"; }
+  // pods spread across workers (fallback to all nodes if no workers)
+  const podHosts = workerIds.length ? workerIds : fab.nodeIds;
+  const pods=[];
+  for(let i=0;i<app_replicas;i++){
+    pods.push({ name:`web-${i+1}`, namespace:"default", node:podHosts[i%podHosts.length],
+      ip:`10.244.0.${11+i}`, labels:{app:"web"}, status:"Running" });
+  }
+  const ports = svc_type==="NodePort" ? [{port:80,target_port:8080,node_port:30080,proto:"tcp"}]
+              : svc_type==="LoadBalancer" ? [{port:80,target_port:8080,node_port:30080,proto:"tcp"}]
+              : [{port:80,target_port:8080,proto:"tcp"}];
+  const svc = { name:"web-svc", namespace:"default", type:svc_type, cluster_ip:"10.96.0.10",
+    selector:{app:"web"}, ports };
+  if(svc_type==="LoadBalancer") svc.external_ip="203.0.113.80";
+  App.config.k8s.clusters.push({ name:cluster_name, pod_cidr:"10.244.0.0/16", service_cidr:"10.96.0.0/12",
+    nodes:fab.nodeIds, namespaces:["default","kube-system"], pods, services:[svc], ingresses:[] });
+  return stats;
+}
+function buildK8sHA(opts){
+  const { masters, workers, app_replicas, cluster_name, prefix, base_x, base_y } = opts;
+  App.config.k8s = App.config.k8s || { clusters:[] };
+  const total = masters + workers;
+  const fab = _k8sFabric(prefix, total, base_x, base_y, cluster_name);
+  const stats = fab.stats;
+  const masterIds = fab.nodeIds.slice(0, masters);
+  const workerIds = fab.nodeIds.slice(masters);
+  // API server load balancer in front of masters
+  const lbId = `${prefix}-apilb`;
+  App.config.devices.push({ id:lbId, label:`${cluster_name} API-LB`, type:"loadbalancer", status:"running",
+    x:base_x+200, y:base_y-110, width:130, height:60, interfaces:[{id:"eth0",ip:"10.96.0.1/24",status:"up"}],
+    lb:{ vips:[{ vip:"10.96.0.1", port:6443, algorithm:"round-robin",
+      pool: masterIds.map(id=>({ server:id, port:6443 })) }] } });
+  stats.devices++;
+  for(const id of masterIds){ const s=Cfg.byId("servers",id); s.label=id+" (master/etcd)"; }
+  const podHosts = workerIds.length ? workerIds : fab.nodeIds;
+  const pods=[];
+  for(let i=0;i<app_replicas;i++){
+    pods.push({ name:`app-${i+1}`, namespace:"default", node:podHosts[i%podHosts.length],
+      ip:`10.244.0.${11+i}`, labels:{app:"app"}, status:"Running" });
+  }
+  App.config.k8s.clusters.push({ name:cluster_name, pod_cidr:"10.244.0.0/16", service_cidr:"10.96.0.0/12",
+    nodes:fab.nodeIds, namespaces:["default","kube-system"],
+    control_plane:{ ha:true, api_vip:"10.96.0.1", masters:masterIds },
+    pods, services:[
+      { name:"app-svc", namespace:"default", type:"ClusterIP", cluster_ip:"10.96.0.20",
+        selector:{app:"app"}, ports:[{port:80,target_port:8080,proto:"tcp"}] }
+    ], ingresses:[] });
+  return stats;
+}
+function buildK8sMulti(opts){
+  const { clusters, workers_each, prefix, base_x, base_y } = opts;
+  App.config.k8s = App.config.k8s || { clusters:[] };
+  const names = ["prod","staging","dev","qa","dr"];
+  let dev=0, srv=0, lnk=0;
+  for(let c=0;c<clusters;c++){
+    const cname = names[c] || ("cluster"+(c+1));
+    const total = 1 + workers_each; // 1 master + workers
+    const fab = _k8sFabric(`${prefix}-${cname}`, total, base_x, base_y + c*340, cname);
+    dev+=fab.stats.devices; srv+=fab.stats.servers; lnk+=fab.stats.links;
+    const masterId=fab.nodeIds[0]; const workerIds=fab.nodeIds.slice(1);
+    Cfg.byId("servers",masterId).label=masterId+" (master)";
+    const podHosts = workerIds.length?workerIds:fab.nodeIds;
+    const pods=[{ name:`${cname}-web-1`, namespace:"default", node:podHosts[0], ip:`10.244.${c}.11`, labels:{app:"web"}, status:"Running" },
+                { name:`${cname}-web-2`, namespace:"default", node:podHosts[podHosts.length>1?1:0], ip:`10.244.${c}.12`, labels:{app:"web"}, status:"Running" }];
+    App.config.k8s.clusters.push({ name:cname, pod_cidr:`10.244.${c}.0/24`, service_cidr:`10.96.${c}.0/24`,
+      nodes:fab.nodeIds, namespaces:["default"], pods,
+      services:[{ name:"web-svc", namespace:"default", type:"NodePort", cluster_ip:`10.96.${c}.10`,
+        selector:{app:"web"}, ports:[{port:80,target_port:8080,node_port:30080+c,proto:"tcp"}] }], ingresses:[] });
+  }
+  return { devices:dev, servers:srv, links:lnk };
 }
 
 /* ====== MAC AUDIT DIALOG ====== */
