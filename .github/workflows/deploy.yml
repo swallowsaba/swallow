@@ -1,48 +1,88 @@
-# mainブランチへのpush時にGitHub Pagesへ自動デプロイ
-# ルートに index.html が無ければサブディレクトリ一覧を自動生成する
+# ============================================================================
+#  これは「GitHub Actions」の設定ファイルです。
+#  GitHub Actions = GitHubが無料で用意してくれる“自動作業ロボット”のこと。
+#  このファイルに「いつ・何をするか」を書いておくと、その通りに自動で動きます。
+#  ここでやりたいこと:「mainに変更を上げたら、自動でWebサイトを公開する」
+#  ※ 行頭の # から始まる行は「コメント（人間用のメモ）」で、動作には影響しません。
+# ============================================================================
+
+# name: この自動作業の名前。GitHubの「Actions」タブにこの名前で表示されるだけ。
 name: Deploy to GitHub Pages
 
+# on: 「どういう時にこのロボットを動かすか」を決める引き金（トリガー）の設定。
 on:
+  # push: 誰かがコードをGitHubに「アップロード（push）」したら動かす、という意味。
   push:
+    # branches: その中でも「main」という名前の保管場所に上げた時だけ動かす。
     branches: ["main"]
+  # workflow_dispatch: GitHubの画面にある手動ボタンからも動かせるようにする設定。
   workflow_dispatch:
 
+# permissions: このロボットに与える“権限（できること）”の設定。
 permissions:
+  # contents: read = リポジトリの中身を「読む」ことを許可。
   contents: read
+  # pages: write = GitHub Pages（Web公開機能）に「書き込む＝公開する」ことを許可。
   pages: write
+  # id-token: write = 公開時の本人確認に使う電子的な合言葉の発行を許可（おまじない）。
   id-token: write
 
+# concurrency: 同じ作業が同時に何個も走らないように交通整理する設定。
 concurrency:
+  # group: "pages" = 「pages」という名札のグループは同時に1つだけ、というルール。
   group: "pages"
+  # cancel-in-progress: false = すでに動いている公開作業は中断せず、最後までやらせる。
   cancel-in-progress: false
 
+# jobs: 実際にやる「仕事（ジョブ）」の中身。ここから下が作業内容の本体。
 jobs:
+  # deploy: この仕事につけた名前（自由に決めてよい）。「公開する仕事」の意味で命名。
   deploy:
+    # environment: 公開先の環境名。GitHub Pagesでは「github-pages」と書く決まり。
     environment:
+      # name: 環境の名前（固定でこう書く）。
       name: github-pages
+      # url: 公開が終わったら、出来上がったサイトのURLをここに自動で表示する。
       url: ${{ steps.deployment.outputs.page_url }}
+    # runs-on: この作業を動かす“貸しパソコン”の種類。ubuntu-latest = 最新のLinux。
     runs-on: ubuntu-latest
-    # Node 20非推奨の警告対策: アクションを強制的にNode 24で実行する
+    # env: この仕事の間ずっと有効な環境変数（設定値）。
+    # ↓ 「Node 20はもう古い」という警告を消すため、新しいNode 24で動かす指定。
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    # steps: 作業の手順を、上から順番に1ステップずつ並べたもの。
     steps:
+      # 【手順1】リポジトリ（あなたのファイル一式）を貸しパソコンにコピーしてくる。
       - name: Checkout
+        # uses: 既製の便利ツールを使う宣言。actions/checkout = 公式の「取得ツール」。
         uses: actions/checkout@v4
 
+      # 【手順2】トップページ(index.html)が無ければ、自動で“目次ページ”を作る。
       - name: Generate landing page if root index.html is missing
+        # run: | = ここから下は普通のコマンド（シェルスクリプト）を実行する、の意味。
         run: |
+          # もしトップ階層に index.html が「すでにある」なら、
           if [ -f index.html ]; then
+            # メッセージだけ出して、
             echo "Root index.html already exists — keeping it as-is."
+            # この手順を途中終了する（自作の目次で上書きしないため）。
             exit 0
           fi
 
+          # ここから下は「index.htmlが無かった場合」の処理。
           echo "No root index.html — generating landing page from subdirectories..."
 
-          # index.html を含むサブディレクトリを列挙 (.git や .github は除外)
+          # 各サブフォルダの中にある index.html を探して、フォルダ名の一覧を作る。
+          # （.git や .github のような隠しフォルダは対象から外している）
           mapfile -t DIRS < <(find . -maxdepth 2 -name index.html -not -path "./index.html" -not -path "./.*/*" \
                                 | sed -E 's|^\./||;s|/index\.html$||' | sort)
 
+          # ↓ ここから、目次となるHTMLファイルの中身を組み立てて index.html に書き出す。
+          # 【重要】次の「HTML_HEAD」から始まる枠の“中”は、書いた文字がそのまま
+          #         HTMLファイルになって出力されます。だからこの枠の中には
+          #         説明コメントを入れられません（入れると画面に表示されてしまう）。
           {
+            # cat <<'HTML_HEAD' … HTML_HEAD = この2つの目印に挟まれた部分を丸ごと出力。
             cat <<'HTML_HEAD'
           <!DOCTYPE html>
           <html lang="ja">
@@ -85,14 +125,20 @@ jobs:
           <div class="grid">
           HTML_HEAD
 
+            # ↓ ここは枠の“外”なので、またコメントを書けます。
+            # もし index.html を持つサブフォルダが1つも無かったら、
             if [ ${#DIRS[@]} -eq 0 ]; then
+              # 「見つかりませんでした」という案内文を出す。
               echo '<div class="empty">No subdirectories with index.html were found.</div>'
             else
+              # 見つかったフォルダの数だけ繰り返して、
               for d in "${DIRS[@]}"; do
+                # フォルダごとに「クリックできるカード」を1枚ずつ作る。
                 echo "<a class=\"card\" href=\"${d}/\"><div class=\"name\">${d}</div><div class=\"path\">/${d}/</div></a>"
               done
             fi
 
+            # ↓ 再びそのまま出力される枠（フッター部分）。中にはコメントを書けない。
             cat <<HTML_FOOT
           </div>
           <footer>
@@ -102,18 +148,26 @@ jobs:
           </body>
           </html>
           HTML_FOOT
+          # } > index.html = ここまで組み立てた中身を、まとめて index.html に保存する。
           } > index.html
 
+          # 最後に「何個のプロジェクトを目次に入れたか」をログに出して完了。
           echo "Generated landing page with ${#DIRS[@]} project(s)."
 
+      # 【手順3】GitHub Pages（Web公開機能）を使う準備をする公式ツール。
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # 【手順4】公開したいファイル一式を“荷物（アーティファクト）”としてまとめる。
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
+        # with: ツールに渡す追加の設定。
         with:
+          # path: '.' = 「今いるフォルダの全部（＝リポジトリ全体）」を荷物に入れる。
           path: '.'
 
+      # 【手順5】まとめた荷物を実際にGitHub Pagesへ届けて、Webに公開する。
       - name: Deploy to GitHub Pages
+        # id: この手順に付ける名札。上のほうの url: で結果を呼び出すのに使っている。
         id: deployment
         uses: actions/deploy-pages@v4
