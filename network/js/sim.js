@@ -624,6 +624,79 @@ function pbrLookup(device, srcIp, dstIp, proto, dstPort){
   return null;
 }
 
+/* ====== NAT (Network Address Translation) ======
+ * device.nat = {
+ *   enabled, 
+ *   snat:[{ src, out_iface, translated_src }],   // source NAT / masquerade
+ *   dnat:[{ orig_dst, orig_port, proto, translated_dst, translated_port }],  // port forwarding / DNAT
+ *   masquerade: bool   // PAT on egress interface
+ * }
+ */
+function natDnatLookup(device, dstIp, proto, dstPort){
+  const nat = device.nat;
+  if(!nat || !nat.enabled) return null;
+  for(const r of (nat.dnat||[])){
+    if(r.status && r.status!=="enabled") continue;
+    if(r.orig_dst && !matchRef(dstIp, r.orig_dst)) continue;
+    if(r.proto && r.proto!=="any" && proto && r.proto.toLowerCase()!==proto.toLowerCase()) continue;
+    if(r.orig_port!=null && dstPort!=null && +r.orig_port!==+dstPort) continue;
+    return { translated_dst: ipOnly(r.translated_dst||dstIp),
+             translated_port: (r.translated_port!=null? +r.translated_port : dstPort), rule:r };
+  }
+  return null;
+}
+function natSnatLookup(device, srcIp, dstIp){
+  const nat = device.nat;
+  if(!nat || !nat.enabled) return null;
+  for(const r of (nat.snat||[])){
+    if(r.status && r.status!=="enabled") continue;
+    if(r.src && srcIp && !matchRef(srcIp, r.src)) continue;
+    if(r.dst && dstIp && !matchRef(dstIp, r.dst)) continue;
+    return { translated_src: ipOnly(r.translated_src||srcIp), rule:r };
+  }
+  if(nat.masquerade) return { masquerade:true };
+  return null;
+}
+
+/* ====== PROXY (forward / reverse) ======
+ * A proxy is a service on a server. It terminates the client connection and opens a NEW
+ * connection to the upstream/backend on the client's behalf.
+ *   service.type = "reverse_proxy" → service.proxy = { upstreams:[{host,port}], mode:"round-robin", listen_port }
+ *   service.type = "forward_proxy" → service.proxy = { allow:[cidr/seg], listen_port }  (any upstream allowed)
+ * proxyForServer(serverId): returns the proxy services hosted there.
+ */
+function proxyServicesOn(serverId){
+  return (App.config.services||[]).filter(s=>s.server===serverId &&
+    (s.type==="reverse_proxy"||s.type==="forward_proxy") && (s.status||"running")==="running");
+}
+// If a server hosts a reverse proxy listening on dstPort, pick an upstream backend.
+function reverseProxyUpstream(serverId, dstPort){
+  for(const s of proxyServicesOn(serverId)){
+    if(s.type!=="reverse_proxy") continue;
+    const lp = (s.proxy && s.proxy.listen_port) || s.port || 443;
+    if(dstPort!=null && +lp!==+dstPort) continue;
+    const ups = (s.proxy && s.proxy.upstreams) || [];
+    const healthy = ups.filter(u=>u.host);
+    if(!healthy.length) return { proxy:s, upstream:null };
+    // round-robin
+    const idx = (reverseProxyUpstream._rr=((reverseProxyUpstream._rr||0)+1)) % healthy.length;
+    return { proxy:s, upstream:healthy[idx] };
+  }
+  return null;
+}
+// Forward proxy: does this server act as a forward proxy on dstPort, and is src allowed?
+function forwardProxyOn(serverId, dstPort, srcIp){
+  for(const s of proxyServicesOn(serverId)){
+    if(s.type!=="forward_proxy") continue;
+    const lp = (s.proxy && s.proxy.listen_port) || s.port || 3128;
+    if(dstPort!=null && +lp!==+dstPort) continue;
+    const allow = (s.proxy && s.proxy.allow) || [];
+    if(allow.length && srcIp && !allow.some(a=>matchRef(srcIp, a))) return { proxy:s, allowed:false };
+    return { proxy:s, allowed:true };
+  }
+  return null;
+}
+
 function elementPrimaryIp(kind, id, family){
   // family is optional: "v4" | "v6". If unspecified, prefer v4, fall back to v6.
   if(kind === "service"){
@@ -1140,10 +1213,39 @@ function findEgressLink(elKind, elObj, destIp, visited){
 function computePath(srcKind, srcObj, destIp, proto, dstPort){
   const center = (o)=>({ x:(o.x||0)+(o.width||(o.interfaces?130:120))/2, y:(o.y||0)+(o.height||65)/2 });
   const path = [];
+
+  // VM bridging: a VM (server.host) reaches the physical network THROUGH its host.
+  // Source VM → record the VM as origin, then route from the host.
+  let vmOrigin = null;
+  if(srcKind === "server" && srcObj.host){
+    const host = Cfg.byId("servers", srcObj.host);
+    if(host){
+      vmOrigin = srcObj;
+      path.push({ kind:"server", id:srcObj.id, ...center(srcObj) });
+      srcObj = host; // route from the host onward
+    }
+  }
   path.push({ kind:srcKind, id:srcObj.id, ...center(srcObj) });
   const visited = new Set([srcObj.id]);
   const maxHops = 30;
   let cur = { kind:srcKind, obj:srcObj };
+
+  // Destination VM: if destIp belongs to a VM, retarget routing to the VM's host,
+  // then deliver to the VM once the host is reached.
+  let vmDestPick = null;
+  for(const s of (App.config.servers||[])){
+    if(!s.host) continue;
+    const ips = (typeof elementAllAddresses==="function") ? elementAllAddresses("server", s.id).map(ipOnly) : [];
+    if(ips.includes(destIp)){
+      vmDestPick = s;
+      const host = Cfg.byId("servers", s.host);
+      if(host){
+        const hip = elementPrimaryIp("server", host.id, ipFamily(destIp)) || elementPrimaryIp("server", host.id, "v4");
+        if(hip) destIp = hip;
+      }
+      break;
+    }
+  }
 
   // Kubernetes: if destIp is a Service ClusterIP or LoadBalancer external IP, kube-proxy
   // selects a backend pod and the traffic is delivered to that pod's NODE.
@@ -1165,8 +1267,12 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
     }
   }
 
+  // NAT collection: track translations applied along the path (for reporting)
+  const natApplied = [];
+
   const destFam = ipFamily(destIp);
-  const srcIp = elementPrimaryIp(srcKind, srcObj.id, destFam);
+  const srcIp = (vmOrigin ? (elementPrimaryIp("server", vmOrigin.id, destFam) || elementPrimaryIp("server", vmOrigin.id, "v4")) : null)
+                || elementPrimaryIp(srcKind, srcObj.id, destFam);
 
   // Helper: does iface have an address (in either family) matching destIp's subnet?
   function ifaceInDestSubnet(i){
@@ -1206,6 +1312,23 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
     const hasDest = (curObj.interfaces||[]).some(ifaceHasDestIp)
       || bondIp4 === destIp || bondIp6 === destIp;
     if(hasDest && hop > 0){
+      // Destination VM: arrived at the VM's host → deliver to the VM (verify its ports)
+      if(vmDestPick && cur.kind === "server" && cur.obj.id === vmDestPick.host){
+        if((vmDestPick.status||"running") !== "running"){
+          return { ok:false, path, reason:`VM ${vmDestPick.label||vmDestPick.id} is ${vmDestPick.status}`, blockedAt:{kind:"server",id:vmDestPick.id} };
+        }
+        // (host hop is already the last path entry) append the VM as the final endpoint
+        path.push({ kind:"server", id:vmDestPick.id, ...center(cur.obj) });
+        if(dstPort != null){
+          const verdict = serverAcceptsPort(vmDestPick, proto, dstPort);
+          if(!verdict.ok){
+            return { ok:false, path, reason:`${vmDestPick.label||vmDestPick.id} (VM): ${verdict.reason}`,
+              blockedAt:{ kind:"server", id:vmDestPick.id }, portState:verdict.state };
+          }
+          return { ok:true, path, portState:verdict.state, portInfo:`VM ${vmDestPick.label||vmDestPick.id}: ${verdict.reason}` };
+        }
+        return { ok:true, path, portInfo:`VM ${vmDestPick.label||vmDestPick.id} 到達` };
+      }
       // Kubernetes: delivered to the selected pod's node → success with pod info
       if(k8sPick && cur.kind === "server" && cur.obj.id === k8sPick.pod.node){
         path.push({ kind:"pod", id:k8sPick.pod.name, ...center(cur.obj) });
@@ -1221,7 +1344,29 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
           return { ok:false, path, reason:`${curObj.id}: ${verdict.reason}`,
             blockedAt:{ kind:"server", id:curObj.id }, portState:verdict.state };
         }
-        return { ok:true, path, portState:verdict.state, portInfo:verdict.reason };
+        // Reverse proxy: terminate here and open a NEW connection to an upstream backend
+        if(typeof reverseProxyUpstream === "function"){
+          const rp = reverseProxyUpstream(curObj.id, dstPort);
+          if(rp && rp.proxy){
+            if(!rp.upstream){
+              return { ok:false, path, reason:`${curObj.id}: リバースプロキシ ${rp.proxy.label||rp.proxy.id} にupstream未設定`,
+                blockedAt:{ kind:"server", id:curObj.id } };
+            }
+            path[path.length-1].proxy = "reverse-proxy → "+rp.upstream.host+":"+rp.upstream.port;
+            // recurse: proxy → upstream (avoid infinite loops via visited)
+            if(!visited.has("proxy:"+rp.upstream.host)){
+              visited.add("proxy:"+rp.upstream.host);
+              const sub = computePath("server", curObj, ipOnly(rp.upstream.host), proto, +rp.upstream.port);
+              if(sub.ok){
+                const merged = path.concat((sub.path||[]).slice(1));
+                return { ok:true, path:merged, proxy:{ type:"reverse", at:curObj.id, upstream:rp.upstream.host+":"+rp.upstream.port },
+                  natApplied, portInfo:`reverse-proxy ${curObj.id} → upstream ${rp.upstream.host}:${rp.upstream.port}` };
+              }
+              return { ok:false, path, reason:`リバースプロキシ upstream到達不可: ${sub.reason}`, blockedAt:sub.blockedAt };
+            }
+          }
+        }
+        return { ok:true, path, portState:verdict.state, portInfo:verdict.reason, natApplied };
       }
       // External cloud/SaaS endpoint with declared ports → verify the port is offered
       if(cur.kind === "device" && curObj.external && Array.isArray(curObj.external_ports) && dstPort != null){
@@ -1279,6 +1424,26 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
           return { ok:false, path,
             reason:`BLOCKED by ${curObj.id} rule ${(res.rule&&res.rule.id)||"implicit-deny"} (${res.action})`,
             blockedAt:{ kind:"device", id:curObj.id } };
+        }
+      }
+    }
+
+    // NAT at this device (routers/firewalls): DNAT rewrites destination, SNAT/masquerade rewrites source
+    if(cur.kind === "device" && curObj.nat && curObj.nat.enabled && hop >= 0){
+      const dn = (typeof natDnatLookup==="function") ? natDnatLookup(curObj, destIp, proto, dstPort) : null;
+      if(dn){
+        natApplied.push({ at:curObj.id, type:"DNAT", from:destIp+(dstPort!=null?(":"+dstPort):""), to:dn.translated_dst+(dn.translated_port!=null?(":"+dn.translated_port):"") });
+        destIp = dn.translated_dst;
+        if(dn.translated_port!=null) dstPort = dn.translated_port;
+        // re-resolve any VM/K8s targets for the new destination is out of scope; continue routing to translated_dst
+        path[path.length-1].nat = "DNAT→"+destIp;
+      }
+      const sn = (typeof natSnatLookup==="function") ? natSnatLookup(curObj, srcIp, destIp) : null;
+      if(sn){
+        const newSrc = sn.masquerade ? (elementPrimaryIp("device",curObj.id,destFam)||srcIp) : sn.translated_src;
+        if(newSrc && newSrc!==srcIp){
+          natApplied.push({ at:curObj.id, type: sn.masquerade?"MASQUERADE":"SNAT", from:srcIp, to:newSrc });
+          path[path.length-1].nat = (path[path.length-1].nat?path[path.length-1].nat+" / ":"")+"SNAT→"+newSrc;
         }
       }
     }
@@ -1390,6 +1555,17 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
       if(peerObj.status && peerObj.status !== "running"){
         return { ok:false, path, reason:`${peerObj.id} is ${peerObj.status}`, blockedAt:{kind:next.peerKind,id:peerObj.id} };
       }
+      // Destination VM reached via its host (peer shortcut)
+      if(vmDestPick && next.peerKind === "server" && peerObj.id === vmDestPick.host){
+        path.push({ kind:"server", id:peerObj.id, ...center(peerObj) });
+        path.push({ kind:"server", id:vmDestPick.id, ...center(peerObj) });
+        if(dstPort != null){
+          const verdict = serverAcceptsPort(vmDestPick, proto, dstPort);
+          if(!verdict.ok) return { ok:false, path, reason:`${vmDestPick.label||vmDestPick.id} (VM): ${verdict.reason}`, blockedAt:{kind:"server",id:vmDestPick.id}, portState:verdict.state };
+          return { ok:true, path, portState:verdict.state, portInfo:`VM ${vmDestPick.label||vmDestPick.id}: ${verdict.reason}` };
+        }
+        return { ok:true, path, portInfo:`VM ${vmDestPick.label||vmDestPick.id} 到達` };
+      }
       // Kubernetes pod delivery at the pod's node (reached as a peer)
       if(k8sPick && next.peerKind === "server" && peerObj.id === k8sPick.pod.node){
         path.push({ kind:"server", id:peerObj.id, ...center(peerObj) });
@@ -1406,7 +1582,27 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
           return { ok:false, path, reason:`${peerObj.id}: ${verdict.reason}`,
             blockedAt:{ kind:"server", id:peerObj.id }, portState:verdict.state };
         }
-        return { ok:true, path, portState:verdict.state, portInfo:verdict.reason };
+        // Reverse proxy: terminate and forward to an upstream backend
+        if(typeof reverseProxyUpstream === "function"){
+          const rp = reverseProxyUpstream(peerObj.id, dstPort);
+          if(rp && rp.proxy){
+            if(!rp.upstream){
+              return { ok:false, path, reason:`${peerObj.id}: リバースプロキシ ${rp.proxy.label||rp.proxy.id} にupstream未設定`, blockedAt:{kind:"server",id:peerObj.id} };
+            }
+            path[path.length-1].proxy = "reverse-proxy → "+rp.upstream.host+":"+rp.upstream.port;
+            if(!visited.has("proxy:"+rp.upstream.host)){
+              visited.add("proxy:"+rp.upstream.host);
+              const sub = computePath("server", peerObj, ipOnly(rp.upstream.host), proto, +rp.upstream.port);
+              if(sub.ok){
+                const merged = path.concat((sub.path||[]).slice(1));
+                return { ok:true, path:merged, proxy:{ type:"reverse", at:peerObj.id, upstream:rp.upstream.host+":"+rp.upstream.port },
+                  natApplied, portInfo:`reverse-proxy ${peerObj.id} → upstream ${rp.upstream.host}:${rp.upstream.port}` };
+              }
+              return { ok:false, path, reason:`リバースプロキシ upstream到達不可: ${sub.reason}`, blockedAt:sub.blockedAt };
+            }
+          }
+        }
+        return { ok:true, path, portState:verdict.state, portInfo:verdict.reason, natApplied };
       }
       return { ok:true, path };
     }

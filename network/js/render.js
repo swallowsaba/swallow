@@ -931,10 +931,13 @@ function drawServerIcon(g, type, x, y){
 }
 
 function renderServer(s){
-  // Hosted VMs (hypervisor) and containers — render as mini-badges; expand box to fit
-  const vms = (s.hypervisor && Array.isArray(s.hypervisor.vms)) ? s.hypervisor.vms : [];
+  // VM servers (pinned to a host) are NOT drawn as standalone boxes — they appear
+  // as guest badges inside their hypervisor host.
+  if(s.host && Cfg.byId("servers", s.host)) return;
+  // Hosted VMs (servers pinned here) and containers — render as mini-badges; expand box to fit
+  const vmGuests = (typeof vmServersOf==="function") ? vmServersOf(s.id) : [];
   const ctrs = Array.isArray(s.containers) ? s.containers : [];
-  const guests = vms.length + ctrs.length;
+  const guests = vmGuests.length + ctrs.length;
   const baseW = s.width||130, baseH = s.height||65;
   const w = Math.max(baseW, guests>0 ? 150 : baseW);
   const perRow = Math.max(1, Math.floor((w-12)/46));
@@ -967,10 +970,10 @@ function renderServer(s){
   if(guests>0){
     const zoneTop = baseH;
     ce("line", { x1:4, y1:zoneTop-2, x2:w-4, y2:zoneTop-2, stroke:"var(--border)", "stroke-width":0.7, "stroke-dasharray":"2 2" }, g);
-    ce("text", { x:6, y:zoneTop+8, text:(vms.length?("VM×"+vms.length):"")+(vms.length&&ctrs.length?"  ":"")+(ctrs.length?("CT×"+ctrs.length):""),
+    ce("text", { x:6, y:zoneTop+8, text:(vmGuests.length?("VM×"+vmGuests.length):"")+(vmGuests.length&&ctrs.length?"  ":"")+(ctrs.length?("CT×"+ctrs.length):""),
       "font-size":"7.5", fill:"var(--text-dim)" }, g);
     let idx=0;
-    const drawGuest=(name, on, kind)=>{
+    const drawGuest=(name, on, kind, vmId)=>{
       const col = idx % perRow, row = Math.floor(idx / perRow);
       const gx = 6 + col*46, gy = zoneTop + 12 + row*16;
       const gg = ce("g", { "class":"guest-mini", transform:`translate(${gx},${gy})` }, g);
@@ -980,14 +983,21 @@ function renderServer(s){
       ce("circle", { cx:5, cy:6.5, r:2.2, fill: on?"var(--green)":"var(--grey)" }, gg);
       ce("text", { x:10, y:9, text:(kind==="vm"?"🖥":"🐳"), "font-size":"7" }, gg);
       ce("text", { x:19, y:9, text:(name||"").slice(0,7), "font-size":"7", fill:"var(--text)", "font-family":"var(--mono)" }, gg);
-      gg.addEventListener("mouseenter",(e)=>showTooltip(e, `${kind==="vm"?"VM":"Container"}: ${name}\n状態: ${on?"稼働":"停止"}`));
+      gg.addEventListener("mouseenter",(e)=>showTooltip(e, `${kind==="vm"?"VM":"Container"}: ${name}\n状態: ${on?"稼働":"停止"}${kind==="vm"?"\nクリック=選択 / ダブルクリック=詳細設定":""}`));
       gg.addEventListener("mouseleave",hideTooltip);
       gg.addEventListener("mousemove",moveTooltip);
-      gg.addEventListener("click",(e)=>{ e.stopPropagation(); if(kind==="vm") showHypervisorManager(s.id); else showContainerManager(s.id); });
+      gg.addEventListener("click",(e)=>{ e.stopPropagation();
+        if(kind==="vm" && vmId){ selectElement("server", vmId); }
+        else if(kind==="vm"){ showHypervisorManager(s.id); }
+        else showContainerManager(s.id); });
+      gg.addEventListener("dblclick",(e)=>{ e.stopPropagation();
+        if(kind==="vm" && vmId){ selectElement("server", vmId); openPropertyPanel(); }
+        else if(kind==="vm"){ showHypervisorManager(s.id); }
+        else showContainerManager(s.id); });
       idx++;
     };
-    for(const vm of vms) drawGuest(vm.name||vm.id, (vm.power||"on")==="on", "vm");
-    for(const c of ctrs) drawGuest(c.name||c.id, (c.status||"running")==="running", "ctr");
+    for(const vm of vmGuests) drawGuest(vm.label||vm.id, (vm.status||"running")==="running", "vm", vm.id);
+    for(const c of ctrs) drawGuest(c.name||c.id, (c.status||"running")==="running", "ctr", null);
   }
 
   renderStatusLed(g, w-9, 9, s.status);

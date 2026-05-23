@@ -241,15 +241,75 @@ function renderDeviceProps(body, obj){
     }, pbrBar);
   }
 
-  // NAT
-  const sec2 = ch("div", { class:"sub-section" }, body);
-  ch("h4", { text:"NAT設定" }, sec2);
-  const nat = obj.nat || {};
-  addCheckbox(sec2, "有効", !!nat.enabled, v=>{ obj.nat=obj.nat||{}; obj.nat.enabled=v; renderAndSync(); });
-  addField(sec2, "Inside (カンマ区切)", "text", (nat.inside||[]).join(","),
-    v=>{ obj.nat=obj.nat||{}; obj.nat.inside=v.split(",").map(s=>s.trim()).filter(Boolean); renderAndSync(); });
-  addField(sec2, "Outside (カンマ区切)", "text", (nat.outside||[]).join(","),
-    v=>{ obj.nat=obj.nat||{}; obj.nat.outside=v.split(",").map(s=>s.trim()).filter(Boolean); renderAndSync(); });
+  // NAT — full editor (SNAT / DNAT / masquerade) for routers & firewalls
+  if(obj.type === "router" || obj.type === "l3switch" || obj.type === "firewall"){
+    const natBar = ch("div", { style:{margin:"8px 0"} }, body);
+    ch("button", { text:"🔁 NAT設定 (SNAT/DNAT/Masquerade)",
+      style:{width:"100%",padding:"7px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
+        background:"var(--bg3)",border:"1px solid var(--green)",color:"var(--green)",fontWeight:"700"},
+      on:{ click:()=>showNatEditor(obj.id) }
+    }, natBar);
+  }
+}
+
+// NAT editor: source NAT (SNAT/masquerade) + destination NAT (DNAT / port-forwarding)
+function showNatEditor(id){
+  const dev = Cfg.byId("devices", id);
+  if(!dev) return;
+  dev.nat = dev.nat || { enabled:false, snat:[], dnat:[], masquerade:false };
+  const nat = dev.nat;
+  openDialog(`🔁 NAT設定 — ${dev.label||id}`, (body)=>{
+    const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
+    function refresh(){
+      body.innerHTML="";
+      const top=ch("div",{style:{display:"flex",gap:"12px",alignItems:"center",marginBottom:"8px"}},body);
+      const en=ch("label",{style:{display:"flex",gap:"4px",alignItems:"center",fontSize:"11px",cursor:"pointer"}},top);
+      const enChk=ch("input",{type:"checkbox"},en); enChk.checked=!!nat.enabled;
+      enChk.addEventListener("change",()=>{ nat.enabled=enChk.checked; renderAndSync(); });
+      ch("span",{text:"NAT有効"},en);
+      const mq=ch("label",{style:{display:"flex",gap:"4px",alignItems:"center",fontSize:"11px",cursor:"pointer"}},top);
+      const mqChk=ch("input",{type:"checkbox"},mq); mqChk.checked=!!nat.masquerade;
+      mqChk.addEventListener("change",()=>{ nat.masquerade=mqChk.checked; renderAndSync(); });
+      ch("span",{text:"Masquerade(出力IFでPAT)"},mq);
+
+      // SNAT
+      const s1=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"送信元NAT (SNAT)"},s1);
+      ch("div",{text:"指定の送信元を別アドレスに変換して送出します。",style:{fontSize:"10px",color:"var(--text-dim)",padding:"0 0 4px"}},s1);
+      (nat.snat||[]).forEach((r,i)=>{
+        const row=ch("div",{style:{display:"flex",gap:"5px",alignItems:"center",marginBottom:"3px",flexWrap:"wrap"}},s1);
+        ch("span",{text:"src",style:{fontSize:"9px",color:"var(--text-dim)"}},row);
+        const a=ch("input",{type:"text",value:r.src||"",placeholder:"10.0.0.0/24/セグメント",list:"nat-seg",style:Object.assign({width:"140px"},fStyle)},row); a.addEventListener("change",()=>{r.src=a.value;renderAndSync();});
+        ch("span",{text:"→",style:{fontSize:"11px"}},row);
+        const b=ch("input",{type:"text",value:r.translated_src||"",placeholder:"変換後IP",style:Object.assign({width:"120px"},fStyle)},row); b.addEventListener("change",()=>{r.translated_src=b.value;renderAndSync();});
+        ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},on:{click:()=>{nat.snat.splice(i,1);renderAndSync();refresh();}}},row);
+      });
+      ch("button",{text:"+ SNATルール",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},on:{click:()=>{nat.snat=nat.snat||[];nat.snat.push({src:"",translated_src:"",status:"enabled"});renderAndSync();refresh();}}},s1);
+
+      // DNAT
+      const s2=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"宛先NAT (DNAT / ポートフォワード)"},s2);
+      ch("div",{text:"外部宛先(IP:ポート)を内部のサーバ(IP:ポート)へ転送します。",style:{fontSize:"10px",color:"var(--text-dim)",padding:"0 0 4px"}},s2);
+      (nat.dnat||[]).forEach((r,i)=>{
+        const row=ch("div",{style:{display:"flex",gap:"4px",alignItems:"center",marginBottom:"3px",flexWrap:"wrap"}},s2);
+        const od=ch("input",{type:"text",value:r.orig_dst||"",placeholder:"元宛先IP",style:Object.assign({width:"105px"},fStyle)},row); od.addEventListener("change",()=>{r.orig_dst=od.value;renderAndSync();});
+        ch("span",{text:":"},row);
+        const op=ch("input",{type:"number",value:r.orig_port!=null?r.orig_port:"",placeholder:"port",style:Object.assign({width:"56px"},fStyle)},row); op.addEventListener("change",()=>{r.orig_port=op.value===""?null:+op.value;renderAndSync();});
+        const pr=ch("select",{style:fStyle},row);["any","tcp","udp"].forEach(x=>ch("option",{value:x,text:x},pr));pr.value=r.proto||"tcp";pr.addEventListener("change",()=>{r.proto=pr.value;renderAndSync();});
+        ch("span",{text:"→",style:{fontSize:"11px"}},row);
+        const td=ch("input",{type:"text",value:r.translated_dst||"",placeholder:"内部IP",style:Object.assign({width:"105px"},fStyle)},row); td.addEventListener("change",()=>{r.translated_dst=td.value;renderAndSync();});
+        ch("span",{text:":"},row);
+        const tp=ch("input",{type:"number",value:r.translated_port!=null?r.translated_port:"",placeholder:"port",style:Object.assign({width:"56px"},fStyle)},row); tp.addEventListener("change",()=>{r.translated_port=tp.value===""?null:+tp.value;renderAndSync();});
+        ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},on:{click:()=>{nat.dnat.splice(i,1);renderAndSync();refresh();}}},row);
+      });
+      ch("button",{text:"+ DNATルール",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},on:{click:()=>{nat.dnat=nat.dnat||[];nat.dnat.push({orig_dst:"",orig_port:null,proto:"tcp",translated_dst:"",translated_port:null,status:"enabled"});renderAndSync();refresh();}}},s2);
+
+      const dl=ch("datalist",{id:"nat-seg"},body);
+      for(const n of (typeof segmentRefOptions==="function"?segmentRefOptions():[])) ch("option",{value:n},dl);
+    }
+    refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
 }
 
 // Firewall policy editor — ordered rules (first match wins, implicit deny at end)
@@ -678,50 +738,70 @@ function showHypervisorManager(id){
       });
       ch("button",{text:"+ vSwitch追加",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
         on:{click:()=>{ hv.vswitches.push({name:"vSwitch"+(hv.vswitches.length),portgroups:["VM Network"]}); renderAndSync(); refresh(); }}},sw);
-      // VMs
+      // VMs (each VM is a full server object pinned to this host via server.host)
+      migrateLegacyVms(obj);
       const vmsec=ch("div",{class:"sub-section"},body);
       ch("h4",{text:"仮想マシン (VM)"},vmsec);
+      ch("div",{text:"VMはサーバとして扱われます。「詳細設定」でインターフェース・IP・サービス等を設定できます。",
+        style:{fontSize:"10px",color:"var(--text-dim)",padding:"2px 0 6px",lineHeight:"1.4"}},vmsec);
       const pgOptions=[].concat(...(hv.vswitches||[]).map(v=>v.portgroups||[]));
-      (hv.vms||[]).forEach((vm,i)=>{
+      const vmList = vmServersOf(obj.id);
+      vmList.forEach((vm)=>{
+        const on = (vm.status||"running")==="running";
         const card=ch("div",{style:{border:"1px solid var(--border)",borderRadius:"5px",padding:"6px",marginBottom:"5px",background:"var(--bg2)"}},vmsec);
-        const hd=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center"}},card);
-        ch("span",{text:(vm.power||"on")==="on"?"🟢":"⚪"},hd);
-        const nm=ch("input",{type:"text",value:vm.name||"",placeholder:"vm名",style:Object.assign({width:"110px"},fStyle)},hd);
-        nm.addEventListener("change",()=>{ vm.name=nm.value; renderAndSync(); });
-        const cpu=ch("input",{type:"number",value:vm.vcpu||2,title:"vCPU",style:Object.assign({width:"44px"},fStyle)},hd);
+        const hd=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",flexWrap:"wrap"}},card);
+        ch("span",{text:on?"🟢":"⚪"},hd);
+        const nm=ch("input",{type:"text",value:vm.label||vm.id,placeholder:"vm名",style:Object.assign({width:"100px"},fStyle)},hd);
+        nm.addEventListener("change",()=>{ vm.label=nm.value; renderAndSync(); });
+        const cpu=ch("input",{type:"number",value:vm.vcpu||2,title:"vCPU",style:Object.assign({width:"42px"},fStyle)},hd);
         cpu.addEventListener("change",()=>{ vm.vcpu=+cpu.value; renderAndSync(); });
         ch("span",{text:"vCPU",style:{fontSize:"9px",color:"var(--text-dim)"}},hd);
-        const ram=ch("input",{type:"number",value:vm.ram_gb||4,title:"RAM(GB)",style:Object.assign({width:"44px"},fStyle)},hd);
+        const ram=ch("input",{type:"number",value:vm.ram_gb||4,title:"RAM(GB)",style:Object.assign({width:"42px"},fStyle)},hd);
         ram.addEventListener("change",()=>{ vm.ram_gb=+ram.value; renderAndSync(); });
         ch("span",{text:"GB",style:{fontSize:"9px",color:"var(--text-dim)"}},hd);
-        ch("button",{text:(vm.power||"on")==="on"?"停止":"起動",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
-          on:{click:()=>{ vm.power=(vm.power||"on")==="on"?"off":"on"; renderAndSync(); refresh(); }}},hd);
+        // power
+        ch("button",{text:on?"停止":"起動",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
+          on:{click:()=>{ vm.status=on?"stopped":"running"; vm.power=on?"off":"on"; renderAndSync(); refresh(); }}},hd);
         ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
-          on:{click:()=>{ hv.vms.splice(i,1); renderAndSync(); refresh(); }}},hd);
-        const r2=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginTop:"4px"}},card);
-        ch("span",{text:"IP:",style:{fontSize:"10px",color:"var(--text-dim)"}},r2);
-        const ip=ch("input",{type:"text",value:vm.ip||"",placeholder:"10.10.0.5",style:Object.assign({width:"120px"},fStyle)},r2);
-        ip.addEventListener("change",()=>{ vm.ip=ip.value; renderAndSync(); });
+          on:{click:()=>{ App.config.servers=App.config.servers.filter(s=>s.id!==vm.id); renderAndSync(); refresh(); }}},hd);
+        // portgroup + primary IP summary
+        const r2=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginTop:"4px",flexWrap:"wrap"}},card);
         ch("span",{text:"PG:",style:{fontSize:"10px",color:"var(--text-dim)"}},r2);
         const pgSel=ch("select",{style:fStyle},r2);
         ch("option",{value:"",text:"-"},pgSel);
         for(const pg of pgOptions) ch("option",{value:pg,text:pg},pgSel);
         pgSel.value=vm.portgroup||"";
         pgSel.addEventListener("change",()=>{ vm.portgroup=pgSel.value; renderAndSync(); });
+        const primaryIp = (typeof elementPrimaryIp==="function") ? (elementPrimaryIp("server",vm.id,"v4")||elementPrimaryIp("server",vm.id,"v6")) : null;
+        ch("span",{text:"IP: "+(primaryIp||"(未設定)"),style:{fontSize:"10px",color:"var(--text-dim)",fontFamily:"var(--mono)"}},r2);
+        const svcCount=(App.config.services||[]).filter(s=>s.server===vm.id).length;
+        ch("span",{text:"サービス: "+svcCount,style:{fontSize:"10px",color:"var(--text-dim)"}},r2);
+        // full-config button → open the server property editor for this VM
+        ch("button",{text:"🖧 詳細設定 (IF / IP / サービス)",style:{width:"100%",marginTop:"5px",padding:"5px",cursor:"pointer",fontSize:"10.5px",background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"4px",fontWeight:"700"},
+          on:{click:()=>{ closeDialog(); selectElement("server", vm.id); openPropertyPanel(); }}},card);
       });
+      if(!vmList.length) ch("div",{text:"(VMがありません)",style:{color:"var(--text-mute)",fontSize:"11px",padding:"4px 2px"}},vmsec);
       ch("button",{text:"+ VM追加",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
-        on:{click:()=>{ hv.vms.push({name:"vm"+(hv.vms.length+1),vcpu:2,ram_gb:4,power:"on",ip:"",portgroup:(pgOptions[0]||"")}); renderAndSync(); refresh(); }}},vmsec);
+        on:{click:()=>{
+          pushUndo();
+          const id=uid("vm");
+          App.config.servers.push({ id, label:id, host:obj.id, vm:true, type:"virtual", os:"linux",
+            status:"running", power:"on", vcpu:2, ram_gb:4, portgroup:(pgOptions[0]||""),
+            x:(obj.x||0)+20, y:(obj.y||0)+40, interfaces:[{id:"eth0",status:"up"}], gateway:"" });
+          renderAndSync(); refresh();
+        }}},vmsec);
       // datastores
       const ds=ch("div",{class:"sub-section"},body);
       ch("h4",{text:"データストア"},ds);
       const dsIn=ch("input",{type:"text",value:(hv.datastores||[]).map(d=>typeof d==="string"?d:(d.name+":"+(d.capacity_gb||"?")+"GB")).join(", "),placeholder:"datastore1:500GB, ...",style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},ds);
       dsIn.addEventListener("change",()=>{ hv.datastores=dsIn.value.split(",").map(x=>x.trim()).filter(Boolean); renderAndSync(); });
       // capacity summary
-      const usedCpu=(hv.vms||[]).reduce((s,v)=>s+(+v.vcpu||0),0);
-      const usedRam=(hv.vms||[]).reduce((s,v)=>s+(+v.ram_gb||0),0);
-      ch("div",{text:`割当: ${(hv.vms||[]).length} VM / ${usedCpu} vCPU / ${usedRam} GB RAM`,
+      const vmsForCap = vmServersOf(obj.id);
+      const usedCpu=vmsForCap.reduce((s,v)=>s+(+v.vcpu||0),0);
+      const usedRam=vmsForCap.reduce((s,v)=>s+(+v.ram_gb||0),0);
+      ch("div",{text:`割当: ${vmsForCap.length} VM / ${usedCpu} vCPU / ${usedRam} GB RAM`,
         style:{fontSize:"11px",color:"var(--text-dim)",padding:"8px 2px",fontFamily:"var(--mono)"}},body);
-      ch("div",{text:"💡 VMにIPを設定すると、そのVMが通信シミュレーションの到達先になります(ホスト経由)。",style:{fontSize:"10px",color:"var(--text-mute)",padding:"2px"}},body);
+      ch("div",{text:"💡 VMはサーバとして通信シミュレーションの送信元/到達先になります。IF/IP未配線でもホスト経由で同一PG/サブネットに到達します。",style:{fontSize:"10px",color:"var(--text-mute)",padding:"2px",lineHeight:"1.4"}},body);
     }
     refresh();
     return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
@@ -845,6 +925,28 @@ function renderServiceProps(body, obj){
       renderAndSync();
     });
   }
+  // Proxy configuration (reverse_proxy / forward_proxy)
+  if(obj.type === "reverse_proxy" || obj.type === "forward_proxy"){
+    obj.proxy = obj.proxy || {};
+    const pSec = ch("div", { class:"sub-section" }, body);
+    ch("h4", { text: obj.type==="reverse_proxy" ? "リバースプロキシ設定" : "フォワードプロキシ設定" }, pSec);
+    addField(pSec, "Listen ポート", "number", obj.proxy.listen_port!=null?obj.proxy.listen_port:(obj.port||(obj.type==="reverse_proxy"?443:3128)),
+      v=>{ obj.proxy.listen_port = v?+v:null; obj.port = obj.proxy.listen_port; renderAndSync(); });
+    if(obj.type === "reverse_proxy"){
+      ch("div",{text:"upstream(バックエンド)へ振り分けます。1行=host:port",style:{fontSize:"10px",color:"var(--text-dim)",padding:"2px 0"}},pSec);
+      const ups = (obj.proxy.upstreams||[]).map(u=>`${u.host}:${u.port}`).join("\n");
+      addTextareaField(pSec, "upstreams (host:port 改行区切り)", ups, v=>{
+        obj.proxy.upstreams = v.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{ const [h,p]=l.split(":"); return { host:h, port:+(p||80) }; });
+        renderAndSync();
+      });
+      addSelectField(pSec, "振り分け方式", ["round-robin","first"], obj.proxy.mode||"round-robin", v=>{ obj.proxy.mode=v; renderAndSync(); });
+    } else {
+      ch("div",{text:"許可する送信元(空=全許可)。CIDR/セグメント名をカンマ区切り",style:{fontSize:"10px",color:"var(--text-dim)",padding:"2px 0"}},pSec);
+      addField(pSec, "allow 送信元", "text", (obj.proxy.allow||[]).join(", "),
+        v=>{ obj.proxy.allow = v.split(",").map(s=>s.trim()).filter(Boolean); renderAndSync(); });
+    }
+  }
+
   // config
   const cfgSec = ch("div", { class:"sub-section" }, body);
   ch("h4", { text:"設定 (config)" }, cfgSec);
@@ -2914,6 +3016,23 @@ function cliExec(obj, kind, cmd, args, println, state){
             (r.protocol||"any").padEnd(7) +
             (r.dst_port||"-")
           );
+        }
+      } else if(sub === "nat"){
+        const nat = obj.nat;
+        if(!nat || !nat.enabled){ println("(NAT 無効)"); return; }
+        println("NAT: enabled"+(nat.masquerade?" (masquerade)":""));
+        if((nat.snat||[]).length){ println("SNAT:"); for(const r of nat.snat) println(`  ${r.src||"any"} → ${r.translated_src}`); }
+        if((nat.dnat||[]).length){ println("DNAT:"); for(const r of nat.dnat) println(`  ${r.orig_dst}:${r.orig_port||"*"}/${r.proto||"any"} → ${r.translated_dst}:${r.translated_port||"*"}`); }
+      } else if(sub === "proxy"){
+        const proxies = (App.config.services||[]).filter(s=>(s.type==="reverse_proxy"||s.type==="forward_proxy"));
+        if(!proxies.length){ println("(プロキシサービスなし)"); return; }
+        for(const s of proxies){
+          if(s.type==="reverse_proxy"){
+            println(`reverse-proxy ${s.label||s.id} @${s.server} listen:${(s.proxy&&s.proxy.listen_port)||s.port}`);
+            for(const u of ((s.proxy&&s.proxy.upstreams)||[])) println(`  upstream → ${u.host}:${u.port}`);
+          } else {
+            println(`forward-proxy ${s.label||s.id} @${s.server} listen:${(s.proxy&&s.proxy.listen_port)||s.port} allow:${((s.proxy&&s.proxy.allow)||["any"]).join(",")}`);
+          }
         }
       } else {
         println(`Unknown subcommand: ${args.slice(1).join(" ")}`, "cli-err");

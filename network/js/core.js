@@ -956,6 +956,14 @@ var Cfg = {
         }
       }
     }
+    // Migrate legacy embedded hypervisor VMs into real server objects (VM-as-server)
+    if(typeof migrateLegacyVms === "function"){
+      for(const s of (c.servers||[]).slice()){
+        if(s && s.hypervisor && Array.isArray(s.hypervisor.vms) && s.hypervisor.vms.length){
+          migrateLegacyVms(s);
+        }
+      }
+    }
   },
   byId(kind,id){ return (this.c()[kind]||[]).find(x=>x.id===id); },
   removeById(kind,id){
@@ -1036,7 +1044,8 @@ function logCommResult(srcLabel, dstLabel, proto, port, res){
   const portTxt = port!=null ? (":"+port) : "";
   const flow = `${srcLabel} → ${dstLabel}${portTxt} (${(proto||"ip").toUpperCase()})`;
   if(res && res.ok){
-    const hops = (res.path||[]).map(p=>p.id).join(" → ");
+    const ids = (res.path||[]).map(p=>p.id);
+    const hops = ids.filter((x,i)=>i===0||x!==ids[i-1]).join(" → ");
     let extra = "";
     if(res.k8s) extra = ` [K8s ${res.k8s.service}→Pod ${res.k8s.pod}]`;
     else if(res.portInfo) extra = ` [${res.portInfo}]`;
@@ -1243,6 +1252,32 @@ function genUniqueMac(){
  * logical bonded interface visible in `show interfaces`, OS-level routing, etc.
  * Physical members keep their port_type/MAC; the virtual bond does not have a port_type.
  */
+// A VM is a full server object pinned to a hypervisor host via server.host.
+function isVmServer(s){ return !!(s && s.host); }
+function vmServersOf(hostId){ return (App.config.servers||[]).filter(s=>s.host===hostId); }
+// Migrate legacy embedded hypervisor.vms (plain objects) into real server objects (once).
+function migrateLegacyVms(host){
+  if(!host || !host.hypervisor || !Array.isArray(host.hypervisor.vms)) return;
+  const legacy = host.hypervisor.vms;
+  if(!legacy.length) return;
+  App.config.servers = App.config.servers || [];
+  for(const vm of legacy){
+    // already migrated? skip if a server with this name+host exists
+    if((App.config.servers||[]).some(s=>s.host===host.id && (s.label===vm.name||s.id===vm.name))) continue;
+    const id = uid("vm");
+    const iface = { id:"eth0", status:"up" };
+    if(vm.ip) iface.ip = (vm.ip.indexOf("/")>=0?vm.ip:(vm.ip+"/24"));
+    App.config.servers.push({
+      id, label: vm.name||id, host: host.id, vm:true, type:"virtual",
+      os: vm.os||"linux", status: (vm.power==="off"?"stopped":"running"),
+      power: vm.power||"on", vcpu: vm.vcpu||2, ram_gb: vm.ram_gb||4,
+      portgroup: vm.portgroup||"", x:(host.x||0)+20, y:(host.y||0)+40,
+      interfaces:[iface], gateway: vm.gateway||""
+    });
+  }
+  host.hypervisor.vms = []; // now sourced from server objects
+}
+
 function ensureBond0Interface(obj){
   if(!obj || !obj.bonding || !obj.bonding.enabled) return null;
   const bondName = obj.bonding.bond_name || "bond0";
