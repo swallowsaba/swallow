@@ -503,31 +503,31 @@ function renderPorts(g, obj, kind){
     hit.addEventListener("mouseleave",()=>{ if(App._hoverPort && App._hoverPort.id===obj.id && App._hoverPort.iface===iface.id) App._hoverPort = null; hideTooltip(); });
     hit.addEventListener("mousemove",moveTooltip);
     hit.addEventListener("mousedown",(e)=>{
-      if(e.button !== 0) return;
-      if(App.connectMode) return;  // in connect-mode, suppress drag-to-reposition
-      e.stopPropagation();
-      // Is this interface already wired? (has a connection attached)
-      const isConnected = (App.config.connections||[]).some(c=>{
-        const a=c.from||{}, b=c.to||{};
-        return ((a.device===obj.id||a.server===obj.id) && a.interface===iface.id) ||
-               ((b.device===obj.id||b.server===obj.id) && b.interface===iface.id);
-      });
-      // Reposition when: Shift held, OR the port is already connected (free move).
-      // Wire-draw when: plain drag on an UNCONNECTED port (drag-to-connect gesture).
-      if(e.shiftKey || isConnected){
-        dragState = {
-          mode: "port", obj, kind, ifaceIdx: i, moved: false,
-          origPos: iface.port_position ? JSON.parse(JSON.stringify(iface.port_position)) : null
-        };
-      } else {
+      if(App.connectMode){
+        // legacy click-connect mode: ignore drag handling
+        return;
+      }
+      // RIGHT button (or Shift+left) → draw a connection wire from this interface
+      if(e.button === 2 || (e.button === 0 && e.shiftKey)){
+        e.preventDefault(); e.stopPropagation();
         const pos = (computePortPositions(obj, kind)[i]) || {cx:0,cy:0,outX:0,outY:0};
         wireDrag = {
           fromKind:kind, fromId:obj.id, fromIface:iface.id,
           sx:(obj.x||0)+(pos.outX!=null?pos.outX:pos.cx), sy:(obj.y||0)+(pos.outY!=null?pos.outY:pos.cy),
           moved:false
         };
+        return;
       }
+      // LEFT button → always reposition the port (connected or not), no conflict with wiring
+      if(e.button !== 0) return;
+      e.stopPropagation();
+      dragState = {
+        mode: "port", obj, kind, ifaceIdx: i, moved: false,
+        origPos: iface.port_position ? JSON.parse(JSON.stringify(iface.port_position)) : null
+      };
     });
+    // Suppress the browser context menu on ports so right-drag wiring works cleanly
+    hit.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); });
     hit.addEventListener("click",(e)=>{
       e.stopPropagation();
       // === Connection mode: clicking a PORT picks that interface ===
@@ -552,7 +552,8 @@ function formatPortTooltip(iface){
   if(iface.mac) s += `MAC: ${iface.mac}\n`;
   if(iface.speed) s += `Speed: ${iface.speed >= 1000 ? (iface.speed/1000)+"G" : iface.speed+"M"}\n`;
   if(iface.network) s += `Network: ${iface.network}\n`;
-  s += `Status: ${iface.status||"up"}`;
+  s += `Status: ${iface.status||"up"}\n`;
+  s += `── 左ドラッグ=移動 / 右ドラッグ=配線`;
   return s;
 }
 
