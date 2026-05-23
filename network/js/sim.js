@@ -2463,6 +2463,11 @@ function attachEventHandlers(){
   svg.addEventListener("contextmenu", (e)=>{
     if(e.target === svg){ e.preventDefault(); hideContextMenu(); }
   });
+  // While a right-drag wiring gesture is active (or just finished), suppress the native
+  // browser context menu everywhere so it can't interrupt the drag-to-connect.
+  document.addEventListener("contextmenu", (e)=>{
+    if(App._wireActive){ e.preventDefault(); e.stopPropagation(); }
+  }, true);
   document.addEventListener("mousemove", onMouseMove);
   document.addEventListener("mouseup", onMouseUp);
   window.addEventListener("resize", applyViewBox);

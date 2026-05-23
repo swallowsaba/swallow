@@ -510,6 +510,7 @@ function renderPorts(g, obj, kind){
       // RIGHT button (or Shift+left) → draw a connection wire from this interface
       if(e.button === 2 || (e.button === 0 && e.shiftKey)){
         e.preventDefault(); e.stopPropagation();
+        App._wireActive = true;  // suppress native context menu while wiring
         const pos = (computePortPositions(obj, kind)[i]) || {cx:0,cy:0,outX:0,outY:0};
         wireDrag = {
           fromKind:kind, fromId:obj.id, fromIface:iface.id,
@@ -1773,8 +1774,15 @@ function onMouseUp(){
       const sameIface = tp.kind===wd.fromKind && tp.id===wd.fromId && tp.iface===wd.fromIface;
       if(!sameIface){
         createConnectionBetween(wd.fromKind, wd.fromId, wd.fromIface, tp.kind, tp.id, tp.iface);
+      } else {
+        toast("配線先のインターフェースが選択されていません（対向ポート上で離してください）", "warn");
       }
+    } else if(wd.moved && !App._hoverPort){
+      toast("配線先のインターフェース上でマウスを離してください", "warn");
     }
+    // keep native context menu suppressed briefly so the just-finished right-drag
+    // doesn't pop a browser menu, then clear
+    setTimeout(()=>{ App._wireActive = false; }, 50);
     return;
   }
   if(!dragState) return;
