@@ -11,6 +11,8 @@ function render(){
   Cfg.ensure();
   gConnSegments = [];
   for(const n of App.config.networks) renderNetwork(n);
+  renderAwsOverlay();
+  renderK8sOverlay();
   for(const c of App.config.connections) renderConnection(c);
   renderCrossoverHops();
   renderVpcOverlay();
@@ -647,6 +649,96 @@ function renderBondOverlay(g, obj, kind){
         "pointer-events":"none", text:"▲ACTIVE" }, boxG);
     }
   }
+}
+
+// Draw AWS VPC boundary regions (enclosing their EC2 servers) + subnet sub-boxes.
+// Empty VPCs are shown as a labeled placeholder so they are always visible.
+function renderAwsOverlay(){
+  const layer = $("#layer-networks");
+  if(!layer || !App.config.aws || !(App.config.aws.vpcs||[]).length) return;
+  let placeholderX = 40;
+  (App.config.aws.vpcs||[]).forEach((vpc, vi)=>{
+    const members = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc===vpc.name && !(s.host));
+    const g = ce("g", { class:"aws-vpc-overlay", "pointer-events":"none" }, layer);
+    let minX,minY,maxX,maxY;
+    if(members.length){
+      minX=Infinity;minY=Infinity;maxX=-Infinity;maxY=-Infinity;
+      for(const s of members){
+        const w=s.width||130,h=s.height||65;
+        minX=Math.min(minX,s.x||0); minY=Math.min(minY,s.y||0);
+        maxX=Math.max(maxX,(s.x||0)+w); maxY=Math.max(maxY,(s.y||0)+h);
+      }
+      minX-=28; minY-=34; maxX+=28; maxY+=24;
+    } else {
+      // placeholder empty VPC region
+      minX=placeholderX; minY=20; maxX=placeholderX+260; maxY=180; placeholderX+=300;
+    }
+    ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:14, ry:14,
+      fill:"rgba(255,153,0,0.05)", stroke:"#ff9900", "stroke-width":1.6, "stroke-dasharray":"9 5" }, g);
+    const label = `☁ VPC ${vpc.name} ${vpc.cidr?("("+vpc.cidr+")"):""} ${vpc.region||""}`;
+    const bw = label.length*6.0+16;
+    ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9, fill:"#ff9900", stroke:"#fff", "stroke-width":1.2 }, g);
+    ce("text", { x:minX+8+bw/2, y:minY+1, "text-anchor":"middle", "dominant-baseline":"middle",
+      "font-size":10, "font-weight":"700", fill:"#fff", "font-family":"var(--mono)", text:label }, g);
+    if(vpc.igw){
+      ce("text", { x:maxX-8, y:minY+1, "text-anchor":"end", "dominant-baseline":"middle",
+        "font-size":9, fill:"#ff9900", "font-weight":"700", text:"⇄ IGW" }, g);
+    }
+    if(!members.length){
+      ce("text", { x:(minX+maxX)/2, y:(minY+maxY)/2, "text-anchor":"middle", "dominant-baseline":"middle",
+        "font-size":11, fill:"var(--text-mute)", text:"(EC2未配置 — AWS管理で「+ EC2インスタンス追加」)" }, g);
+    }
+    // subnet sub-boxes: group members by subnet
+    const bySubnet={};
+    for(const s of members){ const sn=(s.aws&&s.aws.subnet)||"(no-subnet)"; (bySubnet[sn]=bySubnet[sn]||[]).push(s); }
+    for(const snName in bySubnet){
+      const arr=bySubnet[snName]; if(snName==="(no-subnet)") continue;
+      let sx=Infinity,sy=Infinity,ex=-Infinity,ey=-Infinity;
+      for(const s of arr){ const w=s.width||130,h=s.height||65; sx=Math.min(sx,s.x||0);sy=Math.min(sy,s.y||0);ex=Math.max(ex,(s.x||0)+w);ey=Math.max(ey,(s.y||0)+h); }
+      sx-=12;sy-=14;ex+=12;ey+=10;
+      const snDef=(vpc.subnets||[]).find(z=>z.name===snName);
+      const pub = snDef && snDef.public;
+      ce("rect", { x:sx, y:sy, width:ex-sx, height:ey-sy, rx:9, ry:9,
+        fill:(pub?"rgba(34,197,94,0.05)":"rgba(100,150,250,0.05)"), stroke:(pub?"#22c55e":"#6496fa"), "stroke-width":1, "stroke-dasharray":"4 3" }, g);
+      ce("text", { x:sx+6, y:sy+9, "font-size":8, "font-weight":"700", fill:(pub?"#22c55e":"#6496fa"),
+        text:`${snName}${snDef?(" "+(snDef.cidr||"")):""} ${pub?"[public]":"[private]"}` }, g);
+    }
+  });
+}
+
+// Draw Kubernetes cluster boundary regions enclosing their nodes.
+function renderK8sOverlay(){
+  const layer = $("#layer-networks");
+  if(!layer || !App.config.k8s || !(App.config.k8s.clusters||[]).length) return;
+  let placeholderX = 40;
+  (App.config.k8s.clusters||[]).forEach((cl)=>{
+    const nodes = (cl.nodes||[]).map(id=>Cfg.byId("servers",id)).filter(Boolean);
+    const g = ce("g", { class:"k8s-overlay", "pointer-events":"none" }, layer);
+    let minX,minY,maxX,maxY;
+    if(nodes.length){
+      minX=Infinity;minY=Infinity;maxX=-Infinity;maxY=-Infinity;
+      for(const s of nodes){ const w=s.width||130,h=s.height||65; minX=Math.min(minX,s.x||0);minY=Math.min(minY,s.y||0);maxX=Math.max(maxX,(s.x||0)+w);maxY=Math.max(maxY,(s.y||0)+h); }
+      minX-=26; minY-=34; maxX+=26; maxY+=22;
+    } else {
+      minX=placeholderX; minY=220; maxX=placeholderX+260; maxY=360; placeholderX+=300;
+    }
+    ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:14, ry:14,
+      fill:"rgba(50,108,229,0.05)", stroke:"#326ce5", "stroke-width":1.8, "stroke-dasharray":"10 5" }, g);
+    const podN=(cl.pods||[]).length, svcN=(cl.services||[]).length;
+    const label = `☸ K8s ${cl.name} — ${nodes.length}node / ${podN}pod / ${svcN}svc`;
+    const bw = label.length*6.0+16;
+    ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9, fill:"#326ce5", stroke:"#fff", "stroke-width":1.2 }, g);
+    ce("text", { x:minX+8+bw/2, y:minY+1, "text-anchor":"middle", "dominant-baseline":"middle",
+      "font-size":10, "font-weight":"700", fill:"#fff", "font-family":"var(--mono)", text:label }, g);
+    if(cl.control_plane && cl.control_plane.ha){
+      ce("text", { x:maxX-8, y:minY+1, "text-anchor":"end", "dominant-baseline":"middle",
+        "font-size":9, fill:"#326ce5", "font-weight":"700", text:"HA control-plane" }, g);
+    }
+    if(!nodes.length){
+      ce("text", { x:(minX+maxX)/2, y:(minY+maxY)/2, "text-anchor":"middle", "dominant-baseline":"middle",
+        "font-size":11, fill:"var(--text-mute)", text:"(ノード未割当 — K8s管理でノード追加)" }, g);
+    }
+  });
 }
 
 function renderVpcOverlay(){

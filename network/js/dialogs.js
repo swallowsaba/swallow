@@ -245,6 +245,11 @@ function renderDeviceProps(body, obj){
       style:{fontSize:"11px",color:(rootId===obj.id?"var(--green)":"var(--text-dim)"),padding:"2px 0 6px",fontWeight:"700"} }, stpSec);
     addSelectField(stpSec, "STPモード", ["rstp","pvst","mst","off"], (obj.stp&&obj.stp.mode)||"rstp",
       v=>{ obj.stp=obj.stp||{}; obj.stp.mode=v; renderAndSync(); });
+    // BPDU Guard: when a loop drives MAC flapping to the max, an err-disable trips and converges it
+    const bg = ch("label",{style:{display:"flex",gap:"5px",alignItems:"center",fontSize:"11px",cursor:"pointer",padding:"2px 0"}},stpSec);
+    const bgC = ch("input",{type:"checkbox"},bg); bgC.checked=!!obj.bpdu_guard;
+    bgC.addEventListener("change",()=>{ obj.bpdu_guard=bgC.checked; renderAndSync(); });
+    ch("span",{text:"BPDU Guard (ループ激化時にポートを err-disable して収束)"},bg);
     // Bridge priority (lower = more likely root; multiple of 4096)
     const pf=ch("div",{class:"field"},stpSec);
     ch("label",{text:"ブリッジプライオリティ (低いほど優先 / 4096刻み)"},pf);

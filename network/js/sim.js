@@ -992,27 +992,72 @@ function buildMacTable(switchDevice){
   return entries;
 }
 
-/* ====== MAC FLAPPING SIMULATION ======
- * Real switches "flap" when the SAME MAC address is learned on multiple ports — caused by
- * an L2 loop (redundant links without STP/bonding) or a duplicate MAC. The control plane
- * thrashes its CAM table, a broadcast storm builds, CPU climbs, and the L2 domain gradually
- * degrades (intermittent loss → heavy loss → effectively down).
+/* ====== MAC ADDRESS FLAPPING SIMULATION (実機挙動準拠) ======
+ * 定義: 同一MACアドレスが「同一VLAN内」で「複数ポート」にて短時間に繰り返し学習される現象。
+ *   検知基準(Meraki準拠): 10秒以内に2ポート以上で3回以上学習。
+ * 主因(重大度順):
+ *   - L2ループ (loop)      : STP無効の冗長リンク等。最も重大。ブロードキャストストーム+CPU高騰。
+ *   - MACアドレス重複 (duplicate): 仮想NICのMAC競合等。フラップlog多発だがストームは限定的。
+ *   - 無線ローミング (roaming) : 端末がAP間を高速移動。多くは無害で無視可。
+ * 実機ログ(severity 4):
+ *   %SW_MATM-4-MACFLAP_NOTIF: Host xxxx.xxxx.xxxx in vlan X is flapping between port P1 and port P2
+ * 影響の進行: ログ大量出力 → CPU負荷高騰 → IP電話の音声途切れ/断続ロス → ブロードキャストストーム
+ *           → (BPDUガード設定時) 約一定時間後にポートが err-disable となり収束。
+ * STPでブロック済みのポートは検知対象外。
  *
- * App.macFlap = { [switchId]: { macs:{mac:[ports]}, loop:bool, severity:0..100, since } }
+ * App.macFlap[switchId] = {
+ *   macs:{ mac:{ports:[p1,p2], vlan, flaps} }, cause, loop, severity:0..100, cpu:0..100,
+ *   logToggle, errDisabledPorts:[], since }
  */
+function macToCisco(mac){
+  // aa:bb:cc:dd:ee:ff → aabb.ccdd.eeff
+  const h = String(mac||"").replace(/[^0-9a-fA-F]/g,"").toLowerCase().padStart(12,"0").slice(0,12);
+  return h.slice(0,4)+"."+h.slice(4,8)+"."+h.slice(8,12);
+}
+function vlanOfIface(sw, ifaceId){
+  const i = (sw.interfaces||[]).find(x=>x.id===ifaceId);
+  if(i && i.network){ const net = Cfg.byId("networks", i.network); if(net && net.vlan_id) return net.vlan_id; }
+  return 1; // default VLAN
+}
+// Ports currently BLOCKED by STP on this switch (excluded from flap detection)
+function stpBlockedPorts(sw){
+  const blocked = new Set();
+  try{
+    if(typeof computeStpForSwitch === "function"){
+      const sd = computeStpForSwitch(sw);
+      for(const v of (sd.vlans||[])){
+        for(const p of (v.ports||[])){
+          const st=(p.state||"").toUpperCase(); const role=(p.role||"").toLowerCase();
+          if(st==="BLK"||st==="BLOCK"||role.startsWith("altn")||role.startsWith("bloc")||role.startsWith("disc")) blocked.add(p.iface);
+        }
+      }
+    }
+  }catch(e){}
+  return blocked;
+}
 function detectMacFlaps(){
   const report = [];
   for(const sw of (App.config.devices||[])){
     if(sw.type!=="l2switch" && sw.type!=="l3switch") continue;
     const entries = buildMacTable(sw);
-    // group ports by MAC
-    const byMac = {};
-    for(const e of entries){ (byMac[e.mac]=byMac[e.mac]||new Set()).add(e.port); }
+    const blocked = stpBlockedPorts(sw);
+    // group ports by (mac, vlan), excluding STP-blocked ports
+    const byKey = {};
+    for(const e of entries){
+      if(blocked.has(e.port)) continue;            // STPブロック済みポートは対象外
+      const vid = e.vlan!=null ? e.vlan : vlanOfIface(sw, e.port);
+      const key = e.mac + "@" + vid;
+      (byKey[key]=byKey[key]||{mac:e.mac,vlan:vid,ports:new Set()}).ports.add(e.port);
+    }
     const flapMacs = {};
-    for(const mac in byMac){ if(byMac[mac].size >= 2) flapMacs[mac] = [...byMac[mac]]; }
-    // L2 loop: two switches joined by >=2 active links not in a bond, with STP off
+    for(const k in byKey){
+      const g = byKey[k];
+      if(g.ports.size >= 2){ flapMacs[g.mac] = { ports:[...g.ports], vlan:g.vlan }; }  // 同一VLANで複数ポート
+    }
+    // L2ループ判定: STP無効の冗長リンク(同一ピアへ非bondで2本以上)
     const stpOff = !sw.stp || sw.stp.mode==="off" || sw.stp.enabled===false;
     let loop = false;
+    let loopPorts = null;
     const peerLinks = {};
     for(const c of (App.config.connections||[])){
       if(c.status==="down") continue;
@@ -1020,72 +1065,234 @@ function detectMacFlaps(){
       if(c.from&&c.from.device===sw.id){me=c.from;peer=c.to;}
       else if(c.to&&c.to.device===sw.id){me=c.to;peer=c.from;}
       else continue;
+      if(blocked.has(me.interface)) continue;       // ブロックポートはループ形成しない
       const pid = peer&&(peer.device||peer.server); if(!pid) continue;
-      // ignore bonded member links (intentional redundancy)
-      const myIf=(sw.interfaces||[]).find(i=>i.id===me.interface);
       const bonded = sw.bonding&&sw.bonding.enabled&&(sw.bonding.members||[]).includes(me.interface);
-      (peerLinks[pid]=peerLinks[pid]||[]).push({bonded});
+      (peerLinks[pid]=peerLinks[pid]||[]).push({bonded, port:me.interface});
     }
     for(const pid in peerLinks){
-      const links=peerLinks[pid];
-      const nonBond=links.filter(l=>!l.bonded).length;
-      if(nonBond>=2 && stpOff) loop=true;
+      const nonBond=peerLinks[pid].filter(l=>!l.bonded);
+      if(nonBond.length>=2 && stpOff){ loop=true; loopPorts=[nonBond[0].port, nonBond[1].port]; }
+    }
+    // 実機同様、ループ時はブロードキャストドメイン内の端末MACがループポート間で揺れる。
+    // buildMacTableは重複を出さないため、ループ時はフラップMACを合成する。
+    if(loop && loopPorts){
+      const vid = vlanOfIface(sw, loopPorts[0]);
+      // この L2 ドメインに居る端末(サーバ)のMACを収集
+      for(const c of (App.config.connections||[])){
+        if(c.status==="down") continue;
+        const ep = (c.from&&c.from.server) ? c.from : (c.to&&c.to.server) ? c.to : null;
+        if(!ep) continue;
+        const srv = Cfg.byId("servers", ep.server);
+        const iface = srv && (srv.interfaces||[]).find(i=>i.id===ep.interface);
+        const mac = iface && iface.mac;
+        if(mac && !flapMacs[mac]) flapMacs[mac] = { ports:[loopPorts[0], loopPorts[1]], vlan:vid };
+      }
+      // 端末が無くてもループ自体は計上(汎用ホスト表記)
+      if(!Object.keys(flapMacs).length){
+        flapMacs["02:00:00:00:00:01"] = { ports:[loopPorts[0], loopPorts[1]], vlan:vid };
+      }
     }
     if(Object.keys(flapMacs).length || loop){
-      report.push({ switchId:sw.id, label:sw.label||sw.id, macs:flapMacs, loop });
+      // 原因分類: ループあり→loop / フラップMACがサーバ等の重複→duplicate / 端末移動→roaming
+      let cause = "duplicate";
+      if(loop) cause = "loop";
+      else {
+        // endpoint(サーバ/VM)が2スイッチポートに見える場合は重複の可能性が高い
+        cause = "duplicate";
+      }
+      report.push({ switchId:sw.id, label:sw.label||sw.id, macs:flapMacs, loop, cause });
     }
   }
   return report;
 }
-// Recompute flap state + escalate severity over time. Called on each sim tick.
 function updateMacFlapState(){
   App.macFlap = App.macFlap || {};
   const report = detectMacFlaps();
   const active = new Set(report.map(r=>r.switchId));
-  // escalate active, decay inactive
   for(const r of report){
-    const st = App.macFlap[r.switchId] || { severity:0, since:Date.now() };
-    st.macs = r.macs; st.loop = r.loop;
-    const inc = r.loop ? 14 : 6; // loops escalate faster than a single duplicate MAC
+    const st = App.macFlap[r.switchId] || { severity:0, cpu:5, logToggle:false, errDisabledPorts:[], since:Date.now() };
+    st.macs = r.macs; st.loop = r.loop; st.cause = r.cause;
+    st.origin = true;  // this switch is the flap ORIGIN (vs. a victim of storm spillover)
+    // escalation rate by cause (loop worst, roaming benign)
+    const inc = r.cause==="loop" ? 18 : (r.cause==="roaming" ? 3 : 8);
     st.severity = Math.min(100, st.severity + inc);
+    // flap counter (回数) — accumulates re-learning events
+    st.flaps = (st.flaps||0) + (r.loop ? 4 : 2);
+    // CPU load climbs with severity for loop/broadcast storm; duplicate keeps CPU lower
+    const cpuTarget = r.cause==="loop" ? Math.min(99, 20 + st.severity*0.8)
+                    : r.cause==="duplicate" ? Math.min(60, 10 + st.severity*0.4)
+                    : Math.min(25, 8 + st.severity*0.15);
+    st.cpu = Math.round(st.cpu + (cpuTarget - st.cpu)*0.5);
+    st.logToggle = !st.logToggle; // alternate port order in syslog like real devices
+    // BPDU guard: when a loop is severe and the switch has bpdu_guard enabled, a port goes
+    // err-disabled (実機の「約40分後にBPDUガード作動」を凝縮). This breaks the loop → recovery.
+    if(r.loop && st.severity>=100 && sw_bpduGuard(r.switchId) && !(st.errDisabledPorts||[]).length){
+      const sw = Cfg.byId("devices", r.switchId);
+      const port = _firstLoopPort(sw);
+      if(port){
+        const iface = (sw.interfaces||[]).find(i=>i.id===port);
+        if(iface){ iface.status = "err-disabled"; st.errDisabledPorts = [port]; st.bpduGuardTripped = true; }
+      }
+    }
     App.macFlap[r.switchId] = st;
   }
+
+  // === ブロードキャストストームの波及 (実機挙動) ===
+  // ループ起因のフラッピングは「ブロードキャストストーム」を生み、同一ブロードキャスト
+  // ドメイン(L2で相互到達できるスイッチ群=同一VLAN)に氾濫する。隣接スイッチも徐々に
+  // CPU高騰・通信劣化に陥り、ネットワーク全体が異常をきたす。距離(ホップ)が遠いほど
+  // 影響は減衰するが、ストームが強いほど遠方まで波及する。
+  const stormVictims = {};  // switchId -> max spillover severity
+  for(const r of report){
+    if(r.cause !== "loop") continue;  // ストームを生むのはループのみ(重複/ローミングは局所)
+    const origin = App.macFlap[r.switchId];
+    if(!origin || origin.severity < 25) continue;  // ある程度育つと氾濫し始める
+    const vlans = new Set(Object.values(r.macs||{}).map(m=>m.vlan));
+    const dist = l2DomainDistances(r.switchId, vlans);  // {switchId: hops}
+    for(const vid in dist){}
+    for(const otherId in dist){
+      if(otherId === r.switchId) continue;
+      const hops = dist[otherId];
+      // 減衰: 1ホップごとに約25%減。ストーム強度(origin severity)に比例して波及
+      const spill = Math.max(0, Math.round(origin.severity * Math.pow(0.6, hops)) - 10);
+      if(spill > 0) stormVictims[otherId] = Math.max(stormVictims[otherId]||0, spill);
+    }
+  }
+  for(const vid in stormVictims){
+    const sev = stormVictims[vid];
+    if(active.has(vid)) continue;  // 自身が発生源なら上書きしない
+    const st = App.macFlap[vid] || { severity:0, cpu:5, logToggle:false, errDisabledPorts:[], since:Date.now() };
+    st.cause = "storm";       // ストーム波及による被害(victim)
+    st.origin = false;
+    st.loop = false;
+    st.victim = true;
+    st.severity = Math.min(95, Math.max(st.severity, sev));  // 波及先は発生源を超えない
+    st.cpu = Math.round(Math.min(90, 15 + st.severity*0.7));
+    st.logToggle = !st.logToggle;
+    App.macFlap[vid] = st;
+    active.add(vid);  // 維持対象に含める(減衰ループで消さない)
+  }
+
+  // 減衰: 発生源でもストーム被害でもないものは回復へ
   for(const id in App.macFlap){
     if(!active.has(id)){
-      App.macFlap[id].severity = Math.max(0, App.macFlap[id].severity - 20);
-      if(App.macFlap[id].severity<=0) delete App.macFlap[id];
+      const st = App.macFlap[id];
+      st.severity = Math.max(0, st.severity - 20);
+      st.cpu = Math.max(5, Math.round(st.cpu*0.6));
+      if(st.severity<=0) delete App.macFlap[id];
     }
   }
   return report;
 }
+// BFS over the L2 broadcast domain (switch↔switch links in the same VLAN, excluding STP-blocked
+// and err-disabled ports) returning hop distance from the origin switch to every reachable switch.
+function l2DomainDistances(originId, vlanSet){
+  const dist = { [originId]: 0 };
+  const queue = [originId];
+  while(queue.length){
+    const cur = queue.shift();
+    const sw = Cfg.byId("devices", cur);
+    if(!sw) continue;
+    for(const c of (App.config.connections||[])){
+      if(c.status==="down") continue;
+      let me=null, peer=null;
+      if(c.from && c.from.device===cur){ me=c.from; peer=c.to; }
+      else if(c.to && c.to.device===cur){ me=c.to; peer=c.from; }
+      else continue;
+      const myIf = (sw.interfaces||[]).find(i=>i.id===me.interface);
+      // ブロードキャストストームは転送中の全L2リンクへ氾濫する。実際に遮断されるのは
+      // リンクダウン/err-disable のみ(STPが正しく動作していればループ自体が起きない)。
+      if(myIf && myIf.status && myIf.status!=="up") continue;
+      const peerId = peer && peer.device;
+      if(!peerId) continue;
+      const peerDev = Cfg.byId("devices", peerId);
+      if(!peerDev || (peerDev.type!=="l2switch" && peerDev.type!=="l3switch")) continue;
+      // ピア側ポートが err-disable/down なら越えない
+      const peerIf = (peerDev.interfaces||[]).find(i=>i.id===peer.interface);
+      if(peerIf && peerIf.status && peerIf.status!=="up") continue;
+      if(dist[peerId] == null){ dist[peerId] = dist[cur] + 1; queue.push(peerId); }
+    }
+  }
+  return dist;
+}
+function sw_bpduGuard(switchId){
+  const sw = Cfg.byId("devices", switchId);
+  return !!(sw && (sw.bpdu_guard || (sw.stp && sw.stp.bpdu_guard)));
+}
+function _firstLoopPort(sw){
+  for(const c of (App.config.connections||[])){
+    if(c.status==="down") continue;
+    if(c.from&&c.from.device===sw.id) return c.from.interface;
+    if(c.to&&c.to.device===sw.id) return c.to.interface;
+  }
+  return null;
+}
 function macFlapSeverity(switchId){
   return (App.macFlap && App.macFlap[switchId]) ? App.macFlap[switchId].severity : 0;
 }
-// drop probability at a flapping switch (0..~0.9), grows with severity
+function macFlapCpu(switchId){
+  return (App.macFlap && App.macFlap[switchId]) ? (App.macFlap[switchId].cpu||0) : 0;
+}
+// drop probability at a flapping switch. Loops cause heavy loss; duplicate moderate; roaming light.
 function macFlapDropProb(switchId){
-  const sev = macFlapSeverity(switchId);
-  if(sev<=0) return 0;
-  return Math.min(0.9, sev/120); // 50→0.42, 100→0.83
+  const st = App.macFlap && App.macFlap[switchId];
+  if(!st || st.severity<=0) return 0;
+  const base = st.cause==="loop" ? st.severity/110
+             : st.cause==="storm" ? st.severity/140      // ストーム波及先も大きく劣化
+             : st.cause==="duplicate" ? st.severity/200
+             : st.severity/600;
+  return Math.min(0.95, base);
 }
-function macFlapStage(sev){
+function macFlapStage(sev, cause){
   if(sev<=0) return "正常";
-  if(sev<25) return "学習ゆらぎ(軽微)";
-  if(sev<50) return "CAMテーブル不安定・断続的パケットロス";
-  if(sev<75) return "ブロードキャストストーム発生・CPU上昇";
-  return "L2ドメイン崩壊寸前(ほぼ通信不可)";
+  if(cause==="roaming") return sev<50 ? "無線ローミングによる学習移動(通常は無害)" : "頻繁なローミング(要確認)";
+  if(cause==="storm"){
+    if(sev<30) return "近隣からのブロードキャストストーム波及(軽微)";
+    if(sev<60) return "ストーム氾濫によりCPU上昇・断続ロス";
+    return "ストーム氾濫により通信不安定(発生源の影響を受けて劣化)";
+  }
+  if(sev<25) return "MAC学習がポート間で揺れ始め (MACFLAP_NOTIFログ発生)";
+  if(sev<50) return "ログ多発・CAM不安定／L2機器のCPU負荷上昇";
+  if(sev<75) return "断続的パケットロス・IP電話の音声途切れ";
+  if(sev<100) return "ブロードキャストストーム発生・CPU高騰";
+  return "L2ドメイン崩壊寸前 (BPDUガード設定時はerr-disableで収束)";
 }
-// Emit escalating symptom logs (called on tick when flapping present)
+// Emit Cisco-style syslog (%SW_MATM-4-MACFLAP_NOTIF) + escalating symptom lines.
+// Also logs broadcast-storm spillover at victim switches in the same L2 domain.
 function logMacFlapSymptoms(report){
   for(const r of report){
-    const sev = macFlapSeverity(r.switchId);
-    const macList = Object.keys(r.macs||{});
-    let msg = `${r.label}: MACフラッピング`;
-    if(r.loop) msg += "(L2ループ検出)";
-    if(macList.length) msg += ` MAC ${macList[0]}${macList.length>1?(" 他"+(macList.length-1)):""} が複数ポートで学習`;
-    CommLog.blocked(msg, `段階: ${macFlapStage(sev)} (severity ${sev})`);
+    const st = App.macFlap[r.switchId] || {};
+    const sev = st.severity||0;
+    for(const mac in (r.macs||{})){
+      const info = r.macs[mac];
+      let p1 = info.ports[0], p2 = info.ports[1]||info.ports[0];
+      if(st.logToggle){ const t=p1; p1=p2; p2=t; }
+      CommLog.blocked(
+        `%SW_MATM-4-MACFLAP_NOTIF: Host ${macToCisco(mac)} in vlan ${info.vlan} is flapping between port ${p1} and port ${p2}`,
+        `${r.label} — ${r.cause==="loop"?"L2ループ":r.cause==="duplicate"?"MAC重複":"ローミング"} / CPU ${st.cpu||0}% / 段階: ${macFlapStage(sev, r.cause)}`
+      );
+    }
+    if(st.bpduGuardTripped && st.errDisabledPorts && st.errDisabledPorts.length){
+      CommLog.blocked(
+        `%SPANTREE-2-BLOCK_BPDUGUARD: Received BPDU on port ${st.errDisabledPorts[0]} with BPDU Guard enabled, putting ${st.errDisabledPorts[0]} in err-disable state`,
+        `${r.label} — BPDUガード作動によりループ収束`
+      );
+      st.bpduGuardTripped = false;
+    }
+  }
+  // storm spillover victims (other switches in the same L2 domain degrading)
+  for(const id in (App.macFlap||{})){
+    const st = App.macFlap[id];
+    if(st && st.cause==="storm" && st.victim && (st.severity||0) >= 20){
+      const sw = Cfg.byId("devices", id);
+      CommLog.blocked(
+        `${(sw&&sw.label)||id}: ブロードキャストストーム波及を検知 (隣接ループの氾濫)`,
+        `CPU ${st.cpu||0}% / 段階: ${macFlapStage(st.severity, "storm")}`
+      );
+    }
   }
 }
-
 // === CML2/GNS3 parity: list direct LLDP neighbors ===
 function buildLldpNeighbors(device){
   const entries = [];
@@ -1330,7 +1537,8 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
       const dp = macFlapDropProb(curObj.id);
       if(dp > 0 && Math.random() < dp){
         const sev = macFlapSeverity(curObj.id);
-        return { ok:false, path, reason:`${curObj.id}: MACフラッピングによりパケット破棄 (${macFlapStage(sev)})`,
+        const cause = (App.macFlap && App.macFlap[curObj.id] && App.macFlap[curObj.id].cause) || "loop";
+        return { ok:false, path, reason:`${curObj.id}: MACフラッピングによりパケット破棄 (${macFlapStage(sev, cause)})`,
           blockedAt:{ kind:"device", id:curObj.id }, macFlap:true };
       }
     }
@@ -2376,14 +2584,14 @@ function startMacFlapMonitor(){
   let prevActive = false;
   _macFlapTimer = setInterval(()=>{
     const report = updateMacFlapState();
-    const active = report.length > 0;
+    const affected = Object.keys(App.macFlap||{}).filter(id=>(App.macFlap[id].severity||0)>0);
+    const active = affected.length > 0;
     if(active){
       logMacFlapSymptoms(report);
       updateNetHealthBanner(report);
-      render(); // redraw to update flap badges/animation
+      render(); // redraw to update flap badges/animation on origin AND storm-victim switches
     } else if(prevActive){
-      // condition cleared → recovered
-      CommLog.info("MACフラッピング解消: L2ドメインが安定しました");
+      CommLog.info("MACフラッピング/ブロードキャストストーム解消: L2ドメインが安定しました");
       updateNetHealthBanner([]);
       render();
     }
@@ -2394,17 +2602,26 @@ function startMacFlapMonitor(){
 // Show a prominent, escalating banner describing the gradual network degradation
 function updateNetHealthBanner(report){
   const el = $("#nethealth-banner"); if(!el) return;
-  if(!report || !report.length){ el.style.display="none"; return; }
-  let worst=0, worstId=null;
-  for(const r of report){ const sev=macFlapSeverity(r.switchId); if(sev>worst){ worst=sev; worstId=r.switchId; } }
-  const stage = macFlapStage(worst);
-  const color = worst<25 ? "#eab308" : worst<50 ? "#f59e0b" : worst<75 ? "#ef4444" : "#b91c1c";
+  const affected = Object.keys(App.macFlap||{}).filter(id=>(App.macFlap[id].severity||0)>0);
+  if(!affected.length){ el.style.display="none"; return; }
+  // worst = highest severity across ALL affected switches (origin + storm victims)
+  let worst=0, worstId=null, victims=0;
+  for(const id of affected){
+    const st=App.macFlap[id];
+    if(st.cause==="storm"||st.victim) victims++;
+    if((st.severity||0)>worst){ worst=st.severity; worstId=id; }
+  }
+  const st = (App.macFlap && App.macFlap[worstId]) || {};
+  const cause = st.cause || "loop";
+  const stage = macFlapStage(worst, cause);
+  const causeLbl = cause==="loop" ? "L2ループ" : cause==="duplicate" ? "MAC重複" : cause==="storm" ? "ストーム波及" : "無線ローミング";
+  const color = cause==="roaming" ? "#3b82f6" : worst<25 ? "#eab308" : worst<50 ? "#f59e0b" : worst<75 ? "#ef4444" : "#b91c1c";
   const swLabel = (Cfg.byId("devices",worstId)||{}).label || worstId;
+  const spread = (affected.length>1) ? ` ／ 影響範囲: ${affected.length}台のスイッチに波及中` : "";
   el.style.display="block";
   el.style.background=color;
-  el.innerHTML = `⚠ ネットワーク異常進行中 — MACフラッピング/L2ループ<br>`
-    + `<span style="font-size:11px;font-weight:600">対象: ${escapeHtml(swLabel)} ／ 重大度 ${Math.round(worst)}% ／ ${escapeHtml(stage)}</span>`;
-  // pulse effect by toggling opacity
+  el.innerHTML = `⚠ ネットワーク異常進行中 — MACアドレスフラッピング (${escapeHtml(causeLbl)})${spread?'<span style="font-size:11px">'+escapeHtml(spread)+'</span>':''}<br>`
+    + `<span style="font-size:11px;font-weight:600">最悪: ${escapeHtml(swLabel)} ／ 重大度 ${Math.round(worst)}% ／ CPU ${st.cpu||0}% ／ ${escapeHtml(stage)}</span>`;
   el.style.opacity = "1";
   el.animate ? el.animate([{opacity:1},{opacity:0.55},{opacity:1}],{duration: Math.max(500,1400-worst*8), iterations:1}) : 0;
 }
