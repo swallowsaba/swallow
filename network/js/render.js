@@ -11,6 +11,14 @@ function render(){
   Cfg.ensure();
   gConnSegments = [];
   for(const n of App.config.networks) renderNetwork(n);
+  // Precompute the set of elements that currently have a conflicting (duplicate) IP
+  App._ipConflictSet = new Set();
+  try{
+    if(typeof detectIpConflicts==="function"){
+      const cf = detectIpConflicts();
+      for(const ip in cf){ for(const o of cf[ip]) App._ipConflictSet.add(o.kind+":"+o.id); }
+    }
+  }catch(e){}
   renderAwsOverlay();
   renderK8sOverlay();
   for(const c of App.config.connections) renderConnection(c);
@@ -686,9 +694,14 @@ function renderAwsOverlay(){
       fill:"rgba(255,153,0,0.05)", stroke:"#ff9900", "stroke-width":1.6, "stroke-dasharray":"9 5" }, g);
     const label = `☁ VPC ${vpc.name} ${vpc.cidr?("("+vpc.cidr+")"):""} ${vpc.region||""}`;
     const bw = label.length*6.0+16;
-    ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9, fill:"#ff9900", stroke:"#fff", "stroke-width":1.2 }, g);
+    const labelRect = ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9, fill:"#ff9900", stroke:"#fff", "stroke-width":1.2,
+      style:"cursor:move", "pointer-events":"all" }, g);
     ce("text", { x:minX+8+bw/2, y:minY+1, "text-anchor":"middle", "dominant-baseline":"middle",
-      "font-size":10, "font-weight":"700", fill:"#fff", "font-family":"var(--mono)", text:label }, g);
+      "font-size":10, "font-weight":"700", fill:"#fff", "font-family":"var(--mono)", text:label, "pointer-events":"none" }, g);
+    if(members.length){
+      const mem = members.map(s=>({kind:"server",id:s.id}));
+      labelRect.addEventListener("mousedown",(e)=>startGroupDrag(e, mem));
+    }
     if(vpc.igw){
       ce("text", { x:maxX-8, y:minY+1, "text-anchor":"end", "dominant-baseline":"middle",
         "font-size":9, fill:"#ff9900", "font-weight":"700", text:"⇄ IGW" }, g);
@@ -736,9 +749,14 @@ function renderK8sOverlay(){
     const podN=(cl.pods||[]).length, svcN=(cl.services||[]).length;
     const label = `☸ K8s ${cl.name} — ${nodes.length}node / ${podN}pod / ${svcN}svc`;
     const bw = label.length*6.0+16;
-    ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9, fill:"#326ce5", stroke:"#fff", "stroke-width":1.2 }, g);
+    const labelRect = ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9, fill:"#326ce5", stroke:"#fff", "stroke-width":1.2,
+      style:"cursor:move", "pointer-events":"all" }, g);
     ce("text", { x:minX+8+bw/2, y:minY+1, "text-anchor":"middle", "dominant-baseline":"middle",
-      "font-size":10, "font-weight":"700", fill:"#fff", "font-family":"var(--mono)", text:label }, g);
+      "font-size":10, "font-weight":"700", fill:"#fff", "font-family":"var(--mono)", text:label, "pointer-events":"none" }, g);
+    if(nodes.length){
+      const mem = nodes.map(s=>({kind:"server",id:s.id}));
+      labelRect.addEventListener("mousedown",(e)=>startGroupDrag(e, mem));
+    }
     if(cl.control_plane && cl.control_plane.ha){
       ce("text", { x:maxX-8, y:minY+1, "text-anchor":"end", "dominant-baseline":"middle",
         "font-size":9, fill:"#326ce5", "font-weight":"700", text:"HA control-plane" }, g);
@@ -795,8 +813,9 @@ function renderVpcOverlay(){
     // (b) Domain badge at top-LEFT corner (does not overlap the peer-link in the middle)
     const badgeText = `⛓ vPC Domain ${d.vpc.domain||1} — 論理1台`;
     const bWidth = badgeText.length * 6.0 + 18;
-    ce("rect", { x:minX+8, y:minY-9, width:bWidth, height:18, rx:9, ry:9,
-      fill:"var(--purple)", stroke:"#fff", "stroke-width":1.5, "pointer-events":"none" }, g);
+    const vpcLabelRect = ce("rect", { x:minX+8, y:minY-9, width:bWidth, height:18, rx:9, ry:9,
+      fill:"var(--purple)", stroke:"#fff", "stroke-width":1.5, "pointer-events":"all", style:"cursor:move" }, g);
+    vpcLabelRect.addEventListener("mousedown",(e)=>startGroupDrag(e, [{kind:"device",id:d.id},{kind:"device",id:peerId}]));
     ce("text", { x:minX+8+bWidth/2, y:minY+1, text: badgeText,
       "text-anchor":"middle", "dominant-baseline":"middle",
       "font-size":10, "font-family":"var(--mono)", "font-weight":"700",
@@ -984,7 +1003,12 @@ function renderDevice(d){
   drawDeviceIcon(g, d.type, w, h);
   ce("text", { "class":"element-label", x:w/2, y:h-7, text:d.label||d.id }, g);
   renderStatusLed(g, w-9, 9, d.status);
-  // Persistent root-bridge crown (VLAN1) so the root is always visible, even without the STP overlay
+  // IP address conflict badge
+  if(App._ipConflictSet && App._ipConflictSet.has("device:"+d.id)){
+    const cb = ce("g", { class:"ipconflict-badge" }, g);
+    ce("rect", { x:w/2-30, y:h+2, width:60, height:13, rx:3, ry:3, fill:"var(--red)" }, cb);
+    ce("text", { x:w/2, y:h+11, "text-anchor":"middle", "font-size":"7.5", fill:"#fff", "font-weight":"700", text:"⚠ IP重複" }, cb);
+  }
   if((d.type==="l2switch" || d.type==="l3switch") && typeof computeStpForSwitch==="function"){
     try{
       const sd = computeStpForSwitch(d);
@@ -1102,6 +1126,11 @@ function renderServer(s){
   }
 
   renderStatusLed(g, w-9, 9, s.status);
+  if(App._ipConflictSet && App._ipConflictSet.has("server:"+s.id)){
+    const cb = ce("g", { class:"ipconflict-badge" }, g);
+    ce("rect", { x:w/2-30, y:-15, width:60, height:13, rx:3, ry:3, fill:"var(--red)" }, cb);
+    ce("text", { x:w/2, y:-6, "text-anchor":"middle", "font-size":"7.5", fill:"#fff", "font-weight":"700", text:"⚠ IP重複" }, cb);
+  }
   renderBondOverlay(g, s, "server");
   renderPorts(g, s, "server");
 
@@ -1748,6 +1777,17 @@ function onElMouseDown(e, kind, id){
   };
 }
 
+// Begin dragging a group of elements (used by VPC/K8s/vPC frame labels to move the whole group)
+function startGroupDrag(e, members){
+  if(e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  const pt = svgPoint(e);
+  dragState = {
+    mode:"group", moved:false, startSX:pt.x, startSY:pt.y,
+    members: members.map(m=>{ const o=Cfg.byId(kindToCol(m.kind), m.id); return o?{kind:m.kind,id:m.id,x0:o.x||0,y0:o.y||0}:null; }).filter(Boolean)
+  };
+}
+
 function svgPoint(e){
   const svg = $("#svg");
   const pt = svg.createSVGPoint();
@@ -1881,6 +1921,16 @@ function onMouseMove(e){
     obj.width = Math.max(40, dragState.startW + dx);
     obj.height = Math.max(30, dragState.startH + dy);
     render();
+  } else if(dragState.mode === "group"){
+    const pt = svgPoint(e);
+    const dx = pt.x - dragState.startSX;
+    const dy = pt.y - dragState.startSY;
+    if(Math.abs(dx)>2 || Math.abs(dy)>2) dragState.moved = true;
+    for(const m of dragState.members){
+      const co = Cfg.byId(kindToCol(m.kind), m.id);
+      if(co){ co.x = m.x0 + dx; co.y = m.y0 + dy; }
+    }
+    render();
   } else if(dragState.mode === "pan"){
     const dx = (e.clientX - dragState.startSX) / App.view.scale;
     const dy = (e.clientY - dragState.startSY) / App.view.scale;
@@ -1933,6 +1983,11 @@ function onMouseUp(){
     return;
   }
   if(dragState.mode === "bend" || dragState.mode === "waypoint"){
+    if(dragState.moved){ pushUndo(); syncYamlFromConfig(); render(); }
+    dragState = null;
+    return;
+  }
+  if(dragState.mode === "group"){
     if(dragState.moved){ pushUndo(); syncYamlFromConfig(); render(); }
     dragState = null;
     return;
@@ -2481,6 +2536,20 @@ function updateStatusBar(){
   $("#stat-servers").textContent = (App.config.servers||[]).length;
   $("#stat-services").textContent = (App.config.services||[]).length;
   $("#stat-connections").textContent = (App.config.connections||[]).length;
+  // IP conflict warning in the status message
+  try{
+    if(typeof detectIpConflicts==="function"){
+      const cf = detectIpConflicts();
+      const ips = Object.keys(cf);
+      const msgEl = $("#status-msg");
+      if(ips.length && msgEl && !App.connectMode){
+        msgEl.textContent = `⚠ IPアドレス競合: ${ips.slice(0,3).join(", ")}${ips.length>3?" 他":""} — 同一ネットワーク内で重複しています`;
+        msgEl.style.color = "var(--red)";
+      } else if(msgEl && msgEl.style.color === "rgb(255, 99, 99)"){
+        msgEl.style.color = "";
+      }
+    }
+  }catch(e){}
 }
 
 function refreshScenarioSelect(){

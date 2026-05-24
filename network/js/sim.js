@@ -873,19 +873,26 @@ function computeStpForSwitch(switchDevice){
         if(d.type === "l2switch" || d.type === "l3switch") participantIds.add(d.id);
       }
     }
-    // Get bridge MAC for each (= MAC of first up interface)
+    // Bridge MAC = the LOWEST MAC among the switch's interfaces (the chassis "bridge base
+    // address"), matching real STP. This is stable regardless of port up/down order.
     function bridgeMac(d){
+      let best = null;
       for(const i of (d.interfaces||[])){
-        if(i.mac && i.status === "up") return normalizeMac(i.mac);
+        if(!i.mac) continue;
+        const m = normalizeMac(i.mac);
+        if(best===null || m < best) best = m;
       }
-      return "00:00:00:00:00:00";
+      return best || "ff:ff:ff:ff:ff:ff"; // no MAC → treat as highest (least likely root)
     }
     const participants = [...participantIds].map(pid=>{
       const d = Cfg.byId("devices", pid);
-      return d ? { id:pid, dev:d, priority:(d.stp_priority||32768)+vid, mac:bridgeMac(d) } : null;
+      return d ? { id:pid, dev:d, priority:(d.stp_priority==null?32768:d.stp_priority)+vid, mac:bridgeMac(d) } : null;
     }).filter(Boolean);
-    // Find root: lowest (priority, then mac)
-    participants.sort((a,b)=>(a.priority-b.priority) || a.mac.localeCompare(b.mac));
+    // Root bridge election (real STP): lowest Bridge ID = (priority, then lowest MAC).
+    // - If the user sets stp_priority, it takes precedence.
+    // - Otherwise all share the default (32768) and the LOWEST MAC wins (sequential MAC
+    //   allocation means the "oldest"/lowest-addressed switch becomes root).
+    participants.sort((a,b)=>(a.priority-b.priority) || (a.mac < b.mac ? -1 : a.mac > b.mac ? 1 : 0));
     const root = participants[0];
     if(!root){ vlans.push({ vlan:vid, ports:[], isRoot:false, rootPriority:0, rootMac:"-", rootCost:0, bridgePriority:32768+vid, bridgeMac:bridgeMac(switchDevice) }); continue; }
     const isRoot = root.id === switchDevice.id;
@@ -1454,6 +1461,63 @@ function findEgressLink(elKind, elObj, destIp, visited){
  *
  * 動的ARPキャッシュ: App.arpCache[ownerId] = { ip: {mac, iface, ts} }
  */
+/* ====== IP ADDRESS CONFLICT DETECTION ======
+ * 同一サブネット(同一ブロードキャストドメイン)内に同一IPv4/IPv6が複数存在する場合は
+ * アドレス競合(IP conflict)であり、宛先が一意に定まらず通信が破綻する。
+ * FHRP/VRRP/HSRP の仮想IP(意図的に共有)とボンド/エイリアスは除外する。
+ * 戻り値: { "ip": [ {kind,id,iface,label}, ... ], ... } 競合しているIPのみ
+ */
+function _fhrpVirtualIps(){
+  const set = new Set();
+  for(const d of (App.config.devices||[])){
+    for(const i of (d.interfaces||[])){
+      if(i.fhrp && i.fhrp.virtual_ip) set.add(ipOnly(i.fhrp.virtual_ip));
+      if(i.vrrp && i.vrrp.virtual_ip) set.add(ipOnly(i.vrrp.virtual_ip));
+    }
+  }
+  return set;
+}
+function detectIpConflicts(){
+  const virt = _fhrpVirtualIps();
+  // collect (ip -> owners) for physical interface IPs
+  const map = {};
+  const add = (ip, owner)=>{
+    const t = ipOnly(ip); if(!t || virt.has(t)) return;
+    (map[t] = map[t] || []).push(owner);
+  };
+  for(const s of (App.config.servers||[])){
+    for(const i of (s.interfaces||[])){
+      add(i.ip,   { kind:"server", id:s.id, iface:i.id, label:s.label||s.id, cidr:i.ip });
+      add(i.ipv6, { kind:"server", id:s.id, iface:i.id, label:s.label||s.id, cidr:i.ipv6 });
+    }
+  }
+  for(const d of (App.config.devices||[])){
+    for(const i of (d.interfaces||[])){
+      add(i.ip,   { kind:"device", id:d.id, iface:i.id, label:d.label||d.id, cidr:i.ip });
+      add(i.ipv6, { kind:"device", id:d.id, iface:i.id, label:d.label||d.id, cidr:i.ipv6 });
+    }
+  }
+  // a conflict requires the SAME subnet (same prefix). Group owners by subnet and only flag
+  // groups with >=2 distinct owners in the same subnet.
+  const conflicts = {};
+  for(const ip in map){
+    const owners = map[ip];
+    if(owners.length < 2) continue;
+    // distinct owners (same element/iface counted once)
+    const seen = new Set(); const uniq = [];
+    for(const o of owners){ const k=o.kind+":"+o.id+":"+o.iface; if(!seen.has(k)){ seen.add(k); uniq.push(o); } }
+    // require >=2 distinct ELEMENTS (not just same element)
+    const elems = new Set(uniq.map(o=>o.kind+":"+o.id));
+    if(elems.size >= 2) conflicts[ip] = uniq;
+  }
+  return conflicts;
+}
+// Is this specific IP in conflict? returns the owners array or null
+function ipConflictOwners(ip){
+  const c = detectIpConflicts();
+  return c[ipOnly(ip)] || null;
+}
+
 function _arpOwnerId(kind,id){ return kind+":"+id; }
 function arpLookup(kind, id, ip){
   const obj = Cfg.byId(kind==="device"?"devices":"servers", id);
@@ -1596,6 +1660,25 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
     const ar = arpResolve(srcKind, srcObj, destIp, (m)=>arpLog.push(m));
     if(!ar.ok){
       return { ok:false, path, reason: ar.reason, blockedAt:{ kind:srcKind, id:srcObj.id }, arpLog, macFlap:true };
+    }
+  }
+
+  // IP address conflict: if the destination IP is duplicated within the same subnet, the
+  // destination is ambiguous (ARP replies from multiple hosts) and communication breaks.
+  if(typeof ipConflictOwners === "function"){
+    const dstConf = ipConflictOwners(destIp);
+    if(dstConf && dstConf.length >= 2){
+      const who = dstConf.map(o=>o.label).join(" / ");
+      return { ok:false, path, reason:`IPアドレス競合: 宛先 ${ipOnly(destIp)} が複数ホストに重複 (${who})。宛先が一意に定まらず通信不能。`,
+        blockedAt:{ kind:srcKind, id:srcObj.id }, ipConflict:true };
+    }
+    // also fail if the SOURCE's own primary IP is duplicated
+    const srcIp0 = elementPrimaryIp(srcKind, srcObj.id, "v4") || elementPrimaryIp(srcKind, srcObj.id, "v6");
+    const srcConf = srcIp0 && ipConflictOwners(srcIp0);
+    if(srcConf && srcConf.length >= 2){
+      const who = srcConf.map(o=>o.label).join(" / ");
+      return { ok:false, path, reason:`IPアドレス競合: 送信元 ${ipOnly(srcIp0)} が重複 (${who})。応答が正しく返らず通信不安定。`,
+        blockedAt:{ kind:srcKind, id:srcObj.id }, ipConflict:true };
     }
   }
 

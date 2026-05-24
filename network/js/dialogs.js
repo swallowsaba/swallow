@@ -233,16 +233,25 @@ function renderDeviceProps(body, obj){
       const v1 = (sd.vlans||[]).find(v=>v.vlan===1) || (sd.vlans||[])[0];
       if(v1){ isRoot=v1.isRoot; rootPri=v1.rootPriority; }
     }catch(e){}
-    // find global root for VLAN1
+    // find global root for VLAN1 using the same basis as the engine (priority, then lowest MAC)
     let best=null;
+    const baseMacOf=(d)=>{ let b=null; for(const i of (d.interfaces||[])){ if(i.mac){ const m=i.mac.toLowerCase(); if(b===null||m<b)b=m; } } return b||"ff:ff:ff:ff:ff:ff"; };
     for(const d of (App.config.devices||[])){
       if(d.type!=="l2switch" && d.type!=="l3switch") continue;
       const pri=(d.stp_priority==null?32768:d.stp_priority);
-      if(!best || pri<best.pri) best={id:d.id,pri};
+      const mac=baseMacOf(d);
+      if(!best || pri<best.pri || (pri===best.pri && mac<best.mac)) best={id:d.id,pri,mac};
     }
     rootId = best && best.id;
     ch("div",{ text: (rootId===obj.id? "✓ このスイッチが現在のルートブリッジです" : `現在のルートブリッジ: ${rootId||"-"}`),
-      style:{fontSize:"11px",color:(rootId===obj.id?"var(--green)":"var(--text-dim)"),padding:"2px 0 6px",fontWeight:"700"} }, stpSec);
+      style:{fontSize:"11px",color:(rootId===obj.id?"var(--green)":"var(--text-dim)"),padding:"2px 0 4px",fontWeight:"700"} }, stpSec);
+    // show this switch's bridge ID (priority + base MAC) — the election basis
+    let baseMac="-";
+    { let best=null; for(const i of (obj.interfaces||[])){ if(i.mac){ const m=i.mac.toLowerCase(); if(best===null||m<best)best=m; } } baseMac=best||"(MAC未設定)"; }
+    ch("div",{ text:`Bridge ID = priority ${(obj.stp_priority==null?32768:obj.stp_priority)} / MAC ${baseMac}`,
+      style:{fontSize:"10px",color:"var(--text-mute)",padding:"0 0 6px",fontFamily:"var(--mono)"} }, stpSec);
+    ch("div",{ text:"※ ルートは Bridge ID 最小（プライオリティ→MAC最小）で選定。未指定時は最小MACのスイッチが自動でルートになります。",
+      style:{fontSize:"9px",color:"var(--text-mute)",padding:"0 0 6px",lineHeight:"1.4"} }, stpSec);
     addSelectField(stpSec, "STPモード", ["rstp","pvst","mst","off"], (obj.stp&&obj.stp.mode)||"rstp",
       v=>{ obj.stp=obj.stp||{}; obj.stp.mode=v; renderAndSync(); });
     // BPDU Guard: when a loop drives MAC flapping to the max, an err-disable trips and converges it
