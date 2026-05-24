@@ -505,8 +505,20 @@ function renderPorts(g, obj, kind){
     hit.addEventListener("mouseleave",()=>{ if(App._hoverPort && App._hoverPort.id===obj.id && App._hoverPort.iface===iface.id) App._hoverPort = null; hideTooltip(); });
     hit.addEventListener("mousemove",moveTooltip);
     hit.addEventListener("mousedown",(e)=>{
-      // In connect mode: do NOT move/reposition — wiring is done via click (handleConnectClick)
-      if(App.connectMode) return;
+      if(App.connectMode){
+        // Connect mode: start a wire gesture from this port. Works for BOTH
+        //   (a) press-drag-release onto the target port, and
+        //   (b) click this port, then click the target port.
+        if(e.button !== 0) return;
+        e.preventDefault(); e.stopPropagation();
+        const pos = (computePortPositions(obj, kind)[i]) || {cx:0,cy:0,outX:0,outY:0};
+        wireDrag = {
+          fromKind:kind, fromId:obj.id, fromIface:iface.id,
+          sx:(obj.x||0)+(pos.outX!=null?pos.outX:pos.cx), sy:(obj.y||0)+(pos.outY!=null?pos.outY:pos.cy),
+          moved:false, connectMode:true
+        };
+        return;
+      }
       // Not in connect mode: LEFT-drag repositions the interface port. No wiring here.
       if(e.button !== 0) return;
       e.stopPropagation();
@@ -517,11 +529,8 @@ function renderPorts(g, obj, kind){
     });
     hit.addEventListener("click",(e)=>{
       e.stopPropagation();
-      // === Connection mode: clicking a PORT picks that interface (continuous wiring) ===
-      if(App.connectMode){
-        handleConnectClick(kind, obj.id, iface.id);
-        return;
-      }
+      // In connect mode, wiring is handled in mousedown/mouseup (drag or click-click).
+      if(App.connectMode) return;
       if(!dragState || !dragState.moved){
         selectElement(kind, obj.id); openPropertyPanel();
       }
@@ -1779,6 +1788,20 @@ function onMouseMove(e){
     if(rb) rb.setAttribute("d", `M ${wireDrag.sx} ${wireDrag.sy} L ${pt.x} ${pt.y}`);
     return;
   }
+  // Connect mode click-pick: after the first port is picked, show a rubber band
+  // from that port to the cursor so the user can aim at the target port.
+  if(App.connectMode && App.connectMode.from && App.connectMode.from.anchor){
+    const pt = svgPoint(e);
+    let rb = $("#wire-rubber");
+    const layer = $("#layer-overlays") || $("#layer-connections");
+    if(!rb && layer){
+      rb = ce("path", { id:"wire-rubber", fill:"none", stroke:"var(--accent)",
+        "stroke-width":2.5, "stroke-dasharray":"6 4", "pointer-events":"none", opacity:"0.9" }, layer);
+    }
+    const a = App.connectMode.from.anchor;
+    if(rb) rb.setAttribute("d", `M ${a.x} ${a.y} L ${pt.x} ${pt.y}`);
+    return;
+  }
   if(!dragState) return;
   if(dragState.mode === "port"){
     const pt = svgPoint(e);
@@ -1872,20 +1895,27 @@ function onMouseUp(){
   if(wireDrag){
     const rb = $("#wire-rubber"); if(rb) rb.remove();
     const wd = wireDrag; wireDrag = null;
-    if(wd.moved && App._hoverPort){
-      const tp = App._hoverPort;
+    const tp = App._hoverPort;
+    if(wd.connectMode){
+      // CONNECT MODE — two ways to wire:
+      const sameAsTarget = tp && tp.kind===wd.fromKind && tp.id===wd.fromId && tp.iface===wd.fromIface;
+      if(wd.moved && tp && !sameAsTarget){
+        // (a) drag gesture: pressed on source port, released on target port → wire now
+        createConnectionBetween(wd.fromKind, wd.fromId, wd.fromIface, tp.kind, tp.id, tp.iface);
+        if(App.connectMode){ App.connectMode.step=1; App.connectMode.from=null; }
+        setConnectStatusMsg();
+      } else {
+        // (b) click (no real movement): treat as a click-pick (click source, then click target)
+        handleConnectClick(wd.fromKind, wd.fromId, wd.fromIface);
+      }
+      return;
+    }
+    if(wd.moved && tp){
       const sameIface = tp.kind===wd.fromKind && tp.id===wd.fromId && tp.iface===wd.fromIface;
       if(!sameIface){
         createConnectionBetween(wd.fromKind, wd.fromId, wd.fromIface, tp.kind, tp.id, tp.iface);
-      } else {
-        toast("配線先のインターフェースが選択されていません（対向ポート上で離してください）", "warn");
       }
-    } else if(wd.moved && !App._hoverPort){
-      toast("配線先のインターフェース上でマウスを離してください", "warn");
     }
-    // keep native context menu suppressed briefly so the just-finished right-drag
-    // doesn't pop a browser menu, then clear
-    setTimeout(()=>{ App._wireActive = false; }, 50);
     return;
   }
   if(!dragState) return;
@@ -1990,34 +2020,44 @@ function handleConnectClick(kind, id, ifaceId){
     return;
   }
   if(App.connectMode.step === 1){
-    App.connectMode.from = { kind, id, iface: ifaceId };
+    // record the anchor point of the picked port so a rubber band can follow the cursor
+    let anchor = null;
+    const obj = Cfg.byId(kindToCol(kind), id);
+    if(obj && ifaceId){
+      const positions = computePortPositions(obj, kind);
+      const ifIdx = (obj.interfaces||[]).findIndex(i=>i.id===ifaceId);
+      const pos = positions[ifIdx];
+      if(pos) anchor = { x:(obj.x||0)+(pos.outX!=null?pos.outX:pos.cx), y:(obj.y||0)+(pos.outY!=null?pos.outY:pos.cy) };
+    }
+    App.connectMode.from = { kind, id, iface: ifaceId, anchor };
     App.connectMode.step = 2;
-    const port = ifaceId ? ` (port ${ifaceId})` : "";
-    $("#status-msg").textContent = `From: ${id}${port} → 接続先のインターフェースをクリック (ESCでキャンセル)`;
+    const port = ifaceId ? ` (${ifaceId})` : "";
+    $("#status-msg").textContent = `始点: ${id}${port} → 接続先インターフェースをクリック/ドラッグ離し (ESCでキャンセル)`;
     Log.info(`接続元: ${kind} ${id}${port}`);
   } else {
     if(App.connectMode.from.kind === kind && App.connectMode.from.id === id){
-      // Same device: allow if a DIFFERENT iface is chosen (loopback within is unusual but legal)
       if(App.connectMode.from.iface && ifaceId && App.connectMode.from.iface === ifaceId){
         Log.warn("同じインターフェース同士は接続できません");
         return;
       }
-      if(!ifaceId){
-        Log.warn("同じ要素には接続できません");
-        return;
-      }
+      if(!ifaceId){ Log.warn("同じ要素には接続できません"); return; }
     }
     addConnection(App.connectMode.from, { kind, id, iface: ifaceId });
-    // Stay in connect mode for CONTINUOUS wiring — reset to pick a new source.
     App.connectMode.step = 1;
     App.connectMode.from = null;
-    $("#status-msg").textContent = "接続モード: 始点インターフェースをクリック → 終点をクリック (連続配線可 / ESC または「接続」ボタンで終了)";
+    const rb = $("#wire-rubber"); if(rb) rb.remove();
+    setConnectStatusMsg();
   }
+}
+function setConnectStatusMsg(){
+  const el = $("#status-msg"); if(!el) return;
+  el.textContent = "接続モード: 始点インターフェースをクリック → 終点をクリック(またはドラッグ離し) / 連続配線可 / ESC・「接続」ボタンで終了";
 }
 function cancelConnectMode(){
   App.connectMode = null;
   $("#svg").classList.remove("connecting");
   $("#status-msg").textContent = "";
+  const rb = $("#wire-rubber"); if(rb) rb.remove();
   const btn = $("#btn-add-connection"); if(btn) btn.classList.remove("active");
 }
 

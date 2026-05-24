@@ -1043,6 +1043,12 @@ var CommLog = {
 function logCommResult(srcLabel, dstLabel, proto, port, res){
   const portTxt = port!=null ? (":"+port) : "";
   const flow = `${srcLabel} → ${dstLabel}${portTxt} (${(proto||"ip").toUpperCase()})`;
+  // Show the ARP resolution exchange that preceded this flow, if any
+  const arp = (res && res.arpLog) || App._lastArpLog;
+  if(arp && arp.length){
+    for(const line of arp) CommLog.info("  "+line);
+  }
+  App._lastArpLog = null;
   if(res && res.ok){
     const ids = (res.path||[]).map(p=>p.id);
     const hops = ids.filter((x,i)=>i===0||x!==ids[i-1]).join(" → ");

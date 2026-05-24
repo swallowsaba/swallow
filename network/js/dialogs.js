@@ -464,6 +464,12 @@ function renderServerProps(body, obj){
       background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",fontWeight:"600"},
     on:{ click:()=>showArpTable("server", obj.id) }
   }, arpBar);
+  ch("button", { text:"📢 GARP送信",
+    style:{flex:"1",padding:"6px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
+      background:"var(--bg3)",border:"1px solid var(--green)",color:"var(--green)",fontWeight:"600"},
+    title:"Gratuitous ARP を送信し、近隣のARPキャッシュを更新・IP重複を検知します",
+    on:{ click:()=>{ const ifc=(obj.interfaces||[]).find(i=>i.ip)||(obj.interfaces||[])[0]; sendGarp("server", obj.id, ifc&&ifc.id); }}
+  }, arpBar);
   ch("button", { text:"🔌 ポート/FW",
     style:{flex:"1",padding:"6px",fontSize:"11px",cursor:"pointer",borderRadius:"4px",
       background:"var(--bg3)",border:"1px solid var(--orange)",color:"var(--orange)",fontWeight:"600"},

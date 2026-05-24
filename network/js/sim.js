@@ -1445,9 +1445,159 @@ function findEgressLink(elKind, elObj, destIp, visited){
   return allLinks[0] || null;
 }
 
+/* ====== ARP / GARP (Address Resolution Protocol) ======
+ * 通信前にL2宛先MACを解決する。同一サブネットなら宛先IP、異サブネットならGW IPをARP解決。
+ * ブロードキャストであるARPは、同一ブロードキャストドメインでストームが起きていると
+ * 損失し、ARP解決失敗→通信不能となる(間接接続機器も影響を受ける)。
+ * GARP(Gratuitous ARP): 自身のIP→MACを一斉通知。ARPキャッシュ更新・IP重複検知・
+ * 冗長切替(VRRP/HA)時のMAC再学習に使われる。
+ *
+ * 動的ARPキャッシュ: App.arpCache[ownerId] = { ip: {mac, iface, ts} }
+ */
+function _arpOwnerId(kind,id){ return kind+":"+id; }
+function arpLookup(kind, id, ip){
+  const obj = Cfg.byId(kind==="device"?"devices":"servers", id);
+  if(obj){
+    for(const a of (obj.arp_static||[])){ if(ipOnly(a.ip)===ipOnly(ip)) return { mac:a.mac, static:true }; }
+  }
+  const c = (App.arpCache && App.arpCache[_arpOwnerId(kind,id)]) || {};
+  if(c[ipOnly(ip)]) return c[ipOnly(ip)];
+  return null;
+}
+function arpLearn(kind, id, ip, mac, iface){
+  App.arpCache = App.arpCache || {};
+  const k = _arpOwnerId(kind,id);
+  App.arpCache[k] = App.arpCache[k] || {};
+  App.arpCache[k][ipOnly(ip)] = { mac, iface, ts:Date.now() };
+}
+// Find which element owns a given IP (the ARP target), returning {kind,id,mac,iface}
+function findIpOwner(ip){
+  const t = ipOnly(ip);
+  for(const s of (App.config.servers||[])){
+    for(const i of (s.interfaces||[])){
+      if(ipOnly(i.ip)===t || ipOnly(i.ipv6)===t) return { kind:"server", id:s.id, mac:i.mac, iface:i.id, obj:s };
+    }
+    if(s.bonding && (ipOnly(s.bonding.bond_ip)===t)) return { kind:"server", id:s.id, mac:(s.bonding.bond_mac||null), iface:s.bonding.bond_name||"bond0", obj:s };
+  }
+  for(const d of (App.config.devices||[])){
+    for(const i of (d.interfaces||[])){
+      if(ipOnly(i.ip)===t || ipOnly(i.ipv6)===t) return { kind:"device", id:d.id, mac:i.mac, iface:i.id, obj:d };
+    }
+  }
+  return null;
+}
+// Highest storm/flap severity among switches in the L2 broadcast domain reachable from a host.
+// Broadcast (ARP) is most sensitive to storms — this is how indirectly-connected hosts get hit.
+function l2StormSeverityForHost(kind, id){
+  // find the access switch the host attaches to
+  let accessSw = null, accessVlanSet = new Set([1]);
+  for(const c of (App.config.connections||[])){
+    if(c.status==="down") continue;
+    let me=null, peer=null;
+    if(c.from && c.from[kind]===id){ me=c.from; peer=c.to; }
+    else if(c.to && c.to[kind]===id){ me=c.to; peer=c.from; }
+    else continue;
+    if(peer && peer.device){
+      const d = Cfg.byId("devices", peer.device);
+      if(d && (d.type==="l2switch"||d.type==="l3switch")){ accessSw = d.id; break; }
+    }
+  }
+  if(!accessSw){
+    // host might itself be reached via a switch differently; fall back to global worst
+    let worst=0; for(const sid in (App.macFlap||{})) worst=Math.max(worst, App.macFlap[sid].severity||0);
+    return worst*0; // no L2 attachment found → not on a flapping domain
+  }
+  // BFS the broadcast domain from the access switch, take the worst severity present
+  const dist = (typeof l2DomainDistances==="function") ? l2DomainDistances(accessSw, accessVlanSet) : {[accessSw]:0};
+  let worst=0;
+  for(const sid in dist){ const sev=(App.macFlap && App.macFlap[sid] && App.macFlap[sid].severity)||0; if(sev>worst) worst=sev; }
+  return worst;
+}
+// Perform ARP resolution for targetIp from a source host. Returns {ok, mac, viaGw, log:[...]}.
+// During an L2 broadcast storm, ARP (broadcast) is lost with probability ∝ severity.
+function arpResolve(srcKind, srcObj, targetIp, logFn){
+  const log = (m)=>{ if(logFn) logFn(m); };
+  const owner = findIpOwner(targetIp);
+  // cache hit?
+  const cached = arpLookup(srcKind, srcObj.id, targetIp);
+  const tgtMac = (owner && owner.mac) || (cached && cached.mac) || null;
+  // broadcast storm impact on ARP (who-has is broadcast)
+  const sev = l2StormSeverityForHost(srcKind, srcObj.id);
+  // During an active broadcast storm the segment is flooded, so even cached/established L2
+  // comms are disrupted — ARP (and its refresh) is lost with probability ∝ severity.
+  if(sev > 0){
+    const lossP = Math.min(0.95, sev/110);
+    if(Math.random() < lossP){
+      log(`ARP: who-has ${ipOnly(targetIp)}? (no reply — broadcast storm)`);
+      return { ok:false, reason:`ARP解決失敗: ${ipOnly(targetIp)} (ブロードキャストストームによりARP応答消失 / 重大度${Math.round(sev)}%)`, log, stormSeverity:sev };
+    }
+  }
+  if(!cached){
+    log(`ARP: who-has ${ipOnly(targetIp)}? tell ${elementPrimaryIp(srcKind, srcObj.id,"v4")||srcObj.id}`);
+    if(!owner && !tgtMac){
+      log(`ARP: (宛先はGW/次ホップ経由で解決)`);
+    } else {
+      log(`ARP: ${ipOnly(targetIp)} is-at ${tgtMac||"(learned)"}`);
+      if(owner && owner.mac) arpLearn(srcKind, srcObj.id, targetIp, owner.mac, owner.iface);
+    }
+  }
+  return { ok:true, mac:tgtMac, stormSeverity:sev };
+}
+// Gratuitous ARP: host announces its own IP→MAC. Updates neighbors' ARP caches and detects
+// IP duplication. Returns { conflict, conflictWith }.
+function sendGarp(kind, id, ifaceId){
+  const obj = Cfg.byId(kind==="device"?"devices":"servers", id);
+  if(!obj) return { ok:false };
+  const iface = (obj.interfaces||[]).find(i=>i.id===ifaceId) || (obj.interfaces||[])[0];
+  if(!iface || !iface.ip){ toast("GARP送信不可: IP未設定", "warn"); return { ok:false }; }
+  const ip = ipOnly(iface.ip), mac = iface.mac || "(unknown)";
+  // IP duplication detection: any OTHER element with the same IP?
+  let conflict = null;
+  for(const s of (App.config.servers||[])){
+    if(s.id===id && kind==="server") continue;
+    for(const i of (s.interfaces||[])) if(ipOnly(i.ip)===ip){ conflict={kind:"server",id:s.id,mac:i.mac}; }
+  }
+  for(const d of (App.config.devices||[])){
+    if(d.id===id && kind==="device") continue;
+    for(const i of (d.interfaces||[])) if(ipOnly(i.ip)===ip){ conflict={kind:"device",id:d.id,mac:i.mac}; }
+  }
+  // update all other hosts' ARP caches with this IP→MAC (gratuitous announcement)
+  let updated=0;
+  for(const s of (App.config.servers||[])){ if(!(s.id===id&&kind==="server")){ arpLearn("server", s.id, ip, mac, null); updated++; } }
+  for(const d of (App.config.devices||[])){ if(!(d.id===id&&kind==="device")){ arpLearn("device", d.id, ip, mac, null); updated++; } }
+  if(typeof CommLog!=="undefined"){
+    CommLog.info(`GARP送信: ${obj.label||id} が ${ip} is-at ${mac} を一斉通知 (近隣ARPキャッシュ ${updated}台更新)`);
+    if(conflict){
+      const co = Cfg.byId(conflict.kind==="device"?"devices":"servers", conflict.id);
+      CommLog.blocked(`%IP-DUP: IPアドレス重複検知 ${ip} — ${obj.label||id}(${mac}) と ${(co&&co.label)||conflict.id}(${conflict.mac})`,
+        "GARPにより重複を検出。両者の通信が不安定になります。");
+    }
+  }
+  if(conflict) toast(`⚠ GARP: IP重複検知 ${ip}`, "warn");
+  else toast(`GARP送信: ${ip} is-at ${mac}`, "ok");
+  return { ok:true, conflict };
+}
+
 function computePath(srcKind, srcObj, destIp, proto, dstPort){
   const center = (o)=>({ x:(o.x||0)+(o.width||(o.interfaces?130:120))/2, y:(o.y||0)+(o.height||65)/2 });
   const path = [];
+  const arpLog = [];
+  App._lastArpLog = arpLog;
+
+  // Refresh MAC-flapping / broadcast-storm state so the CURRENT condition (incl. storm
+  // spillover to neighbor switches) is applied to THIS communication immediately — this is
+  // how indirectly-connected hosts in the same L2 domain are affected, not just the looped switch.
+  if(typeof updateMacFlapState === "function"){ try{ updateMacFlapState(); }catch(e){} }
+
+  // ARP resolution (L2): before forwarding, the source resolves the destination's (or its
+  // gateway's) MAC via ARP. ARP is broadcast → during a storm it is lost and resolution fails,
+  // so even a host whose own switch isn't the loop origin loses connectivity.
+  if(srcKind === "server" || srcKind === "device"){
+    const ar = arpResolve(srcKind, srcObj, destIp, (m)=>arpLog.push(m));
+    if(!ar.ok){
+      return { ok:false, path, reason: ar.reason, blockedAt:{ kind:srcKind, id:srcObj.id }, arpLog, macFlap:true };
+    }
+  }
 
   // VM bridging: a VM (server.host) reaches the physical network THROUGH its host.
   // Source VM → record the VM as origin, then route from the host.
