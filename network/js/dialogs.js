@@ -221,6 +221,49 @@ function renderDeviceProps(body, obj){
 
   renderInterfaceTable(body, obj, "device");
 
+  // STP / Root Bridge — for L2/L3 switches
+  if(obj.type === "l2switch" || obj.type === "l3switch"){
+    const stpSec = ch("div", { class:"sub-section" }, body);
+    ch("h4", { text:"スパニングツリー (STP) / ルートブリッジ" }, stpSec);
+    const curPri = (obj.stp_priority==null ? 32768 : obj.stp_priority);
+    // Show whether this switch is currently the root bridge (VLAN1)
+    let isRoot=false, rootId=null, rootPri=null;
+    try{
+      const sd = computeStpForSwitch(obj);
+      const v1 = (sd.vlans||[]).find(v=>v.vlan===1) || (sd.vlans||[])[0];
+      if(v1){ isRoot=v1.isRoot; rootPri=v1.rootPriority; }
+    }catch(e){}
+    // find global root for VLAN1
+    let best=null;
+    for(const d of (App.config.devices||[])){
+      if(d.type!=="l2switch" && d.type!=="l3switch") continue;
+      const pri=(d.stp_priority==null?32768:d.stp_priority);
+      if(!best || pri<best.pri) best={id:d.id,pri};
+    }
+    rootId = best && best.id;
+    ch("div",{ text: (rootId===obj.id? "✓ このスイッチが現在のルートブリッジです" : `現在のルートブリッジ: ${rootId||"-"}`),
+      style:{fontSize:"11px",color:(rootId===obj.id?"var(--green)":"var(--text-dim)"),padding:"2px 0 6px",fontWeight:"700"} }, stpSec);
+    addSelectField(stpSec, "STPモード", ["rstp","pvst","mst","off"], (obj.stp&&obj.stp.mode)||"rstp",
+      v=>{ obj.stp=obj.stp||{}; obj.stp.mode=v; renderAndSync(); });
+    // Bridge priority (lower = more likely root; multiple of 4096)
+    const pf=ch("div",{class:"field"},stpSec);
+    ch("label",{text:"ブリッジプライオリティ (低いほど優先 / 4096刻み)"},pf);
+    const prow=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center"}},pf);
+    const psel=ch("select",{style:{flex:"1",padding:"5px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"4px"}},prow);
+    for(let pv=0; pv<=61440; pv+=4096){ const o=ch("option",{value:String(pv),text:String(pv)+(pv===32768?" (既定)":"")},psel); if(pv===curPri)o.selected=true; }
+    psel.addEventListener("change",()=>{ obj.stp_priority=+psel.value; renderAndSync(); openPropertyPanel(); });
+    ch("button",{text:"👑 ルートブリッジにする",style:{whiteSpace:"nowrap",padding:"5px 8px",fontSize:"10px",cursor:"pointer",background:"#f59e0b",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
+      on:{click:()=>{
+        // set this switch to the lowest priority among all switches
+        let minOther=32768;
+        for(const d of (App.config.devices||[])){ if((d.type==="l2switch"||d.type==="l3switch") && d.id!==obj.id){ minOther=Math.min(minOther,(d.stp_priority==null?32768:d.stp_priority)); } }
+        obj.stp_priority = Math.max(0, (minOther>=4096?minOther-4096:0));
+        renderAndSync(); openPropertyPanel(); toast(`${obj.label||obj.id} をルートブリッジに設定 (priority=${obj.stp_priority})`,"ok");
+      }}},prow);
+    ch("div",{text:"💡 「STP表示」ボタンで全体のルート/ブロックポートを可視化できます。ルートブリッジには👑が表示されます。",
+      style:{fontSize:"10px",color:"var(--text-mute)",padding:"6px 0 0",lineHeight:"1.4"}},stpSec);
+  }
+
   // Firewall policy editor — for firewall / WAF devices
   if(obj.type === "firewall" || obj.type === "waf"){
     const fwBar = ch("div", { style:{margin:"8px 0"} }, body);
@@ -900,6 +943,38 @@ function showAwsManager(){
       });
       ch("button",{text:"+ セキュリティグループ",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
         on:{click:()=>{ vpc.security_groups=vpc.security_groups||[]; vpc.security_groups.push({name:"sg-"+(vpc.security_groups.length+1),inbound:[{proto:"tcp",port:443,source:"0.0.0.0/0"}],outbound:[{proto:"any",port:null,dest:"0.0.0.0/0"}]}); renderAndSync(); refresh(); }}},s2);
+
+      // EC2 instances (servers placed in this VPC)
+      const s3=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"EC2 インスタンス"},s3);
+      const ec2s=(App.config.servers||[]).filter(sv=>sv.aws && sv.aws.vpc===vpc.name);
+      ec2s.forEach(sv=>{
+        const row=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"3px",flexWrap:"wrap",padding:"3px",border:"1px solid var(--border)",borderRadius:"4px"}},s3);
+        ch("span",{text:(sv.status||"running")==="running"?"🟢":"⚪"},row);
+        ch("span",{text:sv.label||sv.id,style:{flex:"1",fontWeight:"600",fontSize:"11px"}},row);
+        ch("span",{text:(sv.aws.subnet||"-"),style:{fontSize:"9px",color:"var(--text-dim)"}},row);
+        ch("span",{text:"SG:"+((sv.aws.security_groups||[]).join(",")||"-"),style:{fontSize:"9px",color:"var(--text-dim)"}},row);
+        ch("button",{text:"設定",style:{padding:"1px 7px",fontSize:"10px",cursor:"pointer",background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"3px"},
+          on:{click:()=>{ closeDialog(); selectElement("server",sv.id); openPropertyPanel(); }}},row);
+        ch("button",{text:"✕",style:{padding:"1px 6px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{ App.config.servers=App.config.servers.filter(x=>x.id!==sv.id); renderAndSync(); refresh(); }}},row);
+      });
+      if(!ec2s.length) ch("div",{text:"(このVPCにEC2インスタンスがありません)",style:{color:"var(--text-mute)",fontSize:"11px",padding:"4px 2px"}},s3);
+      ch("button",{text:"+ EC2インスタンス追加",style:{width:"100%",padding:"7px",fontSize:"11px",cursor:"pointer",background:"#ff9900",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
+        on:{click:()=>{
+          pushUndo();
+          const id=uid("ec2");
+          const subnet=(vpc.subnets||[])[0];
+          // derive an IP from the subnet CIDR if present
+          let ip="10.0.1.10/24";
+          if(subnet && subnet.cidr){ const m=subnet.cidr.match(/^(\d+)\.(\d+)\.(\d+)\./); if(m) ip=`${m[1]}.${m[2]}.${m[3]}.${10+ec2s.length}/24`; }
+          App.config.servers.push({ id, label:id, type:"server", os:"Amazon Linux", status:"running",
+            x:(App.view.x||0)+260, y:(App.view.y||0)+200+ec2s.length*90, width:130, height:65,
+            interfaces:[{id:"eth0",ip,mac:genUniqueMac(),speed:1000,port_type:"rj45",status:"up"}],
+            aws:{ vpc:vpc.name, subnet:(subnet&&subnet.name)||"", security_groups:(vpc.security_groups||[]).slice(0,1).map(g=>g.name) } });
+          renderAndSync(); refresh();
+          toast("EC2インスタンスを追加: "+id,"ok");
+        }}},s3);
       ch("div",{text:"💡 サーバのプロパティでVPC/サブネット/SGを割り当てると、SGのインバウンド許可がそのサーバへの通信制御として適用されます。",style:{fontSize:"10px",color:"var(--text-mute)",padding:"8px 2px",lineHeight:"1.4"}},body);
     }
     refresh();

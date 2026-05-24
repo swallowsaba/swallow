@@ -503,23 +503,9 @@ function renderPorts(g, obj, kind){
     hit.addEventListener("mouseleave",()=>{ if(App._hoverPort && App._hoverPort.id===obj.id && App._hoverPort.iface===iface.id) App._hoverPort = null; hideTooltip(); });
     hit.addEventListener("mousemove",moveTooltip);
     hit.addEventListener("mousedown",(e)=>{
-      if(App.connectMode){
-        // legacy click-connect mode: ignore drag handling
-        return;
-      }
-      // RIGHT button (or Shift+left) → draw a connection wire from this interface
-      if(e.button === 2 || (e.button === 0 && e.shiftKey)){
-        e.preventDefault(); e.stopPropagation();
-        App._wireActive = true;  // suppress native context menu while wiring
-        const pos = (computePortPositions(obj, kind)[i]) || {cx:0,cy:0,outX:0,outY:0};
-        wireDrag = {
-          fromKind:kind, fromId:obj.id, fromIface:iface.id,
-          sx:(obj.x||0)+(pos.outX!=null?pos.outX:pos.cx), sy:(obj.y||0)+(pos.outY!=null?pos.outY:pos.cy),
-          moved:false
-        };
-        return;
-      }
-      // LEFT button → always reposition the port (connected or not), no conflict with wiring
+      // In connect mode: do NOT move/reposition — wiring is done via click (handleConnectClick)
+      if(App.connectMode) return;
+      // Not in connect mode: LEFT-drag repositions the interface port. No wiring here.
       if(e.button !== 0) return;
       e.stopPropagation();
       dragState = {
@@ -527,16 +513,14 @@ function renderPorts(g, obj, kind){
         origPos: iface.port_position ? JSON.parse(JSON.stringify(iface.port_position)) : null
       };
     });
-    // Suppress the browser context menu on ports so right-drag wiring works cleanly
-    hit.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); });
     hit.addEventListener("click",(e)=>{
       e.stopPropagation();
-      // === Connection mode: clicking a PORT picks that interface ===
+      // === Connection mode: clicking a PORT picks that interface (continuous wiring) ===
       if(App.connectMode){
         handleConnectClick(kind, obj.id, iface.id);
         return;
       }
-      if((!dragState || !dragState.moved) && (!wireDrag || !wireDrag.moved)){
+      if(!dragState || !dragState.moved){
         selectElement(kind, obj.id); openPropertyPanel();
       }
     });
@@ -899,6 +883,18 @@ function renderDevice(d){
   drawDeviceIcon(g, d.type, w, h);
   ce("text", { "class":"element-label", x:w/2, y:h-7, text:d.label||d.id }, g);
   renderStatusLed(g, w-9, 9, d.status);
+  // Persistent root-bridge crown (VLAN1) so the root is always visible, even without the STP overlay
+  if((d.type==="l2switch" || d.type==="l3switch") && typeof computeStpForSwitch==="function"){
+    try{
+      const sd = computeStpForSwitch(d);
+      const v1 = (sd.vlans||[]).find(v=>v.vlan===1) || (sd.vlans||[])[0];
+      if(v1 && v1.isRoot){
+        const cg = ce("g", { class:"root-crown", "pointer-events":"none" }, g);
+        ce("text", { x:10, y:-4, "font-size":"13", text:"👑" }, cg);
+        ce("text", { x:24, y:-4, "font-size":"7.5", fill:"#f59e0b", "font-weight":"700", text:"ROOT BRIDGE" }, cg);
+      }
+    }catch(e){}
+  }
   // MAC flapping warning badge (severity-scaled)
   if(typeof macFlapSeverity === "function"){
     const sev = macFlapSeverity(d.id);
@@ -1318,6 +1314,21 @@ function renderConnection(c){
   // Base line - with an id so animateMotion can reference it
   const pathId = "conn-path-" + c.id.replace(/[^a-zA-Z0-9_-]/g,"_");
   const line = ce("path", { id: pathId, "class": cls, d: built.pathD, fill:"none" }, g);
+  // MAC-flapping degradation: links touching a flapping switch turn an escalating red and flicker
+  if(typeof macFlapSeverity === "function" && !isDown){
+    const fa = (c.from.device && macFlapSeverity(c.from.device)) || 0;
+    const fb = (c.to.device && macFlapSeverity(c.to.device)) || 0;
+    const sev = Math.max(fa, fb);
+    if(sev > 0){
+      const col = sev<40 ? "#f59e0b" : sev<70 ? "#ef4444" : "#b91c1c";
+      line.setAttribute("stroke", col);
+      line.setAttribute("stroke-width", (2 + sev/30).toFixed(1));
+      if(App.animationsEnabled !== false){
+        ce("animate", { attributeName:"opacity", values:"1;0.25;1",
+          dur:(Math.max(0.35, 1.4 - sev/90))+"s", repeatCount:"indefinite" }, line);
+      }
+    }
+  }
   // Arrowhead markers based on direction (only when up)
   if(!isDown){
     const mid = "url(#arrow-"+type+")";
@@ -1905,13 +1916,17 @@ function handleConnectClick(kind, id, ifaceId){
       }
     }
     addConnection(App.connectMode.from, { kind, id, iface: ifaceId });
-    cancelConnectMode();
+    // Stay in connect mode for CONTINUOUS wiring — reset to pick a new source.
+    App.connectMode.step = 1;
+    App.connectMode.from = null;
+    $("#status-msg").textContent = "接続モード: 始点インターフェースをクリック → 終点をクリック (連続配線可 / ESC または「接続」ボタンで終了)";
   }
 }
 function cancelConnectMode(){
   App.connectMode = null;
   $("#svg").classList.remove("connecting");
   $("#status-msg").textContent = "";
+  const btn = $("#btn-add-connection"); if(btn) btn.classList.remove("active");
 }
 
 function addConnection(from, to){

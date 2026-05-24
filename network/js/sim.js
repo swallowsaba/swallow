@@ -2232,12 +2232,106 @@ function addNewAnnotation(){
   toast("メモを追加: ダブルクリックで文言を編集", "ok");
 }
 
+/* ====== COPY / PASTE (Ctrl+C / Ctrl+V) — duplicate servers & devices ======
+ * The clone gets a new unique id, an offset position, freshly generated MACs, and
+ * de-duplicated IP addresses. Connections are NOT copied (the clone is standalone).
+ */
+function copySelectedElement(){
+  if(!App.selected) return;
+  const col = App.selected.kind === "server" ? "servers" : "devices";
+  const obj = Cfg.byId(col, App.selected.id);
+  if(!obj) return;
+  App.clipboard = { kind: App.selected.kind, data: JSON.parse(JSON.stringify(obj)) };
+  toast(`コピー: ${obj.label||obj.id}  (Ctrl+V で複製)`, "ok");
+  Log.info(`コピー: ${App.selected.kind} ${obj.id}`);
+}
+
+// Collect every IPv4/IPv6 address currently in use across the config
+function _allUsedIps(){
+  const v4 = new Set(), v6 = new Set();
+  const add = (s)=>{ if(!s) return; const ip = ipOnly(s); if(!ip) return; (ip.indexOf(":")>=0?v6:v4).add(ip); };
+  for(const arr of [App.config.servers, App.config.devices]){
+    for(const o of (arr||[])){
+      for(const i of (o.interfaces||[])){ add(i.ip); add(i.ipv6); }
+      if(o.bonding){ add(o.bonding.bond_ip); add(o.bonding.bond_ipv6); }
+    }
+  }
+  return { v4, v6 };
+}
+// Return an unused IPv4 by incrementing the host octet; falls back across the last octet
+function _nextFreeV4(cidr, used){
+  const m = String(cidr).match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)(\/\d+)?$/);
+  if(!m) return cidr;
+  let [a,b,c,d] = [+m[1],+m[2],+m[3],+m[4]];
+  const suffix = m[5]||"";
+  for(let tries=0; tries<254; tries++){
+    d++; if(d>254){ d=1; c=(c+1)%256; }
+    const cand = `${a}.${b}.${c}.${d}`;
+    if(!used.v4.has(cand)){ used.v4.add(cand); return cand+suffix; }
+  }
+  return cidr;
+}
+function _nextFreeV6(cidr, used){
+  const m = String(cidr).match(/^(.*?)([0-9a-fA-F]+)(\/\d+)?$/);
+  if(!m) return cidr;
+  let host = parseInt(m[2],16); const prefix=m[1], suffix=m[3]||"";
+  for(let tries=0; tries<4096; tries++){
+    host++;
+    const cand = prefix + host.toString(16);
+    if(!used.v6.has(cand)){ used.v6.add(cand); return cand+suffix; }
+  }
+  return cidr;
+}
+function pasteClipboardElement(){
+  if(!App.clipboard) return;
+  pushUndo(); Cfg.ensure();
+  const { kind, data } = App.clipboard;
+  const col = kind === "server" ? "servers" : "devices";
+  const clone = JSON.parse(JSON.stringify(data));
+  // new unique id + label
+  const baseId = (data.id||"node").replace(/-copy\d*$/,"");
+  clone.id = uid(baseId + "-copy");
+  clone.label = (data.label||data.id) + " (copy)";
+  clone.x = (data.x||0) + 40;
+  clone.y = (data.y||0) + 40;
+  // a pasted VM stays associated to the same host (still a standalone node)
+  // regenerate MACs + de-duplicate IPs
+  const used = _allUsedIps();
+  for(const i of (clone.interfaces||[])){
+    if("mac" in i || true) i.mac = genUniqueMac();
+    if(i.ip)  i.ip  = _nextFreeV4(i.ip, used);
+    if(i.ipv6) i.ipv6 = _nextFreeV6(i.ipv6, used);
+  }
+  if(clone.bonding){
+    if(clone.bonding.bond_ip)   clone.bonding.bond_ip   = _nextFreeV4(clone.bonding.bond_ip, used);
+    if(clone.bonding.bond_ipv6) clone.bonding.bond_ipv6 = _nextFreeV6(clone.bonding.bond_ipv6, used);
+  }
+  App.config[col].push(clone);
+  // clone services attached to a server (so the duplicate keeps its services, with new ids)
+  if(kind === "server"){
+    const svcs = (App.config.services||[]).filter(s=>s.server===data.id);
+    for(const s of svcs){
+      const sc = JSON.parse(JSON.stringify(s));
+      sc.id = uid((s.id||"svc")+"-copy");
+      sc.server = clone.id;
+      App.config.services.push(sc);
+    }
+  }
+  selectElement(kind, clone.id);
+  renderAndSync(); updateStatusBar();
+  toast(`複製しました: ${clone.label}  (MAC/IPは自動で重複回避)`, "ok");
+  Log.info(`ペースト複製: ${kind} ${clone.id}`);
+}
+
 function startConnectMode(){
+  // Toggle: pressing the button again exits connect mode
+  if(App.connectMode){ cancelConnectMode(); toast("接続モード終了", "ok"); return; }
   App.connectMode = { step:1, from:null };
   $("#svg").classList.add("connecting");
-  $("#status-msg").textContent = "接続元のインターフェース (ポート) をクリック (ESCでキャンセル)";
-  toast("インターフェース (ポート) をクリックして接続元を選択", "ok");
-  Log.info("接続モード開始");
+  const btn = $("#btn-add-connection"); if(btn) btn.classList.add("active");
+  $("#status-msg").textContent = "接続モード: 始点インターフェースをクリック → 終点をクリック (連続配線可 / ESC または「接続」ボタンで終了)";
+  toast("接続モード開始: インターフェース(ポート)を順にクリックで連続配線", "ok");
+  Log.info("接続モード開始 (連続配線)");
 }
 
 /* ====== FLOATING MENU UTILS ====== */
@@ -2285,16 +2379,34 @@ function startMacFlapMonitor(){
     const active = report.length > 0;
     if(active){
       logMacFlapSymptoms(report);
+      updateNetHealthBanner(report);
       render(); // redraw to update flap badges/animation
     } else if(prevActive){
       // condition cleared → recovered
       CommLog.info("MACフラッピング解消: L2ドメインが安定しました");
+      updateNetHealthBanner([]);
       render();
     }
     prevActive = active;
-    // keep status bar fresh
     if(typeof updateStatusBar==="function") updateStatusBar();
   }, 2500);
+}
+// Show a prominent, escalating banner describing the gradual network degradation
+function updateNetHealthBanner(report){
+  const el = $("#nethealth-banner"); if(!el) return;
+  if(!report || !report.length){ el.style.display="none"; return; }
+  let worst=0, worstId=null;
+  for(const r of report){ const sev=macFlapSeverity(r.switchId); if(sev>worst){ worst=sev; worstId=r.switchId; } }
+  const stage = macFlapStage(worst);
+  const color = worst<25 ? "#eab308" : worst<50 ? "#f59e0b" : worst<75 ? "#ef4444" : "#b91c1c";
+  const swLabel = (Cfg.byId("devices",worstId)||{}).label || worstId;
+  el.style.display="block";
+  el.style.background=color;
+  el.innerHTML = `⚠ ネットワーク異常進行中 — MACフラッピング/L2ループ<br>`
+    + `<span style="font-size:11px;font-weight:600">対象: ${escapeHtml(swLabel)} ／ 重大度 ${Math.round(worst)}% ／ ${escapeHtml(stage)}</span>`;
+  // pulse effect by toggling opacity
+  el.style.opacity = "1";
+  el.animate ? el.animate([{opacity:1},{opacity:0.55},{opacity:1}],{duration: Math.max(500,1400-worst*8), iterations:1}) : 0;
 }
 
 function attachEventHandlers(){
@@ -2554,6 +2666,14 @@ function attachEventHandlers(){
       } else if(e.key === "y" || e.key === "Y"){
         if(!isTyping || e.target.id !== "yaml-editor"){
           e.preventDefault(); redo();
+        }
+      } else if(e.key === "c" || e.key === "C"){
+        if(!isTyping && App.selected && (App.selected.kind==="server" || App.selected.kind==="device")){
+          e.preventDefault(); copySelectedElement();
+        }
+      } else if(e.key === "v" || e.key === "V"){
+        if(!isTyping && App.clipboard){
+          e.preventDefault(); pasteClipboardElement();
         }
       }
       return;
