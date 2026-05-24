@@ -909,6 +909,24 @@ function showAwsManager(){
       sel.addEventListener("change",()=>{active=+sel.value;refresh();});
       ch("button",{text:"+ VPC",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
         on:{click:()=>{ vpcs.push({id:uid("vpc"),name:"vpc-"+(vpcs.length+1),cidr:"10.0.0.0/16",region:"ap-northeast-1",igw:true,subnets:[],security_groups:[]}); active=vpcs.length-1; renderAndSync(); refresh(); }}},top);
+      if(vpcs.length){
+        ch("button",{text:"🗑 VPC削除",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px",fontWeight:"700"},
+          on:{click:()=>{
+            const target=vpcs[active]; if(!target) return;
+            const ec2s=(App.config.servers||[]).filter(s=>s.aws && s.aws.vpc===target.name);
+            const msg = ec2s.length
+              ? `VPC「${target.name}」を削除しますか？\n配置中のEC2インスタンス ${ec2s.length}台 のAWS割り当ても解除されます（サーバ自体は残ります）。`
+              : `VPC「${target.name}」を削除しますか？`;
+            if(!((typeof confirm==="function") ? confirm(msg) : true)) return;
+            pushUndo();
+            // detach EC2 instances from this VPC (keep the servers, clear their aws placement)
+            for(const s of ec2s){ delete s.aws; }
+            vpcs.splice(active,1);
+            active=Math.max(0,active-1);
+            renderAndSync(); refresh();
+            toast(`VPC「${target.name}」を削除しました`,"ok");
+          }}},top);
+      }
       if(!vpcs.length){ ch("div",{text:"VPCを追加してください。",style:{color:"var(--text-mute)",fontSize:"11px",padding:"10px"}},body); return; }
       const vpc=vpcs[active]; if(!vpc){active=0;return refresh();}
 

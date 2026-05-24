@@ -690,8 +690,13 @@ function renderAwsOverlay(){
       // placeholder empty VPC region
       minX=placeholderX; minY=20; maxX=placeholderX+260; maxY=180; placeholderX+=300;
     }
-    ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:14, ry:14,
-      fill:"rgba(255,153,0,0.05)", stroke:"#ff9900", "stroke-width":1.6, "stroke-dasharray":"9 5" }, g);
+    const vpcFrame = ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:14, ry:14,
+      fill:"rgba(255,153,0,0.05)", stroke:"#ff9900", "stroke-width":1.6, "stroke-dasharray":"9 5",
+      "pointer-events":"all", style:"cursor:move" }, g);
+    if(members.length){
+      const memF = members.map(s=>({kind:"server",id:s.id}));
+      vpcFrame.addEventListener("mousedown",(e)=>startGroupDrag(e, memF));
+    }
     const label = `☁ VPC ${vpc.name} ${vpc.cidr?("("+vpc.cidr+")"):""} ${vpc.region||""}`;
     const bw = label.length*6.0+16;
     const labelRect = ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9, fill:"#ff9900", stroke:"#fff", "stroke-width":1.2,
@@ -744,8 +749,13 @@ function renderK8sOverlay(){
     } else {
       minX=placeholderX; minY=220; maxX=placeholderX+260; maxY=360; placeholderX+=300;
     }
-    ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:14, ry:14,
-      fill:"rgba(50,108,229,0.05)", stroke:"#326ce5", "stroke-width":1.8, "stroke-dasharray":"10 5" }, g);
+    const k8sFrame = ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:14, ry:14,
+      fill:"rgba(50,108,229,0.05)", stroke:"#326ce5", "stroke-width":1.8, "stroke-dasharray":"10 5",
+      "pointer-events":"all", style:"cursor:move" }, g);
+    if(nodes.length){
+      const memF = nodes.map(s=>({kind:"server",id:s.id}));
+      k8sFrame.addEventListener("mousedown",(e)=>startGroupDrag(e, memF));
+    }
     const podN=(cl.pods||[]).length, svcN=(cl.services||[]).length;
     const label = `☸ K8s ${cl.name} — ${nodes.length}node / ${podN}pod / ${svcN}svc`;
     const bw = label.length*6.0+16;
@@ -803,12 +813,13 @@ function renderVpcOverlay(){
     const maxX = Math.max((d.x||0)+dw, (peer.x||0)+pw) + 18;
     const minY = Math.min(d.y||0, peer.y||0) - 30;
     const maxY = Math.max((d.y||0)+dh, (peer.y||0)+ph) + 16;
-    ce("rect", {
+    const vpcRegion = ce("rect", {
       "class":"vpc-domain-region",
       x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:16, ry:16,
       fill:"rgba(163,113,247,0.07)", stroke:"var(--purple)", "stroke-width":1.6,
-      "stroke-dasharray":"7 5", "pointer-events":"none"
+      "stroke-dasharray":"7 5", "pointer-events":"all", style:"cursor:move"
     }, g);
+    vpcRegion.addEventListener("mousedown",(e)=>startGroupDrag(e, [{kind:"device",id:d.id},{kind:"device",id:peerId}]));
 
     // (b) Domain badge at top-LEFT corner (does not overlap the peer-link in the middle)
     const badgeText = `⛓ vPC Domain ${d.vpc.domain||1} — 論理1台`;
