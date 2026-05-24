@@ -690,6 +690,8 @@ function renderAwsOverlay(){
       // placeholder empty VPC region
       minX=placeholderX; minY=20; maxX=placeholderX+260; maxY=180; placeholderX+=300;
     }
+    // user-adjustable size: extend the auto box by the stored padding (resize handle)
+    if(vpc._pad){ maxX += (vpc._pad.w||0); maxY += (vpc._pad.h||0); }
     const vpcFrame = ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:14, ry:14,
       fill:"rgba(255,153,0,0.05)", stroke:"#ff9900", "stroke-width":1.6, "stroke-dasharray":"9 5",
       "pointer-events":"all", style:"cursor:move" }, g);
@@ -730,6 +732,10 @@ function renderAwsOverlay(){
       ce("text", { x:sx+6, y:sy+9, "font-size":8, "font-weight":"700", fill:(pub?"#22c55e":"#6496fa"),
         text:`${snName}${snDef?(" "+(snDef.cidr||"")):""} ${pub?"[public]":"[private]"}` }, g);
     }
+    // SE resize handle (drag to enlarge the VPC frame)
+    const rh = ce("rect", { x:maxX-7, y:maxY-7, width:12, height:12, rx:2, ry:2,
+      fill:"#ff9900", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, g);
+    rh.addEventListener("mousedown",(e)=>startFrameResize(e, vpc, {x:minX,y:minY,w:maxX-minX,h:maxY-minY}));
   });
 }
 
@@ -749,6 +755,7 @@ function renderK8sOverlay(){
     } else {
       minX=placeholderX; minY=220; maxX=placeholderX+260; maxY=360; placeholderX+=300;
     }
+    if(cl._pad){ maxX += (cl._pad.w||0); maxY += (cl._pad.h||0); }
     const k8sFrame = ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:14, ry:14,
       fill:"rgba(50,108,229,0.05)", stroke:"#326ce5", "stroke-width":1.8, "stroke-dasharray":"10 5",
       "pointer-events":"all", style:"cursor:move" }, g);
@@ -775,6 +782,9 @@ function renderK8sOverlay(){
       ce("text", { x:(minX+maxX)/2, y:(minY+maxY)/2, "text-anchor":"middle", "dominant-baseline":"middle",
         "font-size":11, fill:"var(--text-mute)", text:"(ノード未割当 — K8s管理でノード追加)" }, g);
     }
+    const krh = ce("rect", { x:maxX-7, y:maxY-7, width:12, height:12, rx:2, ry:2,
+      fill:"#326ce5", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, g);
+    krh.addEventListener("mousedown",(e)=>startFrameResize(e, cl, {x:minX,y:minY,w:maxX-minX,h:maxY-minY}));
   });
 }
 
@@ -810,9 +820,12 @@ function renderVpcOverlay(){
 
     // (a) Translucent domain background enclosing both peers
     const minX = Math.min(d.x||0, peer.x||0) - 18;
-    const maxX = Math.max((d.x||0)+dw, (peer.x||0)+pw) + 18;
+    const maxXbase = Math.max((d.x||0)+dw, (peer.x||0)+pw) + 18;
     const minY = Math.min(d.y||0, peer.y||0) - 30;
-    const maxY = Math.max((d.y||0)+dh, (peer.y||0)+ph) + 16;
+    const maxYbase = Math.max((d.y||0)+dh, (peer.y||0)+ph) + 16;
+    d.vpc._pad = d.vpc._pad || null;
+    const maxX = maxXbase + ((d.vpc._pad&&d.vpc._pad.w)||0);
+    const maxY = maxYbase + ((d.vpc._pad&&d.vpc._pad.h)||0);
     const vpcRegion = ce("rect", {
       "class":"vpc-domain-region",
       x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:16, ry:16,
@@ -820,6 +833,9 @@ function renderVpcOverlay(){
       "stroke-dasharray":"7 5", "pointer-events":"all", style:"cursor:move"
     }, g);
     vpcRegion.addEventListener("mousedown",(e)=>startGroupDrag(e, [{kind:"device",id:d.id},{kind:"device",id:peerId}]));
+    const vrh = ce("rect", { x:maxX-7, y:maxY-7, width:12, height:12, rx:2, ry:2,
+      fill:"var(--purple)", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, g);
+    vrh.addEventListener("mousedown",(e)=>startFrameResize(e, d.vpc, {x:minX,y:minY,w:maxX-minX,h:maxY-minY}));
 
     // (b) Domain badge at top-LEFT corner (does not overlap the peer-link in the middle)
     const badgeText = `⛓ vPC Domain ${d.vpc.domain||1} — 論理1台`;
@@ -1799,6 +1815,18 @@ function startGroupDrag(e, members){
   };
 }
 
+function startFrameResize(e, target, curBox){
+  if(e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  const pt = svgPoint(e);
+  target._pad = target._pad || { w:0, h:0 };
+  dragState = {
+    mode:"frameresize", moved:false, target,
+    pad0:{ w:target._pad.w||0, h:target._pad.h||0 },
+    startSX:pt.x, startSY:pt.y
+  };
+}
+
 function svgPoint(e){
   const svg = $("#svg");
   const pt = svg.createSVGPoint();
@@ -1932,6 +1960,16 @@ function onMouseMove(e){
     obj.width = Math.max(40, dragState.startW + dx);
     obj.height = Math.max(30, dragState.startH + dy);
     render();
+  } else if(dragState.mode === "frameresize"){
+    const pt = svgPoint(e);
+    const dx = pt.x - dragState.startSX;
+    const dy = pt.y - dragState.startSY;
+    if(Math.abs(dx)>2 || Math.abs(dy)>2) dragState.moved = true;
+    dragState.target._pad = {
+      w: Math.max(0, dragState.pad0.w + dx),
+      h: Math.max(0, dragState.pad0.h + dy)
+    };
+    render();
   } else if(dragState.mode === "group"){
     const pt = svgPoint(e);
     const dx = pt.x - dragState.startSX;
@@ -1999,6 +2037,11 @@ function onMouseUp(){
     return;
   }
   if(dragState.mode === "group"){
+    if(dragState.moved){ pushUndo(); syncYamlFromConfig(); render(); }
+    dragState = null;
+    return;
+  }
+  if(dragState.mode === "frameresize"){
     if(dragState.moved){ pushUndo(); syncYamlFromConfig(); render(); }
     dragState = null;
     return;
