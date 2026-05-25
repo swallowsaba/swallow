@@ -894,6 +894,131 @@ function showHypervisorManager(id){
 }
 
 // AWS environment manager — VPC / Subnet / Security Group / Internet Gateway
+// ====== LEARNING / HELP PANEL ======
+// Explains how to reproduce each fault and perform key operations. Sections are collapsible
+// so users can show/hide explanations and learn interactively.
+var LEARN_TOPICS = [
+  { id:"flap-loop", icon:"🔁", title:"MACフラッピング① — L2ループ", body:[
+    "原因: STPが無効/未対応の冗長リンクでブロードキャストが無限ループする。",
+    "再現手順:",
+    "1. スイッチを2台配置し、接続モードで2本のリンクで相互接続する。",
+    "2. 両スイッチのプロパティで STPモード を「off」にする(またはSTP非対応にする)。",
+    "3. どちらかのスイッチ配下に端末(サーバ)を接続する。",
+    "4. 数秒待つと上部に異常バナーが出て、重大度・CPUが上昇し、ループポート間でMACが揺れる。",
+    "観察: %SW_MATM-4-MACFLAP_NOTIF ログ、リンクの赤色化、隣接スイッチへのストーム波及。",
+    "収束: 片方のリンクを削除する / STPを有効化する / BPDU Guardを有効化する。"
+  ]},
+  { id:"flap-dup", icon:"👯", title:"MACフラッピング② — MACアドレス重複(ループ以外)", body:[
+    "原因: 同一VLAN内で、同じMACアドレスを持つ機器が複数の異なるポートに存在する。",
+    "(仮想NICのMACコピー、テンプレートからの複製で発生しやすい)",
+    "再現手順:",
+    "1. サーバを2台用意し、同じスイッチの別ポートに接続する(同一VLAN)。",
+    "2. 両サーバのインターフェースMACを同一の値に設定する。",
+    "   (例: 両方とも 00:50:56:aa:bb:cc にする)",
+    "3. 数秒待つと、そのMACが2ポート間でフラップし duplicate として検知される。",
+    "観察: ループ無しでもMACFLAPログが出る。CPU上昇はループより緩やか、ストーム波及は限定的。",
+    "ヒント: Ctrl+Cで複製したサーバはMACが自動再生成されるため、意図的に同じMACにする必要があります。"
+  ]},
+  { id:"flap-roam", icon:"📶", title:"MACフラッピング③ — 無線ローミング(無害な揺れ)", body:[
+    "原因: 端末がAP/スイッチ間を移動し、短時間で学習ポートが変わる。多くは正常動作で無害。",
+    "ポイント: roaming は重大度が上がりにくく、通信影響もほぼ無い。loop/duplicate と区別して扱われます。"
+  ]},
+  { id:"storm", icon:"🌊", title:"ブロードキャストストームの波及", body:[
+    "ループ起因のストームは同一L2ドメイン全体に氾濫し、間接接続の機器も影響を受ける。",
+    "再現手順: 「MACフラッピング①」を作り、ループスイッチの先にさらにスイッチ→サーバを数珠つなぎにする。",
+    "観察: 発生源100% → 1ホップ先 → 2ホップ先 と距離減衰しながら波及。ARPブロードキャストが消失し、",
+    "      遠くの機器同士の通信もタイムアウトする(通信テストで確認)。"
+  ]},
+  { id:"ipdup", icon:"⚠️", title:"IPアドレス重複", body:[
+    "原因: 同一サブネット内に同じIPを持つ機器が複数存在する。",
+    "再現手順:",
+    "1. 同一ネットワークのサーバ2台に、同じIP(例 10.0.0.10/24)を設定する。",
+    "2. 両機器に「⚠ IP重複」バッジが表示され、ステータスバーに警告が出る。",
+    "3. その重複IP宛て/発の通信テストを行うとエラーになる。",
+    "補足: FHRP/VRRPの仮想IP(意図的な共有)は競合扱いされません。"
+  ]},
+  { id:"arp", icon:"📇", title:"ARP / GARP", body:[
+    "ARP: 通信前に宛先(または既定GW)のMACを解決する。通信テストのログに who-has / is-at が出る。",
+    "GARP: サーバのプロパティの「📢 GARP送信」で、自IP→MACを一斉通知。",
+    "  ・近隣のARPキャッシュを更新する。",
+    "  ・同一IPの別機器があれば %IP-DUP でIP重複を検知する。",
+    "障害との関係: ストーム中はARPブロードキャストが消失し『ARP解決失敗』で通信不能になります。"
+  ]},
+  { id:"stp", icon:"👑", title:"STP ルートブリッジの選定", body:[
+    "ルートは Bridge ID 最小(プライオリティ→MAC最小)で決まる。",
+    "操作: スイッチのプロパティ →「STP」セクションで、",
+    "  ・ブリッジプライオリティを設定する(低いほど優先 / 4096刻み)。",
+    "  ・「👑 ルートブリッジにする」で最小プライオリティを自動設定。",
+    "  ・プライオリティ未指定なら、MACアドレス最小のスイッチが自動でルートになる。",
+    "表示: ルートには👑 ROOT BRIDGEが常時表示。「STP表示」ボタンでブロックポートも可視化。"
+  ]},
+  { id:"lacp", icon:"🔗", title:"リンクアグリゲーション (LACP / ボンディング)", body:[
+    "複数の物理リンクを束ねて1本の論理リンクにし、帯域増加と冗長化を行う。",
+    "操作: 機器/サーバのプロパティ →「インターフェース」→「🔗 ボンディング/LACP設定」で、",
+    "  ・モードを選択: LACP(802.3ad / 動的), static(固定), active-backup(冗長のみ) など。",
+    "  ・束ねるメンバーポートを選ぶ。LACPなら相手と自動ネゴシエーション。",
+    "可視化: 束ねたリンクは太線+「LAG/LACP」バッジで表示。LACPは Actor/Partner の状態を表示。"
+  ]},
+  { id:"multisel", icon:"⬚", title:"複数選択(まとめて移動・削除)", body:[
+    "操作:",
+    "  ・ツールバーの「複数選択」ボタンを押す → 空白をドラッグして範囲選択(PowerPoint風)。",
+    "  ・または Shift+クリック で要素を1つずつ選択に追加/解除。",
+    "  ・選択した複数要素は、どれかをドラッグすると まとめて移動。",
+    "  ・Delete キーで まとめて削除。",
+    "  ・Esc または 「複数選択」再押下で解除。"
+  ]},
+  { id:"frames", icon:"▭", title:"VPC / vPC / K8s 枠の操作", body:[
+    "移動: 枠の本体(空き部分)またはラベルをドラッグ → 中の機器ごと移動。",
+    "サイズ変更: 枠の右下のハンドルをドラッグ → 枠を拡大(中身は自動で内包)。",
+    "AWS: ☁ボタンでVPC/サブネット/SG/EC2を管理。VPC削除も可能。",
+    "K8s: ☸ボタンでクラスタ/ノード/Pod/Serviceを管理。"
+  ]}
+];
+// A collapsible beginner-friendly help box to embed at the top of managers/sections.
+function helpBox(parent, title, lines, openByDefault){
+  const box = ch("div",{style:{border:"1px solid var(--accent)",borderRadius:"6px",margin:"0 0 10px",background:"rgba(88,166,255,0.05)",overflow:"hidden"}},parent);
+  const head = ch("div",{style:{display:"flex",alignItems:"center",gap:"6px",padding:"6px 10px",cursor:"pointer",fontWeight:"700",fontSize:"11.5px",color:"var(--accent)"}},box);
+  ch("span",{text:"💡"},head);
+  ch("span",{text:title,style:{flex:"1"}},head);
+  const chev=ch("span",{text:openByDefault?"▲":"▼",style:{fontSize:"10px"}},head);
+  const bodyEl=ch("div",{style:{display:openByDefault?"block":"none",padding:"6px 12px 10px",fontSize:"11px",lineHeight:"1.7",color:"var(--text)"}},box);
+  for(const ln of lines){
+    const isHead=/^(これは何|手順|ポイント|注意|例):/.test(ln.trim());
+    const isStep=/^[0-9]+\./.test(ln.trim());
+    ch("div",{text:ln,style:{paddingLeft:isStep?"12px":"0",fontWeight:isHead?"700":"400",color:isHead?"var(--accent)":"var(--text)",margin:isHead?"3px 0 1px":"1px 0"}},bodyEl);
+  }
+  head.addEventListener("click",()=>{ const o=bodyEl.style.display==="none"; bodyEl.style.display=o?"block":"none"; chev.textContent=o?"▲":"▼"; });
+  return box;
+}
+function showLearnPanel(){
+  openDialog("📖 学習モード — 障害の発生手順と操作ガイド", (body)=>{
+    ch("div",{ text:"各トピックをクリックすると説明を表示/非表示できます。実際に手を動かして障害を再現し、挙動を観察しながら学習できます。",
+      style:{fontSize:"12px",color:"var(--text-dim)",lineHeight:"1.6",marginBottom:"10px"} }, body);
+    // expand/collapse all
+    const ctrl = ch("div",{style:{display:"flex",gap:"6px",marginBottom:"10px"}}, body);
+    ch("button",{text:"すべて開く",style:{padding:"4px 10px",fontSize:"11px",cursor:"pointer",background:"var(--bg3)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"4px"},
+      on:{click:()=>{ body.querySelectorAll(".learn-body").forEach(e=>e.style.display="block"); }}}, ctrl);
+    ch("button",{text:"すべて閉じる",style:{padding:"4px 10px",fontSize:"11px",cursor:"pointer",background:"var(--bg3)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"4px"},
+      on:{click:()=>{ body.querySelectorAll(".learn-body").forEach(e=>e.style.display="none"); }}}, ctrl);
+    for(const topic of LEARN_TOPICS){
+      const card = ch("div",{style:{border:"1px solid var(--border)",borderRadius:"6px",marginBottom:"6px",overflow:"hidden"}}, body);
+      const head = ch("div",{style:{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",cursor:"pointer",background:"var(--bg3)",fontWeight:"700",fontSize:"12px"}}, card);
+      ch("span",{text:topic.icon,style:{fontSize:"15px"}}, head);
+      ch("span",{text:topic.title,style:{flex:"1"}}, head);
+      const chevron = ch("span",{text:"▼",style:{fontSize:"10px",color:"var(--text-mute)"}}, head);
+      const bodyEl = ch("div",{class:"learn-body",style:{display:"none",padding:"8px 12px",fontSize:"11.5px",lineHeight:"1.7",color:"var(--text)",background:"var(--bg)"}}, card);
+      for(const line of topic.body){
+        const isStep = /^[0-9]+\./.test(line.trim());
+        const isHead = /^(原因|再現手順|観察|操作|収束|表示|補足|ヒント|ポイント|障害との関係):/.test(line.trim());
+        ch("div",{ text:line,
+          style:{ paddingLeft:isStep?"12px":"0", fontWeight:isHead?"700":"400",
+            color:isHead?"var(--accent)":"var(--text)", margin:isHead?"4px 0 2px":"1px 0" } }, bodyEl);
+      }
+      head.addEventListener("click",()=>{ const open=bodyEl.style.display==="none"; bodyEl.style.display=open?"block":"none"; chevron.textContent=open?"▲":"▼"; });
+    }
+  });
+}
+
 function showAwsManager(){
   App.config.aws = App.config.aws || { vpcs:[] };
   openDialog("☁ AWS 環境管理 (VPC / Subnet / Security Group)", (body)=>{
@@ -901,6 +1026,16 @@ function showAwsManager(){
     let active=0;
     function refresh(){
       body.innerHTML="";
+      helpBox(body, "AWS VPCとは？ 作り方ガイド", [
+        "これは何: VPC(Virtual Private Cloud)はAWS上の仮想ネットワーク。中にサブネットを切り、EC2(仮想サーバ)を配置します。",
+        "手順:",
+        "1. 「+ VPC」でVPCを作成し、CIDR(例 10.0.0.0/16)とリージョンを設定。",
+        "2. 「+ サブネット」で用途別にサブネットを作る(public=外部公開, private=内部のみ)。",
+        "3. 「+ セキュリティグループ」で通信を許可するポート/送信元を定義(インバウンド許可)。",
+        "4. 「+ EC2インスタンス追加」でサーバをVPC/サブネット/SGに配置。",
+        "ポイント: セキュリティグループは許可リスト方式。許可が無い通信は拒否されます(通信テストで確認可)。",
+        "注意: VPC削除はEC2のAWS割り当てを解除します(サーバ自体は残ります)。"
+      ], true);
       const vpcs=App.config.aws.vpcs;
       const top=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"8px"}},body);
       ch("span",{text:"VPC:",style:{fontSize:"11px"}},top);
@@ -1310,6 +1445,30 @@ function autoOrthogonalWaypoints(c){
   }
 }
 
+// Collect IP/CIDR suggestions from the CURRENT configuration so input fields can suggest
+// values already in use (and helpful candidates in the same subnet).
+function ipSuggestions(){
+  const v4=new Set(), v6=new Set(), cidr=new Set();
+  for(const n of (App.config.networks||[])){ if(n.cidr) cidr.add(n.cidr); if(n.cidr_v6) cidr.add(n.cidr_v6); }
+  const addIp=(s)=>{ if(!s) return; (String(s).indexOf(":")>=0?v6:v4).add(s); };
+  for(const arr of [App.config.servers, App.config.devices]){
+    for(const o of (arr||[])){
+      for(const i of (o.interfaces||[])){ addIp(i.ip); addIp(i.ipv6); }
+      if(o.bonding){ addIp(o.bonding.bond_ip); addIp(o.bonding.bond_ipv6); }
+    }
+  }
+  // also offer the network CIDRs as v4/v6 suggestions (user picks subnet then edits host)
+  for(const c of cidr){ (String(c).indexOf(":")>=0?v6:v4).add(c); }
+  return { v4:[...v4], v6:[...v6], cidr:[...cidr] };
+}
+// Create (or refresh) a datalist of options and return its id
+var _ipdlSeq = 0;
+function makeSuggestDatalist(parent, values){
+  const id = "ipsug-"+(++_ipdlSeq);
+  const dl = ch("datalist",{id},parent);
+  for(const v of values){ if(v) ch("option",{value:v},dl); }
+  return id;
+}
 function renderInterfaceTable(body, obj, kind){
   const sec = ch("div", { class:"sub-section" }, body);
   const headerRow = ch("div", { style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"6px"} }, sec);
@@ -1419,16 +1578,19 @@ function renderInterfaceTable(body, obj, kind){
     const idIn = ch("input",{type:"text",value:iface.id||"",placeholder:"eth0, gi1/0/1...",style:fldStyle},r1a);
     idIn.addEventListener("change",()=>{ iface.id=idIn.value.trim(); renderAndSync(); });
     if(!isBondMember){
+      const sug = ipSuggestions();
+      const dl4 = makeSuggestDatalist(card, sug.v4);
+      const dl6 = makeSuggestDatalist(card, sug.v6);
       const r1b = ch("div",{},r1);
       ch("label",{text:"IPv4 / CIDR",style:lblStyle},r1b);
-      const ipIn = ch("input",{type:"text",value:iface.ip||"",placeholder:"10.0.0.1/24 (任意)",style:fldStyle},r1b);
+      const ipIn = ch("input",{type:"text",value:iface.ip||"",placeholder:"10.0.0.1/24 (任意)",list:dl4,style:fldStyle},r1b);
       ipIn.addEventListener("change",()=>{ iface.ip=ipIn.value; renderAndSync(); });
 
       // Row 1.5: IPv6
       const r15 = ch("div", { style:{display:"grid",gridTemplateColumns:"1fr",gap:"6px",marginBottom:"5px"} }, card);
       const r15a = ch("div",{},r15);
       ch("label",{text:"IPv6 / CIDR",style:lblStyle},r15a);
-      const ip6In = ch("input",{type:"text",value:iface.ipv6||"",placeholder:"2001:db8::1/64 (任意 — IPv4と併用可)",style:fldStyle},r15a);
+      const ip6In = ch("input",{type:"text",value:iface.ipv6||"",placeholder:"2001:db8::1/64 (任意 — IPv4と併用可)",list:dl6,style:fldStyle},r15a);
       ip6In.addEventListener("change",()=>{ iface.ipv6=ip6In.value; renderAndSync(); });
     } else {
       // Bond member notice
@@ -1553,6 +1715,18 @@ function renderBondingSection(parent, obj, kind){
   const sec = ch("div", { class:"sub-section", style:{ marginTop:"10px" } }, parent);
   obj.bonding = obj.bonding || {};
   const enabled = !!obj.bonding.enabled;
+  if(enabled){
+    helpBox(sec, "ボンディング/LACPとは？ 設定ガイド", [
+      "これは何: 複数の物理NICを束ねて1本の論理リンク(bond0)にし、帯域増加と冗長化を行います。",
+      "手順:",
+      "1. モードを選ぶ: active-backup(冗長のみ) / 802.3ad LACP(動的集約・推奨) / balance-rr(負荷分散) など。",
+      "2. 束ねるメンバーインターフェースにチェックを入れる(2本以上)。",
+      "3. bond0にIP(Bond IP)を設定する。メンバー個別のIPは不要(bond0に集約)。",
+      "4. 802.3adの場合はLACPレート(slow/fast)とシステム優先度を設定。相手側もLACPなら自動でバンドル形成。",
+      "ポイント: 対向機器も同じ方式で設定する必要があります(LACP↔LACP)。",
+      "例: スイッチとサーバを2本で接続しLACPにすると、1本切れても通信継続(冗長)＋合算帯域。"
+    ], false);
+  }
   const headerRow = ch("div",{
     style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"6px",
       padding:"6px 8px",background:enabled?"rgba(6,182,212,0.12)":"var(--bg2)",
@@ -1617,6 +1791,26 @@ function renderBondingSection(parent, obj, kind){
   }
   modeSel.addEventListener("change",()=>{ obj.bonding.mode=modeSel.value; renderAndSync(); openPropertyPanel(); });
 
+  // LACP-specific options (only for 802.3ad)
+  if((obj.bonding.mode||"active-backup")==="802.3ad"){
+    obj.bonding.lacp = obj.bonding.lacp || { rate:"slow", system_priority:32768 };
+    const lacpBox = ch("div",{style:{border:"1px solid var(--cyan)",borderRadius:"4px",padding:"6px",margin:"6px 0",background:"rgba(0,200,255,0.04)"}},sec);
+    ch("div",{text:"🔗 LACP (IEEE 802.3ad) 設定",style:{fontSize:"11px",fontWeight:"700",color:"var(--cyan)",marginBottom:"4px"}},lacpBox);
+    const lrow = ch("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px"}},lacpBox);
+    const la = ch("div",{},lrow);
+    ch("label",{text:"LACPレート",style:lblStyle},la);
+    const rateSel = ch("select",{style:fldStyle},la);
+    for(const r of [["slow","slow (30秒)"],["fast","fast (1秒)"]]){ const o=ch("option",{value:r[0],text:r[1]},rateSel); if(r[0]===obj.bonding.lacp.rate)o.selected=true; }
+    rateSel.addEventListener("change",()=>{ obj.bonding.lacp.rate=rateSel.value; renderAndSync(); });
+    const lb = ch("div",{},lrow);
+    ch("label",{text:"システム優先度",style:lblStyle},lb);
+    const spIn = ch("input",{type:"number",value:obj.bonding.lacp.system_priority||32768,style:fldStyle},lb);
+    spIn.addEventListener("change",()=>{ obj.bonding.lacp.system_priority=+spIn.value||32768; renderAndSync(); });
+    // negotiation status (LACP forms a bundle when the peer is also LACP)
+    let negNote = "相手側がLACPなら自動ネゴシエーションでバンドル(LAG)を形成します。";
+    ch("div",{text:negNote,style:{fontSize:"9.5px",color:"var(--text-mute)",marginTop:"4px",lineHeight:"1.4"}},lacpBox);
+  }
+
   ch("label",{text:`メンバーインターフェース (${(obj.bonding.members||[]).length}個選択中)`,
     style:{ ...lblStyle, marginTop:"4px" }},sec);
   const memList = ch("div",{
@@ -1676,7 +1870,9 @@ function renderBondingSection(parent, obj, kind){
     text: bondIpEmpty ? "⚠ Bond IPv4 (必須!)" : "✓ Bond IPv4 (例: 10.0.0.10/24)",
     style:{ ...lblStyle, color: bondIpEmpty ? "var(--red)" : "var(--green)", fontWeight:"700" }
   },r3b);
-  const bipIn = ch("input",{type:"text",value:obj.bonding.bond_ip||"",placeholder:"10.0.0.10/24 (必須)",
+  const _bsug = ipSuggestions();
+  const _bdl4 = makeSuggestDatalist(r3b, _bsug.v4);
+  const bipIn = ch("input",{type:"text",value:obj.bonding.bond_ip||"",placeholder:"10.0.0.10/24 (必須)",list:_bdl4,
     style:{ ...fldStyle, border: bondIpEmpty ? "2px solid var(--red)" : "1px solid var(--green)" }},r3b);
   bipIn.addEventListener("change",()=>{
     obj.bonding.bond_ip=bipIn.value;
@@ -1687,7 +1883,8 @@ function renderBondingSection(parent, obj, kind){
   // Bond IPv6 row
   const r3c = ch("div",{style:{marginTop:"6px"}},sec);
   ch("label",{text:"Bond IPv6 (任意: 2001:db8::10/64)",style:lblStyle},r3c);
-  const b6In = ch("input",{type:"text",value:obj.bonding.bond_ipv6||"",placeholder:"2001:db8::10/64",style:fldStyle},r3c);
+  const _bdl6 = makeSuggestDatalist(r3c, _bsug.v6);
+  const b6In = ch("input",{type:"text",value:obj.bonding.bond_ipv6||"",placeholder:"2001:db8::10/64",list:_bdl6,style:fldStyle},r3c);
   b6In.addEventListener("change",()=>{
     obj.bonding.bond_ipv6=b6In.value;
     if(typeof ensureBond0Interface === "function") ensureBond0Interface(obj);

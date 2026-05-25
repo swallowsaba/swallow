@@ -2910,6 +2910,13 @@ function attachEventHandlers(){
   bind("#btn-add-server","click", addNewServer);
   bind("#btn-add-service","click", addNewService);
   bind("#btn-add-connection","click", startConnectMode);
+  bind("#btn-select","click", ()=>{
+    App.selectMode = !App.selectMode;
+    const b=$("#btn-select"); if(b) b.classList.toggle("active", App.selectMode);
+    if(!App.selectMode){ App.multiSelect=[]; render(); }
+    toast(App.selectMode?"複数選択モード: ドラッグで範囲選択 / Shift+クリックで追加":"複数選択モード解除", "ok");
+  });
+  bind("#btn-learn","click", showLearnPanel);
 
   bind("#btn-sim-play","click", ()=>{
     if(App.simulation.paused){
@@ -3142,14 +3149,16 @@ function attachEventHandlers(){
       e.preventDefault(); $("#zoom-out").click(); return;
     }
     if(e.key === "Delete" || e.key === "Backspace"){
-      if(App.selected){
+      if(App.multiSelect && App.multiSelect.length){
+        deleteMultiSelected();
+      } else if(App.selected){
         deleteElement(App.selected.kind, App.selected.id);
       }
     } else if(e.key === "Escape"){
       if(!$("#dialog-overlay").classList.contains("hidden")) closeDialog();
       else if(App.connectMode) cancelConnectMode();
       else if(!$("#ctx-menu").classList.contains("hidden")) hideContextMenu();
-      else selectElement(null, null);
+      else { App.multiSelect=[]; App.selectMode=false; const b=$("#btn-select"); if(b)b.classList.remove("active"); selectElement(null, null); }
     } else if(e.key === " "){
       e.preventDefault();
       if(App.simulation.running){

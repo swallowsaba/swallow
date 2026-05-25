@@ -1767,13 +1767,18 @@ function createConnectionBetween(fromKind, fromId, fromIface, toKind, toId, toIf
 }
 
 function attachElementHandlers(g, kind, id){
+  if(isMultiSelected(kind, id) && g.classList) g.classList.add("selected");
   g.addEventListener("mousedown", (e)=>onElMouseDown(e, kind, id));
   g.addEventListener("click", (e)=>{
     e.stopPropagation();
-    if(App.connectMode){ handleConnectClick(kind, id); }
-    else { selectElement(kind, id); }
+    if(App.connectMode){ handleConnectClick(kind, id); return; }
+    if(e.shiftKey) return; // shift-toggle handled in mousedown
+    // if a multi-move/rubberband just happened, don't collapse the selection
+    if(App.multiSelect && App.multiSelect.length && isMultiSelected(kind,id)) return;
+    App.multiSelect = [];
+    selectElement(kind, id);
   });
-  g.addEventListener("dblclick", (e)=>{ e.stopPropagation(); selectElement(kind, id); openPropertyPanel(); });
+  g.addEventListener("dblclick", (e)=>{ e.stopPropagation(); App.multiSelect=[]; selectElement(kind, id); openPropertyPanel(); });
   g.addEventListener("contextmenu", (e)=>{ e.preventDefault(); e.stopPropagation(); showContextMenu(e, kind, id); });
 }
 
@@ -1796,6 +1801,20 @@ function onElMouseDown(e, kind, id){
   e.stopPropagation();
   const obj = Cfg.byId(kindToCol(kind), id);
   if(!obj) return;
+  // Shift+click toggles this element in the multi-selection (PowerPoint-style)
+  if(e.shiftKey){
+    toggleMultiSelect(kind, id);
+    return;
+  }
+  // If this element is part of a multi-selection, drag moves ALL selected together
+  if(isMultiSelected(kind, id) && App.multiSelect.length > 1){
+    const pt = svgPoint(e);
+    dragState = {
+      mode:"multimove", moved:false, startSX:pt.x, startSY:pt.y,
+      items: App.multiSelect.map(m=>{ const o=Cfg.byId(kindToCol(m.kind),m.id); return o?{kind:m.kind,id:m.id,x0:o.x||0,y0:o.y||0}:null; }).filter(Boolean)
+    };
+    return;
+  }
   const pt = svgPoint(e);
   dragState = {
     mode:"move", kind, id, obj,
@@ -1882,6 +1901,35 @@ function onMouseMove(e){
     return;
   }
   if(!dragState) return;
+  if(dragState.mode === "rubberband"){
+    const pt = svgPoint(e);
+    dragState.x1 = pt.x; dragState.y1 = pt.y;
+    let rb = $("#sel-rect");
+    const layer = $("#layer-overlays") || $("#layer-connections");
+    if(!rb && layer){
+      rb = ce("rect", { id:"sel-rect", fill:"rgba(88,166,255,0.12)", stroke:"var(--accent)",
+        "stroke-width":1, "stroke-dasharray":"4 3", "pointer-events":"none" }, layer);
+    }
+    if(rb){
+      rb.setAttribute("x", Math.min(dragState.x0,pt.x));
+      rb.setAttribute("y", Math.min(dragState.y0,pt.y));
+      rb.setAttribute("width", Math.abs(pt.x-dragState.x0));
+      rb.setAttribute("height", Math.abs(pt.y-dragState.y0));
+    }
+    return;
+  }
+  if(dragState.mode === "multimove"){
+    const pt = svgPoint(e);
+    const dx = pt.x - dragState.startSX;
+    const dy = pt.y - dragState.startSY;
+    if(Math.abs(dx)>2||Math.abs(dy)>2) dragState.moved = true;
+    for(const m of dragState.items){
+      const o = Cfg.byId(kindToCol(m.kind), m.id);
+      if(o){ o.x = m.x0+dx; o.y = m.y0+dy; }
+    }
+    render();
+    return;
+  }
   if(dragState.mode === "port"){
     const pt = svgPoint(e);
     const obj = dragState.obj;
@@ -2041,6 +2089,17 @@ function onMouseUp(){
     dragState = null;
     return;
   }
+  if(dragState.mode === "rubberband"){
+    if(dragState.x1!=null) finishRubberband();
+    else { const rb=$("#sel-rect"); if(rb) rb.remove(); }
+    dragState = null;
+    return;
+  }
+  if(dragState.mode === "multimove"){
+    if(dragState.moved){ pushUndo(); syncYamlFromConfig(); render(); }
+    dragState = null;
+    return;
+  }
   if(dragState.mode === "frameresize"){
     if(dragState.moved){ pushUndo(); syncYamlFromConfig(); render(); }
     dragState = null;
@@ -2084,7 +2143,15 @@ function onSvgMouseDown(e){
     return;
   }
   if(e.button === 0 && e.target === $("#svg")){
+    // Shift-drag (or 選択モード) on empty canvas → rubber-band multi-select; else pan
+    if(e.shiftKey || App.selectMode){
+      const pt = svgPoint(e);
+      if(!e.shiftKey){ App.multiSelect = []; }
+      dragState = { mode:"rubberband", x0:pt.x, y0:pt.y, additive:e.shiftKey };
+      return;
+    }
     selectElement(null, null);
+    if(!e.shiftKey) App.multiSelect = [];
     dragState = {
       mode:"pan",
       startSX:e.clientX, startSY:e.clientY,
@@ -2100,6 +2167,54 @@ function onSvgMouseDown(e){
     };
     $("#svg").classList.add("panning");
   }
+}
+// Bounding box of an element in world coords
+function elementBBox(kind, o){
+  if(kind==="network") return { x:o.x||0, y:o.y||0, w:o.width||300, h:o.height||200 };
+  const w = o.width || (o.interfaces?130:120), h = o.height || 65;
+  return { x:o.x||0, y:o.y||0, w, h };
+}
+function rectsIntersect(a,b){
+  return !(a.x+a.w < b.x || b.x+b.w < a.x || a.y+a.h < b.y || b.y+b.h < a.y);
+}
+function finishRubberband(){
+  const r = dragState;
+  App.multiSelect = App.multiSelect || [];
+  const sel = { x:Math.min(r.x0,r.x1), y:Math.min(r.y0,r.y1), w:Math.abs(r.x1-r.x0), h:Math.abs(r.y1-r.y0) };
+  if(!r.additive) App.multiSelect = [];
+  const addIf = (kind, arr)=>{ for(const o of (arr||[])){ if(rectsIntersect(sel, elementBBox(kind,o))){ if(!App.multiSelect.some(m=>m.kind===kind&&m.id===o.id)) App.multiSelect.push({kind,id:o.id}); } } };
+  addIf("device", App.config.devices);
+  addIf("server", App.config.servers);
+  addIf("network", App.config.networks);
+  const rb = $("#sel-rect"); if(rb) rb.remove();
+  App.selected = null;
+  render();
+  if(App.multiSelect.length) toast(`${App.multiSelect.length}個の要素を選択`, "ok");
+}
+function isMultiSelected(kind, id){ return App.multiSelect && App.multiSelect.some(m=>m.kind===kind&&m.id===id); }
+function toggleMultiSelect(kind, id){
+  App.multiSelect = App.multiSelect || [];
+  const i = App.multiSelect.findIndex(m=>m.kind===kind&&m.id===id);
+  if(i>=0) App.multiSelect.splice(i,1); else App.multiSelect.push({kind,id});
+  render();
+}
+function deleteMultiSelected(){
+  if(!App.multiSelect || !App.multiSelect.length) return false;
+  pushUndo();
+  for(const m of App.multiSelect){
+    const col = kindToCol(m.kind);
+    if(App.config[col]) App.config[col] = App.config[col].filter(o=>o.id!==m.id);
+    // also remove connections touching deleted devices/servers
+    App.config.connections = (App.config.connections||[]).filter(c=>{
+      const f=c.from&&(c.from[m.kind]===m.id), t=c.to&&(c.to[m.kind]===m.id);
+      return !(f||t);
+    });
+  }
+  const n = App.multiSelect.length;
+  App.multiSelect = [];
+  renderAndSync(); updateStatusBar();
+  toast(`${n}個の要素を削除しました`, "ok");
+  return true;
 }
 
 function onSvgWheel(e){

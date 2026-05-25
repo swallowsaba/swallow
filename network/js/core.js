@@ -1067,7 +1067,62 @@ function logCommResult(srcLabel, dstLabel, proto, port, res){
   } else {
     const where = res && res.blockedAt ? ` @${res.blockedAt.id}` : "";
     CommLog.blocked(flow + where, res ? (res.reason||"到達不可") : "到達不可");
+    // Beginner-friendly diagnosis: WHY it failed and HOW to fix it
+    if(typeof diagnoseCommError === "function"){
+      const dx = diagnoseCommError(res);
+      if(dx){
+        CommLog.info("  💡 原因: " + dx.cause);
+        for(const step of (dx.fix||[])) CommLog.info("     → 対処: " + step);
+      }
+    }
   }
+}
+// Map a failed communication result to a plain-language cause + concrete remediation steps.
+function diagnoseCommError(res){
+  if(!res || res.ok) return null;
+  const r = String(res.reason||"");
+  if(res.ipConflict || /IPアドレス競合|重複/.test(r)){
+    return { cause:"同一ネットワーク内でIPアドレスが重複しており、宛先(または送信元)が一意に定まりません。",
+      fix:["重複している機器のどちらかのIPを別の未使用アドレスに変更する。",
+           "各機器のプロパティ→インターフェースでIPを確認(⚠IP重複バッジが目印)。",
+           "DHCP運用なら固定IPの重複予約がないか確認する。"] };
+  }
+  if(res.macFlap || /ARP解決失敗|フラッピング|ストーム/.test(r)){
+    return { cause:"L2ループ等によるブロードキャストストームでARPが通らず、宛先MACを解決できません。",
+      fix:["冗長リンクのどちらかを外す、またはSTPを有効化してループを解消する。",
+           "該当スイッチでBPDU Guardを有効化し、ループポートをerr-disableさせる。",
+           "上部の異常バナーで発生源スイッチを特定し、そのリンク構成を見直す。"] };
+  }
+  if(/is (down|stopped|maintenance|err-disabled)|停止|ダウン/.test(r)){
+    return { cause:"経路上の機器またはインターフェースがダウン/停止しています。",
+      fix:["該当機器のステータスを running(起動) に変更する。",
+           "リンクやインターフェースの status を up にする。"] };
+  }
+  if(/ファイアウォール|FW|ポリシー|denied|ACL/.test(r)){
+    return { cause:"ファイアウォール/ACLポリシーで通信が拒否されています(暗黙のdenyを含む)。",
+      fix:["該当機器の🛡ファイアウォールポリシーに許可ルールを追加する。",
+           "送信元/宛先/ポート/プロトコルがルールに一致しているか確認する。",
+           "ルールは上から順に評価され、最後は暗黙のdenyである点に注意。"] };
+  }
+  if(/セキュリティグループ|security group|SG/.test(r)){
+    return { cause:"AWSセキュリティグループのインバウンド許可が無いため拒否されています。",
+      fix:["☁AWS管理で対象VPCのセキュリティグループに、許可するポート/送信元を追加する。",
+           "EC2のSG割り当て(サーバのAWS配置)が正しいか確認する。"] };
+  }
+  if(/ルート|route|到達不可|no route|gateway|GW/.test(r)){
+    return { cause:"宛先への経路(ルーティング)が無いか、デフォルトGWが未設定です。",
+      fix:["送信元/宛先が異なるサブネットなら、間にルータ/L3SWがあり経路が通っているか確認する。",
+           "各セグメントのデフォルトゲートウェイ設定と、ルータのルーティングを確認する。",
+           "途中の接続(ケーブル)が繋がっているか図で確認する。"] };
+  }
+  if(/ポート|port .* closed|listen/.test(r)){
+    return { cause:"宛先で対象ポートが待ち受けていません(サービス未起動/ポート不一致)。",
+      fix:["宛先サーバの🔌ポートで、該当ポートをlistenに追加する。",
+           "通信テストのポート番号が、サービスの待ち受けポートと一致しているか確認する。"] };
+  }
+  return { cause:"経路上のいずれかの段階で通信がブロックされました。",
+    fix:["通信ログの @機器名 でブロック箇所を特定する。",
+         "その機器の状態・ポリシー・ルーティング・接続を順に確認する。"] };
 }
 
 /* ====== IP UTILS (IPv4 + IPv6 dual-stack) ====== */
