@@ -990,7 +990,7 @@ function helpBox(parent, title, lines, openByDefault){
   head.addEventListener("click",()=>{ const o=bodyEl.style.display==="none"; bodyEl.style.display=o?"block":"none"; chev.textContent=o?"▲":"▼"; });
   return box;
 }
-function showLearnPanel(){
+function showLearnPanel(openTopicId){
   openDialog("📖 学習モード — 障害の発生手順と操作ガイド", (body)=>{
     ch("div",{ text:"各トピックをクリックすると説明を表示/非表示できます。実際に手を動かして障害を再現し、挙動を観察しながら学習できます。",
       style:{fontSize:"12px",color:"var(--text-dim)",lineHeight:"1.6",marginBottom:"10px"} }, body);
@@ -1006,7 +1006,9 @@ function showLearnPanel(){
       ch("span",{text:topic.icon,style:{fontSize:"15px"}}, head);
       ch("span",{text:topic.title,style:{flex:"1"}}, head);
       const chevron = ch("span",{text:"▼",style:{fontSize:"10px",color:"var(--text-mute)"}}, head);
-      const bodyEl = ch("div",{class:"learn-body",style:{display:"none",padding:"8px 12px",fontSize:"11.5px",lineHeight:"1.7",color:"var(--text)",background:"var(--bg)"}}, card);
+      const _isOpen = (typeof openTopicId==="string" && openTopicId===topic.id);
+      const bodyEl = ch("div",{class:"learn-body",style:{display:_isOpen?"block":"none",padding:"8px 12px",fontSize:"11.5px",lineHeight:"1.7",color:"var(--text)",background:"var(--bg)"}}, card);
+      if(_isOpen) chevron.textContent="▲";
       for(const line of topic.body){
         const isStep = /^[0-9]+\./.test(line.trim());
         const isHead = /^(原因|再現手順|観察|操作|収束|表示|補足|ヒント|ポイント|障害との関係):/.test(line.trim());

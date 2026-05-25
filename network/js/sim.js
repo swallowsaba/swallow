@@ -2854,7 +2854,13 @@ function updateNetHealthBanner(report){
   el.style.display="block";
   el.style.background=color;
   el.innerHTML = `⚠ ネットワーク異常進行中 — MACアドレスフラッピング (${escapeHtml(causeLbl)})${spread?'<span style="font-size:11px">'+escapeHtml(spread)+'</span>':''}<br>`
-    + `<span style="font-size:11px;font-weight:600">最悪: ${escapeHtml(swLabel)} ／ 重大度 ${Math.round(worst)}% ／ CPU ${st.cpu||0}% ／ ${escapeHtml(stage)}</span>`;
+    + `<span style="font-size:11px;font-weight:600">最悪: ${escapeHtml(swLabel)} ／ 重大度 ${Math.round(worst)}% ／ CPU ${st.cpu||0}% ／ ${escapeHtml(stage)}</span>`
+    + `<br><span style="font-size:10px;text-decoration:underline">📖 クリックで原因と対処の説明を開く</span>`;
+  // make the banner clickable → open the matching learning topic
+  el.style.pointerEvents = "auto";
+  el.style.cursor = "pointer";
+  const topicId = cause==="loop" ? "flap-loop" : cause==="duplicate" ? "flap-dup" : cause==="storm" ? "storm" : "flap-roam";
+  el.onclick = ()=>{ if(typeof showLearnPanel==="function") showLearnPanel(topicId); };
   el.style.opacity = "1";
   el.animate ? el.animate([{opacity:1},{opacity:0.55},{opacity:1}],{duration: Math.max(500,1400-worst*8), iterations:1}) : 0;
 }
