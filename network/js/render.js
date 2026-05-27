@@ -13,10 +13,15 @@ function render(){
   for(const n of App.config.networks) renderNetwork(n);
   // Precompute the set of elements that currently have a conflicting (duplicate) IP
   App._ipConflictSet = new Set();
+  App._macConflictSet = new Set();
   try{
     if(typeof detectIpConflicts==="function"){
       const cf = detectIpConflicts();
       for(const ip in cf){ for(const o of cf[ip]) App._ipConflictSet.add(o.kind+":"+o.id); }
+    }
+    if(typeof detectMacConflicts==="function"){
+      const mf = detectMacConflicts();
+      for(const m in mf){ for(const o of mf[m]) App._macConflictSet.add(o.kind+":"+o.id); }
     }
   }catch(e){}
   renderAwsOverlay();
@@ -699,6 +704,8 @@ function renderAwsOverlay(){
       const memF = members.map(s=>({kind:"server",id:s.id}));
       vpcFrame.addEventListener("mousedown",(e)=>startGroupDrag(e, memF));
     }
+    vpcFrame.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); showContextMenu(e,"aws-vpc",vpc.name); });
+    vpcFrame.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showAwsManager(vpc.name); });
     const label = `☁ VPC ${vpc.name} ${vpc.cidr?("("+vpc.cidr+")"):""} ${vpc.region||""}`;
     const bw = label.length*6.0+16;
     const labelRect = ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9, fill:"#ff9900", stroke:"#fff", "stroke-width":1.2,
@@ -727,9 +734,13 @@ function renderAwsOverlay(){
       sx-=12;sy-=14;ex+=12;ey+=10;
       const snDef=(vpc.subnets||[]).find(z=>z.name===snName);
       const pub = snDef && snDef.public;
-      ce("rect", { x:sx, y:sy, width:ex-sx, height:ey-sy, rx:9, ry:9,
-        fill:(pub?"rgba(34,197,94,0.05)":"rgba(100,150,250,0.05)"), stroke:(pub?"#22c55e":"#6496fa"), "stroke-width":1, "stroke-dasharray":"4 3" }, g);
-      ce("text", { x:sx+6, y:sy+9, "font-size":8, "font-weight":"700", fill:(pub?"#22c55e":"#6496fa"),
+      const snBox = ce("rect", { x:sx, y:sy, width:ex-sx, height:ey-sy, rx:9, ry:9,
+        fill:(pub?"rgba(34,197,94,0.05)":"rgba(100,150,250,0.05)"), stroke:(pub?"#22c55e":"#6496fa"), "stroke-width":1, "stroke-dasharray":"4 3",
+        "pointer-events":"all", style:"cursor:move" }, g);
+      // drag the subnet box → move all EC2 in this subnet together (subnet-level move)
+      const snMembers = arr.map(s=>({kind:"server",id:s.id}));
+      snBox.addEventListener("mousedown",(e)=>startGroupDrag(e, snMembers));
+      ce("text", { x:sx+6, y:sy+9, "font-size":8, "font-weight":"700", fill:(pub?"#22c55e":"#6496fa"), "pointer-events":"none",
         text:`${snName}${snDef?(" "+(snDef.cidr||"")):""} ${pub?"[public]":"[private]"}` }, g);
     }
     // SE resize handle (drag to enlarge the VPC frame)
@@ -763,6 +774,8 @@ function renderK8sOverlay(){
       const memF = nodes.map(s=>({kind:"server",id:s.id}));
       k8sFrame.addEventListener("mousedown",(e)=>startGroupDrag(e, memF));
     }
+    k8sFrame.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); showContextMenu(e,"k8s-cluster",cl.name); });
+    k8sFrame.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showK8sManager(cl.name); });
     const podN=(cl.pods||[]).length, svcN=(cl.services||[]).length;
     const label = `☸ K8s ${cl.name} — ${nodes.length}node / ${podN}pod / ${svcN}svc`;
     const bw = label.length*6.0+16;
@@ -1153,6 +1166,21 @@ function renderServer(s){
   }
 
   renderStatusLed(g, w-9, 9, s.status);
+  // MAC-flapping / broadcast-storm impact on this server (if its access switch is affected)
+  if(typeof l2StormSeverityForHost === "function"){
+    let sev = 0;
+    try{ sev = l2StormSeverityForHost("server", s.id); }catch(e){}
+    if(sev > 0){
+      const col = sev<40?"#f59e0b":sev<70?"#ef4444":"#b91c1c";
+      const fb = ce("g", { class:"flap-impact" }, g);
+      ce("rect", { x:w/2-44, y:-15, width:88, height:13, rx:3, ry:3, fill:col }, fb);
+      ce("text", { x:w/2, y:-6, "text-anchor":"middle", "font-size":"7", fill:"#fff", "font-weight":"700",
+        text:`⚠ 通信不安定 ${Math.round(sev)}%` }, fb);
+      // pulsing ring to draw attention
+      const ring = ce("rect", { x:-3, y:-3, width:w+6, height:h+6, rx:8, ry:8, fill:"none", stroke:col, "stroke-width":2, opacity:"0.8" }, g);
+      if(App.animationsEnabled !== false) ce("animate", { attributeName:"opacity", values:"0.8;0.2;0.8", dur:"1.1s", repeatCount:"indefinite" }, ring);
+    }
+  }
   if(App._ipConflictSet && App._ipConflictSet.has("server:"+s.id)){
     const cb = ce("g", { class:"ipconflict-badge" }, g);
     ce("rect", { x:w/2-30, y:-15, width:60, height:13, rx:3, ry:3, fill:"var(--red)" }, cb);
@@ -2283,6 +2311,20 @@ function cancelConnectMode(){
   $("#status-msg").textContent = "";
   const rb = $("#wire-rubber"); if(rb) rb.remove();
   const btn = $("#btn-add-connection"); if(btn) btn.classList.remove("active");
+  if(typeof updateModeIndicator==="function") updateModeIndicator();
+}
+// Show a clear on-canvas indicator of the active interaction mode
+function updateModeIndicator(){
+  const el = $("#mode-indicator"); if(!el) return;
+  if(App.connectMode){
+    el.style.display="block"; el.style.background="#22c55e";
+    el.textContent = "🔌 接続モード — ポートをクリック/ドラッグで配線 (ESCで終了)";
+  } else if(App.selectMode){
+    el.style.display="block"; el.style.background="#8b5cf6";
+    el.textContent = "⬚ 複数選択モード — ドラッグで範囲選択 / Shift+クリックで追加 (ESCで終了)";
+  } else {
+    el.style.display="none";
+  }
 }
 
 function addConnection(from, to){
@@ -2334,6 +2376,21 @@ function showContextMenu(e, kind, id){
 function hideContextMenu(){ $("#ctx-menu").classList.add("hidden"); }
 
 function getContextItems(kind, id){
+  if(kind === "aws-vpc"){
+    return [
+      { icon:"☁", label:"VPC設定を開く", action:()=>showAwsManager(id) },
+      { icon:"📦", label:"EC2インスタンス追加", action:()=>showAwsManager(id) },
+      { sep:true },
+      { icon:"🗑", label:"VPC削除", action:()=>deleteAwsVpc(id) }
+    ];
+  }
+  if(kind === "k8s-cluster"){
+    return [
+      { icon:"☸", label:"クラスタ設定を開く", action:()=>showK8sManager(id) },
+      { sep:true },
+      { icon:"🗑", label:"クラスタ削除", action:()=>deleteK8sCluster(id) }
+    ];
+  }
   if(kind === "device" || kind === "server"){
     const obj = Cfg.byId(kindToCol(kind), id);
     if(!obj) return [];
@@ -2713,6 +2770,10 @@ function updateStatusBar(){
       const msgEl = $("#status-msg");
       if(ips.length && msgEl && !App.connectMode){
         msgEl.textContent = `⚠ IPアドレス競合: ${ips.slice(0,3).join(", ")}${ips.length>3?" 他":""} — 同一ネットワーク内で重複しています`;
+        msgEl.style.color = "var(--red)";
+      } else if(typeof detectMacConflicts==="function" && Object.keys(detectMacConflicts()).length && msgEl && !App.connectMode){
+        const macs=Object.keys(detectMacConflicts());
+        msgEl.textContent = `⚠ MACアドレス重複: ${macs.length}件 — 同一MACが複数のNICに存在(フラッピングの原因)`;
         msgEl.style.color = "var(--red)";
       } else if(msgEl && msgEl.style.color === "rgb(255, 99, 99)"){
         msgEl.style.color = "";

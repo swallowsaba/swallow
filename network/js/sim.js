@@ -1050,11 +1050,31 @@ function detectMacFlaps(){
     const blocked = stpBlockedPorts(sw);
     // group ports by (mac, vlan), excluding STP-blocked ports
     const byKey = {};
+    const addPort = (mac, vid, port)=>{ if(!mac) return; const key=mac+"@"+vid; (byKey[key]=byKey[key]||{mac,vlan:vid,ports:new Set()}).ports.add(port); };
     for(const e of entries){
       if(blocked.has(e.port)) continue;            // STPブロック済みポートは対象外
       const vid = e.vlan!=null ? e.vlan : vlanOfIface(sw, e.port);
-      const key = e.mac + "@" + vid;
-      (byKey[key]=byKey[key]||{mac:e.mac,vlan:vid,ports:new Set()}).ports.add(e.port);
+      addPort(e.mac, vid, e.port);
+    }
+    // Direct scan of connections so DUPLICATE MACs (same MAC on two different ports of THIS
+    // switch) are detected even though buildMacTable dedups by MAC. This makes "two NICs with
+    // the same MAC on one switch" correctly trigger flapping.
+    for(const c of (App.config.connections||[])){
+      if(c.status==="down") continue;
+      let myPort=null, peer=null;
+      if(c.from && c.from.device===sw.id){ myPort=c.from.interface; peer=c.to; }
+      else if(c.to && c.to.device===sw.id){ myPort=c.to.interface; peer=c.from; }
+      else continue;
+      if(blocked.has(myPort)) continue;
+      const peerObj = Cfg.byId(peer.device?"devices":"servers", peer.device||peer.server);
+      if(!peerObj) continue;
+      const peerIf = (peerObj.interfaces||[]).find(i=>i.id===peer.interface);
+      const vid = vlanOfIface(sw, myPort);
+      if(peerIf && peerIf.mac) addPort(normalizeMac(peerIf.mac), vid, myPort);
+      // bonded peer: also its bond members' MACs
+      if(peerObj.bonding && peerObj.bonding.enabled){
+        for(const m of (peerObj.bonding.members||[])){ const mi=(peerObj.interfaces||[]).find(i=>i.id===m); if(mi&&mi.mac) addPort(normalizeMac(mi.mac), vid, myPort); }
+      }
     }
     const flapMacs = {};
     for(const k in byKey){
@@ -1075,7 +1095,19 @@ function detectMacFlaps(){
       if(blocked.has(me.interface)) continue;       // ブロックポートはループ形成しない
       const pid = peer&&(peer.device||peer.server); if(!pid) continue;
       const bonded = sw.bonding&&sw.bonding.enabled&&(sw.bonding.members||[]).includes(me.interface);
-      (peerLinks[pid]=peerLinks[pid]||[]).push({bonded, port:me.interface});
+      // vPC peer link: if this switch and the peer are vPC peers (same domain / configured peer),
+      // their redundant links are managed (MLAG) and must NOT be treated as a loop — this is how
+      // switch-to-switch heartbeat/peer-link redundancy works without flapping.
+      let vpcPeerLink = false;
+      if(peer && peer.device){
+        const peerDev = Cfg.byId("devices", peer.device);
+        const myV = sw.vpc, pV = peerDev && peerDev.vpc;
+        if(myV && myV.enabled && pV && pV.enabled){
+          if((myV.peer && myV.peer===peer.device) || (pV.peer && pV.peer===sw.id) ||
+             (myV.domain!=null && myV.domain===pV.domain)) vpcPeerLink = true;
+        }
+      }
+      (peerLinks[pid]=peerLinks[pid]||[]).push({bonded: bonded||vpcPeerLink, port:me.interface});
     }
     for(const pid in peerLinks){
       const nonBond=peerLinks[pid].filter(l=>!l.bonded);
@@ -1517,6 +1549,25 @@ function ipConflictOwners(ip){
   const c = detectIpConflicts();
   return c[ipOnly(ip)] || null;
 }
+// ====== MAC ADDRESS CHECK ======
+// Detect duplicate MAC addresses across interfaces (same MAC on 2+ distinct elements).
+// Duplicate MACs in the same L2 domain cause MAC flapping and unreliable switching.
+function detectMacConflicts(){
+  const map = {};
+  const add=(mac,owner)=>{ if(!mac) return; const m=normalizeMac(mac); (map[m]=map[m]||[]).push(owner); };
+  for(const s of (App.config.servers||[])) for(const i of (s.interfaces||[])) add(i.mac,{kind:"server",id:s.id,iface:i.id,label:s.label||s.id});
+  for(const d of (App.config.devices||[])) for(const i of (d.interfaces||[])) add(i.mac,{kind:"device",id:d.id,iface:i.id,label:d.label||d.id});
+  const conflicts={};
+  for(const m in map){
+    const owners=map[m];
+    const elems=new Set(owners.map(o=>o.kind+":"+o.id));
+    if(owners.length>=2 && (elems.size>=2 || owners.length>=2)){
+      // duplicate if same MAC appears on 2+ interfaces (even within one device it's invalid)
+      if(owners.length>=2) conflicts[m]=owners;
+    }
+  }
+  return conflicts;
+}
 
 function _arpOwnerId(kind,id){ return kind+":"+id; }
 function arpLookup(kind, id, ip){
@@ -1682,6 +1733,17 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
     }
   }
 
+  // AWS Direct Connect: if the DX link is down, on-prem ↔ AWS(EC2) connectivity is lost.
+  if(App.config.aws && App.config.aws.direct_connect && App.config.aws.direct_connect.status === "down"){
+    const dstOwner = (typeof findIpOwner==="function") ? findIpOwner(destIp) : null;
+    const dstIsAws = dstOwner && dstOwner.obj && dstOwner.obj.aws;
+    const srcIsAws = srcObj.aws;
+    if(dstIsAws && !srcIsAws){
+      return { ok:false, path, reason:"AWS Direct Connect 障害: オンプレミス↔AWS間の専用線がダウンしており、VPC内リソースに到達できません。",
+        blockedAt:{ kind:srcKind, id:srcObj.id }, directConnect:true };
+    }
+  }
+
   // VM bridging: a VM (server.host) reaches the physical network THROUGH its host.
   // Source VM → record the VM as origin, then route from the host.
   let vmOrigin = null;
@@ -1774,6 +1836,13 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
         return { ok:false, path, reason:`${curObj.id}: MACフラッピングによりパケット破棄 (${macFlapStage(sev, cause)})`,
           blockedAt:{ kind:"device", id:curObj.id }, macFlap:true };
       }
+    }
+    // SFP/optics partial failure: a degraded transceiver causes CRC errors and intermittent
+    // packet loss (a "half-broken" link that is up but flaky — common real-world fault).
+    const degIf = (curObj.interfaces||[]).find(i=>i.sfp_degraded);
+    if(degIf && Math.random() < 0.45){
+      return { ok:false, path, reason:`${curObj.id}: SFP/光モジュール劣化により入力エラー(CRC)でフレーム破棄 — ${degIf.id} (リンクUPだが不安定)`,
+        blockedAt:{ kind:cur.kind, id:curObj.id }, sfp:true };
     }
     // Arrived check — destIp matches any address on any interface (or the bond addr)
     const bondIp4 = curObj.bonding && curObj.bonding.enabled ? ipOnly(curObj.bonding.bond_ip) : null;
@@ -2360,13 +2429,29 @@ var DEVICE_TYPES = [
  * (FQDN + IP + listening ports), reachable in the communication simulator.
  */
 var EXTERNAL_CATALOG = [
-  { group:"AWS", provider:"cloud", items:[
+  { group:"AWS マネージドサービス", provider:"cloud", items:[
     { key:"aws-s3",        label:"Amazon S3",        fqdn:"s3.amazonaws.com",            ip:"52.216.0.10",  ports:[443] },
     { key:"aws-rds",       label:"Amazon RDS",       fqdn:"rds.amazonaws.com",           ip:"52.94.0.20",   ports:[3306,5432] },
     { key:"aws-dynamodb",  label:"DynamoDB",         fqdn:"dynamodb.amazonaws.com",      ip:"52.94.0.40",   ports:[443] },
-    { key:"aws-ec2",       label:"EC2 Endpoint",     fqdn:"ec2.amazonaws.com",           ip:"52.94.0.50",   ports:[443] },
     { key:"aws-cloudfront",label:"CloudFront (CDN)", fqdn:"cloudfront.net",              ip:"13.224.0.10",  ports:[443,80] },
-    { key:"aws-sqs",       label:"SQS",              fqdn:"sqs.amazonaws.com",           ip:"52.94.0.60",   ports:[443] }
+    { key:"aws-sqs",       label:"SQS",              fqdn:"sqs.amazonaws.com",           ip:"52.94.0.60",   ports:[443] },
+    { key:"aws-lambda",    label:"Lambda",           fqdn:"lambda.amazonaws.com",        ip:"52.94.0.70",   ports:[443] },
+    { key:"aws-apigw",     label:"API Gateway",      fqdn:"execute-api.amazonaws.com",   ip:"52.94.0.80",   ports:[443] }
+  ]},
+  { group:"AWS ロードバランサ / コンテナ", provider:"cloud", items:[
+    { key:"aws-alb",  label:"ALB (Application LB)", fqdn:"alb.elb.amazonaws.com",  ip:"52.20.0.10", ports:[80,443] },
+    { key:"aws-nlb",  label:"NLB (Network LB)",     fqdn:"nlb.elb.amazonaws.com",  ip:"52.20.0.20", ports:[80,443,3306] },
+    { key:"aws-ecs",  label:"ECS (コンテナ)",       fqdn:"ecs.amazonaws.com",      ip:"52.20.0.30", ports:[80,443,8080] },
+    { key:"aws-eks",  label:"EKS (Kubernetes)",     fqdn:"eks.amazonaws.com",      ip:"52.20.0.40", ports:[443,6443] },
+    { key:"aws-fargate", label:"Fargate",           fqdn:"fargate.amazonaws.com",  ip:"52.20.0.50", ports:[80,443] }
+  ]},
+  { group:"AWS ネットワーク / ゲートウェイ", provider:"cloud", items:[
+    { key:"aws-igw",  label:"Internet Gateway (IGW)", fqdn:"igw.amazonaws.com",     ip:"0.0.0.0",   ports:[80,443] },
+    { key:"aws-natgw",label:"NAT Gateway",            fqdn:"natgw.amazonaws.com",   ip:"52.30.0.10",ports:[80,443] },
+    { key:"aws-vpce", label:"VPC Endpoint",           fqdn:"vpce.amazonaws.com",    ip:"10.0.0.250",ports:[443] },
+    { key:"aws-dx",   label:"Direct Connect",         fqdn:"dx.amazonaws.com",      ip:"169.254.0.1",ports:[179] },
+    { key:"aws-tgw",  label:"Transit Gateway",        fqdn:"tgw.amazonaws.com",     ip:"52.30.0.20",ports:[443] },
+    { key:"aws-route53", label:"Route 53 (DNS)",      fqdn:"route53.amazonaws.com", ip:"52.94.0.90",ports:[53] }
   ]},
   { group:"SaaS", provider:"saas", items:[
     { key:"salesforce", label:"Salesforce",   fqdn:"login.salesforce.com", ip:"104.16.0.10", ports:[443] },
@@ -2764,6 +2849,253 @@ function pasteClipboardElement(){
   Log.info(`ペースト複製: ${kind} ${clone.id}`);
 }
 
+/* ====== OJT 障害トレーニング・ラボ ======
+ * 画面右に常時表示されるガイドパネルで、各障害の「症状・発生手順・原因解説・対処」を読みながら、
+ * ボタンで実際に障害を発生(inject)・復旧(recover)させ、通信テストで挙動を確認できる。
+ */
+function _labFirst(kind, pred){
+  const arr = kind==="device" ? App.config.devices : App.config.servers;
+  for(const o of (arr||[])){ if(!pred || pred(o)) return o; }
+  return null;
+}
+function _labSwitches(){ return (App.config.devices||[]).filter(d=>d.type==="l2switch"||d.type==="l3switch"); }
+function _labRealServers(){ return (App.config.servers||[]).filter(s=>!s.vm); }
+function _labSave(id, data){ App._labState = App._labState||{}; App._labState[id]=data; }
+function _labGet(id){ return (App._labState||{})[id]; }
+
+var FAULT_LABS = [
+  { cat:"基礎を学ぶ(概念と手順)", id:"learn-l2switch", icon:"🔀", title:"L2スイッチとは？(基礎)",
+    symptom:"スイッチ・VLAN・MACテーブルの役割を理解する。",
+    steps:["1. ツールバー『機器追加』→ L2スイッチ を配置する。",
+      "2. サーバを2台配置し、接続モードでスイッチの別ポートへそれぞれ接続する。",
+      "3. 2台に同じサブネットのIP(例 10.0.0.1/24, 10.0.0.2/24)を設定する。",
+      "4. 通信テストで2台が疎通することを確認する。"],
+    explain:["L2スイッチ: MACアドレスを学習し、宛先MACのポートだけにフレームを転送するL2機器。",
+      "同一サブネット内の端末同士はルータ無しで直接通信できる(同一ブロードキャストドメイン)。",
+      "VLANで論理的にネットワークを分割できる(別VLANはL3で接続)。",
+      "MACテーブル: どのMACがどのポートにいるかの対応表。右クリック→ARP/MAC確認。"],
+    inject:null, recover:null },
+
+  { cat:"基礎を学ぶ(概念と手順)", id:"learn-l3", icon:"🧭", title:"L3スイッチ/ルータとVLAN間ルーティング",
+    symptom:"異なるサブネット間の通信にはL3(ルーティング)が必要。",
+    steps:["1. L3スイッチ(またはルータ)を配置する。",
+      "2. 2つの異なるサブネット(例 10.0.1.0/24 と 10.0.2.0/24)の端末を用意する。",
+      "3. L3機器の各IFにそれぞれのサブネットのGW IPを設定する。",
+      "4. 各端末のデフォルトGWをそのIPにし、通信テストでサブネット間疎通を確認する。"],
+    explain:["L3スイッチ/ルータ: IPアドレスを見てサブネット間を中継(ルーティング)する機器。",
+      "デフォルトゲートウェイ: 自分のサブネット外への出口となるルータIP。",
+      "ルーティングテーブル: どの宛先ネットワークをどの方向へ送るかの表(右クリックで編集)。"],
+    inject:null, recover:null },
+
+  { cat:"基礎を学ぶ(概念と手順)", id:"learn-vpc", icon:"⛓", title:"vPC(仮想ポートチャネル)とは？設定手順",
+    symptom:"2台のスイッチを論理的に1台に見せ、ループ無しで冗長化・帯域倍増する技術。",
+    steps:["1. L2/L3スイッチを2台配置する(vPCピア)。",
+      "2. 各スイッチを右クリック →『vPC設定』を開き、有効化して同じドメインIDを設定する。",
+      "3. 2台間をピアリンクで接続する。",
+      "4. 下位機器を両スイッチへ接続(vPCメンバーポート)し、ループ無しで冗長化されることを確認。"],
+    explain:["vPC(Cisco)/MLAG: 2台のスイッチを1つの論理スイッチとして扱う技術。",
+      "利点: STPでブロックされず両リンクを同時利用(帯域倍増)＋片系故障でも継続(冗長)。",
+      "ピアリンク: 2台のvPCピア間を結ぶ重要なリンク(状態同期)。",
+      "ピアキープアライブ: ピアの生存監視(ハートビート)。本ツールではvPC設定で表現。",
+      "注意: 通常の2本接続をSTP無効で繋ぐとループになる。vPCはそれを安全に束ねる仕組み。"],
+    inject:null, recover:null },
+
+  { cat:"基礎を学ぶ(概念と手順)", id:"learn-heartbeat", icon:"💓", title:"スイッチ間ハートビート/キープアライブ",
+    symptom:"冗長ペア(vPC/HA)はハートビートで相互生存監視する。",
+    steps:["1. vPCまたは冗長ペアを構成する(上記vPC手順)。",
+      "2. vPC設定内の『ピアキープアライブ』で監視を有効化する。",
+      "3. 片系をダウンさせると、もう片方が単独動作に切り替わることを観察する。"],
+    explain:["ハートビート: 一定間隔で相互に生存確認パケットを送り合う仕組み。",
+      "途切れるとフェイルオーバ(片系へ切替)やスプリットブレイン防止動作が働く。",
+      "vPC/HSRP/VRRP/スタック等で利用される。"],
+    inject:null, recover:null },
+
+  { cat:"機器・ハードウェア障害", id:"server-down", icon:"🖥", title:"サーバ故障(ダウン)",
+    symptom:"特定サーバへの通信が全て不可。経路途中ではなく宛先で停止。",
+    steps:["1. 対象サーバを選び、プロパティでステータスを『error/stopped』にする(下のボタンでも可)。",
+      "2. 別ホストからそのサーバへ通信テストを実行する。",
+      "3. 『@サーバ名 is error』で失敗し、原因と対処が表示される。"],
+    explain:["原因: サーバ本体のダウン(電源/OS/ハード故障)。",
+      "切り分け: 同セグメントの他サーバは到達可→個別障害。GW/SW正常を確認。",
+      "対処: サーバを復旧(起動)する。冗長構成ならLB/フェイルオーバで継続。"],
+    inject:()=>{ const s=_labRealServers()[0]; if(!s){toast("サーバがありません","warn");return;} _labSave("server-down",{id:s.id,st:s.status}); s.status="error"; return s.label||s.id; },
+    recover:()=>{ const v=_labGet("server-down"); if(v){ const s=Cfg.byId("servers",v.id); if(s)s.status=v.st||"running"; } } },
+
+  { cat:"機器・ハードウェア障害", id:"switch-down", icon:"🔀", title:"スイッチ本体の故障",
+    symptom:"そのスイッチ配下の全機器が通信不可。広範囲に影響。",
+    steps:["1. 対象スイッチのステータスを『error』にする。",
+      "2. 配下のサーバ同士/外部への通信テストを行う。",
+      "3. スイッチ経由の経路が全滅することを確認。"],
+    explain:["原因: スイッチの電源/筐体故障。",
+      "切り分け: 配下の複数機器が同時に到達不可→集約機器(SW)を疑う。",
+      "対処: スイッチ復旧。冗長(スタック/vPC/二重化)なら影響を局限化できる。"],
+    inject:()=>{ const sw=_labSwitches()[0]; if(!sw){toast("スイッチがありません","warn");return;} _labSave("switch-down",{id:sw.id,st:sw.status}); sw.status="error"; return sw.label||sw.id; },
+    recover:()=>{ const v=_labGet("switch-down"); if(v){ const d=Cfg.byId("devices",v.id); if(d)d.status=v.st||"running"; } } },
+
+  { cat:"機器・ハードウェア障害", id:"link-down", icon:"🔌", title:"リンク/ポート障害(ケーブル断)",
+    symptom:"特定リンク経由の通信のみ不可。迂回路があれば継続。",
+    steps:["1. 対象リンク(接続)を down にする(下のボタン)。",
+      "2. そのリンクを通る通信テストを実行。",
+      "3. 迂回路の有無で結果が変わることを確認。"],
+    explain:["原因: ケーブル断/ポート故障/コネクタ不良。",
+      "切り分け: 片リンクのみ。冗長があれば自動迂回(STP/ルーティング再計算)。",
+      "対処: ケーブル/ポート交換。リンク状態(up/down)とエラーカウンタを確認。"],
+    inject:()=>{ const c=(App.config.connections||[])[0]; if(!c){toast("接続がありません","warn");return;} _labSave("link-down",{id:c.id,st:c.status}); c.status="down"; return c.id; },
+    recover:()=>{ const v=_labGet("link-down"); if(v){ const c=(App.config.connections||[]).find(x=>x.id===v.id); if(c)c.status=v.st||"up"; } } },
+
+  { cat:"機器・ハードウェア障害", id:"sfp-degraded", icon:"📡", title:"SFP/光モジュールの中途半端な障害",
+    symptom:"リンクはUPなのに通信が断続的に失敗。CRCエラー多発。最も切り分けが難しい障害の一つ。",
+    steps:["1. 対象インターフェースを『SFP劣化』状態にする(下のボタン)。",
+      "2. そのポートを通る通信テストを複数回実行する。",
+      "3. 成功と失敗が混在(約45%失敗)し、CRCエラーで破棄されることを確認。"],
+    explain:["原因: 光トランシーバ/ファイバの劣化、受光レベル低下、汚れ。リンクはUPのままなので気付きにくい。",
+      "切り分け: input errors / CRC カウンタの増加、断続的なパケットロス。show interface で確認。",
+      "対処: SFP・光ファイバの交換、清掃。受光レベルを測定する。"],
+    inject:()=>{ const sw=_labSwitches().find(d=>(d.interfaces||[]).some(i=>i.status!=="down")); if(!sw){toast("対象がありません","warn");return;} const ifc=(sw.interfaces||[]).find(i=>i.status!=="down"); if(!ifc)return; _labSave("sfp-degraded",{id:sw.id,ifId:ifc.id}); ifc.sfp_degraded=true; return (sw.label||sw.id)+" / "+ifc.id; },
+    recover:()=>{ const v=_labGet("sfp-degraded"); if(v){ const d=Cfg.byId("devices",v.id); const ifc=d&&(d.interfaces||[]).find(i=>i.id===v.ifId); if(ifc)delete ifc.sfp_degraded; } } },
+
+  { cat:"L2/STP障害", id:"loop-flap", icon:"🔁", title:"L2ループ→MACフラッピング",
+    symptom:"ネットワーク全体が徐々に異常化。CPU高騰、断続ロス、上部に異常バナー。",
+    steps:["1. 2台のスイッチ間を2本のリンクで接続する。",
+      "2. 両スイッチのSTPを『off』にする(下のボタンで自動構成)。",
+      "3. 数秒待つと異常バナーが出現。バナーをクリックで詳細解説。"],
+    explain:["原因: STP無効の冗長リンクでブロードキャストが無限ループ。",
+      "影響: 同一L2ドメイン全体に波及し、間接接続機器も巻き込む。",
+      "対処: STP有効化、片リンク削除、BPDU Guardでループポートをerr-disable。"],
+    inject:()=>{ const sw=_labSwitches(); if(sw.length<2){toast("スイッチが2台必要です","warn");return;} const a=sw[0],b=sw[1];
+      _labSave("loop-flap",{a:a.id,b:b.id,sa:(a.stp&&a.stp.mode),sb:(b.stp&&b.stp.mode),added:[]});
+      a.stp=a.stp||{}; b.stp=b.stp||{}; a.stp.mode="off"; b.stp.mode="off";
+      // ensure 2 links between a,b
+      const pa1=(a.interfaces[0]||{}).id, pa2=(a.interfaces[1]||{}).id, pb1=(b.interfaces[0]||{}).id, pb2=(b.interfaces[1]||{}).id;
+      const links=(App.config.connections||[]).filter(c=>{const x=c.from.device,y=c.to.device;return (x===a.id&&y===b.id)||(x===b.id&&y===a.id);});
+      const v=_labGet("loop-flap");
+      if(links.length<2 && pa1&&pa2&&pb1&&pb2){ const id1=uid("loopA"),id2=uid("loopB");
+        App.config.connections.push({id:id1,from:{device:a.id,interface:pa1},to:{device:b.id,interface:pb1},status:"up"});
+        App.config.connections.push({id:id2,from:{device:a.id,interface:pa2},to:{device:b.id,interface:pb2},status:"up"});
+        v.added=[id1,id2]; }
+      return (a.label||a.id)+" ⇄ "+(b.label||b.id); },
+    recover:()=>{ const v=_labGet("loop-flap"); if(!v)return; const a=Cfg.byId("devices",v.a),b=Cfg.byId("devices",v.b);
+      if(a){a.stp=a.stp||{};a.stp.mode=v.sa||"rstp";} if(b){b.stp=b.stp||{};b.stp.mode=v.sb||"rstp";}
+      if(v.added&&v.added.length) App.config.connections=App.config.connections.filter(c=>!v.added.includes(c.id));
+      App.macFlap={}; } },
+
+  { cat:"L2/STP障害", id:"mac-dup", icon:"👯", title:"MACアドレス重複(ループ以外のフラッピング)",
+    symptom:"ループが無いのにMACFLAPログ。特定MACが2ポート間で揺れる。",
+    steps:["1. 同一スイッチ配下の2サーバに同じMACを設定する(下のボタン)。",
+      "2. 数秒待ち、duplicate原因のフラッピングを確認。"],
+    explain:["原因: 仮想NICのMACコピー/複製ミスで同一MACが同一VLANに二つ。",
+      "対処: 一方のMACを一意な値に変更する。仮想環境ではMAC自動生成を有効に。"],
+    inject:()=>{ const ss=_labRealServers(); if(ss.length<2){toast("サーバが2台必要","warn");return;}
+      const m=(ss[0].interfaces[0]||{}).mac||"00:50:56:aa:bb:cc"; _labSave("mac-dup",{id:ss[1].id,ifId:(ss[1].interfaces[0]||{}).id,old:(ss[1].interfaces[0]||{}).mac});
+      if(ss[1].interfaces[0]) ss[1].interfaces[0].mac=m; return (ss[0].label||ss[0].id)+" = "+(ss[1].label||ss[1].id); },
+    recover:()=>{ const v=_labGet("mac-dup"); if(v){ const s=Cfg.byId("servers",v.id); const ifc=s&&(s.interfaces||[]).find(i=>i.id===v.ifId); if(ifc)ifc.mac=v.old||genUniqueMac(); } App.macFlap={}; } },
+
+  { cat:"L2/STP障害", id:"stp-misconfig", icon:"👑", title:"STPルートブリッジの誤設定",
+    symptom:"意図しないスイッチがルートになり、トラフィックが非最適経路に。",
+    steps:["1. エッジ(末端)スイッチに最小プライオリティ(0)を設定する(下のボタン)。",
+      "2. STP表示ボタンでルート位置を確認し、設計と異なることを観察。"],
+    explain:["原因: bridge priority の設定ミス。最小ID(priority→MAC)がルートになる。",
+      "対処: コア/分配スイッチに低いpriority、エッジは高めに。意図したルートを明示設定。"],
+    inject:()=>{ const sw=_labSwitches(); if(!sw.length){toast("スイッチがありません","warn");return;} const edge=sw[sw.length-1]; _labSave("stp-misconfig",{id:edge.id,old:edge.stp_priority}); edge.stp_priority=0; return edge.label||edge.id; },
+    recover:()=>{ const v=_labGet("stp-misconfig"); if(v){ const d=Cfg.byId("devices",v.id); if(d){ if(v.old==null)delete d.stp_priority; else d.stp_priority=v.old; } } } },
+
+  { cat:"L3/到達性障害", id:"ip-dup", icon:"⚠️", title:"IPアドレス重複",
+    symptom:"重複IB宛て通信がエラー。該当機器に⚠IP重複バッジ。",
+    steps:["1. 同一サブネットの2サーバに同じIPを設定する(下のボタン)。",
+      "2. その重複IP宛てに通信テスト→競合エラーを確認。"],
+    explain:["原因: 同一サブネットに同一IPが二つ。ARPで宛先が一意に定まらない。",
+      "対処: 一方を未使用IPに変更。DHCP予約の重複も確認。"],
+    inject:()=>{ const ss=_labRealServers(); if(ss.length<2){toast("サーバが2台必要","warn");return;} const ip=(ss[0].interfaces[0]||{}).ip; if(!ip){toast("基準サーバにIPが必要","warn");return;} _labSave("ip-dup",{id:ss[1].id,ifId:(ss[1].interfaces[0]||{}).id,old:(ss[1].interfaces[0]||{}).ip}); if(ss[1].interfaces[0])ss[1].interfaces[0].ip=ip; return ip; },
+    recover:()=>{ const v=_labGet("ip-dup"); if(v){ const s=Cfg.byId("servers",v.id); const ifc=s&&(s.interfaces||[]).find(i=>i.id===v.ifId); if(ifc)ifc.ip=v.old||""; } } },
+
+  { cat:"L3/到達性障害", id:"fw-block", icon:"🛡", title:"ファイアウォール誤遮断",
+    symptom:"特定の通信だけ拒否される。経路途中のFW/SWで停止。",
+    steps:["1. 経路上のFW/SWに『全拒否』ルールを追加する(下のボタン)。",
+      "2. 通信テスト→ポリシー拒否で失敗、原因と対処が表示。"],
+    explain:["原因: ACL/FWポリシーの設定ミス、暗黙のdeny。",
+      "対処: 必要な許可ルールを追加。ルールは上から評価、最後はdenyに注意。"],
+    inject:()=>{ const d=_labFirst("device",x=>x.type==="firewall")||_labSwitches()[0]; if(!d){toast("対象機器がありません","warn");return;} App.config.policies=App.config.policies||[]; const pol={device:d.id,rules:[{id:uid("r"),action:"deny",src:"any",dst:"any",protocol:"any",status:"active",log:true}],_lab:true}; _labSave("fw-block",{device:d.id}); App.config.policies.push(pol); return d.label||d.id; },
+    recover:()=>{ const v=_labGet("fw-block"); if(v) App.config.policies=(App.config.policies||[]).filter(p=>!(p._lab&&p.device===v.device)); } },
+
+  { cat:"AWS/クラウド障害", id:"dx-down", icon:"☁", title:"AWS Direct Connect 障害",
+    symptom:"オンプレからAWS(EC2/VPC)へ到達不可。AWS内部は正常。",
+    steps:["1. Direct Connectをダウンさせる(下のボタン)。",
+      "2. オンプレのサーバからEC2へ通信テスト→専用線障害で失敗。"],
+    explain:["原因: Direct Connect専用線/ルータの障害。",
+      "対処: 回線復旧、冗長DXやVPNバックアップへ切替。BGP経路の確認。"],
+    inject:()=>{ App.config.aws=App.config.aws||{vpcs:[]}; App.config.aws.direct_connect=App.config.aws.direct_connect||{}; _labSave("dx-down",{old:App.config.aws.direct_connect.status}); App.config.aws.direct_connect.status="down"; App.config.aws.direct_connect.enabled=true; return "Direct Connect DOWN"; },
+    recover:()=>{ if(App.config.aws&&App.config.aws.direct_connect){ App.config.aws.direct_connect.status="up"; } } },
+
+  { cat:"AWS/クラウド障害", id:"sg-deny", icon:"🔒", title:"セキュリティグループ誤設定",
+    symptom:"EC2への特定ポート通信が拒否される。",
+    steps:["1. 対象VPCのSGインバウンド許可を削除する(下のボタン)。",
+      "2. EC2の該当ポートへ通信テスト→SG拒否で失敗。"],
+    explain:["原因: SGは許可リスト方式。許可が無い通信は全て拒否。",
+      "対処: 必要なポート/送信元をSGインバウンドに追加。"],
+    inject:()=>{ const vpc=(App.config.aws&&App.config.aws.vpcs||[])[0]; if(!vpc||!(vpc.security_groups||[]).length){toast("VPC/SGがありません","warn");return;} _labSave("sg-deny",{vpc:vpc.name,sg:JSON.parse(JSON.stringify(vpc.security_groups))}); for(const g of vpc.security_groups) g.inbound=[]; return vpc.name; },
+    recover:()=>{ const v=_labGet("sg-deny"); if(v){ const vpc=(App.config.aws&&App.config.aws.vpcs||[]).find(x=>x.name===v.vpc); if(vpc)vpc.security_groups=v.sg; } } },
+
+  { cat:"冗長性の確認", id:"lacp-member", icon:"🔗", title:"LACPメンバーリンク障害(冗長動作の確認)",
+    symptom:"束ねたリンクの1本が断。LACP/ボンディングなら通信は継続(帯域低下)。",
+    steps:["1. ボンディング設定済み機器のメンバー1本をdownにする(下のボタン)。",
+      "2. 通信テスト→冗長により継続することを確認(degraded表示)。"],
+    explain:["原因: 集約リンクの1本が物理障害。",
+      "ポイント: LACP/active-backupなら残リンクで継続。全断で初めて不通。",
+      "対処: 障害リンクを復旧して帯域・冗長を回復。"],
+    inject:()=>{ const o=_labFirst("device",x=>x.bonding&&x.bonding.enabled)||_labFirst("server",x=>x.bonding&&x.bonding.enabled); if(!o){toast("ボンディング設定済みの機器がありません","warn");return;} const mem=(o.bonding.members||[])[0]; const ifc=(o.interfaces||[]).find(i=>i.id===mem); if(!ifc){toast("メンバーがありません","warn");return;} _labSave("lacp-member",{kind:o.interfaces?(o.type?"device":"server"):"server",id:o.id,ifId:ifc.id,old:ifc.status}); ifc.status="down"; return (o.label||o.id)+" / "+ifc.id; },
+    recover:()=>{ const v=_labGet("lacp-member"); if(v){ const o=Cfg.byId("devices",v.id)||Cfg.byId("servers",v.id); const ifc=o&&(o.interfaces||[]).find(i=>i.id===v.ifId); if(ifc)ifc.status=v.old||"up"; } } }
+];
+
+function showLabPanel(openLabId){
+  const panel=$("#lab-panel"); if(!panel) return;
+  panel.classList.remove("hidden");
+  const body=$("#lab-body");
+  if(openLabId){ const lab=FAULT_LABS.find(l=>l.id===openLabId); if(lab){ renderLabDetail(lab); return; } }
+  body.innerHTML="";
+  ch("div",{style:{fontSize:"11px",color:"var(--text-dim)",lineHeight:"1.6",marginBottom:"6px"},
+    text:"障害を選ぶと、症状・発生手順・原因・対処の解説が表示されます。『発生させる』で実際に障害を注入し、通信テストで挙動を観察、『復旧』で戻せます。"},body);
+  const cats={};
+  for(const lab of FAULT_LABS){ (cats[lab.cat]=cats[lab.cat]||[]).push(lab); }
+  for(const cat in cats){
+    ch("div",{class:"lab-cat",text:cat},body);
+    for(const lab of cats[cat]){
+      const item=ch("div",{class:"lab-item"},body);
+      ch("span",{class:"li-ico",text:lab.icon},item);
+      ch("span",{class:"li-t",text:lab.title},item);
+      ch("span",{text:"›",style:{color:"var(--text-mute)"}},item);
+      item.addEventListener("click",()=>renderLabDetail(lab));
+    }
+  }
+}
+function renderLabDetail(lab){
+  const body=$("#lab-body"); if(!body) return;
+  body.innerHTML="";
+  const back=ch("button",{class:"lab-back",style:{padding:"4px 10px",fontSize:"11px",borderRadius:"4px",cursor:"pointer",marginBottom:"8px"},text:"← ラボ一覧"},body);
+  back.addEventListener("click",()=>showLabPanel());
+  const d=ch("div",{class:"lab-detail"},body);
+  ch("h3",{text:lab.icon+" "+lab.title},d);
+  ch("div",{class:"lab-sec",text:"症状"},d);
+  ch("div",{class:"lab-line",text:lab.symptom},d);
+  ch("div",{class:"lab-sec",text:"発生手順(OJT)"},d);
+  for(const s of lab.steps) ch("div",{class:"lab-step",text:s},d);
+  ch("div",{class:"lab-sec",text:"原因と対処"},d);
+  for(const e of lab.explain) ch("div",{class:"lab-line",text:e},d);
+  const btns=ch("div",{class:"lab-btns"},d);
+  if(lab.inject){
+    ch("button",{class:"lab-inject",text:"⚠ この障害を発生させる",on:{click:()=>{
+      pushUndo(); const tgt=lab.inject&&lab.inject(); renderAndSync(); updateStatusBar();
+      if(tgt) toast(`障害を発生: ${lab.title}${tgt?(" — "+tgt):""}`,"warn");
+    }}},btns);
+    ch("button",{class:"lab-recover",text:"✓ 復旧する",on:{click:()=>{
+      pushUndo(); lab.recover&&lab.recover(); renderAndSync(); updateStatusBar(); toast(`復旧: ${lab.title}`,"ok");
+    }}},btns);
+  }
+  ch("button",{class:"lab-test",text:"🎯 通信テストを開く",on:{click:()=>{ if(typeof openCommSimulator==="function") openCommSimulator(); }}},btns);
+  ch("div",{style:{fontSize:"10px",color:"var(--text-mute)",marginTop:"6px",lineHeight:"1.5"},
+    text:"ヒント: 発生→通信テストで失敗を確認→ログの『💡原因/対処』を読む→復旧、の順で学習効果が高いです。"},d);
+}
+function hideLabPanel(){ const p=$("#lab-panel"); if(p) p.classList.add("hidden"); }
+
 function startConnectMode(){
   // Toggle: pressing the button again exits connect mode
   if(App.connectMode){ cancelConnectMode(); toast("接続モード終了", "ok"); return; }
@@ -2773,6 +3105,7 @@ function startConnectMode(){
   $("#status-msg").textContent = "接続モード: 始点インターフェースをクリック → 終点をクリック (連続配線可 / ESC または「接続」ボタンで終了)";
   toast("接続モード開始: インターフェース(ポート)を順にクリックで連続配線", "ok");
   Log.info("接続モード開始 (連続配線)");
+  if(typeof updateModeIndicator==="function") updateModeIndicator();
 }
 
 /* ====== FLOATING MENU UTILS ====== */
@@ -2859,8 +3192,8 @@ function updateNetHealthBanner(report){
   // make the banner clickable → open the matching learning topic
   el.style.pointerEvents = "auto";
   el.style.cursor = "pointer";
-  const topicId = cause==="loop" ? "flap-loop" : cause==="duplicate" ? "flap-dup" : cause==="storm" ? "storm" : "flap-roam";
-  el.onclick = ()=>{ if(typeof showLearnPanel==="function") showLearnPanel(topicId); };
+  const topicId = cause==="duplicate" ? "mac-dup" : "loop-flap";
+  el.onclick = ()=>{ if(typeof showLabPanel==="function") showLabPanel(topicId); };
   el.style.opacity = "1";
   el.animate ? el.animate([{opacity:1},{opacity:0.55},{opacity:1}],{duration: Math.max(500,1400-worst*8), iterations:1}) : 0;
 }
@@ -2920,9 +3253,11 @@ function attachEventHandlers(){
     App.selectMode = !App.selectMode;
     const b=$("#btn-select"); if(b) b.classList.toggle("active", App.selectMode);
     if(!App.selectMode){ App.multiSelect=[]; render(); }
+    if(typeof updateModeIndicator==="function") updateModeIndicator();
     toast(App.selectMode?"複数選択モード: ドラッグで範囲選択 / Shift+クリックで追加":"複数選択モード解除", "ok");
   });
-  bind("#btn-learn","click", showLearnPanel);
+  bind("#btn-learn","click", ()=>showLabPanel());
+  bind("#lab-close","click", hideLabPanel);
 
   bind("#btn-sim-play","click", ()=>{
     if(App.simulation.paused){
@@ -3038,10 +3373,12 @@ function attachEventHandlers(){
   svg.addEventListener("contextmenu", (e)=>{
     if(e.target === svg){ e.preventDefault(); hideContextMenu(); }
   });
-  // While a right-drag wiring gesture is active (or just finished), suppress the native
-  // browser context menu everywhere so it can't interrupt the drag-to-connect.
+  // Suppress the native browser context menu anywhere inside the canvas area so the tool's
+  // own right-click menu always takes precedence (no competing browser menu).
   document.addEventListener("contextmenu", (e)=>{
-    if(App._wireActive){ e.preventDefault(); e.stopPropagation(); }
+    if(App._wireActive){ e.preventDefault(); e.stopPropagation(); return; }
+    const wrap = $("#svg-wrap");
+    if(wrap && wrap.contains(e.target)){ e.preventDefault(); }
   }, true);
   document.addEventListener("mousemove", onMouseMove);
   document.addEventListener("mouseup", onMouseUp);

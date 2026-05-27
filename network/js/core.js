@@ -1081,6 +1081,17 @@ function logCommResult(srcLabel, dstLabel, proto, port, res){
 function diagnoseCommError(res){
   if(!res || res.ok) return null;
   const r = String(res.reason||"");
+  if(res.sfp || /SFP|光モジュール|CRC/.test(r)){
+    return { cause:"SFP/光トランシーバの劣化で、リンクはUPでもCRCエラーが多発し断続的にフレームが破棄されています。",
+      fix:["該当インターフェースのSFP/光モジュール・光ファイバを交換する。",
+           "ポートのエラーカウンタ(CRC/input errors)を確認し、劣化箇所を特定する。",
+           "ラボでは対象インターフェースの『SFP劣化』を解除すると回復します。"] };
+  }
+  if(res.directConnect || /Direct Connect|専用線/.test(r)){
+    return { cause:"AWS Direct Connect(専用線)がダウンし、オンプレミスからVPC内リソースへ到達できません。",
+      fix:["Direct Connect回線/ルータの状態を確認し復旧する(冗長DXやVPN backupがあれば切替)。",
+           "ラボではDirect Connectを『復旧』するとVPCへ再到達できます。"] };
+  }
   if(res.ipConflict || /IPアドレス競合|重複/.test(r)){
     return { cause:"同一ネットワーク内でIPアドレスが重複しており、宛先(または送信元)が一意に定まりません。",
       fix:["重複している機器のどちらかのIPを別の未使用アドレスに変更する。",

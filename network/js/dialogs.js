@@ -50,6 +50,16 @@ function addField(parent, label, type, value, onChange){
   const f = ch("div", { class:"field" }, parent);
   ch("label", { text:label }, f);
   const inp = ch("input", { type, value: value==null ? "" : String(value) }, f);
+  // Auto-suggest existing IPs/CIDRs for address-like fields (gateway, IP, CIDR, next-hop, 宛先)
+  if(type==="text" && /IP|CIDR|Gateway|ゲートウェイ|next.?hop|ネクストホップ|宛先|ネットワーク|アドレス|address|route|ルート/i.test(label)){
+    try{
+      const sug = ipSuggestions();
+      const isV6 = /v6|IPv6/i.test(label);
+      const vals = isV6 ? sug.v6 : sug.v4.concat(sug.cidr.filter(c=>!sug.v4.includes(c)));
+      const id = makeSuggestDatalist(f, vals);
+      inp.setAttribute("list", id);
+    }catch(e){}
+  }
   inp.addEventListener("change", ()=>onChange(inp.value));
   return inp;
 }
@@ -780,9 +790,145 @@ function showContainerManager(id){
       });
       ch("button",{text:"+ コンテナ追加",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
         on:{click:()=>{ obj.containers.push({name:"ctr"+(obj.containers.length+1),image:"nginx:latest",status:"running",networks:[],port_mappings:[]}); renderAndSync(); refresh(); }}},s2);
+      // docker-compose import/export
+      ch("button",{text:"📋 docker-compose 取込 / 書出",style:{width:"100%",padding:"6px",fontSize:"11px",cursor:"pointer",background:"var(--bg3)",border:"1px solid var(--cyan)",color:"var(--cyan)",borderRadius:"4px",fontWeight:"700",marginTop:"6px"},
+        on:{click:()=>showComposeDialog(id, refresh)}},s2);
       ch("div",{text:"💡 公開ポート(host_port)はサーバの待ち受けポートとして通信シミュレーションの宛先になります。",style:{fontSize:"10px",color:"var(--text-mute)",padding:"6px 2px"}},body);
     }
     refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
+}
+
+// ====== docker-compose 取込 / 書出 ======
+// Indentation-based parser for the common docker-compose structure (services + networks).
+function parseDockerCompose(text){
+  const lines = String(text).replace(/\t/g,"  ").split(/\r?\n/);
+  const indent = (s)=> s.match(/^ */)[0].length;
+  const result = { services:[], networks:[] };
+  let section=null;       // "services" | "networks"
+  let curSvc=null, curNet=null, sub=null;  // sub: "ports"|"networks"|"environment"|"depends_on"|"ipam"
+  for(let raw of lines){
+    if(!raw.trim() || /^\s*#/.test(raw)) continue;
+    const ind = indent(raw);
+    const line = raw.trim();
+    if(ind===0){
+      if(/^services:/.test(line)){ section="services"; curSvc=null; }
+      else if(/^networks:/.test(line)){ section="networks"; curNet=null; }
+      else { section=null; }
+      continue;
+    }
+    if(section==="services"){
+      if(ind===2 && /^[\w.-]+:\s*$/.test(line)){
+        curSvc={ name:line.replace(/:\s*$/,""), image:"", ports:[], networks:[], environment:[], depends_on:[], status:"running" };
+        result.services.push(curSvc); sub=null; continue;
+      }
+      if(!curSvc) continue;
+      if(ind===4){
+        const m=line.match(/^([\w.-]+):\s*(.*)$/);
+        if(m){
+          const key=m[1], val=m[2];
+          if(key==="image") curSvc.image=val.replace(/^["']|["']$/g,"");
+          else if(key==="ports"||key==="networks"||key==="environment"||key==="depends_on"||key==="expose"){ sub=key; if(val){ /* inline */ } }
+          else if(key==="ipam") sub="ipam";
+          else sub=null;
+        }
+        continue;
+      }
+      if(ind>=6 && /^- /.test(line)){
+        const item=line.replace(/^- /,"").replace(/^["']|["']$/g,"").trim();
+        if(sub==="ports"||sub==="expose"){
+          const pm=item.replace(/^["']|["']$/g,"");
+          const mm=pm.match(/^(?:[\d.]+:)?(\d+):(\d+)(?:\/(tcp|udp))?$/) || pm.match(/^(\d+)(?:\/(tcp|udp))?$/);
+          if(mm){ if(mm.length>=3 && mm[2]!=null && /^\d+$/.test(mm[2])) curSvc.ports.push({host:+mm[1],container:+mm[2],proto:mm[3]||"tcp"}); else curSvc.ports.push({host:+mm[1],container:+mm[1],proto:mm[2]||"tcp"}); }
+        } else if(sub==="networks") curSvc.networks.push(item);
+        else if(sub==="depends_on") curSvc.depends_on.push(item);
+        else if(sub==="environment") curSvc.environment.push(item);
+      }
+    } else if(section==="networks"){
+      if(ind===2 && /^[\w.-]+:\s*$/.test(line)){ curNet={ name:line.replace(/:\s*$/,""), driver:"bridge", subnet:"" }; result.networks.push(curNet); sub=null; continue; }
+      if(!curNet) continue;
+      const dm=line.match(/^driver:\s*(.+)$/); if(dm){ curNet.driver=dm[1].trim(); continue; }
+      const sm=line.match(/subnet:\s*(.+)$/); if(sm){ curNet.subnet=sm[1].trim().replace(/^["']|["']$/g,""); }
+    }
+  }
+  return result;
+}
+function applyComposeToServer(obj, parsed){
+  obj.container_networks = obj.container_networks || [];
+  obj.containers = obj.containers || [];
+  // merge networks
+  for(const n of parsed.networks){
+    if(!obj.container_networks.some(x=>x.name===n.name))
+      obj.container_networks.push({ name:n.name, driver:n.driver||"bridge", subnet:n.subnet||"172.18.0.0/16" });
+  }
+  // ensure any network referenced by a service exists
+  for(const s of parsed.services){
+    for(const nn of (s.networks||[])){
+      if(!obj.container_networks.some(x=>x.name===nn)) obj.container_networks.push({name:nn,driver:"bridge",subnet:"172.18.0.0/16"});
+    }
+  }
+  // services → containers
+  for(const s of parsed.services){
+    const c = {
+      name:s.name, image:s.image||"nginx:latest", status:s.status||"running",
+      networks: (s.networks||[]).map(nn=>({net:nn,ip:""})),
+      port_mappings: (s.ports||[]).map(p=>({host_port:p.host,container_port:p.container,proto:p.proto||"tcp"})),
+      depends_on: s.depends_on||[], environment: s.environment||[]
+    };
+    const ex = obj.containers.findIndex(x=>x.name===s.name);
+    if(ex>=0) obj.containers[ex]=c; else obj.containers.push(c);
+  }
+}
+function serverToComposeText(obj){
+  let out = 'services:\n';
+  for(const c of (obj.containers||[])){
+    out += '  '+(c.name||"svc")+':\n';
+    out += '    image: '+(c.image||"nginx:latest")+'\n';
+    if((c.port_mappings||[]).length){
+      out += '    ports:\n';
+      for(const p of c.port_mappings) out += '      - "'+p.host_port+':'+p.container_port+(p.proto&&p.proto!=="tcp"?"/"+p.proto:"")+'"\n';
+    }
+    const nets=(c.networks||[]).map(n=>n.net).filter(Boolean);
+    if(nets.length){ out += '    networks:\n'; for(const n of nets) out += '      - '+n+'\n'; }
+    if((c.depends_on||[]).length){ out += '    depends_on:\n'; for(const d of c.depends_on) out += '      - '+d+'\n'; }
+    if((c.environment||[]).length){ out += '    environment:\n'; for(const e of c.environment) out += '      - '+e+'\n'; }
+  }
+  if((obj.container_networks||[]).length){
+    out += 'networks:\n';
+    for(const n of obj.container_networks){
+      out += '  '+(n.name||"bridge")+':\n';
+      out += '    driver: '+(n.driver||"bridge")+'\n';
+      if(n.subnet){ out += '    ipam:\n      config:\n        - subnet: '+n.subnet+'\n'; }
+    }
+  }
+  return out;
+}
+function showComposeDialog(serverId, onDone){
+  const obj = Cfg.byId("servers", serverId); if(!obj) return;
+  openDialog("📋 docker-compose 取込 / 書出", (body)=>{
+    helpBox(body, "docker-compose とは？", [
+      "これは何: 複数コンテナの構成(イメージ/ポート/ネットワーク/依存)を1ファイルで定義する仕組み。",
+      "取込: 既存のdocker-compose.yml(services/networks)を貼り付けて『取込』すると、このホストのコンテナとして反映されます。",
+      "書出: 現在のコンテナ構成をdocker-compose形式で出力します。",
+      "例: services.web.image / ports(\"8080:80\") / networks / depends_on を解釈します。"
+    ], true);
+    const ta = ch("textarea",{style:{width:"100%",height:"240px",fontFamily:"var(--mono)",fontSize:"11px",background:"var(--bg)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:"4px",padding:"8px",boxSizing:"border-box"},
+      placeholder:'services:\n  web:\n    image: nginx:latest\n    ports:\n      - "8080:80"\n    networks: [frontend]\nnetworks:\n  frontend:\n    driver: bridge'},body);
+    ta.value = (obj.containers||[]).length ? serverToComposeText(obj) : "";
+    const btns = ch("div",{style:{display:"flex",gap:"8px",marginTop:"10px"}},body);
+    ch("button",{text:"⬇ 取込 (compose→コンテナ)",style:{flex:"1",padding:"8px",fontSize:"11px",fontWeight:"700",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"5px"},
+      on:{click:()=>{
+        try{
+          const parsed=parseDockerCompose(ta.value);
+          if(!parsed.services.length){ toast("servicesが見つかりません","err"); return; }
+          pushUndo(); applyComposeToServer(obj, parsed); renderAndSync();
+          toast(`取込完了: ${parsed.services.length}サービス / ${parsed.networks.length}ネットワーク`,"ok");
+          closeDialog(); if(onDone) onDone();
+        }catch(e){ toast("取込エラー: "+e.message,"err"); }
+      }}},btns);
+    ch("button",{text:"⬆ 書出 (コンテナ→compose)",style:{flex:"1",padding:"8px",fontSize:"11px",fontWeight:"700",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"5px"},
+      on:{click:()=>{ ta.value = serverToComposeText(obj); toast("現在の構成をcompose形式で出力しました","ok"); }}},btns);
     return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
   });
 }
@@ -1021,11 +1167,40 @@ function showLearnPanel(openTopicId){
   });
 }
 
-function showAwsManager(){
+// Delete an AWS VPC by name/id (detaches EC2 placements, keeps the servers).
+function deleteAwsVpc(vpcRef){
+  const vpcs = (App.config.aws && App.config.aws.vpcs) || [];
+  const vpc = vpcs.find(v=>v.name===vpcRef || v.id===vpcRef);
+  if(!vpc) return;
+  const ec2s = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc===vpc.name);
+  const msg = ec2s.length
+    ? `VPC「${vpc.name}」を削除しますか？\n配置中のEC2 ${ec2s.length}台のAWS割り当ても解除されます（サーバ自体は残ります）。`
+    : `VPC「${vpc.name}」を削除しますか？`;
+  if(!((typeof confirm==="function")?confirm(msg):true)) return;
+  pushUndo();
+  for(const s of ec2s){ delete s.aws; }
+  App.config.aws.vpcs = vpcs.filter(v=>v!==vpc);
+  renderAndSync(); updateStatusBar();
+  toast(`VPC「${vpc.name}」を削除しました`,"ok");
+}
+// Delete a Kubernetes cluster by name (keeps the node servers).
+function deleteK8sCluster(clRef){
+  const cls = (App.config.k8s && App.config.k8s.clusters) || [];
+  const cl = cls.find(c=>c.name===clRef);
+  if(!cl) return;
+  if(!((typeof confirm==="function")?confirm(`Kubernetesクラスタ「${cl.name}」を削除しますか？\nノードのサーバ自体は残ります。`):true)) return;
+  pushUndo();
+  App.config.k8s.clusters = cls.filter(c=>c!==cl);
+  renderAndSync(); updateStatusBar();
+  toast(`クラスタ「${cl.name}」を削除しました`,"ok");
+}
+
+function showAwsManager(focusVpc){
   App.config.aws = App.config.aws || { vpcs:[] };
   openDialog("☁ AWS 環境管理 (VPC / Subnet / Security Group)", (body)=>{
     const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
     let active=0;
+    if(focusVpc){ const fi=(App.config.aws.vpcs||[]).findIndex(v=>v.name===focusVpc||v.id===focusVpc); if(fi>=0) active=fi; }
     function refresh(){
       body.innerHTML="";
       helpBox(body, "AWS VPCとは？ 作り方ガイド", [
@@ -1158,11 +1333,12 @@ function showAwsManager(){
 }
 
 // Kubernetes cluster manager — nodes, pods, services (ClusterIP/NodePort/LoadBalancer)
-function showK8sManager(){
+function showK8sManager(focusCluster){
   App.config.k8s = App.config.k8s || { clusters:[] };
   openDialog("☸ Kubernetes クラスタ管理", (body)=>{
     const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
     let activeIdx = 0;
+    if(focusCluster){ const fi=(App.config.k8s.clusters||[]).findIndex(c=>c.name===focusCluster); if(fi>=0) activeIdx=fi; }
     function refresh(){
       body.innerHTML = "";
       const clusters = App.config.k8s.clusters;
@@ -2167,12 +2343,15 @@ function showRoutingTable(deviceId){
       ch("h4", { text:"＋ ルート追加", style:{margin:"12px 0 6px",fontSize:"12px",color:"var(--accent)"} }, body);
       const form = ch("div", { style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px"} }, body);
       let dest="", nh="", iface="", metric=1, rtype="static";
+      const _rsug = ipSuggestions();
+      const _rdlDest = makeSuggestDatalist(form, _rsug.cidr.concat(_rsug.v4));
+      const _rdlNh = makeSuggestDatalist(form, _rsug.v4);
       const f1 = ch("div",{},form);
       ch("label",{text:"宛先 CIDR (例 10.5.0.0/24, 0.0.0.0/0)",style:{fontSize:"10px",color:"var(--text-dim)"}},f1);
-      const destIn = ch("input",{type:"text",placeholder:"10.5.0.0/24",style:{width:"100%",padding:"4px",fontSize:"11px",fontFamily:"var(--mono)"}},f1);
+      const destIn = ch("input",{type:"text",placeholder:"10.5.0.0/24",list:_rdlDest,style:{width:"100%",padding:"4px",fontSize:"11px",fontFamily:"var(--mono)"}},f1);
       const f2 = ch("div",{},form);
       ch("label",{text:"Next Hop (例 10.1.0.1)",style:{fontSize:"10px",color:"var(--text-dim)"}},f2);
-      const nhIn = ch("input",{type:"text",placeholder:"10.1.0.1",style:{width:"100%",padding:"4px",fontSize:"11px",fontFamily:"var(--mono)"}},f2);
+      const nhIn = ch("input",{type:"text",placeholder:"10.1.0.1",list:_rdlNh,style:{width:"100%",padding:"4px",fontSize:"11px",fontFamily:"var(--mono)"}},f2);
       const f3 = ch("div",{},form);
       ch("label",{text:"出力インターフェース",style:{fontSize:"10px",color:"var(--text-dim)"}},f3);
       const ifSel = ch("select",{style:{width:"100%",padding:"4px",fontSize:"11px"}},f3);
@@ -4077,7 +4256,10 @@ var TOPOLOGY_TEMPLATES = [
     builder: buildK8sHA },
   { id:"k8s-multi", icon:"☸", title:"Kubernetes — マルチクラスタ",
     desc:"複数の独立クラスタ(prod/staging等)を同時生成。",
-    builder: buildK8sMulti }
+    builder: buildK8sMulti },
+  { id:"k8s-prod", icon:"🚀", title:"Kubernetes — 本番構成 (CDN + LB + Ingress)",
+    desc:"Internet→CloudFront(CDN)→ALB(LoadBalancer)→K8s Service→Pod の本番想定フルスタック。LB/CDN/Ingress込み。",
+    builder: buildK8sProd }
 ];
 
 function openTopologyTemplates(){
@@ -4143,6 +4325,14 @@ function openTemplateOptions(tpl){
       addField(body, "クラスタ数", "number", opts.clusters, v=>opts.clusters=Math.max(2,+v));
       addField(body, "クラスタあたりWorker数", "number", opts.workers_each, v=>opts.workers_each=Math.max(1,+v));
       addField(body, "ID Prefix", "text", opts.prefix, v=>opts.prefix=v||"mc");
+    } else if(tpl.id === "k8s-prod"){
+      opts = { workers:3, app_replicas:3, cluster_name:"prod", prefix:"kp", base_x:1100, base_y:120 };
+      addField(body, "Worker 台数", "number", opts.workers, v=>opts.workers=Math.max(1,+v));
+      addField(body, "アプリPodレプリカ数", "number", opts.app_replicas, v=>opts.app_replicas=Math.max(1,+v));
+      addField(body, "クラスタ名", "text", opts.cluster_name, v=>opts.cluster_name=v||"prod");
+      addField(body, "ID Prefix", "text", opts.prefix, v=>opts.prefix=v||"kp");
+      ch("div",{text:"生成内容: K8sクラスタ + LoadBalancer Service + Ingress + 外部ALB + CloudFront CDN(Internet→CDN→ALB→Service→Pod)",
+        style:{fontSize:"10px",color:"var(--text-mute)",margin:"4px 0",lineHeight:"1.4"}},body);
     }
     return {
       buttons:[
@@ -4462,6 +4652,49 @@ function buildK8sSingle(opts){
   if(svc_type==="LoadBalancer") svc.external_ip="203.0.113.80";
   App.config.k8s.clusters.push({ name:cluster_name, pod_cidr:"10.244.0.0/16", service_cidr:"10.96.0.0/12",
     nodes:fab.nodeIds, namespaces:["default","kube-system"], pods, services:[svc], ingresses:[] });
+  return stats;
+}
+// Production-like cluster: workers + LoadBalancer Service + external Ingress LB + CloudFront CDN.
+// Edge path: Internet → CDN(CloudFront) → ALB(LoadBalancer) → cluster Service → Pods.
+function buildK8sProd(opts){
+  const { workers=3, app_replicas=3, cluster_name="prod", prefix="kp", base_x=400, base_y=300 } = opts||{};
+  App.config.k8s = App.config.k8s || { clusters:[] };
+  const masters = 1, total = masters + workers;
+  const fab = _k8sFabric(prefix, total, base_x, base_y, cluster_name);
+  const stats = fab.stats;
+  const masterIds = fab.nodeIds.slice(0, masters);
+  const workerIds = fab.nodeIds.slice(masters);
+  for(const id of masterIds){ const s=Cfg.byId("servers",id); s.label=id+" (master)"; }
+  const podHosts = workerIds.length ? workerIds : fab.nodeIds;
+  const pods=[];
+  for(let i=0;i<app_replicas;i++){
+    pods.push({ name:`web-${i+1}`, namespace:"default", node:podHosts[i%podHosts.length],
+      ip:`10.244.0.${11+i}`, labels:{app:"web"}, status:"Running" });
+  }
+  const svc = { name:"web-svc", namespace:"default", type:"LoadBalancer", cluster_ip:"10.96.0.10",
+    external_ip:"203.0.113.80", selector:{app:"web"}, ports:[{port:80,target_port:8080,node_port:30080,proto:"tcp"}] };
+  const ingress = { name:"web-ingress", namespace:"default", host:"app.example.com",
+    rules:[{path:"/", service:"web-svc", port:80}] };
+  App.config.k8s.clusters.push({ name:cluster_name, pod_cidr:"10.244.0.0/16", service_cidr:"10.96.0.0/12",
+    nodes:fab.nodeIds, namespaces:["default","kube-system"], pods, services:[svc], ingresses:[ingress] });
+
+  // External Ingress Load Balancer (ALB-like) in front of the cluster
+  const lbId = `${prefix}-alb`;
+  App.config.devices.push({ id:lbId, label:`${cluster_name} Ingress ALB`, type:"loadbalancer", status:"running",
+    x:base_x+40, y:base_y-130, width:140, height:60, interfaces:[{id:"eth0",ip:"203.0.113.80/24",status:"up"}],
+    lb:{ vips:[{ vip:"203.0.113.80", port:443, algorithm:"round-robin",
+      pool: workerIds.map(id=>({ server:id, port:30080 })) }] } });
+  App.config.connections.push({ id:uid("link"), from:{device:lbId,interface:"eth0"}, to:{device:fab.swId,interface:"g"+(total)}, type:"ethernet", status:"up" });
+  stats.devices++; stats.links++;
+
+  // CloudFront CDN edge in front of the ALB
+  const cdnId = `${prefix}-cdn`;
+  App.config.servers.push({ id:cdnId, label:`${cluster_name} CloudFront CDN`, type:"cloud", provider:"cloud",
+    status:"running", x:base_x+40, y:base_y-240, width:150, height:55, external:true, fqdn:"d123.cloudfront.net",
+    interfaces:[{id:"eth0", ip:"13.224.0.10/32", status:"up"}], listen_ports:[{port:443,proto:"tcp"},{port:80,proto:"tcp"}],
+    cdn:{ origin:"203.0.113.80", origin_port:443 } });
+  App.config.connections.push({ id:uid("link"), from:{server:cdnId,interface:"eth0"}, to:{device:lbId,interface:"eth0"}, type:"ethernet", status:"up" });
+  stats.servers++; stats.links++;
   return stats;
 }
 function buildK8sHA(opts){
