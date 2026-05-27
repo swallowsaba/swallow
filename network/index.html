@@ -85,6 +85,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 
 #canvas-pane{flex:1;position:relative;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;min-width:0}
 #svg-wrap{flex:1;position:relative;overflow:hidden;min-height:0}
+#lab-panel{position:absolute;top:0;right:0;width:340px;max-width:46%;height:100%;z-index:60;background:var(--panel);border-left:2px solid var(--accent);box-shadow:-4px 0 18px rgba(0,0,0,0.35);display:flex;flex-direction:column;font-size:12px}
+#lab-panel.hidden{display:none}
+#lab-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--accent);color:#fff;font-weight:700;font-size:13px}
+#lab-head #lab-title{flex:1}
+#lab-head button{background:rgba(255,255,255,0.2);border:none;color:#fff;cursor:pointer;border-radius:4px;padding:2px 8px;font-size:13px}
+#lab-body{flex:1;overflow-y:auto;padding:12px}
+.lab-cat{font-size:10px;font-weight:700;color:var(--text-mute);text-transform:uppercase;letter-spacing:0.05em;margin:12px 0 4px}
+.lab-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:5px;cursor:pointer;background:var(--bg2);transition:border-color .15s}
+.lab-item:hover{border-color:var(--accent)}
+.lab-item .li-ico{font-size:16px}
+.lab-item .li-t{flex:1;font-weight:600}
+.lab-detail h3{margin:0 0 6px;font-size:14px}
+.lab-detail .lab-sec{font-weight:700;color:var(--accent);margin:10px 0 3px;font-size:11.5px}
+.lab-detail .lab-line{line-height:1.7;margin:1px 0}
+.lab-detail .lab-step{line-height:1.7;margin:1px 0;padding-left:14px}
+.lab-btns{display:flex;gap:6px;margin:12px 0 4px;flex-wrap:wrap}
+.lab-btns button{flex:1;min-width:110px;padding:8px;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer}
+.lab-inject{background:var(--red);color:#fff}
+.lab-recover{background:var(--green);color:#fff}
+.lab-test{background:var(--accent);color:#fff}
+.lab-back{background:var(--bg3);color:var(--text);border:1px solid var(--border)!important}
 #svg{width:100%;height:100%;display:block;background:radial-gradient(circle at 20px 20px,rgba(255,255,255,0.02) 1px,transparent 1px),var(--bg);background-size:40px 40px;cursor:grab}
 html.light #svg{background:radial-gradient(circle at 20px 20px,rgba(0,0,0,0.04) 1px,transparent 1px),var(--bg);background-size:40px 40px}
 #svg.panning{cursor:grabbing}
@@ -589,6 +610,14 @@ body.no-animations .pcap-pulse{
   </div>
   <div id="canvas-pane">
     <div id="svg-wrap">
+      <div id="lab-panel" class="hidden">
+        <div id="lab-head">
+          <span id="lab-title">🎓 障害トレーニング (OJTラボ)</span>
+          <button id="lab-close" title="閉じる">✕</button>
+        </div>
+        <div id="lab-body"></div>
+      </div>
+      <div id="mode-indicator" style="display:none;position:absolute;top:10px;left:10px;z-index:45;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:var(--font);pointer-events:none"></div>
       <div id="nethealth-banner" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:40;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;color:#fff;box-shadow:0 3px 10px rgba(0,0,0,0.4);pointer-events:none;font-family:var(--font);max-width:90%;text-align:center"></div>
       <svg id="svg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
         <defs id="svg-defs"></defs>
