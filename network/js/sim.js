@@ -1921,6 +1921,25 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
             reason:`${curObj.id} (${curObj.fqdn||"external"}): ポート ${proto}/${dstPort} は提供されていません`,
             blockedAt:{ kind:"device", id:curObj.id } };
         }
+        // AWS-specific engine effects
+        if(curObj.aws_kind === "aws-s3" && curObj.aws_config){
+          const cfg = curObj.aws_config;
+          // bucket policy: if not public and source IP is not in allowed_cidrs → deny
+          if(!cfg.public){
+            const srcIp = (typeof elementPrimaryIp==="function")? elementPrimaryIp(srcKind, srcObj.id, "v4") : null;
+            const allowed = (cfg.allowed_cidrs||[]).some(c=>srcIp && inSubnet(srcIp, c));
+            if(!allowed){
+              return { ok:false, path,
+                reason:`S3バケット「${cfg.bucket_name||curObj.id}」: バケットポリシーで送信元 ${srcIp||"(不明)"} が許可されていません`,
+                blockedAt:{ kind:"device", id:curObj.id }, s3Deny:true };
+            }
+          }
+        }
+        if(curObj.aws_kind === "aws-dx" && curObj.aws_config && curObj.aws_config.status === "down"){
+          return { ok:false, path,
+            reason:"Direct Connectがダウンしています",
+            blockedAt:{ kind:"device", id:curObj.id }, directConnect:true };
+        }
         return { ok:true, path, portInfo:`${curObj.fqdn||curObj.id} ${proto}/${dstPort} OK` };
       }
       return { ok:true, path };
@@ -2494,6 +2513,29 @@ function addExternalEndpoint(provider, item){
     interfaces:[{ id:"public0", ip:item.ip+"/32", status:"up" }],
     external_ports: (item.ports||[]).map(p=>({ port:p, proto:"tcp" }))
   };
+  // Tag AWS-specific kind so the property panel can show service-specific config
+  if(item.key && item.key.indexOf("aws-")===0){
+    dev.aws_kind = item.key;
+    // Sensible defaults per AWS service type (honored by engine where applicable)
+    if(item.key==="aws-s3")       dev.aws_config = { bucket_name:"my-bucket", region:"ap-northeast-1", public:false, allowed_cidrs:["10.0.0.0/8"], versioning:false, encryption:"SSE-S3" };
+    if(item.key==="aws-igw")      dev.aws_config = { attached_vpc:"", route_table_assoc:[] };
+    if(item.key==="aws-natgw")    dev.aws_config = { subnet:"", elastic_ip:"52.30.100.10", connectivity:"public" };
+    if(item.key==="aws-vpce")     dev.aws_config = { endpoint_type:"interface", service:"com.amazonaws.s3", allowed_subnets:[] };
+    if(item.key==="aws-dx")       dev.aws_config = { bandwidth_gbps:1, bgp_asn:65000, vlan:100, status:"up" };
+    if(item.key==="aws-alb"||item.key==="aws-nlb"){
+      dev.aws_config = { scheme:"internet-facing", listeners:[{port:443,proto:"HTTPS",target_group:"tg-web"}], target_group:{ name:"tg-web", port:8080, health_check:"/health", targets:[] } };
+    }
+    if(item.key==="aws-ecs")      dev.aws_config = { cluster_name:"ecs-cluster", task_definition:{ family:"web", containers:[{ name:"web", image:"nginx:latest", ports:[{ container:80, host:8080 }] }] }, launch_type:"FARGATE", desired_count:2 };
+    if(item.key==="aws-eks")      dev.aws_config = { cluster_name:"eks-cluster", k8s_version:"1.29", node_group:{ name:"ng1", instance_type:"t3.medium", desired:3 }, fargate:false };
+    if(item.key==="aws-route53")  dev.aws_config = { hosted_zones:[{ name:"example.com", records:[{ name:"app", type:"A", value:"203.0.113.10", ttl:300 }] }] };
+    if(item.key==="aws-tgw")      dev.aws_config = { asn:64512, attachments:[], propagation:true };
+    if(item.key==="aws-apigw")    dev.aws_config = { api_name:"my-api", stage:"prod", endpoints:[{ path:"/users", method:"GET", integration:"lambda" }] };
+    if(item.key==="aws-lambda")   dev.aws_config = { function_name:"my-func", runtime:"nodejs20.x", memory_mb:128, timeout_sec:30, trigger:"apigw" };
+    if(item.key==="aws-cloudfront") dev.aws_config = { distribution_id:"E123", origin_domain:"alb.elb.amazonaws.com", default_ttl:86400, ssl_cert:"acm-default" };
+    if(item.key==="aws-rds")      dev.aws_config = { engine:"mysql", engine_version:"8.0", instance_class:"db.t3.micro", multi_az:false, port:3306, allocated_gb:20 };
+    if(item.key==="aws-dynamodb") dev.aws_config = { table_name:"my-table", partition_key:"id", read_capacity:5, write_capacity:5, billing_mode:"PAY_PER_REQUEST" };
+    if(item.key==="aws-sqs")      dev.aws_config = { queue_name:"my-queue", type:"standard", visibility_timeout:30, retention_days:4 };
+  }
   App.config.devices.push(dev);
   selectElement("device", id);
   renderAndSync(); updateStatusBar();
@@ -2566,6 +2608,16 @@ function addNewServer(){
     return { buttons:[{text:"キャンセル",action:closeDialog}] };
   });
 }
+function _autoFreeIp(){
+  // Pick an IP in the first network's subnet (or 10.0.0.0/24) that isn't already used.
+  let baseCidr = (App.config.networks&&App.config.networks[0]&&App.config.networks[0].cidr) || "10.0.0.0/24";
+  const m = String(baseCidr).match(/^(\d+)\.(\d+)\.(\d+)\.\d+(\/\d+)?/);
+  const a=m?m[1]:"10", b=m?m[2]:"0", c=m?m[3]:"0", suf=(m&&m[4])||"/24";
+  const used = new Set();
+  for(const arr of [App.config.servers, App.config.devices]) for(const o of (arr||[])) for(const i of (o.interfaces||[])){ if(i.ip) used.add(ipOnly(i.ip)); }
+  for(let h=10; h<255; h++){ const cand=`${a}.${b}.${c}.${h}`; if(!used.has(cand)) return cand+suf; }
+  return `10.0.0.${Math.floor(Math.random()*200)+10}/24`;
+}
 function createServerOfKind(kind){
   pushUndo(); Cfg.ensure();
   const id = uid(kind==="esxi"?"esxi":(kind==="container"?"cnthost":"srv"));
@@ -2575,11 +2627,26 @@ function createServerOfKind(kind){
     os: kind==="esxi"?"VMware ESXi":"Linux",
     cpu: kind==="esxi"?32:2, memory: kind==="esxi"?131072:4096, status:"running",
     x: App.view.x + 200, y: App.view.y + 200, width:130, height:65,
-    interfaces:[{ id:"eth0", ip:"10.0.0.10/24", network:"", mac: genUniqueMac(), speed:1000, port_type:"rj45", status:"up" }]
+    interfaces:[{ id:"eth0", ip:_autoFreeIp(), network:"", mac: genUniqueMac(), speed:1000, port_type:"rj45", status:"up" }]
   };
   if(kind==="esxi"){ base.hypervisor = { type:"esxi", vms:[], vswitches:[{name:"vSwitch0",portgroups:["VM Network"]}], datastores:["datastore1:1TB"] }; }
   if(kind==="container"){ base.containers=[]; base.container_networks=[{name:"bridge0",driver:"bridge",subnet:"172.18.0.0/16"}]; }
   App.config.servers.push(base);
+  // If a VPC or K8s cluster is currently selected, attach the new server to it (unified UI flow:
+  // standard "サーバ追加" works in the cluster context without forcing the AWS/K8s manager).
+  try{
+    if(App.selected && App.selected.kind === "aws-vpc"){
+      const vpc = (App.config.aws&&App.config.aws.vpcs||[]).find(v=>v.name===App.selected.id);
+      if(vpc){
+        const sn = (vpc.subnets&&vpc.subnets[0]&&vpc.subnets[0].name) || "";
+        base.aws = { vpc:vpc.name, subnet:sn, security_groups:[] };
+        toast(`新規サーバをVPC「${vpc.name}」に配置`,"ok");
+      }
+    } else if(App.selected && App.selected.kind === "k8s-cluster"){
+      const cl = (App.config.k8s&&App.config.k8s.clusters||[]).find(c=>c.name===App.selected.id);
+      if(cl){ cl.nodes = cl.nodes||[]; cl.nodes.push(base.id); toast(`新規サーバをクラスタ「${cl.name}」のノードとして追加`,"ok"); }
+    }
+  }catch(e){}
   selectElement("server", id);
   renderAndSync(); updateStatusBar();
   const lbl = kind==="esxi"?"ESXiホスト":(kind==="container"?"コンテナホスト":"物理サーバ");
@@ -3145,6 +3212,56 @@ function init(){
 // Periodically scan for MAC flapping and escalate the simulated degradation.
 // While a flap/loop persists the L2 domain gradually worsens; warnings stream to the comm log.
 var _macFlapTimer = null;
+// Automatic Pod/VM failover when their current node/host goes down — simulates HA behavior.
+// Pods → reschedule to another healthy node in the same K8s cluster.
+// VMs → vMotion to another healthy ESXi/hypervisor host (HA cluster behavior).
+function checkAutoMigrations(){
+  let moved = 0;
+  // ---- K8s Pod failover ----
+  for(const cl of ((App.config.k8s&&App.config.k8s.clusters)||[])){
+    const healthyNodes = (cl.nodes||[]).filter(nid=>{
+      const s = Cfg.byId("servers", nid);
+      return s && s.status !== "error" && s.status !== "stopped";
+    });
+    for(const pod of (cl.pods||[])){
+      if(!pod.node) continue;
+      const cur = Cfg.byId("servers", pod.node);
+      const curDown = !cur || cur.status === "error" || cur.status === "stopped";
+      if(curDown && healthyNodes.length){
+        const target = healthyNodes[moved % healthyNodes.length];
+        if(target && target !== pod.node){
+          const orig = pod.node; pod.node = target;
+          CommLog.info(`🔀 K8s自動フェイルオーバ: Pod ${pod.name} を ${orig}(障害) → ${target} へ再スケジュール`);
+          moved++;
+        }
+      }
+    }
+    if((cl.pods||[]).some(p=>p.node && !healthyNodes.includes(p.node)) && !healthyNodes.length){
+      CommLog.info(`⚠ クラスタ ${cl.name}: 健全なノードが無くPodをスケジュールできません`);
+    }
+  }
+  // ---- VM (vCenter HA) failover ----
+  const hypervisors = (App.config.servers||[]).filter(s=>s.hypervisor);
+  for(const vm of (App.config.servers||[])){
+    if(!vm.vm || !vm.host) continue;
+    const host = Cfg.byId("servers", vm.host);
+    const hostDown = !host || host.status === "error" || host.status === "stopped";
+    if(!hostDown) continue;
+    // find another healthy hypervisor (excluding the current down one)
+    const target = hypervisors.find(h => h.id !== vm.host && h.status === "running");
+    if(target){
+      const orig = vm.host; vm.host = target.id;
+      // reposition inside the new host's body
+      const w=target.width||130, h=target.height||65;
+      vm.x = (target.x||0) + Math.round(w*0.15) + (moved%2)*80;
+      vm.y = (target.y||0) + h + 10 + Math.floor(moved/2)*46;
+      CommLog.info(`🔀 vCenter HA: VM ${vm.label||vm.id} を ${orig}(障害) → ${target.id} へvMotion`);
+      moved++;
+    }
+  }
+  if(moved > 0){ try{ syncYamlFromConfig(); render(); }catch(e){} }
+  return moved;
+}
 function startMacFlapMonitor(){
   if(_macFlapTimer) clearInterval(_macFlapTimer);
   let prevActive = false;
@@ -3163,6 +3280,8 @@ function startMacFlapMonitor(){
     }
     prevActive = active;
     if(typeof updateStatusBar==="function") updateStatusBar();
+    // Automatic Pod/VM failover (HA): if a node/host became down, reschedule its workloads
+    try{ checkAutoMigrations(); }catch(e){}
   }, 2500);
 }
 // Show a prominent, escalating banner describing the gradual network degradation
@@ -3501,7 +3620,7 @@ function attachEventHandlers(){
       if(!$("#dialog-overlay").classList.contains("hidden")) closeDialog();
       else if(App.connectMode) cancelConnectMode();
       else if(!$("#ctx-menu").classList.contains("hidden")) hideContextMenu();
-      else { App.multiSelect=[]; App.selectMode=false; const b=$("#btn-select"); if(b)b.classList.remove("active"); selectElement(null, null); }
+      else { App.multiSelect=[]; App.selectMode=false; const b=$("#btn-select"); if(b)b.classList.remove("active"); if(typeof updateModeIndicator==="function") updateModeIndicator(); selectElement(null, null); }
     } else if(e.key === " "){
       e.preventDefault();
       if(App.simulation.running){

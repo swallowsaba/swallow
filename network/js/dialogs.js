@@ -211,7 +211,217 @@ function suggestFreeCidr(){
   return "10.0.0.0/24";
 }
 
+// AWS-specific property panel — switches on aws_kind and shows service-specific fields.
+function renderAwsKindProps(body, obj){
+  obj.aws_config = obj.aws_config || {};
+  const cfg = obj.aws_config;
+  ch("div",{text:`☁ AWS — ${obj.label||obj.id}`,style:{fontSize:"12px",fontWeight:"700",color:"#ff9900",marginBottom:"6px"}},body);
+  ch("div",{text:`種別: ${obj.aws_kind} / FQDN: ${obj.fqdn||"-"}`,style:{fontSize:"10px",color:"var(--text-dim)",fontFamily:"var(--mono)",marginBottom:"8px"}},body);
+  addField(body,"ラベル","text",obj.label||"",v=>{obj.label=v;renderAndSync();});
+  // Public IP (single interface)
+  const pubIf=(obj.interfaces||[])[0];
+  if(pubIf) addField(body,"パブリックIP","text",pubIf.ip||"",v=>{pubIf.ip=v;renderAndSync();});
+
+  const sec=ch("div",{class:"sub-section",style:{marginTop:"8px"}},body);
+  ch("h4",{text:"AWSサービス固有設定",style:{margin:0,fontSize:"12px",color:"#ff9900"}},sec);
+  const helpLines = {
+    "aws-s3":["S3バケットの設定。bucket policyで送信元CIDRを絞れます。"," allowed_cidrsに無いアドレスからの通信はエンジンが拒否します。"],
+    "aws-igw":["VPCをアタッチし、VPC内からインターネットへの出口とします。"],
+    "aws-natgw":["プライベートサブネットからインターネットへNAT。Elastic IPでアウトバウンド。"],
+    "aws-vpce":["VPC内からマネージドサービスへの私設経路。Gateway型(S3/DynamoDB)とInterface型。"],
+    "aws-dx":["オンプレ↔AWSの専用線。statusをdownにすると到達不可。"],
+    "aws-alb":["L7ロードバランサ。リスナとターゲットグループでトラフィックを振分け。"],
+    "aws-nlb":["L4ロードバランサ。低遅延。リスナ+ターゲットグループ。"],
+    "aws-ecs":["タスク定義(コンテナ仕様)とdesired_countで運用。"],
+    "aws-eks":["マネージドK8sコントロールプレーン。ノードグループでWorker提供。"],
+    "aws-route53":["DNSホストゾーン+レコード。"],
+    "aws-tgw":["複数VPC/オンプレを相互接続するTransit Gateway。"],
+    "aws-apigw":["REST/HTTP APIゲートウェイ。エンドポイントとIntegration。"],
+    "aws-lambda":["FaaS。トリガと関数定義。"],
+    "aws-cloudfront":["CDN。Originと配信設定。"],
+    "aws-rds":["マネージドRDB。エンジンとマルチAZで冗長化。"],
+    "aws-dynamodb":["フルマネージドNoSQL。"],
+    "aws-sqs":["キューサービス。"]
+  };
+  for(const ln of (helpLines[obj.aws_kind]||[])) ch("div",{text:"💡 "+ln,style:{fontSize:"10px",color:"var(--text-mute)",lineHeight:"1.4",margin:"2px 0"}},sec);
+
+  const k = obj.aws_kind;
+  if(k==="aws-s3"){
+    addField(sec,"バケット名","text",cfg.bucket_name||"",v=>{cfg.bucket_name=v;renderAndSync();});
+    addField(sec,"リージョン","text",cfg.region||"ap-northeast-1",v=>{cfg.region=v;renderAndSync();});
+    addSelectField(sec,"公開","yes,no".split(",").map(x=>x==="yes"?"public":"private"),(cfg.public?"public":"private"),v=>{cfg.public=(v==="public");renderAndSync();});
+    addField(sec,"許可CIDR (カンマ区切り)","text",(cfg.allowed_cidrs||[]).join(","),v=>{cfg.allowed_cidrs=v.split(",").map(x=>x.trim()).filter(Boolean);renderAndSync();});
+    addSelectField(sec,"暗号化",["none","SSE-S3","SSE-KMS"],cfg.encryption||"SSE-S3",v=>{cfg.encryption=v;renderAndSync();});
+    addSelectField(sec,"バージョニング",["true","false"],String(!!cfg.versioning),v=>{cfg.versioning=(v==="true");renderAndSync();});
+    ch("div",{text:"※エンジン効果: allowed_cidrs外からの通信は拒否されます",style:{fontSize:"9px",color:"var(--text-mute)",marginTop:"4px"}},sec);
+  }
+  else if(k==="aws-igw"){
+    addField(sec,"アタッチVPC名","text",cfg.attached_vpc||"",v=>{cfg.attached_vpc=v;renderAndSync();});
+    ch("div",{text:"※IGWアタッチが無いVPCからインターネットへ通信不可(エンジン効果)",style:{fontSize:"9px",color:"var(--text-mute)",marginTop:"4px"}},sec);
+  }
+  else if(k==="aws-natgw"){
+    addField(sec,"配置サブネット","text",cfg.subnet||"",v=>{cfg.subnet=v;renderAndSync();});
+    addField(sec,"Elastic IP","text",cfg.elastic_ip||"",v=>{cfg.elastic_ip=v;renderAndSync();});
+    addSelectField(sec,"接続性",["public","private"],cfg.connectivity||"public",v=>{cfg.connectivity=v;renderAndSync();});
+  }
+  else if(k==="aws-vpce"){
+    addSelectField(sec,"タイプ",["interface","gateway"],cfg.endpoint_type||"interface",v=>{cfg.endpoint_type=v;renderAndSync();});
+    addField(sec,"対象サービス","text",cfg.service||"",v=>{cfg.service=v;renderAndSync();});
+    addField(sec,"許可サブネット (カンマ区切り)","text",(cfg.allowed_subnets||[]).join(","),v=>{cfg.allowed_subnets=v.split(",").map(x=>x.trim()).filter(Boolean);renderAndSync();});
+  }
+  else if(k==="aws-dx"){
+    addField(sec,"帯域 (Gbps)","number",cfg.bandwidth_gbps||1,v=>{cfg.bandwidth_gbps=+v||1;renderAndSync();});
+    addField(sec,"BGP ASN","number",cfg.bgp_asn||65000,v=>{cfg.bgp_asn=+v||65000;renderAndSync();});
+    addField(sec,"VLAN ID","number",cfg.vlan||100,v=>{cfg.vlan=+v||100;renderAndSync();});
+    addSelectField(sec,"ステータス",["up","down"],cfg.status||"up",v=>{cfg.status=v;renderAndSync();});
+    ch("div",{text:"※statusをdownにするとオンプレ↔AWSが切断されます",style:{fontSize:"9px",color:"var(--text-mute)",marginTop:"4px"}},sec);
+  }
+  else if(k==="aws-alb"||k==="aws-nlb"){
+    addSelectField(sec,"スキーム",["internet-facing","internal"],cfg.scheme||"internet-facing",v=>{cfg.scheme=v;renderAndSync();});
+    ch("h5",{text:"リスナ",style:{margin:"6px 0 2px",fontSize:"11px"}},sec);
+    (cfg.listeners||[]).forEach((l,i)=>{
+      const r=ch("div",{style:{display:"flex",gap:"4px",alignItems:"center",marginBottom:"3px"}},sec);
+      const pi=ch("input",{type:"number",value:l.port||443,style:{width:"60px",padding:"3px",fontSize:"11px"}},r);
+      pi.addEventListener("change",()=>{l.port=+pi.value;renderAndSync();});
+      const ps=ch("select",{style:{padding:"3px",fontSize:"11px"}},r);
+      ["HTTP","HTTPS","TCP","TLS","UDP"].forEach(p=>ch("option",{value:p,text:p},ps)); ps.value=l.proto||"HTTPS";
+      ps.addEventListener("change",()=>{l.proto=ps.value;renderAndSync();});
+      ch("span",{text:"→",style:{fontSize:"10px"}},r);
+      const ti=ch("input",{type:"text",value:l.target_group||"tg-web",placeholder:"target group",style:{flex:"1",padding:"3px",fontSize:"11px"}},r);
+      ti.addEventListener("change",()=>{l.target_group=ti.value;renderAndSync();});
+      ch("button",{text:"✕",style:{padding:"2px 6px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)"},
+        on:{click:()=>{cfg.listeners.splice(i,1);renderAndSync();openPropertyPanel();}}},r);
+    });
+    ch("button",{text:"+ リスナ追加",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",marginTop:"3px"},
+      on:{click:()=>{(cfg.listeners=cfg.listeners||[]).push({port:80,proto:"HTTP",target_group:"tg-web"});renderAndSync();openPropertyPanel();}}},sec);
+    ch("h5",{text:"ターゲットグループ",style:{margin:"6px 0 2px",fontSize:"11px"}},sec);
+    cfg.target_group = cfg.target_group||{name:"tg-web",port:8080,health_check:"/health",targets:[]};
+    const tg=cfg.target_group;
+    addField(sec,"TG名","text",tg.name||"",v=>{tg.name=v;renderAndSync();});
+    addField(sec,"ターゲットポート","number",tg.port||8080,v=>{tg.port=+v;renderAndSync();});
+    addField(sec,"ヘルスチェックパス","text",tg.health_check||"/",v=>{tg.health_check=v;renderAndSync();});
+    addField(sec,"ターゲット (サーバID, カンマ区切り)","text",(tg.targets||[]).join(","),v=>{tg.targets=v.split(",").map(x=>x.trim()).filter(Boolean);renderAndSync();});
+  }
+  else if(k==="aws-ecs"){
+    addField(sec,"クラスタ名","text",cfg.cluster_name||"",v=>{cfg.cluster_name=v;renderAndSync();});
+    addSelectField(sec,"起動タイプ",["FARGATE","EC2"],cfg.launch_type||"FARGATE",v=>{cfg.launch_type=v;renderAndSync();});
+    addField(sec,"desired_count","number",cfg.desired_count||1,v=>{cfg.desired_count=+v||1;renderAndSync();});
+    const td = cfg.task_definition = cfg.task_definition||{family:"web",containers:[]};
+    ch("h5",{text:"タスク定義",style:{margin:"6px 0 2px",fontSize:"11px"}},sec);
+    addField(sec,"family","text",td.family||"",v=>{td.family=v;renderAndSync();});
+    (td.containers||[]).forEach((c,i)=>{
+      const box=ch("div",{style:{border:"1px solid var(--border)",padding:"4px",borderRadius:"4px",marginBottom:"3px"}},sec);
+      addField(box,"コンテナ名","text",c.name||"",v=>{c.name=v;renderAndSync();});
+      addField(box,"イメージ","text",c.image||"",v=>{c.image=v;renderAndSync();});
+      addField(box,"ポート (container:host, カンマ区切り)","text",(c.ports||[]).map(p=>p.container+":"+p.host).join(","),
+        v=>{c.ports=v.split(",").map(s=>{const[a,b]=s.split(":");return{container:+a,host:+b};}).filter(p=>p.container);renderAndSync();});
+      ch("button",{text:"このコンテナを削除",style:{padding:"2px 6px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)"},
+        on:{click:()=>{td.containers.splice(i,1);renderAndSync();openPropertyPanel();}}},box);
+    });
+    ch("button",{text:"+ コンテナ追加",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer"},
+      on:{click:()=>{(td.containers=td.containers||[]).push({name:"app",image:"nginx:latest",ports:[{container:80,host:8080}]});renderAndSync();openPropertyPanel();}}},sec);
+  }
+  else if(k==="aws-eks"){
+    addField(sec,"クラスタ名","text",cfg.cluster_name||"",v=>{cfg.cluster_name=v;renderAndSync();});
+    addField(sec,"K8sバージョン","text",cfg.k8s_version||"1.29",v=>{cfg.k8s_version=v;renderAndSync();});
+    const ng=cfg.node_group=cfg.node_group||{name:"ng1",instance_type:"t3.medium",desired:3};
+    ch("h5",{text:"ノードグループ",style:{margin:"6px 0 2px",fontSize:"11px"}},sec);
+    addField(sec,"ノードグループ名","text",ng.name||"",v=>{ng.name=v;renderAndSync();});
+    addField(sec,"インスタンスタイプ","text",ng.instance_type||"",v=>{ng.instance_type=v;renderAndSync();});
+    addField(sec,"desired数","number",ng.desired||1,v=>{ng.desired=+v||1;renderAndSync();});
+    addSelectField(sec,"Fargate併用",["true","false"],String(!!cfg.fargate),v=>{cfg.fargate=(v==="true");renderAndSync();});
+  }
+  else if(k==="aws-route53"){
+    ch("h5",{text:"ホストゾーン",style:{margin:"6px 0 2px",fontSize:"11px"}},sec);
+    cfg.hosted_zones=cfg.hosted_zones||[];
+    cfg.hosted_zones.forEach((z,zi)=>{
+      const box=ch("div",{style:{border:"1px solid var(--border)",padding:"4px",borderRadius:"4px",marginBottom:"4px"}},sec);
+      addField(box,"ゾーン名","text",z.name||"",v=>{z.name=v;renderAndSync();});
+      (z.records||[]).forEach((r,ri)=>{
+        const rr=ch("div",{style:{display:"flex",gap:"3px",alignItems:"center",marginBottom:"2px"}},box);
+        const ni=ch("input",{type:"text",value:r.name||"",placeholder:"name",style:{width:"60px",padding:"2px",fontSize:"10px"}},rr);
+        ni.addEventListener("change",()=>{r.name=ni.value;renderAndSync();});
+        const ts=ch("select",{style:{padding:"2px",fontSize:"10px"}},rr); ["A","AAAA","CNAME","MX","TXT","NS"].forEach(t=>ch("option",{value:t,text:t},ts)); ts.value=r.type||"A";
+        ts.addEventListener("change",()=>{r.type=ts.value;renderAndSync();});
+        const vi=ch("input",{type:"text",value:r.value||"",placeholder:"value",style:{flex:"1",padding:"2px",fontSize:"10px"}},rr);
+        vi.addEventListener("change",()=>{r.value=vi.value;renderAndSync();});
+        const ti=ch("input",{type:"number",value:r.ttl||300,style:{width:"50px",padding:"2px",fontSize:"10px"}},rr);
+        ti.addEventListener("change",()=>{r.ttl=+ti.value;renderAndSync();});
+        ch("button",{text:"✕",style:{padding:"1px 4px",fontSize:"9px",cursor:"pointer"},on:{click:()=>{z.records.splice(ri,1);renderAndSync();openPropertyPanel();}}},rr);
+      });
+      ch("button",{text:"+ レコード",style:{padding:"2px 6px",fontSize:"9px",cursor:"pointer"},
+        on:{click:()=>{(z.records=z.records||[]).push({name:"app",type:"A",value:"203.0.113.10",ttl:300});renderAndSync();openPropertyPanel();}}},box);
+    });
+    ch("button",{text:"+ ホストゾーン",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",marginTop:"3px"},
+      on:{click:()=>{cfg.hosted_zones.push({name:"example.com",records:[]});renderAndSync();openPropertyPanel();}}},sec);
+  }
+  else if(k==="aws-tgw"){
+    addField(sec,"BGP ASN","number",cfg.asn||64512,v=>{cfg.asn=+v||64512;renderAndSync();});
+    addSelectField(sec,"ルート伝播",["true","false"],String(!!cfg.propagation),v=>{cfg.propagation=(v==="true");renderAndSync();});
+    addField(sec,"アタッチメント (VPC名/ID, カンマ区切り)","text",(cfg.attachments||[]).join(","),v=>{cfg.attachments=v.split(",").map(x=>x.trim()).filter(Boolean);renderAndSync();});
+  }
+  else if(k==="aws-apigw"){
+    addField(sec,"API名","text",cfg.api_name||"",v=>{cfg.api_name=v;renderAndSync();});
+    addField(sec,"ステージ","text",cfg.stage||"prod",v=>{cfg.stage=v;renderAndSync();});
+    cfg.endpoints=cfg.endpoints||[];
+    ch("h5",{text:"エンドポイント",style:{margin:"6px 0 2px",fontSize:"11px"}},sec);
+    cfg.endpoints.forEach((ep,ei)=>{
+      const r=ch("div",{style:{display:"flex",gap:"3px",alignItems:"center",marginBottom:"3px"}},sec);
+      const ms=ch("select",{style:{padding:"2px",fontSize:"10px"}},r); ["GET","POST","PUT","DELETE","PATCH"].forEach(m=>ch("option",{value:m,text:m},ms)); ms.value=ep.method||"GET";
+      ms.addEventListener("change",()=>{ep.method=ms.value;renderAndSync();});
+      const pi=ch("input",{type:"text",value:ep.path||"",placeholder:"/path",style:{flex:"1",padding:"2px",fontSize:"10px"}},r);
+      pi.addEventListener("change",()=>{ep.path=pi.value;renderAndSync();});
+      const ii=ch("input",{type:"text",value:ep.integration||"lambda",placeholder:"integration",style:{width:"80px",padding:"2px",fontSize:"10px"}},r);
+      ii.addEventListener("change",()=>{ep.integration=ii.value;renderAndSync();});
+      ch("button",{text:"✕",style:{padding:"1px 4px",fontSize:"9px",cursor:"pointer"},on:{click:()=>{cfg.endpoints.splice(ei,1);renderAndSync();openPropertyPanel();}}},r);
+    });
+    ch("button",{text:"+ エンドポイント",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer"},
+      on:{click:()=>{cfg.endpoints.push({path:"/api",method:"GET",integration:"lambda"});renderAndSync();openPropertyPanel();}}},sec);
+  }
+  else if(k==="aws-lambda"){
+    addField(sec,"関数名","text",cfg.function_name||"",v=>{cfg.function_name=v;renderAndSync();});
+    addField(sec,"ランタイム","text",cfg.runtime||"nodejs20.x",v=>{cfg.runtime=v;renderAndSync();});
+    addField(sec,"メモリ (MB)","number",cfg.memory_mb||128,v=>{cfg.memory_mb=+v||128;renderAndSync();});
+    addField(sec,"タイムアウト (秒)","number",cfg.timeout_sec||30,v=>{cfg.timeout_sec=+v||30;renderAndSync();});
+    addField(sec,"トリガ","text",cfg.trigger||"apigw",v=>{cfg.trigger=v;renderAndSync();});
+  }
+  else if(k==="aws-cloudfront"){
+    addField(sec,"ディストリビューションID","text",cfg.distribution_id||"",v=>{cfg.distribution_id=v;renderAndSync();});
+    addField(sec,"Origin (ドメイン)","text",cfg.origin_domain||"",v=>{cfg.origin_domain=v;renderAndSync();});
+    addField(sec,"Default TTL (秒)","number",cfg.default_ttl||86400,v=>{cfg.default_ttl=+v||86400;renderAndSync();});
+    addField(sec,"SSL証明書","text",cfg.ssl_cert||"acm-default",v=>{cfg.ssl_cert=v;renderAndSync();});
+  }
+  else if(k==="aws-rds"){
+    addSelectField(sec,"エンジン",["mysql","postgres","mariadb","aurora-mysql","aurora-postgresql","oracle","sqlserver"],cfg.engine||"mysql",v=>{cfg.engine=v;renderAndSync();});
+    addField(sec,"エンジンバージョン","text",cfg.engine_version||"",v=>{cfg.engine_version=v;renderAndSync();});
+    addField(sec,"インスタンスクラス","text",cfg.instance_class||"db.t3.micro",v=>{cfg.instance_class=v;renderAndSync();});
+    addSelectField(sec,"Multi-AZ",["true","false"],String(!!cfg.multi_az),v=>{cfg.multi_az=(v==="true");renderAndSync();});
+    addField(sec,"ポート","number",cfg.port||3306,v=>{cfg.port=+v||3306;renderAndSync();});
+    addField(sec,"ストレージ (GB)","number",cfg.allocated_gb||20,v=>{cfg.allocated_gb=+v||20;renderAndSync();});
+  }
+  else if(k==="aws-dynamodb"){
+    addField(sec,"テーブル名","text",cfg.table_name||"",v=>{cfg.table_name=v;renderAndSync();});
+    addField(sec,"パーティションキー","text",cfg.partition_key||"id",v=>{cfg.partition_key=v;renderAndSync();});
+    addSelectField(sec,"課金モード",["PAY_PER_REQUEST","PROVISIONED"],cfg.billing_mode||"PAY_PER_REQUEST",v=>{cfg.billing_mode=v;renderAndSync();});
+    addField(sec,"Read Capacity","number",cfg.read_capacity||5,v=>{cfg.read_capacity=+v||5;renderAndSync();});
+    addField(sec,"Write Capacity","number",cfg.write_capacity||5,v=>{cfg.write_capacity=+v||5;renderAndSync();});
+  }
+  else if(k==="aws-sqs"){
+    addField(sec,"キュー名","text",cfg.queue_name||"",v=>{cfg.queue_name=v;renderAndSync();});
+    addSelectField(sec,"タイプ",["standard","fifo"],cfg.type||"standard",v=>{cfg.type=v;renderAndSync();});
+    addField(sec,"可視性タイムアウト (秒)","number",cfg.visibility_timeout||30,v=>{cfg.visibility_timeout=+v||30;renderAndSync();});
+    addField(sec,"保持期間 (日)","number",cfg.retention_days||4,v=>{cfg.retention_days=+v||4;renderAndSync();});
+  }
+  // Common: still allow interfaces (for connection wiring)
+  renderInterfaceTable(body, obj, "device");
+}
+
 function renderDeviceProps(body, obj){
+  // AWS-specific node: render the service-specific config first (before generic device fields)
+  if(obj.aws_kind){
+    renderAwsKindProps(body, obj);
+    return;
+  }
   addSelectField(body, "種別", ["router","l3switch","l2switch","firewall","loadbalancer","waf"], obj.type||"router",
     v=>{ obj.type=v; renderAndSync(); openPropertyPanel(); });
   addField(body, "Model", "text", obj.model||"", v=>{ obj.model=v; renderAndSync(); });
@@ -729,6 +939,17 @@ function showContainerManager(id){
     const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
     function refresh(){
       body.innerHTML = "";
+      helpBox(body, "コンテナホストの使い方", [
+        "これは何: 1台のホスト上で複数のコンテナを動かす環境(Docker相当)。",
+        "手順:",
+        "1. 『コンテナネットワーク』でブリッジ等を作成(例: bridge0, 172.18.0.0/16)。",
+        "2. 『+コンテナ追加』でコンテナを作成し、イメージ名(nginx:latest等)を設定。",
+        "3. コンテナを所属させるネットワークを選択、IPを設定。",
+        "4. ホストOSのポート → コンテナ内ポート の『ポートマッピング』を設定(例 8080→80)。",
+        "5. 公開ポートは通信テストの宛先になります(他ホストから host:port で到達)。",
+        "ポイント: 既存のdocker-compose.ymlは『📋 docker-compose 取込/書出』で一括取込可。",
+        "サービス設定はサーバ本体の🔌ポート/ファイアウォールで(コンテナの公開ポートは自動でホストのlistenにマップ)。"
+      ], false);
       // --- Container networks ---
       const s1=ch("div",{class:"sub-section"},body);
       ch("h4",{text:"コンテナネットワーク"},s1);
@@ -943,6 +1164,16 @@ function showHypervisorManager(id){
     const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
     function refresh(){
       body.innerHTML = "";
+      helpBox(body, "vCenter/ESXi(仮想基盤)の使い方", [
+        "これは何: 1台の物理サーバ上で複数の仮想マシン(VM)を動かす仮想化基盤(VMware ESXi)。",
+        "手順:",
+        "1. 種別を選択(ESXi/KVM/Hyper-V)。",
+        "2. vSwitch/ポートグループでVM用の仮想ネットワークを定義。",
+        "3. 『+VM追加』でこのホスト内にVMを作成(=サーバとして扱われ、ホストにバインドされます)。",
+        "4. データストアで仮想ディスク領域を定義(別サーバをストレージとして指定可能)。",
+        "5. VMの『マイグレーション』でホスト間の移動シミュレーション。",
+        "ポイント: VMは『このホスト内に』作成され、ホスト経由で物理ネットワークへ通信します。"
+      ], false);
       // host summary
       const hsum=ch("div",{class:"sub-section"},body);
       ch("h4",{text:"ハイパーバイザ"},hsum);
@@ -991,6 +1222,18 @@ function showHypervisorManager(id){
         // power
         ch("button",{text:on?"停止":"起動",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
           on:{click:()=>{ vm.status=on?"stopped":"running"; vm.power=on?"off":"on"; renderAndSync(); refresh(); }}},hd);
+        // vMotion-like migration to another ESXi host
+        ch("button",{text:"🔀 vMotion",title:"別のESXi/vCenterホストへVMをマイグレーション",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"3px"},
+          on:{click:()=>{
+            const others=(App.config.servers||[]).filter(s=>s.hypervisor && s.id!==obj.id);
+            if(!others.length){ toast("移動先となる別のESXi/vCenterホストがありません","warn"); return; }
+            const target = others[0];
+            pushUndo(); const orig=vm.host; vm.host=target.id;
+            vm.x = (target.x||0) + 160 + Math.random()*100;
+            vm.y = (target.y||0) + 80 + Math.random()*60;
+            toast(`VM ${vm.label||vm.id} を ${orig} → ${target.id} へvMotion`,"ok");
+            renderAndSync(); refresh();
+          }}},hd);
         ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
           on:{click:()=>{ App.config.servers=App.config.servers.filter(s=>s.id!==vm.id); renderAndSync(); refresh(); }}},hd);
         // portgroup + primary IP summary
@@ -1015,17 +1258,47 @@ function showHypervisorManager(id){
           pushUndo();
           const id=uid("vm");
           const n = vmServersOf(obj.id).length;
+          // VMs must be created INSIDE the vCenter host's visual area (host's body, not outside).
+          // Anchor to the host's center + small grid offset so they render within the host box.
+          const hostW = obj.width||130, hostH = obj.height||65;
+          const cellW=80, cellH=46;
+          const col=n%2, row=Math.floor(n/2);
           App.config.servers.push({ id, label:id, host:obj.id, vm:true, type:"virtual", os:"linux",
             status:"running", power:"on", vcpu:2, ram_gb:4, portgroup:(pgOptions[0]||""),
-            x:(obj.x||0)+160+ (n%3)*150, y:(obj.y||0)+ Math.floor(n/3)*100, width:130, height:65,
-            interfaces:[{id:"eth0",status:"up"}], gateway:"" });
+            x:(obj.x||0) + Math.round(hostW*0.15) + col*cellW,
+            y:(obj.y||0) + hostH + 10 + row*cellH,
+            width:74, height:42,
+            interfaces:[{id:"eth0", ip:_autoFreeIp(), mac:genUniqueMac(), status:"up"}], gateway:"" });
           renderAndSync(); refresh();
+          toast("VM追加: "+id+" (ホスト内に配置)","ok");
         }}},vmsec);
       // datastores
       const ds=ch("div",{class:"sub-section"},body);
-      ch("h4",{text:"データストア"},ds);
-      const dsIn=ch("input",{type:"text",value:(hv.datastores||[]).map(d=>typeof d==="string"?d:(d.name+":"+(d.capacity_gb||"?")+"GB")).join(", "),placeholder:"datastore1:500GB, ...",style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},ds);
-      dsIn.addEventListener("change",()=>{ hv.datastores=dsIn.value.split(",").map(x=>x.trim()).filter(Boolean); renderAndSync(); });
+      ch("h4",{text:"データストア (仮想ディスク領域)"},ds);
+      hv.datastores = hv.datastores || [];
+      (hv.datastores||[]).forEach((d,di)=>{
+        const dso = (typeof d==="string") ? { name:d.split(":")[0]||"datastore"+(di+1), capacity_gb: parseInt((d.split(":")[1]||"500"),10)||500, backing:"" } : d;
+        hv.datastores[di] = dso;
+        const dr=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"4px",flexWrap:"wrap"}},ds);
+        const nmI=ch("input",{type:"text",value:dso.name||"",placeholder:"datastore名",style:Object.assign({width:"110px"},fStyle)},dr);
+        nmI.addEventListener("change",()=>{ dso.name=nmI.value; renderAndSync(); });
+        const capI=ch("input",{type:"number",value:dso.capacity_gb||500,style:Object.assign({width:"70px"},fStyle)},dr);
+        capI.addEventListener("change",()=>{ dso.capacity_gb=+capI.value||500; renderAndSync(); });
+        ch("span",{text:"GB",style:{fontSize:"9px",color:"var(--text-dim)"}},dr);
+        ch("span",{text:"ストレージサーバ:",style:{fontSize:"9px",color:"var(--text-dim)"}},dr);
+        const bSel=ch("select",{style:Object.assign({flex:"1",minWidth:"120px"},fStyle)},dr);
+        ch("option",{value:"",text:"(ローカル)"},bSel);
+        for(const s of (App.config.servers||[])){
+          if(s.id===obj.id||s.vm) continue;
+          const o=ch("option",{value:s.id,text:(s.label||s.id)+" ("+(s.type||"server")+")"},bSel);
+          if(dso.backing===s.id) o.selected=true;
+        }
+        bSel.addEventListener("change",()=>{ dso.backing=bSel.value; renderAndSync(); });
+        ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{ hv.datastores.splice(di,1); renderAndSync(); refresh(); }}},dr);
+      });
+      ch("button",{text:"+ データストア追加",style:{padding:"4px 10px",fontSize:"10px",cursor:"pointer",background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"3px",fontWeight:"700"},
+        on:{click:()=>{ hv.datastores.push({name:"datastore"+(hv.datastores.length+1),capacity_gb:500,backing:""}); renderAndSync(); refresh(); }}},ds);
       // capacity summary
       const vmsForCap = vmServersOf(obj.id);
       const usedCpu=vmsForCap.reduce((s,v)=>s+(+v.vcpu||0),0);
@@ -1341,6 +1614,16 @@ function showK8sManager(focusCluster){
     if(focusCluster){ const fi=(App.config.k8s.clusters||[]).findIndex(c=>c.name===focusCluster); if(fi>=0) activeIdx=fi; }
     function refresh(){
       body.innerHTML = "";
+      helpBox(body, "Kubernetesクラスタの使い方", [
+        "これは何: コンテナ(Pod)をクラスタ全体で自動配置・運用するオーケストレーション基盤。",
+        "手順:",
+        "1. 『+クラスタ』でクラスタを作成。",
+        "2. 『+ノード追加』でWorkerノード(物理/仮想サーバ)をクラスタに追加(Podはノード上で動作)。",
+        "3. 『+Pod追加』で各ノードにPodを配置。`selector`でServiceに紐付けます。",
+        "4. 『+Service追加』でClusterIP/NodePort/LoadBalancerを公開。",
+        "5. LoadBalancer Service + Ingressで外部公開、前段にALB/CDNを置くと本番構成。",
+        "ポイント: ノードが無いとPodは作れません(エラー)。マイグレーションでPodを別ノードへ移せます。"
+      ], false);
       const clusters = App.config.k8s.clusters;
       const top=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"8px"}},body);
       ch("span",{text:"クラスタ:",style:{fontSize:"11px"}},top);
@@ -1360,9 +1643,34 @@ function showK8sManager(focusCluster){
       const pc=ch("input",{type:"text",value:cl.pod_cidr||"",style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f2); pc.addEventListener("change",()=>{cl.pod_cidr=pc.value;renderAndSync();});
       const f3=ch("div",{},cr); ch("label",{text:"Service CIDR",style:{fontSize:"9px",color:"var(--text-dim)"}},f3);
       const sc=ch("input",{type:"text",value:cl.service_cidr||"",style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f3); sc.addEventListener("change",()=>{cl.service_cidr=sc.value;renderAndSync();});
-      ch("label",{text:"ノード (サーバ, カンマ区切り)",style:{fontSize:"9px",color:"var(--text-dim)",display:"block",marginTop:"4px"}},cfg);
-      const ndIn=ch("input",{type:"text",value:(cl.nodes||[]).join(", "),placeholder:"web01, app01",style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},cfg);
-      ndIn.addEventListener("change",()=>{ cl.nodes=ndIn.value.split(",").map(x=>x.trim()).filter(Boolean); renderAndSync(); });
+      ch("label",{text:"ノード (Workerサーバ)",style:{fontSize:"9px",color:"var(--text-dim)",display:"block",marginTop:"4px",fontWeight:"700"}},cfg);
+      const nodeBox = ch("div",{style:{border:"1px solid var(--border)",padding:"6px",borderRadius:"4px",background:"var(--bg)",marginBottom:"6px"}},cfg);
+      (cl.nodes||[]).forEach((nid,ni)=>{
+        const nr=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"3px",fontSize:"10.5px"}},nodeBox);
+        ch("span",{text:"●",style:{color:"var(--green)"}},nr);
+        ch("span",{text:nid,style:{flex:"1",fontFamily:"var(--mono)"}},nr);
+        const s=Cfg.byId("servers",nid);
+        ch("span",{text:s?(s.status==="running"?"running":s.status):"未存在",style:{fontSize:"9px",color:s&&s.status==="running"?"var(--green)":"var(--red)"}},nr);
+        ch("button",{text:"×",style:{padding:"2px 6px",fontSize:"10px",cursor:"pointer",background:"var(--bg3)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
+          on:{click:()=>{ cl.nodes=cl.nodes.filter(x=>x!==nid); renderAndSync(); refresh(); }}},nr);
+      });
+      if(!(cl.nodes||[]).length) ch("div",{text:"(まだノードがありません)",style:{fontSize:"10px",color:"var(--text-mute)",fontStyle:"italic"}},nodeBox);
+      const naBtn=ch("div",{style:{display:"flex",gap:"6px",marginTop:"6px",flexWrap:"wrap"}},nodeBox);
+      // Add existing server as a node
+      const exSel=ch("select",{style:Object.assign({flex:"1",minWidth:"120px"},fStyle)},naBtn);
+      ch("option",{value:"",text:"既存サーバを選択..."},exSel);
+      for(const s of (App.config.servers||[])){ if(!(cl.nodes||[]).includes(s.id) && !s.vm) ch("option",{value:s.id,text:(s.label||s.id)+(s.type?" ("+s.type+")":"")},exSel); }
+      ch("button",{text:"➕ このサーバをノード追加",style:{padding:"4px 8px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+        on:{click:()=>{ if(!exSel.value){ toast("追加するサーバを選択してください","warn"); return; } cl.nodes=cl.nodes||[]; if(!cl.nodes.includes(exSel.value)) cl.nodes.push(exSel.value); renderAndSync(); refresh(); }}},naBtn);
+      ch("button",{text:"🆕 新規Workerを作成して追加",style:{padding:"4px 8px",fontSize:"10px",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+        on:{click:()=>{
+          const nid = uid("worker");
+          App.config.servers.push({ id:nid, label:nid, type:"server", os:"linux", status:"running",
+            x:200+Math.random()*200, y:300+Math.random()*100, width:120, height:60,
+            interfaces:[{ id:"eth0", ip:_autoFreeIp(), mac:genUniqueMac(), status:"up" }] });
+          cl.nodes=cl.nodes||[]; cl.nodes.push(nid); renderAndSync(); refresh();
+          toast("Workerノード追加: "+nid,"ok");
+        }}},naBtn);
 
       const ps=ch("div",{class:"sub-section"},body);
       ch("h4",{text:"Pods"},ps);
@@ -1378,11 +1686,21 @@ function showK8sManager(focusCluster){
         ndSel.addEventListener("change",()=>{pod.node=ndSel.value;renderAndSync();});
         ch("button",{text:(pod.status||"Running")==="Running"?"停止":"起動",style:{padding:"1px 5px",cursor:"pointer",fontSize:"9px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
           on:{click:()=>{ pod.status=(pod.status||"Running")==="Running"?"Stopped":"Running"; renderAndSync(); refresh(); }}},row);
+        // Pod migration: move the pod to a different node (simulates kubectl drain → reschedule).
+        ch("button",{text:"🔀 移動",title:"別ノードへマイグレーション(Pod再スケジュール)",style:{padding:"1px 5px",cursor:"pointer",fontSize:"9px",background:"var(--bg)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"3px"},
+          on:{click:()=>{
+            const others=(cl.nodes||[]).filter(n=>n!==pod.node);
+            if(!others.length){ toast("移動先となる別ノードがありません","warn"); return; }
+            const target = others[0];
+            pushUndo(); const orig=pod.node; pod.node=target;
+            toast(`Pod ${pod.name} を ${orig||"(なし)"} → ${target} へマイグレーション`,"ok");
+            renderAndSync(); refresh();
+          }}},row);
         ch("button",{text:"✕",style:{padding:"1px 5px",cursor:"pointer",fontSize:"9px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
           on:{click:()=>{ cl.pods.splice(i,1); renderAndSync(); refresh(); }}},row);
       });
       ch("button",{text:"+ Pod追加",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
-        on:{click:()=>{ const n=(cl.pods=cl.pods||[]).length+1; cl.pods.push({name:"pod-"+n,namespace:"default",node:(cl.nodes||[])[0]||"",ip:"10.244.0."+(n+1),labels:{app:"web"},status:"Running",containers:[]}); renderAndSync(); refresh(); }}},ps);
+        on:{click:()=>{ if(!(cl.nodes||[]).length){ toast("先にノードを追加してください(Podはノード上で動作します)","err"); return; } const n=(cl.pods=cl.pods||[]).length+1; cl.pods.push({name:"pod-"+n,namespace:"default",node:(cl.nodes||[])[0]||"",ip:"10.244.0."+(n+1),labels:{app:"web"},status:"Running",containers:[]}); renderAndSync(); refresh(); }}},ps);
 
       const ss=ch("div",{class:"sub-section"},body);
       ch("h4",{text:"Services"},ss);
@@ -4259,7 +4577,13 @@ var TOPOLOGY_TEMPLATES = [
     builder: buildK8sMulti },
   { id:"k8s-prod", icon:"🚀", title:"Kubernetes — 本番構成 (CDN + LB + Ingress)",
     desc:"Internet→CloudFront(CDN)→ALB(LoadBalancer)→K8s Service→Pod の本番想定フルスタック。LB/CDN/Ingress込み。",
-    builder: buildK8sProd }
+    builder: buildK8sProd },
+  { id:"vcenter-ha", icon:"🖥", title:"vCenter HA — 冗長ESXi (vMotion対応)",
+    desc:"管理SW配下に複数ESXiホスト＋共有データストア。各ホスト内にVM。vMotionで相互移動可能な冗長構成。",
+    builder: buildVcenterHA },
+  { id:"openshift", icon:"🟥", title:"OpenShift — コンテナ+VM 統合",
+    desc:"Master 3台 + Worker N + Ingress Router + コンテナPod + OpenShift Virtualization VM の本番構成。",
+    builder: buildOpenShift }
 ];
 
 function openTopologyTemplates(){
@@ -4332,6 +4656,21 @@ function openTemplateOptions(tpl){
       addField(body, "クラスタ名", "text", opts.cluster_name, v=>opts.cluster_name=v||"prod");
       addField(body, "ID Prefix", "text", opts.prefix, v=>opts.prefix=v||"kp");
       ch("div",{text:"生成内容: K8sクラスタ + LoadBalancer Service + Ingress + 外部ALB + CloudFront CDN(Internet→CDN→ALB→Service→Pod)",
+        style:{fontSize:"10px",color:"var(--text-mute)",margin:"4px 0",lineHeight:"1.4"}},body);
+    } else if(tpl.id === "vcenter-ha"){
+      opts = { hosts:2, vms_each:2, prefix:"vc", base_x:1100, base_y:100 };
+      addField(body, "ESXiホスト数", "number", opts.hosts, v=>opts.hosts=Math.max(2,+v));
+      addField(body, "ホストあたりVM数", "number", opts.vms_each, v=>opts.vms_each=Math.max(0,+v));
+      addField(body, "ID Prefix", "text", opts.prefix, v=>opts.prefix=v||"vc");
+      ch("div",{text:"生成内容: 管理SW + 複数のESXiホスト(内部にVM)。vMotionで相互移動可能。",
+        style:{fontSize:"10px",color:"var(--text-mute)",margin:"4px 0",lineHeight:"1.4"}},body);
+    } else if(tpl.id === "openshift"){
+      opts = { workers:3, app_replicas:3, vms:1, cluster_name:"ocp", prefix:"ocp", base_x:1100, base_y:100 };
+      addField(body, "Worker 台数", "number", opts.workers, v=>opts.workers=Math.max(1,+v));
+      addField(body, "アプリPod数", "number", opts.app_replicas, v=>opts.app_replicas=Math.max(1,+v));
+      addField(body, "OCP VM数 (OpenShift Virtualization)", "number", opts.vms, v=>opts.vms=Math.max(0,+v));
+      addField(body, "クラスタ名", "text", opts.cluster_name, v=>opts.cluster_name=v||"ocp");
+      ch("div",{text:"生成内容: Master3+WorkerN+Ingress Router+Pod+OCP VM。コンテナとVMが同一クラスタで動作。",
         style:{fontSize:"10px",color:"var(--text-mute)",margin:"4px 0",lineHeight:"1.4"}},body);
     }
     return {
@@ -4560,6 +4899,79 @@ function build3Tier(opts){
       type:"ethernet", speed:1000, status:"up", traffic:"idle", direction:"bidirectional" });
     stats.links++;
   }
+  return stats;
+}
+
+// vCenter HA — 2 ESXi hosts behind a switch, each hosting VMs. vMotion ready.
+function buildVcenterHA(opts){
+  const { hosts=2, vms_each=2, prefix="vc", base_x=400, base_y=200 } = opts||{};
+  const stats={devices:0,servers:0,links:0};
+  const swId = `${prefix}-sw`;
+  App.config.devices.push({ id:swId, label:`${prefix} mgmt sw`, type:"l2switch", status:"running",
+    x:base_x, y:base_y, width:130, height:60, interfaces:Array.from({length:hosts+1},(_,i)=>({id:"g"+i,status:"up"})) });
+  stats.devices++;
+  for(let h=0;h<hosts;h++){
+    const hid = `${prefix}-esxi${h+1}`;
+    App.config.servers.push({ id:hid, label:hid, type:"hypervisor", os:"VMware ESXi", status:"running",
+      x:base_x-100+h*260, y:base_y+150, width:160, height:80, cpu:32, memory:131072,
+      interfaces:[{id:"vmnic0",ip:`10.0.${100+h}.10/24`,mac:genUniqueMac(),status:"up"}],
+      hypervisor:{ type:"esxi", vms:[], vswitches:[{name:"vSwitch0",portgroups:["VM Network","Management"]}], datastores:[{name:"shared-ds",capacity_gb:2000,backing:""}] } });
+    App.config.connections.push({id:uid("link"),from:{server:hid,interface:"vmnic0"},to:{device:swId,interface:"g"+h},type:"ethernet",status:"up"});
+    stats.servers++; stats.links++;
+    for(let v=0; v<vms_each; v++){
+      const vid = `${hid}-vm${v+1}`;
+      App.config.servers.push({ id:vid, label:vid, host:hid, vm:true, type:"virtual", os:"linux",
+        status:"running", power:"on", vcpu:2, ram_gb:4, portgroup:"VM Network",
+        x:base_x-100+h*260 + 8 + (v%2)*80, y:base_y+150 + 80 + 10 + Math.floor(v/2)*46,
+        width:74, height:42,
+        interfaces:[{id:"eth0", ip:_autoFreeIp(), mac:genUniqueMac(), status:"up"}] });
+      stats.servers++;
+    }
+  }
+  return stats;
+}
+// OpenShift: K8s + ingress router + integrated container/VM (OCP supports VMs via OpenShift Virtualization).
+function buildOpenShift(opts){
+  const { workers=3, app_replicas=3, vms=1, cluster_name="ocp", prefix="ocp", base_x=400, base_y=200 } = opts||{};
+  App.config.k8s = App.config.k8s || { clusters:[] };
+  const masters = 3, total = masters + workers;
+  const fab = _k8sFabric(prefix, total, base_x, base_y, cluster_name);
+  const stats = fab.stats;
+  const masterIds = fab.nodeIds.slice(0, masters);
+  const workerIds = fab.nodeIds.slice(masters);
+  for(const id of masterIds){ const s=Cfg.byId("servers",id); s.label=id+" (control-plane)"; }
+  // OpenShift Virtualization VMs (Kubernetes-managed VMs on worker nodes)
+  for(let v=0; v<vms; v++){
+    const wid = workerIds[v%workerIds.length]; if(!wid) break;
+    const host = Cfg.byId("servers",wid);
+    const vid = `${prefix}-vm${v+1}`;
+    App.config.servers.push({ id:vid, label:vid+" (OCP VM)", host:wid, vm:true, type:"virtual", os:"linux",
+      status:"running", power:"on", vcpu:2, ram_gb:4,
+      x:(host.x||0)+8+(v%2)*80, y:(host.y||0)+(host.height||60)+10+Math.floor(v/2)*46,
+      width:74, height:42,
+      interfaces:[{id:"eth0", ip:_autoFreeIp(), mac:genUniqueMac(), status:"up"}] });
+    stats.servers++;
+  }
+  const pods=[];
+  for(let i=0;i<app_replicas;i++){
+    pods.push({ name:`app-${i+1}`, namespace:"default", node:workerIds[i%workerIds.length],
+      ip:`10.244.0.${11+i}`, labels:{app:"web"}, status:"Running" });
+  }
+  const svc = { name:"web-svc", namespace:"default", type:"ClusterIP", cluster_ip:"172.30.0.10",
+    selector:{app:"web"}, ports:[{port:80,target_port:8080,proto:"tcp"}] };
+  const route = { name:"web-route", namespace:"default", host:"web.apps.example.com",
+    rules:[{path:"/", service:"web-svc", port:80}] };
+  App.config.k8s.clusters.push({ name:cluster_name, pod_cidr:"10.128.0.0/14", service_cidr:"172.30.0.0/16",
+    nodes:fab.nodeIds, namespaces:["default","openshift-ingress"], pods, services:[svc], ingresses:[route],
+    openshift:true });
+  // Ingress Router (HAProxy/OpenShift Router) as LB device
+  const lbId = `${prefix}-router`;
+  App.config.devices.push({ id:lbId, label:`${cluster_name} Ingress Router`, type:"loadbalancer", status:"running",
+    x:base_x+200, y:base_y-110, width:140, height:60, interfaces:[{id:"eth0",ip:"203.0.113.90/24",status:"up"}],
+    lb:{ vips:[{ vip:"203.0.113.90", port:443, algorithm:"round-robin",
+      pool: workerIds.map(id=>({ server:id, port:8080 })) }] } });
+  App.config.connections.push({ id:uid("link"), from:{device:lbId,interface:"eth0"}, to:{device:fab.swId,interface:"g"+(total)}, type:"ethernet", status:"up" });
+  stats.devices++; stats.links++;
   return stats;
 }
 
