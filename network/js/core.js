@@ -939,6 +939,7 @@ var App = {
   logFilters: { info:true, warn:true, error:true },
   animationsEnabled: (typeof localStorage !== "undefined" && localStorage.getItem("netsim-animations")) !== "off",
   suppressToast: false,
+  autoActions: [],   // 自動対応アクション履歴: [{ts, type, what, from, to, detail}]
 };
 
 var Cfg = {

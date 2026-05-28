@@ -3044,6 +3044,50 @@ var FAULT_LABS = [
       "HA構成では、ノード障害時にPod/VMが自動的に健全なノードへフェイルオーバします。"],
     inject:null, recover:null },
 
+  { cat:"基礎を学ぶ(概念と手順)", id:"learn-ha-failover", icon:"🔁", title:"冗長構成と自動フェイルオーバー",
+    symptom:"単一障害点をどう減らすか。障害発生時に何が自動で起きるか。",
+    steps:["【冗長構成の種類】",
+      " ① ネットワーク冗長: スイッチ2台/ルータ2台/LACP/STP/VRRP-HSRP/ECMP",
+      " ② サーバ冗長: Active-Standby / Active-Active (LB配下)",
+      " ③ コンテナ冗長: K8s ReplicaSet (Pod複数台)、ノード障害でPod再スケジュール",
+      " ④ VM冗長: vCenter HA (ホスト障害でVMが別ホストへ自動移動)",
+      " ⑤ DB冗長: RDS Multi-AZ (Standby自動昇格), Read Replica",
+      " ⑥ AZ冗長: 複数AZにまたがる配置で1AZ障害でも継続",
+      "【自動対応の流れ】",
+      " a. 監視(ヘルスチェック) → b. 異常検知 → c. 切離/切替 → d. 復旧確認 → e. 再投入",
+      "【本シミュレータでの確認方法】",
+      " 1. ツールバー右上の 🩺 をクリック → ヘルスダッシュボードを開く",
+      " 2. 任意のノード/リンク/機器を右クリック → 障害発生(エラー)",
+      " 3. ダッシュボードに『自動対応の履歴』が積まれる(K8s Pod, VM, ALBターゲット, RDS等)",
+      " 4. 通信テストで代替経路の動作を確認",
+      " 5. 復旧後、ダッシュボードの履歴で時系列に確認"],
+    explain:["冗長構成は単一障害点(SPOF)をなくす設計手法。重要度に応じてどこまで冗長化するか決める。",
+      "自動フェイルオーバは『検知 → 切替』の自動化。手動切替より速いが、誤検知(スプリットブレイン等)に注意。",
+      "本シミュレータは以下を自動実行: Pod再スケジュール, VM HA移動, ALBターゲット切離, RDS Multi-AZ昇格。",
+      "冗長スイッチ/リンクは通常のL2/L3配線で実現。一方がdownすると computePath が自動的に代替経路を選択する。"],
+    inject:null, recover:null },
+
+  { cat:"基礎を学ぶ(概念と手順)", id:"learn-incident-response", icon:"🚨", title:"障害検知 → 対応のIT運用フロー",
+    symptom:"運用現場で障害が発生したとき、何をどの順序で見るか。",
+    steps:["【1. 検知】監視システムからアラート (CloudWatch / Prometheus / Zabbix等)",
+      "【2. 影響範囲特定】どのサービスが落ちたか、ユーザーへの影響度は",
+      "【3. 切り分け】ネットワーク? サーバ? アプリ? DB? 順に切り分ける",
+      "  → ping/traceroute/curl で疎通確認",
+      "  → サーバのプロセス/CPU/メモリ確認 (top, ps)",
+      "  → DBのクエリ滞留・接続数確認",
+      "  → ログ(/var/log/, journalctl)を時系列で追う",
+      "【4. 暫定対処】サービス再起動・トラフィック切替・スケールアウト",
+      "【5. 復旧確認】再度通信テスト・監視メトリクス確認",
+      "【6. 恒久対策】根本原因分析(RCA)・再発防止策・ポストモーテム",
+      "【本シミュレータでの練習】",
+      " - 学習タブから個別の障害ラボ(server-down, link-down, fw-block等)を選ぶ",
+      " - 『障害を発生させる』→ 通信テスト失敗 → 『手動での直し方』に従う",
+      " - 🩺 ダッシュボードで自動対応が走ったかも併せて確認"],
+    explain:["障害対応は『焦らない・記録する・先に影響範囲確認』が原則。",
+      "切り分けは『下位レイヤから上位』(物理→L2→L3→アプリ)が基本。",
+      "本ツールには12種の障害ラボ + 自動対応エンジンが入っており、対応フローを反復練習できます。"],
+    inject:null, recover:null },
+
   { cat:"基礎を学ぶ(概念と手順)", id:"learn-k8s-wiring", icon:"🔗", title:"コンテナ/Pod → ノード → スイッチ の構成方法",
     symptom:"Pod・コンテナのサービス/ポート/ネットワーク/配線をどこで設定するか。",
     steps:["【考え方】Pod/コンテナは『論理要素』でノード/ホスト上で動作。物理配線は『ノード/ホスト ↔ スイッチ』で行う。",
@@ -3416,6 +3460,11 @@ function runLiveMigration(kind, id, target, tcpSessions){
 // VMs → vMotion to another healthy ESXi/hypervisor host (HA cluster behavior).
 function checkAutoMigrations(){
   let moved = 0;
+  const _logAuto = (type, what, from, to, detail)=>{
+    App.autoActions = App.autoActions || [];
+    App.autoActions.unshift({ ts: new Date().toLocaleTimeString(), type, what, from, to, detail });
+    if(App.autoActions.length > 50) App.autoActions.pop();
+  };
   // ---- K8s Pod failover ----
   for(const cl of ((App.config.k8s&&App.config.k8s.clusters)||[])){
     const healthyNodes = (cl.nodes||[]).filter(nid=>{
@@ -3431,6 +3480,7 @@ function checkAutoMigrations(){
         if(target && target !== pod.node){
           const orig = pod.node; pod.node = target;
           CommLog.info(`🔀 K8s自動フェイルオーバ: Pod ${pod.name} を ${orig}(障害) → ${target} へ再スケジュール`);
+          _logAuto("k8s-pod-failover", "Pod "+pod.name, orig, target, "ノード障害検知→別ノードへ再スケジュール");
           moved++;
         }
       }
@@ -3446,20 +3496,96 @@ function checkAutoMigrations(){
     const host = Cfg.byId("servers", vm.host);
     const hostDown = !host || host.status === "error" || host.status === "stopped";
     if(!hostDown) continue;
-    // find another healthy hypervisor (excluding the current down one)
     const target = hypervisors.find(h => h.id !== vm.host && h.status === "running");
     if(target){
       const orig = vm.host; vm.host = target.id;
-      // reposition inside the new host's body
       const w=target.width||130, h=target.height||65;
       vm.x = (target.x||0) + Math.round(w*0.15) + (moved%2)*80;
       vm.y = (target.y||0) + h + 10 + Math.floor(moved/2)*46;
       CommLog.info(`🔀 vCenter HA: VM ${vm.label||vm.id} を ${orig}(障害) → ${target.id} へvMotion`);
+      _logAuto("vm-ha-failover", "VM "+(vm.label||vm.id), orig, target.id, "ホスト障害検知→別ESXiへ自動移動");
       moved++;
     }
   }
-  if(moved > 0){ try{ syncYamlFromConfig(); render(); }catch(e){} }
+  // ---- ALB/NLB target health management: unhealthy targets auto-removed from rotation ----
+  for(const dev of (App.config.devices||[])){
+    if(!(dev.aws_kind==="aws-alb"||dev.aws_kind==="aws-nlb")) continue;
+    const tg = dev.aws_config && dev.aws_config.target_group;
+    if(!tg || !tg.targets) continue;
+    tg._activeTargets = tg._activeTargets || tg.targets.slice();
+    tg._unhealthyTargets = tg._unhealthyTargets || [];
+    // Re-evaluate each target's health
+    for(const tid of tg.targets){
+      const srv = Cfg.byId("servers", tid);
+      const unhealthy = !srv || srv.status === "error" || srv.status === "stopped" ||
+        !((srv.listen_ports||[]).some(p=>+p.port===+(tg.port||80)));
+      const wasActive = tg._activeTargets.includes(tid);
+      if(unhealthy && wasActive){
+        tg._activeTargets = tg._activeTargets.filter(x=>x!==tid);
+        if(!tg._unhealthyTargets.includes(tid)) tg._unhealthyTargets.push(tid);
+        CommLog.info(`🔀 ${dev.label||dev.id}: ターゲット ${tid} を unhealthy として切り離し (ヘルスチェック失敗)`);
+        _logAuto("lb-target-down", `ALB ${dev.label||dev.id}`, tid, "切離", "ヘルスチェック失敗→ターゲットグループから除外");
+        moved++;
+      } else if(!unhealthy && !wasActive){
+        tg._activeTargets.push(tid);
+        tg._unhealthyTargets = tg._unhealthyTargets.filter(x=>x!==tid);
+        CommLog.info(`✓ ${dev.label||dev.id}: ターゲット ${tid} を復帰 (ヘルスチェック成功)`);
+        _logAuto("lb-target-up", `ALB ${dev.label||dev.id}`, "切離", tid, "ヘルスチェック復旧→ターゲットグループに再登録");
+        moved++;
+      }
+    }
+  }
+  // ---- RDS Multi-AZ auto-failover: primary down + multi_az=true → promote standby ----
+  for(const dev of (App.config.devices||[])){
+    if(dev.aws_kind!=="aws-rds") continue;
+    if(!(dev.aws_config && dev.aws_config.multi_az)) continue;
+    if(dev.aws_config.read_replica) continue; // Read Replica isn't a standby
+    const primaryDown = dev.status === "error" || dev.status === "stopped";
+    if(!primaryDown) continue;
+    // Find a healthy standby — any RDS device with source_db===dev.id OR a sibling in same VPC with multi_az
+    const standby = (App.config.devices||[]).find(d=>d.aws_kind==="aws-rds" && d.id!==dev.id && d.status==="running" && d.aws_vpc===dev.aws_vpc);
+    if(standby && !dev._failedOver){
+      // swap IPs: standby takes over primary's endpoint
+      const primaryIp = (dev.interfaces && dev.interfaces[0] && dev.interfaces[0].ip);
+      const standbyIp = (standby.interfaces && standby.interfaces[0] && standby.interfaces[0].ip);
+      if(primaryIp && standbyIp){
+        const savedPrimary = primaryIp;
+        dev.interfaces[0].ip = standbyIp + ".old"; // primary becomes inactive
+        standby.interfaces[0].ip = savedPrimary;   // standby promoted (gets primary's IP)
+        dev._failedOver = true; standby._promoted = true;
+        CommLog.info(`🔀 RDS Multi-AZ自動フェイルオーバ: ${dev.label||dev.id} (primary障害) → ${standby.label||standby.id} を昇格 (IP引継ぎ)`);
+        _logAuto("rds-multi-az-failover", `RDS ${dev.label||dev.id}`, "Primary", standby.id, "Multi-AZ Standbyが自動昇格 (約2-3分相当)");
+        moved++;
+      }
+    }
+  }
+  if(moved > 0){ try{ syncYamlFromConfig(); render(); updateHealthDashboard(); }catch(e){} }
   return moved;
+}
+
+// Update the System Health Dashboard panel
+function updateHealthDashboard(){
+  const el = document.querySelector("#health-dashboard");
+  if(!el) return;
+  const actions = (App.autoActions||[]).slice(0,5);
+  // Count degraded components
+  const degServers = (App.config.servers||[]).filter(s=>s.status==="error"||s.status==="stopped").length;
+  const degDevices = (App.config.devices||[]).filter(d=>d.status==="error"||d.status==="stopped").length;
+  const degLinks = (App.config.connections||[]).filter(c=>c.status==="down").length;
+  const totalDeg = degServers + degDevices + degLinks;
+  const status = totalDeg === 0 ? "🟢 正常" : (actions.length>0 ? "🔵 自動復旧中" : "🟠 障害発生");
+  let html = `<div class="hd-head"><span class="hd-status">${status}</span><span class="hd-deg">${totalDeg>0?"⚠ "+totalDeg+"件の障害":"全機器健全"}</span></div>`;
+  if(actions.length){
+    html += `<div class="hd-title">🔄 自動対応の履歴 (新しい順)</div>`;
+    html += `<div class="hd-actions">`;
+    for(const a of actions){
+      html += `<div class="hd-action"><span class="hd-ts">${a.ts}</span> <span class="hd-type">${a.type}</span><br/><span class="hd-detail">${a.what}: ${a.from} → ${a.to}<br/>${a.detail||""}</span></div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="hd-empty">自動対応の履歴はありません</div>`;
+  }
+  el.innerHTML = html;
 }
 function startMacFlapMonitor(){
   if(_macFlapTimer) clearInterval(_macFlapTimer);
@@ -3613,6 +3739,7 @@ function attachEventHandlers(){
   bind("#btn-aws","click", showAwsManager);
   bind("#btn-aws-svc","click", openExternalServiceCatalog);
   bind("#btn-handson","click", showHandsOnIndex);
+  bind("#btn-health-toggle","click", ()=>{ const p=document.querySelector("#health-dashboard"); if(!p) return; p.classList.toggle("hidden"); if(!p.classList.contains("hidden")) updateHealthDashboard(); });
   bind("#btn-mac-audit","click", openMacAudit);
   const btnAnim = $("#btn-anim-toggle");
   if(btnAnim){

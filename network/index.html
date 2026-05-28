@@ -122,6 +122,20 @@ html.light #svg{background:radial-gradient(circle at 20px 20px,rgba(0,0,0,0.04) 
 #prop-panel .ph-head{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:12px;background:var(--bg3)}
 #prop-panel .ph-head .close{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;padding:0 4px}
 #prop-panel .ph-body{padding:10px 12px;overflow-y:auto;flex:1;font-size:12px}
+#btn-health-toggle{position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:50%;background:var(--panel);border:1px solid var(--border);cursor:pointer;font-size:18px;z-index:7;box-shadow:var(--shadow)}
+#btn-health-toggle:hover{background:var(--bg3)}
+#health-dashboard{position:absolute;right:60px;top:60px;width:280px;max-height:50vh;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);z-index:7;padding:10px 12px;overflow-y:auto;font-size:11px}
+#health-dashboard.hidden{display:none}
+#health-dashboard .hd-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+#health-dashboard .hd-status{font-weight:700;font-size:13px}
+#health-dashboard .hd-deg{font-size:10px;color:var(--text-mute)}
+#health-dashboard .hd-title{font-weight:700;color:var(--accent);margin:6px 0 4px;font-size:11px}
+#health-dashboard .hd-actions{display:flex;flex-direction:column;gap:6px}
+#health-dashboard .hd-action{padding:6px 8px;background:var(--bg2);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;font-size:10.5px;line-height:1.4}
+#health-dashboard .hd-ts{color:var(--text-mute);font-family:var(--mono);font-size:9.5px}
+#health-dashboard .hd-type{display:inline-block;padding:1px 5px;background:var(--accent);color:#fff;border-radius:2px;font-size:9px;font-weight:700;margin-left:4px}
+#health-dashboard .hd-detail{color:var(--text);margin-top:2px;font-size:10px}
+#health-dashboard .hd-empty{color:var(--text-mute);font-style:italic;padding:8px 0;text-align:center}
 .field{margin-bottom:8px}
 .field label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:3px;font-weight:500}
 .field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:4px;font-family:var(--mono);font-size:11px;outline:none}
@@ -641,6 +655,8 @@ body.no-animations .pcap-pulse{
         <div class="ph-head"><span id="ph-title">プロパティ</span><button class="close" id="ph-close">×</button></div>
         <div class="ph-body" id="ph-body"></div>
       </div>
+      <button id="btn-health-toggle" title="システムヘルス・自動対応ダッシュボード">🩺</button>
+      <div id="health-dashboard" class="hidden"></div>
     </div>
     <div id="log-wrap">
       <div id="log-resize"></div>
