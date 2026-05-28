@@ -2516,6 +2516,15 @@ function addExternalEndpoint(provider, item){
   // Tag AWS-specific kind so the property panel can show service-specific config
   if(item.key && item.key.indexOf("aws-")===0){
     dev.aws_kind = item.key;
+    // Region + VPC association (so the service isn't isolated). Default to the first VPC if any.
+    const firstVpc = (App.config.aws && App.config.aws.vpcs && App.config.aws.vpcs[0]) || null;
+    dev.aws_region = (firstVpc && firstVpc.region) || "ap-northeast-1";
+    const vpcScoped = ["aws-ec2","aws-alb","aws-nlb","aws-natgw","aws-vpce","aws-rds","aws-ecs","aws-eks","aws-fargate","aws-igw","aws-tgw"];
+    dev.aws_vpc = (vpcScoped.includes(item.key) && firstVpc) ? firstVpc.name : "";
+    if(dev.aws_vpc){
+      const members = (App.config.servers||[]).filter(s=>s.aws&&s.aws.vpc===dev.aws_vpc);
+      if(members.length){ dev.x = (members[0].x||100) + 180; dev.y = (members[0].y||100); }
+    }
     // Sensible defaults per AWS service type (honored by engine where applicable)
     if(item.key==="aws-s3")       dev.aws_config = { bucket_name:"my-bucket", region:"ap-northeast-1", public:false, allowed_cidrs:["10.0.0.0/8"], versioning:false, encryption:"SSE-S3" };
     if(item.key==="aws-igw")      dev.aws_config = { attached_vpc:"", route_table_assoc:[] };
@@ -3008,6 +3017,28 @@ var FAULT_LABS = [
       "HA構成では、ノード障害時にPod/VMが自動的に健全なノードへフェイルオーバします。"],
     inject:null, recover:null },
 
+  { cat:"基礎を学ぶ(概念と手順)", id:"learn-k8s-wiring", icon:"🔗", title:"コンテナ/Pod → ノード → スイッチ の構成方法",
+    symptom:"Pod・コンテナのサービス/ポート/ネットワーク/配線をどこで設定するか。",
+    steps:["【考え方】Pod/コンテナは『論理要素』でノード/ホスト上で動作。物理配線は『ノード/ホスト ↔ スイッチ』で行う。",
+      "【1. 物理配線(線)】",
+      " a. L2スイッチを配置する。",
+      " b. ツールバー『接続』モード → WorkerノードのポートとスイッチのポートをクリックでLAN配線。",
+      " c. (コンテナホストも同様にホスト↔スイッチを配線)",
+      "【2. ネットワーク/IP】",
+      " d. Workerノード(サーバ)を選択 → インターフェース表でIP/サブネットを設定。",
+      " e. Podのネットワークは『Pod CIDR』、Serviceは『Service CIDR』(K8s管理/右パネルで設定)。",
+      "【3. Pod のコンテナ・ポート】",
+      " f. ☸K8s管理 → Pod行の『+コンテナ』でimageと公開ポート(例80,443)を設定。",
+      "【4. サービス公開】",
+      " g. 『+Service追加』でClusterIP/NodePort/LoadBalancerを作成し、ポートとselectorを設定。",
+      " h. NodePortならノードの公開ポート、LoadBalancerなら外部IPで到達。",
+      "【5. 確認】通信テストで [クライアント → スイッチ → ノード → Service/Pod] の疎通を確認。"],
+    explain:["Pod/コンテナ自体には物理ケーブルは引きません(ノード/ホスト上で動くため)。",
+      "物理的な線は『ノード/ホスト ↔ スイッチ』。これは接続モードで配線します。",
+      "Podの公開はService(ClusterIP/NodePort/LoadBalancer)で行い、ポートはServiceとコンテナの両方で定義。",
+      "コンテナホストの場合はコンテナのポートマッピング(ホスト:コンテナ)で公開します。"],
+    inject:null, recover:null },
+
   { cat:"機器・ハードウェア障害", id:"server-down", icon:"🖥", title:"サーバ故障(ダウン)",
     symptom:"特定サーバへの通信が全て不可。経路途中ではなく宛先で停止。",
     steps:["1. 対象サーバを選び、プロパティでステータスを『error/stopped』にする(下のボタンでも可)。",
@@ -3016,6 +3047,7 @@ var FAULT_LABS = [
     explain:["原因: サーバ本体のダウン(電源/OS/ハード故障)。",
       "切り分け: 同セグメントの他サーバは到達可→個別障害。GW/SW正常を確認。",
       "対処: サーバを復旧(起動)する。冗長構成ならLB/フェイルオーバで継続。"],
+    fix_steps:["1. ダウンしたサーバを右クリック → ステータスを「running(起動)」に戻す。","2. または右パネルの「ステータス」を running に変更。","3. 通信テストで復旧を確認。"],
     inject:()=>{ const s=_labRealServers()[0]; if(!s){toast("サーバがありません","warn");return;} _labSave("server-down",{id:s.id,st:s.status}); s.status="error"; return s.label||s.id; },
     recover:()=>{ const v=_labGet("server-down"); if(v){ const s=Cfg.byId("servers",v.id); if(s)s.status=v.st||"running"; } } },
 
@@ -3027,6 +3059,7 @@ var FAULT_LABS = [
     explain:["原因: スイッチの電源/筐体故障。",
       "切り分け: 配下の複数機器が同時に到達不可→集約機器(SW)を疑う。",
       "対処: スイッチ復旧。冗長(スタック/vPC/二重化)なら影響を局限化できる。"],
+    fix_steps:["1. ダウンしたスイッチを右クリック → ステータスを「running」に。","2. 配下機器との通信テストで全体復旧を確認。"],
     inject:()=>{ const sw=_labSwitches()[0]; if(!sw){toast("スイッチがありません","warn");return;} _labSave("switch-down",{id:sw.id,st:sw.status}); sw.status="error"; return sw.label||sw.id; },
     recover:()=>{ const v=_labGet("switch-down"); if(v){ const d=Cfg.byId("devices",v.id); if(d)d.status=v.st||"running"; } } },
 
@@ -3038,6 +3071,7 @@ var FAULT_LABS = [
     explain:["原因: ケーブル断/ポート故障/コネクタ不良。",
       "切り分け: 片リンクのみ。冗長があれば自動迂回(STP/ルーティング再計算)。",
       "対処: ケーブル/ポート交換。リンク状態(up/down)とエラーカウンタを確認。"],
+    fix_steps:["1. 切れたリンク(線)をクリックで選択 → 右パネルでステータスを「up」に。","2. または接続を引き直す。迂回路があるか図で確認。"],
     inject:()=>{ const c=(App.config.connections||[])[0]; if(!c){toast("接続がありません","warn");return;} _labSave("link-down",{id:c.id,st:c.status}); c.status="down"; return c.id; },
     recover:()=>{ const v=_labGet("link-down"); if(v){ const c=(App.config.connections||[]).find(x=>x.id===v.id); if(c)c.status=v.st||"up"; } } },
 
@@ -3049,6 +3083,7 @@ var FAULT_LABS = [
     explain:["原因: 光トランシーバ/ファイバの劣化、受光レベル低下、汚れ。リンクはUPのままなので気付きにくい。",
       "切り分け: input errors / CRC カウンタの増加、断続的なパケットロス。show interface で確認。",
       "対処: SFP・光ファイバの交換、清掃。受光レベルを測定する。"],
+    fix_steps:["1. 該当スイッチを選択 → 右パネルのインターフェース表で対象ポートを確認。","2. 「SFP劣化」フラグを解除(=交換相当)。本ツールでは『復旧する』で解除。","3. 通信テストを複数回行い、CRC破棄が無くなったことを確認。"],
     inject:()=>{ const sw=_labSwitches().find(d=>(d.interfaces||[]).some(i=>i.status!=="down")); if(!sw){toast("対象がありません","warn");return;} const ifc=(sw.interfaces||[]).find(i=>i.status!=="down"); if(!ifc)return; _labSave("sfp-degraded",{id:sw.id,ifId:ifc.id}); ifc.sfp_degraded=true; return (sw.label||sw.id)+" / "+ifc.id; },
     recover:()=>{ const v=_labGet("sfp-degraded"); if(v){ const d=Cfg.byId("devices",v.id); const ifc=d&&(d.interfaces||[]).find(i=>i.id===v.ifId); if(ifc)delete ifc.sfp_degraded; } } },
 
@@ -3060,6 +3095,7 @@ var FAULT_LABS = [
     explain:["原因: STP無効の冗長リンクでブロードキャストが無限ループ。",
       "影響: 同一L2ドメイン全体に波及し、間接接続機器も巻き込む。",
       "対処: STP有効化、片リンク削除、BPDU Guardでループポートをerr-disable。"],
+    fix_steps:["1. ループしている2スイッチ間の片方のリンクを選択して削除する。","2. または両スイッチを選択 → 右パネルのSTPを「rstp」など有効に戻す。","3. さらにBPDU Guardを有効化するとループポートを自動遮断。","4. 上部の異常バナーが消え、CPUが下がることを確認。"],
     inject:()=>{ const sw=_labSwitches(); if(sw.length<2){toast("スイッチが2台必要です","warn");return;} const a=sw[0],b=sw[1];
       _labSave("loop-flap",{a:a.id,b:b.id,sa:(a.stp&&a.stp.mode),sb:(b.stp&&b.stp.mode),added:[]});
       a.stp=a.stp||{}; b.stp=b.stp||{}; a.stp.mode="off"; b.stp.mode="off";
@@ -3083,6 +3119,7 @@ var FAULT_LABS = [
       "2. 数秒待ち、duplicate原因のフラッピングを確認。"],
     explain:["原因: 仮想NICのMACコピー/複製ミスで同一MACが同一VLANに二つ。",
       "対処: 一方のMACを一意な値に変更する。仮想環境ではMAC自動生成を有効に。"],
+    fix_steps:["1. 重複MACのサーバ2台のうち片方を選択 → インターフェース表でMACを一意な値に変更。","2. (仮想環境想定なら)MAC自動生成に。","3. フラッピングが収まることを確認。"],
     inject:()=>{ const ss=_labRealServers(); if(ss.length<2){toast("サーバが2台必要","warn");return;}
       const m=(ss[0].interfaces[0]||{}).mac||"00:50:56:aa:bb:cc"; _labSave("mac-dup",{id:ss[1].id,ifId:(ss[1].interfaces[0]||{}).id,old:(ss[1].interfaces[0]||{}).mac});
       if(ss[1].interfaces[0]) ss[1].interfaces[0].mac=m; return (ss[0].label||ss[0].id)+" = "+(ss[1].label||ss[1].id); },
@@ -3094,6 +3131,7 @@ var FAULT_LABS = [
       "2. STP表示ボタンでルート位置を確認し、設計と異なることを観察。"],
     explain:["原因: bridge priority の設定ミス。最小ID(priority→MAC)がルートになる。",
       "対処: コア/分配スイッチに低いpriority、エッジは高めに。意図したルートを明示設定。"],
+    fix_steps:["1. 本来ルートにしたいコア/分配スイッチを選択 → 右パネルのSTPでプライオリティを低く(例4096)。","2. エッジスイッチのプライオリティは高め(初期値32768)に戻す。","3. 「STP表示」ボタンで意図したスイッチが👑ルートか確認。"],
     inject:()=>{ const sw=_labSwitches(); if(!sw.length){toast("スイッチがありません","warn");return;} const edge=sw[sw.length-1]; _labSave("stp-misconfig",{id:edge.id,old:edge.stp_priority}); edge.stp_priority=0; return edge.label||edge.id; },
     recover:()=>{ const v=_labGet("stp-misconfig"); if(v){ const d=Cfg.byId("devices",v.id); if(d){ if(v.old==null)delete d.stp_priority; else d.stp_priority=v.old; } } } },
 
@@ -3103,6 +3141,7 @@ var FAULT_LABS = [
       "2. その重複IP宛てに通信テスト→競合エラーを確認。"],
     explain:["原因: 同一サブネットに同一IPが二つ。ARPで宛先が一意に定まらない。",
       "対処: 一方を未使用IPに変更。DHCP予約の重複も確認。"],
+    fix_steps:["1. ⚠IP重複バッジの付いた機器を選択 → インターフェース表でIPを未使用の値に変更。","2. ステータスバーのIP重複警告が消えることを確認。","3. 通信テストで疎通を確認。"],
     inject:()=>{ const ss=_labRealServers(); if(ss.length<2){toast("サーバが2台必要","warn");return;} const ip=(ss[0].interfaces[0]||{}).ip; if(!ip){toast("基準サーバにIPが必要","warn");return;} _labSave("ip-dup",{id:ss[1].id,ifId:(ss[1].interfaces[0]||{}).id,old:(ss[1].interfaces[0]||{}).ip}); if(ss[1].interfaces[0])ss[1].interfaces[0].ip=ip; return ip; },
     recover:()=>{ const v=_labGet("ip-dup"); if(v){ const s=Cfg.byId("servers",v.id); const ifc=s&&(s.interfaces||[]).find(i=>i.id===v.ifId); if(ifc)ifc.ip=v.old||""; } } },
 
@@ -3112,6 +3151,7 @@ var FAULT_LABS = [
       "2. 通信テスト→ポリシー拒否で失敗、原因と対処が表示。"],
     explain:["原因: ACL/FWポリシーの設定ミス、暗黙のdeny。",
       "対処: 必要な許可ルールを追加。ルールは上から評価、最後はdenyに注意。"],
+    fix_steps:["1. 経路上のFW/スイッチを選択 → 右パネルの🛡ファイアウォールポリシーを開く。","2. 必要な通信を許可するルール(action=allow)を、暗黙のdenyより上に追加。","3. 通信テストで許可されたことを確認。"],
     inject:()=>{ const d=_labFirst("device",x=>x.type==="firewall")||_labSwitches()[0]; if(!d){toast("対象機器がありません","warn");return;} App.config.policies=App.config.policies||[]; const pol={device:d.id,rules:[{id:uid("r"),action:"deny",src:"any",dst:"any",protocol:"any",status:"active",log:true}],_lab:true}; _labSave("fw-block",{device:d.id}); App.config.policies.push(pol); return d.label||d.id; },
     recover:()=>{ const v=_labGet("fw-block"); if(v) App.config.policies=(App.config.policies||[]).filter(p=>!(p._lab&&p.device===v.device)); } },
 
@@ -3121,6 +3161,7 @@ var FAULT_LABS = [
       "2. オンプレのサーバからEC2へ通信テスト→専用線障害で失敗。"],
     explain:["原因: Direct Connect専用線/ルータの障害。",
       "対処: 回線復旧、冗長DXやVPNバックアップへ切替。BGP経路の確認。"],
+    fix_steps:["1. Direct Connectノードを選択 → 右パネルでstatusを「up」に。","2. オンプレのサーバからEC2への通信テストで復旧を確認。"],
     inject:()=>{ App.config.aws=App.config.aws||{vpcs:[]}; App.config.aws.direct_connect=App.config.aws.direct_connect||{}; _labSave("dx-down",{old:App.config.aws.direct_connect.status}); App.config.aws.direct_connect.status="down"; App.config.aws.direct_connect.enabled=true; return "Direct Connect DOWN"; },
     recover:()=>{ if(App.config.aws&&App.config.aws.direct_connect){ App.config.aws.direct_connect.status="up"; } } },
 
@@ -3130,6 +3171,7 @@ var FAULT_LABS = [
       "2. EC2の該当ポートへ通信テスト→SG拒否で失敗。"],
     explain:["原因: SGは許可リスト方式。許可が無い通信は全て拒否。",
       "対処: 必要なポート/送信元をSGインバウンドに追加。"],
+    fix_steps:["1. ☁AWS管理 → 対象VPCのセキュリティグループを開く。","2. 必要なポート/送信元のインバウンド許可ルールを追加。","3. EC2への通信テストで許可されたことを確認。"],
     inject:()=>{ const vpc=(App.config.aws&&App.config.aws.vpcs||[])[0]; if(!vpc||!(vpc.security_groups||[]).length){toast("VPC/SGがありません","warn");return;} _labSave("sg-deny",{vpc:vpc.name,sg:JSON.parse(JSON.stringify(vpc.security_groups))}); for(const g of vpc.security_groups) g.inbound=[]; return vpc.name; },
     recover:()=>{ const v=_labGet("sg-deny"); if(v){ const vpc=(App.config.aws&&App.config.aws.vpcs||[]).find(x=>x.name===v.vpc); if(vpc)vpc.security_groups=v.sg; } } },
 
@@ -3140,6 +3182,7 @@ var FAULT_LABS = [
     explain:["原因: 集約リンクの1本が物理障害。",
       "ポイント: LACP/active-backupなら残リンクで継続。全断で初めて不通。",
       "対処: 障害リンクを復旧して帯域・冗長を回復。"],
+    fix_steps:["1. ダウンしたメンバーリンクのインターフェースを選択 → statusを「up」に戻す。","2. ボンディングが全帯域・冗長を回復したことを確認(縮退表示が消える)。"],
     inject:()=>{ const o=_labFirst("device",x=>x.bonding&&x.bonding.enabled)||_labFirst("server",x=>x.bonding&&x.bonding.enabled); if(!o){toast("ボンディング設定済みの機器がありません","warn");return;} const mem=(o.bonding.members||[])[0]; const ifc=(o.interfaces||[]).find(i=>i.id===mem); if(!ifc){toast("メンバーがありません","warn");return;} _labSave("lacp-member",{kind:o.interfaces?(o.type?"device":"server"):"server",id:o.id,ifId:ifc.id,old:ifc.status}); ifc.status="down"; return (o.label||o.id)+" / "+ifc.id; },
     recover:()=>{ const v=_labGet("lacp-member"); if(v){ const o=Cfg.byId("devices",v.id)||Cfg.byId("servers",v.id); const ifc=o&&(o.interfaces||[]).find(i=>i.id===v.ifId); if(ifc)ifc.status=v.old||"up"; } } }
 ];
@@ -3178,6 +3221,12 @@ function renderLabDetail(lab){
   for(const s of lab.steps) ch("div",{class:"lab-step",text:s},d);
   ch("div",{class:"lab-sec",text:"原因と対処"},d);
   for(const e of lab.explain) ch("div",{class:"lab-line",text:e},d);
+  if(lab.fix_steps && lab.fix_steps.length){
+    ch("div",{class:"lab-sec",text:"🔧 手動での直し方(操作手順)"},d);
+    for(const s of lab.fix_steps) ch("div",{class:"lab-step",text:s},d);
+    ch("div",{style:{fontSize:"10px",color:"var(--text-mute)",margin:"4px 0",lineHeight:"1.5"},
+      text:"※『復旧する』ボタンは自動で直しますが、上の手順を自分で操作して直すのが学習になります。"},d);
+  }
   const btns=ch("div",{class:"lab-btns"},d);
   if(lab.inject){
     ch("button",{class:"lab-inject",text:"⚠ この障害を発生させる",on:{click:()=>{
@@ -3536,6 +3585,7 @@ function attachEventHandlers(){
   bind("#btn-k8s","click", showK8sManager);
   bind("#btn-aws","click", showAwsManager);
   bind("#btn-aws-svc","click", openExternalServiceCatalog);
+  bind("#btn-handson","click", showHandsOnIndex);
   bind("#btn-mac-audit","click", openMacAudit);
   const btnAnim = $("#btn-anim-toggle");
   if(btnAnim){

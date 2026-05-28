@@ -321,6 +321,22 @@ function renderAwsKindProps(body, obj){
   ch("div",{text:`☁ AWS — ${obj.label||obj.id}`,style:{fontSize:"12px",fontWeight:"700",color:"#ff9900",marginBottom:"6px"}},body);
   ch("div",{text:`種別: ${obj.aws_kind} / FQDN: ${obj.fqdn||"-"}`,style:{fontSize:"10px",color:"var(--text-dim)",fontFamily:"var(--mono)",marginBottom:"8px"}},body);
   addField(body,"ラベル","text",obj.label||"",v=>{obj.label=v;renderAndSync();});
+  // Region + VPC association (so the service belongs somewhere, not isolated)
+  const reg = ["ap-northeast-1","ap-northeast-3","us-east-1","us-west-2","eu-west-1","eu-central-1","ap-southeast-1","global"];
+  addSelectField(body,"リージョン", reg, obj.aws_region||"ap-northeast-1", v=>{ obj.aws_region=v; renderAndSync(); });
+  const vpcNames = ["(なし / グローバル)"].concat(((App.config.aws&&App.config.aws.vpcs)||[]).map(v=>v.name));
+  const curVpc = obj.aws_vpc || "(なし / グローバル)";
+  addSelectField(body,"所属VPC", vpcNames, curVpc, v=>{
+    obj.aws_vpc = (v==="(なし / グローバル)") ? "" : v;
+    // when attaching to a VPC, also adopt its region and move inside its area
+    if(obj.aws_vpc){
+      const vpc=(App.config.aws.vpcs||[]).find(x=>x.name===obj.aws_vpc);
+      if(vpc&&vpc.region) obj.aws_region=vpc.region;
+      const members=(App.config.servers||[]).filter(s=>s.aws&&s.aws.vpc===obj.aws_vpc);
+      if(members.length){ obj.x=(members[0].x||100)+180; obj.y=(members[0].y||100); }
+    }
+    renderAndSync(); openPropertyPanel();
+  });
   // Public IP (single interface)
   const pubIf=(obj.interfaces||[])[0];
   if(pubIf) addField(body,"パブリックIP","text",pubIf.ip||"",v=>{pubIf.ip=v;renderAndSync();});
@@ -1366,16 +1382,19 @@ function showHypervisorManager(id){
           pushUndo();
           const id=uid("vm");
           const n = vmServersOf(obj.id).length;
-          // VMs must be created INSIDE the vCenter host's visual area (host's body, not outside).
-          // Anchor to the host's center + small grid offset so they render within the host box.
-          const hostW = obj.width||130, hostH = obj.height||65;
-          const cellW=80, cellH=46;
-          const col=n%2, row=Math.floor(n/2);
+          // VM grid INSIDE the host body. Auto-grow the host so VMs visually sit within its rectangle.
+          const vmW=70, vmH=38, gap=6, headerH=28, padX=10;
+          const cols=3, col=n%cols, row=Math.floor(n/cols);
+          const totalRows = Math.floor(n/cols)+1;
+          const reqW = padX*2 + cols*vmW + (cols-1)*gap;
+          const reqH = headerH + totalRows*(vmH+gap) + 8;
+          if((obj.width||0) < reqW) obj.width = reqW;
+          if((obj.height||0) < reqH) obj.height = reqH;
+          const vx = (obj.x||0) + padX + col*(vmW+gap);
+          const vy = (obj.y||0) + headerH + row*(vmH+gap);
           App.config.servers.push({ id, label:id, host:obj.id, vm:true, type:"virtual", os:"linux",
             status:"running", power:"on", vcpu:2, ram_gb:4, portgroup:(pgOptions[0]||""),
-            x:(obj.x||0) + Math.round(hostW*0.15) + col*cellW,
-            y:(obj.y||0) + hostH + 10 + row*cellH,
-            width:74, height:42,
+            x:vx, y:vy, width:vmW, height:vmH,
             interfaces:[{id:"eth0", ip:_autoFreeIp(), mac:genUniqueMac(), status:"up"}], gateway:"" });
           renderAndSync(); refresh();
           toast("VM追加: "+id+" (ホスト内に配置)","ok");
@@ -1714,6 +1733,88 @@ function showAwsManager(focusVpc){
 }
 
 // Kubernetes cluster manager — nodes, pods, services (ClusterIP/NodePort/LoadBalancer)
+// Ensure a K8s cluster has its own L2 switch fabric and every node is connected to it.
+// Also create etcd peer links between masters (HA visualization).
+function _ensureClusterFabric(cl){
+  if(!cl) return;
+  // 1) ensure cluster switch exists
+  let swId = cl.cluster_switch_id;
+  let sw = swId ? Cfg.byId("devices", swId) : null;
+  if(!sw){
+    swId = uid("k8s-sw");
+    cl.cluster_switch_id = swId;
+    // place near nodes (or default)
+    const ns = (cl.nodes||[]).map(n=>Cfg.byId("servers",n)).filter(Boolean);
+    let sx=400, sy=420;
+    if(ns.length){
+      const xs=ns.map(n=>n.x||0), ys=ns.map(n=>n.y||0);
+      sx = (Math.min(...xs)+Math.max(...xs))/2;
+      sy = Math.max(...ys) + 120;
+    }
+    sw = { id:swId, label:`${cl.name}-sw`, type:"l2switch", status:"running",
+      x:sx, y:sy, width:140, height:54,
+      interfaces:Array.from({length: Math.max(8,(cl.nodes||[]).length+4)},(_,i)=>({id:"g"+i,status:"up"})) };
+    App.config.devices.push(sw);
+  }
+  // 2) ensure each node is connected to the cluster switch
+  let portIdx = 0;
+  for(const nid of (cl.nodes||[])){
+    const exists = (App.config.connections||[]).some(c=>{
+      const a = c.from && (c.from.server===nid||c.from.device===nid);
+      const b = c.to && (c.to.server===nid||c.to.device===nid);
+      const swA = c.from && c.from.device===swId;
+      const swB = c.to && c.to.device===swId;
+      return (a&&swB) || (b&&swA);
+    });
+    if(!exists){
+      // find a free port on the switch
+      while(portIdx < sw.interfaces.length){
+        const port = sw.interfaces[portIdx];
+        const used = (App.config.connections||[]).some(c=>(c.from&&c.from.device===swId&&c.from.interface===port.id)||(c.to&&c.to.device===swId&&c.to.interface===port.id));
+        if(!used) break;
+        portIdx++;
+      }
+      if(portIdx >= sw.interfaces.length){
+        // grow the switch
+        for(let i=0;i<4;i++) sw.interfaces.push({id:"g"+(sw.interfaces.length),status:"up"});
+      }
+      const port = sw.interfaces[portIdx];
+      const node = Cfg.byId("servers", nid);
+      if(node){
+        // ensure the node has eth0
+        node.interfaces = node.interfaces||[];
+        if(!node.interfaces.length) node.interfaces.push({id:"eth0", ip:_autoFreeIp(), mac:genUniqueMac(), status:"up"});
+        App.config.connections.push({ id:uid("link"),
+          from:{server:nid, interface:node.interfaces[0].id},
+          to:{device:swId, interface:port.id}, type:"ethernet", status:"up" });
+      }
+      portIdx++;
+    }
+  }
+  // 3) etcd peer mesh between master nodes (HA control-plane visualization)
+  const masters = (cl.control_plane && cl.control_plane.masters) || [];
+  if(masters.length >= 2){
+    for(let i=0;i<masters.length;i++){
+      for(let j=i+1;j<masters.length;j++){
+        const a = masters[i], b = masters[j];
+        const exists=(App.config.connections||[]).some(c=>{
+          const fa=c.from&&(c.from.server===a||c.from.device===a);
+          const ta=c.to&&(c.to.server===b||c.to.device===b);
+          const fb=c.from&&(c.from.server===b||c.from.device===b);
+          const tb=c.to&&(c.to.server===a||c.to.device===a);
+          return (fa&&ta)||(fb&&tb);
+        });
+        if(!exists){
+          App.config.connections.push({ id:uid("etcd"),
+            from:{server:a, interface:"eth0"},
+            to:{server:b, interface:"eth0"},
+            type:"etcd-peer", status:"up", label:"etcd peer" });
+        }
+      }
+    }
+  }
+}
+
 function showK8sManager(focusCluster){
   App.config.k8s = App.config.k8s || { clusters:[] };
   openDialog("☸ Kubernetes クラスタ管理", (body)=>{
@@ -1769,6 +1870,7 @@ function showK8sManager(focusCluster){
           if(isMaster) cl.control_plane.masters = cl.control_plane.masters.filter(x=>x!==nid);
           else cl.control_plane.masters.push(nid);
           cl.roles = cl.roles||{}; cl.roles[nid] = isMaster?"worker":"master";
+          _ensureClusterFabric(cl);
           renderAndSync(); refresh();
         });
         ch("span",{text:s?(s.status==="running"?"running":s.status):"未存在",style:{fontSize:"9px",color:s&&s.status==="running"?"var(--green)":"var(--red)"}},nr);
@@ -1782,15 +1884,15 @@ function showK8sManager(focusCluster){
       ch("option",{value:"",text:"既存サーバを選択..."},exSel);
       for(const s of (App.config.servers||[])){ if(!(cl.nodes||[]).includes(s.id) && !s.vm) ch("option",{value:s.id,text:(s.label||s.id)+(s.type?" ("+s.type+")":"")},exSel); }
       ch("button",{text:"➕ このサーバをノード追加",style:{padding:"4px 8px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
-        on:{click:()=>{ if(!exSel.value){ toast("追加するサーバを選択してください","warn"); return; } cl.nodes=cl.nodes||[]; if(!cl.nodes.includes(exSel.value)) cl.nodes.push(exSel.value); renderAndSync(); refresh(); }}},naBtn);
+        on:{click:()=>{ if(!exSel.value){ toast("追加するサーバを選択してください","warn"); return; } cl.nodes=cl.nodes||[]; if(!cl.nodes.includes(exSel.value)) cl.nodes.push(exSel.value); _ensureClusterFabric(cl); renderAndSync(); refresh(); }}},naBtn);
       ch("button",{text:"🆕 新規Workerを作成して追加",style:{padding:"4px 8px",fontSize:"10px",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
         on:{click:()=>{
           const nid = uid("worker");
           App.config.servers.push({ id:nid, label:nid, type:"server", os:"linux", status:"running",
             x:200+Math.random()*200, y:300+Math.random()*100, width:120, height:60,
             interfaces:[{ id:"eth0", ip:_autoFreeIp(), mac:genUniqueMac(), status:"up" }] });
-          cl.nodes=cl.nodes||[]; cl.nodes.push(nid); renderAndSync(); refresh();
-          toast("Workerノード追加: "+nid,"ok");
+          cl.nodes=cl.nodes||[]; cl.nodes.push(nid); _ensureClusterFabric(cl); renderAndSync(); refresh();
+          toast("Workerノード追加: "+nid+" (クラスタスイッチに自動接続)","ok");
         }}},naBtn);
 
       const ps=ch("div",{class:"sub-section"},body);
@@ -1819,6 +1921,21 @@ function showK8sManager(focusCluster){
           }}},row);
         ch("button",{text:"✕",style:{padding:"1px 5px",cursor:"pointer",fontSize:"9px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
           on:{click:()=>{ cl.pods.splice(i,1); renderAndSync(); refresh(); }}},row);
+        // Pod containers (image + container ports) — the pod's "service/port"
+        const cbox=ch("div",{style:{margin:"2px 0 6px 18px",padding:"4px 6px",borderLeft:"2px solid var(--cyan)",background:"var(--bg)"}},ps);
+        pod.containers = pod.containers || [];
+        ch("div",{text:"コンテナ / ポート:",style:{fontSize:"9px",color:"var(--text-dim)",fontWeight:"700"}},cbox);
+        pod.containers.forEach((c,ci)=>{
+          const cr=ch("div",{style:{display:"flex",gap:"3px",alignItems:"center",marginBottom:"2px"}},cbox);
+          const imI=ch("input",{type:"text",value:c.image||"",placeholder:"nginx:latest",style:Object.assign({width:"110px"},fStyle)},cr);
+          imI.addEventListener("change",()=>{c.image=imI.value;renderAndSync();});
+          const ptI=ch("input",{type:"text",value:(c.ports||[]).join(","),placeholder:"80,443",style:Object.assign({width:"70px"},fStyle)},cr);
+          ptI.addEventListener("change",()=>{c.ports=ptI.value.split(",").map(x=>+x.trim()).filter(Boolean);renderAndSync();});
+          ch("button",{text:"✕",style:{padding:"0 5px",fontSize:"9px",cursor:"pointer",background:"var(--bg2)",border:"1px solid var(--red)",color:"var(--red)"},
+            on:{click:()=>{pod.containers.splice(ci,1);renderAndSync();refresh();}}},cr);
+        });
+        ch("button",{text:"+ コンテナ",style:{padding:"1px 6px",fontSize:"9px",cursor:"pointer",background:"var(--bg2)",border:"1px solid var(--cyan)",color:"var(--cyan)",borderRadius:"3px"},
+          on:{click:()=>{ pod.containers.push({name:"app",image:"nginx:latest",ports:[80]}); renderAndSync(); refresh(); }}},cbox);
       });
       ch("button",{text:"+ Pod追加",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
         on:{click:()=>{ if(!(cl.nodes||[]).length){ toast("先にノードを追加してください(Podはノード上で動作します)","err"); return; } const n=(cl.pods=cl.pods||[]).length+1; cl.pods.push({name:"pod-"+n,namespace:"default",node:(cl.nodes||[])[0]||"",ip:"10.244.0."+(n+1),labels:{app:"web"},status:"Running",containers:[]}); renderAndSync(); refresh(); }}},ps);
@@ -5033,18 +5150,26 @@ function buildVcenterHA(opts){
   stats.devices++;
   for(let h=0;h<hosts;h++){
     const hid = `${prefix}-esxi${h+1}`;
+    // size host to fit vms inside
+    const vmW=70, vmH=38, gap=6, headerH=28, padX=10, cols=3;
+    const totalRows = Math.ceil(vms_each/cols);
+    const hostW = Math.max(200, padX*2 + cols*vmW + (cols-1)*gap);
+    const hostH = Math.max(100, headerH + totalRows*(vmH+gap) + 8);
+    const hx = base_x-100+h*(hostW+40), hy = base_y+150;
     App.config.servers.push({ id:hid, label:hid, type:"hypervisor", os:"VMware ESXi", status:"running",
-      x:base_x-100+h*260, y:base_y+150, width:160, height:80, cpu:32, memory:131072,
+      x:hx, y:hy, width:hostW, height:hostH, cpu:32, memory:131072,
       interfaces:[{id:"vmnic0",ip:`10.0.${100+h}.10/24`,mac:genUniqueMac(),status:"up"}],
       hypervisor:{ type:"esxi", vms:[], vswitches:[{name:"vSwitch0",portgroups:["VM Network","Management"]}], datastores:[{name:"shared-ds",capacity_gb:2000,backing:""}] } });
     App.config.connections.push({id:uid("link"),from:{server:hid,interface:"vmnic0"},to:{device:swId,interface:"g"+h},type:"ethernet",status:"up"});
     stats.servers++; stats.links++;
     for(let v=0; v<vms_each; v++){
       const vid = `${hid}-vm${v+1}`;
+      const col=v%cols, row=Math.floor(v/cols);
       App.config.servers.push({ id:vid, label:vid, host:hid, vm:true, type:"virtual", os:"linux",
         status:"running", power:"on", vcpu:2, ram_gb:4, portgroup:"VM Network",
-        x:base_x-100+h*260 + 8 + (v%2)*80, y:base_y+150 + 80 + 10 + Math.floor(v/2)*46,
-        width:74, height:42,
+        x: hx + padX + col*(vmW+gap),
+        y: hy + headerH + row*(vmH+gap),
+        width:vmW, height:vmH,
         interfaces:[{id:"eth0", ip:_autoFreeIp(), mac:genUniqueMac(), status:"up"}] });
       stats.servers++;
     }
@@ -5437,3 +5562,309 @@ function showShortcutHelp(){
   });
 }
 
+
+// ============================================================================
+// AWS ハンズオンラボ — Qiita「0から始めるAWS入門」5記事を対話型シミュレーションに移植
+// 各ラボは複数のステップを持ち、各ステップは:
+//   instructions: 実機での操作手順(参考)
+//   sim_steps: シミュレータでの操作手順
+//   verify(): 完了判定(true/false)
+//   autoBuild(): 自動構築(学習補助)
+//   hint: ヒント
+// ============================================================================
+
+var _HANDSON_VPC_NAME = "test-vpc";
+var _HANDSON_EC2_ID   = "test-web-a";
+var _HANDSON_ELB_ID   = "test-web-elb";
+var _HANDSON_RDS_ID   = "test-rds-mysql";
+var _HANDSON_RDS_RR   = "test-rds-mysql-rr";
+
+function _findVpc(name){ return ((App.config.aws&&App.config.aws.vpcs)||[]).find(v=>v.name===name); }
+function _vpcHasSubnet(vpc, cidr){ return vpc && (vpc.subnets||[]).some(s=>s.cidr===cidr); }
+function _vpcHasSubnetAZ(vpc, az){ return vpc && (vpc.subnets||[]).some(s=>(s.az||"")===az); }
+function _findDeviceByKind(kind){ return ((App.config.devices)||[]).find(d=>d.aws_kind===kind); }
+function _findDevicesByKind(kind){ return ((App.config.devices)||[]).filter(d=>d.aws_kind===kind); }
+
+var HANDS_ON_LABS = [
+{
+  id:"aws-handson-1-vpc",
+  number:1,
+  title:"0から始めるAWS入門① VPC編",
+  overview:"AWS環境の囲い(VPC)を作成し、サブネット2つ(AZ-a/AZ-c)・Internet Gateway・ルートテーブルを設定する。Qiita @hiroshik1985 氏の記事に準拠。",
+  next:"aws-handson-2-ec2",
+  steps:[
+    { id:"vpc-create", title:"VPCを作成 (10.0.0.0/16)",
+      instructions:["AWSコンソール → [VPC] → [Create VPC]","Name: test-vpc / CIDR: 10.0.0.0/16 / Tenancy: Default"],
+      sim_steps:["ツールバー『☁ AWS』ボタン → 『+ VPC』","Name: test-vpc, CIDR: 10.0.0.0/16, Region: ap-northeast-1"],
+      hint:"VPCは『AWS上に論理的に分離されたプライベートネットワーク』を作る箱です。",
+      verify:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); return !!(v && v.cidr==="10.0.0.0/16"); },
+      autoBuild:()=>{ App.config.aws=App.config.aws||{vpcs:[]}; if(!_findVpc(_HANDSON_VPC_NAME)){ App.config.aws.vpcs.push({id:"vpc-"+uid("v"),name:_HANDSON_VPC_NAME,cidr:"10.0.0.0/16",region:"ap-northeast-1",tenancy:"default",subnets:[],security_groups:[],route_tables:[{name:"main",routes:[{dest:"10.0.0.0/16",target:"local"}]}],igw:false}); } } },
+    { id:"vpc-subnet-a", title:"サブネット作成: AZ-a (10.0.0.0/24)",
+      instructions:["[Subnets] → [Create Subnet]","VPC: test-vpc / AZ: ap-northeast-1a / CIDR: 10.0.0.0/24"],
+      sim_steps:["VPC枠をクリック → 右パネルで『+サブネット』","Name: test-subnet-a, CIDR: 10.0.0.0/24, AZ: ap-northeast-1a"],
+      hint:"AZ (Availability Zone) はデータセンター単位。冗長化のためAZを分けます。",
+      verify:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); return _vpcHasSubnet(v,"10.0.0.0/24") && _vpcHasSubnetAZ(v,"ap-northeast-1a"); },
+      autoBuild:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); if(v && !_vpcHasSubnet(v,"10.0.0.0/24")){ v.subnets=v.subnets||[]; v.subnets.push({name:"test-subnet-a",cidr:"10.0.0.0/24",az:"ap-northeast-1a",public:true}); } } },
+    { id:"vpc-subnet-c", title:"サブネット追加: AZ-c (10.0.1.0/24)",
+      instructions:["[Subnets] → [Create Subnet]","VPC: test-vpc / AZ: ap-northeast-1c / CIDR: 10.0.1.0/24"],
+      sim_steps:["VPC枠→右パネル『+サブネット』をもう一度","Name: test-subnet-c, CIDR: 10.0.1.0/24, AZ: ap-northeast-1c"],
+      hint:"2つのAZにまたがってサブネットを置くと、ELBやRDSのMulti-AZが使えます。",
+      verify:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); return _vpcHasSubnet(v,"10.0.1.0/24") && _vpcHasSubnetAZ(v,"ap-northeast-1c"); },
+      autoBuild:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); if(v && !_vpcHasSubnet(v,"10.0.1.0/24")){ v.subnets=v.subnets||[]; v.subnets.push({name:"test-subnet-c",cidr:"10.0.1.0/24",az:"ap-northeast-1c",public:true}); } } },
+    { id:"vpc-igw", title:"Internet Gateway を作成・VPCにアタッチ",
+      instructions:["[Internet Gateways] → [Create] → [Attach to VPC] で test-vpc を選択"],
+      sim_steps:["ツールバー『🧩 AWSサービス』→ Internet Gateway を配置","配置されたIGWをクリック→右パネルで『アタッチVPC』に test-vpc を指定"],
+      hint:"IGWが無いと、VPC内からインターネットへ出られません。",
+      verify:()=>{ const igw=_findDeviceByKind("aws-igw"); const v=_findVpc(_HANDSON_VPC_NAME); return !!(v && v.igw) || !!(igw && igw.aws_config && igw.aws_config.attached_vpc===_HANDSON_VPC_NAME); },
+      autoBuild:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); if(v){ v.igw=true; }
+        if(!_findDeviceByKind("aws-igw")){ App.config.devices.push({id:uid("igw"),label:"test-igw",type:"cloud",status:"running",external:true,aws_kind:"aws-igw",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:60,y:60,interfaces:[{id:"public0",ip:"0.0.0.0/32",status:"up"}],external_ports:[{port:80,proto:"tcp"},{port:443,proto:"tcp"}],aws_config:{attached_vpc:_HANDSON_VPC_NAME,route_table_assoc:["main"]}}); } } },
+    { id:"vpc-route", title:"ルートテーブルに 0.0.0.0/0 → IGW を追加",
+      instructions:["[Route Tables] → 該当VPC のメインRTを選択 → [Routes] → [Edit] → 0.0.0.0/0 → IGW"],
+      sim_steps:["VPC枠をクリック → 右パネル『+ルート』 → 宛先 0.0.0.0/0 / ターゲット IGW (test-igw)"],
+      hint:"このルートが無いと、サブネット内のEC2からインターネットに出られません。",
+      verify:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); if(!v||!v.route_tables) return false; const rt=v.route_tables[0]; return !!(rt && (rt.routes||[]).some(r=>r.dest==="0.0.0.0/0" && /igw/i.test(r.target||""))); },
+      autoBuild:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); if(v){ v.route_tables=v.route_tables||[{name:"main",routes:[{dest:"10.0.0.0/16",target:"local"}]}]; const rt=v.route_tables[0]; if(!(rt.routes||[]).some(r=>r.dest==="0.0.0.0/0")) rt.routes.push({dest:"0.0.0.0/0",target:"igw (test-igw)"}); } } }
+  ]
+},
+{
+  id:"aws-handson-2-ec2",
+  number:2,
+  title:"0から始めるAWS入門② EC2編",
+  overview:"VPC内にEC2(t2.micro/Amazon Linux)を起動。ストレージ・タグ・セキュリティグループ・キーペアを設定し、nginxをインストール。",
+  next:"aws-handson-3-elb",
+  steps:[
+    { id:"ec2-launch", title:"EC2インスタンス起動 (Amazon Linux, t2.micro)",
+      instructions:["[EC2] → [Launch Instance] → Amazon Linux 2 → t2.micro","VPC: test-vpc / Subnet: AZ-a / Auto-assign Public IP: enable"],
+      sim_steps:["VPCを選択した状態でツールバー『サーバ追加』→物理サーバ","OS: amazon-linux, Type: t2.micro, サブネット: test-subnet-a (10.0.0.0/24)"],
+      hint:"EC2は仮想サーバです。t2.micro は無料枠で利用可能。",
+      verify:()=>{ const s=Cfg.byId("servers",_HANDSON_EC2_ID); return !!(s && s.aws && s.aws.vpc===_HANDSON_VPC_NAME); },
+      autoBuild:()=>{ if(!Cfg.byId("servers",_HANDSON_EC2_ID)){ App.config.servers.push({id:_HANDSON_EC2_ID,label:"test-web-a",type:"server",os:"amazon-linux",instance_type:"t2.micro",status:"running",x:520,y:280,width:130,height:65,interfaces:[{id:"eth0",ip:"10.0.0.10/24",mac:genUniqueMac(),status:"up"}],aws:{vpc:_HANDSON_VPC_NAME,subnet:"test-subnet-a",security_groups:[],public_ip:"54.0.0.10"}}); } } },
+    { id:"ec2-storage", title:"ストレージ: 10GB / General Purpose SSD",
+      instructions:["[Add Storage] で Size:10, Volume Type:General Purpose (SSD)"],
+      sim_steps:["EC2を選択 → 右パネル『ストレージ』に 10GB / gp2 を入力"],
+      hint:"汎用SSD(gp2/gp3)はほとんどの用途で十分です。",
+      verify:()=>{ const s=Cfg.byId("servers",_HANDSON_EC2_ID); return !!(s && s.storage && s.storage.size_gb===10 && /SSD|gp2|gp3/i.test(s.storage.type||"")); },
+      autoBuild:()=>{ const s=Cfg.byId("servers",_HANDSON_EC2_ID); if(s) s.storage={size_gb:10,type:"gp2 (General Purpose SSD)"}; } },
+    { id:"ec2-tag", title:"Name タグを設定: test-web-a",
+      instructions:["[Add Tags] で Name=test-web-a"],
+      sim_steps:["EC2を選択 → 右パネル『ラベル』を test-web-a に"],
+      hint:"複数インスタンスを管理する際、タグ命名規則が重要です。",
+      verify:()=>{ const s=Cfg.byId("servers",_HANDSON_EC2_ID); return !!(s && /test-web/.test(s.label||"")); },
+      autoBuild:()=>{ const s=Cfg.byId("servers",_HANDSON_EC2_ID); if(s) s.label="test-web-a"; } },
+    { id:"ec2-sg", title:"セキュリティグループ作成: SSH(22) MyIP, HTTP(80) 10.0.0.0/16",
+      instructions:["[Security Group] → [Create] test-web-sg","Inbound: SSH 22 (MyIP), HTTP 80 (10.0.0.0/16)"],
+      sim_steps:["VPC枠 → 右パネル『+ セキュリティグループ』","Name: test-web-sg, Inbound: tcp/22 MyIP, tcp/80 10.0.0.0/16"],
+      hint:"HTTPはELB経由のためVPC内CIDRのみ。SSHは自分のIPのみが安全。",
+      verify:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); const sg=v && (v.security_groups||[]).find(g=>g.name==="test-web-sg"); if(!sg) return false; const inb=sg.inbound||[]; return inb.some(r=>r.port===22) && inb.some(r=>r.port===80 && /10\.0\.0\.0\/16/.test(r.source||"")); },
+      autoBuild:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); if(v){ v.security_groups=v.security_groups||[]; if(!v.security_groups.find(g=>g.name==="test-web-sg")) v.security_groups.push({name:"test-web-sg",inbound:[{proto:"tcp",port:22,source:"0.0.0.0/0"},{proto:"tcp",port:80,source:"10.0.0.0/16"}],outbound:[{proto:"all",port:0,dest:"0.0.0.0/0"}]}); const s=Cfg.byId("servers",_HANDSON_EC2_ID); if(s){ s.aws=s.aws||{}; s.aws.security_groups=["test-web-sg"]; } } } },
+    { id:"ec2-keypair", title:"キーペアを作成 (pem ダウンロード)",
+      instructions:["[Launch] 時に Create a new key pair → test-key.pem ダウンロード"],
+      sim_steps:["EC2を選択 → 右パネル『キーペア』を test-key に設定 (本シミュレータでは記録のみ)"],
+      hint:"pemは厳重保管。失くすとSSH不可。",
+      verify:()=>{ const s=Cfg.byId("servers",_HANDSON_EC2_ID); return !!(s && s.key_pair); },
+      autoBuild:()=>{ const s=Cfg.byId("servers",_HANDSON_EC2_ID); if(s) s.key_pair="test-key"; } },
+    { id:"ec2-nginx", title:"nginxインストール・起動 (listen 80)",
+      instructions:["SSH接続後: sudo yum install -y nginx && sudo systemctl start nginx"],
+      sim_steps:["EC2を選択 → 右パネル『listen_ports』に 80/tcp を追加"],
+      hint:"ELBのヘルスチェック対象になります。80番が listenしていることが重要。",
+      verify:()=>{ const s=Cfg.byId("servers",_HANDSON_EC2_ID); return !!(s && (s.listen_ports||[]).some(p=>p.port===80)); },
+      autoBuild:()=>{ const s=Cfg.byId("servers",_HANDSON_EC2_ID); if(s){ s.listen_ports=s.listen_ports||[]; if(!s.listen_ports.some(p=>p.port===80)) s.listen_ports.push({port:80,proto:"tcp",service:"nginx"}); } } }
+  ]
+},
+{
+  id:"aws-handson-3-elb",
+  number:3,
+  title:"0から始めるAWS入門③ ELB編",
+  overview:"インターネットからの玄関となるELB(ALB)を作成し、EC2にリクエストを振り分ける。リスナ・ヘルスチェック・SG・ターゲット紐付け。",
+  next:"aws-handson-4-rds",
+  steps:[
+    { id:"elb-create", title:"ELB(ALB)を作成: test-web-elb",
+      instructions:["[Load Balancers] → [Create] → Application LB","Name: test-web-elb, VPC: test-vpc"],
+      sim_steps:["ツールバー『🧩 AWSサービス』→ ALB を配置","Label: test-web-elb (右パネルで設定)、所属VPC: test-vpc"],
+      hint:"ALB(L7)/NLB(L4) が一般的。今回は HTTP なので ALB。",
+      verify:()=>{ const a=_findDevicesByKind("aws-alb").find(d=>/test-web-elb/.test(d.label||d.id)); return !!a; },
+      autoBuild:()=>{ if(!_findDevicesByKind("aws-alb").find(d=>/test-web-elb/.test(d.label||d.id))){ App.config.devices.push({id:_HANDSON_ELB_ID,label:"test-web-elb",type:"cloud",status:"running",external:true,aws_kind:"aws-alb",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:380,y:160,interfaces:[{id:"public0",ip:"52.20.0.10/32",status:"up"}],external_ports:[{port:80,proto:"tcp"},{port:443,proto:"tcp"}],aws_config:{scheme:"internet-facing",listeners:[],target_group:{name:"tg-web",port:80,health_check:"/",targets:[]},subnets:[],security_groups:[]}}); } } },
+    { id:"elb-listener", title:"リスナを HTTP:80 → HTTP:80 で設定",
+      instructions:["[Listeners] → Add: Protocol HTTP, Port 80 → Target HTTP, Port 80"],
+      sim_steps:["ALBを選択 → 右パネル『リスナ』+追加 → Port:80, Proto:HTTP, TG:tg-web"],
+      hint:"HTTPSにする場合は別途SSL証明書(ACM)をアタッチします。",
+      verify:()=>{ const a=Cfg.byId("devices",_HANDSON_ELB_ID); return !!(a && a.aws_config && (a.aws_config.listeners||[]).some(l=>l.port===80 && /HTTP/i.test(l.proto||""))); },
+      autoBuild:()=>{ const a=Cfg.byId("devices",_HANDSON_ELB_ID); if(a){ a.aws_config.listeners=a.aws_config.listeners||[]; if(!a.aws_config.listeners.some(l=>l.port===80)) a.aws_config.listeners.push({port:80,proto:"HTTP",target_group:"tg-web"}); } } },
+    { id:"elb-health", title:"ヘルスチェック設定: HTTP / 5s / 10s / 2 / 5",
+      instructions:["Ping Protocol: HTTP / Port: 80 / Path: / / Timeout: 5 / Interval: 10 / Unhealthy: 2 / Healthy: 5"],
+      sim_steps:["ALB → 右パネル『ヘルスチェック』に上記値を入力"],
+      hint:"異常2回連続でターゲットから切り離し、正常5回連続で復帰。",
+      verify:()=>{ const a=Cfg.byId("devices",_HANDSON_ELB_ID); const hc=a && a.aws_config && a.aws_config.health_check; return !!(hc && hc.protocol==="HTTP" && hc.path==="/" && hc.interval===10 && hc.unhealthy===2 && hc.healthy===5); },
+      autoBuild:()=>{ const a=Cfg.byId("devices",_HANDSON_ELB_ID); if(a) a.aws_config.health_check={protocol:"HTTP",port:80,path:"/",timeout:5,interval:10,unhealthy:2,healthy:5}; } },
+    { id:"elb-subnet", title:"サブネットを両AZに割当",
+      instructions:["[Subnets] → AZ-a と AZ-c の両方を Add"],
+      sim_steps:["ALB → 右パネル『所属サブネット』に test-subnet-a と test-subnet-c を追加"],
+      hint:"ELBは複数AZにまたがって配置し可用性を確保。",
+      verify:()=>{ const a=Cfg.byId("devices",_HANDSON_ELB_ID); const sn=a && a.aws_config && a.aws_config.subnets; return !!(sn && sn.includes("test-subnet-a") && sn.includes("test-subnet-c")); },
+      autoBuild:()=>{ const a=Cfg.byId("devices",_HANDSON_ELB_ID); if(a) a.aws_config.subnets=["test-subnet-a","test-subnet-c"]; } },
+    { id:"elb-sg", title:"ELB用セキュリティグループ: HTTP 0.0.0.0/0",
+      instructions:["test-web-elb-sg を新規作成: Inbound HTTP 80 from 0.0.0.0/0"],
+      sim_steps:["VPC → 右パネル『+ セキュリティグループ』 Name:test-web-elb-sg, Inbound:tcp/80 0.0.0.0/0"],
+      hint:"ELBは外部公開なので 0.0.0.0/0。EC2は ELB 経由のみ許可。",
+      verify:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); const sg=v && (v.security_groups||[]).find(g=>g.name==="test-web-elb-sg"); return !!(sg && (sg.inbound||[]).some(r=>r.port===80 && (r.source==="0.0.0.0/0"||/Anywhere/i.test(r.source||"")))); },
+      autoBuild:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); if(v){ v.security_groups=v.security_groups||[]; if(!v.security_groups.find(g=>g.name==="test-web-elb-sg")) v.security_groups.push({name:"test-web-elb-sg",inbound:[{proto:"tcp",port:80,source:"0.0.0.0/0"}],outbound:[{proto:"all",port:0,dest:"0.0.0.0/0"}]}); const a=Cfg.byId("devices",_HANDSON_ELB_ID); if(a) a.aws_config.security_groups=["test-web-elb-sg"]; } } },
+    { id:"elb-target", title:"ターゲットEC2を登録: test-web-a",
+      instructions:["[Targets] → test-web-a を Register"],
+      sim_steps:["ALB → 右パネル『ターゲットグループ』のターゲットに test-web-a を追加"],
+      hint:"InService になるまで数十秒。OutOfService の場合はSGとヘルスチェックパスを確認。",
+      verify:()=>{ const a=Cfg.byId("devices",_HANDSON_ELB_ID); const tg=a && a.aws_config && a.aws_config.target_group; return !!(tg && (tg.targets||[]).includes(_HANDSON_EC2_ID)); },
+      autoBuild:()=>{ const a=Cfg.byId("devices",_HANDSON_ELB_ID); if(a){ a.aws_config.target_group=a.aws_config.target_group||{name:"tg-web",port:80,health_check:"/"}; a.aws_config.target_group.targets=[_HANDSON_EC2_ID]; }
+        // 物理的にALB→EC2を接続(配線の見える化)
+        const exists=(App.config.connections||[]).some(c=>(c.from&&(c.from.device===_HANDSON_ELB_ID||c.from.server===_HANDSON_ELB_ID))&&(c.to&&(c.to.server===_HANDSON_EC2_ID||c.to.device===_HANDSON_EC2_ID)));
+        if(!exists) App.config.connections.push({id:uid("link"),from:{device:_HANDSON_ELB_ID,interface:"public0"},to:{server:_HANDSON_EC2_ID,interface:"eth0"},type:"ethernet",status:"up"}); } }
+  ]
+},
+{
+  id:"aws-handson-4-rds",
+  number:4,
+  title:"0から始めるAWS入門④ RDS編",
+  overview:"AWSのDB(RDS, MySQL)を作成。DB Subnet Group, Parameter Group, SG を準備しMulti-AZ なしの最小構成 → Read Replica 追加。",
+  next:"aws-handson-5-final",
+  steps:[
+    { id:"rds-subnet-group", title:"DB Subnet Group を登録 (両AZのサブネット)",
+      instructions:["[RDS] → [Subnet Groups] → [Create] test-db-sng / VPC: test-vpc / Subnets: AZ-a + AZ-c"],
+      sim_steps:["VPCを選択 → 右パネル『+ DB Subnet Group』 → test-db-sng, サブネット: test-subnet-a, test-subnet-c"],
+      hint:"RDSはマルチAZ要件のため、最低2つのAZにまたがるサブネットが必要。",
+      verify:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); const sng=v && (v.db_subnet_groups||[]).find(g=>g.name==="test-db-sng"); return !!(sng && (sng.subnets||[]).length>=2); },
+      autoBuild:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); if(v){ v.db_subnet_groups=v.db_subnet_groups||[]; if(!v.db_subnet_groups.find(g=>g.name==="test-db-sng")) v.db_subnet_groups.push({name:"test-db-sng",subnets:["test-subnet-a","test-subnet-c"]}); } } },
+    { id:"rds-param-group", title:"パラメータグループ作成 (utf8設定)",
+      instructions:["[Parameter Groups] → [Create] mysql8.0 family / Name: japanese","Edit Parameters: character_set_* を utf8 に"],
+      sim_steps:["VPCを選択 → 右パネル『+ DB Parameter Group』 Name:japanese, Family:mysql8.0, character_set:utf8"],
+      hint:"日本語を扱うMySQLでは文字コード設定が必須。",
+      verify:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); const pg=v && (v.db_parameter_groups||[]).find(g=>g.name==="japanese"); return !!(pg && /utf8/i.test(pg.character_set||"")); },
+      autoBuild:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); if(v){ v.db_parameter_groups=v.db_parameter_groups||[]; if(!v.db_parameter_groups.find(g=>g.name==="japanese")) v.db_parameter_groups.push({name:"japanese",family:"mysql8.0",character_set:"utf8"}); } } },
+    { id:"rds-sg", title:"DB用セキュリティグループ: MySQL 3306 from 10.0.0.0/16",
+      instructions:["test-rds-sg を作成 → Inbound: TCP 3306 from 10.0.0.0/16"],
+      sim_steps:["VPC → 右パネル『+ セキュリティグループ』 Name:test-rds-sg, Inbound:tcp/3306 10.0.0.0/16"],
+      hint:"DBはVPC内からのみアクセスを許可。インターネット直接は厳禁。",
+      verify:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); const sg=v && (v.security_groups||[]).find(g=>g.name==="test-rds-sg"); return !!(sg && (sg.inbound||[]).some(r=>r.port===3306 && /10\.0\.0\.0\/16/.test(r.source||""))); },
+      autoBuild:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); if(v){ v.security_groups=v.security_groups||[]; if(!v.security_groups.find(g=>g.name==="test-rds-sg")) v.security_groups.push({name:"test-rds-sg",inbound:[{proto:"tcp",port:3306,source:"10.0.0.0/16"}],outbound:[{proto:"all",port:0,dest:"0.0.0.0/0"}]}); } } },
+    { id:"rds-create", title:"RDS本体作成 (MySQL, db.t1.micro)",
+      instructions:["[RDS] → [Create] MySQL / db.t1.micro / 20GB / Multi-AZ: No","DB Subnet Group: test-db-sng / SG: test-rds-sg / Parameter: japanese"],
+      sim_steps:["ツールバー『🧩 AWSサービス』→ RDS を配置","右パネル: engine=mysql, instance_class=db.t1.micro, 所属VPC=test-vpc, port=3306"],
+      hint:"プロダクションでは Multi-AZ を Yes に。フェイルオーバが自動。",
+      verify:()=>{ const r=_findDevicesByKind("aws-rds").find(d=>d.id===_HANDSON_RDS_ID); return !!(r && r.aws_config && r.aws_config.engine==="mysql"); },
+      autoBuild:()=>{ if(!_findDevicesByKind("aws-rds").find(d=>d.id===_HANDSON_RDS_ID)){ App.config.devices.push({id:_HANDSON_RDS_ID,label:"test-rds-mysql",type:"cloud",status:"running",external:true,aws_kind:"aws-rds",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:680,y:420,interfaces:[{id:"public0",ip:"10.0.0.200/32",status:"up"}],external_ports:[{port:3306,proto:"tcp"}],aws_config:{engine:"mysql",engine_version:"8.0.35",instance_class:"db.t1.micro",multi_az:false,port:3306,allocated_gb:20,db_subnet_group:"test-db-sng",parameter_group:"japanese",security_groups:["test-rds-sg"],master_username:"admin",database_name:"appdb",backup_retention_days:1,az:"ap-northeast-1a"}}); } } },
+    { id:"rds-read-replica", title:"Read Replica を AZ-c に作成",
+      instructions:["RDS インスタンス右クリック → [Create Read Replica] → AZ: ap-northeast-1c"],
+      sim_steps:["RDSを選択 → 右パネル『+ Read Replica』 → AZ: ap-northeast-1c"],
+      hint:"参照クエリをレプリカに逃がすことで、マスター負荷を軽減。",
+      verify:()=>{ const rr=_findDevicesByKind("aws-rds").find(d=>d.aws_config && d.aws_config.source_db===_HANDSON_RDS_ID); return !!rr; },
+      autoBuild:()=>{ if(!_findDevicesByKind("aws-rds").find(d=>d.aws_config && d.aws_config.source_db===_HANDSON_RDS_ID)){ App.config.devices.push({id:_HANDSON_RDS_RR,label:"test-rds-mysql-rr",type:"cloud",status:"running",external:true,aws_kind:"aws-rds",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:820,y:420,interfaces:[{id:"public0",ip:"10.0.1.200/32",status:"up"}],external_ports:[{port:3306,proto:"tcp"}],aws_config:{engine:"mysql",engine_version:"8.0.35",instance_class:"db.t1.micro",port:3306,read_replica:true,source_db:_HANDSON_RDS_ID,az:"ap-northeast-1c",db_subnet_group:"test-db-sng",security_groups:["test-rds-sg"]}}); } } }
+  ]
+},
+{
+  id:"aws-handson-5-final",
+  number:5,
+  title:"0から始めるAWS入門⑤ 総合演習 (Lab1〜4の通信確認)",
+  overview:"Lab1〜4で構築した [Internet → ALB → EC2(nginx) → RDS(MySQL)] の通信経路を確認し、本番想定でMulti-AZ化する。",
+  next:null,
+  steps:[
+    { id:"final-verify-web", title:"Web経路確認: Internet → ALB → EC2",
+      instructions:["ブラウザで ALBのDNS名にアクセス → nginxデフォルトが表示されればOK"],
+      sim_steps:["ツールバー『通信テスト』 → ソース:Internet, 宛先:test-web-elb(ALB)/HTTP:80 を実行"],
+      hint:"ALB→EC2のヘルスチェックが通っていれば、ALB経由でEC2のnginxに届きます。",
+      verify:()=>{ const a=Cfg.byId("devices",_HANDSON_ELB_ID); const s=Cfg.byId("servers",_HANDSON_EC2_ID); return !!(a && s && (a.aws_config.target_group.targets||[]).includes(_HANDSON_EC2_ID) && (s.listen_ports||[]).some(p=>p.port===80)); },
+      autoBuild:()=>{} },
+    { id:"final-verify-db", title:"DB経路確認: EC2 → RDS (MySQL 3306)",
+      instructions:["EC2 から RDS のエンドポイントへ mysql接続"],
+      sim_steps:["通信テスト → ソース:test-web-a, 宛先:test-rds-mysql/TCP:3306"],
+      hint:"SGで 10.0.0.0/16 → 3306 が許可されていれば疎通します。",
+      verify:()=>{ const r=Cfg.byId("devices",_HANDSON_RDS_ID); const v=_findVpc(_HANDSON_VPC_NAME); const sg=v && (v.security_groups||[]).find(g=>g.name==="test-rds-sg"); return !!(r && sg && (sg.inbound||[]).some(x=>x.port===3306)); },
+      autoBuild:()=>{} },
+    { id:"final-multi-az", title:"本番化: Multi-AZにする",
+      instructions:["RDSのMulti-AZ Deployment を Yes / EC2をAZ-cにも追加"],
+      sim_steps:["RDSを選択 → 右パネル『Multi-AZ』を true に / EC2 を AZ-c にもう1台追加"],
+      hint:"AZ障害が起きてもサービス継続できる構成になります。",
+      verify:()=>{ const r=Cfg.byId("devices",_HANDSON_RDS_ID); const ec2c=(App.config.servers||[]).find(s=>s.aws&&s.aws.vpc===_HANDSON_VPC_NAME && s.aws.subnet==="test-subnet-c" && !s.vm); return !!(r && r.aws_config.multi_az===true && ec2c); },
+      autoBuild:()=>{ const r=Cfg.byId("devices",_HANDSON_RDS_ID); if(r) r.aws_config.multi_az=true;
+        if(!(App.config.servers||[]).some(s=>s.aws&&s.aws.subnet==="test-subnet-c"&&!s.vm)){ App.config.servers.push({id:"test-web-c",label:"test-web-c",type:"server",os:"amazon-linux",instance_type:"t2.micro",status:"running",x:520,y:480,width:130,height:65,interfaces:[{id:"eth0",ip:"10.0.1.10/24",mac:genUniqueMac(),status:"up"}],listen_ports:[{port:80,proto:"tcp",service:"nginx"}],storage:{size_gb:10,type:"gp2"},aws:{vpc:_HANDSON_VPC_NAME,subnet:"test-subnet-c",security_groups:["test-web-sg"],public_ip:"54.0.0.11"},key_pair:"test-key"}); const a=Cfg.byId("devices",_HANDSON_ELB_ID); if(a){ a.aws_config.target_group.targets=a.aws_config.target_group.targets||[]; if(!a.aws_config.target_group.targets.includes("test-web-c")) a.aws_config.target_group.targets.push("test-web-c"); App.config.connections.push({id:uid("link"),from:{device:_HANDSON_ELB_ID,interface:"public0"},to:{server:"test-web-c",interface:"eth0"},type:"ethernet",status:"up"}); } } } }
+  ]
+}
+];
+
+function _handsonLabProgress(lab){
+  let done=0; for(const st of lab.steps){ try{ if(st.verify()) done++; }catch(e){} } return { done, total:lab.steps.length };
+}
+function _handsonResetAll(){
+  // Lab で使う固定IDの要素を削除して、まっさらな状態でやり直せるようにする
+  pushUndo();
+  App.config.aws = App.config.aws || {vpcs:[]};
+  App.config.aws.vpcs = (App.config.aws.vpcs||[]).filter(v=>v.name!==_HANDSON_VPC_NAME);
+  App.config.servers = (App.config.servers||[]).filter(s=>!(s.aws&&s.aws.vpc===_HANDSON_VPC_NAME) && s.id!==_HANDSON_EC2_ID && s.id!=="test-web-c");
+  App.config.devices = (App.config.devices||[]).filter(d=>!(d.aws_vpc===_HANDSON_VPC_NAME) && d.id!==_HANDSON_ELB_ID && d.id!==_HANDSON_RDS_ID && d.id!==_HANDSON_RDS_RR);
+  App.config.connections = (App.config.connections||[]).filter(c=>{
+    const ids=[c.from&&c.from.device,c.from&&c.from.server,c.to&&c.to.device,c.to&&c.to.server];
+    return !ids.some(id=>id===_HANDSON_ELB_ID||id===_HANDSON_EC2_ID||id===_HANDSON_RDS_ID||id===_HANDSON_RDS_RR||id==="test-web-c");
+  });
+  renderAndSync(); updateStatusBar();
+  toast("ハンズオン要素をリセットしました","ok");
+}
+
+function showHandsOnIndex(){
+  openDialog("📘 AWSハンズオン (0から始めるAWS入門)", (body)=>{
+    helpBox(body,"このハンズオンについて",[
+      "Qiita @hiroshik1985 氏の『0から始めるAWS入門』シリーズ(5記事)を本シミュレータ用に移植したものです。",
+      "各ラボはステップ毎に判定され、自分で操作してもよいし、『🤖 自動構築』で学習することもできます。",
+      "Lab1から順に進めるのが推奨です。"
+    ], false);
+    for(const lab of HANDS_ON_LABS){
+      const prog=_handsonLabProgress(lab);
+      const card=ch("div",{style:{border:"1px solid var(--border)",borderRadius:"6px",padding:"10px",marginBottom:"8px",background:"var(--bg2)",cursor:"pointer"}},body);
+      ch("div",{text:`Lab ${lab.number}. ${lab.title}`,style:{fontWeight:"700",fontSize:"13px",color:"var(--accent)"}},card);
+      ch("div",{text:lab.overview,style:{fontSize:"11px",color:"var(--text-dim)",margin:"4px 0",lineHeight:"1.4"}},card);
+      ch("div",{text:`進捗: ${prog.done}/${prog.total} ${prog.done===prog.total?"✅ 完了":""}`,style:{fontSize:"11px",color:prog.done===prog.total?"var(--green)":"var(--text)",fontWeight:"700"}},card);
+      card.addEventListener("click",()=>{ closeDialog(); showHandsOnLab(lab.id); });
+    }
+    const btns=ch("div",{style:{display:"flex",gap:"6px",marginTop:"10px"}},body);
+    ch("button",{text:"🔄 ハンズオン要素をリセット",style:{padding:"6px 12px",fontSize:"11px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"4px"},
+      on:{click:()=>{ if((typeof confirm==="function")?confirm("test-vpcとその配下要素を削除します。よろしいですか?"):true){ _handsonResetAll(); closeDialog(); showHandsOnIndex(); } }}},btns);
+    return { buttons:[{ text:"閉じる", primary:true, action: closeDialog }] };
+  });
+}
+
+function showHandsOnLab(labId){
+  const lab = HANDS_ON_LABS.find(l=>l.id===labId);
+  if(!lab) return;
+  openDialog(`📘 ${lab.title}`, (body)=>{
+    helpBox(body, lab.overview, [
+      "ステップを上から順に実施してください。各ステップ右の『判定』で完了確認、『🤖 自動』で自動構築できます。"
+    ], false);
+    const list = ch("div",{},body);
+    lab.steps.forEach((st,i)=>{
+      let ok=false; try{ ok=!!st.verify(); }catch(e){}
+      const row=ch("div",{style:{border:"1px solid "+(ok?"var(--green)":"var(--border)"),borderRadius:"6px",padding:"8px",marginBottom:"6px",background:ok?"rgba(34,197,94,0.05)":"var(--bg2)"}},list);
+      const hd=ch("div",{style:{display:"flex",alignItems:"center",gap:"6px"}},row);
+      ch("span",{text: ok?"✅":(""+(i+1)+"."),style:{fontWeight:"700",fontSize:"12px",color:ok?"var(--green)":"var(--accent)",minWidth:"24px"}},hd);
+      ch("span",{text:st.title,style:{flex:"1",fontWeight:"700",fontSize:"12px"}},hd);
+      const detail=ch("div",{style:{margin:"4px 0 4px 28px"}},row);
+      ch("div",{text:"📋 実機操作:",style:{fontSize:"10px",color:"var(--text-mute)",fontWeight:"700",marginTop:"4px"}},detail);
+      for(const s of st.instructions) ch("div",{text:" · "+s,style:{fontSize:"10px",color:"var(--text-dim)",lineHeight:"1.4"}},detail);
+      ch("div",{text:"🖱 シミュレータ操作:",style:{fontSize:"10px",color:"var(--accent)",fontWeight:"700",marginTop:"4px"}},detail);
+      for(const s of st.sim_steps) ch("div",{text:" · "+s,style:{fontSize:"10px",color:"var(--text)",lineHeight:"1.4"}},detail);
+      if(st.hint) ch("div",{text:"💡 "+st.hint,style:{fontSize:"10px",color:"var(--cyan)",margin:"4px 0",lineHeight:"1.4"}},detail);
+      const btns=ch("div",{style:{display:"flex",gap:"4px",marginTop:"4px"}},detail);
+      ch("button",{text:"✓ 判定",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
+        on:{click:()=>{ let r=false; try{r=!!st.verify();}catch(e){} toast(r?"✅ ステップ "+(i+1)+" クリア!":"❌ 未完了 — シミュレータ操作の手順を試してください","" +(r?"ok":"warn")); showHandsOnLab(labId); }}},btns);
+      ch("button",{text:"🤖 自動",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+        on:{click:()=>{ pushUndo(); try{st.autoBuild&&st.autoBuild();}catch(e){console.log(e);} renderAndSync(); updateStatusBar(); toast("ステップ "+(i+1)+" を自動構築","ok"); showHandsOnLab(labId); }}},btns);
+    });
+    const prog=_handsonLabProgress(lab);
+    ch("div",{text:`進捗: ${prog.done}/${prog.total}${prog.done===prog.total?" 🎉 このラボ完了!":""}`,style:{margin:"8px 0",fontWeight:"700",color:prog.done===prog.total?"var(--green)":"var(--text)"}},body);
+    const bottomBtns=ch("div",{style:{display:"flex",gap:"6px",flexWrap:"wrap"}},body);
+    ch("button",{text:"🤖 全ステップ自動構築",style:{padding:"5px 12px",fontSize:"11px",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
+      on:{click:()=>{ pushUndo(); for(const st of lab.steps){ try{st.autoBuild&&st.autoBuild();}catch(e){console.log(e);} } renderAndSync(); updateStatusBar(); toast("全ステップを自動構築しました","ok"); showHandsOnLab(labId); }}},bottomBtns);
+    if(lab.next){
+      ch("button",{text:"→ 次のラボへ",style:{padding:"5px 12px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
+        on:{click:()=>{ closeDialog(); showHandsOnLab(lab.next); }}},bottomBtns);
+    }
+    ch("button",{text:"← 一覧に戻る",style:{padding:"5px 12px",fontSize:"11px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"4px"},
+      on:{click:()=>{ closeDialog(); showHandsOnIndex(); }}},bottomBtns);
+    return { buttons:[{ text:"閉じる", primary:true, action: closeDialog }] };
+  });
+}

@@ -681,7 +681,9 @@ function renderAwsOverlay(){
   if(!layer || !App.config.aws || !(App.config.aws.vpcs||[]).length) return;
   let placeholderX = 40;
   (App.config.aws.vpcs||[]).forEach((vpc, vi)=>{
-    const members = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc===vpc.name && !(s.host));
+    const srvMembers = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc===vpc.name && !(s.host));
+    const svcMembers = (App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===vpc.name);
+    const members = srvMembers.concat(svcMembers);
     const g = ce("g", { class:"aws-vpc-overlay", "pointer-events":"none" }, layer);
     let minX,minY,maxX,maxY;
     if(members.length){
@@ -872,21 +874,39 @@ function renderVcenterOverlay(){
   const hosts = (App.config.servers||[]).filter(s=>s.hypervisor || s.type==="hypervisor");
   for(const host of hosts){
     const vms = (App.config.servers||[]).filter(s=>s.vm && s.host===host.id);
-    const g = ce("g", { class:"vcenter-overlay", "pointer-events":"none" }, layer);
+    const g = ce("g", { class:"vcenter-overlay" }, layer);
     let minX=host.x||0, minY=host.y||0, maxX=(host.x||0)+(host.width||160), maxY=(host.y||0)+(host.height||80);
     for(const vm of vms){ const w=vm.width||74,h=vm.height||42; minX=Math.min(minX,vm.x||0); minY=Math.min(minY,vm.y||0); maxX=Math.max(maxX,(vm.x||0)+w); maxY=Math.max(maxY,(vm.y||0)+h); }
-    minX-=12; minY-=24; maxX+=12; maxY+=12;
-    // frame
-    ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:12, ry:12,
-      fill:"rgba(120,180,90,0.05)", stroke:"#78b45a", "stroke-width":1.6, "stroke-dasharray":"8 4" }, g);
+    minX-=14; minY-=26; maxX+=14; maxY+=14;
+    // user-adjustable size via _pad (resize handle drags this)
+    if(host._pad){ maxX += (host._pad.w||0); maxY += (host._pad.h||0); }
+    // frame (clickable)
+    const frame = ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:12, ry:12,
+      fill:"rgba(120,180,90,0.05)", stroke:"#78b45a", "stroke-width":1.6, "stroke-dasharray":"8 4",
+      "pointer-events":"all", style:"cursor:pointer" }, g);
+    frame.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"server",id:host.id}; openPropertyPanel(); });
+    frame.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showHypervisorManager(host.id); });
+    frame.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); showContextMenu(e,"server",host.id); });
+    // label (clickable)
     const lbl = `🖥 ${host.label||host.id} — VM ${vms.length}`;
-    const bw = lbl.length*6.6+14;
-    ce("rect", { x:minX+8, y:minY-9, width:bw, height:17, rx:8, ry:8, fill:"#78b45a", stroke:"#fff", "stroke-width":1 }, g);
+    const bw = lbl.length*7+18;
+    const labelRect = ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9,
+      fill:"#78b45a", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:pointer" }, g);
+    labelRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.selected={kind:"server",id:host.id}; openPropertyPanel(); });
+    labelRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showHypervisorManager(host.id); });
     ce("text", { x:minX+8+bw/2, y:minY+0.5, "text-anchor":"middle", "dominant-baseline":"middle",
-      "font-size":9.5, "font-weight":"700", fill:"#fff", text:lbl }, g);
+      "font-size":10, "font-weight":"700", fill:"#fff", text:lbl, "pointer-events":"none" }, g);
+    // resize handle (drag to enlarge the frame)
+    const rh = ce("rect", { x:maxX-7, y:maxY-7, width:12, height:12, rx:2, ry:2,
+      fill:"#78b45a", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, g);
+    rh.addEventListener("mousedown",(e)=>startFrameResize(e, host, {x:minX,y:minY,w:maxX-minX,h:maxY-minY}));
     if(!vms.length){
-      ce("text", { x:(minX+maxX)/2, y:maxY-10, "text-anchor":"middle", "font-size":9, fill:"var(--text-mute)",
-        text:"(VM未作成 — 🖥仮想基盤で「+VM追加」)" }, g);
+      ce("text", { x:(minX+maxX)/2, y:maxY-12, "text-anchor":"middle", "font-size":9, fill:"var(--text-mute)",
+        text:"(VM未作成 — ダブルクリックで仮想基盤を開く)", "pointer-events":"none" }, g);
+    } else {
+      // hint about vMotion
+      ce("text", { x:minX+10, y:maxY-6, "font-size":8, fill:"var(--text-mute)",
+        text:"💡 VMを右クリック → 🚚vMotion で別ホストへ移動", "pointer-events":"none" }, g);
     }
   }
 }
@@ -2533,6 +2553,18 @@ function getContextItems(kind, id){
     }
     if(kind === "server"){
       items.push({ sep:true });
+      // VM: vMotion submenu — pick a target hypervisor and run live migration
+      if(obj.vm && obj.host){
+        const others=(App.config.servers||[]).filter(s=>(s.hypervisor||s.type==="hypervisor")&&s.id!==obj.host && s.status==="running");
+        if(others.length){
+          for(const tgt of others){
+            items.push({ icon:"🚚", label:`vMotion → ${tgt.label||tgt.id}`,
+              action:()=>{ if(typeof runLiveMigration==="function"){ const mig=runLiveMigration("vm",obj.id,tgt.id,obj._tcp_sessions||0); if(mig.failed) toast("ライブマイグレーション失敗: "+mig.reason,"err"); else toast(`vMotion完了: ${obj.label||obj.id} → ${tgt.id} (ダウンタイム${mig.downtime_ms}ms)`,"ok"); } } });
+          }
+        } else {
+          items.push({ icon:"🚚", label:"vMotion (移動先ホスト無し)", action:()=>toast("別の稼働中ESXi/vCenterホストを配置してください","warn") });
+        }
+      }
       items.push({ icon:"➕", label:"サービス追加...", action:()=>addServiceToServer(id) });
       const hosted = (App.config.services||[]).filter(s=>s.server===id);
       for(const sv of hosted){
