@@ -5585,6 +5585,17 @@ function _vpcHasSubnetAZ(vpc, az){ return vpc && (vpc.subnets||[]).some(s=>(s.az
 function _findDeviceByKind(kind){ return ((App.config.devices)||[]).find(d=>d.aws_kind===kind); }
 function _findDevicesByKind(kind){ return ((App.config.devices)||[]).filter(d=>d.aws_kind===kind); }
 
+
+function _findFreeSwPort(sw){
+  for(const p of (sw.interfaces||[])){
+    const used=(App.config.connections||[]).some(c=>(c.from&&c.from.device===sw.id&&c.from.interface===p.id)||(c.to&&c.to.device===sw.id&&c.to.interface===p.id));
+    if(!used) return p.id;
+  }
+  const newId="g"+(sw.interfaces||[]).length;
+  sw.interfaces.push({id:newId,status:"up"});
+  return newId;
+}
+
 var HANDS_ON_LABS = [
 {
   id:"aws-handson-1-vpc",
@@ -5598,7 +5609,45 @@ var HANDS_ON_LABS = [
       sim_steps:["ツールバー『☁ AWS』ボタン → 『+ VPC』","Name: test-vpc, CIDR: 10.0.0.0/16, Region: ap-northeast-1"],
       hint:"VPCは『AWS上に論理的に分離されたプライベートネットワーク』を作る箱です。",
       verify:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); return !!(v && v.cidr==="10.0.0.0/16"); },
-      autoBuild:()=>{ App.config.aws=App.config.aws||{vpcs:[]}; if(!_findVpc(_HANDSON_VPC_NAME)){ App.config.aws.vpcs.push({id:"vpc-"+uid("v"),name:_HANDSON_VPC_NAME,cidr:"10.0.0.0/16",region:"ap-northeast-1",tenancy:"default",subnets:[],security_groups:[],route_tables:[{name:"main",routes:[{dest:"10.0.0.0/16",target:"local"}]}],igw:false}); } } },
+      autoBuild:()=>{
+        App.config.aws=App.config.aws||{vpcs:[]};
+        if(!_findVpc(_HANDSON_VPC_NAME)){
+          App.config.aws.vpcs.push({id:"vpc-"+uid("v"),name:_HANDSON_VPC_NAME,cidr:"10.0.0.0/16",region:"ap-northeast-1",tenancy:"default",subnets:[],security_groups:[],route_tables:[{name:"main",routes:[{dest:"10.0.0.0/16",target:"local"}]}],igw:false});
+        }
+        // VPCルータ(L3)
+        if(!Cfg.byId("devices","test-vpc-router")){
+          App.config.devices.push({
+            id:"test-vpc-router", label:"test-vpc-router", type:"l3switch", status:"running",
+            x:380, y:340, width:140, height:60,
+            interfaces:[
+              {id:"vlan-a", ip:"10.0.0.1/24", mac:genUniqueMac(), status:"up"},
+              {id:"vlan-c", ip:"10.0.1.1/24", mac:genUniqueMac(), status:"up"},
+              {id:"uplink", ip:"169.254.0.1/30", mac:genUniqueMac(), status:"up"}
+            ],
+            routes:[{dest:"0.0.0.0/0", gateway:"169.254.0.2", interface:"uplink"}]
+          });
+        }
+        // サブネット毎にL2スイッチを配置(各サブネットの放送ドメイン)
+        // AZ-a 用 L2スイッチ
+        if(!Cfg.byId("devices","test-subnet-a-sw")){
+          App.config.devices.push({
+            id:"test-subnet-a-sw", label:"subnet-a-sw (10.0.0.0/24)", type:"l2switch", status:"running",
+            x:580, y:340, width:120, height:50,
+            interfaces:Array.from({length:8},(_,i)=>({id:"g"+i, status:"up"}))
+          });
+          // router.vlan-a → subnet-a-sw.g0
+          App.config.connections.push({id:uid("link"),from:{device:"test-vpc-router",interface:"vlan-a"},to:{device:"test-subnet-a-sw",interface:"g0"},type:"ethernet",status:"up"});
+        }
+        // AZ-c 用 L2スイッチ
+        if(!Cfg.byId("devices","test-subnet-c-sw")){
+          App.config.devices.push({
+            id:"test-subnet-c-sw", label:"subnet-c-sw (10.0.1.0/24)", type:"l2switch", status:"running",
+            x:580, y:440, width:120, height:50,
+            interfaces:Array.from({length:8},(_,i)=>({id:"g"+i, status:"up"}))
+          });
+          App.config.connections.push({id:uid("link"),from:{device:"test-vpc-router",interface:"vlan-c"},to:{device:"test-subnet-c-sw",interface:"g0"},type:"ethernet",status:"up"});
+        }
+      } },
     { id:"vpc-subnet-a", title:"サブネット作成: AZ-a (10.0.0.0/24)",
       instructions:["[Subnets] → [Create Subnet]","VPC: test-vpc / AZ: ap-northeast-1a / CIDR: 10.0.0.0/24"],
       sim_steps:["VPC枠をクリック → 右パネルで『+サブネット』","Name: test-subnet-a, CIDR: 10.0.0.0/24, AZ: ap-northeast-1a"],
@@ -5617,7 +5666,14 @@ var HANDS_ON_LABS = [
       hint:"IGWが無いと、VPC内からインターネットへ出られません。",
       verify:()=>{ const igw=_findDeviceByKind("aws-igw"); const v=_findVpc(_HANDSON_VPC_NAME); return !!(v && v.igw) || !!(igw && igw.aws_config && igw.aws_config.attached_vpc===_HANDSON_VPC_NAME); },
       autoBuild:()=>{ const v=_findVpc(_HANDSON_VPC_NAME); if(v){ v.igw=true; }
-        if(!_findDeviceByKind("aws-igw")){ App.config.devices.push({id:uid("igw"),label:"test-igw",type:"cloud",status:"running",external:true,aws_kind:"aws-igw",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:60,y:60,interfaces:[{id:"public0",ip:"0.0.0.0/32",status:"up"}],external_ports:[{port:80,proto:"tcp"},{port:443,proto:"tcp"}],aws_config:{attached_vpc:_HANDSON_VPC_NAME,route_table_assoc:["main"]}}); } } },
+        if(!_findDeviceByKind("aws-igw")){ App.config.devices.push({id:"test-igw",label:"test-igw",type:"cloud",status:"running",external:true,aws_kind:"aws-igw",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:60,y:200,interfaces:[{id:"uplink",ip:"169.254.0.2/30",mac:genUniqueMac(),status:"up"},{id:"internet",ip:"0.0.0.0/32",mac:genUniqueMac(),status:"up"}],external_ports:[{port:80,proto:"tcp"},{port:443,proto:"tcp"}],aws_config:{attached_vpc:_HANDSON_VPC_NAME,route_table_assoc:["main"]},routes:[{dest:"10.0.0.0/16",gateway:"169.254.0.1",interface:"uplink"},{dest:"0.0.0.0/0",gateway:"",interface:"internet"}]}); }
+        // 物理接続: VPCルータ ↔ IGW
+        const rtr=Cfg.byId("devices","test-vpc-router"); const igw=Cfg.byId("devices","test-igw");
+        if(rtr && igw){
+          const exists=(App.config.connections||[]).some(c=>(c.from&&c.from.device==="test-vpc-router"&&c.from.interface==="uplink"&&c.to&&c.to.device==="test-igw")||(c.from&&c.from.device==="test-igw"&&c.to&&c.to.device==="test-vpc-router"&&c.to.interface==="uplink"));
+          if(!exists) App.config.connections.push({id:uid("link"),from:{device:"test-vpc-router",interface:"uplink"},to:{device:"test-igw",interface:"uplink"},type:"ethernet",status:"up"});
+        }
+      } },
     { id:"vpc-route", title:"ルートテーブルに 0.0.0.0/0 → IGW を追加",
       instructions:["[Route Tables] → 該当VPC のメインRTを選択 → [Routes] → [Edit] → 0.0.0.0/0 → IGW"],
       sim_steps:["VPC枠をクリック → 右パネル『+ルート』 → 宛先 0.0.0.0/0 / ターゲット IGW (test-igw)"],
@@ -5638,7 +5694,17 @@ var HANDS_ON_LABS = [
       sim_steps:["VPCを選択した状態でツールバー『サーバ追加』→物理サーバ","OS: amazon-linux, Type: t2.micro, サブネット: test-subnet-a (10.0.0.0/24)"],
       hint:"EC2は仮想サーバです。t2.micro は無料枠で利用可能。",
       verify:()=>{ const s=Cfg.byId("servers",_HANDSON_EC2_ID); return !!(s && s.aws && s.aws.vpc===_HANDSON_VPC_NAME); },
-      autoBuild:()=>{ if(!Cfg.byId("servers",_HANDSON_EC2_ID)){ App.config.servers.push({id:_HANDSON_EC2_ID,label:"test-web-a",type:"server",os:"amazon-linux",instance_type:"t2.micro",status:"running",x:520,y:280,width:130,height:65,interfaces:[{id:"eth0",ip:"10.0.0.10/24",mac:genUniqueMac(),status:"up"}],aws:{vpc:_HANDSON_VPC_NAME,subnet:"test-subnet-a",security_groups:[],public_ip:"54.0.0.10"}}); } } },
+      autoBuild:()=>{
+        if(!Cfg.byId("servers",_HANDSON_EC2_ID)){
+          App.config.servers.push({id:_HANDSON_EC2_ID,label:"test-web-a",type:"server",os:"amazon-linux",instance_type:"t2.micro",status:"running",x:520,y:280,width:130,height:65,interfaces:[{id:"eth0",ip:"10.0.0.10/24",mac:genUniqueMac(),status:"up"}],gateway:"10.0.0.1",aws:{vpc:_HANDSON_VPC_NAME,subnet:"test-subnet-a",security_groups:[],public_ip:"54.0.0.10"}});
+        }
+        // 物理接続: EC2 ↔ VPCルータ(vlan-a)
+        const rtr=Cfg.byId("devices","test-vpc-router");
+        if(rtr){
+          const exists=(App.config.connections||[]).some(c=>(c.from&&c.from.server===_HANDSON_EC2_ID&&c.to&&c.to.device==="test-vpc-router")||(c.from&&c.from.device==="test-vpc-router"&&c.to&&c.to.server===_HANDSON_EC2_ID));
+          if(!exists){ const sw=Cfg.byId("devices","test-subnet-a-sw"); if(sw){ const port=_findFreeSwPort(sw); App.config.connections.push({id:uid("link"),from:{server:_HANDSON_EC2_ID,interface:"eth0"},to:{device:"test-subnet-a-sw",interface:port},type:"ethernet",status:"up"}); } }
+        }
+      } },
     { id:"ec2-storage", title:"ストレージ: 10GB / General Purpose SSD",
       instructions:["[Add Storage] で Size:10, Volume Type:General Purpose (SSD)"],
       sim_steps:["EC2を選択 → 右パネル『ストレージ』に 10GB / gp2 を入力"],
@@ -5683,7 +5749,20 @@ var HANDS_ON_LABS = [
       sim_steps:["ツールバー『🧩 AWSサービス』→ ALB を配置","Label: test-web-elb (右パネルで設定)、所属VPC: test-vpc"],
       hint:"ALB(L7)/NLB(L4) が一般的。今回は HTTP なので ALB。",
       verify:()=>{ const a=_findDevicesByKind("aws-alb").find(d=>/test-web-elb/.test(d.label||d.id)); return !!a; },
-      autoBuild:()=>{ if(!_findDevicesByKind("aws-alb").find(d=>/test-web-elb/.test(d.label||d.id))){ App.config.devices.push({id:_HANDSON_ELB_ID,label:"test-web-elb",type:"cloud",status:"running",external:true,aws_kind:"aws-alb",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:380,y:160,interfaces:[{id:"public0",ip:"52.20.0.10/32",status:"up"}],external_ports:[{port:80,proto:"tcp"},{port:443,proto:"tcp"}],aws_config:{scheme:"internet-facing",listeners:[],target_group:{name:"tg-web",port:80,health_check:"/",targets:[]},subnets:[],security_groups:[]}}); } } },
+      autoBuild:()=>{
+        if(!_findDevicesByKind("aws-alb").find(d=>/test-web-elb/.test(d.label||d.id))){
+          App.config.devices.push({id:_HANDSON_ELB_ID,label:"test-web-elb",type:"cloud",status:"running",external:true,aws_kind:"aws-alb",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:380,y:160,interfaces:[
+            {id:"vlan-a",ip:"10.0.0.50/24",mac:genUniqueMac(),status:"up"}, // VPC内IF
+            {id:"public",ip:"52.20.0.10/32",mac:genUniqueMac(),status:"up"} // パブリックIF
+          ],gateway:"10.0.0.1",external_ports:[{port:80,proto:"tcp"},{port:443,proto:"tcp"}],aws_config:{scheme:"internet-facing",listeners:[],target_group:{name:"tg-web",port:80,health_check:"/",targets:[]},subnets:[],security_groups:[]}});
+        }
+        // 物理接続: ALB ↔ VPCルータ(vlan-a)
+        const rtr=Cfg.byId("devices","test-vpc-router");
+        if(rtr){
+          const exists=(App.config.connections||[]).some(c=>(c.from&&c.from.device===_HANDSON_ELB_ID&&c.to&&c.to.device==="test-vpc-router")||(c.from&&c.from.device==="test-vpc-router"&&c.to&&c.to.device===_HANDSON_ELB_ID));
+          if(!exists){ const sw=Cfg.byId("devices","test-subnet-a-sw"); if(sw){ const port=_findFreeSwPort(sw); App.config.connections.push({id:uid("link"),from:{device:_HANDSON_ELB_ID,interface:"vlan-a"},to:{device:"test-subnet-a-sw",interface:port},type:"ethernet",status:"up"}); } }
+        }
+      } },
     { id:"elb-listener", title:"リスナを HTTP:80 → HTTP:80 で設定",
       instructions:["[Listeners] → Add: Protocol HTTP, Port 80 → Target HTTP, Port 80"],
       sim_steps:["ALBを選択 → 右パネル『リスナ』+追加 → Port:80, Proto:HTTP, TG:tg-web"],
@@ -5714,9 +5793,8 @@ var HANDS_ON_LABS = [
       hint:"InService になるまで数十秒。OutOfService の場合はSGとヘルスチェックパスを確認。",
       verify:()=>{ const a=Cfg.byId("devices",_HANDSON_ELB_ID); const tg=a && a.aws_config && a.aws_config.target_group; return !!(tg && (tg.targets||[]).includes(_HANDSON_EC2_ID)); },
       autoBuild:()=>{ const a=Cfg.byId("devices",_HANDSON_ELB_ID); if(a){ a.aws_config.target_group=a.aws_config.target_group||{name:"tg-web",port:80,health_check:"/"}; a.aws_config.target_group.targets=[_HANDSON_EC2_ID]; }
-        // 物理的にALB→EC2を接続(配線の見える化)
-        const exists=(App.config.connections||[]).some(c=>(c.from&&(c.from.device===_HANDSON_ELB_ID||c.from.server===_HANDSON_ELB_ID))&&(c.to&&(c.to.server===_HANDSON_EC2_ID||c.to.device===_HANDSON_EC2_ID)));
-        if(!exists) App.config.connections.push({id:uid("link"),from:{device:_HANDSON_ELB_ID,interface:"public0"},to:{server:_HANDSON_EC2_ID,interface:"eth0"},type:"ethernet",status:"up"}); } }
+        // ALBはVPCルータ経由でEC2へ通信 — 直接物理接続は不要(VPCルータがL3でルーティング)
+      } }
   ]
 },
 {
@@ -5749,13 +5827,31 @@ var HANDS_ON_LABS = [
       sim_steps:["ツールバー『🧩 AWSサービス』→ RDS を配置","右パネル: engine=mysql, instance_class=db.t1.micro, 所属VPC=test-vpc, port=3306"],
       hint:"プロダクションでは Multi-AZ を Yes に。フェイルオーバが自動。",
       verify:()=>{ const r=_findDevicesByKind("aws-rds").find(d=>d.id===_HANDSON_RDS_ID); return !!(r && r.aws_config && r.aws_config.engine==="mysql"); },
-      autoBuild:()=>{ if(!_findDevicesByKind("aws-rds").find(d=>d.id===_HANDSON_RDS_ID)){ App.config.devices.push({id:_HANDSON_RDS_ID,label:"test-rds-mysql",type:"cloud",status:"running",external:true,aws_kind:"aws-rds",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:680,y:420,interfaces:[{id:"public0",ip:"10.0.0.200/32",status:"up"}],external_ports:[{port:3306,proto:"tcp"}],aws_config:{engine:"mysql",engine_version:"8.0.35",instance_class:"db.t1.micro",multi_az:false,port:3306,allocated_gb:20,db_subnet_group:"test-db-sng",parameter_group:"japanese",security_groups:["test-rds-sg"],master_username:"admin",database_name:"appdb",backup_retention_days:1,az:"ap-northeast-1a"}}); } } },
+      autoBuild:()=>{
+        if(!_findDevicesByKind("aws-rds").find(d=>d.id===_HANDSON_RDS_ID)){
+          App.config.devices.push({id:_HANDSON_RDS_ID,label:"test-rds-mysql",type:"cloud",status:"running",external:true,aws_kind:"aws-rds",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:680,y:420,interfaces:[{id:"eth0",ip:"10.0.0.200/24",mac:genUniqueMac(),status:"up"}],gateway:"10.0.0.1",external_ports:[{port:3306,proto:"tcp"}],aws_config:{engine:"mysql",engine_version:"8.0.35",instance_class:"db.t1.micro",multi_az:false,port:3306,allocated_gb:20,db_subnet_group:"test-db-sng",parameter_group:"japanese",security_groups:["test-rds-sg"],master_username:"admin",database_name:"appdb",backup_retention_days:1,az:"ap-northeast-1a"}});
+        }
+        const rtr=Cfg.byId("devices","test-vpc-router");
+        if(rtr){
+          const exists=(App.config.connections||[]).some(c=>(c.from&&c.from.device===_HANDSON_RDS_ID&&c.to&&c.to.device==="test-vpc-router")||(c.from&&c.from.device==="test-vpc-router"&&c.to&&c.to.device===_HANDSON_RDS_ID));
+          if(!exists){ const sw=Cfg.byId("devices","test-subnet-a-sw"); if(sw){ const port=_findFreeSwPort(sw); App.config.connections.push({id:uid("link"),from:{device:_HANDSON_RDS_ID,interface:"eth0"},to:{device:"test-subnet-a-sw",interface:port},type:"ethernet",status:"up"}); } }
+        }
+      } },
     { id:"rds-read-replica", title:"Read Replica を AZ-c に作成",
       instructions:["RDS インスタンス右クリック → [Create Read Replica] → AZ: ap-northeast-1c"],
       sim_steps:["RDSを選択 → 右パネル『+ Read Replica』 → AZ: ap-northeast-1c"],
       hint:"参照クエリをレプリカに逃がすことで、マスター負荷を軽減。",
       verify:()=>{ const rr=_findDevicesByKind("aws-rds").find(d=>d.aws_config && d.aws_config.source_db===_HANDSON_RDS_ID); return !!rr; },
-      autoBuild:()=>{ if(!_findDevicesByKind("aws-rds").find(d=>d.aws_config && d.aws_config.source_db===_HANDSON_RDS_ID)){ App.config.devices.push({id:_HANDSON_RDS_RR,label:"test-rds-mysql-rr",type:"cloud",status:"running",external:true,aws_kind:"aws-rds",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:820,y:420,interfaces:[{id:"public0",ip:"10.0.1.200/32",status:"up"}],external_ports:[{port:3306,proto:"tcp"}],aws_config:{engine:"mysql",engine_version:"8.0.35",instance_class:"db.t1.micro",port:3306,read_replica:true,source_db:_HANDSON_RDS_ID,az:"ap-northeast-1c",db_subnet_group:"test-db-sng",security_groups:["test-rds-sg"]}}); } } }
+      autoBuild:()=>{
+        if(!_findDevicesByKind("aws-rds").find(d=>d.aws_config && d.aws_config.source_db===_HANDSON_RDS_ID)){
+          App.config.devices.push({id:_HANDSON_RDS_RR,label:"test-rds-mysql-rr",type:"cloud",status:"running",external:true,aws_kind:"aws-rds",aws_region:"ap-northeast-1",aws_vpc:_HANDSON_VPC_NAME,x:820,y:420,interfaces:[{id:"eth0",ip:"10.0.1.200/24",mac:genUniqueMac(),status:"up"}],gateway:"10.0.1.1",external_ports:[{port:3306,proto:"tcp"}],aws_config:{engine:"mysql",engine_version:"8.0.35",instance_class:"db.t1.micro",port:3306,read_replica:true,source_db:_HANDSON_RDS_ID,az:"ap-northeast-1c",db_subnet_group:"test-db-sng",security_groups:["test-rds-sg"]}});
+        }
+        const rtr=Cfg.byId("devices","test-vpc-router");
+        if(rtr){
+          const exists=(App.config.connections||[]).some(c=>(c.from&&c.from.device===_HANDSON_RDS_RR&&c.to&&c.to.device==="test-vpc-router")||(c.from&&c.from.device==="test-vpc-router"&&c.to&&c.to.device===_HANDSON_RDS_RR));
+          if(!exists){ const sw=Cfg.byId("devices","test-subnet-c-sw"); if(sw){ const port=_findFreeSwPort(sw); App.config.connections.push({id:uid("link"),from:{device:_HANDSON_RDS_RR,interface:"eth0"},to:{device:"test-subnet-c-sw",interface:port},type:"ethernet",status:"up"}); } }
+        }
+      } }
   ]
 },
 {
@@ -5783,7 +5879,12 @@ var HANDS_ON_LABS = [
       hint:"AZ障害が起きてもサービス継続できる構成になります。",
       verify:()=>{ const r=Cfg.byId("devices",_HANDSON_RDS_ID); const ec2c=(App.config.servers||[]).find(s=>s.aws&&s.aws.vpc===_HANDSON_VPC_NAME && s.aws.subnet==="test-subnet-c" && !s.vm); return !!(r && r.aws_config.multi_az===true && ec2c); },
       autoBuild:()=>{ const r=Cfg.byId("devices",_HANDSON_RDS_ID); if(r) r.aws_config.multi_az=true;
-        if(!(App.config.servers||[]).some(s=>s.aws&&s.aws.subnet==="test-subnet-c"&&!s.vm)){ App.config.servers.push({id:"test-web-c",label:"test-web-c",type:"server",os:"amazon-linux",instance_type:"t2.micro",status:"running",x:520,y:480,width:130,height:65,interfaces:[{id:"eth0",ip:"10.0.1.10/24",mac:genUniqueMac(),status:"up"}],listen_ports:[{port:80,proto:"tcp",service:"nginx"}],storage:{size_gb:10,type:"gp2"},aws:{vpc:_HANDSON_VPC_NAME,subnet:"test-subnet-c",security_groups:["test-web-sg"],public_ip:"54.0.0.11"},key_pair:"test-key"}); const a=Cfg.byId("devices",_HANDSON_ELB_ID); if(a){ a.aws_config.target_group.targets=a.aws_config.target_group.targets||[]; if(!a.aws_config.target_group.targets.includes("test-web-c")) a.aws_config.target_group.targets.push("test-web-c"); App.config.connections.push({id:uid("link"),from:{device:_HANDSON_ELB_ID,interface:"public0"},to:{server:"test-web-c",interface:"eth0"},type:"ethernet",status:"up"}); } } } }
+        if(!(App.config.servers||[]).some(s=>s.aws&&s.aws.subnet==="test-subnet-c"&&!s.vm)){
+          App.config.servers.push({id:"test-web-c",label:"test-web-c",type:"server",os:"amazon-linux",instance_type:"t2.micro",status:"running",x:520,y:480,width:130,height:65,interfaces:[{id:"eth0",ip:"10.0.1.10/24",mac:genUniqueMac(),status:"up"}],gateway:"10.0.1.1",listen_ports:[{port:80,proto:"tcp",service:"nginx"}],storage:{size_gb:10,type:"gp2"},aws:{vpc:_HANDSON_VPC_NAME,subnet:"test-subnet-c",security_groups:["test-web-sg"],public_ip:"54.0.0.11"},key_pair:"test-key"});
+          const rtr=Cfg.byId("devices","test-vpc-router");
+          if(rtr){ const sw=Cfg.byId("devices","test-subnet-c-sw"); if(sw){ const port=_findFreeSwPort(sw); App.config.connections.push({id:uid("link"),from:{server:"test-web-c",interface:"eth0"},to:{device:"test-subnet-c-sw",interface:port},type:"ethernet",status:"up"}); } }
+          const a=Cfg.byId("devices",_HANDSON_ELB_ID); if(a){ a.aws_config.target_group.targets=a.aws_config.target_group.targets||[]; if(!a.aws_config.target_group.targets.includes("test-web-c")) a.aws_config.target_group.targets.push("test-web-c"); }
+        } } }
   ]
 }
 ];
@@ -5797,7 +5898,7 @@ function _handsonResetAll(){
   App.config.aws = App.config.aws || {vpcs:[]};
   App.config.aws.vpcs = (App.config.aws.vpcs||[]).filter(v=>v.name!==_HANDSON_VPC_NAME);
   App.config.servers = (App.config.servers||[]).filter(s=>!(s.aws&&s.aws.vpc===_HANDSON_VPC_NAME) && s.id!==_HANDSON_EC2_ID && s.id!=="test-web-c");
-  App.config.devices = (App.config.devices||[]).filter(d=>!(d.aws_vpc===_HANDSON_VPC_NAME) && d.id!==_HANDSON_ELB_ID && d.id!==_HANDSON_RDS_ID && d.id!==_HANDSON_RDS_RR);
+  App.config.devices = (App.config.devices||[]).filter(d=>!(d.aws_vpc===_HANDSON_VPC_NAME) && d.id!==_HANDSON_ELB_ID && d.id!==_HANDSON_RDS_ID && d.id!==_HANDSON_RDS_RR && d.id!=="test-vpc-router" && d.id!=="test-igw" && d.id!=="test-subnet-a-sw" && d.id!=="test-subnet-c-sw");
   App.config.connections = (App.config.connections||[]).filter(c=>{
     const ids=[c.from&&c.from.device,c.from&&c.from.server,c.to&&c.to.device,c.to&&c.to.server];
     return !ids.some(id=>id===_HANDSON_ELB_ID||id===_HANDSON_EC2_ID||id===_HANDSON_RDS_ID||id===_HANDSON_RDS_RR||id==="test-web-c");
@@ -5853,18 +5954,533 @@ function showHandsOnLab(labId){
         on:{click:()=>{ let r=false; try{r=!!st.verify();}catch(e){} toast(r?"✅ ステップ "+(i+1)+" クリア!":"❌ 未完了 — シミュレータ操作の手順を試してください","" +(r?"ok":"warn")); showHandsOnLab(labId); }}},btns);
       ch("button",{text:"🤖 自動",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
         on:{click:()=>{ pushUndo(); try{st.autoBuild&&st.autoBuild();}catch(e){console.log(e);} renderAndSync(); updateStatusBar(); toast("ステップ "+(i+1)+" を自動構築","ok"); showHandsOnLab(labId); }}},btns);
+      // 詳しい解説/注意点/確認/参考リンク を差し込む
+      _renderHandsOnDeep(st.id, detail);
     });
     const prog=_handsonLabProgress(lab);
     ch("div",{text:`進捗: ${prog.done}/${prog.total}${prog.done===prog.total?" 🎉 このラボ完了!":""}`,style:{margin:"8px 0",fontWeight:"700",color:prog.done===prog.total?"var(--green)":"var(--text)"}},body);
     const bottomBtns=ch("div",{style:{display:"flex",gap:"6px",flexWrap:"wrap"}},body);
     ch("button",{text:"🤖 全ステップ自動構築",style:{padding:"5px 12px",fontSize:"11px",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
       on:{click:()=>{ pushUndo(); for(const st of lab.steps){ try{st.autoBuild&&st.autoBuild();}catch(e){console.log(e);} } renderAndSync(); updateStatusBar(); toast("全ステップを自動構築しました","ok"); showHandsOnLab(labId); }}},bottomBtns);
+    if(HANDS_ON_SUMMARY && HANDS_ON_SUMMARY[labId]){
+      ch("button",{text:"🎓 まとめ・確認テスト",style:{padding:"5px 12px",fontSize:"11px",cursor:"pointer",background:"var(--cyan)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
+        on:{click:()=>{ closeDialog(); showHandsOnSummary(labId); }}},bottomBtns);
+    }
     if(lab.next){
       ch("button",{text:"→ 次のラボへ",style:{padding:"5px 12px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
         on:{click:()=>{ closeDialog(); showHandsOnLab(lab.next); }}},bottomBtns);
     }
     ch("button",{text:"← 一覧に戻る",style:{padding:"5px 12px",fontSize:"11px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"4px"},
       on:{click:()=>{ closeDialog(); showHandsOnIndex(); }}},bottomBtns);
+    return { buttons:[{ text:"閉じる", primary:true, action: closeDialog }] };
+  });
+}
+
+// ============================================================================
+// AWSハンズオンラボ — 詳細学習解説データ
+// 各ステップに「なぜそうするのか」「実機での落とし穴」「確認ポイント」「参考リンク」を追加。
+// 元記事(Qiita @hiroshik1985)と AWS 公式ドキュメントを参照し、概念理解を深めるための補足。
+// ============================================================================
+var HANDS_ON_DEEP = {
+  // ---- Lab 1: VPC ----
+  "vpc-create":{
+    explain:[
+      "VPC (Virtual Private Cloud) はAWS上に作る論理ネットワークの『囲い』。1アカウント・1リージョンに複数作成可能で、互いに完全に分離されます。",
+      "CIDR(例 10.0.0.0/16)はそのVPC内で使えるプライベートIPアドレスの範囲。/16なら 10.0.0.0 〜 10.0.255.255 の約65,536個。",
+      "RFC1918プライベートIP(10/8, 172.16/12, 192.168/16)から選ぶのが原則。社内ネットワークやVPN先と被らないよう設計します。",
+      "Tenancy(テナンシー): Default(共有HW・通常料金) / Dedicated(物理サーバ専有・高料金・コンプラ要件向け)。"
+    ],
+    cautions:[
+      "VPCのCIDRは作成後の縮小は不可。拡張(/16→/12)は可能だが計画的に。",
+      "Dedicatedにすると配下EC2全部が専有HWになり料金が跳ね上がる。初心者は必ずDefault。",
+      "/28未満(/29以降)は作れない。各サブネットでAWSが最初の4IPと最後の1IPを予約するため、最低でも/28の16IPが必要。"
+    ],
+    checks:[
+      "コンソール左上のリージョンが想定どおり(東京=ap-northeast-1)か確認。リージョン違いだと他リソースから見えません。",
+      "CIDRブロック表記が /16 等の正しい形式か (10.0.0.0/16はOK、10.0.0.0/255はNG)。"
+    ],
+    refs:[
+      "Qiita 元記事: https://qiita.com/hiroshik1985/items/9de2dd02c9c2f6911f3b",
+      "AWS公式: VPCのドキュメント (Amazon VPC ユーザーガイド)"
+    ]
+  },
+  "vpc-subnet-a":{
+    explain:[
+      "サブネット = VPCをさらに区切る論理ネットワーク。1サブネットは1AZ(Availability Zone)に紐付きます。",
+      "AZはリージョン内の物理的に分離されたデータセンター群。同一リージョンで通常3つ以上のAZがあり、AZ間は低レイテンシで結ばれています。",
+      "サブネットのCIDRはVPCのCIDR内に収まる必要があり、他サブネットと重複NG。例: 10.0.0.0/24(=10.0.0.0〜10.0.0.255)。",
+      "『パブリック』(IGW経由でインターネット出入り可) / 『プライベート』(内部のみ) はルートテーブルの設定で区別されます。"
+    ],
+    cautions:[
+      "AWSが各サブネットで5つのIPを予約: .0(ネットワーク), .1(VPCルータ), .2(DNS), .3(将来予約), .255(ブロードキャスト)。利用可能IPは(2^ホスト部 - 5)。",
+      "AZは表示名(1a/1c等)とAWS内部ID(use1-az1等)が利用者間で別マッピング。別アカウントと連携時に注意。"
+    ],
+    checks:["AZの選択が想定通りか(ap-northeast-1a)。CIDRが他サブネットと重複していないか。"],
+    refs:["AWS VPCとサブネット: https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/configure-subnets.html"]
+  },
+  "vpc-subnet-c":{
+    explain:[
+      "2つ目以降のサブネットを別AZに置くのは『冗長化(可用性)』のため。1AZが障害でも別AZのリソースで継続できます。",
+      "ELB(複数AZにまたがる)・RDS Multi-AZ・Auto Scaling Group は最低2AZを要求します。",
+      "AZ-a と AZ-c の組合せが一般的(東京リージョンの場合)。1bは過去にあったが現在は無い。"
+    ],
+    cautions:["将来Multi-AZ構成にしないなら1AZでも動くが、本番ワークロードでは必ず2AZ以上に。"],
+    checks:["2つのサブネットが異なるAZに属しているか。CIDR(10.0.1.0/24)がVPC内かつ他と重複しないか。"]
+  },
+  "vpc-igw":{
+    explain:[
+      "Internet Gateway (IGW) はVPCを『インターネットへ繋ぐ門』。VPCあたり1つだけアタッチ可能。",
+      "IGWが無いVPCは完全プライベート(外部到達不可)になります。EC2にPublic IPを振っても、IGWが無ければインターネット到達不可。",
+      "IGWは水平スケール・冗長化・高可用 がAWS側でマネージドなので、こちら側で何もしなくてOK。"
+    ],
+    cautions:[
+      "VPCにアタッチする操作と、サブネットのルートテーブルにIGW行を追加する操作は別。両方必要。",
+      "IGWを途中で削除すると、そのVPC内の全パブリック通信が即座に停止します。"
+    ],
+    checks:["IGWのStateがattachedになっているか。対象VPCが正しく選択されているか。"]
+  },
+  "vpc-route":{
+    explain:[
+      "ルートテーブルは『宛先サブネット → 次のホップ』の対応表。サブネット単位で1つ紐付けます。",
+      "デフォルトでは VPCのCIDR向け(local) ルートだけが入っています。これだけだとVPC内通信のみ可能。",
+      "0.0.0.0/0 → IGW を追加することで『デフォルトルートはインターネットへ送る』= パブリックサブネットになります。",
+      "ロンゲストマッチ: 宛先が複数該当する場合、より細かいCIDRが優先(例 10.0.0.0/16(local)が0.0.0.0/0より優先)。"
+    ],
+    cautions:[
+      "0.0.0.0/0 → IGW を入れたサブネットは『パブリックサブネット』扱い。DBはここに置かない。",
+      "プライベートサブネット用のRouteと混同しないよう、ルートテーブルを2種類(public-rt / private-rt)に分けるのが本番設計のセオリー。"
+    ],
+    checks:["対象サブネットがそのルートテーブルに関連付けられているか(Subnet Associations)。"]
+  },
+
+  // ---- Lab 2: EC2 ----
+  "ec2-launch":{
+    explain:[
+      "EC2 (Elastic Compute Cloud) はAWSの仮想サーバ。OS・インスタンスタイプ・配置場所(VPC/Subnet/AZ)・ストレージ等を組合せて起動。",
+      "AMI (Amazon Machine Image) はOSテンプレート。Amazon Linux/Ubuntu/RHEL/Windows等。自分で作ったAMIも使えます。",
+      "インスタンスタイプ: t2.micro(無料枠/1vCPU/1GB), t3.medium(汎用), m5.large(汎用本番), c5(計算最適化), r5(メモリ最適化), など多数。",
+      "Auto-assign Public IP: enable にするとEC2起動時にパブリックIPが自動付与(VPC設定にも依存)。",
+      "Shutdown behavior: stop(課金停止/再起動可)/terminate(完全消滅/復旧不可)。事故防止に stop を推奨。"
+    ],
+    cautions:[
+      "t2.microは『無料枠』だが、月750時間まで・最初の12ヶ月のみ。常時起動すると無料枠を使い切る。",
+      "termination protection を ON にしておくと、誤操作で消えるのを防げる。本番では必須。",
+      "rootボリュームの『Delete on Termination』ONだと、インスタンス削除でデータも消える。"
+    ],
+    checks:[
+      "正しいVPC・Subnetが選択されているか。",
+      "Public IP が enable になっているか(後から付け直しは不可、ENI付け替えで可能)。"
+    ],
+    refs:["Qiita 元記事(EC2): https://qiita.com/hiroshik1985/items/f078a6a017d092a541cf"]
+  },
+  "ec2-storage":{
+    explain:[
+      "EBS (Elastic Block Store) はEC2にアタッチするブロックストレージ。EC2が停止/再起動してもデータ保持。",
+      "gp2/gp3(汎用SSD): IOPS自動、ほぼ全用途に最適。コスパ良。",
+      "io1/io2(プロビジョンドIOPS SSD): 高IOPS保証(数千〜数万)、大規模DB向け、割高。",
+      "st1/sc1(HDD): 大容量・シーケンシャル向け(ログ・ビッグデータ)、安価。",
+      "10GBは学習用には十分。本番は用途に応じて。"
+    ],
+    cautions:[
+      "EBSは同一AZ内でしか付替できない。別AZへ持っていきたい場合はスナップショット→別AZで復元。",
+      "削除保護(Delete on Termination)をOFFにすればEC2削除後もEBSが残る。"
+    ],
+    checks:["Volume Typeが意図通り(汎用ならgp2/gp3)。Sizeが十分か。"]
+  },
+  "ec2-tag":{
+    explain:[
+      "タグ = キー/値ペアでリソースを分類するメタデータ。検索・課金按分・自動化(Lambda等)で活用。",
+      "Nameタグは特別: コンソールで『名前』列として表示される。",
+      "命名規則の例: <環境>-<役割>-<AZ> (例: prod-web-a, dev-db-c)。"
+    ],
+    cautions:["大規模になるほどタグ規約が重要。タグ無しリソースの管理は破綻します。"],
+    checks:["Nameが想定どおりか、命名規則が一貫しているか。"]
+  },
+  "ec2-sg":{
+    explain:[
+      "セキュリティグループ(SG) = インスタンス単位の仮想ファイアウォール。ステートフル(戻り通信は自動許可)。",
+      "デフォルトは『全Inbound拒否 / 全Outbound許可』。明示的に許可ルールを足していく。",
+      "SSH(22)は管理アクセス、HTTP(80)/HTTPS(443)は公開Web、MySQL(3306)はDB等。",
+      "Source(送信元)は IPアドレス/CIDR、または別のSG(『このSGに属するリソースだけ許可』)を指定可能。"
+    ],
+    cautions:[
+      "0.0.0.0/0 で SSH(22) を開放するのは非常に危険(全世界からSSH試行を受ける)。必ず自分のIPに絞る。",
+      "SGはステートフルなので、Outboundをわざわざ Inboundと逆向きに書く必要はない(戻りは自動)。",
+      "NACLとは別物。NACL(ネットワークACL)はステートレス・サブネット単位。"
+    ],
+    checks:[
+      "SSHのSource(MyIP) は自宅/事務所の現在のIP。VPNやモバイル切替で変わる点に注意。",
+      "HTTP(80)を 10.0.0.0/16 (=VPC内CIDR) に絞る → ELB経由のみ許可 → 直接アクセス遮断の意図。"
+    ]
+  },
+  "ec2-keypair":{
+    explain:[
+      "EC2への初回SSH認証は『公開鍵認証』。AWS側に公開鍵を保存し、ユーザは秘密鍵(.pem)で認証。",
+      "起動時に作成された.pemは『この瞬間しかダウンロードできない』。失くすと再発行不可。",
+      "EC2インスタンスから authorized_keys を書き換えれば、別キーへ切替えは可能(初回SSHできる前提)。"
+    ],
+    cautions:[
+      ".pemファイルは絶対にGitリポジトリにcommitしない。漏洩=サーバ乗っ取り。",
+      "Linuxでは .pem は chmod 400 にしないとSSHが拒否する。",
+      "Windowsでは PuTTY 用に .pem→.ppk 変換が必要。"
+    ],
+    checks:["ローカルの.pemファイルを安全な場所(暗号化ボリューム等)に保管しているか。"]
+  },
+  "ec2-nginx":{
+    explain:[
+      "nginx は軽量・高性能なWebサーバ/リバースプロキシ。AWSではEC2上に立てるのが定番。",
+      "ELBのヘルスチェック対象として『TCP/80 が listen され、200を返すURI』が必要です。",
+      "Amazon Linux2 では `sudo yum install -y nginx` でインストール、`sudo systemctl start nginx && sudo systemctl enable nginx` で起動&自動起動。"
+    ],
+    cautions:[
+      "ELB(ターゲットグループ)のヘルスチェックパスが /(ルート)であること、それに対し nginxが200を返すこと。404を返すパスを指定すると、ELBから常時 unhealthy 扱いになる。",
+      "SELinux/firewalldが nginx を阻害することがある(Amazon Linux2では基本問題ないが、RHEL系では確認)。"
+    ],
+    checks:["EC2上で `curl localhost` が 200 を返すか。SG で 80 が VPC内CIDR から許可されているか。"]
+  },
+
+  // ---- Lab 3: ELB ----
+  "elb-create":{
+    explain:[
+      "ELB (Elastic Load Balancing) は複数EC2へリクエストを振り分けるロードバランサ。",
+      "種類: ALB(L7/HTTP・HTTPS, ホスト/パスルーティング), NLB(L4/TCP・UDP, 超高速), CLB(旧Classic, 非推奨)。",
+      "本ハンズオンでは Webアプリ用なので ALB を使用。",
+      "ALB自身は複数AZにまたがって配置され、AWS内部で自動冗長化されます(料金は時間+データ転送)。"
+    ],
+    cautions:[
+      "ALBは『internet-facing(外部公開)』と『internal(VPC内のみ)』のどちらかを選択。後から変更不可。",
+      "ALBはサブネット単位で稼働するので、最低2つのAZのサブネットを指定必要。"
+    ],
+    checks:["VPC選択が正しいか。internet-facingになっているか。"],
+    refs:["Qiita 元記事(ELB): https://qiita.com/hiroshik1985/items/ffda3f2bdb71599783a3"]
+  },
+  "elb-listener":{
+    explain:[
+      "リスナはALBが受け付けるプロトコル/ポートと、バックエンド(ターゲットグループ)への転送ルールを定義。",
+      "本構成: HTTP:80(クライアント) → HTTP:80(EC2 nginx)。",
+      "本番ではHTTPS:443を追加し、SSL証明書(ACM=AWS Certificate Manager)をアタッチします。"
+    ],
+    cautions:[
+      "ALBは『SSLターミネーション』機能あり。HTTPS:443→HTTP:80(裏)とすることで、EC2側はHTTPでよい(証明書はALBに集約)。",
+      "リスナルールでホスト/パスベースの振分けが可能(例 /api/* は API用TG、それ以外はWeb用TG)。"
+    ]
+  },
+  "elb-health":{
+    explain:[
+      "ヘルスチェック = ALBがバックエンドEC2の正常性を継続監視する仕組み。",
+      "失敗が Unhealthy Threshold 回連続でTGから切り離し、成功が Healthy Threshold 回連続で復帰。",
+      "本構成: interval=10秒, timeout=5秒, unhealthy=2, healthy=5 → 異常検出20秒、復帰50秒。"
+    ],
+    cautions:[
+      "ヘルスチェックパス(/)へのアクセスがEC2のSGで許可されている必要あり(ALBのSG → EC2のSG: HTTP/80)。",
+      "EC2側で / が 200 以外(リダイレクト302/エラー50x)を返すと不健全扱い。",
+      "ヘルスチェック失敗時はCloudWatchで状態確認、Targets タブで詳細理由(Connection timed out等)を見る。"
+    ],
+    checks:["EC2側で curl http://localhost/ が 200 を返すか確認。"]
+  },
+  "elb-subnet":{
+    explain:[
+      "ALBは指定したサブネットそれぞれにIPを確保してロードバランシング。複数AZのサブネット指定で冗長化。",
+      "Cross-Zone Load Balancing(ALBは標準ON, NLBはオプション)で、AZを跨いで均等振分け可能。"
+    ],
+    cautions:["1AZしか指定しないとそのAZ障害時にALB全体停止。"]
+  },
+  "elb-sg":{
+    explain:[
+      "ALB用のSGは別途作成。Inbound: HTTP/80 from 0.0.0.0/0 (=全世界からアクセス受付)。",
+      "EC2側のSGはこのALB-SGからのみHTTPを許可 → ALB経由でしか到達できない構成 = セキュア。"
+    ],
+    cautions:["『EC2のSGで HTTP from 10.0.0.0/16』と書く(本ハンズオン)代わりに、『EC2のSGで HTTP from sg-xxx(ALBのSG)』と書くと、より厳密で本番向け。"]
+  },
+  "elb-target":{
+    explain:[
+      "ターゲットグループ(TG) = 同じ役割のEC2を束ねたグループ。ALBはこのTGへ振分け。",
+      "ターゲットタイプ: instance(EC2インスタンスID) / ip(IPアドレス) / lambda(関数)。",
+      "InService(健全) / OutOfService(不健全/未登録) / Initial(初期化中)の状態がある。"
+    ],
+    cautions:[
+      "OutOfServiceの原因 (頻出): ①EC2のSGがALB-SGからのアクセスを拒否 ②ヘルスチェックパスが200を返さない ③EC2自体が停止 ④ターゲットポート(80)で何もlistenしていない。",
+      "Initialのまま長時間続くなら、ヘルスチェック設定の見直しを。"
+    ],
+    checks:["ALBのDNS名(出力される)にブラウザでアクセス → nginxデフォルト画面表示 = 全経路OK。"]
+  },
+
+  // ---- Lab 4: RDS ----
+  "rds-subnet-group":{
+    explain:[
+      "DB Subnet Group = RDSが使えるサブネットの集合。RDSは『どのサブネット群で動くか』を指定して起動。",
+      "最低2つの異なるAZのサブネットが必要(Multi-AZ要件のため)。1AZしかないVPCではRDS作成不可。",
+      "DB Subnet Group はリージョン単位で複数作成可。"
+    ],
+    cautions:["RDSはプライベートサブネットに置くのが原則。Public Accessible は通常 No。"],
+    refs:["Qiita 元記事(RDS): https://qiita.com/hiroshik1985/items/6643b7323183f82297b2"]
+  },
+  "rds-param-group":{
+    explain:[
+      "DB Parameter Group = MySQL等の設定(my.cnf相当)をテンプレート化したもの。",
+      "本ハンズオンでは日本語対応のため character_set_* を utf8 に。本番では utf8mb4(絵文字対応)が現代の主流。",
+      "DB Parameter Group は再起動時に反映(動的パラメータは即時)。"
+    ],
+    cautions:[
+      "デフォルトパラメータグループは編集不可。必ず Custom を作って割り当てる。",
+      "utf8 vs utf8mb4: 旧utf8は3バイト止まりで絵文字不可。本番では utf8mb4 を推奨。"
+    ]
+  },
+  "rds-sg":{
+    explain:[
+      "RDS用SGはMySQLポート3306をVPC内(10.0.0.0/16)から許可。インターネット直接アクセスは厳禁。",
+      "EC2のSGから許可する書き方(`source = sg-xxx-ec2`)にすると、より厳密。"
+    ],
+    cautions:["3306を 0.0.0.0/0 にすると、世界中から認証試行を受ける。絶対に避ける。"]
+  },
+  "rds-create":{
+    explain:[
+      "RDS本体作成。Engine(MySQL等)、Version、Instance Class(db.t3.micro等)、Storage(GBとタイプ)、Multi-AZ、Backup を設定。",
+      "Multi-AZ: 別AZにスタンバイDB を同期レプリケート。マスター故障時は2〜3分でフェイルオーバ。料金は約2倍。",
+      "本ハンズオンは学習目的で Multi-AZ:No。本番では必ず Yes。",
+      "Public Accessible:No → 外部から直接接続不可、EC2(踏み台)経由のみ。"
+    ],
+    cautions:[
+      "Auto Minor Version Upgrade をYesかつ Multi-AZ:No だと、メンテナンス時にDB停止することがある。",
+      "Master Password はAWS側でも復号化できない。失くしたらリセット手順が必要。",
+      "RDSは起動から課金開始。停止しても7日後に自動起動。長期未使用は削除推奨。"
+    ],
+    checks:["EndpointのDNS名が払い出されるので、EC2から `mysql -h <endpoint> -u admin -p` で接続確認。"]
+  },
+  "rds-read-replica":{
+    explain:[
+      "Read Replica = マスターから非同期レプリケーションで作る『読み取り専用』DB。参照クエリを逃がせる。",
+      "MySQL/PostgreSQL/MariaDB/Auroraで対応。最大5つまでチェーンも可能。",
+      "Multi-AZ(同期レプリカ)とは別物: Read Replica は非同期、レプリカラグあり、書込不可。"
+    ],
+    cautions:[
+      "Read Replica の昇格(Promote)で独立したマスターに昇格可能(レプリケーション停止)。",
+      "クロスリージョン Read Replica も可能(災害対策に使う)。"
+    ]
+  },
+
+  // ---- Lab 5: 総合演習 ----
+  "final-verify-web":{
+    explain:[
+      "完成した経路: Internet → ALB(internet-facing) → TG(EC2 nginx) → 200 OK。",
+      "通信テストでこの経路の各点(SG・ヘルスチェック・nginx)が機能していることを確認。"
+    ],
+    checks:["通信ログで ALB→EC2 の経路が表示され、200相当の応答が出るか。"]
+  },
+  "final-verify-db":{
+    explain:[
+      "EC2 → RDS の経路: EC2は同じVPC内 → SG(3306 from 10.0.0.0/16) → RDS endpoint:3306。",
+      "DBへの実SQL実行は本シミュレータでは行わず、TCP/3306の到達性で『接続可能』を確認。"
+    ]
+  },
+  "final-multi-az":{
+    explain:[
+      "本番化の最終ステップ: ALB配下に AZ-c の EC2 も追加・RDS を Multi-AZ にして可用性を確保。",
+      "これでAZ-aの障害でもサービス継続(ALBはAZ-cのEC2へ振分け、RDSはスタンバイへフェイルオーバ)。",
+      "さらに本番では: Auto Scaling Group(自動スケール)、CloudFront(CDN)、Route53(DNSフェイルオーバ)を追加。"
+    ],
+    cautions:["Multi-AZにすると料金が約2倍。学習段階では戻すのを忘れずに。"],
+    checks:[
+      "ALBのターゲットグループに AZ-a と AZ-c の両EC2が登録され、両方とも InService であること。",
+      "RDSの『Multi-AZ』が Yes になり、Standby AZ が AZ-c になっていること。",
+      "EC2 AZ-a を停止しても ALB DNS 名へのアクセスが継続することを通信テストで確認。"
+    ]
+  }
+};
+
+// ラボごとのまとめ・確認テスト
+var HANDS_ON_SUMMARY = {
+  "aws-handson-1-vpc":{
+    architecture:[
+      "完成した構成図:",
+      "  ┌─────────────── VPC test-vpc (10.0.0.0/16) ───────────────┐",
+      "  │                          │ Internet Gateway              │",
+      "  │  ┌── Subnet AZ-a ──┐   ┌── Subnet AZ-c ──┐               │",
+      "  │  │ 10.0.0.0/24     │   │ 10.0.1.0/24     │               │",
+      "  │  └─────────────────┘   └─────────────────┘               │",
+      "  │  ルートテーブル: 10.0.0.0/16 → local, 0.0.0.0/0 → IGW    │",
+      "  └────────────────────────────────────────────────────────┘"
+    ],
+    key_points:[
+      "VPCはAWS上の論理ネットワーク。CIDRはRFC1918プライベートIP帯から選ぶ。",
+      "サブネットは1AZに紐付き、複数AZでの冗長化に使う。",
+      "IGWを『アタッチ』+ ルートテーブルに『0.0.0.0/0→IGW』 = パブリックサブネット完成。"
+    ],
+    quiz:[
+      { q:"VPCのCIDRに使うのに適切なのはどれ?", choices:["10.0.0.0/16","8.8.8.0/24","224.0.0.0/4","172.0.0.0/8"],
+        answer:0, explain:"プライベートIP(RFC1918)は 10/8, 172.16/12, 192.168/16。10.0.0.0/16 はこの範囲に収まる。8.8.8.0はGoogleの公開IP、224.0.0.0はマルチキャスト。" },
+      { q:"パブリックサブネットにするには何が必要?", choices:["EC2にPublic IPを振るだけ","IGWのアタッチのみ","IGW + ルートテーブルに 0.0.0.0/0 → IGW","NAT Gatewayの作成"],
+        answer:2, explain:"IGWをVPCにアタッチした上で、サブネットに紐付くルートテーブルに 0.0.0.0/0→IGW のルートを追加して初めてパブリックサブネット。" },
+      { q:"Multi-AZ構成にRDSやELBが要求する最低AZ数は?", choices:["1","2","3","リージョン全部"],
+        answer:1, explain:"最低2つの異なるAZのサブネットが必要。Multi-AZ Deploymentは別AZにスタンバイを配置するため。" }
+    ]
+  },
+  "aws-handson-2-ec2":{
+    architecture:[
+      "完成した構成:",
+      "  Internet ─ (※IGW経由でアクセス可能) ─ EC2 test-web-a",
+      "                                          ├─ Amazon Linux2 / t2.micro",
+      "                                          ├─ EBS 10GB (gp2)",
+      "                                          ├─ SG test-web-sg",
+      "                                          │  ├─ SSH(22) ← MyIP",
+      "                                          │  └─ HTTP(80) ← 10.0.0.0/16",
+      "                                          ├─ nginx (listen 80)",
+      "                                          └─ Public IP + Key pair (.pem)"
+    ],
+    key_points:[
+      "EC2はAMI+インスタンスタイプ+VPC/Subnet+ストレージ+SG+キーペアの組合せで起動。",
+      "SGはステートフル仮想FW。Inboundに必要最小限だけ許可。",
+      "キーペアの.pem は再ダウンロード不可。必ず安全保管。"
+    ],
+    quiz:[
+      { q:"無料枠で使えるインスタンスタイプは?", choices:["t2.micro","t3.medium","m5.large","c5.xlarge"],
+        answer:0, explain:"t2.micro が AWS無料利用枠の対象(月750時間まで、12ヶ月間)。" },
+      { q:"SGの『SSH(22) Source 0.0.0.0/0』はなぜ危険?", choices:["料金が上がる","世界中からSSH試行を受けるため","SGの上限を超える","Public IPが固定化される"],
+        answer:1, explain:"SSHを全世界に開放すると、自動化されたブルートフォース攻撃を24時間受け続ける。必ず自分のIP(MyIP)等に絞る。" },
+      { q:".pemファイルを失くした場合は?", choices:["AWSサポートで再発行","EC2は使えなくなる","authorized_keys 書換ができない限り入れない","Tagでキー名検索"],
+        answer:2, explain:"pemは再ダウンロード不可。別の手段(ユーザーデータ・SSM Session Manager等)でauthorized_keysを書き換える必要がある。" }
+    ]
+  },
+  "aws-handson-3-elb":{
+    architecture:[
+      "完成した構成:",
+      "  Internet → ALB(internet-facing, SG:test-web-elb-sg)",
+      "             │  Listener: HTTP:80",
+      "             │  Health Check: HTTP:80 /",
+      "             ▼",
+      "           Target Group tg-web (port 80)",
+      "             └─ EC2 test-web-a (SG:test-web-sg)"
+    ],
+    key_points:[
+      "ALBはL7ロードバランサ。複数AZにまたがって自動冗長化。",
+      "ヘルスチェック失敗 → ターゲットを自動切り離し。閾値の設計が重要。",
+      "ALB用SGは 0.0.0.0/0:80 を許可。EC2用SGは ALB-SGまたはVPC内CIDRからのみ許可。"
+    ],
+    quiz:[
+      { q:"OutOfServiceの主要原因として最も多いのは?", choices:["EC2のCPU使用率高い","ヘルスチェックパス(/)が200を返さない or SG拒否","ALBの設定漏れ","RDSへの接続失敗"],
+        answer:1, explain:"頻出原因はEC2側の /(ルート)が200を返していないか、EC2のSGがALBからのアクセスを拒否しているケース。" },
+      { q:"ALBは何種類のロードバランサ?", choices:["L2","L3","L4","L7"],
+        answer:3, explain:"ALB は L7(アプリケーション層・HTTP/HTTPS)。L4はNLB。ホスト名/パスに基づく振分けはL7だから可能。" },
+      { q:"interval=10, unhealthy=2 の意味は?", choices:["10秒ごとチェック、2回連続失敗で切り離し","2秒に10回","10分に2回","10台のうち2台failure"],
+        answer:0, explain:"10秒間隔で連続2回失敗 = 約20秒以内に異常検知 → ターゲットから切り離し。" }
+    ]
+  },
+  "aws-handson-4-rds":{
+    architecture:[
+      "完成した構成:",
+      "  EC2 test-web-a (10.0.0.10) ──→ test-rds-mysql (MySQL 8.0, db.t1.micro, AZ-a)",
+      "                                    │ SG: test-rds-sg (3306 from 10.0.0.0/16)",
+      "                                    │ Parameter: japanese(utf8)",
+      "                                    │ Subnet Group: test-db-sng (AZ-a + AZ-c)",
+      "                                    └─ Read Replica → test-rds-mysql-rr (AZ-c)"
+    ],
+    key_points:[
+      "RDSはマネージドDB。バックアップ・パッチ・冗長化を自動化。",
+      "Multi-AZは『同期スタンバイ』(高可用)、Read Replicaは『非同期コピー』(読み逃がし)。役割が違う。",
+      "DBはプライベートサブネット + SGで厳格制限。Public Accessible は基本No。"
+    ],
+    quiz:[
+      { q:"Multi-AZとRead Replicaの違いは?", choices:["全く同じ","Multi-AZは非同期、RRは同期","Multi-AZは同期(高可用)、RRは非同期(読み逃がし)","Multi-AZは料金無料"],
+        answer:2, explain:"Multi-AZは別AZへ同期レプリケーション+自動フェイルオーバ(高可用)。Read Replicaは非同期で読み取り専用(参照分散)。" },
+      { q:"DB Subnet Group が要求するのは?", choices:["1AZ以上","2AZ以上のサブネット","3AZ以上","リージョン全部のAZ"],
+        answer:1, explain:"RDSはMulti-AZ要件のため、最低2つの異なるAZのサブネットを含むDB Subnet Groupが必要。" },
+      { q:"日本語(絵文字含む)を扱う MySQLで推奨される文字コードは?", choices:["latin1","utf8(旧)","utf8mb4","sjis"],
+        answer:2, explain:"旧utf8は3バイトまでで絵文字(4バイト)が扱えない。utf8mb4が現代の標準。" }
+    ]
+  },
+  "aws-handson-5-final":{
+    architecture:[
+      "完成した本番想定構成:",
+      "  Internet",
+      "    │",
+      "  ALB (multi-AZ)",
+      "    ├─→ EC2 test-web-a (AZ-a)",
+      "    └─→ EC2 test-web-c (AZ-c)",
+      "          │",
+      "        RDS Multi-AZ",
+      "          ├─ Master (AZ-a)",
+      "          ├─ Standby同期 (AZ-c)",
+      "          └─ Read Replica (AZ-c)"
+    ],
+    key_points:[
+      "可用性: AZ障害時もサービス継続(ALBが残るEC2へ振分け、RDSがスタンバイへフェイルオーバ)。",
+      "本構成にさらに加えるべきもの: Auto Scaling Group(自動スケール)、CloudFront(CDN)、Route53(DNS+ヘルスチェック)、WAF(防御)。",
+      "コスト面: Multi-AZにすると料金が約2倍。学習が終わったらリソース削除を忘れずに。"
+    ],
+    quiz:[
+      { q:"AZ-aの障害でサービスを継続するために必須なものは?", choices:["EC2を高性能にする","別AZ(AZ-c)にもEC2を配置 + Multi-AZ RDS","SGをゆるくする","Public IPを増やす"],
+        answer:1, explain:"別AZにもEC2を置きALB配下にする、かつRDS Multi-AZでスタンバイ用意 → AZ-a障害でも他AZが受持つ。" },
+      { q:"学習が終わったらやるべきことは?", choices:["放置でOK","リソースを全て削除して課金を止める","タグを消す","起動だけ止める"],
+        answer:1, explain:"EC2 stopでもEBS課金は続く。RDSは7日後に自動起動。削除しないと料金がかかり続ける。" },
+      { q:"本番構成にさらに必要なものは(複数選択肢から最も重要)?", choices:["Auto Scaling + CloudFront + Route53","tag整備","リージョンを増やす","Public IPを固定"],
+        answer:0, explain:"自動スケール・CDN・DNSヘルスチェックは本番の3点セット。" }
+    ]
+  }
+};
+
+// ステップ詳細表示の拡張: 既存のshowHandsOnLabが各stepを描いた後、
+// この関数で追加セクション(解説/注意/確認/参考)を差し込む。
+function _renderHandsOnDeep(stepId, parent){
+  const d = HANDS_ON_DEEP[stepId]; if(!d) return;
+  if(d.explain && d.explain.length){
+    ch("div",{text:"📚 詳しい解説",style:{fontSize:"10px",color:"var(--accent)",fontWeight:"700",marginTop:"6px"}},parent);
+    for(const s of d.explain) ch("div",{text:" · "+s,style:{fontSize:"10.5px",color:"var(--text)",lineHeight:"1.5",margin:"1px 0"}},parent);
+  }
+  if(d.cautions && d.cautions.length){
+    ch("div",{text:"⚠️ 注意点・落とし穴",style:{fontSize:"10px",color:"var(--orange)",fontWeight:"700",marginTop:"6px"}},parent);
+    for(const s of d.cautions) ch("div",{text:" ⚠ "+s,style:{fontSize:"10.5px",color:"var(--text)",lineHeight:"1.5",margin:"1px 0"}},parent);
+  }
+  if(d.checks && d.checks.length){
+    ch("div",{text:"🔍 確認ポイント",style:{fontSize:"10px",color:"var(--green)",fontWeight:"700",marginTop:"6px"}},parent);
+    for(const s of d.checks) ch("div",{text:" ✓ "+s,style:{fontSize:"10.5px",color:"var(--text)",lineHeight:"1.5",margin:"1px 0"}},parent);
+  }
+  if(d.refs && d.refs.length){
+    ch("div",{text:"🔗 参考",style:{fontSize:"10px",color:"var(--text-mute)",fontWeight:"700",marginTop:"6px"}},parent);
+    for(const s of d.refs) ch("div",{text:" "+s,style:{fontSize:"10px",color:"var(--text-dim)",lineHeight:"1.4",margin:"1px 0",fontStyle:"italic"}},parent);
+  }
+}
+
+// ラボ完了サマリ + クイズダイアログ
+function showHandsOnSummary(labId){
+  const sum = HANDS_ON_SUMMARY[labId];
+  const lab = HANDS_ON_LABS.find(l=>l.id===labId);
+  if(!sum || !lab) return;
+  openDialog(`🎓 ${lab.title} — まとめ・確認テスト`, (body)=>{
+    if(sum.architecture){
+      ch("div",{text:"📐 構成図",style:{fontSize:"12px",color:"var(--accent)",fontWeight:"700"}},body);
+      const pre=ch("pre",{style:{background:"var(--bg)",border:"1px solid var(--border)",padding:"8px",fontFamily:"var(--mono)",fontSize:"10.5px",lineHeight:"1.4",whiteSpace:"pre",borderRadius:"4px",margin:"4px 0 10px 0"}},body);
+      pre.textContent = sum.architecture.join("\n");
+    }
+    if(sum.key_points){
+      ch("div",{text:"🎯 学習ポイント",style:{fontSize:"12px",color:"var(--accent)",fontWeight:"700",marginTop:"6px"}},body);
+      for(const k of sum.key_points) ch("div",{text:" • "+k,style:{fontSize:"11px",color:"var(--text)",lineHeight:"1.5",margin:"2px 0"}},body);
+    }
+    if(sum.quiz && sum.quiz.length){
+      ch("div",{text:"📝 確認テスト("+sum.quiz.length+"問)",style:{fontSize:"12px",color:"var(--accent)",fontWeight:"700",marginTop:"10px"}},body);
+      sum.quiz.forEach((q,qi)=>{
+        const qbox=ch("div",{style:{border:"1px solid var(--border)",borderRadius:"5px",padding:"8px",margin:"6px 0",background:"var(--bg2)"}},body);
+        ch("div",{text:"Q"+(qi+1)+". "+q.q,style:{fontWeight:"700",fontSize:"11.5px",marginBottom:"4px"}},qbox);
+        const result=ch("div",{style:{fontSize:"10.5px",marginTop:"4px",lineHeight:"1.5"}},qbox);
+        q.choices.forEach((c,ci)=>{
+          const choice=ch("div",{style:{display:"flex",alignItems:"center",gap:"6px",cursor:"pointer",padding:"3px 6px",borderRadius:"3px",margin:"2px 0"}},qbox);
+          choice.addEventListener("mouseenter",()=>{choice.style.background="var(--bg)"});
+          choice.addEventListener("mouseleave",()=>{choice.style.background=""});
+          ch("span",{text:String.fromCharCode(65+ci)+".",style:{fontWeight:"700",color:"var(--text-dim)"}},choice);
+          ch("span",{text:c,style:{flex:"1",fontSize:"11px"}},choice);
+          choice.addEventListener("click",()=>{
+            if(ci===q.answer){ result.innerHTML=""; ch("div",{text:"✅ 正解!",style:{color:"var(--green)",fontWeight:"700"}},result); ch("div",{text:"解説: "+q.explain,style:{color:"var(--text)",marginTop:"3px"}},result); choice.style.background="rgba(34,197,94,0.2)"; }
+            else { result.innerHTML=""; ch("div",{text:"❌ 不正解。正解は "+String.fromCharCode(65+q.answer),style:{color:"var(--red)",fontWeight:"700"}},result); ch("div",{text:"解説: "+q.explain,style:{color:"var(--text)",marginTop:"3px"}},result); choice.style.background="rgba(255,99,99,0.2)"; }
+          });
+        });
+      });
+    }
+    const btns=ch("div",{style:{display:"flex",gap:"6px",marginTop:"12px"}},body);
+    ch("button",{text:"← ラボに戻る",style:{padding:"6px 12px",fontSize:"11px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"4px"},
+      on:{click:()=>{ closeDialog(); showHandsOnLab(labId); }}},btns);
+    if(lab.next){
+      ch("button",{text:"→ 次のラボへ",style:{padding:"6px 12px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
+        on:{click:()=>{ closeDialog(); showHandsOnLab(lab.next); }}},btns);
+    }
     return { buttons:[{ text:"閉じる", primary:true, action: closeDialog }] };
   });
 }

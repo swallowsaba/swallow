@@ -710,9 +710,15 @@ function awsFindSecurityGroup(name){
   return null;
 }
 function awsSecurityGroupVerdict(server, proto, port, srcIp){
-  const aws = server.aws;
-  if(!aws || !aws.security_groups || !aws.security_groups.length) return { ok:true };
-  for(const sgName of aws.security_groups){
+  // server can be either a server object (server.aws.security_groups) or a device (device.aws_config.security_groups)
+  let sgNames = null;
+  if(server && server.aws && server.aws.security_groups && server.aws.security_groups.length){
+    sgNames = server.aws.security_groups;
+  } else if(server && server.aws_config && server.aws_config.security_groups && server.aws_config.security_groups.length){
+    sgNames = server.aws_config.security_groups;
+  }
+  if(!sgNames) return { ok:true };
+  for(const sgName of sgNames){
     const sg=awsFindSecurityGroup(sgName);
     if(!sg) continue;
     for(const r of (sg.inbound||[])){
@@ -722,9 +728,8 @@ function awsSecurityGroupVerdict(server, proto, port, srcIp){
       return { ok:true, sg:sgName, rule:r };
     }
   }
-  return { ok:false, reason:`AWS Security Group により遮断 (${aws.security_groups.join(",")}: ${proto}/${port} 未許可)` };
+  return { ok:false, reason:`AWS Security Group により遮断 (${sgNames.join(",")}: ${proto}/${port} 未許可)` };
 }
-
 function elementPrimaryIp(kind, id, family){
   // family is optional: "v4" | "v6". If unspecified, prefer v4, fall back to v6.
   if(kind === "service"){
@@ -1921,6 +1926,13 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
             reason:`${curObj.id} (${curObj.fqdn||"external"}): ポート ${proto}/${dstPort} は提供されていません`,
             blockedAt:{ kind:"device", id:curObj.id } };
         }
+        // AWS Security Group inbound check for AWS service devices (RDS/ALB/etc.)
+        if(curObj.aws_kind && typeof awsSecurityGroupVerdict === "function"){
+          const sgv = awsSecurityGroupVerdict(curObj, proto, dstPort, srcIp);
+          if(!sgv.ok){
+            return { ok:false, path, reason:`${curObj.id}: ${sgv.reason}`, blockedAt:{ kind:"device", id:curObj.id } };
+          }
+        }
         // AWS-specific engine effects
         if(curObj.aws_kind === "aws-s3" && curObj.aws_config){
           const cfg = curObj.aws_config;
@@ -2174,6 +2186,21 @@ function computePath(srcKind, srcObj, destIp, proto, dstPort){
           }
         }
         return { ok:true, path, portState:verdict.state, portInfo:verdict.reason, natApplied };
+      }
+      // Peer is an AWS service device (RDS/ALB/etc.) — evaluate external_ports and SG
+      if(next.peerKind === "device" && peerObj.external && Array.isArray(peerObj.external_ports) && dstPort != null){
+        const portOk = peerObj.external_ports.some(p=>+p.port===+dstPort);
+        path.push({ kind:"device", id:peerObj.id, ...center(peerObj) });
+        if(!portOk){
+          return { ok:false, path, reason:`${peerObj.id}: ポート ${proto}/${dstPort} は提供されていません`, blockedAt:{ kind:"device", id:peerObj.id } };
+        }
+        if(peerObj.aws_kind && typeof awsSecurityGroupVerdict === "function"){
+          const sgv = awsSecurityGroupVerdict(peerObj, proto, dstPort, srcIp);
+          if(!sgv.ok){
+            return { ok:false, path, reason:`${peerObj.id}: ${sgv.reason}`, blockedAt:{ kind:"device", id:peerObj.id } };
+          }
+        }
+        return { ok:true, path, portInfo:`${peerObj.fqdn||peerObj.id} ${proto}/${dstPort} OK` };
       }
       return { ok:true, path };
     }
