@@ -5,12 +5,115 @@ function openPropertyPanel(){
   if(!App.selected){ p.classList.add("hidden"); return; }
   p.classList.remove("hidden");
   const { kind, id } = App.selected;
+  // AWS VPC / K8s cluster are not in the standard collections — handle them specially
+  if(kind === "aws-vpc"){
+    const vpc = (App.config.aws&&App.config.aws.vpcs||[]).find(v=>v.name===id||v.id===id);
+    if(!vpc){ p.classList.add("hidden"); return; }
+    $("#ph-title").textContent = `AWS VPC: ${vpc.name}`;
+    const body = $("#ph-body"); body.innerHTML = "";
+    renderVpcInlineProps(body, vpc);
+    return;
+  }
+  if(kind === "k8s-cluster"){
+    const cl = (App.config.k8s&&App.config.k8s.clusters||[]).find(c=>c.name===id);
+    if(!cl){ p.classList.add("hidden"); return; }
+    $("#ph-title").textContent = `K8s クラスタ: ${cl.name}`;
+    const body = $("#ph-body"); body.innerHTML = "";
+    renderClusterInlineProps(body, cl);
+    return;
+  }
   const obj = Cfg.byId(kindToCol(kind), id);
   if(!obj){ p.classList.add("hidden"); return; }
   $("#ph-title").textContent = `${kindLabel(kind)}: ${obj.label||id}`;
   renderPropertyForm(kind, obj);
 }
 function closePropertyPanel(){ $("#prop-panel").classList.add("hidden"); }
+
+// Inline property panel for an AWS VPC (right-side panel, like a server/device)
+function renderVpcInlineProps(body, vpc){
+  helpBox(body, "VPCの設定", [
+    "VPCの基本設定、サブネット、セキュリティグループを編集できます。",
+    "詳細な追加(EC2配置など)は『詳細管理を開く』から。"
+  ], false);
+  addField(body, "VPC名", "text", vpc.name||"", v=>{ const old=vpc.name; vpc.name=v;
+    // keep EC2 placements in sync
+    for(const s of (App.config.servers||[])){ if(s.aws&&s.aws.vpc===old) s.aws.vpc=v; }
+    App.selected={kind:"aws-vpc",id:v}; renderAndSync(); openPropertyPanel(); });
+  addField(body, "CIDR", "text", vpc.cidr||"", v=>{ vpc.cidr=v; renderAndSync(); });
+  addField(body, "リージョン", "text", vpc.region||"", v=>{ vpc.region=v; renderAndSync(); });
+  addSelectField(body, "Internet Gateway", ["true","false"], String(!!vpc.igw), v=>{ vpc.igw=(v==="true"); renderAndSync(); });
+  // subnets
+  const ss=ch("div",{class:"sub-section"},body);
+  ch("h4",{text:"サブネット",style:{margin:0,fontSize:"12px"}},ss);
+  (vpc.subnets||[]).forEach((sn,i)=>{
+    const r=ch("div",{style:{display:"flex",gap:"4px",alignItems:"center",marginBottom:"3px",flexWrap:"wrap"}},ss);
+    const nmI=ch("input",{type:"text",value:sn.name||"",placeholder:"name",style:{width:"70px",padding:"3px",fontSize:"10px"}},r);
+    nmI.addEventListener("change",()=>{sn.name=nmI.value;renderAndSync();});
+    const cI=ch("input",{type:"text",value:sn.cidr||"",placeholder:"10.0.1.0/24",style:{flex:"1",padding:"3px",fontSize:"10px"}},r);
+    cI.addEventListener("change",()=>{sn.cidr=cI.value;renderAndSync();});
+    const pubS=ch("select",{style:{padding:"3px",fontSize:"10px"}},r);
+    ch("option",{value:"public",text:"public"},pubS); ch("option",{value:"private",text:"private"},pubS); pubS.value=sn.public?"public":"private";
+    pubS.addEventListener("change",()=>{sn.public=(pubS.value==="public");renderAndSync();});
+    ch("button",{text:"✕",style:{padding:"1px 5px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)"},
+      on:{click:()=>{vpc.subnets.splice(i,1);renderAndSync();openPropertyPanel();}}},r);
+  });
+  ch("button",{text:"+ サブネット",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",marginTop:"3px"},
+    on:{click:()=>{(vpc.subnets=vpc.subnets||[]).push({name:"subnet"+((vpc.subnets||[]).length+1),cidr:"10.0."+((vpc.subnets||[]).length+1)+".0/24",public:false});renderAndSync();openPropertyPanel();}}},ss);
+  // security groups
+  const sg=ch("div",{class:"sub-section"},body);
+  ch("h4",{text:"セキュリティグループ",style:{margin:0,fontSize:"12px"}},sg);
+  (vpc.security_groups||[]).forEach((g,i)=>{
+    const r=ch("div",{style:{display:"flex",gap:"4px",alignItems:"center",marginBottom:"3px"}},sg);
+    const nmI=ch("input",{type:"text",value:g.name||"",placeholder:"sg名",style:{width:"80px",padding:"3px",fontSize:"10px"}},r);
+    nmI.addEventListener("change",()=>{g.name=nmI.value;renderAndSync();});
+    const ibI=ch("input",{type:"text",value:(g.inbound||[]).map(x=>typeof x==="string"?x:(x.proto+"/"+x.port+(x.source?(" "+x.source):""))).join(", "),placeholder:"tcp/443 0.0.0.0/0, ...",style:{flex:"1",padding:"3px",fontSize:"10px"}},r);
+    ibI.addEventListener("change",()=>{ g.inbound = ibI.value.split(",").map(s=>s.trim()).filter(Boolean).map(s=>{ const m=s.match(/^(\w+)\/(\d+)\s*(.*)$/); return m?{proto:m[1],port:+m[2],source:m[3]||"0.0.0.0/0"}:{raw:s}; }); renderAndSync(); });
+    ch("button",{text:"✕",style:{padding:"1px 5px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)"},
+      on:{click:()=>{vpc.security_groups.splice(i,1);renderAndSync();openPropertyPanel();}}},r);
+  });
+  ch("button",{text:"+ セキュリティグループ",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",marginTop:"3px"},
+    on:{click:()=>{(vpc.security_groups=vpc.security_groups||[]).push({name:"sg-"+((vpc.security_groups||[]).length+1),inbound:[{proto:"tcp",port:443,source:"0.0.0.0/0"}],outbound:[]});renderAndSync();openPropertyPanel();}}},sg);
+  // EC2 list
+  const ec2s=(App.config.servers||[]).filter(s=>s.aws&&s.aws.vpc===vpc.name);
+  ch("div",{text:`配置EC2: ${ec2s.length}台 — ${ec2s.map(s=>s.label||s.id).join(", ")||"(なし)"}`,style:{fontSize:"10px",color:"var(--text-dim)",margin:"8px 0"}},body);
+  const btns=ch("div",{style:{display:"flex",gap:"6px",marginTop:"8px",flexWrap:"wrap"}},body);
+  ch("button",{text:"⚙ 詳細管理を開く",style:{flex:"1",padding:"7px",fontSize:"11px",cursor:"pointer",background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"5px",fontWeight:"700"},
+    on:{click:()=>showAwsManager(vpc.name)}},btns);
+  ch("button",{text:"🗑 VPC削除",style:{flex:"1",padding:"7px",fontSize:"11px",cursor:"pointer",background:"var(--red)",border:"none",color:"#fff",borderRadius:"5px",fontWeight:"700"},
+    on:{click:()=>{ deleteAwsVpc(vpc.name); closePropertyPanel(); }}},btns);
+}
+
+// Inline property panel for a K8s cluster
+function renderClusterInlineProps(body, cl){
+  helpBox(body, "Kubernetesクラスタの設定", [
+    "クラスタの基本設定・ノード・Pod・Serviceを編集できます。",
+    "ノードを追加するとPodを配置できます。詳細は『詳細管理を開く』から。"
+  ], false);
+  addField(body, "クラスタ名", "text", cl.name||"", v=>{ cl.name=v; App.selected={kind:"k8s-cluster",id:v}; renderAndSync(); openPropertyPanel(); });
+  addField(body, "Pod CIDR", "text", cl.pod_cidr||"", v=>{ cl.pod_cidr=v; renderAndSync(); });
+  addField(body, "Service CIDR", "text", cl.service_cidr||"", v=>{ cl.service_cidr=v; renderAndSync(); });
+  // nodes with roles
+  const cp = new Set(cl.control_plane && cl.control_plane.masters || []);
+  const ns=ch("div",{class:"sub-section"},body);
+  ch("h4",{text:`ノード (${(cl.nodes||[]).length})`,style:{margin:0,fontSize:"12px"}},ns);
+  (cl.nodes||[]).forEach(nid=>{
+    const r=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"3px",fontSize:"10.5px"}},ns);
+    const isMaster = cp.has(nid);
+    ch("span",{text:isMaster?"👑":"⚙",title:isMaster?"control-plane":"worker"},r);
+    ch("span",{text:nid,style:{flex:"1",fontFamily:"var(--mono)"}},r);
+    const s=Cfg.byId("servers",nid);
+    ch("span",{text:isMaster?"master":"worker",style:{fontSize:"9px",color:isMaster?"var(--orange)":"var(--cyan)"}},r);
+    ch("span",{text:s?(s.status||"?"):"未存在",style:{fontSize:"9px",color:s&&s.status==="running"?"var(--green)":"var(--red)"}},r);
+  });
+  const podsByNode={};
+  for(const pod of (cl.pods||[])){ (podsByNode[pod.node||"(未割当)"]=podsByNode[pod.node||"(未割当)"]||[]).push(pod.name); }
+  ch("div",{text:`Pod配置: ${Object.entries(podsByNode).map(([n,ps])=>n+"→["+ps.join(",")+"]").join(" / ")||"(なし)"}`,style:{fontSize:"10px",color:"var(--text-dim)",margin:"6px 0",lineHeight:"1.4"}},body);
+  const btns=ch("div",{style:{display:"flex",gap:"6px",marginTop:"8px",flexWrap:"wrap"}},body);
+  ch("button",{text:"⚙ 詳細管理を開く",style:{flex:"1",padding:"7px",fontSize:"11px",cursor:"pointer",background:"var(--bg3)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"5px",fontWeight:"700"},
+    on:{click:()=>showK8sManager(cl.name)}},btns);
+  ch("button",{text:"🗑 クラスタ削除",style:{flex:"1",padding:"7px",fontSize:"11px",cursor:"pointer",background:"var(--red)",border:"none",color:"#fff",borderRadius:"5px",fontWeight:"700"},
+    on:{click:()=>{ deleteK8sCluster(cl.name); closePropertyPanel(); }}},btns);
+}
 
 function renderPropertyForm(kind, obj){
   const body = $("#ph-body"); body.innerHTML = "";
@@ -1652,12 +1755,25 @@ function showK8sManager(focusCluster){
       const nodeBox = ch("div",{style:{border:"1px solid var(--border)",padding:"6px",borderRadius:"4px",background:"var(--bg)",marginBottom:"6px"}},cfg);
       (cl.nodes||[]).forEach((nid,ni)=>{
         const nr=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"3px",fontSize:"10.5px"}},nodeBox);
-        ch("span",{text:"●",style:{color:"var(--green)"}},nr);
+        cl.control_plane = cl.control_plane || { masters:[] };
+        cl.control_plane.masters = cl.control_plane.masters || [];
+        const isMaster = cl.control_plane.masters.includes(nid);
+        ch("span",{text:isMaster?"👑":"⚙",title:isMaster?"control-plane (master)":"worker"},nr);
         ch("span",{text:nid,style:{flex:"1",fontFamily:"var(--mono)"}},nr);
         const s=Cfg.byId("servers",nid);
+        // role toggle
+        const roleBtn=ch("button",{text:isMaster?"master":"worker",title:"クリックで役割切替",
+          style:{padding:"2px 6px",fontSize:"9px",cursor:"pointer",borderRadius:"3px",fontWeight:"700",
+            background:isMaster?"rgba(245,158,11,0.15)":"rgba(0,200,255,0.12)",border:"1px solid "+(isMaster?"var(--orange)":"var(--cyan)"),color:isMaster?"var(--orange)":"var(--cyan)"}},nr);
+        roleBtn.addEventListener("click",()=>{
+          if(isMaster) cl.control_plane.masters = cl.control_plane.masters.filter(x=>x!==nid);
+          else cl.control_plane.masters.push(nid);
+          cl.roles = cl.roles||{}; cl.roles[nid] = isMaster?"worker":"master";
+          renderAndSync(); refresh();
+        });
         ch("span",{text:s?(s.status==="running"?"running":s.status):"未存在",style:{fontSize:"9px",color:s&&s.status==="running"?"var(--green)":"var(--red)"}},nr);
         ch("button",{text:"×",style:{padding:"2px 6px",fontSize:"10px",cursor:"pointer",background:"var(--bg3)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
-          on:{click:()=>{ cl.nodes=cl.nodes.filter(x=>x!==nid); renderAndSync(); refresh(); }}},nr);
+          on:{click:()=>{ cl.nodes=cl.nodes.filter(x=>x!==nid); if(cl.control_plane)cl.control_plane.masters=(cl.control_plane.masters||[]).filter(x=>x!==nid); renderAndSync(); refresh(); }}},nr);
       });
       if(!(cl.nodes||[]).length) ch("div",{text:"(まだノードがありません)",style:{fontSize:"10px",color:"var(--text-mute)",fontStyle:"italic"}},nodeBox);
       const naBtn=ch("div",{style:{display:"flex",gap:"6px",marginTop:"6px",flexWrap:"wrap"}},nodeBox);
@@ -5068,7 +5184,8 @@ function buildK8sSingle(opts){
     selector:{app:"web"}, ports };
   if(svc_type==="LoadBalancer") svc.external_ip="203.0.113.80";
   App.config.k8s.clusters.push({ name:cluster_name, pod_cidr:"10.244.0.0/16", service_cidr:"10.96.0.0/12",
-    nodes:fab.nodeIds, namespaces:["default","kube-system"], pods, services:[svc], ingresses:[] });
+    nodes:fab.nodeIds, control_plane:{ masters:masterIds, ha:masters>=3 }, roles:Object.fromEntries(fab.nodeIds.map(id=>[id, masterIds.includes(id)?"master":"worker"])),
+    namespaces:["default","kube-system"], pods, services:[svc], ingresses:[] });
   return stats;
 }
 // Production-like cluster: workers + LoadBalancer Service + external Ingress LB + CloudFront CDN.
@@ -5093,7 +5210,8 @@ function buildK8sProd(opts){
   const ingress = { name:"web-ingress", namespace:"default", host:"app.example.com",
     rules:[{path:"/", service:"web-svc", port:80}] };
   App.config.k8s.clusters.push({ name:cluster_name, pod_cidr:"10.244.0.0/16", service_cidr:"10.96.0.0/12",
-    nodes:fab.nodeIds, namespaces:["default","kube-system"], pods, services:[svc], ingresses:[ingress] });
+    nodes:fab.nodeIds, control_plane:{ masters:masterIds, ha:masters>=3 }, roles:Object.fromEntries(fab.nodeIds.map(id=>[id, masterIds.includes(id)?"master":"worker"])),
+    namespaces:["default","kube-system"], pods, services:[svc], ingresses:[ingress] });
 
   // External Ingress Load Balancer (ALB-like) in front of the cluster
   const lbId = `${prefix}-alb`;

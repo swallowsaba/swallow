@@ -2539,7 +2539,7 @@ function addExternalEndpoint(provider, item){
   App.config.devices.push(dev);
   selectElement("device", id);
   renderAndSync(); updateStatusBar();
-  toast(`外部サービス「${item.label}」を追加 (${item.fqdn})`, "ok");
+  toast(`「${item.label}」を追加 — 右パネルで詳細設定できます`, "ok");
   Log.info(`外部サービス追加: ${id} ${item.fqdn} ${item.ip}`);
 }
 function showDeviceTypeMenu(anchorBtn){
@@ -2975,6 +2975,37 @@ var FAULT_LABS = [
     explain:["ハートビート: 一定間隔で相互に生存確認パケットを送り合う仕組み。",
       "途切れるとフェイルオーバ(片系へ切替)やスプリットブレイン防止動作が働く。",
       "vPC/HSRP/VRRP/スタック等で利用される。"],
+    inject:null, recover:null },
+
+  { cat:"基礎を学ぶ(概念と手順)", id:"learn-aws-svc", icon:"☁", title:"AWSサービス(S3等)の設定方法",
+    symptom:"S3/ALB/IGW等のAWSサービスを配置して設定する手順。",
+    steps:["1. 左の『☁ 外部サービス』ボタン → カタログから S3 / ALB / NLB / IGW / VPCエンドポイント等を選んで配置。",
+      "2. 配置したノードを【クリックで選択】すると、画面右にそのサービス専用の設定パネルが開く。",
+      "3. 例(S3): バケット名・リージョン・public/private・許可CIDR(バケットポリシー)・暗号化を設定。",
+      "4. 接続モードで他の機器と線で繋ぐ。通信テストで疎通を確認。",
+      "5. S3で『private』かつ許可CIDR外からアクセスすると、バケットポリシーで拒否される(エンジン再現)。"],
+    explain:["AWSサービスは『☁外部サービス』から配置 → 右パネルで設定、が基本の流れです。",
+      "S3: 許可CIDRに送信元が含まれないと拒否(バケットポリシー)。",
+      "ALB/NLB: リスナとターゲットグループで振分け先のEC2を指定。",
+      "IGW: VPCにアタッチしないとインターネットへ出られません。",
+      "Direct Connect: statusをdownにするとオンプレ↔AWSが切断されます。"],
+    inject:null, recover:null },
+
+  { cat:"基礎を学ぶ(概念と手順)", id:"learn-migration", icon:"🚚", title:"マイグレーションの操作方法",
+    symptom:"Pod/VMを別ノード・別ホストへ移動する操作と挙動。",
+    steps:["【VM ライブマイグレーション(vMotion)】",
+      "1. ESXi/vCenterホストを選択 → 右パネルの『🖥 仮想基盤を管理』を開く。",
+      "2. VM行の『負荷』を 低/中/高 から選ぶ(メモリ書込負荷)。",
+      "3. VM行の『🚚 ライブvMotion』を押すと、別ホストへpre-copy方式で移動。",
+      "4. 通信ログでpre-copy反復・ダウンタイム・TCP継続・成否を確認。負荷『高』は収束せず失敗する。",
+      "【Pod マイグレーション】",
+      "5. K8sクラスタを選択 → 右パネルの『詳細管理』 → Pod行の『🔀 移動』で別ノードへ再スケジュール。",
+      "【自動フェイルオーバ(HA)】",
+      "6. ノード/ホストを右クリック→ステータスを『error』にすると、その上のPod/VMが健全な別ノードへ自動移動。"],
+    explain:["ライブマイグレーション: メモリをpre-copyで反復転送し、最後に短時間停止(stop-and-copy)して移動先で再開。",
+      "IP/MACを維持するため、既存のTCPセッションは数十msの瞬断を挟んで継続します。",
+      "ダーティページ生成が転送帯域を超えるとpre-copyが収束せず失敗(負荷『高』で再現)。",
+      "HA構成では、ノード障害時にPod/VMが自動的に健全なノードへフェイルオーバします。"],
     inject:null, recover:null },
 
   { cat:"機器・ハードウェア障害", id:"server-down", icon:"🖥", title:"サーバ故障(ダウン)",
@@ -3504,6 +3535,7 @@ function attachEventHandlers(){
   bind("#btn-segments","click", showSegmentManager);
   bind("#btn-k8s","click", showK8sManager);
   bind("#btn-aws","click", showAwsManager);
+  bind("#btn-aws-svc","click", openExternalServiceCatalog);
   bind("#btn-mac-audit","click", openMacAudit);
   const btnAnim = $("#btn-anim-toggle");
   if(btnAnim){

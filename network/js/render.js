@@ -6,7 +6,7 @@ function render(){
   $("#layer-elements").innerHTML = "";
   const annLayer = $("#layer-annotations");
   if(annLayer) annLayer.innerHTML = "";
-  // overlays/packets not cleared here
+  const ovl = $("#layer-overlays"); if(ovl) ovl.innerHTML = "";  // top layer for pod chips / badges
   ensureArrowMarkers();
   Cfg.ensure();
   gConnSegments = [];
@@ -26,6 +26,7 @@ function render(){
   }catch(e){}
   renderAwsOverlay();
   renderK8sOverlay();
+  renderVcenterOverlay();
   for(const c of App.config.connections) renderConnection(c);
   renderCrossoverHops();
   renderVpcOverlay();
@@ -711,7 +712,7 @@ function renderAwsOverlay(){
     }
     vpcFrame.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); showContextMenu(e,"aws-vpc",vpc.name); });
     vpcFrame.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showAwsManager(vpc.name); });
-    vpcFrame.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-vpc",id:vpc.name}; toast("VPC選択: "+vpc.name+" (Deleteで削除 / ダブルクリックで編集)","ok"); });
+    vpcFrame.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-vpc",id:vpc.name}; openPropertyPanel(); });
     const label = `☁ VPC ${vpc.name} ${vpc.cidr?("("+vpc.cidr+")"):""} ${vpc.region||""}`;
     const bw = label.length*6.0+16;
     const labelRect = ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9, fill:"#ff9900", stroke:"#fff", "stroke-width":1.2,
@@ -722,6 +723,8 @@ function renderAwsOverlay(){
       const mem = members.map(s=>({kind:"server",id:s.id}));
       labelRect.addEventListener("mousedown",(e)=>startGroupDrag(e, mem));
     }
+    labelRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-vpc",id:vpc.name}; openPropertyPanel(); });
+    labelRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showAwsManager(vpc.name); });
     if(vpc.igw){
       ce("text", { x:maxX-8, y:minY+1, "text-anchor":"end", "dominant-baseline":"middle",
         "font-size":9, fill:"#ff9900", "font-weight":"700", text:"⇄ IGW" }, g);
@@ -786,7 +789,7 @@ function renderK8sOverlay(){
     }
     k8sFrame.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); showContextMenu(e,"k8s-cluster",cl.name); });
     k8sFrame.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showK8sManager(cl.name); });
-    k8sFrame.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"k8s-cluster",id:cl.name}; toast("クラスタ選択: "+cl.name+" (Deleteで削除 / ダブルクリックで編集)","ok"); });
+    k8sFrame.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"k8s-cluster",id:cl.name}; openPropertyPanel(); });
     const podN=(cl.pods||[]).length, svcN=(cl.services||[]).length;
     const label = `☸ K8s ${cl.name} — ${nodes.length}node / ${podN}pod / ${svcN}svc`;
     const bw = label.length*6.0+16;
@@ -798,6 +801,8 @@ function renderK8sOverlay(){
       const mem = nodes.map(s=>({kind:"server",id:s.id}));
       labelRect.addEventListener("mousedown",(e)=>startGroupDrag(e, mem));
     }
+    labelRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"k8s-cluster",id:cl.name}; openPropertyPanel(); });
+    labelRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showK8sManager(cl.name); });
     if(cl.control_plane && cl.control_plane.ha){
       ce("text", { x:maxX-8, y:minY+1, "text-anchor":"end", "dominant-baseline":"middle",
         "font-size":9, fill:"#326ce5", "font-weight":"700", text:"HA control-plane" }, g);
@@ -809,7 +814,81 @@ function renderK8sOverlay(){
     const krh = ce("rect", { x:maxX-7, y:maxY-7, width:12, height:12, rx:2, ry:2,
       fill:"#326ce5", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, g);
     krh.addEventListener("mousedown",(e)=>startFrameResize(e, cl, {x:minX,y:minY,w:maxX-minX,h:maxY-minY}));
+    // ---- Pod visualization: show which pods run on each node (TOP layer so visible over nodes) ----
+    const topLayer = $("#layer-overlays") || layer;
+    const og = ce("g", { class:"k8s-pods-top", "pointer-events":"none" }, topLayer);
+    const masters = new Set((cl.control_plane&&cl.control_plane.masters)||[]);
+    const podsByNode = {};
+    const unscheduled = [];
+    const nodeIdSet = new Set((cl.nodes||[]));
+    for(const pod of (cl.pods||[])){
+      if(pod.node && nodeIdSet.has(pod.node)) (podsByNode[pod.node]=podsByNode[pod.node]||[]).push(pod);
+      else unscheduled.push(pod);
+    }
+    // pods with no/invalid node → put them on the first node so they are still visible
+    if(unscheduled.length && nodes.length){
+      const fid = nodes[0].id;
+      podsByNode[fid] = (podsByNode[fid]||[]).concat(unscheduled);
+    }
+    for(const s of nodes){
+      const role = masters.has(s.id) ? "master" : "worker";
+      const rcol = role==="master" ? "#f59e0b" : "#326ce5";
+      const nx=(s.x||0), ny=(s.y||0), nw=s.width||130, nh=s.height||65;
+      // role badge — top-right corner of the node (always on the node body)
+      const rb = ce("g", { class:"k8s-role" }, og);
+      const bw = role==="master"?58:52;
+      ce("rect", { x:nx+nw-bw-4, y:ny+4, width:bw, height:13, rx:3, ry:3, fill:rcol, opacity:"0.95" }, rb);
+      ce("text", { x:nx+nw-bw-4+bw/2, y:ny+13.5, "text-anchor":"middle", "font-size":7.5, "font-weight":"700", fill:"#fff",
+        text:(role==="master"?"👑master":"⚙worker") }, rb);
+      // pod chips — INSIDE the lower area of the node body (always visible on the server)
+      const pods = podsByNode[s.id] || [];
+      if(pods.length){
+        const chipW=44, chipH=13, gap=4, pad=6;
+        const cols = Math.max(1, Math.floor((nw-pad*2+gap)/(chipW+gap)));
+        // header
+        ce("text", { x:nx+pad, y:ny+nh-6-Math.ceil(pods.length/cols)*(chipH+gap), "font-size":7, fill:"var(--text-mute)",
+          "font-weight":"700", text:`Pods (${pods.length})` }, og);
+        pods.forEach((pod,pi)=>{
+          const col=pi%cols, rrow=Math.floor(pi/cols);
+          const cx = nx+pad + col*(chipW+gap);
+          const cy = ny+nh - (Math.ceil(pods.length/cols)-rrow)*(chipH+gap) - 2;
+          const running=(pod.status||"Running")==="Running";
+          const pg=ce("g",{class:"k8s-pod"},og);
+          ce("rect",{x:cx,y:cy,width:chipW,height:chipH,rx:6,ry:6,
+            fill:running?"#326ce5":"#888",stroke:"#fff","stroke-width":0.7},pg);
+          ce("text",{x:cx+chipW/2,y:cy+9.5,"text-anchor":"middle","font-size":7,fill:"#fff","font-weight":"700",
+            text:"⬡"+(pod.name.length>7?pod.name.slice(0,7):pod.name)},pg);
+        });
+      }
+    }
   });
+}
+
+// Draw a frame around each hypervisor (ESXi/vCenter) host enclosing its VMs, so the VMs are
+// clearly shown INSIDE the host box.
+function renderVcenterOverlay(){
+  const layer = $("#layer-networks");
+  if(!layer) return;
+  const hosts = (App.config.servers||[]).filter(s=>s.hypervisor || s.type==="hypervisor");
+  for(const host of hosts){
+    const vms = (App.config.servers||[]).filter(s=>s.vm && s.host===host.id);
+    const g = ce("g", { class:"vcenter-overlay", "pointer-events":"none" }, layer);
+    let minX=host.x||0, minY=host.y||0, maxX=(host.x||0)+(host.width||160), maxY=(host.y||0)+(host.height||80);
+    for(const vm of vms){ const w=vm.width||74,h=vm.height||42; minX=Math.min(minX,vm.x||0); minY=Math.min(minY,vm.y||0); maxX=Math.max(maxX,(vm.x||0)+w); maxY=Math.max(maxY,(vm.y||0)+h); }
+    minX-=12; minY-=24; maxX+=12; maxY+=12;
+    // frame
+    ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:12, ry:12,
+      fill:"rgba(120,180,90,0.05)", stroke:"#78b45a", "stroke-width":1.6, "stroke-dasharray":"8 4" }, g);
+    const lbl = `🖥 ${host.label||host.id} — VM ${vms.length}`;
+    const bw = lbl.length*6.6+14;
+    ce("rect", { x:minX+8, y:minY-9, width:bw, height:17, rx:8, ry:8, fill:"#78b45a", stroke:"#fff", "stroke-width":1 }, g);
+    ce("text", { x:minX+8+bw/2, y:minY+0.5, "text-anchor":"middle", "dominant-baseline":"middle",
+      "font-size":9.5, "font-weight":"700", fill:"#fff", text:lbl }, g);
+    if(!vms.length){
+      ce("text", { x:(minX+maxX)/2, y:maxY-10, "text-anchor":"middle", "font-size":9, fill:"var(--text-mute)",
+        text:"(VM未作成 — 🖥仮想基盤で「+VM追加」)" }, g);
+    }
+  }
 }
 
 function renderVpcOverlay(){
