@@ -1219,20 +1219,25 @@ function showHypervisorManager(id){
         const ram=ch("input",{type:"number",value:vm.ram_gb||4,title:"RAM(GB)",style:Object.assign({width:"42px"},fStyle)},hd);
         ram.addEventListener("change",()=>{ vm.ram_gb=+ram.value; renderAndSync(); });
         ch("span",{text:"GB",style:{fontSize:"9px",color:"var(--text-dim)"}},hd);
+        // memory write workload — affects live-migration convergence (heavy = pre-copy may fail)
+        ch("span",{text:"負荷",style:{fontSize:"9px",color:"var(--text-dim)"}},hd);
+        const wlSel=ch("select",{title:"メモリ書込負荷(マイグレーション収束に影響)",style:Object.assign({width:"70px"},fStyle)},hd);
+        for(const w of [["idle","低"],["normal","中"],["heavy","高"]]){ const o=ch("option",{value:w[0],text:w[1]},wlSel); if((vm.workload||"normal")===w[0])o.selected=true; }
+        wlSel.addEventListener("change",()=>{ vm.workload=wlSel.value; renderAndSync(); });
         // power
         ch("button",{text:on?"停止":"起動",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"},
           on:{click:()=>{ vm.status=on?"stopped":"running"; vm.power=on?"off":"on"; renderAndSync(); refresh(); }}},hd);
-        // vMotion-like migration to another ESXi host
-        ch("button",{text:"🔀 vMotion",title:"別のESXi/vCenterホストへVMをマイグレーション",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"3px"},
+        // vMotion-like LIVE migration to another ESXi host (pre-copy + stop-and-copy + resume)
+        ch("button",{text:"🚚 ライブvMotion",title:"別のESXi/vCenterホストへライブマイグレーション(メモリpre-copy+TCP継続)",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"3px"},
           on:{click:()=>{
-            const others=(App.config.servers||[]).filter(s=>s.hypervisor && s.id!==obj.id);
+            const others=(App.config.servers||[]).filter(s=>s.hypervisor && s.id!==obj.id && s.status==="running");
             if(!others.length){ toast("移動先となる別のESXi/vCenterホストがありません","warn"); return; }
             const target = others[0];
-            pushUndo(); const orig=vm.host; vm.host=target.id;
-            vm.x = (target.x||0) + 160 + Math.random()*100;
-            vm.y = (target.y||0) + 80 + Math.random()*60;
-            toast(`VM ${vm.label||vm.id} を ${orig} → ${target.id} へvMotion`,"ok");
-            renderAndSync(); refresh();
+            pushUndo();
+            const mig = runLiveMigration("vm", vm.id, target.id, vm._tcp_sessions||0);
+            if(mig.failed) toast(`ライブマイグレーション失敗: ${mig.reason}`,"err");
+            else toast(`ライブvMotion完了: ${vm.label||vm.id} → ${target.id} (ダウンタイム${mig.downtime_ms}ms)`,"ok");
+            refresh();
           }}},hd);
         ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
           on:{click:()=>{ App.config.servers=App.config.servers.filter(s=>s.id!==vm.id); renderAndSync(); refresh(); }}},hd);

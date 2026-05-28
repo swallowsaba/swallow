@@ -3213,6 +3213,98 @@ function init(){
 // While a flap/loop persists the L2 domain gradually worsens; warnings stream to the comm log.
 var _macFlapTimer = null;
 // Automatic Pod/VM failover when their current node/host goes down — simulates HA behavior.
+// ====== LIVE MIGRATION ENGINE ======
+// Simulates a realistic vMotion / KVM live-migration: iterative pre-copy of memory pages where
+// the working set keeps dirtying pages, a final stop-and-copy with a brief downtime, then
+// resume on the target. TCP sessions survive because the VM keeps the same IP/MAC (the engine
+// re-homes it to the target host while preserving identity). Models failure when the dirty-page
+// rate outpaces the link bandwidth (pre-copy never converges).
+var _liveMigrations = {};
+function startLiveMigration(opts){
+  const kind = opts.kind, id = opts.id, target = opts.target;
+  const ram_mb = opts.ram_mb || (kind==="vm" ? ((Cfg.byId("servers",id)||{}).ram_gb||4)*1024 : 512);
+  const link_mbps = opts.link_mbps || 10000;
+  const page_kb = 4;
+  const total_pages = Math.round(ram_mb*1024/page_kb);
+  const dirty_pps = opts.dirty_rate_pps != null ? opts.dirty_rate_pps : (function(){
+    const vm = kind==="vm" ? Cfg.byId("servers",id) : null;
+    const wl = (vm && vm.workload) || "normal";
+    const xp = Math.round((link_mbps*1000*1000/8)/(page_kb*1024));
+    if(wl==="idle")   return Math.round(total_pages*0.01);
+    if(wl==="heavy")  return Math.round(xp*1.2);
+    return Math.round(total_pages*0.06);
+  })();
+  const xfer_pps = Math.round((link_mbps*1000*1000/8) / (page_kb*1024));
+  const mig = {
+    kind, id, target, orig:(kind==="vm"?(Cfg.byId("servers",id)||{}).host:null),
+    ram_mb, link_mbps, total_pages, dirty_pps, xfer_pps,
+    phase:"pre-copy", iteration:0, remaining:total_pages, transferred:0,
+    downtime_ms:0, converged:false, failed:false, log:[]
+  };
+  let iterRemaining = total_pages;
+  const maxIters = 30;
+  for(let it=1; it<=maxIters; it++){
+    const roundSeconds = iterRemaining / xfer_pps;
+    mig.transferred += iterRemaining;
+    const newDirty = Math.round(dirty_pps * roundSeconds);
+    mig.iteration = it;
+    mig.log.push({ iter:it, sent:iterRemaining, redirtied:newDirty, round_s:+roundSeconds.toFixed(2) });
+    iterRemaining = newDirty;
+    if(iterRemaining <= xfer_pps*0.5){ mig.converged = true; break; }
+    if(dirty_pps >= xfer_pps){ mig.failed = true; break; }
+  }
+  mig.remaining = iterRemaining;
+  if(mig.failed){
+    mig.phase = "failed";
+    mig.reason = "pre-copyが収束しません(ダーティページ生成率 ≥ 転送帯域)。帯域増強かワークロード低減が必要。";
+  } else {
+    mig.downtime_ms = Math.max(20, Math.round((iterRemaining / xfer_pps)*1000));
+    mig.phase = "completed";
+  }
+  _liveMigrations[id] = mig;
+  return mig;
+}
+function applyLiveMigration(mig){
+  if(mig.failed) return false;
+  if(mig.kind === "vm"){
+    const vm = Cfg.byId("servers", mig.id); if(!vm) return false;
+    const target = Cfg.byId("servers", mig.target); if(!target) return false;
+    vm.host = mig.target;
+    const w=target.width||130, h=target.height||65;
+    vm.x = (target.x||0) + Math.round(w*0.15);
+    vm.y = (target.y||0) + h + 10;
+  } else if(mig.kind === "pod"){
+    for(const cl of ((App.config.k8s&&App.config.k8s.clusters)||[])){
+      const pod = (cl.pods||[]).find(p=>p.name===mig.id);
+      if(pod){ pod.node = mig.target; break; }
+    }
+  }
+  return true;
+}
+function runLiveMigration(kind, id, target, tcpSessions){
+  const obj = kind==="vm" ? Cfg.byId("servers",id) : null;
+  const name = obj ? (obj.label||obj.id) : id;
+  const mig = startLiveMigration({ kind, id, target });
+  CommLog.info(`🚚 ライブマイグレーション開始: ${name} → ${target} (RAM ${mig.ram_mb}MB, 移行NW ${(mig.link_mbps/1000)}Gbps)`);
+  CommLog.info(`   フェーズ1: pre-copy (メモリページを反復コピー)`);
+  for(const r of mig.log){
+    CommLog.info(`   ・iteration ${r.iter}: ${r.sent.toLocaleString()}ページ送信, この間に${r.redirtied.toLocaleString()}ページ再ダーティ (${r.round_s}s)`);
+  }
+  if(mig.failed){
+    CommLog.blocked(`ライブマイグレーション失敗: ${name}`, mig.reason);
+    CommLog.info(`   💡 対処: 移行ネットワークの帯域を上げる / VMのメモリ書き込み負荷を下げる`);
+    return mig;
+  }
+  CommLog.info(`   フェーズ2: stop-and-copy (VM一時停止 → 残り${mig.remaining.toLocaleString()}ページ転送)`);
+  CommLog.info(`   ⏸ ダウンタイム: 約${mig.downtime_ms}ms (この間だけVMが瞬断)`);
+  const sess = tcpSessions || (obj && obj._tcp_sessions) || 0;
+  if(sess>0) CommLog.info(`   🔗 TCPセッション ${sess}本: IP/MAC維持により移行後も継続 (${mig.downtime_ms}msの瞬断のみ)`);
+  else CommLog.info(`   🔗 IP/MAC維持 → 既存TCPセッションは${mig.downtime_ms}msの瞬断を挟んで継続`);
+  applyLiveMigration(mig);
+  CommLog.info(`   ✅ フェーズ3: ${mig.target}でVM再開。完了 (総転送 ${(mig.transferred*4/1024).toFixed(0)}MB相当 / ${mig.iteration}イテレーション)`);
+  try{ syncYamlFromConfig(); render(); }catch(e){}
+  return mig;
+}
 // Pods → reschedule to another healthy node in the same K8s cluster.
 // VMs → vMotion to another healthy ESXi/hypervisor host (HA cluster behavior).
 function checkAutoMigrations(){
