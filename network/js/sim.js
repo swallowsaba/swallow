@@ -2543,9 +2543,14 @@ function addExternalEndpoint(provider, item){
   // Tag AWS-specific kind so the property panel can show service-specific config
   if(item.key && item.key.indexOf("aws-")===0){
     dev.aws_kind = item.key;
-    // Auto-create a default VPC if none exists, so any AWS service is shown in context
+    // AWS service classification (correct hierarchy):
+    //   GLOBAL/REGIONAL (outside VPC): S3, DynamoDB, Route53, CloudFront, Lambda, SQS, APIGW
+    //   VPC-SCOPED:                    EC2, ALB, NLB, NATGW, VPCe, RDS, ECS, EKS, Fargate, IGW, TGW
+    const vpcScopedKinds = ["aws-ec2","aws-alb","aws-nlb","aws-natgw","aws-vpce","aws-rds","aws-ecs","aws-eks","aws-fargate","aws-igw","aws-tgw"];
+    const isVpcScoped = vpcScopedKinds.includes(item.key);
     App.config.aws = App.config.aws || {vpcs:[]};
-    if(!App.config.aws.vpcs.length){
+    // Only auto-create a default VPC for VPC-scoped services (so the canvas isn't empty for EC2/RDS/etc.)
+    if(isVpcScoped && !App.config.aws.vpcs.length){
       App.config.aws.vpcs.push({
         id:"vpc-"+uid("v"), name:"default-vpc", cidr:"10.0.0.0/16",
         region:"ap-northeast-1", tenancy:"default",
@@ -2554,25 +2559,34 @@ function addExternalEndpoint(provider, item){
         route_tables:[{name:"main",routes:[{dest:"10.0.0.0/16",target:"local"}]}],
         igw:false
       });
-      toast("VPC『default-vpc』を自動作成してそこに配置します","ok");
+      toast("VPC『default-vpc』を自動作成","ok");
     }
-    const firstVpc = App.config.aws.vpcs[0];
+    const firstVpc = App.config.aws.vpcs[0] || null;
     dev.aws_region = (firstVpc && firstVpc.region) || "ap-northeast-1";
-    // 全AWSサービスをVPCに紐付ける(可視性向上 — グローバル/リージョンサービスもVPC枠内に表示)
-    dev.aws_vpc = firstVpc.name;
-    // place inside the VPC frame
-    const vpcMembers = (App.config.servers||[]).filter(s=>s.aws&&s.aws.vpc===dev.aws_vpc)
-      .concat((App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===dev.aws_vpc && d.id!==dev.id));
-    if(vpcMembers.length){
-      const minX = Math.min(...vpcMembers.map(m=>m.x||0));
-      const minY = Math.min(...vpcMembers.map(m=>m.y||0));
-      const maxX = Math.max(...vpcMembers.map(m=>(m.x||0)+(m.width||130)));
-      const maxY = Math.max(...vpcMembers.map(m=>(m.y||0)+(m.height||65)));
-      dev.x = maxX + 30;
-      dev.y = minY + (vpcMembers.length % 3) * 90;
-      if(dev.x > minX + 600){ dev.x = minX + 40; dev.y = maxY + 30; }
+    if(isVpcScoped && firstVpc){
+      // VPC-scoped: place inside the VPC frame
+      dev.aws_vpc = firstVpc.name;
+      const vpcMembers = (App.config.servers||[]).filter(s=>s.aws&&s.aws.vpc===dev.aws_vpc)
+        .concat((App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===dev.aws_vpc && d.id!==dev.id));
+      if(vpcMembers.length){
+        const minX = Math.min(...vpcMembers.map(m=>m.x||0));
+        const minY = Math.min(...vpcMembers.map(m=>m.y||0));
+        const maxX = Math.max(...vpcMembers.map(m=>(m.x||0)+(m.width||130)));
+        const maxY = Math.max(...vpcMembers.map(m=>(m.y||0)+(m.height||65)));
+        dev.x = maxX + 30;
+        dev.y = minY + (vpcMembers.length % 3) * 90;
+        if(dev.x > minX + 600){ dev.x = minX + 40; dev.y = maxY + 30; }
+      } else {
+        dev.x = 280; dev.y = 280;
+      }
     } else {
-      dev.x = 220; dev.y = 220;
+      // GLOBAL/REGIONAL: outside any VPC but inside the AWS region frame (placed at the top area)
+      dev.aws_vpc = "";    // 明示的に VPC外
+      dev.aws_global = true; // 全体フレーム内に描画される印
+      // top area of AWS frame
+      const globals = (App.config.devices||[]).filter(d=>d.aws_kind && d.aws_global && d.id!==dev.id);
+      dev.x = 80 + (globals.length % 4) * 150;
+      dev.y = 60 + Math.floor(globals.length / 4) * 80;
     }
     // Sensible defaults per AWS service type (honored by engine where applicable)
     if(item.key==="aws-s3")       dev.aws_config = { bucket_name:"my-bucket", region:"ap-northeast-1", public:false, allowed_cidrs:["10.0.0.0/8"], versioning:false, encryption:"SSE-S3" };

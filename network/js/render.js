@@ -678,8 +678,68 @@ function renderBondOverlay(g, obj, kind){
 // Empty VPCs are shown as a labeled placeholder so they are always visible.
 function renderAwsOverlay(){
   const layer = $("#layer-networks");
-  if(!layer || !App.config.aws || !(App.config.aws.vpcs||[]).length) return;
-  let placeholderX = 40;
+  if(!layer || !App.config.aws) return;
+  const vpcs = App.config.aws.vpcs || [];
+  // グローバル/リージョナルサービス(VPC外、AWS全体の直下に居る)
+  const globalSvcs = (App.config.devices||[]).filter(d=>d.aws_kind && !d.aws_vpc);
+  if(!vpcs.length && !globalSvcs.length) return;
+  // ===== AWS 全体フレーム (これが最も外側 — VPC・グローバルサービスを内包) =====
+  // AWS全体の_posとして保存(ドラッグで移動可能)
+  App.config.aws._pos = App.config.aws._pos || {x:0, y:0};
+  App.config.aws._pad = App.config.aws._pad || {w:0, h:0};
+  // bounding box of all AWS resources
+  let amx=Infinity, amy=Infinity, aMx=-Infinity, aMy=-Infinity;
+  const allAws = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc)
+    .concat((App.config.devices||[]).filter(d=>d.aws_kind));
+  for(const m of allAws){
+    const w=m.width||130, h=m.height||65;
+    amx=Math.min(amx,m.x||0); amy=Math.min(amy,m.y||0);
+    aMx=Math.max(aMx,(m.x||0)+w); aMy=Math.max(aMy,(m.y||0)+h);
+  }
+  if(amx===Infinity){ amx=20; amy=20; aMx=720; aMy=520; }
+  amx-=44; amy-=64; aMx+=44; aMy+=30;
+  aMx += (App.config.aws._pad.w||0); aMy += (App.config.aws._pad.h||0);
+  // AWS全体フレーム
+  const awsG = ce("g", { class:"aws-master-overlay" }, layer);
+  const awsFrame = ce("rect", { x:amx, y:amy, width:aMx-amx, height:aMy-amy, rx:14, ry:14,
+    fill:"rgba(255,153,0,0.025)", stroke:"#ff9900", "stroke-width":2.5, "stroke-dasharray":"14 6",
+    "pointer-events":"all", style:"cursor:pointer" }, awsG);
+  awsFrame.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-root",id:"aws"}; });
+  awsFrame.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
+    if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
+      { icon:"☁", label:"AWS 全体構成", action:()=>{ if(typeof showAwsManager==="function") showAwsManager(); }},
+      { sep:true },
+      { icon:"🗑", label:"AWS全体を削除 (全VPC・全サービス)", action:()=>{
+        if((typeof confirm==="function")?confirm("AWS全体を削除します。VPC・全AWSサービスが消えます。よろしいですか?"):true){
+          App.config.aws = {vpcs:[]};
+          App.config.devices = (App.config.devices||[]).filter(d=>!d.aws_kind);
+          App.config.servers = (App.config.servers||[]).filter(s=>!(s.aws&&s.aws.vpc));
+          renderAndSync(); toast("AWS全体を削除","ok");
+        }
+      }}
+    ]);
+  });
+  // AWS全体ラベル
+  const albl = `☁ AWS — ${vpcs.length} VPC / ${globalSvcs.length} グローバル`;
+  const albw = albl.length*7.5+16;
+  const albelRect = ce("rect", { x:amx+12, y:amy-12, width:albw, height:22, rx:11, ry:11,
+    fill:"#ff9900", stroke:"#fff", "stroke-width":1.4, "pointer-events":"all", style:"cursor:move" }, awsG);
+  ce("text", { x:amx+12+albw/2, y:amy-1, "text-anchor":"middle", "dominant-baseline":"middle",
+    "font-size":11, "font-weight":"700", fill:"#fff", text:albl, "pointer-events":"none" }, awsG);
+  // AWS全体ドラッグで全AWSリソース移動
+  const allAwsMem = allAws.map(m=>({kind:m.aws_kind?"device":"server", id:m.id}));
+  albelRect.addEventListener("mousedown",(e)=>startGroupDrag(e, allAwsMem));
+  // グローバルサービス領域ラベル (右上)
+  if(globalSvcs.length){
+    ce("text", { x:aMx-12, y:amy+6, "text-anchor":"end", "font-size":9,
+      fill:"#ff9900", "font-weight":"700", text:"◆ Global / Regional Services", "pointer-events":"none" }, awsG);
+  }
+  // AWS全体のリサイズハンドル
+  const arh = ce("rect", { x:aMx-7, y:aMy-7, width:12, height:12, rx:2, ry:2,
+    fill:"#ff9900", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, awsG);
+  arh.addEventListener("mousedown",(e)=>startFrameResize(e, App.config.aws, {x:amx,y:amy,w:aMx-amx,h:aMy-amy}));
+  // ===== VPC単位の枠 (AWS全体内に配置) =====
+  let placeholderX = amx+40;
   (App.config.aws.vpcs||[]).forEach((vpc, vi)=>{
     const srvMembers = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc===vpc.name && !(s.host));
     const svcMembers = (App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===vpc.name);
@@ -931,23 +991,102 @@ function renderVcenterOverlay(){
   const layer = $("#layer-networks");
   if(!layer) return;
   const hosts = (App.config.servers||[]).filter(s=>s.hypervisor || s.type==="hypervisor");
+  // ===== vCenter Cluster frames (複数ESXiホストを内包する大枠) =====
+  const clusters = App.config.vcenter_clusters || [];
+  for(const cl of clusters){
+    const memberHosts = hosts.filter(h => (cl.hosts||[]).includes(h.id) || h.vcenter_cluster===cl.name);
+    if(!memberHosts.length) continue;
+    // bounding box: hosts + their VMs
+    let cmnx=Infinity, cmny=Infinity, cmxx=-Infinity, cmxy=-Infinity;
+    for(const host of memberHosts){
+      const w=host.width||160, h=host.height||80;
+      cmnx=Math.min(cmnx, host.x||0); cmny=Math.min(cmny, host.y||0);
+      cmxx=Math.max(cmxx, (host.x||0)+w); cmxy=Math.max(cmxy, (host.y||0)+h);
+      const vms = (App.config.servers||[]).filter(s=>s.vm && s.host===host.id);
+      for(const vm of vms){ const vw=vm.width||74, vh=vm.height||42;
+        cmnx=Math.min(cmnx, vm.x||0); cmny=Math.min(cmny, vm.y||0);
+        cmxx=Math.max(cmxx, (vm.x||0)+vw); cmxy=Math.max(cmxy, (vm.y||0)+vh); }
+    }
+    cmnx-=32; cmny-=44; cmxx+=32; cmxy+=24;
+    cl._pad = cl._pad || {w:0,h:0};
+    cmxx += (cl._pad.w||0); cmxy += (cl._pad.h||0);
+    const cg = ce("g", { class:"vcenter-cluster-overlay" }, layer);
+    // outer cluster frame (太線・濃緑)
+    const clFrame = ce("rect", { x:cmnx, y:cmny, width:cmxx-cmnx, height:cmxy-cmny, rx:14, ry:14,
+      fill:"rgba(34,139,34,0.04)", stroke:"#228b22", "stroke-width":2.5, "stroke-dasharray":"12 5",
+      "pointer-events":"all", style:"cursor:pointer" }, cg);
+    clFrame.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"vcenter-cluster",id:cl.name}; });
+    clFrame.addEventListener("dblclick",(e)=>{ e.stopPropagation(); if(memberHosts[0]) showHypervisorManager(memberHosts[0].id); });
+    clFrame.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
+      if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
+        { icon:"🏢", label:"クラスタ設定を開く", action:()=>{ if(memberHosts[0]) showHypervisorManager(memberHosts[0].id); }},
+        { icon:"➕", label:"ESXiホストを追加 (新規作成)", action:()=>{
+          pushUndo();
+          const newId = uid("esxi");
+          const baseN = (App.config.servers||[]).filter(s=>s.hypervisor||s.type==="hypervisor").length;
+          App.config.servers.push({
+            id:newId, label:"esxi-"+(baseN+1), type:"hypervisor", os:"VMware ESXi", status:"running",
+            cpu:32, memory:131072,
+            x: cmxx + 20, y: cmny + 60,
+            width:200, height:120,
+            vcenter_cluster: cl.name,
+            interfaces:[{ id:"vmnic0", ip:"10.0.100."+(10+baseN)+"/24", mac:genUniqueMac(), status:"up" }],
+            hypervisor:{ type:"esxi", vms:[], vswitches:[{name:"vSwitch0",portgroups:["VM Network","Management"]}], datastores:[{name:"shared-ds",capacity_gb:2000,backing:""}] }
+          });
+          cl.hosts = cl.hosts || [];
+          cl.hosts.push(newId);
+          renderAndSync(); toast("ESXi "+newId+" をクラスタ "+cl.name+" に追加","ok");
+        }},
+        { sep:true },
+        { icon:"🗑", label:"クラスタを削除 (ホストは残る)", action:()=>{
+          if((typeof confirm==="function")?confirm("クラスタ "+cl.name+" を削除します。ホストは残ります。"):true){
+            for(const h of memberHosts){ h.vcenter_cluster=""; }
+            App.config.vcenter_clusters = (App.config.vcenter_clusters||[]).filter(c=>c.name!==cl.name);
+            renderAndSync(); toast("クラスタ "+cl.name+" を削除","ok");
+          }
+        }}
+      ]);
+    });
+    // ラベル(設定の概要表示)
+    const drsTxt = cl.drs ? "DRS✓" : "DRS✕";
+    const haTxt = cl.ha ? "HA✓" : "HA✕";
+    const evcTxt = (cl.evc && cl.evc !== "disabled") ? ("EVC:"+cl.evc) : "";
+    const totalVMs = memberHosts.reduce((a,h)=>a+(App.config.servers||[]).filter(s=>s.vm&&s.host===h.id).length, 0);
+    const clbl = `🏢 vCenter Cluster: ${cl.name} — ${memberHosts.length}台 / ${totalVMs}VM — ${drsTxt} ${haTxt}${evcTxt?" "+evcTxt:""}`;
+    const cbw = clbl.length*6.5+18;
+    const clblRect = ce("rect", { x:cmnx+10, y:cmny-11, width:cbw, height:22, rx:11, ry:11,
+      fill:"#228b22", stroke:"#fff", "stroke-width":1.4, "pointer-events":"all", style:"cursor:move" }, cg);
+    ce("text", { x:cmnx+10+cbw/2, y:cmny, "text-anchor":"middle", "dominant-baseline":"middle",
+      "font-size":10, "font-weight":"700", fill:"#fff", text:clbl, "pointer-events":"none" }, cg);
+    // ラベルをドラッグでクラスタ全体(ホスト+VM)を移動
+    const allMem = [];
+    for(const host of memberHosts){
+      allMem.push({kind:"server", id:host.id});
+      const vms = (App.config.servers||[]).filter(s=>s.vm && s.host===host.id);
+      for(const vm of vms) allMem.push({kind:"server", id:vm.id});
+    }
+    clblRect.addEventListener("mousedown",(e)=>startGroupDrag(e, allMem));
+    clblRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); if(memberHosts[0]) showHypervisorManager(memberHosts[0].id); });
+    // リサイズハンドル
+    const crh = ce("rect", { x:cmxx-7, y:cmxy-7, width:12, height:12, rx:2, ry:2,
+      fill:"#228b22", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, cg);
+    crh.addEventListener("mousedown",(e)=>startFrameResize(e, cl, {x:cmnx,y:cmny,w:cmxx-cmnx,h:cmxy-cmny}));
+  }
+  // ===== 個別ESXiホストの枠 (旧来通り、クラスタ枠の中に表示) =====
   for(const host of hosts){
     const vms = (App.config.servers||[]).filter(s=>s.vm && s.host===host.id);
     const g = ce("g", { class:"vcenter-overlay" }, layer);
     let minX=host.x||0, minY=host.y||0, maxX=(host.x||0)+(host.width||160), maxY=(host.y||0)+(host.height||80);
     for(const vm of vms){ const w=vm.width||74,h=vm.height||42; minX=Math.min(minX,vm.x||0); minY=Math.min(minY,vm.y||0); maxX=Math.max(maxX,(vm.x||0)+w); maxY=Math.max(maxY,(vm.y||0)+h); }
     minX-=14; minY-=26; maxX+=14; maxY+=14;
-    // user-adjustable size via _pad (resize handle drags this)
     if(host._pad){ maxX += (host._pad.w||0); maxY += (host._pad.h||0); }
-    // frame (clickable)
     const frame = ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:12, ry:12,
       fill:"rgba(120,180,90,0.05)", stroke:"#78b45a", "stroke-width":1.6, "stroke-dasharray":"8 4",
       "pointer-events":"all", style:"cursor:pointer" }, g);
     frame.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"server",id:host.id}; openPropertyPanel(); });
     frame.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showHypervisorManager(host.id); });
     frame.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); showContextMenu(e,"server",host.id); });
-    // label (clickable)
-    const lbl = `🖥 ${host.label||host.id} — VM ${vms.length}`;
+    const lbl = `🖥 ${host.label||host.id} — VM ${vms.length}${host.vcenter_cluster?(" ⟨"+host.vcenter_cluster+"⟩"):""}`;
     const bw = lbl.length*7+18;
     const labelRect = ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9,
       fill:"#78b45a", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:pointer" }, g);
@@ -955,7 +1094,6 @@ function renderVcenterOverlay(){
     labelRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showHypervisorManager(host.id); });
     ce("text", { x:minX+8+bw/2, y:minY+0.5, "text-anchor":"middle", "dominant-baseline":"middle",
       "font-size":10, "font-weight":"700", fill:"#fff", text:lbl, "pointer-events":"none" }, g);
-    // resize handle (drag to enlarge the frame)
     const rh = ce("rect", { x:maxX-7, y:maxY-7, width:12, height:12, rx:2, ry:2,
       fill:"#78b45a", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, g);
     rh.addEventListener("mousedown",(e)=>startFrameResize(e, host, {x:minX,y:minY,w:maxX-minX,h:maxY-minY}));
@@ -963,7 +1101,6 @@ function renderVcenterOverlay(){
       ce("text", { x:(minX+maxX)/2, y:maxY-12, "text-anchor":"middle", "font-size":9, fill:"var(--text-mute)",
         text:"(VM未作成 — ダブルクリックで仮想基盤を開く)", "pointer-events":"none" }, g);
     } else {
-      // hint about vMotion
       ce("text", { x:minX+10, y:maxY-6, "font-size":8, fill:"var(--text-mute)",
         text:"💡 VMを右クリック → 🚚vMotion で別ホストへ移動", "pointer-events":"none" }, g);
     }
@@ -2691,6 +2828,41 @@ function getContextItems(kind, id){
           showPodEditor(inCluster.name, newPod.name);
         }});
         items.push({ icon:"☸", label:"☸ クラスタ管理を開く", action:()=>showK8sManager(inCluster.name) });
+        items.push({ sep:true });
+      }
+      // ESXi/Hypervisor: vCenter cluster operations
+      if(obj.hypervisor || obj.type==="hypervisor"){
+        items.push({ icon:"🖥", label:"仮想基盤(ESXi)を開く", action:()=>showHypervisorManager(id) });
+        items.push({ icon:"🏢", label:"vCenterクラスタ管理", action:()=>showVcenterClusterManager(obj.vcenter_cluster||"") });
+        // VMリスト
+        const myVMs = (App.config.servers||[]).filter(s=>s.vm && s.host===id);
+        if(myVMs.length){
+          items.push({ icon:"⬡", label:`VM一覧 (${myVMs.length}台)`, action:()=>{
+            openDialog(`⬡ ${obj.label||id} のVM一覧`, (body)=>{
+              for(const vm of myVMs){
+                const row=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",padding:"6px",border:"1px solid var(--border)",borderRadius:"4px",marginBottom:"4px",background:"var(--bg2)"}},body);
+                ch("span",{text:"⬡ "+(vm.label||vm.id),style:{flex:"1",fontWeight:"700",fontSize:"11px"}},row);
+                ch("span",{text:vm.status,style:{fontSize:"10px",color:vm.status==="running"?"var(--green)":"var(--orange)",padding:"2px 5px",border:"1px solid",borderRadius:"3px"}},row);
+                ch("button",{text:"⚙ 編集",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px"},
+                  on:{click:()=>{ closeDialog(); App.selected={kind:"server",id:vm.id}; openPropertyPanel(); }}},row);
+              }
+              return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+            });
+          }});
+        }
+        items.push({ icon:"➕", label:"VMをこのホストに追加", action:()=>{
+          const n = myVMs.length + 1;
+          const vmId = uid("vm");
+          const w = obj.width||200, h = obj.height||120;
+          App.config.servers.push({
+            id:vmId, label:"vm-"+n, host:id, vm:true, type:"virtual",
+            os:"linux", status:"running", power:"on", vcpu:2, ram_gb:4,
+            x: (obj.x||0)+15+((n-1)%2)*80, y:(obj.y||0)+30+Math.floor((n-1)/2)*46,
+            width:70, height:38, portgroup:"VM Network",
+            interfaces:[{id:"eth0", ip:"10.50.0."+(10+n)+"/24", mac:genUniqueMac(), status:"up"}]
+          });
+          renderAndSync(); toast("VM "+vmId+" を "+id+" に追加","ok");
+        }});
         items.push({ sep:true });
       }
       // VM: vMotion submenu — pick a target hypervisor and run live migration

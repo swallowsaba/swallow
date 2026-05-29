@@ -7156,3 +7156,143 @@ function showServiceContextMenu(ev, clusterName, serviceName){
   ];
   if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(ev, items);
 }
+
+// ============================================================================
+// vCenter クラスタ専用管理ダイアログ — クラスタ作成・編集・メンバー管理
+// ============================================================================
+function showVcenterClusterManager(clusterName){
+  App.config.vcenter_clusters = App.config.vcenter_clusters || [];
+  const allHosts = (App.config.servers||[]).filter(s=>s.hypervisor||s.type==="hypervisor");
+  let currentCluster = (App.config.vcenter_clusters||[]).find(c=>c.name===clusterName);
+  if(!currentCluster && App.config.vcenter_clusters.length) currentCluster = App.config.vcenter_clusters[0];
+  openDialog("🏢 vCenter クラスタ管理", (body)=>{
+    const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
+    function refresh(){
+      body.innerHTML = "";
+      helpBox(body, "vCenter クラスタとは",[
+        "ESXiホストを複数台束ねた論理グループ。共通の設定(DRS/HA/EVC)を適用します。",
+        "DRS: VM負荷を自動分散 (vMotion自動実行)",
+        "HA: ホスト障害時にVMを別ホストで自動再起動",
+        "EVC: 異なる世代CPU間でもvMotion可能にする互換モード",
+        "クラスタ枠内に複数ESXiホストを並べると、緑色の太枠で囲まれます。"
+      ], false);
+      // クラスタ一覧
+      ch("h4",{text:"既存クラスタ"},body);
+      if(!App.config.vcenter_clusters.length){
+        ch("div",{text:"(まだクラスタがありません — 下の『+ 新規クラスタ作成』で作れます)",style:{fontSize:"11px",color:"var(--text-mute)",fontStyle:"italic"}},body);
+      }
+      for(const cl of App.config.vcenter_clusters){
+        const card=ch("div",{style:{border:"2px solid "+(cl===currentCluster?"#228b22":"var(--border)"),borderRadius:"6px",padding:"10px",marginBottom:"8px",background:cl===currentCluster?"rgba(34,139,34,0.1)":"var(--bg2)"}},body);
+        const head=ch("div",{style:{display:"flex",gap:"8px",alignItems:"center",marginBottom:"6px"}},card);
+        ch("span",{text:"🏢",style:{fontSize:"18px"}},head);
+        const nmIn=ch("input",{type:"text",value:cl.name,style:Object.assign({flex:"1",fontWeight:"700"},fStyle)},head);
+        nmIn.addEventListener("change",()=>{
+          const old=cl.name; cl.name=nmIn.value;
+          for(const h of allHosts) if(h.vcenter_cluster===old) h.vcenter_cluster=cl.name;
+          renderAndSync(); refresh();
+        });
+        ch("span",{text:`${(cl.hosts||[]).length}ホスト`,style:{fontSize:"10px",color:"var(--text-dim)",padding:"2px 6px",background:"var(--bg)",borderRadius:"3px"}},head);
+        if(cl!==currentCluster){
+          ch("button",{text:"選択",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px"},
+            on:{click:()=>{ currentCluster=cl; refresh(); }}},head);
+        }
+        ch("button",{text:"🗑 削除",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{
+            if((typeof confirm==="function")?confirm("クラスタ "+cl.name+" を削除しますか?ホストは残ります。"):true){
+              for(const h of allHosts) if(h.vcenter_cluster===cl.name) h.vcenter_cluster="";
+              App.config.vcenter_clusters = App.config.vcenter_clusters.filter(c=>c.name!==cl.name);
+              if(currentCluster===cl) currentCluster = App.config.vcenter_clusters[0] || null;
+              renderAndSync(); refresh();
+              toast("クラスタ "+cl.name+" を削除","ok");
+            }
+          }}},head);
+        // クラスタ設定
+        const cfg=ch("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"6px",marginBottom:"6px",fontSize:"10px"}},card);
+        const drsL=ch("label",{style:{display:"flex",alignItems:"center",gap:"4px",cursor:"pointer"}},cfg);
+        const drsC=ch("input",{type:"checkbox"},drsL); drsC.checked=!!cl.drs;
+        ch("span",{text:"DRS (自動負荷分散)"},drsL);
+        drsC.addEventListener("change",()=>{ cl.drs=drsC.checked; renderAndSync(); });
+        const haL=ch("label",{style:{display:"flex",alignItems:"center",gap:"4px",cursor:"pointer"}},cfg);
+        const haC=ch("input",{type:"checkbox"},haL); haC.checked=!!cl.ha;
+        ch("span",{text:"HA (障害時VM再起動)"},haL);
+        haC.addEventListener("change",()=>{ cl.ha=haC.checked; renderAndSync(); });
+        const evcR=ch("div",{style:{display:"flex",gap:"4px",alignItems:"center"}},cfg);
+        ch("span",{text:"EVC:",style:{fontSize:"10px"}},evcR);
+        const evcS=ch("select",{style:Object.assign({flex:"1"},fStyle)},evcR);
+        for(const m of ["disabled","intel-broadwell","intel-skylake","intel-cascadelake","amd-rome","amd-milan"]) ch("option",{value:m,text:m},evcS);
+        evcS.value=cl.evc||"disabled";
+        evcS.addEventListener("change",()=>{ cl.evc=evcS.value; renderAndSync(); });
+        // メンバーホスト一覧
+        ch("div",{text:"クラスタ所属ホスト:",style:{fontSize:"10px",fontWeight:"700",color:"var(--text-dim)",marginTop:"4px"}},card);
+        const hlist=ch("div",{style:{marginTop:"4px"}},card);
+        const memHosts = allHosts.filter(h=>(cl.hosts||[]).includes(h.id)||h.vcenter_cluster===cl.name);
+        if(!memHosts.length) ch("div",{text:"(まだホストが居ません — 下のドロップダウンから追加)",style:{fontSize:"10px",color:"var(--text-mute)",fontStyle:"italic"}},hlist);
+        for(const h of memHosts){
+          const hr=ch("div",{style:{display:"flex",gap:"4px",alignItems:"center",padding:"3px 6px",background:"var(--bg)",borderRadius:"3px",marginBottom:"2px",fontSize:"10px"}},hlist);
+          ch("span",{text:"🖥 "+(h.label||h.id),style:{flex:"1"}},hr);
+          ch("span",{text:((App.config.servers||[]).filter(s=>s.vm&&s.host===h.id).length)+"VM",style:{color:"var(--text-mute)"}},hr);
+          ch("button",{text:"外す",style:{padding:"1px 6px",fontSize:"9px",cursor:"pointer",background:"var(--bg2)",border:"1px solid var(--orange)",color:"var(--orange)",borderRadius:"2px"},
+            on:{click:()=>{
+              cl.hosts = (cl.hosts||[]).filter(x=>x!==h.id);
+              h.vcenter_cluster="";
+              renderAndSync(); refresh();
+            }}},hr);
+        }
+        // ホスト追加
+        const addRow=ch("div",{style:{display:"flex",gap:"4px",marginTop:"4px"}},card);
+        const availHosts = allHosts.filter(h=>!(cl.hosts||[]).includes(h.id) && h.vcenter_cluster!==cl.name);
+        if(availHosts.length){
+          const addSel=ch("select",{style:Object.assign({flex:"1"},fStyle)},addRow);
+          ch("option",{value:"",text:"既存ホストから追加..."},addSel);
+          for(const h of availHosts) ch("option",{value:h.id,text:h.label||h.id},addSel);
+          ch("button",{text:"➕ 追加",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"3px"},
+            on:{click:()=>{
+              if(!addSel.value) return;
+              const oldCl=App.config.vcenter_clusters.find(c=>(c.hosts||[]).includes(addSel.value));
+              if(oldCl) oldCl.hosts = oldCl.hosts.filter(x=>x!==addSel.value);
+              cl.hosts = cl.hosts||[]; cl.hosts.push(addSel.value);
+              const h=Cfg.byId("servers",addSel.value); if(h) h.vcenter_cluster=cl.name;
+              renderAndSync(); refresh();
+              toast(addSel.value+" を "+cl.name+" に追加","ok");
+            }}},addRow);
+        }
+        ch("button",{text:"➕ 新規ESXi作成して追加",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"3px"},
+          on:{click:()=>{
+            pushUndo();
+            const newId = uid("esxi");
+            const baseN = allHosts.length;
+            const newHost = {
+              id:newId, label:"esxi-"+(baseN+1), type:"hypervisor", os:"VMware ESXi", status:"running",
+              cpu:32, memory:131072,
+              x: 200 + (cl.hosts||[]).length * 240, y: 250,
+              width:200, height:120,
+              vcenter_cluster: cl.name,
+              interfaces:[{id:"vmnic0", ip:"10.0.100."+(10+baseN)+"/24", mac:genUniqueMac(), status:"up"}],
+              hypervisor:{type:"esxi", vms:[], vswitches:[{name:"vSwitch0",portgroups:["VM Network","Management"]}], datastores:[{name:"shared-ds",capacity_gb:2000,backing:""}]}
+            };
+            App.config.servers.push(newHost);
+            cl.hosts = cl.hosts||[];
+            cl.hosts.push(newId);
+            renderAndSync(); refresh();
+            toast("新規ESXi "+newId+" を作成して "+cl.name+" に追加","ok");
+          }}},addRow);
+      }
+      // 新規クラスタ作成
+      ch("div",{style:{borderTop:"1px solid var(--border)",margin:"12px 0 8px",paddingTop:"8px"}},body);
+      const newRow=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center"}},body);
+      const newNm=ch("input",{type:"text",placeholder:"新規クラスタ名(例: prod-cluster)",style:Object.assign({flex:"1"},fStyle)},newRow);
+      ch("button",{text:"+ 新規クラスタ作成",style:{padding:"5px 10px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700"},
+        on:{click:()=>{
+          const n = (newNm.value||"").trim() || ("vc-cluster-"+(App.config.vcenter_clusters.length+1));
+          if(App.config.vcenter_clusters.some(c=>c.name===n)){ toast("同名のクラスタが既にあります","err"); return; }
+          const nc = {name:n, drs:false, ha:false, evc:"disabled", hosts:[]};
+          App.config.vcenter_clusters.push(nc);
+          currentCluster = nc;
+          renderAndSync(); refresh();
+          toast("クラスタ "+n+" を作成","ok");
+        }}},newRow);
+    }
+    refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
+}
