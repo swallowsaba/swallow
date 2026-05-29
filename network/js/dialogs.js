@@ -332,8 +332,16 @@ function renderAwsKindProps(body, obj){
     if(obj.aws_vpc){
       const vpc=(App.config.aws.vpcs||[]).find(x=>x.name===obj.aws_vpc);
       if(vpc&&vpc.region) obj.aws_region=vpc.region;
-      const members=(App.config.servers||[]).filter(s=>s.aws&&s.aws.vpc===obj.aws_vpc);
-      if(members.length){ obj.x=(members[0].x||100)+180; obj.y=(members[0].y||100); }
+      const members=(App.config.servers||[]).filter(s=>s.aws&&s.aws.vpc===obj.aws_vpc)
+        .concat((App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===obj.aws_vpc && d.id!==obj.id));
+      if(members.length){
+        const minX=Math.min(...members.map(m=>m.x||0));
+        const minY=Math.min(...members.map(m=>m.y||0));
+        const maxX=Math.max(...members.map(m=>(m.x||0)+(m.width||130)));
+        const maxY=Math.max(...members.map(m=>(m.y||0)+(m.height||65)));
+        obj.x = maxX + 30; obj.y = minY + (members.length%3)*90;
+        if(obj.x > minX + 600){ obj.x = minX + 40; obj.y = maxY + 30; }
+      }
     }
     renderAndSync(); openPropertyPanel();
   });
@@ -1279,6 +1287,17 @@ function showHypervisorManager(id){
   if(!obj) return;
   obj.hypervisor = obj.hypervisor || { type:"esxi", vms:[], vswitches:[], datastores:[] };
   const hv = obj.hypervisor;
+  // vCenter cluster context: a cluster is a named group of ESXi hosts
+  App.config.vcenter_clusters = App.config.vcenter_clusters || [];
+  // ensure this host belongs to a cluster (auto-create default cluster if none)
+  if(!obj.vcenter_cluster){
+    if(!App.config.vcenter_clusters.length){
+      App.config.vcenter_clusters.push({ name:"vc-cluster-1", drs:false, ha:false, evc:"disabled", hosts:[] });
+    }
+    obj.vcenter_cluster = App.config.vcenter_clusters[0].name;
+  }
+  const cl = App.config.vcenter_clusters.find(c=>c.name===obj.vcenter_cluster) || App.config.vcenter_clusters[0];
+  if(cl && !(cl.hosts||[]).includes(obj.id)) (cl.hosts=cl.hosts||[]).push(obj.id);
   openDialog(`🖥 仮想基盤 (vCenter/ESXi) — ${obj.label||id}`, (body)=>{
     const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px",fontFamily:"var(--mono)"};
     function refresh(){
@@ -1303,6 +1322,115 @@ function showHypervisorManager(id){
       tSel.addEventListener("change",()=>{ hv.type=tSel.value; renderAndSync(); });
       // capacity
       addField(hr,"","",""); // spacer noop
+
+      // ===== vCenter クラスタ構成 =====
+      const csec=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"🏢 vCenter クラスタ構成 (ESXiホストの集合)"},csec);
+      // クラスタ選択 + 名前
+      const crow=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"4px",flexWrap:"wrap"}},csec);
+      ch("span",{text:"所属クラスタ:",style:{fontSize:"10px",color:"var(--text-dim)"}},crow);
+      const cSel=ch("select",{style:Object.assign({minWidth:"120px"},fStyle)},crow);
+      for(const cc of App.config.vcenter_clusters) ch("option",{value:cc.name,text:cc.name+" ("+((cc.hosts||[]).length)+"台)"},cSel);
+      cSel.value = obj.vcenter_cluster || "";
+      cSel.addEventListener("change",()=>{
+        // remove from old cluster, add to new
+        const old = App.config.vcenter_clusters.find(c=>c.name===obj.vcenter_cluster);
+        if(old) old.hosts = (old.hosts||[]).filter(h=>h!==obj.id);
+        obj.vcenter_cluster = cSel.value;
+        const nc = App.config.vcenter_clusters.find(c=>c.name===cSel.value);
+        if(nc && !(nc.hosts||[]).includes(obj.id)) (nc.hosts=nc.hosts||[]).push(obj.id);
+        renderAndSync(); refresh();
+      });
+      ch("button",{text:"+ 新規クラスタ",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--cyan)",color:"var(--cyan)",borderRadius:"3px"},
+        on:{click:()=>{ const n=(App.config.vcenter_clusters.length||0)+1; const nc={name:"vc-cluster-"+n,drs:false,ha:false,evc:"disabled",hosts:[]}; App.config.vcenter_clusters.push(nc); const old=App.config.vcenter_clusters.find(c=>c.name===obj.vcenter_cluster); if(old) old.hosts=(old.hosts||[]).filter(h=>h!==obj.id); obj.vcenter_cluster=nc.name; nc.hosts.push(obj.id); renderAndSync(); refresh(); toast("クラスタ "+nc.name+" を作成","ok"); }}},crow);
+
+      // cluster settings
+      const cl2 = App.config.vcenter_clusters.find(c=>c.name===obj.vcenter_cluster);
+      if(cl2){
+        const grid=ch("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px",marginBottom:"6px"}},csec);
+        // DRS
+        const drsL = ch("label",{style:{fontSize:"10px",display:"flex",alignItems:"center",gap:"4px",cursor:"pointer"}},grid);
+        const drsC = ch("input",{type:"checkbox"},drsL); drsC.checked = !!cl2.drs;
+        ch("span",{text:"DRS有効 (負荷分散自動)"},drsL);
+        drsC.addEventListener("change",()=>{ cl2.drs=drsC.checked; renderAndSync(); });
+        // HA
+        const haL = ch("label",{style:{fontSize:"10px",display:"flex",alignItems:"center",gap:"4px",cursor:"pointer"}},grid);
+        const haC = ch("input",{type:"checkbox"},haL); haC.checked = !!cl2.ha;
+        ch("span",{text:"HA有効 (ホスト障害時にVM自動再起動)"},haL);
+        haC.addEventListener("change",()=>{ cl2.ha=haC.checked; renderAndSync(); });
+        // EVC mode
+        const evcR=ch("div",{style:{gridColumn:"1/-1",display:"flex",gap:"6px",alignItems:"center"}},grid);
+        ch("span",{text:"EVCモード:",style:{fontSize:"10px",color:"var(--text-dim)"}},evcR);
+        const evcS=ch("select",{style:fStyle},evcR);
+        for(const e of ["disabled","intel-broadwell","intel-haswell","intel-skylake","intel-cascadelake","amd-rome","amd-milan"]) ch("option",{value:e,text:e},evcS);
+        evcS.value=cl2.evc||"disabled";
+        evcS.addEventListener("change",()=>{ cl2.evc=evcS.value; renderAndSync(); });
+
+        // メンバーホスト一覧
+        ch("div",{text:`このクラスタのホスト: ${cl2.hosts.length}台`,style:{fontSize:"10px",color:"var(--text-dim)",marginTop:"6px"}},csec);
+        const hlist=ch("div",{style:{display:"flex",flexDirection:"column",gap:"3px",marginBottom:"6px"}},csec);
+        for(const hid of (cl2.hosts||[])){
+          const h = Cfg.byId("servers", hid);
+          if(!h) continue;
+          const hr2 = ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",padding:"4px 6px",background:hid===obj.id?"var(--bg3)":"var(--bg2)",borderRadius:"4px",border:"1px solid "+(hid===obj.id?"var(--accent)":"var(--border)")}},hlist);
+          ch("span",{text:(hid===obj.id?"▶ ":"")+h.label||hid,style:{flex:"1",fontSize:"11px",fontWeight:hid===obj.id?"700":"400"}},hr2);
+          ch("span",{text:h.status,style:{fontSize:"9px",color:h.status==="running"?"var(--green)":"var(--orange)",padding:"1px 5px",border:"1px solid",borderRadius:"3px"}},hr2);
+          ch("span",{text:((App.config.servers||[]).filter(s=>s.vm&&s.host===hid).length)+"VM",style:{fontSize:"9px",color:"var(--text-mute)"}},hr2);
+          if(hid!==obj.id){
+            ch("button",{text:"開く",style:{padding:"2px 6px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"3px"},
+              on:{click:()=>{ closeDialog(); showHypervisorManager(hid); }}},hr2);
+          }
+          ch("button",{text:"クラスタから外す",style:{padding:"2px 6px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--orange)",color:"var(--orange)",borderRadius:"3px"},
+            on:{click:()=>{
+              if((typeof confirm==="function")?confirm(h.label+" をクラスタから外しますか?"):true){
+                cl2.hosts = (cl2.hosts||[]).filter(x=>x!==hid);
+                h.vcenter_cluster = "";
+                renderAndSync(); refresh(); toast(h.label+" をクラスタから除外","ok");
+              }
+            }}},hr2);
+        }
+        // 新規ESXiホスト作成 + 既存ホスト追加
+        const adr=ch("div",{style:{display:"flex",gap:"4px",marginTop:"4px"}},csec);
+        ch("button",{text:"➕ 新規ESXiホストを作成・追加",style:{flex:"1",padding:"5px 8px",fontSize:"10px",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+          on:{click:()=>{
+            pushUndo();
+            const newId = uid("esxi");
+            const baseN = (App.config.servers||[]).filter(s=>s.hypervisor||s.type==="hypervisor").length;
+            App.config.servers.push({
+              id:newId, label:"esxi-"+(baseN+1), type:"hypervisor", os:"VMware ESXi", status:"running",
+              cpu:32, memory:131072,
+              x: (obj.x||300) + 220, y: (obj.y||200),
+              width:200, height:120,
+              vcenter_cluster: cl2.name,
+              interfaces:[{ id:"vmnic0", ip:"10.0.100."+(10+baseN)+"/24", mac:genUniqueMac(), status:"up" }],
+              hypervisor:{ type:"esxi", vms:[], vswitches:[{name:"vSwitch0",portgroups:["VM Network","Management"]}], datastores:[{name:"shared-ds",capacity_gb:2000,backing:""}] }
+            });
+            cl2.hosts.push(newId);
+            renderAndSync(); refresh(); toast("新規ESXi "+newId+" を作成しクラスタに追加","ok");
+          }}},adr);
+        // 既存ホスト追加プルダウン
+        const otherHosts=(App.config.servers||[]).filter(s=>(s.hypervisor||s.type==="hypervisor")&&!(cl2.hosts||[]).includes(s.id));
+        if(otherHosts.length){
+          const exSel=ch("select",{style:Object.assign({flex:"1"},fStyle)},adr);
+          ch("option",{value:"",text:"-- 既存のホストを追加 --"},exSel);
+          for(const h of otherHosts) ch("option",{value:h.id,text:h.label||h.id},exSel);
+          ch("button",{text:"追加",style:{padding:"5px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px"},
+            on:{click:()=>{ if(exSel.value){ const old=App.config.vcenter_clusters.find(c=>(c.hosts||[]).includes(exSel.value)); if(old) old.hosts=old.hosts.filter(x=>x!==exSel.value); cl2.hosts.push(exSel.value); const h=Cfg.byId("servers",exSel.value); if(h) h.vcenter_cluster=cl2.name; renderAndSync(); refresh(); toast(exSel.value+" をクラスタに追加","ok"); }}}},adr);
+        }
+        // クラスタ削除 (このホストはどこにも所属しなくなるが残す)
+        ch("button",{text:"このクラスタを削除 (ホストは残る)",style:{padding:"4px 8px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px",marginTop:"4px"},
+          on:{click:()=>{
+            if((typeof confirm==="function")?confirm("クラスタ "+cl2.name+" を削除しますか? ホストは残ります。"):true){
+              for(const hid of (cl2.hosts||[])){ const h=Cfg.byId("servers",hid); if(h) h.vcenter_cluster=""; }
+              App.config.vcenter_clusters = App.config.vcenter_clusters.filter(c=>c.name!==cl2.name);
+              if(!App.config.vcenter_clusters.length) App.config.vcenter_clusters.push({name:"vc-cluster-1",drs:false,ha:false,evc:"disabled",hosts:[obj.id]});
+              obj.vcenter_cluster = App.config.vcenter_clusters[0].name;
+              if(!App.config.vcenter_clusters[0].hosts.includes(obj.id)) App.config.vcenter_clusters[0].hosts.push(obj.id);
+              renderAndSync(); refresh(); toast("クラスタを削除","ok");
+            }
+          }}},csec);
+      }
+
       // vSwitches / port groups
       const sw=ch("div",{class:"sub-section"},body);
       ch("h4",{text:"仮想スイッチ / ポートグループ"},sw);
@@ -1753,7 +1881,7 @@ function _ensureClusterFabric(cl){
     }
     sw = { id:swId, label:`${cl.name}-sw`, type:"l2switch", status:"running",
       x:sx, y:sy, width:140, height:54,
-      interfaces:Array.from({length: Math.max(8,(cl.nodes||[]).length+4)},(_,i)=>({id:"g"+i,status:"up"})) };
+      interfaces:Array.from({length: Math.max(8,(cl.nodes||[]).length+4)},(_,i)=>({id:"g"+i, mac:genUniqueMac(), status:"up"})) };
     App.config.devices.push(sw);
   }
   // 2) ensure each node is connected to the cluster switch
@@ -1776,7 +1904,7 @@ function _ensureClusterFabric(cl){
       }
       if(portIdx >= sw.interfaces.length){
         // grow the switch
-        for(let i=0;i<4;i++) sw.interfaces.push({id:"g"+(sw.interfaces.length),status:"up"});
+        for(let i=0;i<4;i++) sw.interfaces.push({id:"g"+(sw.interfaces.length), mac:genUniqueMac(), status:"up"});
       }
       const port = sw.interfaces[portIdx];
       const node = Cfg.byId("servers", nid);
@@ -5592,7 +5720,7 @@ function _findFreeSwPort(sw){
     if(!used) return p.id;
   }
   const newId="g"+(sw.interfaces||[]).length;
-  sw.interfaces.push({id:newId,status:"up"});
+  sw.interfaces.push({id:newId,mac:genUniqueMac(),status:"up"});
   return newId;
 }
 
@@ -5633,9 +5761,8 @@ var HANDS_ON_LABS = [
           App.config.devices.push({
             id:"test-subnet-a-sw", label:"subnet-a-sw (10.0.0.0/24)", type:"l2switch", status:"running",
             x:580, y:340, width:120, height:50,
-            interfaces:Array.from({length:8},(_,i)=>({id:"g"+i, status:"up"}))
+            interfaces:Array.from({length:8},(_,i)=>({id:"g"+i, mac:genUniqueMac(), status:"up"}))
           });
-          // router.vlan-a → subnet-a-sw.g0
           App.config.connections.push({id:uid("link"),from:{device:"test-vpc-router",interface:"vlan-a"},to:{device:"test-subnet-a-sw",interface:"g0"},type:"ethernet",status:"up"});
         }
         // AZ-c 用 L2スイッチ
@@ -5643,7 +5770,7 @@ var HANDS_ON_LABS = [
           App.config.devices.push({
             id:"test-subnet-c-sw", label:"subnet-c-sw (10.0.1.0/24)", type:"l2switch", status:"running",
             x:580, y:440, width:120, height:50,
-            interfaces:Array.from({length:8},(_,i)=>({id:"g"+i, status:"up"}))
+            interfaces:Array.from({length:8},(_,i)=>({id:"g"+i, mac:genUniqueMac(), status:"up"}))
           });
           App.config.connections.push({id:uid("link"),from:{device:"test-vpc-router",interface:"vlan-c"},to:{device:"test-subnet-c-sw",interface:"g0"},type:"ethernet",status:"up"});
         }
@@ -5885,6 +6012,219 @@ var HANDS_ON_LABS = [
           if(rtr){ const sw=Cfg.byId("devices","test-subnet-c-sw"); if(sw){ const port=_findFreeSwPort(sw); App.config.connections.push({id:uid("link"),from:{server:"test-web-c",interface:"eth0"},to:{device:"test-subnet-c-sw",interface:port},type:"ethernet",status:"up"}); } }
           const a=Cfg.byId("devices",_HANDSON_ELB_ID); if(a){ a.aws_config.target_group.targets=a.aws_config.target_group.targets||[]; if(!a.aws_config.target_group.targets.includes("test-web-c")) a.aws_config.target_group.targets.push("test-web-c"); }
         } } }
+  ]
+},
+// ============================================================================
+// ネットワーク機器ハンズオン (本ツールの主題: Cisco/Nexus/ESXi/vCenter)
+// ============================================================================
+{
+  id:"net-handson-1-l2switch",
+  number:6,
+  title:"L2スイッチ ハンズオン (Cisco Catalyst想定)",
+  overview:"基本的なL2スイッチを構築し、複数台のPCを接続。MACテーブルとSTPの動作を確認する。",
+  next:"net-handson-2-l3switch",
+  steps:[
+    { id:"l2-add", title:"L2スイッチを1台配置",
+      instructions:["Cisco Catalyst 2960等の実機相当のL2スイッチを設置"],
+      sim_steps:["ツールバー『NW機器』→『L2スイッチ』を選択して配置"],
+      hint:"L2スイッチはMACアドレスを学習して転送します。VLAN/STP/LACPが基本機能。",
+      verify:()=>(App.config.devices||[]).some(d=>d.id==="lab-sw1" || (d.type==="l2switch" && /lab-sw/.test(d.id||""))),
+      autoBuild:()=>{ if(!Cfg.byId("devices","lab-sw1")) App.config.devices.push({id:"lab-sw1",label:"lab-sw1 (Catalyst)",type:"l2switch",status:"running",x:400,y:300,width:140,height:60,interfaces:Array.from({length:8},(_,i)=>({id:"gi1/0/"+(i+1),mac:genUniqueMac(),status:"up"}))}); } },
+    { id:"l2-pcs", title:"PC 3台を接続",
+      instructions:["PC1,PC2,PC3にIP割当 (10.1.1.10-12/24)"],
+      sim_steps:["ツールバー『サーバ』→物理サーバを3つ追加して接続"],
+      hint:"同一サブネット(10.1.1.0/24)内のホストはL2のみで通信できます。",
+      verify:()=>(App.config.servers||[]).filter(s=>/lab-pc/.test(s.id||"")).length>=3,
+      autoBuild:()=>{ const sw=Cfg.byId("devices","lab-sw1"); if(!sw) return;
+        for(let i=1;i<=3;i++){ const id="lab-pc"+i; if(!Cfg.byId("servers",id)){ App.config.servers.push({id,label:"lab-pc"+i,type:"server",os:"linux",status:"running",x:200+i*120,y:480,width:110,height:55,interfaces:[{id:"eth0",ip:"10.1.1."+(9+i)+"/24",mac:genUniqueMac(),status:"up"}]});
+          App.config.connections.push({id:uid("link"),from:{server:id,interface:"eth0"},to:{device:"lab-sw1",interface:"gi1/0/"+i},type:"ethernet",status:"up"}); } } } },
+    { id:"l2-test", title:"PC1→PC2の通信テスト (L2学習)",
+      instructions:["PC1から ping 10.1.1.11 → MACテーブル学習"],
+      sim_steps:["lab-pc1を右クリック→『ここから通信テスト』→宛先 lab-pc2 でICMP"],
+      hint:"スイッチはまずARPで宛先MACを学習し、以後そのポートにのみ転送します(flooding→unicast)。",
+      verify:()=>(App.config.connections||[]).filter(c=>(c.from&&c.from.device==="lab-sw1")||(c.to&&c.to.device==="lab-sw1")).length>=3,
+      autoBuild:()=>{} },
+    { id:"l2-stp", title:"STP を確認 (将来のループ対策)",
+      instructions:["show spanning-tree でルートブリッジを確認"],
+      sim_steps:["lab-sw1を選択→右パネルで STP=rstp/pvst+ を確認"],
+      hint:"スイッチ1台ならSTPは『これがルート』。複数台で意味を持ちます。",
+      verify:()=>{ const sw=Cfg.byId("devices","lab-sw1"); return !!(sw && sw.stp && sw.stp.mode); },
+      autoBuild:()=>{ const sw=Cfg.byId("devices","lab-sw1"); if(sw){ sw.stp={mode:"rstp",bpdu_guard:false}; sw.stp_priority=32768; } } }
+  ]
+},
+{
+  id:"net-handson-2-l3switch",
+  number:7,
+  title:"L3スイッチ ハンズオン (VLAN間ルーティング)",
+  overview:"L3スイッチでVLANを切り、VLAN間ルーティング (Inter-VLAN Routing) を構築する。",
+  next:"net-handson-3-cisco-router",
+  steps:[
+    { id:"l3-add", title:"L3スイッチを配置",
+      instructions:["Catalyst 3850/9300等 → 異なるVLAN(10/20)を作成"],
+      sim_steps:["NW機器 → L3スイッチを配置"],
+      hint:"L3スイッチはL2機能 + VLAN間ルーティング(SVI)を持ちます。",
+      verify:()=>(App.config.devices||[]).some(d=>d.id==="lab-l3sw" || (d.type==="l3switch" && /lab-l3/.test(d.id||""))),
+      autoBuild:()=>{ if(!Cfg.byId("devices","lab-l3sw")) App.config.devices.push({id:"lab-l3sw",label:"lab-l3sw",type:"l3switch",status:"running",x:400,y:200,width:140,height:60,interfaces:[
+        {id:"vlan10",ip:"10.10.0.1/24",mac:genUniqueMac(),status:"up"},
+        {id:"vlan20",ip:"10.20.0.1/24",mac:genUniqueMac(),status:"up"},
+        {id:"gi1/0/1",mac:genUniqueMac(),status:"up"},{id:"gi1/0/2",mac:genUniqueMac(),status:"up"}
+      ]}); } },
+    { id:"l3-pcs", title:"異なるVLANのPCを配置",
+      instructions:["VLAN10: PC1 (10.10.0.10), VLAN20: PC2 (10.20.0.10)"],
+      sim_steps:["サーバを2台追加 → 各々別サブネットIPに設定"],
+      hint:"異なるVLAN(=サブネット)間はL3経由でしか通信できません。",
+      verify:()=>(App.config.servers||[]).filter(s=>/lab-vlanpc/.test(s.id||"")).length>=2,
+      autoBuild:()=>{
+        const sw=Cfg.byId("devices","lab-l3sw"); if(!sw) return;
+        if(!Cfg.byId("servers","lab-vlanpc1")) App.config.servers.push({id:"lab-vlanpc1",label:"vlan10-pc1",status:"running",x:230,y:380,interfaces:[{id:"eth0",ip:"10.10.0.10/24",mac:genUniqueMac(),status:"up"}],gateway:"10.10.0.1"});
+        if(!Cfg.byId("servers","lab-vlanpc2")) App.config.servers.push({id:"lab-vlanpc2",label:"vlan20-pc1",status:"running",x:580,y:380,interfaces:[{id:"eth0",ip:"10.20.0.10/24",mac:genUniqueMac(),status:"up"}],gateway:"10.20.0.1"});
+        if(!(App.config.connections||[]).some(c=>c.from&&c.from.server==="lab-vlanpc1")) App.config.connections.push({id:uid("link"),from:{server:"lab-vlanpc1",interface:"eth0"},to:{device:"lab-l3sw",interface:"gi1/0/1"},type:"ethernet",status:"up"});
+        if(!(App.config.connections||[]).some(c=>c.from&&c.from.server==="lab-vlanpc2")) App.config.connections.push({id:uid("link"),from:{server:"lab-vlanpc2",interface:"eth0"},to:{device:"lab-l3sw",interface:"gi1/0/2"},type:"ethernet",status:"up"}); } },
+    { id:"l3-svi", title:"SVI (Switch Virtual Interface) を確認",
+      instructions:["interface vlan10 / 20 にIP設定 → 各VLAN GW"],
+      sim_steps:["lab-l3swの右パネル→インターフェース vlan10/vlan20 のIPを確認"],
+      hint:"SVI は『VLANに対する仮想インターフェース』。VLAN内のGWになります。",
+      verify:()=>{ const sw=Cfg.byId("devices","lab-l3sw"); return !!(sw && (sw.interfaces||[]).filter(i=>/vlan/.test(i.id)).length>=2); },
+      autoBuild:()=>{} }
+  ]
+},
+{
+  id:"net-handson-3-cisco-router",
+  number:8,
+  title:"Cisco ルータ ハンズオン (静的ルーティング)",
+  overview:"2拠点間をCisco ISRルータで接続し、静的ルートで疎通させる。",
+  next:"net-handson-4-nexus",
+  steps:[
+    { id:"rtr-add", title:"ルータ2台を配置 (本社/支社)",
+      instructions:["Cisco ISR4321等を2台、WAN回線で接続"],
+      sim_steps:["NW機器 → ルータを2台配置"],
+      hint:"ルータはサブネット間を中継する装置。各IFが異なるサブネット。",
+      verify:()=>(App.config.devices||[]).filter(d=>d.type==="router" && /lab-rtr/.test(d.id||"")).length>=2,
+      autoBuild:()=>{
+        if(!Cfg.byId("devices","lab-rtr-hq")) App.config.devices.push({id:"lab-rtr-hq",label:"hq-router (ISR)",type:"router",status:"running",x:250,y:200,width:130,height:60,interfaces:[
+          {id:"gi0/0",ip:"10.1.1.1/24",mac:genUniqueMac(),status:"up"},
+          {id:"gi0/1",ip:"192.168.1.1/30",mac:genUniqueMac(),status:"up"}
+        ]});
+        if(!Cfg.byId("devices","lab-rtr-br")) App.config.devices.push({id:"lab-rtr-br",label:"br-router (ISR)",type:"router",status:"running",x:580,y:200,width:130,height:60,interfaces:[
+          {id:"gi0/0",ip:"10.2.1.1/24",mac:genUniqueMac(),status:"up"},
+          {id:"gi0/1",ip:"192.168.1.2/30",mac:genUniqueMac(),status:"up"}
+        ]});
+        // WAN link
+        if(!(App.config.connections||[]).some(c=>(c.from&&c.from.device==="lab-rtr-hq"&&c.from.interface==="gi0/1")))
+          App.config.connections.push({id:uid("link"),from:{device:"lab-rtr-hq",interface:"gi0/1"},to:{device:"lab-rtr-br",interface:"gi0/1"},type:"ethernet",status:"up",label:"WAN"});
+      } },
+    { id:"rtr-static", title:"静的ルートを設定",
+      instructions:["hq: ip route 10.2.1.0 255.255.255.0 192.168.1.2","br: ip route 10.1.1.0 255.255.255.0 192.168.1.1"],
+      sim_steps:["各ルータを右クリック→ルーティングテーブル→ルート追加"],
+      hint:"静的ルートは『この宛先はこの隣のIPへ』を手動指定するもの。小規模では確実。",
+      verify:()=>{
+        const hq=Cfg.byId("devices","lab-rtr-hq"), br=Cfg.byId("devices","lab-rtr-br");
+        const rtHq=(App.config.routing_tables||[]).find(rt=>rt.device==="lab-rtr-hq");
+        const rtBr=(App.config.routing_tables||[]).find(rt=>rt.device==="lab-rtr-br");
+        return !!(rtHq && (rtHq.routes||[]).some(r=>/10\.2\.1\.0/.test(r.dest||""))) && !!(rtBr && (rtBr.routes||[]).some(r=>/10\.1\.1\.0/.test(r.dest||"")));
+      },
+      autoBuild:()=>{
+        App.config.routing_tables=App.config.routing_tables||[];
+        let rtHq=(App.config.routing_tables||[]).find(rt=>rt.device==="lab-rtr-hq");
+        if(!rtHq){ rtHq={device:"lab-rtr-hq",routes:[]}; App.config.routing_tables.push(rtHq); }
+        if(!rtHq.routes.some(r=>r.dest==="10.2.1.0/24")) rtHq.routes.push({dest:"10.2.1.0/24",gateway:"192.168.1.2",interface:"gi0/1",type:"static",status:"active"});
+        let rtBr=(App.config.routing_tables||[]).find(rt=>rt.device==="lab-rtr-br");
+        if(!rtBr){ rtBr={device:"lab-rtr-br",routes:[]}; App.config.routing_tables.push(rtBr); }
+        if(!rtBr.routes.some(r=>r.dest==="10.1.1.0/24")) rtBr.routes.push({dest:"10.1.1.0/24",gateway:"192.168.1.1",interface:"gi0/1",type:"static",status:"active"});
+      } }
+  ]
+},
+{
+  id:"net-handson-4-nexus",
+  number:9,
+  title:"Cisco Nexus ハンズオン (vPC冗長化)",
+  overview:"Nexusスイッチ2台でvPC (Virtual Port Channel) を組み、ダウンしても通信継続する冗長構成を作る。",
+  next:"net-handson-5-esxi",
+  steps:[
+    { id:"nx-add", title:"Nexusスイッチ2台を配置",
+      instructions:["Nexus 9000シリーズ2台でvPC Peer-Linkを形成"],
+      sim_steps:["NW機器 → L3スイッチを2台配置 (Nexus相当)"],
+      hint:"Nexusスイッチは Cisco データセンタ向け。vPCで2台が1台として振る舞う。",
+      verify:()=>(App.config.devices||[]).filter(d=>/lab-nx/.test(d.id||"")).length>=2,
+      autoBuild:()=>{
+        if(!Cfg.byId("devices","lab-nx1")) App.config.devices.push({id:"lab-nx1",label:"nexus1 (N9K)",type:"l3switch",status:"running",x:300,y:200,width:140,height:60,interfaces:Array.from({length:6},(_,i)=>({id:"eth1/"+(i+1),mac:genUniqueMac(),status:"up"}))});
+        if(!Cfg.byId("devices","lab-nx2")) App.config.devices.push({id:"lab-nx2",label:"nexus2 (N9K)",type:"l3switch",status:"running",x:600,y:200,width:140,height:60,interfaces:Array.from({length:6},(_,i)=>({id:"eth1/"+(i+1),mac:genUniqueMac(),status:"up"}))});
+      } },
+    { id:"nx-vpc", title:"vPC ドメインとPeer-Linkを設定",
+      instructions:["vpc domain 10 / peer-link eth1/1-2 / peer-keepalive destination ..."],
+      sim_steps:["各Nexusを選択→vPC設定→domain:10, peer:相手, keepalive:相手mgmt-IP"],
+      hint:"vPCは『2台が1論理スイッチ』として振る舞い、片方ダウンでも通信が継続。",
+      verify:()=>{ const n1=Cfg.byId("devices","lab-nx1"), n2=Cfg.byId("devices","lab-nx2"); return !!(n1 && n1.vpc && n1.vpc.enabled && n2 && n2.vpc && n2.vpc.enabled); },
+      autoBuild:()=>{
+        const n1=Cfg.byId("devices","lab-nx1"), n2=Cfg.byId("devices","lab-nx2");
+        if(n1){ n1.vpc={enabled:true,domain:10,peer:"lab-nx2",keepalive:"10.0.99.2"}; }
+        if(n2){ n2.vpc={enabled:true,domain:10,peer:"lab-nx1",keepalive:"10.0.99.1"}; }
+        // Peer-Link
+        if(!(App.config.connections||[]).some(c=>(c.from&&c.from.device==="lab-nx1"&&c.to&&c.to.device==="lab-nx2"&&c.label==="peer-link")))
+          App.config.connections.push({id:uid("link"),from:{device:"lab-nx1",interface:"eth1/1"},to:{device:"lab-nx2",interface:"eth1/1"},type:"ethernet",status:"up",label:"peer-link"});
+        if(!(App.config.connections||[]).some(c=>(c.from&&c.from.device==="lab-nx1"&&c.from.interface==="eth1/2")))
+          App.config.connections.push({id:uid("link"),from:{device:"lab-nx1",interface:"eth1/2"},to:{device:"lab-nx2",interface:"eth1/2"},type:"ethernet",status:"up",label:"peer-link"});
+      } },
+    { id:"nx-host", title:"サーバを両Nexusに冗長接続",
+      instructions:["サーバNIC×2 → LACPボンディング → 両Nexus へ接続"],
+      sim_steps:["サーバ追加 → 各Nexusに各IFを接続"],
+      hint:"冗長接続でリンク or 片方Nexus障害でも継続通信。",
+      verify:()=>(App.config.servers||[]).some(s=>s.id==="lab-nx-srv") && (App.config.connections||[]).filter(c=>(c.from&&c.from.server==="lab-nx-srv")||(c.to&&c.to.server==="lab-nx-srv")).length>=2,
+      autoBuild:()=>{
+        if(!Cfg.byId("servers","lab-nx-srv")) App.config.servers.push({id:"lab-nx-srv",label:"app-server",status:"running",x:450,y:380,interfaces:[{id:"eth0",ip:"10.50.0.10/24",mac:genUniqueMac(),status:"up"},{id:"eth1",ip:"10.50.0.10/24",mac:genUniqueMac(),status:"up"}],bonding:{enabled:true,mode:"lacp",members:["eth0","eth1"]}});
+        if(!(App.config.connections||[]).some(c=>c.from&&c.from.server==="lab-nx-srv"&&c.from.interface==="eth0"))
+          App.config.connections.push({id:uid("link"),from:{server:"lab-nx-srv",interface:"eth0"},to:{device:"lab-nx1",interface:"eth1/3"},type:"ethernet",status:"up"});
+        if(!(App.config.connections||[]).some(c=>c.from&&c.from.server==="lab-nx-srv"&&c.from.interface==="eth1"))
+          App.config.connections.push({id:uid("link"),from:{server:"lab-nx-srv",interface:"eth1"},to:{device:"lab-nx2",interface:"eth1/3"},type:"ethernet",status:"up"});
+      } }
+  ]
+},
+{
+  id:"net-handson-5-esxi",
+  number:10,
+  title:"ESXi/vCenter ハンズオン (仮想基盤+VM)",
+  overview:"VMware ESXiホストを2台でクラスタ化し、vCenter HA構成を作ってVMを稼働させる。",
+  next:null,
+  steps:[
+    { id:"esxi-add", title:"ESXiホストを2台配置",
+      instructions:["物理サーバにESXiインストール → vCenter登録"],
+      sim_steps:["サーバ追加→ESXiホストを2台選択して配置"],
+      hint:"ESXiは VMware が出す ハイパーバイザOS。複数台でクラスタを組む。",
+      verify:()=>(App.config.servers||[]).filter(s=>(s.hypervisor||s.type==="hypervisor")&&/lab-esxi/.test(s.id||"")).length>=2,
+      autoBuild:()=>{
+        for(let i=1;i<=2;i++){ const id="lab-esxi"+i;
+          if(!Cfg.byId("servers",id)) App.config.servers.push({id,label:"esxi-host-"+i,type:"hypervisor",os:"VMware ESXi",status:"running",cpu:32,memory:131072,x:200+(i-1)*340,y:240,width:240,height:140,interfaces:[{id:"vmnic0",ip:"10.0.100."+(10+i)+"/24",mac:genUniqueMac(),status:"up"}],hypervisor:{type:"esxi",vms:[],vswitches:[{name:"vSwitch0",portgroups:["VM Network","Management"]}],datastores:[{name:"shared-ds",capacity_gb:2000,backing:""}]}}); }
+      } },
+    { id:"esxi-cluster", title:"vCenterクラスタを作成し2台を登録",
+      instructions:["vCenter → New Cluster → 各ESXiを追加"],
+      sim_steps:["ESXiをダブルクリック→vCenterクラスタセクション→クラスタ作成・追加"],
+      hint:"クラスタにすると、DRS(負荷分散)・HA(自動フェイルオーバ)・vMotion等が使える。",
+      verify:()=>{ App.config.vcenter_clusters=App.config.vcenter_clusters||[]; return App.config.vcenter_clusters.some(c=>(c.hosts||[]).includes("lab-esxi1")&&(c.hosts||[]).includes("lab-esxi2")); },
+      autoBuild:()=>{
+        App.config.vcenter_clusters=App.config.vcenter_clusters||[];
+        let c=App.config.vcenter_clusters.find(x=>x.name==="lab-vc-cluster");
+        if(!c){ c={name:"lab-vc-cluster",drs:true,ha:true,evc:"intel-cascadelake",hosts:[]}; App.config.vcenter_clusters.push(c); }
+        for(const id of ["lab-esxi1","lab-esxi2"]){ if(!c.hosts.includes(id)) c.hosts.push(id); const h=Cfg.byId("servers",id); if(h) h.vcenter_cluster="lab-vc-cluster"; }
+      } },
+    { id:"esxi-vms", title:"VMを2台作成 (各ESXiに1つずつ)",
+      instructions:["VM新規作成 → ESXi-1, ESXi-2 に配置"],
+      sim_steps:["各ESXiの仮想基盤管理→『+VM追加』を実行"],
+      hint:"VMはホストの内側に表示されます。ホスト障害時はHAで別ホストへ移動。",
+      verify:()=>(App.config.servers||[]).filter(s=>s.vm && (s.host==="lab-esxi1"||s.host==="lab-esxi2")).length>=2,
+      autoBuild:()=>{
+        for(let i=1;i<=2;i++){ const hostId="lab-esxi"+i; const vmId="lab-vm"+i;
+          if(!Cfg.byId("servers",vmId)){
+            const host=Cfg.byId("servers",hostId);
+            App.config.servers.push({id:vmId,label:"vm"+i,host:hostId,vm:true,type:"virtual",os:"linux",status:"running",power:"on",vcpu:2,ram_gb:4,portgroup:"VM Network",x:(host?host.x:200)+15+((i-1)%2)*80,y:(host?host.y:240)+30,width:70,height:38,interfaces:[{id:"eth0",ip:"10.50.0."+(10+i)+"/24",mac:genUniqueMac(),status:"up"}]});
+          }
+        }
+      } },
+    { id:"esxi-vmotion", title:"vMotionでVMを別ホストへ移動",
+      instructions:["vCenter→VMを右クリック→Migrate→Compute resource"],
+      sim_steps:["VMを右クリック→vMotion→移動先ESXiを選択"],
+      hint:"vMotionはVMを無停止で別ESXiへ移動する技術。共有ストレージ + vSphere必須。",
+      verify:()=>{ const vm=Cfg.byId("servers","lab-vm1"); return !!(vm); },
+      autoBuild:()=>{} }
   ]
 }
 ];
@@ -6483,4 +6823,336 @@ function showHandsOnSummary(labId){
     }
     return { buttons:[{ text:"閉じる", primary:true, action: closeDialog }] };
   });
+}
+
+// ============================================================================
+// Pod 直接編集 UI — キャンバスのPodチップをクリックで開く
+// ============================================================================
+function showPodEditor(clusterName, podName){
+  const cl = ((App.config.k8s&&App.config.k8s.clusters)||[]).find(c=>c.name===clusterName);
+  if(!cl) return;
+  const pod = (cl.pods||[]).find(p=>p.name===podName);
+  if(!pod){ toast("Podが見つかりません: "+podName,"err"); return; }
+  openDialog(`⬡ Pod 設定 — ${pod.name}`, (body)=>{
+    helpBox(body,"Pod の設定を変更できます",[
+      "・名前/Namespace/IP/ステータスを編集",
+      "・配置ノード(node)を変更すると、そのPodはそのノードに移動します",
+      "・containers でコンテナイメージ・公開ポートを設定",
+      "・labels で Service の selector に紐付けます"
+    ], false);
+    addField(body,"Pod名","text",pod.name,v=>{ pod.name=v; renderAndSync(); });
+    addField(body,"Namespace","text",pod.namespace||"default",v=>{ pod.namespace=v; renderAndSync(); });
+    addField(body,"Pod IP","text",pod.ip||"",v=>{ pod.ip=v; renderAndSync(); });
+    // ステータス
+    addSelectField(body,"ステータス",["Running","Pending","Failed","Succeeded","Unknown"], pod.status||"Running", v=>{ pod.status=v; renderAndSync(); });
+    // 配置ノード = 移動UI
+    const nodeOpts=(cl.nodes||[]).slice();
+    addSelectField(body,"配置ノード (変更で移動)", nodeOpts, pod.node||(nodeOpts[0]||""), v=>{
+      const old=pod.node; pod.node=v;
+      CommLog.info(`🔀 Pod ${pod.name} を ${old||"(未割当)"} → ${v} へ移動 (手動)`);
+      App.autoActions = App.autoActions||[];
+      App.autoActions.unshift({ts:new Date().toLocaleTimeString(), type:"pod-manual-move", what:"Pod "+pod.name, from:old||"(未割当)", to:v, detail:"手動による配置ノード変更"});
+      renderAndSync();
+      if(typeof updateHealthDashboard==="function") updateHealthDashboard();
+      toast(`Pod ${pod.name} を ${v} へ移動`,"ok");
+    });
+    // ラベル (key=val,...)
+    const labels = pod.labels||{};
+    const labelStr = Object.entries(labels).map(([k,v])=>k+"="+v).join(",");
+    addField(body,"ラベル (例: app=web,tier=front)","text",labelStr,v=>{
+      const o={}; v.split(",").map(s=>s.trim()).filter(Boolean).forEach(p=>{ const [k,val]=p.split("="); if(k) o[k.trim()]=(val||"").trim(); });
+      pod.labels=o; renderAndSync();
+    });
+    // コンテナ管理
+    ch("div",{text:"コンテナ (image / ポート)",style:{fontWeight:"700",marginTop:"10px",fontSize:"11px",color:"var(--accent)"}},body);
+    pod.containers = pod.containers || [];
+    const clist = ch("div",{style:{display:"flex",flexDirection:"column",gap:"4px"}},body);
+    function refreshC(){
+      clist.innerHTML="";
+      pod.containers.forEach((c,ci)=>{
+        const r=ch("div",{style:{display:"flex",gap:"3px",alignItems:"center"}},clist);
+        const ni=ch("input",{type:"text",value:c.name||"app",placeholder:"name",style:{width:"60px",fontSize:"10px",padding:"2px 4px",background:"var(--bg)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:"3px"}},r);
+        ni.addEventListener("change",()=>{c.name=ni.value;renderAndSync();});
+        const ii=ch("input",{type:"text",value:c.image||"nginx:latest",placeholder:"nginx:latest",style:{flex:"1",fontSize:"10px",padding:"2px 4px",background:"var(--bg)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:"3px"}},r);
+        ii.addEventListener("change",()=>{c.image=ii.value;renderAndSync();});
+        const pi=ch("input",{type:"text",value:(c.ports||[]).join(","),placeholder:"80,443",style:{width:"70px",fontSize:"10px",padding:"2px 4px",background:"var(--bg)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:"3px"}},r);
+        pi.addEventListener("change",()=>{c.ports=pi.value.split(",").map(x=>+x.trim()).filter(Boolean);renderAndSync();});
+        ch("button",{text:"✕",style:{padding:"0 5px",fontSize:"9px",cursor:"pointer",background:"var(--bg2)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{pod.containers.splice(ci,1);renderAndSync();refreshC();}}},r);
+      });
+    }
+    refreshC();
+    ch("button",{text:"+ コンテナ追加",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--cyan)",color:"var(--cyan)",borderRadius:"3px",marginTop:"4px"},
+      on:{click:()=>{ pod.containers.push({name:"app"+(pod.containers.length+1),image:"nginx:latest",ports:[80]}); renderAndSync(); refreshC(); }}},body);
+    return { buttons:[
+      { text:"このPodを削除", action:()=>{
+        if((typeof confirm==="function")?confirm("Pod "+pod.name+" を削除しますか?"):true){
+          cl.pods = (cl.pods||[]).filter(p=>p!==pod);
+          renderAndSync(); closeDialog(); toast("Pod "+pod.name+" を削除","ok");
+        }
+      } },
+      { text:"閉じる", primary:true, action: closeDialog }
+    ] };
+  });
+}
+
+function showPodMigrationMenu(clusterName, podName){
+  const cl = ((App.config.k8s&&App.config.k8s.clusters)||[]).find(c=>c.name===clusterName);
+  if(!cl) return;
+  const pod = (cl.pods||[]).find(p=>p.name===podName);
+  if(!pod) return;
+  openDialog(`🔀 Pod 移動 — ${pod.name}`, (body)=>{
+    helpBox(body,"Podの再スケジュール (マイグレーション)",[
+      "・移動先のノードをクリックすると、そのノードへPodを移動します",
+      "・実環境では Pod は再作成されますが、本シミュレータでは配置のみ変更します",
+      "・移動先がダウン中だと自動フェイルオーバが走ります"
+    ], false);
+    ch("div",{text:`現在の配置: ${pod.node||"(未割当)"}`,style:{fontSize:"11px",color:"var(--text-dim)",margin:"6px 0"}},body);
+    const list = ch("div",{style:{display:"flex",flexDirection:"column",gap:"4px",margin:"6px 0"}},body);
+    for(const nid of (cl.nodes||[])){
+      if(nid===pod.node) continue;
+      const node = Cfg.byId("servers",nid);
+      const healthy = node && node.status==="running";
+      const masters = new Set((cl.control_plane&&cl.control_plane.masters)||[]);
+      const role = masters.has(nid) ? "master 👑" : "worker ⚙";
+      const btn = ch("button",{style:{padding:"6px 10px",fontSize:"11px",cursor:"pointer",background:healthy?"var(--bg2)":"var(--bg)",border:"1px solid "+(healthy?"var(--accent)":"var(--red)"),color:healthy?"var(--text)":"var(--text-mute)",borderRadius:"4px",textAlign:"left"}},list);
+      btn.textContent = `→ ${nid} (${role}) ${healthy?"":"⚠ ダウン中"}`;
+      btn.addEventListener("click",()=>{
+        const old=pod.node; pod.node=nid;
+        CommLog.info(`🔀 Pod ${pod.name} を ${old} → ${nid} へ移動 (手動マイグレーション)`);
+        App.autoActions = App.autoActions||[];
+        App.autoActions.unshift({ts:new Date().toLocaleTimeString(), type:"pod-manual-move", what:"Pod "+pod.name, from:old, to:nid, detail:"手動マイグレーション (再スケジュール)"});
+        renderAndSync(); if(typeof updateHealthDashboard==="function") updateHealthDashboard();
+        closeDialog(); toast(`Pod ${pod.name} を ${nid} へ移動`,"ok");
+      });
+    }
+    if(!(cl.nodes||[]).some(n=>n!==pod.node)){
+      ch("div",{text:"⚠ 移動先候補となる別ノードがありません。先にノードを追加してください。",style:{fontSize:"11px",color:"var(--orange)",padding:"6px",border:"1px solid var(--orange)",borderRadius:"4px"}},body);
+    }
+    return { buttons:[{text:"閉じる", primary:true, action:closeDialog}] };
+  });
+}
+
+function showPodContextMenu(ev, clusterName, podName){
+  const cl = ((App.config.k8s&&App.config.k8s.clusters)||[]).find(c=>c.name===clusterName);
+  if(!cl) return;
+  const pod = (cl.pods||[]).find(p=>p.name===podName);
+  if(!pod) return;
+  // 既存の showContextMenu インフラを使う
+  const items = [
+    { icon:"⬡", label:"Pod 設定を編集...", action:()=>showPodEditor(clusterName, podName) },
+    { icon:"🔀", label:"別ノードへ移動...", action:()=>showPodMigrationMenu(clusterName, podName) },
+    { sep:true },
+    { icon:(pod.status==="Running"?"⏸":"▶"), label:(pod.status==="Running"?"停止 (Failed)":"起動 (Running)"),
+      action:()=>{ pod.status = (pod.status==="Running"?"Failed":"Running"); CommLog.info(`Pod ${pod.name} を ${pod.status} に変更`); renderAndSync(); toast(`Pod ${pod.name}: ${pod.status}`,"ok"); } },
+    { sep:true },
+    { icon:"🗑", label:"Podを削除",
+      action:()=>{ if((typeof confirm==="function")?confirm("Pod "+pod.name+" を削除しますか?"):true){ cl.pods=(cl.pods||[]).filter(p=>p!==pod); renderAndSync(); toast("Pod "+pod.name+" を削除","ok"); } } }
+  ];
+  if(typeof showContextMenu==="function"){
+    // showContextMenu(ev, kind, id) は固定の getContextItems を呼ぶため、ここでは独自実装
+    _showSimpleContextMenu(ev, items);
+  }
+}
+
+function _showSimpleContextMenu(ev, items){
+  // remove existing
+  const existing = document.querySelector("#simple-ctx-menu"); if(existing) existing.remove();
+  const m = document.createElement("div");
+  m.id = "simple-ctx-menu";
+  m.style.cssText = "position:fixed;background:var(--panel);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow);z-index:9999;min-width:180px;padding:4px 0;font-size:12px;";
+  m.style.left = (ev.clientX||0)+"px";
+  m.style.top = (ev.clientY||0)+"px";
+  for(const it of items){
+    if(it.sep){
+      const sep = document.createElement("div"); sep.style.cssText="height:1px;background:var(--border);margin:4px 0;"; m.appendChild(sep);
+      continue;
+    }
+    const row = document.createElement("div");
+    row.style.cssText="padding:6px 12px;cursor:pointer;display:flex;gap:8px;align-items:center;";
+    row.onmouseenter=()=>row.style.background="var(--bg3)";
+    row.onmouseleave=()=>row.style.background="";
+    const ic = document.createElement("span"); ic.textContent = it.icon||"·"; ic.style.cssText="width:18px;text-align:center;";
+    const lb = document.createElement("span"); lb.textContent = it.label;
+    row.appendChild(ic); row.appendChild(lb); m.appendChild(row);
+    row.addEventListener("click",()=>{ m.remove(); try{it.action&&it.action();}catch(e){console.log(e);} });
+  }
+  document.body.appendChild(m);
+  const cleanup = (e)=>{ if(!m.contains(e.target)){ m.remove(); document.removeEventListener("click",cleanup); document.removeEventListener("contextmenu",cleanup); }};
+  setTimeout(()=>{ document.addEventListener("click",cleanup); document.addEventListener("contextmenu",cleanup); }, 0);
+}
+
+// ============================================================================
+// 指定ノードを送信元として通信テスト + 経路を画面にアニメ表示
+// ============================================================================
+function openCommTestFrom(srcKind, srcId){
+  Cfg.ensure();
+  const src = Cfg.byId(kindToCol(srcKind), srcId);
+  if(!src){ toast("送信元が見つかりません","err"); return; }
+  openDialog(`🎯 通信テスト — ${src.label||src.id} から`, (body)=>{
+    helpBox(body,"このノードから別ノードへの疎通テスト",[
+      "・宛先を選んでテスト実行",
+      "・経路が画面上にアニメーション表示されます",
+      "・失敗時は遮断箇所と理由をログに表示"
+    ], false);
+    const targets = [];
+    for(const d of (App.config.devices||[])) if(d.id!==srcId) targets.push({kind:"device",id:d.id,label:`(機器) ${d.label||d.id}`,ips:elementAllAddresses("device",d.id)});
+    for(const s of (App.config.servers||[])) if(s.id!==srcId) targets.push({kind:"server",id:s.id,label:`(サーバ) ${s.label||s.id}`,ips:elementAllAddresses("server",s.id)});
+    let toId="", toIp="", proto="tcp", port=80;
+    const f=ch("div",{class:"field"},body); ch("label",{text:"宛先"},f);
+    const sel=ch("select",{},f);
+    ch("option",{value:"",text:"-- 選択 --"},sel);
+    for(const t of targets){ const o=ch("option",{value:t.kind+":"+t.id+":"+(t.ips[0]||""),text:t.label+(t.ips[0]?" ("+t.ips[0]+")":"")},sel); }
+    sel.addEventListener("change",()=>{
+      const parts=sel.value.split(":");
+      if(parts.length>=3){ toId=parts[1]; toIp=parts.slice(2).join(":"); }
+    });
+    const fp=ch("div",{class:"field-grid"},body);
+    addField(fp,"宛先IPを上書き(任意)","text","",v=>{ if(v) toIp=v; });
+    addSelectField(fp,"プロトコル",["icmp","tcp","udp"],"tcp",v=>proto=v);
+    addField(fp,"ポート","number",80,v=>port=+v||80);
+    const resBox=ch("div",{style:{margin:"10px 0",padding:"8px",border:"1px solid var(--border)",borderRadius:"4px",background:"var(--bg2)",fontSize:"11px",minHeight:"40px",fontFamily:"var(--mono)"}},body);
+    resBox.textContent = "(まだテストしていません)";
+    return { buttons:[
+      { text:"テスト実行", primary:true, action:()=>{
+        if(!toIp){ toast("宛先IPを選択してください","err"); return; }
+        const r=computePath(srcKind, src, toIp, proto, port);
+        resBox.innerHTML="";
+        if(r.ok){
+          ch("div",{text:"✅ 疎通成功",style:{color:"var(--green)",fontWeight:"700"}},resBox);
+          ch("div",{text:"経路: "+((r.path||[]).map(p=>p.id).join(" → "))},resBox);
+          if(r.portInfo) ch("div",{text:r.portInfo,style:{color:"var(--text-dim)",fontSize:"10px"}},resBox);
+          if(r.natApplied) ch("div",{text:"NAT適用: "+JSON.stringify(r.natApplied),style:{color:"var(--cyan)",fontSize:"10px"}},resBox);
+        } else {
+          ch("div",{text:"❌ 疎通失敗",style:{color:"var(--red)",fontWeight:"700"}},resBox);
+          ch("div",{text:"理由: "+(r.reason||"不明")},resBox);
+          if(r.path && r.path.length) ch("div",{text:"到達経路: "+(r.path.map(p=>p.id).join(" → "))},resBox);
+          if(r.blockedAt) ch("div",{text:"遮断箇所: "+r.blockedAt.kind+"/"+r.blockedAt.id,style:{color:"var(--orange)"}},resBox);
+        }
+        // 経路をキャンバスにアニメ表示
+        if(r.path && r.path.length>=2 && typeof animatePath==="function") animatePath(r.path, r.ok);
+        // 通信ログにも記録
+        if(typeof logCommResult==="function") logCommResult(src, toIp, proto, port, r);
+      }},
+      { text:"閉じる", action: closeDialog }
+    ]};
+  });
+}
+
+// 通信経路をキャンバス上にアニメ表示 (パケットドットが経路を流れる)
+function animatePath(path, success){
+  const layer = $("#layer-packets") || $("#layer-overlays");
+  if(!layer) return;
+  // 古いパケットを削除
+  const old = (typeof layer.querySelectorAll==="function") ? layer.querySelectorAll(".comm-anim") : [];
+  if(old && old.forEach) old.forEach(n=>{try{n.remove();}catch(e){}});
+  // 経路の各セグメントを順に描画
+  for(let i=0;i<path.length-1;i++){
+    const a=path[i], b=path[i+1];
+    if(typeof a.x!=="number"||typeof b.x!=="number") continue;
+    const line=ce("line",{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:success?"#22c55e":"#ef4444","stroke-width":3,"stroke-dasharray":"6 4",opacity:0.85,class:"comm-anim","pointer-events":"none"},layer);
+    // パケットドット (animate要素)
+    const dot=ce("circle",{cx:a.x,cy:a.y,r:5,fill:success?"#22c55e":"#ef4444",class:"comm-anim","pointer-events":"none"},layer);
+    const animX=ce("animate",{attributeName:"cx",from:a.x,to:b.x,dur:(0.7+i*0.15)+"s",begin:(i*0.7)+"s",fill:"freeze"},dot);
+    const animY=ce("animate",{attributeName:"cy",from:a.y,to:b.y,dur:(0.7+i*0.15)+"s",begin:(i*0.7)+"s",fill:"freeze"},dot);
+  }
+  // 6秒後にアニメをクリア
+  setTimeout(()=>{
+    try{
+      const layer2 = $("#layer-packets") || $("#layer-overlays");
+      if(layer2 && layer2.querySelectorAll){
+        const els = layer2.querySelectorAll(".comm-anim");
+        if(els && els.forEach) els.forEach(n=>{try{n.remove();}catch(e){}});
+      }
+    }catch(e){}
+  }, 6000);
+}
+
+// ============================================================================
+// K8s Service 直接編集 UI
+// ============================================================================
+function showServiceEditor(clusterName, serviceName){
+  const cl = ((App.config.k8s&&App.config.k8s.clusters)||[]).find(c=>c.name===clusterName);
+  if(!cl) return;
+  const svc = (cl.services||[]).find(s=>s.name===serviceName);
+  if(!svc){ toast("Serviceが見つかりません","err"); return; }
+  openDialog(`⚓ Service 設定 — ${svc.name}`, (body)=>{
+    helpBox(body,"K8s Service の設定編集",[
+      "・ClusterIP: クラスタ内部からのみアクセス可能 (デフォルト)",
+      "・NodePort: ノードのポート(30000-32767)で外部公開",
+      "・LoadBalancer: 外部LBが自動発行(クラウド連携)",
+      "・selector で対象Pod(ラベル)を指定"
+    ], false);
+    addField(body,"Service名","text",svc.name,v=>{svc.name=v;renderAndSync();});
+    addField(body,"Namespace","text",svc.namespace||"default",v=>{svc.namespace=v;renderAndSync();});
+    addSelectField(body,"タイプ",["ClusterIP","NodePort","LoadBalancer"],svc.type||"ClusterIP",v=>{svc.type=v;renderAndSync();});
+    addField(body,"Cluster IP","text",svc.cluster_ip||"",v=>{svc.cluster_ip=v;renderAndSync();});
+    if((svc.type||"ClusterIP")==="LoadBalancer"){
+      addField(body,"External IP","text",svc.external_ip||"",v=>{svc.external_ip=v;renderAndSync();});
+    }
+    // selector (label match for pods)
+    const selStr = Object.entries(svc.selector||{}).map(([k,v])=>k+"="+v).join(",");
+    addField(body,"Selector (例: app=web,tier=front)","text",selStr,v=>{
+      const o={}; v.split(",").map(s=>s.trim()).filter(Boolean).forEach(p=>{const [k,val]=p.split("="); if(k) o[k.trim()]=(val||"").trim();});
+      svc.selector=o; renderAndSync();
+    });
+    // 紐付くPod一覧 (selectorが一致するPod)
+    const matched = (cl.pods||[]).filter(p=>{
+      const sel = svc.selector||{};
+      for(const k in sel){ if((p.labels||{})[k]!==sel[k]) return false; }
+      return Object.keys(sel).length>0;
+    });
+    ch("div",{text:"このServiceが束ねるPod (selector一致): "+(matched.length||0)+"個",style:{fontSize:"10px",color:"var(--text-dim)",margin:"6px 0"}},body);
+    for(const p of matched) ch("div",{text:"  ⬡ "+p.name+" ("+(p.status||"Running")+")",style:{fontSize:"10px",color:"var(--text)",marginLeft:"10px"}},body);
+    if(!matched.length) ch("div",{text:"  ⚠ Selector に一致するPodがありません — Selectorまたは Pod のラベルを見直してください",style:{fontSize:"10px",color:"var(--orange)",marginLeft:"10px"}},body);
+    // ポート設定
+    ch("div",{text:"ポート設定",style:{fontWeight:"700",marginTop:"10px",fontSize:"11px",color:"var(--accent)"}},body);
+    svc.ports = svc.ports || [];
+    const plist = ch("div",{},body);
+    function refreshP(){
+      plist.innerHTML="";
+      svc.ports.forEach((pp,pi)=>{
+        const r=ch("div",{style:{display:"flex",gap:"3px",alignItems:"center",marginBottom:"3px"}},plist);
+        const portI=ch("input",{type:"number",value:pp.port||80,placeholder:"80",style:{width:"55px",fontSize:"10px",padding:"2px 4px",background:"var(--bg)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:"3px"}},r);
+        portI.addEventListener("change",()=>{pp.port=+portI.value||80;renderAndSync();});
+        ch("span",{text:"→",style:{fontSize:"10px",color:"var(--text-mute)"}},r);
+        const tpI=ch("input",{type:"number",value:pp.target_port||pp.port||80,placeholder:"target",style:{width:"55px",fontSize:"10px",padding:"2px 4px",background:"var(--bg)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:"3px"}},r);
+        tpI.addEventListener("change",()=>{pp.target_port=+tpI.value||pp.port;renderAndSync();});
+        if((svc.type||"ClusterIP")==="NodePort"){
+          ch("span",{text:" NodePort:",style:{fontSize:"10px",color:"var(--text-mute)"}},r);
+          const npI=ch("input",{type:"number",value:pp.node_port||(30000+pi),placeholder:"30000-32767",style:{width:"60px",fontSize:"10px",padding:"2px 4px",background:"var(--bg)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:"3px"}},r);
+          npI.addEventListener("change",()=>{pp.node_port=+npI.value;renderAndSync();});
+        }
+        addSelectField({appendChild:c=>r.appendChild(c)},"",["tcp","udp"],pp.proto||"tcp",v=>{pp.proto=v;renderAndSync();});
+        ch("button",{text:"✕",style:{padding:"0 5px",fontSize:"9px",cursor:"pointer",background:"var(--bg2)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{svc.ports.splice(pi,1);renderAndSync();refreshP();}}},r);
+      });
+    }
+    refreshP();
+    ch("button",{text:"+ ポート追加",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--cyan)",color:"var(--cyan)",borderRadius:"3px",marginTop:"4px"},
+      on:{click:()=>{svc.ports.push({port:80,target_port:80,proto:"tcp"});renderAndSync();refreshP();}}},body);
+    return { buttons:[
+      { text:"このServiceを削除", action:()=>{
+        if((typeof confirm==="function")?confirm("Service "+svc.name+" を削除しますか?"):true){
+          cl.services = (cl.services||[]).filter(s=>s!==svc);
+          renderAndSync(); closeDialog(); toast("Service "+svc.name+" を削除","ok");
+        }
+      } },
+      { text:"閉じる", primary:true, action: closeDialog }
+    ] };
+  });
+}
+
+function showServiceContextMenu(ev, clusterName, serviceName){
+  const cl = ((App.config.k8s&&App.config.k8s.clusters)||[]).find(c=>c.name===clusterName);
+  if(!cl) return;
+  const svc = (cl.services||[]).find(s=>s.name===serviceName);
+  if(!svc) return;
+  const items = [
+    { icon:"⚓", label:"Service 設定を編集...", action:()=>showServiceEditor(clusterName, serviceName) },
+    { sep:true },
+    { icon:"🗑", label:"Serviceを削除",
+      action:()=>{ if((typeof confirm==="function")?confirm("Service "+svc.name+" を削除しますか?"):true){ cl.services=(cl.services||[]).filter(s=>s!==svc); renderAndSync(); toast("Service "+svc.name+" を削除","ok"); }}}
+  ];
+  if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(ev, items);
 }

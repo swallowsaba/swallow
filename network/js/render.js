@@ -735,24 +735,47 @@ function renderAwsOverlay(){
       ce("text", { x:(minX+maxX)/2, y:(minY+maxY)/2, "text-anchor":"middle", "dominant-baseline":"middle",
         "font-size":11, fill:"var(--text-mute)", text:"(EC2未配置 — AWS管理で「+ EC2インスタンス追加」)" }, g);
     }
-    // subnet sub-boxes: group members by subnet
+    // subnet sub-boxes: group members by subnet (draggable + resizable)
     const bySubnet={};
     for(const s of members){ const sn=(s.aws&&s.aws.subnet)||"(no-subnet)"; (bySubnet[sn]=bySubnet[sn]||[]).push(s); }
     for(const snName in bySubnet){
       const arr=bySubnet[snName]; if(snName==="(no-subnet)") continue;
-      let sx=Infinity,sy=Infinity,ex=-Infinity,ey=-Infinity;
-      for(const s of arr){ const w=s.width||130,h=s.height||65; sx=Math.min(sx,s.x||0);sy=Math.min(sy,s.y||0);ex=Math.max(ex,(s.x||0)+w);ey=Math.max(ey,(s.y||0)+h); }
-      sx-=12;sy-=14;ex+=12;ey+=10;
       const snDef=(vpc.subnets||[]).find(z=>z.name===snName);
-      const pub = snDef && snDef.public;
+      if(!snDef) continue;
+      let sx,sy,ex,ey;
+      // If subnet has manual size/pos overrides use those; otherwise auto-bound the members.
+      if(snDef._pos && snDef._size){
+        sx = snDef._pos.x; sy = snDef._pos.y;
+        ex = sx + snDef._size.w; ey = sy + snDef._size.h;
+      } else {
+        sx=Infinity;sy=Infinity;ex=-Infinity;ey=-Infinity;
+        for(const s of arr){ const w=s.width||130,h=s.height||65; sx=Math.min(sx,s.x||0);sy=Math.min(sy,s.y||0);ex=Math.max(ex,(s.x||0)+w);ey=Math.max(ey,(s.y||0)+h); }
+        sx-=12;sy-=14;ex+=12;ey+=10;
+      }
+      const pub = snDef.public;
       const snBox = ce("rect", { x:sx, y:sy, width:ex-sx, height:ey-sy, rx:9, ry:9,
         fill:(pub?"rgba(34,197,94,0.05)":"rgba(100,150,250,0.05)"), stroke:(pub?"#22c55e":"#6496fa"), "stroke-width":1, "stroke-dasharray":"4 3",
         "pointer-events":"all", style:"cursor:move" }, g);
-      // drag the subnet box → move all EC2 in this subnet together (subnet-level move)
+      // ドラッグでサブネット全体(枠 + 中のEC2)を移動
       const snMembers = arr.map(s=>({kind:"server",id:s.id}));
-      snBox.addEventListener("mousedown",(e)=>startGroupDrag(e, snMembers));
+      snBox.addEventListener("mousedown",(e)=>{
+        e.stopPropagation();
+        // 既存位置を記録
+        if(!snDef._pos){ snDef._pos = { x:sx, y:sy }; snDef._size = { w:ex-sx, h:ey-sy }; }
+        startSubnetDrag(e, snDef, snMembers);
+      });
+      // クリックでサブネット選択 (将来の選択時操作用)
+      snBox.addEventListener("click",(e)=>{ e.stopPropagation(); App.selected={kind:"aws-subnet",id:vpc.name+"/"+snName}; });
       ce("text", { x:sx+6, y:sy+9, "font-size":8, "font-weight":"700", fill:(pub?"#22c55e":"#6496fa"), "pointer-events":"none",
         text:`${snName}${snDef?(" "+(snDef.cidr||"")):""} ${pub?"[public]":"[private]"}` }, g);
+      // サブネット右下にリサイズハンドル
+      const snRh = ce("rect", { x:ex-7, y:ey-7, width:10, height:10, rx:2, ry:2,
+        fill:(pub?"#22c55e":"#6496fa"), stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, g);
+      snRh.addEventListener("mousedown",(e)=>{
+        e.stopPropagation();
+        if(!snDef._pos){ snDef._pos = { x:sx, y:sy }; snDef._size = { w:ex-sx, h:ey-sy }; }
+        startSubnetResize(e, snDef);
+      });
     }
     // SE resize handle (drag to enlarge the VPC frame)
     const rh = ce("rect", { x:maxX-7, y:maxY-7, width:12, height:12, rx:2, ry:2,
@@ -813,6 +836,29 @@ function renderK8sOverlay(){
       ce("text", { x:(minX+maxX)/2, y:(minY+maxY)/2, "text-anchor":"middle", "dominant-baseline":"middle",
         "font-size":11, fill:"var(--text-mute)", text:"(ノード未割当 — K8s管理でノード追加)" }, g);
     }
+    // ---- Service chips at top of cluster frame (clickable for editing) ----
+    const services = cl.services || [];
+    if(services.length){
+      const topLayer = $("#layer-overlays") || layer;
+      const sg = ce("g", { class:"k8s-services-top", "pointer-events":"none" }, topLayer);
+      const svcW=70, svcH=14, gap=4;
+      services.forEach((svc,si)=>{
+        const cx = minX + 14 + bw + 12 + si*(svcW+gap);
+        const cy = minY - 9;
+        const typeColor = svc.type==="LoadBalancer" ? "#16a34a" : (svc.type==="NodePort" ? "#f59e0b" : "#0891b2");
+        const sgEl = ce("g", { class:"k8s-service-chip", "pointer-events":"all", style:"cursor:pointer" }, sg);
+        ce("rect", { x:cx, y:cy, width:svcW, height:svcH, rx:7, ry:7,
+          fill:typeColor, stroke:"#fff", "stroke-width":1, "pointer-events":"all" }, sgEl);
+        ce("text", { x:cx+svcW/2, y:cy+10, "text-anchor":"middle", "font-size":8, "font-weight":"700",
+          fill:"#fff", text:"⚓ "+(svc.name.length>7?svc.name.slice(0,7):svc.name), "pointer-events":"none" }, sgEl);
+        sgEl.addEventListener("click",(e)=>{ e.stopPropagation();
+          if(typeof showServiceEditor==="function") showServiceEditor(cl.name, svc.name);
+        });
+        sgEl.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
+          if(typeof showServiceContextMenu==="function") showServiceContextMenu(e, cl.name, svc.name);
+        });
+      });
+    }
     const krh = ce("rect", { x:maxX-7, y:maxY-7, width:12, height:12, rx:2, ry:2,
       fill:"#326ce5", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, g);
     krh.addEventListener("mousedown",(e)=>startFrameResize(e, cl, {x:minX,y:minY,w:maxX-minX,h:maxY-minY}));
@@ -855,11 +901,24 @@ function renderK8sOverlay(){
           const cx = nx+pad + col*(chipW+gap);
           const cy = ny+nh - (Math.ceil(pods.length/cols)-rrow)*(chipH+gap) - 2;
           const running=(pod.status||"Running")==="Running";
-          const pg=ce("g",{class:"k8s-pod"},og);
+          const pg=ce("g",{class:"k8s-pod","pointer-events":"all",style:"cursor:pointer"},og);
           ce("rect",{x:cx,y:cy,width:chipW,height:chipH,rx:6,ry:6,
-            fill:running?"#326ce5":"#888",stroke:"#fff","stroke-width":0.7},pg);
+            fill:running?"#326ce5":"#888",stroke:"#fff","stroke-width":0.7,
+            "pointer-events":"all"},pg);
           ce("text",{x:cx+chipW/2,y:cy+9.5,"text-anchor":"middle","font-size":7,fill:"#fff","font-weight":"700",
-            text:"⬡"+(pod.name.length>7?pod.name.slice(0,7):pod.name)},pg);
+            text:"⬡"+(pod.name.length>7?pod.name.slice(0,7):pod.name),"pointer-events":"none"},pg);
+          // クリックで Pod 設定ダイアログを開く
+          pg.addEventListener("click",(e)=>{ e.stopPropagation();
+            if(typeof showPodEditor==="function") showPodEditor(cl.name, pod.name);
+          });
+          // ダブルクリックで Pod 移動メニュー
+          pg.addEventListener("dblclick",(e)=>{ e.stopPropagation();
+            if(typeof showPodMigrationMenu==="function") showPodMigrationMenu(cl.name, pod.name);
+          });
+          // 右クリックで Pod 操作メニュー (移動/停止/削除)
+          pg.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
+            if(typeof showPodContextMenu==="function") showPodContextMenu(e, cl.name, pod.name);
+          });
         });
       }
     }
@@ -1961,6 +2020,32 @@ function onElMouseDown(e, kind, id){
   };
 }
 
+// AWS Subnet box drag: move the subnet's pos AND all its EC2 members together
+function startSubnetDrag(e, snDef, members){
+  if(e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  const pt = svgPoint(e);
+  const startPx = pt.x, startPy = pt.y;
+  const startSnX = snDef._pos.x, startSnY = snDef._pos.y;
+  const memInit = members.map(m=>{ const o = Cfg.byId(kindToCol(m.kind), m.id); return {kind:m.kind,id:m.id,x:o?(o.x||0):0,y:o?(o.y||0):0}; });
+  dragState = {
+    mode:"subnetMove", snDef, memInit, startPx, startPy, startSnX, startSnY,
+    moved:false
+  };
+}
+
+// AWS Subnet box resize: drag the SE handle to enlarge
+function startSubnetResize(e, snDef){
+  if(e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  const pt = svgPoint(e);
+  dragState = {
+    mode:"subnetResize", snDef,
+    startPx:pt.x, startPy:pt.y,
+    startW:snDef._size.w, startH:snDef._size.h
+  };
+}
+
 // Begin dragging a group of elements (used by VPC/K8s/vPC frame labels to move the whole group)
 function startGroupDrag(e, members){
   if(e.button !== 0) return;
@@ -2184,6 +2269,23 @@ function onMouseMove(e){
       if(co){ co.x = m.x0 + dx; co.y = m.y0 + dy; }
     }
     render();
+  } else if(dragState.mode === "subnetMove"){
+    const pt = svgPoint(e);
+    const dx = pt.x - dragState.startPx;
+    const dy = pt.y - dragState.startPy;
+    if(Math.abs(dx)>2 || Math.abs(dy)>2) dragState.moved = true;
+    dragState.snDef._pos = { x: dragState.startSnX + dx, y: dragState.startSnY + dy };
+    for(const m of dragState.memInit){
+      const co = Cfg.byId(kindToCol(m.kind), m.id);
+      if(co){ co.x = m.x + dx; co.y = m.y + dy; }
+    }
+    render();
+  } else if(dragState.mode === "subnetResize"){
+    const pt = svgPoint(e);
+    const dx = pt.x - dragState.startPx;
+    const dy = pt.y - dragState.startPy;
+    dragState.snDef._size = { w: Math.max(80, dragState.startW + dx), h: Math.max(60, dragState.startH + dy) };
+    render();
   } else if(dragState.mode === "pan"){
     const dx = (e.clientX - dragState.startSX) / App.view.scale;
     const dy = (e.clientY - dragState.startSY) / App.view.scale;
@@ -2263,6 +2365,11 @@ function onMouseUp(){
   }
   if(dragState.mode === "frameresize"){
     if(dragState.moved){ pushUndo(); syncYamlFromConfig(); render(); }
+    dragState = null;
+    return;
+  }
+  if(dragState.mode === "subnetMove" || dragState.mode === "subnetResize"){
+    if(dragState.moved!==false){ pushUndo(); syncYamlFromConfig(); render(); }
     dragState = null;
     return;
   }
@@ -2533,6 +2640,7 @@ function getContextItems(kind, id){
       { icon:"⚠", label:"障害発生", action:()=>setStatus(kind,id,"error") },
       { icon:"🔧", label:"メンテナンスモード", action:()=>setStatus(kind,id,"maintenance") },
       { sep:true },
+      { icon:"🎯", label:"ここから通信テスト...", action:()=>{ if(typeof openCommTestFrom==="function") openCommTestFrom(kind, id); }},
       { icon:"💻", label:"CLI コンソール", action:()=>openCliConsole(kind, id) }
     ];
     if(kind === "device" && (obj.type==="router"||obj.type==="l3switch"||obj.type==="firewall")){
@@ -2553,6 +2661,38 @@ function getContextItems(kind, id){
     }
     if(kind === "server"){
       items.push({ sep:true });
+      // K8s node: show pods running on this node as a submenu
+      const inCluster = ((App.config.k8s&&App.config.k8s.clusters)||[]).find(cl=>(cl.nodes||[]).includes(id));
+      if(inCluster){
+        const podsHere = (inCluster.pods||[]).filter(p=>p.node===id);
+        if(podsHere.length){
+          items.push({ icon:"⬡", label:`⬡ Pod 操作 (このノード: ${podsHere.length}個)`, action:()=>{
+            openDialog(`⬡ ${obj.label||id} のPod一覧`, (body)=>{
+              ch("div",{text:"ノードに配置されているPod。クリックで個別編集できます。",style:{fontSize:"11px",color:"var(--text-dim)",margin:"6px 0"}},body);
+              for(const pod of podsHere){
+                const row = ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",padding:"6px",border:"1px solid var(--border)",borderRadius:"4px",marginBottom:"4px",background:"var(--bg2)"}},body);
+                ch("span",{text:"⬡ "+pod.name,style:{flex:"1",fontWeight:"700",fontSize:"11px"}},row);
+                ch("span",{text:pod.status||"Running",style:{fontSize:"10px",color:pod.status==="Running"?"var(--green)":"var(--orange)",padding:"2px 5px",border:"1px solid",borderRadius:"3px"}},row);
+                ch("button",{text:"⚙ 編集",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px"},
+                  on:{click:()=>{ closeDialog(); showPodEditor(inCluster.name, pod.name); }}},row);
+                ch("button",{text:"🔀 移動",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"3px"},
+                  on:{click:()=>{ closeDialog(); showPodMigrationMenu(inCluster.name, pod.name); }}},row);
+              }
+              ch("button",{text:"+ このノードに新規Podを作成",style:{padding:"5px 10px",fontSize:"11px",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700",marginTop:"8px"},
+                on:{click:()=>{ const n=(inCluster.pods=inCluster.pods||[]).length+1; const newPod={name:"pod-"+n,namespace:"default",node:id,ip:"10.244.0."+(n+1),labels:{app:"web"},status:"Running",containers:[{name:"app",image:"nginx:latest",ports:[80]}]}; inCluster.pods.push(newPod); renderAndSync(); closeDialog(); showPodEditor(inCluster.name, newPod.name); }}},body);
+              return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+            });
+          }});
+        }
+        items.push({ icon:"➕", label:"⬡ このノードにPod追加", action:()=>{
+          const n=(inCluster.pods=inCluster.pods||[]).length+1;
+          const newPod={name:"pod-"+n,namespace:"default",node:id,ip:"10.244.0."+(n+1),labels:{app:"web"},status:"Running",containers:[{name:"app",image:"nginx:latest",ports:[80]}]};
+          inCluster.pods.push(newPod); renderAndSync();
+          showPodEditor(inCluster.name, newPod.name);
+        }});
+        items.push({ icon:"☸", label:"☸ クラスタ管理を開く", action:()=>showK8sManager(inCluster.name) });
+        items.push({ sep:true });
+      }
       // VM: vMotion submenu — pick a target hypervisor and run live migration
       if(obj.vm && obj.host){
         const others=(App.config.servers||[]).filter(s=>(s.hypervisor||s.type==="hypervisor")&&s.id!==obj.host && s.status==="running");

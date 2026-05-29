@@ -957,12 +957,13 @@ var Cfg = {
         }
       }
     }
-    // Ensure switches have interface MACs so STP root election is deterministic
-    // (real bridges always have a base MAC; without one, election would be unstable).
-    for(const d of (c.devices||[])){
-      if(d.type!=="l2switch" && d.type!=="l3switch") continue;
-      for(const i of (d.interfaces||[])){
-        if(!i.mac && typeof genUniqueMac==="function") i.mac = genUniqueMac();
+    // Ensure ALL interfaces on ALL servers and devices have a MAC address
+    // (real NICs always have MAC; without one, ARP/STP/MAC tables can't function).
+    for(const arr of [(c.devices||[]), (c.servers||[])]){
+      for(const obj of arr){
+        for(const i of (obj.interfaces||[])){
+          if(!i.mac && typeof genUniqueMac==="function") i.mac = genUniqueMac();
+        }
       }
     }
     // Migrate legacy embedded hypervisor VMs into real server objects (VM-as-server)

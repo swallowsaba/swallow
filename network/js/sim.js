@@ -2537,20 +2537,42 @@ function addExternalEndpoint(provider, item){
     id, label:item.label, type:provider, status:"running", external:true,
     x: 60 + Math.random()*60, y: 60 + Math.random()*60,
     fqdn:item.fqdn,
-    interfaces:[{ id:"public0", ip:item.ip+"/32", status:"up" }],
+    interfaces:[{ id:"public0", ip:item.ip+"/32", mac:genUniqueMac(), status:"up" }],
     external_ports: (item.ports||[]).map(p=>({ port:p, proto:"tcp" }))
   };
   // Tag AWS-specific kind so the property panel can show service-specific config
   if(item.key && item.key.indexOf("aws-")===0){
     dev.aws_kind = item.key;
-    // Region + VPC association (so the service isn't isolated). Default to the first VPC if any.
-    const firstVpc = (App.config.aws && App.config.aws.vpcs && App.config.aws.vpcs[0]) || null;
+    // Auto-create a default VPC if none exists, so any AWS service is shown in context
+    App.config.aws = App.config.aws || {vpcs:[]};
+    if(!App.config.aws.vpcs.length){
+      App.config.aws.vpcs.push({
+        id:"vpc-"+uid("v"), name:"default-vpc", cidr:"10.0.0.0/16",
+        region:"ap-northeast-1", tenancy:"default",
+        subnets:[{name:"default-subnet-a",cidr:"10.0.0.0/24",az:"ap-northeast-1a",public:true}],
+        security_groups:[],
+        route_tables:[{name:"main",routes:[{dest:"10.0.0.0/16",target:"local"}]}],
+        igw:false
+      });
+      toast("VPC『default-vpc』を自動作成してそこに配置します","ok");
+    }
+    const firstVpc = App.config.aws.vpcs[0];
     dev.aws_region = (firstVpc && firstVpc.region) || "ap-northeast-1";
-    const vpcScoped = ["aws-ec2","aws-alb","aws-nlb","aws-natgw","aws-vpce","aws-rds","aws-ecs","aws-eks","aws-fargate","aws-igw","aws-tgw"];
-    dev.aws_vpc = (vpcScoped.includes(item.key) && firstVpc) ? firstVpc.name : "";
-    if(dev.aws_vpc){
-      const members = (App.config.servers||[]).filter(s=>s.aws&&s.aws.vpc===dev.aws_vpc);
-      if(members.length){ dev.x = (members[0].x||100) + 180; dev.y = (members[0].y||100); }
+    // 全AWSサービスをVPCに紐付ける(可視性向上 — グローバル/リージョンサービスもVPC枠内に表示)
+    dev.aws_vpc = firstVpc.name;
+    // place inside the VPC frame
+    const vpcMembers = (App.config.servers||[]).filter(s=>s.aws&&s.aws.vpc===dev.aws_vpc)
+      .concat((App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===dev.aws_vpc && d.id!==dev.id));
+    if(vpcMembers.length){
+      const minX = Math.min(...vpcMembers.map(m=>m.x||0));
+      const minY = Math.min(...vpcMembers.map(m=>m.y||0));
+      const maxX = Math.max(...vpcMembers.map(m=>(m.x||0)+(m.width||130)));
+      const maxY = Math.max(...vpcMembers.map(m=>(m.y||0)+(m.height||65)));
+      dev.x = maxX + 30;
+      dev.y = minY + (vpcMembers.length % 3) * 90;
+      if(dev.x > minX + 600){ dev.x = minX + 40; dev.y = maxY + 30; }
+    } else {
+      dev.x = 220; dev.y = 220;
     }
     // Sensible defaults per AWS service type (honored by engine where applicable)
     if(item.key==="aws-s3")       dev.aws_config = { bucket_name:"my-bucket", region:"ap-northeast-1", public:false, allowed_cidrs:["10.0.0.0/8"], versioning:false, encryption:"SSE-S3" };
@@ -2621,7 +2643,31 @@ function addNewDeviceOfType(type){
   Log.info(`${type} 追加: ${id}`);
 }
 function addNewDevice(){
-  showDeviceTypeMenu($("#btn-add-device"));
+  openDialog("NW機器を追加 — 種別を選択", (body)=>{
+    ch("p",{text:"追加するネットワーク機器の種別を選択してください。",style:{margin:"0 0 10px",fontSize:"12px",color:"var(--text-dim)"}},body);
+    const grid=ch("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}},body);
+    const items = (Array.isArray(DEVICE_TYPES) && DEVICE_TYPES.length ? DEVICE_TYPES : [
+      {type:"router",icon:"🔀",label:"ルータ",desc:"L3ルーティング"},
+      {type:"l3switch",icon:"⊟",label:"L3スイッチ",desc:"L3 + L2機能"},
+      {type:"l2switch",icon:"⊟",label:"L2スイッチ",desc:"レイヤ2スイッチ"},
+      {type:"firewall",icon:"🛡",label:"ファイアウォール",desc:"ステートフルFW"},
+      {type:"loadbalancer",icon:"⚖",label:"ロードバランサ",desc:"L4/L7 LB"},
+      {type:"waf",icon:"🛡",label:"WAF",desc:"アプリ層保護"}
+    ]);
+    for(const dt of items){
+      const btn=ch("button",{style:{display:"flex",alignItems:"center",gap:"10px",padding:"10px",cursor:"pointer",
+        background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:"6px",color:"var(--text)",textAlign:"left"}},grid);
+      ch("span",{text:dt.icon||"⊟",style:{fontSize:"20px"}},btn);
+      ch("div",{html:`<div style="font-weight:700">${escapeHtml(dt.label||dt.type)}</div><div style="font-size:10px;opacity:0.7">${escapeHtml(dt.desc||"")}</div>`},btn);
+      btn.addEventListener("click",()=>{ closeDialog(); addNewDeviceOfType(dt.type); });
+    }
+    // 外部サービスカタログへのショートカット
+    ch("div",{style:{borderTop:"1px solid var(--border)",margin:"10px 0 6px",paddingTop:"8px",fontSize:"11px",color:"var(--text-dim)"},text:"または外部サービス(AWS/SaaS)から追加:"},body);
+    ch("button",{text:"☁ AWS/SaaS サービスカタログを開く...",
+      style:{width:"100%",padding:"8px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--cyan)",color:"var(--cyan)",borderRadius:"5px",fontSize:"11px",fontWeight:"700"},
+      on:{click:()=>{ closeDialog(); openExternalServiceCatalog(); }}},body);
+    return { buttons:[{text:"キャンセル",action:closeDialog}] };
+  });
 }
 
 function addNewServer(){
@@ -3304,13 +3350,17 @@ function renderLabDetail(lab){
       pushUndo(); const tgt=lab.inject&&lab.inject(); renderAndSync(); updateStatusBar();
       if(tgt) toast(`障害を発生: ${lab.title}${tgt?(" — "+tgt):""}`,"warn");
     }}},btns);
+    ch("button",{class:"lab-test",text:"🎯 通信テストで確認",title:"通信シミュレーションを開いて疎通確認",on:{click:()=>{ if(typeof openCommSimulator==="function") openCommSimulator(); }}},btns);
     ch("button",{class:"lab-recover",text:"✓ 復旧する",on:{click:()=>{
       pushUndo(); lab.recover&&lab.recover(); renderAndSync(); updateStatusBar(); toast(`復旧: ${lab.title}`,"ok");
     }}},btns);
+    ch("div",{style:{fontSize:"10px",color:"var(--text-mute)",marginTop:"6px",lineHeight:"1.5"},
+      text:"進め方: ① 障害を発生 → ② 通信テストで失敗を確認 → ③ 手動修正手順を試す → ④ 復旧する"},d);
+  } else {
+    ch("button",{class:"lab-test",text:"🎯 任意の2点で通信テストを実行",title:"通信シミュレーションを開く",on:{click:()=>{ if(typeof openCommSimulator==="function") openCommSimulator(); }}},btns);
+    ch("div",{style:{fontSize:"10px",color:"var(--text-mute)",marginTop:"6px",lineHeight:"1.5"},
+      text:"このラボは概念学習です。読了後、上の通信テストで実構成を試せます。"},d);
   }
-  ch("button",{class:"lab-test",text:"🎯 通信テストを開く",on:{click:()=>{ if(typeof openCommSimulator==="function") openCommSimulator(); }}},btns);
-  ch("div",{style:{fontSize:"10px",color:"var(--text-mute)",marginTop:"6px",lineHeight:"1.5"},
-    text:"ヒント: 発生→通信テストで失敗を確認→ログの『💡原因/対処』を読む→復旧、の順で学習効果が高いです。"},d);
 }
 function hideLabPanel(){ const p=$("#lab-panel"); if(p) p.classList.add("hidden"); }
 

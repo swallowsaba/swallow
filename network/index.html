@@ -59,7 +59,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 #toolbar .tlabel{display:flex;flex-direction:column;justify-content:center;font-size:9px;color:var(--text-mute);padding:0 4px;margin-top:8px;letter-spacing:0.5px;text-transform:uppercase}
 
 /* Floating menu (for + Dev, + Svc selectors) */
-.fmenu{position:absolute;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-hi);padding:6px;z-index:1100;min-width:200px;display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.fmenu{position:fixed;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-hi);padding:6px;z-index:1100;min-width:200px;max-height:80vh;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .fmenu.hidden{display:none}
 .fmenu-item{padding:8px 10px;cursor:pointer;border-radius:5px;display:flex;align-items:center;gap:8px;font-size:12px;background:var(--bg3);border:1px solid transparent;transition:all .12s}
 .fmenu-item:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-1px)}
@@ -191,12 +191,12 @@ html.light #svg{background:radial-gradient(circle at 20px 20px,rgba(0,0,0,0.04) 
 .ctx-sep{height:1px;background:var(--border);margin:4px 0}
 .ctx-item .icon{width:14px;display:inline-block;text-align:center}
 
-#dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1500;display:flex;align-items:center;justify-content:center}
+#dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1500;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
 #dialog-overlay.hidden{display:none}
 /* Floating mode: no dim, clicks pass through to the canvas; only the dialog itself is interactive */
-#dialog-overlay.floating{background:transparent;display:block;pointer-events:none}
-#dialog-overlay.floating .dialog{pointer-events:auto;box-shadow:0 8px 32px rgba(0,0,0,0.55)}
-.dialog{background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-hi);padding:18px 20px;min-width:380px;width:max-content;max-width:min(94vw,860px);max-height:84vh;overflow:auto;box-sizing:border-box}
+#dialog-overlay.floating{background:transparent;display:block;pointer-events:none;padding:0}
+#dialog-overlay.floating .dialog{pointer-events:auto;box-shadow:0 8px 32px rgba(0,0,0,0.55);position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);max-width:min(94vw,860px);max-height:88vh;overflow:auto}
+.dialog{background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-hi);padding:18px 20px;min-width:min(380px,90vw);width:auto;max-width:min(94vw,860px);max-height:min(88vh,calc(100vh - 40px));overflow:auto;box-sizing:border-box}
 .dialog h3{margin:0 -20px 14px -20px;padding:6px 20px 10px 20px;font-size:14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,0.04), transparent);cursor:move;user-select:none;position:relative}
 .dialog h3::before{content:"⋮⋮";position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-mute);letter-spacing:-2px}
 .dialog h3:active{cursor:grabbing}
