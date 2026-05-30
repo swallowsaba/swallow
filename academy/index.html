@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swallow AI Academy — AIエンジニアとして世界をリードする</title>
+<meta name="description" content="G検定・E資格・統計検定・Python認定・AWS MLA-C01・画像処理エンジニア検定・Jetson AI Specialist の7資格を、420問以上のオリジナル問題と8種の対話的シミュレーションで体系的に学ぶ独立学習プラットフォーム。">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="#certifications">資格</a>
+      <a href="learn/basics.html">基本</a>
+      <a href="learn/advanced.html">応用</a>
+      <a href="learn/simulation.html">シミュレーション</a>
+      <a href="learn/hands-on.html">ハンズオン</a>
+      <a href="quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">
+      Issue No. 001<br>
+      <strong>2026 / Spring</strong>
+    </div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="cover">
+  <div class="cover-grid">
+    <div>
+      <div class="cover-meta fade-up">A LEARNING JOURNAL · VOL. 1</div>
+      <h1 class="cover-title fade-up d1">
+        AIで世界を<br>リードする。
+        <span class="en">— a curriculum, not a course.</span>
+      </h1>
+      <p class="cover-lede fade-up d2">
+        Swallow AI Academy は、G検定 / E資格 / 統計検定 / Python エンジニア認定 / AWS MLA-C01 / 画像処理エンジニア検定 / Jetson AI Specialist の <strong>7資格</strong> を一つの体系で扱う独立した学習サイトです。基本・応用・シミュレーション（全8種）・ハンズオン・<strong>420問以上</strong>のオリジナル問題演習を往復しながら、点ではなく地図として学びを積み上げます。
+      </p>
+      <div style="margin-top:36px;display:flex;gap:12px;flex-wrap:wrap;" class="fade-up d3">
+        <a href="#certifications" class="btn solid">資格マップを開く</a>
+        <a href="quiz.html" class="btn">問題で実力を測る</a>
+      </div>
+    </div>
+
+    <aside class="cover-side fade-up d4">
+      <h4>In this issue</h4>
+      <p style="margin-top:16px;">
+        <span class="number">No. 01</span>
+        AI資格マップ — G/E、統計、Python、AWS、画像、Jetson
+      </p>
+      <p style="margin-top:14px;">
+        <span class="number">No. 02</span>
+        E資格 2026#2 改訂シラバスの読み解き
+      </p>
+      <p style="margin-top:14px;">
+        <span class="number">No. 03</span>
+        LLM 時代の最短実装ロードマップ
+      </p>
+      <p style="margin-top:14px;">
+        <span class="number">No. 04</span>
+        ハンズオン: PyTorch から Diffusion まで
+      </p>
+      <hr class="divider" style="margin:28px 0 16px;">
+      <p style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;color:var(--ink-mute);">
+        AS OF 2026 · TOKYO
+      </p>
+    </aside>
+  </div>
+</section>
+
+<hr class="section-rule">
+
+<!-- DASHBOARD -->
+<section class="dashboard">
+  <div class="dashboard-inner">
+    <div class="dashboard-head">
+      <h2>学習ダッシュボード <span class="en">Your Progress</span></h2>
+      <div class="dashboard-meta">SAVED LOCALLY · NO ACCOUNT NEEDED</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">完了チェック</div>
+        <div class="stat-value"><span id="stat-checks">0</span><sup>項目</sup></div>
+        <div class="stat-note">章ごとのチェックを積み上げると増加</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">連続学習</div>
+        <div class="stat-value"><span id="stat-streak">0</span><sup>日</sup></div>
+        <div class="stat-note">毎日アクセスでストリーク継続</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">クイズ挑戦</div>
+        <div class="stat-value"><span id="stat-attempts">0</span><sup>回</sup></div>
+        <div class="stat-note">問題演習に挑戦するとカウント</div>
+      </div>
+      <div class="stat" style="border-right:none;">
+        <div class="stat-label">最高正答率</div>
+        <div class="stat-value"><span id="stat-acc">0%</span></div>
+        <div class="stat-note">これまでのベストスコア</div>
+      </div>
+    </div>
+
+    <div class="dashboard-actions">
+      <a href="quiz.html" class="btn invert">クイズを始める</a>
+      <a href="learn/basics.html" class="btn invert">基本から学ぶ</a>
+      <a href="learn/hands-on.html" class="btn invert">ハンズオンへ</a>
+    </div>
+
+    <h4 style="margin-top:56px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.2em;color:var(--accent-soft);text-transform:uppercase;">直近のクイズ履歴</h4>
+    <ul class="resource-list" id="recent-quiz" style="margin-top:16px;">
+      <li><span class="tag" style="color:var(--accent-soft);">記録なし</span><span class="desc" style="color:rgba(250,247,242,0.7);">まだクイズに挑戦していません。</span></li>
+    </ul>
+  </div>
+</section>
+
+<hr class="section-rule">
+
+<!-- CERTIFICATIONS -->
+<section class="section" id="certifications">
+  <div class="section-head">
+    <div class="section-number">§01</div>
+    <h2 class="section-title">AI資格マップ <span class="en">Certifications</span></h2>
+  </div>
+  <p class="section-intro" style="margin-bottom:48px;">
+    リテラシーから実装、データサイエンス、クラウドML、エッジAIまで。それぞれの資格は単独でも価値がありますが、組み合わせることで「AIエンジニアとしての射程」が立体的に広がります。
+  </p>
+
+  <div class="cert-grid">
+    <a class="cert-card" href="certifications/g-kentei.html">
+      <div class="cert-card-tag"><span>RITERACY</span><span class="level">入門 / 必修</span></div>
+      <h3 class="cert-card-title">G検定</h3>
+      <div class="cert-card-subtitle">JDLA Deep Learning for GENERAL</div>
+      <p class="cert-card-desc">AI・ディープラーニングのリテラシーを測る検定。事業活用の基礎、技術トレンド、AI 倫理・法律まで広く問われる。AI 学習の最初の地図として最適。</p>
+      <div class="cert-card-foot">
+        <span>JDLA · 100分 · 145問</span>
+        <span class="cert-card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="cert-card" href="certifications/e-shikaku.html">
+      <div class="cert-card-tag"><span>IMPLEMENTATION</span><span class="level">中核 / 実装</span></div>
+      <h3 class="cert-card-title">E資格</h3>
+      <div class="cert-card-subtitle">JDLA Deep Learning for ENGINEER</div>
+      <p class="cert-card-desc">ディープラーニング実装の中核理論。数学的基礎・機械学習・DL基礎/応用・運用環境の5領域。認定プログラム修了が受験要件。</p>
+      <div class="cert-card-foot">
+        <span>JDLA · 120分 · 104問</span>
+        <span class="cert-card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="cert-card" href="certifications/tokei-kentei.html">
+      <div class="cert-card-tag"><span>STATISTICS</span><span class="level">2級 → 1級</span></div>
+      <h3 class="cert-card-title">統計検定</h3>
+      <div class="cert-card-subtitle">Statistical Quality Examination</div>
+      <p class="cert-card-desc">統計学の体系を段階的に固める検定。2級で記述・推測の基礎、準1級で多変量・モデル、1級で論述に踏み込む。データサイエンスの背骨。</p>
+      <div class="cert-card-foot">
+        <span>日本統計学会 · CBT</span>
+        <span class="cert-card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="cert-card" href="certifications/python-cert.html">
+      <div class="cert-card-tag"><span>PYTHON</span><span class="level">基礎 → 実践</span></div>
+      <h3 class="cert-card-title">Python 3 エンジニア認定</h3>
+      <div class="cert-card-subtitle">Python Engineer Certification</div>
+      <p class="cert-card-desc">基礎・データ分析・実践・データ分析実践の4階層。Python の言語仕様と pandas・NumPy・可視化を含めた実務スキルを段階的に保証。</p>
+      <div class="cert-card-foot">
+        <span>一般社団法人 Python エンジニア育成推進協会</span>
+        <span class="cert-card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="cert-card" href="certifications/aws-mla-c01.html">
+      <div class="cert-card-tag"><span>CLOUD ML</span><span class="level">Associate</span></div>
+      <h3 class="cert-card-title">AWS MLA-C01</h3>
+      <div class="cert-card-subtitle">Certified Machine Learning Engineer – Associate</div>
+      <p class="cert-card-desc">AWS 上での ML パイプライン構築・運用・モニタリング・セキュリティを問う。SageMaker を中心に、データ準備からデプロイ・MLOps まで実務志向。</p>
+      <div class="cert-card-foot">
+        <span>AWS · 130分</span>
+        <span class="cert-card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="cert-card" href="certifications/image-engineer.html">
+      <div class="cert-card-tag"><span>VISION</span><span class="level">ベーシック / エキスパート</span></div>
+      <h3 class="cert-card-title">画像処理エンジニア検定</h3>
+      <div class="cert-card-subtitle">CG-ARTS Image Processing Engineer</div>
+      <p class="cert-card-desc">画像処理の数理・アルゴリズム（フィルタ・特徴量・幾何変換・領域分割）を基礎から固める。CV/DL 応用の前提として有効。</p>
+      <div class="cert-card-foot">
+        <span>CG-ARTS 協会</span>
+        <span class="cert-card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="cert-card" href="certifications/jetson-ai.html">
+      <div class="cert-card-tag"><span>EDGE AI</span><span class="level">Specialist / Ambassador</span></div>
+      <h3 class="cert-card-title">Jetson AI Specialist</h3>
+      <div class="cert-card-subtitle">NVIDIA DLI Certification</div>
+      <p class="cert-card-desc">NVIDIA Jetson プラットフォーム上で動く実プロジェクトをポートフォリオとして提示し認定を得る、実装重視の資格。エッジAI のショーケースに。</p>
+      <div class="cert-card-foot">
+        <span>NVIDIA · DLI</span>
+        <span class="cert-card-arrow">→</span>
+      </div>
+    </a>
+
+    <a class="cert-card" href="learn/basics.html" style="background:var(--paper-soft);">
+      <div class="cert-card-tag"><span>FOUNDATION</span><span class="level">資格横断</span></div>
+      <h3 class="cert-card-title">学習フレーム</h3>
+      <div class="cert-card-subtitle">Cross-cert curriculum</div>
+      <p class="cert-card-desc">基本／応用／シミュレーション／ハンズオン／問題演習の5フレームで、資格を横断して知識を再利用可能な構造にする。</p>
+      <div class="cert-card-foot">
+        <span>Basics → Advanced → Hands-on</span>
+        <span class="cert-card-arrow">→</span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<hr class="section-rule thin">
+
+<!-- PATHWAY -->
+<section class="section" id="pathway">
+  <div class="section-head">
+    <div class="section-number">§02</div>
+    <h2 class="section-title">推奨パスウェイ <span class="en">Recommended Pathway</span></h2>
+  </div>
+  <p class="section-intro" style="margin-bottom:48px;">
+    順序は絶対ではありませんが、リテラシー → 実装 → データサイエンス → クラウド/エッジ の流れが堅実です。並行学習も可能。
+  </p>
+
+  <div class="pathway">
+    <div class="pathway-step">
+      <span class="num">PHASE 01</span>
+      <h5>リテラシー</h5>
+      <div class="lvl">G検定</div>
+      <p>AI 用語・歴史・倫理・法律を一気に俯瞰。事業文脈で語れるようになる。</p>
+    </div>
+    <div class="pathway-step">
+      <span class="num">PHASE 02</span>
+      <h5>実装理論</h5>
+      <div class="lvl">E資格</div>
+      <p>数学 → ML → DL基礎/応用 → 運用環境。PyTorch / TF で書ける深さを獲得。</p>
+    </div>
+    <div class="pathway-step">
+      <span class="num">PHASE 03</span>
+      <h5>データ基盤</h5>
+      <div class="lvl">統計検定 2級 → 準1級</div>
+      <p>推測統計・回帰・多変量。E資格の数学的基礎を統計側から補強。</p>
+    </div>
+    <div class="pathway-step">
+      <span class="num">PHASE 04</span>
+      <h5>Pythonの底力</h5>
+      <div class="lvl">Python 3 認定 基礎 → 実践</div>
+      <p>言語仕様、データ分析、実装パターンを段階的に厳密化。</p>
+    </div>
+    <div class="pathway-step">
+      <span class="num">PHASE 05</span>
+      <h5>クラウドML</h5>
+      <div class="lvl">AWS MLA-C01</div>
+      <p>SageMaker でのデプロイ・MLOps・モニタリング・セキュリティを把握。</p>
+    </div>
+    <div class="pathway-step">
+      <span class="num">PHASE 06</span>
+      <h5>専門の翼</h5>
+      <div class="lvl">画像処理検定 / Jetson AI</div>
+      <p>CV／エッジAI の専門性で差別化。Kaggle ／ ハンズオンと相互補強。</p>
+    </div>
+  </div>
+</section>
+
+<hr class="section-rule thin">
+
+<!-- LEARNING FRAME -->
+<section class="section narrow" id="frame">
+  <div class="section-head">
+    <div class="section-number">§03</div>
+    <h2 class="section-title">5つの学習フレーム <span class="en">Five Frames</span></h2>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+    <div>
+      <h3 style="font-family:var(--font-display-jp);font-weight:700;font-size:22px;border-top:1px solid var(--ink);padding-top:16px;">
+        基本 — Basics
+      </h3>
+      <p style="font-size:14.5px;line-height:1.9;color:var(--ink-soft);margin-top:8px;">
+        各資格に共通する数理・概念・用語。線形代数、確率統計、最適化、機械学習の枠組み、深層学習の構成要素を最短で押さえる。
+      </p>
+      <a href="learn/basics.html" class="btn small" style="margin-top:14px;">基本へ</a>
+    </div>
+    <div>
+      <h3 style="font-family:var(--font-display-jp);font-weight:700;font-size:22px;border-top:1px solid var(--ink);padding-top:16px;">
+        応用 — Advanced
+      </h3>
+      <p style="font-size:14.5px;line-height:1.9;color:var(--ink-soft);margin-top:8px;">
+        Transformer、拡散モデル、強化学習、RAG、Agent、MLOps、責任あるAI。LLM 時代の中核と実務上の論点を扱う。
+      </p>
+      <a href="learn/advanced.html" class="btn small" style="margin-top:14px;">応用へ</a>
+    </div>
+    <div>
+      <h3 style="font-family:var(--font-display-jp);font-weight:700;font-size:22px;border-top:1px solid var(--ink);padding-top:16px;">
+        シミュレーション — Simulation
+      </h3>
+      <p style="font-size:14.5px;line-height:1.9;color:var(--ink-soft);margin-top:8px;">
+        勾配降下・活性化関数・過学習・決定境界・バックプロパゲーション・Attention・K-means・PCA — 8つのブラウザ内インタラクティブで、数式を「動かして」理解する。
+      </p>
+      <a href="learn/simulation.html" class="btn small" style="margin-top:14px;">シミュレーションへ</a>
+    </div>
+    <div>
+      <h3 style="font-family:var(--font-display-jp);font-weight:700;font-size:22px;border-top:1px solid var(--ink);padding-top:16px;">
+        ハンズオン — Hands-on
+      </h3>
+      <p style="font-size:14.5px;line-height:1.9;color:var(--ink-soft);margin-top:8px;">
+        Colab / PyTorch / SageMaker / Jetson での実装手順。コードを写経し、改造し、自分の問題に適用する。
+      </p>
+      <a href="learn/hands-on.html" class="btn small" style="margin-top:14px;">ハンズオンへ</a>
+    </div>
+    <div style="grid-column:1/-1;">
+      <h3 style="font-family:var(--font-display-jp);font-weight:700;font-size:22px;border-top:1px solid var(--ink);padding-top:16px;">
+        問題演習 — Problems
+      </h3>
+      <p style="font-size:14.5px;line-height:1.9;color:var(--ink-soft);margin-top:8px;">
+        7資格を横断する <strong>420問以上</strong> のオリジナル問題集。即時採点・出典付き解説・履歴の蓄積で、弱点を可視化しながら反復する。<br>
+        G検定 97 / E資格 81 / 統計検定 59 / Python 50 / AWS MLA-C01 50 / 画像処理 40 / Jetson AI 30 ＋ 横断ミニ。
+      </p>
+      <a href="quiz.html" class="btn small" style="margin-top:14px;">問題演習へ</a>
+    </div>
+  </div>
+</section>
+
+<hr class="section-rule thin">
+
+<!-- MANIFESTO -->
+<section class="section narrow" id="manifesto" style="text-align:center;">
+  <div class="section-number" style="margin-bottom:24px;">§04 · MANIFESTO</div>
+  <p style="font-family:var(--font-display-jp);font-weight:700;font-size:clamp(22px, 3vw, 32px);line-height:1.6;color:var(--ink);max-width:30ch;margin:0 auto 24px;">
+    “資格は通過点。<br>地図は世界をリードするために描く。”
+  </p>
+  <p style="font-size:15px;line-height:1.9;color:var(--ink-soft);max-width:50ch;margin:0 auto;">
+    G検定で見渡し、E資格で深く実装し、統計と Python で背骨を作り、クラウドとエッジで届ける。Swallow AI Academy は、それぞれを点ではなく一つの軌道として束ねます。一羽のツバメが、はるか遠くまで飛ぶように。
+  </p>
+</section>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。GitHub Pages 上でホストされる、広告も追跡もないオープンサイト。</p>
+    </div>
+    <div>
+      <h6>資格</h6>
+      <ul>
+        <li><a href="certifications/g-kentei.html">G検定</a></li>
+        <li><a href="certifications/e-shikaku.html">E資格</a></li>
+        <li><a href="certifications/tokei-kentei.html">統計検定</a></li>
+        <li><a href="certifications/python-cert.html">Python認定</a></li>
+        <li><a href="certifications/aws-mla-c01.html">AWS MLA-C01</a></li>
+        <li><a href="certifications/image-engineer.html">画像処理</a></li>
+        <li><a href="certifications/jetson-ai.html">Jetson AI</a></li>
+      </ul>
+    </div>
+    <div>
+      <h6>学習</h6>
+      <ul>
+        <li><a href="learn/basics.html">基本</a></li>
+        <li><a href="learn/advanced.html">応用</a></li>
+        <li><a href="learn/simulation.html">シミュレーション</a></li>
+        <li><a href="learn/hands-on.html">ハンズオン</a></li>
+        <li><a href="quiz.html">問題演習</a></li>
+      </ul>
+    </div>
+    <div>
+      <h6>外部リソース</h6>
+      <ul>
+        <li><a href="https://www.jdla.org/" target="_blank" rel="noopener">JDLA 公式</a></li>
+        <li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener">Kaggle Learn</a></li>
+        <li><a href="https://www.deeplearning.ai/" target="_blank" rel="noopener">DeepLearning.AI</a></li>
+        <li><a href="https://see.stanford.edu/Course/CS229" target="_blank" rel="noopener">Stanford CS229</a></li>
+        <li><a href="https://yutaroogawa.github.io/pytorch_tutorials_jp/" target="_blank" rel="noopener">PyTorch 日本語チュートリアル</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>

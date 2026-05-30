@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jetson AI Specialist — Swallow AI Academy</title>
+<meta name="description" content="NVIDIA Jetson AI Specialist / Ambassador 認定。Jetson ハードウェア、JetPack、TensorRT、DeepStream、Isaac ROS、sim2real、エッジLLM までを実装観点で解説。30問のオリジナル問題集も搭載。">
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../index.html#certifications">資格</a>
+      <a href="../learn/basics.html">基本</a>
+      <a href="../learn/advanced.html">応用</a>
+      <a href="../learn/simulation.html">シミュレーション</a>
+      <a href="../learn/hands-on.html">ハンズオン</a>
+      <a href="../quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">JETSON<br><strong>Edge AI</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; CERTIFICATIONS &nbsp;/&nbsp; JETSON</div>
+    <h1>Jetson AI Specialist<span class="en">NVIDIA Edge AI Certification</span></h1>
+    <p class="standfirst">NVIDIA Jetson プラットフォーム上で動く <strong>エッジ AI</strong> の力量を、プロジェクトベースで評価する認定。ロボット、ドローン、自律システム、産業ビジョン、エッジ LLM など、「物理の世界に AI を埋め込む」エンジニアを目指す人のための国際的な看板資格。</p>
+  </div>
+</section>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>Contents</h6>
+    <a href="#about">§01 認定概要</a>
+    <a href="#hw">§02 Jetson ハードウェア</a>
+    <a href="#sw">§03 JetPack / ソフトウェア</a>
+    <a href="#trt">§04 TensorRT 推論最適化</a>
+    <a href="#deepstream">§05 DeepStream / メディア</a>
+    <a href="#isaac">§06 Isaac ROS / Sim</a>
+    <a href="#llm">§07 エッジ LLM</a>
+    <a href="#mlops">§08 エッジ MLOps</a>
+    <a href="#roadmap">§09 学習ロードマップ</a>
+    <a href="#checklist">§10 チェックリスト</a>
+    <a href="#books">§11 教材</a>
+    <a href="#quiz">§12 問題演習</a>
+  </aside>
+
+  <article class="article-body">
+    <div class="article-eyebrow">CERTIFICATION DOSSIER — No.07</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">
+      クラウドから降りて、<br>物理の世界で動くAI。
+    </h2>
+    <p class="article-lede">
+      Jetson AI Specialist は、試験問題に答えるのではなく、<strong>自作のオープンソースプロジェクトを NVIDIA に提出し、レビューを受けて取得する</strong> 認定です。Nano から Orin Nano／AGX Orin まで、限られた電力と計算資源の中で「動く AI」を作る能力が評価されます。
+    </p>
+
+    <h2 id="about"><span class="label">§01 / OVERVIEW</span>認定の概要</h2>
+    <table class="spec">
+      <tr><th>運営</th><td>NVIDIA</td></tr>
+      <tr><th>名称</th><td>Jetson AI Specialist（プロジェクトベース） / Jetson AI Ambassador（教育者向け）</td></tr>
+      <tr><th>形式</th><td>自作プロジェクトの GitHub、技術ブログ、デモ動画を提出してレビュー</td></tr>
+      <tr><th>料金</th><td>無料</td></tr>
+      <tr><th>必須要件</th><td>Jetson 実機での動作確認、再現可能性、社会的に有意義な目的、公開可能性</td></tr>
+      <tr><th>関連</th><td>NVIDIA DLI（Deep Learning Institute）コース修了が前提となる場合あり</td></tr>
+    </table>
+
+    <h2 id="hw"><span class="label">§02 / HW</span>Jetson ハードウェア</h2>
+    <table class="spec">
+      <tr><th>Jetson Nano（初代）</th><td>Maxwell GPU、約 0.5 TFLOPS FP16、4GB RAM、入門向け（2024 年で EOL ロードマップ進行）</td></tr>
+      <tr><th>Jetson Orin Nano</th><td>Ampere GPU、最大 40 TOPS（INT8）、4/8GB、現行入門</td></tr>
+      <tr><th>Jetson Orin NX</th><td>最大 100 TOPS、8/16GB、産業組込み向け</td></tr>
+      <tr><th>Jetson AGX Orin</th><td>最大 275 TOPS、32/64GB、ロボティクス・自動運転試作</td></tr>
+      <tr><th>Jetson Xavier NX / AGX Xavier</th><td>Volta GPU、Orin 以前の世代、現役で稼働中</td></tr>
+      <tr><th>Jetson Thor（次世代）</th><td>Blackwell ベース、ヒューマノイドロボティクス向け</td></tr>
+    </table>
+    <h3>共通の特徴</h3>
+    <ul>
+      <li>CPU/GPU が物理的にメモリを共有する <strong>UMA（Unified Memory Architecture）</strong></li>
+      <li>nvpmodel で電力モード切替（例: MAXN、15W、10W）</li>
+      <li>tegrastats で CPU/GPU/メモリ/温度/電力を確認</li>
+      <li>専用アクセラレータ: <strong>DLA（Deep Learning Accelerator）</strong>、VIC、PVA、NVENC/NVDEC</li>
+    </ul>
+
+    <h2 id="sw"><span class="label">§03 / SW</span>JetPack / ソフトウェア</h2>
+    <ul>
+      <li><strong>JetPack</strong>: Jetson のSDKメタパッケージ。Linux for Tegra（L4T）＋CUDA＋cuDNN＋TensorRT＋VPI＋Multimedia API</li>
+      <li><strong>SDK Manager</strong>: ホスト Ubuntu PC から Jetson へフラッシュ</li>
+      <li><strong>nvidia-container-runtime</strong>: Docker で CUDA/GPU をコンテナに渡す</li>
+      <li><strong>jetson-containers</strong>: 各 JetPack 用に最適化された Docker イメージ集</li>
+      <li><strong>jtop</strong>: tegrastats を読みやすく可視化する OSS ツール（要 sudo インストール）</li>
+    </ul>
+    <div class="callout">
+      <span class="callout-eyebrow">JetPack のバージョン整合</span>
+      <p>JetPack のバージョンによって CUDA・cuDNN・TensorRT・OpenCV のバージョンが固定されます。サードパーティ ML パッケージ（PyTorch ホイール等）も <strong>JetPack バージョン依存</strong>。NVIDIA 公式の jetson-containers イメージを使うのが衝突回避の最短ルート。</p>
+    </div>
+
+    <h2 id="trt"><span class="label">§04 / TRT</span>TensorRT 推論最適化</h2>
+    <ul>
+      <li>ONNX 経由でモデルを TensorRT エンジンに変換: <code>trtexec --onnx=model.onnx --saveEngine=model.engine</code></li>
+      <li>精度: FP32 / FP16 / INT8 / INT4（一部）。FP16 は校正不要・精度劣化小、INT8 は <strong>キャリブレーションデータ</strong> が必要</li>
+      <li>カーネル融合（Conv+BN+ReLU 等）でメモリ帯域削減</li>
+      <li><strong>DLA</strong> を <code>--useDLACore=0</code> 等で活用、GPU と並列動作で電力効率向上</li>
+      <li>動的形状（Dynamic Shape）、プロファイル、Workspace サイズに注意</li>
+      <li><strong>TensorRT-LLM</strong>: 大規模言語モデル向け推論最適化（Jetson Orin 系で利用）</li>
+    </ul>
+
+    <h2 id="deepstream"><span class="label">§05 / DEEPSTREAM</span>DeepStream / メディア</h2>
+    <ul>
+      <li><strong>DeepStream SDK</strong>: GStreamer ベースの動画 AI パイプライン。複数ストリーム同時処理可能</li>
+      <li>主要プラグイン: <code>nvstreammux</code>（バッチ）、<code>nvinfer</code>（推論）、<code>nvtracker</code>（追跡）、<code>nvdsanalytics</code>、<code>nvmsgbroker</code>（クラウド送信）</li>
+      <li>ハードウェアアクセラレータ: NVENC（エンコード）／NVDEC（デコード）／VIC（変換）</li>
+      <li>カメラ取り込み: <code>nvarguscamerasrc</code>（CSI、Argus）、<code>v4l2src</code>（USB UVC）</li>
+      <li>Metropolis アーキテクチャ：エッジ DeepStream → クラウド分析の典型構成</li>
+    </ul>
+
+    <h2 id="isaac"><span class="label">§06 / ISAAC</span>Isaac ROS / Sim</h2>
+    <ul>
+      <li><strong>Isaac ROS</strong>: ROS 2 互換の GPU 加速パッケージ群（知覚、SLAM、Stereo、AprilTag、DNN ベースの perception）</li>
+      <li><strong>Isaac Sim</strong>: Omniverse 上のフォトリアル＋物理シミュレータ。合成データ生成、sim2real 転移</li>
+      <li><strong>Replicator</strong>: 合成データ生成 SDK（Domain Randomization）</li>
+      <li>ROS 2 の DDS ベース通信、QoS 設定</li>
+      <li>JetBot / JetRacer: 教育用ロボットキット</li>
+    </ul>
+
+    <h2 id="llm"><span class="label">§07 / LLM</span>エッジ LLM</h2>
+    <p>Orin 系の登場により、エッジでの中小 LLM 実行が現実的になりました。</p>
+    <ul>
+      <li><strong>量子化</strong>: INT4/INT8 でメモリ削減（GPTQ、AWQ、SmoothQuant、llama.cpp ggml/gguf）</li>
+      <li><strong>TensorRT-LLM</strong>: NVIDIA 公式の LLM 推論最適化</li>
+      <li><strong>jetson-containers のLLMイメージ</strong>: text-generation-inference、vLLM 等の Jetson 向けビルド</li>
+      <li><strong>KV キャッシュ管理</strong>と <strong>PagedAttention</strong> でスループット向上</li>
+      <li><strong>マルチモーダルエッジ</strong>: VLM、Edge SAM、Edge YOLO + LLM 連携</li>
+      <li>UMA を活かした <strong>ZeroCopy</strong> 実装でメモリ帯域を節約</li>
+    </ul>
+
+    <h2 id="mlops"><span class="label">§08 / MLOPS</span>エッジ MLOps</h2>
+    <ul>
+      <li><strong>OTA 更新</strong>: A/B スロット、署名検証、ロールバック（Mender、AWS IoT Greengrass、Azure IoT Edge）</li>
+      <li><strong>監視</strong>: モデルパフォーマンス、温度、電力、ドリフト検出</li>
+      <li><strong>Federated Learning</strong>: エッジで学習し中央には勾配のみを集約</li>
+      <li><strong>合成データ→Sim2Real</strong>: Isaac Sim + Replicator で大量ラベル付き合成データを生成</li>
+      <li><strong>Triton Inference Server (Jetson 対応)</strong>: 多モデル統一サービング</li>
+    </ul>
+
+    <h2 id="roadmap"><span class="label">§09 / ROADMAP</span>学習ロードマップ</h2>
+    <h4>Phase 1 — Jetson の起動と「Hello AI World」（20〜40時間）</h4>
+    <p>Orin Nano Developer Kit を入手し、SDK Manager でフラッシュ。<a href="https://github.com/dusty-nv/jetson-inference" target="_blank" rel="noopener">jetson-inference</a> リポジトリの分類・検出・セグメンテーション例を一通り動作確認。</p>
+    <h4>Phase 2 — TensorRT と DeepStream（40〜80時間）</h4>
+    <p>PyTorch / ONNX → TensorRT エンジン化、INT8 校正の体験。DeepStream で複数ストリーム同時推論。jtop で電力プロファイル測定。</p>
+    <h4>Phase 3 — プロジェクト構築（60〜120時間）</h4>
+    <p>独自のテーマ（環境モニタリング、農業、ロボット制御、エッジ LLM ボイスアシスタントなど）を選び、GitHub に公開可能なリポジトリを作成。ブログ記事＋デモ動画を準備。</p>
+    <h4>Phase 4 — 認定申請</h4>
+    <p>NVIDIA の Jetson AI Certification Programs ページから申請。レビューに数週間。</p>
+
+    <h2 id="checklist"><span class="label">§10 / CHECKLIST</span>到達度チェックリスト</h2>
+    <ul class="checklist">
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-1"> Jetson Orin Nano にフラッシュし起動できる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-2"> nvpmodel と jetson_clocks で電力／クロックを制御</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-3"> tegrastats / jtop で稼働状況を読める</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-4"> jetson-containers の Docker イメージで PyTorch を動かす</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-5"> CSI カメラ／USB カメラを GStreamer で取り込む</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-6"> ONNX → TensorRT エンジン変換（FP16）</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-7"> INT8 量子化とキャリブレーションを実施</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-8"> DLA を活用してマルチ DNN を並列動作</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-9"> DeepStream で複数カメラ同時推論</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-10"> nvtracker で複数オブジェクト追跡</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-11"> Isaac ROS パッケージでロボット知覚を構築</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-12"> Isaac Sim + Replicator で合成データ生成</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-13"> ZeroCopy / Pinned Memory でメモリ最適化</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-14"> TensorRT-LLM もしくは llama.cpp でエッジ LLM 動作</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-15"> Triton Inference Server on Jetson で多モデル運用</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-16"> OTA 更新フローを設計できる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="jet-ck-17"> 公開可能なプロジェクトをドキュメント込みで仕上げた</label></li>
+    </ul>
+
+    <h2 id="books"><span class="label">§11 / BOOKS</span>教材</h2>
+    <ul class="resource-list">
+      <li><span class="tag">公式</span><span class="desc"><a href="https://developer.nvidia.com/embedded/learn/jetson-ai-certification-programs" target="_blank" rel="noopener">Jetson AI Certification Programs</a> — 認定の最新案内</span></li>
+      <li><span class="tag">公式</span><span class="desc"><a href="https://courses.nvidia.com/" target="_blank" rel="noopener">NVIDIA DLI（Deep Learning Institute）</a> — Jetson 関連コース多数</span></li>
+      <li><span class="tag">公式</span><span class="desc"><a href="https://github.com/dusty-nv/jetson-inference" target="_blank" rel="noopener">jetson-inference</a> — 公式チュートリアル「Hello AI World」</span></li>
+      <li><span class="tag">公式</span><span class="desc"><a href="https://github.com/dusty-nv/jetson-containers" target="_blank" rel="noopener">jetson-containers</a> — JetPack 別の Docker レシピ</span></li>
+      <li><span class="tag">公式</span><span class="desc"><a href="https://nvidia-isaac-ros.github.io/" target="_blank" rel="noopener">Isaac ROS Documentation</a></span></li>
+      <li><span class="tag">公式</span><span class="desc"><a href="https://docs.nvidia.com/jetson/" target="_blank" rel="noopener">Jetson Linux Developer Guide</a> — JetPack / L4T の公式ドキュメント</span></li>
+    </ul>
+
+    <h2 id="quiz"><span class="label">§12 / DRILL</span>問題演習</h2>
+    <p>本サイトには Jetson プラットフォーム＋エッジ AI を横断する <strong>30問</strong> のオリジナル問題があります。</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0;">
+      <a class="btn solid" href="../quiz.html?topic=jetson">Jetson AI クイズを始める →</a>
+      <a class="btn" href="../quiz.html">他の資格のクイズ</a>
+    </div>
+
+    <hr class="divider bold">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      Last reviewed · 2026 Spring · 公式情報は NVIDIA Developer サイトで必ず確認してください。
+    </p>
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>資格</h6><ul>
+      <li><a href="g-kentei.html">G検定</a></li>
+      <li><a href="e-shikaku.html">E資格</a></li>
+      <li><a href="tokei-kentei.html">統計検定</a></li>
+      <li><a href="python-cert.html">Python認定</a></li>
+      <li><a href="aws-mla-c01.html">AWS MLA-C01</a></li>
+      <li><a href="image-engineer.html">画像処理エンジニア</a></li>
+      <li><a href="jetson-ai.html">Jetson AI</a></li>
+    </ul></div>
+    <div><h6>学習</h6><ul>
+      <li><a href="../learn/basics.html">基本</a></li>
+      <li><a href="../learn/advanced.html">応用</a></li>
+      <li><a href="../learn/simulation.html">シミュレーション</a></li>
+      <li><a href="../learn/hands-on.html">ハンズオン</a></li>
+      <li><a href="../quiz.html">問題演習</a></li>
+    </ul></div>
+    <div><h6>外部</h6><ul>
+      <li><a href="https://developer.nvidia.com/embedded/jetson-modules" target="_blank" rel="noopener">Jetson Modules</a></li>
+      <li><a href="https://developer.nvidia.com/embedded/community/jetson-projects" target="_blank" rel="noopener">Jetson Projects</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

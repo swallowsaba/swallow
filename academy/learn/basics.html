@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基本 — Swallow AI Academy</title>
+<meta name="description" content="AI/ML/DL の基礎 — 線形代数、確率統計、最適化、機械学習の枠組み、深層学習の構成要素。">
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../index.html#certifications">資格</a>
+      <a href="basics.html">基本</a>
+      <a href="advanced.html">応用</a>
+      <a href="simulation.html">シミュレーション</a>
+      <a href="hands-on.html">ハンズオン</a>
+      <a href="../quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">LEARN<br><strong>Basics</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; LEARN &nbsp;/&nbsp; BASICS</div>
+    <h1>基本<span class="en">Foundations of AI / ML / DL</span></h1>
+    <p class="standfirst">資格を横断する「共通の基礎」をひとまとめに。線形代数、確率統計、最適化、機械学習の枠組み、深層学習の構成要素。ここを固めれば、どの試験範囲も「同じ言語の方言」として読めるようになります。</p>
+  </div>
+</section>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>Contents</h6>
+    <a href="#linalg">§01 線形代数</a>
+    <a href="#prob">§02 確率と統計</a>
+    <a href="#info">§03 情報理論</a>
+    <a href="#opt">§04 最適化</a>
+    <a href="#ml-frame">§05 機械学習の枠組み</a>
+    <a href="#dl-elements">§06 DL の構成要素</a>
+    <a href="#metrics">§07 評価指標</a>
+    <a href="#regularization">§08 正則化と汎化</a>
+    <a href="#next">§09 次のステップ</a>
+  </aside>
+
+  <article class="article-body">
+    <div class="article-eyebrow">LEARN · FOUNDATIONS</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">
+      点ではなく、<br>地図として。
+    </h2>
+    <p class="article-lede">
+      ML の本は無数にありますが、骨格は驚くほどコンパクトです。<strong>数学 →（モデル化）→ 最適化 →（評価）→ 改善</strong>。この5つの動詞のあいだを行き来できれば、新しい技術もすぐに位置づけられます。
+    </p>
+
+    <h2 id="linalg"><span class="label">§01 / LINEAR ALGEBRA</span>線形代数</h2>
+    <p>ML の大半は線形代数の操作で書けます。ベクトルは「特徴量の束」、行列は「線形変換」、固有値分解と特異値分解は「分解して見る」装置。</p>
+    <ul>
+      <li><strong>ベクトル空間</strong>：和とスカラ倍が閉じている世界。特徴量空間そのもの。</li>
+      <li><strong>ノルム</strong>：L1（曼哈頓距離）、L2（ユークリッド距離）、L∞（最大値）。正則化や距離計算で頻出。</li>
+      <li><strong>内積とコサイン類似度</strong>：埋め込みの近さを測る基本道具。</li>
+      <li><strong>固有値・固有ベクトル</strong>：「変換しても向きが変わらない方向」と「その伸縮率」。共分散行列に適用すれば PCA に。</li>
+      <li><strong>SVD</strong>：任意の行列を直交変換と対角化に分解。低ランク近似、画像圧縮、推薦の数理。</li>
+    </ul>
+    <p>手で計算するのは 2×2、3×3 で十分。<strong>「式の意味」を絵で説明できる</strong>かが大事。</p>
+
+    <h2 id="prob"><span class="label">§02 / PROBABILITY</span>確率と統計</h2>
+    <ul>
+      <li><strong>条件付き確率とベイズの定理</strong>：データから仮説を更新する文法。RAG・分類・異常検知の根底。</li>
+      <li><strong>代表的な分布</strong>：ベルヌーイ（コイン）、二項（コインの和）、ポアソン（稀なイベント）、正規（自然界の合計）、指数（待ち時間）。</li>
+      <li><strong>期待値・分散・共分散</strong>：データの「重心」と「広がり」と「連動」。</li>
+      <li><strong>大数の法則と中心極限定理</strong>：標本平均は母平均に近づき、その分布は正規に近づく。検定・区間推定の根拠。</li>
+      <li><strong>推定論</strong>：最尤推定（MLE）、最大事後確率推定（MAP）、ベイズ推定。損失関数の正体は対数尤度であることが多い。</li>
+    </ul>
+
+    <h2 id="info"><span class="label">§03 / INFORMATION</span>情報理論</h2>
+    <ul>
+      <li><strong>情報量</strong>：起こりにくい事象ほど情報量が大きい（−log p）。</li>
+      <li><strong>エントロピー H(X)</strong>：分布の不確かさ。一様分布で最大、ピーキーな分布で小さい。</li>
+      <li><strong>クロスエントロピー H(P, Q)</strong>：真の分布 P を Q で符号化したときの平均符号長。<strong>分類の損失関数そのもの</strong>。</li>
+      <li><strong>KL ダイバージェンス D(P||Q)</strong>：P と Q の「距離」のような量（非対称）。VAE、強化学習、知識蒸留で頻出。</li>
+    </ul>
+
+    <h2 id="opt"><span class="label">§04 / OPTIMIZATION</span>最適化</h2>
+    <p>ML の学習は「損失関数を最小化する」最適化問題。<strong>勾配が指す方向に少しずつ下る</strong>のが基本。</p>
+    <ul>
+      <li><strong>勾配降下法</strong>：θ ← θ − η ∇L(θ)。学習率 η が大きすぎれば発散、小さすぎれば収束遅延。</li>
+      <li><strong>確率的勾配降下（SGD）</strong>：ミニバッチで近似勾配を計算。並列化・正則化的効果。</li>
+      <li><strong>Momentum / Adam</strong>：過去の勾配を活かして加速。Adam は学習率まで適応化。</li>
+      <li><strong>凸性</strong>：凸関数なら局所最適＝大域最適。DL の損失は非凸だが、SGD でうまくいく経験則がある。</li>
+    </ul>
+
+    <h2 id="ml-frame"><span class="label">§05 / FRAMEWORK</span>機械学習の枠組み</h2>
+    <p>どんなアルゴリズムも、3つの問いに答えています。</p>
+    <ol>
+      <li><strong>仮説集合（モデル）</strong>：どんな関数を候補にするか</li>
+      <li><strong>損失（指標）</strong>：どの候補が「よい」かをどう測るか</li>
+      <li><strong>探索（学習）</strong>：候補空間をどう探すか</li>
+    </ol>
+    <p>例：線形回帰 = 一次関数の集合 + 二乗誤差 + 正規方程式 or 勾配降下。SVM = 超平面 + ヒンジ損失 + 双対最適化。ニューラルネット = 合成関数 + クロスエントロピー + 逆伝播 + Adam。新しい技術もこの枠で読むと整理できます。</p>
+
+    <h3>3 つの学習パラダイム</h3>
+    <ul>
+      <li><strong>教師あり</strong>：入力 x と正解 y のペアから写像 f を学ぶ。分類・回帰。</li>
+      <li><strong>教師なし</strong>：x だけから構造を見出す。クラスタリング・次元削減・密度推定。</li>
+      <li><strong>強化学習</strong>：環境との相互作用から、累積報酬を最大化する方策を学ぶ。</li>
+    </ul>
+    <p>近年は<strong>自己教師あり学習（self-supervised）</strong>が中心になっており、データ自身からラベルを作って学ぶことで、巨大コーパスを活用しています。BERT・GPT・SimCLR・MAE はみなこの枠組み。</p>
+
+    <h2 id="dl-elements"><span class="label">§06 / DL ELEMENTS</span>深層学習の構成要素</h2>
+    <p>DL モデルは結局、以下の積み木の組み合わせ。</p>
+    <ul>
+      <li><strong>線形変換</strong>：y = Wx + b。「特徴量の混ぜ合わせ」</li>
+      <li><strong>非線形活性化</strong>：ReLU / GELU / Softmax。「曲げる」</li>
+      <li><strong>正規化</strong>：BN / LN / GN。「スケールを揃える」</li>
+      <li><strong>畳み込み</strong>：局所的なパターン抽出。並進不変性。</li>
+      <li><strong>アテンション</strong>：トークン同士の関係を学習。位置を超えた依存。</li>
+      <li><strong>残差接続</strong>：恒等写像をベースラインに置き、勾配を通す。</li>
+      <li><strong>埋め込み（embedding）</strong>：離散シンボルを連続空間に写像する。</li>
+    </ul>
+    <p>「Transformer」「ViT」「Diffusion」もすべて、これらを組み合わせて作られています。</p>
+
+    <h2 id="metrics"><span class="label">§07 / METRICS</span>評価指標</h2>
+    <h3>分類</h3>
+    <ul>
+      <li>Accuracy — クラスバランスがよい時の基本</li>
+      <li>Precision・Recall・F1 — 不均衡データ、誤検知／見落としに敏感な場合</li>
+      <li>ROC-AUC、PR-AUC — 閾値非依存の比較</li>
+    </ul>
+    <h3>回帰</h3>
+    <ul>
+      <li>MAE — 外れ値に頑健</li>
+      <li>MSE / RMSE — 大きな誤差にペナルティ</li>
+      <li>R² — モデルがどれだけ分散を説明したか</li>
+    </ul>
+    <h3>生成・順位付け</h3>
+    <ul>
+      <li>BLEU、ROUGE、METEOR、BERTScore — 自然言語生成</li>
+      <li>FID、IS — 画像生成の品質</li>
+      <li>nDCG、MRR、MAP — 検索・推薦</li>
+    </ul>
+
+    <h2 id="regularization"><span class="label">§08 / REGULARIZATION</span>正則化と汎化</h2>
+    <p>学習データに対して誤差を下げるのは簡単。難しいのは<strong>見ていないデータでも誤差が下がる</strong>こと（汎化）。そのための工夫が正則化です。</p>
+    <ul>
+      <li>L1 / L2 ペナルティ — 重みを小さく保つ／スパースにする</li>
+      <li>Dropout — ランダムにユニットを消して、共依存を減らす</li>
+      <li>Data Augmentation — 入力に多様性を持たせる</li>
+      <li>Early Stopping — 検証損失が悪化する前で止める</li>
+      <li>Label Smoothing — 過信を抑える</li>
+      <li>Mixup / CutMix — 入力どうしを混ぜる</li>
+    </ul>
+    <p>「過学習が起きている」と感じたら、<strong>正則化を強める・データを増やす・モデルを小さくする</strong>の3手をまず試す。</p>
+
+    <h2 id="next"><span class="label">§09 / NEXT</span>次のステップ</h2>
+    <p>基本が固まったら、応用・シミュレーション・ハンズオン・問題演習へ進みましょう。</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0;">
+      <a class="btn solid" href="advanced.html">応用へ進む →</a>
+      <a class="btn" href="simulation.html">シミュレーションで動かす</a>
+      <a class="btn" href="hands-on.html">ハンズオン</a>
+      <a class="btn" href="../quiz.html">問題演習</a>
+    </div>
+
+    <hr class="divider bold">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      Foundations · 2026 Spring
+    </p>
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>資格</h6><ul>
+      <li><a href="../certifications/g-kentei.html">G検定</a></li>
+      <li><a href="../certifications/e-shikaku.html">E資格</a></li>
+      <li><a href="../certifications/tokei-kentei.html">統計検定</a></li>
+      <li><a href="../certifications/python-cert.html">Python認定</a></li>
+      <li><a href="../certifications/aws-mla-c01.html">AWS MLA-C01</a></li>
+      <li><a href="../certifications/image-engineer.html">画像処理エンジニア</a></li>
+      <li><a href="../certifications/jetson-ai.html">Jetson AI</a></li>
+    </ul></div>
+    <div><h6>学習</h6><ul>
+      <li><a href="basics.html">基本</a></li>
+      <li><a href="advanced.html">応用</a></li>
+      <li><a href="simulation.html">シミュレーション</a></li>
+      <li><a href="hands-on.html">ハンズオン</a></li>
+      <li><a href="../quiz.html">問題演習</a></li>
+    </ul></div>
+    <div><h6>外部</h6><ul>
+      <li><a href="https://www.jdla.org/" target="_blank" rel="noopener">JDLA</a></li>
+      <li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener">Kaggle Learn</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

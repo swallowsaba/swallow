@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>応用 — Swallow AI Academy</title>
+<meta name="description" content="Transformer、拡散モデル、強化学習、RAG、Agent、MLOps、責任あるAI — 実務と最前線を結ぶ応用編。">
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../index.html#certifications">資格</a>
+      <a href="basics.html">基本</a>
+      <a href="advanced.html" class="current">応用</a>
+      <a href="simulation.html">シミュレーション</a>
+      <a href="hands-on.html">ハンズオン</a>
+      <a href="../quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">FRAME 02<br><strong>Advanced</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; LEARN &nbsp;/&nbsp; ADVANCED</div>
+    <h1>応用<span class="en">Advanced — frontiers in practice</span></h1>
+    <p class="standfirst">Transformer から拡散モデル、強化学習、検索拡張生成、エージェント、MLOps、責任あるAIまで。現代の生成AI／LLM時代の中核となる応用領域を、原理と実務の両側面から押さえる。</p>
+  </div>
+</section>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>目次</h6>
+    <a href="#transformer">§01 Transformer</a>
+    <a href="#llm">§02 LLM の設計</a>
+    <a href="#diffusion">§03 拡散モデル</a>
+    <a href="#rl">§04 強化学習</a>
+    <a href="#rag">§05 RAG</a>
+    <a href="#agent">§06 Agent</a>
+    <a href="#mlops">§07 MLOps</a>
+    <a href="#responsible">§08 責任あるAI</a>
+    <a href="#next">§09 次へ</a>
+  </aside>
+
+  <article class="article-body">
+    <div class="article-eyebrow">Frame 02 — Advanced &nbsp;·&nbsp; 2026 Spring</div>
+    <h1 class="article-title">応用<span class="en">Where the frontier meets practice.</span></h1>
+    <p class="article-lede">「基本」で学んだ要素技術が、現代のAIシステムの中で<strong>どう組み上げられているか</strong>を俯瞰する章です。Transformer・LLM・拡散モデル・強化学習・RAG・Agent・MLOps・責任あるAI — 試験と実務の両方でいま問われる主題を、最短経路で。</p>
+
+    <h2 id="transformer"><span class="label">§01 / TRANSFORMER</span>Transformer の構造</h2>
+    <p>2017年の「Attention Is All You Need」以降、自然言語処理のみならず画像・音声・マルチモーダルまで席巻したアーキテクチャ。鍵は<strong>Self-Attention</strong> — 系列のすべての位置が、すべての位置を参照できる仕組み。</p>
+    <h3>主要コンポーネント</h3>
+    <ul>
+      <li><strong>Self-Attention</strong> — Query / Key / Value を線形変換し、Q·K のスケールド内積をソフトマックスして重み、V を加重和</li>
+      <li><strong>Multi-Head Attention</strong> — 複数のヘッドで並列に異なる関係を学習</li>
+      <li><strong>Position-wise FFN</strong> — 各位置に独立にかかる2層MLP</li>
+      <li><strong>Positional Encoding</strong> — 系列順序を表現（Sinusoidal、学習可能、RoPE、ALiBi など）</li>
+      <li><strong>Layer Norm / Residual</strong> — 学習安定化（Pre-LN が現在の主流）</li>
+    </ul>
+
+    <div class="callout accent">
+      <p><strong>Attention の計算量</strong>は系列長 L に対して O(L²)。長文を扱うときの主要なボトルネックで、Flash Attention・線形近似・Sparse Attention・状態空間モデル（Mamba 系）といった改良が活発に研究されている領域。</p>
+    </div>
+
+    <h3>派生</h3>
+    <ul>
+      <li><strong>Encoder のみ</strong> — BERT、RoBERTa（理解・分類）</li>
+      <li><strong>Decoder のみ</strong> — GPT 系（生成）</li>
+      <li><strong>Encoder-Decoder</strong> — T5、BART（翻訳・要約）</li>
+      <li><strong>Vision Transformer (ViT)</strong> — 画像を patch に分解して Transformer に</li>
+    </ul>
+
+    <h2 id="llm"><span class="label">§02 / LLM</span>LLM の設計と学習</h2>
+    <p>大規模言語モデル（LLM）は、Decoder-only Transformer を巨大なコーパスで自己教師あり学習させたもの。能力は<strong>スケーリング則</strong>（パラメータ数・データ量・計算量にべき乗で性能が伸びる）に従う。</p>
+    <h3>学習の3段階</h3>
+    <ol>
+      <li><strong>事前学習 (Pre-training)</strong> — 大規模テキストで次トークン予測。世界知識と言語能力を獲得</li>
+      <li><strong>指示チューニング (SFT)</strong> — 人手で作った指示・応答ペアで微調整</li>
+      <li><strong>アライメント</strong> — RLHF / DPO / RLAIF などで人の好みに整合させる</li>
+    </ol>
+
+    <h3>推論時の制御</h3>
+    <ul>
+      <li><strong>Temperature</strong> — 出力分布の鋭さ（低いほど決定的）</li>
+      <li><strong>Top-k / Top-p (nucleus)</strong> — 候補トークンの絞り込み</li>
+      <li><strong>Beam Search</strong> — 確率の積で複数候補を保持（要約・翻訳で有効）</li>
+      <li><strong>Greedy</strong> — 各ステップで最大確率（決定的、貧弱になりがち）</li>
+    </ul>
+
+    <h3>プロンプトエンジニアリング</h3>
+    <ul>
+      <li><strong>Zero-shot / Few-shot</strong> — 例示なし／少数例示</li>
+      <li><strong>Chain-of-Thought (CoT)</strong> — 段階的に考えさせて推論力を引き出す</li>
+      <li><strong>Self-Consistency</strong> — 複数サンプリングして多数決</li>
+      <li><strong>Tree-of-Thought</strong> — 推論を木構造で探索</li>
+      <li><strong>役割設定・制約・出力形式の明示</strong> — 実務での基本</li>
+    </ul>
+
+    <h3>効率化</h3>
+    <ul>
+      <li><strong>量子化 (Quantization)</strong> — INT8 / INT4 / GPTQ / AWQ で重みを縮小</li>
+      <li><strong>蒸留 (Distillation)</strong> — 大モデルを教師に小モデルを学習</li>
+      <li><strong>LoRA / QLoRA</strong> — 低ランク差分のみ学習する PEFT 手法</li>
+      <li><strong>KV キャッシュ</strong> — 推論時の attention 計算を再利用</li>
+      <li><strong>MoE (Mixture of Experts)</strong> — 一部の専門家のみを活性化（スパース）</li>
+    </ul>
+
+    <h2 id="diffusion"><span class="label">§03 / DIFFUSION</span>拡散モデル</h2>
+    <p>画像・音声・動画生成で主流となった生成モデル。データに少しずつノイズを加える順過程と、ノイズを除去する逆過程を学習する。</p>
+    <h3>原理（直感）</h3>
+    <ol>
+      <li>本物の画像 x₀ にガウスノイズを段階的に加え、x_T はほぼ純粋ノイズになる（順過程）</li>
+      <li>ニューラルネットに「いまどれだけノイズが乗っているか」を予測させる</li>
+      <li>逆向きに少しずつノイズを除去すれば、純ノイズから画像を生成できる（逆過程）</li>
+    </ol>
+
+    <h3>派生と発展</h3>
+    <ul>
+      <li><strong>DDPM</strong> — 確率的拡散の基礎</li>
+      <li><strong>DDIM</strong> — 決定論的サンプリングで高速化</li>
+      <li><strong>Latent Diffusion (Stable Diffusion)</strong> — VAE の潜在空間で拡散して高解像度を可能に</li>
+      <li><strong>Classifier-free Guidance</strong> — 条件あり／なしを足し合わせて条件従順性を強める</li>
+      <li><strong>ControlNet・LoRA</strong> — 既存モデルへの条件付け・微調整</li>
+      <li><strong>Flow Matching</strong> — 拡散の一般化として近年注目</li>
+    </ul>
+
+    <h2 id="rl"><span class="label">§04 / RL</span>強化学習</h2>
+    <p>環境と相互作用しながら、累積報酬を最大化する方策を学習する枠組み。教師あり学習と違い、正解ラベルではなく報酬信号のみが手がかり。</p>
+    <h3>基本概念</h3>
+    <ul>
+      <li><strong>状態 s、行動 a、報酬 r、方策 π</strong> — MDP（マルコフ決定過程）として定式化</li>
+      <li><strong>価値関数 V(s)・行動価値関数 Q(s,a)</strong> — 将来得られる累積報酬の期待値</li>
+      <li><strong>ベルマン方程式</strong> — 価値の再帰的定義</li>
+      <li><strong>探索と活用 (Exploration vs Exploitation)</strong> — ε-greedy、UCB、Thompson Sampling</li>
+    </ul>
+
+    <h3>代表的手法</h3>
+    <ul>
+      <li><strong>Q学習 / SARSA</strong> — テーブル形式の古典</li>
+      <li><strong>DQN</strong> — Q関数をニューラルネットで近似、経験再生・ターゲットネット</li>
+      <li><strong>方策勾配 / REINFORCE</strong> — 方策を直接微分</li>
+      <li><strong>Actor-Critic / A2C / A3C</strong> — 価値関数と方策を同時に学習</li>
+      <li><strong>PPO</strong> — 安定性が高く、LLM のアライメントにも使われる主力</li>
+      <li><strong>SAC、TD3</strong> — 連続行動空間で強い</li>
+      <li><strong>AlphaGo / AlphaZero</strong> — モンテカルロ木探索 × ニューラルネット</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>RLHF (Reinforcement Learning from Human Feedback)</strong> — 人間の選好データから報酬モデルを学習し、PPO で LLM を微調整する手法。ChatGPT 以降のチャット型LLMを支える中核技術。近年は DPO（Direct Preference Optimization）のようにRLを使わない代替手法も普及している。</p>
+    </div>
+
+    <h2 id="rag"><span class="label">§05 / RAG</span>検索拡張生成 (RAG)</h2>
+    <p>LLM の知識の鮮度・専門性・事実性の弱点を補うための定番アーキテクチャ。<strong>外部知識ベースから関連文書を検索し、コンテキストに入れて回答させる</strong>。</p>
+    <h3>標準的なパイプライン</h3>
+    <ol>
+      <li><strong>Ingest</strong> — ドキュメントをチャンクに分割（数百〜千トークン）</li>
+      <li><strong>Embed</strong> — 各チャンクを埋め込みベクトル化</li>
+      <li><strong>Index</strong> — ベクトルDBに格納（FAISS、Pinecone、pgvector、Qdrant など）</li>
+      <li><strong>Retrieve</strong> — 質問を埋め込み、類似上位 k 件を取得</li>
+      <li><strong>Rerank</strong> — 関連性スコアで再ランキング（任意）</li>
+      <li><strong>Generate</strong> — 取得文書をプロンプトに入れて LLM に回答させる</li>
+    </ol>
+
+    <h3>設計上の論点</h3>
+    <ul>
+      <li>チャンクサイズ・重なり — 小さすぎると文脈喪失、大きすぎるとノイズ</li>
+      <li>ハイブリッド検索 — ベクトル検索 × BM25（キーワード）</li>
+      <li>クエリ書き換え — HyDE、Multi-Query、Step-back prompting</li>
+      <li>引用 — どの文書からの情報か明示する</li>
+      <li>評価 — Recall@k、MRR、faithfulness、answer relevancy（RAGAS、TruLens）</li>
+    </ul>
+
+    <h2 id="agent"><span class="label">§06 / AGENT</span>LLMエージェント</h2>
+    <p>LLM が<strong>ツールを使い、外部環境に作用しながら、複数ステップで目標を達成する</strong>システム。チャットボットの先にある実務的な活用形態。</p>
+    <h3>主要なパターン</h3>
+    <ul>
+      <li><strong>ReAct</strong> — Reasoning（思考）と Acting（行動）を交互に</li>
+      <li><strong>Tool Use / Function Calling</strong> — 関数を呼び出して結果を観測</li>
+      <li><strong>Plan-and-Execute</strong> — 先に計画を立て、サブタスクに分解して実行</li>
+      <li><strong>Multi-Agent</strong> — 役割を分担した複数エージェントの協調</li>
+      <li><strong>MCP (Model Context Protocol)</strong> — ツール提供を標準化するプロトコル</li>
+    </ul>
+
+    <h3>実務で重要なポイント</h3>
+    <ul>
+      <li>失敗からの回復（リトライ、人間への引き継ぎ）</li>
+      <li>コスト・レイテンシ管理（無限ループや暴走の防止）</li>
+      <li>ガードレール（出力検証、入力サニタイズ、プロンプトインジェクション対策）</li>
+      <li>観測可能性（trace、logs、評価データの蓄積）</li>
+    </ul>
+
+    <h2 id="mlops"><span class="label">§07 / MLOPS</span>MLOps / LLMOps</h2>
+    <p>ML モデルを<strong>本番に届け、運用し続ける</strong>ための実践。コードだけでなく、データ・モデル・特徴量・実験すべてをバージョン管理する。</p>
+    <h3>運用ライフサイクル</h3>
+    <ol>
+      <li><strong>データ収集・前処理</strong> — DVC、データバージョニング</li>
+      <li><strong>実験管理</strong> — MLflow、Weights &amp; Biases、Comet</li>
+      <li><strong>特徴量ストア</strong> — Feast、SageMaker Feature Store</li>
+      <li><strong>モデルレジストリ</strong> — 学習済みモデルの管理</li>
+      <li><strong>CI/CD for ML</strong> — テスト・自動学習・デプロイ</li>
+      <li><strong>サービング</strong> — REST、gRPC、バッチ、ストリーミング</li>
+      <li><strong>モニタリング</strong> — 精度、レイテンシ、データドリフト、コンセプトドリフト</li>
+      <li><strong>再学習</strong> — トリガーに応じた自動／半自動の更新</li>
+    </ol>
+
+    <h3>LLMOps 固有の関心事</h3>
+    <ul>
+      <li>プロンプトのバージョン管理と A/B テスト</li>
+      <li>評価データセットと回帰テスト（LLM-as-a-judge）</li>
+      <li>トークン課金とコスト監視</li>
+      <li>ハルシネーション検出、有害出力の検知</li>
+      <li>キャッシング、ルーティング（モデル使い分け）</li>
+    </ul>
+
+    <h2 id="responsible"><span class="label">§08 / RESPONSIBLE AI</span>責任あるAI</h2>
+    <p>AI を作るだけでなく、<strong>誰に・どのように影響するか</strong>を考えるのが現代のエンジニアの責任。試験でも実務でも比重が増している領域。</p>
+    <h3>主要な観点</h3>
+    <ul>
+      <li><strong>公平性 (Fairness)</strong> — 性別・人種など属性ごとの性能格差を測定・是正</li>
+      <li><strong>透明性・説明可能性 (XAI)</strong> — LIME、SHAP、Grad-CAM、Integrated Gradients</li>
+      <li><strong>プライバシー</strong> — 差分プライバシー、連合学習、データ最小化</li>
+      <li><strong>セキュリティ</strong> — 敵対的攻撃、データポイズニング、モデル抽出、プロンプトインジェクション</li>
+      <li><strong>頑健性</strong> — 分布外データへの耐性、不確実性の定量化</li>
+      <li><strong>環境負荷</strong> — 学習・推論のエネルギー消費、効率化の責任</li>
+    </ul>
+
+    <h3>規制・ガイドライン（2026 時点）</h3>
+    <ul>
+      <li><strong>EU AI Act</strong> — リスクベース規制、汎用AI（GPAI）への透明性義務</li>
+      <li><strong>日本 AI 事業者ガイドライン</strong> — 開発者・提供者・利用者向け</li>
+      <li><strong>NIST AI Risk Management Framework</strong> — 米国の自主的フレームワーク</li>
+      <li><strong>G7 広島AIプロセス</strong> — 国際協調の枠組み</li>
+      <li><strong>OECD AI 原則</strong> — 国際的な共通基盤</li>
+    </ul>
+
+    <div class="callout accent">
+      <p>「動く」「速い」「強い」だけでなく、「説明できる」「公平である」「壊れにくい」「漏れない」を満たすことが、現代の AI システムに求められる最低限。試験対策のための知識でなく、設計判断そのものに使う。</p>
+    </div>
+
+    <h2 id="next"><span class="label">§09 / NEXT</span>次のステップ</h2>
+    <p>応用の概念を頭に入れたら、次は手と目で動かす段階。シミュレーションで挙動を可視化し、ハンズオンで実装し、問題演習で定着させる。</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0;">
+      <a class="btn solid" href="simulation.html">シミュレーションへ →</a>
+      <a class="btn" href="hands-on.html">ハンズオン</a>
+      <a class="btn" href="../quiz.html">問題演習</a>
+      <a class="btn" href="basics.html">基本に戻る</a>
+    </div>
+
+    <hr class="divider bold">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      Advanced · 2026 Spring
+    </p>
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>資格</h6><ul>
+      <li><a href="../certifications/g-kentei.html">G検定</a></li>
+      <li><a href="../certifications/e-shikaku.html">E資格</a></li>
+      <li><a href="../certifications/tokei-kentei.html">統計検定</a></li>
+      <li><a href="../certifications/python-cert.html">Python認定</a></li>
+      <li><a href="../certifications/aws-mla-c01.html">AWS MLA-C01</a></li>
+      <li><a href="../certifications/image-engineer.html">画像処理エンジニア</a></li>
+      <li><a href="../certifications/jetson-ai.html">Jetson AI</a></li>
+    </ul></div>
+    <div><h6>学習</h6><ul>
+      <li><a href="basics.html">基本</a></li>
+      <li><a href="advanced.html">応用</a></li>
+      <li><a href="simulation.html">シミュレーション</a></li>
+      <li><a href="hands-on.html">ハンズオン</a></li>
+      <li><a href="../quiz.html">問題演習</a></li>
+    </ul></div>
+    <div><h6>外部</h6><ul>
+      <li><a href="https://www.jdla.org/" target="_blank" rel="noopener">JDLA</a></li>
+      <li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener">Kaggle Learn</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

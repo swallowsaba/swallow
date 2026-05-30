@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>問題演習 — Swallow AI Academy</title>
+<meta name="description" content="G検定・E資格・統計検定・Python認定・AWS MLA-C01・画像処理エンジニア・Jetson AI など7資格を網羅した420問以上のオリジナル問題集。即時採点・解説・履歴保存。">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="index.html#certifications">資格</a>
+      <a href="learn/basics.html">基本</a>
+      <a href="learn/advanced.html">応用</a>
+      <a href="learn/simulation.html">シミュレーション</a>
+      <a href="learn/hands-on.html">ハンズオン</a>
+      <a href="quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">DRILL<br><strong>Quiz Bank</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="index.html">HOME</a> &nbsp;/&nbsp; QUIZ</div>
+    <h1>問題演習<span class="en">Quiz Bank — original drills</span></h1>
+    <p class="standfirst">G検定100問・E資格80問・統計検定60問・Python50問・AWS MLA-C01が50問・画像処理40問・Jetson 30問など、7資格＋横断トピックを <strong>合計420問以上</strong> でカバー。即時採点・解説・出典の三点セット、履歴はブラウザに保存しアカウント不要。</p>
+  </div>
+</section>
+
+<div class="quiz-shell" id="quiz-shell">
+
+  <!-- Topic selector (default view) -->
+  <div id="topic-select">
+    <h2 style="font-family:var(--font-display-jp);font-weight:700;font-size:24px;border-bottom:1px solid var(--ink);padding-bottom:14px;margin-bottom:8px;">トピックを選ぶ</h2>
+    <p style="font-size:14.5px;line-height:1.85;color:var(--ink-soft);margin-top:12px;">各トピックは概ね 10〜20 問。出題はランダム化、選択肢はオリジナルで、解説付きです。</p>
+
+    <div class="topic-grid">
+      <a class="topic-card" href="?topic=g-kentei" data-topic="g-kentei">
+        <span class="tag">G-KENTEI</span>
+        <h4>G検定 総合</h4>
+        <p>2024/11改訂シラバス＋生成AI領域を9章で網羅。AIリテラシー全般。</p>
+        <div class="count">100問</div>
+      </a>
+
+      <a class="topic-card" href="?topic=e-shikaku" data-topic="e-shikaku">
+        <span class="tag">E-SHIKAKU</span>
+        <h4>E資格 総合</h4>
+        <p>数学的基礎／ML／DL基礎／DL応用／開発・運用環境の5領域。</p>
+        <div class="count">80問</div>
+      </a>
+
+      <a class="topic-card" href="?topic=tokei" data-topic="tokei">
+        <span class="tag">TOKEI</span>
+        <h4>統計検定（2級→1級）</h4>
+        <p>記述／推測／回帰／多変量／ベイズ／実験計画／時系列／因果推論。</p>
+        <div class="count">60問</div>
+      </a>
+
+      <a class="topic-card" href="?topic=python" data-topic="python">
+        <span class="tag">PYTHON</span>
+        <h4>Python エンジニア認定</h4>
+        <p>Python基礎／NumPy／pandas／scikit-learn／可視化／実務分析。</p>
+        <div class="count">50問</div>
+      </a>
+
+      <a class="topic-card" href="?topic=aws-mla" data-topic="aws-mla">
+        <span class="tag">AWS-MLA</span>
+        <h4>AWS MLA-C01</h4>
+        <p>データ準備／モデル開発／デプロイ／監視・セキュリティの4ドメイン。</p>
+        <div class="count">50問</div>
+      </a>
+
+      <a class="topic-card" href="?topic=image" data-topic="image">
+        <span class="tag">IMAGE</span>
+        <h4>画像処理エンジニア検定</h4>
+        <p>サンプリング／フィルタ／エッジ／特徴抽出／形状解析／DL応用。</p>
+        <div class="count">40問</div>
+      </a>
+
+      <a class="topic-card" href="?topic=jetson" data-topic="jetson">
+        <span class="tag">JETSON</span>
+        <h4>Jetson AI Specialist</h4>
+        <p>Jetsonハード／JetPack／TensorRT／DeepStream／Isaac／sim2real。</p>
+        <div class="count">30問</div>
+      </a>
+
+      <a class="topic-card" href="?topic=llm" data-topic="llm">
+        <span class="tag">LLM</span>
+        <h4>LLM・生成AI（横断）</h4>
+        <p>プロンプト、RAG、アライメント、評価、Agent、効率化。</p>
+        <div class="count">12問</div>
+      </a>
+
+      <a class="topic-card" href="?topic=stats" data-topic="stats">
+        <span class="tag">STATS</span>
+        <h4>統計DS（横断ミニ）</h4>
+        <p>統計検定対策のショート版・横断確認用。</p>
+        <div class="count">10問</div>
+      </a>
+    </div>
+
+    <hr class="divider">
+    <p style="font-size:13px;color:var(--ink-mute);">
+      ※ 履歴は <code>localStorage</code> にのみ保存され、サーバーには送信されません。ブラウザを変えると共有されません。
+    </p>
+  </div>
+
+  <!-- Quiz mount target -->
+  <div id="quiz-mount" style="display:none;">
+    <div style="margin-bottom:16px;">
+      <a class="btn small" href="quiz.html">← トピック選択に戻る</a>
+    </div>
+    <div id="quiz-engine-target"></div>
+  </div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div>
+      <h6>資格</h6>
+      <ul>
+        <li><a href="certifications/g-kentei.html">G検定</a></li>
+        <li><a href="certifications/e-shikaku.html">E資格</a></li>
+        <li><a href="certifications/tokei-kentei.html">統計検定</a></li>
+        <li><a href="certifications/python-cert.html">Python認定</a></li>
+        <li><a href="certifications/aws-mla-c01.html">AWS MLA-C01</a></li>
+        <li><a href="certifications/image-engineer.html">画像処理エンジニア</a></li>
+        <li><a href="certifications/jetson-ai.html">Jetson AI</a></li>
+      </ul>
+    </div>
+    <div>
+      <h6>学習</h6>
+      <ul>
+        <li><a href="learn/basics.html">基本</a></li>
+        <li><a href="learn/advanced.html">応用</a></li>
+        <li><a href="learn/simulation.html">シミュレーション</a></li>
+        <li><a href="learn/hands-on.html">ハンズオン</a></li>
+      </ul>
+    </div>
+    <div>
+      <h6>外部</h6>
+      <ul>
+        <li><a href="https://www.jdla.org/" target="_blank" rel="noopener">JDLA 公式</a></li>
+        <li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener">Kaggle Learn</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+<script src="assets/js/quiz.js"></script>
+<script>
+(function() {
+  const TOPICS = {
+    'g-kentei': { title: 'G検定 総合', url: 'assets/data/quiz-g-kentei.json' },
+    'e-shikaku': { title: 'E資格 総合', url: 'assets/data/quiz-e-shikaku.json' },
+    'tokei':    { title: '統計検定 総合', url: 'assets/data/quiz-tokei.json' },
+    'python':   { title: 'Python エンジニア認定', url: 'assets/data/quiz-python.json' },
+    'aws-mla':  { title: 'AWS MLA-C01', url: 'assets/data/quiz-aws-mla.json' },
+    'image':    { title: '画像処理エンジニア検定', url: 'assets/data/quiz-image.json' },
+    'jetson':   { title: 'Jetson AI Specialist', url: 'assets/data/quiz-jetson.json' },
+    'llm':      { title: 'LLM・生成AI（横断）', url: 'assets/data/quiz-llm.json' },
+    'stats':    { title: '統計DS（横断ミニ）', url: 'assets/data/quiz-stats.json' },
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const topic = params.get('topic');
+
+  if (topic && TOPICS[topic]) {
+    document.getElementById('topic-select').style.display = 'none';
+    const mount = document.getElementById('quiz-mount');
+    mount.style.display = 'block';
+    const target = document.getElementById('quiz-engine-target');
+    const engine = new window.QuizEngine({
+      topicId: topic,
+      title: TOPICS[topic].title,
+      dataUrl: TOPICS[topic].url,
+      mount: target,
+    });
+    engine.start();
+  }
+})();
+</script>
+</body>
+</html>

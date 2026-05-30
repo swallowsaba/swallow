@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS Certified Machine Learning Engineer – Associate (MLA-C01) — Swallow AI Academy</title>
+<meta name="description" content="AWS MLA-C01 を 4 ドメインで詳細解説。SageMaker・Bedrock・Glue・Feature Store・Pipelines・Model Monitor・セキュリティを実務目線で整理。学習ロードマップ、頻出サービス比較、50問のオリジナル問題集。">
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../index.html#certifications">資格</a>
+      <a href="../learn/basics.html">基本</a>
+      <a href="../learn/advanced.html">応用</a>
+      <a href="../learn/simulation.html">シミュレーション</a>
+      <a href="../learn/hands-on.html">ハンズオン</a>
+      <a href="../quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">AWS<br><strong>MLA-C01</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; CERTIFICATIONS &nbsp;/&nbsp; AWS MLA-C01</div>
+    <h1>AWS MLA-C01<span class="en">Machine Learning Engineer – Associate</span></h1>
+    <p class="standfirst">2024年に登場した「実装側」の AWS ML 資格。データ準備、モデル開発、デプロイ、監視・保守・セキュリティの 4 ドメインで、<strong>本番の機械学習を成立させるアーキテクト力</strong>を測ります。MLOps の標準語彙としても価値が大きい。</p>
+  </div>
+</section>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>Contents</h6>
+    <a href="#about">§01 試験概要</a>
+    <a href="#d1">§02 D1 データ準備</a>
+    <a href="#d2">§03 D2 モデル開発</a>
+    <a href="#d3">§04 D3 デプロイ/オーケストレーション</a>
+    <a href="#d4">§05 D4 監視・保守・セキュリティ</a>
+    <a href="#bedrock">§06 Bedrock / 基盤モデル</a>
+    <a href="#mlops">§07 MLOps アーキテクチャ</a>
+    <a href="#cmp">§08 サービス比較早見表</a>
+    <a href="#roadmap">§09 学習ロードマップ</a>
+    <a href="#checklist">§10 チェックリスト</a>
+    <a href="#books">§11 教材</a>
+    <a href="#quiz">§12 問題演習</a>
+  </aside>
+
+  <article class="article-body">
+    <div class="article-eyebrow">CERTIFICATION DOSSIER — No.05</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">
+      モデルが動く本番を、<br>設計図として描けるか。
+    </h2>
+    <p class="article-lede">
+      AWS の機械学習資格は、ML Specialty（MLS-C01）と、本資格 MLA-C01 の 2 系統があります。MLA-C01 は <strong>「実装と運用」</strong> 側に焦点を当てた Associate 級。SageMaker、Glue、Feature Store、Pipelines、Model Monitor、Bedrock といった構成要素を、本番の文脈でどう組むかを問います。
+    </p>
+
+    <h2 id="about"><span class="label">§01 / EXAM</span>試験概要</h2>
+    <table class="spec">
+      <tr><th>試験コード</th><td>MLA-C01</td></tr>
+      <tr><th>レベル</th><td>Associate</td></tr>
+      <tr><th>問題数</th><td>65問（採点対象50問＋採点外15問）</td></tr>
+      <tr><th>時間</th><td>130分</td></tr>
+      <tr><th>合格スコア</th><td>720 / 1000</td></tr>
+      <tr><th>形式</th><td>テストセンター CBT または オンライン監督付き</td></tr>
+      <tr><th>料金</th><td>USD 150</td></tr>
+      <tr><th>ドメイン構成</th><td>D1 データ準備 28% / D2 モデル開発 26% / D3 デプロイとオーケストレーション 22% / D4 監視・保守・セキュリティ 24%</td></tr>
+    </table>
+
+    <h2 id="d1"><span class="label">§02 / D1</span>ドメイン1: データ準備（28%）</h2>
+    <h3>取り込み・保存</h3>
+    <ul>
+      <li><strong>S3</strong> をデータレイクの中心に、Parquet/ORC など列指向で保存</li>
+      <li><strong>Kinesis Data Streams</strong>（低レイテンシ） vs <strong>Firehose</strong>（バッファ配信、ニアリアルタイム）</li>
+      <li><strong>AWS Glue</strong>: サーバレス ETL ＋ データカタログ（Crawler、Studio、DataBrew）</li>
+      <li><strong>EMR</strong>: Spark / Hadoop マネージド、大規模分散処理</li>
+      <li><strong>Lake Formation</strong>: アクセス制御を集中管理、行・列レベルのきめ細かい権限</li>
+    </ul>
+    <h3>変換・特徴量エンジニアリング</h3>
+    <ul>
+      <li><strong>SageMaker Data Wrangler</strong>: GUI で 300+ の組み込み変換</li>
+      <li><strong>SageMaker Processing Job</strong>: コンテナベースの前処理／後処理</li>
+      <li><strong>SageMaker Feature Store</strong>: オンライン／オフラインの統一管理で <strong>train/serving skew</strong> を防止</li>
+      <li><strong>Glue DataBrew</strong>: ノーコード前処理。Wrangler との使い分けに注意</li>
+    </ul>
+    <h3>クエリ・カタログ</h3>
+    <ul>
+      <li><strong>Athena</strong>: S3 への SQL（サーバレス、スキャン量課金）</li>
+      <li><strong>Redshift / Redshift Spectrum</strong>: DWH、S3 直クエリ</li>
+      <li><strong>Glue Data Catalog</strong>: Athena・EMR・Redshift Spectrum 共通のメタデータ層</li>
+    </ul>
+    <h3>データ品質・バイアス</h3>
+    <ul>
+      <li><strong>SageMaker Clarify</strong>: 学習前バイアス、推論バイアス、説明可能性（SHAP）</li>
+      <li><strong>Glue Data Quality</strong>: DQDL で品質ルール</li>
+      <li><strong>Macie</strong>: S3 内 PII の自動検出</li>
+    </ul>
+
+    <h2 id="d2"><span class="label">§03 / D2</span>ドメイン2: モデル開発（26%）</h2>
+    <h3>学習サービス</h3>
+    <ul>
+      <li><strong>SageMaker Training</strong>: Estimator API（PyTorch/TF/HF/独自BYOC）でジョブ管理</li>
+      <li><strong>SageMaker Training Compiler</strong>: XLAで計算グラフ最適化、学習高速化</li>
+      <li><strong>SageMaker Distributed Training</strong>: Data Parallel / Model Parallel（テンソル、パイプライン）</li>
+      <li><strong>SageMaker HyperPod</strong>: 大規模 FM 学習向け耐障害クラスタ、自動復旧</li>
+      <li><strong>Managed Spot Training</strong>: 最大70%コスト削減＋チェックポイント必須</li>
+    </ul>
+    <h3>自動化と事前学習活用</h3>
+    <ul>
+      <li><strong>SageMaker Autopilot</strong>: 表形式 AutoML、Notebook も生成</li>
+      <li><strong>SageMaker Canvas</strong>: ノーコード ML（ビジネスユーザ向け）</li>
+      <li><strong>SageMaker JumpStart</strong>: 事前学習済みモデルのワンクリック展開・微調整</li>
+      <li><strong>Hyperparameter Tuner</strong>: Random / Bayesian / Hyperband / Grid、Warm Start</li>
+    </ul>
+    <h3>アクセラレータ</h3>
+    <ul>
+      <li><strong>EC2 G5/P5、ml.g/p インスタンス</strong>: NVIDIA GPU</li>
+      <li><strong>AWS Trainium（Trn1/Trn2）</strong>: 学習に最適化されたカスタムシリコン</li>
+      <li><strong>AWS Inferentia（Inf1/Inf2）</strong>: 推論最適化チップ。Neuron SDK 経由</li>
+    </ul>
+
+    <h2 id="d3"><span class="label">§04 / D3</span>ドメイン3: デプロイとオーケストレーション（22%）</h2>
+    <h3>推論オプションの選択</h3>
+    <table class="spec">
+      <tr><th>Real-time Endpoint</th><td>常時稼働、低レイテンシ。Auto Scaling、Multi-Model、Multi-Container 対応</td></tr>
+      <tr><th>Serverless Inference</th><td>断続的トラフィック、従量課金。冷起動あり、Provisioned Concurrency で緩和</td></tr>
+      <tr><th>Async Inference</th><td>大きなペイロード（最大1GB）、長時間処理、S3 経由のキュー。Auto Scaling to zero</td></tr>
+      <tr><th>Batch Transform</th><td>S3 → S3 のオフライン推論、エンドポイント不要</td></tr>
+    </table>
+    <h3>オーケストレーション</h3>
+    <ul>
+      <li><strong>SageMaker Pipelines</strong>: ステップを DAG で連結（Processing/Training/CreateModel/Endpoint）</li>
+      <li><strong>Model Registry</strong>: モデルパッケージのバージョン管理＋承認フロー</li>
+      <li><strong>Step Functions / EventBridge / Lambda</strong>: イベント駆動の自動化</li>
+      <li><strong>Inference Recommender</strong>: 構成のベンチマークと推奨</li>
+      <li><strong>Deployment Guardrails</strong>: Canary / Linear / BlueGreen、Auto-Rollback</li>
+    </ul>
+    <h3>大規模・効率化</h3>
+    <ul>
+      <li><strong>Multi-Model Endpoint（MME）</strong>: 数千のモデルを1エンドポイントで共有</li>
+      <li><strong>Multi-Container Endpoint（MCE）</strong>: 異種コンテナを並列ホスト</li>
+      <li><strong>Inference Components</strong>: 大規模 FM のためのきめ細かいリソース割当</li>
+    </ul>
+
+    <h2 id="d4"><span class="label">§05 / D4</span>ドメイン4: 監視・保守・セキュリティ（24%）</h2>
+    <h3>監視</h3>
+    <ul>
+      <li><strong>SageMaker Model Monitor</strong>: データ品質／モデル品質／バイアスドリフト／特徴量寄与ドリフト</li>
+      <li><strong>CloudWatch</strong>: Metrics / Logs / Alarms。InvocationsPerInstance, ModelLatency など</li>
+      <li><strong>CloudTrail</strong>: API監査ログ、Security Hub で集約</li>
+    </ul>
+    <h3>セキュリティ</h3>
+    <ul>
+      <li><strong>IAM</strong>: 最小権限、Permission Boundary、SCP</li>
+      <li><strong>KMS</strong>: 暗号鍵管理（S3、EBS、SageMaker、Bedrock との統合）</li>
+      <li><strong>VPC Endpoint（Gateway/Interface）／PrivateLink</strong>: AWS API への閉域接続</li>
+      <li><strong>SageMaker Network Isolation</strong>: コンテナをインターネットから切り離す</li>
+      <li><strong>Block Public Access、Bucket Policy</strong>: S3 公開リスクの遮断</li>
+      <li><strong>Macie / GuardDuty / Inspector / Detective</strong>: 脅威検知・脆弱性・PII検出</li>
+    </ul>
+    <h3>運用</h3>
+    <ul>
+      <li><strong>Model Card</strong>: 用途・学習データ・性能・限界・倫理を構造化</li>
+      <li><strong>SageMaker Lineage Tracking</strong>: データ・特徴量・モデル・成果物の系譜</li>
+      <li><strong>Auto Scaling</strong>: Target Tracking / Step / Scheduled</li>
+    </ul>
+
+    <h2 id="bedrock"><span class="label">§06 / BEDROCK</span>Bedrock / 基盤モデル</h2>
+    <ul>
+      <li><strong>Bedrock</strong>: マネージドな基盤モデル API（Claude、Llama、Titan、Mistral、Stable Diffusion 等）</li>
+      <li><strong>Bedrock Knowledge Bases</strong>: ベクトル DB（OpenSearch Serverless、Aurora pgvector）と連携した RAG</li>
+      <li><strong>Bedrock Agents</strong>: ツール／API 呼び出しを伴うエージェント</li>
+      <li><strong>Bedrock Guardrails</strong>: 入出力フィルタリング、機密検出、トピック制限</li>
+      <li><strong>Custom Model Import / Continued Pre-training / Fine-tuning</strong></li>
+      <li><strong>Provisioned Throughput</strong>: 大規模・低レイテンシ要件向けの専有スループット</li>
+    </ul>
+
+    <h2 id="mlops"><span class="label">§07 / MLOPS</span>MLOps アーキテクチャ</h2>
+    <ol>
+      <li>データ取り込み（S3 / Kinesis / Glue）→ カタログ（Glue / Lake Formation）</li>
+      <li>前処理（Glue / Processing / DataBrew / Wrangler）→ Feature Store</li>
+      <li>学習（SageMaker Training、Distributed / Spot / HyperPod）</li>
+      <li>評価（Clarify、Model Monitor ベースライン）→ Model Registry に登録・承認</li>
+      <li>デプロイ（Real-time / Serverless / Async / Batch、Pipelines + Guardrails）</li>
+      <li>監視（Model Monitor + CloudWatch Alarms → EventBridge → Pipelines 再学習）</li>
+      <li>ログ（CloudTrail / CloudWatch Logs）と Lineage で監査・再現性を担保</li>
+    </ol>
+
+    <h2 id="cmp"><span class="label">§08 / COMPARE</span>サービス比較早見表</h2>
+    <table class="spec">
+      <tr><th>常時低レイテンシ推論</th><td>SageMaker Real-time Endpoint</td></tr>
+      <tr><th>断続トラフィック</th><td>SageMaker Serverless Inference</td></tr>
+      <tr><th>大きなペイロード／長時間</th><td>SageMaker Async Inference</td></tr>
+      <tr><th>夜間／オフライン一括</th><td>SageMaker Batch Transform</td></tr>
+      <tr><th>FM の手早い実験</th><td>Bedrock</td></tr>
+      <tr><th>FM のセルフホスト・微調整</th><td>JumpStart / SageMaker</td></tr>
+      <tr><th>GUI 前処理</th><td>Data Wrangler（コード化容易）／Glue DataBrew</td></tr>
+      <tr><th>大規模分散 SQL</th><td>Athena（S3）／Redshift（DWH）</td></tr>
+      <tr><th>大規模 ETL</th><td>Glue（サーバレス）／EMR（クラスタ）</td></tr>
+    </table>
+
+    <h2 id="roadmap"><span class="label">§09 / ROADMAP</span>学習ロードマップ</h2>
+    <h4>Phase 1 — AWS 基礎を底上げ（40〜60時間）</h4>
+    <p>未経験ならまず AWS Solutions Architect Associate（SAA）相当の知識を確認。IAM / VPC / S3 / EC2 / Lambda / CloudWatch の基本。</p>
+    <h4>Phase 2 — SageMaker ハンズオン（60〜100時間）</h4>
+    <p>SageMaker Studio で Training／Endpoint／Pipelines を一通り触り、JumpStart、Autopilot、Bedrock も体験。AWS Skill Builder の公式コースが効率的。</p>
+    <h4>Phase 3 — 模試・本番対策（40〜60時間）</h4>
+    <p>公式サンプル問題＋公式練習試験。Whizlabs/Tutorials Dojo などサードパーティ模試 2〜3 セットを 90% 安定するまで反復。</p>
+
+    <h2 id="checklist"><span class="label">§10 / CHECKLIST</span>到達度チェックリスト</h2>
+    <ul class="checklist">
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-1"> S3 ストレージクラスとライフサイクル設計</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-2"> Kinesis Streams / Firehose の使い分け</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-3"> Glue（ETL/Catalog/DataBrew）と Athena の連携</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-4"> SageMaker Feature Store の online/offline と train-serving skew</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-5"> Estimator API でカスタム学習ジョブを起動</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-6"> HyperparameterTuner で Bayesian/Hyperband</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-7"> Managed Spot Training + Checkpoint S3</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-8"> Real-time / Serverless / Async / Batch を要件で選べる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-9"> Multi-Model / Multi-Container Endpoint の違い</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-10"> Pipelines + Model Registry + Deployment Guardrails</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-11"> Inference Recommender でインスタンス選定</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-12"> Model Monitor の 4 種類のドリフト</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-13"> Clarify で前学習バイアスと SHAP 説明</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-14"> KMS / SSE-KMS / VPC Endpoint / PrivateLink</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-15"> IAM 最小権限、Permission Boundary、SCP</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-16"> Bedrock Knowledge Bases で RAG 構成</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-17"> Trainium / Inferentia のユースケース</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="aws-ck-18"> EventBridge ドリブンの再学習自動化</label></li>
+    </ul>
+
+    <h2 id="books"><span class="label">§11 / BOOKS</span>教材</h2>
+    <ul class="resource-list">
+      <li><span class="tag">公式</span><span class="desc"><a href="https://aws.amazon.com/certification/certified-machine-learning-engineer-associate/" target="_blank" rel="noopener">AWS MLA-C01 公式ページ</a> — 試験ガイド、サンプル問題</span></li>
+      <li><span class="tag">公式</span><span class="desc"><a href="https://skillbuilder.aws/" target="_blank" rel="noopener">AWS Skill Builder</a> — 公式コース＋公式練習試験</span></li>
+      <li><span class="tag">ハンズオン</span><span class="desc"><strong>Amazon SageMaker Examples (GitHub)</strong> — 各機能の Notebook 集</span></li>
+      <li><span class="tag">補助</span><span class="desc">Tutorials Dojo, Whizlabs などサードパーティ模試</span></li>
+      <li><span class="tag">関連</span><span class="desc">AWS Well-Architected Machine Learning Lens（PDF）</span></li>
+    </ul>
+
+    <h2 id="quiz"><span class="label">§12 / DRILL</span>問題演習</h2>
+    <p>本サイトには MLA-C01 4 ドメインを横断する <strong>50問</strong> のオリジナル問題があります。</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0;">
+      <a class="btn solid" href="../quiz.html?topic=aws-mla">AWS MLA-C01 クイズを始める →</a>
+      <a class="btn" href="../quiz.html">他の資格のクイズ</a>
+    </div>
+
+    <hr class="divider bold">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      Last reviewed · 2026 Spring · 公式情報は AWS 公式サイトで必ず確認してください。
+    </p>
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>資格</h6><ul>
+      <li><a href="g-kentei.html">G検定</a></li>
+      <li><a href="e-shikaku.html">E資格</a></li>
+      <li><a href="tokei-kentei.html">統計検定</a></li>
+      <li><a href="python-cert.html">Python認定</a></li>
+      <li><a href="aws-mla-c01.html">AWS MLA-C01</a></li>
+      <li><a href="image-engineer.html">画像処理エンジニア</a></li>
+      <li><a href="jetson-ai.html">Jetson AI</a></li>
+    </ul></div>
+    <div><h6>学習</h6><ul>
+      <li><a href="../learn/basics.html">基本</a></li>
+      <li><a href="../learn/advanced.html">応用</a></li>
+      <li><a href="../learn/simulation.html">シミュレーション</a></li>
+      <li><a href="../learn/hands-on.html">ハンズオン</a></li>
+      <li><a href="../quiz.html">問題演習</a></li>
+    </ul></div>
+    <div><h6>外部</h6><ul>
+      <li><a href="https://aws.amazon.com/certification/" target="_blank" rel="noopener">AWS 認定一覧</a></li>
+      <li><a href="https://aws.amazon.com/sagemaker/" target="_blank" rel="noopener">Amazon SageMaker</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

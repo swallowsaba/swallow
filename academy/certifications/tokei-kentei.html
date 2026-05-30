@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統計検定 — Swallow AI Academy</title>
+<meta name="description" content="統計検定（2級→準1級→1級）の詳細解説。各級の出題範囲、学習ロードマップ、頻出概念、計算式、参考書、チェックリスト、60問のオリジナル問題集まで一冊で完結。">
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../index.html#certifications">資格</a>
+      <a href="../learn/basics.html">基本</a>
+      <a href="../learn/advanced.html">応用</a>
+      <a href="../learn/simulation.html">シミュレーション</a>
+      <a href="../learn/hands-on.html">ハンズオン</a>
+      <a href="../quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">TOKEI<br><strong>Statistics</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; CERTIFICATIONS &nbsp;/&nbsp; STATISTICS</div>
+    <h1>統計検定<span class="en">Japan Statistical Society Certification</span></h1>
+    <p class="standfirst">機械学習は統計の応用です。「平均と分散」「仮説検定」「回帰モデル」「多変量解析」「ベイズ」を体系的に習得することは、AI モデルの結果を<strong>解釈し批判的に検証する力</strong>を養うための、もっとも効率の良い投資です。本ページは 2 級から 1 級までを一気通貫で扱います。</p>
+  </div>
+</section>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>Contents</h6>
+    <a href="#about">§01 検定概要</a>
+    <a href="#levels">§02 各級の位置づけ</a>
+    <a href="#2kyu">§03 2級の詳細</a>
+    <a href="#jun1">§04 準1級の詳細</a>
+    <a href="#1kyu">§05 1級の詳細</a>
+    <a href="#dskentei">§06 DS基礎・発展・エキスパート</a>
+    <a href="#keyconcepts">§07 頻出概念リファレンス</a>
+    <a href="#roadmap">§08 学習ロードマップ</a>
+    <a href="#checklist">§09 チェックリスト</a>
+    <a href="#books">§10 参考書</a>
+    <a href="#quiz">§11 問題演習</a>
+  </aside>
+
+  <article class="article-body">
+    <div class="article-eyebrow">CERTIFICATION DOSSIER — No.03</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">
+      推測の言語を、<br>正しく話すために。
+    </h2>
+    <p class="article-lede">
+      AIエンジニアにとって統計検定は、E資格や Kaggle と並んで <strong>「数学を逃げずに通り抜けたか」</strong> を示す資格です。2級でデータサイエンスの最低ライン、準1級でモデル選択・多変量・ベイズの実務知識、1級で導出を書ける論述力までを順に積み上げます。
+    </p>
+
+    <h2 id="about"><span class="label">§01 / OVERVIEW</span>検定の概要</h2>
+    <table class="spec">
+      <tr><th>名称</th><td>統計検定（日本統計学会公式認定）</td></tr>
+      <tr><th>運営</th><td>一般財団法人 統計質保証推進協会</td></tr>
+      <tr><th>主な階級</th><td>4級 / 3級 / 2級 / 準1級 / 1級 / 統計調査士 / 専門統計調査士 / データサイエンス基礎・発展・エキスパート</td></tr>
+      <tr><th>形式</th><td>多くの級は CBT（随時受験、即時採点）。<strong>1級のみ年1回（例年6月）</strong>の筆記論述</td></tr>
+      <tr><th>受験資格</th><td>制限なし（年齢・学歴問わず）</td></tr>
+      <tr><th>合格基準</th><td>概ね 60点 / 100点（級・分野で微差あり）</td></tr>
+      <tr><th>本サイトの推奨</th><td>AI志望は <strong>2級 → 準1級 → DSエキスパート</strong>、研究志向なら <strong>1級</strong></td></tr>
+    </table>
+
+    <div class="callout">
+      <span class="callout-eyebrow">統計を学ぶ意味</span>
+      <p>機械学習モデルが出した値の信頼区間を読めない、A/Bテストの p値を誤解する、回帰係数の符号を物理的に解釈できない――こうした失敗は、すべて「統計の側」を埋めることで防げます。統計検定はその訓練の標準化された場であり、合格証以上に <strong>学習プロセス自体に価値</strong> があります。</p>
+    </div>
+
+    <h2 id="levels"><span class="label">§02 / LEVELS</span>各級の位置づけ</h2>
+    <ul>
+      <li><strong>3級</strong> — 高校レベル。記述統計、確率の入口。</li>
+      <li><strong>2級</strong> — 大学基礎レベル。確率分布、点推定・区間推定、仮説検定、回帰、ANOVA。<strong>データサイエンスの最低ライン</strong>。最も受験者の多い級。</li>
+      <li><strong>準1級</strong> — 多変量解析、時系列、ベイズ、実験計画、ノンパラ、GLM。<strong>実務寄りで E資格 の数学領域と最も重なる</strong>。</li>
+      <li><strong>1級</strong> — 大学院レベル。「統計数理」と「統計応用（人文／社会／医薬／理工 から1選択）」の 2 科目論述。<strong>最難関</strong>。導出を書ける力が必要。</li>
+      <li><strong>DS基礎 / 発展 / エキスパート</strong> — Python・R での計算を伴う実務志向試験。エキスパートは大規模データのモデリング全般。</li>
+      <li><strong>統計調査士・専門統計調査士</strong> — 調査設計・公的統計・サンプリング設計に特化。</li>
+    </ul>
+
+    <h2 id="2kyu"><span class="label">§03 / LEVEL 2</span>2級の詳細</h2>
+    <h3>主要トピック</h3>
+    <ul>
+      <li>記述統計（中心傾向・散らばり・歪度・尖度）／相関・共分散／単・重回帰の基本</li>
+      <li>確率分布（離散：二項・ポアソン・幾何／連続：正規・指数・一様）</li>
+      <li>標本分布（標本平均、t、χ²、F）／中心極限定理</li>
+      <li>点推定（最尤・モーメント法）／区間推定（信頼区間の正しい解釈）</li>
+      <li>仮説検定（1標本・2標本、対応あり／なし、t検定、Welch、F検定、比率の検定）</li>
+      <li>カテゴリカルデータ（独立性の検定、適合度検定）</li>
+      <li>単・重回帰（決定係数、調整済み R²、F統計量、残差プロット）</li>
+      <li>一元・二元分散分析（主効果・交互作用）</li>
+    </ul>
+    <h3>頻出のひっかけ・注意点</h3>
+    <ul>
+      <li>「真の値が95%の確率で区間内」は <strong>誤り</strong>。正しくは「同じ手順を多数回行うと95%の区間が真の値を含む」</li>
+      <li>p値は H0 の確率ではなく、<strong>H0 が真と仮定したときに観測値以上の結果が得られる確率</strong></li>
+      <li>独立性の検定では <strong>期待度数が5以下のセル</strong> が多い場合 Fisher 正確検定を検討</li>
+      <li>等分散性に疑義があれば <strong>Welch の t検定</strong> を選択</li>
+    </ul>
+
+    <h2 id="jun1"><span class="label">§04 / LEVEL PRE-1</span>準1級の詳細</h2>
+    <p>2級の延長に「<strong>本格的なモデリングと多変量</strong>」が加わります。AI/ML との接続が最も濃い級。</p>
+    <h3>追加で問われるテーマ</h3>
+    <ul>
+      <li><strong>多変量解析</strong>: 主成分分析（PCA）、因子分析、判別分析（LDA/QDA）、クラスター分析（階層・K-means）、正準相関</li>
+      <li><strong>ノンパラメトリック検定</strong>: 符号検定、Wilcoxon、Mann-Whitney U、Kruskal-Wallis、ブートストラップ</li>
+      <li><strong>時系列解析</strong>: 自己相関・偏自己相関、AR/MA/ARMA/ARIMA、定常性と単位根（ADF）、状態空間モデル</li>
+      <li><strong>実験計画</strong>: 完全/不完全ブロック、乱塊法、ラテン方格、直交配列、応答曲面法、SN比</li>
+      <li><strong>ベイズ統計</strong>: 事前事後分布、共役分布、最尤と MAP、MCMC（Metropolis-Hastings、Gibbs）の入門</li>
+      <li><strong>一般化線形モデル（GLM）</strong>: ロジスティック、ポアソン、負の二項、リンク関数、逸脱度</li>
+      <li><strong>モデル選択・検証</strong>: AIC、BIC、Cp、交差検証、ブートストラップ</li>
+      <li><strong>因果推論</strong>: 傾向スコア、IPTW、差の差、操作変数（基本まで）</li>
+    </ul>
+
+    <div class="callout">
+      <span class="callout-eyebrow">準1級と E資格の相補性</span>
+      <p>準1級は「統計の側から」、E資格は「最適化と DL の側から」、同じ数学的中身に到達します。両方を学ぶことで、論文の理解、データの誠実な扱い、安全なモデル運用の能力が立体的に整います。</p>
+    </div>
+
+    <h2 id="1kyu"><span class="label">§05 / LEVEL 1</span>1級の詳細（論述）</h2>
+    <p>例年 6 月開催。<strong>統計数理</strong>と <strong>統計応用</strong>（人文／社会／医薬／理工 から1選択）の 2 科目。論述形式で、<strong>導出を書ける力</strong> が問われます。</p>
+    <h3>統計数理</h3>
+    <ul>
+      <li>確率論：測度論の入口、確率変数、確率収束、極限定理</li>
+      <li>推定論：MLE、十分統計量、Fisher 情報量、Cramér-Rao 下限、漸近正規性</li>
+      <li>仮説検定：Neyman-Pearson の基本定理、検出力、UMP 検定、尤度比検定</li>
+      <li>ベイズ：事前選択、階層モデル、ベイズ的検定</li>
+      <li>線形モデルの行列表現、最小二乗の幾何</li>
+    </ul>
+    <h3>統計応用（選択）</h3>
+    <ul>
+      <li><strong>人文科学</strong>: 心理測定、因子分析、構造方程式モデル</li>
+      <li><strong>社会科学</strong>: 標本調査、計量経済（操作変数、時系列）</li>
+      <li><strong>医薬生物</strong>: 生存解析、ロジスティック、臨床試験のデザイン</li>
+      <li><strong>理工学</strong>: 信頼性、品質工学、実験計画、応答曲面</li>
+    </ul>
+
+    <h2 id="dskentei"><span class="label">§06 / DS</span>データサイエンス基礎・発展・エキスパート</h2>
+    <p>Python / R を用いた実装・解釈を含む実務型試験。AIエンジニアの履歴書において「<strong>統計学を計算機の上で動かせる</strong>」ことを示せます。</p>
+    <ul>
+      <li><strong>DS基礎</strong>: 表データ操作、可視化、基礎統計、回帰、検定</li>
+      <li><strong>DS発展</strong>: 多変量、機械学習、評価指標、特徴量設計</li>
+      <li><strong>DSエキスパート</strong>: 大規模／非構造データ、深層学習、因果推論、業務適用</li>
+    </ul>
+
+    <h2 id="keyconcepts"><span class="label">§07 / KEY</span>頻出概念リファレンス</h2>
+    <h3>記述統計</h3>
+    <ul>
+      <li>平均 μ = Σxᵢ/n、分散 σ² = Σ(xᵢ-μ)²/n、不偏分散は分母を <strong>n-1</strong></li>
+      <li>標準化 z = (x - μ) / σ で平均0・分散1</li>
+      <li>四分位範囲 IQR = Q3 - Q1。外れ値の目安 <strong>1.5 × IQR</strong></li>
+      <li>ピアソン相関は線形のみを捉える。非線形ならスピアマンや相互情報量</li>
+    </ul>
+    <h3>分布</h3>
+    <ul>
+      <li>二項 Bin(n,p)：平均 np、分散 np(1-p)</li>
+      <li>ポアソン Po(λ)：平均=分散=λ。希少事象の到着</li>
+      <li>正規 N(μ,σ²)：左右対称、平均=中央値=最頻値。CLTで標本平均が漸近正規</li>
+      <li>t分布：自由度小で裾が重く、∞で正規</li>
+    </ul>
+    <h3>推定と検定</h3>
+    <ul>
+      <li>標準誤差 = σ/√n。検出力 = 1-β</li>
+      <li>Bonferroni 補正は FWER 制御、Benjamini-Hochberg は FDR 制御</li>
+      <li>母分散既知 → z検定、未知 → t検定</li>
+    </ul>
+    <h3>回帰・GLM</h3>
+    <ul>
+      <li>OLS は残差二乗和の最小化、正規ノイズ仮定で MLE と一致</li>
+      <li>多重共線性は VIF≥10 が目安、リッジで縮小、ラッソでスパース化</li>
+      <li>ロジスティック回帰の出力は P(Y=1|X)、ポアソン回帰のリンクは log</li>
+    </ul>
+    <h3>ベイズ</h3>
+    <ul>
+      <li>事後 ∝ 尤度 × 事前。MAP は事前が一様なら MLE に一致</li>
+      <li>共役: ベルヌーイ↔ベータ、正規↔正規、ポアソン↔ガンマ</li>
+      <li>MCMC は近似サンプリング、VI は ELBO 最大化による変分近似</li>
+    </ul>
+    <h3>時系列</h3>
+    <ul>
+      <li>弱定常 = 平均・分散・自己共分散が時間によらない</li>
+      <li>ADF の H0 は「単位根がある」＝非定常</li>
+      <li>ACF・PACF で AR/MA の次数推定（Box-Jenkins）</li>
+    </ul>
+    <h3>因果推論</h3>
+    <ul>
+      <li>RCT は介入のランダム化が因果の根拠</li>
+      <li>傾向スコア（マッチング・IPTW）、差の差（並行トレンド前提）、IV（内生性回避）、RDD（カットオフ近傍）</li>
+    </ul>
+
+    <h2 id="roadmap"><span class="label">§08 / ROADMAP</span>学習ロードマップ</h2>
+    <h4>Phase 1 — 2級到達（40〜80時間）</h4>
+    <p>『統計学入門（東京大学出版会・基礎統計学Ⅰ）』を通読、<strong>確率分布の積分・微分が手で動かせる</strong> 状態に。公式問題集を 2 周。CBT 模試で時間配分を体得。</p>
+    <h4>Phase 2 — 準1級到達（80〜120時間）</h4>
+    <p>『統計学実践ワークブック』を主軸に、Python / R で各手法を実装。ロジスティック・ポアソン・ARIMA・PCA・LDA・MCMC を一通り実装することで理解が深まる。E資格の数学パートと同時並行が効率的。</p>
+    <h4>Phase 3 — 1級挑戦（200時間〜）</h4>
+    <p>『現代数理統計学の基礎』(久保川) などで導出に慣れる。過去問の論述を <strong>手で書き起こす</strong> 訓練。応用分野（医薬／理工等）の専門書 1 冊を読み込む。</p>
+    <h4>Phase 4 — DSエキスパート挑戦（合算150〜250時間）</h4>
+    <p>Python / R での実装力＋因果推論＋深層学習評価。Kaggle や実データ分析プロジェクトを並走させると盤石。</p>
+
+    <h2 id="checklist"><span class="label">§09 / CHECKLIST</span>到達度チェックリスト</h2>
+    <p>各項目について「人に説明できる」「自分で実装または導出できる」レベルを目指してください。クリックで保存されます。</p>
+    <ul class="checklist">
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-1"> 中心極限定理を直観と数式で説明できる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-2"> 信頼区間の頻度論的解釈（区間が確率的、真値は固定）</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-3"> p値・α・β・検出力の関係を図解できる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-4"> t検定／Welch／対応あり／対応なしを使い分けられる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-5"> 一元・二元 ANOVA で交互作用を解釈できる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-6"> 重回帰のVIFと残差プロットを読める</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-7"> リッジ／ラッソ／Elastic Net を使い分けられる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-8"> ロジスティック・ポアソン回帰の式・リンク関数を書ける</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-9"> PCA を共分散行列の固有値分解として説明できる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-10"> 因子分析と PCA の違いを説明できる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-11"> 階層クラスタリングと K-means の長所短所</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-12"> ベイズの定理を導出できる、共役分布を3組挙げられる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-13"> MCMC / 変分推論の使い分けを説明できる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-14"> ARIMA(p,d,q) の各パラメータと推定手順</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-15"> 単位根検定（ADF, KPSS）と差分・対数差分の扱い</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-16"> 状態空間モデル／カルマンフィルタの本質</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-17"> 傾向スコア・差の差・IV・RDD を使い分けられる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-18"> ノンパラメトリック検定の代表3種以上</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-19"> AIC・BIC・WAIC の意味と使い分け</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="tk-ck-20"> 直交配列実験と SN 比の意義</label></li>
+    </ul>
+
+    <h2 id="books"><span class="label">§10 / BOOKS</span>参考書</h2>
+    <ul class="resource-list">
+      <li><span class="tag">2級</span><span class="desc"><strong>統計学入門</strong>（東京大学出版会・基礎統計学Ⅰ） — 標準教科書</span></li>
+      <li><span class="tag">2級</span><span class="desc"><strong>統計検定2級 公式問題集</strong> — 過去問は必須</span></li>
+      <li><span class="tag">準1級</span><span class="desc"><strong>統計学実践ワークブック</strong>（日本統計学会編） — 準1級対策の定番</span></li>
+      <li><span class="tag">準1級</span><span class="desc"><strong>多変量解析法入門</strong>（永田・棟近） — 多変量の体系</span></li>
+      <li><span class="tag">1級</span><span class="desc"><strong>現代数理統計学の基礎</strong>（久保川達也） — 1級数理の標準</span></li>
+      <li><span class="tag">1級</span><span class="desc"><strong>統計学（東京大学出版会・基礎統計学Ⅲ）</strong> — 自然科学向け統計</span></li>
+      <li><span class="tag">DS</span><span class="desc"><strong>Pythonによるあたらしいデータ分析の教科書</strong> — DS基礎・発展準拠</span></li>
+      <li><span class="tag">公式</span><span class="desc"><a href="https://www.toukei-kentei.jp/" target="_blank" rel="noopener">統計検定 公式サイト</a> — 級別シラバスと過去問</span></li>
+    </ul>
+
+    <h2 id="quiz"><span class="label">§11 / DRILL</span>問題演習</h2>
+    <p>本サイトには <strong>60問</strong> のオリジナル統計検定問題（2級～1級横断、記述/推測/回帰/多変量/ベイズ/時系列/実験計画/因果推論）が用意されています。</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0;">
+      <a class="btn solid" href="../quiz.html?topic=tokei">統計検定クイズ（60問）を始める →</a>
+      <a class="btn" href="../quiz.html?topic=stats">統計DS ミニ（10問）</a>
+      <a class="btn" href="../quiz.html">他の資格のクイズ</a>
+    </div>
+
+    <hr class="divider bold">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      Last reviewed · 2026 Spring · 公式情報は統計検定公式サイトで必ず確認してください。
+    </p>
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>資格</h6><ul>
+      <li><a href="g-kentei.html">G検定</a></li>
+      <li><a href="e-shikaku.html">E資格</a></li>
+      <li><a href="tokei-kentei.html">統計検定</a></li>
+      <li><a href="python-cert.html">Python認定</a></li>
+      <li><a href="aws-mla-c01.html">AWS MLA-C01</a></li>
+      <li><a href="image-engineer.html">画像処理エンジニア</a></li>
+      <li><a href="jetson-ai.html">Jetson AI</a></li>
+    </ul></div>
+    <div><h6>学習</h6><ul>
+      <li><a href="../learn/basics.html">基本</a></li>
+      <li><a href="../learn/advanced.html">応用</a></li>
+      <li><a href="../learn/simulation.html">シミュレーション</a></li>
+      <li><a href="../learn/hands-on.html">ハンズオン</a></li>
+      <li><a href="../quiz.html">問題演習</a></li>
+    </ul></div>
+    <div><h6>外部</h6><ul>
+      <li><a href="https://www.toukei-kentei.jp/" target="_blank" rel="noopener">統計検定 公式</a></li>
+      <li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener">Kaggle Learn</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

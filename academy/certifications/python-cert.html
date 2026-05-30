@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python エンジニア認定 — Swallow AI Academy</title>
+<meta name="description" content="Python 3 エンジニア認定試験（基礎・データ分析・実践・データ分析実践）を一気通貫で解説。出題範囲、頻出概念、コード例、学習ロードマップ、チェックリスト、50問のオリジナル問題集。">
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../index.html#certifications">資格</a>
+      <a href="../learn/basics.html">基本</a>
+      <a href="../learn/advanced.html">応用</a>
+      <a href="../learn/simulation.html">シミュレーション</a>
+      <a href="../learn/hands-on.html">ハンズオン</a>
+      <a href="../quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">PYTHON<br><strong>Engineer</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; CERTIFICATIONS &nbsp;/&nbsp; PYTHON</div>
+    <h1>Python エンジニア認定<span class="en">Python 3 Engineer Certification</span></h1>
+    <p class="standfirst">基礎／データ分析／実践／データ分析実践の4試験で構成される、日本最大級の Python ベンダーニュートラル資格。実務で使う知識をバランスよく整理する出発点として最適。AI/データ職に必要な Python の「正しさ」と「現代の書き方」を、4 段階で身につけます。</p>
+  </div>
+</section>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>Contents</h6>
+    <a href="#about">§01 検定概要</a>
+    <a href="#basic">§02 基礎試験</a>
+    <a href="#data">§03 データ分析試験</a>
+    <a href="#practical">§04 実践試験</a>
+    <a href="#data-practical">§05 データ分析実践試験</a>
+    <a href="#modern">§06 モダン Python の常識</a>
+    <a href="#libs">§07 主要ライブラリ早見表</a>
+    <a href="#roadmap">§08 学習ロードマップ</a>
+    <a href="#checklist">§09 チェックリスト</a>
+    <a href="#books">§10 参考書・教材</a>
+    <a href="#quiz">§11 問題演習</a>
+  </aside>
+
+  <article class="article-body">
+    <div class="article-eyebrow">CERTIFICATION DOSSIER — No.04</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">
+      動くだけのコードから、<br>明日に渡せるコードへ。
+    </h2>
+    <p class="article-lede">
+      Python は AI/ML の事実上の標準言語ですが、「動く」と「保守できる」の間には大きな差があります。本資格は、文法／データ処理／プロジェクト設計／実務分析という4つの軸で、その差を埋めるためのチェックポイントです。
+    </p>
+
+    <h2 id="about"><span class="label">§01 / OVERVIEW</span>検定の概要</h2>
+    <table class="spec">
+      <tr><th>運営</th><td>一般社団法人 Pythonエンジニア育成推進協会（PEP-IA）</td></tr>
+      <tr><th>試験一覧</th><td>基礎 / データ分析 / 実践 / データ分析実践</td></tr>
+      <tr><th>形式</th><td>CBT（オデッセイ・コミュニケーションズ）。40問・60分（試験により40問60分または40問90分）</td></tr>
+      <tr><th>合格基準</th><td>正答率70%以上</td></tr>
+      <tr><th>受験資格</th><td>制限なし</td></tr>
+      <tr><th>主教材</th><td>各試験ごとに「主教材（書籍）」が指定されている</td></tr>
+      <tr><th>本サイトの推奨</th><td>AI志望は <strong>基礎 → データ分析 → データ分析実践</strong>、Web/汎用なら <strong>基礎 → 実践</strong></td></tr>
+    </table>
+
+    <h2 id="basic"><span class="label">§02 / BASIC</span>基礎試験</h2>
+    <p>Python 3 の文法・標準ライブラリ・組み込み型の基本を確認します。プログラミング初学者の到達目標として広く使われる試験。</p>
+    <h3>出題範囲</h3>
+    <ul>
+      <li>食欲をそそる序章、Python インタプリタの使い方</li>
+      <li>形式ばらない Python の紹介（数値、文字列、リスト）</li>
+      <li>その他の制御フローツール、データ構造、モジュール</li>
+      <li>入出力、エラーと例外、クラス、標準ライブラリめぐり、仮想環境とパッケージ</li>
+    </ul>
+    <h3>頻出ポイント</h3>
+    <ul>
+      <li>イテラブル／イテレータ／ジェネレータの違い、yield</li>
+      <li>リスト・タプル・辞書・集合の <strong>mutable/immutable</strong> と性能特性</li>
+      <li>例外処理 try / except / else / finally の挙動</li>
+      <li>スライス記法、リスト内包表記、関数引数（*args, **kwargs, デフォルト値の罠）</li>
+      <li><code>if __name__ == '__main__':</code> の意味</li>
+    </ul>
+
+    <h2 id="data"><span class="label">§03 / DATA</span>データ分析試験</h2>
+    <p>NumPy・pandas・matplotlib・scikit-learn を中心に、データ前処理・可視化・モデル構築の流れを確認する試験。</p>
+    <h3>出題範囲</h3>
+    <ul>
+      <li>データエンジニアの役割、Python と環境（pip、conda、Jupyter）</li>
+      <li>数学の基礎（線形代数、微分、確率・統計の最低限）</li>
+      <li>ライブラリによる分析実践：NumPy、pandas、Matplotlib、scikit-learn</li>
+      <li>応用：機械学習（教師あり／なし、評価指標）、前処理、特徴量</li>
+    </ul>
+    <h3>頻出ポイント</h3>
+    <ul>
+      <li>NumPy の <strong>ブロードキャスト</strong>・ファンシーインデキシング・ブール抽出</li>
+      <li>pandas の <strong>.loc / .iloc</strong>、groupby、merge、pivot_table、欠損処理</li>
+      <li>matplotlib の Figure/Axes 構造、subplots、ラベルと凡例</li>
+      <li>scikit-learn の <strong>fit / predict / transform</strong>、Pipeline、train_test_split、cross_val_score</li>
+      <li>回帰・分類の評価指標（MSE/MAE/R²、Accuracy/Precision/Recall/F1/AUC）</li>
+    </ul>
+
+    <h2 id="practical"><span class="label">§04 / PRACTICAL</span>実践試験</h2>
+    <p>2022年以降に登場した試験。<strong>実務寄りの Python</strong>（テスト、ロギング、型ヒント、並行処理、パッケージング、セキュリティなど）を扱う。</p>
+    <h3>出題範囲</h3>
+    <ul>
+      <li>環境構築、コーディング規約・lint・format（PEP 8、black、ruff）</li>
+      <li>型ヒント（typing、mypy）、データクラス（dataclass、Pydantic）</li>
+      <li>ロギング、設定管理、CLI、Web API（FastAPI 等）</li>
+      <li>テスト（pytest、fixture、parametrize、coverage）、CI/CD</li>
+      <li>並行・並列（threading、multiprocessing、asyncio）、性能最適化</li>
+      <li>パッケージング（pyproject.toml、PEP 621、Poetry / Hatch / uv）</li>
+      <li>セキュリティ（依存スキャン、Secrets 管理）</li>
+    </ul>
+
+    <h2 id="data-practical"><span class="label">§05 / DATA-PRACTICAL</span>データ分析実践試験</h2>
+    <p>データ分析の <strong>実務プロセス</strong>に踏み込んだ試験。データの取得・整形・モデリング・評価・運用までを扱う。</p>
+    <h3>出題範囲</h3>
+    <ul>
+      <li>データの収集・前処理（API、SQL、スクレイピング基礎）</li>
+      <li>特徴量エンジニアリング、リーク防止、不均衡データ</li>
+      <li>モデル比較（線形、決定木、ランダムフォレスト、勾配ブースティング）</li>
+      <li>パイプライン化、ハイパーパラメータ最適化、交差検証戦略</li>
+      <li>モデル解釈（SHAP、Permutation Importance）</li>
+      <li>運用（モデル保存、推論API、モニタリング）</li>
+    </ul>
+
+    <h2 id="modern"><span class="label">§06 / MODERN</span>モダン Python の常識</h2>
+    <h3>環境管理</h3>
+    <ul>
+      <li>標準: <code>python -m venv .venv</code> ＋ pip</li>
+      <li>高機能: <strong>Poetry / Hatch / uv（高速）</strong>。pyproject.toml（PEP 621）に依存・ビルド設定を集約</li>
+      <li>conda: 科学計算寄り、コンパイラ依存パッケージの統一が容易</li>
+    </ul>
+    <h3>型と検証</h3>
+    <ul>
+      <li>型ヒントは <strong>3.10以降の組み込み型</strong>（<code>list[int]</code>、<code>X | None</code>）が標準</li>
+      <li>dataclass はデフォルト、検証や(de)シリアライズが必要なら <strong>Pydantic v2</strong></li>
+      <li>静的解析: mypy / pyright、lint+format は <strong>ruff</strong> がデファクト</li>
+    </ul>
+    <h3>非同期</h3>
+    <ul>
+      <li><code>async def</code> ＋ <code>await</code> ＋ <strong>asyncio.TaskGroup</strong>（3.11+）</li>
+      <li>HTTP は <strong>httpx</strong>、CLI は <strong>typer</strong>、ORM は <strong>SQLAlchemy 2.0</strong></li>
+    </ul>
+    <h3>性能と GIL</h3>
+    <ul>
+      <li>I/O バウンドは asyncio / threading、CPU バウンドは multiprocessing / numpy ベクトル化 / C 拡張</li>
+      <li>3.12 で perf 改善、3.13 で <strong>experimental no-GIL</strong>。将来的に並列性能が一段変わる可能性</li>
+    </ul>
+
+    <h2 id="libs"><span class="label">§07 / LIBS</span>主要ライブラリ早見表</h2>
+    <table class="spec">
+      <tr><th>NumPy</th><td>多次元配列、線形代数、ブロードキャスト</td></tr>
+      <tr><th>pandas</th><td>表形式データ、groupby、merge、時系列</td></tr>
+      <tr><th>matplotlib / seaborn / plotly</th><td>可視化（静的／統計／対話）</td></tr>
+      <tr><th>scikit-learn</th><td>古典ML、Pipeline、CV、評価指標</td></tr>
+      <tr><th>XGBoost / LightGBM / CatBoost</th><td>勾配ブースティング（テーブルの王者）</td></tr>
+      <tr><th>statsmodels</th><td>統計推論、ARIMA、GLM、Causal Inference</td></tr>
+      <tr><th>PyTorch / TensorFlow / JAX</th><td>深層学習フレームワーク</td></tr>
+      <tr><th>FastAPI / Flask</th><td>Web API（型ヒント駆動はFastAPI）</td></tr>
+      <tr><th>pytest / hypothesis</th><td>テスト（プロパティベース含む）</td></tr>
+      <tr><th>MLflow / W&B / DVC</th><td>実験管理・データ/モデル管理</td></tr>
+      <tr><th>Pydantic v2 / dataclasses</th><td>データバリデーション・モデリング</td></tr>
+    </table>
+
+    <h2 id="roadmap"><span class="label">§08 / ROADMAP</span>学習ロードマップ</h2>
+    <h4>Phase 1 — 基礎試験（30〜60時間）</h4>
+    <p>『Pythonチュートリアル』（主教材）を写経しながら通読。リスト・辞書・例外・クラスを手を動かして書く。</p>
+    <h4>Phase 2 — データ分析試験（40〜80時間）</h4>
+    <p>『Pythonによるあたらしいデータ分析の教科書』（主教材）と並行で、Kaggle Titanic を NumPy / pandas / scikit-learn で完走。可視化も習慣化。</p>
+    <h4>Phase 3 — 実践 / データ分析実践（各 60〜100 時間）</h4>
+    <p>pytest・型ヒント・FastAPI・Docker を自作プロジェクトに組み込む。データ分析実践は中規模の Kaggle コンペや業務データで全工程を体験。</p>
+
+    <h2 id="checklist"><span class="label">§09 / CHECKLIST</span>到達度チェックリスト</h2>
+    <ul class="checklist">
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-1"> mutable / immutable と参照渡しの挙動</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-2"> リスト内包・辞書内包・ジェネレータ式</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-3"> 例外処理 / コンテキストマネージャ</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-4"> 型ヒント（list[int]、Optional、Union、Generics）</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-5"> dataclass / Pydantic v2 の使い分け</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-6"> NumPy のブロードキャストと vectorize</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-7"> pandas の loc/iloc/groupby/merge/pivot_table</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-8"> matplotlib の Figure/Axes 構造を理解</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-9"> scikit-learn Pipeline と ColumnTransformer</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-10"> StratifiedKFold / TimeSeriesSplit の選択</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-11"> 不均衡データ対策（重み付け、SMOTE、Focal Loss）</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-12"> pyproject.toml / 仮想環境 / lockfile を扱える</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-13"> pytest fixture / parametrize / monkeypatch</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-14"> ruff / mypy / pre-commit を CI に組み込める</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-15"> FastAPI で型駆動 API を書ける</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-16"> asyncio で I/O バウンド処理を高速化できる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-17"> SHAP / Permutation Importance でモデル解釈</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="py-ck-18"> Optuna でハイパラ最適化を回せる</label></li>
+    </ul>
+
+    <h2 id="books"><span class="label">§10 / BOOKS</span>参考書・教材</h2>
+    <ul class="resource-list">
+      <li><span class="tag">基礎</span><span class="desc"><strong>Pythonチュートリアル</strong>（オライリー、主教材）</span></li>
+      <li><span class="tag">データ分析</span><span class="desc"><strong>Pythonによるあたらしいデータ分析の教科書</strong>（翔泳社、主教材）</span></li>
+      <li><span class="tag">実践</span><span class="desc"><strong>Python実践レシピ</strong>（技術評論社、主教材）</span></li>
+      <li><span class="tag">データ分析実践</span><span class="desc"><strong>Pythonによるデータ分析の教科書 第2版</strong>＋実務問題集</span></li>
+      <li><span class="tag">補助</span><span class="desc"><strong>Pythonクックブック</strong>（オライリー） — 実務TIPSの宝庫</span></li>
+      <li><span class="tag">補助</span><span class="desc"><strong>Effective Python（第2版）</strong> — モダン Python 90 項目</span></li>
+      <li><span class="tag">公式</span><span class="desc"><a href="https://www.pythonic-exam.com/" target="_blank" rel="noopener">Pythonエンジニア育成推進協会 公式</a></span></li>
+    </ul>
+
+    <h2 id="quiz"><span class="label">§11 / DRILL</span>問題演習</h2>
+    <p>本サイトには Python 認定 4 試験の主要トピックを横断する <strong>50問</strong> のオリジナル問題があります。</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0;">
+      <a class="btn solid" href="../quiz.html?topic=python">Python クイズ（50問）を始める →</a>
+      <a class="btn" href="../quiz.html">他の資格のクイズ</a>
+    </div>
+
+    <hr class="divider bold">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      Last reviewed · 2026 Spring · 公式情報は Pythonエンジニア育成推進協会のサイトで必ず確認してください。
+    </p>
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>資格</h6><ul>
+      <li><a href="g-kentei.html">G検定</a></li>
+      <li><a href="e-shikaku.html">E資格</a></li>
+      <li><a href="tokei-kentei.html">統計検定</a></li>
+      <li><a href="python-cert.html">Python認定</a></li>
+      <li><a href="aws-mla-c01.html">AWS MLA-C01</a></li>
+      <li><a href="image-engineer.html">画像処理エンジニア</a></li>
+      <li><a href="jetson-ai.html">Jetson AI</a></li>
+    </ul></div>
+    <div><h6>学習</h6><ul>
+      <li><a href="../learn/basics.html">基本</a></li>
+      <li><a href="../learn/advanced.html">応用</a></li>
+      <li><a href="../learn/simulation.html">シミュレーション</a></li>
+      <li><a href="../learn/hands-on.html">ハンズオン</a></li>
+      <li><a href="../quiz.html">問題演習</a></li>
+    </ul></div>
+    <div><h6>外部</h6><ul>
+      <li><a href="https://www.pythonic-exam.com/" target="_blank" rel="noopener">Python認定 公式</a></li>
+      <li><a href="https://docs.python.org/ja/3/" target="_blank" rel="noopener">Python 公式ドキュメント</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

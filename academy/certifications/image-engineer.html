@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>画像処理エンジニア検定 — Swallow AI Academy</title>
+<meta name="description" content="画像処理エンジニア検定（ベーシック・エキスパート、CG-ARTS）の出題範囲を詳細解説。古典的画像処理から深層学習までを実務目線で整理。学習ロードマップ、頻出概念、40問のオリジナル問題集。">
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../index.html#certifications">資格</a>
+      <a href="../learn/basics.html">基本</a>
+      <a href="../learn/advanced.html">応用</a>
+      <a href="../learn/simulation.html">シミュレーション</a>
+      <a href="../learn/hands-on.html">ハンズオン</a>
+      <a href="../quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">IMAGE<br><strong>Engineer</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; CERTIFICATIONS &nbsp;/&nbsp; IMAGE</div>
+    <h1>画像処理エンジニア検定<span class="en">Image Processing Engineer (CG-ARTS)</span></h1>
+    <p class="standfirst">CG-ARTS 協会が主催する画像処理の知識検定。ベーシック／エキスパートの 2 階級で、サンプリング・フィルタ・エッジ・形状解析といった<strong>古典的画像処理の体系</strong>と、近年は<strong>深層学習による認識</strong>までを横断的に問います。CV エンジニアの基礎教養として最適。</p>
+  </div>
+</section>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>Contents</h6>
+    <a href="#about">§01 検定概要</a>
+    <a href="#basic">§02 ベーシック</a>
+    <a href="#expert">§03 エキスパート</a>
+    <a href="#fund">§04 基礎概念</a>
+    <a href="#filter">§05 フィルタとエッジ</a>
+    <a href="#feature">§06 特徴抽出とマッチング</a>
+    <a href="#shape">§07 形状と幾何変換</a>
+    <a href="#color">§08 カラーとコーデック</a>
+    <a href="#dl">§09 ディープラーニング応用</a>
+    <a href="#roadmap">§10 学習ロードマップ</a>
+    <a href="#checklist">§11 チェックリスト</a>
+    <a href="#books">§12 参考書</a>
+    <a href="#quiz">§13 問題演習</a>
+  </aside>
+
+  <article class="article-body">
+    <div class="article-eyebrow">CERTIFICATION DOSSIER — No.06</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">
+      ピクセルから意味へ。<br>古典が支える深層学習。
+    </h2>
+    <p class="article-lede">
+      深層学習の前段／後段には依然として古典的画像処理が並びます。サンプリング、フィルタ、エッジ、形状、色――この体系を握っていることは、エッジ AI・産業ビジョン・医用画像・ロボティクスなど「現場の画像」を扱うエンジニアの強みになります。
+    </p>
+
+    <h2 id="about"><span class="label">§01 / OVERVIEW</span>検定の概要</h2>
+    <table class="spec">
+      <tr><th>運営</th><td>公益財団法人 CG-ARTS 協会</td></tr>
+      <tr><th>階級</th><td>画像処理エンジニア検定 ベーシック／エキスパート</td></tr>
+      <tr><th>形式</th><td>多くは紙ベース、年2回（前期7月・後期11月頃）。CBT 化動向にも注意</td></tr>
+      <tr><th>合格基準</th><td>正答率 70% 程度</td></tr>
+      <tr><th>受験資格</th><td>制限なし</td></tr>
+      <tr><th>関連検定</th><td>マルチメディア／Webデザイナー／CGクリエイター／CGエンジニア（同協会）</td></tr>
+    </table>
+
+    <h2 id="basic"><span class="label">§02 / BASIC</span>ベーシック</h2>
+    <p>画像処理の基礎概念と古典的アルゴリズムが中心。学生・初学者・隣接分野エンジニアの入門に最適。</p>
+    <ul>
+      <li>画像表現（標本化・量子化、色空間、ファイルフォーマット）</li>
+      <li>濃淡変換（ヒストグラム、ガンマ補正）</li>
+      <li>空間フィルタ（平均、ガウシアン、メディアン、ラプラシアン）</li>
+      <li>二値化、モルフォロジー、ラベリング</li>
+      <li>幾何変換（平行移動・回転・拡大縮小、アフィン、補間）</li>
+      <li>圧縮の概念（JPEG/PNG/GIFの違い）</li>
+    </ul>
+
+    <h2 id="expert"><span class="label">§03 / EXPERT</span>エキスパート</h2>
+    <p>ベーシックを土台に、より高度な処理と応用、近年は深層学習までを問う。</p>
+    <ul>
+      <li>周波数領域処理（FFT、DCT、ウェーブレット）</li>
+      <li>エッジ検出（Sobel、Canny、LoG、Hough 変換）</li>
+      <li>特徴記述（SIFT、SURF、ORB、HOG、LBP）</li>
+      <li>セグメンテーション（領域分割、グラフカット、SLIC）</li>
+      <li>動画像処理（オプティカルフロー、MPEG、背景差分）</li>
+      <li>3次元復元（ステレオ、SfM、Structure from Motion）</li>
+      <li>機械学習・深層学習による画像認識（CNN、物体検出、セグメンテーション、生成）</li>
+    </ul>
+
+    <h2 id="fund"><span class="label">§04 / FUND</span>基礎概念</h2>
+    <h3>標本化と量子化</h3>
+    <ul>
+      <li>ナイキスト定理: <strong>f_s ≥ 2 f_max</strong>。これを下回るとエイリアシング</li>
+      <li>量子化ビット深度（8/10/12/16bit）→ ダイナミックレンジ</li>
+    </ul>
+    <h3>輝度の表現</h3>
+    <ul>
+      <li>ガンマ補正: 表示と人間視覚の非線形性を補正（sRGB は概ね γ≈2.2）</li>
+      <li>ヒストグラム平坦化、CLAHE で局所コントラスト改善</li>
+    </ul>
+    <h3>解像度とファイルサイズ</h3>
+    <ul>
+      <li>非圧縮データ量 = 幅 × 高さ × チャネル × ビット深度</li>
+      <li>JPEG は非可逆（DCT＋量子化）、PNG は可逆（DEFLATE）、GIF は限定色＋アニメ</li>
+    </ul>
+
+    <h2 id="filter"><span class="label">§05 / FILTER</span>フィルタとエッジ</h2>
+    <h3>平滑化</h3>
+    <ul>
+      <li>平均（ボックス）: 単純だが境界もぼやける</li>
+      <li>ガウシアン: σ で広がり制御、分離可能で高速</li>
+      <li>メディアン: 塩胡椒ノイズに頑健</li>
+      <li>バイラテラル / Non-local Means: エッジ保持平滑化</li>
+    </ul>
+    <h3>エッジ検出</h3>
+    <ul>
+      <li>Sobel/Prewitt/Scharr: 一次微分</li>
+      <li>Laplacian / LoG: 二次微分のゼロ交差</li>
+      <li>Canny: 平滑化→勾配→非極大抑制→二重閾値・ヒステリシス</li>
+      <li>Hough 変換: パラメータ空間投票で直線・円検出</li>
+    </ul>
+
+    <h2 id="feature"><span class="label">§06 / FEATURE</span>特徴抽出とマッチング</h2>
+    <ul>
+      <li><strong>SIFT</strong>: スケール・回転・照明に頑健、DoG ピラミッド＋勾配ヒストグラム</li>
+      <li><strong>SURF</strong>: SIFT 高速版（積分画像）</li>
+      <li><strong>ORB</strong>: 特許フリー、FAST + BRIEF、二値特徴</li>
+      <li><strong>HOG</strong>: 勾配方向ヒストグラム、歩行者検出（Dalal-Triggs）</li>
+      <li><strong>LBP</strong>: 局所2値パターン、テクスチャに強い</li>
+      <li><strong>RANSAC</strong>: 外れ値を含むデータでのモデル推定（ホモグラフィ等）</li>
+    </ul>
+
+    <h2 id="shape"><span class="label">§07 / SHAPE</span>形状と幾何変換</h2>
+    <h3>形状解析</h3>
+    <ul>
+      <li>二値化（大津、適応的、Sauvola、Niblack）</li>
+      <li>モルフォロジー（dilation/erosion、opening/closing、top-hat）</li>
+      <li>連結成分ラベリング（4近傍／8近傍、Union-Find）</li>
+      <li>輪郭追跡、面積・周囲長・形状特徴（Hu モーメント）</li>
+    </ul>
+    <h3>幾何変換</h3>
+    <ul>
+      <li>アフィン（6自由度、平行性保存）</li>
+      <li>射影（ホモグラフィ、8自由度）</li>
+      <li>補間（最近傍、双線形、双三次、Lanczos）</li>
+      <li>イメージスティッチング: 特徴対応＋ホモグラフィ＋ブレンディング</li>
+    </ul>
+
+    <h2 id="color"><span class="label">§08 / COLOR</span>カラーとコーデック</h2>
+    <ul>
+      <li>色空間: RGB / HSV / YCbCr / Lab、CIE 色度図</li>
+      <li>JPEG は YCbCr 変換＋4:2:0サブサンプリング＋DCT＋量子化＋エントロピー符号化</li>
+      <li>動画コーデック: H.264 / H.265 (HEVC) / AV1、I/P/B フレーム、GOP、動き補償</li>
+      <li>HDR: PQ / HLG、広色域（BT.2020）</li>
+    </ul>
+
+    <h2 id="dl"><span class="label">§09 / DL</span>ディープラーニング応用</h2>
+    <ul>
+      <li><strong>CNN</strong>: 畳み込み・プーリング、ResNet、EfficientNet、ConvNeXt</li>
+      <li><strong>物体検出</strong>: Faster R-CNN（2段階）、YOLO・SSD・DETR（1段階）、NMS・IoU・mAP</li>
+      <li><strong>セグメンテーション</strong>: FCN、U-Net、DeepLab、Mask R-CNN、Panoptic</li>
+      <li><strong>Vision Transformer</strong>: ViT、Swin、MAE。事前学習データ規模が成功要因</li>
+      <li><strong>マルチモーダル</strong>: CLIP、BLIP、LLaVA</li>
+      <li><strong>生成</strong>: GAN、VAE、Diffusion（Stable Diffusion）＋ControlNet</li>
+      <li><strong>3D / NeRF / Gaussian Splatting</strong>: 視点合成・3D 復元の最新潮流</li>
+    </ul>
+
+    <h2 id="roadmap"><span class="label">§10 / ROADMAP</span>学習ロードマップ</h2>
+    <h4>Phase 1 — ベーシック（40〜60時間）</h4>
+    <p>『ディジタル画像処理（CG-ARTS）』を写経しながら通読。OpenCV でフィルタ・エッジ・二値化・モルフォロジーを手元で確認。</p>
+    <h4>Phase 2 — エキスパート（80〜120時間）</h4>
+    <p>同書のエキスパート章、Szeliski 『Computer Vision: Algorithms and Applications』の主要章。SIFT、Hough、Stereo、SfM を OpenCV で実装。</p>
+    <h4>Phase 3 — 深層学習応用（60〜100時間）</h4>
+    <p>PyTorch + torchvision で分類／検出／セグメンテーションを各 1 本実装。Hugging Face で ViT / DINOv2 / SAM を試す。</p>
+
+    <h2 id="checklist"><span class="label">§11 / CHECKLIST</span>到達度チェックリスト</h2>
+    <ul class="checklist">
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-1"> サンプリング定理とエイリアシング</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-2"> ガンマ補正と sRGB 色空間</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-3"> 各種平滑化フィルタの選択基準</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-4"> Canny の 4 ステップを説明できる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-5"> Hough 変換で直線／円検出を実装できる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-6"> SIFT / ORB / HOG / LBP の特徴と用途</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-7"> RANSAC でホモグラフィ推定</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-8"> 大津と適応的二値化を使い分けられる</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-9"> モルフォロジーで小ノイズ除去と穴埋め</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-10"> アフィン／射影変換と補間方式</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-11"> JPEG 圧縮の流れ（YCbCr→DCT→量子化）</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-12"> H.264/HEVC の I/P/B フレーム</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-13"> オプティカルフロー（Lucas-Kanade、Farneback）</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-14"> ステレオ／SfM の三角測量</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-15"> CNN による分類・検出・セグメンテーション</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-16"> mAP、IoU、PR 曲線の解釈</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-17"> ViT/Swin の特徴と CNN との比較</label></li>
+      <li class="checklist-item"><label><input type="checkbox" data-id="img-ck-18"> Diffusion + ControlNet による生成制御</label></li>
+    </ul>
+
+    <h2 id="books"><span class="label">§12 / BOOKS</span>参考書</h2>
+    <ul class="resource-list">
+      <li><span class="tag">主教材</span><span class="desc"><strong>ディジタル画像処理</strong>（CG-ARTS協会） — 検定対応の標準教科書</span></li>
+      <li><span class="tag">主教材</span><span class="desc"><strong>画像情報処理</strong>（CG-ARTS協会） — エキスパート対応</span></li>
+      <li><span class="tag">古典</span><span class="desc"><strong>Computer Vision: Algorithms and Applications</strong>（Szeliski） — 国際的標準教科書（無料PDF）</span></li>
+      <li><span class="tag">DL</span><span class="desc"><strong>深層学習による画像認識の基礎</strong> — CNN 入門</span></li>
+      <li><span class="tag">実装</span><span class="desc"><strong>OpenCV 4 入門</strong>＋公式チュートリアル</span></li>
+      <li><span class="tag">公式</span><span class="desc"><a href="https://www.cgarts.or.jp/kentei/about/img_engineer/index.html" target="_blank" rel="noopener">CG-ARTS 検定 公式</a></span></li>
+    </ul>
+
+    <h2 id="quiz"><span class="label">§13 / DRILL</span>問題演習</h2>
+    <p>本サイトには古典〜DL までの <strong>40問</strong> のオリジナル画像処理問題があります。</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0;">
+      <a class="btn solid" href="../quiz.html?topic=image">画像処理クイズを始める →</a>
+      <a class="btn" href="../quiz.html">他の資格のクイズ</a>
+    </div>
+
+    <hr class="divider bold">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      Last reviewed · 2026 Spring · 公式情報は CG-ARTS 協会のサイトで必ず確認してください。
+    </p>
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>資格</h6><ul>
+      <li><a href="g-kentei.html">G検定</a></li>
+      <li><a href="e-shikaku.html">E資格</a></li>
+      <li><a href="tokei-kentei.html">統計検定</a></li>
+      <li><a href="python-cert.html">Python認定</a></li>
+      <li><a href="aws-mla-c01.html">AWS MLA-C01</a></li>
+      <li><a href="image-engineer.html">画像処理エンジニア</a></li>
+      <li><a href="jetson-ai.html">Jetson AI</a></li>
+    </ul></div>
+    <div><h6>学習</h6><ul>
+      <li><a href="../learn/basics.html">基本</a></li>
+      <li><a href="../learn/advanced.html">応用</a></li>
+      <li><a href="../learn/simulation.html">シミュレーション</a></li>
+      <li><a href="../learn/hands-on.html">ハンズオン</a></li>
+      <li><a href="../quiz.html">問題演習</a></li>
+    </ul></div>
+    <div><h6>外部</h6><ul>
+      <li><a href="https://www.cgarts.or.jp/" target="_blank" rel="noopener">CG-ARTS 協会</a></li>
+      <li><a href="https://szeliski.org/Book/" target="_blank" rel="noopener">Szeliski CV Book</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

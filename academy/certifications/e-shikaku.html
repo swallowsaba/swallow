@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E資格 — Swallow AI Academy</title>
+<meta name="description" content="JDLA E資格の試験概要、最新シラバス、5領域の学習ポイント、ロードマップを体系化。">
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../index.html#certifications">資格</a>
+      <a href="../learn/basics.html">基本</a>
+      <a href="../learn/advanced.html">応用</a>
+      <a href="../learn/simulation.html">シミュレーション</a>
+      <a href="../learn/hands-on.html">ハンズオン</a>
+      <a href="../quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">E-SHIKAKU<br><strong>Engineer</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; CERTIFICATIONS &nbsp;/&nbsp; E-SHIKAKU</div>
+    <h1>E資格<span class="en">JDLA Deep Learning for ENGINEER</span></h1>
+    <p class="standfirst">ディープラーニングを<strong>実装する</strong>エンジニアの能力を認定する資格。数学的基礎・機械学習・深層学習基礎/応用・開発と運用環境の5領域を、コードと数式の両面から問う。<strong>JDLA認定プログラムの修了が受験要件</strong>であり、本検定で AI エンジニアとしての中核が形になります。</p>
+  </div>
+</section>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>Contents</h6>
+    <a href="#about">§01 検定概要</a>
+    <a href="#prereq">§02 受験要件と認定プログラム</a>
+    <a href="#syllabus">§03 シラバス全体</a>
+    <a href="#roadmap">§04 学習ロードマップ</a>
+    <a href="#d1-math">§05 領域1 数学的基礎</a>
+    <a href="#d2-ml">§06 領域2 機械学習</a>
+    <a href="#d3-dl-basic">§07 領域3 深層学習の基礎</a>
+    <a href="#d4-dl-adv">§08 領域4 深層学習の応用</a>
+    <a href="#d5-ops">§09 領域5 開発・運用環境</a>
+    <a href="#framework">§10 PyTorch vs TensorFlow</a>
+    <a href="#checklist">§11 直前チェックリスト</a>
+    <a href="#books">§12 参考書・リソース</a>
+    <a href="#quiz">§13 問題演習へ</a>
+  </aside>
+
+  <article class="article-body">
+
+    <div class="article-eyebrow">CERTIFICATION DOSSIER — No.02</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">
+      数式とコードを、<br>同じ手で扱う。
+    </h2>
+    <p class="article-lede">
+      E資格は、G検定が「事業活用」を問うのに対し、「<strong>実装する側</strong>」の能力を問う検定です。数学の式を読み、ニューラルネットの構造を設計し、フレームワークでコードに落とし込み、運用環境まで考える。AI エンジニアとしての中心軸がこの一試験に集約されています。
+    </p>
+
+    <h2 id="about"><span class="label">§01 / OVERVIEW</span>検定の概要</h2>
+    <table class="spec">
+      <tr><th>名称</th><td>JDLA Deep Learning for ENGINEER（E資格）</td></tr>
+      <tr><th>主催</th><td>一般社団法人 日本ディープラーニング協会（JDLA）</td></tr>
+      <tr><th>受験資格</th><td><strong>JDLA認定プログラム</strong>を試験日の過去2年以内に修了していること</td></tr>
+      <tr><th>形式</th><td>全国の指定試験会場でのコンピュータ試験</td></tr>
+      <tr><th>試験時間 / 問題数</th><td>120分 / 104問（多肢選択）</td></tr>
+      <tr><th>受験料</th><td>一般 33,000円／会員 27,500円／学生 22,000円（税込）</td></tr>
+      <tr><th>合格ライン</th><td>非公開（領域ごとに最低正答率の目安あり）</td></tr>
+      <tr><th>開催頻度</th><td>年2回（おおむね 2月・8月、それぞれ3日間）</td></tr>
+      <tr><th>新シラバス</th><td>E資格 2026#2（8月）から改訂シラバス適用</td></tr>
+    </table>
+
+    <div class="callout accent" data-label="重要な変更">
+      <p><strong>E資格 2026#2 から新シラバスが適用</strong>されます。最新トレンド（生成AI・LLM 周辺）のキーワードが追加・整理されています。試験申込時は必ず <a href="https://www.jdla.org/certificate/engineer/" target="_blank" rel="noopener">JDLA 公式ページ</a> の最新シラバスを確認してください。</p>
+    </div>
+
+    <h2 id="prereq"><span class="label">§02 / PREREQUISITES</span>受験要件と認定プログラム</h2>
+    <p>E資格は誰でも受けられる試験ではありません。<strong>JDLA が認定する教育プログラム</strong>のいずれかを、試験日の過去2年以内に修了していることが受験要件です。プログラムは複数存在し、費用・期間・形式（オンライン／通学）・コードの主軸言語が異なります。</p>
+    <h3>プログラム選定の観点</h3>
+    <ul>
+      <li><strong>主軸フレームワーク</strong> — PyTorch 中心か、TensorFlow 中心か。受験時のフレームワーク選択と整合させる</li>
+      <li><strong>期間と料金</strong> — 短期集中型（数週間）と長期型（数ヶ月）。費用は数万円〜数十万円</li>
+      <li><strong>修了基準</strong> — 修了試験の有無、提出物の重さ</li>
+      <li><strong>サポート</strong> — メンター、質問対応、コミュニティ</li>
+    </ul>
+    <p>多くのプログラムは「Coursera Deep Learning Specialization の和訳＋日本独自カリキュラム」のような構成です。プログラム自体が、E資格の主要範囲をなぞるカリキュラムになっています。</p>
+
+    <h2 id="syllabus"><span class="label">§03 / SYLLABUS</span>シラバス全体像（5領域）</h2>
+    <ol>
+      <li><strong>数学的基礎</strong> — 線形代数、確率・統計、情報理論、最適化</li>
+      <li><strong>機械学習</strong> — 教師あり／なし／強化学習、評価、特徴量工学</li>
+      <li><strong>深層学習の基礎</strong> — 順伝播・逆伝播、最適化、正則化、活性化</li>
+      <li><strong>深層学習の応用</strong> — CNN、RNN、Transformer、生成モデル、強化学習、説明性</li>
+      <li><strong>開発・運用環境</strong> — フレームワーク、分散学習、計算資源、エッジ・量子化、MLOps</li>
+    </ol>
+    <p>近年は<strong>領域4（応用）と領域5（運用）の比重が増加</strong>傾向。生成AI・LLM、軽量化、責任あるAI といった文脈の出題が拡充されています。</p>
+
+    <h2 id="roadmap"><span class="label">§04 / ROADMAP</span>学習ロードマップ（標準 100〜200時間）</h2>
+    <h4>Phase 1 — 数学的基盤（2〜3週）</h4>
+    <p>線形代数（行列演算、固有値、特異値分解）、確率（条件付き、ベイズ、KL）、最適化（凸性、勾配法）を <strong>「手で計算できる」</strong>レベルに。E資格の数学は深くはないが、出題されるとほぼ確実に取れる項目なので、ここを落とすと致命的。</p>
+
+    <h4>Phase 2 — 古典機械学習（2週）</h4>
+    <p>SVM、決定木、アンサンブル（バギング／ブースティング）、PCA、k-means、評価指標、交差検証、正則化。<strong>scikit-learn でひと通り実装してから理論に戻る</strong>のが効率的。</p>
+
+    <h4>Phase 3 — 深層学習の基礎（3〜4週）</h4>
+    <p>多層パーセプトロン、活性化関数、損失関数、最適化アルゴリズム（SGD/Momentum/Adam）、正則化（L1/L2/Dropout/BN/LayerNorm）。<strong>逆伝播は手書きで一度導出する</strong>こと。式の意味が体に入る。</p>
+
+    <h4>Phase 4 — 深層学習の応用（3〜4週）</h4>
+    <p>CNN（畳み込み・プーリング・代表アーキテクチャ）、RNN/LSTM/GRU、Attention/Transformer、生成モデル（VAE/GAN/Diffusion）、強化学習（Q学習/DQN/方策勾配/PPO）、説明性（SHAP/Grad-CAM）。<strong>論文の原典に当たる</strong>と忘れにくい。</p>
+
+    <h4>Phase 5 — 開発・運用（1〜2週）</h4>
+    <p>PyTorch / TensorFlow の API、自動微分、データローダ、分散学習（DP/DDP、Horovod）、混合精度、量子化、蒸留、プルーニング、MLOps（CI/CD、モデル監視、ドリフト検知）。</p>
+
+    <h4>Phase 6 — 模試と弱点補強（1〜2週）</h4>
+    <p>市販問題集を2周以上。<strong>誤答の周辺概念ごと潰す</strong>。本サイトのクイズも反復。</p>
+
+    <h2 id="d1-math"><span class="label">§05 / DOMAIN 1</span>数学的基礎</h2>
+    <h3>線形代数</h3>
+    <ul>
+      <li>ベクトル・行列演算、ノルム（L1/L2/∞）</li>
+      <li>固有値・固有ベクトル、対称行列の対角化</li>
+      <li>特異値分解（SVD）、主成分分析の基礎</li>
+      <li>行列の階数、可逆性、擬似逆行列</li>
+    </ul>
+    <h3>確率・統計</h3>
+    <ul>
+      <li>確率公理、独立性、条件付き確率、ベイズの定理</li>
+      <li>代表的な分布（正規、ベルヌーイ、二項、ポアソン、指数、ガンマ）</li>
+      <li>期待値・分散・共分散・相関、不偏推定量</li>
+      <li>最尤推定（MLE）、最大事後確率推定（MAP）、ベイズ推定</li>
+    </ul>
+    <h3>情報理論</h3>
+    <ul>
+      <li>情報量、エントロピー、結合・条件付きエントロピー</li>
+      <li>KL ダイバージェンス、交差エントロピー</li>
+      <li>相互情報量</li>
+    </ul>
+    <h3>最適化</h3>
+    <ul>
+      <li>凸関数・凸最適化問題</li>
+      <li>勾配降下法、ニュートン法、L-BFGS</li>
+      <li>ラグランジュ未定乗数法</li>
+    </ul>
+
+    <h2 id="d2-ml"><span class="label">§06 / DOMAIN 2</span>機械学習</h2>
+    <h3>主要アルゴリズム</h3>
+    <ul>
+      <li>線形回帰／ロジスティック回帰、正則化（Ridge / Lasso / Elastic Net）</li>
+      <li>SVM、カーネルトリック（RBF / Polynomial）</li>
+      <li>決定木、CART、情報利得、ジニ不純度</li>
+      <li>アンサンブル：バギング（Random Forest）、ブースティング（AdaBoost / Gradient Boosting / XGBoost / LightGBM）</li>
+      <li>クラスタリング：k-means、k-means++、階層クラスタリング、DBSCAN、ガウス混合モデル</li>
+      <li>次元削減：PCA、カーネルPCA、t-SNE、UMAP</li>
+    </ul>
+    <h3>評価と検証</h3>
+    <ul>
+      <li>過学習・未学習、バイアス・バリアンス分解</li>
+      <li>交差検証（k-fold、Stratified、TimeSeriesSplit）</li>
+      <li>分類指標：Precision、Recall、F1、ROC-AUC、PR-AUC、MCC</li>
+      <li>回帰指標：MAE、RMSE、R²、MAPE</li>
+      <li>不均衡データ対策：SMOTE、Class Weight、Focal Loss</li>
+    </ul>
+
+    <h2 id="d3-dl-basic"><span class="label">§07 / DOMAIN 3</span>深層学習の基礎</h2>
+    <h3>順伝播と逆伝播</h3>
+    <p>多層パーセプトロンの順伝播の式と、連鎖律による誤差逆伝播。<strong>計算グラフ</strong>の概念は PyTorch の autograd の理解に直結します。</p>
+    <h3>活性化関数</h3>
+    <ul>
+      <li>Sigmoid、tanh — 勾配消失の主因</li>
+      <li>ReLU、Leaky ReLU、PReLU、ELU、SELU</li>
+      <li>GELU、Swish — Transformer 系で標準</li>
+      <li>Softmax — 多クラス分類出力</li>
+    </ul>
+    <h3>損失関数</h3>
+    <ul>
+      <li>回帰：MSE、MAE、Huber</li>
+      <li>分類：Cross Entropy、Binary CE、Focal Loss</li>
+      <li>埋め込み：Contrastive Loss、Triplet Loss、InfoNCE</li>
+    </ul>
+    <h3>最適化アルゴリズム</h3>
+    <ul>
+      <li>SGD、Momentum、Nesterov</li>
+      <li>AdaGrad、RMSProp、Adam、AdamW、AdaBelief</li>
+      <li>学習率スケジュール：Step Decay、Cosine、Warmup、One Cycle</li>
+    </ul>
+    <h3>正則化</h3>
+    <ul>
+      <li>L1 / L2 重み減衰</li>
+      <li>Dropout（学習時のみ、推論時はスケール調整）</li>
+      <li>Batch Normalization、Layer Normalization、Group Normalization</li>
+      <li>Data Augmentation、Mixup、CutMix、Label Smoothing</li>
+      <li>Early Stopping</li>
+    </ul>
+
+    <h2 id="d4-dl-adv"><span class="label">§08 / DOMAIN 4</span>深層学習の応用</h2>
+    <h3>畳み込みニューラルネット（CNN）</h3>
+    <ul>
+      <li>畳み込み、ストライド、パディング、プーリング</li>
+      <li>パラメータ共有、並進不変性</li>
+      <li>代表アーキテクチャ：LeNet、AlexNet、VGG、GoogLeNet（Inception）、ResNet、DenseNet、MobileNet、EfficientNet</li>
+      <li>物体検出：R-CNN ファミリー、YOLO ファミリー、SSD</li>
+      <li>セグメンテーション：FCN、U-Net、DeepLab、Mask R-CNN、SAM</li>
+    </ul>
+    <h3>系列モデル</h3>
+    <ul>
+      <li>単純 RNN、LSTM、GRU</li>
+      <li>Bi-RNN、Encoder-Decoder、Attention</li>
+      <li>Seq2Seq、Beam Search</li>
+    </ul>
+    <h3>Transformer 系</h3>
+    <ul>
+      <li>Self-Attention、Multi-Head Attention、位置エンコーディング</li>
+      <li>Encoder のみ：BERT、RoBERTa、DeBERTa</li>
+      <li>Decoder のみ：GPT 系、LLaMA、Mistral</li>
+      <li>Encoder-Decoder：T5、BART</li>
+      <li>視覚 Transformer：ViT、Swin Transformer、DETR</li>
+    </ul>
+    <h3>生成モデル</h3>
+    <ul>
+      <li>Autoencoder、VAE、β-VAE</li>
+      <li>GAN（DCGAN、Conditional GAN、StyleGAN、CycleGAN）、モード崩壊</li>
+      <li>Diffusion Model（DDPM、Stable Diffusion、Latent Diffusion）</li>
+      <li>Flow-based（RealNVP、Glow）</li>
+    </ul>
+    <h3>強化学習</h3>
+    <ul>
+      <li>マルコフ決定過程、Bellman 方程式</li>
+      <li>Q学習、SARSA、DQN（Experience Replay、Target Network）</li>
+      <li>方策勾配、REINFORCE、Actor-Critic、A3C</li>
+      <li>PPO、TRPO、SAC、DDPG</li>
+      <li>AlphaGo / AlphaZero / MuZero の系譜</li>
+    </ul>
+    <h3>説明可能AI</h3>
+    <ul>
+      <li>LIME、SHAP</li>
+      <li>Grad-CAM、Saliency Map、Integrated Gradients</li>
+      <li>Attention の可視化</li>
+    </ul>
+
+    <h2 id="d5-ops"><span class="label">§09 / DOMAIN 5</span>開発・運用環境</h2>
+    <h3>フレームワークと自動微分</h3>
+    <ul>
+      <li>PyTorch（動的グラフ）、TensorFlow / Keras（静的＋eager）</li>
+      <li>JAX / Flax（関数型・XLA）</li>
+      <li>ONNX による相互運用</li>
+    </ul>
+    <h3>計算資源とスケーリング</h3>
+    <ul>
+      <li>GPU、TPU、NPU の特性</li>
+      <li>混合精度学習（FP16 / BF16）、Tensor Core</li>
+      <li>データ並列、モデル並列、パイプライン並列、ZeRO</li>
+      <li>分散通信：NCCL、All-Reduce</li>
+    </ul>
+    <h3>推論最適化と軽量化</h3>
+    <ul>
+      <li>量子化（INT8、INT4、QAT、PTQ）</li>
+      <li>蒸留（Knowledge Distillation）</li>
+      <li>プルーニング、構造化／非構造化</li>
+      <li>LoRA / QLoRA / Adapter（PEFT）</li>
+      <li>KV キャッシュ、Flash Attention、Speculative Decoding</li>
+    </ul>
+    <h3>MLOps と運用</h3>
+    <ul>
+      <li>データ版数管理（DVC）、モデルレジストリ</li>
+      <li>CI/CD パイプライン、再現性</li>
+      <li>ドリフト検知（データドリフト／コンセプトドリフト）</li>
+      <li>A/B テスト、シャドーデプロイ、カナリアリリース</li>
+    </ul>
+
+    <h2 id="framework"><span class="label">§10 / FRAMEWORK</span>PyTorch と TensorFlow の選択</h2>
+    <p>E資格の試験では、<strong>試験開始時にフレームワークを選択</strong>し、試験中の変更はできません。事前に決め、過去問演習でも揃えておきます。</p>
+    <h3>PyTorch を選ぶ場合</h3>
+    <ul>
+      <li>研究・論文実装が多い。Hugging Face、Stable Diffusion 系もほぼ PyTorch</li>
+      <li>動的グラフで「Pythonっぽく」書ける</li>
+      <li>近年は受験者の主流</li>
+    </ul>
+    <h3>TensorFlow / Keras を選ぶ場合</h3>
+    <ul>
+      <li>業務でデプロイ環境が GCP / TF Serving / TF Lite で固まっている</li>
+      <li>Keras の高レベル API でコードが短い</li>
+      <li>モバイル・エッジ最適化が成熟</li>
+    </ul>
+    <p>どちらでも合格は十分可能。<strong>自分が学習教材で読んだコードのフレームワーク</strong>を選ぶのが最も自然です。</p>
+
+    <h2 id="checklist"><span class="label">§11 / CHECKLIST</span>直前チェックリスト</h2>
+    <p>クリックでチェックが入り、ブラウザに保存されます。</p>
+    <ul class="checklist">
+      <li data-id="e-ck-1">逆伝播を手書きで1層分（線形層 + 活性化）導出できる</li>
+      <li data-id="e-ck-2">Adam の更新式を書ける（一次・二次モーメント、バイアス補正）</li>
+      <li data-id="e-ck-3">Batch Norm と Layer Norm の違いと使い分けを言える</li>
+      <li data-id="e-ck-4">畳み込み出力サイズの式を覚えている（H、W、padding、stride）</li>
+      <li data-id="e-ck-5">LSTM の3つのゲートと役割を説明できる</li>
+      <li data-id="e-ck-6">Self-Attention の Q・K・V の役割と式を書ける</li>
+      <li data-id="e-ck-7">VAE と GAN の損失関数の本質的違いを説明できる</li>
+      <li data-id="e-ck-8">Diffusion Model の順方向・逆方向過程を説明できる</li>
+      <li data-id="e-ck-9">DQN の Experience Replay と Target Network の必要性を言える</li>
+      <li data-id="e-ck-10">PPO のクリッピングの目的を説明できる</li>
+      <li data-id="e-ck-11">PyTorch の autograd の動作を1分で説明できる</li>
+      <li data-id="e-ck-12">DataParallel と DistributedDataParallel の違いを言える</li>
+      <li data-id="e-ck-13">量子化（PTQ vs QAT）の違いを説明できる</li>
+      <li data-id="e-ck-14">LoRA がパラメータ効率的な理由を式で説明できる</li>
+      <li data-id="e-ck-15">クロスエントロピーと KL ダイバージェンスの関係を導出できる</li>
+      <li data-id="e-ck-16">フレームワークを決定し、試験中に変更しないと決めた</li>
+      <li data-id="e-ck-17">本サイトの E資格クイズで 75% 以上を一度取った</li>
+    </ul>
+
+    <h2 id="books"><span class="label">§12 / RESOURCES</span>参考書・外部リソース</h2>
+    <ul class="resource-list">
+      <li>
+        <span class="tag">公式</span>
+        <span class="desc"><strong>深層学習教科書 ディープラーニング G検定/E資格 公式</strong> シリーズ ／ <a href="https://www.jdla.org/certificate/engineer/" target="_blank" rel="noopener">JDLA E資格 公式ページ</a></span>
+      </li>
+      <li>
+        <span class="tag">問題集</span>
+        <span class="desc"><strong>徹底攻略 ディープラーニング E資格 エンジニア問題集</strong>（インプレス） — 通称「黒本」。最低2周</span>
+      </li>
+      <li>
+        <span class="tag">理論</span>
+        <span class="desc"><strong>ゼロから作る Deep Learning</strong> シリーズ（オライリー） — 1～4巻。逆伝播・自然言語・強化学習を実装で理解</span>
+      </li>
+      <li>
+        <span class="tag">理論</span>
+        <span class="desc"><strong>Deep Learning（Goodfellow et al.）</strong> — 通称「花の本」。英語原書は <a href="https://www.deeplearningbook.org/" target="_blank" rel="noopener">無料公開</a></span>
+      </li>
+      <li>
+        <span class="tag">講義</span>
+        <span class="desc"><a href="https://www.coursera.org/specializations/deep-learning" target="_blank" rel="noopener">DeepLearning.AI Specialization</a>（Andrew Ng） — 5講座で網羅</span>
+      </li>
+      <li>
+        <span class="tag">講義</span>
+        <span class="desc"><a href="https://see.stanford.edu/Course/CS229" target="_blank" rel="noopener">Stanford CS229</a> ／ <a href="http://cs231n.stanford.edu/" target="_blank" rel="noopener">CS231n</a> ／ <a href="https://web.stanford.edu/class/cs224n/" target="_blank" rel="noopener">CS224n</a> — 古典・CV・NLP</span>
+      </li>
+      <li>
+        <span class="tag">実装</span>
+        <span class="desc"><a href="https://yutaroogawa.github.io/pytorch_tutorials_jp/" target="_blank" rel="noopener">PyTorch チュートリアル（日本語）</a> ／ <a href="https://www.kaggle.com/learn" target="_blank" rel="noopener">Kaggle Learn</a></span>
+      </li>
+      <li>
+        <span class="tag">数学</span>
+        <span class="desc"><strong>ディープラーニングの数学</strong>（涌井良幸・涌井貞美） — 数学の前段に</span>
+      </li>
+    </ul>
+
+    <h2 id="quiz"><span class="label">§13 / DRILL</span>問題演習で実力を測る</h2>
+    <p>本サイトには E資格 範囲のオリジナル問題が用意されています。フレームワーク選択前にこれで弱点領域を特定するのが効率的です。</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0;">
+      <a class="btn solid" href="../quiz.html?topic=e-shikaku">E資格 クイズを始める →</a>
+      <a class="btn" href="../quiz.html">他の資格のクイズ</a>
+    </div>
+
+    <hr class="divider bold">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      Last reviewed · 2026 Spring · 公式情報は JDLA 公式サイトで必ず確認してください。
+    </p>
+
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div>
+      <h6>資格</h6>
+      <ul>
+        <li><a href="g-kentei.html">G検定</a></li>
+        <li><a href="e-shikaku.html">E資格</a></li>
+        <li><a href="tokei-kentei.html">統計検定</a></li>
+        <li><a href="python-cert.html">Python認定</a></li>
+        <li><a href="aws-mla-c01.html">AWS MLA-C01</a></li>
+        <li><a href="image-engineer.html">画像処理エンジニア</a></li>
+        <li><a href="jetson-ai.html">Jetson AI</a></li>
+      </ul>
+    </div>
+    <div>
+      <h6>学習</h6>
+      <ul>
+        <li><a href="../learn/basics.html">基本</a></li>
+        <li><a href="../learn/advanced.html">応用</a></li>
+        <li><a href="../learn/simulation.html">シミュレーション</a></li>
+        <li><a href="../learn/hands-on.html">ハンズオン</a></li>
+        <li><a href="../quiz.html">問題演習</a></li>
+      </ul>
+    </div>
+    <div>
+      <h6>外部</h6>
+      <ul>
+        <li><a href="https://www.jdla.org/" target="_blank" rel="noopener">JDLA 公式</a></li>
+        <li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener">Kaggle Learn</a></li>
+        <li><a href="https://www.deeplearning.ai/" target="_blank" rel="noopener">DeepLearning.AI</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

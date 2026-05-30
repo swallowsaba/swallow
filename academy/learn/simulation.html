@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>シミュレーション — Swallow AI Academy</title>
+<meta name="description" content="勾配降下・活性化関数・過学習・決定境界をブラウザ上で動かして体感する、対話的シミュレーション集。">
+<link rel="stylesheet" href="../assets/css/main.css">
+<style>
+  .sim-container { background:var(--paper-card); border:1px solid var(--rule); padding:24px; margin:24px 0; border-radius:2px; }
+  .sim-container canvas { display:block; width:100%; max-width:680px; height:auto; background:#fff; border:1px solid var(--rule); }
+  .sim-controls { display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-top:14px; font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+  .sim-controls label { display:flex; gap:8px; align-items:center; }
+  .sim-controls input[type="range"] { width:140px; accent-color:var(--accent); }
+  .sim-controls button { font-family:var(--font-mono); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; background:var(--ink); color:var(--paper); border:none; padding:7px 13px; cursor:pointer; }
+  .sim-controls button:hover { background:var(--accent); }
+  .sim-controls select { font-family:var(--font-mono); font-size:11px; padding:5px 8px; border:1px solid var(--rule); background:#fff; }
+  .sim-readout { font-family:var(--font-mono); font-size:11px; color:var(--ink-mute); margin-left:auto; letter-spacing:0.05em; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../index.html#certifications">資格</a>
+      <a href="basics.html">基本</a>
+      <a href="advanced.html">応用</a>
+      <a href="simulation.html" class="current">シミュレーション</a>
+      <a href="hands-on.html">ハンズオン</a>
+      <a href="../quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">FRAME 03<br><strong>Simulation</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; LEARN &nbsp;/&nbsp; SIMULATION</div>
+    <h1>シミュレーション<span class="en">Simulation — see it move</span></h1>
+    <p class="standfirst">図と数式だけでは掴みづらい挙動を、ブラウザ上で動かしながら体得する。勾配降下・活性化関数・過学習・決定境界・バックプロパゲーション・Attention・K-means・PCA — 8 つの対話的デモで、概念がパラメータで変わる様を手で確かめる。</p>
+  </div>
+</section>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>デモ</h6>
+    <a href="#gd">§01 勾配降下</a>
+    <a href="#activation">§02 活性化関数</a>
+    <a href="#overfit">§03 過学習</a>
+    <a href="#decision">§04 決定境界</a>
+    <a href="#backprop">§05 バックプロパゲーション</a>
+    <a href="#attention">§06 Attention重み</a>
+    <a href="#kmeans">§07 K-meansクラスタリング</a>
+    <a href="#pca">§08 PCA主成分分析</a>
+    <a href="#next">§09 次へ</a>
+  </aside>
+
+  <article class="article-body">
+    <div class="article-eyebrow">Frame 03 — Simulation &nbsp;·&nbsp; 2026 Spring</div>
+    <h1 class="article-title">シミュレーション<span class="en">Move the dial. Watch the model change.</span></h1>
+    <p class="article-lede">学習率を上げると何が壊れるのか。活性化関数を変えるとどう変わるのか。誤差はどう逆伝播し、Attentionはどこを見るのか。<strong>パラメータを動かすことでしか見えない挙動</strong>を、8 つの対話的なデモで掴む。</p>
+
+    <h2 id="gd"><span class="label">§01 / GRADIENT DESCENT</span>勾配降下</h2>
+    <p>一次元の凸／非凸関数の上を、勾配降下法がどう降りていくかを観察する。学習率を変えると、収束の速さ・振動・発散の境目が見える。</p>
+
+    <div class="sim-container">
+      <canvas id="gd-canvas" width="680" height="320"></canvas>
+      <div class="sim-controls">
+        <label>関数 <select id="gd-fn"><option value="quad">凸 (x²)</option><option value="wavy">非凸 (x² + sin)</option></select></label>
+        <label>学習率 η <input id="gd-lr" type="range" min="0.01" max="1.20" step="0.01" value="0.20"></label>
+        <label>初期位置 <input id="gd-x0" type="range" min="-5" max="5" step="0.1" value="-4.0"></label>
+        <button id="gd-step">1ステップ</button>
+        <button id="gd-run">自動</button>
+        <button id="gd-reset">リセット</button>
+        <span class="sim-readout" id="gd-readout">x=-4.000  loss=16.000</span>
+      </div>
+    </div>
+
+    <h3>観察のヒント</h3>
+    <ul>
+      <li>η を小さくする → ゆっくり確実に収束</li>
+      <li>η を大きくする → 振動が大きくなり、ある閾値で発散</li>
+      <li>非凸関数では初期位置によって到達する谷が変わる（局所最適）</li>
+    </ul>
+
+    <h2 id="activation"><span class="label">§02 / ACTIVATIONS</span>活性化関数の比較</h2>
+    <p>Sigmoid、Tanh、ReLU、Leaky ReLU、GELU、Swish の出力と微分を重ねて表示。それぞれの<strong>勾配消失</strong>のしやすさを目視で比較する。</p>
+
+    <div class="sim-container">
+      <canvas id="act-canvas" width="680" height="320"></canvas>
+      <div class="sim-controls">
+        <label><input type="checkbox" data-act="sigmoid" checked> sigmoid</label>
+        <label><input type="checkbox" data-act="tanh" checked> tanh</label>
+        <label><input type="checkbox" data-act="relu" checked> ReLU</label>
+        <label><input type="checkbox" data-act="lrelu"> Leaky ReLU</label>
+        <label><input type="checkbox" data-act="gelu"> GELU</label>
+        <label><input type="checkbox" data-act="swish"> Swish</label>
+        <label>表示 <select id="act-mode"><option value="f">f(x)</option><option value="d">df/dx</option></select></label>
+      </div>
+    </div>
+
+    <h3>勾配消失の正体</h3>
+    <ul>
+      <li>sigmoid・tanh は飽和域で微分がほぼ 0 → 深い層では勾配が指数的に小さくなる</li>
+      <li>ReLU は正の領域で微分 1 → 勾配消失しにくいが、負の領域は完全に死ぬ（dying ReLU）</li>
+      <li>Leaky ReLU・GELU・Swish はその欠点を緩和した派生</li>
+    </ul>
+
+    <h2 id="overfit"><span class="label">§03 / OVERFIT</span>過学習の可視化</h2>
+    <p>正弦波 + ノイズに対して、多項式の次数を上げていくと何が起きるか。低次は表現力不足（バイアス高）、高次は学習データに過剰適合（バリアンス高）。</p>
+
+    <div class="sim-container">
+      <canvas id="of-canvas" width="680" height="320"></canvas>
+      <div class="sim-controls">
+        <label>次数 <input id="of-deg" type="range" min="1" max="15" step="1" value="3"> <span id="of-deg-val">3</span></label>
+        <label>データ数 <input id="of-n" type="range" min="6" max="60" step="1" value="15"> <span id="of-n-val">15</span></label>
+        <label>ノイズ <input id="of-noise" type="range" min="0" max="0.6" step="0.02" value="0.20"></label>
+        <button id="of-reseed">再サンプル</button>
+        <span class="sim-readout" id="of-readout">train=- test=-</span>
+      </div>
+    </div>
+
+    <h3>バイアス・バリアンスのトレードオフ</h3>
+    <ul>
+      <li>次数を上げる → train 誤差は下がるが、test 誤差は U 字に</li>
+      <li>データ数を増やす → 高次でも過学習しにくくなる</li>
+      <li>ノイズを増やす → 低次の方が頑健に</li>
+    </ul>
+
+    <h2 id="decision"><span class="label">§04 / DECISION BOUNDARY</span>決定境界</h2>
+    <p>2クラス分類で、モデルの容量（隠れ層のユニット数）を変えると決定境界がどう変わるか。簡易MLP（1隠れ層）で、ランダム重みからの学習を可視化。</p>
+
+    <div class="sim-container">
+      <canvas id="db-canvas" width="680" height="320"></canvas>
+      <div class="sim-controls">
+        <label>データ <select id="db-data"><option value="moons">2 つの三日月</option><option value="circles">同心円</option><option value="xor">XOR</option></select></label>
+        <label>隠れユニット <input id="db-h" type="range" min="2" max="32" step="1" value="8"> <span id="db-h-val">8</span></label>
+        <label>学習率 <input id="db-lr" type="range" min="0.01" max="0.5" step="0.01" value="0.10"></label>
+        <button id="db-train">学習</button>
+        <button id="db-reset">リセット</button>
+        <span class="sim-readout" id="db-readout">epoch=0  loss=-</span>
+      </div>
+    </div>
+
+    <h3>容量と表現力</h3>
+    <ul>
+      <li>ユニット数が少ない → 単純すぎて非線形境界を描けない</li>
+      <li>ユニット数を増やす → 複雑な境界も描けるが、過学習リスクも上昇</li>
+      <li>同じ構造でも初期値次第で違う解に収束（最適化の非凸性）</li>
+    </ul>
+
+    <h2 id="backprop"><span class="label">§05 / BACKPROP</span>バックプロパゲーション可視化</h2>
+    <p>2層 MLP の順伝播と逆伝播を、重みエッジの色と太さに反映して観察する。順方向は活性化値、逆方向は勾配ノルムが流れる様子を可視化する。</p>
+
+    <div class="sim-container">
+      <canvas id="bp-canvas" width="680" height="320"></canvas>
+      <div class="sim-controls">
+        <label>モード <select id="bp-mode"><option value="fwd">順伝播</option><option value="bwd">逆伝播</option></select></label>
+        <label>入力 x₁ <input id="bp-x1" type="range" min="-2" max="2" step="0.1" value="0.5"></label>
+        <label>入力 x₂ <input id="bp-x2" type="range" min="-2" max="2" step="0.1" value="-0.3"></label>
+        <label>正解 y <input id="bp-y" type="range" min="0" max="1" step="0.05" value="0.8"></label>
+        <button id="bp-step">1ステップ学習</button>
+        <button id="bp-reset">重み初期化</button>
+        <span class="sim-readout" id="bp-readout">ŷ=-  loss=-</span>
+      </div>
+    </div>
+
+    <h3>読み取り方</h3>
+    <ul>
+      <li>順伝播モード：エッジの太さ＝活性化×重み の絶対値。出力までの情報の流れが見える</li>
+      <li>逆伝播モード：エッジの太さ＝勾配の絶対値。誤差が出力側から入力側へ伝播する</li>
+      <li>1ステップ学習で重みが更新され、損失が下がる過程を観察できる</li>
+    </ul>
+
+    <h2 id="attention"><span class="label">§06 / ATTENTION</span>Self-Attention重み可視化</h2>
+    <p>系列長 N のトークン列に対し、各クエリ位置 i が他のどの位置 j に重みを置くかをヒートマップで表示。スケール (√d_k) と softmax の効果が直感的に分かる。</p>
+
+    <div class="sim-container">
+      <canvas id="at-canvas" width="680" height="380"></canvas>
+      <div class="sim-controls">
+        <label>系列長 N <input id="at-n" type="range" min="4" max="12" step="1" value="8"> <span id="at-n-val">8</span></label>
+        <label>温度 (1/√d) <input id="at-t" type="range" min="0.1" max="3.0" step="0.1" value="1.0"></label>
+        <label>パターン <select id="at-pat"><option value="random">ランダム</option><option value="causal">因果マスク</option><option value="local">局所的</option><option value="diagonal">自己重視</option></select></label>
+        <button id="at-reset">再生成</button>
+        <span class="sim-readout" id="at-readout">N=8  τ=1.00</span>
+      </div>
+    </div>
+
+    <h3>読み取り方</h3>
+    <ul>
+      <li>各行＝クエリ位置 i、各列＝キー位置 j。行の総和は1（softmaxの性質）</li>
+      <li>温度を下げる → 分布が鋭くなり、特定位置に集中。上げる → 一様に近づく</li>
+      <li>因果マスクは上三角が0（自己回帰生成で未来を見ない）</li>
+    </ul>
+
+    <h2 id="kmeans"><span class="label">§07 / KMEANS</span>K-meansクラスタリング</h2>
+    <p>2次元データに対し、重心の初期化→割当→重心更新の反復を1ステップずつ進める。K の選択や初期化次第で結果が大きく変わることを体験する。</p>
+
+    <div class="sim-container">
+      <canvas id="km-canvas" width="680" height="360"></canvas>
+      <div class="sim-controls">
+        <label>K <input id="km-k" type="range" min="2" max="8" step="1" value="3"> <span id="km-k-val">3</span></label>
+        <label>データ <select id="km-data"><option value="blobs">3クラスタ</option><option value="circles">同心円</option><option value="moons">三日月</option><option value="random">ランダム</option></select></label>
+        <button id="km-step">1ステップ</button>
+        <button id="km-run">自動収束</button>
+        <button id="km-reset">再生成</button>
+        <span class="sim-readout" id="km-readout">iter=0  inertia=-</span>
+      </div>
+    </div>
+
+    <h3>K-means の弱点</h3>
+    <ul>
+      <li>等方的・等サイズ・凸クラスタを仮定。同心円や三日月では失敗しやすい</li>
+      <li>初期化次第で局所解に落ちる → K-means++ や複数回試行が実務的</li>
+      <li>K は事前指定。エルボー法／シルエット係数／Gap 統計量で評価</li>
+    </ul>
+
+    <h2 id="pca"><span class="label">§08 / PCA</span>主成分分析の幾何</h2>
+    <p>2次元データの分布から主成分（共分散行列の固有ベクトル）を計算し、第一主成分／第二主成分を視覚化する。回転・スケール・形状でどう変化するか体感する。</p>
+
+    <div class="sim-container">
+      <canvas id="pca-canvas" width="680" height="360"></canvas>
+      <div class="sim-controls">
+        <label>形状 <select id="pca-shape"><option value="diag">対角伸長</option><option value="anti">反対角伸長</option><option value="iso">等方</option><option value="curve">曲線分布</option></select></label>
+        <label>角度 θ <input id="pca-rot" type="range" min="-90" max="90" step="5" value="30"></label>
+        <label>伸び率 <input id="pca-stretch" type="range" min="1" max="6" step="0.1" value="3.0"></label>
+        <label>ノイズ <input id="pca-noise" type="range" min="0" max="1.0" step="0.05" value="0.3"></label>
+        <label>射影表示 <input id="pca-proj" type="checkbox" checked></label>
+        <button id="pca-reset">再生成</button>
+        <span class="sim-readout" id="pca-readout">λ₁=-  λ₂=-  説明率=-%</span>
+      </div>
+    </div>
+
+    <h3>固有値の意味</h3>
+    <ul>
+      <li>λ₁（大きい方）＝第一主成分方向の分散。射影が最も広がる方向</li>
+      <li>λ₁ / (λ₁+λ₂) ＝ 第一主成分の累積寄与率（説明率）</li>
+      <li>非線形構造（曲線・三日月）には PCA は不適 → カーネルPCA・t-SNE・UMAP が必要</li>
+    </ul>
+
+    <h2 id="next"><span class="label">§09 / NEXT</span>次のステップ</h2>
+    <p>手応えがついたら、実際のコードに触れに行きましょう。ハンズオンでは PyTorch・Colab・SageMaker・Jetson の最小の動くサンプルを用意しています。</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0;">
+      <a class="btn solid" href="hands-on.html">ハンズオンへ →</a>
+      <a class="btn" href="../quiz.html">問題演習</a>
+      <a class="btn" href="basics.html">基本に戻る</a>
+    </div>
+
+    <hr class="divider bold">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      Simulation · 2026 Spring · Built with vanilla canvas
+    </p>
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>資格</h6><ul>
+      <li><a href="../certifications/g-kentei.html">G検定</a></li>
+      <li><a href="../certifications/e-shikaku.html">E資格</a></li>
+      <li><a href="../certifications/tokei-kentei.html">統計検定</a></li>
+      <li><a href="../certifications/python-cert.html">Python認定</a></li>
+      <li><a href="../certifications/aws-mla-c01.html">AWS MLA-C01</a></li>
+      <li><a href="../certifications/image-engineer.html">画像処理エンジニア</a></li>
+      <li><a href="../certifications/jetson-ai.html">Jetson AI</a></li>
+    </ul></div>
+    <div><h6>学習</h6><ul>
+      <li><a href="basics.html">基本</a></li>
+      <li><a href="advanced.html">応用</a></li>
+      <li><a href="simulation.html">シミュレーション</a></li>
+      <li><a href="hands-on.html">ハンズオン</a></li>
+      <li><a href="../quiz.html">問題演習</a></li>
+    </ul></div>
+    <div><h6>外部</h6><ul>
+      <li><a href="https://www.jdla.org/" target="_blank" rel="noopener">JDLA</a></li>
+      <li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener">Kaggle Learn</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+<script>
+/* ============================================================
+   §01  Gradient Descent
+   ============================================================ */
+(function(){
+  const c = document.getElementById('gd-canvas'); if(!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const fnSel = document.getElementById('gd-fn');
+  const lr = document.getElementById('gd-lr');
+  const x0 = document.getElementById('gd-x0');
+  const readout = document.getElementById('gd-readout');
+  let xs = [], anim = null;
+  function f(x){ return fnSel.value==='quad' ? x*x : x*x + 4*Math.sin(2*x); }
+  function df(x){ return fnSel.value==='quad' ? 2*x : 2*x + 8*Math.cos(2*x); }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // axes
+    ctx.strokeStyle = '#e4dfd4'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, H-40); ctx.lineTo(W, H-40); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+    // curve
+    ctx.strokeStyle = '#0d1b2a'; ctx.lineWidth = 2; ctx.beginPath();
+    const xMin=-6, xMax=6, yMin=-2, yMax=40;
+    for(let px=0; px<W; px++){
+      const x = xMin + (xMax-xMin)*px/W;
+      const y = f(x);
+      const py = H-40 - (y-yMin)/(yMax-yMin) * (H-60);
+      if(px===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+    // path
+    if(xs.length){
+      ctx.strokeStyle='#b8431f'; ctx.lineWidth=1.5; ctx.beginPath();
+      xs.forEach((x,i)=>{
+        const px = (x-xMin)/(xMax-xMin)*W;
+        const py = H-40 - (f(x)-yMin)/(yMax-yMin) * (H-60);
+        if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      });
+      ctx.stroke();
+      // ball
+      const xLast = xs[xs.length-1];
+      const px = (xLast-xMin)/(xMax-xMin)*W;
+      const py = H-40 - (f(xLast)-yMin)/(yMax-yMin) * (H-60);
+      ctx.fillStyle='#b8431f'; ctx.beginPath(); ctx.arc(px,py,5,0,Math.PI*2); ctx.fill();
+      readout.textContent = `x=${xLast.toFixed(3)}  loss=${f(xLast).toFixed(3)}  step=${xs.length-1}`;
+    } else {
+      readout.textContent = `x=-  loss=-`;
+    }
+  }
+  function step(){
+    if(!xs.length) xs.push(parseFloat(x0.value));
+    const x = xs[xs.length-1];
+    const eta = parseFloat(lr.value);
+    const nx = x - eta * df(x);
+    if(Math.abs(nx) > 100){ xs.push(nx); draw(); stop(); return; }
+    xs.push(nx); draw();
+  }
+  function reset(){ stop(); xs = [parseFloat(x0.value)]; draw(); }
+  function run(){ if(anim){ stop(); return; } document.getElementById('gd-run').textContent='停止'; anim = setInterval(()=>{ step(); if(xs.length>200) stop(); }, 120); }
+  function stop(){ if(anim){ clearInterval(anim); anim=null; document.getElementById('gd-run').textContent='自動'; } }
+  document.getElementById('gd-step').onclick = step;
+  document.getElementById('gd-run').onclick = run;
+  document.getElementById('gd-reset').onclick = reset;
+  fnSel.onchange = reset; x0.oninput = reset;
+  reset();
+})();
+
+/* ============================================================
+   §02  Activation functions
+   ============================================================ */
+(function(){
+  const c = document.getElementById('act-canvas'); if(!c) return;
+  const ctx = c.getContext('2d'); const W=c.width, H=c.height;
+  const fns = {
+    sigmoid: { f:x=>1/(1+Math.exp(-x)), d:x=>{const s=1/(1+Math.exp(-x));return s*(1-s);}, color:'#0d1b2a' },
+    tanh:    { f:x=>Math.tanh(x), d:x=>1-Math.tanh(x)**2, color:'#b8431f' },
+    relu:    { f:x=>Math.max(0,x), d:x=>x>0?1:0, color:'#3a5a8f' },
+    lrelu:   { f:x=>x>0?x:0.1*x, d:x=>x>0?1:0.1, color:'#6b8e23' },
+    gelu:    { f:x=>0.5*x*(1+Math.tanh(Math.sqrt(2/Math.PI)*(x+0.044715*x*x*x))), d:x=>{const h=0.001;return ((0.5*(x+h)*(1+Math.tanh(Math.sqrt(2/Math.PI)*((x+h)+0.044715*(x+h)**3))))-(0.5*(x-h)*(1+Math.tanh(Math.sqrt(2/Math.PI)*((x-h)+0.044715*(x-h)**3)))))/(2*h);}, color:'#7b3f8c' },
+    swish:   { f:x=>x/(1+Math.exp(-x)), d:x=>{const s=1/(1+Math.exp(-x));return s+x*s*(1-s);}, color:'#c97a1f' },
+  };
+  const mode = document.getElementById('act-mode');
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const xMin=-5, xMax=5, yMin=-1.2, yMax=2.2;
+    // axes
+    ctx.strokeStyle='#e4dfd4'; ctx.lineWidth=1;
+    const x0 = (0-xMin)/(xMax-xMin)*W;
+    const y0 = H - (0-yMin)/(yMax-yMin)*H;
+    ctx.beginPath(); ctx.moveTo(0,y0); ctx.lineTo(W,y0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x0,0); ctx.lineTo(x0,H); ctx.stroke();
+    // unit gridline at y=1
+    const y1 = H - (1-yMin)/(yMax-yMin)*H;
+    ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(0,y1); ctx.lineTo(W,y1); ctx.stroke(); ctx.setLineDash([]);
+    // curves
+    document.querySelectorAll('[data-act]').forEach(cb=>{
+      if(!cb.checked) return;
+      const fn = fns[cb.dataset.act]; if(!fn) return;
+      ctx.strokeStyle = fn.color; ctx.lineWidth = 2; ctx.beginPath();
+      for(let px=0; px<W; px++){
+        const x = xMin + (xMax-xMin)*px/W;
+        const y = mode.value==='f' ? fn.f(x) : fn.d(x);
+        const py = H - (y-yMin)/(yMax-yMin)*H;
+        if(px===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      }
+      ctx.stroke();
+    });
+    // legend
+    let lx=14, ly=18;
+    ctx.font='11px monospace';
+    document.querySelectorAll('[data-act]').forEach(cb=>{
+      if(!cb.checked) return;
+      const fn = fns[cb.dataset.act];
+      ctx.fillStyle=fn.color; ctx.fillRect(lx,ly-9,10,3);
+      ctx.fillStyle='#0d1b2a'; ctx.fillText(cb.dataset.act, lx+16, ly);
+      ly += 16;
+    });
+  }
+  document.querySelectorAll('[data-act]').forEach(cb=> cb.onchange = draw);
+  mode.onchange = draw;
+  draw();
+})();
+
+/* ============================================================
+   §03  Overfit — polynomial fit on noisy sine
+   ============================================================ */
+(function(){
+  const c = document.getElementById('of-canvas'); if(!c) return;
+  const ctx = c.getContext('2d'); const W=c.width, H=c.height;
+  const deg = document.getElementById('of-deg');
+  const nIn = document.getElementById('of-n');
+  const noiseIn = document.getElementById('of-noise');
+  const readout = document.getElementById('of-readout');
+  const degVal = document.getElementById('of-deg-val');
+  const nVal = document.getElementById('of-n-val');
+  let trainX=[], trainY=[], testX=[], testY=[];
+  function seed(){
+    const n = parseInt(nIn.value);
+    const noise = parseFloat(noiseIn.value);
+    trainX=[]; trainY=[];
+    for(let i=0;i<n;i++){
+      const x = -1 + 2*i/(n-1);
+      trainX.push(x);
+      trainY.push(Math.sin(Math.PI*x) + (Math.random()-0.5)*2*noise);
+    }
+    testX=[]; testY=[];
+    for(let i=0;i<200;i++){
+      const x = -1 + 2*Math.random();
+      testX.push(x);
+      testY.push(Math.sin(Math.PI*x) + (Math.random()-0.5)*2*noise);
+    }
+  }
+  function fitPoly(xs, ys, d){
+    // Normal equations: w = (XᵀX)⁻¹ XᵀY
+    const N = xs.length, D = d+1;
+    const X = xs.map(x=>{ const row=[]; let p=1; for(let j=0;j<D;j++){row.push(p); p*=x;} return row; });
+    const XT = transpose(X);
+    const XTX = matmul(XT,X);
+    // ridge tiny for stability
+    for(let i=0;i<D;i++) XTX[i][i] += 1e-6;
+    const XTy = matvec(XT, ys);
+    return solve(XTX, XTy);
+  }
+  function pred(w, x){ let s=0, p=1; for(let i=0;i<w.length;i++){ s+=w[i]*p; p*=x; } return s; }
+  function transpose(M){ const r=M.length,c=M[0].length; const T=[]; for(let j=0;j<c;j++){ const row=[]; for(let i=0;i<r;i++) row.push(M[i][j]); T.push(row);} return T; }
+  function matmul(A,B){ const r=A.length, c=B[0].length, k=B.length; const C=[]; for(let i=0;i<r;i++){ const row=[]; for(let j=0;j<c;j++){ let s=0; for(let p=0;p<k;p++) s+=A[i][p]*B[p][j]; row.push(s);} C.push(row);} return C; }
+  function matvec(A,v){ return A.map(row=>row.reduce((s,a,i)=>s+a*v[i],0)); }
+  function solve(A, b){ // Gauss
+    const n=A.length; const M = A.map((r,i)=>[...r, b[i]]);
+    for(let i=0;i<n;i++){
+      let mx=i; for(let k=i+1;k<n;k++) if(Math.abs(M[k][i])>Math.abs(M[mx][i])) mx=k;
+      [M[i],M[mx]]=[M[mx],M[i]];
+      for(let k=i+1;k<n;k++){ const f=M[k][i]/M[i][i]; for(let j=i;j<=n;j++) M[k][j]-=f*M[i][j]; }
+    }
+    const x=new Array(n);
+    for(let i=n-1;i>=0;i--){ let s=M[i][n]; for(let j=i+1;j<n;j++) s-=M[i][j]*x[j]; x[i]=s/M[i][i]; }
+    return x;
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const xMin=-1.1, xMax=1.1, yMin=-1.8, yMax=1.8;
+    // axes
+    ctx.strokeStyle='#e4dfd4';
+    const y0 = H - (0-yMin)/(yMax-yMin)*H;
+    ctx.beginPath(); ctx.moveTo(0,y0); ctx.lineTo(W,y0); ctx.stroke();
+    // true
+    ctx.strokeStyle='#a89e8a'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]); ctx.beginPath();
+    for(let px=0;px<W;px++){
+      const x = xMin+(xMax-xMin)*px/W;
+      const y = Math.sin(Math.PI*x);
+      const py = H-(y-yMin)/(yMax-yMin)*H;
+      if(px===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+    // train data
+    ctx.fillStyle='#0d1b2a';
+    trainX.forEach((x,i)=>{
+      const px=(x-xMin)/(xMax-xMin)*W;
+      const py=H-(trainY[i]-yMin)/(yMax-yMin)*H;
+      ctx.beginPath(); ctx.arc(px,py,3.5,0,Math.PI*2); ctx.fill();
+    });
+    // fit
+    const d = parseInt(deg.value);
+    let w;
+    try { w = fitPoly(trainX, trainY, d); }
+    catch(e){ readout.textContent = 'error'; return; }
+    ctx.strokeStyle='#b8431f'; ctx.lineWidth=2; ctx.beginPath();
+    for(let px=0;px<W;px++){
+      const x = xMin+(xMax-xMin)*px/W;
+      const y = pred(w,x);
+      const py = H-(y-yMin)/(yMax-yMin)*H;
+      if(px===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+    const tr = trainX.reduce((s,x,i)=>s+(pred(w,x)-trainY[i])**2,0)/trainX.length;
+    const te = testX.reduce((s,x,i)=>s+(pred(w,x)-testY[i])**2,0)/testX.length;
+    readout.textContent = `train MSE=${tr.toFixed(3)}  test MSE=${te.toFixed(3)}`;
+    degVal.textContent = d; nVal.textContent = trainX.length;
+  }
+  document.getElementById('of-reseed').onclick = ()=>{ seed(); draw(); };
+  deg.oninput = draw; nIn.oninput = ()=>{ seed(); draw(); }; noiseIn.oninput = ()=>{ seed(); draw(); };
+  seed(); draw();
+})();
+
+/* ============================================================
+   §04  Decision boundary — minimal MLP
+   ============================================================ */
+(function(){
+  const c = document.getElementById('db-canvas'); if(!c) return;
+  const ctx = c.getContext('2d'); const W=c.width, H=c.height;
+  const dataSel = document.getElementById('db-data');
+  const hIn = document.getElementById('db-h');
+  const lrIn = document.getElementById('db-lr');
+  const hVal = document.getElementById('db-h-val');
+  const readout = document.getElementById('db-readout');
+  let data = [], W1, b1, W2, b2, epoch = 0, anim = null;
+  function genData(){
+    data = [];
+    const N = 120;
+    if(dataSel.value === 'moons'){
+      for(let i=0;i<N/2;i++){
+        const t = Math.PI*i/(N/2);
+        data.push([Math.cos(t)+0.05*rand(), Math.sin(t)+0.05*rand(), 0]);
+        data.push([1+Math.cos(t)+0.05*rand(), -Math.sin(t)+0.5+0.05*rand(), 1]);
+      }
+    } else if(dataSel.value === 'circles'){
+      for(let i=0;i<N/2;i++){
+        const t = 2*Math.PI*i/(N/2);
+        data.push([0.4*Math.cos(t)+0.04*rand(), 0.4*Math.sin(t)+0.04*rand(), 0]);
+        data.push([1.0*Math.cos(t)+0.05*rand(), 1.0*Math.sin(t)+0.05*rand(), 1]);
+      }
+    } else { // xor
+      for(let i=0;i<N;i++){
+        const x = -1+2*Math.random(), y = -1+2*Math.random();
+        const c = ((x>0) ^ (y>0)) ? 1 : 0;
+        data.push([x,y,c]);
+      }
+    }
+  }
+  function rand(){ return (Math.random()-0.5)*2; }
+  function initNet(){
+    const h = parseInt(hIn.value);
+    W1 = []; b1 = [];
+    for(let i=0;i<h;i++){ W1.push([(Math.random()-0.5)*2, (Math.random()-0.5)*2]); b1.push(0); }
+    W2 = []; for(let i=0;i<h;i++) W2.push((Math.random()-0.5)*2); b2 = 0;
+    epoch = 0;
+  }
+  function relu(x){ return Math.max(0,x); }
+  function sig(x){ return 1/(1+Math.exp(-x)); }
+  function forward(x,y){
+    const h = W1.length;
+    const z1 = new Array(h), a1 = new Array(h);
+    for(let i=0;i<h;i++){ z1[i] = W1[i][0]*x + W1[i][1]*y + b1[i]; a1[i] = relu(z1[i]); }
+    let z2 = b2; for(let i=0;i<h;i++) z2 += W2[i]*a1[i];
+    const o = sig(z2);
+    return {z1,a1,z2,o};
+  }
+  function trainStep(){
+    const lr = parseFloat(lrIn.value);
+    let loss = 0;
+    const h = W1.length;
+    const gW1 = W1.map(r=>[0,0]), gb1 = new Array(h).fill(0);
+    const gW2 = new Array(h).fill(0); let gb2 = 0;
+    data.forEach(([x,y,t])=>{
+      const {z1,a1,o} = forward(x,y);
+      const eps = 1e-9;
+      loss += -(t*Math.log(o+eps) + (1-t)*Math.log(1-o+eps));
+      const dz2 = o - t;
+      gb2 += dz2;
+      for(let i=0;i<h;i++) gW2[i] += dz2 * a1[i];
+      for(let i=0;i<h;i++){
+        const da1 = dz2 * W2[i];
+        const dz1 = z1[i] > 0 ? da1 : 0;
+        gW1[i][0] += dz1 * x; gW1[i][1] += dz1 * y; gb1[i] += dz1;
+      }
+    });
+    const N = data.length;
+    for(let i=0;i<h;i++){ W1[i][0] -= lr*gW1[i][0]/N; W1[i][1] -= lr*gW1[i][1]/N; b1[i] -= lr*gb1[i]/N; }
+    for(let i=0;i<h;i++) W2[i] -= lr*gW2[i]/N; b2 -= lr*gb2/N;
+    epoch++;
+    return loss/N;
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const xMin=-1.5, xMax=2.5, yMin=-1.5, yMax=1.8;
+    // grid prediction
+    const cell = 8;
+    for(let px=0; px<W; px+=cell){
+      for(let py=0; py<H; py+=cell){
+        const x = xMin + (xMax-xMin)*px/W;
+        const y = yMax - (yMax-yMin)*py/H;
+        const o = forward(x,y).o;
+        const t = (o-0.5)*2; // -1..1
+        if(t>0) ctx.fillStyle = `rgba(184,67,31,${Math.min(0.45, Math.abs(t)*0.6)})`;
+        else    ctx.fillStyle = `rgba(13,27,42,${Math.min(0.40, Math.abs(t)*0.55)})`;
+        ctx.fillRect(px, py, cell, cell);
+      }
+    }
+    // points
+    data.forEach(([x,y,t])=>{
+      const px = (x-xMin)/(xMax-xMin)*W;
+      const py = H - (y-yMin)/(yMax-yMin)*H;
+      ctx.fillStyle = t===1 ? '#b8431f' : '#0d1b2a';
+      ctx.beginPath(); ctx.arc(px,py,3.5,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#fefdfb'; ctx.lineWidth=1; ctx.stroke();
+    });
+  }
+  function loop(){
+    const losses = [];
+    for(let i=0;i<5;i++) losses.push(trainStep());
+    const avg = losses.reduce((a,b)=>a+b,0)/losses.length;
+    readout.textContent = `epoch=${epoch}  loss=${avg.toFixed(4)}`;
+    draw();
+    if(epoch < 600) anim = requestAnimationFrame(loop);
+    else { anim = null; document.getElementById('db-train').textContent = '学習'; }
+  }
+  document.getElementById('db-train').onclick = ()=>{
+    if(anim){ cancelAnimationFrame(anim); anim=null; document.getElementById('db-train').textContent = '学習'; return; }
+    document.getElementById('db-train').textContent = '停止';
+    loop();
+  };
+  document.getElementById('db-reset').onclick = ()=>{
+    if(anim){ cancelAnimationFrame(anim); anim=null; document.getElementById('db-train').textContent = '学習'; }
+    genData(); initNet(); readout.textContent = 'epoch=0  loss=-'; draw();
+  };
+  dataSel.onchange = ()=>{ genData(); initNet(); draw(); };
+  hIn.oninput = ()=>{ hVal.textContent = hIn.value; initNet(); draw(); };
+  genData(); initNet(); draw();
+})();
+
+/* =================== §05 BACKPROP ==================== */
+(function(){
+  const c = document.getElementById('bp-canvas'); if(!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  // 2 inputs, 3 hidden, 1 output (sigmoid)
+  let w1, w2; // w1:[3][2], w2:[3]
+  function init(){
+    w1 = [[0.5,-0.4],[0.3,0.7],[-0.6,0.2]];
+    w2 = [0.4,-0.5,0.6];
+  }
+  init();
+  const x1In = document.getElementById('bp-x1');
+  const x2In = document.getElementById('bp-x2');
+  const yIn  = document.getElementById('bp-y');
+  const modeSel = document.getElementById('bp-mode');
+  const readout = document.getElementById('bp-readout');
+  function sigmoid(z){return 1/(1+Math.exp(-z));}
+  function forward(x1,x2){
+    const h = w1.map(r => sigmoid(r[0]*x1 + r[1]*x2));
+    const z = h[0]*w2[0] + h[1]*w2[1] + h[2]*w2[2];
+    const yhat = sigmoid(z);
+    return {h, z, yhat};
+  }
+  function backward(x1,x2,y){
+    const {h, yhat} = forward(x1,x2);
+    const dz = yhat - y; // dL/dz_out
+    const dw2 = h.map(hi => dz*hi);
+    const dh = w2.map(wi => dz*wi);
+    const dz1 = h.map((hi,i)=> dh[i]*hi*(1-hi));
+    const dw1 = dz1.map(d => [d*x1, d*x2]);
+    return {dw1, dw2, dz1};
+  }
+  function step(){
+    const x1=+x1In.value, x2=+x2In.value, y=+yIn.value;
+    const lr = 0.5;
+    const {dw1, dw2} = backward(x1,x2,y);
+    for(let i=0;i<3;i++){
+      w1[i][0] -= lr*dw1[i][0]; w1[i][1] -= lr*dw1[i][1];
+      w2[i] -= lr*dw2[i];
+    }
+    draw();
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const x1=+x1In.value, x2=+x2In.value, y=+yIn.value;
+    const {h, yhat} = forward(x1,x2);
+    const loss = 0.5*(yhat-y)*(yhat-y);
+    readout.textContent = `ŷ=${yhat.toFixed(3)}  loss=${loss.toFixed(4)}`;
+    const mode = modeSel.value;
+    // node positions
+    const inputs = [[80,90],[80,230]];
+    const hidden = [[330,55],[330,160],[330,265]];
+    const output = [580, 160];
+    const inputVals = [x1, x2];
+    // edges
+    ctx.lineCap='round';
+    for(let i=0;i<3;i++){
+      for(let j=0;j<2;j++){
+        let mag, color;
+        if(mode==='fwd'){
+          mag = Math.abs(inputVals[j]*w1[i][j]);
+          color = w1[i][j]>0 ? '#b8431f' : '#0d1b2a';
+        } else {
+          const {dw1} = backward(x1,x2,y);
+          mag = Math.abs(dw1[i][j]);
+          color = dw1[i][j]>0 ? '#b8431f' : '#0d1b2a';
+        }
+        ctx.strokeStyle = color; ctx.globalAlpha = 0.35 + Math.min(0.6, mag*1.5);
+        ctx.lineWidth = 0.8 + Math.min(8, mag*8);
+        ctx.beginPath();
+        ctx.moveTo(inputs[j][0]+22, inputs[j][1]);
+        ctx.lineTo(hidden[i][0]-22, hidden[i][1]);
+        ctx.stroke();
+      }
+    }
+    for(let i=0;i<3;i++){
+      let mag, color;
+      if(mode==='fwd'){
+        mag = Math.abs(h[i]*w2[i]);
+        color = w2[i]>0 ? '#b8431f' : '#0d1b2a';
+      } else {
+        const dz = yhat - y;
+        mag = Math.abs(dz*h[i]);
+        color = (dz*h[i])>0 ? '#b8431f' : '#0d1b2a';
+      }
+      ctx.strokeStyle = color; ctx.globalAlpha = 0.35 + Math.min(0.6, mag*1.5);
+      ctx.lineWidth = 0.8 + Math.min(8, mag*8);
+      ctx.beginPath();
+      ctx.moveTo(hidden[i][0]+22, hidden[i][1]);
+      ctx.lineTo(output[0]-22, output[1]);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    // nodes
+    function drawNode(x,y,label,val,fill){
+      ctx.fillStyle=fill; ctx.strokeStyle='#0d1b2a'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(x,y,22,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#0d1b2a'; ctx.font='11px JetBrains Mono, monospace';
+      ctx.textAlign='center';
+      ctx.fillText(label, x, y-3);
+      ctx.fillText(val.toFixed(2), x, y+11);
+    }
+    drawNode(inputs[0][0], inputs[0][1], 'x₁', x1, '#faf7f2');
+    drawNode(inputs[1][0], inputs[1][1], 'x₂', x2, '#faf7f2');
+    for(let i=0;i<3;i++) drawNode(hidden[i][0], hidden[i][1], 'h'+(i+1), h[i], '#ece7d8');
+    drawNode(output[0], output[1], 'ŷ', yhat, '#b8431f33');
+    // target
+    ctx.fillStyle='#0d1b2a'; ctx.font='11px JetBrains Mono, monospace';
+    ctx.textAlign='left';
+    ctx.fillText('target y='+y.toFixed(2), output[0]-50, output[1]+50);
+    // legend
+    ctx.fillText(mode==='fwd' ? 'forward: edge = |activation × weight|' : 'backward: edge = |gradient|', 20, H-12);
+  }
+  document.getElementById('bp-step').onclick = step;
+  document.getElementById('bp-reset').onclick = ()=>{ init(); draw(); };
+  x1In.oninput = draw; x2In.oninput = draw; yIn.oninput = draw; modeSel.onchange = draw;
+  draw();
+})();
+
+/* =================== §06 ATTENTION ==================== */
+(function(){
+  const c = document.getElementById('at-canvas'); if(!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const nIn = document.getElementById('at-n');
+  const nVal = document.getElementById('at-n-val');
+  const tIn = document.getElementById('at-t');
+  const patSel = document.getElementById('at-pat');
+  const readout = document.getElementById('at-readout');
+  let scores = []; // raw similarity scores
+  function genScores(){
+    const N = +nIn.value;
+    nVal.textContent = N;
+    const pat = patSel.value;
+    scores = [];
+    for(let i=0;i<N;i++){
+      const row = [];
+      for(let j=0;j<N;j++){
+        let s;
+        if(pat==='random') s = Math.random()*2-1;
+        else if(pat==='causal') s = j<=i ? (Math.random()*2-1) : -99;
+        else if(pat==='local') s = -Math.abs(i-j)*0.5 + (Math.random()*0.3);
+        else /*diagonal*/ s = (i===j ? 2 : 0) + (Math.random()*0.6-0.3);
+        row.push(s);
+      }
+      scores.push(row);
+    }
+    draw();
+  }
+  function softmax(arr, t){
+    const m = Math.max(...arr);
+    const ex = arr.map(v => Math.exp((v-m)/t));
+    const s = ex.reduce((a,b)=>a+b,0);
+    return ex.map(v=>v/s);
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const N = scores.length; if(!N) return;
+    const t = +tIn.value;
+    readout.textContent = `N=${N}  τ=${t.toFixed(2)}`;
+    const M = 60, top = 50;
+    const size = Math.min((W - M*2 - 40)/N, (H - top - 50)/N);
+    const x0 = M + 30, y0 = top;
+    // labels
+    ctx.fillStyle='#5a5f6a'; ctx.font='11px JetBrains Mono, monospace';
+    ctx.textAlign='center';
+    for(let j=0;j<N;j++){
+      ctx.fillText('K'+j, x0 + size*j + size/2, top - 8);
+    }
+    ctx.textAlign='right';
+    for(let i=0;i<N;i++){
+      ctx.fillText('Q'+i, x0 - 6, y0 + size*i + size/2 + 4);
+    }
+    // softmax per row
+    for(let i=0;i<N;i++){
+      const probs = softmax(scores[i], t);
+      for(let j=0;j<N;j++){
+        const v = probs[j];
+        // color: 茶系（高い）→ 白系（低い）
+        const r = Math.round(250 - 66*v*3);
+        const g = Math.round(247 - 180*v*3);
+        const b = Math.round(242 - 200*v*3);
+        ctx.fillStyle = `rgb(${Math.max(20,r)},${Math.max(20,g)},${Math.max(20,b)})`;
+        ctx.fillRect(x0 + size*j, y0 + size*i, size-1, size-1);
+        if(v > 0.18){
+          ctx.fillStyle = v>0.5 ? '#faf7f2' : '#0d1b2a';
+          ctx.font='9px JetBrains Mono, monospace';
+          ctx.textAlign='center';
+          ctx.fillText(v.toFixed(2), x0 + size*j + size/2, y0 + size*i + size/2 + 3);
+        }
+      }
+    }
+    // title
+    ctx.fillStyle='#0d1b2a'; ctx.font='12px JetBrains Mono, monospace';
+    ctx.textAlign='left';
+    ctx.fillText('softmax(QKᵀ/√d) — 行ごとに合計 1', M, H-15);
+  }
+  document.getElementById('at-reset').onclick = genScores;
+  nIn.oninput = genScores;
+  tIn.oninput = draw;
+  patSel.onchange = genScores;
+  genScores();
+})();
+
+/* =================== §07 KMEANS ==================== */
+(function(){
+  const c = document.getElementById('km-canvas'); if(!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const kIn = document.getElementById('km-k');
+  const kVal = document.getElementById('km-k-val');
+  const dataSel = document.getElementById('km-data');
+  const readout = document.getElementById('km-readout');
+  let pts = [], centroids = [], assign = [], iter = 0, anim = null;
+  const COLORS = ['#b8431f','#0d1b2a','#3a7d44','#8c5e8b','#d4a017','#2e86ab','#a23b72','#5c4033'];
+  function genData(){
+    pts = [];
+    const N = 160;
+    const ds = dataSel.value;
+    if(ds==='blobs'){
+      const centers = [[200,120],[460,140],[330,280]];
+      for(let i=0;i<N;i++){
+        const c = centers[i%3];
+        pts.push([c[0]+gauss()*30, c[1]+gauss()*30]);
+      }
+    } else if(ds==='circles'){
+      for(let i=0;i<N;i++){
+        const inner = i%2===0;
+        const r = inner ? 50 : 130;
+        const a = Math.random()*Math.PI*2;
+        pts.push([340+Math.cos(a)*r+gauss()*8, 180+Math.sin(a)*r+gauss()*8]);
+      }
+    } else if(ds==='moons'){
+      for(let i=0;i<N;i++){
+        const up = i%2===0;
+        const a = Math.random()*Math.PI;
+        const cx = up ? 280 : 400, cy = up ? 170 : 200;
+        const r = 100;
+        pts.push([cx + Math.cos(a)*r + gauss()*10, cy + (up?-1:1)*Math.sin(a)*r + gauss()*10]);
+      }
+    } else {
+      for(let i=0;i<N;i++) pts.push([80+Math.random()*520, 50+Math.random()*260]);
+    }
+    initCentroids();
+  }
+  function gauss(){
+    let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  }
+  function initCentroids(){
+    const K = +kIn.value; kVal.textContent = K;
+    centroids = [];
+    // K-means++ light init: pick random + farthest-first
+    centroids.push([...pts[Math.floor(Math.random()*pts.length)]]);
+    while(centroids.length < K){
+      const dists = pts.map(p => Math.min(...centroids.map(c => (p[0]-c[0])**2 + (p[1]-c[1])**2)));
+      const total = dists.reduce((a,b)=>a+b,0);
+      let r = Math.random()*total, idx=0;
+      for(let i=0;i<dists.length;i++){ r -= dists[i]; if(r<=0){ idx=i; break; } }
+      centroids.push([...pts[idx]]);
+    }
+    assign = new Array(pts.length).fill(0);
+    iter = 0;
+    assignStep(false);
+  }
+  function assignStep(updateCent){
+    let changed = false, inertia = 0;
+    for(let i=0;i<pts.length;i++){
+      let best=0, bd=Infinity;
+      for(let k=0;k<centroids.length;k++){
+        const d = (pts[i][0]-centroids[k][0])**2 + (pts[i][1]-centroids[k][1])**2;
+        if(d<bd){ bd=d; best=k; }
+      }
+      if(assign[i]!==best){ assign[i]=best; changed=true; }
+      inertia += bd;
+    }
+    if(updateCent){
+      for(let k=0;k<centroids.length;k++){
+        let sx=0, sy=0, n=0;
+        for(let i=0;i<pts.length;i++) if(assign[i]===k){ sx+=pts[i][0]; sy+=pts[i][1]; n++; }
+        if(n>0){ centroids[k][0]=sx/n; centroids[k][1]=sy/n; }
+      }
+      iter++;
+    }
+    readout.textContent = `iter=${iter}  inertia=${inertia.toFixed(0)}`;
+    draw();
+    return changed;
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#faf7f2'; ctx.fillRect(0,0,W,H);
+    // points
+    for(let i=0;i<pts.length;i++){
+      ctx.fillStyle = COLORS[assign[i]%COLORS.length];
+      ctx.globalAlpha = 0.55;
+      ctx.beginPath(); ctx.arc(pts[i][0], pts[i][1], 4, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // centroids
+    for(let k=0;k<centroids.length;k++){
+      ctx.fillStyle = COLORS[k%COLORS.length];
+      ctx.strokeStyle = '#0d1b2a'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(centroids[k][0], centroids[k][1], 11, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#faf7f2';
+      ctx.font='bold 11px JetBrains Mono, monospace'; ctx.textAlign='center';
+      ctx.fillText('μ'+(k+1), centroids[k][0], centroids[k][1]+4);
+    }
+  }
+  document.getElementById('km-step').onclick = ()=>{ assignStep(true); };
+  document.getElementById('km-run').onclick = ()=>{
+    if(anim){ cancelAnimationFrame(anim); anim=null; return; }
+    function loop(){
+      const changed = assignStep(true);
+      if(changed && iter<60) anim = requestAnimationFrame(loop); else anim=null;
+    }
+    loop();
+  };
+  document.getElementById('km-reset').onclick = ()=>{ if(anim){cancelAnimationFrame(anim); anim=null;} genData(); };
+  kIn.oninput = initCentroids;
+  dataSel.onchange = genData;
+  genData();
+})();
+
+/* =================== §08 PCA ==================== */
+(function(){
+  const c = document.getElementById('pca-canvas'); if(!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const shapeSel = document.getElementById('pca-shape');
+  const rotIn = document.getElementById('pca-rot');
+  const stretchIn = document.getElementById('pca-stretch');
+  const noiseIn = document.getElementById('pca-noise');
+  const projIn = document.getElementById('pca-proj');
+  const readout = document.getElementById('pca-readout');
+  let pts = [];
+  function gauss(){
+    let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  }
+  function genData(){
+    const N = 200;
+    const shape = shapeSel.value;
+    const th = (+rotIn.value)*Math.PI/180;
+    const s = +stretchIn.value;
+    const n = +noiseIn.value;
+    const cos = Math.cos(th), sin = Math.sin(th);
+    pts = [];
+    for(let i=0;i<N;i++){
+      let x,y;
+      if(shape==='iso'){ x = gauss(); y = gauss(); }
+      else if(shape==='diag'){ x = gauss()*s; y = gauss(); }
+      else if(shape==='anti'){ x = gauss(); y = gauss()*s; }
+      else /*curve*/ { const t = gauss()*1.5; x = t; y = 0.4*t*t + gauss()*0.5; }
+      const xr = x*cos - y*sin;
+      const yr = x*sin + y*cos;
+      pts.push([xr + gauss()*n, yr + gauss()*n]);
+    }
+    draw();
+  }
+  function eig2(a,b,c,d){
+    // eigenvalues of 2x2 symmetric [[a,b],[b,d]]
+    const tr = a+d, det = a*d - b*b;
+    const disc = Math.sqrt(Math.max(0, tr*tr/4 - det));
+    const l1 = tr/2 + disc;
+    const l2 = tr/2 - disc;
+    // eigenvector for l1: (b, l1-a) (if b != 0)
+    let v1;
+    if(Math.abs(b) > 1e-6){
+      v1 = [b, l1-a];
+    } else {
+      v1 = a>=d ? [1,0] : [0,1];
+    }
+    const norm = Math.sqrt(v1[0]*v1[0]+v1[1]*v1[1]);
+    v1 = [v1[0]/norm, v1[1]/norm];
+    const v2 = [-v1[1], v1[0]];
+    return {l1, l2, v1, v2};
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#faf7f2'; ctx.fillRect(0,0,W,H);
+    if(!pts.length) return;
+    // compute mean and covariance
+    let mx=0,my=0; for(const p of pts){mx+=p[0]; my+=p[1];} mx/=pts.length; my/=pts.length;
+    let a=0,b=0,d=0;
+    for(const p of pts){ const dx=p[0]-mx, dy=p[1]-my; a+=dx*dx; b+=dx*dy; d+=dy*dy; }
+    a/=pts.length; b/=pts.length; d/=pts.length;
+    const {l1,l2,v1,v2} = eig2(a,b,d,d); // careful: covariance is [[a,b],[b,d]]
+    // recompute correctly
+    const eig = eig2(a,b,b,d);
+    const ratio = eig.l1 / (eig.l1 + eig.l2);
+    readout.textContent = `λ₁=${eig.l1.toFixed(2)}  λ₂=${eig.l2.toFixed(2)}  説明率=${(ratio*100).toFixed(1)}%`;
+    // map to canvas (center 340, 180; scale 50)
+    const cx = 340, cy = 180, scale = 50;
+    function toCanvas(p){return [cx + (p[0]-mx)*scale, cy - (p[1]-my)*scale];}
+    // optional projection: show projections onto v1 as small ticks
+    if(projIn.checked){
+      ctx.strokeStyle='#b8431f'; ctx.globalAlpha=0.15; ctx.lineWidth=1;
+      for(const p of pts){
+        const dx = p[0]-mx, dy = p[1]-my;
+        const t = dx*eig.v1[0] + dy*eig.v1[1];
+        const projP = [mx + t*eig.v1[0], my + t*eig.v1[1]];
+        const pc = toCanvas(p), pp = toCanvas(projP);
+        ctx.beginPath(); ctx.moveTo(pc[0],pc[1]); ctx.lineTo(pp[0],pp[1]); ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+    }
+    // points
+    ctx.fillStyle='#0d1b2a'; ctx.globalAlpha=0.65;
+    for(const p of pts){
+      const q = toCanvas(p);
+      ctx.beginPath(); ctx.arc(q[0], q[1], 3, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    // mean point
+    ctx.fillStyle='#b8431f';
+    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2); ctx.fill();
+    // principal axes
+    const len1 = Math.sqrt(eig.l1)*scale*2.0;
+    const len2 = Math.sqrt(eig.l2)*scale*2.0;
+    function arrow(vx,vy,len,color,label){
+      ctx.strokeStyle=color; ctx.lineWidth=3;
+      const ex = cx + vx*len, ey = cy - vy*len;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.stroke();
+      const ang = Math.atan2(-vy, vx);
+      const ah = 8;
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(ex - ah*Math.cos(ang - 0.4), ey - ah*Math.sin(ang - 0.4));
+      ctx.lineTo(ex - ah*Math.cos(ang + 0.4), ey - ah*Math.sin(ang + 0.4));
+      ctx.closePath(); ctx.fillStyle=color; ctx.fill();
+      ctx.fillStyle=color; ctx.font='12px JetBrains Mono, monospace';
+      ctx.fillText(label, ex+6, ey-6);
+    }
+    arrow(eig.v1[0], eig.v1[1], len1, '#b8431f', 'PC1');
+    arrow(eig.v2[0], eig.v2[1], len2, '#0d1b2a', 'PC2');
+    // axes
+    ctx.strokeStyle='#c8c2b3'; ctx.lineWidth=1; ctx.globalAlpha=0.4;
+    ctx.beginPath(); ctx.moveTo(40, cy); ctx.lineTo(W-40, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, 30); ctx.lineTo(cx, H-30); ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+  document.getElementById('pca-reset').onclick = genData;
+  shapeSel.onchange = genData;
+  rotIn.oninput = genData;
+  stretchIn.oninput = genData;
+  noiseIn.oninput = genData;
+  projIn.onchange = draw;
+  genData();
+})();
+</script>
+</body>
+</html>

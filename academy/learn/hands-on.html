@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ハンズオン — Swallow AI Academy</title>
+<meta name="description" content="Colab / PyTorch / SageMaker / Jetson の最小の動くサンプルを束ねた、手を動かすためのレシピ集。">
+<link rel="stylesheet" href="../assets/css/main.css">
+<style>
+  pre.code { background:#0d1b2a; color:#f1ede4; padding:18px 20px; font-family:var(--font-mono); font-size:12.5px; line-height:1.7; overflow-x:auto; border-radius:2px; margin:18px 0; }
+  pre.code .c { color:#837e74; }
+  pre.code .k { color:#c97a1f; }
+  pre.code .s { color:#a8c97a; }
+  pre.code .n { color:#9fbede; }
+  .recipe-tag { display:inline-block; font-family:var(--font-mono); font-size:10px; letter-spacing:0.15em; text-transform:uppercase; padding:3px 9px; border:1px solid var(--rule); background:var(--paper-soft); color:var(--ink-soft); margin-right:6px; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../index.html#certifications">資格</a>
+      <a href="basics.html">基本</a>
+      <a href="advanced.html">応用</a>
+      <a href="simulation.html">シミュレーション</a>
+      <a href="hands-on.html" class="current">ハンズオン</a>
+      <a href="../quiz.html">問題演習</a>
+    </nav>
+    <div class="issue-tag">FRAME 04<br><strong>Hands-on</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; LEARN &nbsp;/&nbsp; HANDS-ON</div>
+    <h1>ハンズオン<span class="en">Hands-on — minimum runnable recipes</span></h1>
+    <p class="standfirst">読むより速い理解のために、最小で動くコードを集めた章。Google Colab、PyTorch、Hugging Face、AWS SageMaker、NVIDIA Jetson — 試験範囲と実務をつなぐ橋として、手を動かしながら読む。</p>
+  </div>
+</section>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>レシピ</h6>
+    <a href="#colab">§01 Colab を始める</a>
+    <a href="#pytorch">§02 PyTorch / MNIST</a>
+    <a href="#hf">§03 Hugging Face / LLM</a>
+    <a href="#rag">§04 ローカルRAG</a>
+    <a href="#sagemaker">§05 SageMaker</a>
+    <a href="#jetson">§06 Jetson</a>
+    <a href="#next">§07 次へ</a>
+  </aside>
+
+  <article class="article-body">
+    <div class="article-eyebrow">Frame 04 — Hands-on &nbsp;·&nbsp; 2026 Spring</div>
+    <h1 class="article-title">ハンズオン<span class="en">Code that runs in five minutes.</span></h1>
+    <p class="article-lede">どの章も <strong>5〜30分で結果が出る最小サンプル</strong>。GPU が手元になくても Google Colab で完結するように構成しました。長大なチュートリアルを読む前に、まず動かして全体像を掴むためのレシピ集です。</p>
+
+    <h2 id="colab"><span class="label">§01 / COLAB</span>Google Colab を始める</h2>
+    <p><span class="recipe-tag">無料</span><span class="recipe-tag">GPU 可</span><span class="recipe-tag">所要 5 分</span></p>
+    <p>環境構築に時間を使わないために、ブラウザ完結の Google Colab を入口にします。Google アカウントだけで GPU が無料で使え、PyTorch・TensorFlow も最初から入っています。</p>
+    <ol>
+      <li><a href="https://colab.research.google.com/" target="_blank" rel="noopener">colab.research.google.com</a> を開く</li>
+      <li>「ノートブックを新規作成」→ メニューの「ランタイム → ランタイムのタイプを変更」で T4 GPU を選択</li>
+      <li>最初のセルで GPU の確認</li>
+    </ol>
+<pre class="code"><span class="c"># GPU が見えているか確認</span>
+<span class="k">import</span> torch
+<span class="n">print</span>(torch.cuda.is_available(), torch.cuda.get_device_name(<span class="n">0</span>) <span class="k">if</span> torch.cuda.is_available() <span class="k">else</span> <span class="s">'CPU'</span>)
+</pre>
+
+    <h2 id="pytorch"><span class="label">§02 / PYTORCH</span>PyTorch で MNIST 分類</h2>
+    <p><span class="recipe-tag">PyTorch</span><span class="recipe-tag">画像分類</span><span class="recipe-tag">所要 10 分</span></p>
+    <p>深層学習の Hello World。28×28 の手書き数字を分類する CNN を、数十行で書き、Colab の T4 GPU で 1 分ほど学習させます。</p>
+<pre class="code"><span class="k">import</span> torch, torch.nn <span class="k">as</span> nn
+<span class="k">from</span> torch.utils.data <span class="k">import</span> DataLoader
+<span class="k">from</span> torchvision <span class="k">import</span> datasets, transforms
+
+device = <span class="s">'cuda'</span> <span class="k">if</span> torch.cuda.is_available() <span class="k">else</span> <span class="s">'cpu'</span>
+tf = transforms.ToTensor()
+train_loader = DataLoader(datasets.MNIST(<span class="s">'.'</span>, train=<span class="n">True</span>, download=<span class="n">True</span>, transform=tf), batch_size=<span class="n">128</span>, shuffle=<span class="n">True</span>)
+test_loader  = DataLoader(datasets.MNIST(<span class="s">'.'</span>, train=<span class="n">False</span>, download=<span class="n">True</span>, transform=tf), batch_size=<span class="n">256</span>)
+
+<span class="k">class</span> CNN(nn.Module):
+    <span class="k">def</span> __init__(self):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(<span class="n">1</span>,<span class="n">32</span>,<span class="n">3</span>,padding=<span class="n">1</span>), nn.ReLU(), nn.MaxPool2d(<span class="n">2</span>),
+            nn.Conv2d(<span class="n">32</span>,<span class="n">64</span>,<span class="n">3</span>,padding=<span class="n">1</span>), nn.ReLU(), nn.MaxPool2d(<span class="n">2</span>),
+            nn.Flatten(), nn.Linear(<span class="n">64</span>*<span class="n">7</span>*<span class="n">7</span>,<span class="n">128</span>), nn.ReLU(), nn.Linear(<span class="n">128</span>,<span class="n">10</span>)
+        )
+    <span class="k">def</span> forward(self, x): <span class="k">return</span> self.net(x)
+
+model = CNN().to(device)
+opt = torch.optim.Adam(model.parameters(), lr=<span class="n">1e-3</span>)
+loss_fn = nn.CrossEntropyLoss()
+
+<span class="k">for</span> epoch <span class="k">in</span> range(<span class="n">3</span>):
+    model.train()
+    <span class="k">for</span> x, y <span class="k">in</span> train_loader:
+        x, y = x.to(device), y.to(device)
+        opt.zero_grad(); loss = loss_fn(model(x), y); loss.backward(); opt.step()
+    model.eval(); correct = 0
+    <span class="k">with</span> torch.no_grad():
+        <span class="k">for</span> x, y <span class="k">in</span> test_loader:
+            x, y = x.to(device), y.to(device)
+            correct += (model(x).argmax(<span class="n">1</span>) == y).sum().item()
+    print(<span class="s">f'epoch </span>{epoch}<span class="s"> acc=</span>{correct/<span class="n">10000</span>:.4f}<span class="s">'</span>)
+</pre>
+
+    <div class="callout">
+      <p><strong>読みどころ。</strong>(1) <code>DataLoader</code> がバッチ・シャッフルを面倒見る (2) <code>nn.Sequential</code> で層を積む (3) <code>opt.zero_grad → loss.backward → opt.step</code> の3点セットが PyTorch 学習ループの基本形 (4) <code>model.eval()</code> + <code>torch.no_grad()</code> で評価時の挙動を切替。</p>
+    </div>
+
+    <h2 id="hf"><span class="label">§03 / HUGGING FACE</span>Hugging Face で LLM 推論</h2>
+    <p><span class="recipe-tag">LLM</span><span class="recipe-tag">Transformers</span><span class="recipe-tag">所要 10 分</span></p>
+    <p>事前学習済みモデルを数行で動かす。日本語が得意な小型モデルを例に、テキスト生成と分類の最小サンプル。</p>
+<pre class="code"><span class="c"># pip install -U transformers accelerate</span>
+<span class="k">from</span> transformers <span class="k">import</span> pipeline
+
+<span class="c"># 1) テキスト生成（小型モデルで動作確認）</span>
+gen = pipeline(<span class="s">'text-generation'</span>, model=<span class="s">'rinna/japanese-gpt2-small'</span>, device_map=<span class="s">'auto'</span>)
+print(gen(<span class="s">'今日は良い天気なので'</span>, max_new_tokens=<span class="n">40</span>, do_sample=<span class="n">True</span>, temperature=<span class="n">0.8</span>)[<span class="n">0</span>][<span class="s">'generated_text'</span>])
+
+<span class="c"># 2) 感情分類（事前学習済み多言語モデル）</span>
+clf = pipeline(<span class="s">'sentiment-analysis'</span>, model=<span class="s">'cardiffnlp/twitter-xlm-roberta-base-sentiment'</span>)
+print(clf([<span class="s">'最高だった'</span>, <span class="s">'がっかり'</span>, <span class="s">'普通'</span>]))
+</pre>
+    <h3>パラメータの読み方</h3>
+    <ul>
+      <li><code>do_sample=True</code> + <code>temperature</code> — 確率的に生成（多様性）</li>
+      <li><code>do_sample=False</code> — Greedy（決定的）</li>
+      <li><code>top_p</code> — nucleus sampling（累積確率で切る）</li>
+      <li><code>repetition_penalty</code> — 同じ語の連発を抑える</li>
+      <li><code>max_new_tokens</code> — 生成する最大トークン数</li>
+    </ul>
+
+    <h2 id="rag"><span class="label">§04 / RAG</span>ローカルで動く最小 RAG</h2>
+    <p><span class="recipe-tag">RAG</span><span class="recipe-tag">LangChain なし</span><span class="recipe-tag">所要 20 分</span></p>
+    <p>外部APIなしで「文書を読み込んで埋め込み、質問に近い文書を検索して回答に使う」という RAG の核を、ライブラリを最小限にして書く。</p>
+<pre class="code"><span class="c"># pip install sentence-transformers numpy</span>
+<span class="k">from</span> sentence_transformers <span class="k">import</span> SentenceTransformer
+<span class="k">import</span> numpy <span class="k">as</span> np
+
+<span class="c"># 1) コーパス（実際は PDF や Markdown から読み込む）</span>
+docs = [
+    <span class="s">'勾配降下法は損失関数の勾配と逆方向に少しずつ進むことで最小値を探す。'</span>,
+    <span class="s">'Transformer は Self-Attention によって系列の全位置を相互参照する。'</span>,
+    <span class="s">'過学習は学習データに過剰適合し、未知のデータで性能が落ちる現象。'</span>,
+    <span class="s">'L2 正則化は重みの二乗和をロスに加え、大きな重みにペナルティを課す。'</span>,
+]
+
+<span class="c"># 2) 埋め込み</span>
+embedder = SentenceTransformer(<span class="s">'intfloat/multilingual-e5-small'</span>)
+doc_emb = embedder.encode([<span class="s">'passage: '</span> + d <span class="k">for</span> d <span class="k">in</span> docs], normalize_embeddings=<span class="n">True</span>)
+
+<span class="c"># 3) 検索</span>
+<span class="k">def</span> retrieve(query, k=<span class="n">2</span>):
+    q = embedder.encode(<span class="s">'query: '</span> + query, normalize_embeddings=<span class="n">True</span>)
+    scores = doc_emb @ q
+    idx = np.argsort(-scores)[:k]
+    <span class="k">return</span> [(docs[i], float(scores[i])) <span class="k">for</span> i <span class="k">in</span> idx]
+
+<span class="c"># 4) 質問 → 文脈付きプロンプト（LLM への入力）</span>
+q = <span class="s">'過学習を防ぐ方法は？'</span>
+ctx = retrieve(q, k=<span class="n">2</span>)
+prompt = <span class="s">f'以下の文書を参考に「</span>{q}<span class="s">」に答えてください。\n\n'</span> + <span class="s">'\n'</span>.join(<span class="s">f'- '</span>+c[<span class="n">0</span>] <span class="k">for</span> c <span class="k">in</span> ctx)
+print(prompt)
+<span class="c"># この prompt を LLM (OpenAI / Anthropic / ローカル) に渡せば RAG 完成</span>
+</pre>
+    <h3>実プロダクトへの拡張</h3>
+    <ul>
+      <li>FAISS / Qdrant / pgvector で大量文書に対応</li>
+      <li>BM25 と組み合わせたハイブリッド検索</li>
+      <li>クエリ書き換え（HyDE、Multi-Query）</li>
+      <li>Reranker（cross-encoder）で上位 k を再ランキング</li>
+      <li>引用箇所を回答に明示</li>
+    </ul>
+
+    <h2 id="sagemaker"><span class="label">§05 / SAGEMAKER</span>AWS SageMaker で訓練→デプロイ</h2>
+    <p><span class="recipe-tag">AWS</span><span class="recipe-tag">MLA-C01</span><span class="recipe-tag">所要 30 分（要 AWS アカウント）</span></p>
+    <p>SageMaker SDK の核は「Estimator で訓練 → fit → deploy → predict」の流れ。AWS MLA-C01 試験でも頻出の構文。</p>
+<pre class="code"><span class="c"># pip install sagemaker</span>
+<span class="k">import</span> sagemaker
+<span class="k">from</span> sagemaker.pytorch <span class="k">import</span> PyTorch
+<span class="k">from</span> sagemaker <span class="k">import</span> get_execution_role
+
+session = sagemaker.Session()
+role = get_execution_role()  <span class="c"># SageMaker Studio 内なら自動取得</span>
+
+estimator = PyTorch(
+    entry_point=<span class="s">'train.py'</span>,           <span class="c"># 学習スクリプト</span>
+    source_dir=<span class="s">'src'</span>,                  <span class="c"># 周辺コード</span>
+    role=role,
+    instance_type=<span class="s">'ml.g5.xlarge'</span>,     <span class="c"># GPU インスタンス</span>
+    instance_count=<span class="n">1</span>,
+    framework_version=<span class="s">'2.3.0'</span>,
+    py_version=<span class="s">'py311'</span>,
+    hyperparameters={<span class="s">'epochs'</span>: <span class="n">5</span>, <span class="s">'lr'</span>: <span class="n">1e-3</span>},
+)
+
+<span class="c"># 1) 訓練ジョブ起動（S3 上のデータを参照）</span>
+estimator.fit({<span class="s">'train'</span>: <span class="s">'s3://my-bucket/data/train'</span>})
+
+<span class="c"># 2) リアルタイム推論エンドポイントへデプロイ</span>
+predictor = estimator.deploy(
+    initial_instance_count=<span class="n">1</span>,
+    instance_type=<span class="s">'ml.m5.large'</span>,
+)
+
+<span class="c"># 3) 推論</span>
+result = predictor.predict({<span class="s">'inputs'</span>: [[<span class="n">1.0</span>, <span class="n">2.0</span>, <span class="n">3.0</span>]]})
+print(result)
+
+<span class="c"># 4) 後片付け（課金を止める）</span>
+predictor.delete_endpoint()
+</pre>
+    <h3>関連サービスの早見</h3>
+    <ul>
+      <li><strong>SageMaker Pipelines</strong> — MLパイプラインを DAG として定義（CI/CD for ML）</li>
+      <li><strong>Model Registry</strong> — モデルバージョンと承認フローを管理</li>
+      <li><strong>Model Monitor</strong> — データドリフト・モデルドリフトの監視</li>
+      <li><strong>Feature Store</strong> — オンライン／オフライン特徴量の一元管理</li>
+      <li><strong>Clarify</strong> — バイアス検出・説明可能性</li>
+      <li><strong>JumpStart</strong> — 事前学習済みモデルのワンクリック展開</li>
+      <li><strong>Inference オプション</strong>: Real-time / Serverless / Async / Batch transform</li>
+    </ul>
+
+    <h2 id="jetson"><span class="label">§06 / JETSON</span>Jetson でエッジ推論</h2>
+    <p><span class="recipe-tag">NVIDIA</span><span class="recipe-tag">Edge AI</span><span class="recipe-tag">所要 30 分</span></p>
+    <p>NVIDIA Jetson（Nano / Orin Nano / AGX Orin）は手のひらサイズのエッジAIプラットフォーム。クラウドにデータを送らずに、現地で推論を完結させる。</p>
+    <h3>セットアップの流れ</h3>
+    <ol>
+      <li>JetPack（CUDA・cuDNN・TensorRT 同梱の SDK）を SD カードに書き込み</li>
+      <li>初回起動でユーザ設定 → <code>jtop</code> でリソース監視</li>
+      <li>NVIDIA NGC から PyTorch / TensorRT のコンテナを <code>docker pull</code></li>
+    </ol>
+<pre class="code"><span class="c"># Jetson 用の PyTorch コンテナを起動</span>
+sudo docker run --runtime nvidia -it --rm \
+  -v $(pwd):/work -w /work \
+  nvcr.io/nvidia/l4t-pytorch:r36.2.0-pth2.2-py3
+
+<span class="c"># コンテナ内: モデルを TensorRT で最適化</span>
+<span class="k">import</span> torch, torch_tensorrt
+model = torch.load(<span class="s">'model.pt'</span>).eval().cuda()
+trt = torch_tensorrt.compile(model,
+    inputs=[torch_tensorrt.Input((<span class="n">1</span>,<span class="n">3</span>,<span class="n">224</span>,<span class="n">224</span>), dtype=torch.float16)],
+    enabled_precisions={torch.float16})
+torch.jit.save(trt, <span class="s">'model_trt.ts'</span>)
+</pre>
+    <h3>Jetson AI Specialist で求められる観点</h3>
+    <ul>
+      <li>JetPack・CUDA・cuDNN・TensorRT の役割と関係</li>
+      <li>FP32 → FP16 / INT8 量子化による高速化</li>
+      <li>DeepStream による映像パイプライン構築</li>
+      <li>Isaac ROS によるロボティクス統合</li>
+      <li>消費電力モード（10W / 15W / MAXN）と性能のトレードオフ</li>
+    </ul>
+
+    <h2 id="next"><span class="label">§07 / NEXT</span>次のステップ</h2>
+    <p>動かしたコードを自分のテーマで応用してみる、もしくはここで得た理解を問題演習で固めにいく。両方を交互にやるのがいちばん身につきます。</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0;">
+      <a class="btn solid" href="../quiz.html">問題演習へ →</a>
+      <a class="btn" href="simulation.html">シミュレーション</a>
+      <a class="btn" href="advanced.html">応用に戻る</a>
+    </div>
+
+    <hr class="divider bold">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      Hands-on · 2026 Spring · Code is original, runnable in minutes
+    </p>
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>資格</h6><ul>
+      <li><a href="../certifications/g-kentei.html">G検定</a></li>
+      <li><a href="../certifications/e-shikaku.html">E資格</a></li>
+      <li><a href="../certifications/tokei-kentei.html">統計検定</a></li>
+      <li><a href="../certifications/python-cert.html">Python認定</a></li>
+      <li><a href="../certifications/aws-mla-c01.html">AWS MLA-C01</a></li>
+      <li><a href="../certifications/image-engineer.html">画像処理エンジニア</a></li>
+      <li><a href="../certifications/jetson-ai.html">Jetson AI</a></li>
+    </ul></div>
+    <div><h6>学習</h6><ul>
+      <li><a href="basics.html">基本</a></li>
+      <li><a href="advanced.html">応用</a></li>
+      <li><a href="simulation.html">シミュレーション</a></li>
+      <li><a href="hands-on.html">ハンズオン</a></li>
+      <li><a href="../quiz.html">問題演習</a></li>
+    </ul></div>
+    <div><h6>外部</h6><ul>
+      <li><a href="https://www.jdla.org/" target="_blank" rel="noopener">JDLA</a></li>
+      <li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener">Kaggle Learn</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>
