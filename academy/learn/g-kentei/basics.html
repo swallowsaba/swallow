@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定の基本：AIの定義と歴史、線形代数・微積分・確率統計の数学基礎、機械学習の体系、ニューラルネットの仕組みを、定義・導出・例題・つまずきポイントまで含めて教科書品質で解説。">
+<link rel="stylesheet" href="../../assets/css/main.css">
+<style>
+/* 数式表示用の補助スタイル */
+.formula { background:#f5f1e8; border-left:3px solid #b8431f; padding:14px 18px; margin:18px 0; font-family:'JetBrains Mono', 'Courier New', monospace; font-size:14px; line-height:1.8; overflow-x:auto; }
+.formula-num { color:#5a5f6a; font-size:11px; text-align:right; margin-top:4px; }
+.derive { background:#fafafa; border:1px solid #e5e1d4; padding:18px 22px; margin:20px 0; font-size:14.5px; line-height:1.95; }
+.derive-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#0d1b2a; border-bottom:1px solid #c8c2b3; padding-bottom:8px; margin-bottom:12px; letter-spacing:0.04em; }
+.example { background:#fff8f2; border-left:3px solid #d4a017; padding:16px 22px; margin:20px 0; font-size:14.5px; line-height:1.9; }
+.example-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#0d1b2a; margin-bottom:8px; }
+.pitfall { background:#fbf3f0; border-left:3px solid #b8431f; padding:16px 22px; margin:20px 0; font-size:14.5px; line-height:1.9; }
+.pitfall-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#b8431f; margin-bottom:8px; }
+.crossref { background:#eef2f5; border-left:3px solid #2e5577; padding:12px 18px; margin:18px 0; font-size:13.5px; line-height:1.7; }
+.crossref-title { font-family:var(--font-display-jp); font-weight:700; font-size:12px; color:#2e5577; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
+.flow-nav { display:flex; justify-content:space-between; align-items:center; padding:18px 24px; background:#0d1b2a; color:#faf7f2; margin:32px 0; border-radius:2px; font-size:13.5px; }
+.flow-nav a { color:#faf7f2; text-decoration:none; }
+.flow-nav a:hover { color:#d4a017; }
+.flow-nav .step-label { font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:#9aa0a8; }
+.flow-nav .step-title { font-family:var(--font-display-jp); font-weight:700; font-size:15px; }
+.toc-deep { background:#faf7f2; border:1px solid #c8c2b3; padding:20px 26px; margin:24px 0; }
+.toc-deep h4 { font-family:var(--font-display-jp); font-weight:700; font-size:14px; margin:0 0 12px; color:#0d1b2a; }
+.toc-deep ol { margin:0; padding-left:22px; font-size:13.5px; line-height:1.95; }
+.toc-deep ol li { margin-bottom:4px; }
+.kbd { font-family:'JetBrains Mono', monospace; background:#0d1b2a; color:#faf7f2; padding:1px 6px; font-size:12px; border-radius:2px; }
+table.formula-table { width:100%; border-collapse:collapse; margin:18px 0; font-size:13.5px; }
+table.formula-table th, table.formula-table td { padding:9px 13px; text-align:left; border-bottom:1px solid #e5e1d4; vertical-align:top; }
+table.formula-table th { background:#faf7f2; font-family:var(--font-display-jp); font-weight:700; font-size:12.5px; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../index.html#certifications">資格</a>
+      <a href="../../certifications/g-kentei.html">G検定</a>
+      <a href="basics.html">基本</a>
+      <a href="advanced.html">応用</a>
+      <a href="simulation.html">シミュレーション</a>
+      <a href="hands-on.html">ハンズオン</a>
+      <a href="../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>Ch.1 基本</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../index.html">HOME</a> &nbsp;/&nbsp; LEARN &nbsp;/&nbsp; G検定 &nbsp;/&nbsp; 基本</div>
+    <h1>G検定 基本<span class="en">Chapter 1 — Foundations</span></h1>
+    <p class="standfirst">G検定が問う「AIリテラシー」の核は、ハイプではなく <strong>仕組みの理解</strong> です。本章はその仕組みを支える <strong>数学・機械学習・深層学習の基礎</strong> を、定義・導出・例題・つまずきポイントまで含めて、教科書1章として書き下ろします。読み終えたとき、上位章（応用・生成AI）を独立して読めるだけの地盤が残ることを目標にします。</p>
+  </div>
+</section>
+
+<div class="flow-nav">
+  <div><span class="step-label">Step 1 of 4</span><br><span class="step-title">基本（このページ）</span></div>
+  <div>→ <a href="advanced.html">応用：Transformer・生成AI・倫理</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>Chapter 1 目次</h6>
+    <a href="#intro">§01 はじめに：AIとは何か</a>
+    <a href="#history">§02 AIの歴史と冬の時代</a>
+    <a href="#math-linalg">§03 線形代数（ベクトル・行列・固有値）</a>
+    <a href="#math-calc">§04 微積分と最適化</a>
+    <a href="#math-prob">§05 確率と統計</a>
+    <a href="#math-info">§06 情報理論の入口</a>
+    <a href="#ml-frame">§07 機械学習のパラダイム</a>
+    <a href="#ml-classical">§08 古典的機械学習手法</a>
+    <a href="#ml-eval">§09 評価と過学習</a>
+    <a href="#nn-basics">§10 ニューラルネットの最小構成</a>
+    <a href="#nn-backprop">§11 バックプロパゲーション</a>
+    <a href="#nn-tricks">§12 学習を成功させる工夫</a>
+    <a href="#summary">§13 章のまとめ</a>
+  </aside>
+
+  <article class="article-body">
+    <div class="article-eyebrow">G-KENTEI · CHAPTER 1 · BASICS · 2026</div>
+    <h1 class="article-title" style="border-top:none;padding-top:0;margin-top:0;">仕組みから理解する、<br>AIリテラシーの地盤</h1>
+    <p class="article-lede">
+      AIエンジニアの基礎は「単語を覚える」ことではありません。<strong>「なぜそうなるか」を式で書ける</strong> ことです。本章ではG検定範囲の数学・機械学習・深層学習の基礎を、暗記用語ではなく仕組みとして再構築します。所要時間は読了で 90〜150 分、手を動かしながらなら 1 週間程度です。
+    </p>
+
+    <!-- =========================================================== -->
+    <h2 id="intro"><span class="label">§01 / INTRODUCTION</span>はじめに：AIとは何か</h2>
+
+    <h3>1.1 「AI」という曖昧な言葉</h3>
+    <p>
+      「AI（人工知能）」という用語は、研究者の間でも明確な合意のない曖昧な言葉です。チューリングは1950年の論文 <em>“Computing Machinery and Intelligence”</em> で、知能を哲学的に定義する代わりに、<strong>「人間と区別できないほど自然な会話ができるかどうか」</strong> を判定基準とすることを提案しました（後の<strong>チューリングテスト</strong>）。この発想は、知能を <strong>関数の入出力（振る舞い）</strong> で定義しようとする「機能主義」の立場です。一方、ジョン・サールは1980年に <strong>「中国語の部屋」</strong> という思考実験を提示し、入出力が知的に見えても内部に <strong>意味理解</strong> が存在しなければ知能とは呼べない、と反論しました。
+    </p>
+    <p>
+      この対立は単なる哲学論ではなく、現代の LLM 評価にも直結します。LLM は流暢に応答しますが、それが「理解」なのか「統計的なパターン補完」なのか、研究者間で見解は割れています。G検定では <strong>両方の立場を理解した上で、どちらが優れているか結論を出さない</strong> 姿勢が求められます。
+    </p>
+
+    <h3>1.2 強いAI／弱いAI／AGI／ASI</h3>
+    <p>用語の関係を整理します：</p>
+    <table class="formula-table">
+      <tr><th>用語</th><th>定義</th><th>現在の達成状況</th></tr>
+      <tr><td><strong>弱いAI</strong></td><td>特定タスクに特化したAI。タスクが解ければ「意識」「理解」は不要</td><td>達成（画像認識、翻訳など）</td></tr>
+      <tr><td><strong>強いAI</strong></td><td>人間と同等の意識・主観・自己認識を持つAI</td><td>未達成。実現可能性も論争中</td></tr>
+      <tr><td><strong>ANI (特化型)</strong></td><td>弱いAIとほぼ同義。Artificial Narrow Intelligence</td><td>達成</td></tr>
+      <tr><td><strong>AGI (汎用)</strong></td><td>人間と同等以上に、領域横断で課題を解けるAI</td><td>研究途上。LLMが近いとする意見と否定的意見が並立</td></tr>
+      <tr><td><strong>ASI (超知能)</strong></td><td>あらゆる領域で人間を超えるAI</td><td>仮説段階</td></tr>
+    </table>
+    <p>
+      レイ・カーツワイルは2005年の著書 <em>『The Singularity Is Near』</em> で、<strong>2045年頃に技術的特異点（シンギュラリティ）が到来する</strong> と予測しました。これは「ASI に到達することで、技術進歩が人間に予測不能な速度に達する」というシナリオです。受け止め方は研究者ごとに異なります。
+    </p>
+
+    <h3>1.3 知能を測ることの困難さ</h3>
+    <p>
+      AI が「人間並み」かどうかを評価するには、知能を定量化する必要があります。しかし「知能」という対象自体に普遍的な定義がないため、評価には常にバイアスが伴います。現在用いられる代表的なベンチマーク：
+    </p>
+    <ul>
+      <li><strong>MMLU</strong>（Massive Multitask Language Understanding）：57 分野の知識問題で LLM の汎用知識を測る</li>
+      <li><strong>HumanEval / SWE-bench</strong>：プログラミング能力</li>
+      <li><strong>ARC-AGI</strong>：抽象的パターン推論。LLM が苦手な領域として注目された</li>
+      <li><strong>GAIA</strong>：実世界的なエージェント能力</li>
+    </ul>
+    <p>
+      ベンチマーク・スコアの上昇は <strong>「知能」の上昇とは必ずしも等価でない</strong> 点に注意。学習データに類題が混入する <em>contamination</em>、過剰最適化、評価軸の偏りなどが常に問題となります。
+    </p>
+
+    <h3>1.4 古典的なAIの問題</h3>
+    <p>G検定で出題される代表的な未解決問題：</p>
+    <ul>
+      <li><strong>フレーム問題（McCarthy, 1969）</strong>：実世界では考慮すべき要因が無数にあり、「何を考慮し何を無視するか」を有限ステップで決定できない問題。シンボリックAIの限界の象徴。</li>
+      <li><strong>シンボルグラウンディング問題（Harnad, 1990）</strong>：記号と実世界の意味を結びつけられないという問題。「リンゴ」という記号が実物のリンゴと結びついていない計算機は、本当の意味を持てない。</li>
+      <li><strong>トイプロブレム</strong>：理想化された限定環境（チェス盤など）で解ける問題。実世界に拡張するとフレーム問題に当たる。</li>
+      <li><strong>ノーフリーランチ定理（Wolpert, 1996）</strong>：全ての問題で最強のアルゴリズムは存在しない。問題ごとに帰納バイアスを与える必要がある、という数学的命題。</li>
+    </ul>
+
+    <div class="crossref">
+      <div class="crossref-title">→ クロスリファレンス</div>
+      これらの未解決問題は、現代の生成AIにも姿を変えて現れます。ハルシネーション（事実と異なる出力）はシンボルグラウンディング問題の現代版とも言えます。詳細は <a href="advanced.html#hallucination">応用 §05 ハルシネーションと事実性</a>。
+    </div>
+
+    <!-- =========================================================== -->
+    <h2 id="history"><span class="label">§02 / HISTORY</span>AIの歴史と冬の時代</h2>
+
+    <p>
+      AI の歴史は <strong>3 つのブームと2回の「冬」</strong> として整理されます。それぞれのブームを支えた技術と、冬を招いた限界を理解することで、現在の生成AIブーム（第4次）が将来どこに向かう可能性があるかを推測する基盤になります。
+    </p>
+
+    <h3>2.1 第1次AIブーム（1956–1970s前半）：探索と推論</h3>
+    <p>
+      1956年、ダートマス会議で <strong>マッカーシー</strong>が「Artificial Intelligence」という用語を提案。この会議には <strong>マービン・ミンスキー、クロード・シャノン、ナサニエル・ロチェスター</strong> ら錚々たる顔ぶれが集まりました。
+    </p>
+    <p>当時の中心技術は <strong>探索と推論</strong>：</p>
+    <ul>
+      <li><strong>幅優先・深さ優先探索</strong>、後に<strong>αβ枝刈り</strong>などで効率化</li>
+      <li><strong>ヒューリスティック探索</strong>（A* など）</li>
+      <li>定理証明（Logic Theorist）、初期のチャットボット（ELIZA, 1966）</li>
+    </ul>
+    <p>
+      この時代の AI は「<strong>ルールを書いて推論させる</strong>」ものでした。しかし <strong>組み合わせ爆発</strong>（探索木が指数的に大きくなる）と <strong>常識推論の困難さ</strong>（フレーム問題）から、現実問題への拡張に失敗し、最初の <strong>AIの冬</strong> が訪れます。
+    </p>
+
+    <h3>2.2 第2次AIブーム（1980年代）：エキスパートシステム</h3>
+    <p>
+      1980年代、<strong>専門家の知識をルールとして書き下し</strong>、コンピュータに推論させる「エキスパートシステム」が商業的成功を収めました。代表例：
+    </p>
+    <ul>
+      <li><strong>MYCIN</strong>：感染症診断（スタンフォード大）</li>
+      <li><strong>DENDRAL</strong>：化学物質の構造同定</li>
+      <li><strong>第五世代コンピュータプロジェクト</strong>（日本、1982-1992）：論理プログラミング（Prolog）に巨額投資</li>
+    </ul>
+    <p>
+      しかし<strong>知識獲得のボトルネック</strong>（専門家の知識をルール化する人件費が膨大）と <strong>例外処理の脆さ</strong>（ルールに無い状況に弱い）から、再び冬が訪れます。
+    </p>
+
+    <h3>2.3 第3次AIブーム（2006–現在）：機械学習と深層学習</h3>
+    <p>
+      転換点は2006年、<strong>ジェフリー・ヒントン</strong>らによる <strong>事前学習（Deep Belief Network）</strong> の提案、そして2012年の <strong>ILSVRC</strong>（ImageNet画像認識コンテスト）で <strong>AlexNet</strong>（Krizhevsky, Sutskever, Hinton）が2位以下を10ポイント以上引き離して優勝した事件でした。
+    </p>
+    <p>このブームの中心技術：</p>
+    <ul>
+      <li>深層学習（CNN、RNN/LSTM、Transformer）</li>
+      <li>大規模データ（ImageNet、Common Crawl）</li>
+      <li>GPU/TPU による並列計算</li>
+      <li>End-to-End学習：特徴量を人手設計せず、生データから学習</li>
+    </ul>
+    <p>主な里程標：</p>
+    <table class="formula-table">
+      <tr><th>年</th><th>出来事</th></tr>
+      <tr><td>2012</td><td>AlexNet が ILSVRC を制覇</td></tr>
+      <tr><td>2014</td><td>GAN（Goodfellow ら）、Seq2Seq（Sutskever ら）</td></tr>
+      <tr><td>2015</td><td>ResNet（残差接続で152層）、AlphaGo が囲碁プロに勝利</td></tr>
+      <tr><td>2017</td><td>Transformer 論文 “Attention Is All You Need”</td></tr>
+      <tr><td>2018</td><td>BERT、GPT-1。事前学習＋微調整パラダイムが確立</td></tr>
+      <tr><td>2020</td><td>GPT-3（1750億パラメータ）。Scaling Laws の発表</td></tr>
+      <tr><td>2022</td><td>ChatGPT 公開、Stable Diffusion 公開</td></tr>
+      <tr><td>2023–</td><td>GPT-4、Claude、Gemini、Llama。マルチモーダル化</td></tr>
+    </table>
+
+    <h3>2.4 第4次AIブームと呼ばれる現在（2022–）</h3>
+    <p>
+      ChatGPT 公開以降、<strong>基盤モデル（FM）</strong> と <strong>生成AI</strong> を中心とした新たな段階が始まったと多くの研究者が見なしています。第3次の延長か、第4次と呼ぶべきかは議論があります。特徴：
+    </p>
+    <ul>
+      <li>巨大スケール（パラメータ・データ・計算量）</li>
+      <li>事前学習で得られた汎用能力を <strong>プロンプト</strong>で引き出す</li>
+      <li>マルチモーダル（テキスト・画像・音声・動画を統一）</li>
+      <li>エージェント化（外部ツール呼び出し、自律行動）</li>
+    </ul>
+
+    <div class="pitfall">
+      <div class="pitfall-title">⚠ よくある誤解</div>
+      「AIブーム」と「実用化」は別物。第2次ブームでもエキスパートシステムは商業利用されていたし、第3次ブームの初期では深層学習が一部の画像認識タスクに限定されていました。冬の時代の主因は <strong>「期待値と実装可能性のギャップ」</strong> です。現在の生成AIにも同じ罠が潜みます。
+    </div>
+
+    <!-- =========================================================== -->
+    <h2 id="math-linalg"><span class="label">§03 / MATH</span>線形代数：ベクトル・行列・固有値</h2>
+
+    <p>
+      機械学習は <strong>ベクトル・行列で書かれた最適化問題</strong> です。線形代数を「公式の暗記」から「<strong>図形的直感</strong>」に切り替えることで、後段が劇的に分かりやすくなります。
+    </p>
+
+    <h3>3.1 ベクトル：方向と大きさを持つ点</h3>
+    <p>
+      n次元ベクトル <span class="kbd">x = (x₁, x₂, …, xₙ)ᵀ</span> は、n 次元空間上の <strong>原点からの矢印</strong> です。機械学習では特徴量を並べた表現として使います。例：身長・体重を持つ人を <span class="kbd">x = (170, 65)ᵀ</span> と書く。
+    </p>
+    <p><strong>内積（dot product）</strong> の定義：</p>
+    <div class="formula">
+      x · y &nbsp;=&nbsp; xᵀy &nbsp;=&nbsp; x₁y₁ + x₂y₂ + … + xₙyₙ &nbsp;=&nbsp; ||x|| ||y|| cos θ
+      <div class="formula-num">(3.1)</div>
+    </div>
+    <p>
+      内積の幾何学的意味は <strong>「y を x の方向に射影した長さ × ||x||」</strong>。すなわち <strong>2 つのベクトルの『似ている度合い』</strong> を表します。cos θ が 1（同方向）なら最大、0（直交）なら 0、-1（逆方向）なら最小。
+    </p>
+
+    <h3>3.2 ノルム：ベクトルの「長さ」</h3>
+    <table class="formula-table">
+      <tr><th>ノルム</th><th>定義</th><th>機械学習での用途</th></tr>
+      <tr><td>L¹（マンハッタン）</td><td>||x||₁ = Σ|xᵢ|</td><td>Lasso 回帰のスパース化正則化</td></tr>
+      <tr><td>L²（ユークリッド）</td><td>||x||₂ = √Σxᵢ²</td><td>Ridge 回帰、距離計算、勾配クリッピング</td></tr>
+      <tr><td>L∞（最大値）</td><td>||x||_∞ = max|xᵢ|</td><td>敵対的サンプル攻撃の制約</td></tr>
+    </table>
+    <p>
+      ノルムは <strong>「ベクトル → スカラー」の写像</strong>で、(a) 非負性、(b) 同次性 ||αx|| = |α| ||x||、(c) 三角不等式 ||x+y|| ≤ ||x|| + ||y|| を満たします。
+    </p>
+
+    <h3>3.3 行列：線形変換</h3>
+    <p>
+      m×n 行列 A は、<strong>n 次元ベクトルを m 次元ベクトルに変換する関数</strong> として理解できます。Ax = y は「x を A という変換で y に移す」と読みます。
+    </p>
+    <p>幾何的にイメージしやすい2次元の変換例：</p>
+    <table class="formula-table">
+      <tr><th>変換</th><th>行列</th><th>効果</th></tr>
+      <tr><td>恒等</td><td>I = [[1,0],[0,1]]</td><td>何もしない</td></tr>
+      <tr><td>X方向に2倍拡大</td><td>[[2,0],[0,1]]</td><td>横に引き伸ばす</td></tr>
+      <tr><td>θ回転</td><td>[[cos θ,-sin θ],[sin θ,cos θ]]</td><td>原点中心に回転</td></tr>
+      <tr><td>X軸鏡映</td><td>[[1,0],[0,-1]]</td><td>X 軸で折り返す</td></tr>
+    </table>
+
+    <h3>3.4 固有値と固有ベクトル：変換の「不変方向」</h3>
+    <p>
+      行列 A に対して、ベクトル v ≠ 0 とスカラー λ が <strong>Av = λv</strong> を満たすとき、v を <strong>固有ベクトル（eigenvector）</strong>、λ を <strong>固有値（eigenvalue）</strong> と呼びます。意味は <strong>「行列 A をかけても、方向が変わらず大きさだけ λ 倍になる特別な方向」</strong>。
+    </p>
+    <div class="derive">
+      <div class="derive-title">導出：固有値方程式</div>
+      Av = λv より (A - λI)v = 0。v ≠ 0 で解を持つには、(A - λI) が非可逆、すなわち：
+      <div class="formula">det(A - λI) = 0 &nbsp;&nbsp; (固有方程式)</div>
+      これは λ に関する n 次方程式。n 個の固有値（重複・複素数を含む）が得られる。
+    </div>
+
+    <div class="example">
+      <div class="example-title">例題：2×2 行列の固有値</div>
+      A = [[3,1],[0,2]] の固有値を求める。<br>
+      det(A - λI) = (3-λ)(2-λ) - 0 = 0 → λ = 3, 2<br>
+      λ = 3 の固有ベクトル: (A - 3I)v = 0 → [[0,1],[0,-1]]v = 0 → v = (1,0)ᵀ<br>
+      λ = 2 の固有ベクトル: (A - 2I)v = 0 → [[1,1],[0,0]]v = 0 → v = (1,-1)ᵀ<br>
+      意味：x 軸方向は3倍、(1,-1) 方向は2倍に伸縮される変換。
+    </div>
+
+    <p><strong>機械学習における重要な活用</strong>：</p>
+    <ul>
+      <li><strong>PCA（主成分分析）</strong>：データの共分散行列の固有ベクトル＝最大分散方向。次元削減・可視化の標準手法</li>
+      <li><strong>ヘッセ行列の固有値</strong>：最適化において、損失関数の局所形状（凸／凹／鞍点）を判定</li>
+      <li><strong>固有値分解・SVD</strong>：データ圧縮、画像圧縮、推薦システム（行列分解）</li>
+    </ul>
+
+    <h3>3.5 特異値分解（SVD）：万能の行列分解</h3>
+    <p>
+      任意の m×n 行列 A は次のように分解できます：
+    </p>
+    <div class="formula">
+      A &nbsp;=&nbsp; U Σ Vᵀ
+      <div class="formula-num">(3.2)</div>
+    </div>
+    <ul>
+      <li>U: m×m 直交行列（左特異ベクトル）</li>
+      <li>Σ: m×n 対角様行列（非負の<strong>特異値</strong> σ₁ ≥ σ₂ ≥ … ≥ 0 を対角に）</li>
+      <li>V: n×n 直交行列（右特異ベクトル）</li>
+    </ul>
+    <p>
+      特異値の大きさは「その方向の重要度」。上位 k 個だけ残せば <strong>低ランク近似</strong> となり、データ圧縮・推薦システム（Netflix Prize）・LoRA（後述）の基礎になる。
+    </p>
+
+    <div class="crossref">
+      <div class="crossref-title">→ シミュレーションで確認</div>
+      <a href="simulation.html#pca">シミュレーション §07 PCA</a> で、2次元データから第一主成分・第二主成分が動的に求まる様子を観察できます。
+    </div>
+
+    <!-- =========================================================== -->
+    <h2 id="math-calc"><span class="label">§04 / MATH</span>微積分と最適化</h2>
+
+    <h3>4.1 微分：変化率</h3>
+    <p>
+      関数 f(x) の微分 f'(x) は、x が微小に変化したときの f の変化率（接線の傾き）：
+    </p>
+    <div class="formula">
+      f'(x) = lim_{h→0} [f(x+h) - f(x)] / h
+      <div class="formula-num">(4.1)</div>
+    </div>
+
+    <h3>4.2 偏微分と勾配</h3>
+    <p>
+      多変数関数 f(x₁, …, xₙ) を、特定の変数 xᵢ について微分したものが <strong>偏微分</strong> ∂f/∂xᵢ。これを全ての変数について並べた列ベクトルが <strong>勾配（gradient）</strong>：
+    </p>
+    <div class="formula">
+      ∇f(x) = (∂f/∂x₁, ∂f/∂x₂, …, ∂f/∂xₙ)ᵀ
+      <div class="formula-num">(4.2)</div>
+    </div>
+    <p>
+      勾配の <strong>幾何学的意味</strong> は「<strong>その点で f が最も急に増加する方向</strong>」。逆向き -∇f は最も急に減少する方向で、<strong>これが勾配降下法の根拠</strong> です。
+    </p>
+
+    <h3>4.3 連鎖律：合成関数の微分</h3>
+    <p>
+      ニューラルネットの学習を支える最重要法則。f(g(x)) の微分は：
+    </p>
+    <div class="formula">
+      d/dx [f(g(x))] &nbsp;=&nbsp; f'(g(x)) · g'(x)
+      <div class="formula-num">(4.3)</div>
+    </div>
+    <p>
+      多変数版（行列の連鎖律）が <strong>バックプロパゲーション</strong> の数学的基盤になります（§11 で詳述）。
+    </p>
+
+    <h3>4.4 ヘッセ行列：二階微分の集まり</h3>
+    <p>
+      多変数関数の二階偏微分を行列にまとめたものを <strong>ヘッセ行列</strong> H と呼びます：
+    </p>
+    <div class="formula">
+      Hᵢⱼ = ∂²f / (∂xᵢ ∂xⱼ)
+      <div class="formula-num">(4.4)</div>
+    </div>
+    <p>
+      勾配 ∇f = 0 の点（極値候補）でのヘッセ行列の <strong>固有値の符号</strong> によって：
+    </p>
+    <ul>
+      <li>全ての固有値 &gt; 0 → 極小（凸）</li>
+      <li>全ての固有値 &lt; 0 → 極大（凹）</li>
+      <li>正負混合 → <strong>鞍点</strong>（saddle point）</li>
+    </ul>
+    <p>
+      高次元の損失関数では、極小よりも <strong>鞍点</strong> の方が遥かに多いことが知られており、これが現代の最適化研究の重要な視点です。
+    </p>
+
+    <h3>4.5 勾配降下法（Gradient Descent）</h3>
+    <p>
+      損失関数 L(θ) を最小化したい。パラメータ θ を、勾配の逆方向に少しずつ動かす：
+    </p>
+    <div class="formula">
+      θₜ₊₁ &nbsp;=&nbsp; θₜ &nbsp;-&nbsp; η · ∇L(θₜ)
+      <div class="formula-num">(4.5)</div>
+    </div>
+    <p>η は <strong>学習率（learning rate）</strong>。小さいと収束が遅く、大きいと振動・発散。</p>
+
+    <table class="formula-table">
+      <tr><th>変種</th><th>説明</th></tr>
+      <tr><td><strong>バッチ勾配降下</strong></td><td>全データの平均勾配で1回更新。安定だが遅い</td></tr>
+      <tr><td><strong>SGD</strong>（確率的勾配降下）</td><td>1サンプルごとに更新。ノイジーだが早い・汎化が良い場合あり</td></tr>
+      <tr><td><strong>ミニバッチSGD</strong></td><td>m サンプル（典型 32〜256）で平均勾配。実務標準</td></tr>
+      <tr><td><strong>Momentum</strong></td><td>過去の更新方向を慣性として加算。振動抑制</td></tr>
+      <tr><td><strong>RMSProp</strong></td><td>各パラメータごとに勾配の二乗平均で学習率を適応化</td></tr>
+      <tr><td><strong>Adam</strong></td><td>Momentum + RMSProp。実務でほぼ標準</td></tr>
+    </table>
+
+    <div class="example">
+      <div class="example-title">例題：1次元の勾配降下を手で1ステップ</div>
+      L(θ) = (θ - 3)², 初期 θ₀ = 0, η = 0.1。<br>
+      ∇L(0) = 2(0-3) = -6<br>
+      θ₁ = 0 - 0.1 × (-6) = 0.6<br>
+      θ₂ = 0.6 - 0.1 × (2(0.6-3)) = 0.6 - 0.1 × (-4.8) = 1.08<br>
+      ... 反復すると θ → 3（最小点）に収束する。
+    </div>
+
+    <div class="pitfall">
+      <div class="pitfall-title">⚠ 学習率を大きくし過ぎると</div>
+      η = 1.5 にすると θ₁ = 0 - 1.5 × (-6) = 9。次に θ₂ = 9 - 1.5 × 12 = -9。発散（振動拡大）します。<strong>学習率は最適化問題の最重要ハイパーパラメータ</strong>。
+    </div>
+
+    <div class="crossref">
+      <div class="crossref-title">→ シミュレーションで確認</div>
+      <a href="simulation.html#gd">シミュレーション §01 勾配降下</a> で η を動かしながら、収束・振動・発散の境界を体験できます。
+    </div>
+
+    <!-- =========================================================== -->
+    <h2 id="math-prob"><span class="label">§05 / MATH</span>確率と統計</h2>
+
+    <h3>5.1 確率と確率変数</h3>
+    <p>
+      <strong>確率変数</strong> X は「値が確率的に決まる変数」。離散と連続があります。
+    </p>
+    <p>離散の場合：<strong>確率質量関数（PMF）</strong> P(X = x)。サイコロなら P(X=1)=...=P(X=6)=1/6。</p>
+    <p>連続の場合：<strong>確率密度関数（PDF）</strong> f(x)。値そのものではなく <strong>積分</strong> が確率を表す：</p>
+    <div class="formula">
+      P(a ≤ X ≤ b) &nbsp;=&nbsp; ∫ₐᵇ f(x) dx,  &nbsp;&nbsp;&nbsp; ∫₋∞^∞ f(x) dx = 1
+      <div class="formula-num">(5.1)</div>
+    </div>
+
+    <h3>5.2 期待値と分散</h3>
+    <div class="formula">
+      E[X] = Σ x · P(X=x)   （離散）<br>
+      E[X] = ∫ x · f(x) dx  （連続）<br>
+      Var[X] = E[(X - E[X])²] = E[X²] - E[X]²
+      <div class="formula-num">(5.2)</div>
+    </div>
+    <p>
+      期待値は <strong>「無限回試行したときの平均」</strong>。分散はそのばらつき（散らばり）。標準偏差 σ = √Var。
+    </p>
+
+    <h3>5.3 主要な確率分布</h3>
+    <table class="formula-table">
+      <tr><th>分布</th><th>パラメータ</th><th>E[X]</th><th>Var[X]</th><th>用途</th></tr>
+      <tr><td>ベルヌーイ</td><td>p</td><td>p</td><td>p(1-p)</td><td>二値結果（成功/失敗）</td></tr>
+      <tr><td>二項 Bin(n,p)</td><td>n, p</td><td>np</td><td>np(1-p)</td><td>n回の二値試行の成功数</td></tr>
+      <tr><td>ポアソン Po(λ)</td><td>λ</td><td>λ</td><td>λ</td><td>稀少事象（到着数など）</td></tr>
+      <tr><td>正規 N(μ, σ²)</td><td>μ, σ</td><td>μ</td><td>σ²</td><td>連続値の標準モデル</td></tr>
+      <tr><td>一様 U(a,b)</td><td>a, b</td><td>(a+b)/2</td><td>(b-a)²/12</td><td>等確率の連続値</td></tr>
+      <tr><td>指数 Exp(λ)</td><td>λ</td><td>1/λ</td><td>1/λ²</td><td>待ち時間、寿命</td></tr>
+    </table>
+
+    <h3>5.4 中心極限定理（Central Limit Theorem）</h3>
+    <p>
+      機械学習で最も重要な統計定理。独立同分布な確率変数 X₁, ..., Xₙ の和（または平均）は、<strong>n が大きいとき正規分布に従う</strong>。これは <strong>元の分布が何であっても</strong> 成り立つ。
+    </p>
+    <p>
+      実用上の意味：標本平均は正規分布で近似できる → 信頼区間が計算できる → 仮説検定ができる、という連鎖が動きます。ニューラルネットの BatchNorm が機能する直観的根拠の一つでもあります。
+    </p>
+
+    <h3>5.5 ベイズの定理</h3>
+    <div class="formula">
+      P(A | B) &nbsp;=&nbsp; P(B | A) · P(A) / P(B)
+      <div class="formula-num">(5.3)</div>
+    </div>
+    <p>
+      パラメータ θ とデータ D に対して：
+    </p>
+    <div class="formula">
+      P(θ | D) &nbsp;∝&nbsp; P(D | θ) · P(θ)<br>
+      事後  &nbsp;&nbsp;∝&nbsp; 尤度  &nbsp;×&nbsp; 事前
+      <div class="formula-num">(5.4)</div>
+    </div>
+    <p>
+      ベイズ的思考は <strong>「データを見る前の信念（事前分布）を、データを得た後の信念（事後分布）に更新する」</strong> 枠組み。L2正則化はガウス事前、L1はラプラス事前を仮定した MAP 推定と等価、など機械学習との接続も深い。
+    </p>
+
+    <h3>5.6 最尤推定（MLE）</h3>
+    <p>
+      観測データ x₁, ..., xₙ が与えられたとき、それを <strong>最も「もっともらしく」する</strong> パラメータ θ を選ぶ：
+    </p>
+    <div class="formula">
+      θ̂_MLE = argmax_θ Π P(xᵢ | θ) = argmax_θ Σ log P(xᵢ | θ)
+      <div class="formula-num">(5.5)</div>
+    </div>
+
+    <div class="example">
+      <div class="example-title">例題：ベルヌーイの最尤推定</div>
+      コイン投げで n 回中 k 回表が出た。表の確率 p を MLE で推定。<br>
+      尤度 L(p) = pᵏ(1-p)ⁿ⁻ᵏ<br>
+      対数尤度 log L(p) = k log p + (n-k) log(1-p)<br>
+      微分 d/dp log L = k/p - (n-k)/(1-p) = 0 → p̂ = k/n<br>
+      <strong>結論：MLE は単に「成功比率」</strong>。直感と一致。
+    </div>
+
+    <!-- =========================================================== -->
+    <h2 id="math-info"><span class="label">§06 / MATH</span>情報理論の入口</h2>
+
+    <h3>6.1 自己情報量とエントロピー</h3>
+    <p>
+      事象 x が確率 p(x) で起こるとき、その <strong>自己情報量（驚き）</strong> は -log p(x)。確率が低いほど大きく、確率1なら0。
+    </p>
+    <p>
+      <strong>エントロピー</strong> は自己情報量の期待値：
+    </p>
+    <div class="formula">
+      H(X) = -Σ p(x) log p(x)
+      <div class="formula-num">(6.1)</div>
+    </div>
+    <p>
+      <strong>分布の「不確実さ」</strong> の尺度。一様分布が最大、決定論的（一点集中）なら 0。
+    </p>
+
+    <h3>6.2 KLダイバージェンス</h3>
+    <p>
+      2つの分布 P, Q の <strong>違い</strong> を測る量（厳密な距離ではない）：
+    </p>
+    <div class="formula">
+      KL(P ‖ Q) &nbsp;=&nbsp; Σ p(x) log[p(x) / q(x)]
+      <div class="formula-num">(6.2)</div>
+    </div>
+    <p>
+      性質：KL(P‖Q) ≥ 0、P=Q で 0、<strong>非対称</strong>（距離公理を満たさない）。VAE の損失、強化学習の信頼領域、変分推論など至る所で出現。
+    </p>
+
+    <h3>6.3 クロスエントロピー（分類の損失関数）</h3>
+    <p>
+      正解分布 p（one-hot）と予測分布 q に対し：
+    </p>
+    <div class="formula">
+      H(p, q) = -Σ p(x) log q(x) = H(p) + KL(p ‖ q)
+      <div class="formula-num">(6.3)</div>
+    </div>
+    <p>
+      ニューラルネット分類の標準損失。最小化することは、KL(p‖q) の最小化と同等（H(p) は定数）。
+    </p>
+
+    <!-- =========================================================== -->
+    <h2 id="ml-frame"><span class="label">§07 / ML</span>機械学習のパラダイム</h2>
+
+    <h3>7.1 3つの大分類</h3>
+    <table class="formula-table">
+      <tr><th>パラダイム</th><th>入力</th><th>出力</th><th>例</th></tr>
+      <tr><td><strong>教師あり学習</strong></td><td>(x, y) ペア</td><td>x→y を予測する関数</td><td>画像分類、回帰、翻訳</td></tr>
+      <tr><td><strong>教師なし学習</strong></td><td>x のみ</td><td>構造（クラスタ・低次元・密度）</td><td>K-means、PCA、GAN</td></tr>
+      <tr><td><strong>強化学習</strong></td><td>環境からの状態と報酬</td><td>方策（policy）</td><td>囲碁、ロボット制御、RLHF</td></tr>
+    </table>
+
+    <h3>7.2 教師あり学習の構造</h3>
+    <p>
+      訓練データ D = {(x₁, y₁), ..., (xₙ, yₙ)} から、未知の関数 f*: X → Y を近似する関数 f̂ を学ぶ。形式化：
+    </p>
+    <ul>
+      <li><strong>仮説空間</strong> H：考えるモデル族（線形回帰、決定木、NN など）</li>
+      <li><strong>損失関数</strong> L(f(x), y)：予測誤差の定義</li>
+      <li><strong>経験リスク最小化</strong>：D 上の平均損失を最小化する f を選ぶ</li>
+    </ul>
+    <div class="formula">
+      f̂ = argmin_{f ∈ H} (1/n) Σ L(f(xᵢ), yᵢ)
+      <div class="formula-num">(7.1)</div>
+    </div>
+
+    <h3>7.3 半教師あり・自己教師あり学習</h3>
+    <ul>
+      <li><strong>半教師あり学習</strong>：少量のラベル付きと大量のラベルなしを併用</li>
+      <li><strong>自己教師あり学習</strong>：データ自身から擬似ラベルを作る（BERT のマスク言語モデル、画像の対比学習 SimCLR、MAE など）。<strong>近年の事前学習はほぼこれ</strong></li>
+    </ul>
+
+    <!-- =========================================================== -->
+    <h2 id="ml-classical"><span class="label">§08 / ML</span>古典的機械学習手法</h2>
+
+    <h3>8.1 線形回帰：すべての出発点</h3>
+    <p>
+      入力 x ∈ ℝᵈ に対して、線形に予測：
+    </p>
+    <div class="formula">
+      ŷ = wᵀx + b
+      <div class="formula-num">(8.1)</div>
+    </div>
+    <p>損失：二乗誤差 L = (1/2n) Σ (ŷᵢ - yᵢ)²。閉形式解（正規方程式）：</p>
+    <div class="formula">
+      ŵ = (XᵀX)⁻¹ Xᵀy
+      <div class="formula-num">(8.2)</div>
+    </div>
+    <p>X はデータ行列（n×d）。XᵀX が特異（共線性あり）だと解が不安定 → リッジ回帰へ。</p>
+
+    <h3>8.2 リッジとラッソ（正則化）</h3>
+    <p>
+      過学習を防ぐため、重みの大きさにペナルティを課す：
+    </p>
+    <div class="formula">
+      Ridge (L²): L + λ ||w||²  →  ŵ = (XᵀX + λI)⁻¹ Xᵀy<br>
+      Lasso (L¹): L + λ ||w||₁  →  解析解なし、座標降下法
+      <div class="formula-num">(8.3)</div>
+    </div>
+    <p>
+      Lasso は <strong>多くの重みを 0 にする（スパース化）</strong> 性質があり、特徴量選択に使えます。Ridge は重みを <strong>全体的に小さく</strong> しますが 0 にはしません。両者を併用したものが Elastic Net。
+    </p>
+
+    <h3>8.3 ロジスティック回帰：二値分類</h3>
+    <p>
+      線形出力 z = wᵀx + b を <strong>シグモイド関数</strong>で確率に変換：
+    </p>
+    <div class="formula">
+      σ(z) = 1 / (1 + e⁻ᶻ),  &nbsp;&nbsp; P(y=1 | x) = σ(wᵀx + b)
+      <div class="formula-num">(8.4)</div>
+    </div>
+    <p>
+      損失は <strong>クロスエントロピー</strong>（最尤推定と等価）。多クラス版はソフトマックス回帰。
+    </p>
+
+    <h3>8.4 サポートベクトルマシン（SVM）</h3>
+    <p>
+      クラス間の <strong>マージン（境界からの最近接点までの距離）を最大化</strong> する分類器。直線で分けられない場合は <strong>カーネルトリック</strong> で高次元に写像（実際に写像せず内積だけ計算）。
+    </p>
+    <p>
+      代表的なカーネル：線形、多項式、<strong>RBF（ガウシアン）</strong>。RBF は最も柔軟だが、ハイパーパラメータ調整が必須。
+    </p>
+
+    <h3>8.5 決定木 / ランダムフォレスト / 勾配ブースティング</h3>
+    <p>
+      <strong>決定木</strong> はデータを if-then ルールで再帰的に分割する。木が深くなりすぎると過学習。
+    </p>
+    <p>
+      <strong>ランダムフォレスト</strong>：複数の決定木の多数決（バギング）。各木は <strong>ブートストラップ標本</strong> と <strong>特徴量サブセット</strong> で学習することで多様化。
+    </p>
+    <p>
+      <strong>勾配ブースティング</strong>（GBDT）：木を逐次的に追加し、前の木の<strong>誤差（負勾配）を埋める</strong> ように学習。実装としては <strong>XGBoost, LightGBM, CatBoost</strong>。表データの王者として現在も多くのコンペで上位を占める。
+    </p>
+
+    <h3>8.6 K-means クラスタリング</h3>
+    <ol>
+      <li>K 個のセントロイドをランダム初期化</li>
+      <li>各データを最も近いセントロイドに割当（割当ステップ）</li>
+      <li>各クラスタのセントロイドを平均で更新（更新ステップ）</li>
+      <li>収束まで 2-3 を反復</li>
+    </ol>
+    <p>
+      Lloyd アルゴリズムと呼ばれます。初期化が悪いと局所解に落ちるので <strong>K-means++</strong> 初期化が推奨。K の選択には <strong>エルボー法</strong>・<strong>シルエット係数</strong>。
+    </p>
+    <div class="crossref">
+      <div class="crossref-title">→ シミュレーションで確認</div>
+      <a href="simulation.html#kmeans">シミュレーション §06 K-means</a> で1ステップずつ収束を観察できます。
+    </div>
+
+    <h3>8.7 主成分分析（PCA）</h3>
+    <p>
+      高次元データを <strong>分散最大方向</strong> に射影して次元削減。共分散行列の固有ベクトル（第一主成分、第二主成分、...）に射影します。
+    </p>
+    <p>
+      数学的には、データ中心化 → 共分散行列計算 → 固有値分解（または SVD）→ 上位 k 個の固有ベクトルに射影、という手順。
+    </p>
+
+    <!-- =========================================================== -->
+    <h2 id="ml-eval"><span class="label">§09 / ML</span>評価と過学習</h2>
+
+    <h3>9.1 訓練・検証・テストの分割</h3>
+    <p>
+      モデルの汎化性能を正しく測るには、データを <strong>三分割</strong>：
+    </p>
+    <ul>
+      <li><strong>訓練（train）</strong>：パラメータを学習</li>
+      <li><strong>検証（validation）</strong>：ハイパーパラメータ・モデル選択</li>
+      <li><strong>テスト（test）</strong>：最終的な汎化性能の評価（複数回見てはいけない）</li>
+    </ul>
+    <p>
+      データが少ない場合は <strong>K-fold 交差検証（CV）</strong>：訓練データを K 分割し、各 fold を検証用にして K 回学習し平均。
+    </p>
+
+    <h3>9.2 過学習とバイアス・バリアンス分解</h3>
+    <p>
+      汎化誤差 = バイアス² + バリアンス + 既約誤差。
+    </p>
+    <table class="formula-table">
+      <tr><th>用語</th><th>意味</th><th>原因</th><th>対策</th></tr>
+      <tr><td><strong>バイアス</strong></td><td>モデルが真の関数から系統的にずれる</td><td>モデルが単純すぎる（underfit）</td><td>モデル容量を上げる、特徴量を増やす</td></tr>
+      <tr><td><strong>バリアンス</strong></td><td>訓練データのノイズに過敏</td><td>モデルが複雑すぎる（overfit）</td><td>正則化、データ拡大、早期終了、Dropout</td></tr>
+    </table>
+
+    <h3>9.3 分類の評価指標</h3>
+    <p>
+      混同行列：
+    </p>
+    <table class="formula-table">
+      <tr><th></th><th>予測：陽性</th><th>予測：陰性</th></tr>
+      <tr><th>真：陽性</th><td>TP（真陽性）</td><td>FN（偽陰性）</td></tr>
+      <tr><th>真：陰性</th><td>FP（偽陽性）</td><td>TN（真陰性）</td></tr>
+    </table>
+    <ul>
+      <li><strong>Accuracy</strong> = (TP+TN)/全件。クラス不均衡だと役立たず</li>
+      <li><strong>Precision（適合率）</strong> = TP/(TP+FP)。陽性と判定したうち本当に陽性</li>
+      <li><strong>Recall（再現率）</strong> = TP/(TP+FN)。本当の陽性のうち捕まえられた</li>
+      <li><strong>F1</strong> = Precision と Recall の調和平均 = 2PR/(P+R)</li>
+      <li><strong>ROC-AUC</strong>：閾値非依存の総合指標。完璧 1.0、ランダム 0.5</li>
+      <li><strong>PR-AUC</strong>：不均衡データでは ROC より適切</li>
+    </ul>
+
+    <div class="example">
+      <div class="example-title">例題：医療診断の評価</div>
+      がん検診で TP=80, FN=20, FP=200, TN=9700。<br>
+      Accuracy = (80+9700)/10000 = 97.8%（一見良い）<br>
+      Precision = 80/(80+200) = 28.6%<br>
+      Recall = 80/(80+20) = 80%<br>
+      <strong>医療では Recall（見落としを減らす）が重要</strong>。Accuracy は誤解を招く。
+    </div>
+
+    <h3>9.4 正則化の手段一覧</h3>
+    <ul>
+      <li><strong>L1 / L2 / Elastic Net</strong>：重みのペナルティ</li>
+      <li><strong>Early Stopping</strong>：検証誤差が悪化し始めたら学習停止</li>
+      <li><strong>Dropout</strong>（DL）：学習時にユニットをランダムに無効化</li>
+      <li><strong>Batch Normalization</strong>：各層の入力を正規化（暗黙の正則化）</li>
+      <li><strong>データ拡張</strong>：画像なら回転・反転、テキストなら言い換え</li>
+      <li><strong>アンサンブル</strong>：複数モデルの予測を平均</li>
+    </ul>
+
+    <!-- =========================================================== -->
+    <h2 id="nn-basics"><span class="label">§10 / NN</span>ニューラルネットの最小構成</h2>
+
+    <h3>10.1 パーセプトロン</h3>
+    <p>
+      Rosenblatt (1958) が提案した最初期のニューラルネットモデル。入力 x の線形結合に活性化関数（ステップ関数）を適用：
+    </p>
+    <div class="formula">
+      y = step(wᵀx + b),  &nbsp;&nbsp; step(z) = 1 if z ≥ 0 else 0
+      <div class="formula-num">(10.1)</div>
+    </div>
+    <p>
+      1969年、Minsky &amp; Papert が <em>『Perceptrons』</em> で <strong>XOR が表現できない</strong>（線形分離不可能）ことを証明。これが第1次 AI 冬の一因に。
+    </p>
+
+    <h3>10.2 多層パーセプトロン（MLP）と万能近似定理</h3>
+    <p>
+      パーセプトロンを多層に重ねると <strong>非線形関数</strong> を表現できるようになります（XOR も解ける）。
+    </p>
+    <p>
+      <strong>万能近似定理（Cybenko, 1989; Hornik, 1991）</strong>：1層の隠れ層を持つ MLP は、ユニット数を十分大きくすれば <strong>任意の連続関数を任意の精度で近似できる</strong>。
+    </p>
+    <div class="pitfall">
+      <div class="pitfall-title">⚠ 万能近似定理の限界</div>
+      「表現できる」と「学習できる」は別。1層で表現可能でも、現実には<strong>深層化</strong>することで遥かに少ないユニット数で表現できることが多い（指数的圧縮）。これが「Deep Learning」の本質的価値の一つ。
+    </div>
+
+    <h3>10.3 活性化関数</h3>
+    <table class="formula-table">
+      <tr><th>関数</th><th>式</th><th>特徴</th><th>用途</th></tr>
+      <tr><td>Sigmoid</td><td>1/(1+e⁻ᶻ)</td><td>出力 (0,1)、勾配消失</td><td>二値分類出力</td></tr>
+      <tr><td>Tanh</td><td>(eᶻ-e⁻ᶻ)/(eᶻ+e⁻ᶻ)</td><td>出力 (-1,1)、ゼロ中心</td><td>RNN の中で歴史的に多用</td></tr>
+      <tr><td><strong>ReLU</strong></td><td>max(0, z)</td><td>計算軽、勾配消失緩和、Dying ReLU 問題</td><td>CNN/MLP 標準</td></tr>
+      <tr><td>Leaky ReLU</td><td>max(αz, z) (α≈0.01)</td><td>Dying ReLU 緩和</td><td>ReLU 代替</td></tr>
+      <tr><td>GELU</td><td>z · Φ(z)</td><td>滑らか、Transformer 標準</td><td>BERT、GPT</td></tr>
+      <tr><td>Softmax</td><td>eᶻⁱ / Σeᶻʲ</td><td>確率分布化（出力層）</td><td>多クラス分類</td></tr>
+    </table>
+
+    <div class="crossref">
+      <div class="crossref-title">→ シミュレーションで確認</div>
+      <a href="simulation.html#activation">シミュレーション §02 活性化関数</a> で各関数の形状と微分を並べて確認できます。
+    </div>
+
+    <!-- =========================================================== -->
+    <h2 id="nn-backprop"><span class="label">§11 / NN</span>バックプロパゲーション</h2>
+
+    <p>
+      MLP の学習を可能にした最重要アルゴリズム。<strong>連鎖律</strong>を計算グラフ上で系統的に適用することで、<strong>多層に対する勾配を効率的に計算</strong>します。
+    </p>
+
+    <h3>11.1 計算グラフ</h3>
+    <p>
+      ニューラルネットを「ノード（演算）」と「エッジ（テンソル）」のグラフとして表現します。例：2層 MLP は：
+    </p>
+    <div class="formula">
+      x → [線形 W₁] → z₁ → [ReLU] → h → [線形 W₂] → z₂ → [Sigmoid] → ŷ → [損失 L]
+    </div>
+
+    <h3>11.2 フォワードパス</h3>
+    <p>
+      入力 x から損失 L まで、順に値を計算します。途中の中間値（活性化）は全て保存しておく（バックワードで使うため）。
+    </p>
+
+    <h3>11.3 バックワードパス（連鎖律の系統的適用）</h3>
+    <p>
+      出力側から入力側に向かって、各パラメータについて勾配を計算：
+    </p>
+    <div class="formula">
+      ∂L/∂W₂ = ∂L/∂ŷ · ∂ŷ/∂z₂ · ∂z₂/∂W₂<br>
+      ∂L/∂W₁ = ∂L/∂ŷ · ∂ŷ/∂z₂ · ∂z₂/∂h · ∂h/∂z₁ · ∂z₁/∂W₁
+      <div class="formula-num">(11.1)</div>
+    </div>
+    <p>
+      共通部分を <strong>再利用</strong> するのが鍵。これにより <strong>勾配計算は順伝播の定数倍程度のコスト</strong> で済みます。これがなければ深層学習は計算量的に不可能でした。
+    </p>
+
+    <h3>11.4 自動微分（Automatic Differentiation）</h3>
+    <p>
+      バックプロパゲーションを <strong>「計算グラフから勾配を機械的に計算する」</strong> 一般的なアルゴリズムとして実装したもの。PyTorch・TensorFlow・JAX の中核。
+    </p>
+    <ul>
+      <li><strong>順モード自動微分</strong>：入力1つに対する出力多数の場合に効率的</li>
+      <li><strong>逆モード自動微分（バックプロパゲーションと同じ）</strong>：出力1つ（損失）に対する入力多数（パラメータ）の場合に効率的。<strong>深層学習はこちら</strong></li>
+    </ul>
+
+    <h3>11.5 勾配消失と勾配爆発</h3>
+    <p>
+      深い NN では、勾配を順番にかけ算するため：
+    </p>
+    <ul>
+      <li>小さい数字を多数かける → <strong>勾配消失</strong>。下層が学習しない</li>
+      <li>大きい数字を多数かける → <strong>勾配爆発</strong>。発散</li>
+    </ul>
+    <p>対策：</p>
+    <ul>
+      <li><strong>ReLU 系活性化</strong>：正領域で勾配 1</li>
+      <li><strong>適切な重み初期化</strong>：He（ReLU 用）、Xavier/Glorot（tanh 用）</li>
+      <li><strong>残差接続（ResNet, 2015）</strong>：y = F(x) + x で勾配を直接伝える</li>
+      <li><strong>BatchNorm / LayerNorm</strong>：各層の入力分布を安定化</li>
+      <li><strong>勾配クリッピング</strong>：勾配の大きさを閾値で抑制</li>
+    </ul>
+
+    <div class="crossref">
+      <div class="crossref-title">→ シミュレーションで確認</div>
+      <a href="simulation.html#backprop">シミュレーション §05 バックプロパゲーション</a> で、勾配が出力から入力へ伝播する様子をエッジの太さで可視化できます。
+    </div>
+
+    <!-- =========================================================== -->
+    <h2 id="nn-tricks"><span class="label">§12 / NN</span>学習を成功させる工夫</h2>
+
+    <h3>12.1 ミニバッチ学習</h3>
+    <p>
+      バッチサイズ m（典型 32〜256）で勾配を平均することで、SGD のノイズを抑えつつ並列計算の恩恵を受ける。バッチサイズが大きすぎると汎化性能が落ちる傾向（シャープミニマ問題）。
+    </p>
+
+    <h3>12.2 学習率スケジューリング</h3>
+    <ul>
+      <li><strong>Step Decay</strong>：一定エポックごとに学習率を 1/10 に</li>
+      <li><strong>Cosine Annealing</strong>：コサイン関数で滑らかに減衰</li>
+      <li><strong>Warmup</strong>：最初の数ステップは小さい学習率から徐々に上げる（Transformer で標準）</li>
+    </ul>
+
+    <h3>12.3 重み初期化</h3>
+    <p>
+      不適切な初期化は学習が一切進まない原因になります。
+    </p>
+    <ul>
+      <li><strong>Xavier/Glorot 初期化</strong>：Var(W) = 2/(n_in + n_out)。sigmoid/tanh 向け</li>
+      <li><strong>He 初期化</strong>：Var(W) = 2/n_in。ReLU 系向け</li>
+      <li><strong>LeCun 初期化</strong>：Var(W) = 1/n_in。SELU 向け</li>
+    </ul>
+
+    <h3>12.4 正規化レイヤ</h3>
+    <table class="formula-table">
+      <tr><th>正規化</th><th>正規化軸</th><th>主な用途</th></tr>
+      <tr><td><strong>BatchNorm</strong></td><td>バッチ方向</td><td>CNN（バッチサイズが大きいとき）</td></tr>
+      <tr><td><strong>LayerNorm</strong></td><td>特徴量方向（サンプルごと）</td><td>RNN、Transformer（バッチ非依存）</td></tr>
+      <tr><td><strong>GroupNorm</strong></td><td>チャネルグループ方向</td><td>バッチサイズが小さい CNN</td></tr>
+      <tr><td><strong>InstanceNorm</strong></td><td>各サンプル、各チャネル</td><td>画像スタイル変換</td></tr>
+    </table>
+
+    <h3>12.5 Dropout の本質</h3>
+    <p>
+      学習時に <strong>各ユニットを確率 p（典型 0.5）で 0 にする</strong>。これにより：
+    </p>
+    <ul>
+      <li>暗黙のアンサンブル効果（毎ステップ違うサブネットを学習）</li>
+      <li>ユニット間の共依存抑制</li>
+    </ul>
+    <p>推論時は無効化（あるいは出力を 1-p 倍）するのが「inverted dropout」。</p>
+
+    <h3>12.6 最適化アルゴリズム（再訪）</h3>
+    <p>
+      Adam が事実上の標準。ただし：
+    </p>
+    <ul>
+      <li>大規模言語モデルでは <strong>AdamW</strong>（重み減衰を分離）が主流</li>
+      <li>古典 ML や小規模 NN では <strong>SGD + Momentum</strong> の方が汎化が良いこともある</li>
+      <li>巨大モデルでは <strong>LAMB, LION, Sophia</strong> など新世代も実用化</li>
+    </ul>
+
+    <!-- =========================================================== -->
+    <h2 id="summary"><span class="label">§13 / SUMMARY</span>章のまとめと到達確認</h2>
+
+    <h3>13.1 この章で押さえた地盤</h3>
+    <div class="toc-deep">
+      <h4>本章で議論した30の核となる概念</h4>
+      <ol>
+        <li>強いAI／弱いAI／AGI／ASI の区別</li>
+        <li>チューリングテスト と 中国語の部屋</li>
+        <li>フレーム問題 と シンボルグラウンディング</li>
+        <li>3 つの AI ブームと 2 つの冬の構造</li>
+        <li>ダートマス会議、AlexNet、Transformer の歴史的位置づけ</li>
+        <li>ベクトル・内積・ノルム の幾何学的意味</li>
+        <li>行列の固有値・固有ベクトル・SVD</li>
+        <li>勾配・ヘッセ行列・テイラー展開</li>
+        <li>勾配降下法（SGD/Momentum/Adam）</li>
+        <li>確率分布（離散・連続）と期待値・分散</li>
+        <li>中心極限定理</li>
+        <li>ベイズの定理と最尤推定</li>
+        <li>エントロピー、KL、クロスエントロピー</li>
+        <li>教師あり / 教師なし / 強化学習の枠組み</li>
+        <li>経験リスク最小化</li>
+        <li>線形回帰、リッジ、ラッソ</li>
+        <li>ロジスティック回帰</li>
+        <li>SVM とカーネルトリック</li>
+        <li>決定木、ランダムフォレスト、勾配ブースティング</li>
+        <li>K-means と PCA</li>
+        <li>訓練・検証・テスト分割と CV</li>
+        <li>バイアス・バリアンス分解</li>
+        <li>Precision/Recall/F1/ROC-AUC</li>
+        <li>パーセプトロンと XOR 問題</li>
+        <li>万能近似定理</li>
+        <li>活性化関数（ReLU/Sigmoid/Tanh/GELU/Softmax）</li>
+        <li>計算グラフと自動微分</li>
+        <li>勾配消失・爆発と対策</li>
+        <li>正則化（L1/L2/Dropout/BN）</li>
+        <li>学習率スケジューリングと重み初期化</li>
+      </ol>
+    </div>
+
+    <h3>13.2 到達度確認のための問い</h3>
+    <p>
+      以下の問いに <strong>誰かに口頭で説明できる</strong> なら、本章は卒業です。詰まったら該当節に戻ってください。
+    </p>
+    <ol>
+      <li>「中国語の部屋」がなぜ生成AIの議論にも関わるか説明できるか</li>
+      <li>勾配ベクトルが「最も急に増加する方向」になる理由を導出できるか</li>
+      <li>K-fold CV と Hold-out の違いと使い分け</li>
+      <li>シグモイドと softmax がそれぞれどんな分類問題で使われるか</li>
+      <li>ResNet の残差接続がなぜ勾配消失を防ぐかを式で説明できるか</li>
+      <li>Adam が「Momentum + RMSProp」と呼ばれる理由</li>
+      <li>BatchNorm と LayerNorm をどう使い分けるか</li>
+      <li>過学習とバイアス・バリアンスの関係を例で説明できるか</li>
+      <li>SVM のカーネルトリックがなぜ「計算上の魔法」なのか</li>
+      <li>勾配ブースティングが「残差を逐次に学習する」とはどういうことか</li>
+    </ol>
+
+    <h3>13.3 次の章へ</h3>
+    <p>
+      応用章では、本章で築いた地盤の上に <strong>Transformer・LLM・拡散モデル・強化学習・RAG・エージェント・AI倫理と法律</strong> を積み上げます。基本章で出た「Attention」「事前学習」「微調整」「勾配」「最尤推定」「KL」が、応用章では <strong>常識として再利用される</strong> ことを確認できます。
+    </p>
+
+    <div class="flow-nav">
+      <div><a href="../../certifications/g-kentei.html">← G検定 概要に戻る</a></div>
+      <div><a href="advanced.html">応用：Transformer・生成AI・倫理 →</a></div>
+    </div>
+
+    <hr class="divider bold">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      G-KENTEI · Chapter 1 · Foundations · Last reviewed 2026
+    </p>
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>G検定 学習動線</h6><ul>
+      <li><a href="../../certifications/g-kentei.html">概要</a></li>
+      <li><a href="basics.html"><strong>基本（このページ）</strong></a></li>
+      <li><a href="advanced.html">応用</a></li>
+      <li><a href="simulation.html">シミュレーション</a></li>
+      <li><a href="hands-on.html">ハンズオン</a></li>
+      <li><a href="../../quiz.html?topic=g-kentei">問題演習</a></li>
+    </ul></div>
+    <div><h6>他資格</h6><ul>
+      <li><a href="../../certifications/e-shikaku.html">E資格</a></li>
+      <li><a href="../../certifications/tokei-kentei.html">統計検定</a></li>
+      <li><a href="../../certifications/python-cert.html">Python認定</a></li>
+      <li><a href="../../certifications/aws-mla-c01.html">AWS MLA-C01</a></li>
+      <li><a href="../../certifications/image-engineer.html">画像処理</a></li>
+      <li><a href="../../certifications/jetson-ai.html">Jetson AI</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../../assets/js/main.js"></script>
+</body>
+</html>
