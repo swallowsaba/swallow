@@ -974,6 +974,9 @@ var Cfg = {
         }
       }
     }
+    // Ensure correct AWS hierarchy: regions[] each holding azs[] + vpcs[].
+    // VPCs stay reachable via aws.vpcs (flat mirror) for backward-compat with the rest of the code.
+    if(typeof ensureAwsHierarchy === "function") ensureAwsHierarchy();
   },
   byId(kind,id){ return (this.c()[kind]||[]).find(x=>x.id===id); },
   removeById(kind,id){
@@ -992,6 +995,87 @@ var Cfg = {
 };
 var kindToCol = (k)=>({network:"networks",device:"devices",server:"servers",service:"services",connection:"connections",annotation:"annotations"})[k];
 var kindLabel = (k)=>({device:"デバイス",server:"サーバ",service:"サービス",connection:"接続",network:"ネットワーク"})[k]||k;
+
+/* ====== AWS HIERARCHY (Region > AZ + VPC; Subnet belongs to VPC and AZ) ====== */
+// Standard AWS regions with their AZ suffixes.
+var AWS_REGION_CATALOG = [
+  {id:"ap-northeast-1", name:"東京",        azSuffixes:["a","c","d"]},
+  {id:"ap-northeast-2", name:"ソウル",      azSuffixes:["a","b","c"]},
+  {id:"ap-northeast-3", name:"大阪",        azSuffixes:["a","b","c"]},
+  {id:"ap-southeast-1", name:"シンガポール", azSuffixes:["a","b","c"]},
+  {id:"ap-southeast-2", name:"シドニー",    azSuffixes:["a","b","c"]},
+  {id:"us-east-1",      name:"北バージニア", azSuffixes:["a","b","c","d","e","f"]},
+  {id:"us-east-2",      name:"オハイオ",    azSuffixes:["a","b","c"]},
+  {id:"us-west-1",      name:"北カリフォルニア", azSuffixes:["a","b","c"]},
+  {id:"us-west-2",      name:"オレゴン",    azSuffixes:["a","b","c","d"]},
+  {id:"eu-west-1",      name:"アイルランド", azSuffixes:["a","b","c"]},
+  {id:"eu-west-2",      name:"ロンドン",    azSuffixes:["a","b","c"]},
+  {id:"eu-central-1",   name:"フランクフルト", azSuffixes:["a","b","c"]}
+];
+function awsRegionInfo(id){ return AWS_REGION_CATALOG.find(r=>r.id===id) || null; }
+function awsDefaultAzs(regionId){
+  const info = awsRegionInfo(regionId);
+  if(info) return info.azSuffixes.slice(0,2).map(s=>regionId+s); // default: first 2 AZs
+  return [regionId+"a", regionId+"c"];
+}
+// Ensure App.config.aws has the correct hierarchy. Migrates the legacy flat aws.vpcs[]
+// (where each VPC had a `region` string and subnets had `az`) into aws.regions[].
+function ensureAwsHierarchy(){
+  const c = App.config;
+  if(!c.aws) c.aws = {};
+  const aws = c.aws;
+  if(!Array.isArray(aws.regions)) aws.regions = [];
+  // Legacy: VPCs sitting directly on aws.vpcs → fold them into their region.
+  const legacyVpcs = Array.isArray(aws.vpcs) ? aws.vpcs : [];
+  for(const vpc of legacyVpcs){
+    const regionId = vpc.region || "ap-northeast-1";
+    let region = aws.regions.find(r=>r.id===regionId);
+    if(!region){
+      const info = awsRegionInfo(regionId);
+      region = { id:regionId, name:(info?info.name:regionId), azs:[], vpcs:[] };
+      aws.regions.push(region);
+    }
+    if(!region.vpcs.includes(vpc)) region.vpcs.push(vpc);
+    // collect AZs referenced by this VPC's subnets into the region's az list
+    for(const sn of (vpc.subnets||[])){
+      if(sn.az && !region.azs.includes(sn.az)) region.azs.push(sn.az);
+    }
+  }
+  // Make sure each region has at least its default AZs.
+  for(const region of aws.regions){
+    if(!Array.isArray(region.azs)) region.azs = [];
+    if(!region.azs.length) region.azs = awsDefaultAzs(region.id);
+    if(!Array.isArray(region.vpcs)) region.vpcs = [];
+  }
+  // Rebuild the flat mirror aws.vpcs (used widely by the rest of the codebase).
+  const flat = [];
+  for(const region of aws.regions){
+    for(const vpc of region.vpcs){
+      vpc.region = region.id;            // keep region pointer in sync
+      if(!flat.includes(vpc)) flat.push(vpc);
+    }
+  }
+  aws.vpcs = flat;
+}
+// Find the region object that owns a given VPC (by name or object).
+function awsRegionOfVpc(vpcOrName){
+  const aws = App.config.aws; if(!aws || !aws.regions) return null;
+  const name = (typeof vpcOrName === "string") ? vpcOrName : (vpcOrName && vpcOrName.name);
+  for(const r of aws.regions){ if((r.vpcs||[]).some(v=>v.name===name)) return r; }
+  return null;
+}
+// Add a new region (with default AZs). Returns the region.
+function awsAddRegion(regionId){
+  ensureAwsHierarchy();
+  const aws = App.config.aws;
+  if(aws.regions.some(r=>r.id===regionId)){ return aws.regions.find(r=>r.id===regionId); }
+  const info = awsRegionInfo(regionId);
+  const region = { id:regionId, name:(info?info.name:regionId), azs:awsDefaultAzs(regionId), vpcs:[] };
+  aws.regions.push(region);
+  return region;
+}
+
+
 
 /* ====== LOG ====== */
 var Log = {
@@ -1552,6 +1636,30 @@ function syncConfigFromYaml(){
   }
 }
 function syncYamlFromConfig(){
-  $("#yaml-editor").value = YAML.stringify(App.config);
+  $("#yaml-editor").value = YAML.stringify(awsCleanForYaml(App.config));
+}
+// Produce a config copy whose AWS section shows ONLY the canonical hierarchy
+// (aws.regions[].vpcs[].subnets[]). The flat `aws.vpcs` mirror and internal
+// layout fields (_pos/_pad/_size) are stripped so the YAML matches the real
+// "Region > AZ + VPC > Subnet" structure and isn't confusing.
+function awsCleanForYaml(config){
+  let clone;
+  try { clone = JSON.parse(JSON.stringify(config)); } catch(e){ return config; }
+  if(clone && clone.aws){
+    const aws = clone.aws;
+    delete aws.vpcs;       // internal flat mirror — rebuilt on load by ensureAwsHierarchy()
+    delete aws._pos; delete aws._pad;
+    for(const region of (aws.regions||[])){
+      for(const vpc of (region.vpcs||[])){
+        delete vpc._pos; delete vpc._pad;
+        for(const sn of (vpc.subnets||[])){ delete sn._pos; delete sn._size; }
+      }
+    }
+    // If there are no regions but a legacy flat list existed, keep it visible
+    if((!aws.regions || !aws.regions.length) && config.aws.vpcs && config.aws.vpcs.length){
+      aws.vpcs = JSON.parse(JSON.stringify(config.aws.vpcs));
+    }
+  }
+  return clone;
 }
 
