@@ -2149,6 +2149,39 @@ function onElMouseDown(e, kind, id){
     };
     return;
   }
+  // If this is a K8s cluster node OR vCenter cluster ESXi host, drag the WHOLE cluster
+  // (so the cluster frame and its members move together). Alt+drag moves only this node.
+  if(kind === "server" && !e.altKey){
+    // K8s node?
+    const k8sCl = ((App.config.k8s&&App.config.k8s.clusters)||[]).find(cl=>(cl.nodes||[]).includes(id));
+    if(k8sCl && (k8sCl.nodes||[]).length>1){
+      const members = (k8sCl.nodes||[]).map(nid=>({kind:"server",id:nid}));
+      const pt = svgPoint(e);
+      dragState = {
+        mode:"group", moved:false, startSX:pt.x, startSY:pt.y,
+        members: members.map(m=>{ const o=Cfg.byId("servers",m.id); return o?{kind:m.kind,id:m.id,x0:o.x||0,y0:o.y||0}:null; }).filter(Boolean)
+      };
+      return;
+    }
+    // vCenter cluster ESXi host?
+    if(obj.hypervisor || obj.type==="hypervisor"){
+      const vc = (App.config.vcenter_clusters||[]).find(c=>(c.hosts||[]).includes(id)||obj.vcenter_cluster===c.name);
+      if(vc && (vc.hosts||[]).length>1){
+        const memList = [];
+        for(const hid of (vc.hosts||[])){
+          memList.push({kind:"server", id:hid});
+          // include all VMs on this host
+          for(const s of (App.config.servers||[])) if(s.vm && s.host===hid) memList.push({kind:"server", id:s.id});
+        }
+        const pt = svgPoint(e);
+        dragState = {
+          mode:"group", moved:false, startSX:pt.x, startSY:pt.y,
+          members: memList.map(m=>{ const o=Cfg.byId("servers",m.id); return o?{kind:m.kind,id:m.id,x0:o.x||0,y0:o.y||0}:null; }).filter(Boolean)
+        };
+        return;
+      }
+    }
+  }
   const pt = svgPoint(e);
   dragState = {
     mode:"move", kind, id, obj,

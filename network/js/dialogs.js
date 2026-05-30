@@ -1777,27 +1777,100 @@ function showAwsManager(focusVpc){
       const nm=ch("input",{type:"text",value:vpc.name,style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f1);nm.addEventListener("change",()=>{vpc.name=nm.value;renderAndSync();});
       const f2=ch("div",{},cr);ch("label",{text:"CIDR",style:{fontSize:"9px",color:"var(--text-dim)"}},f2);
       const cd=ch("input",{type:"text",value:vpc.cidr,style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f2);cd.addEventListener("change",()=>{vpc.cidr=cd.value;renderAndSync();});
+      // Region as dropdown (selectable) + auto-cascade to subnet AZs
+      const AWS_REGIONS = [
+        {id:"ap-northeast-1", name:"東京", azs:["ap-northeast-1a","ap-northeast-1c","ap-northeast-1d"]},
+        {id:"ap-northeast-2", name:"ソウル",  azs:["ap-northeast-2a","ap-northeast-2b","ap-northeast-2c"]},
+        {id:"ap-northeast-3", name:"大阪",  azs:["ap-northeast-3a","ap-northeast-3b","ap-northeast-3c"]},
+        {id:"ap-southeast-1", name:"シンガポール", azs:["ap-southeast-1a","ap-southeast-1b","ap-southeast-1c"]},
+        {id:"ap-southeast-2", name:"シドニー", azs:["ap-southeast-2a","ap-southeast-2b","ap-southeast-2c"]},
+        {id:"us-east-1",  name:"北バージニア", azs:["us-east-1a","us-east-1b","us-east-1c","us-east-1d","us-east-1e","us-east-1f"]},
+        {id:"us-east-2",  name:"オハイオ",  azs:["us-east-2a","us-east-2b","us-east-2c"]},
+        {id:"us-west-1",  name:"北カリフォルニア", azs:["us-west-1a","us-west-1b","us-west-1c"]},
+        {id:"us-west-2",  name:"オレゴン",  azs:["us-west-2a","us-west-2b","us-west-2c","us-west-2d"]},
+        {id:"eu-west-1",  name:"アイルランド", azs:["eu-west-1a","eu-west-1b","eu-west-1c"]},
+        {id:"eu-west-2",  name:"ロンドン",  azs:["eu-west-2a","eu-west-2b","eu-west-2c"]},
+        {id:"eu-central-1", name:"フランクフルト", azs:["eu-central-1a","eu-central-1b","eu-central-1c"]}
+      ];
       const f3=ch("div",{},cr);ch("label",{text:"リージョン",style:{fontSize:"9px",color:"var(--text-dim)"}},f3);
-      const rg=ch("input",{type:"text",value:vpc.region,style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f3);rg.addEventListener("change",()=>{vpc.region=rg.value;renderAndSync();});
+      const rg=ch("select",{style:Object.assign({width:"100%",boxSizing:"border-box"},fStyle)},f3);
+      for(const r of AWS_REGIONS) ch("option",{value:r.id,text:r.id+" ("+r.name+")"},rg);
+      // 既存のregionが一覧に無ければ追加
+      if(!AWS_REGIONS.some(r=>r.id===vpc.region)) { ch("option",{value:vpc.region||"",text:(vpc.region||"")+" (カスタム)"},rg); }
+      rg.value=vpc.region||"ap-northeast-1";
+      rg.addEventListener("change",()=>{
+        const oldRegion=vpc.region;
+        vpc.region=rg.value;
+        // EC2/RDS/ALB等のaws_region も追従更新
+        for(const dev of (App.config.devices||[])){
+          if(dev.aws_vpc===vpc.name) dev.aws_region=rg.value;
+        }
+        // サブネットのAZを新リージョンの第1AZへ更新するか確認
+        const newR = AWS_REGIONS.find(r=>r.id===rg.value);
+        if(newR && (vpc.subnets||[]).length){
+          const proceed = (typeof confirm==="function") ? confirm(`リージョンを ${rg.value} に変更します。\n${(vpc.subnets||[]).length} 個のサブネットのAZも新リージョンに合わせて自動更新しますか?`) : true;
+          if(proceed){
+            (vpc.subnets||[]).forEach((sn,i)=>{ sn.az = newR.azs[i % newR.azs.length]; });
+          }
+        }
+        renderAndSync(); refresh();
+        toast(`リージョン: ${oldRegion} → ${rg.value}`,"ok");
+      });
       const igwL=ch("label",{style:{display:"flex",gap:"4px",alignItems:"center",fontSize:"11px",marginTop:"6px",cursor:"pointer"}},cfg);
       const igwC=ch("input",{type:"checkbox"},igwL);igwC.checked=!!vpc.igw;igwC.addEventListener("change",()=>{vpc.igw=igwC.checked;renderAndSync();});
       ch("span",{text:"Internet Gateway (IGW) アタッチ"},igwL);
 
+      // ==== Availability Zones 管理セクション ====
+      const azSec=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:"アベイラビリティゾーン (AZ) — このリージョンで利用可能"},azSec);
+      const curRegion = AWS_REGIONS.find(r=>r.id===vpc.region) || {azs:[]};
+      const usedAzs = new Set((vpc.subnets||[]).map(s=>s.az).filter(Boolean));
+      const azGrid=ch("div",{style:{display:"flex",flexWrap:"wrap",gap:"6px"}},azSec);
+      for(const az of curRegion.azs){
+        const card=ch("div",{style:{padding:"6px 10px",border:"1px solid "+(usedAzs.has(az)?"var(--green)":"var(--border)"),borderRadius:"4px",background:usedAzs.has(az)?"rgba(34,197,94,0.1)":"var(--bg2)",fontSize:"11px"}},azGrid);
+        ch("div",{text:az,style:{fontWeight:"700"}},card);
+        const cnt = (vpc.subnets||[]).filter(s=>s.az===az).length;
+        ch("div",{text:cnt>0?(cnt+"サブネット使用中"):"未使用",style:{fontSize:"9px",color:cnt>0?"var(--green)":"var(--text-mute)"}},card);
+        if(cnt===0){
+          ch("button",{text:"このAZを除外",style:{padding:"2px 6px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--orange)",color:"var(--orange)",borderRadius:"2px",marginTop:"3px"},
+            on:{click:()=>{
+              // remove this AZ from current region's list (only for this VPC's view; actual region list is global, so we hide it via vpc._disabled_azs)
+              vpc._disabled_azs = vpc._disabled_azs || [];
+              if(!vpc._disabled_azs.includes(az)) vpc._disabled_azs.push(az);
+              renderAndSync(); refresh();
+              toast("AZ "+az+" を非表示に","ok");
+            }}},card);
+        }
+      }
+      // 非表示AZを復活ボタン
+      if((vpc._disabled_azs||[]).length){
+        ch("div",{text:"非表示中のAZ: "+vpc._disabled_azs.join(", "),style:{fontSize:"10px",color:"var(--text-mute)",marginTop:"4px"}},azSec);
+        ch("button",{text:"非表示AZを全て復活",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--accent)",color:"var(--accent)",borderRadius:"3px"},
+          on:{click:()=>{ vpc._disabled_azs=[]; renderAndSync(); refresh(); }}},azSec);
+      }
+
       // Subnets
       const s1=ch("div",{class:"sub-section"},body);
-      ch("h4",{text:"サブネット"},s1);
+      ch("h4",{text:"サブネット (各AZにサブネットを切る)"},s1);
+      const availAzs = (curRegion.azs||[]).filter(az=>!(vpc._disabled_azs||[]).includes(az));
       (vpc.subnets||[]).forEach((sn,i)=>{
         const row=ch("div",{style:{display:"flex",gap:"5px",alignItems:"center",marginBottom:"3px",flexWrap:"wrap"}},s1);
         const n=ch("input",{type:"text",value:sn.name||"",placeholder:"subnet名",style:Object.assign({width:"100px"},fStyle)},row);n.addEventListener("change",()=>{sn.name=n.value;renderAndSync();});
         const c=ch("input",{type:"text",value:sn.cidr||"",placeholder:"10.0.1.0/24",style:Object.assign({width:"110px"},fStyle)},row);c.addEventListener("change",()=>{sn.cidr=c.value;renderAndSync();});
-        const az=ch("input",{type:"text",value:sn.az||"",placeholder:"az-a",style:Object.assign({width:"56px"},fStyle)},row);az.addEventListener("change",()=>{sn.az=az.value;renderAndSync();});
+        // AZ as dropdown
+        const azS=ch("select",{style:Object.assign({width:"130px"},fStyle)},row);
+        ch("option",{value:"",text:"-- AZ --"},azS);
+        for(const az of availAzs) ch("option",{value:az,text:az},azS);
+        if(sn.az && !availAzs.includes(sn.az)) ch("option",{value:sn.az,text:sn.az+" (リージョン外)"},azS);
+        azS.value=sn.az||"";
+        azS.addEventListener("change",()=>{sn.az=azS.value;renderAndSync();});
         const pubL=ch("label",{style:{display:"flex",gap:"3px",alignItems:"center",fontSize:"10px",cursor:"pointer"}},row);
         const pub=ch("input",{type:"checkbox"},pubL);pub.checked=!!sn.public;pub.addEventListener("change",()=>{sn.public=pub.checked;renderAndSync();});
         ch("span",{text:"public"},pubL);
-        ch("button",{text:"✕",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},on:{click:()=>{vpc.subnets.splice(i,1);renderAndSync();refresh();}}},row);
+        ch("button",{text:"✕削除",style:{padding:"1px 6px",cursor:"pointer",fontSize:"10px",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},on:{click:()=>{vpc.subnets.splice(i,1);renderAndSync();refresh();}}},row);
       });
       ch("button",{text:"+ サブネット",style:{padding:"3px 10px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
-        on:{click:()=>{ const n=(vpc.subnets=vpc.subnets||[]).length; vpc.subnets.push({name:(n%2?"private":"public")+"-"+(n+1),cidr:`10.0.${n+1}.0/24`,az:"az-"+String.fromCharCode(97+(n%3)),public:n%2===0}); renderAndSync(); refresh(); }}},s1);
+        on:{click:()=>{ const n=(vpc.subnets=vpc.subnets||[]).length; const az = availAzs[n % availAzs.length] || (curRegion.azs[0]||""); vpc.subnets.push({name:(n%2?"private":"public")+"-"+(n+1),cidr:`10.0.${n+1}.0/24`,az:az,public:n%2===0}); renderAndSync(); refresh(); }}},s1);
 
       // Security Groups
       const s2=ch("div",{class:"sub-section"},body);
