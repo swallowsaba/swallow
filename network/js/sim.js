@@ -2564,21 +2564,19 @@ function addExternalEndpoint(provider, item){
     const firstVpc = App.config.aws.vpcs[0] || null;
     dev.aws_region = (firstVpc && firstVpc.region) || "ap-northeast-1";
     if(isVpcScoped && firstVpc){
-      // VPC-scoped: place inside the VPC frame
+      // VPC-scoped: place inside the VPC frame, in an appropriate subnet cell
       dev.aws_vpc = firstVpc.name;
-      const vpcMembers = (App.config.servers||[]).filter(s=>s.aws&&s.aws.vpc===dev.aws_vpc)
-        .concat((App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===dev.aws_vpc && d.id!==dev.id));
-      if(vpcMembers.length){
-        const minX = Math.min(...vpcMembers.map(m=>m.x||0));
-        const minY = Math.min(...vpcMembers.map(m=>m.y||0));
-        const maxX = Math.max(...vpcMembers.map(m=>(m.x||0)+(m.width||130)));
-        const maxY = Math.max(...vpcMembers.map(m=>(m.y||0)+(m.height||65)));
-        dev.x = maxX + 30;
-        dev.y = minY + (vpcMembers.length % 3) * 90;
-        if(dev.x > minX + 600){ dev.x = minX + 40; dev.y = maxY + 30; }
+      // pick a subnet: public for ALB/NAT/IGW, otherwise first private (or first available)
+      const subs = firstVpc.subnets || [];
+      let target = null;
+      if(["aws-alb","aws-nlb","aws-natgw","aws-igw"].includes(item.key)){
+        target = subs.find(s=>s.public) || subs[0];
       } else {
-        dev.x = 280; dev.y = 280;
+        target = subs.find(s=>!s.public) || subs[0];
       }
+      if(target) dev.aws_subnet = target.name;
+      // x/y will be assigned by the grid layout in renderAwsOverlay; seed a default
+      dev.x = 280; dev.y = 280;
     } else {
       // GLOBAL/REGIONAL: outside any VPC but inside the AWS region frame (placed at the top area)
       dev.aws_vpc = "";    // 明示的に VPC外

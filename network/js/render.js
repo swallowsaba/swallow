@@ -676,42 +676,103 @@ function renderBondOverlay(g, obj, kind){
 
 // Draw AWS VPC boundary regions (enclosing their EC2 servers) + subnet sub-boxes.
 // Empty VPCs are shown as a labeled placeholder so they are always visible.
+// AWS hierarchy render — correct AWS structure (AWS official):
+//   Region ⊃ VPC ⊃ AZ ⊃ Subnet ⊃ EC2
+// Every frame stores its own absolute _pos/_size (seeded by auto-layout the first
+// time, then persisted), so each is independently draggable & resizable.
 function renderAwsOverlay(){
   const layer = $("#layer-networks");
   if(!layer || !App.config.aws) return;
-  const vpcs = App.config.aws.vpcs || [];
-  // グローバル/リージョナルサービス(VPC外、AWS全体の直下に居る)
+  if(typeof ensureAwsHierarchy === "function") ensureAwsHierarchy();
+  const aws = App.config.aws;
+  const regions = aws.regions || [];
   const globalSvcs = (App.config.devices||[]).filter(d=>d.aws_kind && !d.aws_vpc);
-  if(!vpcs.length && !globalSvcs.length) return;
-  // ===== AWS 全体フレーム (これが最も外側 — VPC・グローバルサービスを内包) =====
-  // AWS全体の_posとして保存(ドラッグで移動可能)
-  App.config.aws._pos = App.config.aws._pos || {x:0, y:0};
-  App.config.aws._pad = App.config.aws._pad || {w:0, h:0};
-  // bounding box of all AWS resources
-  let amx=Infinity, amy=Infinity, aMx=-Infinity, aMy=-Infinity;
-  const allAws = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc)
-    .concat((App.config.devices||[]).filter(d=>d.aws_kind));
-  for(const m of allAws){
-    const w=m.width||130, h=m.height||65;
-    amx=Math.min(amx,m.x||0); amy=Math.min(amy,m.y||0);
-    aMx=Math.max(aMx,(m.x||0)+w); aMy=Math.max(aMy,(m.y||0)+h);
+  if(!regions.length && !globalSvcs.length) return;
+
+  // ---- layout constants ----
+  const SUBNET_W=190, SUBNET_H=92, SUBNET_GAP=14;
+  const AZ_PAD_TOP=26, AZ_GAP=18, AZ_PAD=12;
+  const VPC_PAD=16, VPC_LABEL_H=24, VPC_GAP=22;
+  const REGION_PAD=18, REGION_LABEL_H=28, REGION_GAP=30;
+  const AWS_PAD=18, AWS_LABEL_H=10;
+
+  aws._pos = aws._pos || { x:40, y:40 };
+
+  // ===== LAYOUT PASS: seed _pos/_size for any frame missing them =====
+  // Regions stack vertically from aws._pos.
+  let regionCursorY = aws._pos.y + 28;
+  const regionX = aws._pos.x + AWS_PAD;
+  for(const region of regions){
+    if(!region._pos) region._pos = { x:regionX, y:regionCursorY };
+    // VPCs stack vertically inside region
+    let vpcCursorY = region._pos.y + REGION_LABEL_H + 6;
+    const vpcX = region._pos.x + REGION_PAD;
+    for(const vpc of (region.vpcs||[])){
+      if(!vpc._pos) vpc._pos = { x:vpcX, y:vpcCursorY };
+      // AZ columns inside VPC (one column per region AZ that this VPC uses, but show all region AZs)
+      const azs = region.azs && region.azs.length ? region.azs : awsDefaultAzs(region.id);
+      vpc._azLayout = vpc._azLayout || {};
+      const azY = vpc._pos.y + VPC_LABEL_H + 6;
+      let azCursorX = vpc._pos.x + VPC_PAD;
+      let maxAzH = 0;
+      for(const az of azs){
+        // subnets of this vpc in this az
+        const azSubs = (vpc.subnets||[]).filter(s=>s.az===az);
+        // seed subnet positions within the az column
+        const azInnerY = azY + AZ_PAD_TOP;
+        let snCursorY = azInnerY;
+        for(const sn of azSubs){
+          if(!sn._size) sn._size = { w:SUBNET_W, h:SUBNET_H };
+          if(!sn._pos)  sn._pos  = { x:azCursorX + AZ_PAD, y:snCursorY };
+          snCursorY = sn._pos.y + sn._size.h + SUBNET_GAP;
+        }
+        const colSubsBottom = azSubs.length ? Math.max(...azSubs.map(s=>s._pos.y+s._size.h)) : (azInnerY+SUBNET_H);
+        const azH = (colSubsBottom - azY) + AZ_PAD;
+        const azW = SUBNET_W + AZ_PAD*2;
+        if(!vpc._azLayout[az]) vpc._azLayout[az] = { x:azCursorX, y:azY, w:azW, h:azH };
+        else { // keep stored x/y, refresh size to fit subnets if auto
+          if(vpc._azLayout[az]._auto !== false){ vpc._azLayout[az].h = azH; }
+        }
+        maxAzH = Math.max(maxAzH, vpc._azLayout[az].h);
+        azCursorX = vpc._azLayout[az].x + vpc._azLayout[az].w + AZ_GAP;
+      }
+      // normalize AZ heights to the tallest (so columns align)
+      for(const az of azs){ if(vpc._azLayout[az]) vpc._azLayout[az].h = maxAzH; }
+      const vpcW = (azCursorX - vpc._pos.x) - AZ_GAP + VPC_PAD;
+      const vpcH = (azY + maxAzH + VPC_PAD) - vpc._pos.y;
+      if(!vpc._size) vpc._size = { w:vpcW, h:vpcH };
+      else if(vpc._size._auto !== false){ vpc._size.w = vpcW; vpc._size.h = vpcH; }
+      vpcCursorY = vpc._pos.y + vpc._size.h + VPC_GAP;
+    }
+    const regionW = Math.max(260, ...(region.vpcs||[]).map(v=>(v._pos.x + v._size.w) - region._pos.x)) + REGION_PAD;
+    const regionH = (vpcCursorY - region._pos.y) + REGION_PAD - VPC_GAP + 6;
+    if(!region._size) region._size = { w:regionW, h:regionH };
+    else if(region._size._auto !== false){ region._size.w = regionW; region._size.h = regionH; }
+    regionCursorY = region._pos.y + region._size.h + REGION_GAP;
   }
-  if(amx===Infinity){ amx=20; amy=20; aMx=720; aMy=520; }
-  amx-=44; amy-=64; aMx+=44; aMy+=30;
-  aMx += (App.config.aws._pad.w||0); aMy += (App.config.aws._pad.h||0);
-  // AWS全体フレーム
+
+  // ===== AWS master bounding box =====
+  let amnX=Infinity, amnY=Infinity, amxX=-Infinity, amxY=-Infinity;
+  for(const region of regions){
+    amnX=Math.min(amnX, region._pos.x); amnY=Math.min(amnY, region._pos.y);
+    amxX=Math.max(amxX, region._pos.x+region._size.w); amxY=Math.max(amxY, region._pos.y+region._size.h);
+  }
+  if(amnX===Infinity){ amnX=aws._pos.x; amnY=aws._pos.y; amxX=aws._pos.x+300; amxY=aws._pos.y+200; }
+  const awsX=amnX-AWS_PAD, awsY=amnY-AWS_PAD-14, awsW=(amxX-amnX)+AWS_PAD*2, awsH=(amxY-amnY)+AWS_PAD*2+14;
+
   const awsG = ce("g", { class:"aws-master-overlay" }, layer);
-  const awsFrame = ce("rect", { x:amx, y:amy, width:aMx-amx, height:aMy-amy, rx:14, ry:14,
-    fill:"rgba(255,153,0,0.025)", stroke:"#ff9900", "stroke-width":2.5, "stroke-dasharray":"14 6",
-    "pointer-events":"all", style:"cursor:pointer" }, awsG);
-  awsFrame.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-root",id:"aws"}; });
-  awsFrame.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
+  // master frame
+  const mRect = ce("rect", { x:awsX, y:awsY, width:awsW, height:awsH, rx:10, ry:10,
+    fill:"rgba(255,153,0,0.02)", stroke:"#ff9900", "stroke-width":2, "stroke-dasharray":"12 6",
+    "pointer-events":"all", style:"cursor:move" }, awsG);
+  mRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
     if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
-      { icon:"☁", label:"AWS 全体構成", action:()=>{ if(typeof showAwsManager==="function") showAwsManager(); }},
+      { icon:"☁", label:"AWS 全体管理", action:()=>{ if(typeof showAwsManager==="function") showAwsManager(); }},
+      { icon:"➕", label:"リージョンを追加", action:()=>{ if(typeof awsAddRegionInteractive==="function") awsAddRegionInteractive(); }},
       { sep:true },
-      { icon:"🗑", label:"AWS全体を削除 (全VPC・全サービス)", action:()=>{
-        if((typeof confirm==="function")?confirm("AWS全体を削除します。VPC・全AWSサービスが消えます。よろしいですか?"):true){
-          App.config.aws = {vpcs:[]};
+      { icon:"🗑", label:"AWS全体を削除", action:()=>{
+        if((typeof confirm==="function")?confirm("AWS全体(全リージョン・VPC・サービス)を削除しますか?"):true){
+          App.config.aws = { regions:[], vpcs:[] };
           App.config.devices = (App.config.devices||[]).filter(d=>!d.aws_kind);
           App.config.servers = (App.config.servers||[]).filter(s=>!(s.aws&&s.aws.vpc));
           renderAndSync(); toast("AWS全体を削除","ok");
@@ -719,129 +780,211 @@ function renderAwsOverlay(){
       }}
     ]);
   });
-  // AWS全体ラベル
-  const albl = `☁ AWS — ${vpcs.length} VPC / ${globalSvcs.length} グローバル`;
-  const albw = albl.length*7.5+16;
-  const albelRect = ce("rect", { x:amx+12, y:amy-12, width:albw, height:22, rx:11, ry:11,
+  // AWS master label (drag moves whole block)
+  const albl="☁ AWS Cloud"; const albw=albl.length*8+16;
+  const albRect = ce("rect", { x:awsX+10, y:awsY-11, width:albw, height:22, rx:11, ry:11,
     fill:"#ff9900", stroke:"#fff", "stroke-width":1.4, "pointer-events":"all", style:"cursor:move" }, awsG);
-  ce("text", { x:amx+12+albw/2, y:amy-1, "text-anchor":"middle", "dominant-baseline":"middle",
+  ce("text", { x:awsX+10+albw/2, y:awsY, "text-anchor":"middle", "dominant-baseline":"middle",
     "font-size":11, "font-weight":"700", fill:"#fff", text:albl, "pointer-events":"none" }, awsG);
-  // AWS全体ドラッグで全AWSリソース移動
-  const allAwsMem = allAws.map(m=>({kind:m.aws_kind?"device":"server", id:m.id}));
-  albelRect.addEventListener("mousedown",(e)=>startGroupDrag(e, allAwsMem));
-  // グローバルサービス領域ラベル (右上)
-  if(globalSvcs.length){
-    ce("text", { x:aMx-12, y:amy+6, "text-anchor":"end", "font-size":9,
-      fill:"#ff9900", "font-weight":"700", text:"◆ Global / Regional Services", "pointer-events":"none" }, awsG);
-  }
-  // AWS全体のリサイズハンドル
-  const arh = ce("rect", { x:aMx-7, y:aMy-7, width:12, height:12, rx:2, ry:2,
+  const moveAws=(e)=>{ if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
+    const pt=svgPoint(e); awsDragState={ startX:pt.x, startY:pt.y, ox:aws._pos.x, oy:aws._pos.y }; };
+  albRect.addEventListener("mousedown", moveAws);
+  mRect.addEventListener("mousedown", moveAws);
+  // master resize handle
+  const mrh = ce("rect", { x:awsX+awsW-7, y:awsY+awsH-7, width:12, height:12, rx:2, ry:2,
     fill:"#ff9900", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, awsG);
-  arh.addEventListener("mousedown",(e)=>startFrameResize(e, App.config.aws, {x:amx,y:amy,w:aMx-amx,h:aMy-amy}));
-  // ===== VPC単位の枠 (AWS全体内に配置) =====
-  let placeholderX = amx+40;
-  (App.config.aws.vpcs||[]).forEach((vpc, vi)=>{
-    const srvMembers = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc===vpc.name && !(s.host));
-    const svcMembers = (App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===vpc.name);
-    const members = srvMembers.concat(svcMembers);
-    const g = ce("g", { class:"aws-vpc-overlay", "pointer-events":"none" }, layer);
-    let minX,minY,maxX,maxY;
-    if(members.length){
-      minX=Infinity;minY=Infinity;maxX=-Infinity;maxY=-Infinity;
-      for(const s of members){
-        const w=s.width||130,h=s.height||65;
-        minX=Math.min(minX,s.x||0); minY=Math.min(minY,s.y||0);
-        maxX=Math.max(maxX,(s.x||0)+w); maxY=Math.max(maxY,(s.y||0)+h);
+  // (master auto-sizes from contents; resize handle is cosmetic anchor)
+
+  // ===== draw each REGION → VPC → AZ → SUBNET =====
+  for(const region of regions){
+    const rp=region._pos, rs=region._size;
+    const regG = ce("g", { class:"aws-region-overlay" }, layer);
+    const regRect = ce("rect", { x:rp.x, y:rp.y, width:rs.w, height:rs.h, rx:6, ry:6,
+      fill:"rgba(40,110,200,0.015)", stroke:"#2860c8", "stroke-width":1.6,
+      "pointer-events":"all", style:"cursor:move" }, regG);
+    regRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-region",id:region.id}; if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+    regRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); if(typeof showAwsRegionManager==="function") showAwsRegionManager(region.id); });
+    regRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
+      if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
+        { icon:"🌐", label:"リージョン設定 (AZ追加/変更)", action:()=>{ if(typeof showAwsRegionManager==="function") showAwsRegionManager(region.id); }},
+        { icon:"➕", label:"このリージョンにVPCを追加", action:()=>{ if(typeof awsAddVpcToRegion==="function") awsAddVpcToRegion(region.id); }},
+        { sep:true },
+        { icon:"🗑", label:"リージョンを削除", action:()=>{ if(typeof awsDeleteRegion==="function") awsDeleteRegion(region.id); }}
+      ]);
+    });
+    // region label bar (drag moves region + descendants)
+    const rlbl="⚑ リージョン / "+region.id; const rlw=rlbl.length*7+16;
+    const rlRect = ce("rect", { x:rp.x+8, y:rp.y+6, width:rlw, height:18, rx:4, ry:4,
+      fill:"rgba(40,96,200,0.12)", stroke:"none", "pointer-events":"all", style:"cursor:move" }, regG);
+    ce("text", { x:rp.x+12, y:rp.y+18, "font-size":12, "font-weight":"700", fill:"#2860c8",
+      text:rlbl, "pointer-events":"none" }, regG);
+    const dragRegion=(e)=>startAwsFrameDrag(e, "region", region);
+    regRect.addEventListener("mousedown", dragRegion);
+    rlRect.addEventListener("mousedown", dragRegion);
+    // region resize handle
+    const rrh = ce("rect", { x:rp.x+rs.w-7, y:rp.y+rs.h-7, width:12, height:12, rx:2, ry:2,
+      fill:"#2860c8", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, regG);
+    rrh.addEventListener("mousedown",(e)=>startAwsFrameResize(e, region));
+
+    // VPCs
+    for(const vpc of (region.vpcs||[])){
+      const vp=vpc._pos, vs=vpc._size;
+      const vg = ce("g", { class:"aws-vpc-overlay" }, layer);
+      const vpcRect = ce("rect", { x:vp.x, y:vp.y, width:vs.w, height:vs.h, rx:6, ry:6,
+        fill:"rgba(80,160,80,0.03)", stroke:"#2e8b2e", "stroke-width":1.6,
+        "pointer-events":"all", style:"cursor:move" }, vg);
+      vpcRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-vpc",id:vpc.name}; if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+      vpcRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showAwsManager(vpc.name); });
+      vpcRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); showContextMenu(e,"aws-vpc",vpc.name); });
+      // VPC label bar (drag moves vpc + descendants)
+      const vlbl="☁ VPC "+(vpc.name||"")+" ("+(vpc.cidr||"")+")"; const vlw=vlbl.length*6.2+14;
+      const vlRect = ce("rect", { x:vp.x+8, y:vp.y+5, width:vlw, height:16, rx:4, ry:4,
+        fill:"rgba(46,139,46,0.14)", stroke:"none", "pointer-events":"all", style:"cursor:move" }, vg);
+      ce("text", { x:vp.x+12, y:vp.y+16, "font-size":11, "font-weight":"700", fill:"#2e8b2e",
+        text:vlbl, "pointer-events":"none" }, vg);
+      if(vpc.igw) ce("text", { x:vp.x+vs.w-10, y:vp.y+16, "text-anchor":"end", "font-size":9, fill:"#2e8b2e", "font-weight":"700", text:"⇄ IGW", "pointer-events":"none" }, vg);
+      const dragVpc=(e)=>startAwsFrameDrag(e, "vpc", vpc);
+      vpcRect.addEventListener("mousedown", dragVpc);
+      vlRect.addEventListener("mousedown", dragVpc);
+      const vrh = ce("rect", { x:vp.x+vs.w-7, y:vp.y+vs.h-7, width:12, height:12, rx:2, ry:2,
+        fill:"#2e8b2e", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, vg);
+      vrh.addEventListener("mousedown",(e)=>startAwsFrameResize(e, vpc));
+
+      // AZ frames inside VPC
+      const azs = region.azs && region.azs.length ? region.azs : awsDefaultAzs(region.id);
+      for(const az of azs){
+        const al = vpc._azLayout && vpc._azLayout[az];
+        if(!al) continue;
+        const ag = ce("g", { class:"aws-az-overlay" }, layer);
+        const azRect = ce("rect", { x:al.x, y:al.y, width:al.w, height:al.h, rx:5, ry:5,
+          fill:"rgba(40,110,200,0.02)", stroke:"#3b82d6", "stroke-width":1.1, "stroke-dasharray":"5 4",
+          "pointer-events":"all", style:"cursor:move" }, ag);
+        azRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-az",id:region.id+"/"+az}; if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+        azRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
+          if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
+            { icon:"🌐", label:"AZ: "+az, action:()=>{ if(typeof showAwsRegionManager==="function") showAwsRegionManager(region.id); }},
+            { icon:"➕", label:"このAZにサブネットを追加", action:()=>{ if(typeof awsAddSubnetToAz==="function") awsAddSubnetToAz(vpc.name, az); }},
+            { sep:true },
+            { icon:"🗑", label:"このAZを削除", action:()=>{ if(typeof awsDeleteAz==="function") awsDeleteAz(region.id, az); }}
+          ]);
+        });
+        ce("text", { x:al.x+al.w/2, y:al.y+15, "text-anchor":"middle", "font-size":10, fill:"#3b82d6", "font-weight":"600",
+          text:"AZ / "+az, "pointer-events":"none" }, ag);
+        // drag az moves az + its subnets
+        azRect.addEventListener("mousedown",(e)=>startAwsFrameDrag(e, "az", { vpc, az, layout:al }));
+        const arh = ce("rect", { x:al.x+al.w-7, y:al.y+al.h-7, width:11, height:11, rx:2, ry:2,
+          fill:"#3b82d6", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, ag);
+        arh.addEventListener("mousedown",(e)=>startAwsFrameResize(e, { _azRef:{vpc,az} }));
+
+        // subnets in this AZ
+        const azSubs = (vpc.subnets||[]).filter(s=>s.az===az);
+        for(const sn of azSubs){
+          if(!sn._pos || !sn._size) continue;
+          const sp=sn._pos, ss=sn._size;
+          const isPub = sn.public || /public/i.test(sn.type||"");
+          const isIso = /isolat/i.test(sn.name||"") || /isolat/i.test(sn.type||"");
+          const col = isPub ? "#22c55e" : (isIso ? "#64a0c8" : "#3b82d6");
+          const fillCol = isPub ? "rgba(34,197,94,0.07)" : (isIso ? "rgba(100,160,200,0.07)" : "rgba(59,130,214,0.07)");
+          const sg = ce("g", { class:"aws-subnet-overlay" }, layer);
+          const snRect = ce("rect", { x:sp.x, y:sp.y, width:ss.w, height:ss.h, rx:5, ry:5,
+            fill:fillCol, stroke:col, "stroke-width":1.2, "pointer-events":"all", style:"cursor:move" }, sg);
+          snRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-subnet",id:vpc.name+"/"+sn.name}; if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+          snRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showAwsManager(vpc.name); });
+          snRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
+            if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
+              { icon:(isPub?"🔓":"🔒"), label:(sn.name||"subnet")+" ("+(sn.cidr||"")+")", action:()=>showAwsManager(vpc.name) },
+              { sep:true },
+              { icon:"🗑", label:"このサブネットを削除", action:()=>{
+                vpc.subnets=(vpc.subnets||[]).filter(x=>x!==sn);
+                for(const s of (App.config.servers||[])) if(s.aws&&s.aws.vpc===vpc.name&&s.aws.subnet===sn.name) delete s.aws.subnet;
+                renderAndSync(); toast("サブネット "+sn.name+" を削除","ok");
+              }}
+            ]);
+          });
+          ce("text", { x:sp.x+8, y:sp.y+14, "font-size":9, "font-weight":"700", fill:col, "pointer-events":"none",
+            text:(isPub?"🔓 ":"🔒 ")+(sn.name||"") }, sg);
+          ce("text", { x:sp.x+8, y:sp.y+26, "font-size":8.5, fill:col, "pointer-events":"none", text:(sn.cidr||"") }, sg);
+          // drag subnet moves subnet + its EC2
+          snRect.addEventListener("mousedown",(e)=>startAwsFrameDrag(e, "subnet", { vpc, sn }));
+          const srh = ce("rect", { x:sp.x+ss.w-7, y:sp.y+ss.h-7, width:10, height:10, rx:2, ry:2,
+            fill:col, stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, sg);
+          srh.addEventListener("mousedown",(e)=>startAwsFrameResize(e, sn));
+          // arrange EC2 instances inside the subnet (they follow the subnet)
+          const cellServers = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc===vpc.name && s.aws.subnet===sn.name && !s.host);
+          cellServers.forEach((srv,si)=>{
+            const cw=(ss.w-16-6)/2;
+            srv.x = sp.x+8+(si%2)*(cw+6); srv.y = sp.y+32+Math.floor(si/2)*30;
+            srv.width=Math.min(cw,84); srv.height=24;
+          });
+          const cellDevices = (App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===vpc.name && d.aws_subnet===sn.name);
+          cellDevices.forEach((dev,di)=>{ const cw=(ss.w-16-6)/2; dev.x=sp.x+8+(di%2)*(cw+6); dev.y=sp.y+58+Math.floor(di/2)*28; });
+        }
       }
-      minX-=28; minY-=34; maxX+=28; maxY+=24;
-    } else {
-      // placeholder empty VPC region — position is user-movable via _pos (persists across renders)
-      if(!vpc._pos) vpc._pos = { x:placeholderX, y:20 };
-      minX=vpc._pos.x; minY=vpc._pos.y; maxX=vpc._pos.x+260; maxY=vpc._pos.y+180;
-      if(!vpc._pos.x || vpc._pos.x===placeholderX) placeholderX+=300;
     }
-    // user-adjustable size: extend the auto box by the stored padding (resize handle)
-    if(vpc._pad){ maxX += (vpc._pad.w||0); maxY += (vpc._pad.h||0); }
-    const vpcFrame = ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:14, ry:14,
-      fill:"rgba(255,153,0,0.05)", stroke:"#ff9900", "stroke-width":1.6, "stroke-dasharray":"9 5",
-      "pointer-events":"all", style:"cursor:move" }, g);
-    if(members.length){
-      const memF = members.map(s=>({kind:"server",id:s.id}));
-      vpcFrame.addEventListener("mousedown",(e)=>startGroupDrag(e, memF));
-    } else {
-      // empty VPC frame can still be moved (user wants to position it before adding EC2)
-      vpcFrame.addEventListener("mousedown",(e)=>startFrameMove(e, vpc, {x:minX,y:minY}));
+  }
+  // global services row (outside any VPC) along the top
+  if(globalSvcs.length){
+    ce("text", { x:awsX+awsW-12, y:awsY+16, "text-anchor":"end", "font-size":9,
+      fill:"#ff9900", "font-weight":"700", text:"◆ Global / Regional Services", "pointer-events":"none" }, awsG);
+    globalSvcs.forEach((dev,i)=>{ dev.x=awsX+20+(i%5)*120; dev.y=awsY+24; });
+  }
+}
+// drag state for moving the whole AWS block by its master label
+var awsDragState = null;
+// drag state for moving an individual AWS frame (region/vpc/az/subnet) + its descendants
+var awsFrameDrag = null;
+var awsFrameResize = null;
+
+// Collect all movable refs (frames with _pos, and EC2 servers/devices) under a given AWS frame.
+function awsCollectDescendants(kind, ref){
+  const frames = [];   // objects with a _pos {x,y} to shift
+  const azRects = [];  // {x,y} layout rects to shift
+  if(kind === "region"){
+    const region = ref;
+    for(const vpc of (region.vpcs||[])){
+      frames.push(vpc._pos);
+      for(const az in (vpc._azLayout||{})) azRects.push(vpc._azLayout[az]);
+      for(const sn of (vpc.subnets||[])) if(sn._pos) frames.push(sn._pos);
     }
-    vpcFrame.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); showContextMenu(e,"aws-vpc",vpc.name); });
-    vpcFrame.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showAwsManager(vpc.name); });
-    vpcFrame.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-vpc",id:vpc.name}; openPropertyPanel(); });
-    const label = `☁ VPC ${vpc.name} ${vpc.cidr?("("+vpc.cidr+")"):""} ${vpc.region||""}`;
-    const bw = label.length*6.0+16;
-    const labelRect = ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9, fill:"#ff9900", stroke:"#fff", "stroke-width":1.2,
-      style:"cursor:move", "pointer-events":"all" }, g);
-    ce("text", { x:minX+8+bw/2, y:minY+1, "text-anchor":"middle", "dominant-baseline":"middle",
-      "font-size":10, "font-weight":"700", fill:"#fff", "font-family":"var(--mono)", text:label, "pointer-events":"none" }, g);
-    if(members.length){
-      const mem = members.map(s=>({kind:"server",id:s.id}));
-      labelRect.addEventListener("mousedown",(e)=>startGroupDrag(e, mem));
-    }
-    labelRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-vpc",id:vpc.name}; openPropertyPanel(); });
-    labelRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showAwsManager(vpc.name); });
-    if(vpc.igw){
-      ce("text", { x:maxX-8, y:minY+1, "text-anchor":"end", "dominant-baseline":"middle",
-        "font-size":9, fill:"#ff9900", "font-weight":"700", text:"⇄ IGW" }, g);
-    }
-    if(!members.length){
-      ce("text", { x:(minX+maxX)/2, y:(minY+maxY)/2, "text-anchor":"middle", "dominant-baseline":"middle",
-        "font-size":11, fill:"var(--text-mute)", text:"(EC2未配置 — AWS管理で「+ EC2インスタンス追加」)" }, g);
-    }
-    // subnet sub-boxes: group members by subnet (draggable + resizable)
-    const bySubnet={};
-    for(const s of members){ const sn=(s.aws&&s.aws.subnet)||"(no-subnet)"; (bySubnet[sn]=bySubnet[sn]||[]).push(s); }
-    for(const snName in bySubnet){
-      const arr=bySubnet[snName]; if(snName==="(no-subnet)") continue;
-      const snDef=(vpc.subnets||[]).find(z=>z.name===snName);
-      if(!snDef) continue;
-      let sx,sy,ex,ey;
-      // If subnet has manual size/pos overrides use those; otherwise auto-bound the members.
-      if(snDef._pos && snDef._size){
-        sx = snDef._pos.x; sy = snDef._pos.y;
-        ex = sx + snDef._size.w; ey = sy + snDef._size.h;
-      } else {
-        sx=Infinity;sy=Infinity;ex=-Infinity;ey=-Infinity;
-        for(const s of arr){ const w=s.width||130,h=s.height||65; sx=Math.min(sx,s.x||0);sy=Math.min(sy,s.y||0);ex=Math.max(ex,(s.x||0)+w);ey=Math.max(ey,(s.y||0)+h); }
-        sx-=12;sy-=14;ex+=12;ey+=10;
-      }
-      const pub = snDef.public;
-      const snBox = ce("rect", { x:sx, y:sy, width:ex-sx, height:ey-sy, rx:9, ry:9,
-        fill:(pub?"rgba(34,197,94,0.05)":"rgba(100,150,250,0.05)"), stroke:(pub?"#22c55e":"#6496fa"), "stroke-width":1, "stroke-dasharray":"4 3",
-        "pointer-events":"all", style:"cursor:move" }, g);
-      // ドラッグでサブネット全体(枠 + 中のEC2)を移動
-      const snMembers = arr.map(s=>({kind:"server",id:s.id}));
-      snBox.addEventListener("mousedown",(e)=>{
-        e.stopPropagation();
-        // 既存位置を記録
-        if(!snDef._pos){ snDef._pos = { x:sx, y:sy }; snDef._size = { w:ex-sx, h:ey-sy }; }
-        startSubnetDrag(e, snDef, snMembers);
-      });
-      // クリックでサブネット選択 (将来の選択時操作用)
-      snBox.addEventListener("click",(e)=>{ e.stopPropagation(); App.selected={kind:"aws-subnet",id:vpc.name+"/"+snName}; });
-      ce("text", { x:sx+6, y:sy+9, "font-size":8, "font-weight":"700", fill:(pub?"#22c55e":"#6496fa"), "pointer-events":"none",
-        text:`${snName}${snDef?(" "+(snDef.cidr||"")):""} ${pub?"[public]":"[private]"}` }, g);
-      // サブネット右下にリサイズハンドル
-      const snRh = ce("rect", { x:ex-7, y:ey-7, width:10, height:10, rx:2, ry:2,
-        fill:(pub?"#22c55e":"#6496fa"), stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, g);
-      snRh.addEventListener("mousedown",(e)=>{
-        e.stopPropagation();
-        if(!snDef._pos){ snDef._pos = { x:sx, y:sy }; snDef._size = { w:ex-sx, h:ey-sy }; }
-        startSubnetResize(e, snDef);
-      });
-    }
-    // SE resize handle (drag to enlarge the VPC frame)
-    const rh = ce("rect", { x:maxX-7, y:maxY-7, width:12, height:12, rx:2, ry:2,
-      fill:"#ff9900", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, g);
-    rh.addEventListener("mousedown",(e)=>startFrameResize(e, vpc, {x:minX,y:minY,w:maxX-minX,h:maxY-minY}));
-  });
+  } else if(kind === "vpc"){
+    const vpc = ref;
+    for(const az in (vpc._azLayout||{})) azRects.push(vpc._azLayout[az]);
+    for(const sn of (vpc.subnets||[])) if(sn._pos) frames.push(sn._pos);
+  } else if(kind === "az"){
+    const { vpc, az } = ref;
+    for(const sn of (vpc.subnets||[])) if(sn.az===az && sn._pos) frames.push(sn._pos);
+  }
+  // subnet has no child frames; EC2 auto-follow on render
+  return { frames, azRects };
+}
+
+function startAwsFrameDrag(e, kind, ref){
+  if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
+  const pt = svgPoint(e);
+  // capture starting positions
+  let anchor;
+  if(kind==="region") anchor = ref._pos;
+  else if(kind==="vpc") anchor = ref._pos;
+  else if(kind==="az") anchor = ref.layout;
+  else if(kind==="subnet") anchor = ref.sn._pos;
+  const desc = awsCollectDescendants(kind, kind==="subnet"?ref.sn:(kind==="az"?ref:ref));
+  awsFrameDrag = {
+    kind, ref, startX:pt.x, startY:pt.y, moved:false,
+    anchor, anchorX0:anchor.x, anchorY0:anchor.y,
+    descFrames: desc.frames.map(p=>({p, x0:p.x, y0:p.y})),
+    descAz: desc.azRects.map(a=>({a, x0:a.x, y0:a.y}))
+  };
+}
+
+function startAwsFrameResize(e, obj){
+  if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
+  const pt = svgPoint(e);
+  let sizeRef;
+  if(obj._azRef){ const {vpc,az}=obj._azRef; sizeRef = vpc._azLayout[az]; }
+  else { obj._size = obj._size || {w:190,h:92}; sizeRef = obj._size; }
+  // mark as manually sized so layout pass won't override
+  sizeRef._auto = false;
+  awsFrameResize = { sizeRef, startX:pt.x, startY:pt.y, w0:sizeRef.w, h0:sizeRef.h };
 }
 
 // Draw Kubernetes cluster boundary regions enclosing their nodes.
@@ -996,18 +1139,18 @@ function renderVcenterOverlay(){
   for(const cl of clusters){
     const memberHosts = hosts.filter(h => (cl.hosts||[]).includes(h.id) || h.vcenter_cluster===cl.name);
     if(!memberHosts.length) continue;
-    // bounding box: hosts + their VMs
+    // bounding box: hosts + their VMs (use the SAME managed frame size as the host renderer)
     let cmnx=Infinity, cmny=Infinity, cmxx=-Infinity, cmxy=-Infinity;
     for(const host of memberHosts){
-      const w=host.width||160, h=host.height||80;
-      cmnx=Math.min(cmnx, host.x||0); cmny=Math.min(cmny, host.y||0);
-      cmxx=Math.max(cmxx, (host.x||0)+w); cmxy=Math.max(cmxy, (host.y||0)+h);
       const vms = (App.config.servers||[]).filter(s=>s.vm && s.host===host.id);
-      for(const vm of vms){ const vw=vm.width||74, vh=vm.height||42;
-        cmnx=Math.min(cmnx, vm.x||0); cmny=Math.min(cmny, vm.y||0);
-        cmxx=Math.max(cmxx, (vm.x||0)+vw); cmxy=Math.max(cmxy, (vm.y||0)+vh); }
+      const VM_W=78, VM_H=40, VM_GAP=8, COLS=2, PAD=12, HEAD=30;
+      const rows = Math.max(1, Math.ceil(vms.length/COLS));
+      const hw = host.width || (PAD*2 + COLS*VM_W + (COLS-1)*VM_GAP);
+      const hh = HEAD + PAD + rows*VM_H + (rows-1)*VM_GAP + PAD + (host._pad?host._pad.h||0:0);
+      cmnx=Math.min(cmnx, host.x||0); cmny=Math.min(cmny, host.y||0);
+      cmxx=Math.max(cmxx, (host.x||0)+hw); cmxy=Math.max(cmxy, (host.y||0)+hh);
     }
-    cmnx-=32; cmny-=44; cmxx+=32; cmxy+=24;
+    cmnx-=26; cmny-=58; cmxx+=26; cmxy+=22;   // extra top room for the cluster label band
     cl._pad = cl._pad || {w:0,h:0};
     cmxx += (cl._pad.w||0); cmxy += (cl._pad.h||0);
     const cg = ce("g", { class:"vcenter-cluster-overlay" }, layer);
@@ -1047,16 +1190,15 @@ function renderVcenterOverlay(){
         }}
       ]);
     });
-    // ラベル(設定の概要表示)
+    // ラベル(設定の概要表示) — 簡潔にしてホスト枠と重ならないように
     const drsTxt = cl.drs ? "DRS✓" : "DRS✕";
     const haTxt = cl.ha ? "HA✓" : "HA✕";
-    const evcTxt = (cl.evc && cl.evc !== "disabled") ? ("EVC:"+cl.evc) : "";
     const totalVMs = memberHosts.reduce((a,h)=>a+(App.config.servers||[]).filter(s=>s.vm&&s.host===h.id).length, 0);
-    const clbl = `🏢 vCenter Cluster: ${cl.name} — ${memberHosts.length}台 / ${totalVMs}VM — ${drsTxt} ${haTxt}${evcTxt?" "+evcTxt:""}`;
-    const cbw = clbl.length*6.5+18;
-    const clblRect = ce("rect", { x:cmnx+10, y:cmny-11, width:cbw, height:22, rx:11, ry:11,
+    const clbl = `🏢 vCenter: ${cl.name} (${memberHosts.length}台/${totalVMs}VM) ${drsTxt} ${haTxt}`;
+    const cbw = clbl.length*6.2+16;
+    const clblRect = ce("rect", { x:cmnx+10, y:cmny-11, width:cbw, height:20, rx:10, ry:10,
       fill:"#228b22", stroke:"#fff", "stroke-width":1.4, "pointer-events":"all", style:"cursor:move" }, cg);
-    ce("text", { x:cmnx+10+cbw/2, y:cmny, "text-anchor":"middle", "dominant-baseline":"middle",
+    ce("text", { x:cmnx+10+cbw/2, y:cmny-1, "text-anchor":"middle", "dominant-baseline":"middle",
       "font-size":10, "font-weight":"700", fill:"#fff", text:clbl, "pointer-events":"none" }, cg);
     // ラベルをドラッグでクラスタ全体(ホスト+VM)を移動
     const allMem = [];
@@ -1072,37 +1214,62 @@ function renderVcenterOverlay(){
       fill:"#228b22", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, cg);
     crh.addEventListener("mousedown",(e)=>startFrameResize(e, cl, {x:cmnx,y:cmny,w:cmxx-cmnx,h:cmxy-cmny}));
   }
-  // ===== 個別ESXiホストの枠 (旧来通り、クラスタ枠の中に表示) =====
+  // ===== 個別ESXiホストの枠 (VMはホスト枠内にグリッド配置 = 必ず内側に収まる) =====
   for(const host of hosts){
     const vms = (App.config.servers||[]).filter(s=>s.vm && s.host===host.id);
     const g = ce("g", { class:"vcenter-overlay" }, layer);
-    let minX=host.x||0, minY=host.y||0, maxX=(host.x||0)+(host.width||160), maxY=(host.y||0)+(host.height||80);
-    for(const vm of vms){ const w=vm.width||74,h=vm.height||42; minX=Math.min(minX,vm.x||0); minY=Math.min(minY,vm.y||0); maxX=Math.max(maxX,(vm.x||0)+w); maxY=Math.max(maxY,(vm.y||0)+h); }
-    minX-=14; minY-=26; maxX+=14; maxY+=14;
-    if(host._pad){ maxX += (host._pad.w||0); maxY += (host._pad.h||0); }
-    const frame = ce("rect", { x:minX, y:minY, width:maxX-minX, height:maxY-minY, rx:12, ry:12,
+    // host frame anchored at the host's position with a managed size.
+    const hx = host.x||0, hy = host.y||0;
+    const VM_W=78, VM_H=40, VM_GAP=8, COLS=2, PAD=12, HEAD=30;
+    // frame size: fits a grid of VMs (min 1 row tall)
+    const rows = Math.max(1, Math.ceil(vms.length/COLS));
+    let fw = host.width  || (PAD*2 + COLS*VM_W + (COLS-1)*VM_GAP);
+    let fh = HEAD + PAD + rows*VM_H + (rows-1)*VM_GAP + PAD;
+    if(host._pad){ fw += (host._pad.w||0); fh += (host._pad.h||0); }
+    fw = Math.max(fw, PAD*2 + COLS*VM_W + (COLS-1)*VM_GAP);
+    const minX=hx, minY=hy, maxX=hx+fw, maxY=hy+fh;
+    const frame = ce("rect", { x:minX, y:minY, width:fw, height:fh, rx:12, ry:12,
       fill:"rgba(120,180,90,0.05)", stroke:"#78b45a", "stroke-width":1.6, "stroke-dasharray":"8 4",
-      "pointer-events":"all", style:"cursor:pointer" }, g);
+      "pointer-events":"all", style:"cursor:move" }, g);
     frame.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"server",id:host.id}; openPropertyPanel(); });
     frame.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showHypervisorManager(host.id); });
     frame.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); showContextMenu(e,"server",host.id); });
+    // drag the host frame → move host + ITS VMs together (and cluster siblings if in a cluster)
+    frame.addEventListener("mousedown",(e)=>{
+      if(e.button!==0 || e.altKey) return;  // alt = let individual element handlers run
+      e.preventDefault(); e.stopPropagation();
+      const pt=svgPoint(e);
+      const mem=[{kind:"server",id:host.id}].concat(vms.map(v=>({kind:"server",id:v.id})));
+      dragState={ mode:"group", moved:false, startSX:pt.x, startSY:pt.y,
+        members: mem.map(m=>{const o=Cfg.byId("servers",m.id);return o?{kind:m.kind,id:m.id,x0:o.x||0,y0:o.y||0}:null;}).filter(Boolean) };
+    });
     const lbl = `🖥 ${host.label||host.id} — VM ${vms.length}${host.vcenter_cluster?(" ⟨"+host.vcenter_cluster+"⟩"):""}`;
     const bw = lbl.length*7+18;
-    const labelRect = ce("rect", { x:minX+8, y:minY-9, width:bw, height:18, rx:9, ry:9,
-      fill:"#78b45a", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:pointer" }, g);
+    const labelRect = ce("rect", { x:minX+8, y:minY+6, width:bw, height:18, rx:9, ry:9,
+      fill:"#78b45a", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:move" }, g);
     labelRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.selected={kind:"server",id:host.id}; openPropertyPanel(); });
     labelRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showHypervisorManager(host.id); });
-    ce("text", { x:minX+8+bw/2, y:minY+0.5, "text-anchor":"middle", "dominant-baseline":"middle",
+    labelRect.addEventListener("mousedown",(e)=>{
+      if(e.button!==0||e.altKey) return; e.preventDefault(); e.stopPropagation();
+      const pt=svgPoint(e);
+      const mem=[{kind:"server",id:host.id}].concat(vms.map(v=>({kind:"server",id:v.id})));
+      dragState={ mode:"group", moved:false, startSX:pt.x, startSY:pt.y,
+        members: mem.map(m=>{const o=Cfg.byId("servers",m.id);return o?{kind:m.kind,id:m.id,x0:o.x||0,y0:o.y||0}:null;}).filter(Boolean) };
+    });
+    ce("text", { x:minX+8+bw/2, y:minY+15, "text-anchor":"middle", "dominant-baseline":"middle",
       "font-size":10, "font-weight":"700", fill:"#fff", text:lbl, "pointer-events":"none" }, g);
+    // arrange VMs in a grid INSIDE the frame (so they're always contained)
+    vms.forEach((vm,i)=>{
+      vm.x = minX + PAD + (i%COLS)*(VM_W+VM_GAP);
+      vm.y = minY + HEAD + Math.floor(i/COLS)*(VM_H+VM_GAP);
+      vm.width = VM_W; vm.height = VM_H;
+    });
     const rh = ce("rect", { x:maxX-7, y:maxY-7, width:12, height:12, rx:2, ry:2,
       fill:"#78b45a", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, g);
-    rh.addEventListener("mousedown",(e)=>startFrameResize(e, host, {x:minX,y:minY,w:maxX-minX,h:maxY-minY}));
+    rh.addEventListener("mousedown",(e)=>startFrameResize(e, host, {x:minX,y:minY,w:fw,h:fh}));
     if(!vms.length){
-      ce("text", { x:(minX+maxX)/2, y:maxY-12, "text-anchor":"middle", "font-size":9, fill:"var(--text-mute)",
+      ce("text", { x:(minX+maxX)/2, y:minY+HEAD+20, "text-anchor":"middle", "font-size":9, fill:"var(--text-mute)",
         text:"(VM未作成 — ダブルクリックで仮想基盤を開く)", "pointer-events":"none" }, g);
-    } else {
-      ce("text", { x:minX+10, y:maxY-6, "font-size":8, fill:"var(--text-mute)",
-        text:"💡 VMを右クリック → 🚚vMotion で別ホストへ移動", "pointer-events":"none" }, g);
     }
   }
 }
@@ -2277,6 +2444,34 @@ function getContainedElements(network){
 }
 
 function onMouseMove(e){
+  // AWS individual frame drag (region/vpc/az/subnet + descendants)
+  if(awsFrameDrag){
+    const pt = svgPoint(e);
+    const dx = pt.x - awsFrameDrag.startX, dy = pt.y - awsFrameDrag.startY;
+    if(Math.abs(dx)>1||Math.abs(dy)>1) awsFrameDrag.moved = true;
+    awsFrameDrag.anchor.x = awsFrameDrag.anchorX0 + dx;
+    awsFrameDrag.anchor.y = awsFrameDrag.anchorY0 + dy;
+    for(const f of awsFrameDrag.descFrames){ f.p.x = f.x0 + dx; f.p.y = f.y0 + dy; }
+    for(const a of awsFrameDrag.descAz){ a.a.x = a.x0 + dx; a.a.y = a.y0 + dy; }
+    render();
+    return;
+  }
+  // AWS frame resize
+  if(awsFrameResize){
+    const pt = svgPoint(e);
+    awsFrameResize.sizeRef.w = Math.max(70, awsFrameResize.w0 + (pt.x - awsFrameResize.startX));
+    awsFrameResize.sizeRef.h = Math.max(50, awsFrameResize.h0 + (pt.y - awsFrameResize.startY));
+    render();
+    return;
+  }
+  // AWS master block drag (move the whole AWS cloud by its label)
+  if(awsDragState){
+    const pt = svgPoint(e);
+    App.config.aws._pos = { x: awsDragState.ox + (pt.x - awsDragState.startX), y: awsDragState.oy + (pt.y - awsDragState.startY) };
+    awsDragState.moved = true;
+    render();
+    return;
+  }
   // Wire-drag (drag-to-connect from an interface port)
   if(wireDrag){
     wireDrag.moved = true;
@@ -2466,6 +2661,21 @@ function onMouseMove(e){
 }
 
 function onMouseUp(){
+  // Finish AWS individual frame drag/resize
+  if(awsFrameDrag){
+    if(awsFrameDrag.moved){ pushUndo(); syncYamlFromConfig(); }
+    awsFrameDrag = null; render(); return;
+  }
+  if(awsFrameResize){
+    pushUndo(); syncYamlFromConfig(); awsFrameResize = null; render(); return;
+  }
+  // Finish AWS master block drag
+  if(awsDragState){
+    if(awsDragState.moved){ pushUndo(); syncYamlFromConfig(); }
+    awsDragState = null;
+    render();
+    return;
+  }
   // Complete a wire-drag: if released over a different interface port, create a connection
   if(wireDrag){
     const rb = $("#wire-rubber"); if(rb) rb.remove();

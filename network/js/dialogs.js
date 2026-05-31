@@ -22,10 +22,64 @@ function openPropertyPanel(){
     renderClusterInlineProps(body, cl);
     return;
   }
+  if(kind === "aws-region"){
+    if(typeof ensureAwsHierarchy==="function") ensureAwsHierarchy();
+    const region = (App.config.aws&&App.config.aws.regions||[]).find(r=>r.id===id);
+    if(!region){ p.classList.add("hidden"); return; }
+    $("#ph-title").textContent = `AWS リージョン: ${region.id}`;
+    const body = $("#ph-body"); body.innerHTML = "";
+    helpBox(body,"リージョン",["地理的な大区分。中にAZとVPCを持ちます。","詳細管理で AZ追加/削除・VPC追加 ができます。"],false);
+    ch("div",{text:"リージョンID: "+region.id+(region.name?(" ("+region.name+")"):""),style:{fontSize:"12px",fontWeight:"700",margin:"6px 0"}},body);
+    ch("div",{text:"AZ: "+(region.azs||[]).join(", "),style:{fontSize:"11px",color:"var(--text-dim)",margin:"4px 0"}},body);
+    ch("div",{text:"VPC数: "+(region.vpcs||[]).length,style:{fontSize:"11px",color:"var(--text-dim)",margin:"4px 0"}},body);
+    ch("button",{text:"🌐 リージョン/AZ 詳細管理",style:{padding:"6px 12px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700",marginTop:"8px"},
+      on:{click:()=>{ if(typeof showAwsRegionManager==="function") showAwsRegionManager(region.id); }}},body);
+    return;
+  }
+  if(kind === "aws-az"){
+    if(typeof ensureAwsHierarchy==="function") ensureAwsHierarchy();
+    const [rid, az] = String(id).split("/");
+    const region = (App.config.aws&&App.config.aws.regions||[]).find(r=>r.id===rid);
+    $("#ph-title").textContent = `AZ: ${az}`;
+    const body = $("#ph-body"); body.innerHTML = "";
+    helpBox(body,"アベイラビリティゾーン",["リージョン内の独立したデータセンター群。","複数AZにVPCのサブネットを分散させて高可用性を確保します。"],false);
+    ch("div",{text:"AZ: "+az,style:{fontSize:"12px",fontWeight:"700",margin:"6px 0"}},body);
+    ch("div",{text:"所属リージョン: "+rid,style:{fontSize:"11px",color:"var(--text-dim)"}},body);
+    if(region){
+      const subs=[]; for(const v of (region.vpcs||[])) for(const s of (v.subnets||[])) if(s.az===az) subs.push(v.name+"/"+s.name);
+      ch("div",{text:"このAZのサブネット: "+(subs.length?subs.join(", "):"(なし)"),style:{fontSize:"11px",color:"var(--text-dim)",margin:"4px 0"}},body);
+      ch("button",{text:"🗑 このAZを削除",style:{padding:"6px 12px",fontSize:"11px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"4px",marginTop:"8px"},
+        on:{click:()=>{ if(typeof awsDeleteAz==="function") awsDeleteAz(rid, az); closePropertyPanel(); }}},body);
+    }
+    return;
+  }
+  if(kind === "aws-subnet"){
+    const [vpcName, snName] = String(id).split("/");
+    const vpc = (App.config.aws&&App.config.aws.vpcs||[]).find(v=>v.name===vpcName);
+    const sn = vpc && (vpc.subnets||[]).find(s=>s.name===snName);
+    if(!sn){ p.classList.add("hidden"); return; }
+    $("#ph-title").textContent = `サブネット: ${sn.name}`;
+    const body = $("#ph-body"); body.innerHTML = "";
+    helpBox(body,"サブネット",["VPC内かつ特定AZに属するIP範囲。","public/private/isolated を使い分けます。"],false);
+    addField(body,"サブネット名","text",sn.name||"",v=>{ const old=sn.name; sn.name=v; for(const s of (App.config.servers||[])) if(s.aws&&s.aws.vpc===vpcName&&s.aws.subnet===old) s.aws.subnet=v; App.selected={kind:"aws-subnet",id:vpcName+"/"+v}; renderAndSync(); openPropertyPanel(); });
+    addField(body,"CIDR","text",sn.cidr||"",v=>{ sn.cidr=v; renderAndSync(); });
+    const region = (typeof awsRegionOfVpc==="function") ? awsRegionOfVpc(vpcName) : null;
+    const azOpts = region ? (region.azs||[]) : [sn.az];
+    addSelectField(body,"AZ", azOpts, sn.az||azOpts[0]||"", v=>{ sn.az=v; renderAndSync(); });
+    addSelectField(body,"種別",["public","private","isolated"], (sn.public?"public":(/isolat/i.test(sn.name||"")?"isolated":"private")), v=>{ sn.public=(v==="public"); sn.type=v; renderAndSync(); });
+    ch("button",{text:"🗑 このサブネットを削除",style:{padding:"6px 12px",fontSize:"11px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"4px",marginTop:"8px"},
+      on:{click:()=>{ vpc.subnets=(vpc.subnets||[]).filter(s=>s!==sn); for(const s of (App.config.servers||[])) if(s.aws&&s.aws.vpc===vpcName&&s.aws.subnet===snName) delete s.aws.subnet; closePropertyPanel(); renderAndSync(); toast("サブネット削除","ok"); }}},body);
+    return;
+  }
+  if(kind === "aws-root"){
+    $("#ph-title").textContent = "AWS 全体";
+    const body = $("#ph-body"); body.innerHTML = "";
+    helpBox(body,"AWS クラウド全体",["全リージョン・VPC・サービスを含む最上位。"],false);
+    ch("button",{text:"☁ AWS全体管理を開く",style:{padding:"6px 12px",fontSize:"11px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700",marginTop:"8px"},
+      on:{click:()=>{ if(typeof showAwsManager==="function") showAwsManager(); }}},body);
+    return;
+  }
   const obj = Cfg.byId(kindToCol(kind), id);
-  if(!obj){ p.classList.add("hidden"); return; }
-  $("#ph-title").textContent = `${kindLabel(kind)}: ${obj.label||id}`;
-  renderPropertyForm(kind, obj);
 }
 function closePropertyPanel(){ $("#prop-panel").classList.add("hidden"); }
 
@@ -1721,6 +1775,179 @@ function deleteK8sCluster(clRef){
   App.config.k8s.clusters = cls.filter(c=>c!==cl);
   renderAndSync(); updateStatusBar();
   toast(`クラスタ「${cl.name}」を削除しました`,"ok");
+}
+
+// ============================================================================
+// AWS Region / AZ management (correct hierarchy: Region holds AZs + VPCs)
+// ============================================================================
+function awsAddRegionInteractive(){
+  if(typeof ensureAwsHierarchy==="function") ensureAwsHierarchy();
+  openDialog("➕ AWS リージョンを追加", (body)=>{
+    ch("p",{text:"追加するリージョンを選択してください。",style:{fontSize:"12px",color:"var(--text-dim)",margin:"0 0 8px"}},body);
+    const existing = new Set((App.config.aws.regions||[]).map(r=>r.id));
+    const sel = ch("select",{style:{width:"100%",padding:"6px",fontSize:"12px",background:"var(--bg)",color:"var(--text)",border:"1px solid var(--border)",borderRadius:"4px"}},body);
+    for(const r of (typeof AWS_REGION_CATALOG!=="undefined"?AWS_REGION_CATALOG:[])){
+      if(existing.has(r.id)) continue;
+      ch("option",{value:r.id,text:`${r.id} (${r.name})`},sel);
+    }
+    return { buttons:[
+      { text:"追加", primary:true, action:()=>{
+        if(!sel.value){ toast("リージョンを選択してください","err"); return; }
+        pushUndo();
+        if(typeof awsAddRegion==="function") awsAddRegion(sel.value);
+        renderAndSync(); closeDialog(); toast("リージョン "+sel.value+" を追加","ok");
+        if(typeof showAwsRegionManager==="function") showAwsRegionManager(sel.value);
+      }},
+      { text:"キャンセル", action:closeDialog }
+    ]};
+  });
+}
+
+function awsAddSubnetToAz(vpcName, az){
+  if(typeof ensureAwsHierarchy==="function") ensureAwsHierarchy();
+  const vpc = (App.config.aws.vpcs||[]).find(v=>v.name===vpcName);
+  if(!vpc) return;
+  pushUndo();
+  const n = (vpc.subnets||[]).length + 1;
+  const azSuffix = az.slice(-2);
+  vpc.subnets = vpc.subnets || [];
+  vpc.subnets.push({ name:"subnet-"+azSuffix+"-"+n, cidr:`10.0.${n*10}.0/24`, az:az, public:false });
+  // clear cached az layout so it re-seeds with the new subnet
+  if(vpc._azLayout) delete vpc._azLayout[az];
+  if(vpc._size) vpc._size._auto = true;
+  renderAndSync(); toast("サブネットを "+az+" に追加","ok");
+}
+
+function awsAddVpcToRegion(regionId){
+  if(typeof ensureAwsHierarchy==="function") ensureAwsHierarchy();
+  const region = (App.config.aws.regions||[]).find(r=>r.id===regionId);
+  if(!region) return;
+  pushUndo();
+  const n = (region.vpcs||[]).length + 1;
+  const az0 = region.azs[0] || (regionId+"a");
+  const az1 = region.azs[1] || region.azs[0] || (regionId+"c");
+  const vpc = {
+    id:uid("vpc"), name:"vpc-"+regionId.split("-")[0]+"-"+n, cidr:`10.${n}.0.0/16`, region:regionId, igw:true,
+    subnets:[
+      {name:"public-"+az0.slice(-2), cidr:`10.${n}.1.0/24`, az:az0, public:true},
+      {name:"public-"+az1.slice(-2), cidr:`10.${n}.2.0/24`, az:az1, public:true}
+    ],
+    security_groups:[], route_tables:[{name:"main",routes:[{dest:`10.${n}.0.0/16`,target:"local"}]}]
+  };
+  region.vpcs = region.vpcs || [];
+  region.vpcs.push(vpc);
+  if(typeof ensureAwsHierarchy==="function") ensureAwsHierarchy();
+  renderAndSync(); toast("VPC "+vpc.name+" を "+regionId+" に追加","ok");
+}
+
+function awsDeleteRegion(regionId){
+  const aws = App.config.aws; if(!aws || !aws.regions) return;
+  const region = aws.regions.find(r=>r.id===regionId); if(!region) return;
+  const vpcNames = (region.vpcs||[]).map(v=>v.name);
+  const msg = `リージョン「${regionId}」を削除しますか？\nVPC ${vpcNames.length}個 と、配置されたEC2のAWS割り当ても解除されます。`;
+  if(!((typeof confirm==="function")?confirm(msg):true)) return;
+  pushUndo();
+  // detach servers/devices in this region's VPCs
+  for(const vn of vpcNames){
+    for(const s of (App.config.servers||[])) if(s.aws && s.aws.vpc===vn) delete s.aws;
+    App.config.devices = (App.config.devices||[]).filter(d=>!(d.aws_kind && d.aws_vpc===vn));
+  }
+  aws.regions = aws.regions.filter(r=>r.id!==regionId);
+  if(typeof ensureAwsHierarchy==="function") ensureAwsHierarchy();
+  renderAndSync(); toast("リージョン "+regionId+" を削除","ok");
+}
+
+function awsDeleteAz(regionId, az){
+  const region = (App.config.aws.regions||[]).find(r=>r.id===regionId); if(!region) return;
+  // check if any subnet uses this AZ
+  const usedBy = [];
+  for(const vpc of (region.vpcs||[])) for(const sn of (vpc.subnets||[])) if(sn.az===az) usedBy.push(vpc.name+"/"+sn.name);
+  if(usedBy.length){
+    const msg = `AZ「${az}」は ${usedBy.length}個のサブネットで使用中です。\n削除するとそれらのサブネットも削除されます。続行しますか？`;
+    if(!((typeof confirm==="function")?confirm(msg):true)) return;
+    pushUndo();
+    for(const vpc of (region.vpcs||[])){
+      const removed = (vpc.subnets||[]).filter(sn=>sn.az===az);
+      vpc.subnets = (vpc.subnets||[]).filter(sn=>sn.az!==az);
+      for(const sn of removed) for(const s of (App.config.servers||[])) if(s.aws&&s.aws.vpc===vpc.name&&s.aws.subnet===sn.name) delete s.aws.subnet;
+    }
+  } else {
+    pushUndo();
+  }
+  region.azs = (region.azs||[]).filter(a=>a!==az);
+  renderAndSync(); toast("AZ "+az+" を削除","ok");
+}
+
+function showAwsRegionManager(regionId){
+  if(typeof ensureAwsHierarchy==="function") ensureAwsHierarchy();
+  const aws = App.config.aws;
+  let region = (aws.regions||[]).find(r=>r.id===regionId) || (aws.regions||[])[0];
+  openDialog("🌐 AWS リージョン / AZ 管理", (body)=>{
+    const fStyle={padding:"4px 6px",fontSize:"11px",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"3px"};
+    function refresh(){
+      body.innerHTML="";
+      helpBox(body,"AWSの階層構造",[
+        "リージョン: 地理的な大区分 (例: 東京=ap-northeast-1)。この中にAZとVPCが入ります。",
+        "アベイラビリティゾーン(AZ): リージョン内の独立したデータセンター群。複数AZに分散配置することで高可用性を実現。",
+        "VPC: リージョン内の仮想ネットワーク。複数AZにまたがってサブネットを配置できます。",
+        "サブネット: VPC内かつ特定AZに属するIP範囲。public/private/isolatedを使い分けます。"
+      ], false);
+      // region selector
+      const top=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",marginBottom:"10px",flexWrap:"wrap"}},body);
+      ch("span",{text:"リージョン:",style:{fontSize:"11px",fontWeight:"700"}},top);
+      const rsel=ch("select",{style:fStyle},top);
+      for(const r of aws.regions){ const o=ch("option",{value:r.id,text:`${r.id} (${r.name||""}) — VPC ${r.vpcs.length}`},rsel); if(r===region)o.selected=true; }
+      rsel.addEventListener("change",()=>{ region=aws.regions.find(r=>r.id===rsel.value); refresh(); });
+      ch("button",{text:"+ リージョン追加",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px",fontWeight:"700"},
+        on:{click:()=>{ closeDialog(); awsAddRegionInteractive(); }}},top);
+      if(aws.regions.length>1){
+        ch("button",{text:"🗑 このリージョン削除",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"3px"},
+          on:{click:()=>{ const rid=region.id; closeDialog(); awsDeleteRegion(rid); }}},top);
+      }
+      if(!region){ ch("div",{text:"リージョンがありません。追加してください。",style:{color:"var(--text-mute)",fontSize:"11px"}},body); return; }
+
+      // AZ management
+      const azSec=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:`アベイラビリティゾーン (${region.id})`},azSec);
+      const azList=ch("div",{style:{display:"flex",flexWrap:"wrap",gap:"6px",marginBottom:"6px"}},azSec);
+      for(const az of (region.azs||[])){
+        const usedCount = (region.vpcs||[]).reduce((a,v)=>a+(v.subnets||[]).filter(s=>s.az===az).length,0);
+        const card=ch("div",{style:{padding:"6px 10px",border:"1px solid "+(usedCount?"var(--green)":"var(--border)"),borderRadius:"4px",background:usedCount?"rgba(34,197,94,0.1)":"var(--bg2)",fontSize:"11px"}},azList);
+        ch("div",{text:az,style:{fontWeight:"700"}},card);
+        ch("div",{text:usedCount?(usedCount+" サブネット"):"未使用",style:{fontSize:"9px",color:usedCount?"var(--green)":"var(--text-mute)"}},card);
+        ch("button",{text:"削除",style:{padding:"1px 6px",fontSize:"9px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"2px",marginTop:"3px"},
+          on:{click:()=>{ const rid=region.id; awsDeleteAz(rid, az); region=aws.regions.find(r=>r.id===rid); refresh(); }}},card);
+      }
+      // add AZ
+      const addAzRow=ch("div",{style:{display:"flex",gap:"4px",alignItems:"center"}},azSec);
+      const info = (typeof awsRegionInfo==="function") ? awsRegionInfo(region.id) : null;
+      const allAzs = info ? info.azSuffixes.map(s=>region.id+s) : [];
+      const availAzs = allAzs.filter(a=>!(region.azs||[]).includes(a));
+      if(availAzs.length){
+        const azSel=ch("select",{style:fStyle},addAzRow);
+        for(const a of availAzs) ch("option",{value:a,text:a},azSel);
+        ch("button",{text:"+ AZ追加",style:{padding:"3px 8px",fontSize:"10px",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"3px"},
+          on:{click:()=>{ pushUndo(); region.azs.push(azSel.value); renderAndSync(); refresh(); toast("AZ "+azSel.value+" を追加","ok"); }}},addAzRow);
+      } else {
+        ch("span",{text:"(このリージョンの全AZが追加済み)",style:{fontSize:"10px",color:"var(--text-mute)"}},addAzRow);
+      }
+
+      // VPCs in this region
+      const vpcSec=ch("div",{class:"sub-section"},body);
+      ch("h4",{text:`このリージョンのVPC (${region.vpcs.length})`},vpcSec);
+      for(const vpc of (region.vpcs||[])){
+        const row=ch("div",{style:{display:"flex",gap:"6px",alignItems:"center",padding:"5px 8px",background:"var(--bg2)",borderRadius:"4px",marginBottom:"4px"}},vpcSec);
+        ch("span",{text:"☁ "+vpc.name+" ("+(vpc.cidr||"")+")",style:{flex:"1",fontSize:"11px",fontWeight:"700"}},row);
+        ch("span",{text:(vpc.subnets||[]).length+" subnet",style:{fontSize:"9px",color:"var(--text-mute)"}},row);
+        ch("button",{text:"詳細編集",style:{padding:"2px 8px",fontSize:"10px",cursor:"pointer",background:"var(--accent)",border:"none",color:"#fff",borderRadius:"3px"},
+          on:{click:()=>{ closeDialog(); showAwsManager(vpc.name); }}},row);
+      }
+      ch("button",{text:"+ VPCをこのリージョンに追加",style:{padding:"5px 10px",fontSize:"11px",cursor:"pointer",background:"var(--green)",border:"none",color:"#fff",borderRadius:"4px",fontWeight:"700",marginTop:"4px"},
+        on:{click:()=>{ const rid=region.id; awsAddVpcToRegion(rid); region=aws.regions.find(r=>r.id===rid); refresh(); }}},vpcSec);
+    }
+    refresh();
+    return { buttons:[{text:"閉じる",primary:true,action:closeDialog}] };
+  });
 }
 
 function showAwsManager(focusVpc){
