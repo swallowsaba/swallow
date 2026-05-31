@@ -690,17 +690,29 @@ function renderAwsOverlay(){
   if(!regions.length && !globalSvcs.length) return;
 
   // ---- layout constants ----
-  const SUBNET_W=190, SUBNET_H=92, SUBNET_GAP=14;
-  const AZ_PAD_TOP=26, AZ_GAP=18, AZ_PAD=12;
+  const MIN_SUBNET_W=170, MIN_SUBNET_H=78, SUBNET_PAD=14, SUBNET_PAD_TOP=30;
+  const AZ_GAP=18, AZ_PAD=12, AZ_PAD_TOP=26;
   const VPC_PAD=16, VPC_LABEL_H=24, VPC_GAP=22;
   const REGION_PAD=18, REGION_LABEL_H=28, REGION_GAP=30;
-  const AWS_PAD=18, AWS_LABEL_H=10;
+  const AWS_PAD=18;
 
   aws._pos = aws._pos || { x:40, y:40 };
 
-  // ===== LAYOUT PASS (bottom-up auto-encompass: parent = bbox(children)+pad) =====
-  // 1) seed subnet positions/sizes (only when missing); user drags/resizes persist on these.
-  let seedX = aws._pos.x + AWS_PAD + REGION_PAD + VPC_PAD + AZ_PAD;
+  // helper: members (EC2 servers + AWS service devices) that belong to a subnet
+  function subnetMembers(vpcName, snName){
+    const srv = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc===vpcName && s.aws.subnet===snName && !s.host);
+    const dev = (App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===vpcName && d.aws_subnet===snName);
+    return srv.concat(dev);
+  }
+  function memBox(m){ return { x:m.x||0, y:m.y||0, w:m.width||120, h:m.height||60 }; }
+  function bboxOf(items){
+    let mnx=Infinity,mny=Infinity,mxx=-Infinity,mxy=-Infinity;
+    for(const it of items){ mnx=Math.min(mnx,it.x); mny=Math.min(mny,it.y); mxx=Math.max(mxx,it.x+it.w); mxy=Math.max(mxy,it.y+it.h); }
+    if(mnx===Infinity) return null;
+    return { x:mnx, y:mny, w:mxx-mnx, h:mxy-mny };
+  }
+
+  // ===== LAYOUT PASS 1: seed positions for empty containers + newly-assigned EC2 =====
   let seedY = aws._pos.y + 60;
   for(const region of regions){
     const azs = region.azs && region.azs.length ? region.azs : awsDefaultAzs(region.id);
@@ -710,48 +722,63 @@ function renderAwsOverlay(){
       vpc._azLayout = vpc._azLayout || {};
       let azCol = vpc._seedPos.x + VPC_PAD;
       for(const az of azs){
+        if(!vpc._azLayout[az]) vpc._azLayout[az] = {};
+        const al = vpc._azLayout[az];
+        if(!al._seed) al._seed = { x:azCol, y:vpc._seedPos.y+VPC_LABEL_H+AZ_PAD_TOP };
         const azSubs = (vpc.subnets||[]).filter(s=>s.az===az);
-        let snY = vpc._seedPos.y + VPC_LABEL_H + AZ_PAD_TOP + 6;
+        let snSeedY = al._seed.y + 4;
         for(const sn of azSubs){
-          if(!sn._size) sn._size = { w:SUBNET_W, h:SUBNET_H };
-          if(!sn._pos){ sn._pos = { x:azCol+AZ_PAD, y:snY }; }
-          snY = (sn._pos.y||snY) + (sn._size.h||SUBNET_H) + SUBNET_GAP;
+          if(!sn._seed) sn._seed = { x:al._seed.x+AZ_PAD, y:snSeedY };
+          // seed any member EC2/device that has no position yet → drop it inside its subnet
+          const mems = subnetMembers(vpc.name, sn.name);
+          let mi = 0;
+          for(const m of mems){
+            if(m.x===undefined || m.y===undefined || (m._awsSeeded!==true && m.x===0 && m.y===0)){
+              m.x = sn._seed.x + SUBNET_PAD + (mi%2)*130;
+              m.y = sn._seed.y + SUBNET_PAD_TOP + Math.floor(mi/2)*70;
+              m._awsSeeded = true;
+            }
+            mi++;
+          }
+          snSeedY += MIN_SUBNET_H + 14;
         }
-        // seed empty-AZ position
-        if(!vpc._azLayout[az]) vpc._azLayout[az] = { _seed:{ x:azCol, y:vpc._seedPos.y+VPC_LABEL_H+6 } };
-        else if(!vpc._azLayout[az]._seed) vpc._azLayout[az]._seed = { x:azCol, y:vpc._seedPos.y+VPC_LABEL_H+6 };
-        azCol += SUBNET_W + AZ_PAD*2 + AZ_GAP;
+        azCol += MIN_SUBNET_W + AZ_PAD*2 + AZ_GAP;
       }
     }
   }
 
-  // 2) compute boxes bottom-up
-  function bboxOf(items){ // items: [{x,y,w,h}]
-    let mnx=Infinity,mny=Infinity,mxx=-Infinity,mxy=-Infinity;
-    for(const it of items){ mnx=Math.min(mnx,it.x); mny=Math.min(mny,it.y); mxx=Math.max(mxx,it.x+it.w); mxy=Math.max(mxy,it.y+it.h); }
-    if(mnx===Infinity) return null;
-    return { x:mnx, y:mny, w:mxx-mnx, h:mxy-mny };
-  }
+  // ===== LAYOUT PASS 2: compute boxes bottom-up (parent = bbox(children)+pad) =====
   for(const region of regions){
     const azs = region.azs && region.azs.length ? region.azs : awsDefaultAzs(region.id);
     const vpcBoxes = [];
     for(const vpc of (region.vpcs||[])){
       const azBoxes = [];
       for(const az of azs){
-        const azSubs = (vpc.subnets||[]).filter(s=>s.az===az && s._pos && s._size);
-        let box;
-        if(azSubs.length){
-          const b = bboxOf(azSubs.map(s=>({x:s._pos.x,y:s._pos.y,w:s._size.w,h:s._size.h})));
-          box = { x:b.x-AZ_PAD, y:b.y-AZ_PAD_TOP, w:b.w+AZ_PAD*2, h:b.h+AZ_PAD_TOP+AZ_PAD };
-        } else {
-          const seed = vpc._azLayout[az]._seed;
-          box = { x:seed.x, y:seed.y, w:SUBNET_W+AZ_PAD*2, h:SUBNET_H+AZ_PAD_TOP+AZ_PAD };
-        }
-        // honor manual resize (min size)
         const al = vpc._azLayout[az];
-        if(al._size && al._size._auto===false){ box.w=Math.max(box.w,al._size.w); box.h=Math.max(box.h,al._size.h); }
-        al.x=box.x; al.y=box.y; al.w=box.w; al.h=box.h;
-        azBoxes.push(box);
+        const azSubs = (vpc.subnets||[]).filter(s=>s.az===az);
+        const subBoxes = [];
+        for(const sn of azSubs){
+          const mems = subnetMembers(vpc.name, sn.name);
+          let box;
+          if(mems.length){
+            const b = bboxOf(mems.map(memBox));
+            box = { x:b.x-SUBNET_PAD, y:b.y-SUBNET_PAD_TOP, w:b.w+SUBNET_PAD*2, h:b.h+SUBNET_PAD_TOP+SUBNET_PAD };
+          } else {
+            box = { x:sn._seed.x, y:sn._seed.y, w:MIN_SUBNET_W, h:MIN_SUBNET_H };
+          }
+          if(box.w<MIN_SUBNET_W) box.w=MIN_SUBNET_W;
+          if(box.h<MIN_SUBNET_H) box.h=MIN_SUBNET_H;
+          if(sn._size && sn._size._auto===false){ box.w=Math.max(box.w,sn._size.w); box.h=Math.max(box.h,sn._size.h); }
+          sn._pos = { x:box.x, y:box.y };
+          sn._size = Object.assign(sn._size||{}, { w:box.w, h:box.h });
+          subBoxes.push(box);
+        }
+        let abox = bboxOf(subBoxes);
+        if(!abox) abox = { x:al._seed.x, y:al._seed.y, w:MIN_SUBNET_W+AZ_PAD*2, h:MIN_SUBNET_H+AZ_PAD_TOP+AZ_PAD };
+        else abox = { x:abox.x-AZ_PAD, y:abox.y-AZ_PAD_TOP, w:abox.w+AZ_PAD*2, h:abox.h+AZ_PAD_TOP+AZ_PAD };
+        if(al._size && al._size._auto===false){ abox.w=Math.max(abox.w,al._size.w); abox.h=Math.max(abox.h,al._size.h); }
+        al.x=abox.x; al.y=abox.y; al.w=abox.w; al.h=abox.h;
+        azBoxes.push(abox);
       }
       let vbox = bboxOf(azBoxes);
       if(!vbox) vbox = { x:vpc._seedPos.x, y:vpc._seedPos.y, w:240, h:120 };
@@ -769,11 +796,22 @@ function renderAwsOverlay(){
     region._size = Object.assign(region._size||{}, { w:rbox.w, h:rbox.h });
   }
 
-  // ===== AWS master bounding box =====
+  // ===== AWS master bounding box (encompasses regions + free global services) =====
+  // Seed unpositioned global services near the top-left once; afterwards they're free.
+  globalSvcs.forEach((dev,i)=>{
+    if(dev.x===undefined || dev.y===undefined || (!dev._awsSeeded && dev.x===0 && dev.y===0)){
+      dev.x = aws._pos.x + 30 + (i%4)*130; dev.y = aws._pos.y + 20; dev._awsSeeded = true;
+    }
+  });
   let amnX=Infinity, amnY=Infinity, amxX=-Infinity, amxY=-Infinity;
   for(const region of regions){
     amnX=Math.min(amnX, region._pos.x); amnY=Math.min(amnY, region._pos.y);
     amxX=Math.max(amxX, region._pos.x+region._size.w); amxY=Math.max(amxY, region._pos.y+region._size.h);
+  }
+  for(const dev of globalSvcs){
+    const w=dev.width||130, h=dev.height||60;
+    amnX=Math.min(amnX, dev.x); amnY=Math.min(amnY, dev.y);
+    amxX=Math.max(amxX, dev.x+w); amxY=Math.max(amxY, dev.y+h);
   }
   if(amnX===Infinity){ amnX=aws._pos.x; amnY=aws._pos.y; amxX=aws._pos.x+300; amxY=aws._pos.y+200; }
   const awsX=amnX-AWS_PAD, awsY=amnY-AWS_PAD-14, awsW=(amxX-amnX)+AWS_PAD*2, awsH=(amxY-amnY)+AWS_PAD*2+14;
@@ -798,7 +836,7 @@ function renderAwsOverlay(){
       }}
     ]);
   });
-  // AWS master label (drag moves whole block)
+  // AWS master label (drag moves whole block); click opens settings
   const albl="☁ AWS Cloud"; const albw=albl.length*8+16;
   const albRect = ce("rect", { x:awsX+10, y:awsY-11, width:albw, height:22, rx:11, ry:11,
     fill:"#ff9900", stroke:"#fff", "stroke-width":1.4, "pointer-events":"all", style:"cursor:move" }, awsG);
@@ -807,10 +845,10 @@ function renderAwsOverlay(){
   const moveAws=(e)=>{ startAwsFrameDrag(e, "aws", null); };
   albRect.addEventListener("mousedown", moveAws);
   mRect.addEventListener("mousedown", moveAws);
-  // master resize handle
-  const mrh = ce("rect", { x:awsX+awsW-7, y:awsY+awsH-7, width:12, height:12, rx:2, ry:2,
-    fill:"#ff9900", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, awsG);
-  // (master auto-sizes from contents; resize handle is cosmetic anchor)
+  // click (no drag) on master frame or label → open AWS settings
+  mRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-root",id:"aws"}; if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+  albRect.addEventListener("click",(e)=>{ e.stopPropagation(); if(typeof showAwsManager==="function") showAwsManager(); });
+  albRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); if(typeof showAwsManager==="function") showAwsManager(); });
 
   // ===== draw each REGION → VPC → AZ → SUBNET =====
   for(const region of regions){
@@ -921,29 +959,21 @@ function renderAwsOverlay(){
           ce("text", { x:sp.x+8, y:sp.y+14, "font-size":9, "font-weight":"700", fill:col, "pointer-events":"none",
             text:(isPub?"🔓 ":"🔒 ")+(sn.name||"") }, sg);
           ce("text", { x:sp.x+8, y:sp.y+26, "font-size":8.5, fill:col, "pointer-events":"none", text:(sn.cidr||"") }, sg);
-          // drag subnet moves subnet + its EC2
+          // drag subnet moves subnet + its member EC2/devices
           snRect.addEventListener("mousedown",(e)=>startAwsFrameDrag(e, "subnet", { vpc, sn }));
           const srh = ce("rect", { x:sp.x+ss.w-7, y:sp.y+ss.h-7, width:10, height:10, rx:2, ry:2,
             fill:col, stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, sg);
           srh.addEventListener("mousedown",(e)=>startAwsFrameResize(e, sn));
-          // arrange EC2 instances inside the subnet (they follow the subnet)
-          const cellServers = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc===vpc.name && s.aws.subnet===sn.name && !s.host);
-          cellServers.forEach((srv,si)=>{
-            const cw=(ss.w-16-6)/2;
-            srv.x = sp.x+8+(si%2)*(cw+6); srv.y = sp.y+32+Math.floor(si/2)*30;
-            srv.width=Math.min(cw,84); srv.height=24;
-          });
-          const cellDevices = (App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===vpc.name && d.aws_subnet===sn.name);
-          cellDevices.forEach((dev,di)=>{ const cw=(ss.w-16-6)/2; dev.x=sp.x+8+(di%2)*(cw+6); dev.y=sp.y+58+Math.floor(di/2)*28; });
+          // NOTE: EC2/devices are free-draggable normal objects rendered by renderServer/
+          // renderDevice; the subnet frame auto-encompasses them (computed in the layout pass).
         }
       }
     }
   }
-  // global services row (outside any VPC) along the top
+  // global services row label (services themselves are free-draggable normal devices)
   if(globalSvcs.length){
     ce("text", { x:awsX+awsW-12, y:awsY+16, "text-anchor":"end", "font-size":9,
       fill:"#ff9900", "font-weight":"700", text:"◆ Global / Regional Services", "pointer-events":"none" }, awsG);
-    globalSvcs.forEach((dev,i)=>{ dev.x=awsX+20+(i%5)*120; dev.y=awsY+24; });
   }
 }
 // drag state for moving the whole AWS block by its master label
@@ -952,27 +982,41 @@ var awsDragState = null;
 var awsFrameDrag = null;
 var awsFrameResize = null;
 
-// Collect all LEAF position objects ({x,y}) under a frame. Moving these and
-// re-rendering makes every ancestor frame recompute its bbox, so children can
-// never escape their parent.
+// Collect all LEAF objects under a frame whose {x,y} must shift on drag.
+// Leaves are the actual EC2 servers / AWS service devices (free objects) plus
+// the seed-position objects of EMPTY containers. Moving them and re-rendering
+// makes every ancestor frame recompute its bbox, so children never escape.
 function awsCollectLeaves(kind, ref){
   const leaves = [];
   const aws = App.config.aws;
-  function vpcLeaves(vpc, azFilter){
-    const azs = (vpc._azLayout ? Object.keys(vpc._azLayout) : []);
-    for(const az of azs){
-      if(azFilter && az!==azFilter) continue;
-      const subs = (vpc.subnets||[]).filter(s=>s.az===az && s._pos);
-      if(subs.length){ for(const s of subs) leaves.push(s._pos); }
-      else if(vpc._azLayout[az] && vpc._azLayout[az]._seed){ leaves.push(vpc._azLayout[az]._seed); }
-    }
-    if(!azs.length && vpc._seedPos) leaves.push(vpc._seedPos);
+  function membersOf(vpcName, snName){
+    const srv = (App.config.servers||[]).filter(s=>s.aws && s.aws.vpc===vpcName && s.aws.subnet===snName && !s.host);
+    const dev = (App.config.devices||[]).filter(d=>d.aws_kind && d.aws_vpc===vpcName && d.aws_subnet===snName);
+    return srv.concat(dev);
+  }
+  function subnetLeaves(vpc, sn){
+    const mems = membersOf(vpc.name, sn.name);
+    if(mems.length){ for(const m of mems) leaves.push(m); }      // move the EC2/device itself
+    else if(sn._seed) leaves.push(sn._seed);                      // empty subnet → move its seed
+  }
+  function azLeaves(vpc, az){
+    const subs = (vpc.subnets||[]).filter(s=>s.az===az);
+    if(subs.length){ for(const sn of subs) subnetLeaves(vpc, sn); }
+    else if(vpc._azLayout && vpc._azLayout[az] && vpc._azLayout[az]._seed) leaves.push(vpc._azLayout[az]._seed);
+  }
+  function vpcLeaves(vpc){
+    const azs = vpc._azLayout ? Object.keys(vpc._azLayout) : [];
+    let any=false;
+    for(const az of azs){ azLeaves(vpc, az); any=true; }
+    if(!any && vpc._seedPos) leaves.push(vpc._seedPos);
   }
   if(kind==="aws"){
     for(const region of (aws.regions||[])){
       if(!(region.vpcs||[]).length && region._seedPos){ leaves.push(region._seedPos); continue; }
       for(const vpc of (region.vpcs||[])) vpcLeaves(vpc);
     }
+    // global services (S3 etc.) move with the whole AWS block too
+    for(const d of (App.config.devices||[])) if(d.aws_kind && !d.aws_vpc) leaves.push(d);
   } else if(kind==="region"){
     const region = ref;
     if(!(region.vpcs||[]).length && region._seedPos){ leaves.push(region._seedPos); }
@@ -980,9 +1024,9 @@ function awsCollectLeaves(kind, ref){
   } else if(kind==="vpc"){
     vpcLeaves(ref);
   } else if(kind==="az"){
-    vpcLeaves(ref.vpc, ref.az);
+    azLeaves(ref.vpc, ref.az);
   } else if(kind==="subnet"){
-    if(ref.sn && ref.sn._pos) leaves.push(ref.sn._pos);
+    subnetLeaves(ref.vpc, ref.sn);
   }
   return leaves;
 }
@@ -2680,8 +2724,12 @@ function onMouseMove(e){
 function onMouseUp(){
   // Finish AWS individual frame drag/resize
   if(awsFrameDrag){
-    if(awsFrameDrag.moved){ pushUndo(); syncYamlFromConfig(); }
-    awsFrameDrag = null; render(); return;
+    const moved = awsFrameDrag.moved;
+    awsFrameDrag = null;
+    if(moved){ pushUndo(); syncYamlFromConfig(); render(); }
+    // if NOT moved, skip render so the natural click event still reaches the frame
+    // (this is what opens the region/VPC/AZ/subnet settings panel)
+    return;
   }
   if(awsFrameResize){
     pushUndo(); syncYamlFromConfig(); awsFrameResize = null; render(); return;
