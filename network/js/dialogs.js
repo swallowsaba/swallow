@@ -3231,39 +3231,38 @@ function openDialog(title, contentFn, opts){
   d.style.transform = "";
   d.style.margin = "";
   if(floating){
-    // Open at a sensible default spot (top-right area) unless previously moved
-    d.style.left = (window.innerWidth - 460) + "px";
-    d.style.top  = "80px";
+    // Open at a sensible default spot (top-right area) unless previously moved.
+    // Override the centering transform from CSS so left/top are honored.
+    d.style.transform = "none";
+    d.style.left = Math.max(20, window.innerWidth - 470) + "px";
+    d.style.top  = "70px";
   } else {
     d.style.left = "";
     d.style.top = "";
   }
   const h3 = ch("h3", { text:title, style:{ cursor:"move", userSelect:"none" } }, d);
-  // Drag-to-move handler on the title bar
-  let dragData = null;
+  // Drag-to-move handler on the title bar (state stored on the element so the
+  // document-level listeners, wired once, always read the current dialog's data)
   h3.addEventListener("mousedown", (e)=>{
     if(e.button !== 0) return;
     const rect = d.getBoundingClientRect();
-    if(!d.style.left || d.style.left === ""){
-      d.style.left = rect.left + "px";
-      d.style.top  = rect.top  + "px";
-    }
     d.style.transform = "none";
     d.style.margin = "0";
-    dragData = { startX: e.clientX, startY: e.clientY,
-                 origLeft: parseFloat(d.style.left), origTop: parseFloat(d.style.top) };
+    d.style.left = rect.left + "px";
+    d.style.top  = rect.top  + "px";
+    d._dragData = { startX: e.clientX, startY: e.clientY, origLeft: rect.left, origTop: rect.top };
     e.preventDefault();
   });
   function onMove(e){
-    if(!dragData) return;
-    const dx = e.clientX - dragData.startX;
-    const dy = e.clientY - dragData.startY;
-    const newL = Math.max(0, Math.min(window.innerWidth - 60, dragData.origLeft + dx));
-    const newT = Math.max(0, Math.min(window.innerHeight - 60, dragData.origTop  + dy));
+    const dd = d._dragData; if(!dd) return;
+    const dx = e.clientX - dd.startX;
+    const dy = e.clientY - dd.startY;
+    const newL = Math.max(0, Math.min(window.innerWidth - 60, dd.origLeft + dx));
+    const newT = Math.max(0, Math.min(window.innerHeight - 60, dd.origTop  + dy));
     d.style.left = newL + "px";
     d.style.top  = newT + "px";
   }
-  function onUp(){ dragData = null; }
+  function onUp(){ d._dragData = null; }
   if(!d._dragWired){
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
@@ -5221,7 +5220,7 @@ function openCommSimulator(){
         }}
       ]
     };
-  }, { floating:true });
+  });
 }
 
 /* ====== TOPOLOGY TEMPLATES (spine-leaf, etc) ====== */
@@ -6569,7 +6568,7 @@ function showHandsOnIndex(){
     ch("button",{text:"🔄 ハンズオン要素をリセット",style:{padding:"6px 12px",fontSize:"11px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--red)",color:"var(--red)",borderRadius:"4px"},
       on:{click:()=>{ if((typeof confirm==="function")?confirm("test-vpcとその配下要素を削除します。よろしいですか?"):true){ _handsonResetAll(); closeDialog(); showHandsOnIndex(); } }}},btns);
     return { buttons:[{ text:"閉じる", primary:true, action: closeDialog }] };
-  });
+  }, { floating:true });
 }
 
 function showHandsOnLab(labId){
@@ -6616,7 +6615,7 @@ function showHandsOnLab(labId){
     ch("button",{text:"← 一覧に戻る",style:{padding:"5px 12px",fontSize:"11px",cursor:"pointer",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"4px"},
       on:{click:()=>{ closeDialog(); showHandsOnIndex(); }}},bottomBtns);
     return { buttons:[{ text:"閉じる", primary:true, action: closeDialog }] };
-  });
+  }, { floating:true });
 }
 
 // ============================================================================
@@ -7125,7 +7124,7 @@ function showHandsOnSummary(labId){
         on:{click:()=>{ closeDialog(); showHandsOnLab(lab.next); }}},btns);
     }
     return { buttons:[{ text:"閉じる", primary:true, action: closeDialog }] };
-  });
+  }, { floating:true });
 }
 
 // ============================================================================

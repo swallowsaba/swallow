@@ -816,11 +816,13 @@ function renderAwsOverlay(){
   if(amnX===Infinity){ amnX=aws._pos.x; amnY=aws._pos.y; amxX=aws._pos.x+300; amxY=aws._pos.y+200; }
   const awsX=amnX-AWS_PAD, awsY=amnY-AWS_PAD-14, awsW=(amxX-amnX)+AWS_PAD*2, awsH=(amxY-amnY)+AWS_PAD*2+14;
 
+  const awsSel = App.selected && App.selected.kind==="aws-root";
   const awsG = ce("g", { class:"aws-master-overlay" }, layer);
   // master frame
   const mRect = ce("rect", { x:awsX, y:awsY, width:awsW, height:awsH, rx:10, ry:10,
-    fill:"rgba(255,153,0,0.02)", stroke:"#ff9900", "stroke-width":2, "stroke-dasharray":"12 6",
+    fill:awsSel?"rgba(255,153,0,0.06)":"rgba(255,153,0,0.02)", stroke:"#ff9900", "stroke-width":awsSel?3.5:2, "stroke-dasharray":"12 6",
     "pointer-events":"all", style:"cursor:move" }, awsG);
+  if(awsSel) mRect.setAttribute("filter","drop-shadow(0 0 5px #ff9900)");
   mRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
     if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
       { icon:"☁", label:"AWS 全体管理", action:()=>{ if(typeof showAwsManager==="function") showAwsManager(); }},
@@ -846,18 +848,20 @@ function renderAwsOverlay(){
   albRect.addEventListener("mousedown", moveAws);
   mRect.addEventListener("mousedown", moveAws);
   // click (no drag) on master frame or label → open AWS settings
-  mRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-root",id:"aws"}; if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+  mRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-root",id:"aws"}; render(); if(typeof openPropertyPanel==="function") openPropertyPanel(); });
   albRect.addEventListener("click",(e)=>{ e.stopPropagation(); if(typeof showAwsManager==="function") showAwsManager(); });
   albRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); if(typeof showAwsManager==="function") showAwsManager(); });
 
   // ===== draw each REGION → VPC → AZ → SUBNET =====
   for(const region of regions){
     const rp=region._pos, rs=region._size;
+    const regSel = App.selected && App.selected.kind==="aws-region" && App.selected.id===region.id;
     const regG = ce("g", { class:"aws-region-overlay" }, layer);
     const regRect = ce("rect", { x:rp.x, y:rp.y, width:rs.w, height:rs.h, rx:6, ry:6,
-      fill:"rgba(40,110,200,0.015)", stroke:"#2860c8", "stroke-width":1.6,
+      fill:regSel?"rgba(40,110,200,0.07)":"rgba(40,110,200,0.015)", stroke:"#2860c8", "stroke-width":regSel?3.5:1.6,
       "pointer-events":"all", style:"cursor:move" }, regG);
-    regRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-region",id:region.id}; if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+    if(regSel) regRect.setAttribute("filter","drop-shadow(0 0 4px #2860c8)");
+    regRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-region",id:region.id}; render(); if(typeof openPropertyPanel==="function") openPropertyPanel(); });
     regRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); if(typeof showAwsRegionManager==="function") showAwsRegionManager(region.id); });
     regRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
       if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
@@ -876,6 +880,7 @@ function renderAwsOverlay(){
     const dragRegion=(e)=>startAwsFrameDrag(e, "region", region);
     regRect.addEventListener("mousedown", dragRegion);
     rlRect.addEventListener("mousedown", dragRegion);
+    rlRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-region",id:region.id}; render(); if(typeof openPropertyPanel==="function") openPropertyPanel(); });
     // region resize handle
     const rrh = ce("rect", { x:rp.x+rs.w-7, y:rp.y+rs.h-7, width:12, height:12, rx:2, ry:2,
       fill:"#2860c8", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, regG);
@@ -884,11 +889,13 @@ function renderAwsOverlay(){
     // VPCs
     for(const vpc of (region.vpcs||[])){
       const vp=vpc._pos, vs=vpc._size;
+      const vpcSel = App.selected && App.selected.kind==="aws-vpc" && App.selected.id===vpc.name;
       const vg = ce("g", { class:"aws-vpc-overlay" }, layer);
       const vpcRect = ce("rect", { x:vp.x, y:vp.y, width:vs.w, height:vs.h, rx:6, ry:6,
-        fill:"rgba(80,160,80,0.03)", stroke:"#2e8b2e", "stroke-width":1.6,
+        fill:vpcSel?"rgba(80,160,80,0.1)":"rgba(80,160,80,0.03)", stroke:"#2e8b2e", "stroke-width":vpcSel?3.5:1.6,
         "pointer-events":"all", style:"cursor:move" }, vg);
-      vpcRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-vpc",id:vpc.name}; if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+      if(vpcSel) vpcRect.setAttribute("filter","drop-shadow(0 0 4px #2e8b2e)");
+      vpcRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-vpc",id:vpc.name}; render(); if(typeof openPropertyPanel==="function") openPropertyPanel(); });
       vpcRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showAwsManager(vpc.name); });
       vpcRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation(); showContextMenu(e,"aws-vpc",vpc.name); });
       // VPC label bar (drag moves vpc + descendants)
@@ -901,6 +908,7 @@ function renderAwsOverlay(){
       const dragVpc=(e)=>startAwsFrameDrag(e, "vpc", vpc);
       vpcRect.addEventListener("mousedown", dragVpc);
       vlRect.addEventListener("mousedown", dragVpc);
+      vlRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-vpc",id:vpc.name}; render(); if(typeof openPropertyPanel==="function") openPropertyPanel(); });
       const vrh = ce("rect", { x:vp.x+vs.w-7, y:vp.y+vs.h-7, width:12, height:12, rx:2, ry:2,
         fill:"#2e8b2e", stroke:"#fff", "stroke-width":1, "pointer-events":"all", style:"cursor:nwse-resize" }, vg);
       vrh.addEventListener("mousedown",(e)=>startAwsFrameResize(e, vpc));
@@ -910,11 +918,13 @@ function renderAwsOverlay(){
       for(const az of azs){
         const al = vpc._azLayout && vpc._azLayout[az];
         if(!al) continue;
+        const azSel = App.selected && App.selected.kind==="aws-az" && App.selected.id===region.id+"/"+az;
         const ag = ce("g", { class:"aws-az-overlay" }, layer);
         const azRect = ce("rect", { x:al.x, y:al.y, width:al.w, height:al.h, rx:5, ry:5,
-          fill:"rgba(40,110,200,0.02)", stroke:"#3b82d6", "stroke-width":1.1, "stroke-dasharray":"5 4",
+          fill:azSel?"rgba(40,110,200,0.08)":"rgba(40,110,200,0.02)", stroke:"#3b82d6", "stroke-width":azSel?3:1.1, "stroke-dasharray":"5 4",
           "pointer-events":"all", style:"cursor:move" }, ag);
-        azRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-az",id:region.id+"/"+az}; if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+        if(azSel) azRect.setAttribute("filter","drop-shadow(0 0 3px #3b82d6)");
+        azRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-az",id:region.id+"/"+az}; render(); if(typeof openPropertyPanel==="function") openPropertyPanel(); });
         azRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
           if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
             { icon:"🌐", label:"AZ: "+az, action:()=>{ if(typeof showAwsRegionManager==="function") showAwsRegionManager(region.id); }},
@@ -941,9 +951,11 @@ function renderAwsOverlay(){
           const col = isPub ? "#22c55e" : (isIso ? "#64a0c8" : "#3b82d6");
           const fillCol = isPub ? "rgba(34,197,94,0.07)" : (isIso ? "rgba(100,160,200,0.07)" : "rgba(59,130,214,0.07)");
           const sg = ce("g", { class:"aws-subnet-overlay" }, layer);
+          const snSel = App.selected && App.selected.kind==="aws-subnet" && App.selected.id===vpc.name+"/"+sn.name;
           const snRect = ce("rect", { x:sp.x, y:sp.y, width:ss.w, height:ss.h, rx:5, ry:5,
-            fill:fillCol, stroke:col, "stroke-width":1.2, "pointer-events":"all", style:"cursor:move" }, sg);
-          snRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-subnet",id:vpc.name+"/"+sn.name}; if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+            fill:fillCol, stroke:col, "stroke-width":snSel?3.5:1.2, "pointer-events":"all", style:"cursor:move" }, sg);
+          if(snSel) snRect.setAttribute("filter","drop-shadow(0 0 4px "+col+")");
+          snRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-subnet",id:vpc.name+"/"+sn.name}; render(); if(typeof openPropertyPanel==="function") openPropertyPanel(); });
           snRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); showAwsManager(vpc.name); });
           snRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
             if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
