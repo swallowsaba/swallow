@@ -80,6 +80,9 @@ function openPropertyPanel(){
     return;
   }
   const obj = Cfg.byId(kindToCol(kind), id);
+  if(!obj){ p.classList.add("hidden"); return; }
+  $("#ph-title").textContent = `${kindLabel(kind)}: ${obj.label||id}`;
+  renderPropertyForm(kind, obj);
 }
 function closePropertyPanel(){ $("#prop-panel").classList.add("hidden"); }
 

@@ -1650,9 +1650,9 @@ function awsCleanForYaml(config){
     delete aws.vpcs;       // internal flat mirror — rebuilt on load by ensureAwsHierarchy()
     delete aws._pos; delete aws._pad;
     for(const region of (aws.regions||[])){
-      delete region._pos; delete region._size;
+      delete region._pos; delete region._size; delete region._seedPos;
       for(const vpc of (region.vpcs||[])){
-        delete vpc._pos; delete vpc._pad; delete vpc._size; delete vpc._azLayout;
+        delete vpc._pos; delete vpc._pad; delete vpc._size; delete vpc._azLayout; delete vpc._seedPos;
         for(const sn of (vpc.subnets||[])){ delete sn._pos; delete sn._size; }
       }
     }

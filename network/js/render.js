@@ -698,57 +698,75 @@ function renderAwsOverlay(){
 
   aws._pos = aws._pos || { x:40, y:40 };
 
-  // ===== LAYOUT PASS: seed _pos/_size for any frame missing them =====
-  // Regions stack vertically from aws._pos.
-  let regionCursorY = aws._pos.y + 28;
-  const regionX = aws._pos.x + AWS_PAD;
+  // ===== LAYOUT PASS (bottom-up auto-encompass: parent = bbox(children)+pad) =====
+  // 1) seed subnet positions/sizes (only when missing); user drags/resizes persist on these.
+  let seedX = aws._pos.x + AWS_PAD + REGION_PAD + VPC_PAD + AZ_PAD;
+  let seedY = aws._pos.y + 60;
   for(const region of regions){
-    if(!region._pos) region._pos = { x:regionX, y:regionCursorY };
-    // VPCs stack vertically inside region
-    let vpcCursorY = region._pos.y + REGION_LABEL_H + 6;
-    const vpcX = region._pos.x + REGION_PAD;
+    const azs = region.azs && region.azs.length ? region.azs : awsDefaultAzs(region.id);
+    region._seedPos = region._seedPos || { x:aws._pos.x+AWS_PAD, y:seedY };
     for(const vpc of (region.vpcs||[])){
-      if(!vpc._pos) vpc._pos = { x:vpcX, y:vpcCursorY };
-      // AZ columns inside VPC (one column per region AZ that this VPC uses, but show all region AZs)
-      const azs = region.azs && region.azs.length ? region.azs : awsDefaultAzs(region.id);
+      vpc._seedPos = vpc._seedPos || { x:region._seedPos.x+REGION_PAD, y:region._seedPos.y+REGION_LABEL_H };
       vpc._azLayout = vpc._azLayout || {};
-      const azY = vpc._pos.y + VPC_LABEL_H + 6;
-      let azCursorX = vpc._pos.x + VPC_PAD;
-      let maxAzH = 0;
+      let azCol = vpc._seedPos.x + VPC_PAD;
       for(const az of azs){
-        // subnets of this vpc in this az
         const azSubs = (vpc.subnets||[]).filter(s=>s.az===az);
-        // seed subnet positions within the az column
-        const azInnerY = azY + AZ_PAD_TOP;
-        let snCursorY = azInnerY;
+        let snY = vpc._seedPos.y + VPC_LABEL_H + AZ_PAD_TOP + 6;
         for(const sn of azSubs){
           if(!sn._size) sn._size = { w:SUBNET_W, h:SUBNET_H };
-          if(!sn._pos)  sn._pos  = { x:azCursorX + AZ_PAD, y:snCursorY };
-          snCursorY = sn._pos.y + sn._size.h + SUBNET_GAP;
+          if(!sn._pos){ sn._pos = { x:azCol+AZ_PAD, y:snY }; }
+          snY = (sn._pos.y||snY) + (sn._size.h||SUBNET_H) + SUBNET_GAP;
         }
-        const colSubsBottom = azSubs.length ? Math.max(...azSubs.map(s=>s._pos.y+s._size.h)) : (azInnerY+SUBNET_H);
-        const azH = (colSubsBottom - azY) + AZ_PAD;
-        const azW = SUBNET_W + AZ_PAD*2;
-        if(!vpc._azLayout[az]) vpc._azLayout[az] = { x:azCursorX, y:azY, w:azW, h:azH };
-        else { // keep stored x/y, refresh size to fit subnets if auto
-          if(vpc._azLayout[az]._auto !== false){ vpc._azLayout[az].h = azH; }
-        }
-        maxAzH = Math.max(maxAzH, vpc._azLayout[az].h);
-        azCursorX = vpc._azLayout[az].x + vpc._azLayout[az].w + AZ_GAP;
+        // seed empty-AZ position
+        if(!vpc._azLayout[az]) vpc._azLayout[az] = { _seed:{ x:azCol, y:vpc._seedPos.y+VPC_LABEL_H+6 } };
+        else if(!vpc._azLayout[az]._seed) vpc._azLayout[az]._seed = { x:azCol, y:vpc._seedPos.y+VPC_LABEL_H+6 };
+        azCol += SUBNET_W + AZ_PAD*2 + AZ_GAP;
       }
-      // normalize AZ heights to the tallest (so columns align)
-      for(const az of azs){ if(vpc._azLayout[az]) vpc._azLayout[az].h = maxAzH; }
-      const vpcW = (azCursorX - vpc._pos.x) - AZ_GAP + VPC_PAD;
-      const vpcH = (azY + maxAzH + VPC_PAD) - vpc._pos.y;
-      if(!vpc._size) vpc._size = { w:vpcW, h:vpcH };
-      else if(vpc._size._auto !== false){ vpc._size.w = vpcW; vpc._size.h = vpcH; }
-      vpcCursorY = vpc._pos.y + vpc._size.h + VPC_GAP;
     }
-    const regionW = Math.max(260, ...(region.vpcs||[]).map(v=>(v._pos.x + v._size.w) - region._pos.x)) + REGION_PAD;
-    const regionH = (vpcCursorY - region._pos.y) + REGION_PAD - VPC_GAP + 6;
-    if(!region._size) region._size = { w:regionW, h:regionH };
-    else if(region._size._auto !== false){ region._size.w = regionW; region._size.h = regionH; }
-    regionCursorY = region._pos.y + region._size.h + REGION_GAP;
+  }
+
+  // 2) compute boxes bottom-up
+  function bboxOf(items){ // items: [{x,y,w,h}]
+    let mnx=Infinity,mny=Infinity,mxx=-Infinity,mxy=-Infinity;
+    for(const it of items){ mnx=Math.min(mnx,it.x); mny=Math.min(mny,it.y); mxx=Math.max(mxx,it.x+it.w); mxy=Math.max(mxy,it.y+it.h); }
+    if(mnx===Infinity) return null;
+    return { x:mnx, y:mny, w:mxx-mnx, h:mxy-mny };
+  }
+  for(const region of regions){
+    const azs = region.azs && region.azs.length ? region.azs : awsDefaultAzs(region.id);
+    const vpcBoxes = [];
+    for(const vpc of (region.vpcs||[])){
+      const azBoxes = [];
+      for(const az of azs){
+        const azSubs = (vpc.subnets||[]).filter(s=>s.az===az && s._pos && s._size);
+        let box;
+        if(azSubs.length){
+          const b = bboxOf(azSubs.map(s=>({x:s._pos.x,y:s._pos.y,w:s._size.w,h:s._size.h})));
+          box = { x:b.x-AZ_PAD, y:b.y-AZ_PAD_TOP, w:b.w+AZ_PAD*2, h:b.h+AZ_PAD_TOP+AZ_PAD };
+        } else {
+          const seed = vpc._azLayout[az]._seed;
+          box = { x:seed.x, y:seed.y, w:SUBNET_W+AZ_PAD*2, h:SUBNET_H+AZ_PAD_TOP+AZ_PAD };
+        }
+        // honor manual resize (min size)
+        const al = vpc._azLayout[az];
+        if(al._size && al._size._auto===false){ box.w=Math.max(box.w,al._size.w); box.h=Math.max(box.h,al._size.h); }
+        al.x=box.x; al.y=box.y; al.w=box.w; al.h=box.h;
+        azBoxes.push(box);
+      }
+      let vbox = bboxOf(azBoxes);
+      if(!vbox) vbox = { x:vpc._seedPos.x, y:vpc._seedPos.y, w:240, h:120 };
+      vbox = { x:vbox.x-VPC_PAD, y:vbox.y-VPC_LABEL_H-4, w:vbox.w+VPC_PAD*2, h:vbox.h+VPC_LABEL_H+4+VPC_PAD };
+      if(vpc._size && vpc._size._auto===false){ vbox.w=Math.max(vbox.w,vpc._size.w); vbox.h=Math.max(vbox.h,vpc._size.h); }
+      vpc._pos = { x:vbox.x, y:vbox.y };
+      vpc._size = Object.assign(vpc._size||{}, { w:vbox.w, h:vbox.h });
+      vpcBoxes.push(vbox);
+    }
+    let rbox = bboxOf(vpcBoxes);
+    if(!rbox) rbox = { x:region._seedPos.x, y:region._seedPos.y, w:280, h:160 };
+    rbox = { x:rbox.x-REGION_PAD, y:rbox.y-REGION_LABEL_H-2, w:rbox.w+REGION_PAD*2, h:rbox.h+REGION_LABEL_H+2+REGION_PAD };
+    if(region._size && region._size._auto===false){ rbox.w=Math.max(rbox.w,region._size.w); rbox.h=Math.max(rbox.h,region._size.h); }
+    region._pos = { x:rbox.x, y:rbox.y };
+    region._size = Object.assign(region._size||{}, { w:rbox.w, h:rbox.h });
   }
 
   // ===== AWS master bounding box =====
@@ -786,8 +804,7 @@ function renderAwsOverlay(){
     fill:"#ff9900", stroke:"#fff", "stroke-width":1.4, "pointer-events":"all", style:"cursor:move" }, awsG);
   ce("text", { x:awsX+10+albw/2, y:awsY, "text-anchor":"middle", "dominant-baseline":"middle",
     "font-size":11, "font-weight":"700", fill:"#fff", text:albl, "pointer-events":"none" }, awsG);
-  const moveAws=(e)=>{ if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
-    const pt=svgPoint(e); awsDragState={ startX:pt.x, startY:pt.y, ox:aws._pos.x, oy:aws._pos.y }; };
+  const moveAws=(e)=>{ startAwsFrameDrag(e, "aws", null); };
   albRect.addEventListener("mousedown", moveAws);
   mRect.addEventListener("mousedown", moveAws);
   // master resize handle
@@ -935,44 +952,48 @@ var awsDragState = null;
 var awsFrameDrag = null;
 var awsFrameResize = null;
 
-// Collect all movable refs (frames with _pos, and EC2 servers/devices) under a given AWS frame.
-function awsCollectDescendants(kind, ref){
-  const frames = [];   // objects with a _pos {x,y} to shift
-  const azRects = [];  // {x,y} layout rects to shift
-  if(kind === "region"){
-    const region = ref;
-    for(const vpc of (region.vpcs||[])){
-      frames.push(vpc._pos);
-      for(const az in (vpc._azLayout||{})) azRects.push(vpc._azLayout[az]);
-      for(const sn of (vpc.subnets||[])) if(sn._pos) frames.push(sn._pos);
+// Collect all LEAF position objects ({x,y}) under a frame. Moving these and
+// re-rendering makes every ancestor frame recompute its bbox, so children can
+// never escape their parent.
+function awsCollectLeaves(kind, ref){
+  const leaves = [];
+  const aws = App.config.aws;
+  function vpcLeaves(vpc, azFilter){
+    const azs = (vpc._azLayout ? Object.keys(vpc._azLayout) : []);
+    for(const az of azs){
+      if(azFilter && az!==azFilter) continue;
+      const subs = (vpc.subnets||[]).filter(s=>s.az===az && s._pos);
+      if(subs.length){ for(const s of subs) leaves.push(s._pos); }
+      else if(vpc._azLayout[az] && vpc._azLayout[az]._seed){ leaves.push(vpc._azLayout[az]._seed); }
     }
-  } else if(kind === "vpc"){
-    const vpc = ref;
-    for(const az in (vpc._azLayout||{})) azRects.push(vpc._azLayout[az]);
-    for(const sn of (vpc.subnets||[])) if(sn._pos) frames.push(sn._pos);
-  } else if(kind === "az"){
-    const { vpc, az } = ref;
-    for(const sn of (vpc.subnets||[])) if(sn.az===az && sn._pos) frames.push(sn._pos);
+    if(!azs.length && vpc._seedPos) leaves.push(vpc._seedPos);
   }
-  // subnet has no child frames; EC2 auto-follow on render
-  return { frames, azRects };
+  if(kind==="aws"){
+    for(const region of (aws.regions||[])){
+      if(!(region.vpcs||[]).length && region._seedPos){ leaves.push(region._seedPos); continue; }
+      for(const vpc of (region.vpcs||[])) vpcLeaves(vpc);
+    }
+  } else if(kind==="region"){
+    const region = ref;
+    if(!(region.vpcs||[]).length && region._seedPos){ leaves.push(region._seedPos); }
+    for(const vpc of (region.vpcs||[])) vpcLeaves(vpc);
+  } else if(kind==="vpc"){
+    vpcLeaves(ref);
+  } else if(kind==="az"){
+    vpcLeaves(ref.vpc, ref.az);
+  } else if(kind==="subnet"){
+    if(ref.sn && ref.sn._pos) leaves.push(ref.sn._pos);
+  }
+  return leaves;
 }
 
 function startAwsFrameDrag(e, kind, ref){
-  if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
+  if(e.button!==0 || e.altKey) return; e.preventDefault(); e.stopPropagation();
   const pt = svgPoint(e);
-  // capture starting positions
-  let anchor;
-  if(kind==="region") anchor = ref._pos;
-  else if(kind==="vpc") anchor = ref._pos;
-  else if(kind==="az") anchor = ref.layout;
-  else if(kind==="subnet") anchor = ref.sn._pos;
-  const desc = awsCollectDescendants(kind, kind==="subnet"?ref.sn:(kind==="az"?ref:ref));
+  const leaves = awsCollectLeaves(kind, ref);
   awsFrameDrag = {
     kind, ref, startX:pt.x, startY:pt.y, moved:false,
-    anchor, anchorX0:anchor.x, anchorY0:anchor.y,
-    descFrames: desc.frames.map(p=>({p, x0:p.x, y0:p.y})),
-    descAz: desc.azRects.map(a=>({a, x0:a.x, y0:a.y}))
+    leaves: leaves.map(p=>({p, x0:p.x, y0:p.y}))
   };
 }
 
@@ -980,10 +1001,9 @@ function startAwsFrameResize(e, obj){
   if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
   const pt = svgPoint(e);
   let sizeRef;
-  if(obj._azRef){ const {vpc,az}=obj._azRef; sizeRef = vpc._azLayout[az]; }
+  if(obj._azRef){ const {vpc,az}=obj._azRef; const al=vpc._azLayout[az]; al._size = al._size || {w:al.w,h:al.h}; sizeRef = al._size; }
   else { obj._size = obj._size || {w:190,h:92}; sizeRef = obj._size; }
-  // mark as manually sized so layout pass won't override
-  sizeRef._auto = false;
+  sizeRef._auto = false;   // mark manually sized so layout uses it as a minimum
   awsFrameResize = { sizeRef, startX:pt.x, startY:pt.y, w0:sizeRef.w, h0:sizeRef.h };
 }
 
@@ -2444,15 +2464,12 @@ function getContainedElements(network){
 }
 
 function onMouseMove(e){
-  // AWS individual frame drag (region/vpc/az/subnet + descendants)
+  // AWS individual frame drag (region/vpc/az/subnet) — move leaf positions; parents auto-recompute
   if(awsFrameDrag){
     const pt = svgPoint(e);
     const dx = pt.x - awsFrameDrag.startX, dy = pt.y - awsFrameDrag.startY;
     if(Math.abs(dx)>1||Math.abs(dy)>1) awsFrameDrag.moved = true;
-    awsFrameDrag.anchor.x = awsFrameDrag.anchorX0 + dx;
-    awsFrameDrag.anchor.y = awsFrameDrag.anchorY0 + dy;
-    for(const f of awsFrameDrag.descFrames){ f.p.x = f.x0 + dx; f.p.y = f.y0 + dy; }
-    for(const a of awsFrameDrag.descAz){ a.a.x = a.x0 + dx; a.a.y = a.y0 + dy; }
+    for(const f of awsFrameDrag.leaves){ f.p.x = f.x0 + dx; f.p.y = f.y0 + dy; }
     render();
     return;
   }
