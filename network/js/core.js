@@ -1041,12 +1041,24 @@ function ensureAwsHierarchy(){
       if(sn.az && !region.azs.includes(sn.az)) region.azs.push(sn.az);
     }
   }
-  // Make sure each region has at least its default AZs.
+  // Make sure each region has at least its default AZs; dedup AZ lists.
   for(const region of aws.regions){
     if(!Array.isArray(region.azs)) region.azs = [];
+    region.azs = region.azs.filter((az,i)=>region.azs.indexOf(az)===i);  // dedup
     if(!region.azs.length) region.azs = awsDefaultAzs(region.id);
     if(!Array.isArray(region.vpcs)) region.vpcs = [];
   }
+  // Merge any duplicate region entries (same id) into one.
+  const seen = {};
+  const merged = [];
+  for(const region of aws.regions){
+    if(seen[region.id]){
+      const tgt = seen[region.id];
+      for(const az of (region.azs||[])) if(!tgt.azs.includes(az)) tgt.azs.push(az);
+      for(const v of (region.vpcs||[])) if(!tgt.vpcs.includes(v)) tgt.vpcs.push(v);
+    } else { seen[region.id]=region; merged.push(region); }
+  }
+  aws.regions = merged;
   // Rebuild the flat mirror aws.vpcs (used widely by the rest of the codebase).
   const flat = [];
   for(const region of aws.regions){
@@ -1648,12 +1660,12 @@ function awsCleanForYaml(config){
   if(clone && clone.aws){
     const aws = clone.aws;
     delete aws.vpcs;       // internal flat mirror — rebuilt on load by ensureAwsHierarchy()
-    delete aws._pos; delete aws._pad;
+    delete aws._pos; delete aws._pad; delete aws._minSize;
     for(const region of (aws.regions||[])){
       delete region._pos; delete region._size; delete region._seedPos;
       for(const vpc of (region.vpcs||[])){
         delete vpc._pos; delete vpc._pad; delete vpc._size; delete vpc._azLayout; delete vpc._seedPos;
-        for(const sn of (vpc.subnets||[])){ delete sn._pos; delete sn._size; }
+        for(const sn of (vpc.subnets||[])){ delete sn._pos; delete sn._size; delete sn._seed; }
       }
     }
     // If there are no regions but a legacy flat list existed, keep it visible

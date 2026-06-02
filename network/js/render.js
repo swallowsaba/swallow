@@ -713,23 +713,26 @@ function renderAwsOverlay(){
   }
 
   // ===== LAYOUT PASS 1: seed positions for empty containers + newly-assigned EC2 =====
+  // Regions stack VERTICALLY with a generous gap so different regions never overlap.
   let seedY = aws._pos.y + 60;
   for(const region of regions){
     const azs = region.azs && region.azs.length ? region.azs : awsDefaultAzs(region.id);
-    region._seedPos = region._seedPos || { x:aws._pos.x+AWS_PAD, y:seedY };
+    if(!region._seedPos) region._seedPos = { x:aws._pos.x+AWS_PAD+10, y:seedY };
+    // VPCs stack vertically inside the region
+    let vpcSeedY = region._seedPos.y + REGION_LABEL_H + 8;
     for(const vpc of (region.vpcs||[])){
-      vpc._seedPos = vpc._seedPos || { x:region._seedPos.x+REGION_PAD, y:region._seedPos.y+REGION_LABEL_H };
+      if(!vpc._seedPos) vpc._seedPos = { x:region._seedPos.x+REGION_PAD, y:vpcSeedY };
       vpc._azLayout = vpc._azLayout || {};
       let azCol = vpc._seedPos.x + VPC_PAD;
+      let maxAzBottom = vpc._seedPos.y + VPC_LABEL_H + AZ_PAD_TOP + MIN_SUBNET_H + 30;
       for(const az of azs){
         if(!vpc._azLayout[az]) vpc._azLayout[az] = {};
         const al = vpc._azLayout[az];
-        if(!al._seed) al._seed = { x:azCol, y:vpc._seedPos.y+VPC_LABEL_H+AZ_PAD_TOP };
+        if(!al._seed) al._seed = { x:azCol, y:vpc._seedPos.y+VPC_LABEL_H+8 };
         const azSubs = (vpc.subnets||[]).filter(s=>s.az===az);
-        let snSeedY = al._seed.y + 4;
+        let snSeedY = al._seed.y + AZ_PAD_TOP;
         for(const sn of azSubs){
           if(!sn._seed) sn._seed = { x:al._seed.x+AZ_PAD, y:snSeedY };
-          // seed any member EC2/device that has no position yet → drop it inside its subnet
           const mems = subnetMembers(vpc.name, sn.name);
           let mi = 0;
           for(const m of mems){
@@ -741,10 +744,14 @@ function renderAwsOverlay(){
             mi++;
           }
           snSeedY += MIN_SUBNET_H + 14;
+          maxAzBottom = Math.max(maxAzBottom, snSeedY);
         }
         azCol += MIN_SUBNET_W + AZ_PAD*2 + AZ_GAP;
       }
+      vpcSeedY = maxAzBottom + VPC_GAP + 24;
     }
+    // next region starts below this region's seeded content (generous gap)
+    seedY = Math.max(seedY + 220, vpcSeedY + REGION_GAP + 30);
   }
 
   // ===== LAYOUT PASS 2: compute boxes bottom-up (parent = bbox(children)+pad) =====
@@ -814,7 +821,9 @@ function renderAwsOverlay(){
     amxX=Math.max(amxX, dev.x+w); amxY=Math.max(amxY, dev.y+h);
   }
   if(amnX===Infinity){ amnX=aws._pos.x; amnY=aws._pos.y; amxX=aws._pos.x+300; amxY=aws._pos.y+200; }
-  const awsX=amnX-AWS_PAD, awsY=amnY-AWS_PAD-14, awsW=(amxX-amnX)+AWS_PAD*2, awsH=(amxY-amnY)+AWS_PAD*2+14;
+  let awsX=amnX-AWS_PAD, awsY=amnY-AWS_PAD-14, awsW=(amxX-amnX)+AWS_PAD*2, awsH=(amxY-amnY)+AWS_PAD*2+14;
+  // honor a user-set minimum size (resize handle); frame never shrinks below contents
+  if(aws._minSize){ awsW=Math.max(awsW, aws._minSize.w); awsH=Math.max(awsH, aws._minSize.h); }
 
   const awsSel = App.selected && App.selected.kind==="aws-root";
   const awsG = ce("g", { class:"aws-master-overlay" }, layer);
@@ -851,6 +860,15 @@ function renderAwsOverlay(){
   mRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-root",id:"aws"}; render(); if(typeof openPropertyPanel==="function") openPropertyPanel(); });
   albRect.addEventListener("click",(e)=>{ e.stopPropagation(); if(typeof showAwsManager==="function") showAwsManager(); });
   albRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); if(typeof showAwsManager==="function") showAwsManager(); });
+  // AWS master resize handle (bottom-right) — sets a minimum size
+  const amrh = ce("rect", { x:awsX+awsW-8, y:awsY+awsH-8, width:14, height:14, rx:2, ry:2,
+    fill:"#ff9900", stroke:"#fff", "stroke-width":1.2, "pointer-events":"all", style:"cursor:nwse-resize" }, awsG);
+  amrh.addEventListener("mousedown",(e)=>{
+    if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
+    const pt=svgPoint(e);
+    aws._minSize = aws._minSize || { w:awsW, h:awsH };
+    awsFrameResize = { sizeRef:aws._minSize, startX:pt.x, startY:pt.y, w0:awsW, h0:awsH };
+  });
 
   // ===== draw each REGION → VPC → AZ → SUBNET =====
   for(const region of regions){
