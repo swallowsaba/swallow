@@ -803,76 +803,52 @@ function renderAwsOverlay(){
     region._size = Object.assign(region._size||{}, { w:rbox.w, h:rbox.h });
   }
 
-  // ===== AWS master bounding box (encompasses regions + free global services) =====
-  // Seed unpositioned global services near the top-left once; afterwards they're free.
+  // ===== Seed global services (free-draggable; live in their own AWS Global frame) =====
   globalSvcs.forEach((dev,i)=>{
     if(dev.x===undefined || dev.y===undefined || (!dev._awsSeeded && dev.x===0 && dev.y===0)){
       dev.x = aws._pos.x + 30 + (i%4)*130; dev.y = aws._pos.y + 20; dev._awsSeeded = true;
     }
   });
-  let amnX=Infinity, amnY=Infinity, amxX=-Infinity, amxY=-Infinity;
-  for(const region of regions){
-    amnX=Math.min(amnX, region._pos.x); amnY=Math.min(amnY, region._pos.y);
-    amxX=Math.max(amxX, region._pos.x+region._size.w); amxY=Math.max(amxY, region._pos.y+region._size.h);
-  }
-  for(const dev of globalSvcs){
-    const w=dev.width||130, h=dev.height||60;
-    amnX=Math.min(amnX, dev.x); amnY=Math.min(amnY, dev.y);
-    amxX=Math.max(amxX, dev.x+w); amxY=Math.max(amxY, dev.y+h);
-  }
-  if(amnX===Infinity){ amnX=aws._pos.x; amnY=aws._pos.y; amxX=aws._pos.x+300; amxY=aws._pos.y+200; }
-  let awsX=amnX-AWS_PAD, awsY=amnY-AWS_PAD-14, awsW=(amxX-amnX)+AWS_PAD*2, awsH=(amxY-amnY)+AWS_PAD*2+14;
-  // honor a user-set minimum size (resize handle); frame never shrinks below contents
-  if(aws._minSize){ awsW=Math.max(awsW, aws._minSize.w); awsH=Math.max(awsH, aws._minSize.h); }
 
-  const awsSel = App.selected && App.selected.kind==="aws-root";
-  const awsG = ce("g", { class:"aws-master-overlay" }, layer);
-  // master frame
-  const mRect = ce("rect", { x:awsX, y:awsY, width:awsW, height:awsH, rx:10, ry:10,
-    fill:awsSel?"rgba(255,153,0,0.06)":"rgba(255,153,0,0.02)", stroke:"#ff9900", "stroke-width":awsSel?3.5:2, "stroke-dasharray":"12 6",
-    "pointer-events":"all", style:"cursor:move" }, awsG);
-  if(awsSel) mRect.setAttribute("filter","drop-shadow(0 0 5px #ff9900)");
-  mRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
-    if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
-      { icon:"☁", label:"AWS 全体管理", action:()=>{ if(typeof showAwsManager==="function") showAwsManager(); }},
-      { icon:"➕", label:"リージョンを追加", action:()=>{ if(typeof awsAddRegionInteractive==="function") awsAddRegionInteractive(); }},
-      { sep:true },
-      { icon:"🗑", label:"AWS全体を削除", action:()=>{
-        if((typeof confirm==="function")?confirm("AWS全体(全リージョン・VPC・サービス)を削除しますか?"):true){
-          App.config.aws = { regions:[], vpcs:[] };
-          App.config.devices = (App.config.devices||[]).filter(d=>!d.aws_kind);
-          App.config.servers = (App.config.servers||[]).filter(s=>!(s.aws&&s.aws.vpc));
-          renderAndSync(); toast("AWS全体を削除","ok");
-        }
-      }}
-    ]);
-  });
-  // AWS master label (drag moves whole block); click opens settings
-  const albl="☁ AWS Cloud"; const albw=albl.length*8+16;
-  const albRect = ce("rect", { x:awsX+10, y:awsY-11, width:albw, height:22, rx:11, ry:11,
-    fill:"#ff9900", stroke:"#fff", "stroke-width":1.4, "pointer-events":"all", style:"cursor:move" }, awsG);
-  ce("text", { x:awsX+10+albw/2, y:awsY, "text-anchor":"middle", "dominant-baseline":"middle",
-    "font-size":11, "font-weight":"700", fill:"#fff", text:albl, "pointer-events":"none" }, awsG);
-  const moveAws=(e)=>{ startAwsFrameDrag(e, "aws", null); };
-  albRect.addEventListener("mousedown", moveAws);
-  mRect.addEventListener("mousedown", moveAws);
-  // click (no drag) on master frame or label → open AWS settings
-  mRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-root",id:"aws"}; render(); if(typeof openPropertyPanel==="function") openPropertyPanel(); });
-  albRect.addEventListener("click",(e)=>{ e.stopPropagation(); if(typeof showAwsManager==="function") showAwsManager(); });
-  albRect.addEventListener("dblclick",(e)=>{ e.stopPropagation(); if(typeof showAwsManager==="function") showAwsManager(); });
-  // AWS master resize handle (bottom-right) — sets a minimum size
-  const amrh = ce("rect", { x:awsX+awsW-8, y:awsY+awsH-8, width:14, height:14, rx:2, ry:2,
-    fill:"#ff9900", stroke:"#fff", "stroke-width":1.2, "pointer-events":"all", style:"cursor:nwse-resize" }, awsG);
-  amrh.addEventListener("mousedown",(e)=>{
-    if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
-    const pt=svgPoint(e);
-    aws._minSize = aws._minSize || { w:awsW, h:awsH };
-    awsFrameResize = { sizeRef:aws._minSize, startX:pt.x, startY:pt.y, w0:awsW, h0:awsH };
-  });
-
-  // ===== draw each REGION → VPC → AZ → SUBNET =====
+  // ===== draw each REGION inside its OWN orange "AWS Cloud" frame =====
   for(const region of regions){
     const rp=region._pos, rs=region._size;
+    // --- per-region AWS frame (orange, AWS-branded) wrapping this region ---
+    const awsSel = App.selected && App.selected.kind==="aws-region" && App.selected.id===region.id;
+    let ax=rp.x-AWS_PAD, ay=rp.y-AWS_PAD-16, aw=rs.w+AWS_PAD*2, ah=rs.h+AWS_PAD*2+16;
+    if(region._awsMin){ aw=Math.max(aw, region._awsMin.w); ah=Math.max(ah, region._awsMin.h); }
+    const awsG = ce("g", { class:"aws-master-overlay" }, layer);
+    const mRect = ce("rect", { x:ax, y:ay, width:aw, height:ah, rx:10, ry:10,
+      fill:awsSel?"rgba(255,153,0,0.05)":"rgba(255,153,0,0.02)", stroke:"#ff9900", "stroke-width":awsSel?3:2, "stroke-dasharray":"12 6",
+      "pointer-events":"all", style:"cursor:move" }, awsG);
+    mRect.addEventListener("contextmenu",(e)=>{ e.preventDefault(); e.stopPropagation();
+      if(typeof _showSimpleContextMenu==="function") _showSimpleContextMenu(e, [
+        { icon:"🌐", label:"リージョン設定 (AZ追加/変更)", action:()=>{ if(typeof showAwsRegionManager==="function") showAwsRegionManager(region.id); }},
+        { icon:"➕", label:"このリージョンにVPCを追加", action:()=>{ if(typeof awsAddVpcToRegion==="function") awsAddVpcToRegion(region.id); }},
+        { icon:"➕", label:"リージョンを追加", action:()=>{ if(typeof awsAddRegionInteractive==="function") awsAddRegionInteractive(); }},
+        { sep:true },
+        { icon:"🗑", label:"このリージョンを削除", action:()=>{ if(typeof awsDeleteRegion==="function") awsDeleteRegion(region.id); }}
+      ]);
+    });
+    // AWS label (drag moves this region's whole block; click selects region)
+    const albl="☁ AWS Cloud"; const albw=albl.length*8+16;
+    const albRect = ce("rect", { x:ax+10, y:ay-11, width:albw, height:22, rx:11, ry:11,
+      fill:"#ff9900", stroke:"#fff", "stroke-width":1.4, "pointer-events":"all", style:"cursor:move" }, awsG);
+    ce("text", { x:ax+10+albw/2, y:ay, "text-anchor":"middle", "dominant-baseline":"middle",
+      "font-size":11, "font-weight":"700", fill:"#fff", text:albl, "pointer-events":"none" }, awsG);
+    const dragRegionAws=(e)=>startAwsFrameDrag(e, "region", region);
+    mRect.addEventListener("mousedown", dragRegionAws);
+    albRect.addEventListener("mousedown", dragRegionAws);
+    mRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-region",id:region.id}; render(); if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+    albRect.addEventListener("click",(e)=>{ e.stopPropagation(); App.multiSelect=[]; App.selected={kind:"aws-region",id:region.id}; render(); if(typeof openPropertyPanel==="function") openPropertyPanel(); });
+    // AWS frame resize handle → stores per-region min size
+    const amrh = ce("rect", { x:ax+aw-8, y:ay+ah-8, width:14, height:14, rx:2, ry:2,
+      fill:"#ff9900", stroke:"#fff", "stroke-width":1.2, "pointer-events":"all", style:"cursor:nwse-resize" }, awsG);
+    amrh.addEventListener("mousedown",(e)=>{ if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
+      const pt=svgPoint(e); region._awsMin = region._awsMin || { w:aw, h:ah };
+      awsFrameResize = { sizeRef:region._awsMin, startX:pt.x, startY:pt.y, w0:aw, h0:ah };
+    });
+
     const regSel = App.selected && App.selected.kind==="aws-region" && App.selected.id===region.id;
     const regG = ce("g", { class:"aws-region-overlay" }, layer);
     const regRect = ce("rect", { x:rp.x, y:rp.y, width:rs.w, height:rs.h, rx:6, ry:6,
@@ -1000,10 +976,38 @@ function renderAwsOverlay(){
       }
     }
   }
-  // global services row label (services themselves are free-draggable normal devices)
+  // ===== Global / Regional services in their own orange "AWS Global" frame =====
   if(globalSvcs.length){
-    ce("text", { x:awsX+awsW-12, y:awsY+16, "text-anchor":"end", "font-size":9,
-      fill:"#ff9900", "font-weight":"700", text:"◆ Global / Regional Services", "pointer-events":"none" }, awsG);
+    let gmnX=Infinity,gmnY=Infinity,gmxX=-Infinity,gmxY=-Infinity;
+    for(const dev of globalSvcs){ const w=dev.width||130,h=dev.height||60;
+      gmnX=Math.min(gmnX,dev.x); gmnY=Math.min(gmnY,dev.y); gmxX=Math.max(gmxX,dev.x+w); gmxY=Math.max(gmxY,dev.y+h); }
+    const gpad=20;
+    let gx=gmnX-gpad, gy=gmnY-gpad-14;
+    let gw=(gmxX-gmnX)+gpad*2, gh=(gmxY-gmnY)+gpad*2+14;
+    if(aws._globalMin){ gw=Math.max(gw,aws._globalMin.w); gh=Math.max(gh,aws._globalMin.h); }
+    const gG = ce("g", { class:"aws-global-overlay" }, layer);
+    const gRect = ce("rect", { x:gx, y:gy, width:gw, height:gh, rx:10, ry:10,
+      fill:"rgba(255,153,0,0.02)", stroke:"#ff9900", "stroke-width":2, "stroke-dasharray":"12 6",
+      "pointer-events":"all", style:"cursor:move" }, gG);
+    const glbl="☁ AWS Global / Regional Services"; const glbw=glbl.length*6.4+16;
+    const glRect = ce("rect", { x:gx+10, y:gy-11, width:glbw, height:22, rx:11, ry:11,
+      fill:"#ff9900", stroke:"#fff", "stroke-width":1.4, "pointer-events":"all", style:"cursor:move" }, gG);
+    ce("text", { x:gx+10+glbw/2, y:gy, "text-anchor":"middle", "dominant-baseline":"middle",
+      "font-size":10, "font-weight":"700", fill:"#fff", text:glbl, "pointer-events":"none" }, gG);
+    // drag moves all global services together
+    const dragGlobal=(e)=>{ if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
+      const pt=svgPoint(e);
+      awsFrameDrag = { kind:"global", ref:null, startX:pt.x, startY:pt.y, moved:false,
+        leaves: globalSvcs.map(d=>({p:d, x0:d.x, y0:d.y})) };
+    };
+    gRect.addEventListener("mousedown", dragGlobal);
+    glRect.addEventListener("mousedown", dragGlobal);
+    const grh = ce("rect", { x:gx+gw-8, y:gy+gh-8, width:14, height:14, rx:2, ry:2,
+      fill:"#ff9900", stroke:"#fff", "stroke-width":1.2, "pointer-events":"all", style:"cursor:nwse-resize" }, gG);
+    grh.addEventListener("mousedown",(e)=>{ if(e.button!==0) return; e.preventDefault(); e.stopPropagation();
+      const pt=svgPoint(e); aws._globalMin = aws._globalMin || { w:gw, h:gh };
+      awsFrameResize = { sizeRef:aws._globalMin, startX:pt.x, startY:pt.y, w0:gw, h0:gh };
+    });
   }
 }
 // drag state for moving the whole AWS block by its master label
@@ -3476,6 +3480,28 @@ function findServiceCenter(id){
 
 function deleteElement(kind, id){
   if(kind === "aws-vpc"){ App.selected=null; deleteAwsVpc(id); return; }
+  if(kind === "aws-region"){ App.selected=null; if(typeof awsDeleteRegion==="function") awsDeleteRegion(id); return; }
+  if(kind === "aws-az"){ App.selected=null; const [rid,az]=String(id).split("/"); if(typeof awsDeleteAz==="function") awsDeleteAz(rid,az); return; }
+  if(kind === "aws-subnet"){
+    App.selected=null;
+    const [vpcName,snName]=String(id).split("/");
+    const vpc=(App.config.aws&&App.config.aws.vpcs||[]).find(v=>v.name===vpcName);
+    if(vpc){ pushUndo(); vpc.subnets=(vpc.subnets||[]).filter(s=>s.name!==snName);
+      for(const s of (App.config.servers||[])) if(s.aws&&s.aws.vpc===vpcName&&s.aws.subnet===snName) delete s.aws.subnet;
+      renderAndSync(); toast("サブネット "+snName+" を削除","ok"); }
+    return;
+  }
+  if(kind === "aws-root"){
+    App.selected=null;
+    if((typeof confirm==="function")?confirm("AWS全体(全リージョン・VPC・サービス)を削除しますか?"):true){
+      pushUndo();
+      App.config.aws = { regions:[], vpcs:[] };
+      App.config.devices = (App.config.devices||[]).filter(d=>!d.aws_kind);
+      App.config.servers = (App.config.servers||[]).filter(s=>!(s.aws&&s.aws.vpc));
+      renderAndSync(); toast("AWS全体を削除","ok");
+    }
+    return;
+  }
   if(kind === "k8s-cluster"){ App.selected=null; deleteK8sCluster(id); return; }
   pushUndo();
   if(kind === "server" || kind === "device"){

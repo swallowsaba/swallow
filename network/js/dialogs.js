@@ -1765,6 +1765,12 @@ function deleteAwsVpc(vpcRef){
   pushUndo();
   for(const s of ec2s){ delete s.aws; }
   App.config.aws.vpcs = vpcs.filter(v=>v!==vpc);
+  // also remove from its region's vpcs[] so ensureAwsHierarchy won't re-add it
+  for(const region of (App.config.aws.regions||[])){
+    region.vpcs = (region.vpcs||[]).filter(v=>v!==vpc && v.name!==vpc.name);
+  }
+  if(typeof ensureAwsHierarchy==="function") ensureAwsHierarchy();
+  App.selected=null;
   renderAndSync(); updateStatusBar();
   toast(`VPC「${vpc.name}」を削除しました`,"ok");
 }
@@ -1856,7 +1862,10 @@ function awsDeleteRegion(regionId){
     App.config.devices = (App.config.devices||[]).filter(d=>!(d.aws_kind && d.aws_vpc===vn));
   }
   aws.regions = aws.regions.filter(r=>r.id!==regionId);
+  // also drop this region's VPCs from the flat mirror so ensureAwsHierarchy won't re-create the region
+  aws.vpcs = (aws.vpcs||[]).filter(v=>v.region!==regionId && !vpcNames.includes(v.name));
   if(typeof ensureAwsHierarchy==="function") ensureAwsHierarchy();
+  App.selected=null;
   renderAndSync(); toast("リージョン "+regionId+" を削除","ok");
 }
 
