@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章7 機械学習のパラダイム — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章7：教師あり／教師なし／強化学習／自己教師あり学習。機械学習の全体地図を図解で構築する。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="index.html">基本</a>
+      <a href="../advanced/index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>Ch.7</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章7</div>
+    <h1>章7 — 機械学習のパラダイム<span class="en">Chapter 7 — ML Paradigms</span></h1>
+    <p class="standfirst">機械学習には根本的に異なる <strong>3つの学習パラダイム</strong>（教師あり・教師なし・強化学習）と、近年台頭した <strong>自己教師あり学習</strong>があります。それぞれが何を入力し、何を学び、何に使われるのかを地図として持つと、現代AIの全景が一気に見えるようになります。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="06-info-theory.html">← 章6: 情報理論</a></div>
+  <div><span class="ch-label">Chapter 7 of 12</span><br><span class="ch-title">機械学習のパラダイム</span></div>
+  <div><a href="08-ml-classical.html">章8: 古典手法 →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章7 目次</h6>
+    <a href="#map">§1 機械学習の地図</a>
+    <a href="#supervised">§2 教師あり学習</a>
+    <a href="#unsupervised">§3 教師なし学習</a>
+    <a href="#rl">§4 強化学習</a>
+    <a href="#self">§5 自己教師あり学習</a>
+    <a href="#semi">§6 半教師あり学習</a>
+    <a href="#erm">§7 経験リスク最小化</a>
+    <a href="#summary">§8 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 7</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">3つのパラダイム、<br>1つの目標。</h2>
+
+    <h2 id="map"><span class="label">§1 / MAP</span>機械学習の地図</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg">
+        <!-- Center -->
+        <ellipse cx="380" cy="200" rx="100" ry="60" fill="#0d1b2a"/>
+        <text x="380" y="195" text-anchor="middle" font-size="14" font-weight="bold" fill="#faf7f2">機械学習</text>
+        <text x="380" y="215" text-anchor="middle" font-size="11" fill="#d4a017">Machine Learning</text>
+
+        <!-- Supervised -->
+        <g>
+          <line x1="280" y1="200" x2="120" y2="80" stroke="#0d1b2a" stroke-width="1.5"/>
+          <ellipse cx="100" cy="70" rx="90" ry="45" fill="#b8431f"/>
+          <text x="100" y="60" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">教師あり</text>
+          <text x="100" y="80" text-anchor="middle" font-size="10" fill="#faf7f2">(x, y) ペア</text>
+          <text x="100" y="95" text-anchor="middle" font-size="9" fill="#f5d4c4">分類・回帰</text>
+        </g>
+
+        <!-- Unsupervised -->
+        <g>
+          <line x1="280" y1="200" x2="120" y2="320" stroke="#0d1b2a" stroke-width="1.5"/>
+          <ellipse cx="100" cy="330" rx="90" ry="45" fill="#d4a017"/>
+          <text x="100" y="320" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">教師なし</text>
+          <text x="100" y="340" text-anchor="middle" font-size="10" fill="#0d1b2a">x のみ</text>
+          <text x="100" y="355" text-anchor="middle" font-size="9" fill="#5a5f6a">クラスタ・次元削減</text>
+        </g>
+
+        <!-- Reinforcement -->
+        <g>
+          <line x1="480" y1="200" x2="640" y2="80" stroke="#0d1b2a" stroke-width="1.5"/>
+          <ellipse cx="660" cy="70" rx="90" ry="45" fill="#2e5577"/>
+          <text x="660" y="60" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">強化学習</text>
+          <text x="660" y="80" text-anchor="middle" font-size="10" fill="#faf7f2">状態・報酬</text>
+          <text x="660" y="95" text-anchor="middle" font-size="9" fill="#c0d4e3">方策学習</text>
+        </g>
+
+        <!-- Self-supervised -->
+        <g>
+          <line x1="480" y1="200" x2="640" y2="320" stroke="#0d1b2a" stroke-width="1.5"/>
+          <ellipse cx="660" cy="330" rx="90" ry="45" fill="#3a7d44"/>
+          <text x="660" y="320" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">自己教師あり</text>
+          <text x="660" y="340" text-anchor="middle" font-size="10" fill="#faf7f2">擬似ラベル</text>
+          <text x="660" y="355" text-anchor="middle" font-size="9" fill="#c0d4c4">事前学習</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 7.1</span> 機械学習の4大パラダイム。教師あり・教師なし・強化学習が古典的3分類、自己教師あり学習が近年加わった第4の柱（BERT, SimCLR, MAE などの基礎）。</div>
+    </div>
+
+    <h2 id="supervised"><span class="label">§2 / SUPER</span>教師あり学習</h2>
+    <p><strong>入力 x と正解ラベル y のペア</strong> (x, y) から、関数 f: x → y を学ぶ。最も一般的なパラダイム。</p>
+    <ul>
+      <li><strong>分類</strong>：y がカテゴリ。「この画像は猫」「このメールはスパム」</li>
+      <li><strong>回帰</strong>：y が連続値。「明日の気温」「不動産価格」</li>
+    </ul>
+    <p>代表的手法（章8で詳述）：線形/ロジスティック回帰、SVM、決定木、ランダムフォレスト、勾配ブースティング、ニューラルネット。</p>
+
+    <h2 id="unsupervised"><span class="label">§3 / UNSUP</span>教師なし学習</h2>
+    <p><strong>ラベルなしの x だけ</strong> から、データの構造を見つける。</p>
+    <ul>
+      <li><strong>クラスタリング</strong>：K-means、階層クラスタ、DBSCAN — 似たデータをグループ化</li>
+      <li><strong>次元削減</strong>：PCA、t-SNE、UMAP — 高次元データを低次元で可視化</li>
+      <li><strong>密度推定</strong>：分布を推定。GMM、KDE</li>
+      <li><strong>生成モデル</strong>：GAN、VAE、Diffusion — 新しいサンプル生成</li>
+    </ul>
+
+    <h2 id="rl"><span class="label">§4 / RL</span>強化学習</h2>
+    <p><strong>エージェントが環境とやり取りし、報酬を最大化する方策（policy）</strong> を学ぶ。教師ラベルではなく、<strong>遅延された報酬シグナル</strong> から学ぶのが特徴。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="rl-arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          </marker>
+        </defs>
+
+        <!-- Agent -->
+        <rect x="100" y="100" width="160" height="80" fill="#b8431f"/>
+        <text x="180" y="135" text-anchor="middle" font-size="15" font-weight="bold" fill="#faf7f2">エージェント</text>
+        <text x="180" y="155" text-anchor="middle" font-size="11" fill="#f5d4c4">方策 π(a|s) を学ぶ</text>
+
+        <!-- Environment -->
+        <rect x="420" y="100" width="160" height="80" fill="#2e5577"/>
+        <text x="500" y="135" text-anchor="middle" font-size="15" font-weight="bold" fill="#faf7f2">環境</text>
+        <text x="500" y="155" text-anchor="middle" font-size="11" fill="#c0d4e3">状態の遷移と報酬</text>
+
+        <!-- Action arrow -->
+        <line x1="260" y1="125" x2="420" y2="125" stroke="#0d1b2a" stroke-width="2" marker-end="url(#rl-arr)"/>
+        <text x="340" y="115" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">行動 a</text>
+
+        <!-- State, reward arrows -->
+        <line x1="420" y1="160" x2="260" y2="160" stroke="#0d1b2a" stroke-width="2" marker-end="url(#rl-arr)"/>
+        <text x="340" y="180" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">状態 s, 報酬 r</text>
+
+        <!-- Title -->
+        <text x="340" y="40" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">強化学習：エージェントと環境のループ</text>
+        <text x="340" y="240" text-anchor="middle" font-size="11" fill="#5a5f6a">エージェントは累積報酬 Σ γᵗ rₜ を最大化する方策を探す</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 7.2</span> 強化学習の基本構造。エージェントが行動 a を選び、環境が次状態 s と報酬 r を返す。累積報酬を最大化する方策を学ぶ。AlphaGo, ChatGPT の RLHF, ロボティクスの基盤。</div>
+    </div>
+
+    <h3>4.1 主な手法</h3>
+    <ul>
+      <li><strong>価値ベース</strong>：Q学習、DQN — 各状態-行動の価値 Q(s,a) を推定</li>
+      <li><strong>方策ベース</strong>：REINFORCE、PPO — 方策 π を直接最適化</li>
+      <li><strong>Actor-Critic</strong>：A2C、SAC — 価値と方策の両方</li>
+      <li><strong>モデルベース</strong>：Dyna、World Models — 環境のモデルを学習して計画</li>
+    </ul>
+
+    <h3>4.2 主な応用</h3>
+    <ul>
+      <li><strong>ゲーム</strong>：AlphaGo（囲碁）、AlphaZero、MuZero、AlphaStar（StarCraft）</li>
+      <li><strong>RLHF</strong>：ChatGPT, Claude の人間フィードバック学習</li>
+      <li><strong>ロボット制御</strong>：歩行、操作、自動運転</li>
+      <li><strong>推薦システム</strong>：長期的なユーザー満足度の最大化</li>
+    </ul>
+
+    <h2 id="self"><span class="label">§5 / SELF</span>自己教師あり学習</h2>
+    <p>「人手でラベルを付けない」が「データ自身から擬似ラベルを生成して教師あり学習する」枠組み。<strong>近年の事前学習（BERT、GPT、SimCLR、MAE、DINO）はほぼ全てこれ</strong>。</p>
+
+    <table class="spec">
+      <tr><th>タスク</th><th>擬似ラベルの作り方</th><th>例</th></tr>
+      <tr><td>Masked Language Model</td><td>文の一部の単語を [MASK] にして、それを予測</td><td>BERT, RoBERTa</td></tr>
+      <tr><td>Next Token Prediction</td><td>次の単語を予測</td><td>GPT 系全て</td></tr>
+      <tr><td>Masked Image Model</td><td>画像のパッチを隠して復元</td><td>MAE, BEiT</td></tr>
+      <tr><td>対比学習</td><td>同じ画像の2つの増強を近づけ、別画像を遠ざける</td><td>SimCLR, MoCo</td></tr>
+      <tr><td>クロスモーダル</td><td>画像とキャプションのペアを近づける</td><td>CLIP, ALIGN</td></tr>
+    </table>
+
+    <p><strong>なぜ重要か</strong>：人手アノテーションは高コストで質に限界がある。インターネットには <strong>ラベルなしのテキスト・画像</strong> が無限にある。それを使えるなら学習データを桁違いに増やせる。これが <strong>基盤モデル（FM）の革命</strong> の正体。</p>
+
+    <h2 id="semi"><span class="label">§6 / SEMI</span>半教師あり学習</h2>
+    <p>少量のラベル付きデータと大量のラベルなしデータを併用。医療画像など <strong>アノテーションが高価な分野</strong> で重要。</p>
+    <p>代表手法：</p>
+    <ul>
+      <li>擬似ラベリング（モデルの予測を擬似ラベルに）</li>
+      <li>整合性正則化（ノイズに対する予測の安定性）</li>
+      <li>FixMatch、Mean Teacher</li>
+    </ul>
+
+    <h2 id="erm"><span class="label">§7 / ERM</span>経験リスク最小化</h2>
+    <p>教師あり学習の数学的定式化：</p>
+    <ul>
+      <li><strong>仮説空間 H</strong>：考えるモデル族（線形回帰、決定木、NN など）</li>
+      <li><strong>損失関数 L(f(x), y)</strong>：予測誤差の定義</li>
+      <li><strong>経験リスク</strong>：訓練データ上の平均損失</li>
+    </ul>
+    <div class="formula">f̂ = argmin_{f ∈ H} (1/n) Σ L(f(xᵢ), yᵢ)</div>
+    <p>しかし真に最小化したいのは <strong>汎化誤差</strong>（未知データでの誤差）。<strong>過学習</strong> はこのギャップ（章9で扱う）。</p>
+
+    <h2 id="summary"><span class="label">§8 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>機械学習の4パラダイム：教師あり／教師なし／強化学習／自己教師あり</td></tr>
+      <tr><th>2</th><td>教師あり：(x, y) ペアから学ぶ。分類と回帰</td></tr>
+      <tr><th>3</th><td>教師なし：x のみ。クラスタ・次元削減・生成</td></tr>
+      <tr><th>4</th><td>強化学習：エージェント・環境・報酬のループ</td></tr>
+      <tr><th>5</th><td>自己教師あり：データ自身から擬似ラベル。BERT, GPT, MAE</td></tr>
+      <tr><th>6</th><td>半教師あり：少量ラベル + 大量ラベルなし</td></tr>
+      <tr><th>7</th><td>経験リスク最小化（ERM）が教師あり学習の定式化</td></tr>
+      <tr><th>8</th><td>RLHF が ChatGPT などのアライメントの中核</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>教師あり学習・教師なし学習・強化学習の入力と出力を比較できるか</li>
+        <li>「クラスタリング」は教師ありか教師なしか</li>
+        <li>強化学習の3要素（エージェント、環境、報酬）を図で説明できるか</li>
+        <li>BERT のマスク言語モデルが「自己教師あり」と呼ばれる理由</li>
+        <li>CLIP がどんなタスクで学習しているか（クロスモーダル対比）</li>
+        <li>半教師あり学習が有効な実務シーンの例</li>
+        <li>経験リスク最小化の式を書けるか</li>
+        <li>RLHF が「強化学習」の枠に入る理由</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="06-info-theory.html">← 章6</a></div>
+  <div><span class="ch-label">次の章</span><br><span class="ch-title">章8: 古典手法</span></div>
+  <div><a href="08-ml-classical.html">章8へ →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="index.html">基本</a></li><li><a href="../advanced/index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章9 評価と過学習 — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章9：訓練・検証・テスト分割、交差検証、過学習、バイアス・バリアンス分解、混同行列、ROC-AUC を図解で。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
+.pitfall{background:#fbf3f0;border-left:3px solid #b8431f;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.pitfall-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#b8431f;margin-bottom:8px}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="index.html">基本</a>
+      <a href="../advanced/index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>Ch.9</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章9</div>
+    <h1>章9 — 評価と過学習<span class="en">Chapter 9 — Evaluation and Overfitting</span></h1>
+    <p class="standfirst">機械学習で最も多い失敗は「<strong>訓練データでは完璧、本番では使い物にならない</strong>」。これを避けるための <strong>データ分割・交差検証・評価指標</strong> を、図と例題で徹底的に押さえます。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="08-ml-classical.html">← 章8: 古典手法</a></div>
+  <div><span class="ch-label">Chapter 9 of 12</span><br><span class="ch-title">評価と過学習</span></div>
+  <div><a href="10-nn-basics.html">章10: NN 基礎 →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章9 目次</h6>
+    <a href="#split">§1 訓練・検証・テスト分割</a>
+    <a href="#cv">§2 交差検証</a>
+    <a href="#overfit">§3 過学習と未学習</a>
+    <a href="#biasvar">§4 バイアス・バリアンス分解</a>
+    <a href="#confusion">§5 混同行列</a>
+    <a href="#metrics">§6 評価指標</a>
+    <a href="#roc">§7 ROC-AUC</a>
+    <a href="#regul">§8 正則化の手段</a>
+    <a href="#summary">§9 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 9</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">「ちゃんと動く」を、<br>数字で証明する。</h2>
+
+    <h2 id="split"><span class="label">§1 / SPLIT</span>訓練・検証・テスト分割</h2>
+    <p>機械学習の最も基本的な実験設計。<strong>3つに分割</strong>：</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="40" y="60" width="400" height="60" fill="#b8431f"/>
+        <text x="240" y="95" text-anchor="middle" font-size="14" font-weight="bold" fill="#faf7f2">訓練 (Train) 60-70%</text>
+        <rect x="440" y="60" width="100" height="60" fill="#d4a017"/>
+        <text x="490" y="95" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">検証 15%</text>
+        <rect x="540" y="60" width="100" height="60" fill="#2e5577"/>
+        <text x="590" y="95" text-anchor="middle" font-size="12" font-weight="bold" fill="#faf7f2">テスト 15%</text>
+        <text x="240" y="145" text-anchor="middle" font-size="11" fill="#5a5f6a">パラメータ学習</text>
+        <text x="490" y="145" text-anchor="middle" font-size="11" fill="#5a5f6a">ハイパラ調整</text>
+        <text x="590" y="145" text-anchor="middle" font-size="11" fill="#5a5f6a">最終評価</text>
+        <text x="340" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">データセットの分割（典型例）</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 9.1</span> データ分割の基本。テストデータは <strong>「最終評価で一度しか見ない」</strong>。何度も見て調整すると暗黙の過学習が起こる。</div>
+    </div>
+
+    <table class="spec">
+      <tr><th>訓練（train）</th><td>モデルのパラメータ（重み）を学習</td></tr>
+      <tr><th>検証（validation）</th><td>ハイパーパラメータ調整、モデル選択、早期終了</td></tr>
+      <tr><th>テスト（test）</th><td>最終的な汎化性能の評価。<strong>複数回見てはいけない</strong></td></tr>
+    </table>
+
+    <div class="pitfall">
+      <div class="pitfall-title">⚠ データリーク</div>
+      テストデータの情報が訓練に漏れることを <strong>データリーク</strong> という。標準化・特徴量設計を分割前にやると平均・分散にテストデータが入ってしまう。正しくは：分割 → 訓練データで統計を計算 → 検証/テストにも同じ変換を適用。
+    </div>
+
+    <h2 id="cv"><span class="label">§2 / CV</span>K-fold 交差検証</h2>
+    <p>データが少ない場合、訓練データを K 分割し、各 fold を検証用にして K 回学習・評価、平均する。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+        <text x="340" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">5-fold 交差検証</text>
+        <g transform="translate(0, 40)">
+          <text x="50" y="20" font-size="11" fill="#5a5f6a">Iter 1</text>
+          <rect x="100" y="6" width="80" height="20" fill="#d4a017"/>
+          <rect x="180" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="260" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="340" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="420" y="6" width="80" height="20" fill="#b8431f"/>
+        </g>
+        <g transform="translate(0, 70)">
+          <text x="50" y="20" font-size="11" fill="#5a5f6a">Iter 2</text>
+          <rect x="100" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="180" y="6" width="80" height="20" fill="#d4a017"/>
+          <rect x="260" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="340" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="420" y="6" width="80" height="20" fill="#b8431f"/>
+        </g>
+        <g transform="translate(0, 100)">
+          <text x="50" y="20" font-size="11" fill="#5a5f6a">Iter 3</text>
+          <rect x="100" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="180" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="260" y="6" width="80" height="20" fill="#d4a017"/>
+          <rect x="340" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="420" y="6" width="80" height="20" fill="#b8431f"/>
+        </g>
+        <g transform="translate(0, 130)">
+          <text x="50" y="20" font-size="11" fill="#5a5f6a">Iter 4</text>
+          <rect x="100" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="180" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="260" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="340" y="6" width="80" height="20" fill="#d4a017"/>
+          <rect x="420" y="6" width="80" height="20" fill="#b8431f"/>
+        </g>
+        <g transform="translate(0, 160)">
+          <text x="50" y="20" font-size="11" fill="#5a5f6a">Iter 5</text>
+          <rect x="100" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="180" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="260" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="340" y="6" width="80" height="20" fill="#b8431f"/>
+          <rect x="420" y="6" width="80" height="20" fill="#d4a017"/>
+        </g>
+        <g transform="translate(530, 60)">
+          <rect x="0" y="0" width="16" height="16" fill="#b8431f"/>
+          <text x="22" y="13" font-size="11" fill="#0d1b2a">訓練</text>
+          <rect x="0" y="22" width="16" height="16" fill="#d4a017"/>
+          <text x="22" y="35" font-size="11" fill="#0d1b2a">検証</text>
+        </g>
+        <text x="340" y="255" text-anchor="middle" font-size="11" fill="#5a5f6a">5回の検証スコアを平均 → ロバストな評価</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 9.2</span> 5-fold 交差検証。データを5分割し、各 fold を順番に検証用にする。データ少なくても汎化性能を頑健に推定できる。</div>
+    </div>
+
+    <p>代表的なバリエーション：</p>
+    <ul>
+      <li><strong>Stratified K-fold</strong>：各 fold でクラス比率を一定に</li>
+      <li><strong>LOO（Leave-One-Out）</strong>：K = データ数。極小データ向け</li>
+      <li><strong>Time Series Split</strong>：時系列データでは未来を訓練に使わない</li>
+      <li><strong>Group K-fold</strong>：同じ患者/ユーザーが訓練と検証に分かれないように</li>
+    </ul>
+
+    <h2 id="overfit"><span class="label">§3 / OVERFIT</span>過学習と未学習</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
+        <!-- Underfit -->
+        <g transform="translate(0, 0)">
+          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
+          <line x1="40" y1="40" x2="40" y2="200" stroke="#0d1b2a"/>
+          <circle cx="60" cy="150" r="3" fill="#0d1b2a"/>
+          <circle cx="80" cy="130" r="3" fill="#0d1b2a"/>
+          <circle cx="100" cy="100" r="3" fill="#0d1b2a"/>
+          <circle cx="120" cy="80" r="3" fill="#0d1b2a"/>
+          <circle cx="140" cy="60" r="3" fill="#0d1b2a"/>
+          <circle cx="160" cy="100" r="3" fill="#0d1b2a"/>
+          <circle cx="180" cy="120" r="3" fill="#0d1b2a"/>
+          <circle cx="200" cy="160" r="3" fill="#0d1b2a"/>
+          <line x1="50" y1="160" x2="210" y2="80" stroke="#b8431f" stroke-width="2"/>
+          <text x="130" y="220" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">未学習（underfit）</text>
+          <text x="130" y="237" text-anchor="middle" font-size="10" fill="#5a5f6a">バイアス大、表現力不足</text>
+        </g>
+        <g transform="translate(260, 0)">
+          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
+          <line x1="40" y1="40" x2="40" y2="200" stroke="#0d1b2a"/>
+          <circle cx="60" cy="150" r="3" fill="#0d1b2a"/>
+          <circle cx="80" cy="130" r="3" fill="#0d1b2a"/>
+          <circle cx="100" cy="100" r="3" fill="#0d1b2a"/>
+          <circle cx="120" cy="80" r="3" fill="#0d1b2a"/>
+          <circle cx="140" cy="60" r="3" fill="#0d1b2a"/>
+          <circle cx="160" cy="100" r="3" fill="#0d1b2a"/>
+          <circle cx="180" cy="120" r="3" fill="#0d1b2a"/>
+          <circle cx="200" cy="160" r="3" fill="#0d1b2a"/>
+          <path d="M 50 160 Q 100 100 140 60 Q 180 110 210 160" stroke="#b8431f" stroke-width="2" fill="none"/>
+          <text x="130" y="220" text-anchor="middle" font-size="13" font-weight="bold" fill="#3a7d44">適合（fit）</text>
+          <text x="130" y="237" text-anchor="middle" font-size="10" fill="#5a5f6a">バランス良い</text>
+        </g>
+        <g transform="translate(520, 0)">
+          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
+          <line x1="40" y1="40" x2="40" y2="200" stroke="#0d1b2a"/>
+          <circle cx="60" cy="150" r="3" fill="#0d1b2a"/>
+          <circle cx="80" cy="130" r="3" fill="#0d1b2a"/>
+          <circle cx="100" cy="100" r="3" fill="#0d1b2a"/>
+          <circle cx="120" cy="80" r="3" fill="#0d1b2a"/>
+          <circle cx="140" cy="60" r="3" fill="#0d1b2a"/>
+          <circle cx="160" cy="100" r="3" fill="#0d1b2a"/>
+          <circle cx="180" cy="120" r="3" fill="#0d1b2a"/>
+          <circle cx="200" cy="160" r="3" fill="#0d1b2a"/>
+          <path d="M 50 165 Q 75 130 80 130 Q 90 105 100 100 Q 110 90 120 80 Q 135 50 140 60 Q 150 80 160 100 Q 170 130 180 120 Q 190 145 200 160 Q 205 170 210 170" stroke="#b8431f" stroke-width="2" fill="none"/>
+          <text x="130" y="220" text-anchor="middle" font-size="13" font-weight="bold" fill="#b8431f">過学習（overfit）</text>
+          <text x="130" y="237" text-anchor="middle" font-size="10" fill="#5a5f6a">バリアンス大、ノイズに過敏</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 9.3</span> 未学習・適合・過学習。同じデータでも、モデルの複雑度によって挙動が変わる。過学習はノイズまで学習している状態。</div>
+    </div>
+
+    <h2 id="biasvar"><span class="label">§4 / BIAS-VAR</span>バイアス・バリアンス分解</h2>
+    <p>汎化誤差 = バイアス² + バリアンス + 既約誤差。</p>
+
+    <table class="spec">
+      <tr><th>用語</th><th>意味</th><th>原因</th><th>対策</th></tr>
+      <tr><td><strong>バイアス</strong></td><td>真の関数からの系統的ずれ</td><td>モデル単純すぎ（underfit）</td><td>モデル容量↑、特徴量増</td></tr>
+      <tr><td><strong>バリアンス</strong></td><td>訓練データのノイズへの過敏さ</td><td>モデル複雑すぎ（overfit）</td><td>正則化、データ拡大、Dropout</td></tr>
+      <tr><td><strong>既約誤差</strong></td><td>データ自体に含まれるノイズ</td><td>避けられない</td><td>－</td></tr>
+    </table>
+
+    <h2 id="confusion"><span class="label">§5 / CONFUSION</span>混同行列</h2>
+    <p>2値分類の評価の出発点：</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 580 280" xmlns="http://www.w3.org/2000/svg">
+        <text x="290" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">混同行列（2値分類）</text>
+        <text x="170" y="55" text-anchor="middle" font-size="12" fill="#5a5f6a">予測：陽性</text>
+        <text x="350" y="55" text-anchor="middle" font-size="12" fill="#5a5f6a">予測：陰性</text>
+        <text x="60" y="115" text-anchor="middle" font-size="12" fill="#5a5f6a">真：</text>
+        <text x="60" y="130" text-anchor="middle" font-size="12" fill="#5a5f6a">陽性</text>
+        <text x="60" y="195" text-anchor="middle" font-size="12" fill="#5a5f6a">真：</text>
+        <text x="60" y="210" text-anchor="middle" font-size="12" fill="#5a5f6a">陰性</text>
+        <rect x="100" y="70" width="140" height="80" fill="#3a7d44"/>
+        <text x="170" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#faf7f2">TP</text>
+        <text x="170" y="125" text-anchor="middle" font-size="10" fill="#faf7f2">真陽性（正解）</text>
+        <rect x="280" y="70" width="140" height="80" fill="#b8431f"/>
+        <text x="350" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#faf7f2">FN</text>
+        <text x="350" y="125" text-anchor="middle" font-size="10" fill="#faf7f2">偽陰性（見逃し）</text>
+        <rect x="100" y="160" width="140" height="80" fill="#d4a017"/>
+        <text x="170" y="195" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">FP</text>
+        <text x="170" y="215" text-anchor="middle" font-size="10" fill="#0d1b2a">偽陽性（誤検出）</text>
+        <rect x="280" y="160" width="140" height="80" fill="#3a7d44" opacity="0.5"/>
+        <text x="350" y="195" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">TN</text>
+        <text x="350" y="215" text-anchor="middle" font-size="10" fill="#0d1b2a">真陰性（正解）</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 9.4</span> 混同行列。4つの組み合わせ（TP/FN/FP/TN）から、目的に応じた評価指標を計算する。</div>
+    </div>
+
+    <h2 id="metrics"><span class="label">§6 / METRICS</span>評価指標</h2>
+    <table class="spec">
+      <tr><th>Accuracy</th><td>(TP + TN) / 全件。クラス不均衡だと役立たず</td></tr>
+      <tr><th>Precision（適合率）</th><td>TP / (TP + FP)。陽性と判定したうち本当に陽性</td></tr>
+      <tr><th>Recall（再現率・感度）</th><td>TP / (TP + FN)。本当の陽性をどれだけ捕まえたか</td></tr>
+      <tr><th>F1</th><td>2 · P · R / (P + R)。PとRの調和平均</td></tr>
+      <tr><th>Specificity（特異度）</th><td>TN / (TN + FP)。本当の陰性をどれだけ正しく陰性と</td></tr>
+      <tr><th>FPR</th><td>FP / (FP + TN) = 1 − Specificity</td></tr>
+    </table>
+
+    <div class="example">
+      <div class="example-title">例題：がん検診の評価</div>
+      検査結果：TP=80, FN=20, FP=200, TN=9700<br>
+      Accuracy = (80+9700)/10000 = 97.8%（一見良い）<br>
+      Precision = 80/(80+200) = 28.6%<br>
+      Recall = 80/(80+20) = 80%<br>
+      <strong>医療では Recall（見落としを減らす）が重要</strong>。Accuracy は不均衡データで誤解を招く。
+    </div>
+
+    <h2 id="roc"><span class="label">§7 / ROC</span>ROC 曲線と AUC</h2>
+    <p>分類器のスコア閾値を 0 → 1 で動かしたときの (FPR, TPR) の軌跡が ROC 曲線。<strong>閾値非依存</strong>の評価。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">
+        <line x1="60" y1="320" x2="420" y2="320" stroke="#0d1b2a" stroke-width="1.5"/>
+        <line x1="60" y1="40" x2="60" y2="320" stroke="#0d1b2a" stroke-width="1.5"/>
+        <text x="240" y="345" text-anchor="middle" font-size="11" fill="#5a5f6a">FPR (偽陽性率)</text>
+        <text x="35" y="180" text-anchor="middle" font-size="11" fill="#5a5f6a" transform="rotate(-90 35 180)">TPR (真陽性率)</text>
+        <!-- Diagonal (random) -->
+        <line x1="60" y1="320" x2="420" y2="40" stroke="#5a5f6a" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="240" y="200" font-size="10" fill="#5a5f6a" font-style="italic" transform="rotate(-37 240 200)">ランダム AUC=0.5</text>
+        <!-- Good ROC -->
+        <path d="M 60 320 Q 75 100 130 60 Q 280 50 420 40" stroke="#b8431f" stroke-width="3" fill="none"/>
+        <text x="250" y="80" font-size="13" font-weight="bold" fill="#b8431f">優れた分類器</text>
+        <text x="250" y="97" font-size="11" fill="#5a5f6a">AUC ≈ 0.95</text>
+        <!-- Perfect ROC -->
+        <path d="M 60 320 L 60 40 L 420 40" stroke="#3a7d44" stroke-width="2" fill="none" stroke-dasharray="6,2"/>
+        <text x="80" y="60" font-size="10" fill="#3a7d44">完璧 AUC=1.0</text>
+        <text x="50" y="335" font-size="10" fill="#5a5f6a">0</text>
+        <text x="415" y="335" font-size="10" fill="#5a5f6a">1</text>
+        <text x="45" y="45" font-size="10" fill="#5a5f6a">1</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 9.5</span> ROC 曲線。閾値を動かすと (FPR, TPR) がプロットされる。曲線の下面積 (AUC) が大きいほど分類器が良い。完璧 = 1.0、ランダム = 0.5。</div>
+    </div>
+
+    <p><strong>PR 曲線・PR-AUC</strong>：不均衡データ（陽性が稀）では ROC より <strong>PR (Precision-Recall) 曲線</strong> の方が適切な評価。</p>
+
+    <h2 id="regul"><span class="label">§8 / REGUL</span>正則化の手段</h2>
+    <ul>
+      <li><strong>L1 / L2 / Elastic Net</strong>：重みのペナルティ（章8）</li>
+      <li><strong>Early Stopping</strong>：検証誤差が悪化し始めたら学習停止</li>
+      <li><strong>Dropout</strong>（DL）：学習時に各ユニットを確率 p で 0 に（章12）</li>
+      <li><strong>Batch Normalization</strong>：各層の入力を正規化（暗黙の正則化）</li>
+      <li><strong>データ拡張</strong>：画像なら回転・反転、テキストなら言い換え</li>
+      <li><strong>アンサンブル</strong>：複数モデルの予測を平均</li>
+      <li><strong>Label Smoothing</strong>：one-hot ラベルを少しソフト化</li>
+    </ul>
+
+    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>訓練・検証・テストの3分割。テストは1度だけ見る</td></tr>
+      <tr><th>2</th><td>データリークの防止：分割 → 訓練で統計計算 → 全体に適用</td></tr>
+      <tr><th>3</th><td>K-fold CV、Stratified、Time Series Split、Group K-fold の使い分け</td></tr>
+      <tr><th>4</th><td>過学習：バリアンス大。未学習：バイアス大</td></tr>
+      <tr><th>5</th><td>汎化誤差 = バイアス² + バリアンス + 既約誤差</td></tr>
+      <tr><th>6</th><td>混同行列：TP/FN/FP/TN の4区分</td></tr>
+      <tr><th>7</th><td>Precision・Recall・F1 はクラス不均衡で重要</td></tr>
+      <tr><th>8</th><td>ROC-AUC：閾値非依存の総合指標</td></tr>
+      <tr><th>9</th><td>不均衡データでは PR-AUC の方が適切</td></tr>
+      <tr><th>10</th><td>正則化：L1/L2、Dropout、Early Stopping、Data Augmentation</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>訓練・検証・テストの3分割を、何のために行うか</li>
+        <li>データリークの典型的な失敗例を1つ挙げられるか</li>
+        <li>5-fold CV の手順を図で説明できるか</li>
+        <li>過学習と未学習の違いを「バイアス・バリアンス」の言葉で説明できるか</li>
+        <li>混同行列の4区分（TP/FN/FP/TN）を書けるか</li>
+        <li>Precision と Recall のどちらを優先すべきかが業務で変わる例</li>
+        <li>Accuracy が不均衡データで誤解を招く例</li>
+        <li>ROC 曲線の縦軸・横軸が何か。完璧な分類器は何処を通るか</li>
+        <li>AUC = 0.5、0.9、1.0 の意味</li>
+        <li>不均衡データで PR-AUC を推奨する理由</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="08-ml-classical.html">← 章8</a></div>
+  <div><span class="ch-label">次の章</span><br><span class="ch-title">章10: NN の最小構成</span></div>
+  <div><a href="10-nn-basics.html">章10へ →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="index.html">基本</a></li><li><a href="../advanced/index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

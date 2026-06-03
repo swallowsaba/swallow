@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章5 確率と統計 — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章5：確率分布、中心極限定理、ベイズの定理、最尤推定。図解で「不確かさを扱う数学」を直感的に。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula { background:#f5f1e8; border-left:3px solid #b8431f; padding:14px 18px; margin:18px 0; font-family:'JetBrains Mono', monospace; font-size:14px; line-height:1.8; }
+.example { background:#fff8f2; border-left:3px solid #d4a017; padding:16px 22px; margin:20px 0; font-size:14.5px; line-height:1.9; }
+.example-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#0d1b2a; margin-bottom:8px; }
+.pitfall { background:#fbf3f0; border-left:3px solid #b8431f; padding:16px 22px; margin:20px 0; font-size:14.5px; line-height:1.9; }
+.pitfall-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#b8431f; margin-bottom:8px; }
+.figure { margin:32px 0; text-align:center; }
+.figure svg { max-width:100%; height:auto; border:1px solid #e5e1d4; background:#faf7f2; }
+.figure-caption { font-size:12.5px; color:#5a5f6a; margin-top:10px; line-height:1.7; max-width:680px; margin-left:auto; margin-right:auto; padding:0 12px; font-style:italic; }
+.figure-num { font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.12em; color:#b8431f; }
+.chapter-nav { display:flex; justify-content:space-between; align-items:center; padding:18px 24px; background:#0d1b2a; color:#faf7f2; margin:32px 0; font-size:13.5px; }
+.chapter-nav a { color:#faf7f2; text-decoration:none; }
+.chapter-nav a:hover { color:#d4a017; }
+.chapter-nav .ch-label { font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:#9aa0a8; }
+.chapter-nav .ch-title { font-family:var(--font-display-jp); font-weight:700; font-size:15px; }
+table.spec { width:100%; border-collapse:collapse; margin:18px 0; font-size:13.5px; }
+table.spec th, table.spec td { padding:9px 13px; text-align:left; border-bottom:1px solid #e5e1d4; vertical-align:top; }
+table.spec th { background:#faf7f2; font-family:var(--font-display-jp); font-weight:700; font-size:12.5px; }
+.test-yourself { background:#0d1b2a; color:#faf7f2; padding:28px 32px; margin:32px 0; }
+.test-yourself h3 { font-family:var(--font-display-jp); font-weight:700; color:#d4a017; margin:0 0 16px; font-size:18px; }
+.test-yourself ol { padding-left:24px; font-size:14px; line-height:1.95; }
+.test-yourself li { margin-bottom:10px; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="index.html">基本</a>
+      <a href="../advanced/index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>Ch.5</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章5</div>
+    <h1>章5 — 確率と統計<span class="en">Chapter 5 — Probability and Statistics</span></h1>
+    <p class="standfirst">機械学習は <strong>不確かさを扱う数学</strong> です。「このメールはスパムか？」「このX線画像は癌か？」のような予測は本質的に確率的。<strong>確率分布、中心極限定理、ベイズの定理、最尤推定</strong> を直感と式の両面から押さえます。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="04-calculus.html">← 章4: 微積分</a></div>
+  <div><span class="ch-label">Chapter 5 of 12</span><br><span class="ch-title">確率と統計</span></div>
+  <div><a href="06-info-theory.html">章6: 情報理論 →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章5 目次</h6>
+    <a href="#prob">§1 確率変数</a>
+    <a href="#expect">§2 期待値と分散</a>
+    <a href="#dist">§3 主要な確率分布</a>
+    <a href="#clt">§4 中心極限定理</a>
+    <a href="#bayes">§5 ベイズの定理</a>
+    <a href="#mle">§6 最尤推定（MLE）</a>
+    <a href="#map">§7 MAP推定とベイズの接続</a>
+    <a href="#ci">§8 信頼区間と検定</a>
+    <a href="#summary">§9 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 5</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">不確かさを、<br>数式で扱う。</h2>
+    <p class="article-lede">現実の AI システムは決定論的ではなく、すべて確率的に動作します。「90% の確信度で犬」「事後確率 0.7 でこの治療が有効」というように。本章では確率の道具立てを揃え、機械学習の損失関数（クロスエントロピー）が <strong>最尤推定の自然な帰結</strong> であることまで進みます。</p>
+
+    <h2 id="prob"><span class="label">§1 / RANDOM</span>確率変数</h2>
+    <p><strong>確率変数</strong> X は「値が確率的に決まる変数」。離散と連続の2種類があります。</p>
+    <p>離散：<strong>確率質量関数（PMF）</strong> P(X = x)。サイコロなら P(X=1) = ... = P(X=6) = 1/6。</p>
+    <p>連続：<strong>確率密度関数（PDF）</strong> f(x)。値そのものではなく <strong>積分</strong> が確率を表す：</p>
+    <div class="formula">P(a ≤ X ≤ b) = ∫ₐᵇ f(x) dx, &nbsp; ∫₋∞^∞ f(x) dx = 1</div>
+
+    <h2 id="expect"><span class="label">§2 / EXPECT</span>期待値と分散</h2>
+    <div class="formula">
+      期待値 E[X] = Σ x · P(X=x) （離散） = ∫ x · f(x) dx （連続）<br>
+      分散 Var[X] = E[(X - E[X])²] = E[X²] - E[X]²
+    </div>
+    <p>期待値は <strong>「無限回試行したときの平均」</strong>。分散はばらつき。標準偏差 σ = √Var。</p>
+
+    <h2 id="dist"><span class="label">§3 / DIST</span>主要な確率分布</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg">
+        <!-- Normal -->
+        <g transform="translate(0, 0)">
+          <line x1="40" y1="160" x2="220" y2="160" stroke="#0d1b2a"/>
+          <line x1="130" y1="20" x2="130" y2="180" stroke="#0d1b2a"/>
+          <path d="M 50 158 Q 90 158 100 155 Q 110 145 120 90 Q 130 40 140 90 Q 150 145 160 155 Q 170 158 210 158" stroke="#b8431f" stroke-width="2.5" fill="none"/>
+          <text x="130" y="205" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">正規分布</text>
+          <text x="130" y="222" text-anchor="middle" font-size="10" fill="#5a5f6a">N(μ, σ²) / 釣鐘</text>
+        </g>
+        <!-- Uniform -->
+        <g transform="translate(260, 0)">
+          <line x1="40" y1="160" x2="220" y2="160" stroke="#0d1b2a"/>
+          <line x1="130" y1="20" x2="130" y2="180" stroke="#0d1b2a"/>
+          <line x1="60" y1="158" x2="80" y2="158" stroke="#b8431f" stroke-width="2.5"/>
+          <line x1="80" y1="158" x2="80" y2="100" stroke="#b8431f" stroke-width="2.5"/>
+          <line x1="80" y1="100" x2="180" y2="100" stroke="#b8431f" stroke-width="2.5"/>
+          <line x1="180" y1="100" x2="180" y2="158" stroke="#b8431f" stroke-width="2.5"/>
+          <line x1="180" y1="158" x2="200" y2="158" stroke="#b8431f" stroke-width="2.5"/>
+          <text x="130" y="205" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">一様分布</text>
+          <text x="130" y="222" text-anchor="middle" font-size="10" fill="#5a5f6a">U(a, b)</text>
+        </g>
+        <!-- Exponential -->
+        <g transform="translate(520, 0)">
+          <line x1="40" y1="160" x2="220" y2="160" stroke="#0d1b2a"/>
+          <line x1="130" y1="20" x2="130" y2="180" stroke="#0d1b2a"/>
+          <path d="M 130 50 Q 145 95 165 130 Q 185 150 200 158" stroke="#b8431f" stroke-width="2.5" fill="none"/>
+          <text x="130" y="205" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">指数分布</text>
+          <text x="130" y="222" text-anchor="middle" font-size="10" fill="#5a5f6a">Exp(λ) / 待ち時間</text>
+        </g>
+        <!-- Bernoulli -->
+        <g transform="translate(0, 240)">
+          <line x1="40" y1="100" x2="220" y2="100" stroke="#0d1b2a"/>
+          <line x1="130" y1="-10" x2="130" y2="120" stroke="#0d1b2a"/>
+          <rect x="80" y="60" width="15" height="40" fill="#b8431f"/>
+          <rect x="170" y="40" width="15" height="60" fill="#b8431f"/>
+          <text x="87" y="115" font-size="9" fill="#5a5f6a">0</text>
+          <text x="177" y="115" font-size="9" fill="#5a5f6a">1</text>
+          <text x="130" y="145" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">ベルヌーイ分布</text>
+          <text x="130" y="162" text-anchor="middle" font-size="10" fill="#5a5f6a">Be(p) / コイン</text>
+        </g>
+        <!-- Binomial -->
+        <g transform="translate(260, 240)">
+          <line x1="40" y1="100" x2="220" y2="100" stroke="#0d1b2a"/>
+          <line x1="130" y1="-10" x2="130" y2="120" stroke="#0d1b2a"/>
+          <rect x="55" y="92" width="10" height="8" fill="#b8431f"/>
+          <rect x="75" y="78" width="10" height="22" fill="#b8431f"/>
+          <rect x="95" y="60" width="10" height="40" fill="#b8431f"/>
+          <rect x="115" y="50" width="10" height="50" fill="#b8431f"/>
+          <rect x="135" y="50" width="10" height="50" fill="#b8431f"/>
+          <rect x="155" y="60" width="10" height="40" fill="#b8431f"/>
+          <rect x="175" y="78" width="10" height="22" fill="#b8431f"/>
+          <rect x="195" y="92" width="10" height="8" fill="#b8431f"/>
+          <text x="130" y="145" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">二項分布</text>
+          <text x="130" y="162" text-anchor="middle" font-size="10" fill="#5a5f6a">Bin(n, p)</text>
+        </g>
+        <!-- Poisson -->
+        <g transform="translate(520, 240)">
+          <line x1="40" y1="100" x2="220" y2="100" stroke="#0d1b2a"/>
+          <line x1="130" y1="-10" x2="130" y2="120" stroke="#0d1b2a"/>
+          <rect x="55" y="78" width="10" height="22" fill="#b8431f"/>
+          <rect x="75" y="55" width="10" height="45" fill="#b8431f"/>
+          <rect x="95" y="40" width="10" height="60" fill="#b8431f"/>
+          <rect x="115" y="42" width="10" height="58" fill="#b8431f"/>
+          <rect x="135" y="55" width="10" height="45" fill="#b8431f"/>
+          <rect x="155" y="72" width="10" height="28" fill="#b8431f"/>
+          <rect x="175" y="84" width="10" height="16" fill="#b8431f"/>
+          <rect x="195" y="92" width="10" height="8" fill="#b8431f"/>
+          <text x="130" y="145" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">ポアソン分布</text>
+          <text x="130" y="162" text-anchor="middle" font-size="10" fill="#5a5f6a">Po(λ) / 到着数</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 5.1</span> 機械学習で頻出する6つの分布。上段は連続（正規・一様・指数）、下段は離散（ベルヌーイ・二項・ポアソン）。形状を見て即時に思い出せると応用が楽になる。</div>
+    </div>
+
+    <table class="spec">
+      <tr><th>分布</th><th>パラメータ</th><th>E[X]</th><th>Var[X]</th><th>用途</th></tr>
+      <tr><td>ベルヌーイ</td><td>p</td><td>p</td><td>p(1-p)</td><td>二値結果</td></tr>
+      <tr><td>二項 Bin(n,p)</td><td>n, p</td><td>np</td><td>np(1-p)</td><td>n回の試行の成功数</td></tr>
+      <tr><td>ポアソン Po(λ)</td><td>λ</td><td>λ</td><td>λ</td><td>稀少事象、到着</td></tr>
+      <tr><td>正規 N(μ, σ²)</td><td>μ, σ</td><td>μ</td><td>σ²</td><td>連続値の標準</td></tr>
+      <tr><td>一様 U(a, b)</td><td>a, b</td><td>(a+b)/2</td><td>(b-a)²/12</td><td>等確率</td></tr>
+      <tr><td>指数 Exp(λ)</td><td>λ</td><td>1/λ</td><td>1/λ²</td><td>待ち時間</td></tr>
+    </table>
+
+    <h2 id="clt"><span class="label">§4 / CLT</span>中心極限定理</h2>
+    <p>機械学習で最も重要な統計定理。<strong>独立同分布な確率変数 X₁, ..., Xₙ の平均は、n が大きいとき正規分布に従う</strong>。元の分布が <strong>何であっても</strong> 成り立つ。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- n=1 -->
+        <g transform="translate(0, 0)">
+          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
+          <rect x="55" y="80" width="20" height="100" fill="#5a5f6a"/>
+          <rect x="80" y="80" width="20" height="100" fill="#5a5f6a"/>
+          <rect x="105" y="80" width="20" height="100" fill="#5a5f6a"/>
+          <rect x="130" y="80" width="20" height="100" fill="#5a5f6a"/>
+          <rect x="155" y="80" width="20" height="100" fill="#5a5f6a"/>
+          <rect x="180" y="80" width="20" height="100" fill="#5a5f6a"/>
+          <text x="130" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">n = 1（元の分布）</text>
+          <text x="130" y="230" text-anchor="middle" font-size="10" fill="#5a5f6a">サイコロ一様</text>
+        </g>
+        <!-- n=3 -->
+        <g transform="translate(260, 0)">
+          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
+          <rect x="55" y="170" width="14" height="10" fill="#5a5f6a"/>
+          <rect x="70" y="140" width="14" height="40" fill="#5a5f6a"/>
+          <rect x="85" y="120" width="14" height="60" fill="#5a5f6a"/>
+          <rect x="100" y="100" width="14" height="80" fill="#5a5f6a"/>
+          <rect x="115" y="80" width="14" height="100" fill="#5a5f6a"/>
+          <rect x="130" y="80" width="14" height="100" fill="#5a5f6a"/>
+          <rect x="145" y="100" width="14" height="80" fill="#5a5f6a"/>
+          <rect x="160" y="120" width="14" height="60" fill="#5a5f6a"/>
+          <rect x="175" y="140" width="14" height="40" fill="#5a5f6a"/>
+          <rect x="190" y="170" width="14" height="10" fill="#5a5f6a"/>
+          <text x="130" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">n = 3 の平均</text>
+          <text x="130" y="230" text-anchor="middle" font-size="10" fill="#5a5f6a">三角形に近い</text>
+        </g>
+        <!-- n=30 -->
+        <g transform="translate(520, 0)">
+          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
+          <path d="M 50 178 Q 90 178 100 173 Q 115 130 130 80 Q 145 130 160 173 Q 170 178 210 178 L 210 180 L 50 180 Z" fill="#b8431f" opacity="0.6"/>
+          <path d="M 50 178 Q 90 178 100 173 Q 115 130 130 80 Q 145 130 160 173 Q 170 178 210 178" stroke="#b8431f" stroke-width="2" fill="none"/>
+          <text x="130" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#b8431f">n = 30 の平均</text>
+          <text x="130" y="230" text-anchor="middle" font-size="10" fill="#5a5f6a">正規分布に収束！</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 5.2</span> 中心極限定理：サイコロのような一様分布から取ったサンプルの平均でも、n を大きくすると正規分布に近づく。これが「信頼区間」「仮説検定」を可能にする魔法。</div>
+    </div>
+
+    <p>実用上の意味：標本平均は正規分布で近似できる → 信頼区間が計算できる → 仮説検定ができる、という連鎖が動きます。ニューラルネットの BatchNorm が機能する直観的根拠の一つでもあります。</p>
+
+    <h2 id="bayes"><span class="label">§5 / BAYES</span>ベイズの定理</h2>
+    <div class="formula">P(A | B) = P(B | A) · P(A) / P(B)</div>
+    <p>パラメータ θ とデータ D に置き換えると：</p>
+    <div class="formula">
+      P(θ | D) ∝ P(D | θ) · P(θ)<br>
+      <span style="color:#b8431f;font-weight:bold;">事後 ∝ 尤度 × 事前</span>
+    </div>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
+        <!-- Prior -->
+        <g transform="translate(0, 0)">
+          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
+          <path d="M 60 178 Q 130 178 130 100 Q 130 178 200 178" stroke="#5a5f6a" stroke-width="2" fill="none"/>
+          <text x="130" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">事前 P(θ)</text>
+          <text x="130" y="228" text-anchor="middle" font-size="10" fill="#5a5f6a">データを見る前の信念</text>
+        </g>
+        <!-- × Likelihood -->
+        <text x="240" y="100" font-size="22" font-weight="bold" fill="#b8431f">×</text>
+        <g transform="translate(260, 0)">
+          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
+          <path d="M 60 178 Q 100 178 120 90 Q 140 178 200 178" stroke="#d4a017" stroke-width="2" fill="none"/>
+          <text x="130" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">尤度 P(D | θ)</text>
+          <text x="130" y="228" text-anchor="middle" font-size="10" fill="#5a5f6a">データから得た情報</text>
+        </g>
+        <!-- = Posterior -->
+        <text x="500" y="100" font-size="22" font-weight="bold" fill="#b8431f">=</text>
+        <g transform="translate(500, 0)">
+          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
+          <path d="M 60 178 Q 110 178 130 70 Q 150 178 200 178" stroke="#b8431f" stroke-width="2.5" fill="none"/>
+          <text x="130" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#b8431f">事後 P(θ | D)</text>
+          <text x="130" y="228" text-anchor="middle" font-size="10" fill="#5a5f6a">更新された信念</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 5.3</span> ベイズの定理の図解。事前分布（最初の信念）と尤度（データから得た証拠）を掛けると、事後分布（更新された信念）になる。これがベイズ的思考の核心。</div>
+    </div>
+
+    <p><strong>L2正則化はガウス事前、L1はラプラス事前</strong> を仮定した MAP 推定と等価、というように機械学習との接続も深い。</p>
+
+    <h2 id="mle"><span class="label">§6 / MLE</span>最尤推定（Maximum Likelihood Estimation）</h2>
+    <p>観測データ x₁, ..., xₙ が与えられたとき、それを <strong>最も「もっともらしく」する</strong> パラメータ θ を選ぶ：</p>
+    <div class="formula">θ̂_MLE = argmax_θ Π P(xᵢ | θ) = argmax_θ Σ log P(xᵢ | θ)</div>
+
+    <div class="example">
+      <div class="example-title">例題：ベルヌーイ分布の最尤推定</div>
+      コイン投げ。n 回中 k 回表が出た。表の確率 p を MLE で推定。<br>
+      尤度: L(p) = pᵏ(1-p)ⁿ⁻ᵏ<br>
+      対数尤度: log L(p) = k log p + (n-k) log(1-p)<br>
+      微分してゼロ: d/dp log L = k/p - (n-k)/(1-p) = 0<br>
+      → p̂ = k/n &nbsp; <strong>結論：MLE は単に「成功比率」</strong>。直感と一致！
+    </div>
+
+    <h3>6.1 最尤推定と機械学習の損失関数</h3>
+    <p>MLE は <strong>対数尤度の最大化</strong> ＝ <strong>負の対数尤度（NLL）の最小化</strong>。これが多くの損失関数の正体：</p>
+    <ul>
+      <li>正規分布の MLE → <strong>二乗誤差（MSE）損失</strong>（線形回帰）</li>
+      <li>ベルヌーイの MLE → <strong>二値クロスエントロピー</strong>（ロジスティック回帰、二値分類）</li>
+      <li>カテゴリカルの MLE → <strong>多クラスクロスエントロピー</strong>（softmax分類）</li>
+    </ul>
+
+    <h2 id="map"><span class="label">§7 / MAP</span>MAP推定とベイズの接続</h2>
+    <p><strong>MAP推定</strong>（Maximum A Posteriori）：事後分布 P(θ | D) を最大化する θ。</p>
+    <div class="formula">θ̂_MAP = argmax_θ P(θ | D) = argmax_θ [P(D | θ) · P(θ)]</div>
+    <p>事前分布が一様（無情報事前）なら、MAP = MLE。事前を入れることで <strong>正則化</strong> が自然に出てくる：</p>
+    <ul>
+      <li>事前 P(θ) ∝ exp(-||θ||²) （ガウス）→ <strong>L2 正則化</strong></li>
+      <li>事前 P(θ) ∝ exp(-||θ||₁) （ラプラス）→ <strong>L1 正則化</strong></li>
+    </ul>
+
+    <h2 id="ci"><span class="label">§8 / CI</span>信頼区間と仮説検定</h2>
+    <p><strong>信頼区間</strong>：パラメータの推定値の不確かさを表す区間。95% 信頼区間とは、<strong>同じ実験を多数回行うと、95% の区間が真の値を含む</strong>という意味（真の値が95%の確率で入る、ではない！）。</p>
+    <p><strong>仮説検定</strong>：帰無仮説 H₀ vs 対立仮説 H₁。p値 が小さいと H₀ を棄却。<strong>p値はH₀ の確率ではない</strong>（H₀ が真と仮定したときに、観測値以上の極端な結果が得られる確率）。</p>
+
+    <table class="spec">
+      <tr><th>第1種の過誤</th><td>H₀ が真なのに棄却（偽陽性）。確率 α</td></tr>
+      <tr><th>第2種の過誤</th><td>H₀ が偽なのに棄却しない（偽陰性）。確率 β</td></tr>
+      <tr><th>検出力</th><td>1 - β。H₁ が真のとき正しく棄却する確率</td></tr>
+    </table>
+
+    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>確率変数の離散（PMF）と連続（PDF）の違い</td></tr>
+      <tr><th>2</th><td>期待値・分散・標準偏差の定義</td></tr>
+      <tr><th>3</th><td>主要な確率分布6種：正規・一様・指数・ベルヌーイ・二項・ポアソン</td></tr>
+      <tr><th>4</th><td>中心極限定理：標本平均は正規分布に収束</td></tr>
+      <tr><th>5</th><td>ベイズの定理：事後 ∝ 尤度 × 事前</td></tr>
+      <tr><th>6</th><td>最尤推定（MLE）：観測データを最ももっともらしくするパラメータ</td></tr>
+      <tr><th>7</th><td>機械学習の損失関数 = 負の対数尤度（NLL）</td></tr>
+      <tr><th>8</th><td>MAP推定：事前 + 尤度。正則化のベイズ的解釈</td></tr>
+      <tr><th>9</th><td>L2 = ガウス事前、L1 = ラプラス事前</td></tr>
+      <tr><th>10</th><td>p値・信頼区間の正しい解釈（よくある誤解に注意）</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>離散と連続の確率分布の違い（PMF vs PDF）を説明できるか</li>
+        <li>正規分布 N(μ, σ²) の形状を描けるか、E[X] と Var[X] を答えられるか</li>
+        <li>中心極限定理を「言葉と図」で説明できるか</li>
+        <li>ベイズの定理 P(A|B) = P(B|A)P(A)/P(B) を書けるか、各項の意味は</li>
+        <li>「事後 ∝ 尤度 × 事前」の3つの分布の形状を描けるか</li>
+        <li>ベルヌーイ分布の MLE を導出できるか（k/n になる）</li>
+        <li>線形回帰のMSE損失が正規分布のMLEから出てくることを説明できるか</li>
+        <li>L2 正則化がガウス事前の MAP 推定と等価である理由</li>
+        <li>「95% 信頼区間」の正しい解釈と、よくある誤解</li>
+        <li>p値の正しい定義と、「H₀ の確率」ではない理由</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="04-calculus.html">← 章4</a></div>
+  <div><span class="ch-label">次の章</span><br><span class="ch-title">章6: 情報理論</span></div>
+  <div><a href="06-info-theory.html">章6へ →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul>
+      <li><a href="../../../certifications/g-kentei.html">概要</a></li>
+      <li><a href="index.html">基本</a></li>
+      <li><a href="../advanced/index.html">応用</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

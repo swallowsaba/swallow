@@ -1,126 +1,17 @@
 {
   "topic": "統計・データサイエンス",
-  "version": "1.0",
+  "version": "2.0",
+  "description": "統計・データサイエンスの基礎10問。各解説をミニ授業級に深化。",
   "questions": [
-    {
-      "category": "記述統計",
-      "difficulty": "★",
-      "q": "外れ値に対して最も頑健な代表値はどれか。",
-      "choices": ["平均", "中央値", "最頻値", "分散"],
-      "answer": 1,
-      "explain": "中央値は順位ベースの統計量なので、極端な外れ値の影響を受けにくい性質があります。平均は外れ値を強く引っ張られます。"
-    },
-    {
-      "category": "推測統計",
-      "difficulty": "★★",
-      "q": "中心極限定理の主張として正しいのはどれか。",
-      "choices": [
-        "母集団が正規分布のとき標本平均も正規分布になる",
-        "独立同分布な確率変数の標本平均は、サンプルサイズが十分大きいとき正規分布に近づく",
-        "サンプル数を増やすと分散も増える",
-        "母平均は必ず標本平均と等しい"
-      ],
-      "answer": 1,
-      "explain": "中心極限定理は、母集団分布の形に関係なく（i.i.d.で分散が有限なら）標本平均の分布が漸近的に正規分布になることを示します。多くの推測統計の基盤です。"
-    },
-    {
-      "category": "推測統計",
-      "difficulty": "★★",
-      "q": "p値の解釈として正しいのはどれか。",
-      "choices": [
-        "帰無仮説が正しい確率",
-        "帰無仮説が正しいと仮定したとき、得られた統計量以上に極端な値が出る確率",
-        "対立仮説が正しい確率",
-        "効果量の大きさ"
-      ],
-      "answer": 1,
-      "explain": "p値は『帰無仮説が真の下で観測以上に極端な統計量が出る確率』。よくある誤解の『帰無仮説が正しい確率』ではありません。米国統計学会も声明を出しています。"
-    },
-    {
-      "category": "推測統計",
-      "difficulty": "★★",
-      "q": "第1種の過誤（Type I Error）の定義として正しいのはどれか。",
-      "choices": [
-        "対立仮説が真なのに帰無仮説を採択",
-        "帰無仮説が真なのに棄却する",
-        "サンプル数の不足",
-        "分布の選択ミス"
-      ],
-      "answer": 1,
-      "explain": "Type I は『真な帰無仮説を棄却』、Type II は『偽な帰無仮説を採択』。有意水準αはType I の許容確率にあたります。"
-    },
-    {
-      "category": "回帰",
-      "difficulty": "★★",
-      "q": "重回帰分析で多重共線性（Multicollinearity）の指標として用いられるのはどれか。",
-      "choices": ["AIC", "VIF", "p値", "ROC"],
-      "answer": 1,
-      "explain": "VIF（Variance Inflation Factor）は説明変数間の相関の強さを示し、一般に10以上で多重共線性が疑われます。"
-    },
-    {
-      "category": "ベイズ",
-      "difficulty": "★★★",
-      "q": "MCMC（マルコフ連鎖モンテカルロ）の目的として最も適切なのはどれか。",
-      "choices": [
-        "決定論的解の導出",
-        "事後分布からのサンプリングによる近似推論",
-        "勾配計算の高速化",
-        "次元削減"
-      ],
-      "answer": 1,
-      "explain": "ベイズ推論ではP(D)の計算が困難な場合が多く、MCMC（Metropolis-Hastings, HMC, Gibbs等）で事後分布からサンプリングし、期待値や分位点を推定します。"
-    },
-    {
-      "category": "実験計画",
-      "difficulty": "★★",
-      "q": "A/Bテストにおいて『検出力』とは何を指すか。",
-      "choices": [
-        "効果がない時に効果ありと判定する確率",
-        "効果が真にある時に正しく検出できる確率（1 − β）",
-        "サンプルサイズ",
-        "p値の逆数"
-      ],
-      "answer": 1,
-      "explain": "検出力（Power）= 1 − β = 偽な帰無仮説を正しく棄却する確率。サンプルサイズ・効果量・有意水準から決まり、慣例的に0.8以上が目標とされます。"
-    },
-    {
-      "category": "前処理",
-      "difficulty": "★",
-      "q": "欠損値の代表的な対処として、ある変数の欠損が他の変数と関係している『MAR』が想定される場合に有効な手法はどれか。",
-      "choices": [
-        "リストワイズ削除のみ",
-        "多重代入法（Multiple Imputation）",
-        "ゼロ埋め固定",
-        "削除して放置"
-      ],
-      "answer": 1,
-      "explain": "MAR（Missing At Random）では、観測変数を条件として欠損を予測できるため、多重代入法等が推奨されます。MCAR/MAR/MNARの区別が重要です。"
-    },
-    {
-      "category": "因果推論",
-      "difficulty": "★★★",
-      "q": "因果推論における『交絡因子（confounder）』を統計的に処置する代表的アプローチはどれか。",
-      "choices": [
-        "傾向スコアマッチング",
-        "勾配ブースティング",
-        "畳み込み",
-        "次元削減"
-      ],
-      "answer": 0,
-      "explain": "傾向スコア（処置を受ける確率）でマッチング・重み付けすることで、観察データから疑似的に処置群と対照群を揃え、交絡を軽減できます。DiD、操作変数、回帰不連続なども因果推論の基本手法です。"
-    },
-    {
-      "category": "時系列",
-      "difficulty": "★★",
-      "q": "時系列の定常性チェックで用いられる代表的検定はどれか。",
-      "choices": [
-        "t検定",
-        "ADF検定（Augmented Dickey-Fuller）",
-        "χ²検定",
-        "Mann-Whitney U検定"
-      ],
-      "answer": 1,
-      "explain": "ADF検定は単位根の存在（=非定常）を帰無仮説とし、棄却できれば定常とみなします。KPSS検定と併用するのが実務的です。"
-    }
+    {"category":"記述統計","difficulty":"★","q":"外れ値に対して最も頑健な代表値はどれか。","choices":["平均","中央値","最頻値","分散"],"answer":1,"explain":"【正解】中央値（median）。順位ベースの統計量で、極端な外れ値が1〜2個あっても結果がほぼ変わらない。例：データ {1, 2, 3, 4, 1000} で中央値=3、平均=202。\n\n【誤答】\n・(0)平均：外れ値1個で大きく引っ張られる。所得分布などで平均と中央値が大きく乖離する典型。\n・(2)最頻値（mode）：カテゴリカルデータでは有用だが、連続データではビン化に依存。外れ値の影響は受けにくいが代表値としての安定性は中央値が上。\n・(3)分散：代表値ではなく散らばりの指標。外れ値に最も弱い（二乗するため）。\n\n【背景知識】\n頑健統計（Robust Statistics）：(a)中央値、四分位範囲（IQR）、MAD（Median Absolute Deviation）、(b)Trimmed Mean（両端を捨てた平均）、Winsorized Mean、(c)Huber M-estimator。実務での選択：(a)所得・住宅価格・株価リターン → 中央値、(b)正規分布データ → 平均、(c)Robust Scaling = (x - median) / IQR は外れ値に頑健な標準化。\n\n【関連】IQR／MAD／Trimmed Mean／Huber Loss／Robust Scaling／対数正規分布\n\n【出題ポイント】中央値＝外れ値に最頑健、平均は引っ張られる。📖 統計検定2級／基本編 Ch.5"},
+    {"category":"推測統計","difficulty":"★★","q":"中心極限定理の主張として正しいのはどれか。","choices":["母集団が正規分布のとき標本平均も正規分布になる","独立同分布な確率変数の標本平均は、サンプルサイズが十分大きいとき正規分布に近づく","サンプル数を増やすと分散も増える","母平均は必ず標本平均と等しい"],"answer":1,"explain":"【正解】中心極限定理（CLT）：独立同分布（i.i.d.）かつ有限分散の確率変数 X₁, ..., Xₙ について、n が十分大きいとき標本平均 X̄ は正規分布 N(μ, σ²/n) に近づく。母集団分布が何であれ（正規でなくても）正規化されることが鍵。\n\n【誤答】\n・(0)母集団が正規なら標本平均も厳密に正規だが、これは CLT の特殊例で本質ではない。CLT は『非正規母集団でも正規になる』点が重要。\n・(2)逆。標本平均の分散は σ²/n で n が増えると小さくなる。\n・(3)『必ず一致』は誤り。標本平均は確率変数で、母平均はその期待値。\n\n【背景知識】\nCLT の応用：(a)信頼区間構成、(b)仮説検定（z検定、t検定）、(c)機械学習ミニバッチ：『大バッチの勾配 ≈ 真の勾配』、(d)Bootstrap 法、(e)A/B テスト。注意：(a)コーシー分布など分散が無限の分布で不成立、(b)極端な歪みのある母集団では n>30 でも近似が悪い、n>200 必要なことも、(c)i.i.d. 性が崩れると別の極限定理が必要（マルチンゲール CLT 等）。LLN（大数の法則）との対比：(a)LLN：X̄ → μ（点収束）、(b)CLT：√n(X̄ - μ)/σ → N(0, 1)（分布収束）。\n\n【関連】LLN／信頼区間／Bootstrap／コーシー分布／A/Bテスト／指数族\n\n【出題ポイント】CLT＝i.i.d. の標本平均が正規分布に、母集団分布によらず。📖 統計検定2級／基本編 Ch.5"},
+    {"category":"推測統計","difficulty":"★★","q":"p値の解釈として正しいのはどれか。","choices":["帰無仮説が正しい確率","帰無仮説が正しいと仮定したとき、得られた統計量以上に極端な値が出る確率","対立仮説が正しい確率","効果量の大きさ"],"answer":1,"explain":"【正解】p値の正しい定義：『H0（帰無仮説）が真であると仮定したとき、現在の観測値と同等以上に極端な結果が得られる条件付き確率』。p < α（典型 0.05）なら H0 棄却。これは条件付き確率 P(データ|H0真) であり、ベイズの逆 P(H0真|データ) ではない。\n\n【誤答】\n・(0)よくある誤解。頻度論では『パラメータが真の確率』は定義されない（パラメータは固定）。\n・(2)対立仮説の確率でもない。\n・(3)効果量とは別。p値は『差の大きさ』でなく『偶然で説明できる確率』。\n\n【背景知識】\np値の誤解と問題（ASA 2016年警告）：(a)p<0.05 ≠ 効果が大きい（n大なら微差でも有意）、(b)p>0.05 ≠ 効果なし（検出力不足の可能性）、(c)p-hacking：複数解析を試して有意なものだけ報告、(d)HARKing：結果を見て仮説変更。代替・補完アプローチ：(a)信頼区間の併記、(b)効果量（Cohen's d、Pearson r）、(c)事前登録（Pre-registration）、(d)ベイズ統計（事後確率）、(e)レプリケーション、(f)多重検定補正（Bonferroni、FDR）。再現性危機との関連：心理学・医学で『有意な結果』の半数以上が再現できない（Open Science Collaboration 2015）。\n\n【関連】Type I/II 過誤／効果量／Pre-registration／FDR／Bonferroni／再現性危機／ASA statement\n\n【出題ポイント】p値＝H0仮定で観測以上に極端な結果の確率、H0真の確率ではない。📖 統計検定2級"},
+    {"category":"推測統計","difficulty":"★★","q":"第1種の過誤（Type I Error）の定義として正しいのはどれか。","choices":["対立仮説が真なのに帰無仮説を採択","帰無仮説が真なのに棄却する","サンプル数の不足","分布の選択ミス"],"answer":1,"explain":"【正解】Type I error（第一種の過誤）= H0 が真にもかかわらず棄却してしまう誤り（False Positive、偽陽性）。確率 α（有意水準、典型 0.05）。例：薬が効かないのに『効く』と判定。\n\n【誤答】\n・(0)これは Type II error（第二種の過誤）、H0 が偽なのに棄却失敗、確率 β、偽陰性。\n・(2)サンプル数不足は別問題（検出力低下を招く）。\n・(3)分布選択ミスは別概念（モデル誤指定）。\n\n【背景知識】\n仮説検定の4結果マトリックス：(a)H0 真 + 棄却 → Type I（α）、(b)H0 真 + 採択 → 正解（1-α）、(c)H0 偽 + 棄却 → 正解（検出力 1-β）、(d)H0 偽 + 採択 → Type II（β）。トレードオフ：(a)α↓（厳しく）→ β↑（見逃し増）、(b)サンプル数 n↑ → 両方下げられる、(c)効果量大 → β↓。実用：(a)医療診断：α は健康な人の誤診（治療リスク）、β は病気の見逃し（手遅れ）→ 病気の重大性でバランス、(b)司法：『疑わしきは罰せず』は α を小さく、(c)スパムフィルタ：α は重要メール誤判定、(d)A/B テスト：α は『効果なし』を『あり』と誤判定、ビジネス判断ミス。多重検定では家族錯誤率（FWER）か FDR で α を制御。\n\n【関連】Type II／検出力／有意水準／Bonferroni／FDR／検出力分析\n\n【出題ポイント】Type I = H0 真でも棄却、偽陽性、α。📖 統計検定2級"},
+    {"category":"回帰","difficulty":"★★","q":"重回帰分析で多重共線性（Multicollinearity）の指標として用いられるのはどれか。","choices":["AIC","VIF","p値","ROC"],"answer":1,"explain":"【正解】VIF（Variance Inflation Factor、分散拡大係数）= 1/(1-Rⱼ²)：説明変数 j を他のすべての説明変数で回帰したときの R² の逆数。VIF > 10（または 5）で多重共線性ありと判定。値が大きいほど『その変数が他と被っている』。\n\n【誤答】\n・(0)AIC：モデル選択基準、共線性とは別。\n・(2)p値：個別係数の有意性、共線性検出ではない（むしろ共線性で p値が不安定化する）。\n・(3)ROC：分類モデルの評価指標。\n\n【背景知識】\n多重共線性の影響：(a)係数の標準誤差が爆発、(b)符号や大きさが不自然、(c)係数の解釈不能だが予測精度には大きく影響しない場合あり。検出方法：(a)相関行列：|r|>0.7 で要注意、(b)VIF：標準的指標、(c)Condition Number / 固有値：X^TX の最小固有値が極端に小、Condition Number > 30 で問題。対処：(a)変数削減：高相関ペアの片方を除外、ドメイン知識で選択、(b)PCA：直交化、解釈性犠牲、(c)Ridge 回帰：L2 正則化で安定化、(d)Partial Least Squares (PLS)：応答変数と共分散最大方向、(e)Stepwise Selection、LASSO で自動選択。区別すべき問題：(a)Multicollinearity（説明変数間相関、本問）、(b)Perfect Collinearity（完全に線形従属、X^TX 特異、OLS 解不能）、(c)Endogeneity（内生性、説明変数と誤差項相関）、操作変数法で対処、別問題。\n\n【関連】Ridge／LASSO／PCA／Condition Number／Endogeneity／PLS\n\n【出題ポイント】VIF > 10 で多重共線性、対処は Ridge / PCA / 変数選択。📖 統計検定2級／基本編 Ch.8"},
+    {"category":"ベイズ","difficulty":"★★★","q":"MCMC（マルコフ連鎖モンテカルロ）の目的として最も適切なのはどれか。","choices":["決定論的解の導出","事後分布からのサンプリングによる近似推論","勾配計算の高速化","次元削減"],"answer":1,"explain":"【正解】MCMC：ベイズ推論で事後分布 P(θ|D) ∝ P(D|θ)P(θ) から直接サンプリングする確率的アルゴリズム。事後分布が解析的に求まらない場合（実用的にはほぼ全ての複雑なモデル）に必須。マルコフ連鎖を構築し、その定常分布が目的の事後分布になるよう設計、長時間実行でサンプル列を得る。\n\n【誤答】\n・(0)決定論的解は VI（変分推論）や解析解。MCMC は確率的。\n・(2)勾配計算の高速化は自動微分（バックプロパゲーション）の話。HMC は勾配を使うが、目的は勾配計算でなくサンプリング。\n・(3)次元削減は PCA、t-SNE、UMAP、Autoencoder。\n\n【背景知識】\n代表的 MCMC：(a)Metropolis-Hastings（1953/1970）：提案分布で候補を生成、採択比で受け入れ／棄却、(b)Gibbs サンプリング（Geman 1984）：各パラメータを条件付き分布から順次サンプル、(c)Hamiltonian Monte Carlo（HMC）：物理的アナロジー、勾配情報で効率化、(d)NUTS（No-U-Turn Sampler）：HMC のステップサイズ自動調整、Stan の標準、(e)Variational Inference（VI）：MCMC の代替、決定論的・高速だが近似的。MCMC 診断：(a)Trace plot、(b)Autocorrelation、(c)Gelman-Rubin R̂（複数チェーン比較）、(d)Effective Sample Size（ESS）、(e)Warmup/Burn-in。実用ツール：(a)Stan（HMC/NUTS）、(b)PyMC3/PyMC4、(c)NumPyro（JAX）、(d)Edward/TF Probability、(e)Pyro（Uber）。応用：階層モデル、ベイズ NN、ベイズ最適化、Phylogenetics、PK/PD モデル（薬物動態）。\n\n【関連】Gibbs／HMC／NUTS／Stan／PyMC／VI／Gelman-Rubin R̂\n\n【出題ポイント】MCMC＝事後分布からサンプリング、HMC/NUTS が現代標準。📖 統計検定準1級／基本編 Ch.5"},
+    {"category":"実験計画","difficulty":"★★","q":"A/Bテストにおいて『検出力』とは何を指すか。","choices":["効果がない時に効果ありと判定する確率","効果が真にある時に正しく検出できる確率（1 − β）","サンプルサイズ","p値の逆数"],"answer":1,"explain":"【正解】検出力（Statistical Power）= 1 - β = P(H0 棄却 | H1 真) = 『本当に効果があるとき、それを正しく検出できる確率』。慣習的に 0.80（80%）以上が望ましい。サンプルサイズ計算の主要要素。\n\n【誤答】\n・(0)これは Type I error（α）、第一種の過誤。検出力の逆。\n・(2)サンプルサイズは検出力に影響する変数だが定義ではない。\n・(3)p値の逆数は意味不明。\n\n【背景知識】\n検出力に影響する4要素：(1)効果量（effect size）：差が大きいほど検出力大、(2)サンプルサイズ n：大きいほど大、(3)有意水準 α：緩いほど大（α=0.05 → 0.10）、(4)分散：小さいほど大。サンプルサイズ計算：これら4要素のうち3つを決めて残りを計算。式（2標本平均比較）：n ≈ 2(z_α/2 + z_β)² σ² / Δ²。例：CTR 2% → 2.2%（効果量0.2pt）、α=0.05、検出力 0.80 → 各群 ~38,000 ユーザー。Underpowered Studies の問題：(a)効果が小さい有意な結果のみが偶然発表 → 効果量の過大評価（Winner's Curse）、(b)再現性危機の一因、(c)Pre-registration で対処。実用ツール：G*Power、Python `statsmodels.stats.power`、R `pwr`、Optimizely。A/Bテスト特有の罠：(a)Peeking（途中で結果を見る）→ α 膨張、(b)Multiple Testing（多変量）→ Bonferroni 補正、(c)Network Effect → 干渉、(d)Novelty Effect → 短期と長期の乖離。\n\n【関連】効果量／Cohen's d／Pre-registration／Peeking／Sequential Testing／MAB\n\n【出題ポイント】検出力＝1-β、本当に効果があるとき検出できる確率、0.80以上が目安。📖 統計検定2級"},
+    {"category":"前処理","difficulty":"★","q":"欠損値の代表的な対処として、ある変数の欠損が他の変数と関係している『MAR』が想定される場合に有効な手法はどれか。","choices":["リストワイズ削除のみ","多重代入法（Multiple Imputation）","ゼロ埋め固定","削除して放置"],"answer":1,"explain":"【正解】多重代入法（Multiple Imputation、Rubin 1987）：欠損値を他の変数からの予測モデルで複数回（典型 5-10 回）代入し、それぞれで分析、結果を統合（Rubin's rules）する。MAR（Missing At Random、観察変数で条件付ければランダム）の下で有効。代表実装：MICE（Multivariate Imputation by Chained Equations）。\n\n【誤答】\n・(0)リストワイズ削除（欠損のある行を全削除）：MCAR でない限りバイアスを生む、サンプル激減。\n・(2)ゼロ埋め：意味のない値で分散・関係性を歪める。\n・(3)放置：分析不能。\n\n【背景知識】\n欠損メカニズム（Rubin 1976）：(a)MCAR（Missing Completely At Random）：欠損が完全ランダム、(b)MAR（Missing At Random）：観察変数で条件付ければランダム、多重代入有効、(c)MNAR（Missing Not At Random）：欠損が値自体に依存、最難、専門的扱い。欠損処理の手法：(a)Listwise/Pairwise Deletion、(b)Mean/Median Imputation：単純、分散過小、(c)Hot-deck：類似ケースから、(d)K-NN Imputation、(e)Multiple Imputation (MICE)：標準的方法、(f)Maximum Likelihood（EM）、(g)Deep Learning：GAIN、MIDA。実装：(a)R: `mice`、`Amelia`、(b)Python: `fancyimpute`、`sklearn.impute.IterativeImputer`、`miceforest`。Rubin's Rules：複数の代入結果から (1)点推定の平均、(2)分散 = 平均分散 + (代入数+1)/代入数 × 代入間分散、で統合する。\n\n【関連】MCAR／MAR／MNAR／MICE／EM アルゴリズム／Rubin's Rules\n\n【出題ポイント】MAR では多重代入法が標準、平均代入は分散歪み。📖 統計検定2級"},
+    {"category":"因果推論","difficulty":"★★★","q":"因果推論における『交絡因子（confounder）』を統計的に処置する代表的アプローチはどれか。","choices":["傾向スコアマッチング","勾配ブースティング","畳み込み","次元削減"],"answer":0,"explain":"【正解】傾向スコア（Propensity Score、Rosenbaum & Rubin 1983）：観察データで処置を受ける確率 P(T=1|X) を共変量 X から推定。これに基づきマッチング（PSM）、層化、重み付け（IPW）を行い、共変量バランスを取って準実験的に因果効果を推定する。RCT が不可能な観察研究での因果推論の中核技法。\n\n【誤答】\n・(1)勾配ブースティング（XGBoost等）：予測モデル、因果推論ではない（ただし傾向スコアの推定に使うことはある）。\n・(2)畳み込み（Convolution）：CNN の演算、無関係。\n・(3)次元削減（PCA等）：データ可視化／圧縮、因果推論ではない。\n\n【背景知識】\n傾向スコア手法の種類：(a)Propensity Score Matching（PSM）：処置群・対照群で類似 PS のペアを作成、(b)Stratification（層化）：PS を区分して各層で効果推定、(c)Inverse Probability Weighting（IPW）：各観測を 1/PS で重み付け、(d)Doubly Robust Estimator：PS推定 + 結果回帰の二重ロバスト性。前提：(a)Unconfoundedness（強無視可能性）：観察された X で条件付ければ処置と潜在結果が独立、(b)Common Support / Positivity：処置・非処置とも全範囲の X に存在、(c)SUTVA（Stable Unit Treatment Value Assumption）：個体間の干渉なし。実装：(a)R: `MatchIt`、`twang`、(b)Python: `causalml`（Uber）、`DoWhy`（Microsoft）、`EconML`（Microsoft）。発展：(a)TMLE（Targeted Maximum Likelihood Estimation）、(b)Double Machine Learning（DML, Chernozhukov 2018）：ML を nuisance 推定に、Cross-fitting、(c)Causal Forest、Generalized Random Forest（Athey）、(d)Synthetic Control Method、(e)Difference-in-Differences、(f)Regression Discontinuity Design。\n\n【関連】IPW／DML／Causal Forest／DoWhy／EconML／RCT／DAG\n\n【出題ポイント】傾向スコア＝処置確率推定で観察データの因果推論。📖 統計検定準1級"},
+    {"category":"時系列","difficulty":"★★","q":"時系列の定常性チェックで用いられる代表的検定はどれか。","choices":["t検定","ADF検定（Augmented Dickey-Fuller）","χ²検定","Mann-Whitney U検定"],"answer":1,"explain":"【正解】ADF（Augmented Dickey-Fuller）検定：時系列の単位根の有無を検定。H0（帰無仮説）：『単位根がある＝非定常』、H1：『単位根がない＝定常』。p < α（典型 0.05）で H0 棄却 → 定常と判定。\n\n【誤答】\n・(0)t検定：母平均比較、時系列定常性ではない。\n・(2)χ²検定：カテゴリの独立性／適合度。\n・(3)Mann-Whitney U：ノンパラメトリックな2群比較。\n\n【背景知識】\n単位根とは：AR(1) モデル Y_t = ρ Y_{t-1} + ε_t において ρ=1 のとき単位根、ランダムウォーク。ρ<1 で定常、ρ>1 で発散。ADF の式：ΔY_t = α + βt + γY_{t-1} + Σδᵢ ΔY_{t-i} + ε_t。γ=0 が単位根、γ<0 が定常。ADF 統計量は通常の t統計量より裾が広い分布、特別な臨界値を使う。代替手法：(a)KPSS 検定：帰無仮説が逆（H0:定常）、ADF と組み合わせて使う、(b)Phillips-Perron：自己相関頑健、(c)DF-GLS（Elliott-Rothenberg-Stock）：検出力高い、(d)Zivot-Andrews：構造変化点考慮。応用：(a)時系列モデリング前処理、ARIMA の d（差分回数）決定、(b)金融データ：株価は非定常、リターンは定常、(c)共和分（Cointegration）：複数非定常時系列の長期均衡関係（Engle-Granger、Johansen テスト）。実装：R `tseries::adf.test`、Python `statsmodels.tsa.stattools.adfuller`。\n\n【関連】単位根／KPSS／Phillips-Perron／共和分／ARIMA／ランダムウォーク\n\n【出題ポイント】ADF: H0=単位根あり（非定常）、定常性チェックの標準。📖 統計検定準1級"}
   ]
 }

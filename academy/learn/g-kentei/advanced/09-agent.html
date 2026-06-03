@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章9 エージェントとツール使用 — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章9：AIエージェント。ReAct、Function Calling、Computer Use、長期記憶、Multi-Agent System。2025年の最前線。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="../basics/index.html">基本</a>
+      <a href="index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.9</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章9</div>
+    <h1>応用 章9 — エージェントとツール使用<span class="en">AI Agents</span></h1>
+    <p class="standfirst">2024-2025年、AI の中心は <strong>「答える」LLM</strong> から <strong>「行動する」エージェント</strong> へ。ReAct パターン、Function Calling、Computer Use、Multi-Agent System まで、現代エージェントの設計原理を網羅します。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="08-rag.html">← 章8: RAG</a></div>
+  <div><span class="ch-label">応用 Chapter 9 of 12</span><br><span class="ch-title">エージェント</span></div>
+  <div><a href="10-mlops.html">章10: MLOps →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章9 目次</h6>
+    <a href="#what">§1 エージェントとは</a>
+    <a href="#react">§2 ReAct パターン</a>
+    <a href="#fc">§3 Function Calling</a>
+    <a href="#computer">§4 Computer Use</a>
+    <a href="#memory">§5 長期記憶</a>
+    <a href="#multi">§6 Multi-Agent System</a>
+    <a href="#frameworks">§7 主要フレームワーク</a>
+    <a href="#risks">§8 リスクと対策</a>
+    <a href="#summary">§9 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <h2 id="what"><span class="label">§1 / WHAT</span>エージェントとは</h2>
+    <p>狭義のエージェント：<strong>環境を観察し、目標を達成するために行動を選択する自律的システム</strong>。古典AI でも長く扱われてきた概念。</p>
+    <p>現代の LLM エージェント：</p>
+    <ul>
+      <li>LLM が <strong>「次に何をするか」を考える脳</strong></li>
+      <li>外部ツール（API、検索、コード実行、ファイル操作）が <strong>手足</strong></li>
+      <li>これらを <strong>ループ</strong> で回し、複雑なタスクを達成</li>
+    </ul>
+
+    <h2 id="react"><span class="label">§2 / REACT</span>ReAct パターン（Reason + Act）</h2>
+    <p>Yao et al. (2022) が提案。<strong>思考 → 行動 → 観察 → 思考 → ...</strong> のループ。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="react-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          </marker>
+        </defs>
+        <!-- Thought -->
+        <rect x="40" y="80" width="140" height="80" fill="#b8431f"/>
+        <text x="110" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">Thought</text>
+        <text x="110" y="135" text-anchor="middle" font-size="11" fill="#f5d4c4">思考（推論）</text>
+        <!-- Action -->
+        <rect x="240" y="80" width="140" height="80" fill="#d4a017"/>
+        <text x="310" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">Action</text>
+        <text x="310" y="135" text-anchor="middle" font-size="11" fill="#5a5f6a">ツール呼び出し</text>
+        <!-- Observation -->
+        <rect x="440" y="80" width="140" height="80" fill="#3a7d44"/>
+        <text x="510" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">Observation</text>
+        <text x="510" y="135" text-anchor="middle" font-size="11" fill="#c0d4c4">結果の観察</text>
+        <!-- Repeat -->
+        <text x="640" y="125" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">→ 繰り返し</text>
+
+        <line x1="180" y1="120" x2="238" y2="120" stroke="#0d1b2a" marker-end="url(#react-a)"/>
+        <line x1="380" y1="120" x2="438" y2="120" stroke="#0d1b2a" marker-end="url(#react-a)"/>
+
+        <path d="M 510 160 L 510 200 L 110 200 L 110 162" stroke="#5a5f6a" stroke-width="2" stroke-dasharray="5,3" fill="none" marker-end="url(#react-a)"/>
+        <text x="310" y="220" text-anchor="middle" font-size="11" fill="#5a5f6a" font-style="italic">目標達成までループ</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 9.1</span> ReAct パターン。LLM は次に何を考えるか・何を行動するかを言語で出力し、ツールがそれを実行、結果を LLM に戻す。最も基本的かつ強力なエージェント設計。</div>
+    </div>
+
+    <div class="example">
+      <strong>例：「東京の今日の最高気温は何度？」</strong><br>
+      Thought: 気温を知るには検索が必要。weather API を使おう。<br>
+      Action: weather_api(location="Tokyo", date="today")<br>
+      Observation: {"max_temp": 28, "unit": "C"}<br>
+      Thought: 結果が得られた。回答できる。<br>
+      Final Answer: 東京の今日の最高気温は 28℃ です。
+    </div>
+
+    <h2 id="fc"><span class="label">§3 / FC</span>Function Calling（ツール使用）</h2>
+    <p>2023年6月、OpenAI が GPT-4 で <strong>Function Calling</strong> を正式機能化。モデルに利用可能な関数のスキーマを渡すと、モデルが <strong>JSON 形式で関数呼び出しを出力</strong> する。</p>
+
+    <div class="example">
+      <strong>関数定義（JSON Schema）：</strong><br>
+      {<br>
+      &nbsp;&nbsp;"name": "get_weather",<br>
+      &nbsp;&nbsp;"parameters": { "location": "string", "date": "string" }<br>
+      }<br>
+      <strong>モデル出力：</strong><br>
+      { "function": "get_weather", "args": {"location": "Tokyo", "date": "2026-05-31"} }
+    </div>
+
+    <p>主要 API：</p>
+    <ul>
+      <li><strong>OpenAI Function Calling / Tools</strong></li>
+      <li><strong>Anthropic Tool Use</strong>（Claude）</li>
+      <li><strong>Google Function Calling</strong>（Gemini）</li>
+      <li><strong>MCP（Model Context Protocol）</strong>：Anthropic が2024年に提唱、ツールサーバの標準プロトコル</li>
+    </ul>
+
+    <h2 id="computer"><span class="label">§4 / COMPUTER</span>Computer Use（コンピュータ操作）</h2>
+    <p>2024年10月、Anthropic が <strong>Computer Use</strong> を発表。LLM が <strong>マウス・キーボード操作で PC を直接操作</strong> する。スクリーンショットを観察 → 次の操作（クリック、入力、スクロール）を出力 → 実行 → ループ。</p>
+    <p>競合：</p>
+    <ul>
+      <li><strong>OpenAI Operator</strong>（2025年）：ブラウザ操作に特化</li>
+      <li><strong>Google Project Mariner</strong>：Chrome 拡張</li>
+      <li><strong>Microsoft Copilot Vision</strong>：画面理解と操作</li>
+    </ul>
+
+    <h2 id="memory"><span class="label">§5 / MEMORY</span>長期記憶</h2>
+    <p>LLM のコンテキスト長は有限。会話やタスクが長くなると過去の情報が消える。<strong>外部記憶</strong> を持たせる必要がある。</p>
+    <table class="spec">
+      <tr><th>短期記憶</th><td>現在のコンテキスト内（数万〜数百万トークン）</td></tr>
+      <tr><th>エピソード記憶</th><td>過去の会話・タスクの要約をベクトルDBに</td></tr>
+      <tr><th>知識記憶</th><td>事実、ユーザー設定、ドキュメント → RAG で参照</td></tr>
+      <tr><th>手続き記憶</th><td>使えるツール、過去に成功した手順</td></tr>
+    </table>
+    <p>実装例：MemGPT、LangChain Memory、Letta（旧 MemGPT）。</p>
+
+    <h2 id="multi"><span class="label">§6 / MULTI</span>Multi-Agent System</h2>
+    <p>複数のエージェントが <strong>役割を分担して協力</strong>するシステム。</p>
+    <table class="spec">
+      <tr><th>CrewAI</th><td>役割ベースのエージェントオーケストレーション</td></tr>
+      <tr><th>AutoGen</th><td>Microsoft、エージェント間の会話で問題解決</td></tr>
+      <tr><th>LangGraph</th><td>状態機械として記述。LangChain系</td></tr>
+      <tr><th>MetaGPT</th><td>ソフトウェア開発を「会社」に見立てる（PM, Dev, QA）</td></tr>
+      <tr><th>OpenAI Swarm</th><td>2024年公開の軽量フレームワーク</td></tr>
+    </table>
+
+    <h2 id="frameworks"><span class="label">§7 / FW</span>主要フレームワーク</h2>
+    <ul>
+      <li><strong>LangChain</strong>：最も普及、ツール・記憶・チェーンの抽象化</li>
+      <li><strong>LlamaIndex</strong>：RAG に強み</li>
+      <li><strong>DSPy</strong>：宣言的・自動最適化</li>
+      <li><strong>Haystack</strong>：エンタープライズ RAG・QA</li>
+      <li><strong>OpenAI Assistants API</strong>：マネージドエージェント基盤</li>
+      <li><strong>Claude Code / Cursor / Devin</strong>：コーディング特化エージェント</li>
+    </ul>
+
+    <h2 id="risks"><span class="label">§8 / RISK</span>リスクと対策</h2>
+    <ul>
+      <li><strong>プロンプトインジェクション</strong>：ツール結果に悪意ある指示が紛れ込み、エージェントを乗っ取る</li>
+      <li><strong>意図しない実行</strong>：「ファイルを削除」のような破壊的操作の誤発火</li>
+      <li><strong>暴走・無限ループ</strong>：終了条件不備</li>
+      <li><strong>権限過剰</strong>：エージェントに与える権限の最小化原則</li>
+      <li><strong>監査困難</strong>：行動ログの記録と人間レビュー</li>
+    </ul>
+    <p>対策：サンドボックス実行、Human-in-the-Loop の確認、Constitutional Classifiers、ツール権限の細分化。</p>
+
+    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>エージェント = LLM（脳）+ ツール（手足）+ ループ</td></tr>
+      <tr><th>2</th><td>ReAct パターン：Thought → Action → Observation の反復</td></tr>
+      <tr><th>3</th><td>Function Calling：JSON Schema を渡し、モデルが構造化呼び出しを生成</td></tr>
+      <tr><th>4</th><td>MCP（Model Context Protocol）：Anthropic 提唱のツール標準</td></tr>
+      <tr><th>5</th><td>Computer Use：マウス・キーボード操作で PC を直接操作</td></tr>
+      <tr><th>6</th><td>長期記憶：エピソード・知識・手続きの3層</td></tr>
+      <tr><th>7</th><td>Multi-Agent：CrewAI、AutoGen、LangGraph、MetaGPT</td></tr>
+      <tr><th>8</th><td>主要 FW：LangChain、LlamaIndex、DSPy</td></tr>
+      <tr><th>9</th><td>リスク：プロンプトインジェクション・暴走・権限過剰</td></tr>
+      <tr><th>10</th><td>対策：サンドボックス、Human-in-the-Loop、最小権限</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>ReAct パターンの3つのステップ</li>
+        <li>Function Calling のスキーマ例を書けるか</li>
+        <li>MCP（Model Context Protocol）が解決する問題</li>
+        <li>Computer Use と Function Calling の違い</li>
+        <li>長期記憶の4種類とそれぞれの実装手段</li>
+        <li>Multi-Agent System の利点と難点</li>
+        <li>主要なエージェントフレームワーク3つ</li>
+        <li>プロンプトインジェクションの例とエージェントへの危険性</li>
+        <li>エージェントに「最小権限の原則」を適用する例</li>
+        <li>Human-in-the-Loop がエージェントで重要な理由</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="08-rag.html">← 章8</a></div>
+  <div><a href="10-mlops.html">章10: MLOps →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

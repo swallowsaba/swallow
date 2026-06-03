@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章10 MLOps と社会実装 — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章10：MLOps。PoCから本番運用、データ・モデル管理、CI/CD、モニタリング、ドリフト検出、A/B テスト。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="../basics/index.html">基本</a>
+      <a href="index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.10</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章10</div>
+    <h1>応用 章10 — MLOps と社会実装<span class="en">MLOps</span></h1>
+    <p class="standfirst">「モデルを Jupyter で動かす」と「24時間稼働する本番システム」は別世界。MLOps はその間を埋める <strong>運用工学</strong>。データ・モデルバージョニング、モニタリング、ドリフト検出、CI/CD、デプロイ戦略を体系的に押さえます。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="09-agent.html">← 章9: エージェント</a></div>
+  <div><span class="ch-label">応用 Chapter 10 of 12</span><br><span class="ch-title">MLOps</span></div>
+  <div><a href="11-ethics.html">章11: AI 倫理 →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章10 目次</h6>
+    <a href="#why">§1 MLOps とは</a>
+    <a href="#lifecycle">§2 ML ライフサイクル</a>
+    <a href="#versioning">§3 データ・モデルのバージョン管理</a>
+    <a href="#cicd">§4 CI/CD for ML</a>
+    <a href="#deploy">§5 デプロイ戦略</a>
+    <a href="#monitor">§6 モニタリング</a>
+    <a href="#drift">§7 ドリフト検出</a>
+    <a href="#tools">§8 主要ツール</a>
+    <a href="#summary">§9 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <h2 id="why"><span class="label">§1 / WHY</span>MLOps とは</h2>
+    <p>「<strong>機械学習モデルを本番環境で継続的に動かす</strong>」ための工学的アプローチ。DevOps の概念を機械学習に拡張。</p>
+    <p>古典的ソフトウェアとの違い：</p>
+    <ul>
+      <li><strong>コード+データ+モデルの3つを管理</strong>（DevOpsはコードのみ）</li>
+      <li>挙動がデータに依存 → <strong>データの変化で性能が劣化</strong>（ドリフト）</li>
+      <li>再現性が難しい（乱数・GPU・データ更新）</li>
+      <li>本番デプロイ後も継続的に <strong>再学習</strong> が必要</li>
+    </ul>
+    <p>Gartner の指摘：「<strong>機械学習プロジェクトの 80% は本番化に失敗</strong>」。MLOps はこの失敗を減らす実践。</p>
+
+    <h2 id="lifecycle"><span class="label">§2 / CYCLE</span>ML ライフサイクル</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="mlops-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          </marker>
+        </defs>
+        <ellipse cx="380" cy="140" rx="280" ry="100" fill="none" stroke="#5a5f6a" stroke-dasharray="4,3"/>
+
+        <!-- Stages around the loop -->
+        <rect x="100" y="50" width="120" height="50" fill="#b8431f"/>
+        <text x="160" y="80" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">1. データ収集</text>
+
+        <rect x="270" y="30" width="120" height="50" fill="#d4a017"/>
+        <text x="330" y="60" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">2. EDA・前処理</text>
+
+        <rect x="440" y="50" width="120" height="50" fill="#3a7d44"/>
+        <text x="500" y="80" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">3. モデル学習</text>
+
+        <rect x="540" y="170" width="120" height="50" fill="#2e5577"/>
+        <text x="600" y="200" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">4. 評価・テスト</text>
+
+        <rect x="370" y="220" width="120" height="50" fill="#0d1b2a"/>
+        <text x="430" y="250" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">5. デプロイ</text>
+
+        <rect x="200" y="220" width="120" height="50" fill="#2e5577"/>
+        <text x="260" y="250" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">6. モニタリング</text>
+
+        <rect x="100" y="170" width="120" height="50" fill="#b8431f"/>
+        <text x="160" y="200" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">7. 再学習</text>
+
+        <!-- Arrows showing loop -->
+        <text x="380" y="160" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">ML ライフサイクル（継続的ループ）</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 10.1</span> MLライフサイクル。データ→前処理→学習→評価→デプロイ→監視→再学習という<strong>継続的なループ</strong>。各段階で MLOps の異なる工夫が必要。</div>
+    </div>
+
+    <h2 id="versioning"><span class="label">§3 / VERSION</span>データ・モデルのバージョン管理</h2>
+    <table class="spec">
+      <tr><th>コード</th><td>Git。当然の標準</td></tr>
+      <tr><th>データ</th><td><strong>DVC</strong>（Data Version Control）、<strong>LakeFS</strong>、<strong>Delta Lake</strong>。Git と連携し、大容量データのバージョン管理</td></tr>
+      <tr><th>モデル</th><td><strong>MLflow Model Registry</strong>、<strong>Weights &amp; Biases Artifacts</strong>、<strong>SageMaker Model Registry</strong></td></tr>
+      <tr><th>実験</th><td><strong>MLflow Tracking</strong>、<strong>W&amp;B</strong>、<strong>Neptune</strong>、<strong>Comet</strong>。ハイパラ・メトリクス・成果物を記録</td></tr>
+      <tr><th>特徴量</th><td><strong>Feature Store</strong>：Feast、Tecton、SageMaker Feature Store。訓練と推論で同じ特徴量計算を保証</td></tr>
+    </table>
+
+    <h2 id="cicd"><span class="label">§4 / CICD</span>CI/CD for ML</h2>
+    <p>従来の CI/CD（コードのテスト・自動デプロイ）に加えて：</p>
+    <ul>
+      <li><strong>CT（Continuous Training）</strong>：データ更新時に自動再学習</li>
+      <li><strong>CV（Continuous Validation）</strong>：データ品質・モデル性能の自動テスト</li>
+      <li><strong>CM（Continuous Monitoring）</strong>：本番モデルの継続監視</li>
+    </ul>
+    <p>ツール：GitHub Actions、GitLab CI、Jenkins、Argo Workflows、Kubeflow Pipelines、Vertex AI Pipelines、SageMaker Pipelines。</p>
+
+    <h2 id="deploy"><span class="label">§5 / DEPLOY</span>デプロイ戦略</h2>
+    <table class="spec">
+      <tr><th>Blue-Green</th><td>新旧2環境を並行稼働、スイッチで切替。ロールバック容易</td></tr>
+      <tr><th>Canary</th><td>新モデルに少数のトラフィックを徐々に流す</td></tr>
+      <tr><th>Shadow</th><td>本番トラフィックを新モデルにも流すが、応答は使わない（ログ比較のみ）</td></tr>
+      <tr><th>A/B テスト</th><td>2モデルを統計的に比較。ビジネスKPI で判定</td></tr>
+      <tr><th>Multi-armed Bandit</th><td>探索と活用のバランスで最適モデルに自動切替</td></tr>
+    </table>
+    <p>推論基盤：<strong>TorchServe</strong>、<strong>TensorFlow Serving</strong>、<strong>Triton Inference Server</strong>（NVIDIA）、<strong>KServe</strong>（Kubernetes）、<strong>Ray Serve</strong>。LLM 推論は <strong>vLLM</strong>、<strong>TGI</strong>、<strong>SGLang</strong>。</p>
+
+    <h2 id="monitor"><span class="label">§6 / MONITOR</span>モニタリング</h2>
+    <p>機械学習特有の監視項目：</p>
+    <ul>
+      <li><strong>性能メトリクス</strong>：accuracy、F1、AUC（正解ラベルがある場合）</li>
+      <li><strong>プロキシメトリクス</strong>：CTR、コンバージョン率、ユーザ反応</li>
+      <li><strong>レイテンシ・スループット</strong>：応答時間、QPS</li>
+      <li><strong>データ品質</strong>：欠損、外れ値、スキーマ違反</li>
+      <li><strong>予測分布</strong>：予測確率のヒストグラム</li>
+    </ul>
+    <p>ツール：Prometheus + Grafana（汎用）、<strong>Evidently AI</strong>（ML特化）、<strong>WhyLabs</strong>、<strong>Arize</strong>、<strong>Fiddler</strong>。</p>
+
+    <h2 id="drift"><span class="label">§7 / DRIFT</span>ドリフト検出</h2>
+    <p>機械学習特有の劣化要因。3種類：</p>
+    <table class="spec">
+      <tr><th>Data Drift（共変量シフト）</th><td>入力 X の分布が変わる。例：ユーザ層の変化</td></tr>
+      <tr><th>Concept Drift</th><td>X と y の関係が変わる。例：COVID 前後の消費行動</td></tr>
+      <tr><th>Label Drift</th><td>y の分布が変わる。例：流行病の発生率上昇</td></tr>
+    </table>
+    <p>検出方法：</p>
+    <ul>
+      <li><strong>統計的検定</strong>：KS テスト、χ²、PSI（Population Stability Index）</li>
+      <li><strong>分布距離</strong>：KL ダイバージェンス、JS、Wasserstein</li>
+      <li><strong>埋め込みベース</strong>：再学習データと運用データの埋め込み分布比較</li>
+    </ul>
+
+    <h2 id="tools"><span class="label">§8 / TOOLS</span>主要 MLOps ツール一覧</h2>
+    <table class="spec">
+      <tr><th>実験追跡</th><td>MLflow, Weights &amp; Biases, Neptune, Comet</td></tr>
+      <tr><th>データ管理</th><td>DVC, LakeFS, Delta Lake</td></tr>
+      <tr><th>パイプライン</th><td>Kubeflow, Airflow, Prefect, Dagster, Metaflow</td></tr>
+      <tr><th>特徴量ストア</th><td>Feast, Tecton, SageMaker Feature Store</td></tr>
+      <tr><th>推論サービング</th><td>TorchServe, TF Serving, Triton, KServe, Ray Serve, vLLM, BentoML</td></tr>
+      <tr><th>監視・観測</th><td>Evidently AI, WhyLabs, Arize, Fiddler</td></tr>
+      <tr><th>マネージド統合</th><td>SageMaker (AWS), Vertex AI (GCP), Azure ML, Databricks</td></tr>
+    </table>
+
+    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>MLOps = DevOps + データ + モデルの3軸管理</td></tr>
+      <tr><th>2</th><td>「ML プロジェクトの 80% は本番化失敗」を減らす実践</td></tr>
+      <tr><th>3</th><td>データバージョニング：DVC、LakeFS</td></tr>
+      <tr><th>4</th><td>実験追跡：MLflow、W&amp;B</td></tr>
+      <tr><th>5</th><td>Feature Store で訓練・推論の特徴量一貫性</td></tr>
+      <tr><th>6</th><td>CI/CD + CT (Continuous Training)</td></tr>
+      <tr><th>7</th><td>デプロイ戦略：Blue-Green、Canary、Shadow、A/B</td></tr>
+      <tr><th>8</th><td>モニタリング：性能・データ品質・予測分布</td></tr>
+      <tr><th>9</th><td>ドリフト3種：Data、Concept、Label</td></tr>
+      <tr><th>10</th><td>マネージド：SageMaker、Vertex AI、Azure ML、Databricks</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>MLOps が DevOps と異なる3つの点</li>
+        <li>データ・モデル・実験のバージョン管理にそれぞれ使われるツール</li>
+        <li>Feature Store が解決する問題</li>
+        <li>Blue-Green と Canary の違い</li>
+        <li>Shadow Deployment の用途</li>
+        <li>A/B テストで気をつけるべき統計的観点</li>
+        <li>Data Drift と Concept Drift の違い</li>
+        <li>PSI（Population Stability Index）が監視する対象</li>
+        <li>LLM の推論サービングで使われる代表ツール（vLLM, TGI）</li>
+        <li>「ML プロジェクトの 80% が本番化失敗」と言われる主な原因</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="09-agent.html">← 章9</a></div>
+  <div><a href="11-ethics.html">章11: AI 倫理 →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

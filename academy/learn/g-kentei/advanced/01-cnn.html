@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章1 CNN — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章1：畳み込みニューラルネット。畳み込み、プーリング、ResNet、EfficientNet、ConvNeXt の進化を図解で。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="../basics/index.html">基本</a>
+      <a href="index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.1</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章1</div>
+    <h1>応用 章1 — CNN<span class="en">Convolutional Neural Networks</span></h1>
+    <p class="standfirst">画像認識の長年の主役。<strong>「局所性」「平行移動不変性」「重み共有」</strong> という3つの帰納バイアスを利用し、MLP では破綻する高解像度画像を扱えるように設計された深層NN。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="index.html">← 応用 章一覧</a></div>
+  <div><span class="ch-label">応用 Chapter 1 of 12</span><br><span class="ch-title">CNN</span></div>
+  <div><a href="02-rnn.html">章2: RNN/LSTM →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章1 目次</h6>
+    <a href="#why">§1 なぜ MLP では駄目か</a>
+    <a href="#conv">§2 畳み込み演算</a>
+    <a href="#pool">§3 プーリング</a>
+    <a href="#stride">§4 ストライド・パディング</a>
+    <a href="#arch">§5 典型的 CNN 構造</a>
+    <a href="#models">§6 代表モデル史</a>
+    <a href="#resnet">§7 ResNet</a>
+    <a href="#modern">§8 EfficientNet・ConvNeXt</a>
+    <a href="#summary">§9 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <h2 id="why"><span class="label">§1 / WHY</span>なぜ MLP では駄目か</h2>
+    <p>224×224×3 の画像を MLP に入れると、入力次元は <strong>150,528</strong>。1層目で 1000 ユニットなら重みが <strong>1.5億</strong>。これを学習するには：</p>
+    <ul>
+      <li>巨大なパラメータ数 → 過学習</li>
+      <li>位置依存：左上のリンゴと右下のリンゴを別物として学ぶ</li>
+      <li>局所性無視：隣接ピクセルの関係を捨てる</li>
+    </ul>
+    <p>CNN はこれらを <strong>3つの設計</strong> で解決：</p>
+    <ol>
+      <li><strong>局所結合</strong>：各ニューロンが入力の一部のみ見る</li>
+      <li><strong>重み共有</strong>：同じフィルタを全位置で再利用</li>
+      <li><strong>プーリング</strong>：階層的に解像度を下げる</li>
+    </ol>
+
+    <h2 id="conv"><span class="label">§2 / CONV</span>畳み込み演算</h2>
+    <p>小さなフィルタ（カーネル）を画像上にスライドし、内積を取って特徴マップを作る。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Input image 5x5 -->
+        <g transform="translate(20, 60)">
+          <text x="100" y="-10" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">入力 5×5</text>
+          <g stroke="#0d1b2a" stroke-width="1">
+            <rect x="0" y="0" width="40" height="40" fill="#fff8f2"/>
+            <rect x="40" y="0" width="40" height="40" fill="#fff8f2"/>
+            <rect x="80" y="0" width="40" height="40" fill="#fff8f2"/>
+            <rect x="120" y="0" width="40" height="40" fill="#fff8f2"/>
+            <rect x="160" y="0" width="40" height="40" fill="#fff8f2"/>
+            <rect x="0" y="40" width="40" height="40" fill="#fff8f2"/>
+            <rect x="40" y="40" width="40" height="40" fill="#fff8f2"/>
+            <rect x="80" y="40" width="40" height="40" fill="#fff8f2"/>
+            <rect x="120" y="40" width="40" height="40" fill="#fff8f2"/>
+            <rect x="160" y="40" width="40" height="40" fill="#fff8f2"/>
+            <rect x="0" y="80" width="40" height="40" fill="#fff8f2"/>
+            <rect x="40" y="80" width="40" height="40" fill="#fff8f2"/>
+            <rect x="80" y="80" width="40" height="40" fill="#fff8f2"/>
+            <rect x="120" y="80" width="40" height="40" fill="#fff8f2"/>
+            <rect x="160" y="80" width="40" height="40" fill="#fff8f2"/>
+            <rect x="0" y="120" width="40" height="40" fill="#fff8f2"/>
+            <rect x="40" y="120" width="40" height="40" fill="#fff8f2"/>
+            <rect x="80" y="120" width="40" height="40" fill="#fff8f2"/>
+            <rect x="120" y="120" width="40" height="40" fill="#fff8f2"/>
+            <rect x="160" y="120" width="40" height="40" fill="#fff8f2"/>
+            <rect x="0" y="160" width="40" height="40" fill="#fff8f2"/>
+            <rect x="40" y="160" width="40" height="40" fill="#fff8f2"/>
+            <rect x="80" y="160" width="40" height="40" fill="#fff8f2"/>
+            <rect x="120" y="160" width="40" height="40" fill="#fff8f2"/>
+            <rect x="160" y="160" width="40" height="40" fill="#fff8f2"/>
+          </g>
+          <!-- Highlighted 3x3 -->
+          <rect x="0" y="0" width="120" height="120" fill="#b8431f" opacity="0.3" stroke="#b8431f" stroke-width="3"/>
+        </g>
+
+        <!-- Filter 3x3 -->
+        <g transform="translate(290, 100)">
+          <text x="60" y="-10" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">フィルタ 3×3</text>
+          <g stroke="#b8431f" stroke-width="1">
+            <rect x="0" y="0" width="40" height="40" fill="#b8431f"/><text x="20" y="26" text-anchor="middle" font-size="11" fill="#faf7f2">-1</text>
+            <rect x="40" y="0" width="40" height="40" fill="#b8431f"/><text x="60" y="26" text-anchor="middle" font-size="11" fill="#faf7f2">0</text>
+            <rect x="80" y="0" width="40" height="40" fill="#b8431f"/><text x="100" y="26" text-anchor="middle" font-size="11" fill="#faf7f2">1</text>
+            <rect x="0" y="40" width="40" height="40" fill="#b8431f"/><text x="20" y="66" text-anchor="middle" font-size="11" fill="#faf7f2">-2</text>
+            <rect x="40" y="40" width="40" height="40" fill="#b8431f"/><text x="60" y="66" text-anchor="middle" font-size="11" fill="#faf7f2">0</text>
+            <rect x="80" y="40" width="40" height="40" fill="#b8431f"/><text x="100" y="66" text-anchor="middle" font-size="11" fill="#faf7f2">2</text>
+            <rect x="0" y="80" width="40" height="40" fill="#b8431f"/><text x="20" y="106" text-anchor="middle" font-size="11" fill="#faf7f2">-1</text>
+            <rect x="40" y="80" width="40" height="40" fill="#b8431f"/><text x="60" y="106" text-anchor="middle" font-size="11" fill="#faf7f2">0</text>
+            <rect x="80" y="80" width="40" height="40" fill="#b8431f"/><text x="100" y="106" text-anchor="middle" font-size="11" fill="#faf7f2">1</text>
+          </g>
+          <text x="60" y="140" text-anchor="middle" font-size="10" fill="#5a5f6a">Sobel エッジ検出</text>
+        </g>
+
+        <!-- Arrow -->
+        <text x="440" y="170" font-size="20" fill="#0d1b2a">→</text>
+
+        <!-- Output feature map -->
+        <g transform="translate(490, 100)">
+          <text x="60" y="-10" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">特徴マップ 3×3</text>
+          <g stroke="#3a7d44" stroke-width="1">
+            <rect x="0" y="0" width="40" height="40" fill="#3a7d44" opacity="0.8"/>
+            <rect x="40" y="0" width="40" height="40" fill="#3a7d44" opacity="0.4"/>
+            <rect x="80" y="0" width="40" height="40" fill="#3a7d44" opacity="0.6"/>
+            <rect x="0" y="40" width="40" height="40" fill="#3a7d44" opacity="0.5"/>
+            <rect x="40" y="40" width="40" height="40" fill="#3a7d44" opacity="0.9"/>
+            <rect x="80" y="40" width="40" height="40" fill="#3a7d44" opacity="0.3"/>
+            <rect x="0" y="80" width="40" height="40" fill="#3a7d44" opacity="0.7"/>
+            <rect x="40" y="80" width="40" height="40" fill="#3a7d44" opacity="0.5"/>
+            <rect x="80" y="80" width="40" height="40" fill="#3a7d44" opacity="0.8"/>
+          </g>
+        </g>
+
+        <text x="340" y="295" text-anchor="middle" font-size="11" fill="#5a5f6a" font-style="italic">フィルタが画像上をスライドし、各位置で内積を計算 → 特徴マップが完成</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 1.1</span> 畳み込み演算。フィルタ（カーネル）が入力上をスライドし、各位置で要素ごとの積の総和を取る。これにより「縦エッジがある場所」「丸い形がある場所」など、特定パターンへの応答が画像として得られる。</div>
+    </div>
+
+    <p>パラメータ：</p>
+    <ul>
+      <li><strong>カーネルサイズ</strong>：3×3 が標準（VGG, ResNet）。1×1 は次元圧縮用</li>
+      <li><strong>ストライド</strong>：スライド幅。2 にすると出力解像度が半分</li>
+      <li><strong>パディング</strong>：境界の処理。"same" は出力サイズ維持</li>
+      <li><strong>チャネル</strong>：入力 RGB（3）、出力は任意（例：64, 128, 256...）</li>
+    </ul>
+
+    <h2 id="pool"><span class="label">§3 / POOL</span>プーリング</h2>
+    <p>近接領域の代表値を取り、解像度を下げる。学習パラメータなし。</p>
+    <ul>
+      <li><strong>Max Pooling</strong>：領域内の最大値。最も一般的</li>
+      <li><strong>Average Pooling</strong>：平均値</li>
+      <li><strong>Global Average Pooling</strong>：特徴マップ全体を1つの値に集約。出力層直前で使用（FC層の代替）</li>
+    </ul>
+
+    <h2 id="stride"><span class="label">§4 / STRIDE</span>ストライド・パディング・出力サイズ</h2>
+    <div class="formula">出力サイズ = (入力サイズ + 2×P - K) / S + 1</div>
+    <p>K=カーネルサイズ、P=パディング、S=ストライド。</p>
+
+    <h2 id="arch"><span class="label">§5 / ARCH</span>典型的 CNN 構造</h2>
+    <p>古典的な構造：</p>
+    <div class="formula">[Conv + ReLU + Pool] × N → Flatten → FC → Softmax</div>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- Input 224x224x3 -->
+        <rect x="20" y="50" width="80" height="80" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="60" y="160" text-anchor="middle" font-size="10" fill="#0d1b2a">224×224×3</text>
+        <text x="60" y="175" text-anchor="middle" font-size="10" fill="#5a5f6a">入力画像</text>
+        <!-- After Conv1+Pool -->
+        <rect x="140" y="60" width="60" height="60" fill="#d4a017" stroke="#0d1b2a"/>
+        <text x="170" y="155" text-anchor="middle" font-size="10" fill="#0d1b2a">112×112×64</text>
+        <text x="170" y="170" text-anchor="middle" font-size="10" fill="#5a5f6a">Conv+Pool</text>
+        <!-- Layer 2 -->
+        <rect x="240" y="70" width="40" height="40" fill="#d4a017" stroke="#0d1b2a"/>
+        <text x="260" y="150" text-anchor="middle" font-size="10" fill="#0d1b2a">56×56×128</text>
+        <text x="260" y="165" text-anchor="middle" font-size="10" fill="#5a5f6a">Conv+Pool</text>
+        <!-- Layer 3 -->
+        <rect x="320" y="78" width="24" height="24" fill="#d4a017" stroke="#0d1b2a"/>
+        <text x="332" y="145" text-anchor="middle" font-size="10" fill="#0d1b2a">28×28×256</text>
+        <text x="332" y="160" text-anchor="middle" font-size="10" fill="#5a5f6a">Conv+Pool</text>
+        <!-- Layer 4 -->
+        <rect x="380" y="82" width="16" height="16" fill="#d4a017" stroke="#0d1b2a"/>
+        <text x="388" y="140" text-anchor="middle" font-size="10" fill="#0d1b2a">14×14×512</text>
+        <text x="388" y="155" text-anchor="middle" font-size="10" fill="#5a5f6a">Conv+Pool</text>
+        <!-- Layer 5 -->
+        <rect x="430" y="86" width="8" height="8" fill="#d4a017" stroke="#0d1b2a"/>
+        <text x="434" y="135" text-anchor="middle" font-size="10" fill="#0d1b2a">7×7×512</text>
+        <!-- Flatten -->
+        <rect x="480" y="65" width="20" height="50" fill="#2e5577"/>
+        <text x="490" y="135" text-anchor="middle" font-size="10" fill="#0d1b2a">Flatten</text>
+        <!-- FC -->
+        <rect x="530" y="65" width="20" height="50" fill="#2e5577"/>
+        <text x="540" y="135" text-anchor="middle" font-size="10" fill="#0d1b2a">FC</text>
+        <!-- Output -->
+        <rect x="580" y="75" width="20" height="30" fill="#b8431f"/>
+        <text x="590" y="135" text-anchor="middle" font-size="10" fill="#0d1b2a">Softmax</text>
+        <text x="590" y="148" text-anchor="middle" font-size="10" fill="#5a5f6a">1000 クラス</text>
+
+        <text x="380" y="35" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">空間解像度が下がりつつ、チャネル数（特徴の種類）が増える</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 1.2</span> 典型的な CNN（VGG 風）の構造。各畳み込み層で空間解像度が半分になりつつ、チャネル数が増える。低層は局所パターン（エッジ）、高層は意味的特徴（顔・物体）を学習。</div>
+    </div>
+
+    <h2 id="models"><span class="label">§6 / MODELS</span>代表モデル史</h2>
+    <table class="spec">
+      <tr><th>1998</th><td><strong>LeNet</strong>（LeCun）— 手書き数字認識</td></tr>
+      <tr><th>2012</th><td><strong>AlexNet</strong> — ImageNet 革命。GPU、ReLU、Dropout 導入</td></tr>
+      <tr><th>2014</th><td><strong>VGG</strong> — 3×3 畳み込みを深く積む単純設計</td></tr>
+      <tr><th>2014</th><td><strong>GoogLeNet/Inception</strong> — 並列の異なるカーネルサイズ</td></tr>
+      <tr><th>2015</th><td><strong>ResNet</strong> — 残差接続で152層、ImageNet 優勝</td></tr>
+      <tr><th>2016</th><td><strong>DenseNet</strong> — すべての層を密に接続</td></tr>
+      <tr><th>2017</th><td><strong>MobileNet</strong> — Depthwise Separable Conv で軽量化</td></tr>
+      <tr><th>2019</th><td><strong>EfficientNet</strong> — Compound Scaling（幅・深さ・解像度の協調）</td></tr>
+      <tr><th>2020</th><td><strong>Vision Transformer (ViT)</strong> — CNN ではなく Transformer で画像</td></tr>
+      <tr><th>2022</th><td><strong>ConvNeXt</strong> — ViT に対抗する近代化 CNN</td></tr>
+    </table>
+
+    <h2 id="resnet"><span class="label">§7 / RESNET</span>ResNet の意義（再訪）</h2>
+    <p>基本編 章11 で扱った残差接続 y = F(x) + x は、ResNet で導入。これにより：</p>
+    <ul>
+      <li>152層、最終的に 1000層超の NN が学習可能に</li>
+      <li>Bottleneck ブロック（1×1 → 3×3 → 1×1）でパラメータ削減</li>
+      <li>後続の Transformer など <strong>あらゆる深層モデルの基本構造</strong> となる</li>
+    </ul>
+
+    <h2 id="modern"><span class="label">§8 / MODERN</span>EfficientNet・ConvNeXt</h2>
+    <p><strong>EfficientNet</strong>（2019）：モデルサイズ拡大の3軸（幅・深さ・解像度）を <strong>協調的にスケール</strong>。同精度でパラメータ数 1/10 を実現。</p>
+    <p><strong>ConvNeXt</strong>（2022）：ViT に押された CNN を、Transformer の良い設計（LayerNorm、GELU、大カーネル）を逆輸入することで現代化。シンプルさを保ちつつ ViT に匹敵。</p>
+
+    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>CNN は局所性・平行移動不変性・重み共有という帰納バイアス</td></tr>
+      <tr><th>2</th><td>畳み込み = フィルタを画像上にスライドして内積</td></tr>
+      <tr><th>3</th><td>カーネルサイズ・ストライド・パディング・チャネルの4ハイパラ</td></tr>
+      <tr><th>4</th><td>プーリング = 解像度を下げる（Max/Avg/GAP）</td></tr>
+      <tr><th>5</th><td>典型構造：[Conv+ReLU+Pool] × N → Flatten → FC</td></tr>
+      <tr><th>6</th><td>LeNet → AlexNet → VGG → GoogLeNet → ResNet の系譜</td></tr>
+      <tr><th>7</th><td>ResNet の残差接続が深層化を可能にした</td></tr>
+      <tr><th>8</th><td>EfficientNet：Compound Scaling</td></tr>
+      <tr><th>9</th><td>ViT 登場後、CNN は ConvNeXt として現代化</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>MLP で画像を扱うとどんな問題が起こるか3つ</li>
+        <li>畳み込み演算の図解と式</li>
+        <li>3×3 カーネル、ストライド 2、パディング 1 の出力サイズ計算</li>
+        <li>Max Pooling と Global Average Pooling の違いと使い分け</li>
+        <li>AlexNet が ILSVRC 2012 で何を成し遂げたか、技術的工夫を3つ</li>
+        <li>VGG と GoogLeNet/Inception の設計思想の違い</li>
+        <li>ResNet の残差接続がなぜ深層化を可能にしたか</li>
+        <li>EfficientNet の Compound Scaling とは何か</li>
+        <li>ViT が CNN に対して持つ利点と欠点</li>
+        <li>ConvNeXt が ViT の何を逆輸入したか</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="index.html">← 章一覧</a></div>
+  <div><a href="02-rnn.html">章2: RNN/LSTM →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

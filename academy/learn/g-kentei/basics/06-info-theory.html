@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章6 情報理論 — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章6：シャノンエントロピー、KLダイバージェンス、クロスエントロピー。「驚き」を数学化し、分類損失の正体を理解する。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula { background:#f5f1e8; border-left:3px solid #b8431f; padding:14px 18px; margin:18px 0; font-family:'JetBrains Mono', monospace; font-size:14px; line-height:1.8; }
+.example { background:#fff8f2; border-left:3px solid #d4a017; padding:16px 22px; margin:20px 0; font-size:14.5px; line-height:1.9; }
+.example-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#0d1b2a; margin-bottom:8px; }
+.figure { margin:32px 0; text-align:center; }
+.figure svg { max-width:100%; height:auto; border:1px solid #e5e1d4; background:#faf7f2; }
+.figure-caption { font-size:12.5px; color:#5a5f6a; margin-top:10px; line-height:1.7; max-width:680px; margin-left:auto; margin-right:auto; padding:0 12px; font-style:italic; }
+.figure-num { font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.12em; color:#b8431f; }
+.chapter-nav { display:flex; justify-content:space-between; align-items:center; padding:18px 24px; background:#0d1b2a; color:#faf7f2; margin:32px 0; font-size:13.5px; }
+.chapter-nav a { color:#faf7f2; text-decoration:none; }
+.chapter-nav a:hover { color:#d4a017; }
+.chapter-nav .ch-label { font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:#9aa0a8; }
+.chapter-nav .ch-title { font-family:var(--font-display-jp); font-weight:700; font-size:15px; }
+table.spec { width:100%; border-collapse:collapse; margin:18px 0; font-size:13.5px; }
+table.spec th, table.spec td { padding:9px 13px; text-align:left; border-bottom:1px solid #e5e1d4; vertical-align:top; }
+table.spec th { background:#faf7f2; font-family:var(--font-display-jp); font-weight:700; font-size:12.5px; }
+.test-yourself { background:#0d1b2a; color:#faf7f2; padding:28px 32px; margin:32px 0; }
+.test-yourself h3 { font-family:var(--font-display-jp); font-weight:700; color:#d4a017; margin:0 0 16px; font-size:18px; }
+.test-yourself ol { padding-left:24px; font-size:14px; line-height:1.95; }
+.test-yourself li { margin-bottom:10px; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="index.html">基本</a>
+      <a href="../advanced/index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>Ch.6</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章6</div>
+    <h1>章6 — 情報理論<span class="en">Chapter 6 — Information Theory</span></h1>
+    <p class="standfirst">情報理論は「<strong>驚き</strong>」を数式で扱う数学です。シャノンが1948年に作りました。エントロピー、KLダイバージェンス、クロスエントロピーは <strong>分類問題の損失関数の本質</strong> です。なぜニューラルネットがクロスエントロピーを使うのか、本章で根本から理解します。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="05-probability.html">← 章5: 確率と統計</a></div>
+  <div><span class="ch-label">Chapter 6 of 12</span><br><span class="ch-title">情報理論</span></div>
+  <div><a href="07-ml-paradigm.html">章7: ML パラダイム →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章6 目次</h6>
+    <a href="#info">§1 自己情報量：驚きの量</a>
+    <a href="#entropy">§2 シャノンエントロピー</a>
+    <a href="#kl">§3 KLダイバージェンス</a>
+    <a href="#crossentropy">§4 クロスエントロピー</a>
+    <a href="#nll">§5 分類損失の正体</a>
+    <a href="#mi">§6 相互情報量</a>
+    <a href="#apps">§7 機械学習での活用</a>
+    <a href="#summary">§8 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 6</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">「驚き」を、<br>数学化する。</h2>
+    <p class="article-lede">サイコロで「1が出た」と「7が出た」では情報量が違います。前者は珍しくないが、後者は不可能 = 驚きが無限大。情報理論はこの直感を <strong>-log p(x)</strong> という数式に整理します。これがエントロピー・KL・クロスエントロピーの土台です。</p>
+
+    <h2 id="info"><span class="label">§1 / INFO</span>自己情報量：驚きの量</h2>
+    <p>事象 x が確率 p(x) で起こるとき、その <strong>自己情報量</strong>（驚き）は：</p>
+    <div class="formula">I(x) = -log p(x)</div>
+    <ul>
+      <li>p(x) = 1（確実） → I(x) = 0（驚きなし）</li>
+      <li>p(x) = 0.5（コインの表） → I(x) = 1 ビット</li>
+      <li>p(x) → 0（極めて稀） → I(x) → ∞（最大の驚き）</li>
+    </ul>
+    <p>底が 2 ならビット（情報量の単位）、底が e なら nat、底が 10 なら dit。機械学習では自然対数（nat）が標準。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+        <line x1="60" y1="240" x2="640" y2="240" stroke="#0d1b2a" stroke-width="1.5"/>
+        <line x1="100" y1="40" x2="100" y2="260" stroke="#0d1b2a" stroke-width="1.5"/>
+        <text x="635" y="258" font-size="11" fill="#5a5f6a">p(x)</text>
+        <text x="80" y="50" font-size="11" fill="#5a5f6a">I(x) = -log p</text>
+        <text x="105" y="258" font-size="10" fill="#5a5f6a">0</text>
+        <text x="200" y="258" font-size="10" fill="#5a5f6a">0.25</text>
+        <text x="300" y="258" font-size="10" fill="#5a5f6a">0.5</text>
+        <text x="400" y="258" font-size="10" fill="#5a5f6a">0.75</text>
+        <text x="500" y="258" font-size="10" fill="#5a5f6a">1.0</text>
+
+        <!-- -log curve -->
+        <path d="M 110 40 Q 150 100 200 160 Q 300 220 500 240" stroke="#b8431f" stroke-width="3" fill="none"/>
+
+        <!-- annotations -->
+        <line x1="300" y1="240" x2="300" y2="190" stroke="#5a5f6a" stroke-dasharray="3,2"/>
+        <circle cx="300" cy="190" r="4" fill="#b8431f"/>
+        <text x="310" y="185" font-size="10" fill="#0d1b2a">p=0.5 → 1ビット</text>
+
+        <line x1="200" y1="240" x2="200" y2="160" stroke="#5a5f6a" stroke-dasharray="3,2"/>
+        <circle cx="200" cy="160" r="4" fill="#b8431f"/>
+        <text x="210" y="155" font-size="10" fill="#0d1b2a">p=0.25 → 2ビット</text>
+
+        <text x="130" y="80" font-size="11" fill="#b8431f" font-weight="bold">確率が小さいほど</text>
+        <text x="130" y="98" font-size="11" fill="#b8431f" font-weight="bold">驚き（情報量）大</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 6.1</span> 自己情報量 I(x) = -log p(x)。確率が高い事象は驚きが小さく、確率が低い事象は驚きが大きい。これが「情報」を測る数学の出発点。</div>
+    </div>
+
+    <h2 id="entropy"><span class="label">§2 / ENTROPY</span>シャノンエントロピー</h2>
+    <p>確率分布全体の <strong>「不確かさ」</strong> を、自己情報量の期待値として定義：</p>
+    <div class="formula">H(X) = -Σ p(x) log p(x) = E[I(X)]</div>
+    <p>性質：</p>
+    <ul>
+      <li>H(X) ≥ 0</li>
+      <li>1点集中（決定論的）→ H = 0（不確かさなし）</li>
+      <li>一様分布で最大（最も不確か）</li>
+    </ul>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+        <line x1="60" y1="240" x2="640" y2="240" stroke="#0d1b2a" stroke-width="1.5"/>
+        <line x1="100" y1="40" x2="100" y2="260" stroke="#0d1b2a" stroke-width="1.5"/>
+        <text x="635" y="258" font-size="11" fill="#5a5f6a">p</text>
+        <text x="60" y="50" font-size="11" fill="#5a5f6a">H(p)</text>
+        <text x="105" y="258" font-size="10" fill="#5a5f6a">0</text>
+        <text x="300" y="258" font-size="10" fill="#5a5f6a">0.5</text>
+        <text x="500" y="258" font-size="10" fill="#5a5f6a">1.0</text>
+
+        <!-- binary entropy: -p log p - (1-p) log(1-p) -->
+        <path d="M 100 240 Q 200 80 300 60 Q 400 80 500 240" stroke="#b8431f" stroke-width="3" fill="none"/>
+
+        <!-- annotations -->
+        <line x1="300" y1="240" x2="300" y2="60" stroke="#5a5f6a" stroke-dasharray="3,2"/>
+        <circle cx="300" cy="60" r="4" fill="#b8431f"/>
+        <text x="310" y="55" font-size="11" font-weight="bold" fill="#b8431f">最大エントロピー</text>
+        <text x="310" y="73" font-size="10" fill="#5a5f6a">p=0.5 で 1 ビット</text>
+
+        <circle cx="100" cy="240" r="4" fill="#b8431f"/>
+        <text x="110" y="232" font-size="10" fill="#0d1b2a">p=0 → H=0（確定）</text>
+        <circle cx="500" cy="240" r="4" fill="#b8431f"/>
+        <text x="430" y="225" font-size="10" fill="#0d1b2a">p=1 → H=0（確定）</text>
+
+        <text x="555" y="160" font-size="12" fill="#0d1b2a">二値エントロピー</text>
+        <text x="555" y="178" font-size="11" fill="#5a5f6a">最も不確かなのは</text>
+        <text x="555" y="195" font-size="11" fill="#5a5f6a">公平なコイン</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 6.2</span> 二値エントロピー H(p) = -p log p - (1-p) log(1-p)。p = 0.5（公平なコイン）で最大値 1 ビットに達し、p = 0 または 1 で 0 になる。</div>
+    </div>
+
+    <div class="example">
+      <div class="example-title">例題：エントロピーの計算</div>
+      公平なサイコロ：H = -6 × (1/6) × log₂(1/6) = log₂ 6 ≈ 2.585 ビット<br>
+      偏ったサイコロ（1の目だけ確率1）：H = -1 × log 1 = 0<br>
+      4種のカードを等確率で引く：H = log₂ 4 = 2 ビット
+    </div>
+
+    <h2 id="kl"><span class="label">§3 / KL</span>KLダイバージェンス</h2>
+    <p>2つの確率分布 P, Q の <strong>「違い」</strong> を測る量：</p>
+    <div class="formula">KL(P ‖ Q) = Σ p(x) log [p(x) / q(x)] = Σ p(x) [log p(x) - log q(x)]</div>
+    <p>性質：</p>
+    <ul>
+      <li>KL(P ‖ Q) ≥ 0（Gibbs の不等式）</li>
+      <li>KL(P ‖ Q) = 0 ⟺ P = Q</li>
+      <li><strong>非対称</strong>：KL(P ‖ Q) ≠ KL(Q ‖ P)（厳密な「距離」ではない）</li>
+      <li>三角不等式を満たさない</li>
+    </ul>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg">
+        <!-- P distribution -->
+        <g transform="translate(40, 0)">
+          <line x1="20" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
+          <rect x="40" y="100" width="25" height="80" fill="#b8431f" opacity="0.7"/>
+          <rect x="75" y="80" width="25" height="100" fill="#b8431f" opacity="0.7"/>
+          <rect x="110" y="60" width="25" height="120" fill="#b8431f" opacity="0.7"/>
+          <rect x="145" y="100" width="25" height="80" fill="#b8431f" opacity="0.7"/>
+          <rect x="180" y="140" width="25" height="40" fill="#b8431f" opacity="0.7"/>
+          <text x="120" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#b8431f">P (真の分布)</text>
+        </g>
+        <text x="280" y="100" text-anchor="middle" font-size="20" fill="#0d1b2a" font-weight="bold">vs</text>
+        <g transform="translate(320, 0)">
+          <line x1="20" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
+          <rect x="40" y="140" width="25" height="40" fill="#2e5577" opacity="0.7"/>
+          <rect x="75" y="120" width="25" height="60" fill="#2e5577" opacity="0.7"/>
+          <rect x="110" y="100" width="25" height="80" fill="#2e5577" opacity="0.7"/>
+          <rect x="145" y="80" width="25" height="100" fill="#2e5577" opacity="0.7"/>
+          <rect x="180" y="60" width="25" height="120" fill="#2e5577" opacity="0.7"/>
+          <text x="120" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#2e5577">Q (近似分布)</text>
+        </g>
+        <text x="600" y="100" text-anchor="middle" font-size="11" fill="#0d1b2a" font-weight="bold">KL(P‖Q)</text>
+        <text x="600" y="118" text-anchor="middle" font-size="11" fill="#0d1b2a" font-weight="bold">＝ 大きい</text>
+        <text x="600" y="138" text-anchor="middle" font-size="10" fill="#5a5f6a">(2つは違う)</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 6.3</span> KL ダイバージェンスは2つの分布の違いを定量化。形が大きく違うほど KL は大きい。VAE 学習、強化学習の信頼領域、変分推論などで頻出。</div>
+    </div>
+
+    <h2 id="crossentropy"><span class="label">§4 / CROSS</span>クロスエントロピー</h2>
+    <p>分類問題の損失関数の主役。正解分布 p（多くは one-hot）と予測分布 q に対して：</p>
+    <div class="formula">H(p, q) = -Σ p(x) log q(x) = H(p) + KL(p ‖ q)</div>
+    <p>つまり <strong>クロスエントロピー = 真の分布のエントロピー + KL</strong>。</p>
+    <p>機械学習では p（真の分布）は固定なので H(p) は定数。よって <strong>クロスエントロピーを最小化することは KL を最小化することと等価</strong>。これが分類で使われる理由です。</p>
+
+    <h2 id="nll"><span class="label">§5 / NLL</span>分類損失の正体</h2>
+    <p>正解が one-hot ベクトル（クラス k のみ 1）で、予測が softmax 出力 q のとき：</p>
+    <div class="formula">CE = -log q_k</div>
+    <p>つまり <strong>「正解クラスに割り当てた確率の負対数」</strong>。</p>
+
+    <div class="example">
+      <div class="example-title">例題：3クラス分類のクロスエントロピー</div>
+      正解: 猫（クラス2）。one-hot = (0, 1, 0)<br>
+      予測 q = (0.2, 0.7, 0.1) → CE = -log 0.7 ≈ 0.357（良い予測、損失小）<br>
+      予測 q = (0.6, 0.3, 0.1) → CE = -log 0.3 ≈ 1.204（悪い予測、損失大）<br>
+      → <strong>正解クラスの確率が低いほど、損失が指数的に増える</strong>
+    </div>
+
+    <p><strong>章5 § 6.1 の最尤推定（MLE）と接続</strong>：分類の NLL（負対数尤度）= クロスエントロピー。同じものを別の見方で書いているだけ。</p>
+
+    <h2 id="mi"><span class="label">§6 / MI</span>相互情報量</h2>
+    <p>2つの確率変数 X, Y がどれだけ <strong>独立から離れているか</strong> を測る：</p>
+    <div class="formula">
+      I(X; Y) = KL(P(X,Y) ‖ P(X)P(Y))<br>
+      &nbsp;&nbsp;= H(X) - H(X | Y) = H(Y) - H(Y | X)
+    </div>
+    <p>意味：「Y を知ったときに X の不確かさがどれだけ減るか」。<br>
+    X と Y が独立なら I(X; Y) = 0。<strong>非線形な依存関係も検出できる</strong>（ピアソン相関は線形のみ）。</p>
+
+    <h2 id="apps"><span class="label">§7 / APPS</span>機械学習での活用一覧</h2>
+    <table class="spec">
+      <tr><th>用途</th><th>情報理論の道具</th></tr>
+      <tr><td>分類の損失関数</td><td>クロスエントロピー</td></tr>
+      <tr><td>VAE の損失</td><td>再構成誤差 + KL（事後と事前のずれ）</td></tr>
+      <tr><td>強化学習の信頼領域（TRPO/PPO）</td><td>方策の更新を KL で制約</td></tr>
+      <tr><td>変分推論</td><td>真の事後を近似する分布との KL 最小化</td></tr>
+      <tr><td>知識蒸留</td><td>教師ソフト出力と生徒のクロスエントロピー</td></tr>
+      <tr><td>決定木の分岐基準</td><td>情報利得 = 親エントロピー − 子エントロピー</td></tr>
+      <tr><td>言語モデル評価</td><td>パープレキシティ = exp(クロスエントロピー)</td></tr>
+      <tr><td>非線形相関</td><td>相互情報量</td></tr>
+    </table>
+
+    <h2 id="summary"><span class="label">§8 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>自己情報量 I(x) = -log p(x) は「驚き」の量</td></tr>
+      <tr><th>2</th><td>シャノンエントロピー H(X) = E[-log p(X)] は分布の不確かさ</td></tr>
+      <tr><th>3</th><td>一様分布で最大、決定論的分布で0</td></tr>
+      <tr><th>4</th><td>KL ダイバージェンス：分布の違いの定量化（非対称・距離ではない）</td></tr>
+      <tr><th>5</th><td>クロスエントロピー = 真の分布のエントロピー + KL</td></tr>
+      <tr><th>6</th><td>分類損失は -log q_k（正解クラスの予測確率の負対数）</td></tr>
+      <tr><th>7</th><td>クロスエントロピー最小化 = KL 最小化 = MLE と等価</td></tr>
+      <tr><th>8</th><td>相互情報量：非線形な依存関係も検出</td></tr>
+      <tr><th>9</th><td>VAE、PPO、変分推論、知識蒸留すべて KL の応用</td></tr>
+      <tr><th>10</th><td>パープレキシティ = exp(CE) は言語モデルの標準評価指標</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>p = 1/8 の事象の自己情報量を計算できるか（底2）</li>
+        <li>シャノンエントロピーの定義式を書けるか</li>
+        <li>二値エントロピー H(p) が p = 0.5 で最大になることを示せるか</li>
+        <li>KL(P ‖ Q) が非対称である理由を直感的に説明できるか</li>
+        <li>クロスエントロピー = H(p) + KL(p ‖ q) を示せるか</li>
+        <li>分類で予測 q = (0.2, 0.6, 0.2)、正解が中央のクラスのときの CE 損失</li>
+        <li>クロスエントロピー最小化と MLE が同じである理由</li>
+        <li>VAE の損失の2つの項（再構成誤差と KL）が何を表すか</li>
+        <li>PPO が KL ペナルティを使う理由</li>
+        <li>言語モデルのパープレキシティと CE の関係</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="05-probability.html">← 章5</a></div>
+  <div><span class="ch-label">次の章</span><br><span class="ch-title">章7: 機械学習のパラダイム</span></div>
+  <div><a href="07-ml-paradigm.html">章7へ →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul>
+      <li><a href="../../../certifications/g-kentei.html">概要</a></li>
+      <li><a href="index.html">基本</a></li>
+      <li><a href="../advanced/index.html">応用</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章3 Transformer — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章3：Transformer。Self-Attention、Multi-Head、Position Encoding、Encoder-Decoder の全構造を図解で。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="../basics/index.html">基本</a>
+      <a href="index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.3</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章3</div>
+    <h1>応用 章3 — Transformer<span class="en">Attention is All You Need</span></h1>
+    <p class="standfirst">2017年 Vaswani らによる「<em>Attention Is All You Need</em>」が現代AIの分水嶺。RNN/CNN を捨て、<strong>Self-Attention</strong> だけで系列モデルを作るという提案でした。GPT、BERT、ChatGPT、Claude、Stable Diffusion、ViT すべての基礎。本章はその構造を完全に理解することを目標にします。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="02-rnn.html">← 章2: RNN</a></div>
+  <div><span class="ch-label">応用 Chapter 3 of 12</span><br><span class="ch-title">Transformer</span></div>
+  <div><a href="04-bert-gpt.html">章4: BERT/GPT →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章3 目次</h6>
+    <a href="#why">§1 なぜ Transformer か</a>
+    <a href="#attention">§2 Attention の基本</a>
+    <a href="#qkv">§3 Query, Key, Value</a>
+    <a href="#self">§4 Self-Attention</a>
+    <a href="#multi">§5 Multi-Head Attention</a>
+    <a href="#pos">§6 Position Encoding</a>
+    <a href="#arch">§7 全体構造</a>
+    <a href="#variants">§8 派生モデル</a>
+    <a href="#summary">§9 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <h2 id="why"><span class="label">§1 / WHY</span>なぜ Transformer か</h2>
+    <p>RNN の問題：</p>
+    <ul>
+      <li><strong>逐次計算</strong>：時刻 t の計算には t-1 が必要 → <strong>並列化不可</strong></li>
+      <li><strong>長期依存</strong>：LSTM でも数百トークン以上は厳しい</li>
+    </ul>
+    <p>Transformer の利点：</p>
+    <ul>
+      <li><strong>完全並列</strong>：全位置を同時に処理 → GPU を最大活用</li>
+      <li><strong>長距離依存</strong>：任意の2位置間が直接接続される</li>
+      <li><strong>スケーリングが効く</strong>：パラメータ・データ・計算量を増やせば性能が伸びる</li>
+    </ul>
+
+    <h2 id="attention"><span class="label">§2 / ATTN</span>Attention の基本</h2>
+    <p>Attention の本質：「<strong>クエリ q と複数のキー k₁, ..., kₙ の類似度に基づき、対応する値 v₁, ..., vₙ を加重和する</strong>」。</p>
+    <div class="formula">Attention(q, K, V) = Σᵢ softmax(q · kᵢ / √d) · vᵢ</div>
+    <p>つまり「<strong>辞書検索の柔らかいバージョン</strong>」：</p>
+    <ul>
+      <li>普通の辞書：q とキーが完全一致したものを返す</li>
+      <li>Attention：q と各キーの<strong>類似度に応じて値を加重平均</strong></li>
+    </ul>
+
+    <h2 id="qkv"><span class="label">§3 / QKV</span>Query, Key, Value</h2>
+    <p>各単語の埋め込みベクトル x から、3つの異なる表現を線形変換で作る：</p>
+    <div class="formula">Q = X W_Q,  K = X W_K,  V = X W_V</div>
+    <p>意味：</p>
+    <ul>
+      <li><strong>Query (Q)</strong>：「何を探しているか」の表現</li>
+      <li><strong>Key (K)</strong>：「自分はどんな内容か」の見出し</li>
+      <li><strong>Value (V)</strong>：実際に渡したい内容</li>
+    </ul>
+
+    <h2 id="self"><span class="label">§4 / SELF</span>Self-Attention</h2>
+    <p>同じ系列の単語同士で attention を取る。文章「<em>The cat sat on the mat</em>」では、各単語が他のすべての単語と関係を計算する。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+        <text x="380" y="25" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">Self-Attention: "cat" がどの単語に注目するか</text>
+
+        <!-- Words as columns -->
+        <g font-size="13" text-anchor="middle">
+          <text x="120" y="80" fill="#0d1b2a">The</text>
+          <text x="220" y="80" fill="#0d1b2a" font-weight="bold">cat</text>
+          <text x="320" y="80" fill="#0d1b2a">sat</text>
+          <text x="420" y="80" fill="#0d1b2a">on</text>
+          <text x="520" y="80" fill="#0d1b2a">the</text>
+          <text x="620" y="80" fill="#0d1b2a">mat</text>
+        </g>
+
+        <!-- Attention weights from "cat" -->
+        <g>
+          <circle cx="120" cy="180" r="18" fill="#b8431f" opacity="0.2"/>
+          <text x="120" y="184" text-anchor="middle" font-size="10" fill="#0d1b2a">0.05</text>
+          <circle cx="220" cy="180" r="18" fill="#b8431f" opacity="0.45"/>
+          <text x="220" y="184" text-anchor="middle" font-size="10" fill="#0d1b2a">0.15</text>
+          <circle cx="320" cy="180" r="18" fill="#b8431f" opacity="0.95"/>
+          <text x="320" y="184" text-anchor="middle" font-size="10" fill="#faf7f2">0.40</text>
+          <circle cx="420" cy="180" r="18" fill="#b8431f" opacity="0.25"/>
+          <text x="420" y="184" text-anchor="middle" font-size="10" fill="#0d1b2a">0.08</text>
+          <circle cx="520" cy="180" r="18" fill="#b8431f" opacity="0.2"/>
+          <text x="520" y="184" text-anchor="middle" font-size="10" fill="#0d1b2a">0.05</text>
+          <circle cx="620" cy="180" r="18" fill="#b8431f" opacity="0.75"/>
+          <text x="620" y="184" text-anchor="middle" font-size="10" fill="#faf7f2">0.27</text>
+        </g>
+
+        <!-- Lines from "cat" to each -->
+        <line x1="220" y1="90" x2="120" y2="162" stroke="#b8431f" stroke-width="0.5" opacity="0.3"/>
+        <line x1="220" y1="90" x2="220" y2="162" stroke="#b8431f" stroke-width="0.8" opacity="0.45"/>
+        <line x1="220" y1="90" x2="320" y2="162" stroke="#b8431f" stroke-width="3" opacity="0.95"/>
+        <line x1="220" y1="90" x2="420" y2="162" stroke="#b8431f" stroke-width="0.7" opacity="0.25"/>
+        <line x1="220" y1="90" x2="520" y2="162" stroke="#b8431f" stroke-width="0.5" opacity="0.2"/>
+        <line x1="220" y1="90" x2="620" y2="162" stroke="#b8431f" stroke-width="2.2" opacity="0.75"/>
+
+        <text x="380" y="240" text-anchor="middle" font-size="12" fill="#0d1b2a">"cat" は "sat"（行動）と "mat"（座る対象）に強く注目</text>
+        <text x="380" y="260" text-anchor="middle" font-size="11" fill="#5a5f6a">→ 文脈に応じた単語表現が得られる</text>
+        <text x="380" y="290" text-anchor="middle" font-size="11" font-style="italic" fill="#b8431f">これが Self-Attention の本質：文脈の動的な統合</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 3.1</span> Self-Attention は各単語が他のすべての単語に「注目度」を計算する。"cat" は "sat" や "mat" との関係性が強く、文脈に応じた表現が得られる。</div>
+    </div>
+
+    <h3>4.1 計算の流れ</h3>
+    <div class="formula">
+      Attention(Q, K, V) = softmax(QKᵀ / √d_k) V
+    </div>
+    <p>√d_k で割るのは「<strong>スケーリング</strong>」。次元 d_k が大きいと QKᵀ も大きくなり、softmax が極端な分布に偏るのを防ぐ。</p>
+
+    <h2 id="multi"><span class="label">§5 / MULTI</span>Multi-Head Attention</h2>
+    <p>1つの Attention だけでなく、<strong>h 個の Attention を並列に</strong> 行い、結果を結合する。</p>
+    <div class="formula">
+      MultiHead(Q,K,V) = Concat(head₁, ..., head_h) W_O<br>
+      where headᵢ = Attention(Q W_Qᵢ, K W_Kᵢ, V W_Vᵢ)
+    </div>
+    <p>各ヘッドが <strong>異なる種類の関係性</strong> を学習する：</p>
+    <ul>
+      <li>1つのヘッド：主語-動詞関係</li>
+      <li>別のヘッド：名詞-修飾語関係</li>
+      <li>さらに別のヘッド：照応関係（he ↔ John）</li>
+    </ul>
+
+    <h2 id="pos"><span class="label">§6 / POS</span>Position Encoding</h2>
+    <p>Attention は順序を持たない（全位置が並列）。"cat sat on mat" と "mat on sat cat" を区別できない。<br>→ <strong>位置情報を埋め込みベクトルに加える</strong>。</p>
+
+    <p>古典的な Sinusoidal Encoding：</p>
+    <div class="formula">
+      PE(pos, 2i) = sin(pos / 10000^(2i/d))<br>
+      PE(pos, 2i+1) = cos(pos / 10000^(2i/d))
+    </div>
+
+    <p>近年は <strong>RoPE（Rotary Position Embedding）</strong>、<strong>ALiBi</strong> など改良版が主流。Llama、Mistral などが RoPE を採用。</p>
+
+    <h2 id="arch"><span class="label">§7 / ARCH</span>全体構造</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 720 480" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="tx-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          </marker>
+        </defs>
+
+        <!-- Encoder -->
+        <g>
+          <rect x="40" y="40" width="280" height="380" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+          <text x="180" y="65" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">Encoder (×N)</text>
+
+          <!-- Input embedding -->
+          <rect x="80" y="380" width="200" height="30" fill="#d4a017"/>
+          <text x="180" y="400" text-anchor="middle" font-size="11" fill="#0d1b2a">入力埋込 + 位置エンコード</text>
+
+          <!-- Multi-Head Attention -->
+          <rect x="80" y="290" width="200" height="60" fill="#b8431f"/>
+          <text x="180" y="315" text-anchor="middle" font-size="12" font-weight="bold" fill="#faf7f2">Multi-Head</text>
+          <text x="180" y="335" text-anchor="middle" font-size="11" fill="#f5d4c4">Self-Attention</text>
+
+          <!-- Add & Norm -->
+          <rect x="80" y="255" width="200" height="25" fill="#2e5577"/>
+          <text x="180" y="272" text-anchor="middle" font-size="11" fill="#faf7f2">Add &amp; Norm</text>
+
+          <!-- FFN -->
+          <rect x="80" y="180" width="200" height="60" fill="#3a7d44"/>
+          <text x="180" y="205" text-anchor="middle" font-size="12" font-weight="bold" fill="#faf7f2">Feed Forward</text>
+          <text x="180" y="225" text-anchor="middle" font-size="11" fill="#c0d4c4">2層 MLP (GELU)</text>
+
+          <!-- Add & Norm -->
+          <rect x="80" y="145" width="200" height="25" fill="#2e5577"/>
+          <text x="180" y="162" text-anchor="middle" font-size="11" fill="#faf7f2">Add &amp; Norm</text>
+
+          <line x1="180" y1="380" x2="180" y2="352" stroke="#0d1b2a" marker-end="url(#tx-a)"/>
+          <line x1="180" y1="290" x2="180" y2="282" stroke="#0d1b2a" marker-end="url(#tx-a)"/>
+          <line x1="180" y1="255" x2="180" y2="242" stroke="#0d1b2a" marker-end="url(#tx-a)"/>
+          <line x1="180" y1="180" x2="180" y2="172" stroke="#0d1b2a" marker-end="url(#tx-a)"/>
+          <line x1="180" y1="145" x2="180" y2="100" stroke="#0d1b2a" marker-end="url(#tx-a)"/>
+          <text x="190" y="120" font-size="10" fill="#5a5f6a">N 回繰り返し</text>
+        </g>
+
+        <!-- Decoder -->
+        <g>
+          <rect x="400" y="40" width="280" height="380" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+          <text x="540" y="65" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">Decoder (×N)</text>
+
+          <rect x="440" y="380" width="200" height="30" fill="#d4a017"/>
+          <text x="540" y="400" text-anchor="middle" font-size="11" fill="#0d1b2a">出力埋込 + 位置エンコード</text>
+
+          <rect x="440" y="290" width="200" height="60" fill="#b8431f"/>
+          <text x="540" y="312" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">Masked Multi-Head</text>
+          <text x="540" y="332" text-anchor="middle" font-size="11" fill="#f5d4c4">Self-Attention</text>
+
+          <rect x="440" y="200" width="200" height="60" fill="#b8431f"/>
+          <text x="540" y="222" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">Cross-Attention</text>
+          <text x="540" y="242" text-anchor="middle" font-size="11" fill="#f5d4c4">(Enc → Dec)</text>
+
+          <rect x="440" y="120" width="200" height="50" fill="#3a7d44"/>
+          <text x="540" y="148" text-anchor="middle" font-size="12" font-weight="bold" fill="#faf7f2">Feed Forward</text>
+
+          <rect x="440" y="60" width="200" height="40" fill="#0d1b2a"/>
+          <text x="540" y="85" text-anchor="middle" font-size="12" font-weight="bold" fill="#faf7f2">Linear + Softmax</text>
+
+          <line x1="540" y1="380" x2="540" y2="352" stroke="#0d1b2a" marker-end="url(#tx-a)"/>
+          <line x1="540" y1="290" x2="540" y2="262" stroke="#0d1b2a" marker-end="url(#tx-a)"/>
+          <line x1="540" y1="200" x2="540" y2="172" stroke="#0d1b2a" marker-end="url(#tx-a)"/>
+          <line x1="540" y1="120" x2="540" y2="102" stroke="#0d1b2a" marker-end="url(#tx-a)"/>
+        </g>
+
+        <!-- Cross attention connection -->
+        <line x1="320" y1="180" x2="440" y2="220" stroke="#b8431f" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#tx-a)"/>
+        <text x="380" y="190" text-anchor="middle" font-size="10" fill="#b8431f" font-weight="bold">エンコーダ出力</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 3.2</span> Transformer の Encoder-Decoder 構造。各ブロックは Multi-Head Attention + FFN + Add&amp;Norm の組合せ。Decoder は Masked Self-Attention（未来を見ない）と Cross-Attention（Encoder の出力に注目）を持つ。</div>
+    </div>
+
+    <h2 id="variants"><span class="label">§8 / VARIANTS</span>派生モデル</h2>
+    <table class="spec">
+      <tr><th>Encoder のみ</th><td><strong>BERT</strong>, RoBERTa, DeBERTa — 双方向の言語理解</td></tr>
+      <tr><th>Decoder のみ</th><td><strong>GPT 系</strong>, Llama, Claude, Gemini, Mistral — 自己回帰生成</td></tr>
+      <tr><th>Encoder-Decoder</th><td><strong>T5</strong>, BART — 入出力が独立の系列対系列</td></tr>
+      <tr><th>Vision Transformer</th><td><strong>ViT</strong>（2020）— 画像をパッチに分割して Transformer に</td></tr>
+      <tr><th>Audio</th><td><strong>Whisper</strong>, AudioLM — 音声処理</td></tr>
+      <tr><th>マルチモーダル</th><td><strong>CLIP</strong>, GPT-4V, Gemini — テキスト＋画像＋動画</td></tr>
+    </table>
+
+    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>Transformer：RNN/CNN を捨て Self-Attention だけで構成（2017）</td></tr>
+      <tr><th>2</th><td>並列計算可能、長距離依存に強い</td></tr>
+      <tr><th>3</th><td>Attention = softmax(QKᵀ/√d) V：類似度に応じた加重平均</td></tr>
+      <tr><th>4</th><td>Q, K, V は同じ入力から異なる線形変換で生成</td></tr>
+      <tr><th>5</th><td>Self-Attention：同系列内で attention</td></tr>
+      <tr><th>6</th><td>Multi-Head：複数の attention を並列、異なる関係性を学習</td></tr>
+      <tr><th>7</th><td>Position Encoding で順序情報を追加（Sinusoidal、RoPE、ALiBi）</td></tr>
+      <tr><th>8</th><td>Encoder：Multi-Head + FFN + Add&amp;Norm</td></tr>
+      <tr><th>9</th><td>Decoder：Masked Self-Attention + Cross-Attention + FFN</td></tr>
+      <tr><th>10</th><td>派生：BERT（Enc）、GPT（Dec）、T5（Enc-Dec）、ViT（画像）</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>Transformer が RNN に対して持つ2つの利点</li>
+        <li>Attention(Q, K, V) = softmax(QKᵀ/√d_k) V の式を書けるか</li>
+        <li>√d_k で割る理由</li>
+        <li>Q, K, V の意味と、それぞれ何を表すか</li>
+        <li>Self-Attention で各単語がどう「文脈」を取り込むか</li>
+        <li>Multi-Head Attention の利点</li>
+        <li>Position Encoding が必要な理由</li>
+        <li>Encoder と Decoder の違い（Masked Self-Attention、Cross-Attention）</li>
+        <li>BERT、GPT、T5 がそれぞれ Transformer のどの部分を使っているか</li>
+        <li>ViT がなぜ画像でも Transformer が使えると示せたのか</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="02-rnn.html">← 章2</a></div>
+  <div><a href="04-bert-gpt.html">章4: BERT/GPT →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

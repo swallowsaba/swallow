@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章7 強化学習と RLHF — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章7：Q学習、DQN、PPO、AlphaGo、RLHF（ChatGPTの核）、DPO の最新動向。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="../basics/index.html">基本</a>
+      <a href="index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.7</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章7</div>
+    <h1>応用 章7 — 強化学習と RLHF<span class="en">Reinforcement Learning &amp; RLHF</span></h1>
+    <p class="standfirst">強化学習は AlphaGo を世界一にし、ChatGPT のアライメントを実現した技術。本章では基礎（Q学習・DQN・方策勾配・PPO）から、生成AI 時代の主役 <strong>RLHF</strong>・<strong>DPO</strong> まで一気に進みます。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="06-generative.html">← 章6: 生成AI</a></div>
+  <div><span class="ch-label">応用 Chapter 7 of 12</span><br><span class="ch-title">強化学習と RLHF</span></div>
+  <div><a href="08-rag.html">章8: RAG →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章7 目次</h6>
+    <a href="#mdp">§1 MDP（マルコフ決定過程）</a>
+    <a href="#value">§2 価値関数と Q 学習</a>
+    <a href="#dqn">§3 DQN（深層 Q 学習）</a>
+    <a href="#policy">§4 方策勾配と PPO</a>
+    <a href="#actor">§5 Actor-Critic</a>
+    <a href="#alphago">§6 AlphaGo / AlphaZero</a>
+    <a href="#rlhf">§7 RLHF</a>
+    <a href="#dpo">§8 DPO と新世代手法</a>
+    <a href="#summary">§9 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <h2 id="mdp"><span class="label">§1 / MDP</span>マルコフ決定過程</h2>
+    <p>強化学習の数学的定式化。次の5つ組で定義：</p>
+    <ul>
+      <li><strong>S</strong>：状態空間</li>
+      <li><strong>A</strong>：行動空間</li>
+      <li><strong>P(s' | s, a)</strong>：遷移確率</li>
+      <li><strong>R(s, a)</strong>：報酬関数</li>
+      <li><strong>γ ∈ [0, 1)</strong>：割引率（未来の報酬の現在価値）</li>
+    </ul>
+    <p>目標：累積報酬の期待値を最大化する <strong>方策 π(a | s)</strong> を見つける。</p>
+    <div class="formula">J(π) = E_π [Σₜ γᵗ rₜ]</div>
+
+    <h2 id="value"><span class="label">§2 / Q</span>価値関数と Q 学習</h2>
+    <p><strong>状態価値関数</strong> V^π(s) と <strong>行動価値関数</strong> Q^π(s, a)：</p>
+    <div class="formula">
+      V^π(s) = E_π[Σₜ γᵗ rₜ | s₀ = s]<br>
+      Q^π(s, a) = E_π[Σₜ γᵗ rₜ | s₀ = s, a₀ = a]
+    </div>
+    <p><strong>Q 学習</strong>（Watkins, 1989）：最適 Q* を反復的に学習</p>
+    <div class="formula">Q(s, a) ← Q(s, a) + α [r + γ max_{a'} Q(s', a') - Q(s, a)]</div>
+
+    <h2 id="dqn"><span class="label">§3 / DQN</span>DQN（Deep Q-Network）</h2>
+    <p>2013年、DeepMind が Q 関数を <strong>ディープニューラルネットで近似</strong>。Atari ゲームを人間以上のスコアで攻略し、深層強化学習の幕開け。</p>
+    <p>主要な工夫：</p>
+    <ul>
+      <li><strong>経験再生（Replay Buffer）</strong>：過去の経験をランダムサンプリングして学習を安定化</li>
+      <li><strong>ターゲットネットワーク</strong>：固定された Q' で TD ターゲット計算</li>
+      <li><strong>Double DQN</strong>：行動選択と価値推定を分離して過大評価を緩和</li>
+    </ul>
+
+    <h2 id="policy"><span class="label">§4 / POLICY</span>方策勾配と PPO</h2>
+    <p>方策 π を直接最適化（価値関数を経由しない）：</p>
+    <div class="formula">∇J(θ) = E_π[∇log π_θ(a | s) · Q(s, a)]</div>
+    <p>これが <strong>REINFORCE</strong> の基本式。Q を Advantage A = Q - V に置き換えると分散が下がる。</p>
+
+    <h3>4.1 PPO（Proximal Policy Optimization）</h3>
+    <p>2017年、OpenAI が提案。<strong>方策の更新を KL で制約</strong> することで安定化。</p>
+    <div class="formula">L^CLIP(θ) = E[min(rₜ(θ) Â, clip(rₜ(θ), 1-ε, 1+ε) Â)]</div>
+    <p>実装容易・性能高で、<strong>RLHF など現代の主力</strong>。</p>
+
+    <h2 id="actor"><span class="label">§5 / AC</span>Actor-Critic 系</h2>
+    <p>方策（Actor）と価値（Critic）を両方学習する手法：</p>
+    <ul>
+      <li><strong>A2C / A3C</strong>：同期・非同期 Advantage Actor-Critic</li>
+      <li><strong>SAC（Soft Actor-Critic）</strong>：エントロピー最大化で探索を促進</li>
+      <li><strong>DDPG / TD3</strong>：連続行動空間向け（ロボット制御）</li>
+    </ul>
+
+    <h2 id="alphago"><span class="label">§6 / ALPHA</span>AlphaGo / AlphaZero / MuZero</h2>
+    <table class="spec">
+      <tr><th>AlphaGo (2016)</th><td>人間の棋譜で事前学習 + 自己対戦 RL。Lee Sedol に勝利</td></tr>
+      <tr><th>AlphaGo Zero (2017)</th><td>人間データなし、ゼロからの自己対戦のみで世界最強</td></tr>
+      <tr><th>AlphaZero (2017)</th><td>囲碁・将棋・チェスを統一アルゴリズムで攻略</td></tr>
+      <tr><th>MuZero (2019)</th><td>環境モデルも学習。Atari もカバー</td></tr>
+      <tr><th>AlphaStar (2019)</th><td>StarCraft II でグランドマスター級</td></tr>
+    </table>
+    <p>共通技術：<strong>モンテカルロ木探索（MCTS）</strong> + 方策・価値ネット + 自己対戦。</p>
+
+    <h2 id="rlhf"><span class="label">§7 / RLHF</span>RLHF（Reinforcement Learning from Human Feedback）</h2>
+    <p><strong>ChatGPT を「人間にとって良い応答をする」アシスタントにした技術</strong>。3ステップ：</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="rlhf-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          </marker>
+        </defs>
+        <!-- Step 1 -->
+        <rect x="20" y="60" width="220" height="160" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="130" y="90" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">Step 1: SFT</text>
+        <text x="130" y="120" text-anchor="middle" font-size="11" fill="#5a5f6a">Supervised Fine-Tuning</text>
+        <text x="130" y="155" text-anchor="middle" font-size="11" fill="#0d1b2a">人間が書いた</text>
+        <text x="130" y="170" text-anchor="middle" font-size="11" fill="#0d1b2a">理想応答で微調整</text>
+        <text x="130" y="200" text-anchor="middle" font-size="10" fill="#b8431f">→ ベースモデル</text>
+        <!-- Step 2 -->
+        <rect x="270" y="60" width="220" height="160" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="380" y="90" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">Step 2: 報酬モデル</text>
+        <text x="380" y="120" text-anchor="middle" font-size="11" fill="#5a5f6a">Reward Modeling</text>
+        <text x="380" y="155" text-anchor="middle" font-size="11" fill="#0d1b2a">人間が応答ペアを</text>
+        <text x="380" y="170" text-anchor="middle" font-size="11" fill="#0d1b2a">良し悪しでランク付け</text>
+        <text x="380" y="200" text-anchor="middle" font-size="10" fill="#b8431f">→ 報酬モデル RM</text>
+        <!-- Step 3 -->
+        <rect x="520" y="60" width="220" height="160" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="630" y="90" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">Step 3: PPO で RL</text>
+        <text x="630" y="120" text-anchor="middle" font-size="11" fill="#5a5f6a">Policy Optimization</text>
+        <text x="630" y="155" text-anchor="middle" font-size="11" fill="#0d1b2a">RM の予測を報酬として</text>
+        <text x="630" y="170" text-anchor="middle" font-size="11" fill="#0d1b2a">PPO で LLM を微調整</text>
+        <text x="630" y="200" text-anchor="middle" font-size="10" fill="#b8431f">→ アライン済 ChatGPT</text>
+        <line x1="240" y1="140" x2="268" y2="140" stroke="#0d1b2a" marker-end="url(#rlhf-a)"/>
+        <line x1="490" y1="140" x2="518" y2="140" stroke="#0d1b2a" marker-end="url(#rlhf-a)"/>
+        <text x="380" y="40" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">RLHF の3ステップ</text>
+        <text x="380" y="255" text-anchor="middle" font-size="11" fill="#b8431f" font-style="italic">人間の好みを「報酬関数」として学習し、それで LLM を最適化</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 7.1</span> RLHF の3ステップ。InstructGPT (2022) と ChatGPT のアライメントの中核技術。Claude や Gemini も類似の手法を採用。</div>
+    </div>
+
+    <h2 id="dpo"><span class="label">§8 / DPO</span>DPO と新世代手法</h2>
+    <p>RLHF は実装が複雑で不安定。これを <strong>「報酬モデル不要、直接最適化」</strong> に簡略化したのが <strong>DPO</strong>（Direct Preference Optimization, 2023）。</p>
+    <div class="formula">L_DPO = -E[log σ(β log(π(y_w|x)/π_ref(y_w|x)) - β log(π(y_l|x)/π_ref(y_l|x)))]</div>
+    <p>y_w：好まれた応答、y_l：好まれなかった応答。RLHF と同等以上の性能で、実装が遥かに簡単。</p>
+    <p>派生：<strong>IPO, KTO, ORPO, SimPO</strong> など、2024年も活発に研究が続く。</p>
+
+    <h3>関連：Constitutional AI（Anthropic）</h3>
+    <p>「<strong>AI 自身に憲法（原則）を与え、自分でフィードバックを生成する</strong>」アプローチ。人間ラベラーの負担を減らしつつ、価値観を明示的に組み込む。Claude のアライメントの中核。</p>
+
+    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>MDP：S, A, P, R, γ の5要素で定式化</td></tr>
+      <tr><th>2</th><td>累積報酬の期待値を最大化する方策 π を学ぶ</td></tr>
+      <tr><th>3</th><td>Q 学習：行動価値関数を反復更新</td></tr>
+      <tr><th>4</th><td>DQN：Q を DNN で近似、経験再生・ターゲットネット</td></tr>
+      <tr><th>5</th><td>方策勾配：方策を直接最適化、PPO は実用標準</td></tr>
+      <tr><th>6</th><td>Actor-Critic：方策と価値の併用</td></tr>
+      <tr><th>7</th><td>AlphaGo/Zero：自己対戦 + MCTS + DNN</td></tr>
+      <tr><th>8</th><td>RLHF：SFT → 報酬モデル → PPO の3ステップ</td></tr>
+      <tr><th>9</th><td>DPO：報酬モデル不要の簡略化、RLHF と同等性能</td></tr>
+      <tr><th>10</th><td>Constitutional AI：AI に原則を与え自己フィードバック</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>MDP の5要素を答えられるか</li>
+        <li>割引率 γ の役割</li>
+        <li>状態価値関数 V と行動価値関数 Q の違い</li>
+        <li>Q 学習の更新式</li>
+        <li>DQN の3つの工夫（経験再生・ターゲットネット・Double）</li>
+        <li>PPO が方策更新を KL で制約する理由</li>
+        <li>AlphaGo と AlphaGo Zero の違い</li>
+        <li>RLHF の3ステップを順に説明できるか</li>
+        <li>DPO が RLHF と比べて何を簡略化したか</li>
+        <li>Constitutional AI のコンセプト</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="06-generative.html">← 章6</a></div>
+  <div><a href="08-rag.html">章8: RAG →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

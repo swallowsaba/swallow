@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G検定 基本 — 章一覧 — Swallow AI Academy</title>
+<meta name="description" content="G検定の基本編。AI概論から数学基礎、機械学習、ニューラルネットまで12章を独立ページで深く学ぶ。図解多用、教科書品質。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.chapter-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(310px, 1fr)); gap:18px; margin:32px 0; }
+.chapter-card { display:block; padding:22px 24px; background:#faf7f2; border:1px solid #c8c2b3; text-decoration:none; color:#0d1b2a; transition:all 0.15s; }
+.chapter-card:hover { background:#0d1b2a; color:#faf7f2; border-color:#0d1b2a; }
+.chapter-card:hover .ch-num { color:#d4a017; }
+.chapter-card:hover .ch-desc { color:#d4d0c5; }
+.ch-num { font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.15em; color:#b8431f; margin-bottom:8px; }
+.ch-title { font-family:var(--font-display-jp); font-weight:700; font-size:17px; margin:0 0 10px; line-height:1.4; }
+.ch-desc { font-size:13px; line-height:1.65; color:#5a5f6a; margin:0 0 12px; }
+.ch-keywords { font-size:11px; color:#8a8f97; font-family:'JetBrains Mono', monospace; }
+.ch-status { display:inline-block; padding:2px 8px; font-size:10px; letter-spacing:0.1em; margin-bottom:8px; }
+.status-ready { background:#b8431f; color:#faf7f2; }
+.status-soon { background:#c8c2b3; color:#5a5f6a; }
+.unit-divider { font-family:var(--font-display-jp); font-weight:700; font-size:13px; letter-spacing:0.18em; color:#5a5f6a; text-transform:uppercase; margin:36px 0 -4px; padding-bottom:8px; border-bottom:1px solid #c8c2b3; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="index.html">基本</a>
+      <a href="../advanced/index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>基本 / 章一覧</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> &nbsp;/&nbsp; LEARN &nbsp;/&nbsp; G検定 &nbsp;/&nbsp; 基本</div>
+    <h1>G検定 基本<span class="en">Foundations — 12 Chapters</span></h1>
+    <p class="standfirst">基本編は <strong>12 の独立章</strong> で構成されています。各章は教科書1章分の深さを持ち、図解と数式の導出、例題、つまずきポイントを含みます。<strong>章ごとに独立して読める</strong> ように設計されていますが、初学者は順に進むのが推奨されます。</p>
+  </div>
+</section>
+
+<div class="article" style="display:block;padding:0 6vw;">
+  <article class="article-body" style="max-width:1200px;margin:0 auto;padding:48px 0;">
+
+    <div class="article-eyebrow">G-KENTEI · BASICS · TABLE OF CONTENTS</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;">基本編の構造</h2>
+    <p class="article-lede">
+      基本編は 4 ユニット 12 章で構成されています。<strong>Unit 1 はAIの全体像</strong>、<strong>Unit 2 は数学の3本柱</strong>、<strong>Unit 3 は機械学習の体系</strong>、<strong>Unit 4 はニューラルネットの仕組み</strong>。各ユニットの最後の章を読み終えるごとに、上位の応用編に進む準備が整います。
+    </p>
+
+    <div class="unit-divider">Unit 1 / Overview — AIの全体像</div>
+    <div class="chapter-list">
+
+      <a class="chapter-card" href="01-what-is-ai.html">
+        <div class="ch-num">CHAPTER 01</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">AIとは何か：定義と思考実験</div>
+        <p class="ch-desc">強いAI／弱いAI／AGI／ASI の区別。チューリングテストと中国語の部屋。知能を測ることの困難。フレーム問題とシンボルグラウンディング問題。</p>
+        <div class="ch-keywords">#定義 #チューリングテスト #中国語の部屋 #AGI #フレーム問題</div>
+      </a>
+
+      <a class="chapter-card" href="02-history.html">
+        <div class="ch-num">CHAPTER 02</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">AIの歴史：3つのブームと2つの冬</div>
+        <p class="ch-desc">第1次（探索・推論）／第2次（エキスパートシステム）／第3次（深層学習）と冬の時代の構造。AlexNet、Transformer、ChatGPT といった転換点の意義。</p>
+        <div class="ch-keywords">#ダートマス会議 #エキスパートシステム #AlexNet #Transformer #ChatGPT</div>
+      </a>
+
+    </div>
+
+    <div class="unit-divider">Unit 2 / Mathematics — 数学の3本柱</div>
+    <div class="chapter-list">
+
+      <a class="chapter-card" href="03-linear-algebra.html">
+        <div class="ch-num">CHAPTER 03</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">線形代数：ベクトル・行列・固有値</div>
+        <p class="ch-desc">ベクトルの幾何、内積の意味、行列を「線形変換」として読む。固有値・固有ベクトル・SVD まで、図解で直観を作る。</p>
+        <div class="ch-keywords">#ベクトル #行列 #固有値 #SVD #PCA</div>
+      </a>
+
+      <a class="chapter-card" href="04-calculus.html">
+        <div class="ch-num">CHAPTER 04</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">微積分と最適化</div>
+        <p class="ch-desc">微分・偏微分・勾配・ヘッセ行列・テイラー展開。連鎖律の幾何学的解釈。勾配降下法の収束と発散。</p>
+        <div class="ch-keywords">#勾配 #ヘッセ行列 #連鎖律 #勾配降下</div>
+      </a>
+
+      <a class="chapter-card" href="05-probability.html">
+        <div class="ch-num">CHAPTER 05</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">確率と統計：分布・推定・検定</div>
+        <p class="ch-desc">確率変数、主要な確率分布、中心極限定理、最尤推定、ベイズの定理、信頼区間と仮説検定の論理。</p>
+        <div class="ch-keywords">#確率分布 #CLT #MLE #ベイズ #検定</div>
+      </a>
+
+      <a class="chapter-card" href="06-info-theory.html">
+        <div class="ch-num">CHAPTER 06</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">情報理論：エントロピーとKL</div>
+        <p class="ch-desc">自己情報量、シャノンエントロピー、相互情報量、KLダイバージェンス、クロスエントロピーが分類損失になる理由。</p>
+        <div class="ch-keywords">#エントロピー #KL #クロスエントロピー</div>
+      </a>
+
+    </div>
+
+    <div class="unit-divider">Unit 3 / Machine Learning — 機械学習の体系</div>
+    <div class="chapter-list">
+
+      <a class="chapter-card" href="07-ml-paradigm.html">
+        <div class="ch-num">CHAPTER 07</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">機械学習のパラダイム</div>
+        <p class="ch-desc">教師あり／教師なし／強化学習の枠組み。経験リスク最小化、汎化の概念、自己教師あり学習の登場。</p>
+        <div class="ch-keywords">#教師あり #教師なし #強化学習 #自己教師あり</div>
+      </a>
+
+      <a class="chapter-card" href="08-ml-classical.html">
+        <div class="ch-num">CHAPTER 08</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">古典的機械学習手法の全景</div>
+        <p class="ch-desc">線形回帰、リッジ／ラッソ、ロジスティック回帰、SVM、決定木、ランダムフォレスト、勾配ブースティング、K-means、PCA。</p>
+        <div class="ch-keywords">#線形回帰 #SVM #GBDT #PCA</div>
+      </a>
+
+      <a class="chapter-card" href="09-ml-evaluation.html">
+        <div class="ch-num">CHAPTER 09</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">評価・過学習・バイアス分散</div>
+        <p class="ch-desc">訓練・検証・テスト分割、K-fold CV、過学習の検出、バイアス・バリアンス分解、混同行列、Precision/Recall/F1/ROC-AUC。</p>
+        <div class="ch-keywords">#CV #過学習 #F1 #ROC-AUC</div>
+      </a>
+
+    </div>
+
+    <div class="unit-divider">Unit 4 / Neural Networks — ニューラルネットの仕組み</div>
+    <div class="chapter-list">
+
+      <a class="chapter-card" href="10-nn-basics.html">
+        <div class="ch-num">CHAPTER 10</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">ニューラルネットの最小構成</div>
+        <p class="ch-desc">パーセプトロン、XOR 問題、多層パーセプトロン、万能近似定理、活性化関数（Sigmoid/Tanh/ReLU/GELU/Softmax）。</p>
+        <div class="ch-keywords">#パーセプトロン #XOR #ReLU #万能近似定理</div>
+      </a>
+
+      <a class="chapter-card" href="11-backprop.html">
+        <div class="ch-num">CHAPTER 11</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">バックプロパゲーション</div>
+        <p class="ch-desc">計算グラフ、連鎖律の系統的適用、自動微分、勾配消失・勾配爆発、ResNet 残差接続の意義。</p>
+        <div class="ch-keywords">#バックプロパゲーション #自動微分 #勾配消失 #残差接続</div>
+      </a>
+
+      <a class="chapter-card" href="12-nn-tricks.html">
+        <div class="ch-num">CHAPTER 12</div>
+        <span class="ch-status status-ready">準備完了</span>
+        <div class="ch-title">学習を成功させる工夫</div>
+        <p class="ch-desc">ミニバッチ学習、学習率スケジューリング、重み初期化（Xavier/He）、BatchNorm/LayerNorm、Dropout、Adam の選択。</p>
+        <div class="ch-keywords">#Adam #BatchNorm #Dropout #LayerNorm</div>
+      </a>
+
+    </div>
+
+    <hr class="divider bold" style="margin-top:48px;">
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
+      G-KENTEI · Basics · 12 chapters · All 12 chapters published. Total ≈ 350KB of textbook-grade content with 30+ SVG diagrams.
+    </p>
+
+  </article>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>G検定 学習動線</h6><ul>
+      <li><a href="../../../certifications/g-kentei.html">概要</a></li>
+      <li><a href="index.html"><strong>基本（このページ）</strong></a></li>
+      <li><a href="../advanced/index.html">応用</a></li>
+      <li><a href="../../../quiz.html?topic=g-kentei">問題演習</a></li>
+    </ul></div>
+    <div><h6>他資格</h6><ul>
+      <li><a href="../../../certifications/e-shikaku.html">E資格</a></li>
+      <li><a href="../../../certifications/tokei-kentei.html">統計検定</a></li>
+      <li><a href="../../../certifications/python-cert.html">Python認定</a></li>
+      <li><a href="../../../certifications/aws-mla-c01.html">AWS MLA-C01</a></li>
+      <li><a href="../../../certifications/image-engineer.html">画像処理</a></li>
+      <li><a href="../../../certifications/jetson-ai.html">Jetson AI</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

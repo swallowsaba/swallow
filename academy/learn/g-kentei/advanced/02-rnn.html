@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章2 RNN・LSTM・GRU — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章2：RNN の基本構造、勾配消失問題、LSTM のゲート機構、GRU、Transformer 以前の系列モデル。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="../basics/index.html">基本</a>
+      <a href="index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.2</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章2</div>
+    <h1>応用 章2 — RNN・LSTM・GRU<span class="en">Sequence Models</span></h1>
+    <p class="standfirst">言語、音声、時系列などの <strong>順序のあるデータ</strong> を扱うために設計されたNN。Transformer 登場前の標準であり、いまも軽量モデルや組込み用途で現役。<strong>勾配消失問題とゲート機構による克服</strong> がこの章の核。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="01-cnn.html">← 章1: CNN</a></div>
+  <div><span class="ch-label">応用 Chapter 2 of 12</span><br><span class="ch-title">RNN・LSTM・GRU</span></div>
+  <div><a href="03-transformer.html">章3: Transformer →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章2 目次</h6>
+    <a href="#why">§1 系列データと NN</a>
+    <a href="#rnn">§2 RNN の基本</a>
+    <a href="#unroll">§3 時間方向の展開</a>
+    <a href="#vanish">§4 勾配消失問題</a>
+    <a href="#lstm">§5 LSTM とゲート機構</a>
+    <a href="#gru">§6 GRU</a>
+    <a href="#seq2seq">§7 Seq2Seq とアテンション</a>
+    <a href="#summary">§8 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <h2 id="why"><span class="label">§1 / WHY</span>系列データと NN</h2>
+    <p>言語・音声・時系列・株価などは <strong>順序が意味を持つ</strong> データ。MLP に「I love you」を 3 単語の独立な入力として与えると順序情報が失われる。CNN は局所相関は捉えるが <strong>可変長</strong> に弱い。</p>
+    <p>解決策：<strong>過去の情報を内部状態として持ち越す</strong> NN ＝ RNN。</p>
+
+    <h2 id="rnn"><span class="label">§2 / RNN</span>RNN の基本</h2>
+    <p>各時刻 t で、入力 xₜ と前時刻の <strong>隠れ状態</strong> hₜ₋₁ から、新しい隠れ状態 hₜ を計算：</p>
+    <div class="formula">
+      hₜ = tanh(W_xh · xₜ + W_hh · hₜ₋₁ + b)<br>
+      yₜ = W_hy · hₜ + c
+    </div>
+    <p>重要なのは <strong>同じ重み行列を全時刻で共有</strong> すること。これにより可変長系列を扱える。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="rnn-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          </marker>
+        </defs>
+        <!-- Time step 0 -->
+        <text x="80" y="40" text-anchor="middle" font-size="11" fill="#0d1b2a">x₀</text>
+        <rect x="55" y="50" width="50" height="50" fill="#fff8f2" stroke="#0d1b2a"/>
+        <rect x="55" y="120" width="50" height="50" fill="#b8431f"/>
+        <text x="80" y="150" text-anchor="middle" font-size="11" fill="#faf7f2">RNN</text>
+        <text x="80" y="200" text-anchor="middle" font-size="11" fill="#0d1b2a">y₀</text>
+        <line x1="80" y1="100" x2="80" y2="118" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
+        <line x1="80" y1="170" x2="80" y2="190" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
+        <text x="40" y="148" font-size="11" fill="#5a5f6a">h₀</text>
+        <!-- arrow to next -->
+        <line x1="105" y1="145" x2="170" y2="145" stroke="#2e5577" stroke-width="2" marker-end="url(#rnn-a)"/>
+        <!-- Time step 1 -->
+        <text x="195" y="40" text-anchor="middle" font-size="11" fill="#0d1b2a">x₁</text>
+        <rect x="170" y="50" width="50" height="50" fill="#fff8f2" stroke="#0d1b2a"/>
+        <rect x="170" y="120" width="50" height="50" fill="#b8431f"/>
+        <text x="195" y="150" text-anchor="middle" font-size="11" fill="#faf7f2">RNN</text>
+        <text x="195" y="200" text-anchor="middle" font-size="11" fill="#0d1b2a">y₁</text>
+        <line x1="195" y1="100" x2="195" y2="118" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
+        <line x1="195" y1="170" x2="195" y2="190" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
+        <text x="155" y="148" font-size="11" fill="#5a5f6a">h₁</text>
+        <line x1="220" y1="145" x2="285" y2="145" stroke="#2e5577" stroke-width="2" marker-end="url(#rnn-a)"/>
+        <!-- Time step 2 -->
+        <text x="310" y="40" text-anchor="middle" font-size="11" fill="#0d1b2a">x₂</text>
+        <rect x="285" y="50" width="50" height="50" fill="#fff8f2" stroke="#0d1b2a"/>
+        <rect x="285" y="120" width="50" height="50" fill="#b8431f"/>
+        <text x="310" y="150" text-anchor="middle" font-size="11" fill="#faf7f2">RNN</text>
+        <text x="310" y="200" text-anchor="middle" font-size="11" fill="#0d1b2a">y₂</text>
+        <line x1="310" y1="100" x2="310" y2="118" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
+        <line x1="310" y1="170" x2="310" y2="190" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
+        <text x="270" y="148" font-size="11" fill="#5a5f6a">h₂</text>
+        <!-- More steps -->
+        <text x="400" y="148" font-size="20" fill="#5a5f6a">...</text>
+        <text x="500" y="40" text-anchor="middle" font-size="11" fill="#0d1b2a">xₜ</text>
+        <rect x="475" y="50" width="50" height="50" fill="#fff8f2" stroke="#0d1b2a"/>
+        <rect x="475" y="120" width="50" height="50" fill="#b8431f"/>
+        <text x="500" y="150" text-anchor="middle" font-size="11" fill="#faf7f2">RNN</text>
+        <text x="500" y="200" text-anchor="middle" font-size="11" fill="#0d1b2a">yₜ</text>
+        <line x1="500" y1="100" x2="500" y2="118" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
+        <line x1="500" y1="170" x2="500" y2="190" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
+
+        <text x="380" y="225" text-anchor="middle" font-size="11" fill="#5a5f6a" font-style="italic">全時刻で同じ重み W_xh, W_hh, W_hy を共有（パラメータ共有）</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 2.1</span> RNN の時間方向展開図。各時刻の RNN ユニットは同じ重みを使う。隠れ状態 h が「過去の記憶」として時系列に流れていく。</div>
+    </div>
+
+    <h2 id="unroll"><span class="label">§3 / UNROLL</span>時間方向の展開と BPTT</h2>
+    <p>RNN を時間方向に展開すると、巨大な MLP に見える。<strong>BPTT</strong>（Backpropagation Through Time）= 普通の逆伝播を時間方向にも適用する。</p>
+
+    <h2 id="vanish"><span class="label">§4 / VANISH</span>勾配消失問題（再訪）</h2>
+    <p>長い系列だと、勾配が時間方向に何十回も掛け算される。tanh の微分は ≤ 1、Sigmoid は ≤ 0.25。<strong>指数的に減衰</strong>して下層（過去）に伝わらない。</p>
+    <p>これが「長期依存性が学べない」という RNN の根本問題。例：「私は <strong>フランス</strong> で生まれ育ち、… 数十単語後 …、流暢に <strong>フランス語</strong> を話す」のような長距離依存。</p>
+
+    <h2 id="lstm"><span class="label">§5 / LSTM</span>LSTM とゲート機構</h2>
+    <p>1997年、Hochreiter &amp; Schmidhuber が考案。<strong>セル状態（cell state）c</strong> と <strong>3つのゲート</strong>で、情報の流れを学習的に制御する。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="lstm-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          </marker>
+        </defs>
+        <rect x="100" y="60" width="560" height="200" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="380" y="40" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">LSTM セル</text>
+
+        <!-- Cell state flow (top horizontal) -->
+        <line x1="100" y1="100" x2="660" y2="100" stroke="#b8431f" stroke-width="3"/>
+        <text x="40" y="105" font-size="11" font-weight="bold" fill="#b8431f">cₜ₋₁</text>
+        <text x="675" y="105" font-size="11" font-weight="bold" fill="#b8431f">cₜ</text>
+
+        <!-- Forget gate -->
+        <circle cx="180" cy="160" r="22" fill="#d4a017"/>
+        <text x="180" y="165" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">忘却</text>
+        <text x="180" y="200" text-anchor="middle" font-size="10" fill="#5a5f6a">fₜ = σ(...)</text>
+        <line x1="180" y1="138" x2="180" y2="115" stroke="#0d1b2a" stroke-width="1.5"/>
+
+        <!-- Input gate -->
+        <circle cx="300" cy="160" r="22" fill="#d4a017"/>
+        <text x="300" y="165" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">入力</text>
+        <text x="300" y="200" text-anchor="middle" font-size="10" fill="#5a5f6a">iₜ = σ(...)</text>
+        <line x1="300" y1="138" x2="300" y2="115" stroke="#0d1b2a" stroke-width="1.5"/>
+
+        <!-- Candidate -->
+        <circle cx="400" cy="160" r="22" fill="#2e5577"/>
+        <text x="400" y="165" text-anchor="middle" font-size="11" fill="#faf7f2">候補</text>
+        <text x="400" y="200" text-anchor="middle" font-size="10" fill="#5a5f6a">c̃ₜ = tanh(...)</text>
+        <line x1="400" y1="138" x2="400" y2="115" stroke="#0d1b2a" stroke-width="1.5"/>
+
+        <!-- Output gate -->
+        <circle cx="540" cy="160" r="22" fill="#d4a017"/>
+        <text x="540" y="165" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">出力</text>
+        <text x="540" y="200" text-anchor="middle" font-size="10" fill="#5a5f6a">oₜ = σ(...)</text>
+
+        <!-- Hidden state -->
+        <line x1="540" y1="182" x2="540" y2="240" stroke="#0d1b2a" stroke-width="1.5"/>
+        <line x1="540" y1="240" x2="660" y2="240" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="675" y="244" font-size="11" font-weight="bold" fill="#0d1b2a">hₜ</text>
+        <text x="40" y="244" font-size="11" font-weight="bold" fill="#0d1b2a">hₜ₋₁</text>
+        <line x1="100" y1="240" x2="180" y2="240" stroke="#0d1b2a" stroke-width="2"/>
+
+        <!-- Input -->
+        <text x="320" y="285" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">xₜ（現在の入力）</text>
+        <line x1="320" y1="270" x2="320" y2="185" stroke="#0d1b2a" stroke-width="1" stroke-dasharray="3,2"/>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 2.2</span> LSTM の構造（簡略）。セル状態（赤い線）が「高速道路」として情報を流す。3つのゲート（忘却・入力・出力）が情報の出入りを制御する。</div>
+    </div>
+
+    <p>4つの式：</p>
+    <div class="formula">
+      fₜ = σ(W_f · [hₜ₋₁, xₜ])  &nbsp;# 忘却ゲート<br>
+      iₜ = σ(W_i · [hₜ₋₁, xₜ])  &nbsp;# 入力ゲート<br>
+      c̃ₜ = tanh(W_c · [hₜ₋₁, xₜ])  &nbsp;# 候補値<br>
+      cₜ = fₜ ⊙ cₜ₋₁ + iₜ ⊙ c̃ₜ  &nbsp;# セル更新<br>
+      oₜ = σ(W_o · [hₜ₋₁, xₜ])  &nbsp;# 出力ゲート<br>
+      hₜ = oₜ ⊙ tanh(cₜ)
+    </div>
+
+    <p><strong>なぜ勾配消失を緩和できるか</strong>：セル状態 cₜ = fₜ ⊙ cₜ₋₁ + ... という形は、ResNet の残差接続と同様、<strong>勾配がセル状態を介して直接過去に流れる</strong> 経路を提供する。</p>
+
+    <h2 id="gru"><span class="label">§6 / GRU</span>GRU（Gated Recurrent Unit）</h2>
+    <p>2014年、Cho らが提案。LSTM の簡略版。<strong>ゲートを 3 つから 2 つに削減</strong>、セル状態と隠れ状態を統合。</p>
+    <ul>
+      <li>更新ゲート（Update gate）</li>
+      <li>リセットゲート（Reset gate）</li>
+    </ul>
+    <p>パラメータ数が LSTM より少なく、計算が速い。実務では <strong>LSTM とほぼ同等の性能</strong> なので、軽量化のため GRU を使うことも多い。</p>
+
+    <h2 id="seq2seq"><span class="label">§7 / SEQ2SEQ</span>Seq2Seq とアテンション</h2>
+    <p><strong>Seq2Seq</strong>（Sutskever et al., 2014）：エンコーダ RNN で入力系列を1つの固定長ベクトルに圧縮し、デコーダ RNN で出力系列を生成。機械翻訳のEnd-to-Endを実現。</p>
+    <p>問題：長い入力を1つのベクトルに圧縮するボトルネック → 性能が頭打ち。</p>
+    <p><strong>アテンション機構</strong>（Bahdanau, 2014）：デコーダの各時刻で、エンコーダの<strong>全時刻の出力を加重平均</strong>して参照。これが後の Transformer の中核となる。</p>
+
+    <h2 id="summary"><span class="label">§8 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>系列データは順序が重要 → 隠れ状態を持ち越す RNN</td></tr>
+      <tr><th>2</th><td>RNN は全時刻で同じ重みを共有（可変長対応）</td></tr>
+      <tr><th>3</th><td>BPTT で時間方向にも逆伝播</td></tr>
+      <tr><th>4</th><td>勾配消失問題が長期依存性を阻害</td></tr>
+      <tr><th>5</th><td>LSTM：セル状態と3ゲート（忘却・入力・出力）</td></tr>
+      <tr><th>6</th><td>セル状態経由で勾配が直接流れる → 長期依存学習可能</td></tr>
+      <tr><th>7</th><td>GRU：LSTM の簡略版、2ゲート、軽量</td></tr>
+      <tr><th>8</th><td>Seq2Seq：エンコーダ・デコーダで機械翻訳を End-to-End</td></tr>
+      <tr><th>9</th><td>アテンション機構が後の Transformer に繋がる</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>RNN の更新式 hₜ = tanh(W_xh · xₜ + W_hh · hₜ₋₁ + b) を書けるか</li>
+        <li>「重み共有」がなぜ可変長系列を扱えるようにするか</li>
+        <li>BPTT とは何か</li>
+        <li>RNN の勾配消失問題の数学的原因</li>
+        <li>LSTM の3つのゲートと、それぞれの役割</li>
+        <li>セル状態の更新式 cₜ = fₜ⊙cₜ₋₁ + iₜ⊙c̃ₜ を説明できるか</li>
+        <li>LSTM が勾配消失を緩和する理由を ResNet と関連付けて</li>
+        <li>GRU が LSTM のどこを簡略化したか</li>
+        <li>Seq2Seq の「ボトルネック問題」とは</li>
+        <li>アテンション機構が Seq2Seq に何をもたらしたか</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="01-cnn.html">← 章1</a></div>
+  <div><a href="03-transformer.html">章3: Transformer →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

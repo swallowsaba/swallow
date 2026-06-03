@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章2 AIの歴史 — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章2：3つのAIブームと2つの冬の時代を、技術的転換点と社会的背景を含めて図解する。ダートマス会議からChatGPTまでの本質を理解する。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula { background:#f5f1e8; border-left:3px solid #b8431f; padding:14px 18px; margin:18px 0; font-family:'JetBrains Mono', 'Courier New', monospace; font-size:14px; line-height:1.8; }
+.example { background:#fff8f2; border-left:3px solid #d4a017; padding:16px 22px; margin:20px 0; font-size:14.5px; line-height:1.9; }
+.example-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#0d1b2a; margin-bottom:8px; }
+.pitfall { background:#fbf3f0; border-left:3px solid #b8431f; padding:16px 22px; margin:20px 0; font-size:14.5px; line-height:1.9; }
+.pitfall-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#b8431f; margin-bottom:8px; }
+.crossref { background:#eef2f5; border-left:3px solid #2e5577; padding:12px 18px; margin:18px 0; font-size:13.5px; line-height:1.7; }
+.crossref-title { font-family:var(--font-display-jp); font-weight:700; font-size:12px; color:#2e5577; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
+.figure { margin:32px 0; text-align:center; }
+.figure svg { max-width:100%; height:auto; border:1px solid #e5e1d4; background:#faf7f2; }
+.figure-caption { font-size:12.5px; color:#5a5f6a; margin-top:10px; line-height:1.7; max-width:680px; margin-left:auto; margin-right:auto; padding:0 12px; font-style:italic; }
+.figure-num { font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.12em; color:#b8431f; }
+.chapter-nav { display:flex; justify-content:space-between; align-items:center; padding:18px 24px; background:#0d1b2a; color:#faf7f2; margin:32px 0; font-size:13.5px; }
+.chapter-nav a { color:#faf7f2; text-decoration:none; }
+.chapter-nav a:hover { color:#d4a017; }
+.chapter-nav .ch-label { font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:#9aa0a8; }
+.chapter-nav .ch-title { font-family:var(--font-display-jp); font-weight:700; font-size:15px; }
+table.spec { width:100%; border-collapse:collapse; margin:18px 0; font-size:13.5px; }
+table.spec th, table.spec td { padding:9px 13px; text-align:left; border-bottom:1px solid #e5e1d4; vertical-align:top; }
+table.spec th { background:#faf7f2; font-family:var(--font-display-jp); font-weight:700; font-size:12.5px; }
+.test-yourself { background:#0d1b2a; color:#faf7f2; padding:28px 32px; margin:32px 0; }
+.test-yourself h3 { font-family:var(--font-display-jp); font-weight:700; color:#d4a017; margin:0 0 16px; font-size:18px; }
+.test-yourself ol { padding-left:24px; font-size:14px; line-height:1.95; }
+.test-yourself li { margin-bottom:10px; }
+.era-card { background:#faf7f2; border:1px solid #c8c2b3; padding:20px 24px; margin:18px 0; }
+.era-card.boom { border-left:5px solid #b8431f; }
+.era-card.winter { border-left:5px solid #2e5577; background:#eef2f5; }
+.era-card h4 { font-family:var(--font-display-jp); font-weight:700; font-size:16px; margin:0 0 8px; color:#0d1b2a; }
+.era-card .era-period { font-family:'JetBrains Mono', monospace; font-size:11px; color:#5a5f6a; letter-spacing:0.1em; margin-bottom:8px; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="index.html">基本</a>
+      <a href="../advanced/index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>Ch.2</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> &nbsp;/&nbsp; LEARN &nbsp;/&nbsp; G検定 &nbsp;/&nbsp; <a href="index.html">基本</a> &nbsp;/&nbsp; 章2</div>
+    <h1>章2 — AIの歴史<span class="en">Chapter 2 — Three Booms and Two Winters</span></h1>
+    <p class="standfirst">AI 70年の歴史は、<strong>3つのブーム</strong> と <strong>2つの冬</strong> として整理できます。各ブームを支えた技術、冬を招いた限界、そしてその構造的パターンを理解することで、<strong>現在の生成AIブームが将来どこに向かう可能性があるか</strong> を考える視点が得られます。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="01-what-is-ai.html">← 章1: AIとは何か</a></div>
+  <div><span class="ch-label">Chapter 2 of 12</span><br><span class="ch-title">AIの歴史</span></div>
+  <div><a href="03-linear-algebra.html">章3: 線形代数 →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章2 目次</h6>
+    <a href="#overview">§1 歴史の全体像</a>
+    <a href="#boom1">§2 第1次AIブーム</a>
+    <a href="#winter1">§3 第1次AIの冬</a>
+    <a href="#boom2">§4 第2次AIブーム</a>
+    <a href="#winter2">§5 第2次AIの冬</a>
+    <a href="#boom3">§6 第3次AIブーム</a>
+    <a href="#boom4">§7 第4次 (生成AI時代)</a>
+    <a href="#milestones">§8 重要な里程標</a>
+    <a href="#patterns">§9 ブームと冬のパターン</a>
+    <a href="#summary">§10 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 2</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">3つのブームと、<br>2つの冬。</h2>
+    <p class="article-lede">
+      AIの歴史は単調な進歩ではなく、<strong>誇大広告 → 実装失敗 → 投資撤退 → 反省</strong> という循環の上に積み上がっています。第3次AIブームの中にいる私達は、これが本当に違うのか、それとも第3次の冬を準備しているのかを、過去のパターンを知った上で判断する必要があります。
+    </p>
+
+    <!-- ==================================================== §1 -->
+    <h2 id="overview"><span class="label">§1 / OVERVIEW</span>歴史の全体像</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background grid -->
+        <line x1="60" y1="280" x2="700" y2="280" stroke="#0d1b2a" stroke-width="2"/>
+        <line x1="60" y1="40" x2="60" y2="280" stroke="#0d1b2a" stroke-width="1"/>
+
+        <!-- Year ticks -->
+        <text x="80" y="298" font-size="10" fill="#5a5f6a">1950</text>
+        <text x="180" y="298" font-size="10" fill="#5a5f6a">1970</text>
+        <text x="280" y="298" font-size="10" fill="#5a5f6a">1980</text>
+        <text x="380" y="298" font-size="10" fill="#5a5f6a">1995</text>
+        <text x="460" y="298" font-size="10" fill="#5a5f6a">2010</text>
+        <text x="540" y="298" font-size="10" fill="#5a5f6a">2017</text>
+        <text x="620" y="298" font-size="10" fill="#5a5f6a">2022</text>
+        <text x="690" y="298" font-size="10" fill="#5a5f6a">2026</text>
+
+        <!-- Hype curve - 3 booms 2 winters -->
+        <!-- Boom 1: 1956-1974 -->
+        <path d="M 80 270 Q 110 160 140 130 Q 160 110 180 200 Q 200 250 240 268" stroke="#b8431f" stroke-width="3" fill="none"/>
+        <!-- Winter 1 -->
+        <line x1="240" y1="268" x2="280" y2="270" stroke="#2e5577" stroke-width="2"/>
+        <!-- Boom 2: 1980-1992 -->
+        <path d="M 280 270 Q 310 175 340 145 Q 360 130 380 220 Q 400 260 430 268" stroke="#b8431f" stroke-width="3" fill="none"/>
+        <!-- Winter 2 -->
+        <line x1="430" y1="268" x2="460" y2="270" stroke="#2e5577" stroke-width="2"/>
+        <!-- Boom 3: 2010- (current, ongoing) -->
+        <path d="M 460 270 Q 490 230 520 180 Q 550 130 590 90 Q 630 60 700 45" stroke="#b8431f" stroke-width="3" fill="none"/>
+
+        <!-- Boom labels -->
+        <text x="155" y="100" text-anchor="middle" font-size="11" fill="#b8431f" font-weight="bold">第1次AI</text>
+        <text x="155" y="116" text-anchor="middle" font-size="9" fill="#5a5f6a">探索・推論</text>
+
+        <text x="358" y="118" text-anchor="middle" font-size="11" fill="#b8431f" font-weight="bold">第2次AI</text>
+        <text x="358" y="134" text-anchor="middle" font-size="9" fill="#5a5f6a">知識ベース</text>
+
+        <text x="560" y="115" text-anchor="middle" font-size="11" fill="#b8431f" font-weight="bold">第3次AI</text>
+        <text x="560" y="131" text-anchor="middle" font-size="9" fill="#5a5f6a">深層学習</text>
+
+        <text x="665" y="35" text-anchor="middle" font-size="11" fill="#b8431f" font-weight="bold">第4次?</text>
+        <text x="665" y="51" text-anchor="middle" font-size="9" fill="#5a5f6a">生成AI</text>
+
+        <!-- Winter labels -->
+        <text x="260" y="245" text-anchor="middle" font-size="11" fill="#2e5577" font-weight="bold">❄ 冬1</text>
+        <text x="445" y="245" text-anchor="middle" font-size="11" fill="#2e5577" font-weight="bold">❄ 冬2</text>
+
+        <!-- Key events markers -->
+        <circle cx="95" cy="245" r="4" fill="#0d1b2a"/>
+        <text x="95" y="232" text-anchor="middle" font-size="8" fill="#0d1b2a">Dart</text>
+        <circle cx="465" cy="200" r="4" fill="#0d1b2a"/>
+        <text x="465" y="190" text-anchor="middle" font-size="8" fill="#0d1b2a">Alex</text>
+        <circle cx="540" cy="143" r="4" fill="#0d1b2a"/>
+        <text x="540" y="133" text-anchor="middle" font-size="8" fill="#0d1b2a">Tx</text>
+        <circle cx="620" cy="80" r="4" fill="#0d1b2a"/>
+        <text x="620" y="68" text-anchor="middle" font-size="8" fill="#0d1b2a">GPT</text>
+
+        <!-- Y-axis label -->
+        <text x="40" y="160" text-anchor="middle" font-size="11" fill="#5a5f6a" transform="rotate(-90 40 160)">期待・投資・実装</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 2.1</span> &nbsp;AI 70年の俯瞰：3つのブームと2つの冬。各ブームは別の中心技術に支えられ、冬は「期待と現実のギャップ」によって訪れた。Dart=ダートマス会議, Alex=AlexNet, Tx=Transformer, GPT=ChatGPT。</div>
+    </div>
+
+    <!-- ==================================================== §2 -->
+    <h2 id="boom1"><span class="label">§2 / BOOM 1</span>第1次AIブーム（1956–1974）：探索と推論</h2>
+
+    <div class="era-card boom">
+      <div class="era-period">1956 – 1974（約18年）</div>
+      <h4>第1次AIブーム：探索と推論の時代</h4>
+      <p>論理ベースの記号操作で、人間の問題解決を機械化しようとした時代。</p>
+    </div>
+
+    <h3>2.1 ダートマス会議（1956）</h3>
+    <p>
+      1956年夏、米国ダートマス大学で開催された約2ヶ月のワークショップ。<strong>ジョン・マッカーシー</strong>（後にLISP発明）の主催で、<strong>マービン・ミンスキー、クロード・シャノン、ナサニエル・ロチェスター</strong> ら、後にAI研究の巨人となる10名が集まりました。
+    </p>
+    <p>
+      このワークショップで「<strong>Artificial Intelligence</strong>」という用語が公式に採用されました。提案書には次の主旨が書かれています：
+    </p>
+    <div class="example">
+      <div class="example-title">ダートマス会議 提案書より（要約）</div>
+      「学習や知性のあらゆる側面を、原則として正確に記述できる、それゆえ機械にシミュレーションさせられる、という仮定に基づいてこの研究を進める」
+    </div>
+    <p>
+      <strong>強い楽観主義</strong>がこの時代を特徴づけます。「20年以内に人間と同等のAIが完成する」という予測も真剣に語られました。
+    </p>
+
+    <h3>2.2 中心技術：探索と推論</h3>
+    <ul>
+      <li><strong>幅優先探索（BFS）/ 深さ優先探索（DFS）</strong>：問題空間を体系的に探索</li>
+      <li><strong>α-β枝刈り</strong>：ミニマックス探索の効率化（チェスAI などで使用）</li>
+      <li><strong>A* 探索</strong>：ヒューリスティック関数を使った最良優先探索</li>
+      <li><strong>論理プログラミング</strong>：Prolog などで論理推論を計算機に</li>
+    </ul>
+
+    <h3>2.3 代表的成果</h3>
+    <table class="spec">
+      <tr><th>1956</th><td>Logic Theorist（Newell・Simon）：数学の定理を自動証明</td></tr>
+      <tr><th>1957</th><td>パーセプトロン（Rosenblatt）：脳を模倣した最初の学習機</td></tr>
+      <tr><th>1958</th><td>LISP 言語（McCarthy）：AI 研究で標準となる関数型言語</td></tr>
+      <tr><th>1966</th><td>ELIZA（Weizenbaum）：パターンマッチで「カウンセラー」を演じるチャットボット</td></tr>
+      <tr><th>1969</th><td>『Perceptrons』（Minsky・Papert）：単層パーセプトロンは XOR を解けないと証明</td></tr>
+    </table>
+
+    <h3>2.4 ELIZA の影響</h3>
+    <p>
+      ELIZA は驚くほど単純なパターンマッチで動作しましたが、多くのユーザーが <strong>「ELIZA は本当に自分を理解している」</strong> と信じ込みました。Weizenbaum 自身が「これは恐ろしい」と語ったほど。<strong>「ELIZA 効果」</strong>は、現代の生成AI でも繰り返される心理現象として知られています。
+    </p>
+
+    <div class="crossref">
+      <div class="crossref-title">→ 現代との接続</div>
+      ChatGPT に対する「擬人化」「親密感」「依存」も ELIZA 効果の延長です。技術的に正確に理解することが、健全な利用の前提になります。
+    </div>
+
+    <!-- ==================================================== §3 -->
+    <h2 id="winter1"><span class="label">§3 / WINTER 1</span>第1次AIの冬（1974–1980）</h2>
+
+    <div class="era-card winter">
+      <div class="era-period">1974 – 1980（約6年）</div>
+      <h4>第1次AIの冬：組み合わせ爆発の壁</h4>
+      <p>探索が現実の規模に拡張できず、約束が果たせない時代。</p>
+    </div>
+
+    <h3>3.1 冬を招いた要因</h3>
+    <ol>
+      <li><strong>組み合わせ爆発</strong>：探索空間が指数的に大きくなる。チェスでも10^120局面。実世界はもっと大きい</li>
+      <li><strong>常識推論の困難</strong>：フレーム問題（章1 §6 で扱った）。世界の何を考慮すべきか有限ステップで決定できない</li>
+      <li><strong>計算機の貧弱さ</strong>：当時のメモリは MB 単位、CPU も 1 MHz 未満</li>
+      <li><strong>Lighthill レポート（1973）</strong>：英国政府の依頼でジェームズ・ライトヒルが書いた批判的レポート。AI 研究への投資打ち切りを促した</li>
+      <li><strong>パーセプトロンの限界証明</strong>：単層では XOR が解けない。多層化が必要だが、当時はバックプロパゲーションが知られていなかった</li>
+    </ol>
+
+    <h3>3.2 投資撤退</h3>
+    <p>
+      DARPA（米国国防高等研究計画局）が AI への投資を大幅縮小、英国でも研究費が削減され、AI 専門の研究室の閉鎖が相次ぎました。<strong>「AI ウィンター」という言葉が一般化した</strong> のもこの時期です。
+    </p>
+
+    <!-- ==================================================== §4 -->
+    <h2 id="boom2"><span class="label">§4 / BOOM 2</span>第2次AIブーム（1980–1992）：エキスパートシステム</h2>
+
+    <div class="era-card boom">
+      <div class="era-period">1980 – 1992（約12年）</div>
+      <h4>第2次AIブーム：知識ベースの時代</h4>
+      <p>専門家の知識をルールとして書き下し、商業利用を成功させた時代。</p>
+    </div>
+
+    <h3>4.1 エキスパートシステム</h3>
+    <p>
+      <strong>「専門家の知識を IF-THEN ルールの集合として書き、推論エンジンで問題を解く」</strong> という方式。これは大きな商業的成功を収めました。
+    </p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr_es" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          </marker>
+        </defs>
+
+        <!-- Knowledge engineer -->
+        <circle cx="80" cy="80" r="28" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="80" y="84" text-anchor="middle" font-size="10" fill="#0d1b2a">専門家</text>
+        <text x="80" y="125" text-anchor="middle" font-size="10" fill="#5a5f6a">(医者・地質学者など)</text>
+
+        <!-- Knowledge engineer -->
+        <circle cx="80" cy="230" r="28" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="80" y="234" text-anchor="middle" font-size="10" fill="#0d1b2a">知識工学者</text>
+        <text x="80" y="275" text-anchor="middle" font-size="10" fill="#5a5f6a">(ナレッジエンジニア)</text>
+
+        <!-- Knowledge base -->
+        <rect x="220" y="50" width="200" height="100" fill="#faf7f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="320" y="78" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">知識ベース</text>
+        <text x="320" y="100" text-anchor="middle" font-size="11" fill="#5a5f6a">IF 発熱 AND 咳 THEN</text>
+        <text x="320" y="116" text-anchor="middle" font-size="11" fill="#5a5f6a">  → 風邪 (確信度 0.7)</text>
+        <text x="320" y="135" text-anchor="middle" font-size="11" fill="#5a5f6a">... (数千ルール)</text>
+
+        <!-- Inference engine -->
+        <rect x="220" y="190" width="200" height="80" fill="#0d1b2a"/>
+        <text x="320" y="218" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">推論エンジン</text>
+        <text x="320" y="240" text-anchor="middle" font-size="10" fill="#d4a017">前向き推論</text>
+        <text x="320" y="256" text-anchor="middle" font-size="10" fill="#d4a017">後向き推論</text>
+
+        <!-- User -->
+        <circle cx="600" cy="155" r="28" fill="#b8431f"/>
+        <text x="600" y="160" text-anchor="middle" font-size="11" fill="#faf7f2">利用者</text>
+
+        <!-- Arrows -->
+        <path d="M108 90 L218 90" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#arr_es)"/>
+        <text x="160" y="80" text-anchor="middle" font-size="9" fill="#5a5f6a">知識ヒアリング</text>
+
+        <path d="M108 230 L218 230" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#arr_es)"/>
+        <text x="160" y="220" text-anchor="middle" font-size="9" fill="#5a5f6a">ルール化</text>
+
+        <path d="M320 150 L320 188" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#arr_es)"/>
+        <text x="335" y="172" font-size="9" fill="#5a5f6a">参照</text>
+
+        <path d="M420 230 L572 165" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#arr_es)"/>
+        <path d="M572 155 L420 220" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#arr_es)" stroke-dasharray="4,3"/>
+        <text x="500" y="180" font-size="9" fill="#5a5f6a">質問</text>
+        <text x="500" y="208" font-size="9" fill="#5a5f6a">回答</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 2.2</span> &nbsp;エキスパートシステムの構造。専門家から知識工学者が知識を抽出し、IF-THEN ルールとして知識ベースに格納。推論エンジンがそれを参照して利用者の質問に答える。</div>
+    </div>
+
+    <h3>4.2 代表的エキスパートシステム</h3>
+    <table class="spec">
+      <tr><th>MYCIN</th><td>1970年代前半・スタンフォード大。感染症の診断と抗生物質の推薦。約450ルール。専門医と同等の精度</td></tr>
+      <tr><th>DENDRAL</th><td>1965年・スタンフォード大。質量分析データから化学物質の構造を推定</td></tr>
+      <tr><th>XCON / R1</th><td>1980年代・DEC社のミニコンピュータの設定を自動化。1986年までに$40M節約と報告</td></tr>
+      <tr><th>PROSPECTOR</th><td>1970年代後半。鉱物資源の評価。実際に新しい鉱脈を発見した実績</td></tr>
+    </table>
+
+    <h3>4.3 第五世代コンピュータプロジェクト（日本）</h3>
+    <p>
+      1982年から1992年、日本政府が10年間で約540億円を投資した国家プロジェクト。<strong>論理プログラミング言語 Prolog</strong> をベースとした並列推論マシンを目標にしました。
+    </p>
+    <p>
+      技術的に意欲的でしたが、<strong>商業的成功には繋がりませんでした</strong>。同時期に他国で機械学習・統計的手法が台頭したこと、論理推論ベースの限界が露呈したことが原因です。
+    </p>
+
+    <!-- ==================================================== §5 -->
+    <h2 id="winter2"><span class="label">§5 / WINTER 2</span>第2次AIの冬（1992–2010）</h2>
+
+    <div class="era-card winter">
+      <div class="era-period">1992 – 2010（約18年）</div>
+      <h4>第2次AIの冬：知識獲得のボトルネック</h4>
+      <p>専門家の知識をルール化する人件費が膨大で、例外処理にも脆かった時代。</p>
+    </div>
+
+    <h3>5.1 冬の構造的原因</h3>
+    <ol>
+      <li><strong>知識獲得のボトルネック</strong>：1つの分野のエキスパートシステムを作るのに、数年と数千時間の専門家インタビュー</li>
+      <li><strong>例外処理の脆さ</strong>：ルールに無い状況に対応できない。実世界の複雑さに耐えられない</li>
+      <li><strong>メンテナンス困難</strong>：知識が更新されるたびにルールも更新が必要。整合性の維持が困難</li>
+      <li><strong>暗黙知の問題</strong>：専門家自身が言語化できない直観的判断はルール化できない（マイケル・ポランニーの暗黙知論）</li>
+    </ol>
+
+    <h3>5.2 この時期の地味な進歩</h3>
+    <p>
+      ニュースとしては地味ですが、後の第3次ブームの基礎となる技術がこの「冬」の時期に育ちました：
+    </p>
+    <ul>
+      <li><strong>1986年</strong>：バックプロパゲーション論文（Rumelhart、Hinton、Williams）— 多層NNの学習が可能に</li>
+      <li><strong>1989年</strong>：LeCun の CNN（LeNet）— 手書き数字認識</li>
+      <li><strong>1995年</strong>：SVM（Cortes、Vapnik）— カーネルトリックで非線形分類</li>
+      <li><strong>1997年</strong>：LSTM（Hochreiter、Schmidhuber）— RNN の勾配消失問題を解決</li>
+      <li><strong>1997年</strong>：Deep Blue が世界チャンピオン Kasparov に勝利（探索ベース）</li>
+      <li><strong>2001年</strong>：ランダムフォレスト（Breiman）— アンサンブル学習の主流</li>
+      <li><strong>2006年</strong>：Hinton の DBN（深層信念ネットワーク）— 事前学習による深層学習復活の合図</li>
+    </ul>
+
+    <!-- ==================================================== §6 -->
+    <h2 id="boom3"><span class="label">§6 / BOOM 3</span>第3次AIブーム（2010–現在）：深層学習</h2>
+
+    <div class="era-card boom">
+      <div class="era-period">2010 – 現在（15年以上、継続中）</div>
+      <h4>第3次AIブーム：深層学習革命</h4>
+      <p>大規模データ・GPU計算・深層ニューラルネットワークの三位一体で実用化が爆発した時代。</p>
+    </div>
+
+    <h3>6.1 転換点：AlexNet（2012）</h3>
+    <p>
+      2012年の <strong>ILSVRC</strong>（ImageNet Large Scale Visual Recognition Challenge）。<strong>Geoffrey Hinton</strong> の研究室の <strong>Alex Krizhevsky、Ilya Sutskever、Geoffrey Hinton</strong> が提出した <strong>AlexNet</strong> が、2位を10ポイント以上引き離して優勝。エラー率15.3%、2位は26.2%でした。
+    </p>
+    <p>
+      AlexNet の鍵となる工夫：
+    </p>
+    <ul>
+      <li><strong>深い畳み込みネット</strong>：8層</li>
+      <li><strong>ReLU 活性化関数</strong>：勾配消失緩和</li>
+      <li><strong>GPU 学習</strong>：2台の GeForce GTX 580 で6日間</li>
+      <li><strong>Dropout</strong>：過学習防止</li>
+      <li><strong>データ拡張</strong>：水平反転、色ジッタ等</li>
+    </ul>
+    <p>
+      この結果は研究コミュニティに衝撃を与え、<strong>「深層学習は使える」</strong> という認識が一気に広がりました。
+    </p>
+
+    <h3>6.2 第3次ブームの三位一体</h3>
+    <div class="figure">
+      <svg viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Triangle visualization -->
+        <polygon points="340,60 130,260 550,260" fill="none" stroke="#0d1b2a" stroke-width="2"/>
+
+        <!-- Data corner -->
+        <circle cx="130" cy="260" r="55" fill="#fff8f2" stroke="#b8431f" stroke-width="2"/>
+        <text x="130" y="252" text-anchor="middle" font-size="14" font-weight="bold" fill="#b8431f">大規模データ</text>
+        <text x="130" y="272" text-anchor="middle" font-size="10" fill="#5a5f6a">ImageNet, Web</text>
+
+        <!-- Compute corner -->
+        <circle cx="550" cy="260" r="55" fill="#fff8f2" stroke="#b8431f" stroke-width="2"/>
+        <text x="550" y="252" text-anchor="middle" font-size="14" font-weight="bold" fill="#b8431f">GPU / TPU</text>
+        <text x="550" y="272" text-anchor="middle" font-size="10" fill="#5a5f6a">並列演算</text>
+
+        <!-- Algorithm corner -->
+        <circle cx="340" cy="60" r="55" fill="#fff8f2" stroke="#b8431f" stroke-width="2"/>
+        <text x="340" y="52" text-anchor="middle" font-size="14" font-weight="bold" fill="#b8431f">深層NN</text>
+        <text x="340" y="72" text-anchor="middle" font-size="10" fill="#5a5f6a">CNN, RNN, Transformer</text>
+
+        <!-- Center -->
+        <circle cx="340" cy="195" r="38" fill="#0d1b2a"/>
+        <text x="340" y="195" text-anchor="middle" font-size="14" font-weight="bold" fill="#faf7f2">第3次</text>
+        <text x="340" y="215" text-anchor="middle" font-size="11" fill="#d4a017">AIブーム</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 2.3</span> &nbsp;第3次AIブームを支える三位一体。どれか一つが欠けても深層学習革命は起こらなかった。データ・計算・アルゴリズムの3つが相互に拡張可能になったことが本質。</div>
+    </div>
+
+    <h3>6.3 主な里程標（2012–2022）</h3>
+    <table class="spec">
+      <tr><th>2014</th><td>GAN（Goodfellow ら）：生成モデルの新パラダイム</td></tr>
+      <tr><th>2014</th><td>Seq2Seq（Sutskever ら）：機械翻訳のEnd-to-End学習</td></tr>
+      <tr><th>2015</th><td>ResNet（He ら）：残差接続で152層、勾配消失を実質的に解決</td></tr>
+      <tr><th>2016</th><td>AlphaGo がイ・セドルに勝利。RL + 探索 + 深層学習</td></tr>
+      <tr><th>2017</th><td>Transformer 論文「Attention Is All You Need」（Vaswani ら）</td></tr>
+      <tr><th>2018</th><td>BERT（Google）、GPT-1（OpenAI）：事前学習＋微調整パラダイム</td></tr>
+      <tr><th>2020</th><td>GPT-3：1750億パラメータ。Few-shot 学習の実証</td></tr>
+      <tr><th>2020</th><td>Scaling Laws（Kaplan ら）：パラメータ・データ・計算量の冪乗則を発見</td></tr>
+      <tr><th>2021</th><td>CLIP、Codex：マルチモーダル、コード生成の本格化</td></tr>
+      <tr><th>2022</th><td>Stable Diffusion 公開、ChatGPT 公開</td></tr>
+    </table>
+
+    <!-- ==================================================== §7 -->
+    <h2 id="boom4"><span class="label">§7 / GEN AI</span>第4次? 生成AI時代（2022–）</h2>
+
+    <p>
+      2022年11月の <strong>ChatGPT</strong> 公開は、AI を初めて一般大衆の手に届けた歴史的事件です。2ヶ月で1億ユーザーに到達（史上最速）。多くの研究者がこれを <strong>「第4次AIブーム」</strong> と呼ぶようになりました。第3次の延長なのか、新しい段階なのかは議論があります。
+    </p>
+
+    <h3>7.1 生成AI時代の特徴</h3>
+    <ul>
+      <li><strong>基盤モデル（Foundation Models）</strong>：一つの巨大モデルで多様なタスクに対応</li>
+      <li><strong>プロンプトエンジニアリング</strong>：プログラミングから自然言語指示へ</li>
+      <li><strong>RLHF（人間フィードバックによる強化学習）</strong>：人間の価値観への調整</li>
+      <li><strong>マルチモーダル化</strong>：テキスト・画像・音声・動画の統一</li>
+      <li><strong>エージェント化</strong>：自律的に外部ツールを呼び出す</li>
+      <li><strong>巨大化</strong>：パラメータ数・コンテキスト長・データ量の継続的拡張</li>
+    </ul>
+
+    <h3>7.2 2023–2026 の主な動向</h3>
+    <table class="spec">
+      <tr><th>2023.03</th><td>GPT-4 公開。マルチモーダル対応</td></tr>
+      <tr><th>2023</th><td>Llama / Llama 2（Meta）：オープンモデルの本格化</td></tr>
+      <tr><th>2023</th><td>Claude（Anthropic）公開、Gemini（Google）公開</td></tr>
+      <tr><th>2024</th><td>EU AI Act 成立。生成AIへの規制始動</td></tr>
+      <tr><th>2024–2025</th><td>推論モデル（OpenAI o1, o3, DeepSeek R1）登場。「考える」AI</td></tr>
+      <tr><th>2025</th><td>エージェント機能の実用化（Operator、Claude Computer Use）</td></tr>
+    </table>
+
+    <h3>7.3 まだ未解決の論点</h3>
+    <ul>
+      <li><strong>ハルシネーション</strong>：流暢だが事実と異なる出力</li>
+      <li><strong>環境負荷</strong>：学習・推論の電力消費が指数的に増加</li>
+      <li><strong>著作権</strong>：学習データの取扱、生成物の権利</li>
+      <li><strong>労働市場</strong>：知的職業への影響</li>
+      <li><strong>誤情報・ディープフェイク</strong>：悪用可能性</li>
+      <li><strong>AGI への接近？</strong>：技術的・哲学的に未決着</li>
+    </ul>
+
+    <!-- ==================================================== §8 -->
+    <h2 id="milestones"><span class="label">§8 / KEY FIGURES</span>重要人物</h2>
+
+    <table class="spec">
+      <tr><th>Alan Turing</th><td>1912–1954。計算理論、チューリングテスト</td></tr>
+      <tr><th>John McCarthy</th><td>1927–2011。「AI」命名、LISP発明</td></tr>
+      <tr><th>Marvin Minsky</th><td>1927–2016。MIT AI Lab創設、フレーム問題提起</td></tr>
+      <tr><th>Geoffrey Hinton</th><td>1947–。「深層学習の父」、バックプロパゲーション普及、2018年チューリング賞、2024年ノーベル物理学賞</td></tr>
+      <tr><th>Yann LeCun</th><td>1960–。CNN（LeNet）開発、2018年チューリング賞、Meta AI チーフ</td></tr>
+      <tr><th>Yoshua Bengio</th><td>1964–。深層学習基礎理論、2018年チューリング賞</td></tr>
+      <tr><th>Andrew Ng</th><td>1976–。Coursera 創業、deeplearning.ai、ImageNet 構築参画</td></tr>
+      <tr><th>Fei-Fei Li</th><td>1976–。ImageNet 構築、AI 民主化の旗手</td></tr>
+      <tr><th>Demis Hassabis</th><td>1976–。DeepMind 創業、AlphaGo・AlphaFold、2024年ノーベル化学賞</td></tr>
+      <tr><th>Ilya Sutskever</th><td>1986–。AlexNet、OpenAI 共同創業</td></tr>
+      <tr><th>Dario Amodei</th><td>1983–。OpenAI 元 VP of Research、Anthropic 創業</td></tr>
+      <tr><th>Andrej Karpathy</th><td>1986–。スタンフォード CS231n、Tesla、OpenAI</td></tr>
+    </table>
+
+    <!-- ==================================================== §9 -->
+    <h2 id="patterns"><span class="label">§9 / PATTERNS</span>ブームと冬のパターン</h2>
+
+    <h3>9.1 共通パターン</h3>
+    <p>
+      3つのブームと2つの冬を俯瞰すると、構造的な共通パターンが見えます：
+    </p>
+    <ol>
+      <li><strong>転換点となる技術ブレイクスルー</strong>（ダートマス／MYCIN／AlexNet／ChatGPT）</li>
+      <li><strong>誇大広告と過剰な期待</strong>（「20年でAGI」「人間を超える」など）</li>
+      <li><strong>大規模投資の流入</strong>（政府・企業・VC）</li>
+      <li><strong>実装上の困難の露呈</strong>（組み合わせ爆発／知識獲得／…？）</li>
+      <li><strong>「期待値 - 実装可能性」のギャップ</strong>が拡大</li>
+      <li><strong>投資撤退と研究衰退</strong></li>
+      <li><strong>静かな技術蓄積</strong>（冬の間に次の基礎が育つ）</li>
+      <li><strong>次の転換点で再点火</strong></li>
+    </ol>
+
+    <h3>9.2 ハイプサイクル</h3>
+    <p>
+      ガートナーが提唱する「ハイプサイクル」は、新技術の社会的認知の典型パターンを示します。AI の各ブームもこのカーブに従って動きました。
+    </p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- Axes -->
+        <line x1="60" y1="240" x2="660" y2="240" stroke="#0d1b2a" stroke-width="2"/>
+        <line x1="60" y1="40" x2="60" y2="240" stroke="#0d1b2a" stroke-width="1"/>
+        <text x="40" y="140" text-anchor="middle" font-size="11" fill="#5a5f6a" transform="rotate(-90 40 140)">期待</text>
+        <text x="660" y="258" text-anchor="end" font-size="11" fill="#5a5f6a">時間</text>
+
+        <!-- Curve -->
+        <path d="M 80 230 Q 130 100 200 60 Q 230 50 260 80 Q 290 120 320 200 Q 350 230 380 220 Q 450 200 520 160 Q 600 130 660 110" stroke="#b8431f" stroke-width="3" fill="none"/>
+
+        <!-- Markers -->
+        <text x="80" y="220" text-anchor="middle" font-size="9" fill="#0d1b2a">技術登場</text>
+        <line x1="230" y1="55" x2="230" y2="40" stroke="#5a5f6a"/>
+        <text x="230" y="32" text-anchor="middle" font-size="10" fill="#b8431f" font-weight="bold">過度な期待の頂</text>
+
+        <line x1="320" y1="200" x2="320" y2="215" stroke="#5a5f6a"/>
+        <text x="320" y="232" text-anchor="middle" font-size="10" fill="#2e5577" font-weight="bold">幻滅期</text>
+
+        <line x1="450" y1="200" x2="450" y2="215" stroke="#5a5f6a"/>
+        <text x="450" y="232" text-anchor="middle" font-size="9" fill="#0d1b2a">啓発期</text>
+
+        <line x1="620" y1="115" x2="620" y2="130" stroke="#5a5f6a"/>
+        <text x="620" y="150" text-anchor="middle" font-size="9" fill="#0d1b2a">生産性の安定期</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 2.4</span> &nbsp;ガートナーのハイプサイクル。新技術は「過度な期待 → 幻滅 → 啓発 → 安定」という典型パターンをたどる。AIの各ブームもこのカーブを描いてきた。</div>
+    </div>
+
+    <h3>9.3 現在の生成AIはどこにいるか</h3>
+    <p>
+      Gartner の2024年ハイプサイクルでは、生成AI は <strong>「幻滅期に向かって下降中」</strong> と評価されました。実用化は進む一方、期待値とのギャップに気付く段階に入りつつあるという見方です。
+    </p>
+    <p>
+      ただし、第3次ブームのように <strong>「実装可能なものが残って静かに広がる」</strong> 段階に入る可能性が高く、第3の冬は来ない、あるいは来ても短いという楽観論も有力です。
+    </p>
+
+    <!-- ==================================================== §10 -->
+    <h2 id="summary"><span class="label">§10 / SUMMARY</span>章のまとめ</h2>
+
+    <h3>本章で覚えるべき15の核概念</h3>
+    <table class="spec">
+      <tr><th>1</th><td><strong>ダートマス会議（1956）</strong> — マッカーシーが「AI」を命名</td></tr>
+      <tr><th>2</th><td><strong>第1次AIブーム</strong> — 探索と推論、ELIZA、Perceptron</td></tr>
+      <tr><th>3</th><td><strong>第1次AIの冬</strong> — 組み合わせ爆発、Lighthillレポート</td></tr>
+      <tr><th>4</th><td><strong>第2次AIブーム</strong> — エキスパートシステム、MYCIN、第五世代</td></tr>
+      <tr><th>5</th><td><strong>第2次AIの冬</strong> — 知識獲得のボトルネック</td></tr>
+      <tr><th>6</th><td><strong>第3次AIブーム</strong> — 深層学習（2012 AlexNet ～）</td></tr>
+      <tr><th>7</th><td><strong>三位一体</strong> — 大規模データ、GPU、深層NN</td></tr>
+      <tr><th>8</th><td><strong>ImageNet / ILSVRC</strong> — 深層学習革命の場</td></tr>
+      <tr><th>9</th><td><strong>Transformer（2017）</strong> — 「Attention Is All You Need」</td></tr>
+      <tr><th>10</th><td><strong>第4次? 生成AI時代</strong> — ChatGPT 2022年公開</td></tr>
+      <tr><th>11</th><td><strong>Hinton・LeCun・Bengio</strong> — 2018年チューリング賞（深層学習）</td></tr>
+      <tr><th>12</th><td><strong>Hinton</strong> — 2024年ノーベル物理学賞</td></tr>
+      <tr><th>13</th><td><strong>Hassabis</strong> — 2024年ノーベル化学賞（AlphaFold）</td></tr>
+      <tr><th>14</th><td><strong>ハイプサイクル</strong> — ガートナー、過度な期待→幻滅→啓発→安定</td></tr>
+      <tr><th>15</th><td><strong>冬の構造的原因</strong> — 期待と実装のギャップ</td></tr>
+    </table>
+
+    <!-- ==================================================== Test -->
+    <div class="test-yourself" id="test">
+      <h3>章末問題：理解度確認</h3>
+      <p style="color:#d4d0c5;margin:0 0 12px;">以下に <strong>口頭で答えられる</strong> なら、本章は卒業です。</p>
+      <ol>
+        <li>ダートマス会議の年・参加者・成果を3つ以上挙げられるか</li>
+        <li>第1次AIブームの中心技術と、冬を招いた要因を2つ以上説明できるか</li>
+        <li>ELIZA がなぜ重要か。技術的にはどう動いていたか</li>
+        <li>第2次AIブームのエキスパートシステムの構造（知識ベース、推論エンジン、知識工学者）を図で描けるか</li>
+        <li>MYCIN がどんな分野に応用されたか、いつ頃か</li>
+        <li>第五世代コンピュータプロジェクトの目標と、なぜ商業的に失敗したか</li>
+        <li>「知識獲得のボトルネック」とは何か</li>
+        <li>2012年 ILSVRC で AlexNet が何を達成したか、技術的工夫を3つ以上</li>
+        <li>第3次AIブームの「三位一体」を説明できるか</li>
+        <li>Transformer 論文の年・著者・タイトル・なぜ画期的だったか</li>
+        <li>2018年チューリング賞の3人と、それぞれの貢献</li>
+        <li>2024年ノーベル賞でAIに関連した2人の受賞者と分野</li>
+        <li>ハイプサイクルの4段階を順に挙げられるか</li>
+        <li>現在の生成AIブームがハイプサイクルのどこにいるという見方が多いか</li>
+        <li>「ブームと冬の構造的パターン」を5ステップ以上で説明できるか</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="01-what-is-ai.html">← 章1: AIとは何か</a></div>
+  <div><span class="ch-label">次の章</span><br><span class="ch-title">章3: 線形代数</span></div>
+  <div><a href="03-linear-algebra.html">章3へ進む →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="colophon">Swallow<br><em>AI Academy</em></div>
+      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+    </div>
+    <div><h6>G検定 学習動線</h6><ul>
+      <li><a href="../../../certifications/g-kentei.html">概要</a></li>
+      <li><a href="index.html">基本</a></li>
+      <li><a href="../advanced/index.html">応用</a></li>
+      <li><a href="../../../quiz.html?topic=g-kentei">問題演習</a></li>
+    </ul></div>
+    <div><h6>関連章</h6><ul>
+      <li><a href="01-what-is-ai.html">章1: AIとは何か</a></li>
+      <li><a href="02-history.html"><strong>章2（このページ）</strong></a></li>
+      <li><a href="03-linear-algebra.html">章3: 線形代数</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Swallow AI Academy · Independent Project</div>
+    <div>Built on GitHub Pages · No tracking · No ads</div>
+  </div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

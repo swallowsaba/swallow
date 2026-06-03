@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章8 RAG — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章8：Retrieval-Augmented Generation。埋め込み検索、ベクトルDB、ハイブリッド検索、re-ranking、ハルシネーション対策。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="../basics/index.html">基本</a>
+      <a href="index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.8</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章8</div>
+    <h1>応用 章8 — RAG<span class="en">Retrieval-Augmented Generation</span></h1>
+    <p class="standfirst">「LLM は最新情報を知らない」「社内文書を知らない」「ハルシネーションする」── これらの問題に対する <strong>実務上の決定打</strong> が RAG。検索 → 拡張 → 生成という3段階で、LLM を <strong>外部知識ベース</strong> に接続します。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="07-rl.html">← 章7: RL</a></div>
+  <div><span class="ch-label">応用 Chapter 8 of 12</span><br><span class="ch-title">RAG</span></div>
+  <div><a href="09-agent.html">章9: エージェント →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章8 目次</h6>
+    <a href="#why">§1 なぜ RAG が必要か</a>
+    <a href="#embed">§2 埋め込みベクトル</a>
+    <a href="#vectordb">§3 ベクトルデータベース</a>
+    <a href="#flow">§4 RAG の3段階</a>
+    <a href="#chunking">§5 チャンク化と前処理</a>
+    <a href="#hybrid">§6 ハイブリッド検索</a>
+    <a href="#rerank">§7 再ランキング</a>
+    <a href="#advanced">§8 高度な RAG パターン</a>
+    <a href="#summary">§9 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <h2 id="why"><span class="label">§1 / WHY</span>なぜ RAG が必要か</h2>
+    <p>LLM の根本的な制約：</p>
+    <ul>
+      <li><strong>知識のカットオフ</strong>：訓練データの時点までしか知らない</li>
+      <li><strong>非公開情報</strong>：社内文書・個人ファイル等は知らない</li>
+      <li><strong>ハルシネーション</strong>：知らないことも自信満々に答える</li>
+      <li><strong>再学習コスト</strong>：知識を更新するには莫大な計算資源</li>
+    </ul>
+    <p>RAG の解決策：「<strong>必要な情報をその場で検索して、プロンプトに添えて LLM に渡す</strong>」。実装容易・効果絶大で、2023-2025年の LLM 応用の中心。</p>
+
+    <h2 id="embed"><span class="label">§2 / EMBED</span>埋め込みベクトル</h2>
+    <p>テキストを <strong>意味を保った高次元ベクトル</strong> に変換。意味が近い文は近いベクトルになる。</p>
+    <div class="formula">embed("猫が魚を食べる") ≈ embed("ネコがサカナを食べる")</div>
+    <p>代表的なモデル：</p>
+    <ul>
+      <li><strong>text-embedding-3</strong>（OpenAI）</li>
+      <li><strong>BGE</strong>（中国 BAAI、オープン強力）</li>
+      <li><strong>E5</strong>（Microsoft）</li>
+      <li><strong>multilingual-e5</strong>（多言語）</li>
+      <li><strong>Cohere Embed</strong></li>
+      <li><strong>Sentence-BERT</strong>（古典）</li>
+    </ul>
+    <p>類似度は <strong>コサイン類似度</strong>（基本編 章3）：</p>
+    <div class="formula">cos_sim(q, d) = (q · d) / (||q|| · ||d||)</div>
+
+    <h2 id="vectordb"><span class="label">§3 / VECTORDB</span>ベクトルデータベース</h2>
+    <p>埋め込みベクトルを格納し、<strong>近似最近傍探索（ANN）</strong> で高速検索するDB。</p>
+    <table class="spec">
+      <tr><th>Pinecone</th><td>マネージド SaaS。実務で人気</td></tr>
+      <tr><th>Weaviate</th><td>オープンソース、グラフ機能あり</td></tr>
+      <tr><th>Chroma</th><td>軽量・開発者向け</td></tr>
+      <tr><th>Qdrant</th><td>高性能 Rust 実装、オープン</td></tr>
+      <tr><th>Milvus</th><td>大規模分散</td></tr>
+      <tr><th>FAISS</th><td>Meta、ライブラリ（DBではない）。HNSW, IVF 等のアルゴリズム提供</td></tr>
+      <tr><th>pgvector</th><td>PostgreSQL の拡張。既存 DB に統合</td></tr>
+    </table>
+    <p>主な ANN アルゴリズム：<strong>HNSW</strong>（階層的近傍グラフ）、<strong>IVF</strong>（転置インデックス）、<strong>PQ</strong>（直積量子化）。</p>
+
+    <h2 id="flow"><span class="label">§4 / FLOW</span>RAG の3段階</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="rag-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          </marker>
+        </defs>
+        <!-- User Query -->
+        <rect x="20" y="120" width="120" height="60" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="80" y="148" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">ユーザの</text>
+        <text x="80" y="165" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">質問</text>
+
+        <!-- Step 1: Retrieve -->
+        <rect x="180" y="50" width="180" height="200" fill="#b8431f"/>
+        <text x="270" y="80" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">① Retrieve</text>
+        <text x="270" y="98" text-anchor="middle" font-size="10" fill="#f5d4c4">（検索）</text>
+        <text x="270" y="125" text-anchor="middle" font-size="11" fill="#faf7f2">クエリを埋込ベクトルに</text>
+        <text x="270" y="142" text-anchor="middle" font-size="11" fill="#faf7f2">↓</text>
+        <text x="270" y="160" text-anchor="middle" font-size="11" fill="#faf7f2">ベクトルDB で top-k 検索</text>
+        <text x="270" y="177" text-anchor="middle" font-size="11" fill="#faf7f2">↓</text>
+        <text x="270" y="195" text-anchor="middle" font-size="11" fill="#faf7f2">関連文書 k 個を取得</text>
+        <line x1="140" y1="150" x2="178" y2="150" stroke="#0d1b2a" marker-end="url(#rag-a)"/>
+
+        <!-- Step 2: Augment -->
+        <rect x="390" y="50" width="180" height="200" fill="#d4a017"/>
+        <text x="480" y="80" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">② Augment</text>
+        <text x="480" y="98" text-anchor="middle" font-size="10" fill="#5a5f6a">（拡張）</text>
+        <text x="480" y="130" text-anchor="middle" font-size="11" fill="#0d1b2a">「以下の文書を参考に</text>
+        <text x="480" y="147" text-anchor="middle" font-size="11" fill="#0d1b2a">　回答してください:」</text>
+        <text x="480" y="173" text-anchor="middle" font-size="11" fill="#0d1b2a">{検索した文書}</text>
+        <text x="480" y="195" text-anchor="middle" font-size="11" fill="#0d1b2a">質問: {ユーザの質問}</text>
+        <line x1="360" y1="150" x2="388" y2="150" stroke="#0d1b2a" marker-end="url(#rag-a)"/>
+
+        <!-- Step 3: Generate -->
+        <rect x="600" y="50" width="140" height="200" fill="#3a7d44"/>
+        <text x="670" y="80" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">③ Generate</text>
+        <text x="670" y="98" text-anchor="middle" font-size="10" fill="#c0d4c4">（生成）</text>
+        <text x="670" y="140" text-anchor="middle" font-size="11" fill="#faf7f2">LLM が文書に</text>
+        <text x="670" y="157" text-anchor="middle" font-size="11" fill="#faf7f2">基づいて</text>
+        <text x="670" y="174" text-anchor="middle" font-size="11" fill="#faf7f2">回答を生成</text>
+        <line x1="570" y1="150" x2="598" y2="150" stroke="#0d1b2a" marker-end="url(#rag-a)"/>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 8.1</span> RAG の3段階。質問 → 検索 → プロンプトに添付 → LLM が文書に基づいて回答。LLM の重みを変えずに、新しい知識・最新情報・社内データを使えるようになる。</div>
+    </div>
+
+    <h2 id="chunking"><span class="label">§5 / CHUNK</span>チャンク化と前処理</h2>
+    <p>長文書はそのままだとベクトル化できない（モデルの入力長制限）。<strong>チャンク（文書の塊）</strong> に分割する必要がある。</p>
+    <p>チャンク戦略：</p>
+    <ul>
+      <li><strong>固定長</strong>：512〜1024 文字。シンプルだが文脈分断のリスク</li>
+      <li><strong>セマンティック分割</strong>：見出し・段落で区切り、意味の塊で</li>
+      <li><strong>オーバーラップ</strong>：隣接チャンクで重複を持たせて文脈保持</li>
+      <li><strong>親子チャンク</strong>：小さい単位で検索、大きい単位で文脈提供</li>
+    </ul>
+
+    <h2 id="hybrid"><span class="label">§6 / HYBRID</span>ハイブリッド検索</h2>
+    <p>埋め込み検索（ベクトル）だけでは <strong>固有名詞や数値の精密マッチ</strong> に弱い。<strong>BM25（キーワード検索）</strong> と組み合わせる：</p>
+    <div class="formula">score = α · vector_sim + (1-α) · BM25_score</div>
+    <p>BM25 は古典的な TF-IDF の改良版。完全一致が必要な状況（製品コード、人名など）に強い。<strong>2024-2025年の本番システムではほぼ必須</strong>。</p>
+
+    <h2 id="rerank"><span class="label">§7 / RERANK</span>再ランキング（Re-ranking）</h2>
+    <p>ベクトル検索で top-100 を取り、より高精度な <strong>Cross-Encoder</strong> で再順位付けして top-10 を選ぶ：</p>
+    <ul>
+      <li>Bi-Encoder（埋め込み）：高速だが精度に限界</li>
+      <li>Cross-Encoder（再ランカー）：クエリと文書をペアで入力 → 高精度だが遅い</li>
+    </ul>
+    <p>代表的な再ランカー：<strong>Cohere Rerank</strong>、<strong>BGE-Reranker</strong>、<strong>ColBERT</strong>。</p>
+
+    <h2 id="advanced"><span class="label">§8 / ADV</span>高度な RAG パターン</h2>
+    <table class="spec">
+      <tr><th>HyDE</th><td>クエリから仮想回答を生成し、それで検索（クエリと文書の語彙ギャップを埋める）</td></tr>
+      <tr><th>Query Decomposition</th><td>複雑な質問を複数のサブクエリに分解</td></tr>
+      <tr><th>Multi-hop RAG</th><td>1回の検索で足りないとき、複数回検索</td></tr>
+      <tr><th>Self-RAG</th><td>LLM が「検索すべきか」「結果が良いか」を判断</td></tr>
+      <tr><th>GraphRAG</th><td>知識グラフを併用（Microsoft 2024）</td></tr>
+      <tr><th>Long-context vs RAG</th><td>200K+ トークン文脈 vs RAG。後者の方が依然優位な場面が多い</td></tr>
+    </table>
+
+    <h3>RAG の評価</h3>
+    <ul>
+      <li><strong>Retrieval 評価</strong>：Recall@k、MRR、NDCG</li>
+      <li><strong>Generation 評価</strong>：Faithfulness（文書への忠実性）、Answer Relevance</li>
+      <li><strong>RAGAS</strong>：RAG 専用の自動評価フレームワーク</li>
+    </ul>
+
+    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>RAG = Retrieval（検索）+ Augment（拡張）+ Generate（生成）</td></tr>
+      <tr><th>2</th><td>LLM の知識制約・ハルシネーション対策の決定打</td></tr>
+      <tr><th>3</th><td>埋め込みベクトルで意味的類似度を計算</td></tr>
+      <tr><th>4</th><td>ベクトル DB：Pinecone, Weaviate, Chroma, Qdrant, Milvus, FAISS, pgvector</td></tr>
+      <tr><th>5</th><td>ANN アルゴリズム：HNSW、IVF、PQ</td></tr>
+      <tr><th>6</th><td>チャンク化が品質を左右</td></tr>
+      <tr><th>7</th><td>ハイブリッド検索（ベクトル + BM25）が実務標準</td></tr>
+      <tr><th>8</th><td>Re-ranking で精度向上</td></tr>
+      <tr><th>9</th><td>HyDE, Self-RAG, GraphRAG などの拡張</td></tr>
+      <tr><th>10</th><td>評価は Retrieval と Generation の両軸、RAGAS が代表</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>LLM の3つの限界と RAG がそれぞれをどう解決するか</li>
+        <li>埋め込みベクトルの基本的な性質</li>
+        <li>コサイン類似度の式</li>
+        <li>主要なベクトル DB を3つ以上挙げられるか</li>
+        <li>HNSW, IVF, PQ それぞれの仕組み</li>
+        <li>固定長チャンク vs セマンティック分割のメリット・デメリット</li>
+        <li>ハイブリッド検索の式と、なぜ必要か</li>
+        <li>Bi-Encoder と Cross-Encoder の違い</li>
+        <li>HyDE（Hypothetical Document Embedding）の発想</li>
+        <li>「Long-context が来れば RAG は不要」という主張への反論</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="07-rl.html">← 章7</a></div>
+  <div><a href="09-agent.html">章9: エージェント →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

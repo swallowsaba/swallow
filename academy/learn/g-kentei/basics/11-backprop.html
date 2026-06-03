@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章11 バックプロパゲーション — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章11：計算グラフ、連鎖律、自動微分、勾配消失・勾配爆発、ResNet 残差接続。深層学習を可能にした計算技法。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="index.html">基本</a>
+      <a href="../advanced/index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>Ch.11</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章11</div>
+    <h1>章11 — バックプロパゲーション<span class="en">Chapter 11 — Backpropagation</span></h1>
+    <p class="standfirst">バックプロパゲーションは <strong>多層NNの学習を可能にした</strong> 最重要アルゴリズムです。連鎖律を計算グラフ上で系統的に適用するだけ。PyTorch・TensorFlow・JAX の自動微分の中核でもあります。本章で「<strong>勾配がどう流れるか</strong>」が見えるようにします。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="10-nn-basics.html">← 章10: NN 基礎</a></div>
+  <div><span class="ch-label">Chapter 11 of 12</span><br><span class="ch-title">バックプロパゲーション</span></div>
+  <div><a href="12-nn-tricks.html">章12: 学習の工夫 →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章11 目次</h6>
+    <a href="#graph">§1 計算グラフ</a>
+    <a href="#forward">§2 フォワードパス</a>
+    <a href="#backward">§3 バックワードパス</a>
+    <a href="#autodiff">§4 自動微分</a>
+    <a href="#vanish">§5 勾配消失・爆発</a>
+    <a href="#resnet">§6 ResNet 残差接続</a>
+    <a href="#tools">§7 PyTorch/TF/JAX</a>
+    <a href="#summary">§8 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 11</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">勾配を、<br>逆向きに流す。</h2>
+
+    <p>バックプロパゲーション（誤差逆伝播法）は1986年、Rumelhart, Hinton, Williams によって NN 研究にもたらされました（独立に複数の研究者が発見）。その本質は「<strong>連鎖律を計算グラフ上で系統的に適用する</strong>」だけ。</p>
+
+    <h2 id="graph"><span class="label">§1 / GRAPH</span>計算グラフ</h2>
+    <p>NN を <strong>「ノード（演算）」と「エッジ（テンソル）」のグラフ</strong> として表現します。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="cga" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          </marker>
+        </defs>
+        <circle cx="40" cy="100" r="22" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="40" y="105" text-anchor="middle" font-size="13" fill="#0d1b2a">x</text>
+        <rect x="100" y="78" width="80" height="44" fill="#d4a017"/>
+        <text x="140" y="105" text-anchor="middle" font-size="12" fill="#0d1b2a">線形 W₁</text>
+        <line x1="62" y1="100" x2="98" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
+        <circle cx="220" cy="100" r="22" fill="#fff8f2" stroke="#0d1b2a"/>
+        <text x="220" y="105" text-anchor="middle" font-size="12" fill="#0d1b2a">z₁</text>
+        <line x1="182" y1="100" x2="198" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
+        <rect x="270" y="78" width="80" height="44" fill="#3a7d44"/>
+        <text x="310" y="105" text-anchor="middle" font-size="12" fill="#faf7f2">ReLU</text>
+        <line x1="242" y1="100" x2="268" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
+        <circle cx="390" cy="100" r="22" fill="#fff8f2" stroke="#0d1b2a"/>
+        <text x="390" y="105" text-anchor="middle" font-size="13" fill="#0d1b2a">h</text>
+        <line x1="352" y1="100" x2="368" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
+        <rect x="440" y="78" width="80" height="44" fill="#d4a017"/>
+        <text x="480" y="105" text-anchor="middle" font-size="12" fill="#0d1b2a">線形 W₂</text>
+        <line x1="412" y1="100" x2="438" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
+        <circle cx="560" cy="100" r="22" fill="#fff8f2" stroke="#0d1b2a"/>
+        <text x="560" y="105" text-anchor="middle" font-size="12" fill="#0d1b2a">ŷ</text>
+        <line x1="522" y1="100" x2="538" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
+        <rect x="610" y="78" width="80" height="44" fill="#b8431f"/>
+        <text x="650" y="105" text-anchor="middle" font-size="12" fill="#faf7f2">損失 L</text>
+        <line x1="582" y1="100" x2="608" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
+        <text x="40" y="160" font-size="11" font-weight="bold" fill="#3a7d44">→ 順伝播：左から右</text>
+        <text x="450" y="160" font-size="11" font-weight="bold" fill="#b8431f">← 逆伝播：右から左（勾配が流れる）</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 11.1</span> 2層 MLP の計算グラフ。順伝播で値を計算、逆伝播で勾配を計算。中間値（h, z₁, ŷ）は両方で再利用される。</div>
+    </div>
+
+    <h2 id="forward"><span class="label">§2 / FORWARD</span>フォワードパス（順伝播）</h2>
+    <p>入力 x から損失 L まで、順に値を計算。<strong>途中の中間値（活性化）はすべて保存</strong>（バックワードで使うため）。</p>
+    <div class="example">
+      <div class="example-title">例：2層 MLP の順伝播</div>
+      z₁ = W₁ x + b₁<br>
+      h = ReLU(z₁) = max(0, z₁)<br>
+      z₂ = W₂ h + b₂<br>
+      ŷ = σ(z₂)（出力 sigmoid）<br>
+      L = -[y log ŷ + (1-y) log(1-ŷ)]（CE 損失）
+    </div>
+
+    <h2 id="backward"><span class="label">§3 / BACK</span>バックワードパス（逆伝播）</h2>
+    <p>出力側から入力側へ、各パラメータについて勾配を計算。<strong>連鎖律</strong>を機械的に適用：</p>
+    <div class="formula">
+      ∂L/∂W₂ = ∂L/∂ŷ · ∂ŷ/∂z₂ · ∂z₂/∂W₂<br>
+      ∂L/∂W₁ = ∂L/∂ŷ · ∂ŷ/∂z₂ · ∂z₂/∂h · ∂h/∂z₁ · ∂z₁/∂W₁
+    </div>
+    <p>共通部分（左から右に並ぶ最初の項）を <strong>再利用</strong> するのが鍵。これにより：</p>
+    <ul>
+      <li>勾配計算コスト = 順伝播の数倍程度</li>
+      <li>パラメータ数が数十億あっても全て一回で計算できる</li>
+    </ul>
+    <p>これがなければ深層学習は計算量的に不可能でした。</p>
+
+    <h3>3.1 アルゴリズムの本質</h3>
+    <ol>
+      <li><strong>順伝播</strong>：入力から出力へ。すべての中間値を保存</li>
+      <li><strong>損失計算</strong>：L = L(ŷ, y)</li>
+      <li><strong>逆伝播</strong>：出力側から入力側へ ∂L/∂... を計算（連鎖律）</li>
+      <li><strong>更新</strong>：θ ← θ - η · ∂L/∂θ</li>
+    </ol>
+
+    <h2 id="autodiff"><span class="label">§4 / AUTODIFF</span>自動微分（AD）</h2>
+    <p>バックプロパゲーションを「計算グラフから勾配を機械的に計算する」一般的アルゴリズムにしたもの。<strong>PyTorch・TensorFlow・JAX の中核</strong>。</p>
+    <ul>
+      <li><strong>順モード AD</strong>：入力1つに対する出力多数の場合に効率的</li>
+      <li><strong>逆モード AD（バックプロパゲーションと同じ）</strong>：出力1つ（損失）に対する入力多数（パラメータ）の場合に効率的。<strong>深層学習はこちら</strong></li>
+    </ul>
+
+    <h2 id="vanish"><span class="label">§5 / VANISH</span>勾配消失・勾配爆発</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
+        <text x="340" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">深層NNでの勾配の挙動</text>
+
+        <!-- Vanishing -->
+        <g transform="translate(0, 40)">
+          <text x="50" y="20" font-size="12" font-weight="bold" fill="#0d1b2a">勾配消失</text>
+          <text x="50" y="40" font-size="10" fill="#5a5f6a">層が深いほど勾配が指数的に減衰</text>
+          <text x="50" y="65" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L1:</text>
+          <line x1="100" y1="62" x2="600" y2="62" stroke="#b8431f" stroke-width="8" opacity="0.95"/>
+          <text x="50" y="90" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L5:</text>
+          <line x1="100" y1="87" x2="350" y2="87" stroke="#b8431f" stroke-width="5" opacity="0.6"/>
+          <text x="50" y="115" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L20:</text>
+          <line x1="100" y1="112" x2="160" y2="112" stroke="#b8431f" stroke-width="2" opacity="0.3"/>
+          <text x="180" y="115" font-size="10" fill="#5a5f6a">下層は学習しない！</text>
+        </g>
+
+        <!-- Exploding -->
+        <g transform="translate(0, 170)">
+          <text x="50" y="20" font-size="12" font-weight="bold" fill="#0d1b2a">勾配爆発</text>
+          <text x="50" y="40" font-size="10" fill="#5a5f6a">層が深いほど勾配が指数的に増大</text>
+          <text x="50" y="65" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L1:</text>
+          <line x1="100" y1="62" x2="180" y2="62" stroke="#b8431f" stroke-width="2"/>
+          <text x="50" y="90" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L5:</text>
+          <line x1="100" y1="87" x2="350" y2="87" stroke="#b8431f" stroke-width="5"/>
+          <text x="50" y="115" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L20:</text>
+          <line x1="100" y1="112" x2="640" y2="112" stroke="#b8431f" stroke-width="14"/>
+          <text x="490" y="105" font-size="10" fill="#5a5f6a">発散・NaN</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 11.2</span> 勾配消失（小さい数を多数かけ続ける）と勾配爆発（大きい数を多数かけ続ける）。どちらも深い NN の学習を妨げる。</div>
+    </div>
+
+    <p>原因と対策：</p>
+    <table class="spec">
+      <tr><th>対策</th><th>効果</th></tr>
+      <tr><td><strong>ReLU 系活性化</strong></td><td>正領域で勾配 1。Sigmoid/Tanh のような飽和を回避</td></tr>
+      <tr><td><strong>He 初期化</strong>（ReLU用）／<strong>Xavier 初期化</strong>（Tanh用）</td><td>初期勾配のスケールを適切に</td></tr>
+      <tr><td><strong>残差接続（ResNet）</strong></td><td>勾配を直接下層に伝える</td></tr>
+      <tr><td><strong>BatchNorm / LayerNorm</strong></td><td>各層の入力分布を安定化</td></tr>
+      <tr><td><strong>勾配クリッピング</strong></td><td>勾配のノルムを閾値で抑制（特にRNN）</td></tr>
+    </table>
+
+    <h2 id="resnet"><span class="label">§6 / RESNET</span>ResNet：残差接続</h2>
+    <p>2015年、He らが提案した <strong>残差接続</strong> は、深層学習を実質的に「使い物にした」ブレークスルー。</p>
+    <div class="formula">y = F(x) + x</div>
+    <p>F(x) は普通の層変換。<strong>入力 x を出力に直接加える</strong>。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ra1" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          </marker>
+        </defs>
+        <!-- Input -->
+        <circle cx="80" cy="120" r="22" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="80" y="125" text-anchor="middle" font-size="13" fill="#0d1b2a">x</text>
+
+        <!-- F(x) path -->
+        <line x1="102" y1="120" x2="180" y2="120" stroke="#0d1b2a" stroke-width="2"/>
+        <rect x="180" y="98" width="100" height="44" fill="#d4a017"/>
+        <text x="230" y="125" text-anchor="middle" font-size="12" fill="#0d1b2a">層 F</text>
+        <line x1="280" y1="120" x2="360" y2="120" stroke="#0d1b2a" stroke-width="2"/>
+
+        <!-- Sum -->
+        <circle cx="380" cy="120" r="18" fill="#b8431f"/>
+        <text x="380" y="126" text-anchor="middle" font-size="18" font-weight="bold" fill="#faf7f2">+</text>
+        <line x1="398" y1="120" x2="480" y2="120" stroke="#0d1b2a" stroke-width="2" marker-end="url(#ra1)"/>
+        <text x="500" y="125" font-size="13" font-weight="bold" fill="#0d1b2a">y = F(x) + x</text>
+
+        <!-- Skip connection -->
+        <path d="M 80 142 L 80 200 L 380 200 L 380 138" stroke="#3a7d44" stroke-width="2.5" fill="none" stroke-dasharray="5,3" marker-end="url(#ra1)"/>
+        <text x="220" y="220" text-anchor="middle" font-size="12" fill="#3a7d44" font-weight="bold">スキップ接続（残差接続）</text>
+        <text x="220" y="55" text-anchor="middle" font-size="11" fill="#5a5f6a">逆伝播時：勾配は直接 x へ流れる</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 11.3</span> ResNet の残差ブロック。y = F(x) + x という単純な式が、勾配を <strong>F を通らずに直接下層へ</strong> 伝える経路を作る。これにより152層、最終的に1000層超の NN が学習可能に。</div>
+    </div>
+
+    <p>残差接続による勾配の流れ：</p>
+    <div class="formula">
+      ∂L/∂x = ∂L/∂y · ∂y/∂x = ∂L/∂y · (∂F/∂x + 1)
+    </div>
+    <p><strong>「+ 1」</strong> の項により、F の勾配がゼロに近くても勾配が消えない。これが ResNet を「最重要発明の一つ」と呼ばせる理由。</p>
+
+    <h2 id="tools"><span class="label">§7 / TOOLS</span>PyTorch / TensorFlow / JAX</h2>
+    <p>これらのフレームワークの核心は <strong>自動微分エンジン</strong>。ユーザは順伝播を書くだけで、逆伝播は自動的に計算されます。</p>
+    <table class="spec">
+      <tr><th>PyTorch</th><td>動的計算グラフ（define-by-run）。研究で支配的。Meta 開発</td></tr>
+      <tr><th>TensorFlow</th><td>静的グラフ（v1）→ Eager Execution（v2）。Google 開発、産業で広く使用</td></tr>
+      <tr><th>JAX</th><td>関数型・XLAコンパイル・自動微分。研究で台頭。Google 開発</td></tr>
+    </table>
+
+    <h2 id="summary"><span class="label">§8 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>計算グラフ：演算をノード、テンソルをエッジで表現</td></tr>
+      <tr><th>2</th><td>順伝播：入力 → 損失。中間値はすべて保存</td></tr>
+      <tr><th>3</th><td>逆伝播：損失 → パラメータ。連鎖律を系統的に適用</td></tr>
+      <tr><th>4</th><td>共通部分の再利用で計算コスト = 順伝播の定数倍</td></tr>
+      <tr><th>5</th><td>自動微分（AD）：逆モードが深層学習の基盤</td></tr>
+      <tr><th>6</th><td>勾配消失：層が深いと小さい数を掛け続けて勾配 → 0</td></tr>
+      <tr><th>7</th><td>勾配爆発：大きい数を掛け続けて勾配 → ∞</td></tr>
+      <tr><th>8</th><td>対策：ReLU、適切な初期化、ResNet、Normalization、勾配クリップ</td></tr>
+      <tr><th>9</th><td>ResNet の残差接続 y = F(x) + x が深層化を可能に</td></tr>
+      <tr><th>10</th><td>PyTorch/TF/JAX の核心は自動微分エンジン</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>計算グラフとは何か、何のために描くか</li>
+        <li>順伝播で中間値を全て保存する必要がある理由</li>
+        <li>連鎖律を「∂L/∂W₁ = ...」の形で多層NNに書けるか</li>
+        <li>逆モード自動微分が深層学習で逆向きに勾配を計算する理由</li>
+        <li>勾配消失と勾配爆発の数学的原因</li>
+        <li>ReLU が勾配消失を緩和する理由</li>
+        <li>He 初期化と Xavier 初期化はどんなときに使い分けるか</li>
+        <li>ResNet の y = F(x) + x がなぜ勾配を直接流せるのか</li>
+        <li>勾配クリッピングがどんな場面で必要か</li>
+        <li>PyTorch・TensorFlow・JAX の主な違い</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="10-nn-basics.html">← 章10</a></div>
+  <div><span class="ch-label">次の章</span><br><span class="ch-title">章12: 学習の工夫</span></div>
+  <div><a href="12-nn-tricks.html">章12へ →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="index.html">基本</a></li><li><a href="../advanced/index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章12 学習を成功させる工夫 — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章12：ミニバッチ、学習率スケジューリング、重み初期化、BatchNorm/LayerNorm、Dropout、Adam変種。深層NN を「動かす」現代の工夫を網羅。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="index.html">基本</a>
+      <a href="../advanced/index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>Ch.12</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章12</div>
+    <h1>章12 — 学習を成功させる工夫<span class="en">Chapter 12 — Training Tricks</span></h1>
+    <p class="standfirst">「<strong>NN は学習が難しい</strong>」が10年前まで常識でした。今は <strong>標準的な工夫の組合せ</strong> でほぼ確実に学習が回せる時代です。本章ではその工夫の総まとめを行います。基本編の最終章。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="11-backprop.html">← 章11: 逆伝播</a></div>
+  <div><span class="ch-label">Chapter 12 of 12 (基本編 最終章)</span><br><span class="ch-title">学習の工夫</span></div>
+  <div><a href="../advanced/index.html">応用編 →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章12 目次</h6>
+    <a href="#minibatch">§1 ミニバッチ学習</a>
+    <a href="#lr-sched">§2 学習率スケジューリング</a>
+    <a href="#init">§3 重み初期化</a>
+    <a href="#norm">§4 BatchNorm / LayerNorm</a>
+    <a href="#dropout">§5 Dropout</a>
+    <a href="#adam">§6 Adam とその仲間</a>
+    <a href="#data-aug">§7 データ拡張</a>
+    <a href="#regul-other">§8 その他の正則化</a>
+    <a href="#summary">§9 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 12 (FINAL)</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">深層学習を、<br>動かすための工夫。</h2>
+
+    <h2 id="minibatch"><span class="label">§1 / BATCH</span>ミニバッチ学習</h2>
+    <p>SGD のノイズを抑えつつ並列計算の恩恵を受けるため、<strong>m サンプル（典型 32〜256）</strong> ごとに平均勾配で更新するのが標準。</p>
+    <ul>
+      <li>バッチサイズ小 → ノイジー、汎化が良い場合あり</li>
+      <li>バッチサイズ大 → 安定、並列効率良いが <strong>「シャープミニマ」</strong> に陥り汎化が落ちる傾向</li>
+      <li>大規模学習では <strong>線形スケーリング則</strong>：バッチサイズを k 倍にしたら学習率も k 倍</li>
+    </ul>
+
+    <h2 id="lr-sched"><span class="label">§2 / LR-SCHED</span>学習率スケジューリング</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(0, 0)">
+          <line x1="20" y1="160" x2="220" y2="160" stroke="#0d1b2a"/>
+          <line x1="40" y1="20" x2="40" y2="180" stroke="#0d1b2a"/>
+          <line x1="40" y1="60" x2="100" y2="60" stroke="#b8431f" stroke-width="2.5"/>
+          <line x1="100" y1="60" x2="100" y2="100" stroke="#b8431f" stroke-width="2.5"/>
+          <line x1="100" y1="100" x2="160" y2="100" stroke="#b8431f" stroke-width="2.5"/>
+          <line x1="160" y1="100" x2="160" y2="130" stroke="#b8431f" stroke-width="2.5"/>
+          <line x1="160" y1="130" x2="220" y2="130" stroke="#b8431f" stroke-width="2.5"/>
+          <text x="120" y="200" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">Step Decay</text>
+        </g>
+        <g transform="translate(260, 0)">
+          <line x1="20" y1="160" x2="220" y2="160" stroke="#0d1b2a"/>
+          <line x1="40" y1="20" x2="40" y2="180" stroke="#0d1b2a"/>
+          <path d="M 40 60 Q 100 70 130 100 Q 170 130 220 150" stroke="#b8431f" stroke-width="2.5" fill="none"/>
+          <text x="120" y="200" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">Cosine Annealing</text>
+        </g>
+        <g transform="translate(520, 0)">
+          <line x1="20" y1="160" x2="220" y2="160" stroke="#0d1b2a"/>
+          <line x1="40" y1="20" x2="40" y2="180" stroke="#0d1b2a"/>
+          <line x1="40" y1="160" x2="80" y2="60" stroke="#b8431f" stroke-width="2.5"/>
+          <path d="M 80 60 Q 150 70 220 130" stroke="#b8431f" stroke-width="2.5" fill="none"/>
+          <text x="120" y="200" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">Warmup + Decay</text>
+          <text x="120" y="220" text-anchor="middle" font-size="10" fill="#5a5f6a">Transformer 学習で標準</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 12.1</span> 主な学習率スケジューリング。Warmup（最初の数千ステップは低い学習率から徐々に上げる）は Transformer 学習で標準。</div>
+    </div>
+
+    <ul>
+      <li><strong>Step Decay</strong>：一定エポックごとに 1/10 など</li>
+      <li><strong>Cosine Annealing</strong>：コサイン関数で滑らかに減衰</li>
+      <li><strong>Warmup</strong>：最初の数ステップは小さい学習率から徐々に上げる（Transformer で標準）</li>
+      <li><strong>ReduceLROnPlateau</strong>：検証ロスが改善しないとき学習率を下げる</li>
+      <li><strong>One-Cycle</strong>：急上昇 → 急下降。fast.ai で普及</li>
+    </ul>
+
+    <h2 id="init"><span class="label">§3 / INIT</span>重み初期化</h2>
+    <p>不適切な初期化は学習が一切進まない原因に。</p>
+    <table class="spec">
+      <tr><th>手法</th><th>式</th><th>用途</th></tr>
+      <tr><td><strong>Xavier / Glorot</strong></td><td>Var(W) = 2 / (n_in + n_out)</td><td>Sigmoid, Tanh</td></tr>
+      <tr><td><strong>He</strong></td><td>Var(W) = 2 / n_in</td><td>ReLU 系（標準）</td></tr>
+      <tr><td><strong>LeCun</strong></td><td>Var(W) = 1 / n_in</td><td>SELU</td></tr>
+      <tr><td><strong>ゼロ初期化</strong></td><td>すべて 0</td><td>NG（対称性が破れない）</td></tr>
+    </table>
+
+    <h2 id="norm"><span class="label">§4 / NORM</span>BatchNorm / LayerNorm</h2>
+    <p>各層の入力を正規化（平均 0、分散 1 にスケール）してから学習可能なスケール・バイアスをかける：</p>
+    <div class="formula">y = γ · (x - μ) / √(σ² + ε) + β</div>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(0, 0)">
+          <text x="160" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">BatchNorm</text>
+          <text x="160" y="42" text-anchor="middle" font-size="10" fill="#5a5f6a">バッチ方向に正規化</text>
+          <!-- batch as rows, features as cols -->
+          <g transform="translate(40, 60)">
+            <rect x="0" y="0" width="240" height="20" fill="#b8431f"/>
+            <rect x="0" y="22" width="240" height="20" fill="#b8431f" opacity="0.7"/>
+            <rect x="0" y="44" width="240" height="20" fill="#b8431f" opacity="0.5"/>
+            <rect x="0" y="66" width="240" height="20" fill="#b8431f" opacity="0.3"/>
+          </g>
+          <text x="40" y="170" font-size="10" fill="#5a5f6a">N=4 samples × D=6 features</text>
+          <text x="40" y="190" font-size="10" fill="#0d1b2a">各特徴量で N サンプル平均・分散</text>
+        </g>
+        <g transform="translate(360, 0)">
+          <text x="160" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">LayerNorm</text>
+          <text x="160" y="42" text-anchor="middle" font-size="10" fill="#5a5f6a">特徴量方向に正規化</text>
+          <g transform="translate(40, 60)">
+            <rect x="0" y="0" width="40" height="86" fill="#2e5577"/>
+            <rect x="42" y="0" width="40" height="86" fill="#2e5577" opacity="0.8"/>
+            <rect x="84" y="0" width="40" height="86" fill="#2e5577" opacity="0.65"/>
+            <rect x="126" y="0" width="40" height="86" fill="#2e5577" opacity="0.5"/>
+            <rect x="168" y="0" width="40" height="86" fill="#2e5577" opacity="0.35"/>
+            <rect x="210" y="0" width="40" height="86" fill="#2e5577" opacity="0.25"/>
+          </g>
+          <text x="400" y="170" text-anchor="end" font-size="10" fill="#5a5f6a">各サンプルで D 特徴量平均・分散</text>
+          <text x="400" y="190" text-anchor="end" font-size="10" fill="#0d1b2a">バッチサイズ非依存</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 12.2</span> BatchNorm vs LayerNorm。正規化の軸が違う。BatchNorm は CNN で標準、LayerNorm は Transformer や RNN で標準（バッチ非依存）。</div>
+    </div>
+
+    <table class="spec">
+      <tr><th>正規化</th><th>正規化軸</th><th>主な用途</th></tr>
+      <tr><td><strong>BatchNorm</strong></td><td>バッチ方向</td><td>CNN（バッチサイズが大きいとき）</td></tr>
+      <tr><td><strong>LayerNorm</strong></td><td>特徴量方向（サンプルごと）</td><td>RNN、Transformer（バッチ非依存）</td></tr>
+      <tr><td><strong>GroupNorm</strong></td><td>チャネルグループ方向</td><td>バッチサイズが小さい CNN</td></tr>
+      <tr><td><strong>InstanceNorm</strong></td><td>各サンプル、各チャネル</td><td>画像スタイル変換</td></tr>
+      <tr><td><strong>RMSNorm</strong></td><td>LayerNorm の簡略化（平均引かない）</td><td>Llama 系、近年の LLM</td></tr>
+    </table>
+
+    <h2 id="dropout"><span class="label">§5 / DROPOUT</span>Dropout</h2>
+    <p>学習時に <strong>各ユニットを確率 p（典型 0.5）で 0 にする</strong> 正則化手法（Hinton ら、2014）。</p>
+    <p>効果：</p>
+    <ul>
+      <li><strong>暗黙のアンサンブル</strong>：毎ステップ違うサブネットを学習</li>
+      <li><strong>ユニット間の共依存抑制</strong></li>
+      <li>推論時は無効化（あるいは出力を 1-p 倍）。これが <strong>inverted dropout</strong></li>
+    </ul>
+
+    <h2 id="adam"><span class="label">§6 / ADAM</span>Adam とその仲間</h2>
+    <p>Adam が事実上の標準。ただし用途によって以下も使われます：</p>
+    <table class="spec">
+      <tr><th>Optimizer</th><th>特徴</th><th>主な用途</th></tr>
+      <tr><td><strong>Adam</strong></td><td>Momentum + RMSProp。汎用標準</td><td>大半の DL</td></tr>
+      <tr><td><strong>AdamW</strong></td><td>Adam + 重み減衰の分離</td><td><strong>LLM 学習標準</strong></td></tr>
+      <tr><td><strong>SGD + Momentum</strong></td><td>古典、適切な学習率なら汎化が最良の場合</td><td>画像分類の最終調整</td></tr>
+      <tr><td><strong>LAMB</strong></td><td>大バッチ学習向け</td><td>BERT 学習</td></tr>
+      <tr><td><strong>LION</strong></td><td>2023年、メモリ効率良い、Adamに迫る性能</td><td>大規模学習で台頭中</td></tr>
+      <tr><td><strong>Sophia</strong></td><td>2次情報を効率的に活用</td><td>LLM 学習で実験的</td></tr>
+    </table>
+
+    <h2 id="data-aug"><span class="label">§7 / AUG</span>データ拡張</h2>
+    <p>訓練データに <strong>意味を変えない変形</strong> を加えてサンプル数を増やす。<strong>暗黙の正則化</strong>でもある。</p>
+    <ul>
+      <li>画像：回転、反転、トリミング、色ジッタ、Mixup、CutMix、RandAugment</li>
+      <li>テキスト：言い換え、バックトランスレーション、トークン削除</li>
+      <li>音声：時間引き伸ばし、ノイズ重畳、SpecAugment</li>
+    </ul>
+
+    <h2 id="regul-other"><span class="label">§8 / OTHER</span>その他の正則化・テクニック</h2>
+    <ul>
+      <li><strong>Label Smoothing</strong>：one-hot を (1-ε, ε/(C-1), ..., ε/(C-1)) に。過信を抑える</li>
+      <li><strong>Stochastic Depth</strong>：学習時にランダムに層をスキップ</li>
+      <li><strong>Mixup</strong>：2つのサンプルを線形補間して新サンプル生成</li>
+      <li><strong>EMA（指数移動平均）</strong>：重みの平滑版を保持、推論で使用</li>
+      <li><strong>Gradient Accumulation</strong>：小バッチを複数回累積してから更新（GPUメモリ節約）</li>
+      <li><strong>Mixed Precision</strong>：FP16/BF16 で計算、メモリと速度の改善</li>
+    </ul>
+
+    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>ミニバッチ学習（32〜256 が典型）が現代の標準</td></tr>
+      <tr><th>2</th><td>大バッチには線形スケーリング則 + Warmup</td></tr>
+      <tr><th>3</th><td>学習率スケジューリング：Step、Cosine、Warmup</td></tr>
+      <tr><th>4</th><td>重み初期化：He（ReLU）、Xavier（Tanh）</td></tr>
+      <tr><th>5</th><td>BatchNorm（CNN）vs LayerNorm（Transformer）の使い分け</td></tr>
+      <tr><th>6</th><td>Dropout：暗黙のアンサンブル効果、推論時無効化</td></tr>
+      <tr><th>7</th><td>Adam = 事実上の標準、AdamW = LLM の標準</td></tr>
+      <tr><th>8</th><td>データ拡張は暗黙の正則化</td></tr>
+      <tr><th>9</th><td>Label Smoothing、Mixup、EMA、Mixed Precision など現代の工夫多数</td></tr>
+    </table>
+
+    <h3>基本編 完結</h3>
+    <p>12章すべてを読み終えました。これで G検定の <strong>基本</strong> 範囲（AI概論、歴史、数学、機械学習、ニューラルネット）は構造的に把握しています。次は <strong>応用編</strong> で Transformer、生成AI、強化学習、AI倫理・法律 へ進みます。</p>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>ミニバッチサイズが大きすぎ／小さすぎることの影響</li>
+        <li>線形スケーリング則と Warmup の関係</li>
+        <li>Cosine Annealing のメリット</li>
+        <li>He 初期化と Xavier 初期化の使い分け</li>
+        <li>BatchNorm の数式と「学習可能なγ・β」がある理由</li>
+        <li>なぜ Transformer は BatchNorm でなく LayerNorm を使うのか</li>
+        <li>Dropout が「暗黙のアンサンブル」と呼ばれる理由</li>
+        <li>Inverted dropout の式（推論時の補正）</li>
+        <li>Adam と AdamW の違い</li>
+        <li>Label Smoothing が「過信を抑える」とはどういうことか</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="11-backprop.html">← 章11</a></div>
+  <div><span class="ch-label">基本編 完結</span><br><span class="ch-title">応用編へ進む</span></div>
+  <div><a href="../advanced/index.html">応用編 →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="index.html">基本</a></li><li><a href="../advanced/index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

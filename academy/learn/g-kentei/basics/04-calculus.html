@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章4 微積分と最適化 — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章4：微分・偏微分・勾配・ヘッセ行列・連鎖律・勾配降下法。図解で「最適化が機械学習の心臓」である理由を直感的に理解する。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula { background:#f5f1e8; border-left:3px solid #b8431f; padding:14px 18px; margin:18px 0; font-family:'JetBrains Mono', monospace; font-size:14px; line-height:1.8; }
+.example { background:#fff8f2; border-left:3px solid #d4a017; padding:16px 22px; margin:20px 0; font-size:14.5px; line-height:1.9; }
+.example-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#0d1b2a; margin-bottom:8px; }
+.pitfall { background:#fbf3f0; border-left:3px solid #b8431f; padding:16px 22px; margin:20px 0; font-size:14.5px; line-height:1.9; }
+.pitfall-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#b8431f; margin-bottom:8px; }
+.figure { margin:32px 0; text-align:center; }
+.figure svg { max-width:100%; height:auto; border:1px solid #e5e1d4; background:#faf7f2; }
+.figure-caption { font-size:12.5px; color:#5a5f6a; margin-top:10px; line-height:1.7; max-width:680px; margin-left:auto; margin-right:auto; padding:0 12px; font-style:italic; }
+.figure-num { font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.12em; color:#b8431f; }
+.chapter-nav { display:flex; justify-content:space-between; align-items:center; padding:18px 24px; background:#0d1b2a; color:#faf7f2; margin:32px 0; font-size:13.5px; }
+.chapter-nav a { color:#faf7f2; text-decoration:none; }
+.chapter-nav a:hover { color:#d4a017; }
+.chapter-nav .ch-label { font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:#9aa0a8; }
+.chapter-nav .ch-title { font-family:var(--font-display-jp); font-weight:700; font-size:15px; }
+table.spec { width:100%; border-collapse:collapse; margin:18px 0; font-size:13.5px; }
+table.spec th, table.spec td { padding:9px 13px; text-align:left; border-bottom:1px solid #e5e1d4; vertical-align:top; }
+table.spec th { background:#faf7f2; font-family:var(--font-display-jp); font-weight:700; font-size:12.5px; }
+.test-yourself { background:#0d1b2a; color:#faf7f2; padding:28px 32px; margin:32px 0; }
+.test-yourself h3 { font-family:var(--font-display-jp); font-weight:700; color:#d4a017; margin:0 0 16px; font-size:18px; }
+.test-yourself ol { padding-left:24px; font-size:14px; line-height:1.95; }
+.test-yourself li { margin-bottom:10px; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="index.html">基本</a>
+      <a href="../advanced/index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>Ch.4</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章4</div>
+    <h1>章4 — 微積分と最適化<span class="en">Chapter 4 — Calculus and Optimization</span></h1>
+    <p class="standfirst">機械学習の <strong>学習</strong> はすべて「<strong>損失関数を最小化する</strong>」最適化問題です。本章では微分・勾配・ヘッセ行列を <strong>図形的直感</strong> で構築し、<strong>勾配降下法</strong> の振る舞いを地形をたどる比喩で理解します。「学習率を上げると何故発散するか」「鞍点とは何か」が手で説明できるようになることを目標にします。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="03-linear-algebra.html">← 章3: 線形代数</a></div>
+  <div><span class="ch-label">Chapter 4 of 12</span><br><span class="ch-title">微積分と最適化</span></div>
+  <div><a href="05-probability.html">章5: 確率統計 →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章4 目次</h6>
+    <a href="#diff">§1 微分：変化率</a>
+    <a href="#partial">§2 偏微分</a>
+    <a href="#gradient">§3 勾配ベクトル</a>
+    <a href="#chain">§4 連鎖律</a>
+    <a href="#hessian">§5 ヘッセ行列</a>
+    <a href="#saddle">§6 凸・凹・鞍点</a>
+    <a href="#gd">§7 勾配降下法</a>
+    <a href="#lr">§8 学習率の影響</a>
+    <a href="#variants">§9 SGD・Momentum・Adam</a>
+    <a href="#summary">§10 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 4</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">損失の地形を、<br>下りていく科学。</h2>
+    <p class="article-lede">機械学習は「データを入力する → モデルが予測する → 損失を計算する → 損失を減らす方向にパラメータを動かす」というループの繰り返し。<strong>「損失を減らす方向」を計算するのが微分</strong> で、<strong>動かすのが最適化アルゴリズム</strong>。本章でこの2つを根本から理解します。</p>
+
+    <h2 id="diff"><span class="label">§1 / DERIVATIVE</span>微分：変化率</h2>
+    <p>関数 f(x) の <strong>微分</strong> f'(x) は、x が微小に変化したときの f の変化率：</p>
+    <div class="formula">f'(x) = lim_{h→0} [f(x+h) - f(x)] / h</div>
+    <p>幾何学的には <strong>接線の傾き</strong>。f が急に増加している場所は微分が大きく、変化していない場所は微分が 0。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+        <line x1="40" y1="240" x2="640" y2="240" stroke="#0d1b2a" stroke-width="1.5"/>
+        <line x1="80" y1="20" x2="80" y2="260" stroke="#0d1b2a" stroke-width="1.5"/>
+        <text x="635" y="258" font-size="11" fill="#5a5f6a">x</text>
+        <text x="60" y="30" font-size="11" fill="#5a5f6a">f(x)</text>
+
+        <!-- Parabola y = (x-300)^2 / 200 + 60 -->
+        <path d="M 100 230 Q 300 -20 500 230" stroke="#b8431f" stroke-width="3" fill="none"/>
+
+        <!-- Tangent at x=200 (where curve is steep) -->
+        <line x1="150" y1="200" x2="280" y2="100" stroke="#0d1b2a" stroke-width="2" stroke-dasharray="4,3"/>
+        <circle cx="215" cy="150" r="4" fill="#0d1b2a"/>
+        <text x="105" y="195" font-size="11" fill="#0d1b2a">急な傾き</text>
+        <text x="100" y="210" font-size="11" fill="#0d1b2a">f'(x) 大</text>
+
+        <!-- Tangent at minimum (flat) -->
+        <line x1="240" y1="195" x2="360" y2="195" stroke="#0d1b2a" stroke-width="2" stroke-dasharray="4,3"/>
+        <circle cx="300" cy="195" r="4" fill="#0d1b2a"/>
+        <text x="285" y="220" font-size="11" fill="#0d1b2a">傾き 0</text>
+        <text x="280" y="234" font-size="11" fill="#0d1b2a">f'(x) = 0</text>
+
+        <!-- Tangent at x=400 (positive steep) -->
+        <line x1="340" y1="100" x2="470" y2="200" stroke="#0d1b2a" stroke-width="2" stroke-dasharray="4,3"/>
+        <circle cx="405" cy="150" r="4" fill="#0d1b2a"/>
+        <text x="460" y="125" font-size="11" fill="#0d1b2a">急な傾き</text>
+        <text x="460" y="140" font-size="11" fill="#0d1b2a">f'(x) 大（正）</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 4.1</span> 微分の幾何学的意味は「接線の傾き」。最小点では傾き 0、急な勾配ではその点での傾きが大きい。これが最適化の鍵。</div>
+    </div>
+
+    <h3>1.1 基本的な微分公式</h3>
+    <table class="spec">
+      <tr><th>関数 f(x)</th><th>微分 f'(x)</th></tr>
+      <tr><td>定数 c</td><td>0</td></tr>
+      <tr><td>xⁿ</td><td>nxⁿ⁻¹</td></tr>
+      <tr><td>eˣ</td><td>eˣ</td></tr>
+      <tr><td>log x</td><td>1/x</td></tr>
+      <tr><td>sin x</td><td>cos x</td></tr>
+      <tr><td>cos x</td><td>-sin x</td></tr>
+      <tr><td>sigmoid σ(x) = 1/(1+e⁻ˣ)</td><td>σ(x)(1 - σ(x))</td></tr>
+      <tr><td>tanh x</td><td>1 - tanh²x</td></tr>
+      <tr><td>ReLU max(0,x)</td><td>1 if x &gt; 0 else 0</td></tr>
+    </table>
+
+    <h2 id="partial"><span class="label">§2 / PARTIAL</span>偏微分</h2>
+    <p>多変数関数 f(x₁, x₂, ..., xₙ) を、<strong>特定の変数 xᵢ だけについて</strong> 微分したものが <strong>偏微分</strong> ∂f/∂xᵢ。他の変数は定数扱い。</p>
+    <div class="example">
+      <div class="example-title">例：f(x, y) = x²y + 3xy²</div>
+      ∂f/∂x = 2xy + 3y² &nbsp;&nbsp;(y を定数扱い)<br>
+      ∂f/∂y = x² + 6xy &nbsp;&nbsp;(x を定数扱い)
+    </div>
+
+    <h2 id="gradient"><span class="label">§3 / GRADIENT</span>勾配ベクトル：最急上昇方向</h2>
+    <p>多変数関数 f の <strong>勾配 ∇f</strong> は、偏微分を全変数について並べた列ベクトル：</p>
+    <div class="formula">∇f(x) = (∂f/∂x₁, ∂f/∂x₂, ..., ∂f/∂xₙ)ᵀ</div>
+    <p><strong>核心的意味</strong>：勾配 ∇f は「<strong>その点で f が最も急に増加する方向</strong>」を指す。<br>
+    → <strong>反対方向 -∇f は最も急に減少する方向</strong>。<strong>これが勾配降下法の根拠</strong>。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg">
+        <!-- Contour map of f(x,y) = x^2 + y^2 -->
+        <defs>
+          <radialGradient id="rg" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#b8431f" stop-opacity="0.05"/>
+            <stop offset="100%" stop-color="#b8431f" stop-opacity="0.4"/>
+          </radialGradient>
+        </defs>
+        <rect x="60" y="40" width="560" height="280" fill="url(#rg)"/>
+
+        <!-- Contour ellipses -->
+        <ellipse cx="340" cy="180" rx="50" ry="40" fill="none" stroke="#b8431f" stroke-width="1.5"/>
+        <ellipse cx="340" cy="180" rx="100" ry="80" fill="none" stroke="#b8431f" stroke-width="1.5"/>
+        <ellipse cx="340" cy="180" rx="150" ry="120" fill="none" stroke="#b8431f" stroke-width="1.5"/>
+        <ellipse cx="340" cy="180" rx="200" ry="160" fill="none" stroke="#b8431f" stroke-width="1.5"/>
+        <ellipse cx="340" cy="180" rx="250" ry="190" fill="none" stroke="#b8431f" stroke-width="1"/>
+
+        <!-- Center (minimum) -->
+        <circle cx="340" cy="180" r="4" fill="#0d1b2a"/>
+        <text x="345" y="195" font-size="11" fill="#0d1b2a" font-weight="bold">最小</text>
+
+        <!-- Point P -->
+        <circle cx="450" cy="240" r="5" fill="#0d1b2a"/>
+        <text x="442" y="262" font-size="11" font-weight="bold" fill="#0d1b2a">P</text>
+
+        <!-- Gradient arrow (steepest ascent at P) -->
+        <line x1="450" y1="240" x2="510" y2="290" stroke="#b8431f" stroke-width="3"/>
+        <polygon points="510,290 500,288 502,278" fill="#b8431f"/>
+        <text x="520" y="295" font-size="11" font-weight="bold" fill="#b8431f">∇f （最急上昇）</text>
+
+        <!-- Negative gradient (steepest descent) -->
+        <line x1="450" y1="240" x2="390" y2="190" stroke="#2e5577" stroke-width="3"/>
+        <polygon points="390,190 396,200 400,194" fill="#2e5577"/>
+        <text x="305" y="180" font-size="11" font-weight="bold" fill="#2e5577">-∇f （最急降下）</text>
+
+        <!-- Tangent to contour -->
+        <line x1="395" y1="265" x2="505" y2="215" stroke="#0d1b2a" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <text x="380" y="285" font-size="10" fill="#5a5f6a">等高線の接線（勾配と直交）</text>
+
+        <!-- Title -->
+        <text x="340" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">関数 f(x,y) = x² + y² の等高線</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 4.2</span> 勾配 ∇f は等高線に直交し、最も急な上昇方向を指す。-∇f は最急降下方向。機械学習はこの方向にパラメータを動かして損失を減らす。</div>
+    </div>
+
+    <h2 id="chain"><span class="label">§4 / CHAIN</span>連鎖律</h2>
+    <p>合成関数 f(g(x)) の微分：</p>
+    <div class="formula">d/dx [f(g(x))] = f'(g(x)) · g'(x)</div>
+    <p><strong>これがバックプロパゲーションの数学的基盤</strong>。多層NNでは合成関数が何層にも重なるが、連鎖律を機械的に適用すれば全パラメータの勾配が計算できる。</p>
+
+    <div class="example">
+      <div class="example-title">例：f(g(x)) = (3x + 1)²</div>
+      g(x) = 3x + 1, f(u) = u²<br>
+      g'(x) = 3, f'(u) = 2u<br>
+      d/dx [(3x+1)²] = 2(3x+1) · 3 = 6(3x+1)
+    </div>
+
+    <h2 id="hessian"><span class="label">§5 / HESSIAN</span>ヘッセ行列</h2>
+    <p>多変数関数 f の <strong>2階偏微分</strong> を行列にまとめたもの：</p>
+    <div class="formula">H_{ij} = ∂²f / (∂xᵢ ∂xⱼ)</div>
+    <p>勾配 ∇f = 0 となる点（極値候補）で、ヘッセ行列の <strong>固有値の符号</strong> によって：</p>
+
+    <h2 id="saddle"><span class="label">§6 / SADDLE</span>凸・凹・鞍点</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Convex (minimum) -->
+        <g transform="translate(0, 0)">
+          <line x1="40" y1="240" x2="220" y2="240" stroke="#0d1b2a" stroke-width="1.5"/>
+          <line x1="130" y1="40" x2="130" y2="260" stroke="#0d1b2a" stroke-width="1.5"/>
+          <path d="M 60 80 Q 130 240 200 80" stroke="#b8431f" stroke-width="3" fill="none"/>
+          <circle cx="130" cy="220" r="5" fill="#0d1b2a"/>
+          <text x="130" y="285" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">凸（極小）</text>
+          <text x="130" y="305" text-anchor="middle" font-size="10" fill="#5a5f6a">全固有値 &gt; 0</text>
+        </g>
+
+        <!-- Concave (maximum) -->
+        <g transform="translate(260, 0)">
+          <line x1="40" y1="240" x2="220" y2="240" stroke="#0d1b2a" stroke-width="1.5"/>
+          <line x1="130" y1="40" x2="130" y2="260" stroke="#0d1b2a" stroke-width="1.5"/>
+          <path d="M 60 200 Q 130 40 200 200" stroke="#b8431f" stroke-width="3" fill="none"/>
+          <circle cx="130" cy="60" r="5" fill="#0d1b2a"/>
+          <text x="130" y="285" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">凹（極大）</text>
+          <text x="130" y="305" text-anchor="middle" font-size="10" fill="#5a5f6a">全固有値 &lt; 0</text>
+        </g>
+
+        <!-- Saddle point -->
+        <g transform="translate(520, 0)">
+          <line x1="40" y1="240" x2="220" y2="240" stroke="#0d1b2a" stroke-width="1.5"/>
+          <line x1="130" y1="40" x2="130" y2="260" stroke="#0d1b2a" stroke-width="1.5"/>
+          <!-- saddle: along one direction convex, other concave -->
+          <path d="M 60 80 Q 130 150 200 80" stroke="#b8431f" stroke-width="2.5" fill="none" stroke-dasharray="4,2"/>
+          <path d="M 60 200 Q 130 150 200 200" stroke="#d4a017" stroke-width="2.5" fill="none"/>
+          <circle cx="130" cy="150" r="5" fill="#0d1b2a"/>
+          <text x="130" y="285" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">鞍点</text>
+          <text x="130" y="305" text-anchor="middle" font-size="10" fill="#5a5f6a">符号混合</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 4.3</span> ヘッセ行列の固有値の符号で、極小・極大・鞍点を判定できる。高次元では鞍点が極小より遥かに多いことが知られ、これが現代最適化研究の重要視点。</div>
+    </div>
+
+    <table class="spec">
+      <tr><th>全固有値 &gt; 0</th><td><strong>極小</strong>（凸）</td></tr>
+      <tr><th>全固有値 &lt; 0</th><td><strong>極大</strong>（凹）</td></tr>
+      <tr><th>符号が混在</th><td><strong>鞍点</strong>（saddle point）</td></tr>
+      <tr><th>0 を含む</th><td>退化（追加分析が必要）</td></tr>
+    </table>
+
+    <h2 id="gd"><span class="label">§7 / GD</span>勾配降下法</h2>
+    <p>損失 L(θ) を最小化したい。パラメータ θ を、勾配の逆方向に少しずつ動かす：</p>
+    <div class="formula">θ_{t+1} = θ_t − η · ∇L(θ_t)</div>
+    <p>η は <strong>学習率</strong>（learning rate）。これが最適化の最重要ハイパーパラメータ。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Contour map -->
+        <ellipse cx="400" cy="180" rx="40" ry="32" fill="none" stroke="#b8431f" stroke-width="1.5"/>
+        <ellipse cx="400" cy="180" rx="80" ry="64" fill="none" stroke="#b8431f" stroke-width="1.5"/>
+        <ellipse cx="400" cy="180" rx="120" ry="96" fill="none" stroke="#b8431f" stroke-width="1.5"/>
+        <ellipse cx="400" cy="180" rx="160" ry="128" fill="none" stroke="#b8431f" stroke-width="1.5"/>
+        <ellipse cx="400" cy="180" rx="200" ry="160" fill="none" stroke="#b8431f" stroke-width="1"/>
+
+        <!-- Center -->
+        <circle cx="400" cy="180" r="4" fill="#0d1b2a"/>
+        <text x="408" y="195" font-size="11" font-weight="bold" fill="#0d1b2a">最小 θ*</text>
+
+        <!-- Trajectory (good learning rate) -->
+        <circle cx="180" cy="80" r="5" fill="#2e5577"/>
+        <text x="120" y="78" font-size="11" font-weight="bold" fill="#2e5577">θ₀（初期）</text>
+
+        <line x1="180" y1="80" x2="240" y2="120" stroke="#2e5577" stroke-width="2"/>
+        <polygon points="240,120 232,118 234,126" fill="#2e5577"/>
+        <line x1="240" y1="120" x2="290" y2="145" stroke="#2e5577" stroke-width="2"/>
+        <polygon points="290,145 282,143 284,151" fill="#2e5577"/>
+        <line x1="290" y1="145" x2="335" y2="162" stroke="#2e5577" stroke-width="2"/>
+        <polygon points="335,162 327,160 329,168" fill="#2e5577"/>
+        <line x1="335" y1="162" x2="375" y2="174" stroke="#2e5577" stroke-width="2"/>
+        <polygon points="375,174 367,172 369,180" fill="#2e5577"/>
+        <line x1="375" y1="174" x2="397" y2="179" stroke="#2e5577" stroke-width="2"/>
+
+        <text x="240" y="245" font-size="11" fill="#2e5577" font-weight="bold">適切な学習率：</text>
+        <text x="240" y="262" font-size="11" fill="#2e5577">- 最小に向かう</text>
+        <text x="240" y="278" font-size="11" fill="#2e5577">- ステップごとに損失減少</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 4.4</span> 勾配降下法のトラジェクトリ（適切な学習率）。各ステップで -∇L 方向に進み、最小点に近づく。</div>
+    </div>
+
+    <h2 id="lr"><span class="label">§8 / LR</span>学習率の影響</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- Too small -->
+        <g transform="translate(0, 0)">
+          <line x1="40" y1="220" x2="220" y2="220" stroke="#0d1b2a"/>
+          <line x1="130" y1="40" x2="130" y2="240" stroke="#0d1b2a"/>
+          <path d="M 60 80 Q 130 230 200 80" stroke="#b8431f" stroke-width="2" fill="none"/>
+          <circle cx="80" cy="160" r="4" fill="#2e5577"/>
+          <circle cx="90" cy="190" r="4" fill="#2e5577"/>
+          <circle cx="100" cy="205" r="4" fill="#2e5577"/>
+          <circle cx="110" cy="213" r="4" fill="#2e5577"/>
+          <circle cx="120" cy="218" r="4" fill="#2e5577"/>
+          <text x="130" y="260" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">η 小すぎ</text>
+          <text x="130" y="277" text-anchor="middle" font-size="10" fill="#5a5f6a">収束が遅い</text>
+        </g>
+
+        <!-- Just right -->
+        <g transform="translate(260, 0)">
+          <line x1="40" y1="220" x2="220" y2="220" stroke="#0d1b2a"/>
+          <line x1="130" y1="40" x2="130" y2="240" stroke="#0d1b2a"/>
+          <path d="M 60 80 Q 130 230 200 80" stroke="#b8431f" stroke-width="2" fill="none"/>
+          <circle cx="80" cy="160" r="4" fill="#2e5577"/>
+          <circle cx="110" cy="210" r="4" fill="#2e5577"/>
+          <circle cx="130" cy="220" r="5" fill="#0d1b2a"/>
+          <text x="130" y="260" text-anchor="middle" font-size="12" font-weight="bold" fill="#2e5577">η 適切</text>
+          <text x="130" y="277" text-anchor="middle" font-size="10" fill="#5a5f6a">スムーズに収束</text>
+        </g>
+
+        <!-- Too large -->
+        <g transform="translate(520, 0)">
+          <line x1="40" y1="220" x2="220" y2="220" stroke="#0d1b2a"/>
+          <line x1="130" y1="40" x2="130" y2="240" stroke="#0d1b2a"/>
+          <path d="M 60 80 Q 130 230 200 80" stroke="#b8431f" stroke-width="2" fill="none"/>
+          <circle cx="70" cy="120" r="4" fill="#b8431f"/>
+          <circle cx="190" cy="100" r="4" fill="#b8431f"/>
+          <circle cx="55" cy="90" r="4" fill="#b8431f"/>
+          <circle cx="205" cy="70" r="4" fill="#b8431f"/>
+          <text x="130" y="260" text-anchor="middle" font-size="12" font-weight="bold" fill="#b8431f">η 大きすぎ</text>
+          <text x="130" y="277" text-anchor="middle" font-size="10" fill="#5a5f6a">振動・発散</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 4.5</span> 学習率の選択：小さすぎると遅く、大きすぎると発散する。ニューラルネット学習で最も重要なハイパーパラメータ。</div>
+    </div>
+
+    <div class="example">
+      <div class="example-title">例題：1次元の勾配降下を手で1ステップ</div>
+      L(θ) = (θ - 3)², 初期 θ₀ = 0, η = 0.1<br>
+      ∇L(0) = 2(0-3) = -6<br>
+      θ₁ = 0 - 0.1 × (-6) = 0.6<br>
+      θ₂ = 0.6 - 0.1 × (2(0.6-3)) = 0.6 - 0.1 × (-4.8) = 1.08<br>
+      ... 反復すると θ → 3（最小点）に収束
+    </div>
+
+    <div class="pitfall">
+      <div class="pitfall-title">⚠ 学習率を大きくし過ぎると</div>
+      η = 1.5 で同じ問題：θ₁ = 0 - 1.5 × (-6) = 9。次に θ₂ = 9 - 1.5 × 12 = -9。発散（振動拡大）。
+    </div>
+
+    <h2 id="variants"><span class="label">§9 / VARIANTS</span>SGD・Momentum・Adam</h2>
+
+    <table class="spec">
+      <tr><th>手法</th><th>更新式の心臓部</th><th>特徴</th></tr>
+      <tr><td><strong>バッチGD</strong></td><td>全データの平均勾配で更新</td><td>安定だが遅い、メモリ大</td></tr>
+      <tr><td><strong>SGD</strong></td><td>1サンプルで更新</td><td>ノイジー、汎化が良い場合あり</td></tr>
+      <tr><td><strong>ミニバッチSGD</strong></td><td>m サンプル（典型32〜256）平均</td><td><strong>実務標準</strong>。並列計算の恩恵</td></tr>
+      <tr><td><strong>Momentum</strong></td><td>v_t = γ v_{t-1} + η∇L、θ ← θ - v_t</td><td>慣性で振動抑制、谷を高速通過</td></tr>
+      <tr><td><strong>AdaGrad</strong></td><td>パラメータごとに学習率を適応化</td><td>スパース勾配に有効、学習率が単調減少</td></tr>
+      <tr><td><strong>RMSProp</strong></td><td>勾配二乗の指数移動平均で正規化</td><td>RNN で実績</td></tr>
+      <tr><td><strong>Adam</strong></td><td>Momentum + RMSProp</td><td><strong>事実上の標準</strong>、ハイパラ調整少なく強い</td></tr>
+      <tr><td><strong>AdamW</strong></td><td>Adam + 重み減衰分離</td><td>LLM学習で主流</td></tr>
+    </table>
+
+    <h2 id="summary"><span class="label">§10 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>微分 = 接線の傾き、変化率</td></tr>
+      <tr><th>2</th><td>偏微分 = 多変数のうち1変数だけの微分</td></tr>
+      <tr><th>3</th><td>勾配 ∇f = 最急上昇方向（-∇f = 最急降下方向）</td></tr>
+      <tr><th>4</th><td>勾配は等高線に直交</td></tr>
+      <tr><th>5</th><td>連鎖律：合成関数の微分。<strong>バックプロパゲーションの基盤</strong></td></tr>
+      <tr><th>6</th><td>ヘッセ行列：2階偏微分の行列。固有値で局所形状を判定</td></tr>
+      <tr><th>7</th><td>凸・凹・鞍点の区別。高次元では鞍点が多い</td></tr>
+      <tr><th>8</th><td>勾配降下法：θ ← θ - η∇L</td></tr>
+      <tr><th>9</th><td>学習率：小さすぎ→遅い、大きすぎ→発散</td></tr>
+      <tr><th>10</th><td>SGD/Momentum/Adam の使い分け。Adam が事実上の標準</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>f(x) = x² の x = 3 における微分を計算できるか</li>
+        <li>f(x, y) = x²y + y² の偏微分 ∂f/∂x と ∂f/∂y を計算できるか</li>
+        <li>勾配ベクトルが「最急上昇方向」を指す理由を説明できるか</li>
+        <li>連鎖律で sigmoid の微分 σ'(x) = σ(x)(1-σ(x)) を導出できるか</li>
+        <li>鞍点を「2次元の凸+凹の組み合わせ」として説明できるか</li>
+        <li>勾配降下法の更新式 θ ← θ - η∇L を書けるか</li>
+        <li>学習率を大きくしすぎると発散する具体例を1次元で示せるか</li>
+        <li>SGD と バッチGD の違いを「分散・速度」の観点で説明できるか</li>
+        <li>Momentum の物理的アナロジー（慣性）を説明できるか</li>
+        <li>Adam が事実上の標準とされる理由</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="03-linear-algebra.html">← 章3</a></div>
+  <div><span class="ch-label">次の章</span><br><span class="ch-title">章5: 確率と統計</span></div>
+  <div><a href="05-probability.html">章5へ →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul>
+      <li><a href="../../../certifications/g-kentei.html">概要</a></li>
+      <li><a href="index.html">基本</a></li>
+      <li><a href="../advanced/index.html">応用</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>

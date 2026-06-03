@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>章10 ニューラルネットの最小構成 — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章10：パーセプトロン、XOR問題、多層パーセプトロン、万能近似定理、活性化関数。図解でNN の構造を組み立てる。">
+<link rel="stylesheet" href="../../../assets/css/main.css">
+<style>
+.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
+.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
+.pitfall{background:#fbf3f0;border-left:3px solid #b8431f;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
+.pitfall-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#b8431f;margin-bottom:8px}
+.figure{margin:32px 0;text-align:center}
+.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
+.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
+.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
+.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
+.chapter-nav a{color:#faf7f2;text-decoration:none}
+.chapter-nav a:hover{color:#d4a017}
+.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
+.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
+table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
+table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
+table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
+.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
+.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
+.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
+.test-yourself li{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
+      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="index.html">基本</a>
+      <a href="../advanced/index.html">応用</a>
+      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
+    </nav>
+    <div class="issue-tag">G-KENTEI<br><strong>Ch.10</strong></div>
+    <button class="nav-toggle">MENU</button>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章10</div>
+    <h1>章10 — ニューラルネットの最小構成<span class="en">Chapter 10 — Neural Network Building Blocks</span></h1>
+    <p class="standfirst">深層学習はパーセプトロンから始まりました。<strong>「1個のニューロンができないことを多層で克服する」</strong> という歴史を、XOR 問題と万能近似定理を通して理解します。</p>
+  </div>
+</section>
+
+<div class="chapter-nav">
+  <div><a href="09-ml-evaluation.html">← 章9: 評価</a></div>
+  <div><span class="ch-label">Chapter 10 of 12</span><br><span class="ch-title">NN の最小構成</span></div>
+  <div><a href="11-backprop.html">章11: 逆伝播 →</a></div>
+</div>
+
+<div class="article">
+  <aside class="article-side">
+    <h6>章10 目次</h6>
+    <a href="#perceptron">§1 パーセプトロン</a>
+    <a href="#xor">§2 XOR 問題</a>
+    <a href="#mlp">§3 多層パーセプトロン</a>
+    <a href="#universal">§4 万能近似定理</a>
+    <a href="#activation">§5 活性化関数</a>
+    <a href="#why-deep">§6 なぜ深くするのか</a>
+    <a href="#summary">§7 章のまとめ</a>
+    <a href="#test">章末問題</a>
+  </aside>
+
+  <article class="article-body">
+
+    <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 10</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">1個のニューロンから、<br>深層学習へ。</h2>
+
+    <h2 id="perceptron"><span class="label">§1 / PERCEPTRON</span>パーセプトロン</h2>
+    <p>Frank Rosenblatt（1958年）が提案した最初期のニューラルネット。入力の線形結合にステップ関数を適用：</p>
+    <div class="formula">
+      y = step(wᵀx + b),  &nbsp; step(z) = 1 if z ≥ 0 else 0
+    </div>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- Inputs -->
+        <circle cx="100" cy="80" r="22" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="100" y="85" text-anchor="middle" font-size="14" fill="#0d1b2a">x₁</text>
+        <circle cx="100" cy="160" r="22" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="100" y="165" text-anchor="middle" font-size="14" fill="#0d1b2a">x₂</text>
+        <circle cx="100" cy="240" r="22" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="100" y="245" text-anchor="middle" font-size="14" fill="#0d1b2a">x₃</text>
+
+        <!-- Neuron -->
+        <circle cx="400" cy="160" r="40" fill="#b8431f"/>
+        <text x="400" y="155" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">Σ + step</text>
+        <text x="400" y="175" text-anchor="middle" font-size="10" fill="#f5d4c4">バイアス b</text>
+
+        <!-- Weights -->
+        <line x1="122" y1="80" x2="365" y2="155" stroke="#0d1b2a"/>
+        <text x="240" y="105" font-size="11" fill="#b8431f" font-weight="bold">w₁</text>
+        <line x1="122" y1="160" x2="360" y2="160" stroke="#0d1b2a"/>
+        <text x="240" y="155" font-size="11" fill="#b8431f" font-weight="bold">w₂</text>
+        <line x1="122" y1="240" x2="365" y2="170" stroke="#0d1b2a"/>
+        <text x="240" y="225" font-size="11" fill="#b8431f" font-weight="bold">w₃</text>
+
+        <!-- Output -->
+        <line x1="440" y1="160" x2="560" y2="160" stroke="#0d1b2a" stroke-width="2"/>
+        <polygon points="560,160 552,156 552,164" fill="#0d1b2a"/>
+        <text x="595" y="165" font-size="15" font-weight="bold" fill="#0d1b2a">y</text>
+        <text x="500" y="148" font-size="10" fill="#5a5f6a">0 or 1</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 10.1</span> パーセプトロンの構造。入力 xᵢ に重み wᵢ をかけ、足し合わせてバイアス b を加え、ステップ関数を通す。「重み付き合計が閾値を超えたら発火」というニューロンの数学化。</div>
+    </div>
+
+    <h3>1.1 学習アルゴリズム</h3>
+    <p>誤分類されたサンプルがあれば重みを更新：</p>
+    <div class="formula">w ← w + η · (y - ŷ) · x</div>
+    <p>線形分離可能なデータならば <strong>有限ステップで収束</strong>することが証明されている（Rosenblatt の収束定理）。</p>
+
+    <h2 id="xor"><span class="label">§2 / XOR</span>XOR 問題：パーセプトロンの限界</h2>
+    <p>1969年、Minsky と Papert が著書『Perceptrons』で証明：<strong>単層パーセプトロンは XOR を学習できない</strong>。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(0, 0)">
+          <line x1="40" y1="200" x2="240" y2="200" stroke="#0d1b2a"/>
+          <line x1="60" y1="20" x2="60" y2="220" stroke="#0d1b2a"/>
+          <text x="120" y="220" font-size="10" fill="#5a5f6a">x₁</text>
+          <text x="45" y="135" font-size="10" fill="#5a5f6a">x₂</text>
+          <text x="60" y="218" font-size="10" fill="#5a5f6a">0</text>
+          <text x="180" y="218" font-size="10" fill="#5a5f6a">1</text>
+          <text x="50" y="200" font-size="10" fill="#5a5f6a">0</text>
+          <text x="50" y="85" font-size="10" fill="#5a5f6a">1</text>
+          <circle cx="60" cy="200" r="8" fill="#2e5577"/>
+          <circle cx="180" cy="200" r="8" fill="#b8431f"/>
+          <circle cx="60" cy="80" r="8" fill="#b8431f"/>
+          <circle cx="180" cy="80" r="8" fill="#2e5577"/>
+          <line x1="40" y1="180" x2="200" y2="100" stroke="#5a5f6a" stroke-dasharray="3,2"/>
+          <text x="120" y="245" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">XOR の真理値表</text>
+        </g>
+        <g transform="translate(300, 30)">
+          <text x="0" y="20" font-size="13" font-weight="bold" fill="#0d1b2a">XOR 真理値表</text>
+          <text x="0" y="50" font-size="12" fill="#0d1b2a">x₁ | x₂ | y</text>
+          <line x1="0" y1="55" x2="120" y2="55" stroke="#0d1b2a"/>
+          <text x="0" y="75" font-size="12" fill="#0d1b2a">0 | 0 | 0</text>
+          <text x="0" y="95" font-size="12" fill="#0d1b2a">0 | 1 | 1</text>
+          <text x="0" y="115" font-size="12" fill="#0d1b2a">1 | 0 | 1</text>
+          <text x="0" y="135" font-size="12" fill="#0d1b2a">1 | 1 | 0</text>
+          <text x="0" y="170" font-size="11" fill="#b8431f" font-weight="bold">→ 1本の直線で</text>
+          <text x="0" y="187" font-size="11" fill="#b8431f" font-weight="bold">　分離できない！</text>
+        </g>
+        <g transform="translate(520, 20)">
+          <text x="0" y="20" font-size="13" font-weight="bold" fill="#0d1b2a">2層 MLP で解決</text>
+          <text x="0" y="60" font-size="12" fill="#0d1b2a">隠れ層が論理ゲートの組合せ：</text>
+          <text x="0" y="85" font-size="12" fill="#0d1b2a">h₁ = OR(x₁, x₂)</text>
+          <text x="0" y="105" font-size="12" fill="#0d1b2a">h₂ = AND(x₁, x₂)</text>
+          <text x="0" y="125" font-size="12" fill="#0d1b2a">y  = AND(h₁, NOT h₂)</text>
+          <text x="0" y="155" font-size="11" fill="#3a7d44" font-weight="bold">= XOR ✓</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 10.2</span> XOR 問題。出力 1 の点と 0 の点を1本の直線で分離できない（線形分離不可能）。多層化することで解決される。これが第1次AI冬の原因の一つ。</div>
+    </div>
+
+    <p><strong>これが第1次AI冬の主要因の一つ</strong>。多層化が解決策だが、当時は多層NNの学習法（バックプロパゲーション）が一般化していなかった。</p>
+
+    <h2 id="mlp"><span class="label">§3 / MLP</span>多層パーセプトロン（MLP）</h2>
+    <p>パーセプトロンを多層に積み、ステップではなく <strong>滑らかな活性化関数</strong>（sigmoid/ReLU等）を使うことで、<strong>非線形関数を表現できる</strong>。</p>
+
+    <div class="figure">
+      <svg viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Input layer -->
+        <circle cx="80" cy="80" r="22" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/><text x="80" y="85" text-anchor="middle" font-size="13" fill="#0d1b2a">x₁</text>
+        <circle cx="80" cy="160" r="22" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/><text x="80" y="165" text-anchor="middle" font-size="13" fill="#0d1b2a">x₂</text>
+        <circle cx="80" cy="240" r="22" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/><text x="80" y="245" text-anchor="middle" font-size="13" fill="#0d1b2a">x₃</text>
+        <!-- Hidden layer 1 -->
+        <circle cx="260" cy="60" r="22" fill="#d4a017"/><text x="260" y="65" text-anchor="middle" font-size="13" fill="#0d1b2a">h₁</text>
+        <circle cx="260" cy="140" r="22" fill="#d4a017"/><text x="260" y="145" text-anchor="middle" font-size="13" fill="#0d1b2a">h₂</text>
+        <circle cx="260" cy="220" r="22" fill="#d4a017"/><text x="260" y="225" text-anchor="middle" font-size="13" fill="#0d1b2a">h₃</text>
+        <circle cx="260" cy="300" r="22" fill="#d4a017"/><text x="260" y="305" text-anchor="middle" font-size="13" fill="#0d1b2a">h₄</text>
+        <!-- Hidden layer 2 -->
+        <circle cx="440" cy="100" r="22" fill="#d4a017" opacity="0.7"/><text x="440" y="105" text-anchor="middle" font-size="13" fill="#0d1b2a">h₁'</text>
+        <circle cx="440" cy="180" r="22" fill="#d4a017" opacity="0.7"/><text x="440" y="185" text-anchor="middle" font-size="13" fill="#0d1b2a">h₂'</text>
+        <circle cx="440" cy="260" r="22" fill="#d4a017" opacity="0.7"/><text x="440" y="265" text-anchor="middle" font-size="13" fill="#0d1b2a">h₃'</text>
+        <!-- Output -->
+        <circle cx="600" cy="160" r="22" fill="#b8431f"/><text x="600" y="165" text-anchor="middle" font-size="13" fill="#faf7f2">y</text>
+
+        <!-- Edges (simplified) -->
+        <g stroke="#c8c2b3" stroke-width="0.8">
+          <line x1="100" y1="80" x2="240" y2="60"/><line x1="100" y1="80" x2="240" y2="140"/><line x1="100" y1="80" x2="240" y2="220"/><line x1="100" y1="80" x2="240" y2="300"/>
+          <line x1="100" y1="160" x2="240" y2="60"/><line x1="100" y1="160" x2="240" y2="140"/><line x1="100" y1="160" x2="240" y2="220"/><line x1="100" y1="160" x2="240" y2="300"/>
+          <line x1="100" y1="240" x2="240" y2="60"/><line x1="100" y1="240" x2="240" y2="140"/><line x1="100" y1="240" x2="240" y2="220"/><line x1="100" y1="240" x2="240" y2="300"/>
+          <line x1="280" y1="60" x2="420" y2="100"/><line x1="280" y1="60" x2="420" y2="180"/><line x1="280" y1="60" x2="420" y2="260"/>
+          <line x1="280" y1="140" x2="420" y2="100"/><line x1="280" y1="140" x2="420" y2="180"/><line x1="280" y1="140" x2="420" y2="260"/>
+          <line x1="280" y1="220" x2="420" y2="100"/><line x1="280" y1="220" x2="420" y2="180"/><line x1="280" y1="220" x2="420" y2="260"/>
+          <line x1="280" y1="300" x2="420" y2="100"/><line x1="280" y1="300" x2="420" y2="180"/><line x1="280" y1="300" x2="420" y2="260"/>
+          <line x1="460" y1="100" x2="580" y2="160"/><line x1="460" y1="180" x2="580" y2="160"/><line x1="460" y1="260" x2="580" y2="160"/>
+        </g>
+        <text x="80" y="20" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">入力層</text>
+        <text x="260" y="20" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">隠れ層 1</text>
+        <text x="440" y="20" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">隠れ層 2</text>
+        <text x="600" y="20" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">出力層</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 10.3</span> 2隠れ層の多層パーセプトロン。各層は (重み付き和 + 活性化) の繰り返し。全結合（fully connected, dense）が基本構造。</div>
+    </div>
+
+    <h2 id="universal"><span class="label">§4 / UNIV</span>万能近似定理</h2>
+    <p><strong>Cybenko (1989), Hornik (1991)</strong>：1隠れ層を持つ MLP は、隠れユニットを十分多く取れば、<strong>任意の連続関数を任意の精度で近似できる</strong>。</p>
+
+    <div class="pitfall">
+      <div class="pitfall-title">⚠ 「表現できる」と「学習できる」は別</div>
+      万能近似定理は <strong>「そのような重みの値が存在する」</strong> ことしか保証しない。<br>
+      実際にそれを <strong>学習で見つけられる</strong> かは別問題。<br>
+      また、1隠れ層で表現可能でも、現実には<strong>多層化</strong>で遥かに少ないユニット数で表現できる（指数的圧縮）。これが「Deep Learning」と呼ばれる所以。
+    </div>
+
+    <h2 id="activation"><span class="label">§5 / ACT</span>活性化関数</h2>
+
+    <div class="figure">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Sigmoid -->
+        <g transform="translate(0, 0)">
+          <line x1="20" y1="100" x2="180" y2="100" stroke="#0d1b2a"/>
+          <line x1="100" y1="20" x2="100" y2="180" stroke="#0d1b2a"/>
+          <path d="M 25 100 Q 80 100 90 95 Q 100 75 110 35 Q 120 30 175 30" stroke="#b8431f" stroke-width="2.5" fill="none"/>
+          <line x1="20" y1="30" x2="175" y2="30" stroke="#5a5f6a" stroke-dasharray="3,2"/>
+          <text x="100" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">Sigmoid</text>
+          <text x="100" y="227" text-anchor="middle" font-size="10" fill="#5a5f6a">出力 (0, 1)</text>
+        </g>
+        <!-- Tanh -->
+        <g transform="translate(190, 0)">
+          <line x1="20" y1="100" x2="180" y2="100" stroke="#0d1b2a"/>
+          <line x1="100" y1="20" x2="100" y2="180" stroke="#0d1b2a"/>
+          <path d="M 25 170 Q 80 170 90 165 Q 100 100 110 35 Q 120 30 175 30" stroke="#b8431f" stroke-width="2.5" fill="none"/>
+          <text x="100" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">Tanh</text>
+          <text x="100" y="227" text-anchor="middle" font-size="10" fill="#5a5f6a">出力 (-1, 1)</text>
+        </g>
+        <!-- ReLU -->
+        <g transform="translate(380, 0)">
+          <line x1="20" y1="160" x2="180" y2="160" stroke="#0d1b2a"/>
+          <line x1="100" y1="20" x2="100" y2="180" stroke="#0d1b2a"/>
+          <line x1="20" y1="160" x2="100" y2="160" stroke="#b8431f" stroke-width="2.5"/>
+          <line x1="100" y1="160" x2="175" y2="35" stroke="#b8431f" stroke-width="2.5"/>
+          <text x="100" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">ReLU</text>
+          <text x="100" y="227" text-anchor="middle" font-size="10" fill="#5a5f6a">max(0, x) — 標準</text>
+        </g>
+        <!-- GELU -->
+        <g transform="translate(570, 0)">
+          <line x1="20" y1="160" x2="180" y2="160" stroke="#0d1b2a"/>
+          <line x1="100" y1="20" x2="100" y2="180" stroke="#0d1b2a"/>
+          <path d="M 25 158 Q 70 162 90 162 Q 100 150 110 105 Q 130 50 175 30" stroke="#b8431f" stroke-width="2.5" fill="none"/>
+          <text x="100" y="210" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">GELU</text>
+          <text x="100" y="227" text-anchor="middle" font-size="10" fill="#5a5f6a">滑らか・Transformer</text>
+        </g>
+        <!-- Softmax (separate) -->
+        <g transform="translate(190, 240)">
+          <text x="0" y="20" font-size="13" font-weight="bold" fill="#0d1b2a">Softmax (出力層 / 多クラス分類)</text>
+          <text x="0" y="42" font-size="12" font-family="JetBrains Mono, monospace" fill="#5a5f6a">softmax(zᵢ) = exp(zᵢ) / Σⱼ exp(zⱼ)</text>
+          <text x="0" y="62" font-size="11" fill="#0d1b2a">→ ベクトルを確率分布に変換（合計 1）</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 10.4</span> 主な活性化関数。隠れ層は ReLU が標準（Transformer は GELU）、二値分類出力は Sigmoid、多クラス出力は Softmax。</div>
+    </div>
+
+    <table class="spec">
+      <tr><th>関数</th><th>式</th><th>特徴</th><th>用途</th></tr>
+      <tr><td>Sigmoid</td><td>1/(1+e⁻ᶻ)</td><td>出力 (0,1)、勾配消失</td><td>二値分類出力</td></tr>
+      <tr><td>Tanh</td><td>(eᶻ-e⁻ᶻ)/(eᶻ+e⁻ᶻ)</td><td>出力 (-1,1)、ゼロ中心</td><td>RNNで歴史的に多用</td></tr>
+      <tr><td><strong>ReLU</strong></td><td>max(0, z)</td><td>計算軽、勾配消失緩和、Dying ReLU</td><td><strong>CNN/MLP 標準</strong></td></tr>
+      <tr><td>Leaky ReLU</td><td>max(αz, z) (α≈0.01)</td><td>Dying ReLU 緩和</td><td>ReLU 代替</td></tr>
+      <tr><td>GELU</td><td>z · Φ(z)</td><td>滑らか</td><td><strong>Transformer 標準</strong></td></tr>
+      <tr><td>SiLU/Swish</td><td>z · sigmoid(z)</td><td>滑らか</td><td>Llama 系の FFN</td></tr>
+      <tr><td>Softmax</td><td>eᶻⁱ / Σ eᶻʲ</td><td>確率分布化</td><td>多クラス分類出力</td></tr>
+    </table>
+
+    <h2 id="why-deep"><span class="label">§6 / DEEP</span>なぜ深くするのか</h2>
+    <p>「1隠れ層で十分」が万能近似定理の主張。それでもなぜ <strong>深層</strong> にするのか？</p>
+    <ul>
+      <li><strong>指数的圧縮</strong>：同じ表現力を遥かに少ない総パラメータ数で実現できる</li>
+      <li><strong>階層的特徴抽出</strong>：低層は線分・色、中層は形・テクスチャ、高層は意味的概念 — と<strong>抽象度が階層的に上がる</strong></li>
+      <li><strong>転移学習</strong>：事前学習で学んだ低層の特徴は他タスクでも使える</li>
+      <li><strong>帰納バイアス</strong>：層構造そのものが「現実世界の階層性」と合致</li>
+    </ul>
+
+    <h2 id="summary"><span class="label">§7 / SUMMARY</span>章のまとめ</h2>
+    <table class="spec">
+      <tr><th>1</th><td>パーセプトロン = 線形結合 + ステップ関数。Rosenblatt 1958</td></tr>
+      <tr><th>2</th><td>線形分離可能なデータには有限ステップで収束</td></tr>
+      <tr><th>3</th><td>単層では XOR を解けない（線形分離不可能）→ Minsky 1969</td></tr>
+      <tr><th>4</th><td>多層パーセプトロン（MLP）で非線形を表現</td></tr>
+      <tr><th>5</th><td>万能近似定理：1隠れ層で任意の連続関数を近似可能</td></tr>
+      <tr><th>6</th><td>ただし「表現可能」と「学習可能」は別</td></tr>
+      <tr><th>7</th><td>活性化関数：ReLU が標準、Transformer は GELU、出力は Sigmoid/Softmax</td></tr>
+      <tr><th>8</th><td>深層化は「指数的圧縮」と「階層的特徴抽出」で意味がある</td></tr>
+    </table>
+
+    <div class="test-yourself" id="test">
+      <h3>章末問題</h3>
+      <ol>
+        <li>パーセプトロンの式と図を書けるか</li>
+        <li>XOR が単層パーセプトロンで解けない理由を「線形分離可能性」で説明できるか</li>
+        <li>万能近似定理の主張と限界を説明できるか</li>
+        <li>「表現可能」と「学習可能」が異なる理由</li>
+        <li>ReLU の式と、勾配消失緩和に貢献する理由</li>
+        <li>Sigmoid と Tanh の比較（出力範囲、ゼロ中心性）</li>
+        <li>Softmax がなぜ「ベクトルを確率分布に変換」できるのか</li>
+        <li>Dying ReLU 問題とその対策</li>
+        <li>多層化が「指数的圧縮」を生む直観</li>
+        <li>低層／中層／高層が学習する特徴の階層性</li>
+      </ol>
+    </div>
+
+  </article>
+</div>
+
+<div class="chapter-nav">
+  <div><a href="09-ml-evaluation.html">← 章9</a></div>
+  <div><span class="ch-label">次の章</span><br><span class="ch-title">章11: バックプロパゲーション</span></div>
+  <div><a href="11-backprop.html">章11へ →</a></div>
+</div>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
+    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="index.html">基本</a></li><li><a href="../advanced/index.html">応用</a></li></ul></div>
+  </div>
+  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
+</footer>
+
+<script src="../../../assets/js/main.js"></script>
+</body>
+</html>
