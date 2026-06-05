@@ -3,378 +3,496 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章9 評価と過学習 — G検定 基本 — Swallow AI Academy</title>
-<meta name="description" content="G検定基本 章9：訓練・検証・テスト分割、交差検証、過学習、バイアス・バリアンス分解、混同行列、ROC-AUC を図解で。">
+<title>章9 評価指標 — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章9：混同行列、Accuracy、Precision/Recall、F1、ROC-AUC、PR-AUC、Log Loss、MAP@k、NDCG、回帰指標を5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
-.pitfall{background:#fbf3f0;border-left:3px solid #b8431f;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.pitfall-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#b8431f;margin-bottom:8px}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="index.html">基本</a>
-      <a href="../advanced/index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>Ch.9</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="index.html">基本</a><a href="../advanced/index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
     <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章9</div>
-    <h1>章9 — 評価と過学習<span class="en">Chapter 9 — Evaluation and Overfitting</span></h1>
-    <p class="standfirst">機械学習で最も多い失敗は「<strong>訓練データでは完璧、本番では使い物にならない</strong>」。これを避けるための <strong>データ分割・交差検証・評価指標</strong> を、図と例題で徹底的に押さえます。</p>
+    <h1>章9 — 評価指標<span class="en">Chapter 9 — Evaluation Metrics</span></h1>
+    <p class="standfirst">『精度95%！』──スパム検知でスパムが全体の5%しかなければ『すべて非スパム』と答えるだけで95%。<strong>評価指標は問題の本質に応じて選ぶ</strong>必要があります。本章では、<strong>混同行列</strong>から、<strong>Accuracy/Precision/Recall/F1</strong>、<strong>ROC-AUC</strong>、<strong>PR-AUC</strong>、<strong>Log Loss</strong>、<strong>MAP@k</strong>、<strong>回帰指標</strong>、そして<strong>不均衡対応</strong>・<strong>Calibration</strong>・<strong>統計検定</strong>までを5部構成で扱います。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="08-ml-classical.html">← 章8: 古典手法</a></div>
-  <div><span class="ch-label">Chapter 9 of 12</span><br><span class="ch-title">評価と過学習</span></div>
-  <div><a href="10-nn-basics.html">章10: NN 基礎 →</a></div>
+  <div><a href="08-ml-classical.html">← 章8: 古典ML</a></div>
+  <div><span class="ch-label">Chapter 9 of 12 · 基本編</span><br><span class="ch-title">評価指標</span></div>
+  <div><a href="10-nn-basics.html">章10: NN基礎 →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
     <h6>章9 目次</h6>
-    <a href="#split">§1 訓練・検証・テスト分割</a>
-    <a href="#cv">§2 交差検証</a>
-    <a href="#overfit">§3 過学習と未学習</a>
-    <a href="#biasvar">§4 バイアス・バリアンス分解</a>
-    <a href="#confusion">§5 混同行列</a>
-    <a href="#metrics">§6 評価指標</a>
-    <a href="#roc">§7 ROC-AUC</a>
-    <a href="#regul">§8 正則化の手段</a>
-    <a href="#summary">§9 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
     <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 9</div>
-    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">「ちゃんと動く」を、<br>数字で証明する。</h2>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">数字で性能を語る。<br>正しい数字を選ぶ。</h2>
+    <p class="article-lede">モデルが本番でどれだけ役立つかは、評価指標で決まります。クラス不均衡、コスト非対称、ランキング、確率出力 ── 状況により適切な指標は異なる。Accuracy だけ見ていてはたどり着けない正しい意思決定への鍵が、本章にあります。</p>
 
-    <h2 id="split"><span class="label">§1 / SPLIT</span>訓練・検証・テスト分割</h2>
-    <p>機械学習の最も基本的な実験設計。<strong>3つに分割</strong>：</p>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg">
-        <rect x="40" y="60" width="400" height="60" fill="#b8431f"/>
-        <text x="240" y="95" text-anchor="middle" font-size="14" font-weight="bold" fill="#faf7f2">訓練 (Train) 60-70%</text>
-        <rect x="440" y="60" width="100" height="60" fill="#d4a017"/>
-        <text x="490" y="95" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">検証 15%</text>
-        <rect x="540" y="60" width="100" height="60" fill="#2e5577"/>
-        <text x="590" y="95" text-anchor="middle" font-size="12" font-weight="bold" fill="#faf7f2">テスト 15%</text>
-        <text x="240" y="145" text-anchor="middle" font-size="11" fill="#5a5f6a">パラメータ学習</text>
-        <text x="490" y="145" text-anchor="middle" font-size="11" fill="#5a5f6a">ハイパラ調整</text>
-        <text x="590" y="145" text-anchor="middle" font-size="11" fill="#5a5f6a">最終評価</text>
-        <text x="340" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">データセットの分割（典型例）</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 9.1</span> データ分割の基本。テストデータは <strong>「最終評価で一度しか見ない」</strong>。何度も見て調整すると暗黙の過学習が起こる。</div>
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>混同行列・Accuracy・Precision/Recall・F1・ROC-AUC・PR-AUC・Log Loss・MAP@k・回帰指標・多クラスの10節。</p>
     </div>
 
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 混同行列</h3>
     <table class="spec">
-      <tr><th>訓練（train）</th><td>モデルのパラメータ（重み）を学習</td></tr>
-      <tr><th>検証（validation）</th><td>ハイパーパラメータ調整、モデル選択、早期終了</td></tr>
-      <tr><th>テスト（test）</th><td>最終的な汎化性能の評価。<strong>複数回見てはいけない</strong></td></tr>
+      <tr><th></th><th>予測：陽性</th><th>予測：陰性</th></tr>
+      <tr><th>実際：陽性</th><td>TP（真陽性）</td><td>FN（偽陰性）</td></tr>
+      <tr><th>実際：陰性</th><td>FP（偽陽性）</td><td>TN（真陰性）</td></tr>
     </table>
+
+    <h3 style="margin-top:36px;">§1.2 Accuracy（正解率）</h3>
+    <div class="formula">Accuracy = (TP + TN) / 全体<br><br>クラス均衡なら有用。不均衡（陽性 1%）では誤解を生む典型。</div>
 
     <div class="pitfall">
-      <div class="pitfall-title">⚠ データリーク</div>
-      テストデータの情報が訓練に漏れることを <strong>データリーク</strong> という。標準化・特徴量設計を分割前にやると平均・分散にテストデータが入ってしまう。正しくは：分割 → 訓練データで統計を計算 → 検証/テストにも同じ変換を適用。
+      <div class="pitfall-title">▎ Accuracyの罠</div>
+      陽性率1%のスパム検知で『全て陰性』と予測 → Accuracy 99% だが完全に無価値。不均衡では F1/PR-AUC を使う。
     </div>
 
-    <h2 id="cv"><span class="label">§2 / CV</span>K-fold 交差検証</h2>
-    <p>データが少ない場合、訓練データを K 分割し、各 fold を検証用にして K 回学習・評価、平均する。</p>
+    <h3 style="margin-top:36px;">§1.3 Precision と Recall</h3>
+    <div class="formula">
+<strong>Precision</strong> = TP / (TP + FP)　 陽性予測のうち実際に陽性の割合<br>
+<strong>Recall（感度）</strong> = TP / (TP + FN)　 実際の陽性のうち検出できた割合<br>
+<strong>Specificity</strong> = TN / (TN + FP)　 実際の陰性のうち正しく陰性判定の割合<br><br>
+<strong>使い分け</strong><br>
+　 医療：Recall重視（見逃し=死）<br>
+　 スパム：Precision重視（誤検出は迷惑）
+    </div>
+
+    <h3 style="margin-top:36px;">§1.4 F1スコア</h3>
+    <div class="formula">F1 = 2·P·R / (P+R)　 調和平均、両方高くないと高くならない<br>F_β：β&gt;1でRecall重視、β&lt;1でPrecision重視</div>
+
+    <h3 style="margin-top:36px;">§1.5 ROC曲線とAUC</h3>
+    <div class="formula">
+ROC：閾値を変化させて (FPR, TPR) をプロット<br>
+AUC：曲線下面積、ランダム=0.5、完全=1.0<br>
+解釈：陽性-陰性ペアで陽性が高スコアになる確率
+    </div>
 
     <div class="figure">
-      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
-        <text x="340" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">5-fold 交差検証</text>
-        <g transform="translate(0, 40)">
-          <text x="50" y="20" font-size="11" fill="#5a5f6a">Iter 1</text>
-          <rect x="100" y="6" width="80" height="20" fill="#d4a017"/>
-          <rect x="180" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="260" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="340" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="420" y="6" width="80" height="20" fill="#b8431f"/>
+      <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 9.1 ／ ROC CURVE AND AUC</text>
+        <g transform="translate(100,55)">
+          <line x1="0" y1="180" x2="180" y2="180" stroke="#5a5f6a"/>
+          <line x1="0" y1="180" x2="0" y2="0" stroke="#5a5f6a"/>
+          <text x="-30" y="180" font-family="monospace" font-size="11" fill="#5a5f6a">0</text>
+          <text x="-30" y="6" font-family="monospace" font-size="11" fill="#5a5f6a">1</text>
+          <text x="-15" y="100" font-family="serif" font-size="11" fill="#0d1b2a">TPR</text>
+          <text x="185" y="183" font-family="monospace" font-size="11" fill="#5a5f6a">1</text>
+          <text x="90" y="205" text-anchor="middle" font-family="serif" font-size="11" fill="#0d1b2a">FPR</text>
+          <line x1="0" y1="180" x2="180" y2="0" stroke="#5a5f6a" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="100" y="100" font-family="serif" font-size="10" fill="#5a5f6a">ランダム AUC=0.5</text>
+          <path d="M 0 180 Q 5 50 30 20 Q 60 5 180 0" stroke="#b8431f" stroke-width="2.5" fill="#b8431f" fill-opacity="0.15"/>
+          <text x="40" y="40" font-family="serif" font-size="11" fill="#b8431f" font-weight="700">良いモデル</text>
+          <text x="50" y="56" font-family="monospace" font-size="11" fill="#b8431f">AUC=0.92</text>
+          <path d="M 0 0 L 180 0 L 180 180" stroke="#d4a017" stroke-width="1.5" fill="none"/>
+          <text x="100" y="-2" font-family="serif" font-size="10" fill="#d4a017">完全 AUC=1.0</text>
         </g>
-        <g transform="translate(0, 70)">
-          <text x="50" y="20" font-size="11" fill="#5a5f6a">Iter 2</text>
-          <rect x="100" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="180" y="6" width="80" height="20" fill="#d4a017"/>
-          <rect x="260" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="340" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="420" y="6" width="80" height="20" fill="#b8431f"/>
-        </g>
-        <g transform="translate(0, 100)">
-          <text x="50" y="20" font-size="11" fill="#5a5f6a">Iter 3</text>
-          <rect x="100" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="180" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="260" y="6" width="80" height="20" fill="#d4a017"/>
-          <rect x="340" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="420" y="6" width="80" height="20" fill="#b8431f"/>
-        </g>
-        <g transform="translate(0, 130)">
-          <text x="50" y="20" font-size="11" fill="#5a5f6a">Iter 4</text>
-          <rect x="100" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="180" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="260" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="340" y="6" width="80" height="20" fill="#d4a017"/>
-          <rect x="420" y="6" width="80" height="20" fill="#b8431f"/>
-        </g>
-        <g transform="translate(0, 160)">
-          <text x="50" y="20" font-size="11" fill="#5a5f6a">Iter 5</text>
-          <rect x="100" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="180" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="260" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="340" y="6" width="80" height="20" fill="#b8431f"/>
-          <rect x="420" y="6" width="80" height="20" fill="#d4a017"/>
-        </g>
-        <g transform="translate(530, 60)">
-          <rect x="0" y="0" width="16" height="16" fill="#b8431f"/>
-          <text x="22" y="13" font-size="11" fill="#0d1b2a">訓練</text>
-          <rect x="0" y="22" width="16" height="16" fill="#d4a017"/>
-          <text x="22" y="35" font-size="11" fill="#0d1b2a">検証</text>
-        </g>
-        <text x="340" y="255" text-anchor="middle" font-size="11" fill="#5a5f6a">5回の検証スコアを平均 → ロバストな評価</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 9.2</span> 5-fold 交差検証。データを5分割し、各 fold を順番に検証用にする。データ少なくても汎化性能を頑健に推定できる。</div>
-    </div>
-
-    <p>代表的なバリエーション：</p>
-    <ul>
-      <li><strong>Stratified K-fold</strong>：各 fold でクラス比率を一定に</li>
-      <li><strong>LOO（Leave-One-Out）</strong>：K = データ数。極小データ向け</li>
-      <li><strong>Time Series Split</strong>：時系列データでは未来を訓練に使わない</li>
-      <li><strong>Group K-fold</strong>：同じ患者/ユーザーが訓練と検証に分かれないように</li>
-    </ul>
-
-    <h2 id="overfit"><span class="label">§3 / OVERFIT</span>過学習と未学習</h2>
-
-    <div class="figure">
-      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
-        <!-- Underfit -->
-        <g transform="translate(0, 0)">
-          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
-          <line x1="40" y1="40" x2="40" y2="200" stroke="#0d1b2a"/>
-          <circle cx="60" cy="150" r="3" fill="#0d1b2a"/>
-          <circle cx="80" cy="130" r="3" fill="#0d1b2a"/>
-          <circle cx="100" cy="100" r="3" fill="#0d1b2a"/>
-          <circle cx="120" cy="80" r="3" fill="#0d1b2a"/>
-          <circle cx="140" cy="60" r="3" fill="#0d1b2a"/>
-          <circle cx="160" cy="100" r="3" fill="#0d1b2a"/>
-          <circle cx="180" cy="120" r="3" fill="#0d1b2a"/>
-          <circle cx="200" cy="160" r="3" fill="#0d1b2a"/>
-          <line x1="50" y1="160" x2="210" y2="80" stroke="#b8431f" stroke-width="2"/>
-          <text x="130" y="220" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">未学習（underfit）</text>
-          <text x="130" y="237" text-anchor="middle" font-size="10" fill="#5a5f6a">バイアス大、表現力不足</text>
-        </g>
-        <g transform="translate(260, 0)">
-          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
-          <line x1="40" y1="40" x2="40" y2="200" stroke="#0d1b2a"/>
-          <circle cx="60" cy="150" r="3" fill="#0d1b2a"/>
-          <circle cx="80" cy="130" r="3" fill="#0d1b2a"/>
-          <circle cx="100" cy="100" r="3" fill="#0d1b2a"/>
-          <circle cx="120" cy="80" r="3" fill="#0d1b2a"/>
-          <circle cx="140" cy="60" r="3" fill="#0d1b2a"/>
-          <circle cx="160" cy="100" r="3" fill="#0d1b2a"/>
-          <circle cx="180" cy="120" r="3" fill="#0d1b2a"/>
-          <circle cx="200" cy="160" r="3" fill="#0d1b2a"/>
-          <path d="M 50 160 Q 100 100 140 60 Q 180 110 210 160" stroke="#b8431f" stroke-width="2" fill="none"/>
-          <text x="130" y="220" text-anchor="middle" font-size="13" font-weight="bold" fill="#3a7d44">適合（fit）</text>
-          <text x="130" y="237" text-anchor="middle" font-size="10" fill="#5a5f6a">バランス良い</text>
-        </g>
-        <g transform="translate(520, 0)">
-          <line x1="40" y1="180" x2="220" y2="180" stroke="#0d1b2a"/>
-          <line x1="40" y1="40" x2="40" y2="200" stroke="#0d1b2a"/>
-          <circle cx="60" cy="150" r="3" fill="#0d1b2a"/>
-          <circle cx="80" cy="130" r="3" fill="#0d1b2a"/>
-          <circle cx="100" cy="100" r="3" fill="#0d1b2a"/>
-          <circle cx="120" cy="80" r="3" fill="#0d1b2a"/>
-          <circle cx="140" cy="60" r="3" fill="#0d1b2a"/>
-          <circle cx="160" cy="100" r="3" fill="#0d1b2a"/>
-          <circle cx="180" cy="120" r="3" fill="#0d1b2a"/>
-          <circle cx="200" cy="160" r="3" fill="#0d1b2a"/>
-          <path d="M 50 165 Q 75 130 80 130 Q 90 105 100 100 Q 110 90 120 80 Q 135 50 140 60 Q 150 80 160 100 Q 170 130 180 120 Q 190 145 200 160 Q 205 170 210 170" stroke="#b8431f" stroke-width="2" fill="none"/>
-          <text x="130" y="220" text-anchor="middle" font-size="13" font-weight="bold" fill="#b8431f">過学習（overfit）</text>
-          <text x="130" y="237" text-anchor="middle" font-size="10" fill="#5a5f6a">バリアンス大、ノイズに過敏</text>
+        <g transform="translate(350,80)">
+          <text x="0" y="0" font-family="serif" font-size="13" font-weight="700" fill="#0d1b2a">ROC曲線</text>
+          <text x="0" y="22" font-family="serif" font-size="12" fill="#0d1b2a">▸ 左上に近いほど良い</text>
+          <text x="0" y="42" font-family="serif" font-size="12" fill="#0d1b2a">▸ AUC=ペア確率</text>
+          <text x="0" y="62" font-family="serif" font-size="12" fill="#0d1b2a">▸ 不均衡データで安定</text>
+          <text x="0" y="82" font-family="serif" font-size="12" fill="#0d1b2a">▸ 極端不均衡では PR-AUC</text>
         </g>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 9.3</span> 未学習・適合・過学習。同じデータでも、モデルの複雑度によって挙動が変わる。過学習はノイズまで学習している状態。</div>
+      <div class="figure-caption"><span class="figure-num">FIG 9.1</span> ／ ROC曲線。閾値変化で(FPR, TPR)をプロット。AUCで分類性能を一値に集約。</div>
     </div>
 
-    <h2 id="biasvar"><span class="label">§4 / BIAS-VAR</span>バイアス・バリアンス分解</h2>
-    <p>汎化誤差 = バイアス² + バリアンス + 既約誤差。</p>
+    <h3 style="margin-top:36px;">§1.6 PR曲線とPR-AUC</h3>
+    <p>Precision-Recall曲線。極端不均衡では ROC より <strong>PR-AUC</strong> が有意義。情報検索、異常検知、推薦で標準。</p>
 
+    <h3 style="margin-top:36px;">§1.7 Log Loss と Brier Score</h3>
+    <div class="formula">
+Log Loss = -Σ y log p̂ + (1-y) log(1-p̂)<br>
+Brier = (1/N)Σ(p̂-y)²<br>
+ハードラベルでなく『出力確率の信頼性』を評価
+    </div>
+
+    <h3 style="margin-top:36px;">§1.8 MAP@k と NDCG（ランキング）</h3>
+    <p>Precision@k：上位k個の精度。MAP：APの平均。NDCG：上位ほど重みを大きく、正規化。推薦・検索・NERで標準。</p>
+
+    <h3 style="margin-top:36px;">§1.9 回帰指標</h3>
     <table class="spec">
-      <tr><th>用語</th><th>意味</th><th>原因</th><th>対策</th></tr>
-      <tr><td><strong>バイアス</strong></td><td>真の関数からの系統的ずれ</td><td>モデル単純すぎ（underfit）</td><td>モデル容量↑、特徴量増</td></tr>
-      <tr><td><strong>バリアンス</strong></td><td>訓練データのノイズへの過敏さ</td><td>モデル複雑すぎ（overfit）</td><td>正則化、データ拡大、Dropout</td></tr>
-      <tr><td><strong>既約誤差</strong></td><td>データ自体に含まれるノイズ</td><td>避けられない</td><td>－</td></tr>
+      <tr><th>指標</th><th>式</th><th>特徴</th></tr>
+      <tr><td>MSE</td><td>(1/N)Σ(y-ŷ)²</td><td>外れ値に敏感、学習で最頻用</td></tr>
+      <tr><td>RMSE</td><td>√MSE</td><td>単位がyと同じ、解釈しやすい</td></tr>
+      <tr><td>MAE</td><td>(1/N)Σ|y-ŷ|</td><td>外れ値に頑健</td></tr>
+      <tr><td>R²</td><td>1 - SSE/SST</td><td>分散説明割合、線形回帰標準</td></tr>
+      <tr><td>MAPE</td><td>(1/N)Σ|y-ŷ|/|y|</td><td>%スケール、y=0で爆発</td></tr>
+      <tr><td>Huber</td><td>MSE+MAE混合</td><td>外れ値頑健、滑らか</td></tr>
     </table>
 
-    <h2 id="confusion"><span class="label">§5 / CONFUSION</span>混同行列</h2>
-    <p>2値分類の評価の出発点：</p>
-
-    <div class="figure">
-      <svg viewBox="0 0 580 280" xmlns="http://www.w3.org/2000/svg">
-        <text x="290" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">混同行列（2値分類）</text>
-        <text x="170" y="55" text-anchor="middle" font-size="12" fill="#5a5f6a">予測：陽性</text>
-        <text x="350" y="55" text-anchor="middle" font-size="12" fill="#5a5f6a">予測：陰性</text>
-        <text x="60" y="115" text-anchor="middle" font-size="12" fill="#5a5f6a">真：</text>
-        <text x="60" y="130" text-anchor="middle" font-size="12" fill="#5a5f6a">陽性</text>
-        <text x="60" y="195" text-anchor="middle" font-size="12" fill="#5a5f6a">真：</text>
-        <text x="60" y="210" text-anchor="middle" font-size="12" fill="#5a5f6a">陰性</text>
-        <rect x="100" y="70" width="140" height="80" fill="#3a7d44"/>
-        <text x="170" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#faf7f2">TP</text>
-        <text x="170" y="125" text-anchor="middle" font-size="10" fill="#faf7f2">真陽性（正解）</text>
-        <rect x="280" y="70" width="140" height="80" fill="#b8431f"/>
-        <text x="350" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#faf7f2">FN</text>
-        <text x="350" y="125" text-anchor="middle" font-size="10" fill="#faf7f2">偽陰性（見逃し）</text>
-        <rect x="100" y="160" width="140" height="80" fill="#d4a017"/>
-        <text x="170" y="195" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">FP</text>
-        <text x="170" y="215" text-anchor="middle" font-size="10" fill="#0d1b2a">偽陽性（誤検出）</text>
-        <rect x="280" y="160" width="140" height="80" fill="#3a7d44" opacity="0.5"/>
-        <text x="350" y="195" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">TN</text>
-        <text x="350" y="215" text-anchor="middle" font-size="10" fill="#0d1b2a">真陰性（正解）</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 9.4</span> 混同行列。4つの組み合わせ（TP/FN/FP/TN）から、目的に応じた評価指標を計算する。</div>
-    </div>
-
-    <h2 id="metrics"><span class="label">§6 / METRICS</span>評価指標</h2>
+    <h3 style="margin-top:36px;">§1.10 多クラス分類指標</h3>
     <table class="spec">
-      <tr><th>Accuracy</th><td>(TP + TN) / 全件。クラス不均衡だと役立たず</td></tr>
-      <tr><th>Precision（適合率）</th><td>TP / (TP + FP)。陽性と判定したうち本当に陽性</td></tr>
-      <tr><th>Recall（再現率・感度）</th><td>TP / (TP + FN)。本当の陽性をどれだけ捕まえたか</td></tr>
-      <tr><th>F1</th><td>2 · P · R / (P + R)。PとRの調和平均</td></tr>
-      <tr><th>Specificity（特異度）</th><td>TN / (TN + FP)。本当の陰性をどれだけ正しく陰性と</td></tr>
-      <tr><th>FPR</th><td>FP / (FP + TN) = 1 − Specificity</td></tr>
+      <tr><th>平均</th><th>計算</th><th>特徴</th></tr>
+      <tr><td>Macro</td><td>各クラスF1を単純平均</td><td>少数クラスを保護</td></tr>
+      <tr><td>Micro</td><td>全TP/FP/FN集計後F1</td><td>多数クラス支配</td></tr>
+      <tr><td>Weighted</td><td>クラス頻度で重み付け</td><td>頻度バランス考慮</td></tr>
     </table>
 
-    <div class="example">
-      <div class="example-title">例題：がん検診の評価</div>
-      検査結果：TP=80, FN=20, FP=200, TN=9700<br>
-      Accuracy = (80+9700)/10000 = 97.8%（一見良い）<br>
-      Precision = 80/(80+200) = 28.6%<br>
-      Recall = 80/(80+20) = 80%<br>
-      <strong>医療では Recall（見落としを減らす）が重要</strong>。Accuracy は不均衡データで誤解を招く。
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>クラス不均衡対応、コスト感度学習、Calibration、統計検定の4節。</p>
     </div>
 
-    <h2 id="roc"><span class="label">§7 / ROC</span>ROC 曲線と AUC</h2>
-    <p>分類器のスコア閾値を 0 → 1 で動かしたときの (FPR, TPR) の軌跡が ROC 曲線。<strong>閾値非依存</strong>の評価。</p>
+    <h2>応用</h2>
 
-    <div class="figure">
-      <svg viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">
-        <line x1="60" y1="320" x2="420" y2="320" stroke="#0d1b2a" stroke-width="1.5"/>
-        <line x1="60" y1="40" x2="60" y2="320" stroke="#0d1b2a" stroke-width="1.5"/>
-        <text x="240" y="345" text-anchor="middle" font-size="11" fill="#5a5f6a">FPR (偽陽性率)</text>
-        <text x="35" y="180" text-anchor="middle" font-size="11" fill="#5a5f6a" transform="rotate(-90 35 180)">TPR (真陽性率)</text>
-        <!-- Diagonal (random) -->
-        <line x1="60" y1="320" x2="420" y2="40" stroke="#5a5f6a" stroke-width="1" stroke-dasharray="4,3"/>
-        <text x="240" y="200" font-size="10" fill="#5a5f6a" font-style="italic" transform="rotate(-37 240 200)">ランダム AUC=0.5</text>
-        <!-- Good ROC -->
-        <path d="M 60 320 Q 75 100 130 60 Q 280 50 420 40" stroke="#b8431f" stroke-width="3" fill="none"/>
-        <text x="250" y="80" font-size="13" font-weight="bold" fill="#b8431f">優れた分類器</text>
-        <text x="250" y="97" font-size="11" fill="#5a5f6a">AUC ≈ 0.95</text>
-        <!-- Perfect ROC -->
-        <path d="M 60 320 L 60 40 L 420 40" stroke="#3a7d44" stroke-width="2" fill="none" stroke-dasharray="6,2"/>
-        <text x="80" y="60" font-size="10" fill="#3a7d44">完璧 AUC=1.0</text>
-        <text x="50" y="335" font-size="10" fill="#5a5f6a">0</text>
-        <text x="415" y="335" font-size="10" fill="#5a5f6a">1</text>
-        <text x="45" y="45" font-size="10" fill="#5a5f6a">1</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 9.5</span> ROC 曲線。閾値を動かすと (FPR, TPR) がプロットされる。曲線の下面積 (AUC) が大きいほど分類器が良い。完璧 = 1.0、ランダム = 0.5。</div>
+    <h3 style="margin-top:36px;">§2.1 クラス不均衡対応</h3>
+    <p>(a)サンプリング：Oversampling (SMOTE)、Undersampling、(b)損失重み付け：class_weight、Focal Loss、(c)閾値調整：0.5を最適化、(d)指標選択：F1、PR-AUC、(e)生成モデル：GAN/VAEで少数クラス生成。</p>
+
+    <h3 style="margin-top:36px;">§2.2 コスト感度学習</h3>
+    <p>FPとFNのコストが非対称（医療、不正検知）な場合、コスト行列を組み込んだ損失で学習、または閾値を期待コスト最小で選ぶ。</p>
+
+    <h3 style="margin-top:36px;">§2.3 Calibration（確率較正）</h3>
+    <p>現代NNは過信気味。Platt Scaling（シグモイド）、Isotonic Regression、Temperature Scalingで較正。評価はECE（Expected Calibration Error）。</p>
+
+    <h3 style="margin-top:36px;">§2.4 統計検定でモデル比較</h3>
+    <p>2モデルの差が偶然か検定：McNemar検定（同データ予測比較）、対応のあるt検定（CVスコア）、Wilcoxon符号付き順位。Kaggle微差競争で重要。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>sklearn metrics、混同行列、ROC、閾値最適化、CVの5節。</p>
     </div>
 
-    <p><strong>PR 曲線・PR-AUC</strong>：不均衡データ（陽性が稀）では ROC より <strong>PR (Precision-Recall) 曲線</strong> の方が適切な評価。</p>
+    <h2>ハンズオン</h2>
 
-    <h2 id="regul"><span class="label">§8 / REGUL</span>正則化の手段</h2>
-    <ul>
-      <li><strong>L1 / L2 / Elastic Net</strong>：重みのペナルティ（章8）</li>
-      <li><strong>Early Stopping</strong>：検証誤差が悪化し始めたら学習停止</li>
-      <li><strong>Dropout</strong>（DL）：学習時に各ユニットを確率 p で 0 に（章12）</li>
-      <li><strong>Batch Normalization</strong>：各層の入力を正規化（暗黙の正則化）</li>
-      <li><strong>データ拡張</strong>：画像なら回転・反転、テキストなら言い換え</li>
-      <li><strong>アンサンブル</strong>：複数モデルの予測を平均</li>
-      <li><strong>Label Smoothing</strong>：one-hot ラベルを少しソフト化</li>
-    </ul>
+    <h3 style="margin-top:36px;">§3.1 sklearn metrics 総合使用</h3>
+    <div class="code-block">
+<span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> (
+    accuracy_score, precision_score, recall_score, f1_score,
+    roc_auc_score, log_loss, confusion_matrix, classification_report)
 
-    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
-    <table class="spec">
-      <tr><th>1</th><td>訓練・検証・テストの3分割。テストは1度だけ見る</td></tr>
-      <tr><th>2</th><td>データリークの防止：分割 → 訓練で統計計算 → 全体に適用</td></tr>
-      <tr><th>3</th><td>K-fold CV、Stratified、Time Series Split、Group K-fold の使い分け</td></tr>
-      <tr><th>4</th><td>過学習：バリアンス大。未学習：バイアス大</td></tr>
-      <tr><th>5</th><td>汎化誤差 = バイアス² + バリアンス + 既約誤差</td></tr>
-      <tr><th>6</th><td>混同行列：TP/FN/FP/TN の4区分</td></tr>
-      <tr><th>7</th><td>Precision・Recall・F1 はクラス不均衡で重要</td></tr>
-      <tr><th>8</th><td>ROC-AUC：閾値非依存の総合指標</td></tr>
-      <tr><th>9</th><td>不均衡データでは PR-AUC の方が適切</td></tr>
-      <tr><th>10</th><td>正則化：L1/L2、Dropout、Early Stopping、Data Augmentation</td></tr>
-    </table>
+y_true = [<span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">0</span>, <span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">0</span>]
+y_pred = [<span class="builtin">0</span>, <span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">1</span>, <span class="builtin">0</span>]
+y_prob = [<span class="builtin">0.1</span>, <span class="builtin">0.6</span>, <span class="builtin">0.8</span>, <span class="builtin">0.9</span>, <span class="builtin">0.2</span>, <span class="builtin">0.4</span>, <span class="builtin">0.7</span>, <span class="builtin">0.3</span>]
 
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>訓練・検証・テストの3分割を、何のために行うか</li>
-        <li>データリークの典型的な失敗例を1つ挙げられるか</li>
-        <li>5-fold CV の手順を図で説明できるか</li>
-        <li>過学習と未学習の違いを「バイアス・バリアンス」の言葉で説明できるか</li>
-        <li>混同行列の4区分（TP/FN/FP/TN）を書けるか</li>
-        <li>Precision と Recall のどちらを優先すべきかが業務で変わる例</li>
-        <li>Accuracy が不均衡データで誤解を招く例</li>
-        <li>ROC 曲線の縦軸・横軸が何か。完璧な分類器は何処を通るか</li>
-        <li>AUC = 0.5、0.9、1.0 の意味</li>
-        <li>不均衡データで PR-AUC を推奨する理由</li>
-      </ol>
+print(<span class="string">f"Accuracy:  {accuracy_score(y_true, y_pred):.4f}"</span>)
+print(<span class="string">f"Precision: {precision_score(y_true, y_pred):.4f}"</span>)
+print(<span class="string">f"Recall:    {recall_score(y_true, y_pred):.4f}"</span>)
+print(<span class="string">f"F1:        {f1_score(y_true, y_pred):.4f}"</span>)
+print(<span class="string">f"ROC-AUC:   {roc_auc_score(y_true, y_prob):.4f}"</span>)
+print(<span class="string">f"Log Loss:  {log_loss(y_true, y_prob):.4f}"</span>)
     </div>
+
+    <h3 style="margin-top:36px;">§3.2 ROC曲線描画</h3>
+    <div class="code-block">
+<span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> roc_curve, auc
+<span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt
+
+fpr, tpr, _ = roc_curve(y_true, y_prob)
+roc_auc = auc(fpr, tpr)
+plt.plot(fpr, tpr, label=<span class="string">f'ROC (AUC={roc_auc:.3f})'</span>)
+plt.plot([<span class="builtin">0</span>,<span class="builtin">1</span>], [<span class="builtin">0</span>,<span class="builtin">1</span>], <span class="string">'--'</span>, label=<span class="string">'Random'</span>)
+plt.legend(); plt.savefig(<span class="string">'roc.png'</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 閾値最適化（F1最大化）</h3>
+    <div class="code-block">
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+<span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> precision_recall_curve
+
+p, r, t = precision_recall_curve(y_true, y_prob)
+f1 = <span class="builtin">2</span>*p*r/(p+r+<span class="builtin">1e-10</span>)
+best = np.argmax(f1)
+print(<span class="string">f"最適閾値={t[best]:.4f}, F1={f1[best]:.4f}"</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 CV自前実装</h3>
+    <div class="code-block">
+<span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> StratifiedKFold
+<span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LogisticRegression
+
+skf = StratifiedKFold(n_splits=<span class="builtin">5</span>, shuffle=<span class="keyword">True</span>, random_state=<span class="builtin">42</span>)
+metrics = {<span class="string">'acc'</span>:[], <span class="string">'auc'</span>:[], <span class="string">'f1'</span>:[]}
+<span class="keyword">for</span> tr, va <span class="keyword">in</span> skf.split(X, y):
+    clf = LogisticRegression(max_iter=<span class="builtin">1000</span>).fit(X[tr], y[tr])
+    pred = clf.predict(X[va]); prob = clf.predict_proba(X[va])[:,<span class="builtin">1</span>]
+    metrics[<span class="string">'acc'</span>].append(accuracy_score(y[va], pred))
+    metrics[<span class="string">'auc'</span>].append(roc_auc_score(y[va], prob))
+    metrics[<span class="string">'f1'</span>].append(f1_score(y[va], pred))
+<span class="keyword">for</span> k,v <span class="keyword">in</span> metrics.items():
+    print(<span class="string">f"{k}: {np.mean(v):.4f}±{np.std(v):.4f}"</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 Calibration の効果</h3>
+    <div class="code-block">
+<span class="keyword">from</span> sklearn.calibration <span class="keyword">import</span> CalibratedClassifierCV
+<span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> brier_score_loss
+
+base = RandomForestClassifier(n_estimators=<span class="builtin">100</span>, random_state=<span class="builtin">42</span>)
+cal = CalibratedClassifierCV(base, method=<span class="string">'isotonic'</span>, cv=<span class="builtin">5</span>).fit(X_tr, y_tr)
+base.fit(X_tr, y_tr)
+print(<span class="string">f"Base:  {brier_score_loss(y_te, base.predict_proba(X_te)[:,1]):.4f}"</span>)
+print(<span class="string">f"Cal:   {brier_score_loss(y_te, cal.predict_proba(X_te)[:,1]):.4f}"</span>)
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>不均衡データの罠、閾値とPR、ROC vs PRの3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — 不均衡データの Accuracy の罠</h4>
+      <div class="sim-output">
+&gt;&gt; スパム検知：陽性率1%、10000サンプル<br>
+<br>
+[全て陰性と予測（無価値）]<br>
+　 TP=0, FP=0, FN=100, TN=9900<br>
+　 Accuracy=99.00% ← 高く見える<br>
+　 Recall=0%, F1=0, AUC=0.5<br>
+<br>
+[まともなモデル]<br>
+　 TP=80, FP=20, FN=20, TN=9880<br>
+　 Accuracy=99.60%, F1=0.800, AUC=0.89<br>
+<br>
+&gt;&gt; Accuracy差はわずか0.6%でも、F1/AUCで実体が明白
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — 閾値と Precision-Recall</h4>
+      <div class="sim-output">
+&gt;&gt; 同モデルで閾値変化<br>
+<br>
+閾値 0.3: P=0.45, R=0.95 ← Recall重視<br>
+閾値 0.5: P=0.78, R=0.82<br>
+閾値 0.7: P=0.92, R=0.65<br>
+閾値 0.9: P=0.98, R=0.32 ← Precision重視<br>
+<br>
+&gt;&gt; トレードオフ、ビジネス要件で決定
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — ROC vs PR-AUC、不均衡</h4>
+      <div class="sim-output">
+&gt;&gt; 陽性率を変えて同モデル評価<br>
+<br>
+陽性率 50%: ROC=0.91, PR=0.92<br>
+陽性率 10%: ROC=0.91, PR=0.65<br>
+陽性率  1%: ROC=0.90, PR=0.28<br>
+陽性率0.1%: ROC=0.89, PR=0.08<br>
+<br>
+&gt;&gt; ROCは不均衡に頑健、PRは真の困難度を示す
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">混同行列の TP は何を意味するか。</div>
+        <div class="p-choices">① 真陽性（陽性を陽性と予測）　 ② 偽陽性　 ③ 偽陰性　 ④ 真陰性</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> TP = True Positive。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">Precision の定義は。</div>
+        <div class="p-choices">① TP/(TP+FN)　 ② TP/(TP+FP)　 ③ TN/(TN+FP)　 ④ (TP+TN)/全体</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 陽性予測のうち実際に陽性の割合。FPが増えると下がる。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">Recall（感度）の定義は。</div>
+        <div class="p-choices">① TP/(TP+FN)　 ② TP/(TP+FP)　 ③ TN/(TN+FP)　 ④ (TP+TN)/全体</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 実際の陽性のうち検出できた割合。FN（見逃し）が増えると下がる。医療診断で重視。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">F1スコアの定義は。</div>
+        <div class="p-choices">① 算術平均　 ② P×R　 ③ PとRの調和平均　 ④ P/R</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> F1=2PR/(P+R)。両方が高くないと高くならない。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">スパム検知で『全て非スパム』予測で Accuracy 99% のモデルは。</div>
+        <div class="p-choices">① 良い　 ② 完全に無価値（Recall=0、F1=0）　 ③ 完全分類器　 ④ ベスト</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 不均衡データでの Accuracy の典型的な罠。F1・PR-AUC は0。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">ROC-AUC の意味として正しいのは。</div>
+        <div class="p-choices">① 訓練時間　 ② 陽性-陰性ペアで陽性のスコアが高い確率　 ③ Precisionの平均　 ④ パラメータ数</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> AUCの確率的解釈。0.5=ランダム、1.0=完全。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">極端な不均衡（陽性率 0.1%）で適切な指標は。</div>
+        <div class="p-choices">① Accuracy　 ② PR-AUC　 ③ MSE　 ④ R²</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ROC-AUCは不均衡に頑健すぎて高く出るがPR-AUCは真の困難度を反映。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">医療診断で重視すべき指標は。</div>
+        <div class="p-choices">① Precision　 ② Recall　 ③ Specificity　 ④ MSE</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Recall でFN（見逃し）を最小化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">スパムフィルタで重視すべきは。</div>
+        <div class="p-choices">① Precision　 ② Recall　 ③ 両方　 ④ Accuracy</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Precision でFP（重要メール誤検出）を最小化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">回帰指標で外れ値に頑健なのは。</div>
+        <div class="p-choices">① MSE　 ② RMSE　 ③ MAE　 ④ MAPE</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> MAE は絶対値、外れ値の影響が線形。MSE は二乗で敏感。中間に Huber Loss。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">R²（決定係数）の意味は。</div>
+        <div class="p-choices">① 必ず0〜1　 ② 1-SSE/SST、モデルが説明する分散の割合　 ③ パラメータ数　 ④ Accuracy</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> テストで負になることもある。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">NNの予測確率を真の頻度に合わせる手法は。</div>
+        <div class="p-choices">① 正則化　 ② Calibration（Platt、Isotonic、Temperature）　 ③ 標準化　 ④ Augmentation</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 現代NNは過信気味。Calibrationで補正、ECEで評価。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">多クラス F1 で macro と weighted の違いは。</div>
+        <div class="p-choices">① 同じ　 ② macro は各クラス等値、weighted はクラス頻度で重み付け　 ③ macroはスパース　 ④ weightedは教師あり</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 不均衡では macro が公平、頻度反映なら weighted。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">推薦システムでの MAP@k の意味は。</div>
+        <div class="p-choices">① 全体精度　 ② 上位k個のAverage Precisionの平均、ランキング品質指標　 ③ MSE　 ④ R²</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> NDCG とともに推薦・検索で標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">Log Loss と Accuracy の違いは。</div>
+        <div class="p-choices">① 同じ　 ② Log Lossは予測確率の質を評価（自信度を考慮）、Accuracyはハードラベルのみ　 ③ Log Lossは離散　 ④ Accuracyは確率</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 自信を持って間違えるほどLog Lossが高くなる。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">McNemar検定の用途は。</div>
+        <div class="p-choices">① t検定の代替　 ② 同一データに対する2モデル予測比較で差が有意か判定　 ③ クラスタリング評価　 ④ 回帰分析</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 同データ・異モデルの予測一致／不一致を表で集計し検定。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">SMOTE が行うことは。</div>
+        <div class="p-choices">① 少数クラスを単純複製　 ② 少数クラスのk近傍間に合成サンプルを補間生成　 ③ 多数クラスを削除のみ　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 単純複製と違い、合成データで多様性を保つ。imbalanced-learnで実装。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">Cross-Validation の主目的は。</div>
+        <div class="p-choices">① データ拡張　 ② 評価分散を減らしハイパラ選択の信頼性向上　 ③ 計算高速化　 ④ ラベル予測</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 1回分割では運次第。k-foldで多数評価の平均で安定化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">Focal Loss が解決する問題は。</div>
+        <div class="p-choices">① 過学習　 ② クラス不均衡＋簡単例の過剰寄与（物体検出由来）　 ③ 学習率　 ④ 正則化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> -(1-p)^γ log p で容易例の損失を下げ、難しい例（少数クラス）に集中。RetinaNet で導入。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">分類閾値の標準値 0.5 を変える理由として正しいのは。</div>
+        <div class="p-choices">① 必ず0.5　 ② 業務要件、不均衡、コスト非対称性に応じて最適化　 ③ 変えてはいけない　 ④ モデル変更必要</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 0.5は単なる慣例値。F1最大化、期待コスト最小化などで決定。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">混同行列、Accuracy、Precision/Recall/F1、ROC-AUC、PR-AUC、Log Loss、MAP@k、回帰指標を扱いました。応用で不均衡対応、コスト感度、Calibration、統計検定。ハンズオンでsklearn metrics、ROC、閾値最適化、CV、Calibration。シミュレーションでAccuracyの罠、閾値トレードオフ、ROC vs PR-AUCを確認。次章から深層学習へ。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="08-ml-classical.html">← 章8</a></div>
-  <div><span class="ch-label">次の章</span><br><span class="ch-title">章10: NN の最小構成</span></div>
-  <div><a href="10-nn-basics.html">章10へ →</a></div>
+  <div><a href="08-ml-classical.html">← 章8: 古典ML</a></div>
+  <div><span class="ch-label">Chapter 9 of 12 · 基本編</span><br><span class="ch-title">評価指標</span></div>
+  <div><a href="10-nn-basics.html">章10: NN基礎 →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="index.html">基本</a></li><li><a href="../advanced/index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a><a href="../../../certifications/tokei.html">統計検定</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

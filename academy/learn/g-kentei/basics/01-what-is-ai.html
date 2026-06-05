@@ -4,35 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>章1 AIとは何か — G検定 基本 — Swallow AI Academy</title>
-<meta name="description" content="G検定基本 章1：AIの定義をめぐる哲学的議論。強いAI／弱いAI／AGI／ASI、チューリングテスト、中国語の部屋、フレーム問題を図解で深く理解する。">
+<meta name="description" content="G検定基本 章1：AIの定義、強いAI/弱いAI、ANI/AGI/ASI、チューリングテスト、中国語の部屋、フレーム問題、シンボルグラウンディング、AI効果を、基本・応用・ハンズオン・シミュレーション・問題の5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula { background:#f5f1e8; border-left:3px solid #b8431f; padding:14px 18px; margin:18px 0; font-family:'JetBrains Mono', 'Courier New', monospace; font-size:14px; line-height:1.8; }
-.example { background:#fff8f2; border-left:3px solid #d4a017; padding:16px 22px; margin:20px 0; font-size:14.5px; line-height:1.9; }
-.example-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#0d1b2a; margin-bottom:8px; }
-.pitfall { background:#fbf3f0; border-left:3px solid #b8431f; padding:16px 22px; margin:20px 0; font-size:14.5px; line-height:1.9; }
-.pitfall-title { font-family:var(--font-display-jp); font-weight:700; font-size:14px; color:#b8431f; margin-bottom:8px; }
-.crossref { background:#eef2f5; border-left:3px solid #2e5577; padding:12px 18px; margin:18px 0; font-size:13.5px; line-height:1.7; }
-.crossref-title { font-family:var(--font-display-jp); font-weight:700; font-size:12px; color:#2e5577; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
-.figure { margin:32px 0; text-align:center; }
-.figure svg { max-width:100%; height:auto; border:1px solid #e5e1d4; background:#faf7f2; }
-.figure-caption { font-size:12.5px; color:#5a5f6a; margin-top:10px; line-height:1.7; max-width:600px; margin-left:auto; margin-right:auto; padding:0 12px; font-style:italic; }
-.figure-num { font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.12em; color:#b8431f; }
-.chapter-nav { display:flex; justify-content:space-between; align-items:center; padding:18px 24px; background:#0d1b2a; color:#faf7f2; margin:32px 0; font-size:13.5px; }
-.chapter-nav a { color:#faf7f2; text-decoration:none; }
-.chapter-nav a:hover { color:#d4a017; }
-.chapter-nav .ch-label { font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:#9aa0a8; }
-.chapter-nav .ch-title { font-family:var(--font-display-jp); font-weight:700; font-size:15px; }
-table.spec { width:100%; border-collapse:collapse; margin:18px 0; font-size:13.5px; }
-table.spec th, table.spec td { padding:9px 13px; text-align:left; border-bottom:1px solid #e5e1d4; vertical-align:top; }
-table.spec th { background:#faf7f2; font-family:var(--font-display-jp); font-weight:700; font-size:12.5px; width:25%; }
-.test-yourself { background:#0d1b2a; color:#faf7f2; padding:28px 32px; margin:32px 0; }
-.test-yourself h3 { font-family:var(--font-display-jp); font-weight:700; color:#d4a017; margin:0 0 16px; font-size:18px; }
-.test-yourself ol { padding-left:24px; font-size:14px; line-height:1.95; }
-.test-yourself li { margin-bottom:10px; }
-</style>
 </head>
 <body>
+
+<div class="aurora" aria-hidden="true"></div>
+
 
 <header class="masthead">
   <div class="masthead-inner">
@@ -50,579 +28,1512 @@ table.spec th { background:#faf7f2; font-family:var(--font-display-jp); font-wei
       <a href="../advanced/index.html">応用</a>
       <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
     </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>Ch.1</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
     <div class="crumbs"><a href="../../../index.html">HOME</a> &nbsp;/&nbsp; LEARN &nbsp;/&nbsp; G検定 &nbsp;/&nbsp; <a href="index.html">基本</a> &nbsp;/&nbsp; 章1</div>
-    <h1>章1 — AIとは何か<span class="en">Chapter 1 — What is AI? Definitions and Thought Experiments</span></h1>
-    <p class="standfirst">「AI」という言葉は曖昧です。本章では <strong>知能の定義</strong> を巡る哲学的議論を、図解とともに整理します。チューリングテスト、中国語の部屋、強いAI／弱いAI、AGI／ASI、フレーム問題、シンボルグラウンディング問題 — これらは70年前の論争ですが、ChatGPT を「理解している」と呼んでよいかという <strong>2026年の議論にそのまま接続</strong> します。</p>
+    <h1>章1 — AIとは何か<span class="en">Chapter 1 — What Is Artificial Intelligence?</span></h1>
+    <p class="standfirst">『AI』という言葉は1956年のダートマス会議で誕生して以来、技術と哲学の両面で議論され続けてきました。本章では、<strong>知能の定義</strong>から<strong>強いAI／弱いAI</strong>、<strong>チューリングテスト</strong>、<strong>中国語の部屋</strong>、<strong>フレーム問題</strong>、<strong>シンボルグラウンディング</strong>、<strong>AI効果</strong>まで、G検定で必出の概念群を、基本・応用・ハンズオン・シミュレーション・問題の5部構成で徹底的に解説します。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="index.html">← 章一覧</a></div>
-  <div><span class="ch-label">Chapter 1 of 12</span><br><span class="ch-title">AIとは何か</span></div>
+  <div><a href="index.html">← 目次へ</a></div>
+  <div><span class="ch-label">Chapter 1 of 12 · 基本編</span><br><span class="ch-title">AIとは何か</span></div>
   <div><a href="02-history.html">章2: AIの歴史 →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
     <h6>章1 目次</h6>
-    <a href="#sec1">§1 知能を定義することの困難</a>
-    <a href="#sec2">§2 チューリングテスト</a>
-    <a href="#sec3">§3 中国語の部屋</a>
-    <a href="#sec4">§4 強いAI / 弱いAI</a>
-    <a href="#sec5">§5 ANI / AGI / ASI のスペクトル</a>
-    <a href="#sec6">§6 フレーム問題</a>
-    <a href="#sec7">§7 シンボルグラウンディング問題</a>
-    <a href="#sec8">§8 ノーフリーランチ定理</a>
-    <a href="#sec9">§9 シンギュラリティの議論</a>
-    <a href="#sec10">§10 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#basic-definition">　└ 1.1 AIの定義</a>
+    <a href="#basic-quadrant">　└ 1.2 4象限の知能観</a>
+    <a href="#basic-strong-weak">　└ 1.3 強いAI／弱いAI</a>
+    <a href="#basic-ani-agi-asi">　└ 1.4 ANI / AGI / ASI</a>
+    <a href="#basic-turing">　└ 1.5 チューリングテスト</a>
+    <a href="#basic-chinese-room">　└ 1.6 中国語の部屋</a>
+    <a href="#basic-frame">　└ 1.7 フレーム問題</a>
+    <a href="#basic-symbol-ground">　└ 1.8 シンボルグラウンディング</a>
+    <a href="#basic-ai-effect">　└ 1.9 AI効果</a>
+    <a href="#basic-aimldl">　└ 1.10 AI/ML/DL の関係</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
     <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 1</div>
-    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">「知能」を、<br>定義する困難から始める</h2>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">『知能』を、<br>機械に与える試み。</h2>
     <p class="article-lede">
-      AI を理解する旅は、「<strong>知能とは何か</strong>」という問いから始まります。これは技術的な問いではなく、<strong>哲学的・認知科学的</strong>な問いです。だからこそ70年経っても決着していません。本章でその論点を整理することは、後続の全章（数学、機械学習、深層学習、生成AI）を <strong>「これは結局、知能なのか単なる関数近似なのか」</strong> という視点で読むための地盤になります。
+      私たちは普段『知能』を当然のものとして使っています。しかし、それを機械に再現しようとした瞬間、<strong>知能とは何か</strong>という問いそのものに答えがないことに気づきます。本章で扱う概念群は、すべてこの問いに対する異なる角度からの応答です。<strong>定義は学派により異なり</strong>、<strong>テストの基準は時代により変わり</strong>、<strong>限界の指摘は新しい技術を呼びます</strong>。G検定で『正解』として求められる知識を、その背景まで含めて見ていきましょう。
     </p>
 
-    <!-- ==================================================== §1 -->
-    <h2 id="sec1"><span class="label">§1 / DEFINITION</span>知能を定義することの困難</h2>
+    <!-- ============================================ -->
+    <!-- セクション1 基本 -->
+    <!-- ============================================ -->
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION 1 / 5</div>
+      <h2>基本</h2>
+      <p>AIの定義、4象限の知能観、強いAI／弱いAI、ANI/AGI/ASI の階層、5つの古典的論題（チューリングテスト・中国語の部屋・フレーム問題・シンボルグラウンディング・AI効果）、AI/ML/DLの関係を体系的に学ぶ。</p>
+    </div>
 
+    <h3 id="basic-definition" style="margin-top:36px;">§1.1 AIの定義 — なぜ一つに決まらないのか</h3>
+    
     <p>
-      「人工知能（Artificial Intelligence）」という言葉は、1956年のダートマス会議でジョン・マッカーシーが提唱しました。しかしマッカーシー自身、「知能」の厳密な定義は与えませんでした。<strong>知能という対象自体に普遍的定義がない</strong> 以上、その人工再現を定義することもできません。
+      『AI（Artificial Intelligence、人工知能）』には<strong>唯一の合意された定義は存在しません</strong>。これはG検定で頻繁に問われるポイントで、その理由は『知能』そのものに普遍的合意がないからです。心理学・哲学・神経科学・計算機科学のそれぞれが異なる側面に注目し、研究者の数だけ定義があるとさえ言われます。代表的な定義をいくつか見てみましょう。
     </p>
-    <p>
-      この曖昧さは現代まで続き、AI研究者の間でも以下のような複数のアプローチが並立しています：
-    </p>
+
+    <div class="thinker-card">
+      <span class="thinker-name">マービン・ミンスキー</span><span class="thinker-period">Marvin Minsky · MIT</span><br>
+      『AIとは、<strong>もし人間が行えば知能を要するであろうこと</strong>を、機械に行わせる科学である』
+    </div>
+    
+    <div class="thinker-card">
+      <span class="thinker-name">ジョン・マッカーシー</span><span class="thinker-period">John McCarthy · ダートマス会議命名者</span><br>
+      『<strong>知的な機械、特に知的なコンピュータプログラム</strong>を作る科学と工学である』
+    </div>
+
+    <div class="thinker-card">
+      <span class="thinker-name">スチュアート・ラッセル & ピーター・ノーヴィグ</span><span class="thinker-period">Stuart Russell & Peter Norvig · 教科書</span><br>
+      AI の定義を <strong>4つの象限</strong> に分類：(1) 人間のように考える、(2) 合理的に考える、(3) 人間のように行動する、(4) 合理的に行動する。
+    </div>
+
+    <div class="thinker-card">
+      <span class="thinker-name">ニルス・ニルソン</span><span class="thinker-period">Nils Nilsson · スタンフォード</span><br>
+      『AIとは、機械を<strong>知的に行動させる</strong>活動である。ここで知的とは、その環境において<strong>適切に、先見的に機能できる</strong>性質を指す』
+    </div>
+
+    <p>これらの定義はいずれも『知能とは何か』に踏み込まずに『知能的振る舞い』を機械に再現する側面に着目しています。<strong>知能の本質を定義する</strong>のは哲学者の仕事で、<strong>知能的に振る舞わせる</strong>のが工学者の仕事という分業が見て取れます。</p>
+
+    <div class="figure">
+      <span class="figure-num">FIG. 1.1</span>
+      <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="720" height="360" fill="#faf7f2"/>
+        <text x="360" y="30" text-anchor="middle" font-family="serif" font-size="16" font-weight="700" fill="#0d1b2a">AIの定義 — 4つの学派</text>
+        
+        <!-- 中央線 -->
+        <line x1="360" y1="60" x2="360" y2="340" stroke="#5a5f6a" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <line x1="80" y1="200" x2="640" y2="200" stroke="#5a5f6a" stroke-width="0.5" stroke-dasharray="3,3"/>
+        
+        <!-- 軸ラベル -->
+        <text x="360" y="78" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a" font-weight="700">思考プロセス</text>
+        <text x="360" y="330" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a" font-weight="700">行動・振る舞い</text>
+        <text x="100" y="205" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a" font-weight="700" transform="rotate(-90 100 205)">人間的</text>
+        <text x="620" y="205" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a" font-weight="700" transform="rotate(-90 620 205)">合理的</text>
+        
+        <!-- 4象限 -->
+        <rect x="130" y="90" width="220" height="100" fill="#fff8f2" stroke="#d4a017" stroke-width="1.5"/>
+        <text x="240" y="115" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#0d1b2a">人間のように考える</text>
+        <text x="240" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">認知モデル</text>
+        <text x="240" y="156" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">認知科学</text>
+        <text x="240" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">GPS (Newell & Simon)</text>
+        
+        <rect x="370" y="90" width="220" height="100" fill="#fff8f2" stroke="#d4a017" stroke-width="1.5"/>
+        <text x="480" y="115" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#0d1b2a">合理的に考える</text>
+        <text x="480" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">論理主義</text>
+        <text x="480" y="156" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">アリストテレス論理学</text>
+        <text x="480" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">Logic Theorist</text>
+        
+        <rect x="130" y="210" width="220" height="100" fill="#eef2f5" stroke="#2e5577" stroke-width="1.5"/>
+        <text x="240" y="235" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#0d1b2a">人間のように行動する</text>
+        <text x="240" y="258" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">チューリングテスト</text>
+        <text x="240" y="276" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">対話AI / ELIZA</text>
+        <text x="240" y="294" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">ChatGPT / Claude</text>
+        
+        <rect x="370" y="210" width="220" height="100" fill="#eef2f5" stroke="#2e5577" stroke-width="1.5"/>
+        <text x="480" y="235" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#0d1b2a">合理的に行動する</text>
+        <text x="480" y="258" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">合理的エージェント</text>
+        <text x="480" y="276" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">最適化・効用最大化</text>
+        <text x="480" y="294" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">強化学習 / AlphaGo</text>
+      </svg>
+      <p class="figure-caption">図1.1：Russell & Norvigによる4象限。横軸は『人間的か合理的か』、縦軸は『思考か行動か』。チューリングテストは『人間のように行動する』象限、現代の強化学習エージェントは『合理的に行動する』象限に位置する。</p>
+    </div>
+
+    <h3 id="basic-quadrant" style="margin-top:36px;">§1.2 4象限の知能観 — それぞれが目指すもの</h3>
 
     <table class="spec">
-      <tr><th>立場</th><th>知能の定義</th><th>代表的論者</th></tr>
-      <tr><td>機能主義</td><td>知的に「振る舞え」ば知能である。内部状態は問わない</td><td>チューリング、デネット</td></tr>
-      <tr><td>シンボル主義</td><td>記号を操作する論理的能力こそ知能</td><td>ニューウェル、サイモン</td></tr>
-      <tr><td>コネクショニズム</td><td>ニューロン的なネットワークが情報を処理することが知能</td><td>マッカロック・ピッツ、ヒントン</td></tr>
-      <tr><td>身体性認知</td><td>知能は身体と環境の相互作用から立ち上がる</td><td>ロドニー・ブルックス</td></tr>
-      <tr><td>強いAI批判</td><td>意味の理解なしに振る舞いだけ似せても知能ではない</td><td>ジョン・サール</td></tr>
+      <thead>
+        <tr><th>象限</th><th>目標</th><th>評価方法</th><th>代表的研究</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>人間のように考える</strong></td><td>人間の思考過程をモデル化</td><td>認知科学的検証</td><td>GPS (1959), SOAR, ACT-R</td></tr>
+        <tr><td><strong>合理的に考える</strong></td><td>論理的に正しい推論</td><td>定理証明・論理計算</td><td>Logic Theorist (1956), Prolog</td></tr>
+        <tr><td><strong>人間のように行動する</strong></td><td>人間と区別不能な振る舞い</td><td>チューリングテスト</td><td>ELIZA (1966), ChatGPT (2022)</td></tr>
+        <tr><td><strong>合理的に行動する</strong></td><td>環境で最適に行動するエージェント</td><td>期待効用最大化</td><td>AlphaGo (2016), 強化学習</td></tr>
+      </tbody>
     </table>
 
     <p>
-      G検定では <strong>各立場の主張を理解した上で、どれが正しいかという結論を出さない</strong> 姿勢が求められます。「正解」のない問いだということ自体が出題範囲です。
+      『人間のように』派は、<strong>人間の認知メカニズムを再現する</strong>ことを目標とします。誤りや偏見も含めて人間らしさを目指すため、現在の生成AIが時に『ハルシネーション』を起こす振る舞いと親和性があります。一方『合理的に』派は、<strong>正しさ・最適性</strong>を優先します。これらは時に対立し、現代のAI研究は両者の融合を目指しています。
     </p>
 
-    <!-- ==================================================== §2 -->
-    <h2 id="sec2"><span class="label">§2 / TURING TEST</span>チューリングテスト</h2>
+    <div class="example">
+      <div class="example-title">具体例：『人間のように』vs『合理的に』の違い</div>
+      数学の問題『53 × 47 を暗算で』。<br>
+      <strong>人間のように考えるAI</strong>：『50 × 47 = 2350、3 × 47 = 141、合計 2491』と人間の暗算手順を再現。途中で計算ミスもしうる。<br>
+      <strong>合理的に考えるAI</strong>：『2491』を即座に正答。手順は人間と異なるが結果は常に正しい。<br>
+      現代のLLM（GPT-4 等）は前者寄りに振る舞いますが、ツール（電卓）の併用で後者の正確性を得ます。
+    </div>
+
+    <h3 id="basic-strong-weak" style="margin-top:36px;">§1.3 強いAI／弱いAI — ジョン・サールの区別</h3>
 
     <p>
-      アラン・チューリングは1950年の論文 <em>"Computing Machinery and Intelligence"</em> で、知能の哲学的定義を避け、<strong>「機械が知的かどうかは、機械が知的に振る舞えるかで判定する」</strong> という機能主義の発想を提案しました。これが <strong>チューリングテスト</strong>（オリジナルは「イミテーションゲーム」）です。
+      1980年、哲学者<strong>ジョン・サール</strong>は論文『Minds, Brains, and Programs』で、AIに対する哲学的立場を二つに分けました。これは現在でもG検定で最頻出の概念の一つです。
+    </p>
+
+    <div class="compare-grid strong-vs-weak">
+      <div>
+        <h5>強いAI（Strong AI）</h5>
+        <p style="font-size:13.5px;line-height:1.85;margin:0;">
+          『適切にプログラムされたコンピュータは、<strong>本物の心を持ち</strong>、人間と同じ意味で物事を理解し、信念や欲求を持つ』という立場。意識・主観体験・志向性を備えた人工的知性。<br><br>
+          <strong>現状：仮説段階。実現していない。</strong><br>
+          AGI（汎用人工知能）とほぼ同義で語られることが多い。
+        </p>
+      </div>
+      <div>
+        <h5>弱いAI（Weak AI）</h5>
+        <p style="font-size:13.5px;line-height:1.85;margin:0;">
+          『AIは知能を<strong>模倣・シミュレートする道具</strong>であり、本物の意識や理解を持つ必要はない』という立場。タスクを上手にこなせばよく、内部に心があるかは問わない。<br><br>
+          <strong>現状：現在実用化されているAIはすべて弱いAI。</strong><br>
+          画像認識、翻訳、囲碁、ChatGPT等すべてここに分類される。
+        </p>
+      </div>
+    </div>
+
+    <p>
+      サール自身は『強いAIは原理的に不可能である』と主張し、その論拠として<strong>中国語の部屋</strong>（§1.6で詳述）の思考実験を提示しました。彼の有名なテーゼは『<strong>シンタックスはセマンティクスを生まない</strong>』（記号操作だけでは意味理解は生じない）。
     </p>
 
     <div class="figure">
-      <svg viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="arr1" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
-          </marker>
-        </defs>
-
-        <!-- Judge -->
-        <rect x="270" y="20" width="140" height="80" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="340" y="50" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">判定者 C</text>
-        <text x="340" y="72" text-anchor="middle" font-size="11" fill="#5a5f6a">(人間)</text>
-        <text x="340" y="88" text-anchor="middle" font-size="10" fill="#5a5f6a">AとBがどちらか分からない</text>
-
-        <!-- A: computer -->
-        <rect x="60" y="200" width="180" height="100" fill="#0d1b2a"/>
-        <text x="150" y="232" text-anchor="middle" font-size="15" font-weight="bold" fill="#faf7f2">A：コンピュータ</text>
-        <text x="150" y="256" text-anchor="middle" font-size="11" fill="#d4a017">人間のフリをしようとする</text>
-        <text x="150" y="280" text-anchor="middle" font-size="10" fill="#9aa0a8">(テキストのみで応答)</text>
-
-        <!-- B: human -->
-        <rect x="440" y="200" width="180" height="100" fill="#b8431f"/>
-        <text x="530" y="232" text-anchor="middle" font-size="15" font-weight="bold" fill="#faf7f2">B：人間</text>
-        <text x="530" y="256" text-anchor="middle" font-size="11" fill="#f5d4c4">普通に応答する</text>
-        <text x="530" y="280" text-anchor="middle" font-size="10" fill="#f5d4c4">(テキストのみで応答)</text>
-
-        <!-- Connections -->
-        <path d="M310 100 L160 200" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#arr1)" fill="none"/>
-        <path d="M160 200 L310 100" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#arr1)" fill="none" stroke-dasharray="4,3"/>
-        <path d="M370 100 L520 200" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#arr1)" fill="none"/>
-        <path d="M520 200 L370 100" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#arr1)" fill="none" stroke-dasharray="4,3"/>
-
-        <!-- Labels -->
-        <text x="200" y="155" font-size="11" fill="#5a5f6a">質問</text>
-        <text x="475" y="155" font-size="11" fill="#5a5f6a">質問</text>
-
-        <!-- Conclusion -->
-        <text x="340" y="335" text-anchor="middle" font-size="13" fill="#b8431f" font-weight="bold">→ 判定者が「どちらが機械か」を見分けられなければ、機械は知的</text>
+      <span class="figure-num">FIG. 1.2</span>
+      <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="720" height="280" fill="#faf7f2"/>
+        <text x="360" y="30" text-anchor="middle" font-family="serif" font-size="16" font-weight="700" fill="#0d1b2a">強いAI vs 弱いAI</text>
+        
+        <!-- 強いAI -->
+        <rect x="50" y="60" width="280" height="190" fill="#fff8f2" stroke="#b8431f" stroke-width="2"/>
+        <text x="190" y="88" text-anchor="middle" font-family="serif" font-size="14" font-weight="700" fill="#b8431f">強いAI（Strong AI）</text>
+        <line x1="80" y1="100" x2="300" y2="100" stroke="#b8431f" stroke-width="0.8"/>
+        <text x="190" y="125" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#0d1b2a">本物の理解・意識を持つ</text>
+        <text x="190" y="148" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#0d1b2a">主観体験 (qualia) あり</text>
+        <text x="190" y="171" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#0d1b2a">志向性 (intentionality)</text>
+        <text x="190" y="194" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#0d1b2a">人間と同等以上の知能</text>
+        <text x="190" y="220" text-anchor="middle" font-family="sans-serif" font-size="11.5" font-style="italic" fill="#5a5f6a">≈ AGI / ASI</text>
+        <text x="190" y="240" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#b8431f">未実現（仮説段階）</text>
+        
+        <!-- 弱いAI -->
+        <rect x="390" y="60" width="280" height="190" fill="#eef2f5" stroke="#2e5577" stroke-width="2"/>
+        <text x="530" y="88" text-anchor="middle" font-family="serif" font-size="14" font-weight="700" fill="#2e5577">弱いAI（Weak AI）</text>
+        <line x1="420" y1="100" x2="640" y2="100" stroke="#2e5577" stroke-width="0.8"/>
+        <text x="530" y="125" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#0d1b2a">知能の模倣・道具</text>
+        <text x="530" y="148" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#0d1b2a">意識は持たない</text>
+        <text x="530" y="171" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#0d1b2a">特定タスクで人間超</text>
+        <text x="530" y="194" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#0d1b2a">記号操作・統計推論</text>
+        <text x="530" y="220" text-anchor="middle" font-family="sans-serif" font-size="11.5" font-style="italic" fill="#5a5f6a">≈ ANI</text>
+        <text x="530" y="240" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#2e5577">実用化済み（現在のAI）</text>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 1.1</span> &nbsp;チューリングテストの構成。判定者 C は、テキストチャネルを通じてのみ A・B と会話する。一定回数の会話後、どちらが機械かを当てる。当てられなければ機械は「知的に振る舞った」と見なす。</div>
+      <p class="figure-caption">図1.2：強いAIと弱いAIの本質的違い。前者は『内部に心がある』ことを必要とし、後者は『振る舞い』だけを問う。現在の ChatGPT・Claude・Gemini を含むすべての実用AIは弱いAIに分類される。</p>
     </div>
 
-    <h3>テストの含意</h3>
-    <ul>
-      <li><strong>身体的特徴を排除</strong>：声・容姿は問わず、テキスト応答のみで判定する</li>
-      <li><strong>意味の理解は問わない</strong>：内部で何が起こっていてもよい、見える振る舞いが基準</li>
-      <li><strong>確率的判定</strong>：一度のテストではなく、多数の判定者の判断率で評価</li>
-    </ul>
+    <h3 id="basic-ani-agi-asi" style="margin-top:36px;">§1.4 ANI / AGI / ASI — 知能の階層</h3>
 
-    <h3>批判</h3>
-    <ul>
-      <li>欺瞞の能力に偏る：会話を成立させる能力 ≠ 全領域の知能</li>
-      <li>ELIZA（1966）など簡単なルールベースでも一部の人を欺けた</li>
-      <li>そもそも「人間に似せる」ことが知能の本質か？</li>
-      <li>現代の LLM は表面的にはチューリングテストを <strong>多くのケースで通過</strong> するが、研究者の評価は分かれる</li>
-    </ul>
+    <p>
+      強いAI／弱いAIとは別に、AIの能力範囲による分類が広く使われます。これは3階層（ANI → AGI → ASI）で表現されます。
+    </p>
+
+    <table class="spec">
+      <thead>
+        <tr><th>分類</th><th>正式名称</th><th>定義</th><th>例</th><th>実現度</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>ANI</strong></td><td>Artificial Narrow Intelligence<br>（特化型人工知能）</td><td>特定タスクのみで動作する。タスク外は何もできない。</td><td>画像認識、囲碁AI、翻訳、ChatGPT</td><td><span style="color:#2e5577;font-weight:700;">●●● 実用化済</span></td></tr>
+        <tr><td><strong>AGI</strong></td><td>Artificial General Intelligence<br>（汎用人工知能）</td><td>人間と同程度に多様な領域で柔軟に思考・学習・行動できる。</td><td>SF映画のAI、HAL 9000</td><td><span style="color:#d4a017;font-weight:700;">●○○ 研究目標</span></td></tr>
+        <tr><td><strong>ASI</strong></td><td>Artificial Super Intelligence<br>（人工超知能）</td><td>人間の知能をあらゆる領域で凌駕する。</td><td>ニック・ボストロムの『Superintelligence』</td><td><span style="color:#b8431f;font-weight:700;">○○○ 理論段階</span></td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      現在実用化されているAIはすべて<strong>ANI</strong>です。ChatGPTやClaudeは『汎用的に見える』が、これは多様な訓練データから多くのタスクをこなせるためで、本質的には『多くの ANI が一つのモデルに詰め込まれている』状態と解釈できます。AGI の実現時期は研究者により大きく見解が分かれ、5年（楽観派）から数百年（懐疑派）まで予測が散らばっています。
+    </p>
+
+    <div class="figure">
+      <span class="figure-num">FIG. 1.3</span>
+      <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="720" height="320" fill="#faf7f2"/>
+        <text x="360" y="28" text-anchor="middle" font-family="serif" font-size="16" font-weight="700" fill="#0d1b2a">AI能力階層 — ANI / AGI / ASI</text>
+        
+        <!-- ピラミッド -->
+        <polygon points="360,60 220,260 500,260" fill="none" stroke="#0d1b2a" stroke-width="1.5"/>
+        
+        <!-- ASI (頂点) -->
+        <polygon points="360,60 320,118 400,118" fill="#fbe8d8" stroke="#b8431f" stroke-width="1.5"/>
+        <text x="360" y="95" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#b8431f">ASI</text>
+        <text x="555" y="92" text-anchor="start" font-family="sans-serif" font-size="11.5" fill="#0d1b2a" font-weight="700">人工超知能</text>
+        <text x="555" y="108" text-anchor="start" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">人間を凌駕</text>
+        <text x="555" y="122" text-anchor="start" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">理論段階のみ</text>
+        
+        <!-- AGI -->
+        <polygon points="320,118 280,178 440,178 400,118" fill="#fff8f2" stroke="#d4a017" stroke-width="1.5"/>
+        <text x="360" y="155" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#d4a017">AGI</text>
+        <text x="555" y="148" text-anchor="start" font-family="sans-serif" font-size="11.5" fill="#0d1b2a" font-weight="700">汎用人工知能</text>
+        <text x="555" y="164" text-anchor="start" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">人間と同等の柔軟性</text>
+        <text x="555" y="178" text-anchor="start" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">研究目標・未実現</text>
+        
+        <!-- ANI -->
+        <polygon points="280,178 220,260 500,260 440,178" fill="#eef2f5" stroke="#2e5577" stroke-width="1.5"/>
+        <text x="360" y="220" text-anchor="middle" font-family="serif" font-size="15" font-weight="700" fill="#2e5577">ANI</text>
+        <text x="555" y="220" text-anchor="start" font-family="sans-serif" font-size="11.5" fill="#0d1b2a" font-weight="700">特化型人工知能</text>
+        <text x="555" y="236" text-anchor="start" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">特定タスクのみ</text>
+        <text x="555" y="250" text-anchor="start" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">現在実用化されているAI</text>
+        
+        <text x="120" y="105" text-anchor="start" font-family="sans-serif" font-size="10" fill="#b8431f" font-weight="700">超知能</text>
+        <text x="120" y="160" text-anchor="start" font-family="sans-serif" font-size="10" fill="#d4a017" font-weight="700">人間レベル</text>
+        <text x="120" y="225" text-anchor="start" font-family="sans-serif" font-size="10" fill="#2e5577" font-weight="700">特化型</text>
+        
+        <text x="360" y="298" text-anchor="middle" font-family="sans-serif" font-size="11" font-style="italic" fill="#5a5f6a">現代AI（GPT-4, Claude, Gemini）は ANI に位置するが、その境界は議論中</text>
+      </svg>
+      <p class="figure-caption">図1.3：AI 能力階層のピラミッド。ANI は実用化済み、AGI は研究目標、ASI は理論段階。GPT-4 が AGI に近づいたかは2024-2025年の最大の論争の一つ。</p>
+    </div>
+
+    <h3 id="basic-turing" style="margin-top:36px;">§1.5 チューリングテスト — 知能を測る最初の試み</h3>
+
+    <p>
+      1950年、<strong>アラン・チューリング</strong>は論文『Computing Machinery and Intelligence』を発表しました。『機械は考えることができるか？』という曖昧な問いを、彼は『機械は人間と区別不能に振る舞えるか？』という<strong>測定可能な問い</strong>に置き換えました。これが<strong>チューリングテスト</strong>（元の名前は『模倣ゲーム』）です。
+    </p>
+
+    <div class="figure">
+      <span class="figure-num">FIG. 1.4</span>
+      <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="720" height="340" fill="#faf7f2"/>
+        <text x="360" y="28" text-anchor="middle" font-family="serif" font-size="16" font-weight="700" fill="#0d1b2a">チューリングテスト — 模倣ゲームの構造</text>
+        
+        <!-- 判定者 -->
+        <circle cx="360" cy="290" r="32" fill="#fff8f2" stroke="#d4a017" stroke-width="2"/>
+        <text x="360" y="295" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#0d1b2a">判定者</text>
+        <text x="360" y="328" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">どちらが人間か当てる</text>
+        
+        <!-- 人間 (左) -->
+        <rect x="100" y="80" width="160" height="100" fill="#eef2f5" stroke="#2e5577" stroke-width="2" rx="4"/>
+        <text x="180" y="115" text-anchor="middle" font-family="serif" font-size="14" font-weight="700" fill="#2e5577">人間（プレイヤーA）</text>
+        <text x="180" y="140" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#5a5f6a">テキスト対話で応答</text>
+        <text x="180" y="158" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#5a5f6a">『私は人間です』と主張</text>
+        
+        <!-- AI (右) -->
+        <rect x="460" y="80" width="160" height="100" fill="#fff8f2" stroke="#b8431f" stroke-width="2" rx="4"/>
+        <text x="540" y="115" text-anchor="middle" font-family="serif" font-size="14" font-weight="700" fill="#b8431f">機械（プレイヤーB）</text>
+        <text x="540" y="140" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#5a5f6a">テキスト対話で応答</text>
+        <text x="540" y="158" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#5a5f6a">『私は人間です』と偽装</text>
+        
+        <!-- カーテン -->
+        <line x1="180" y1="195" x2="180" y2="255" stroke="#0d1b2a" stroke-width="2" stroke-dasharray="6,3"/>
+        <line x1="540" y1="195" x2="540" y2="255" stroke="#0d1b2a" stroke-width="2" stroke-dasharray="6,3"/>
+        <text x="180" y="215" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#5a5f6a" font-style="italic">カーテン</text>
+        <text x="540" y="215" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#5a5f6a" font-style="italic">カーテン</text>
+        
+        <!-- テキスト通信 -->
+        <path d="M 200 220 Q 280 260 340 280" stroke="#5a5f6a" stroke-width="1" fill="none" marker-end="url(#arrowhead)"/>
+        <path d="M 520 220 Q 440 260 380 280" stroke="#5a5f6a" stroke-width="1" fill="none" marker-end="url(#arrowhead)"/>
+        
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <polygon points="0 0, 10 3, 0 6" fill="#5a5f6a"/>
+          </marker>
+        </defs>
+        
+        <text x="240" y="265" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">テキスト</text>
+        <text x="480" y="265" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">テキスト</text>
+        
+        <!-- 結論 -->
+        <rect x="120" y="55" width="480" height="20" fill="#0d1b2a"/>
+        <text x="360" y="69" text-anchor="middle" font-family="sans-serif" font-size="11.5" font-weight="700" fill="#d4a017">判定者が人間と機械を区別できなければ、機械は知能を持つと看做す</text>
+      </svg>
+      <p class="figure-caption">図1.4：チューリングテストの基本構造。判定者はカーテン越しのテキスト通信のみで人間と機械を判別する。表面的振る舞いだけで知能を測ろうとする操作的定義。</p>
+    </div>
+
+    <p>
+      チューリングの哲学的功績は、<strong>『知能とは何か』という形而上学的問いを、『どう判定するか』という操作的問いに転換した</strong>ことにあります。これにより、AIの『進歩』を測定可能な指標で議論できるようになりました。
+    </p>
+
+    <div class="example">
+      <div class="example-title">チューリングテスト合格と言われる試み</div>
+      ・<strong>1966年 ELIZA</strong>：精神療法医を演じる対話プログラム。被験者の中には『本物の医師だと信じた』者もいたとされる。<br>
+      ・<strong>2014年 Eugene Goostman</strong>：13歳のウクライナ少年を演じるチャットボット。Royal Society の実験で30%の判定者が人間と誤認、『初の合格』と話題になったが議論あり。<br>
+      ・<strong>2022年 LaMDA</strong>：GoogleエンジニアのBlake Lemoineが『LaMDAは感覚を持つ』と主張し論争に。Googleは否定し彼を解雇。<br>
+      ・<strong>2023年〜 GPT-4 / Claude</strong>：チューリングテストを実質的に通過したと多くの研究者が認めるが、それでAIに『心がある』とは言えないという立場が主流。
+    </div>
 
     <div class="pitfall">
-      <div class="pitfall-title">⚠ よくある誤解</div>
-      「ChatGPT はチューリングテストに合格した」というニュースを目にすることがありますが、<strong>厳密に統制された大規模実験</strong> はまだ確立されていません。短時間・限定設定での通過と、本格テストの通過は別物です。
+      <div class="pitfall-title">⚠ チューリングテストの限界</div>
+      ・<strong>表面的振る舞いだけ</strong>を見るため、内部の理解の有無は問わない（→ 中国語の部屋の批判）。<br>
+      ・人間を<strong>騙すこと</strong>が目標になり、本質的知能の評価から離れる。<br>
+      ・<strong>欺瞞のテストである</strong>という批判：『嘘がうまい』だけかもしれない。<br>
+      ・現代の評価指標（MMLU、HumanEval、ARC-AGI 等）は、より客観的なタスク達成度を測る方向に進化した。
     </div>
 
-    <h3>派生：ローブナー賞</h3>
-    <p>
-      1991年から2019年まで、チューリングテストを実装した賞金コンテストが毎年開催されました（ヒュー・ローブナーが資金提供）。本格賞（人間と区別不能なAI）には誰も到達できず、年ごとに「最も人間らしい」AI に銅メダルが授与されるだけで終わりました。
-    </p>
-
-    <!-- ==================================================== §3 -->
-    <h2 id="sec3"><span class="label">§3 / CHINESE ROOM</span>中国語の部屋</h2>
+    <h3 id="basic-chinese-room" style="margin-top:36px;">§1.6 中国語の部屋 — サールの反論</h3>
 
     <p>
-      機能主義（振る舞いで判定する）への最も鋭い反論が、哲学者 <strong>ジョン・サール</strong> が1980年に提示した <strong>「中国語の部屋」</strong> という思考実験です。
+      1980年、サールはチューリングテストの哲学的限界を突く思考実験を提示しました。それが<strong>中国語の部屋（Chinese Room）</strong>です。
     </p>
 
     <div class="figure">
-      <svg viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg">
+      <span class="figure-num">FIG. 1.5</span>
+      <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="720" height="360" fill="#faf7f2"/>
+        <text x="360" y="28" text-anchor="middle" font-family="serif" font-size="16" font-weight="700" fill="#0d1b2a">中国語の部屋（Chinese Room）— サールの思考実験</text>
+        
+        <!-- 部屋 -->
+        <rect x="180" y="80" width="360" height="220" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
+        <text x="360" y="105" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#0d1b2a">部屋（プログラム）</text>
+        
+        <!-- 中の人 -->
+        <circle cx="290" cy="175" r="28" fill="#eef2f5" stroke="#2e5577" stroke-width="1.5"/>
+        <text x="290" y="180" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#2e5577" font-weight="700">英語話者</text>
+        <text x="290" y="215" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">中国語は</text>
+        <text x="290" y="228" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">理解しない</text>
+        
+        <!-- ルールブック -->
+        <rect x="395" y="150" width="100" height="60" fill="#faf7f2" stroke="#5a5f6a" stroke-width="1.5"/>
+        <text x="445" y="172" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#0d1b2a">ルール</text>
+        <text x="445" y="187" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#0d1b2a">ブック</text>
+        <text x="445" y="202" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#5a5f6a">if 你好 → 你好</text>
+        
+        <text x="360" y="265" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#0d1b2a">『記号操作』だけで応答を生成</text>
+        <text x="360" y="282" text-anchor="middle" font-family="sans-serif" font-size="10.5" font-style="italic" fill="#5a5f6a">中の人は何を言っているか分かっていない</text>
+        
+        <!-- 外部 (中国語入力) -->
+        <rect x="20" y="155" width="120" height="50" fill="#fbe8d8" stroke="#b8431f" stroke-width="1.5"/>
+        <text x="80" y="175" text-anchor="middle" font-family="serif" font-size="14" fill="#0d1b2a">你好吗？</text>
+        <text x="80" y="195" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">（中国語入力）</text>
+        
+        <!-- 外部 (中国語出力) -->
+        <rect x="580" y="155" width="120" height="50" fill="#fbe8d8" stroke="#b8431f" stroke-width="1.5"/>
+        <text x="640" y="175" text-anchor="middle" font-family="serif" font-size="14" fill="#0d1b2a">我很好</text>
+        <text x="640" y="195" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">（中国語出力）</text>
+        
+        <!-- 矢印 -->
+        <line x1="145" y1="180" x2="175" y2="180" stroke="#0d1b2a" stroke-width="2" marker-end="url(#arrow2)"/>
+        <line x1="545" y1="180" x2="575" y2="180" stroke="#0d1b2a" stroke-width="2" marker-end="url(#arrow2)"/>
         <defs>
-          <marker id="arr2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          <marker id="arrow2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <polygon points="0 0, 10 3, 0 6" fill="#0d1b2a"/>
           </marker>
         </defs>
-
-        <!-- Room outline -->
-        <rect x="160" y="60" width="360" height="240" fill="#faf7f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="340" y="42" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">部屋（コンピュータの比喩）</text>
-
-        <!-- Person -->
-        <circle cx="340" cy="160" r="34" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="340" y="158" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">中の人</text>
-        <text x="340" y="174" text-anchor="middle" font-size="10" fill="#5a5f6a">英語話者</text>
-        <text x="340" y="207" text-anchor="middle" font-size="10" fill="#b8431f">中国語は理解しない</text>
-
-        <!-- Rule book -->
-        <rect x="240" y="240" width="200" height="44" fill="#ece7d8" stroke="#0d1b2a"/>
-        <text x="340" y="259" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">ルール集</text>
-        <text x="340" y="275" text-anchor="middle" font-size="10" fill="#5a5f6a">「この記号列にはこう返す」</text>
-
-        <!-- Input -->
-        <rect x="20" y="148" width="100" height="44" fill="#b8431f"/>
-        <text x="70" y="170" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">入力（中国語）</text>
-        <text x="70" y="187" text-anchor="middle" font-size="13" fill="#faf7f2">你好吗？</text>
-        <path d="M120 170 L300 170" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#arr2)"/>
-
-        <!-- Output -->
-        <rect x="560" y="148" width="100" height="44" fill="#0d1b2a"/>
-        <text x="610" y="170" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">出力（中国語）</text>
-        <text x="610" y="187" text-anchor="middle" font-size="13" fill="#faf7f2">我很好。</text>
-        <path d="M380 170 L555 170" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#arr2)"/>
-
-        <!-- Question mark -->
-        <text x="340" y="332" text-anchor="middle" font-size="13" fill="#b8431f" font-style="italic" font-weight="bold">外から見れば中国語を「理解している」ように見える。しかし本当に？</text>
+        
+        <!-- 観察者 -->
+        <text x="360" y="333" text-anchor="middle" font-family="sans-serif" font-size="11.5" font-weight="700" fill="#b8431f">外から見れば『中国語を理解しているように見える』</text>
+        <text x="360" y="350" text-anchor="middle" font-family="sans-serif" font-size="11" font-style="italic" fill="#5a5f6a">しかし内部に『理解』は存在しない — サールの主張</text>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 1.2</span> &nbsp;中国語の部屋。中の人は英語話者で中国語は一切分からないが、ルール集を引いて応答する。外から見ると中国語の自然な会話に見える — でも内部に「理解」はあるか？</div>
+      <p class="figure-caption">図1.5：中国語の部屋の構造。記号操作（シンタックス）と意味理解（セマンティクス）の区別を強調する思考実験。チューリングテストでは内部の理解の有無を区別できないという批判。</p>
     </div>
 
-    <h3>サールの主張</h3>
-    <ol>
-      <li><strong>シンタックス（記号操作）はセマンティクス（意味）を生まない</strong></li>
-      <li>コンピュータは記号を機械的に操作しているだけ</li>
-      <li>従って、どれほど見事に「振る舞い」を再現しても、それは「強いAI（真の理解を持つ）」ではない</li>
-      <li>LLM もこの議論の範囲：流暢な応答 ≠ 理解</li>
+    <p>サールの論証：</p>
+    <ol style="font-size:14px;line-height:1.95;">
+      <li>部屋の中には中国語を理解しない英語話者がいる。</li>
+      <li>その人は中国語の質問を受け取り、巨大なルールブック（プログラム）に従って中国語の答えを返す。</li>
+      <li>外から見れば、部屋は中国語を完璧に理解しているかのように振る舞う（→ チューリングテスト合格）。</li>
+      <li>しかし、<strong>部屋の中の人も、ルールブックも、中国語を理解していない</strong>。</li>
+      <li>ゆえに、<strong>記号操作だけで意味理解は生じない</strong>。</li>
+      <li>コンピュータは記号操作のみを行うため、<strong>強いAIは原理的に不可能</strong>。</li>
     </ol>
 
-    <h3>反論</h3>
-    <ul>
-      <li><strong>システム反論</strong>：理解しているのは「中の人」ではなく <strong>システム全体（部屋 + ルール集 + 人）</strong>である</li>
-      <li><strong>ロボット反論</strong>：実世界とつながった身体性があれば、記号は意味に接地する（→ シンボルグラウンディング問題）</li>
-      <li><strong>創発反論</strong>：理解は十分複雑なシステムから自然に立ち上がる性質ではないか</li>
+    <p>この主張は『シンタックスはセマンティクスを生まない（Syntax is not sufficient for semantics）』と要約されます。これに対する反論も多く提示されており、AI哲学の中心的論争となっています。</p>
+
+    <div class="example">
+      <div class="example-title">中国語の部屋への代表的な反論</div>
+      ・<strong>システム説</strong>：部屋全体（人＋ルールブック＋紙）として理解しているのであり、中の人個人で考えるのは誤り。<br>
+      ・<strong>ロボット説</strong>：身体を持ち世界と相互作用できれば、シンボルが意味を獲得する（→ シンボルグラウンディング問題、§1.8）。<br>
+      ・<strong>脳シミュレーション説</strong>：もしプログラムが脳の神経活動を完全に模倣するなら、それは『理解』しているはず（機能主義の立場）。<br>
+      ・<strong>サールの再反論</strong>：これらの反論は、すべて『記号操作 + 何か』を要請しており、純粋な計算では不十分という彼の主張を結局支持している。
+    </div>
+
+    <h3 id="basic-frame" style="margin-top:36px;">§1.7 フレーム問題 — 古典AIの根本的難題</h3>
+
+    <p>
+      1969年、ジョン・マッカーシーとパトリック・ヘイズはAIの根本的難題を提起しました。それが<strong>フレーム問題（Frame Problem）</strong>です。
+    </p>
+
+    <p>
+      問題の核心：AIが行動を選ぶとき、<strong>『今この状況に関係する事実』と『関係しない事実』を区別する</strong>必要があります。しかし世界には無限の事実があり、すべてを検討していたら時間切れになります。何を考慮し、何を無視すべきかをAIはどう知るのか？
+    </p>
+
+    <div class="figure">
+      <span class="figure-num">FIG. 1.6</span>
+      <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="720" height="380" fill="#faf7f2"/>
+        <text x="360" y="28" text-anchor="middle" font-family="serif" font-size="16" font-weight="700" fill="#0d1b2a">フレーム問題 — デネットのロボット寓話</text>
+        
+        <!-- ロボット1 -->
+        <rect x="40" y="70" width="200" height="280" fill="#fff8f2" stroke="#b8431f" stroke-width="1.5"/>
+        <text x="140" y="92" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#b8431f">R1（初代）</text>
+        <text x="140" y="112" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#0d1b2a">『台車を運び出せ』</text>
+        <line x1="60" y1="125" x2="220" y2="125" stroke="#b8431f" stroke-width="0.5"/>
+        <text x="140" y="148" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">台車を運び出す</text>
+        <text x="140" y="166" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">↓</text>
+        <text x="140" y="186" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">爆弾も台車に</text>
+        <text x="140" y="204" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">乗っていたが気付かず</text>
+        <text x="140" y="222" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">↓</text>
+        <text x="140" y="242" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#b8431f">💥 爆発</text>
+        <text x="140" y="280" text-anchor="middle" font-family="sans-serif" font-size="11" font-style="italic" fill="#5a5f6a">副作用を全く</text>
+        <text x="140" y="295" text-anchor="middle" font-family="sans-serif" font-size="11" font-style="italic" fill="#5a5f6a">考慮しない</text>
+        <text x="140" y="320" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#0d1b2a" font-weight="700">問題：副作用を見ない</text>
+        
+        <!-- ロボット2 -->
+        <rect x="260" y="70" width="200" height="280" fill="#fff8f2" stroke="#d4a017" stroke-width="1.5"/>
+        <text x="360" y="92" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#d4a017">R1D1（改良版）</text>
+        <text x="360" y="112" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#0d1b2a">『副作用を全部検討せよ』</text>
+        <line x1="280" y1="125" x2="440" y2="125" stroke="#d4a017" stroke-width="0.5"/>
+        <text x="360" y="148" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">『電気は消えるか』</text>
+        <text x="360" y="166" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">『絨毯は動くか』</text>
+        <text x="360" y="184" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">『天気は変わるか』</text>
+        <text x="360" y="202" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">『重力は…』</text>
+        <text x="360" y="220" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">…無限に考え続ける</text>
+        <text x="360" y="245" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#b8431f">💥 時間切れで爆発</text>
+        <text x="360" y="280" text-anchor="middle" font-family="sans-serif" font-size="11" font-style="italic" fill="#5a5f6a">無関係な副作用も</text>
+        <text x="360" y="295" text-anchor="middle" font-family="sans-serif" font-size="11" font-style="italic" fill="#5a5f6a">全て検討してしまう</text>
+        <text x="360" y="320" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#0d1b2a" font-weight="700">問題：無限に考え続ける</text>
+        
+        <!-- ロボット3 -->
+        <rect x="480" y="70" width="200" height="280" fill="#fff8f2" stroke="#2e5577" stroke-width="1.5"/>
+        <text x="580" y="92" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#2e5577">R2D1（更に改良）</text>
+        <text x="580" y="112" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#0d1b2a">『無関係な副作用を無視せよ』</text>
+        <line x1="500" y1="125" x2="660" y2="125" stroke="#2e5577" stroke-width="0.5"/>
+        <text x="580" y="148" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">『これは無関係か』</text>
+        <text x="580" y="166" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">『これも無関係か』</text>
+        <text x="580" y="184" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">『これも…』</text>
+        <text x="580" y="202" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">『これも…』</text>
+        <text x="580" y="220" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">無関係性を判定中…</text>
+        <text x="580" y="245" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#b8431f">💥 時間切れで爆発</text>
+        <text x="580" y="280" text-anchor="middle" font-family="sans-serif" font-size="11" font-style="italic" fill="#5a5f6a">『無関係である』の</text>
+        <text x="580" y="295" text-anchor="middle" font-family="sans-serif" font-size="11" font-style="italic" fill="#5a5f6a">判定で時間切れ</text>
+        <text x="580" y="320" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#0d1b2a" font-weight="700">問題：判定でも時間切れ</text>
+      </svg>
+      <p class="figure-caption">図1.6：ダニエル・デネットによるフレーム問題の寓話。3世代のロボットすべてが失敗する。問題の本質は『何を考慮すべきかを限定する』ことが論理的に困難なこと。</p>
+    </div>
+
+    <p>
+      フレーム問題は、<strong>古典AI（記号処理AI）が現実世界の常識的推論で挫折した最大の原因</strong>とされます。人間は無意識に『今関係する事実』を絞り込めますが、これを論理的に定式化することは極めて困難です。
+    </p>
+
+    <div class="example">
+      <div class="example-title">現代AIはフレーム問題をどう扱うか</div>
+      現代のディープラーニング、特にLLM（大規模言語モデル）は、フレーム問題を<strong>『暗黙の常識』を学習データから獲得する</strong>ことで実務的に回避しています。GPT-4が『部屋から出るとき何を心配すべきか』に妥当に答えられるのは、無数のテキストから人間の暗黙ルールを統計的に学んでいるためです。<br><br>
+      しかし、これは<strong>根本解決ではなく回避</strong>です。学習データにない状況では失敗します。完全な常識推論（Common Sense Reasoning）の実現は、AGIへの主要な障害の一つです。
+    </div>
+
+    <h3 id="basic-symbol-ground" style="margin-top:36px;">§1.8 シンボルグラウンディング問題</h3>
+
+    <p>
+      1990年、認知科学者<strong>スティーブン・ハルナッド</strong>は『Symbol Grounding Problem』と題する論文で、AIが扱う記号がどう現実世界の意味と結びつくのかを問いました。
+    </p>
+
+    <p>
+      AIにとって『リンゴ』という単語は、辞書定義（『バラ科の植物の果実』）や他の単語との関連で表現されるだけです。しかしAIは<strong>実際にリンゴを見たり、噛んだり、酸味を感じたり</strong>したことがありません。記号と感覚的・運動的経験を結びつけない限り、本物の意味理解は得られない、というのが彼の主張です。
+    </p>
+
+    <div class="figure">
+      <span class="figure-num">FIG. 1.7</span>
+      <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="720" height="320" fill="#faf7f2"/>
+        <text x="360" y="28" text-anchor="middle" font-family="serif" font-size="16" font-weight="700" fill="#0d1b2a">シンボルグラウンディング問題</text>
+        
+        <!-- AIの世界 -->
+        <rect x="40" y="70" width="280" height="220" fill="#fff8f2" stroke="#b8431f" stroke-width="1.5"/>
+        <text x="180" y="95" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#b8431f">AIの世界（記号の世界）</text>
+        
+        <ellipse cx="120" cy="155" rx="40" ry="22" fill="#faf7f2" stroke="#5a5f6a" stroke-width="1"/>
+        <text x="120" y="160" text-anchor="middle" font-family="serif" font-size="12" fill="#0d1b2a">リンゴ</text>
+        
+        <ellipse cx="240" cy="155" rx="40" ry="22" fill="#faf7f2" stroke="#5a5f6a" stroke-width="1"/>
+        <text x="240" y="160" text-anchor="middle" font-family="serif" font-size="12" fill="#0d1b2a">果物</text>
+        
+        <ellipse cx="120" cy="220" rx="40" ry="22" fill="#faf7f2" stroke="#5a5f6a" stroke-width="1"/>
+        <text x="120" y="225" text-anchor="middle" font-family="serif" font-size="12" fill="#0d1b2a">バラ科</text>
+        
+        <ellipse cx="240" cy="220" rx="40" ry="22" fill="#faf7f2" stroke="#5a5f6a" stroke-width="1"/>
+        <text x="240" y="225" text-anchor="middle" font-family="serif" font-size="12" fill="#0d1b2a">赤い</text>
+        
+        <line x1="160" y1="155" x2="200" y2="155" stroke="#5a5f6a" stroke-width="1"/>
+        <line x1="120" y1="177" x2="120" y2="198" stroke="#5a5f6a" stroke-width="1"/>
+        <line x1="240" y1="177" x2="240" y2="198" stroke="#5a5f6a" stroke-width="1"/>
+        <line x1="160" y1="220" x2="200" y2="220" stroke="#5a5f6a" stroke-width="1"/>
+        
+        <text x="180" y="275" text-anchor="middle" font-family="sans-serif" font-size="11" font-style="italic" fill="#5a5f6a">記号と記号の関係だけ</text>
+        
+        <!-- 人間の世界 -->
+        <rect x="400" y="70" width="280" height="220" fill="#eef2f5" stroke="#2e5577" stroke-width="1.5"/>
+        <text x="540" y="95" text-anchor="middle" font-family="serif" font-size="13" font-weight="700" fill="#2e5577">人間の世界（経験と接続）</text>
+        
+        <circle cx="540" cy="160" r="35" fill="#fbe8d8" stroke="#b8431f" stroke-width="1.2"/>
+        <text x="540" y="166" text-anchor="middle" font-family="serif" font-size="22">🍎</text>
+        
+        <text x="450" y="155" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">見る</text>
+        <text x="450" y="180" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">触る</text>
+        <text x="450" y="205" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">噛む</text>
+        
+        <text x="630" y="155" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">嗅ぐ</text>
+        <text x="630" y="180" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">味わう</text>
+        <text x="630" y="205" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">記憶</text>
+        
+        <line x1="463" y1="155" x2="505" y2="155" stroke="#2e5577" stroke-width="0.8" marker-end="url(#a3)"/>
+        <line x1="463" y1="180" x2="505" y2="170" stroke="#2e5577" stroke-width="0.8" marker-end="url(#a3)"/>
+        <line x1="463" y1="205" x2="505" y2="185" stroke="#2e5577" stroke-width="0.8" marker-end="url(#a3)"/>
+        <line x1="615" y1="155" x2="575" y2="155" stroke="#2e5577" stroke-width="0.8" marker-end="url(#a3)"/>
+        <line x1="615" y1="180" x2="575" y2="170" stroke="#2e5577" stroke-width="0.8" marker-end="url(#a3)"/>
+        <line x1="615" y1="205" x2="575" y2="185" stroke="#2e5577" stroke-width="0.8" marker-end="url(#a3)"/>
+        
+        <defs><marker id="a3" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 8 2.5, 0 5" fill="#2e5577"/></marker></defs>
+        
+        <text x="540" y="240" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#0d1b2a">『リンゴ』の意味 = 身体経験</text>
+        <text x="540" y="275" text-anchor="middle" font-family="sans-serif" font-size="11" font-style="italic" fill="#5a5f6a">記号が現実に『接地』している</text>
+      </svg>
+      <p class="figure-caption">図1.7：AIの記号世界（左）は記号間の関係のみで自己完結。人間の世界（右）は記号が感覚・運動経験に『接地』している。シンボルグラウンディング問題はAIにこの接地をどう与えるかを問う。</p>
+    </div>
+
+    <p>
+      この問題提起は現代AIの方向性に大きく影響しました。<strong>マルチモーダルAI</strong>（画像・テキスト・音声を統合する CLIP、Gemini、GPT-4V、Claude 3+）や<strong>身体性AI</strong>（ロボティクス、Embodied AI）は、シンボルグラウンディング問題への工学的応答と解釈できます。
+    </p>
+
+    <h3 id="basic-ai-effect" style="margin-top:36px;">§1.9 AI効果 — 達成すれば『AIでなくなる』奇妙な現象</h3>
+
+    <p>
+      <strong>AI効果（AI effect）</strong>とは、AIが特定タスクを達成すると、人々が『これはもうAIではない』『単なるアルゴリズムだ』と評価を下げる現象です。これは1956年からAI研究者が一貫して経験してきた皮肉な状況です。
+    </p>
+
+    <table class="spec">
+      <thead>
+        <tr><th>時代</th><th>『これがAIだ』とされたタスク</th><th>達成後の評価</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1950s</td><td>定理証明・チェス</td><td>『単なる探索アルゴリズム』</td></tr>
+        <tr><td>1960s</td><td>自然言語の質問応答</td><td>『単なるパターンマッチング』</td></tr>
+        <tr><td>1980s</td><td>専門家システム（医療診断）</td><td>『単なるルールベース』</td></tr>
+        <tr><td>1997</td><td>Deep Blue がチェスチャンピオンに勝利</td><td>『単なる計算力の勝利』</td></tr>
+        <tr><td>2011</td><td>IBM Watson が Jeopardy! で勝利</td><td>『単なる情報検索』</td></tr>
+        <tr><td>2016</td><td>AlphaGo が囲碁チャンピオンに勝利</td><td>『単なる強化学習』</td></tr>
+        <tr><td>2022〜</td><td>ChatGPT が自然な対話</td><td>『単なる確率予測』</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      AI効果は、<strong>人間が『知能』の定義を絶えず後退させている</strong>ことを示します。マシンができるようになったタスクは『知能の証ではなく機械的処理』と再分類され、知能の領域は『まだ機械にできないこと』として再定義されます。この性質上、『AIが達成した』と評価される瞬間は常に未来に押しやられる傾向があります。
+    </p>
+
+    <h3 id="basic-aimldl" style="margin-top:36px;">§1.10 AI / 機械学習 / 深層学習の関係</h3>
+
+    <p>
+      日常的に AI、機械学習、深層学習が混同して使われますが、これらは<strong>入れ子構造</strong>の関係にあります。
+    </p>
+
+    <div class="figure">
+      <span class="figure-num">FIG. 1.8</span>
+      <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="720" height="320" fill="#faf7f2"/>
+        <text x="360" y="28" text-anchor="middle" font-family="serif" font-size="16" font-weight="700" fill="#0d1b2a">AI / ML / DL の入れ子関係</text>
+        
+        <!-- AI 外枠 -->
+        <rect x="80" y="60" width="560" height="240" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2" rx="8"/>
+        <text x="120" y="85" font-family="serif" font-size="14" font-weight="700" fill="#0d1b2a">AI（Artificial Intelligence）</text>
+        <text x="120" y="105" font-family="sans-serif" font-size="11" fill="#5a5f6a">最広義：知能的振る舞いを再現する技術全般</text>
+        <text x="120" y="123" font-family="sans-serif" font-size="11" fill="#5a5f6a">含む：ルールベース、探索、エキスパートシステム、機械学習等</text>
+        
+        <!-- ML -->
+        <rect x="150" y="140" width="420" height="140" fill="#fbe8d8" stroke="#b8431f" stroke-width="2" rx="6"/>
+        <text x="170" y="165" font-family="serif" font-size="13" font-weight="700" fill="#b8431f">機械学習（Machine Learning）</text>
+        <text x="170" y="183" font-family="sans-serif" font-size="11" fill="#5a5f6a">データから学習するAIの一手法</text>
+        <text x="170" y="200" font-family="sans-serif" font-size="11" fill="#5a5f6a">含む：線形回帰、決定木、SVM、ランダムフォレスト、深層学習等</text>
+        
+        <!-- DL -->
+        <rect x="240" y="215" width="240" height="55" fill="#faf7f2" stroke="#d4a017" stroke-width="2" rx="4"/>
+        <text x="260" y="237" font-family="serif" font-size="12.5" font-weight="700" fill="#d4a017">深層学習（Deep Learning）</text>
+        <text x="260" y="254" font-family="sans-serif" font-size="10.5" fill="#5a5f6a">多層NNを用いた機械学習</text>
+      </svg>
+      <p class="figure-caption">図1.8：AI ⊃ 機械学習 ⊃ 深層学習。AI が最広義、深層学習は機械学習の一部、機械学習は AI の一手法。すべての DL は ML、すべての ML は AI、だが逆は成立しない。</p>
+    </div>
+
+    <table class="spec">
+      <thead>
+        <tr><th>用語</th><th>定義</th><th>例</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>AI</strong></td><td>知能的振る舞いを機械に行わせる技術全般</td><td>ルールベース、探索、専門家システム、機械学習</td></tr>
+        <tr><td><strong>機械学習 (ML)</strong></td><td>明示的にプログラムせず、データから学習するAI</td><td>線形回帰、決定木、SVM、ランダムフォレスト</td></tr>
+        <tr><td><strong>深層学習 (DL)</strong></td><td>多層NNを使う機械学習の一種</td><td>CNN、RNN、Transformer、GAN、Diffusion</td></tr>
+        <tr><td><strong>生成AI</strong></td><td>新規データを生成するDL／ML</td><td>ChatGPT、DALL-E、Stable Diffusion</td></tr>
+        <tr><td><strong>LLM</strong></td><td>大規模言語モデル、Transformerベースの巨大NN</td><td>GPT-4、Claude、Gemini、Llama</td></tr>
+      </tbody>
+    </table>
+
+    <div class="pitfall">
+      <div class="pitfall-title">⚠ よくある混同</div>
+      ・『AI を導入する』≠『深層学習を導入する』。決定木やルールベースも AI。<br>
+      ・『機械学習』≠『深層学習』。GBDTのような勾配ブースティングは深層学習ではない。<br>
+      ・『生成AI』≠『ChatGPT』。Stable Diffusion、Midjourney、Sora など多数ある。
+    </div>
+
+
+    <!-- ============================================ -->
+    <!-- セクション2 応用 -->
+    <!-- ============================================ -->
+    <div id="sec-applied" class="section-divider">
+      <div class="sec-num">SECTION 2 / 5</div>
+      <h2>応用</h2>
+      <p>本章で学んだ概念群が、現代のAI実用例と社会にどう関わっているか。医療、金融、エンタメ、産業、国家戦略まで、知能の定義論が実装に現れる現場を見ていく。</p>
+    </div>
+
+    <h3 style="margin-top:36px;">§2.1 業界別のAI実用例 — 弱いAIの最前線</h3>
+
+    <p>すべて『弱いAI（特化型AI）』であることに注意しながら、業界別実装例を見ていきます。</p>
+
+    <table class="spec">
+      <thead>
+        <tr><th>業界</th><th>用途</th><th>技術</th><th>関連企業・サービス</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>医療</td><td>画像診断（CT・X線・病理）</td><td>CNN・U-Net・ViT</td><td>富士フイルム REiLI、エルピクセル EIRL、Google Lymph Node Assistant</td></tr>
+        <tr><td>医療</td><td>新薬探索</td><td>GNN・拡散モデル・LLM</td><td>AlphaFold (DeepMind)、Insilico Medicine</td></tr>
+        <tr><td>金融</td><td>不正取引検知</td><td>異常検知・GBDT</td><td>JCB、Visa、Stripe Radar</td></tr>
+        <tr><td>金融</td><td>信用スコアリング</td><td>ロジスティック回帰・GBDT</td><td>FICO、ZestFinance</td></tr>
+        <tr><td>製造</td><td>外観検査・品質管理</td><td>CNN・異常検知</td><td>キーエンス、トヨタ、Foxconn</td></tr>
+        <tr><td>製造</td><td>予知保全</td><td>時系列予測・LSTM</td><td>GE Predix、SAP Predictive</td></tr>
+        <tr><td>物流</td><td>需要予測・在庫最適化</td><td>時系列・強化学習</td><td>Amazon、楽天</td></tr>
+        <tr><td>小売</td><td>レコメンド</td><td>協調フィルタリング・DLRM</td><td>Amazon、Netflix、Spotify</td></tr>
+        <tr><td>自動車</td><td>自動運転</td><td>CNN・LiDAR融合・強化学習</td><td>Tesla FSD、Waymo、Cruise</td></tr>
+        <tr><td>農業</td><td>収量予測・病害虫検知</td><td>CNN・衛星画像解析</td><td>クボタ、ヤンマー、John Deere</td></tr>
+        <tr><td>エンタメ</td><td>音声・音楽生成</td><td>拡散モデル・AudioLM</td><td>Suno、Udio、ElevenLabs</td></tr>
+        <tr><td>エンタメ</td><td>画像・動画生成</td><td>Stable Diffusion・Sora</td><td>OpenAI Sora、Runway、Kling</td></tr>
+        <tr><td>教育</td><td>個別最適化学習</td><td>LLM・知識追跡</td><td>Khan Academy Khanmigo、Duolingo</td></tr>
+        <tr><td>セキュリティ</td><td>サイバー脅威検知</td><td>異常検知・LLM</td><td>Darktrace、CrowdStrike</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:36px;">§2.2 日常生活に浸透したAI — 気付かない場所にいる</h3>
+
+    <p>
+      私たちが日々使っているサービスの背後にAIが組み込まれていることが多くあります。これらはすべて『弱いAI』ですが、一つひとつのタスクで人間を凌駕しています。
+    </p>
+
+    <ul style="font-size:14px;line-height:2;">
+      <li><strong>スマートフォン</strong>：顔認証（Face ID）、Siri/Googleアシスタント、写真の自動分類、ナイトモード撮影、入力予測</li>
+      <li><strong>メール</strong>：スパムフィルタ、優先トレイ、自動返信候補（Gmail Smart Reply）</li>
+      <li><strong>カーナビ</strong>：渋滞予測、ルート最適化、到着時刻推定（Google Maps）</li>
+      <li><strong>SNS</strong>：タイムライン順序、推奨フォロー、コンテンツモデレーション（TikTok For You、X アルゴリズム）</li>
+      <li><strong>動画配信</strong>：おすすめ作品、サムネイル最適化、画質補正（Netflix、YouTube）</li>
+      <li><strong>ECサイト</strong>：レコメンド、検索ランキング、価格最適化、不正注文検知（Amazon、楽天）</li>
+      <li><strong>翻訳</strong>：DeepL、Google Translate、ChatGPT、Claude</li>
+      <li><strong>音声入力</strong>：YouTube字幕、Zoom議事録、AppleのSiriインターフェース</li>
+    </ul>
+
+    <h3 style="margin-top:36px;">§2.3 国別AI戦略 — 国家間競争の構図</h3>
+
+    <table class="spec">
+      <thead>
+        <tr><th>国</th><th>主要戦略文書</th><th>強み</th><th>規制スタンス</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>米国</td><td>National AI Initiative Act (2020)、Executive Order on AI (2023)</td><td>基礎研究、産業、人材（OpenAI、Anthropic、Google、Meta、Microsoft）</td><td>規制軽め、業界自主に任せる傾向</td></tr>
+        <tr><td>中国</td><td>新一代人工知能発展計画（2017）</td><td>応用、データ量、製造（百度、アリババ、Tencent、DeepSeek）</td><td>政府による中央統制、生成AI規制（2023年8月）</td></tr>
+        <tr><td>EU</td><td>EU AI Act (2024年5月採択)</td><td>規制設計、倫理</td><td>世界で最も厳格、4段階のリスク階層</td></tr>
+        <tr><td>日本</td><td>AI戦略2022、AI事業者ガイドライン (2024)</td><td>製造業との融合、ロボット、広島AIプロセス</td><td>原則ベース、規制最小限</td></tr>
+        <tr><td>英国</td><td>AI Safety Summit (2023年Bletchley)</td><td>研究機関（DeepMind）、AI Safety Institute</td><td>促進と安全の両立</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:36px;">§2.4 サールの強いAI／弱いAI論の現代的意義</h3>
+
+    <p>
+      なぜ40年以上前のサールの議論がG検定で問われるのか？それは現代の生成AIブームにおいて、サールの問いが<strong>再び中心的論点</strong>になっているからです。
+    </p>
+
+    <ul style="font-size:14px;line-height:2;">
+      <li>GPT-4 / Claude / Gemini は『理解しているのか、それとも記号操作しているだけか』。</li>
+      <li>2022年 Google エンジニア Blake Lemoine が『LaMDAは感覚を持つ』と主張、サールの問いが再燃した。</li>
+      <li>2023年 Microsoft 論文『Sparks of Artificial General Intelligence』が GPT-4 を AGI の萌芽と評価し論争に。</li>
+      <li>2024-2025年 OpenAI o1/o3、DeepSeek R1 等の『推論モデル』が登場し、『考える』の定義が再び問われている。</li>
+      <li>ハルシネーション問題は、まさに『シンタックスがセマンティクスを生まない』ことの実装上の現れと解釈できる。</li>
+    </ul>
+
+
+    <!-- ============================================ -->
+    <!-- セクション3 ハンズオン -->
+    <!-- ============================================ -->
+    <div id="sec-handson" class="section-divider">
+      <div class="sec-num">SECTION 3 / 5</div>
+      <h2>ハンズオン</h2>
+      <p>ルールベースAI、ELIZAスタイルのチャットボット、簡易チューリングテスト評価器、フレーム問題のシミュレーション。Pythonでの実装例で『弱いAI』の実体を体感する。</p>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.1 ルールベースAI — 最も単純なAI</h3>
+
+    <p>
+      AIの定義の幅を実感するため、まず<strong>機械学習を一切使わないルールベースAI</strong>を実装します。これも立派なAIです。
+    </p>
+
+    <div class="code-block">
+<span class="comment"># rule_based_diagnosis.py — 単純な症状診断 AI</span>
+<span class="keyword">def</span> <span class="builtin">diagnose</span>(symptoms):
+    <span class="string">"""</span>
+<span class="string">    症状リストから可能な病気を推定する。</span>
+<span class="string">    これも『AI』である（弱いAIの代表的形態）。</span>
+<span class="string">    """</span>
+    rules = [
+        ({<span class="string">"発熱"</span>, <span class="string">"咳"</span>, <span class="string">"のどの痛み"</span>}, <span class="string">"風邪の疑い"</span>),
+        ({<span class="string">"発熱"</span>, <span class="string">"頭痛"</span>, <span class="string">"関節痛"</span>}, <span class="string">"インフルエンザの疑い"</span>),
+        ({<span class="string">"発疹"</span>, <span class="string">"かゆみ"</span>}, <span class="string">"アレルギーの疑い"</span>),
+        ({<span class="string">"腹痛"</span>, <span class="string">"下痢"</span>}, <span class="string">"胃腸炎の疑い"</span>),
+    ]
+    
+    s = <span class="builtin">set</span>(symptoms)
+    matches = []
+    <span class="keyword">for</span> condition, diagnosis <span class="keyword">in</span> rules:
+        <span class="keyword">if</span> condition.issubset(s):
+            matches.append(diagnosis)
+    
+    <span class="keyword">return</span> matches <span class="keyword">if</span> matches <span class="keyword">else</span> [<span class="string">"判定不能 — 医師の診察を推奨"</span>]
+
+<span class="comment"># 実行例</span>
+<span class="builtin">print</span>(diagnose([<span class="string">"発熱"</span>, <span class="string">"咳"</span>, <span class="string">"のどの痛み"</span>]))
+<span class="builtin">print</span>(diagnose([<span class="string">"発熱"</span>, <span class="string">"頭痛"</span>, <span class="string">"関節痛"</span>]))
+<span class="builtin">print</span>(diagnose([<span class="string">"くしゃみ"</span>]))</div>
+
+    <div class="code-output">
+<div class="code-output-label">実行結果</div>
+['風邪の疑い']<br>
+['インフルエンザの疑い']<br>
+['判定不能 — 医師の診察を推奨']
+    </div>
+
+    <p>
+      これは1980年代の<strong>エキスパートシステム</strong>の超単純版です。学習せず、ルールを人間が手書きします。AI定義の『知能的振る舞いを機械に行わせる』に該当します。MYCIN（1970年代の医療診断システム）は約450のルールで抗生物質処方を判断しました。
+    </p>
+
+    <h3 style="margin-top:36px;">§3.2 ELIZA — 1966年の対話AI</h3>
+
+    <p>
+      ジョセフ・ワイゼンバウムが1966年に MIT で開発した <strong>ELIZA</strong> は、心理療法医を演じる対話プログラムです。表面的な単語マッチングだけで動作しますが、当時の被験者の中には『本物の医師と話している』と信じた人もいました。チューリングテスト的に成功した最初期の例です。
+    </p>
+
+    <div class="code-block">
+<span class="comment"># eliza_lite.py — 簡易ELIZA実装</span>
+<span class="keyword">import</span> re
+<span class="keyword">import</span> random
+
+reflections = {
+    <span class="string">"私"</span>: <span class="string">"あなた"</span>, <span class="string">"私は"</span>: <span class="string">"あなたは"</span>,
+    <span class="string">"私の"</span>: <span class="string">"あなたの"</span>, <span class="string">"あなた"</span>: <span class="string">"私"</span>,
+}
+
+patterns = [
+    (<span class="string">r"私は(.*)が好き"</span>, [<span class="string">"なぜ{0}が好きなのですか？"</span>, <span class="string">"{0}についてもっと話してください"</span>]),
+    (<span class="string">r"私は(.*)です"</span>, [<span class="string">"あなたが{0}だとどう感じますか？"</span>, <span class="string">"なぜ{0}だと思うのですか？"</span>]),
+    (<span class="string">r"なぜ(.*)"</span>, [<span class="string">"あなたはどう思いますか？"</span>, <span class="string">"それが分かるとどうなるでしょう？"</span>]),
+    (<span class="string">r"(.*)夢(.*)"</span>, [<span class="string">"夢について教えてください"</span>, <span class="string">"夢は何を意味すると思いますか？"</span>]),
+    (<span class="string">r"(.*)親(.*)"</span>, [<span class="string">"あなたの家族関係について教えてください"</span>]),
+    (<span class="string">r"(.*)"</span>, [<span class="string">"なるほど、続けてください"</span>, <span class="string">"もう少し詳しく教えてください"</span>, <span class="string">"それはなぜですか？"</span>]),
+]
+
+<span class="keyword">def</span> <span class="builtin">eliza_respond</span>(user_input):
+    <span class="keyword">for</span> pattern, responses <span class="keyword">in</span> patterns:
+        match = re.match(pattern, user_input)
+        <span class="keyword">if</span> match:
+            response = random.choice(responses)
+            <span class="keyword">if</span> <span class="string">"{0}"</span> <span class="keyword">in</span> response <span class="keyword">and</span> match.groups():
+                response = response.format(match.group(<span class="builtin">1</span>))
+            <span class="keyword">return</span> response
+    <span class="keyword">return</span> <span class="string">"続けてください"</span>
+
+<span class="comment"># 対話例</span>
+<span class="builtin">print</span>(eliza_respond(<span class="string">"私は猫が好き"</span>))      <span class="comment"># → なぜ猫が好きなのですか？</span>
+<span class="builtin">print</span>(eliza_respond(<span class="string">"私は悲しいです"</span>))     <span class="comment"># → なぜ悲しいだと思うのですか？</span>
+<span class="builtin">print</span>(eliza_respond(<span class="string">"夢の中で空を飛んだ"</span>))  <span class="comment"># → 夢について教えてください</span></div>
+
+    <div class="example">
+      <div class="example-title">ELIZA効果</div>
+      ワイゼンバウム自身は、自分の秘書がELIZAと話す姿を見て衝撃を受けたと回想しています。秘書は『（私的な話なので）部屋から出ていってください』と頼んだといいます。<br><br>
+      <strong>ELIZA効果</strong>とは、AIが浅い処理しかしていないにもかかわらず、人間がそれに人格・理解・感情を投影する傾向です。これは現代のLLMにも当てはまります（特にハードな擬人化を起こした2022年 LaMDA 騒動など）。
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 簡易チューリングテスト評価器</h3>
+
+    <p>
+      実際のチューリングテストを評価する簡易プログラムを作ってみましょう。判定者の判断を集計し、識別率を出します。
+    </p>
+
+    <div class="code-block">
+<span class="comment"># turing_test_evaluator.py</span>
+<span class="keyword">def</span> <span class="builtin">evaluate_turing_test</span>(judgments):
+    <span class="string">"""</span>
+<span class="string">    judgments: list of dicts</span>
+<span class="string">      [{"judge_id": 1, "label": "AI", "true": "AI"}, ...]</span>
+<span class="string">    </span>
+<span class="string">    AIをAIと識別できた割合（識別率）を計算。</span>
+<span class="string">    チューリングテスト基準では、識別率 ≤ 50% で『合格』と看做す</span>
+<span class="string">    （ランダム判定と区別がつかないため）。</span>
+<span class="string">    """</span>
+    total = <span class="builtin">len</span>(judgments)
+    correct = <span class="builtin">sum</span>(<span class="builtin">1</span> <span class="keyword">for</span> j <span class="keyword">in</span> judgments <span class="keyword">if</span> j[<span class="string">"label"</span>] == j[<span class="string">"true"</span>])
+    accuracy = correct / total
+    
+    <span class="builtin">print</span>(<span class="string">f"判定者数: {total}"</span>)
+    <span class="builtin">print</span>(<span class="string">f"識別率: {accuracy:.1%}"</span>)
+    <span class="builtin">print</span>(<span class="string">f"判定: {'合格（人間と区別不能）' if accuracy <= 0.5 else '不合格'}"</span>)
+    <span class="keyword">return</span> accuracy
+
+<span class="comment"># 仮想的な実験データ</span>
+data = [
+    {<span class="string">"judge_id"</span>: <span class="builtin">1</span>, <span class="string">"label"</span>: <span class="string">"AI"</span>, <span class="string">"true"</span>: <span class="string">"AI"</span>},
+    {<span class="string">"judge_id"</span>: <span class="builtin">2</span>, <span class="string">"label"</span>: <span class="string">"human"</span>, <span class="string">"true"</span>: <span class="string">"AI"</span>},  <span class="comment"># 誤認</span>
+    {<span class="string">"judge_id"</span>: <span class="builtin">3</span>, <span class="string">"label"</span>: <span class="string">"human"</span>, <span class="string">"true"</span>: <span class="string">"AI"</span>},  <span class="comment"># 誤認</span>
+    {<span class="string">"judge_id"</span>: <span class="builtin">4</span>, <span class="string">"label"</span>: <span class="string">"AI"</span>, <span class="string">"true"</span>: <span class="string">"AI"</span>},
+    {<span class="string">"judge_id"</span>: <span class="builtin">5</span>, <span class="string">"label"</span>: <span class="string">"human"</span>, <span class="string">"true"</span>: <span class="string">"AI"</span>},  <span class="comment"># 誤認</span>
+]
+evaluate_turing_test(data)</div>
+
+    <div class="code-output">
+<div class="code-output-label">実行結果</div>
+判定者数: 5<br>
+識別率: 40.0%<br>
+判定: 合格（人間と区別不能）
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 フレーム問題のシミュレーション</h3>
+
+    <p>
+      フレーム問題を体感するため、副作用を全列挙するロボットの計算量を実感する Python シミュレーションです。
+    </p>
+
+    <div class="code-block">
+<span class="comment"># frame_problem_simulation.py</span>
+<span class="keyword">import</span> time
+
+<span class="keyword">def</span> <span class="builtin">all_possible_side_effects</span>(action, world_facts):
+    <span class="string">"""</span>
+<span class="string">    あるアクションについて、世界の全事実が変化するかどうかを</span>
+<span class="string">    一つひとつ検討する（フレーム問題のナイーブな実装）。</span>
+<span class="string">    """</span>
+    <span class="builtin">print</span>(<span class="string">f"アクション『{action}』の副作用を検討中..."</span>)
+    start = time.time()
+    considered = []
+    <span class="keyword">for</span> fact <span class="keyword">in</span> world_facts:
+        <span class="comment"># 各事実が変わるかをチェック（実際にはここに無限の計算）</span>
+        considered.append((fact, <span class="string">"unchanged"</span>))
+        <span class="keyword">if</span> time.time() - start > <span class="builtin">2.0</span>:
+            <span class="builtin">print</span>(<span class="string">f"  時間切れ！ 検討できた事実: {len(considered)}/{len(world_facts)}"</span>)
+            <span class="keyword">return</span> considered
+    <span class="keyword">return</span> considered
+
+<span class="comment"># 世界の事実が増えるほど計算量が爆発</span>
+world_small = [<span class="string">f"fact_{i}"</span> <span class="keyword">for</span> i <span class="keyword">in</span> <span class="builtin">range</span>(<span class="builtin">100</span>)]
+world_huge = [<span class="string">f"fact_{i}"</span> <span class="keyword">for</span> i <span class="keyword">in</span> <span class="builtin">range</span>(<span class="builtin">10_000_000</span>)]
+
+<span class="builtin">print</span>(<span class="string">"--- 小さい世界 ---"</span>)
+all_possible_side_effects(<span class="string">"台車を運ぶ"</span>, world_small)
+
+<span class="builtin">print</span>(<span class="string">"--- 大きい世界（現実に近い） ---"</span>)
+all_possible_side_effects(<span class="string">"台車を運ぶ"</span>, world_huge)</div>
+
+    <p>
+      現実の世界には、家具の位置、室温、電気の状態、隣人の活動、政治情勢...と無限の事実があります。すべて検討するのは原理的に不可能。フレーム問題はAIに『何を考えるか』を限定する能力が必要だと示します。
+    </p>
+
+    <h3 style="margin-top:36px;">§3.5 機械学習版の同じ問題</h3>
+
+    <p>
+      ハンズオンの締めくくりに、同じ症状診断問題を機械学習で実装してみます。ルールベース版との比較で、ML/DLの本質が見えてきます。
+    </p>
+
+    <div class="code-block">
+<span class="comment"># ml_diagnosis.py — 機械学習による症状診断</span>
+<span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeClassifier
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+
+<span class="comment"># 学習データ（症状ベクトル, 病気ラベル）</span>
+<span class="comment"># 症状: [発熱, 咳, のどの痛み, 頭痛, 関節痛, 発疹, かゆみ, 腹痛, 下痢]</span>
+X_train = np.array([
+    [<span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>],  <span class="comment"># 風邪</span>
+    [<span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>],  <span class="comment"># 風邪</span>
+    [<span class="builtin">1</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>],  <span class="comment"># インフル</span>
+    [<span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">0</span>, <span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>],  <span class="comment"># インフル</span>
+    [<span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">0</span>, <span class="builtin">0</span>],  <span class="comment"># アレルギー</span>
+    [<span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">1</span>, <span class="builtin">1</span>],  <span class="comment"># 胃腸炎</span>
+])
+y_train = [<span class="string">"風邪"</span>, <span class="string">"風邪"</span>, <span class="string">"インフル"</span>, <span class="string">"インフル"</span>, <span class="string">"アレルギー"</span>, <span class="string">"胃腸炎"</span>]
+
+clf = DecisionTreeClassifier()
+clf.fit(X_train, y_train)
+
+<span class="comment"># 推論：新しい症状から病気を推定</span>
+X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">1</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>, <span class="builtin">0</span>]])
+<span class="builtin">print</span>(<span class="string">f"予測: {clf.predict(X_test)[0]}"</span>)</div>
+
+    <div class="code-output">
+<div class="code-output-label">実行結果</div>
+予測: 風邪
+    </div>
+
+    <p>
+      ルールベース版（§3.1）と比較すると：(1) <strong>ルールを書かずに済む</strong>、(2) <strong>学習データから自動的にパターンを発見</strong>、(3) <strong>データに偏りがあると予測も偏る</strong>、という機械学習の特徴が見えます。これが第3次AIブームの本質です。
+    </p>
+
+
+    <!-- ============================================ -->
+    <!-- セクション4 シミュレーション -->
+    <!-- ============================================ -->
+    <div id="sec-simulation" class="section-divider">
+      <div class="sec-num">SECTION 4 / 5</div>
+      <h2>シミュレーション</h2>
+      <p>知能の定義論を体感する3つのインタラクティブ思考実験 — チューリングテスト風判定、中国語の部屋の操作、フレーム問題の計算量爆発。本やテキストでは伝わらない『AIに知能を与える困難さ』を直接体験する。</p>
+    </div>
+
+    <h3 style="margin-top:36px;">§4.1 シミュレーション1：チューリングテスト風判定</h3>
+
+    <div class="sim-box">
+      <h4>シミュレーション設定</h4>
+      <div class="sim-desc">
+      仮想実験。10人の判定者がそれぞれ ChatGPT-4 風と人間（プロライター）の文章を5分間読み、どちらがAIかを判定する。<br><br>
+      <strong>条件</strong>：判定者は『この文章はAIか人間か』をブラインドで判定する。識別率 50%（ランダム水準）に近ければチューリングテスト合格。
+      </div>
+      <div class="sim-output">
+判定者 #1: AI と判定 → 正解（AIの文章）<br>
+判定者 #2: 人間 と判定 → 誤認（AIの文章を人間と勘違い）<br>
+判定者 #3: 人間 と判定 → 誤認<br>
+判定者 #4: AI と判定 → 正解<br>
+判定者 #5: 人間 と判定 → 誤認<br>
+判定者 #6: AI と判定 → 正解<br>
+判定者 #7: 人間 と判定 → 誤認<br>
+判定者 #8: 人間 と判定 → 誤認<br>
+判定者 #9: AI と判定 → 正解<br>
+判定者 #10: 人間 と判定 → 誤認<br>
+<br>
+=================================================<br>
+識別率: 40.0% （AIをAIとして識別できた割合）<br>
+誤認率: 60.0% （AIを人間と勘違いした割合）<br>
+判定: <span style="color:#d4a017;font-weight:700;">『チューリングテスト合格』</span><br>
+=================================================<br>
+<br>
+※ 識別率 50% 以下 = ランダム判定と区別がつかない<br>
+※ 2024年研究：GPT-4 は人間と区別がつかないという報告複数<br>
+※ ただし『合格』が『心がある』を意味しないことに注意（中国語の部屋）
+      </div>
+    </div>
+
+    <p>このシミュレーションが示すように、現代の LLM は実質的にチューリングテストを通過しています。しかし、これだけで『AGIに到達した』とは多くの研究者が認めていません。表面的な振る舞いと内部の理解は別だというサールの問題提起が、改めて重要になっています。</p>
+
+    <h3 style="margin-top:36px;">§4.2 シミュレーション2：中国語の部屋の操作</h3>
+
+    <div class="figure">
+      <span class="figure-num">FIG. 1.9</span>
+      <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="720" height="280" fill="#faf7f2"/>
+        <text x="360" y="28" text-anchor="middle" font-family="serif" font-size="16" font-weight="700" fill="#0d1b2a">シミュレーション：あなたが中国語の部屋になる</text>
+        
+        <!-- ステップ1 -->
+        <rect x="20" y="60" width="160" height="200" fill="#fff8f2" stroke="#5a5f6a" stroke-width="1"/>
+        <text x="100" y="85" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">Step 1</text>
+        <text x="100" y="110" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#0d1b2a">入力受信</text>
+        <text x="100" y="140" text-anchor="middle" font-family="serif" font-size="20" fill="#b8431f">你叫什么名字？</text>
+        <text x="100" y="175" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">あなたはこれが何を</text>
+        <text x="100" y="190" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">意味するか</text>
+        <text x="100" y="205" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">わからない</text>
+        
+        <!-- ステップ2 -->
+        <rect x="200" y="60" width="160" height="200" fill="#fff8f2" stroke="#5a5f6a" stroke-width="1"/>
+        <text x="280" y="85" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">Step 2</text>
+        <text x="280" y="110" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#0d1b2a">ルール参照</text>
+        <text x="280" y="135" text-anchor="middle" font-family="monospace" font-size="9.5" fill="#5a5f6a">if 你叫什么名字 →</text>
+        <text x="280" y="150" text-anchor="middle" font-family="monospace" font-size="9.5" fill="#5a5f6a">output: 我叫{name}</text>
+        <text x="280" y="175" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">『名前を聞いている』</text>
+        <text x="280" y="190" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">という意味は</text>
+        <text x="280" y="205" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">理解していない</text>
+        
+        <!-- ステップ3 -->
+        <rect x="380" y="60" width="160" height="200" fill="#fff8f2" stroke="#5a5f6a" stroke-width="1"/>
+        <text x="460" y="85" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">Step 3</text>
+        <text x="460" y="110" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#0d1b2a">出力作成</text>
+        <text x="460" y="145" text-anchor="middle" font-family="serif" font-size="18" fill="#2e5577">我叫小明</text>
+        <text x="460" y="175" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">何も理解せず</text>
+        <text x="460" y="190" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">記号を組み合わせ</text>
+        <text x="460" y="205" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5a5f6a">ただけ</text>
+        
+        <!-- 観察者 -->
+        <rect x="560" y="60" width="140" height="200" fill="#eef2f5" stroke="#2e5577" stroke-width="1"/>
+        <text x="630" y="85" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#2e5577">外の観察者</text>
+        <text x="630" y="110" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#0d1b2a">『理解している</text>
+        <text x="630" y="125" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#0d1b2a">ように見える！』</text>
+        <text x="630" y="160" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">→ チューリング</text>
+        <text x="630" y="175" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">テスト合格</text>
+        <text x="630" y="210" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#b8431f">しかし...？</text>
+        
+        <!-- 矢印 -->
+        <line x1="183" y1="160" x2="200" y2="160" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#a4)"/>
+        <line x1="363" y1="160" x2="380" y2="160" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#a4)"/>
+        <line x1="543" y1="160" x2="560" y2="160" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#a4)"/>
+        <defs><marker id="a4" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 8 2.5, 0 5" fill="#0d1b2a"/></marker></defs>
+      </svg>
+      <p class="figure-caption">図1.9：中国語の部屋シミュレーション。あなたは中国語を知らないまま完璧に応答できる。外から見れば『理解している』だが、内部に意味理解は存在しない。これがサールの主張のすべて。</p>
+    </div>
+
+    <div class="sim-box">
+      <h4>あなたが中国語の部屋になる思考実験</h4>
+      <div class="sim-desc">
+      ステップ1：あなたは中国語の入力『你叫什么名字？』を受け取った。意味はまったくわからない。<br>
+      ステップ2：ルールブックを引く。<br>
+      <code style="background:#1a2538;padding:4px 8px;">If 你叫什么名字 → Reply with: 我叫 + 名前</code><br>
+      ステップ3：あなたは記号を組み合わせて『我叫小明』を出力する。<br><br>
+      <strong>外の中国人</strong>から見れば、あなたは流暢に応答した。チューリングテスト合格。<br>
+      <strong>しかし</strong>、あなた自身は『私の名前は小明です』と『言った』と知らない。意味の理解はない。<br><br>
+      これがサールの主張：『チューリングテストは合格できても、中の人（プログラム）に理解はない』。
+      </div>
+    </div>
+
+    <h3 style="margin-top:36px;">§4.3 シミュレーション3：フレーム問題の計算量爆発</h3>
+
+    <div class="figure">
+      <span class="figure-num">FIG. 1.10</span>
+      <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="720" height="320" fill="#faf7f2"/>
+        <text x="360" y="28" text-anchor="middle" font-family="serif" font-size="16" font-weight="700" fill="#0d1b2a">フレーム問題：考慮すべき事実の爆発</text>
+        
+        <!-- グラフ軸 -->
+        <line x1="80" y1="270" x2="660" y2="270" stroke="#0d1b2a" stroke-width="1.5"/>
+        <line x1="80" y1="60" x2="80" y2="270" stroke="#0d1b2a" stroke-width="1.5"/>
+        
+        <!-- 軸ラベル -->
+        <text x="370" y="295" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a">世界の事実の数</text>
+        <text x="35" y="170" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#5a5f6a" transform="rotate(-90 35 170)">計算時間</text>
+        
+        <!-- 目盛り -->
+        <text x="80" y="285" text-anchor="middle" font-family="monospace" font-size="9" fill="#5a5f6a">10</text>
+        <text x="225" y="285" text-anchor="middle" font-family="monospace" font-size="9" fill="#5a5f6a">100</text>
+        <text x="370" y="285" text-anchor="middle" font-family="monospace" font-size="9" fill="#5a5f6a">1,000</text>
+        <text x="515" y="285" text-anchor="middle" font-family="monospace" font-size="9" fill="#5a5f6a">10,000</text>
+        <text x="660" y="285" text-anchor="middle" font-family="monospace" font-size="9" fill="#5a5f6a">100,000</text>
+        
+        <text x="72" y="270" text-anchor="end" font-family="monospace" font-size="9" fill="#5a5f6a">0</text>
+        <text x="72" y="220" text-anchor="end" font-family="monospace" font-size="9" fill="#5a5f6a">1秒</text>
+        <text x="72" y="170" text-anchor="end" font-family="monospace" font-size="9" fill="#5a5f6a">1分</text>
+        <text x="72" y="120" text-anchor="end" font-family="monospace" font-size="9" fill="#5a5f6a">1時間</text>
+        <text x="72" y="70" text-anchor="end" font-family="monospace" font-size="9" fill="#5a5f6a">1日+</text>
+        
+        <!-- 線形成長（理想） -->
+        <line x1="80" y1="265" x2="660" y2="220" stroke="#2e5577" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="640" y="215" text-anchor="end" font-family="sans-serif" font-size="10.5" fill="#2e5577">人間（賢い絞り込み）</text>
+        
+        <!-- 指数成長（フレーム問題） -->
+        <path d="M 80 265 Q 200 260 300 240 Q 400 200 500 130 Q 580 80 660 60" stroke="#b8431f" stroke-width="2" fill="none"/>
+        <text x="500" y="115" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#b8431f">古典AI（全列挙）</text>
+        <text x="500" y="130" text-anchor="middle" font-family="sans-serif" font-size="9.5" font-style="italic" fill="#b8431f">→ 時間切れで爆発</text>
+      </svg>
+      <p class="figure-caption">図1.10：フレーム問題の計算量爆発。事実の数とともに、すべての副作用を検討するコストが急増する。人間は無意識に絞り込めるが、AIにはそれが難しい。</p>
+    </div>
+
+    <div class="sim-box">
+      <h4>10×100×1000×10000 のシミュレーション</h4>
+      <div class="sim-output">
+事実数 10: 全列挙時間 = 0.00001秒 ✓ 余裕<br>
+事実数 100: 全列挙時間 = 0.001秒 ✓ 余裕<br>
+事実数 1,000: 全列挙時間 = 0.1秒 ✓ なんとか<br>
+事実数 10,000: 全列挙時間 = 100秒 △ 限界<br>
+事実数 100,000: 全列挙時間 = 10,000秒 (約3時間) ✗ 実用不可<br>
+事実数 1,000,000 (現実世界): 全列挙時間 = 100,000,000秒 (約3年) ✗ 不可能<br>
+<br>
+=================================================<br>
+結論：現実世界では全列挙は原理的に不可能<br>
+→ AIは『何を考慮するか』を絞り込む必要がある<br>
+→ それを論理的に定式化することがフレーム問題の核心<br>
+→ 現代LLMは『暗黙の常識』を学習で獲得し回避（根本解決ではない）<br>
+=================================================
+      </div>
+    </div>
+
+
+    <!-- ============================================ -->
+    <!-- セクション5 問題 -->
+    <!-- ============================================ -->
+    <div id="sec-problems" class="section-divider">
+      <div class="sec-num">SECTION 5 / 5</div>
+      <h2>問題</h2>
+      <p>本章で学んだ概念群の理解度を測る20問。すべて G検定 出題傾向に沿った設問。各問に詳細な解説と関連トピックを付す。</p>
+    </div>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">問題 1.1 / ★</div>
+        <div class="p-q">『強いAI』と『弱いAI』という分類を1980年に提唱した哲学者は誰か。</div>
+        <div class="p-choices">
+          (0) アラン・チューリング<br>
+          (1) ジョン・サール<br>
+          (2) マービン・ミンスキー<br>
+          (3) ジョン・マッカーシー
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：1 (ジョン・サール)</div>
+          1980年の論文『Minds, Brains, and Programs』で『中国語の部屋』思考実験と共に提示。チューリング（1950・テスト）、ミンスキー（MIT AI Lab）、マッカーシー（AI命名）と区別。サール＝強いAI／弱いAIで覚える。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.2 / ★</div>
+        <div class="p-q">1956年に『Artificial Intelligence』という用語が初めて公式に使われた会議は。</div>
+        <div class="p-choices">
+          (0) ダートマス会議<br>
+          (1) ジュネーブ会議<br>
+          (2) スタンフォード会議<br>
+          (3) MIT AI Lab 設立会議
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：0 (ダートマス会議)</div>
+          1956年夏、米国ダートマス大学。マッカーシー、ミンスキー、シャノン、ローチェスター、ニューウェル、サイモンら10名が集結。マッカーシーが『Artificial Intelligence』を命名。AIの公式な誕生宣言。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.3 / ★</div>
+        <div class="p-q">チューリングテストの説明として最も適切なものは。</div>
+        <div class="p-choices">
+          (0) AIに将棋で人間に勝てるかを試す<br>
+          (1) 人間とAIが対話し、判定者がどちらか見分けられないかを試す<br>
+          (2) AIが画像を正しく分類できるかを試す<br>
+          (3) AIが論理パズルを解けるかを試す
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：1</div>
+          1950年チューリング『Computing Machinery and Intelligence』。元名『模倣ゲーム』。テキスト対話のみで人間判定者がAIと人間を区別できなければ知能ありと看做す。表面的振る舞いに着目した操作的定義。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.4 / ★★</div>
+        <div class="p-q">『シンギュラリティ』を2045年頃と予測したことで知られる人物は。</div>
+        <div class="p-choices">
+          (0) イーロン・マスク<br>
+          (1) ジェフリー・ヒントン<br>
+          (2) レイ・カーツワイル<br>
+          (3) ヤン・ルカン
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：2 (レイ・カーツワイル)</div>
+          発明家・未来学者、現Google技術ディレクター。2005年『The Singularity Is Near』で収穫加速の法則に基づき2045年シンギュラリティを予測。ヒントン＝深層学習の父、ルカン＝CNN、マスク＝OpenAI共同設立。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.5 / ★★</div>
+        <div class="p-q">特化型AI（ANI）と汎用AI（AGI）について正しい記述は。</div>
+        <div class="p-choices">
+          (0) AGIはANIの寄せ集めである<br>
+          (1) 現在実用化されているAIはほとんどANIで、AGIは未実現<br>
+          (2) 深層学習で容易にAGIが実現する<br>
+          (3) ANIとAGIは同義語
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：1</div>
+          ChatGPT・Claude・Gemini を含むすべての実用AIは ANI。AGI は研究目標であり実現時期は議論中。Microsoft 論文『Sparks of AGI』(2023) は GPT-4 を AGI の萌芽と評価したが、議論は決着していない。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.6 / ★★★</div>
+        <div class="p-q">フレーム問題とは何か。</div>
+        <div class="p-choices">
+          (0) 画像のフレーム検出問題<br>
+          (1) AIが状況の中で何を考慮すべきかを限定できない問題<br>
+          (2) ハードウェアの制約問題<br>
+          (3) 学習データのフレームレート問題
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：1</div>
+          1969年マッカーシー&ヘイズが提起。世界の無限の事実から『今関連する事実』を有限時間で取り出せない問題。デネットのロボット寓話で有名。現代LLMは『暗黙の常識』の学習で実務的に回避するが根本解決ではない。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.7 / ★★★</div>
+        <div class="p-q">シンボルグラウンディング問題が指す内容は。</div>
+        <div class="p-choices">
+          (0) 記号が現実世界の意味に結びつかない<br>
+          (1) シンボリックAIが性能で劣る<br>
+          (2) プログラム記号の文字化け<br>
+          (3) 記号処理が遅い
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：0</div>
+          1990年ハルナッド提起。AIが扱う記号と人間の体験的意味が結びついていない問題。マルチモーダルAI（CLIP、Gemini、GPT-4V、Claude 3+）や身体性AI（ロボティクス）はこの問題への工学的応答。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.8 / ★★</div>
+        <div class="p-q">『中国語の部屋』思考実験の主張として最も適切なものは。</div>
+        <div class="p-choices">
+          (0) 中国語は習得が難しい<br>
+          (1) 記号操作だけでは意味理解は生じない<br>
+          (2) コンピュータは中国語が苦手<br>
+          (3) 部屋の構造は計算に重要
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：1</div>
+          サール1980年の中核主張。『シンタックスはセマンティクスを生まない』を要約したテーゼ。チューリングテスト合格しても本物の理解はないという立場。これに対し『システム説』『ロボット説』『脳シミュレーション説』等の反論あり。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.9 / ★★</div>
+        <div class="p-q">『AI効果』とは何か。</div>
+        <div class="p-choices">
+          (0) AIが他のAIに影響を与える現象<br>
+          (1) AIがタスクを達成すると『それはAIではない』と再評価される現象<br>
+          (2) AIが学習で性能向上する効果<br>
+          (3) AI導入による経済効果
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：1</div>
+          人間が『知能』の定義を絶えず後退させる現象。チェス→『単なる探索』、囲碁→『単なる強化学習』、ChatGPT→『単なる確率予測』と再分類されてきた。知能の境界が常に未来に押しやられる傾向。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.10 / ★★</div>
+        <div class="p-q">AI / 機械学習 / 深層学習の関係として正しいものは。</div>
+        <div class="p-choices">
+          (0) AI ⊂ 機械学習 ⊂ 深層学習<br>
+          (1) AI ⊃ 機械学習 ⊃ 深層学習<br>
+          (2) AI = 機械学習 = 深層学習<br>
+          (3) これらは互いに独立
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：1</div>
+          AI が最広義、機械学習はその一手法、深層学習は機械学習のさらに一部。すべての DL は ML、すべての ML は AI だが逆は成立しない。ルールベース AI は機械学習ではないし、決定木は機械学習だが深層学習ではない。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.11 / ★★</div>
+        <div class="p-q">Russell & Norvigによる4象限の知能観で『チューリングテスト』が位置するのは。</div>
+        <div class="p-choices">
+          (0) 人間のように考える<br>
+          (1) 合理的に考える<br>
+          (2) 人間のように行動する<br>
+          (3) 合理的に行動する
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：2</div>
+          チューリングテストは表面的振る舞いを問うため『人間のように行動する』象限。一方、強化学習の AlphaGo は『合理的に行動する』、認知科学の SOAR/ACT-R は『人間のように考える』、定理証明は『合理的に考える』象限。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.12 / ★★★</div>
+        <div class="p-q">『中国語の部屋』への代表的な反論として、『部屋全体としてなら理解している』とする立場は。</div>
+        <div class="p-choices">
+          (0) システム説<br>
+          (1) ロボット説<br>
+          (2) 脳シミュレーション説<br>
+          (3) その他の存在説
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：0 (システム説)</div>
+          『中の人は理解しないが、人＋ルールブック＋紙＋部屋の全体として理解している』という反論。サールはこれを認めず再反論したが、機能主義哲学の主流的応答。ロボット説は身体性の追加、脳シミュレーション説は神経完全模倣を要請。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.13 / ★</div>
+        <div class="p-q">AIの定義について研究者の意見が完全に一致しない最大の理由は。</div>
+        <div class="p-choices">
+          (0) 技術進歩が速いから<br>
+          (1) 『知能』そのものに普遍的な合意がないから<br>
+          (2) 国により法律が違うから<br>
+          (3) 翻訳が困難だから
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：1</div>
+          知能を『問題解決能力』『学習能力』『推論能力』『創造性』『意識』のどれと結びつけるかで定義が変わる。心理学・哲学・神経科学・計算機科学で異なる立場が併存し、AI 効果が定義の境界を絶えず動かす。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.14 / ★★</div>
+        <div class="p-q">ELIZA（1966年、ワイゼンバウム）の中核技術は。</div>
+        <div class="p-choices">
+          (0) 深層学習<br>
+          (1) 強化学習<br>
+          (2) パターンマッチングと書き換えルール<br>
+          (3) 知識グラフ
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：2</div>
+          ELIZA は入力テキストを正規表現的パターンでマッチし、書き換えルールで応答を生成する。学習機能はない。当時の人々を驚かせた表層的『理解感』は『ELIZA効果』と呼ばれ、現代LLMでも同様の現象が見られる。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.15 / ★★★</div>
+        <div class="p-q">ASI（人工超知能）の説明として最も適切なものは。</div>
+        <div class="p-choices">
+          (0) 特定タスクで人間を超えるAI<br>
+          (1) 人間と同程度の柔軟性を持つAI<br>
+          (2) あらゆる領域で人間の知能を超えるAI<br>
+          (3) ハードウェア性能の高いAI
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：2</div>
+          ASI = Artificial Super Intelligence。あらゆる認知領域（科学的創造、社会的理解、戦略、芸術）で人間の知能を凌駕するAI。理論段階のみで、ニック・ボストロムの『Superintelligence』(2014) が代表的議論。AGI 達成後の自己改良で到達する可能性が議論される。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.16 / ★★</div>
+        <div class="p-q">フレーム問題に対する現代AIの現実的な対応として最も近いものは。</div>
+        <div class="p-choices">
+          (0) 完全に解決済み<br>
+          (1) 大規模学習データから『暗黙の常識』を獲得し回避（根本解決ではない）<br>
+          (2) フレーム問題は存在しない<br>
+          (3) 量子計算で解く
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：1</div>
+          LLM（GPT-4等）は無数のテキストから人間の常識的判断を統計的に学習し、実務上は妥当に振る舞う。しかしこれは根本解決ではなく、学習データにない状況や、複雑な常識推論が必要な場面では失敗する。完全な常識推論はAGIへの主要な障害。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.17 / ★★</div>
+        <div class="p-q">『弱いAI』の典型例として誤っているものは。</div>
+        <div class="p-choices">
+          (0) Google Translate<br>
+          (1) AlphaGo<br>
+          (2) 顔認証システム<br>
+          (3) 意識を持つ人工知能
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：3</div>
+          意識を持つAIは『強いAI』に分類される（しかも未実現）。他はすべて特定タスクで動作する弱いAI。Google Translate＝翻訳、AlphaGo＝囲碁、顔認証＝画像分類。これらは『理解』せず、統計的パターン処理で動く。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.18 / ★★★</div>
+        <div class="p-q">『シンタックスはセマンティクスを生まない』というテーゼで知られるのは。</div>
+        <div class="p-choices">
+          (0) チューリング<br>
+          (1) サール<br>
+          (2) ハルナッド<br>
+          (3) マッカーシー
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：1</div>
+          サールの中国語の部屋議論の核心テーゼ。記号操作（シンタックス）をいくら積み重ねても、意味理解（セマンティクス）には到達しないという主張。これに対しハルナッドのシンボルグラウンディング問題は、身体性・経験を介して意味を獲得する可能性を示唆。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.19 / ★★★</div>
+        <div class="p-q">2022年にGoogleエンジニアBlake Lemoineが『感覚を持つ』と主張して論争になったAIは。</div>
+        <div class="p-choices">
+          (0) GPT-3<br>
+          (1) Claude<br>
+          (2) LaMDA<br>
+          (3) AlphaFold
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：2 (LaMDA)</div>
+          Google の対話特化LLM。LemoineはLaMDAに『感覚（sentience）がある』と発言し、Googleから機密漏洩で停職・解雇された。サールの強いAI／弱いAI論争が現代に再燃した象徴的事件。ほぼ全研究者がLemoineの主張は誤りとする立場。
+        </div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">問題 1.20 / ★★★</div>
+        <div class="p-q">現代の生成AI（GPT-4等）がチューリングテストを実質的に通過したと多くの研究者が認めるが、それでも『AGI到達』とは多くが認めない。その主要な理由は。</div>
+        <div class="p-choices">
+          (0) 速度が遅すぎる<br>
+          (1) 表面的振る舞いの合格と本質的知能は別問題（中国語の部屋の問題）<br>
+          (2) 多言語対応が不十分<br>
+          (3) コストが高すぎる
+        </div>
+        <div class="p-answer">
+          <div class="p-answer-label">▷ 正解：1</div>
+          サール的批判が再び中心に。チューリングテストは『振る舞い』を測るが『理解』や『意識』は問わない。ハルシネーション、論理的整合性の限界、新規問題への一般化能力等の不足が指摘される。2024-2025年の推論モデル（o1/o3、DeepSeek R1）はこの懸念に部分的に応えるが議論は継続中。
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 章まとめ -->
+    <!-- ============================================ -->
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+
+    <ul style="font-size:14px;line-height:2;">
+      <li><strong>AIの定義は一意でない</strong>。Russell & Norvig の4象限（人間的／合理的 × 思考／行動）で整理されることが多い。</li>
+      <li><strong>強いAI／弱いAI</strong>はサール1980年の区別。現在実用化されているのはすべて弱いAI。</li>
+      <li><strong>ANI / AGI / ASI</strong>は能力範囲の階層。ANI（特化型）実用化済、AGI（人間レベル）未実現、ASI（超知能）理論段階。</li>
+      <li><strong>チューリングテスト</strong>（1950）は知能を操作的に測る最初の試み。表面的振る舞いに着目。</li>
+      <li><strong>中国語の部屋</strong>（サール1980）はチューリングテストの哲学的限界を突く思考実験。『シンタックスはセマンティクスを生まない』。</li>
+      <li><strong>フレーム問題</strong>（マッカーシー1969）は古典AIの根本的難題。何を考慮するかを限定する論理的困難さ。</li>
+      <li><strong>シンボルグラウンディング問題</strong>（ハルナッド1990）は記号と現実世界の意味の結びつきの欠落を指摘。マルチモーダルAIへの根拠。</li>
+      <li><strong>AI効果</strong>は、AIの達成タスクが次々と『知能ではない』と再分類される現象。</li>
+      <li><strong>AI ⊃ ML ⊃ DL</strong> の入れ子関係。生成AI、LLM はそれらの一部。</li>
     </ul>
 
     <div class="crossref">
-      <div class="crossref-title">→ 現代への接続</div>
-      LLM のハルシネーション（事実と異なる流暢な出力）は、サールの主張の現代版とも読めます。「言葉を意味と接地せず、統計的に最も尤もらしい次トークンを出している」だけだとすれば、中国語の部屋の現代版です。詳細は <a href="../advanced/index.html">応用編</a>。
-    </div>
-
-    <!-- ==================================================== §4 -->
-    <h2 id="sec4"><span class="label">§4 / STRONG vs WEAK</span>強いAI / 弱いAI</h2>
-
-    <p>
-      サールが導入したもう一つの重要概念が、<strong>強いAI / 弱いAI</strong> の区別です。
-    </p>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
-        <!-- Weak AI box -->
-        <rect x="40" y="40" width="280" height="200" fill="#faf7f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="180" y="68" text-anchor="middle" font-size="16" font-weight="bold" fill="#0d1b2a">弱いAI（Weak AI）</text>
-        <text x="180" y="92" text-anchor="middle" font-size="11" fill="#5a5f6a">特定タスクをこなす道具</text>
-        <line x1="60" y1="108" x2="300" y2="108" stroke="#c8c2b3"/>
-        <text x="180" y="132" text-anchor="middle" font-size="12" fill="#0d1b2a">• 翻訳できる</text>
-        <text x="180" y="152" text-anchor="middle" font-size="12" fill="#0d1b2a">• 画像を分類できる</text>
-        <text x="180" y="172" text-anchor="middle" font-size="12" fill="#0d1b2a">• 囲碁で勝てる</text>
-        <text x="180" y="192" text-anchor="middle" font-size="12" fill="#0d1b2a">• 文章を生成できる</text>
-        <text x="180" y="222" text-anchor="middle" font-size="11" fill="#b8431f" font-weight="bold">→ 内部の「理解」「意識」は不要</text>
-
-        <!-- Strong AI box -->
-        <rect x="360" y="40" width="280" height="200" fill="#0d1b2a"/>
-        <text x="500" y="68" text-anchor="middle" font-size="16" font-weight="bold" fill="#faf7f2">強いAI（Strong AI）</text>
-        <text x="500" y="92" text-anchor="middle" font-size="11" fill="#9aa0a8">人間と同等の心を持つ存在</text>
-        <line x1="380" y1="108" x2="620" y2="108" stroke="#3a4759"/>
-        <text x="500" y="132" text-anchor="middle" font-size="12" fill="#faf7f2">• 主観的経験を持つ</text>
-        <text x="500" y="152" text-anchor="middle" font-size="12" fill="#faf7f2">• 自己認識がある</text>
-        <text x="500" y="172" text-anchor="middle" font-size="12" fill="#faf7f2">• 意味を理解する</text>
-        <text x="500" y="192" text-anchor="middle" font-size="12" fill="#faf7f2">• 意図を持つ</text>
-        <text x="500" y="222" text-anchor="middle" font-size="11" fill="#d4a017" font-weight="bold">→ まだ実現されていない（議論中）</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 1.3</span> &nbsp;弱いAI と 強いAI の対比。現在実用化されているAIはすべて「弱いAI」のカテゴリ。強いAI は技術的にも哲学的にも未到達。</div>
-    </div>
-
-    <table class="spec">
-      <tr><th></th><th>弱いAI</th><th>強いAI</th></tr>
-      <tr><th>定義</th><td>特定の知的タスクをこなす道具</td><td>人間と同等の意識・主観・理解を持つ存在</td></tr>
-      <tr><th>実例</th><td>画像分類器、機械翻訳、ChatGPT、AlphaGo（全て）</td><td>未実現</td></tr>
-      <tr><th>必要なもの</th><td>うまく動くアルゴリズムとデータ</td><td>意識の科学的解明（未解明）</td></tr>
-      <tr><th>判定基準</th><td>タスク性能</td><td>判定不能（外から測れない）</td></tr>
-    </table>
-
-    <p>
-      <strong>重要な注意</strong>：「弱い」は性能の低さを意味しません。AlphaGo は囲碁で人間を超えていますが、弱いAI です。「弱い」とは「<strong>知能の一側面に特化している</strong>」という意味です。
-    </p>
-
-    <!-- ==================================================== §5 -->
-    <h2 id="sec5"><span class="label">§5 / ANI/AGI/ASI</span>ANI / AGI / ASI のスペクトル</h2>
-
-    <p>
-      「弱いAI / 強いAI」が哲学的区別なのに対し、<strong>ANI / AGI / ASI</strong> は能力範囲による区別です。スペクトルとして捉えるのが現代の見方です。
-    </p>
-
-    <div class="figure">
-      <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg">
-        <!-- Horizontal axis -->
-        <line x1="60" y1="200" x2="660" y2="200" stroke="#0d1b2a" stroke-width="2"/>
-        <polygon points="660,200 650,194 650,206" fill="#0d1b2a"/>
-        <text x="660" y="225" text-anchor="end" font-size="11" fill="#5a5f6a">能力範囲</text>
-
-        <!-- ANI -->
-        <rect x="80" y="100" width="180" height="100" fill="#fff8f2" stroke="#b8431f" stroke-width="2"/>
-        <text x="170" y="130" text-anchor="middle" font-size="14" font-weight="bold" fill="#b8431f">ANI</text>
-        <text x="170" y="148" text-anchor="middle" font-size="10" fill="#5a5f6a">Artificial Narrow</text>
-        <text x="170" y="161" text-anchor="middle" font-size="10" fill="#5a5f6a">Intelligence</text>
-        <text x="170" y="178" text-anchor="middle" font-size="12" fill="#0d1b2a" font-weight="bold">特化型</text>
-        <text x="170" y="252" text-anchor="middle" font-size="12" fill="#0d1b2a">画像認識、翻訳、</text>
-        <text x="170" y="268" text-anchor="middle" font-size="12" fill="#0d1b2a">囲碁、推薦システム</text>
-        <text x="170" y="295" text-anchor="middle" font-size="11" fill="#b8431f" font-weight="bold">✓ 実現済み</text>
-
-        <!-- AGI -->
-        <rect x="280" y="80" width="180" height="120" fill="#faf7f2" stroke="#d4a017" stroke-width="2"/>
-        <text x="370" y="110" text-anchor="middle" font-size="14" font-weight="bold" fill="#d4a017">AGI</text>
-        <text x="370" y="128" text-anchor="middle" font-size="10" fill="#5a5f6a">Artificial General</text>
-        <text x="370" y="141" text-anchor="middle" font-size="10" fill="#5a5f6a">Intelligence</text>
-        <text x="370" y="158" text-anchor="middle" font-size="12" fill="#0d1b2a" font-weight="bold">汎用</text>
-        <text x="370" y="178" text-anchor="middle" font-size="11" fill="#0d1b2a">人間と同等の柔軟性</text>
-        <text x="370" y="252" text-anchor="middle" font-size="12" fill="#0d1b2a">領域を超えて</text>
-        <text x="370" y="268" text-anchor="middle" font-size="12" fill="#0d1b2a">タスクを解ける</text>
-        <text x="370" y="295" text-anchor="middle" font-size="11" fill="#d4a017" font-weight="bold">⚠ 議論中（LLM が近い説）</text>
-
-        <!-- ASI -->
-        <rect x="480" y="60" width="180" height="140" fill="#0d1b2a"/>
-        <text x="570" y="92" text-anchor="middle" font-size="14" font-weight="bold" fill="#faf7f2">ASI</text>
-        <text x="570" y="110" text-anchor="middle" font-size="10" fill="#9aa0a8">Artificial Super</text>
-        <text x="570" y="123" text-anchor="middle" font-size="10" fill="#9aa0a8">Intelligence</text>
-        <text x="570" y="142" text-anchor="middle" font-size="12" fill="#faf7f2" font-weight="bold">超知能</text>
-        <text x="570" y="162" text-anchor="middle" font-size="11" fill="#faf7f2">人間を全領域で超える</text>
-        <text x="570" y="252" text-anchor="middle" font-size="12" fill="#0d1b2a">あらゆる科学・</text>
-        <text x="570" y="268" text-anchor="middle" font-size="12" fill="#0d1b2a">創造性で人間超</text>
-        <text x="570" y="295" text-anchor="middle" font-size="11" fill="#d4a017" font-weight="bold">✗ 仮説段階</text>
-
-        <!-- Time arrow at bottom -->
-        <text x="170" y="340" text-anchor="middle" font-size="11" fill="#5a5f6a" font-style="italic">2010年代から実用化</text>
-        <text x="370" y="340" text-anchor="middle" font-size="11" fill="#5a5f6a" font-style="italic">2020年代の中心論点</text>
-        <text x="570" y="340" text-anchor="middle" font-size="11" fill="#5a5f6a" font-style="italic">2040年代以降？</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 1.4</span> &nbsp;ANI／AGI／ASI のスペクトル。現在は ANI を全面実用化し、AGI の入口に立っているとされる。ASI は仮説段階。</div>
-    </div>
-
-    <h3>近年の論争：LLM は AGI か？</h3>
-    <p>
-      2023年以降、GPT-4 や Claude などの大規模言語モデルが、複数領域でタスクをこなすことから、「AGI に近づいた」という主張が出ています。
-    </p>
-    <ul>
-      <li><strong>肯定派</strong>：法律・医療・コーディングなど多領域でプロ並みのスコア。「Sparks of AGI」（Microsoft Research, 2023）</li>
-      <li><strong>否定派</strong>：計画立案・継続学習・身体性が欠落。記憶も持たない。AGI とは呼べない</li>
-      <li><strong>中立派</strong>：定義次第。「AGI」自体に合意がない</li>
-    </ul>
-
-    <!-- ==================================================== §6 -->
-    <h2 id="sec6"><span class="label">§6 / FRAME PROBLEM</span>フレーム問題</h2>
-
-    <p>
-      1969年、ジョン・マッカーシーとパトリック・ヘイズが提起した古典問題。<strong>「AIは、ある行動が世界の何を変え、何を変えないかを、どう知ればよいか」</strong> という問題です。
-    </p>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="arr3" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
-          </marker>
-        </defs>
-
-        <!-- Situation: Robot wants to take a battery out of a room with a bomb -->
-        <rect x="40" y="60" width="280" height="200" fill="#faf7f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="180" y="84" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">課題：部屋からバッテリーを取り出す</text>
-
-        <!-- Robot -->
-        <rect x="68" y="108" width="40" height="40" fill="#0d1b2a"/>
-        <text x="88" y="133" text-anchor="middle" font-size="10" fill="#faf7f2">R</text>
-
-        <!-- Battery on cart -->
-        <rect x="180" y="140" width="60" height="32" fill="#b8431f"/>
-        <text x="210" y="160" text-anchor="middle" font-size="10" fill="#faf7f2">電池</text>
-        <line x1="190" y1="172" x2="180" y2="190" stroke="#0d1b2a" stroke-width="1.5"/>
-        <line x1="230" y1="172" x2="240" y2="190" stroke="#0d1b2a" stroke-width="1.5"/>
-        <circle cx="185" cy="195" r="6" fill="none" stroke="#0d1b2a" stroke-width="1.5"/>
-        <circle cx="235" cy="195" r="6" fill="none" stroke="#0d1b2a" stroke-width="1.5"/>
-        <text x="210" y="218" text-anchor="middle" font-size="10" fill="#5a5f6a">台車</text>
-
-        <!-- Bomb on cart -->
-        <circle cx="210" cy="124" r="14" fill="#d4a017"/>
-        <text x="210" y="129" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">爆</text>
-
-        <text x="180" y="248" text-anchor="middle" font-size="11" fill="#b8431f">⚠ 台車を動かすと爆弾も動く！</text>
-
-        <!-- Considerations needed -->
-        <rect x="380" y="60" width="280" height="240" fill="#fff8f2" stroke="#d4a017" stroke-width="2"/>
-        <text x="520" y="84" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">考慮すべきこと（無限に近い）</text>
-
-        <text x="395" y="115" font-size="11" fill="#0d1b2a">□ 電池は台車に載っているか</text>
-        <text x="395" y="135" font-size="11" fill="#0d1b2a">□ 台車を動かすと爆弾も動くか</text>
-        <text x="395" y="155" font-size="11" fill="#0d1b2a">□ 爆弾が動くとどうなるか</text>
-        <text x="395" y="175" font-size="11" fill="#0d1b2a">□ 床は滑るか</text>
-        <text x="395" y="195" font-size="11" fill="#0d1b2a">□ 部屋の天井は崩れないか</text>
-        <text x="395" y="215" font-size="11" fill="#0d1b2a">□ 照明は消えないか</text>
-        <text x="395" y="235" font-size="11" fill="#0d1b2a">□ 隣の部屋の人は気づくか</text>
-        <text x="395" y="255" font-size="11" fill="#0d1b2a">□ そもそも今は何曜日か</text>
-        <text x="395" y="275" font-size="11" fill="#5a5f6a">...</text>
-
-        <text x="520" y="295" text-anchor="middle" font-size="11" fill="#b8431f" font-weight="bold">どこまで考えれば十分なのか？</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 1.5</span> &nbsp;フレーム問題のロボット例。単純な「電池を取る」というタスクでも、世界のどの側面を考慮し、どれを無視するかを有限ステップで決定することが論理的に困難。これがシンボリックAIの根本的限界。</div>
-    </div>
-
-    <h3>本質</h3>
-    <p>
-      フレーム問題は <strong>「実世界では考慮事項が事実上無限にある」</strong>ことから来ます。AIが「いま考えるべきことのフレーム（枠）」を有限ステップで選び出せない。
-    </p>
-    <p>
-      古典AIではこれが致命的な制約でした。現代の機械学習は、フレームを <strong>明示的にプログラムせず、データから学ぶ</strong> ことで部分的に回避していますが、根本的な解決には至っていません。LLM の文脈長の制限や、未知の状況での失敗は、フレーム問題の現代版とも言えます。
-    </p>
-
-    <!-- ==================================================== §7 -->
-    <h2 id="sec7"><span class="label">§7 / SYMBOL GROUNDING</span>シンボルグラウンディング問題</h2>
-
-    <p>
-      1990年、認知科学者スティーブン・ハルナッドが提起した問題。<strong>「記号は、どうやって実世界の意味に結びつくのか」</strong>。
-    </p>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
-        <!-- Symbolic level -->
-        <rect x="40" y="40" width="600" height="80" fill="#faf7f2" stroke="#0d1b2a"/>
-        <text x="60" y="68" font-size="13" font-weight="bold" fill="#0d1b2a">記号の世界</text>
-        <text x="60" y="88" font-size="11" fill="#5a5f6a">"リンゴ" / "apple" / "🍎" / [0.32, -0.18, 0.71, ...] (埋め込みベクトル)</text>
-        <text x="60" y="106" font-size="11" fill="#5a5f6a">辞書定義：「赤色のバラ科の果実...」</text>
-
-        <!-- World level -->
-        <rect x="40" y="180" width="600" height="80" fill="#fff8f2" stroke="#b8431f"/>
-        <text x="60" y="208" font-size="13" font-weight="bold" fill="#b8431f">実世界（現実）</text>
-        <circle cx="540" cy="220" r="20" fill="#b8431f"/>
-        <ellipse cx="540" cy="207" rx="6" ry="3" fill="#3a7d44"/>
-        <text x="60" y="228" font-size="11" fill="#0d1b2a">触れる、噛める、香る、種が落ちる、木に実る、地面に落ちる...</text>
-        <text x="60" y="248" font-size="11" fill="#0d1b2a">「リンゴ」という記号が指す物体の経験</text>
-
-        <!-- Gap -->
-        <text x="340" y="155" text-anchor="middle" font-size="13" fill="#b8431f" font-weight="bold">↕ どう結びつく？</text>
-        <line x1="340" y1="125" x2="340" y2="175" stroke="#b8431f" stroke-width="2" stroke-dasharray="5,3"/>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 1.6</span> &nbsp;シンボルグラウンディング問題。AIの内部にある「リンゴ」という記号（または埋め込みベクトル）は、実世界のリンゴという物体とどう結びついているか？ 結びついていないなら、AI は本当に「リンゴ」を理解しているのか？</div>
-    </div>
-
-    <h3>含意と現代への接続</h3>
-    <p>
-      LLM は膨大なテキストから学習しますが、<strong>身体を持たず</strong>、実世界の経験を持ちません。「リンゴ」というトークンは他の単語との共起パターンとしてのみ存在します。<strong>これがハルシネーションの一因</strong>と主張する研究者も多くいます。
-    </p>
-    <p>
-      近年の対応：
-    </p>
-    <ul>
-      <li><strong>マルチモーダル化</strong>：CLIP、GPT-4V、Gemini は画像と言語を結びつけることで、ある程度の接地を達成</li>
-      <li><strong>身体性AI</strong>：ロボティクスと言語モデルの融合（NVIDIA Eureka、Google RT-2）</li>
-      <li><strong>RAG</strong>：外部知識ベースで事実性を補強</li>
-    </ul>
-
-    <!-- ==================================================== §8 -->
-    <h2 id="sec8"><span class="label">§8 / NO FREE LUNCH</span>ノーフリーランチ定理</h2>
-
-    <p>
-      David Wolpert が1996年に証明した数学的定理。<strong>「すべての問題に対して平均的にみると、どの最適化アルゴリズムも同等の性能」</strong>。
-    </p>
-
-    <div class="formula">
-      ∀ アルゴA, アルゴB： 全問題上での平均性能(A) = 全問題上での平均性能(B)
-    </div>
-
-    <h3>含意</h3>
-    <ul>
-      <li><strong>万能のアルゴリズムは存在しない</strong>。深層学習も例外ではない</li>
-      <li>あるアルゴリズムが問題 X で優れているのは、<strong>その問題の構造に合った帰納バイアス</strong> を持っているから</li>
-      <li>新しい問題ではアルゴリズム選択が重要。常に同じものを使うのは合理的でない</li>
-      <li>「Attention Is All You Need」は <strong>「言語系列の問題には」</strong> という前提付きの主張</li>
-    </ul>
-
-    <p>
-      この定理が示すのは、<strong>「AI研究は問題ごとの帰納バイアス設計の科学」</strong> という見方です。CNN は画像の局所性、Transformer は系列の柔軟な依存関係、GNN はグラフ構造、というように、それぞれが特定構造に最適化されています。
-    </p>
-
-    <!-- ==================================================== §9 -->
-    <h2 id="sec9"><span class="label">§9 / SINGULARITY</span>シンギュラリティの議論</h2>
-
-    <p>
-      未来学者 <strong>レイ・カーツワイル</strong> が2005年の著書 <em>『The Singularity Is Near』</em>（邦題『ポスト・ヒューマン誕生』）で提示した予測。<strong>「2045年頃に技術的特異点（Technological Singularity）が到来し、それ以降は人間に予測不能な速度で技術が進歩する」</strong>。
-    </p>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg">
-        <!-- Axes -->
-        <line x1="60" y1="280" x2="660" y2="280" stroke="#0d1b2a" stroke-width="2"/>
-        <line x1="60" y1="40" x2="60" y2="280" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="660" y="298" text-anchor="end" font-size="11" fill="#5a5f6a">時間 (年)</text>
-        <text x="60" y="32" text-anchor="middle" font-size="11" fill="#5a5f6a">知能</text>
-
-        <!-- Time labels -->
-        <text x="120" y="298" font-size="10" fill="#5a5f6a">1950</text>
-        <text x="220" y="298" font-size="10" fill="#5a5f6a">1990</text>
-        <text x="320" y="298" font-size="10" fill="#5a5f6a">2010</text>
-        <text x="420" y="298" font-size="10" fill="#5a5f6a">2025</text>
-        <text x="520" y="298" font-size="10" fill="#5a5f6a">2045</text>
-        <text x="620" y="298" font-size="10" fill="#5a5f6a">2050+</text>
-
-        <!-- Human intelligence baseline -->
-        <line x1="60" y1="180" x2="660" y2="180" stroke="#5a5f6a" stroke-width="1" stroke-dasharray="3,3"/>
-        <text x="660" y="174" text-anchor="end" font-size="10" fill="#5a5f6a">人間の知能水準</text>
-
-        <!-- AI capability curve (exponential) -->
-        <path d="M 120 270 Q 220 268 320 250 Q 420 220 480 180 Q 510 150 520 100 L 522 80 L 524 60 L 526 50 L 528 45" stroke="#b8431f" stroke-width="3" fill="none"/>
-
-        <!-- Singularity point -->
-        <circle cx="520" cy="100" r="6" fill="#d4a017"/>
-        <line x1="520" y1="40" x2="520" y2="290" stroke="#d4a017" stroke-width="1" stroke-dasharray="4,3"/>
-        <text x="520" y="80" text-anchor="middle" font-size="11" fill="#d4a017" font-weight="bold">特異点</text>
-        <text x="520" y="22" text-anchor="middle" font-size="12" fill="#d4a017" font-weight="bold">SINGULARITY</text>
-
-        <!-- Annotation -->
-        <text x="200" y="220" font-size="11" fill="#0d1b2a">弱いAI</text>
-        <text x="370" y="200" font-size="11" fill="#0d1b2a">AGI 接近</text>
-        <text x="600" y="60" font-size="11" fill="#b8431f" font-weight="bold">ASI →</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 1.7</span> &nbsp;カーツワイルのシンギュラリティ仮説。AIの能力は指数関数的に伸び、ある時点で人間を超え、その後は人間が予測できない速度で進化するという見立て。あくまで仮説であり、現実がこのように進むかは不明。</div>
-    </div>
-
-    <h3>反論</h3>
-    <ul>
-      <li>指数的進歩は永遠に続かない（物理的・経済的制約）</li>
-      <li>過去の予測（核融合、量子コンピュータ）は常に「20年後」のままだった</li>
-      <li>「知能」が単一の量として表せるかが疑問</li>
-      <li>議論の経済的インセンティブ（恐怖は売れる）</li>
-    </ul>
-
-    <p>
-      G検定では、<strong>シンギュラリティ自体の真偽を問わず、概念とその提唱者を知っていることが求められます</strong>。社会的影響として「労働の変容」「教育の変革」「倫理問題」と結びつけて議論されます。
-    </p>
-
-    <!-- ==================================================== §10 -->
-    <h2 id="sec10"><span class="label">§10 / SUMMARY</span>章のまとめ</h2>
-
-    <h3>本章で覚えるべき10の核概念</h3>
-    <table class="spec">
-      <tr><th>1</th><td><strong>チューリングテスト</strong> — 機能主義に基づく知能の判定。テキスト応答で人間と区別不能なら知的</td></tr>
-      <tr><th>2</th><td><strong>中国語の部屋</strong> — サールの反論。シンタックス操作は意味を生まない</td></tr>
-      <tr><th>3</th><td><strong>強いAI / 弱いAI</strong> — 哲学的区別。意識を持つかどうか</td></tr>
-      <tr><th>4</th><td><strong>ANI / AGI / ASI</strong> — 能力範囲の区別。現在は ANI のみ実現</td></tr>
-      <tr><th>5</th><td><strong>フレーム問題</strong> — 何を考慮し何を無視するかを有限ステップで決定できない</td></tr>
-      <tr><th>6</th><td><strong>シンボルグラウンディング問題</strong> — 記号が実世界の意味に結びつかない</td></tr>
-      <tr><th>7</th><td><strong>ノーフリーランチ定理</strong> — 万能のアルゴリズムは存在しない。帰納バイアスが必要</td></tr>
-      <tr><th>8</th><td><strong>シンギュラリティ</strong> — カーツワイルの2045年予測。技術的特異点</td></tr>
-      <tr><th>9</th><td><strong>身体性認知</strong> — 知能は身体と環境の相互作用から立ち上がるという立場</td></tr>
-      <tr><th>10</th><td><strong>LLM 時代の議論</strong> — これらの古典問題は現代生成AIにも姿を変えて現れる</td></tr>
-    </table>
-
-    <!-- ==================================================== Test -->
-    <div class="test-yourself" id="test">
-      <h3>章末問題：理解度確認</h3>
-      <p style="color:#d4d0c5;margin:0 0 12px;">以下に <strong>口頭で答えられる</strong> なら、本章は卒業です。詰まったら該当節に戻ってください。</p>
-      <ol>
-        <li>チューリングテストの基本構造を、3つの登場人物（A・B・C）を使って説明できるか</li>
-        <li>「中国語の部屋」がチューリングテストへの反論として何を主張しているか</li>
-        <li>「強いAI」と「AGI」は同じか違うか。違うとすればどう違うか</li>
-        <li>「弱いAI」と「ANI」はほぼ同義だが、用語のニュアンスの違いを説明できるか</li>
-        <li>フレーム問題が古典AIの限界を象徴するのはなぜか</li>
-        <li>シンボルグラウンディング問題が、現代のLLMのハルシネーションとどう繋がるか</li>
-        <li>ノーフリーランチ定理が示すのは何か。「だから深層学習はダメ」と読むのは正しいか</li>
-        <li>シンギュラリティ予測の核は何か。批判の論点を2つ以上挙げられるか</li>
-        <li>マルチモーダルAI（CLIP、GPT-4V）が、シンボルグラウンディング問題に対してどんな部分的解を与えているか</li>
-        <li>「LLM は AGI に近い」という主張に対して、肯定派と否定派それぞれの論点を1つずつ挙げられるか</li>
-      </ol>
+      <div class="crossref-title">次章へ</div>
+      <strong>章2 AIの歴史</strong>では、本章で見た概念群が時代ごとにどう実装され、なぜ二度の『AIの冬』が訪れたか、そして第3次・第4次AIブームの正体を見ていきます。
     </div>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="index.html">← 章一覧</a></div>
-  <div><span class="ch-label">次の章</span><br><span class="ch-title">章2: AIの歴史と冬の時代</span></div>
-  <div><a href="02-history.html">章2へ進む →</a></div>
+  <div><a href="index.html">← 目次へ</a></div>
+  <div><span class="ch-label">Chapter 1 of 12</span><br><span class="ch-title">AIとは何か</span></div>
+  <div><a href="02-history.html">章2: AIの歴史 →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand">
-      <div class="colophon">Swallow<br><em>AI Academy</em></div>
-      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">Swallow AI Academy</div>
+      <p>Independent, editorial-style learning for AI / ML certifications. 2026.</p>
     </div>
-    <div><h6>G検定 学習動線</h6><ul>
-      <li><a href="../../../certifications/g-kentei.html">概要</a></li>
-      <li><a href="index.html">基本</a></li>
-      <li><a href="../advanced/index.html">応用</a></li>
-      <li><a href="../../../quiz.html?topic=g-kentei">問題演習</a></li>
-    </ul></div>
-    <div><h6>関連章</h6><ul>
-      <li><a href="01-what-is-ai.html"><strong>章1（このページ）</strong></a></li>
-      <li><a href="02-history.html">章2: AIの歴史</a></li>
-      <li><a href="03-linear-algebra.html">章3: 線形代数</a></li>
-    </ul></div>
-  </div>
-  <div class="foot-bottom">
-    <div>© 2026 Swallow AI Academy · Independent Project</div>
-    <div>Built on GitHub Pages · No tracking · No ads</div>
+    <div class="footer-cols">
+      <div>
+        <h6>LEARN</h6>
+        <a href="../../../certifications/g-kentei.html">G検定</a>
+        <a href="../../../certifications/e-shikaku.html">E資格</a>
+        <a href="../../../certifications/tokei-kentei.html">統計検定</a>
+      </div>
+      <div>
+        <h6>PRACTICE</h6>
+        <a href="../../../quiz.html">問題演習</a>
+      </div>
+      <div>
+        <h6>SHORTCUTS</h6>
+        <a href="javascript:void(0)" onclick="Swallow.Search.open()">⌘K 検索</a>
+        <a href="javascript:void(0)" onclick="Swallow.ThemeManager.toggle()">テーマ切替</a>
+      </div>
+    </div>
   </div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

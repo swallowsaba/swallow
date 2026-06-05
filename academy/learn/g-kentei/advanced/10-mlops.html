@@ -3,240 +3,536 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章10 MLOps と社会実装 — G検定 応用 — Swallow AI Academy</title>
-<meta name="description" content="G検定応用 章10：MLOps。PoCから本番運用、データ・モデル管理、CI/CD、モニタリング、ドリフト検出、A/B テスト。">
+<title>章22 MLOps — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章22：MLOps、データパイプライン、Feature Store、MLflow、CI/CD、モデルデプロイ、モニタリング、Drift検知、A/B Test、Canary、SageMaker、Vertex AI、Kubeflowを5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="../basics/index.html">基本</a>
-      <a href="index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.10</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="../basics/index.html">基本</a><a href="index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章10</div>
-    <h1>応用 章10 — MLOps と社会実装<span class="en">MLOps</span></h1>
-    <p class="standfirst">「モデルを Jupyter で動かす」と「24時間稼働する本番システム」は別世界。MLOps はその間を埋める <strong>運用工学</strong>。データ・モデルバージョニング、モニタリング、ドリフト検出、CI/CD、デプロイ戦略を体系的に押さえます。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章22</div>
+    <h1>章22 — MLOps<span class="en">Chapter 22 — Machine Learning Operations</span></h1>
+    <p class="standfirst">『モデルが学習できた』はゴールではなく、スタート地点。本番環境で<strong>安定動作させ続ける</strong>には、データパイプライン、モデル管理、デプロイ、モニタリング、再学習自動化が必須です。本章では<strong>MLOps</strong>の全体像から、<strong>MLflow</strong>、<strong>CI/CD</strong>、<strong>KServe/SageMaker</strong>、<strong>Drift検知</strong>、<strong>A/B Testing</strong>、<strong>Canary Release</strong>までを5部構成で扱います。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="09-agent.html">← 章9: エージェント</a></div>
-  <div><span class="ch-label">応用 Chapter 10 of 12</span><br><span class="ch-title">MLOps</span></div>
-  <div><a href="11-ethics.html">章11: AI 倫理 →</a></div>
+  <div><a href="09-agent.html">← 章21: AI Agent</a></div>
+  <div><span class="ch-label">Chapter 22 of 24 · 応用編</span><br><span class="ch-title">MLOps</span></div>
+  <div><a href="11-ethics.html">章23: AI倫理 →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
-    <h6>章10 目次</h6>
-    <a href="#why">§1 MLOps とは</a>
-    <a href="#lifecycle">§2 ML ライフサイクル</a>
-    <a href="#versioning">§3 データ・モデルのバージョン管理</a>
-    <a href="#cicd">§4 CI/CD for ML</a>
-    <a href="#deploy">§5 デプロイ戦略</a>
-    <a href="#monitor">§6 モニタリング</a>
-    <a href="#drift">§7 ドリフト検出</a>
-    <a href="#tools">§8 主要ツール</a>
-    <a href="#summary">§9 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <h6>章22 目次</h6>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
-    <h2 id="why"><span class="label">§1 / WHY</span>MLOps とは</h2>
-    <p>「<strong>機械学習モデルを本番環境で継続的に動かす</strong>」ための工学的アプローチ。DevOps の概念を機械学習に拡張。</p>
-    <p>古典的ソフトウェアとの違い：</p>
-    <ul>
-      <li><strong>コード+データ+モデルの3つを管理</strong>（DevOpsはコードのみ）</li>
-      <li>挙動がデータに依存 → <strong>データの変化で性能が劣化</strong>（ドリフト）</li>
-      <li>再現性が難しい（乱数・GPU・データ更新）</li>
-      <li>本番デプロイ後も継続的に <strong>再学習</strong> が必要</li>
-    </ul>
-    <p>Gartner の指摘：「<strong>機械学習プロジェクトの 80% は本番化に失敗</strong>」。MLOps はこの失敗を減らす実践。</p>
+    <div class="article-eyebrow">G-KENTEI · ADVANCED · CHAPTER 22</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">モデルを動かし続ける。<br>MLの本番運用学。</h2>
+    <p class="article-lede">研究と本番運用は別物。研究では『精度が高ければ良い』ですが、本番では『常に安定動作・障害時の迅速復旧・データドリフト対応・複数モデルA/B比較・再現性保証』が求められます。MLOps は DevOps を MLに拡張した分野で、企業導入の成功率を左右する重要技術です。</p>
 
-    <h2 id="lifecycle"><span class="label">§2 / CYCLE</span>ML ライフサイクル</h2>
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>MLOps概要、データパイプライン、Feature Store、モデル管理、CI/CD、デプロイ、モニタリング、Drift、A/B、Canaryの10節。</p>
+    </div>
+
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 MLOps とは — ML × DevOps</h3>
+    <p>機械学習システムのライフサイクル（データ収集→学習→評価→デプロイ→運用→再学習）全体を自動化・標準化する分野。Google『Hidden Technical Debt in ML Systems』(2015) が原点的論文。</p>
 
     <div class="figure">
-      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 22.1 ／ MLOPS LIFECYCLE</text>
+        
+        <g transform="translate(60,70)">
+          <rect x="0" y="0" width="100" height="50" fill="#fff8f2" stroke="#0d1b2a"/>
+          <text x="50" y="22" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">データ収集</text>
+          <text x="50" y="40" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">DB/S3/Kafka</text>
+        </g>
+        
+        <g transform="translate(180,70)">
+          <rect x="0" y="0" width="100" height="50" fill="#b8431f" fill-opacity="0.2" stroke="#0d1b2a"/>
+          <text x="50" y="22" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">学習</text>
+          <text x="50" y="40" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">MLflow/W&amp;B</text>
+        </g>
+        
+        <g transform="translate(300,70)">
+          <rect x="0" y="0" width="100" height="50" fill="#d4a017" fill-opacity="0.3" stroke="#0d1b2a"/>
+          <text x="50" y="22" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">評価</text>
+          <text x="50" y="40" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">CV/Test</text>
+        </g>
+        
+        <g transform="translate(420,70)">
+          <rect x="0" y="0" width="100" height="50" fill="#2e5577" fill-opacity="0.3" stroke="#0d1b2a"/>
+          <text x="50" y="22" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">デプロイ</text>
+          <text x="50" y="40" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">KServe/SageMaker</text>
+        </g>
+        
+        <g transform="translate(540,70)">
+          <rect x="0" y="0" width="120" height="50" fill="#b8431f" fill-opacity="0.4" stroke="#0d1b2a"/>
+          <text x="60" y="22" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">運用・監視</text>
+          <text x="60" y="40" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">Prometheus/Evidently</text>
+        </g>
+        
+        <line x1="160" y1="95" x2="180" y2="95" stroke="#0d1b2a" marker-end="url(#arr2)"/>
+        <line x1="280" y1="95" x2="300" y2="95" stroke="#0d1b2a" marker-end="url(#arr2)"/>
+        <line x1="400" y1="95" x2="420" y2="95" stroke="#0d1b2a" marker-end="url(#arr2)"/>
+        <line x1="520" y1="95" x2="540" y2="95" stroke="#0d1b2a" marker-end="url(#arr2)"/>
+        
+        <path d="M 600 130 Q 600 200 300 200 Q 110 200 110 130" stroke="#b8431f" stroke-width="2" fill="none" stroke-dasharray="6 3" marker-end="url(#arr2)"/>
+        <text x="350" y="225" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#b8431f">Drift検知 → 再学習</text>
+        
         <defs>
-          <marker id="mlops-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#0d1b2a"/>
           </marker>
         </defs>
-        <ellipse cx="380" cy="140" rx="280" ry="100" fill="none" stroke="#5a5f6a" stroke-dasharray="4,3"/>
-
-        <!-- Stages around the loop -->
-        <rect x="100" y="50" width="120" height="50" fill="#b8431f"/>
-        <text x="160" y="80" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">1. データ収集</text>
-
-        <rect x="270" y="30" width="120" height="50" fill="#d4a017"/>
-        <text x="330" y="60" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">2. EDA・前処理</text>
-
-        <rect x="440" y="50" width="120" height="50" fill="#3a7d44"/>
-        <text x="500" y="80" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">3. モデル学習</text>
-
-        <rect x="540" y="170" width="120" height="50" fill="#2e5577"/>
-        <text x="600" y="200" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">4. 評価・テスト</text>
-
-        <rect x="370" y="220" width="120" height="50" fill="#0d1b2a"/>
-        <text x="430" y="250" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">5. デプロイ</text>
-
-        <rect x="200" y="220" width="120" height="50" fill="#2e5577"/>
-        <text x="260" y="250" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">6. モニタリング</text>
-
-        <rect x="100" y="170" width="120" height="50" fill="#b8431f"/>
-        <text x="160" y="200" text-anchor="middle" font-size="11" font-weight="bold" fill="#faf7f2">7. 再学習</text>
-
-        <!-- Arrows showing loop -->
-        <text x="380" y="160" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">ML ライフサイクル（継続的ループ）</text>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 10.1</span> MLライフサイクル。データ→前処理→学習→評価→デプロイ→監視→再学習という<strong>継続的なループ</strong>。各段階で MLOps の異なる工夫が必要。</div>
+      <div class="figure-caption"><span class="figure-num">FIG 22.1</span> ／ MLOps ライフサイクル。データ収集→学習→評価→デプロイ→運用、Drift検知時に自動再学習でループ。</div>
     </div>
 
-    <h2 id="versioning"><span class="label">§3 / VERSION</span>データ・モデルのバージョン管理</h2>
+    <h3 style="margin-top:36px;">§1.2 データパイプライン</h3>
+    <p>本番データをETL（Extract Transform Load）で学習可能な形式に。Apache Airflow（DAG ベースのスケジューラ）、dbt（SQL中心）、Dagster、Prefect 等。データ品質チェック（Great Expectations）も統合。</p>
+
+    <h3 style="margin-top:36px;">§1.3 Feature Store</h3>
+    <p>特徴量を再利用可能に管理。同じ特徴量を学習時とサービング時で<strong>一貫して提供</strong>（Training-Serving Skew防止）。Feast（OSS）、Tecton、AWS SageMaker Feature Store、Vertex AI Feature Store。</p>
+
+    <h3 style="margin-top:36px;">§1.4 モデル管理（Model Registry）</h3>
+    <p>学習したモデルをバージョン管理。MLflow Model Registry、Weights & Biases、Neptune、DVC + Git-LFS。実験追跡（パラメータ、メトリクス、アーティファクト）と統合。</p>
+
+    <h3 style="margin-top:36px;">§1.5 CI/CD for ML（CT 含む）</h3>
     <table class="spec">
-      <tr><th>コード</th><td>Git。当然の標準</td></tr>
-      <tr><th>データ</th><td><strong>DVC</strong>（Data Version Control）、<strong>LakeFS</strong>、<strong>Delta Lake</strong>。Git と連携し、大容量データのバージョン管理</td></tr>
-      <tr><th>モデル</th><td><strong>MLflow Model Registry</strong>、<strong>Weights &amp; Biases Artifacts</strong>、<strong>SageMaker Model Registry</strong></td></tr>
-      <tr><th>実験</th><td><strong>MLflow Tracking</strong>、<strong>W&amp;B</strong>、<strong>Neptune</strong>、<strong>Comet</strong>。ハイパラ・メトリクス・成果物を記録</td></tr>
-      <tr><th>特徴量</th><td><strong>Feature Store</strong>：Feast、Tecton、SageMaker Feature Store。訓練と推論で同じ特徴量計算を保証</td></tr>
+      <tr><th>段階</th><th>内容</th></tr>
+      <tr><td>CI（Continuous Integration）</td><td>コード・データ変更で自動テスト</td></tr>
+      <tr><td>CD（Continuous Deployment）</td><td>合格モデルを自動本番デプロイ</td></tr>
+      <tr><td>CT（Continuous Training）</td><td>Drift検知やスケジュールで自動再学習</td></tr>
     </table>
 
-    <h2 id="cicd"><span class="label">§4 / CICD</span>CI/CD for ML</h2>
-    <p>従来の CI/CD（コードのテスト・自動デプロイ）に加えて：</p>
-    <ul>
-      <li><strong>CT（Continuous Training）</strong>：データ更新時に自動再学習</li>
-      <li><strong>CV（Continuous Validation）</strong>：データ品質・モデル性能の自動テスト</li>
-      <li><strong>CM（Continuous Monitoring）</strong>：本番モデルの継続監視</li>
-    </ul>
-    <p>ツール：GitHub Actions、GitLab CI、Jenkins、Argo Workflows、Kubeflow Pipelines、Vertex AI Pipelines、SageMaker Pipelines。</p>
-
-    <h2 id="deploy"><span class="label">§5 / DEPLOY</span>デプロイ戦略</h2>
+    <h3 style="margin-top:36px;">§1.6 モデルデプロイ方式</h3>
     <table class="spec">
-      <tr><th>Blue-Green</th><td>新旧2環境を並行稼働、スイッチで切替。ロールバック容易</td></tr>
-      <tr><th>Canary</th><td>新モデルに少数のトラフィックを徐々に流す</td></tr>
-      <tr><th>Shadow</th><td>本番トラフィックを新モデルにも流すが、応答は使わない（ログ比較のみ）</td></tr>
-      <tr><th>A/B テスト</th><td>2モデルを統計的に比較。ビジネスKPI で判定</td></tr>
-      <tr><th>Multi-armed Bandit</th><td>探索と活用のバランスで最適モデルに自動切替</td></tr>
+      <tr><th>方式</th><th>用途</th><th>例</th></tr>
+      <tr><td>REST API</td><td>同期推論</td><td>FastAPI, Flask, KServe</td></tr>
+      <tr><td>gRPC</td><td>低レイテンシ</td><td>Triton Inference Server</td></tr>
+      <tr><td>バッチ推論</td><td>非同期、大量</td><td>Spark, AWS Batch</td></tr>
+      <tr><td>Edge推論</td><td>デバイス上</td><td>TF Lite, ONNX, Core ML</td></tr>
+      <tr><td>Serverless</td><td>低頻度、トラフィック変動大</td><td>AWS Lambda, Cloud Functions</td></tr>
     </table>
-    <p>推論基盤：<strong>TorchServe</strong>、<strong>TensorFlow Serving</strong>、<strong>Triton Inference Server</strong>（NVIDIA）、<strong>KServe</strong>（Kubernetes）、<strong>Ray Serve</strong>。LLM 推論は <strong>vLLM</strong>、<strong>TGI</strong>、<strong>SGLang</strong>。</p>
 
-    <h2 id="monitor"><span class="label">§6 / MONITOR</span>モニタリング</h2>
-    <p>機械学習特有の監視項目：</p>
-    <ul>
-      <li><strong>性能メトリクス</strong>：accuracy、F1、AUC（正解ラベルがある場合）</li>
-      <li><strong>プロキシメトリクス</strong>：CTR、コンバージョン率、ユーザ反応</li>
-      <li><strong>レイテンシ・スループット</strong>：応答時間、QPS</li>
-      <li><strong>データ品質</strong>：欠損、外れ値、スキーマ違反</li>
-      <li><strong>予測分布</strong>：予測確率のヒストグラム</li>
-    </ul>
-    <p>ツール：Prometheus + Grafana（汎用）、<strong>Evidently AI</strong>（ML特化）、<strong>WhyLabs</strong>、<strong>Arize</strong>、<strong>Fiddler</strong>。</p>
-
-    <h2 id="drift"><span class="label">§7 / DRIFT</span>ドリフト検出</h2>
-    <p>機械学習特有の劣化要因。3種類：</p>
-    <table class="spec">
-      <tr><th>Data Drift（共変量シフト）</th><td>入力 X の分布が変わる。例：ユーザ層の変化</td></tr>
-      <tr><th>Concept Drift</th><td>X と y の関係が変わる。例：COVID 前後の消費行動</td></tr>
-      <tr><th>Label Drift</th><td>y の分布が変わる。例：流行病の発生率上昇</td></tr>
-    </table>
-    <p>検出方法：</p>
-    <ul>
-      <li><strong>統計的検定</strong>：KS テスト、χ²、PSI（Population Stability Index）</li>
-      <li><strong>分布距離</strong>：KL ダイバージェンス、JS、Wasserstein</li>
-      <li><strong>埋め込みベース</strong>：再学習データと運用データの埋め込み分布比較</li>
+    <h3 style="margin-top:36px;">§1.7 モニタリング — 本番運用の眼</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>システムメトリクス</strong>：レイテンシ、スループット、エラー率、CPU/GPU使用率 (Prometheus + Grafana)</li>
+      <li><strong>モデルメトリクス</strong>：予測分布、入力分布、ラベル分布、精度（ラベル取得後）</li>
+      <li><strong>Data Drift</strong>：本番入力分布の変化（Evidently、Alibi Detect）</li>
+      <li><strong>Concept Drift</strong>：入力-出力関係の変化</li>
     </ul>
 
-    <h2 id="tools"><span class="label">§8 / TOOLS</span>主要 MLOps ツール一覧</h2>
-    <table class="spec">
-      <tr><th>実験追跡</th><td>MLflow, Weights &amp; Biases, Neptune, Comet</td></tr>
-      <tr><th>データ管理</th><td>DVC, LakeFS, Delta Lake</td></tr>
-      <tr><th>パイプライン</th><td>Kubeflow, Airflow, Prefect, Dagster, Metaflow</td></tr>
-      <tr><th>特徴量ストア</th><td>Feast, Tecton, SageMaker Feature Store</td></tr>
-      <tr><th>推論サービング</th><td>TorchServe, TF Serving, Triton, KServe, Ray Serve, vLLM, BentoML</td></tr>
-      <tr><th>監視・観測</th><td>Evidently AI, WhyLabs, Arize, Fiddler</td></tr>
-      <tr><th>マネージド統合</th><td>SageMaker (AWS), Vertex AI (GCP), Azure ML, Databricks</td></tr>
-    </table>
-
-    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
-    <table class="spec">
-      <tr><th>1</th><td>MLOps = DevOps + データ + モデルの3軸管理</td></tr>
-      <tr><th>2</th><td>「ML プロジェクトの 80% は本番化失敗」を減らす実践</td></tr>
-      <tr><th>3</th><td>データバージョニング：DVC、LakeFS</td></tr>
-      <tr><th>4</th><td>実験追跡：MLflow、W&amp;B</td></tr>
-      <tr><th>5</th><td>Feature Store で訓練・推論の特徴量一貫性</td></tr>
-      <tr><th>6</th><td>CI/CD + CT (Continuous Training)</td></tr>
-      <tr><th>7</th><td>デプロイ戦略：Blue-Green、Canary、Shadow、A/B</td></tr>
-      <tr><th>8</th><td>モニタリング：性能・データ品質・予測分布</td></tr>
-      <tr><th>9</th><td>ドリフト3種：Data、Concept、Label</td></tr>
-      <tr><th>10</th><td>マネージド：SageMaker、Vertex AI、Azure ML、Databricks</td></tr>
-    </table>
-
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>MLOps が DevOps と異なる3つの点</li>
-        <li>データ・モデル・実験のバージョン管理にそれぞれ使われるツール</li>
-        <li>Feature Store が解決する問題</li>
-        <li>Blue-Green と Canary の違い</li>
-        <li>Shadow Deployment の用途</li>
-        <li>A/B テストで気をつけるべき統計的観点</li>
-        <li>Data Drift と Concept Drift の違い</li>
-        <li>PSI（Population Stability Index）が監視する対象</li>
-        <li>LLM の推論サービングで使われる代表ツール（vLLM, TGI）</li>
-        <li>「ML プロジェクトの 80% が本番化失敗」と言われる主な原因</li>
-      </ol>
+    <h3 style="margin-top:36px;">§1.8 Drift検知</h3>
+    <div class="formula">
+<strong>Data Drift（共変量シフト）</strong>　 P(X) が変化、 P(Y|X) は不変<br>
+<strong>Concept Drift</strong>　 P(Y|X) が変化（季節要因、トレンド）<br>
+<strong>Label Drift</strong>　 P(Y) が変化（クラス頻度変動）<br><br>
+検知手法：KS検定、PSI（Population Stability Index）、Wasserstein距離、Mahalanobis距離
     </div>
+
+    <h3 style="margin-top:36px;">§1.9 A/B Testing と Multi-Armed Bandit</h3>
+    <p><strong>A/B Test</strong>：本番トラフィックを2モデルに均等に分割、統計検定で勝者決定。<strong>Multi-Armed Bandit</strong>：効果の高いモデルに動的にトラフィックを偏らせる（Thompson Sampling、UCB）。</p>
+
+    <h3 style="margin-top:36px;">§1.10 Canary Release と Shadow Mode</h3>
+    <p><strong>Canary</strong>：新モデルを少量トラフィック（1〜5%）に流して安全確認、段階的に拡大。<strong>Shadow Mode</strong>：本番トラフィックを両方に流し、新モデルは予測のみ記録（影響なし）、安全に評価。</p>
+
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>SageMaker、Vertex AI、Kubeflow、MLflow vs DVC の4節。</p>
+    </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 AWS SageMaker</h3>
+    <p>マネージドML プラットフォーム。Studio (IDE)、Training Jobs（マネージドGPU）、Endpoints（推論）、Model Registry、Feature Store、Pipelines（ワークフロー）、Clarify（Bias検知）、Ground Truth（ラベル付け）の統合。エンタープライズで広く採用。</p>
+
+    <h3 style="margin-top:36px;">§2.2 Google Vertex AI</h3>
+    <p>Google Cloud の統合MLプラットフォーム。Workbench（Jupyter）、Custom Training、Online Prediction、Model Registry、Pipelines（Kubeflow ベース）、Feature Store、Model Monitoring、Explainable AI 統合。Gemini モデル等への直接アクセスも。</p>
+
+    <h3 style="margin-top:36px;">§2.3 Kubeflow — Kubernetes 上の ML</h3>
+    <p>Kubernetes ネイティブの OSS MLプラットフォーム。Notebooks、Pipelines（DAG）、KServe（推論サーバ）、Training Operator（分散学習）、Katib（HPO）。クラウド非依存、マルチクラウドや on-premise で人気。</p>
+
+    <h3 style="margin-top:36px;">§2.4 ツール比較</h3>
+    <table class="spec">
+      <tr><th>ツール</th><th>主な役割</th></tr>
+      <tr><td>MLflow</td><td>実験追跡、モデル管理、デプロイ統合（OSS、ベンダー非依存）</td></tr>
+      <tr><td>Weights & Biases</td><td>実験追跡＋ハイパラ最適化（クラウド SaaS）</td></tr>
+      <tr><td>DVC</td><td>データ・モデルバージョン管理（Git拡張）</td></tr>
+      <tr><td>Neptune</td><td>実験追跡（SaaS）</td></tr>
+      <tr><td>ClearML</td><td>パイプライン＋実験追跡（OSS）</td></tr>
+    </table>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>MLflow、FastAPI、Docker、Prometheus、Drift検出の5節。</p>
+    </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 MLflow で実験追跡</h3>
+    <div class="code-block">
+<span class="keyword">import</span> mlflow
+<span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> RandomForestClassifier
+
+mlflow.set_experiment(<span class="string">"churn_prediction"</span>)
+
+<span class="keyword">with</span> mlflow.start_run():
+    params = {<span class="string">"n_estimators"</span>: <span class="builtin">100</span>, <span class="string">"max_depth"</span>: <span class="builtin">10</span>}
+    mlflow.log_params(params)
+    
+    model = RandomForestClassifier(**params).fit(X_tr, y_tr)
+    acc = model.score(X_te, y_te)
+    mlflow.log_metric(<span class="string">"accuracy"</span>, acc)
+    
+    mlflow.sklearn.log_model(model, <span class="string">"model"</span>)
+    
+<span class="comment"># 後で UI（http://localhost:5000）で全実験を比較</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 FastAPI で推論サーバ</h3>
+    <div class="code-block">
+<span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI
+<span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel
+<span class="keyword">import</span> mlflow.pyfunc
+
+app = FastAPI()
+model = mlflow.pyfunc.load_model(<span class="string">"models:/churn/Production"</span>)
+
+<span class="keyword">class</span> Features(BaseModel):
+    age: <span class="builtin">int</span>
+    tenure: <span class="builtin">float</span>
+    monthly_charges: <span class="builtin">float</span>
+
+<span class="keyword">@app</span>.post(<span class="string">"/predict"</span>)
+<span class="keyword">def</span> predict(f: Features):
+    pred = model.predict([[f.age, f.tenure, f.monthly_charges]])
+    <span class="keyword">return</span> {<span class="string">"churn_probability"</span>: <span class="builtin">float</span>(pred[<span class="builtin">0</span>])}
+
+<span class="comment"># uvicorn main:app --reload で起動</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 Docker でコンテナ化</h3>
+    <div class="code-block">
+<span class="comment"># Dockerfile</span>
+FROM python:<span class="builtin">3.11</span>-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+EXPOSE <span class="builtin">8000</span>
+CMD [<span class="string">"uvicorn"</span>, <span class="string">"main:app"</span>, <span class="string">"--host"</span>, <span class="string">"0.0.0.0"</span>]
+
+<span class="comment"># ビルドと実行</span>
+$ docker build -t churn-api .
+$ docker run -p <span class="builtin">8000</span>:<span class="builtin">8000</span> churn-api
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 Prometheus メトリクス</h3>
+    <div class="code-block">
+<span class="keyword">from</span> prometheus_client <span class="keyword">import</span> Counter, Histogram, start_http_server
+
+REQUEST_COUNT = Counter(<span class="string">'ml_requests_total'</span>, <span class="string">'Total requests'</span>)
+LATENCY = Histogram(<span class="string">'ml_latency_seconds'</span>, <span class="string">'Inference latency'</span>)
+
+<span class="keyword">@app</span>.post(<span class="string">"/predict"</span>)
+<span class="keyword">def</span> predict(f: Features):
+    REQUEST_COUNT.inc()
+    <span class="keyword">with</span> LATENCY.time():
+        pred = model.predict([[...]])
+    <span class="keyword">return</span> {<span class="string">"pred"</span>: pred}
+
+<span class="comment"># Grafana でダッシュボード化</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 Drift検出（Evidently）</h3>
+    <div class="code-block">
+<span class="keyword">from</span> evidently.report <span class="keyword">import</span> Report
+<span class="keyword">from</span> evidently.metric_preset <span class="keyword">import</span> DataDriftPreset
+
+ref = pd.read_csv(<span class="string">"reference.csv"</span>)　 <span class="comment"># 学習時データ</span>
+cur = pd.read_csv(<span class="string">"production.csv"</span>) <span class="comment"># 本番データ</span>
+
+report = Report(metrics=[DataDriftPreset()])
+report.run(reference_data=ref, current_data=cur)
+report.save_html(<span class="string">"drift_report.html"</span>)
+
+<span class="comment"># PSI &gt; 0.2 で警告、各特徴量の分布変化を可視化</span>
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>モデルバージョン管理、Drift検知、Canary の3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — モデルバージョン管理</h4>
+      <div class="sim-output">
+&gt;&gt; MLflow Model Registry での運用例<br>
+<br>
+[2025-01-15] v1 (acc 0.84) → Staging<br>
+[2025-01-20] v2 (acc 0.87) → Staging<br>
+[2025-01-22] v2 → Production（v1は Archive へ）<br>
+[2025-02-10] Data Drift 検知（PSI=0.34）<br>
+[2025-02-12] v3（再学習、acc 0.89）→ Staging<br>
+[2025-02-15] Canary 5% v3 → 24時間問題なし<br>
+[2025-02-16] Canary 50% v3 → 24時間OK<br>
+[2025-02-17] v3 → Production（v2は Archive）<br>
+<br>
+&gt;&gt; 各バージョンは MLflow で再現可能<br>
+&gt;&gt; ロールバックも 1コマンドで可能
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — Drift 検知の実際</h4>
+      <div class="sim-output">
+&gt;&gt; e-commerce 推薦モデル、6ヶ月運用<br>
+<br>
+Month 1: PSI=0.05, acc=87% （安定）<br>
+Month 2: PSI=0.08, acc=86%<br>
+Month 3: PSI=0.13, acc=84% （Holiday Season）<br>
+Month 4: PSI=0.21, acc=80% ← Drift閾値超過<br>
+Month 5: 再学習実施 → acc=88% に回復<br>
+Month 6: PSI=0.06, acc=87% （安定）<br>
+<br>
+&gt;&gt; Drift検知 → 再学習トリガで性能維持<br>
+&gt;&gt; PSI 0.2 が一般的な警告閾値
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — Canary Release</h4>
+      <div class="sim-output">
+&gt;&gt; 新モデル v3 を Canary でロールアウト<br>
+<br>
+[Hour  0] v3: 1% traffic, v2: 99%<br>
+&nbsp;&nbsp;v3 latency=120ms, v2=125ms, v3 error=0.1%<br>
+[Hour  6] v3: 5%<br>
+[Hour 24] v3: 25%, パフォーマンス問題なし<br>
+[Hour 48] v3: 50%<br>
+[Hour 72] v3: 100% (Full rollout)<br>
+<br>
+&gt;&gt; 異常時は数秒で v2 にロールバック可能<br>
+&gt;&gt; Kubernetes/Istio で実装、自動化
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">MLOps の主な対象は。</div>
+        <div class="p-choices">① モデル学習のみ　 ② MLシステムのライフサイクル全体（データ・学習・デプロイ・運用・再学習）の自動化　 ③ データ収集のみ　 ④ 評価のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Google『Hidden Technical Debt in ML Systems』が原点。コードはML全体の5〜10%、残りは MLOps インフラ。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">Feature Store の主な目的は。</div>
+        <div class="p-choices">① モデル管理　 ② 学習時とサービング時で一貫した特徴量提供、Training-Serving Skew 防止　 ③ パラメータ追跡　 ④ ログ収集</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Feast、Tecton、SageMaker Feature Store、Vertex AI Feature Store。特徴量の再利用と一貫性が核心。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">MLflow の主機能でないのは。</div>
+        <div class="p-choices">① 実験追跡（パラメータ、メトリクス）　 ② モデルレジストリ　 ③ プロジェクトパッケージング　 ④ データベース管理</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> MLflow は Tracking、Models、Projects、Registry の4機能。データベース自体は管理対象外。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">CI/CD for ML で『CT』が表すのは。</div>
+        <div class="p-choices">① Continuous Testing　 ② Continuous Training（Drift時等の自動再学習）　 ③ Continuous Tracking　 ④ Continuous Tagging</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> MLOps の独自概念。CI（コードテスト）+ CD（デプロイ）+ CT（再学習）の3要素。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">Data Drift と Concept Drift の違いは。</div>
+        <div class="p-choices">① 同じ　 ② Data: P(X) 変化、Concept: P(Y|X) 変化　 ③ Drift は無関係　 ④ ラベルだけ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Data Drift = 入力分布の変化（季節、ユーザー層変化）、Concept Drift = 入力→出力関係の変化（嗜好変化）。両方を監視。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">PSI（Population Stability Index）の用途は。</div>
+        <div class="p-choices">① 学習　 ② 分布変化の定量化（金融でDrift検知に標準）。0.2以上で警告　 ③ パラメータ調整　 ④ ノイズ生成</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> PSI = Σ (P_new - P_ref) · ln(P_new / P_ref)。0.1未満=安定、0.1-0.2=やや変化、0.2以上=大きな変化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">Canary Release の特徴は。</div>
+        <div class="p-choices">① 全トラフィック切替　 ② 新モデルに少量トラフィック（1〜5%）流して段階的に拡大、異常時即ロールバック　 ③ シャドウ　 ④ A/B均等</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Kubernetes/Istio で実装。安全なロールアウトの定番。Blue-Green デプロイより漸進的。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">Shadow Mode の特徴は。</div>
+        <div class="p-choices">① ユーザに新モデル結果を返す　 ② 本番トラフィックを両方に流すが新モデル結果は記録のみ、ユーザ影響ゼロで評価　 ③ ランダム　 ④ オフライン</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 本番影響なしで新モデルを評価。レイテンシ、メモリ、予測一致度を確認。Canary 前の安全策。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">Kubeflow の主な特徴は。</div>
+        <div class="p-choices">① クラウド専用　 ② Kubernetesネイティブの OSS、MLパイプライン・分散学習・推論を統合　 ③ AWS専用　 ④ Python専用</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Kubeflow Pipelines, KServe, Training Operator, Katib (HPO)。クラウド非依存、on-premise でも動く。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">AWS SageMaker の主機能でないのは。</div>
+        <div class="p-choices">① マネージドGPU 学習　 ② Endpoint デプロイ　 ③ Feature Store　 ④ 仮想通貨マイニング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> SageMaker は ML特化マネージドサービス。Studio、Training Jobs、Endpoints、Pipelines、Clarify（Bias）、Ground Truth など。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">バッチ推論が向くケースは。</div>
+        <div class="p-choices">① リアルタイム必要　 ② 大量データを定期的に処理（夜間バッチ、レポート、推薦の事前計算）　 ③ チャット　 ④ ストリーミング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Spark、AWS Batch、Airflow で実装。リアルタイム性不要・GPUコスト最適化が目的。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">Edge推論の典型ユースケースは。</div>
+        <div class="p-choices">① 大型サーバ　 ② スマホ・IoT・自動車などデバイス上で推論（TF Lite、ONNX、Core ML）　 ③ クラウドのみ　 ④ オフライン学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> プライバシー・遅延・通信コストの観点でデバイス上推論が重要。量子化（INT8）、Pruning でモデル軽量化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">A/B Test と Multi-Armed Bandit の違いは。</div>
+        <div class="p-choices">① 同じ　 ② A/B は固定割合、MAB は性能高いモデルに動的に割合増加（Thompson Sampling、UCB）　 ③ A/B はクラスタリング　 ④ MAB は強化学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> MAB は Exploration-Exploitation を強化学習的に最適化。総合報酬最大化、A/B Test の発展形。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">Triton Inference Server の特徴は。</div>
+        <div class="p-choices">① 学習専用　 ② NVIDIA製、高性能推論サーバ、複数フレームワーク（PyTorch、TF、ONNX）・複数モデルを統合提供　 ③ DB　 ④ コンパイラ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> gRPC/HTTP両対応、Dynamic Batching、Model Concurrency でGPUを最大活用。SageMaker・Vertex でも統合。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">DVC の主機能は。</div>
+        <div class="p-choices">① ニューラルネット　 ② データ・モデルのバージョン管理（Gitに統合、大ファイルは外部ストレージへ）　 ③ 学習　 ④ クラウド管理</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Data Version Control。Git は大ファイルが苦手、DVC はメタ情報のみGit、本体はS3/GCS等。再現性確保に重要。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">Apache Airflow の主機能は。</div>
+        <div class="p-choices">① ML特化　 ② 汎用ワークフロー（DAG）スケジューラ、データパイプライン・ML パイプライン用　 ③ DBMS　 ④ Webサーバ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Python で DAG を記述、スケジュール実行。MLOps では学習・推論・前処理を構成。代替に Dagster、Prefect、Argo。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">Training-Serving Skew の典型原因は。</div>
+        <div class="p-choices">① 学習データが少ない　 ② 学習時とサービング時で特徴量の計算ロジックが微妙に異なる　 ③ パラメータ多い　 ④ ランダム性</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 例：学習で平均値補完、サービングで0補完。Feature Store で計算ロジック共有することで防止。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">本番運用で監視すべきメトリクスでないのは。</div>
+        <div class="p-choices">① レイテンシ p99　 ② スループット（QPS）　 ③ エラー率　 ④ 開発者のメール頻度</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> システム面（レイテンシ、QPS、エラー率、CPU/GPU）とモデル面（予測分布、入力分布、Drift）を監視。Prometheus + Grafana が標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">Model Card の役割は。</div>
+        <div class="p-choices">① 学習データ　 ② モデルの用途、性能、制限、Bias情報を文書化（Google Mitchell 2019）。透明性確保　 ③ 名刺　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> モデルの『使用説明書』。EU AI Act、ISO/IEC 23053 などで義務化方向。Hugging Face で標準化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">『MLOps Maturity』レベル0の特徴は。</div>
+        <div class="p-choices">① 完全自動化　 ② 全て手動、学習・デプロイ・モニタリング無連携　 ③ Drift自動再学習　 ④ MLOpsなし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Google MLOps Maturity Model。Level 0=Manual、Level 1=ML Pipeline自動化、Level 2=CI/CD/CT完全統合。多くの企業はLevel 0-1。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">MLOpsライフサイクル、データパイプライン、Feature Store、モデル管理、CI/CD/CT、デプロイ方式、モニタリング、Drift検知（Data/Concept/Label）、A/B/MAB、Canary/Shadowを扱いました。応用でSageMaker、Vertex AI、Kubeflow、ツール比較。ハンズオンでMLflow、FastAPI、Docker、Prometheus、Evidently。シミュレーションでバージョン管理、Drift検知、Canaryロールアウト。次章でAI倫理（バイアス、Fairness、説明可能性、プライバシー、AI Safety、Alignment）に進みます。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="09-agent.html">← 章9</a></div>
-  <div><a href="11-ethics.html">章11: AI 倫理 →</a></div>
+  <div><a href="09-agent.html">← 章21: AI Agent</a></div>
+  <div><span class="ch-label">Chapter 22 of 24 · 応用編</span><br><span class="ch-title">MLOps</span></div>
+  <div><a href="11-ethics.html">章23: AI倫理 →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a><a href="../../../certifications/tokei.html">統計検定</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

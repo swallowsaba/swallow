@@ -3,251 +3,573 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章8 RAG — G検定 応用 — Swallow AI Academy</title>
-<meta name="description" content="G検定応用 章8：Retrieval-Augmented Generation。埋め込み検索、ベクトルDB、ハイブリッド検索、re-ranking、ハルシネーション対策。">
+<title>章20 RAG — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章20：RAG（検索拡張生成）の基礎から、Embedding、Vector DB、Chunking、Rerank、GraphRAG、HyDE、Self-RAG、評価指標まで5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="../basics/index.html">基本</a>
-      <a href="index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.8</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="../basics/index.html">基本</a><a href="index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章8</div>
-    <h1>応用 章8 — RAG<span class="en">Retrieval-Augmented Generation</span></h1>
-    <p class="standfirst">「LLM は最新情報を知らない」「社内文書を知らない」「ハルシネーションする」── これらの問題に対する <strong>実務上の決定打</strong> が RAG。検索 → 拡張 → 生成という3段階で、LLM を <strong>外部知識ベース</strong> に接続します。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章20</div>
+    <h1>章20 — RAG（検索拡張生成）<span class="en">Chapter 20 — Retrieval-Augmented Generation</span></h1>
+    <p class="standfirst">LLM には 3 つの致命的弱点があります。<strong>(1) 知識カットオフ</strong>（学習データ以降の情報を知らない）、<strong>(2) 幻覚</strong>（自信を持って嘘を生成）、<strong>(3) 私的データ非対応</strong>。これらをすべて解決するのが <strong>RAG</strong>（Retrieval-Augmented Generation）── 質問を受けたら関連文書を検索して LLM に渡す、という単純で強力なアプローチ。本章では <strong>Embedding</strong>、<strong>Vector DB</strong>、<strong>Chunking</strong>、<strong>Reranking</strong>、<strong>GraphRAG</strong>、<strong>HyDE</strong> までを5部構成で扱います。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="07-rl.html">← 章7: RL</a></div>
-  <div><span class="ch-label">応用 Chapter 8 of 12</span><br><span class="ch-title">RAG</span></div>
-  <div><a href="09-agent.html">章9: エージェント →</a></div>
+  <div><a href="07-rl.html">← 章19: 強化学習</a></div>
+  <div><span class="ch-label">Chapter 20 · 応用編</span><br><span class="ch-title">RAG</span></div>
+  <div><a href="09-agent.html">章21: AI Agent →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
-    <h6>章8 目次</h6>
-    <a href="#why">§1 なぜ RAG が必要か</a>
-    <a href="#embed">§2 埋め込みベクトル</a>
-    <a href="#vectordb">§3 ベクトルデータベース</a>
-    <a href="#flow">§4 RAG の3段階</a>
-    <a href="#chunking">§5 チャンク化と前処理</a>
-    <a href="#hybrid">§6 ハイブリッド検索</a>
-    <a href="#rerank">§7 再ランキング</a>
-    <a href="#advanced">§8 高度な RAG パターン</a>
-    <a href="#summary">§9 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <h6>章20 目次</h6>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
-    <h2 id="why"><span class="label">§1 / WHY</span>なぜ RAG が必要か</h2>
-    <p>LLM の根本的な制約：</p>
-    <ul>
-      <li><strong>知識のカットオフ</strong>：訓練データの時点までしか知らない</li>
-      <li><strong>非公開情報</strong>：社内文書・個人ファイル等は知らない</li>
-      <li><strong>ハルシネーション</strong>：知らないことも自信満々に答える</li>
-      <li><strong>再学習コスト</strong>：知識を更新するには莫大な計算資源</li>
-    </ul>
-    <p>RAG の解決策：「<strong>必要な情報をその場で検索して、プロンプトに添えて LLM に渡す</strong>」。実装容易・効果絶大で、2023-2025年の LLM 応用の中心。</p>
+    <div class="article-eyebrow">G-KENTEI · ADVANCED · CHAPTER 20</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">幻覚を、検索で消す。<br>LLMに、最新知識を。</h2>
+    <p class="article-lede">RAG の原理は驚くほど単純：<strong>『質問が来たら、関連する文書を検索 → 文書と質問を一緒に LLM に渡す → 答えさせる』</strong>。これだけで、ファインチューニング不要・最新情報対応・自社データ活用が可能に。Lewis et al. 2020 で提案されて以来、エンタープライズ AI の事実上の標準となりました。</p>
 
-    <h2 id="embed"><span class="label">§2 / EMBED</span>埋め込みベクトル</h2>
-    <p>テキストを <strong>意味を保った高次元ベクトル</strong> に変換。意味が近い文は近いベクトルになる。</p>
-    <div class="formula">embed("猫が魚を食べる") ≈ embed("ネコがサカナを食べる")</div>
-    <p>代表的なモデル：</p>
-    <ul>
-      <li><strong>text-embedding-3</strong>（OpenAI）</li>
-      <li><strong>BGE</strong>（中国 BAAI、オープン強力）</li>
-      <li><strong>E5</strong>（Microsoft）</li>
-      <li><strong>multilingual-e5</strong>（多言語）</li>
-      <li><strong>Cohere Embed</strong></li>
-      <li><strong>Sentence-BERT</strong>（古典）</li>
-    </ul>
-    <p>類似度は <strong>コサイン類似度</strong>（基本編 章3）：</p>
-    <div class="formula">cos_sim(q, d) = (q · d) / (||q|| · ||d||)</div>
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>RAGの動機、Embedding、Vector DB、Retrieval、Chunking、Rerank、Generation、評価、Hybrid、RAG vs Fine-tuneの10節。</p>
+    </div>
 
-    <h2 id="vectordb"><span class="label">§3 / VECTORDB</span>ベクトルデータベース</h2>
-    <p>埋め込みベクトルを格納し、<strong>近似最近傍探索（ANN）</strong> で高速検索するDB。</p>
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 RAGの動機 — LLMの3つの弱点</h3>
     <table class="spec">
-      <tr><th>Pinecone</th><td>マネージド SaaS。実務で人気</td></tr>
-      <tr><th>Weaviate</th><td>オープンソース、グラフ機能あり</td></tr>
-      <tr><th>Chroma</th><td>軽量・開発者向け</td></tr>
-      <tr><th>Qdrant</th><td>高性能 Rust 実装、オープン</td></tr>
-      <tr><th>Milvus</th><td>大規模分散</td></tr>
-      <tr><th>FAISS</th><td>Meta、ライブラリ（DBではない）。HNSW, IVF 等のアルゴリズム提供</td></tr>
-      <tr><th>pgvector</th><td>PostgreSQL の拡張。既存 DB に統合</td></tr>
+      <tr><th>問題</th><th>RAGによる解決</th></tr>
+      <tr><td>知識カットオフ（GPT-4は2023/4まで）</td><td>最新文書を Index に追加するだけ</td></tr>
+      <tr><td>幻覚（Hallucination）</td><td>事実を文書から引用させる</td></tr>
+      <tr><td>私的データ未対応</td><td>社内文書を Vector DB に</td></tr>
+      <tr><td>引用元不明</td><td>使った文書を明示</td></tr>
+      <tr><td>ドメイン特化困難</td><td>専門文書だけ Index 化</td></tr>
     </table>
-    <p>主な ANN アルゴリズム：<strong>HNSW</strong>（階層的近傍グラフ）、<strong>IVF</strong>（転置インデックス）、<strong>PQ</strong>（直積量子化）。</p>
 
-    <h2 id="flow"><span class="label">§4 / FLOW</span>RAG の3段階</h2>
+    <h3 style="margin-top:36px;">§1.2 Embedding — テキストをベクトルに</h3>
+    <p>文書とクエリを同じ意味空間の<strong>密ベクトル</strong>（典型 384〜3072次元）に変換。意味的に類似なものは近い距離に。代表モデル：</p>
+    <table class="spec">
+      <tr><th>モデル</th><th>次元</th><th>特徴</th></tr>
+      <tr><td>OpenAI text-embedding-3-small</td><td>1536</td><td>API、安価、多言語</td></tr>
+      <tr><td>OpenAI text-embedding-3-large</td><td>3072</td><td>API、高精度</td></tr>
+      <tr><td>Cohere Embed v3</td><td>1024</td><td>多言語、Re-rank と組み合わせ</td></tr>
+      <tr><td>Voyage AI</td><td>1024〜</td><td>専門ドメイン特化</td></tr>
+      <tr><td>BGE-large (BAAI)</td><td>1024</td><td>オープン、MTEBで上位</td></tr>
+      <tr><td>E5-mistral-7B</td><td>4096</td><td>LLM ベース、高精度</td></tr>
+      <tr><td>Sentence-Transformers (all-MiniLM-L6-v2)</td><td>384</td><td>軽量、CPU動作可</td></tr>
+    </table>
+
+    <h3 style="margin-top:36px;">§1.3 Vector Database</h3>
+    <p>大量のベクトルから類似ベクトルを高速検索するDB。<strong>ANN</strong>（Approximate Nearest Neighbor）アルゴリズムが核。</p>
+    <table class="spec">
+      <tr><th>DB</th><th>方式</th><th>特徴</th></tr>
+      <tr><td>FAISS</td><td>ライブラリ</td><td>Meta、GPU対応、最高速</td></tr>
+      <tr><td>Pinecone</td><td>マネージド</td><td>SaaS、運用簡単、商用</td></tr>
+      <tr><td>Weaviate</td><td>OSS</td><td>GraphQL、ハイブリッド検索</td></tr>
+      <tr><td>Qdrant</td><td>OSS（Rust）</td><td>高速、フィルタリング強</td></tr>
+      <tr><td>ChromaDB</td><td>OSS</td><td>Python ネイティブ、開発向け</td></tr>
+      <tr><td>Milvus</td><td>OSS</td><td>大規模、Zilliz商用版</td></tr>
+      <tr><td>pgvector</td><td>PostgreSQL拡張</td><td>既存DBに組込可</td></tr>
+    </table>
+    <p>アルゴリズム：<strong>HNSW</strong>（Hierarchical Navigable Small World）が現代標準、IVF-PQ も実用。</p>
+
+    <h3 style="margin-top:36px;">§1.4 Retrieval — 類似度検索</h3>
+    <div class="formula">
+<strong>Cosine 類似度</strong>　 sim(q, d) = (q·d) / (||q|| ||d||)<br>
+<strong>Dot Product</strong>　 q·d　 (正規化済みなら Cosine と同じ)<br>
+<strong>BM25</strong>　 古典的疎ベクトル（TF-IDF系）、キーワード一致<br><br>
+<strong>top-k 検索</strong>　 上位 k=5〜20 文書を返す。最近は k=50→Rerank で k=5 が定石
+    </div>
 
     <div class="figure">
-      <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="rag-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
-          </marker>
-        </defs>
-        <!-- User Query -->
-        <rect x="20" y="120" width="120" height="60" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="80" y="148" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">ユーザの</text>
-        <text x="80" y="165" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">質問</text>
-
-        <!-- Step 1: Retrieve -->
-        <rect x="180" y="50" width="180" height="200" fill="#b8431f"/>
-        <text x="270" y="80" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">① Retrieve</text>
-        <text x="270" y="98" text-anchor="middle" font-size="10" fill="#f5d4c4">（検索）</text>
-        <text x="270" y="125" text-anchor="middle" font-size="11" fill="#faf7f2">クエリを埋込ベクトルに</text>
-        <text x="270" y="142" text-anchor="middle" font-size="11" fill="#faf7f2">↓</text>
-        <text x="270" y="160" text-anchor="middle" font-size="11" fill="#faf7f2">ベクトルDB で top-k 検索</text>
-        <text x="270" y="177" text-anchor="middle" font-size="11" fill="#faf7f2">↓</text>
-        <text x="270" y="195" text-anchor="middle" font-size="11" fill="#faf7f2">関連文書 k 個を取得</text>
-        <line x1="140" y1="150" x2="178" y2="150" stroke="#0d1b2a" marker-end="url(#rag-a)"/>
-
-        <!-- Step 2: Augment -->
-        <rect x="390" y="50" width="180" height="200" fill="#d4a017"/>
-        <text x="480" y="80" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">② Augment</text>
-        <text x="480" y="98" text-anchor="middle" font-size="10" fill="#5a5f6a">（拡張）</text>
-        <text x="480" y="130" text-anchor="middle" font-size="11" fill="#0d1b2a">「以下の文書を参考に</text>
-        <text x="480" y="147" text-anchor="middle" font-size="11" fill="#0d1b2a">　回答してください:」</text>
-        <text x="480" y="173" text-anchor="middle" font-size="11" fill="#0d1b2a">{検索した文書}</text>
-        <text x="480" y="195" text-anchor="middle" font-size="11" fill="#0d1b2a">質問: {ユーザの質問}</text>
-        <line x1="360" y1="150" x2="388" y2="150" stroke="#0d1b2a" marker-end="url(#rag-a)"/>
-
-        <!-- Step 3: Generate -->
-        <rect x="600" y="50" width="140" height="200" fill="#3a7d44"/>
-        <text x="670" y="80" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">③ Generate</text>
-        <text x="670" y="98" text-anchor="middle" font-size="10" fill="#c0d4c4">（生成）</text>
-        <text x="670" y="140" text-anchor="middle" font-size="11" fill="#faf7f2">LLM が文書に</text>
-        <text x="670" y="157" text-anchor="middle" font-size="11" fill="#faf7f2">基づいて</text>
-        <text x="670" y="174" text-anchor="middle" font-size="11" fill="#faf7f2">回答を生成</text>
-        <line x1="570" y1="150" x2="598" y2="150" stroke="#0d1b2a" marker-end="url(#rag-a)"/>
+      <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 20.1 ／ RAG PIPELINE</text>
+        <g transform="translate(20,60)">
+          <rect x="0" y="50" width="100" height="50" fill="#fff8f2" stroke="#0d1b2a"/>
+          <text x="50" y="78" text-anchor="middle" font-family="serif" font-size="12" font-weight="700">質問</text>
+          
+          <path d="M 105 75 L 130 75" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#a1)"/>
+          
+          <rect x="135" y="50" width="100" height="50" fill="#b8431f" fill-opacity="0.25" stroke="#0d1b2a"/>
+          <text x="185" y="73" text-anchor="middle" font-family="serif" font-size="11">Embed</text>
+          <text x="185" y="88" text-anchor="middle" font-family="monospace" font-size="9" fill="#5a5f6a">→ vector</text>
+          
+          <path d="M 240 75 L 265 75" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#a1)"/>
+          
+          <rect x="270" y="30" width="110" height="100" fill="#2e5577" fill-opacity="0.25" stroke="#0d1b2a"/>
+          <text x="325" y="55" text-anchor="middle" font-family="serif" font-size="11" font-weight="700">Vector DB</text>
+          <text x="325" y="73" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">類似検索</text>
+          <text x="325" y="90" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">top-k 文書</text>
+          <text x="325" y="115" text-anchor="middle" font-family="monospace" font-size="9" fill="#5a5f6a">HNSW</text>
+          
+          <path d="M 385 75 L 410 75" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#a1)"/>
+          
+          <rect x="415" y="40" width="120" height="70" fill="#d4a017" fill-opacity="0.25" stroke="#0d1b2a"/>
+          <text x="475" y="65" text-anchor="middle" font-family="serif" font-size="12" font-weight="700">LLM</text>
+          <text x="475" y="83" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">プロンプト：</text>
+          <text x="475" y="98" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">文書+質問</text>
+          
+          <path d="M 540 75 L 565 75" stroke="#0d1b2a" stroke-width="1.5" marker-end="url(#a1)"/>
+          
+          <rect x="570" y="50" width="100" height="50" fill="#fff8f2" stroke="#0d1b2a"/>
+          <text x="620" y="78" text-anchor="middle" font-family="serif" font-size="12" font-weight="700">回答</text>
+          
+          <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0 0, 8 4, 0 8" fill="#0d1b2a"/></marker></defs>
+        </g>
+        <text x="350" y="180" text-anchor="middle" font-family="serif" font-size="11" fill="#5a5f6a" font-style="italic">事前準備：文書を chunk → embedding → Vector DB に登録</text>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 8.1</span> RAG の3段階。質問 → 検索 → プロンプトに添付 → LLM が文書に基づいて回答。LLM の重みを変えずに、新しい知識・最新情報・社内データを使えるようになる。</div>
+      <div class="figure-caption"><span class="figure-num">FIG 20.1</span> ／ RAG パイプライン。質問を埋め込みベクトル化 → Vector DBで類似検索 → 取得文書を LLM に渡して回答生成。</div>
     </div>
 
-    <h2 id="chunking"><span class="label">§5 / CHUNK</span>チャンク化と前処理</h2>
-    <p>長文書はそのままだとベクトル化できない（モデルの入力長制限）。<strong>チャンク（文書の塊）</strong> に分割する必要がある。</p>
-    <p>チャンク戦略：</p>
-    <ul>
-      <li><strong>固定長</strong>：512〜1024 文字。シンプルだが文脈分断のリスク</li>
-      <li><strong>セマンティック分割</strong>：見出し・段落で区切り、意味の塊で</li>
-      <li><strong>オーバーラップ</strong>：隣接チャンクで重複を持たせて文脈保持</li>
-      <li><strong>親子チャンク</strong>：小さい単位で検索、大きい単位で文脈提供</li>
+    <h3 style="margin-top:36px;">§1.5 Chunking 戦略</h3>
+    <p>長い文書を埋め込む単位に分割：</p>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>Fixed-size</strong>：典型 200〜800 トークン、オーバーラップ 10〜20%</li>
+      <li><strong>Semantic chunking</strong>：意味的境界（段落、見出し）で分割</li>
+      <li><strong>Recursive</strong>：階層的に分割（LangChain RecursiveCharacterTextSplitter）</li>
+      <li><strong>Late chunking</strong>（2024）：長文を埋め込んでから分割（コンテキスト保持）</li>
+      <li><strong>Parent-Child</strong>：小チャンクで検索、親チャンクを渡す</li>
     </ul>
 
-    <h2 id="hybrid"><span class="label">§6 / HYBRID</span>ハイブリッド検索</h2>
-    <p>埋め込み検索（ベクトル）だけでは <strong>固有名詞や数値の精密マッチ</strong> に弱い。<strong>BM25（キーワード検索）</strong> と組み合わせる：</p>
-    <div class="formula">score = α · vector_sim + (1-α) · BM25_score</div>
-    <p>BM25 は古典的な TF-IDF の改良版。完全一致が必要な状況（製品コード、人名など）に強い。<strong>2024-2025年の本番システムではほぼ必須</strong>。</p>
-
-    <h2 id="rerank"><span class="label">§7 / RERANK</span>再ランキング（Re-ranking）</h2>
-    <p>ベクトル検索で top-100 を取り、より高精度な <strong>Cross-Encoder</strong> で再順位付けして top-10 を選ぶ：</p>
-    <ul>
-      <li>Bi-Encoder（埋め込み）：高速だが精度に限界</li>
-      <li>Cross-Encoder（再ランカー）：クエリと文書をペアで入力 → 高精度だが遅い</li>
-    </ul>
-    <p>代表的な再ランカー：<strong>Cohere Rerank</strong>、<strong>BGE-Reranker</strong>、<strong>ColBERT</strong>。</p>
-
-    <h2 id="advanced"><span class="label">§8 / ADV</span>高度な RAG パターン</h2>
+    <h3 style="margin-top:36px;">§1.6 Reranking — 検索結果の再順序付け</h3>
+    <p>Embedding ベース検索は速いが精度に限界。<strong>Cross-Encoder</strong> で top-50 を厳密採点 → top-5 に絞る2段階が標準。</p>
     <table class="spec">
-      <tr><th>HyDE</th><td>クエリから仮想回答を生成し、それで検索（クエリと文書の語彙ギャップを埋める）</td></tr>
-      <tr><th>Query Decomposition</th><td>複雑な質問を複数のサブクエリに分解</td></tr>
-      <tr><th>Multi-hop RAG</th><td>1回の検索で足りないとき、複数回検索</td></tr>
-      <tr><th>Self-RAG</th><td>LLM が「検索すべきか」「結果が良いか」を判断</td></tr>
-      <tr><th>GraphRAG</th><td>知識グラフを併用（Microsoft 2024）</td></tr>
-      <tr><th>Long-context vs RAG</th><td>200K+ トークン文脈 vs RAG。後者の方が依然優位な場面が多い</td></tr>
+      <tr><th>モデル</th><th>特徴</th></tr>
+      <tr><td>Cohere Rerank</td><td>API、多言語、商用最強</td></tr>
+      <tr><td>BGE Reranker</td><td>OSS、BAAI、高精度</td></tr>
+      <tr><td>ColBERT</td><td>遅延相互作用、効率と精度両立</td></tr>
+      <tr><td>monoT5/RankT5</td><td>T5 ベース、CPU可</td></tr>
     </table>
 
-    <h3>RAG の評価</h3>
-    <ul>
-      <li><strong>Retrieval 評価</strong>：Recall@k、MRR、NDCG</li>
-      <li><strong>Generation 評価</strong>：Faithfulness（文書への忠実性）、Answer Relevance</li>
-      <li><strong>RAGAS</strong>：RAG 専用の自動評価フレームワーク</li>
-    </ul>
-
-    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
-    <table class="spec">
-      <tr><th>1</th><td>RAG = Retrieval（検索）+ Augment（拡張）+ Generate（生成）</td></tr>
-      <tr><th>2</th><td>LLM の知識制約・ハルシネーション対策の決定打</td></tr>
-      <tr><th>3</th><td>埋め込みベクトルで意味的類似度を計算</td></tr>
-      <tr><th>4</th><td>ベクトル DB：Pinecone, Weaviate, Chroma, Qdrant, Milvus, FAISS, pgvector</td></tr>
-      <tr><th>5</th><td>ANN アルゴリズム：HNSW、IVF、PQ</td></tr>
-      <tr><th>6</th><td>チャンク化が品質を左右</td></tr>
-      <tr><th>7</th><td>ハイブリッド検索（ベクトル + BM25）が実務標準</td></tr>
-      <tr><th>8</th><td>Re-ranking で精度向上</td></tr>
-      <tr><th>9</th><td>HyDE, Self-RAG, GraphRAG などの拡張</td></tr>
-      <tr><th>10</th><td>評価は Retrieval と Generation の両軸、RAGAS が代表</td></tr>
-    </table>
-
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>LLM の3つの限界と RAG がそれぞれをどう解決するか</li>
-        <li>埋め込みベクトルの基本的な性質</li>
-        <li>コサイン類似度の式</li>
-        <li>主要なベクトル DB を3つ以上挙げられるか</li>
-        <li>HNSW, IVF, PQ それぞれの仕組み</li>
-        <li>固定長チャンク vs セマンティック分割のメリット・デメリット</li>
-        <li>ハイブリッド検索の式と、なぜ必要か</li>
-        <li>Bi-Encoder と Cross-Encoder の違い</li>
-        <li>HyDE（Hypothetical Document Embedding）の発想</li>
-        <li>「Long-context が来れば RAG は不要」という主張への反論</li>
-      </ol>
+    <h3 style="margin-top:36px;">§1.7 Generation — プロンプト構築</h3>
+    <div class="formula">
+プロンプト = システム指示 + 取得文書（複数） + 質問<br><br>
+<strong>典型構造</strong><br>
+　 「以下の文脈を参考にして質問に答えなさい。<br>
+　 　文脈：&lt;doc1&gt;&lt;doc2&gt;&lt;doc3&gt;<br>
+　 　質問：&lt;query&gt;<br>
+　 　文脈に書かれていない事実は答えないこと」
     </div>
+
+    <h3 style="margin-top:36px;">§1.8 評価指標</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>Retrieval metrics</strong>：Recall@k、MRR、NDCG@k</li>
+      <li><strong>Generation metrics</strong>：BLEU、ROUGE、BERTScore</li>
+      <li><strong>RAG specific</strong>：<strong>Faithfulness</strong>（回答が文脈に忠実か）、<strong>Answer Relevance</strong>、<strong>Context Precision</strong></li>
+      <li><strong>フレームワーク</strong>：RAGAS、TruLens、ARES、LLM-as-Judge（GPT-4による自動評価）</li>
+    </ul>
+
+    <h3 style="margin-top:36px;">§1.9 Hybrid Search — Dense + Sparse</h3>
+    <p>Embedding（Dense、意味類似）と BM25（Sparse、キーワード一致）を組み合わせて Reciprocal Rank Fusion（RRF）で統合。固有名詞・略語・新語に強くなる。</p>
+
+    <h3 style="margin-top:36px;">§1.10 RAG vs Fine-tuning</h3>
+    <table class="spec">
+      <tr><th>判断基準</th><th>RAG</th><th>Fine-tuning</th></tr>
+      <tr><td>知識の更新</td><td>○ Index 追加のみ</td><td>× 再学習</td></tr>
+      <tr><td>引用元の明示</td><td>○</td><td>×</td></tr>
+      <tr><td>スタイル・行動の変更</td><td>△</td><td>○</td></tr>
+      <tr><td>初期コスト</td><td>低</td><td>高</td></tr>
+      <tr><td>幻覚抑制</td><td>○</td><td>△</td></tr>
+      <tr><td>レイテンシ</td><td>検索分加算</td><td>低い</td></tr>
+    </table>
+    <p>実用では両者の併用が増えている：Domain Adaptation で Fine-tune → RAG で最新情報。</p>
+
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>GraphRAG、Self-RAG、HyDE、Multimodal RAGの4節。</p>
+    </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 GraphRAG（Microsoft 2024）</h3>
+    <p>文書からエンティティ・関係を抽出し<strong>知識グラフ</strong>を構築。グラフのコミュニティ単位で要約を作成し、Global query（『全体の傾向は？』）にも対応。論文・企業文書の包括理解に強い。</p>
+
+    <h3 style="margin-top:36px;">§2.2 Self-RAG（Asai 2023）</h3>
+    <p>LLM 自身が『検索が必要か』『取得文書が関連か』『回答が裏付けされているか』を <strong>Reflection Token</strong> で判断する自律的RAG。不必要な検索の削減と品質向上を両立。</p>
+
+    <h3 style="margin-top:36px;">§2.3 HyDE — Hypothetical Document Embeddings</h3>
+    <p>Gao 2022。質問をそのまま埋め込む代わりに、<strong>LLM に仮の回答を生成させ、それを埋め込んで検索</strong>。質問と回答は意味空間で異なる位置にあり得るため、検索精度が向上することがある。</p>
+
+    <h3 style="margin-top:36px;">§2.4 Multimodal RAG</h3>
+    <p>画像、表、グラフを含む PDF・スライドから情報抽出。<strong>CLIP</strong> 系統の画像-テキスト共通埋め込み、または<strong>Vision LLM</strong>（GPT-4V、Claude 3、Gemini）で画像チャンクを直接処理。技術文書・財務報告書解析で重要。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>LangChain、LlamaIndex、ChromaDB、Pinecone、Cohere Rerankの5節。</p>
+    </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 LangChain での最小 RAG</h3>
+    <div class="code-block">
+<span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> PyPDFLoader
+<span class="keyword">from</span> langchain.text_splitter <span class="keyword">import</span> RecursiveCharacterTextSplitter
+<span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAIEmbeddings, ChatOpenAI
+<span class="keyword">from</span> langchain_community.vectorstores <span class="keyword">import</span> Chroma
+<span class="keyword">from</span> langchain.chains <span class="keyword">import</span> RetrievalQA
+
+<span class="comment"># 1. 文書をロード＆分割</span>
+docs = PyPDFLoader(<span class="string">'manual.pdf'</span>).load()
+splitter = RecursiveCharacterTextSplitter(chunk_size=<span class="builtin">500</span>, chunk_overlap=<span class="builtin">50</span>)
+chunks = splitter.split_documents(docs)
+
+<span class="comment"># 2. Embedding + Vector DB</span>
+embeddings = OpenAIEmbeddings(model=<span class="string">'text-embedding-3-small'</span>)
+vectordb = Chroma.from_documents(chunks, embeddings, persist_directory=<span class="string">'./db'</span>)
+retriever = vectordb.as_retriever(search_kwargs={<span class="string">'k'</span>: <span class="builtin">5</span>})
+
+<span class="comment"># 3. RAG チェーン</span>
+qa = RetrievalQA.from_chain_type(
+    llm=ChatOpenAI(model=<span class="string">'gpt-4'</span>, temperature=<span class="builtin">0</span>),
+    retriever=retriever,
+    return_source_documents=<span class="keyword">True</span>)
+
+result = qa.invoke({<span class="string">'query'</span>: <span class="string">'返品ポリシーは？'</span>})
+print(result[<span class="string">'result'</span>])
+print(<span class="string">"参照元:"</span>, [d.metadata <span class="keyword">for</span> d <span class="keyword">in</span> result[<span class="string">'source_documents'</span>]])
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 LlamaIndex</h3>
+    <div class="code-block">
+<span class="keyword">from</span> llama_index.core <span class="keyword">import</span> VectorStoreIndex, SimpleDirectoryReader
+<span class="keyword">from</span> llama_index.llms.openai <span class="keyword">import</span> OpenAI
+
+documents = SimpleDirectoryReader(<span class="string">'./docs'</span>).load_data()
+index = VectorStoreIndex.from_documents(documents)
+query_engine = index.as_query_engine(llm=OpenAI(model=<span class="string">'gpt-4o-mini'</span>))
+response = query_engine.query(<span class="string">'AI戦略の主要な柱は？'</span>)
+print(response)
+print(<span class="string">"ソース:"</span>, response.source_nodes)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 ChromaDB スクラッチ</h3>
+    <div class="code-block">
+<span class="keyword">import</span> chromadb
+<span class="keyword">from</span> chromadb.utils <span class="keyword">import</span> embedding_functions
+
+client = chromadb.PersistentClient(path=<span class="string">'./chroma'</span>)
+ef = embedding_functions.OpenAIEmbeddingFunction(
+    model_name=<span class="string">'text-embedding-3-small'</span>)
+col = client.get_or_create_collection(name=<span class="string">'docs'</span>, embedding_function=ef)
+
+<span class="comment"># 追加</span>
+col.add(documents=[<span class="string">'返品は購入後30日以内'</span>, <span class="string">'配送は3-5営業日'</span>], 
+        ids=[<span class="string">'1'</span>, <span class="string">'2'</span>],
+        metadatas=[{<span class="string">'cat'</span>:<span class="string">'return'</span>}, {<span class="string">'cat'</span>:<span class="string">'shipping'</span>}])
+
+<span class="comment"># 検索</span>
+results = col.query(query_texts=[<span class="string">'返品方法'</span>], n_results=<span class="builtin">2</span>)
+print(results)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 Pinecone</h3>
+    <div class="code-block">
+<span class="keyword">from</span> pinecone <span class="keyword">import</span> Pinecone, ServerlessSpec
+
+pc = Pinecone(api_key=<span class="string">'YOUR_KEY'</span>)
+pc.create_index(
+    name=<span class="string">'docs'</span>, dimension=<span class="builtin">1536</span>, metric=<span class="string">'cosine'</span>,
+    spec=ServerlessSpec(cloud=<span class="string">'aws'</span>, region=<span class="string">'us-east-1'</span>))
+
+idx = pc.Index(<span class="string">'docs'</span>)
+idx.upsert(vectors=[
+    (<span class="string">'1'</span>, [<span class="builtin">0.1</span>]*<span class="builtin">1536</span>, {<span class="string">'text'</span>: <span class="string">'返品ポリシー...'</span>}),
+])
+results = idx.query(vector=[<span class="builtin">0.1</span>]*<span class="builtin">1536</span>, top_k=<span class="builtin">5</span>, include_metadata=<span class="keyword">True</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 Cohere Rerank で精度向上</h3>
+    <div class="code-block">
+<span class="keyword">import</span> cohere
+co = cohere.Client(<span class="string">'YOUR_KEY'</span>)
+
+<span class="comment"># 1. Vector DB で top-50 取得</span>
+candidates = vectordb.similarity_search(query, k=<span class="builtin">50</span>)
+docs = [d.page_content <span class="keyword">for</span> d <span class="keyword">in</span> candidates]
+
+<span class="comment"># 2. Rerank で top-5 に絞る</span>
+rerank = co.rerank(model=<span class="string">'rerank-multilingual-v3.0'</span>,
+                   query=query, documents=docs, top_n=<span class="builtin">5</span>)
+top_docs = [docs[r.index] <span class="keyword">for</span> r <span class="keyword">in</span> rerank.results]
+
+<span class="comment"># 3. LLM に渡して回答生成</span>
+prompt = <span class="string">f"以下の文脈を参照: {top_docs}\n質問: {query}"</span>
+answer = llm.invoke(prompt)
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>Chunk size、Rerank効果、Hybrid Searchの3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — Chunk Size が精度に与える影響</h4>
+      <div class="sim-output">
+&gt;&gt; 同じ文書セット、Chunk size を変えて Recall@5 評価<br>
+<br>
+Chunk 100 tokens:　 Recall@5 = 0.62  (細切れで文脈不足)<br>
+Chunk 300 tokens:　 Recall@5 = 0.78<br>
+Chunk 500 tokens:　 Recall@5 = 0.84 ← スイートスポット<br>
+Chunk 1000 tokens: Recall@5 = 0.81 (1チャンクに多話題)<br>
+Chunk 2000 tokens: Recall@5 = 0.75<br>
+<br>
+&gt;&gt; Overlap 50〜100 tokens で境界問題を緩和<br>
+&gt;&gt; Semantic chunking で更に向上の場合も
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — Rerank の効果</h4>
+      <div class="sim-output">
+&gt;&gt; FAQ データセット、Embedding のみ vs +Rerank<br>
+<br>
+[Embedding (top-5)]<br>
+　 Recall@5 = 0.72, MRR = 0.58<br>
+　 レイテンシ: 50ms<br>
+<br>
+[Embedding top-50 + Cohere Rerank top-5]<br>
+　 Recall@5 = 0.91, MRR = 0.82<br>
+　 レイテンシ: 250ms (+200ms)<br>
+<br>
+&gt;&gt; 2段階で精度大幅向上、レイテンシは少し増加<br>
+&gt;&gt; 多くの本番システムで採用される定石パターン
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — Hybrid Search（Dense + Sparse）</h4>
+      <div class="sim-output">
+&gt;&gt; 製品マニュアル、固有名詞・型番含む<br>
+<br>
+[Dense (Embedding)]<br>
+　 一般的な質問: Recall@5 = 0.85<br>
+　 型番含む質問:　 Recall@5 = 0.42 ← 弱点<br>
+<br>
+[Sparse (BM25)]<br>
+　 一般的な質問: Recall@5 = 0.61<br>
+　 型番含む質問:　 Recall@5 = 0.94<br>
+<br>
+[Hybrid (RRF統合)]<br>
+　 一般的な質問: Recall@5 = 0.91<br>
+　 型番含む質問:　 Recall@5 = 0.89<br>
+<br>
+&gt;&gt; Hybrid で両方の強みを取り込む
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">RAG が解決する LLM の主な弱点は。</div>
+        <div class="p-choices">① 計算速度　 ② 知識カットオフ、幻覚、私的データ非対応　 ③ パラメータ数　 ④ メモリ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LLM の学習データ以降の知識・自社データ・幻覚（誤情報生成）を、関連文書検索で補完。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">RAG パイプラインの基本構成は。</div>
+        <div class="p-choices">① クラスタ→分類　 ② Embed → Vector DB 検索 → 文脈付き LLM プロンプト → 回答　 ③ Fine-tune のみ　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Lewis 2020。質問を埋め込み、Vector DB から類似文書取得、LLM に文書+質問を渡して回答生成。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">Embedding モデルの代表として誤りはどれか。</div>
+        <div class="p-choices">① text-embedding-3-large (OpenAI)　 ② BGE-large (BAAI)　 ③ Cohere Embed v3　 ④ XGBoost</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> XGBoost は勾配ブースティング、テキスト埋め込み用ではない。MTEB ベンチマークで競合中。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">Vector Database で標準的な高速検索アルゴリズムは。</div>
+        <div class="p-choices">① ブルートフォース　 ② HNSW（Hierarchical Navigable Small World）、IVF-PQ　 ③ K-means　 ④ Decision Tree</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ANN（Approximate Nearest Neighbor）の代表。HNSW は graph-based で精度・速度両立。FAISS, Pinecone, Qdrant, Weaviate で実装。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">Chunking で典型的なオーバーラップ率は。</div>
+        <div class="p-choices">① 0%　 ② 10〜20%（境界問題緩和）　 ③ 50%以上　 ④ 100%</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> オーバーラップで文脈の境界での情報損失を緩和。chunk_size=500 なら overlap=50〜100 が典型。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">Reranking の目的は。</div>
+        <div class="p-choices">① 計算高速化　 ② Embedding 検索で得た上位文書を Cross-Encoder で再評価し精度向上　 ③ 学習　 ④ 正則化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2段階パイプライン：Embedding で top-50 → Rerank で top-5。Cohere Rerank, BGE Reranker が代表。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">Hybrid Search の典型構成は。</div>
+        <div class="p-choices">① Dense のみ　 ② Embedding（Dense）+ BM25（Sparse）を RRF で統合　 ③ ランダム　 ④ Sparse のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Reciprocal Rank Fusion（RRF）で両者の順位を融合。固有名詞・型番に強い BM25 と意味類似の Dense を統合。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">RAG vs Fine-tuning の使い分けで正しいのは。</div>
+        <div class="p-choices">① RAG = スタイル変更　 ② 知識追加・更新は RAG、行動・スタイル変更は Fine-tune　 ③ どちらも同じ　 ④ Fine-tune が常に上</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RAG = 知識（事実）、Fine-tune = 振舞い（口調、フォーマット）。実用では併用が多い。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">『Faithfulness』が評価する対象は。</div>
+        <div class="p-choices">① 速度　 ② 生成回答が取得文書に忠実か（捏造でないか）　 ③ パラメータ数　 ④ コスト</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RAGAS, TruLensなどで自動評価。LLM-as-Judge（GPT-4） が一般的。幻覚抑制の指標。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">GraphRAG（Microsoft 2024）の特徴は。</div>
+        <div class="p-choices">① 単純な BM25　 ② 文書から知識グラフを構築、Global query（全体傾向）にも対応　 ③ Fine-tune必須　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> エンティティ・関係抽出 → グラフ → コミュニティ要約。『この文書集合全体の傾向は』のような Global question に強い。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">HyDE（Hypothetical Document Embeddings）の手順は。</div>
+        <div class="p-choices">① 質問を直接埋め込み　 ② LLMに仮回答を生成させ、それを埋め込んで検索　 ③ 教師ありのみ　 ④ クラスタ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Gao 2022。質問と回答は意味空間で異なる位置にあり得るため、仮回答を介して検索精度向上。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">Self-RAG が用いる仕組みは。</div>
+        <div class="p-choices">① ランダム検索　 ② Reflection Token で『検索が必要か』『文書が関連か』『裏付けあるか』を LLM 自身が判断　 ③ クラスタリング　 ④ 教師あり</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Asai 2023。不要検索の削減と品質向上を両立。LLMが検索の必要性を判断。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">Cosine類似度の式は。</div>
+        <div class="p-choices">① q + d　 ② (q·d)/(||q|| ||d||)　 ③ |q - d|　 ④ q × d</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ベクトル間の角度を測る。長さ非依存で意味の類似度に適する。RAGの標準距離。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">RAG の典型的な失敗パターンは。</div>
+        <div class="p-choices">① 速度向上　 ② Chunk が大きすぎる/小さすぎる、Embedding がドメイン外、適切な Rerank不在　 ③ パラメータ削減　 ④ 学習率</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 実用 RAG は『調整勝負』。Chunk size、Embedding 選択、Rerank、プロンプト構造、メタデータフィルタなどの組合せ最適化が肝。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">Multimodal RAG が扱う主なデータは。</div>
+        <div class="p-choices">① テキストのみ　 ② 画像、表、グラフを含む PDF・スライド（CLIP系または Vision LLM 利用）　 ③ 音声のみ　 ④ コード</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 技術文書・財務報告書は画像・表が多い。GPT-4V, Claude 3, Gemini が直接処理可能、または CLIP 系で画像埋め込み。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">LangChain の役割は。</div>
+        <div class="p-choices">① 学習　 ② LLMアプリ構築の統合フレームワーク（RAG、Agent、チェーン）　 ③ Vector DB のみ　 ④ Embedding</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 文書ローダー、Splitter、Vector DB、LLM、Retriever、Agent を統合。LlamaIndex は RAG 特化の競合。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">Sentence-Transformers の代表モデルは。</div>
+        <div class="p-choices">① BERT base のみ　 ② all-MiniLM-L6-v2（軽量384次元、CPU動作可）　 ③ GPT-4　 ④ ResNet</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 開発・プロトタイプの定番。BGE, E5, GTE などより新しいモデルもオープン提供。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">RAGAS フレームワークが提供する RAG 評価指標は。</div>
+        <div class="p-choices">① Accuracy のみ　 ② Faithfulness, Answer Relevance, Context Precision, Context Recall　 ③ MSE　 ④ R²</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LLM-as-Judge で自動評価。RAG 特有の側面（事実忠実性、文脈の必要性・十分性）を測定。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">Vector DB の選択基準として誤りはどれか。</div>
+        <div class="p-choices">① 規模・QPS要件　 ② フィルタリング機能　 ③ ホスティング（SaaS vs Self-host）　 ④ どれも同じ性能</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> Pinecone（マネージド）、Weaviate（OSS+クラウド）、Qdrant（OSS Rust高速）、Chroma（軽量）、Milvus（大規模）など特性は大きく違う。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">プロダクション RAG での重要な工夫として誤りはどれか。</div>
+        <div class="p-choices">① クエリ書き換え（query rewriting）　 ② Rerank　 ③ メタデータフィルタ　 ④ 必ず Chunk size を 100 にする</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> Chunk size はデータ・タスク依存で最適化対象。100 だと文脈不足の場合が多い。500前後が経験的に良いが、用途で異なる。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">RAG の動機、Embedding、Vector DB（FAISS/Pinecone/Chroma/Weaviate/Qdrant）、Retrieval、Chunking、Reranking、Generation、評価（RAGAS）、Hybrid Search、RAG vs Fine-tuning を扱いました。応用で GraphRAG、Self-RAG、HyDE、Multimodal RAG。ハンズオンで LangChain、LlamaIndex、ChromaDB、Pinecone、Cohere Rerank。シミュレーションで Chunk size、Rerank効果、Hybrid を確認。次章は AI Agent。ReAct、Tool Use、Multi-step Reasoning、Computer Use へ。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="07-rl.html">← 章7</a></div>
-  <div><a href="09-agent.html">章9: エージェント →</a></div>
+  <div><a href="07-rl.html">← 章19: 強化学習</a></div>
+  <div><span class="ch-label">Chapter 20 · 応用編</span><br><span class="ch-title">RAG</span></div>
+  <div><a href="09-agent.html">章21: AI Agent →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

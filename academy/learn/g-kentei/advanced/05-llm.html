@@ -3,231 +3,546 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章5 LLM とスケーリング則 — G検定 応用 — Swallow AI Academy</title>
-<meta name="description" content="G検定応用 章5：LLM、スケーリング則、Chinchilla の最適配分、創発能力、In-context Learning、Chain-of-Thought。">
+<title>章17 LLM — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章17：LLM、スケーリング則、Chinchilla最適化、In-Context Learning、Chain-of-Thought、Instruction Tuning、RLHF、DPO、MoE、Hallucinationを5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="../basics/index.html">基本</a>
-      <a href="index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.5</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="../basics/index.html">基本</a><a href="index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章5</div>
-    <h1>応用 章5 — LLM とスケーリング則<span class="en">LLMs and Scaling Laws</span></h1>
-    <p class="standfirst">「<strong>大きくすれば賢くなる</strong>」が現代AIの一つの帰結。本章ではスケーリング則の数式・Chinchilla の最適配分・創発能力（Emergence）・In-context Learning・Chain-of-Thought の主要トピックを押さえます。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章17</div>
+    <h1>章17 — LLM（大規模言語モデル）<span class="en">Chapter 17 — Large Language Models</span></h1>
+    <p class="standfirst">2022年11月の ChatGPT 公開以降、世界は『LLMの時代』に突入。<strong>パラメータ100億超</strong>、<strong>数兆トークンでの事前学習</strong>、<strong>RLHF による指示追従化</strong> ── これらが組み合わさることで、創発的にコード生成・推論・対話・翻訳・要約までこなす『汎用文章AI』が誕生しました。本章では、<strong>スケーリング則</strong>、<strong>Chinchilla最適化</strong>、<strong>In-Context Learning</strong>、<strong>Chain-of-Thought</strong>、<strong>Instruction Tuning</strong>、<strong>RLHF/DPO</strong>、<strong>MoE</strong>、<strong>Hallucination</strong> までを5部構成で扱います。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="04-bert-gpt.html">← 章4: BERT/GPT</a></div>
-  <div><span class="ch-label">応用 Chapter 5 of 12</span><br><span class="ch-title">LLM とスケーリング則</span></div>
-  <div><a href="06-generative.html">章6: 生成AI →</a></div>
+  <div><a href="04-bert-gpt.html">← 章16: BERT・GPT</a></div>
+  <div><span class="ch-label">Chapter 17 of 24 · 応用編</span><br><span class="ch-title">LLM</span></div>
+  <div><a href="06-generative.html">章18: 生成モデル →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
-    <h6>章5 目次</h6>
-    <a href="#scaling">§1 スケーリング則</a>
-    <a href="#chinchilla">§2 Chinchilla の発見</a>
-    <a href="#emergence">§3 創発能力</a>
-    <a href="#icl">§4 In-context Learning</a>
-    <a href="#cot">§5 Chain-of-Thought</a>
-    <a href="#tuning">§6 微調整の手法</a>
-    <a href="#summary">§7 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <h6>章17 目次</h6>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
-    <h2 id="scaling"><span class="label">§1 / SCALING</span>スケーリング則（Kaplan et al., 2020）</h2>
-    <p>Kaplan らが OpenAI で発見：<strong>LLM の損失は、パラメータ数 N、データ量 D、計算量 C それぞれに対し、冪乗則で減少する</strong>。</p>
+    <div class="article-eyebrow">G-KENTEI · ADVANCED · CHAPTER 17</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">スケールで賢くなる。<br>創発する知性。</h2>
+    <p class="article-lede">LLM が興味深いのは、『次のトークンを予測する』というシンプルな目的だけで学習されたのに、十分大きくなると <strong>推論・コーディング・翻訳・要約・対話</strong> が創発的にできるようになる点です。本章でその科学と工学を学びます。</p>
+
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>LLM定義・スケーリング則・Chinchilla・ICL・CoT・Instruction Tuning・RLHF・DPO・Hallucination・評価の10節。</p>
+    </div>
+
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 LLM の定義</h3>
+    <p>『大規模言語モデル』に厳密な定義はないが、典型的に <strong>パラメータ数10B（100億）以上</strong>、<strong>数千億〜数兆トークン</strong>での事前学習、<strong>Transformerデコーダ</strong>ベース、<strong>創発的能力</strong>を持つもの。GPT-3.5/4、Claude、Gemini、LLaMA、Mistral、Qwen など。</p>
+
+    <h3 style="margin-top:36px;">§1.2 スケーリング則（Scaling Laws）</h3>
     <div class="formula">
-      L(N) ≈ (N_c / N)^α_N<br>
-      L(D) ≈ (D_c / D)^α_D<br>
-      L(C) ≈ (C_c / C)^α_C
+Kaplan et al. 2020：損失 L が以下のパワーロー則に従う<br>
+　 L(N) ∝ N⁻ᵅ　 (N: パラメータ数, α ≈ 0.076)<br>
+　 L(D) ∝ D⁻ᵝ　 (D: トークン数, β ≈ 0.095)<br>
+　 L(C) ∝ C⁻ᵞ　 (C: 計算量, γ ≈ 0.050)<br><br>
+パラメータ・データ・計算の3軸で予測可能に改善 → 巨大化が正当化された
     </div>
 
-    <div class="figure">
-      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
-        <line x1="60" y1="240" x2="640" y2="240" stroke="#0d1b2a"/>
-        <line x1="100" y1="40" x2="100" y2="260" stroke="#0d1b2a"/>
-        <text x="635" y="258" font-size="11" fill="#5a5f6a">log(パラメータ数 N)</text>
-        <text x="80" y="55" font-size="11" fill="#5a5f6a">log(損失 L)</text>
-        <!-- Linear in log-log = power law -->
-        <line x1="120" y1="80" x2="600" y2="210" stroke="#b8431f" stroke-width="3"/>
-        <text x="370" y="120" font-size="12" font-weight="bold" fill="#b8431f">log L = -α · log N + const</text>
-        <text x="370" y="145" font-size="11" fill="#5a5f6a">→ 冪乗則 L ∝ N^(-α)</text>
-        <text x="200" y="100" font-size="10" fill="#5a5f6a">小モデル</text>
-        <text x="500" y="200" font-size="10" fill="#5a5f6a">大モデル</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 5.1</span> スケーリング則：両対数プロットで直線。これが「大きくすれば賢くなる」の数学的根拠。10倍にすれば一定割合だけ性能が上がる。</div>
+    <h3 style="margin-top:36px;">§1.3 Chinchilla 最適化（DeepMind 2022）</h3>
+    <p>Hoffmann et al.：『多くのLLMは過大パラメータで学習データ不足』。<strong>計算予算が決まれば、パラメータとデータは概ね同じスケールで増やすのが最適</strong>。Chinchilla（70B、1.4Tトークン）は Gopher（280B）を凌駕。LLaMA 系がこの教訓を踏襲。</p>
+
+    <h3 style="margin-top:36px;">§1.4 In-Context Learning（ICL）</h3>
+    <p>GPT-3 で発見された創発能力。プロンプト内の少数例から、<strong>パラメータを更新せずに</strong>新タスクを実行：</p>
+    <div class="formula">
+<strong>Zero-shot</strong>：説明だけ<br>
+<strong>One-shot</strong>：例1つ<br>
+<strong>Few-shot</strong>：例数件<br><br>
+例：『英語→フランス語<br>
+　 sea otter → loutre de mer<br>
+　 cheese → ?』<br>
+→ モデルは『fromage』と出力できる
     </div>
 
-    <h2 id="chinchilla"><span class="label">§2 / CHINCHILLA</span>Chinchilla の発見（2022）</h2>
-    <p>2022年、DeepMind の Chinchilla 論文が <strong>「パラメータ数とデータ量を同じ速度で増やすべき」</strong> という発見を提示。それまでの GPT-3 (175B) は <strong>パラメータ過剰・データ不足</strong> だった。</p>
-    <p>新しい指針：</p>
-    <ul>
-      <li>計算予算が固定 → <strong>N ≈ D</strong>（パラメータ数とトークン数を比例）</li>
-      <li>Chinchilla（70B params, 1.4T トークン）が GPT-3 を上回った</li>
-      <li>これ以降、データ量を意識した学習設計が標準に</li>
-    </ul>
+    <h3 style="margin-top:36px;">§1.5 Chain-of-Thought（CoT）プロンプティング</h3>
+    <p>Wei et al. 2022。<strong>『ステップバイステップで考えよう』</strong>と促すと、数学・推論タスクで精度大幅向上。複雑な問題を分解する過程を出力させることで、最終答えの質が上がる。GPT-4以降は『考える』を内部化（推論モデル o1/o3）。</p>
 
-    <h2 id="emergence"><span class="label">§3 / EMERGENCE</span>創発能力（Emergent Abilities）</h2>
-    <p>Wei et al. (2022) が報告：ある種の能力（多段推論、コード生成、ジョークの理解など）は、<strong>モデルサイズが一定閾値を超えると突然出現</strong>する。</p>
+    <h3 style="margin-top:36px;">§1.6 Instruction Tuning</h3>
+    <p>事前学習済みLLM に <strong>(指示, 入力, 出力) の組</strong>で追加学習。FLAN、T0、Alpaca。RLHFの前段として標準化。多様なタスクの『指示の理解』を学習し、ユーザの自然言語要求に応答できるようになる。</p>
 
-    <div class="figure">
-      <svg viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg">
-        <line x1="60" y1="200" x2="640" y2="200" stroke="#0d1b2a"/>
-        <line x1="100" y1="20" x2="100" y2="220" stroke="#0d1b2a"/>
-        <text x="635" y="218" font-size="11" fill="#5a5f6a">モデルサイズ</text>
-        <text x="80" y="35" font-size="11" fill="#5a5f6a">性能</text>
-        <!-- Random level baseline -->
-        <line x1="100" y1="180" x2="400" y2="180" stroke="#5a5f6a" stroke-width="1" stroke-dasharray="3,3"/>
-        <text x="105" y="195" font-size="9" fill="#5a5f6a">ランダム水準</text>
-        <!-- Sudden emergence -->
-        <line x1="400" y1="180" x2="440" y2="170" stroke="#b8431f" stroke-width="3"/>
-        <line x1="440" y1="170" x2="470" y2="100" stroke="#b8431f" stroke-width="3"/>
-        <line x1="470" y1="100" x2="600" y2="50" stroke="#b8431f" stroke-width="3"/>
-        <line x1="420" y1="50" x2="420" y2="195" stroke="#d4a017" stroke-width="1" stroke-dasharray="4,2"/>
-        <text x="430" y="80" font-size="12" font-weight="bold" fill="#d4a017">創発閾値</text>
-        <text x="525" y="40" font-size="11" font-weight="bold" fill="#b8431f">急上昇！</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 5.2</span> 創発能力。一定サイズまで「ランダム水準」だった性能が、閾値を超えると急上昇する。これが「LLM は AGI に近づいた」議論の背景。</div>
+    <h3 style="margin-top:36px;">§1.7 RLHF（Reinforcement Learning from Human Feedback）</h3>
+    <div class="formula">
+<strong>RLHF の3ステップ</strong>（InstructGPT/ChatGPT）<br>
+① <strong>SFT</strong>　 人間が書いた回答で教師あり微調整<br>
+② <strong>報酬モデル</strong>　 人間がモデル出力をランキング→報酬モデル学習<br>
+③ <strong>PPO</strong>　 報酬モデルをreward, KLペナルティ付きで方策最適化<br><br>
+これで『指示追従性』と『無害化』を実現
     </div>
 
-    <p>創発される能力の例：</p>
-    <ul>
-      <li>多段算術（複数桁の掛け算）</li>
-      <li>多言語推論</li>
-      <li>Chain-of-Thought 推論（次節）</li>
-      <li>コード生成</li>
-      <li>ジョーク・皮肉の理解</li>
-    </ul>
-    <p>※ 創発の存在自体に疑義を呈する研究もある（Schaeffer et al. 2023, 「測り方の問題」）。</p>
+    <h3 style="margin-top:36px;">§1.8 DPO（Direct Preference Optimization）</h3>
+    <p>Rafailov et al. 2023。RLHFの複雑な3段階を <strong>直接最適化問題</strong>に変換。報酬モデルが不要、PPO不要、シンプルなクロスエントロピー風の損失。実装容易で性能はRLHF同等以上、現代の標準。</p>
 
-    <h2 id="icl"><span class="label">§4 / ICL</span>In-context Learning（再訪）</h2>
-    <p>章4 で言及したとおり、GPT-3 はプロンプトに例を含めるだけでタスクを学習する。これは <strong>weight 更新なし</strong> の「学習」。研究上の謎の一つ。</p>
-    <p>近年の理解（仮説）：</p>
-    <ul>
-      <li>Self-Attention が「メタ学習」のように動作している</li>
-      <li>Transformer 内部で勾配降下に似た計算が実行されている</li>
-      <li>事前学習データに同様のパターンが存在し、それを「想起」している</li>
+    <h3 style="margin-top:36px;">§1.9 Hallucination（幻覚）</h3>
+    <p>LLMが <strong>事実と異なる情報を自信を持って生成</strong>する現象。原因：(a)訓練データの事実誤り、(b)文章生成の確率的性質、(c)知識カットオフ、(d)分布外質問。対処：</p>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>RAG</strong>：外部知識を検索して根拠化（章19）</li>
+      <li><strong>Tool Use</strong>：計算機・検索エンジンを呼び出し</li>
+      <li><strong>Self-Consistency</strong>：複数サンプリングで多数決</li>
+      <li><strong>Calibration</strong>：不確実なら『分からない』と答えるよう学習</li>
+      <li><strong>Citation</strong>：根拠の出所を明示</li>
     </ul>
 
-    <h2 id="cot"><span class="label">§5 / COT</span>Chain-of-Thought（思考の連鎖）</h2>
-    <p>Wei et al. (2022) が提案。<strong>「ステップバイステップで考えて」</strong> とプロンプトに添えるだけで、複雑な推論問題の正答率が劇的に上がる。</p>
-
-    <div class="example">
-      <div class="example-title">CoT の効果（数学問題）</div>
-      <strong>普通のプロンプト</strong>：「リンゴが12個、4人で分けると1人何個？ 答え: ?」<br>
-      → モデル：「3個」（正解だが、もっと難しい問題では誤答が増える）<br><br>
-      <strong>CoT プロンプト</strong>：「ステップバイステップで考えて。リンゴが12個、4人で分けると1人何個？」<br>
-      → モデル：「12個を4人で割る。12 ÷ 4 = 3。答え: 3個」<br>
-      → より複雑な問題でも正答率が大幅上昇
-    </div>
-
-    <p>派生：</p>
-    <ul>
-      <li><strong>Zero-shot CoT</strong>：「Let's think step by step」だけ追加</li>
-      <li><strong>Self-Consistency</strong>：複数の推論経路を生成し多数決</li>
-      <li><strong>Tree of Thoughts</strong>：推論を木構造で探索</li>
-      <li><strong>OpenAI o1, o3 / DeepSeek R1</strong>：CoT を学習で内在化した「推論モデル」</li>
-    </ul>
-
-    <h2 id="tuning"><span class="label">§6 / TUNING</span>微調整の手法</h2>
+    <h3 style="margin-top:36px;">§1.10 LLM の評価</h3>
     <table class="spec">
-      <tr><th>Full Fine-tuning</th><td>全パラメータを更新。最高性能だが計算コスト高</td></tr>
-      <tr><th><strong>LoRA</strong></th><td>低ランク行列 ΔW = AB だけ学習。元の重みは凍結。<strong>主流</strong></td></tr>
-      <tr><th>QLoRA</th><td>LoRA + 4bit 量子化。GPU メモリ大幅削減</td></tr>
-      <tr><th>Prefix Tuning</th><td>各層に学習可能なプロンプトを追加</td></tr>
-      <tr><th>Prompt Tuning</th><td>入力にだけ学習可能なトークンを追加</td></tr>
-      <tr><th>Adapter</th><td>各層に小さな MLP を挿入</td></tr>
-      <tr><th>Instruction Tuning</th><td>「指示 → 応答」形式の教師あり学習</td></tr>
-      <tr><th>RLHF</th><td>人間フィードバックで強化学習（章7で詳述）</td></tr>
+      <tr><th>ベンチマーク</th><th>評価対象</th></tr>
+      <tr><td>MMLU</td><td>57科目の選択肢QA、汎用知識</td></tr>
+      <tr><td>HumanEval / MBPP</td><td>Pythonコード生成</td></tr>
+      <tr><td>GSM8K / MATH</td><td>数学的推論</td></tr>
+      <tr><td>BIG-bench</td><td>200+ の多様タスク</td></tr>
+      <tr><td>TruthfulQA</td><td>真偽性、Hallucination</td></tr>
+      <tr><td>HELM / Chatbot Arena</td><td>総合評価、人間嗜好評価</td></tr>
+      <tr><td>SWE-bench</td><td>実GitHub課題でのコーディング</td></tr>
     </table>
 
-    <h2 id="summary"><span class="label">§7 / SUMMARY</span>章のまとめ</h2>
-    <table class="spec">
-      <tr><th>1</th><td>スケーリング則：N, D, C のいずれもが冪乗則で損失を下げる</td></tr>
-      <tr><th>2</th><td>両対数プロットで直線</td></tr>
-      <tr><th>3</th><td>Chinchilla：パラメータ数とデータ量を同程度に増やすべき</td></tr>
-      <tr><th>4</th><td>GPT-3 は「パラメータ過剰、データ不足」だった</td></tr>
-      <tr><th>5</th><td>創発能力：閾値を超えると急に出現する能力</td></tr>
-      <tr><th>6</th><td>In-context Learning：プロンプトでの実質的な学習</td></tr>
-      <tr><th>7</th><td>Chain-of-Thought：「ステップで考えて」で推論性能向上</td></tr>
-      <tr><th>8</th><td>o1, o3, R1 は CoT を学習で内在化した推論モデル</td></tr>
-      <tr><th>9</th><td>LoRA / QLoRA が現代の微調整標準</td></tr>
-      <tr><th>10</th><td>Instruction Tuning と RLHF が ChatGPT の核</td></tr>
-    </table>
-
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>スケーリング則の3つの軸（N, D, C）と冪乗則</li>
-        <li>Chinchilla 論文が示した「正しい配分」</li>
-        <li>GPT-3 が Chinchilla の観点で何を間違えていたか</li>
-        <li>創発能力とは何か。例を3つ</li>
-        <li>創発の存在に懐疑的な見方</li>
-        <li>In-context Learning の謎（重みを更新しないのに学習に見える理由）</li>
-        <li>Chain-of-Thought プロンプトの効果と仕組み</li>
-        <li>LoRA がどのように計算コストを削減するか</li>
-        <li>Instruction Tuning と Pretraining の違い</li>
-        <li>o1 / o3 / R1 が従来の LLM と何が違うか</li>
-      </ol>
+    <div class="figure">
+      <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 17.1 ／ EMERGENT ABILITIES OF LLMs</text>
+        <g transform="translate(80,55)">
+          <line x1="0" y1="130" x2="500" y2="130" stroke="#5a5f6a"/>
+          <line x1="0" y1="130" x2="0" y2="0" stroke="#5a5f6a"/>
+          <text x="-15" y="65" font-family="serif" font-size="11" fill="#0d1b2a">性能</text>
+          <text x="250" y="160" text-anchor="middle" font-family="serif" font-size="11" fill="#0d1b2a">パラメータ数 (log)</text>
+          
+          <text x="20" y="148" font-family="monospace" font-size="9" fill="#5a5f6a">100M</text>
+          <text x="155" y="148" font-family="monospace" font-size="9" fill="#5a5f6a">1B</text>
+          <text x="290" y="148" font-family="monospace" font-size="9" fill="#5a5f6a">10B</text>
+          <text x="425" y="148" font-family="monospace" font-size="9" fill="#5a5f6a">100B</text>
+          
+          <path d="M 0 125 L 100 122 L 200 115 L 280 95 L 350 50 L 450 15" stroke="#b8431f" stroke-width="2.5" fill="none"/>
+          <text x="450" y="10" font-family="monospace" font-size="10" fill="#b8431f">数学推論</text>
+          <line x1="280" y1="130" x2="280" y2="95" stroke="#b8431f" stroke-width="1" stroke-dasharray="3 2"/>
+          <text x="240" y="125" font-family="serif" font-size="10" fill="#b8431f">創発</text>
+          
+          <path d="M 0 100 L 100 85 L 200 70 L 300 50 L 400 30 L 480 15" stroke="#2e5577" stroke-width="2.5" fill="none"/>
+          <text x="450" y="25" font-family="monospace" font-size="10" fill="#2e5577">翻訳</text>
+          
+          <path d="M 0 110 L 100 100 L 200 90 L 300 75 L 400 60 L 480 45" stroke="#d4a017" stroke-width="2.5" fill="none"/>
+          <text x="450" y="40" font-family="monospace" font-size="10" fill="#d4a017">要約</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 17.1</span> ／ LLM のスケールと性能。簡単なタスク（翻訳・要約）は連続改善、複雑な推論はある閾値で『創発』する。これがスケーリングの最も興味深い性質。</div>
     </div>
+
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>プロンプトエンジニアリング、Constitutional AI、MoE、長文文脈の4節。</p>
+    </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 プロンプトエンジニアリング</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>明確な指示</strong>：何をすべきか、フォーマット、長さを具体的に</li>
+      <li><strong>Few-shot 例</strong>：所望の入出力例を2〜5個</li>
+      <li><strong>Chain-of-Thought</strong>：『step by step』『let's think』</li>
+      <li><strong>Role Prompting</strong>：『あなたは経験豊富な医師です』</li>
+      <li><strong>Format Specification</strong>：JSON、Markdown、XMLタグ指定</li>
+      <li><strong>Anti-pattern 回避</strong>：曖昧・矛盾・ハルシネーション誘発を避ける</li>
+    </ul>
+
+    <h3 style="margin-top:36px;">§2.2 Constitutional AI（Anthropic）</h3>
+    <p>『憲法』として書かれた原則のセットで LLM の出力を <strong>自己批判・自己修正</strong>させる手法。Claude の核技術。RLHF と組み合わせて、有害な出力を減らしつつ helpful 性を保つ。RLAIF（AI Feedback）への発展。</p>
+
+    <h3 style="margin-top:36px;">§2.3 Mixture of Experts（MoE）</h3>
+    <p>すべてのトークンですべてのパラメータを使う dense モデルに対し、MoE はトークンごとに <strong>専門家サブネット</strong>を選択（典型 8〜64のうち2〜4をアクティブ）。総パラメータ数は大きいが計算量は少ない。Mixtral、GPT-4（推定）、Gemini 1.5 などが採用。</p>
+
+    <h3 style="margin-top:36px;">§2.4 長文文脈と KV Cache</h3>
+    <p>Transformer の Attention は O(n²) で、文脈長 n が伸びるとメモリが爆発。技術：(a)<strong>KV Cache</strong>：推論時に過去のkey/valueを再利用、(b)<strong>Flash Attention</strong>：メモリ効率良いカーネル、(c)<strong>Sparse/Sliding Window Attention</strong>：選択的注意、(d)<strong>RoPE/ALiBi</strong>で長さ外挿、(e)<strong>RingAttention/PagedAttention</strong>。100万トークン超の文脈（Gemini 1.5 Pro, Claude 3.7）が実用化。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>OpenAI API、Anthropic API、Hugging Face LLM、LoRA微調整、CoTプロンプティングの5節。</p>
+    </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 OpenAI API</h3>
+    <div class="code-block">
+<span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI
+
+client = OpenAI(api_key=<span class="string">"sk-..."</span>)
+res = client.chat.completions.create(
+    model=<span class="string">"gpt-4o"</span>,
+    messages=[
+        {<span class="string">"role"</span>: <span class="string">"system"</span>, <span class="string">"content"</span>: <span class="string">"You are a helpful assistant."</span>},
+        {<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: <span class="string">"日本の総理大臣は？"</span>}
+    ],
+    temperature=<span class="builtin">0.7</span>,
+    max_tokens=<span class="builtin">200</span>
+)
+print(res.choices[<span class="builtin">0</span>].message.content)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 Anthropic Claude API</h3>
+    <div class="code-block">
+<span class="keyword">import</span> anthropic
+
+client = anthropic.Anthropic(api_key=<span class="string">"sk-ant-..."</span>)
+res = client.messages.create(
+    model=<span class="string">"claude-opus-4-7"</span>,
+    max_tokens=<span class="builtin">1024</span>,
+    system=<span class="string">"あなたは経験豊富な日本語講師です。"</span>,
+    messages=[
+        {<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: <span class="string">"『推す』の活用形を教えて"</span>}
+    ]
+)
+print(res.content[<span class="builtin">0</span>].text)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 Hugging Face で LLaMA</h3>
+    <div class="code-block">
+<span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer
+<span class="keyword">import</span> torch
+
+model_id = <span class="string">"meta-llama/Llama-3.1-8B-Instruct"</span>
+tok = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(
+    model_id, torch_dtype=torch.bfloat16, device_map=<span class="string">"auto"</span>)
+
+messages = [{<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: <span class="string">"Tell me a joke."</span>}]
+inputs = tok.apply_chat_template(messages, return_tensors=<span class="string">"pt"</span>).to(<span class="string">"cuda"</span>)
+out = model.generate(inputs, max_new_tokens=<span class="builtin">100</span>, temperature=<span class="builtin">0.7</span>)
+print(tok.decode(out[<span class="builtin">0</span>][inputs.shape[<span class="builtin">1</span>]:], skip_special_tokens=<span class="keyword">True</span>))
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 LoRA で LLM ファインチューニング</h3>
+    <div class="code-block">
+<span class="keyword">from</span> peft <span class="keyword">import</span> LoraConfig, get_peft_model
+<span class="keyword">from</span> transformers <span class="keyword">import</span> Trainer, TrainingArguments
+
+lora_config = LoraConfig(
+    r=<span class="builtin">8</span>,                    <span class="comment"># ランク（小さいほど効率的）</span>
+    lora_alpha=<span class="builtin">16</span>,
+    target_modules=[<span class="string">"q_proj"</span>, <span class="string">"v_proj"</span>],
+    lora_dropout=<span class="builtin">0.05</span>,
+    task_type=<span class="string">"CAUSAL_LM"</span>
+)
+model = get_peft_model(model, lora_config)
+model.print_trainable_parameters()
+<span class="comment"># trainable params: 8.4M / 8B = 0.1%</span>
+
+trainer = Trainer(model=model, args=TrainingArguments(
+    output_dir=<span class="string">"./lora-out"</span>, num_train_epochs=<span class="builtin">3</span>,
+    per_device_train_batch_size=<span class="builtin">4</span>, learning_rate=<span class="builtin">3e-4</span>),
+    train_dataset=dataset)
+trainer.train()
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 Chain-of-Thought プロンプト</h3>
+    <div class="code-block">
+<span class="comment"># Few-shot CoT</span>
+prompt = <span class="string">"""
+質問：太郎は鉛筆を10本持っている。3本を友達にあげた後、
+さらに5本買った。今、太郎は何本持っているか？
+
+思考：
+1. 元々 10本
+2. 3本あげた → 10 - 3 = 7本
+3. 5本買った → 7 + 5 = 12本
+答え：12本
+
+質問：花子はりんごを8個買い、家族に4個あげ、
+さらに3個もらった。今、何個ある？
+
+思考："""</span>
+
+<span class="comment"># LLM の回答（典型）</span>
+<span class="comment"># 思考：</span>
+<span class="comment"># 1. 元々 8個買った</span>
+<span class="comment"># 2. 4個あげた → 8 - 4 = 4個</span>
+<span class="comment"># 3. 3個もらった → 4 + 3 = 7個</span>
+<span class="comment"># 答え：7個</span>
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>スケーリング則、CoTの効果、Hallucinationの3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — スケーリング則の実証</h4>
+      <div class="sim-output">
+&gt;&gt; LLaMA系列のMMLU（57科目QA）スコア<br>
+<br>
+LLaMA-7B:　 35.1%　 ← 人間ランダムレベル<br>
+LLaMA-13B:　46.9%<br>
+LLaMA-30B:　57.8%<br>
+LLaMA-65B:　63.4%<br>
+LLaMA2-70B: 68.9%<br>
+LLaMA3-70B: 79.5%　 ← データ品質改善も<br>
+LLaMA3-405B: 86.4%　 ← 巨大化の効果<br>
+<br>
+GPT-4o:　　 88.7%<br>
+Claude 3.7: 89.5%<br>
+o1-preview: 90.8%<br>
+<br>
+&gt;&gt; パラメータ・データ・計算でスムーズに改善<br>
+&gt;&gt; ただし限界ベンチマークも見え始め
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — Chain-of-Thought の効果</h4>
+      <div class="sim-output">
+&gt;&gt; GSM8K（小学校算数）正解率<br>
+<br>
+[直接回答]<br>
+GPT-3 (175B):　 17.9%<br>
+PaLM 540B:　　 56.5%<br>
+<br>
+[Chain-of-Thought プロンプト]<br>
+GPT-3 (175B):　 46.9%　 ← +29% (劇的改善)<br>
+PaLM 540B:　　 80.7%<br>
+<br>
+[自己一貫性（複数サンプリング＋多数決）]<br>
+PaLM 540B:　　 87.3%<br>
+<br>
+&gt;&gt; CoT は『推論能力の表出』を促す<br>
+&gt;&gt; o1/o3 はこれを内部化、テスト時推論で更に強化
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — Hallucination の発生</h4>
+      <div class="sim-output">
+&gt;&gt; 『2025年4月の日本の総理大臣は？』 LLMの回答<br>
+<br>
+[GPT-3.5 (knowledge cutoff: 2021)]<br>
+　 『岸田文雄首相です』 ← 古い知識で誤り（2024年10月に石破首相に交代）<br>
+<br>
+[GPT-4 with web search]<br>
+　 [searches]『2025年4月時点では石破茂首相です』 ← 正確<br>
+<br>
+[微妙な質問]『Albert Einstein はノーベル平和賞を受賞した？』<br>
+　 多くのLLM：『はい、1921年に』 ← 完全な誤り<br>
+　 正解：物理学賞であって平和賞ではない<br>
+<br>
+&gt;&gt; 対処：RAG、Tool Use、Citation、Self-Consistency
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">『スケーリング則（Scaling Laws）』の主張は。</div>
+        <div class="p-choices">① パラメータ数だけが効く　 ② パラメータ・データ・計算の3軸で損失がパワーロー則で改善　 ③ 関係なし　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Kaplan et al. 2020。これがGPT-3, GPT-4 のスケール拡大を駆動。Chinchilla で最適配分が改良。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">『Chinchilla 最適化』（DeepMind 2022）が示した知見は。</div>
+        <div class="p-choices">① 必ずパラメータを増やせ　 ② 計算予算が決まればパラメータとデータをほぼ同じスケールで増やすのが最適　 ③ データ不要　 ④ パラメータ削減</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hoffmann et al. それまでのLLMはパラメータ過大・データ不足。70Bモデル+1.4Tトークンが280Bを凌駕。LLaMA系がこの教訓を踏襲。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">『In-Context Learning（ICL）』とは。</div>
+        <div class="p-choices">① 微調整　 ② プロンプト内の例だけで推論時にタスク適応（パラメータ更新なし）　 ③ クラスタリング　 ④ 強化学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GPT-3 で発見された創発能力。Few-shot Learning の革命。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">『Chain-of-Thought』プロンプトが効果的なタスクは。</div>
+        <div class="p-choices">① 単純な事実検索　 ② 多段推論（数学、論理パズル、複雑な計算）　 ③ 翻訳　 ④ 分類</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 『step by step』『let's think』で思考過程を出力させ、最終答えの質を向上。GSM8K等の数学で劇的改善。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">RLHF の3つのステップは。</div>
+        <div class="p-choices">① SFT → 報酬モデル学習 → PPO で方策最適化　 ② 学習なし　 ③ 強化学習のみ　 ④ 単純な教師あり</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> SFT で初期化、人間のランキングから報酬モデル、PPO（KL正則化付き）で最適化。InstructGPT/ChatGPT の核心。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">DPO（Direct Preference Optimization）の利点は。</div>
+        <div class="p-choices">① RLHFと同じ　 ② 報酬モデルもPPOも不要、CE風損失だけで好み学習が可能　 ③ 学習しない　 ④ パラメータ削減</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Rafailov 2023。RLHF より実装が大幅に簡単で性能同等以上、現代の標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">LLM の Hallucination（幻覚）対策として有効でないのは。</div>
+        <div class="p-choices">① RAG（外部知識検索）　 ② Tool Use　 ③ Citation　 ④ 学習率を上げる</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> 学習率変更は事前学習段階の話。Hallucination は RAG, Tool Use, Self-Consistency, Citation, Calibration で対処。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">『MoE（Mixture of Experts）』の動作は。</div>
+        <div class="p-choices">① すべてのパラメータ常時使用　 ② トークンごとに専門家サブネットを選択的アクティブ化（疎活性化）　 ③ クラスタリング　 ④ アンサンブル</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 総パラメータは巨大、計算は一部のみ。Mixtral、GPT-4（推定）、Gemini 1.5 で採用。スケール効率の鍵。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">LLM の評価ベンチマークで『多分野QA』に該当するのは。</div>
+        <div class="p-choices">① HumanEval　 ② MMLU（57科目）　 ③ GSM8K　 ④ SWE-bench</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> MMLU は数学、歴史、医学等57分野の選択肢QA。HumanEval=コード、GSM8K=数学、SWE-bench=実コーディング。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">『Constitutional AI』（Anthropic）の特徴は。</div>
+        <div class="p-choices">① 学習なし　 ② 原則のセットでモデル自身に出力を批判・修正させ、人間ラベルを最小化　 ③ 検索のみ　 ④ パラメータ削減</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Claude の核技術。AI Feedback（RLAIF）への発展。スケーラブルな安全性技術。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">Instruction Tuning（指示チューニング）の入力形式は。</div>
+        <div class="p-choices">① (画像, ラベル)　 ② (指示, 入力, 出力) のペア　 ③ クラスタ　 ④ ラベルなし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> FLAN、T0、Alpacaなど。多様なタスクの指示理解を学習。RLHFの前段。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">『創発的能力』とは何か。</div>
+        <div class="p-choices">① 全モデルが持つ　 ② パラメータ／計算が閾値を超えると突然現れる能力（多段推論、コーディング等）　 ③ ランダム　 ④ 線形改善のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Wei et al. 2022。小モデルでは ≈0%、大モデルで急激に向上するタスクが存在。スケーリングの最も興味深い性質。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">長文文脈処理の効率化技術として該当するのは。</div>
+        <div class="p-choices">① Dropout　 ② Flash Attention、KV Cache、Sparse Attention、PagedAttention　 ③ Sigmoid　 ④ K-means</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Attention の O(n²) を抑えてメモリ・計算効率化。100万トークン超の文脈（Gemini 1.5, Claude 3.7）を可能にした。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">o1/o3 など『推論モデル』の特徴は。</div>
+        <div class="p-choices">① 高速応答のみ　 ② テスト時に長い思考過程を生成して推論精度を向上、数学・コーディングで SOTA　 ③ 学習しない　 ④ ラベル不要</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CoT を内部化、テスト時の計算量増で性能向上。新しいスケーリング軸（テスト時計算）の発見。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">LLM の温度（temperature）パラメータの意味は。</div>
+        <div class="p-choices">① モデルサイズ　 ② Softmaxを T で割って分布の鋭さを調整。低い=決定的、高い=多様　 ③ パラメータ数　 ④ 学習率</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 創造性と一貫性のバランス。T=0で貪欲、T=1で標準、T=2で創造的だがHallucination増。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">『Top-p Nucleus Sampling』の動作は。</div>
+        <div class="p-choices">① 全ての候補から　 ② 累積確率が p になるまで上位トークンを選び、その中からサンプリング　 ③ 必ず1位　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Top-k よりも適応的。低確率の長い裾を切り落としつつ多様性確保。p=0.9 が典型。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">LLM 微調整の効率技術『LoRA』が更新するパラメータは。</div>
+        <div class="p-choices">① 全パラメータ　 ② 元の行列に低ランク差分（A·B、ランクr）を加え、その差分のみ学習　 ③ 凍結のみ　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 学習可能パラメータを 0.1〜1% に削減。QLoRA で 4-bit 量子化と組合せ、コンシューマGPUで70Bモデル微調整可能に。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">LLM の『指示追従性』を実現する手法は。</div>
+        <div class="p-choices">① 単なる事前学習　 ② Instruction Tuning + RLHF（または DPO）　 ③ 線形化　 ④ クラスタ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 事前学習だけでは『次のトークン予測機』にすぎない。指示理解と安全性は Instruction Tuning + RLHF で獲得。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">『Self-Consistency』の手法は。</div>
+        <div class="p-choices">① 1回サンプリング　 ② 同じ問題を複数回CoTでサンプリングし、最頻の答えを選ぶ　 ③ 線形回帰　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Wang 2022。数学推論で CoT+Self-Consistency が CoT 単独より大幅に強い。複数の思考経路の多数決。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">『Knowledge Cutoff』とは。</div>
+        <div class="p-choices">① 計算リソース上限　 ② LLM が事前学習した時点までしか知識を持たないという制約　 ③ パラメータ数　 ④ 学習率</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GPT-4o は2024年初頭まで、Claude 3.7 は2025年初頭までなど。新しい情報は RAG, Web 検索、Tool Use で補完。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">LLM の定義、スケーリング則（Kaplan）、Chinchilla 最適化、In-Context Learning、Chain-of-Thought、Instruction Tuning、RLHF、DPO、Hallucination、評価（MMLU、HumanEval、GSM8K、HELM）を扱いました。応用ではプロンプトエンジニアリング、Constitutional AI、MoE、長文文脈。ハンズオンで OpenAI/Anthropic API、Hugging Face LLaMA、LoRA、CoT。シミュレーションでスケーリング、CoT、Hallucination。次章は生成モデル（GAN、VAE、Diffusion）で画像・音声・動画生成へ。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="04-bert-gpt.html">← 章4</a></div>
-  <div><a href="06-generative.html">章6: 生成AI →</a></div>
+  <div><a href="04-bert-gpt.html">← 章16: BERT・GPT</a></div>
+  <div><span class="ch-label">Chapter 17 of 24 · 応用編</span><br><span class="ch-title">LLM</span></div>
+  <div><a href="06-generative.html">章18: 生成モデル →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a><a href="../../../certifications/tokei.html">統計検定</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

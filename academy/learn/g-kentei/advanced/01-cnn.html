@@ -3,311 +3,567 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章1 CNN — G検定 応用 — Swallow AI Academy</title>
-<meta name="description" content="G検定応用 章1：畳み込みニューラルネット。畳み込み、プーリング、ResNet、EfficientNet、ConvNeXt の進化を図解で。">
+<title>章13 CNN — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章13：畳み込み演算、フィルタ、プーリング、受容野、AlexNet、VGG、ResNet、EfficientNet、ViT、物体検出、セマンティックセグメンテーション、転移学習、Grad-CAMを5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="../basics/index.html">基本</a>
-      <a href="index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.1</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="../basics/index.html">基本</a><a href="index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章1</div>
-    <h1>応用 章1 — CNN<span class="en">Convolutional Neural Networks</span></h1>
-    <p class="standfirst">画像認識の長年の主役。<strong>「局所性」「平行移動不変性」「重み共有」</strong> という3つの帰納バイアスを利用し、MLP では破綻する高解像度画像を扱えるように設計された深層NN。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章13</div>
+    <h1>章13 — CNN（畳み込みニューラルネット）<span class="en">Chapter 13 — Convolutional Neural Networks</span></h1>
+    <p class="standfirst">2012年、AlexNet が ImageNet コンペで第2位を10ポイント以上引き離して優勝。<strong>深層学習革命</strong>はここから始まりました。本章では、画像認識を根本的に変えた <strong>CNN</strong> を、<strong>畳み込み演算</strong>、<strong>フィルタ</strong>、<strong>プーリング</strong>、<strong>受容野</strong>、<strong>AlexNet/VGG/ResNet/EfficientNet/ViT</strong>、<strong>物体検出</strong>、<strong>セグメンテーション</strong>、<strong>Grad-CAM</strong> まで5部構成で徹底解説します。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="index.html">← 応用 章一覧</a></div>
-  <div><span class="ch-label">応用 Chapter 1 of 12</span><br><span class="ch-title">CNN</span></div>
-  <div><a href="02-rnn.html">章2: RNN/LSTM →</a></div>
+  <div><a href="../basics/12-nn-tricks.html">← 章12: NNの工夫</a></div>
+  <div><span class="ch-label">Chapter 13 of 24 · 応用編 1/12</span><br><span class="ch-title">CNN</span></div>
+  <div><a href="02-rnn.html">章14: RNN →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
-    <h6>章1 目次</h6>
-    <a href="#why">§1 なぜ MLP では駄目か</a>
-    <a href="#conv">§2 畳み込み演算</a>
-    <a href="#pool">§3 プーリング</a>
-    <a href="#stride">§4 ストライド・パディング</a>
-    <a href="#arch">§5 典型的 CNN 構造</a>
-    <a href="#models">§6 代表モデル史</a>
-    <a href="#resnet">§7 ResNet</a>
-    <a href="#modern">§8 EfficientNet・ConvNeXt</a>
-    <a href="#summary">§9 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <h6>章13 目次</h6>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
-    <h2 id="why"><span class="label">§1 / WHY</span>なぜ MLP では駄目か</h2>
-    <p>224×224×3 の画像を MLP に入れると、入力次元は <strong>150,528</strong>。1層目で 1000 ユニットなら重みが <strong>1.5億</strong>。これを学習するには：</p>
-    <ul>
-      <li>巨大なパラメータ数 → 過学習</li>
-      <li>位置依存：左上のリンゴと右下のリンゴを別物として学ぶ</li>
-      <li>局所性無視：隣接ピクセルの関係を捨てる</li>
-    </ul>
-    <p>CNN はこれらを <strong>3つの設計</strong> で解決：</p>
-    <ol>
-      <li><strong>局所結合</strong>：各ニューロンが入力の一部のみ見る</li>
-      <li><strong>重み共有</strong>：同じフィルタを全位置で再利用</li>
-      <li><strong>プーリング</strong>：階層的に解像度を下げる</li>
-    </ol>
+    <div class="article-eyebrow">G-KENTEI · ADVANCED · CHAPTER 13</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">画像を、空間構造のまま<br>機械に理解させる。</h2>
+    <p class="article-lede">普通のMLPで32x32の画像を扱うと、入力1024次元。フル結合で過剰なパラメータ。<strong>CNN</strong>はこの問題を、画像の <strong>空間的局所性</strong>（近い画素は関係する）と <strong>平行移動不変性</strong>（猫はどこにいても猫）の2つの仮定で解決します。畳み込みフィルタを画像全体にスライドさせてパラメータを共有、プーリングで階層的に圧縮 ── これが現代視覚AIの基本骨格です。</p>
 
-    <h2 id="conv"><span class="label">§2 / CONV</span>畳み込み演算</h2>
-    <p>小さなフィルタ（カーネル）を画像上にスライドし、内積を取って特徴マップを作る。</p>
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>畳み込み・フィルタ・ストライド/パディング・プーリング・受容野・チャネル・AlexNet・VGG・ResNet・EfficientNet/ViTの10節。</p>
+    </div>
+
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 畳み込み演算 — CNNの心臓</h3>
+    <div class="formula">
+(I * K)(i, j) = Σ_m Σ_n I(i+m, j+n) · K(m, n)<br><br>
+I：入力画像、K：カーネル（フィルタ、典型 3x3 や 5x5）<br>
+カーネルを画像上でスライドし、要素積の和を計算
+    </div>
+
+    <p>『局所領域の重み付き和』を空間全体で繰り返す。<strong>パラメータ共有</strong>（同じカーネルを全位置で使用）が CNN の効率の根源。MLP（全結合）と比較して劇的にパラメータ削減＋平行移動不変性獲得。</p>
 
     <div class="figure">
-      <svg viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg">
-        <!-- Input image 5x5 -->
-        <g transform="translate(20, 60)">
-          <text x="100" y="-10" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">入力 5×5</text>
+      <svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="25" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 13.1 ／ CONVOLUTION OPERATION</text>
+        <g transform="translate(60,50)">
+          <text x="60" y="0" text-anchor="middle" font-family="serif" font-size="12" font-weight="700">入力 5x5</text>
           <g stroke="#0d1b2a" stroke-width="1">
-            <rect x="0" y="0" width="40" height="40" fill="#fff8f2"/>
-            <rect x="40" y="0" width="40" height="40" fill="#fff8f2"/>
-            <rect x="80" y="0" width="40" height="40" fill="#fff8f2"/>
-            <rect x="120" y="0" width="40" height="40" fill="#fff8f2"/>
-            <rect x="160" y="0" width="40" height="40" fill="#fff8f2"/>
-            <rect x="0" y="40" width="40" height="40" fill="#fff8f2"/>
-            <rect x="40" y="40" width="40" height="40" fill="#fff8f2"/>
-            <rect x="80" y="40" width="40" height="40" fill="#fff8f2"/>
-            <rect x="120" y="40" width="40" height="40" fill="#fff8f2"/>
-            <rect x="160" y="40" width="40" height="40" fill="#fff8f2"/>
-            <rect x="0" y="80" width="40" height="40" fill="#fff8f2"/>
-            <rect x="40" y="80" width="40" height="40" fill="#fff8f2"/>
-            <rect x="80" y="80" width="40" height="40" fill="#fff8f2"/>
-            <rect x="120" y="80" width="40" height="40" fill="#fff8f2"/>
-            <rect x="160" y="80" width="40" height="40" fill="#fff8f2"/>
-            <rect x="0" y="120" width="40" height="40" fill="#fff8f2"/>
-            <rect x="40" y="120" width="40" height="40" fill="#fff8f2"/>
-            <rect x="80" y="120" width="40" height="40" fill="#fff8f2"/>
-            <rect x="120" y="120" width="40" height="40" fill="#fff8f2"/>
-            <rect x="160" y="120" width="40" height="40" fill="#fff8f2"/>
-            <rect x="0" y="160" width="40" height="40" fill="#fff8f2"/>
-            <rect x="40" y="160" width="40" height="40" fill="#fff8f2"/>
-            <rect x="80" y="160" width="40" height="40" fill="#fff8f2"/>
-            <rect x="120" y="160" width="40" height="40" fill="#fff8f2"/>
-            <rect x="160" y="160" width="40" height="40" fill="#fff8f2"/>
+            <rect x="0" y="10" width="25" height="25" fill="#fff8f2"/>
+            <rect x="25" y="10" width="25" height="25" fill="#fff8f2"/>
+            <rect x="50" y="10" width="25" height="25" fill="#fff8f2"/>
+            <rect x="75" y="10" width="25" height="25" fill="#fff8f2"/>
+            <rect x="100" y="10" width="25" height="25" fill="#fff8f2"/>
+            <rect x="0" y="35" width="25" height="25" fill="#fff8f2"/>
+            <rect x="25" y="35" width="25" height="25" fill="#fff8f2"/>
+            <rect x="50" y="35" width="25" height="25" fill="#fff8f2"/>
+            <rect x="75" y="35" width="25" height="25" fill="#fff8f2"/>
+            <rect x="100" y="35" width="25" height="25" fill="#fff8f2"/>
+            <rect x="0" y="60" width="25" height="25" fill="#fff8f2"/>
+            <rect x="25" y="60" width="25" height="25" fill="#fff8f2"/>
+            <rect x="50" y="60" width="25" height="25" fill="#fff8f2"/>
+            <rect x="75" y="60" width="25" height="25" fill="#fff8f2"/>
+            <rect x="100" y="60" width="25" height="25" fill="#fff8f2"/>
+            <rect x="0" y="85" width="25" height="25" fill="#fff8f2"/>
+            <rect x="25" y="85" width="25" height="25" fill="#fff8f2"/>
+            <rect x="50" y="85" width="25" height="25" fill="#fff8f2"/>
+            <rect x="75" y="85" width="25" height="25" fill="#fff8f2"/>
+            <rect x="100" y="85" width="25" height="25" fill="#fff8f2"/>
+            <rect x="0" y="110" width="25" height="25" fill="#fff8f2"/>
+            <rect x="25" y="110" width="25" height="25" fill="#fff8f2"/>
+            <rect x="50" y="110" width="25" height="25" fill="#fff8f2"/>
+            <rect x="75" y="110" width="25" height="25" fill="#fff8f2"/>
+            <rect x="100" y="110" width="25" height="25" fill="#fff8f2"/>
           </g>
-          <!-- Highlighted 3x3 -->
-          <rect x="0" y="0" width="120" height="120" fill="#b8431f" opacity="0.3" stroke="#b8431f" stroke-width="3"/>
+          <rect x="0" y="10" width="75" height="75" fill="#b8431f" fill-opacity="0.25" stroke="#b8431f" stroke-width="2.5"/>
         </g>
-
-        <!-- Filter 3x3 -->
-        <g transform="translate(290, 100)">
-          <text x="60" y="-10" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">フィルタ 3×3</text>
-          <g stroke="#b8431f" stroke-width="1">
-            <rect x="0" y="0" width="40" height="40" fill="#b8431f"/><text x="20" y="26" text-anchor="middle" font-size="11" fill="#faf7f2">-1</text>
-            <rect x="40" y="0" width="40" height="40" fill="#b8431f"/><text x="60" y="26" text-anchor="middle" font-size="11" fill="#faf7f2">0</text>
-            <rect x="80" y="0" width="40" height="40" fill="#b8431f"/><text x="100" y="26" text-anchor="middle" font-size="11" fill="#faf7f2">1</text>
-            <rect x="0" y="40" width="40" height="40" fill="#b8431f"/><text x="20" y="66" text-anchor="middle" font-size="11" fill="#faf7f2">-2</text>
-            <rect x="40" y="40" width="40" height="40" fill="#b8431f"/><text x="60" y="66" text-anchor="middle" font-size="11" fill="#faf7f2">0</text>
-            <rect x="80" y="40" width="40" height="40" fill="#b8431f"/><text x="100" y="66" text-anchor="middle" font-size="11" fill="#faf7f2">2</text>
-            <rect x="0" y="80" width="40" height="40" fill="#b8431f"/><text x="20" y="106" text-anchor="middle" font-size="11" fill="#faf7f2">-1</text>
-            <rect x="40" y="80" width="40" height="40" fill="#b8431f"/><text x="60" y="106" text-anchor="middle" font-size="11" fill="#faf7f2">0</text>
-            <rect x="80" y="80" width="40" height="40" fill="#b8431f"/><text x="100" y="106" text-anchor="middle" font-size="11" fill="#faf7f2">1</text>
-          </g>
-          <text x="60" y="140" text-anchor="middle" font-size="10" fill="#5a5f6a">Sobel エッジ検出</text>
-        </g>
-
-        <!-- Arrow -->
-        <text x="440" y="170" font-size="20" fill="#0d1b2a">→</text>
-
-        <!-- Output feature map -->
-        <g transform="translate(490, 100)">
-          <text x="60" y="-10" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">特徴マップ 3×3</text>
-          <g stroke="#3a7d44" stroke-width="1">
-            <rect x="0" y="0" width="40" height="40" fill="#3a7d44" opacity="0.8"/>
-            <rect x="40" y="0" width="40" height="40" fill="#3a7d44" opacity="0.4"/>
-            <rect x="80" y="0" width="40" height="40" fill="#3a7d44" opacity="0.6"/>
-            <rect x="0" y="40" width="40" height="40" fill="#3a7d44" opacity="0.5"/>
-            <rect x="40" y="40" width="40" height="40" fill="#3a7d44" opacity="0.9"/>
-            <rect x="80" y="40" width="40" height="40" fill="#3a7d44" opacity="0.3"/>
-            <rect x="0" y="80" width="40" height="40" fill="#3a7d44" opacity="0.7"/>
-            <rect x="40" y="80" width="40" height="40" fill="#3a7d44" opacity="0.5"/>
-            <rect x="80" y="80" width="40" height="40" fill="#3a7d44" opacity="0.8"/>
+        <text x="220" y="100" font-family="serif" font-size="20" fill="#0d1b2a">*</text>
+        <g transform="translate(260,80)">
+          <text x="40" y="-30" text-anchor="middle" font-family="serif" font-size="12" font-weight="700">カーネル 3x3</text>
+          <g stroke="#0d1b2a" stroke-width="1">
+            <rect x="0" y="0" width="25" height="25" fill="#d4a017" fill-opacity="0.4"/>
+            <text x="12" y="17" text-anchor="middle" font-family="monospace" font-size="11">1</text>
+            <rect x="25" y="0" width="25" height="25" fill="#d4a017" fill-opacity="0.4"/>
+            <text x="37" y="17" text-anchor="middle" font-family="monospace" font-size="11">0</text>
+            <rect x="50" y="0" width="25" height="25" fill="#d4a017" fill-opacity="0.4"/>
+            <text x="62" y="17" text-anchor="middle" font-family="monospace" font-size="11">-1</text>
+            <rect x="0" y="25" width="25" height="25" fill="#d4a017" fill-opacity="0.4"/>
+            <text x="12" y="42" text-anchor="middle" font-family="monospace" font-size="11">1</text>
+            <rect x="25" y="25" width="25" height="25" fill="#d4a017" fill-opacity="0.4"/>
+            <text x="37" y="42" text-anchor="middle" font-family="monospace" font-size="11">0</text>
+            <rect x="50" y="25" width="25" height="25" fill="#d4a017" fill-opacity="0.4"/>
+            <text x="62" y="42" text-anchor="middle" font-family="monospace" font-size="11">-1</text>
+            <rect x="0" y="50" width="25" height="25" fill="#d4a017" fill-opacity="0.4"/>
+            <text x="12" y="67" text-anchor="middle" font-family="monospace" font-size="11">1</text>
+            <rect x="25" y="50" width="25" height="25" fill="#d4a017" fill-opacity="0.4"/>
+            <text x="37" y="67" text-anchor="middle" font-family="monospace" font-size="11">0</text>
+            <rect x="50" y="50" width="25" height="25" fill="#d4a017" fill-opacity="0.4"/>
+            <text x="62" y="67" text-anchor="middle" font-family="monospace" font-size="11">-1</text>
           </g>
         </g>
-
-        <text x="340" y="295" text-anchor="middle" font-size="11" fill="#5a5f6a" font-style="italic">フィルタが画像上をスライドし、各位置で内積を計算 → 特徴マップが完成</text>
+        <text x="380" y="100" font-family="serif" font-size="20" fill="#0d1b2a">=</text>
+        <g transform="translate(420,55)">
+          <text x="40" y="0" text-anchor="middle" font-family="serif" font-size="12" font-weight="700">出力 3x3</text>
+          <g stroke="#0d1b2a" stroke-width="1">
+            <rect x="0" y="10" width="35" height="35" fill="#2e5577" fill-opacity="0.4"/>
+            <text x="17" y="32" text-anchor="middle" font-family="monospace" font-size="11">2</text>
+            <rect x="35" y="10" width="35" height="35" fill="#2e5577" fill-opacity="0.4"/>
+            <text x="52" y="32" text-anchor="middle" font-family="monospace" font-size="11">-1</text>
+            <rect x="70" y="10" width="35" height="35" fill="#2e5577" fill-opacity="0.4"/>
+            <text x="87" y="32" text-anchor="middle" font-family="monospace" font-size="11">0</text>
+            <rect x="0" y="45" width="35" height="35" fill="#2e5577" fill-opacity="0.4"/>
+            <rect x="35" y="45" width="35" height="35" fill="#2e5577" fill-opacity="0.4"/>
+            <rect x="70" y="45" width="35" height="35" fill="#2e5577" fill-opacity="0.4"/>
+            <rect x="0" y="80" width="35" height="35" fill="#2e5577" fill-opacity="0.4"/>
+            <rect x="35" y="80" width="35" height="35" fill="#2e5577" fill-opacity="0.4"/>
+            <rect x="70" y="80" width="35" height="35" fill="#2e5577" fill-opacity="0.4"/>
+          </g>
+        </g>
+        <text x="350" y="240" text-anchor="middle" font-family="serif" font-size="11" fill="#5a5f6a" font-style="italic">3x3カーネルが5x5入力をスライド → 3x3出力（縦エッジ検出フィルタの例）</text>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 1.1</span> 畳み込み演算。フィルタ（カーネル）が入力上をスライドし、各位置で要素ごとの積の総和を取る。これにより「縦エッジがある場所」「丸い形がある場所」など、特定パターンへの応答が画像として得られる。</div>
+      <div class="figure-caption"><span class="figure-num">FIG 13.1</span> ／ 畳み込み演算の例。3x3カーネルが5x5入力上をスライドし、各位置で要素積の和を計算して3x3出力を得る。学習で多様なカーネルが特徴検出器として獲得される。</div>
     </div>
 
-    <p>パラメータ：</p>
-    <ul>
-      <li><strong>カーネルサイズ</strong>：3×3 が標準（VGG, ResNet）。1×1 は次元圧縮用</li>
-      <li><strong>ストライド</strong>：スライド幅。2 にすると出力解像度が半分</li>
-      <li><strong>パディング</strong>：境界の処理。"same" は出力サイズ維持</li>
-      <li><strong>チャネル</strong>：入力 RGB（3）、出力は任意（例：64, 128, 256...）</li>
-    </ul>
+    <h3 style="margin-top:36px;">§1.2 フィルタ・カーネル</h3>
+    <p>典型サイズ：3x3、5x5、7x7。VGG以降は3x3を多層積み重ねるアプローチが主流（同じ受容野を少ないパラメータで実現）。フィルタは学習可能、初期はエッジ・色、深層は複雑なパーツへ。</p>
 
-    <h2 id="pool"><span class="label">§3 / POOL</span>プーリング</h2>
-    <p>近接領域の代表値を取り、解像度を下げる。学習パラメータなし。</p>
-    <ul>
-      <li><strong>Max Pooling</strong>：領域内の最大値。最も一般的</li>
-      <li><strong>Average Pooling</strong>：平均値</li>
-      <li><strong>Global Average Pooling</strong>：特徴マップ全体を1つの値に集約。出力層直前で使用（FC層の代替）</li>
-    </ul>
-
-    <h2 id="stride"><span class="label">§4 / STRIDE</span>ストライド・パディング・出力サイズ</h2>
-    <div class="formula">出力サイズ = (入力サイズ + 2×P - K) / S + 1</div>
-    <p>K=カーネルサイズ、P=パディング、S=ストライド。</p>
-
-    <h2 id="arch"><span class="label">§5 / ARCH</span>典型的 CNN 構造</h2>
-    <p>古典的な構造：</p>
-    <div class="formula">[Conv + ReLU + Pool] × N → Flatten → FC → Softmax</div>
-
-    <div class="figure">
-      <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg">
-        <!-- Input 224x224x3 -->
-        <rect x="20" y="50" width="80" height="80" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="60" y="160" text-anchor="middle" font-size="10" fill="#0d1b2a">224×224×3</text>
-        <text x="60" y="175" text-anchor="middle" font-size="10" fill="#5a5f6a">入力画像</text>
-        <!-- After Conv1+Pool -->
-        <rect x="140" y="60" width="60" height="60" fill="#d4a017" stroke="#0d1b2a"/>
-        <text x="170" y="155" text-anchor="middle" font-size="10" fill="#0d1b2a">112×112×64</text>
-        <text x="170" y="170" text-anchor="middle" font-size="10" fill="#5a5f6a">Conv+Pool</text>
-        <!-- Layer 2 -->
-        <rect x="240" y="70" width="40" height="40" fill="#d4a017" stroke="#0d1b2a"/>
-        <text x="260" y="150" text-anchor="middle" font-size="10" fill="#0d1b2a">56×56×128</text>
-        <text x="260" y="165" text-anchor="middle" font-size="10" fill="#5a5f6a">Conv+Pool</text>
-        <!-- Layer 3 -->
-        <rect x="320" y="78" width="24" height="24" fill="#d4a017" stroke="#0d1b2a"/>
-        <text x="332" y="145" text-anchor="middle" font-size="10" fill="#0d1b2a">28×28×256</text>
-        <text x="332" y="160" text-anchor="middle" font-size="10" fill="#5a5f6a">Conv+Pool</text>
-        <!-- Layer 4 -->
-        <rect x="380" y="82" width="16" height="16" fill="#d4a017" stroke="#0d1b2a"/>
-        <text x="388" y="140" text-anchor="middle" font-size="10" fill="#0d1b2a">14×14×512</text>
-        <text x="388" y="155" text-anchor="middle" font-size="10" fill="#5a5f6a">Conv+Pool</text>
-        <!-- Layer 5 -->
-        <rect x="430" y="86" width="8" height="8" fill="#d4a017" stroke="#0d1b2a"/>
-        <text x="434" y="135" text-anchor="middle" font-size="10" fill="#0d1b2a">7×7×512</text>
-        <!-- Flatten -->
-        <rect x="480" y="65" width="20" height="50" fill="#2e5577"/>
-        <text x="490" y="135" text-anchor="middle" font-size="10" fill="#0d1b2a">Flatten</text>
-        <!-- FC -->
-        <rect x="530" y="65" width="20" height="50" fill="#2e5577"/>
-        <text x="540" y="135" text-anchor="middle" font-size="10" fill="#0d1b2a">FC</text>
-        <!-- Output -->
-        <rect x="580" y="75" width="20" height="30" fill="#b8431f"/>
-        <text x="590" y="135" text-anchor="middle" font-size="10" fill="#0d1b2a">Softmax</text>
-        <text x="590" y="148" text-anchor="middle" font-size="10" fill="#5a5f6a">1000 クラス</text>
-
-        <text x="380" y="35" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">空間解像度が下がりつつ、チャネル数（特徴の種類）が増える</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 1.2</span> 典型的な CNN（VGG 風）の構造。各畳み込み層で空間解像度が半分になりつつ、チャネル数が増える。低層は局所パターン（エッジ）、高層は意味的特徴（顔・物体）を学習。</div>
+    <h3 style="margin-top:36px;">§1.3 ストライドとパディング</h3>
+    <div class="formula">
+出力サイズ = ⌊(入力 + 2P - K) / S⌋ + 1<br>
+　 K: カーネルサイズ、S: ストライド、P: パディング<br><br>
+<strong>パディング</strong>　 'same'：出力サイズ=入力、'valid'：パディング無し（縮小）<br>
+<strong>ストライド</strong>　 1=密、2=半分にダウンサンプリング
     </div>
 
-    <h2 id="models"><span class="label">§6 / MODELS</span>代表モデル史</h2>
+    <h3 style="margin-top:36px;">§1.4 プーリング（Pooling）</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>Max Pooling</strong>：領域内の最大値。最頻使用</li>
+      <li><strong>Average Pooling</strong>：領域内の平均</li>
+      <li><strong>Global Average Pooling</strong>：全体平均で空間次元を1に。最終層の代替</li>
+      <li>典型 2x2、stride 2：空間次元を半分に</li>
+      <li>パラメータなし、計算高速、平行移動不変性強化</li>
+    </ul>
+
+    <h3 style="margin-top:36px;">§1.5 受容野（Receptive Field）</h3>
+    <p>出力の1ピクセルが見ている入力上の領域。深い層ほど受容野が広い。3x3 conv を 2層重ねると 5x5 受容野、3層で 7x7、しかしパラメータは少ない（VGG の発見）。</p>
+
+    <h3 style="margin-top:36px;">§1.6 マルチチャネル</h3>
+    <p>カラー画像：RGB 3チャネル入力。中間層でフィルタ数 = 出力チャネル数（典型 64, 128, 256, 512）。チャネルとフィルタの全組合せで畳み込み、合計を出力。</p>
+
+    <h3 style="margin-top:36px;">§1.7 AlexNet — 深層学習革命の起点</h3>
+    <p>Krizhevsky 2012、ImageNet 優勝（誤り率 15.3%、2位 26.2%）。8層、ReLU、GPU、Dropout、Data Augmentation を組み合わせて圧勝。<strong>深層学習時代の幕開け</strong>。</p>
+
+    <h3 style="margin-top:36px;">§1.8 VGG — シンプルな深層化</h3>
+    <p>Simonyan 2014、Oxford。3x3 conv のみ16〜19層。シンプルで強力、転移学習で長く使われた。パラメータ多すぎ（約 140M）。</p>
+
+    <h3 style="margin-top:36px;">§1.9 ResNet — 残差接続の発明</h3>
+    <p>He 2015、Microsoft。残差接続 y = F(x) + x で <strong>152層</strong> を学習可能に。ImageNet 誤り率 3.57%、人間（5.1%）を上回る。現代の事実上の標準構造。</p>
+
+    <h3 style="margin-top:36px;">§1.10 EfficientNet / Vision Transformer</h3>
     <table class="spec">
-      <tr><th>1998</th><td><strong>LeNet</strong>（LeCun）— 手書き数字認識</td></tr>
-      <tr><th>2012</th><td><strong>AlexNet</strong> — ImageNet 革命。GPU、ReLU、Dropout 導入</td></tr>
-      <tr><th>2014</th><td><strong>VGG</strong> — 3×3 畳み込みを深く積む単純設計</td></tr>
-      <tr><th>2014</th><td><strong>GoogLeNet/Inception</strong> — 並列の異なるカーネルサイズ</td></tr>
-      <tr><th>2015</th><td><strong>ResNet</strong> — 残差接続で152層、ImageNet 優勝</td></tr>
-      <tr><th>2016</th><td><strong>DenseNet</strong> — すべての層を密に接続</td></tr>
-      <tr><th>2017</th><td><strong>MobileNet</strong> — Depthwise Separable Conv で軽量化</td></tr>
-      <tr><th>2019</th><td><strong>EfficientNet</strong> — Compound Scaling（幅・深さ・解像度の協調）</td></tr>
-      <tr><th>2020</th><td><strong>Vision Transformer (ViT)</strong> — CNN ではなく Transformer で画像</td></tr>
-      <tr><th>2022</th><td><strong>ConvNeXt</strong> — ViT に対抗する近代化 CNN</td></tr>
+      <tr><th>モデル</th><th>年</th><th>特徴</th></tr>
+      <tr><td>EfficientNet</td><td>2019</td><td>深さ・幅・解像度を複合スケーリング、効率最良</td></tr>
+      <tr><td>ViT (Vision Transformer)</td><td>2020</td><td>画像をパッチに分けてTransformer適用、JFT-300Mで CNN を上回る</td></tr>
+      <tr><td>Swin Transformer</td><td>2021</td><td>階層的ViT、局所窓注意</td></tr>
+      <tr><td>ConvNeXt</td><td>2022</td><td>ViT のテクニックを CNN に逆輸入</td></tr>
+      <tr><td>DINOv2</td><td>2023</td><td>自己教師あり学習でSOTA</td></tr>
     </table>
 
-    <h2 id="resnet"><span class="label">§7 / RESNET</span>ResNet の意義（再訪）</h2>
-    <p>基本編 章11 で扱った残差接続 y = F(x) + x は、ResNet で導入。これにより：</p>
-    <ul>
-      <li>152層、最終的に 1000層超の NN が学習可能に</li>
-      <li>Bottleneck ブロック（1×1 → 3×3 → 1×1）でパラメータ削減</li>
-      <li>後続の Transformer など <strong>あらゆる深層モデルの基本構造</strong> となる</li>
-    </ul>
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>物体検出、セマンティックセグメンテーション、転移学習、ViTの4節。</p>
+    </div>
 
-    <h2 id="modern"><span class="label">§8 / MODERN</span>EfficientNet・ConvNeXt</h2>
-    <p><strong>EfficientNet</strong>（2019）：モデルサイズ拡大の3軸（幅・深さ・解像度）を <strong>協調的にスケール</strong>。同精度でパラメータ数 1/10 を実現。</p>
-    <p><strong>ConvNeXt</strong>（2022）：ViT に押された CNN を、Transformer の良い設計（LayerNorm、GELU、大カーネル）を逆輸入することで現代化。シンプルさを保ちつつ ViT に匹敵。</p>
+    <h2>応用</h2>
 
-    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <h3 style="margin-top:36px;">§2.1 物体検出</h3>
     <table class="spec">
-      <tr><th>1</th><td>CNN は局所性・平行移動不変性・重み共有という帰納バイアス</td></tr>
-      <tr><th>2</th><td>畳み込み = フィルタを画像上にスライドして内積</td></tr>
-      <tr><th>3</th><td>カーネルサイズ・ストライド・パディング・チャネルの4ハイパラ</td></tr>
-      <tr><th>4</th><td>プーリング = 解像度を下げる（Max/Avg/GAP）</td></tr>
-      <tr><th>5</th><td>典型構造：[Conv+ReLU+Pool] × N → Flatten → FC</td></tr>
-      <tr><th>6</th><td>LeNet → AlexNet → VGG → GoogLeNet → ResNet の系譜</td></tr>
-      <tr><th>7</th><td>ResNet の残差接続が深層化を可能にした</td></tr>
-      <tr><th>8</th><td>EfficientNet：Compound Scaling</td></tr>
-      <tr><th>9</th><td>ViT 登場後、CNN は ConvNeXt として現代化</td></tr>
+      <tr><th>モデル</th><th>方式</th><th>特徴</th></tr>
+      <tr><td>R-CNN 系（Fast/Faster R-CNN）</td><td>2-stage</td><td>RoI 提案 + 分類、精度高</td></tr>
+      <tr><td>YOLO 系（YOLOv8 等）</td><td>1-stage</td><td>リアルタイム、グリッド予測</td></tr>
+      <tr><td>SSD</td><td>1-stage</td><td>マルチスケール特徴</td></tr>
+      <tr><td>DETR / DINO</td><td>Transformer</td><td>End-to-End、NMS不要</td></tr>
+      <tr><td>SAM (Segment Anything)</td><td>Foundation</td><td>2023 Meta、プロンプト型</td></tr>
     </table>
 
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>MLP で画像を扱うとどんな問題が起こるか3つ</li>
-        <li>畳み込み演算の図解と式</li>
-        <li>3×3 カーネル、ストライド 2、パディング 1 の出力サイズ計算</li>
-        <li>Max Pooling と Global Average Pooling の違いと使い分け</li>
-        <li>AlexNet が ILSVRC 2012 で何を成し遂げたか、技術的工夫を3つ</li>
-        <li>VGG と GoogLeNet/Inception の設計思想の違い</li>
-        <li>ResNet の残差接続がなぜ深層化を可能にしたか</li>
-        <li>EfficientNet の Compound Scaling とは何か</li>
-        <li>ViT が CNN に対して持つ利点と欠点</li>
-        <li>ConvNeXt が ViT の何を逆輸入したか</li>
-      </ol>
+    <h3 style="margin-top:36px;">§2.2 セマンティックセグメンテーション</h3>
+    <p>ピクセル単位のクラス分類。U-Net（医療画像で標準）、DeepLab、Mask R-CNN（インスタンスセグメンテーション）、SAM（Segment Anything Model）。</p>
+
+    <h3 style="margin-top:36px;">§2.3 画像分類の転移学習</h3>
+    <p>ImageNet で事前学習したモデル（ResNet50、EfficientNet、ViT）の最終層だけ置き換えて少量データで学習。データが少ないタスクで標準。Hugging Face Hub に多数公開。</p>
+
+    <h3 style="margin-top:36px;">§2.4 Vision Transformer の革命</h3>
+    <p>2020 Dosovitskiy ら：画像を 16x16 パッチに分けて Transformer に入力。CNN の局所性の帰納バイアスなしで、大量データなら CNN を上回る。CLIP、DINOv2、Stable Diffusion で標準。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>PyTorch CNN、転移学習、特徴マップ、Grad-CAM、データ拡張の5節。</p>
     </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 PyTorch で CNN</h3>
+    <div class="code-block">
+<span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn
+
+<span class="keyword">class</span> SimpleCNN(nn.Module):
+    <span class="keyword">def</span> __init__(<span class="builtin">self</span>, num_classes=<span class="builtin">10</span>):
+        <span class="builtin">super</span>().__init__()
+        <span class="builtin">self</span>.features = nn.Sequential(
+            nn.Conv2d(<span class="builtin">3</span>, <span class="builtin">32</span>, <span class="builtin">3</span>, padding=<span class="builtin">1</span>), nn.BatchNorm2d(<span class="builtin">32</span>), nn.ReLU(),
+            nn.Conv2d(<span class="builtin">32</span>, <span class="builtin">64</span>, <span class="builtin">3</span>, padding=<span class="builtin">1</span>), nn.BatchNorm2d(<span class="builtin">64</span>), nn.ReLU(),
+            nn.MaxPool2d(<span class="builtin">2</span>),  <span class="comment"># 32→16</span>
+            nn.Conv2d(<span class="builtin">64</span>, <span class="builtin">128</span>, <span class="builtin">3</span>, padding=<span class="builtin">1</span>), nn.BatchNorm2d(<span class="builtin">128</span>), nn.ReLU(),
+            nn.MaxPool2d(<span class="builtin">2</span>),  <span class="comment"># 16→8</span>
+        )
+        <span class="builtin">self</span>.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d(<span class="builtin">1</span>),  <span class="comment"># GAP</span>
+            nn.Flatten(),
+            nn.Linear(<span class="builtin">128</span>, num_classes))
+    <span class="keyword">def</span> forward(<span class="builtin">self</span>, x):
+        <span class="keyword">return</span> <span class="builtin">self</span>.classifier(<span class="builtin">self</span>.features(x))
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 ImageNet 転移学習</h3>
+    <div class="code-block">
+<span class="keyword">from</span> torchvision <span class="keyword">import</span> models
+<span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn
+
+<span class="comment"># 事前学習済みResNet50をロード</span>
+model = models.resnet50(weights=<span class="string">'IMAGENET1K_V2'</span>)
+
+<span class="comment"># 最終層を新しいタスク用に置換</span>
+num_classes = <span class="builtin">10</span>
+model.fc = nn.Linear(model.fc.in_features, num_classes)
+
+<span class="comment"># 特徴抽出は固定、最終層のみ学習</span>
+<span class="keyword">for</span> param <span class="keyword">in</span> model.parameters():
+    param.requires_grad = <span class="keyword">False</span>
+<span class="keyword">for</span> param <span class="keyword">in</span> model.fc.parameters():
+    param.requires_grad = <span class="keyword">True</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 特徴マップの可視化</h3>
+    <div class="code-block">
+<span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt
+
+<span class="comment"># 中間層出力を取得（hook）</span>
+features = {}
+<span class="keyword">def</span> hook(name):
+    <span class="keyword">def</span> _hook(module, inp, out): features[name] = out.detach()
+    <span class="keyword">return</span> _hook
+
+model.layer1.register_forward_hook(hook(<span class="string">'layer1'</span>))
+model.layer2.register_forward_hook(hook(<span class="string">'layer2'</span>))
+model.layer3.register_forward_hook(hook(<span class="string">'layer3'</span>))
+
+<span class="comment"># 順伝播後、features['layer1']が16x56x56等の特徴マップ</span>
+output = model(image)
+<span class="comment"># 浅層 → エッジ、中層 → テクスチャ、深層 → セマンティック</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 Grad-CAM（クラス活性化マップ）</h3>
+    <div class="code-block">
+<span class="keyword">from</span> pytorch_grad_cam <span class="keyword">import</span> GradCAM
+<span class="keyword">from</span> pytorch_grad_cam.utils.image <span class="keyword">import</span> show_cam_on_image
+
+target_layers = [model.layer4[-<span class="builtin">1</span>]]
+cam = GradCAM(model=model, target_layers=target_layers)
+grayscale_cam = cam(input_tensor=image, targets=<span class="keyword">None</span>)[<span class="builtin">0</span>]
+visualization = show_cam_on_image(rgb_image, grayscale_cam, use_rgb=<span class="keyword">True</span>)
+plt.imshow(visualization)  <span class="comment"># 判断根拠の可視化</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 画像データ拡張</h3>
+    <div class="code-block">
+<span class="keyword">from</span> torchvision <span class="keyword">import</span> transforms
+
+train_tf = transforms.Compose([
+    transforms.RandomResizedCrop(<span class="builtin">224</span>),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandAugment(num_ops=<span class="builtin">2</span>, magnitude=<span class="builtin">9</span>),
+    transforms.ToTensor(),
+    transforms.Normalize([<span class="builtin">0.485</span>, <span class="builtin">0.456</span>, <span class="builtin">0.406</span>],
+                         [<span class="builtin">0.229</span>, <span class="builtin">0.224</span>, <span class="builtin">0.225</span>]),
+    transforms.RandomErasing(p=<span class="builtin">0.25</span>),  <span class="comment"># Cutout相当</span>
+])
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>畳み込みフィルタの効果、プーリング比較、受容野の3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — 畳み込みフィルタが何を学ぶか</h4>
+      <div class="sim-output">
+&gt;&gt; ImageNet学習済みResNet50の各層フィルタを可視化<br>
+<br>
+Layer 1 (conv1, 7x7):<br>
+　 → 縦線、横線、斜線、色のグラデーション<br>
+　 → ガボールフィルタ風、視覚野V1に類似<br>
+<br>
+Layer 5-10 (中層):<br>
+　 → 円、十字、テクスチャパターン<br>
+　 → 部品検出器（目、車輪、葉脈など）<br>
+<br>
+Layer 15-50 (深層):<br>
+　 → 犬の顔、車の前部、文字の組合せ<br>
+　 → 高レベル概念検出器<br>
+<br>
+&gt;&gt; 階層的に低レベル→高レベル特徴を学習<br>
+&gt;&gt; これが転移学習が機能する根拠
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — Max Pooling vs Average Pooling</h4>
+      <div class="sim-output">
+&gt;&gt; CIFAR-10、同じCNN、Pooling種類だけ変更<br>
+<br>
+Max Pooling:　　test=92.3%　 ← 最頻使用、エッジ・特徴を強調<br>
+Avg Pooling:　　test=89.8%<br>
+Stride=2 Conv:　test=92.1%　 ← Pooling 代替、学習可能<br>
+Global Avg Pool: 最終層、パラメータ削減効果<br>
+<br>
+&gt;&gt; Max Pooling が経験的に最良<br>
+&gt;&gt; 強い活性化を保持、ノイズ抑制
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — 受容野の拡大</h4>
+      <div class="sim-output">
+&gt;&gt; 各層の理論的受容野（VGG-16）<br>
+<br>
+Conv1_1: 3x3<br>
+Conv1_2: 5x5<br>
+Conv2_1 (after pool): 10x10<br>
+Conv3_1: 24x24<br>
+Conv4_1: 60x60<br>
+Conv5_3 (深層): 196x196　 ← 入力224x224の大半をカバー<br>
+<br>
+&gt;&gt; 深い層は画像全体を見る能力<br>
+&gt;&gt; だから高レベル概念を捉えられる<br>
+&gt;&gt; Dilated Conv で受容野を更に拡大可能
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式の演習問題 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">CNN が MLP より画像処理に適している理由は。</div>
+        <div class="p-choices">① 計算が遅い　 ② 空間的局所性と平行移動不変性の帰納バイアス、パラメータ共有でパラメータ削減　 ③ 学習が不安定　 ④ メモリを大量に必要とする</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CNN は同じフィルタを全位置で適用（パラメータ共有）し、近い画素関係を仮定。MLPの全結合に比べパラメータが2〜3桁少なく、性能も高い。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">2012年の AlexNet が ImageNet コンペで起こした革命の核心は。</div>
+        <div class="p-choices">① 浅い NN を使った　 ② 深層CNN + ReLU + Dropout + GPU + データ拡張で従来手法を圧倒　 ③ 教師なし学習　 ④ 強化学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Krizhevsky 2012。誤り率 15.3% vs 2位 26.2%。深層学習革命の起点となった。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">入力 32x32、3x3 Conv、stride=1、padding=1 のとき出力サイズは。</div>
+        <div class="p-choices">① 30x30　 ② 32x32（same パディング）　 ③ 16x16　 ④ 34x34</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> (32 + 2·1 - 3) / 1 + 1 = 32。padding='same' で入力と同じサイズを維持。VGG以降で標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">Max Pooling の役割として正しいのは。</div>
+        <div class="p-choices">① 学習可能パラメータ追加　 ② 領域内最大値を取り、空間ダウンサンプリング・平行移動不変性強化　 ③ 正則化のみ　 ④ 出力層</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> パラメータなし、空間次元削減、強い活性化を保持。Average Pooling より一般的。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">ResNet（2015）が解決した深層化の壁は。</div>
+        <div class="p-choices">① 計算量　 ② 勾配消失と退化問題：残差接続 y=F(x)+x で 152層を学習可能に　 ③ メモリのみ　 ④ ラベル不足</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> He 2015。スキップ接続で勾配が直接伝播。ImageNet 誤り率 3.57%、人間（5.1%）超え。現代CNN/Transformerの標準構造。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">VGG の特徴的な設計は。</div>
+        <div class="p-choices">① 1x1 Conv のみ　 ② 3x3 Conv のみを多層積み重ね（16〜19層）　 ③ ランダム　 ④ 全結合のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Simonyan 2014。シンプルで強力。3x3 を 2層で 5x5 相当の受容野をパラメータ少なく実現する発見。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">『受容野（Receptive Field）』とは。</div>
+        <div class="p-choices">① 出力ピクセルが影響を受ける入力上の領域　 ② パラメータ数　 ③ バッチサイズ　 ④ 学習率</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 深い層ほど受容野が広い。3x3 conv を 2層重ねると 5x5 受容野。Dilated Conv で更に拡大可能。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">EfficientNet (2019) の貢献は。</div>
+        <div class="p-choices">① ランダム探索　 ② 深さ・幅・解像度を複合スケーリングで最適化、同精度で大幅パラメータ削減　 ③ 教師なし　 ④ ViT 提案</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Tan & Le 2019。compound scaling で計算予算に対する精度効率を最大化。モバイル向けにも適用。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">Vision Transformer (ViT) の入力処理は。</div>
+        <div class="p-choices">① 画素単位　 ② 画像を 16x16 などのパッチに分けてトークン化し Transformer に入力　 ③ Conv のみ　 ④ MLP のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dosovitskiy 2020。CNN の帰納バイアスなしで、大量データ（JFT-300M）で CNN を超えた。CLIP、Stable Diffusion で標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">YOLO シリーズの特徴は。</div>
+        <div class="p-choices">① 2-stage　 ② 1-stage：画像をグリッド分割し各セルで物体予測、リアルタイム　 ③ 教師なし　 ④ セグメンテーション特化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Redmon 2016 で導入、YOLOv8/v10 まで進化。FPS が高く、産業応用で広く使われる。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">U-Net (2015) が広く使われる分野は。</div>
+        <div class="p-choices">① 物体検出　 ② 医療画像セグメンテーション、エンコーダ-デコーダ＋スキップ接続　 ③ 言語モデル　 ④ 強化学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ronneberger 2015。U字型構造で詳細を保持。Diffusion モデル（DDPM、Stable Diffusion）の denoiser にも採用。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">転移学習（ImageNet → 別タスク）が機能する理由は。</div>
+        <div class="p-choices">① 偶然　 ② 浅層が汎用的特徴（エッジ、テクスチャ）を学習、それは多くのタスクで再利用可能　 ③ ランダム　 ④ パラメータ多いから</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 階層的特徴学習。少量データのタスクで事前学習モデルをファインチューニングすると、ゼロから学習より大幅に高精度。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">Global Average Pooling (GAP) の役割は。</div>
+        <div class="p-choices">① 学習する　 ② 各チャネルの空間平均でベクトル化、最終FC層代替、パラメータ削減　 ③ ノイズ追加　 ④ 正則化のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> NIN/ResNet以降で標準。Flatten + 巨大 FC をGAPで置換、過学習防止＋パラメータ削減。Class Activation Map の基礎にも。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">Grad-CAM の目的は。</div>
+        <div class="p-choices">① 学習加速　 ② 予測根拠の可視化（どの画像領域がクラス予測に貢献したか）　 ③ 圧縮　 ④ ノイズ除去</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Selvaraju 2017。最終 Conv 層の勾配を使ってヒートマップを生成。XAI（説明可能AI）の標準ツール、医療画像で重要。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">1x1 Convolution（pointwise）の役割は。</div>
+        <div class="p-choices">① 役立たず　 ② チャネル間の線形結合、次元削減・拡張、Inception/ResNet で頻用　 ③ プーリング代替　 ④ 正則化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 空間方向は1x1で変えず、チャネル方向のみ変換。Bottleneck構造で計算量削減。MobileNet（Depthwise Separable Conv）でも核心。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">Segment Anything Model (SAM, 2023) の特徴は。</div>
+        <div class="p-choices">① 単一タスク　 ② プロンプト型セグメンテーション、未知物体も可、Foundation Modelとして広く転用可　 ③ 教師なしのみ　 ④ 軽量モデル</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Meta AI 2023。点・ボックス・テキストプロンプトで任意の物体をセグメント。10億+のマスクで事前学習。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">DenseNet (2017) の特徴は。</div>
+        <div class="p-choices">① 全層をスキップ接続でなく完全に連結（dense connection）、特徴再利用と勾配伝播改善　 ② パラメータ激増　 ③ 浅い NN　 ④ 物体検出専用</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Huang 2017。各層が前のすべての層の出力を入力に。パラメータ効率と精度が高い。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">物体検出の評価指標として標準的なのは。</div>
+        <div class="p-choices">① Accuracy　 ② mAP（mean Average Precision）@IoU 0.5、0.5:0.95　 ③ MSE　 ④ R²</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> COCO標準。クラスごとの AP の平均、IoU 閾値で性能評価。YOLO, Faster R-CNN等の比較で使用。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">ConvNeXt (2022) の主張は。</div>
+        <div class="p-choices">① ViTが万能　 ② CNNにViTの工夫（GELU、LN、大きなカーネル等）を取り入れれば、CNNがViTと同等以上の精度に　 ③ Conv 不要　 ④ 教師なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Liu 2022。ViT の優位性はアーキテクチャ自体ではなく、学習レシピと工夫にあると示唆。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">Dilated（Atrous）Convolution の効果は。</div>
+        <div class="p-choices">① パラメータ増加　 ② カーネル内のサンプル間隔を空けて受容野を拡大、パラメータ・計算量は同じ　 ③ ノイズ追加　 ④ 教師なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> DeepLab系で活用。セグメンテーションで詳細を保ちつつ広い文脈を捉える。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">畳み込み演算、フィルタ、ストライド/パディング、プーリング、受容野、AlexNet、VGG、ResNet、EfficientNet、ViT、物体検出（YOLO/Faster R-CNN/DETR/SAM）、セグメンテーション（U-Net/DeepLab）、転移学習、ConvNeXt を扱いました。応用で物体検出、セグメンテーション、転移学習、ViT。ハンズオンで PyTorch CNN、ImageNet 転移学習、特徴マップ可視化、Grad-CAM、データ拡張。次章は RNN・LSTM・GRU・Seq2Seq へ進みます。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="index.html">← 章一覧</a></div>
-  <div><a href="02-rnn.html">章2: RNN/LSTM →</a></div>
+  <div><a href="../basics/12-nn-tricks.html">← 章12: NNの工夫</a></div>
+  <div><span class="ch-label">Chapter 13 of 24 · 応用編 1/12</span><br><span class="ch-title">CNN</span></div>
+  <div><a href="02-rnn.html">章14: RNN →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a><a href="../../../certifications/tokei.html">統計検定</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

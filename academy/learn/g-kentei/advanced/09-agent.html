@@ -3,248 +3,546 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章9 エージェントとツール使用 — G検定 応用 — Swallow AI Academy</title>
-<meta name="description" content="G検定応用 章9：AIエージェント。ReAct、Function Calling、Computer Use、長期記憶、Multi-Agent System。2025年の最前線。">
+<title>章21 AI Agent — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章21：AI Agent、ReAct、Tool Use、Planning、Memory、Self-Reflection、Function Calling、Computer Use、Multi-Agentを5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="../basics/index.html">基本</a>
-      <a href="index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.9</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="../basics/index.html">基本</a><a href="index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章9</div>
-    <h1>応用 章9 — エージェントとツール使用<span class="en">AI Agents</span></h1>
-    <p class="standfirst">2024-2025年、AI の中心は <strong>「答える」LLM</strong> から <strong>「行動する」エージェント</strong> へ。ReAct パターン、Function Calling、Computer Use、Multi-Agent System まで、現代エージェントの設計原理を網羅します。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章21</div>
+    <h1>章21 — AI Agent<span class="en">Chapter 21 — AI Agents</span></h1>
+    <p class="standfirst">『質問に答える』LLM から、『目標を達成するために自律的に行動する』LLM へ ── これが <strong>AI Agent</strong> 革命です。ReAct で <strong>『考えて行動する』</strong>、ツール呼び出しで <strong>外部世界と対話</strong>、メモリで <strong>長期コンテキストを保持</strong>、Self-Reflection で <strong>自己修正</strong>。2024 年の <strong>Computer Use</strong>（Claude）、<strong>OpenAI o1</strong>、<strong>Devin AI</strong> ── Agent は AI の次の Frontier です。本章で <strong>ReAct</strong>、<strong>Tool Use</strong>、<strong>Planning</strong>、<strong>Memory</strong>、<strong>Multi-Agent</strong> までを5部構成で扱います。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="08-rag.html">← 章8: RAG</a></div>
-  <div><span class="ch-label">応用 Chapter 9 of 12</span><br><span class="ch-title">エージェント</span></div>
-  <div><a href="10-mlops.html">章10: MLOps →</a></div>
+  <div><a href="08-rag.html">← 章20: RAG</a></div>
+  <div><span class="ch-label">Chapter 21 · 応用編</span><br><span class="ch-title">AI Agent</span></div>
+  <div><a href="10-mlops.html">章22: MLOps →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
-    <h6>章9 目次</h6>
-    <a href="#what">§1 エージェントとは</a>
-    <a href="#react">§2 ReAct パターン</a>
-    <a href="#fc">§3 Function Calling</a>
-    <a href="#computer">§4 Computer Use</a>
-    <a href="#memory">§5 長期記憶</a>
-    <a href="#multi">§6 Multi-Agent System</a>
-    <a href="#frameworks">§7 主要フレームワーク</a>
-    <a href="#risks">§8 リスクと対策</a>
-    <a href="#summary">§9 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <h6>章21 目次</h6>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
-    <h2 id="what"><span class="label">§1 / WHAT</span>エージェントとは</h2>
-    <p>狭義のエージェント：<strong>環境を観察し、目標を達成するために行動を選択する自律的システム</strong>。古典AI でも長く扱われてきた概念。</p>
-    <p>現代の LLM エージェント：</p>
-    <ul>
-      <li>LLM が <strong>「次に何をするか」を考える脳</strong></li>
-      <li>外部ツール（API、検索、コード実行、ファイル操作）が <strong>手足</strong></li>
-      <li>これらを <strong>ループ</strong> で回し、複雑なタスクを達成</li>
-    </ul>
+    <div class="article-eyebrow">G-KENTEI · ADVANCED · CHAPTER 21</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">考え、ツールを使い、<br>世界に働きかける AI。</h2>
+    <p class="article-lede">LLM 単独では『1ターンの応答』を生成するだけ。Agent は LLM を脳として使い、<strong>『観察 → 推論 → 行動 → 観察…』のループ</strong>を回します。検索する、コードを実行する、API を叩く、ファイルを書く、画面を操作する ── ツールを通じて世界と対話する AI へ。</p>
 
-    <h2 id="react"><span class="label">§2 / REACT</span>ReAct パターン（Reason + Act）</h2>
-    <p>Yao et al. (2022) が提案。<strong>思考 → 行動 → 観察 → 思考 → ...</strong> のループ。</p>
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>Agent定義、ReAct、Tool Use、Planning、Memory、Self-Reflection、Multi-step、LLM Backbone、Function Calling、Agent Loopの10節。</p>
+    </div>
+
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 AI Agent の定義</h3>
+    <p>『目標が与えられ、その達成のために自律的に推論・計画・行動できるシステム』。LLMを<strong>脳</strong>として、ツールを<strong>手足</strong>として、メモリを<strong>記憶</strong>として、ループで動作。Russell & Norvig の古典的 Agent 定義（PEAS: Performance, Environment, Actuators, Sensors）の LLM 時代版。</p>
+
+    <h3 style="margin-top:36px;">§1.2 ReAct パラダイム（2022）</h3>
+    <p>Yao et al. ReAct = Reasoning + Acting。LLM が <strong>Thought → Action → Observation</strong> のサイクルを繰り返す：</p>
+    <div class="formula">
+Thought: 何をすべきか考える<br>
+Action: ツール呼び出し（例：search("...")）<br>
+Observation: ツールの結果を受け取る<br>
+Thought: 次の行動を考える<br>
+...<br>
+最終 Action: 回答を返す
+    </div>
 
     <div class="figure">
-      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="react-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
-          </marker>
-        </defs>
-        <!-- Thought -->
-        <rect x="40" y="80" width="140" height="80" fill="#b8431f"/>
-        <text x="110" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">Thought</text>
-        <text x="110" y="135" text-anchor="middle" font-size="11" fill="#f5d4c4">思考（推論）</text>
-        <!-- Action -->
-        <rect x="240" y="80" width="140" height="80" fill="#d4a017"/>
-        <text x="310" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">Action</text>
-        <text x="310" y="135" text-anchor="middle" font-size="11" fill="#5a5f6a">ツール呼び出し</text>
-        <!-- Observation -->
-        <rect x="440" y="80" width="140" height="80" fill="#3a7d44"/>
-        <text x="510" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">Observation</text>
-        <text x="510" y="135" text-anchor="middle" font-size="11" fill="#c0d4c4">結果の観察</text>
-        <!-- Repeat -->
-        <text x="640" y="125" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">→ 繰り返し</text>
-
-        <line x1="180" y1="120" x2="238" y2="120" stroke="#0d1b2a" marker-end="url(#react-a)"/>
-        <line x1="380" y1="120" x2="438" y2="120" stroke="#0d1b2a" marker-end="url(#react-a)"/>
-
-        <path d="M 510 160 L 510 200 L 110 200 L 110 162" stroke="#5a5f6a" stroke-width="2" stroke-dasharray="5,3" fill="none" marker-end="url(#react-a)"/>
-        <text x="310" y="220" text-anchor="middle" font-size="11" fill="#5a5f6a" font-style="italic">目標達成までループ</text>
+      <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 21.1 ／ ReAct AGENT LOOP</text>
+        <g transform="translate(80,60)">
+          <circle cx="100" cy="90" r="50" fill="#b8431f" fill-opacity="0.25" stroke="#0d1b2a" stroke-width="2"/>
+          <text x="100" y="85" text-anchor="middle" font-family="serif" font-size="13" font-weight="700">Thought</text>
+          <text x="100" y="102" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">LLMで推論</text>
+          
+          <circle cx="280" cy="90" r="50" fill="#d4a017" fill-opacity="0.3" stroke="#0d1b2a" stroke-width="2"/>
+          <text x="280" y="85" text-anchor="middle" font-family="serif" font-size="13" font-weight="700">Action</text>
+          <text x="280" y="102" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">ツール実行</text>
+          
+          <circle cx="460" cy="90" r="50" fill="#2e5577" fill-opacity="0.3" stroke="#0d1b2a" stroke-width="2"/>
+          <text x="460" y="85" text-anchor="middle" font-family="serif" font-size="13" font-weight="700">Observation</text>
+          <text x="460" y="102" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">結果取得</text>
+          
+          <path d="M 150 90 L 230 90" stroke="#0d1b2a" stroke-width="2" fill="none" marker-end="url(#a2)"/>
+          <path d="M 330 90 L 410 90" stroke="#0d1b2a" stroke-width="2" fill="none" marker-end="url(#a2)"/>
+          <path d="M 460 140 Q 460 200 280 200 Q 100 200 100 140" stroke="#0d1b2a" stroke-width="2" fill="none" marker-end="url(#a2)" stroke-dasharray="5 5"/>
+          <text x="280" y="218" text-anchor="middle" font-family="serif" font-size="11" fill="#5a5f6a" font-style="italic">最終回答まで繰り返す</text>
+          
+          <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0 0, 8 4, 0 8" fill="#0d1b2a"/></marker></defs>
+        </g>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 9.1</span> ReAct パターン。LLM は次に何を考えるか・何を行動するかを言語で出力し、ツールがそれを実行、結果を LLM に戻す。最も基本的かつ強力なエージェント設計。</div>
+      <div class="figure-caption"><span class="figure-num">FIG 21.1</span> ／ ReActループ。LLMが Thought（推論）→ Action（ツール実行）→ Observation（結果）を繰り返し、最終回答に到達。</div>
     </div>
 
-    <div class="example">
-      <strong>例：「東京の今日の最高気温は何度？」</strong><br>
-      Thought: 気温を知るには検索が必要。weather API を使おう。<br>
-      Action: weather_api(location="Tokyo", date="today")<br>
-      Observation: {"max_temp": 28, "unit": "C"}<br>
-      Thought: 結果が得られた。回答できる。<br>
-      Final Answer: 東京の今日の最高気温は 28℃ です。
-    </div>
-
-    <h2 id="fc"><span class="label">§3 / FC</span>Function Calling（ツール使用）</h2>
-    <p>2023年6月、OpenAI が GPT-4 で <strong>Function Calling</strong> を正式機能化。モデルに利用可能な関数のスキーマを渡すと、モデルが <strong>JSON 形式で関数呼び出しを出力</strong> する。</p>
-
-    <div class="example">
-      <strong>関数定義（JSON Schema）：</strong><br>
-      {<br>
-      &nbsp;&nbsp;"name": "get_weather",<br>
-      &nbsp;&nbsp;"parameters": { "location": "string", "date": "string" }<br>
-      }<br>
-      <strong>モデル出力：</strong><br>
-      { "function": "get_weather", "args": {"location": "Tokyo", "date": "2026-05-31"} }
-    </div>
-
-    <p>主要 API：</p>
-    <ul>
-      <li><strong>OpenAI Function Calling / Tools</strong></li>
-      <li><strong>Anthropic Tool Use</strong>（Claude）</li>
-      <li><strong>Google Function Calling</strong>（Gemini）</li>
-      <li><strong>MCP（Model Context Protocol）</strong>：Anthropic が2024年に提唱、ツールサーバの標準プロトコル</li>
+    <h3 style="margin-top:36px;">§1.3 Tool Use — 外部世界へのインタフェース</h3>
+    <p>Agent が呼び出せる関数・API。代表的なツール：</p>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>検索</strong>：Web search、社内DB検索、RAG</li>
+      <li><strong>計算</strong>：Code Interpreter、数式評価</li>
+      <li><strong>外部API</strong>：天気、株価、SaaS（Slack、GitHub、Notion）</li>
+      <li><strong>ファイル操作</strong>：読み書き、要約、変換</li>
+      <li><strong>制御</strong>：ブラウザ自動化、デスクトップ操作（Computer Use）</li>
     </ul>
 
-    <h2 id="computer"><span class="label">§4 / COMPUTER</span>Computer Use（コンピュータ操作）</h2>
-    <p>2024年10月、Anthropic が <strong>Computer Use</strong> を発表。LLM が <strong>マウス・キーボード操作で PC を直接操作</strong> する。スクリーンショットを観察 → 次の操作（クリック、入力、スクロール）を出力 → 実行 → ループ。</p>
-    <p>競合：</p>
-    <ul>
-      <li><strong>OpenAI Operator</strong>（2025年）：ブラウザ操作に特化</li>
-      <li><strong>Google Project Mariner</strong>：Chrome 拡張</li>
-      <li><strong>Microsoft Copilot Vision</strong>：画面理解と操作</li>
+    <h3 style="margin-top:36px;">§1.4 Function Calling — 構造化されたツール呼出</h3>
+    <p>OpenAI 2023 が標準化。ツール仕様（名前、説明、JSON Schema）をモデルに渡し、モデルが構造化された JSON で呼出パラメータを生成。現在 Claude、Gemini、Llama 等すべてサポート。</p>
+
+    <h3 style="margin-top:36px;">§1.5 Planning と Decomposition</h3>
+    <p>複雑な目標を <strong>サブタスクに分解</strong>。手法：</p>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>Chain-of-Thought</strong>：1ターン内での思考連鎖</li>
+      <li><strong>Plan-and-Execute</strong>：最初に計画策定 → 実行</li>
+      <li><strong>Tree of Thoughts</strong>：分岐探索で最良パス選択</li>
+      <li><strong>Graph of Thoughts</strong>：DAGで複雑な依存関係表現</li>
     </ul>
 
-    <h2 id="memory"><span class="label">§5 / MEMORY</span>長期記憶</h2>
-    <p>LLM のコンテキスト長は有限。会話やタスクが長くなると過去の情報が消える。<strong>外部記憶</strong> を持たせる必要がある。</p>
+    <h3 style="margin-top:36px;">§1.6 Memory — 短期と長期</h3>
     <table class="spec">
-      <tr><th>短期記憶</th><td>現在のコンテキスト内（数万〜数百万トークン）</td></tr>
-      <tr><th>エピソード記憶</th><td>過去の会話・タスクの要約をベクトルDBに</td></tr>
-      <tr><th>知識記憶</th><td>事実、ユーザー設定、ドキュメント → RAG で参照</td></tr>
-      <tr><th>手続き記憶</th><td>使えるツール、過去に成功した手順</td></tr>
-    </table>
-    <p>実装例：MemGPT、LangChain Memory、Letta（旧 MemGPT）。</p>
-
-    <h2 id="multi"><span class="label">§6 / MULTI</span>Multi-Agent System</h2>
-    <p>複数のエージェントが <strong>役割を分担して協力</strong>するシステム。</p>
-    <table class="spec">
-      <tr><th>CrewAI</th><td>役割ベースのエージェントオーケストレーション</td></tr>
-      <tr><th>AutoGen</th><td>Microsoft、エージェント間の会話で問題解決</td></tr>
-      <tr><th>LangGraph</th><td>状態機械として記述。LangChain系</td></tr>
-      <tr><th>MetaGPT</th><td>ソフトウェア開発を「会社」に見立てる（PM, Dev, QA）</td></tr>
-      <tr><th>OpenAI Swarm</th><td>2024年公開の軽量フレームワーク</td></tr>
+      <tr><th>種類</th><th>実装</th><th>用途</th></tr>
+      <tr><td>短期（Conversation Buffer）</td><td>直近Nターンをプロンプトに保持</td><td>会話の流れ</td></tr>
+      <tr><td>要約メモリ</td><td>過去をLLMで要約し圧縮</td><td>長時間セッション</td></tr>
+      <tr><td>Entity Memory</td><td>登場人物・キー情報を抽出保管</td><td>事実トラッキング</td></tr>
+      <tr><td>長期（Vector Memory）</td><td>過去会話をベクトル化、関連時取得</td><td>個人化、学習</td></tr>
+      <tr><td>Episodic Memory</td><td>特定のタスク経験を保管・引用</td><td>少数派手段</td></tr>
     </table>
 
-    <h2 id="frameworks"><span class="label">§7 / FW</span>主要フレームワーク</h2>
-    <ul>
-      <li><strong>LangChain</strong>：最も普及、ツール・記憶・チェーンの抽象化</li>
-      <li><strong>LlamaIndex</strong>：RAG に強み</li>
-      <li><strong>DSPy</strong>：宣言的・自動最適化</li>
-      <li><strong>Haystack</strong>：エンタープライズ RAG・QA</li>
-      <li><strong>OpenAI Assistants API</strong>：マネージドエージェント基盤</li>
-      <li><strong>Claude Code / Cursor / Devin</strong>：コーディング特化エージェント</li>
-    </ul>
+    <h3 style="margin-top:36px;">§1.7 Self-Reflection と Self-Critique</h3>
+    <p>Reflexion (Shinn 2023)、Self-Refine (Madaan 2023)。Agent が自分の出力を <strong>批評・修正</strong> するメタループ。Code生成タスクで人間レベル超え。OpenAI o1, Claude 3.5 Sonnetの『thinking』 もこの思想。</p>
 
-    <h2 id="risks"><span class="label">§8 / RISK</span>リスクと対策</h2>
-    <ul>
-      <li><strong>プロンプトインジェクション</strong>：ツール結果に悪意ある指示が紛れ込み、エージェントを乗っ取る</li>
-      <li><strong>意図しない実行</strong>：「ファイルを削除」のような破壊的操作の誤発火</li>
-      <li><strong>暴走・無限ループ</strong>：終了条件不備</li>
-      <li><strong>権限過剰</strong>：エージェントに与える権限の最小化原則</li>
-      <li><strong>監査困難</strong>：行動ログの記録と人間レビュー</li>
-    </ul>
-    <p>対策：サンドボックス実行、Human-in-the-Loop の確認、Constitutional Classifiers、ツール権限の細分化。</p>
+    <h3 style="margin-top:36px;">§1.8 Multi-step Reasoning</h3>
+    <p>数式問題、論理パズル、コーディングなど多段階思考が必要なタスク。CoT、ToT、Program-Aided Language Models（PAL）、Math型 LLM などの手法。</p>
 
-    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <h3 style="margin-top:36px;">§1.9 LLM Backbone の選択</h3>
     <table class="spec">
-      <tr><th>1</th><td>エージェント = LLM（脳）+ ツール（手足）+ ループ</td></tr>
-      <tr><th>2</th><td>ReAct パターン：Thought → Action → Observation の反復</td></tr>
-      <tr><th>3</th><td>Function Calling：JSON Schema を渡し、モデルが構造化呼び出しを生成</td></tr>
-      <tr><th>4</th><td>MCP（Model Context Protocol）：Anthropic 提唱のツール標準</td></tr>
-      <tr><th>5</th><td>Computer Use：マウス・キーボード操作で PC を直接操作</td></tr>
-      <tr><th>6</th><td>長期記憶：エピソード・知識・手続きの3層</td></tr>
-      <tr><th>7</th><td>Multi-Agent：CrewAI、AutoGen、LangGraph、MetaGPT</td></tr>
-      <tr><th>8</th><td>主要 FW：LangChain、LlamaIndex、DSPy</td></tr>
-      <tr><th>9</th><td>リスク：プロンプトインジェクション・暴走・権限過剰</td></tr>
-      <tr><th>10</th><td>対策：サンドボックス、Human-in-the-Loop、最小権限</td></tr>
+      <tr><th>LLM</th><th>Agent向けの強み</th></tr>
+      <tr><td>GPT-4 / GPT-4o</td><td>Function Calling 成熟、Code Interpreter</td></tr>
+      <tr><td>Claude 3.5/3.7 Sonnet</td><td>Computer Use、ツール推論強い</td></tr>
+      <tr><td>Gemini 1.5/2.0</td><td>長コンテキスト 2M tokens</td></tr>
+      <tr><td>OpenAI o1/o3</td><td>推論専門、複雑タスクで高精度</td></tr>
+      <tr><td>Llama 3.x</td><td>オープン、Self-host可</td></tr>
+      <tr><td>DeepSeek V3/R1</td><td>オープン、推論強</td></tr>
     </table>
 
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>ReAct パターンの3つのステップ</li>
-        <li>Function Calling のスキーマ例を書けるか</li>
-        <li>MCP（Model Context Protocol）が解決する問題</li>
-        <li>Computer Use と Function Calling の違い</li>
-        <li>長期記憶の4種類とそれぞれの実装手段</li>
-        <li>Multi-Agent System の利点と難点</li>
-        <li>主要なエージェントフレームワーク3つ</li>
-        <li>プロンプトインジェクションの例とエージェントへの危険性</li>
-        <li>エージェントに「最小権限の原則」を適用する例</li>
-        <li>Human-in-the-Loop がエージェントで重要な理由</li>
-      </ol>
+    <h3 style="margin-top:36px;">§1.10 Agent Loop の終了条件</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li>最終回答に到達（Final Answer 出力）</li>
+      <li>最大反復数到達（典型 10〜50）</li>
+      <li>同一ツール呼出ループ検出</li>
+      <li>エラー閾値超過</li>
+      <li>人間承認待ち</li>
+    </ul>
+
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>AutoGPT、LangChain Agents、Claude Computer Use、Multi-Agentの4節。</p>
     </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 AutoGPT、BabyAGI（2023）</h3>
+    <p>2023年初、GPT-4 を用いた自律 Agent の先駆け。タスクを自動分解・実行・評価のループ。技術的限界（コスト・ループ・幻覚）で運用には課題があったが、Agent ブームの火付け役。</p>
+
+    <h3 style="margin-top:36px;">§2.2 LangChain Agents / LangGraph</h3>
+    <p>LangChain：宣言的なAgent構築。LangGraph：状態機械として Agent をモデル化、Cycle・分岐・人間介入を扱える。Production 用途で広く使用。</p>
+
+    <h3 style="margin-top:36px;">§2.3 Claude Computer Use（Anthropic 2024）</h3>
+    <p>2024 年 10 月発表。Claude 3.5 Sonnet が <strong>画面のスクリーンショットを見て、マウス・キーボードを操作</strong>。表計算記入、ブラウザ作業、フォーム入力など、人間と同じ方法でPC操作。</p>
+
+    <h3 style="margin-top:36px;">§2.4 Multi-Agent（AutoGen、CrewAI）</h3>
+    <p>複数の専門 Agent が協調：<strong>AutoGen</strong>（Microsoft）はカンファレンス形式、<strong>CrewAI</strong> は役割（Researcher、Writer、Critic）を明示。複雑タスク（コード生成、報告書作成）で単一Agentより高品質。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>OpenAI Function Calling、LangChain ReAct、Tools、LangGraph、CrewAIの5節。</p>
+    </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 OpenAI Function Calling</h3>
+    <div class="code-block">
+<span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI
+client = OpenAI()
+
+tools = [{
+    <span class="string">"type"</span>: <span class="string">"function"</span>,
+    <span class="string">"function"</span>: {
+        <span class="string">"name"</span>: <span class="string">"get_weather"</span>,
+        <span class="string">"description"</span>: <span class="string">"指定都市の現在の天気を取得"</span>,
+        <span class="string">"parameters"</span>: {
+            <span class="string">"type"</span>: <span class="string">"object"</span>,
+            <span class="string">"properties"</span>: {<span class="string">"city"</span>: {<span class="string">"type"</span>: <span class="string">"string"</span>}},
+            <span class="string">"required"</span>: [<span class="string">"city"</span>]
+        }
+    }
+}]
+
+response = client.chat.completions.create(
+    model=<span class="string">"gpt-4o"</span>,
+    messages=[{<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: <span class="string">"東京の天気は？"</span>}],
+    tools=tools)
+
+tool_call = response.choices[<span class="builtin">0</span>].message.tool_calls[<span class="builtin">0</span>]
+print(tool_call.function.name)       <span class="comment"># get_weather</span>
+print(tool_call.function.arguments)  <span class="comment"># {"city": "東京"}</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 LangChain ReAct Agent</h3>
+    <div class="code-block">
+<span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_react_agent, AgentExecutor
+<span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool
+<span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI
+
+@tool
+<span class="keyword">def</span> search(query: <span class="builtin">str</span>) -&gt; <span class="builtin">str</span>:
+    <span class="string">"""Web を検索する"""</span>
+    <span class="keyword">return</span> f<span class="string">"検索結果: {query}に関する情報..."</span>
+
+@tool
+<span class="keyword">def</span> calculator(expression: <span class="builtin">str</span>) -&gt; <span class="builtin">float</span>:
+    <span class="string">"""数式を計算する"""</span>
+    <span class="keyword">return</span> <span class="builtin">eval</span>(expression)
+
+llm = ChatOpenAI(model=<span class="string">"gpt-4o"</span>, temperature=<span class="builtin">0</span>)
+agent = create_react_agent(llm, [search, calculator], prompt)
+executor = AgentExecutor(agent=agent, tools=[search, calculator], 
+                          max_iterations=<span class="builtin">10</span>)
+result = executor.invoke({<span class="string">"input"</span>: <span class="string">"GPT-4のパラメータ数は？それは1750億の何倍？"</span>})
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 自前 Agent ループ</h3>
+    <div class="code-block">
+<span class="keyword">def</span> simple_agent(query, tools, max_steps=<span class="builtin">10</span>):
+    messages = [{<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: query}]
+    <span class="keyword">for</span> step <span class="keyword">in</span> <span class="builtin">range</span>(max_steps):
+        response = llm.chat(messages, tools=tools)
+        <span class="keyword">if</span> response.tool_calls:
+            <span class="keyword">for</span> tc <span class="keyword">in</span> response.tool_calls:
+                result = tools[tc.name](**tc.arguments)
+                messages.append({<span class="string">"role"</span>: <span class="string">"tool"</span>, <span class="string">"name"</span>: tc.name, 
+                                 <span class="string">"content"</span>: <span class="builtin">str</span>(result)})
+        <span class="keyword">else</span>:
+            <span class="keyword">return</span> response.content  <span class="comment"># 最終回答</span>
+    <span class="keyword">return</span> <span class="string">"最大反復に到達"</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 LangGraph で状態機械</h3>
+    <div class="code-block">
+<span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, END
+<span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict
+
+<span class="keyword">class</span> State(TypedDict):
+    query: <span class="builtin">str</span>
+    plan: <span class="builtin">list</span>
+    results: <span class="builtin">list</span>
+    answer: <span class="builtin">str</span>
+
+<span class="keyword">def</span> plan_node(state):
+    <span class="comment"># LLM でタスクを分解</span>
+    state[<span class="string">"plan"</span>] = llm.invoke(f<span class="string">"分解: {state['query']}"</span>)
+    <span class="keyword">return</span> state
+
+<span class="keyword">def</span> execute_node(state):
+    <span class="comment"># 各サブタスクを実行</span>
+    <span class="keyword">for</span> task <span class="keyword">in</span> state[<span class="string">"plan"</span>]:
+        state[<span class="string">"results"</span>].append(execute_task(task))
+    <span class="keyword">return</span> state
+
+graph = StateGraph(State)
+graph.add_node(<span class="string">"plan"</span>, plan_node)
+graph.add_node(<span class="string">"execute"</span>, execute_node)
+graph.add_edge(<span class="string">"plan"</span>, <span class="string">"execute"</span>)
+graph.add_edge(<span class="string">"execute"</span>, END)
+graph.set_entry_point(<span class="string">"plan"</span>)
+app = graph.compile()
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 CrewAI で Multi-Agent</h3>
+    <div class="code-block">
+<span class="keyword">from</span> crewai <span class="keyword">import</span> Agent, Task, Crew
+
+researcher = Agent(
+    role=<span class="string">"Researcher"</span>, goal=<span class="string">"最新情報を集める"</span>,
+    backstory=<span class="string">"AIの最新動向に精通したリサーチャー"</span>,
+    tools=[search_tool])
+
+writer = Agent(
+    role=<span class="string">"Writer"</span>, goal=<span class="string">"洗練された記事を書く"</span>,
+    backstory=<span class="string">"技術ライター"</span>)
+
+task1 = Task(description=<span class="string">"2025年のLLM動向調査"</span>, agent=researcher)
+task2 = Task(description=<span class="string">"調査結果から1500字記事執筆"</span>, agent=writer,
+             context=[task1])
+
+crew = Crew(agents=[researcher, writer], tasks=[task1, task2])
+result = crew.kickoff()
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>ReActの効果、Self-Reflection、Multi-Agentの3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — ReAct vs 単純LLM</h4>
+      <div class="sim-output">
+&gt;&gt; HotpotQA（マルチホップQA） で比較<br>
+<br>
+[GPT-4 単独]　　　 　 Accuracy = 36%<br>
+[GPT-4 + Chain-of-Thought] Accuracy = 42%<br>
+[GPT-4 + ReAct + Wikipedia検索]  Accuracy = 58%<br>
+<br>
+&gt;&gt; ツール（検索）アクセスで大幅向上<br>
+&gt;&gt; 知識カットオフ問題も解決
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — Self-Reflection</h4>
+      <div class="sim-output">
+&gt;&gt; HumanEval（コード生成ベンチマーク）<br>
+<br>
+[GPT-4 1回生成]　　 pass@1 = 67%<br>
+[+ Self-Critique]　 pass@1 = 79%<br>
+[+ Reflexion (5回)] pass@1 = 91%<br>
+[Claude 3.5 + 思考] pass@1 = 92%<br>
+<br>
+&gt;&gt; 反復的自己批評で大幅改善<br>
+&gt;&gt; o1, o3 の『推論時計算』もこの延長線
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — Multi-Agent vs Single-Agent</h4>
+      <div class="sim-output">
+&gt;&gt; ソフトウェア開発タスク（小規模Webアプリ）<br>
+<br>
+[GPT-4 単独] 完成度 62%、バグ多数<br>
+[CrewAI Planner+Coder+Tester]<br>
+　 完成度 87%、自動テスト通過<br>
+[ChatDev (CEO+CTO+Programmer+...)]<br>
+　 完成度 89%<br>
+<br>
+&gt;&gt; 役割分担と相互レビューで品質向上<br>
+&gt;&gt; ただしコストとレイテンシは増加
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">AI Agent の定義として最も適切なのは。</div>
+        <div class="p-choices">① 単発の質問応答　 ② 目標達成のため自律的に推論・計画・行動するシステム　 ③ Vector DBのみ　 ④ ファインチューニング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LLMを脳、ツールを手足、メモリを記憶とする自律システム。1ターン応答との根本的違い。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">ReAct パラダイムの構成は。</div>
+        <div class="p-choices">① Search→Generate　 ② Thought→Action→Observation のループ　 ③ Train→Test　 ④ Encode→Decode</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Yao 2022 ReAct論文。LLM が推論→ツール実行→結果観察を繰り返す。Agent の基本パターン。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">Function Calling の役割は。</div>
+        <div class="p-choices">① 学習　 ② LLMが構造化された JSON でツール呼出パラメータを生成　 ③ 正則化　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> OpenAI 2023標準化、GPT/Claude/Gemini/Llama すべて対応。ツール仕様（JSON Schema）に従いLLMがパラメータ抽出。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">Claude Computer Use（Anthropic 2024）の特徴は。</div>
+        <div class="p-choices">① テキスト生成のみ　 ② スクリーンショットを見てマウス・キーボードを操作　 ③ Vector検索のみ　 ④ 音声処理</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2024年10月発表。Claude 3.5 Sonnet が画面を理解してPC操作。人間と同じ方法での自動化を可能に。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">Self-Reflection / Self-Critique の効果は。</div>
+        <div class="p-choices">① 計算高速化　 ② Agent が自分の出力を批評・修正することで品質向上　 ③ パラメータ削減　 ④ ランダム化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Reflexion (2023), Self-Refine (2023)。HumanEvalでpass@1が67%→91%に。o1 の思考時間長期化もこの思想。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">Multi-Agent フレームワークの代表は。</div>
+        <div class="p-choices">① TensorFlow　 ② AutoGen (Microsoft)、CrewAI　 ③ scikit-learn　 ④ NumPy</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> AutoGen（カンファレンス形式）、CrewAI（役割明示）、ChatDev（ソフトウェア会社シミュレーション）など。協調で複雑タスクの品質向上。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">Agent の短期メモリの典型実装は。</div>
+        <div class="p-choices">① Vector DB のみ　 ② 直近Nターンを会話履歴としてプロンプトに保持　 ③ ファイル　 ④ なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Conversation Buffer Memory。長くなると要約・圧縮、または Vector Memory に長期化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">Plan-and-Execute Agent の特徴は。</div>
+        <div class="p-choices">① 1ステップで全実行　 ② 最初に計画策定 → サブタスクを順次実行　 ③ ランダム　 ④ 学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Chain-of-Thought の発展形。複雑タスクで失敗を減らせる。BabyAGI、AutoGPT の基礎パターン。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">LangGraph が LangChain Agent と異なる点は。</div>
+        <div class="p-choices">① 同じ　 ② 状態機械として明示的にモデル化、Cycle・分岐・人間介入を扱える　 ③ Vector DB専用　 ④ 学習特化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 暗黙的ループではなく明示的グラフで Agent を制御。Production-grade Agent の標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">Agent の典型的な失敗パターンは。</div>
+        <div class="p-choices">① 無限ループ、過剰なツール呼出、コスト爆発　 ② 学習速度低下　 ③ メモリリーク　 ④ なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> max_iterations 設定、ループ検出、コスト上限、人間承認などのガードレールが本番必須。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">AutoGPT (2023) の意義は。</div>
+        <div class="p-choices">① 学習アルゴリズム　 ② 自律 LLM Agent の先駆け、技術的限界はあったがAgent ブームの火付け役　 ③ Vector DB　 ④ 単なる検索</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2023年初、GPT-4 ベース。タスク自動分解実行のループ。実用性は限定的だったが、Agent概念を一般に広めた。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">『Tool Use』の代表的ツールカテゴリは。</div>
+        <div class="p-choices">① 学習　 ② 検索、計算、API、ファイル操作、ブラウザ・PC制御　 ③ 単一機能のみ　 ④ Vector のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 多様なツールが LLM の能力を拡張。Web search、Code Interpreter、SaaS API、Computer Use など。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">Tree of Thoughts（ToT）の発展点は。</div>
+        <div class="p-choices">① 単線思考　 ② 思考を木構造で分岐探索し最良経路選択　 ③ Vector検索　 ④ 教師あり</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Yao 2023。CoTを枝分かれにし、BFS/DFS的に探索。数独、24パズル等で高性能。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">Reflexion（2023）の動作は。</div>
+        <div class="p-choices">① 教師あり　 ② Agent が失敗から自己批評＆メモリ蓄積→次回反映　 ③ Vector DB のみ　 ④ クラスタ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Shinn 2023。失敗の言語的反省を Memory に蓄積、次の試行で参照。コード生成でpass@1 を大幅向上。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">OpenAI o1 / o3 が従来 LLM と異なる点は。</div>
+        <div class="p-choices">① パラメータが100倍　 ② 推論時に長い『思考』を行い、Self-Reflection内蔵　 ③ Vector検索専用　 ④ 多言語のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Test-time compute scaling。数十秒〜数分の思考連鎖で複雑タスク（数学、コード）で人間レベル超え。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">Agent のメモリで Vector Memory が解決する問題は。</div>
+        <div class="p-choices">① 計算速度　 ② 長期記憶（過去会話・経験から関連情報を検索可能に）　 ③ 学習　 ④ パラメータ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 会話履歴をベクトル化し、関連時に取得。個人化、長期セッション、経験学習に必須。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">Program-Aided Language Models (PAL) の特徴は。</div>
+        <div class="p-choices">① 計算　 ② LLM が Python コードを生成→実行→結果を使う（数値計算誤りを防ぐ）　 ③ Vector検索　 ④ 教師あり</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Gao 2022。LLM の苦手な厳密計算を Python に委任。数学・データ処理タスクで高精度。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">2024年に登場した Devin AI の特徴は。</div>
+        <div class="p-choices">① 単純チャット　 ② 自律的にコーディングタスクを完遂、ブラウザ・エディタ操作可能　 ③ Vector検索のみ　 ④ 画像生成</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Cognition Labs。コード生成、デバッグ、デプロイまで一貫実行のAI Software Engineer。SWE-Bench で当時 SOTA。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">Agent の安全性で重要なのは。</div>
+        <div class="p-choices">① 全自動が常に良い　 ② Human-in-the-Loop、ツール権限制限、コスト上限、監査ログ　 ③ なし　 ④ 速度</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 自律実行のリスク：誤ったAPI呼出、機密漏洩、コスト爆発。人間承認、サンドボックス、レート制限が必須。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">Agent と LLM 単独 RAG の本質的違いは。</div>
+        <div class="p-choices">① 同じ　 ② Agentは多段階推論＋ツール選択＋ループ、RAGは1ターン取得+生成　 ③ Vector不使用　 ④ 学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RAG は静的なパイプライン（検索→生成）、Agent は動的な意思決定（どのツールを何回呼ぶか LLM が判断）。Agent内でRAGをツールとして使える。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">Agent の定義、ReAct、Tool Use、Function Calling、Planning（CoT/ToT/Plan-Execute）、Memory（短期/長期）、Self-Reflection、Multi-step Reasoning、Backbone LLM、Loop管理を扱いました。応用で AutoGPT/BabyAGI、LangChain Agents/LangGraph、Claude Computer Use、Multi-Agent（AutoGen/CrewAI）。ハンズオンで OpenAI Function Calling、LangChain ReAct、自前 Agent loop、LangGraph、CrewAI。シミュレーションで ReActの効果、Self-Reflection、Multi-Agent を確認。次章は MLOps へ。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="08-rag.html">← 章8</a></div>
-  <div><a href="10-mlops.html">章10: MLOps →</a></div>
+  <div><a href="08-rag.html">← 章20: RAG</a></div>
+  <div><span class="ch-label">Chapter 21 · 応用編</span><br><span class="ch-title">AI Agent</span></div>
+  <div><a href="10-mlops.html">章22: MLOps →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

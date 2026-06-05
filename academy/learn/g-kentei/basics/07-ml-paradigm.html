@@ -3,38 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章7 機械学習のパラダイム — G検定 基本 — Swallow AI Academy</title>
-<meta name="description" content="G検定基本 章7：教師あり／教師なし／強化学習／自己教師あり学習。機械学習の全体地図を図解で構築する。">
+<title>章7 機械学習パラダイム — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章7：教師あり/教師なし/半教師あり/自己教師あり/強化学習、訓練・検証・テスト分割、バイアス-バリアンス、過学習・未学習、ハイパラ調整、NFL定理、転移学習・メタ学習を5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
+
+<div class="aurora" aria-hidden="true"></div>
+
 
 <header class="masthead">
   <div class="masthead-inner">
     <a href="../../../index.html" class="brand">
       <span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
     </a>
     <nav class="nav-primary">
       <a href="../../../index.html#certifications">資格</a>
@@ -43,237 +28,584 @@ table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:
       <a href="../advanced/index.html">応用</a>
       <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
     </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>Ch.7</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章7</div>
-    <h1>章7 — 機械学習のパラダイム<span class="en">Chapter 7 — ML Paradigms</span></h1>
-    <p class="standfirst">機械学習には根本的に異なる <strong>3つの学習パラダイム</strong>（教師あり・教師なし・強化学習）と、近年台頭した <strong>自己教師あり学習</strong>があります。それぞれが何を入力し、何を学び、何に使われるのかを地図として持つと、現代AIの全景が一気に見えるようになります。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> &nbsp;/&nbsp; LEARN &nbsp;/&nbsp; G検定 &nbsp;/&nbsp; <a href="index.html">基本</a> &nbsp;/&nbsp; 章7</div>
+    <h1>章7 — 機械学習パラダイム<span class="en">Chapter 7 — Learning Paradigms</span></h1>
+    <p class="standfirst">機械学習にはいくつもの『学び方』があります。ラベル付きデータから学ぶ <strong>教師あり学習</strong>、ラベルなしから構造を見出す <strong>教師なし学習</strong>、半分だけラベルがある <strong>半教師あり</strong>、データ自体から教師を作る <strong>自己教師あり</strong>、報酬から行動を学ぶ <strong>強化学習</strong> ── これらの違いと使い分け、そして <strong>訓練/検証/テスト分割</strong>、<strong>バイアス-バリアンス分解</strong>、<strong>過学習対策</strong>、<strong>ハイパラチューニング</strong>、<strong>No Free Lunch定理</strong> までを5部構成で扱います。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
   <div><a href="06-info-theory.html">← 章6: 情報理論</a></div>
-  <div><span class="ch-label">Chapter 7 of 12</span><br><span class="ch-title">機械学習のパラダイム</span></div>
-  <div><a href="08-ml-classical.html">章8: 古典手法 →</a></div>
+  <div><span class="ch-label">Chapter 7 of 12 · 基本編</span><br><span class="ch-title">機械学習パラダイム</span></div>
+  <div><a href="08-ml-classical.html">章8: 古典機械学習 →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
     <h6>章7 目次</h6>
-    <a href="#map">§1 機械学習の地図</a>
-    <a href="#supervised">§2 教師あり学習</a>
-    <a href="#unsupervised">§3 教師なし学習</a>
-    <a href="#rl">§4 強化学習</a>
-    <a href="#self">§5 自己教師あり学習</a>
-    <a href="#semi">§6 半教師あり学習</a>
-    <a href="#erm">§7 経験リスク最小化</a>
-    <a href="#summary">§8 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
     <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 7</div>
-    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">3つのパラダイム、<br>1つの目標。</h2>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">学び方を、選ぶ。<br>過学習と、闘う。</h2>
+    <p class="article-lede">
+      『どのアルゴリズムを使うか』より、<strong>どの学習パラダイムを選ぶか</strong>の方が結果を大きく左右します。ラベル付きデータが豊富なら教師あり、構造を発見したいなら教師なし、ラベル収集が高コストなら自己教師あり、最適化問題なら強化学習。さらに、データを <strong>訓練/検証/テスト</strong> に分け、過学習をモニタし、ハイパラを系統的に探索する ── これらの『学習を運営する』スキルが、本章の中身です。
+    </p>
 
-    <h2 id="map"><span class="label">§1 / MAP</span>機械学習の地図</h2>
-
-    <div class="figure">
-      <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg">
-        <!-- Center -->
-        <ellipse cx="380" cy="200" rx="100" ry="60" fill="#0d1b2a"/>
-        <text x="380" y="195" text-anchor="middle" font-size="14" font-weight="bold" fill="#faf7f2">機械学習</text>
-        <text x="380" y="215" text-anchor="middle" font-size="11" fill="#d4a017">Machine Learning</text>
-
-        <!-- Supervised -->
-        <g>
-          <line x1="280" y1="200" x2="120" y2="80" stroke="#0d1b2a" stroke-width="1.5"/>
-          <ellipse cx="100" cy="70" rx="90" ry="45" fill="#b8431f"/>
-          <text x="100" y="60" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">教師あり</text>
-          <text x="100" y="80" text-anchor="middle" font-size="10" fill="#faf7f2">(x, y) ペア</text>
-          <text x="100" y="95" text-anchor="middle" font-size="9" fill="#f5d4c4">分類・回帰</text>
-        </g>
-
-        <!-- Unsupervised -->
-        <g>
-          <line x1="280" y1="200" x2="120" y2="320" stroke="#0d1b2a" stroke-width="1.5"/>
-          <ellipse cx="100" cy="330" rx="90" ry="45" fill="#d4a017"/>
-          <text x="100" y="320" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">教師なし</text>
-          <text x="100" y="340" text-anchor="middle" font-size="10" fill="#0d1b2a">x のみ</text>
-          <text x="100" y="355" text-anchor="middle" font-size="9" fill="#5a5f6a">クラスタ・次元削減</text>
-        </g>
-
-        <!-- Reinforcement -->
-        <g>
-          <line x1="480" y1="200" x2="640" y2="80" stroke="#0d1b2a" stroke-width="1.5"/>
-          <ellipse cx="660" cy="70" rx="90" ry="45" fill="#2e5577"/>
-          <text x="660" y="60" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">強化学習</text>
-          <text x="660" y="80" text-anchor="middle" font-size="10" fill="#faf7f2">状態・報酬</text>
-          <text x="660" y="95" text-anchor="middle" font-size="9" fill="#c0d4e3">方策学習</text>
-        </g>
-
-        <!-- Self-supervised -->
-        <g>
-          <line x1="480" y1="200" x2="640" y2="320" stroke="#0d1b2a" stroke-width="1.5"/>
-          <ellipse cx="660" cy="330" rx="90" ry="45" fill="#3a7d44"/>
-          <text x="660" y="320" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">自己教師あり</text>
-          <text x="660" y="340" text-anchor="middle" font-size="10" fill="#faf7f2">擬似ラベル</text>
-          <text x="660" y="355" text-anchor="middle" font-size="9" fill="#c0d4c4">事前学習</text>
-        </g>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 7.1</span> 機械学習の4大パラダイム。教師あり・教師なし・強化学習が古典的3分類、自己教師あり学習が近年加わった第4の柱（BERT, SimCLR, MAE などの基礎）。</div>
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>5つの学習パラダイム、データ分割、バイアス-バリアンス、過学習、ハイパラ、NFL定理の10節。</p>
     </div>
 
-    <h2 id="supervised"><span class="label">§2 / SUPER</span>教師あり学習</h2>
-    <p><strong>入力 x と正解ラベル y のペア</strong> (x, y) から、関数 f: x → y を学ぶ。最も一般的なパラダイム。</p>
-    <ul>
-      <li><strong>分類</strong>：y がカテゴリ。「この画像は猫」「このメールはスパム」</li>
-      <li><strong>回帰</strong>：y が連続値。「明日の気温」「不動産価格」</li>
-    </ul>
-    <p>代表的手法（章8で詳述）：線形/ロジスティック回帰、SVM、決定木、ランダムフォレスト、勾配ブースティング、ニューラルネット。</p>
+    <h2>基本</h2>
 
-    <h2 id="unsupervised"><span class="label">§3 / UNSUP</span>教師なし学習</h2>
-    <p><strong>ラベルなしの x だけ</strong> から、データの構造を見つける。</p>
-    <ul>
-      <li><strong>クラスタリング</strong>：K-means、階層クラスタ、DBSCAN — 似たデータをグループ化</li>
-      <li><strong>次元削減</strong>：PCA、t-SNE、UMAP — 高次元データを低次元で可視化</li>
-      <li><strong>密度推定</strong>：分布を推定。GMM、KDE</li>
-      <li><strong>生成モデル</strong>：GAN、VAE、Diffusion — 新しいサンプル生成</li>
-    </ul>
-
-    <h2 id="rl"><span class="label">§4 / RL</span>強化学習</h2>
-    <p><strong>エージェントが環境とやり取りし、報酬を最大化する方策（policy）</strong> を学ぶ。教師ラベルではなく、<strong>遅延された報酬シグナル</strong> から学ぶのが特徴。</p>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="rl-arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
-          </marker>
-        </defs>
-
-        <!-- Agent -->
-        <rect x="100" y="100" width="160" height="80" fill="#b8431f"/>
-        <text x="180" y="135" text-anchor="middle" font-size="15" font-weight="bold" fill="#faf7f2">エージェント</text>
-        <text x="180" y="155" text-anchor="middle" font-size="11" fill="#f5d4c4">方策 π(a|s) を学ぶ</text>
-
-        <!-- Environment -->
-        <rect x="420" y="100" width="160" height="80" fill="#2e5577"/>
-        <text x="500" y="135" text-anchor="middle" font-size="15" font-weight="bold" fill="#faf7f2">環境</text>
-        <text x="500" y="155" text-anchor="middle" font-size="11" fill="#c0d4e3">状態の遷移と報酬</text>
-
-        <!-- Action arrow -->
-        <line x1="260" y1="125" x2="420" y2="125" stroke="#0d1b2a" stroke-width="2" marker-end="url(#rl-arr)"/>
-        <text x="340" y="115" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">行動 a</text>
-
-        <!-- State, reward arrows -->
-        <line x1="420" y1="160" x2="260" y2="160" stroke="#0d1b2a" stroke-width="2" marker-end="url(#rl-arr)"/>
-        <text x="340" y="180" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">状態 s, 報酬 r</text>
-
-        <!-- Title -->
-        <text x="340" y="40" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">強化学習：エージェントと環境のループ</text>
-        <text x="340" y="240" text-anchor="middle" font-size="11" fill="#5a5f6a">エージェントは累積報酬 Σ γᵗ rₜ を最大化する方策を探す</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 7.2</span> 強化学習の基本構造。エージェントが行動 a を選び、環境が次状態 s と報酬 r を返す。累積報酬を最大化する方策を学ぶ。AlphaGo, ChatGPT の RLHF, ロボティクスの基盤。</div>
-    </div>
-
-    <h3>4.1 主な手法</h3>
-    <ul>
-      <li><strong>価値ベース</strong>：Q学習、DQN — 各状態-行動の価値 Q(s,a) を推定</li>
-      <li><strong>方策ベース</strong>：REINFORCE、PPO — 方策 π を直接最適化</li>
-      <li><strong>Actor-Critic</strong>：A2C、SAC — 価値と方策の両方</li>
-      <li><strong>モデルベース</strong>：Dyna、World Models — 環境のモデルを学習して計画</li>
-    </ul>
-
-    <h3>4.2 主な応用</h3>
-    <ul>
-      <li><strong>ゲーム</strong>：AlphaGo（囲碁）、AlphaZero、MuZero、AlphaStar（StarCraft）</li>
-      <li><strong>RLHF</strong>：ChatGPT, Claude の人間フィードバック学習</li>
-      <li><strong>ロボット制御</strong>：歩行、操作、自動運転</li>
-      <li><strong>推薦システム</strong>：長期的なユーザー満足度の最大化</li>
-    </ul>
-
-    <h2 id="self"><span class="label">§5 / SELF</span>自己教師あり学習</h2>
-    <p>「人手でラベルを付けない」が「データ自身から擬似ラベルを生成して教師あり学習する」枠組み。<strong>近年の事前学習（BERT、GPT、SimCLR、MAE、DINO）はほぼ全てこれ</strong>。</p>
-
+    <h3 style="margin-top:36px;">§1.1 教師あり学習 — ラベル付きデータからの学習</h3>
+    <p>(x, y) ペアから関数 f: x → y を学習。<strong>回帰</strong>（y が連続）と <strong>分類</strong>（y が離散カテゴリ）に分かれる。</p>
     <table class="spec">
-      <tr><th>タスク</th><th>擬似ラベルの作り方</th><th>例</th></tr>
-      <tr><td>Masked Language Model</td><td>文の一部の単語を [MASK] にして、それを予測</td><td>BERT, RoBERTa</td></tr>
-      <tr><td>Next Token Prediction</td><td>次の単語を予測</td><td>GPT 系全て</td></tr>
-      <tr><td>Masked Image Model</td><td>画像のパッチを隠して復元</td><td>MAE, BEiT</td></tr>
-      <tr><td>対比学習</td><td>同じ画像の2つの増強を近づけ、別画像を遠ざける</td><td>SimCLR, MoCo</td></tr>
-      <tr><td>クロスモーダル</td><td>画像とキャプションのペアを近づける</td><td>CLIP, ALIGN</td></tr>
+      <tr><th>タスク</th><th>例</th><th>代表手法</th><th>損失関数</th></tr>
+      <tr><td>回帰</td><td>住宅価格、需要予測</td><td>線形回帰、SVR、勾配ブースティング</td><td>MSE, MAE, Huber</td></tr>
+      <tr><td>二値分類</td><td>スパム/ham、疾病有無</td><td>ロジ回帰、SVM、ランダムフォレスト</td><td>BCE, Hinge</td></tr>
+      <tr><td>多クラス分類</td><td>画像認識、文書カテゴリ</td><td>Softmax + NN, GBDT</td><td>CE</td></tr>
+      <tr><td>多ラベル分類</td><td>マルチタグ付け</td><td>Sigmoid × K</td><td>独立BCE</td></tr>
+      <tr><td>順序回帰</td><td>レーティング予測</td><td>Ordinal Logistic</td><td>順序対応CE</td></tr>
     </table>
 
-    <p><strong>なぜ重要か</strong>：人手アノテーションは高コストで質に限界がある。インターネットには <strong>ラベルなしのテキスト・画像</strong> が無限にある。それを使えるなら学習データを桁違いに増やせる。これが <strong>基盤モデル（FM）の革命</strong> の正体。</p>
-
-    <h2 id="semi"><span class="label">§6 / SEMI</span>半教師あり学習</h2>
-    <p>少量のラベル付きデータと大量のラベルなしデータを併用。医療画像など <strong>アノテーションが高価な分野</strong> で重要。</p>
-    <p>代表手法：</p>
-    <ul>
-      <li>擬似ラベリング（モデルの予測を擬似ラベルに）</li>
-      <li>整合性正則化（ノイズに対する予測の安定性）</li>
-      <li>FixMatch、Mean Teacher</li>
+    <h3 style="margin-top:36px;">§1.2 教師なし学習 — 構造の発見</h3>
+    <p>ラベルなしのデータからパターンや構造を見出す：</p>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>クラスタリング</strong>：K-means、階層型、DBSCAN、GMM</li>
+      <li><strong>次元削減</strong>：PCA、t-SNE、UMAP、Autoencoder</li>
+      <li><strong>密度推定</strong>：KDE、GMM、Normalizing Flow</li>
+      <li><strong>異常検知</strong>：Isolation Forest、One-Class SVM、Autoencoder再構成誤差</li>
+      <li><strong>アソシエーション</strong>：Aprioriアルゴリズム、買い物カゴ分析</li>
     </ul>
 
-    <h2 id="erm"><span class="label">§7 / ERM</span>経験リスク最小化</h2>
-    <p>教師あり学習の数学的定式化：</p>
-    <ul>
-      <li><strong>仮説空間 H</strong>：考えるモデル族（線形回帰、決定木、NN など）</li>
-      <li><strong>損失関数 L(f(x), y)</strong>：予測誤差の定義</li>
-      <li><strong>経験リスク</strong>：訓練データ上の平均損失</li>
-    </ul>
-    <div class="formula">f̂ = argmin_{f ∈ H} (1/n) Σ L(f(xᵢ), yᵢ)</div>
-    <p>しかし真に最小化したいのは <strong>汎化誤差</strong>（未知データでの誤差）。<strong>過学習</strong> はこのギャップ（章9で扱う）。</p>
+    <h3 style="margin-top:36px;">§1.3 半教師あり学習</h3>
+    <p>少量のラベル付き＋大量のラベルなしから学習。Self-Training、Pseudo-Labeling、Co-Training、グラフベース手法など。実用：医療画像、Webラベル分類（収集コスト高）。</p>
 
-    <h2 id="summary"><span class="label">§8 / SUMMARY</span>章のまとめ</h2>
+    <h3 style="margin-top:36px;">§1.4 自己教師あり学習 — データ自身が教師</h3>
+    <p>ラベルなしデータから人工的に教師信号を作る。NLP の Masked Language Model（BERT）、Next Token Prediction（GPT）、画像の対照学習（SimCLR、MoCo）、Masked Image Modeling（MAE）。<strong>これが大規模事前学習の核</strong>で、現代の基盤モデル時代を支える。</p>
+
+    <h3 style="margin-top:36px;">§1.5 強化学習 — 報酬からの行動学習</h3>
+    <div class="formula">
+<strong>エージェント-環境ループ</strong><br>
+　 状態 s_t → 行動 a_t → 報酬 r_t → 次状態 s_{t+1}<br>
+　 累積報酬 Σ γ<sup>t</sup> r_t を最大化する方策 π(a|s) を学習<br><br>
+<strong>主要アルゴリズム</strong><br>
+　 Q-Learning, SARSA, DQN, A3C, PPO, SAC<br>
+<strong>応用</strong>　 AlphaGo, AlphaZero, ChatGPT(RLHF), 自動運転, ロボティクス
+    </div>
+
+    <div class="figure">
+      <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 7.1 ／ FIVE LEARNING PARADIGMS</text>
+        
+        <g transform="translate(50,60)">
+          <rect x="0" y="0" width="120" height="80" fill="#b8431f" fill-opacity="0.2" stroke="#b8431f" stroke-width="1.5"/>
+          <text x="60" y="25" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">教師あり</text>
+          <text x="60" y="45" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">(x, y)</text>
+          <text x="60" y="62" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">分類・回帰</text>
+        </g>
+        
+        <g transform="translate(180,60)">
+          <rect x="0" y="0" width="120" height="80" fill="#d4a017" fill-opacity="0.2" stroke="#d4a017" stroke-width="1.5"/>
+          <text x="60" y="25" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">教師なし</text>
+          <text x="60" y="45" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">x のみ</text>
+          <text x="60" y="62" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">クラスタ・次元削減</text>
+        </g>
+        
+        <g transform="translate(310,60)">
+          <rect x="0" y="0" width="120" height="80" fill="#2e5577" fill-opacity="0.2" stroke="#2e5577" stroke-width="1.5"/>
+          <text x="60" y="20" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">半教師あり</text>
+          <text x="60" y="38" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">少量(x,y)</text>
+          <text x="60" y="52" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">+ 多くの x</text>
+          <text x="60" y="68" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">医療・Web</text>
+        </g>
+        
+        <g transform="translate(440,60)">
+          <rect x="0" y="0" width="120" height="80" fill="#b8431f" fill-opacity="0.3" stroke="#b8431f" stroke-width="2"/>
+          <text x="60" y="20" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">自己教師あり</text>
+          <text x="60" y="38" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">x から</text>
+          <text x="60" y="52" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">y を作る</text>
+          <text x="60" y="68" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">BERT・GPT</text>
+        </g>
+        
+        <g transform="translate(570,60)">
+          <rect x="0" y="0" width="120" height="80" fill="#0d1b2a" fill-opacity="0.15" stroke="#0d1b2a" stroke-width="1.5"/>
+          <text x="60" y="25" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">強化学習</text>
+          <text x="60" y="45" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">(s, a, r)</text>
+          <text x="60" y="62" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">AlphaGo・RLHF</text>
+        </g>
+        
+        <text x="350" y="180" text-anchor="middle" font-family="serif" font-size="13" fill="#0d1b2a" font-weight="700">スペクトラム：ラベルの『量』と『質』</text>
+        <text x="350" y="200" text-anchor="middle" font-family="serif" font-size="11" fill="#5a5f6a" font-style="italic">完全教師 → 部分教師 → 自動教師 → 環境報酬</text>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 7.1</span> ／ 5つの主要な学習パラダイム。データに含まれる『教師信号』の質と量で分類される。実用では複数を組み合わせることが多い（自己教師あり事前学習 + 教師あり微調整など）。</div>
+    </div>
+
+    <h3 style="margin-top:36px;">§1.6 訓練・検証・テストデータ</h3>
+    <p>データを3分割するのが標準（典型 60/20/20、または 80/10/10）：</p>
     <table class="spec">
-      <tr><th>1</th><td>機械学習の4パラダイム：教師あり／教師なし／強化学習／自己教師あり</td></tr>
-      <tr><th>2</th><td>教師あり：(x, y) ペアから学ぶ。分類と回帰</td></tr>
-      <tr><th>3</th><td>教師なし：x のみ。クラスタ・次元削減・生成</td></tr>
-      <tr><th>4</th><td>強化学習：エージェント・環境・報酬のループ</td></tr>
-      <tr><th>5</th><td>自己教師あり：データ自身から擬似ラベル。BERT, GPT, MAE</td></tr>
-      <tr><th>6</th><td>半教師あり：少量ラベル + 大量ラベルなし</td></tr>
-      <tr><th>7</th><td>経験リスク最小化（ERM）が教師あり学習の定式化</td></tr>
-      <tr><th>8</th><td>RLHF が ChatGPT などのアライメントの中核</td></tr>
+      <tr><th>分割</th><th>用途</th><th>注意</th></tr>
+      <tr><td><strong>訓練データ</strong></td><td>パラメータの学習</td><td>最大の比率</td></tr>
+      <tr><td><strong>検証データ</strong></td><td>ハイパラ選択、Early Stopping</td><td>これに過適合させない</td></tr>
+      <tr><td><strong>テストデータ</strong></td><td>最終評価のみ（1回）</td><td>本番性能の推定。複数回見ると信頼性失う</td></tr>
     </table>
 
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>教師あり学習・教師なし学習・強化学習の入力と出力を比較できるか</li>
-        <li>「クラスタリング」は教師ありか教師なしか</li>
-        <li>強化学習の3要素（エージェント、環境、報酬）を図で説明できるか</li>
-        <li>BERT のマスク言語モデルが「自己教師あり」と呼ばれる理由</li>
-        <li>CLIP がどんなタスクで学習しているか（クロスモーダル対比）</li>
-        <li>半教師あり学習が有効な実務シーンの例</li>
-        <li>経験リスク最小化の式を書けるか</li>
-        <li>RLHF が「強化学習」の枠に入る理由</li>
-      </ol>
+    <div class="pitfall">
+      <div class="pitfall-title">▎ データリーク（Data Leakage）</div>
+      テストデータの情報が訓練に漏れる現象。典型例：(a)時系列データを単純シャッフルで分割、(b)正規化を全データで実行してから分割、(c)同一患者の複数画像が訓練と検証両方に、(d)目的変数を間接的に含む特徴量。<strong>本番性能を大幅に過大評価する</strong>致命的なバグ。
     </div>
+
+    <h3 style="margin-top:36px;">§1.7 汎化誤差とバイアス・バリアンス分解</h3>
+    <div class="formula">
+<strong>期待汎化誤差の分解（MSE の場合）</strong><br>
+　 E[(y - f̂(x))²] = (Bias)² + Variance + Irreducible Noise<br><br>
+　 <strong>バイアス</strong>　 E[f̂(x)] - f(x)　 モデルの『間違い方の偏り』<br>
+　 <strong>バリアンス</strong>　 E[(f̂(x) - E[f̂(x)])²]　 訓練データへの感度<br>
+　 <strong>削減不可能ノイズ</strong>　 ラベル自体のばらつき
+    </div>
+
+    <div class="figure">
+      <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 7.2 ／ BIAS-VARIANCE TRADEOFF</text>
+        
+        <g transform="translate(80,60)">
+          <line x1="0" y1="170" x2="300" y2="170" stroke="#5a5f6a"/>
+          <line x1="0" y1="170" x2="0" y2="0" stroke="#5a5f6a"/>
+          <text x="305" y="174" font-family="serif" font-size="11" fill="#5a5f6a">モデル複雑度</text>
+          <text x="-15" y="80" font-family="serif" font-size="11" fill="#5a5f6a">誤差</text>
+          
+          <path d="M 0 30 Q 50 80 100 130 Q 150 160 200 167 Q 250 169 300 169" stroke="#b8431f" stroke-width="2" fill="none"/>
+          <text x="35" y="30" font-family="serif" font-size="11" fill="#b8431f">Bias²</text>
+          
+          <path d="M 0 168 Q 50 165 100 155 Q 150 130 200 80 Q 250 30 300 0" stroke="#2e5577" stroke-width="2" fill="none"/>
+          <text x="270" y="20" font-family="serif" font-size="11" fill="#2e5577">Variance</text>
+          
+          <path d="M 0 50 Q 50 70 100 80 Q 150 75 200 80 Q 250 90 300 110" stroke="#0d1b2a" stroke-width="2.5" fill="none"/>
+          <text x="220" y="100" font-family="serif" font-size="11" fill="#0d1b2a" font-weight="700">合計</text>
+          
+          <line x1="150" y1="170" x2="150" y2="75" stroke="#d4a017" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <circle cx="150" cy="75" r="4" fill="#d4a017"/>
+          <text x="156" y="65" font-family="serif" font-size="10" fill="#d4a017" font-weight="700">最適点</text>
+          
+          <text x="40" y="195" font-family="serif" font-size="10" fill="#0d1b2a">未学習</text>
+          <text x="245" y="195" font-family="serif" font-size="10" fill="#0d1b2a">過学習</text>
+        </g>
+      </svg>
+      <div class="figure-caption"><span class="figure-num">FIG 7.2</span> ／ 古典的なバイアス-バリアンスのトレードオフ。モデルが単純すぎるとBias大（未学習）、複雑すぎるとVariance大（過学習）。中間に最適点がある。深層学習では『Double Descent』現象でこの古典像が更新された。</div>
+    </div>
+
+    <h3 style="margin-top:36px;">§1.8 過学習と未学習</h3>
+    <table class="spec">
+      <tr><th>状態</th><th>訓練誤差</th><th>検証誤差</th><th>対処</th></tr>
+      <tr><td><strong>未学習</strong>（Under-fitting）</td><td>大</td><td>大</td><td>モデル複雑化、特徴量追加、正則化緩める</td></tr>
+      <tr><td><strong>適切</strong></td><td>小</td><td>小</td><td>このまま運用</td></tr>
+      <tr><td><strong>過学習</strong>（Over-fitting）</td><td>小</td><td>大</td><td>正則化、データ追加、Early Stopping、Dropout</td></tr>
+    </table>
+
+    <h3 style="margin-top:36px;">§1.9 ハイパーパラメータ調整</h3>
+    <table class="spec">
+      <tr><th>手法</th><th>説明</th><th>用途</th></tr>
+      <tr><td>Grid Search</td><td>すべての組合せを試す</td><td>少数の離散ハイパラ</td></tr>
+      <tr><td>Random Search</td><td>ランダムサンプル</td><td>高次元（Bergstra 2012 が標準推奨）</td></tr>
+      <tr><td>Bayesian Optimization</td><td>ガウス過程で次の候補予測</td><td>1試行が高コスト（NN学習等）</td></tr>
+      <tr><td>Hyperband / ASHA</td><td>悪い候補を早期打切り</td><td>大規模並列、Population Based Training</td></tr>
+      <tr><td>Optuna / Ray Tune</td><td>TPE + 早期打切り</td><td>実用的標準</td></tr>
+    </table>
+
+    <h3 style="margin-top:36px;">§1.10 No Free Lunch 定理</h3>
+    <p><strong>NFL定理</strong>（Wolpert 1996）：『全ての可能な問題分布で平均した性能は、全アルゴリズムで等しい』。実用的含意：<strong>万能アルゴリズムは存在せず、問題に合った手法を選ぶ必要</strong>。深層学習が万能に見えるのは、実用問題が『画像・言語など特定の構造』を持つから。</p>
+
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>各パラダイムの代表手法、転移学習、マルチタスク、メタ学習の4節。</p>
+    </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 各パラダイムの代表アルゴリズム</h3>
+    <p>教師あり：線形回帰、ロジ回帰、SVM、決定木、Random Forest、XGBoost、LightGBM、NN。教師なし：K-means、DBSCAN、GMM、PCA、t-SNE、Autoencoder。半教師あり：Pseudo-Labeling、MixMatch、FixMatch。自己教師あり：BERT MLM、GPT NTP、SimCLR、MAE。強化学習：DQN、PPO、SAC、AlphaZero。</p>
+
+    <h3 style="margin-top:36px;">§2.2 転移学習 — 事前学習＋微調整</h3>
+    <p>大規模データで学習したモデルを、別タスクに転用。BERT/GPT で標準化された手法：(1)事前学習（巨大コーパスで自己教師あり）、(2)微調整（少量のタスク特化データで教師あり）。LoRAなど低ランク手法でメモリ削減も。</p>
+
+    <h3 style="margin-top:36px;">§2.3 マルチタスク学習</h3>
+    <p>複数タスクを同時に解くNNを学習。タスク間の知識共有で各タスク単独より高性能になることがある。GPT-4 が翻訳・要約・コード生成を統一的に扱えるのもマルチタスク的。</p>
+
+    <h3 style="margin-top:36px;">§2.4 メタ学習・Few-shot Learning</h3>
+    <p><strong>『学び方を学ぶ』</strong>。MAML（Model-Agnostic Meta-Learning）はパラメータ初期値を最適化し、新タスクに数ステップで適応できるようにする。GPT-4 の In-Context Learning は事実上のメタ学習で、プロンプトの例から新タスクを推論する。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>データ分割、ハイパラ探索、学習曲線、過学習対処、K-fold の5節。</p>
+    </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 train_test_split と Cross-Validation</h3>
+    <div class="code-block">
+<span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split, cross_val_score, KFold
+<span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> RandomForestClassifier
+<span class="keyword">from</span> sklearn.datasets <span class="keyword">import</span> load_iris
+
+X, y = load_iris(return_X_y=<span class="keyword">True</span>)
+
+<span class="comment"># 単純な分割</span>
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=<span class="builtin">0.2</span>, stratify=y, random_state=<span class="builtin">42</span>)
+
+<span class="comment"># 5-fold Cross Validation</span>
+clf = RandomForestClassifier(n_estimators=<span class="builtin">100</span>, random_state=<span class="builtin">42</span>)
+scores = cross_val_score(clf, X, y, cv=<span class="builtin">5</span>, scoring=<span class="string">'accuracy'</span>)
+print(<span class="string">f"CV平均: {scores.mean():.4f} ± {scores.std():.4f}"</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 Optuna でハイパラ探索</h3>
+    <div class="code-block">
+<span class="keyword">import</span> optuna
+<span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> cross_val_score
+
+<span class="keyword">def</span> objective(trial):
+    params = {
+        <span class="string">'n_estimators'</span>: trial.suggest_int(<span class="string">'n_estimators'</span>, <span class="builtin">50</span>, <span class="builtin">500</span>),
+        <span class="string">'max_depth'</span>: trial.suggest_int(<span class="string">'max_depth'</span>, <span class="builtin">3</span>, <span class="builtin">20</span>),
+        <span class="string">'min_samples_split'</span>: trial.suggest_int(<span class="string">'min_samples_split'</span>, <span class="builtin">2</span>, <span class="builtin">20</span>),
+    }
+    clf = RandomForestClassifier(**params, random_state=<span class="builtin">42</span>)
+    score = cross_val_score(clf, X, y, cv=<span class="builtin">5</span>).mean()
+    <span class="keyword">return</span> score
+
+study = optuna.create_study(direction=<span class="string">'maximize'</span>)
+study.optimize(objective, n_trials=<span class="builtin">50</span>)
+print(<span class="string">"Best params:"</span>, study.best_params)
+print(<span class="string">"Best score:"</span>, study.best_value)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 学習曲線で過学習を診断</h3>
+    <div class="code-block">
+<span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> learning_curve
+<span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+
+sizes, train_scores, val_scores = learning_curve(
+    RandomForestClassifier(n_estimators=<span class="builtin">100</span>), X, y, 
+    train_sizes=np.linspace(<span class="builtin">0.1</span>, <span class="builtin">1.0</span>, <span class="builtin">10</span>), cv=<span class="builtin">5</span>)
+
+plt.plot(sizes, train_scores.mean(axis=<span class="builtin">1</span>), label=<span class="string">'Train'</span>)
+plt.plot(sizes, val_scores.mean(axis=<span class="builtin">1</span>), label=<span class="string">'Validation'</span>)
+plt.xlabel(<span class="string">'Training Size'</span>); plt.ylabel(<span class="string">'Accuracy'</span>); plt.legend()
+<span class="comment"># Train と Val のギャップが大 → 過学習</span>
+<span class="comment"># 両方とも低 → 未学習</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 過学習対策の効果</h3>
+    <div class="code-block">
+<span class="keyword">from</span> sklearn.tree <span class="keyword">import</span> DecisionTreeClassifier
+
+<span class="comment"># 無制限の決定木：高過学習リスク</span>
+clf_unlimited = DecisionTreeClassifier(random_state=<span class="builtin">42</span>)
+clf_unlimited.fit(X_train, y_train)
+print(<span class="string">f"Train: {clf_unlimited.score(X_train, y_train):.4f}"</span>)
+print(<span class="string">f"Test:  {clf_unlimited.score(X_test, y_test):.4f}"</span>)
+
+<span class="comment"># 深さ制限で正則化</span>
+clf_limited = DecisionTreeClassifier(max_depth=<span class="builtin">3</span>, random_state=<span class="builtin">42</span>)
+clf_limited.fit(X_train, y_train)
+print(<span class="string">f"Train (depth=3): {clf_limited.score(X_train, y_train):.4f}"</span>)
+print(<span class="string">f"Test  (depth=3): {clf_limited.score(X_test, y_test):.4f}"</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 Stratified K-Fold のスクラッチ</h3>
+    <div class="code-block">
+<span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> StratifiedKFold
+
+skf = StratifiedKFold(n_splits=<span class="builtin">5</span>, shuffle=<span class="keyword">True</span>, random_state=<span class="builtin">42</span>)
+fold_scores = []
+<span class="keyword">for</span> fold, (train_idx, val_idx) <span class="keyword">in</span> <span class="builtin">enumerate</span>(skf.split(X, y)):
+    X_tr, X_v = X[train_idx], X[val_idx]
+    y_tr, y_v = y[train_idx], y[val_idx]
+    clf = RandomForestClassifier(n_estimators=<span class="builtin">100</span>, random_state=<span class="builtin">42</span>)
+    clf.fit(X_tr, y_tr)
+    s = clf.score(X_v, y_v)
+    fold_scores.append(s)
+    print(<span class="string">f"Fold {fold+1}: {s:.4f}"</span>)
+
+print(<span class="string">f"平均: {np.mean(fold_scores):.4f} ± {np.std(fold_scores):.4f}"</span>)
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>バイアス-バリアンス分解、過学習、NFL の3つの実験。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — バイアス-バリアンス分解の実験</h4>
+      <div class="sim-output">
+&gt;&gt; 真の関数 y = sin(x) + ε にデータ生成、多項式回帰でフィット<br>
+&gt;&gt; 100回の独立試行で予測の平均（Bias）と分散（Variance）を測定<br>
+<br>
+次数 1: Bias²=0.412, Var=0.011, 合計=0.423 ← 未学習（高Bias）<br>
+次数 3: Bias²=0.045, Var=0.038, 合計=0.083 ← バランス良い<br>
+次数 5: Bias²=0.012, Var=0.087, 合計=0.099<br>
+次数 9: Bias²=0.003, Var=0.241, 合計=0.244 ← 過学習（高Var）<br>
+<br>
+&gt;&gt; 古典的Uカーブ：次数3前後が最適
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — 過学習の検出</h4>
+      <div class="sim-output">
+&gt;&gt; 5層NN、MNIST、過学習を意図的に起こす<br>
+<br>
+Epoch  1: train_loss=0.512, val_loss=0.478, gap=-0.034<br>
+Epoch  5: train_loss=0.123, val_loss=0.156, gap= 0.033<br>
+Epoch 10: train_loss=0.047, val_loss=0.142, gap= 0.095<br>
+Epoch 20: train_loss=0.011, val_loss=0.198, gap= 0.187 ← gap拡大<br>
+Epoch 50: train_loss=0.001, val_loss=0.342, gap= 0.341 ← 明らかな過学習<br>
+<br>
+&gt;&gt; Early Stopping を Epoch 10 で適用すべき<br>
+&gt;&gt; あるいは Dropout、L2正則化、データ拡張を導入
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — NFL定理の意味</h4>
+      <div class="sim-output">
+&gt;&gt; 仮想的に『すべての可能な問題分布』で評価<br>
+<br>
+データセットA（画像分類風）: CNN=92%, RF=78%, k-NN=65%<br>
+データセットB（表形式）　 : CNN=72%, RF=89%, k-NN=84%<br>
+データセットC（時系列）　 : CNN=68%, RF=72%, RNN=85%<br>
+データセットD（小サンプル）: CNN=55%, RF=68%, k-NN=72%<br>
+<br>
+&gt;&gt; どのモデルも『あらゆる問題に強い』わけではない<br>
+&gt;&gt; 問題特性に合った選択が必要（NFL定理の経験的確認）
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式の演習問題 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">教師あり学習の定義として正しいのは。</div>
+        <div class="p-choices">① ラベルなしから学ぶ　 ② (入力, 正解) ペアからマッピングを学ぶ　 ③ 報酬から学ぶ　 ④ 学習しない</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 教師あり学習は (x, y) ペアから関数 y=f(x) を学習。分類と回帰が代表。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">K-means や PCA はどの学習パラダイムか。</div>
+        <div class="p-choices">① 教師あり　 ② 教師なし　 ③ 強化学習　 ④ 自己教師あり</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ラベルを使わずデータ構造（クラスタ、主成分）を見出す教師なし学習の代表。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">BERT の MLM や GPT の Next Token Prediction はどのパラダイムか。</div>
+        <div class="p-choices">① 教師あり　 ② 教師なし　 ③ 自己教師あり（データから教師信号を作る）　 ④ 強化学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 大量のラベルなしテキストから、自分自身でマスク埋めや次トークン予測という『教師信号』を作って学習。現代基盤モデルの核。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">強化学習の中核要素は。</div>
+        <div class="p-choices">① ラベル　 ② 状態・行動・報酬・方策　 ③ クラスタ　 ④ ベクトル化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> エージェントが状態s_tで行動a_tを取り、報酬r_tを得て次状態s_{t+1}へ。累積報酬を最大化する方策 π(a|s) を学習。AlphaGo, RLHF の根幹。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">訓練・検証・テストデータの主な役割として正しい組合せは。</div>
+        <div class="p-choices">① 訓練=学習、検証=ハイパラ選択、テスト=最終評価　 ② すべて同じ　 ③ テストで学習　 ④ 検証はランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> テストデータは『最終評価1回のみ』。検証で繰り返しチューニングしたあとに、初めて見るデータで本番性能を推定。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">『データリーク』が起きる典型例は。</div>
+        <div class="p-choices">① 時系列データを単純シャッフルで分割、全データで正規化、目的変数情報の混入　 ② 大きすぎるバッチ　 ③ 学習率小さい　 ④ パラメータ少ない</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> いずれもテスト情報の漏洩。本番性能を大幅に過大評価する致命的バグ。時系列は時間順分割、正規化は訓練データで計算してテストに適用。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">過学習（overfitting）の典型的サインは。</div>
+        <div class="p-choices">① 訓練・検証とも誤差大　 ② 訓練誤差小、検証誤差大　 ③ 両方小　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 過学習は『訓練データを暗記して、未見データで失敗』。対処はEarly Stopping、Dropout、L2、データ拡張、Augmentation。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">バイアス-バリアンス分解で『バイアス大』を表す状況は。</div>
+        <div class="p-choices">① モデルが複雑すぎ　 ② モデルが単純すぎて関数を表現できない（未学習）　 ③ データ多すぎ　 ④ 正則化なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Bias は『系統的な誤差』、モデルの表現力不足が原因。対処はモデル複雑化、特徴量追加、正則化緩和。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">5-fold Cross-Validation の目的は。</div>
+        <div class="p-choices">① データ量を増やす　 ② モデル評価の分散を減らし安定化、ハイパラ選択の信頼性　 ③ 計算を減らす　 ④ 正則化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> データを5分割し各回1つを検証に。5回の評価の平均で評価分散を抑える。小データで特に重要。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">高次元ハイパラ探索で Grid Search より Random Search が推奨される理由は。</div>
+        <div class="p-choices">① Bergstra 2012：少数の重要パラメータを効率的に探索できる　 ② 計算量が同じ　 ③ ランダムは常に最適　 ④ コードが短い</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 多くの場合、性能を支配するハイパラは少数。Grid は全格子点を試すが、無関係次元の試行が無駄。Random は重要次元を多くサンプリングできる。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">Bayesian Optimization の特徴は。</div>
+        <div class="p-choices">① 過去の試行結果からガウス過程で次の候補を予測、試行数を最小化　 ② ランダム　 ③ 厳密な数学なし　 ④ Optuna は使えない</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> GP やTPE で予測平均と分散を考慮し『有望かつ未探索な点』を選ぶ。NN の学習など1試行が高コストな場合に強力。Optuna は TPE ベースで実装。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">転移学習（Transfer Learning）の典型的フローは。</div>
+        <div class="p-choices">① 事前学習（大規模データで自己教師あり）→ ファインチューニング（少量タスクデータ）　 ② ゼロから訓練のみ　 ③ ハイパラ調整のみ　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> BERT/GPT/ViT すべてこの流れ。LLM ではIn-Context Learning, LoRA, RLHFなど発展形が多数。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">No Free Lunch（NFL）定理が示唆することは。</div>
+        <div class="p-choices">① あるアルゴリズムが万能　 ② すべての可能な問題分布で平均すると、どのアルゴリズムも同性能 → 問題ごとに適した手法を選ぶ必要　 ③ 学習不要　 ④ 深層学習が最強</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Wolpert 1996。実用問題が特定構造（画像・言語の局所性、自然法則）を持つから NN が機能するが、すべての問題に最強なアルゴリズムは数学的に存在しない。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">層化抽出（Stratified Sampling）が必要な典型ケースは。</div>
+        <div class="p-choices">① クラス不均衡データの分類　 ② 完全に均一なデータ　 ③ 連続値のみ　 ④ 時系列のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> クラス比が偏った（陽性 1% など）データで単純ランダム分割すると検証セットに陽性が含まれない可能性も。層化で各分割のクラス比を均一に保つ。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">『Early Stopping』が機能する原理は。</div>
+        <div class="p-choices">① 訓練を最後まで続ける　 ② 検証損失が悪化し始める前に学習を止めて過学習を防ぐ　 ③ パラメータ削減　 ④ データ拡張</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 訓練損失は単調減少するが検証損失は U字。最低点で止めると過学習せず汎化性能最大化。Patience（数エポック改善なしで停止）で実装。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">Few-shot Learning の典型は。</div>
+        <div class="p-choices">① 大量データで学習　 ② 数〜数十サンプルで新タスクに適応（MAML, In-Context Learning）　 ③ ゼロデータ　 ④ パラメータ調整なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 限られたサンプルで新タスクに適応する手法。GPT-4 のIn-Context Learning はプロンプトの例から推論する強力な Few-shot 手法。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">マルチタスク学習の利点として誤りはどれか。</div>
+        <div class="p-choices">① タスク間で知識共有　 ② 各タスクで Bias を下げる効果　 ③ 正則化効果でVariance↓　 ④ 全てのタスクが互いに干渉して性能が必ず下がる</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> 実際にはタスク間の知識共有でしばしば性能↑。ただし関連性のないタスク同時学習は『負の転移』を起こすことがある。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">『Double Descent』現象（深層学習で観察）の主張は。</div>
+        <div class="p-choices">① モデル複雑度を上げ続けると、過学習を超えて再び汎化が改善する　 ② U字カーブのみ　 ③ 学習しない　 ④ 必ず単調減少</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 古典的 U字 の後に二度目の下降。過パラメータ化された NN が経験的に汎化することの一つの説明。Belkin 2019。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">半教師あり学習が威力を発揮する状況は。</div>
+        <div class="p-choices">① ラベル付け不可　 ② ラベル付きデータが少ないがラベルなしデータは大量にある（医療画像など）　 ③ 全データラベル付き　 ④ データなし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ラベル収集コストが高い領域で、ラベルなしデータを活用して学習を強化。Pseudo-Labeling, FixMatch, MixMatch などの手法。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">『時系列データ』を扱う際の正しい分割方法は。</div>
+        <div class="p-choices">① ランダム k-fold　 ② 時系列順に分割：過去で訓練、未来で検証・テスト（Time Series Split）　 ③ シャッフル　 ④ 階層化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 時系列の単純シャッフルは『未来を見て過去を予測』するデータリークの典型。常に時間順で分割。Expanding window / Rolling window などの手法がある。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">
+      5つの学習パラダイム（教師あり、教師なし、半教師あり、自己教師あり、強化学習）と、訓練・検証・テスト分割、バイアス-バリアンス分解、過学習・未学習、ハイパラ調整（Grid/Random/Bayesian/Optuna）、NFL 定理を扱いました。応用は転移学習、マルチタスク、メタ学習。ハンズオンで train_test_split、CV、Optuna、学習曲線、Stratified K-Fold。シミュレーションでバイアス-バリアンス、過学習検出、NFL の意味。次章は古典機械学習（線形回帰、ロジ回帰、SVM、決定木、Random Forest、GBDT、K-means、PCA など）で、これらのパラダイムの具体的な実装を扱います。
+    </p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="06-info-theory.html">← 章6</a></div>
-  <div><span class="ch-label">次の章</span><br><span class="ch-title">章8: 古典手法</span></div>
-  <div><a href="08-ml-classical.html">章8へ →</a></div>
+  <div><a href="06-info-theory.html">← 章6: 情報理論</a></div>
+  <div><span class="ch-label">Chapter 7 of 12 · 基本編</span><br><span class="ch-title">機械学習パラダイム</span></div>
+  <div><a href="08-ml-classical.html">章8: 古典機械学習 →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="index.html">基本</a></li><li><a href="../advanced/index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">Swallow AI Academy</div>
+      <p>Independent, editorial-style learning for AI / ML certifications. 2026.</p>
+    </div>
+    <div class="footer-cols">
+      <div>
+        <h6>LEARN</h6>
+        <a href="../../../certifications/g-kentei.html">G検定</a>
+        <a href="../../../certifications/e-shikaku.html">E資格</a>
+        <a href="../../../certifications/tokei.html">統計検定</a>
+      </div>
+      <div>
+        <h6>PRACTICE</h6>
+        <a href="../../../quiz.html">問題演習</a>
+        <a href="../../../glossary.html">用語集</a>
+      </div>
+      <div>
+        <h6>INFO</h6>
+        <a href="../../../about.html">サイトについて</a>
+      </div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

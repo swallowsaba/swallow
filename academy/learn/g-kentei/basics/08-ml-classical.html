@@ -3,37 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章8 古典的機械学習手法 — G検定 基本 — Swallow AI Academy</title>
-<meta name="description" content="G検定基本 章8：線形回帰、ロジスティック回帰、SVM、決定木、ランダムフォレスト、GBDT、K-means、PCA。図解で各手法を直感的に。">
+<title>章8 古典機械学習 — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章8：線形回帰、ロジスティック回帰、SVM、決定木、ランダムフォレスト、勾配ブースティング（XGBoost/LightGBM/CatBoost）、k-NN、K-means、PCA を5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    <a href="../../../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
     </a>
     <nav class="nav-primary">
       <a href="../../../index.html#certifications">資格</a>
@@ -42,343 +28,526 @@ table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:
       <a href="../advanced/index.html">応用</a>
       <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
     </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>Ch.8</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章8</div>
-    <h1>章8 — 古典的機械学習手法<span class="en">Chapter 8 — Classical ML Methods</span></h1>
-    <p class="standfirst">深層学習以前、機械学習はこの章の手法群が中心でした。<strong>現在も実務の多くで現役</strong> です。特に表形式データでは GBDT がいまだに最強格。各手法の仕組みと、いつどれを使うかを掴みます。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> &nbsp;/&nbsp; LEARN &nbsp;/&nbsp; G検定 &nbsp;/&nbsp; <a href="index.html">基本</a> &nbsp;/&nbsp; 章8</div>
+    <h1>章8 — 古典機械学習<span class="en">Chapter 8 — Classical ML</span></h1>
+    <p class="standfirst">深層学習が登場する前、機械学習はすでに高い実用性を持っていました。<strong>線形回帰</strong>、<strong>ロジスティック回帰</strong>、<strong>SVM</strong>、<strong>決定木</strong>、<strong>ランダムフォレスト</strong>、<strong>勾配ブースティング</strong>、<strong>k-NN</strong>、<strong>K-means</strong>、<strong>PCA</strong> ── 表形式データでは今もこれらが <strong>NN を上回ることが多い</strong>。本章で代表手法を体系的に学び、適切な使い分けと実装まで習得します。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="07-ml-paradigm.html">← 章7: パラダイム</a></div>
-  <div><span class="ch-label">Chapter 8 of 12</span><br><span class="ch-title">古典的機械学習</span></div>
-  <div><a href="09-ml-evaluation.html">章9: 評価 →</a></div>
+  <div><a href="07-ml-paradigm.html">← 章7: ML パラダイム</a></div>
+  <div><span class="ch-label">Chapter 8 of 12 · 基本編</span><br><span class="ch-title">古典機械学習</span></div>
+  <div><a href="09-ml-evaluation.html">章9: 評価指標 →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
     <h6>章8 目次</h6>
-    <a href="#linear">§1 線形回帰</a>
-    <a href="#regul">§2 リッジ・ラッソ</a>
-    <a href="#logistic">§3 ロジスティック回帰</a>
-    <a href="#svm">§4 SVM</a>
-    <a href="#tree">§5 決定木</a>
-    <a href="#ensemble">§6 アンサンブル（RF・GBDT）</a>
-    <a href="#kmeans">§7 K-means</a>
-    <a href="#pca">§8 PCA</a>
-    <a href="#summary">§9 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
     <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 8</div>
-    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">深層学習以前の<br>巨人たち。</h2>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">線形から木へ、<br>そしてアンサンブルへ。</h2>
+    <p class="article-lede">
+      古典機械学習を理解せず深層学習に進むのは、文法を学ばずに文学を書くようなもの。線形モデルの単純さと解釈性、SVMのマージン最大化、決定木の階層的判断、ランダムフォレストの多様性、勾配ブースティングの逐次学習 ── これらが今でも Kaggle 表形式コンペで NN を圧倒する理由がここにあります。
+    </p>
 
-    <h2 id="linear"><span class="label">§1 / LINEAR</span>線形回帰</h2>
-    <p>機械学習で最も基本的なモデル。入力 x ∈ ℝᵈ に対し、線形に予測：</p>
-    <div class="formula">ŷ = wᵀx + b</div>
-    <p>損失：二乗誤差 L = (1/2n) Σ (ŷᵢ - yᵢ)²。<strong>正規方程式</strong>で閉形式解が存在：</p>
-    <div class="formula">ŵ = (XᵀX)⁻¹ Xᵀy</div>
-    <p>XᵀX が非正則（多重共線性あり）だと解が不安定 → リッジ回帰で逃げる。</p>
-
-    <h2 id="regul"><span class="label">§2 / REG</span>リッジ・ラッソ・Elastic Net</h2>
-    <p>過学習を防ぐため、重みの大きさにペナルティを課す：</p>
-    <table class="spec">
-      <tr><th>Ridge (L²)</th><td>L + λ||w||² → ŵ = (XᵀX + λI)⁻¹ Xᵀy（解析解あり）</td></tr>
-      <tr><th>Lasso (L¹)</th><td>L + λ||w||₁ → 解析解なし、座標降下法。<strong>スパース化</strong></td></tr>
-      <tr><th>Elastic Net</th><td>L + λ₁||w||₁ + λ₂||w||² → 両者の長所</td></tr>
-    </table>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
-        <!-- Lasso (L1) -->
-        <g transform="translate(0, 0)">
-          <line x1="40" y1="160" x2="280" y2="160" stroke="#0d1b2a"/>
-          <line x1="160" y1="40" x2="160" y2="240" stroke="#0d1b2a"/>
-          <text x="280" y="155" font-size="10" fill="#5a5f6a">w₁</text>
-          <text x="165" y="40" font-size="10" fill="#5a5f6a">w₂</text>
-          <!-- L1 ball -->
-          <polygon points="160,80 220,160 160,240 100,160" fill="none" stroke="#b8431f" stroke-width="2.5"/>
-          <!-- contour of loss -->
-          <ellipse cx="220" cy="100" rx="80" ry="40" fill="none" stroke="#5a5f6a" stroke-width="1"/>
-          <ellipse cx="220" cy="100" rx="55" ry="28" fill="none" stroke="#5a5f6a" stroke-width="1"/>
-          <ellipse cx="220" cy="100" rx="30" ry="15" fill="none" stroke="#5a5f6a" stroke-width="1"/>
-          <!-- intersection on corner -->
-          <circle cx="160" cy="80" r="5" fill="#d4a017"/>
-          <text x="125" y="78" font-size="11" font-weight="bold" fill="#d4a017">解 = 角</text>
-          <text x="100" y="63" font-size="10" fill="#0d1b2a">w₁ = 0</text>
-          <text x="160" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">Lasso (L¹) → スパース解</text>
-        </g>
-        <!-- Ridge (L2) -->
-        <g transform="translate(380, 0)">
-          <line x1="40" y1="160" x2="280" y2="160" stroke="#0d1b2a"/>
-          <line x1="160" y1="40" x2="160" y2="240" stroke="#0d1b2a"/>
-          <text x="280" y="155" font-size="10" fill="#5a5f6a">w₁</text>
-          <text x="165" y="40" font-size="10" fill="#5a5f6a">w₂</text>
-          <circle cx="160" cy="160" r="80" fill="none" stroke="#b8431f" stroke-width="2.5"/>
-          <ellipse cx="220" cy="100" rx="80" ry="40" fill="none" stroke="#5a5f6a" stroke-width="1"/>
-          <ellipse cx="220" cy="100" rx="55" ry="28" fill="none" stroke="#5a5f6a" stroke-width="1"/>
-          <ellipse cx="220" cy="100" rx="30" ry="15" fill="none" stroke="#5a5f6a" stroke-width="1"/>
-          <!-- intersection somewhere on the circle -->
-          <circle cx="215" cy="118" r="5" fill="#d4a017"/>
-          <text x="225" y="115" font-size="11" font-weight="bold" fill="#d4a017">滑らかな解</text>
-          <text x="160" y="270" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">Ridge (L²) → 小さい係数</text>
-        </g>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 8.1</span> L¹ と L² 正則化の幾何。L¹ の単位球は菱形なので「角」に解が来やすく、多くの係数がゼロ（スパース化）。L² は円なので解は滑らかに分布。</div>
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>線形回帰・ロジ回帰・SVM・決定木・アンサンブル・RF・GBDT・k-NN・K-means・PCA の10節。</p>
     </div>
 
-    <h2 id="logistic"><span class="label">§3 / LOG</span>ロジスティック回帰：二値分類</h2>
-    <p>線形出力 z = wᵀx + b を <strong>シグモイド</strong>で確率に変換：</p>
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 線形回帰 — 最もシンプルな予測器</h3>
     <div class="formula">
-      σ(z) = 1 / (1 + e⁻ᶻ),  &nbsp; P(y=1 | x) = σ(wᵀx + b)
-    </div>
-    <p>損失は <strong>二値クロスエントロピー</strong>（最尤推定と等価）。多クラスは softmax 回帰。</p>
-
-    <h2 id="svm"><span class="label">§4 / SVM</span>サポートベクトルマシン</h2>
-    <p>クラス間の <strong>マージン</strong>（境界からの最近接点までの距離）を最大化する分類器。</p>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
-        <line x1="40" y1="240" x2="640" y2="240" stroke="#0d1b2a"/>
-        <line x1="80" y1="20" x2="80" y2="260" stroke="#0d1b2a"/>
-        <!-- Class A (orange) -->
-        <circle cx="160" cy="180" r="8" fill="#b8431f"/>
-        <circle cx="200" cy="160" r="8" fill="#b8431f"/>
-        <circle cx="180" cy="200" r="8" fill="#b8431f"/>
-        <circle cx="220" cy="180" r="8" fill="#b8431f" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="230" y="185" font-size="9" fill="#0d1b2a">SV</text>
-        <circle cx="240" cy="200" r="8" fill="#b8431f"/>
-        <!-- Class B (navy) -->
-        <circle cx="400" cy="100" r="8" fill="#2e5577"/>
-        <circle cx="440" cy="80" r="8" fill="#2e5577"/>
-        <circle cx="460" cy="120" r="8" fill="#2e5577"/>
-        <circle cx="420" cy="120" r="8" fill="#2e5577" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="430" y="125" font-size="9" fill="#0d1b2a">SV</text>
-        <circle cx="480" cy="100" r="8" fill="#2e5577"/>
-        <!-- Hyperplane -->
-        <line x1="120" y1="60" x2="500" y2="240" stroke="#0d1b2a" stroke-width="3"/>
-        <text x="540" y="248" font-size="11" fill="#0d1b2a" font-weight="bold">超平面 wᵀx+b=0</text>
-        <!-- Margin lines -->
-        <line x1="140" y1="40" x2="520" y2="220" stroke="#5a5f6a" stroke-dasharray="4,3"/>
-        <line x1="100" y1="80" x2="480" y2="260" stroke="#5a5f6a" stroke-dasharray="4,3"/>
-        <!-- Margin label -->
-        <text x="300" y="40" text-anchor="middle" font-size="12" font-weight="bold" fill="#b8431f">マージン最大化</text>
-        <text x="300" y="55" text-anchor="middle" font-size="10" fill="#5a5f6a">境界に最も近い点（サポートベクトル SV）からの距離を最大化</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 8.2</span> SVM はクラス境界からの最近接点（サポートベクトル）までの距離を最大化する超平面を見つける。線形分離できない場合は <strong>カーネルトリック</strong> で高次元に写像。</div>
+y = β₀ + β₁x₁ + … + β_p x_p + ε　 = X β + ε<br><br>
+<strong>OLS解析解</strong>　 β̂ = (X<sup>T</sup>X)⁻¹ X<sup>T</sup>y<br>
+<strong>正則化版</strong>　 Ridge: (X<sup>T</sup>X + λI)⁻¹X<sup>T</sup>y、　 Lasso: L1正則化で凸最適化
     </div>
 
-    <h3>4.1 カーネルトリック</h3>
-    <p>データを高次元に写像する関数 φ を陽に計算せず、<strong>内積 K(x, x') = φ(x)·φ(x') だけを計算</strong> する技法。代表的なカーネル：</p>
-    <ul>
-      <li><strong>線形</strong>：K(x, x') = xᵀx'</li>
-      <li><strong>多項式</strong>：K(x, x') = (xᵀx' + 1)ᵈ</li>
-      <li><strong>RBF（ガウシアン）</strong>：K(x, x') = exp(-γ ||x - x'||²) — 最も柔軟</li>
-    </ul>
-
-    <h2 id="tree"><span class="label">§5 / TREE</span>決定木</h2>
-    <p>データを if-then ルールで再帰的に分割。<strong>解釈性が高い</strong> のが最大の利点。</p>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
-        <!-- Root -->
-        <rect x="280" y="20" width="120" height="40" fill="#b8431f"/>
-        <text x="340" y="45" text-anchor="middle" font-size="13" fill="#faf7f2">年齢 &gt; 30?</text>
-        <!-- Branches -->
-        <line x1="320" y1="60" x2="160" y2="100" stroke="#0d1b2a"/>
-        <text x="220" y="80" font-size="10" fill="#5a5f6a">No</text>
-        <line x1="360" y1="60" x2="520" y2="100" stroke="#0d1b2a"/>
-        <text x="450" y="80" font-size="10" fill="#5a5f6a">Yes</text>
-        <!-- Left node -->
-        <rect x="100" y="100" width="120" height="40" fill="#d4a017"/>
-        <text x="160" y="125" text-anchor="middle" font-size="13" fill="#0d1b2a">収入 &gt; 500?</text>
-        <line x1="140" y1="140" x2="80" y2="180" stroke="#0d1b2a"/>
-        <line x1="180" y1="140" x2="240" y2="180" stroke="#0d1b2a"/>
-        <!-- Right node -->
-        <rect x="460" y="100" width="120" height="40" fill="#d4a017"/>
-        <text x="520" y="125" text-anchor="middle" font-size="13" fill="#0d1b2a">勤続 &gt; 5年?</text>
-        <line x1="500" y1="140" x2="440" y2="180" stroke="#0d1b2a"/>
-        <line x1="540" y1="140" x2="600" y2="180" stroke="#0d1b2a"/>
-        <!-- Leaves -->
-        <rect x="40" y="180" width="80" height="40" fill="#faf7f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="80" y="205" text-anchor="middle" font-size="12" fill="#0d1b2a">拒否</text>
-        <rect x="200" y="180" width="80" height="40" fill="#faf7f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="240" y="205" text-anchor="middle" font-size="12" fill="#0d1b2a">承認</text>
-        <rect x="400" y="180" width="80" height="40" fill="#faf7f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="440" y="205" text-anchor="middle" font-size="12" fill="#0d1b2a">条件付き</text>
-        <rect x="560" y="180" width="80" height="40" fill="#faf7f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="600" y="205" text-anchor="middle" font-size="12" fill="#0d1b2a">承認</text>
-        <text x="340" y="265" text-anchor="middle" font-size="11" fill="#5a5f6a" font-style="italic">分岐基準：情報利得（エントロピー減少）または ジニ不純度</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 8.3</span> 決定木の構造（融資審査の例）。各ノードで1つの特徴量について閾値分割。深い木ほど表現力が増すが過学習しやすい。</div>
-    </div>
-
-    <p>分岐基準：</p>
-    <ul>
-      <li><strong>情報利得</strong>：分岐前後のエントロピー差（章6）</li>
-      <li><strong>ジニ不純度</strong>：1 - Σ pᵢ²。エントロピーと似た性質</li>
-    </ul>
-
-    <h2 id="ensemble"><span class="label">§6 / ENSEMBLE</span>アンサンブル：RF と GBDT</h2>
-
-    <h3>6.1 ランダムフォレスト（バギング）</h3>
-    <p>複数の決定木を <strong>並列に学習し、多数決</strong>。各木は：</p>
-    <ul>
-      <li><strong>ブートストラップ標本</strong>（同じデータから復元抽出）で学習</li>
-      <li><strong>特徴量サブセット</strong>（毎ノードで一部だけ考慮）で多様化</li>
-    </ul>
-    <p>結果：単一の木より <strong>過学習しにくく</strong>、頑健。実装簡単。</p>
-
-    <h3>6.2 勾配ブースティング（GBDT）</h3>
-    <p>木を <strong>逐次的</strong>に追加し、<strong>前の木の誤差（負勾配）を埋める</strong>ように学習：</p>
+    <h3 style="margin-top:36px;">§1.2 ロジスティック回帰 — 確率を予測する線形モデル</h3>
     <div class="formula">
-      F_m(x) = F_{m-1}(x) + γ_m h_m(x), &nbsp; h_m は誤差を近似する木
+P(y=1|x) = σ(β<sup>T</sup>x)　 (シグモイド関数で確率に変換)<br>
+損失：ベルヌーイ尤度の負の対数 = クロスエントロピー<br><br>
+解析解なし、勾配降下や IRLS で学習。決定境界は線形。
     </div>
-    <p>代表実装：</p>
-    <table class="spec">
-      <tr><th>XGBoost</th><td>2014年。Kaggleの支配的勝者。多くの実務で標準</td></tr>
-      <tr><th>LightGBM</th><td>2017年。Microsoft。GOSS + EFB で高速</td></tr>
-      <tr><th>CatBoost</th><td>2017年。Yandex。カテゴリ変数の扱いが優秀</td></tr>
-    </table>
-    <p>表形式データでは <strong>いまだに深層学習を凌駕する</strong> ことが多い（2024-2025年の Kaggle 上位もGBDT 系が中心）。</p>
 
-    <h2 id="kmeans"><span class="label">§7 / KMEANS</span>K-means クラスタリング</h2>
-    <p>教師なしのクラスタリング。Lloyd アルゴリズム：</p>
-    <ol>
-      <li>K 個のセントロイドをランダム初期化</li>
-      <li><strong>割当ステップ</strong>：各データを最近接セントロイドに割当</li>
-      <li><strong>更新ステップ</strong>：各クラスタのセントロイドを平均で更新</li>
-      <li>収束まで 2-3 を反復</li>
-    </ol>
+    <h3 style="margin-top:36px;">§1.3 サポートベクターマシン（SVM）</h3>
+    <p>クラス間の <strong>マージン（距離）を最大化</strong> する超平面を見つける：</p>
+    <div class="formula">
+<strong>ハードマージン</strong>　 min ||w||² s.t. yᵢ(w·xᵢ + b) ≥ 1<br>
+<strong>ソフトマージン</strong>　 + スラック変数 ξᵢ で誤分類を許容<br>
+<strong>カーネルトリック</strong>　 K(x, x') = φ(x)·φ(x') で非線形分離<br>
+　 主要カーネル：RBF（K = exp(-γ||x-x'||²)）、多項式、線形
+    </div>
 
     <div class="figure">
-      <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">
-        <g transform="translate(0, 0)">
-          <rect x="20" y="20" width="220" height="160" fill="none" stroke="#5a5f6a"/>
-          <circle cx="80" cy="60" r="4" fill="#5a5f6a"/><circle cx="100" cy="80" r="4" fill="#5a5f6a"/>
-          <circle cx="120" cy="60" r="4" fill="#5a5f6a"/><circle cx="80" cy="120" r="4" fill="#5a5f6a"/>
-          <circle cx="160" cy="110" r="4" fill="#5a5f6a"/><circle cx="180" cy="80" r="4" fill="#5a5f6a"/>
-          <circle cx="140" cy="140" r="4" fill="#5a5f6a"/><circle cx="100" cy="150" r="4" fill="#5a5f6a"/>
-          <text x="130" y="200" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">1. データ</text>
+      <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 8.1 ／ SVM MAX-MARGIN HYPERPLANE</text>
+        
+        <g transform="translate(80,55)">
+          <line x1="0" y1="180" x2="300" y2="180" stroke="#5a5f6a" stroke-width="1"/>
+          <line x1="0" y1="180" x2="0" y2="0" stroke="#5a5f6a" stroke-width="1"/>
+          
+          <circle cx="60" cy="140" r="6" fill="#b8431f"/>
+          <circle cx="40" cy="100" r="6" fill="#b8431f"/>
+          <circle cx="90" cy="120" r="6" fill="#b8431f"/>
+          <circle cx="120" cy="80" r="7" fill="#b8431f" stroke="#0d1b2a" stroke-width="2"/>
+          
+          <rect x="200" y="40" width="12" height="12" fill="#2e5577"/>
+          <rect x="225" y="65" width="12" height="12" fill="#2e5577"/>
+          <rect x="245" y="30" width="12" height="12" fill="#2e5577"/>
+          <rect x="180" y="55" width="14" height="14" fill="#2e5577" stroke="#0d1b2a" stroke-width="2"/>
+          
+          <line x1="20" y1="20" x2="280" y2="180" stroke="#0d1b2a" stroke-width="2"/>
+          <line x1="40" y1="0" x2="300" y2="160" stroke="#0d1b2a" stroke-width="1" stroke-dasharray="5 3"/>
+          <line x1="0" y1="40" x2="260" y2="200" stroke="#0d1b2a" stroke-width="1" stroke-dasharray="5 3"/>
+          
+          <text x="160" y="115" font-family="serif" font-size="12" fill="#0d1b2a" font-weight="700">境界 w·x + b = 0</text>
+          <text x="-5" y="-5" font-family="monospace" font-size="11" fill="#5a5f6a">y</text>
+          <text x="305" y="184" font-family="monospace" font-size="11" fill="#5a5f6a">x</text>
         </g>
-        <g transform="translate(260, 0)">
-          <rect x="20" y="20" width="220" height="160" fill="none" stroke="#5a5f6a"/>
-          <circle cx="80" cy="60" r="4" fill="#5a5f6a"/><circle cx="100" cy="80" r="4" fill="#5a5f6a"/>
-          <circle cx="120" cy="60" r="4" fill="#5a5f6a"/><circle cx="80" cy="120" r="4" fill="#5a5f6a"/>
-          <circle cx="160" cy="110" r="4" fill="#5a5f6a"/><circle cx="180" cy="80" r="4" fill="#5a5f6a"/>
-          <circle cx="140" cy="140" r="4" fill="#5a5f6a"/><circle cx="100" cy="150" r="4" fill="#5a5f6a"/>
-          <circle cx="90" cy="55" r="7" fill="#b8431f"/><text x="80" y="50" font-size="10" fill="#b8431f" font-weight="bold">μ₁</text>
-          <circle cx="170" cy="120" r="7" fill="#2e5577"/><text x="180" y="120" font-size="10" fill="#2e5577" font-weight="bold">μ₂</text>
-          <text x="130" y="200" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">2. セントロイド初期化</text>
-        </g>
-        <g transform="translate(520, 0)">
-          <rect x="20" y="20" width="220" height="160" fill="none" stroke="#5a5f6a"/>
-          <circle cx="80" cy="60" r="4" fill="#b8431f"/><circle cx="100" cy="80" r="4" fill="#b8431f"/>
-          <circle cx="120" cy="60" r="4" fill="#b8431f"/><circle cx="80" cy="120" r="4" fill="#b8431f"/>
-          <circle cx="160" cy="110" r="4" fill="#2e5577"/><circle cx="180" cy="80" r="4" fill="#2e5577"/>
-          <circle cx="140" cy="140" r="4" fill="#2e5577"/><circle cx="100" cy="150" r="4" fill="#b8431f"/>
-          <circle cx="95" cy="95" r="7" fill="#b8431f"/><circle cx="160" cy="110" r="7" fill="#2e5577" stroke="#faf7f2" stroke-width="2"/>
-          <text x="130" y="200" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">3. 割当 → 更新 → 反復</text>
+        
+        <g transform="translate(450,90)">
+          <text x="0" y="0" font-family="serif" font-size="13" font-weight="700" fill="#0d1b2a">マージン最大化</text>
+          <text x="0" y="22" font-family="serif" font-size="12" fill="#0d1b2a">▸ サポートベクター（◯/□強調）</text>
+          <text x="14" y="40" font-family="serif" font-size="11" fill="#5a5f6a">境界から最近接の点</text>
+          <text x="0" y="62" font-family="serif" font-size="12" fill="#0d1b2a">▸ マージン = 2/||w||</text>
+          <text x="14" y="80" font-family="serif" font-size="11" fill="#5a5f6a">これを最大化＝||w||最小化</text>
+          <text x="0" y="102" font-family="serif" font-size="12" fill="#0d1b2a">▸ 凸最適化（QP）</text>
+          <text x="14" y="120" font-family="serif" font-size="11" fill="#5a5f6a">大域最適保証</text>
         </g>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 8.4</span> K-means の動作。ランダム初期化したセントロイドを、割当と平均更新で交互に動かすと、データの自然なクラスタへ収束する。</div>
+      <div class="figure-caption"><span class="figure-num">FIG 8.1</span> ／ SVM はマージン（境界と最近接サンプルの距離）を最大化。サポートベクターのみが境界を決定し、他の点はモデルに影響しない。これがSVMの数学的美しさ。</div>
     </div>
 
-    <p>注意点：</p>
-    <ul>
-      <li>初期化次第で<strong>局所解に陥る</strong> → <strong>K-means++</strong> 初期化、複数回試行</li>
-      <li>K は事前に決める → <strong>エルボー法</strong>、<strong>シルエット係数</strong></li>
-      <li>等方的・凸クラスタを仮定 → 非凸データには DBSCAN や階層クラスタが有効</li>
+    <h3 style="margin-top:36px;">§1.4 決定木 — IF-THEN ルールの階層</h3>
+    <p>『年齢が30未満か？』→『収入が500万以上か？』のような条件分岐の木構造。分岐基準：</p>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>分類</strong>：情報利得（エントロピー減少）、ジニ係数</li>
+      <li><strong>回帰</strong>：分散減少、MSE</li>
     </ul>
+    <p>単独では過学習しやすく弱学習器だが、解釈性が高い。アンサンブル化で爆発的に強くなる。</p>
 
-    <h2 id="pca"><span class="label">§8 / PCA</span>主成分分析（PCA）</h2>
-    <p>高次元データを <strong>分散最大方向</strong> に射影して次元削減：</p>
-    <ol>
-      <li>データを中心化（平均を引く）</li>
-      <li>共分散行列 Σ = (1/n) XᵀX を計算</li>
-      <li>Σ の固有値分解（章3）</li>
-      <li>上位 k 個の固有ベクトル（第1〜k主成分）に射影</li>
-    </ol>
-    <p>固有値の大きさが「その方向の分散の量」。累積寄与率で次元数を決定。</p>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
-        <line x1="60" y1="240" x2="620" y2="240" stroke="#0d1b2a"/>
-        <line x1="340" y1="20" x2="340" y2="260" stroke="#0d1b2a"/>
-        <!-- Elongated data cloud -->
-        <ellipse cx="340" cy="140" rx="180" ry="50" fill="#5a5f6a" opacity="0.2" transform="rotate(-25 340 140)"/>
-        <!-- Data points -->
-        <circle cx="200" cy="200" r="3" fill="#0d1b2a"/><circle cx="240" cy="170" r="3" fill="#0d1b2a"/>
-        <circle cx="280" cy="160" r="3" fill="#0d1b2a"/><circle cx="320" cy="140" r="3" fill="#0d1b2a"/>
-        <circle cx="360" cy="135" r="3" fill="#0d1b2a"/><circle cx="400" cy="120" r="3" fill="#0d1b2a"/>
-        <circle cx="440" cy="100" r="3" fill="#0d1b2a"/><circle cx="480" cy="85" r="3" fill="#0d1b2a"/>
-        <circle cx="280" cy="180" r="3" fill="#0d1b2a"/><circle cx="380" cy="125" r="3" fill="#0d1b2a"/>
-        <!-- PC1 -->
-        <line x1="180" y1="225" x2="500" y2="65" stroke="#b8431f" stroke-width="3"/>
-        <text x="510" y="65" font-size="13" font-weight="bold" fill="#b8431f">PC1（最大分散）</text>
-        <!-- PC2 (orthogonal) -->
-        <line x1="280" y1="110" x2="400" y2="170" stroke="#2e5577" stroke-width="2.5"/>
-        <text x="400" y="180" font-size="11" font-weight="bold" fill="#2e5577">PC2</text>
-        <text x="340" y="20" text-anchor="middle" font-size="12" fill="#0d1b2a">PCA：データの分散最大方向を第1主成分に</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 8.5</span> PCAは「データの分散が最大の方向」を第一主成分とする。次元削減・可視化・ノイズ除去・特徴量抽出に多用される。</div>
-    </div>
-
-    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
+    <h3 style="margin-top:36px;">§1.5 アンサンブル学習</h3>
     <table class="spec">
-      <tr><th>1</th><td>線形回帰は正規方程式で閉形式解</td></tr>
-      <tr><th>2</th><td>Lasso（L¹）はスパース化、Ridge（L²）は重み縮小</td></tr>
-      <tr><th>3</th><td>ロジスティック回帰：線形 + sigmoid + 交差エントロピー</td></tr>
-      <tr><th>4</th><td>SVM：マージン最大化、カーネルトリックで非線形化</td></tr>
-      <tr><th>5</th><td>決定木：解釈性高い、分岐基準は情報利得・ジニ</td></tr>
-      <tr><th>6</th><td>ランダムフォレスト：バギング、特徴量サブセット</td></tr>
-      <tr><th>7</th><td>GBDT：逐次的に誤差を埋める。XGBoost/LightGBM/CatBoost</td></tr>
-      <tr><th>8</th><td>表データではいまだに GBDT が深層を凌駕することが多い</td></tr>
-      <tr><th>9</th><td>K-means：割当・更新の反復、K は事前指定</td></tr>
-      <tr><th>10</th><td>PCA：分散最大方向 = 共分散行列の固有ベクトル</td></tr>
+      <tr><th>手法</th><th>原理</th><th>代表</th></tr>
+      <tr><td><strong>Bagging</strong></td><td>並列に独立学習→平均化（Variance削減）</td><td>Random Forest</td></tr>
+      <tr><td><strong>Boosting</strong></td><td>逐次に前の誤りを補正（Bias削減）</td><td>AdaBoost, GBDT, XGBoost</td></tr>
+      <tr><td><strong>Stacking</strong></td><td>複数モデルの予測を別モデルで統合</td><td>メタ学習器</td></tr>
     </table>
 
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>線形回帰の正規方程式を書けるか、XᵀX が非可逆だとどう困るか</li>
-        <li>Lasso と Ridge の解析的・幾何的な違いを説明できるか</li>
-        <li>ロジスティック回帰の損失（クロスエントロピー）が MLE と等価である理由</li>
-        <li>SVM のマージン最大化を図で説明できるか</li>
-        <li>RBF カーネルの式と「無限次元への写像」の意味</li>
-        <li>決定木の分岐基準（情報利得とジニ不純度）の式</li>
-        <li>ランダムフォレストと GBDT の違い（並列 vs 逐次）</li>
-        <li>K-means が局所解に落ちる例と、K-means++ の効果</li>
-        <li>PCA がなぜ「共分散行列の固有値分解」なのか</li>
-        <li>表データで深層学習より GBDT が強い理由を説明できるか</li>
-      </ol>
+    <h3 style="margin-top:36px;">§1.6 ランダムフォレスト</h3>
+    <p>Bagging の発展形：(1)各木を Bootstrap サンプルで学習、(2)各分岐で <strong>特徴量もランダム選択</strong>。これで木同士の相関を下げ、Variance を効果的に削減。デフォルトで高性能、特徴量重要度も得られる実用的な手法。</p>
+
+    <h3 style="margin-top:36px;">§1.7 勾配ブースティング — Kaggleの王者</h3>
+    <p>残差を逐次学習する Boosting の発展。XGBoost、LightGBM、CatBoost が3大ライブラリ。</p>
+    <table class="spec">
+      <tr><th>ライブラリ</th><th>特徴</th><th>強み</th></tr>
+      <tr><td><strong>XGBoost</strong></td><td>2014, Tianqi Chen</td><td>Kaggle 王者、ヒストグラム法</td></tr>
+      <tr><td><strong>LightGBM</strong></td><td>2017, Microsoft</td><td>葉単位成長、超高速、メモリ効率</td></tr>
+      <tr><td><strong>CatBoost</strong></td><td>2017, Yandex</td><td>カテゴリ特徴量を内蔵処理</td></tr>
+    </table>
+
+    <h3 style="margin-top:36px;">§1.8 k-Nearest Neighbors（k-NN）</h3>
+    <p>学習なし（lazy learner）：新サンプルの k 個の最近傍の多数決（分類）or 平均（回帰）。距離計量と k の選択が肝。高次元では『距離の呪い』に弱い。</p>
+
+    <h3 style="margin-top:36px;">§1.9 K-means クラスタリング</h3>
+    <div class="formula">
+1. k 個のクラスタ中心をランダム初期化（K-means++ 推奨）<br>
+2. 各点を最近のクラスタ中心に割当<br>
+3. 各クラスタの中心を所属点の平均で更新<br>
+4. 2-3 を収束まで反復<br><br>
+<strong>目的関数</strong>　 Σ Σ ||xᵢ - μ_k||²　 （クラスタ内分散合計を最小化）<br>
+<strong>k の選び方</strong>　 Elbow法、Silhouette score、Gap statistic
     </div>
+
+    <h3 style="margin-top:36px;">§1.10 主成分分析（PCA）</h3>
+    <p>章3 で詳しく扱った通り、共分散行列の固有値分解で分散最大方向を取り、次元削減・可視化に使う。教師なし、線形変換。非線形版は Kernel PCA、t-SNE、UMAP。</p>
+
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>表形式GBDT、Stacking、クラスタリング比較、特徴選択の4節。</p>
+    </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 表形式データでのGBDTの強さ</h3>
+    <p>2023〜2026 の研究でも『中規模の表形式データでは GBDT が NN を上回る』ことが多数報告されている。理由：(a)スケーリング不要、(b)カテゴリ・欠損のネイティブ対応、(c)スパース・不均衡データに頑健、(d)ハイパラに頑健。Kaggle表形式コンペで GBDT が依然主役。</p>
+
+    <h3 style="margin-top:36px;">§2.2 Stacking と Blending</h3>
+    <p>複数の異なるモデル（GBDT、RF、ロジ回帰、NN）の予測を <strong>メタ学習器</strong>（線形回帰等）で統合。Kaggle上位の常套手段。CVを2段階で慎重に設計する必要あり（リーク防止）。</p>
+
+    <h3 style="margin-top:36px;">§2.3 クラスタリング比較</h3>
+    <table class="spec">
+      <tr><th>手法</th><th>形状</th><th>k事前指定</th><th>外れ値</th></tr>
+      <tr><td>K-means</td><td>球状のみ</td><td>必要</td><td>弱い</td></tr>
+      <tr><td>階層クラスタ</td><td>柔軟</td><td>不要（後で決定）</td><td>中</td></tr>
+      <tr><td>DBSCAN</td><td>任意形状</td><td>不要</td><td>頑健（ノイズラベル）</td></tr>
+      <tr><td>GMM</td><td>楕円</td><td>必要</td><td>確率的ソフト割当</td></tr>
+      <tr><td>HDBSCAN</td><td>密度ベース、階層</td><td>不要</td><td>頑健</td></tr>
+    </table>
+
+    <h3 style="margin-top:36px;">§2.4 特徴量選択</h3>
+    <p>(a)フィルタ法：相関係数、相互情報量、χ²、(b)ラッパー法：Forward/Backward Selection、RFE、(c)埋め込み法：Lasso、Tree-based importance、SHAP。実用は SHAP が解釈性と精度両立で標準化。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>線形回帰、SVM、RF、XGBoost、K-meansの5節。</p>
+    </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 線形回帰 + 正則化</h3>
+    <div class="code-block">
+<span class="keyword">from</span> sklearn.linear_model <span class="keyword">import</span> LinearRegression, Ridge, Lasso
+<span class="keyword">from</span> sklearn.datasets <span class="keyword">import</span> fetch_california_housing
+<span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split
+
+X, y = fetch_california_housing(return_X_y=<span class="keyword">True</span>)
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=<span class="builtin">0.2</span>, random_state=<span class="builtin">42</span>)
+
+<span class="keyword">for</span> name, model <span class="keyword">in</span> [(<span class="string">"OLS"</span>, LinearRegression()), 
+                  (<span class="string">"Ridge"</span>, Ridge(alpha=<span class="builtin">1.0</span>)),
+                  (<span class="string">"Lasso"</span>, Lasso(alpha=<span class="builtin">0.1</span>))]:
+    model.fit(X_tr, y_tr)
+    score = model.score(X_te, y_te)
+    print(<span class="string">f"{name:6s}: R² = {score:.4f}"</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 SVMカーネル比較</h3>
+    <div class="code-block">
+<span class="keyword">from</span> sklearn.svm <span class="keyword">import</span> SVC
+<span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> StandardScaler
+<span class="keyword">from</span> sklearn.pipeline <span class="keyword">import</span> make_pipeline
+
+<span class="keyword">for</span> kernel <span class="keyword">in</span> [<span class="string">'linear'</span>, <span class="string">'poly'</span>, <span class="string">'rbf'</span>]:
+    pipe = make_pipeline(StandardScaler(), SVC(kernel=kernel, C=<span class="builtin">1.0</span>))
+    pipe.fit(X_tr, y_tr &gt; y_tr.median())
+    print(<span class="string">f"{kernel}: {pipe.score(X_te, y_te &gt; y_tr.median()):.4f}"</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 ランダムフォレスト + 特徴重要度</h3>
+    <div class="code-block">
+<span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> RandomForestRegressor
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+
+rf = RandomForestRegressor(n_estimators=<span class="builtin">100</span>, random_state=<span class="builtin">42</span>)
+rf.fit(X_tr, y_tr)
+print(<span class="string">f"R² = {rf.score(X_te, y_te):.4f}"</span>)
+
+<span class="comment"># 特徴量重要度</span>
+features = fetch_california_housing().feature_names
+<span class="keyword">for</span> i <span class="keyword">in</span> np.argsort(rf.feature_importances_)[::-<span class="builtin">1</span>]:
+    print(<span class="string">f"{features[i]:15s} : {rf.feature_importances_[i]:.4f}"</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 XGBoost</h3>
+    <div class="code-block">
+<span class="keyword">import</span> xgboost <span class="keyword">as</span> xgb
+
+dtrain = xgb.DMatrix(X_tr, label=y_tr)
+dtest = xgb.DMatrix(X_te, label=y_te)
+params = {<span class="string">'objective'</span>: <span class="string">'reg:squarederror'</span>, <span class="string">'eval_metric'</span>: <span class="string">'rmse'</span>,
+          <span class="string">'learning_rate'</span>: <span class="builtin">0.05</span>, <span class="string">'max_depth'</span>: <span class="builtin">6</span>}
+
+model = xgb.train(params, dtrain, num_boost_round=<span class="builtin">500</span>, 
+                  evals=[(dtest, <span class="string">'test'</span>)], 
+                  early_stopping_rounds=<span class="builtin">20</span>, verbose_eval=<span class="builtin">100</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 K-means スクラッチ</h3>
+    <div class="code-block">
+<span class="keyword">def</span> kmeans(X, k, max_iter=<span class="builtin">100</span>):
+    <span class="comment"># K-means++ 初期化</span>
+    centers = [X[np.random.randint(<span class="builtin">len</span>(X))]]
+    <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="builtin">range</span>(k - <span class="builtin">1</span>):
+        dists = np.min([np.sum((X-c)**<span class="builtin">2</span>, axis=<span class="builtin">1</span>) <span class="keyword">for</span> c <span class="keyword">in</span> centers], axis=<span class="builtin">0</span>)
+        probs = dists / dists.sum()
+        centers.append(X[np.random.choice(<span class="builtin">len</span>(X), p=probs)])
+    centers = np.array(centers)
+    
+    <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="builtin">range</span>(max_iter):
+        labels = np.argmin([np.sum((X-c)**<span class="builtin">2</span>, axis=<span class="builtin">1</span>) <span class="keyword">for</span> c <span class="keyword">in</span> centers], axis=<span class="builtin">0</span>)
+        new_centers = np.array([X[labels==i].mean(axis=<span class="builtin">0</span>) <span class="keyword">for</span> i <span class="keyword">in</span> <span class="builtin">range</span>(k)])
+        <span class="keyword">if</span> np.allclose(centers, new_centers): <span class="keyword">break</span>
+        centers = new_centers
+    <span class="keyword">return</span> labels, centers
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>SVM決定境界、GBDT逐次学習、K-means初期化の3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — SVMカーネルの決定境界</h4>
+      <div class="sim-output">
+&gt;&gt; 同じ円形データに3つのカーネルを適用<br>
+<br>
+線形: 精度 53%　   ← 線形分離できない<br>
+多項式: 精度 91% （degree=3）<br>
+RBF:   精度 98%　 ← γ=1.0 で最高<br>
+<br>
+&gt;&gt; カーネルトリックで線形不可分問題を解決<br>
+&gt;&gt; RBFのγが大きい → 局所的、過学習リスク<br>
+&gt;&gt; γが小さい → グローバル、未学習リスク
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — GBDTの逐次学習</h4>
+      <div class="sim-output">
+&gt;&gt; California Housing で XGBoost を学習、各回の RMSE 観察<br>
+<br>
+Round   1: train_rmse=2.05, test_rmse=2.07<br>
+Round  10: train_rmse=0.71, test_rmse=0.76<br>
+Round  50: train_rmse=0.52, test_rmse=0.62<br>
+Round 100: train_rmse=0.45, test_rmse=0.55<br>
+Round 200: train_rmse=0.37, test_rmse=0.51<br>
+Round 500: train_rmse=0.26, test_rmse=0.49　 ← Early Stopping<br>
+<br>
+&gt;&gt; 各木が前の残差を補正、徐々に精度向上<br>
+&gt;&gt; 過剰反復で過学習リスク → early_stopping_rounds 必須
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — K-means の初期化問題</h4>
+      <div class="sim-output">
+&gt;&gt; 3クラスタの blob データで初期化を変えて100回試行<br>
+<br>
+[ランダム初期化] 局所最適に陥った回数: 27/100 (27%)<br>
+[K-means++]　　 局所最適に陥った回数: 2/100 (2%)<br>
+<br>
+&gt;&gt; K-means++ は初期点を順次最も離れた点から選び、<br>
+&gt;&gt; 局所最適のリスクを大幅に削減<br>
+&gt;&gt; sklearn のデフォルトは K-means++
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式の演習問題 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">線形回帰のOLS解析解は。</div>
+        <div class="p-choices">① (XᵀX)⁻¹Xᵀy　 ② Xy　 ③ X⁻¹y　 ④ XᵀX</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 正規方程式 XᵀXβ = Xᵀy の解。XᵀX が可逆（フルランク）であることが条件。多重共線性で不安定化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">ロジスティック回帰の出力は。</div>
+        <div class="p-choices">① 連続値　 ② 確率 P(y=1|x)　 ③ クラスタID　 ④ ハードラベル</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> シグモイドで [0,1] に押込めた確率。0.5閾値でハードラベル化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">SVM の最大化対象は。</div>
+        <div class="p-choices">① 学習データ数　 ② マージン（境界とサポートベクター間の距離）　 ③ 学習率　 ④ パラメータ数</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> マージン = 2/||w|| の最大化。これは ||w|| 最小化に帰着、凸最適化問題。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">SVM のカーネルトリックが解決する問題は。</div>
+        <div class="p-choices">① 計算速度　 ② 線形分離不可能なデータ（非線形特徴空間への暗黙写像）　 ③ ノイズ除去　 ④ データ拡張</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> K(x,x')=φ(x)·φ(x') で高次元への明示的写像なしに非線形分離。RBF, 多項式, シグモイドなどのカーネルが使われる。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">決定木の分岐基準（分類）として一般的なのは。</div>
+        <div class="p-choices">① 情報利得（エントロピー減少）、ジニ係数　 ② MSE のみ　 ③ ランダム　 ④ 多数決</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 分類木では情報利得（ID3, C4.5）かジニ係数（CART）。回帰木では分散減少 or MSE。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">Bagging と Boosting の根本的違いは。</div>
+        <div class="p-choices">① Bagging=並列・Variance削減、Boosting=逐次・Bias削減　 ② 全く同じ　 ③ Bagging が常に強い　 ④ Boosting は弱学習器を使えない</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Bagging は独立な弱学習器の平均で分散削減。Boosting は前の誤差を補正する逐次学習でバイアス削減。両者は相補的。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">ランダムフォレストが決定木より頑健な理由は。</div>
+        <div class="p-choices">① 1本の深い木を使う　 ② Bootstrap + 特徴量ランダム選択で木同士の相関を下げ、Variance削減　 ③ 学習が速い　 ④ パラメータが少ない</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2重のランダム性（データのBootstrap、各分岐での特徴量選択）で木の多様性を確保。100本の木の平均で過学習を抑える。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">表形式データでGBDT（XGBoost等）がNNより強い傾向にある主な理由は。</div>
+        <div class="p-choices">① 計算が遅い　 ② スケーリング不要、カテゴリ・欠損対応、不均衡データに頑健　 ③ パラメータが多い　 ④ メモリ消費が大きい</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GBDTは表形式の特性に最適化。NNは特徴量の前処理に敏感で、表形式では性能発揮しにくい（一部例外：FT-Transformer、TabTransformer）。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">XGBoost、LightGBM、CatBoost の特徴対応として正しいのは。</div>
+        <div class="p-choices">① XGBoostはGPUなし　 ② LightGBMは葉単位成長で高速　 ③ CatBoostはカテゴリ非対応　 ④ 全て同じ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LightGBM はヒストグラム法＋Leaf-wise成長で超高速。XGBoost は精度志向、CatBoost はカテゴリ特徴を内蔵処理。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">k-NN の特徴として正しくないのは。</div>
+        <div class="p-choices">① 学習フェーズが軽量　 ② 推論で全データを保持・距離計算が必要　 ③ 高次元で『距離の呪い』に弱い　 ④ 大規模データで超高速</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> k-NN は遅延学習で学習は速いが、推論で毎回全データとの距離計算が必要、大規模では遅い。Approximate NN（FAISS, HNSW）で実用化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">K-means が苦手なケースは。</div>
+        <div class="p-choices">① 球状クラスタ　 ② 異なるサイズ・密度・形状のクラスタ（非球状）　 ③ 数値データ　 ④ 教師あり</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> K-meansは球状クラスタを仮定（ユークリッド距離・等分散）。非球状や密度差・サイズ差があるとDBSCAN, GMM, HDBSCANが良い。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">K-means の初期化問題への対処は。</div>
+        <div class="p-choices">① ランダム初期化のみ　 ② K-means++、複数回試行＋最良採用　 ③ 全データを初期点に　 ④ 1点のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> K-means++ は初期点を順次最も遠い点から選ぶ。これにより局所最適確率を大幅に削減。sklearn の n_init で複数試行も標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">PCA の主成分の取得方法は。</div>
+        <div class="p-choices">① ランダム　 ② 共分散行列の固有値分解 or データのSVD　 ③ k-NN距離　 ④ 勾配降下</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 共分散行列 Σ の固有値分解で主成分（固有ベクトル）。実装上は SVD で直接行うのが数値的に安定。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">DBSCAN の利点は。</div>
+        <div class="p-choices">① クラスタ数 k を事前指定不要、任意形状、ノイズラベル付与　 ② 球状のみ　 ③ K指定必要　 ④ 学習なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 密度ベースでk不要、任意形状クラスタ検出、ノイズ点を明示的に分離。eps と min_samples のチューニングが鍵。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">Ridge と Lasso の違いとして正しいのは。</div>
+        <div class="p-choices">① Ridge=L2でスパース、Lasso=L1で全保持　 ② Ridge=L2で全て縮小、Lasso=L1でスパース化　 ③ 同じ　 ④ どちらも線形不可</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ridge は L2 ペナルティで全係数を縮小、Lasso は L1 ペナルティで多くを正確に 0 に（自動的特徴選択）。Elastic Net は両者のブレンド。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">SHAP（SHapley Additive exPlanations）の役割は。</div>
+        <div class="p-choices">① 学習アルゴリズム　 ② モデル解釈（各特徴量が予測にどう寄与したか）　 ③ ハイパラ調整　 ④ 正則化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ゲーム理論のShapley値ベース。各特徴量の貢献を一貫した方法で説明。XAI（説明可能AI）の標準ツール。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">AdaBoost の仕組みは。</div>
+        <div class="p-choices">① 並列学習　 ② 誤分類サンプルの重みを大きくして弱学習器を逐次学習　 ③ ランダム　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Boosting の元祖。各回で誤分類点の重みを増やし、次の弱学習器が苦手部分に集中。XGBoostは Gradient Boosting の発展形。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">Stacking の典型構造は。</div>
+        <div class="p-choices">① 1つのモデルのみ　 ② 複数モデルの予測を入力としてメタ学習器が最終予測　 ③ 多数決のみ　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ベース学習器（GBDT、RF、ロジ回帰）の予測をメタ学習器（多くは線形）で統合。Kaggle上位の常套手段。CVの設計に注意。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">RFE（Recursive Feature Elimination）の役割は。</div>
+        <div class="p-choices">① 学習アルゴリズム　 ② 特徴量を重要度の低い順から削除する反復的特徴量選択　 ③ 正則化　 ④ クラスタ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> モデルを学習→重要度を取得→最低の特徴量を削除→繰り返し。所望の特徴量数まで縮約。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">『Elbow法』が判定するものは。</div>
+        <div class="p-choices">① 学習率　 ② K-means のクラスタ数 k（クラスタ内分散の減少が緩むk）　 ③ 正則化強度　 ④ 過学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> k を 1, 2, 3... と増やし、SSE（クラスタ内分散和）をプロット。減少率が急変する『ひじ』を最適 k とする経験則。Silhouette score などより厳密な手法も。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">
+      線形回帰・ロジスティック回帰・SVM・決定木・アンサンブル（Bagging/Boosting/Stacking）・ランダムフォレスト・勾配ブースティング（XGBoost/LightGBM/CatBoost）・k-NN・K-means・PCA を扱いました。応用では表形式GBDT、Stacking、クラスタリング比較、特徴選択。ハンズオンで Linear/SVM/RF/XGBoost/K-means。シミュレーションで SVMカーネル比較、GBDT逐次学習、K-means初期化の効果を確認。次章は評価指標。Accuracy、Precision、Recall、F1、ROC-AUC、混同行列、Cross-Validation の作法へ進みます。
+    </p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="07-ml-paradigm.html">← 章7</a></div>
-  <div><span class="ch-label">次の章</span><br><span class="ch-title">章9: 評価と過学習</span></div>
-  <div><a href="09-ml-evaluation.html">章9へ →</a></div>
+  <div><a href="07-ml-paradigm.html">← 章7: ML パラダイム</a></div>
+  <div><span class="ch-label">Chapter 8 of 12 · 基本編</span><br><span class="ch-title">古典機械学習</span></div>
+  <div><a href="09-ml-evaluation.html">章9: 評価指標 →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="index.html">基本</a></li><li><a href="../advanced/index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">Swallow AI Academy</div>
+      <p>Independent, editorial-style learning for AI / ML certifications. 2026.</p>
+    </div>
+    <div class="footer-cols">
+      <div>
+        <h6>LEARN</h6>
+        <a href="../../../certifications/g-kentei.html">G検定</a>
+        <a href="../../../certifications/e-shikaku.html">E資格</a>
+        <a href="../../../certifications/tokei.html">統計検定</a>
+      </div>
+      <div>
+        <h6>PRACTICE</h6>
+        <a href="../../../quiz.html">問題演習</a>
+        <a href="../../../glossary.html">用語集</a>
+      </div>
+      <div>
+        <h6>INFO</h6>
+        <a href="../../../about.html">サイトについて</a>
+      </div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

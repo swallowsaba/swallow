@@ -3,231 +3,582 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章4 BERT と GPT — G検定 応用 — Swallow AI Academy</title>
-<meta name="description" content="G検定応用 章4：BERT（Encoder のみ）vs GPT（Decoder のみ）。マスク言語モデルと自己回帰生成。代表モデルの系統。">
+<title>章16 BERT・GPT — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章16：BERTとGPT、事前学習＋微調整パラダイム、MLM/NTP、Tokenization、Position Encoding、T5、RoBERTa/DeBERTa、ELECTRA、プロンプティングを5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="../basics/index.html">基本</a>
-      <a href="index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.4</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="../basics/index.html">基本</a><a href="index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章4</div>
-    <h1>応用 章4 — BERT と GPT<span class="en">Two Pretraining Paradigms</span></h1>
-    <p class="standfirst">2018年、Transformer が <strong>事前学習 + 微調整</strong> という枠組みで爆発的に発展しました。<strong>BERT</strong>（Google）と <strong>GPT</strong>（OpenAI）はその二大潮流。それぞれが Transformer のどの部分を使い、どんな自己教師あり学習で力を引き出したかを理解します。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章16</div>
+    <h1>章16 — BERT と GPT<span class="en">Chapter 16 — BERT &amp; GPT</span></h1>
+    <p class="standfirst">2018年は『NLPの転換点』でした。<strong>BERT</strong>（Devlin et al.）と <strong>GPT</strong>（Radford et al.）が、<strong>大規模事前学習＋微調整</strong>の枠組みを確立。それまでタスクごとに別モデルを設計していた NLP が、一つの『汎用エンコーダ／デコーダ』を使い回す世界に変わりました。これが2022年のChatGPT、2024年のGPT-4o、Claude 3.7まで続く<strong>基盤モデル時代</strong>の起点。本章で BERT・GPT・T5・RoBERTa・DeBERTa・ELECTRA、そしてプロンプティング paradigm までを5部構成で扱います。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="03-transformer.html">← 章3: Transformer</a></div>
-  <div><span class="ch-label">応用 Chapter 4 of 12</span><br><span class="ch-title">BERT と GPT</span></div>
-  <div><a href="05-llm.html">章5: LLM →</a></div>
+  <div><a href="03-transformer.html">← 章15: Transformer</a></div>
+  <div><span class="ch-label">Chapter 16 of 24 · 応用編</span><br><span class="ch-title">BERT・GPT</span></div>
+  <div><a href="05-llm.html">章17: LLM →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
-    <h6>章4 目次</h6>
-    <a href="#paradigm">§1 事前学習＋微調整</a>
-    <a href="#bert">§2 BERT</a>
-    <a href="#gpt">§3 GPT</a>
-    <a href="#compare">§4 BERT vs GPT</a>
-    <a href="#t5">§5 T5・BART</a>
-    <a href="#lineage">§6 モデル系統</a>
-    <a href="#summary">§7 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <h6>章16 目次</h6>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
-    <h2 id="paradigm"><span class="label">§1 / PARADIGM</span>事前学習＋微調整パラダイム</h2>
-    <p>2018年以前は、各タスクごとに別のモデルを最初から学習していた。2018年以降の標準：</p>
-    <ol>
-      <li><strong>事前学習</strong>：大量のラベルなしテキストで、汎用的な言語表現を学ぶ（自己教師あり）</li>
-      <li><strong>微調整（Fine-tuning）</strong>：少量のラベル付きデータで、特定タスクに特化</li>
-    </ol>
-    <p>これにより：</p>
-    <ul>
-      <li>少量データでも高性能</li>
-      <li>1つの基盤モデルから多数のタスクに展開可能</li>
-      <li>「基盤モデル（Foundation Model）」という概念が成立</li>
+    <div class="article-eyebrow">G-KENTEI · ADVANCED · CHAPTER 16</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">事前学習＋微調整。<br>NLPの新パラダイム。</h2>
+    <p class="article-lede">2018年6月、OpenAI が GPT-1（Improving Language Understanding by Generative Pre-Training）を発表。同年10月、Google が BERT（Bidirectional Encoder Representations from Transformers）を発表。<strong>『教師なし事前学習で言語を学び、教師ありで個別タスクに適応』</strong>というシンプルなアイデアが、NLPベンチマークを次々塗り替えました。本章でその核心を学びます。</p>
+
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>事前学習パラダイム、BERT、GPT、Tokenization、Position Encoding、T5、RoBERTa/DeBERTa/ELECTRA、微調整 vs プロンプティングの10節。</p>
+    </div>
+
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 事前学習＋微調整パラダイム</h3>
+    <p>(1)大規模ラベルなしコーパスで <strong>自己教師あり学習</strong>（MLM、NTP）、(2)タスク特化の少量データで <strong>微調整</strong>。これにより：</p>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li>各タスクで一から学習する必要がない</li>
+      <li>言語の汎用知識を活用</li>
+      <li>少量データでも高精度（Few-shot 含む）</li>
+      <li>計算リソースの集中投資が可能（事前学習1回 → 多くのタスクに）</li>
     </ul>
 
-    <h2 id="bert"><span class="label">§2 / BERT</span>BERT（Bidirectional Encoder）</h2>
-    <p>2018年10月、Google が発表。Bidirectional Encoder Representations from Transformers。Transformer の <strong>Encoder のみ</strong> を使用。</p>
+    <h3 style="margin-top:36px;">§1.2 BERT — Masked Language Model</h3>
+    <div class="formula">
+<strong>BERT</strong>　 Bidirectional Encoder Representations from Transformers<br>
+<strong>事前学習タスク</strong><br>
+　① <strong>MLM（Masked LM）</strong>　 入力の15%を [MASK] に置換し、元のトークンを予測<br>
+　② <strong>NSP（Next Sentence Prediction）</strong>　 2文が連続かを予測（後の RoBERTa で削除）<br><br>
+<strong>アーキテクチャ</strong>　 Transformer エンコーダのみ（12層 base / 24層 large）<br>
+<strong>双方向性</strong>　 各トークンは左右両方の文脈を見る → 文章理解タスクに強い
+    </div>
 
-    <h3>2.1 事前学習タスク</h3>
-    <ul>
-      <li><strong>Masked Language Model（MLM）</strong>：入力の15%を [MASK] に置き換え、それを予測。<strong>双方向の文脈</strong>を活用できる</li>
-      <li><strong>Next Sentence Prediction（NSP）</strong>：2つの文が連続するかを判定（後に RoBERTa で廃止）</li>
-    </ul>
+    <h3 style="margin-top:36px;">§1.3 GPT — Causal Language Model</h3>
+    <div class="formula">
+<strong>GPT</strong>　 Generative Pre-trained Transformer<br>
+<strong>事前学習タスク</strong>　 Next Token Prediction（次のトークンを予測）<br><br>
+<strong>アーキテクチャ</strong>　 Transformer デコーダのみ<br>
+<strong>因果Attention（Causal Mask）</strong>　 各トークンは『過去』のみ参照<br>
+<strong>強み</strong>　 自然な文章生成、In-Context Learning
+    </div>
 
     <div class="figure">
-      <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">
-        <text x="380" y="30" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">BERT のマスク言語モデル</text>
-        <text x="380" y="55" text-anchor="middle" font-size="11" fill="#5a5f6a">「The cat [MASK] on the mat」 → [MASK] = "sat" を予測</text>
-
-        <g transform="translate(40, 90)">
-          <rect x="0" y="0" width="100" height="40" fill="#fff8f2" stroke="#0d1b2a"/>
-          <text x="50" y="25" text-anchor="middle" font-size="12" fill="#0d1b2a">The</text>
-          <rect x="110" y="0" width="100" height="40" fill="#fff8f2" stroke="#0d1b2a"/>
-          <text x="160" y="25" text-anchor="middle" font-size="12" fill="#0d1b2a">cat</text>
-          <rect x="220" y="0" width="100" height="40" fill="#b8431f" stroke="#0d1b2a"/>
-          <text x="270" y="25" text-anchor="middle" font-size="11" fill="#faf7f2">[MASK]</text>
-          <rect x="330" y="0" width="100" height="40" fill="#fff8f2" stroke="#0d1b2a"/>
-          <text x="380" y="25" text-anchor="middle" font-size="12" fill="#0d1b2a">on</text>
-          <rect x="440" y="0" width="100" height="40" fill="#fff8f2" stroke="#0d1b2a"/>
-          <text x="490" y="25" text-anchor="middle" font-size="12" fill="#0d1b2a">the</text>
-          <rect x="550" y="0" width="100" height="40" fill="#fff8f2" stroke="#0d1b2a"/>
-          <text x="600" y="25" text-anchor="middle" font-size="12" fill="#0d1b2a">mat</text>
+      <svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 16.1 ／ BERT vs GPT ARCHITECTURE</text>
+        
+        <g transform="translate(60,70)">
+          <text x="120" y="-10" text-anchor="middle" font-family="serif" font-size="14" font-weight="700" fill="#0d1b2a">BERT（エンコーダ）</text>
+          <rect x="20" y="20" width="200" height="140" fill="#b8431f" fill-opacity="0.15" stroke="#b8431f" stroke-width="1.5"/>
+          
+          <rect x="40" y="35" width="50" height="20" fill="#fff" stroke="#0d1b2a"/>
+          <text x="65" y="49" text-anchor="middle" font-family="monospace" font-size="10">[CLS]</text>
+          <rect x="95" y="35" width="40" height="20" fill="#fff" stroke="#0d1b2a"/>
+          <text x="115" y="49" text-anchor="middle" font-family="monospace" font-size="10">私</text>
+          <rect x="140" y="35" width="40" height="20" fill="#d4a017" fill-opacity="0.4" stroke="#0d1b2a"/>
+          <text x="160" y="49" text-anchor="middle" font-family="monospace" font-size="9">[MASK]</text>
+          <rect x="185" y="35" width="30" height="20" fill="#fff" stroke="#0d1b2a"/>
+          <text x="200" y="49" text-anchor="middle" font-family="monospace" font-size="10">猫</text>
+          
+          <text x="120" y="90" text-anchor="middle" font-family="serif" font-size="11" fill="#0d1b2a">双方向 Self-Attention</text>
+          <line x1="40" y1="100" x2="220" y2="100" stroke="#0d1b2a" stroke-width="1.5"/>
+          <line x1="40" y1="120" x2="220" y2="120" stroke="#0d1b2a" stroke-width="1.5"/>
+          
+          <text x="120" y="145" text-anchor="middle" font-family="serif" font-size="11" fill="#b8431f" font-weight="700">[MASK] を予測 = 『は』</text>
+          
+          <text x="120" y="180" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">文章理解、分類、QA</text>
         </g>
-        <line x1="290" y1="135" x2="290" y2="165" stroke="#0d1b2a" stroke-width="2"/>
-        <polygon points="290,165 285,155 295,155" fill="#0d1b2a"/>
-        <text x="290" y="195" text-anchor="middle" font-size="13" font-weight="bold" fill="#b8431f">予測：sat（左右両方の文脈を見て）</text>
+        
+        <g transform="translate(380,70)">
+          <text x="120" y="-10" text-anchor="middle" font-family="serif" font-size="14" font-weight="700" fill="#0d1b2a">GPT（デコーダ）</text>
+          <rect x="20" y="20" width="200" height="140" fill="#2e5577" fill-opacity="0.15" stroke="#2e5577" stroke-width="1.5"/>
+          
+          <rect x="40" y="35" width="40" height="20" fill="#fff" stroke="#0d1b2a"/>
+          <text x="60" y="49" text-anchor="middle" font-family="monospace" font-size="10">私</text>
+          <rect x="85" y="35" width="40" height="20" fill="#fff" stroke="#0d1b2a"/>
+          <text x="105" y="49" text-anchor="middle" font-family="monospace" font-size="10">は</text>
+          <rect x="130" y="35" width="40" height="20" fill="#fff" stroke="#0d1b2a"/>
+          <text x="150" y="49" text-anchor="middle" font-family="monospace" font-size="10">猫</text>
+          <rect x="175" y="35" width="30" height="20" fill="#d4a017" fill-opacity="0.4" stroke="#0d1b2a"/>
+          <text x="190" y="49" text-anchor="middle" font-family="monospace" font-size="10">?</text>
+          
+          <text x="120" y="90" text-anchor="middle" font-family="serif" font-size="11" fill="#0d1b2a">因果 Attention（過去のみ）</text>
+          <path d="M 40 100 L 220 120" stroke="#0d1b2a" stroke-width="1.5"/>
+          <text x="220" y="105" font-family="monospace" font-size="9" fill="#0d1b2a">→</text>
+          
+          <text x="120" y="145" text-anchor="middle" font-family="serif" font-size="11" fill="#2e5577" font-weight="700">次のトークン予測 = 『が』</text>
+          
+          <text x="120" y="180" text-anchor="middle" font-family="serif" font-size="10" fill="#5a5f6a">文章生成、対話、コード</text>
+        </g>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 4.1</span> BERT のマスク言語モデル。文中の単語を [MASK] に置き換え、両側の文脈から予測する。これにより双方向の文脈を取り込んだ表現が学習される。</div>
+      <div class="figure-caption"><span class="figure-num">FIG 16.1</span> ／ BERT vs GPT。BERTはエンコーダ、MLMで双方向文脈を学ぶ。GPTはデコーダ、NTPで左から右の生成を学ぶ。タスク特性が異なる。</div>
     </div>
 
-    <h3>2.2 BERT 系の進化</h3>
+    <h3 style="margin-top:36px;">§1.4 Tokenization — テキストを単位に分割</h3>
     <table class="spec">
-      <tr><th>RoBERTa</th><td>2019, Meta. BERT の学習を改良（大量データ、NSP削除、より長い学習）</td></tr>
-      <tr><th>ALBERT</th><td>2019, Google. パラメータ共有で軽量化</td></tr>
-      <tr><th>DistilBERT</th><td>2019. 知識蒸留で 40% 軽量化、97% 性能維持</td></tr>
-      <tr><th>DeBERTa</th><td>2020, Microsoft. 相対位置エンコーディング</td></tr>
-      <tr><th>多言語 BERT</th><td>mBERT, XLM-R など。多言語対応</td></tr>
+      <tr><th>手法</th><th>採用</th><th>特徴</th></tr>
+      <tr><td><strong>WordPiece</strong></td><td>BERT</td><td>頻度ベース、サブワード</td></tr>
+      <tr><td><strong>BPE（Byte-Pair Encoding）</strong></td><td>GPT-2, RoBERTa</td><td>頻度ペアを反復マージ</td></tr>
+      <tr><td><strong>SentencePiece</strong></td><td>T5, ALBERT, mBART</td><td>言語非依存、生のテキストから直接</td></tr>
+      <tr><td><strong>Tiktoken</strong></td><td>GPT-3.5/4/4o</td><td>BPE 改良、約 5万〜10万語彙</td></tr>
     </table>
 
-    <h2 id="gpt"><span class="label">§3 / GPT</span>GPT（Decoder のみ・自己回帰）</h2>
-    <p>2018年6月、OpenAI が GPT-1 を発表（BERT より少し早い）。Transformer の <strong>Decoder のみ</strong>。</p>
-
-    <h3>3.1 事前学習タスク</h3>
-    <p><strong>Next Token Prediction（自己回帰言語モデル）</strong>：</p>
-    <div class="formula">P(x₁, x₂, ..., xₙ) = Π P(xₜ | x₁, ..., xₜ₋₁)</div>
-    <p>つまり「次の単語を予測する」。これだけで膨大な能力が学習される。</p>
-
-    <h3>3.2 GPT 系の進化と Few-shot 能力</h3>
-    <table class="spec">
-      <tr><th>GPT-1</th><td>2018, 117M params. 事前学習＋タスク特化微調整</td></tr>
-      <tr><th>GPT-2</th><td>2019, 1.5B params. Zero-shot タスク実行を提示</td></tr>
-      <tr><th>GPT-3</th><td>2020, 175B params. <strong>In-context Learning（プロンプトでタスク指示）</strong></td></tr>
-      <tr><th>InstructGPT / ChatGPT</th><td>2022. RLHF で人間の好みに調整</td></tr>
-      <tr><th>GPT-4</th><td>2023, マルチモーダル（画像入力対応）</td></tr>
-      <tr><th>GPT-4o, o1, o3</th><td>2024-2025, ネイティブマルチモーダル、推論モード</td></tr>
-    </table>
-
-    <h3>3.3 In-context Learning（ICL）</h3>
-    <p>GPT-3 が示した革命：<strong>パラメータを更新せず、プロンプトに例を含めるだけでタスクを実行</strong>できる。</p>
-    <ul>
-      <li><strong>Zero-shot</strong>：「英語を仏訳して: Hello → ?」</li>
-      <li><strong>One-shot</strong>：1例だけ提示</li>
-      <li><strong>Few-shot</strong>：数例提示</li>
+    <h3 style="margin-top:36px;">§1.5 Position Encoding</h3>
+    <p>Transformer 自体は順序を扱わない（permutation invariant）。位置情報を追加する手法：</p>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>正弦波（Sinusoidal）</strong>：原論文 Transformer、固定パターン</li>
+      <li><strong>学習可能位置埋め込み</strong>：BERT、GPT-2、最大長制限</li>
+      <li><strong>RoPE（Rotary Position Embedding）</strong>：LLaMA、相対位置を回転で表現、長さ外挿可能</li>
+      <li><strong>ALiBi（Attention with Linear Biases）</strong>：BLOOM、超長文脈対応</li>
     </ul>
 
-    <h2 id="compare"><span class="label">§4 / COMPARE</span>BERT vs GPT の比較</h2>
-
+    <h3 style="margin-top:36px;">§1.6 BERT のバリエーション</h3>
     <table class="spec">
-      <tr><th></th><th>BERT</th><th>GPT</th></tr>
-      <tr><th>アーキテクチャ</th><td>Encoder のみ</td><td>Decoder のみ</td></tr>
-      <tr><th>注意機構</th><td>双方向</td><td>単方向（因果マスク）</td></tr>
-      <tr><th>事前学習</th><td>MLM + NSP</td><td>Next Token Prediction</td></tr>
-      <tr><th>得意なタスク</th><td>分類、抽出、理解</td><td>生成、対話、推論</td></tr>
-      <tr><th>典型サイズ</th><td>~100M〜1B</td><td>1B〜数百B</td></tr>
-      <tr><th>現代の位置づけ</th><td>NLPタスクの主力、エンタープライズで活躍</td><td>生成AI時代の主役</td></tr>
+      <tr><th>モデル</th><th>変更点</th><th>性能</th></tr>
+      <tr><td><strong>BERT-base</strong></td><td>12層・768次元・110Mパラメータ</td><td>標準</td></tr>
+      <tr><td><strong>BERT-large</strong></td><td>24層・1024次元・340Mパラメータ</td><td>+2〜3%</td></tr>
+      <tr><td><strong>RoBERTa</strong></td><td>NSP削除・データ10倍・長く学習</td><td>大幅改善</td></tr>
+      <tr><td><strong>ALBERT</strong></td><td>パラメータ共有でメモリ削減</td><td>速い</td></tr>
+      <tr><td><strong>DeBERTa</strong></td><td>分離型Attention（disentangled）</td><td>SuperGLUE 1位</td></tr>
+      <tr><td><strong>ELECTRA</strong></td><td>Replaced Token Detection（識別タスク）</td><td>学習効率高</td></tr>
     </table>
 
-    <h2 id="t5"><span class="label">§5 / T5</span>T5・BART：Encoder-Decoder 系統</h2>
-    <p><strong>T5</strong>（2019, Google）：すべての NLP タスクを「テキスト → テキスト」に統一。"translate English to German: ..." のようなプロンプト形式。</p>
-    <p><strong>BART</strong>（2019, Meta）：ノイズ入力からの再構成タスクで事前学習。要約・翻訳に強い。</p>
-
-    <h2 id="lineage"><span class="label">§6 / LINEAGE</span>モデル系統図</h2>
+    <h3 style="margin-top:36px;">§1.7 GPT のスケーリング</h3>
     <table class="spec">
-      <tr><th>Encoder のみ</th><td>BERT (2018) → RoBERTa, ALBERT, DistilBERT, DeBERTa, ELECTRA</td></tr>
-      <tr><th>Decoder のみ</th><td>GPT-1 (2018) → GPT-2/3/4, LLaMA, Mistral, Claude, Gemini, Qwen, DeepSeek</td></tr>
-      <tr><th>Encoder-Decoder</th><td>T5 (2019), BART, mBART, FLAN-T5</td></tr>
-      <tr><th>ハイブリッド</th><td>UL2, PaLM 系の一部</td></tr>
-    </table>
-    <p><strong>2024-2025 の主流は Decoder のみ</strong>。ChatGPT・Claude・Gemini・Llama・Mistral すべて。BERT は依然として NLU（理解系）で現役。</p>
-
-    <h2 id="summary"><span class="label">§7 / SUMMARY</span>章のまとめ</h2>
-    <table class="spec">
-      <tr><th>1</th><td>事前学習＋微調整：2018年以降の標準パラダイム</td></tr>
-      <tr><th>2</th><td>BERT: Encoder のみ、Masked Language Model、双方向</td></tr>
-      <tr><th>3</th><td>GPT: Decoder のみ、Next Token Prediction、単方向（自己回帰）</td></tr>
-      <tr><th>4</th><td>BERT は理解、GPT は生成に強い</td></tr>
-      <tr><th>5</th><td>In-context Learning：GPT-3 が示した、プロンプトだけでのタスク実行</td></tr>
-      <tr><th>6</th><td>RoBERTa, ALBERT, DistilBERT, DeBERTa など BERT 派生</td></tr>
-      <tr><th>7</th><td>T5/BART は Encoder-Decoder、すべてを text-to-text に</td></tr>
-      <tr><th>8</th><td>2024-2025の主流は Decoder のみ（ChatGPT・Claude・Llama 系）</td></tr>
+      <tr><th>モデル</th><th>年</th><th>パラメータ</th><th>特徴</th></tr>
+      <tr><td>GPT-1</td><td>2018</td><td>117M</td><td>事前学習＋微調整の概念実証</td></tr>
+      <tr><td>GPT-2</td><td>2019</td><td>1.5B</td><td>Zero-shot で文章生成、危険性懸念で段階公開</td></tr>
+      <tr><td>GPT-3</td><td>2020</td><td>175B</td><td>In-Context Learning、Few-shot</td></tr>
+      <tr><td>InstructGPT/ChatGPT</td><td>2022</td><td>~175B</td><td>RLHF で指示追従性</td></tr>
+      <tr><td>GPT-4</td><td>2023</td><td>非公開（推定1T+）</td><td>マルチモーダル、推論力大幅向上</td></tr>
+      <tr><td>GPT-4o</td><td>2024</td><td>非公開</td><td>音声・画像・動画ネイティブ統合</td></tr>
+      <tr><td>o1 / o3</td><td>2024-25</td><td>非公開</td><td>テスト時推論で数学・コーディング SOTA</td></tr>
     </table>
 
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>「事前学習＋微調整」が前のパラダイムより優れている理由</li>
-        <li>BERT のマスク言語モデルがなぜ「双方向」と呼ばれるか</li>
-        <li>GPT の Next Token Prediction の式と本質</li>
-        <li>BERT と GPT が Transformer のどの部分を使うか</li>
-        <li>In-context Learning が示す重要な発見</li>
-        <li>Zero-shot / One-shot / Few-shot の違い</li>
-        <li>BERT が NLU で、GPT が生成で強い理由</li>
-        <li>RoBERTa が BERT に対して何を改良したか</li>
-        <li>T5 の「text-to-text 統一」のアイディア</li>
-        <li>現代の主流が Decoder のみになった理由</li>
-      </ol>
+    <h3 style="margin-top:36px;">§1.8 T5 — Text-to-Text 統一</h3>
+    <p>Google 2020。<strong>すべてのNLPタスクを Text-to-Text として統一</strong>：分類は『positive』『negative』を文字列で出力、QAは答えを文字列で。プレフィックスでタスク指定（『translate English to French:』）。マルチタスク事前学習。</p>
+
+    <h3 style="margin-top:36px;">§1.9 微調整 vs プロンプティング</h3>
+    <table class="spec">
+      <tr><th></th><th>微調整</th><th>プロンプティング</th></tr>
+      <tr><td>方法</td><td>追加学習</td><td>入力テキストで指示</td></tr>
+      <tr><td>必要データ</td><td>数百〜数万件</td><td>0〜数十件（few-shot）</td></tr>
+      <tr><td>コスト</td><td>GPU時間、専門知識</td><td>API呼び出しのみ</td></tr>
+      <tr><td>精度</td><td>タスク特化で高</td><td>汎用、In-Context で学習</td></tr>
+      <tr><td>適性</td><td>固定タスク・高精度要</td><td>多様なタスク・素早く試す</td></tr>
+    </table>
+
+    <h3 style="margin-top:36px;">§1.10 LoRA — 微調整の効率化</h3>
+    <p>Hu et al. 2021。事前学習済みモデルのパラメータを凍結し、低ランクの差分行列だけ学習。<strong>パラメータ数を1万分の1に削減</strong>しつつ性能維持。LLM の実用的微調整で必須技術。QLoRA は4-bit量子化＋LoRAでさらに効率化。</p>
+
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>文章分類、QA、NER、文章生成の4つの代表的応用。</p>
     </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 文章分類 — BERT の最頻用ケース</h3>
+    <p>[CLS] トークンの出力埋め込みに分類層を追加。感情分析（IMDB、Twitter）、意図分類、トピック分類、毒性検出など、エンタープライズの NLP の主役。</p>
+
+    <h3 style="margin-top:36px;">§2.2 質問応答（QA） — SQuAD ベンチマーク</h3>
+    <p>パラグラフ＋質問 → 答えの開始・終了位置を予測。BERT が SQuAD で人間超え（2018）。現代では RAG（章19）で外部知識と組み合わせる。</p>
+
+    <h3 style="margin-top:36px;">§2.3 固有表現認識（NER）</h3>
+    <p>各トークンに 'PERSON', 'LOC', 'ORG' などのタグを付与。BERTトークン分類で標準。医療文書から薬剤名抽出、契約書から日付・金額抽出など実用例多数。</p>
+
+    <h3 style="margin-top:36px;">§2.4 文章生成 — GPT の特長</h3>
+    <p>記事執筆、メール、コード、対話、要約、翻訳。サンプリング戦略（Temperature、Top-k、Top-p/Nucleus、Beam Search）が品質を左右。Hallucination 抑制が現代の課題。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>Hugging Face、Tokenization、感情分類微調整、GPT生成、Embeddingの5節。</p>
+    </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 Hugging Face Transformers の基本</h3>
+    <div class="code-block">
+<span class="keyword">from</span> transformers <span class="keyword">import</span> pipeline
+
+<span class="comment"># 感情分析</span>
+classifier = pipeline(<span class="string">"sentiment-analysis"</span>)
+result = classifier(<span class="string">"I love this product!"</span>)
+print(result)
+<span class="comment"># [{'label': 'POSITIVE', 'score': 0.9998}]</span>
+
+<span class="comment"># 質問応答</span>
+qa = pipeline(<span class="string">"question-answering"</span>)
+ctx = <span class="string">"Claude is an AI assistant created by Anthropic."</span>
+print(qa(question=<span class="string">"Who created Claude?"</span>, context=ctx))
+<span class="comment"># {'answer': 'Anthropic', 'score': 0.98}</span>
+
+<span class="comment"># NER</span>
+ner = pipeline(<span class="string">"ner"</span>, aggregation_strategy=<span class="string">"simple"</span>)
+print(ner(<span class="string">"Tokyo is in Japan."</span>))
+<span class="comment"># [{'entity_group': 'LOC', 'word': 'Tokyo'}, ...]</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 Tokenization 観察</h3>
+    <div class="code-block">
+<span class="keyword">from</span> transformers <span class="keyword">import</span> AutoTokenizer
+
+<span class="comment"># BERT WordPiece</span>
+tok = AutoTokenizer.from_pretrained(<span class="string">"bert-base-uncased"</span>)
+text = <span class="string">"unhappiness is generally undesirable"</span>
+print(tok.tokenize(text))
+<span class="comment"># ['un', '##happiness', 'is', 'generally', 'un', '##desirable']</span>
+
+<span class="comment"># GPT-2 BPE</span>
+tok2 = AutoTokenizer.from_pretrained(<span class="string">"gpt2"</span>)
+print(tok2.tokenize(text))
+<span class="comment"># ['un', 'happiness', ' is', ' generally', ' und', 'esirable']</span>
+
+print(<span class="string">"BERT 語彙数:"</span>, tok.vocab_size)   <span class="comment"># 30522</span>
+print(<span class="string">"GPT-2 語彙数:"</span>, tok2.vocab_size) <span class="comment"># 50257</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 感情分析の微調整</h3>
+    <div class="code-block">
+<span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForSequenceClassification, Trainer, TrainingArguments
+<span class="keyword">from</span> datasets <span class="keyword">import</span> load_dataset
+
+model = AutoModelForSequenceClassification.from_pretrained(
+    <span class="string">"bert-base-uncased"</span>, num_labels=<span class="builtin">2</span>)
+tokenizer = AutoTokenizer.from_pretrained(<span class="string">"bert-base-uncased"</span>)
+
+dataset = load_dataset(<span class="string">"imdb"</span>)
+<span class="keyword">def</span> tokenize(b): <span class="keyword">return</span> tokenizer(b[<span class="string">"text"</span>], truncation=<span class="keyword">True</span>, padding=<span class="string">"max_length"</span>)
+tokenized = dataset.map(tokenize, batched=<span class="keyword">True</span>)
+
+args = TrainingArguments(output_dir=<span class="string">"./out"</span>, num_train_epochs=<span class="builtin">3</span>,
+                          per_device_train_batch_size=<span class="builtin">16</span>, learning_rate=<span class="builtin">2e-5</span>)
+trainer = Trainer(model=model, args=args, 
+                  train_dataset=tokenized[<span class="string">"train"</span>],
+                  eval_dataset=tokenized[<span class="string">"test"</span>])
+trainer.train()
+<span class="comment"># 3エポックで test accuracy 94%+</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 GPT による文章生成</h3>
+    <div class="code-block">
+<span class="keyword">from</span> transformers <span class="keyword">import</span> AutoTokenizer, AutoModelForCausalLM
+
+model = AutoModelForCausalLM.from_pretrained(<span class="string">"gpt2"</span>)
+tok = AutoTokenizer.from_pretrained(<span class="string">"gpt2"</span>)
+
+input_ids = tok(<span class="string">"Once upon a time"</span>, return_tensors=<span class="string">"pt"</span>).input_ids
+outputs = model.generate(
+    input_ids,
+    max_length=<span class="builtin">100</span>,
+    temperature=<span class="builtin">0.8</span>,      <span class="comment"># 創造性</span>
+    top_p=<span class="builtin">0.9</span>,            <span class="comment"># Nucleus サンプリング</span>
+    do_sample=<span class="keyword">True</span>,
+    no_repeat_ngram_size=<span class="builtin">2</span>  <span class="comment"># 繰り返し抑制</span>
+)
+print(tok.decode(outputs[<span class="builtin">0</span>], skip_special_tokens=<span class="keyword">True</span>))
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 BERT で文埋め込み抽出</h3>
+    <div class="code-block">
+<span class="keyword">import</span> torch
+<span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModel
+
+model = AutoModel.from_pretrained(<span class="string">"bert-base-uncased"</span>)
+tok = AutoTokenizer.from_pretrained(<span class="string">"bert-base-uncased"</span>)
+sents = [<span class="string">"I love cats."</span>, <span class="string">"Dogs are great."</span>, <span class="string">"AI is fascinating."</span>]
+encoded = tok(sents, padding=<span class="keyword">True</span>, truncation=<span class="keyword">True</span>, return_tensors=<span class="string">"pt"</span>)
+<span class="keyword">with</span> torch.no_grad():
+    out = model(**encoded)
+<span class="comment"># [CLS] トークン埋め込み（典型）</span>
+cls_emb = out.last_hidden_state[:, <span class="builtin">0</span>, :]
+<span class="comment"># または mean pooling（より良いことが多い）</span>
+mean_emb = out.last_hidden_state.mean(dim=<span class="builtin">1</span>)
+print(<span class="string">"形状:"</span>, cls_emb.shape)  <span class="comment"># [3, 768]</span>
+<span class="comment"># コサイン類似度</span>
+sim = torch.cosine_similarity(mean_emb[<span class="builtin">0</span>], mean_emb[<span class="builtin">1</span>], dim=<span class="builtin">0</span>)
+print(<span class="string">"cat-dog 類似度:"</span>, sim.item())
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>BERT vs GPT、Tokenization の効果、スケーリングの3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — BERT vs GPT、得意分野</h4>
+      <div class="sim-output">
+&gt;&gt; 同じタスクで両方の事前学習モデルを微調整<br>
+<br>
+タスク：感情分析（文章理解）<br>
+　 BERT-base: 92.4%　 ← 双方向理解で強い<br>
+　 GPT-2:　　 88.7%<br>
+<br>
+タスク：要約（生成）<br>
+　 BERT2BERT: ROUGE 38.5<br>
+　 GPT-2:　　 ROUGE 42.1　 ← 生成タスクで強い<br>
+<br>
+タスク：QA（SQuAD）<br>
+　 BERT-large: F1 93.2<br>
+　 GPT-3 zero-shot: F1 71.2　 ← 微調整なしでも動く<br>
+<br>
+&gt;&gt; BERT=理解（分類、QA、NER）<br>
+&gt;&gt; GPT=生成（翻訳、要約、対話）<br>
+&gt;&gt; 現代はLLMが両方こなす
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — Tokenization の効果</h4>
+      <div class="sim-output">
+&gt;&gt; 多言語データでの効率<br>
+<br>
+[英語のみ訓練の語彙]<br>
+　 "Hello world"　　 → [Hello, world]　 2トークン<br>
+　 "こんにちは世界"  → [bytes×16]　　　 16トークン<br>
+<br>
+[mBERT 多言語語彙]<br>
+　 "Hello world"　　 → [Hello, world]　 2トークン<br>
+　 "こんにちは世界"  → [こん, ##に, ##ち, ##は, 世, ##界]　 6トークン<br>
+<br>
+&gt;&gt; 適切なトークナイザは多言語性能を大幅改善<br>
+&gt;&gt; GPT-4 の Tiktoken は多言語に強い改良版<br>
+&gt;&gt; 漢字1文字を1トークンで処理可能
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — スケーリング則の威力</h4>
+      <div class="sim-output">
+&gt;&gt; GLUE平均スコア（言語理解ベンチマーク）<br>
+<br>
+BERT-base   (110M):　 79.6<br>
+BERT-large  (340M):　 82.1　 → +2.5<br>
+RoBERTa-base (110M):　85.8　 → 学習方法改善<br>
+RoBERTa-large(355M): 88.5<br>
+DeBERTa-v3-large (700M): 91.5<br>
+GPT-3 few-shot (175B): 90+<br>
+GPT-4 (~1T+):　　　　 ~95+<br>
+<br>
+&gt;&gt; パラメータ×データ×計算でスムーズに改善<br>
+&gt;&gt; これが『スケーリング則』として体系化（Kaplan 2020）
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">BERT の事前学習タスクで主要なものは。</div>
+        <div class="p-choices">① 次トークン予測　 ② Masked Language Model（MLM）と Next Sentence Prediction　 ③ クラスタリング　 ④ 強化学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 入力の15%を [MASK] に置換し復元するMLMが核。NSPは後の改良（RoBERTa）で削除。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">GPT の事前学習タスクは。</div>
+        <div class="p-choices">① MLM　 ② Next Token Prediction（因果的言語モデル）　 ③ 分類　 ④ 強化学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 左から右に次のトークンを予測する自己回帰モデル。生成タスクに自然に適合。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">BERT と GPT のアーキテクチャの違いは。</div>
+        <div class="p-choices">① BERTはエンコーダ（双方向Attention）、GPTはデコーダ（因果Attention）　 ② 全く同じ　 ③ BERTはRNN　 ④ GPTはCNN</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> どちらもTransformerベースだが、Attentionの方向と用途が異なる。理解はBERT、生成はGPTが得意。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">『事前学習＋微調整』パラダイムの利点は。</div>
+        <div class="p-choices">① タスクごとに学習し直す必要なし、汎用言語知識を活用、少量データで高精度　 ② 計算量が増える　 ③ 精度が下がる　 ④ 言語別必要</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 大規模事前学習1回 → 多タスクに転移。NLPを変革したパラダイム。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">BERT で使われる Tokenization は。</div>
+        <div class="p-choices">① 単語分割のみ　 ② WordPiece（サブワード分割）　 ③ 文字単位　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> WordPiece は未知語に強く、語彙サイズを抑える。'unhappiness' → 'un', '##happiness' のような分割。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">『RoPE（Rotary Position Embedding）』を採用しているLLMは。</div>
+        <div class="p-choices">① BERT　 ② GPT-2　 ③ LLaMA, GPT-NeoX 等の現代LLM　 ④ T5</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> Su 2021。相対位置を回転で表現、長さ外挿に有利。LLaMA 系の標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">T5 が提唱した paradigm は。</div>
+        <div class="p-choices">① RNN復活　 ② すべてのタスクを Text-to-Text として統一　 ③ 線形化　 ④ ハードコーディング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 分類も生成も翻訳もすべて『テキスト入力→テキスト出力』。プレフィックスでタスク指定。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">RoBERTa が BERT を改良した主要点は。</div>
+        <div class="p-choices">① NSP削除、データ量と学習時間を大幅増、動的マスキング　 ② アーキテクチャ変更　 ③ パラメータ削減　 ④ Sigmoid化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Liu et al. 2019。アーキテクチャは同じだが学習レシピで GLUE 大幅改善。『正しく訓練』の重要性を示した。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">ELECTRA の事前学習タスクは。</div>
+        <div class="p-choices">① MLM　 ② NTP　 ③ Replaced Token Detection（置換されたトークンを識別）　 ④ Clustering</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 生成器が置換したトークンを判別器が識別。MLMより学習効率良く、同パラメータで高性能。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">GPT-3 で注目された『In-Context Learning』とは。</div>
+        <div class="p-choices">① パラメータ更新　 ② プロンプト内の数件の例から、新タスクを推論時に学習　 ③ 微調整　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Few-shot Learning の革命。重みは変更せず、コンテキスト内の例だけでタスク適応。Brown 2020。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">『微調整』と『プロンプティング』の違いは。</div>
+        <div class="p-choices">① 同じ　 ② 微調整=モデル重み更新、プロンプティング=入力テキストで指示（重み不変）　 ③ どちらも教師なし　 ④ 必ず両方必要</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 微調整はGPU・データ必要、プロンプティングはAPI呼び出しのみ。実用ではプロンプトエンジニアリングが先、必要に応じて微調整。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">LoRA（Low-Rank Adaptation）の役割は。</div>
+        <div class="p-choices">① 学習率調整　 ② 元モデルを凍結し、低ランク差分行列だけ学習し効率的微調整　 ③ 量子化　 ④ クラスタ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hu 2021。学習可能パラメータを1/10000に削減しつつ性能維持。LLM実用微調整の標準。QLoRAで4-bit量子化と組合せ。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">BERT の文埋め込み取得で[CLS]以外に良いとされる方法は。</div>
+        <div class="p-choices">① ランダム　 ② 全トークンのmean pooling　 ③ 1番目のトークンのみ　 ④ 不可能</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> [CLS] よりも全トークンの平均が下流タスクで強いことが多い。Sentence-BERT で標準化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">GPT の生成サンプリングで『創造性と一貫性のバランス』を制御する典型パラメータは。</div>
+        <div class="p-choices">① 学習率　 ② Temperature、Top-p（Nucleus）、Top-k　 ③ バッチサイズ　 ④ Dropout</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Temperature 低→決定的、高→多様。Top-p=0.9 で上位累積90%から選択、Hallucination抑制と多様性のバランス。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">GPT-3 の InstructGPT/ChatGPT で導入された手法は。</div>
+        <div class="p-choices">① CNN　 ② RLHF（Reinforcement Learning from Human Feedback）で指示追従性を学習　 ③ K-means　 ④ Random Forest</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 人間のフィードバックで報酬モデルを学習し、PPO で方策を最適化。指示追従性と無害化の核心技術。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">BERT が最も得意なタスクは。</div>
+        <div class="p-choices">① 長文生成　 ② 文章理解（分類、QA、NER）　 ③ 音楽生成　 ④ 画像認識</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 双方向 Attention で文脈理解が強い。SQuAD で人間超え、GLUEベンチマークを大幅刷新（2018）。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">『スケーリング則』（Kaplan 2020）の主張は。</div>
+        <div class="p-choices">① パラメータ数だけが効く　 ② パラメータ・データ・計算の3軸でモデル性能が予測可能に改善　 ③ ランダム　 ④ 関係なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 損失がパワーロー則で改善。これがGPT-3, GPT-4のスケール拡大を駆動。Chinchilla（DeepMind 2022）が最適配分を改良。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">SentencePiece が WordPiece より優れる点は。</div>
+        <div class="p-choices">① 必ず速い　 ② 言語非依存、生のテキストから直接学習、空白を特殊文字として扱う　 ③ 英語専用　 ④ なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 日本語・中国語のような空白区切りでない言語に強い。T5, mBART, ALBERTで採用。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">『MLM（Masked LM）』が双方向文脈学習を可能にする仕組みは。</div>
+        <div class="p-choices">① ランダム　 ② マスクされたトークンを予測するため、両側の文脈を見る必要がある（因果制約なし）　 ③ 線形　 ④ 距離計算</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 『私は[MASK]を見た』の[MASK]を予測するには前後両方が必要。これがGPTの因果Attentionとの本質的違い。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">日本語特化の事前学習モデルとして代表的なものは。</div>
+        <div class="p-choices">① 全く存在しない　 ② 東北大BERT、cl-tohoku/bert-base-japanese、rinna/japanese-gpt等　 ③ GPT-1のみ　 ④ ELMo</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 多言語BERTより日本語特化モデルが精度高いことが多い。最近はLLM（Swallow、Stockmark、ELYZA等）も日本語特化版が登場。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">事前学習＋微調整パラダイム、BERT（MLM、エンコーダ）、GPT（NTP、デコーダ）、Tokenization（WordPiece/BPE/SentencePiece）、Position Encoding（学習可能/正弦波/RoPE/ALiBi）、BERT 派生（RoBERTa, ALBERT, DeBERTa, ELECTRA）、GPTスケーリング、T5、LoRA、In-Context Learning を扱いました。応用で分類、QA、NER、生成。ハンズオンで Hugging Face、Tokenization、感情分析微調整、GPT生成、Embedding。シミュレーションで BERT vs GPT、Tokenization の効果、スケーリング則。次章は LLM（大規模言語モデル）の現代的展開。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="03-transformer.html">← 章3</a></div>
-  <div><a href="05-llm.html">章5: LLM →</a></div>
+  <div><a href="03-transformer.html">← 章15: Transformer</a></div>
+  <div><span class="ch-label">Chapter 16 of 24 · 応用編</span><br><span class="ch-title">BERT・GPT</span></div>
+  <div><a href="05-llm.html">章17: LLM →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a><a href="../../../certifications/tokei.html">統計検定</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

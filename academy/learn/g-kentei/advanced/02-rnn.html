@@ -3,276 +3,503 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章2 RNN・LSTM・GRU — G検定 応用 — Swallow AI Academy</title>
-<meta name="description" content="G検定応用 章2：RNN の基本構造、勾配消失問題、LSTM のゲート機構、GRU、Transformer 以前の系列モデル。">
+<title>章14 RNN/LSTM — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章14：RNN、BPTT、勾配消失/爆発、LSTM、GRU、双方向RNN、Seq2Seq、Attention、Beam Search、NMTを5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="../basics/index.html">基本</a>
-      <a href="index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.2</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="../basics/index.html">基本</a><a href="index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章2</div>
-    <h1>応用 章2 — RNN・LSTM・GRU<span class="en">Sequence Models</span></h1>
-    <p class="standfirst">言語、音声、時系列などの <strong>順序のあるデータ</strong> を扱うために設計されたNN。Transformer 登場前の標準であり、いまも軽量モデルや組込み用途で現役。<strong>勾配消失問題とゲート機構による克服</strong> がこの章の核。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章14</div>
+    <h1>章14 — RNN・LSTM<span class="en">Chapter 14 — Recurrent Neural Networks</span></h1>
+    <p class="standfirst">画像はCNN、では系列データ（文章、音声、時系列）は？ ── 答えは <strong>RNN</strong>。隠れ状態を時間方向に伝播させることで、文脈を保持しながら系列を処理します。本章では、<strong>素朴RNN</strong>から、<strong>BPTT</strong>、<strong>勾配消失問題</strong>、それを解決した <strong>LSTM</strong>・<strong>GRU</strong>、<strong>双方向RNN</strong>、<strong>Seq2Seq</strong>、<strong>Attention</strong>（次章Transformerへの架け橋）、<strong>Beam Search</strong>、<strong>NMT</strong> までを5部構成で扱います。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="01-cnn.html">← 章1: CNN</a></div>
-  <div><span class="ch-label">応用 Chapter 2 of 12</span><br><span class="ch-title">RNN・LSTM・GRU</span></div>
-  <div><a href="03-transformer.html">章3: Transformer →</a></div>
+  <div><a href="01-cnn.html">← 章13: CNN</a></div>
+  <div><span class="ch-label">Chapter 14 of 24 · 応用編 2/12</span><br><span class="ch-title">RNN/LSTM</span></div>
+  <div><a href="03-transformer.html">章15: Transformer →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
-    <h6>章2 目次</h6>
-    <a href="#why">§1 系列データと NN</a>
-    <a href="#rnn">§2 RNN の基本</a>
-    <a href="#unroll">§3 時間方向の展開</a>
-    <a href="#vanish">§4 勾配消失問題</a>
-    <a href="#lstm">§5 LSTM とゲート機構</a>
-    <a href="#gru">§6 GRU</a>
-    <a href="#seq2seq">§7 Seq2Seq とアテンション</a>
-    <a href="#summary">§8 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <h6>章14 目次</h6>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
-    <h2 id="why"><span class="label">§1 / WHY</span>系列データと NN</h2>
-    <p>言語・音声・時系列・株価などは <strong>順序が意味を持つ</strong> データ。MLP に「I love you」を 3 単語の独立な入力として与えると順序情報が失われる。CNN は局所相関は捉えるが <strong>可変長</strong> に弱い。</p>
-    <p>解決策：<strong>過去の情報を内部状態として持ち越す</strong> NN ＝ RNN。</p>
+    <div class="article-eyebrow">G-KENTEI · ADVANCED · CHAPTER 14</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">時間を、ニューラルネットに<br>組み込む方法。</h2>
+    <p class="article-lede">RNNは『隠れ状態 h_t』を導入することで時系列を処理します。h_t は『過去の要約』、各時刻で更新され次に伝播する。素朴な構造は勾配消失で長距離依存に弱く、LSTMが『ゲート』機構でこれを解決。やがてAttention/Transformerに主役を譲りますが、その思想は今も現代AIに息づいています。</p>
 
-    <h2 id="rnn"><span class="label">§2 / RNN</span>RNN の基本</h2>
-    <p>各時刻 t で、入力 xₜ と前時刻の <strong>隠れ状態</strong> hₜ₋₁ から、新しい隠れ状態 hₜ を計算：</p>
-    <div class="formula">
-      hₜ = tanh(W_xh · xₜ + W_hh · hₜ₋₁ + b)<br>
-      yₜ = W_hy · hₜ + c
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>RNN、BPTT、勾配消失、LSTM、GRU、BiRNN、Seq2Seq、Attention、Beam Search、NMTの10節。</p>
     </div>
-    <p>重要なのは <strong>同じ重み行列を全時刻で共有</strong> すること。これにより可変長系列を扱える。</p>
+
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 RNN — 隠れ状態で時間を扱う</h3>
+    <div class="formula">
+h_t = tanh(W_h h_{t-1} + W_x x_t + b)<br>
+y_t = W_y h_t<br><br>
+すべての時刻で<strong>同じパラメータ</strong>を共有<br>
+任意長の系列を扱える
+    </div>
 
     <div class="figure">
-      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="rnn-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
-          </marker>
-        </defs>
-        <!-- Time step 0 -->
-        <text x="80" y="40" text-anchor="middle" font-size="11" fill="#0d1b2a">x₀</text>
-        <rect x="55" y="50" width="50" height="50" fill="#fff8f2" stroke="#0d1b2a"/>
-        <rect x="55" y="120" width="50" height="50" fill="#b8431f"/>
-        <text x="80" y="150" text-anchor="middle" font-size="11" fill="#faf7f2">RNN</text>
-        <text x="80" y="200" text-anchor="middle" font-size="11" fill="#0d1b2a">y₀</text>
-        <line x1="80" y1="100" x2="80" y2="118" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
-        <line x1="80" y1="170" x2="80" y2="190" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
-        <text x="40" y="148" font-size="11" fill="#5a5f6a">h₀</text>
-        <!-- arrow to next -->
-        <line x1="105" y1="145" x2="170" y2="145" stroke="#2e5577" stroke-width="2" marker-end="url(#rnn-a)"/>
-        <!-- Time step 1 -->
-        <text x="195" y="40" text-anchor="middle" font-size="11" fill="#0d1b2a">x₁</text>
-        <rect x="170" y="50" width="50" height="50" fill="#fff8f2" stroke="#0d1b2a"/>
-        <rect x="170" y="120" width="50" height="50" fill="#b8431f"/>
-        <text x="195" y="150" text-anchor="middle" font-size="11" fill="#faf7f2">RNN</text>
-        <text x="195" y="200" text-anchor="middle" font-size="11" fill="#0d1b2a">y₁</text>
-        <line x1="195" y1="100" x2="195" y2="118" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
-        <line x1="195" y1="170" x2="195" y2="190" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
-        <text x="155" y="148" font-size="11" fill="#5a5f6a">h₁</text>
-        <line x1="220" y1="145" x2="285" y2="145" stroke="#2e5577" stroke-width="2" marker-end="url(#rnn-a)"/>
-        <!-- Time step 2 -->
-        <text x="310" y="40" text-anchor="middle" font-size="11" fill="#0d1b2a">x₂</text>
-        <rect x="285" y="50" width="50" height="50" fill="#fff8f2" stroke="#0d1b2a"/>
-        <rect x="285" y="120" width="50" height="50" fill="#b8431f"/>
-        <text x="310" y="150" text-anchor="middle" font-size="11" fill="#faf7f2">RNN</text>
-        <text x="310" y="200" text-anchor="middle" font-size="11" fill="#0d1b2a">y₂</text>
-        <line x1="310" y1="100" x2="310" y2="118" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
-        <line x1="310" y1="170" x2="310" y2="190" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
-        <text x="270" y="148" font-size="11" fill="#5a5f6a">h₂</text>
-        <!-- More steps -->
-        <text x="400" y="148" font-size="20" fill="#5a5f6a">...</text>
-        <text x="500" y="40" text-anchor="middle" font-size="11" fill="#0d1b2a">xₜ</text>
-        <rect x="475" y="50" width="50" height="50" fill="#fff8f2" stroke="#0d1b2a"/>
-        <rect x="475" y="120" width="50" height="50" fill="#b8431f"/>
-        <text x="500" y="150" text-anchor="middle" font-size="11" fill="#faf7f2">RNN</text>
-        <text x="500" y="200" text-anchor="middle" font-size="11" fill="#0d1b2a">yₜ</text>
-        <line x1="500" y1="100" x2="500" y2="118" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
-        <line x1="500" y1="170" x2="500" y2="190" stroke="#0d1b2a" marker-end="url(#rnn-a)"/>
-
-        <text x="380" y="225" text-anchor="middle" font-size="11" fill="#5a5f6a" font-style="italic">全時刻で同じ重み W_xh, W_hh, W_hy を共有（パラメータ共有）</text>
+      <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="25" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 14.1 ／ RNN UNROLLED IN TIME</text>
+        <g transform="translate(50,60)">
+          <text x="0" y="70" font-family="serif" font-size="13" fill="#0d1b2a">h₀</text>
+          <line x1="15" y1="65" x2="50" y2="65" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <rect x="55" y="50" width="40" height="35" fill="#fff8f2" stroke="#0d1b2a"/>
+          <text x="75" y="73" text-anchor="middle" font-family="serif" font-size="13" fill="#0d1b2a">h₁</text>
+          <text x="75" y="30" text-anchor="middle" font-family="monospace" font-size="11" fill="#b8431f">x₁</text>
+          <line x1="75" y1="40" x2="75" y2="50" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <line x1="75" y1="85" x2="75" y2="100" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <text x="75" y="115" text-anchor="middle" font-family="monospace" font-size="11" fill="#2e5577">y₁</text>
+          
+          <line x1="95" y1="65" x2="135" y2="65" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <rect x="140" y="50" width="40" height="35" fill="#fff8f2" stroke="#0d1b2a"/>
+          <text x="160" y="73" text-anchor="middle" font-family="serif" font-size="13" fill="#0d1b2a">h₂</text>
+          <text x="160" y="30" text-anchor="middle" font-family="monospace" font-size="11" fill="#b8431f">x₂</text>
+          <line x1="160" y1="40" x2="160" y2="50" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <line x1="160" y1="85" x2="160" y2="100" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <text x="160" y="115" text-anchor="middle" font-family="monospace" font-size="11" fill="#2e5577">y₂</text>
+          
+          <line x1="180" y1="65" x2="220" y2="65" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <rect x="225" y="50" width="40" height="35" fill="#fff8f2" stroke="#0d1b2a"/>
+          <text x="245" y="73" text-anchor="middle" font-family="serif" font-size="13" fill="#0d1b2a">h₃</text>
+          <text x="245" y="30" text-anchor="middle" font-family="monospace" font-size="11" fill="#b8431f">x₃</text>
+          <line x1="245" y1="40" x2="245" y2="50" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <line x1="245" y1="85" x2="245" y2="100" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <text x="245" y="115" text-anchor="middle" font-family="monospace" font-size="11" fill="#2e5577">y₃</text>
+          
+          <text x="295" y="70" font-family="serif" font-size="16" fill="#5a5f6a">...</text>
+          
+          <line x1="320" y1="65" x2="360" y2="65" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <rect x="365" y="50" width="40" height="35" fill="#d4a017" fill-opacity="0.3" stroke="#0d1b2a"/>
+          <text x="385" y="73" text-anchor="middle" font-family="serif" font-size="13" fill="#0d1b2a">hₜ</text>
+          <text x="385" y="30" text-anchor="middle" font-family="monospace" font-size="11" fill="#b8431f">xₜ</text>
+          <line x1="385" y1="40" x2="385" y2="50" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <line x1="385" y1="85" x2="385" y2="100" stroke="#0d1b2a" marker-end="url(#arrow1)"/>
+          <text x="385" y="115" text-anchor="middle" font-family="monospace" font-size="11" fill="#2e5577">yₜ</text>
+          
+          <text x="200" y="155" text-anchor="middle" font-family="serif" font-size="12" font-style="italic" fill="#5a5f6a">隠れ状態 h が時間方向に伝播、すべての RNN セルで同じパラメータを共有</text>
+        </g>
+        <defs><marker id="arrow1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0d1b2a"/></marker></defs>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 2.1</span> RNN の時間方向展開図。各時刻の RNN ユニットは同じ重みを使う。隠れ状態 h が「過去の記憶」として時系列に流れていく。</div>
+      <div class="figure-caption"><span class="figure-num">FIG 14.1</span> ／ RNNを時間方向に展開した図。同じ重みパラメータを各時刻で共有する。隠れ状態 h が『過去の要約』として伝播する。</div>
     </div>
 
-    <h2 id="unroll"><span class="label">§3 / UNROLL</span>時間方向の展開と BPTT</h2>
-    <p>RNN を時間方向に展開すると、巨大な MLP に見える。<strong>BPTT</strong>（Backpropagation Through Time）= 普通の逆伝播を時間方向にも適用する。</p>
+    <h3 style="margin-top:36px;">§1.2 BPTT — 時間方向の逆伝播</h3>
+    <p><strong>Backpropagation Through Time</strong>。RNNを展開した計算グラフ上で連鎖律で勾配を計算。系列長 T が長いほど計算・メモリが増加。実装では <strong>Truncated BPTT</strong>（一定長で切る）が使われる。</p>
 
-    <h2 id="vanish"><span class="label">§4 / VANISH</span>勾配消失問題（再訪）</h2>
-    <p>長い系列だと、勾配が時間方向に何十回も掛け算される。tanh の微分は ≤ 1、Sigmoid は ≤ 0.25。<strong>指数的に減衰</strong>して下層（過去）に伝わらない。</p>
-    <p>これが「長期依存性が学べない」という RNN の根本問題。例：「私は <strong>フランス</strong> で生まれ育ち、… 数十単語後 …、流暢に <strong>フランス語</strong> を話す」のような長距離依存。</p>
-
-    <h2 id="lstm"><span class="label">§5 / LSTM</span>LSTM とゲート機構</h2>
-    <p>1997年、Hochreiter &amp; Schmidhuber が考案。<strong>セル状態（cell state）c</strong> と <strong>3つのゲート</strong>で、情報の流れを学習的に制御する。</p>
-
-    <div class="figure">
-      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="lstm-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
-          </marker>
-        </defs>
-        <rect x="100" y="60" width="560" height="200" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="380" y="40" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d1b2a">LSTM セル</text>
-
-        <!-- Cell state flow (top horizontal) -->
-        <line x1="100" y1="100" x2="660" y2="100" stroke="#b8431f" stroke-width="3"/>
-        <text x="40" y="105" font-size="11" font-weight="bold" fill="#b8431f">cₜ₋₁</text>
-        <text x="675" y="105" font-size="11" font-weight="bold" fill="#b8431f">cₜ</text>
-
-        <!-- Forget gate -->
-        <circle cx="180" cy="160" r="22" fill="#d4a017"/>
-        <text x="180" y="165" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">忘却</text>
-        <text x="180" y="200" text-anchor="middle" font-size="10" fill="#5a5f6a">fₜ = σ(...)</text>
-        <line x1="180" y1="138" x2="180" y2="115" stroke="#0d1b2a" stroke-width="1.5"/>
-
-        <!-- Input gate -->
-        <circle cx="300" cy="160" r="22" fill="#d4a017"/>
-        <text x="300" y="165" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">入力</text>
-        <text x="300" y="200" text-anchor="middle" font-size="10" fill="#5a5f6a">iₜ = σ(...)</text>
-        <line x1="300" y1="138" x2="300" y2="115" stroke="#0d1b2a" stroke-width="1.5"/>
-
-        <!-- Candidate -->
-        <circle cx="400" cy="160" r="22" fill="#2e5577"/>
-        <text x="400" y="165" text-anchor="middle" font-size="11" fill="#faf7f2">候補</text>
-        <text x="400" y="200" text-anchor="middle" font-size="10" fill="#5a5f6a">c̃ₜ = tanh(...)</text>
-        <line x1="400" y1="138" x2="400" y2="115" stroke="#0d1b2a" stroke-width="1.5"/>
-
-        <!-- Output gate -->
-        <circle cx="540" cy="160" r="22" fill="#d4a017"/>
-        <text x="540" y="165" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">出力</text>
-        <text x="540" y="200" text-anchor="middle" font-size="10" fill="#5a5f6a">oₜ = σ(...)</text>
-
-        <!-- Hidden state -->
-        <line x1="540" y1="182" x2="540" y2="240" stroke="#0d1b2a" stroke-width="1.5"/>
-        <line x1="540" y1="240" x2="660" y2="240" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="675" y="244" font-size="11" font-weight="bold" fill="#0d1b2a">hₜ</text>
-        <text x="40" y="244" font-size="11" font-weight="bold" fill="#0d1b2a">hₜ₋₁</text>
-        <line x1="100" y1="240" x2="180" y2="240" stroke="#0d1b2a" stroke-width="2"/>
-
-        <!-- Input -->
-        <text x="320" y="285" text-anchor="middle" font-size="11" font-weight="bold" fill="#0d1b2a">xₜ（現在の入力）</text>
-        <line x1="320" y1="270" x2="320" y2="185" stroke="#0d1b2a" stroke-width="1" stroke-dasharray="3,2"/>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 2.2</span> LSTM の構造（簡略）。セル状態（赤い線）が「高速道路」として情報を流す。3つのゲート（忘却・入力・出力）が情報の出入りを制御する。</div>
-    </div>
-
-    <p>4つの式：</p>
+    <h3 style="margin-top:36px;">§1.3 勾配消失・爆発の問題</h3>
     <div class="formula">
-      fₜ = σ(W_f · [hₜ₋₁, xₜ])  &nbsp;# 忘却ゲート<br>
-      iₜ = σ(W_i · [hₜ₋₁, xₜ])  &nbsp;# 入力ゲート<br>
-      c̃ₜ = tanh(W_c · [hₜ₋₁, xₜ])  &nbsp;# 候補値<br>
-      cₜ = fₜ ⊙ cₜ₋₁ + iₜ ⊙ c̃ₜ  &nbsp;# セル更新<br>
-      oₜ = σ(W_o · [hₜ₋₁, xₜ])  &nbsp;# 出力ゲート<br>
-      hₜ = oₜ ⊙ tanh(cₜ)
+∂L/∂h₁ ∝ Π_{t=1}^{T-1} (∂h_{t+1}/∂h_t) ∝ W^T (tanh' の積)<br><br>
+W のスペクトル半径<1：指数的に減衰（勾配消失）→ 長期依存学べない<br>
+W のスペクトル半径>1：指数的に増大（勾配爆発）→ NaN<br><br>
+対処：Gradient Clipping、LSTM/GRU、直交初期化、層正規化
     </div>
 
-    <p><strong>なぜ勾配消失を緩和できるか</strong>：セル状態 cₜ = fₜ ⊙ cₜ₋₁ + ... という形は、ResNet の残差接続と同様、<strong>勾配がセル状態を介して直接過去に流れる</strong> 経路を提供する。</p>
-
-    <h2 id="gru"><span class="label">§6 / GRU</span>GRU（Gated Recurrent Unit）</h2>
-    <p>2014年、Cho らが提案。LSTM の簡略版。<strong>ゲートを 3 つから 2 つに削減</strong>、セル状態と隠れ状態を統合。</p>
-    <ul>
-      <li>更新ゲート（Update gate）</li>
-      <li>リセットゲート（Reset gate）</li>
-    </ul>
-    <p>パラメータ数が LSTM より少なく、計算が速い。実務では <strong>LSTM とほぼ同等の性能</strong> なので、軽量化のため GRU を使うことも多い。</p>
-
-    <h2 id="seq2seq"><span class="label">§7 / SEQ2SEQ</span>Seq2Seq とアテンション</h2>
-    <p><strong>Seq2Seq</strong>（Sutskever et al., 2014）：エンコーダ RNN で入力系列を1つの固定長ベクトルに圧縮し、デコーダ RNN で出力系列を生成。機械翻訳のEnd-to-Endを実現。</p>
-    <p>問題：長い入力を1つのベクトルに圧縮するボトルネック → 性能が頭打ち。</p>
-    <p><strong>アテンション機構</strong>（Bahdanau, 2014）：デコーダの各時刻で、エンコーダの<strong>全時刻の出力を加重平均</strong>して参照。これが後の Transformer の中核となる。</p>
-
-    <h2 id="summary"><span class="label">§8 / SUMMARY</span>章のまとめ</h2>
-    <table class="spec">
-      <tr><th>1</th><td>系列データは順序が重要 → 隠れ状態を持ち越す RNN</td></tr>
-      <tr><th>2</th><td>RNN は全時刻で同じ重みを共有（可変長対応）</td></tr>
-      <tr><th>3</th><td>BPTT で時間方向にも逆伝播</td></tr>
-      <tr><th>4</th><td>勾配消失問題が長期依存性を阻害</td></tr>
-      <tr><th>5</th><td>LSTM：セル状態と3ゲート（忘却・入力・出力）</td></tr>
-      <tr><th>6</th><td>セル状態経由で勾配が直接流れる → 長期依存学習可能</td></tr>
-      <tr><th>7</th><td>GRU：LSTM の簡略版、2ゲート、軽量</td></tr>
-      <tr><th>8</th><td>Seq2Seq：エンコーダ・デコーダで機械翻訳を End-to-End</td></tr>
-      <tr><th>9</th><td>アテンション機構が後の Transformer に繋がる</td></tr>
-    </table>
-
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>RNN の更新式 hₜ = tanh(W_xh · xₜ + W_hh · hₜ₋₁ + b) を書けるか</li>
-        <li>「重み共有」がなぜ可変長系列を扱えるようにするか</li>
-        <li>BPTT とは何か</li>
-        <li>RNN の勾配消失問題の数学的原因</li>
-        <li>LSTM の3つのゲートと、それぞれの役割</li>
-        <li>セル状態の更新式 cₜ = fₜ⊙cₜ₋₁ + iₜ⊙c̃ₜ を説明できるか</li>
-        <li>LSTM が勾配消失を緩和する理由を ResNet と関連付けて</li>
-        <li>GRU が LSTM のどこを簡略化したか</li>
-        <li>Seq2Seq の「ボトルネック問題」とは</li>
-        <li>アテンション機構が Seq2Seq に何をもたらしたか</li>
-      </ol>
+    <h3 style="margin-top:36px;">§1.4 LSTM — ゲート機構の発明</h3>
+    <p>Hochreiter & Schmidhuber 1997。<strong>セル状態 c_t</strong> を別途持ち、3つのゲートで情報の流れを制御：</p>
+    <div class="formula">
+忘却ゲート f_t = σ(W_f [h_{t-1}, x_t] + b_f)<br>
+入力ゲート i_t = σ(W_i [h_{t-1}, x_t] + b_i)<br>
+出力ゲート o_t = σ(W_o [h_{t-1}, x_t] + b_o)<br>
+候補値 c̃_t = tanh(W_c [h_{t-1}, x_t] + b_c)<br>
+セル状態 c_t = f_t ⊙ c_{t-1} + i_t ⊙ c̃_t<br>
+隠れ状態 h_t = o_t ⊙ tanh(c_t)
     </div>
+    <p>セル状態の伝播は加算ベースで勾配消失が緩和。長期依存（数百ステップ）を扱える。</p>
+
+    <h3 style="margin-top:36px;">§1.5 GRU — LSTMの簡略版</h3>
+    <p>Cho 2014。リセットゲートと更新ゲートの2つだけ。LSTMより少ないパラメータで同程度の性能を出すことが多い。</p>
+
+    <h3 style="margin-top:36px;">§1.6 双方向RNN（BiRNN/BiLSTM）</h3>
+    <p>前向きと後向きの隠れ状態を結合。文脈を両方向から取得。<strong>分類・タグ付け</strong>では効果絶大、ただし生成タスクは未来情報が使えないので不可。</p>
+
+    <h3 style="margin-top:36px;">§1.7 Seq2Seq — 系列→系列の生成</h3>
+    <p>Sutskever 2014、Google翻訳の基礎。エンコーダ（入力系列を固定長ベクトルに）+ デコーダ（そのベクトルから出力系列を生成）。機械翻訳、要約、対話の枠組み。</p>
+
+    <h3 style="margin-top:36px;">§1.8 Attention — RNN時代の革命</h3>
+    <p>Bahdanau 2015。エンコーダのすべての時刻 h_i にデコーダがその時々で重み α_t,i を付けて参照。固定長ベクトル経由のボトルネックを解消し、長文翻訳の品質が劇的向上。Transformer の基盤となる発想。</p>
+
+    <h3 style="margin-top:36px;">§1.9 Beam Search</h3>
+    <p>系列生成で『一番確率高い1個』を取る Greedy より、『上位 k 候補を保持して並列展開』する Beam Search が翻訳・要約で標準。BLEU で2〜3ポイント改善。</p>
+
+    <h3 style="margin-top:36px;">§1.10 ニューラル機械翻訳（NMT）</h3>
+    <p>2014〜2016：RNN+Attention の NMT が統計的機械翻訳を圧倒、Google 翻訳が全面採用（2016）。2017 で Transformer に置換。</p>
+
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>系列ラベリング、時系列予測、音声認識、現代的位置の4節。</p>
+    </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 系列ラベリング（NER、POS）</h3>
+    <p>固有表現抽出、品詞タグ付けで Bi-LSTM + CRF が長く標準。各単語に対しタグを予測。BERT 登場までは最強。</p>
+
+    <h3 style="margin-top:36px;">§2.2 時系列予測</h3>
+    <p>株価、需要、気象予測。LSTM/GRU、最近は Temporal Fusion Transformer、N-BEATS、Informer、PatchTST 等の Transformer 系。古典統計（ARIMA）との比較も重要。</p>
+
+    <h3 style="margin-top:36px;">§2.3 音声認識</h3>
+    <p>2010s 後半まで DeepSpeech（RNN+CTC）が主流。2020 以降 Conformer（Transformer + Conv）、Whisper（OpenAI 2022）が SOTA に。</p>
+
+    <h3 style="margin-top:36px;">§2.4 RNN の現代的位置</h3>
+    <p>NLPでは Transformer に座を譲った。しかし、(a) リアルタイム逐次処理（音声、ストリーミング）、(b) 線形メモリ（Mamba/SSM）、(c) 軽量モデル（モバイル、IoT）では RNN/SSM 系統が復活。2023〜2024 の Mamba、RWKV 等は『RNN の系譜』。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>PyTorch RNN/LSTM、文字生成、機械翻訳、時系列、Bi-LSTMの5節。</p>
+    </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 PyTorch で LSTM</h3>
+    <div class="code-block">
+<span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn
+
+<span class="keyword">class</span> LSTMClassifier(nn.Module):
+    <span class="keyword">def</span> __init__(<span class="builtin">self</span>, vocab_size, embed_dim, hidden_dim, num_classes):
+        <span class="builtin">super</span>().__init__()
+        <span class="builtin">self</span>.embed = nn.Embedding(vocab_size, embed_dim)
+        <span class="builtin">self</span>.lstm = nn.LSTM(embed_dim, hidden_dim, batch_first=<span class="keyword">True</span>)
+        <span class="builtin">self</span>.fc = nn.Linear(hidden_dim, num_classes)
+    <span class="keyword">def</span> forward(<span class="builtin">self</span>, x):
+        x = <span class="builtin">self</span>.embed(x)
+        _, (h, _) = <span class="builtin">self</span>.lstm(x)
+        <span class="keyword">return</span> <span class="builtin">self</span>.fc(h[-<span class="builtin">1</span>])
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 文字レベル言語モデル</h3>
+    <div class="code-block">
+<span class="keyword">class</span> CharLM(nn.Module):
+    <span class="keyword">def</span> __init__(<span class="builtin">self</span>, vocab_size, hidden=<span class="builtin">256</span>):
+        <span class="builtin">super</span>().__init__()
+        <span class="builtin">self</span>.embed = nn.Embedding(vocab_size, hidden)
+        <span class="builtin">self</span>.lstm = nn.LSTM(hidden, hidden, num_layers=<span class="builtin">2</span>, batch_first=<span class="keyword">True</span>)
+        <span class="builtin">self</span>.fc = nn.Linear(hidden, vocab_size)
+    <span class="keyword">def</span> forward(<span class="builtin">self</span>, x, hidden=<span class="keyword">None</span>):
+        x = <span class="builtin">self</span>.embed(x)
+        out, hidden = <span class="builtin">self</span>.lstm(x, hidden)
+        <span class="keyword">return</span> <span class="builtin">self</span>.fc(out), hidden
+
+<span class="comment"># 学習：次の文字予測（自己教師あり）</span>
+<span class="comment"># 生成：開始文字から逐次サンプリング</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 Seq2Seq機械翻訳</h3>
+    <div class="code-block">
+<span class="keyword">class</span> Seq2Seq(nn.Module):
+    <span class="keyword">def</span> __init__(<span class="builtin">self</span>, src_vocab, tgt_vocab, hidden=<span class="builtin">256</span>):
+        <span class="builtin">super</span>().__init__()
+        <span class="builtin">self</span>.encoder = nn.LSTM(hidden, hidden, batch_first=<span class="keyword">True</span>)
+        <span class="builtin">self</span>.src_embed = nn.Embedding(src_vocab, hidden)
+        <span class="builtin">self</span>.tgt_embed = nn.Embedding(tgt_vocab, hidden)
+        <span class="builtin">self</span>.decoder = nn.LSTM(hidden, hidden, batch_first=<span class="keyword">True</span>)
+        <span class="builtin">self</span>.fc = nn.Linear(hidden, tgt_vocab)
+    <span class="keyword">def</span> forward(<span class="builtin">self</span>, src, tgt):
+        _, (h, c) = <span class="builtin">self</span>.encoder(<span class="builtin">self</span>.src_embed(src))
+        out, _ = <span class="builtin">self</span>.decoder(<span class="builtin">self</span>.tgt_embed(tgt), (h, c))
+        <span class="keyword">return</span> <span class="builtin">self</span>.fc(out)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 時系列予測（株価風）</h3>
+    <div class="code-block">
+<span class="keyword">class</span> TSPredictor(nn.Module):
+    <span class="keyword">def</span> __init__(<span class="builtin">self</span>, n_features, hidden=<span class="builtin">64</span>):
+        <span class="builtin">super</span>().__init__()
+        <span class="builtin">self</span>.lstm = nn.LSTM(n_features, hidden, batch_first=<span class="keyword">True</span>)
+        <span class="builtin">self</span>.fc = nn.Linear(hidden, <span class="builtin">1</span>)
+    <span class="keyword">def</span> forward(<span class="builtin">self</span>, x):
+        out, _ = <span class="builtin">self</span>.lstm(x)
+        <span class="keyword">return</span> <span class="builtin">self</span>.fc(out[:, -<span class="builtin">1</span>])  <span class="comment"># 最終時刻のみ予測</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 双方向LSTM</h3>
+    <div class="code-block">
+<span class="comment"># BiLSTM：bidirectional=True で前後両方向</span>
+bilstm = nn.LSTM(<span class="builtin">128</span>, <span class="builtin">64</span>, bidirectional=<span class="keyword">True</span>, batch_first=<span class="keyword">True</span>)
+<span class="comment"># 出力は hidden*2 = 128 次元</span>
+<span class="comment"># NER, POS タグ付け、文分類で標準（BERT 以前）</span>
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>勾配消失/爆発、LSTMゲート、Attentionの3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — RNN の勾配消失</h4>
+      <div class="sim-output">
+&gt;&gt; 100ステップRNN、最終損失から入力側への勾配ノルム<br>
+<br>
+[Vanilla RNN]<br>
+t=100:　 ||grad|| = 0.42<br>
+t= 80:　 ||grad|| = 0.024<br>
+t= 60:　 ||grad|| = 0.00103<br>
+t= 40:　 ||grad|| = 3.8e-5<br>
+t= 20:　 ||grad|| = 1.1e-6 ← ほぼ0<br>
+t=  1:　 ||grad|| = 2.3e-8<br>
+&gt;&gt; 入力側の情報がほぼ伝わらない<br>
+<br>
+[LSTM]<br>
+t=100:　 ||grad|| = 0.51<br>
+t= 50:　 ||grad|| = 0.087<br>
+t=  1:　 ||grad|| = 0.0042<br>
+&gt;&gt; セル状態経由で勾配が保存される
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — LSTMゲートの役割</h4>
+      <div class="sim-output">
+&gt;&gt; 文字列「I am from Japan and I speak ___」での予測<br>
+<br>
+入力 'I am':　 　 入力ゲート開、忘却ゲート閉<br>
+入力 'from Japan':忘却ゲート部分閉、入力ゲート開<br>
+　　　　　　　　 → 'Japan' を強く記憶<br>
+入力 'and I speak':忘却ゲート開（古い文脈忘れ気味）<br>
+出力時点:　　　 'Japan' の情報から → 'Japanese' を予測<br>
+<br>
+&gt;&gt; ゲートが学習で『何を覚えて何を忘れるか』を獲得
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — Attentionの効果</h4>
+      <div class="sim-output">
+&gt;&gt; 50語の英文を仏訳、固定ベクトル経由 vs Attention<br>
+<br>
+[Vanilla Seq2Seq（固定ベクトル）]<br>
+　 BLEU: 18.3<br>
+　 長文で品質激減（情報ボトルネック）<br>
+<br>
+[Seq2Seq + Attention]<br>
+　 BLEU: 27.5　 ← +50%<br>
+　 長文でも品質維持<br>
+　 attention map で対応関係を可視化可能<br>
+<br>
+&gt;&gt; Attentionが固定ベクトルボトルネックを解消<br>
+&gt;&gt; やがてRNN自体が不要に → Transformer
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">RNNが MLP より系列データに適する理由は。</div>
+        <div class="p-choices">① 計算高速　 ② 隠れ状態 h で過去の文脈を保持、可変長系列を扱える　 ③ パラメータ多い　 ④ 教師なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> h_t = f(h_{t-1}, x_t) で過去情報を伝播、同じパラメータを全時刻で共有。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">BPTT（Backprop Through Time）の問題は。</div>
+        <div class="p-choices">① 不要　 ② 長系列で計算・メモリ増、勾配消失/爆発　 ③ 教師なし限定　 ④ 学習しない</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 系列長Tに比例して計算が増え、勾配が指数的に減衰または爆発。Truncated BPTT、Gradient Clipping、LSTM/GRU で対処。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">勾配消失問題で『記憶できる時間』の典型は。</div>
+        <div class="p-choices">① 1ステップ　 ② Vanilla RNNでは 10〜20ステップが限界　 ③ 無限　 ④ 100万ステップ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> tanh の勾配積が指数減衰。LSTM/GRU でこれを数百ステップまで拡大。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">LSTM のセル状態 c_t の特徴は。</div>
+        <div class="p-choices">① 隠れ状態と同じ　 ② 加算更新で勾配が保存され、長期依存を学べる　 ③ 出力のみ　 ④ ノイズ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> c_t = f_t ⊙ c_{t-1} + i_t ⊙ c̃_t の加算ベース更新が勾配消失を緩和。これが LSTM の核心。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">LSTMの3つのゲートとして正しいのは。</div>
+        <div class="p-choices">① 入力、Conv、Pool　 ② 忘却（forget）、入力（input）、出力（output）　 ③ 順、逆、双方向　 ④ 学習、推論、評価</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hochreiter & Schmidhuber 1997。Sigmoidゲートで情報の流れを制御。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">GRU がLSTMより優れる点は。</div>
+        <div class="p-choices">① 必ず高精度　 ② パラメータが少なく、計算高速、性能はほぼ同等　 ③ ゲートなし　 ④ 双方向のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Cho 2014。リセットゲートと更新ゲートだけで2ゲート構造。実装簡素、性能はLSTMと拮抗。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">双方向RNN（Bi-LSTM）が使えない典型タスクは。</div>
+        <div class="p-choices">① 文分類　 ② NER　 ③ 言語モデル（次トークン予測、未来情報禁止）　 ④ 感情分析</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 生成・予測タスクは未来情報を使えない（カンニングになる）。分類・タグ付けには Bi-LSTM が長く標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">Seq2Seq モデルの構造は。</div>
+        <div class="p-choices">① 1個のRNN　 ② エンコーダ（入力→ベクトル）+ デコーダ（ベクトル→出力）　 ③ CNN のみ　 ④ MLP のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Sutskever 2014。機械翻訳、要約、対話の基本枠組み。固定長ベクトルがボトルネック、Attentionで解消。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">Attention（Bahdanau 2015）が解決した Seq2Seq の課題は。</div>
+        <div class="p-choices">① 学習速度　 ② 固定長ベクトルのボトルネック、長文で性能劣化　 ③ メモリ消費　 ④ 過学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> エンコーダ全時刻の隠れ状態にデコーダが重み付き参照。長文翻訳の品質が劇的改善。Transformer の母。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">Beam Search の役割は。</div>
+        <div class="p-choices">① 学習加速　 ② 系列生成で上位 k 候補を保持して探索、Greedy より高品質　 ③ 正則化　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 翻訳・要約で標準。beam size 4〜8 で BLEU 2〜3 ポイント改善。LLM 生成では nucleus sampling 等の方が人気。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">Truncated BPTT の目的は。</div>
+        <div class="p-choices">① 精度向上　 ② 長系列で計算・メモリを節約、一定ステップで切って勾配計算　 ③ 学習なし　 ④ 過学習防止</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 全系列のBPTTは不可能なので、典型 35〜200 ステップで切る。長期依存は LSTM/GRU の力で。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">勾配爆発の対処として有効なのは。</div>
+        <div class="p-choices">① 学習率を上げる　 ② Gradient Clipping（勾配ノルムを閾値で制限）　 ③ パラメータ削除　 ④ Sigmoid を使う</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> torch.nn.utils.clip_grad_norm_ で実装。閾値1.0〜5.0が典型。Transformer 学習でも常用。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">音声認識で 2020〜2026 の標準は。</div>
+        <div class="p-choices">① 古典GMM-HMM　 ② Whisper、Conformer など Transformer 系　 ③ Bi-LSTM のみ　 ④ K-means</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Whisper（OpenAI 2022）が多言語SOTA。Conformer（Google）はTransformer+Convの組合せでオンライン認識に強い。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">時系列予測で Transformer 系の代表例は。</div>
+        <div class="p-choices">① ResNet　 ② Informer、PatchTST、Temporal Fusion Transformer　 ③ K-NN　 ④ ARIMA</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 長系列・多変量を効率良く扱える。最近の研究では『単純MLPでもTransformerと同等』との指摘も（DLinear等）。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">2023 年以降、『RNN の系譜』を継ぐ新世代モデルは。</div>
+        <div class="p-choices">① CNN　 ② Mamba（SSM）、RWKV、Linear Attention　 ③ MLP のみ　 ④ K-NN</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Selective SSM (Mamba 2023) が Transformer に対抗、線形メモリ・長文脈で優位。RWKV は RNN ライクな並列学習。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">『Teacher Forcing』の意味は。</div>
+        <div class="p-choices">① 強制学習　 ② Seq2Seq学習時に、デコーダへの入力に過去のモデル出力ではなく『正解』を与える手法　 ③ 教師なし　 ④ クラスタ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 訓練効率を上げるが、推論時の自己回帰生成と乖離する『Exposure Bias』問題も。Scheduled Sampling が緩和策。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">BiLSTM-CRF が長く標準だったタスクは。</div>
+        <div class="p-choices">① 画像分類　 ② NER（固有表現抽出）、品詞タグ付けなどの系列ラベリング　 ③ 強化学習　 ④ K-means</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> BiLSTM が文脈、CRF がラベル間依存関係を学習。BERT 登場（2018）まで最強。今もリソース制約環境で実用。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">機械翻訳の評価指標として標準的なのは。</div>
+        <div class="p-choices">① Accuracy　 ② BLEU、METEOR、chrF、最近は COMET、BERTScore　 ③ MSE　 ④ R²</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> BLEU が古典標準、ただし表面文字列マッチで限界あり。LLM 時代は BERTScore、COMET 等の埋め込みベース指標が好まれる。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">2014〜2017 の機械翻訳の主流は。</div>
+        <div class="p-choices">① ルールベース　 ② RNN+Attentionのニューラル機械翻訳（NMT）、Google翻訳が全面採用（2016）　 ③ Transformer　 ④ LLM</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2017 年に Transformer 登場し急速に置換。現在は LLM が機械翻訳でも事実上の SOTA。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">CTC（Connectionist Temporal Classification）の用途は。</div>
+        <div class="p-choices">① 画像分類　 ② 音声認識・手書き認識など、入力と出力の長さが異なる・整列がないタスクの損失関数　 ③ 強化学習　 ④ クラスタ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Graves 2006。アラインメントを暗黙にマージしながら学習。RNN+CTC（DeepSpeech）が音声認識の標準だった。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">RNN、BPTT、勾配消失/爆発、LSTM、GRU、Bi-RNN、Seq2Seq、Attention、Beam Search、NMT、CTC を扱いました。応用で系列ラベリング、時系列予測、音声認識、現代的位置（Mamba/RWKV の復活）。ハンズオンで PyTorch LSTM、文字レベル LM、Seq2Seq、時系列予測、Bi-LSTM。シミュレーションで勾配消失、ゲート役割、Attention効果を確認。次章は Transformer — 現代AIを定義した革命的アーキテクチャへ。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="01-cnn.html">← 章1</a></div>
-  <div><a href="03-transformer.html">章3: Transformer →</a></div>
+  <div><a href="01-cnn.html">← 章13: CNN</a></div>
+  <div><span class="ch-label">Chapter 14 of 24 · 応用編 2/12</span><br><span class="ch-title">RNN/LSTM</span></div>
+  <div><a href="03-transformer.html">章15: Transformer →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a><a href="../../../certifications/tokei.html">統計検定</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

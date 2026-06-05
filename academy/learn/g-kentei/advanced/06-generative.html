@@ -3,307 +3,591 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章6 生成AI — G検定 応用 — Swallow AI Academy</title>
-<meta name="description" content="G検定応用 章6：生成AI。VAE、GAN、拡散モデル、Stable Diffusion、動画生成。3つの主要パラダイムを図解で。">
+<title>章18 生成モデル — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章18：GAN、VAE、Diffusion Model、Flow Models、Stable Diffusion、ControlNet、Sora、画像/動画/音声生成を5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="../basics/index.html">基本</a>
-      <a href="index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.6</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="../basics/index.html">基本</a><a href="index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章6</div>
-    <h1>応用 章6 — 生成AI<span class="en">Generative AI: VAE, GAN, Diffusion</span></h1>
-    <p class="standfirst">画像・音声・動画の生成を可能にした技術群。<strong>VAE・GAN・拡散モデル</strong> という3つの主要パラダイムを理解します。2022年の Stable Diffusion、2024年の Sora までの流れを押さえます。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章18</div>
+    <h1>章18 — 生成モデル<span class="en">Chapter 18 — Generative Models</span></h1>
+    <p class="standfirst">『描いて』と言えば絵が生まれ、『作曲して』と言えば曲が流れる ── これが2022〜2026の生成AIです。<strong>GAN</strong>（2014）、<strong>VAE</strong>（2013）、そして 2020年以降の <strong>Diffusion Models</strong> という3つの系譜が、<strong>DALL-E・Stable Diffusion・Midjourney・Imagen・Sora・Veo</strong>といった現代の傑作を生みました。本章で <strong>生成モデル</strong> の数学と実装を、5部構成で徹底解説します。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="05-llm.html">← 章5: LLM</a></div>
-  <div><span class="ch-label">応用 Chapter 6 of 12</span><br><span class="ch-title">生成AI</span></div>
-  <div><a href="07-rl.html">章7: 強化学習 →</a></div>
+  <div><a href="05-llm.html">← 章17: LLM</a></div>
+  <div><span class="ch-label">Chapter 18 of 24 · 応用編</span><br><span class="ch-title">生成モデル</span></div>
+  <div><a href="07-rl.html">章19: 強化学習 →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
-    <h6>章6 目次</h6>
-    <a href="#what">§1 生成モデルとは</a>
-    <a href="#vae">§2 VAE</a>
-    <a href="#gan">§3 GAN</a>
-    <a href="#diffusion">§4 拡散モデル</a>
-    <a href="#sd">§5 Stable Diffusion</a>
-    <a href="#video">§6 動画生成（Sora）</a>
-    <a href="#compare">§7 3パラダイム比較</a>
-    <a href="#summary">§8 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <h6>章18 目次</h6>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
-    <h2 id="what"><span class="label">§1 / WHAT</span>生成モデルとは</h2>
-    <p>データの確率分布 P(x) を学習し、そこから <strong>新しいサンプルを生成できる</strong> モデル。識別モデル（P(y|x)）との対比で定義される。</p>
-    <p>3大パラダイム：</p>
-    <ul>
-      <li><strong>VAE</strong>（2013, Kingma &amp; Welling）：確率的に潜在空間にエンコードして復元</li>
-      <li><strong>GAN</strong>（2014, Goodfellow）：生成器と判別器の対戦</li>
-      <li><strong>拡散モデル</strong>（2020, DDPM）：ノイズ付加の逆を学習</li>
+    <div class="article-eyebrow">G-KENTEI · ADVANCED · CHAPTER 18</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">分布を学び、<br>新しいデータを生む。</h2>
+    <p class="article-lede">生成モデルの本質は『データ分布 p(x) を学習し、そこからサンプリングする』こと。GANは識別器との敵対的学習、VAEは変分推論、Diffusionは逐次的なノイズ除去 ── アプローチは異なるが目的は同じ。本章でこの3つを横断的に理解し、現代の画像・動画・音声生成の仕組みを解読します。</p>
+
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>生成モデル、GAN、VAE、Diffusion、Flow、Energy-based、自己回帰、画像生成、動画、音声の10節。</p>
+    </div>
+
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 生成モデルの定義</h3>
+    <p>『データ分布 p_data(x) を学習し、そこからサンプリングする』モデル。識別モデル（p(y|x) を学習）と対照的。代表アプローチ：</p>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>陰的分布</strong>（GAN）：密度を計算せず、サンプリングのみ</li>
+      <li><strong>陽的分布</strong>（VAE、Flow、Autoregressive）：尤度を計算可能</li>
+      <li><strong>Score-based</strong>（Diffusion）：分布の勾配 ∇log p(x) を学習</li>
     </ul>
 
-    <h2 id="vae"><span class="label">§2 / VAE</span>VAE（変分オートエンコーダ）</h2>
-    <p>2013年、Kingma &amp; Welling が提案。入力を <strong>確率的に</strong> 潜在変数にエンコードし、デコーダで復元。</p>
+    <h3 style="margin-top:36px;">§1.2 GAN（Generative Adversarial Network）</h3>
+    <div class="formula">
+Goodfellow et al. 2014<br>
+　 Generator G(z) → 偽画像<br>
+　 Discriminator D(x) → 真偽判定<br><br>
+<strong>min-max ゲーム</strong>　 min_G max_D 𝔼[log D(x)] + 𝔼[log(1 - D(G(z)))]<br><br>
+理論的均衡で G が真の分布を再現。
+    </div>
+    <p>主な派生：<strong>DCGAN</strong>（CNN化）、<strong>WGAN</strong>（Wasserstein距離）、<strong>StyleGAN</strong>（高解像度顔生成）、<strong>BigGAN</strong>（ImageNet）。問題：<strong>モード崩壊</strong>（多様性消失）、<strong>不安定な学習</strong>。</p>
 
-    <div class="figure">
-      <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="vae-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
-          </marker>
-        </defs>
-        <!-- Input -->
-        <rect x="40" y="80" width="100" height="60" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="90" y="115" text-anchor="middle" font-size="12" fill="#0d1b2a">入力 x</text>
-        <text x="90" y="160" text-anchor="middle" font-size="10" fill="#5a5f6a">（画像）</text>
-        <!-- Encoder -->
-        <rect x="180" y="60" width="120" height="100" fill="#b8431f"/>
-        <text x="240" y="105" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">Encoder</text>
-        <text x="240" y="125" text-anchor="middle" font-size="10" fill="#f5d4c4">分布 q(z|x)</text>
-        <line x1="140" y1="110" x2="178" y2="110" stroke="#0d1b2a" marker-end="url(#vae-a)"/>
-        <!-- Latent z -->
-        <ellipse cx="380" cy="110" rx="35" ry="50" fill="#d4a017"/>
-        <text x="380" y="105" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">z</text>
-        <text x="380" y="125" text-anchor="middle" font-size="10" fill="#0d1b2a">潜在変数</text>
-        <line x1="300" y1="110" x2="343" y2="110" stroke="#0d1b2a" marker-end="url(#vae-a)"/>
-        <!-- Decoder -->
-        <rect x="460" y="60" width="120" height="100" fill="#3a7d44"/>
-        <text x="520" y="105" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">Decoder</text>
-        <text x="520" y="125" text-anchor="middle" font-size="10" fill="#c0d4c4">分布 p(x|z)</text>
-        <line x1="415" y1="110" x2="458" y2="110" stroke="#0d1b2a" marker-end="url(#vae-a)"/>
-        <!-- Output -->
-        <rect x="620" y="80" width="100" height="60" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="670" y="115" text-anchor="middle" font-size="12" fill="#0d1b2a">x' 復元</text>
-        <line x1="580" y1="110" x2="618" y2="110" stroke="#0d1b2a" marker-end="url(#vae-a)"/>
-        <text x="380" y="195" text-anchor="middle" font-size="11" font-style="italic" fill="#b8431f">損失 = 再構成誤差 + KL(q(z|x) || 事前分布 N(0,I))</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 6.1</span> VAE の構造。Encoder は決定論的でなく <strong>確率分布</strong> q(z|x) を出力。これにより滑らかな潜在空間が学習され、新規サンプル生成が可能になる。</div>
+    <h3 style="margin-top:36px;">§1.3 VAE（Variational Autoencoder）</h3>
+    <div class="formula">
+Kingma &amp; Welling 2013<br>
+　 Encoder q(z|x) → 潜在変数 z<br>
+　 Decoder p(x|z) → 再構成<br><br>
+<strong>ELBO 最大化</strong>　 E_q[log p(x|z)] - KL(q(z|x) || p(z))<br>
+　　　　　　　 ↑ 再構成損失　 　 ↑ 正則化（事前 N(0,I)）
+    </div>
+    <p>連続的な潜在空間、滑らかな補間が可能。GANより生成品質はぼやけるが、安定学習＋確率密度計算可能。VQ-VAEは離散化版。</p>
+
+    <h3 style="margin-top:36px;">§1.4 Diffusion Model — 現代の主役</h3>
+    <p>Sohl-Dickstein 2015、Ho et al. 2020（DDPM）、Song et al. 2021（Score-based SDE）。</p>
+    <div class="formula">
+<strong>順方向過程</strong>（学習）：x₀ にガウシアンノイズを T 回加えて x_T（純粋ノイズ）<br>
+　 x_t = √(α_t) x_{t-1} + √(1-α_t) ε<br><br>
+<strong>逆方向過程</strong>（生成）：NN がノイズを逐次予測し、ノイズから x₀ を復元<br>
+　 学習：NN ε_θ(x_t, t) が x_t から ε を予測<br>
+　 損失：E[||ε - ε_θ(x_t, t)||²]<br><br>
+DDPM、DDIM、Latent Diffusion (Stable Diffusion) などの派生
     </div>
 
-    <h2 id="gan"><span class="label">§3 / GAN</span>GAN（敵対的生成ネットワーク）</h2>
-    <p>2014年、Ian Goodfellow が提案。<strong>生成器（Generator）</strong> と <strong>判別器（Discriminator）</strong> を対戦させる。</p>
-
     <div class="figure">
-      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="gan-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
-          </marker>
-        </defs>
-        <!-- Noise -->
-        <ellipse cx="80" cy="120" rx="30" ry="30" fill="#d4a017"/>
-        <text x="80" y="125" text-anchor="middle" font-size="11" fill="#0d1b2a">乱数 z</text>
-        <!-- Generator -->
-        <rect x="160" y="80" width="120" height="80" fill="#b8431f"/>
-        <text x="220" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">Generator</text>
-        <text x="220" y="135" text-anchor="middle" font-size="10" fill="#f5d4c4">偽物を作る</text>
-        <line x1="110" y1="120" x2="158" y2="120" stroke="#0d1b2a" marker-end="url(#gan-a)"/>
-        <!-- Fake -->
-        <rect x="320" y="80" width="100" height="80" fill="#fff8f2" stroke="#0d1b2a"/>
-        <text x="370" y="125" text-anchor="middle" font-size="11" fill="#0d1b2a">偽物画像</text>
-        <line x1="280" y1="120" x2="318" y2="120" stroke="#0d1b2a" marker-end="url(#gan-a)"/>
-        <!-- Real (training data) -->
-        <rect x="320" y="190" width="100" height="40" fill="#fff8f2" stroke="#3a7d44" stroke-width="2"/>
-        <text x="370" y="215" text-anchor="middle" font-size="11" fill="#0d1b2a">本物画像</text>
-        <!-- Discriminator -->
-        <rect x="460" y="80" width="120" height="140" fill="#2e5577"/>
-        <text x="520" y="140" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">Discriminator</text>
-        <text x="520" y="160" text-anchor="middle" font-size="10" fill="#c0d4e3">本物 or 偽物?</text>
-        <line x1="420" y1="120" x2="458" y2="120" stroke="#0d1b2a" marker-end="url(#gan-a)"/>
-        <line x1="420" y1="210" x2="458" y2="180" stroke="#0d1b2a" marker-end="url(#gan-a)"/>
-        <!-- Output -->
-        <rect x="620" y="120" width="100" height="40" fill="#0d1b2a"/>
-        <text x="670" y="145" text-anchor="middle" font-size="11" fill="#faf7f2">確率</text>
-        <line x1="580" y1="140" x2="618" y2="140" stroke="#0d1b2a" marker-end="url(#gan-a)"/>
-        <text x="380" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">GAN：偽札作りと警察の対戦</text>
+      <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 18.1 ／ DIFFUSION MODEL FORWARD/REVERSE</text>
+        
+        <g transform="translate(50,70)">
+          <text x="0" y="-5" font-family="serif" font-size="11" font-weight="700" fill="#0d1b2a">順方向（学習時）：画像 → ノイズ</text>
+          
+          <rect x="0" y="10" width="60" height="60" fill="#d4a017"/>
+          <text x="30" y="85" text-anchor="middle" font-family="monospace" font-size="10">x₀（画像）</text>
+          
+          <text x="65" y="42" font-family="serif" font-size="11" fill="#5a5f6a">→</text>
+          
+          <rect x="80" y="10" width="60" height="60" fill="url(#noise1)"/>
+          <text x="110" y="85" text-anchor="middle" font-family="monospace" font-size="10">x₁</text>
+          
+          <text x="145" y="42" font-family="serif" font-size="11" fill="#5a5f6a">→</text>
+          
+          <rect x="160" y="10" width="60" height="60" fill="url(#noise2)"/>
+          <text x="190" y="85" text-anchor="middle" font-family="monospace" font-size="10">x_t</text>
+          
+          <text x="225" y="42" font-family="serif" font-size="11" fill="#5a5f6a">→</text>
+          
+          <rect x="240" y="10" width="60" height="60" fill="#9aa0a8"/>
+          <text x="270" y="85" text-anchor="middle" font-family="monospace" font-size="10">x_T（純ノイズ）</text>
+          
+          <defs>
+            <pattern id="noise1" patternUnits="userSpaceOnUse" width="4" height="4">
+              <rect width="4" height="4" fill="#d4a017"/>
+              <circle cx="2" cy="2" r="1" fill="#9aa0a8" opacity="0.3"/>
+            </pattern>
+            <pattern id="noise2" patternUnits="userSpaceOnUse" width="3" height="3">
+              <rect width="3" height="3" fill="#d4a017" opacity="0.4"/>
+              <circle cx="1.5" cy="1.5" r="1" fill="#9aa0a8" opacity="0.6"/>
+            </pattern>
+          </defs>
+        </g>
+        
+        <g transform="translate(50,150)">
+          <text x="0" y="-5" font-family="serif" font-size="11" font-weight="700" fill="#0d1b2a">逆方向（生成時）：ノイズ → 画像（NNが各ステップ予測）</text>
+          
+          <rect x="0" y="10" width="60" height="60" fill="#9aa0a8"/>
+          <text x="65" y="42" font-family="serif" font-size="11" fill="#b8431f">→</text>
+          <rect x="80" y="10" width="60" height="60" fill="url(#noise2)"/>
+          <text x="145" y="42" font-family="serif" font-size="11" fill="#b8431f">→</text>
+          <rect x="160" y="10" width="60" height="60" fill="url(#noise1)"/>
+          <text x="225" y="42" font-family="serif" font-size="11" fill="#b8431f">→</text>
+          <rect x="240" y="10" width="60" height="60" fill="#d4a017"/>
+          
+          <text x="350" y="42" font-family="serif" font-size="11" fill="#b8431f">U-Net ε_θ(x_t, t) が各ステップでノイズを推定</text>
+        </g>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 6.2</span> GAN の構造。Generator は本物そっくりの偽物を作ろうとし、Discriminator は見分けようとする。両者が同時に学習することで、最終的に Generator は本物と区別不能な画像を作れるようになる。</div>
+      <div class="figure-caption"><span class="figure-num">FIG 18.1</span> ／ Diffusion Model。順方向で画像→ノイズ（学習用データ）、逆方向でNNがノイズ予測し画像復元（生成）。Stable Diffusion / DALL-E 2 / Imagen の核。</div>
     </div>
 
-    <h3>3.1 損失関数（minimax）</h3>
-    <div class="formula">min_G max_D E[log D(x)] + E[log(1 - D(G(z)))]</div>
+    <h3 style="margin-top:36px;">§1.5 Flow-based Models</h3>
+    <p>Normalizing Flow（NICE, RealNVP, Glow）：可逆変換 f: z → x を学習。<strong>厳密な尤度計算が可能</strong>。条件付き生成・密度推定で重要だが、画像生成の品質は Diffusion に劣る。</p>
 
-    <h3>3.2 GAN の系譜</h3>
+    <h3 style="margin-top:36px;">§1.6 Energy-based Models（EBM）</h3>
+    <p>p(x) ∝ exp(-E(x)) でエネルギー関数 E を学習。Langevin Dynamics 等でサンプリング。Score-based Diffusion の親戚。Boltzmann Machine の現代版。</p>
+
+    <h3 style="margin-top:36px;">§1.7 自己回帰モデル</h3>
+    <p>p(x) = Π p(xᵢ | x_{&lt;i}) で分解、トークンを順次予測。PixelRNN, PixelCNN（画像）、WaveNet（音声）、GPT（テキスト）。生成は遅いが厳密尤度可能。</p>
+
+    <h3 style="margin-top:36px;">§1.8 主要画像生成モデル</h3>
     <table class="spec">
-      <tr><th>DCGAN (2015)</th><td>畳み込みベース、画像で実用化</td></tr>
-      <tr><th>Conditional GAN (2014)</th><td>クラスラベルで条件付き生成</td></tr>
-      <tr><th>Pix2Pix (2016)</th><td>画像→画像変換</td></tr>
-      <tr><th>CycleGAN (2017)</th><td>ペアなし画像変換（馬↔シマウマなど）</td></tr>
-      <tr><th>StyleGAN (2018-2020)</th><td>NVIDIA、超高品質顔画像、潜在空間制御</td></tr>
-      <tr><th>BigGAN (2018)</th><td>大規模 GAN</td></tr>
+      <tr><th>モデル</th><th>提供</th><th>年</th><th>特徴</th></tr>
+      <tr><td>DALL-E 2</td><td>OpenAI</td><td>2022</td><td>CLIP+Diffusion、テキスト→画像</td></tr>
+      <tr><td>Imagen</td><td>Google</td><td>2022</td><td>T5+カスケード Diffusion</td></tr>
+      <tr><td>Stable Diffusion</td><td>Stability AI</td><td>2022</td><td>Latent Diffusion、オープンソース</td></tr>
+      <tr><td>Midjourney</td><td>Midjourney</td><td>2022〜</td><td>美術的品質、Discord ベース</td></tr>
+      <tr><td>FLUX</td><td>Black Forest Labs</td><td>2024</td><td>Stable Diffusion 系後継、SOTA</td></tr>
+      <tr><td>Imagen 3</td><td>Google</td><td>2024</td><td>Gemini 統合</td></tr>
+      <tr><td>DALL-E 3</td><td>OpenAI</td><td>2023</td><td>ChatGPT 統合、プロンプト忠実度向上</td></tr>
     </table>
 
-    <h3>3.3 GAN の問題</h3>
-    <ul>
-      <li><strong>モード崩壊（Mode Collapse）</strong>：多様性を失い、似たサンプルだけ生成</li>
-      <li>学習が不安定（2つのモデルのバランス）</li>
-      <li>これらが拡散モデルへの主役交代を促した</li>
+    <h3 style="margin-top:36px;">§1.9 動画生成</h3>
+    <table class="spec">
+      <tr><th>モデル</th><th>提供</th><th>年</th><th>能力</th></tr>
+      <tr><td>Sora</td><td>OpenAI</td><td>2024</td><td>1分以上の高品質動画、物理理解</td></tr>
+      <tr><td>Veo / Veo 2</td><td>Google</td><td>2024</td><td>4K対応、長時間</td></tr>
+      <tr><td>Kling</td><td>Kuaishou</td><td>2024</td><td>中国発、Sora対抗</td></tr>
+      <tr><td>Runway Gen-3</td><td>Runway</td><td>2024</td><td>商業利用向け</td></tr>
+      <tr><td>Pika 2.0</td><td>Pika</td><td>2024</td><td>キャラクター一貫性</td></tr>
+    </table>
+
+    <h3 style="margin-top:36px;">§1.10 音声・音楽生成</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>音声合成（TTS）</strong>：WaveNet、Tacotron、VALL-E、ElevenLabs</li>
+      <li><strong>音声認識（STT）</strong>：Whisper（OpenAI、多言語）</li>
+      <li><strong>音楽生成</strong>：MusicGen（Meta）、Suno、Udio、Stable Audio</li>
+      <li><strong>音声クローン</strong>：3秒のサンプルで話者複製（VALL-E、XTTS）</li>
     </ul>
 
-    <h2 id="diffusion"><span class="label">§4 / DIFF</span>拡散モデル（Diffusion Models）</h2>
-    <p>2020年、Ho et al. の <strong>DDPM</strong> 論文。<strong>「ノイズを付加していくプロセスの逆を学習する」</strong>。</p>
-
-    <div class="figure">
-      <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="diff-a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
-          </marker>
-        </defs>
-        <!-- Forward: image to noise -->
-        <text x="50" y="40" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">x₀</text>
-        <rect x="20" y="50" width="60" height="60" fill="#3a7d44"/>
-        <text x="120" y="85" font-size="14" fill="#0d1b2a">→</text>
-        <rect x="140" y="50" width="60" height="60" fill="#3a7d44" opacity="0.7"/>
-        <text x="170" y="40" text-anchor="middle" font-size="12" fill="#0d1b2a">x₁</text>
-        <text x="240" y="85" font-size="14" fill="#0d1b2a">→</text>
-        <rect x="260" y="50" width="60" height="60" fill="#3a7d44" opacity="0.4"/>
-        <text x="290" y="40" text-anchor="middle" font-size="12" fill="#0d1b2a">x₂</text>
-        <text x="360" y="85" font-size="14" fill="#0d1b2a">→ ... →</text>
-        <rect x="450" y="50" width="60" height="60" fill="#5a5f6a"/>
-        <text x="480" y="40" text-anchor="middle" font-size="12" fill="#0d1b2a">x_T</text>
-        <text x="480" y="135" text-anchor="middle" font-size="10" fill="#5a5f6a">完全ノイズ</text>
-        <text x="265" y="138" text-anchor="middle" font-size="12" font-weight="bold" fill="#b8431f">順過程（既知のノイズ追加）</text>
-
-        <!-- Reverse -->
-        <text x="265" y="200" text-anchor="middle" font-size="12" font-weight="bold" fill="#3a7d44">逆過程（NN で学習：ノイズを徐々に除去 → 画像生成）</text>
-        <line x1="510" y1="175" x2="80" y2="175" stroke="#3a7d44" stroke-width="2" marker-end="url(#diff-a)"/>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 6.3</span> 拡散モデル。順過程（画像 → ノイズ）は既知のスケジュールでガウスノイズを追加するだけ。逆過程（ノイズ → 画像）を NN が学習する。これが生成プロセス。</div>
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>Latent Diffusion、ControlNet、LoRA、評価指標の4節。</p>
     </div>
 
-    <h3>4.1 損失関数</h3>
-    <p>各ステップで、加えられたノイズ ε を予測する：</p>
-    <div class="formula">L = E_t,x,ε [|| ε - ε_θ(x_t, t) ||²]</div>
+    <h2>応用</h2>
 
-    <h3>4.2 拡散モデルの優位</h3>
-    <ul>
-      <li><strong>多様性が高い</strong>：モード崩壊しない</li>
-      <li>学習が安定</li>
-      <li>高品質（GAN を超えた）</li>
-      <li>条件付き生成（テキスト → 画像など）が自然に拡張できる</li>
+    <h3 style="margin-top:36px;">§2.1 Latent Diffusion — Stable Diffusion の核心</h3>
+    <p>Rombach et al. 2022。<strong>VAE で画像を低次元潜在空間（典型 64×64×4）に圧縮</strong>し、潜在空間で Diffusion。計算量を1/64に削減しつつ品質維持。これがコンシューマGPUでの画像生成を可能にした。</p>
+
+    <h3 style="margin-top:36px;">§2.2 ControlNet</h3>
+    <p>Zhang et al. 2023。Stable Diffusion に <strong>姿勢・エッジ・深度などの追加制約</strong>を与える条件付け技術。OpenPose の骨格→人物画像、線画→塗り絵、深度マップ→3D 感のある画像など、生成の制御性を劇的に向上。</p>
+
+    <h3 style="margin-top:36px;">§2.3 LoRA for Diffusion</h3>
+    <p>LLM の LoRA をDiffusionに適用。<strong>10〜100枚の画像で特定キャラ・スタイルを学習</strong>、メモリ効率良く配布可能（数MB）。Civitai 等で大量公開。</p>
+
+    <h3 style="margin-top:36px;">§2.4 生成画像の評価</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>FID（Fréchet Inception Distance）</strong>：Inception 特徴量の分布距離、画像品質と多様性</li>
+      <li><strong>IS（Inception Score）</strong>：品質と多様性のバランス（古い）</li>
+      <li><strong>CLIP Score</strong>：テキスト-画像整合性</li>
+      <li><strong>人間評価</strong>：A/B 比較、最終的に最も信頼</li>
+      <li><strong>PickScore, ImageReward</strong>：人間嗜好の学習モデル</li>
     </ul>
 
-    <h2 id="sd"><span class="label">§5 / SD</span>Stable Diffusion（潜在拡散）</h2>
-    <p>2022年、Rombach et al. による <strong>Latent Diffusion Model</strong>。拡散過程を <strong>画素空間ではなく潜在空間</strong>で行うことで、計算コストを激減。</p>
-    <ol>
-      <li>VAE で画像を潜在空間（小さい）に圧縮</li>
-      <li>潜在空間で拡散モデルを学習・生成</li>
-      <li>VAE Decoder で画像に戻す</li>
-    </ol>
-    <p>テキスト条件付けは CLIP テキストエンコーダ → Cross-Attention で実現。</p>
-
-    <h3>5.1 主要モデル</h3>
-    <table class="spec">
-      <tr><th>DALL-E 2 / 3</th><td>OpenAI</td></tr>
-      <tr><th>Stable Diffusion 1/2/3/XL</th><td>Stability AI、オープン</td></tr>
-      <tr><th>Midjourney</th><td>独自モデル、芸術性で人気</td></tr>
-      <tr><th>FLUX.1</th><td>2024、Black Forest Labs</td></tr>
-      <tr><th>Imagen</th><td>Google</td></tr>
-    </table>
-
-    <h2 id="video"><span class="label">§6 / VIDEO</span>動画生成（Sora ほか）</h2>
-    <p>2024年 OpenAI の <strong>Sora</strong> が衝撃。動画を「時空パッチ」のシーケンスとして扱う <strong>Diffusion Transformer (DiT)</strong> アーキテクチャ。最長1分以上の高解像度動画を生成可能に。</p>
-    <p>競合：Runway Gen-3、Pika、Kling（中国）、Veo（Google）。2024-2025年で急速に進化。</p>
-
-    <h2 id="compare"><span class="label">§7 / COMPARE</span>3パラダイム比較</h2>
-    <table class="spec">
-      <tr><th></th><th>VAE</th><th>GAN</th><th>Diffusion</th></tr>
-      <tr><th>原理</th><td>確率的エンコード・デコード</td><td>生成器 vs 判別器の対戦</td><td>ノイズ除去過程の学習</td></tr>
-      <tr><th>品質</th><td>中（ぼやけがち）</td><td>高（モード崩壊リスク）</td><td>最高</td></tr>
-      <tr><th>多様性</th><td>高</td><td>低（モード崩壊）</td><td>高</td></tr>
-      <tr><th>学習安定性</th><td>高</td><td>低</td><td>高</td></tr>
-      <tr><th>生成速度</th><td>速い（1回の forward）</td><td>速い（1回の forward）</td><td>遅い（多ステップ）</td></tr>
-      <tr><th>現在の主流</th><td>潜在空間として SD で再利用</td><td>限定的、StyleGAN 等</td><td><strong>主流</strong></td></tr>
-    </table>
-
-    <h2 id="summary"><span class="label">§8 / SUMMARY</span>章のまとめ</h2>
-    <table class="spec">
-      <tr><th>1</th><td>VAE: 2013, 確率的潜在変数、損失 = 再構成 + KL</td></tr>
-      <tr><th>2</th><td>GAN: 2014, 生成器と判別器の対戦、min-max ゲーム</td></tr>
-      <tr><th>3</th><td>GAN の問題：モード崩壊・学習不安定</td></tr>
-      <tr><th>4</th><td>拡散モデル: 2020 DDPM、ノイズ除去過程を学習</td></tr>
-      <tr><th>5</th><td>Stable Diffusion: 潜在空間で拡散（高速・低コスト）</td></tr>
-      <tr><th>6</th><td>テキスト条件付けは CLIP + Cross-Attention</td></tr>
-      <tr><th>7</th><td>動画生成：Sora、Diffusion Transformer (DiT)</td></tr>
-      <tr><th>8</th><td>現代の主流は拡散モデル。GAN は限定的、VAE は補助的</td></tr>
-    </table>
-
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>生成モデルと識別モデルの違い</li>
-        <li>VAE の損失関数の2つの項とそれぞれの意味</li>
-        <li>GAN の min-max 損失</li>
-        <li>モード崩壊とは何か</li>
-        <li>拡散モデルの「順過程」と「逆過程」</li>
-        <li>拡散モデルが GAN を品質で超えた理由</li>
-        <li>Stable Diffusion が「潜在空間」で拡散する利点</li>
-        <li>テキスト → 画像の条件付けの仕組み（CLIP + Cross-Attn）</li>
-        <li>Sora の Diffusion Transformer (DiT) の特徴</li>
-        <li>VAE/GAN/Diffusion の3パラダイムを表で比較できるか</li>
-      </ol>
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>Stable Diffusion、GAN、VAE、DDPM、SDEdit の5節。</p>
     </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 Stable Diffusion で画像生成</h3>
+    <div class="code-block">
+<span class="keyword">from</span> diffusers <span class="keyword">import</span> StableDiffusionPipeline
+<span class="keyword">import</span> torch
+
+pipe = StableDiffusionPipeline.from_pretrained(
+    <span class="string">"stable-diffusion-v1-5/stable-diffusion-v1-5"</span>,
+    torch_dtype=torch.float16
+).to(<span class="string">"cuda"</span>)
+
+img = pipe(
+    prompt=<span class="string">"a serene Japanese garden in autumn, ukiyo-e style"</span>,
+    negative_prompt=<span class="string">"low quality, blurry"</span>,
+    num_inference_steps=<span class="builtin">50</span>,
+    guidance_scale=<span class="builtin">7.5</span>,
+    height=<span class="builtin">512</span>, width=<span class="builtin">512</span>
+).images[<span class="builtin">0</span>]
+img.save(<span class="string">"output.png"</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 GAN スクラッチ</h3>
+    <div class="code-block">
+<span class="keyword">import</span> torch
+<span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn
+
+<span class="keyword">class</span> Generator(nn.Module):
+    <span class="keyword">def</span> __init__(<span class="builtin">self</span>, z_dim=<span class="builtin">100</span>, img_dim=<span class="builtin">784</span>):
+        <span class="builtin">super</span>().__init__()
+        <span class="builtin">self</span>.net = nn.Sequential(
+            nn.Linear(z_dim, <span class="builtin">256</span>), nn.LeakyReLU(<span class="builtin">0.2</span>),
+            nn.Linear(<span class="builtin">256</span>, <span class="builtin">512</span>), nn.LeakyReLU(<span class="builtin">0.2</span>),
+            nn.Linear(<span class="builtin">512</span>, img_dim), nn.Tanh())
+    <span class="keyword">def</span> forward(<span class="builtin">self</span>, z): <span class="keyword">return</span> <span class="builtin">self</span>.net(z)
+
+<span class="keyword">class</span> Discriminator(nn.Module):
+    <span class="keyword">def</span> __init__(<span class="builtin">self</span>, img_dim=<span class="builtin">784</span>):
+        <span class="builtin">super</span>().__init__()
+        <span class="builtin">self</span>.net = nn.Sequential(
+            nn.Linear(img_dim, <span class="builtin">512</span>), nn.LeakyReLU(<span class="builtin">0.2</span>),
+            nn.Linear(<span class="builtin">512</span>, <span class="builtin">256</span>), nn.LeakyReLU(<span class="builtin">0.2</span>),
+            nn.Linear(<span class="builtin">256</span>, <span class="builtin">1</span>), nn.Sigmoid())
+    <span class="keyword">def</span> forward(<span class="builtin">self</span>, x): <span class="keyword">return</span> <span class="builtin">self</span>.net(x)
+
+<span class="comment"># min-max ゲーム学習</span>
+G, D = Generator(), Discriminator()
+opt_g = torch.optim.Adam(G.parameters(), lr=<span class="builtin">2e-4</span>)
+opt_d = torch.optim.Adam(D.parameters(), lr=<span class="builtin">2e-4</span>)
+bce = nn.BCELoss()
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 VAE 実装</h3>
+    <div class="code-block">
+<span class="keyword">class</span> VAE(nn.Module):
+    <span class="keyword">def</span> __init__(<span class="builtin">self</span>, x_dim=<span class="builtin">784</span>, z_dim=<span class="builtin">20</span>):
+        <span class="builtin">super</span>().__init__()
+        <span class="builtin">self</span>.encoder = nn.Sequential(nn.Linear(x_dim, <span class="builtin">400</span>), nn.ReLU())
+        <span class="builtin">self</span>.fc_mu = nn.Linear(<span class="builtin">400</span>, z_dim)
+        <span class="builtin">self</span>.fc_logvar = nn.Linear(<span class="builtin">400</span>, z_dim)
+        <span class="builtin">self</span>.decoder = nn.Sequential(nn.Linear(z_dim, <span class="builtin">400</span>), nn.ReLU(),
+                                     nn.Linear(<span class="builtin">400</span>, x_dim), nn.Sigmoid())
+    
+    <span class="keyword">def</span> reparameterize(<span class="builtin">self</span>, mu, logvar):
+        std = torch.exp(<span class="builtin">0.5</span> * logvar)
+        eps = torch.randn_like(std)
+        <span class="keyword">return</span> mu + eps * std
+    
+    <span class="keyword">def</span> forward(<span class="builtin">self</span>, x):
+        h = <span class="builtin">self</span>.encoder(x)
+        mu, logvar = <span class="builtin">self</span>.fc_mu(h), <span class="builtin">self</span>.fc_logvar(h)
+        z = <span class="builtin">self</span>.reparameterize(mu, logvar)
+        <span class="keyword">return</span> <span class="builtin">self</span>.decoder(z), mu, logvar
+
+<span class="keyword">def</span> vae_loss(recon, x, mu, logvar):
+    bce = nn.functional.binary_cross_entropy(recon, x, reduction=<span class="string">'sum'</span>)
+    kld = -<span class="builtin">0.5</span> * torch.sum(<span class="builtin">1</span> + logvar - mu.pow(<span class="builtin">2</span>) - logvar.exp())
+    <span class="keyword">return</span> bce + kld
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 ControlNet 利用</h3>
+    <div class="code-block">
+<span class="keyword">from</span> diffusers <span class="keyword">import</span> StableDiffusionControlNetPipeline, ControlNetModel
+<span class="keyword">from</span> controlnet_aux <span class="keyword">import</span> CannyDetector
+
+<span class="comment"># Canny エッジ検出</span>
+canny = CannyDetector()
+edge_image = canny(input_image)
+
+<span class="comment"># エッジを参照した画像生成</span>
+controlnet = ControlNetModel.from_pretrained(<span class="string">"lllyasviel/sd-controlnet-canny"</span>)
+pipe = StableDiffusionControlNetPipeline.from_pretrained(
+    <span class="string">"runwayml/stable-diffusion-v1-5"</span>, controlnet=controlnet
+).to(<span class="string">"cuda"</span>)
+
+result = pipe(
+    prompt=<span class="string">"a futuristic city, neon lights"</span>,
+    image=edge_image,
+    num_inference_steps=<span class="builtin">30</span>
+).images[<span class="builtin">0</span>]
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 Diffusion LoRA 学習</h3>
+    <div class="code-block">
+<span class="comment"># Hugging Face Diffusers の LoRA 学習スクリプト</span>
+<span class="comment"># 約 10-30枚の画像で特定スタイル/キャラ学習</span>
+
+accelerate launch train_dreambooth_lora.py \
+    --pretrained_model_name_or_path=<span class="string">"runwayml/stable-diffusion-v1-5"</span> \
+    --instance_data_dir=<span class="string">"./training_images"</span> \
+    --instance_prompt=<span class="string">"a photo of sks dog"</span> \
+    --resolution=<span class="builtin">512</span> \
+    --train_batch_size=<span class="builtin">1</span> \
+    --gradient_accumulation_steps=<span class="builtin">1</span> \
+    --learning_rate=<span class="builtin">1e-4</span> \
+    --max_train_steps=<span class="builtin">1000</span> \
+    --output_dir=<span class="string">"./lora-output"</span>
+
+<span class="comment"># 学習後、数MBのLoRAをロードして使用</span>
+pipe.load_lora_weights(<span class="string">"./lora-output"</span>)
+img = pipe(<span class="string">"sks dog wearing sunglasses"</span>).images[<span class="builtin">0</span>]
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>GANモード崩壊、Diffusionステップ、CLIP-guidedの3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — GAN のモード崩壊</h4>
+      <div class="sim-output">
+&gt;&gt; MNIST GAN を素朴に学習<br>
+<br>
+[初期] 全クラスのノイズを生成<br>
+[1000 step] 数字 3,5,8 のみ生成（モード崩壊開始）<br>
+[5000 step] 数字 8 ばかり生成（厳しいモード崩壊）<br>
+<br>
+&gt;&gt; G が D を騙しやすいモードに局所最適<br>
+&gt;&gt; 他クラスは生成不能、多様性消失<br>
+<br>
+[対策] WGAN-GP, Mini-batch Discrimination, Spectral Norm<br>
+　 改善後 → 10クラス均等に生成可能
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — Diffusion のサンプリングステップ</h4>
+      <div class="sim-output">
+&gt;&gt; Stable Diffusion で同プロンプト、ステップ数を変える<br>
+<br>
+ステップ 10:　 ノイジー、構図確定せず<br>
+ステップ 20:　 構図見える、細部不安定<br>
+ステップ 30:　 実用品質<br>
+ステップ 50:　 高品質、デフォルト<br>
+ステップ 100: わずかに改善、計算コスト2倍<br>
+ステップ 250: 通常 50 と差なし<br>
+<br>
+&gt;&gt; DDIM, DPM-Solver などで 10-20 ステップでも高品質に<br>
+&gt;&gt; Distillation で 1-4 ステップ生成も実用化（SDXL Turbo）
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — Classifier-Free Guidance の効果</h4>
+      <div class="sim-output">
+&gt;&gt; Stable Diffusion、guidance_scale を変化<br>
+<br>
+scale 1.0: プロンプトをあまり聞かない、自由な生成<br>
+scale 7.5: バランス（デフォルト）<br>
+scale 15:　プロンプトに忠実、品質やや低下<br>
+scale 30:　過剰、不自然なアーティファクト<br>
+<br>
+&gt;&gt; CFG は条件付き/無条件の差を増幅<br>
+&gt;&gt; 7-10 が typical、強いプロンプトに合わせて調整
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">GAN の基本構造は。</div>
+        <div class="p-choices">① エンコーダのみ　 ② Generator と Discriminator の敵対的学習　 ③ デコーダのみ　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Goodfellow 2014。Generator が偽画像、Discriminator が真偽判定、min-max ゲーム。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">GAN の典型的な問題で『多様性が失われる』現象を何と呼ぶか。</div>
+        <div class="p-choices">① 過学習　 ② モード崩壊（Mode Collapse）　 ③ 勾配消失　 ④ 不確実性</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Generator が騙しやすい一部モードに局所最適。WGAN-GP、Spectral Normalization、Mini-batch Discrimination で対策。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">VAE の損失関数 ELBO は何と何の組合せか。</div>
+        <div class="p-choices">① 再構成損失 + KL ダイバージェンス（事前との距離）　 ② MSE のみ　 ③ Hinge　 ④ 敵対的損失</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> ELBO = 再構成 - KL(q(z|x)||p(z))。再構成精度と潜在分布の事前 N(0,I) への近さのバランス。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">Diffusion Model の学習は何を予測するか。</div>
+        <div class="p-choices">① ラベル　 ② 画像に加えられたノイズ（または score = ∇log p(x)）　 ③ クラスタ　 ④ Bounding Box</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 各タイムステップで NN がノイズを予測し、それを差し引いて x_{t-1} を得る。これを T 回繰り返してノイズから画像復元。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">Stable Diffusion の核心技術は。</div>
+        <div class="p-choices">① ピクセル空間のDiffusion　 ② Latent Diffusion（VAEで圧縮した潜在空間で Diffusion）　 ③ GAN　 ④ Flow</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Rombach 2022。512×512 を 64×64 潜在に圧縮し、計算量1/64に。コンシューマGPUで動作可能に。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">ControlNet の役割は。</div>
+        <div class="p-choices">① 高速化　 ② Stable Diffusion に追加制約（姿勢、深度、エッジ）を与えて生成を制御　 ③ パラメータ削減　 ④ 学習率自動</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Zhang 2023。骨格→人物、線画→塗り絵、深度→立体感のある画像など。生成の制御性を劇的向上。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">『Classifier-Free Guidance（CFG）』の役割は。</div>
+        <div class="p-choices">① 分類器学習　 ② 条件付き/無条件のスコア差を増幅、テキスト指示への忠実度を高める　 ③ クラスタ　 ④ 学習率</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ho 2022。guidance_scale パラメータで強さを調整。7-10 が典型、高すぎると過剰でアーティファクト発生。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">DALL-E 2 の主な構成要素は。</div>
+        <div class="p-choices">① CNN のみ　 ② CLIP（テキスト・画像埋め込み）＋ Diffusion （prior + decoder）　 ③ RNN のみ　 ④ K-means</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CLIP埋め込みを介してテキストと画像を結ぶ、unCLIP アーキテクチャ。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">画像生成評価の代表的指標『FID』は何を測るか。</div>
+        <div class="p-choices">① 学習速度　 ② Inception 特徴量で実画像分布と生成画像分布の距離　 ③ クラス数　 ④ パラメータ数</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Fréchet Inception Distance。画像品質と多様性を一値に集約。低いほど良い。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">『CLIP Score』が評価するのは。</div>
+        <div class="p-choices">① 画像品質のみ　 ② テキストプロンプトと生成画像の意味的整合性　 ③ 計算速度　 ④ ファイルサイズ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CLIP モデルの埋め込み類似度。プロンプト忠実度の標準指標。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">Sora や Veo は何のためのモデルか。</div>
+        <div class="p-choices">① 音楽生成　 ② 動画生成（テキスト→1分以上の高品質動画）　 ③ 顔認識　 ④ 文章生成</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> OpenAI Sora（2024）、Google Veo。Diffusion Transformer ベース、物理理解・長時間生成が特徴。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">Whisper（OpenAI）の用途は。</div>
+        <div class="p-choices">① 画像生成　 ② 多言語音声認識（STT）　 ③ TTS　 ④ 翻訳のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Speech-to-Text の多言語モデル。99言語対応、ノイズに頑健。オープンウェイト。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">VQ-VAE の特徴は。</div>
+        <div class="p-choices">① 連続潜在　 ② 離散コードブックで潜在表現、画像・音声生成や Tokenizer で活用　 ③ 線形変換　 ④ ノイズなし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 連続潜在を離散コードに量子化。Audio LM、画像 Tokenizer などで使用。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">Normalizing Flow の利点は。</div>
+        <div class="p-choices">① 厳密な尤度計算が可能（可逆変換）　 ② 高速生成　 ③ パラメータ少　 ④ 学習不要</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 可逆な変換 f: z → x を学習し、変数変換公式で厳密尤度。GANやVAEと違い密度評価可能。画像品質は Diffusion に劣る。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">Diffusion Models の高速化『Distillation』が達成するのは。</div>
+        <div class="p-choices">① 学習速度のみ　 ② 50ステップを 1-4 ステップに圧縮、リアルタイム生成可能に　 ③ パラメータ削減　 ④ 不可能</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 教師モデルから生徒モデルへの蒸留。SDXL Turbo、LCM などでリアルタイム画像生成（30fps）が可能に。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">LoRA を Diffusion に適用する利点は。</div>
+        <div class="p-choices">① 全パラメータ学習　 ② 10-100枚の画像で特定キャラ/スタイル学習、数MBで配布可能　 ③ 高速学習不可　 ④ 精度低下</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Civitai 等で大量のLoRA公開、コミュニティが活発。Stable Diffusion カスタマイズの主流。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">StyleGAN の特徴は。</div>
+        <div class="p-choices">① 全結合のみ　 ② スタイル（属性）と画像内容を分離、高解像度顔生成、潜在空間編集　 ③ 線形　 ④ RNN</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> NVIDIA、Karras 2019。ThisPersonDoesNotExist のあの顔。潜在空間の意味的編集（笑顔強度、年齢など）。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">音楽生成モデル MusicGen は何で学習されているか。</div>
+        <div class="p-choices">① 画像のみ　 ② 大量の楽曲とテキスト説明のペア、自己回帰モデル　 ③ ランダム　 ④ MIDI のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Meta、2023。テキスト→音楽の Transformer ベース。Suno、Udio などのサービスも類似アプローチ。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">生成 AI の社会的課題として該当しないのは。</div>
+        <div class="p-choices">① ディープフェイク　 ② 著作権　 ③ バイアス　 ④ 必ず物理法則を守る</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> 生成モデルは物理法則を必ずしも守らない（手指の数間違い、不自然な液体運動など）。Sora は改善したが完璧でない。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">Diffusion Model が現在 GAN を凌駕している主な理由は。</div>
+        <div class="p-choices">① 学習が速い　 ② 学習安定、高品質、多様性確保、テキスト条件付け容易、スケール可能　 ③ パラメータ少　 ④ メモリ少</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GANの不安定学習・モード崩壊の問題なし、Diffusion Transformer でスケール可能（Sora）。現代生成AIの主流。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">生成モデルの3大系譜 GAN、VAE、Diffusion を扱いました。GAN は敵対的学習、VAE は変分推論、Diffusion はノイズ除去。Stable Diffusion の Latent Diffusion、ControlNet、LoRA。Sora/Veo の動画生成、Whisper、MusicGen の音声・音楽生成。ハンズオンで Stable Diffusion、GAN、VAE、ControlNet、LoRA。シミュレーションで GAN モード崩壊、Diffusion ステップ、CFG。次章は強化学習 AlphaGo、DQN、PPO、AlphaZero へ。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="05-llm.html">← 章5</a></div>
-  <div><a href="07-rl.html">章7: 強化学習 →</a></div>
+  <div><a href="05-llm.html">← 章17: LLM</a></div>
+  <div><span class="ch-label">Chapter 18 of 24 · 応用編</span><br><span class="ch-title">生成モデル</span></div>
+  <div><a href="07-rl.html">章19: 強化学習 →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a><a href="../../../certifications/tokei.html">統計検定</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

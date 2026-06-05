@@ -3,305 +3,585 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章11 バックプロパゲーション — G検定 基本 — Swallow AI Academy</title>
-<meta name="description" content="G検定基本 章11：計算グラフ、連鎖律、自動微分、勾配消失・勾配爆発、ResNet 残差接続。深層学習を可能にした計算技法。">
+<title>章11 逆伝播 — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章11：連鎖律、計算グラフ、逆伝播、全結合層の勾配、活性化関数の勾配、Softmax+CE、SGD、自動微分、勾配消失/爆発、Gradient Checkpoint、Mixed Precisionを5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="index.html">基本</a>
-      <a href="../advanced/index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>Ch.11</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="index.html">基本</a><a href="../advanced/index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
     <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章11</div>
-    <h1>章11 — バックプロパゲーション<span class="en">Chapter 11 — Backpropagation</span></h1>
-    <p class="standfirst">バックプロパゲーションは <strong>多層NNの学習を可能にした</strong> 最重要アルゴリズムです。連鎖律を計算グラフ上で系統的に適用するだけ。PyTorch・TensorFlow・JAX の自動微分の中核でもあります。本章で「<strong>勾配がどう流れるか</strong>」が見えるようにします。</p>
+    <h1>章11 — 逆伝播<span class="en">Chapter 11 — Backpropagation</span></h1>
+    <p class="standfirst">1986年、Rumelhart・Hinton・Williams が <strong>逆伝播</strong>（Backpropagation）を実用化しました。これは『連鎖律を計算グラフ上で系統的に適用する』だけのアイデアですが、これにより<strong>多層NNの学習</strong>が可能になり、現代深層学習の扉が開きました。本章では、<strong>連鎖律</strong>、<strong>計算グラフ</strong>、<strong>逆伝播の数学</strong>、<strong>全結合層・活性化関数・Softmax+CE の勾配</strong>、<strong>SGD更新</strong>、<strong>自動微分</strong>、<strong>勾配消失/爆発</strong>、<strong>Gradient Checkpointing</strong>、<strong>Mixed Precision</strong> までを5部構成で扱います。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="10-nn-basics.html">← 章10: NN 基礎</a></div>
-  <div><span class="ch-label">Chapter 11 of 12</span><br><span class="ch-title">バックプロパゲーション</span></div>
-  <div><a href="12-nn-tricks.html">章12: 学習の工夫 →</a></div>
+  <div><a href="10-nn-basics.html">← 章10: NN基礎</a></div>
+  <div><span class="ch-label">Chapter 11 of 12 · 基本編</span><br><span class="ch-title">逆伝播</span></div>
+  <div><a href="12-nn-tricks.html">章12: NNの工夫 →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
     <h6>章11 目次</h6>
-    <a href="#graph">§1 計算グラフ</a>
-    <a href="#forward">§2 フォワードパス</a>
-    <a href="#backward">§3 バックワードパス</a>
-    <a href="#autodiff">§4 自動微分</a>
-    <a href="#vanish">§5 勾配消失・爆発</a>
-    <a href="#resnet">§6 ResNet 残差接続</a>
-    <a href="#tools">§7 PyTorch/TF/JAX</a>
-    <a href="#summary">§8 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
     <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 11</div>
-    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">勾配を、<br>逆向きに流す。</h2>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">連鎖律を、計算機に。<br>深層学習の心臓部。</h2>
+    <p class="article-lede">100万のパラメータを持つNNの、各パラメータに対する損失の偏微分を、どうやって計算するのでしょう。素朴に有限差分で計算すれば100万回の順伝播が必要 ── 実用不可能です。<strong>逆伝播</strong>は、たった1回の順伝播と1回の逆伝播で全パラメータの勾配を一気に計算します。この『計算量を1次オーダーに圧縮する』アイデアが、現代AIを可能にしました。</p>
 
-    <p>バックプロパゲーション（誤差逆伝播法）は1986年、Rumelhart, Hinton, Williams によって NN 研究にもたらされました（独立に複数の研究者が発見）。その本質は「<strong>連鎖律を計算グラフ上で系統的に適用する</strong>」だけ。</p>
-
-    <h2 id="graph"><span class="label">§1 / GRAPH</span>計算グラフ</h2>
-    <p>NN を <strong>「ノード（演算）」と「エッジ（テンソル）」のグラフ</strong> として表現します。</p>
-
-    <div class="figure">
-      <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="cga" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
-          </marker>
-        </defs>
-        <circle cx="40" cy="100" r="22" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="40" y="105" text-anchor="middle" font-size="13" fill="#0d1b2a">x</text>
-        <rect x="100" y="78" width="80" height="44" fill="#d4a017"/>
-        <text x="140" y="105" text-anchor="middle" font-size="12" fill="#0d1b2a">線形 W₁</text>
-        <line x1="62" y1="100" x2="98" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
-        <circle cx="220" cy="100" r="22" fill="#fff8f2" stroke="#0d1b2a"/>
-        <text x="220" y="105" text-anchor="middle" font-size="12" fill="#0d1b2a">z₁</text>
-        <line x1="182" y1="100" x2="198" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
-        <rect x="270" y="78" width="80" height="44" fill="#3a7d44"/>
-        <text x="310" y="105" text-anchor="middle" font-size="12" fill="#faf7f2">ReLU</text>
-        <line x1="242" y1="100" x2="268" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
-        <circle cx="390" cy="100" r="22" fill="#fff8f2" stroke="#0d1b2a"/>
-        <text x="390" y="105" text-anchor="middle" font-size="13" fill="#0d1b2a">h</text>
-        <line x1="352" y1="100" x2="368" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
-        <rect x="440" y="78" width="80" height="44" fill="#d4a017"/>
-        <text x="480" y="105" text-anchor="middle" font-size="12" fill="#0d1b2a">線形 W₂</text>
-        <line x1="412" y1="100" x2="438" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
-        <circle cx="560" cy="100" r="22" fill="#fff8f2" stroke="#0d1b2a"/>
-        <text x="560" y="105" text-anchor="middle" font-size="12" fill="#0d1b2a">ŷ</text>
-        <line x1="522" y1="100" x2="538" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
-        <rect x="610" y="78" width="80" height="44" fill="#b8431f"/>
-        <text x="650" y="105" text-anchor="middle" font-size="12" fill="#faf7f2">損失 L</text>
-        <line x1="582" y1="100" x2="608" y2="100" stroke="#0d1b2a" marker-end="url(#cga)"/>
-        <text x="40" y="160" font-size="11" font-weight="bold" fill="#3a7d44">→ 順伝播：左から右</text>
-        <text x="450" y="160" font-size="11" font-weight="bold" fill="#b8431f">← 逆伝播：右から左（勾配が流れる）</text>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 11.1</span> 2層 MLP の計算グラフ。順伝播で値を計算、逆伝播で勾配を計算。中間値（h, z₁, ŷ）は両方で再利用される。</div>
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>連鎖律・計算グラフ・逆伝播・全結合層・活性化関数・Softmax+CE・SGD・自動微分・勾配消失・計算量の10節。</p>
     </div>
 
-    <h2 id="forward"><span class="label">§2 / FORWARD</span>フォワードパス（順伝播）</h2>
-    <p>入力 x から損失 L まで、順に値を計算。<strong>途中の中間値（活性化）はすべて保存</strong>（バックワードで使うため）。</p>
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 連鎖律 — 微分の核心</h3>
+    <div class="formula">
+y = f(g(h(x))) のとき　 dy/dx = (df/dg)·(dg/dh)·(dh/dx)<br><br>
+NN は f∘g∘h∘... の合成関数。連鎖律で各パラメータへの勾配を計算。
+    </div>
+
     <div class="example">
-      <div class="example-title">例：2層 MLP の順伝播</div>
-      z₁ = W₁ x + b₁<br>
-      h = ReLU(z₁) = max(0, z₁)<br>
-      z₂ = W₂ h + b₂<br>
-      ŷ = σ(z₂)（出力 sigmoid）<br>
-      L = -[y log ŷ + (1-y) log(1-ŷ)]（CE 損失）
+      <div class="example-title">▎ 簡単な例</div>
+      L = (Wx + b - y_target)² で W に対する勾配は<br>
+      ∂L/∂W = 2(Wx + b - y_target) · x　 (連鎖律の適用)
     </div>
 
-    <h2 id="backward"><span class="label">§3 / BACK</span>バックワードパス（逆伝播）</h2>
-    <p>出力側から入力側へ、各パラメータについて勾配を計算。<strong>連鎖律</strong>を機械的に適用：</p>
-    <div class="formula">
-      ∂L/∂W₂ = ∂L/∂ŷ · ∂ŷ/∂z₂ · ∂z₂/∂W₂<br>
-      ∂L/∂W₁ = ∂L/∂ŷ · ∂ŷ/∂z₂ · ∂z₂/∂h · ∂h/∂z₁ · ∂z₁/∂W₁
-    </div>
-    <p>共通部分（左から右に並ぶ最初の項）を <strong>再利用</strong> するのが鍵。これにより：</p>
-    <ul>
-      <li>勾配計算コスト = 順伝播の数倍程度</li>
-      <li>パラメータ数が数十億あっても全て一回で計算できる</li>
-    </ul>
-    <p>これがなければ深層学習は計算量的に不可能でした。</p>
-
-    <h3>3.1 アルゴリズムの本質</h3>
-    <ol>
-      <li><strong>順伝播</strong>：入力から出力へ。すべての中間値を保存</li>
-      <li><strong>損失計算</strong>：L = L(ŷ, y)</li>
-      <li><strong>逆伝播</strong>：出力側から入力側へ ∂L/∂... を計算（連鎖律）</li>
-      <li><strong>更新</strong>：θ ← θ - η · ∂L/∂θ</li>
-    </ol>
-
-    <h2 id="autodiff"><span class="label">§4 / AUTODIFF</span>自動微分（AD）</h2>
-    <p>バックプロパゲーションを「計算グラフから勾配を機械的に計算する」一般的アルゴリズムにしたもの。<strong>PyTorch・TensorFlow・JAX の中核</strong>。</p>
-    <ul>
-      <li><strong>順モード AD</strong>：入力1つに対する出力多数の場合に効率的</li>
-      <li><strong>逆モード AD（バックプロパゲーションと同じ）</strong>：出力1つ（損失）に対する入力多数（パラメータ）の場合に効率的。<strong>深層学習はこちら</strong></li>
-    </ul>
-
-    <h2 id="vanish"><span class="label">§5 / VANISH</span>勾配消失・勾配爆発</h2>
+    <h3 style="margin-top:36px;">§1.2 計算グラフ — 順伝播の可視化</h3>
+    <p>各演算をノード、データの流れをエッジとする有向グラフ。順伝播は forward 方向で値計算、逆伝播は backward 方向で勾配計算。</p>
 
     <div class="figure">
-      <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
-        <text x="340" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">深層NNでの勾配の挙動</text>
-
-        <!-- Vanishing -->
-        <g transform="translate(0, 40)">
-          <text x="50" y="20" font-size="12" font-weight="bold" fill="#0d1b2a">勾配消失</text>
-          <text x="50" y="40" font-size="10" fill="#5a5f6a">層が深いほど勾配が指数的に減衰</text>
-          <text x="50" y="65" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L1:</text>
-          <line x1="100" y1="62" x2="600" y2="62" stroke="#b8431f" stroke-width="8" opacity="0.95"/>
-          <text x="50" y="90" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L5:</text>
-          <line x1="100" y1="87" x2="350" y2="87" stroke="#b8431f" stroke-width="5" opacity="0.6"/>
-          <text x="50" y="115" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L20:</text>
-          <line x1="100" y1="112" x2="160" y2="112" stroke="#b8431f" stroke-width="2" opacity="0.3"/>
-          <text x="180" y="115" font-size="10" fill="#5a5f6a">下層は学習しない！</text>
+      <svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 11.1 ／ COMPUTATIONAL GRAPH AND BACKPROP</text>
+        
+        <g transform="translate(60,80)">
+          <circle cx="0" cy="0" r="20" fill="#fff8f2" stroke="#0d1b2a"/>
+          <text x="0" y="5" text-anchor="middle" font-family="monospace" font-size="12" fill="#0d1b2a">x</text>
+          <text x="0" y="-30" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">入力</text>
         </g>
-
-        <!-- Exploding -->
-        <g transform="translate(0, 170)">
-          <text x="50" y="20" font-size="12" font-weight="bold" fill="#0d1b2a">勾配爆発</text>
-          <text x="50" y="40" font-size="10" fill="#5a5f6a">層が深いほど勾配が指数的に増大</text>
-          <text x="50" y="65" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L1:</text>
-          <line x1="100" y1="62" x2="180" y2="62" stroke="#b8431f" stroke-width="2"/>
-          <text x="50" y="90" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L5:</text>
-          <line x1="100" y1="87" x2="350" y2="87" stroke="#b8431f" stroke-width="5"/>
-          <text x="50" y="115" font-family="JetBrains Mono, monospace" font-size="11" fill="#b8431f">L20:</text>
-          <line x1="100" y1="112" x2="640" y2="112" stroke="#b8431f" stroke-width="14"/>
-          <text x="490" y="105" font-size="10" fill="#5a5f6a">発散・NaN</text>
+        
+        <g transform="translate(180,80)">
+          <rect x="-25" y="-20" width="50" height="40" fill="#b8431f" fill-opacity="0.2" stroke="#0d1b2a"/>
+          <text x="0" y="5" text-anchor="middle" font-family="monospace" font-size="11" fill="#0d1b2a">W·x</text>
+          <text x="0" y="-30" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">線形</text>
         </g>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 11.2</span> 勾配消失（小さい数を多数かけ続ける）と勾配爆発（大きい数を多数かけ続ける）。どちらも深い NN の学習を妨げる。</div>
-    </div>
-
-    <p>原因と対策：</p>
-    <table class="spec">
-      <tr><th>対策</th><th>効果</th></tr>
-      <tr><td><strong>ReLU 系活性化</strong></td><td>正領域で勾配 1。Sigmoid/Tanh のような飽和を回避</td></tr>
-      <tr><td><strong>He 初期化</strong>（ReLU用）／<strong>Xavier 初期化</strong>（Tanh用）</td><td>初期勾配のスケールを適切に</td></tr>
-      <tr><td><strong>残差接続（ResNet）</strong></td><td>勾配を直接下層に伝える</td></tr>
-      <tr><td><strong>BatchNorm / LayerNorm</strong></td><td>各層の入力分布を安定化</td></tr>
-      <tr><td><strong>勾配クリッピング</strong></td><td>勾配のノルムを閾値で抑制（特にRNN）</td></tr>
-    </table>
-
-    <h2 id="resnet"><span class="label">§6 / RESNET</span>ResNet：残差接続</h2>
-    <p>2015年、He らが提案した <strong>残差接続</strong> は、深層学習を実質的に「使い物にした」ブレークスルー。</p>
-    <div class="formula">y = F(x) + x</div>
-    <p>F(x) は普通の層変換。<strong>入力 x を出力に直接加える</strong>。</p>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg">
+        
+        <g transform="translate(300,80)">
+          <circle cx="0" cy="0" r="20" fill="#d4a017" fill-opacity="0.3" stroke="#0d1b2a"/>
+          <text x="0" y="5" text-anchor="middle" font-family="monospace" font-size="11" fill="#0d1b2a">+b</text>
+          <text x="0" y="-30" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">バイアス</text>
+        </g>
+        
+        <g transform="translate(420,80)">
+          <rect x="-25" y="-20" width="50" height="40" fill="#2e5577" fill-opacity="0.3" stroke="#0d1b2a"/>
+          <text x="0" y="5" text-anchor="middle" font-family="monospace" font-size="11" fill="#0d1b2a">σ</text>
+          <text x="0" y="-30" text-anchor="middle" font-family="monospace" font-size="10" fill="#5a5f6a">活性化</text>
+        </g>
+        
+        <g transform="translate(560,80)">
+          <circle cx="0" cy="0" r="25" fill="#b8431f" fill-opacity="0.4" stroke="#0d1b2a"/>
+          <text x="0" y="5" text-anchor="middle" font-family="monospace" font-size="11" fill="#0d1b2a">Loss</text>
+        </g>
+        
+        <line x1="80" y1="80" x2="155" y2="80" stroke="#0d1b2a" marker-end="url(#arrow)"/>
+        <line x1="205" y1="80" x2="280" y2="80" stroke="#0d1b2a" marker-end="url(#arrow)"/>
+        <line x1="320" y1="80" x2="395" y2="80" stroke="#0d1b2a" marker-end="url(#arrow)"/>
+        <line x1="445" y1="80" x2="535" y2="80" stroke="#0d1b2a" marker-end="url(#arrow)"/>
+        
+        <text x="350" y="50" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#0d1b2a">順伝播 →</text>
+        
+        <path d="M 535 110 Q 350 180 80 110" stroke="#b8431f" stroke-width="2" fill="none" stroke-dasharray="6 3"/>
+        <text x="300" y="200" text-anchor="middle" font-family="serif" font-size="12" font-weight="700" fill="#b8431f">← 逆伝播（勾配を出力側から入力側へ）</text>
+        
         <defs>
-          <marker id="ra1" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0d1b2a"/>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#0d1b2a"/>
           </marker>
         </defs>
-        <!-- Input -->
-        <circle cx="80" cy="120" r="22" fill="#fff8f2" stroke="#0d1b2a" stroke-width="2"/>
-        <text x="80" y="125" text-anchor="middle" font-size="13" fill="#0d1b2a">x</text>
-
-        <!-- F(x) path -->
-        <line x1="102" y1="120" x2="180" y2="120" stroke="#0d1b2a" stroke-width="2"/>
-        <rect x="180" y="98" width="100" height="44" fill="#d4a017"/>
-        <text x="230" y="125" text-anchor="middle" font-size="12" fill="#0d1b2a">層 F</text>
-        <line x1="280" y1="120" x2="360" y2="120" stroke="#0d1b2a" stroke-width="2"/>
-
-        <!-- Sum -->
-        <circle cx="380" cy="120" r="18" fill="#b8431f"/>
-        <text x="380" y="126" text-anchor="middle" font-size="18" font-weight="bold" fill="#faf7f2">+</text>
-        <line x1="398" y1="120" x2="480" y2="120" stroke="#0d1b2a" stroke-width="2" marker-end="url(#ra1)"/>
-        <text x="500" y="125" font-size="13" font-weight="bold" fill="#0d1b2a">y = F(x) + x</text>
-
-        <!-- Skip connection -->
-        <path d="M 80 142 L 80 200 L 380 200 L 380 138" stroke="#3a7d44" stroke-width="2.5" fill="none" stroke-dasharray="5,3" marker-end="url(#ra1)"/>
-        <text x="220" y="220" text-anchor="middle" font-size="12" fill="#3a7d44" font-weight="bold">スキップ接続（残差接続）</text>
-        <text x="220" y="55" text-anchor="middle" font-size="11" fill="#5a5f6a">逆伝播時：勾配は直接 x へ流れる</text>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 11.3</span> ResNet の残差ブロック。y = F(x) + x という単純な式が、勾配を <strong>F を通らずに直接下層へ</strong> 伝える経路を作る。これにより152層、最終的に1000層超の NN が学習可能に。</div>
+      <div class="figure-caption"><span class="figure-num">FIG 11.1</span> ／ 計算グラフ。順伝播で各ノードの値を計算、逆伝播で出力側から連鎖律により各エッジの勾配を計算。これがPyTorch/TensorFlowの内部動作。</div>
     </div>
 
-    <p>残差接続による勾配の流れ：</p>
+    <h3 style="margin-top:36px;">§1.3 逆伝播の基本原理</h3>
     <div class="formula">
-      ∂L/∂x = ∂L/∂y · ∂y/∂x = ∂L/∂y · (∂F/∂x + 1)
+入力 x、出力 L、ある中間量 z があるとき：<br>
+　 ∂L/∂x = (∂L/∂z) · (∂z/∂x)<br><br>
+各層について『下流から流れてきた勾配』に『局所微分』を掛けて『上流に流す』
     </div>
-    <p><strong>「+ 1」</strong> の項により、F の勾配がゼロに近くても勾配が消えない。これが ResNet を「最重要発明の一つ」と呼ばせる理由。</p>
 
-    <h2 id="tools"><span class="label">§7 / TOOLS</span>PyTorch / TensorFlow / JAX</h2>
-    <p>これらのフレームワークの核心は <strong>自動微分エンジン</strong>。ユーザは順伝播を書くだけで、逆伝播は自動的に計算されます。</p>
+    <h3 style="margin-top:36px;">§1.4 全結合層の逆伝播</h3>
+    <div class="formula">
+順伝播：z = Wx + b （x: dᵢₙ, W: dₒᵤₜ×dᵢₙ, z: dₒᵤₜ）<br><br>
+逆伝播：上流勾配 ∂L/∂z = δ が与えられたとき<br>
+　 ∂L/∂W = δ · xᵀ　 (外積、形状: dₒᵤₜ×dᵢₙ)<br>
+　 ∂L/∂b = δ　　 (そのまま)<br>
+　 ∂L/∂x = Wᵀ · δ　 (下流へ流す)
+    </div>
+
+    <h3 style="margin-top:36px;">§1.5 活性化関数の逆伝播</h3>
     <table class="spec">
-      <tr><th>PyTorch</th><td>動的計算グラフ（define-by-run）。研究で支配的。Meta 開発</td></tr>
-      <tr><th>TensorFlow</th><td>静的グラフ（v1）→ Eager Execution（v2）。Google 開発、産業で広く使用</td></tr>
-      <tr><th>JAX</th><td>関数型・XLAコンパイル・自動微分。研究で台頭。Google 開発</td></tr>
+      <tr><th>関数</th><th>微分</th></tr>
+      <tr><td>Sigmoid σ(x)</td><td>σ(x)(1-σ(x))</td></tr>
+      <tr><td>Tanh</td><td>1 - tanh²(x)</td></tr>
+      <tr><td>ReLU</td><td>x&gt;0 で 1、x≤0 で 0</td></tr>
+      <tr><td>Leaky ReLU(α)</td><td>x&gt;0 で 1、x≤0 で α</td></tr>
+      <tr><td>GELU</td><td>Φ(x) + x·φ(x)</td></tr>
+      <tr><td>Softmax</td><td>Jacobian J_ij = pᵢ(δᵢⱼ - pⱼ)</td></tr>
     </table>
 
-    <h2 id="summary"><span class="label">§8 / SUMMARY</span>章のまとめ</h2>
+    <h3 style="margin-top:36px;">§1.6 Softmax+CE の合成勾配 — 美しい単純化</h3>
+    <div class="formula">
+順伝播：p = softmax(z),　 L = -Σ yᵢ log pᵢ<br><br>
+逆伝播（logit z に対する勾配）：<br>
+　 ∂L/∂z = p - y　 (Softmax+CE 合体の場合)<br><br>
+※ Softmax と CE を別々に微分するより圧倒的に簡潔・安定<br>
+　 これが NN 分類の計算効率の根拠
+    </div>
+
+    <h3 style="margin-top:36px;">§1.7 パラメータ更新（SGD）</h3>
+    <div class="formula">
+θ ← θ - η · ∂L/∂θ<br><br>
+SGD：単純な勾配降下、学習率 η<br>
+Momentum：v ← β v + ∂L/∂θ, θ ← θ - η v<br>
+Adam：1次・2次モーメントの推定（章4で詳細）<br>
+AdamW：Adam + weight decay 分離（LLM学習標準）
+    </div>
+
+    <h3 style="margin-top:36px;">§1.8 自動微分（Auto-diff）</h3>
     <table class="spec">
-      <tr><th>1</th><td>計算グラフ：演算をノード、テンソルをエッジで表現</td></tr>
-      <tr><th>2</th><td>順伝播：入力 → 損失。中間値はすべて保存</td></tr>
-      <tr><th>3</th><td>逆伝播：損失 → パラメータ。連鎖律を系統的に適用</td></tr>
-      <tr><th>4</th><td>共通部分の再利用で計算コスト = 順伝播の定数倍</td></tr>
-      <tr><th>5</th><td>自動微分（AD）：逆モードが深層学習の基盤</td></tr>
-      <tr><th>6</th><td>勾配消失：層が深いと小さい数を掛け続けて勾配 → 0</td></tr>
-      <tr><th>7</th><td>勾配爆発：大きい数を掛け続けて勾配 → ∞</td></tr>
-      <tr><th>8</th><td>対策：ReLU、適切な初期化、ResNet、Normalization、勾配クリップ</td></tr>
-      <tr><th>9</th><td>ResNet の残差接続 y = F(x) + x が深層化を可能に</td></tr>
-      <tr><th>10</th><td>PyTorch/TF/JAX の核心は自動微分エンジン</td></tr>
+      <tr><th>モード</th><th>計算量</th><th>用途</th></tr>
+      <tr><td>Forward mode</td><td>O(入力数)</td><td>少入力・多出力（Jacobian-vector）</td></tr>
+      <tr><td>Reverse mode</td><td>O(出力数)</td><td>多入力・少出力（NN学習、損失1つ）</td></tr>
+    </table>
+    <p>NN では reverse mode が標準（パラメータ数 ≫ 出力数 1）。PyTorch, TensorFlow, JAX が実装。</p>
+
+    <h3 style="margin-top:36px;">§1.9 勾配消失・勾配爆発</h3>
+    <div class="formula">
+深層NN の連鎖律で、L 層の勾配は<br>
+　 ∂L/∂x = (∂z_L/∂x) = J_L · J_{L-1} · ... · J_1<br><br>
+J の固有値が &lt; 1 → 勾配消失（深層で 0 に）<br>
+J の固有値が &gt; 1 → 勾配爆発（深層で発散）<br><br>
+<strong>対策</strong>　 ReLU、適切な初期化、BatchNorm、残差接続、Gradient Clipping、LSTM のセル
+    </div>
+
+    <h3 style="margin-top:36px;">§1.10 計算量とメモリ</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>計算量</strong>：順伝播 O(N)、逆伝播 O(N)。合計でも O(N) パラメータ数の定数倍。</li>
+      <li><strong>メモリ</strong>：順伝播の中間活性化を全て保存（O(L·B·D)：層数×バッチ×次元）。これが大規模NN のメモリ消費の主因。</li>
+    </ul>
+
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>計算グラフ最適化、Gradient Checkpointing、Mixed Precision、Distributed Training の4節。</p>
+    </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 計算グラフの最適化（Operator Fusion）</h3>
+    <p>『LayerNorm → Linear → GELU』のような連続演算を1つのカーネルに融合（Fused operations）。メモリ転送回数を削減、GPU 計算効率↑。FlashAttention などの最新Transformer実装で重要。</p>
+
+    <h3 style="margin-top:36px;">§2.2 Gradient Checkpointing — メモリと計算のトレードオフ</h3>
+    <p>順伝播の活性化を一部のみ保存、逆伝播時に再計算。メモリ O(L)→O(√L)、計算は1.5倍程度。LLM 学習で必須。</p>
+
+    <h3 style="margin-top:36px;">§2.3 Mixed Precision（FP16/BF16）</h3>
+    <p>計算は FP16/BF16、重みコピーは FP32 で精度を保つ。GPU メモリ半減、計算 2〜3 倍速。Loss Scaling で勾配のアンダーフロー対策。NVIDIA Apex、PyTorch AMP で標準。</p>
+
+    <h3 style="margin-top:36px;">§2.4 分散学習</h3>
+    <table class="spec">
+      <tr><th>並列化</th><th>説明</th></tr>
+      <tr><td>Data Parallel</td><td>各GPUに同じモデル、データを分割</td></tr>
+      <tr><td>Model Parallel</td><td>モデルを層で分割</td></tr>
+      <tr><td>Tensor Parallel</td><td>各層の行列を分割（Megatron）</td></tr>
+      <tr><td>Pipeline Parallel</td><td>層をパイプライン実行（GPipe）</td></tr>
+      <tr><td>ZeRO</td><td>オプティマイザ状態を分散（DeepSpeed）</td></tr>
     </table>
 
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>計算グラフとは何か、何のために描くか</li>
-        <li>順伝播で中間値を全て保存する必要がある理由</li>
-        <li>連鎖律を「∂L/∂W₁ = ...」の形で多層NNに書けるか</li>
-        <li>逆モード自動微分が深層学習で逆向きに勾配を計算する理由</li>
-        <li>勾配消失と勾配爆発の数学的原因</li>
-        <li>ReLU が勾配消失を緩和する理由</li>
-        <li>He 初期化と Xavier 初期化はどんなときに使い分けるか</li>
-        <li>ResNet の y = F(x) + x がなぜ勾配を直接流せるのか</li>
-        <li>勾配クリッピングがどんな場面で必要か</li>
-        <li>PyTorch・TensorFlow・JAX の主な違い</li>
-      </ol>
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>NumPy逆伝播、PyTorch自動微分、カスタムbackward、勾配チェック、勾配可視化の5節。</p>
     </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 NumPyでスクラッチ逆伝播</h3>
+    <div class="code-block">
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+
+<span class="comment"># 2層NN: x → Linear → ReLU → Linear → Softmax+CE</span>
+<span class="keyword">def</span> forward(x, y, W1, b1, W2, b2):
+    z1 = x @ W1 + b1
+    a1 = np.maximum(<span class="builtin">0</span>, z1)      <span class="comment"># ReLU</span>
+    z2 = a1 @ W2 + b2
+    e = np.exp(z2 - z2.max(axis=<span class="builtin">1</span>, keepdims=<span class="keyword">True</span>))
+    p = e / e.sum(axis=<span class="builtin">1</span>, keepdims=<span class="keyword">True</span>)  <span class="comment"># Softmax</span>
+    loss = -np.log(p[<span class="builtin">range</span>(<span class="builtin">len</span>(y)), y]).mean()
+    cache = (x, z1, a1, p, y)
+    <span class="keyword">return</span> loss, cache
+
+<span class="keyword">def</span> backward(cache):
+    x, z1, a1, p, y = cache
+    N = <span class="builtin">len</span>(y)
+    
+    <span class="comment"># Softmax+CE: dL/dz2 = (p - one_hot(y)) / N</span>
+    dz2 = p.copy()
+    dz2[<span class="builtin">range</span>(N), y] -= <span class="builtin">1</span>
+    dz2 /= N
+    
+    dW2 = a1.T @ dz2
+    db2 = dz2.sum(axis=<span class="builtin">0</span>)
+    da1 = dz2 @ W2.T
+    
+    dz1 = da1 * (z1 &gt; <span class="builtin">0</span>)  <span class="comment"># ReLU derivative</span>
+    dW1 = x.T @ dz1
+    db1 = dz1.sum(axis=<span class="builtin">0</span>)
+    
+    <span class="keyword">return</span> dW1, db1, dW2, db2
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 PyTorch 自動微分</h3>
+    <div class="code-block">
+<span class="keyword">import</span> torch
+
+x = torch.tensor([<span class="builtin">2.0</span>], requires_grad=<span class="keyword">True</span>)
+y = x ** <span class="builtin">3</span> + <span class="builtin">2</span> * x ** <span class="builtin">2</span> + <span class="builtin">1</span>  <span class="comment"># y = x³ + 2x² + 1</span>
+y.backward()
+print(x.grad)  <span class="comment"># 3·4 + 2·2·2 = 12 + 8 = 20 ✓</span>
+
+<span class="comment"># NN学習でも同じ仕組み</span>
+W = torch.randn(<span class="builtin">3</span>, requires_grad=<span class="keyword">True</span>)
+x = torch.tensor([<span class="builtin">1.</span>, <span class="builtin">2.</span>, <span class="builtin">3.</span>])
+y_target = torch.tensor(<span class="builtin">5.</span>)
+loss = ((W @ x) - y_target) ** <span class="builtin">2</span>
+loss.backward()
+print(<span class="string">f"勾配 W: {W.grad}"</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 カスタム backward 実装</h3>
+    <div class="code-block">
+<span class="keyword">class</span> MyReLU(torch.autograd.Function):
+    <span class="keyword">@staticmethod</span>
+    <span class="keyword">def</span> forward(ctx, x):
+        ctx.save_for_backward(x)
+        <span class="keyword">return</span> x.clamp(<span class="builtin">min</span>=<span class="builtin">0</span>)
+    
+    <span class="keyword">@staticmethod</span>
+    <span class="keyword">def</span> backward(ctx, grad_output):
+        x, = ctx.saved_tensors
+        grad_input = grad_output.clone()
+        grad_input[x &lt; <span class="builtin">0</span>] = <span class="builtin">0</span>
+        <span class="keyword">return</span> grad_input
+
+<span class="comment"># 使用</span>
+x = torch.randn(<span class="builtin">5</span>, requires_grad=<span class="keyword">True</span>)
+y = MyReLU.apply(x).sum()
+y.backward()
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 勾配チェック（Gradient Check）</h3>
+    <div class="code-block">
+<span class="comment"># 解析勾配 vs 数値微分</span>
+<span class="keyword">def</span> numerical_grad(f, x, eps=<span class="builtin">1e-5</span>):
+    grad = np.zeros_like(x)
+    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="builtin">range</span>(x.size):
+        idx = np.unravel_index(i, x.shape)
+        x[idx] += eps; fp = f(x)
+        x[idx] -= <span class="builtin">2</span>*eps; fm = f(x)
+        x[idx] += eps
+        grad[idx] = (fp - fm) / (<span class="builtin">2</span>*eps)
+    <span class="keyword">return</span> grad
+
+<span class="comment"># 解析勾配と比較。差が 1e-6 以下なら正しい</span>
+analytical = my_backward(x)
+numerical = numerical_grad(my_forward, x)
+error = np.max(np.abs(analytical - numerical))
+print(<span class="string">f"勾配誤差: {error}"</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 勾配の可視化</h3>
+    <div class="code-block">
+<span class="comment"># 各層の勾配ノルムを記録</span>
+<span class="keyword">def</span> log_grad_norms(model):
+    <span class="keyword">return</span> {n: p.grad.norm().item() <span class="keyword">for</span> n, p <span class="keyword">in</span> model.named_parameters() 
+            <span class="keyword">if</span> p.grad <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>}
+
+<span class="comment"># 学習中の勾配ノルムをプロット</span>
+<span class="comment"># 入力側で勾配が小さければ勾配消失、大きければ勾配爆発</span>
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>連鎖律手計算、勾配消失観察、Adamの効果の3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — 連鎖律の手計算</h4>
+      <div class="sim-output">
+&gt;&gt; y = (x² + 3x)² で x=2 のときの dy/dx<br>
+<br>
+合成関数：g(x) = x² + 3x、 y = g²<br>
+　 dy/dg = 2g = 2(4+6) = 20<br>
+　 dg/dx = 2x + 3 = 7<br>
+　 dy/dx = (dy/dg)·(dg/dx) = 20 · 7 = 140<br>
+<br>
+[PyTorch で確認]<br>
+　 x = torch.tensor(2.0, requires_grad=True)<br>
+　 y = (x**2 + 3*x)**2<br>
+　 y.backward()<br>
+　 x.grad → 140.0 ✓<br>
+<br>
+&gt;&gt; 連鎖律は単純な掛け算、これを自動化するのが auto-diff
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — 勾配消失の観察</h4>
+      <div class="sim-output">
+&gt;&gt; 20層NN、Sigmoid活性化で各層の勾配ノルム<br>
+<br>
+Layer 20 (出力)　: ||grad|| = 0.952<br>
+Layer 18:　　　　: ||grad|| = 0.180<br>
+Layer 15:　　　　: ||grad|| = 0.0078<br>
+Layer 12:　　　　: ||grad|| = 0.00012<br>
+Layer  9:　　　　: ||grad|| = 1.8e-6<br>
+Layer  6:　　　　: ||grad|| = 3.0e-8<br>
+Layer  3:　　　　: ||grad|| = 5.1e-10<br>
+Layer  1 (入力)　: ||grad|| = 8.5e-12<br>
+<br>
+&gt;&gt; 出力から入力で勾配が10億倍小さく<br>
+&gt;&gt; ReLU + BatchNorm + 残差接続で解決
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — オプティマイザ比較（収束速度）</h4>
+      <div class="sim-output">
+&gt;&gt; MNIST、3層MLP、20エポック学習<br>
+<br>
+SGD (lr=0.01):　　   Final acc=92.3% (収束遅い)<br>
+SGD+Mom (lr=0.01):  Final acc=94.8%<br>
+Adam (lr=1e-3):　　 Final acc=97.2% (早期収束)<br>
+AdamW (lr=1e-3):　  Final acc=97.5% (汎化やや↑)<br>
+LION (lr=1e-4):　　 Final acc=97.0% (メモリ半分)<br>
+<br>
+&gt;&gt; Adam系が NN 学習のデフォルト<br>
+&gt;&gt; LLM は AdamW、画像は SGD+Momentum も健在
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">逆伝播の数学的核心は。</div>
+        <div class="p-choices">① 線形回帰　 ② 連鎖律（chain rule）を計算グラフ上で系統的に適用　 ③ ランダム　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> dy/dx = (dy/du)(du/dx) を多層に適用、計算グラフのbackwardで自動化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">逆伝播を実用化した1986年の論文の著者は。</div>
+        <div class="p-choices">① Turing　 ② Rumelhart, Hinton, Williams　 ③ Bengio　 ④ LeCun</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Nature論文『Learning representations by back-propagating errors』。多層NNの実用化を可能にした歴史的論文。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">100万パラメータNNで全勾配を計算するのに必要な順伝播・逆伝播の回数は。</div>
+        <div class="p-choices">① 100万回　 ② 順伝播1回 + 逆伝播1回（合計でも O(N) パラメータ数）　 ③ 1000回　 ④ ゼロ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> これが逆伝播の真価。素朴な有限差分なら100万倍のコスト。reverse-mode auto-diff の効率性。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">Sigmoid 関数の微分は。</div>
+        <div class="p-choices">① σ(x)　 ② σ(x)·(1-σ(x))　 ③ 1-σ(x)　 ④ x</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 美しい形。最大値は σ(0)·(1-σ(0)) = 0.25。これが勾配消失の主因。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">ReLU の微分は。</div>
+        <div class="p-choices">① 常に1　 ② x&gt;0で1、x≤0で0　 ③ x　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> x=0で厳密には微分不可能だが、実装で0または1を採用。シンプルさが計算効率に貢献。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">Softmax + CE の合成勾配が美しい形は。</div>
+        <div class="p-choices">① p+y　 ② p-y　 ③ p²　 ④ y²</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> logit z への ∂L/∂z = (p - y_onehot) / N。シンプル＆数値安定。NN分類の計算効率の根拠。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">全結合層 z = Wx + b で、上流勾配 δ = ∂L/∂z から得られる ∂L/∂W は。</div>
+        <div class="p-choices">① δ・x　 ② δ・xᵀ（外積）　 ③ Wδ　 ④ δ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 形状 dₒᵤₜ × dᵢₙ。バッチでは Σ δᵢ·xᵢᵀ。∂L/∂b = δ, ∂L/∂x = Wᵀδ。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">NN学習で reverse-mode 自動微分が使われる理由は。</div>
+        <div class="p-choices">① パラメータ数 ≫ 出力数（損失1つ）なので、forward-modeより遥かに効率的　 ② 唯一の方法　 ③ ランダム　 ④ メモリ少ない</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Forward は入力数に、Reverse は出力数に計算量が比例。NN は損失1つなので Reverse 一択。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">勾配消失の主因は。</div>
+        <div class="p-choices">① 学習率　 ② 活性化関数の微分の積が層数で指数的に減衰（Sigmoid/Tanh）　 ③ パラメータ数　 ④ データ量</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Sigmoid 微分最大 0.25、L層で 0.25^L。10層で 1e-6。ReLU、BN、ResNet で解決。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">勾配爆発の対処は。</div>
+        <div class="p-choices">① 学習率を上げる　 ② Gradient Clipping（勾配ノルムを上限でカット）　 ③ 何もしない　 ④ パラメータ増加</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RNN/Transformer で標準。||g|| &gt; threshold なら g ← g · threshold/||g||。閾値 1.0 が典型。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">SGD の更新式は。</div>
+        <div class="p-choices">① θ ← θ + η・∂L/∂θ　 ② θ ← θ - η・∂L/∂θ　 ③ θ ← ∂L/∂θ　 ④ θ ← η・θ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 勾配方向の逆（descent）に η（学習率）だけ動く。シンプルだが汎化が良いことがある。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">逆伝播でメモリを最も消費するのは。</div>
+        <div class="p-choices">① パラメータ　 ② オプティマイザ状態　 ③ 順伝播の中間活性化（逆伝播で必要）　 ④ 損失値</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 各層の出力（B × D）を逆伝播のために保存。L 層では O(L·B·D)。これが大規模NN のメモリ消費の主因。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">Gradient Checkpointing の効果は。</div>
+        <div class="p-choices">① 計算高速化　 ② 中間活性化を一部だけ保存し逆伝播で再計算、メモリ O(L)→O(√L)　 ③ 精度向上　 ④ パラメータ削減</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> メモリと計算のトレードオフ（計算1.5倍）。LLM 学習で必須。PyTorch torch.utils.checkpoint で実装。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">Mixed Precision Training（FP16/BF16）の主な利点は。</div>
+        <div class="p-choices">① 精度向上　 ② GPU メモリ半減＆計算2〜3倍速、Tensor Coreを活用　 ③ パラメータ削減　 ④ ランダム性</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> FP16計算 + FP32重みコピー + Loss Scaling。BF16はダイナミックレンジが広く Loss Scaling 不要。LLM学習で標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">Data Parallel の動作は。</div>
+        <div class="p-choices">① 1GPUだけ使う　 ② 各GPUに同じモデルコピー、ミニバッチを分割、勾配をAllReduceで集約　 ③ モデルを分割　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 最も基本的な並列化。PyTorch DDP, Horovod。モデルがGPUに載るサイズなら最初の選択肢。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">勾配チェック（Gradient Check）の用途は。</div>
+        <div class="p-choices">① 学習加速　 ② 解析的に計算した勾配と数値微分を比較し、実装バグを検出　 ③ パラメータ削減　 ④ 必須学習</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> カスタム backward を書いたとき必須。差が 1e-7〜1e-5 オーダーなら正しい。学習中は遅いので無効化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">PyTorch で勾配計算を有効化するには。</div>
+        <div class="p-choices">① 自動で有効　 ② requires_grad=True で作成、または .requires_grad_() で設定　 ③ 不可能　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> requires_grad=True の Tensor は計算グラフに含まれ、.backward() で勾配が記録される。.grad 属性で取得。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">ZeRO（DeepSpeed）が分散するのは。</div>
+        <div class="p-choices">① モデルのみ　 ② オプティマイザ状態、勾配、パラメータを分散保持しメモリ削減　 ③ データのみ　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ZeRO-1：オプティマイザ状態、ZeRO-2：+勾配、ZeRO-3：+パラメータも分散。LLM学習で必須。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">Operator Fusion（Fused operations）の効果は。</div>
+        <div class="p-choices">① 精度向上　 ② 連続した演算を1カーネルに融合、メモリ転送削減でGPU効率↑　 ③ パラメータ削減　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> FlashAttention の核心。HBM ↔ SRAM 転送を減らす。Triton, CUDA Graph で実装。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">『Stop Gradient』の用途は。</div>
+        <div class="p-choices">① 学習停止　 ② 計算グラフの一部で勾配を遮断（GAN、対照学習、強化学習の Target Network 等で必須）　 ③ パラメータ削除　 ④ ランダム</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> .detach() で実装。Target を更新せず参照だけしたいときに使う。BYOL、DQN、PPO で必須テクニック。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">連鎖律、計算グラフ、逆伝播、全結合層・活性化関数・Softmax+CE の勾配、SGD更新、自動微分（forward/reverse mode）、勾配消失/爆発、計算量・メモリを扱いました。応用で計算グラフ最適化、Gradient Checkpointing、Mixed Precision、分散学習。ハンズオンでNumPy逆伝播、PyTorch自動微分、カスタムbackward、勾配チェック、勾配可視化。シミュレーションで連鎖律手計算、勾配消失、オプティマイザ比較を確認。次章はNNの工夫（Dropout、BN、データ拡張、学習率スケジュール等）。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="10-nn-basics.html">← 章10</a></div>
-  <div><span class="ch-label">次の章</span><br><span class="ch-title">章12: 学習の工夫</span></div>
-  <div><a href="12-nn-tricks.html">章12へ →</a></div>
+  <div><a href="10-nn-basics.html">← 章10: NN基礎</a></div>
+  <div><span class="ch-label">Chapter 11 of 12 · 基本編</span><br><span class="ch-title">逆伝播</span></div>
+  <div><a href="12-nn-tricks.html">章12: NNの工夫 →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="index.html">基本</a></li><li><a href="../advanced/index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a><a href="../../../certifications/tokei.html">統計検定</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

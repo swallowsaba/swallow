@@ -3,264 +3,547 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章12 AI 法律とガバナンス — G検定 応用 — Swallow AI Academy</title>
-<meta name="description" content="G検定応用 章12：著作権法30条の4、EU AI Act、AI事業者ガイドライン、Bletchley宣言、各国規制動向。G検定で最重要の社会領域。">
+<title>章24 AI法規制 — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章24：EU AI Act、GDPR、CCPA、日本のAI推進法、著作権、Anthropic ASL、SB-1047、特許、肖像権を5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="../basics/index.html">基本</a>
-      <a href="index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.12</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="../basics/index.html">基本</a><a href="index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章12</div>
-    <h1>応用 章12 — AI 法律とガバナンス<span class="en">AI Law &amp; Governance</span></h1>
-    <p class="standfirst">G検定の出題比重で <strong>近年最大の伸びを見せている領域</strong>。日本の著作権法30条の4、EU AI Act、各省ガイドライン、Bletchley宣言、各国の規制動向。本章で社会実装AIの法的常識を整える。応用編 最終章。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章24</div>
+    <h1>章24 — AI法規制<span class="en">Chapter 24 — AI Regulation &amp; Law</span></h1>
+    <p class="standfirst">2024年8月のEU AI Act施行、2026年米SB-1047本格運用、日本のAI推進法（2024年5月成立、2025年施行）── 法整備が世界規模で進んでいます。GDPR、CCPA、著作権、特許、肖像権、Anthropic ASL（責任スケーリング方針）など、現代AIの実装と運用に必須の法的知識を、5部構成で扱います。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="11-ethics.html">← 章11: AI 倫理</a></div>
-  <div><span class="ch-label">応用 Chapter 12 of 12 — 完結</span><br><span class="ch-title">AI 法律</span></div>
-  <div><a href="index.html">応用 章一覧 →</a></div>
+  <div><a href="11-ethics.html">← 章23: AI倫理</a></div>
+  <div><span class="ch-label">Chapter 24 of 12 · 応用編完結</span><br><span class="ch-title">AI法規制</span></div>
+  <div><a href="../../../certifications/g-kentei.html">G検定 TOP →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
-    <h6>章12 目次</h6>
-    <a href="#jp-copyright">§1 日本の著作権法30条の4</a>
-    <a href="#eu-aiact">§2 EU AI Act</a>
-    <a href="#jp-guideline">§3 AI事業者ガイドライン</a>
-    <a href="#us">§4 米国の動向</a>
-    <a href="#china">§5 中国の動向</a>
-    <a href="#international">§6 国際的取り組み</a>
-    <a href="#personal-data">§7 個人情報保護</a>
-    <a href="#liability">§8 責任と保険</a>
-    <a href="#summary">§9 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <h6>章24 目次</h6>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
-    <h2 id="jp-copyright"><span class="label">§1 / JP-COPY</span>日本の著作権法30条の4</h2>
-    <p>2018年改正で導入された <strong>「情報解析のための著作物利用」</strong>。AI 学習に関し、世界でも最も寛容な部類の制度。</p>
-    <div class="example">
-      <div class="example-title">著作権法30条の4（要旨）</div>
-      著作物は、次に掲げる場合 ... 必要と認められる限度において、いずれの方法によるかを問わず、利用することができる。<br>
-      二 情報解析（多数の著作物その他の大量の情報から、当該情報を構成する言語、音、影像その他の要素に係る情報を抽出し、比較、分類その他の解析を行うことをいう）の用に供する場合
+    <div class="article-eyebrow">G-KENTEI · ADVANCED · CHAPTER 24</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">『動く』だけでは、<br>足りない。法を知れ。</h2>
+    <p class="article-lede">アルゴリズムが正しく動いても、法に抵触すれば本番運用できません。EUのリスクベース規制、米国の州レベル規制、日本のソフトロー、著作権の現代的論点 ── 開発者・実装者が知るべき法務知識のエッセンスを本章でまとめます。</p>
+
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>EU AI Act、GDPR、CCPA、日本のAI推進法、著作権、特許、肖像権、Anthropic ASL、SB-1047、不公正取引の10節。</p>
     </div>
-    <p>含意：</p>
-    <ul>
-      <li>原則として <strong>AI 学習目的の著作物の利用は適法</strong></li>
-      <li>営利・非営利を問わない</li>
-      <li>著作権者の許諾不要</li>
-      <li><strong>ただし「享受目的」が伴う場合は対象外</strong>（つまり「鑑賞・楽しむ」目的の利用は不可）</li>
-      <li><strong>著作権者の利益を不当に害する場合は不可</strong>（例：海賊版データセット）</li>
-    </ul>
-    <p>2024年3月、<strong>文化庁 が「AI と著作権に関する考え方」</strong> を公表。重要ポイント：</p>
-    <ul>
-      <li>AI 出力が既存著作物に <strong>類似性 + 依拠性</strong> あれば侵害</li>
-      <li>「<strong>RAG で著作物を取り込む</strong>」は享受目的に該当しやすい → 注意</li>
-      <li>意図的に特定作家の作風を学習させて模倣 → 「利益を不当に害する」可能性</li>
+
+    <h2>基本</h2>
+
+    <h3 style="margin-top:36px;">§1.1 EU AI Act — 世界初の包括的AI規制</h3>
+    <p>2024年8月発効、段階的施行（2026年8月本格運用）。世界初の包括的AIリスクベース規制：</p>
+    <table class="spec">
+      <tr><th>リスク</th><th>例</th><th>規制</th></tr>
+      <tr><td>許容不可</td><td>社会信用スコア、サブリミナル操作、リアルタイム公開生体認識</td><td>原則禁止</td></tr>
+      <tr><td>高リスク</td><td>採用判断、信用評価、医療機器、教育評価、法執行</td><td>第三者適合性評価、リスク管理、人間監督</td></tr>
+      <tr><td>限定リスク</td><td>チャットボット、ディープフェイク</td><td>透明性義務（AI使用の開示）</td></tr>
+      <tr><td>最小リスク</td><td>スパムフィルタ、ゲームAI</td><td>規制なし</td></tr>
+      <tr><td>GPAI</td><td>GPT-4、Claude、Gemini（10²⁵FLOPs超）</td><td>体系的リスク、レッドチーミング、報告義務</td></tr>
+    </table>
+    <p>違反罰金は最大 €35M または全世界売上の7%。</p>
+
+    <h3 style="margin-top:36px;">§1.2 GDPR — EUデータ保護</h3>
+    <p>2018年施行。EU個人データ処理に世界中の事業者に適用（域外適用）。AIに特に関連する条項：</p>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>第22条：完全自動意思決定の禁止</strong>。法的効果のある決定（融資、採用、保険）にAIを使う場合、人間の関与・説明要求権を保障。</li>
+      <li><strong>第13-15条：説明可能性</strong>。アルゴリズムの『意義のある情報』を本人に開示。</li>
+      <li><strong>忘れられる権利</strong>（第17条）：学習データからの削除要求。LLMでは技術的に困難（Unlearning研究）。</li>
+      <li>違反罰金は最大 €20M または全世界売上の4%。</li>
     </ul>
 
-    <h2 id="eu-aiact"><span class="label">§2 / EU</span>EU AI Act（世界初の包括的 AI 規制）</h2>
-    <p>2024年5月、正式採択。世界初の包括的 AI 法。リスクベースアプローチで <strong>4段階</strong>に分類：</p>
+    <h3 style="margin-top:36px;">§1.3 CCPA / CPRA — カリフォルニア消費者プライバシー法</h3>
+    <p>2020年施行、CPRA（2023年）で強化。CCPAの『売却』に AI への提供を含むか論争。広告関連で重要。</p>
+
+    <h3 style="margin-top:36px;">§1.4 日本のAI推進法 / ガイドライン</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>AI事業者ガイドライン</strong>（2024年4月、総務省・経産省）：ソフトロー的アプローチ、開発者・提供者・利用者の3つの主体向け。</li>
+      <li><strong>広島AIプロセス</strong>（2023〜）：G7主導の生成AI国際枠組み。</li>
+      <li><strong>人間中心のAI社会原則</strong>（内閣府 2019）：日本の基本原則。</li>
+      <li><strong>個人情報保護法</strong>（2022年改正）：仮名加工情報、漏えい報告義務など。</li>
+    </ul>
+
+    <h3 style="margin-top:36px;">§1.5 著作権 — AI学習と生成の論点</h3>
+    <div class="formula">
+<strong>学習段階</strong>　 日本：第30条の4（情報解析のための利用）で原則OK。EU：DSM指令でオプトアウト可（科学研究は除く）。米国：Fair Useが議論中（NYT vs OpenAI 訴訟、Anthropic Authors v. Anthropic）<br><br>
+<strong>生成物</strong>　 米国：人間の創作性なきAI生成物に著作権なし（Thaler v. Perlmutter 2023）。日本：類似性 + 依拠性の判断。<br><br>
+<strong>論点</strong>　 既存作品の特定生成（style mimicry）、商標、パブリシティ権侵害
+    </div>
+
+    <h3 style="margin-top:36px;">§1.6 特許 — AI関連発明</h3>
+    <p>多くの国で『AIを発明者とする特許は認めない』が定着（DABUS判例：英、豪、欧、米で却下）。AIを用いた発明は人間発明者として可。LLM プロンプト発明は新領域。</p>
+
+    <h3 style="margin-top:36px;">§1.7 肖像権・パブリシティ権</h3>
+    <p>本人同意なしのディープフェイク、AI生成肖像は損害賠償・差止対象。米国はTennessee州 ELVIS Act（2024）、NO FAKES Act（連邦提案中）で立法化進行。日本では民法・不法行為で対処。</p>
+
+    <h3 style="margin-top:36px;">§1.8 Anthropic ASL（Responsible Scaling Policy）</h3>
+    <p>Anthropic 独自の自主基準。モデル能力に応じた『Responsibility Scaling Level』を設定：</p>
+    <table class="spec">
+      <tr><th>レベル</th><th>能力</th><th>対応</th></tr>
+      <tr><td>ASL-1</td><td>明確な脅威なし</td><td>基本的安全</td></tr>
+      <tr><td>ASL-2</td><td>初期的危険能力</td><td>現Claude シリーズ</td></tr>
+      <tr><td>ASL-3</td><td>大規模誤用リスク or 自律性</td><td>専門のレッドチーム、セキュリティ強化</td></tr>
+      <tr><td>ASL-4</td><td>致命的誤用 or AI 安全研究自律</td><td>未開発</td></tr>
+    </table>
+    <p>OpenAI Preparedness Framework、DeepMind Frontier Safety Framework など類似枠組みあり。</p>
+
+    <h3 style="margin-top:36px;">§1.9 SB-1047 と Frontier Model 関連法</h3>
+    <p>カリフォルニア州のフロンティアモデル規制（10²⁶FLOPs/$100M超）。2024年Newsom拒否権で頓挫、改訂版が議論中。フロンティアモデル開発者に安全評価・報告義務を課す動き。</p>
+
+    <h3 style="margin-top:36px;">§1.10 不公正取引・競争法</h3>
+    <p>大手AIプラットフォームの市場独占を懸念。EU Digital Markets Act（DMA、2024年施行）、米国の反トラスト法調査（OpenAI、Microsoft）。日本の独禁法もデジタルプラットフォーム透明化法で関連。</p>
 
     <div class="figure">
-      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
-        <!-- Pyramid -->
-        <polygon points="380,40 280,140 480,140" fill="#b8431f"/>
-        <text x="380" y="95" text-anchor="middle" font-size="13" font-weight="bold" fill="#faf7f2">許容できない</text>
-        <text x="380" y="115" text-anchor="middle" font-size="11" fill="#f5d4c4">禁止</text>
-
-        <polygon points="280,140 480,140 540,220 220,220" fill="#d4a017"/>
-        <text x="380" y="175" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">高リスク</text>
-        <text x="380" y="195" text-anchor="middle" font-size="11" fill="#5a5f6a">厳格規制</text>
-
-        <polygon points="220,220 540,220 600,280 160,280" fill="#3a7d44"/>
-        <text x="380" y="248" text-anchor="middle" font-size="12" font-weight="bold" fill="#faf7f2">限定的リスク</text>
-        <text x="380" y="268" text-anchor="middle" font-size="11" fill="#c0d4c4">透明性義務</text>
-
-        <rect x="100" y="280" width="560" height="30" fill="#2e5577"/>
-        <text x="380" y="300" text-anchor="middle" font-size="12" font-weight="bold" fill="#faf7f2">最小リスク（規制対象外）</text>
-
-        <!-- Examples -->
-        <text x="40" y="100" font-size="10" fill="#0d1b2a">例：</text>
-        <text x="40" y="115" font-size="9" fill="#5a5f6a">ソーシャルスコアリング、サブリミナル</text>
-        <text x="600" y="180" font-size="10" fill="#0d1b2a">例：</text>
-        <text x="600" y="195" font-size="9" fill="#5a5f6a">採用、信用、医療、教育</text>
-        <text x="40" y="250" font-size="10" fill="#0d1b2a">例：</text>
-        <text x="40" y="265" font-size="9" fill="#5a5f6a">チャットボット、ディープフェイク</text>
-        <text x="600" y="300" font-size="10" fill="#faf7f2">例：AI ゲーム、スパムフィルタ</text>
+      <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+        <text x="40" y="30" font-family="monospace" font-size="11" letter-spacing="0.1em" fill="#b8431f">FIG 24.1 ／ GLOBAL AI REGULATION LANDSCAPE 2026</text>
+        <g transform="translate(50,55)">
+          <rect x="0" y="0" width="200" height="80" fill="#b8431f" fill-opacity="0.15" stroke="#b8431f"/>
+          <text x="100" y="20" text-anchor="middle" font-family="serif" font-size="13" font-weight="700">EU</text>
+          <text x="100" y="40" text-anchor="middle" font-family="monospace" font-size="10">AI Act</text>
+          <text x="100" y="55" text-anchor="middle" font-family="monospace" font-size="10">GDPR</text>
+          <text x="100" y="70" text-anchor="middle" font-family="serif" font-size="9" font-style="italic">包括ハードロー</text>
+          
+          <rect x="220" y="0" width="200" height="80" fill="#2e5577" fill-opacity="0.15" stroke="#2e5577"/>
+          <text x="320" y="20" text-anchor="middle" font-family="serif" font-size="13" font-weight="700">米国</text>
+          <text x="320" y="40" text-anchor="middle" font-family="monospace" font-size="10">EO 14110</text>
+          <text x="320" y="55" text-anchor="middle" font-family="monospace" font-size="10">州法（SB-1047）</text>
+          <text x="320" y="70" text-anchor="middle" font-family="serif" font-size="9" font-style="italic">分散・部分的</text>
+          
+          <rect x="440" y="0" width="200" height="80" fill="#d4a017" fill-opacity="0.15" stroke="#d4a017"/>
+          <text x="540" y="20" text-anchor="middle" font-family="serif" font-size="13" font-weight="700">日本</text>
+          <text x="540" y="40" text-anchor="middle" font-family="monospace" font-size="10">AI推進法</text>
+          <text x="540" y="55" text-anchor="middle" font-family="monospace" font-size="10">ガイドライン</text>
+          <text x="540" y="70" text-anchor="middle" font-family="serif" font-size="9" font-style="italic">ソフトロー中心</text>
+          
+          <rect x="0" y="110" width="200" height="80" fill="#0d1b2a" fill-opacity="0.1" stroke="#0d1b2a"/>
+          <text x="100" y="130" text-anchor="middle" font-family="serif" font-size="13" font-weight="700">中国</text>
+          <text x="100" y="150" text-anchor="middle" font-family="monospace" font-size="10">生成AI暫定弁法</text>
+          <text x="100" y="165" text-anchor="middle" font-family="serif" font-size="9" font-style="italic">事前許認可</text>
+          
+          <rect x="220" y="110" width="200" height="80" fill="#b8431f" fill-opacity="0.1" stroke="#b8431f"/>
+          <text x="320" y="130" text-anchor="middle" font-family="serif" font-size="13" font-weight="700">英国</text>
+          <text x="320" y="150" text-anchor="middle" font-family="monospace" font-size="10">既存規制活用</text>
+          <text x="320" y="165" text-anchor="middle" font-family="serif" font-size="9" font-style="italic">機動的</text>
+          
+          <rect x="440" y="110" width="200" height="80" fill="#2e5577" fill-opacity="0.1" stroke="#2e5577"/>
+          <text x="540" y="130" text-anchor="middle" font-family="serif" font-size="13" font-weight="700">G7</text>
+          <text x="540" y="150" text-anchor="middle" font-family="monospace" font-size="10">広島AIプロセス</text>
+          <text x="540" y="165" text-anchor="middle" font-family="serif" font-size="9" font-style="italic">国際協調</text>
+        </g>
       </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 12.1</span> EU AI Act のリスク階層。下に行くほど規制が緩い。最上部（許容不能）は禁止、高リスクは厳格な要件（CE マーク、リスク評価、人間監視義務など）。</div>
+      <div class="figure-caption"><span class="figure-num">FIG 24.1</span> ／ 2026年時点の世界AI規制マップ。EU の包括ハードロー、米国の州レベル分散、日本のソフトローというスタイルの違い。</div>
     </div>
 
-    <table class="spec">
-      <tr><th>禁止</th><td>ソーシャルスコアリング、サブリミナル操作、リアルタイム遠隔顔認証（例外あり）、職場・学校での感情認識</td></tr>
-      <tr><th>高リスク</th><td>採用、信用評価、医療診断、司法、重要インフラ。CEマーク、ドキュメント、人間監視義務</td></tr>
-      <tr><th>限定的リスク</th><td>チャットボット、生成AI 出力 → ユーザに通知義務</td></tr>
-      <tr><th>最小リスク</th><td>規制対象外（自主行動規範のみ）</td></tr>
-      <tr><th>汎用AI（GPAI）</th><td>基盤モデルに別途義務。<strong>システミックリスク</strong>モデル（GPT-4 等）は特に厳格</td></tr>
-    </table>
-    <p>違反時の罰金：最大 <strong>3500万ユーロまたは世界売上の7%</strong>。GDPR より厳しい。段階的施行（禁止は2025年2月、汎用AIは2025年8月、高リスクは2026年8月）。</p>
-
-    <h2 id="jp-guideline"><span class="label">§3 / JP-GUIDE</span>AI事業者ガイドライン</h2>
-    <p>2024年4月、経済産業省・総務省が <strong>「AI 事業者ガイドライン（第1.0版）」</strong> を公表。それまでの3つのガイドライン（AI開発、利活用、AIガバナンス）を統合。</p>
-    <p>3つの主体に分けて指針を提示：</p>
-    <ul>
-      <li><strong>AI 開発者</strong>：基盤モデル等の開発を行う者</li>
-      <li><strong>AI 提供者</strong>：開発者の AI を組み込んで提供する者</li>
-      <li><strong>AI 利用者</strong>：実際に利用する事業者</li>
-    </ul>
-    <p>10の指針：人間中心、安全性、公平性、プライバシー保護、セキュリティ確保、透明性、アカウンタビリティ、教育・リテラシー、公正競争確保、イノベーション。</p>
-    <p>位置づけ：<strong>法的拘束力のないソフトロー</strong>。ただし業界スタンダードとして実質的影響大。</p>
-
-    <h3>関連法・制度</h3>
-    <ul>
-      <li><strong>AI戦略会議</strong>（内閣府）：政府の AI 政策の司令塔</li>
-      <li><strong>「広島 AI プロセス」</strong>（2023 G7）：日本主導の国際枠組み</li>
-      <li><strong>「AI 推進法案」</strong>（2024-2025）：開発状況によっては将来的に法制化</li>
-    </ul>
-
-    <h2 id="us"><span class="label">§4 / US</span>米国の動向</h2>
-    <ul>
-      <li><strong>2023年10月、バイデン大統領令</strong>「Safe, Secure, and Trustworthy AI」：大規模モデルの政府報告義務など</li>
-      <li><strong>2025年1月、トランプ政権による大統領令撤回</strong>。規制緩和方針へ</li>
-      <li><strong>NIST AI Risk Management Framework</strong>（2023年1月）：技術的フレームワーク</li>
-      <li>州レベル：カリフォルニア州 SB 1047（拒否権発動）、コロラド州 AI 法など州ごとに動き</li>
-    </ul>
-
-    <h2 id="china"><span class="label">§5 / CHINA</span>中国の動向</h2>
-    <ul>
-      <li><strong>生成式AI サービス管理暫定弁法</strong>（2023年8月）：生成AI 規制</li>
-      <li><strong>アルゴリズム推薦規定</strong>（2022年）：推薦アルゴリズム規制</li>
-      <li><strong>深層合成規定</strong>（2023年）：ディープフェイク規制</li>
-      <li>事前ライセンス制 + 訓練データの内容規制 + コンテンツモデレーション義務</li>
-    </ul>
-
-    <h2 id="international"><span class="label">§6 / INTL</span>国際的取り組み</h2>
-    <table class="spec">
-      <tr><th>Bletchley 宣言（2023年11月）</th><td>英国 Bletchley Park の AI Safety Summit。日本含む28カ国とEU が署名。フロンティアAIの安全性に関する初の国際合意</td></tr>
-      <tr><th>Seoul AI Summit（2024年5月）</th><td>第2回。各社が安全コミットメントを発表</td></tr>
-      <tr><th>OECD AI 原則（2019）</th><td>世界初の政府間 AI 原則。日本含む50カ国以上が採択</td></tr>
-      <tr><th>UNESCO AI 倫理勧告（2021）</th><td>193カ国が採択</td></tr>
-      <tr><th>欧州評議会 AI 条約（2024）</th><td>世界初の法的拘束力のある AI 条約</td></tr>
-      <tr><th>広島 AI プロセス（2023）</th><td>G7 で日本主導、生成AIの国際指針と行動規範</td></tr>
-    </table>
-
-    <h2 id="personal-data"><span class="label">§7 / PRIVACY</span>個人情報保護</h2>
-    <table class="spec">
-      <tr><th>日本：個人情報保護法</th><td>2022年4月改正。仮名加工情報、漏えい報告義務、域外適用</td></tr>
-      <tr><th>EU：GDPR</th><td>2018年施行。自動化された決定への異議申立権（22条）など、AI に直接関係</td></tr>
-      <tr><th>米国：州法</th><td>カリフォルニア CCPA/CPRA など</td></tr>
-      <tr><th>中国：個人情報保護法（PIPL）</th><td>2021年11月施行</td></tr>
-    </table>
-    <p>LLM 特有の論点：</p>
-    <ul>
-      <li>訓練データに個人情報が混入 → <strong>記憶化（memorization）</strong> による漏洩</li>
-      <li>「忘れられる権利」と訓練済みモデルの関係</li>
-      <li>2023年イタリア当局による ChatGPT 一時停止命令</li>
-    </ul>
-
-    <h2 id="liability"><span class="label">§8 / LIAB</span>責任と保険</h2>
-    <p>AI が誤動作したときの責任は誰が負うか？ <strong>未確立</strong>。</p>
-    <ul>
-      <li>EU：<strong>AI 責任指令</strong>案（2022年提案、最終的に2025年取り下げ）</li>
-      <li>製造物責任法の準用議論</li>
-      <li>医療AI：医師の最終責任原則を維持する方向</li>
-      <li>自動運転：日本では2023年改正道路交通法でレベル4が部分的許可</li>
-      <li>AI 保険の登場：Munich Re など</li>
-    </ul>
-
-    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
-    <table class="spec">
-      <tr><th>1</th><td>日本：著作権法30条の4 で AI 学習目的の利用を広く許容</td></tr>
-      <tr><th>2</th><td>ただし「享受目的」「権利者の利益を不当に害する」場合は対象外</td></tr>
-      <tr><th>3</th><td>EU AI Act（2024採択）：4段階リスク階層、罰金最大 売上7%</td></tr>
-      <tr><th>4</th><td>禁止・高リスク・限定的リスク・最小リスクの分類</td></tr>
-      <tr><th>5</th><td>汎用AI（GPAI）に特別な義務、システミックリスクは更に厳格</td></tr>
-      <tr><th>6</th><td>日本：AI 事業者ガイドライン（経産省・総務省、2024）</td></tr>
-      <tr><th>7</th><td>10指針＋3主体（開発者・提供者・利用者）</td></tr>
-      <tr><th>8</th><td>米国：バイデン令→トランプ政権で撤回・規制緩和へ</td></tr>
-      <tr><th>9</th><td>中国：事前ライセンス＋内容規制で厳格</td></tr>
-      <tr><th>10</th><td>国際：Bletchley宣言、OECD原則、広島AIプロセス、欧州評議会条約</td></tr>
-    </table>
-
-    <h3>応用編 完結</h3>
-    <p>応用編 12 章 すべて読了。G検定の <strong>応用・社会・最新技術</strong> 範囲を網羅しました。基本編と合わせて <strong>24 章 / 600KB+ の教科書相当の内容</strong>を学習できます。問題演習で確認しましょう。</p>
-
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>著作権法30条の4で AI 学習目的の利用が許容される条件</li>
-        <li>「享受目的」と「情報解析目的」の違い</li>
-        <li>2024年文化庁の指針で、RAG 利用に関する注意点</li>
-        <li>EU AI Act の4つのリスク階層と例</li>
-        <li>「汎用AI（GPAI）」と「システミックリスク」モデルの違い</li>
-        <li>EU AI Act の最大罰金額</li>
-        <li>日本のAI事業者ガイドラインの3主体</li>
-        <li>Bletchley AI Safety Summit（2023年）の意義</li>
-        <li>広島 AI プロセスの位置づけ</li>
-        <li>個人情報保護法と GDPR の主要な違い</li>
-        <li>AI の事故時の責任主体に関する現時点の整理</li>
-      </ol>
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>業種別規制、AIガバナンス、域外適用、契約実務の4節。</p>
     </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 業種別規制</h3>
+    <p>金融：MiFID II（投資判断AI）、Basel委員会のML/AI原則。医療：FDA SaMD、CEマーク（MDR）、PMDA。自動運転：UN-R157、各国のLevel認証。教育：UNESCO勧告。</p>
+
+    <h3 style="margin-top:36px;">§2.2 AIガバナンスのフレームワーク</h3>
+    <p>NIST AI Risk Management Framework（RMF, 2023）、ISO/IEC 42001（AIマネジメントシステム）、IEEE 7000シリーズ。組織内CoEや AI 倫理委員会の設置が標準化。</p>
+
+    <h3 style="margin-top:36px;">§2.3 域外適用</h3>
+    <p>GDPR、EU AI Act、中国生成AI規制は域外適用が明示。日本企業もEUユーザーを持つなら適用対象。</p>
+
+    <h3 style="margin-top:36px;">§2.4 AI契約実務</h3>
+    <p>AI提供契約、生成物の権利帰属、学習データ提供、責任配分、SLA、出力禁止事項、監査権、コンプライアンス遵守義務、無権限学習禁止条項など、契約条項の検討が複雑化。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>コンプラチェック、リスク評価、PIA、AIモデルカード、契約レビューの5節。</p>
+    </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 EU AI Act リスク評価チェックリスト</h3>
+    <div class="code-block">
+<span class="comment"># AI システムリスク分類スクリーニング</span>
+<span class="keyword">def</span> classify_eu_ai_act(system):
+    <span class="comment"># Annex III の高リスク分野</span>
+    high_risk_domains = [
+        <span class="string">'biometric_identification'</span>,
+        <span class="string">'critical_infrastructure'</span>,
+        <span class="string">'education_evaluation'</span>,
+        <span class="string">'employment_selection'</span>,
+        <span class="string">'essential_services'</span>,
+        <span class="string">'law_enforcement'</span>,
+        <span class="string">'migration_border'</span>,
+        <span class="string">'justice'</span>]
+    
+    prohibited = [
+        <span class="string">'social_scoring'</span>,
+        <span class="string">'subliminal_manipulation'</span>,
+        <span class="string">'realtime_biometric_public'</span>]
+    
+    <span class="keyword">if</span> system.use_case <span class="keyword">in</span> prohibited:
+        <span class="keyword">return</span> <span class="string">"PROHIBITED"</span>
+    <span class="keyword">if</span> system.use_case <span class="keyword">in</span> high_risk_domains:
+        <span class="keyword">return</span> <span class="string">"HIGH_RISK - 適合性評価必須"</span>
+    <span class="keyword">if</span> system.interacts_with_humans <span class="keyword">or</span> system.generates_deepfake:
+        <span class="keyword">return</span> <span class="string">"LIMITED_RISK - 透明性義務"</span>
+    <span class="keyword">if</span> system.training_flops &gt; <span class="builtin">1e25</span>:
+        <span class="keyword">return</span> <span class="string">"GPAI - 体系的リスク評価"</span>
+    <span class="keyword">return</span> <span class="string">"MINIMAL_RISK"</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 個人データ処理影響評価（DPIA）</h3>
+    <div class="code-block">
+<span class="comment"># GDPR第35条 DPIA テンプレート</span>
+DPIA_CHECKLIST = {
+    <span class="string">"1. システム説明"</span>: [<span class="string">"目的"</span>, <span class="string">"処理範囲"</span>, <span class="string">"データ種別"</span>, <span class="string">"主体"</span>],
+    <span class="string">"2. 必要性・比例性"</span>: [<span class="string">"目的の正当化"</span>, <span class="string">"最小限のデータ"</span>],
+    <span class="string">"3. リスク評価"</span>: [<span class="string">"プライバシー侵害可能性"</span>, <span class="string">"影響度"</span>],
+    <span class="string">"4. 対策"</span>: [<span class="string">"暗号化"</span>, <span class="string">"匿名化"</span>, <span class="string">"アクセス制御"</span>],
+    <span class="string">"5. 残余リスク"</span>: [<span class="string">"受容可能性"</span>],
+    <span class="string">"6. 監督機関への通知"</span>: [<span class="string">"残余高リスクなら必要"</span>]
+}
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 AIモデルカード作成</h3>
+    <div class="code-block">
+<span class="comment"># Mitchell 2019 提案、業界標準化</span>
+MODEL_CARD = {
+    <span class="string">"model_name"</span>: <span class="string">"XYZ-LLM-v2"</span>,
+    <span class="string">"date"</span>: <span class="string">"2026-06"</span>,
+    <span class="string">"model_type"</span>: <span class="string">"Transformer decoder, 7B params"</span>,
+    <span class="string">"intended_use"</span>: [<span class="string">"FAQ assistant"</span>, <span class="string">"text completion"</span>],
+    <span class="string">"out_of_scope"</span>: [<span class="string">"医療診断"</span>, <span class="string">"法律相談"</span>, <span class="string">"財務アドバイス"</span>],
+    <span class="string">"training_data"</span>: <span class="string">"説明（出所、規模、フィルタリング）"</span>,
+    <span class="string">"performance"</span>: {<span class="string">"MMLU"</span>: <span class="builtin">0.62</span>, <span class="string">"GSM8K"</span>: <span class="builtin">0.45</span>},
+    <span class="string">"fairness"</span>: <span class="string">"バイアステスト結果"</span>,
+    <span class="string">"environmental_impact"</span>: <span class="string">"訓練CO2排出量"</span>,
+    <span class="string">"limitations"</span>: [<span class="string">"幻覚"</span>, <span class="string">"知識カットオフ"</span>, <span class="string">"言語バイアス"</span>],
+    <span class="string">"ethical_considerations"</span>: <span class="string">"..."</span>
+}
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 学習データ著作権チェック</h3>
+    <div class="code-block">
+<span class="comment"># 学習データ収集時の論点チェックリスト</span>
+COPYRIGHT_CHECK = [
+    <span class="string">"1. 出所の特定（クローリング元、データセット名）"</span>,
+    <span class="string">"2. ライセンス確認（CC、商用利用可否）"</span>,
+    <span class="string">"3. robots.txt 尊重"</span>,
+    <span class="string">"4. 著作権者からの opt-out 機構"</span>,
+    <span class="string">"5. 個人情報含有チェック（PII フィルタ）"</span>,
+    <span class="string">"6. 有害コンテンツフィルタ（CSAM 等）"</span>,
+    <span class="string">"7. 商標・肖像権の検討"</span>,
+    <span class="string">"8. 国別法令遵守（日本30条の4、EU DSM、米Fair Use）"</span>,
+    <span class="string">"9. データ削除要求への対応プロセス"</span>,
+    <span class="string">"10. 監査ログの保管"</span>
+]
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 API利用契約レビュー</h3>
+    <div class="code-block">
+<span class="comment"># LLM API 利用契約で見るべき条項</span>
+API_CONTRACT_REVIEW = [
+    <span class="string">"・利用規約・AUP（禁止用途）"</span>,
+    <span class="string">"・データ取り扱い（学習利用、保存期間、リージョン）"</span>,
+    <span class="string">"・知財帰属（プロンプト、出力）"</span>,
+    <span class="string">"・SLA（可用性、レイテンシ）"</span>,
+    <span class="string">"・賠償責任の範囲・上限"</span>,
+    <span class="string">"・データ主権・国外移転"</span>,
+    <span class="string">"・サブプロセッサー（OpenAI→Azure 等）"</span>,
+    <span class="string">"・解約時のデータ取扱"</span>,
+    <span class="string">"・準拠法・裁判管轄"</span>
+]
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>3つの法的判断シナリオ。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — 採用AI のEU AI Act 適合</h4>
+      <div class="sim-output">
+&gt;&gt; シナリオ：EU子会社の採用書類スクリーニングAI<br>
+<br>
+EU AI Act 分類: 高リスク（Annex III - 雇用）<br>
+必要対応:<br>
+　・適合性評価（CE-AI マーク取得）<br>
+　・リスク管理システム構築<br>
+　・人間による監督確保（最終判断は人）<br>
+　・データガバナンス（バイアステスト）<br>
+　・透明性（候補者への通知）<br>
+　・ロバスト性・精度の文書化<br>
+　・登録DB（EU AI Database）への登録<br>
+<br>
+&gt;&gt; 違反罰金：最大€15M または売上3%<br>
+&gt;&gt; 2026年8月本格施行までに対応必須
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — 画像生成AI の著作権リスク</h4>
+      <div class="sim-output">
+&gt;&gt; シナリオ：StableDiffusion fine-tune モデルで広告画像生成<br>
+<br>
+リスク評価:<br>
+　・学習データに著作物含有（高）<br>
+　・生成物の既存作品類似性（中）<br>
+　・他者キャラクター/人物の生成（高）<br>
+　・商標的要素の生成（中）<br>
+<br>
+対策:<br>
+　・LoRA 学習素材の権利クリア<br>
+　・プロンプト/生成物の類似性フィルタ<br>
+　・有名キャラクター/実在人物プロンプト禁止<br>
+　・SynthID 等のウォーターマーク<br>
+　・モデルカードでの限界明示<br>
+　・利用規約での免責<br>
+<br>
+&gt;&gt; 米国はNYT vs OpenAI など訴訟継続中
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — GDPR 第22条の自動意思決定</h4>
+      <div class="sim-output">
+&gt;&gt; シナリオ：オンライン融資AIの自動審査<br>
+<br>
+GDPR 第22条適用: 法的効果を持つ完全自動意思決定<br>
+要件:<br>
+　・人間の関与権（最終確認・異議申立を人）<br>
+　・説明可能性（拒絶理由の意義ある情報）<br>
+　・主体の権利行使機構<br>
+　・DPIA 実施<br>
+<br>
+推奨実装:<br>
+　・SHAP/LIME で個別予測説明<br>
+　・低スコア時に人間レビュー必須化<br>
+　・ユーザーへの『AI使用』明示<br>
+　・異議申立・再評価窓口<br>
+　・データ削除権の行使対応<br>
+<br>
+&gt;&gt; 違反罰金：最大€20M または売上4%
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">EU AI Act が採用したアプローチは。</div>
+        <div class="p-choices">① 一律規制　 ② リスクベース（許容不可〜最小リスクの4段階＋GPAI）　 ③ 自主規制のみ　 ④ 禁止のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> リスクレベルに応じた段階規制。世界初の包括的AI法、2024年発効、2026年8月本格施行。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">EU AI Act で『許容不可リスク』に分類されるのは。</div>
+        <div class="p-choices">① スパムフィルタ　 ② 社会信用スコア、サブリミナル操作、リアルタイム公開生体認識　 ③ チャットボット　 ④ 翻訳</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 第5条で原則禁止される行為。一部例外あり（テロリスト捜索の生体認識など）。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">GDPR 第22条の規定は。</div>
+        <div class="p-choices">① 個人データの所有権　 ② 完全自動意思決定に対する人間の関与権・説明要求権　 ③ 罰金規定　 ④ 域外適用</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 法的効果を持つ自動決定（融資、採用）には人間関与が必要。例外あり（同意、契約必要、法的根拠）。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">日本の著作権法でAI学習を原則合法とする条項は。</div>
+        <div class="p-choices">① 第30条　 ② 第30条の4（情報解析のための利用）　 ③ 第32条　 ④ 第47条の5</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2018年改正で導入。情報解析（学習）目的での複製・公衆送信を原則認める。ただし著作権者の利益を不当に害する場合は除外。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">米国の著作権で、AI生成物に著作権が認められない判例として正しいのは。</div>
+        <div class="p-choices">① Thaler v. Perlmutter（人間の創作性必要）　 ② NYT v. OpenAI　 ③ Stable Diffusion 判決　 ④ DABUS 判例</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 2023年。完全AI生成物に著作権登録却下。人間の創作的貢献が必要。日本も同様の方向。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">GDPR 違反の最大罰金は。</div>
+        <div class="p-choices">① €10M or 全世界売上の2%　 ② €20M or 全世界売上の4%（高い方）　 ③ €100M　 ④ 罰金なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 重大違反で €20M または前年度全世界売上の4%のいずれか高い方。EU AI Act は €35M または7%でさらに厳しい。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">EU AI Act の『GPAI』に該当するモデルは（典型例）。</div>
+        <div class="p-choices">① 線形回帰　 ② GPT-4、Claude、Gemini など 10²⁵ FLOPs 超の汎用基盤モデル　 ③ K-means　 ④ 全モデル</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> General Purpose AI モデル。10²⁵ FLOPs 超は『体系的リスク』を持つとして追加義務（評価、サイバーセキュリティ、報告）。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">Anthropic ASL（Responsible Scaling Policy）の特徴は。</div>
+        <div class="p-choices">① 政府規制　 ② モデル能力に応じた自主基準、能力評価で次レベルに移行　 ③ 罰則あり　 ④ 1段階のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ASL-1〜4。能力評価でレベル決定、各レベルで安全要件。OpenAI Preparedness Framework、DeepMind FSF も類似。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">日本のAI事業者ガイドライン（2024年）のアプローチは。</div>
+        <div class="p-choices">① 罰則付きハードロー　 ② 開発者・提供者・利用者向けソフトロー　 ③ 禁止リスト　 ④ 何もなし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 総務省・経産省合同。法的拘束力なしのガイドラインだが、業界標準として広く参照される。3主体別の規範を提示。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">『DABUS判例』が確立したのは。</div>
+        <div class="p-choices">① AIに著作権　 ② AIを発明者とする特許は認めない（多数国）　 ③ AIが法人格　 ④ AIが訴訟当事者</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 英・豪・欧・米・日でAI単独発明者を却下。発明者は自然人のみ。ただしAI利用発明は人間発明者として可。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">GDPR の『忘れられる権利』をLLMで実装する際の技術的課題は。</div>
+        <div class="p-choices">① 簡単に削除可　 ② 一度学習されたデータの選択的削除は技術的に困難（Machine Unlearning 研究）　 ③ 不要　 ④ パラメータ削減で対応</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> NN は分散表現なので個別データの削除が難しい。Machine Unlearning、SISA、Approximate Unlearning などの研究分野。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">米国 California SB-1047 の対象モデル基準は。</div>
+        <div class="p-choices">① 全モデル　 ② 学習費用 $100M 超 or 10²⁶ FLOPs 超の Frontier モデル　 ③ MNIST モデル　 ④ ローカルLLMのみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2024年に Newsom 拒否権で頓挫したが、改訂版議論中。フロンティアモデル開発者に安全評価・報告義務を課す提案。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">『広島AIプロセス』の主体は。</div>
+        <div class="p-choices">① 国連　 ② G7主導の生成AI国際ガバナンス枠組み　 ③ 日本単独　 ④ EU単独</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2023年G7広島サミットで開始、国際指針・行動規範を策定。OECD、UN AI Advisory Body と連携。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">NIST AI Risk Management Framework の役割は。</div>
+        <div class="p-choices">① 米法律　 ② AI リスク管理の自主的フレームワーク（Govern, Map, Measure, Manage の4機能）　 ③ 罰則　 ④ EU専用</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2023年公表。米企業のデファクト標準的フレームワーク。ISO/IEC 42001（AI管理システム）と相補的。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">EU AI Act の『高リスク』分野でないのは。</div>
+        <div class="p-choices">① 採用判断　 ② 信用評価　 ③ スパムフィルタ　 ④ 医療機器</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> スパムフィルタは『最小リスク』。Annex III の高リスク分野は雇用、信用、教育、医療、法執行、国境管理など8カテゴリ。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">著作権法における日本とEUの違いは。</div>
+        <div class="p-choices">① 同じ　 ② 日本：第30条の4で原則OK、EU：DSM指令でテキスト・データマイニング権あるが商用利用にはオプトアウト可　 ③ 両方禁止　 ④ 両方完全自由</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> EU はオプトアウト権が著作権者にあり、商用利用での学習に拒否表示できる。日本は第30条の4で広く認める。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">ディープフェイク規制の米国の動向は。</div>
+        <div class="p-choices">① 全面禁止　 ② Tennessee州 ELVIS Act（音声）、NO FAKES Act（連邦提案）など州・連邦で立法化進行　 ③ 何もなし　 ④ 全許可</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 各州が肖像・音声権を立法化。NO FAKES Act は連邦レベルの統一を目指す。EU AI Act の透明性義務とも関連。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">『モデルカード』（Model Card）の役割は。</div>
+        <div class="p-choices">① 学習ループ　 ② AIモデルの意図された用途、限界、評価結果、倫理的考慮を文書化する透明性ツール　 ③ ハイパラ管理　 ④ ハードウェア仕様</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Mitchell 2019。HuggingFace でデファクト標準化。EU AI Act 文書化義務とも整合。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">EU の DMA（Digital Markets Act）の対象は。</div>
+        <div class="p-choices">① 全AI　 ② プラットフォーム独占を抑制、Gatekeeper 認定企業（Microsoft、Google、Meta、Apple等）に義務　 ③ 個人開発者　 ④ 中小企業</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2024年施行。大手プラットフォームの市場支配力濫用を抑制。AI 機能の差別的提供禁止などが含まれる。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">G検定取得者として、AI法規制への向き合い方として最も適切なのは。</div>
+        <div class="p-choices">① 法律家任せ　 ② 開発・運用ライフサイクルの各段階で法的論点を意識し、必要なら専門家と協働　 ③ 無視　 ④ 必ず最も厳しい規制に合わせる</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 設計時のリスク評価、データ取得時の権利クリア、運用時の説明可能性、生成物の権利処理、契約レビュー。技術と法務の協働が現代AIの開発標準。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ（および応用編完結）</h3>
+    <p style="font-size:14px; line-height:1.95;">EU AI Act、GDPR、CCPA、日本のAI事業者ガイドライン・推進法、著作権、特許、肖像権、Anthropic ASL、SB-1047、競争法を扱いました。応用で業種別規制、AI ガバナンスフレームワーク、域外適用、契約実務。ハンズオンで EU AI Act 分類、DPIA、モデルカード、著作権チェック、API契約レビュー。シミュレーションで採用AI、画像生成、GDPR第22条の判断シナリオ。<br><br>これで G検定 応用編 全12章が完結しました。基本編12章＋応用編12章＝計24章を通じて、AIの数学的基礎から、機械学習・深層学習の代表手法、最新のLLM・生成AI・エージェント、そしてMLOps・倫理・法規制まで、G検定範囲を体系的に学びました。問題演習、用語集、コミュニティで実力をさらに磨いてください。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="11-ethics.html">← 章11</a></div>
-  <div><span class="ch-label">応用編 完結</span><br><span class="ch-title">演習へ</span></div>
-  <div><a href="../../../quiz.html?topic=g-kentei">問題演習 →</a></div>
+  <div><a href="11-ethics.html">← 章23: AI倫理</a></div>
+  <div><span class="ch-label">Chapter 24 of 12 · 応用編完結</span><br><span class="ch-title">AI法規制</span></div>
+  <div><a href="../../../certifications/g-kentei.html">G検定 TOP →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a><a href="../../../certifications/tokei.html">統計検定</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

@@ -4,10 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>G検定 — Swallow AI Academy</title>
-<meta name="description" content="JDLA G検定の試験概要、最新シラバス、章別の学習ポイント、参考書、外部リソースを体系化。">
+<meta name="description" content="G検定（ジェネラリスト検定）の完全カリキュラム。基本編12章＋応用編12章、480問のオリジナル演習で合格を支援。">
 <link rel="stylesheet" href="../assets/css/main.css">
+<meta name="theme-color" content="#0a0a0c">
 </head>
 <body>
+
+<div class="aurora" aria-hidden="true"></div>
 
 <header class="masthead">
   <div class="masthead-inner">
@@ -15,312 +18,392 @@
       <span class="brand-mark">S</span>
       <div>
         <div class="brand-name">Swallow AI Academy</div>
-        <div class="brand-meta">Independent · Editorial · 2026</div>
+        <div class="brand-meta">Independent · 2026</div>
       </div>
     </a>
     <nav class="nav-primary">
       <a href="../index.html#certifications">資格</a>
-      <a href="../learn/basics.html">基本</a>
-      <a href="../learn/advanced.html">応用</a>
-      <a href="../learn/simulation.html">シミュレーション</a>
-      <a href="../learn/hands-on.html">ハンズオン</a>
+      <a href="g-kentei.html" aria-current="page">G検定</a>
+      <a href="e-shikaku.html">E資格</a>
       <a href="../quiz.html">問題演習</a>
     </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>Generalist</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <div class="nav-actions">
+      <button class="search-trigger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; CERTIFICATIONS &nbsp;/&nbsp; G-KENTEI</div>
-    <h1>G検定<span class="en">JDLA Deep Learning for GENERAL</span></h1>
-    <p class="standfirst">ディープラーニングを<strong>事業に活かす</strong>ための知識を測る検定。エンジニアだけでなく、企画・経営・研究のあらゆる立場で「AIの地図」を持つための第一歩。 受験資格なし、オンライン100分・小問145問前後（2026年から時間・問題数が改訂）。</p>
+    <div class="crumbs"><a href="../index.html">HOME</a> &nbsp;/&nbsp; CERTIFICATIONS &nbsp;/&nbsp; G検定</div>
+    <h1>G検定<span class="en">Generalist Certification — Deep Learning &amp; AI</span></h1>
+    <p class="standfirst">
+      日本ディープラーニング協会（JDLA）が主催する、<strong>AI・ディープラーニングの社会実装に必要な基礎知識</strong>を問う資格。
+      ジェネラリスト向けに、技術的素地から、ビジネス活用、倫理・法規制まで体系的な理解を求める。
+      本コースでは <strong>基本編12章＋応用編12章＝計24章、480問のオリジナル演習</strong>で完全合格を支援します。
+    </p>
+
+    <dl class="exam-info">
+      <div class="exam-info-item"><dt>主催</dt><dd>日本ディープラーニング協会</dd></div>
+      <div class="exam-info-item"><dt>受験形式</dt><dd>オンライン・120分</dd></div>
+      <div class="exam-info-item"><dt>問題数</dt><dd>約 220 問</dd></div>
+      <div class="exam-info-item"><dt>合格率</dt><dd>約 60-70%</dd></div>
+      <div class="exam-info-item"><dt>受験料</dt><dd>一般 13,200円</dd></div>
+    </dl>
   </div>
 </section>
 
-<div class="article">
-  <aside class="article-side">
-    <h6>Contents</h6>
-    <a href="#about">§01 検定概要</a>
-    <a href="#syllabus">§02 シラバス</a>
-    <a href="#roadmap">§03 学習ロードマップ</a>
-    <a href="#ch1-2">§04 第1〜2章 AIとは／動向</a>
-    <a href="#ch3">§05 第3章 機械学習</a>
-    <a href="#ch4-5">§06 第4〜5章 DL概要/要素技術</a>
-    <a href="#ch6">§07 第6章 DL応用例</a>
-    <a href="#ch7-8">§08 第7〜8章 社会実装/法と倫理</a>
-    <a href="#math">§09 数理・統計の基礎</a>
-    <a href="#checklist">§10 直前チェックリスト</a>
-    <a href="#books">§11 参考書・リソース</a>
-    <a href="#quiz">§12 問題演習へ</a>
-  </aside>
-
-  <article class="article-body">
-
-    <div class="article-eyebrow">CERTIFICATION DOSSIER — No.01</div>
-    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">
-      AIの「地図」を<br>1冊で持つために。
-    </h2>
-    <p class="article-lede">
-      G検定は、AI・ディープラーニング全般のリテラシーを問う検定です。技術用語と歴史、機械学習・ディープラーニングの仕組み、社会実装の論点、法律と倫理まで、出題範囲は広く浅く。LLM・生成AIの動向もシラバスに含まれており、AI時代の「読み書き能力」を一気にインストールできます。
-    </p>
-
-    <div style="background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0;border-radius:2px;">
-      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.18em;color:#9aa0a8;text-transform:uppercase;margin-bottom:10px;">LEARNING TRACK · 4 chapters</div>
-      <h3 style="font-family:var(--font-display-jp);font-weight:700;font-size:22px;margin:0 0 16px;color:#faf7f2;">G検定 学習動線</h3>
-      <p style="font-size:14.5px;line-height:1.85;color:#d4d0c5;margin:0 0 22px;">
-        本ページの概要を読んだあと、<strong style="color:#faf7f2;">基本 → 応用 → シミュレーション → ハンズオン</strong> の4章を順に読むことで、G検定の合格と「仕組みの理解」が両立します。各章は教科書1章レベルの分量で、数式の導出・計算例・つまずきポイント・相互参照を備えています。
-      </p>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
-        <a href="../learn/g-kentei/basics/index.html" style="display:block;padding:14px 18px;background:#b8431f;color:#faf7f2;text-decoration:none;font-family:var(--font-display-jp);font-weight:700;">
-          <div style="font-size:10.5px;letter-spacing:0.18em;color:#f5d4c4;margin-bottom:4px;">CHAPTER 1</div>
-          <div style="font-size:15.5px;">基本（数学・ML・DLの地盤）→</div>
-        </a>
-        <a href="../learn/g-kentei/advanced/index.html" style="display:block;padding:14px 18px;background:#1a2a3f;color:#faf7f2;text-decoration:none;font-family:var(--font-display-jp);font-weight:700;border:1px solid #2e4159;">
-          <div style="font-size:10.5px;letter-spacing:0.18em;color:#9aa0a8;margin-bottom:4px;">CHAPTER 2（執筆予定）</div>
-          <div style="font-size:15.5px;">応用：Transformer・生成AI・倫理</div>
-        </a>
-        <a href="../learn/g-kentei/simulation.html" style="display:block;padding:14px 18px;background:#1a2a3f;color:#faf7f2;text-decoration:none;font-family:var(--font-display-jp);font-weight:700;border:1px solid #2e4159;">
-          <div style="font-size:10.5px;letter-spacing:0.18em;color:#9aa0a8;margin-bottom:4px;">CHAPTER 3（執筆予定）</div>
-          <div style="font-size:15.5px;">シミュレーション</div>
-        </a>
-        <a href="../learn/g-kentei/hands-on.html" style="display:block;padding:14px 18px;background:#1a2a3f;color:#faf7f2;text-decoration:none;font-family:var(--font-display-jp);font-weight:700;border:1px solid #2e4159;">
-          <div style="font-size:10.5px;letter-spacing:0.18em;color:#9aa0a8;margin-bottom:4px;">CHAPTER 4（執筆予定）</div>
-          <div style="font-size:15.5px;">ハンズオン（Python実装）</div>
-        </a>
+<!-- COURSE OVERVIEW BENTO -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">COURSE OVERVIEW</div>
+        <h2>コースの構成<span class="en">24 chapters · 480 problems · 5-section structure</span></h2>
       </div>
     </div>
 
-    <h2 id="about"><span class="label">§01 / OVERVIEW</span>検定の概要</h2>
-    <table class="spec">
-      <tr><th>名称</th><td>JDLA Deep Learning for GENERAL（G検定）</td></tr>
-      <tr><th>主催</th><td>一般社団法人 日本ディープラーニング協会（JDLA）</td></tr>
-      <tr><th>受験資格</th><td>制限なし。誰でも受験可能</td></tr>
-      <tr><th>形式</th><td>オンライン（自宅受験）／会場（オンサイト）</td></tr>
-      <tr><th>試験時間 / 問題数</th><td>オンライン100分・小問145問前後、会場120分（2026年から改訂）</td></tr>
-      <tr><th>受験料</th><td>一般 13,200円（税込）／学生 5,500円（税込）</td></tr>
-      <tr><th>合格ライン</th><td>非公開（おおむね正答率 7 割前後と推定）</td></tr>
-      <tr><th>開催頻度</th><td>2026年はオンライン6回＋会場3回の年9回開催予定</td></tr>
-      <tr><th>関連バッジ</th><td>合格後「DX推進パスポート」オープンバッジの発行が可能</td></tr>
-    </table>
+    <div class="bento">
+      <div class="bento-card bento-card--feature bento-card--span-2">
+        <div class="bento-card__eyebrow">CORE CURRICULUM</div>
+        <div class="bento-card__title">基本編 12章<span class="en">Foundations of AI &amp; ML</span></div>
+        <p class="bento-card__body">
+          AIの定義・歴史から、線形代数・微分・確率統計・情報理論の数学的基礎、
+          機械学習パラダイム、古典ML、評価指標、NN基礎、逆伝播、NNの工夫まで。
+          深層学習を学ぶ土台を完全に固めます。
+        </p>
+        <div class="bento-card__stat">240</div>
+        <div class="bento-card__footer">
+          <span>問題演習</span>
+          <a href="#basics" class="btn btn--sm" style="background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.15);">章一覧 →</a>
+        </div>
+      </div>
 
-    <div class="callout" data-label="2026 年度の動き">
-      <p><strong>試験時間および問題数が G2026#1 から変更</strong>されています。最新の試験要項は必ず <a href="https://www.jdla.org/certificate/general/" target="_blank" rel="noopener">JDLA 公式ページ</a> で確認してください。本ページの記述は公開時点の公開情報に基づきます。</p>
-    </div>
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">ADVANCED</div>
+        <div class="bento-card__title">応用編 12章</div>
+        <p class="bento-card__body">CNN・RNN・Transformer・BERT/GPT・LLM・生成AI・強化学習・RAG・Agent・MLOps・倫理・法規制。</p>
+        <div class="bento-card__footer"><a href="#advanced">章一覧 →</a><div class="bento-card__arrow">→</div></div>
+      </div>
 
-    <h2 id="syllabus"><span class="label">§02 / SYLLABUS</span>最新シラバスの全体像</h2>
-    <p>2024年11月の G2024#6 から改訂版シラバスが適用されており、生成AI 時代の重要キーワード（LLM、Diffusion Model、Foundation Model、RAG、AI Alignment、AI ガバナンス等）が拡充されました。出題範囲は大きく8章＋数理・統計の基礎で構成されます。</p>
-    <ol>
-      <li><strong>人工知能（AI）とは</strong> — AI の定義、強い AI／弱い AI、AI 効果、シンギュラリティ</li>
-      <li><strong>人工知能をめぐる動向</strong> — 3次のブーム、推論・探索、エキスパートシステム、機械学習・DL の興隆</li>
-      <li><strong>機械学習の具体的手法</strong> — 教師あり／なし／強化、回帰、分類、クラスタリング、評価指標</li>
-      <li><strong>ディープラーニングの概要</strong> — NN の歴史、勾配消失、活性化関数、最適化、過学習</li>
-      <li><strong>ディープラーニングの要素技術</strong> — CNN、RNN、LSTM、Attention、Transformer、正則化技術</li>
-      <li><strong>ディープラーニングの応用例</strong> — CV、NLP、音声、強化学習、生成AI（GAN／Diffusion／LLM）</li>
-      <li><strong>AI の社会実装に向けて</strong> — プロジェクト設計、MLOps、責任あるAI、データ準備</li>
-      <li><strong>AI の法律と倫理</strong> — 個人情報、知的財産、AI 関連法令、ガイドライン、EU AI Act</li>
-    </ol>
-    <p>これに加え、<strong>数理・統計の基礎</strong>（確率、ベイズ、線形代数の初歩、情報量）も出題範囲に含まれます。</p>
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">FORMAT</div>
+        <div class="bento-card__title">5部構成</div>
+        <p class="bento-card__body">基本・応用・ハンズオン・シミュレーション・問題演習。</p>
+        <div class="bento-card__footer"><span>各章 ~40KB</span><div class="bento-card__arrow">→</div></div>
+      </div>
 
-    <h2 id="roadmap"><span class="label">§03 / ROADMAP</span>学習ロードマップ（標準 30〜60時間）</h2>
-    <h4>Week 1 — 全体俯瞰</h4>
-    <p>公式テキスト第3版の目次を1周。各章タイトルから「何を問う章か」を口頭で説明できる状態を目指す。Wikipedia / JDLA の用語集で見出し語をスキャン。</p>
-    <h4>Week 2 — 機械学習 / DL 基礎</h4>
-    <p>第3〜5章を精読。アルゴリズム名・概念名と「なぜ生まれたか／何を解いたか」を結びつけて記憶。学習曲線・過学習・正則化はシミュレーションで体感（<a href="../learn/simulation.html">本サイトの該当章</a>）。</p>
-    <h4>Week 3 — 応用と社会実装</h4>
-    <p>第6〜7章。CV／NLP／生成AI の代表モデル名と用途を一覧化。MLOps、責任あるAI のキーワードを実例とともに整理。</p>
-    <h4>Week 4 — 法と倫理＋数理</h4>
-    <p>第8章＋数理。法律名・ガイドライン名・条文の論点を年表で整理。情報量、エントロピー、ベイズの式を手で書けるレベルに。</p>
-    <h4>Week 5 — 演習・模試</h4>
-    <p>本サイトの問題演習、市販問題集の最低2周。1問あたり40秒のペース感覚を作る。</p>
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">PRACTICE</div>
+        <div class="bento-card__title">演習問題</div>
+        <p class="bento-card__body">各章 20 問 × 24 章 = 480 問。解答解説付き。</p>
+        <div class="bento-card__footer"><a href="../quiz.html?topic=g-kentei">演習へ →</a><div class="bento-card__arrow">→</div></div>
+      </div>
 
-    <h2 id="ch1-2"><span class="label">§04 / Ch.1–2</span>第1〜2章：AIとは／動向</h2>
-    <p>歴史と概念を扱う最重要セクション。<strong>3次のブームと冬の時代の対応関係</strong>、<strong>各時代の代表技術</strong>、<strong>人名と提唱の対応</strong>を抑えれば取りこぼしを減らせます。</p>
-    <h3>頻出キーワード</h3>
-    <ul>
-      <li><strong>第1次（1950s〜60s）</strong> 探索・推論／トイプロブレム／ロジック理論機械／ダートマス会議</li>
-      <li><strong>第2次（1980s）</strong> エキスパートシステム／MYCIN／DENDRAL／フレーム問題／シンボルグラウンディング問題</li>
-      <li><strong>第3次（2010s〜）</strong> ILSVRC／AlexNet／GAN／Transformer／LLM／生成AI</li>
-      <li><strong>提唱者の対応</strong> チューリング（テスト）／マッカーシー（命名）／ミンスキー（フレーム問題）／サール（強いAI・中国語の部屋）／カーツワイル（収穫加速）</li>
-    </ul>
-
-    <h2 id="ch3"><span class="label">§05 / Ch.3</span>第3章：機械学習の具体的手法</h2>
-    <p>「教師あり／なし／強化」を軸に、各アルゴリズムの<strong>長所・短所・使いどころ</strong>を表で整理するのが効率的。</p>
-    <h3>覚えるべきアルゴリズム</h3>
-    <ul>
-      <li><strong>教師あり</strong> 線形回帰／ロジスティック回帰／SVM／決定木／ランダムフォレスト／勾配ブースティング（XGBoost, LightGBM）</li>
-      <li><strong>教師なし</strong> k-means／階層クラスタリング／PCA／t-SNE／UMAP</li>
-      <li><strong>強化学習</strong> Q学習／SARSA／方策勾配／DQN／AlphaGo の系譜</li>
-      <li><strong>評価指標</strong> 正解率・適合率・再現率・F1・ROC AUC・PR AUC・MAE／RMSE・R²</li>
-    </ul>
-    <h3>正則化</h3>
-    <p>L1 正則化（Lasso）は<strong>係数をゼロに</strong>する効果でスパース性を生み、L2 正則化（Ridge）は<strong>係数を小さく</strong>抑え過学習を緩和。Elastic Net は両者の組み合わせ。</p>
-
-    <h2 id="ch4-5"><span class="label">§06 / Ch.4–5</span>第4〜5章：DL概要 / 要素技術</h2>
-    <p>勾配消失とその解決の系譜は出題の核です。Hintonの事前学習 → ReLU → BN → 残差接続 → 正規化フロー、と<strong>歴史的解決の連鎖</strong>として頭に入れます。</p>
-    <h3>主要構造</h3>
-    <ul>
-      <li><strong>CNN</strong> 畳み込み・プーリング・パラメータ共有・並進不変性。代表: LeNet / AlexNet / VGG / GoogLeNet / ResNet / EfficientNet</li>
-      <li><strong>RNN 系</strong> 単純RNN／LSTM／GRU。系列の長距離依存をゲート機構で扱う</li>
-      <li><strong>Attention / Transformer</strong> Self-Attention、Multi-Head、位置エンコーディング、Encoder-Decoder 構造</li>
-      <li><strong>生成モデル</strong> AutoEncoder ／ VAE ／ GAN ／ Diffusion Model ／ Flow-based</li>
-    </ul>
-    <h3>最適化と正則化</h3>
-    <ul>
-      <li>SGD ／ Momentum ／ AdaGrad ／ RMSProp ／ Adam ／ AdamW</li>
-      <li>Dropout ／ Batch Normalization ／ Layer Normalization ／ Data Augmentation</li>
-      <li>Learning Rate Schedule（Cosine, Warmup）</li>
-    </ul>
-
-    <h2 id="ch6"><span class="label">§07 / Ch.6</span>第6章：ディープラーニングの応用例</h2>
-    <p>生成AI 時代に直接対応する章。<strong>代表モデルの名前と用途を1対1で結べるか</strong>がポイントです。</p>
-    <h3>領域別の代表モデル</h3>
-    <ul>
-      <li><strong>画像</strong> ResNet, EfficientNet, ViT, YOLO, SSD, Faster R-CNN, Mask R-CNN, Segment Anything</li>
-      <li><strong>自然言語</strong> word2vec, GloVe, ELMo, BERT, GPT 系, LLaMA, Claude, Gemini, T5</li>
-      <li><strong>音声</strong> WaveNet, Tacotron, Whisper</li>
-      <li><strong>生成画像</strong> DCGAN, StyleGAN, Stable Diffusion, DALL·E, Midjourney</li>
-      <li><strong>強化学習</strong> DQN, A3C, PPO, AlphaGo / AlphaZero, MuZero</li>
-      <li><strong>マルチモーダル</strong> CLIP, Flamingo, GPT-4V, Gemini, Claude（vision）</li>
-    </ul>
-
-    <h2 id="ch7-8"><span class="label">§08 / Ch.7–8</span>第7〜8章：社会実装 / 法と倫理</h2>
-    <p>社会実装は<strong>CRISP-DM の6工程</strong>、データの収集・前処理、データバリデーション、MLOps（CI/CD・モデル監視・ドリフト検知）が頻出。倫理は<strong>原則・ガイドライン・法令</strong>を一覧で整理します。</p>
-    <h3>覚えるべき枠組み</h3>
-    <ul>
-      <li>FAT（Fairness, Accountability, Transparency）／XAI（説明可能AI）</li>
-      <li>日本: AI事業者ガイドライン、人間中心のAI社会原則、個人情報保護法、不正競争防止法（営業秘密）、著作権法 30 条の 4</li>
-      <li>EU: AI Act（4段階リスク区分、汎用AIの透明性義務）、GDPR</li>
-      <li>米: NIST AI RMF、Executive Order on AI</li>
-      <li>国際: OECD AI 原則、G7 広島AIプロセス</li>
-    </ul>
-    <p>固有名詞は<strong>「誰が／いつ／何を決めたか」</strong>のセットで整理すると問題で迷いません。</p>
-
-    <h2 id="math"><span class="label">§09 / Math</span>数理・統計の基礎</h2>
-    <p>2024年改訂で範囲に明示されました。負担は小さいですが、E資格への橋渡しになるので、ここで土台を作っておくと将来費用対効果が高い。</p>
-    <ul>
-      <li>確率・条件付き確率・ベイズの定理</li>
-      <li>確率分布（ベルヌーイ、正規、ポアソン）</li>
-      <li>期待値・分散・共分散・相関</li>
-      <li>線形代数の初歩（ベクトル・行列・内積）</li>
-      <li>情報量・エントロピー・KLダイバージェンス</li>
-      <li>勾配と最適化の直感</li>
-    </ul>
-
-    <h2 id="checklist"><span class="label">§10 / CHECKLIST</span>直前チェックリスト</h2>
-    <p>クリックでチェックが入り、ブラウザに保存されます（リセット可）。</p>
-    <ul class="checklist">
-      <li data-id="g-ck-1">3次のブームと代表技術・代表人物を口頭で説明できる</li>
-      <li data-id="g-ck-2">機械学習アルゴリズムを「教師あり／なし／強化」で分類できる</li>
-      <li data-id="g-ck-3">L1・L2 正則化の効果の違いを式と直感で説明できる</li>
-      <li data-id="g-ck-4">CNN・RNN・Transformer の構造と適用領域を区別できる</li>
-      <li data-id="g-ck-5">活性化関数（Sigmoid / tanh / ReLU / GELU）の特徴と用途を言える</li>
-      <li data-id="g-ck-6">過学習の対策を5つ以上挙げられる</li>
-      <li data-id="g-ck-7">GAN・VAE・Diffusion Model の違いを説明できる</li>
-      <li data-id="g-ck-8">LLM のスケーリング則と限界を理解している</li>
-      <li data-id="g-ck-9">RAG とファインチューニングの使い分けが説明できる</li>
-      <li data-id="g-ck-10">CRISP-DM の6工程を順序通り言える</li>
-      <li data-id="g-ck-11">EU AI Act の4段階リスク区分を説明できる</li>
-      <li data-id="g-ck-12">日本の AI 事業者ガイドラインの主要原則を説明できる</li>
-      <li data-id="g-ck-13">著作権法 30 条の 4 の趣旨と論点を理解している</li>
-      <li data-id="g-ck-14">仮名加工情報と匿名加工情報の違いを言える</li>
-      <li data-id="g-ck-15">ベイズの定理を手書きで書ける</li>
-      <li data-id="g-ck-16">KL ダイバージェンスの定義と性質を1分で述べられる</li>
-      <li data-id="g-ck-17">本サイトの G検定クイズで 80% 以上を一度取った</li>
-    </ul>
-
-    <h2 id="books"><span class="label">§11 / RESOURCES</span>参考書・外部リソース</h2>
-    <p>公式テキストを軸に、生成AI 章は最新情報源を併用するのが効率的です。</p>
-    <ul class="resource-list">
-      <li>
-        <span class="tag">公式テキスト</span>
-        <span class="desc"><strong>ディープラーニングG検定（ジェネラリスト）公式テキスト 第3版</strong>（JDLA 監修・翔泳社） — シラバス改訂対応の最新版</span>
-      </li>
-      <li>
-        <span class="tag">公式問題集</span>
-        <span class="desc"><strong>G検定 公式問題集 第3版</strong> — 公式テキストと同じ団体による問題集。最初の演習に</span>
-      </li>
-      <li>
-        <span class="tag">用語辞典</span>
-        <span class="desc"><a href="https://zero2one.jp/ai-word/" target="_blank" rel="noopener">AI用語集（zero2one）</a> — 概念ごとの簡潔な解説。隙間時間に</span>
-      </li>
-      <li>
-        <span class="tag">動画</span>
-        <span class="desc"><a href="https://datawokagaku.com/" target="_blank" rel="noopener">データを科学する</a> — データサイエンスの体系的解説</span>
-      </li>
-      <li>
-        <span class="tag">最新動向</span>
-        <span class="desc"><a href="https://ai-scholar.tech/" target="_blank" rel="noopener">AI Scholar</a> ／ <a href="https://www.ai-souken.com/" target="_blank" rel="noopener">AI総研</a> — 論文・サービスの最新トレンド</span>
-      </li>
-      <li>
-        <span class="tag">英語講義</span>
-        <span class="desc"><a href="https://www.deeplearning.ai/" target="_blank" rel="noopener">DeepLearning.AI</a> ／ <a href="https://see.stanford.edu/Course/CS229" target="_blank" rel="noopener">Stanford CS229</a> — 体系的な英語講座</span>
-      </li>
-      <li>
-        <span class="tag">公式</span>
-        <span class="desc"><a href="https://www.jdla.org/certificate/general/" target="_blank" rel="noopener">JDLA G検定 公式ページ</a> — シラバスと日程の一次情報</span>
-      </li>
-    </ul>
-
-    <h2 id="quiz"><span class="label">§12 / DRILL</span>問題演習で実力を測る</h2>
-    <p>本サイトには G検定 出題範囲のオリジナル問題が用意されています。1問あたり 40 秒のペース感覚を体に染み込ませましょう。</p>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;margin:24px 0;">
-      <a class="btn solid" href="../quiz.html?topic=g-kentei">G検定 クイズを始める →</a>
-      <a class="btn" href="../quiz.html">他の資格のクイズ</a>
-    </div>
-
-    <hr class="divider bold">
-    <p style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);letter-spacing:0.15em;text-transform:uppercase;">
-      Last reviewed · 2026 Spring · 公式情報は JDLA 公式サイトで必ず確認してください。
-    </p>
-
-  </article>
-</div>
-
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand">
-      <div class="colophon">Swallow<br><em>AI Academy</em></div>
-      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
-    </div>
-    <div>
-      <h6>資格</h6>
-      <ul>
-        <li><a href="g-kentei.html">G検定</a></li>
-        <li><a href="e-shikaku.html">E資格</a></li>
-        <li><a href="tokei-kentei.html">統計検定</a></li>
-        <li><a href="python-cert.html">Python認定</a></li>
-        <li><a href="aws-mla-c01.html">AWS MLA-C01</a></li>
-        <li><a href="image-engineer.html">画像処理エンジニア</a></li>
-        <li><a href="jetson-ai.html">Jetson AI</a></li>
-      </ul>
-    </div>
-    <div>
-      <h6>学習</h6>
-      <ul>
-        <li><a href="../learn/basics.html">基本</a></li>
-        <li><a href="../learn/advanced.html">応用</a></li>
-        <li><a href="../learn/simulation.html">シミュレーション</a></li>
-        <li><a href="../learn/hands-on.html">ハンズオン</a></li>
-        <li><a href="../quiz.html">問題演習</a></li>
-      </ul>
-    </div>
-    <div>
-      <h6>外部</h6>
-      <ul>
-        <li><a href="https://www.jdla.org/" target="_blank" rel="noopener">JDLA 公式</a></li>
-        <li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener">Kaggle Learn</a></li>
-        <li><a href="https://www.deeplearning.ai/" target="_blank" rel="noopener">DeepLearning.AI</a></li>
-      </ul>
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">VISUALS</div>
+        <div class="bento-card__title">SVG 図解</div>
+        <p class="bento-card__body">概念の視覚的説明を 50 以上の独自図解で。</p>
+        <div class="bento-card__footer"><span>独立UI</span><div class="bento-card__arrow">→</div></div>
+      </div>
     </div>
   </div>
-  <div class="foot-bottom">
-    <div>© 2026 Swallow AI Academy · Independent Project</div>
-    <div>Built on GitHub Pages · No tracking · No ads</div>
+</section>
+
+<!-- BASICS CHAPTERS -->
+<section class="section section--bg" id="basics">
+  <div class="container">
+    <div class="toc-section-head" style="margin-top:0">
+      <h3>基本編 ── 12章</h3>
+      <span class="count">FOUNDATIONS · 12 chapters · 240 problems</span>
+    </div>
+
+    <div class="chapter-list">
+      <a class="chapter-item" href="../learn/g-kentei/basics/01-what-is-ai.html" data-chapter-key="g-kentei:basics:01-what-is-ai">
+        <div class="chapter-item__num">01</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">AIとは何か</div>
+          <div class="chapter-item__sub">Foundations of AI</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/basics/02-history.html" data-chapter-key="g-kentei:basics:02-history">
+        <div class="chapter-item__num">02</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">AIの歴史</div>
+          <div class="chapter-item__sub">History of AI</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/basics/03-linear-algebra.html" data-chapter-key="g-kentei:basics:03-linear-algebra">
+        <div class="chapter-item__num">03</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">線形代数</div>
+          <div class="chapter-item__sub">Linear Algebra</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/basics/04-calculus.html" data-chapter-key="g-kentei:basics:04-calculus">
+        <div class="chapter-item__num">04</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">微分・最適化</div>
+          <div class="chapter-item__sub">Calculus &amp; Optimization</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/basics/05-probability.html" data-chapter-key="g-kentei:basics:05-probability">
+        <div class="chapter-item__num">05</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">確率・統計</div>
+          <div class="chapter-item__sub">Probability &amp; Statistics</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/basics/06-info-theory.html" data-chapter-key="g-kentei:basics:06-info-theory">
+        <div class="chapter-item__num">06</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">情報理論</div>
+          <div class="chapter-item__sub">Information Theory</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/basics/07-ml-paradigm.html" data-chapter-key="g-kentei:basics:07-ml-paradigm">
+        <div class="chapter-item__num">07</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">機械学習パラダイム</div>
+          <div class="chapter-item__sub">ML Paradigms</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/basics/08-ml-classical.html" data-chapter-key="g-kentei:basics:08-ml-classical">
+        <div class="chapter-item__num">08</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">古典機械学習</div>
+          <div class="chapter-item__sub">Classical ML</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/basics/09-ml-evaluation.html" data-chapter-key="g-kentei:basics:09-ml-evaluation">
+        <div class="chapter-item__num">09</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">評価指標</div>
+          <div class="chapter-item__sub">Evaluation Metrics</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/basics/10-nn-basics.html" data-chapter-key="g-kentei:basics:10-nn-basics">
+        <div class="chapter-item__num">10</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">NN基礎</div>
+          <div class="chapter-item__sub">Neural Network Basics</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/basics/11-backprop.html" data-chapter-key="g-kentei:basics:11-backprop">
+        <div class="chapter-item__num">11</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">逆伝播</div>
+          <div class="chapter-item__sub">Backpropagation</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/basics/12-nn-tricks.html" data-chapter-key="g-kentei:basics:12-nn-tricks">
+        <div class="chapter-item__num">12</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">NNの工夫</div>
+          <div class="chapter-item__sub">Training Techniques</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+    </div>
   </div>
+</section>
+
+<!-- ADVANCED CHAPTERS -->
+<section class="section" id="advanced">
+  <div class="container">
+    <div class="toc-section-head" style="margin-top:0">
+      <h3>応用編 ── 12章</h3>
+      <span class="count">ADVANCED · 12 chapters · 240 problems</span>
+    </div>
+
+    <div class="chapter-list">
+      <a class="chapter-item" href="../learn/g-kentei/advanced/01-cnn.html" data-chapter-key="g-kentei:advanced:01-cnn">
+        <div class="chapter-item__num">13</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">CNN</div>
+          <div class="chapter-item__sub">Convolutional Networks</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/advanced/02-rnn.html" data-chapter-key="g-kentei:advanced:02-rnn">
+        <div class="chapter-item__num">14</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">RNN・LSTM</div>
+          <div class="chapter-item__sub">Recurrent Networks</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/advanced/03-transformer.html" data-chapter-key="g-kentei:advanced:03-transformer">
+        <div class="chapter-item__num">15</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">Transformer</div>
+          <div class="chapter-item__sub">Attention is all you need</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/advanced/04-bert-gpt.html" data-chapter-key="g-kentei:advanced:04-bert-gpt">
+        <div class="chapter-item__num">16</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">BERT・GPT</div>
+          <div class="chapter-item__sub">Pretrained Language Models</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/advanced/05-llm.html" data-chapter-key="g-kentei:advanced:05-llm">
+        <div class="chapter-item__num">17</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">LLM</div>
+          <div class="chapter-item__sub">Scaling, RLHF, CoT</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/advanced/06-generative.html" data-chapter-key="g-kentei:advanced:06-generative">
+        <div class="chapter-item__num">18</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">生成AI</div>
+          <div class="chapter-item__sub">GAN, VAE, Diffusion</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/advanced/07-rl.html" data-chapter-key="g-kentei:advanced:07-rl">
+        <div class="chapter-item__num">19</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">強化学習</div>
+          <div class="chapter-item__sub">Reinforcement Learning</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/advanced/08-rag.html" data-chapter-key="g-kentei:advanced:08-rag">
+        <div class="chapter-item__num">20</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">RAG</div>
+          <div class="chapter-item__sub">Retrieval-Augmented Generation</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/advanced/09-agent.html" data-chapter-key="g-kentei:advanced:09-agent">
+        <div class="chapter-item__num">21</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">AI Agent</div>
+          <div class="chapter-item__sub">Tool Use, Computer Use</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/advanced/10-mlops.html" data-chapter-key="g-kentei:advanced:10-mlops">
+        <div class="chapter-item__num">22</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">MLOps</div>
+          <div class="chapter-item__sub">Production ML</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/advanced/11-ethics.html" data-chapter-key="g-kentei:advanced:11-ethics">
+        <div class="chapter-item__num">23</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">AI倫理</div>
+          <div class="chapter-item__sub">Fairness, XAI, Safety</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+
+      <a class="chapter-item" href="../learn/g-kentei/advanced/12-law.html" data-chapter-key="g-kentei:advanced:12-law">
+        <div class="chapter-item__num">24</div>
+        <div class="chapter-item__body">
+          <div class="chapter-item__title">AI法規制</div>
+          <div class="chapter-item__sub">EU AI Act, GDPR, SB-1047</div>
+        </div>
+        <div class="chapter-item__arrow">→</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section" style="padding-bottom:120px;">
+  <div class="container container--narrow">
+    <div class="bento-card bento-card--feature" style="text-align:center;padding:56px 32px;">
+      <div class="bento-card__eyebrow" style="justify-content:center;">START LEARNING</div>
+      <div class="bento-card__title" style="font-size:clamp(28px, 3.8vw, 40px);margin-bottom:16px;">最初の章から始める</div>
+      <p class="bento-card__body" style="max-width:50ch;margin:0 auto 28px;font-size:14.5px;">
+        『AIとは何か』── AI の定義、知能の階層、シンギュラリティ、ELIZA効果、AI効果まで。
+      </p>
+      <a href="../learn/g-kentei/basics/01-what-is-ai.html" class="btn btn--primary">章1 を開く
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">Swallow AI Academy</div>
+      <p>Independent, editorial-style learning for AI / ML certifications. Hand-crafted curriculum, frontier-aware content.</p>
+    </div>
+    <div class="footer-cols">
+      <div>
+        <h6>G検定</h6>
+        <a href="#basics">基本編 12章</a>
+        <a href="#advanced">応用編 12章</a>
+        <a href="../quiz.html?topic=g-kentei">問題演習</a>
+      </div>
+      <div>
+        <h6>OTHER CERTS</h6>
+        <a href="e-shikaku.html">E資格</a>
+        <a href="tokei-kentei.html">統計検定</a>
+        <a href="python-cert.html">Python認定</a>
+      </div>
+      <div>
+        <h6>SHORTCUTS</h6>
+        <a href="javascript:void(0)" onclick="Swallow.Search.open()">⌘K 検索</a>
+        <a href="javascript:void(0)" onclick="Swallow.ThemeManager.toggle()">テーマ切替</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-credit">SWALLOW AI ACADEMY · G-KENTEI COURSE · INDEPENDENT</div>
 </footer>
 
-<script src="../assets/js/main.js"></script>
+<script src="../assets/js/main.js" defer></script>
 </body>
 </html>

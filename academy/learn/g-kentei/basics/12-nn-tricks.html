@@ -3,37 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章12 学習を成功させる工夫 — G検定 基本 — Swallow AI Academy</title>
-<meta name="description" content="G検定基本 章12：ミニバッチ、学習率スケジューリング、重み初期化、BatchNorm/LayerNorm、Dropout、Adam変種。深層NN を「動かす」現代の工夫を網羅。">
+<title>章12 NNの工夫 — G検定 基本 — Swallow AI Academy</title>
+<meta name="description" content="G検定基本 章12：L2正則化/Weight Decay、Dropout、BatchNorm、LayerNorm、初期化、Early Stopping、データ拡張、Label Smoothing、Mixup、Gradient Clipping、Knowledge Distillation、Mixed Precision、Checkpointingを5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.example-title{font-family:var(--font-display-jp);font-weight:700;font-size:14px;color:#0d1b2a;margin-bottom:8px}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
+    <a href="../../../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-name">Swallow AI Academy</div>
+        <div class="brand-meta">Independent · Editorial · 2026</div>
+      </div>
     </a>
     <nav class="nav-primary">
       <a href="../../../index.html#certifications">資格</a>
@@ -42,237 +28,508 @@ table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:
       <a href="../advanced/index.html">応用</a>
       <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
     </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>Ch.12</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">基本</a> / 章12</div>
-    <h1>章12 — 学習を成功させる工夫<span class="en">Chapter 12 — Training Tricks</span></h1>
-    <p class="standfirst">「<strong>NN は学習が難しい</strong>」が10年前まで常識でした。今は <strong>標準的な工夫の組合せ</strong> でほぼ確実に学習が回せる時代です。本章ではその工夫の総まとめを行います。基本編の最終章。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> &nbsp;/&nbsp; LEARN &nbsp;/&nbsp; G検定 &nbsp;/&nbsp; <a href="index.html">基本</a> &nbsp;/&nbsp; 章12</div>
+    <h1>章12 — NNの工夫<span class="en">Chapter 12 — Training Techniques</span></h1>
+    <p class="standfirst">『深層学習が動く』のは、純粋な数学的理論だけでは説明できません。<strong>Dropout</strong>、<strong>Batch Normalization</strong>、<strong>適切な初期化</strong>、<strong>データ拡張</strong>、<strong>Label Smoothing</strong>、<strong>Mixup</strong>、<strong>Gradient Clipping</strong>、<strong>Knowledge Distillation</strong>、<strong>Mixed Precision</strong> ── これらの『工学的工夫』の積み重ねが、現代の深層学習を成立させています。本章は<strong>深層学習が動く理由</strong>のすべて。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
   <div><a href="11-backprop.html">← 章11: 逆伝播</a></div>
-  <div><span class="ch-label">Chapter 12 of 12 (基本編 最終章)</span><br><span class="ch-title">学習の工夫</span></div>
-  <div><a href="../advanced/index.html">応用編 →</a></div>
+  <div><span class="ch-label">Chapter 12 of 12 · 基本編</span><br><span class="ch-title">NNの工夫</span></div>
+  <div><a href="../advanced/01-cnn.html">章13: CNN（応用編へ） →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
     <h6>章12 目次</h6>
-    <a href="#minibatch">§1 ミニバッチ学習</a>
-    <a href="#lr-sched">§2 学習率スケジューリング</a>
-    <a href="#init">§3 重み初期化</a>
-    <a href="#norm">§4 BatchNorm / LayerNorm</a>
-    <a href="#dropout">§5 Dropout</a>
-    <a href="#adam">§6 Adam とその仲間</a>
-    <a href="#data-aug">§7 データ拡張</a>
-    <a href="#regul-other">§8 その他の正則化</a>
-    <a href="#summary">§9 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
-    <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 12 (FINAL)</div>
-    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">深層学習を、<br>動かすための工夫。</h2>
+    <div class="article-eyebrow">G-KENTEI · BASICS · CHAPTER 12</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">学習を、安定させる。<br>汎化を、引き出す。</h2>
+    <p class="article-lede">
+      パーセプトロンが提案されて 65 年。<strong>『なぜ深層学習が動くか』</strong>は今でも完全に理解されていません。しかし数多くの『工学的工夫』が経験的に発見され、深層学習の実用化を支えています。本章では、それらを系統的に学びます。
+    </p>
 
-    <h2 id="minibatch"><span class="label">§1 / BATCH</span>ミニバッチ学習</h2>
-    <p>SGD のノイズを抑えつつ並列計算の恩恵を受けるため、<strong>m サンプル（典型 32〜256）</strong> ごとに平均勾配で更新するのが標準。</p>
-    <ul>
-      <li>バッチサイズ小 → ノイジー、汎化が良い場合あり</li>
-      <li>バッチサイズ大 → 安定、並列効率良いが <strong>「シャープミニマ」</strong> に陥り汎化が落ちる傾向</li>
-      <li>大規模学習では <strong>線形スケーリング則</strong>：バッチサイズを k 倍にしたら学習率も k 倍</li>
-    </ul>
-
-    <h2 id="lr-sched"><span class="label">§2 / LR-SCHED</span>学習率スケジューリング</h2>
-
-    <div class="figure">
-      <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
-        <g transform="translate(0, 0)">
-          <line x1="20" y1="160" x2="220" y2="160" stroke="#0d1b2a"/>
-          <line x1="40" y1="20" x2="40" y2="180" stroke="#0d1b2a"/>
-          <line x1="40" y1="60" x2="100" y2="60" stroke="#b8431f" stroke-width="2.5"/>
-          <line x1="100" y1="60" x2="100" y2="100" stroke="#b8431f" stroke-width="2.5"/>
-          <line x1="100" y1="100" x2="160" y2="100" stroke="#b8431f" stroke-width="2.5"/>
-          <line x1="160" y1="100" x2="160" y2="130" stroke="#b8431f" stroke-width="2.5"/>
-          <line x1="160" y1="130" x2="220" y2="130" stroke="#b8431f" stroke-width="2.5"/>
-          <text x="120" y="200" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">Step Decay</text>
-        </g>
-        <g transform="translate(260, 0)">
-          <line x1="20" y1="160" x2="220" y2="160" stroke="#0d1b2a"/>
-          <line x1="40" y1="20" x2="40" y2="180" stroke="#0d1b2a"/>
-          <path d="M 40 60 Q 100 70 130 100 Q 170 130 220 150" stroke="#b8431f" stroke-width="2.5" fill="none"/>
-          <text x="120" y="200" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">Cosine Annealing</text>
-        </g>
-        <g transform="translate(520, 0)">
-          <line x1="20" y1="160" x2="220" y2="160" stroke="#0d1b2a"/>
-          <line x1="40" y1="20" x2="40" y2="180" stroke="#0d1b2a"/>
-          <line x1="40" y1="160" x2="80" y2="60" stroke="#b8431f" stroke-width="2.5"/>
-          <path d="M 80 60 Q 150 70 220 130" stroke="#b8431f" stroke-width="2.5" fill="none"/>
-          <text x="120" y="200" text-anchor="middle" font-size="12" font-weight="bold" fill="#0d1b2a">Warmup + Decay</text>
-          <text x="120" y="220" text-anchor="middle" font-size="10" fill="#5a5f6a">Transformer 学習で標準</text>
-        </g>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 12.1</span> 主な学習率スケジューリング。Warmup（最初の数千ステップは低い学習率から徐々に上げる）は Transformer 学習で標準。</div>
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>L1/L2正則化・Dropout・BatchNorm・LayerNorm・初期化・Early Stopping・データ拡張・Label Smoothing・Mixup・Gradient Clipping の10節。</p>
     </div>
 
-    <ul>
-      <li><strong>Step Decay</strong>：一定エポックごとに 1/10 など</li>
-      <li><strong>Cosine Annealing</strong>：コサイン関数で滑らかに減衰</li>
-      <li><strong>Warmup</strong>：最初の数ステップは小さい学習率から徐々に上げる（Transformer で標準）</li>
-      <li><strong>ReduceLROnPlateau</strong>：検証ロスが改善しないとき学習率を下げる</li>
-      <li><strong>One-Cycle</strong>：急上昇 → 急下降。fast.ai で普及</li>
-    </ul>
+    <h2>基本</h2>
 
-    <h2 id="init"><span class="label">§3 / INIT</span>重み初期化</h2>
-    <p>不適切な初期化は学習が一切進まない原因に。</p>
-    <table class="spec">
-      <tr><th>手法</th><th>式</th><th>用途</th></tr>
-      <tr><td><strong>Xavier / Glorot</strong></td><td>Var(W) = 2 / (n_in + n_out)</td><td>Sigmoid, Tanh</td></tr>
-      <tr><td><strong>He</strong></td><td>Var(W) = 2 / n_in</td><td>ReLU 系（標準）</td></tr>
-      <tr><td><strong>LeCun</strong></td><td>Var(W) = 1 / n_in</td><td>SELU</td></tr>
-      <tr><td><strong>ゼロ初期化</strong></td><td>すべて 0</td><td>NG（対称性が破れない）</td></tr>
-    </table>
-
-    <h2 id="norm"><span class="label">§4 / NORM</span>BatchNorm / LayerNorm</h2>
-    <p>各層の入力を正規化（平均 0、分散 1 にスケール）してから学習可能なスケール・バイアスをかける：</p>
-    <div class="formula">y = γ · (x - μ) / √(σ² + ε) + β</div>
-
-    <div class="figure">
-      <svg viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg">
-        <g transform="translate(0, 0)">
-          <text x="160" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">BatchNorm</text>
-          <text x="160" y="42" text-anchor="middle" font-size="10" fill="#5a5f6a">バッチ方向に正規化</text>
-          <!-- batch as rows, features as cols -->
-          <g transform="translate(40, 60)">
-            <rect x="0" y="0" width="240" height="20" fill="#b8431f"/>
-            <rect x="0" y="22" width="240" height="20" fill="#b8431f" opacity="0.7"/>
-            <rect x="0" y="44" width="240" height="20" fill="#b8431f" opacity="0.5"/>
-            <rect x="0" y="66" width="240" height="20" fill="#b8431f" opacity="0.3"/>
-          </g>
-          <text x="40" y="170" font-size="10" fill="#5a5f6a">N=4 samples × D=6 features</text>
-          <text x="40" y="190" font-size="10" fill="#0d1b2a">各特徴量で N サンプル平均・分散</text>
-        </g>
-        <g transform="translate(360, 0)">
-          <text x="160" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d1b2a">LayerNorm</text>
-          <text x="160" y="42" text-anchor="middle" font-size="10" fill="#5a5f6a">特徴量方向に正規化</text>
-          <g transform="translate(40, 60)">
-            <rect x="0" y="0" width="40" height="86" fill="#2e5577"/>
-            <rect x="42" y="0" width="40" height="86" fill="#2e5577" opacity="0.8"/>
-            <rect x="84" y="0" width="40" height="86" fill="#2e5577" opacity="0.65"/>
-            <rect x="126" y="0" width="40" height="86" fill="#2e5577" opacity="0.5"/>
-            <rect x="168" y="0" width="40" height="86" fill="#2e5577" opacity="0.35"/>
-            <rect x="210" y="0" width="40" height="86" fill="#2e5577" opacity="0.25"/>
-          </g>
-          <text x="400" y="170" text-anchor="end" font-size="10" fill="#5a5f6a">各サンプルで D 特徴量平均・分散</text>
-          <text x="400" y="190" text-anchor="end" font-size="10" fill="#0d1b2a">バッチサイズ非依存</text>
-        </g>
-      </svg>
-      <div class="figure-caption"><span class="figure-num">FIG 12.2</span> BatchNorm vs LayerNorm。正規化の軸が違う。BatchNorm は CNN で標準、LayerNorm は Transformer や RNN で標準（バッチ非依存）。</div>
+    <h3 style="margin-top:36px;">§1.1 正則化（L1, L2, Weight Decay）</h3>
+    <div class="formula">
+<strong>L2正則化（Ridge）</strong>　 L_total = L + λ ||θ||²<br>
+　 大きな重みを罰する、滑らかな解<br><br>
+<strong>L1正則化（Lasso）</strong>　 L_total = L + λ ||θ||₁<br>
+　 多くの重みが正確に 0 → スパースモデル<br><br>
+<strong>Weight Decay</strong>　 NNでは SGD/AdamW の更新時に θ ← θ - η(∇L + λθ)<br>
+　 AdamW は減衰を Adam の更新式から分離して正しく動く
     </div>
 
-    <table class="spec">
-      <tr><th>正規化</th><th>正規化軸</th><th>主な用途</th></tr>
-      <tr><td><strong>BatchNorm</strong></td><td>バッチ方向</td><td>CNN（バッチサイズが大きいとき）</td></tr>
-      <tr><td><strong>LayerNorm</strong></td><td>特徴量方向（サンプルごと）</td><td>RNN、Transformer（バッチ非依存）</td></tr>
-      <tr><td><strong>GroupNorm</strong></td><td>チャネルグループ方向</td><td>バッチサイズが小さい CNN</td></tr>
-      <tr><td><strong>InstanceNorm</strong></td><td>各サンプル、各チャネル</td><td>画像スタイル変換</td></tr>
-      <tr><td><strong>RMSNorm</strong></td><td>LayerNorm の簡略化（平均引かない）</td><td>Llama 系、近年の LLM</td></tr>
-    </table>
-
-    <h2 id="dropout"><span class="label">§5 / DROPOUT</span>Dropout</h2>
-    <p>学習時に <strong>各ユニットを確率 p（典型 0.5）で 0 にする</strong> 正則化手法（Hinton ら、2014）。</p>
-    <p>効果：</p>
-    <ul>
-      <li><strong>暗黙のアンサンブル</strong>：毎ステップ違うサブネットを学習</li>
-      <li><strong>ユニット間の共依存抑制</strong></li>
-      <li>推論時は無効化（あるいは出力を 1-p 倍）。これが <strong>inverted dropout</strong></li>
-    </ul>
-
-    <h2 id="adam"><span class="label">§6 / ADAM</span>Adam とその仲間</h2>
-    <p>Adam が事実上の標準。ただし用途によって以下も使われます：</p>
-    <table class="spec">
-      <tr><th>Optimizer</th><th>特徴</th><th>主な用途</th></tr>
-      <tr><td><strong>Adam</strong></td><td>Momentum + RMSProp。汎用標準</td><td>大半の DL</td></tr>
-      <tr><td><strong>AdamW</strong></td><td>Adam + 重み減衰の分離</td><td><strong>LLM 学習標準</strong></td></tr>
-      <tr><td><strong>SGD + Momentum</strong></td><td>古典、適切な学習率なら汎化が最良の場合</td><td>画像分類の最終調整</td></tr>
-      <tr><td><strong>LAMB</strong></td><td>大バッチ学習向け</td><td>BERT 学習</td></tr>
-      <tr><td><strong>LION</strong></td><td>2023年、メモリ効率良い、Adamに迫る性能</td><td>大規模学習で台頭中</td></tr>
-      <tr><td><strong>Sophia</strong></td><td>2次情報を効率的に活用</td><td>LLM 学習で実験的</td></tr>
-    </table>
-
-    <h2 id="data-aug"><span class="label">§7 / AUG</span>データ拡張</h2>
-    <p>訓練データに <strong>意味を変えない変形</strong> を加えてサンプル数を増やす。<strong>暗黙の正則化</strong>でもある。</p>
-    <ul>
-      <li>画像：回転、反転、トリミング、色ジッタ、Mixup、CutMix、RandAugment</li>
-      <li>テキスト：言い換え、バックトランスレーション、トークン削除</li>
-      <li>音声：時間引き伸ばし、ノイズ重畳、SpecAugment</li>
-    </ul>
-
-    <h2 id="regul-other"><span class="label">§8 / OTHER</span>その他の正則化・テクニック</h2>
-    <ul>
-      <li><strong>Label Smoothing</strong>：one-hot を (1-ε, ε/(C-1), ..., ε/(C-1)) に。過信を抑える</li>
-      <li><strong>Stochastic Depth</strong>：学習時にランダムに層をスキップ</li>
-      <li><strong>Mixup</strong>：2つのサンプルを線形補間して新サンプル生成</li>
-      <li><strong>EMA（指数移動平均）</strong>：重みの平滑版を保持、推論で使用</li>
-      <li><strong>Gradient Accumulation</strong>：小バッチを複数回累積してから更新（GPUメモリ節約）</li>
-      <li><strong>Mixed Precision</strong>：FP16/BF16 で計算、メモリと速度の改善</li>
-    </ul>
-
-    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
-    <table class="spec">
-      <tr><th>1</th><td>ミニバッチ学習（32〜256 が典型）が現代の標準</td></tr>
-      <tr><th>2</th><td>大バッチには線形スケーリング則 + Warmup</td></tr>
-      <tr><th>3</th><td>学習率スケジューリング：Step、Cosine、Warmup</td></tr>
-      <tr><th>4</th><td>重み初期化：He（ReLU）、Xavier（Tanh）</td></tr>
-      <tr><th>5</th><td>BatchNorm（CNN）vs LayerNorm（Transformer）の使い分け</td></tr>
-      <tr><th>6</th><td>Dropout：暗黙のアンサンブル効果、推論時無効化</td></tr>
-      <tr><th>7</th><td>Adam = 事実上の標準、AdamW = LLM の標準</td></tr>
-      <tr><th>8</th><td>データ拡張は暗黙の正則化</td></tr>
-      <tr><th>9</th><td>Label Smoothing、Mixup、EMA、Mixed Precision など現代の工夫多数</td></tr>
-    </table>
-
-    <h3>基本編 完結</h3>
-    <p>12章すべてを読み終えました。これで G検定の <strong>基本</strong> 範囲（AI概論、歴史、数学、機械学習、ニューラルネット）は構造的に把握しています。次は <strong>応用編</strong> で Transformer、生成AI、強化学習、AI倫理・法律 へ進みます。</p>
-
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>ミニバッチサイズが大きすぎ／小さすぎることの影響</li>
-        <li>線形スケーリング則と Warmup の関係</li>
-        <li>Cosine Annealing のメリット</li>
-        <li>He 初期化と Xavier 初期化の使い分け</li>
-        <li>BatchNorm の数式と「学習可能なγ・β」がある理由</li>
-        <li>なぜ Transformer は BatchNorm でなく LayerNorm を使うのか</li>
-        <li>Dropout が「暗黙のアンサンブル」と呼ばれる理由</li>
-        <li>Inverted dropout の式（推論時の補正）</li>
-        <li>Adam と AdamW の違い</li>
-        <li>Label Smoothing が「過信を抑える」とはどういうことか</li>
-      </ol>
+    <h3 style="margin-top:36px;">§1.2 Dropout — ニューロンをランダムに無効化</h3>
+    <p>Hinton 2012 が提案。訓練時に <strong>各ニューロンを確率 p（典型 0.5）で 0 に</strong>。</p>
+    <div class="formula">
+学習時：h ← Bernoulli(p) ⊙ h<br>
+推論時：h ← (1-p) · h  　(scale 補正、または学習時に 1/(1-p) で逆補正)
     </div>
+    <p>効果：(a) 大規模アンサンブルの近似、(b) ニューロン間の共依存防止、(c) 暗黙的正則化。<strong>ただし Batch Normalization と併用すると効果が薄れる</strong>ことが多い。</p>
+
+    <h3 style="margin-top:36px;">§1.3 Batch Normalization</h3>
+    <p>Ioffe & Szegedy 2015。ミニバッチごとに各層の出力を平均0・分散1に正規化：</p>
+    <div class="formula">
+　 μ_B = (1/B) Σ h<br>
+　 σ²_B = (1/B) Σ (h - μ_B)²<br>
+　 ĥ = (h - μ_B) / √(σ²_B + ε)<br>
+　 y = γ ĥ + β　 (γ, β は学習可能)<br><br>
+推論時：訓練時の移動平均統計を使用
+    </div>
+    <p>効果：(a) 内部共変量シフト緩和、(b) 大きな学習率使用可能、(c) 初期化への感度低下、(d) 正則化効果。CNN で標準。</p>
+
+    <h3 style="margin-top:36px;">§1.4 Layer Normalization と Group Normalization</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>BatchNorm</strong>：バッチ方向で正規化。バッチサイズ大が必要、RNN/Transformer に不向き。</li>
+      <li><strong>LayerNorm</strong>：単一サンプル内の特徴次元で正規化。バッチサイズ非依存、RNN・Transformer で標準。</li>
+      <li><strong>GroupNorm</strong>：チャネルをグループに分けて正規化。小バッチCNN向け。</li>
+      <li><strong>RMSNorm</strong>：平均を引かず、二乗平均だけで正規化。LLaMA 等で採用、計算効率↑。</li>
+    </ul>
+
+    <h3 style="margin-top:36px;">§1.5 重みの初期化</h3>
+    <table class="spec">
+      <tr><th>手法</th><th>分散</th><th>適性</th></tr>
+      <tr><td>Xavier/Glorot</td><td>1/n_in や 2/(n_in+n_out)</td><td>Sigmoid, tanh</td></tr>
+      <tr><td>He/Kaiming</td><td>2/n_in</td><td>ReLU, Leaky ReLU</td></tr>
+      <tr><td>直交初期化</td><td>直交行列</td><td>RNN, 深層 NN</td></tr>
+      <tr><td>LeCun</td><td>1/n_in</td><td>SELU</td></tr>
+    </table>
+
+    <h3 style="margin-top:36px;">§1.6 Early Stopping</h3>
+    <p>検証損失が改善しなくなったら学習を停止。Patience（数エポック改善なしで停止）で実装。最も簡単で効果的な正則化。</p>
+
+    <h3 style="margin-top:36px;">§1.7 データ拡張</h3>
+    <table class="spec">
+      <tr><th>対象</th><th>手法</th></tr>
+      <tr><td>画像</td><td>反転、回転、クロップ、色変化、Cutout、RandAugment、AutoAugment</td></tr>
+      <tr><td>音声</td><td>時間伸縮、ピッチシフト、ノイズ付加、SpecAugment</td></tr>
+      <tr><td>テキスト</td><td>類義語置換、Back Translation、EDA、SimCLR系の対照</td></tr>
+      <tr><td>表形式</td><td>SMOTE、特徴量ノイズ、Mixup</td></tr>
+    </table>
+
+    <h3 style="margin-top:36px;">§1.8 Label Smoothing</h3>
+    <p>one-hot ラベル [0,1,0,0] を [ε/(K-1), 1-ε, ε/(K-1), ε/(K-1)]（典型 ε=0.1）に置換。<strong>過信を防ぎ汎化を改善</strong>。情報論的にはエントロピーの底上げ。</p>
+
+    <h3 style="margin-top:36px;">§1.9 Mixup と CutMix</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>Mixup</strong>：2サンプルを λ:1-λ で線形混合、ラベルも同様に混合。</li>
+      <li><strong>CutMix</strong>：1枚の画像の一部を別画像で置換、ラベルも面積比で混合。</li>
+      <li><strong>MixCut</strong>：上記の組合せ。CIFAR・ImageNet で大幅性能向上。</li>
+    </ul>
+
+    <h3 style="margin-top:36px;">§1.10 Gradient Clipping</h3>
+    <p>勾配ノルムが閾値を超えたらスケーリング。RNN や Transformer の学習で標準（勾配爆発防止）：</p>
+    <div class="formula">
+g ← g · min(1, threshold / ||g||)　 (典型 threshold=1.0 〜 5.0)
+    </div>
+
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>Stochastic Depth、Knowledge Distillation、Mixed Precision、Gradient Checkpointing の4節。</p>
+    </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 Stochastic Depth</h3>
+    <p>残差ブロックを確率的にスキップ（恒等写像で置換）。Dropout の深さ版。100層超の深いResNet で標準的に使われる。</p>
+
+    <h3 style="margin-top:36px;">§2.2 Knowledge Distillation（蒸留）</h3>
+    <p>大きな教師モデルの出力（soft target）で小さな生徒モデルを学習。Hinton 2015。LLM の小型化（DistilBERT、TinyLLaMA）で必須。</p>
+
+    <h3 style="margin-top:36px;">§2.3 Mixed Precision Training</h3>
+    <p>主に FP16 で計算しつつ、損失スケーリングと FP32 重みコピーで精度を保つ。GPU メモリ半減、計算速度2〜3倍。最近は BF16 が主流（FP16より広いdynamic range）。NVIDIA Hopper 以降は FP8 も。</p>
+
+    <h3 style="margin-top:36px;">§2.4 Gradient Checkpointing（Activation Checkpointing）</h3>
+    <p>順伝播の活性化を全部保存せず、一部だけ。逆伝播時に再計算。<strong>メモリを √L 倍に削減、計算は 1.3〜2倍</strong>。LLM 学習で必須。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>Dropout、BN、Data Aug、LR Schedule、Early Stoppingの5節。</p>
+    </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 PyTorch で Dropout</h3>
+    <div class="code-block">
+<span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn
+
+<span class="keyword">class</span> MLPDropout(nn.Module):
+    <span class="keyword">def</span> __init__(<span class="builtin">self</span>):
+        <span class="builtin">super</span>().__init__()
+        <span class="builtin">self</span>.fc1 = nn.Linear(<span class="builtin">784</span>, <span class="builtin">256</span>)
+        <span class="builtin">self</span>.drop1 = nn.Dropout(<span class="builtin">0.3</span>)
+        <span class="builtin">self</span>.fc2 = nn.Linear(<span class="builtin">256</span>, <span class="builtin">256</span>)
+        <span class="builtin">self</span>.drop2 = nn.Dropout(<span class="builtin">0.3</span>)
+        <span class="builtin">self</span>.fc3 = nn.Linear(<span class="builtin">256</span>, <span class="builtin">10</span>)
+    <span class="keyword">def</span> forward(<span class="builtin">self</span>, x):
+        x = <span class="builtin">self</span>.drop1(torch.relu(<span class="builtin">self</span>.fc1(x)))
+        x = <span class="builtin">self</span>.drop2(torch.relu(<span class="builtin">self</span>.fc2(x)))
+        <span class="keyword">return</span> <span class="builtin">self</span>.fc3(x)
+<span class="comment"># model.train() でドロップアウト有効、model.eval() で無効</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 Batch Normalization 適用</h3>
+    <div class="code-block">
+<span class="keyword">class</span> MLPBN(nn.Module):
+    <span class="keyword">def</span> __init__(<span class="builtin">self</span>):
+        <span class="builtin">super</span>().__init__()
+        <span class="builtin">self</span>.net = nn.Sequential(
+            nn.Linear(<span class="builtin">784</span>, <span class="builtin">256</span>),
+            nn.BatchNorm1d(<span class="builtin">256</span>),
+            nn.ReLU(),
+            nn.Linear(<span class="builtin">256</span>, <span class="builtin">256</span>),
+            nn.BatchNorm1d(<span class="builtin">256</span>),
+            nn.ReLU(),
+            nn.Linear(<span class="builtin">256</span>, <span class="builtin">10</span>)
+        )
+    <span class="keyword">def</span> forward(<span class="builtin">self</span>, x): <span class="keyword">return</span> <span class="builtin">self</span>.net(x)
+<span class="comment"># CNN なら nn.BatchNorm2d、Transformer なら nn.LayerNorm</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 データ拡張（画像）</h3>
+    <div class="code-block">
+<span class="keyword">from</span> torchvision <span class="keyword">import</span> transforms
+
+train_transform = transforms.Compose([
+    transforms.RandomCrop(<span class="builtin">32</span>, padding=<span class="builtin">4</span>),
+    transforms.RandomHorizontalFlip(),
+    transforms.ColorJitter(brightness=<span class="builtin">0.2</span>, contrast=<span class="builtin">0.2</span>),
+    transforms.RandAugment(num_ops=<span class="builtin">2</span>, magnitude=<span class="builtin">9</span>),  <span class="comment"># 強力</span>
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[<span class="builtin">0.485</span>, <span class="builtin">0.456</span>, <span class="builtin">0.406</span>], 
+                         std=[<span class="builtin">0.229</span>, <span class="builtin">0.224</span>, <span class="builtin">0.225</span>])
+])
+<span class="comment"># test_transform はノーマライズと ToTensor のみ</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 学習率スケジューリング（Cosine Annealing + Warmup）</h3>
+    <div class="code-block">
+<span class="keyword">from</span> torch.optim.lr_scheduler <span class="keyword">import</span> CosineAnnealingLR, LinearLR, SequentialLR
+
+opt = torch.optim.AdamW(model.parameters(), lr=<span class="builtin">3e-4</span>, weight_decay=<span class="builtin">0.01</span>)
+
+<span class="comment"># 最初の 1000 ステップで線形 Warmup、その後 Cosine 減衰</span>
+warmup = LinearLR(opt, start_factor=<span class="builtin">0.01</span>, total_iters=<span class="builtin">1000</span>)
+cosine = CosineAnnealingLR(opt, T_max=<span class="builtin">100000</span>)
+scheduler = SequentialLR(opt, [warmup, cosine], milestones=[<span class="builtin">1000</span>])
+
+<span class="keyword">for</span> step <span class="keyword">in</span> <span class="builtin">range</span>(num_steps):
+    <span class="comment"># ... 学習 ...</span>
+    opt.step()
+    scheduler.step()
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 Early Stopping 実装</h3>
+    <div class="code-block">
+best_val = <span class="builtin">float</span>(<span class="string">'inf'</span>)
+patience = <span class="builtin">10</span>
+counter = <span class="builtin">0</span>
+
+<span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="builtin">range</span>(num_epochs):
+    <span class="comment"># 訓練ループ</span>
+    train_loss = train_one_epoch()
+    val_loss = validate()
+    
+    <span class="keyword">if</span> val_loss &lt; best_val:
+        best_val = val_loss
+        counter = <span class="builtin">0</span>
+        torch.save(model.state_dict(), <span class="string">'best.pt'</span>)  <span class="comment"># 最良時保存</span>
+    <span class="keyword">else</span>:
+        counter += <span class="builtin">1</span>
+        <span class="keyword">if</span> counter &gt;= patience:
+            print(<span class="string">f"Early stopping at epoch {epoch}"</span>)
+            <span class="keyword">break</span>
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>Dropout、BN、データ拡張の3つの効果実験。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — Dropout の効果（CIFAR-10）</h4>
+      <div class="sim-output">
+&gt;&gt; 同じ CNN、Dropout 率だけ変える<br>
+<br>
+Dropout 0.0: train=99.5%, test=82.1%　 ← 過学習<br>
+Dropout 0.2: train=97.8%, test=85.3%<br>
+Dropout 0.5: train=92.4%, test=87.2%　 ← バランス良い<br>
+Dropout 0.7: train=85.1%, test=84.7%　 ← 過抑制、未学習気味<br>
+<br>
+&gt;&gt; Dropout 0.3〜0.5 が典型<br>
+&gt;&gt; BNと併用すると効果が薄れる傾向（互いに似た役割）
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — Batch Normalization の効果</h4>
+      <div class="sim-output">
+&gt;&gt; 同じ深層 CNN、BN の有無だけ変える<br>
+<br>
+[BN なし]<br>
+Epoch  1: loss=2.30, accuracy=10%　 ← 学習進まず<br>
+Epoch 10: loss=1.85, accuracy=42%　 ← 遅い<br>
+Epoch 50: loss=0.95, accuracy=68%<br>
+<br>
+[BN あり]<br>
+Epoch  1: loss=0.71, accuracy=82%　 ← 一気に進む<br>
+Epoch 10: loss=0.21, accuracy=92%<br>
+Epoch 50: loss=0.05, accuracy=95%<br>
+<br>
+&gt;&gt; BN で学習が安定・高速化、大きな学習率も使える<br>
+&gt;&gt; ResNet50 でlr=0.1 でも収束、なしでは困難
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — データ拡張の威力</h4>
+      <div class="sim-output">
+&gt;&gt; CIFAR-10、ResNet18<br>
+<br>
+[拡張なし]　　　 test=85.2%<br>
+[Random Crop+Flip] test=92.1%　 ← 標準的な拡張で 7%↑<br>
+[+ ColorJitter] test=92.8%<br>
+[+ RandAugment] test=94.3%　 ← 強力な自動拡張<br>
+[+ Mixup]　　　 test=95.1%<br>
+[+ CutMix]　　　 test=95.6%　 ← さらなる改善<br>
+[+ Label Smoothing] test=95.9%<br>
+<br>
+&gt;&gt; データ拡張の積み重ねで 10%以上の改善<br>
+&gt;&gt; 現代の SOTA はこれら『ベストプラクティス』の集積
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式の演習問題 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">L2 正則化（Weight Decay）が抑制するのは。</div>
+        <div class="p-choices">① 学習速度　 ② 大きな重みの値、過学習　 ③ 計算量　 ④ メモリ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> L_total = L + λ||θ||² で大きな重みを罰し、汎化を改善。MAP推定でガウス事前に対応。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">Dropout の典型的なドロップ率は。</div>
+        <div class="p-choices">① 0.01　 ② 0.1〜0.5　 ③ 0.9　 ④ 1.0</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 一般に 0.1〜0.5。隠れ層で 0.5、入力層で 0.2 が古典的。BN と併用するときは小さめにする傾向。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">Dropout の動作として正しいのは。</div>
+        <div class="p-choices">① 訓練時のみニューロンを確率的に無効化、推論時はすべて使用　 ② 常に無効化　 ③ 推論でのみ動作　 ④ パラメータ削減</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 訓練時のみドロップ、推論時は通常通り（スケール補正あり）。アンサンブル近似と解釈できる。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">Batch Normalization の正規化対象は。</div>
+        <div class="p-choices">① 単一サンプル内　 ② ミニバッチ内の各チャネルごと　 ③ パラメータ自体　 ④ 学習率</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ミニバッチ内で各特徴/チャネルごとに平均・分散を計算し正規化。バッチサイズ依存、Tiny バッチでは不安定。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">Transformer で標準的な正規化は。</div>
+        <div class="p-choices">① BatchNorm　 ② LayerNorm（バッチサイズ非依存、系列長変化OK）　 ③ なし　 ④ Dropout</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LayerNorm は単一サンプル内の特徴次元で正規化。可変長の系列、小バッチでも安定。最近は RMSNorm も（LLaMA 等）。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">He 初期化が適している活性化関数は。</div>
+        <div class="p-choices">① Sigmoid　 ② tanh　 ③ ReLU 系（Leaky ReLU、GELU を含む）　 ④ Step</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> He（2015）は分散 2/n_in で、ReLU の片側 0 の性質を考慮。Xavier は Sigmoid/tanh 向け。LeCun は SELU 向け。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">Early Stopping の動作は。</div>
+        <div class="p-choices">① 訓練を必ず最終エポックまで　 ② 検証損失が改善しなくなったら停止（過学習開始前）　 ③ ランダム停止　 ④ 学習しない</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Patience（数エポック改善なし）で停止。最も簡単で効果的な正則化。最良時のモデルを保存して使う。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">画像認識でよく使われる強力な自動データ拡張は。</div>
+        <div class="p-choices">① 反転のみ　 ② RandAugment、AutoAugment、TrivialAugment　 ③ ノイズのみ　 ④ なし</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RandAugment は2つの操作を強度 9 でランダム適用。AutoAugment は RL で最適化された方策。深層学習の SOTA で標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">Label Smoothing が変更する対象は。</div>
+        <div class="p-choices">① 学習率　 ② one-hot ラベルを [ε/(K-1), 1-ε,...] に置換、過信抑制　 ③ パラメータ数　 ④ バッチサイズ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 真ラベルの確信度を 1.0 から 1-ε（典型 0.9）に下げる。汎化改善＋過信抑制。ImageNet, NMT などで標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">Mixup の動作は。</div>
+        <div class="p-choices">① 単一サンプル　 ② 2サンプルを λ:1-λ で線形混合、ラベルも同様に混合　 ③ ノイズ加算　 ④ パラメータ平均</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Zhang 2018。画像とラベルを線形補間。決定境界を滑らかにし、汎化と頑健性を改善。CutMix は領域置換版。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">Gradient Clipping の目的は。</div>
+        <div class="p-choices">① 過学習防止　 ② 勾配爆発防止（特に RNN/Transformer 学習）　 ③ 計算高速化　 ④ メモリ削減</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ||g|| が閾値超過時にスケーリング。RNN の長系列・Transformer の大規模学習で標準（threshold=1.0 が典型）。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">Knowledge Distillation（蒸留）の目的は。</div>
+        <div class="p-choices">① パラメータ増加　 ② 大きな教師モデルの知識を小さな生徒モデルに転送　 ③ ランダム学習　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hinton 2015。教師の softmax 出力（soft target）で生徒を学習。DistilBERT、TinyLLaMA、MobileBERT 等で軽量化に必須。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">Mixed Precision Training で主に使う型は。</div>
+        <div class="p-choices">① FP32 のみ　 ② FP16 や BF16 と FP32 重みコピーの組合せ　 ③ INT8 のみ　 ④ INT4 のみ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 計算は FP16/BF16、重みは FP32 で保持、損失スケーリングで underflow 防止。GPU メモリ半減、計算2-3倍速。BF16 はダイナミックレンジが広く実用的。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">Gradient Checkpointing（Activation Checkpointing）の効果は。</div>
+        <div class="p-choices">① 計算高速化　 ② 順伝播の活性化を一部のみ保存し、逆伝播で再計算。メモリO(L) → O(√L)に　 ③ 精度向上　 ④ 学習率自動調整</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> メモリと計算のトレードオフ。LLM 学習では巨大モデルを限られた GPU で訓練するために必須。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">『Warmup』（学習率ウォームアップ）が必要な代表的状況は。</div>
+        <div class="p-choices">① 全ての状況　 ② Transformer 学習、大バッチ学習　 ③ 線形回帰　 ④ K-means</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 初期の勾配が大きく不安定なため、η を 0 から徐々に上げる（数千ステップ）。Transformer、ViT、LLM 学習で必須。Cosine Annealing と組合せが標準。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">深層 CNN で勾配消失を抑制する主要技術として誤りはどれか。</div>
+        <div class="p-choices">① ReLU　 ② 残差接続　 ③ Batch Normalization　 ④ Sigmoid 活性化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> Sigmoid は勾配消失の主要原因の一つ。ReLU、残差接続、BN、適切な初期化が勾配消失緩和の四天王。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">Stochastic Depth の動作は。</div>
+        <div class="p-choices">① パラメータをランダムドロップ　 ② 残差ブロックを確率的にスキップ（恒等写像に）　 ③ 学習率変化　 ④ ノイズ加算</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Huang 2016。残差NNの深さをランダム化することで正則化。100+ 層 ResNet で標準的に使われる。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">推論時に Dropout を有効にして複数回サンプリングする手法は何の推定に使うか。</div>
+        <div class="p-choices">① 高速化　 ② 不確実性推定（Monte Carlo Dropout, Gal 2016）　 ③ 学習継続　 ④ 正則化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Yarin Gal が示した。推論時 Dropout で N 回サンプリング、出力の分散が予測不確実性の近似となる。ベイズ NN の安価な近似。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">『Cosine Annealing』学習率スケジューラの形状は。</div>
+        <div class="p-choices">① 直線的減少　 ② 余弦関数で滑らかに減衰（T_max でゼロ近くに）　 ③ 階段状　 ④ 一定</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> lr = lr_max · (1+cos(π·t/T))/2 で滑らかに減衰。Warmup と組み合わせが現代学習の標準。SGDR で再起動版もある。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">AdamW が Adam と異なる主要な点は。</div>
+        <div class="p-choices">① Momentumなし　 ② 重み減衰を更新式の最後で適用（Adam の正則化と分離）、L2 正則化と等価に動作　 ③ 学習率を増やす　 ④ Bias 補正削除</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 元の Adam で L2 を勾配に足すと2次モーメントとの相互作用で減衰効果が薄れる。AdamW は θ ← θ - η(m̂/√v̂ + ε) - η λ θ と最後で減衰、L2 と一致。LLM学習の事実上の標準。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">
+      L1/L2 正則化、Weight Decay、Dropout、Batch Normalization、Layer Normalization、重み初期化（He/Xavier/直交）、Early Stopping、データ拡張（RandAugment, Mixup, CutMix）、Label Smoothing、Gradient Clipping を扱いました。応用では Stochastic Depth、Knowledge Distillation、Mixed Precision、Gradient Checkpointing。これで G検定 基本編 12章すべて完了。次は応用編に進み、CNN、RNN、Transformer、BERT/GPT、LLM、生成AI、強化学習、RAG、Agent、MLOps、倫理、法規制を扱います。
+    </p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="11-backprop.html">← 章11</a></div>
-  <div><span class="ch-label">基本編 完結</span><br><span class="ch-title">応用編へ進む</span></div>
-  <div><a href="../advanced/index.html">応用編 →</a></div>
+  <div><a href="11-backprop.html">← 章11: 逆伝播</a></div>
+  <div><span class="ch-label">Chapter 12 of 12 · 基本編完結</span><br><span class="ch-title">NNの工夫</span></div>
+  <div><a href="../advanced/01-cnn.html">章13: CNN（応用編へ） →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="index.html">基本</a></li><li><a href="../advanced/index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">Swallow AI Academy</div>
+      <p>Independent, editorial-style learning for AI / ML certifications. 2026.</p>
+    </div>
+    <div class="footer-cols">
+      <div>
+        <h6>LEARN</h6>
+        <a href="../../../certifications/g-kentei.html">G検定</a>
+        <a href="../../../certifications/e-shikaku.html">E資格</a>
+        <a href="../../../certifications/tokei.html">統計検定</a>
+      </div>
+      <div>
+        <h6>PRACTICE</h6>
+        <a href="../../../quiz.html">問題演習</a>
+        <a href="../../../glossary.html">用語集</a>
+      </div>
+      <div>
+        <h6>INFO</h6>
+        <a href="../../../about.html">サイトについて</a>
+      </div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

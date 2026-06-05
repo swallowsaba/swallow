@@ -3,230 +3,491 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>章11 AI 倫理と公平性 — G検定 応用 — Swallow AI Academy</title>
-<meta name="description" content="G検定応用 章11：AI倫理、バイアス、公平性指標、説明可能性（XAI）、プライバシー、ハルシネーション、Constitutional AI。">
+<title>章23 AI倫理 — G検定 応用 — Swallow AI Academy</title>
+<meta name="description" content="G検定応用 章23：AI倫理、バイアス、Fairness（DP/EO/EOd）、説明可能性（XAI/SHAP/LIME）、プライバシー（DP）、AI Alignment、AI Safety、敵対的攻撃、社会的影響を5部構成で徹底解説。">
 <link rel="stylesheet" href="../../../assets/css/main.css">
-<style>
-.formula{background:#f5f1e8;border-left:3px solid #b8431f;padding:14px 18px;margin:18px 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8}
-.example{background:#fff8f2;border-left:3px solid #d4a017;padding:16px 22px;margin:20px 0;font-size:14.5px;line-height:1.9}
-.figure{margin:32px 0;text-align:center}
-.figure svg{max-width:100%;height:auto;border:1px solid #e5e1d4;background:#faf7f2}
-.figure-caption{font-size:12.5px;color:#5a5f6a;margin-top:10px;line-height:1.7;max-width:680px;margin-left:auto;margin-right:auto;padding:0 12px;font-style:italic}
-.figure-num{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;color:#b8431f}
-.chapter-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;background:#0d1b2a;color:#faf7f2;margin:32px 0;font-size:13.5px}
-.chapter-nav a{color:#faf7f2;text-decoration:none}
-.chapter-nav a:hover{color:#d4a017}
-.chapter-nav .ch-label{font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;color:#9aa0a8}
-.chapter-nav .ch-title{font-family:var(--font-display-jp);font-weight:700;font-size:15px}
-table.spec{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}
-table.spec th,table.spec td{padding:9px 13px;text-align:left;border-bottom:1px solid #e5e1d4;vertical-align:top}
-table.spec th{background:#faf7f2;font-family:var(--font-display-jp);font-weight:700;font-size:12.5px}
-.test-yourself{background:#0d1b2a;color:#faf7f2;padding:28px 32px;margin:32px 0}
-.test-yourself h3{font-family:var(--font-display-jp);font-weight:700;color:#d4a017;margin:0 0 16px;font-size:18px}
-.test-yourself ol{padding-left:24px;font-size:14px;line-height:1.95}
-.test-yourself li{margin-bottom:10px}
-</style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"></div>
+
+
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span>
-      <div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div>
-    </a>
-    <nav class="nav-primary">
-      <a href="../../../index.html#certifications">資格</a>
-      <a href="../../../certifications/g-kentei.html">G検定</a>
-      <a href="../basics/index.html">基本</a>
-      <a href="index.html">応用</a>
-      <a href="../../../quiz.html?topic=g-kentei">問題演習</a>
-    </nav>
-    <div class="issue-tag">G-KENTEI<br><strong>応用 Ch.11</strong></div>
-    <button class="nav-toggle">MENU</button>
+    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
+    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="../basics/index.html">基本</a><a href="index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <div class="nav-actions">
+      <button class="search-trigger" aria-label="検索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
   </div>
 </header>
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章11</div>
-    <h1>応用 章11 — AI 倫理と公平性<span class="en">AI Ethics &amp; Fairness</span></h1>
-    <p class="standfirst">技術が強くなるほど、誤用・偏見・privacy 侵害の影響も大きくなります。<strong>バイアス・公平性指標・説明可能性（XAI）・プライバシー・ハルシネーション</strong>。G検定でも比重が大きく、実務でも避けて通れないテーマを体系的に。</p>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章23</div>
+    <h1>章23 — AI倫理<span class="en">Chapter 23 — AI Ethics</span></h1>
+    <p class="standfirst">2018年、Amazon が女性差別する採用 AI を廃止。2019年、Apple Card で女性に低い信用枠が割り当てられる事件。2020年、COMPAS（米司法）が黒人被告に不公平な再犯予測。2025年、Anthropic Claude が <strong>Constitutional AI</strong> と <strong>RLHF</strong> でAlignment 研究の最前線に。AI倫理は理論ではなく <strong>実装すべき技術</strong> です。本章では<strong>バイアス</strong>、<strong>Fairness</strong>、<strong>XAI（説明可能性）</strong>、<strong>プライバシー（DP）</strong>、<strong>AI Safety</strong>、<strong>Alignment</strong>、<strong>敵対的攻撃</strong>までを5部構成で扱います。</p>
   </div>
 </section>
 
 <div class="chapter-nav">
-  <div><a href="10-mlops.html">← 章10: MLOps</a></div>
-  <div><span class="ch-label">応用 Chapter 11 of 12</span><br><span class="ch-title">AI 倫理と公平性</span></div>
-  <div><a href="12-law.html">章12: AI 法律 →</a></div>
+  <div><a href="10-mlops.html">← 章22: MLOps</a></div>
+  <div><span class="ch-label">Chapter 23 of 24 · 応用編</span><br><span class="ch-title">AI倫理</span></div>
+  <div><a href="12-law.html">章24: AI法規制 →</a></div>
 </div>
 
 <div class="article">
   <aside class="article-side">
-    <h6>章11 目次</h6>
-    <a href="#bias">§1 バイアスの種類</a>
-    <a href="#fairness">§2 公平性指標</a>
-    <a href="#xai">§3 説明可能性（XAI）</a>
-    <a href="#privacy">§4 プライバシー保護</a>
-    <a href="#toxic">§5 Toxicity と有害性</a>
-    <a href="#hallu">§6 ハルシネーション</a>
-    <a href="#redteam">§7 Red Teaming</a>
-    <a href="#constitutional">§8 Constitutional AI</a>
-    <a href="#summary">§9 章のまとめ</a>
-    <a href="#test">章末問題</a>
+    <h6>章23 目次</h6>
+    <a href="#sec-basic">§1 基本</a>
+    <a href="#sec-applied">§2 応用</a>
+    <a href="#sec-handson">§3 ハンズオン</a>
+    <a href="#sec-simulation">§4 シミュレーション</a>
+    <a href="#sec-problems">§5 問題</a>
   </aside>
 
   <article class="article-body">
 
-    <h2 id="bias"><span class="label">§1 / BIAS</span>バイアスの種類</h2>
-    <table class="spec">
-      <tr><th>選択バイアス</th><td>データ収集方法に偏り。例：富裕層のみのアンケート</td></tr>
-      <tr><th>測定バイアス</th><td>測定方法に偏り。例：肌の色で精度が違う顔認識</td></tr>
-      <tr><th>表現バイアス</th><td>マイノリティのデータが不足。例：欧米中心の医療データ</td></tr>
-      <tr><th>確証バイアス</th><td>仮説を支持する情報のみ集める</td></tr>
-      <tr><th>歴史的バイアス</th><td>過去の社会的不平等がデータに反映。例：採用履歴の性別偏り</td></tr>
-      <tr><th>集約バイアス</th><td>異なる集団を一括処理してしまう</td></tr>
-      <tr><th>評価バイアス</th><td>テストデータが現実と乖離</td></tr>
-    </table>
+    <div class="article-eyebrow">G-KENTEI · ADVANCED · CHAPTER 23</div>
+    <h2 class="article-title" style="border-top:none;padding-top:0;margin:0 0 24px;">差別しないAI。<br>説明できるAI。守られたAI。</h2>
+    <p class="article-lede">機械学習モデルは過去データを反映するため、データに含まれる偏見・不公平を学習してしまいます。さらに、深層学習は『なぜそう判断したか』が人間に理解しにくい『ブラックボックス』。これらの問題に <strong>技術的</strong> に取り組む分野が AI 倫理。法的義務化も進んでおり、すべての ML エンジニア・データサイエンティストが学ぶべき分野です。</p>
 
-    <div class="example">
-      <strong>有名事例</strong>：Amazon の採用 AI（2018年廃止）が女性候補者を不当に低評価。原因：過去10年の採用データ（男性中心）で学習 → 「女子大」「女性チェスクラブ」を負の特徴として学習。これが <strong>歴史的バイアス + フィードバックループ</strong>。
+    <div id="sec-basic" class="section-divider">
+      <div class="sec-num">SECTION ONE</div>
+      <h2>基本</h2>
+      <p>AI倫理概要、バイアス、Fairness、XAI、プライバシー、Safety、Alignment、敵対的、Robustness、社会的影響の10節。</p>
     </div>
 
-    <h2 id="fairness"><span class="label">§2 / FAIRNESS</span>公平性指標</h2>
-    <p>「公平」の定義は1つではない。<strong>複数の指標が同時に成立しない</strong>（不可能性定理）。</p>
-    <table class="spec">
-      <tr><th>Demographic Parity（人口統計学的均等）</th><td>各グループで陽性率が同じ：P(ŷ=1|A=0) = P(ŷ=1|A=1)</td></tr>
-      <tr><th>Equal Opportunity（機会均等）</th><td>真陽性率（Recall）が等しい：P(ŷ=1|y=1, A=0) = P(ŷ=1|y=1, A=1)</td></tr>
-      <tr><th>Equalized Odds</th><td>TPRとFPRの両方が等しい</td></tr>
-      <tr><th>Calibration（較正）</th><td>予測確率が実際の頻度と一致：P(y=1|ŷ=p, A=a) = p（全グループで）</td></tr>
-      <tr><th>個人公平性</th><td>類似する個人は類似する予測を受ける</td></tr>
-      <tr><th>反事実公平性</th><td>保護属性を変えても予測が変わらない</td></tr>
-    </table>
-    <p>有名な事例：<strong>COMPAS</strong>（再犯予測AI）。ProPublica が「黒人に対し False Positive 率が高い」と批判。一方で開発元は「Calibration（較正）は等しい」と反論。<strong>両者とも数学的に正しい</strong>が、公平性の定義が異なるため対立。</p>
+    <h2>基本</h2>
 
-    <h2 id="xai"><span class="label">§3 / XAI</span>説明可能性（Explainable AI）</h2>
-    <p>「<strong>なぜそう予測したか</strong>」を人間に説明できるようにする技術。EU AI Act の高リスク用途で義務化される。</p>
+    <h3 style="margin-top:36px;">§1.1 AI倫理の重要性</h3>
+    <p>OECD AI原則（2019）、EU AI Act（2024）、米国大統領令（2023）、日本AI事業者ガイドライン（2024）。技術と倫理は分離不可能、特に医療・金融・司法・採用といった<strong>高リスク領域</strong>では法的義務化が進む。</p>
+
+    <h3 style="margin-top:36px;">§1.2 バイアスの種類</h3>
     <table class="spec">
-      <tr><th>本質的解釈可能モデル</th><td>線形回帰、決定木、Generalized Additive Models（モデル自体が透明）</td></tr>
-      <tr><th>事後説明：Permutation Importance</th><td>特徴量をシャッフルして性能低下を見る</td></tr>
-      <tr><th>事後説明：LIME</th><td>個別予測の周辺を線形モデルで局所近似</td></tr>
-      <tr><th>事後説明：SHAP</th><td>ゲーム理論（Shapley値）で各特徴の貢献度を算出。理論的根拠が強い</td></tr>
-      <tr><th>事後説明：Integrated Gradients</th><td>ニューラルネットの勾配を統合</td></tr>
-      <tr><th>事後説明：Attention Visualization</th><td>注意の重みをヒートマップ表示</td></tr>
-      <tr><th>事後説明：Grad-CAM</th><td>CNN で「画像のどこを見たか」を可視化</td></tr>
+      <tr><th>種類</th><th>説明</th><th>例</th></tr>
+      <tr><td>歴史的バイアス</td><td>社会の歴史的不平等がデータに反映</td><td>過去の採用データ（男性多数）</td></tr>
+      <tr><td>サンプリングバイアス</td><td>収集データが母集団を代表しない</td><td>都市住民のみで学習</td></tr>
+      <tr><td>ラベルバイアス</td><td>ラベル付け時の人間判断</td><td>診断医のスタイル差</td></tr>
+      <tr><td>測定バイアス</td><td>特徴量測定の不均一</td><td>センサ精度の地域差</td></tr>
+      <tr><td>集計バイアス</td><td>異なる集団を平均化</td><td>男女混合データ</td></tr>
+      <tr><td>確証バイアス</td><td>仮説に合うデータを偏重</td><td>研究者の選別</td></tr>
     </table>
 
-    <h2 id="privacy"><span class="label">§4 / PRIVACY</span>プライバシー保護</h2>
-    <table class="spec">
-      <tr><th>差分プライバシー（Differential Privacy）</th><td>個人データの影響を数学的に限定。ノイズを加える。Apple、Google が採用</td></tr>
-      <tr><th>連合学習（Federated Learning）</th><td>データをサーバに送らず、各クライアントで学習し勾配のみ集約</td></tr>
-      <tr><th>準同型暗号</th><td>暗号化したまま計算可能。重い</td></tr>
-      <tr><th>セキュアマルチパーティ計算（SMPC）</th><td>複数当事者の秘密データを共有せず計算</td></tr>
-      <tr><th>k-匿名化、l-多様性、t-近接</th><td>個人特定リスクを下げるデータ加工</td></tr>
-      <tr><th>機械学習で抑制すべき攻撃</th><td>メンバーシップ推論攻撃、モデル反転攻撃、属性推論攻撃</td></tr>
-    </table>
-
-    <h2 id="toxic"><span class="label">§5 / TOXIC</span>Toxicity と有害性</h2>
-    <p>LLM が生成・あるいは応答できる有害コンテンツのカテゴリ：</p>
-    <ul>
-      <li>差別・ヘイトスピーチ</li>
-      <li>暴力・自傷・自殺の助長</li>
-      <li>違法行為の指示（武器、薬物、ハッキング）</li>
-      <li>性的・搾取的コンテンツ（特に未成年）</li>
-      <li>誤情報・選挙妨害</li>
-      <li>個人情報の漏洩</li>
-    </ul>
-    <p>対策：</p>
-    <ul>
-      <li><strong>事前学習データのフィルタリング</strong></li>
-      <li><strong>RLHF / DPO</strong>（章7）で安全な応答を学習</li>
-      <li><strong>システムプロンプト</strong>での挙動制約</li>
-      <li><strong>出力フィルタ</strong>（Perspective API など）</li>
-      <li><strong>Constitutional AI</strong>（§ 8）</li>
-    </ul>
-
-    <h2 id="hallu"><span class="label">§6 / HALLU</span>ハルシネーション</h2>
-    <p>LLM が <strong>事実でないことを自信を持って生成</strong>する現象。原因：</p>
-    <ul>
-      <li>言語モデルは「もっともらしさ」を最適化、「正しさ」ではない</li>
-      <li>知識のカットオフ、訓練データの誤り</li>
-      <li>RLHF が「自信ある回答」を強化する副作用</li>
-    </ul>
-    <p>対策：</p>
-    <ul>
-      <li><strong>RAG</strong>（章8）で外部知識を参照</li>
-      <li><strong>引用付き生成</strong>（出典明示）</li>
-      <li><strong>Self-Critique</strong>（モデル自身に確認させる）</li>
-      <li><strong>Chain-of-Verification</strong></li>
-      <li><strong>不確実性の伝達</strong>（「わかりません」を許容）</li>
-    </ul>
-    <p>評価指標：<strong>TruthfulQA</strong>、<strong>HaluEval</strong>、<strong>FActScore</strong>。</p>
-
-    <h2 id="redteam"><span class="label">§7 / REDTEAM</span>Red Teaming</h2>
-    <p>セキュリティ用語からの輸入：<strong>意図的にAIを攻撃し、脆弱性を見つける</strong>。OpenAI、Anthropic、Google など全社で実施。</p>
-    <ul>
-      <li>Jailbreak の発見</li>
-      <li>プロンプトインジェクション</li>
-      <li>有害コンテンツ生成の誘導</li>
-      <li>偏見・差別の引き出し</li>
-      <li>個人情報の抽出</li>
-    </ul>
-
-    <h2 id="constitutional"><span class="label">§8 / CONST</span>Constitutional AI（Anthropic）</h2>
-    <p>2022年、Anthropic が提案。<strong>AI に「憲法」（自然言語の原則）を与え、AI 自身がそれに従ってフィードバックを生成する</strong>。</p>
-    <p>2ステップ：</p>
-    <ol>
-      <li><strong>SL-CAI</strong>：教師あり段階。モデルの応答を憲法に基づきモデル自身が批判・修正</li>
-      <li><strong>RL-CAI</strong>：強化学習段階。AI が好み順をつけ、それで RLHF（RLAIF とも呼ぶ）</li>
-    </ol>
-    <p>利点：<strong>人間アノテーションの大幅削減</strong>、<strong>原則の明文化</strong>、<strong>スケーラビリティ</strong>。Claude のアライメントの中核。</p>
-
-    <h2 id="summary"><span class="label">§9 / SUMMARY</span>章のまとめ</h2>
-    <table class="spec">
-      <tr><th>1</th><td>バイアスは多種類：選択・測定・表現・歴史・確証...</td></tr>
-      <tr><th>2</th><td>公平性指標は複数あり、同時に成立しない（不可能性定理）</td></tr>
-      <tr><th>3</th><td>COMPAS 事件：定義により公平／不公平が分かれる典型例</td></tr>
-      <tr><th>4</th><td>XAI：LIME, SHAP, Grad-CAM などで「なぜ」を説明</td></tr>
-      <tr><th>5</th><td>プライバシー：差分プライバシー、連合学習</td></tr>
-      <tr><th>6</th><td>Toxicity 対策：RLHF、システムプロンプト、出力フィルタ</td></tr>
-      <tr><th>7</th><td>ハルシネーション：LLM が「もっともらしい嘘」をつく現象</td></tr>
-      <tr><th>8</th><td>RAG・引用・Self-Critique がハルシネーション対策</td></tr>
-      <tr><th>9</th><td>Red Teaming：意図的攻撃で脆弱性を見つける</td></tr>
-      <tr><th>10</th><td>Constitutional AI：AI 自身に憲法を与えてフィードバック</td></tr>
-    </table>
-
-    <div class="test-yourself" id="test">
-      <h3>章末問題</h3>
-      <ol>
-        <li>選択バイアスと測定バイアスの違い</li>
-        <li>Amazon 採用 AI 事件の原因</li>
-        <li>Demographic Parity と Equal Opportunity の違い</li>
-        <li>公平性指標の「不可能性定理」とは</li>
-        <li>SHAP が LIME より優れている理論的根拠</li>
-        <li>差分プライバシーの基本アイディア</li>
-        <li>連合学習がプライバシー保護に貢献する仕組み</li>
-        <li>LLM のハルシネーションが起こる主な原因</li>
-        <li>Red Teaming で発見される脆弱性の例</li>
-        <li>Constitutional AI が RLHF と異なる点</li>
-      </ol>
+    <h3 style="margin-top:36px;">§1.3 Fairness の定義</h3>
+    <div class="formula">
+<strong>Demographic Parity</strong>　 P(Ŷ=1|A=0) = P(Ŷ=1|A=1)　 全グループで陽性率が同じ<br><br>
+<strong>Equal Opportunity</strong>　 P(Ŷ=1|Y=1,A=0) = P(Ŷ=1|Y=1,A=1)　 全グループでTPR が同じ<br><br>
+<strong>Equalized Odds</strong>　 TPR と FPR が全グループで同じ<br><br>
+<strong>Individual Fairness</strong>　 類似個人は類似結果を得る<br>
+<strong>Counterfactual Fairness</strong>　 保護属性を変えても予測が同じ
     </div>
+
+    <div class="pitfall">
+      <div class="pitfall-title">▎ Impossibility Theorem</div>
+      Kleinberg 2016：3つの自然な Fairness 条件（Calibration、Equal Opportunity、Equalized Odds）は基準値が異なるグループでは<strong>同時に満たすことが数学的に不可能</strong>。トレードオフの選択が必要。
+    </div>
+
+    <h3 style="margin-top:36px;">§1.4 説明可能AI（XAI）</h3>
+    <table class="spec">
+      <tr><th>手法</th><th>説明</th></tr>
+      <tr><td>LIME</td><td>局所的に線形モデルで近似</td></tr>
+      <tr><td>SHAP</td><td>Shapley値（ゲーム理論）で特徴貢献度</td></tr>
+      <tr><td>Grad-CAM</td><td>CNN の判断根拠を画像上でヒートマップ</td></tr>
+      <tr><td>Integrated Gradients</td><td>勾配ベースの特徴重要度</td></tr>
+      <tr><td>Attention Visualization</td><td>Transformer の注意の可視化</td></tr>
+      <tr><td>Counterfactual</td><td>『何を変えれば結果が変わるか』</td></tr>
+    </table>
+
+    <h3 style="margin-top:36px;">§1.5 Differential Privacy（差分プライバシー）</h3>
+    <div class="formula">
+ε-Differential Privacy：1人のデータ変化で出力分布が e^ε 倍以内に収まる<br><br>
+P(M(D) ∈ S) ≤ e^ε · P(M(D') ∈ S)　 (D, D' は1レコードだけ異なる)<br><br>
+実装：Laplace ノイズ、Gaussian ノイズ加算、DP-SGD（勾配にノイズ）
+    </div>
+    <p>2020年米国国勢調査、Apple iOS、Google Chrome がDPを採用。プライバシーと精度のトレードオフ。</p>
+
+    <h3 style="margin-top:36px;">§1.6 AI Safety と Alignment</h3>
+    <p><strong>AI Alignment</strong>：AIの目標を人間の意図と一致させる課題。Anthropic、OpenAI、DeepMind の研究の中核。RLHF、DPO、Constitutional AI、Debate、IDA（Iterated Distillation and Amplification）等の手法。</p>
+
+    <p><strong>主要リスク</strong>：(a)Specification Gaming（目標関数の悪用）、(b)Reward Hacking（報酬システム悪用）、(c)Power-Seeking（自己保存・リソース獲得）、(d)Deception（欺瞞）、(e)Inner Misalignment（学習した内部目標と訓練目標の乖離）。</p>
+
+    <h3 style="margin-top:36px;">§1.7 敵対的攻撃（Adversarial Examples）</h3>
+    <p>人間には変化が見えない微小摂動で AI を誤分類させる。Goodfellow 2014『FGSM』が古典。応用：顔認証突破、自動運転標識誤認、医療画像改ざん。</p>
+    <div class="formula">
+FGSM：x' = x + ε · sign(∇ₓ L(θ, x, y))<br>
+PGD（より強力）：x'ₜ₊₁ = Πₓ ε[x'ₜ + α·sign(∇L)]
+    </div>
+
+    <h3 style="margin-top:36px;">§1.8 Adversarial Robustness</h3>
+    <p>対策：Adversarial Training（敵対的サンプルを学習データに混ぜる）、Certified Robustness（数学的保証つき防御、Randomized Smoothing）、Defensive Distillation。</p>
+
+    <h3 style="margin-top:36px;">§1.9 Federated Learning — プライバシー保全学習</h3>
+    <p>データを中央集約せず、各クライアントで学習した勾配のみ集約。Google Gboard、医療連携で実用化。Secure Aggregation（暗号化集約）、DP-FL（DP付き）で更にプライバシー強化。</p>
+
+    <h3 style="margin-top:36px;">§1.10 社会的影響</h3>
+    <ul style="font-size:13.5px; line-height:1.95;">
+      <li><strong>雇用</strong>：自動化による職業変化（IMF: 全雇用の40%が AI 影響、2024）</li>
+      <li><strong>情報環境</strong>：Deepfake、合成メディア、誤情報拡散</li>
+      <li><strong>監視</strong>：顔認証の社会監視への利用</li>
+      <li><strong>権力集中</strong>：AI開発企業への影響力集中</li>
+      <li><strong>環境</strong>：LLM学習の電力消費・CO₂排出（GPT-3: 552 t CO₂相当）</li>
+      <li><strong>教育</strong>：ChatGPT による学習形態変化</li>
+    </ul>
+
+    <div class="section-divider" id="sec-applied">
+      <div class="sec-num">SECTION TWO</div>
+      <h2>応用</h2>
+      <p>SHAP、Fairlearn、DP-SGD、Constitutional AI の4節。</p>
+    </div>
+
+    <h2>応用</h2>
+
+    <h3 style="margin-top:36px;">§2.1 SHAP（SHapley Additive exPlanations）</h3>
+    <p>Lundberg & Lee 2017。協力ゲーム理論の Shapley 値で各特徴量の予測貢献度を計算。TreeExplainer（GBDT 専用、高速）、DeepExplainer（NN）、KernelExplainer（汎用）。一貫性・局所精度などの公理を満たす唯一の手法。</p>
+
+    <h3 style="margin-top:36px;">§2.2 Fairlearn / AIF360 — Bias 緩和ツール</h3>
+    <p>Microsoft Fairlearn、IBM AIF360 が代表的 OSS。Bias 検出（Disparate Impact、EOR、Statistical Parity Difference）と緩和（Reweighing、Adversarial Debiasing、Reject Option Classification、Equalized Odds Postprocessing）。</p>
+
+    <h3 style="margin-top:36px;">§2.3 DP-SGD</h3>
+    <p>Abadi 2016『Deep Learning with Differential Privacy』。各サンプルの勾配ノルムをクリップ、Gaussian ノイズを加えて集約。Moments Accountant で ε を厳密に追跡。Opacus（PyTorch）、TF Privacy で実装。</p>
+
+    <h3 style="margin-top:36px;">§2.4 Constitutional AI（Anthropic）</h3>
+    <p>RLHFの発展。憲法（行動原則）に従って AI 自身が出力を批評・修正。人間ラベラーの代わりに AI による評価で大規模化可能。Claude モデルの基盤。RLAIF（RL from AI Feedback）。</p>
+
+    <div class="section-divider" id="sec-handson">
+      <div class="sec-num">SECTION THREE</div>
+      <h2>ハンズオン</h2>
+      <p>Fairlearn、SHAP、LIME、FGSM、DP-SGD の5節。</p>
+    </div>
+
+    <h2>ハンズオン</h2>
+
+    <h3 style="margin-top:36px;">§3.1 Fairlearn で Bias検出</h3>
+    <div class="code-block">
+<span class="keyword">from</span> fairlearn.metrics <span class="keyword">import</span> (
+    MetricFrame, demographic_parity_difference, equalized_odds_difference)
+<span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> accuracy_score
+
+<span class="comment"># 保護属性 A、予測 y_pred、真ラベル y_true</span>
+mf = MetricFrame(metrics=accuracy_score, y_true=y_true, y_pred=y_pred,
+                 sensitive_features=A)
+print(<span class="string">"グループごとの Accuracy:"</span>, mf.by_group)
+print(<span class="string">f"DP Diff: {demographic_parity_difference(y_true, y_pred, sensitive_features=A):.4f}"</span>)
+print(<span class="string">f"EOd Diff: {equalized_odds_difference(y_true, y_pred, sensitive_features=A):.4f}"</span>)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.2 SHAP で説明</h3>
+    <div class="code-block">
+<span class="keyword">import</span> shap
+<span class="keyword">import</span> xgboost <span class="keyword">as</span> xgb
+
+model = xgb.XGBClassifier().fit(X_tr, y_tr)
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X_te)
+
+<span class="comment"># 1サンプルの説明</span>
+shap.force_plot(explainer.expected_value, shap_values[<span class="builtin">0</span>], X_te.iloc[<span class="builtin">0</span>])
+
+<span class="comment"># 全体的な重要度</span>
+shap.summary_plot(shap_values, X_te)
+    </div>
+
+    <h3 style="margin-top:36px;">§3.3 LIME で局所説明</h3>
+    <div class="code-block">
+<span class="keyword">from</span> lime.lime_tabular <span class="keyword">import</span> LimeTabularExplainer
+
+explainer = LimeTabularExplainer(X_tr.values, feature_names=X_tr.columns,
+                                  class_names=[<span class="string">'no'</span>, <span class="string">'yes'</span>], mode=<span class="string">'classification'</span>)
+exp = explainer.explain_instance(X_te.iloc[<span class="builtin">0</span>].values, model.predict_proba, num_features=<span class="builtin">10</span>)
+exp.show_in_notebook(show_table=<span class="keyword">True</span>)
+<span class="comment"># 各特徴量がこの予測にどう寄与したかをローカル線形で説明</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.4 FGSM 敵対的攻撃</h3>
+    <div class="code-block">
+<span class="keyword">import</span> torch
+<span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F
+
+<span class="keyword">def</span> fgsm_attack(model, x, y, eps=<span class="builtin">0.03</span>):
+    x = x.clone().detach().requires_grad_(<span class="keyword">True</span>)
+    output = model(x)
+    loss = F.cross_entropy(output, y)
+    loss.backward()
+    x_adv = x + eps * x.grad.sign()
+    x_adv = torch.clamp(x_adv, <span class="builtin">0</span>, <span class="builtin">1</span>)  <span class="comment"># 画像範囲</span>
+    <span class="keyword">return</span> x_adv.detach()
+
+<span class="comment"># 元: 「猫」 99%、攻撃後: 「飛行機」 87% にできる</span>
+    </div>
+
+    <h3 style="margin-top:36px;">§3.5 DP-SGD（Opacus）</h3>
+    <div class="code-block">
+<span class="keyword">from</span> opacus <span class="keyword">import</span> PrivacyEngine
+
+privacy_engine = PrivacyEngine()
+model, optimizer, train_loader = privacy_engine.make_private(
+    module=model, optimizer=optimizer, data_loader=train_loader,
+    noise_multiplier=<span class="builtin">1.0</span>, max_grad_norm=<span class="builtin">1.0</span>)
+
+<span class="comment"># 通常通り学習、各バッチで勾配クリップ + ノイズ追加</span>
+<span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="builtin">range</span>(epochs):
+    train_loop(...)
+    eps = privacy_engine.get_epsilon(delta=<span class="builtin">1e-5</span>)
+    print(<span class="string">f"Epoch {epoch}, ε = {eps:.2f}"</span>)
+    </div>
+
+    <div class="section-divider" id="sec-simulation">
+      <div class="sec-num">SECTION FOUR</div>
+      <h2>シミュレーション</h2>
+      <p>採用AIのバイアス、SHAP説明、敵対的攻撃の3節。</p>
+    </div>
+
+    <h2>シミュレーション</h2>
+
+    <div class="sim-box">
+      <h4>SIM 1 — 採用AIのバイアス</h4>
+      <div class="sim-output">
+&gt;&gt; 過去5年の採用データ（男性80%、女性20%）で学習<br>
+&gt;&gt; テストデータで性別ごとの推薦率を測定<br>
+<br>
+男性候補者: 推薦率 38%, FNR 12%<br>
+女性候補者: 推薦率 21%, FNR 28%<br>
+　 Demographic Parity Diff = 17%<br>
+　 Equal Opportunity Diff = 16%<br>
+<br>
+[Reweighing で緩和]<br>
+男性: 推薦率 32%, FNR 14%<br>
+女性: 推薦率 29%, FNR 16%<br>
+　 DP Diff = 3%, EO Diff = 2%<br>
+　 全体精度はわずか 0.5% 低下のみ<br>
+<br>
+&gt;&gt; Fairlearn の Reweighing で大幅改善
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 2 — SHAP による融資判定の説明</h4>
+      <div class="sim-output">
+&gt;&gt; 顧客A（融資 NG）への SHAP 説明<br>
+<br>
+判定: NO（拒否、確率 78%）<br>
+ベース確率: 30%<br>
+　 + 0.32: 信用スコア 350（低）<br>
+　 + 0.22: 既往延滞 3回<br>
+　 + 0.08: 年収 250万円<br>
+　 - 0.05: 雇用 10年（プラス要因）<br>
+　 - 0.07: 持ち家あり<br>
+　 合計: ベース 0.30 + 寄与 0.50 = 0.78<br>
+<br>
+&gt;&gt; 各特徴量の貢献を加法的に説明<br>
+&gt;&gt; EU AI Act でこの種の説明が義務化
+      </div>
+    </div>
+
+    <div class="sim-box">
+      <h4>SIM 3 — FGSM 敵対的攻撃の威力</h4>
+      <div class="sim-output">
+&gt;&gt; ImageNet、ResNet50で敵対的画像生成<br>
+<br>
+[元画像: パンダ 92%]<br>
+&nbsp;&nbsp;eps=0.001: パンダ 89% (見た目変化なし)<br>
+&nbsp;&nbsp;eps=0.01:  パンダ 76%, テナガザル 18%<br>
+&nbsp;&nbsp;eps=0.03:  テナガザル 67% (微小ノイズで誤分類)<br>
+&nbsp;&nbsp;eps=0.07:  ノイズが人間にも見えるが「パンダ」と認識可<br>
+<br>
+[Adversarial Training 後]<br>
+&nbsp;&nbsp;eps=0.03: パンダ 81% (頑健性確保)<br>
+<br>
+&gt;&gt; 自動運転、医療診断では致命的<br>
+&gt;&gt; Robustness 評価が必須
+      </div>
+    </div>
+
+    <div class="section-divider" id="sec-problems">
+      <div class="sec-num">SECTION FIVE</div>
+      <h2>問題</h2>
+      <p>G検定形式 20問。</p>
+    </div>
+
+    <h2>問題</h2>
+
+    <div class="problem-set">
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 1</div>
+        <div class="p-q">AIバイアスの『歴史的バイアス』の典型例は。</div>
+        <div class="p-choices">① ランダム　 ② 過去の社会的不平等がデータに含まれ、AIが学習して再生産　 ③ 計算誤差　 ④ 学習率</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Amazon の採用AI事件（2018）。過去10年の採用データが男性中心で、AIが女性の履歴書を低評価した。データの選別だけでは解決困難。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 2</div>
+        <div class="p-q">Demographic Parity（人口統計学的等しさ）の定義は。</div>
+        <div class="p-choices">① 同じ Accuracy　 ② 全グループで陽性予測率が同じ：P(Ŷ=1|A=0) = P(Ŷ=1|A=1)　 ③ 同じ Recall　 ④ 同じ Precision</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 最もシンプルだが結果指標を強制するため、Equal Opportunity（TPR等値）と矛盾しうる。Fairness Impossibility Theorem。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 3</div>
+        <div class="p-q">Fairness Impossibility Theorem の主張は。</div>
+        <div class="p-choices">① 全てのFairnessは矛盾　 ② 基準値が異なるグループでは複数のFairness定義（Calibration、Equal Opportunity、Equalized Odds）を同時には満たせない　 ③ Fairness 不可能　 ④ 何もできない</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Kleinberg 2016, Chouldechova 2017。トレードオフの選択を文脈に応じて行う必要がある。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 4</div>
+        <div class="p-q">SHAP の数学的基盤は。</div>
+        <div class="p-choices">① 線形回帰　 ② 協力ゲーム理論の Shapley 値（各特徴の限界貢献度の平均）　 ③ クラスタリング　 ④ ベイズ</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 一貫性・局所精度・無依存性などの公理を満たす唯一の説明手法。Lundberg & Lee 2017。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 5</div>
+        <div class="p-q">LIME の動作は。</div>
+        <div class="p-choices">① 大域的説明　 ② 個別予測点の周辺で線形モデルで局所近似し説明　 ③ ランダム　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ribeiro 2016。摂動サンプルを生成、重み付き線形回帰で局所的説明。モデル非依存（black-box対応）。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 6</div>
+        <div class="p-q">Differential Privacy（ε-DP）の意味は。</div>
+        <div class="p-choices">① ノイズなし　 ② 1人のデータ変化で出力分布が e^ε 倍以内、個人特定リスクを数学的に制限　 ③ 学習加速　 ④ 暗号化</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dwork 2006。εが小さいほどプライバシー強、精度低下とのトレードオフ。Apple、Google、米国国勢調査で採用。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 7</div>
+        <div class="p-q">DP-SGD の実装の核心は。</div>
+        <div class="p-choices">① 学習率変化　 ② 各サンプル勾配をクリップ後、Gaussian ノイズを加えて集約　 ③ ランダム選択　 ④ パラメータ削除</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Abadi 2016。Moments Accountantでεを厳密追跡。Opacus（PyTorch）、TF Privacy で実装。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 8</div>
+        <div class="p-q">FGSM（Fast Gradient Sign Method）の式は。</div>
+        <div class="p-choices">① x' = x + ε　 ② x' = x + ε · sign(∇ₓ L)　 ③ x' = -x　 ④ x' = 2x</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 損失を最大化する方向に微小摂動を加える。Goodfellow 2014。最も基本的な敵対的攻撃。PGD はその反復強化版。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 9</div>
+        <div class="p-q">Adversarial Training は何を行うか。</div>
+        <div class="p-choices">① ランダム学習　 ② 敵対的サンプルを学習データに混ぜて学習、Robustness を獲得　 ③ パラメータ削減　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Madry 2018。PGD で生成した敵対的サンプルで Min-Max 学習。クリーン精度は微減、頑健性は大幅向上。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 10</div>
+        <div class="p-q">Federated Learning の核心は。</div>
+        <div class="p-choices">① 中央データ集約　 ② データを中央化せず、各クライアントで学習→勾配のみ集約　 ③ クラウドのみ　 ④ シングルマシン</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> McMahan 2017 (Google)。Gboard、医療機関連携で実用。Secure Aggregation、DP と組み合わせて更にプライバシー強化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 11</div>
+        <div class="p-q">AI Alignment 問題の核心は。</div>
+        <div class="p-choices">① 計算速度　 ② AIシステムの目標を人間の真の意図と整合させること（誤った目標関数で学習すると有害な行動）　 ③ パラメータ最適化　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Anthropic、OpenAI、DeepMind の中核研究分野。RLHF、Constitutional AI、Debate、IDA などが主要手法。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 12</div>
+        <div class="p-q">Reward Hacking（報酬ハッキング）の例は。</div>
+        <div class="p-choices">① 学習成功　 ② 目標関数の意図しない『穴』を突いて高得点だが望ましくない行動（CoastRunners でゲーム本来の目的を無視して報酬狩り）　 ③ パラメータ調整　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Specification Gaming の一種。AGI が現実世界で類似行動を取ることがAI Safetyの主要懸念。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 13</div>
+        <div class="p-q">Constitutional AI（Anthropic）の特徴は。</div>
+        <div class="p-choices">① 法律遵守　 ② AI自身が憲法（行動原則）に照らして自己批評・修正、RLAIF で大規模化　 ③ ランダム　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Bai 2022。Claude モデルの基盤。RLHF の人間ラベラーの代わりに AI判定を使い、Alignment を大規模化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 14</div>
+        <div class="p-q">Grad-CAM の用途は。</div>
+        <div class="p-choices">① 学習加速　 ② CNN の予測根拠を画像上にヒートマップで可視化　 ③ パラメータ削減　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Selvaraju 2017。最後のConv層の活性化と勾配の重み付き和。医療画像、自動運転の説明に重要。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 15</div>
+        <div class="p-q">Deepfake の主な技術基盤は。</div>
+        <div class="p-choices">① ロジスティック回帰　 ② GAN、Diffusion Model、Autoencoder　 ③ 線形回帰　 ④ K-means</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 生成モデルで顔・声を合成。検知技術（Deepfake Detection、C2PA、SynthID）も並行発展中。EU AI Act で透明性表示義務化。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 16</div>
+        <div class="p-q">Membership Inference Attack（メンバーシップ推定攻撃）の標的は。</div>
+        <div class="p-choices">① モデル盗難　 ② 特定の個人データがモデルの学習データに含まれていたか推定する攻撃　 ③ パラメータ盗難　 ④ ラベル改ざん</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> プライバシー侵害の一形態。学習データへの過剰適合が手がかり。DPで防御。Shokri 2017。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 17</div>
+        <div class="p-q">Model Inversion Attack の目的は。</div>
+        <div class="p-choices">① モデル予測　 ② モデルの出力から学習データの特徴を復元（顔認証から顔画像復元等）　 ③ パラメータ盗難　 ④ ラベル改ざん</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Fredrikson 2015。プライバシー侵害の重大形式。DP、出力の粗視化で防御。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 18</div>
+        <div class="p-q">LLM の Jailbreak とは。</div>
+        <div class="p-choices">① 学習　 ② プロンプトエンジニアリングで安全機構を回避し有害出力を引き出す　 ③ パラメータ盗難　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> DAN、ロールプレイ、Many-shot Jailbreak（Anthropic 2024）など多様。LLM 安全研究の主要課題。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 19</div>
+        <div class="p-q">『Right to Explanation』が法的に要求される代表例は。</div>
+        <div class="p-choices">① 全てのAI　 ② GDPR（EU）の自動意思決定条項、EU AI Act の高リスクシステム　 ③ なし　 ④ 業界自主</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GDPR Art. 22。重要な判断（融資拒否、採用、医療）にAIを使う場合、本人に説明する義務。SHAP/LIMEがその実装手段。</div>
+      </div>
+
+      <div class="problem">
+        <div class="p-num">PROBLEM 20</div>
+        <div class="p-q">大規模LLMの環境影響として正しいのは。</div>
+        <div class="p-choices">① 影響なし　 ② 学習に巨大な電力消費とCO₂排出（GPT-3: 552 t CO₂相当、Strubell 2019）　 ③ パラメータ少ない　 ④ クラスタリング</div>
+        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> モデル巨大化のサステナビリティ問題。Green AI、再生可能エネルギー使用、効率化（蒸留、量子化）が課題。</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>
+    <p style="font-size:14px; line-height:1.95;">AI倫理の全体像、バイアスの種類、Fairness定義（DP/EO/EOd）と Impossibility Theorem、XAI（SHAP/LIME/Grad-CAM）、Differential Privacy、AI Safety、Alignment、RLHF/Constitutional AI、敵対的攻撃（FGSM/PGD）と Robustness、Federated Learning、社会的影響を扱いました。応用でSHAP、Fairlearn、DP-SGD、Constitutional AI。ハンズオンでこれらの実装。シミュレーションで採用AIバイアス、SHAP説明、敵対的攻撃。最後の章でEU AI Act、GDPR、日本AI推進法など法規制を扱います。</p>
 
   </article>
 </div>
 
 <div class="chapter-nav">
-  <div><a href="10-mlops.html">← 章10</a></div>
-  <div><a href="12-law.html">章12: AI 法律 →</a></div>
+  <div><a href="10-mlops.html">← 章22: MLOps</a></div>
+  <div><span class="ch-label">Chapter 23 of 24 · 応用編</span><br><span class="ch-title">AI倫理</span></div>
+  <div><a href="12-law.html">章24: AI法規制 →</a></div>
 </div>
 
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand"><div class="colophon">Swallow<br><em>AI Academy</em></div></div>
-    <div><h6>G検定</h6><ul><li><a href="../../../certifications/g-kentei.html">概要</a></li><li><a href="../basics/index.html">基本</a></li><li><a href="index.html">応用</a></li></ul></div>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div class="footer-cols">
+      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a><a href="../../../certifications/tokei.html">統計検定</a></div>
+      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
+      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+    </div>
   </div>
-  <div class="foot-bottom"><div>© 2026 Swallow AI Academy</div></div>
 </footer>
 
-<script src="../../../assets/js/main.js"></script>
+<script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>
