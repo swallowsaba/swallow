@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>シミュレーション — G検定 — Swallow AI Academy</title>
+<meta name="description" content="G検定 全24章のシミュレーション 72シナリオを一覧で確認。思考実験と実行結果の可視化。">
+<link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body data-cert="g-kentei">
+
+<header class="topbar">
+  <button class="topbar-menu" aria-label="メニューを開く">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../index.html" class="topbar-brand">
+    <span class="brand-mark">S</span>
+    <span>Swallow Academy</span>
+  </a>
+  <div class="topbar-spacer"></div>
+  <div class="topbar-stats" id="stats-slot"></div>
+  <button class="topbar-search" aria-label="検索">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span>検索…</span>
+    <span class="kbd">⌘K</span>
+  </button>
+  <button class="topbar-theme" aria-label="テーマを切替">
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  </button>
+</header>
+
+<div class="app-shell">
+<aside class="sidebar" id="sidebar">
+  <nav>
+    <div class="sidebar-section">
+      <h6 class="sidebar-heading">資格</h6>
+      <div class="sidebar-items">
+        <a href="../../index.html" class="sidebar-link"><span class="sidebar-link__text">ホーム</span></a>
+        <a href="../../certifications/g-kentei.html" class="sidebar-link"><span class="sidebar-link__text">G検定</span></a>
+        <a href="../../certifications/e-shikaku.html" class="sidebar-link"><span class="sidebar-link__text">E資格</span></a>
+        <a href="../../certifications/tokei-kentei.html" class="sidebar-link"><span class="sidebar-link__text">統計検定</span></a>
+        <a href="../../certifications/python-cert.html" class="sidebar-link"><span class="sidebar-link__text">Python認定</span></a>
+        <a href="../../certifications/aws-mla-c01.html" class="sidebar-link"><span class="sidebar-link__text">AWS MLA</span></a>
+        <a href="../../certifications/image-engineer.html" class="sidebar-link"><span class="sidebar-link__text">画像処理</span></a>
+        <a href="../../certifications/jetson-ai.html" class="sidebar-link"><span class="sidebar-link__text">Jetson AI</span></a>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <button class="sidebar-heading" data-collapse data-collapsed="false">
+        <span>G検定 基本編</span>
+        <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sidebar-items">
+        <a href="../../learn/g-kentei/basics/01-what-is-ai.html" class="sidebar-link" data-key="g-kentei:basics:01-what-is-ai"><span class="sidebar-link__num">01</span><span class="sidebar-link__text">AIとは何か</span></a>
+        <a href="../../learn/g-kentei/basics/02-history.html" class="sidebar-link" data-key="g-kentei:basics:02-history"><span class="sidebar-link__num">02</span><span class="sidebar-link__text">AIの歴史</span></a>
+        <a href="../../learn/g-kentei/basics/03-linear-algebra.html" class="sidebar-link" data-key="g-kentei:basics:03-linear-algebra"><span class="sidebar-link__num">03</span><span class="sidebar-link__text">線形代数</span></a>
+        <a href="../../learn/g-kentei/basics/04-calculus.html" class="sidebar-link" data-key="g-kentei:basics:04-calculus"><span class="sidebar-link__num">04</span><span class="sidebar-link__text">微分・最適化</span></a>
+        <a href="../../learn/g-kentei/basics/05-probability.html" class="sidebar-link" data-key="g-kentei:basics:05-probability"><span class="sidebar-link__num">05</span><span class="sidebar-link__text">確率・統計</span></a>
+        <a href="../../learn/g-kentei/basics/06-info-theory.html" class="sidebar-link" data-key="g-kentei:basics:06-info-theory"><span class="sidebar-link__num">06</span><span class="sidebar-link__text">情報理論</span></a>
+        <a href="../../learn/g-kentei/basics/07-ml-paradigm.html" class="sidebar-link" data-key="g-kentei:basics:07-ml-paradigm"><span class="sidebar-link__num">07</span><span class="sidebar-link__text">ML パラダイム</span></a>
+        <a href="../../learn/g-kentei/basics/08-ml-classical.html" class="sidebar-link" data-key="g-kentei:basics:08-ml-classical"><span class="sidebar-link__num">08</span><span class="sidebar-link__text">古典ML</span></a>
+        <a href="../../learn/g-kentei/basics/09-ml-evaluation.html" class="sidebar-link" data-key="g-kentei:basics:09-ml-evaluation"><span class="sidebar-link__num">09</span><span class="sidebar-link__text">評価指標</span></a>
+        <a href="../../learn/g-kentei/basics/10-nn-basics.html" class="sidebar-link" data-key="g-kentei:basics:10-nn-basics"><span class="sidebar-link__num">10</span><span class="sidebar-link__text">NN基礎</span></a>
+        <a href="../../learn/g-kentei/basics/11-backprop.html" class="sidebar-link" data-key="g-kentei:basics:11-backprop"><span class="sidebar-link__num">11</span><span class="sidebar-link__text">逆伝播</span></a>
+        <a href="../../learn/g-kentei/basics/12-nn-tricks.html" class="sidebar-link" data-key="g-kentei:basics:12-nn-tricks"><span class="sidebar-link__num">12</span><span class="sidebar-link__text">NNの工夫</span></a>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <button class="sidebar-heading" data-collapse data-collapsed="false">
+        <span>G検定 応用編</span>
+        <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sidebar-items">
+        <a href="../../learn/g-kentei/advanced/01-cnn.html" class="sidebar-link" data-key="g-kentei:advanced:01-cnn"><span class="sidebar-link__num">13</span><span class="sidebar-link__text">CNN</span></a>
+        <a href="../../learn/g-kentei/advanced/02-rnn.html" class="sidebar-link" data-key="g-kentei:advanced:02-rnn"><span class="sidebar-link__num">14</span><span class="sidebar-link__text">RNN・LSTM</span></a>
+        <a href="../../learn/g-kentei/advanced/03-transformer.html" class="sidebar-link" data-key="g-kentei:advanced:03-transformer"><span class="sidebar-link__num">15</span><span class="sidebar-link__text">Transformer</span></a>
+        <a href="../../learn/g-kentei/advanced/04-bert-gpt.html" class="sidebar-link" data-key="g-kentei:advanced:04-bert-gpt"><span class="sidebar-link__num">16</span><span class="sidebar-link__text">BERT・GPT</span></a>
+        <a href="../../learn/g-kentei/advanced/05-llm.html" class="sidebar-link" data-key="g-kentei:advanced:05-llm"><span class="sidebar-link__num">17</span><span class="sidebar-link__text">LLM</span></a>
+        <a href="../../learn/g-kentei/advanced/06-generative.html" class="sidebar-link" data-key="g-kentei:advanced:06-generative"><span class="sidebar-link__num">18</span><span class="sidebar-link__text">生成AI</span></a>
+        <a href="../../learn/g-kentei/advanced/07-rl.html" class="sidebar-link" data-key="g-kentei:advanced:07-rl"><span class="sidebar-link__num">19</span><span class="sidebar-link__text">強化学習</span></a>
+        <a href="../../learn/g-kentei/advanced/08-rag.html" class="sidebar-link" data-key="g-kentei:advanced:08-rag"><span class="sidebar-link__num">20</span><span class="sidebar-link__text">RAG</span></a>
+        <a href="../../learn/g-kentei/advanced/09-agent.html" class="sidebar-link" data-key="g-kentei:advanced:09-agent"><span class="sidebar-link__num">21</span><span class="sidebar-link__text">AI Agent</span></a>
+        <a href="../../learn/g-kentei/advanced/10-mlops.html" class="sidebar-link" data-key="g-kentei:advanced:10-mlops"><span class="sidebar-link__num">22</span><span class="sidebar-link__text">MLOps</span></a>
+        <a href="../../learn/g-kentei/advanced/11-ethics.html" class="sidebar-link" data-key="g-kentei:advanced:11-ethics"><span class="sidebar-link__num">23</span><span class="sidebar-link__text">AI倫理</span></a>
+        <a href="../../learn/g-kentei/advanced/12-law.html" class="sidebar-link" data-key="g-kentei:advanced:12-law"><span class="sidebar-link__num">24</span><span class="sidebar-link__text">AI法規制</span></a>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h6 class="sidebar-heading">演習</h6>
+      <div class="sidebar-items">
+        <a href="../../learn/g-kentei/handson.html" class="sidebar-link"><span class="sidebar-link__text">ハンズオン</span><span class="sidebar-link__badge">150</span></a>
+        <a href="../../learn/g-kentei/simulation.html" class="sidebar-link"><span class="sidebar-link__text">シミュレーション</span><span class="sidebar-link__badge">72</span></a>
+        <a href="../../quiz.html" class="sidebar-link"><span class="sidebar-link__text">問題演習</span><span class="sidebar-link__badge">480</span></a>
+      </div>
+    </div>
+  </nav>
+</aside>
+<div class="sidebar-overlay"></div>
+  <main class="main">
+
+    <div class="content content--wide" data-cert="g-kentei">
+      <div class="crumbs"><a href="../../index.html">ホーム</a> <span class="crumbs-sep">/</span> <a href="../../certifications/g-kentei.html">G検定</a> <span class="crumbs-sep">/</span> シミュレーション</div>
+      <h1 class="page-title">シミュレーション</h1>
+      <p class="page-lede">
+        全24章 × 各章3つの思考実験 = <strong>合計72シナリオ</strong>。
+        各シミュレーションは概念を直観的に理解し、実証実験で確認する橋渡し。
+        基本編・応用編すべての章の §4 シミュレーション セクションへ直接ジャンプできます。
+      </p>
+
+      <dl class="info-strip">
+        <div class="info-strip-item"><dt>総シナリオ数</dt><dd>72</dd></div>
+        <div class="info-strip-item"><dt>基本編</dt><dd>36シナリオ</dd></div>
+        <div class="info-strip-item"><dt>応用編</dt><dd>36シナリオ</dd></div>
+        <div class="info-strip-item"><dt>形式</dt><dd>思考実験＋実行結果</dd></div>
+      </dl>
+
+      <div class="section-h"><h2>📚 基本編 シミュレーション</h2><span class="count">36シナリオ</span></div>
+      <div class="handson-list">
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">01</div>
+          <div class="handson-chapter__title">
+            <a href="basics/01-what-is-ai.html#sec-simulation">AIとは何か</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/01-what-is-ai.html#sec-simulation"><span class="handson-num">SIM 1</span> シミュレーション設定</a></li>
+          <li><a href="basics/01-what-is-ai.html#sec-simulation"><span class="handson-num">SIM 2</span> あなたが中国語の部屋になる思考実験</a></li>
+          <li><a href="basics/01-what-is-ai.html#sec-simulation"><span class="handson-num">SIM 3</span> 10×100×1000×10000 のシミュレーション</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">02</div>
+          <div class="handson-chapter__title">
+            <a href="basics/02-history.html#sec-simulation">AIの歴史</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/02-history.html#sec-simulation"><span class="handson-num">SIM 1</span> §4.1 シミュレーション1：ハイプサイクルと冬の到来</a></li>
+          <li><a href="basics/02-history.html#sec-simulation"><span class="handson-num">SIM 2</span> §4.2 シミュレーション2：ムーアの法則 × AI 性能の指数的増加</a></li>
+          <li><a href="basics/02-history.html#sec-simulation"><span class="handson-num">SIM 3</span> §4.3 シミュレーション3：もし2012年にAlexNetが失敗していたら？</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">03</div>
+          <div class="handson-chapter__title">
+            <a href="basics/03-linear-algebra.html#sec-simulation">線形代数</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/03-linear-algebra.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — 高次元での「距離の呪い」</a></li>
+          <li><a href="basics/03-linear-algebra.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — SVD ランク削減でどこまで情報が残るか</a></li>
+          <li><a href="basics/03-linear-algebra.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — テンソル形状の追跡</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">04</div>
+          <div class="handson-chapter__title">
+            <a href="basics/04-calculus.html#sec-simulation">微分・最適化</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/04-calculus.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — 学習率と発散・収束</a></li>
+          <li><a href="basics/04-calculus.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — 鞍点問題</a></li>
+          <li><a href="basics/04-calculus.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — Adam vs SGD on Rosenbrock 関数</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">05</div>
+          <div class="handson-chapter__title">
+            <a href="basics/05-probability.html#sec-simulation">確率・統計</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/05-probability.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — 中心極限定理の威力</a></li>
+          <li><a href="basics/05-probability.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — ベイズ事後の逐次更新</a></li>
+          <li><a href="basics/05-probability.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — モンテカルロ積分</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">06</div>
+          <div class="handson-chapter__title">
+            <a href="basics/06-info-theory.html#sec-simulation">情報理論</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/06-info-theory.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — エントロピーの直観</a></li>
+          <li><a href="basics/06-info-theory.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — KL の非対称性で何が起きるか</a></li>
+          <li><a href="basics/06-info-theory.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — CE 最小化 = MLE は同じこと</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">07</div>
+          <div class="handson-chapter__title">
+            <a href="basics/07-ml-paradigm.html#sec-simulation">ML パラダイム</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/07-ml-paradigm.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — バイアス-バリアンス分解の実験</a></li>
+          <li><a href="basics/07-ml-paradigm.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — 過学習の検出</a></li>
+          <li><a href="basics/07-ml-paradigm.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — NFL定理の意味</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">08</div>
+          <div class="handson-chapter__title">
+            <a href="basics/08-ml-classical.html#sec-simulation">古典ML</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/08-ml-classical.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — SVMカーネルの決定境界</a></li>
+          <li><a href="basics/08-ml-classical.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — GBDTの逐次学習</a></li>
+          <li><a href="basics/08-ml-classical.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — K-means の初期化問題</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">09</div>
+          <div class="handson-chapter__title">
+            <a href="basics/09-ml-evaluation.html#sec-simulation">評価指標</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/09-ml-evaluation.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — 不均衡データの Accuracy の罠</a></li>
+          <li><a href="basics/09-ml-evaluation.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — 閾値と Precision-Recall</a></li>
+          <li><a href="basics/09-ml-evaluation.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — ROC vs PR-AUC、不均衡</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">10</div>
+          <div class="handson-chapter__title">
+            <a href="basics/10-nn-basics.html#sec-simulation">NN基礎</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/10-nn-basics.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — XOR問題</a></li>
+          <li><a href="basics/10-nn-basics.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — UAP（普遍近似定理）</a></li>
+          <li><a href="basics/10-nn-basics.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — 勾配消失問題</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">11</div>
+          <div class="handson-chapter__title">
+            <a href="basics/11-backprop.html#sec-simulation">逆伝播</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/11-backprop.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — 連鎖律の手計算</a></li>
+          <li><a href="basics/11-backprop.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — 勾配消失の観察</a></li>
+          <li><a href="basics/11-backprop.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — オプティマイザ比較（収束速度）</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">12</div>
+          <div class="handson-chapter__title">
+            <a href="basics/12-nn-tricks.html#sec-simulation">NNの工夫</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/12-nn-tricks.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — Dropout の効果（CIFAR-10）</a></li>
+          <li><a href="basics/12-nn-tricks.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — Batch Normalization の効果</a></li>
+          <li><a href="basics/12-nn-tricks.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — データ拡張の威力</a></li>
+        </ul>
+      </div>
+      </div>
+
+      <div class="section-h" style="margin-top:40px;"><h2>🚀 応用編 シミュレーション</h2><span class="count">36シナリオ</span></div>
+      <div class="handson-list">
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">13</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/01-cnn.html#sec-simulation">CNN</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/01-cnn.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — 畳み込みフィルタが何を学ぶか</a></li>
+          <li><a href="advanced/01-cnn.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — Max Pooling vs Average Pooling</a></li>
+          <li><a href="advanced/01-cnn.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — 受容野の拡大</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">14</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/02-rnn.html#sec-simulation">RNN・LSTM</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/02-rnn.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — RNN の勾配消失</a></li>
+          <li><a href="advanced/02-rnn.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — LSTMゲートの役割</a></li>
+          <li><a href="advanced/02-rnn.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — Attentionの効果</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">15</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/03-transformer.html#sec-simulation">Transformer</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/03-transformer.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — Attention重みは何を学ぶか</a></li>
+          <li><a href="advanced/03-transformer.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — 長距離依存の効果</a></li>
+          <li><a href="advanced/03-transformer.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — 計算量 N² の意味</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">16</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/04-bert-gpt.html#sec-simulation">BERT・GPT</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/04-bert-gpt.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — BERT vs GPT、得意分野</a></li>
+          <li><a href="advanced/04-bert-gpt.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — Tokenization の効果</a></li>
+          <li><a href="advanced/04-bert-gpt.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — スケーリング則の威力</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">17</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/05-llm.html#sec-simulation">LLM</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/05-llm.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — スケーリング則の実証</a></li>
+          <li><a href="advanced/05-llm.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — Chain-of-Thought の効果</a></li>
+          <li><a href="advanced/05-llm.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — Hallucination の発生</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">18</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/06-generative.html#sec-simulation">生成AI</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/06-generative.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — GAN のモード崩壊</a></li>
+          <li><a href="advanced/06-generative.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — Diffusion のサンプリングステップ</a></li>
+          <li><a href="advanced/06-generative.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — Classifier-Free Guidance の効果</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">19</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/07-rl.html#sec-simulation">強化学習</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/07-rl.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — ε-greedy のεと性能</a></li>
+          <li><a href="advanced/07-rl.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — AlphaGo の進化</a></li>
+          <li><a href="advanced/07-rl.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — RLHF が LLM を変えた</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">20</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/08-rag.html#sec-simulation">RAG</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/08-rag.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — Chunk Size が精度に与える影響</a></li>
+          <li><a href="advanced/08-rag.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — Rerank の効果</a></li>
+          <li><a href="advanced/08-rag.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — Hybrid Search（Dense + Sparse）</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">21</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/09-agent.html#sec-simulation">AI Agent</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/09-agent.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — ReAct vs 単純LLM</a></li>
+          <li><a href="advanced/09-agent.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — Self-Reflection</a></li>
+          <li><a href="advanced/09-agent.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — Multi-Agent vs Single-Agent</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">22</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/10-mlops.html#sec-simulation">MLOps</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/10-mlops.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — モデルバージョン管理</a></li>
+          <li><a href="advanced/10-mlops.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — Drift 検知の実際</a></li>
+          <li><a href="advanced/10-mlops.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — Canary Release</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">23</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/11-ethics.html#sec-simulation">AI倫理</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/11-ethics.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — 採用AIのバイアス</a></li>
+          <li><a href="advanced/11-ethics.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — SHAP による融資判定の説明</a></li>
+          <li><a href="advanced/11-ethics.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — FGSM 敵対的攻撃の威力</a></li>
+        </ul>
+      </div>
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">24</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/12-law.html#sec-simulation">AI法規制</a>
+            <div class="handson-chapter__sub">3つのシミュレーション</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/12-law.html#sec-simulation"><span class="handson-num">SIM 1</span> SIM 1 — 採用AI のEU AI Act 適合</a></li>
+          <li><a href="advanced/12-law.html#sec-simulation"><span class="handson-num">SIM 2</span> SIM 2 — 画像生成AI の著作権リスク</a></li>
+          <li><a href="advanced/12-law.html#sec-simulation"><span class="handson-num">SIM 3</span> SIM 3 — GDPR 第22条の自動意思決定</a></li>
+        </ul>
+      </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

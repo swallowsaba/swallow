@@ -4,9 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>問題演習 — Swallow AI Academy</title>
-<meta name="description" content="G検定・E資格・統計検定・Python認定・AWS MLA-C01・画像処理エンジニア・Jetson AI など7資格を網羅した420問以上のオリジナル問題集。即時採点・解説・履歴保存。">
+<meta name="description" content="G検定形式の演習問題 480問。トピック選択→10問演習→即時採点・解説。">
 <link rel="stylesheet" href="assets/css/main.css">
-
 </head>
 <body>
 
@@ -91,6 +90,7 @@
       <h6 class="sidebar-heading">演習</h6>
       <div class="sidebar-items">
         <a href="learn/g-kentei/handson.html" class="sidebar-link"><span class="sidebar-link__text">ハンズオン</span><span class="sidebar-link__badge">150</span></a>
+        <a href="learn/g-kentei/simulation.html" class="sidebar-link"><span class="sidebar-link__text">シミュレーション</span><span class="sidebar-link__badge">72</span></a>
         <a href="quiz.html" class="sidebar-link"><span class="sidebar-link__text">問題演習</span><span class="sidebar-link__badge">480</span></a>
       </div>
     </div>
@@ -98,102 +98,160 @@
 </aside>
 <div class="sidebar-overlay"></div>
   <main class="main">
-    <div class="content">
-<section class="page-hero">
-  <div class="page-hero-inner">
-    <div class="crumbs"><a href="index.html">HOME</a> &nbsp;/&nbsp; QUIZ</div>
-    <h1>問題演習<span class="en">Quiz Bank — original drills</span></h1>
-    <p class="standfirst">G検定100問・E資格80問・統計検定60問・Python50問・AWS MLA-C01が50問・画像処理40問・Jetson 30問など、7資格＋横断トピックを <strong>合計420問以上</strong> でカバー。即時採点・解説・出典の三点セット、履歴はブラウザに保存しアカウント不要。</p>
-  </div>
-</section>
 
-<div class="quiz-shell" id="quiz-shell">
+    <div class="content content--wide">
+      <div class="crumbs"><a href="index.html">ホーム</a> <span class="crumbs-sep">/</span> 問題演習</div>
+      <h1 class="page-title">問題演習</h1>
+      <p class="page-lede">
+        G検定形式の <strong>480問</strong>のオリジナル演習。
+        各章 20 問×24章。解答解説付き。トピックを選んで実戦力を磨きましょう。
+      </p>
 
-  <!-- Topic selector (default view) -->
-  <div id="topic-select">
-    <h2 style="font-family:var(--font-display-jp);font-weight:700;font-size:24px;border-bottom:1px solid var(--ink);padding-bottom:14px;margin-bottom:8px;">トピックを選ぶ</h2>
-    <p style="font-size:14.5px;line-height:1.85;color:var(--ink-soft);margin-top:12px;">各トピックは概ね 10〜20 問。出題はランダム化、選択肢はオリジナルで、解説付きです。</p>
+      <div id="quiz-selector">
+        <div class="section-h"><h2>主要トピック</h2></div>
+        <div class="quiz-topics" id="main-topics"></div>
 
-    <div class="topic-grid">
-      <a class="topic-card" href="?topic=g-kentei" data-topic="g-kentei">
-        <span class="tag">G-KENTEI</span>
-        <h4>G検定 総合</h4>
-        <p>2024/11改訂シラバス＋生成AI領域を9章で網羅。AIリテラシー全般。</p>
-        <div class="count">100問</div>
-      </a>
+        <div class="section-h" style="margin-top:32px;"><h2>章ごとに演習</h2><span class="count">24章 × 20問</span></div>
+        <div class="quiz-topics" id="chapter-topics"></div>
+      </div>
 
-      <a class="topic-card" href="?topic=e-shikaku" data-topic="e-shikaku">
-        <span class="tag">E-SHIKAKU</span>
-        <h4>E資格 総合</h4>
-        <p>数学的基礎／ML／DL基礎／DL応用／開発・運用環境の5領域。</p>
-        <div class="count">80問</div>
-      </a>
-
-      <a class="topic-card" href="?topic=tokei" data-topic="tokei">
-        <span class="tag">TOKEI</span>
-        <h4>統計検定（2級→1級）</h4>
-        <p>記述／推測／回帰／多変量／ベイズ／実験計画／時系列／因果推論。</p>
-        <div class="count">60問</div>
-      </a>
-
-      <a class="topic-card" href="?topic=python" data-topic="python">
-        <span class="tag">PYTHON</span>
-        <h4>Python エンジニア認定</h4>
-        <p>Python基礎／NumPy／pandas／scikit-learn／可視化／実務分析。</p>
-        <div class="count">50問</div>
-      </a>
-
-      <a class="topic-card" href="?topic=aws-mla" data-topic="aws-mla">
-        <span class="tag">AWS-MLA</span>
-        <h4>AWS MLA-C01</h4>
-        <p>データ準備／モデル開発／デプロイ／監視・セキュリティの4ドメイン。</p>
-        <div class="count">50問</div>
-      </a>
-
-      <a class="topic-card" href="?topic=image" data-topic="image">
-        <span class="tag">IMAGE</span>
-        <h4>画像処理エンジニア検定</h4>
-        <p>サンプリング／フィルタ／エッジ／特徴抽出／形状解析／DL応用。</p>
-        <div class="count">40問</div>
-      </a>
-
-      <a class="topic-card" href="?topic=jetson" data-topic="jetson">
-        <span class="tag">JETSON</span>
-        <h4>Jetson AI Specialist</h4>
-        <p>Jetsonハード／JetPack／TensorRT／DeepStream／Isaac／sim2real。</p>
-        <div class="count">30問</div>
-      </a>
-
-      <a class="topic-card" href="?topic=llm" data-topic="llm">
-        <span class="tag">LLM</span>
-        <h4>LLM・生成AI（横断）</h4>
-        <p>プロンプト、RAG、アライメント、評価、Agent、効率化。</p>
-        <div class="count">12問</div>
-      </a>
-
-      <a class="topic-card" href="?topic=stats" data-topic="stats">
-        <span class="tag">STATS</span>
-        <h4>統計DS（横断ミニ）</h4>
-        <p>統計検定対策のショート版・横断確認用。</p>
-        <div class="count">10問</div>
-      </a>
+      <div id="quiz-runner" class="quiz-runner" style="display:none;"></div>
     </div>
+    <script src="assets/data/quiz.js" defer></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var quizState = { topic: null, questions: [], idx: 0, answers: [], correct: 0 };
+        var $sel = document.getElementById('quiz-selector');
+        var $run = document.getElementById('quiz-runner');
+        var $main = document.getElementById('main-topics');
+        var $chap = document.getElementById('chapter-topics');
 
-    <hr class="divider">
-    <p style="font-size:13px;color:var(--ink-mute);">
-      ※ 履歴は <code>localStorage</code> にのみ保存され、サーバーには送信されません。ブラウザを変えると共有されません。
-    </p>
-  </div>
+        function renderTopics() {
+          if (!window.QUIZ_DATA) return;
+          $main.innerHTML = QUIZ_DATA.topics.map(function(t) {
+            return '<div class="quiz-topic-card" data-topic-id="' + t.id + '">' +
+              '<div class="quiz-topic-card__count">' + t.count + '問</div>' +
+              '<div class="quiz-topic-card__title">' + t.label + '</div>' +
+              '<div class="quiz-topic-card__desc">' + t.desc + '</div>' +
+              '</div>';
+          }).join('');
+          $chap.innerHTML = QUIZ_DATA.chapters.map(function(t) {
+            return '<div class="quiz-topic-card" data-topic-id="' + t.id + '">' +
+              '<div class="quiz-topic-card__count">' + t.count + '問</div>' +
+              '<div class="quiz-topic-card__title">' + t.label + '</div>' +
+              '</div>';
+          }).join('');
+          document.querySelectorAll('.quiz-topic-card').forEach(function(c) {
+            c.addEventListener('click', function() { startQuiz(c.getAttribute('data-topic-id')); });
+          });
+        }
 
-  <!-- Quiz mount target -->
-  <div id="quiz-mount" style="display:none;">
-    <div style="margin-bottom:16px;">
-      <a class="btn small" href="quiz.html">← トピック選択に戻る</a>
-    </div>
-    <div id="quiz-engine-target"></div>
-  </div>
-</div>
-    </div>
+        function findTopic(id) {
+          var all = QUIZ_DATA.topics.concat(QUIZ_DATA.chapters);
+          return all.find(function(t) { return t.id === id; });
+        }
+
+        function shuffle(arr) {
+          var a = arr.slice();
+          for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var t = a[i]; a[i] = a[j]; a[j] = t;
+          }
+          return a;
+        }
+
+        function startQuiz(topicId) {
+          var topic = findTopic(topicId);
+          if (!topic || !topic.problems.length) return;
+          var n = Math.min(10, topic.problems.length); // 10 problems per session
+          quizState = { topic: topic, questions: shuffle(topic.problems).slice(0, n), idx: 0, answers: [], correct: 0 };
+          $sel.style.display = 'none';
+          $run.style.display = 'block';
+          renderQuestion();
+        }
+
+        function renderQuestion() {
+          var q = quizState.questions[quizState.idx];
+          var letters = ['①', '②', '③', '④', '⑤'];
+          var choicesHtml = q.choices.map(function(c, i) {
+            return '<button class="quiz-choice" data-idx="' + i + '">' +
+              '<span class="quiz-choice__letter">' + letters[i] + '</span>' +
+              '<span>' + c + '</span></button>';
+          }).join('');
+          $run.innerHTML =
+            '<div class="quiz-progress-info"><span>' + quizState.topic.label + '</span><span>' + (quizState.idx + 1) + ' / ' + quizState.questions.length + '</span></div>' +
+            '<div class="pbar pbar--thick" style="margin-bottom:20px;"><div class="pbar__fill" style="width:' + ((quizState.idx) / quizState.questions.length * 100) + '%;background:var(--accent);"></div></div>' +
+            '<div class="quiz-card-active">' +
+              '<div class="quiz-q-num">問 ' + (quizState.idx + 1) + '</div>' +
+              '<div class="quiz-q-text">' + q.q + '</div>' +
+              '<div class="quiz-choices">' + choicesHtml + '</div>' +
+              '<div class="quiz-feedback" id="qf"></div>' +
+              '<div class="quiz-actions" id="qa" style="display:none;">' +
+                '<button class="btn btn--ghost" id="quit-btn">中断</button>' +
+                '<button class="btn btn--primary" id="next-btn">' + (quizState.idx + 1 >= quizState.questions.length ? '結果を見る →' : '次へ →') + '</button>' +
+              '</div>' +
+              '<div class="quiz-actions" id="qa-init"><button class="btn btn--ghost" id="quit-btn-2">中断</button></div>' +
+            '</div>';
+          document.querySelectorAll('.quiz-choice').forEach(function(b) {
+            b.addEventListener('click', function() { selectAnswer(parseInt(b.getAttribute('data-idx'))); });
+          });
+          var quit = document.getElementById('quit-btn-2');
+          if (quit) quit.addEventListener('click', exitQuiz);
+        }
+
+        function selectAnswer(idx) {
+          var q = quizState.questions[quizState.idx];
+          quizState.answers.push(idx);
+          var isCorrect = (idx === q.answer);
+          if (isCorrect) quizState.correct++;
+          document.querySelectorAll('.quiz-choice').forEach(function(b, i) {
+            b.disabled = true;
+            if (i === q.answer) b.classList.add('is-correct');
+            else if (i === idx) b.classList.add('is-incorrect');
+            else if (i === idx) b.classList.add('is-selected');
+          });
+          var fb = document.getElementById('qf');
+          fb.classList.add(isCorrect ? 'is-correct' : 'is-incorrect');
+          fb.innerHTML = '<strong>' + (isCorrect ? '✓ 正解！' : '✗ 不正解') + '</strong> ' + q.explanation;
+          document.getElementById('qa').style.display = 'flex';
+          document.getElementById('qa-init').style.display = 'none';
+          document.getElementById('next-btn').addEventListener('click', nextQuestion);
+          document.getElementById('quit-btn').addEventListener('click', exitQuiz);
+        }
+
+        function nextQuestion() {
+          quizState.idx++;
+          if (quizState.idx >= quizState.questions.length) { showResult(); }
+          else { renderQuestion(); }
+        }
+
+        function showResult() {
+          var pct = Math.round((quizState.correct / quizState.questions.length) * 100);
+          $run.innerHTML =
+            '<div class="quiz-result">' +
+              '<div style="font-size:48px;">' + (pct >= 80 ? '🏆' : pct >= 60 ? '🎉' : '📚') + '</div>' +
+              '<div class="quiz-result__score">' + pct + '%</div>' +
+              '<div class="quiz-result__label">' + quizState.correct + ' / ' + quizState.questions.length + ' 問正解 — ' + quizState.topic.label + '</div>' +
+              '<div style="display:flex;gap:10px;justify-content:center;">' +
+                '<button class="btn btn--primary" id="retry-btn">もう一度挑戦</button>' +
+                '<button class="btn btn--ghost" id="back-btn">他のトピックを選ぶ</button>' +
+              '</div>' +
+            '</div>';
+          document.getElementById('retry-btn').addEventListener('click', function() { startQuiz(quizState.topic.id); });
+          document.getElementById('back-btn').addEventListener('click', exitQuiz);
+          if (window.Swallow && Swallow.Store) Swallow.Store.addXP(pct, 'クイズ完了 (' + pct + '%)');
+        }
+
+        function exitQuiz() {
+          $run.style.display = 'none';
+          $sel.style.display = 'block';
+          window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        renderTopics();
+      });
+    </script>
+
   </main>
 </div>
 

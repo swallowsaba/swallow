@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>G検定 — Swallow AI Academy</title>
-<meta name="description" content="G検定の完全カリキュラム。基本編12章＋応用編12章、480問のオリジナル演習。進捗トラッキング付き。">
+<meta name="description" content="G検定 完全カリキュラム。基本・応用・ハンズオン・シミュレーション・問題演習の5学習方法で合格を支援。">
 <link rel="stylesheet" href="../assets/css/main.css">
 </head>
-<body>
+<body data-cert="g-kentei">
 
 <header class="topbar">
   <button class="topbar-menu" aria-label="メニューを開く">
@@ -90,6 +90,7 @@
       <h6 class="sidebar-heading">演習</h6>
       <div class="sidebar-items">
         <a href="../learn/g-kentei/handson.html" class="sidebar-link"><span class="sidebar-link__text">ハンズオン</span><span class="sidebar-link__badge">150</span></a>
+        <a href="../learn/g-kentei/simulation.html" class="sidebar-link"><span class="sidebar-link__text">シミュレーション</span><span class="sidebar-link__badge">72</span></a>
         <a href="../quiz.html" class="sidebar-link"><span class="sidebar-link__text">問題演習</span><span class="sidebar-link__badge">480</span></a>
       </div>
     </div>
@@ -100,9 +101,10 @@
 
     <div class="content content--wide" data-cert="g-kentei">
       <div class="crumbs"><a href="../index.html">ホーム</a> <span class="crumbs-sep">/</span> 資格 <span class="crumbs-sep">/</span> G検定</div>
-      <h1 class="page-title">G検定<span class="en">Generalist Certification — JDLA</span></h1>
+      <h1 class="page-title">G検定</h1>
       <p class="page-lede">
-        AIの社会実装に必要な基礎知識を問う資格。<strong>基本編12章＋応用編12章＝計24章・480問</strong>のオリジナル演習で合格を支援。
+        日本ディープラーニング協会（JDLA）の <strong>AI ジェネラリスト検定</strong>。
+        基本編12章＋応用編12章＝計24章を、5つの学習方法で完全カバーします。
       </p>
 
       <!-- Progress dashboard -->
@@ -111,39 +113,69 @@
           <div class="dash-card__row">
             <div class="ring ring--lg" data-progress-ring="g-kentei:" data-total="24"></div>
             <div style="flex:1;">
-              <div class="dash-card__label">G検定 全体進捗</div>
-              <div class="dash-card__value" id="cert-status">学習開始</div>
-              <div class="dash-card__sub" id="cert-status-sub">24章中、章を完了すると進捗が更新されます</div>
-              <div class="pbar pbar--thick" data-progress-bar="g-kentei:" data-total="24" style="margin-top:12px;background:rgba(255,255,255,0.25);">
-                <div class="pbar__fill" style="background:white;"></div>
-              </div>
+              <div class="dash-card__label">あなたの学習進捗</div>
+              <div class="dash-card__value" id="cert-status">学習開始前</div>
+              <div class="dash-card__sub" id="cert-status-sub">章を完了するとここに反映されます</div>
             </div>
           </div>
         </div>
-
         <div class="dash-card">
           <div class="dash-card__label">📚 基本編</div>
           <div class="dash-card__row">
             <div class="ring ring--sm" data-progress-ring="g-kentei:basics:" data-total="12"></div>
-            <div>
-              <div style="font-weight:700;font-size:16px;">12章</div>
-              <div style="font-size:12px;color:var(--text-mute);">240問</div>
-            </div>
+            <div><div style="font-weight:700;font-size:16px;">12章</div><div style="font-size:12px;color:var(--text-mute);">240問</div></div>
           </div>
         </div>
-
         <div class="dash-card">
           <div class="dash-card__label">🚀 応用編</div>
           <div class="dash-card__row">
             <div class="ring ring--sm" data-progress-ring="g-kentei:advanced:" data-total="12"></div>
-            <div>
-              <div style="font-weight:700;font-size:16px;">12章</div>
-              <div style="font-size:12px;color:var(--text-mute);">240問</div>
-            </div>
+            <div><div style="font-weight:700;font-size:16px;">12章</div><div style="font-size:12px;color:var(--text-mute);">240問</div></div>
           </div>
         </div>
       </div>
 
+      <!-- 5 Learning Paths (THE KEY NAVIGATION) -->
+      <div class="section-h" style="margin-top:36px;"><h2>5つの学習方法</h2><span class="count">基本・応用・ハンズオン・シミュレーション・問題演習</span></div>
+      <div class="path-grid">
+        <a href="#basics" class="path-card" data-color="basic">
+          <div class="path-card__icon">📚</div>
+          <div class="path-card__title">基本</div>
+          <div class="path-card__count">12章 · 120節</div>
+          <div class="path-card__desc">AI定義、数学的基礎、古典ML、NN基礎、逆伝播まで。深層学習の土台。</div>
+          <div class="path-card__arrow">章一覧 ↓</div>
+        </a>
+        <a href="#advanced" class="path-card" data-color="advanced">
+          <div class="path-card__icon">🚀</div>
+          <div class="path-card__title">応用</div>
+          <div class="path-card__count">12章 · 120節</div>
+          <div class="path-card__desc">CNN、Transformer、LLM、生成AI、Agent、MLOps、倫理、法規制。</div>
+          <div class="path-card__arrow">章一覧 ↓</div>
+        </a>
+        <a href="../learn/g-kentei/handson.html" class="path-card" data-color="handson">
+          <div class="path-card__icon">💻</div>
+          <div class="path-card__title">ハンズオン</div>
+          <div class="path-card__count">150演習</div>
+          <div class="path-card__desc">章別 120演習 + 総合プロジェクト 30本。Python・NumPy・PyTorch で実装。</div>
+          <div class="path-card__arrow">演習一覧 →</div>
+        </a>
+        <a href="../learn/g-kentei/simulation.html" class="path-card" data-color="simulation">
+          <div class="path-card__icon">🧪</div>
+          <div class="path-card__title">シミュレーション</div>
+          <div class="path-card__count">72シナリオ</div>
+          <div class="path-card__desc">各章3つの思考実験で直観と実証を橋渡し。実行結果を可視化。</div>
+          <div class="path-card__arrow">シナリオ一覧 →</div>
+        </a>
+        <a href="../quiz.html?topic=g-kentei" class="path-card" data-color="quiz">
+          <div class="path-card__icon">📝</div>
+          <div class="path-card__title">問題演習</div>
+          <div class="path-card__count">480問</div>
+          <div class="path-card__desc">G検定形式の演習問題。各章20問×24章。解答解説付きで実戦力を磨く。</div>
+          <div class="path-card__arrow">演習を始める →</div>
+        </a>
+      </div>
+
+      <!-- Exam info -->
       <dl class="info-strip">
         <div class="info-strip-item"><dt>主催</dt><dd>JDLA</dd></div>
         <div class="info-strip-item"><dt>形式</dt><dd>120分</dd></div>
@@ -152,29 +184,13 @@
         <div class="info-strip-item"><dt>受験料</dt><dd>13,200円</dd></div>
       </dl>
 
-      <!-- Quick links -->
-      <div class="section-h"><h2>学習リソース</h2></div>
-      <div class="card-grid-2">
-        <a href="../learn/g-kentei/handson.html" class="card card-link">
-          <div style="font-size:24px;margin-bottom:6px;">💻</div>
-          <div style="font-weight:700;font-size:15px;">ハンズオン演習</div>
-          <div style="font-size:12.5px;color:var(--text-mute);margin-top:2px;">150実装演習</div>
-        </a>
-        <a href="../quiz.html?topic=g-kentei" class="card card-link">
-          <div style="font-size:24px;margin-bottom:6px;">📝</div>
-          <div style="font-weight:700;font-size:15px;">問題演習</div>
-          <div style="font-size:12.5px;color:var(--text-mute);margin-top:2px;">480問・解答解説</div>
-        </a>
-      </div>
-
       <!-- Chapters -->
-      <div class="section-h" id="basics"><h2>📚 基本編</h2><span class="count">12章 · 240問</span></div>
+      <div class="section-h" id="basics" style="margin-top:48px;"><h2>📚 基本編 全12章</h2><span class="count">240問</span></div>
       <div class="chapter-list chapter-list--2col">
         <a class="chap-item" href="../learn/g-kentei/basics/01-what-is-ai.html" data-chapter-key="g-kentei:basics:01-what-is-ai">
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">01</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">AIとは何か</span>
-            <span class="chap-item__sub">章01</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -182,7 +198,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">02</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">AIの歴史</span>
-            <span class="chap-item__sub">章02</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -190,7 +205,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">03</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">線形代数</span>
-            <span class="chap-item__sub">章03</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -198,7 +212,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">04</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">微分・最適化</span>
-            <span class="chap-item__sub">章04</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -206,7 +219,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">05</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">確率・統計</span>
-            <span class="chap-item__sub">章05</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -214,7 +226,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">06</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">情報理論</span>
-            <span class="chap-item__sub">章06</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -222,7 +233,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">07</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">ML パラダイム</span>
-            <span class="chap-item__sub">章07</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -230,7 +240,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">08</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">古典ML</span>
-            <span class="chap-item__sub">章08</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -238,7 +247,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">09</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">評価指標</span>
-            <span class="chap-item__sub">章09</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -246,7 +254,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">10</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">NN基礎</span>
-            <span class="chap-item__sub">章10</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -254,7 +261,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">11</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">逆伝播</span>
-            <span class="chap-item__sub">章11</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -262,19 +268,17 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">12</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">NNの工夫</span>
-            <span class="chap-item__sub">章12</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
       </div>
 
-      <div class="section-h" id="advanced"><h2>🚀 応用編</h2><span class="count">12章 · 240問</span></div>
+      <div class="section-h" id="advanced"><h2>🚀 応用編 全12章</h2><span class="count">240問</span></div>
       <div class="chapter-list chapter-list--2col">
         <a class="chap-item" href="../learn/g-kentei/advanced/01-cnn.html" data-chapter-key="g-kentei:advanced:01-cnn">
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">13</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">CNN</span>
-            <span class="chap-item__sub">章13</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -282,7 +286,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">14</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">RNN・LSTM</span>
-            <span class="chap-item__sub">章14</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -290,7 +293,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">15</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">Transformer</span>
-            <span class="chap-item__sub">章15</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -298,7 +300,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">16</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">BERT・GPT</span>
-            <span class="chap-item__sub">章16</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -306,7 +307,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">17</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">LLM</span>
-            <span class="chap-item__sub">章17</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -314,7 +314,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">18</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">生成AI</span>
-            <span class="chap-item__sub">章18</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -322,7 +321,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">19</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">強化学習</span>
-            <span class="chap-item__sub">章19</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -330,7 +328,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">20</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">RAG</span>
-            <span class="chap-item__sub">章20</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -338,7 +335,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">21</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">AI Agent</span>
-            <span class="chap-item__sub">章21</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -346,7 +342,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">22</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">MLOps</span>
-            <span class="chap-item__sub">章22</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -354,7 +349,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">23</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">AI倫理</span>
-            <span class="chap-item__sub">章23</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -362,7 +356,6 @@
           <span class="chap-item__indicator"><span class="chap-item__indicator-text">24</span></span>
           <span class="chap-item__body">
             <span class="chap-item__title">AI法規制</span>
-            <span class="chap-item__sub">章24</span>
           </span>
           <span class="chap-item__arrow">→</span>
         </a>
@@ -372,7 +365,7 @@
       <div class="complete-cta" style="margin-top:40px;">
         <div class="complete-cta__icon">🎯</div>
         <div class="complete-cta__title">最初の章から始めよう</div>
-        <div class="complete-cta__sub">『AIとは何か』── AI の定義、知能の階層、シンギュラリティ、AI効果まで。</div>
+        <div class="complete-cta__sub">『AIとは何か』── AIの定義、知能の階層、シンギュラリティ、AI効果まで。</div>
         <a href="../learn/g-kentei/basics/01-what-is-ai.html" class="btn-complete">章1 を開く →</a>
       </div>
     </div>
@@ -385,9 +378,9 @@
             var label = document.getElementById('cert-status');
             var sub = document.getElementById('cert-status-sub');
             if (label) {
-              if (completed === 0) { label.textContent = '0 / 24'; sub.textContent = '学習を始めましょう'; }
+              if (completed === 0) { label.textContent = '0 / 24 章'; sub.textContent = '学習を始めましょう'; }
               else if (completed === 24) { label.textContent = '🏆 完全制覇'; sub.textContent = 'G検定 全章完了！おめでとう'; }
-              else { label.textContent = completed + ' / 24'; sub.textContent = 'あと' + (24 - completed) + '章で完全制覇'; }
+              else { label.textContent = completed + ' / 24 章'; sub.textContent = 'あと' + (24 - completed) + '章で完全制覇'; }
             }
           }
         }, 100);
