@@ -8,33 +8,95 @@
 <link rel="stylesheet" href="assets/css/main.css">
 </head>
 <body>
-<header class="masthead">
-  <div class="masthead-inner">
-    <a href="index.html" class="brand">
-      <span class="brand-mark">S</span>
-      <span class="brand-name">Swallow AI Academy</span>
-    </a>
-    <nav class="nav-primary">
-      <a href="index.html#certifications">資格</a>
-      <a href="certifications/g-kentei.html">G検定</a>
-      <a href="learn/g-kentei/handson.html">ハンズオン</a>
-      <a href="quiz.html" aria-current="page">問題演習</a>
-    </nav>
-    <div class="nav-actions">
-      <button class="search-trigger" aria-label="検索">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <span>検索…</span>
-        <span class="kbd">⌘K</span>
-      </button>
-      <button class="theme-toggle" aria-label="テーマを切替">
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-      </button>
-      <button class="nav-toggle">MENU</button>
-    </div>
-  </div>
+
+<header class="topbar">
+  <button class="topbar-menu" aria-label="メニューを開く">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="index.html" class="topbar-brand">
+    <span class="brand-mark">S</span>
+    <span>Swallow AI Academy</span>
+  </a>
+  <div class="topbar-spacer"></div>
+  <button class="topbar-search" aria-label="検索">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span>検索…</span>
+    <span class="kbd">⌘K</span>
+  </button>
+  <button class="topbar-theme" aria-label="テーマを切替">
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  </button>
 </header>
 
+<div class="app-shell">
+<aside class="sidebar" id="sidebar">
+  <nav>
+    <div class="sidebar-section">
+      <h6 class="sidebar-heading">資格</h6>
+      <div class="sidebar-items">
+        <a href="index.html" class="sidebar-link"><span class="sidebar-link__text">ホーム</span></a>
+        <a href="certifications/g-kentei.html" class="sidebar-link"><span class="sidebar-link__text">G検定</span></a>
+        <a href="certifications/e-shikaku.html" class="sidebar-link"><span class="sidebar-link__text">E資格</span></a>
+        <a href="certifications/tokei-kentei.html" class="sidebar-link"><span class="sidebar-link__text">統計検定</span></a>
+        <a href="certifications/python-cert.html" class="sidebar-link"><span class="sidebar-link__text">Python認定</span></a>
+        <a href="certifications/aws-mla-c01.html" class="sidebar-link"><span class="sidebar-link__text">AWS MLA</span></a>
+        <a href="certifications/image-engineer.html" class="sidebar-link"><span class="sidebar-link__text">画像処理</span></a>
+        <a href="certifications/jetson-ai.html" class="sidebar-link"><span class="sidebar-link__text">Jetson AI</span></a>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <button class="sidebar-heading" data-collapse data-collapsed="false">
+        <span>G検定 基本編</span>
+        <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sidebar-items">
+        <a href="learn/g-kentei/basics/01-what-is-ai.html" class="sidebar-link"><span class="sidebar-link__num">01</span><span class="sidebar-link__text">AIとは何か</span></a>
+        <a href="learn/g-kentei/basics/02-history.html" class="sidebar-link"><span class="sidebar-link__num">02</span><span class="sidebar-link__text">AIの歴史</span></a>
+        <a href="learn/g-kentei/basics/03-linear-algebra.html" class="sidebar-link"><span class="sidebar-link__num">03</span><span class="sidebar-link__text">線形代数</span></a>
+        <a href="learn/g-kentei/basics/04-calculus.html" class="sidebar-link"><span class="sidebar-link__num">04</span><span class="sidebar-link__text">微分・最適化</span></a>
+        <a href="learn/g-kentei/basics/05-probability.html" class="sidebar-link"><span class="sidebar-link__num">05</span><span class="sidebar-link__text">確率・統計</span></a>
+        <a href="learn/g-kentei/basics/06-info-theory.html" class="sidebar-link"><span class="sidebar-link__num">06</span><span class="sidebar-link__text">情報理論</span></a>
+        <a href="learn/g-kentei/basics/07-ml-paradigm.html" class="sidebar-link"><span class="sidebar-link__num">07</span><span class="sidebar-link__text">機械学習パラダイム</span></a>
+        <a href="learn/g-kentei/basics/08-ml-classical.html" class="sidebar-link"><span class="sidebar-link__num">08</span><span class="sidebar-link__text">古典機械学習</span></a>
+        <a href="learn/g-kentei/basics/09-ml-evaluation.html" class="sidebar-link"><span class="sidebar-link__num">09</span><span class="sidebar-link__text">評価指標</span></a>
+        <a href="learn/g-kentei/basics/10-nn-basics.html" class="sidebar-link"><span class="sidebar-link__num">10</span><span class="sidebar-link__text">NN基礎</span></a>
+        <a href="learn/g-kentei/basics/11-backprop.html" class="sidebar-link"><span class="sidebar-link__num">11</span><span class="sidebar-link__text">逆伝播</span></a>
+        <a href="learn/g-kentei/basics/12-nn-tricks.html" class="sidebar-link"><span class="sidebar-link__num">12</span><span class="sidebar-link__text">NNの工夫</span></a>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <button class="sidebar-heading" data-collapse data-collapsed="false">
+        <span>G検定 応用編</span>
+        <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sidebar-items">
+        <a href="learn/g-kentei/advanced/01-cnn.html" class="sidebar-link"><span class="sidebar-link__num">13</span><span class="sidebar-link__text">CNN</span></a>
+        <a href="learn/g-kentei/advanced/02-rnn.html" class="sidebar-link"><span class="sidebar-link__num">14</span><span class="sidebar-link__text">RNN・LSTM</span></a>
+        <a href="learn/g-kentei/advanced/03-transformer.html" class="sidebar-link"><span class="sidebar-link__num">15</span><span class="sidebar-link__text">Transformer</span></a>
+        <a href="learn/g-kentei/advanced/04-bert-gpt.html" class="sidebar-link"><span class="sidebar-link__num">16</span><span class="sidebar-link__text">BERT・GPT</span></a>
+        <a href="learn/g-kentei/advanced/05-llm.html" class="sidebar-link"><span class="sidebar-link__num">17</span><span class="sidebar-link__text">LLM</span></a>
+        <a href="learn/g-kentei/advanced/06-generative.html" class="sidebar-link"><span class="sidebar-link__num">18</span><span class="sidebar-link__text">生成AI</span></a>
+        <a href="learn/g-kentei/advanced/07-rl.html" class="sidebar-link"><span class="sidebar-link__num">19</span><span class="sidebar-link__text">強化学習</span></a>
+        <a href="learn/g-kentei/advanced/08-rag.html" class="sidebar-link"><span class="sidebar-link__num">20</span><span class="sidebar-link__text">RAG</span></a>
+        <a href="learn/g-kentei/advanced/09-agent.html" class="sidebar-link"><span class="sidebar-link__num">21</span><span class="sidebar-link__text">AI Agent</span></a>
+        <a href="learn/g-kentei/advanced/10-mlops.html" class="sidebar-link"><span class="sidebar-link__num">22</span><span class="sidebar-link__text">MLOps</span></a>
+        <a href="learn/g-kentei/advanced/11-ethics.html" class="sidebar-link"><span class="sidebar-link__num">23</span><span class="sidebar-link__text">AI倫理</span></a>
+        <a href="learn/g-kentei/advanced/12-law.html" class="sidebar-link"><span class="sidebar-link__num">24</span><span class="sidebar-link__text">AI法規制</span></a>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h6 class="sidebar-heading">演習</h6>
+      <div class="sidebar-items">
+        <a href="learn/g-kentei/handson.html" class="sidebar-link"><span class="sidebar-link__text">ハンズオン演習</span><span class="sidebar-link__badge">150</span></a>
+        <a href="quiz.html" class="sidebar-link"><span class="sidebar-link__text">問題演習</span><span class="sidebar-link__badge">480</span></a>
+      </div>
+    </div>
+  </nav>
+</aside>
+<div class="sidebar-overlay"></div>
+  <main class="main">
+    <div class="content">
 <section class="page-hero">
   <div class="page-hero-inner">
     <div class="crumbs"><a href="index.html">HOME</a> &nbsp;/&nbsp; QUIZ</div>
@@ -129,81 +191,10 @@
     <div id="quiz-engine-target"></div>
   </div>
 </div>
-
-<footer class="foot">
-  <div class="foot-inner">
-    <div class="foot-brand">
-      <div class="colophon">Swallow<br><em>AI Academy</em></div>
-      <p>AIエンジニアとして世界をリードする人のための、独立した学習ジャーナル。</p>
     </div>
-    <div>
-      <h6>資格</h6>
-      <ul>
-        <li><a href="certifications/g-kentei.html">G検定</a></li>
-        <li><a href="certifications/e-shikaku.html">E資格</a></li>
-        <li><a href="certifications/tokei-kentei.html">統計検定</a></li>
-        <li><a href="certifications/python-cert.html">Python認定</a></li>
-        <li><a href="certifications/aws-mla-c01.html">AWS MLA-C01</a></li>
-        <li><a href="certifications/image-engineer.html">画像処理エンジニア</a></li>
-        <li><a href="certifications/jetson-ai.html">Jetson AI</a></li>
-      </ul>
-    </div>
-    <div>
-      <h6>学習</h6>
-      <ul>
-        <li><a href="learn/basics.html">基本</a></li>
-        <li><a href="learn/advanced.html">応用</a></li>
-        <li><a href="learn/simulation.html">シミュレーション</a></li>
-        <li><a href="learn/hands-on.html">ハンズオン</a></li>
-      </ul>
-    </div>
-    <div>
-      <h6>外部</h6>
-      <ul>
-        <li><a href="https://www.jdla.org/" target="_blank" rel="noopener">JDLA 公式</a></li>
-        <li><a href="https://www.kaggle.com/learn" target="_blank" rel="noopener">Kaggle Learn</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="foot-bottom">
-    <div>© 2026 Swallow AI Academy · Independent Project</div>
-    <div>Built on GitHub Pages · No tracking · No ads</div>
-  </div>
-</footer>
+  </main>
+</div>
 
-<script src="assets/js/main.js"></script>
-<script src="assets/js/quiz.js"></script>
-<script>
-(function() {
-  const TOPICS = {
-    'g-kentei': { title: 'G検定 総合', url: 'assets/data/quiz-g-kentei.json' },
-    'e-shikaku': { title: 'E資格 総合', url: 'assets/data/quiz-e-shikaku.json' },
-    'tokei':    { title: '統計検定 総合', url: 'assets/data/quiz-tokei.json' },
-    'python':   { title: 'Python エンジニア認定', url: 'assets/data/quiz-python.json' },
-    'aws-mla':  { title: 'AWS MLA-C01', url: 'assets/data/quiz-aws-mla.json' },
-    'image':    { title: '画像処理エンジニア検定', url: 'assets/data/quiz-image.json' },
-    'jetson':   { title: 'Jetson AI Specialist', url: 'assets/data/quiz-jetson.json' },
-    'llm':      { title: 'LLM・生成AI（横断）', url: 'assets/data/quiz-llm.json' },
-    'stats':    { title: '統計DS（横断ミニ）', url: 'assets/data/quiz-stats.json' },
-  };
-
-  const params = new URLSearchParams(window.location.search);
-  const topic = params.get('topic');
-
-  if (topic && TOPICS[topic]) {
-    document.getElementById('topic-select').style.display = 'none';
-    const mount = document.getElementById('quiz-mount');
-    mount.style.display = 'block';
-    const target = document.getElementById('quiz-engine-target');
-    const engine = new window.QuizEngine({
-      topicId: topic,
-      title: TOPICS[topic].title,
-      dataUrl: TOPICS[topic].url,
-      mount: target,
-    });
-    engine.start();
-  }
-})();
-</script>
+<script src="assets/js/main.js" defer></script>
 </body>
 </html>

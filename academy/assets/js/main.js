@@ -1,17 +1,15 @@
 /* =============================================================================
-   Swallow AI Academy — Application Script (2026 Edition)
-   Theme, Search, Scroll-spy TOC, Reading Progress, Mobile Nav, Toasts
+   Swallow AI Academy — v5 Documentation Layout JS
    ============================================================================= */
 
 (function () {
   'use strict';
 
-  /* ---------- Utilities ---------- */
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const on = (el, ev, fn, opts) => el && el.addEventListener(ev, fn, opts);
 
-  /* ---------- Theme Toggle ---------- */
+  /* ---------- Theme ---------- */
   const ThemeManager = {
     KEY: 'swallow-theme',
     init() {
@@ -19,20 +17,18 @@
       if (saved === 'dark' || saved === 'light') {
         document.documentElement.setAttribute('data-theme', saved);
       }
-      // Bind toggle buttons
-      $$('.theme-toggle').forEach(btn => on(btn, 'click', () => this.toggle()));
+      $$('.topbar-theme, .theme-toggle').forEach(btn => on(btn, 'click', () => this.toggle()));
     },
     toggle() {
       const current = document.documentElement.getAttribute('data-theme');
-      // Default is light (no attribute = light). Toggle to dark, then back to light.
       const next = current === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem(this.KEY, next);
-      Toast.show(`${next === 'dark' ? 'ダークモード' : 'ライトモード'}に切替`);
+      Toast.show(next === 'dark' ? 'ダークモード' : 'ライトモード');
     }
   };
 
-  /* ---------- Toast Notifications ---------- */
+  /* ---------- Toast ---------- */
   const Toast = {
     container: null,
     ensure() {
@@ -43,18 +39,75 @@
       }
       return this.container;
     },
-    show(msg, type = 'default', duration = 2200) {
+    show(msg, duration = 2000) {
       const c = this.ensure();
       const el = document.createElement('div');
-      el.className = `toast toast--${type}`;
+      el.className = 'toast';
       el.textContent = msg;
       c.appendChild(el);
-      setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; }, duration - 200);
+      setTimeout(() => { el.style.opacity = '0'; }, duration - 200);
       setTimeout(() => el.remove(), duration);
     }
   };
 
-  /* ---------- Reading Progress Bar ---------- */
+  /* ---------- Sidebar Drawer (mobile) ---------- */
+  const Sidebar = {
+    init() {
+      const menuBtn = $('.topbar-menu');
+      const sidebar = $('.sidebar');
+      if (!sidebar) return;
+
+      // Add overlay if not present
+      let overlay = $('.sidebar-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        sidebar.parentNode.insertBefore(overlay, sidebar.nextSibling);
+      }
+
+      on(menuBtn, 'click', () => sidebar.classList.toggle('is-open'));
+      on(overlay, 'click', () => sidebar.classList.remove('is-open'));
+
+      // Close drawer on link click (mobile)
+      $$('a', sidebar).forEach(link => {
+        on(link, 'click', () => {
+          if (window.innerWidth <= 1024) {
+            sidebar.classList.remove('is-open');
+          }
+        });
+      });
+
+      // Sidebar collapsible sections
+      $$('.sidebar-heading[data-collapse]', sidebar).forEach(heading => {
+        on(heading, 'click', () => {
+          const isCollapsed = heading.getAttribute('data-collapsed') === 'true';
+          heading.setAttribute('data-collapsed', !isCollapsed);
+        });
+      });
+
+      // Mark current page as active
+      const path = location.pathname;
+      $$('a', sidebar).forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href) return;
+        // Match if the href ends with the current path's filename or matches a chapter slug
+        const filename = path.split('/').pop();
+        if (filename && href.endsWith(filename)) {
+          link.classList.add('is-active');
+          // Auto-expand parent section
+          let parent = link.closest('.sidebar-items');
+          if (parent) {
+            const heading = parent.previousElementSibling;
+            if (heading && heading.classList.contains('sidebar-heading')) {
+              heading.setAttribute('data-collapsed', 'false');
+            }
+          }
+        }
+      });
+    }
+  };
+
+  /* ---------- Reading Progress ---------- */
   const ReadingProgress = {
     init() {
       const article = $('.article-body') || $('article');
@@ -78,10 +131,10 @@
     }
   };
 
-  /* ---------- Scroll-Spy TOC ---------- */
+  /* ---------- Scroll Spy (right TOC) ---------- */
   const ScrollSpy = {
     init() {
-      const side = $('.article-side');
+      const side = $('.article-side') || $('.article-toc');
       if (!side) return;
       const tocLinks = $$('a[href^="#"]', side);
       if (!tocLinks.length) return;
@@ -112,18 +165,24 @@
     activeIdx: 0,
     matches: [],
 
-    async init() {
-      // Build search index from available pages (use a simple static one)
-      this.index = await this.buildIndex();
+    init() {
+      this.index = this.buildIndex();
       this.createOverlay();
       this.bindShortcuts();
-      $$('.search-trigger').forEach(btn => on(btn, 'click', () => this.open()));
+      $$('.topbar-search, .search-trigger').forEach(btn => on(btn, 'click', () => this.open()));
     },
 
-    async buildIndex() {
-      // Static, lightweight index covering main pages + chapters
+    detectBase() {
+      const path = location.pathname;
+      if (path.includes('/learn/g-kentei/')) return '../../../';
+      if (path.includes('/certifications/')) return '../';
+      return './';
+    },
+
+    buildIndex() {
       const base = this.detectBase();
       const idx = [
+        { cat: 'ホーム', title: 'ホーム', url: `${base}index.html` },
         { cat: '資格', title: 'G検定', url: `${base}certifications/g-kentei.html` },
         { cat: '資格', title: 'E資格', url: `${base}certifications/e-shikaku.html` },
         { cat: '資格', title: '統計検定', url: `${base}certifications/tokei-kentei.html` },
@@ -131,23 +190,20 @@
         { cat: '資格', title: 'AWS MLA', url: `${base}certifications/aws-mla-c01.html` },
         { cat: '資格', title: '画像処理エンジニア', url: `${base}certifications/image-engineer.html` },
         { cat: '資格', title: 'Jetson AI Specialist', url: `${base}certifications/jetson-ai.html` },
-        { cat: 'ページ', title: 'ホーム', url: `${base}index.html` },
-        { cat: 'ページ', title: 'ハンズオン演習（120実装）', url: `${base}learn/g-kentei/handson.html` },
-        { cat: 'ページ', title: '問題演習', url: `${base}quiz.html` },
+        { cat: '演習', title: 'ハンズオン演習', url: `${base}learn/g-kentei/handson.html` },
+        { cat: '演習', title: '問題演習', url: `${base}quiz.html` },
       ];
-      // G検定 basics
       const basicsTitles = [
         '01 AIとは', '02 AIの歴史', '03 線形代数', '04 微分・最適化', '05 確率統計',
         '06 情報理論', '07 機械学習パラダイム', '08 古典機械学習', '09 評価指標',
         '10 NN基礎', '11 逆伝播', '12 NNの工夫'
       ];
+      const basicsSlugs = ['what-is-ai', 'history', 'linear-algebra', 'calculus', 'probability', 'info-theory',
+        'ml-paradigm', 'ml-classical', 'ml-evaluation', 'nn-basics', 'backprop', 'nn-tricks'];
       basicsTitles.forEach((title, i) => {
         const num = String(i + 1).padStart(2, '0');
-        const slugs = ['what-is-ai', 'history', 'linear-algebra', 'calculus', 'probability', 'info-theory',
-          'ml-paradigm', 'ml-classical', 'ml-evaluation', 'nn-basics', 'backprop', 'nn-tricks'];
-        idx.push({ cat: 'G検定 基本', title, url: `${base}learn/g-kentei/basics/${num}-${slugs[i]}.html` });
+        idx.push({ cat: 'G検定 基本', title, url: `${base}learn/g-kentei/basics/${num}-${basicsSlugs[i]}.html` });
       });
-      // G検定 advanced
       const advTitles = [
         '13 CNN', '14 RNN', '15 Transformer', '16 BERT/GPT', '17 LLM', '18 生成AI',
         '19 強化学習', '20 RAG', '21 AI Agent', '22 MLOps', '23 AI倫理', '24 AI法規制'
@@ -161,23 +217,9 @@
       return idx;
     },
 
-    detectBase() {
-      const path = location.pathname;
-      const segs = path.split('/').filter(Boolean);
-      // Detect how deep we are; common deployment under /academy/ or root
-      // We rely on relative ../ navigation matching the file's depth
-      const fileSegs = segs.length - (path.endsWith('/') ? 0 : 1);
-      // If file is at root: 0 segments before file
-      // We just generate paths relative to root with ./ prefix; chapter pages link with ../../ already
-      const file = path.split('/').pop() || '';
-      if (path.includes('/learn/g-kentei/')) return '../../../';
-      if (path.includes('/certifications/')) return '../';
-      return './';
-    },
-
     createOverlay() {
       const html = `
-        <div class="search-overlay" role="dialog" aria-modal="true" aria-label="グローバル検索">
+        <div class="search-overlay" role="dialog" aria-modal="true">
           <div class="search-panel">
             <div class="search-input-wrap">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -226,10 +268,7 @@
       if (!q) {
         this.matches = this.index.slice(0, 8);
       } else {
-        this.matches = this.index.filter(item => {
-          const hay = (item.title + ' ' + item.cat).toLowerCase();
-          return hay.includes(q);
-        }).slice(0, 12);
+        this.matches = this.index.filter(item => (item.title + ' ' + item.cat).toLowerCase().includes(q)).slice(0, 12);
       }
       if (!this.matches.length) {
         this.results.innerHTML = '<div class="search-empty">該当する結果が見つかりませんでした</div>';
@@ -244,19 +283,9 @@
     },
 
     handleKey(e) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        this.activeIdx = Math.min(this.matches.length - 1, this.activeIdx + 1);
-        this.updateActive();
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        this.activeIdx = Math.max(0, this.activeIdx - 1);
-        this.updateActive();
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        const m = this.matches[this.activeIdx];
-        if (m) location.href = m.url;
-      }
+      if (e.key === 'ArrowDown') { e.preventDefault(); this.activeIdx = Math.min(this.matches.length - 1, this.activeIdx + 1); this.updateActive(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); this.activeIdx = Math.max(0, this.activeIdx - 1); this.updateActive(); }
+      else if (e.key === 'Enter') { e.preventDefault(); const m = this.matches[this.activeIdx]; if (m) location.href = m.url; }
     },
     updateActive() {
       $$('.search-result', this.results).forEach((el, i) => el.classList.toggle('is-active', i === this.activeIdx));
@@ -265,71 +294,36 @@
     }
   };
 
-  /* ---------- Mobile Nav ---------- */
-  const MobileNav = {
-    init() {
-      const toggle = $('.nav-toggle');
-      if (!toggle) return;
-      let drawer = $('.nav-drawer');
-      if (!drawer) {
-        // Build drawer from nav-primary
-        const nav = $('.nav-primary');
-        if (!nav) return;
-        drawer = document.createElement('nav');
-        drawer.className = 'nav-drawer';
-        drawer.innerHTML = nav.innerHTML;
-        document.body.appendChild(drawer);
-      }
-      on(toggle, 'click', () => {
-        const isOpen = drawer.classList.toggle('open');
-        toggle.textContent = isOpen ? 'CLOSE' : 'MENU';
-      });
-      $$('a', drawer).forEach(a => on(a, 'click', () => { drawer.classList.remove('open'); toggle.textContent = 'MENU'; }));
-    }
-  };
-
-  /* ---------- Progress Tracking (chapters read) ---------- */
+  /* ---------- Progress Tracking ---------- */
   const Progress = {
     KEY: 'swallow-progress',
     data: {},
     init() {
-      try { this.data = JSON.parse(localStorage.getItem(this.KEY) || '{}'); }
-      catch (e) { this.data = {}; }
-      // Mark current chapter as visited
+      try { this.data = JSON.parse(localStorage.getItem(this.KEY) || '{}'); } catch (e) { this.data = {}; }
       const m = location.pathname.match(/\/learn\/([^/]+)\/([^/]+)\/(\d+-[^/]+)\.html/);
       if (m) {
-        const cert = m[1], level = m[2], chapter = m[3];
-        const key = `${cert}:${level}:${chapter}`;
+        const key = `${m[1]}:${m[2]}:${m[3]}`;
         if (!this.data[key]) {
           this.data[key] = { visited: Date.now() };
           this.save();
         }
       }
-      // Show progress on certification pages
-      this.renderProgressBadges();
+      this.renderBadges();
     },
     save() { try { localStorage.setItem(this.KEY, JSON.stringify(this.data)); } catch (e) {} },
-    markComplete(key) {
-      this.data[key] = this.data[key] || {};
-      this.data[key].completed = Date.now();
-      this.save();
-    },
-    renderProgressBadges() {
-      // Apply visited class to any link with data-chapter-key matching
+    renderBadges() {
       $$('[data-chapter-key]').forEach(el => {
         const key = el.getAttribute('data-chapter-key');
         if (this.data[key]) el.classList.add('is-visited');
-        if (this.data[key]?.completed) el.classList.add('is-completed');
       });
     }
   };
 
-  /* ---------- Initialize on DOMContentLoaded ---------- */
   function init() {
     ThemeManager.init();
     Toast.ensure();
+    Sidebar.init();
     Search.init();
-    MobileNav.init();
     Progress.init();
     ReadingProgress.init();
     ScrollSpy.init();
@@ -341,6 +335,5 @@
     init();
   }
 
-  // Expose for debugging
-  window.Swallow = { ThemeManager, Toast, Search, Progress };
+  window.Swallow = { ThemeManager, Toast, Search, Progress, Sidebar };
 })();
