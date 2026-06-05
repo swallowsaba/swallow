@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ハンズオン演習 — G検定 — Swallow AI Academy</title>
+<meta name="description" content="G検定 全24章 × 5つの実装演習 = 120のハンズオン演習。Python・NumPy・PyTorch・scikit-learn でAIの理論を手を動かして学ぶ。">
+<link rel="stylesheet" href="../../assets/css/main.css">
+<style>
+/* Hands-on page specific */
+.handson-list { display: grid; gap: 16px; margin-top: 20px; }
+.handson-chapter {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px 24px;
+  transition: border-color var(--d-fast) var(--ease);
+}
+.handson-chapter:hover { border-color: var(--border-strong); }
+.handson-chapter__head { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.handson-chapter__num {
+  width: 36px; height: 36px;
+  border-radius: var(--r-sm);
+  background: var(--bg-section);
+  color: var(--text-mute);
+  font-weight: 600;
+  font-size: 14px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.handson-chapter__title { flex: 1; min-width: 0; }
+.handson-chapter__title a { font-weight: 600; font-size: 16px; color: var(--text); text-decoration: none; }
+.handson-chapter__title a:hover { color: var(--accent-text); }
+.handson-chapter__sub { font-size: 12px; color: var(--text-mute); margin-top: 2px; }
+.handson-items { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px; padding: 0; }
+.handson-items li { font-size: 13.5px; line-height: 1.5; }
+.handson-items a {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 8px 10px;
+  color: var(--text-mute);
+  text-decoration: none;
+  border-radius: var(--r-sm);
+  transition: background var(--d-fast) var(--ease), color var(--d-fast) var(--ease);
+}
+.handson-items a:hover { background: var(--bg-section); color: var(--text); text-decoration: none; }
+.handson-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-text);
+  font-weight: 600;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <a href="../../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <span class="brand-name">Swallow AI Academy</span>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../index.html#certifications">資格</a>
+      <a href="../../certifications/g-kentei.html">G検定</a>
+      <a href="handson.html" aria-current="page">ハンズオン</a>
+      <a href="../../quiz.html">問題演習</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="search-trigger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>検索…</span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="theme-toggle" aria-label="テーマを切替">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+      <button class="nav-toggle">MENU</button>
+    </div>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="crumbs"><a href="../../index.html">ホーム</a> / <a href="../../certifications/g-kentei.html">G検定</a> / ハンズオン</div>
+    <h1>ハンズオン演習<span class="en">120 hands-on coding exercises</span></h1>
+    <p class="standfirst">
+      G検定 全24章 × 各章5つの実装演習 = <strong>120のハンズオン</strong>、加えて <strong>30の総合プロジェクト</strong>。合計 <strong>150の実装演習</strong>。
+      Python・NumPy・PyTorch・scikit-learn を使って、AIの理論を手を動かして学ぶ実装中心の演習ハブです。
+      各演習は章本体の <strong>§3 ハンズオン</strong> セクションに対応します。
+    </p>
+
+    <dl class="exam-info">
+      <div class="exam-info-item"><dt>総演習数</dt><dd>150</dd></div>
+      <div class="exam-info-item"><dt>基本編</dt><dd>60演習 (12章)</dd></div>
+      <div class="exam-info-item"><dt>応用編</dt><dd>60演習 (12章)</dd></div>
+      <div class="exam-info-item"><dt>使用言語</dt><dd>Python 3</dd></div>
+      <div class="exam-info-item"><dt>ライブラリ</dt><dd>NumPy, PyTorch, sklearn ほか</dd></div>
+    </dl>
+  </div>
+</section>
+
+
+<!-- BASICS -->
+<section class="section">
+  <div class="container">
+    <div class="toc-section-head">
+      <h3>基本編 ハンズオン</h3>
+      <span class="count">12章 · 60演習</span>
+    </div>
+    <div class="handson-list">
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">01</div>
+          <div class="handson-chapter__title">
+            <a href="basics/01-what-is-ai.html#sec-handson">AIとは何か</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/01-what-is-ai.html#sec-handson"><span class="handson-num">§3.1</span> ルールベースAI — 最も単純なAI</a></li>
+          <li><a href="basics/01-what-is-ai.html#sec-handson"><span class="handson-num">§3.2</span> ELIZA — 1966年の対話AI</a></li>
+          <li><a href="basics/01-what-is-ai.html#sec-handson"><span class="handson-num">§3.3</span> 簡易チューリングテスト評価器</a></li>
+          <li><a href="basics/01-what-is-ai.html#sec-handson"><span class="handson-num">§3.4</span> フレーム問題のシミュレーション</a></li>
+          <li><a href="basics/01-what-is-ai.html#sec-handson"><span class="handson-num">§3.5</span> 機械学習版の同じ問題</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">02</div>
+          <div class="handson-chapter__title">
+            <a href="basics/02-history.html#sec-handson">AIの歴史</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/02-history.html#sec-handson"><span class="handson-num">§3.1</span> Logic Theorist 風の単純な証明エンジン（第1次ブーム）</a></li>
+          <li><a href="basics/02-history.html#sec-handson"><span class="handson-num">§3.2</span> エキスパートシステム — MYCIN 風の感染症診断（第2次ブーム）</a></li>
+          <li><a href="basics/02-history.html#sec-handson"><span class="handson-num">§3.3</span> 単純パーセプトロンと XOR 問題（第1次冬の象徴）</a></li>
+          <li><a href="basics/02-history.html#sec-handson"><span class="handson-num">§3.4</span> AlexNet 級モデルの計算量推定（第3次ブーム）</a></li>
+          <li><a href="basics/02-history.html#sec-handson"><span class="handson-num">§3.5</span> GPT 系列のスケーリング則を可視化（第4次ブーム）</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">03</div>
+          <div class="handson-chapter__title">
+            <a href="basics/03-linear-algebra.html#sec-handson">線形代数</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/03-linear-algebra.html#sec-handson"><span class="handson-num">§3.1</span> NumPy 基礎 — ベクトル・行列演算の標準ライブラリ</a></li>
+          <li><a href="basics/03-linear-algebra.html#sec-handson"><span class="handson-num">§3.2</span> 行列積の手計算と検算</a></li>
+          <li><a href="basics/03-linear-algebra.html#sec-handson"><span class="handson-num">§3.3</span> 固有値分解の実装</a></li>
+          <li><a href="basics/03-linear-algebra.html#sec-handson"><span class="handson-num">§3.4</span> SVD による画像圧縮</a></li>
+          <li><a href="basics/03-linear-algebra.html#sec-handson"><span class="handson-num">§3.5</span> PCAをスクラッチ実装</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">04</div>
+          <div class="handson-chapter__title">
+            <a href="basics/04-calculus.html#sec-handson">微分・最適化</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/04-calculus.html#sec-handson"><span class="handson-num">§3.1</span> 数値微分 — 定義から計算する</a></li>
+          <li><a href="basics/04-calculus.html#sec-handson"><span class="handson-num">§3.2</span> PyTorch の自動微分</a></li>
+          <li><a href="basics/04-calculus.html#sec-handson"><span class="handson-num">§3.3</span> 勾配降下法のスクラッチ実装</a></li>
+          <li><a href="basics/04-calculus.html#sec-handson"><span class="handson-num">§3.4</span> Adam のスクラッチ実装</a></li>
+          <li><a href="basics/04-calculus.html#sec-handson"><span class="handson-num">§3.5</span> 損失曲面の可視化</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">05</div>
+          <div class="handson-chapter__title">
+            <a href="basics/05-probability.html#sec-handson">確率・統計</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/05-probability.html#sec-handson"><span class="handson-num">§3.1</span> ベイズの定理で疾病検査</a></li>
+          <li><a href="basics/05-probability.html#sec-handson"><span class="handson-num">§3.2</span> 中心極限定理を実験</a></li>
+          <li><a href="basics/05-probability.html#sec-handson"><span class="handson-num">§3.3</span> MLE のスクラッチ — コインの公平性</a></li>
+          <li><a href="basics/05-probability.html#sec-handson"><span class="handson-num">§3.4</span> GMM の EM アルゴリズム</a></li>
+          <li><a href="basics/05-probability.html#sec-handson"><span class="handson-num">§3.5</span> Bayesian A/B テスト</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">06</div>
+          <div class="handson-chapter__title">
+            <a href="basics/06-info-theory.html#sec-handson">情報理論</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/06-info-theory.html#sec-handson"><span class="handson-num">§3.1</span> エントロピー計算</a></li>
+          <li><a href="basics/06-info-theory.html#sec-handson"><span class="handson-num">§3.2</span> KLダイバージェンスの非対称性</a></li>
+          <li><a href="basics/06-info-theory.html#sec-handson"><span class="handson-num">§3.3</span> Softmax + クロスエントロピー</a></li>
+          <li><a href="basics/06-info-theory.html#sec-handson"><span class="handson-num">§3.4</span> 相互情報量による特徴選択</a></li>
+          <li><a href="basics/06-info-theory.html#sec-handson"><span class="handson-num">§3.5</span> Huffman符号化</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">07</div>
+          <div class="handson-chapter__title">
+            <a href="basics/07-ml-paradigm.html#sec-handson">機械学習パラダイム</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/07-ml-paradigm.html#sec-handson"><span class="handson-num">§3.1</span> train_test_split と Cross-Validation</a></li>
+          <li><a href="basics/07-ml-paradigm.html#sec-handson"><span class="handson-num">§3.2</span> Optuna でハイパラ探索</a></li>
+          <li><a href="basics/07-ml-paradigm.html#sec-handson"><span class="handson-num">§3.3</span> 学習曲線で過学習を診断</a></li>
+          <li><a href="basics/07-ml-paradigm.html#sec-handson"><span class="handson-num">§3.4</span> 過学習対策の効果</a></li>
+          <li><a href="basics/07-ml-paradigm.html#sec-handson"><span class="handson-num">§3.5</span> Stratified K-Fold のスクラッチ</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">08</div>
+          <div class="handson-chapter__title">
+            <a href="basics/08-ml-classical.html#sec-handson">古典機械学習</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/08-ml-classical.html#sec-handson"><span class="handson-num">§3.1</span> 線形回帰 + 正則化</a></li>
+          <li><a href="basics/08-ml-classical.html#sec-handson"><span class="handson-num">§3.2</span> SVMカーネル比較</a></li>
+          <li><a href="basics/08-ml-classical.html#sec-handson"><span class="handson-num">§3.3</span> ランダムフォレスト + 特徴重要度</a></li>
+          <li><a href="basics/08-ml-classical.html#sec-handson"><span class="handson-num">§3.4</span> XGBoost</a></li>
+          <li><a href="basics/08-ml-classical.html#sec-handson"><span class="handson-num">§3.5</span> K-means スクラッチ</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">09</div>
+          <div class="handson-chapter__title">
+            <a href="basics/09-ml-evaluation.html#sec-handson">評価指標</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/09-ml-evaluation.html#sec-handson"><span class="handson-num">§3.1</span> sklearn metrics 総合使用</a></li>
+          <li><a href="basics/09-ml-evaluation.html#sec-handson"><span class="handson-num">§3.2</span> ROC曲線描画</a></li>
+          <li><a href="basics/09-ml-evaluation.html#sec-handson"><span class="handson-num">§3.3</span> 閾値最適化（F1最大化）</a></li>
+          <li><a href="basics/09-ml-evaluation.html#sec-handson"><span class="handson-num">§3.4</span> CV自前実装</a></li>
+          <li><a href="basics/09-ml-evaluation.html#sec-handson"><span class="handson-num">§3.5</span> Calibration の効果</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">10</div>
+          <div class="handson-chapter__title">
+            <a href="basics/10-nn-basics.html#sec-handson">NN基礎</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/10-nn-basics.html#sec-handson"><span class="handson-num">§3.1</span> NumPyで2層NN</a></li>
+          <li><a href="basics/10-nn-basics.html#sec-handson"><span class="handson-num">§3.2</span> PyTorchで MNIST 分類</a></li>
+          <li><a href="basics/10-nn-basics.html#sec-handson"><span class="handson-num">§3.3</span> Embedding 層</a></li>
+          <li><a href="basics/10-nn-basics.html#sec-handson"><span class="handson-num">§3.4</span> 残差ブロック実装</a></li>
+          <li><a href="basics/10-nn-basics.html#sec-handson"><span class="handson-num">§3.5</span> 活性化関数比較</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">11</div>
+          <div class="handson-chapter__title">
+            <a href="basics/11-backprop.html#sec-handson">逆伝播</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/11-backprop.html#sec-handson"><span class="handson-num">§3.1</span> NumPyでスクラッチ逆伝播</a></li>
+          <li><a href="basics/11-backprop.html#sec-handson"><span class="handson-num">§3.2</span> PyTorch 自動微分</a></li>
+          <li><a href="basics/11-backprop.html#sec-handson"><span class="handson-num">§3.3</span> カスタム backward 実装</a></li>
+          <li><a href="basics/11-backprop.html#sec-handson"><span class="handson-num">§3.4</span> 勾配チェック（Gradient Check）</a></li>
+          <li><a href="basics/11-backprop.html#sec-handson"><span class="handson-num">§3.5</span> 勾配の可視化</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">12</div>
+          <div class="handson-chapter__title">
+            <a href="basics/12-nn-tricks.html#sec-handson">NNの工夫</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="basics/12-nn-tricks.html#sec-handson"><span class="handson-num">§3.1</span> PyTorch で Dropout</a></li>
+          <li><a href="basics/12-nn-tricks.html#sec-handson"><span class="handson-num">§3.2</span> Batch Normalization 適用</a></li>
+          <li><a href="basics/12-nn-tricks.html#sec-handson"><span class="handson-num">§3.3</span> データ拡張（画像）</a></li>
+          <li><a href="basics/12-nn-tricks.html#sec-handson"><span class="handson-num">§3.4</span> 学習率スケジューリング（Cosine Annealing + Warmup）</a></li>
+          <li><a href="basics/12-nn-tricks.html#sec-handson"><span class="handson-num">§3.5</span> Early Stopping 実装</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ADVANCED -->
+<section class="section section--bg">
+  <div class="container">
+    <div class="toc-section-head">
+      <h3>応用編 ハンズオン</h3>
+      <span class="count">12章 · 60演習</span>
+    </div>
+    <div class="handson-list">
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">13</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/01-cnn.html#sec-handson">CNN</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/01-cnn.html#sec-handson"><span class="handson-num">§3.1</span> PyTorch で CNN</a></li>
+          <li><a href="advanced/01-cnn.html#sec-handson"><span class="handson-num">§3.2</span> ImageNet 転移学習</a></li>
+          <li><a href="advanced/01-cnn.html#sec-handson"><span class="handson-num">§3.3</span> 特徴マップの可視化</a></li>
+          <li><a href="advanced/01-cnn.html#sec-handson"><span class="handson-num">§3.4</span> Grad-CAM（クラス活性化マップ）</a></li>
+          <li><a href="advanced/01-cnn.html#sec-handson"><span class="handson-num">§3.5</span> 画像データ拡張</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">14</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/02-rnn.html#sec-handson">RNN・LSTM</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/02-rnn.html#sec-handson"><span class="handson-num">§3.1</span> PyTorch で LSTM</a></li>
+          <li><a href="advanced/02-rnn.html#sec-handson"><span class="handson-num">§3.2</span> 文字レベル言語モデル</a></li>
+          <li><a href="advanced/02-rnn.html#sec-handson"><span class="handson-num">§3.3</span> Seq2Seq機械翻訳</a></li>
+          <li><a href="advanced/02-rnn.html#sec-handson"><span class="handson-num">§3.4</span> 時系列予測（株価風）</a></li>
+          <li><a href="advanced/02-rnn.html#sec-handson"><span class="handson-num">§3.5</span> 双方向LSTM</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">15</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/03-transformer.html#sec-handson">Transformer</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/03-transformer.html#sec-handson"><span class="handson-num">§3.1</span> Scaled Dot-Product Attention</a></li>
+          <li><a href="advanced/03-transformer.html#sec-handson"><span class="handson-num">§3.2</span> Multi-Head Attention</a></li>
+          <li><a href="advanced/03-transformer.html#sec-handson"><span class="handson-num">§3.3</span> Transformer ブロック</a></li>
+          <li><a href="advanced/03-transformer.html#sec-handson"><span class="handson-num">§3.4</span> HuggingFace で簡単利用</a></li>
+          <li><a href="advanced/03-transformer.html#sec-handson"><span class="handson-num">§3.5</span> Attention 重みの可視化</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">16</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/04-bert-gpt.html#sec-handson">BERT・GPT</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/04-bert-gpt.html#sec-handson"><span class="handson-num">§3.1</span> Hugging Face Transformers の基本</a></li>
+          <li><a href="advanced/04-bert-gpt.html#sec-handson"><span class="handson-num">§3.2</span> Tokenization 観察</a></li>
+          <li><a href="advanced/04-bert-gpt.html#sec-handson"><span class="handson-num">§3.3</span> 感情分析の微調整</a></li>
+          <li><a href="advanced/04-bert-gpt.html#sec-handson"><span class="handson-num">§3.4</span> GPT による文章生成</a></li>
+          <li><a href="advanced/04-bert-gpt.html#sec-handson"><span class="handson-num">§3.5</span> BERT で文埋め込み抽出</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">17</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/05-llm.html#sec-handson">LLM</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/05-llm.html#sec-handson"><span class="handson-num">§3.1</span> OpenAI API</a></li>
+          <li><a href="advanced/05-llm.html#sec-handson"><span class="handson-num">§3.2</span> Anthropic Claude API</a></li>
+          <li><a href="advanced/05-llm.html#sec-handson"><span class="handson-num">§3.3</span> Hugging Face で LLaMA</a></li>
+          <li><a href="advanced/05-llm.html#sec-handson"><span class="handson-num">§3.4</span> LoRA で LLM ファインチューニング</a></li>
+          <li><a href="advanced/05-llm.html#sec-handson"><span class="handson-num">§3.5</span> Chain-of-Thought プロンプト</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">18</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/06-generative.html#sec-handson">生成AI</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/06-generative.html#sec-handson"><span class="handson-num">§3.1</span> Stable Diffusion で画像生成</a></li>
+          <li><a href="advanced/06-generative.html#sec-handson"><span class="handson-num">§3.2</span> GAN スクラッチ</a></li>
+          <li><a href="advanced/06-generative.html#sec-handson"><span class="handson-num">§3.3</span> VAE 実装</a></li>
+          <li><a href="advanced/06-generative.html#sec-handson"><span class="handson-num">§3.4</span> ControlNet 利用</a></li>
+          <li><a href="advanced/06-generative.html#sec-handson"><span class="handson-num">§3.5</span> Diffusion LoRA 学習</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">19</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/07-rl.html#sec-handson">強化学習</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/07-rl.html#sec-handson"><span class="handson-num">§3.1</span> Q-Learning スクラッチ</a></li>
+          <li><a href="advanced/07-rl.html#sec-handson"><span class="handson-num">§3.2</span> DQN（簡略版）</a></li>
+          <li><a href="advanced/07-rl.html#sec-handson"><span class="handson-num">§3.3</span> PPO（Stable-Baselines3）</a></li>
+          <li><a href="advanced/07-rl.html#sec-handson"><span class="handson-num">§3.4</span> Gymnasium 環境</a></li>
+          <li><a href="advanced/07-rl.html#sec-handson"><span class="handson-num">§3.5</span> RLHF の概念フロー</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">20</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/08-rag.html#sec-handson">RAG</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/08-rag.html#sec-handson"><span class="handson-num">§3.1</span> LangChain での最小 RAG</a></li>
+          <li><a href="advanced/08-rag.html#sec-handson"><span class="handson-num">§3.2</span> LlamaIndex</a></li>
+          <li><a href="advanced/08-rag.html#sec-handson"><span class="handson-num">§3.3</span> ChromaDB スクラッチ</a></li>
+          <li><a href="advanced/08-rag.html#sec-handson"><span class="handson-num">§3.4</span> Pinecone</a></li>
+          <li><a href="advanced/08-rag.html#sec-handson"><span class="handson-num">§3.5</span> Cohere Rerank で精度向上</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">21</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/09-agent.html#sec-handson">AI Agent</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/09-agent.html#sec-handson"><span class="handson-num">§3.1</span> OpenAI Function Calling</a></li>
+          <li><a href="advanced/09-agent.html#sec-handson"><span class="handson-num">§3.2</span> LangChain ReAct Agent</a></li>
+          <li><a href="advanced/09-agent.html#sec-handson"><span class="handson-num">§3.3</span> 自前 Agent ループ</a></li>
+          <li><a href="advanced/09-agent.html#sec-handson"><span class="handson-num">§3.4</span> LangGraph で状態機械</a></li>
+          <li><a href="advanced/09-agent.html#sec-handson"><span class="handson-num">§3.5</span> CrewAI で Multi-Agent</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">22</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/10-mlops.html#sec-handson">MLOps</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/10-mlops.html#sec-handson"><span class="handson-num">§3.1</span> MLflow で実験追跡</a></li>
+          <li><a href="advanced/10-mlops.html#sec-handson"><span class="handson-num">§3.2</span> FastAPI で推論サーバ</a></li>
+          <li><a href="advanced/10-mlops.html#sec-handson"><span class="handson-num">§3.3</span> Docker でコンテナ化</a></li>
+          <li><a href="advanced/10-mlops.html#sec-handson"><span class="handson-num">§3.4</span> Prometheus メトリクス</a></li>
+          <li><a href="advanced/10-mlops.html#sec-handson"><span class="handson-num">§3.5</span> Drift検出（Evidently）</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">23</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/11-ethics.html#sec-handson">AI倫理</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/11-ethics.html#sec-handson"><span class="handson-num">§3.1</span> Fairlearn で Bias検出</a></li>
+          <li><a href="advanced/11-ethics.html#sec-handson"><span class="handson-num">§3.2</span> SHAP で説明</a></li>
+          <li><a href="advanced/11-ethics.html#sec-handson"><span class="handson-num">§3.3</span> LIME で局所説明</a></li>
+          <li><a href="advanced/11-ethics.html#sec-handson"><span class="handson-num">§3.4</span> FGSM 敵対的攻撃</a></li>
+          <li><a href="advanced/11-ethics.html#sec-handson"><span class="handson-num">§3.5</span> DP-SGD（Opacus）</a></li>
+        </ul>
+      </div>
+
+      <div class="handson-chapter">
+        <div class="handson-chapter__head">
+          <div class="handson-chapter__num">24</div>
+          <div class="handson-chapter__title">
+            <a href="advanced/12-law.html#sec-handson">AI法規制</a>
+            <div class="handson-chapter__sub">5つの実装演習</div>
+          </div>
+        </div>
+        <ul class="handson-items">
+          <li><a href="advanced/12-law.html#sec-handson"><span class="handson-num">§3.1</span> EU AI Act リスク評価チェックリスト</a></li>
+          <li><a href="advanced/12-law.html#sec-handson"><span class="handson-num">§3.2</span> 個人データ処理影響評価（DPIA）</a></li>
+          <li><a href="advanced/12-law.html#sec-handson"><span class="handson-num">§3.3</span> AIモデルカード作成</a></li>
+          <li><a href="advanced/12-law.html#sec-handson"><span class="handson-num">§3.4</span> 学習データ著作権チェック</a></li>
+          <li><a href="advanced/12-law.html#sec-handson"><span class="handson-num">§3.5</span> API利用契約レビュー</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- BONUS PROJECTS -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">増量コンテンツ</div>
+        <h2>総合プロジェクト演習</h2>
+      </div>
+      <p class="section-head__lede">
+        複数章の知識を組み合わせる<strong>30の総合プロジェクト</strong>。
+        単発の章演習に加え、実務に近い end-to-end の課題で実践力を高めます。
+      </p>
+    </div>
+
+    <div class="bento">
+      <!-- Mathematics & Foundations -->
+      <div class="bento-card bento-card--span-4" style="background:var(--bg-section);">
+        <div class="bento-card__eyebrow">PROJECT GROUP 1 · 数学的基礎</div>
+        <div class="bento-card__title">数学的基礎の応用プロジェクト (5本)</div>
+        <p class="bento-card__body">線形代数・微分・確率統計の知識を組み合わせた実装プロジェクト。</p>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P1-01 · 章3+4+5</div>
+        <div class="bento-card__title" style="font-size:16px;">線形回帰スクラッチ</div>
+        <p class="bento-card__body">NumPyだけで線形回帰を実装。最小二乗法、勾配降下法、確率的解釈の3手法で。</p>
+        <div class="bento-card__footer"><span class="badge">Math</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P1-02 · 章3+8</div>
+        <div class="bento-card__title" style="font-size:16px;">PCA画像圧縮</div>
+        <p class="bento-card__body">主成分分析でMNIST画像を圧縮・復元。固有値分解とSVDの両方で実装し比較。</p>
+        <div class="bento-card__footer"><span class="badge">Math</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P1-03 · 章5+6</div>
+        <div class="bento-card__title" style="font-size:16px;">ベイズスパム分類器</div>
+        <p class="bento-card__body">ナイーブベイズで日本語スパム分類。Laplace平滑化、特徴量エンジニアリング込み。</p>
+        <div class="bento-card__footer"><span class="badge">Math</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P1-04 · 章4+11</div>
+        <div class="bento-card__title" style="font-size:16px;">自動微分エンジン</div>
+        <p class="bento-card__body">逆伝播を100行で実装。スカラー値の計算グラフから始め、テンソルへ拡張。</p>
+        <div class="bento-card__footer"><span class="badge">Math</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P1-05 · 章5+9</div>
+        <div class="bento-card__title" style="font-size:16px;">A/Bテスト統計検定</div>
+        <p class="bento-card__body">ベルヌーイ分布の信頼区間、t検定、カイ二乗検定。実データで意思決定。</p>
+        <div class="bento-card__footer"><span class="badge">Math</span></div>
+      </div>
+
+      <!-- Classical ML -->
+      <div class="bento-card bento-card--span-4" style="background:var(--bg-section);">
+        <div class="bento-card__eyebrow">PROJECT GROUP 2 · 古典ML</div>
+        <div class="bento-card__title">古典機械学習プロジェクト (5本)</div>
+        <p class="bento-card__body">scikit-learn、XGBoost、LightGBM で実務的なデータ分析。</p>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P2-01 · 章7+8+9</div>
+        <div class="bento-card__title" style="font-size:16px;">Titanic 生存予測</div>
+        <p class="bento-card__body">Kaggle王道課題。特徴量エンジニアリング、Random Forest、XGBoost、評価指標の選択。</p>
+        <div class="bento-card__footer"><span class="badge">ML</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P2-02 · 章8+9</div>
+        <div class="bento-card__title" style="font-size:16px;">クレジット詐欺検知</div>
+        <p class="bento-card__body">不均衡データの扱い。SMOTE、Focal Loss、Precision-Recall曲線で最適閾値選択。</p>
+        <div class="bento-card__footer"><span class="badge">ML</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P2-03 · 章8</div>
+        <div class="bento-card__title" style="font-size:16px;">顧客セグメンテーション</div>
+        <p class="bento-card__body">K-means、階層クラスタリング、DBSCAN を比較。シルエット係数で評価。</p>
+        <div class="bento-card__footer"><span class="badge">ML</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P2-04 · 章8+9</div>
+        <div class="bento-card__title" style="font-size:16px;">不動産価格予測</div>
+        <p class="bento-card__body">XGBoost + LightGBM のアンサンブル。Optuna でハイパーパラメータ自動探索。</p>
+        <div class="bento-card__footer"><span class="badge">ML</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P2-05 · 章8+22</div>
+        <div class="bento-card__title" style="font-size:16px;">時系列需要予測</div>
+        <p class="bento-card__body">Prophet、LightGBM、SARIMAX を比較。バックテストで実用性を検証。</p>
+        <div class="bento-card__footer"><span class="badge">ML</span></div>
+      </div>
+
+      <!-- Neural Network Implementation -->
+      <div class="bento-card bento-card--span-4" style="background:var(--bg-section);">
+        <div class="bento-card__eyebrow">PROJECT GROUP 3 · NN実装</div>
+        <div class="bento-card__title">ニューラルネット実装プロジェクト (5本)</div>
+        <p class="bento-card__body">PyTorch でNN を一から構築・学習。古典CNN〜Transformer まで。</p>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P3-01 · 章10+11+12</div>
+        <div class="bento-card__title" style="font-size:16px;">MLP for MNIST</div>
+        <p class="bento-card__body">3層MLPで MNIST 98% を目指す。Dropout、BatchNorm、Adam で精度比較。</p>
+        <div class="bento-card__footer"><span class="badge">NN</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P3-02 · 章13</div>
+        <div class="bento-card__title" style="font-size:16px;">CIFAR-10 CNN</div>
+        <p class="bento-card__body">小型 ResNet を実装し CIFAR-10 で 90% 突破。データ拡張、Cosine LR scheduling 込み。</p>
+        <div class="bento-card__footer"><span class="badge">NN</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P3-03 · 章14</div>
+        <div class="bento-card__title" style="font-size:16px;">LSTM 株価予測</div>
+        <p class="bento-card__body">日経平均の翌日予測モデル。Window処理、リーク防止、本番運用の限界も学ぶ。</p>
+        <div class="bento-card__footer"><span class="badge">NN</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P3-04 · 章15</div>
+        <div class="bento-card__title" style="font-size:16px;">Mini Transformer</div>
+        <p class="bento-card__body">Self-Attention から組み立てる小型 Transformer。文字レベル言語モデルで動作確認。</p>
+        <div class="bento-card__footer"><span class="badge">NN</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P3-05 · 章13</div>
+        <div class="bento-card__title" style="font-size:16px;">Transfer Learning</div>
+        <p class="bento-card__body">ImageNet 事前学習済み ResNet50 を、自前データセットで Fine-tuning。</p>
+        <div class="bento-card__footer"><span class="badge">NN</span></div>
+      </div>
+
+      <!-- Modern AI Applications -->
+      <div class="bento-card bento-card--span-4" style="background:var(--bg-section);">
+        <div class="bento-card__eyebrow">PROJECT GROUP 4 · 現代AI応用</div>
+        <div class="bento-card__title">深層学習応用プロジェクト (5本)</div>
+        <p class="bento-card__body">物体検出、セマンティック分割、生成AI など実務的応用。</p>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P4-01 · 章13+18</div>
+        <div class="bento-card__title" style="font-size:16px;">YOLO 物体検出</div>
+        <p class="bento-card__body">Ultralytics YOLOv8 でカスタムデータセット学習。アノテーション、評価、推論まで。</p>
+        <div class="bento-card__footer"><span class="badge">CV</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P4-02 · 章13</div>
+        <div class="bento-card__title" style="font-size:16px;">U-Net セグメンテーション</div>
+        <p class="bento-card__body">医療画像セグメンテーション。Dice loss、IoU評価、データ拡張の効果検証。</p>
+        <div class="bento-card__footer"><span class="badge">CV</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P4-03 · 章16+17</div>
+        <div class="bento-card__title" style="font-size:16px;">BERT 日本語感情分析</div>
+        <p class="bento-card__body">事前学習済み東北大BERT を Fine-tuning。Twitter 評論データで感情分析。</p>
+        <div class="bento-card__footer"><span class="badge">NLP</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P4-04 · 章18</div>
+        <div class="bento-card__title" style="font-size:16px;">Stable Diffusion カスタム</div>
+        <p class="bento-card__body">LoRA で自前画像でファインチューニング。プロンプトエンジニアリングと組合せ。</p>
+        <div class="bento-card__footer"><span class="badge">GenAI</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P4-05 · 章19</div>
+        <div class="bento-card__title" style="font-size:16px;">Gym 強化学習</div>
+        <p class="bento-card__body">CartPole から始め、Atari Breakout まで。DQN、PPO の実装比較。</p>
+        <div class="bento-card__footer"><span class="badge">RL</span></div>
+      </div>
+
+      <!-- LLM & Agent -->
+      <div class="bento-card bento-card--span-4" style="background:var(--bg-section);">
+        <div class="bento-card__eyebrow">PROJECT GROUP 5 · LLM / Agent</div>
+        <div class="bento-card__title">LLM・エージェントプロジェクト (5本)</div>
+        <p class="bento-card__body">Claude / OpenAI / オープンソースLLM を使った実用アプリ開発。</p>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P5-01 · 章17+20</div>
+        <div class="bento-card__title" style="font-size:16px;">社内ドキュメントRAG</div>
+        <p class="bento-card__body">PDF/Notion から Chroma にインデックス。LangChain で質問応答 Bot を構築。</p>
+        <div class="bento-card__footer"><span class="badge">RAG</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P5-02 · 章21</div>
+        <div class="bento-card__title" style="font-size:16px;">ReAct エージェント</div>
+        <p class="bento-card__body">Tool Use で Web 検索＋計算機＋Slack 連携。LangGraph で状態管理。</p>
+        <div class="bento-card__footer"><span class="badge">Agent</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P5-03 · 章17</div>
+        <div class="bento-card__title" style="font-size:16px;">LLM Fine-tuning</div>
+        <p class="bento-card__body">LLaMA-3 8B に LoRA で カスタムタスク学習。Unsloth で高速化。</p>
+        <div class="bento-card__footer"><span class="badge">LLM</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P5-04 · 章21</div>
+        <div class="bento-card__title" style="font-size:16px;">Computer Use Agent</div>
+        <p class="bento-card__body">Claude Computer Use API でブラウザ操作自動化。Playwright と組合せ。</p>
+        <div class="bento-card__footer"><span class="badge">Agent</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P5-05 · 章17</div>
+        <div class="bento-card__title" style="font-size:16px;">LLM 評価フレームワーク</div>
+        <p class="bento-card__body">LangSmith / DeepEval で LLM アプリ品質を継続的に評価。回帰テスト整備。</p>
+        <div class="bento-card__footer"><span class="badge">LLM</span></div>
+      </div>
+
+      <!-- Production -->
+      <div class="bento-card bento-card--span-4" style="background:var(--bg-section);">
+        <div class="bento-card__eyebrow">PROJECT GROUP 6 · 本番運用</div>
+        <div class="bento-card__title">本番運用プロジェクト (5本)</div>
+        <p class="bento-card__body">モデルを本番に乗せる。API、コンテナ、MLOps、監視まで。</p>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P6-01 · 章22</div>
+        <div class="bento-card__title" style="font-size:16px;">FastAPI モデル API</div>
+        <p class="bento-card__body">学習済みモデルを FastAPI で公開。Docker化、認証、レート制限。</p>
+        <div class="bento-card__footer"><span class="badge">MLOps</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P6-02 · 章22</div>
+        <div class="bento-card__title" style="font-size:16px;">MLflow 実験管理</div>
+        <p class="bento-card__body">MLflow Tracking で実験記録、Model Registry でバージョン管理、Pipeline 構築。</p>
+        <div class="bento-card__footer"><span class="badge">MLOps</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P6-03 · 章22</div>
+        <div class="bento-card__title" style="font-size:16px;">SageMaker パイプライン</div>
+        <p class="bento-card__body">AWS SageMaker で前処理→学習→評価→デプロイの一気通貫パイプライン。</p>
+        <div class="bento-card__footer"><span class="badge">AWS</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P6-04 · 章22</div>
+        <div class="bento-card__title" style="font-size:16px;">モデル監視</div>
+        <p class="bento-card__body">Evidently AI でドリフト検出、Prometheus + Grafana でリアルタイム監視。</p>
+        <div class="bento-card__footer"><span class="badge">MLOps</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">P6-05 · 章22+23</div>
+        <div class="bento-card__title" style="font-size:16px;">公正性監査ツール</div>
+        <p class="bento-card__body">Fairlearn でモデルの公正性を継続評価。本番モデルに統合し、CI に組込む。</p>
+        <div class="bento-card__footer"><span class="badge">Ethics</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LEARNING PATH SUGGESTIONS -->
+<section class="section section--bg">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">推奨学習パス</div>
+        <h2>どこから始める？</h2>
+      </div>
+      <p class="section-head__lede">
+        スキルレベルや目標に応じて、おすすめの学習順序を提案します。
+      </p>
+    </div>
+
+    <div class="bento">
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">初学者</div>
+        <div class="bento-card__title">基礎を固める</div>
+        <p class="bento-card__body">
+          章1（AIとは）→ 章3（線形代数）→ 章4（微分）→ 章7（ML基礎）→ 章10（NN基礎）→ <strong>P1-01 線形回帰スクラッチ</strong> を実装。
+        </p>
+        <div class="bento-card__footer"><span class="badge">推奨</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">実務エンジニア</div>
+        <div class="bento-card__title">即戦力ルート</div>
+        <p class="bento-card__body">
+          章8（古典ML）→ 章9（評価指標）→ <strong>P2-01 Titanic</strong>、<strong>P2-04 不動産予測</strong>。
+          XGBoost と LightGBM で実務でよく使うパターンを習得。
+        </p>
+        <div class="bento-card__footer"><span class="badge">推奨</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">研究志向</div>
+        <div class="bento-card__title">深層学習ルート</div>
+        <p class="bento-card__body">
+          章10〜12（NN）→ 章13（CNN）→ 章15（Transformer）→ <strong>P3-04 Mini Transformer</strong>、<strong>P4-03 BERT 感情分析</strong>。
+        </p>
+        <div class="bento-card__footer"><span class="badge">推奨</span></div>
+      </div>
+
+      <div class="bento-card">
+        <div class="bento-card__eyebrow">プロダクト開発</div>
+        <div class="bento-card__title">LLMアプリルート</div>
+        <p class="bento-card__body">
+          章17（LLM）→ 章20（RAG）→ 章21（Agent）→ <strong>P5-01 社内RAG</strong>、<strong>P5-02 ReAct エージェント</strong>。
+        </p>
+        <div class="bento-card__footer"><span class="badge">推奨</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">Swallow AI Academy</div>
+      <p>独立した AI/ML 資格学習プラットフォーム。</p>
+    </div>
+    <div class="footer-cols">
+      <div>
+        <h6>G検定</h6>
+        <a href="../../certifications/g-kentei.html">コース概要</a>
+        <a href="handson.html">ハンズオン</a>
+        <a href="../../quiz.html?topic=g-kentei">問題演習</a>
+      </div>
+      <div>
+        <h6>他の資格</h6>
+        <a href="../../certifications/e-shikaku.html">E資格</a>
+        <a href="../../certifications/tokei-kentei.html">統計検定</a>
+        <a href="../../certifications/python-cert.html">Python認定</a>
+      </div>
+      <div>
+        <h6>ショートカット</h6>
+        <a href="javascript:void(0)" onclick="Swallow.Search.open()">⌘K 検索</a>
+        <a href="javascript:void(0)" onclick="Swallow.ThemeManager.toggle()">テーマ切替</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-credit">© 2026 Swallow AI Academy</div>
+</footer>
+
+<script src="../../assets/js/main.js" defer></script>
+</body>
+</html>

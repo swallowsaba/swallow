@@ -8,14 +8,18 @@
 <link rel="stylesheet" href="../../../assets/css/main.css">
 </head>
 <body>
-
-<div class="aurora" aria-hidden="true"></div>
-
-
 <header class="masthead">
   <div class="masthead-inner">
-    <a href="../../../index.html" class="brand"><span class="brand-mark">S</span><div><div class="brand-name">Swallow AI Academy</div><div class="brand-meta">Independent · Editorial · 2026</div></div></a>
-    <nav class="nav-primary"><a href="../../../index.html#certifications">資格</a><a href="../../../certifications/g-kentei.html">G検定</a><a href="../basics/index.html">基本</a><a href="index.html">応用</a><a href="../../../quiz.html?topic=g-kentei">問題演習</a></nav>
+    <a href="../../../index.html" class="brand">
+      <span class="brand-mark">S</span>
+      <span class="brand-name">Swallow AI Academy</span>
+    </a>
+    <nav class="nav-primary">
+      <a href="../../../index.html#certifications">資格</a>
+      <a href="../../../certifications/g-kentei.html">G検定</a>
+      <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
+      <a href="../../../quiz.html">問題演習</a>
+    </nav>
     <div class="nav-actions">
       <button class="search-trigger" aria-label="検索">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -23,8 +27,8 @@
         <span class="kbd">⌘K</span>
       </button>
       <button class="theme-toggle" aria-label="テーマを切替">
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       </button>
       <button class="nav-toggle">MENU</button>
     </div>
@@ -33,7 +37,7 @@
 
 <section class="page-hero">
   <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="index.html">応用</a> / 章18</div>
+    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="../../../certifications/g-kentei.html#advanced">応用</a> / 章18</div>
     <h1>章18 — 生成モデル<span class="en">Chapter 18 — Generative Models</span></h1>
     <p class="standfirst">『描いて』と言えば絵が生まれ、『作曲して』と言えば曲が流れる ── これが2022〜2026の生成AIです。<strong>GAN</strong>（2014）、<strong>VAE</strong>（2013）、そして 2020年以降の <strong>Diffusion Models</strong> という3つの系譜が、<strong>DALL-E・Stable Diffusion・Midjourney・Imagen・Sora・Veo</strong>といった現代の傑作を生みました。本章で <strong>生成モデル</strong> の数学と実装を、5部構成で徹底解説します。</p>
   </div>
@@ -579,13 +583,30 @@ scale 30:　過剰、不自然なアーティファクト<br>
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <div><div class="footer-logo">Swallow AI Academy</div><p>Independent, editorial-style learning for AI / ML certifications. 2026.</p></div>
+    <div>
+      <div class="footer-logo">Swallow AI Academy</div>
+      <p>独立した AI/ML 資格学習プラットフォーム。</p>
+    </div>
     <div class="footer-cols">
-      <div><h6>LEARN</h6><a href="../../../certifications/g-kentei.html">G検定</a><a href="../../../certifications/e-shikaku.html">E資格</a><a href="../../../certifications/tokei.html">統計検定</a></div>
-      <div><h6>PRACTICE</h6><a href="../../../quiz.html">問題演習</a><a href="../../../glossary.html">用語集</a></div>
-      <div><h6>INFO</h6><a href="../../../about.html">サイトについて</a></div>
+      <div>
+        <h6>資格</h6>
+        <a href="../../../certifications/g-kentei.html">G検定</a>
+        <a href="../../../certifications/e-shikaku.html">E資格</a>
+        <a href="../../../certifications/tokei-kentei.html">統計検定</a>
+      </div>
+      <div>
+        <h6>演習</h6>
+        <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
+        <a href="../../../quiz.html">問題演習</a>
+      </div>
+      <div>
+        <h6>ショートカット</h6>
+        <a href="javascript:void(0)" onclick="Swallow.Search.open()">⌘K 検索</a>
+        <a href="javascript:void(0)" onclick="Swallow.ThemeManager.toggle()">テーマ切替</a>
+      </div>
     </div>
   </div>
+  <div class="footer-credit">© 2026 Swallow AI Academy</div>
 </footer>
 
 <script src="../../../assets/js/main.js" defer></script>

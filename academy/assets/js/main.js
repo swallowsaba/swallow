@@ -24,11 +24,11 @@
     },
     toggle() {
       const current = document.documentElement.getAttribute('data-theme');
-      // Default is dark (no attribute = dark). Toggle to light, then back to dark.
-      const next = current === 'light' ? 'dark' : 'light';
+      // Default is light (no attribute = light). Toggle to dark, then back to light.
+      const next = current === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem(this.KEY, next);
-      Toast.show(`${next === 'dark' ? '🌙 ダーク' : '☀ ライト'}モードに切替`);
+      Toast.show(`${next === 'dark' ? 'ダークモード' : 'ライトモード'}に切替`);
     }
   };
 
@@ -132,6 +132,7 @@
         { cat: '資格', title: '画像処理エンジニア', url: `${base}certifications/image-engineer.html` },
         { cat: '資格', title: 'Jetson AI Specialist', url: `${base}certifications/jetson-ai.html` },
         { cat: 'ページ', title: 'ホーム', url: `${base}index.html` },
+        { cat: 'ページ', title: 'ハンズオン演習（120実装）', url: `${base}learn/g-kentei/handson.html` },
         { cat: 'ページ', title: '問題演習', url: `${base}quiz.html` },
       ];
       // G検定 basics
