@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="../../../assets/css/main.css">
 
 </head>
-<body>
+<body data-cert="g-kentei">
 
 <header class="topbar">
   <button class="topbar-menu" aria-label="メニューを開く">
@@ -16,9 +16,10 @@
   </button>
   <a href="../../../index.html" class="topbar-brand">
     <span class="brand-mark">S</span>
-    <span>Swallow AI Academy</span>
+    <span>Swallow Academy</span>
   </a>
   <div class="topbar-spacer"></div>
+  <div class="topbar-stats" id="stats-slot"></div>
   <button class="topbar-search" aria-label="検索">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <span>検索…</span>
@@ -52,18 +53,18 @@
         <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="sidebar-items">
-        <a href="../../../learn/g-kentei/basics/01-what-is-ai.html" class="sidebar-link"><span class="sidebar-link__num">01</span><span class="sidebar-link__text">AIとは何か</span></a>
-        <a href="../../../learn/g-kentei/basics/02-history.html" class="sidebar-link"><span class="sidebar-link__num">02</span><span class="sidebar-link__text">AIの歴史</span></a>
-        <a href="../../../learn/g-kentei/basics/03-linear-algebra.html" class="sidebar-link"><span class="sidebar-link__num">03</span><span class="sidebar-link__text">線形代数</span></a>
-        <a href="../../../learn/g-kentei/basics/04-calculus.html" class="sidebar-link"><span class="sidebar-link__num">04</span><span class="sidebar-link__text">微分・最適化</span></a>
-        <a href="../../../learn/g-kentei/basics/05-probability.html" class="sidebar-link"><span class="sidebar-link__num">05</span><span class="sidebar-link__text">確率・統計</span></a>
-        <a href="../../../learn/g-kentei/basics/06-info-theory.html" class="sidebar-link"><span class="sidebar-link__num">06</span><span class="sidebar-link__text">情報理論</span></a>
-        <a href="../../../learn/g-kentei/basics/07-ml-paradigm.html" class="sidebar-link"><span class="sidebar-link__num">07</span><span class="sidebar-link__text">機械学習パラダイム</span></a>
-        <a href="../../../learn/g-kentei/basics/08-ml-classical.html" class="sidebar-link"><span class="sidebar-link__num">08</span><span class="sidebar-link__text">古典機械学習</span></a>
-        <a href="../../../learn/g-kentei/basics/09-ml-evaluation.html" class="sidebar-link"><span class="sidebar-link__num">09</span><span class="sidebar-link__text">評価指標</span></a>
-        <a href="../../../learn/g-kentei/basics/10-nn-basics.html" class="sidebar-link"><span class="sidebar-link__num">10</span><span class="sidebar-link__text">NN基礎</span></a>
-        <a href="../../../learn/g-kentei/basics/11-backprop.html" class="sidebar-link"><span class="sidebar-link__num">11</span><span class="sidebar-link__text">逆伝播</span></a>
-        <a href="../../../learn/g-kentei/basics/12-nn-tricks.html" class="sidebar-link"><span class="sidebar-link__num">12</span><span class="sidebar-link__text">NNの工夫</span></a>
+        <a href="../../../learn/g-kentei/basics/01-what-is-ai.html" class="sidebar-link" data-key="g-kentei:basics:01-what-is-ai"><span class="sidebar-link__num">01</span><span class="sidebar-link__text">AIとは何か</span></a>
+        <a href="../../../learn/g-kentei/basics/02-history.html" class="sidebar-link" data-key="g-kentei:basics:02-history"><span class="sidebar-link__num">02</span><span class="sidebar-link__text">AIの歴史</span></a>
+        <a href="../../../learn/g-kentei/basics/03-linear-algebra.html" class="sidebar-link" data-key="g-kentei:basics:03-linear-algebra"><span class="sidebar-link__num">03</span><span class="sidebar-link__text">線形代数</span></a>
+        <a href="../../../learn/g-kentei/basics/04-calculus.html" class="sidebar-link" data-key="g-kentei:basics:04-calculus"><span class="sidebar-link__num">04</span><span class="sidebar-link__text">微分・最適化</span></a>
+        <a href="../../../learn/g-kentei/basics/05-probability.html" class="sidebar-link" data-key="g-kentei:basics:05-probability"><span class="sidebar-link__num">05</span><span class="sidebar-link__text">確率・統計</span></a>
+        <a href="../../../learn/g-kentei/basics/06-info-theory.html" class="sidebar-link" data-key="g-kentei:basics:06-info-theory"><span class="sidebar-link__num">06</span><span class="sidebar-link__text">情報理論</span></a>
+        <a href="../../../learn/g-kentei/basics/07-ml-paradigm.html" class="sidebar-link" data-key="g-kentei:basics:07-ml-paradigm"><span class="sidebar-link__num">07</span><span class="sidebar-link__text">ML パラダイム</span></a>
+        <a href="../../../learn/g-kentei/basics/08-ml-classical.html" class="sidebar-link" data-key="g-kentei:basics:08-ml-classical"><span class="sidebar-link__num">08</span><span class="sidebar-link__text">古典ML</span></a>
+        <a href="../../../learn/g-kentei/basics/09-ml-evaluation.html" class="sidebar-link" data-key="g-kentei:basics:09-ml-evaluation"><span class="sidebar-link__num">09</span><span class="sidebar-link__text">評価指標</span></a>
+        <a href="../../../learn/g-kentei/basics/10-nn-basics.html" class="sidebar-link" data-key="g-kentei:basics:10-nn-basics"><span class="sidebar-link__num">10</span><span class="sidebar-link__text">NN基礎</span></a>
+        <a href="../../../learn/g-kentei/basics/11-backprop.html" class="sidebar-link" data-key="g-kentei:basics:11-backprop"><span class="sidebar-link__num">11</span><span class="sidebar-link__text">逆伝播</span></a>
+        <a href="../../../learn/g-kentei/basics/12-nn-tricks.html" class="sidebar-link" data-key="g-kentei:basics:12-nn-tricks"><span class="sidebar-link__num">12</span><span class="sidebar-link__text">NNの工夫</span></a>
       </div>
     </div>
     <div class="sidebar-section">
@@ -72,24 +73,24 @@
         <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="sidebar-items">
-        <a href="../../../learn/g-kentei/advanced/01-cnn.html" class="sidebar-link"><span class="sidebar-link__num">13</span><span class="sidebar-link__text">CNN</span></a>
-        <a href="../../../learn/g-kentei/advanced/02-rnn.html" class="sidebar-link"><span class="sidebar-link__num">14</span><span class="sidebar-link__text">RNN・LSTM</span></a>
-        <a href="../../../learn/g-kentei/advanced/03-transformer.html" class="sidebar-link"><span class="sidebar-link__num">15</span><span class="sidebar-link__text">Transformer</span></a>
-        <a href="../../../learn/g-kentei/advanced/04-bert-gpt.html" class="sidebar-link"><span class="sidebar-link__num">16</span><span class="sidebar-link__text">BERT・GPT</span></a>
-        <a href="../../../learn/g-kentei/advanced/05-llm.html" class="sidebar-link"><span class="sidebar-link__num">17</span><span class="sidebar-link__text">LLM</span></a>
-        <a href="../../../learn/g-kentei/advanced/06-generative.html" class="sidebar-link"><span class="sidebar-link__num">18</span><span class="sidebar-link__text">生成AI</span></a>
-        <a href="../../../learn/g-kentei/advanced/07-rl.html" class="sidebar-link"><span class="sidebar-link__num">19</span><span class="sidebar-link__text">強化学習</span></a>
-        <a href="../../../learn/g-kentei/advanced/08-rag.html" class="sidebar-link"><span class="sidebar-link__num">20</span><span class="sidebar-link__text">RAG</span></a>
-        <a href="../../../learn/g-kentei/advanced/09-agent.html" class="sidebar-link"><span class="sidebar-link__num">21</span><span class="sidebar-link__text">AI Agent</span></a>
-        <a href="../../../learn/g-kentei/advanced/10-mlops.html" class="sidebar-link"><span class="sidebar-link__num">22</span><span class="sidebar-link__text">MLOps</span></a>
-        <a href="../../../learn/g-kentei/advanced/11-ethics.html" class="sidebar-link"><span class="sidebar-link__num">23</span><span class="sidebar-link__text">AI倫理</span></a>
-        <a href="../../../learn/g-kentei/advanced/12-law.html" class="sidebar-link"><span class="sidebar-link__num">24</span><span class="sidebar-link__text">AI法規制</span></a>
+        <a href="../../../learn/g-kentei/advanced/01-cnn.html" class="sidebar-link" data-key="g-kentei:advanced:01-cnn"><span class="sidebar-link__num">13</span><span class="sidebar-link__text">CNN</span></a>
+        <a href="../../../learn/g-kentei/advanced/02-rnn.html" class="sidebar-link" data-key="g-kentei:advanced:02-rnn"><span class="sidebar-link__num">14</span><span class="sidebar-link__text">RNN・LSTM</span></a>
+        <a href="../../../learn/g-kentei/advanced/03-transformer.html" class="sidebar-link" data-key="g-kentei:advanced:03-transformer"><span class="sidebar-link__num">15</span><span class="sidebar-link__text">Transformer</span></a>
+        <a href="../../../learn/g-kentei/advanced/04-bert-gpt.html" class="sidebar-link" data-key="g-kentei:advanced:04-bert-gpt"><span class="sidebar-link__num">16</span><span class="sidebar-link__text">BERT・GPT</span></a>
+        <a href="../../../learn/g-kentei/advanced/05-llm.html" class="sidebar-link" data-key="g-kentei:advanced:05-llm"><span class="sidebar-link__num">17</span><span class="sidebar-link__text">LLM</span></a>
+        <a href="../../../learn/g-kentei/advanced/06-generative.html" class="sidebar-link" data-key="g-kentei:advanced:06-generative"><span class="sidebar-link__num">18</span><span class="sidebar-link__text">生成AI</span></a>
+        <a href="../../../learn/g-kentei/advanced/07-rl.html" class="sidebar-link" data-key="g-kentei:advanced:07-rl"><span class="sidebar-link__num">19</span><span class="sidebar-link__text">強化学習</span></a>
+        <a href="../../../learn/g-kentei/advanced/08-rag.html" class="sidebar-link" data-key="g-kentei:advanced:08-rag"><span class="sidebar-link__num">20</span><span class="sidebar-link__text">RAG</span></a>
+        <a href="../../../learn/g-kentei/advanced/09-agent.html" class="sidebar-link" data-key="g-kentei:advanced:09-agent"><span class="sidebar-link__num">21</span><span class="sidebar-link__text">AI Agent</span></a>
+        <a href="../../../learn/g-kentei/advanced/10-mlops.html" class="sidebar-link" data-key="g-kentei:advanced:10-mlops"><span class="sidebar-link__num">22</span><span class="sidebar-link__text">MLOps</span></a>
+        <a href="../../../learn/g-kentei/advanced/11-ethics.html" class="sidebar-link" data-key="g-kentei:advanced:11-ethics"><span class="sidebar-link__num">23</span><span class="sidebar-link__text">AI倫理</span></a>
+        <a href="../../../learn/g-kentei/advanced/12-law.html" class="sidebar-link" data-key="g-kentei:advanced:12-law"><span class="sidebar-link__num">24</span><span class="sidebar-link__text">AI法規制</span></a>
       </div>
     </div>
     <div class="sidebar-section">
       <h6 class="sidebar-heading">演習</h6>
       <div class="sidebar-items">
-        <a href="../../../learn/g-kentei/handson.html" class="sidebar-link"><span class="sidebar-link__text">ハンズオン演習</span><span class="sidebar-link__badge">150</span></a>
+        <a href="../../../learn/g-kentei/handson.html" class="sidebar-link"><span class="sidebar-link__text">ハンズオン</span><span class="sidebar-link__badge">150</span></a>
         <a href="../../../quiz.html" class="sidebar-link"><span class="sidebar-link__text">問題演習</span><span class="sidebar-link__badge">480</span></a>
       </div>
     </div>
@@ -97,16 +98,36 @@
 </aside>
 <div class="sidebar-overlay"></div>
   <main class="main">
-<section class="page-hero">
-  <div class="page-hero-inner">
-    <div class="crumbs"><a href="../../../index.html">HOME</a> / LEARN / G検定 / <a href="../../../certifications/g-kentei.html#advanced">応用</a> / 章24</div>
-    <h1>章24 — AI法規制<span class="en">Chapter 24 — AI Regulation &amp; Law</span></h1>
-    <p class="standfirst">2024年8月のEU AI Act施行、2026年米SB-1047本格運用、日本のAI推進法（2024年5月成立、2025年施行）── 法整備が世界規模で進んでいます。GDPR、CCPA、著作権、特許、肖像権、Anthropic ASL（責任スケーリング方針）など、現代AIの実装と運用に必須の法的知識を、5部構成で扱います。</p>
-  </div>
-</section>
+    <div class="content">
+<div class="chap-header">
+      <div class="crumbs">
+        <a href="../../../index.html">ホーム</a> <span class="crumbs-sep">/</span>
+        <a href="../../../certifications/g-kentei.html">G検定</a> <span class="crumbs-sep">/</span>
+        <a href="../../../certifications/g-kentei.html#advanced">応用編</a> <span class="crumbs-sep">/</span>
+        章24
+      </div>
+      <div class="chap-header__meta">
+        <span class="badge badge--accent">CHAPTER 24 OF 24</span>
+        <span class="badge">応用編</span>
+      </div>
+      <div class="chap-header__bar">
+        <div class="pbar"><div class="pbar__fill" style="width: 100%;"></div></div>
+        <div class="chap-header__bar-info">
+          <span>G検定 進捗</span>
+          <span>24 / 24 章</span>
+        </div>
+      </div>
+    </div>
+<nav class="chapter-tabs">
+      <div class="chapter-tabs__inner">
+        <a href="#sec-basic">§1 基本</a>
+        <a href="#sec-applied">§2 応用</a>
+        <a href="#sec-handson">§3 ハンズオン</a>
+        <a href="#sec-simulation">§4 シミュレーション</a>
+        <a href="#sec-problems">§5 問題</a>
+      </div>
+    </nav>
 
-<div class="chapter-nav">
-  <div><a href="11-ethics.html">← 章23: AI倫理</a></div>
   <div><span class="ch-label">Chapter 24 of 12 · 応用編完結</span><br><span class="ch-title">AI法規制</span></div>
   <div><a href="../../../certifications/g-kentei.html">G検定 TOP →</a></div>
 </div>
@@ -593,11 +614,26 @@ GDPR 第22条適用: 法的効果を持つ完全自動意思決定<br>
   </article>
 </div>
 
-<div class="chapter-nav">
-  <div><a href="11-ethics.html">← 章23: AI倫理</a></div>
-  <div><span class="ch-label">Chapter 24 of 12 · 応用編完結</span><br><span class="ch-title">AI法規制</span></div>
+<div><span class="ch-label">Chapter 24 of 12 · 応用編完結</span><br><span class="ch-title">AI法規制</span></div>
   <div><a href="../../../certifications/g-kentei.html">G検定 TOP →</a></div>
 </div>
+  
+<div class="complete-cta">
+      <div class="complete-cta__icon">🎯</div>
+      <div class="complete-cta__title">この章はいかがでしたか？</div>
+      <div class="complete-cta__sub">理解できたら完了マークをつけましょう (+20 XP)</div>
+      <button class="btn-complete" data-complete-chapter="g-kentei:advanced:12-law">
+        <span>✓ 章を完了としてマーク</span>
+      </button>
+    </div>
+<nav class="chapter-nav">
+      <a href="../advanced/11-ethics.html">
+        <span class="ch-label">← 前の章</span>
+        <span class="ch-title">章23: AI倫理</span>
+      </a>
+      <a href="../../../certifications/g-kentei.html" class="next-link"><span class="ch-label">完了 →</span><span class="ch-title">G検定 TOPへ</span></a>
+    </nav>
+    </div>
   </main>
 </div>
 
