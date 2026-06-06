@@ -279,46 +279,32 @@
     }
   };
 
-  /* ---------- Sidebar Drawer (mobile) ---------- */
+    /* ---------- Nav Drawer (mobile menu) ---------- */
   const Sidebar = {
     init() {
       const menuBtn = $('.topbar-menu');
-      const sidebar = $('.sidebar');
-      if (!sidebar) return;
-
-      let overlay = $('.sidebar-overlay');
-      if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'sidebar-overlay';
-        sidebar.after(overlay);
-      }
-
-      on(menuBtn, 'click', () => sidebar.classList.toggle('is-open'));
-      on(overlay, 'click', () => sidebar.classList.remove('is-open'));
-
-      $$('a', sidebar).forEach(link => {
-        on(link, 'click', () => {
-          if (window.innerWidth <= 1024) sidebar.classList.remove('is-open');
-        });
-      });
-
-      $$('.sidebar-heading[data-collapse]', sidebar).forEach(heading => {
-        on(heading, 'click', () => {
-          const c = heading.getAttribute('data-collapsed') === 'true';
-          heading.setAttribute('data-collapsed', !c);
-        });
-      });
-
-      // Mark current page as active
-      const path = location.pathname;
-      const filename = path.split('/').pop();
-      $$('a', sidebar).forEach(link => {
-        const href = link.getAttribute('href');
-        if (!href) return;
-        if (filename && href.endsWith(filename) && filename.length > 5) {
-          link.classList.add('is-active');
+      const drawer = $('#nav-drawer') || $('.nav-drawer');
+      if (!drawer) return;
+      on(menuBtn, 'click', () => drawer.classList.toggle('is-open'));
+      $$('a', drawer).forEach(link => on(link, 'click', () => drawer.classList.remove('is-open')));
+      // Mark current page
+      const filename = location.pathname.split('/').pop();
+      $$('a', drawer).forEach(a => {
+        const href = a.getAttribute('href');
+        if (href && filename && href.endsWith(filename) && filename.length > 5) {
+          a.setAttribute('aria-current', 'page');
         }
       });
+      // Also mark in topbar-nav
+      const topnav = $('.topbar-nav');
+      if (topnav) {
+        $$('a', topnav).forEach(a => {
+          const href = a.getAttribute('href');
+          if (href && filename && href.endsWith(filename) && filename.length > 5) {
+            a.setAttribute('aria-current', 'page');
+          }
+        });
+      }
     }
   };
 
