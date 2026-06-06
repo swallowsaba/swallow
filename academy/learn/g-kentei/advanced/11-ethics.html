@@ -10,46 +10,51 @@
 </head>
 <body data-cert="g-kentei">
 
-<header class="topbar">
-  <a href="../../../index.html" class="topbar-brand">
-    <span class="brand-mark">S</span>
-    <span>Swallow Academy</span>
+<!-- App Status Bar (top) -->
+<header class="app-status">
+  <a href="../../../index.html" class="app-status__brand">
+    <div class="app-status__logo">S</div>
+    <div class="app-status__name">Swallow<small>AI Academy</small></div>
   </a>
-  <nav class="topbar-nav">
-    <a href="../../../index.html">ホーム</a>
-    <a href="../../../certifications/g-kentei.html">G検定</a>
-    <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
-    <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
-    <a href="../../../quiz.html">問題演習</a>
-  </nav>
-  <div class="topbar-actions">
-    <div class="topbar-stats" id="stats-slot"></div>
-    <button class="topbar-search" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <span>検索…</span>
-      <span class="kbd">⌘K</span>
+  <div class="app-status__actions">
+    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
+      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
+    </div>
+    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
+      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
+    </div>
+    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </button>
-    <button class="topbar-theme" aria-label="テーマを切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-    <button class="topbar-menu" aria-label="メニュー">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
     </button>
   </div>
 </header>
-<nav class="nav-drawer" id="nav-drawer">
-    <a href="../../../index.html">🏠 ホーム</a>
-    <a href="../../../certifications/g-kentei.html">📘 G検定</a>
-    <a href="../../../certifications/e-shikaku.html">📗 E資格</a>
-    <a href="../../../certifications/tokei-kentei.html">📊 統計検定</a>
-    <a href="../../../certifications/python-cert.html">🐍 Python認定</a>
-    <a href="../../../certifications/aws-mla-c01.html">☁️ AWS MLA</a>
-    <a href="../../../certifications/image-engineer.html">🖼️ 画像処理</a>
-    <a href="../../../certifications/jetson-ai.html">🤖 Jetson AI</a>
-    <a href="../../../learn/g-kentei/handson.html">💻 ハンズオン</a>
-    <a href="../../../learn/g-kentei/simulation.html">🧪 シミュレーション</a>
-    <a href="../../../quiz.html">📝 問題演習</a>
+
+<!-- Floating Bottom Nav (signature element) -->
+<nav class="bottom-nav" aria-label="メインナビ">
+  <a href="../../../index.html">
+    <span class="bottom-nav__icon">🏠</span>
+    <span class="bottom-nav__label">ホーム</span>
+  </a>
+  <a href="../../../certifications/g-kentei.html">
+    <span class="bottom-nav__icon">📘</span>
+    <span class="bottom-nav__label">G検定</span>
+  </a>
+  <a href="../../../learn/g-kentei/handson.html">
+    <span class="bottom-nav__icon">💻</span>
+    <span class="bottom-nav__label">演習</span>
+  </a>
+  <a href="../../../quiz.html">
+    <span class="bottom-nav__icon">📝</span>
+    <span class="bottom-nav__label">問題</span>
+  </a>
+  <a href="../../../learn/g-kentei/simulation.html">
+    <span class="bottom-nav__icon">🧪</span>
+    <span class="bottom-nav__label">シム</span>
+  </a>
 </nav>
 
 <main class="main">

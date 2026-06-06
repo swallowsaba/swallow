@@ -163,17 +163,20 @@
     }
   };
 
-  /* ---------- Stats Display (in topbar) ---------- */
+    /* ---------- Stats Display (v9 pills) ---------- */
   const StatsDisplay = {
     init() {
-      const slot = $('#stats-slot') || $('.topbar-stats');
-      if (!slot) return;
       const xp = Store.data.stats.xp || 0;
       const streak = Store.data.stats.streak || 0;
-      slot.innerHTML = `
-        ${streak > 0 ? `<div class="stat-pill stat-pill--streak"><span class="stat-pill__icon">🔥</span><span>${streak}日</span></div>` : ''}
-        <div class="stat-pill stat-pill--xp"><span class="stat-pill__icon">⭐</span><span>${xp} XP</span></div>
-      `;
+      const streakEl = document.getElementById('stats-streak');
+      const xpEl = document.getElementById('stats-xp');
+      const streakNum = document.getElementById('streak-num');
+      const xpNum = document.getElementById('xp-num');
+      if (streakEl && streak > 0) { streakEl.style.display = ''; if (streakNum) streakNum.textContent = streak; }
+      if (xpEl) { xpEl.style.display = ''; if (xpNum) xpNum.textContent = xp; }
+      // Legacy fallback
+      const slot = document.getElementById('stats-slot');
+      if (slot) slot.innerHTML = '';
     }
   };
 
@@ -279,32 +282,20 @@
     }
   };
 
-    /* ---------- Nav Drawer (mobile menu) ---------- */
+      /* ---------- Bottom Nav (active link marker) ---------- */
   const Sidebar = {
     init() {
-      const menuBtn = $('.topbar-menu');
-      const drawer = $('#nav-drawer') || $('.nav-drawer');
-      if (!drawer) return;
-      on(menuBtn, 'click', () => drawer.classList.toggle('is-open'));
-      $$('a', drawer).forEach(link => on(link, 'click', () => drawer.classList.remove('is-open')));
-      // Mark current page
       const filename = location.pathname.split('/').pop();
-      $$('a', drawer).forEach(a => {
+      $$('.bottom-nav a').forEach(a => {
         const href = a.getAttribute('href');
         if (href && filename && href.endsWith(filename) && filename.length > 5) {
+          a.classList.add('is-active');
           a.setAttribute('aria-current', 'page');
         }
       });
-      // Also mark in topbar-nav
-      const topnav = $('.topbar-nav');
-      if (topnav) {
-        $$('a', topnav).forEach(a => {
-          const href = a.getAttribute('href');
-          if (href && filename && href.endsWith(filename) && filename.length > 5) {
-            a.setAttribute('aria-current', 'page');
-          }
-        });
-      }
+      // Search button
+      const searchBtn = $('#search-btn');
+      if (searchBtn) on(searchBtn, 'click', () => Search.open());
     }
   };
 
