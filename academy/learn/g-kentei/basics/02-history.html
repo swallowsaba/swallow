@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -1218,141 +1222,121 @@ AI 訓練計算量の歴史:<br>
         <div class="p-num">PROBLEM 01 · 難易度 ★</div>
         <div class="p-q">「人工知能（Artificial Intelligence）」という用語が初めて公式に用いられた1956年の会議は何か。</div>
         <div class="p-choices">(0) MIT 認知科学会議　(1) ダートマス会議　(2) スタンフォード AI 会議　(3) IBM 計算機会議</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>ダートマス会議。1956年夏、米国ニューハンプシャー州ダートマス大学で、約8週間のワークショップとして開催。マッカーシー、ミンスキー、シャノン、ロチェスターが共同提案。マッカーシーが『AI』という用語を提案して採用された。→ §1.1</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>ダートマス会議。1956年夏、米国ニューハンプシャー州ダートマス大学で、約8週間のワークショップとして開催。マッカーシー、ミンスキー、シャノン、ロチェスターが共同提案。マッカーシーが『AI』という用語を提案して採用された。→ §1.1</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 02 · 難易度 ★</div>
         <div class="p-q">「Logic Theorist」を1956年に開発し、後にノーベル経済学賞も受賞した人物は誰か。</div>
         <div class="p-choices">(0) マッカーシー　(1) ミンスキー　(2) サイモン　(3) チューリング</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>ハーバート・サイモン（Carnegie Mellon）。アレン・ニューウェルと共同で Logic Theorist を開発し、Whitehead &amp; Russell の Principia Mathematica の52定理中38を自動証明。1975年チューリング賞、1978年ノーベル経済学賞（限定合理性の研究）を受賞。→ §1.1, §1.2</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>ハーバート・サイモン（Carnegie Mellon）。アレン・ニューウェルと共同で Logic Theorist を開発し、Whitehead &amp; Russell の Principia Mathematica の52定理中38を自動証明。1975年チューリング賞、1978年ノーベル経済学賞（限定合理性の研究）を受賞。→ §1.1, §1.2</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 03 · 難易度 ★</div>
         <div class="p-q">第1次AIブームを終わらせた英国の報告書は何か。</div>
         <div class="p-choices">(0) チューリング・レポート　(1) シャノン・レポート　(2) ライトヒル・レポート　(3) ミンスキー・レポート</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>ライトヒルレポート（1973）。ケンブリッジ大学の応用数学者James Lighthillが英国SRCの依頼で執筆。『AIは過大宣伝に応えていない』と結論し、英国のAI研究予算が大幅削減された。第1次AI冬の引き金。→ §1.3</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>ライトヒルレポート（1973）。ケンブリッジ大学の応用数学者James Lighthillが英国SRCの依頼で執筆。『AIは過大宣伝に応えていない』と結論し、英国のAI研究予算が大幅削減された。第1次AI冬の引き金。→ §1.3</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 04 · 難易度 ★</div>
         <div class="p-q">第2次AIブームの主役技術は何か。</div>
         <div class="p-choices">(0) 深層学習　(1) エキスパートシステム　(2) Transformer　(3) 強化学習</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>エキスパートシステム（1980-1987）。専門家の知識をIF-THENルールにして推論。MYCIN（感染症診断、450ルール）、DENDRAL（化学）、XCON（コンピュータ構成、年間4000万ドル節約）が代表。→ §1.4</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>エキスパートシステム（1980-1987）。専門家の知識をIF-THENルールにして推論。MYCIN（感染症診断、450ルール）、DENDRAL（化学）、XCON（コンピュータ構成、年間4000万ドル節約）が代表。→ §1.4</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 05 · 難易度 ★★</div>
         <div class="p-q">日本の「第五世代コンピュータ計画」は何年代の取り組みか。</div>
         <div class="p-choices">(0) 1970年代　(1) 1980-1990年代　(2) 2000年代　(3) 2010年代</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>1982-1992年。通産省（現経産省）主導、約1100億円規模。Prolog ベースの並列推論マシン開発を目指したが、当初目標は未達成で1992年終了。世界のAI研究を刺激した重要な国家プロジェクト。→ §1.4, §2.3</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>1982-1992年。通産省（現経産省）主導、約1100億円規模。Prolog ベースの並列推論マシン開発を目指したが、当初目標は未達成で1992年終了。世界のAI研究を刺激した重要な国家プロジェクト。→ §1.4, §2.3</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 06 · 難易度 ★★</div>
         <div class="p-q">第2次AI冬の主要な原因として最も適切なものはどれか。</div>
         <div class="p-choices">(0) GPU不足　(1) 知識獲得のボトルネック　(2) インターネット未普及　(3) Prologの欠陥</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>知識獲得のボトルネック。専門家の暗黙知をルール化するのが想像以上に困難で、ルール間矛盾の指数的増加、例外への脆さ、保守コストの増大が顕在化した。LISPマシンの汎用PCへの敗北も追い打ち。→ §1.5</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>知識獲得のボトルネック。専門家の暗黙知をルール化するのが想像以上に困難で、ルール間矛盾の指数的増加、例外への脆さ、保守コストの増大が顕在化した。LISPマシンの汎用PCへの敗北も追い打ち。→ §1.5</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 07 · 難易度 ★★</div>
         <div class="p-q">2012年の ImageNet コンテストで圧倒的差で優勝した深層学習モデルは何か。</div>
         <div class="p-choices">(0) VGG　(1) ResNet　(2) AlexNet　(3) Inception</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>AlexNet（Krizhevsky, Sutskever, Hinton）。Top-5 エラー率15.3%（2位26.2%）で優勝。GPU並列学習、ReLU、Dropout、Data Augmentation など現代DL標準パイプラインの原型を確立。第3次AIブームの起点。→ §1.7</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>AlexNet（Krizhevsky, Sutskever, Hinton）。Top-5 エラー率15.3%（2位26.2%）で優勝。GPU並列学習、ReLU、Dropout、Data Augmentation など現代DL標準パイプラインの原型を確立。第3次AIブームの起点。→ §1.7</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 08 · 難易度 ★★</div>
         <div class="p-q">AlphaGoが世界トップ棋士イ・セドルに4-1で勝利したのは何年か。</div>
         <div class="p-choices">(0) 2014年　(1) 2015年　(2) 2016年　(3) 2017年</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>2016年3月。DeepMindのAlphaGoが韓国・ソウルでイ・セドル九段と5番勝負。第2局37手目の『神の一手』は人間の棋譜にない発想として世界を驚かせた。深層学習×強化学習×MCTSの融合。→ §1.7</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>2016年3月。DeepMindのAlphaGoが韓国・ソウルでイ・セドル九段と5番勝負。第2局37手目の『神の一手』は人間の棋譜にない発想として世界を驚かせた。深層学習×強化学習×MCTSの融合。→ §1.7</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 09 · 難易度 ★★</div>
         <div class="p-q">Transformerの論文「Attention Is All You Need」が発表されたのは何年か。</div>
         <div class="p-choices">(0) 2015年　(1) 2016年　(2) 2017年　(3) 2018年</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>2017年6月、NeurIPS 2017。Google Brain &amp; Researchの8名（Vaswani et al.）が発表。RNN/CNNを使わずSelf-Attentionだけで系列モデルを構築できることを示した、現代AI最大のブレークスルー論文。→ §1.8</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>2017年6月、NeurIPS 2017。Google Brain &amp; Researchの8名（Vaswani et al.）が発表。RNN/CNNを使わずSelf-Attentionだけで系列モデルを構築できることを示した、現代AI最大のブレークスルー論文。→ §1.8</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10 · 難易度 ★★</div>
         <div class="p-q">ChatGPTが一般公開されたのはいつか。</div>
         <div class="p-choices">(0) 2020年6月　(1) 2021年6月　(2) 2022年11月30日　(3) 2023年3月14日</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>2022年11月30日、OpenAIが公開。GPT-3.5 ベース。リリース5日で100万ユーザー、2ヶ月で1億ユーザーに達し、史上最速の消費者向けアプリ普及記録（当時）を樹立。第4次AIブームの起点。→ §1.9</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>2022年11月30日、OpenAIが公開。GPT-3.5 ベース。リリース5日で100万ユーザー、2ヶ月で1億ユーザーに達し、史上最速の消費者向けアプリ普及記録（当時）を樹立。第4次AIブームの起点。→ §1.9</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11 · 難易度 ★★</div>
         <div class="p-q">2018年チューリング賞を共同受賞した3名（深層学習の父たち）は誰か。</div>
         <div class="p-choices">(0) Hinton, LeCun, Bengio　(1) Goodfellow, Hochreiter, LeCun　(2) Sutskever, Karpathy, Hinton　(3) Norvig, Russell, Mitchell</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (0)</span><br>Geoffrey Hinton、Yann LeCun、Yoshua Bengio。2018年チューリング賞を『conceptual and engineering breakthroughs that have made deep neural networks a critical component of computing』として共同受賞。→ §1.6, §1.7</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (0)</span><br>Geoffrey Hinton、Yann LeCun、Yoshua Bengio。2018年チューリング賞を『conceptual and engineering breakthroughs that have made deep neural networks a critical component of computing』として共同受賞。→ §1.6, §1.7</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12 · 難易度 ★★</div>
         <div class="p-q">Yoshua Bengio が共同設立した、モントリオールの主要 AI 研究機関は何か。</div>
         <div class="p-choices">(0) Vector Institute　(1) MILA　(2) DeepMind　(3) OpenAI</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>MILA（Mila - Quebec Artificial Intelligence Institute）。Vector Institute はトロントで Hinton と関連。両者は2017年にカナダ政府のPan-Canadian AI Strategyで設立された主要拠点。→ §2.2</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>MILA（Mila - Quebec Artificial Intelligence Institute）。Vector Institute はトロントで Hinton と関連。両者は2017年にカナダ政府のPan-Canadian AI Strategyで設立された主要拠点。→ §2.2</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13 · 難易度 ★★</div>
         <div class="p-q">RLHF（Reinforcement Learning from Human Feedback）の3段階パイプラインの正しい順序はどれか。</div>
         <div class="p-choices">(0) PPO → SFT → 事前学習　(1) 事前学習 → SFT → 報酬モデル+PPO　(2) SFT → 事前学習 → PPO　(3) 報酬モデル → PPO → 事前学習</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>(1) Web 大規模データで事前学習、(2) 人間が書いた高品質応答でSFT（Supervised Fine-Tuning）、(3) 人間が応答ペアを評価して報酬モデルを学習、それをPPOで反映。InstructGPT (2022) で確立。→ §1.9</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>(1) Web 大規模データで事前学習、(2) 人間が書いた高品質応答でSFT（Supervised Fine-Tuning）、(3) 人間が応答ペアを評価して報酬モデルを学習、それをPPOで反映。InstructGPT (2022) で確立。→ §1.9</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14 · 難易度 ★★★</div>
         <div class="p-q">2024年9月にOpenAIが発表した、推論能力に特化した新カテゴリのモデルは何か。</div>
         <div class="p-choices">(0) GPT-5　(1) o1　(2) DALL-E 3　(3) Sora</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>o1（旧称 Strawberry）。Chain-of-Thoughtを学習で内在化した推論モデル。AIME 2024で83.3%、CodeForcesで人類上位7%。Test-time Scaling（推論時計算量で性能向上）という新パラダイムを確立。→ §1.10</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>o1（旧称 Strawberry）。Chain-of-Thoughtを学習で内在化した推論モデル。AIME 2024で83.3%、CodeForcesで人類上位7%。Test-time Scaling（推論時計算量で性能向上）という新パラダイムを確立。→ §1.10</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15 · 難易度 ★★★</div>
         <div class="p-q">日本の著作権法30条の4（情報解析目的の利用は原則適法）は何年に改正されたか。</div>
         <div class="p-choices">(0) 2015年　(1) 2018年　(2) 2020年　(3) 2022年</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>2018年。著作物を情報解析目的で利用する場合、原則として著作権者の許諾不要とした。これによりAI学習が原則として適法と整理された。2024年3月に文化庁が運用方針を公表。→ §2.3</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>2018年。著作物を情報解析目的で利用する場合、原則として著作権者の許諾不要とした。これによりAI学習が原則として適法と整理された。2024年3月に文化庁が運用方針を公表。→ §2.3</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16 · 難易度 ★★★</div>
         <div class="p-q">2023年に英国で開催された、世界初のAI Safety Summitで採択された宣言は何か。</div>
         <div class="p-choices">(0) パリ宣言　(1) ジュネーブ宣言　(2) Bletchley 宣言　(3) ワシントン宣言</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>Bletchley宣言（2023年11月）。28カ国とEUが署名。フロンティアAIの安全性に関する初の国際合意。2024年Seoul AI Summit、2025年AI Action Summit (パリ)と続く。→ §2.2</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>Bletchley宣言（2023年11月）。28カ国とEUが署名。フロンティアAIの安全性に関する初の国際合意。2024年Seoul AI Summit、2025年AI Action Summit (パリ)と続く。→ §2.2</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17 · 難易度 ★★★</div>
         <div class="p-q">EU AI Actが採択されたのは何年か。リスクは何段階で分類されているか。</div>
         <div class="p-choices">(0) 2022年・3段階　(1) 2023年・4段階　(2) 2024年・4段階　(3) 2025年・5段階</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>2024年5月正式採択。リスクは4段階：(1) 許容できないリスク（禁止）、(2) 高リスク（厳格規制）、(3) 限定的リスク（透明性義務）、(4) 最小リスク（規制対象外）。加えてGPAI（汎用AI）に追加義務。世界初の包括的AI法。→ §2.2</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>2024年5月正式採択。リスクは4段階：(1) 許容できないリスク（禁止）、(2) 高リスク（厳格規制）、(3) 限定的リスク（透明性義務）、(4) 最小リスク（規制対象外）。加えてGPAI（汎用AI）に追加義務。世界初の包括的AI法。→ §2.2</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18 · 難易度 ★★★</div>
         <div class="p-q">Scaling Laws（スケーリング則）を最初に体系的に提示した2020年の論文の著者組織は。</div>
         <div class="p-choices">(0) DeepMind　(1) OpenAI（Kaplan et al.）　(2) Google Brain　(3) Microsoft Research</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>Kaplan et al. (2020) "Scaling Laws for Neural Language Models" by OpenAI。パラメータ・データ・計算量と性能が冪乗則で結ばれることを示し、LLM大規模化の理論的根拠を提供。2022年DeepMindのChinchilla論文で修正版（N≈Dが最適）。→ §1.9</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>Kaplan et al. (2020) "Scaling Laws for Neural Language Models" by OpenAI。パラメータ・データ・計算量と性能が冪乗則で結ばれることを示し、LLM大規模化の理論的根拠を提供。2022年DeepMindのChinchilla論文で修正版（N≈Dが最適）。→ §1.9</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19 · 難易度 ★★★</div>
         <div class="p-q">日本のAI企業 Preferred Networks の創業者は誰か。</div>
         <div class="p-choices">(0) 松尾豊・原田達也　(1) 西川徹・岡野原大輔　(2) David Ha・Llion Jones　(3) 安宅和人・落合陽一</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>Preferred Networks（PFN）は2014年に西川徹（CEO）と岡野原大輔（副社長）が創業。深層学習フレームワークChainer（後にPyTorchに統合）、産業用ロボット、AI創薬、自動運転など幅広い領域に展開。日本発の代表的AI企業。→ §2.3</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (1)</span><br>Preferred Networks（PFN）は2014年に西川徹（CEO）と岡野原大輔（副社長）が創業。深層学習フレームワークChainer（後にPyTorchに統合）、産業用ロボット、AI創薬、自動運転など幅広い領域に展開。日本発の代表的AI企業。→ §2.3</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20 · 難易度 ★★★</div>
         <div class="p-q">2025年1月に発表され、純粋強化学習だけで推論能力を獲得した、注目のオープンソース推論モデルは何か。</div>
         <div class="p-choices">(0) Llama 3.1　(1) Qwen 2.5　(2) DeepSeek R1　(3) Mistral Large</div>
-        <div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>DeepSeek R1（中国DeepSeek社、2025年1月）。RL with Verifiable Rewards だけで Chain-of-Thought能力を獲得。o1相当の性能を圧倒的低コストで実現し、AIコスト構造を一変させた。完全オープン公開。→ §1.10</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">▷ 正解 (2)</span><br>DeepSeek R1（中国DeepSeek社、2025年1月）。RL with Verifiable Rewards だけで Chain-of-Thought能力を獲得。o1相当の性能を圧倒的低コストで実現し、AIコスト構造を一変させた。完全オープン公開。→ §1.10</div></details></div>
     </div>
 
     <h3 style="margin-top:48px;border-top:2px solid #0d1b2a;padding-top:24px;">章のまとめ</h3>

@@ -264,3 +264,80 @@ table.spec tr:last-child td{border-bottom:none}
 .content,.main-content,.app-screen{max-width:var(--wrap);margin:0 auto;padding:clamp(28px,5vw,48px) var(--pad) 80px}
 .content--wide,.main-content--wide,.app-screen--wide{max-width:var(--wrap-wide)}
 .layout,.main{display:block}
+
+/* 章ページ §5問題: 解答折りたたみ（ネタバレ防止） */
+.p-answer-wrap{margin-top:12px}
+.p-answer-toggle{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);padding:8px 14px;background:var(--accent-soft);border-radius:var(--r-sm);list-style:none;user-select:none;transition:background .12s var(--ease)}
+.p-answer-toggle::-webkit-details-marker{display:none}
+.p-answer-toggle::before{content:"▶";font-size:9px;transition:transform .15s var(--ease)}
+.p-answer-wrap[open] .p-answer-toggle::before{transform:rotate(90deg)}
+.p-answer-toggle:hover{background:var(--accent);color:#fff}
+.p-answer-wrap .p-answer{margin-top:10px}
+
+/* ============================================================
+   ダッシュボード (ゲーミフィケーション)
+   ============================================================ */
+.dash-hero{display:grid;grid-template-columns:1.1fr 1.4fr;gap:20px;margin-bottom:28px}
+@media (max-width:760px){.dash-hero{grid-template-columns:1fr}}
+.dash-hero__main{display:flex;align-items:center;gap:22px;background:linear-gradient(135deg,var(--accent),var(--c-e));border-radius:var(--r-lg);padding:26px;color:#fff}
+.level-badge__ring{position:relative;width:104px;height:104px;flex-shrink:0}
+.level-badge__ring svg{width:104px;height:104px;transform:rotate(-90deg)}
+.level-badge__ring .ring-bg{fill:none;stroke:rgba(255,255,255,.25);stroke-width:8}
+.level-badge__ring .ring-fill{fill:none;stroke:#fff;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s var(--ease)}
+.level-badge__num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.level-badge__num .lvl-label{font-size:11px;font-weight:600;opacity:.85}
+.level-badge__num span:last-child{font-size:34px;font-weight:800;letter-spacing:-.02em}
+.dash-hero__info{flex:1;min-width:0}
+.dash-hero__title{font-size:22px;font-weight:800;margin-bottom:4px;letter-spacing:-.01em}
+.dash-hero__sub{font-size:13px;opacity:.9;margin-bottom:10px}
+.dash-hero__sub strong{font-weight:800}
+.xpbar{height:10px;background:rgba(255,255,255,.25);border-radius:999px;overflow:hidden;margin-bottom:8px}
+.xpbar__fill{height:100%;background:#fff;border-radius:999px;width:0;transition:width 1s var(--ease)}
+.dash-hero__next{font-size:12px;opacity:.85}
+.dash-hero__stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+@media (max-width:520px){.dash-hero__stats{grid-template-columns:repeat(2,1fr)}}
+.hstat{background:var(--surface);padding:16px 12px;text-align:center}
+.hstat__icon{font-size:22px;line-height:1;margin-bottom:8px}
+.hstat__val{font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1}
+.hstat__label{font-size:11px;color:var(--text-3);margin-top:5px}
+.hstat__delta{font-size:11px;color:var(--accent);font-weight:600;margin-top:3px}
+
+.challenge{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 26px;margin-bottom:8px;flex-wrap:wrap}
+.challenge__text{display:flex;align-items:center;gap:16px}
+.challenge__icon{font-size:38px;line-height:1}
+.challenge__title{font-size:19px;font-weight:800;margin-bottom:3px}
+.challenge__sub{font-size:13px;color:var(--text-3)}
+.btn--challenge{height:48px;padding:0 26px;font-size:15px;flex-shrink:0}
+
+.mode-card{display:block;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;color:var(--text);transition:border-color .14s var(--ease),box-shadow .14s var(--ease),transform .14s var(--ease)}
+.mode-card:hover{border-color:var(--accent);box-shadow:var(--sh);transform:translateY(-2px)}
+.mode-card__icon{font-size:30px;line-height:1;margin-bottom:12px}
+.mode-card__name{font-size:16px;font-weight:700;margin-bottom:6px}
+.mode-card__desc{font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:12px}
+.mode-card__tag{display:inline-flex;align-items:center;height:22px;padding:0 10px;font-size:11px;font-weight:700;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+
+.badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.badge{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 10px;text-align:center;opacity:.55;transition:opacity .2s,transform .14s var(--ease)}
+.badge--got{opacity:1;border-color:var(--accent)}
+.badge--got:hover{transform:translateY(-2px);box-shadow:var(--sh)}
+.badge__ico{font-size:26px;line-height:1;margin-bottom:7px}
+.badge__name{font-size:12px;font-weight:700;color:var(--text);line-height:1.3}
+.badge__lv{font-size:10px;color:var(--text-3);margin-top:3px}
+
+/* クイズ: コンボ・タイマー表示 */
+.quiz-hud{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.quiz-hud__item{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:700;background:var(--surface-soft);color:var(--text-2)}
+.quiz-hud__item.combo{background:var(--amber-soft);color:var(--amber)}
+.quiz-hud__item.combo.hot{background:var(--amber);color:#fff;animation:comboPulse .4s var(--ease)}
+.quiz-hud__item.timer{background:var(--accent-soft);color:var(--accent)}
+.quiz-hud__item.timer.warn{background:var(--red-soft);color:var(--red)}
+@keyframes comboPulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.quiz-mode-badge{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 12px;border-radius:999px;font-size:12px;font-weight:700;background:var(--accent-soft);color:var(--accent);margin-bottom:14px}
+.combo-bonus{font-size:12px;color:var(--amber);font-weight:700;margin-top:6px}
+
+/* 結果画面の拡張スタッツ */
+.result-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin:20px 0}
+@media (max-width:520px){.result-stats{grid-template-columns:repeat(2,1fr)}}
+.result-stat{background:var(--surface);padding:16px 10px}
+.result-stat__val{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+.result-stat__label{font-size:11px;color:var(--text-3);margin-top:4px}

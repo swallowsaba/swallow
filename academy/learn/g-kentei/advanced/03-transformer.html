@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -370,141 +374,121 @@ N = 16384: メモリ 4 TB（笑）<br>
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">『Attention is All You Need』論文（2017）の革命性は。</div>
         <div class="p-choices">① CNN を提案　 ② RNN/Convolutionなしで Self-Attention のみで Seq2Seq を実現、並列化可能　 ③ K-means 改良　 ④ 強化学習</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Vaswani 2017、Google Brain。WMT 英→独 で SOTA、しかも RNN より高速。現代AIの基盤。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Vaswani 2017、Google Brain。WMT 英→独 で SOTA、しかも RNN より高速。現代AIの基盤。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">Self-Attention の計算式は。</div>
         <div class="p-choices">① QV+K　 ② softmax(QKᵀ/√dₖ) V　 ③ Q·K　 ④ Σ Q·V</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Scaled Dot-Product Attention。√dₖで割るのは数値安定性のため。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Scaled Dot-Product Attention。√dₖで割るのは数値安定性のため。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">Multi-Head Attention の利点は。</div>
         <div class="p-choices">① 計算量削減　 ② 異なる『観点』で並列に注目、表現力増加　 ③ パラメータ削減　 ④ 教師なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 典型 8〜16 ヘッド。各ヘッドが構文、共参照、意味類似など異なる側面を学習。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 典型 8〜16 ヘッド。各ヘッドが構文、共参照、意味類似など異なる側面を学習。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">Transformer が Position Encoding を必要とする理由は。</div>
         <div class="p-choices">① 高速化　 ② Self-Attentionは置換不変、位置情報を別途与える必要　 ③ 正則化　 ④ 教師信号</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> sin/cos の固定位置埋め込み（オリジナル）、学習可能埋め込み（BERT）、RoPE（LLaMA、相対位置）など。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> sin/cos の固定位置埋め込み（オリジナル）、学習可能埋め込み（BERT）、RoPE（LLaMA、相対位置）など。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">RoPE（Rotary Position Embedding）が現代LLMで採用される理由は。</div>
         <div class="p-choices">① 学習不要　 ② 相対位置を回転で表現、外挿性能と長文脈で優位　 ③ 計算最遅　 ④ メモリ大</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Su 2021。LLaMA, GPT-NeoX, PaLM 等で採用。長文脈学習・補間で優れる。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Su 2021。LLaMA, GPT-NeoX, PaLM 等で採用。長文脈学習・補間で優れる。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">Self-Attention の計算量は。</div>
         <div class="p-choices">① O(N)　 ② O(N · d)　 ③ O(N² · d)　 ④ O(N³)</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> N = 系列長、d = 次元。長文で爆発するため Flash Attention、Sparse Attention、Mamba 等で対処。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> N = 系列長、d = 次元。長文で爆発するため Flash Attention、Sparse Attention、Mamba 等で対処。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">FlashAttention の貢献は。</div>
         <div class="p-choices">① 精度向上　 ② メモリO(N²) → O(N) の実装、GPU メモリ階層を活用　 ③ 教師なし　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dao 2022。SRAM/HBM のデータ移動を最小化。計算結果は数値的に同一、高速・低メモリ。長文脈 LLM 必須。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dao 2022。SRAM/HBM のデータ移動を最小化。計算結果は数値的に同一、高速・低メモリ。長文脈 LLM 必須。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">Decoder の Causal Mask の役割は。</div>
         <div class="p-choices">① 高速化　 ② 生成時に未来のトークンを見せない（カンニング防止）　 ③ 正則化　 ④ 教師なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Attention 行列の上三角を -∞ で埋める。GPT 系の自己回帰生成で必須。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Attention 行列の上三角を -∞ で埋める。GPT 系の自己回帰生成で必須。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">Encoder-only Transformer の代表例は。</div>
         <div class="p-choices">① GPT　 ② BERT、RoBERTa、DeBERTa　 ③ T5　 ④ ResNet</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 理解タスク（分類、NER、QA）に強い。MLM で事前学習。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 理解タスク（分類、NER、QA）に強い。MLM で事前学習。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">Decoder-only Transformer の代表例は。</div>
         <div class="p-choices">① BERT　 ② GPT、LLaMA、Claude、Mistral　 ③ T5　 ④ ViT</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Next Token Prediction で事前学習。生成タスクの王者。現代 LLM のデファクト。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Next Token Prediction で事前学習。生成タスクの王者。現代 LLM のデファクト。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">Encoder-Decoder Transformer の代表例は。</div>
         <div class="p-choices">① GPT　 ② T5、BART、mT5、オリジナル Transformer　 ③ BERT　 ④ K-means</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> テキスト→テキスト変換に強い。要約、翻訳、QAを統一フレームで扱える（T5）。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> テキスト→テキスト変換に強い。要約、翻訳、QAを統一フレームで扱える（T5）。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">Layer Normalization が Transformer で標準採用される理由は。</div>
         <div class="p-choices">① 高速　 ② バッチサイズ非依存、系列長変化OK、学習安定化　 ③ パラメータ削減　 ④ 教師なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Batch Norm はバッチ依存、可変長系列・小バッチで不安定。LayerNorm が Transformer の標準。最近は RMSNorm も（LLaMA）。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Batch Norm はバッチ依存、可変長系列・小バッチで不安定。LayerNorm が Transformer の標準。最近は RMSNorm も（LLaMA）。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Vision Transformer (ViT, 2020) の入力処理は。</div>
         <div class="p-choices">① 画素単位　 ② 画像を 16x16 などのパッチに分けてトークン化　 ③ Conv のみ　 ④ MLP のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dosovitskiy 2020。CNN の帰納バイアスなしで、大量データなら CNN 超え。CLIP、Stable Diffusion 等で採用。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dosovitskiy 2020。CNN の帰納バイアスなしで、大量データなら CNN 超え。CLIP、Stable Diffusion 等で採用。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">Cross-Attention の用途は。</div>
         <div class="p-choices">① Encoder内　 ② Decoderが Encoder出力を参照、機械翻訳・要約で使用　 ③ 教師なし　 ④ 計算不要</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Q を Decoder から、K/V を Encoder から。Encoder-Decoder アーキの架け橋。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Q を Decoder から、K/V を Encoder から。Encoder-Decoder アーキの架け橋。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">Pre-Norm と Post-Norm の違いは。</div>
         <div class="p-choices">① 同じ　 ② Pre: y=x+Sub(LN(x)), Post: y=LN(x+Sub(x))、Pre が学習安定で現代LLM標準　 ③ パラメータ違う　 ④ 学習なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> オリジナル Transformer は Post-Norm だが Warmup が必要。Pre-Norm（GPT-2 以降）は学習がより安定。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> オリジナル Transformer は Post-Norm だが Warmup が必要。Pre-Norm（GPT-2 以降）は学習がより安定。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">KV Cache の役割は。</div>
         <div class="p-choices">① 訓練加速　 ② 自己回帰生成で過去トークンの K, V を保存して再計算回避、推論を大幅高速化　 ③ 正則化　 ④ ノイズ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 各トークン生成時、過去全トークンの K, V は変わらないため再利用。LLM 推論の効率化に必須。メモリは N に線形に増加。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 各トークン生成時、過去全トークンの K, V は変わらないため再利用。LLM 推論の効率化に必須。メモリは N に線形に増加。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">SwiGLU 活性化が LLaMA 等の現代 LLM で採用される理由は。</div>
         <div class="p-choices">① 古典的　 ② Gated Linear Unit + Swish、ReLU/GELU より高性能　 ③ 計算最速　 ④ 教師なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Shazeer 2020。SwiGLU(x) = (xW)⊙Swish(xV) で2つの線形変換のゲート積。LLaMA, PaLM 等で標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Shazeer 2020。SwiGLU(x) = (xW)⊙Swish(xV) で2つの線形変換のゲート積。LLaMA, PaLM 等で標準。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">『Sparse Attention』の戦略は。</div>
         <div class="p-choices">① 全位置に注目　 ② 一部位置だけに注目し計算量を O(N√N) や O(N log N) に削減　 ③ 教師なし　 ④ Conv 化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Sparse Transformer、Longformer、BigBird、Reformer 等。長文脈モデルで重要、ただし Flash Attention + 通常 Attention で多くの場合十分。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Sparse Transformer、Longformer、BigBird、Reformer 等。長文脈モデルで重要、ただし Flash Attention + 通常 Attention で多くの場合十分。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">Mixture of Experts (MoE) の Transformer での利用は。</div>
         <div class="p-choices">① 不要　 ② FFN を複数の Expert に分け、Router が選択。総パラメータ大、アクティブパラメータ小　 ③ Attention のみ　 ④ 教師なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GShard、Switch Transformer、Mixtral 8x7B、GPT-4 等で採用。スケーリングと計算効率の両立。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GShard、Switch Transformer、Mixtral 8x7B、GPT-4 等で採用。スケーリングと計算効率の両立。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">Transformer が CNN/RNN に勝った根本的理由は。</div>
         <div class="p-choices">① 帰納バイアスが弱く、大量データで純粋に学習できる（スケーリング有利）+ 並列計算可能　 ② 計算量が少ない　 ③ パラメータ少ない　 ④ 教師なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> CNN は局所性、RNN は逐次性の帰納バイアス。Transformer はそれらが弱い分、データから自由に学習可能でスケーリング則に最適。並列学習で計算リソース活用も容易。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> CNN は局所性、RNN は逐次性の帰納バイアス。Transformer はそれらが弱い分、データから自由に学習可能でスケーリング則に最適。並列学習で計算リソース活用も容易。</div></details></div>
 
     </div>
 

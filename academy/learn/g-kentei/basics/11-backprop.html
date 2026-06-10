@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -446,141 +450,121 @@ LION (lr=1e-4):　　 Final acc=97.0% (メモリ半分)<br>
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">逆伝播の数学的核心は。</div>
         <div class="p-choices">① 線形回帰　 ② 連鎖律（chain rule）を計算グラフ上で系統的に適用　 ③ ランダム　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> dy/dx = (dy/du)(du/dx) を多層に適用、計算グラフのbackwardで自動化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> dy/dx = (dy/du)(du/dx) を多層に適用、計算グラフのbackwardで自動化。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">逆伝播を実用化した1986年の論文の著者は。</div>
         <div class="p-choices">① Turing　 ② Rumelhart, Hinton, Williams　 ③ Bengio　 ④ LeCun</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Nature論文『Learning representations by back-propagating errors』。多層NNの実用化を可能にした歴史的論文。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Nature論文『Learning representations by back-propagating errors』。多層NNの実用化を可能にした歴史的論文。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">100万パラメータNNで全勾配を計算するのに必要な順伝播・逆伝播の回数は。</div>
         <div class="p-choices">① 100万回　 ② 順伝播1回 + 逆伝播1回（合計でも O(N) パラメータ数）　 ③ 1000回　 ④ ゼロ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> これが逆伝播の真価。素朴な有限差分なら100万倍のコスト。reverse-mode auto-diff の効率性。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> これが逆伝播の真価。素朴な有限差分なら100万倍のコスト。reverse-mode auto-diff の効率性。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">Sigmoid 関数の微分は。</div>
         <div class="p-choices">① σ(x)　 ② σ(x)·(1-σ(x))　 ③ 1-σ(x)　 ④ x</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 美しい形。最大値は σ(0)·(1-σ(0)) = 0.25。これが勾配消失の主因。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 美しい形。最大値は σ(0)·(1-σ(0)) = 0.25。これが勾配消失の主因。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">ReLU の微分は。</div>
         <div class="p-choices">① 常に1　 ② x&gt;0で1、x≤0で0　 ③ x　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> x=0で厳密には微分不可能だが、実装で0または1を採用。シンプルさが計算効率に貢献。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> x=0で厳密には微分不可能だが、実装で0または1を採用。シンプルさが計算効率に貢献。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">Softmax + CE の合成勾配が美しい形は。</div>
         <div class="p-choices">① p+y　 ② p-y　 ③ p²　 ④ y²</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> logit z への ∂L/∂z = (p - y_onehot) / N。シンプル＆数値安定。NN分類の計算効率の根拠。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> logit z への ∂L/∂z = (p - y_onehot) / N。シンプル＆数値安定。NN分類の計算効率の根拠。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">全結合層 z = Wx + b で、上流勾配 δ = ∂L/∂z から得られる ∂L/∂W は。</div>
         <div class="p-choices">① δ・x　 ② δ・xᵀ（外積）　 ③ Wδ　 ④ δ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 形状 dₒᵤₜ × dᵢₙ。バッチでは Σ δᵢ·xᵢᵀ。∂L/∂b = δ, ∂L/∂x = Wᵀδ。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 形状 dₒᵤₜ × dᵢₙ。バッチでは Σ δᵢ·xᵢᵀ。∂L/∂b = δ, ∂L/∂x = Wᵀδ。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">NN学習で reverse-mode 自動微分が使われる理由は。</div>
         <div class="p-choices">① パラメータ数 ≫ 出力数（損失1つ）なので、forward-modeより遥かに効率的　 ② 唯一の方法　 ③ ランダム　 ④ メモリ少ない</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Forward は入力数に、Reverse は出力数に計算量が比例。NN は損失1つなので Reverse 一択。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Forward は入力数に、Reverse は出力数に計算量が比例。NN は損失1つなので Reverse 一択。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">勾配消失の主因は。</div>
         <div class="p-choices">① 学習率　 ② 活性化関数の微分の積が層数で指数的に減衰（Sigmoid/Tanh）　 ③ パラメータ数　 ④ データ量</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Sigmoid 微分最大 0.25、L層で 0.25^L。10層で 1e-6。ReLU、BN、ResNet で解決。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Sigmoid 微分最大 0.25、L層で 0.25^L。10層で 1e-6。ReLU、BN、ResNet で解決。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">勾配爆発の対処は。</div>
         <div class="p-choices">① 学習率を上げる　 ② Gradient Clipping（勾配ノルムを上限でカット）　 ③ 何もしない　 ④ パラメータ増加</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RNN/Transformer で標準。||g|| &gt; threshold なら g ← g · threshold/||g||。閾値 1.0 が典型。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RNN/Transformer で標準。||g|| &gt; threshold なら g ← g · threshold/||g||。閾値 1.0 が典型。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">SGD の更新式は。</div>
         <div class="p-choices">① θ ← θ + η・∂L/∂θ　 ② θ ← θ - η・∂L/∂θ　 ③ θ ← ∂L/∂θ　 ④ θ ← η・θ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 勾配方向の逆（descent）に η（学習率）だけ動く。シンプルだが汎化が良いことがある。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 勾配方向の逆（descent）に η（学習率）だけ動く。シンプルだが汎化が良いことがある。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">逆伝播でメモリを最も消費するのは。</div>
         <div class="p-choices">① パラメータ　 ② オプティマイザ状態　 ③ 順伝播の中間活性化（逆伝播で必要）　 ④ 損失値</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 各層の出力（B × D）を逆伝播のために保存。L 層では O(L·B·D)。これが大規模NN のメモリ消費の主因。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 各層の出力（B × D）を逆伝播のために保存。L 層では O(L·B·D)。これが大規模NN のメモリ消費の主因。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Gradient Checkpointing の効果は。</div>
         <div class="p-choices">① 計算高速化　 ② 中間活性化を一部だけ保存し逆伝播で再計算、メモリ O(L)→O(√L)　 ③ 精度向上　 ④ パラメータ削減</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> メモリと計算のトレードオフ（計算1.5倍）。LLM 学習で必須。PyTorch torch.utils.checkpoint で実装。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> メモリと計算のトレードオフ（計算1.5倍）。LLM 学習で必須。PyTorch torch.utils.checkpoint で実装。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">Mixed Precision Training（FP16/BF16）の主な利点は。</div>
         <div class="p-choices">① 精度向上　 ② GPU メモリ半減＆計算2〜3倍速、Tensor Coreを活用　 ③ パラメータ削減　 ④ ランダム性</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> FP16計算 + FP32重みコピー + Loss Scaling。BF16はダイナミックレンジが広く Loss Scaling 不要。LLM学習で標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> FP16計算 + FP32重みコピー + Loss Scaling。BF16はダイナミックレンジが広く Loss Scaling 不要。LLM学習で標準。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">Data Parallel の動作は。</div>
         <div class="p-choices">① 1GPUだけ使う　 ② 各GPUに同じモデルコピー、ミニバッチを分割、勾配をAllReduceで集約　 ③ モデルを分割　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 最も基本的な並列化。PyTorch DDP, Horovod。モデルがGPUに載るサイズなら最初の選択肢。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 最も基本的な並列化。PyTorch DDP, Horovod。モデルがGPUに載るサイズなら最初の選択肢。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">勾配チェック（Gradient Check）の用途は。</div>
         <div class="p-choices">① 学習加速　 ② 解析的に計算した勾配と数値微分を比較し、実装バグを検出　 ③ パラメータ削減　 ④ 必須学習</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> カスタム backward を書いたとき必須。差が 1e-7〜1e-5 オーダーなら正しい。学習中は遅いので無効化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> カスタム backward を書いたとき必須。差が 1e-7〜1e-5 オーダーなら正しい。学習中は遅いので無効化。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">PyTorch で勾配計算を有効化するには。</div>
         <div class="p-choices">① 自動で有効　 ② requires_grad=True で作成、または .requires_grad_() で設定　 ③ 不可能　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> requires_grad=True の Tensor は計算グラフに含まれ、.backward() で勾配が記録される。.grad 属性で取得。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> requires_grad=True の Tensor は計算グラフに含まれ、.backward() で勾配が記録される。.grad 属性で取得。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">ZeRO（DeepSpeed）が分散するのは。</div>
         <div class="p-choices">① モデルのみ　 ② オプティマイザ状態、勾配、パラメータを分散保持しメモリ削減　 ③ データのみ　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ZeRO-1：オプティマイザ状態、ZeRO-2：+勾配、ZeRO-3：+パラメータも分散。LLM学習で必須。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ZeRO-1：オプティマイザ状態、ZeRO-2：+勾配、ZeRO-3：+パラメータも分散。LLM学習で必須。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">Operator Fusion（Fused operations）の効果は。</div>
         <div class="p-choices">① 精度向上　 ② 連続した演算を1カーネルに融合、メモリ転送削減でGPU効率↑　 ③ パラメータ削減　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> FlashAttention の核心。HBM ↔ SRAM 転送を減らす。Triton, CUDA Graph で実装。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> FlashAttention の核心。HBM ↔ SRAM 転送を減らす。Triton, CUDA Graph で実装。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">『Stop Gradient』の用途は。</div>
         <div class="p-choices">① 学習停止　 ② 計算グラフの一部で勾配を遮断（GAN、対照学習、強化学習の Target Network 等で必須）　 ③ パラメータ削除　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> .detach() で実装。Target を更新せず参照だけしたいときに使う。BYOL、DQN、PPO で必須テクニック。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> .detach() で実装。Target を更新せず参照だけしたいときに使う。BYOL、DQN、PPO で必須テクニック。</div></details></div>
 
     </div>
 

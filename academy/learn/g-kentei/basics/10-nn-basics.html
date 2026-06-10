@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -373,141 +377,121 @@ Layer  1 (入力): ||grad|| = 0.0000412<br>
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">パーセプトロンが解けない代表的問題は。</div>
         <div class="p-choices">① AND　 ② OR　 ③ XOR　 ④ NOT</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> XORは線形分離不可能。Minsky 1969でこの限界が指摘され第一次AI冬の時代の一因に。MLPで解決。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> XORは線形分離不可能。Minsky 1969でこの限界が指摘され第一次AI冬の時代の一因に。MLPで解決。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">普遍近似定理（UAP）の主張は。</div>
         <div class="p-choices">① 1層では何もできない　 ② 1層の隠れ層でユニット数十分なら任意の連続関数を任意精度で近似可能　 ③ 必ず2層必要　 ④ ReLUのみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hornik 1989, Cybenko 1989。ただし実用では深層化の方が指数的に効率良い。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hornik 1989, Cybenko 1989。ただし実用では深層化の方が指数的に効率良い。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">ReLU の利点で正しいのは。</div>
         <div class="p-choices">① 計算が遅い　 ② 勾配消失を緩和、計算高速、スパース化　 ③ 出力が(0,1)　 ④ 必ず連続微分可能</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> max(0,x)。x&gt;0で勾配1、入力側まで勾配が伝わる。深層化を可能にした立役者。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> max(0,x)。x&gt;0で勾配1、入力側まで勾配が伝わる。深層化を可能にした立役者。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">Sigmoid 活性化関数の勾配消失の原因は。</div>
         <div class="p-choices">① 微分の最大値が0.25と小さく、深層では勾配が指数的に減衰　 ② 計算が複雑　 ③ 線形　 ④ 出力が-1から1</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> σ'(x) = σ(x)(1-σ(x))の最大が0.25。10層で 0.25¹⁰ ≈ 10⁻⁶。勾配が入力側でほぼ0に。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> σ'(x) = σ(x)(1-σ(x))の最大が0.25。10層で 0.25¹⁰ ≈ 10⁻⁶。勾配が入力側でほぼ0に。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">BERT/GPT で標準的に使われる活性化関数は。</div>
         <div class="p-choices">① Sigmoid　 ② Tanh　 ③ GELU（Gaussian Error Linear Unit）　 ④ Hardmax</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> GELU(x) = x·Φ(x)。ReLUより滑らか、Transformer系で標準。Swish/SiLU も類似形状。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> GELU(x) = x·Φ(x)。ReLUより滑らか、Transformer系で標準。Swish/SiLU も類似形状。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">Softmax 関数の役割は。</div>
         <div class="p-choices">① 二値分類　 ② 多クラスの確率分布出力（合計1、非負）　 ③ ノイズ追加　 ④ 正則化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 多クラス分類の出力層標準。CE損失と組み合わせると勾配が ŷ-y で簡潔。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 多クラス分類の出力層標準。CE損失と組み合わせると勾配が ŷ-y で簡潔。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">He初期化が想定する活性化関数は。</div>
         <div class="p-choices">① Sigmoid　 ② Tanh　 ③ ReLU 系　 ④ Softmax</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> He（Kaiming）初期化：W ~ N(0, 2/fan_in)。ReLU で半分が0になることを補正。Xavier/Glorot は Tanh/Sigmoid 用。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> He（Kaiming）初期化：W ~ N(0, 2/fan_in)。ReLU で半分が0になることを補正。Xavier/Glorot は Tanh/Sigmoid 用。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">NN の重みを全て 0 で初期化すると。</div>
         <div class="p-choices">① 学習加速　 ② 対称性により全ニューロンが同じ更新を受け、多様性が生まれず学習しない　 ③ 過学習　 ④ 高速</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 対称性破壊が必要で、ランダム初期化が必須。バイアスは0でもOK。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 対称性破壊が必要で、ランダム初期化が必須。バイアスは0でもOK。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">残差接続（Skip Connection、ResNet）の主な役割は。</div>
         <div class="p-choices">① パラメータ削減　 ② 勾配伝播の改善、超深層化を可能に　 ③ メモリ節約　 ④ 計算高速化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> y = F(x) + x で勾配がスキップ経路から直接伝わる。100層以上を可能にした。Transformerにも採用。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> y = F(x) + x で勾配がスキップ経路から直接伝わる。100層以上を可能にした。Transformerにも採用。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">ミニバッチ学習の利点として誤りはどれか。</div>
         <div class="p-choices">① 計算効率　 ② GPU並列化　 ③ ノイズが汎化に有利　 ④ 必ず大域最適に収束</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> SGD は確率的なので大域最適保証なし。実用では十分機能、むしろノイズが鞍点脱出に役立つ。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ④</span> SGD は確率的なので大域最適保証なし。実用では十分機能、むしろノイズが鞍点脱出に役立つ。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">Embedding 層の役割は。</div>
         <div class="p-choices">① 数値の正規化　 ② 離散カテゴリ（単語ID、ユーザID）を学習可能な連続ベクトルに変換　 ③ 損失計算　 ④ 出力層</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 単語ID → 128〜4096次元ベクトル。Word2Vec, BERT, GPT, 推薦システムで標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 単語ID → 128〜4096次元ベクトル。Word2Vec, BERT, GPT, 推薦システムで標準。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">多クラス分類で使う損失関数は。</div>
         <div class="p-choices">① MSE　 ② Hinge　 ③ Cross Entropy（Softmax + CE）　 ④ MAE</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> Softmax + CE が標準。多項分布の負の対数尤度と等価。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> Softmax + CE が標準。多項分布の負の対数尤度と等価。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Layer Normalization が Batch Normalization より好まれる場面は。</div>
         <div class="p-choices">① CNN　 ② バッチサイズが小さい、可変、または RNN/Transformer　 ③ 線形回帰　 ④ K-means</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> BN はバッチ依存、小バッチで不安定。LN は1サンプル内で正規化、Transformer ・LLM で標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> BN はバッチ依存、小バッチで不安定。LN は1サンプル内で正規化、Transformer ・LLM で標準。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">『深層化』が UAP の単層拡大より有利な理由は。</div>
         <div class="p-choices">① 単に流行　 ② 同精度を達成するパラメータ数が指数的に少なくて済む（階層的特徴学習）　 ③ 計算高速　 ④ ランダム性</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Telgarsky 2016 等の理論。階層的に低レベル→高レベル特徴を学習でき、効率と汎化が良い。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Telgarsky 2016 等の理論。階層的に低レベル→高レベル特徴を学習でき、効率と汎化が良い。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">Dying ReLU 問題への対処は。</div>
         <div class="p-choices">① Sigmoid に戻す　 ② Leaky ReLU, ELU, GELU 等、x&lt;0でも小さな勾配を持つ関数　 ③ 学習停止　 ④ 入力反転</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ReLU は x≤0 で勾配0、ニューロンが死んで復活しない。Leaky ReLU（α=0.01）, GELU で緩和。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ReLU は x≤0 で勾配0、ニューロンが死んで復活しない。Leaky ReLU（α=0.01）, GELU で緩和。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">バッチサイズを大きくすると一般に。</div>
         <div class="p-choices">① 必ず汎化が向上　 ② 並列効率↑だが、ノイズが減って汎化やや悪化（シャープミニマへ）　 ③ メモリ減　 ④ 学習率不要</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 大バッチは並列効率良いが、勾配ノイズ減でシャープなミニマに収束しやすく汎化が劣化する傾向。Linear Scaling Rule + Warmupで補正。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 大バッチは並列効率良いが、勾配ノイズ減でシャープなミニマに収束しやすく汎化が劣化する傾向。Linear Scaling Rule + Warmupで補正。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">Softmax+CE の logit に対する勾配は。</div>
         <div class="p-choices">① ŷ + y　 ② ŷ - y　 ③ -y　 ④ 1</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ŷ-y というシンプルな形。これがNN分類学習の計算効率の根拠。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ŷ-y というシンプルな形。これがNN分類学習の計算効率の根拠。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">NN の汎化が良い理由として有力な仮説は。</div>
         <div class="p-choices">① 神秘的　 ② SGDの暗黙的正則化、フラットなミニマの選好、データの多様体仮説　 ③ ランダム　 ④ パラメータ多いから良い</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 過パラメータ化されているのに汎化する『深層学習の謎』。SGDの確率性が良いミニマへ導く説明が有力。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 過パラメータ化されているのに汎化する『深層学習の謎』。SGDの確率性が良いミニマへ導く説明が有力。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">『計算グラフ』の概念は何のために使われるか。</div>
         <div class="p-choices">① 可視化のみ　 ② 自動微分の実装：演算をノードとして記録し、逆伝播で勾配を機械的に計算　 ③ メモリ節約　 ④ 学習率</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> PyTorch, TensorFlow の自動微分の根幹。連鎖律を計算グラフ上で機械的に適用。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> PyTorch, TensorFlow の自動微分の根幹。連鎖律を計算グラフ上で機械的に適用。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">バイアス項 b の役割は。</div>
         <div class="p-choices">① 不要　 ② 線形変換に平行移動を加え、原点を通らない決定境界を可能に　 ③ 正則化　 ④ 学習率</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> y = Wx + b の b。原点を通らない超平面を表現可能に。BNを使う層では省略することもある。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> y = Wx + b の b。原点を通らない超平面を表現可能に。BNを使う層では省略することもある。</div></details></div>
 
     </div>
 

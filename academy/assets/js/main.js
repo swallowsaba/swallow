@@ -68,9 +68,58 @@
         this.save();
       }
     },
-    addXP(amount, reason) {
-      this.data.stats.xp = (this.data.stats.xp || 0) + amount;
-      Toast.show({ title: `+${amount} XP`, sub: reason, type: 'xp' });
+    addXP(amount, reason, silent) {
+      const before = this.data.stats.xp || 0;
+      const beforeLevel = this.getLevel(before).level;
+      this.data.stats.xp = before + amount;
+      if (!this.data.stats.xpLog) this.data.stats.xpLog = [];
+      this.data.stats.xpLog.push({ t: Date.now(), a: amount });
+      const cutoff = Date.now() - 90 * 86400000;
+      this.data.stats.xpLog = this.data.stats.xpLog.filter(e => e.t >= cutoff);
+      if (!silent) Toast.show({ title: `+${amount} XP`, sub: reason, type: 'xp' });
+      const afterLevel = this.getLevel(this.data.stats.xp).level;
+      if (afterLevel > beforeLevel) {
+        const info = this.getLevel(this.data.stats.xp);
+        setTimeout(() => {
+          Toast.show({ title: `🎉 レベル ${afterLevel} に到達！`, sub: `称号「${info.title}」を獲得`, type: 'achievement', duration: 4500 });
+          Confetti.burst();
+        }, 600);
+      }
+      this.save();
+    },
+    LEVEL_TITLES: [
+      'AI見習い','データ初心者','機械学習ルーキー','ニューラル探究者','勾配ハンター',
+      'モデル職人','ディープラーナー','Transformer使い','LLMマイスター','AIアーキテクト',
+      'グランドマスター','AI賢者'
+    ],
+    getLevel(xp) {
+      xp = xp || 0;
+      let level = 1, need = 0;
+      while (true) {
+        const cost = Math.round(50 * Math.pow(level, 1.5));
+        if (xp < need + cost) {
+          const into = xp - need;
+          const title = this.LEVEL_TITLES[Math.min(level - 1, this.LEVEL_TITLES.length - 1)];
+          const nextTitle = this.LEVEL_TITLES[Math.min(level, this.LEVEL_TITLES.length - 1)];
+          return { level, title, nextTitle, into, need: cost, remain: cost - into, pct: Math.round(into / cost * 100), totalForNext: need + cost };
+        }
+        need += cost; level++;
+        if (level > 200) return { level, title: 'AI賢者', nextTitle: 'AI賢者', into: 0, need: 1, remain: 0, pct: 100, totalForNext: xp };
+      }
+    },
+    getXPInDays(days) {
+      const cutoff = Date.now() - days * 86400000;
+      return (this.data.stats.xpLog || []).filter(e => e.t >= cutoff).reduce((s, e) => s + e.a, 0);
+    },
+    getQuizStats() {
+      return this.data.stats.quiz || { played: 0, totalCorrect: 0, totalQuestions: 0, bestCombo: 0 };
+    },
+    recordQuiz(correct, total, bestCombo) {
+      const q = this.getQuizStats();
+      q.played += 1; q.totalCorrect += correct; q.totalQuestions += total;
+      q.bestCombo = Math.max(q.bestCombo || 0, bestCombo || 0);
+      this.data.stats.quiz = q;
+      this.save();
     },
     isCompleted(key) { return !!(this.data.progress[key] && this.data.progress[key].completed); },
     isVisited(key) { return !!this.data.progress[key]; },
@@ -168,10 +217,13 @@
     init() {
       const xp = Store.data.stats.xp || 0;
       const streak = Store.data.stats.streak || 0;
+      const lv = Store.getLevel(xp);
       const sv = document.getElementById('nav-streak-v');
       const xv = document.getElementById('nav-xp-v');
+      const lvEl = document.getElementById('nav-level-v');
       if (sv) sv.textContent = streak;
-      if (xv) xv.textContent = xp;
+      if (xv) xv.textContent = xp.toLocaleString();
+      if (lvEl) lvEl.textContent = lv.level;
     }
   };
 
@@ -464,5 +516,17 @@
     init();
   }
 
-  window.Swallow = { Store, ThemeManager, Toast, Search, ProgressRenderer, Confetti };
+
+  /* ---------- AI Settings (将来のAI問題生成用の土台) ---------- */
+  const AISettings = {
+    KEY: 'swallow-ai-config',
+    get() {
+      try { return JSON.parse(localStorage.getItem(this.KEY)) || { provider: 'gemini', key: '' }; }
+      catch (e) { return { provider: 'gemini', key: '' }; }
+    },
+    set(cfg) { try { localStorage.setItem(this.KEY, JSON.stringify(cfg)); } catch (e) {} },
+    hasKey() { return !!(this.get().key); }
+  };
+
+  window.Swallow = { Store, ThemeManager, Toast, Search, ProgressRenderer, Confetti, AISettings };
 })();

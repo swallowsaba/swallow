@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -364,141 +368,121 @@ t=  1:　 ||grad|| = 0.0042<br>
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">RNNが MLP より系列データに適する理由は。</div>
         <div class="p-choices">① 計算高速　 ② 隠れ状態 h で過去の文脈を保持、可変長系列を扱える　 ③ パラメータ多い　 ④ 教師なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> h_t = f(h_{t-1}, x_t) で過去情報を伝播、同じパラメータを全時刻で共有。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> h_t = f(h_{t-1}, x_t) で過去情報を伝播、同じパラメータを全時刻で共有。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">BPTT（Backprop Through Time）の問題は。</div>
         <div class="p-choices">① 不要　 ② 長系列で計算・メモリ増、勾配消失/爆発　 ③ 教師なし限定　 ④ 学習しない</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 系列長Tに比例して計算が増え、勾配が指数的に減衰または爆発。Truncated BPTT、Gradient Clipping、LSTM/GRU で対処。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 系列長Tに比例して計算が増え、勾配が指数的に減衰または爆発。Truncated BPTT、Gradient Clipping、LSTM/GRU で対処。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">勾配消失問題で『記憶できる時間』の典型は。</div>
         <div class="p-choices">① 1ステップ　 ② Vanilla RNNでは 10〜20ステップが限界　 ③ 無限　 ④ 100万ステップ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> tanh の勾配積が指数減衰。LSTM/GRU でこれを数百ステップまで拡大。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> tanh の勾配積が指数減衰。LSTM/GRU でこれを数百ステップまで拡大。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">LSTM のセル状態 c_t の特徴は。</div>
         <div class="p-choices">① 隠れ状態と同じ　 ② 加算更新で勾配が保存され、長期依存を学べる　 ③ 出力のみ　 ④ ノイズ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> c_t = f_t ⊙ c_{t-1} + i_t ⊙ c̃_t の加算ベース更新が勾配消失を緩和。これが LSTM の核心。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> c_t = f_t ⊙ c_{t-1} + i_t ⊙ c̃_t の加算ベース更新が勾配消失を緩和。これが LSTM の核心。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">LSTMの3つのゲートとして正しいのは。</div>
         <div class="p-choices">① 入力、Conv、Pool　 ② 忘却（forget）、入力（input）、出力（output）　 ③ 順、逆、双方向　 ④ 学習、推論、評価</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hochreiter & Schmidhuber 1997。Sigmoidゲートで情報の流れを制御。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hochreiter & Schmidhuber 1997。Sigmoidゲートで情報の流れを制御。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">GRU がLSTMより優れる点は。</div>
         <div class="p-choices">① 必ず高精度　 ② パラメータが少なく、計算高速、性能はほぼ同等　 ③ ゲートなし　 ④ 双方向のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Cho 2014。リセットゲートと更新ゲートだけで2ゲート構造。実装簡素、性能はLSTMと拮抗。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Cho 2014。リセットゲートと更新ゲートだけで2ゲート構造。実装簡素、性能はLSTMと拮抗。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">双方向RNN（Bi-LSTM）が使えない典型タスクは。</div>
         <div class="p-choices">① 文分類　 ② NER　 ③ 言語モデル（次トークン予測、未来情報禁止）　 ④ 感情分析</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 生成・予測タスクは未来情報を使えない（カンニングになる）。分類・タグ付けには Bi-LSTM が長く標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 生成・予測タスクは未来情報を使えない（カンニングになる）。分類・タグ付けには Bi-LSTM が長く標準。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">Seq2Seq モデルの構造は。</div>
         <div class="p-choices">① 1個のRNN　 ② エンコーダ（入力→ベクトル）+ デコーダ（ベクトル→出力）　 ③ CNN のみ　 ④ MLP のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Sutskever 2014。機械翻訳、要約、対話の基本枠組み。固定長ベクトルがボトルネック、Attentionで解消。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Sutskever 2014。機械翻訳、要約、対話の基本枠組み。固定長ベクトルがボトルネック、Attentionで解消。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">Attention（Bahdanau 2015）が解決した Seq2Seq の課題は。</div>
         <div class="p-choices">① 学習速度　 ② 固定長ベクトルのボトルネック、長文で性能劣化　 ③ メモリ消費　 ④ 過学習</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> エンコーダ全時刻の隠れ状態にデコーダが重み付き参照。長文翻訳の品質が劇的改善。Transformer の母。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> エンコーダ全時刻の隠れ状態にデコーダが重み付き参照。長文翻訳の品質が劇的改善。Transformer の母。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">Beam Search の役割は。</div>
         <div class="p-choices">① 学習加速　 ② 系列生成で上位 k 候補を保持して探索、Greedy より高品質　 ③ 正則化　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 翻訳・要約で標準。beam size 4〜8 で BLEU 2〜3 ポイント改善。LLM 生成では nucleus sampling 等の方が人気。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 翻訳・要約で標準。beam size 4〜8 で BLEU 2〜3 ポイント改善。LLM 生成では nucleus sampling 等の方が人気。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">Truncated BPTT の目的は。</div>
         <div class="p-choices">① 精度向上　 ② 長系列で計算・メモリを節約、一定ステップで切って勾配計算　 ③ 学習なし　 ④ 過学習防止</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 全系列のBPTTは不可能なので、典型 35〜200 ステップで切る。長期依存は LSTM/GRU の力で。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 全系列のBPTTは不可能なので、典型 35〜200 ステップで切る。長期依存は LSTM/GRU の力で。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">勾配爆発の対処として有効なのは。</div>
         <div class="p-choices">① 学習率を上げる　 ② Gradient Clipping（勾配ノルムを閾値で制限）　 ③ パラメータ削除　 ④ Sigmoid を使う</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> torch.nn.utils.clip_grad_norm_ で実装。閾値1.0〜5.0が典型。Transformer 学習でも常用。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> torch.nn.utils.clip_grad_norm_ で実装。閾値1.0〜5.0が典型。Transformer 学習でも常用。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">音声認識で 2020〜2026 の標準は。</div>
         <div class="p-choices">① 古典GMM-HMM　 ② Whisper、Conformer など Transformer 系　 ③ Bi-LSTM のみ　 ④ K-means</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Whisper（OpenAI 2022）が多言語SOTA。Conformer（Google）はTransformer+Convの組合せでオンライン認識に強い。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Whisper（OpenAI 2022）が多言語SOTA。Conformer（Google）はTransformer+Convの組合せでオンライン認識に強い。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">時系列予測で Transformer 系の代表例は。</div>
         <div class="p-choices">① ResNet　 ② Informer、PatchTST、Temporal Fusion Transformer　 ③ K-NN　 ④ ARIMA</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 長系列・多変量を効率良く扱える。最近の研究では『単純MLPでもTransformerと同等』との指摘も（DLinear等）。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 長系列・多変量を効率良く扱える。最近の研究では『単純MLPでもTransformerと同等』との指摘も（DLinear等）。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">2023 年以降、『RNN の系譜』を継ぐ新世代モデルは。</div>
         <div class="p-choices">① CNN　 ② Mamba（SSM）、RWKV、Linear Attention　 ③ MLP のみ　 ④ K-NN</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Selective SSM (Mamba 2023) が Transformer に対抗、線形メモリ・長文脈で優位。RWKV は RNN ライクな並列学習。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Selective SSM (Mamba 2023) が Transformer に対抗、線形メモリ・長文脈で優位。RWKV は RNN ライクな並列学習。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">『Teacher Forcing』の意味は。</div>
         <div class="p-choices">① 強制学習　 ② Seq2Seq学習時に、デコーダへの入力に過去のモデル出力ではなく『正解』を与える手法　 ③ 教師なし　 ④ クラスタ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 訓練効率を上げるが、推論時の自己回帰生成と乖離する『Exposure Bias』問題も。Scheduled Sampling が緩和策。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 訓練効率を上げるが、推論時の自己回帰生成と乖離する『Exposure Bias』問題も。Scheduled Sampling が緩和策。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">BiLSTM-CRF が長く標準だったタスクは。</div>
         <div class="p-choices">① 画像分類　 ② NER（固有表現抽出）、品詞タグ付けなどの系列ラベリング　 ③ 強化学習　 ④ K-means</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> BiLSTM が文脈、CRF がラベル間依存関係を学習。BERT 登場（2018）まで最強。今もリソース制約環境で実用。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> BiLSTM が文脈、CRF がラベル間依存関係を学習。BERT 登場（2018）まで最強。今もリソース制約環境で実用。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">機械翻訳の評価指標として標準的なのは。</div>
         <div class="p-choices">① Accuracy　 ② BLEU、METEOR、chrF、最近は COMET、BERTScore　 ③ MSE　 ④ R²</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> BLEU が古典標準、ただし表面文字列マッチで限界あり。LLM 時代は BERTScore、COMET 等の埋め込みベース指標が好まれる。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> BLEU が古典標準、ただし表面文字列マッチで限界あり。LLM 時代は BERTScore、COMET 等の埋め込みベース指標が好まれる。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">2014〜2017 の機械翻訳の主流は。</div>
         <div class="p-choices">① ルールベース　 ② RNN+Attentionのニューラル機械翻訳（NMT）、Google翻訳が全面採用（2016）　 ③ Transformer　 ④ LLM</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2017 年に Transformer 登場し急速に置換。現在は LLM が機械翻訳でも事実上の SOTA。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2017 年に Transformer 登場し急速に置換。現在は LLM が機械翻訳でも事実上の SOTA。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">CTC（Connectionist Temporal Classification）の用途は。</div>
         <div class="p-choices">① 画像分類　 ② 音声認識・手書き認識など、入力と出力の長さが異なる・整列がないタスクの損失関数　 ③ 強化学習　 ④ クラスタ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Graves 2006。アラインメントを暗黙にマージしながら学習。RNN+CTC（DeepSpeech）が音声認識の標準だった。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Graves 2006。アラインメントを暗黙にマージしながら学習。RNN+CTC（DeepSpeech）が音声認識の標準だった。</div></details></div>
 
     </div>
 

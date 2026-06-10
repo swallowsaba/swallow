@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -428,141 +432,121 @@ Conv5_3 (深層): 196x196　 ← 入力224x224の大半をカバー<br>
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">CNN が MLP より画像処理に適している理由は。</div>
         <div class="p-choices">① 計算が遅い　 ② 空間的局所性と平行移動不変性の帰納バイアス、パラメータ共有でパラメータ削減　 ③ 学習が不安定　 ④ メモリを大量に必要とする</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CNN は同じフィルタを全位置で適用（パラメータ共有）し、近い画素関係を仮定。MLPの全結合に比べパラメータが2〜3桁少なく、性能も高い。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CNN は同じフィルタを全位置で適用（パラメータ共有）し、近い画素関係を仮定。MLPの全結合に比べパラメータが2〜3桁少なく、性能も高い。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">2012年の AlexNet が ImageNet コンペで起こした革命の核心は。</div>
         <div class="p-choices">① 浅い NN を使った　 ② 深層CNN + ReLU + Dropout + GPU + データ拡張で従来手法を圧倒　 ③ 教師なし学習　 ④ 強化学習</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Krizhevsky 2012。誤り率 15.3% vs 2位 26.2%。深層学習革命の起点となった。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Krizhevsky 2012。誤り率 15.3% vs 2位 26.2%。深層学習革命の起点となった。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">入力 32x32、3x3 Conv、stride=1、padding=1 のとき出力サイズは。</div>
         <div class="p-choices">① 30x30　 ② 32x32（same パディング）　 ③ 16x16　 ④ 34x34</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> (32 + 2·1 - 3) / 1 + 1 = 32。padding='same' で入力と同じサイズを維持。VGG以降で標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> (32 + 2·1 - 3) / 1 + 1 = 32。padding='same' で入力と同じサイズを維持。VGG以降で標準。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">Max Pooling の役割として正しいのは。</div>
         <div class="p-choices">① 学習可能パラメータ追加　 ② 領域内最大値を取り、空間ダウンサンプリング・平行移動不変性強化　 ③ 正則化のみ　 ④ 出力層</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> パラメータなし、空間次元削減、強い活性化を保持。Average Pooling より一般的。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> パラメータなし、空間次元削減、強い活性化を保持。Average Pooling より一般的。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">ResNet（2015）が解決した深層化の壁は。</div>
         <div class="p-choices">① 計算量　 ② 勾配消失と退化問題：残差接続 y=F(x)+x で 152層を学習可能に　 ③ メモリのみ　 ④ ラベル不足</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> He 2015。スキップ接続で勾配が直接伝播。ImageNet 誤り率 3.57%、人間（5.1%）超え。現代CNN/Transformerの標準構造。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> He 2015。スキップ接続で勾配が直接伝播。ImageNet 誤り率 3.57%、人間（5.1%）超え。現代CNN/Transformerの標準構造。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">VGG の特徴的な設計は。</div>
         <div class="p-choices">① 1x1 Conv のみ　 ② 3x3 Conv のみを多層積み重ね（16〜19層）　 ③ ランダム　 ④ 全結合のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Simonyan 2014。シンプルで強力。3x3 を 2層で 5x5 相当の受容野をパラメータ少なく実現する発見。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Simonyan 2014。シンプルで強力。3x3 を 2層で 5x5 相当の受容野をパラメータ少なく実現する発見。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">『受容野（Receptive Field）』とは。</div>
         <div class="p-choices">① 出力ピクセルが影響を受ける入力上の領域　 ② パラメータ数　 ③ バッチサイズ　 ④ 学習率</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 深い層ほど受容野が広い。3x3 conv を 2層重ねると 5x5 受容野。Dilated Conv で更に拡大可能。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 深い層ほど受容野が広い。3x3 conv を 2層重ねると 5x5 受容野。Dilated Conv で更に拡大可能。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">EfficientNet (2019) の貢献は。</div>
         <div class="p-choices">① ランダム探索　 ② 深さ・幅・解像度を複合スケーリングで最適化、同精度で大幅パラメータ削減　 ③ 教師なし　 ④ ViT 提案</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Tan & Le 2019。compound scaling で計算予算に対する精度効率を最大化。モバイル向けにも適用。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Tan & Le 2019。compound scaling で計算予算に対する精度効率を最大化。モバイル向けにも適用。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">Vision Transformer (ViT) の入力処理は。</div>
         <div class="p-choices">① 画素単位　 ② 画像を 16x16 などのパッチに分けてトークン化し Transformer に入力　 ③ Conv のみ　 ④ MLP のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dosovitskiy 2020。CNN の帰納バイアスなしで、大量データ（JFT-300M）で CNN を超えた。CLIP、Stable Diffusion で標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dosovitskiy 2020。CNN の帰納バイアスなしで、大量データ（JFT-300M）で CNN を超えた。CLIP、Stable Diffusion で標準。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">YOLO シリーズの特徴は。</div>
         <div class="p-choices">① 2-stage　 ② 1-stage：画像をグリッド分割し各セルで物体予測、リアルタイム　 ③ 教師なし　 ④ セグメンテーション特化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Redmon 2016 で導入、YOLOv8/v10 まで進化。FPS が高く、産業応用で広く使われる。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Redmon 2016 で導入、YOLOv8/v10 まで進化。FPS が高く、産業応用で広く使われる。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">U-Net (2015) が広く使われる分野は。</div>
         <div class="p-choices">① 物体検出　 ② 医療画像セグメンテーション、エンコーダ-デコーダ＋スキップ接続　 ③ 言語モデル　 ④ 強化学習</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ronneberger 2015。U字型構造で詳細を保持。Diffusion モデル（DDPM、Stable Diffusion）の denoiser にも採用。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ronneberger 2015。U字型構造で詳細を保持。Diffusion モデル（DDPM、Stable Diffusion）の denoiser にも採用。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">転移学習（ImageNet → 別タスク）が機能する理由は。</div>
         <div class="p-choices">① 偶然　 ② 浅層が汎用的特徴（エッジ、テクスチャ）を学習、それは多くのタスクで再利用可能　 ③ ランダム　 ④ パラメータ多いから</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 階層的特徴学習。少量データのタスクで事前学習モデルをファインチューニングすると、ゼロから学習より大幅に高精度。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 階層的特徴学習。少量データのタスクで事前学習モデルをファインチューニングすると、ゼロから学習より大幅に高精度。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Global Average Pooling (GAP) の役割は。</div>
         <div class="p-choices">① 学習する　 ② 各チャネルの空間平均でベクトル化、最終FC層代替、パラメータ削減　 ③ ノイズ追加　 ④ 正則化のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> NIN/ResNet以降で標準。Flatten + 巨大 FC をGAPで置換、過学習防止＋パラメータ削減。Class Activation Map の基礎にも。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> NIN/ResNet以降で標準。Flatten + 巨大 FC をGAPで置換、過学習防止＋パラメータ削減。Class Activation Map の基礎にも。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">Grad-CAM の目的は。</div>
         <div class="p-choices">① 学習加速　 ② 予測根拠の可視化（どの画像領域がクラス予測に貢献したか）　 ③ 圧縮　 ④ ノイズ除去</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Selvaraju 2017。最終 Conv 層の勾配を使ってヒートマップを生成。XAI（説明可能AI）の標準ツール、医療画像で重要。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Selvaraju 2017。最終 Conv 層の勾配を使ってヒートマップを生成。XAI（説明可能AI）の標準ツール、医療画像で重要。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">1x1 Convolution（pointwise）の役割は。</div>
         <div class="p-choices">① 役立たず　 ② チャネル間の線形結合、次元削減・拡張、Inception/ResNet で頻用　 ③ プーリング代替　 ④ 正則化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 空間方向は1x1で変えず、チャネル方向のみ変換。Bottleneck構造で計算量削減。MobileNet（Depthwise Separable Conv）でも核心。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 空間方向は1x1で変えず、チャネル方向のみ変換。Bottleneck構造で計算量削減。MobileNet（Depthwise Separable Conv）でも核心。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">Segment Anything Model (SAM, 2023) の特徴は。</div>
         <div class="p-choices">① 単一タスク　 ② プロンプト型セグメンテーション、未知物体も可、Foundation Modelとして広く転用可　 ③ 教師なしのみ　 ④ 軽量モデル</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Meta AI 2023。点・ボックス・テキストプロンプトで任意の物体をセグメント。10億+のマスクで事前学習。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Meta AI 2023。点・ボックス・テキストプロンプトで任意の物体をセグメント。10億+のマスクで事前学習。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">DenseNet (2017) の特徴は。</div>
         <div class="p-choices">① 全層をスキップ接続でなく完全に連結（dense connection）、特徴再利用と勾配伝播改善　 ② パラメータ激増　 ③ 浅い NN　 ④ 物体検出専用</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Huang 2017。各層が前のすべての層の出力を入力に。パラメータ効率と精度が高い。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Huang 2017。各層が前のすべての層の出力を入力に。パラメータ効率と精度が高い。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">物体検出の評価指標として標準的なのは。</div>
         <div class="p-choices">① Accuracy　 ② mAP（mean Average Precision）@IoU 0.5、0.5:0.95　 ③ MSE　 ④ R²</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> COCO標準。クラスごとの AP の平均、IoU 閾値で性能評価。YOLO, Faster R-CNN等の比較で使用。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> COCO標準。クラスごとの AP の平均、IoU 閾値で性能評価。YOLO, Faster R-CNN等の比較で使用。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">ConvNeXt (2022) の主張は。</div>
         <div class="p-choices">① ViTが万能　 ② CNNにViTの工夫（GELU、LN、大きなカーネル等）を取り入れれば、CNNがViTと同等以上の精度に　 ③ Conv 不要　 ④ 教師なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Liu 2022。ViT の優位性はアーキテクチャ自体ではなく、学習レシピと工夫にあると示唆。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Liu 2022。ViT の優位性はアーキテクチャ自体ではなく、学習レシピと工夫にあると示唆。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">Dilated（Atrous）Convolution の効果は。</div>
         <div class="p-choices">① パラメータ増加　 ② カーネル内のサンプル間隔を空けて受容野を拡大、パラメータ・計算量は同じ　 ③ ノイズ追加　 ④ 教師なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> DeepLab系で活用。セグメンテーションで詳細を保ちつつ広い文脈を捉える。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> DeepLab系で活用。セグメンテーションで詳細を保ちつつ広い文脈を捉える。</div></details></div>
 
     </div>
 

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>問題演習 — Swallow AI Academy</title>
-<meta name="description" content="G検定形式の演習問題 474問。即時採点・解説・章リンク。">
+<title>クイズチャレンジ — Swallow AI Academy</title>
+<meta name="description" content="G検定474問。コンボ・タイマー・模擬試験でゲーム感覚の学習。">
 <link rel="stylesheet" href="assets/css/main.css">
 <meta name="theme-color" content="#4263eb">
 </head>
@@ -14,13 +14,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="index.html">ホーム</a>
+    <a href="index.html">ダッシュボード</a>
     <a href="certifications/g-kentei.html">G検定</a>
     <a href="learn/g-kentei/handson.html">ハンズオン</a>
     <a href="learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -44,12 +48,22 @@
 <div class="wrap wrap--wide">
   <div id="quiz-selector">
     <div class="head">
-      <div class="eyebrow"><span class="dot"></span>Quiz</div>
-      <h1>問題演習</h1>
-      <p class="desc">G検定形式の <strong>474問</strong> のオリジナル演習。各問は解説付き、関連章への直接リンクで深掘りできます。<strong>1セッション10問</strong>をランダム出題します。</p>
+      <div class="eyebrow"><span class="dot"></span>クイズチャレンジ</div>
+      <h1>問題演習で実力を試す</h1>
+      <p class="desc">G検定形式の <strong>474問</strong>。モードを選んで、コンボとXPを稼ごう。各問は解説付きで復習もできます。</p>
     </div>
+
     <div class="sec">
-      <div class="sec-head"><h2>主要トピック</h2></div>
+      <div class="sec-head"><h2>モードを選ぶ</h2></div>
+      <div class="grid grid--cards">
+        <div class="mode-card" data-mode="combo"><div class="mode-card__icon">⚡</div><div class="mode-card__name">5問連続</div><div class="mode-card__desc">5問連続出題。コンボを繋げてボーナスXP。</div><div class="mode-card__tag">コンボ重視</div></div>
+        <div class="mode-card" data-mode="speed"><div class="mode-card__icon">⏱️</div><div class="mode-card__name">スピードラン</div><div class="mode-card__desc">10問を1問30秒で。瞬発力を鍛える。</div><div class="mode-card__tag">1問30秒</div></div>
+        <div class="mode-card" data-mode="exam"><div class="mode-card__icon">📝</div><div class="mode-card__name">模擬試験</div><div class="mode-card__desc">20問・本番形式。じっくり実力測定。</div><div class="mode-card__tag">本番形式</div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head"><h2>範囲を選ぶ</h2><span class="meta">選択中: <span id="scope-label">G検定 全範囲</span></span></div>
       <div class="quiz-topics" id="main-topics"></div>
     </div>
     <div class="sec">
@@ -57,6 +71,7 @@
       <div class="quiz-topics" id="chapter-topics"></div>
     </div>
   </div>
+
   <div id="quiz-runner" class="quiz-runner" style="display:none;"></div>
 </div>
 <script src="assets/data/quiz.js" defer></script>
@@ -65,46 +80,117 @@
 document.addEventListener('DOMContentLoaded',function(){
   var $sel=document.getElementById('quiz-selector'),$run=document.getElementById('quiz-runner');
   var $main=document.getElementById('main-topics'),$chap=document.getElementById('chapter-topics');
-  var state=null,L=['A','B','C','D','E'];
+  var L=['A','B','C','D','E'];
+  var MODES={combo:{n:5,name:'5問連続',icon:'⚡',timer:0},speed:{n:10,name:'スピードラン',icon:'⏱️',timer:30},exam:{n:20,name:'模擬試験',icon:'📝',timer:0}};
+  var curMode='combo', curScope=null, state=null, timerId=null;
+
+  // URLパラメータでモード初期選択
+  var qm=new URLSearchParams(location.search).get('mode');
+  if(qm&&MODES[qm])curMode=qm;
+
   function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
   function findTopic(id){if(!window.QUIZ_DATA)return null;return QUIZ_DATA.topics.concat(QUIZ_DATA.chapters).find(function(t){return t.id===id;});}
+
+  function markMode(){document.querySelectorAll('.mode-card[data-mode]').forEach(function(c){c.style.borderColor=(c.getAttribute('data-mode')===curMode)?'var(--accent)':'';c.style.boxShadow=(c.getAttribute('data-mode')===curMode)?'0 0 0 2px var(--accent-soft)':'';});}
+
   function renderTopics(){
     if(!window.QUIZ_DATA){$main.innerHTML='<div class="search-empty">読み込み中…</div>';setTimeout(renderTopics,100);return;}
     $main.innerHTML=QUIZ_DATA.topics.map(function(t){return '<div class="quiz-topic-card" data-id="'+t.id+'"><div class="quiz-topic-card__count">'+t.count+' 問</div><div class="quiz-topic-card__title">'+t.label+'</div><div class="quiz-topic-card__desc">'+t.desc+'</div></div>';}).join('');
     $chap.innerHTML=QUIZ_DATA.chapters.map(function(t){return '<div class="quiz-topic-card" data-id="'+t.id+'"><div class="quiz-topic-card__count">'+t.count+' 問</div><div class="quiz-topic-card__title">'+t.label+'</div></div>';}).join('');
     document.querySelectorAll('.quiz-topic-card').forEach(function(c){c.addEventListener('click',function(){startQuiz(c.getAttribute('data-id'));});});
+    markMode();
   }
-  function startQuiz(id){var t=findTopic(id);if(!t||!t.problems.length)return;var n=Math.min(10,t.problems.length);state={topic:t,questions:shuffle(t.problems).slice(0,n),idx:0,correct:0,answered:false};$sel.style.display='none';$run.style.display='block';window.scrollTo(0,0);renderQuestion();}
+
+  document.querySelectorAll('.mode-card[data-mode]').forEach(function(c){
+    c.addEventListener('click',function(){curMode=c.getAttribute('data-mode');markMode();});
+  });
+
+  function startQuiz(id){
+    var t=findTopic(id); if(!t||!t.problems.length)return;
+    var m=MODES[curMode], n=Math.min(m.n,t.problems.length);
+    state={topic:t,mode:curMode,questions:shuffle(t.problems).slice(0,n),idx:0,correct:0,combo:0,bestCombo:0,answered:false,startAt:Date.now(),xpEarned:0};
+    $sel.style.display='none';$run.style.display='block';window.scrollTo(0,0);
+    renderQuestion();
+  }
+
+  function clearTimer(){if(timerId){clearInterval(timerId);timerId=null;}}
+
   function renderQuestion(){
-    var p=state.questions[state.idx],pct=state.idx/state.questions.length*100;
+    clearTimer();
+    var p=state.questions[state.idx], m=MODES[state.mode], pct=state.idx/state.questions.length*100;
     var ch=p.choices.map(function(c,i){return '<button class="quiz-choice" data-i="'+i+'"><span class="quiz-choice__letter">'+L[i]+'</span><span>'+c+'</span></button>';}).join('');
-    $run.innerHTML='<div class="quiz-progress-info"><span>'+state.topic.label+'</span><span>'+(state.idx+1)+' / '+state.questions.length+'</span></div>'+
+    var hud='<div class="quiz-hud"><span class="quiz-mode-badge">'+m.icon+' '+m.name+'</span>';
+    if(state.mode==='combo'||state.mode==='speed'){hud+='<span class="quiz-hud__item combo" id="hud-combo">🔥 '+state.combo+' コンボ</span>';}
+    if(m.timer>0){hud+='<span class="quiz-hud__item timer" id="hud-timer">⏰ '+m.timer+'s</span>';}
+    hud+='</div>';
+    $run.innerHTML=hud+
+      '<div class="quiz-progress-info"><span>'+state.topic.label+'</span><span>'+(state.idx+1)+' / '+state.questions.length+'</span></div>'+
       '<div class="quiz-topbar"><div class="bar"><div class="bar-fill" style="width:'+pct+'%"></div></div></div>'+
       '<div class="quiz-card-active"><div class="quiz-q-num">'+p.section+'</div><div class="quiz-q-text">'+p.q+'</div><div>'+ch+'</div><div id="ex"></div></div>'+
       '<div class="quiz-actions"><button class="btn btn--ghost btn--sm" id="quit">中断して戻る</button><div id="nx"></div></div>';
     state.answered=false;
     document.querySelectorAll('.quiz-choice').forEach(function(b){b.addEventListener('click',function(){answer(parseInt(b.getAttribute('data-i')));});});
     document.getElementById('quit').addEventListener('click',exitQuiz);
+    // タイマー
+    if(m.timer>0){
+      var remain=m.timer, tEl=document.getElementById('hud-timer');
+      timerId=setInterval(function(){
+        remain--;
+        if(tEl){tEl.textContent='⏰ '+remain+'s';if(remain<=10)tEl.classList.add('warn');}
+        if(remain<=0){clearTimer();if(!state.answered)answer(-1);}
+      },1000);
+    }
   }
+
   function answer(i){
-    if(state.answered)return;state.answered=true;
-    var p=state.questions[state.idx],ok=(i===p.answer);if(ok)state.correct++;
+    if(state.answered)return; state.answered=true; clearTimer();
+    var p=state.questions[state.idx], ok=(i===p.answer);
+    var gained=0;
+    if(ok){
+      state.correct++; state.combo++; state.bestCombo=Math.max(state.bestCombo,state.combo);
+      gained=10+Math.max(0,(state.combo-1)*2); // コンボボーナス
+      state.xpEarned+=gained;
+    } else { state.combo=0; }
     document.querySelectorAll('.quiz-choice').forEach(function(b,j){b.disabled=true;if(j===p.answer)b.classList.add('is-correct');else if(j===i)b.classList.add('is-incorrect');});
-    var link=p.chapter_url?'<a class="quiz-explain__link" href="'+p.chapter_url+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>この問題を章で確認する</a>':'';
-    document.getElementById('ex').innerHTML='<div class="quiz-explain"><div class="quiz-explain__status '+(ok?'ok':'ng')+'"><span class="quiz-explain__status-icon">'+(ok?'✓':'✕')+'</span>'+(ok?'正解':'不正解')+'</div><div class="quiz-explain__body"><div class="quiz-explain__answer">正解 — <strong>'+L[p.answer]+'. '+p.choices[p.answer]+'</strong></div><div class="quiz-explain__label">解説</div><div class="quiz-explain__text">'+p.explanation+'</div>'+link+'</div></div>';
+    var hc=document.getElementById('hud-combo'); if(hc){hc.textContent='🔥 '+state.combo+' コンボ';if(state.combo>=2){hc.classList.add('hot');setTimeout(function(){hc.classList.remove('hot');},400);}}
+    var link=p.chapter_url?'<a class="quiz-explain__link" href="'+p.chapter_url+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>この単元の解説を読む</a>':'';
+    var bonus=ok&&gained>10?'<div class="combo-bonus">⚡ コンボボーナス +'+(gained-10)+' XP</div>':'';
+    document.getElementById('ex').innerHTML='<div class="quiz-explain"><div class="quiz-explain__status '+(ok?'ok':'ng')+'"><span class="quiz-explain__status-icon">'+(ok?'✓':'✕')+'</span>'+(ok?'正解 +'+gained+' XP':(i===-1?'時間切れ':'不正解'))+bonus+'</div><div class="quiz-explain__body"><div class="quiz-explain__answer">正解 — <strong>'+L[p.answer]+'. '+p.choices[p.answer]+'</strong></div><div class="quiz-explain__label">解説</div><div class="quiz-explain__text">'+p.explanation+'</div>'+link+'</div></div>';
     document.getElementById('nx').innerHTML='<button class="btn btn--primary" id="next">'+(state.idx+1>=state.questions.length?'結果を見る':'次の問題')+'</button>';
     document.getElementById('next').addEventListener('click',next);
     setTimeout(function(){document.getElementById('ex').scrollIntoView({behavior:'smooth',block:'nearest'});},80);
   }
+
   function next(){state.idx++;if(state.idx>=state.questions.length)showResult();else{renderQuestion();window.scrollTo({top:0,behavior:'smooth'});}}
+
   function showResult(){
+    clearTimer();
     var pct=Math.round(state.correct/state.questions.length*100);
-    $run.innerHTML='<div class="quiz-result"><div class="quiz-result__pct">'+pct+'%</div><div class="quiz-result__detail">'+state.correct+' / '+state.questions.length+' 問 正解</div><div class="quiz-result__topic">'+state.topic.label+'</div><div class="quiz-result__actions"><button class="btn btn--primary" id="retry">もう一度</button><button class="btn btn--ghost" id="back">トピック一覧へ</button></div></div>';
+    var secs=Math.round((Date.now()-state.startAt)/1000);
+    var mm=Math.floor(secs/60), ss=secs%60, timeStr=mm+':'+(ss<10?'0':'')+ss;
+    $run.innerHTML='<div class="quiz-result">'+
+      '<div style="font-size:42px;margin-bottom:8px">'+(pct>=80?'🎉':pct>=50?'👍':'💪')+'</div>'+
+      '<div class="quiz-result__pct">'+pct+'%</div>'+
+      '<div class="quiz-result__detail">'+state.correct+' / '+state.questions.length+' 問 正解</div>'+
+      '<div class="quiz-result__topic">'+MODES[state.mode].icon+' '+MODES[state.mode].name+' · '+state.topic.label+'</div>'+
+      '<div class="result-stats">'+
+        '<div class="result-stat"><div class="result-stat__val">+'+state.xpEarned+'</div><div class="result-stat__label">獲得XP</div></div>'+
+        '<div class="result-stat"><div class="result-stat__val">🔥'+state.bestCombo+'</div><div class="result-stat__label">最大コンボ</div></div>'+
+        '<div class="result-stat"><div class="result-stat__val">'+pct+'%</div><div class="result-stat__label">正答率</div></div>'+
+        '<div class="result-stat"><div class="result-stat__val">'+timeStr+'</div><div class="result-stat__label">所要時間</div></div>'+
+      '</div>'+
+      '<div class="quiz-result__actions"><button class="btn btn--primary" id="retry">もう一度</button><button class="btn btn--ghost" id="back">モード選択へ</button></div>'+
+      '</div>';
     document.getElementById('retry').addEventListener('click',function(){startQuiz(state.topic.id);});
     document.getElementById('back').addEventListener('click',exitQuiz);
-    if(window.Swallow&&Swallow.Store)Swallow.Store.addXP(pct,'クイズ完了 ('+pct+'%)');
+    if(window.Swallow&&Swallow.Store){
+      Swallow.Store.addXP(state.xpEarned,MODES[state.mode].name+' 完了');
+      Swallow.Store.recordQuiz(state.correct,state.questions.length,state.bestCombo);
+    }
+    if(pct>=80&&window.Swallow&&Swallow.Confetti)Swallow.Confetti.burst();
   }
-  function exitQuiz(){$run.style.display='none';$sel.style.display='block';window.scrollTo({top:0,behavior:'smooth'});}
+
+  function exitQuiz(){clearTimer();$run.style.display='none';$sel.style.display='block';window.scrollTo({top:0,behavior:'smooth'});}
   renderTopics();
 });
 </script>

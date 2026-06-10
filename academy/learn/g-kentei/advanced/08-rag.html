@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -434,141 +438,121 @@ Chunk 2000 tokens: Recall@5 = 0.75<br>
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">RAG が解決する LLM の主な弱点は。</div>
         <div class="p-choices">① 計算速度　 ② 知識カットオフ、幻覚、私的データ非対応　 ③ パラメータ数　 ④ メモリ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LLM の学習データ以降の知識・自社データ・幻覚（誤情報生成）を、関連文書検索で補完。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LLM の学習データ以降の知識・自社データ・幻覚（誤情報生成）を、関連文書検索で補完。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">RAG パイプラインの基本構成は。</div>
         <div class="p-choices">① クラスタ→分類　 ② Embed → Vector DB 検索 → 文脈付き LLM プロンプト → 回答　 ③ Fine-tune のみ　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Lewis 2020。質問を埋め込み、Vector DB から類似文書取得、LLM に文書+質問を渡して回答生成。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Lewis 2020。質問を埋め込み、Vector DB から類似文書取得、LLM に文書+質問を渡して回答生成。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">Embedding モデルの代表として誤りはどれか。</div>
         <div class="p-choices">① text-embedding-3-large (OpenAI)　 ② BGE-large (BAAI)　 ③ Cohere Embed v3　 ④ XGBoost</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> XGBoost は勾配ブースティング、テキスト埋め込み用ではない。MTEB ベンチマークで競合中。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ④</span> XGBoost は勾配ブースティング、テキスト埋め込み用ではない。MTEB ベンチマークで競合中。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">Vector Database で標準的な高速検索アルゴリズムは。</div>
         <div class="p-choices">① ブルートフォース　 ② HNSW（Hierarchical Navigable Small World）、IVF-PQ　 ③ K-means　 ④ Decision Tree</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ANN（Approximate Nearest Neighbor）の代表。HNSW は graph-based で精度・速度両立。FAISS, Pinecone, Qdrant, Weaviate で実装。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ANN（Approximate Nearest Neighbor）の代表。HNSW は graph-based で精度・速度両立。FAISS, Pinecone, Qdrant, Weaviate で実装。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">Chunking で典型的なオーバーラップ率は。</div>
         <div class="p-choices">① 0%　 ② 10〜20%（境界問題緩和）　 ③ 50%以上　 ④ 100%</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> オーバーラップで文脈の境界での情報損失を緩和。chunk_size=500 なら overlap=50〜100 が典型。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> オーバーラップで文脈の境界での情報損失を緩和。chunk_size=500 なら overlap=50〜100 が典型。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">Reranking の目的は。</div>
         <div class="p-choices">① 計算高速化　 ② Embedding 検索で得た上位文書を Cross-Encoder で再評価し精度向上　 ③ 学習　 ④ 正則化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2段階パイプライン：Embedding で top-50 → Rerank で top-5。Cohere Rerank, BGE Reranker が代表。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2段階パイプライン：Embedding で top-50 → Rerank で top-5。Cohere Rerank, BGE Reranker が代表。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">Hybrid Search の典型構成は。</div>
         <div class="p-choices">① Dense のみ　 ② Embedding（Dense）+ BM25（Sparse）を RRF で統合　 ③ ランダム　 ④ Sparse のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Reciprocal Rank Fusion（RRF）で両者の順位を融合。固有名詞・型番に強い BM25 と意味類似の Dense を統合。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Reciprocal Rank Fusion（RRF）で両者の順位を融合。固有名詞・型番に強い BM25 と意味類似の Dense を統合。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">RAG vs Fine-tuning の使い分けで正しいのは。</div>
         <div class="p-choices">① RAG = スタイル変更　 ② 知識追加・更新は RAG、行動・スタイル変更は Fine-tune　 ③ どちらも同じ　 ④ Fine-tune が常に上</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RAG = 知識（事実）、Fine-tune = 振舞い（口調、フォーマット）。実用では併用が多い。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RAG = 知識（事実）、Fine-tune = 振舞い（口調、フォーマット）。実用では併用が多い。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">『Faithfulness』が評価する対象は。</div>
         <div class="p-choices">① 速度　 ② 生成回答が取得文書に忠実か（捏造でないか）　 ③ パラメータ数　 ④ コスト</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RAGAS, TruLensなどで自動評価。LLM-as-Judge（GPT-4） が一般的。幻覚抑制の指標。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RAGAS, TruLensなどで自動評価。LLM-as-Judge（GPT-4） が一般的。幻覚抑制の指標。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">GraphRAG（Microsoft 2024）の特徴は。</div>
         <div class="p-choices">① 単純な BM25　 ② 文書から知識グラフを構築、Global query（全体傾向）にも対応　 ③ Fine-tune必須　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> エンティティ・関係抽出 → グラフ → コミュニティ要約。『この文書集合全体の傾向は』のような Global question に強い。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> エンティティ・関係抽出 → グラフ → コミュニティ要約。『この文書集合全体の傾向は』のような Global question に強い。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">HyDE（Hypothetical Document Embeddings）の手順は。</div>
         <div class="p-choices">① 質問を直接埋め込み　 ② LLMに仮回答を生成させ、それを埋め込んで検索　 ③ 教師ありのみ　 ④ クラスタ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Gao 2022。質問と回答は意味空間で異なる位置にあり得るため、仮回答を介して検索精度向上。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Gao 2022。質問と回答は意味空間で異なる位置にあり得るため、仮回答を介して検索精度向上。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">Self-RAG が用いる仕組みは。</div>
         <div class="p-choices">① ランダム検索　 ② Reflection Token で『検索が必要か』『文書が関連か』『裏付けあるか』を LLM 自身が判断　 ③ クラスタリング　 ④ 教師あり</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Asai 2023。不要検索の削減と品質向上を両立。LLMが検索の必要性を判断。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Asai 2023。不要検索の削減と品質向上を両立。LLMが検索の必要性を判断。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Cosine類似度の式は。</div>
         <div class="p-choices">① q + d　 ② (q·d)/(||q|| ||d||)　 ③ |q - d|　 ④ q × d</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ベクトル間の角度を測る。長さ非依存で意味の類似度に適する。RAGの標準距離。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ベクトル間の角度を測る。長さ非依存で意味の類似度に適する。RAGの標準距離。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">RAG の典型的な失敗パターンは。</div>
         <div class="p-choices">① 速度向上　 ② Chunk が大きすぎる/小さすぎる、Embedding がドメイン外、適切な Rerank不在　 ③ パラメータ削減　 ④ 学習率</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 実用 RAG は『調整勝負』。Chunk size、Embedding 選択、Rerank、プロンプト構造、メタデータフィルタなどの組合せ最適化が肝。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 実用 RAG は『調整勝負』。Chunk size、Embedding 選択、Rerank、プロンプト構造、メタデータフィルタなどの組合せ最適化が肝。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">Multimodal RAG が扱う主なデータは。</div>
         <div class="p-choices">① テキストのみ　 ② 画像、表、グラフを含む PDF・スライド（CLIP系または Vision LLM 利用）　 ③ 音声のみ　 ④ コード</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 技術文書・財務報告書は画像・表が多い。GPT-4V, Claude 3, Gemini が直接処理可能、または CLIP 系で画像埋め込み。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 技術文書・財務報告書は画像・表が多い。GPT-4V, Claude 3, Gemini が直接処理可能、または CLIP 系で画像埋め込み。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">LangChain の役割は。</div>
         <div class="p-choices">① 学習　 ② LLMアプリ構築の統合フレームワーク（RAG、Agent、チェーン）　 ③ Vector DB のみ　 ④ Embedding</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 文書ローダー、Splitter、Vector DB、LLM、Retriever、Agent を統合。LlamaIndex は RAG 特化の競合。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 文書ローダー、Splitter、Vector DB、LLM、Retriever、Agent を統合。LlamaIndex は RAG 特化の競合。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">Sentence-Transformers の代表モデルは。</div>
         <div class="p-choices">① BERT base のみ　 ② all-MiniLM-L6-v2（軽量384次元、CPU動作可）　 ③ GPT-4　 ④ ResNet</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 開発・プロトタイプの定番。BGE, E5, GTE などより新しいモデルもオープン提供。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 開発・プロトタイプの定番。BGE, E5, GTE などより新しいモデルもオープン提供。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">RAGAS フレームワークが提供する RAG 評価指標は。</div>
         <div class="p-choices">① Accuracy のみ　 ② Faithfulness, Answer Relevance, Context Precision, Context Recall　 ③ MSE　 ④ R²</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LLM-as-Judge で自動評価。RAG 特有の側面（事実忠実性、文脈の必要性・十分性）を測定。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LLM-as-Judge で自動評価。RAG 特有の側面（事実忠実性、文脈の必要性・十分性）を測定。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">Vector DB の選択基準として誤りはどれか。</div>
         <div class="p-choices">① 規模・QPS要件　 ② フィルタリング機能　 ③ ホスティング（SaaS vs Self-host）　 ④ どれも同じ性能</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> Pinecone（マネージド）、Weaviate（OSS+クラウド）、Qdrant（OSS Rust高速）、Chroma（軽量）、Milvus（大規模）など特性は大きく違う。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ④</span> Pinecone（マネージド）、Weaviate（OSS+クラウド）、Qdrant（OSS Rust高速）、Chroma（軽量）、Milvus（大規模）など特性は大きく違う。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">プロダクション RAG での重要な工夫として誤りはどれか。</div>
         <div class="p-choices">① クエリ書き換え（query rewriting）　 ② Rerank　 ③ メタデータフィルタ　 ④ 必ず Chunk size を 100 にする</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> Chunk size はデータ・タスク依存で最適化対象。100 だと文脈不足の場合が多い。500前後が経験的に良いが、用途で異なる。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ④</span> Chunk size はデータ・タスク依存で最適化対象。100 だと文脈不足の場合が多い。500前後が経験的に良いが、用途で異なる。</div></details></div>
 
     </div>
 

@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -407,141 +411,121 @@ result = crew.kickoff()
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">AI Agent の定義として最も適切なのは。</div>
         <div class="p-choices">① 単発の質問応答　 ② 目標達成のため自律的に推論・計画・行動するシステム　 ③ Vector DBのみ　 ④ ファインチューニング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LLMを脳、ツールを手足、メモリを記憶とする自律システム。1ターン応答との根本的違い。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LLMを脳、ツールを手足、メモリを記憶とする自律システム。1ターン応答との根本的違い。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">ReAct パラダイムの構成は。</div>
         <div class="p-choices">① Search→Generate　 ② Thought→Action→Observation のループ　 ③ Train→Test　 ④ Encode→Decode</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Yao 2022 ReAct論文。LLM が推論→ツール実行→結果観察を繰り返す。Agent の基本パターン。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Yao 2022 ReAct論文。LLM が推論→ツール実行→結果観察を繰り返す。Agent の基本パターン。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">Function Calling の役割は。</div>
         <div class="p-choices">① 学習　 ② LLMが構造化された JSON でツール呼出パラメータを生成　 ③ 正則化　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> OpenAI 2023標準化、GPT/Claude/Gemini/Llama すべて対応。ツール仕様（JSON Schema）に従いLLMがパラメータ抽出。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> OpenAI 2023標準化、GPT/Claude/Gemini/Llama すべて対応。ツール仕様（JSON Schema）に従いLLMがパラメータ抽出。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">Claude Computer Use（Anthropic 2024）の特徴は。</div>
         <div class="p-choices">① テキスト生成のみ　 ② スクリーンショットを見てマウス・キーボードを操作　 ③ Vector検索のみ　 ④ 音声処理</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2024年10月発表。Claude 3.5 Sonnet が画面を理解してPC操作。人間と同じ方法での自動化を可能に。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2024年10月発表。Claude 3.5 Sonnet が画面を理解してPC操作。人間と同じ方法での自動化を可能に。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">Self-Reflection / Self-Critique の効果は。</div>
         <div class="p-choices">① 計算高速化　 ② Agent が自分の出力を批評・修正することで品質向上　 ③ パラメータ削減　 ④ ランダム化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Reflexion (2023), Self-Refine (2023)。HumanEvalでpass@1が67%→91%に。o1 の思考時間長期化もこの思想。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Reflexion (2023), Self-Refine (2023)。HumanEvalでpass@1が67%→91%に。o1 の思考時間長期化もこの思想。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">Multi-Agent フレームワークの代表は。</div>
         <div class="p-choices">① TensorFlow　 ② AutoGen (Microsoft)、CrewAI　 ③ scikit-learn　 ④ NumPy</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> AutoGen（カンファレンス形式）、CrewAI（役割明示）、ChatDev（ソフトウェア会社シミュレーション）など。協調で複雑タスクの品質向上。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> AutoGen（カンファレンス形式）、CrewAI（役割明示）、ChatDev（ソフトウェア会社シミュレーション）など。協調で複雑タスクの品質向上。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">Agent の短期メモリの典型実装は。</div>
         <div class="p-choices">① Vector DB のみ　 ② 直近Nターンを会話履歴としてプロンプトに保持　 ③ ファイル　 ④ なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Conversation Buffer Memory。長くなると要約・圧縮、または Vector Memory に長期化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Conversation Buffer Memory。長くなると要約・圧縮、または Vector Memory に長期化。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">Plan-and-Execute Agent の特徴は。</div>
         <div class="p-choices">① 1ステップで全実行　 ② 最初に計画策定 → サブタスクを順次実行　 ③ ランダム　 ④ 学習</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Chain-of-Thought の発展形。複雑タスクで失敗を減らせる。BabyAGI、AutoGPT の基礎パターン。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Chain-of-Thought の発展形。複雑タスクで失敗を減らせる。BabyAGI、AutoGPT の基礎パターン。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">LangGraph が LangChain Agent と異なる点は。</div>
         <div class="p-choices">① 同じ　 ② 状態機械として明示的にモデル化、Cycle・分岐・人間介入を扱える　 ③ Vector DB専用　 ④ 学習特化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 暗黙的ループではなく明示的グラフで Agent を制御。Production-grade Agent の標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 暗黙的ループではなく明示的グラフで Agent を制御。Production-grade Agent の標準。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">Agent の典型的な失敗パターンは。</div>
         <div class="p-choices">① 無限ループ、過剰なツール呼出、コスト爆発　 ② 学習速度低下　 ③ メモリリーク　 ④ なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> max_iterations 設定、ループ検出、コスト上限、人間承認などのガードレールが本番必須。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> max_iterations 設定、ループ検出、コスト上限、人間承認などのガードレールが本番必須。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">AutoGPT (2023) の意義は。</div>
         <div class="p-choices">① 学習アルゴリズム　 ② 自律 LLM Agent の先駆け、技術的限界はあったがAgent ブームの火付け役　 ③ Vector DB　 ④ 単なる検索</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2023年初、GPT-4 ベース。タスク自動分解実行のループ。実用性は限定的だったが、Agent概念を一般に広めた。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2023年初、GPT-4 ベース。タスク自動分解実行のループ。実用性は限定的だったが、Agent概念を一般に広めた。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">『Tool Use』の代表的ツールカテゴリは。</div>
         <div class="p-choices">① 学習　 ② 検索、計算、API、ファイル操作、ブラウザ・PC制御　 ③ 単一機能のみ　 ④ Vector のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 多様なツールが LLM の能力を拡張。Web search、Code Interpreter、SaaS API、Computer Use など。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 多様なツールが LLM の能力を拡張。Web search、Code Interpreter、SaaS API、Computer Use など。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Tree of Thoughts（ToT）の発展点は。</div>
         <div class="p-choices">① 単線思考　 ② 思考を木構造で分岐探索し最良経路選択　 ③ Vector検索　 ④ 教師あり</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Yao 2023。CoTを枝分かれにし、BFS/DFS的に探索。数独、24パズル等で高性能。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Yao 2023。CoTを枝分かれにし、BFS/DFS的に探索。数独、24パズル等で高性能。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">Reflexion（2023）の動作は。</div>
         <div class="p-choices">① 教師あり　 ② Agent が失敗から自己批評＆メモリ蓄積→次回反映　 ③ Vector DB のみ　 ④ クラスタ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Shinn 2023。失敗の言語的反省を Memory に蓄積、次の試行で参照。コード生成でpass@1 を大幅向上。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Shinn 2023。失敗の言語的反省を Memory に蓄積、次の試行で参照。コード生成でpass@1 を大幅向上。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">OpenAI o1 / o3 が従来 LLM と異なる点は。</div>
         <div class="p-choices">① パラメータが100倍　 ② 推論時に長い『思考』を行い、Self-Reflection内蔵　 ③ Vector検索専用　 ④ 多言語のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Test-time compute scaling。数十秒〜数分の思考連鎖で複雑タスク（数学、コード）で人間レベル超え。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Test-time compute scaling。数十秒〜数分の思考連鎖で複雑タスク（数学、コード）で人間レベル超え。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">Agent のメモリで Vector Memory が解決する問題は。</div>
         <div class="p-choices">① 計算速度　 ② 長期記憶（過去会話・経験から関連情報を検索可能に）　 ③ 学習　 ④ パラメータ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 会話履歴をベクトル化し、関連時に取得。個人化、長期セッション、経験学習に必須。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 会話履歴をベクトル化し、関連時に取得。個人化、長期セッション、経験学習に必須。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">Program-Aided Language Models (PAL) の特徴は。</div>
         <div class="p-choices">① 計算　 ② LLM が Python コードを生成→実行→結果を使う（数値計算誤りを防ぐ）　 ③ Vector検索　 ④ 教師あり</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Gao 2022。LLM の苦手な厳密計算を Python に委任。数学・データ処理タスクで高精度。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Gao 2022。LLM の苦手な厳密計算を Python に委任。数学・データ処理タスクで高精度。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">2024年に登場した Devin AI の特徴は。</div>
         <div class="p-choices">① 単純チャット　 ② 自律的にコーディングタスクを完遂、ブラウザ・エディタ操作可能　 ③ Vector検索のみ　 ④ 画像生成</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Cognition Labs。コード生成、デバッグ、デプロイまで一貫実行のAI Software Engineer。SWE-Bench で当時 SOTA。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Cognition Labs。コード生成、デバッグ、デプロイまで一貫実行のAI Software Engineer。SWE-Bench で当時 SOTA。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">Agent の安全性で重要なのは。</div>
         <div class="p-choices">① 全自動が常に良い　 ② Human-in-the-Loop、ツール権限制限、コスト上限、監査ログ　 ③ なし　 ④ 速度</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 自律実行のリスク：誤ったAPI呼出、機密漏洩、コスト爆発。人間承認、サンドボックス、レート制限が必須。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 自律実行のリスク：誤ったAPI呼出、機密漏洩、コスト爆発。人間承認、サンドボックス、レート制限が必須。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">Agent と LLM 単独 RAG の本質的違いは。</div>
         <div class="p-choices">① 同じ　 ② Agentは多段階推論＋ツール選択＋ループ、RAGは1ターン取得+生成　 ③ Vector不使用　 ④ 学習</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RAG は静的なパイプライン（検索→生成）、Agent は動的な意思決定（どのツールを何回呼ぶか LLM が判断）。Agent内でRAGをツールとして使える。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RAG は静的なパイプライン（検索→生成）、Agent は動的な意思決定（どのツールを何回呼ぶか LLM が判断）。Agent内でRAGをツールとして使える。</div></details></div>
 
     </div>
 

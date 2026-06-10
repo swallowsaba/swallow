@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -527,141 +531,121 @@ KL(q||p) = 0.155 （reverse）<br>
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">確率 p で起こる事象の自己情報量は。</div>
         <div class="p-choices">① p　 ② -p　 ③ -log p　 ④ 1-p</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> h(x) = -log P(x)。確率が小さいほど情報量が大きい。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> h(x) = -log P(x)。確率が小さいほど情報量が大きい。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">エントロピー H(X) が最大となるのは。</div>
         <div class="p-choices">① 確定的　 ② 一様分布　 ③ 最も歪んだ分布　 ④ 連続のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 離散K値の場合、一様分布で H = log K が最大。確定的は H=0 で最小。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 離散K値の場合、一様分布で H = log K が最大。確定的は H=0 で最小。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">公平なコインのエントロピーは。</div>
         <div class="p-choices">① 0 bit　 ② 0.5 bit　 ③ 1 bit　 ④ 2 bit</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> H = -(0.5 log₂0.5 + 0.5 log₂0.5) = 1 bit。公平コイン1回分の情報量＝1bit。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> H = -(0.5 log₂0.5 + 0.5 log₂0.5) = 1 bit。公平コイン1回分の情報量＝1bit。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">相互情報量 I(X;Y) と H の関係で誤りはどれか。</div>
         <div class="p-choices">① I(X;Y) = H(X) + H(Y) - H(X,Y)　 ② I(X;Y) = H(X) - H(X|Y)　 ③ I(X;Y) ≥ 0　 ④ I(X;Y) は負の値も取りうる</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> 相互情報量は常に非負（I≥0）。X,Y独立なら 0、強く依存するなら大きい値。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ④</span> 相互情報量は常に非負（I≥0）。X,Y独立なら 0、強く依存するなら大きい値。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">KLダイバージェンス KL(p||q) について誤りはどれか。</div>
         <div class="p-choices">① 常に非負　 ② p=q なら 0　 ③ 対称：KL(p||q) = KL(q||p)　 ④ 距離関数ではない</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> KL は<strong>非対称</strong>。これが距離関数でない理由。対称化したのが JS ダイバージェンス。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> KL は<strong>非対称</strong>。これが距離関数でない理由。対称化したのが JS ダイバージェンス。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">クロスエントロピー H(p, q) と KL の関係は。</div>
         <div class="p-choices">① H(p,q) = H(p) - KL(p||q)　 ② H(p,q) = H(p) + KL(p||q)　 ③ 関係なし　 ④ H(p,q) = KL(q||p)</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CE = H(p) + KL(p||q)。H(p) は学習データ固定なので、CE最小化 = KL最小化 = q を p に近づける。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CE = H(p) + KL(p||q)。H(p) は学習データ固定なので、CE最小化 = KL最小化 = q を p に近づける。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">NN の分類で『Softmax + CE 損失』が標準的に使われる理由として最も適切なのは。</div>
         <div class="p-choices">① 計算が遅い　 ② 多項分布のMLEと等価、勾配が ŷ-y で簡潔　 ③ パラメータ数を減らす　 ④ 正則化のため</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 多項分布の負の対数尤度であり、ロジットへの勾配が ŷ-y となる美しい性質を持つ。これが NN 分類学習の効率を支える。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 多項分布の負の対数尤度であり、ロジットへの勾配が ŷ-y となる美しい性質を持つ。これが NN 分類学習の効率を支える。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">決定木の分岐基準『情報利得（IG）』の定義は。</div>
         <div class="p-choices">① H(D) - H(D|A) （分割前後のエントロピー差）　 ② H(D) のみ　 ③ Var(D)　 ④ 平均値</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> IG は属性Aで分割したときのエントロピー減少量。これが大きい属性を選ぶことで予測能力の高い分岐を作る。ID3/C4.5の基準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> IG は属性Aで分割したときのエントロピー減少量。これが大きい属性を選ぶことで予測能力の高い分岐を作る。ID3/C4.5の基準。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">VAE の損失関数 -ELBO の構成として正しいのは。</div>
         <div class="p-choices">① 再構成損失 + KL(q(z|x) || p(z))　 ② CE のみ　 ③ MSE のみ　 ④ 正則化なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> -ELBO = 再構成損失 + KL正則化。エンコーダ出力が事前分布N(0,I)に近づくよう KL で正則化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> -ELBO = 再構成損失 + KL正則化。エンコーダ出力が事前分布N(0,I)に近づくよう KL で正則化。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">t-SNE が最小化する量は。</div>
         <div class="p-choices">① ユークリッド距離　 ② 高次元と低次元の分布の KL ダイバージェンス　 ③ MSE　 ④ Hinge損失</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 高次元での近傍類似度分布 P と低次元での Q の KL(P||Q) を最小化。クラスタを可視化する標準手法。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 高次元での近傍類似度分布 P と低次元での Q の KL(P||Q) を最小化。クラスタを可視化する標準手法。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">『最大エントロピー原理』が示すのは。</div>
         <div class="p-choices">① 与えられた制約条件下で最も不確実な分布を選ぶ　 ② 最頻分布を選ぶ　 ③ 最頻値　 ④ 中央値</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 既知の制約以外について余計な仮定をしない原則。例：平均と分散だけ既知 → 正規分布が最大エントロピー解。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 既知の制約以外について余計な仮定をしない原則。例：平均と分散だけ既知 → 正規分布が最大エントロピー解。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">微分エントロピーが離散エントロピーと異なる点で正しいのは。</div>
         <div class="p-choices">① 負の値も取りうる　 ② 必ず非負　 ③ 必ず整数　 ④ 必ず log K 以下</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 連続分布の微分エントロピーは負になりうる（例：分散が極小な正規分布）。スケール変換にも不変でない。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 連続分布の微分エントロピーは負になりうる（例：分散が極小な正規分布）。スケール変換にも不変でない。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Shannon の情報源符号化定理が示す下限は。</div>
         <div class="p-choices">① 1記号あたり 1 bit　 ② 1記号あたり log K bit　 ③ 1記号あたりエントロピー H(X) bit　 ④ 上限なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 平均符号長 ≥ H(X)。これがロスレス圧縮の理論的下限。Huffman 符号は H+1 までで実現。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 平均符号長 ≥ H(X)。これがロスレス圧縮の理論的下限。Huffman 符号は H+1 までで実現。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">GAN（原論文）の損失関数が最小化する分布間距離は。</div>
         <div class="p-choices">① KL（forward）　 ② JSダイバージェンス　 ③ MSE　 ④ ユークリッド</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Goodfellow の元のGANは JS ダイバージェンスを最小化することが示されている。Wasserstein GAN は別の距離（Wasserstein距離）を使う。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Goodfellow の元のGANは JS ダイバージェンスを最小化することが示されている。Wasserstein GAN は別の距離（Wasserstein距離）を使う。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">相互情報量を使った特徴選択の利点は。</div>
         <div class="p-choices">① 計算速度のみ　 ② 線形・非線形両方の依存関係を捉える　 ③ ピアソン相関の代替で線形のみ　 ④ ラベル不要</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Pearson相関は線形のみだが、MIは任意の関数関係（U字、二次、複雑な依存）を捉える。教師あり特徴選択で強力。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Pearson相関は線形のみだが、MIは任意の関数関係（U字、二次、複雑な依存）を捉える。教師あり特徴選択で強力。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">エントロピーが大きい状況の例として最も適切なのは。</div>
         <div class="p-choices">① 確定的シーン　 ② 完全にランダムなビット列　 ③ 単一値の連続　 ④ 既知の数列</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 完全にランダム＝予測不能＝エントロピー最大。圧縮も不可能（log K bit/記号）。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 完全にランダム＝予測不能＝エントロピー最大。圧縮も不可能（log K bit/記号）。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">InfoNCE（対照学習で使う）の役割は。</div>
         <div class="p-choices">① CE損失と同じ　 ② 正サンプルと負サンプルの間で相互情報量の下限を推定して最大化　 ③ MSE　 ④ 正則化のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> InfoNCE は対照学習（SimCLR, MoCo）の損失。表現空間で正ペア類似度を負ペアより高くする、MI下限の最大化として解釈可能。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> InfoNCE は対照学習（SimCLR, MoCo）の損失。表現空間で正ペア類似度を負ペアより高くする、MI下限の最大化として解釈可能。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">2分類タスクで真ラベル y=1、予測確率 p=0.8 のとき、二値CE損失は。</div>
         <div class="p-choices">① -log(0.8)　 ② -log(0.2)　 ③ 0.5　 ④ 1.0</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> CE = -[y log p + (1-y) log(1-p)]、y=1 なら CE = -log p = -log(0.8) ≈ 0.223。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> CE = -[y log p + (1-y) log(1-p)]、y=1 なら CE = -log p = -log(0.8) ≈ 0.223。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">『Label Smoothing』は何を変更するか。</div>
         <div class="p-choices">① one-hotラベル y を [1-ε, ε/(K-1), ...] に置き換え、過信を防ぐ　 ② 損失関数を別物に変更　 ③ 学習率　 ④ バッチサイズ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 真ラベルの確信度を 1.0 から 1-ε（典型 0.9）に下げる正則化。NNの過信を防ぎ、汎化を改善。情報論的にはエントロピーの底上げ。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 真ラベルの確信度を 1.0 から 1-ε（典型 0.9）に下げる正則化。NNの過信を防ぎ、汎化を改善。情報論的にはエントロピーの底上げ。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">KL(p||q) と KL(q||p) が大きく違う典型的状況は。</div>
         <div class="p-choices">① 単峰分布同士の中心ずれ　 ② 多峰分布 vs 単峰分布　 ③ 全く同じ分布　 ④ KLは常に対称</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 多峰の p を単峰の q で近似する場合、KL(p||q) は mode covering（q を広く）を要求し、KL(q||p) は mode seeking（q を一つに集中）を要求。VAEは reverse KL を使い結果として1つのモードに集中しやすい。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 多峰の p を単峰の q で近似する場合、KL(p||q) は mode covering（q を広く）を要求し、KL(q||p) は mode seeking（q を一つに集中）を要求。VAEは reverse KL を使い結果として1つのモードに集中しやすい。</div></details></div>
 
     </div>
 

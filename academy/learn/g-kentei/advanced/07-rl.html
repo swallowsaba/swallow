@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -430,141 +434,121 @@ AlphaZero (2017)　　 : Elo 5300+（囲碁・将棋・チェス）<br>
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">MDP の5要素（S, A, P, R, γ）の γ は何か。</div>
         <div class="p-choices">① 学習率　 ② 割引率（将来報酬の現在価値）　 ③ 探索率　 ④ ノイズ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> γ ∈ [0,1)。0.99 が典型。1なら無限地平の累積発散、0なら短期報酬のみ重視。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> γ ∈ [0,1)。0.99 が典型。1なら無限地平の累積発散、0なら短期報酬のみ重視。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">Q-Learning がオフポリシーである理由は。</div>
         <div class="p-choices">① 学習しない　 ② 行動方策と異なる方策（最適）を学習可能、更新で max を使う　 ③ オンライン　 ④ モデルベース</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Q(s,a) ← Q + α[r + γ max Q(s', a') - Q]。max を使うので実際の次行動と独立。SARSAはオンポリシー。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Q(s,a) ← Q + α[r + γ max Q(s', a') - Q]。max を使うので実際の次行動と独立。SARSAはオンポリシー。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">DQN（DeepMind 2015）の核心的貢献は。</div>
         <div class="p-choices">① 教師あり　 ② Experience Replay + Target Network で深層NN+RL を安定化、Atari 49ゲーム人間超え　 ③ 教師なし　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Mnih et al. 2015 Nature。これが Deep RL 革命の始まり。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Mnih et al. 2015 Nature。これが Deep RL 革命の始まり。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">AlphaGo の構成要素として正しいのは。</div>
         <div class="p-choices">① 教師あり学習のみ　 ② Policy Net + Value Net + MCTS + 自己対戦RL　 ③ Q-tableのみ　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 人間棋譜での教師あり初期化＋自己対戦RL強化＋モンテカルロ木探索による推論時計画。2016年世界トップ棋士を破る。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 人間棋譜での教師あり初期化＋自己対戦RL強化＋モンテカルロ木探索による推論時計画。2016年世界トップ棋士を破る。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">AlphaZero が AlphaGo と異なる点は。</div>
         <div class="p-choices">① 教師データ不要、純粋自己対戦のみ　 ② より小さなNN　 ③ MCTS不使用　 ④ 教師あり強化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> ルールだけからゼロベース自己対戦、人間データ完全不要。囲碁・将棋・チェスすべて同一アーキテクチャでトップ性能。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> ルールだけからゼロベース自己対戦、人間データ完全不要。囲碁・将棋・チェスすべて同一アーキテクチャでトップ性能。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">PPO（Proximal Policy Optimization）の特徴は。</div>
         <div class="p-choices">① クリップ損失で方策更新を安定化、実装簡単で汎用性高い　 ② オンポリシーのみ　 ③ Q-tableのみ　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> OpenAI 2017。L^CLIP = E[min(rA, clip(r, 1-ε, 1+ε)A)]。RLHFの主力アルゴリズム、現代RL標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> OpenAI 2017。L^CLIP = E[min(rA, clip(r, 1-ε, 1+ε)A)]。RLHFの主力アルゴリズム、現代RL標準。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">RLHF（ChatGPT/Claudeで使用）の3ステップは。</div>
         <div class="p-choices">① SFT → 報酬モデル → PPO　 ② 教師あり → 教師なし → 強化　 ③ 事前 → 中間 → 微調整　 ④ Pretrain → Fine-tune → Distill</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Supervised Fine-Tuning → Reward Model（人間ランクで学習）→ PPO で報酬最大化。InstructGPT (2022) で確立。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Supervised Fine-Tuning → Reward Model（人間ランクで学習）→ PPO で報酬最大化。InstructGPT (2022) で確立。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">DPO（Direct Preference Optimization、2023）の利点は。</div>
         <div class="p-choices">① 計算重い　 ② 報酬モデル不要で嗜好データから直接最適化、PPOより安定で簡単　 ③ 教師あり不要　 ④ 必ず劣る</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Rafailov 2023。報酬モデル+PPOの2段階を1段階に。Llama-2-Chat、Mistral、Zephyr などで採用。最近のRLHF主流。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Rafailov 2023。報酬モデル+PPOの2段階を1段階に。Llama-2-Chat、Mistral、Zephyr などで採用。最近のRLHF主流。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">価値関数 V(s) と Q(s,a) の違いは。</div>
         <div class="p-choices">① 同じ　 ② V は状態の価値、Q は(状態,行動)の価値　 ③ V は数値、Q は関数　 ④ V は離散</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> V(s) = E[累積報酬|s]、Q(s,a) = E[累積報酬|s,a]。関係：V<sup>π</sup>(s) = Σ π(a|s) Q<sup>π</sup>(s,a)。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> V(s) = E[累積報酬|s]、Q(s,a) = E[累積報酬|s,a]。関係：V<sup>π</sup>(s) = Σ π(a|s) Q<sup>π</sup>(s,a)。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">Bellman 最適方程式 V*(s) = max_a Σ P(s'|s,a)[R + γV*(s')] が示すのは。</div>
         <div class="p-choices">① 最適価値の再帰関係　 ② ランダム　 ③ 教師ラベル　 ④ 必ず線形</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 最適価値は『最善の次行動の期待値』として再帰的に定義。Value Iteration、DQN学習の基礎。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 最適価値は『最善の次行動の期待値』として再帰的に定義。Value Iteration、DQN学習の基礎。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">ε-greedy の役割は。</div>
         <div class="p-choices">① 学習率　 ② 探索と活用のバランス（εでランダム、1-εで最良Q行動）　 ③ 正則化　 ④ クラスタ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 探索（未知行動を試す）と活用（既知の良い行動を取る）のトレードオフ。実用では学習進行で ε を減衰。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 探索（未知行動を試す）と活用（既知の良い行動を取る）のトレードオフ。実用では学習進行で ε を減衰。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">Actor-Critic アーキテクチャは何の組合せか。</div>
         <div class="p-choices">① 教師あり+教師なし　 ② 方策（Actor）+ 価値関数（Critic）　 ③ クラスタ+回帰　 ④ DQN+SARSA</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Actor が行動、Critic が状態を評価。分散低減で安定学習。A2C/A3C/PPO/SAC の基礎。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Actor が行動、Critic が状態を評価。分散低減で安定学習。A2C/A3C/PPO/SAC の基礎。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">『マルコフ性』とは。</div>
         <div class="p-choices">① 過去履歴を全て参照　 ② 次状態は現在状態と行動のみに依存（過去履歴不要）　 ③ 必ず連続　 ④ 線形</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> P(s_{t+1}|s_t, a_t) = P(s_{t+1}|s_t, a_t, history)。POMDP（部分観測）では緩和される。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> P(s_{t+1}|s_t, a_t) = P(s_{t+1}|s_t, a_t, history)。POMDP（部分観測）では緩和される。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">スパース報酬問題への対処として正しいのは。</div>
         <div class="p-choices">① 学習率を上げる　 ② Reward Shaping、Curiosity-driven exploration（RND, ICM）、HER　 ③ 教師あり化　 ④ クラスタ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 報酬がほとんど0のタスク（Montezuma's Revenge等）で重要。内発的動機付け（好奇心）、後付け目標（HER）で対処。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 報酬がほとんど0のタスク（Montezuma's Revenge等）で重要。内発的動機付け（好奇心）、後付け目標（HER）で対処。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">モデルベース RL とモデルフリー RL の違いは。</div>
         <div class="p-choices">① 同じ　 ② モデルベースは環境モデル(P, R)を学習・利用、モデルフリーはサンプルから直接学習　 ③ 教師あり vs 教師なし　 ④ 速度</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> モデルベース（MuZero、Dreamer）はサンプル効率が良いがモデル誤差影響。モデルフリー（DQN、PPO）はシンプル、サンプル多。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> モデルベース（MuZero、Dreamer）はサンプル効率が良いがモデル誤差影響。モデルフリー（DQN、PPO）はシンプル、サンプル多。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">『継続的なエピソードでは γ &lt; 1 が必要』な理由は。</div>
         <div class="p-choices">① 計算簡単化　 ② 無限和の収束保証、近未来優先　 ③ ランダム性　 ④ 単純化のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> γ=1 だと累積和が発散。γ&lt;1で幾何級数として収束。0.9〜0.999が典型。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> γ=1 だと累積和が発散。γ&lt;1で幾何級数として収束。0.9〜0.999が典型。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">MuZero（DeepMind 2020）の特徴は。</div>
         <div class="p-choices">① 教師あり　 ② 環境モデル自体も学習、ルール未知のAtariでもMCTS可能　 ③ Q-table　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> AlphaZero は環境ルール既知、MuZero はルールも学習。汎用性大幅向上。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> AlphaZero は環境ルール既知、MuZero はルールも学習。汎用性大幅向上。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">SAC（Soft Actor-Critic）が連続行動空間で強い理由は。</div>
         <div class="p-choices">① 離散のみ　 ② 最大エントロピー原理で探索促進、決定的方策より安定　 ③ Q-tableのみ　 ④ 教師あり</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Haarnoja 2018。報酬最大化＋エントロピー最大化で探索維持。ロボット制御などで人気。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Haarnoja 2018。報酬最大化＋エントロピー最大化で探索維持。ロボット制御などで人気。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">ChatGPT のような LLM チャットボットの応答品質を人間嗜好に合わせる手法は。</div>
         <div class="p-choices">① 単なる教師あり　 ② RLHF（または DPO）　 ③ クラスタリング　 ④ 線形回帰</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RLHF（InstructGPT 2022）。人間嗜好を反映する強化学習で、有害性削減・有用性向上。最近は DPO で簡略化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RLHF（InstructGPT 2022）。人間嗜好を反映する強化学習で、有害性削減・有用性向上。最近は DPO で簡略化。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">強化学習の典型的応用として誤りはどれか。</div>
         <div class="p-choices">① ゲーム（AlphaGo, AlphaStar）　 ② ロボット制御　 ③ LLM の人間嗜好調整　 ④ 静的な画像分類</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> 画像分類は典型的に教師あり。RLは『連続的意思決定』『報酬最大化』が要。ゲーム、ロボット、自動運転、推薦、RLHFが代表。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ④</span> 画像分類は典型的に教師あり。RLは『連続的意思決定』『報酬最大化』が要。ゲーム、ロボット、自動運転、推薦、RLHFが代表。</div></details></div>
 
     </div>
 

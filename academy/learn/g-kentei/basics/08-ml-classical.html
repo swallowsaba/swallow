@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -383,141 +387,121 @@ Round 500: train_rmse=0.26, test_rmse=0.49　 ← Early Stopping<br>
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">線形回帰のOLS解析解は。</div>
         <div class="p-choices">① (XᵀX)⁻¹Xᵀy　 ② Xy　 ③ X⁻¹y　 ④ XᵀX</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 正規方程式 XᵀXβ = Xᵀy の解。XᵀX が可逆（フルランク）であることが条件。多重共線性で不安定化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 正規方程式 XᵀXβ = Xᵀy の解。XᵀX が可逆（フルランク）であることが条件。多重共線性で不安定化。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">ロジスティック回帰の出力は。</div>
         <div class="p-choices">① 連続値　 ② 確率 P(y=1|x)　 ③ クラスタID　 ④ ハードラベル</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> シグモイドで [0,1] に押込めた確率。0.5閾値でハードラベル化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> シグモイドで [0,1] に押込めた確率。0.5閾値でハードラベル化。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">SVM の最大化対象は。</div>
         <div class="p-choices">① 学習データ数　 ② マージン（境界とサポートベクター間の距離）　 ③ 学習率　 ④ パラメータ数</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> マージン = 2/||w|| の最大化。これは ||w|| 最小化に帰着、凸最適化問題。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> マージン = 2/||w|| の最大化。これは ||w|| 最小化に帰着、凸最適化問題。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">SVM のカーネルトリックが解決する問題は。</div>
         <div class="p-choices">① 計算速度　 ② 線形分離不可能なデータ（非線形特徴空間への暗黙写像）　 ③ ノイズ除去　 ④ データ拡張</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> K(x,x')=φ(x)·φ(x') で高次元への明示的写像なしに非線形分離。RBF, 多項式, シグモイドなどのカーネルが使われる。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> K(x,x')=φ(x)·φ(x') で高次元への明示的写像なしに非線形分離。RBF, 多項式, シグモイドなどのカーネルが使われる。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">決定木の分岐基準（分類）として一般的なのは。</div>
         <div class="p-choices">① 情報利得（エントロピー減少）、ジニ係数　 ② MSE のみ　 ③ ランダム　 ④ 多数決</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 分類木では情報利得（ID3, C4.5）かジニ係数（CART）。回帰木では分散減少 or MSE。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 分類木では情報利得（ID3, C4.5）かジニ係数（CART）。回帰木では分散減少 or MSE。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">Bagging と Boosting の根本的違いは。</div>
         <div class="p-choices">① Bagging=並列・Variance削減、Boosting=逐次・Bias削減　 ② 全く同じ　 ③ Bagging が常に強い　 ④ Boosting は弱学習器を使えない</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Bagging は独立な弱学習器の平均で分散削減。Boosting は前の誤差を補正する逐次学習でバイアス削減。両者は相補的。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Bagging は独立な弱学習器の平均で分散削減。Boosting は前の誤差を補正する逐次学習でバイアス削減。両者は相補的。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">ランダムフォレストが決定木より頑健な理由は。</div>
         <div class="p-choices">① 1本の深い木を使う　 ② Bootstrap + 特徴量ランダム選択で木同士の相関を下げ、Variance削減　 ③ 学習が速い　 ④ パラメータが少ない</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2重のランダム性（データのBootstrap、各分岐での特徴量選択）で木の多様性を確保。100本の木の平均で過学習を抑える。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2重のランダム性（データのBootstrap、各分岐での特徴量選択）で木の多様性を確保。100本の木の平均で過学習を抑える。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">表形式データでGBDT（XGBoost等）がNNより強い傾向にある主な理由は。</div>
         <div class="p-choices">① 計算が遅い　 ② スケーリング不要、カテゴリ・欠損対応、不均衡データに頑健　 ③ パラメータが多い　 ④ メモリ消費が大きい</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GBDTは表形式の特性に最適化。NNは特徴量の前処理に敏感で、表形式では性能発揮しにくい（一部例外：FT-Transformer、TabTransformer）。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GBDTは表形式の特性に最適化。NNは特徴量の前処理に敏感で、表形式では性能発揮しにくい（一部例外：FT-Transformer、TabTransformer）。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">XGBoost、LightGBM、CatBoost の特徴対応として正しいのは。</div>
         <div class="p-choices">① XGBoostはGPUなし　 ② LightGBMは葉単位成長で高速　 ③ CatBoostはカテゴリ非対応　 ④ 全て同じ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LightGBM はヒストグラム法＋Leaf-wise成長で超高速。XGBoost は精度志向、CatBoost はカテゴリ特徴を内蔵処理。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LightGBM はヒストグラム法＋Leaf-wise成長で超高速。XGBoost は精度志向、CatBoost はカテゴリ特徴を内蔵処理。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">k-NN の特徴として正しくないのは。</div>
         <div class="p-choices">① 学習フェーズが軽量　 ② 推論で全データを保持・距離計算が必要　 ③ 高次元で『距離の呪い』に弱い　 ④ 大規模データで超高速</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> k-NN は遅延学習で学習は速いが、推論で毎回全データとの距離計算が必要、大規模では遅い。Approximate NN（FAISS, HNSW）で実用化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ④</span> k-NN は遅延学習で学習は速いが、推論で毎回全データとの距離計算が必要、大規模では遅い。Approximate NN（FAISS, HNSW）で実用化。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">K-means が苦手なケースは。</div>
         <div class="p-choices">① 球状クラスタ　 ② 異なるサイズ・密度・形状のクラスタ（非球状）　 ③ 数値データ　 ④ 教師あり</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> K-meansは球状クラスタを仮定（ユークリッド距離・等分散）。非球状や密度差・サイズ差があるとDBSCAN, GMM, HDBSCANが良い。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> K-meansは球状クラスタを仮定（ユークリッド距離・等分散）。非球状や密度差・サイズ差があるとDBSCAN, GMM, HDBSCANが良い。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">K-means の初期化問題への対処は。</div>
         <div class="p-choices">① ランダム初期化のみ　 ② K-means++、複数回試行＋最良採用　 ③ 全データを初期点に　 ④ 1点のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> K-means++ は初期点を順次最も遠い点から選ぶ。これにより局所最適確率を大幅に削減。sklearn の n_init で複数試行も標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> K-means++ は初期点を順次最も遠い点から選ぶ。これにより局所最適確率を大幅に削減。sklearn の n_init で複数試行も標準。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">PCA の主成分の取得方法は。</div>
         <div class="p-choices">① ランダム　 ② 共分散行列の固有値分解 or データのSVD　 ③ k-NN距離　 ④ 勾配降下</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 共分散行列 Σ の固有値分解で主成分（固有ベクトル）。実装上は SVD で直接行うのが数値的に安定。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 共分散行列 Σ の固有値分解で主成分（固有ベクトル）。実装上は SVD で直接行うのが数値的に安定。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">DBSCAN の利点は。</div>
         <div class="p-choices">① クラスタ数 k を事前指定不要、任意形状、ノイズラベル付与　 ② 球状のみ　 ③ K指定必要　 ④ 学習なし</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 密度ベースでk不要、任意形状クラスタ検出、ノイズ点を明示的に分離。eps と min_samples のチューニングが鍵。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 密度ベースでk不要、任意形状クラスタ検出、ノイズ点を明示的に分離。eps と min_samples のチューニングが鍵。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">Ridge と Lasso の違いとして正しいのは。</div>
         <div class="p-choices">① Ridge=L2でスパース、Lasso=L1で全保持　 ② Ridge=L2で全て縮小、Lasso=L1でスパース化　 ③ 同じ　 ④ どちらも線形不可</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ridge は L2 ペナルティで全係数を縮小、Lasso は L1 ペナルティで多くを正確に 0 に（自動的特徴選択）。Elastic Net は両者のブレンド。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ridge は L2 ペナルティで全係数を縮小、Lasso は L1 ペナルティで多くを正確に 0 に（自動的特徴選択）。Elastic Net は両者のブレンド。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">SHAP（SHapley Additive exPlanations）の役割は。</div>
         <div class="p-choices">① 学習アルゴリズム　 ② モデル解釈（各特徴量が予測にどう寄与したか）　 ③ ハイパラ調整　 ④ 正則化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ゲーム理論のShapley値ベース。各特徴量の貢献を一貫した方法で説明。XAI（説明可能AI）の標準ツール。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ゲーム理論のShapley値ベース。各特徴量の貢献を一貫した方法で説明。XAI（説明可能AI）の標準ツール。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">AdaBoost の仕組みは。</div>
         <div class="p-choices">① 並列学習　 ② 誤分類サンプルの重みを大きくして弱学習器を逐次学習　 ③ ランダム　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Boosting の元祖。各回で誤分類点の重みを増やし、次の弱学習器が苦手部分に集中。XGBoostは Gradient Boosting の発展形。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Boosting の元祖。各回で誤分類点の重みを増やし、次の弱学習器が苦手部分に集中。XGBoostは Gradient Boosting の発展形。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">Stacking の典型構造は。</div>
         <div class="p-choices">① 1つのモデルのみ　 ② 複数モデルの予測を入力としてメタ学習器が最終予測　 ③ 多数決のみ　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ベース学習器（GBDT、RF、ロジ回帰）の予測をメタ学習器（多くは線形）で統合。Kaggle上位の常套手段。CVの設計に注意。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ベース学習器（GBDT、RF、ロジ回帰）の予測をメタ学習器（多くは線形）で統合。Kaggle上位の常套手段。CVの設計に注意。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">RFE（Recursive Feature Elimination）の役割は。</div>
         <div class="p-choices">① 学習アルゴリズム　 ② 特徴量を重要度の低い順から削除する反復的特徴量選択　 ③ 正則化　 ④ クラスタ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> モデルを学習→重要度を取得→最低の特徴量を削除→繰り返し。所望の特徴量数まで縮約。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> モデルを学習→重要度を取得→最低の特徴量を削除→繰り返し。所望の特徴量数まで縮約。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">『Elbow法』が判定するものは。</div>
         <div class="p-choices">① 学習率　 ② K-means のクラスタ数 k（クラスタ内分散の減少が緩むk）　 ③ 正則化強度　 ④ 過学習</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> k を 1, 2, 3... と増やし、SSE（クラスタ内分散和）をプロット。減少率が急変する『ひじ』を最適 k とする経験則。Silhouette score などより厳密な手法も。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> k を 1, 2, 3... と増やし、SSE（クラスタ内分散和）をプロット。減少率が急変する『ひじ』を最適 k とする経験則。Silhouette score などより厳密な手法も。</div></details></div>
 
     </div>
 

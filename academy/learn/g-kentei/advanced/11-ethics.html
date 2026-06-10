@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -352,141 +356,121 @@ model, optimizer, train_loader = privacy_engine.make_private(
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">AIバイアスの『歴史的バイアス』の典型例は。</div>
         <div class="p-choices">① ランダム　 ② 過去の社会的不平等がデータに含まれ、AIが学習して再生産　 ③ 計算誤差　 ④ 学習率</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Amazon の採用AI事件（2018）。過去10年の採用データが男性中心で、AIが女性の履歴書を低評価した。データの選別だけでは解決困難。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Amazon の採用AI事件（2018）。過去10年の採用データが男性中心で、AIが女性の履歴書を低評価した。データの選別だけでは解決困難。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">Demographic Parity（人口統計学的等しさ）の定義は。</div>
         <div class="p-choices">① 同じ Accuracy　 ② 全グループで陽性予測率が同じ：P(Ŷ=1|A=0) = P(Ŷ=1|A=1)　 ③ 同じ Recall　 ④ 同じ Precision</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 最もシンプルだが結果指標を強制するため、Equal Opportunity（TPR等値）と矛盾しうる。Fairness Impossibility Theorem。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 最もシンプルだが結果指標を強制するため、Equal Opportunity（TPR等値）と矛盾しうる。Fairness Impossibility Theorem。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">Fairness Impossibility Theorem の主張は。</div>
         <div class="p-choices">① 全てのFairnessは矛盾　 ② 基準値が異なるグループでは複数のFairness定義（Calibration、Equal Opportunity、Equalized Odds）を同時には満たせない　 ③ Fairness 不可能　 ④ 何もできない</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Kleinberg 2016, Chouldechova 2017。トレードオフの選択を文脈に応じて行う必要がある。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Kleinberg 2016, Chouldechova 2017。トレードオフの選択を文脈に応じて行う必要がある。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">SHAP の数学的基盤は。</div>
         <div class="p-choices">① 線形回帰　 ② 協力ゲーム理論の Shapley 値（各特徴の限界貢献度の平均）　 ③ クラスタリング　 ④ ベイズ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 一貫性・局所精度・無依存性などの公理を満たす唯一の説明手法。Lundberg & Lee 2017。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 一貫性・局所精度・無依存性などの公理を満たす唯一の説明手法。Lundberg & Lee 2017。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">LIME の動作は。</div>
         <div class="p-choices">① 大域的説明　 ② 個別予測点の周辺で線形モデルで局所近似し説明　 ③ ランダム　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ribeiro 2016。摂動サンプルを生成、重み付き線形回帰で局所的説明。モデル非依存（black-box対応）。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ribeiro 2016。摂動サンプルを生成、重み付き線形回帰で局所的説明。モデル非依存（black-box対応）。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">Differential Privacy（ε-DP）の意味は。</div>
         <div class="p-choices">① ノイズなし　 ② 1人のデータ変化で出力分布が e^ε 倍以内、個人特定リスクを数学的に制限　 ③ 学習加速　 ④ 暗号化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dwork 2006。εが小さいほどプライバシー強、精度低下とのトレードオフ。Apple、Google、米国国勢調査で採用。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dwork 2006。εが小さいほどプライバシー強、精度低下とのトレードオフ。Apple、Google、米国国勢調査で採用。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">DP-SGD の実装の核心は。</div>
         <div class="p-choices">① 学習率変化　 ② 各サンプル勾配をクリップ後、Gaussian ノイズを加えて集約　 ③ ランダム選択　 ④ パラメータ削除</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Abadi 2016。Moments Accountantでεを厳密追跡。Opacus（PyTorch）、TF Privacy で実装。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Abadi 2016。Moments Accountantでεを厳密追跡。Opacus（PyTorch）、TF Privacy で実装。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">FGSM（Fast Gradient Sign Method）の式は。</div>
         <div class="p-choices">① x' = x + ε　 ② x' = x + ε · sign(∇ₓ L)　 ③ x' = -x　 ④ x' = 2x</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 損失を最大化する方向に微小摂動を加える。Goodfellow 2014。最も基本的な敵対的攻撃。PGD はその反復強化版。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 損失を最大化する方向に微小摂動を加える。Goodfellow 2014。最も基本的な敵対的攻撃。PGD はその反復強化版。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">Adversarial Training は何を行うか。</div>
         <div class="p-choices">① ランダム学習　 ② 敵対的サンプルを学習データに混ぜて学習、Robustness を獲得　 ③ パラメータ削減　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Madry 2018。PGD で生成した敵対的サンプルで Min-Max 学習。クリーン精度は微減、頑健性は大幅向上。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Madry 2018。PGD で生成した敵対的サンプルで Min-Max 学習。クリーン精度は微減、頑健性は大幅向上。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">Federated Learning の核心は。</div>
         <div class="p-choices">① 中央データ集約　 ② データを中央化せず、各クライアントで学習→勾配のみ集約　 ③ クラウドのみ　 ④ シングルマシン</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> McMahan 2017 (Google)。Gboard、医療機関連携で実用。Secure Aggregation、DP と組み合わせて更にプライバシー強化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> McMahan 2017 (Google)。Gboard、医療機関連携で実用。Secure Aggregation、DP と組み合わせて更にプライバシー強化。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">AI Alignment 問題の核心は。</div>
         <div class="p-choices">① 計算速度　 ② AIシステムの目標を人間の真の意図と整合させること（誤った目標関数で学習すると有害な行動）　 ③ パラメータ最適化　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Anthropic、OpenAI、DeepMind の中核研究分野。RLHF、Constitutional AI、Debate、IDA などが主要手法。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Anthropic、OpenAI、DeepMind の中核研究分野。RLHF、Constitutional AI、Debate、IDA などが主要手法。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">Reward Hacking（報酬ハッキング）の例は。</div>
         <div class="p-choices">① 学習成功　 ② 目標関数の意図しない『穴』を突いて高得点だが望ましくない行動（CoastRunners でゲーム本来の目的を無視して報酬狩り）　 ③ パラメータ調整　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Specification Gaming の一種。AGI が現実世界で類似行動を取ることがAI Safetyの主要懸念。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Specification Gaming の一種。AGI が現実世界で類似行動を取ることがAI Safetyの主要懸念。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Constitutional AI（Anthropic）の特徴は。</div>
         <div class="p-choices">① 法律遵守　 ② AI自身が憲法（行動原則）に照らして自己批評・修正、RLAIF で大規模化　 ③ ランダム　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Bai 2022。Claude モデルの基盤。RLHF の人間ラベラーの代わりに AI判定を使い、Alignment を大規模化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Bai 2022。Claude モデルの基盤。RLHF の人間ラベラーの代わりに AI判定を使い、Alignment を大規模化。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">Grad-CAM の用途は。</div>
         <div class="p-choices">① 学習加速　 ② CNN の予測根拠を画像上にヒートマップで可視化　 ③ パラメータ削減　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Selvaraju 2017。最後のConv層の活性化と勾配の重み付き和。医療画像、自動運転の説明に重要。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Selvaraju 2017。最後のConv層の活性化と勾配の重み付き和。医療画像、自動運転の説明に重要。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">Deepfake の主な技術基盤は。</div>
         <div class="p-choices">① ロジスティック回帰　 ② GAN、Diffusion Model、Autoencoder　 ③ 線形回帰　 ④ K-means</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 生成モデルで顔・声を合成。検知技術（Deepfake Detection、C2PA、SynthID）も並行発展中。EU AI Act で透明性表示義務化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 生成モデルで顔・声を合成。検知技術（Deepfake Detection、C2PA、SynthID）も並行発展中。EU AI Act で透明性表示義務化。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">Membership Inference Attack（メンバーシップ推定攻撃）の標的は。</div>
         <div class="p-choices">① モデル盗難　 ② 特定の個人データがモデルの学習データに含まれていたか推定する攻撃　 ③ パラメータ盗難　 ④ ラベル改ざん</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> プライバシー侵害の一形態。学習データへの過剰適合が手がかり。DPで防御。Shokri 2017。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> プライバシー侵害の一形態。学習データへの過剰適合が手がかり。DPで防御。Shokri 2017。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">Model Inversion Attack の目的は。</div>
         <div class="p-choices">① モデル予測　 ② モデルの出力から学習データの特徴を復元（顔認証から顔画像復元等）　 ③ パラメータ盗難　 ④ ラベル改ざん</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Fredrikson 2015。プライバシー侵害の重大形式。DP、出力の粗視化で防御。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Fredrikson 2015。プライバシー侵害の重大形式。DP、出力の粗視化で防御。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">LLM の Jailbreak とは。</div>
         <div class="p-choices">① 学習　 ② プロンプトエンジニアリングで安全機構を回避し有害出力を引き出す　 ③ パラメータ盗難　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> DAN、ロールプレイ、Many-shot Jailbreak（Anthropic 2024）など多様。LLM 安全研究の主要課題。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> DAN、ロールプレイ、Many-shot Jailbreak（Anthropic 2024）など多様。LLM 安全研究の主要課題。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">『Right to Explanation』が法的に要求される代表例は。</div>
         <div class="p-choices">① 全てのAI　 ② GDPR（EU）の自動意思決定条項、EU AI Act の高リスクシステム　 ③ なし　 ④ 業界自主</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GDPR Art. 22。重要な判断（融資拒否、採用、医療）にAIを使う場合、本人に説明する義務。SHAP/LIMEがその実装手段。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GDPR Art. 22。重要な判断（融資拒否、採用、医療）にAIを使う場合、本人に説明する義務。SHAP/LIMEがその実装手段。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">大規模LLMの環境影響として正しいのは。</div>
         <div class="p-choices">① 影響なし　 ② 学習に巨大な電力消費とCO₂排出（GPT-3: 552 t CO₂相当、Strubell 2019）　 ③ パラメータ少ない　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> モデル巨大化のサステナビリティ問題。Green AI、再生可能エネルギー使用、効率化（蒸留、量子化）が課題。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> モデル巨大化のサステナビリティ問題。Green AI、再生可能エネルギー使用、効率化（蒸留、量子化）が課題。</div></details></div>
 
     </div>
 

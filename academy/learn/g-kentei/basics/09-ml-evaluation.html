@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -357,141 +361,121 @@ print(<span class="string">f"Cal:   {brier_score_loss(y_te, cal.predict_proba(X_
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">混同行列の TP は何を意味するか。</div>
         <div class="p-choices">① 真陽性（陽性を陽性と予測）　 ② 偽陽性　 ③ 偽陰性　 ④ 真陰性</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> TP = True Positive。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> TP = True Positive。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">Precision の定義は。</div>
         <div class="p-choices">① TP/(TP+FN)　 ② TP/(TP+FP)　 ③ TN/(TN+FP)　 ④ (TP+TN)/全体</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 陽性予測のうち実際に陽性の割合。FPが増えると下がる。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 陽性予測のうち実際に陽性の割合。FPが増えると下がる。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">Recall（感度）の定義は。</div>
         <div class="p-choices">① TP/(TP+FN)　 ② TP/(TP+FP)　 ③ TN/(TN+FP)　 ④ (TP+TN)/全体</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 実際の陽性のうち検出できた割合。FN（見逃し）が増えると下がる。医療診断で重視。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 実際の陽性のうち検出できた割合。FN（見逃し）が増えると下がる。医療診断で重視。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">F1スコアの定義は。</div>
         <div class="p-choices">① 算術平均　 ② P×R　 ③ PとRの調和平均　 ④ P/R</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> F1=2PR/(P+R)。両方が高くないと高くならない。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> F1=2PR/(P+R)。両方が高くないと高くならない。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">スパム検知で『全て非スパム』予測で Accuracy 99% のモデルは。</div>
         <div class="p-choices">① 良い　 ② 完全に無価値（Recall=0、F1=0）　 ③ 完全分類器　 ④ ベスト</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 不均衡データでの Accuracy の典型的な罠。F1・PR-AUC は0。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 不均衡データでの Accuracy の典型的な罠。F1・PR-AUC は0。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">ROC-AUC の意味として正しいのは。</div>
         <div class="p-choices">① 訓練時間　 ② 陽性-陰性ペアで陽性のスコアが高い確率　 ③ Precisionの平均　 ④ パラメータ数</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> AUCの確率的解釈。0.5=ランダム、1.0=完全。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> AUCの確率的解釈。0.5=ランダム、1.0=完全。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">極端な不均衡（陽性率 0.1%）で適切な指標は。</div>
         <div class="p-choices">① Accuracy　 ② PR-AUC　 ③ MSE　 ④ R²</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ROC-AUCは不均衡に頑健すぎて高く出るがPR-AUCは真の困難度を反映。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ROC-AUCは不均衡に頑健すぎて高く出るがPR-AUCは真の困難度を反映。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">医療診断で重視すべき指標は。</div>
         <div class="p-choices">① Precision　 ② Recall　 ③ Specificity　 ④ MSE</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Recall でFN（見逃し）を最小化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Recall でFN（見逃し）を最小化。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">スパムフィルタで重視すべきは。</div>
         <div class="p-choices">① Precision　 ② Recall　 ③ 両方　 ④ Accuracy</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Precision でFP（重要メール誤検出）を最小化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Precision でFP（重要メール誤検出）を最小化。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">回帰指標で外れ値に頑健なのは。</div>
         <div class="p-choices">① MSE　 ② RMSE　 ③ MAE　 ④ MAPE</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> MAE は絶対値、外れ値の影響が線形。MSE は二乗で敏感。中間に Huber Loss。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> MAE は絶対値、外れ値の影響が線形。MSE は二乗で敏感。中間に Huber Loss。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">R²（決定係数）の意味は。</div>
         <div class="p-choices">① 必ず0〜1　 ② 1-SSE/SST、モデルが説明する分散の割合　 ③ パラメータ数　 ④ Accuracy</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> テストで負になることもある。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> テストで負になることもある。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">NNの予測確率を真の頻度に合わせる手法は。</div>
         <div class="p-choices">① 正則化　 ② Calibration（Platt、Isotonic、Temperature）　 ③ 標準化　 ④ Augmentation</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 現代NNは過信気味。Calibrationで補正、ECEで評価。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 現代NNは過信気味。Calibrationで補正、ECEで評価。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">多クラス F1 で macro と weighted の違いは。</div>
         <div class="p-choices">① 同じ　 ② macro は各クラス等値、weighted はクラス頻度で重み付け　 ③ macroはスパース　 ④ weightedは教師あり</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 不均衡では macro が公平、頻度反映なら weighted。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 不均衡では macro が公平、頻度反映なら weighted。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">推薦システムでの MAP@k の意味は。</div>
         <div class="p-choices">① 全体精度　 ② 上位k個のAverage Precisionの平均、ランキング品質指標　 ③ MSE　 ④ R²</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> NDCG とともに推薦・検索で標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> NDCG とともに推薦・検索で標準。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">Log Loss と Accuracy の違いは。</div>
         <div class="p-choices">① 同じ　 ② Log Lossは予測確率の質を評価（自信度を考慮）、Accuracyはハードラベルのみ　 ③ Log Lossは離散　 ④ Accuracyは確率</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 自信を持って間違えるほどLog Lossが高くなる。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 自信を持って間違えるほどLog Lossが高くなる。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">McNemar検定の用途は。</div>
         <div class="p-choices">① t検定の代替　 ② 同一データに対する2モデル予測比較で差が有意か判定　 ③ クラスタリング評価　 ④ 回帰分析</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 同データ・異モデルの予測一致／不一致を表で集計し検定。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 同データ・異モデルの予測一致／不一致を表で集計し検定。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">SMOTE が行うことは。</div>
         <div class="p-choices">① 少数クラスを単純複製　 ② 少数クラスのk近傍間に合成サンプルを補間生成　 ③ 多数クラスを削除のみ　 ④ ランダム</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 単純複製と違い、合成データで多様性を保つ。imbalanced-learnで実装。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 単純複製と違い、合成データで多様性を保つ。imbalanced-learnで実装。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">Cross-Validation の主目的は。</div>
         <div class="p-choices">① データ拡張　 ② 評価分散を減らしハイパラ選択の信頼性向上　 ③ 計算高速化　 ④ ラベル予測</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 1回分割では運次第。k-foldで多数評価の平均で安定化。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 1回分割では運次第。k-foldで多数評価の平均で安定化。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">Focal Loss が解決する問題は。</div>
         <div class="p-choices">① 過学習　 ② クラス不均衡＋簡単例の過剰寄与（物体検出由来）　 ③ 学習率　 ④ 正則化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> -(1-p)^γ log p で容易例の損失を下げ、難しい例（少数クラス）に集中。RetinaNet で導入。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> -(1-p)^γ log p で容易例の損失を下げ、難しい例（少数クラス）に集中。RetinaNet で導入。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">分類閾値の標準値 0.5 を変える理由として正しいのは。</div>
         <div class="p-choices">① 必ず0.5　 ② 業務要件、不均衡、コスト非対称性に応じて最適化　 ③ 変えてはいけない　 ④ モデル変更必要</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 0.5は単なる慣例値。F1最大化、期待コスト最小化などで決定。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 0.5は単なる慣例値。F1最大化、期待コスト最小化などで決定。</div></details></div>
 
     </div>
 

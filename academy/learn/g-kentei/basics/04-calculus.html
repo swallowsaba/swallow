@@ -15,13 +15,17 @@
     <span>Swallow Academy</span>
   </a>
   <div class="nav-links" id="nav-links">
-    <a href="../../../index.html">ホーム</a>
+    <a href="../../../index.html">ダッシュボード</a>
     <a href="../../../certifications/g-kentei.html">G検定</a>
     <a href="../../../learn/g-kentei/handson.html">ハンズオン</a>
     <a href="../../../learn/g-kentei/simulation.html">シミュレーション</a>
     <a href="../../../quiz.html">問題演習</a>
   </div>
   <div class="nav-right">
+    <span class="nav-stat nav-stat--lv" id="nav-level" title="レベル">
+      <span style="font-weight:800;color:var(--accent)">Lv</span>
+      <span id="nav-level-v">1</span>
+    </span>
     <span class="nav-stat" id="nav-streak" title="連続学習日数">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
       <span id="nav-streak-v">0</span>
@@ -882,141 +886,121 @@ Adam (lr=0.01):<br>
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">f(x) = x³ - 2x + 1 の x=2 における微分値は。</div>
         <div class="p-choices">① 4　 ② 8　 ③ 10　 ④ 12</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> f'(x) = 3x² - 2、f'(2) = 12 - 2 = 10。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> f'(x) = 3x² - 2、f'(2) = 12 - 2 = 10。</div></details></div>
 
       <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">勾配ベクトル ∇f(x) が指す方向は。</div>
         <div class="p-choices">① 最も急に減少する方向　 ② 最も急に増加する方向　 ③ 関数の零点　 ④ 接平面の法線</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 勾配は『最急上昇方向』を指す。最小化問題では負の勾配方向 -∇f に進む（最急降下法・SGD・Adam）。等高線に垂直になる幾何学的事実も重要。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 勾配は『最急上昇方向』を指す。最小化問題では負の勾配方向 -∇f に進む（最急降下法・SGD・Adam）。等高線に垂直になる幾何学的事実も重要。</div></details></div>
 
       <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">合成関数 y = f(g(x)) の微分（連鎖律）として正しいのは。</div>
         <div class="p-choices">① dy/dx = f'(g(x)) · g'(x)　 ② dy/dx = f'(x) · g'(x)　 ③ dy/dx = f'(x) + g'(x)　 ④ dy/dx = f(g'(x))</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 連鎖律：外側の関数の微分（g(x) で評価）と内側の微分の積。NNの逆伝播は連鎖律を計算グラフ上で機械的に適用したもの。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 連鎖律：外側の関数の微分（g(x) で評価）と内側の微分の積。NNの逆伝播は連鎖律を計算グラフ上で機械的に適用したもの。</div></details></div>
 
       <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">ヘッセ行列 H の固有値がすべて正のとき、その臨界点は。</div>
         <div class="p-choices">① 極大　 ② 極小　 ③ 鞍点　 ④ 縮退</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> H 正定値 → 周囲が下に凸 → 極小。負定値なら極大、固有値に正負混在なら鞍点。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> H 正定値 → 周囲が下に凸 → 極小。負定値なら極大、固有値に正負混在なら鞍点。</div></details></div>
 
       <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">テイラー展開を機械学習で用いる典型例は。</div>
         <div class="p-choices">① 決定木の分岐　 ② Newton 法、XGBoost の更新方向決定　 ③ データ拡張　 ④ ハッシュ化</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> テイラー展開は局所近似で、1次近似→勾配降下、2次近似→Newton 法・XGBoost。誤差解析にも頻出。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> テイラー展開は局所近似で、1次近似→勾配降下、2次近似→Newton 法・XGBoost。誤差解析にも頻出。</div></details></div>
 
       <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">凸関数の重要な性質として正しいのは。</div>
         <div class="p-choices">① 局所最小と大域最小が一致する　 ② 必ず微分不可能　 ③ 学習が遅い　 ④ 制約付き最適化に使えない</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 凸関数では局所最小＝大域最小。これが線形回帰、ロジスティック回帰、SVM などが理論的に扱いやすい根拠。NN は非凸なので局所最小が複数存在しうる。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 凸関数では局所最小＝大域最小。これが線形回帰、ロジスティック回帰、SVM などが理論的に扱いやすい根拠。NN は非凸なので局所最小が複数存在しうる。</div></details></div>
 
       <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">勾配降下法の更新式 θ ← θ − η ∇L における η が大きすぎるとき起きうる現象は。</div>
         <div class="p-choices">① 過学習　 ② 振動・発散　 ③ 計算量増　 ④ パラメータ削減</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> η が大きすぎると更新が最小を行き過ぎ、振動・発散。一般に Lipschitz 連続な勾配なら η ≤ 1/L が収束保証境界。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> η が大きすぎると更新が最小を行き過ぎ、振動・発散。一般に Lipschitz 連続な勾配なら η ≤ 1/L が収束保証境界。</div></details></div>
 
       <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">SGD（確率的勾配降下）の利点として正しくないものは。</div>
         <div class="p-choices">① 反復が高速　 ② ノイズが鞍点脱出に貢献　 ③ メモリ効率　 ④ 必ず大域最適に収束</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> SGDは局所最適や鞍点に陥る可能性があり、大域最適への収束保証はない（凸関数では確率収束）。それでも実用上は非常に有効、特に NN ではノイズが正則化として機能。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ④</span> SGDは局所最適や鞍点に陥る可能性があり、大域最適への収束保証はない（凸関数では確率収束）。それでも実用上は非常に有効、特に NN ではノイズが正則化として機能。</div></details></div>
 
       <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">Momentum オプティマイザが解決する問題は。</div>
         <div class="p-choices">① 学習率自動調整　 ② 勾配ノイズによる振動と遅い収束　 ③ 正則化　 ④ データ拡張</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Momentum は勾配の指数移動平均を慣性として保持し、振動を抑制しつつ収束を加速する。物理的には『谷を転がるボール』のアナロジー。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Momentum は勾配の指数移動平均を慣性として保持し、振動を抑制しつつ収束を加速する。物理的には『谷を転がるボール』のアナロジー。</div></details></div>
 
       <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">Adam オプティマイザの特徴として正しいのは。</div>
         <div class="p-choices">① Momentum と RMSProp（適応学習率）の組み合わせ＋バイアス補正　 ② 2次オプティマイザ　 ③ 学習率不要　 ④ NN以外でしか動かない</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Adam は1次モーメント（Momentum）と2次モーメント（RMSProp）を併用し、初期段階のバイアス補正を加えた1次オプティマイザ。深層学習のデファクト。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Adam は1次モーメント（Momentum）と2次モーメント（RMSProp）を併用し、初期段階のバイアス補正を加えた1次オプティマイザ。深層学習のデファクト。</div></details></div>
 
       <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">AdamW が通常の Adam と異なる点は。</div>
         <div class="p-choices">① 重み減衰を勾配計算から分離した　 ② Momentum を削除した　 ③ 学習率を固定した　 ④ 全く同じ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Adam で L2 正則化を素朴に加えると2次モーメントとの相互作用で正則化が弱まる。AdamW は重み減衰 λθ を更新式の最後で直接引くことで、SGD と同じ正則化効果を実現。LLM 学習の事実上の標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Adam で L2 正則化を素朴に加えると2次モーメントとの相互作用で正則化が弱まる。AdamW は重み減衰 λθ を更新式の最後で直接引くことで、SGD と同じ正則化効果を実現。LLM 学習の事実上の標準。</div></details></div>
 
       <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">ラグランジュ未定乗数法が解く問題のタイプは。</div>
         <div class="p-choices">① 無制約最適化　 ② 等式制約付き最適化　 ③ 線形回帰　 ④ クラスタリング</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ラグランジュ関数 L(x, λ) = f(x) - λg(x) で等式制約 g(x)=0 のもとでの f(x) の最適化を扱う。不等式制約まで拡張すると KKT 条件。SVM、エントロピー最大化で核心。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ラグランジュ関数 L(x, λ) = f(x) - λg(x) で等式制約 g(x)=0 のもとでの f(x) の最適化を扱う。不等式制約まで拡張すると KKT 条件。SVM、エントロピー最大化で核心。</div></details></div>
 
       <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">バックプロパゲーション（逆伝播）の理論的根拠は。</div>
         <div class="p-choices">① 連鎖律　 ② 中心極限定理　 ③ 大数の法則　 ④ ベイズの定理</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 逆伝播は連鎖律を計算グラフ上で機械的に適用するアルゴリズム。1986年に Rumelhart, Hinton, Williams が普及させた。これがなければ深層学習は実用化できなかった。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 逆伝播は連鎖律を計算グラフ上で機械的に適用するアルゴリズム。1986年に Rumelhart, Hinton, Williams が普及させた。これがなければ深層学習は実用化できなかった。</div></details></div>
 
       <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">Newton 法と勾配降下法の主な違いは。</div>
         <div class="p-choices">① Newton 法は1次情報のみ使用　 ② Newton 法はヘッセ行列の逆を使う2次最適化、局所的に高速　 ③ 全く同じ　 ④ 勾配降下法は教師あり</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Newton 法 θ ← θ − H⁻¹∇L は2次情報を使い、凸問題で局所的に2次収束。深層学習では H が巨大で実装困難なため、Adam 等の対角近似が実用的妥協。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Newton 法 θ ← θ − H⁻¹∇L は2次情報を使い、凸問題で局所的に2次収束。深層学習では H が巨大で実装困難なため、Adam 等の対角近似が実用的妥協。</div></details></div>
 
       <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">学習率 Warmup が必要な典型的状況は。</div>
         <div class="p-choices">① 線形回帰　 ② 大バッチ学習や Transformer 学習の初期段階　 ③ 決定木　 ④ K-means</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 大バッチや Transformer では、初期の勾配が大きく不安定なため、η を 0 から徐々に上げる Warmup（数千ステップ）が学習安定化に必須。Cosine Annealing と組み合わせるのが現代標準。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 大バッチや Transformer では、初期の勾配が大きく不安定なため、η を 0 から徐々に上げる Warmup（数千ステップ）が学習安定化に必須。Cosine Annealing と組み合わせるのが現代標準。</div></details></div>
 
       <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">高次元損失曲面で最も多く存在するのは。</div>
         <div class="p-choices">① 局所最小　 ② 鞍点　 ③ 極大　 ④ 平坦領域のみ</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dauphin et al. 2014 が示したように、高次元ではヘッセ行列のすべての固有値が同符号になる確率が指数的に小さく、鞍点が圧倒的に多い。SGDのノイズが脱出に貢献。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dauphin et al. 2014 が示したように、高次元ではヘッセ行列のすべての固有値が同符号になる確率が指数的に小さく、鞍点が圧倒的に多い。SGDのノイズが脱出に貢献。</div></details></div>
 
       <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">活性化関数 sigmoid σ(x) = 1/(1+e^{-x}) の微分は。</div>
         <div class="p-choices">① 1　 ② σ(x)　 ③ σ(x)(1 - σ(x))　 ④ e^{-x}</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> σ'(x) = σ(x)(1 - σ(x))。出力値で書ける（再利用効率高い）。最大値は σ(0)=0.5 の点で 0.25 と小さく、深層NNで勾配消失の原因に。これがReLU普及の理由の一つ。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ③</span> σ'(x) = σ(x)(1 - σ(x))。出力値で書ける（再利用効率高い）。最大値は σ(0)=0.5 の点で 0.25 と小さく、深層NNで勾配消失の原因に。これがReLU普及の理由の一つ。</div></details></div>
 
       <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">バッチサイズを大きくした際の典型的なトレードオフは。</div>
         <div class="p-choices">① 並列効率↑、汎化性能やや低下（シャープミニマへ）　 ② 全てが向上　 ③ 全てが悪化　 ④ メモリは変わらない</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 大バッチは並列効率・メモリ効率↑だが、勾配ノイズ↓で『シャープなミニマ』に収束しやすく汎化が劣化する傾向。Linear Scaling Rule＋Warmup で部分的補正。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 大バッチは並列効率・メモリ効率↑だが、勾配ノイズ↓で『シャープなミニマ』に収束しやすく汎化が劣化する傾向。Linear Scaling Rule＋Warmup で部分的補正。</div></details></div>
 
       <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">Gradient Checkpointing が解決する問題は。</div>
         <div class="p-choices">① 計算速度の遅さ　 ② 学習中の活性化保存に必要なメモリの大きさ　 ③ ハイパーパラメータ選択　 ④ データの不均衡</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 通常の逆伝播は順伝播の全活性化を保存（O(L) メモリ）。Checkpointing は一部だけ保存し、必要時に再計算でメモリを O(√L) に。計算は 1.3〜2 倍に増えるが、巨大モデル学習で必須。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 通常の逆伝播は順伝播の全活性化を保存（O(L) メモリ）。Checkpointing は一部だけ保存し、必要時に再計算でメモリを O(√L) に。計算は 1.3〜2 倍に増えるが、巨大モデル学習で必須。</div></details></div>
 
       <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">KKT 条件が登場する典型問題は。</div>
         <div class="p-choices">① 不等式制約付き最適化、SVM など　 ② クラスタリング　 ③ 単純線形回帰　 ④ K-NN</div>
-        <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> KKT（Karush-Kuhn-Tucker）条件は不等式制約付き最適化で必要十分（凸の場合）の最適性条件。停留性・主実行可能性・双対実行可能性・相補性の4つ。SVMの双対形式、エントロピー最大化など。</div>
-      </div>
+        <details class="p-answer-wrap"><summary class="p-answer-toggle">解答・解説を見る</summary><div class="p-answer"><span class="p-answer-label">ANSWER ①</span> KKT（Karush-Kuhn-Tucker）条件は不等式制約付き最適化で必要十分（凸の場合）の最適性条件。停留性・主実行可能性・双対実行可能性・相補性の4つ。SVMの双対形式、エントロピー最大化など。</div></details></div>
 
     </div>
 
