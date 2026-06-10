@@ -9,55 +9,108 @@
 
 </head>
 <body data-cert="g-kentei">
-
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../../../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../../../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../../../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="../../../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../../../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../../../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../../../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
+
+  <nav class="rail-section">
+    <a class="rail-link" href="../../../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../../../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../../../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
+    </div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
+    </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</aside>
 
 <main class="main">
+
     <div class="content">
 <div class="chap-header">
       <div class="crumbs">
@@ -723,7 +776,6 @@
       ・『生成AI』≠『ChatGPT』。Stable Diffusion、Midjourney、Sora など多数ある。
     </div>
 
-
     <!-- ============================================ -->
     <!-- セクション2 応用 -->
     <!-- ============================================ -->
@@ -804,7 +856,6 @@
       <li>2024-2025年 OpenAI o1/o3、DeepSeek R1 等の『推論モデル』が登場し、『考える』の定義が再び問われている。</li>
       <li>ハルシネーション問題は、まさに『シンタックスがセマンティクスを生まない』ことの実装上の現れと解釈できる。</li>
     </ul>
-
 
     <!-- ============================================ -->
     <!-- セクション3 ハンズオン -->
@@ -1027,7 +1078,6 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
       ルールベース版（§3.1）と比較すると：(1) <strong>ルールを書かずに済む</strong>、(2) <strong>学習データから自動的にパターンを発見</strong>、(3) <strong>データに偏りがあると予測も偏る</strong>、という機械学習の特徴が見えます。これが第3次AIブームの本質です。
     </p>
 
-
     <!-- ============================================ -->
     <!-- セクション4 シミュレーション -->
     <!-- ============================================ -->
@@ -1198,7 +1248,6 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
       </div>
     </div>
 
-
     <!-- ============================================ -->
     <!-- セクション5 問題 -->
     <!-- ============================================ -->
@@ -1210,7 +1259,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
 
     <div class="problem-set">
 
-      <div class="problem">
+      <div class="problem" id="problem-1">
         <div class="p-num">問題 1.1 / ★</div>
         <div class="p-q">『強いAI』と『弱いAI』という分類を1980年に提唱した哲学者は誰か。</div>
         <div class="p-choices">
@@ -1225,7 +1274,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-2">
         <div class="p-num">問題 1.2 / ★</div>
         <div class="p-q">1956年に『Artificial Intelligence』という用語が初めて公式に使われた会議は。</div>
         <div class="p-choices">
@@ -1240,7 +1289,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-3">
         <div class="p-num">問題 1.3 / ★</div>
         <div class="p-q">チューリングテストの説明として最も適切なものは。</div>
         <div class="p-choices">
@@ -1255,7 +1304,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-4">
         <div class="p-num">問題 1.4 / ★★</div>
         <div class="p-q">『シンギュラリティ』を2045年頃と予測したことで知られる人物は。</div>
         <div class="p-choices">
@@ -1270,7 +1319,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-5">
         <div class="p-num">問題 1.5 / ★★</div>
         <div class="p-q">特化型AI（ANI）と汎用AI（AGI）について正しい記述は。</div>
         <div class="p-choices">
@@ -1285,7 +1334,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-6">
         <div class="p-num">問題 1.6 / ★★★</div>
         <div class="p-q">フレーム問題とは何か。</div>
         <div class="p-choices">
@@ -1300,7 +1349,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-7">
         <div class="p-num">問題 1.7 / ★★★</div>
         <div class="p-q">シンボルグラウンディング問題が指す内容は。</div>
         <div class="p-choices">
@@ -1315,7 +1364,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-8">
         <div class="p-num">問題 1.8 / ★★</div>
         <div class="p-q">『中国語の部屋』思考実験の主張として最も適切なものは。</div>
         <div class="p-choices">
@@ -1330,7 +1379,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-9">
         <div class="p-num">問題 1.9 / ★★</div>
         <div class="p-q">『AI効果』とは何か。</div>
         <div class="p-choices">
@@ -1345,7 +1394,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-10">
         <div class="p-num">問題 1.10 / ★★</div>
         <div class="p-q">AI / 機械学習 / 深層学習の関係として正しいものは。</div>
         <div class="p-choices">
@@ -1360,7 +1409,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-11">
         <div class="p-num">問題 1.11 / ★★</div>
         <div class="p-q">Russell & Norvigによる4象限の知能観で『チューリングテスト』が位置するのは。</div>
         <div class="p-choices">
@@ -1375,7 +1424,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-12">
         <div class="p-num">問題 1.12 / ★★★</div>
         <div class="p-q">『中国語の部屋』への代表的な反論として、『部屋全体としてなら理解している』とする立場は。</div>
         <div class="p-choices">
@@ -1390,7 +1439,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-13">
         <div class="p-num">問題 1.13 / ★</div>
         <div class="p-q">AIの定義について研究者の意見が完全に一致しない最大の理由は。</div>
         <div class="p-choices">
@@ -1405,7 +1454,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-14">
         <div class="p-num">問題 1.14 / ★★</div>
         <div class="p-q">ELIZA（1966年、ワイゼンバウム）の中核技術は。</div>
         <div class="p-choices">
@@ -1420,7 +1469,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-15">
         <div class="p-num">問題 1.15 / ★★★</div>
         <div class="p-q">ASI（人工超知能）の説明として最も適切なものは。</div>
         <div class="p-choices">
@@ -1435,7 +1484,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-16">
         <div class="p-num">問題 1.16 / ★★</div>
         <div class="p-q">フレーム問題に対する現代AIの現実的な対応として最も近いものは。</div>
         <div class="p-choices">
@@ -1450,7 +1499,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-17">
         <div class="p-num">問題 1.17 / ★★</div>
         <div class="p-q">『弱いAI』の典型例として誤っているものは。</div>
         <div class="p-choices">
@@ -1465,7 +1514,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-18">
         <div class="p-num">問題 1.18 / ★★★</div>
         <div class="p-q">『シンタックスはセマンティクスを生まない』というテーゼで知られるのは。</div>
         <div class="p-choices">
@@ -1480,7 +1529,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-19">
         <div class="p-num">問題 1.19 / ★★★</div>
         <div class="p-q">2022年にGoogleエンジニアBlake Lemoineが『感覚を持つ』と主張して論争になったAIは。</div>
         <div class="p-choices">
@@ -1495,7 +1544,7 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
         </div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-20">
         <div class="p-num">問題 1.20 / ★★★</div>
         <div class="p-q">現代の生成AI（GPT-4等）がチューリングテストを実質的に通過したと多くの研究者が認めるが、それでも『AGI到達』とは多くが認めない。その主要な理由は。</div>
         <div class="p-choices">
@@ -1558,6 +1607,8 @@ X_test = np.array([[<span class="builtin">1</span>, <span class="builtin">1</spa
     </nav>
     </div>
   </main>
+
+</div>
 <script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

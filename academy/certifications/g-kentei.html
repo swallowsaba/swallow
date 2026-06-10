@@ -4,361 +4,327 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>G検定 — Swallow AI Academy</title>
-<meta name="description" content="G検定 完全カリキュラム。基本編12章+応用編12章。480問+150ハンズオン+72シミュレーション。">
+<meta name="description" content="G検定 完全カリキュラム。">
 <link rel="stylesheet" href="../assets/css/main.css">
+<meta name="theme-color" content="#5e6ad2">
 </head>
-<body data-cert="g-kentei">
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<body data-cert="g-kentei"><!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
-  </a>
-  <a href="../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
-
-<main class="app-screen app-screen--wide" data-cert="g-kentei">
-  <a href="../index.html" class="back-btn">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-    ホーム
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
 
-  <h1 class="screen-title">G検定 🏆</h1>
-  <p class="screen-subtitle">JDLA の <strong>AI ジェネラリスト検定</strong>。基本編 12 章 + 応用編 12 章 = 24 章。<strong>480 問</strong> のオリジナル問題と <strong>150</strong> のハンズオン演習で合格まで。</p>
+  <nav class="rail-section">
+    <a class="rail-link" href="../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
 
-  <!-- Hero progress card -->
-  <div class="hero-card" data-cert="g-kentei">
-    <div class="hero-card__ring">
-      <div class="ring" data-progress-ring="g-kentei:" data-total="24"></div>
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
     </div>
-    <div class="hero-card__body">
-      <div class="hero-card__label">あなたの進捗</div>
-      <div class="hero-card__value" id="cert-value">0 / 24</div>
-      <div class="hero-card__sub" id="cert-sub">下の章リストから始めよう</div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
     </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
   </div>
+</aside>
 
-  <!-- Action chips -->
-  <div class="screen-section">
-    <div class="screen-section__head">
-      <div class="screen-section__title">5つの学習方法</div>
+<main class="main">
+  <div class="content content--wide">
+    <div class="crumbs"><a href="../index.html">ホーム</a><span class="crumbs-sep">/</span>資格<span class="crumbs-sep">/</span>G検定</div>
+    <div class="page-head">
+      <div class="page-eyebrow"><span class="page-eyebrow__dot"></span>JDLA · ジェネラリスト検定</div>
+      <h1 class="page-title">G検定</h1>
+      <p class="page-desc">日本ディープラーニング協会（JDLA）の AI ジェネラリスト検定。基本編 12 章 + 応用編 12 章 = <strong>全24章</strong>。<strong>474問</strong>の演習と <strong>150</strong> のハンズオンで合格まで。</p>
     </div>
-    <div class="action-chips">
-      <a class="action-chip" data-color="basic" href="#basics">
-        <div class="action-chip__emoji">📚</div>
-        <div class="action-chip__label">基本</div>
-        <div class="action-chip__count">12章</div>
-      </a>
-      <a class="action-chip" data-color="advanced" href="#advanced">
-        <div class="action-chip__emoji">🚀</div>
-        <div class="action-chip__label">応用</div>
-        <div class="action-chip__count">12章</div>
-      </a>
-      <a class="action-chip" data-color="handson" href="../learn/g-kentei/handson.html">
-        <div class="action-chip__emoji">💻</div>
-        <div class="action-chip__label">演習</div>
-        <div class="action-chip__count">150</div>
-      </a>
-      <a class="action-chip" data-color="simulation" href="../learn/g-kentei/simulation.html">
-        <div class="action-chip__emoji">🧪</div>
-        <div class="action-chip__label">シム</div>
-        <div class="action-chip__count">72</div>
-      </a>
-      <a class="action-chip" data-color="quiz" href="../quiz.html">
-        <div class="action-chip__emoji">📝</div>
-        <div class="action-chip__label">問題</div>
-        <div class="action-chip__count">480問</div>
-      </a>
-    </div>
-  </div>
 
-  <!-- Basics chapters -->
-  <div class="screen-section" id="basics">
-    <div class="screen-section__head">
-      <div class="screen-section__title">📚 基本編</div>
-      <div class="screen-section__count">12章 · 240問</div>
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric__label">総合進捗</div>
+        <div class="metric__value" id="gk-progress">0/24</div>
+        <div class="progress-track"><div class="progress-fill" id="gk-fill"></div></div>
+      </div>
+      <div class="metric"><div class="metric__label">◆ 基本編</div><div class="metric__value">12</div><div class="metric__sub">章 · 240問</div></div>
+      <div class="metric"><div class="metric__label">◆ 応用編</div><div class="metric__value">12</div><div class="metric__sub">章 · 234問</div></div>
+      <div class="metric"><div class="metric__label">合格率</div><div class="metric__value">60%</div><div class="metric__sub">前後</div></div>
     </div>
-    <div class="lesson-list">
-      <a class="lesson-tile" href="../learn/g-kentei/basics/01-what-is-ai.html" data-chapter-key="g-kentei:basics:01-what-is-ai">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">01</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">AIとは何か</div>
-          <div class="lesson-tile__sub">章 01</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/basics/02-history.html" data-chapter-key="g-kentei:basics:02-history">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">02</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">AIの歴史</div>
-          <div class="lesson-tile__sub">章 02</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/basics/03-linear-algebra.html" data-chapter-key="g-kentei:basics:03-linear-algebra">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">03</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">線形代数</div>
-          <div class="lesson-tile__sub">章 03</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/basics/04-calculus.html" data-chapter-key="g-kentei:basics:04-calculus">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">04</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">微分・最適化</div>
-          <div class="lesson-tile__sub">章 04</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/basics/05-probability.html" data-chapter-key="g-kentei:basics:05-probability">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">05</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">確率・統計</div>
-          <div class="lesson-tile__sub">章 05</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/basics/06-info-theory.html" data-chapter-key="g-kentei:basics:06-info-theory">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">06</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">情報理論</div>
-          <div class="lesson-tile__sub">章 06</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/basics/07-ml-paradigm.html" data-chapter-key="g-kentei:basics:07-ml-paradigm">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">07</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">ML パラダイム</div>
-          <div class="lesson-tile__sub">章 07</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/basics/08-ml-classical.html" data-chapter-key="g-kentei:basics:08-ml-classical">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">08</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">古典ML</div>
-          <div class="lesson-tile__sub">章 08</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/basics/09-ml-evaluation.html" data-chapter-key="g-kentei:basics:09-ml-evaluation">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">09</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">評価指標</div>
-          <div class="lesson-tile__sub">章 09</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/basics/10-nn-basics.html" data-chapter-key="g-kentei:basics:10-nn-basics">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">10</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">NN基礎</div>
-          <div class="lesson-tile__sub">章 10</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/basics/11-backprop.html" data-chapter-key="g-kentei:basics:11-backprop">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">11</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">逆伝播</div>
-          <div class="lesson-tile__sub">章 11</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/basics/12-nn-tricks.html" data-chapter-key="g-kentei:basics:12-nn-tricks">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">12</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">NNの工夫</div>
-          <div class="lesson-tile__sub">章 12</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-    </div>
-  </div>
 
-  <!-- Advanced chapters -->
-  <div class="screen-section" id="advanced">
-    <div class="screen-section__head">
-      <div class="screen-section__title">🚀 応用編</div>
-      <div class="screen-section__count">12章 · 240問</div>
+    <div class="section">
+      <div class="section__head"><div class="section__title">学習方法</div></div>
+      <div class="navgrid">
+        <a href="#basics" class="navtile"><div class="navtile__icon">◆</div><div class="navtile__title">基本編</div><div class="navtile__meta">12章</div></a>
+        <a href="#advanced" class="navtile"><div class="navtile__icon">◆</div><div class="navtile__title">応用編</div><div class="navtile__meta">12章</div></a>
+        <a href="../learn/g-kentei/handson.html" class="navtile"><div class="navtile__icon">▤</div><div class="navtile__title">ハンズオン</div><div class="navtile__meta">150演習</div></a>
+        <a href="../learn/g-kentei/simulation.html" class="navtile"><div class="navtile__icon">◈</div><div class="navtile__title">シミュレーション</div><div class="navtile__meta">72</div></a>
+        <a href="../quiz.html" class="navtile"><div class="navtile__icon">◎</div><div class="navtile__title">問題演習</div><div class="navtile__meta">474問</div></a>
+      </div>
     </div>
-    <div class="lesson-list">
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/01-cnn.html" data-chapter-key="g-kentei:advanced:01-cnn">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">13</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">CNN</div>
-          <div class="lesson-tile__sub">章 13</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/02-rnn.html" data-chapter-key="g-kentei:advanced:02-rnn">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">14</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">RNN・LSTM</div>
-          <div class="lesson-tile__sub">章 14</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/03-transformer.html" data-chapter-key="g-kentei:advanced:03-transformer">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">15</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">Transformer</div>
-          <div class="lesson-tile__sub">章 15</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/04-bert-gpt.html" data-chapter-key="g-kentei:advanced:04-bert-gpt">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">16</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">BERT・GPT</div>
-          <div class="lesson-tile__sub">章 16</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/05-llm.html" data-chapter-key="g-kentei:advanced:05-llm">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">17</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">LLM</div>
-          <div class="lesson-tile__sub">章 17</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/06-generative.html" data-chapter-key="g-kentei:advanced:06-generative">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">18</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">生成AI</div>
-          <div class="lesson-tile__sub">章 18</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/07-rl.html" data-chapter-key="g-kentei:advanced:07-rl">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">19</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">強化学習</div>
-          <div class="lesson-tile__sub">章 19</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/08-rag.html" data-chapter-key="g-kentei:advanced:08-rag">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">20</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">RAG</div>
-          <div class="lesson-tile__sub">章 20</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/09-agent.html" data-chapter-key="g-kentei:advanced:09-agent">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">21</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">AI Agent</div>
-          <div class="lesson-tile__sub">章 21</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/10-mlops.html" data-chapter-key="g-kentei:advanced:10-mlops">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">22</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">MLOps</div>
-          <div class="lesson-tile__sub">章 22</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/11-ethics.html" data-chapter-key="g-kentei:advanced:11-ethics">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">23</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">AI倫理</div>
-          <div class="lesson-tile__sub">章 23</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-      <a class="lesson-tile" href="../learn/g-kentei/advanced/12-law.html" data-chapter-key="g-kentei:advanced:12-law">
-        <div class="lesson-tile__icon"><span class="lesson-tile__icon-text">24</span></div>
-        <div class="lesson-tile__body">
-          <div class="lesson-tile__title">AI法規制</div>
-          <div class="lesson-tile__sub">章 24</div>
-        </div>
-        <div class="lesson-tile__chevron">›</div>
-      </a>
-    </div>
-  </div>
 
-  <!-- Exam info -->
-  <div class="screen-section">
-    <div class="screen-section__head">
-      <div class="screen-section__title">試験情報</div>
+    <div class="section" id="basics">
+      <div class="section__head"><div class="section__title">基本編</div><div class="section__meta">12章 · 240問</div></div>
+      <div class="rows">
+      <a class="row" href="../learn/g-kentei/basics/01-what-is-ai.html" data-chapter-key="g-kentei:basics:01-what-is-ai">
+        <span class="row__index">1</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">AIとは何か</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/basics/02-history.html" data-chapter-key="g-kentei:basics:02-history">
+        <span class="row__index">2</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">AIの歴史</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/basics/03-linear-algebra.html" data-chapter-key="g-kentei:basics:03-linear-algebra">
+        <span class="row__index">3</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">線形代数</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/basics/04-calculus.html" data-chapter-key="g-kentei:basics:04-calculus">
+        <span class="row__index">4</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">微分・最適化</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/basics/05-probability.html" data-chapter-key="g-kentei:basics:05-probability">
+        <span class="row__index">5</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">確率・統計</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/basics/06-info-theory.html" data-chapter-key="g-kentei:basics:06-info-theory">
+        <span class="row__index">6</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">情報理論</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/basics/07-ml-paradigm.html" data-chapter-key="g-kentei:basics:07-ml-paradigm">
+        <span class="row__index">7</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">MLパラダイム</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/basics/08-ml-classical.html" data-chapter-key="g-kentei:basics:08-ml-classical">
+        <span class="row__index">8</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">古典ML</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/basics/09-ml-evaluation.html" data-chapter-key="g-kentei:basics:09-ml-evaluation">
+        <span class="row__index">9</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">評価指標</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/basics/10-nn-basics.html" data-chapter-key="g-kentei:basics:10-nn-basics">
+        <span class="row__index">10</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">NN基礎</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/basics/11-backprop.html" data-chapter-key="g-kentei:basics:11-backprop">
+        <span class="row__index">11</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">逆伝播</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/basics/12-nn-tricks.html" data-chapter-key="g-kentei:basics:12-nn-tricks">
+        <span class="row__index">12</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">NNの工夫</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      </div>
     </div>
-    <dl class="info-strip">
-      <div class="info-strip-item"><dt>主催</dt><dd>JDLA</dd></div>
-      <div class="info-strip-item"><dt>形式</dt><dd>120分</dd></div>
-      <div class="info-strip-item"><dt>問題数</dt><dd>約220</dd></div>
-      <div class="info-strip-item"><dt>合格率</dt><dd>60-70%</dd></div>
-      <div class="info-strip-item"><dt>受験料</dt><dd>13,200円</dd></div>
-    </dl>
+
+    <div class="section" id="advanced">
+      <div class="section__head"><div class="section__title">応用編</div><div class="section__meta">12章 · 234問</div></div>
+      <div class="rows">
+      <a class="row" href="../learn/g-kentei/advanced/01-cnn.html" data-chapter-key="g-kentei:advanced:01-cnn">
+        <span class="row__index">13</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">CNN</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/advanced/02-rnn.html" data-chapter-key="g-kentei:advanced:02-rnn">
+        <span class="row__index">14</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">RNN・LSTM</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/advanced/03-transformer.html" data-chapter-key="g-kentei:advanced:03-transformer">
+        <span class="row__index">15</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">Transformer</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/advanced/04-bert-gpt.html" data-chapter-key="g-kentei:advanced:04-bert-gpt">
+        <span class="row__index">16</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">BERT・GPT</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/advanced/05-llm.html" data-chapter-key="g-kentei:advanced:05-llm">
+        <span class="row__index">17</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">LLM</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/advanced/06-generative.html" data-chapter-key="g-kentei:advanced:06-generative">
+        <span class="row__index">18</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">生成AI</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/advanced/07-rl.html" data-chapter-key="g-kentei:advanced:07-rl">
+        <span class="row__index">19</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">強化学習</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/advanced/08-rag.html" data-chapter-key="g-kentei:advanced:08-rag">
+        <span class="row__index">20</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">RAG</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/advanced/09-agent.html" data-chapter-key="g-kentei:advanced:09-agent">
+        <span class="row__index">21</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">AI Agent</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/advanced/10-mlops.html" data-chapter-key="g-kentei:advanced:10-mlops">
+        <span class="row__index">22</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">MLOps</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/advanced/11-ethics.html" data-chapter-key="g-kentei:advanced:11-ethics">
+        <span class="row__index">23</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">AI倫理</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      <a class="row" href="../learn/g-kentei/advanced/12-law.html" data-chapter-key="g-kentei:advanced:12-law">
+        <span class="row__index">24</span>
+        <span class="row__check"></span>
+        <span class="row__body"><span class="row__title">AI法規制</span></span>
+        <span class="row__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </a>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section__head"><div class="section__title">試験情報</div></div>
+      <dl class="info-table">
+        <div class="info-cell"><dt>主催</dt><dd>JDLA</dd></div>
+        <div class="info-cell"><dt>形式</dt><dd>120分</dd></div>
+        <div class="info-cell"><dt>問題数</dt><dd>約220</dd></div>
+        <div class="info-cell"><dt>合格率</dt><dd>60-70%</dd></div>
+        <div class="info-cell"><dt>受験料</dt><dd>13,200円</dd></div>
+      </dl>
+    </div>
   </div>
 </main>
+</div>
+<script src="../assets/js/main.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     if (window.Swallow && Swallow.Store) {
-      var completed = Swallow.Store.getCompletedCount('g-kentei:');
-      var v = document.getElementById('cert-value');
-      var sub = document.getElementById('cert-sub');
-      if (v && sub) {
-        if (completed === 0) { v.textContent = '0 / 24'; sub.textContent = '章1から始めよう'; }
-        else if (completed === 24) { v.textContent = '🏆 制覇'; sub.textContent = '全章クリア！'; }
-        else { v.textContent = completed + ' / 24'; sub.textContent = 'あと' + (24-completed) + '章！'; }
-      }
-      // Mark lessons
-      document.querySelectorAll('.lesson-tile[data-chapter-key]').forEach(function(tile) {
-        var key = tile.getAttribute('data-chapter-key');
-        if (Swallow.Store.isCompleted(key)) tile.classList.add('is-completed');
-        else if (Swallow.Store.isVisited(key)) tile.classList.add('is-visited');
+      var c = Swallow.Store.getCompletedCount('g-kentei:');
+      var el;
+      if (el = document.getElementById('gk-progress')) el.textContent = c + '/24';
+      if (el = document.getElementById('gk-fill')) el.style.width = (c/24*100) + '%';
+      document.querySelectorAll('.row[data-chapter-key]').forEach(function(row) {
+        var k = row.getAttribute('data-chapter-key');
+        if (Swallow.Store.isCompleted(k)) row.classList.add('is-completed');
+        else if (Swallow.Store.isVisited(k)) row.classList.add('is-visited');
       });
     }
   }, 50);
 });
 </script>
-
-<script src="../assets/js/main.js" defer></script>
 </body>
 </html>

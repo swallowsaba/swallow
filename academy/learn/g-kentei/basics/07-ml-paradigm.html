@@ -9,55 +9,108 @@
 
 </head>
 <body data-cert="g-kentei">
-
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../../../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../../../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../../../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="../../../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../../../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../../../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../../../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
+
+  <nav class="rail-section">
+    <a class="rail-link" href="../../../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../../../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../../../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
+    </div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
+    </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</aside>
 
 <main class="main">
+
     <div class="content">
 <div class="chap-header">
       <div class="crumbs">
@@ -459,140 +512,140 @@ Epoch 50: train_loss=0.001, val_loss=0.342, gap= 0.341 ← 明らかな過学習
 
     <div class="problem-set">
 
-      <div class="problem">
+      <div class="problem" id="problem-1">
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">教師あり学習の定義として正しいのは。</div>
         <div class="p-choices">① ラベルなしから学ぶ　 ② (入力, 正解) ペアからマッピングを学ぶ　 ③ 報酬から学ぶ　 ④ 学習しない</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 教師あり学習は (x, y) ペアから関数 y=f(x) を学習。分類と回帰が代表。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">K-means や PCA はどの学習パラダイムか。</div>
         <div class="p-choices">① 教師あり　 ② 教師なし　 ③ 強化学習　 ④ 自己教師あり</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ラベルを使わずデータ構造（クラスタ、主成分）を見出す教師なし学習の代表。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">BERT の MLM や GPT の Next Token Prediction はどのパラダイムか。</div>
         <div class="p-choices">① 教師あり　 ② 教師なし　 ③ 自己教師あり（データから教師信号を作る）　 ④ 強化学習</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 大量のラベルなしテキストから、自分自身でマスク埋めや次トークン予測という『教師信号』を作って学習。現代基盤モデルの核。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">強化学習の中核要素は。</div>
         <div class="p-choices">① ラベル　 ② 状態・行動・報酬・方策　 ③ クラスタ　 ④ ベクトル化</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> エージェントが状態s_tで行動a_tを取り、報酬r_tを得て次状態s_{t+1}へ。累積報酬を最大化する方策 π(a|s) を学習。AlphaGo, RLHF の根幹。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">訓練・検証・テストデータの主な役割として正しい組合せは。</div>
         <div class="p-choices">① 訓練=学習、検証=ハイパラ選択、テスト=最終評価　 ② すべて同じ　 ③ テストで学習　 ④ 検証はランダム</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> テストデータは『最終評価1回のみ』。検証で繰り返しチューニングしたあとに、初めて見るデータで本番性能を推定。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">『データリーク』が起きる典型例は。</div>
         <div class="p-choices">① 時系列データを単純シャッフルで分割、全データで正規化、目的変数情報の混入　 ② 大きすぎるバッチ　 ③ 学習率小さい　 ④ パラメータ少ない</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> いずれもテスト情報の漏洩。本番性能を大幅に過大評価する致命的バグ。時系列は時間順分割、正規化は訓練データで計算してテストに適用。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">過学習（overfitting）の典型的サインは。</div>
         <div class="p-choices">① 訓練・検証とも誤差大　 ② 訓練誤差小、検証誤差大　 ③ 両方小　 ④ ランダム</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 過学習は『訓練データを暗記して、未見データで失敗』。対処はEarly Stopping、Dropout、L2、データ拡張、Augmentation。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">バイアス-バリアンス分解で『バイアス大』を表す状況は。</div>
         <div class="p-choices">① モデルが複雑すぎ　 ② モデルが単純すぎて関数を表現できない（未学習）　 ③ データ多すぎ　 ④ 正則化なし</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Bias は『系統的な誤差』、モデルの表現力不足が原因。対処はモデル複雑化、特徴量追加、正則化緩和。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">5-fold Cross-Validation の目的は。</div>
         <div class="p-choices">① データ量を増やす　 ② モデル評価の分散を減らし安定化、ハイパラ選択の信頼性　 ③ 計算を減らす　 ④ 正則化</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> データを5分割し各回1つを検証に。5回の評価の平均で評価分散を抑える。小データで特に重要。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">高次元ハイパラ探索で Grid Search より Random Search が推奨される理由は。</div>
         <div class="p-choices">① Bergstra 2012：少数の重要パラメータを効率的に探索できる　 ② 計算量が同じ　 ③ ランダムは常に最適　 ④ コードが短い</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 多くの場合、性能を支配するハイパラは少数。Grid は全格子点を試すが、無関係次元の試行が無駄。Random は重要次元を多くサンプリングできる。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">Bayesian Optimization の特徴は。</div>
         <div class="p-choices">① 過去の試行結果からガウス過程で次の候補を予測、試行数を最小化　 ② ランダム　 ③ 厳密な数学なし　 ④ Optuna は使えない</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> GP やTPE で予測平均と分散を考慮し『有望かつ未探索な点』を選ぶ。NN の学習など1試行が高コストな場合に強力。Optuna は TPE ベースで実装。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">転移学習（Transfer Learning）の典型的フローは。</div>
         <div class="p-choices">① 事前学習（大規模データで自己教師あり）→ ファインチューニング（少量タスクデータ）　 ② ゼロから訓練のみ　 ③ ハイパラ調整のみ　 ④ ランダム</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> BERT/GPT/ViT すべてこの流れ。LLM ではIn-Context Learning, LoRA, RLHFなど発展形が多数。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">No Free Lunch（NFL）定理が示唆することは。</div>
         <div class="p-choices">① あるアルゴリズムが万能　 ② すべての可能な問題分布で平均すると、どのアルゴリズムも同性能 → 問題ごとに適した手法を選ぶ必要　 ③ 学習不要　 ④ 深層学習が最強</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Wolpert 1996。実用問題が特定構造（画像・言語の局所性、自然法則）を持つから NN が機能するが、すべての問題に最強なアルゴリズムは数学的に存在しない。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">層化抽出（Stratified Sampling）が必要な典型ケースは。</div>
         <div class="p-choices">① クラス不均衡データの分類　 ② 完全に均一なデータ　 ③ 連続値のみ　 ④ 時系列のみ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> クラス比が偏った（陽性 1% など）データで単純ランダム分割すると検証セットに陽性が含まれない可能性も。層化で各分割のクラス比を均一に保つ。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">『Early Stopping』が機能する原理は。</div>
         <div class="p-choices">① 訓練を最後まで続ける　 ② 検証損失が悪化し始める前に学習を止めて過学習を防ぐ　 ③ パラメータ削減　 ④ データ拡張</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 訓練損失は単調減少するが検証損失は U字。最低点で止めると過学習せず汎化性能最大化。Patience（数エポック改善なしで停止）で実装。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">Few-shot Learning の典型は。</div>
         <div class="p-choices">① 大量データで学習　 ② 数〜数十サンプルで新タスクに適応（MAML, In-Context Learning）　 ③ ゼロデータ　 ④ パラメータ調整なし</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 限られたサンプルで新タスクに適応する手法。GPT-4 のIn-Context Learning はプロンプトの例から推論する強力な Few-shot 手法。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">マルチタスク学習の利点として誤りはどれか。</div>
         <div class="p-choices">① タスク間で知識共有　 ② 各タスクで Bias を下げる効果　 ③ 正則化効果でVariance↓　 ④ 全てのタスクが互いに干渉して性能が必ず下がる</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> 実際にはタスク間の知識共有でしばしば性能↑。ただし関連性のないタスク同時学習は『負の転移』を起こすことがある。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">『Double Descent』現象（深層学習で観察）の主張は。</div>
         <div class="p-choices">① モデル複雑度を上げ続けると、過学習を超えて再び汎化が改善する　 ② U字カーブのみ　 ③ 学習しない　 ④ 必ず単調減少</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 古典的 U字 の後に二度目の下降。過パラメータ化された NN が経験的に汎化することの一つの説明。Belkin 2019。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">半教師あり学習が威力を発揮する状況は。</div>
         <div class="p-choices">① ラベル付け不可　 ② ラベル付きデータが少ないがラベルなしデータは大量にある（医療画像など）　 ③ 全データラベル付き　 ④ データなし</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ラベル収集コストが高い領域で、ラベルなしデータを活用して学習を強化。Pseudo-Labeling, FixMatch, MixMatch などの手法。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">『時系列データ』を扱う際の正しい分割方法は。</div>
         <div class="p-choices">① ランダム k-fold　 ② 時系列順に分割：過去で訓練、未来で検証・テスト（Time Series Split）　 ③ シャッフル　 ④ 階層化</div>
@@ -633,6 +686,8 @@ Epoch 50: train_loss=0.001, val_loss=0.342, gap= 0.341 ← 明らかな過学習
     </nav>
     </div>
   </main>
+
+</div>
 <script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

@@ -9,55 +9,108 @@
 
 </head>
 <body data-cert="g-kentei">
-
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../../../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../../../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../../../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="../../../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../../../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../../../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../../../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
+
+  <nav class="rail-section">
+    <a class="rail-link" href="../../../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../../../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../../../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
+    </div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
+    </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</aside>
 
 <main class="main">
+
     <div class="content">
 <div class="chap-header">
       <div class="crumbs">
@@ -446,140 +499,140 @@ Conv5_3 (深層): 196x196　 ← 入力224x224の大半をカバー<br>
 
     <div class="problem-set">
 
-      <div class="problem">
+      <div class="problem" id="problem-1">
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">CNN が MLP より画像処理に適している理由は。</div>
         <div class="p-choices">① 計算が遅い　 ② 空間的局所性と平行移動不変性の帰納バイアス、パラメータ共有でパラメータ削減　 ③ 学習が不安定　 ④ メモリを大量に必要とする</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CNN は同じフィルタを全位置で適用（パラメータ共有）し、近い画素関係を仮定。MLPの全結合に比べパラメータが2〜3桁少なく、性能も高い。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">2012年の AlexNet が ImageNet コンペで起こした革命の核心は。</div>
         <div class="p-choices">① 浅い NN を使った　 ② 深層CNN + ReLU + Dropout + GPU + データ拡張で従来手法を圧倒　 ③ 教師なし学習　 ④ 強化学習</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Krizhevsky 2012。誤り率 15.3% vs 2位 26.2%。深層学習革命の起点となった。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">入力 32x32、3x3 Conv、stride=1、padding=1 のとき出力サイズは。</div>
         <div class="p-choices">① 30x30　 ② 32x32（same パディング）　 ③ 16x16　 ④ 34x34</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> (32 + 2·1 - 3) / 1 + 1 = 32。padding='same' で入力と同じサイズを維持。VGG以降で標準。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">Max Pooling の役割として正しいのは。</div>
         <div class="p-choices">① 学習可能パラメータ追加　 ② 領域内最大値を取り、空間ダウンサンプリング・平行移動不変性強化　 ③ 正則化のみ　 ④ 出力層</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> パラメータなし、空間次元削減、強い活性化を保持。Average Pooling より一般的。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">ResNet（2015）が解決した深層化の壁は。</div>
         <div class="p-choices">① 計算量　 ② 勾配消失と退化問題：残差接続 y=F(x)+x で 152層を学習可能に　 ③ メモリのみ　 ④ ラベル不足</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> He 2015。スキップ接続で勾配が直接伝播。ImageNet 誤り率 3.57%、人間（5.1%）超え。現代CNN/Transformerの標準構造。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">VGG の特徴的な設計は。</div>
         <div class="p-choices">① 1x1 Conv のみ　 ② 3x3 Conv のみを多層積み重ね（16〜19層）　 ③ ランダム　 ④ 全結合のみ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Simonyan 2014。シンプルで強力。3x3 を 2層で 5x5 相当の受容野をパラメータ少なく実現する発見。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">『受容野（Receptive Field）』とは。</div>
         <div class="p-choices">① 出力ピクセルが影響を受ける入力上の領域　 ② パラメータ数　 ③ バッチサイズ　 ④ 学習率</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 深い層ほど受容野が広い。3x3 conv を 2層重ねると 5x5 受容野。Dilated Conv で更に拡大可能。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">EfficientNet (2019) の貢献は。</div>
         <div class="p-choices">① ランダム探索　 ② 深さ・幅・解像度を複合スケーリングで最適化、同精度で大幅パラメータ削減　 ③ 教師なし　 ④ ViT 提案</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Tan & Le 2019。compound scaling で計算予算に対する精度効率を最大化。モバイル向けにも適用。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">Vision Transformer (ViT) の入力処理は。</div>
         <div class="p-choices">① 画素単位　 ② 画像を 16x16 などのパッチに分けてトークン化し Transformer に入力　 ③ Conv のみ　 ④ MLP のみ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Dosovitskiy 2020。CNN の帰納バイアスなしで、大量データ（JFT-300M）で CNN を超えた。CLIP、Stable Diffusion で標準。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">YOLO シリーズの特徴は。</div>
         <div class="p-choices">① 2-stage　 ② 1-stage：画像をグリッド分割し各セルで物体予測、リアルタイム　 ③ 教師なし　 ④ セグメンテーション特化</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Redmon 2016 で導入、YOLOv8/v10 まで進化。FPS が高く、産業応用で広く使われる。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">U-Net (2015) が広く使われる分野は。</div>
         <div class="p-choices">① 物体検出　 ② 医療画像セグメンテーション、エンコーダ-デコーダ＋スキップ接続　 ③ 言語モデル　 ④ 強化学習</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ronneberger 2015。U字型構造で詳細を保持。Diffusion モデル（DDPM、Stable Diffusion）の denoiser にも採用。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">転移学習（ImageNet → 別タスク）が機能する理由は。</div>
         <div class="p-choices">① 偶然　 ② 浅層が汎用的特徴（エッジ、テクスチャ）を学習、それは多くのタスクで再利用可能　 ③ ランダム　 ④ パラメータ多いから</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 階層的特徴学習。少量データのタスクで事前学習モデルをファインチューニングすると、ゼロから学習より大幅に高精度。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Global Average Pooling (GAP) の役割は。</div>
         <div class="p-choices">① 学習する　 ② 各チャネルの空間平均でベクトル化、最終FC層代替、パラメータ削減　 ③ ノイズ追加　 ④ 正則化のみ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> NIN/ResNet以降で標準。Flatten + 巨大 FC をGAPで置換、過学習防止＋パラメータ削減。Class Activation Map の基礎にも。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">Grad-CAM の目的は。</div>
         <div class="p-choices">① 学習加速　 ② 予測根拠の可視化（どの画像領域がクラス予測に貢献したか）　 ③ 圧縮　 ④ ノイズ除去</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Selvaraju 2017。最終 Conv 層の勾配を使ってヒートマップを生成。XAI（説明可能AI）の標準ツール、医療画像で重要。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">1x1 Convolution（pointwise）の役割は。</div>
         <div class="p-choices">① 役立たず　 ② チャネル間の線形結合、次元削減・拡張、Inception/ResNet で頻用　 ③ プーリング代替　 ④ 正則化</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 空間方向は1x1で変えず、チャネル方向のみ変換。Bottleneck構造で計算量削減。MobileNet（Depthwise Separable Conv）でも核心。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">Segment Anything Model (SAM, 2023) の特徴は。</div>
         <div class="p-choices">① 単一タスク　 ② プロンプト型セグメンテーション、未知物体も可、Foundation Modelとして広く転用可　 ③ 教師なしのみ　 ④ 軽量モデル</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Meta AI 2023。点・ボックス・テキストプロンプトで任意の物体をセグメント。10億+のマスクで事前学習。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">DenseNet (2017) の特徴は。</div>
         <div class="p-choices">① 全層をスキップ接続でなく完全に連結（dense connection）、特徴再利用と勾配伝播改善　 ② パラメータ激増　 ③ 浅い NN　 ④ 物体検出専用</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Huang 2017。各層が前のすべての層の出力を入力に。パラメータ効率と精度が高い。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">物体検出の評価指標として標準的なのは。</div>
         <div class="p-choices">① Accuracy　 ② mAP（mean Average Precision）@IoU 0.5、0.5:0.95　 ③ MSE　 ④ R²</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> COCO標準。クラスごとの AP の平均、IoU 閾値で性能評価。YOLO, Faster R-CNN等の比較で使用。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">ConvNeXt (2022) の主張は。</div>
         <div class="p-choices">① ViTが万能　 ② CNNにViTの工夫（GELU、LN、大きなカーネル等）を取り入れれば、CNNがViTと同等以上の精度に　 ③ Conv 不要　 ④ 教師なし</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Liu 2022。ViT の優位性はアーキテクチャ自体ではなく、学習レシピと工夫にあると示唆。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">Dilated（Atrous）Convolution の効果は。</div>
         <div class="p-choices">① パラメータ増加　 ② カーネル内のサンプル間隔を空けて受容野を拡大、パラメータ・計算量は同じ　 ③ ノイズ追加　 ④ 教師なし</div>
@@ -618,6 +671,8 @@ Conv5_3 (深層): 196x196　 ← 入力224x224の大半をカバー<br>
     </nav>
     </div>
   </main>
+
+</div>
 <script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

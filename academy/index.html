@@ -4,234 +4,226 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Swallow AI Academy</title>
-<meta name="description" content="AI資格学習プラットフォーム。G検定・E資格・統計検定など7資格を、進捗トラッキングとXPで楽しく学ぶ。">
+<meta name="description" content="AI資格学習プラットフォーム。7資格を体系的に学ぶ。">
 <link rel="stylesheet" href="assets/css/main.css">
-<meta name="theme-color" content="#6366f1">
+<meta name="theme-color" content="#5e6ad2">
 </head>
-<body data-cert="g-kentei">
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<body data-cert="g-kentei"><!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
 
-<main class="app-screen">
-  <!-- Hero card -->
-  <div class="hero-card" data-cert="g-kentei">
-    <div class="hero-card__ring">
-      <div class="ring" data-progress-ring="g-kentei:" data-total="24"></div>
+  <nav class="rail-section">
+    <a class="rail-link" href="index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
     </div>
-    <div class="hero-card__body">
-      <div class="hero-card__label">G検定 進捗</div>
-      <div class="hero-card__value" id="dashboard-value">0 / 24</div>
-      <div class="hero-card__sub" id="dashboard-sub">章1から始めよう</div>
-      <a href="learn/g-kentei/basics/01-what-is-ai.html" class="hero-card__cta">続ける →</a>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
     </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
   </div>
+</aside>
 
-  <!-- Quick stats -->
-  <div class="quick-stats">
-    <div class="qs-item">
-      <div class="qs-item__icon">🔥</div>
-      <div class="qs-item__value" id="qs-streak">1</div>
-      <div class="qs-item__label">連続日数</div>
+<main class="main">
+  <div class="content content--wide">
+    <div class="page-head">
+      <div class="page-eyebrow"><span class="page-eyebrow__dot"></span>ダッシュボード</div>
+      <h1 class="page-title">学習ダッシュボード</h1>
+      <p class="page-desc">AI エンジニア資格 7 種を、基本・応用・ハンズオン・シミュレーション・問題演習の 5 つの方法で体系的に学習できます。</p>
     </div>
-    <div class="qs-item">
-      <div class="qs-item__icon">⭐</div>
-      <div class="qs-item__value" id="qs-xp">0</div>
-      <div class="qs-item__label">XP</div>
-    </div>
-    <div class="qs-item">
-      <div class="qs-item__icon">📚</div>
-      <div class="qs-item__value" id="qs-completed">0</div>
-      <div class="qs-item__label">完了章</div>
-    </div>
-  </div>
 
-  <!-- Action chips (5 learning paths) -->
-  <div class="screen-section">
-    <div class="screen-section__head">
-      <div class="screen-section__title">学習方法</div>
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric__label">G検定 進捗</div>
+        <div class="metric__value" id="m-progress">0/24</div>
+        <div class="progress-track"><div class="progress-fill" id="m-progress-fill"></div></div>
+      </div>
+      <div class="metric">
+        <div class="metric__label">◉ 連続学習</div>
+        <div class="metric__value" id="m-streak">1</div>
+        <div class="metric__sub">日連続</div>
+      </div>
+      <div class="metric">
+        <div class="metric__label">△ 学習XP</div>
+        <div class="metric__value" id="m-xp">0</div>
+        <div class="metric__sub">ポイント</div>
+      </div>
+      <div class="metric">
+        <div class="metric__label">◎ 問題演習</div>
+        <div class="metric__value">474</div>
+        <div class="metric__sub">問 収録</div>
+      </div>
     </div>
-    <div class="action-chips">
-      <a class="action-chip" data-color="basic" href="certifications/g-kentei.html#basics">
-        <div class="action-chip__emoji">📚</div>
-        <div class="action-chip__label">基本</div>
-        <div class="action-chip__count">12章</div>
-      </a>
-      <a class="action-chip" data-color="advanced" href="certifications/g-kentei.html#advanced">
-        <div class="action-chip__emoji">🚀</div>
-        <div class="action-chip__label">応用</div>
-        <div class="action-chip__count">12章</div>
-      </a>
-      <a class="action-chip" data-color="handson" href="learn/g-kentei/handson.html">
-        <div class="action-chip__emoji">💻</div>
-        <div class="action-chip__label">演習</div>
-        <div class="action-chip__count">150</div>
-      </a>
-      <a class="action-chip" data-color="simulation" href="learn/g-kentei/simulation.html">
-        <div class="action-chip__emoji">🧪</div>
-        <div class="action-chip__label">シム</div>
-        <div class="action-chip__count">72</div>
-      </a>
-      <a class="action-chip" data-color="quiz" href="quiz.html">
-        <div class="action-chip__emoji">📝</div>
-        <div class="action-chip__label">問題</div>
-        <div class="action-chip__count">480問</div>
-      </a>
-    </div>
-  </div>
 
-  <!-- All certifications grid -->
-  <div class="screen-section">
-    <div class="screen-section__head">
-      <div class="screen-section__title">資格コース</div>
-      <div class="screen-section__count">7コース</div>
+    <div class="section">
+      <div class="section__head">
+        <div class="section__title">資格コース</div>
+        <div class="section__meta">7 コース</div>
+      </div>
+      <div class="cards">
+        <a href="certifications/g-kentei.html" class="card" data-cert="g-kentei">
+          <div class="card__head"><span class="card__dot"></span><span class="card__name">G検定</span><span class="card__sub">JDLA</span></div>
+          <div class="card__desc">AIの社会実装に必要な基礎知識。24章・474問でカバー。</div>
+          <div class="card__foot"><span>24章</span><span>·</span><span>474問</span><span>·</span><span>150演習</span></div>
+        </a>
+        <a href="certifications/e-shikaku.html" class="card" data-cert="e-shikaku">
+          <div class="card__head"><span class="card__dot"></span><span class="card__name">E資格</span><span class="card__sub">JDLA</span></div>
+          <div class="card__desc">深層学習の理論と実装を問う高難度資格。</div>
+          <div class="card__foot"><span class="tag">高難度</span></div>
+        </a>
+        <a href="certifications/tokei-kentei.html" class="card" data-cert="tokei-kentei">
+          <div class="card__head"><span class="card__dot"></span><span class="card__name">統計検定</span><span class="card__sub">2級〜1級</span></div>
+          <div class="card__desc">確率、推定、検定、回帰、多変量、ベイズまで網羅。</div>
+          <div class="card__foot"><span class="tag">数学</span></div>
+        </a>
+        <a href="certifications/python-cert.html" class="card" data-cert="python-cert">
+          <div class="card__head"><span class="card__dot"></span><span class="card__name">Python認定</span><span class="card__sub">基礎〜実践</span></div>
+          <div class="card__desc">NumPy、pandas、scikit-learn、PyTorch 実装。</div>
+          <div class="card__foot"><span class="tag">実装</span></div>
+        </a>
+        <a href="certifications/aws-mla-c01.html" class="card" data-cert="aws-mla-c01">
+          <div class="card__head"><span class="card__dot"></span><span class="card__name">AWS MLA</span><span class="card__sub">Associate</span></div>
+          <div class="card__desc">SageMaker、Bedrock、Lambda で実務レベル。</div>
+          <div class="card__foot"><span class="tag">クラウド</span></div>
+        </a>
+        <a href="certifications/image-engineer.html" class="card" data-cert="image-engineer">
+          <div class="card__head"><span class="card__dot"></span><span class="card__name">画像処理エンジニア</span><span class="card__sub">CG-ARTS</span></div>
+          <div class="card__desc">ディジタル画像、フィルタリング、CV基礎。</div>
+          <div class="card__foot"><span class="tag">CV</span></div>
+        </a>
+        <a href="certifications/jetson-ai.html" class="card" data-cert="jetson-ai">
+          <div class="card__head"><span class="card__dot"></span><span class="card__name">Jetson AI Specialist</span><span class="card__sub">NVIDIA</span></div>
+          <div class="card__desc">Jetson Nano/Orin、JetPack、TensorRT。</div>
+          <div class="card__foot"><span class="tag">エッジ</span></div>
+        </a>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
-      <a href="certifications/g-kentei.html" class="cert-tile" data-cert="g-kentei">
-        <div class="cert-tile__icon">G</div>
-        <div class="cert-tile__name">G検定</div>
-        <div class="cert-tile__sub">JDLA · ジェネラリスト</div>
-        <div class="cert-tile__desc">AI 社会実装の基礎。24章・480問。</div>
-        <div class="cert-tile__progress">
-          <div class="cert-tile__progress-bar"><div class="cert-tile__progress-fill" id="g-kentei-fill"></div></div>
-          <span id="g-kentei-progress-text">0/24</span>
-        </div>
-      </a>
-      <a href="certifications/e-shikaku.html" class="cert-tile" data-cert="e-shikaku">
-        <div class="cert-tile__icon">E</div>
-        <div class="cert-tile__name">E資格</div>
-        <div class="cert-tile__sub">JDLA · エンジニア</div>
-        <div class="cert-tile__desc">深層学習の理論と実装を問う高難度。</div>
-        <div class="cert-tile__progress">
-          <div class="cert-tile__progress-bar"><div class="cert-tile__progress-fill"></div></div>
-          <span>0/20</span>
-        </div>
-      </a>
-      <a href="certifications/tokei-kentei.html" class="cert-tile" data-cert="tokei-kentei">
-        <div class="cert-tile__icon">統</div>
-        <div class="cert-tile__name">統計検定</div>
-        <div class="cert-tile__sub">2級・準1級・1級</div>
-        <div class="cert-tile__desc">確率、推定、検定、回帰、多変量。</div>
-        <div class="cert-tile__progress">
-          <div class="cert-tile__progress-bar"><div class="cert-tile__progress-fill"></div></div>
-          <span>0/15</span>
-        </div>
-      </a>
-      <a href="certifications/python-cert.html" class="cert-tile" data-cert="python-cert">
-        <div class="cert-tile__icon">🐍</div>
-        <div class="cert-tile__name">Python認定</div>
-        <div class="cert-tile__sub">基礎・分析・実践</div>
-        <div class="cert-tile__desc">NumPy、pandas、scikit-learn、PyTorch。</div>
-        <div class="cert-tile__progress">
-          <div class="cert-tile__progress-bar"><div class="cert-tile__progress-fill"></div></div>
-          <span>0/15</span>
-        </div>
-      </a>
-      <a href="certifications/aws-mla-c01.html" class="cert-tile" data-cert="aws-mla-c01">
-        <div class="cert-tile__icon">☁</div>
-        <div class="cert-tile__name">AWS MLA</div>
-        <div class="cert-tile__sub">機械学習 Associate</div>
-        <div class="cert-tile__desc">SageMaker、Bedrock、Lambda で実務レベル。</div>
-        <div class="cert-tile__progress">
-          <div class="cert-tile__progress-bar"><div class="cert-tile__progress-fill"></div></div>
-          <span>0/20</span>
-        </div>
-      </a>
-      <a href="certifications/image-engineer.html" class="cert-tile" data-cert="image-engineer">
-        <div class="cert-tile__icon">🖼</div>
-        <div class="cert-tile__name">画像処理</div>
-        <div class="cert-tile__sub">CG-ARTS</div>
-        <div class="cert-tile__desc">ディジタル画像、フィルタリング、CV基礎。</div>
-        <div class="cert-tile__progress">
-          <div class="cert-tile__progress-bar"><div class="cert-tile__progress-fill"></div></div>
-          <span>0/12</span>
-        </div>
-      </a>
-      <a href="certifications/jetson-ai.html" class="cert-tile" data-cert="jetson-ai">
-        <div class="cert-tile__icon">⚡</div>
-        <div class="cert-tile__name">Jetson AI</div>
-        <div class="cert-tile__sub">NVIDIA · エッジAI</div>
-        <div class="cert-tile__desc">Jetson Nano/Orin、JetPack、TensorRT。</div>
-        <div class="cert-tile__progress">
-          <div class="cert-tile__progress-bar"><div class="cert-tile__progress-fill"></div></div>
-          <span>0/10</span>
-        </div>
-      </a>
+
+    <div class="section">
+      <div class="section__head">
+        <div class="section__title">G検定 学習方法</div>
+        <div class="section__meta">5 メソッド</div>
+      </div>
+      <div class="navgrid">
+        <a href="certifications/g-kentei.html#basics" class="navtile">
+          <div class="navtile__icon">◆</div><div class="navtile__title">基本編</div><div class="navtile__meta">12章 · 120節</div>
+        </a>
+        <a href="certifications/g-kentei.html#advanced" class="navtile">
+          <div class="navtile__icon">◆</div><div class="navtile__title">応用編</div><div class="navtile__meta">12章 · 120節</div>
+        </a>
+        <a href="learn/g-kentei/handson.html" class="navtile">
+          <div class="navtile__icon">▤</div><div class="navtile__title">ハンズオン</div><div class="navtile__meta">150 演習</div>
+        </a>
+        <a href="learn/g-kentei/simulation.html" class="navtile">
+          <div class="navtile__icon">◈</div><div class="navtile__title">シミュレーション</div><div class="navtile__meta">72 シナリオ</div>
+        </a>
+        <a href="quiz.html" class="navtile">
+          <div class="navtile__icon">◎</div><div class="navtile__title">問題演習</div><div class="navtile__meta">474 問</div>
+        </a>
+      </div>
     </div>
   </div>
 </main>
-
+</div>
+<script src="assets/js/main.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     if (window.Swallow && Swallow.Store) {
       var s = Swallow.Store.data.stats;
-      var qsStreak = document.getElementById('qs-streak');
-      var qsXp = document.getElementById('qs-xp');
-      var qsCompleted = document.getElementById('qs-completed');
-      if (qsStreak) qsStreak.textContent = s.streak || 1;
-      if (qsXp) qsXp.textContent = s.xp || 0;
-      var completed = Swallow.Store.getCompletedCount('g-kentei:');
-      if (qsCompleted) qsCompleted.textContent = completed;
-      var v = document.getElementById('dashboard-value');
-      var sub = document.getElementById('dashboard-sub');
-      if (v && sub) {
-        if (completed === 24) { v.textContent = '🏆 制覇'; sub.textContent = '全章完了！'; }
-        else if (completed === 0) { v.textContent = '0 / 24'; sub.textContent = '章1から始めよう'; }
-        else { v.textContent = completed + ' / 24'; sub.textContent = 'あと' + (24 - completed) + '章！'; }
-      }
-      var fill = document.getElementById('g-kentei-fill');
-      var text = document.getElementById('g-kentei-progress-text');
-      if (fill) fill.style.width = (completed / 24 * 100) + '%';
-      if (text) text.textContent = completed + '/24';
+      var c = Swallow.Store.getCompletedCount('g-kentei:');
+      var el;
+      if (el = document.getElementById('m-streak')) el.textContent = s.streak || 1;
+      if (el = document.getElementById('m-xp')) el.textContent = s.xp || 0;
+      if (el = document.getElementById('m-progress')) el.textContent = c + '/24';
+      if (el = document.getElementById('m-progress-fill')) el.style.width = (c/24*100) + '%';
     }
   }, 50);
 });
 </script>
-
-<script src="assets/js/main.js" defer></script>
 </body>
 </html>

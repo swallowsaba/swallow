@@ -9,55 +9,108 @@
 
 </head>
 <body data-cert="g-kentei">
-
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../../../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../../../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../../../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="../../../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../../../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../../../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../../../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
+
+  <nav class="rail-section">
+    <a class="rail-link" href="../../../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../../../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../../../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
+    </div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
+    </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</aside>
 
 <main class="main">
+
     <div class="content">
 <div class="chap-header">
       <div class="crumbs">
@@ -391,140 +444,140 @@ Layer  1 (入力): ||grad|| = 0.0000412<br>
 
     <div class="problem-set">
 
-      <div class="problem">
+      <div class="problem" id="problem-1">
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">パーセプトロンが解けない代表的問題は。</div>
         <div class="p-choices">① AND　 ② OR　 ③ XOR　 ④ NOT</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> XORは線形分離不可能。Minsky 1969でこの限界が指摘され第一次AI冬の時代の一因に。MLPで解決。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">普遍近似定理（UAP）の主張は。</div>
         <div class="p-choices">① 1層では何もできない　 ② 1層の隠れ層でユニット数十分なら任意の連続関数を任意精度で近似可能　 ③ 必ず2層必要　 ④ ReLUのみ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hornik 1989, Cybenko 1989。ただし実用では深層化の方が指数的に効率良い。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">ReLU の利点で正しいのは。</div>
         <div class="p-choices">① 計算が遅い　 ② 勾配消失を緩和、計算高速、スパース化　 ③ 出力が(0,1)　 ④ 必ず連続微分可能</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> max(0,x)。x&gt;0で勾配1、入力側まで勾配が伝わる。深層化を可能にした立役者。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">Sigmoid 活性化関数の勾配消失の原因は。</div>
         <div class="p-choices">① 微分の最大値が0.25と小さく、深層では勾配が指数的に減衰　 ② 計算が複雑　 ③ 線形　 ④ 出力が-1から1</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> σ'(x) = σ(x)(1-σ(x))の最大が0.25。10層で 0.25¹⁰ ≈ 10⁻⁶。勾配が入力側でほぼ0に。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">BERT/GPT で標準的に使われる活性化関数は。</div>
         <div class="p-choices">① Sigmoid　 ② Tanh　 ③ GELU（Gaussian Error Linear Unit）　 ④ Hardmax</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> GELU(x) = x·Φ(x)。ReLUより滑らか、Transformer系で標準。Swish/SiLU も類似形状。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">Softmax 関数の役割は。</div>
         <div class="p-choices">① 二値分類　 ② 多クラスの確率分布出力（合計1、非負）　 ③ ノイズ追加　 ④ 正則化</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 多クラス分類の出力層標準。CE損失と組み合わせると勾配が ŷ-y で簡潔。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">He初期化が想定する活性化関数は。</div>
         <div class="p-choices">① Sigmoid　 ② Tanh　 ③ ReLU 系　 ④ Softmax</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> He（Kaiming）初期化：W ~ N(0, 2/fan_in)。ReLU で半分が0になることを補正。Xavier/Glorot は Tanh/Sigmoid 用。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">NN の重みを全て 0 で初期化すると。</div>
         <div class="p-choices">① 学習加速　 ② 対称性により全ニューロンが同じ更新を受け、多様性が生まれず学習しない　 ③ 過学習　 ④ 高速</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 対称性破壊が必要で、ランダム初期化が必須。バイアスは0でもOK。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">残差接続（Skip Connection、ResNet）の主な役割は。</div>
         <div class="p-choices">① パラメータ削減　 ② 勾配伝播の改善、超深層化を可能に　 ③ メモリ節約　 ④ 計算高速化</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> y = F(x) + x で勾配がスキップ経路から直接伝わる。100層以上を可能にした。Transformerにも採用。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">ミニバッチ学習の利点として誤りはどれか。</div>
         <div class="p-choices">① 計算効率　 ② GPU並列化　 ③ ノイズが汎化に有利　 ④ 必ず大域最適に収束</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> SGD は確率的なので大域最適保証なし。実用では十分機能、むしろノイズが鞍点脱出に役立つ。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">Embedding 層の役割は。</div>
         <div class="p-choices">① 数値の正規化　 ② 離散カテゴリ（単語ID、ユーザID）を学習可能な連続ベクトルに変換　 ③ 損失計算　 ④ 出力層</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 単語ID → 128〜4096次元ベクトル。Word2Vec, BERT, GPT, 推薦システムで標準。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">多クラス分類で使う損失関数は。</div>
         <div class="p-choices">① MSE　 ② Hinge　 ③ Cross Entropy（Softmax + CE）　 ④ MAE</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> Softmax + CE が標準。多項分布の負の対数尤度と等価。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Layer Normalization が Batch Normalization より好まれる場面は。</div>
         <div class="p-choices">① CNN　 ② バッチサイズが小さい、可変、または RNN/Transformer　 ③ 線形回帰　 ④ K-means</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> BN はバッチ依存、小バッチで不安定。LN は1サンプル内で正規化、Transformer ・LLM で標準。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">『深層化』が UAP の単層拡大より有利な理由は。</div>
         <div class="p-choices">① 単に流行　 ② 同精度を達成するパラメータ数が指数的に少なくて済む（階層的特徴学習）　 ③ 計算高速　 ④ ランダム性</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Telgarsky 2016 等の理論。階層的に低レベル→高レベル特徴を学習でき、効率と汎化が良い。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">Dying ReLU 問題への対処は。</div>
         <div class="p-choices">① Sigmoid に戻す　 ② Leaky ReLU, ELU, GELU 等、x&lt;0でも小さな勾配を持つ関数　 ③ 学習停止　 ④ 入力反転</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ReLU は x≤0 で勾配0、ニューロンが死んで復活しない。Leaky ReLU（α=0.01）, GELU で緩和。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">バッチサイズを大きくすると一般に。</div>
         <div class="p-choices">① 必ず汎化が向上　 ② 並列効率↑だが、ノイズが減って汎化やや悪化（シャープミニマへ）　 ③ メモリ減　 ④ 学習率不要</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 大バッチは並列効率良いが、勾配ノイズ減でシャープなミニマに収束しやすく汎化が劣化する傾向。Linear Scaling Rule + Warmupで補正。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">Softmax+CE の logit に対する勾配は。</div>
         <div class="p-choices">① ŷ + y　 ② ŷ - y　 ③ -y　 ④ 1</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ŷ-y というシンプルな形。これがNN分類学習の計算効率の根拠。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">NN の汎化が良い理由として有力な仮説は。</div>
         <div class="p-choices">① 神秘的　 ② SGDの暗黙的正則化、フラットなミニマの選好、データの多様体仮説　 ③ ランダム　 ④ パラメータ多いから良い</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 過パラメータ化されているのに汎化する『深層学習の謎』。SGDの確率性が良いミニマへ導く説明が有力。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">『計算グラフ』の概念は何のために使われるか。</div>
         <div class="p-choices">① 可視化のみ　 ② 自動微分の実装：演算をノードとして記録し、逆伝播で勾配を機械的に計算　 ③ メモリ節約　 ④ 学習率</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> PyTorch, TensorFlow の自動微分の根幹。連鎖律を計算グラフ上で機械的に適用。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">バイアス項 b の役割は。</div>
         <div class="p-choices">① 不要　 ② 線形変換に平行移動を加え、原点を通らない決定境界を可能に　 ③ 正則化　 ④ 学習率</div>
@@ -563,6 +616,8 @@ Layer  1 (入力): ||grad|| = 0.0000412<br>
     </nav>
     </div>
   </main>
+
+</div>
 <script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

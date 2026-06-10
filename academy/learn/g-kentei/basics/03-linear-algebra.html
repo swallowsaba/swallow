@@ -9,55 +9,108 @@
 
 </head>
 <body data-cert="g-kentei">
-
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../../../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../../../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../../../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="../../../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../../../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../../../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../../../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
+
+  <nav class="rail-section">
+    <a class="rail-link" href="../../../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../../../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../../../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
+    </div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
+    </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</aside>
 
 <main class="main">
+
     <div class="content">
 <div class="chap-header">
       <div class="crumbs">
@@ -1048,7 +1101,7 @@ k=10:  累積寄与率= 98.4%<br>
 
     <div class="problem-set">
 
-      <div class="problem">
+      <div class="problem" id="problem-1">
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">機械学習で扱う『テンソル』の最も適切な説明は次のうちどれか。</div>
         <div class="p-choices">
@@ -1060,7 +1113,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> 機械学習における『テンソル』は単に多次元配列の意味で使われ、軸数を問わない。TensorFlow の Tensor も同様。物理学の意味は別。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">RGB カラー画像 (高さ 224, 幅 224, チャネル 3) は何階テンソルか。</div>
         <div class="p-choices">
@@ -1069,7 +1122,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 軸が3つ（H, W, C）あるため3階テンソル。これにバッチ次元を加えると (B, H, W, C) または (B, C, H, W) の4階テンソルとなり、CNN の入力形式となる。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">ベクトル u=(2, 3, 1) と v=(1, -1, 2) の内積 u·v は。</div>
         <div class="p-choices">
@@ -1078,7 +1131,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 2·1 + 3·(-1) + 1·2 = 2 - 3 + 2 = 1。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">2つのベクトルが直交するとき、内積の値は。</div>
         <div class="p-choices">
@@ -1087,7 +1140,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> u·v = ||u||||v||cosθ で、直交（θ=90°）なら cos90°=0 のため 0。これが Word Embedding の独立性、Attention の出力の独立次元、直交初期化の根拠。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">行列 A∈ℝ<sup>3×4</sup> と B∈ℝ<sup>4×2</sup> の積 AB のサイズは。</div>
         <div class="p-choices">
@@ -1096,7 +1149,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 行列積は (m×k) × (k×n) → (m×n)。内側の次元 k=4 が一致するので計算可能、結果は外側の次元 3×2。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">L1 ノルムが Lasso 正則化で『スパース解』を生む理由として正しいのは。</div>
         <div class="p-choices">
@@ -1108,7 +1161,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> L1単位球（||w||₁=1）は菱形で、その『角』は軸上にある。制約付き最適化の解は等高線と単位球が接する点であり、角に当たることが多く、その軸の重みが正確に 0 になる（スパース化）。L2 の円には角がなく、すべての重みが小さく縮むだけ。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">ベクトル v₁=(1, 2)、v₂=(2, 4) が形作る関係として正しいのは。</div>
         <div class="p-choices">
@@ -1120,7 +1173,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> v₂ = 2 v₁ なので一方が他方の定数倍。すなわち線形従属で、両者は同じ直線上にあり、平面を張れない。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">正方行列 A の逆行列が存在する必要十分条件は。</div>
         <div class="p-choices">
@@ -1129,7 +1182,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> det(A) ≠ 0 と『フルランク（rank=n）』は同値。これらが逆行列存在の条件。実用では条件数 κ(A) で『近似的特異性』も警戒する。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">固有値分解 A = QΛQ⁻¹ が常に可能となる行列の特徴は。</div>
         <div class="p-choices">
@@ -1141,7 +1194,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 一般の正方行列は固有値分解が常に可能とは限らない（Jordan 標準形が必要なケースあり）。しかし対称行列は実スペクトル定理により、必ず実固有値で直交対角化可能。PCA・カーネル法・ヘッセ行列の解析がうまく行く根拠。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">特異値分解（SVD）A = UΣV<sup>T</sup> に関する記述で正しいのは。</div>
         <div class="p-choices">
@@ -1153,7 +1206,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> SVDは固有値分解の自然な一般化で、任意の m×n 実行列に適用可能。U と V は直交、Σ は非負の特異値を降順に並べた対角行列。特異値は A<sup>T</sup>A の固有値の平方根。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">PCA の理論的根拠として最も適切な記述は。</div>
         <div class="p-choices">
@@ -1165,7 +1218,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> PCA は中心化したデータの共分散行列 Σ = (1/n)X<sup>T</sup>X を固有値分解し、固有値が大きい順の固有ベクトル（主成分）にデータを射影する。教師ラベルは使わない（教師なし）。クラス分離は LDA。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">対称行列 A の固有値がすべて正のとき、A は何と呼ばれるか。</div>
         <div class="p-choices">
@@ -1174,7 +1227,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 対称行列で全固有値 &gt; 0 のとき正定値（PD）。等号許可なら半正定値（PSD、全固有値 ≥ 0）。共分散行列は必ず PSD、最適化のヘッセ行列が PD ならその点は極小。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Self-Attention の計算 softmax(QK<sup>T</sup>/√d)V の計算量は系列長 L に対して。</div>
         <div class="p-choices">
@@ -1183,7 +1236,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> QK<sup>T</sup> が L×L の類似度行列を作るため O(L²)。長系列で支配的なボトルネック。Flash Attention、Mamba/SSM、Linformer などの研究はこの計算量を削減する試み。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">行列 A、B について (AB)<sup>T</sup> はどう書けるか。</div>
         <div class="p-choices">
@@ -1192,7 +1245,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 転置は積の順序を逆にする：(AB)<sup>T</sup> = B<sup>T</sup>A<sup>T</sup>。逆行列も同様：(AB)⁻¹ = B⁻¹A⁻¹。NN の逆伝播計算でこの公式は頻繁に登場。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">行列式 det(A) の幾何学的意味として正しいのは。</div>
         <div class="p-choices">
@@ -1204,7 +1257,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> |det(A)| は A による線形写像が単位立方体に作用したときの体積倍率。負なら向きが反転（鏡映）。det = 0 は『写像が次元を潰す』ことを意味し、逆写像が不可能。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">機械学習で『多重共線性』が問題となる理由として最も適切なのは。</div>
         <div class="p-choices">
@@ -1216,7 +1269,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 線形回帰の正規方程式 w = (X<sup>T</sup>X)⁻¹X<sup>T</sup>y は X<sup>T</sup>X の可逆性に依存。特徴量間に強い線形関係があると X<sup>T</sup>X はほぼ特異になり、係数推定の標準誤差が爆発、解釈不能に。対処は VIF 検出、変数削減、PCA、Ridge 回帰など。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">Eckart-Young 定理が示すことは。</div>
         <div class="p-choices">
@@ -1228,7 +1281,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Eckart-Young 定理（1936）：任意の行列 A に対し、Frobenius ノルム（または2-ノルム）で最良の rank-k 近似は、SVD の上位 k 特異値を残し残りを 0 にしたもの。これが画像圧縮、レコメンドシステム、LoRA の理論的根拠。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">3層 NN の順伝播 h = ReLU(Wx + b) における W が 64×128, x ∈ ℝ<sup>128</sup>, b ∈ ℝ<sup>64</sup> のとき、出力 h の次元は。</div>
         <div class="p-choices">
@@ -1237,7 +1290,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 行列積 Wx は (64×128)×(128) = ℝ<sup>64</sup>。これに b ∈ ℝ<sup>64</sup> を足し、要素ごとの ReLU を通すため、出力次元は 64。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">マハラノビス距離 d_M(x, μ) = √((x-μ)<sup>T</sup>Σ⁻¹(x-μ)) において Σ = I のとき、d_M は何に一致するか。</div>
         <div class="p-choices">
@@ -1246,7 +1299,7 @@ k=10:  累積寄与率= 98.4%<br>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Σ = I のとき (x-μ)<sup>T</sup>I⁻¹(x-μ) = ||x-μ||² で、その平方根は通常のユークリッド距離。マハラノビス距離は『データの共分散構造を考慮した距離』であり、共分散が単位行列なら全方向同等で、距離もユークリッドに一致する。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">『高次元での距離の呪い』の本質的な問題は。</div>
         <div class="p-choices">
@@ -1292,6 +1345,8 @@ k=10:  累積寄与率= 98.4%<br>
     </nav>
     </div>
   </main>
+
+</div>
 <script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

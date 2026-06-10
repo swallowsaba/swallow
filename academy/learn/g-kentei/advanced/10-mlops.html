@@ -9,55 +9,108 @@
 
 </head>
 <body data-cert="g-kentei">
-
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../../../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../../../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../../../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="../../../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../../../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../../../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../../../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
+
+  <nav class="rail-section">
+    <a class="rail-link" href="../../../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../../../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../../../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
+    </div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
+    </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</aside>
 
 <main class="main">
+
     <div class="content">
 <div class="chap-header">
       <div class="crumbs">
@@ -415,140 +468,140 @@ Month 6: PSI=0.06, acc=87% （安定）<br>
 
     <div class="problem-set">
 
-      <div class="problem">
+      <div class="problem" id="problem-1">
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">MLOps の主な対象は。</div>
         <div class="p-choices">① モデル学習のみ　 ② MLシステムのライフサイクル全体（データ・学習・デプロイ・運用・再学習）の自動化　 ③ データ収集のみ　 ④ 評価のみ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Google『Hidden Technical Debt in ML Systems』が原点。コードはML全体の5〜10%、残りは MLOps インフラ。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">Feature Store の主な目的は。</div>
         <div class="p-choices">① モデル管理　 ② 学習時とサービング時で一貫した特徴量提供、Training-Serving Skew 防止　 ③ パラメータ追跡　 ④ ログ収集</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Feast、Tecton、SageMaker Feature Store、Vertex AI Feature Store。特徴量の再利用と一貫性が核心。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">MLflow の主機能でないのは。</div>
         <div class="p-choices">① 実験追跡（パラメータ、メトリクス）　 ② モデルレジストリ　 ③ プロジェクトパッケージング　 ④ データベース管理</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> MLflow は Tracking、Models、Projects、Registry の4機能。データベース自体は管理対象外。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">CI/CD for ML で『CT』が表すのは。</div>
         <div class="p-choices">① Continuous Testing　 ② Continuous Training（Drift時等の自動再学習）　 ③ Continuous Tracking　 ④ Continuous Tagging</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> MLOps の独自概念。CI（コードテスト）+ CD（デプロイ）+ CT（再学習）の3要素。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">Data Drift と Concept Drift の違いは。</div>
         <div class="p-choices">① 同じ　 ② Data: P(X) 変化、Concept: P(Y|X) 変化　 ③ Drift は無関係　 ④ ラベルだけ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Data Drift = 入力分布の変化（季節、ユーザー層変化）、Concept Drift = 入力→出力関係の変化（嗜好変化）。両方を監視。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">PSI（Population Stability Index）の用途は。</div>
         <div class="p-choices">① 学習　 ② 分布変化の定量化（金融でDrift検知に標準）。0.2以上で警告　 ③ パラメータ調整　 ④ ノイズ生成</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> PSI = Σ (P_new - P_ref) · ln(P_new / P_ref)。0.1未満=安定、0.1-0.2=やや変化、0.2以上=大きな変化。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">Canary Release の特徴は。</div>
         <div class="p-choices">① 全トラフィック切替　 ② 新モデルに少量トラフィック（1〜5%）流して段階的に拡大、異常時即ロールバック　 ③ シャドウ　 ④ A/B均等</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Kubernetes/Istio で実装。安全なロールアウトの定番。Blue-Green デプロイより漸進的。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">Shadow Mode の特徴は。</div>
         <div class="p-choices">① ユーザに新モデル結果を返す　 ② 本番トラフィックを両方に流すが新モデル結果は記録のみ、ユーザ影響ゼロで評価　 ③ ランダム　 ④ オフライン</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 本番影響なしで新モデルを評価。レイテンシ、メモリ、予測一致度を確認。Canary 前の安全策。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">Kubeflow の主な特徴は。</div>
         <div class="p-choices">① クラウド専用　 ② Kubernetesネイティブの OSS、MLパイプライン・分散学習・推論を統合　 ③ AWS専用　 ④ Python専用</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Kubeflow Pipelines, KServe, Training Operator, Katib (HPO)。クラウド非依存、on-premise でも動く。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">AWS SageMaker の主機能でないのは。</div>
         <div class="p-choices">① マネージドGPU 学習　 ② Endpoint デプロイ　 ③ Feature Store　 ④ 仮想通貨マイニング</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> SageMaker は ML特化マネージドサービス。Studio、Training Jobs、Endpoints、Pipelines、Clarify（Bias）、Ground Truth など。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">バッチ推論が向くケースは。</div>
         <div class="p-choices">① リアルタイム必要　 ② 大量データを定期的に処理（夜間バッチ、レポート、推薦の事前計算）　 ③ チャット　 ④ ストリーミング</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Spark、AWS Batch、Airflow で実装。リアルタイム性不要・GPUコスト最適化が目的。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">Edge推論の典型ユースケースは。</div>
         <div class="p-choices">① 大型サーバ　 ② スマホ・IoT・自動車などデバイス上で推論（TF Lite、ONNX、Core ML）　 ③ クラウドのみ　 ④ オフライン学習</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> プライバシー・遅延・通信コストの観点でデバイス上推論が重要。量子化（INT8）、Pruning でモデル軽量化。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">A/B Test と Multi-Armed Bandit の違いは。</div>
         <div class="p-choices">① 同じ　 ② A/B は固定割合、MAB は性能高いモデルに動的に割合増加（Thompson Sampling、UCB）　 ③ A/B はクラスタリング　 ④ MAB は強化学習</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> MAB は Exploration-Exploitation を強化学習的に最適化。総合報酬最大化、A/B Test の発展形。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">Triton Inference Server の特徴は。</div>
         <div class="p-choices">① 学習専用　 ② NVIDIA製、高性能推論サーバ、複数フレームワーク（PyTorch、TF、ONNX）・複数モデルを統合提供　 ③ DB　 ④ コンパイラ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> gRPC/HTTP両対応、Dynamic Batching、Model Concurrency でGPUを最大活用。SageMaker・Vertex でも統合。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">DVC の主機能は。</div>
         <div class="p-choices">① ニューラルネット　 ② データ・モデルのバージョン管理（Gitに統合、大ファイルは外部ストレージへ）　 ③ 学習　 ④ クラウド管理</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Data Version Control。Git は大ファイルが苦手、DVC はメタ情報のみGit、本体はS3/GCS等。再現性確保に重要。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">Apache Airflow の主機能は。</div>
         <div class="p-choices">① ML特化　 ② 汎用ワークフロー（DAG）スケジューラ、データパイプライン・ML パイプライン用　 ③ DBMS　 ④ Webサーバ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Python で DAG を記述、スケジュール実行。MLOps では学習・推論・前処理を構成。代替に Dagster、Prefect、Argo。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">Training-Serving Skew の典型原因は。</div>
         <div class="p-choices">① 学習データが少ない　 ② 学習時とサービング時で特徴量の計算ロジックが微妙に異なる　 ③ パラメータ多い　 ④ ランダム性</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 例：学習で平均値補完、サービングで0補完。Feature Store で計算ロジック共有することで防止。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">本番運用で監視すべきメトリクスでないのは。</div>
         <div class="p-choices">① レイテンシ p99　 ② スループット（QPS）　 ③ エラー率　 ④ 開発者のメール頻度</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> システム面（レイテンシ、QPS、エラー率、CPU/GPU）とモデル面（予測分布、入力分布、Drift）を監視。Prometheus + Grafana が標準。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">Model Card の役割は。</div>
         <div class="p-choices">① 学習データ　 ② モデルの用途、性能、制限、Bias情報を文書化（Google Mitchell 2019）。透明性確保　 ③ 名刺　 ④ クラスタリング</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> モデルの『使用説明書』。EU AI Act、ISO/IEC 23053 などで義務化方向。Hugging Face で標準化。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">『MLOps Maturity』レベル0の特徴は。</div>
         <div class="p-choices">① 完全自動化　 ② 全て手動、学習・デプロイ・モニタリング無連携　 ③ Drift自動再学習　 ④ MLOpsなし</div>
@@ -587,6 +640,8 @@ Month 6: PSI=0.06, acc=87% （安定）<br>
     </nav>
     </div>
   </main>
+
+</div>
 <script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

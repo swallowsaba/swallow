@@ -9,55 +9,108 @@
 
 </head>
 <body data-cert="g-kentei">
-
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../../../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../../../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../../../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="../../../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../../../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../../../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../../../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
+
+  <nav class="rail-section">
+    <a class="rail-link" href="../../../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../../../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../../../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
+    </div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
+    </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</aside>
 
 <main class="main">
+
     <div class="content">
 <div class="chap-header">
       <div class="crumbs">
@@ -663,140 +716,140 @@ n=100000: π ≈ 3.1418 誤差 ±0.0001<br>
 
     <div class="problem-set">
 
-      <div class="problem">
+      <div class="problem" id="problem-1">
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">サイコロを2回振って和が 7 になる確率は。</div>
         <div class="p-choices">① 1/36　 ② 1/12　 ③ 1/6　 ④ 1/4</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 和が7になる組合せは (1,6)(2,5)(3,4)(4,3)(5,2)(6,1) の6通り、全 36 通り → 6/36 = 1/6。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">事象 A と B が独立であることの定義として正しいのは。</div>
         <div class="p-choices">① P(A∪B) = P(A) + P(B)　 ② P(A∩B) = P(A)P(B)　 ③ A=B　 ④ P(A|B) = 0</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 独立性の定義は P(A∩B) = P(A)P(B)。これは P(A|B) = P(A) と同値。①は『排反』ではなく『独立』との混同に注意。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">ベイズの定理 P(A|B) = ? を正しく表すのは。</div>
         <div class="p-choices">① P(B|A) P(A) / P(B)　 ② P(A) P(B) / P(A∩B)　 ③ P(A∩B) / P(A)　 ④ P(A) + P(B)</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> ベイズの定理。これにより事前 × 尤度 / エビデンスで事後分布が得られる。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">連続確率変数の確率密度関数 f(x) が満たすべき性質は。</div>
         <div class="p-choices">① 0 ≤ f(x) ≤ 1　 ② f(x) ≥ 0 かつ ∫f(x)dx = 1　 ③ f(x) = 1　 ④ 離散値のみ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> PDFは非負＋全積分1。値自体は1を超えうる（密度であり確率ではない）ことに注意。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">確率変数 X, Y が独立のとき Var(X+Y) は。</div>
         <div class="p-choices">① Var(X) + Var(Y)　 ② Var(X) - Var(Y)　 ③ Var(X)Var(Y)　 ④ Var(XY)</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 一般に Var(X+Y) = Var(X) + Var(Y) + 2Cov(X,Y)。独立なら Cov = 0 で右辺第3項が消える。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">ベルヌーイ分布 Be(p) の平均と分散は。</div>
         <div class="p-choices">① p, p²　 ② p, p(1-p)　 ③ 1-p, p　 ④ 0, p</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> E[X]=p, Var[X]=p(1-p)。分散は p=0.5 で最大 0.25。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">標準正規分布 N(0, 1) の確率密度関数の値が最大となる x は。</div>
         <div class="p-choices">① -1　 ② 0　 ③ 1　 ④ ∞</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 正規分布のピークは平均 μ=0 の位置。最大密度は 1/√(2π) ≈ 0.399（1を超えない例）。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">中心極限定理の主張として正しいのは。</div>
         <div class="p-choices">① 母集団は必ず正規　 ② 標本平均は母集団分布によらず正規分布に近づく　 ③ 期待値=分散　 ④ どんな分布も同じ平均</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CLT は母集団分布が何であれ（有限分散なら）、標本平均が正規分布に収束することを示す。実用上、n≥30 で近似が良い。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">最尤推定（MLE）の基本的な考え方は。</div>
         <div class="p-choices">① 観測データを最も尤もらしくするパラメータを選ぶ　 ② 事前分布の中央値　 ③ 事後分布の期待値　 ④ ランダム選択</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> MLEは観測データの尤度 P(D|θ) を最大化する θ を選ぶ。実装では対数尤度を最大化（数値安定）。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">MAP 推定と MLE の関係は。</div>
         <div class="p-choices">① 完全に同じ　 ② 事前分布が一様なら一致　 ③ MAP は事前を使わない　 ④ MLEはベイズ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> MAP = argmax P(D|θ)P(θ)、事前が一様なら P(θ) が定数となり MAP=MLE。L2 正則化はガウス事前のMAPに相当。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">機械学習で『L2 正則化』に対応する事前分布は。</div>
         <div class="p-choices">① 一様　 ② ガウシアン　 ③ ラプラス　 ④ ベータ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> L2 ≡ -log P(θ) で P(θ) ∝ exp(-λ||θ||²) なのでガウシアン。L1 はラプラス分布の MAP に対応。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">ナイーブベイズが『naive（素朴）』と呼ばれる理由は。</div>
         <div class="p-choices">① パラメータが少ない　 ② 特徴量が条件付き独立と仮定する　 ③ 線形　 ④ 学習が速い</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 強い独立性仮定が『素朴』の由来。実際にはほとんど成立しないが、結果は意外と頑健で実用的。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">EM アルゴリズムの典型用途は。</div>
         <div class="p-choices">① 線形回帰の解析解　 ② 潜在変数を含むモデルの MLE（GMM など）　 ③ 勾配計算　 ④ 正則化選択</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> EM は潜在変数（クラスタ割当、隠れ状態）を含むモデルの反復 MLE。GMM, HMM, LDA, VAE の基礎。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">変分推論（VI）が最大化する量は。</div>
         <div class="p-choices">① 尤度のみ　 ② ELBO（Evidence Lower BOund）　 ③ クロスエントロピー　 ④ 距離</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> VIは事後分布 P(θ|D) を近似分布 q(θ;φ) で近似し、ELBO を最大化する。これは KL(q||P) 最小化と等価。VAE の損失の根拠。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">95% 信頼区間の正しい解釈は。</div>
         <div class="p-choices">① 真値が 95% の確率でこの区間にある　 ② 同じ手順を多数回繰り返すと 95% の区間が真値を含む　 ③ 必ず真値を含む　 ④ 効果量</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 頻度論の解釈は『同じ手順を繰り返すと』。①はベイズの『信用区間』の解釈で、頻度論では誤り。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">p値の正しい意味は。</div>
         <div class="p-choices">① H0 が真の確率　 ② H0 が真と仮定したとき、観測以上に極端な結果が得られる確率　 ③ H1 が真の確率　 ④ 効果量</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> p値は条件付き確率 P(データ|H0)。『H0 が真の確率』ではない（よくある誤解）。p &lt; α で H0 棄却。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">多変量正規分布 N(μ, Σ) において Σ が満たすべき条件は。</div>
         <div class="p-choices">① 対角行列　 ② 対称かつ半正定値　 ③ 単位行列　 ④ 上三角</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 共分散行列は常に対称、必ず半正定値。これは共分散の定義から数学的に従う。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">分類器の確率出力（softmax）が真の確率と一致するように調整する手法を何と呼ぶか。</div>
         <div class="p-choices">① キャリブレーション（Platt Scaling、Isotonic、Temperature Scaling など）　 ② 正則化　 ③ 標準化　 ④ 量子化</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 現代のNNは過信気味で、出力確率と真の頻度が一致しないことが多い。Calibration がそれを補正。Reliability Diagram, ECE で評価。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">ベイズ的 A/B テストの利点は。</div>
         <div class="p-choices">① p値だけが分かる　 ② 『B が A より良い確率』など直観的な確率解釈ができ、逐次更新が自然　 ③ サンプル不要　 ④ 必ず A が勝つ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 事後分布から『P(B&gt;A)』が直接出る。逐次的なデータ追加で事前を更新でき、peeking 問題が起きにくい。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">多重検定の補正で最も保守的な手法は。</div>
         <div class="p-choices">① Bonferroni（α/m）　 ② FDR (Benjamini-Hochberg)　 ③ Holm　 ④ 無補正</div>
@@ -837,6 +890,8 @@ n=100000: π ≈ 3.1418 誤差 ±0.0001<br>
     </nav>
     </div>
   </main>
+
+</div>
 <script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

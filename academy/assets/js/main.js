@@ -163,20 +163,15 @@
     }
   };
 
-    /* ---------- Stats Display (v9 pills) ---------- */
+      /* ---------- Stats Display (v10 rail) ---------- */
   const StatsDisplay = {
     init() {
       const xp = Store.data.stats.xp || 0;
       const streak = Store.data.stats.streak || 0;
-      const streakEl = document.getElementById('stats-streak');
-      const xpEl = document.getElementById('stats-xp');
-      const streakNum = document.getElementById('streak-num');
-      const xpNum = document.getElementById('xp-num');
-      if (streakEl && streak > 0) { streakEl.style.display = ''; if (streakNum) streakNum.textContent = streak; }
-      if (xpEl) { xpEl.style.display = ''; if (xpNum) xpNum.textContent = xp; }
-      // Legacy fallback
-      const slot = document.getElementById('stats-slot');
-      if (slot) slot.innerHTML = '';
+      const rs = document.getElementById('rail-streak');
+      const rx = document.getElementById('rail-xp');
+      if (rs) rs.textContent = streak;
+      if (rx) rx.textContent = xp;
     }
   };
 
@@ -282,20 +277,33 @@
     }
   };
 
-      /* ---------- Bottom Nav (active link marker) ---------- */
+        /* ---------- Rail (left nav) ---------- */
   const Sidebar = {
     init() {
-      const filename = location.pathname.split('/').pop();
-      $$('.bottom-nav a').forEach(a => {
-        const href = a.getAttribute('href');
-        if (href && filename && href.endsWith(filename) && filename.length > 5) {
+      const rail = $('#rail');
+      const toggle = $('#rail-toggle');
+      const backdrop = $('#rail-backdrop');
+      if (toggle && rail) {
+        on(toggle, 'click', () => {
+          rail.classList.toggle('is-open');
+          if (backdrop) backdrop.classList.toggle('is-open');
+        });
+      }
+      if (backdrop) on(backdrop, 'click', () => {
+        rail.classList.remove('is-open');
+        backdrop.classList.remove('is-open');
+      });
+      // Active link
+      const filename = location.pathname.split('/').pop() || 'index.html';
+      $$('.rail-link').forEach(a => {
+        const href = (a.getAttribute('href') || '').split('#')[0];
+        if (href && href.endsWith(filename) && filename.length > 4) {
           a.classList.add('is-active');
-          a.setAttribute('aria-current', 'page');
         }
       });
-      // Search button
-      const searchBtn = $('#search-btn');
-      if (searchBtn) on(searchBtn, 'click', () => Search.open());
+      // Search button (if a dedicated one exists)
+      const sb = $('#search-btn');
+      if (sb) on(sb, 'click', () => Search.open());
     }
   };
 

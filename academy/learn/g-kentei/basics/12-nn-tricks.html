@@ -9,55 +9,108 @@
 
 </head>
 <body data-cert="g-kentei">
-
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../../../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../../../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../../../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="../../../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../../../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../../../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../../../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
+
+  <nav class="rail-section">
+    <a class="rail-link" href="../../../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../../../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../../../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
+    </div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
+    </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</aside>
 
 <main class="main">
+
     <div class="content">
 <div class="chap-header">
       <div class="crumbs">
@@ -383,140 +436,140 @@ Epoch 50: loss=0.05, accuracy=95%<br>
 
     <div class="problem-set">
 
-      <div class="problem">
+      <div class="problem" id="problem-1">
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">L2 正則化（Weight Decay）が抑制するのは。</div>
         <div class="p-choices">① 学習速度　 ② 大きな重みの値、過学習　 ③ 計算量　 ④ メモリ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> L_total = L + λ||θ||² で大きな重みを罰し、汎化を改善。MAP推定でガウス事前に対応。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">Dropout の典型的なドロップ率は。</div>
         <div class="p-choices">① 0.01　 ② 0.1〜0.5　 ③ 0.9　 ④ 1.0</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 一般に 0.1〜0.5。隠れ層で 0.5、入力層で 0.2 が古典的。BN と併用するときは小さめにする傾向。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">Dropout の動作として正しいのは。</div>
         <div class="p-choices">① 訓練時のみニューロンを確率的に無効化、推論時はすべて使用　 ② 常に無効化　 ③ 推論でのみ動作　 ④ パラメータ削減</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 訓練時のみドロップ、推論時は通常通り（スケール補正あり）。アンサンブル近似と解釈できる。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">Batch Normalization の正規化対象は。</div>
         <div class="p-choices">① 単一サンプル内　 ② ミニバッチ内の各チャネルごと　 ③ パラメータ自体　 ④ 学習率</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ミニバッチ内で各特徴/チャネルごとに平均・分散を計算し正規化。バッチサイズ依存、Tiny バッチでは不安定。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">Transformer で標準的な正規化は。</div>
         <div class="p-choices">① BatchNorm　 ② LayerNorm（バッチサイズ非依存、系列長変化OK）　 ③ なし　 ④ Dropout</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> LayerNorm は単一サンプル内の特徴次元で正規化。可変長の系列、小バッチでも安定。最近は RMSNorm も（LLaMA 等）。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">He 初期化が適している活性化関数は。</div>
         <div class="p-choices">① Sigmoid　 ② tanh　 ③ ReLU 系（Leaky ReLU、GELU を含む）　 ④ Step</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> He（2015）は分散 2/n_in で、ReLU の片側 0 の性質を考慮。Xavier は Sigmoid/tanh 向け。LeCun は SELU 向け。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">Early Stopping の動作は。</div>
         <div class="p-choices">① 訓練を必ず最終エポックまで　 ② 検証損失が改善しなくなったら停止（過学習開始前）　 ③ ランダム停止　 ④ 学習しない</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Patience（数エポック改善なし）で停止。最も簡単で効果的な正則化。最良時のモデルを保存して使う。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">画像認識でよく使われる強力な自動データ拡張は。</div>
         <div class="p-choices">① 反転のみ　 ② RandAugment、AutoAugment、TrivialAugment　 ③ ノイズのみ　 ④ なし</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> RandAugment は2つの操作を強度 9 でランダム適用。AutoAugment は RL で最適化された方策。深層学習の SOTA で標準。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">Label Smoothing が変更する対象は。</div>
         <div class="p-choices">① 学習率　 ② one-hot ラベルを [ε/(K-1), 1-ε,...] に置換、過信抑制　 ③ パラメータ数　 ④ バッチサイズ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 真ラベルの確信度を 1.0 から 1-ε（典型 0.9）に下げる。汎化改善＋過信抑制。ImageNet, NMT などで標準。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">Mixup の動作は。</div>
         <div class="p-choices">① 単一サンプル　 ② 2サンプルを λ:1-λ で線形混合、ラベルも同様に混合　 ③ ノイズ加算　 ④ パラメータ平均</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Zhang 2018。画像とラベルを線形補間。決定境界を滑らかにし、汎化と頑健性を改善。CutMix は領域置換版。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">Gradient Clipping の目的は。</div>
         <div class="p-choices">① 過学習防止　 ② 勾配爆発防止（特に RNN/Transformer 学習）　 ③ 計算高速化　 ④ メモリ削減</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> ||g|| が閾値超過時にスケーリング。RNN の長系列・Transformer の大規模学習で標準（threshold=1.0 が典型）。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">Knowledge Distillation（蒸留）の目的は。</div>
         <div class="p-choices">① パラメータ増加　 ② 大きな教師モデルの知識を小さな生徒モデルに転送　 ③ ランダム学習　 ④ クラスタリング</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hinton 2015。教師の softmax 出力（soft target）で生徒を学習。DistilBERT、TinyLLaMA、MobileBERT 等で軽量化に必須。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">Mixed Precision Training で主に使う型は。</div>
         <div class="p-choices">① FP32 のみ　 ② FP16 や BF16 と FP32 重みコピーの組合せ　 ③ INT8 のみ　 ④ INT4 のみ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 計算は FP16/BF16、重みは FP32 で保持、損失スケーリングで underflow 防止。GPU メモリ半減、計算2-3倍速。BF16 はダイナミックレンジが広く実用的。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">Gradient Checkpointing（Activation Checkpointing）の効果は。</div>
         <div class="p-choices">① 計算高速化　 ② 順伝播の活性化を一部のみ保存し、逆伝播で再計算。メモリO(L) → O(√L)に　 ③ 精度向上　 ④ 学習率自動調整</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> メモリと計算のトレードオフ。LLM 学習では巨大モデルを限られた GPU で訓練するために必須。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">『Warmup』（学習率ウォームアップ）が必要な代表的状況は。</div>
         <div class="p-choices">① 全ての状況　 ② Transformer 学習、大バッチ学習　 ③ 線形回帰　 ④ K-means</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 初期の勾配が大きく不安定なため、η を 0 から徐々に上げる（数千ステップ）。Transformer、ViT、LLM 学習で必須。Cosine Annealing と組合せが標準。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">深層 CNN で勾配消失を抑制する主要技術として誤りはどれか。</div>
         <div class="p-choices">① ReLU　 ② 残差接続　 ③ Batch Normalization　 ④ Sigmoid 活性化</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> Sigmoid は勾配消失の主要原因の一つ。ReLU、残差接続、BN、適切な初期化が勾配消失緩和の四天王。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">Stochastic Depth の動作は。</div>
         <div class="p-choices">① パラメータをランダムドロップ　 ② 残差ブロックを確率的にスキップ（恒等写像に）　 ③ 学習率変化　 ④ ノイズ加算</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Huang 2016。残差NNの深さをランダム化することで正則化。100+ 層 ResNet で標準的に使われる。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">推論時に Dropout を有効にして複数回サンプリングする手法は何の推定に使うか。</div>
         <div class="p-choices">① 高速化　 ② 不確実性推定（Monte Carlo Dropout, Gal 2016）　 ③ 学習継続　 ④ 正則化</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Yarin Gal が示した。推論時 Dropout で N 回サンプリング、出力の分散が予測不確実性の近似となる。ベイズ NN の安価な近似。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">『Cosine Annealing』学習率スケジューラの形状は。</div>
         <div class="p-choices">① 直線的減少　 ② 余弦関数で滑らかに減衰（T_max でゼロ近くに）　 ③ 階段状　 ④ 一定</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> lr = lr_max · (1+cos(π·t/T))/2 で滑らかに減衰。Warmup と組み合わせが現代学習の標準。SGDR で再起動版もある。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">AdamW が Adam と異なる主要な点は。</div>
         <div class="p-choices">① Momentumなし　 ② 重み減衰を更新式の最後で適用（Adam の正則化と分離）、L2 正則化と等価に動作　 ③ 学習率を増やす　 ④ Bias 補正削除</div>
@@ -557,6 +610,8 @@ Epoch 50: loss=0.05, accuracy=95%<br>
     </nav>
     </div>
   </main>
+
+</div>
 <script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

@@ -9,55 +9,108 @@
 
 </head>
 <body data-cert="g-kentei">
-
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../../../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../../../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../../../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="../../../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../../../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../../../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../../../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
+
+  <nav class="rail-section">
+    <a class="rail-link" href="../../../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../../../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../../../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
+    </div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
+    </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</aside>
 
 <main class="main">
+
     <div class="content">
 <div class="chap-header">
       <div class="crumbs">
@@ -461,140 +514,140 @@ GPT-4 (~1T+):　　　　 ~95+<br>
 
     <div class="problem-set">
 
-      <div class="problem">
+      <div class="problem" id="problem-1">
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">BERT の事前学習タスクで主要なものは。</div>
         <div class="p-choices">① 次トークン予測　 ② Masked Language Model（MLM）と Next Sentence Prediction　 ③ クラスタリング　 ④ 強化学習</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 入力の15%を [MASK] に置換し復元するMLMが核。NSPは後の改良（RoBERTa）で削除。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">GPT の事前学習タスクは。</div>
         <div class="p-choices">① MLM　 ② Next Token Prediction（因果的言語モデル）　 ③ 分類　 ④ 強化学習</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 左から右に次のトークンを予測する自己回帰モデル。生成タスクに自然に適合。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">BERT と GPT のアーキテクチャの違いは。</div>
         <div class="p-choices">① BERTはエンコーダ（双方向Attention）、GPTはデコーダ（因果Attention）　 ② 全く同じ　 ③ BERTはRNN　 ④ GPTはCNN</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> どちらもTransformerベースだが、Attentionの方向と用途が異なる。理解はBERT、生成はGPTが得意。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">『事前学習＋微調整』パラダイムの利点は。</div>
         <div class="p-choices">① タスクごとに学習し直す必要なし、汎用言語知識を活用、少量データで高精度　 ② 計算量が増える　 ③ 精度が下がる　 ④ 言語別必要</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 大規模事前学習1回 → 多タスクに転移。NLPを変革したパラダイム。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">BERT で使われる Tokenization は。</div>
         <div class="p-choices">① 単語分割のみ　 ② WordPiece（サブワード分割）　 ③ 文字単位　 ④ ランダム</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> WordPiece は未知語に強く、語彙サイズを抑える。'unhappiness' → 'un', '##happiness' のような分割。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">『RoPE（Rotary Position Embedding）』を採用しているLLMは。</div>
         <div class="p-choices">① BERT　 ② GPT-2　 ③ LLaMA, GPT-NeoX 等の現代LLM　 ④ T5</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> Su 2021。相対位置を回転で表現、長さ外挿に有利。LLaMA 系の標準。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">T5 が提唱した paradigm は。</div>
         <div class="p-choices">① RNN復活　 ② すべてのタスクを Text-to-Text として統一　 ③ 線形化　 ④ ハードコーディング</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 分類も生成も翻訳もすべて『テキスト入力→テキスト出力』。プレフィックスでタスク指定。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">RoBERTa が BERT を改良した主要点は。</div>
         <div class="p-choices">① NSP削除、データ量と学習時間を大幅増、動的マスキング　 ② アーキテクチャ変更　 ③ パラメータ削減　 ④ Sigmoid化</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> Liu et al. 2019。アーキテクチャは同じだが学習レシピで GLUE 大幅改善。『正しく訓練』の重要性を示した。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">ELECTRA の事前学習タスクは。</div>
         <div class="p-choices">① MLM　 ② NTP　 ③ Replaced Token Detection（置換されたトークンを識別）　 ④ Clustering</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ③</span> 生成器が置換したトークンを判別器が識別。MLMより学習効率良く、同パラメータで高性能。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">GPT-3 で注目された『In-Context Learning』とは。</div>
         <div class="p-choices">① パラメータ更新　 ② プロンプト内の数件の例から、新タスクを推論時に学習　 ③ 微調整　 ④ クラスタリング</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Few-shot Learning の革命。重みは変更せず、コンテキスト内の例だけでタスク適応。Brown 2020。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">『微調整』と『プロンプティング』の違いは。</div>
         <div class="p-choices">① 同じ　 ② 微調整=モデル重み更新、プロンプティング=入力テキストで指示（重み不変）　 ③ どちらも教師なし　 ④ 必ず両方必要</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 微調整はGPU・データ必要、プロンプティングはAPI呼び出しのみ。実用ではプロンプトエンジニアリングが先、必要に応じて微調整。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">LoRA（Low-Rank Adaptation）の役割は。</div>
         <div class="p-choices">① 学習率調整　 ② 元モデルを凍結し、低ランク差分行列だけ学習し効率的微調整　 ③ 量子化　 ④ クラスタ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hu 2021。学習可能パラメータを1/10000に削減しつつ性能維持。LLM実用微調整の標準。QLoRAで4-bit量子化と組合せ。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">BERT の文埋め込み取得で[CLS]以外に良いとされる方法は。</div>
         <div class="p-choices">① ランダム　 ② 全トークンのmean pooling　 ③ 1番目のトークンのみ　 ④ 不可能</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> [CLS] よりも全トークンの平均が下流タスクで強いことが多い。Sentence-BERT で標準化。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">GPT の生成サンプリングで『創造性と一貫性のバランス』を制御する典型パラメータは。</div>
         <div class="p-choices">① 学習率　 ② Temperature、Top-p（Nucleus）、Top-k　 ③ バッチサイズ　 ④ Dropout</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Temperature 低→決定的、高→多様。Top-p=0.9 で上位累積90%から選択、Hallucination抑制と多様性のバランス。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">GPT-3 の InstructGPT/ChatGPT で導入された手法は。</div>
         <div class="p-choices">① CNN　 ② RLHF（Reinforcement Learning from Human Feedback）で指示追従性を学習　 ③ K-means　 ④ Random Forest</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 人間のフィードバックで報酬モデルを学習し、PPO で方策を最適化。指示追従性と無害化の核心技術。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">BERT が最も得意なタスクは。</div>
         <div class="p-choices">① 長文生成　 ② 文章理解（分類、QA、NER）　 ③ 音楽生成　 ④ 画像認識</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 双方向 Attention で文脈理解が強い。SQuAD で人間超え、GLUEベンチマークを大幅刷新（2018）。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">『スケーリング則』（Kaplan 2020）の主張は。</div>
         <div class="p-choices">① パラメータ数だけが効く　 ② パラメータ・データ・計算の3軸でモデル性能が予測可能に改善　 ③ ランダム　 ④ 関係なし</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 損失がパワーロー則で改善。これがGPT-3, GPT-4のスケール拡大を駆動。Chinchilla（DeepMind 2022）が最適配分を改良。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">SentencePiece が WordPiece より優れる点は。</div>
         <div class="p-choices">① 必ず速い　 ② 言語非依存、生のテキストから直接学習、空白を特殊文字として扱う　 ③ 英語専用　 ④ なし</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 日本語・中国語のような空白区切りでない言語に強い。T5, mBART, ALBERTで採用。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">『MLM（Masked LM）』が双方向文脈学習を可能にする仕組みは。</div>
         <div class="p-choices">① ランダム　 ② マスクされたトークンを予測するため、両側の文脈を見る必要がある（因果制約なし）　 ③ 線形　 ④ 距離計算</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 『私は[MASK]を見た』の[MASK]を予測するには前後両方が必要。これがGPTの因果Attentionとの本質的違い。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">日本語特化の事前学習モデルとして代表的なものは。</div>
         <div class="p-choices">① 全く存在しない　 ② 東北大BERT、cl-tohoku/bert-base-japanese、rinna/japanese-gpt等　 ③ GPT-1のみ　 ④ ELMo</div>
@@ -633,6 +686,8 @@ GPT-4 (~1T+):　　　　 ~95+<br>
     </nav>
     </div>
   </main>
+
+</div>
 <script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

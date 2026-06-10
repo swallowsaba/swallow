@@ -9,55 +9,108 @@
 
 </head>
 <body data-cert="g-kentei">
-
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../../../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../../../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../../../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="../../../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../../../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../../../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../../../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
+
+  <nav class="rail-section">
+    <a class="rail-link" href="../../../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../../../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../../../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
+    </div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
+    </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</aside>
 
 <main class="main">
+
     <div class="content">
 <div class="chap-header">
       <div class="crumbs">
@@ -470,140 +523,140 @@ scale 30:　過剰、不自然なアーティファクト<br>
 
     <div class="problem-set">
 
-      <div class="problem">
+      <div class="problem" id="problem-1">
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">GAN の基本構造は。</div>
         <div class="p-choices">① エンコーダのみ　 ② Generator と Discriminator の敵対的学習　 ③ デコーダのみ　 ④ クラスタリング</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Goodfellow 2014。Generator が偽画像、Discriminator が真偽判定、min-max ゲーム。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">GAN の典型的な問題で『多様性が失われる』現象を何と呼ぶか。</div>
         <div class="p-choices">① 過学習　 ② モード崩壊（Mode Collapse）　 ③ 勾配消失　 ④ 不確実性</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Generator が騙しやすい一部モードに局所最適。WGAN-GP、Spectral Normalization、Mini-batch Discrimination で対策。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">VAE の損失関数 ELBO は何と何の組合せか。</div>
         <div class="p-choices">① 再構成損失 + KL ダイバージェンス（事前との距離）　 ② MSE のみ　 ③ Hinge　 ④ 敵対的損失</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> ELBO = 再構成 - KL(q(z|x)||p(z))。再構成精度と潜在分布の事前 N(0,I) への近さのバランス。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">Diffusion Model の学習は何を予測するか。</div>
         <div class="p-choices">① ラベル　 ② 画像に加えられたノイズ（または score = ∇log p(x)）　 ③ クラスタ　 ④ Bounding Box</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 各タイムステップで NN がノイズを予測し、それを差し引いて x_{t-1} を得る。これを T 回繰り返してノイズから画像復元。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">Stable Diffusion の核心技術は。</div>
         <div class="p-choices">① ピクセル空間のDiffusion　 ② Latent Diffusion（VAEで圧縮した潜在空間で Diffusion）　 ③ GAN　 ④ Flow</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Rombach 2022。512×512 を 64×64 潜在に圧縮し、計算量1/64に。コンシューマGPUで動作可能に。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">ControlNet の役割は。</div>
         <div class="p-choices">① 高速化　 ② Stable Diffusion に追加制約（姿勢、深度、エッジ）を与えて生成を制御　 ③ パラメータ削減　 ④ 学習率自動</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Zhang 2023。骨格→人物、線画→塗り絵、深度→立体感のある画像など。生成の制御性を劇的向上。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">『Classifier-Free Guidance（CFG）』の役割は。</div>
         <div class="p-choices">① 分類器学習　 ② 条件付き/無条件のスコア差を増幅、テキスト指示への忠実度を高める　 ③ クラスタ　 ④ 学習率</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Ho 2022。guidance_scale パラメータで強さを調整。7-10 が典型、高すぎると過剰でアーティファクト発生。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">DALL-E 2 の主な構成要素は。</div>
         <div class="p-choices">① CNN のみ　 ② CLIP（テキスト・画像埋め込み）＋ Diffusion （prior + decoder）　 ③ RNN のみ　 ④ K-means</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CLIP埋め込みを介してテキストと画像を結ぶ、unCLIP アーキテクチャ。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">画像生成評価の代表的指標『FID』は何を測るか。</div>
         <div class="p-choices">① 学習速度　 ② Inception 特徴量で実画像分布と生成画像分布の距離　 ③ クラス数　 ④ パラメータ数</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Fréchet Inception Distance。画像品質と多様性を一値に集約。低いほど良い。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">『CLIP Score』が評価するのは。</div>
         <div class="p-choices">① 画像品質のみ　 ② テキストプロンプトと生成画像の意味的整合性　 ③ 計算速度　 ④ ファイルサイズ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CLIP モデルの埋め込み類似度。プロンプト忠実度の標準指標。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">Sora や Veo は何のためのモデルか。</div>
         <div class="p-choices">① 音楽生成　 ② 動画生成（テキスト→1分以上の高品質動画）　 ③ 顔認識　 ④ 文章生成</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> OpenAI Sora（2024）、Google Veo。Diffusion Transformer ベース、物理理解・長時間生成が特徴。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">Whisper（OpenAI）の用途は。</div>
         <div class="p-choices">① 画像生成　 ② 多言語音声認識（STT）　 ③ TTS　 ④ 翻訳のみ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Speech-to-Text の多言語モデル。99言語対応、ノイズに頑健。オープンウェイト。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">VQ-VAE の特徴は。</div>
         <div class="p-choices">① 連続潜在　 ② 離散コードブックで潜在表現、画像・音声生成や Tokenizer で活用　 ③ 線形変換　 ④ ノイズなし</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 連続潜在を離散コードに量子化。Audio LM、画像 Tokenizer などで使用。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">Normalizing Flow の利点は。</div>
         <div class="p-choices">① 厳密な尤度計算が可能（可逆変換）　 ② 高速生成　 ③ パラメータ少　 ④ 学習不要</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> 可逆な変換 f: z → x を学習し、変数変換公式で厳密尤度。GANやVAEと違い密度評価可能。画像品質は Diffusion に劣る。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">Diffusion Models の高速化『Distillation』が達成するのは。</div>
         <div class="p-choices">① 学習速度のみ　 ② 50ステップを 1-4 ステップに圧縮、リアルタイム生成可能に　 ③ パラメータ削減　 ④ 不可能</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 教師モデルから生徒モデルへの蒸留。SDXL Turbo、LCM などでリアルタイム画像生成（30fps）が可能に。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">LoRA を Diffusion に適用する利点は。</div>
         <div class="p-choices">① 全パラメータ学習　 ② 10-100枚の画像で特定キャラ/スタイル学習、数MBで配布可能　 ③ 高速学習不可　 ④ 精度低下</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Civitai 等で大量のLoRA公開、コミュニティが活発。Stable Diffusion カスタマイズの主流。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">StyleGAN の特徴は。</div>
         <div class="p-choices">① 全結合のみ　 ② スタイル（属性）と画像内容を分離、高解像度顔生成、潜在空間編集　 ③ 線形　 ④ RNN</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> NVIDIA、Karras 2019。ThisPersonDoesNotExist のあの顔。潜在空間の意味的編集（笑顔強度、年齢など）。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">音楽生成モデル MusicGen は何で学習されているか。</div>
         <div class="p-choices">① 画像のみ　 ② 大量の楽曲とテキスト説明のペア、自己回帰モデル　 ③ ランダム　 ④ MIDI のみ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Meta、2023。テキスト→音楽の Transformer ベース。Suno、Udio などのサービスも類似アプローチ。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">生成 AI の社会的課題として該当しないのは。</div>
         <div class="p-choices">① ディープフェイク　 ② 著作権　 ③ バイアス　 ④ 必ず物理法則を守る</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> 生成モデルは物理法則を必ずしも守らない（手指の数間違い、不自然な液体運動など）。Sora は改善したが完璧でない。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">Diffusion Model が現在 GAN を凌駕している主な理由は。</div>
         <div class="p-choices">① 学習が速い　 ② 学習安定、高品質、多様性確保、テキスト条件付け容易、スケール可能　 ③ パラメータ少　 ④ メモリ少</div>
@@ -642,6 +695,8 @@ scale 30:　過剰、不自然なアーティファクト<br>
     </nav>
     </div>
   </main>
+
+</div>
 <script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>

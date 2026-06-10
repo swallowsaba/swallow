@@ -9,55 +9,108 @@
 
 </head>
 <body data-cert="g-kentei">
-
-<!-- App Status Bar (top) -->
-<header class="app-status">
-  <a href="../../../index.html" class="app-status__brand">
-    <div class="app-status__logo">S</div>
-    <div class="app-status__name">Swallow<small>AI Academy</small></div>
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <a href="../../../index.html" class="mobile-header__brand">
+    <span class="mobile-header__logo">S</span>
+    <span>Swallow Academy</span>
   </a>
-  <div class="app-status__actions">
-    <div class="stat-pill stat-pill--streak" id="stats-streak" style="display:none;">
-      <span class="stat-pill__icon">🔥</span><span id="streak-num">0</span>
-    </div>
-    <div class="stat-pill stat-pill--xp" id="stats-xp" style="display:none;">
-      <span class="stat-pill__icon">⭐</span><span id="xp-num">0</span>
-    </div>
-    <button class="app-status__icon-btn" id="search-btn" aria-label="検索">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
-    <button class="app-status__icon-btn topbar-theme" aria-label="テーマ切替">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
-  </div>
 </header>
 
-<!-- Floating Bottom Nav (signature element) -->
-<nav class="bottom-nav" aria-label="メインナビ">
-  <a href="../../../index.html">
-    <span class="bottom-nav__icon">🏠</span>
-    <span class="bottom-nav__label">ホーム</span>
+<div class="layout">
+<div class="rail-backdrop" id="rail-backdrop"></div>
+<aside class="rail" id="rail">
+  <a href="../../../index.html" class="rail-brand">
+    <span class="rail-brand__logo">S</span>
+    <span class="rail-brand__name">Swallow Academy</span>
   </a>
-  <a href="../../../certifications/g-kentei.html">
-    <span class="bottom-nav__icon">📘</span>
-    <span class="bottom-nav__label">G検定</span>
-  </a>
-  <a href="../../../learn/g-kentei/handson.html">
-    <span class="bottom-nav__icon">💻</span>
-    <span class="bottom-nav__label">演習</span>
-  </a>
-  <a href="../../../quiz.html">
-    <span class="bottom-nav__icon">📝</span>
-    <span class="bottom-nav__label">問題</span>
-  </a>
-  <a href="../../../learn/g-kentei/simulation.html">
-    <span class="bottom-nav__icon">🧪</span>
-    <span class="bottom-nav__label">シム</span>
-  </a>
-</nav>
+
+  <nav class="rail-section">
+    <a class="rail-link" href="../../../index.html">
+      <span class="rail-link__icon">⌂</span>
+      <span>ホーム</span>
+    </a>
+    <a class="rail-link" href="../../../quiz.html">
+      <span class="rail-link__icon">◎</span>
+      <span>問題演習</span>
+      <span class="rail-link__badge">474</span>
+    </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">資格</div>
+      <a class="rail-link" href="../../../certifications/g-kentei.html" data-cert="g-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>G検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/e-shikaku.html" data-cert="e-shikaku">
+        <span class="rail-link__icon">●</span>
+        <span>E資格</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/tokei-kentei.html" data-cert="tokei-kentei">
+        <span class="rail-link__icon">●</span>
+        <span>統計検定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/python-cert.html" data-cert="python-cert">
+        <span class="rail-link__icon">●</span>
+        <span>Python認定</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
+        <span class="rail-link__icon">●</span>
+        <span>AWS MLA</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/image-engineer.html" data-cert="image-engineer">
+        <span class="rail-link__icon">●</span>
+        <span>画像処理</span>
+      </a>
+      <a class="rail-link" href="../../../certifications/jetson-ai.html" data-cert="jetson-ai">
+        <span class="rail-link__icon">●</span>
+        <span>Jetson AI</span>
+      </a>
+  </nav>
+
+  <nav class="rail-section">
+    <div class="rail-section__label">G検定 学習</div>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#basics">
+      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../certifications/g-kentei.html#advanced">
+      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/handson.html">
+      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
+    </a>
+    <a class="rail-link" href="../../../learn/g-kentei/simulation.html">
+      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
+    </a>
+  </nav>
+
+  <div class="rail-spacer"></div>
+
+  <div class="rail-foot">
+    <div class="rail-stat">
+      <span class="rail-stat__icon">◉</span>
+      <span class="rail-stat__value" id="rail-streak">0</span>
+      <span class="rail-stat__label">日連続</span>
+    </div>
+    <div class="rail-stat">
+      <span class="rail-stat__icon">△</span>
+      <span class="rail-stat__value" id="rail-xp">0</span>
+      <span class="rail-stat__label">XP</span>
+    </div>
+    <button class="rail-theme topbar-theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>テーマ切替</span>
+    </button>
+  </div>
+</aside>
 
 <main class="main">
+
     <div class="content">
 <div class="chap-header">
       <div class="crumbs">
@@ -425,140 +478,140 @@ PaLM 540B:　　 87.3%<br>
 
     <div class="problem-set">
 
-      <div class="problem">
+      <div class="problem" id="problem-1">
         <div class="p-num">PROBLEM 1</div>
         <div class="p-q">『スケーリング則（Scaling Laws）』の主張は。</div>
         <div class="p-choices">① パラメータ数だけが効く　 ② パラメータ・データ・計算の3軸で損失がパワーロー則で改善　 ③ 関係なし　 ④ ランダム</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Kaplan et al. 2020。これがGPT-3, GPT-4 のスケール拡大を駆動。Chinchilla で最適配分が改良。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-2">
         <div class="p-num">PROBLEM 2</div>
         <div class="p-q">『Chinchilla 最適化』（DeepMind 2022）が示した知見は。</div>
         <div class="p-choices">① 必ずパラメータを増やせ　 ② 計算予算が決まればパラメータとデータをほぼ同じスケールで増やすのが最適　 ③ データ不要　 ④ パラメータ削減</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Hoffmann et al. それまでのLLMはパラメータ過大・データ不足。70Bモデル+1.4Tトークンが280Bを凌駕。LLaMA系がこの教訓を踏襲。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-3">
         <div class="p-num">PROBLEM 3</div>
         <div class="p-q">『In-Context Learning（ICL）』とは。</div>
         <div class="p-choices">① 微調整　 ② プロンプト内の例だけで推論時にタスク適応（パラメータ更新なし）　 ③ クラスタリング　 ④ 強化学習</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> GPT-3 で発見された創発能力。Few-shot Learning の革命。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-4">
         <div class="p-num">PROBLEM 4</div>
         <div class="p-q">『Chain-of-Thought』プロンプトが効果的なタスクは。</div>
         <div class="p-choices">① 単純な事実検索　 ② 多段推論（数学、論理パズル、複雑な計算）　 ③ 翻訳　 ④ 分類</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 『step by step』『let's think』で思考過程を出力させ、最終答えの質を向上。GSM8K等の数学で劇的改善。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-5">
         <div class="p-num">PROBLEM 5</div>
         <div class="p-q">RLHF の3つのステップは。</div>
         <div class="p-choices">① SFT → 報酬モデル学習 → PPO で方策最適化　 ② 学習なし　 ③ 強化学習のみ　 ④ 単純な教師あり</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ①</span> SFT で初期化、人間のランキングから報酬モデル、PPO（KL正則化付き）で最適化。InstructGPT/ChatGPT の核心。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-6">
         <div class="p-num">PROBLEM 6</div>
         <div class="p-q">DPO（Direct Preference Optimization）の利点は。</div>
         <div class="p-choices">① RLHFと同じ　 ② 報酬モデルもPPOも不要、CE風損失だけで好み学習が可能　 ③ 学習しない　 ④ パラメータ削減</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Rafailov 2023。RLHF より実装が大幅に簡単で性能同等以上、現代の標準。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-7">
         <div class="p-num">PROBLEM 7</div>
         <div class="p-q">LLM の Hallucination（幻覚）対策として有効でないのは。</div>
         <div class="p-choices">① RAG（外部知識検索）　 ② Tool Use　 ③ Citation　 ④ 学習率を上げる</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ④</span> 学習率変更は事前学習段階の話。Hallucination は RAG, Tool Use, Self-Consistency, Citation, Calibration で対処。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-8">
         <div class="p-num">PROBLEM 8</div>
         <div class="p-q">『MoE（Mixture of Experts）』の動作は。</div>
         <div class="p-choices">① すべてのパラメータ常時使用　 ② トークンごとに専門家サブネットを選択的アクティブ化（疎活性化）　 ③ クラスタリング　 ④ アンサンブル</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 総パラメータは巨大、計算は一部のみ。Mixtral、GPT-4（推定）、Gemini 1.5 で採用。スケール効率の鍵。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-9">
         <div class="p-num">PROBLEM 9</div>
         <div class="p-q">LLM の評価ベンチマークで『多分野QA』に該当するのは。</div>
         <div class="p-choices">① HumanEval　 ② MMLU（57科目）　 ③ GSM8K　 ④ SWE-bench</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> MMLU は数学、歴史、医学等57分野の選択肢QA。HumanEval=コード、GSM8K=数学、SWE-bench=実コーディング。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-10">
         <div class="p-num">PROBLEM 10</div>
         <div class="p-q">『Constitutional AI』（Anthropic）の特徴は。</div>
         <div class="p-choices">① 学習なし　 ② 原則のセットでモデル自身に出力を批判・修正させ、人間ラベルを最小化　 ③ 検索のみ　 ④ パラメータ削減</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Claude の核技術。AI Feedback（RLAIF）への発展。スケーラブルな安全性技術。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-11">
         <div class="p-num">PROBLEM 11</div>
         <div class="p-q">Instruction Tuning（指示チューニング）の入力形式は。</div>
         <div class="p-choices">① (画像, ラベル)　 ② (指示, 入力, 出力) のペア　 ③ クラスタ　 ④ ラベルなし</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> FLAN、T0、Alpacaなど。多様なタスクの指示理解を学習。RLHFの前段。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-12">
         <div class="p-num">PROBLEM 12</div>
         <div class="p-q">『創発的能力』とは何か。</div>
         <div class="p-choices">① 全モデルが持つ　 ② パラメータ／計算が閾値を超えると突然現れる能力（多段推論、コーディング等）　 ③ ランダム　 ④ 線形改善のみ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Wei et al. 2022。小モデルでは ≈0%、大モデルで急激に向上するタスクが存在。スケーリングの最も興味深い性質。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-13">
         <div class="p-num">PROBLEM 13</div>
         <div class="p-q">長文文脈処理の効率化技術として該当するのは。</div>
         <div class="p-choices">① Dropout　 ② Flash Attention、KV Cache、Sparse Attention、PagedAttention　 ③ Sigmoid　 ④ K-means</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Attention の O(n²) を抑えてメモリ・計算効率化。100万トークン超の文脈（Gemini 1.5, Claude 3.7）を可能にした。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-14">
         <div class="p-num">PROBLEM 14</div>
         <div class="p-q">o1/o3 など『推論モデル』の特徴は。</div>
         <div class="p-choices">① 高速応答のみ　 ② テスト時に長い思考過程を生成して推論精度を向上、数学・コーディングで SOTA　 ③ 学習しない　 ④ ラベル不要</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> CoT を内部化、テスト時の計算量増で性能向上。新しいスケーリング軸（テスト時計算）の発見。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-15">
         <div class="p-num">PROBLEM 15</div>
         <div class="p-q">LLM の温度（temperature）パラメータの意味は。</div>
         <div class="p-choices">① モデルサイズ　 ② Softmaxを T で割って分布の鋭さを調整。低い=決定的、高い=多様　 ③ パラメータ数　 ④ 学習率</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 創造性と一貫性のバランス。T=0で貪欲、T=1で標準、T=2で創造的だがHallucination増。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-16">
         <div class="p-num">PROBLEM 16</div>
         <div class="p-q">『Top-p Nucleus Sampling』の動作は。</div>
         <div class="p-choices">① 全ての候補から　 ② 累積確率が p になるまで上位トークンを選び、その中からサンプリング　 ③ 必ず1位　 ④ ランダム</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Top-k よりも適応的。低確率の長い裾を切り落としつつ多様性確保。p=0.9 が典型。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-17">
         <div class="p-num">PROBLEM 17</div>
         <div class="p-q">LLM 微調整の効率技術『LoRA』が更新するパラメータは。</div>
         <div class="p-choices">① 全パラメータ　 ② 元の行列に低ランク差分（A·B、ランクr）を加え、その差分のみ学習　 ③ 凍結のみ　 ④ ランダム</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 学習可能パラメータを 0.1〜1% に削減。QLoRA で 4-bit 量子化と組合せ、コンシューマGPUで70Bモデル微調整可能に。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-18">
         <div class="p-num">PROBLEM 18</div>
         <div class="p-q">LLM の『指示追従性』を実現する手法は。</div>
         <div class="p-choices">① 単なる事前学習　 ② Instruction Tuning + RLHF（または DPO）　 ③ 線形化　 ④ クラスタ</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> 事前学習だけでは『次のトークン予測機』にすぎない。指示理解と安全性は Instruction Tuning + RLHF で獲得。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-19">
         <div class="p-num">PROBLEM 19</div>
         <div class="p-q">『Self-Consistency』の手法は。</div>
         <div class="p-choices">① 1回サンプリング　 ② 同じ問題を複数回CoTでサンプリングし、最頻の答えを選ぶ　 ③ 線形回帰　 ④ クラスタリング</div>
         <div class="p-answer"><span class="p-answer-label">ANSWER ②</span> Wang 2022。数学推論で CoT+Self-Consistency が CoT 単独より大幅に強い。複数の思考経路の多数決。</div>
       </div>
 
-      <div class="problem">
+      <div class="problem" id="problem-20">
         <div class="p-num">PROBLEM 20</div>
         <div class="p-q">『Knowledge Cutoff』とは。</div>
         <div class="p-choices">① 計算リソース上限　 ② LLM が事前学習した時点までしか知識を持たないという制約　 ③ パラメータ数　 ④ 学習率</div>
@@ -597,6 +650,8 @@ PaLM 540B:　　 87.3%<br>
     </nav>
     </div>
   </main>
+
+</div>
 <script src="../../../assets/js/main.js" defer></script>
 </body>
 </html>
