@@ -9,109 +9,41 @@
 
 </head>
 <body data-cert="tokei-kentei">
-<!-- Mobile header -->
-<header class="mobile-header">
-  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-  </button>
-  <a href="../index.html" class="mobile-header__brand">
-    <span class="mobile-header__logo">S</span>
+<nav class="nav">
+  <a href="../index.html" class="nav-brand">
+    <span class="nav-brand__mark">S</span>
     <span>Swallow Academy</span>
   </a>
-</header>
-
-<div class="layout">
-<div class="rail-backdrop" id="rail-backdrop"></div>
-<aside class="rail" id="rail">
-  <a href="../index.html" class="rail-brand">
-    <span class="rail-brand__logo">S</span>
-    <span class="rail-brand__name">Swallow Academy</span>
-  </a>
-
-  <nav class="rail-section">
-    <a class="rail-link" href="../index.html">
-      <span class="rail-link__icon">⌂</span>
-      <span>ホーム</span>
-    </a>
-    <a class="rail-link" href="../quiz.html">
-      <span class="rail-link__icon">◎</span>
-      <span>問題演習</span>
-      <span class="rail-link__badge">474</span>
-    </a>
-  </nav>
-
-  <nav class="rail-section">
-    <div class="rail-section__label">資格</div>
-      <a class="rail-link" href="../certifications/g-kentei.html" data-cert="g-kentei">
-        <span class="rail-link__icon">●</span>
-        <span>G検定</span>
-      </a>
-      <a class="rail-link" href="../certifications/e-shikaku.html" data-cert="e-shikaku">
-        <span class="rail-link__icon">●</span>
-        <span>E資格</span>
-      </a>
-      <a class="rail-link" href="../certifications/tokei-kentei.html" data-cert="tokei-kentei">
-        <span class="rail-link__icon">●</span>
-        <span>統計検定</span>
-      </a>
-      <a class="rail-link" href="../certifications/python-cert.html" data-cert="python-cert">
-        <span class="rail-link__icon">●</span>
-        <span>Python認定</span>
-      </a>
-      <a class="rail-link" href="../certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
-        <span class="rail-link__icon">●</span>
-        <span>AWS MLA</span>
-      </a>
-      <a class="rail-link" href="../certifications/image-engineer.html" data-cert="image-engineer">
-        <span class="rail-link__icon">●</span>
-        <span>画像処理</span>
-      </a>
-      <a class="rail-link" href="../certifications/jetson-ai.html" data-cert="jetson-ai">
-        <span class="rail-link__icon">●</span>
-        <span>Jetson AI</span>
-      </a>
-  </nav>
-
-  <nav class="rail-section">
-    <div class="rail-section__label">G検定 学習</div>
-    <a class="rail-link" href="../certifications/g-kentei.html#basics">
-      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
-    </a>
-    <a class="rail-link" href="../certifications/g-kentei.html#advanced">
-      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
-    </a>
-    <a class="rail-link" href="../learn/g-kentei/handson.html">
-      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
-    </a>
-    <a class="rail-link" href="../learn/g-kentei/simulation.html">
-      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
-    </a>
-  </nav>
-
-  <div class="rail-spacer"></div>
-
-  <div class="rail-foot">
-    <div class="rail-stat">
-      <span class="rail-stat__icon">◉</span>
-      <span class="rail-stat__value" id="rail-streak">0</span>
-      <span class="rail-stat__label">日連続</span>
-    </div>
-    <div class="rail-stat">
-      <span class="rail-stat__icon">△</span>
-      <span class="rail-stat__value" id="rail-xp">0</span>
-      <span class="rail-stat__label">XP</span>
-    </div>
-    <button class="rail-theme topbar-theme">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-      <span>テーマ切替</span>
+  <div class="nav-links" id="nav-links">
+    <a href="../index.html">ホーム</a>
+    <a href="../certifications/g-kentei.html">G検定</a>
+    <a href="../learn/g-kentei/handson.html">ハンズオン</a>
+    <a href="../learn/g-kentei/simulation.html">シミュレーション</a>
+    <a href="../quiz.html">問題演習</a>
+  </div>
+  <div class="nav-right">
+    <span class="nav-stat" id="nav-streak" title="連続学習日数">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
+      <span id="nav-streak-v">0</span>
+    </span>
+    <span class="nav-stat nav-stat--xp" id="nav-xp" title="学習XP">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 9 22 9 16 14 18 22 12 17 6 22 8 14 2 9 9 9"/></svg>
+      <span id="nav-xp-v">0</span>
+    </span>
+    <button class="nav-icon" id="search-btn" aria-label="検索">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <button class="nav-icon topbar-theme" aria-label="テーマ切替">
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button class="nav-icon nav-toggle" id="nav-toggle" aria-label="メニュー">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
   </div>
-</aside>
+</nav>
 
-<main class="main">
-
-    <div class="content">
+<div class="content">
 <section class="page-hero">
   <div class="page-hero-inner">
     <div class="crumbs"><a href="../index.html">ホーム</a> <span class="crumbs-sep">/</span> 資格 <span class="crumbs-sep">/</span> STATISTICS</div>
@@ -343,9 +275,8 @@
   </article>
 </div>
     </div>
-  </main>
+  
 
-</div>
 <script src="../assets/js/main.js" defer></script>
 </body>
 </html>

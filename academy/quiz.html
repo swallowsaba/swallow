@@ -6,254 +6,104 @@
 <title>問題演習 — Swallow AI Academy</title>
 <meta name="description" content="G検定形式の演習問題 474問。即時採点・解説・章リンク。">
 <link rel="stylesheet" href="assets/css/main.css">
-<meta name="theme-color" content="#5e6ad2">
+<meta name="theme-color" content="#4263eb">
 </head>
-<body><!-- Mobile header -->
-<header class="mobile-header">
-  <button class="mobile-header__menu" id="rail-toggle" aria-label="メニュー">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-  </button>
-  <a href="index.html" class="mobile-header__brand">
-    <span class="mobile-header__logo">S</span>
+<body><nav class="nav">
+  <a href="index.html" class="nav-brand">
+    <span class="nav-brand__mark">S</span>
     <span>Swallow Academy</span>
   </a>
-</header>
-
-<div class="layout">
-<div class="rail-backdrop" id="rail-backdrop"></div>
-<aside class="rail" id="rail">
-  <a href="index.html" class="rail-brand">
-    <span class="rail-brand__logo">S</span>
-    <span class="rail-brand__name">Swallow Academy</span>
-  </a>
-
-  <nav class="rail-section">
-    <a class="rail-link" href="index.html">
-      <span class="rail-link__icon">⌂</span>
-      <span>ホーム</span>
-    </a>
-    <a class="rail-link" href="quiz.html">
-      <span class="rail-link__icon">◎</span>
-      <span>問題演習</span>
-      <span class="rail-link__badge">474</span>
-    </a>
-  </nav>
-
-  <nav class="rail-section">
-    <div class="rail-section__label">資格</div>
-      <a class="rail-link" href="certifications/g-kentei.html" data-cert="g-kentei">
-        <span class="rail-link__icon">●</span>
-        <span>G検定</span>
-      </a>
-      <a class="rail-link" href="certifications/e-shikaku.html" data-cert="e-shikaku">
-        <span class="rail-link__icon">●</span>
-        <span>E資格</span>
-      </a>
-      <a class="rail-link" href="certifications/tokei-kentei.html" data-cert="tokei-kentei">
-        <span class="rail-link__icon">●</span>
-        <span>統計検定</span>
-      </a>
-      <a class="rail-link" href="certifications/python-cert.html" data-cert="python-cert">
-        <span class="rail-link__icon">●</span>
-        <span>Python認定</span>
-      </a>
-      <a class="rail-link" href="certifications/aws-mla-c01.html" data-cert="aws-mla-c01">
-        <span class="rail-link__icon">●</span>
-        <span>AWS MLA</span>
-      </a>
-      <a class="rail-link" href="certifications/image-engineer.html" data-cert="image-engineer">
-        <span class="rail-link__icon">●</span>
-        <span>画像処理</span>
-      </a>
-      <a class="rail-link" href="certifications/jetson-ai.html" data-cert="jetson-ai">
-        <span class="rail-link__icon">●</span>
-        <span>Jetson AI</span>
-      </a>
-  </nav>
-
-  <nav class="rail-section">
-    <div class="rail-section__label">G検定 学習</div>
-    <a class="rail-link" href="certifications/g-kentei.html#basics">
-      <span class="rail-link__icon">◆</span><span>基本編</span><span class="rail-link__badge">12</span>
-    </a>
-    <a class="rail-link" href="certifications/g-kentei.html#advanced">
-      <span class="rail-link__icon">◆</span><span>応用編</span><span class="rail-link__badge">12</span>
-    </a>
-    <a class="rail-link" href="learn/g-kentei/handson.html">
-      <span class="rail-link__icon">▤</span><span>ハンズオン</span><span class="rail-link__badge">150</span>
-    </a>
-    <a class="rail-link" href="learn/g-kentei/simulation.html">
-      <span class="rail-link__icon">◈</span><span>シミュレーション</span><span class="rail-link__badge">72</span>
-    </a>
-  </nav>
-
-  <div class="rail-spacer"></div>
-
-  <div class="rail-foot">
-    <div class="rail-stat">
-      <span class="rail-stat__icon">◉</span>
-      <span class="rail-stat__value" id="rail-streak">0</span>
-      <span class="rail-stat__label">日連続</span>
-    </div>
-    <div class="rail-stat">
-      <span class="rail-stat__icon">△</span>
-      <span class="rail-stat__value" id="rail-xp">0</span>
-      <span class="rail-stat__label">XP</span>
-    </div>
-    <button class="rail-theme topbar-theme">
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-      <span>テーマ切替</span>
+  <div class="nav-links" id="nav-links">
+    <a href="index.html">ホーム</a>
+    <a href="certifications/g-kentei.html">G検定</a>
+    <a href="learn/g-kentei/handson.html">ハンズオン</a>
+    <a href="learn/g-kentei/simulation.html">シミュレーション</a>
+    <a href="quiz.html">問題演習</a>
+  </div>
+  <div class="nav-right">
+    <span class="nav-stat" id="nav-streak" title="連続学習日数">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-2 1-3 1-3s3 2 3 5"/></svg>
+      <span id="nav-streak-v">0</span>
+    </span>
+    <span class="nav-stat nav-stat--xp" id="nav-xp" title="学習XP">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 9 22 9 16 14 18 22 12 17 6 22 8 14 2 9 9 9"/></svg>
+      <span id="nav-xp-v">0</span>
+    </span>
+    <button class="nav-icon" id="search-btn" aria-label="検索">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <button class="nav-icon topbar-theme" aria-label="テーマ切替">
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button class="nav-icon nav-toggle" id="nav-toggle" aria-label="メニュー">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
   </div>
-</aside>
-
-<main class="main">
-  <div class="content content--wide">
-    <div id="quiz-selector">
-      <div class="page-head">
-        <div class="page-eyebrow"><span class="page-eyebrow__dot"></span>Quiz</div>
-        <h1 class="page-title">問題演習</h1>
-        <p class="page-desc">G検定形式の <strong>474問</strong> のオリジナル演習。各問は解説付き、関連章への直接リンクで深掘りできます。<strong>1セッション10問</strong>をランダム出題し、解答ごとに解説を表示します。</p>
-      </div>
-
-      <div class="section">
-        <div class="section__head"><div class="section__title">主要トピック</div></div>
-        <div class="quiz-topics" id="main-topics"></div>
-      </div>
-
-      <div class="section">
-        <div class="section__head"><div class="section__title">章ごとに演習</div><div class="section__meta">24章</div></div>
-        <div class="quiz-topics" id="chapter-topics"></div>
-      </div>
+</nav>
+<div class="wrap wrap--wide">
+  <div id="quiz-selector">
+    <div class="head">
+      <div class="eyebrow"><span class="dot"></span>Quiz</div>
+      <h1>問題演習</h1>
+      <p class="desc">G検定形式の <strong>474問</strong> のオリジナル演習。各問は解説付き、関連章への直接リンクで深掘りできます。<strong>1セッション10問</strong>をランダム出題します。</p>
     </div>
-
-    <div id="quiz-runner" class="quiz-runner" style="display:none;"></div>
+    <div class="sec">
+      <div class="sec-head"><h2>主要トピック</h2></div>
+      <div class="quiz-topics" id="main-topics"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><h2>章ごとに演習</h2><span class="meta">24章</span></div>
+      <div class="quiz-topics" id="chapter-topics"></div>
+    </div>
   </div>
-</main>
+  <div id="quiz-runner" class="quiz-runner" style="display:none;"></div>
 </div>
 <script src="assets/data/quiz.js" defer></script>
 <script src="assets/js/main.js" defer></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  var $sel = document.getElementById('quiz-selector');
-  var $run = document.getElementById('quiz-runner');
-  var $main = document.getElementById('main-topics');
-  var $chap = document.getElementById('chapter-topics');
-  var state = null;
-  var L = ['A','B','C','D','E'];
-
+document.addEventListener('DOMContentLoaded',function(){
+  var $sel=document.getElementById('quiz-selector'),$run=document.getElementById('quiz-runner');
+  var $main=document.getElementById('main-topics'),$chap=document.getElementById('chapter-topics');
+  var state=null,L=['A','B','C','D','E'];
   function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
   function findTopic(id){if(!window.QUIZ_DATA)return null;return QUIZ_DATA.topics.concat(QUIZ_DATA.chapters).find(function(t){return t.id===id;});}
-
   function renderTopics(){
-    if(!window.QUIZ_DATA){$main.innerHTML='<div class="search-empty">問題データを読み込み中…</div>';setTimeout(renderTopics,100);return;}
-    $main.innerHTML = QUIZ_DATA.topics.map(function(t){
-      return '<div class="quiz-topic-card" data-topic-id="'+t.id+'">'+
-        '<div class="quiz-topic-card__count">'+t.count+' 問</div>'+
-        '<div class="quiz-topic-card__title">'+t.label+'</div>'+
-        '<div class="quiz-topic-card__desc">'+t.desc+'</div></div>';
-    }).join('');
-    $chap.innerHTML = QUIZ_DATA.chapters.map(function(t){
-      return '<div class="quiz-topic-card" data-topic-id="'+t.id+'">'+
-        '<div class="quiz-topic-card__count">'+t.count+' 問</div>'+
-        '<div class="quiz-topic-card__title">'+t.label+'</div></div>';
-    }).join('');
-    document.querySelectorAll('.quiz-topic-card').forEach(function(c){
-      c.addEventListener('click',function(){startQuiz(c.getAttribute('data-topic-id'));});
-    });
+    if(!window.QUIZ_DATA){$main.innerHTML='<div class="search-empty">読み込み中…</div>';setTimeout(renderTopics,100);return;}
+    $main.innerHTML=QUIZ_DATA.topics.map(function(t){return '<div class="quiz-topic-card" data-id="'+t.id+'"><div class="quiz-topic-card__count">'+t.count+' 問</div><div class="quiz-topic-card__title">'+t.label+'</div><div class="quiz-topic-card__desc">'+t.desc+'</div></div>';}).join('');
+    $chap.innerHTML=QUIZ_DATA.chapters.map(function(t){return '<div class="quiz-topic-card" data-id="'+t.id+'"><div class="quiz-topic-card__count">'+t.count+' 問</div><div class="quiz-topic-card__title">'+t.label+'</div></div>';}).join('');
+    document.querySelectorAll('.quiz-topic-card').forEach(function(c){c.addEventListener('click',function(){startQuiz(c.getAttribute('data-id'));});});
   }
-
-  function startQuiz(id){
-    var topic=findTopic(id);
-    if(!topic||!topic.problems.length)return;
-    var n=Math.min(10,topic.problems.length);
-    state={topic:topic,questions:shuffle(topic.problems).slice(0,n),idx:0,correct:0,answered:false};
-    $sel.style.display='none';$run.style.display='block';
-    window.scrollTo(0,0);
-    renderQuestion();
-  }
-
+  function startQuiz(id){var t=findTopic(id);if(!t||!t.problems.length)return;var n=Math.min(10,t.problems.length);state={topic:t,questions:shuffle(t.problems).slice(0,n),idx:0,correct:0,answered:false};$sel.style.display='none';$run.style.display='block';window.scrollTo(0,0);renderQuestion();}
   function renderQuestion(){
-    var p=state.questions[state.idx];
-    var pct=(state.idx/state.questions.length*100);
-    var choices=p.choices.map(function(c,i){
-      return '<button class="quiz-choice" data-idx="'+i+'"><span class="quiz-choice__letter">'+L[i]+'</span><span>'+c+'</span></button>';
-    }).join('');
-    $run.innerHTML=
-      '<div class="quiz-progress-info"><span>'+state.topic.label+'</span><span>'+(state.idx+1)+' / '+state.questions.length+'</span></div>'+
-      '<div class="quiz-topbar"><div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>'+
-      '<div class="quiz-card-active">'+
-        '<div class="quiz-q-num">'+p.section+'</div>'+
-        '<div class="quiz-q-text">'+p.q+'</div>'+
-        '<div class="quiz-choices">'+choices+'</div>'+
-        '<div id="explain"></div>'+
-      '</div>'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;">'+
-        '<button class="btn btn--ghost btn--sm" id="quit">中断して戻る</button>'+
-        '<div id="next-slot"></div>'+
-      '</div>';
+    var p=state.questions[state.idx],pct=state.idx/state.questions.length*100;
+    var ch=p.choices.map(function(c,i){return '<button class="quiz-choice" data-i="'+i+'"><span class="quiz-choice__letter">'+L[i]+'</span><span>'+c+'</span></button>';}).join('');
+    $run.innerHTML='<div class="quiz-progress-info"><span>'+state.topic.label+'</span><span>'+(state.idx+1)+' / '+state.questions.length+'</span></div>'+
+      '<div class="quiz-topbar"><div class="bar"><div class="bar-fill" style="width:'+pct+'%"></div></div></div>'+
+      '<div class="quiz-card-active"><div class="quiz-q-num">'+p.section+'</div><div class="quiz-q-text">'+p.q+'</div><div>'+ch+'</div><div id="ex"></div></div>'+
+      '<div class="quiz-actions"><button class="btn btn--ghost btn--sm" id="quit">中断して戻る</button><div id="nx"></div></div>';
     state.answered=false;
-    document.querySelectorAll('.quiz-choice').forEach(function(b){
-      b.addEventListener('click',function(){answer(parseInt(b.getAttribute('data-idx')));});
-    });
+    document.querySelectorAll('.quiz-choice').forEach(function(b){b.addEventListener('click',function(){answer(parseInt(b.getAttribute('data-i')));});});
     document.getElementById('quit').addEventListener('click',exitQuiz);
   }
-
-  function answer(idx){
-    if(state.answered)return;
-    state.answered=true;
-    var p=state.questions[state.idx];
-    var ok=(idx===p.answer);
-    if(ok)state.correct++;
-    document.querySelectorAll('.quiz-choice').forEach(function(b,i){
-      b.disabled=true;
-      if(i===p.answer)b.classList.add('is-correct');
-      else if(i===idx)b.classList.add('is-incorrect');
-    });
-    // Build explanation block — plain text, with separate chapter link
-    var statusCls=ok?'ok':'ng';
-    var statusIcon=ok?'✓':'✕';
-    var statusText=ok?'正解':'不正解';
-    var link = p.chapter_url ? ('<a class="quiz-explain__link" href="'+p.chapter_url+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>この問題を章で確認する</a>') : '';
-    document.getElementById('explain').innerHTML=
-      '<div class="quiz-explain">'+
-        '<div class="quiz-explain__status '+statusCls+'"><span class="quiz-explain__status-icon">'+statusIcon+'</span>'+statusText+'</div>'+
-        '<div class="quiz-explain__body">'+
-          '<div class="quiz-explain__answer">正解 — <strong>'+L[p.answer]+'. '+p.choices[p.answer]+'</strong></div>'+
-          '<div class="quiz-explain__label">解説</div>'+
-          '<div class="quiz-explain__text">'+p.explanation+'</div>'+
-          link+
-        '</div>'+
-      '</div>';
-    document.getElementById('next-slot').innerHTML='<button class="btn btn--primary" id="next">'+(state.idx+1>=state.questions.length?'結果を見る':'次の問題')+'</button>';
+  function answer(i){
+    if(state.answered)return;state.answered=true;
+    var p=state.questions[state.idx],ok=(i===p.answer);if(ok)state.correct++;
+    document.querySelectorAll('.quiz-choice').forEach(function(b,j){b.disabled=true;if(j===p.answer)b.classList.add('is-correct');else if(j===i)b.classList.add('is-incorrect');});
+    var link=p.chapter_url?'<a class="quiz-explain__link" href="'+p.chapter_url+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>この問題を章で確認する</a>':'';
+    document.getElementById('ex').innerHTML='<div class="quiz-explain"><div class="quiz-explain__status '+(ok?'ok':'ng')+'"><span class="quiz-explain__status-icon">'+(ok?'✓':'✕')+'</span>'+(ok?'正解':'不正解')+'</div><div class="quiz-explain__body"><div class="quiz-explain__answer">正解 — <strong>'+L[p.answer]+'. '+p.choices[p.answer]+'</strong></div><div class="quiz-explain__label">解説</div><div class="quiz-explain__text">'+p.explanation+'</div>'+link+'</div></div>';
+    document.getElementById('nx').innerHTML='<button class="btn btn--primary" id="next">'+(state.idx+1>=state.questions.length?'結果を見る':'次の問題')+'</button>';
     document.getElementById('next').addEventListener('click',next);
-    setTimeout(function(){document.getElementById('explain').scrollIntoView({behavior:'smooth',block:'nearest'});},80);
+    setTimeout(function(){document.getElementById('ex').scrollIntoView({behavior:'smooth',block:'nearest'});},80);
   }
-
-  function next(){
-    state.idx++;
-    if(state.idx>=state.questions.length)showResult();
-    else{renderQuestion();window.scrollTo({top:0,behavior:'smooth'});}
-  }
-
+  function next(){state.idx++;if(state.idx>=state.questions.length)showResult();else{renderQuestion();window.scrollTo({top:0,behavior:'smooth'});}}
   function showResult(){
     var pct=Math.round(state.correct/state.questions.length*100);
-    $run.innerHTML=
-      '<div class="quiz-result">'+
-        '<div class="quiz-result__pct">'+pct+'%</div>'+
-        '<div class="quiz-result__detail">'+state.correct+' / '+state.questions.length+' 問 正解</div>'+
-        '<div class="quiz-result__topic">'+state.topic.label+'</div>'+
-        '<div class="quiz-result__actions">'+
-          '<button class="btn btn--primary" id="retry">もう一度</button>'+
-          '<button class="btn btn--secondary" id="back">トピック一覧へ</button>'+
-        '</div>'+
-      '</div>';
+    $run.innerHTML='<div class="quiz-result"><div class="quiz-result__pct">'+pct+'%</div><div class="quiz-result__detail">'+state.correct+' / '+state.questions.length+' 問 正解</div><div class="quiz-result__topic">'+state.topic.label+'</div><div class="quiz-result__actions"><button class="btn btn--primary" id="retry">もう一度</button><button class="btn btn--ghost" id="back">トピック一覧へ</button></div></div>';
     document.getElementById('retry').addEventListener('click',function(){startQuiz(state.topic.id);});
     document.getElementById('back').addEventListener('click',exitQuiz);
     if(window.Swallow&&Swallow.Store)Swallow.Store.addXP(pct,'クイズ完了 ('+pct+'%)');
   }
-
   function exitQuiz(){$run.style.display='none';$sel.style.display='block';window.scrollTo({top:0,behavior:'smooth'});}
   renderTopics();
 });

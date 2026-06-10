@@ -163,15 +163,15 @@
     }
   };
 
-      /* ---------- Stats Display (v10 rail) ---------- */
+        /* ---------- Stats Display (v11 nav) ---------- */
   const StatsDisplay = {
     init() {
       const xp = Store.data.stats.xp || 0;
       const streak = Store.data.stats.streak || 0;
-      const rs = document.getElementById('rail-streak');
-      const rx = document.getElementById('rail-xp');
-      if (rs) rs.textContent = streak;
-      if (rx) rx.textContent = xp;
+      const sv = document.getElementById('nav-streak-v');
+      const xv = document.getElementById('nav-xp-v');
+      if (sv) sv.textContent = streak;
+      if (xv) xv.textContent = xp;
     }
   };
 
@@ -277,31 +277,24 @@
     }
   };
 
-        /* ---------- Rail (left nav) ---------- */
+          /* ---------- Top Nav (v11) ---------- */
   const Sidebar = {
     init() {
-      const rail = $('#rail');
-      const toggle = $('#rail-toggle');
-      const backdrop = $('#rail-backdrop');
-      if (toggle && rail) {
-        on(toggle, 'click', () => {
-          rail.classList.toggle('is-open');
-          if (backdrop) backdrop.classList.toggle('is-open');
+      const toggle = $('#nav-toggle');
+      const links = $('#nav-links');
+      if (toggle && links) {
+        on(toggle, 'click', (e) => { e.stopPropagation(); links.classList.toggle('is-open'); });
+        document.addEventListener('click', (e) => {
+          if (links.classList.contains('is-open') && !links.contains(e.target) && e.target !== toggle && !toggle.contains(e.target)) {
+            links.classList.remove('is-open');
+          }
         });
       }
-      if (backdrop) on(backdrop, 'click', () => {
-        rail.classList.remove('is-open');
-        backdrop.classList.remove('is-open');
-      });
-      // Active link
       const filename = location.pathname.split('/').pop() || 'index.html';
-      $$('.rail-link').forEach(a => {
+      $$('.nav-links a').forEach(a => {
         const href = (a.getAttribute('href') || '').split('#')[0];
-        if (href && href.endsWith(filename) && filename.length > 4) {
-          a.classList.add('is-active');
-        }
+        if (href && href.endsWith(filename) && filename.length > 4) a.classList.add('is-active');
       });
-      // Search button (if a dedicated one exists)
       const sb = $('#search-btn');
       if (sb) on(sb, 'click', () => Search.open());
     }
