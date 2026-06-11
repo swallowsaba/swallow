@@ -203,5 +203,5 @@
     return a;
   }
 
-  EM.registerView("#/idioms", { title: "熟語・句動詞", tab: "vocab", render: render });
+  EM.registerView("#/idioms", { title: "熟語・句動詞", tab: "learn", render: render });
 })();

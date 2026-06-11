@@ -73,5 +73,5 @@
     });
   }
 
-  EM.registerView("#/wordbook", { title: "単語帳", tab: "vocab", render: render });
+  EM.registerView("#/wordbook", { title: "単語帳", tab: "learn", render: render });
 })();

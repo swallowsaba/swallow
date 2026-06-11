@@ -150,5 +150,5 @@
   }
   function stopWpm() { if (st.timer) { clearInterval(st.timer); st.timer = null; } }
 
-  EM.registerView("#/reading", { title: "リーディング", tab: "home", render: render });
+  EM.registerView("#/reading", { title: "リーディング", tab: "learn", render: render });
 })();

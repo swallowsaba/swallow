@@ -146,7 +146,17 @@
      プロキシ不要・設定不要で、自然なアメリカ英語が鳴る。ネット不通時は端末音声へ。
   */
   var currentAudio = null;
-  var ONLINE_TTS_BASE = "https://api.streamelements.com/kappa/v2/speech";
+  // オンライン英語TTSの提供元（上から順に試す）。いずれも <audio> で直接再生（CORS不要）。
+  //  1) StreamElements（Amazon Polly：声を選べる・自然）
+  //  2) Google 翻訳の読み上げ（reliableなフォールバック）
+  var TTS_PROVIDERS = [
+    function (text, voice) {
+      return "https://api.streamelements.com/kappa/v2/speech?voice=" + encodeURIComponent(voice) + "&text=" + encodeURIComponent(text);
+    },
+    function (text /*, voice*/) {
+      return "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=" + encodeURIComponent(text);
+    }
+  ];
   // 選択可能なオンライン英語ボイス（Amazon Polly）
   var ONLINE_VOICES = [
     { id: "Matthew", label: "Matthew（米・男性）" },
@@ -163,12 +173,9 @@
     var v = Storage.getState().profile.onlineVoice;
     return v || "Matthew";
   }
-  function onlineTtsUrl(text, voice) {
-    return ONLINE_TTS_BASE + "?voice=" + encodeURIComponent(voice) + "&text=" + encodeURIComponent(text);
-  }
-  // 長文をチャンク分割（エンドポイントの長さ制限対策）
+  // 長文をチャンク分割（Google翻訳の約200字制限に合わせる）
   function chunkText(text, max) {
-    max = max || 280;
+    max = max || 190;
     var words = String(text).split(/\s+/);
     var chunks = [], cur = "";
     words.forEach(function (w) {
@@ -182,30 +189,41 @@
   function onlineFailover(text, opts) {
     if (!warnedOnline) {
       warnedOnline = true;
-      EM.showToast("オンライン音声に接続できませんでした。端末の声で読み上げます", true);
+      EM.showToast("オンライン音声に接続できません。端末の声で読み上げます", true);
     }
     doSpeakDevice(text, opts);
   }
-  // オンライン音声で読み上げ（CORS対応のため Audio 要素に直接URLを渡す）
+
+  // オンライン音声で読み上げ（CORS不要：Audio要素に直接URLを渡す。提供元を多段フォールバック）
   function speakOnline(text, opts) {
     var voice = onlineVoiceId();
-    var chunks = chunkText(text, 280);
-    var i = 0;
-    var failed = false;
-    function playNext() {
-      if (failed) return;
+    var chunks = chunkText(text);
+    var i = 0;          // チャンク番号
+    var aborted = false;
+
+    function playChunk(provIdx) {
+      if (aborted) return;
       if (i >= chunks.length) { if (typeof opts.onend === "function") opts.onend(); return; }
-      var a = new Audio(onlineTtsUrl(chunks[i], voice));
-      a.crossOrigin = "anonymous";
+      if (provIdx >= TTS_PROVIDERS.length) {
+        // すべての提供元で失敗 → 端末音声へ
+        aborted = true; onlineFailover(text, opts); return;
+      }
+      var url = TTS_PROVIDERS[provIdx](chunks[i], voice);
+      var a = new Audio(url);             // ※ crossOrigin は付けない（再生にCORSは不要）
       currentAudio = a;
       if (typeof opts.rate === "number") a.playbackRate = Math.max(0.5, Math.min(1, opts.rate));
-      a.onended = function () { i++; playNext(); };
-      a.onerror = function () { failed = true; onlineFailover(text, opts); };
+      a.onended = function () { i++; playChunk(0); };       // 次チャンクは先頭提供元から
+      a.onerror = function () { playChunk(provIdx + 1); };  // この提供元が失敗 → 次の提供元
       var p = a.play();
-      if (p && p.catch) p.catch(function () { if (!failed) { failed = true; onlineFailover(text, opts); } });
+      if (p && p.catch) p.catch(function (err) {
+        // 自動再生ブロック（ユーザー操作前）は日本語に落とさず無音で待つ
+        if (err && err.name === "NotAllowedError") { aborted = true; return; }
+        playChunk(provIdx + 1);
+      });
     }
+
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-    playNext();
+    playChunk(0);
   }
 
   // 実際の読み上げ振り分け
@@ -327,15 +345,17 @@
         '</div>' +
 
         '<div>' +
-          '<p class="section-title">トレーニング</p>' +
-          '<div class="quick-grid">' +
+          '<p class="section-title">今日の学習</p>' +
+          '<a class="cta-card" href="#/learn">' +
+            '<div class="cta-card__main"><p class="cta-card__title">学習をはじめる</p>' +
+              '<p class="cta-card__desc">単語・文法・リスニング・発音をまとめて</p></div>' +
+            '<span class="cta-card__arrow">→</span>' +
+          '</a>' +
+          '<div class="quick-grid quick-grid--2 mt-4">' +
             quickCard("あ", "単語", "SRSで暗記", "#/vocab") +
-            quickCard("熟", "熟語・句動詞", "ビジネス頻出", "#/idioms") +
-            quickCard("▷", "シャドーイング", "動画で練習", "#/video") +
-            quickCard("θ", "発音・音声変化", "発音/音素/リンキング", "#/pron") +
-            quickCard("文", "文法", "つまずき順に", "#/grammar") +
-            quickCard("読", "リーディング", "速読・辞書", "#/reading") +
-            quickCard("◔", "レベル診断", "10問で判定", "#/diagnosis") +
+            quickCard("🎧", "リスニング", "聞き取り", "#/listening") +
+            quickCard("θ", "発音", "発音/音声変化", "#/pron") +
+            quickCard("文", "文法", "解説つき", "#/grammar") +
           '</div>' +
         '</div>' +
 
@@ -438,6 +458,37 @@
   }
 
   /* ============================================================
+     学ぶハブ（学ぶタブのトップ。カテゴリ別に全モジュールを集約）
+     ============================================================ */
+  function renderLearn() {
+    function group(title, cards) {
+      return '<div class="mt-5"><p class="section-title">' + title + '</p>' +
+        '<div class="quick-grid quick-grid--2">' + cards + '</div></div>';
+    }
+    var html =
+      '<section class="stack-md view-enter">' +
+        '<p class="home-hero__eyebrow" style="color:var(--c-ink-soft)">LEARN · まなぶ</p>' +
+        group("語彙", 
+          quickCard("あ", "単語", "SRSで暗記", "#/vocab") +
+          quickCard("熟", "熟語・句動詞", "ビジネス頻出", "#/idioms") +
+          quickCard("帳", "単語帳", "保存した語", "#/wordbook")
+        ) +
+        group("文法",
+          quickCard("文", "文法レッスン", "解説＋誤答解説", "#/grammar")
+        ) +
+        group("聞く・話す・読む",
+          quickCard("🎧", "リスニング", "書き取り・内容理解", "#/listening") +
+          quickCard("▷", "シャドーイング", "動画で練習", "#/video") +
+          quickCard("読", "リーディング", "速読・辞書", "#/reading")
+        ) +
+        group("力試し",
+          quickCard("◔", "レベル診断", "10問で判定", "#/diagnosis")
+        ) +
+      '</section>';
+    return { html: html };
+  }
+
+  /* ============================================================
      発音ハブ（発音タブのトップ。子画面へ誘導）
      ============================================================ */
   function renderPronHub() {
@@ -445,7 +496,7 @@
       '<section class="stack-md view-enter">' +
         '<div>' +
           '<p class="section-title">発音トレーニング</p>' +
-          '<div class="quick-grid">' +
+          '<div class="quick-grid quick-grid--2">' +
             quickCard("θ", "発音チェック", "認識で一致率判定", "#/pron-check") +
             quickCard("æ", "フォニックス", "44音素・聞き分け", "#/phonics") +
             quickCard("◠", "リンキング", "音声変化を可視化", "#/linking") +
@@ -522,6 +573,21 @@
           '</div>' +
         '</div>' +
         '<div class="setting-group">' +
+          '<p class="section-title">教材を増やす（インポート）</p>' +
+          '<div class="card">' +
+            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">単語・熟語を<strong>大量に追加</strong>できます。下の形式のJSON（配列）を貼り付けてください。取り込んだ教材は単語・熟語の学習に自動で加わります。</p>' +
+            '<div class="segmented" id="import-kind" role="group" aria-label="種類">' +
+              '<button class="segmented__btn" type="button" data-kind="words" aria-pressed="true">単語</button>' +
+              '<button class="segmented__btn" type="button" data-kind="idioms" aria-pressed="false">熟語</button>' +
+            '</div>' +
+            '<p class="setting-row__hint mt-4" id="import-format">例：[{"en":"revenue","ja":"収益","level":"B1","ipa":"/ˈrevənuː/","ex":"Revenue grew.","exja":"収益が伸びた。"}]</p>' +
+            '<div class="field mt-4"><textarea class="textarea" id="import-in" placeholder="JSON配列を貼り付け"></textarea></div>' +
+            '<button class="btn btn--primary btn--block" id="import-run" type="button">取り込む</button>' +
+            '<p class="setting-row__hint mt-4" id="import-status"></p>' +
+            '<button class="btn btn--ghost btn--block mt-4" id="import-clear" type="button">取り込んだ教材をすべて削除</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="setting-group">' +
           '<p class="section-title">データ</p>' +
           '<div class="button-stack">' +
             '<button class="btn btn--ghost btn--block" id="export-btn" type="button">進捗をJSONで書き出す</button>' +
@@ -542,6 +608,83 @@
   function ttsModeBtn(value, label, current) {
     return '<button class="segmented__btn" type="button" data-tts-value="' + value +
       '" aria-pressed="' + (current === value ? "true" : "false") + '">' + label + '</button>';
+  }
+
+  // 教材インポートUIのセットアップ
+  var importKind = "words";
+  function setupImport() {
+    var seg = document.getElementById("import-kind");
+    var fmt = document.getElementById("import-format");
+    var status = document.getElementById("import-status");
+    if (!seg) return;
+
+    function showCounts() {
+      var im = Storage.getImported();
+      if (status) status.textContent = "取り込み済み：単語 " + im.words.length + " 件 / 熟語 " + im.idioms.length + " 件";
+    }
+    showCounts();
+
+    seg.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-kind]");
+      if (!btn) return;
+      importKind = btn.getAttribute("data-kind");
+      seg.querySelectorAll(".segmented__btn").forEach(function (b) { b.setAttribute("aria-pressed", b === btn ? "true" : "false"); });
+      if (fmt) {
+        fmt.textContent = importKind === "words"
+          ? '例：[{"en":"revenue","ja":"収益","level":"B1","ipa":"/ˈrevənuː/","ex":"Revenue grew.","exja":"収益が伸びた。"}]'
+          : '例：[{"en":"follow up","ja":"あとで確認する","level":"B1","kind":"句動詞","ex":"I will follow up.","exja":"あとで確認します。"}]';
+      }
+    });
+
+    bindClick("import-run", function () {
+      var raw = document.getElementById("import-in").value.trim();
+      if (!raw) { EM.showToast("JSONを貼り付けてください", true); return; }
+      var arr;
+      try { arr = JSON.parse(raw); } catch (e) { EM.showToast("JSONの形式が正しくありません", true); return; }
+      if (!Array.isArray(arr)) { EM.showToast("配列（[...]）で入力してください", true); return; }
+
+      var clean = [];
+      arr.forEach(function (o, i) {
+        if (!o || !o.en || !o.ja) return; // en, ja は必須
+        if (importKind === "words") {
+          clean.push({
+            id: "imp_w_" + Date.now() + "_" + i,
+            en: String(o.en), ja: String(o.ja),
+            level: o.level || "B1",
+            pos: o.pos || "",
+            ipa: o.ipa || "",
+            kata: o.kata || (window.Katakana ? window.Katakana.toKatakana(String(o.en)) : ""),
+            ex: o.ex || "", exja: o.exja || ""
+          });
+        } else {
+          clean.push({
+            id: "imp_i_" + Date.now() + "_" + i,
+            en: String(o.en), ja: String(o.ja),
+            level: o.level || "B1",
+            kind: o.kind || "イディオム",
+            ex: o.ex || "", exja: o.exja || ""
+          });
+        }
+      });
+      if (!clean.length) { EM.showToast("有効な項目がありません（en と ja は必須）", true); return; }
+
+      Storage.addImported(importKind, clean);
+      // 直ちに反映
+      if (window.EigoData) {
+        if (importKind === "words") window.EigoData.words = (window.EigoData.words || []).concat(clean);
+        else window.EigoData.idioms = (window.EigoData.idioms || []).concat(clean);
+      }
+      document.getElementById("import-in").value = "";
+      EM.showToast(clean.length + " 件を取り込みました");
+      showCounts();
+    });
+
+    bindClick("import-clear", function () {
+      if (!window.confirm("取り込んだ教材をすべて削除しますか？（端末内のデータのみ）")) return;
+      Storage.clearImported();
+      EM.showToast("取り込み教材を削除しました（次回起動で完全反映）");
+      showCounts();
+    });
   }
   function bindSettings() {
     var seg = document.getElementById("theme-segmented");
@@ -600,6 +743,9 @@
       var el = document.getElementById("proxy-input"); if (el) el.value = "";
       EM.showToast("既定に戻しました");
     });
+
+    // 教材インポート
+    setupImport();
 
     var goalValueEl = document.getElementById("goal-value");
     function changeGoal(delta) {
@@ -695,6 +841,7 @@
      コア画面の登録（機能モジュールは各自で登録）
      ============================================================ */
   EM.registerView("#/home",     { title: "ホーム", tab: "home",     render: renderHome });
+  EM.registerView("#/learn",    { title: "学ぶ",   tab: "learn",    render: renderLearn });
   EM.registerView("#/pron",     { title: "発音",   tab: "pron",     render: renderPronHub });
   EM.registerView("#/settings", { title: "設定",   tab: "settings", render: renderSettings });
 
@@ -756,7 +903,35 @@
   }
 
   /* ---------- 初期化 ---------- */
+  // 取り込み教材（インポート）を EigoData に統合し、全モジュールから使えるようにする
+  function mergeImported() {
+    if (!window.EigoData) return;
+    var im = Storage.getImported();
+    if (im.words && im.words.length) {
+      window.EigoData.words = (window.EigoData.words || []).concat(im.words);
+    }
+    if (im.idioms && im.idioms.length) {
+      window.EigoData.idioms = (window.EigoData.idioms || []).concat(im.idioms);
+    }
+    dedupeByEn();
+  }
+  // en（見出し語）の重複を排除（最初の1件を残す）。データ増量時の安全弁。
+  function dedupeByEn() {
+    ["words", "idioms"].forEach(function (key) {
+      var list = window.EigoData[key];
+      if (!Array.isArray(list)) return;
+      var seen = {}, out = [];
+      list.forEach(function (item) {
+        var k = (item.en || "").toLowerCase();
+        if (k && seen[k]) return;
+        seen[k] = true; out.push(item);
+      });
+      window.EigoData[key] = out;
+    });
+  }
+
   function init() {
+    mergeImported();
     applyTheme(Storage.getState().profile.theme);
     if (!EM.views[location.hash]) location.replace("#" + DEFAULT_ROUTE.slice(1));
     window.addEventListener("hashchange", navigate);

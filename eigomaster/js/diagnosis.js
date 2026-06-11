@@ -90,5 +90,5 @@
       '<a class="btn btn--ghost btn--block mt-4" href="#/home">ホームへ戻る</a>';
   }
 
-  EM.registerView("#/diagnosis", { title: "レベル診断", tab: "home", render: render });
+  EM.registerView("#/diagnosis", { title: "レベル診断", tab: "learn", render: render });
 })();

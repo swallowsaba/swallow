@@ -511,5 +511,5 @@
 
   function click(id, fn) { var el = document.getElementById(id); if (el) el.addEventListener("click", fn); }
 
-  EM.registerView("#/video", { title: "動画学習", tab: "video", render: render });
+  EM.registerView("#/video", { title: "動画学習", tab: "learn", render: render });
 })();

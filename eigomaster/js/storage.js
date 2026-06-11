@@ -38,6 +38,7 @@
       srs: {},        // 単語ごとの間隔反復状態（Phase 2）
       wordbook: [],   // リーディング等で保存した単語（Phase 6）
       videos: [],     // シャドーイング用に保存した動画（マイ動画ライブラリ）
+      imported: { words: [], idioms: [] }, // CSV/JSONから取り込んだ追加教材
       history: []     // シャドーイング等の練習履歴（Phase 3 以降）
     };
   }
@@ -237,6 +238,25 @@
     });
   }
 
+  // ---- 取り込み教材（インポート） ----
+  function getImported() {
+    var im = getState().imported || { words: [], idioms: [] };
+    if (!Array.isArray(im.words)) im.words = [];
+    if (!Array.isArray(im.idioms)) im.idioms = [];
+    return im;
+  }
+  function addImported(kind, items) {
+    return update(function (state) {
+      if (!state.imported) state.imported = { words: [], idioms: [] };
+      if (!Array.isArray(state.imported[kind])) state.imported[kind] = [];
+      state.imported[kind] = state.imported[kind].concat(items);
+      return state;
+    });
+  }
+  function clearImported() {
+    return update(function (state) { state.imported = { words: [], idioms: [] }; return state; });
+  }
+
   // ---- マイ動画ライブラリ（シャドーイング用） ----
   function getVideos() {
     var v = getState().videos;
@@ -349,6 +369,9 @@
     getVideos: getVideos,
     saveVideo: saveVideo,
     deleteVideo: deleteVideo,
+    getImported: getImported,
+    addImported: addImported,
+    clearImported: clearImported,
     exportToFile: exportToFile,
     importFromFile: importFromFile
   };

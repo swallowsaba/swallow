@@ -84,6 +84,7 @@
           '<span class="w" style="background:var(--c-warm-soft)">____</span>' + EM.escapeHtml(l.blank.after) + "</p>" +
         '<p class="list-row__sub mt-4">' + EM.escapeHtml(l.blank.ja) + "</p>" +
         '<div class="mt-4" id="blank-opts">' + blankOptions + "</div>" +
+        '<div id="blank-explain" class="mt-4"></div>' +
       "</div>" +
 
       '<p class="section-title mt-5">英作文（セルフチェック）</p>' +
@@ -114,13 +115,34 @@
     // 穴埋め
     root().querySelectorAll("#blank-opts .choice-btn").forEach(function (b) {
       b.addEventListener("click", function () {
-        var ok = b.getAttribute("data-opt") === l.blank.answer;
+        var picked = b.getAttribute("data-opt");
+        var ok = picked === l.blank.answer;
         root().querySelectorAll("#blank-opts .choice-btn").forEach(function (x) {
           x.disabled = true;
           if (x.getAttribute("data-opt") === l.blank.answer) x.classList.add("choice-btn--ok");
           else if (x === b) x.classList.add("choice-btn--ng");
         });
         if (ok) { EM.speak(l.blank.before + l.blank.answer + l.blank.after); Storage.recordStudy(1); EM.refreshStreakBadge(); }
+
+        // 解説表示（正解理由＋誤答理由）
+        var ex = l.blank.explain;
+        var box = document.getElementById("blank-explain");
+        if (box) {
+          var head = ok
+            ? '<p class="explain-head explain-head--ok">正解！</p>'
+            : '<p class="explain-head explain-head--ng">惜しい。正解は「' + EM.escapeHtml(l.blank.answer) + '」</p>';
+          var lines = "";
+          if (ex && ex.opts) {
+            if (!ok && ex.opts[picked]) {
+              lines += '<p class="explain-line"><strong>あなたの解答「' + EM.escapeHtml(picked) + '」：</strong>' + EM.escapeHtml(ex.opts[picked]) + "</p>";
+            }
+            if (ex.opts[l.blank.answer]) {
+              lines += '<p class="explain-line"><strong>正解「' + EM.escapeHtml(l.blank.answer) + '」：</strong>' + EM.escapeHtml(ex.opts[l.blank.answer]) + "</p>";
+            }
+          }
+          if (ex && ex.why) lines += '<p class="explain-why">ポイント：' + EM.escapeHtml(ex.why) + "</p>";
+          box.innerHTML = '<div class="explain-card">' + head + lines + "</div>";
+        }
       });
     });
 
@@ -187,5 +209,5 @@
     return a;
   }
 
-  EM.registerView("#/grammar", { title: "文法", tab: "home", render: render });
+  EM.registerView("#/grammar", { title: "文法", tab: "learn", render: render });
 })();

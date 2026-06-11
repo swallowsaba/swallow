@@ -935,3 +935,34 @@ button {
   list-style: revert;
 }
 .cc-manual[open] > summary { margin-bottom: var(--space-2); color: var(--c-ink); }
+
+/* リンキング詳細解説 */
+.chip--static { background: var(--c-surface-2); color: var(--c-ink-soft); cursor: default; font-size: var(--fs-tiny); }
+.lk-how { font-size: var(--fs-small); color: var(--c-ink-soft); margin-top: 8px; background: var(--c-surface-2); padding: 8px 10px; border-radius: var(--radius-sm); }
+.lk-example { padding: 10px 0; border-top: 1px solid var(--c-line); }
+.lk-example:first-child { border-top: none; }
+.lk-breakdown { font-size: var(--fs-small); color: var(--c-ink-soft); margin-top: 6px; line-height: 1.7; }
+.lk-detected { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; }
+.lk-detected__txt { font-size: var(--fs-small); color: var(--c-ink-soft); }
+
+/* 文法の解説カード */
+.explain-card { background: var(--c-surface-2); border-radius: var(--radius-md); padding: var(--space-4); }
+.explain-head { font-weight: 700; margin-bottom: var(--space-2); }
+.explain-head--ok { color: var(--c-good); }
+.explain-head--ng { color: var(--c-warm); }
+.explain-line { font-size: var(--fs-small); line-height: 1.7; margin-top: 6px; }
+.explain-why { font-size: var(--fs-small); line-height: 1.7; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--c-line); color: var(--c-ink-soft); }
+
+/* UI刷新：はじめるCTA・2列グリッド */
+.cta-card {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-3);
+  background: linear-gradient(135deg, var(--c-teal, var(--c-accent)) 0%, var(--c-accent) 100%);
+  color: #fff; text-decoration: none;
+  border-radius: var(--radius-lg); padding: var(--space-5);
+  box-shadow: var(--shadow-soft);
+}
+.cta-card__title { font-size: var(--fs-h3); font-weight: 700; }
+.cta-card__desc { font-size: var(--fs-small); opacity: .92; margin-top: 2px; }
+.cta-card__arrow { font-size: var(--fs-h2); font-weight: 700; }
+.quick-grid--2 { grid-template-columns: 1fr 1fr; }

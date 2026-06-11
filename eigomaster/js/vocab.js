@@ -89,21 +89,25 @@
   }
 
   // フラッシュカード
+  function kataOf(w) {
+    return w.kata || (window.Katakana ? window.Katakana.toKatakana(w.en) : "");
+  }
+
   function drawFlash() {
     var w = st.session[st.idx];
     var front =
       '<div class="flashcard">' +
         '<div class="flashcard__word">' + EM.escapeHtml(w.en) + "</div>" +
-        '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" +
-        '<div class="flashcard__kata">' + EM.escapeHtml(w.kata) + "</div>" +
+        (w.ipa ? '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
+        '<div class="flashcard__kata">' + EM.escapeHtml(kataOf(w)) + "</div>" +
         '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button></div>' +
       "</div>";
     var back =
       '<div class="flashcard">' +
-        '<div class="flashcard__pos">' + EM.escapeHtml(w.pos) + "</div>" +
+        (w.pos ? '<div class="flashcard__pos">' + EM.escapeHtml(w.pos) + "</div>" : "") +
         '<div class="flashcard__ja">' + EM.escapeHtml(w.ja) + "</div>" +
-        '<div class="flashcard__ex"><em>' + EM.escapeHtml(w.en) + "</em> — " + EM.escapeHtml(w.ex) + "</div>" +
-        '<div class="flashcard__ex">' + EM.escapeHtml(w.exja) + "</div>" +
+        (w.ex ? '<div class="flashcard__ex"><em>' + EM.escapeHtml(w.en) + "</em> — " + EM.escapeHtml(w.ex) + "</div>" : "") +
+        (w.exja ? '<div class="flashcard__ex">' + EM.escapeHtml(w.exja) + "</div>" : "") +
       "</div>";
 
     root().innerHTML = progressHtml() +
@@ -146,7 +150,7 @@
     root().innerHTML = progressHtml() +
       '<div class="flashcard" style="min-height:150px">' +
         '<div class="flashcard__word">' + EM.escapeHtml(w.en) + "</div>" +
-        '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" +
+        (w.ipa ? '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
         '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button></div>' +
       "</div>" +
       '<p class="field__label mt-4">意味として正しいものは？</p>' +
@@ -177,7 +181,7 @@
       '<div class="flashcard" style="min-height:150px">' +
         '<div class="flashcard__pos">' + EM.escapeHtml(w.pos) + "</div>" +
         '<div class="flashcard__ja">' + EM.escapeHtml(w.ja) + "</div>" +
-        '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" +
+        (w.ipa ? '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
         '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button></div>' +
       "</div>" +
       '<div class="field mt-4"><input class="input" id="type-in" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="英単語を入力" /></div>' +
@@ -258,5 +262,5 @@
     return a;
   }
 
-  EM.registerView("#/vocab", { title: "単語", tab: "vocab", render: render });
+  EM.registerView("#/vocab", { title: "単語", tab: "learn", render: render });
 })();

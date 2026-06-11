@@ -86,16 +86,21 @@
 
     var catalog = rules.map(function (r, idx) {
       var exHtml = r.examples.map(function (ex, j) {
-        return '<div class="list-row">' +
-          '<div class="list-row__main"><div class="list-row__title">' + EM.escapeHtml(ex.text) + "</div>" +
-          '<div class="list-row__sub">' + EM.escapeHtml(ex.sound) + "</div></div>" +
-          '<button class="audio-btn" type="button" data-say="' + EM.escapeHtml(ex.text) + '" aria-label="再生">▶</button>' +
-          '<button class="audio-btn" type="button" data-say-slow="' + EM.escapeHtml(ex.text) + '" aria-label="ゆっくり再生">🐢</button>' +
-          "</div>";
+        return '<div class="lk-example">' +
+          '<div class="list-row" style="padding:0">' +
+            '<div class="list-row__main"><div class="list-row__title">' + EM.escapeHtml(ex.text) + "</div>" +
+            '<div class="list-row__sub">≈ ' + EM.escapeHtml(ex.sound) + "</div></div>" +
+            '<button class="audio-btn" type="button" data-say="' + EM.escapeHtml(ex.text) + '" aria-label="再生">▶</button>' +
+            '<button class="audio-btn" type="button" data-say-slow="' + EM.escapeHtml(ex.text) + '" aria-label="ゆっくり再生">🐢</button>' +
+          "</div>" +
+          (ex.breakdown ? '<p class="lk-breakdown">' + EM.escapeHtml(ex.breakdown) + "</p>" : "") +
+        "</div>";
       }).join("");
       return '<div class="card">' +
-        '<div class="row-between"><p class="list-row__title">' + EM.escapeHtml(r.name) + "</p></div>" +
-        '<p class="setting-row__hint mt-4" style="margin-top:6px">' + EM.escapeHtml(r.ja) + "</p>" +
+        '<div class="row-between"><p class="list-row__title">' + EM.escapeHtml(r.name) + "</p>" +
+          (r.short ? '<span class="chip chip--static">' + EM.escapeHtml(r.short) + "</span>" : "") + "</div>" +
+        '<p class="setting-row__hint" style="margin-top:8px">' + EM.escapeHtml(r.ja) + "</p>" +
+        (r.how ? '<p class="lk-how"><strong>対象：</strong>' + EM.escapeHtml(r.how) + "</p>" : "") +
         '<div class="mt-4">' + exHtml + "</div></div>";
     }).join("");
 
@@ -129,6 +134,19 @@
       var text = (input.value || "").trim();
       if (!text) { out.innerHTML = ""; return; }
       var res = analyzeLinking(text);
+
+      // 検出された音声変化の解説
+      var rules = (window.EigoData && window.EigoData.linkingRules) || [];
+      var detected = (res.rules || []).map(function (key) {
+        var r = rules.find(function (x) { return x.id === key; });
+        if (!r) return "";
+        return '<div class="lk-detected"><span class="lk lk--' + key + '">' + EM.escapeHtml(r.name) + "</span>" +
+          '<span class="lk-detected__txt">' + EM.escapeHtml(r.short || r.ja) + "</span></div>";
+      }).join("");
+      var detectedHtml = detected
+        ? '<div class="mt-4"><p class="setting-row__hint" style="margin-bottom:6px">この文で起きている変化：</p>' + detected + "</div>"
+        : '<p class="setting-row__hint mt-4">この文では大きな音声変化は検出されませんでした。</p>';
+
       out.innerHTML =
         '<div class="card">' +
           '<p class="linking-out">' + res.html + "</p>" +
@@ -137,6 +155,7 @@
             '<button class="btn btn--ghost" id="lk-play" type="button">▶ 通常</button>' +
             '<button class="btn btn--ghost" id="lk-slow" type="button">🐢 ゆっくり</button>' +
           "</div>" +
+          detectedHtml +
         "</div>";
       document.getElementById("lk-play").addEventListener("click", function () { EM.speak(text, { rate: 1.0 }); });
       document.getElementById("lk-slow").addEventListener("click", function () { EM.speak(text, { rate: 0.6 }); });
