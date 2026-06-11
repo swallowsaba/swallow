@@ -52,44 +52,198 @@
     toastTimer = setTimeout(function () { toastEl.setAttribute("data-show", "false"); }, TOAST_DURATION_MS);
   };
 
-  /* ---------- 音声合成（TTS）---------- */
+  /* ---------- 音声合成（TTS）----------
+     重要：日本語端末では既定ボイスが日本語のため、英文がカタカナのように
+     発音されてしまう。これを防ぐため、英語ボイスを確実に読み込んでから、
+     高品質な en-US ボイスを明示的に割り当てて話す。
+  */
   var cachedVoices = [];
+  var voicesReady = false;
+  var speakQueue = [];   // ボイス未ロード時に再生待ちにする
+
   function loadVoices() {
     if (!("speechSynthesis" in window)) return;
-    cachedVoices = window.speechSynthesis.getVoices() || [];
+    var v = window.speechSynthesis.getVoices() || [];
+    if (v.length) { cachedVoices = v; voicesReady = true; }
   }
   if ("speechSynthesis" in window) {
     loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    window.speechSynthesis.onvoiceschanged = function () {
+      loadVoices();
+      // 待機していた読み上げを実行
+      if (voicesReady && speakQueue.length) {
+        var q = speakQueue.slice(); speakQueue.length = 0;
+        q.forEach(function (item) { doSpeak(item.text, item.opts); });
+      }
+    };
+    // 一部ブラウザは voiceschanged が来ないので保険でポーリング
+    var tries = 0;
+    var poll = setInterval(function () {
+      loadVoices(); tries++;
+      if (voicesReady || tries > 20) clearInterval(poll);
+    }, 250);
   }
-  // en-US 音声を優先選択
-  function pickEnUsVoice() {
+
+  // 利用可能な英語ボイスを品質順に返す
+  function getEnglishVoices() {
     if (!cachedVoices.length) loadVoices();
-    var exact = cachedVoices.find(function (v) { return v.lang === "en-US"; });
-    if (exact) return exact;
-    var anyEn = cachedVoices.find(function (v) { return /^en/i.test(v.lang); });
-    return anyEn || null;
-  }
-  // テキストを読み上げる。opts = { rate, lang, onend }
-  EM.speak = function (text, opts) {
-    opts = opts || {};
-    if (!("speechSynthesis" in window)) {
-      EM.showToast("このブラウザは音声読み上げに対応していません", true);
-      return;
+    var en = cachedVoices.filter(function (v) {
+      return /^en([-_]|$)/i.test(v.lang); // en, en-US, en_GB など。日本語(ja)は除外
+    });
+    // 高品質と分かっている名前を優先
+    var prefer = ["Google US English", "Google UK English", "Samantha", "Alex",
+      "Aria", "Jenny", "Microsoft Aria", "Microsoft Jenny", "Zira", "David",
+      "Karen", "Daniel", "Moira", "Tessa"];
+    function score(v) {
+      var s = 0;
+      if (/en[-_]?US/i.test(v.lang)) s += 20; else s += 8; // 米国英語を最優先
+      for (var i = 0; i < prefer.length; i++) {
+        if (v.name && v.name.indexOf(prefer[i]) >= 0) { s += (prefer.length - i) + 10; break; }
+      }
+      if (/google/i.test(v.name)) s += 6;        // Googleボイスは概して自然
+      if (v.localService === false) s += 2;       // ネットワークボイスは高品質なことが多い
+      return s;
     }
+    return en.sort(function (a, b) { return score(b) - score(a); });
+  }
+  EM.getEnglishVoices = getEnglishVoices;
+
+  // 使用するボイスを決定（設定で指定があればそれを優先）
+  function resolveVoice() {
+    var list = getEnglishVoices();
+    if (!list.length) return null;
+    var savedURI = Storage.getState().profile.voiceURI;
+    if (savedURI) {
+      var picked = list.find(function (v) { return v.voiceURI === savedURI; });
+      if (picked) return picked;
+    }
+    return list[0];
+  }
+
+  var warnedNoVoice = false;
+  function doSpeakDevice(text, opts) {
     var u = new SpeechSynthesisUtterance(text);
-    u.lang = opts.lang || "en-US";
-    u.rate = typeof opts.rate === "number" ? opts.rate : 1.0;
-    var v = pickEnUsVoice();
-    if (v) u.voice = v;
+    var voice = resolveVoice();
+    if (voice) {
+      u.voice = voice;
+      u.lang = voice.lang;       // ボイスと言語を一致させる（重要）
+    } else {
+      u.lang = opts.lang || "en-US";
+      if (!warnedNoVoice) {
+        warnedNoVoice = true;
+        EM.showToast("英語の声がこの端末にありません。設定→音声で『オンライン英語音声』をお試しください", true);
+      }
+    }
+    u.rate = typeof opts.rate === "number" ? opts.rate : 0.95; // やや自然に
+    u.pitch = 1.0;
     if (typeof opts.onend === "function") u.onend = opts.onend;
     window.speechSynthesis.cancel(); // 重複再生を止める
     window.speechSynthesis.speak(u);
+  }
+
+  /* ---------- オンライン英語音声（端末に英語ボイスが無くても英語で読む）----------
+     CORS対応の無料エンドポイント（Amazon Polly音声）から直接MP3を再生する。
+     プロキシ不要・設定不要で、自然なアメリカ英語が鳴る。ネット不通時は端末音声へ。
+  */
+  var currentAudio = null;
+  var ONLINE_TTS_BASE = "https://api.streamelements.com/kappa/v2/speech";
+  // 選択可能なオンライン英語ボイス（Amazon Polly）
+  var ONLINE_VOICES = [
+    { id: "Matthew", label: "Matthew（米・男性）" },
+    { id: "Joanna", label: "Joanna（米・女性）" },
+    { id: "Joey", label: "Joey（米・男性）" },
+    { id: "Justin", label: "Justin（米・男性・若め）" },
+    { id: "Kendra", label: "Kendra（米・女性）" },
+    { id: "Kimberly", label: "Kimberly（米・女性）" },
+    { id: "Salli", label: "Salli（米・女性）" },
+    { id: "Ivy", label: "Ivy（米・女性・子ども声）" }
+  ];
+  EM.ONLINE_VOICES = ONLINE_VOICES;
+  function onlineVoiceId() {
+    var v = Storage.getState().profile.onlineVoice;
+    return v || "Matthew";
+  }
+  function onlineTtsUrl(text, voice) {
+    return ONLINE_TTS_BASE + "?voice=" + encodeURIComponent(voice) + "&text=" + encodeURIComponent(text);
+  }
+  // 長文をチャンク分割（エンドポイントの長さ制限対策）
+  function chunkText(text, max) {
+    max = max || 280;
+    var words = String(text).split(/\s+/);
+    var chunks = [], cur = "";
+    words.forEach(function (w) {
+      if ((cur + " " + w).trim().length > max) { if (cur) chunks.push(cur.trim()); cur = w; }
+      else cur = (cur + " " + w).trim();
+    });
+    if (cur) chunks.push(cur.trim());
+    return chunks.length ? chunks : [text];
+  }
+  var warnedOnline = false;
+  function onlineFailover(text, opts) {
+    if (!warnedOnline) {
+      warnedOnline = true;
+      EM.showToast("オンライン音声に接続できませんでした。端末の声で読み上げます", true);
+    }
+    doSpeakDevice(text, opts);
+  }
+  // オンライン音声で読み上げ（CORS対応のため Audio 要素に直接URLを渡す）
+  function speakOnline(text, opts) {
+    var voice = onlineVoiceId();
+    var chunks = chunkText(text, 280);
+    var i = 0;
+    var failed = false;
+    function playNext() {
+      if (failed) return;
+      if (i >= chunks.length) { if (typeof opts.onend === "function") opts.onend(); return; }
+      var a = new Audio(onlineTtsUrl(chunks[i], voice));
+      a.crossOrigin = "anonymous";
+      currentAudio = a;
+      if (typeof opts.rate === "number") a.playbackRate = Math.max(0.5, Math.min(1, opts.rate));
+      a.onended = function () { i++; playNext(); };
+      a.onerror = function () { failed = true; onlineFailover(text, opts); };
+      var p = a.play();
+      if (p && p.catch) p.catch(function () { if (!failed) { failed = true; onlineFailover(text, opts); } });
+    }
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    playNext();
+  }
+
+  // 実際の読み上げ振り分け
+  function doSpeak(text, opts) {
+    var mode = Storage.getState().profile.ttsMode || "auto";
+    if (mode === "device") { doSpeakDevice(text, opts); return; }
+    if (mode === "online") { speakOnline(text, opts); return; }
+    // auto：原則オンラインの英語音声（自然な米国英語）。失敗時は端末音声へ自動フォールバック。
+    if (navigator.onLine === false) { doSpeakDevice(text, opts); return; }
+    speakOnline(text, opts);
+  }
+
+  // テキストを読み上げる。opts = { rate, lang, onend }
+  EM.speak = function (text, opts) {
+    opts = opts || {};
+    if (!text) return;
+    EM.stopSpeak();
+    var mode = Storage.getState().profile.ttsMode || "auto";
+    // 端末音声を使う場合はボイス読み込みを待つ
+    if (mode === "device" && "speechSynthesis" in window && !voicesReady) {
+      loadVoices();
+      if (!voicesReady) {
+        speakQueue.length = 0;
+        speakQueue.push({ text: text, opts: opts });
+        setTimeout(function () {
+          loadVoices();
+          if (speakQueue.length) { var item = speakQueue.shift(); if (item) doSpeak(item.text, item.opts); }
+        }, 350);
+        return;
+      }
+    }
+    doSpeak(text, opts);
   };
   EM.stopSpeak = function () {
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    if (currentAudio) { try { currentAudio.pause(); } catch (e) {} currentAudio = null; }
   };
-  EM.hasTTS = ("speechSynthesis" in window);
+  EM.hasTTS = true; // オンライン音声があるため常に利用可能
 
   // サブ画面の戻りリンク（HTML文字列）
   EM.backLink = function (toRoute, label) {
@@ -339,6 +493,35 @@
           '</div>' +
         '</div>' +
         '<div class="setting-group">' +
+          '<p class="section-title">音声（発音）</p>' +
+          '<div class="card">' +
+            '<p class="setting-row__label">読み上げの方式</p>' +
+            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">既定は<strong>オンライン（自然なアメリカ英語）</strong>です。ネット接続だけで、設定不要で英語の発音になります。オフラインにしたいときは「端末の声」を選べます。</p>' +
+            '<div class="segmented" id="tts-mode" role="group" aria-label="読み上げ方式">' +
+              ttsModeBtn("auto", "自動", state.profile.ttsMode) +
+              ttsModeBtn("online", "オンライン", state.profile.ttsMode) +
+              ttsModeBtn("device", "端末の声", state.profile.ttsMode) +
+            '</div>' +
+            '<p class="setting-row__label mt-5">オンライン音声の声（自動／オンライン時）</p>' +
+            '<select class="select mt-4" id="online-voice"></select>' +
+            '<p class="setting-row__label mt-5">端末の声（端末モード時）</p>' +
+            '<select class="select mt-4" id="voice-select"><option value="">自動（最適な英語の声）</option></select>' +
+            '<button class="btn btn--primary btn--block mt-4" id="voice-test" type="button">▶ テスト再生（Could you check it out?）</button>' +
+            '<p class="setting-row__hint mt-4" id="voice-hint"></p>' +
+          '</div>' +
+        '</div>' +
+        '<div class="setting-group">' +
+          '<p class="section-title">動画字幕の自動取得</p>' +
+          '<div class="card">' +
+            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">字幕の自動取得に使うCORSプロキシです（音声には不要）。空欄なら公開プロキシを使います。確実に使うには無料のCloudflare Workerを立ててURLを入れてください（READMEに手順）。</p>' +
+            '<input class="input" id="proxy-input" type="text" placeholder="' + EM.escapeHtml(window.Captions ? window.Captions.DEFAULT_PROXY : "") + '" value="' + EM.escapeHtml(state.profile.captionProxy || "") + '" />' +
+            '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr">' +
+              '<button class="btn btn--ghost" id="proxy-save" type="button">保存</button>' +
+              '<button class="btn btn--ghost" id="proxy-reset" type="button">既定に戻す</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="setting-group">' +
           '<p class="section-title">データ</p>' +
           '<div class="button-stack">' +
             '<button class="btn btn--ghost btn--block" id="export-btn" type="button">進捗をJSONで書き出す</button>' +
@@ -356,6 +539,10 @@
     return '<button class="segmented__btn" type="button" data-theme-value="' + value +
       '" aria-pressed="' + (current === value ? "true" : "false") + '">' + label + '</button>';
   }
+  function ttsModeBtn(value, label, current) {
+    return '<button class="segmented__btn" type="button" data-tts-value="' + value +
+      '" aria-pressed="' + (current === value ? "true" : "false") + '">' + label + '</button>';
+  }
   function bindSettings() {
     var seg = document.getElementById("theme-segmented");
     if (seg) seg.addEventListener("click", function (e) {
@@ -367,6 +554,51 @@
       seg.querySelectorAll(".segmented__btn").forEach(function (b) {
         b.setAttribute("aria-pressed", b === btn ? "true" : "false");
       });
+    });
+
+    // 英語ボイス選択
+    setupVoiceSelect();
+
+    // 読み上げ方式（自動／オンライン／端末）
+    var ttsSeg = document.getElementById("tts-mode");
+    if (ttsSeg) ttsSeg.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-tts-value]");
+      if (!btn) return;
+      var value = btn.getAttribute("data-tts-value");
+      Storage.update(function (s) { s.profile.ttsMode = value; return s; });
+      ttsSeg.querySelectorAll(".segmented__btn").forEach(function (b) {
+        b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+      });
+      EM.speak("Could you check it out?");
+    });
+
+    // オンライン音声のボイス選択
+    var onlineSel = document.getElementById("online-voice");
+    if (onlineSel) {
+      (EM.ONLINE_VOICES || []).forEach(function (v) {
+        var opt = document.createElement("option");
+        opt.value = v.id; opt.textContent = v.label;
+        if (v.id === (Storage.getState().profile.onlineVoice || "Matthew")) opt.selected = true;
+        onlineSel.appendChild(opt);
+      });
+      onlineSel.addEventListener("change", function () {
+        Storage.update(function (s) { s.profile.onlineVoice = onlineSel.value; return s; });
+        // オンライン/自動なら即試聴
+        var mode = Storage.getState().profile.ttsMode;
+        if (mode !== "device") EM.speak("Hello, let's get started.");
+      });
+    }
+
+    // 字幕取得プロキシ
+    bindClick("proxy-save", function () {
+      var v = document.getElementById("proxy-input").value.trim();
+      Storage.update(function (s) { s.profile.captionProxy = v || null; return s; });
+      EM.showToast("プロキシを保存しました");
+    });
+    bindClick("proxy-reset", function () {
+      Storage.update(function (s) { s.profile.captionProxy = null; return s; });
+      var el = document.getElementById("proxy-input"); if (el) el.value = "";
+      EM.showToast("既定に戻しました");
     });
 
     var goalValueEl = document.getElementById("goal-value");
@@ -408,6 +640,49 @@
   function bindClick(id, handler) {
     var el = document.getElementById(id);
     if (el) el.addEventListener("click", handler);
+  }
+
+  // 英語ボイス選択UIの構築
+  function setupVoiceSelect() {
+    var select = document.getElementById("voice-select");
+    var hint = document.getElementById("voice-hint");
+    if (!select) return;
+
+    function fill() {
+      var voices = EM.getEnglishVoices ? EM.getEnglishVoices() : [];
+      var saved = Storage.getState().profile.voiceURI;
+      // 既存optionをクリア（自動の1件は残す）
+      select.length = 1;
+      voices.forEach(function (v) {
+        var opt = document.createElement("option");
+        opt.value = v.voiceURI;
+        opt.textContent = v.name + "（" + v.lang + "）";
+        if (v.voiceURI === saved) opt.selected = true;
+        select.appendChild(opt);
+      });
+      if (hint) {
+        if (!voices.length) {
+          hint.innerHTML = "この端末で英語の声が見つかりませんでした。<br>" +
+            "iPhone/iPad：設定→アクセシビリティ→読み上げコンテンツ→声→英語 を追加。<br>" +
+            "Windows：設定→時刻と言語→音声認識→音声 を追加。<br>" +
+            "Android/PC Chrome：Google US English が使えることが多いです。";
+        } else {
+          hint.textContent = "英語の声が " + voices.length + " 件見つかりました。おすすめは Google US English / Samantha / Aria などです。";
+        }
+      }
+    }
+    fill();
+    // ボイスが後から読み込まれた場合に再構築
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.addEventListener("voiceschanged", fill);
+    }
+
+    select.addEventListener("change", function () {
+      var uri = select.value || null;
+      Storage.update(function (s) { s.profile.voiceURI = uri; return s; });
+      EM.speak("Could you check it out?");
+    });
+    bindClick("voice-test", function () { EM.speak("Could you check it out? Let's get started."); });
   }
 
   /* ---------- テーマ適用 ---------- */

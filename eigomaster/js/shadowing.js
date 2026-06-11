@@ -100,7 +100,7 @@
       '<div class="row-between"><p class="section-title" style="margin:0">シャドーイング</p>' +
         '<span class="text-soft" style="font-size:var(--fs-small)">保存 ' + videos.length + " 件</span></div>" +
       '<div class="notice notice--info"><span class="notice__icon">i</span>' +
-        '<span>学習する動画は<strong>自分で選べます</strong>。YouTubeのURLと字幕（SRT/VTT/テキスト）を登録すると一覧に保存され、いつでも選んで練習できます。著作権の都合で字幕は同梱していません。</span></div>' +
+        '<span>学習する動画は<strong>自分で選べます</strong>。YouTubeのURLを入れて「字幕を自動取得」すれば、字幕の手入力は不要です（取得できない動画は手動貼り付けにも対応）。登録した動画は一覧に保存され、いつでも選んで練習できます。</span></div>' +
       '<p class="section-title mt-5" style="font-size:var(--fs-body)">保存した動画から選ぶ</p>' +
       libraryHtml +
       '<button class="btn btn--primary btn--block mt-4" id="add-video" type="button">＋ 動画を追加</button>' +
@@ -148,28 +148,43 @@
     var editing = editId ? Storage.getVideos().find(function (x) { return x.id === editId; }) : null;
     var title = editing ? editing.title : "";
     var url = editing ? editing.url : "";
-    var sub = editing ? editing.subtitles : (quickOnly ? SAMPLE_SRT : "");
+    var sub = editing ? editing.subtitles : "";
 
     root().innerHTML =
       '<a class="back-link" id="form-back" href="#/video">‹ 一覧へ戻る</a>' +
       '<p class="section-title">' + (editing ? "動画を編集" : (quickOnly ? "すぐ練習" : "動画を追加")) + "</p>" +
       (quickOnly ? "" :
-        '<div class="field"><label class="field__label" for="vid-title">タイトル</label>' +
+        '<div class="field"><label class="field__label" for="vid-title">タイトル（任意）</label>' +
           '<input class="input" id="vid-title" type="text" placeholder="例：TED 〇〇 のスピーチ" value="' + EM.escapeHtml(title) + '" /></div>') +
-      '<div class="field"><label class="field__label" for="yt-url">YouTube URL（任意・空なら字幕のみで練習）</label>' +
+      '<div class="field"><label class="field__label" for="yt-url">YouTube URL</label>' +
         '<input class="input" id="yt-url" type="text" placeholder="https://www.youtube.com/watch?v=..." value="' + EM.escapeHtml(url) + '" /></div>' +
-      '<div class="field"><label class="field__label" for="sub-in">字幕 / スクリプト（SRT・VTT・テキスト）</label>' +
-        '<textarea class="textarea" id="sub-in" placeholder="字幕を貼り付け">' + EM.escapeHtml(sub) + "</textarea></div>" +
+      '<button class="btn btn--primary btn--block" id="fetch-cc" type="button">🔎 URLから字幕を自動取得</button>' +
+      '<p class="text-soft mt-4" id="cc-status" style="font-size:var(--fs-small)"></p>' +
+
+      '<details class="cc-manual mt-4"' + (sub ? " open" : "") + '>' +
+        '<summary>自動取得できないとき：字幕を貼り付け（SRT/VTT/テキスト）</summary>' +
+        '<div class="field mt-4">' +
+          '<textarea class="textarea" id="sub-in" placeholder="字幕を貼り付け">' + EM.escapeHtml(sub) + "</textarea></div>" +
+      "</details>" +
+
       (quickOnly
-        ? '<button class="btn btn--primary btn--block" id="quick-go" type="button">この内容で練習する</button>'
-        : '<button class="btn btn--primary btn--block" id="save-video" type="button">' + (editing ? "保存する" : "保存して一覧に追加") + "</button>" +
-          '<button class="btn btn--ghost btn--block mt-4" id="save-and-play" type="button">保存してすぐ練習</button>');
+        ? '<button class="btn btn--primary btn--block mt-4" id="quick-go" type="button">この内容で練習する</button>'
+        : '<button class="btn btn--primary btn--block mt-4" id="save-video" type="button">' + (editing ? "保存する" : "保存して一覧に追加") + "</button>" +
+          '<button class="btn btn--ghost btn--block mt-4" id="save-and-play" type="button">保存してすぐ練習</button>') +
+      '<button class="btn btn--ghost btn--block mt-4" id="silent-go" type="button">動画なし（字幕だけ）で練習</button>';
 
     document.getElementById("form-back").addEventListener("click", function (e) { e.preventDefault(); drawSetup(); });
+    document.getElementById("fetch-cc").addEventListener("click", autoFetch);
+    document.getElementById("silent-go").addEventListener("click", function () {
+      var subRaw = document.getElementById("sub-in").value || "";
+      var parsed = window.Subtitle.parse(subRaw);
+      if (!parsed.length) { EM.showToast("先に字幕を取得または貼り付けてください", true); openManual(); return; }
+      cues = parsed; currentTitle = title || ""; drawSilent();
+    });
 
     if (quickOnly) {
       document.getElementById("quick-go").addEventListener("click", function () {
-        var s = readForm(true);
+        var s = readForm();
         if (!s) return;
         cues = s.cues; currentTitle = "";
         if (s.videoId) drawPlayer(s.videoId); else drawSilent();
@@ -184,17 +199,65 @@
       var saved = saveForm(editing);
       if (!saved) return;
       cues = window.Subtitle.parse(saved.subtitles || "");
-      if (!cues.length) { EM.showToast("字幕を入力してください", true); return; }
+      if (!cues.length) { EM.showToast("字幕を取得または入力してください", true); return; }
       currentTitle = saved.title || "";
       if (saved.videoId) drawPlayer(saved.videoId); else drawSilent();
     });
   }
 
-  // フォーム値を読む（quickOnly時は保存せず {cues, videoId} を返す）
-  function readForm(quickOnly) {
+  function openManual() {
+    var d = document.querySelector(".cc-manual");
+    if (d) d.open = true;
+  }
+
+  // URLから字幕を自動取得して textarea に反映
+  function autoFetch() {
+    var btn = document.getElementById("fetch-cc");
+    var status = document.getElementById("cc-status");
+    var videoId = extractVideoId(document.getElementById("yt-url").value || "");
+    if (!videoId) { EM.showToast("有効なYouTube URLを入力してください", true); return; }
+
+    btn.disabled = true;
+    status.style.color = "";
+    status.textContent = "字幕を取得中…（数秒かかることがあります）";
+
+    window.Captions.fetchCaptions(videoId).then(function (cuesFetched) {
+      var srt = cuesToSRT(cuesFetched);
+      document.getElementById("sub-in").value = srt;
+      openManual();
+      status.style.color = "var(--c-good)";
+      status.textContent = "✓ 字幕を取得しました（" + cuesFetched.length + " 行）。下の「保存してすぐ練習」へ。";
+    }).catch(function (err) {
+      status.style.color = "var(--c-bad)";
+      status.innerHTML = "自動取得できませんでした（" + EM.escapeHtml(err.message || "エラー") + "）。<br>" +
+        "・字幕付きの動画かご確認ください<br>" +
+        "・設定の「字幕取得プロキシ」を設定すると成功率が上がります<br>" +
+        "・難しい場合は下の欄に字幕を貼り付けてください";
+      openManual();
+    }).finally(function () { btn.disabled = false; });
+  }
+
+  // cue配列をSRTテキスト化（タイムコードを保持して再パース可能に）
+  function cuesToSRT(cues) {
+    function ts(sec) {
+      sec = Math.max(0, sec || 0);
+      var h = Math.floor(sec / 3600);
+      var m = Math.floor((sec % 3600) / 60);
+      var s = Math.floor(sec % 60);
+      var ms = Math.round((sec - Math.floor(sec)) * 1000);
+      function p(n, w) { return String(n).padStart(w || 2, "0"); }
+      return p(h) + ":" + p(m) + ":" + p(s) + "," + p(ms, 3);
+    }
+    return cues.map(function (c, i) {
+      return (i + 1) + "\n" + ts(c.start) + " --> " + ts(c.end) + "\n" + c.text;
+    }).join("\n\n");
+  }
+
+  // フォーム値を読む（保存せず {cues, videoId} を返す）
+  function readForm() {
     var subRaw = document.getElementById("sub-in").value || "";
     var parsed = window.Subtitle.parse(subRaw);
-    if (!parsed.length) { EM.showToast("字幕を入力してください", true); return null; }
+    if (!parsed.length) { EM.showToast("字幕を取得または入力してください", true); openManual(); return null; }
     var id = extractVideoId(document.getElementById("yt-url").value || "");
     return { cues: parsed, videoId: id };
   }
@@ -203,7 +266,7 @@
   function saveForm(editing) {
     var titleEl = document.getElementById("vid-title");
     var subRaw = document.getElementById("sub-in").value || "";
-    if (!window.Subtitle.parse(subRaw).length) { EM.showToast("字幕を入力してください", true); return null; }
+    if (!window.Subtitle.parse(subRaw).length) { EM.showToast("字幕を取得または入力してください", true); openManual(); return null; }
     var url = document.getElementById("yt-url").value || "";
     var videoId = extractVideoId(url);
     var entry = {

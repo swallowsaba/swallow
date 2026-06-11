@@ -23,6 +23,10 @@
         theme: "system",                 // "system" | "light" | "dark"
         dailyGoalMinutes: DAILY_GOAL_DEFAULT,
         level: null,                      // レベル診断の結果（Phase 6）
+        voiceURI: null,                   // 端末音声で使う英語ボイス（未設定なら自動選択）
+        ttsMode: "auto",                  // 読み上げ方式 "auto"|"device"|"online"
+        onlineVoice: "Matthew",           // オンライン英語音声のボイス（Amazon Polly）
+        captionProxy: null,               // 字幕自動取得に使うCORSプロキシ
         name: ""                          // 表示名（任意）
       },
       progress: {
