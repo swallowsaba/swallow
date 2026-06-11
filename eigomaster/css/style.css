@@ -966,3 +966,118 @@ button {
 .cta-card__desc { font-size: var(--fs-small); opacity: .92; margin-top: 2px; }
 .cta-card__arrow { font-size: var(--fs-h2); font-weight: 700; }
 .quick-grid--2 { grid-template-columns: 1fr 1fr; }
+
+/* ============================================================
+   Duolingo風リフレッシュ（v3）
+   - コントラスト向上（特にダーク）
+   - ボトムナビを大きく押しやすく・現在地を明確に
+   - カードはチャンキー（丸み＋下に厚みの3D影）
+   - ホームの余白を圧縮、グラフのムダ空白を縮小
+   末尾に置くことで既存ルールを安全に上書きする。
+   ============================================================ */
+
+/* ---- コントラスト調整 ---- */
+:root {
+  --c-accent:       #00a38a;   /* 少し鮮やかに */
+  --c-accent-press: #008a74;
+}
+:root[data-theme="dark"] {
+  --c-bg:        #0f1722;      /* 真っ黒を避け青みのダーク */
+  --c-surface:   #18232f;
+  --c-surface-2: #20303f;
+  --c-ink:       #f3f7f5;
+  --c-ink-soft:  #b9c5cd;      /* 補助テキストを明るく（見やすさ） */
+  --c-ink-faint: #8e9aa3;
+  --c-line:      #2a3a48;
+  --c-line-strong:#3a4d5e;
+  --c-accent:    #25d6b0;      /* 鮮やかなティールグリーン */
+  --c-accent-press:#1fb89a;
+  --c-accent-soft:#0f3b39;
+  --c-warm:      #ffc94d;
+}
+
+/* ---- ホームの余白圧縮 ---- */
+.app-main { padding-top: var(--space-4); }
+.app-main > .stack-md > * + * { margin-top: var(--space-4); }
+.home-hero { padding: var(--space-4) var(--space-5); }
+.home-hero__greeting { font-size: 26px; }
+.home-hero__sub { margin-top: var(--space-1); }
+.graph-wrap { margin-top: var(--space-2); }
+#study-graph { height: 88px !important; }
+.goal { padding: var(--space-3) 0; }
+
+/* ---- ボトムナビ：大きく・押しやすく・現在地明確 ---- */
+.tab-bar {
+  grid-template-columns: unset !important;
+  display: flex;
+  height: calc(72px + var(--safe-bottom));
+  gap: var(--space-1);
+  padding: 6px var(--space-2) calc(6px + var(--safe-bottom));
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-line);
+}
+.tab {
+  flex: 1 1 0;
+  gap: 4px;
+  border-radius: var(--radius-md);
+  color: var(--c-ink-soft);
+  font-weight: 700;
+  min-height: 56px;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.tab__icon { font-size: 24px; }
+.tab__label { font-size: 12px; font-weight: 700; }
+.tab:active { background: var(--c-surface-2); }
+.tab[aria-current="page"] {
+  color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+.tab[aria-current="page"]::before { display: none; } /* 上の細線は廃止（塗りで示す） */
+
+/* ---- チャンキーなカード（Duolingo風の下厚み3D） ---- */
+.quick-card {
+  border: 2px solid var(--c-line);
+  border-bottom-width: 4px;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: var(--c-surface);
+  transition: transform var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.quick-card:hover { border-color: var(--c-accent); }
+.quick-card:active { transform: translateY(2px); border-bottom-width: 2px; }
+.quick-card__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; margin-bottom: var(--space-2);
+  border-radius: 14px;
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+  font-size: 22px; font-weight: 800;
+}
+.quick-card__title { font-size: var(--fs-h2); }
+.quick-card__desc { color: var(--c-ink-soft); }
+.quick-grid { gap: var(--space-3); }
+
+/* ---- 主要CTA：鮮やか＋下厚みの3Dボタン ---- */
+.cta-card {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 0 var(--c-accent-press);
+  padding: var(--space-4) var(--space-5);
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.cta-card:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--c-accent-press); }
+.cta-card__title { font-size: var(--fs-h2); font-weight: 800; }
+
+/* ---- セクション見出しを少し大きく・読みやすく ---- */
+.section-title { font-size: var(--fs-h1); font-weight: 800; }
+
+/* ---- 汎用ボタン（音声ボタン等）も少し大きく ---- */
+.audio-btn { width: 64px; height: 64px; font-size: 24px; }
+
+/* ---- ヘッダーのロゴ/タイトルのコントラスト ---- */
+.app-header { background: var(--c-surface); }
+.app-header__title { color: var(--c-ink); }
+
+/* ---- ダークでのヒーロー文字コントラスト確保 ---- */
+:root[data-theme="dark"] .home-hero { color: #06201d; }

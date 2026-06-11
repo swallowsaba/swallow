@@ -179,3 +179,67 @@ window.EigoData.listening = window.EigoData.listening.concat([
   {"id":"lg_c7","type":"comprehension","level":"B2","text":"We can offer a 10% discount, but only if you commit to a two-year contract. Otherwise, the standard rate applies.","question":"割引の条件は？","choices":["2年契約","即時支払い","大量注文","新規顧客"],"answer":"2年契約","ja":"2年契約を条件に10%割引、そうでなければ通常料金。"},
   {"id":"lg_c8","type":"comprehension","level":"B1","text":"This is a reminder that the office will be closed on Monday for the public holiday. Normal hours resume on Tuesday.","question":"月曜日はどうなりますか？","choices":["休業","短縮営業","通常営業","移転"],"answer":"休業","ja":"月曜は祝日で休業、火曜から通常営業。"}
 ]);
+
+
+/* ---- 増量4：リスニング ---- */
+window.EigoData.listening = window.EigoData.listening.concat([
+  {"id":"lg2_d200","type":"dictation","level":"A2","text":"Could you help me with this?","ja":"これを手伝ってもらえますか？"},
+  {"id":"lg2_d201","type":"dictation","level":"A2","text":"I'll be right back.","ja":"すぐ戻ります。"},
+  {"id":"lg2_d202","type":"dictation","level":"A2","text":"That sounds good to me.","ja":"いいと思います。"},
+  {"id":"lg2_d203","type":"dictation","level":"A2","text":"Let me know if you need anything.","ja":"何か必要なら言ってください。"},
+  {"id":"lg2_d204","type":"dictation","level":"A2","text":"I'm sorry, I didn't catch that.","ja":"すみません、聞き取れませんでした。"},
+  {"id":"lg2_d205","type":"dictation","level":"A2","text":"Can you turn it up a little?","ja":"少し音量を上げてもらえますか？"},
+  {"id":"lg2_d206","type":"dictation","level":"A2","text":"It's just around the corner.","ja":"すぐそこの角です。"},
+  {"id":"lg2_d207","type":"dictation","level":"A2","text":"Thanks for letting me know.","ja":"教えてくれてありがとう。"},
+  {"id":"lg2_d208","type":"dictation","level":"A2","text":"I'll see what I can do.","ja":"できることをやってみます。"},
+  {"id":"lg2_d209","type":"dictation","level":"A2","text":"Take your time.","ja":"ごゆっくりどうぞ。"},
+  {"id":"lg2_d210","type":"dictation","level":"B1","text":"Let me run that by my team.","ja":"チームに相談させてください。"},
+  {"id":"lg2_d211","type":"dictation","level":"B1","text":"We're on the same page now.","ja":"これで認識が合いました。"},
+  {"id":"lg2_d212","type":"dictation","level":"B1","text":"I'll follow up by email.","ja":"メールで追って連絡します。"},
+  {"id":"lg2_d213","type":"dictation","level":"B1","text":"Could we push this to Monday?","ja":"これを月曜に延ばせますか？"},
+  {"id":"lg2_d214","type":"dictation","level":"B1","text":"That works on my end.","ja":"私の方は大丈夫です。"},
+  {"id":"lg2_d215","type":"dictation","level":"B1","text":"Let's keep this between us.","ja":"これは内密にしましょう。"},
+  {"id":"lg2_d216","type":"dictation","level":"B1","text":"I'll circle back with details.","ja":"詳細を改めて連絡します。"},
+  {"id":"lg2_d217","type":"dictation","level":"B1","text":"Can you give me a heads-up?","ja":"事前に知らせてもらえますか？"},
+  {"id":"lg2_d218","type":"dictation","level":"B1","text":"We're cutting it close on time.","ja":"時間がぎりぎりです。"},
+  {"id":"lg2_d219","type":"dictation","level":"B1","text":"I'll loop you in on the thread.","ja":"そのやり取りに加えます。"},
+  {"id":"lg2_d220","type":"dictation","level":"B2","text":"Let's not reinvent the wheel here.","ja":"無駄に一から作り直さないようにしましょう。"},
+  {"id":"lg2_d221","type":"dictation","level":"B2","text":"We need to manage expectations.","ja":"期待値を調整する必要があります。"},
+  {"id":"lg2_d222","type":"dictation","level":"B2","text":"That's a fair point, but consider this.","ja":"もっともですが、これも考えてみてください。"},
+  {"id":"lg2_d223","type":"dictation","level":"B2","text":"Let's drill down into the numbers.","ja":"数字を詳しく見ていきましょう。"},
+  {"id":"lg2_d224","type":"dictation","level":"B2","text":"I'll take the action item on that.","ja":"その件は私が担当します。"},
+  {"id":"lg2_d225","type":"dictation","level":"B2","text":"We should de-risk this approach.","ja":"この方法のリスクを下げるべきです。"},
+  {"id":"lg2_d226","type":"dictation","level":"B2","text":"Let's park this and move on.","ja":"これは保留にして先に進みましょう。"},
+  {"id":"lg2_d227","type":"dictation","level":"B2","text":"I want to push back on that assumption.","ja":"その前提には異論があります。"},
+  {"id":"lg2_d228","type":"dictation","level":"B2","text":"We're aligned on the high-level plan.","ja":"大枠の計画では一致しています。"},
+  {"id":"lg2_d229","type":"dictation","level":"B2","text":"Let's socialize the idea with the team.","ja":"この案をチームに共有しましょう。"},
+  {"id":"lg2_c200","type":"comprehension","level":"B1","text":"Good morning. Due to maintenance, the elevator is out of service until noon. Please use the stairs or the service lift. Thank you.","question":"エレベーターはいつまで使えませんか？","choices":["正午まで","終日","午後まで","明日まで"],"answer":"正午まで","ja":"メンテのためエレベーターは正午まで停止。"},
+  {"id":"lg2_c201","type":"comprehension","level":"B1","text":"Your order has shipped and should arrive within three to five business days. You'll receive a tracking number by email shortly.","question":"何が届きますか？","choices":["追跡番号","請求書","返金","カタログ"],"answer":"追跡番号","ja":"注文は発送済み、3-5営業日で到着、追跡番号がメールで届く。"},
+  {"id":"lg2_c202","type":"comprehension","level":"B2","text":"We surveyed our users. The top request was a dark mode, followed by faster search. Let's prioritize dark mode for the next release.","question":"次のリリースで優先するのは？","choices":["ダークモード","検索速度","通知","多言語対応"],"answer":"ダークモード","ja":"要望1位はダークモード、次が検索高速化。次回はダークモード優先。"},
+  {"id":"lg2_c203","type":"comprehension","level":"B2","text":"The vendor missed the deadline twice. I suggest we add a penalty clause to the next contract to protect ourselves.","question":"提案された対策は？","choices":["違約金条項の追加","業者の変更","前払い","契約解除"],"answer":"違約金条項の追加","ja":"業者が二度締め切りを逃した。次回契約に違約金条項を。"},
+  {"id":"lg2_c204","type":"comprehension","level":"B2","text":"Sales dipped in July, but that's seasonal. Year over year, we're still up eight percent, so there's no need to panic.","question":"7月の落ち込みの理由は？","choices":["季節要因","価格","競合","品質"],"answer":"季節要因","ja":"7月減は季節的。前年比では8%増なので心配無用。"}
+]);
+
+
+/* ---- 増量5：リスニング ---- */
+window.EigoData.listening = window.EigoData.listening.concat([
+  {"id":"lg3_d300","type":"dictation","level":"A2","text":"Could you spell that, please?","ja":"つづりを教えてください。"},
+  {"id":"lg3_d301","type":"dictation","level":"A2","text":"I'll be with you shortly.","ja":"すぐ参ります。"},
+  {"id":"lg3_d302","type":"dictation","level":"A2","text":"Is everything all right?","ja":"大丈夫ですか？"},
+  {"id":"lg3_d303","type":"dictation","level":"A2","text":"Let's grab lunch sometime.","ja":"今度ランチでも。"},
+  {"id":"lg3_d304","type":"dictation","level":"A2","text":"Thanks for your patience.","ja":"お待ちいただき感謝します。"},
+  {"id":"lg3_d305","type":"dictation","level":"B1","text":"Let me get a pen and paper.","ja":"ペンと紙を用意します。"},
+  {"id":"lg3_d306","type":"dictation","level":"B1","text":"Could you forward that to me?","ja":"それを転送してもらえますか？"},
+  {"id":"lg3_d307","type":"dictation","level":"B1","text":"We're slightly behind schedule.","ja":"少し予定より遅れています。"},
+  {"id":"lg3_d308","type":"dictation","level":"B1","text":"Let's recap what we agreed on.","ja":"合意点をおさらいしましょう。"},
+  {"id":"lg3_d309","type":"dictation","level":"B1","text":"I'll need a bit more context.","ja":"もう少し背景が必要です。"},
+  {"id":"lg3_d310","type":"dictation","level":"B2","text":"Let's not get bogged down in details.","ja":"細部にとらわれないようにしましょう。"},
+  {"id":"lg3_d311","type":"dictation","level":"B2","text":"I'd like to circle back on pricing.","ja":"価格の件に戻りたいです。"},
+  {"id":"lg3_d312","type":"dictation","level":"B2","text":"We need to set realistic expectations.","ja":"現実的な期待値を設定すべきです。"},
+  {"id":"lg3_d313","type":"dictation","level":"B2","text":"Let's put a stake in the ground.","ja":"まず仮の基準を決めましょう。"},
+  {"id":"lg3_d314","type":"dictation","level":"B2","text":"That aligns with our priorities.","ja":"それは我々の優先事項と合致します。"},
+  {"id":"lg3_c300","type":"comprehension","level":"B1","text":"Hello, this is a reminder for your appointment tomorrow at ten. Please arrive ten minutes early to complete the paperwork.","question":"何分前に着くべき？","choices":["10分前","30分前","当日でよい","5分前"],"answer":"10分前","ja":"明日10時の予約、書類記入のため10分前到着を。"},
+  {"id":"lg3_c301","type":"comprehension","level":"B1","text":"We've received your application. Our team will review it and get back to you within five business days.","question":"応募はどうなる？","choices":["5営業日以内に連絡","即採用","不採用","追加書類が必要"],"answer":"5営業日以内に連絡","ja":"応募受領、5営業日以内に連絡。"},
+  {"id":"lg3_c302","type":"comprehension","level":"B2","text":"Sales of the basic plan are strong, but few users upgrade to premium. Let's add features that make the upgrade worth it.","question":"課題は何ですか？","choices":["プレミアムへの移行が少ない","基本プランが売れない","解約が多い","広告効果"],"answer":"プレミアムへの移行が少ない","ja":"基本は好調だがプレミアムへの移行が少ない。価値ある機能を追加。"},
+  {"id":"lg3_c303","type":"comprehension","level":"B2","text":"The shipment was delayed at customs, so delivery will be two days late. I've already informed the client and apologized.","question":"遅延の原因は？","choices":["税関での足止め","天候","在庫切れ","工場停止"],"answer":"税関での足止め","ja":"税関で足止め、配送が2日遅延、顧客には連絡済み。"}
+]);

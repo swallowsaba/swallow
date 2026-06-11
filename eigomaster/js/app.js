@@ -122,17 +122,23 @@
 
   var warnedNoVoice = false;
   function doSpeakDevice(text, opts) {
-    var u = new SpeechSynthesisUtterance(text);
     var voice = resolveVoice();
+    // 英語ボイスが無い端末では、日本語ボイスで英単語を読むと
+    // 表記(IPA/カタカナ)と全く違う音になるため、誤読を避けて案内のみ表示する。
+    var looksEnglish = /[A-Za-z]/.test(String(text));
+    if (!voice && looksEnglish) {
+      if (!warnedNoVoice) {
+        warnedNoVoice = true;
+        EM.showToast("この端末に英語の音声がありません。設定→音声で『オンライン英語音声（自動/オンライン）』をお選びください", true);
+      }
+      return; // 日本語ボイスでの誤った読み上げはしない
+    }
+    var u = new SpeechSynthesisUtterance(text);
     if (voice) {
       u.voice = voice;
       u.lang = voice.lang;       // ボイスと言語を一致させる（重要）
     } else {
       u.lang = opts.lang || "en-US";
-      if (!warnedNoVoice) {
-        warnedNoVoice = true;
-        EM.showToast("英語の声がこの端末にありません。設定→音声で『オンライン英語音声』をお試しください", true);
-      }
     }
     u.rate = typeof opts.rate === "number" ? opts.rate : 0.95; // やや自然に
     u.pitch = 1.0;
@@ -883,20 +889,38 @@
       result = { html: '<div class="empty-state"><p class="empty-state__title">表示できませんでした</p>' +
         '<p class="empty-state__body">お手数ですが画面を再読み込みしてください。</p></div>' };
     }
+    // 先に最上部へ戻す（描画前に位置をリセット）
+    window.scrollTo(0, 0);
+    if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+    viewEl.scrollTop = 0;
+
     viewEl.innerHTML = result.html;
     if (typeof result.onMount === "function") {
       try { result.onMount(); } catch (e2) { console.error("[router] onMount エラー:", e2); }
     }
-    viewEl.focus();
+    // フォーカスでブラウザが画面途中までスクロールするのを防ぐ（preventScroll）
+    try { viewEl.focus({ preventScroll: true }); } catch (e3) { /* 古い実装は無視 */ }
+    // 念のためもう一度先頭へ（描画後のレイアウト確定後）
     window.scrollTo(0, 0);
+    if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
   }
 
   /* ---------- Service Worker ---------- */
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;
+    // 新しいSWが制御を奪ったら一度だけリロードして最新版を確実に反映（更新が届かない問題の対策）
+    var reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (reloaded) return;
+      reloaded = true;
+      window.location.reload();
+    });
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js").catch(function (e) {
+      navigator.serviceWorker.register("sw.js").then(function (reg) {
+        // 既存ページに対しても更新確認を促す
+        if (reg && reg.update) { try { reg.update(); } catch (e) {} }
+      }).catch(function (e) {
         console.warn("[sw] 登録に失敗（オフライン非対応で続行）:", e);
       });
     });
