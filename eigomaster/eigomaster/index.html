@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="system">
+<head>
+  <meta charset="UTF-8" />
+  <!-- モバイルファースト：等倍表示・iOSのセーフエリア対応 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="日本人がアメリカ英語をビジネスレベルでマスターするための統合学習アプリ。" />
+  <!-- テーマカラー（ライト/ダークでブラウザUIの色を切り替え） -->
+  <meta name="theme-color" content="#f2f3ef" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#12161a" media="(prefers-color-scheme: dark)" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>EigoMaster｜アメリカ英語 発音スタジオ</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!--
+    アプリ全体の骨格。
+    画面の中身（ビュー）は js/app.js が #view に描画する。
+    Phase 1 ではルーティングとデザインシステム、保存機構のみを実装する。
+  -->
+  <div class="app-shell">
+
+    <!-- 上部ヘッダー：現在地タイトル＋ストリーク表示 -->
+    <header class="app-header" role="banner">
+      <div class="app-header__brand">
+        <span class="app-header__mark" aria-hidden="true">/iː/</span>
+        <span class="app-header__title" id="screen-title">ホーム</span>
+      </div>
+      <button
+        class="streak-pill"
+        id="streak-pill"
+        type="button"
+        aria-label="連続学習日数"
+        data-route="#/home">
+        <span class="streak-pill__flame" aria-hidden="true">▲</span>
+        <span class="streak-pill__count" id="streak-count">0</span>
+        <span class="streak-pill__unit">日</span>
+      </button>
+    </header>
+
+    <!-- メイン：各画面が描画される領域。aria-live で画面切替を支援技術へ通知 -->
+    <main class="app-main" id="view" role="main" aria-live="polite" tabindex="-1">
+      <!-- 初期表示は app.js が担当（JS無効時のフォールバックのみ記載） -->
+      <noscript>
+        <div class="empty-state">
+          <p class="empty-state__title">JavaScript を有効にしてください</p>
+          <p class="empty-state__body">このアプリは JavaScript で動作します。ブラウザの設定をご確認ください。</p>
+        </div>
+      </noscript>
+    </main>
+
+    <!-- 下部タブナビ：ホーム / 単語 / 動画学習 / 発音 / 設定 -->
+    <nav class="tab-bar" id="tab-bar" role="navigation" aria-label="メインナビゲーション">
+      <a class="tab" href="#/home" data-route="#/home" data-tab="home" aria-label="ホーム">
+        <span class="tab__icon" aria-hidden="true">◎</span>
+        <span class="tab__label">ホーム</span>
+      </a>
+      <a class="tab" href="#/vocab" data-route="#/vocab" data-tab="vocab" aria-label="単語">
+        <span class="tab__icon" aria-hidden="true">あ</span>
+        <span class="tab__label">単語</span>
+      </a>
+      <a class="tab" href="#/video" data-route="#/video" data-tab="video" aria-label="動画学習">
+        <span class="tab__icon" aria-hidden="true">▷</span>
+        <span class="tab__label">動画学習</span>
+      </a>
+      <a class="tab" href="#/pron" data-route="#/pron" data-tab="pron" aria-label="発音">
+        <span class="tab__icon" aria-hidden="true">θ</span>
+        <span class="tab__label">発音</span>
+      </a>
+      <a class="tab" href="#/settings" data-route="#/settings" data-tab="settings" aria-label="設定">
+        <span class="tab__icon" aria-hidden="true">⚙</span>
+        <span class="tab__label">設定</span>
+      </a>
+    </nav>
+
+  </div>
+
+  <!-- トースト通知（保存完了などの一時メッセージ） -->
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <!--
+    スクリプト読み込み順（重要）：
+    1) storage.js（保存基盤）
+    2) data/*.js（教材データ。fetchのCORS回避のため window.EigoData に登録）
+    3) app.js（EM名前空間・ルーター。初期化は DOMContentLoaded まで遅延）
+    4) 各機能モジュール（読み込み時に EM.registerView でルート登録）
+    type="module" にすると file:// で読めない環境があるため、通常スクリプトで読み込む。
+  -->
+  <script src="js/storage.js"></script>
+
+  <script src="data/words.js"></script>
+  <script src="data/grammar.js"></script>
+  <script src="data/phonics.js"></script>
+  <script src="data/linking_rules.js"></script>
+  <script src="data/pron_dict.js"></script>
+  <script src="data/diagnosis.js"></script>
+  <script src="data/reading.js"></script>
+  <script src="data/idioms.js"></script>
+
+  <script src="js/app.js"></script>
+
+  <script src="js/srs.js"></script>
+  <script src="js/katakana.js"></script>
+  <script src="js/linking.js"></script>
+  <script src="js/subtitle.js"></script>
+  <script src="js/vocab.js"></script>
+  <script src="js/wordbook.js"></script>
+  <script src="js/idioms.js"></script>
+  <script src="js/shadowing.js"></script>
+  <script src="js/pronunciation.js"></script>
+  <script src="js/phonics.js"></script>
+  <script src="js/grammar.js"></script>
+  <script src="js/reading.js"></script>
+  <script src="js/diagnosis.js"></script>
+</body>
+</html>

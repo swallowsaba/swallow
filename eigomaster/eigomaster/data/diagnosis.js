@@ -1,0 +1,18 @@
+/* ============================================================
+   data/diagnosis.js — レベル診断（10問）
+   各問：{ q, options, answer(正解index), level(難易度) }
+   採点ロジックは js/diagnosis.js が担当する。
+   ============================================================ */
+window.EigoData = window.EigoData || {};
+window.EigoData.diagnosis = [
+  { q: "She ___ a teacher.", options: ["is", "are", "am", "be"], answer: 0, level: "A1" },
+  { q: "I ___ to the office every day.", options: ["go", "goes", "going", "gone"], answer: 0, level: "A1" },
+  { q: "There ___ many people at the event.", options: ["was", "were", "is", "be"], answer: 1, level: "A2" },
+  { q: "We will meet ___ Monday.", options: ["in", "at", "on", "to"], answer: 2, level: "A2" },
+  { q: "I have ___ finished the report.", options: ["yet", "already", "ever", "since"], answer: 1, level: "B1" },
+  { q: "This is the file ___ I sent you.", options: ["who", "that", "where", "what"], answer: 1, level: "B1" },
+  { q: "If I ___ you, I would accept the offer.", options: ["am", "was", "were", "be"], answer: 2, level: "B2" },
+  { q: "We need to ___ our schedules before the launch.", options: ["align", "alike", "alarm", "allow"], answer: 0, level: "B2" },
+  { q: "Let's prepare a ___ plan in case the deal falls through.", options: ["contingency", "consistency", "continuous", "contentment"], answer: 0, level: "C1" },
+  { q: "The new system is far more ___ than the old one.", options: ["robust", "robe", "rebuke", "ruby"], answer: 0, level: "C1" }
+];
