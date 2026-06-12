@@ -91,6 +91,8 @@
         '<div class="explain-card">' +
           '<p class="explain-head ' + (res.rate >= 0.8 ? "explain-head--ok" : "explain-head--ng") + '">正答率 ' + Math.round(res.rate * 100) + "%</p>" +
           '<p class="explain-line"><strong>正解：</strong>' + EM.escapeHtml(q.text) + "</p>" +
+          (window.Katakana ? '<p class="explain-line"><strong>聞こえ方：</strong>≈ ' + EM.escapeHtml(window.Katakana.toKatakana(q.text)) + "</p>" : "") +
+          (q.ja ? '<p class="explain-line"><strong>意味：</strong>' + EM.escapeHtml(q.ja) + "</p>" : "") +
           '<p class="explain-line">' + res.html + "</p>" +
           '<p class="explain-why">' + EM.escapeHtml(q.ja) + "</p>" +
           '<button class="btn btn--primary btn--block mt-4" id="next" type="button">' + (st.idx + 1 >= st.session.length ? "結果を見る" : "次へ") + "</button>" +
@@ -135,6 +137,7 @@
           '<div class="explain-card">' +
             '<p class="explain-head ' + (ok ? "explain-head--ok" : "explain-head--ng") + '">' + (ok ? "正解！" : "正解は「" + EM.escapeHtml(q.answer) + "」") + "</p>" +
             '<p class="explain-line"><strong>英文：</strong>' + EM.escapeHtml(q.text) + "</p>" +
+            (window.Katakana ? '<p class="explain-line"><strong>聞こえ方：</strong>≈ ' + EM.escapeHtml(window.Katakana.toKatakana(q.text)) + "</p>" : "") +
             '<p class="explain-why">' + EM.escapeHtml(q.ja) + "</p>" +
             '<button class="btn btn--primary btn--block mt-4" id="next" type="button">' + (st.idx + 1 >= st.session.length ? "結果を見る" : "次へ") + "</button>" +
           "</div>";

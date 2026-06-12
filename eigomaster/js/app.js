@@ -121,18 +121,69 @@
   }
 
   var warnedNoVoice = false;
+  var speakToken = 0;          // 多重再生防止トークン（エコー対策）：最新の再生だけを生かす
+  var lastSpeakKey = "";       // 連打デバウンス用
+  var lastSpeakAt = 0;
+  var resumeTimer = null;      // Android Chrome の長文停止バグ対策ハートビート
+
+  // 初回のユーザー操作で音声をアンロック（スマホの自動再生制限・初回無音対策）
+  var audioUnlocked = false;
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    try {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.resume();
+        var u = new SpeechSynthesisUtterance(" ");
+        u.volume = 0; u.rate = 2;
+        window.speechSynthesis.speak(u);
+        setTimeout(function () { try { window.speechSynthesis.cancel(); } catch (e) {} }, 60);
+        loadVoices();
+      }
+    } catch (e) { /* 失敗しても実害なし */ }
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("pointerdown", unlockAudio, { once: true, capture: true });
+    document.addEventListener("keydown", unlockAudio, { once: true, capture: true });
+    // タブ/アプリがバックグラウンドへ → 再生を確実に止める。
+    // 復帰時 → pause スタックを resume で解消（放置すると以後ずっと無音になる端末がある）
+    document.addEventListener("visibilitychange", function () {
+      if (!("speechSynthesis" in window)) return;
+      try {
+        if (document.hidden) { EM.stopSpeak(); }
+        else { window.speechSynthesis.resume(); }
+      } catch (e) { /* no-op */ }
+    });
+  }
+
+  function stopResumeTimer() { if (resumeTimer) { clearInterval(resumeTimer); resumeTimer = null; } }
+  function startResumeTimer() {
+    // Chrome系（特にAndroid）は十数秒で speechSynthesis が黙るバグがあるため、定期的に resume する
+    stopResumeTimer();
+    if (!("speechSynthesis" in window)) return;
+    resumeTimer = setInterval(function () {
+      try {
+        if (window.speechSynthesis.speaking) window.speechSynthesis.resume();
+        else stopResumeTimer();
+      } catch (e) { stopResumeTimer(); }
+    }, 9000);
+  }
+
   function doSpeakDevice(text, opts) {
     var voice = resolveVoice();
     // 英語ボイスが無い端末では、日本語ボイスで英単語を読むと
     // 表記(IPA/カタカナ)と全く違う音になるため、誤読を避けて案内のみ表示する。
     var looksEnglish = /[A-Za-z]/.test(String(text));
-    if (!voice && looksEnglish) {
+    if (!voice && looksEnglish && voicesReady) {
+      // ボイス一覧が確定していて英語が無い場合のみ、誤読を避けて中断（autoではこの前にオンラインへ行く）
       if (!warnedNoVoice) {
         warnedNoVoice = true;
-        EM.showToast("この端末に英語の音声がありません。設定→音声で『オンライン英語音声（自動/オンライン）』をお選びください", true);
+        EM.showToast("この端末に英語の音声がありません。設定→音声で『オンライン』をお選びください", true);
       }
-      return; // 日本語ボイスでの誤った読み上げはしない
+      return;
     }
+    // ボイス一覧が未確定の間は lang=en-US 指定で即時発話（待つとタップ起点を失い、スマホ初回が無音になるため）
+    var myToken = ++speakToken;
     var u = new SpeechSynthesisUtterance(text);
     if (voice) {
       u.voice = voice;
@@ -142,9 +193,16 @@
     }
     u.rate = typeof opts.rate === "number" ? opts.rate : 0.95; // やや自然に
     u.pitch = 1.0;
-    if (typeof opts.onend === "function") u.onend = opts.onend;
-    window.speechSynthesis.cancel(); // 重複再生を止める
+    u.volume = 1.0;
+    u.onend = function () {
+      stopResumeTimer();
+      if (myToken === speakToken && typeof opts.onend === "function") opts.onend();
+    };
+    u.onerror = function () { stopResumeTimer(); };
+    try { window.speechSynthesis.cancel(); } catch (e) {} // 重複再生（エコー）を必ず止める
+    try { window.speechSynthesis.resume(); } catch (e2) {} // pauseスタックからの復帰（時々鳴らなくなる対策）
     window.speechSynthesis.speak(u);
+    startResumeTimer();
   }
 
   /* ---------- オンライン英語音声（端末に英語ボイスが無くても英語で読む）----------
@@ -205,25 +263,28 @@
     var voice = onlineVoiceId();
     var chunks = chunkText(text);
     var i = 0;          // チャンク番号
-    var aborted = false;
+    var myToken = ++speakToken;   // 古い再生のコールバックを無効化（エコー対策）
 
     function playChunk(provIdx) {
-      if (aborted) return;
+      if (myToken !== speakToken) return;
       if (i >= chunks.length) { if (typeof opts.onend === "function") opts.onend(); return; }
       if (provIdx >= TTS_PROVIDERS.length) {
         // すべての提供元で失敗 → 端末音声へ
-        aborted = true; onlineFailover(text, opts); return;
+        onlineFailover(text, opts); return;
       }
       var url = TTS_PROVIDERS[provIdx](chunks[i], voice);
       var a = new Audio(url);             // ※ crossOrigin は付けない（再生にCORSは不要）
       currentAudio = a;
       if (typeof opts.rate === "number") a.playbackRate = Math.max(0.5, Math.min(1, opts.rate));
-      a.onended = function () { i++; playChunk(0); };       // 次チャンクは先頭提供元から
-      a.onerror = function () { playChunk(provIdx + 1); };  // この提供元が失敗 → 次の提供元
+      a.onended = function () { if (myToken !== speakToken) return; i++; playChunk(0); };
+      a.onerror = function () { if (myToken !== speakToken) return; playChunk(provIdx + 1); };
       var p = a.play();
       if (p && p.catch) p.catch(function (err) {
-        // 自動再生ブロック（ユーザー操作前）は日本語に落とさず無音で待つ
-        if (err && err.name === "NotAllowedError") { aborted = true; return; }
+        if (myToken !== speakToken) return;
+        if (err && err.name === "NotAllowedError") {
+          // 自動再生ブロック → 無音にせず端末の英語音声で必ず鳴らす
+          doSpeakDevice(text, opts); return;
+        }
         playChunk(provIdx + 1);
       });
     }
@@ -237,7 +298,11 @@
     var mode = Storage.getState().profile.ttsMode || "auto";
     if (mode === "device") { doSpeakDevice(text, opts); return; }
     if (mode === "online") { speakOnline(text, opts); return; }
-    // auto：原則オンラインの英語音声（自然な米国英語）。失敗時は端末音声へ自動フォールバック。
+    // auto：端末に英語ボイスがあれば端末を優先（PC・タップと同期するので確実に鳴る）。
+    //       ボイス一覧が未確定の間も端末で即時発話（lang=en-US）。
+    //       「英語ボイスが無い」と確定した端末（日本のスマホ等）のみオンライン英語音声を使う。
+    if (!voicesReady) { doSpeakDevice(text, opts); return; }
+    if (resolveVoice()) { doSpeakDevice(text, opts); return; }
     if (navigator.onLine === false) { doSpeakDevice(text, opts); return; }
     speakOnline(text, opts);
   }
@@ -246,26 +311,23 @@
   EM.speak = function (text, opts) {
     opts = opts || {};
     if (!text) return;
+    // 連打デバウンス（同じテキストを300ms以内に2回 → 2回目は無視。二重音声＝エコーの防止）
+    var now = Date.now();
+    var key = String(text) + "|" + (opts.rate || "");
+    if (key === lastSpeakKey && now - lastSpeakAt < 300) return;
+    lastSpeakKey = key; lastSpeakAt = now;
+
+    unlockAudio();   // タップと同期してアンロック（初回でも確実に鳴らす）
     EM.stopSpeak();
-    var mode = Storage.getState().profile.ttsMode || "auto";
-    // 端末音声を使う場合はボイス読み込みを待つ
-    if (mode === "device" && "speechSynthesis" in window && !voicesReady) {
-      loadVoices();
-      if (!voicesReady) {
-        speakQueue.length = 0;
-        speakQueue.push({ text: text, opts: opts });
-        setTimeout(function () {
-          loadVoices();
-          if (speakQueue.length) { var item = speakQueue.shift(); if (item) doSpeak(item.text, item.opts); }
-        }, 350);
-        return;
-      }
-    }
+    // ※ ここでボイス読み込みを「待たない」：待つとユーザー操作の文脈が切れて
+    //    スマホの初回再生がブロックされるため、未確定でも lang=en-US で即時に話す。
     doSpeak(text, opts);
   };
   EM.stopSpeak = function () {
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-    if (currentAudio) { try { currentAudio.pause(); } catch (e) {} currentAudio = null; }
+    speakToken++;            // 進行中の再生コールバックをすべて無効化（エコー防止）
+    stopResumeTimer();
+    if ("speechSynthesis" in window) { try { window.speechSynthesis.cancel(); } catch (e) {} }
+    if (currentAudio) { try { currentAudio.pause(); } catch (e2) {} currentAudio = null; }
   };
   EM.hasTTS = true; // オンライン音声があるため常に利用可能
 
@@ -331,9 +393,36 @@
       '<section class="stack-md view-enter">' +
 
         '<div class="home-hero">' +
-          '<p class="home-hero__eyebrow">TODAY\'S STUDIO · ' + EM.escapeHtml(levelLabel) + '</p>' +
+          '<p class="home-hero__eyebrow">EIGO MASTER · ' + EM.escapeHtml(levelLabel) + '</p>' +
           '<h1 class="home-hero__greeting">' + greetingByHour() + '</h1>' +
           '<p class="home-hero__sub">' + subMessage + '</p>' +
+        '</div>' +
+
+        // 学習ダッシュボード風：統計チップ4つ（今日の分数 / 連続日数 / 覚えた語 / 学習回数）
+        '<div class="dash-stats">' +
+          dashChip("⚡", mins + "分", "今日の学習") +
+          dashChip("🔥", streak + "日", "連続記録") +
+          dashChip("📚", totals.wordsLearned, "覚えた単語") +
+          dashChip("🎯", totals.sessions + "回", "学習セッション") +
+        '</div>' +
+
+        // 大きなチャレンジCTA
+        '<a class="cta-card cta-card--big" href="#/learn">' +
+          '<span class="cta-card__emoji">🎯</span>' +
+          '<div class="cta-card__main"><p class="cta-card__title">今日の学習をはじめる</p>' +
+            '<p class="cta-card__desc">単語 7,700語＋・文法155課・リスニング478問から出題</p></div>' +
+          '<span class="cta-card__arrow">→</span>' +
+        '</a>' +
+
+        // 学習モード（3モード）
+        '<div>' +
+          '<div class="hub-section__head"><span class="hub-section__title">学習モード</span>' +
+            '<span class="hub-section__count">3モード</span></div>' +
+          '<div class="hub-list">' +
+            modeRow("⚡", "単語クイック", "SRSが今日の復習を自動で選びます", "コンボ重視", "#/vocab") +
+            modeRow("🎧", "リスニング", "書き取り・内容理解（カタカナ補助つき）", "478問", "#/listening") +
+            modeRow("🗣", "シャドーイング", "英語・カタカナ・訳の3段で口慣らし", "発話練習", "#/video") +
+          '</div>' +
         '</div>' +
 
         '<div class="card">' +
@@ -350,33 +439,9 @@
           '<div class="graph-wrap"><canvas id="study-graph" height="120" aria-label="直近7日間の学習時間グラフ"></canvas></div>' +
         '</div>' +
 
-        '<div>' +
-          '<p class="section-title">今日の学習</p>' +
-          '<a class="cta-card" href="#/learn">' +
-            '<div class="cta-card__main"><p class="cta-card__title">学習をはじめる</p>' +
-              '<p class="cta-card__desc">単語・文法・リスニング・発音をまとめて</p></div>' +
-            '<span class="cta-card__arrow">→</span>' +
-          '</a>' +
-          '<div class="quick-grid quick-grid--2 mt-4">' +
-            quickCard("あ", "単語", "SRSで暗記", "#/vocab") +
-            quickCard("🎧", "リスニング", "聞き取り", "#/listening") +
-            quickCard("θ", "発音", "発音/音声変化", "#/pron") +
-            quickCard("文", "文法", "解説つき", "#/grammar") +
-          '</div>' +
-        '</div>' +
-
         '<div class="card">' +
-          '<p class="section-eyebrow">BADGES</p>' +
+          '<p class="section-eyebrow">称号コレクション</p>' +
           '<div class="badge-row">' + badgeHtml + '</div>' +
-        '</div>' +
-
-        '<div class="card">' +
-          '<p class="section-eyebrow">YOUR RECORD</p>' +
-          '<div class="stat-row">' +
-            stat(totals.wordsLearned, "覚えた単語") +
-            stat(totals.sessions, "学習回数") +
-            stat(state.progress.streak.longest, "最長連続") +
-          '</div>' +
         '</div>' +
 
       '</section>';
@@ -389,6 +454,26 @@
              '<span class="quick-card__icon">' + icon + '</span>' +
              '<span class="quick-card__title">' + EM.escapeHtml(title) + '</span>' +
              '<span class="quick-card__desc">' + EM.escapeHtml(desc) + '</span>' +
+           '</a>';
+  }
+  // ダッシュボードの統計チップ（絵文字・値・ラベル）
+  function dashChip(emoji, value, label) {
+    return '<div class="dash-chip">' +
+             '<span class="dash-chip__emoji">' + emoji + '</span>' +
+             '<span class="dash-chip__value">' + EM.escapeHtml(String(value)) + '</span>' +
+             '<span class="dash-chip__label">' + EM.escapeHtml(label) + '</span>' +
+           '</div>';
+  }
+  // 学習モード行（絵文字・タイトル/説明・タグ）
+  function modeRow(emoji, title, desc, tag, route) {
+    return '<a class="hub-row" href="' + route + '">' +
+             '<span class="hub-row__icon" style="font-size:22px">' + emoji + '</span>' +
+             '<span class="hub-row__main">' +
+               '<span class="hub-row__title">' + EM.escapeHtml(title) + '</span>' +
+               '<span class="hub-row__desc">' + EM.escapeHtml(desc) + '</span>' +
+             '</span>' +
+             '<span class="hub-row__badge">' + EM.escapeHtml(tag) + '</span>' +
+             '<span class="hub-row__arrow">›</span>' +
            '</a>';
   }
   function stat(num, label) {
@@ -464,31 +549,64 @@
   }
 
   /* ============================================================
-     学ぶハブ（学ぶタブのトップ。カテゴリ別に全モジュールを集約）
+     学ぶハブ（学ぶタブのトップ。日程表スタイル：見出し＋件数バッジ＋行リスト）
      ============================================================ */
-  function renderLearn() {
-    function group(title, cards) {
-      return '<div class="mt-5"><p class="section-title">' + title + '</p>' +
-        '<div class="quick-grid quick-grid--2">' + cards + '</div></div>';
+  function dataCount(key) {
+    var d = window.EigoData || {};
+    function dd(a){var s={},o=0;(a||[]).forEach(function(x){var k=(x.en||"").toLowerCase();if(k&&s[k])return;s[k]=1;o++;});return o;}
+    switch (key) {
+      case "words": return dd(d.words);
+      case "idioms": return dd(d.idioms);
+      case "grammar": return (d.grammar || []).length;
+      case "listening": return (d.listening || []).length;
+      case "reading": return (d.readingSamples || []).length;
+      case "pairs": return (d.phonics && d.phonics.minimalPairs || []).length;
+      case "linking": var n = 0; ((d.linkingRules) || []).forEach(function (r) { n += (r.examples || []).length; }); return n;
+      default: return 0;
     }
+  }
+  function fmtCount(n) { return n >= 1000 ? (Math.round(n / 100) / 10).toLocaleString("ja-JP") + "k" : String(n); }
+
+  // 日程表風の行（アイコン丸・タイトル/説明・件数バッジ・矢印）
+  function hubRow(icon, title, desc, route, badge) {
+    return '<a class="hub-row" href="' + route + '">' +
+             '<span class="hub-row__icon">' + icon + '</span>' +
+             '<span class="hub-row__main">' +
+               '<span class="hub-row__title">' + EM.escapeHtml(title) + '</span>' +
+               '<span class="hub-row__desc">' + EM.escapeHtml(desc) + '</span>' +
+             '</span>' +
+             (badge ? '<span class="hub-row__badge">' + EM.escapeHtml(badge) + '</span>' : '') +
+             '<span class="hub-row__arrow">›</span>' +
+           '</a>';
+  }
+  // セクション見出し（左に太いタイトル・右に件数チップ）
+  function hubSection(title, sub, rows) {
+    return '<div class="hub-section">' +
+             '<div class="hub-section__head"><span class="hub-section__title">' + EM.escapeHtml(title) + '</span>' +
+               (sub ? '<span class="hub-section__count">' + EM.escapeHtml(sub) + '</span>' : '') + '</div>' +
+             '<div class="hub-list">' + rows + '</div>' +
+           '</div>';
+  }
+
+  function renderLearn() {
     var html =
       '<section class="stack-md view-enter">' +
         '<p class="home-hero__eyebrow" style="color:var(--c-ink-soft)">LEARN · まなぶ</p>' +
-        group("語彙", 
-          quickCard("あ", "単語", "SRSで暗記", "#/vocab") +
-          quickCard("熟", "熟語・句動詞", "ビジネス頻出", "#/idioms") +
-          quickCard("帳", "単語帳", "保存した語", "#/wordbook")
+        hubSection("語彙", fmtCount(dataCount("words")) + "語",
+          hubRow("あ", "単語", "SRSで効率よく暗記", "#/vocab", fmtCount(dataCount("words")) + "語") +
+          hubRow("熟", "熟語・句動詞", "イディオム・コロケーション", "#/idioms", fmtCount(dataCount("idioms")) + "件") +
+          hubRow("帳", "単語帳", "保存した語を復習", "#/wordbook", "")
         ) +
-        group("文法",
-          quickCard("文", "文法レッスン", "解説＋誤答解説", "#/grammar")
+        hubSection("文法", dataCount("grammar") + "課",
+          hubRow("文", "文法レッスン", "例文・並べ替え・誤答解説つき", "#/grammar", dataCount("grammar") + "課")
         ) +
-        group("聞く・話す・読む",
-          quickCard("🎧", "リスニング", "書き取り・内容理解", "#/listening") +
-          quickCard("▷", "シャドーイング", "動画で練習", "#/video") +
-          quickCard("読", "リーディング", "速読・辞書", "#/reading")
+        hubSection("聞く・話す・読む", "",
+          hubRow("🎧", "リスニング", "書き取り・内容理解（カタカナ補助つき）", "#/listening", dataCount("listening") + "問") +
+          hubRow("▷", "シャドーイング", "英語・カタカナ・訳の3段表示", "#/video", "") +
+          hubRow("読", "リーディング", "全訳・語句・文法解説つき", "#/reading", dataCount("reading") + "本")
         ) +
-        group("力試し",
-          quickCard("◔", "レベル診断", "10問で判定", "#/diagnosis")
+        hubSection("力試し", "",
+          hubRow("◔", "レベル診断", "10問でレベル判定", "#/diagnosis", "")
         ) +
       '</section>';
     return { html: html };
@@ -500,15 +618,12 @@
   function renderPronHub() {
     var html =
       '<section class="stack-md view-enter">' +
-        '<div>' +
-          '<p class="section-title">発音トレーニング</p>' +
-          '<div class="quick-grid quick-grid--2">' +
-            quickCard("θ", "発音チェック", "認識で一致率判定", "#/pron-check") +
-            quickCard("æ", "フォニックス", "44音素・聞き分け", "#/phonics") +
-            quickCard("◠", "リンキング", "音声変化を可視化", "#/linking") +
-            quickCard("カ", "カタカナ変換", "実際の聞こえ方", "#/katakana") +
-          '</div>' +
-        '</div>' +
+        '<p class="home-hero__eyebrow" style="color:var(--c-ink-soft)">PRONUNCIATION · はつおん</p>' +
+        hubSection("発音トレーニング", "",
+          hubRow("θ", "発音チェック", "音声認識で一致率を判定", "#/pron-check", "") +
+          hubRow("æ", "フォニックス", "44音素・ミニマルペア聞き分け", "#/phonics", fmtCount(dataCount("pairs")) + "組") +
+          hubRow("◠", "リンキング", "音声変化の解説＋聞き取りクイズ", "#/linking", dataCount("linking") + "例")
+        ) +
       '</section>';
     return { html: html };
   }
@@ -553,7 +668,7 @@
           '<p class="section-title">音声（発音）</p>' +
           '<div class="card">' +
             '<p class="setting-row__label">読み上げの方式</p>' +
-            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">既定は<strong>オンライン（自然なアメリカ英語）</strong>です。ネット接続だけで、設定不要で英語の発音になります。オフラインにしたいときは「端末の声」を選べます。</p>' +
+            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">既定の<strong>自動</strong>は、端末に英語の声があればそれを使い（PC・確実に再生）、無い端末では<strong>オンラインの米国英語</strong>に切り替えます。エコーや無音が出る場合もまず「自動」をお試しください。</p>' +
             '<div class="segmented" id="tts-mode" role="group" aria-label="読み上げ方式">' +
               ttsModeBtn("auto", "自動", state.profile.ttsMode) +
               ttsModeBtn("online", "オンライン", state.profile.ttsMode) +

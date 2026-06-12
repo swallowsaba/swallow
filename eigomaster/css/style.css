@@ -1243,3 +1243,136 @@ button, .btn { touch-action: manipulation; }
   display: grid; place-items: center; font-size: 26px;
   background: rgba(255, 255, 255, 0.22);
 }
+
+/* ============================================================
+   v7 全面テーマ刷新（インディゴ・ブルー基調）＋ デスクトップ対応
+   - 旧ティール基調から、参考サイト系のブルーへ全画面一新
+   - PCの左右空白を解消：幅を段階的に拡張し、リストを2カラム化
+   ============================================================ */
+
+/* ---- カラー一新（ライト） ---- */
+:root {
+  --c-bg:            #f4f6fb;   /* クールな淡いブルーグレー */
+  --c-surface:       #ffffff;
+  --c-surface-2:     #f7f8fd;
+  --c-ink:           #1c2233;   /* 青みのある黒 */
+  --c-ink-soft:      #5a6275;
+  --c-ink-faint:     #8d94a8;
+  --c-line:          #e3e6f0;
+  --c-line-strong:   #ccd2e3;
+
+  --c-accent:        #4263eb;   /* インディゴブルー（主役） */
+  --c-accent-press:  #3653c9;
+  --c-accent-soft:   #e7ecff;
+  --c-on-accent:     #ffffff;
+
+  --c-warm:          #e8590c;   /* ストリーク等のオレンジ */
+  --c-warm-soft:     #ffe9db;
+
+  --c-good:          #2f9e44;
+  --c-good-soft:     #dff3e3;
+  --c-bad:           #e03131;
+  --c-bad-soft:      #fbe3e3;
+
+  --shadow-sm: 0 1px 2px rgba(28, 34, 51, 0.06);
+  --shadow-md: 0 6px 20px rgba(28, 34, 51, 0.10);
+  --shadow-lg: 0 12px 36px rgba(28, 34, 51, 0.14);
+}
+
+/* ---- カラー一新（手動ダーク） ---- */
+:root[data-theme="dark"] {
+  --c-bg:          #12151f;
+  --c-surface:     #1a1f2e;
+  --c-surface-2:   #161a27;
+  --c-ink:         #e8ebf5;
+  --c-ink-soft:    #a3aabf;
+  --c-ink-faint:   #6e7488;
+  --c-line:        #2a3045;
+  --c-line-strong: #3a415c;
+  --c-accent:      #7b96ff;
+  --c-accent-press:#5f7ef7;
+  --c-accent-soft: #232b4a;
+  --c-on-accent:   #0e1220;
+  --c-warm:        #ffa94d;
+  --c-warm-soft:   #3d2a14;
+  --c-good:        #69db7c;
+  --c-good-soft:   #15301c;
+  --c-bad:         #ff8787;
+  --c-bad-soft:    #3a1818;
+}
+
+/* ---- 自動ダーク（OS設定追従時）も同じ青系に ---- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    --c-bg:          #12151f;
+    --c-surface:     #1a1f2e;
+    --c-surface-2:   #161a27;
+    --c-ink:         #e8ebf5;
+    --c-ink-soft:    #a3aabf;
+    --c-ink-faint:   #6e7488;
+    --c-line:        #2a3045;
+    --c-line-strong: #3a415c;
+    --c-accent:      #7b96ff;
+    --c-accent-press:#5f7ef7;
+    --c-accent-soft: #232b4a;
+    --c-on-accent:   #0e1220;
+    --c-warm:        #ffa94d;
+    --c-warm-soft:   #3d2a14;
+    --c-good:        #69db7c;
+    --c-good-soft:   #15301c;
+    --c-bad:         #ff8787;
+    --c-bad-soft:    #3a1818;
+  }
+}
+:root[data-theme="dark"] .home-hero { color: #ffffff; }
+
+/* ---- ヒーローをブルーグラデに（全テーマ共通で視認性の高い白文字） ---- */
+.home-hero {
+  background: linear-gradient(135deg, #4263eb 0%, #364fc7 55%, #2b3aa0 100%);
+  color: #ffffff;
+}
+
+/* ============================================================
+   デスクトップ対応：幅の段階拡張＋2カラム化＋フローティングドック
+   ============================================================ */
+@media (min-width: 768px) {
+  :root { --shell-max: 768px; }
+  body { background: color-mix(in srgb, var(--c-bg) 92%, var(--c-accent) 8%); }
+  .app-shell {
+    background: var(--c-bg);
+    box-shadow: var(--shadow-lg);
+  }
+  .app-main { padding-left: var(--space-6); padding-right: var(--space-6); }
+
+  /* ハブ・モード行を2カラムに（縦長の単列を解消） */
+  .hub-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .quick-grid--2 { grid-template-columns: repeat(3, 1fr); }
+
+  /* タブバーをフローティングドックに */
+  .tab-bar {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 14px;
+    width: min(560px, calc(100% - 32px));
+    height: var(--tabbar-h);
+    padding-bottom: 0;
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-lg);
+    background: color-mix(in srgb, var(--c-surface) 94%, transparent);
+    overflow: hidden;
+  }
+  .tab[aria-current="page"]::before { top: auto; bottom: 0; }
+  /* ドックに隠れないよう下に余白 */
+  .app-main { padding-bottom: calc(var(--tabbar-h) + 32px); }
+}
+
+@media (min-width: 1100px) {
+  :root { --shell-max: 1000px; }
+  .dash-stats { gap: 12px; }
+  .dash-chip { padding: 14px 8px; }
+  .dash-chip__value { font-size: 20px; }
+  .home-hero { padding: var(--space-6); }
+  .cta-card--big { padding: 22px 20px; }
+}

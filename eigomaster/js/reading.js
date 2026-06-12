@@ -36,11 +36,16 @@
       b.addEventListener("click", function () {
         var s = samples()[parseInt(b.getAttribute("data-sample"), 10)];
         document.getElementById("read-in").value = s.text;
+        st.note = (window.EigoData && window.EigoData.readingNotes && window.EigoData.readingNotes[s.id]) || null;
+        st.noteTitle = s.title;
       });
     });
     document.getElementById("read-go").addEventListener("click", function () {
       var text = (document.getElementById("read-in").value || "").trim();
       if (!text) { EM.showToast("テキストを入力してください", true); return; }
+      // サンプル本文から編集されていたら解説は外す（内容と解説のずれを防ぐ）
+      var matched = samples().some(function (s) { return s.text === text; });
+      if (!matched) st.note = null;
       st.cues = window.Subtitle.parsePlainText(text);
       st.words = text.split(/\s+/);
       drawReader();
@@ -60,10 +65,34 @@
       return '<button class="chip" type="button" data-wpm="' + w + '" aria-pressed="' + (w === st.wpm) + '">' + w + " wpm</button>";
     }).join("");
 
+    // 解説（サンプル選択時のみ）：全訳・語句・文法ポイント
+    var noteHtml = "";
+    if (st.note) {
+      var n = st.note;
+      var vocabRows = (n.vocab || []).map(function (v) {
+        return '<div class="list-row" style="padding:8px 0">' +
+          '<div class="list-row__main"><div class="list-row__title" style="font-size:15px">' + EM.escapeHtml(v.en) + '</div>' +
+          '<div class="list-row__sub">' + EM.escapeHtml(v.ja) + '</div></div>' +
+          '<button class="audio-btn" type="button" data-say-note="' + EM.escapeHtml(v.en) + '" aria-label="再生">▶</button></div>';
+      }).join("");
+      var grammarRows = (n.grammar || []).map(function (g) {
+        return '<div class="lk-example"><p class="list-row__title" style="font-size:15px">📌 ' + EM.escapeHtml(g.point) + '</p>' +
+          '<p class="lk-breakdown">' + EM.escapeHtml(g.ja) + '</p></div>';
+      }).join("");
+      noteHtml =
+        '<div class="card mt-4"><p class="section-eyebrow">全訳' + (st.noteTitle ? "（" + EM.escapeHtml(st.noteTitle) + "）" : "") + '</p>' +
+          '<p class="setting-row__hint" style="line-height:1.9">' + EM.escapeHtml(n.ja || "") + '</p></div>' +
+        (vocabRows ? '<div class="card mt-4"><p class="section-eyebrow">重要語句</p>' + vocabRows + '</div>' : "") +
+        (grammarRows ? '<div class="card mt-4"><p class="section-eyebrow">文法ポイント</p>' + grammarRows + '</div>' : "");
+    } else {
+      noteHtml = '<p class="setting-row__hint mt-4">※ サンプルを選ぶと、全訳・重要語句・文法ポイントの解説が表示されます。</p>';
+    }
+
     root().innerHTML =
       '<a class="back-link" id="to-setup" href="#/reading">‹ テキストを選び直す</a>' +
       '<div class="notice notice--info"><span class="notice__icon">i</span><span>文をタップで読み上げ、単語をタップで意味を表示します。</span></div>' +
       '<div class="card mt-4"><div class="lyric" id="reader">' + lines + "</div></div>" +
+      noteHtml +
 
       '<div class="card mt-4"><p class="section-eyebrow">速読モード（WPM）</p>' +
         '<div class="chip-group">' + wpmChips + "</div>" +
@@ -74,6 +103,14 @@
         "</div></div>" +
 
       '<div id="dict-panel"></div>';
+
+    // 解説内の語句再生
+    root().querySelectorAll("[data-say-note]").forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        EM.speak(b.getAttribute("data-say-note"));
+      });
+    });
 
     document.getElementById("to-setup").addEventListener("click", function (e) { e.preventDefault(); drawSetup(); });
 
