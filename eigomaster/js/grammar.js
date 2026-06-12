@@ -61,9 +61,26 @@
       '<a class="back-link" id="to-list" href="#/grammar">‹ 文法レッスン一覧</a>' +
       '<p class="section-title">' + EM.escapeHtml(l.title) + "</p>" +
 
-      '<div class="card"><p class="section-eyebrow">解説</p><p style="line-height:var(--lh-base)">' + EM.escapeHtml(l.ja) + "</p></div>" +
+      (function () {
+        // 教科書スタイルの解説：①考え方 ②形 ③ミニ会話 ④つまずきポイント
+        var det = (window.EigoData.grammarDetail || {})[l.id];
+        var h = '<div class="card gx">';
+        h += '<p class="gx__head">① 基本の考え方</p><p class="gx__body">' + EM.escapeHtml(det ? det.core : l.ja) + '</p>';
+        if (det && det.form) h += '<p class="gx__head mt-4">② 形（公式）</p><p class="gx__form">' + EM.escapeHtml(det.form) + '</p>';
+        if (det && det.dialog) {
+          h += '<p class="gx__head mt-4">③ ミニ会話で確認</p>';
+          det.dialog.forEach(function (d) {
+            h += '<div class="gx__line"><button class="audio-btn" type="button" data-say="' + EM.escapeHtml(d.en.replace(/^[AB]:\s*/, "")) + '">▶</button>' +
+                 '<span><strong>' + EM.escapeHtml(d.en) + '</strong><br><small>' + EM.escapeHtml(d.ja) + '</small></span></div>';
+          });
+        }
+        if (det) h += '<p class="gx__head mt-4">④ 日本人がつまずくポイント</p><p class="gx__body">' + EM.escapeHtml(det.pitfall) + '</p>' +
+                      '<p class="gx__head mt-4">⑤ 補足</p><p class="gx__body">' + EM.escapeHtml(l.ja) + '</p>';
+        h += "</div>";
+        return h;
+      })() +
 
-      '<p class="section-title mt-5">例文</p>' +
+      '<p class="section-title mt-5">例文（タップで再生）</p>' +
       '<div class="card">' + examples + "</div>" +
 
       '<p class="section-title mt-5">並べ替え</p>' +

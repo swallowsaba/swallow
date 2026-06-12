@@ -121,6 +121,7 @@
   }
 
   var warnedNoVoice = false;
+  var currentUtterance = null; // 発話中のutteranceを保持（ChromeのGCで無音になるバグ対策）
   var speakToken = 0;          // 多重再生防止トークン（エコー対策）：最新の再生だけを生かす
   var lastSpeakKey = "";       // 連打デバウンス用
   var lastSpeakAt = 0;
@@ -185,6 +186,7 @@
     // ボイス一覧が未確定の間は lang=en-US 指定で即時発話（待つとタップ起点を失い、スマホ初回が無音になるため）
     var myToken = ++speakToken;
     var u = new SpeechSynthesisUtterance(text);
+    currentUtterance = u;   // 参照を保持（ChromeはutteranceがGCされると無音になる既知バグがある）
     if (voice) {
       u.voice = voice;
       u.lang = voice.lang;       // ボイスと言語を一致させる（重要）
@@ -199,10 +201,37 @@
       if (myToken === speakToken && typeof opts.onend === "function") opts.onend();
     };
     u.onerror = function () { stopResumeTimer(); };
-    try { window.speechSynthesis.cancel(); } catch (e) {} // 重複再生（エコー）を必ず止める
-    try { window.speechSynthesis.resume(); } catch (e2) {} // pauseスタックからの復帰（時々鳴らなくなる対策）
-    window.speechSynthesis.speak(u);
-    startResumeTimer();
+
+    function fire() {
+      if (myToken !== speakToken) return;
+      try { window.speechSynthesis.resume(); } catch (e) {} // pauseスタックからの復帰
+      window.speechSynthesis.speak(u);
+      startResumeTimer();
+      // 無音ウォッチドッグ：発話が始まらなければ自動でリカバリーする
+      //（Chromeの「cancel直後のspeakが無視される」バグ、英語ボイス0のPC などをすべて拾う）
+      setTimeout(function () {
+        if (myToken !== speakToken) return;
+        var ss = window.speechSynthesis;
+        if (ss.speaking || ss.pending) return;   // 正常に再生中
+        if (!retried) {
+          retried = true;
+          try { ss.cancel(); } catch (e) {}
+          setTimeout(fire, 80);                  // まず端末でもう1回だけ再試行
+        } else if (allowFallback) {
+          speakOnline(text, opts);               // それでも無音 → オンライン英語音声へ
+        }
+      }, 800);
+    }
+    var retried = false;
+    var ss = window.speechSynthesis;
+    if (ss.speaking || ss.pending) {
+      // Chromeは cancel() の直後に speak() すると無視されることがある → 少し置いてから話す
+      try { ss.cancel(); } catch (e) {}
+      setTimeout(fire, 60);
+    } else {
+      try { ss.cancel(); } catch (e) {}
+      fire();
+    }
   }
 
   /* ---------- オンライン英語音声（端末に英語ボイスが無くても英語で読む）----------
@@ -329,6 +358,29 @@
     if ("speechSynthesis" in window) { try { window.speechSynthesis.cancel(); } catch (e) {} }
     if (currentAudio) { try { currentAudio.pause(); } catch (e2) {} currentAudio = null; }
   };
+
+  // どこからでも使える発音チェック（単語・熟語カードの🎤ボタン用）
+  // 対象テキストを言ってもらい、音声認識との単語一致率をトーストで返す。
+  EM.micCheck = function (text) {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { EM.showToast("このブラウザは音声認識に未対応です（Chrome/Edge/Safariをご利用ください）", true); return; }
+    EM.stopSpeak();
+    var rec = new SR();
+    rec.lang = "en-US"; rec.interimResults = false;
+    EM.showToast("🎤 マイクに向かって言ってみよう…");
+    rec.onresult = function (e) {
+      var said = e.results[0][0].transcript;
+      var n = function (s) { return String(s || "").toLowerCase().replace(/[^a-z' ]/g, " ").replace(/\s+/g, " ").trim(); };
+      var a = n(text).split(" "), b = n(said).split(" ");
+      var hit = 0; a.forEach(function (w) { if (b.indexOf(w) >= 0) hit++; });
+      var rate = Math.round(hit / Math.max(1, a.length) * 100);
+      EM.showToast((rate >= 70 ? "⭕ よく言えています！" : "△ もう一度。") + " 一致率" + rate + "%（認識：" + said + "）", rate < 70);
+    };
+    rec.onerror = function (ev) {
+      EM.showToast(ev.error === "not-allowed" ? "マイクの使用を許可してください" : "聞き取れませんでした。もう一度どうぞ", true);
+    };
+    rec.start();
+  };
   EM.hasTTS = true; // オンライン音声があるため常に利用可能
 
   // サブ画面の戻りリンク（HTML文字列）
@@ -407,10 +459,10 @@
         '</div>' +
 
         // 大きなチャレンジCTA
-        '<a class="cta-card cta-card--big" href="#/learn">' +
+        '<a class="cta-card cta-card--big" href="#/lesson">' +
           '<span class="cta-card__emoji">🎯</span>' +
-          '<div class="cta-card__main"><p class="cta-card__title">今日の学習をはじめる</p>' +
-            '<p class="cta-card__desc">単語 7,700語＋・文法155課・リスニング478問から出題</p></div>' +
+          '<div class="cta-card__main"><p class="cta-card__title">今日のレッスンをはじめる</p>' +
+            '<p class="cta-card__desc">語彙・文法・英作文・聞き取り・発音を1本の流れで（約12問）</p></div>' +
           '<span class="cta-card__arrow">→</span>' +
         '</a>' +
 
@@ -421,7 +473,7 @@
           '<div class="hub-list">' +
             modeRow("⚡", "単語クイック", "SRSが今日の復習を自動で選びます", "コンボ重視", "#/vocab") +
             modeRow("🎧", "リスニング", "書き取り・内容理解（カタカナ補助つき）", "478問", "#/listening") +
-            modeRow("🗣", "シャドーイング", "英語・カタカナ・訳の3段で口慣らし", "発話練習", "#/video") +
+            modeRow("🗣", "動画シャドーイング", "YouTube動画と字幕で口慣らし", "YouTube", "#/video") +
           '</div>' +
         '</div>' +
 
@@ -592,6 +644,10 @@
     var html =
       '<section class="stack-md view-enter">' +
         '<p class="home-hero__eyebrow" style="color:var(--c-ink-soft)">LEARN · まなぶ</p>' +
+        hubSection("おすすめ", "毎日ここから",
+          hubRow("🎯", "今日のレッスン", "語彙→文法→英作文→聞き取り→発音をミックスで反復", "#/lesson", "Duolingo式") +
+          hubRow("◔", "レベル診断", "10問でCEFRレベル判定", "#/diagnosis", "")
+        ) +
         hubSection("語彙", fmtCount(dataCount("words")) + "語",
           hubRow("あ", "単語", "SRSで効率よく暗記", "#/vocab", fmtCount(dataCount("words")) + "語") +
           hubRow("熟", "熟語・句動詞", "イディオム・コロケーション", "#/idioms", fmtCount(dataCount("idioms")) + "件") +
@@ -602,12 +658,10 @@
         ) +
         hubSection("聞く・話す・読む", "",
           hubRow("🎧", "リスニング", "書き取り・内容理解（カタカナ補助つき）", "#/listening", dataCount("listening") + "問") +
-          hubRow("▷", "シャドーイング", "英語・カタカナ・訳の3段表示", "#/video", "") +
+          hubRow("▷", "動画シャドーイング", "YouTubeのURLを貼ると字幕で練習（リスニング/音読）", "#/video", "YouTube") +
           hubRow("読", "リーディング", "全訳・語句・文法解説つき", "#/reading", dataCount("reading") + "本")
         ) +
-        hubSection("力試し", "",
-          hubRow("◔", "レベル診断", "10問でレベル判定", "#/diagnosis", "")
-        ) +
+        
       '</section>';
     return { html: html };
   }

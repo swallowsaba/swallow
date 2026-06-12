@@ -100,7 +100,7 @@
         '<div class="flashcard__word">' + EM.escapeHtml(w.en) + "</div>" +
         (w.ipa ? '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
         '<div class="flashcard__kata">' + EM.escapeHtml(kataOf(w)) + "</div>" +
-        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button></div>' +
+        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button> <button class="audio-btn" id="mic" type="button" aria-label="発音チェック">🎤</button></div>' +
       "</div>";
     var back =
       '<div class="flashcard">' +
@@ -118,6 +118,8 @@
 
     var say = document.getElementById("say");
     if (say) say.addEventListener("click", function () { EM.speak(w.en); });
+    var mic = document.getElementById("mic");
+    if (mic) mic.addEventListener("click", function () { EM.micCheck(w.en); });
     EM.speak(w.en); // 自動で1回読み上げ
 
     var flip = document.getElementById("flip");
@@ -151,7 +153,7 @@
       '<div class="flashcard" style="min-height:150px">' +
         '<div class="flashcard__word">' + EM.escapeHtml(w.en) + "</div>" +
         (w.ipa ? '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
-        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button></div>' +
+        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button> <button class="audio-btn" id="mic" type="button" aria-label="発音チェック">🎤</button></div>' +
       "</div>" +
       '<p class="field__label mt-4">意味として正しいものは？</p>' +
       '<div id="choices">' + choices.map(function (c) {
@@ -182,7 +184,7 @@
         '<div class="flashcard__pos">' + EM.escapeHtml(w.pos) + "</div>" +
         '<div class="flashcard__ja">' + EM.escapeHtml(w.ja) + "</div>" +
         (w.ipa ? '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
-        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button></div>' +
+        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button> <button class="audio-btn" id="mic" type="button" aria-label="発音チェック">🎤</button></div>' +
       "</div>" +
       '<div class="field mt-4"><input class="input" id="type-in" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="英単語を入力" /></div>' +
       '<button class="btn btn--primary btn--block" id="check" type="button">こたえ合わせ</button>' +

@@ -89,7 +89,7 @@
         '<div class="flashcard__pos">' + EM.escapeHtml(x.kind) + "</div>" +
         '<div class="flashcard__word" style="font-size:var(--fs-h1)">' + EM.escapeHtml(x.en) + "</div>" +
         '<div class="flashcard__kata">' + EM.escapeHtml(kata(x.en)) + "</div>" +
-        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button></div>' +
+        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button> <button class="audio-btn" id="mic" type="button" aria-label="発音チェック">🎤</button></div>' +
       "</div>";
     var back =
       '<div class="flashcard">' +
@@ -105,6 +105,8 @@
 
     var say = document.getElementById("say");
     if (say) say.addEventListener("click", function () { EM.speak(x.en); });
+    var mic = document.getElementById("mic");
+    if (mic) mic.addEventListener("click", function () { EM.micCheck(x.en); });
     EM.speak(x.en);
     var flip = document.getElementById("flip");
     if (flip) flip.addEventListener("click", function () { st.flipped = true; drawFlash(); });
@@ -137,7 +139,7 @@
       '<div class="flashcard" style="min-height:140px">' +
         '<div class="flashcard__pos">' + EM.escapeHtml(x.kind) + "</div>" +
         '<div class="flashcard__word" style="font-size:var(--fs-h1)">' + EM.escapeHtml(x.en) + "</div>" +
-        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button></div>' +
+        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button> <button class="audio-btn" id="mic" type="button" aria-label="発音チェック">🎤</button></div>' +
       "</div>" +
       '<p class="field__label mt-4">意味として正しいものは？</p>' +
       '<div id="choices">' + choices.map(function (c) {
@@ -145,6 +147,8 @@
       }).join("") + "</div>";
 
     document.getElementById("say").addEventListener("click", function () { EM.speak(x.en); });
+    var mic2 = document.getElementById("mic");
+    if (mic2) mic2.addEventListener("click", function () { EM.micCheck(x.en); });
     EM.speak(x.en);
 
     root().querySelectorAll(".choice-btn").forEach(function (b) {

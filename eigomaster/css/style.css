@@ -1376,3 +1376,103 @@ button, .btn { touch-action: manipulation; }
   .home-hero { padding: var(--space-6); }
   .cta-card--big { padding: 22px 20px; }
 }
+
+/* ============================================================
+   v8 学習体験の刷新
+   - 統合レッスン（1問1画面・下部固定の判定パネル）
+   - 発音チェックの1画面ステージ / フォニックスのグリッド
+   - 文法の教科書レイアウト / リンキングの理由解説
+   ============================================================ */
+
+/* ---- 統合レッスン：100dvh内に収める3段グリッド ---- */
+.lesson {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: calc(100dvh - var(--header-h) - var(--tabbar-h) - 48px);
+}
+.lesson__top { display: flex; align-items: center; gap: 10px; padding: 4px 0 10px; }
+.lesson__quit {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 2px solid var(--c-line); background: var(--c-surface);
+  color: var(--c-ink-soft); font-size: 16px; font-weight: 700;
+}
+.lesson__bar { flex: 1; height: 12px; border-radius: 999px; background: var(--c-line); overflow: hidden; }
+.lesson__bar i { display: block; height: 100%; border-radius: 999px; background: var(--c-accent); transition: width .3s ease; }
+.lesson__combo { min-width: 44px; text-align: right; font-weight: 800; color: var(--c-warm); }
+.lesson__body { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; min-height: 0; }
+.lesson__q { font-size: 13px; font-weight: 700; color: var(--c-ink-soft); }
+.lesson__prompt { display: flex; flex-direction: column; gap: 6px; }
+.lesson__big { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; }
+.lesson__sentence { font-size: 19px; font-weight: 700; line-height: 1.6; }
+.lesson__blank { color: var(--c-accent); text-decoration-color: var(--c-accent); }
+.lesson__ja { font-size: 13px; color: var(--c-ink-soft); }
+.lesson__choices { display: grid; gap: 10px; margin-top: 6px; }
+.lesson__choice {
+  text-align: left; padding: 14px; font-size: 16px; font-weight: 600;
+  background: var(--c-surface); border: 2px solid var(--c-line); border-bottom-width: 4px;
+  border-radius: var(--radius-md); color: var(--c-ink);
+}
+.lesson__choice:active { transform: translateY(2px); border-bottom-width: 2px; }
+.lesson__choice.is-right { border-color: var(--c-good); background: var(--c-good-soft); }
+.lesson__choice.is-wrong { border-color: var(--c-bad); background: var(--c-bad-soft); }
+.lesson__choice:disabled { opacity: .9; }
+.lesson__build, .lesson__bank {
+  display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start;
+  min-height: 52px; padding: 8px;
+  border-radius: var(--radius-md);
+}
+.lesson__build { border: 2px dashed var(--c-line-strong); background: var(--c-surface-2); }
+.lesson__token {
+  padding: 8px 12px; font-size: 15px; font-weight: 700;
+  background: var(--c-surface); border: 2px solid var(--c-line); border-bottom-width: 4px;
+  border-radius: 10px; color: var(--c-ink);
+}
+.lesson__token--bank { background: var(--c-accent-soft); border-color: color-mix(in srgb, var(--c-accent) 35%, var(--c-line)); }
+.lesson__hint { font-size: 12px; color: var(--c-ink-faint); text-align: center; }
+.lesson__foot { padding: 12px 0 4px; border-top: 1px solid transparent; }
+.lesson__foot--ok { background: var(--c-good-soft); margin: 0 calc(-1 * var(--space-4)); padding: 12px var(--space-4); border-radius: 16px 16px 0 0; }
+.lesson__foot--ng { background: var(--c-bad-soft);  margin: 0 calc(-1 * var(--space-4)); padding: 12px var(--space-4); border-radius: 16px 16px 0 0; }
+.lesson__fb { margin-bottom: 10px; }
+.lesson__fb-head { font-size: 16px; font-weight: 800; }
+.lesson__foot--ok .lesson__fb-head { color: var(--c-good); }
+.lesson__foot--ng .lesson__fb-head { color: var(--c-bad); }
+.lesson__fb-body { font-size: 14px; line-height: 1.7; margin-top: 4px; }
+.btn--danger { background: var(--c-bad); color: #fff; }
+
+/* ---- 発音チェック：1画面ステージ ---- */
+.chip-group--scroll { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.chip-group--scroll .chip { flex: none; }
+.pron-stage__en { font-size: 22px; font-weight: 800; line-height: 1.5; margin-top: 8px; }
+.pron-stage__ja { font-size: 13px; color: var(--c-ink-soft); margin-top: 4px; }
+.pron-stage__tip { font-size: 12px; color: var(--c-ink-soft); background: var(--c-surface-2); border-radius: 10px; padding: 8px 10px; margin-top: 10px; }
+.pron-actions { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; margin-top: 14px; }
+.diff-ok { color: var(--c-good); font-weight: 700; }
+.diff-ng { color: var(--c-bad); font-weight: 700; text-decoration: underline; }
+
+/* ---- フォニックス：音素グリッド ---- */
+.phx-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (min-width: 768px) { .phx-grid { grid-template-columns: repeat(8, 1fr); } }
+.phx-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 4px; border-radius: 12px;
+  background: var(--c-surface); border: 2px solid var(--c-line); border-bottom-width: 4px;
+}
+.phx-cell--on { border-color: var(--c-accent); background: var(--c-accent-soft); }
+.phx-cell__ipa { font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--c-accent); }
+.phx-cell__ex { font-size: 10px; color: var(--c-ink-soft); }
+.phx-detail { position: sticky; top: calc(var(--header-h) + 8px); z-index: 5; }
+
+/* ---- 文法：教科書レイアウト ---- */
+.gx__head { font-size: 13px; font-weight: 800; color: var(--c-accent); }
+.gx__body { font-size: 14px; line-height: 1.9; margin-top: 4px; }
+.gx__form {
+  font-size: 15px; font-weight: 700; line-height: 1.7; margin-top: 4px;
+  background: var(--c-accent-soft); border-left: 4px solid var(--c-accent);
+  padding: 10px 12px; border-radius: 0 10px 10px 0;
+}
+.gx__line { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px dashed var(--c-line); }
+.gx__line:last-of-type { border-bottom: none; }
+.gx__line small { color: var(--c-ink-soft); }
+
+/* ---- リンキング：理由解説 ---- */
+.lk-why { color: var(--c-ink-soft); line-height: 1.7; display: block; margin-top: 2px; }

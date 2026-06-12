@@ -136,21 +136,35 @@
     var input = document.getElementById("lk-in");
     var out = document.getElementById("lk-out");
 
+    // 各変化が「なぜ」起きるのかの理由解説（解析・クイズの両方で表示）
+    var REASONS = {
+      link: "英語は語末の子音と次の語頭の母音をひとかたまりに発音するため、単語の切れ目で音がつながります（check it → チェッキッ）。",
+      flap: "アメリカ英語では母音に挟まれた t/d を舌先で弾くため、日本語のラ行に近い音になります（water → ワラー）。",
+      darkl: "語末や子音の前の L は舌先を歯ぐきに付けず舌の奥を持ち上げるため、「ウ」に近いこもった音になります（feel → フィーゥ）。",
+      drop: "破裂音（p/t/k/b/d/g）が連続すると前の音は口の形だけ作って破裂させないため、音が消えたように聞こえます（good bye → グッ(ド)バイ）。",
+      assim: "隣り合う音が言いやすい位置に引っ張られて別の音に変わります（did you → ディジュ：d+y→ヂ）。",
+      weak: "前置詞・冠詞・代名詞などの機能語は内容語より重要度が低いため、あいまい母音で弱く短く発音されます（for → ファ）。",
+      contract: "話し言葉では高頻度の組み合わせが縮まって1語のように発音されます（going to → gonna）。",
+      aspiration: "語頭の p/t/k は強い息を伴って破裂します。息が弱いと b/d/g に聞こえてしまいます（pin と bin の違い）。"
+    };
+
     function run() {
       var text = (input.value || "").trim();
       if (!text) { out.innerHTML = ""; return; }
       var res = analyzeLinking(text);
 
-      // 検出された音声変化の解説
+      // 検出された音声変化の解説（名前＋なにが起きるか＋なぜ起きるか）
       var rules = (window.EigoData && window.EigoData.linkingRules) || [];
       var detected = (res.rules || []).map(function (key) {
         var r = rules.find(function (x) { return x.id === key; });
         if (!r) return "";
         return '<div class="lk-detected"><span class="lk lk--' + key + '">' + EM.escapeHtml(r.name) + "</span>" +
-          '<span class="lk-detected__txt">' + EM.escapeHtml(r.short || r.ja) + "</span></div>";
+          '<span class="lk-detected__txt">' + EM.escapeHtml(r.short || r.ja) +
+          (REASONS[key] ? '<br><small class="lk-why">なぜ？ ' + EM.escapeHtml(REASONS[key]) + '</small>' : "") +
+          "</span></div>";
       }).join("");
       var detectedHtml = detected
-        ? '<div class="mt-4"><p class="setting-row__hint" style="margin-bottom:6px">この文で起きている変化：</p>' + detected + "</div>"
+        ? '<div class="mt-4"><p class="setting-row__hint" style="margin-bottom:6px">この文の<strong>色つき箇所</strong>で起きている変化と理由：</p>' + detected + "</div>"
         : '<p class="setting-row__hint mt-4">この文では大きな音声変化は検出されませんでした。</p>';
 
       out.innerHTML =
