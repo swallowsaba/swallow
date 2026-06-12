@@ -1081,3 +1081,73 @@ button {
 
 /* ---- ダークでのヒーロー文字コントラスト確保 ---- */
 :root[data-theme="dark"] .home-hero { color: #06201d; }
+
+/* ============================================================
+   Duolingo風リフレッシュ v4（完全刷新・第2段）
+   - ライトテーマのコントラストも強化（文字濃く・アクセント鮮やか）
+   - ヘッダーを薄く、全体の余白をさらに圧縮
+   - カテゴリカードをDuolingo風のカラフルなタイルに（nth-childで色替え）
+   - ボトムナビ・ボタンのタップ領域を拡大
+   ============================================================ */
+
+/* ---- ライトテーマのコントラスト強化 ---- */
+:root {
+  --c-ink:       #11201b;     /* 文字をさらに濃く */
+  --c-ink-soft:  #46554f;
+  --c-accent:    #00a884;     /* 鮮やかな緑ティール（Duolingo系の彩度） */
+  --c-accent-press:#008f70;
+  --c-accent-soft:#d3f3ea;
+}
+
+/* ---- ヘッダーを薄く（コンテンツ優先） ---- */
+:root { --header-h: 48px; }
+.app-header__title { font-size: 19px; }
+.app-header__mark  { font-size: 15px; }
+
+/* ---- 余白をさらに圧縮 ---- */
+.app-main { padding: var(--space-3) var(--space-3) calc(72px + var(--safe-bottom) + var(--space-4)); }
+.home-hero { padding: var(--space-4); border-radius: var(--radius-lg); }
+.home-hero__greeting { font-size: 23px; margin-top: 4px; }
+.home-hero__sub { font-size: 12px; }
+.card { padding: var(--space-3) var(--space-4); }
+.section-title { margin-bottom: var(--space-2); }
+.goal { padding: var(--space-2) 0; }
+.goal__ring { --ring-size: 72px; }
+
+/* ---- Duolingo風カラフルタイル（カテゴリごとに色を回す） ---- */
+.quick-grid .quick-card:nth-child(4n+1) .quick-card__icon { background:#d3f3ea; color:#00a884; }
+.quick-grid .quick-card:nth-child(4n+2) .quick-card__icon { background:#e3ecff; color:#3b6ef5; }
+.quick-grid .quick-card:nth-child(4n+3) .quick-card__icon { background:#fdeed6; color:#e08700; }
+.quick-grid .quick-card:nth-child(4n+4) .quick-card__icon { background:#fde3ef; color:#d6427e; }
+:root[data-theme="dark"] .quick-grid .quick-card:nth-child(4n+1) .quick-card__icon { background:#0f3b39; color:#25d6b0; }
+:root[data-theme="dark"] .quick-grid .quick-card:nth-child(4n+2) .quick-card__icon { background:#1c2c4e; color:#7ba3ff; }
+:root[data-theme="dark"] .quick-grid .quick-card:nth-child(4n+3) .quick-card__icon { background:#3d2f14; color:#ffc94d; }
+:root[data-theme="dark"] .quick-grid .quick-card:nth-child(4n+4) .quick-card__icon { background:#3d1c2c; color:#ff8fc0; }
+
+/* ---- タイルの押し心地（3D沈み込み）を全カードに ---- */
+.quick-card { border-width: 2px; border-bottom-width: 5px; }
+.quick-card:active { transform: translateY(3px); border-bottom-width: 2px; }
+.quick-card__title { font-size: 16px; font-weight: 800; }
+.quick-card__desc  { font-size: 12px; }
+
+/* ---- ボトムナビ：タップ領域とアクティブ表示をさらに強化 ---- */
+.tab { min-height: 60px; border-radius: 16px; }
+.tab__icon { font-size: 26px; }
+.tab__label { font-size: 12.5px; letter-spacing: 0.02em; }
+.tab[aria-current="page"] {
+  color: var(--c-accent);
+  background: var(--c-accent-soft);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c-accent) 35%, transparent);
+}
+
+/* ---- 主要ボタン類のタップ領域拡大 ---- */
+.pill-tabs .pill, .pill { min-height: 40px; padding: 8px 14px; font-weight: 700; }
+button, .btn { touch-action: manipulation; }
+
+/* ---- 入力やリスト行の密度をDuolingo寄りに ---- */
+.list-row, .setting-row { padding-top: 10px; padding-bottom: 10px; }
+
+/* v4追補：デイリーゴールカード内の空きを圧縮 */
+#study-graph { height: 72px !important; }
+.graph-wrap { margin-top: 4px; }
+.card .section-eyebrow { margin-bottom: 4px; }

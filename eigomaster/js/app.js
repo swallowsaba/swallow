@@ -901,8 +901,15 @@
     // フォーカスでブラウザが画面途中までスクロールするのを防ぐ（preventScroll）
     try { viewEl.focus({ preventScroll: true }); } catch (e3) { /* 古い実装は無視 */ }
     // 念のためもう一度先頭へ（描画後のレイアウト確定後）
-    window.scrollTo(0, 0);
-    if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+    function toTop() {
+      window.scrollTo(0, 0);
+      if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+      viewEl.scrollTop = 0;
+    }
+    toTop();
+    // canvas描画や画像読み込みでレイアウトが後から動いても先頭を維持
+    if (window.requestAnimationFrame) requestAnimationFrame(toTop);
+    setTimeout(toTop, 60);
   }
 
   /* ---------- Service Worker ---------- */

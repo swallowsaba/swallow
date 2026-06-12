@@ -167,3 +167,44 @@ window.EigoData.linkingRules = [
     if(add[r.id]) r.examples=r.examples.concat(add[r.id]);
   });
 })();
+
+/* ---- 増量2：各ルールに例を追加 ---- */
+(function(){
+  var add={
+    link:[
+      {text:"an apple", sound:"アナポォ", breakdown:"an の n が apple の a にくっつき『ア-ナポォ』。語末ダークLも併発。"},
+      {text:"check it out", sound:"チェッキラウト", breakdown:"check の k が it に連結『キ』、it の t がフラップ化して out へ『ラウト』。"}
+    ],
+    flap:[
+      {text:"a lot of", sound:"アラロブ", breakdown:"lot の t が of の母音とつながりフラップ化『ロ』、of は弱形『ブ』→『ア-ラ-ロブ』。"},
+      {text:"meeting", sound:"ミーリン", breakdown:"mee-t-ing の t が母音間でフラップ化『リ』→『ミーリン』。"}
+    ],
+    darkl:[
+      {text:"people", sound:"ピーポォ", breakdown:"peo-p-le 語末ダークL。『プル』でなく『ポォ』→『ピーポォ』。"},
+      {text:"old", sound:"オウォド", breakdown:"o-l-d の l は子音 d の前でダークL→『オウォド』。"}
+    ],
+    drop:[
+      {text:"next day", sound:"ネクスデイ", breakdown:"next の t は次が day の d（子音）で脱落→『ネクス-デイ』。"},
+      {text:"just because", sound:"ジャスビコーズ", breakdown:"just の t は次が b（子音）で脱落→『ジャス-ビコーズ』。"}
+    ],
+    assim:[
+      {text:"would you", sound:"ウッヂュ", breakdown:"would の d ＋ you の y が /dʒ/ に同化→『ウッ-ヂュ』。"},
+      {text:"meet you", sound:"ミーチュ", breakdown:"meet の t ＋ you の y が /tʃ/ に同化→『ミー-チュ』。"}
+    ],
+    weak:[
+      {text:"cup of tea", sound:"カパヴティー", breakdown:"of が弱形 /əv/ で cup と連結→『カ-パヴ』。"},
+      {text:"for a while", sound:"フォラワイォ", breakdown:"for /fər/ と a /ə/ が弱く連結→『フォラ-ワイォ』。"}
+    ],
+    contract:[
+      {text:"kind of", sound:"カインダ", breakdown:"kind of → kinda。of が弱まり『カイン-ダ』。"},
+      {text:"want to", sound:"ワナ", breakdown:"want to → wanna。nt の t と to が融合→『ワナ』。"}
+    ],
+    aspiration:[
+      {text:"stop", sound:"スタップ", breakdown:"s の直後の t は帯気が消え『タ』。語頭の t（top）なら強い息を伴う。"},
+      {text:"school", sound:"スクーォ", breakdown:"s の直後の k は帯気なし→『スクー』、語末ダークLで『ォ』。"}
+    ]
+  };
+  (window.EigoData.linkingRules||[]).forEach(function(r){
+    if(add[r.id]) r.examples=r.examples.concat(add[r.id]);
+  });
+})();
