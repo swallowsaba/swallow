@@ -243,11 +243,17 @@
   //  1) StreamElements（Amazon Polly：声を選べる・自然）
   //  2) Google 翻訳の読み上げ（reliableなフォールバック）
   var TTS_PROVIDERS = [
-    function (text, voice) {
-      return "https://api.streamelements.com/kappa/v2/speech?voice=" + encodeURIComponent(voice) + "&text=" + encodeURIComponent(text);
+    // 1) Google翻訳API系（CORS/Referer制限がもっとも緩く、PCでも通りやすい）
+    function (text /*, voice*/) {
+      return "https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=en&q=" + encodeURIComponent(text);
     },
+    // 2) Google翻訳（旧エンドポイント）
     function (text /*, voice*/) {
       return "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=" + encodeURIComponent(text);
+    },
+    // 3) StreamElements（Amazon Polly：通れば声を選べる）
+    function (text, voice) {
+      return "https://api.streamelements.com/kappa/v2/speech?voice=" + encodeURIComponent(voice) + "&text=" + encodeURIComponent(text);
     }
   ];
   // 選択可能なオンライン英語ボイス（Amazon Polly）
@@ -280,12 +286,45 @@
   }
   var warnedOnline = false;
   function onlineFailover(text, opts) {
-    if (!warnedOnline) {
+    if (!resolveVoice()) {
+      // オンライン全滅＋端末にも英語ボイス無し → 無言にせず必ず案内する
+      EM.showToast("オンライン音声に接続できず、端末にも英語の声が見つかりません。設定→音声の「🔍診断」をお試しください", true);
+    } else if (!warnedOnline) {
       warnedOnline = true;
       EM.showToast("オンライン音声に接続できません。端末の声で読み上げます", true);
     }
     doSpeakDevice(text, opts);
   }
+
+  // 診断用：経路（auto/device/online）を指定して読み上げる（設定→音声診断から使用）
+  EM.speakWith = function (mode, text) {
+    unlockAudio();
+    EM.stopSpeak();
+    if (mode === "device") doSpeakDevice(text, {});
+    else if (mode === "online") speakOnline(text, {});
+    else doSpeak(text, {});
+  };
+  // 診断用：端末ボイスの状況を返す
+  EM.voiceInfo = function () {
+    var vs = ("speechSynthesis" in window) ? (window.speechSynthesis.getVoices() || []) : [];
+    var en = vs.filter(function (v) { return /^en/i.test(v.lang); });
+    return { supported: "speechSynthesis" in window, total: vs.length, en: en.length,
+             names: en.slice(0, 3).map(function (v) { return v.name; }) };
+  };
+  // 診断用：オンライン提供元の到達テスト（idx番目に "Hello" をロードして可否を返す）
+  EM.ttsProbe = function (idx, cb) {
+    try {
+      var url = TTS_PROVIDERS[idx]("Hello", onlineVoiceId());
+      var a = new Audio(url);
+      var done = false;
+      var fin = function (ok) { if (done) return; done = true; try { a.src = ""; } catch (e) {} cb(ok); };
+      a.oncanplaythrough = function () { fin(true); };
+      a.onerror = function () { fin(false); };
+      setTimeout(function () { fin(false); }, 5000);
+      a.load();
+    } catch (e) { cb(false); }
+  };
+  EM.ttsProviderCount = function () { return TTS_PROVIDERS.length; };
 
   // オンライン音声で読み上げ（CORS不要：Audio要素に直接URLを渡す。提供元を多段フォールバック）
   function speakOnline(text, opts) {
@@ -733,6 +772,16 @@
             '<p class="setting-row__label mt-5">端末の声（端末モード時）</p>' +
             '<select class="select mt-4" id="voice-select"><option value="">自動（最適な英語の声）</option></select>' +
             '<button class="btn btn--primary btn--block mt-4" id="voice-test" type="button">▶ テスト再生（Could you check it out?）</button>' +
+            '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr 1fr">' +
+              '<button class="btn btn--ghost" id="vt-device" type="button">端末で再生</button>' +
+              '<button class="btn btn--ghost" id="vt-online" type="button">オンラインで再生</button>' +
+              '<button class="btn btn--ghost" id="vt-diag" type="button">🔍 診断</button>' +
+            '</div>' +
+            '<div id="vt-report" class="mt-4"></div>' +
+            '<details class="mt-4"><summary class="setting-row__hint" style="cursor:pointer">英語の声を端末に追加する方法（鳴らないときはまずこちら）</summary>' +
+              '<p class="setting-row__hint mt-4"><strong>Windows：</strong>設定 → 時刻と言語 → 音声 → 「音声の追加」で English (United States) を追加 → ブラウザを再起動。<br>' +
+              '<strong>Mac：</strong>システム設定 → アクセシビリティ → 読み上げコンテンツ → システムの声 → 「管理」で英語の声を追加。<br>' +
+              '<strong>共通：</strong>OS・タブの音量とミュート、他アプリの音が鳴るかもあわせてご確認ください。</p></details>' +
             '<p class="setting-row__hint mt-4" id="voice-hint"></p>' +
           '</div>' +
         '</div>' +
@@ -1004,6 +1053,27 @@
       EM.speak("Could you check it out?");
     });
     bindClick("voice-test", function () { EM.speak("Could you check it out? Let's get started."); });
+    bindClick("vt-device", function () { EM.speakWith("device", "This is the device voice test."); });
+    bindClick("vt-online", function () { EM.speakWith("online", "This is the online voice test."); });
+    bindClick("vt-diag", function () {
+      var box = document.getElementById("vt-report");
+      var vi = EM.voiceInfo();
+      var rows = [];
+      rows.push("端末の音声合成：" + (vi.supported ? "対応" : "非対応") + "／ボイス " + vi.total + " 個（英語 " + vi.en + " 個" + (vi.names.length ? "：" + vi.names.join(", ") : "") + "）");
+      box.innerHTML = '<div class="notice notice--info"><span class="notice__icon">i</span><span id="vt-lines">' + EM.escapeHtml(rows[0]) + '<br>オンライン音声の接続を確認中…</span></div>';
+      var n = EM.ttsProviderCount(); var done = 0; var oks = [];
+      var names = ["Google A", "Google B", "Polly"];
+      function fin() {
+        var el = document.getElementById("vt-lines"); if (!el) return;
+        var line2 = "オンライン音声：" + oks.map(function (o, i) { return names[i] + (o ? " ✅" : " ❌"); }).join(" ／ ");
+        var anyOnline = oks.some(function (o) { return o; });
+        var advice = vi.en > 0 ? "→ 端末の英語ボイスで再生できます（自動でこれを使います）。鳴らない場合はOS音量・ミュートをご確認ください。"
+          : anyOnline ? "→ 端末に英語ボイスが無いため、オンライン音声（✅のもの）を自動で使います。"
+          : "→ 端末に英語ボイスが無く、オンラインにも接続できません。上の『英語の声を端末に追加する方法』をお試しください。";
+        el.innerHTML = EM.escapeHtml(rows[0]) + "<br>" + EM.escapeHtml(line2) + "<br>" + EM.escapeHtml(advice);
+      }
+      for (var i = 0; i < n; i++) (function (idx) { EM.ttsProbe(idx, function (ok) { oks[idx] = ok; done++; if (done === n) fin(); }); })(i);
+    });
   }
 
   /* ---------- テーマ適用 ---------- */
