@@ -80,7 +80,12 @@
     var tries = 0;
     var poll = setInterval(function () {
       loadVoices(); tries++;
-      if (voicesReady || tries > 20) clearInterval(poll);
+      if (voicesReady || tries > 20) {
+        clearInterval(poll);
+        // ポーリングが尽きたら「この端末はボイス0」と確定させる
+        //（確定しないと英語ボイス無し端末でカタカナ近似への切替が永遠に行われない）
+        if (!voicesReady) voicesReady = true;
+      }
     }, 250);
   }
 
@@ -176,10 +181,34 @@
     // 表記(IPA/カタカナ)と全く違う音になるため、誤読を避けて案内のみ表示する。
     var looksEnglish = /[A-Za-z]/.test(String(text));
     if (!voice && looksEnglish && voicesReady) {
-      // ボイス一覧が確定していて英語が無い場合のみ、誤読を避けて中断（autoではこの前にオンラインへ行く）
+      // 英語ボイスが無い端末：日本語ボイスがあれば「カタカナ近似」で必ず読み上げる
+      //（このアプリのカタカナ変換はリンキング込みの聞こえ方なので、近い音になる）
+      var jaVoice = null;
+      try {
+        (window.speechSynthesis.getVoices() || []).forEach(function (v) {
+          if (!jaVoice && /^ja/i.test(v.lang)) jaVoice = v;
+        });
+      } catch (e0) {}
+      var kata = (window.Katakana && window.Katakana.toKatakana) ? window.Katakana.toKatakana(String(text)) : "";
+      if (kata) {
+        if (!warnedNoVoice) {
+          warnedNoVoice = true;
+          EM.showToast("この端末に英語の声が無いため、カタカナ近似音声で再生します。より自然な音は 設定→音声 の「英語の声を追加する方法」へ");
+        }
+        var mk = ++speakToken;
+        var ku = new SpeechSynthesisUtterance(kata);
+        currentUtterance = ku;
+        if (jaVoice) { ku.voice = jaVoice; ku.lang = jaVoice.lang; } else { ku.lang = "ja-JP"; }
+        ku.rate = Math.min(1.3, (typeof opts.rate === "number" ? opts.rate : 1) + 0.15); // カタカナは少し速めが英語らしい
+        ku.pitch = 1.0; ku.volume = 1.0;
+        ku.onend = function () { if (mk === speakToken && typeof opts.onend === "function") opts.onend(); };
+        try { window.speechSynthesis.cancel(); } catch (e1) {}
+        setTimeout(function () { if (mk === speakToken) { try { window.speechSynthesis.resume(); } catch (e2) {} window.speechSynthesis.speak(ku); } }, 60);
+        return;
+      }
       if (!warnedNoVoice) {
         warnedNoVoice = true;
-        EM.showToast("この端末に英語の音声がありません。設定→音声で『オンライン』をお選びください", true);
+        EM.showToast("この端末に英語の音声がありません。設定→音声の「🔍診断」をお試しください", true);
       }
       return;
     }
@@ -288,7 +317,7 @@
   function onlineFailover(text, opts) {
     if (!resolveVoice()) {
       // オンライン全滅＋端末にも英語ボイス無し → 無言にせず必ず案内する
-      EM.showToast("オンライン音声に接続できず、端末にも英語の声が見つかりません。設定→音声の「🔍診断」をお試しください", true);
+      EM.showToast("オンライン音声に接続できないため、カタカナ近似音声で再生します（設定→音声に改善方法）");
     } else if (!warnedOnline) {
       warnedOnline = true;
       EM.showToast("オンライン音声に接続できません。端末の声で読み上げます", true);
@@ -684,7 +713,7 @@
       '<section class="stack-md view-enter">' +
         '<p class="home-hero__eyebrow" style="color:var(--c-ink-soft)">LEARN · まなぶ</p>' +
         hubSection("おすすめ", "毎日ここから",
-          hubRow("🎯", "今日のレッスン", "語彙→文法→英作文→聞き取り→発音をミックスで反復", "#/lesson", "Duolingo式") +
+          hubRow("🎯", "今日のレッスン", "語彙→文法→英作文→聞き取り→発音をミックスで反復", "#/lesson", "ミックス反復") +
           hubRow("◔", "レベル診断", "10問でCEFRレベル判定", "#/diagnosis", "")
         ) +
         hubSection("語彙", fmtCount(dataCount("words")) + "語",

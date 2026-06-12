@@ -9,14 +9,13 @@
 
   var LEVELS = ["A1", "A2", "B1", "B2", "C1"];
   var MODES = [
-    { id: "flash", label: "フラッシュ" },
-    { id: "quiz", label: "4択" },
+    { id: "quiz", label: "4択クイズ" },
     { id: "type", label: "タイピング" }
   ];
   var SESSION_SIZE = 10;            // 1セッションの語数
   var MIN_PER_WORD = 0.4;          // 学習時間の概算（分/語）
 
-  var st = { level: "A1", mode: "flash", session: [], idx: 0, flipped: false,
+  var st = { level: "A1", mode: "quiz", session: [], idx: 0, flipped: false,
              learnedNew: 0, answered: false };
 
   function wordsOfLevel(level) {
@@ -83,7 +82,6 @@
   /* ---------- 各モードの描画 ---------- */
   function drawCard() {
     if (st.idx >= st.session.length) return drawSummary();
-    if (st.mode === "flash") return drawFlash();
     if (st.mode === "quiz") return drawQuiz();
     return drawType();
   }
@@ -91,54 +89,6 @@
   // フラッシュカード
   function kataOf(w) {
     return w.kata || (window.Katakana ? window.Katakana.toKatakana(w.en) : "");
-  }
-
-  function drawFlash() {
-    var w = st.session[st.idx];
-    var front =
-      '<div class="flashcard">' +
-        '<div class="flashcard__word">' + EM.escapeHtml(w.en) + "</div>" +
-        (w.ipa ? '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
-        '<div class="flashcard__kata">' + EM.escapeHtml(kataOf(w)) + "</div>" +
-        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button> <button class="audio-btn" id="mic" type="button" aria-label="発音チェック">🎤</button></div>' +
-      "</div>";
-    var back =
-      '<div class="flashcard">' +
-        (w.pos ? '<div class="flashcard__pos">' + EM.escapeHtml(w.pos) + "</div>" : "") +
-        '<div class="flashcard__ja">' + EM.escapeHtml(w.ja) + "</div>" +
-        (w.ex ? '<div class="flashcard__ex"><em>' + EM.escapeHtml(w.en) + "</em> — " + EM.escapeHtml(w.ex) + "</div>" : "") +
-        (w.exja ? '<div class="flashcard__ex">' + EM.escapeHtml(w.exja) + "</div>" : "") +
-      "</div>";
-
-    root().innerHTML = progressHtml() +
-      (st.flipped ? back : front) +
-      (st.flipped
-        ? gradeRowHtml()
-        : '<button class="btn btn--primary btn--block mt-4" id="flip" type="button">意味を見る</button>');
-
-    var say = document.getElementById("say");
-    if (say) say.addEventListener("click", function () { EM.speak(w.en); });
-    var mic = document.getElementById("mic");
-    if (mic) mic.addEventListener("click", function () { EM.micCheck(w.en); });
-    EM.speak(w.en); // 自動で1回読み上げ
-
-    var flip = document.getElementById("flip");
-    if (flip) flip.addEventListener("click", function () { st.flipped = true; drawFlash(); });
-    bindGradeRow(w);
-  }
-
-  function gradeRowHtml() {
-    return '<div class="grade-row">' +
-      '<button class="grade-btn" data-g="again" type="button">もう一度<small>すぐ再出題</small></button>' +
-      '<button class="grade-btn" data-g="hard" type="button">難しい<small>短め</small></button>' +
-      '<button class="grade-btn" data-g="good" type="button">できた<small>標準</small></button>' +
-      '<button class="grade-btn" data-g="easy" type="button">余裕<small>長め</small></button>' +
-      "</div>";
-  }
-  function bindGradeRow(w) {
-    root().querySelectorAll(".grade-btn").forEach(function (b) {
-      b.addEventListener("click", function () { grade(w, b.getAttribute("data-g")); });
-    });
   }
 
   // 4択（英単語→意味）

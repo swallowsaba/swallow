@@ -77,54 +77,7 @@
 
   function drawCard() {
     if (st.idx >= st.session.length) return drawSummary();
-    if (st.mode === "flash") return drawFlash();
     return drawQuiz();
-  }
-
-  /* ---------- フラッシュカード ---------- */
-  function drawFlash() {
-    var x = st.session[st.idx];
-    var front =
-      '<div class="flashcard">' +
-        '<div class="flashcard__pos">' + EM.escapeHtml(x.kind) + "</div>" +
-        '<div class="flashcard__word" style="font-size:var(--fs-h1)">' + EM.escapeHtml(x.en) + "</div>" +
-        '<div class="flashcard__kata">' + EM.escapeHtml(kata(x.en)) + "</div>" +
-        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button> <button class="audio-btn" id="mic" type="button" aria-label="発音チェック">🎤</button></div>' +
-      "</div>";
-    var back =
-      '<div class="flashcard">' +
-        '<div class="flashcard__ja">' + EM.escapeHtml(x.ja) + "</div>" +
-        '<div class="flashcard__ex"><em>' + EM.escapeHtml(x.en) + "</em></div>" +
-        '<div class="flashcard__ex">' + EM.escapeHtml(x.ex) + "</div>" +
-        '<div class="flashcard__ex">' + EM.escapeHtml(x.exja) + "</div>" +
-      "</div>";
-
-    root().innerHTML = progressHtml() + (st.flipped ? back : front) +
-      (st.flipped ? gradeRowHtml()
-                  : '<button class="btn btn--primary btn--block mt-4" id="flip" type="button">意味を見る</button>');
-
-    var say = document.getElementById("say");
-    if (say) say.addEventListener("click", function () { EM.speak(x.en); });
-    var mic = document.getElementById("mic");
-    if (mic) mic.addEventListener("click", function () { EM.micCheck(x.en); });
-    EM.speak(x.en);
-    var flip = document.getElementById("flip");
-    if (flip) flip.addEventListener("click", function () { st.flipped = true; drawFlash(); });
-    bindGrade(x);
-  }
-
-  function gradeRowHtml() {
-    return '<div class="grade-row">' +
-      '<button class="grade-btn" data-g="again" type="button">もう一度<small>すぐ再出題</small></button>' +
-      '<button class="grade-btn" data-g="hard" type="button">難しい<small>短め</small></button>' +
-      '<button class="grade-btn" data-g="good" type="button">できた<small>標準</small></button>' +
-      '<button class="grade-btn" data-g="easy" type="button">余裕<small>長め</small></button>' +
-      "</div>";
-  }
-  function bindGrade(x) {
-    root().querySelectorAll(".grade-btn").forEach(function (b) {
-      b.addEventListener("click", function () { grade(x, b.getAttribute("data-g")); });
-    });
   }
 
   /* ---------- 4択（熟語→意味） ---------- */

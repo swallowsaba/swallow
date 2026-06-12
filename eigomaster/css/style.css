@@ -968,7 +968,7 @@ button {
 .quick-grid--2 { grid-template-columns: 1fr 1fr; }
 
 /* ============================================================
-   Duolingo風リフレッシュ（v3）
+   学習アプリ風リフレッシュ（v3）
    - コントラスト向上（特にダーク）
    - ボトムナビを大きく押しやすく・現在地を明確に
    - カードはチャンキー（丸み＋下に厚みの3D影）
@@ -1034,7 +1034,7 @@ button {
 }
 .tab[aria-current="page"]::before { display: none; } /* 上の細線は廃止（塗りで示す） */
 
-/* ---- チャンキーなカード（Duolingo風の下厚み3D） ---- */
+/* ---- チャンキーなカード（学習アプリ風の下厚み3D） ---- */
 .quick-card {
   border: 2px solid var(--c-line);
   border-bottom-width: 4px;
@@ -1083,10 +1083,10 @@ button {
 :root[data-theme="dark"] .home-hero { color: #06201d; }
 
 /* ============================================================
-   Duolingo風リフレッシュ v4（完全刷新・第2段）
+   学習アプリ風リフレッシュ v4（完全刷新・第2段）
    - ライトテーマのコントラストも強化（文字濃く・アクセント鮮やか）
    - ヘッダーを薄く、全体の余白をさらに圧縮
-   - カテゴリカードをDuolingo風のカラフルなタイルに（nth-childで色替え）
+   - カテゴリカードを学習アプリ風のカラフルなタイルに（nth-childで色替え）
    - ボトムナビ・ボタンのタップ領域を拡大
    ============================================================ */
 
@@ -1094,7 +1094,7 @@ button {
 :root {
   --c-ink:       #11201b;     /* 文字をさらに濃く */
   --c-ink-soft:  #46554f;
-  --c-accent:    #00a884;     /* 鮮やかな緑ティール（Duolingo系の彩度） */
+  --c-accent:    #00a884;     /* 鮮やかな緑ティール（学習アプリ風彩度） */
   --c-accent-press:#008f70;
   --c-accent-soft:#d3f3ea;
 }
@@ -1114,7 +1114,7 @@ button {
 .goal { padding: var(--space-2) 0; }
 .goal__ring { --ring-size: 72px; }
 
-/* ---- Duolingo風カラフルタイル（カテゴリごとに色を回す） ---- */
+/* ---- 学習アプリ風カラフルタイル（カテゴリごとに色を回す） ---- */
 .quick-grid .quick-card:nth-child(4n+1) .quick-card__icon { background:#d3f3ea; color:#00a884; }
 .quick-grid .quick-card:nth-child(4n+2) .quick-card__icon { background:#e3ecff; color:#3b6ef5; }
 .quick-grid .quick-card:nth-child(4n+3) .quick-card__icon { background:#fdeed6; color:#e08700; }
@@ -1144,7 +1144,7 @@ button {
 .pill-tabs .pill, .pill { min-height: 40px; padding: 8px 14px; font-weight: 700; }
 button, .btn { touch-action: manipulation; }
 
-/* ---- 入力やリスト行の密度をDuolingo寄りに ---- */
+/* ---- 入力やリスト行の密度を学習アプリ風に ---- */
 .list-row, .setting-row { padding-top: 10px; padding-bottom: 10px; }
 
 /* v4追補：デイリーゴールカード内の空きを圧縮 */
