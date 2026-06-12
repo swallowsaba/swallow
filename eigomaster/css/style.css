@@ -1151,3 +1151,95 @@ button, .btn { touch-action: manipulation; }
 #study-graph { height: 72px !important; }
 .graph-wrap { margin-top: 4px; }
 .card .section-eyebrow { margin-bottom: 4px; }
+
+/* ============================================================
+   v5 リフレッシュ：日程表スタイルのハブ＋学習ダッシュボード風
+   参考：行リスト（時間・対戦・タグ）／統計チップ・件数バッジ
+   ============================================================ */
+
+/* ---- セクション見出し（左：太タイトル／右：件数チップ） ---- */
+.hub-section { margin-top: var(--space-5); }
+.hub-section__head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 0 2px 8px;
+  border-bottom: 2px solid var(--c-line);
+  margin-bottom: 10px;
+}
+.hub-section__title { font-size: 17px; font-weight: 800; letter-spacing: 0.01em; }
+.hub-section__count {
+  font-size: 12px; font-weight: 700; color: var(--c-accent);
+  background: var(--c-accent-soft);
+  padding: 2px 10px; border-radius: 999px;
+}
+
+/* ---- 行リスト（日程表の試合行のように1行＝1機能） ---- */
+.hub-list { display: flex; flex-direction: column; gap: 10px; }
+.hub-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--c-surface);
+  border: 2px solid var(--c-line);
+  border-bottom-width: 4px;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  text-decoration: none; color: inherit;
+  min-height: 64px;
+  transition: transform .06s ease, border-color .12s ease;
+}
+.hub-row:active { transform: translateY(2px); border-bottom-width: 2px; }
+.hub-row__icon {
+  flex: none; width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center;
+  font-size: 20px; font-weight: 800;
+  background: var(--c-accent-soft); color: var(--c-accent);
+}
+.hub-list .hub-row:nth-child(4n+2) .hub-row__icon { background:#e3ecff; color:#3b6ef5; }
+.hub-list .hub-row:nth-child(4n+3) .hub-row__icon { background:#fdeed6; color:#e08700; }
+.hub-list .hub-row:nth-child(4n+4) .hub-row__icon { background:#fde3ef; color:#d6427e; }
+:root[data-theme="dark"] .hub-list .hub-row:nth-child(4n+2) .hub-row__icon { background:#1c2c4e; color:#7ba3ff; }
+:root[data-theme="dark"] .hub-list .hub-row:nth-child(4n+3) .hub-row__icon { background:#3d2f14; color:#ffc94d; }
+:root[data-theme="dark"] .hub-list .hub-row:nth-child(4n+4) .hub-row__icon { background:#3d1c2c; color:#ff8fc0; }
+.hub-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hub-row__title { font-size: 16px; font-weight: 800; }
+.hub-row__desc { font-size: 12px; color: var(--c-ink-soft); }
+.hub-row__badge {
+  flex: none; font-size: 11px; font-weight: 700;
+  color: var(--c-ink-soft);
+  background: color-mix(in srgb, var(--c-line) 45%, transparent);
+  border: 1px solid var(--c-line);
+  padding: 3px 9px; border-radius: 999px;
+  white-space: nowrap;
+}
+.hub-row__arrow { flex: none; color: var(--c-ink-faint); font-size: 20px; font-weight: 700; }
+
+/* リーディング解説の語句行のボタン余白 */
+#reading-root .list-row .audio-btn { margin-left: 8px; }
+
+/* ============================================================
+   v6 ホーム刷新：学習ダッシュボード風（統計チップ・大型CTA・モード行）
+   ============================================================ */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.dash-chip {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: var(--c-surface);
+  border: 2px solid var(--c-line);
+  border-bottom-width: 4px;
+  border-radius: var(--radius-md);
+  padding: 10px 4px;
+  text-align: center;
+}
+.dash-chip__emoji { font-size: 18px; line-height: 1; }
+.dash-chip__value { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+.dash-chip__label { font-size: 10px; color: var(--c-ink-soft); }
+
+/* 大型チャレンジCTA（絵文字つき） */
+.cta-card--big { padding: 18px 16px; }
+.cta-card--big .cta-card__title { font-size: 18px; }
+.cta-card__emoji {
+  flex: none; width: 48px; height: 48px; border-radius: 14px;
+  display: grid; place-items: center; font-size: 26px;
+  background: rgba(255, 255, 255, 0.22);
+}
