@@ -89,7 +89,19 @@
     return card;
   }
 
+  // 配列をシャッフル（Fisher-Yates）。元配列は壊さない。
+  function shuffle(a) {
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
   // 学習セッションを組む：期限到来の既習語を優先し、新規語で埋める（最大 size 語）
+  // 復習(due)は期限順を保つ（学習効果のため）。新規(fresh)は毎回シャッフルし、
+  // 同じ問題が同じ順序で続くのを防ぐ（飽き防止・満遍ない学習）。
   function buildSession(words, size) {
     var due = [];
     var fresh = [];
@@ -98,9 +110,14 @@
       if (!c) fresh.push(w);
       else if (c.due <= todayISO()) due.push({ w: w, due: c.due });
     });
-    // 期限が早い順
-    due.sort(function (a, b) { return a.due < b.due ? -1 : 1; });
-    var ordered = due.map(function (x) { return x.w; }).concat(fresh);
+    // 既習の復習：期限が早い順（同期限内はシャッフルして偏りを無くす）
+    due.sort(function (a, b) {
+      if (a.due < b.due) return -1;
+      if (a.due > b.due) return 1;
+      return Math.random() - 0.5;
+    });
+    // 新規語はシャッフルして毎回違う出会いに
+    var ordered = due.map(function (x) { return x.w; }).concat(shuffle(fresh));
     return ordered.slice(0, size);
   }
 

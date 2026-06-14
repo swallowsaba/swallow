@@ -177,6 +177,9 @@
 
   function doSpeakDevice(text, opts) {
     var voice = resolveVoice();
+    // 端末読み上げが無音だった場合にオンライン英語音声へ切り替えてよいか。
+    // 「端末の声」固定モードではユーザー意図を尊重して切り替えない。auto のときのみ許可。
+    var allowFallback = (Storage.getState().profile.ttsMode || "auto") !== "device";
     // 英語ボイスが無い端末では、日本語ボイスで英単語を読むと
     // 表記(IPA/カタカナ)と全く違う音になるため、誤読を避けて案内のみ表示する。
     var looksEnglish = /[A-Za-z]/.test(String(text));
@@ -847,12 +850,28 @@
         '<div class="setting-group">' +
           '<p class="section-title">動画字幕の自動取得</p>' +
           '<div class="card">' +
-            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">字幕の自動取得に使うCORSプロキシです（音声には不要）。空欄なら公開プロキシを使います。確実に使うには無料のCloudflare Workerを立ててURLを入れてください（READMEに手順）。</p>' +
+            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">字幕の自動取得に使うCORSプロキシです（音声には不要）。空欄でも公開プロキシで試しますが、近年のYouTube仕様変更で<strong>失敗しやすく</strong>なっています。<strong>自動生成字幕（英語(自動生成)）も含めて安定して取得</strong>するには、無料のCloudflare Workerを立ててそのURLをここに入れてください。下に手順とコードがあります。</p>' +
             '<input class="input" id="proxy-input" type="text" placeholder="' + EM.escapeHtml(window.Captions ? window.Captions.DEFAULT_PROXY : "") + '" value="' + EM.escapeHtml(state.profile.captionProxy || "") + '" />' +
-            '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr">' +
+            '<p class="setting-row__hint mt-4" id="proxy-status"></p>' +
+            '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr 1fr">' +
               '<button class="btn btn--ghost" id="proxy-save" type="button">保存</button>' +
+              '<button class="btn btn--ghost" id="proxy-test" type="button">接続テスト</button>' +
               '<button class="btn btn--ghost" id="proxy-reset" type="button">既定に戻す</button>' +
             '</div>' +
+            '<details class="mt-4"><summary class="setting-row__hint" style="cursor:pointer"><strong>▶ なぜ字幕が取れないことがある？（仕組み）</strong></summary>' +
+              '<p class="setting-row__hint mt-4">このアプリは通信を持たない静的サイトのため、ブラウザから直接YouTubeへ字幕を取りに行くと<strong>CORS</strong>という仕組みでブロックされます。そのため中継役（プロキシ）が必要です。公開プロキシは混雑や制限で失敗しがちで、YouTube側も自動生成字幕の取得を年々厳しくしています。自分専用のCloudflare Worker（無料枠で十分）を中継にすると、この両方を回避でき、<strong>「英語(自動生成)」しかない動画でも取得</strong>できるようになります。</p></details>' +
+            '<details class="mt-4"><summary class="setting-row__hint" style="cursor:pointer"><strong>▶ Cloudflare Workerの作り方（無料・5分・コード付き）</strong></summary>' +
+              '<ol class="setting-row__hint mt-4" style="padding-left:1.2em;line-height:1.9">' +
+                '<li><a href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noopener">dash.cloudflare.com</a> で無料アカウントを作成（クレジットカード不要）。</li>' +
+                '<li>左メニュー「Workers &amp; Pages」→「Create application」→「Create Worker」。</li>' +
+                '<li>名前を付けて「Deploy」。次の画面で「Edit code」を開く。</li>' +
+                '<li>エディタの中身を全部消し、下の<strong>「Workerコードをコピー」</strong>で貼り付けて「Deploy」。</li>' +
+                '<li>表示される <code>https://〇〇.workers.dev</code> の末尾に <code>/?url=</code> を付けた文字列を、上の入力欄に貼って「保存」。<br>例：<code>https://my-cc.workers.dev/?url=</code></li>' +
+                '<li>「接続テスト」で OK が出れば完了。動画追加画面で「URLから字幕を自動取得」が通るようになります。</li>' +
+              '</ol>' +
+              '<button class="btn btn--ghost btn--block mt-4" id="proxy-copy-code" type="button">📋 Workerコードをコピー</button>' +
+              '<p class="setting-row__hint mt-4">このWorkerはGET（HTML・字幕本文）とPOST（YouTube内部API）の両方を中継し、CORSヘッダーを付けて返します。自動生成字幕の安定取得にはPOST中継が効きます。</p>' +
+            '</details>' +
           '</div>' +
         '</div>' +
         '<div class="setting-group">' +
@@ -1025,6 +1044,39 @@
       Storage.update(function (s) { s.profile.captionProxy = null; return s; });
       var el = document.getElementById("proxy-input"); if (el) el.value = "";
       EM.showToast("既定に戻しました");
+    });
+    // 接続テスト：入力中のプロキシで既知の動画から字幕が取れるか試す
+    bindClick("proxy-test", function () {
+      var st = document.getElementById("proxy-status");
+      var input = document.getElementById("proxy-input");
+      var v = (input ? input.value.trim() : "");
+      // 入力値を一時保存して試す（保存前でもテスト可能に）
+      Storage.update(function (s) { s.profile.captionProxy = v || null; return s; });
+      if (st) st.innerHTML = "テスト中… 数秒お待ちください。";
+      // 字幕が確実にある公開動画（YouTube公式の字幕付きサンプル）
+      window.Captions.fetchCaptions("PNLHxR4EtYs").then(function (cues) {
+        if (st) st.innerHTML = '<span style="color:var(--ok,#2e7d32)">✅ 成功：' + cues.length + ' 行の字幕を取得できました。「保存」を押せば設定完了です。</span>';
+      }).catch(function () {
+        // サンプルが取れなくても他の動画で取れる場合があるため文言は穏当に
+        if (st) st.innerHTML = '<span style="color:var(--danger,#c62828)">⚠ このプロキシでは取得できませんでした。URLの末尾が <code>/?url=</code> で終わっているか、Workerが正しくDeployされているかご確認ください。公開プロキシ（空欄）でも動画によっては取得できます。</span>';
+      });
+    });
+    // Workerコードをクリップボードへ
+    bindClick("proxy-copy-code", function () {
+      var code = (window.EigoData && window.EigoData.workerCode) ? window.EigoData.workerCode : "";
+      if (!code) { EM.showToast("コードを読み込めませんでした", true); return; }
+      function done() { EM.showToast("Workerコードをコピーしました"); }
+      function fallback() {
+        try {
+          var ta = document.createElement("textarea");
+          ta.value = code; ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta); ta.select();
+          document.execCommand("copy"); document.body.removeChild(ta); done();
+        } catch (e) { EM.showToast("コピーに失敗しました。手動で選択してください", true); }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(done).catch(fallback);
+      } else { fallback(); }
     });
 
     // 教材インポート

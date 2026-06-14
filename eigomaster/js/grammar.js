@@ -22,13 +22,14 @@
   function drawList() {
     currentId = null;
     var cards = lessons().map(function (l) {
+      var lv = l.level ? '<span class="quick-card__level">' + EM.escapeHtml(l.level) + '</span>' : "";
       return '<button class="quick-card" type="button" data-lesson="' + l.id + '" style="text-align:left">' +
-        '<span class="quick-card__title">' + EM.escapeHtml(l.title) + "</span>" +
+        '<span class="quick-card__title">' + lv + EM.escapeHtml(l.title) + "</span>" +
         '<span class="quick-card__desc">' + EM.escapeHtml(l.ja.slice(0, 38)) + "…</span></button>";
     }).join("");
     root().innerHTML =
       '<p class="section-title">文法</p>' +
-      '<p class="text-soft" style="font-size:var(--fs-small);margin-bottom:var(--space-4)">日本人がつまずきやすい順に並べています。</p>' +
+      '<p class="text-soft" style="font-size:var(--fs-small);margin-bottom:var(--space-4)">易しい順（A1→C1）に並んでいます。上から順に進めると基礎から応用へ無理なく学べます。</p>' +
       '<div class="quick-grid">' + cards + "</div>";
     root().querySelectorAll("[data-lesson]").forEach(function (b) {
       b.addEventListener("click", function () { drawLesson(b.getAttribute("data-lesson")); });

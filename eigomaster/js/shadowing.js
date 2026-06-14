@@ -204,11 +204,67 @@
   }
 
   // 練習画面から直接ライブ文字起こしを起動し、結果を現在のcuesに反映して再描画
+  // マイク利用の前提を確認し、原因別に分かりやすく案内する。
+  // OKなら resolve、問題があれば理由を表示して reject。
+  function ensureMicReady() {
+    return new Promise(function (resolve, reject) {
+      // 1) セキュアコンテキスト（HTTPS / localhost）でないとマイクは使えない
+      var secure = window.isSecureContext ||
+        location.protocol === "https:" ||
+        location.hostname === "localhost" ||
+        location.hostname === "127.0.0.1";
+      if (!secure) {
+        EM.showToast("マイクはhttps接続でのみ使えます。アプリをhttpsのURL（GitHub Pages等）で開いてください。", true);
+        reject(new Error("insecure")); return;
+      }
+      // 2) getUserMedia が無い古い環境
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        EM.showToast("この端末はマイク取得に非対応です（Chrome系を推奨）", true);
+        reject(new Error("no-gum")); return;
+      }
+      // 3) 事前に許可状態を確認できれば、ブロック中は設定方法を案内
+      function requestMic() {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+          // すぐ止める（権限確認が目的。実際の認識はWeb Speech APIが行う）
+          try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+          resolve();
+        }).catch(function (err) {
+          var name = err && err.name;
+          if (name === "NotAllowedError" || name === "SecurityError") {
+            EM.showToast("マイクがブロックされています。アドレスバー左の🔒（鍵/設定）アイコン→マイク→「許可」に変更して、もう一度お試しください。", true);
+          } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+            EM.showToast("マイクが見つかりません。端末にマイクが接続されているかご確認ください。", true);
+          } else {
+            EM.showToast("マイクを開始できませんでした（" + (name || "不明") + "）", true);
+          }
+          reject(err);
+        });
+      }
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: "microphone" }).then(function (st) {
+          if (st.state === "denied") {
+            EM.showToast("マイクがブロックされています。アドレスバー左の🔒アイコン→サイトの設定→マイクを「許可」に変えてページを再読み込みしてください。", true);
+            reject(new Error("denied"));
+          } else {
+            requestMic(); // prompt / granted はそのまま要求
+          }
+        }).catch(function () { requestMic(); });
+      } else {
+        requestMic();
+      }
+    });
+  }
+
   function startLiveCaptionLive() {
     if (!window.LiveCaption || !window.LiveCaption.isSupported()) {
       EM.showToast("この端末はライブ文字起こしに非対応です（Chrome系を推奨）", true);
       return;
     }
+    // マイクの前提を先に確認してから起動
+    ensureMicReady().then(function () { openLiveCaptionOverlay(); }).catch(function () {});
+  }
+
+  function openLiveCaptionOverlay() {
     var overlay = document.createElement("div");
     overlay.className = "live-cc-overlay";
     overlay.innerHTML =
@@ -344,6 +400,10 @@
       EM.showToast("この端末はライブ文字起こしに非対応です（Chrome系ブラウザを推奨）", true);
       return;
     }
+    // マイクの前提（https・許可）を先に確認してから開く
+    ensureMicReady().then(function () { openLiveCaptionForTextarea(title); }).catch(function () {});
+  }
+  function openLiveCaptionForTextarea(title) {
     var url = (document.getElementById("yt-url").value || "").trim();
     var src = detectSource(url);
 
@@ -448,9 +508,9 @@
     }).catch(function (err) {
       status.style.color = "var(--c-warm)";
       status.innerHTML = "字幕を自動取得できませんでした。<br>" +
-        "▶ この動画に字幕が無い場合は、上の<strong>「🎙 マイクで字幕を作る」</strong>で生成できます。<br>" +
-        "▶ または下の欄に字幕を貼り付けてください。<br>" +
-        "▶ 設定の「字幕取得プロキシ」を設定すると成功率が上がります。";
+        "▶ <strong>「英語(自動生成)」しかない動画</strong>も、設定の<strong>「動画字幕の自動取得」</strong>で自分のCloudflare Worker（無料・手順あり）を設定すると取得できます。これが最も確実です。<br>" +
+        "▶ 字幕が全く無い動画・Netflix等は、上の<strong>「🎙 マイクで字幕を作る」</strong>で生成できます。<br>" +
+        "▶ または下の欄に字幕を貼り付けてください。";
       openManual();
     }).finally(function () { btn.disabled = false; });
   }

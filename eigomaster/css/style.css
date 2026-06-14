@@ -1731,3 +1731,78 @@ button, .btn { touch-action: manipulation; }
 }
 .ext-hero__title { font-size: 17px; font-weight: 800; margin-bottom: 6px; }
 .ext-hero__desc { font-size: 13px; color: var(--c-ink-soft); line-height: 1.7; margin-bottom: 14px; }
+
+/* ============================================================
+   v45: リーディング刷新・レスポンシブ強化
+   ============================================================ */
+
+/* レベル別セグメントタブ（リーディング等で共用） */
+.seg-tabs {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);
+}
+.seg-tab {
+  flex: 1 1 auto; min-width: 64px;
+  padding: 8px 10px; border-radius: var(--radius-pill);
+  border: 1.5px solid var(--c-line); background: var(--c-surface);
+  color: var(--c-ink-soft); font-weight: 700; font-size: 14px;
+  cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+}
+.seg-tab small { font-weight: 600; opacity: .7; }
+.seg-tab[aria-pressed="true"] {
+  background: var(--c-ink); color: #fff; border-color: var(--c-ink);
+}
+.seg-tab[aria-pressed="true"] small { opacity: .85; }
+.seg-tab:active { transform: scale(0.98); }
+
+/* サンプル一覧（縦に詰めて見やすく） */
+.read-sample-list {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 46vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
+}
+.read-sample {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; text-align: left;
+  padding: 13px 14px; border-radius: var(--radius-md);
+  border: 1.5px solid var(--c-line); background: var(--c-surface);
+  color: var(--c-ink); font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .05s;
+}
+.read-sample:hover { background: var(--c-surface-2); border-color: var(--c-accent); }
+.read-sample:active { transform: scale(0.99); }
+.read-sample__title { flex: 1; min-width: 0; }
+.read-sample__go { color: var(--c-accent); font-size: 22px; font-weight: 700; line-height: 1; flex: none; }
+
+/* ============================================================
+   v45: PC/タブレットでのレスポンシブ最適化
+   モバイルは従来どおり480px幅。広い画面ではシェルを広げてゆとりを持たせる。
+   ============================================================ */
+@media (min-width: 768px) {
+  :root { --shell-max: 680px; }
+  .app-main { padding-left: var(--space-5); padding-right: var(--space-5); }
+  /* 読み物・一覧は広い画面でやや大きめの本文に */
+  .lyric__en { font-size: 19px; line-height: 1.9; }
+  .read-sample-list { max-height: 52vh; }
+}
+
+@media (min-width: 1024px) {
+  :root { --shell-max: 760px; }
+  /* WPMやグレードの2分割ボタンは広い画面でも横並びを維持（既存gridのまま） */
+  .lyric__en { font-size: 20px; }
+}
+
+/* タップ領域をスマホで確保（最低44px） */
+@media (max-width: 767px) {
+  .seg-tab { min-height: 40px; }
+  .read-sample { min-height: 48px; }
+  .chip { min-height: 38px; }
+}
+
+/* v45: 文法レッスン一覧のレベルバッジ */
+.quick-card__level {
+  display: inline-block;
+  font-size: 11px; font-weight: 800; line-height: 1;
+  padding: 3px 7px; margin-right: 7px; border-radius: var(--radius-pill);
+  background: var(--c-surface-2); color: var(--c-ink-soft);
+  border: 1px solid var(--c-line); vertical-align: middle;
+}
