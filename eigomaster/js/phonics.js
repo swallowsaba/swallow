@@ -18,7 +18,7 @@
 
   function draw() {
     root().innerHTML =
-      EM.backLink("#/pron", "発音メニュー") +
+      EM.backLink("#/learn", "学ぶ") +
       '<p class="section-title">フォニックス</p>' +
       '<div class="pill-tabs">' +
         '<button class="pill-tabs__btn" data-tab="list" aria-pressed="' + (tab === "list") + '">44音素</button>' +
@@ -139,5 +139,5 @@
     document.getElementById("next-round").addEventListener("click", function () { newRound(); drawGame(); });
   }
 
-  EM.registerView("#/phonics", { title: "フォニックス", tab: "pron", render: render });
+  EM.registerView("#/phonics", { title: "フォニックス", tab: "learn", render: render });
 })();

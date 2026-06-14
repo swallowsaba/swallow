@@ -189,7 +189,8 @@
           if (!jaVoice && /^ja/i.test(v.lang)) jaVoice = v;
         });
       } catch (e0) {}
-      var kata = (window.Katakana && window.Katakana.toKatakana) ? window.Katakana.toKatakana(String(text)) : "";
+      var allowKata = Storage.getState().profile.kataFallback !== false; // 既定ON（設定でOFFにできる）
+      var kata = (allowKata && window.Katakana && window.Katakana.toKatakana) ? window.Katakana.toKatakana(String(text)) : "";
       if (kata) {
         if (!warnedNoVoice) {
           warnedNoVoice = true;
@@ -225,8 +226,15 @@
     u.rate = typeof opts.rate === "number" ? opts.rate : 0.95; // やや自然に
     u.pitch = 1.0;
     u.volume = 1.0;
+    // 単語境界イベント：読み上げ位置(charIndex)を通知し、画面側で該当語をハイライトする
+    u.onboundary = function (ev) {
+      if (myToken !== speakToken) return;
+      if (typeof opts.onboundary === "function") opts.onboundary(ev.charIndex, ev.charLength || 0);
+    };
+    u.onstart = function () { if (myToken === speakToken && typeof opts.onstart === "function") opts.onstart(); };
     u.onend = function () {
       stopResumeTimer();
+      if (myToken === speakToken && typeof opts.onboundary === "function") opts.onboundary(-1, 0); // 終了マーク
       if (myToken === speakToken && typeof opts.onend === "function") opts.onend();
     };
     u.onerror = function () { stopResumeTimer(); };
@@ -276,11 +284,15 @@
     function (text /*, voice*/) {
       return "https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=en&q=" + encodeURIComponent(text);
     },
-    // 2) Google翻訳（旧エンドポイント）
+    // 2) Google辞書拡張向け（Referer制限がほぼ無い）
+    function (text /*, voice*/) {
+      return "https://translate.googleapis.com/translate_tts?ie=UTF-8&client=dict-chrome-ex&tl=en&q=" + encodeURIComponent(text);
+    },
+    // 3) Google翻訳（旧エンドポイント）
     function (text /*, voice*/) {
       return "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=" + encodeURIComponent(text);
     },
-    // 3) StreamElements（Amazon Polly：通れば声を選べる）
+    // 4) StreamElements（Amazon Polly：通れば声を選べる）
     function (text, voice) {
       return "https://api.streamelements.com/kappa/v2/speech?voice=" + encodeURIComponent(voice) + "&text=" + encodeURIComponent(text);
     }
@@ -344,7 +356,9 @@
   EM.ttsProbe = function (idx, cb) {
     try {
       var url = TTS_PROVIDERS[idx]("Hello", onlineVoiceId());
-      var a = new Audio(url);
+      var a = new Audio();
+      a.referrerPolicy = "no-referrer";
+      a.src = url;
       var done = false;
       var fin = function (ok) { if (done) return; done = true; try { a.src = ""; } catch (e) {} cb(ok); };
       a.oncanplaythrough = function () { fin(true); };
@@ -370,7 +384,10 @@
         onlineFailover(text, opts); return;
       }
       var url = TTS_PROVIDERS[provIdx](chunks[i], voice);
-      var a = new Audio(url);             // ※ crossOrigin は付けない（再生にCORSは不要）
+      var a = new Audio();                // ※ crossOrigin は付けない（再生にCORSは不要）
+      a.referrerPolicy = "no-referrer";   // Refererで403にならないように（重要）
+      a.preload = "auto";
+      a.src = url;
       currentAudio = a;
       if (typeof opts.rate === "number") a.playbackRate = Math.max(0.5, Math.min(1, opts.rate));
       a.onended = function () { if (myToken !== speakToken) return; i++; playChunk(0); };
@@ -712,24 +729,29 @@
     var html =
       '<section class="stack-md view-enter">' +
         '<p class="home-hero__eyebrow" style="color:var(--c-ink-soft)">LEARN · まなぶ</p>' +
-        hubSection("おすすめ", "毎日ここから",
+        hubSection("まずはここから", "",
           hubRow("🎯", "今日のレッスン", "語彙→文法→英作文→聞き取り→発音をミックスで反復", "#/lesson", "ミックス反復") +
+          hubRow("🗺", "学習マップ", "50以上のスキルがどこで学べるか一覧", "#/skills", "一覧") +
           hubRow("◔", "レベル診断", "10問でCEFRレベル判定", "#/diagnosis", "")
         ) +
-        hubSection("語彙", fmtCount(dataCount("words")) + "語",
+        hubSection("語彙・表現", fmtCount(dataCount("words")) + "語 / " + fmtCount(dataCount("idioms")) + "件",
           hubRow("あ", "単語", "SRSで効率よく暗記", "#/vocab", fmtCount(dataCount("words")) + "語") +
           hubRow("熟", "熟語・句動詞", "イディオム・コロケーション", "#/idioms", fmtCount(dataCount("idioms")) + "件") +
           hubRow("帳", "単語帳", "保存した語を復習", "#/wordbook", "")
         ) +
-        hubSection("文法", dataCount("grammar") + "課",
+        hubSection("文法・英作文", dataCount("grammar") + "課",
           hubRow("文", "文法レッスン", "例文・並べ替え・誤答解説つき", "#/grammar", dataCount("grammar") + "課")
         ) +
         hubSection("聞く・話す・読む", "",
-          hubRow("🎧", "リスニング", "書き取り・内容理解（カタカナ補助つき）", "#/listening", dataCount("listening") + "問") +
-          hubRow("▷", "動画シャドーイング", "YouTubeのURLを貼ると字幕で練習（リスニング/音読）", "#/video", "YouTube") +
+          hubRow("🎧", "リスニング", "書き取り・内容理解（音声変化の解説つき）", "#/listening", dataCount("listening") + "問") +
+          hubRow("▷", "動画シャドーイング", "YouTubeのURLを貼ると字幕で練習", "#/video", "YouTube") +
           hubRow("読", "リーディング", "全訳・語句・文法解説つき", "#/reading", dataCount("reading") + "本")
         ) +
-        
+        hubSection("発音・音声変化", "ネイティブの音に近づく",
+          hubRow("🎤", "発音チェック", "話した英語を音声認識で一致率判定", "#/pron-check", "") +
+          hubRow("æ", "フォニックス", "44音素・ミニマルペア聞き分け", "#/phonics", fmtCount(dataCount("pairs")) + "組") +
+          hubRow("◠", "リンキング・音声変化", "つながる音を弧とカタカナで可視化", "#/linking", dataCount("linking") + "例")
+        ) +
       '</section>';
     return { html: html };
   }
@@ -807,6 +829,14 @@
               '<button class="btn btn--ghost" id="vt-diag" type="button">🔍 診断</button>' +
             '</div>' +
             '<div id="vt-report" class="mt-4"></div>' +
+            '<div class="setting-row" style="padding-left:0;padding-right:0">' +
+              '<div class="setting-row__text"><p class="setting-row__label">英語の声が無いときのカタカナ近似</p>' +
+                '<p class="setting-row__hint">英語ボイスもオンラインも使えない端末で、カタカナの近似音で読むかどうか</p></div>' +
+              '<div class="segmented" id="kata-segmented" role="group" aria-label="カタカナ近似">' +
+                '<button class="segmented__btn" type="button" data-kata="on" aria-pressed="' + (state.profile.kataFallback !== false) + '">使う</button>' +
+                '<button class="segmented__btn" type="button" data-kata="off" aria-pressed="' + (state.profile.kataFallback === false) + '">使わない</button>' +
+              '</div>' +
+            '</div>' +
             '<details class="mt-4"><summary class="setting-row__hint" style="cursor:pointer">英語の声を端末に追加する方法（鳴らないときはまずこちら）</summary>' +
               '<p class="setting-row__hint mt-4"><strong>Windows：</strong>設定 → 時刻と言語 → 音声 → 「音声の追加」で English (United States) を追加 → ブラウザを再起動。<br>' +
               '<strong>Mac：</strong>システム設定 → アクセシビリティ → 読み上げコンテンツ → システムの声 → 「管理」で英語の声を追加。<br>' +
@@ -1083,6 +1113,16 @@
     });
     bindClick("voice-test", function () { EM.speak("Could you check it out? Let's get started."); });
     bindClick("vt-device", function () { EM.speakWith("device", "This is the device voice test."); });
+    document.querySelectorAll('#kata-segmented [data-kata]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var on = b.getAttribute('data-kata') === 'on';
+        Storage.update(function (s) { s.profile.kataFallback = on; return s; });
+        document.querySelectorAll('#kata-segmented [data-kata]').forEach(function (x) {
+          x.setAttribute('aria-pressed', String((x.getAttribute('data-kata') === 'on') === on));
+        });
+        EM.showToast(on ? 'カタカナ近似を使います' : 'カタカナ近似を使いません（英語の声が無い場合は案内のみ表示）');
+      });
+    });
     bindClick("vt-online", function () { EM.speakWith("online", "This is the online voice test."); });
     bindClick("vt-diag", function () {
       var box = document.getElementById("vt-report");
@@ -1091,7 +1131,7 @@
       rows.push("端末の音声合成：" + (vi.supported ? "対応" : "非対応") + "／ボイス " + vi.total + " 個（英語 " + vi.en + " 個" + (vi.names.length ? "：" + vi.names.join(", ") : "") + "）");
       box.innerHTML = '<div class="notice notice--info"><span class="notice__icon">i</span><span id="vt-lines">' + EM.escapeHtml(rows[0]) + '<br>オンライン音声の接続を確認中…</span></div>';
       var n = EM.ttsProviderCount(); var done = 0; var oks = [];
-      var names = ["Google A", "Google B", "Polly"];
+      var names = ["Google A", "Google B", "Google C", "Polly"];
       function fin() {
         var el = document.getElementById("vt-lines"); if (!el) return;
         var line2 = "オンライン音声：" + oks.map(function (o, i) { return names[i] + (o ? " ✅" : " ❌"); }).join(" ／ ");
@@ -1116,7 +1156,7 @@
      ============================================================ */
   EM.registerView("#/home",     { title: "ホーム", tab: "home",     render: renderHome });
   EM.registerView("#/learn",    { title: "学ぶ",   tab: "learn",    render: renderLearn });
-  EM.registerView("#/pron",     { title: "発音",   tab: "pron",     render: renderPronHub });
+  EM.registerView("#/pron",     { title: "発音",   tab: "learn",    render: renderPronHub });
   EM.registerView("#/settings", { title: "設定",   tab: "settings", render: renderSettings });
 
   // 機能モジュール未登録時のフォールバック（読み込み失敗対策）

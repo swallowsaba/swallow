@@ -51,7 +51,7 @@
       '<div class="pron-stage card mt-4">' +
         '<div class="row-between"><span class="hub-row__badge">' + (st.custom ? "自由入力" : (st.idx % p.length + 1) + " / " + p.length + "文") + '</span>' +
           '<button class="audio-btn" id="say-model" type="button" aria-label="お手本">▶</button></div>' +
-        '<p class="pron-stage__en" id="pron-en">' + EM.escapeHtml(s.en) + '</p>' +
+        '<div id="pron-chip"></div>' +
         '<p class="pron-stage__ja">' + EM.escapeHtml(s.ja) + '</p>' +
         '<p class="pron-stage__tip">💡 ' + EM.escapeHtml(s.tip || "") + '</p>' +
         '<div id="pron-result" class="mt-4"></div>' +
@@ -72,6 +72,7 @@
     root().querySelectorAll("[data-cat]").forEach(function (b) {
       b.addEventListener("click", function () { st.cat = b.getAttribute("data-cat"); st.idx = 0; st.custom = ""; draw(); });
     });
+    if (EM.audioChip) EM.audioChip(document.getElementById("pron-chip"), cur().en);
     function go(d) { st.custom = ""; st.idx += d; EM.stopSpeak(); draw(); EM.speak(cur().en); }
     document.getElementById("pron-prev").addEventListener("click", function () { go(-1); });
     document.getElementById("pron-next").addEventListener("click", function () { go(1); });
@@ -117,5 +118,5 @@
       (d.rate < 80 ? '<p class="setting-row__hint mt-4">赤い単語を中心に、▶お手本→自分の順でもう一度。</p>' : '<p class="setting-row__hint mt-4">すばらしい！「次 ›」で進みましょう。</p>');
   }
 
-  EM.registerView("#/pron-check", { title: "発音チェック", tab: "pron", render: render });
+  EM.registerView("#/pron-check", { title: "発音チェック", tab: "learn", render: render });
 })();

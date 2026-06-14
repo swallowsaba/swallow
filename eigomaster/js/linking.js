@@ -15,6 +15,18 @@
   function clean(w) { return w.toLowerCase().replace(/[^a-z']/g, ""); }
 
   // 文を解析して { html, soundKata, rules:[] } を返す
+  // 各音声変化が「なぜ」起きるのかの理由（解析・クイズ・リスニング解説で共有）
+  var REASONS = {
+    link: "英語は語末の子音と次の語頭の母音をひとかたまりに発音するため、単語の切れ目で音がつながります（check it → チェッキッ）。",
+    flap: "アメリカ英語では母音に挟まれた t/d を舌先で弾くため、日本語のラ行に近い音になります（water → ワラー）。",
+    darkl: "語末や子音の前の L は舌先を歯ぐきに付けず舌の奥を持ち上げるため、「ウ」に近いこもった音になります（feel → フィーゥ）。",
+    drop: "破裂音（p/t/k/b/d/g）が連続すると前の音は口の形だけ作って破裂させないため、音が消えたように聞こえます（good bye → グッ(ド)バイ）。",
+    assim: "隣り合う音が言いやすい位置に引っ張られて別の音に変わります（did you → ディジュ：d+y→ヂ）。",
+    weak: "前置詞・冠詞・代名詞などの機能語は内容語より重要度が低いため、あいまい母音で弱く短く発音されます（for → ファ）。",
+    contract: "話し言葉では高頻度の組み合わせが縮まって1語のように発音されます（going to → gonna）。",
+    aspiration: "語頭の p/t/k は強い息を伴って破裂します。息が弱いと b/d/g に聞こえてしまいます（pin と bin の違い）。"
+  };
+
   function analyzeLinking(sentence) {
     var words = String(sentence).trim().split(/\s+/).filter(Boolean);
     var tags = words.map(function () { return {}; });
@@ -53,6 +65,15 @@
       return '<span class="lk lk--' + primary + '">' + EM.escapeHtml(word) + "</span>";
     }).join(" ");
 
+    // 語境界でのリンク（弧でつなぐ箇所）を抽出
+    var links = [];
+    for (var b = 0; b < words.length - 1; b++) {
+      var tb = tags[b];
+      var rule = tb.assim ? "assim" : tb.flap && /[aeiou]t$/.test(clean(words[b])) ? "flap" : tb.link ? "link" : tb.drop ? "drop" : null;
+      if (rule && rule !== "drop") links.push({ from: b, to: b + 1, rule: rule });
+      else if (tb.drop) links.push({ from: b, to: b + 1, rule: "drop" });
+    }
+
     // 参考カタカナ（縮約を反映してから変換）
     var reduced = " " + sentence.toLowerCase() + " ";
     reduced = reduced
@@ -63,10 +84,68 @@
       .replace(/ kind of /g, " kinda ");
     var soundKata = window.Katakana ? window.Katakana.toKatakana(reduced.trim()) : "";
 
-    return { html: html, soundKata: soundKata, rules: Object.keys(rulesUsed) };
+    return { html: html, soundKata: soundKata, rules: Object.keys(rulesUsed), words: words, tags: tags, links: links };
   }
 
-  window.Linking = { analyzeLinking: analyzeLinking };
+  window.Linking = { analyzeLinking: analyzeLinking, explainHtml: explainHtml, REASONS: REASONS };
+
+  // 文中の音声変化を「色分け文＋どこが・どの規則で・なぜ」まで説明するHTMLを返す。
+  // リスニングの答え合わせやレッスンの解説から呼び出して、変化箇所を可視化する。
+  // ルールごとの色（弧・下線・カタカナの色分けに使う）
+  var RULE_COLORS = { link: "#e0457b", flap: "#e0457b", assim: "#e0457b", drop: "#8a8f98", weak: "#f0932b" };
+  var RULE_LABEL = { link: "連結", flap: "フラップ", assim: "同化", drop: "脱落", weak: "弱形" };
+
+  function explainHtml(sentence) {
+    var res = analyzeLinking(sentence);
+    var words = res.words || String(sentence).trim().split(/\s+/);
+    var links = res.links || [];
+
+    // 各語のカタカナ（語単位）
+    var kana = words.map(function (w) {
+      try { return (window.Katakana && window.Katakana.wordToKatakana) ? window.Katakana.wordToKatakana(w) : ""; }
+      catch (e) { return ""; }
+    });
+
+    // 連結が起きる語ペアを強調色にする
+    var linkedIdx = {};
+    links.forEach(function (l) { if (l.rule !== "drop") { linkedIdx[l.from] = l.rule; linkedIdx[l.to] = l.rule; } });
+
+    // 視覚カード：単語の列。連結ペアは弧（∪）で結ぶ
+    var wordsHtml = words.map(function (w, i) {
+      var hasArc = links.some(function (l) { return l.from === i && l.rule !== "drop"; });
+      var rule = linkedIdx[i];
+      var col = rule ? RULE_COLORS[rule] : "";
+      return '<span class="lkv__cell">' +
+        (hasArc ? '<span class="lkv__arc" style="border-color:' + RULE_COLORS[links.find(function (l) { return l.from === i; }).rule] + '"></span>' : '') +
+        '<span class="lkv__en"' + (col ? ' style="color:' + col + '"' : '') + '>' + EM.escapeHtml(w) + '</span>' +
+        '<span class="lkv__ka"' + (col ? ' style="color:' + col + '"' : '') + '>' + EM.escapeHtml(kana[i] || "") + '</span>' +
+        '</span>';
+    }).join("");
+
+    var visual =
+      '<div class="lkv">' +
+        '<p class="lkv__title">リンキングが起こると発音が変わる</p>' +
+        '<div class="lkv__row">' + wordsHtml + '</div>' +
+        '<p class="lkv__full">≈ ' + EM.escapeHtml(res.soundKata) + '</p>' +
+      '</div>';
+
+    // 検出された規則の説明（なぜ）
+    var ruleData = (window.EigoData && window.EigoData.linkingRules) || [];
+    var detected = (res.rules || []).map(function (key) {
+      var r = ruleData.find(function (x) { return x.id === key; });
+      var name = r ? r.name : (RULE_LABEL[key] || key);
+      return '<div class="lk-detected"><span class="lk-chip" style="background:' + (RULE_COLORS[key] || "#888") + '">' + EM.escapeHtml(name) + '</span>' +
+        '<span class="lk-detected__txt">' + EM.escapeHtml(r ? (r.short || r.ja) : "") +
+        (REASONS[key] ? '<br><small class="lk-why">なぜ？ ' + EM.escapeHtml(REASONS[key]) + '</small>' : "") +
+        '</span></div>';
+    }).join("");
+
+    return '<div class="lk-explain">' +
+      visual +
+      (detected ? '<p class="setting-row__hint" style="margin:10px 0 6px">色つきの箇所で、次の変化が起きています：</p>' + detected
+                : '<p class="setting-row__hint" style="margin-top:6px">この文では大きな音声変化はありません。</p>') +
+      '</div>';
+  }
 
   /* ---------- 画面 ---------- */
   var LEGEND = [
@@ -77,198 +156,186 @@
     { id: "weak", label: "弱形", cls: "lk--weak" }
   ];
 
-  function render() {
-    var rules = (window.EigoData && window.EigoData.linkingRules) || [];
 
-    var legendHtml = LEGEND.map(function (l) {
-      return '<span><span class="lk ' + l.cls + '">' + l.label + "</span></span>";
-    }).join("");
+  /* ============================================================
+     画面：タブ切替（クイズ／解析／ルール）で1画面完結
+     - 既定はクイズ。開いたら即出題（だらだら縦長を廃止）
+     ============================================================ */
+  var st = { tab: "quiz" };
+  var qz = { qs: [], idx: 0, score: 0 };
 
-    var catalog = rules.map(function (r, idx) {
-      var exHtml = r.examples.map(function (ex, j) {
-        return '<div class="lk-example">' +
-          '<div class="list-row" style="padding:0">' +
-            '<div class="list-row__main"><div class="list-row__title">' + EM.escapeHtml(ex.text) + "</div>" +
-            '<div class="list-row__sub">≈ ' + EM.escapeHtml(ex.sound) + "</div></div>" +
-            '<button class="audio-btn" type="button" data-say="' + EM.escapeHtml(ex.text) + '" aria-label="再生">▶</button>' +
-            '<button class="audio-btn" type="button" data-say-slow="' + EM.escapeHtml(ex.text) + '" aria-label="ゆっくり再生">🐢</button>' +
-          "</div>" +
-          (ex.breakdown ? '<p class="lk-breakdown">' + EM.escapeHtml(ex.breakdown) + "</p>" : "") +
-        "</div>";
-      }).join("");
-      return '<div class="card">' +
-        '<div class="row-between"><p class="list-row__title">' + EM.escapeHtml(r.name) + "</p>" +
-          (r.short ? '<span class="chip chip--static">' + EM.escapeHtml(r.short) + "</span>" : "") + "</div>" +
-        '<p class="setting-row__hint" style="margin-top:8px">' + EM.escapeHtml(r.ja) + "</p>" +
-        (r.how ? '<p class="lk-how"><strong>対象：</strong>' + EM.escapeHtml(r.how) + "</p>" : "") +
-        '<div class="mt-4">' + exHtml + "</div></div>";
-    }).join("");
-
-    var html =
-      '<section class="view-enter">' +
-        EM.backLink("#/pron", "発音メニュー") +
-        '<p class="section-title">リンキング（音声変化）</p>' +
-        '<div class="notice"><span class="notice__icon">!</span>' +
-          '<span>英文を入力すると、音のつながりを推定して色分けします。つづりベースの<strong>近似</strong>のため、実際の発音と異なる場合があります。</span></div>' +
-
-        '<div class="field mt-4">' +
-          '<label class="field__label" for="lk-in">英文を解析</label>' +
-          '<textarea class="textarea" id="lk-in" placeholder="例：Could you check it out?">Could you check it out?</textarea>' +
-        '</div>' +
-        '<button class="btn btn--primary btn--block" id="lk-go" type="button">音の変化を見る</button>' +
-        '<div id="lk-out" class="mt-5"></div>' +
-
-        '<div class="legend mt-4">' + legendHtml + "</div>" +
-
-        '<p class="section-title mt-5">聞き取りクイズ（全' + String(rules.reduce(function (n, r) { return n + (r.examples || []).length; }, 0)) + '例から10問）</p>' +
-        '<div class="card" id="lkq-box">' +
-          '<p class="setting-row__hint">音声変化した英語を聞いて、正しい英文を選びます。</p>' +
-          '<button class="btn btn--primary btn--block mt-4" id="lkq-start" type="button">クイズをはじめる</button>' +
-        '</div>' +
-
-        '<p class="section-title mt-5">ルール別の練習</p>' +
-        catalog +
-      "</section>";
-    return { html: html, onMount: bind };
+  function rules() { return (window.EigoData && window.EigoData.linkingRules) || []; }
+  function pool() {
+    var p = [];
+    rules().forEach(function (r) {
+      (r.examples || []).forEach(function (ex) {
+        p.push({ text: ex.text, sound: ex.sound || "", breakdown: ex.breakdown || "", rule: r.name, ruleId: r.id });
+      });
+    });
+    return p;
   }
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 
-  function bind() {
+  function render() {
+    return { html: '<section id="linking-root" class="view-enter"></section>', onMount: function () { draw(); } };
+  }
+  function root() { return document.getElementById("linking-root"); }
+
+  function draw() {
+    root().innerHTML =
+      '<div class="pill-tabs" role="tablist">' +
+        tabBtn("quiz", "🎧 クイズ") + tabBtn("analyze", "🔍 解析") + tabBtn("rules", "📖 ルール") +
+      '</div>' +
+      '<div id="lk-body" class="mt-4"></div>';
+    root().querySelectorAll("[data-tab]").forEach(function (b) {
+      b.addEventListener("click", function () { st.tab = b.getAttribute("data-tab"); EM.stopSpeak(); draw(); });
+    });
+    if (st.tab === "quiz") drawQuiz();
+    else if (st.tab === "analyze") drawAnalyze();
+    else drawRules();
+  }
+  function tabBtn(id, label) {
+    return '<button class="pill-tabs__btn" data-tab="' + id + '" aria-pressed="' + (st.tab === id) + '" type="button">' + label + '</button>';
+  }
+  function body() { return document.getElementById("lk-body"); }
+
+  /* ---------- クイズ（既定タブ・即出題・1問1画面） ---------- */
+  function startQuiz() {
+    var p = pool();
+    qz.qs = shuffle(p).slice(0, Math.min(10, p.length));
+    qz.idx = 0; qz.score = 0;
+    showQ();
+  }
+  function showQ() {
+    var q = qz.qs[qz.idx];
+    var others = shuffle(pool().filter(function (x) { return x.text !== q.text; })).slice(0, 3);
+    var choices = shuffle([q].concat(others));
+    body().innerHTML =
+      '<div class="card">' +
+        '<div class="row-between"><span class="hub-row__badge">第' + (qz.idx + 1) + '問 / ' + qz.qs.length + '</span>' +
+          '<span class="hub-row__badge">正解 ' + qz.score + '</span></div>' +
+        '<p class="lesson__q mt-4">音声変化した英語を聞いて、読まれた文を選ぼう</p>' +
+        '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr">' +
+          '<button class="btn btn--primary" id="lkq-play" type="button">▶ 再生</button>' +
+          '<button class="btn btn--ghost" id="lkq-slow" type="button">🐢 ゆっくり</button>' +
+        '</div>' +
+        '<div class="lesson__choices mt-4">' +
+          choices.map(function (c) {
+            return '<button class="lesson__choice" type="button" data-pick="' + EM.escapeHtml(c.text) + '">' + EM.escapeHtml(c.text) + '</button>';
+          }).join("") +
+        '</div>' +
+        '<div id="lkq-fb"></div>' +
+      '</div>';
+    document.getElementById("lkq-play").addEventListener("click", function () { EM.speak(q.text, { rate: 1.0 }); });
+    document.getElementById("lkq-slow").addEventListener("click", function () { EM.speak(q.text, { rate: 0.6 }); });
+    body().querySelectorAll("[data-pick]").forEach(function (b) {
+      b.addEventListener("click", function () { answer(b, q); }, { once: true });
+    });
+    EM.speak(q.text, { rate: 1.0 });
+  }
+  function answer(btn, q) {
+    var ok = btn.getAttribute("data-pick") === q.text;
+    if (ok) qz.score++;
+    body().querySelectorAll("[data-pick]").forEach(function (b) {
+      b.disabled = true;
+      if (b.getAttribute("data-pick") === q.text) b.classList.add("is-right");
+      else if (b === btn) b.classList.add("is-wrong");
+    });
+    document.getElementById("lkq-fb").innerHTML =
+      '<div class="lesson__foot ' + (ok ? "lesson__foot--ok" : "lesson__foot--ng") + '" style="margin:12px 0 0;border-radius:12px;padding:12px">' +
+        '<p class="lesson__fb-head">' + (ok ? "⭕ 正解！" : "❌ 不正解") + '</p>' +
+        '<p class="lesson__fb-body"><strong>' + EM.escapeHtml(q.text) + '</strong>' +
+          (q.sound ? '　≈ ' + EM.escapeHtml(q.sound) : '') +
+          (q.breakdown ? '<br>' + EM.escapeHtml(q.breakdown) : '') +
+          '<br><span class="lk lk--' + q.ruleId + '">' + EM.escapeHtml(q.rule) + '</span> ' +
+          EM.escapeHtml(REASONS[q.ruleId] || "") + '</p>' +
+        '<button class="btn btn--primary btn--block mt-4" id="lkq-next" type="button">' +
+          (qz.idx + 1 < qz.qs.length ? "次の問題 →" : "結果を見る") + '</button>' +
+      '</div>';
+    document.getElementById("lkq-next").addEventListener("click", function () {
+      qz.idx++; EM.stopSpeak();
+      if (qz.idx < qz.qs.length) showQ(); else showResult();
+    });
+  }
+  function showResult() {
+    var pct = Math.round(qz.score / Math.max(1, qz.qs.length) * 100);
+    body().innerHTML =
+      '<div class="card center">' +
+        '<p style="font-size:48px">' + (pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "🌱") + '</p>' +
+        '<p class="lesson__big">' + qz.score + ' / ' + qz.qs.length + ' 問正解</p>' +
+        '<p class="setting-row__hint mt-4">' + (pct >= 80 ? "すばらしい！音声変化に耳が慣れています。" : "繰り返すほど聞き取れるようになります。📖ルールで仕組みも確認してみよう。") + '</p>' +
+        '<button class="btn btn--primary btn--block mt-5" id="lkq-again" type="button">もう一度（別の10問）</button>' +
+      '</div>';
+    document.getElementById("lkq-again").addEventListener("click", startQuiz);
+  }
+  function drawQuiz() { startQuiz(); }
+
+  /* ---------- 解析タブ ---------- */
+  function drawAnalyze() {
+    body().innerHTML =
+      '<div class="notice notice--info"><span class="notice__icon">i</span><span>英文を入れると、<strong>どこが・どの規則で・なぜ</strong>つながるかを色分けして解説します。</span></div>' +
+      '<div class="field mt-4"><span class="field__label">英文を解析</span>' +
+        '<textarea class="textarea" id="lk-in" rows="2" placeholder="例：Could you check it out?">Could you check it out?</textarea></div>' +
+      '<button class="btn btn--primary btn--block" id="lk-go" type="button">音の変化を見る</button>' +
+      '<div id="lk-out" class="mt-4"></div>';
     var input = document.getElementById("lk-in");
     var out = document.getElementById("lk-out");
-
-    // 各変化が「なぜ」起きるのかの理由解説（解析・クイズの両方で表示）
-    var REASONS = {
-      link: "英語は語末の子音と次の語頭の母音をひとかたまりに発音するため、単語の切れ目で音がつながります（check it → チェッキッ）。",
-      flap: "アメリカ英語では母音に挟まれた t/d を舌先で弾くため、日本語のラ行に近い音になります（water → ワラー）。",
-      darkl: "語末や子音の前の L は舌先を歯ぐきに付けず舌の奥を持ち上げるため、「ウ」に近いこもった音になります（feel → フィーゥ）。",
-      drop: "破裂音（p/t/k/b/d/g）が連続すると前の音は口の形だけ作って破裂させないため、音が消えたように聞こえます（good bye → グッ(ド)バイ）。",
-      assim: "隣り合う音が言いやすい位置に引っ張られて別の音に変わります（did you → ディジュ：d+y→ヂ）。",
-      weak: "前置詞・冠詞・代名詞などの機能語は内容語より重要度が低いため、あいまい母音で弱く短く発音されます（for → ファ）。",
-      contract: "話し言葉では高頻度の組み合わせが縮まって1語のように発音されます（going to → gonna）。",
-      aspiration: "語頭の p/t/k は強い息を伴って破裂します。息が弱いと b/d/g に聞こえてしまいます（pin と bin の違い）。"
-    };
-
     function run() {
       var text = (input.value || "").trim();
       if (!text) { out.innerHTML = ""; return; }
       var res = analyzeLinking(text);
-
-      // 検出された音声変化の解説（名前＋なにが起きるか＋なぜ起きるか）
-      var rules = (window.EigoData && window.EigoData.linkingRules) || [];
       var detected = (res.rules || []).map(function (key) {
-        var r = rules.find(function (x) { return x.id === key; });
+        var r = rules().find(function (x) { return x.id === key; });
         if (!r) return "";
-        return '<div class="lk-detected"><span class="lk lk--' + key + '">' + EM.escapeHtml(r.name) + "</span>" +
+        return '<div class="lk-detected"><span class="lk lk--' + key + '">' + EM.escapeHtml(r.name) + '</span>' +
           '<span class="lk-detected__txt">' + EM.escapeHtml(r.short || r.ja) +
-          (REASONS[key] ? '<br><small class="lk-why">なぜ？ ' + EM.escapeHtml(REASONS[key]) + '</small>' : "") +
-          "</span></div>";
+          (REASONS[key] ? '<br><small class="lk-why">なぜ？ ' + EM.escapeHtml(REASONS[key]) + '</small>' : '') +
+          '</span></div>';
       }).join("");
-      var detectedHtml = detected
-        ? '<div class="mt-4"><p class="setting-row__hint" style="margin-bottom:6px">この文の<strong>色つき箇所</strong>で起きている変化と理由：</p>' + detected + "</div>"
-        : '<p class="setting-row__hint mt-4">この文では大きな音声変化は検出されませんでした。</p>';
-
       out.innerHTML =
         '<div class="card">' +
-          '<p class="linking-out">' + res.html + "</p>" +
-          '<p class="linking-kata">≈ ' + EM.escapeHtml(res.soundKata) + "</p>" +
+          '<p class="linking-out">' + res.html + '</p>' +
+          '<p class="linking-kata">≈ ' + EM.escapeHtml(res.soundKata) + '</p>' +
           '<div class="grade-row" style="grid-template-columns:1fr 1fr">' +
             '<button class="btn btn--ghost" id="lk-play" type="button">▶ 通常</button>' +
             '<button class="btn btn--ghost" id="lk-slow" type="button">🐢 ゆっくり</button>' +
-          "</div>" +
-          detectedHtml +
-        "</div>";
+          '</div>' +
+          (detected ? '<div class="mt-4"><p class="setting-row__hint" style="margin-bottom:6px">この文の<strong>色つき箇所</strong>で起きている変化と理由：</p>' + detected + '</div>'
+                    : '<p class="setting-row__hint mt-4">この文では大きな音声変化は検出されませんでした。</p>') +
+        '</div>';
       document.getElementById("lk-play").addEventListener("click", function () { EM.speak(text, { rate: 1.0 }); });
       document.getElementById("lk-slow").addEventListener("click", function () { EM.speak(text, { rate: 0.6 }); });
     }
-
     document.getElementById("lk-go").addEventListener("click", run);
     run();
+  }
 
-    /* ---------- 聞き取りクイズ（10問） ---------- */
-    (function () {
-      var box = document.getElementById("lkq-box");
-      if (!box) return;
-      var rules = (window.EigoData && window.EigoData.linkingRules) || [];
-      var pool = [];
-      rules.forEach(function (r) {
-        (r.examples || []).forEach(function (ex) {
-          pool.push({ text: ex.text, sound: ex.sound || "", breakdown: ex.breakdown || "", rule: r.name });
-        });
-      });
-      function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
-
-      var qs = [], idx = 0, score = 0;
-
-      function startQuiz() {
-        if (pool.length < 4) { box.innerHTML = '<p class="setting-row__hint">出題できる例が足りません。</p>'; return; }
-        qs = shuffle(pool).slice(0, Math.min(10, pool.length));
-        idx = 0; score = 0;
-        showQ();
-      }
-      function showQ() {
-        var q = qs[idx];
-        // 選択肢：正解＋他の例3つ
-        var others = shuffle(pool.filter(function (p) { return p.text !== q.text; })).slice(0, 3);
-        var choices = shuffle([q].concat(others));
-        box.innerHTML =
-          '<div class="row-between"><p class="list-row__title">第' + (idx + 1) + '問 / ' + qs.length + '</p>' +
-            '<span class="chip chip--static">正解 ' + score + '</span></div>' +
-          '<p class="setting-row__hint mt-4">音声を聞いて、読まれた英文を選んでください。</p>' +
-          '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr">' +
-            '<button class="btn btn--primary" id="lkq-play" type="button">▶ 再生</button>' +
-            '<button class="btn btn--ghost" id="lkq-slow" type="button">🐢 ゆっくり</button>' +
-          '</div>' +
-          '<div class="stack-sm mt-4" id="lkq-choices">' +
-            choices.map(function (c, i) {
-              return '<button class="choice-btn" type="button" data-pick="' + EM.escapeHtml(c.text) + '">' + EM.escapeHtml(c.text) + '</button>';
-            }).join("") +
-          '</div>';
-        document.getElementById("lkq-play").addEventListener("click", function () { EM.speak(q.text, { rate: 1.0 }); });
-        document.getElementById("lkq-slow").addEventListener("click", function () { EM.speak(q.text, { rate: 0.6 }); });
-        box.querySelectorAll("[data-pick]").forEach(function (b) {
-          b.addEventListener("click", function () { answer(b.getAttribute("data-pick"), q); });
-        });
-        // 出題と同時に1回再生（タップ起点なのでスマホでも鳴る）
-        EM.speak(q.text, { rate: 1.0 });
-      }
-      function answer(picked, q) {
-        var ok = picked === q.text;
-        if (ok) score++;
-        var fb =
-          '<div class="card mt-4" style="background:var(--c-accent-soft)">' +
-            '<p class="list-row__title">' + (ok ? "⭕ 正解！" : "❌ 不正解") + '</p>' +
-            '<p class="list-row__sub mt-4"><strong>' + EM.escapeHtml(q.text) + '</strong>' +
-              (q.sound ? ' ≈ ' + EM.escapeHtml(q.sound) : '') + '</p>' +
-            (q.breakdown ? '<p class="lk-breakdown mt-4">' + EM.escapeHtml(q.breakdown) + '</p>' : '') +
-            '<p class="setting-row__hint mt-4">変化の種類：' + EM.escapeHtml(q.rule) + '</p>' +
-            '<button class="btn btn--primary btn--block mt-4" id="lkq-next" type="button">' +
-              (idx + 1 < qs.length ? "次の問題 →" : "結果を見る") + '</button>' +
-          '</div>';
-        box.insertAdjacentHTML("beforeend", fb);
-        box.querySelectorAll("[data-pick]").forEach(function (b) { b.disabled = true; });
-        document.getElementById("lkq-next").addEventListener("click", function () {
-          idx++;
-          if (idx < qs.length) showQ(); else showResult();
-        });
-      }
-      function showResult() {
-        box.innerHTML =
-          '<p class="list-row__title">結果：' + score + ' / ' + qs.length + ' 問正解</p>' +
-          '<p class="setting-row__hint mt-4">' + (score >= qs.length * 0.8 ? "すばらしい！音声変化に耳が慣れてきています。" : "繰り返すほど聞き取れるようになります。下のルール別練習で確認しましょう。") + '</p>' +
-          '<button class="btn btn--primary btn--block mt-4" id="lkq-again" type="button">もう一度（別の10問）</button>';
-        document.getElementById("lkq-again").addEventListener("click", startQuiz);
-      }
-      document.getElementById("lkq-start").addEventListener("click", startQuiz);
-    })();
-
-    // カタログの再生ボタン（イベント委譲）
-    document.getElementById("view").addEventListener("click", function (e) {
-      var say = e.target.closest("[data-say]");
-      if (say) { EM.speak(say.getAttribute("data-say"), { rate: 1.0 }); return; }
-      var slow = e.target.closest("[data-say-slow]");
-      if (slow) { EM.speak(slow.getAttribute("data-say-slow"), { rate: 0.55 }); }
+  /* ---------- ルールタブ（アコーディオンで縦長解消） ---------- */
+  function drawRules() {
+    body().innerHTML =
+      '<p class="setting-row__hint">8つの音声変化ルール。タップで開き、例文は▶で聞けます。</p>' +
+      rules().map(function (r) {
+        var exHtml = (r.examples || []).map(function (ex) {
+          return '<div class="list-row" style="padding:8px 0">' +
+            '<div class="list-row__main"><div class="list-row__title" style="font-size:15px">' + EM.escapeHtml(ex.text) + '</div>' +
+            (ex.sound ? '<div class="list-row__sub">≈ ' + EM.escapeHtml(ex.sound) + '</div>' : '') +
+            (ex.breakdown ? '<div class="list-row__sub">' + EM.escapeHtml(ex.breakdown) + '</div>' : '') +
+            '</div>' +
+            '<button class="audio-btn" type="button" data-say="' + EM.escapeHtml(ex.text) + '" aria-label="再生">▶</button></div>';
+        }).join("");
+        return '<details class="card mt-4 lk-rule">' +
+          '<summary class="row-between" style="cursor:pointer;list-style:none">' +
+            '<span class="list-row__title"><span class="lk lk--' + r.id + '">' + EM.escapeHtml(r.name) + '</span></span>' +
+            '<span class="hub-row__badge">' + (r.examples || []).length + '例</span></summary>' +
+          '<p class="setting-row__hint mt-4">' + EM.escapeHtml(r.ja) + '</p>' +
+          (REASONS[r.id] ? '<p class="lk-breakdown mt-4">なぜ？ ' + EM.escapeHtml(REASONS[r.id]) + '</p>' : '') +
+          '<div class="mt-4">' + exHtml + '</div>' +
+        '</details>';
+      }).join("");
+    body().querySelectorAll("[data-say]").forEach(function (b) {
+      b.addEventListener("click", function (e) { e.stopPropagation(); EM.speak(b.getAttribute("data-say")); });
     });
   }
 
-  EM.registerView("#/linking", { title: "リンキング", tab: "pron", render: render });
+  EM.registerView("#/linking", { title: "リンキング", tab: "learn", render: render });
 })();

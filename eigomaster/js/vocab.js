@@ -103,6 +103,7 @@
       '<div class="flashcard" style="min-height:150px">' +
         '<div class="flashcard__word">' + EM.escapeHtml(w.en) + "</div>" +
         (w.ipa ? '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
+        '<div id="vc-chip" class="mt-4"></div>' +
         '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button> <button class="audio-btn" id="mic" type="button" aria-label="発音チェック">🎤</button></div>' +
       "</div>" +
       '<p class="field__label mt-4">意味として正しいものは？</p>' +
@@ -110,6 +111,7 @@
         return '<button class="choice-btn" type="button" data-ja="' + EM.escapeHtml(c) + '">' + EM.escapeHtml(c) + "</button>";
       }).join("") + "</div>";
 
+    if (EM.audioChip) EM.audioChip(document.getElementById("vc-chip"), w.en);
     document.getElementById("say").addEventListener("click", function () { EM.speak(w.en); });
     EM.speak(w.en);
 

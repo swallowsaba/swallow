@@ -118,3 +118,123 @@ window.EigoData.grammarDetail = {
     pitfall: "主節の主語と分詞の意味上の主語が一致していることが絶対条件です。×Having finished the report, the deadline was met.（締切が報告書を書いたことになる）。"
   }
 };
+
+/* ---- 増量：文法詳説（教科書スタイル） ---- */
+Object.assign(window.EigoData.grammarDetail, {
+  g_present_perfect: {
+    core:"現在完了(have+過去分詞)は『過去の出来事を今と結びつけて』語る形です。過去形が「いつ起きたか」に注目するのに対し、現在完了は「今どうなっているか（経験・完了・継続）」に注目します。",
+    form:"have / has + 過去分詞（経験・完了・継続・結果）",
+    dialog:[{en:"A: Have you finished the report?",ja:"A：報告書は終わった？"},{en:"B: Yes, I've just sent it to you.",ja:"B：うん、ちょうど今送ったところ。"}],
+    pitfall:"具体的な過去の時点(yesterday, last week)とは一緒に使えません。×I have seen him yesterday → ○I saw him yesterday。経験の「行ったことがある」は have been to、「行ってしまって今いない」は have gone to で区別します。"
+  },
+  g_articles: {
+    core:"a/an は『聞き手がまだ知らない初登場の一つ』、the は『話し手と聞き手の両方が特定できるもの』に付けます。日本語に冠詞が無いため、名詞を出すたびに「相手はこれを特定できるか？」を自問するのがコツです。",
+    form:"a/an + 初出の可算名詞単数 ／ the + 特定済みの名詞 ／ 無冠詞 + 一般論の複数・不可算",
+    dialog:[{en:"A: I bought a laptop yesterday.",ja:"A：昨日ノートPCを買ったんだ。"},{en:"B: How's the laptop working?",ja:"B：そのPC、調子どう？"}],
+    pitfall:"2回目以降は the になる点に注意（a laptop → the laptop）。一般論の複数は無冠詞（Dogs are loyal.）。固有の役割は the（the sun, the internet）。"
+  },
+  g_prepositions: {
+    core:"時の前置詞 at / on / in は『範囲の大きさ』で使い分けます。at は点(時刻)、on は面(日付・曜日)、in は広がり(月・年・季節)。場所も同様に at(地点)→on(接触面)→in(空間内)と広がります。",
+    form:"at + 時刻/地点 ／ on + 曜日・日付・接触面 ／ in + 月・年・空間",
+    dialog:[{en:"A: When's the meeting?",ja:"A：会議はいつ？"},{en:"B: At 3 on Monday, in the main room.",ja:"B：月曜の3時、メインルームで。"}],
+    pitfall:"in the morning だが on Monday morning（特定の朝は on）。乗り物は in a car / on a bus（大きい乗り物は on）。"
+  },
+  g_passive: {
+    core:"受動態(be+過去分詞)は『誰がやったか』より『何がされたか』に焦点を移す形です。行為者が不明・自明・重要でないとき、または客観的・形式的に述べたいときに使います。ビジネス文書で多用されます。",
+    form:"be動詞 + 過去分詞 (+ by 行為者)",
+    dialog:[{en:"A: Who broke the printer?",ja:"A：誰がプリンターを壊したの？"},{en:"B: It was damaged during the move.",ja:"B：引っ越しの時に壊れたんだ。"}],
+    pitfall:"by 行為者は必要なときだけ付けます（自明なら省略）。自動詞(happen, occur, arrive)は受動態にできません。×was happened → ○happened。"
+  },
+  g_relative: {
+    core:"関係代名詞は2つの文を1つにまとめ、名詞に説明を後ろから付け足す接着剤です。人なら who、物なら which、所有は whose。直前の名詞(先行詞)が節の中で主語か目的語かで使い分けます。",
+    form:"先行詞 + who/which/that + (主語) + 動詞 ...",
+    dialog:[{en:"A: Which candidate did you pick?",ja:"A：どの候補者を選んだの？"},{en:"B: The one who had the most experience.",ja:"B：いちばん経験のある人だよ。"}],
+    pitfall:"目的格の関係代名詞は省略できます（the book (which) I read）。コンマ付き(非制限用法)は that を使えず、補足説明になります。"
+  },
+  g_modals: {
+    core:"助動詞は話し手の『心の態度』（確信・許可・義務・推量）を動詞に乗せます。must(強い義務/確信)、should(助言)、may/might(許可/可能性)、can/could(能力/可能性)。同じ「〜だろう」でも確信度が違います。",
+    form:"主語 + 助動詞 + 動詞の原形",
+    dialog:[{en:"A: He's not answering.",ja:"A：彼、出ないね。"},{en:"B: He might be in a meeting.",ja:"B：会議中かもしれない。"}],
+    pitfall:"助動詞の後は必ず原形（×must to go）。過去の推量は『助動詞+have+過去分詞』(must have been)。must not(禁止)と don't have to(不要)は意味が正反対。"
+  }
+});
+
+/* 増量：文法詳説（教科書スタイル）第2弾 */
+Object.assign(window.EigoData.grammarDetail, {
+  g_subjunctive: {
+    core:"仮定法は『事実に反すること・可能性の低いこと』を表す形です。現在の事実に反する仮定は過去形(If I were…)、過去の事実に反する仮定は過去完了(If I had…)で、時制を一つ過去にずらすのが核心です。",
+    form:"If + 過去形, 主語 + would/could + 原形 ／ If + had + 過去分詞, 主語 + would have + 過去分詞",
+    dialog:[{en:"A: What would you do if you won the lottery?",ja:"A：宝くじが当たったらどうする？"},{en:"B: I'd travel the world.",ja:"B：世界中を旅するよ。"}],
+    pitfall:"仮定法現在の be は人称に関わらず were が標準（If I were you）。実際に起こりうる条件（条件文）は仮定法ではなく直説法を使う（If it rains, I'll stay home.）。"
+  },
+  g_gerund_inf: {
+    core:"動名詞(-ing)と不定詞(to do)はどちらも『動詞を名詞のように使う』形ですが、動詞によってどちらを取るかが決まります。enjoy/finish/avoidは動名詞、want/decide/hopeは不定詞。意味が変わる動詞(stop, remember)にも注意します。",
+    form:"動詞 + -ing ／ 動詞 + to + 原形",
+    dialog:[{en:"A: I stopped smoking last year.",ja:"A：去年タバコをやめたんだ。"},{en:"B: Good. I stopped to buy some.",ja:"B：いいね。僕は買うために立ち止まったよ。"}],
+    pitfall:"stop -ing は『〜するのをやめる』、stop to do は『〜するために立ち止まる』で意味が逆。remember -ing は『〜したのを覚えている』、remember to do は『忘れずに〜する』。"
+  },
+  g_comparison: {
+    core:"比較は『2つ以上を比べる』表現です。比較級(-er/more)で2つを、最上級(-est/most)で3つ以上の中の最上を表します。as…as で同等を表し、否定で『〜ほど…でない』になります。",
+    form:"比較級 + than ／ the + 最上級 ／ as + 原級 + as",
+    dialog:[{en:"A: Is this the best option?",ja:"A：これが一番良い選択？"},{en:"B: It's better than the others, at least.",ja:"B：少なくとも他より良いよ。"}],
+    pitfall:"比較級の強調は much/far + 比較級（much better）。very は比較級に使えない。最上級には the が付くが、副詞の最上級では省略可。"
+  },
+  g_future: {
+    core:"未来表現は『どう捉えるか』で使い分けます。will はその場で決めた意志・予測、be going to は前から決めていた予定・根拠ある予測、現在進行形は確定した個人の予定を表します。",
+    form:"will + 原形 ／ be going to + 原形 ／ be + -ing（確定予定）",
+    dialog:[{en:"A: The phone's ringing.",ja:"A：電話が鳴ってる。"},{en:"B: I'll get it.",ja:"B：私が出るよ。"}],
+    pitfall:"その場の決定は will（I'll get it）。前からの予定に will は不自然で be going to や進行形が自然（I'm meeting him at five）。時・条件の副詞節中は未来でも現在形（When it arrives…）。"
+  },
+  g_reported: {
+    core:"間接話法は、人の発言を自分の言葉で伝える形です。伝達動詞が過去なら、引用内の時制を一つ過去にずらし(時制の一致)、人称や時・場所の表現も話し手基準に変えます。",
+    form:"S + said (that) + 時制を一つ過去にした節",
+    dialog:[{en:"A: What did she say?",ja:"A：彼女は何て言った？"},{en:"B: She said she was busy that day.",ja:"B：その日は忙しいと言ってたよ。"}],
+    pitfall:"say は目的語に人を取らない（×say me）、tell は取る（tell me）。普遍の真理は時制を一致させない（He said the earth is round）。tomorrow→the next day, here→there のように副詞も変える。"
+  },
+  g_conjunctions: {
+    core:"接続詞は文と文をつなぎ、論理関係（理由・逆接・条件・時）を示します。等位接続詞(and/but/or)は対等につなぎ、従位接続詞(because/although/if/when)は主節に従属節をつなげます。",
+    form:"主節 + 従位接続詞 + 従属節 ／ 従位接続詞 + 従属節, 主節",
+    dialog:[{en:"A: Why were you late?",ja:"A：なぜ遅れたの？"},{en:"B: Because the train was delayed.",ja:"B：電車が遅れたからだよ。"}],
+    pitfall:"although と but は意味は近いが重複させない（×Although…, but…）。because of は名詞、because は節を取る。文頭の従属節の後にはコンマを置く。"
+  }
+});
+
+/* 増量：文法詳説 第3弾（5倍ペース） */
+Object.assign(window.EigoData.grammarDetail, {
+  g_quantifiers: {
+    core:"数量詞は『どれくらいの量・数か』を表します。可算名詞には many/few/a few、不可算名詞には much/little/a little を使い分けます。a few/a little は『少しある（肯定的）』、few/little は『ほとんどない（否定的）』。",
+    form:"many/few/a few + 可算名詞複数 ／ much/little/a little + 不可算名詞",
+    dialog:[{en:"A: Do we have much time?",ja:"A：時間はたくさんある？"},{en:"B: Only a little, so let's hurry.",ja:"B：少しだけ、急ごう。"}],
+    pitfall:"a few（少しある）と few（ほとんどない）は印象が逆。肯定文の『たくさん』は a lot of が自然で、much は疑問・否定で使うことが多い。"
+  },
+  g_present_continuous: {
+    core:"現在進行形(be + -ing)は『今まさに進行中』のことや『最近の一時的な状態』『確定した近い予定』を表します。状態動詞(know, like, want)は通常進行形にしません。",
+    form:"am/is/are + -ing",
+    dialog:[{en:"A: What are you doing?",ja:"A：何してるの？"},{en:"B: I'm just finishing an email.",ja:"B：メールを書き終えるところ。"}],
+    pitfall:"know/believe/own などの状態動詞は進行形にしない（×I'm knowing）。確定予定は進行形で表せる（I'm meeting him tomorrow）。"
+  },
+  g_past_simple: {
+    core:"過去形は『過去に完了した出来事』を、いつ起きたか（yesterday, last week）とともに表します。規則動詞は -ed、不規則動詞は個別の形を覚えます。現在とのつながりを示す現在完了とは区別します。",
+    form:"動詞の過去形（規則: -ed / 不規則: 個別）",
+    dialog:[{en:"A: Did you call her?",ja:"A：彼女に電話した？"},{en:"B: Yes, I called this morning.",ja:"B：うん、今朝かけたよ。"}],
+    pitfall:"疑問・否定では did + 原形（×Did you called）。現在完了と違い、過去形は具体的な過去の時点と結びつく。"
+  },
+  g_countable: {
+    core:"名詞は『数えられる(可算)』か『数えられない(不可算)』かで扱いが変わります。可算は a/an や複数形を取り、不可算は単数扱いで a/an を付けず、量は some/much/a piece of などで表します。",
+    form:"可算: a/an + 単数 / 複数形 ／ 不可算: 無冠詞単数 + some/much",
+    dialog:[{en:"A: Can I get an advice?",ja:"A：助言をもらえる？（誤）"},{en:"B: You mean 'some advice'—it's uncountable.",ja:"B：'some advice'ね。不可算だよ。"}],
+    pitfall:"information / advice / furniture / news などは不可算（×an information, ×advices）。数えるには a piece of information のようにする。"
+  },
+  g_so_such: {
+    core:"so と such はどちらも『とても〜』と強調しますが、後ろの形が違います。so は形容詞・副詞を直接強調し、such は『(a/an) + 形容詞 + 名詞』を強調します。",
+    form:"so + 形容詞/副詞 ／ such + (a/an) + 形容詞 + 名詞",
+    dialog:[{en:"A: It was so cold.",ja:"A：とても寒かった。"},{en:"B: Yes, such a cold day!",ja:"B：本当に、すごく寒い日だったね！"}],
+    pitfall:"so + 形容詞（so cold）、such + 名詞句（such a cold day）。混同して×so a cold day としない。結果を導く so…that / such…that も頻出。"
+  },
+  g_causative: {
+    core:"使役表現は『人に〜させる／〜してもらう』を表します。make（強制）、have（依頼・手配）、get（説得して）、let（許可）で強さが異なります。have/get は『物を〜してもらう』にも使えます。",
+    form:"make/have/let + 人 + 原形 ／ get + 人 + to do ／ have/get + 物 + 過去分詞",
+    dialog:[{en:"A: Did you fix the car yourself?",ja:"A：車は自分で直したの？"},{en:"B: No, I had it repaired.",ja:"B：いや、直してもらったよ。"}],
+    pitfall:"make/have/let は原形、get は to 不定詞（get him to do）。『物を〜してもらう』は have/get + 物 + 過去分詞（have it repaired）。"
+  }
+});

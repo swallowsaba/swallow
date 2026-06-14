@@ -2425,3 +2425,101 @@ window.EigoData.idioms = window.EigoData.idioms.concat([
   { id: "iG_withinreason", en: "within reason", ja: "理にかなった範囲で", level: "B2", kind: "表現" },
   { id: "iG_worseforwear", en: "worse for wear", ja: "くたびれて", level: "C1", kind: "表現" }
 ]);
+
+
+/* 増量：イディオム大バッチ */
+window.EigoData.idioms = window.EigoData.idioms.concat([
+  { id: "idm_bottomline", en: "bottom line", ja: "肝心な点・最終損益", level: "B2", kind: "ビジネス" },
+  { id: "idm_upperhand", en: "upper hand", ja: "優位", level: "B2", kind: "ビジネス" },
+  { id: "idm_behindtheeightball", en: "behind the eight ball", ja: "不利な立場で", level: "C1", kind: "ビジネス" },
+  { id: "idm_learningcurve", en: "learning curve", ja: "習熟の度合い", level: "B2", kind: "ビジネス" },
+  { id: "idm_takestock", en: "take stock", ja: "状況を見極める", level: "B2", kind: "ビジネス" },
+  { id: "idm_pieceofmind", en: "piece of mind", ja: "安心", level: "B2", kind: "日常" },
+  { id: "idm_takeitwithagrainofsalt", en: "take it with a grain of salt", ja: "割り引いて聞く", level: "B2", kind: "日常" },
+  { id: "idm_wraponesheadaround", en: "wrap one's head around", ja: "理解する", level: "B2", kind: "日常" },
+  { id: "idm_barkingupthewrongtree", en: "barking up the wrong tree", ja: "見当違いをする", level: "C1", kind: "日常" },
+  { id: "idm_devilsadvocate", en: "devil's advocate", ja: "あえて反対意見を言う人", level: "C1", kind: "日常" },
+  { id: "idm_tipoftheiceberg", en: "tip of the iceberg", ja: "氷山の一角", level: "B2", kind: "日常" }
+]);
+
+/* 増量：イディオム */
+window.EigoData.idioms = window.EigoData.idioms.concat([
+  { id:"idm_x1", en:"get the ball rolling", ja:"物事を始動させる", level:"B2", kind:"ビジネス" },
+  { id:"idm_x2", en:"on the same wavelength", ja:"考えが通じ合って", level:"B2", kind:"ビジネス" },
+  { id:"idm_x3", en:"put it on the back burner", ja:"後回しにする", level:"B2", kind:"ビジネス" },
+  { id:"idm_x4", en:"a ballpark figure", ja:"概算", level:"B2", kind:"ビジネス" },
+  { id:"idm_x5", en:"think on your feet", ja:"とっさに判断する", level:"B2", kind:"ビジネス" },
+  { id:"idm_x6", en:"keep your options open", ja:"選択肢を残す", level:"B2", kind:"ビジネス" },
+  { id:"idm_x7", en:"on the fence", ja:"態度を決めかねて", level:"B2", kind:"日常" },
+  { id:"idm_x8", en:"call the shots", ja:"采配を振るう", level:"B2", kind:"ビジネス" },
+  { id:"idm_x9", en:"by the book", ja:"規則通りに", level:"B2", kind:"ビジネス" },
+  { id:"idm_x10", en:"cut to the chase", ja:"本題に入る", level:"B2", kind:"ビジネス" },
+  { id:"idm_x11", en:"in the same boat", ja:"同じ境遇で", level:"B2", kind:"日常" },
+  { id:"idm_x12", en:"take it with a pinch of salt", ja:"割り引いて聞く", level:"C1", kind:"日常" },
+  { id:"idm_x13", en:"go back to square one", ja:"振り出しに戻る", level:"B2", kind:"日常" },
+  { id:"idm_x14", en:"raise the bar", ja:"基準を上げる", level:"B2", kind:"ビジネス" },
+  { id:"idm_x15", en:"throw in the towel", ja:"降参する", level:"B2", kind:"日常" }
+]);
+
+/* 増量：イディオム第2弾 */
+window.EigoData.idioms = window.EigoData.idioms.concat([
+  { id:"idm_y1", en:"bite the bullet", ja:"困難を耐え忍ぶ", level:"B2", kind:"日常" },
+  { id:"idm_y2", en:"the elephant in the room", ja:"誰もが気づくが避ける問題", level:"C1", kind:"ビジネス" },
+  { id:"idm_y3", en:"move the needle", ja:"目に見える変化を起こす", level:"B2", kind:"ビジネス" },
+  { id:"idm_y4", en:"low-hanging fruit", ja:"容易に得られる成果", level:"B2", kind:"ビジネス" },
+  { id:"idm_y5", en:"boil the ocean", ja:"非現実的なほど壮大なことをする", level:"C1", kind:"ビジネス" },
+  { id:"idm_y6", en:"peel back the layers", ja:"段階的に深く分析する", level:"C1", kind:"ビジネス" },
+  { id:"idm_y7", en:"drink from a fire hose", ja:"情報過多で圧倒される", level:"C1", kind:"ビジネス" },
+  { id:"idm_y8", en:"in the weeds", ja:"細部に没頭しすぎて", level:"C1", kind:"ビジネス" },
+  { id:"idm_y9", en:"par for the course", ja:"予想通りで普通のこと", level:"B2", kind:"日常" },
+  { id:"idm_y10", en:"a tall order", ja:"無理難題", level:"B2", kind:"日常" },
+  { id:"idm_y11", en:"throw under the bus", ja:"自分の利益のため他人を犠牲にする", level:"B2", kind:"日常" },
+  { id:"idm_y12", en:"have skin in the game", ja:"当事者として関与している", level:"C1", kind:"ビジネス" },
+  { id:"idm_y13", en:"kick the can down the road", ja:"問題を先送りする", level:"C1", kind:"ビジネス" },
+  { id:"idm_y14", en:"get one's ducks in a row", ja:"準備を整える", level:"B2", kind:"ビジネス" },
+  { id:"idm_y15", en:"a slippery slope", ja:"危険な悪循環の始まり", level:"B2", kind:"日常" },
+  { id:"idm_y16", en:"cut corners", ja:"手を抜く", level:"B2", kind:"日常" },
+  { id:"idm_y17", en:"on the back foot", ja:"守勢に回って", level:"C1", kind:"日常" },
+  { id:"idm_y18", en:"a double-edged sword", ja:"良い面も悪い面もあるもの", level:"B2", kind:"日常" },
+  { id:"idm_y19", en:"reinvent the wheel", ja:"無駄に一から作り直す", level:"B2", kind:"ビジネス" },
+  { id:"idm_y20", en:"hit the ground running", ja:"勢いよく始める", level:"B2", kind:"ビジネス" }
+]);
+
+
+/* 増量：イディオム第3弾（5倍ペース） */
+window.EigoData.idioms = window.EigoData.idioms.concat([
+  { id: "idm_z0", en: "keep one's cards close to one's chest", ja: "手の内を明かさない", level: "C1", kind: "ビジネス" },
+  { id: "idm_z1", en: "go down a rabbit hole", ja: "脱線して深入りする", level: "C1", kind: "日常" },
+  { id: "idm_z2", en: "read the room", ja: "場の空気を読む", level: "B2", kind: "日常" },
+  { id: "idm_z3", en: "keep one's eye on the ball", ja: "本筋に集中する", level: "B2", kind: "ビジネス" },
+  { id: "idm_z4", en: "bite off more than one can chew", ja: "手に余ることをする", level: "B2", kind: "日常" },
+  { id: "idm_z5", en: "go with the flow", ja: "流れに身を任せる", level: "B1", kind: "日常" },
+  { id: "idm_z6", en: "hands are tied", ja: "どうにもできない", level: "B2", kind: "ビジネス" },
+  { id: "idm_z7", en: "have a lot on one's plate", ja: "やることが山積みだ", level: "B2", kind: "ビジネス" },
+  { id: "idm_z8", en: "keep one's chin up", ja: "気を強く持つ", level: "B1", kind: "日常" },
+  { id: "idm_z9", en: "put all eggs in one basket", ja: "一つに全てを賭ける", level: "B2", kind: "日常" },
+  { id: "idm_z10", en: "the ball is rolling", ja: "物事が動き出した", level: "B2", kind: "ビジネス" }
+]);
+
+
+/* 増量：イディオム第4弾（5倍ペース） */
+window.EigoData.idioms = window.EigoData.idioms.concat([
+  { id: "idm_w0", en: "on the fence about", ja: "〜について迷って", level: "B2", kind: "日常" },
+  { id: "idm_w1", en: "put on the spot", ja: "窮地に立たせる", level: "B2", kind: "日常" },
+  { id: "idm_w2", en: "under one's belt", ja: "身につけて", level: "B2", kind: "日常" },
+  { id: "idm_w3", en: "by the skin of one's teeth", ja: "間一髪で", level: "C1", kind: "日常" },
+  { id: "idm_w4", en: "get one's act together", ja: "しっかりする", level: "B2", kind: "日常" },
+  { id: "idm_w5", en: "hold the fort", ja: "留守を守る", level: "B2", kind: "日常" },
+  { id: "idm_w6", en: "put feelers out", ja: "打診する", level: "C1", kind: "ビジネス" },
+  { id: "idm_w7", en: "cover all the bases", ja: "万全を期す", level: "B2", kind: "ビジネス" }
+]);
+
+
+/* 増量：イディオム第5弾（5倍ペース） */
+window.EigoData.idioms = window.EigoData.idioms.concat([
+  { id: "idm_v0", en: "keep one's head above water", ja: "なんとかやりくりする", level: "B2", kind: "日常" },
+  { id: "idm_v1", en: "the long and short of it", ja: "要するに", level: "B2", kind: "日常" },
+  { id: "idm_v2", en: "get one's foot in the door", ja: "足がかりを得る", level: "B2", kind: "ビジネス" },
+  { id: "idm_v3", en: "keep one's options open", ja: "選択肢を残す", level: "B2", kind: "ビジネス" },
+  { id: "idm_v4", en: "take it in stride", ja: "難なく対処する", level: "C1", kind: "日常" }
+]);

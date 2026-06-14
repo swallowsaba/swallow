@@ -2,6 +2,8 @@
 <html lang="ja" data-theme="system">
 <head>
   <meta charset="UTF-8" />
+  <!-- Google系オンライン音声がRefererで403になるのを防ぐ（音声再生の生命線） -->
+  <meta name="referrer" content="no-referrer" />
   <!-- モバイルファースト：等倍表示・iOSのセーフエリア対応 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="日本人がアメリカ英語をビジネスレベルでマスターするための統合学習アプリ。" />
@@ -14,7 +16,7 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <title>EigoMaster｜アメリカ英語 発音スタジオ</title>
-  <link rel="stylesheet" href="css/style.css?v=10" />
+  <link rel="stylesheet" href="css/style.css?v=43" />
 </head>
 <body>
   <!--
@@ -53,22 +55,24 @@
       </noscript>
     </main>
 
-    <!-- 下部タブナビ：ホーム / 単語 / 動画学習 / 発音 / 設定 -->
+    <!-- 下部タブナビ -->
     <nav class="tab-bar" id="tab-bar" role="navigation" aria-label="メインナビゲーション">
       <a class="tab" href="#/home" data-route="#/home" data-tab="home" aria-label="ホーム">
-        <span class="tab__icon" aria-hidden="true">◎</span>
+        <span class="tab__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-5h5v5"/></svg>
+        </span>
         <span class="tab__label">ホーム</span>
       </a>
       <a class="tab" href="#/learn" data-route="#/learn" data-tab="learn" aria-label="学ぶ">
-        <span class="tab__icon" aria-hidden="true">あ</span>
+        <span class="tab__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H11v16H5.5A2.5 2.5 0 0 0 3 21.5z"/><path d="M21 5.5A2.5 2.5 0 0 0 18.5 3H13v16h5.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg>
+        </span>
         <span class="tab__label">学ぶ</span>
       </a>
-      <a class="tab" href="#/pron" data-route="#/pron" data-tab="pron" aria-label="発音">
-        <span class="tab__icon" aria-hidden="true">θ</span>
-        <span class="tab__label">発音</span>
-      </a>
       <a class="tab" href="#/settings" data-route="#/settings" data-tab="settings" aria-label="設定">
-        <span class="tab__icon" aria-hidden="true">⚙</span>
+        <span class="tab__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V20a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H4a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H10a1.7 1.7 0 0 0 1-1.5V4a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V10a1.7 1.7 0 0 0 1.5 1H20a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </span>
         <span class="tab__label">設定</span>
       </a>
     </nav>
@@ -86,37 +90,42 @@
     4) 各機能モジュール（読み込み時に EM.registerView でルート登録）
     type="module" にすると file:// で読めない環境があるため、通常スクリプトで読み込む。
   -->
-  <script src="js/storage.js?v=10"></script>
+  <script src="js/storage.js?v=43"></script>
 
-  <script src="data/words.js?v=10"></script>
-  <script src="data/grammar.js?v=10"></script>
-  <script src="data/phonics.js?v=10"></script>
-  <script src="data/linking_rules.js?v=10"></script>
-  <script src="data/pron_dict.js?v=10"></script>
-  <script src="data/diagnosis.js?v=10"></script>
-  <script src="data/reading.js?v=10"></script>
-  <script src="data/idioms.js?v=10"></script>
-  <script src="data/listening.js?v=10"></script>
-  <script src="data/pron_sentences.js?v=10"></script>
-  <script src="data/grammar_detail.js?v=10"></script>
+  <script src="data/words.js?v=43"></script>
+  <script src="data/grammar.js?v=43"></script>
+  <script src="data/phonics.js?v=43"></script>
+  <script src="data/linking_rules.js?v=43"></script>
+  <script src="data/pron_dict.js?v=43"></script>
+  <script src="data/diagnosis.js?v=43"></script>
+  <script src="data/reading.js?v=43"></script>
+  <script src="data/idioms.js?v=43"></script>
+  <script src="data/listening.js?v=43"></script>
+  <script src="data/pron_sentences.js?v=43"></script>
+  <script src="data/grammar_detail.js?v=43"></script>
+  <script src="data/training.js?v=43"></script>
+  <script src="data/training2.js?v=43"></script>
 
-  <script src="js/app.js?v=10"></script>
+  <script src="js/app.js?v=43"></script>
 
-  <script src="js/srs.js?v=10"></script>
-  <script src="js/katakana.js?v=10"></script>
-  <script src="js/linking.js?v=10"></script>
-  <script src="js/subtitle.js?v=10"></script>
-  <script src="js/captions.js?v=10"></script>
-  <script src="js/vocab.js?v=10"></script>
-  <script src="js/wordbook.js?v=10"></script>
-  <script src="js/idioms.js?v=10"></script>
-  <script src="js/shadowing.js?v=10"></script>
-  <script src="js/lesson.js?v=10"></script>
-  <script src="js/pronunciation.js?v=10"></script>
-  <script src="js/phonics.js?v=10"></script>
-  <script src="js/grammar.js?v=10"></script>
-  <script src="js/reading.js?v=10"></script>
-  <script src="js/listening.js?v=10"></script>
-  <script src="js/diagnosis.js?v=10"></script>
+  <script src="js/srs.js?v=43"></script>
+  <script src="js/katakana.js?v=43"></script>
+  <script src="js/linking.js?v=43"></script>
+  <script src="js/subtitle.js?v=43"></script>
+  <script src="js/captions.js?v=43"></script>
+  <script src="js/vocab.js?v=43"></script>
+  <script src="js/wordbook.js?v=43"></script>
+  <script src="js/idioms.js?v=43"></script>
+  <script src="js/shadowing.js?v=43"></script>
+  <script src="js/lesson.js?v=43"></script>
+  <script src="js/skills.js?v=43"></script>
+  <script src="js/audioplayer.js?v=43"></script>
+  <script src="js/livecaption.js?v=43"></script>
+  <script src="js/pronunciation.js?v=43"></script>
+  <script src="js/phonics.js?v=43"></script>
+  <script src="js/grammar.js?v=43"></script>
+  <script src="js/reading.js?v=43"></script>
+  <script src="js/listening.js?v=43"></script>
+  <script src="js/diagnosis.js?v=43"></script>
 </body>
 </html>

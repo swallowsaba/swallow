@@ -47,6 +47,20 @@
     return null;
   }
 
+  // URLの種類を判定して { type, id|fileUrl, label } を返す
+  // type: "youtube" | "file"(mp4等の直接動画) | "external"(Netflix等の埋め込み不可)
+  function detectSource(url) {
+    url = (url || "").trim();
+    if (!url) return { type: "none" };
+    var yid = extractVideoId(url);
+    if (yid) return { type: "youtube", id: yid, label: "YouTube" };
+    if (/\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url)) return { type: "file", fileUrl: url, label: "動画ファイル" };
+    // Netflix・その他の動画サイトは埋め込み再生・字幕取得ともに不可（DRM/規約）
+    var host = "";
+    try { host = new URL(url).hostname.replace(/^www\./, ""); } catch (e) {}
+    return { type: "external", url: url, label: host || "外部サイト" };
+  }
+
   /* ---------- 画面 ---------- */
   function render() {
     teardown(); // 再入時のクリーンアップ
@@ -137,10 +151,115 @@
     var v = Storage.getVideos().find(function (x) { return x.id === id; });
     if (!v) return;
     cues = window.Subtitle.parse(v.subtitles || "");
-    if (!cues.length) { EM.showToast("この動画には字幕が登録されていません", true); return; }
+    if (!cues.length && v.sourceType !== "external" && v.sourceType !== "file" && v.videoId) {
+      EM.showToast("この動画には字幕が登録されていません", true); return;
+    }
     currentTitle = v.title || "";
-    if (v.videoId) drawPlayer(v.videoId);
-    else drawSilent();
+    playEntry(v);
+  }
+
+  // ソース種別に応じて再生画面を振り分ける
+  function playEntry(v) {
+    if (v.videoId) { drawPlayer(v.videoId); return; }
+    if (v.fileUrl || v.sourceType === "file") { drawFilePlayer(v.fileUrl || v.url); return; }
+    if (v.sourceType === "external" && v.url) { drawExternal(v.url); return; }
+    // 字幕のみ
+    drawSilent("");
+  }
+
+  // Netflix等の外部サイト：別タブで開く＋ライブ文字起こしを並行する練習画面
+  function drawExternal(url) {
+    activeIdx = 0;
+    var host = "";
+    try { host = new URL(url).hostname.replace(/^www\./, ""); } catch (e) {}
+    root().innerHTML =
+      titleBarHtml() +
+      '<div class="ext-hero">' +
+        '<div class="ext-hero__badge">' + EM.escapeHtml(host || "外部サイト") + '</div>' +
+        '<p class="ext-hero__title">この動画は埋め込み再生できません</p>' +
+        '<p class="ext-hero__desc">' + EM.escapeHtml(host || "このサイト") + ' は著作権保護（DRM）のため、他アプリ内での再生が技術的に禁止されています。下のボタンで動画を開き、本アプリと並べて練習しましょう。</p>' +
+        '<button class="btn btn--primary btn--block" id="ext-open" type="button">▶ ' + EM.escapeHtml(host || "動画") + ' を別画面で開く</button>' +
+        '<button class="btn btn--ghost btn--block mt-4" id="ext-live" type="button">🎙 マイクで字幕を作りながら練習（ライブ文字起こし）</button>' +
+      '</div>' +
+      '<div class="notice notice--info mt-4"><span class="notice__icon">i</span><span>すでに字幕がある場合は、そのまま下の行で練習できます。動画は別画面で再生してください。</span></div>' +
+      '<div class="lyric mt-4" id="lyric"></div>' +
+      '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr 1fr">' +
+        '<button class="btn btn--ghost" id="say-line" type="button">▶ お手本</button>' +
+        '<button class="btn btn--ghost" id="prev-line" type="button">‹ 前へ</button>' +
+        '<button class="btn btn--primary" id="next-line" type="button">次へ ›</button>' +
+      "</div>" +
+      recorderHtml() +
+      finishHtml();
+    bindTitleBar();
+    renderLyrics();
+    highlightActive();
+    bindRecorder();
+    bindFinish();
+
+    click("ext-open", function () { window.open(url, "_blank", "noopener"); });
+    click("ext-live", function () { startLiveCaptionLive(); });
+    click("say-line", function () { if (cues[activeIdx]) EM.speak(splitEnJa(cues[activeIdx].text).en); });
+    click("prev-line", function () { if (activeIdx > 0) { activeIdx--; highlightActive(); } });
+    click("next-line", function () { if (activeIdx < cues.length - 1) { activeIdx++; highlightActive(); } });
+  }
+
+  // 練習画面から直接ライブ文字起こしを起動し、結果を現在のcuesに反映して再描画
+  function startLiveCaptionLive() {
+    if (!window.LiveCaption || !window.LiveCaption.isSupported()) {
+      EM.showToast("この端末はライブ文字起こしに非対応です（Chrome系を推奨）", true);
+      return;
+    }
+    var overlay = document.createElement("div");
+    overlay.className = "live-cc-overlay";
+    overlay.innerHTML =
+      '<div class="live-cc-card">' +
+        '<p class="live-cc__title">🎙 ライブ文字起こし</p>' +
+        '<p class="live-cc__hint">動画を音を出して再生し「開始」を押してください。聞き取った字幕が練習行に追加されます。スピーカー再生・静かな環境だと精度が上がります。</p>' +
+        '<div class="live-cc__transcript" id="live-transcript"><span class="live-cc__placeholder">ここに字幕が表示されます…</span></div>' +
+        '<p class="live-cc__interim" id="live-interim"></p>' +
+        '<div class="live-cc__btns">' +
+          '<button class="btn btn--primary" id="live-start" type="button">● 開始</button>' +
+          '<button class="btn btn--danger" id="live-stop" type="button" disabled>■ 停止して使う</button>' +
+          '<button class="btn btn--ghost" id="live-cancel" type="button">閉じる</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    var collected = [];
+    var transcriptEl = overlay.querySelector("#live-transcript");
+    var interimEl = overlay.querySelector("#live-interim");
+    var startBtn = overlay.querySelector("#live-start");
+    var stopBtn = overlay.querySelector("#live-stop");
+    function renderT() {
+      transcriptEl.innerHTML = collected.length
+        ? collected.map(function (c) { return '<span class="live-cc__line">' + EM.escapeHtml(c.text) + "</span>"; }).join("")
+        : '<span class="live-cc__placeholder">ここに字幕が表示されます…</span>';
+      transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    }
+    startBtn.addEventListener("click", function () {
+      startBtn.disabled = true;
+      liveSession = window.LiveCaption.start({
+        onStart: function () { stopBtn.disabled = false; startBtn.textContent = "● 認識中…"; },
+        onInterim: function (t) { interimEl.textContent = t; },
+        onCue: function (cue) { collected.push(cue); interimEl.textContent = ""; renderT(); },
+        onError: function (msg) { EM.showToast(msg, true); startBtn.disabled = false; startBtn.textContent = "● 開始"; }
+      });
+    });
+    stopBtn.addEventListener("click", function () {
+      if (liveSession) { liveSession.stop(); liveSession = null; }
+      if (collected.length) {
+        cues = collected.slice();
+        document.body.removeChild(overlay);
+        renderLyrics(); highlightActive();
+        EM.showToast(collected.length + " 行の字幕を作成しました");
+      } else {
+        EM.showToast("字幕が作られませんでした。音量を上げて再度お試しください", true);
+      }
+    });
+    overlay.querySelector("#live-cancel").addEventListener("click", function () {
+      if (liveSession) { liveSession.stop(); liveSession = null; }
+      document.body.removeChild(overlay);
+    });
   }
 
   /* ---------- 追加 / 編集フォーム ---------- */
@@ -156,10 +275,15 @@
       (quickOnly ? "" :
         '<div class="field"><label class="field__label" for="vid-title">タイトル（任意）</label>' +
           '<input class="input" id="vid-title" type="text" placeholder="例：TED 〇〇 のスピーチ" value="' + EM.escapeHtml(title) + '" /></div>') +
-      '<div class="field"><label class="field__label" for="yt-url">YouTube URL</label>' +
-        '<input class="input" id="yt-url" type="text" placeholder="https://www.youtube.com/watch?v=..." value="' + EM.escapeHtml(url) + '" /></div>' +
-      '<button class="btn btn--primary btn--block" id="fetch-cc" type="button">🔎 URLから字幕を自動取得</button>' +
+      '<div class="field"><label class="field__label" for="yt-url">動画URL（YouTube / 動画ファイル / Netflix等）</label>' +
+        '<input class="input" id="yt-url" type="text" placeholder="https://... または .mp4 のURL" value="' + EM.escapeHtml(url) + '" /></div>' +
+      '<button class="btn btn--primary btn--block" id="fetch-cc" type="button">🔎 URLから字幕を自動取得（YouTube）</button>' +
       '<p class="text-soft mt-4" id="cc-status" style="font-size:var(--fs-small)"></p>' +
+
+      '<div class="notice notice--info mt-4"><span class="notice__icon">i</span><span>' +
+        '<strong>字幕が無い動画・Netflix等</strong>でも練習できます。下の<strong>「マイクで字幕を作る（ライブ文字起こし）」</strong>を使うと、端末で動画を再生しながら音声を聞き取って字幕を自動生成します。' +
+      '</span></div>' +
+      '<button class="btn btn--ghost btn--block mt-4" id="live-cc" type="button">🎙 マイクで字幕を作る（ライブ文字起こし）</button>' +
 
       '<details class="cc-manual mt-4"' + (sub ? " open" : "") + '>' +
         '<summary>自動取得できないとき：字幕を貼り付け（SRT/VTT/テキスト）</summary>' +
@@ -175,6 +299,7 @@
 
     document.getElementById("form-back").addEventListener("click", function (e) { e.preventDefault(); drawSetup(); });
     document.getElementById("fetch-cc").addEventListener("click", autoFetch);
+    document.getElementById("live-cc").addEventListener("click", function () { startLiveCaption(title); });
     document.getElementById("silent-go").addEventListener("click", function () {
       var subRaw = document.getElementById("sub-in").value || "";
       var parsed = window.Subtitle.parse(subRaw);
@@ -187,7 +312,7 @@
         var s = readForm();
         if (!s) return;
         cues = s.cues; currentTitle = "";
-        if (s.videoId) drawPlayer(s.videoId); else drawSilent();
+        playEntry({ videoId: s.videoId, fileUrl: s.fileUrl, sourceType: s.sourceType, url: document.getElementById('yt-url').value });
       });
       return;
     }
@@ -199,9 +324,11 @@
       var saved = saveForm(editing);
       if (!saved) return;
       cues = window.Subtitle.parse(saved.subtitles || "");
-      if (!cues.length) { EM.showToast("字幕を取得または入力してください", true); return; }
+      if (!cues.length && saved.sourceType !== "external" && saved.sourceType !== "file") {
+        EM.showToast("字幕を取得または入力してください", true); return;
+      }
       currentTitle = saved.title || "";
-      if (saved.videoId) drawPlayer(saved.videoId); else drawSilent();
+      playEntry(saved);
     });
   }
 
@@ -210,13 +337,104 @@
     if (d) d.open = true;
   }
 
+  // ライブ文字起こし：マイクで音声を聞き取り、字幕を生成して textarea に書き込む
+  var liveSession = null;
+  function startLiveCaption(title) {
+    if (!window.LiveCaption || !window.LiveCaption.isSupported()) {
+      EM.showToast("この端末はライブ文字起こしに非対応です（Chrome系ブラウザを推奨）", true);
+      return;
+    }
+    var url = (document.getElementById("yt-url").value || "").trim();
+    var src = detectSource(url);
+
+    // 文字起こし用のオーバーレイUI
+    var overlay = document.createElement("div");
+    overlay.className = "live-cc-overlay";
+    overlay.innerHTML =
+      '<div class="live-cc-card">' +
+        '<p class="live-cc__title">🎙 ライブ文字起こし</p>' +
+        '<ol class="live-cc__steps">' +
+          '<li>別の画面・端末で動画（' + EM.escapeHtml(src.label || "動画") + '）を<strong>音を出して再生</strong>します' +
+            (src.type === "external" && url ? ' <a href="' + EM.escapeHtml(url) + '" target="_blank" rel="noopener">▶ 開く</a>' : "") + '</li>' +
+          '<li>下の「開始」を押し、マイクの使用を<strong>許可</strong>します</li>' +
+          '<li>聞き取った英語が字幕になります。終わったら「停止して使う」</li>' +
+        '</ol>' +
+        '<p class="live-cc__hint">※ 端末のスピーカー音をマイクが拾います。静かな部屋で、音量を上げると精度が上がります。イヤホンだと拾えないのでスピーカー再生にしてください。</p>' +
+        '<div class="live-cc__transcript" id="live-transcript"><span class="live-cc__placeholder">ここに字幕が表示されます…</span></div>' +
+        '<p class="live-cc__interim" id="live-interim"></p>' +
+        '<div class="live-cc__btns">' +
+          '<button class="btn btn--primary" id="live-start" type="button">● 開始</button>' +
+          '<button class="btn btn--danger" id="live-stop" type="button" disabled>■ 停止して使う</button>' +
+          '<button class="btn btn--ghost" id="live-cancel" type="button">閉じる</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    var collected = [];
+    var transcriptEl = overlay.querySelector("#live-transcript");
+    var interimEl = overlay.querySelector("#live-interim");
+    var startBtn = overlay.querySelector("#live-start");
+    var stopBtn = overlay.querySelector("#live-stop");
+
+    function renderTranscript() {
+      transcriptEl.innerHTML = collected.length
+        ? collected.map(function (c) { return '<span class="live-cc__line">' + EM.escapeHtml(c.text) + "</span>"; }).join("")
+        : '<span class="live-cc__placeholder">ここに字幕が表示されます…</span>';
+      transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    }
+
+    startBtn.addEventListener("click", function () {
+      startBtn.disabled = true;
+      liveSession = window.LiveCaption.start({
+        onStart: function () { stopBtn.disabled = false; startBtn.textContent = "● 認識中…"; },
+        onInterim: function (t) { interimEl.textContent = t; },
+        onCue: function (cue) { collected.push(cue); interimEl.textContent = ""; renderTranscript(); },
+        onError: function (msg) { EM.showToast(msg, true); startBtn.disabled = false; startBtn.textContent = "● 開始"; },
+        onEnd: function () {}
+      });
+    });
+
+    stopBtn.addEventListener("click", function () {
+      if (liveSession) { liveSession.stop(); liveSession = null; }
+      if (!collected.length) { EM.showToast("字幕が作られませんでした。音量を上げて再度お試しください", true); return; }
+      // textareaにSRTとして書き込み、手動欄を開く
+      document.getElementById("sub-in").value = cuesToSRT(collected);
+      openManual();
+      var status = document.getElementById("cc-status");
+      if (status) { status.style.color = "var(--c-good)"; status.textContent = "✓ ライブ文字起こしで " + collected.length + " 行を作成しました。下の保存・練習へ。"; }
+      document.body.removeChild(overlay);
+    });
+
+    overlay.querySelector("#live-cancel").addEventListener("click", function () {
+      if (liveSession) { liveSession.stop(); liveSession = null; }
+      document.body.removeChild(overlay);
+    });
+  }
+
   // URLから字幕を自動取得して textarea に反映
   function autoFetch() {
     var btn = document.getElementById("fetch-cc");
     var status = document.getElementById("cc-status");
-    var videoId = extractVideoId(document.getElementById("yt-url").value || "");
-    if (!videoId) { EM.showToast("有効なYouTube URLを入力してください", true); return; }
+    var url = (document.getElementById("yt-url").value || "").trim();
+    var src = detectSource(url);
 
+    // YouTube以外は字幕APIが無い → ライブ文字起こしへ誘導
+    if (src.type !== "youtube") {
+      status.style.color = "var(--c-warm)";
+      if (src.type === "external") {
+        status.innerHTML = "<strong>" + EM.escapeHtml(src.label) + "</strong> はアプリ内に埋め込んで再生できません（著作権保護=DRMのため、技術的に他アプリでの再生・字幕取得が禁止されています）。<br>" +
+          "▶ <strong>保存して練習</strong>すると、" + EM.escapeHtml(src.label) + "を別画面で開くボタン＋ライブ文字起こしを並べた練習画面になります。<br>" +
+          "▶ または字幕テキストを下に貼り付けてください。";
+      } else if (src.type === "file") {
+        status.innerHTML = "動画ファイルのURLですね。字幕は自動取得できないため、<strong>「🎙 マイクで字幕を作る」</strong>か、字幕の貼り付けをご利用ください。";
+      } else {
+        status.innerHTML = "URLが空です。YouTube・動画ファイル・Netflix等のURLを入力してください。";
+      }
+      openManual();
+      return;
+    }
+
+    var videoId = src.id;
     btn.disabled = true;
     status.style.color = "";
     status.textContent = "字幕を取得中…（数秒かかることがあります）";
@@ -228,11 +446,11 @@
       status.style.color = "var(--c-good)";
       status.textContent = "✓ 字幕を取得しました（" + cuesFetched.length + " 行）。下の「保存してすぐ練習」へ。";
     }).catch(function (err) {
-      status.style.color = "var(--c-bad)";
-      status.innerHTML = "自動取得できませんでした（" + EM.escapeHtml(err.message || "エラー") + "）。<br>" +
-        "・字幕付きの動画かご確認ください<br>" +
-        "・設定の「字幕取得プロキシ」を設定すると成功率が上がります<br>" +
-        "・難しい場合は下の欄に字幕を貼り付けてください";
+      status.style.color = "var(--c-warm)";
+      status.innerHTML = "字幕を自動取得できませんでした。<br>" +
+        "▶ この動画に字幕が無い場合は、上の<strong>「🎙 マイクで字幕を作る」</strong>で生成できます。<br>" +
+        "▶ または下の欄に字幕を貼り付けてください。<br>" +
+        "▶ 設定の「字幕取得プロキシ」を設定すると成功率が上がります。";
       openManual();
     }).finally(function () { btn.disabled = false; });
   }
@@ -257,22 +475,31 @@
   function readForm() {
     var subRaw = document.getElementById("sub-in").value || "";
     var parsed = window.Subtitle.parse(subRaw);
-    if (!parsed.length) { EM.showToast("字幕を取得または入力してください", true); openManual(); return null; }
-    var id = extractVideoId(document.getElementById("yt-url").value || "");
-    return { cues: parsed, videoId: id };
+    var src = detectSource(document.getElementById("yt-url").value || "");
+    // external(Netflix等)/file は画面内でライブ文字起こしできるので、字幕未入力でも可
+    if (!parsed.length && src.type !== "external" && src.type !== "file") {
+      EM.showToast("字幕を取得または入力してください", true); openManual(); return null;
+    }
+    return { cues: parsed, videoId: src.id || null, fileUrl: src.fileUrl || null, sourceType: src.type };
   }
 
   // フォーム値を保存し、保存済み動画オブジェクトを返す
   function saveForm(editing) {
     var titleEl = document.getElementById("vid-title");
     var subRaw = document.getElementById("sub-in").value || "";
-    if (!window.Subtitle.parse(subRaw).length) { EM.showToast("字幕を取得または入力してください", true); openManual(); return null; }
     var url = document.getElementById("yt-url").value || "";
-    var videoId = extractVideoId(url);
+    var src = detectSource(url);
+    // external(Netflix等)/file は画面内でライブ文字起こしできるので、字幕未入力でも保存可
+    if (!window.Subtitle.parse(subRaw).length && src.type !== "external" && src.type !== "file") {
+      EM.showToast("字幕を取得または入力してください", true); openManual(); return null;
+    }
+    var label = src.type === "youtube" ? "YouTube動画" : src.type === "file" ? "動画ファイル" : src.type === "external" ? (src.label + "（外部）") : "字幕のみ";
     var entry = {
-      title: (titleEl ? titleEl.value : "").trim() || (videoId ? "YouTube動画" : "字幕のみ"),
+      title: (titleEl ? titleEl.value : "").trim() || label,
       url: url.trim(),
-      videoId: videoId,
+      videoId: src.id || null,
+      fileUrl: src.fileUrl || null,
+      sourceType: src.type,
       subtitles: subRaw
     };
     if (editing) entry.id = editing.id;
@@ -298,10 +525,23 @@
     ensureYouTubeAPI(function () {
       player = new YT.Player("yt-player", {
         videoId: videoId,
-        playerVars: { rel: 0, playsinline: 1 },
+        playerVars: { rel: 0, playsinline: 1, origin: location.origin },
         events: {
           onReady: function () { startPolling(); },
-          onError: function () { EM.showToast("動画を読み込めませんでした", true); }
+          onError: function (e) {
+            // 2:無効なID 5:HTML5不可 100:動画なし/非公開 101,150:埋め込み禁止
+            var code = e && e.data;
+            var msg = (code === 101 || code === 150)
+              ? "この動画は埋め込み再生が許可されていません。別の動画でお試しください（YouTubeで開けば視聴は可能です）。"
+              : (code === 100) ? "動画が見つかりません（削除・非公開の可能性）。"
+              : (code === 2) ? "動画URLが正しくありません。"
+              : "動画を読み込めませんでした（コード " + code + "）。";
+            var frame = document.querySelector(".video-frame");
+            if (frame) frame.insertAdjacentHTML("afterend",
+              '<div class="notice notice--warn" id="yt-err"><span class="notice__icon">!</span><span>' + EM.escapeHtml(msg) +
+              ' <a href="https://www.youtube.com/watch?v=' + EM.escapeHtml(videoId) + '" target="_blank" rel="noopener">YouTubeで開く</a></span></div>');
+            EM.showToast(msg, true);
+          }
         }
       });
     });
@@ -360,6 +600,42 @@
   }
   function fmt(t) { return t == null ? "—" : t.toFixed(1) + "s"; }
 
+  /* ---------- 動画ファイル(mp4等)モード ---------- */
+  function drawFilePlayer(fileUrl) {
+    root().innerHTML =
+      titleBarHtml() +
+      '<div class="video-frame"><video id="file-video" playsinline controls style="width:100%;height:100%;background:#000"></video></div>' +
+      controlsHtml() +
+      recorderHtml() +
+      '<div class="lyric mt-4" id="lyric"></div>' +
+      finishHtml();
+
+    bindTitleBar();
+    renderLyrics();
+    bindControls();
+    bindRecorder();
+    bindFinish();
+
+    var video = document.getElementById("file-video");
+    video.src = fileUrl;
+    video.onerror = function () {
+      var frame = document.querySelector(".video-frame");
+      if (frame) frame.insertAdjacentHTML("afterend",
+        '<div class="notice notice--warn"><span class="notice__icon">!</span><span>この動画ファイルを再生できませんでした（URL・形式・CORSをご確認ください）。字幕だけでも練習できます。</span></div>');
+    };
+    // YT.Player互換のラッパーを player に持たせ、既存のコントロール/ポーリングを流用
+    player = {
+      getCurrentTime: function () { return video.currentTime || 0; },
+      seekTo: function (t) { video.currentTime = t; },
+      playVideo: function () { video.play(); },
+      pauseVideo: function () { video.pause(); },
+      getPlayerState: function () { return video.paused ? 2 : 1; },
+      setPlaybackRate: function (r) { video.playbackRate = r; }
+    };
+    if (!window.YT) window.YT = { PlayerState: { PLAYING: 1, PAUSED: 2 } };
+    startPolling();
+  }
+
   function startPolling() {
     stopPolling();
     pollTimer = setInterval(function () {
@@ -412,11 +688,13 @@
   }
 
   /* ---------- 音声なしモード ---------- */
-  function drawSilent() {
+  function drawSilent(externalUrl) {
     activeIdx = 0;
     root().innerHTML =
       titleBarHtml() +
-      '<div class="notice notice--info"><span class="notice__icon">i</span><span>各行を読み上げ（お手本）→自分で発音、を手動で進めます。</span></div>' +
+      (externalUrl
+        ? '<div class="notice notice--warn"><span class="notice__icon">!</span><span>この動画は埋め込み再生できないため、字幕で練習します。動画は別画面で再生してください。 <a href="' + EM.escapeHtml(externalUrl) + '" target="_blank" rel="noopener">▶ 動画を開く</a></span></div>'
+        : '<div class="notice notice--info"><span class="notice__icon">i</span><span>各行を読み上げ（お手本）→自分で発音、を手動で進めます。</span></div>') +
       '<div class="lyric mt-4" id="lyric"></div>' +
       '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr 1fr">' +
         '<button class="btn btn--ghost" id="say-line" type="button">▶ お手本</button>' +

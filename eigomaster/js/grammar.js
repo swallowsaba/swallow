@@ -46,11 +46,10 @@
     reorder.source = shuffle(tokenize(l.reorder.answer));
     reorder.answer = [];
 
-    var examples = l.examples.map(function (ex) {
-      return '<div class="list-row">' +
-        '<div class="list-row__main"><div class="list-row__title">' + EM.escapeHtml(ex.en) + "</div>" +
-          '<div class="list-row__sub">' + EM.escapeHtml(ex.ja) + "</div></div>" +
-        '<button class="audio-btn" type="button" data-say="' + EM.escapeHtml(ex.en) + '" aria-label="再生">▶</button></div>';
+    var examples = l.examples.map(function (ex, i) {
+      return '<div class="gx-ex">' +
+        '<div class="gx-ex__chip" data-en="' + EM.escapeHtml(ex.en) + '"></div>' +
+        '<div class="gx-ex__ja">' + EM.escapeHtml(ex.ja) + "</div></div>";
     }).join("");
 
     var blankOptions = l.blank.options.map(function (o) {
@@ -118,6 +117,13 @@
   function bindLesson(l) {
     document.getElementById("to-list").addEventListener("click", function (e) { e.preventDefault(); drawList(); });
 
+    // 例文：語ハイライト＋カタカナ同期のプレイヤーチップを生成
+    if (EM.audioChip) {
+      root().querySelectorAll(".gx-ex__chip").forEach(function (el) {
+        EM.audioChip(el, el.getAttribute("data-en"));
+      });
+    }
+    // ミニ会話など他の data-say ボタン
     root().querySelectorAll("[data-say]").forEach(function (b) {
       b.addEventListener("click", function () { EM.speak(b.getAttribute("data-say")); });
     });

@@ -87,7 +87,48 @@
     // 発音・スピーキング（テーマの文を声に出す）
     pick(themeSents, 1).forEach(function (s) { q.push({ type: "speak", s: s }); });
 
-    return shuffle(q).slice(0, 12);
+    // ディクテーション（聞いて入力：アクティブリコール）
+    var dict = (d.listening || []).filter(function (x) { return x.type === "dictation" && inLevel(x); });
+    if (dict.length) { var dq = pick(dict, 1)[0]; q.push({ type: "dictation", text: dq.text, ja: dq.ja }); }
+
+    // 高次トレーニング（要約・パラフレーズ・精読・質問力・即答力・多読）
+    // theme=pron 以外で2問混ぜる。CEFRに合うものを優先。
+    if (theme.id !== "pron") {
+      var tr = (d.trainingItems || []).filter(inLevel);
+      if (tr.length < 2) tr = (d.trainingItems || []);
+      pick(tr, 2).forEach(function (it) {
+        q.push({ type: "training", t: it, choices: shuffle(it.choices.slice()) });
+      });
+    }
+
+    // 発音系スキル：アクセント／イントネーション／リズム（pronテーマは厚め、他は1問）
+    var nPron = theme.id === "pron" ? 3 : 1;
+    var stressP = (d.stressItems || []).filter(inLevel); if (stressP.length < nPron) stressP = (d.stressItems || []);
+    pick(stressP, nPron).forEach(function (it) {
+      q.push({ type: "stress", t: it, choices: it.syl.map(function (s, i) { return i; }) });
+    });
+    if (theme.id === "pron") {
+      var intoP = (d.intonationItems || []); pick(intoP, 1).forEach(function (it) { q.push({ type: "tchoice", kind: "intonation", t: it, choices: shuffle(it.choices.slice()) }); });
+      var rhyP = (d.rhythmItems || []); pick(rhyP, 1).forEach(function (it) { q.push({ type: "tchoice", kind: "rhythm", t: it, choices: shuffle(it.choices.slice()) }); });
+    }
+
+    // 瞬間英作文（和文→英文ゼロ産出）
+    var qrtP = (d.qrtItems || []).filter(inLevel); if (!qrtP.length) qrtP = (d.qrtItems || []);
+    pick(qrtP, 1).forEach(function (it) { q.push({ type: "qrt", t: it }); });
+
+    // チャンク・英語思考・異文化・ディスカッション・コロケーション（mix寄りで1〜2問）
+    var extra = [];
+    (d.chunkItems || []).filter(inLevel).forEach(function (it) { extra.push({ type: "tchoice", kind: "chunk", t: it }); });
+    (d.thinkingItems || []).forEach(function (it) { extra.push({ type: "tchoice", kind: "thinking", t: it }); });
+    (d.cultureItems || []).forEach(function (it) { extra.push({ type: "tchoice", kind: "culture", t: it }); });
+    (d.discussionItems || []).forEach(function (it) { extra.push({ type: "tchoice", kind: "discussion", t: it }); });
+    (d.collocationItems || []).filter(inLevel).forEach(function (it) { extra.push({ type: "tchoice", kind: "collocation", t: it }); });
+    pick(extra, theme.id === "pron" ? 1 : 2).forEach(function (it) {
+      it.choices = shuffle(it.t.choices.slice());
+      q.push(it);
+    });
+
+    return shuffle(q).slice(0, 14);
   }
 
   /* ---------- 画面 ---------- */
@@ -108,7 +149,7 @@
     }).join("");
     root().innerHTML =
       '<p class="home-hero__eyebrow" style="color:var(--c-ink-soft)">LESSON · 今日のレッスン</p>' +
-      '<div class="notice notice--info"><span class="notice__icon">i</span><span>1レッスン約12問。語彙→文法→英作文→聞き取り→発音を<strong>ひとつの流れ</strong>で学び、間違えた問題は最後にもう一度出ます。</span></div>' +
+      '<div class="notice notice--info"><span class="notice__icon">i</span><span>1レッスン約12問。語彙・文法・英作文・リスニング・発音・リンキングに加え、<strong>ディクテーション・要約・言い換え・精読・質問力・即答力・多読</strong>まで<strong>ひとつの流れ</strong>で反復。間違いは最後にもう一度出ます。</span></div>' +
       '<p class="section-title mt-5">レベル（CEFR）</p>' +
       '<div class="chip-group">' + lvChips + '</div>' +
       '<p class="section-title mt-5">コースを選ぶ</p>' +
@@ -178,6 +219,45 @@
         '<p class="lesson__ja">' + EM.escapeHtml(item.s.ja) + '</p>' +
         '<p class="setting-row__hint mt-4">コツ：' + EM.escapeHtml(item.s.tip || "") + '</p></div>' +
         '<div class="center mt-4"><button class="btn btn--ghost" id="ls-say" type="button">▶ お手本</button></div>';
+    } else if (item.type === "dictation") {
+      body = qHead("聞こえた英文を入力しよう（ディクテーション）") +
+        '<div class="lesson__prompt center"><button class="btn btn--primary" id="ls-say" type="button">▶ もう一度聞く</button> ' +
+        '<button class="btn btn--ghost" id="ls-slowd" type="button">🐢</button>' +
+        '<p class="lesson__ja mt-4">' + EM.escapeHtml(item.ja || "") + '</p></div>' +
+        '<input class="input mt-4" id="ls-dict" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="聞こえた英語を入力" />';
+    } else if (item.type === "training") {
+      var t = item.t;
+      var TL = { summary: "要約：最も適切なまとめは？", paraphrase: "言い換え：ほぼ同じ意味は？",
+        intensive: "精読：正しい解釈は？", question: "質問力：最も適切な質問は？",
+        response: "即答：自然な応答は？", extensive: "多読：内容に合うものは？" };
+      body = qHead(TL[t.type] || "問題") +
+        '<div class="lesson__prompt"><p class="lesson__sentence" style="font-size:16px">' + EM.escapeHtml(t.text) + '</p>' +
+        (t.q ? '<p class="lesson__ja mt-4">' + EM.escapeHtml(t.q) + '</p>' : '') + '</div>' +
+        choices(item.choices);
+    } else if (item.type === "stress") {
+      var sw = item.t;
+      body = qHead("アクセント：強く読む音節はどれ？") +
+        '<div class="lesson__prompt"><div class="row-between"><span class="lesson__big">' + EM.escapeHtml((sw.say || sw.word)) + '</span>' +
+        '<button class="audio-btn" id="ls-say" type="button">▶</button></div>' +
+        '<p class="lesson__ja">' + EM.escapeHtml(sw.ja || "") + '</p></div>' +
+        '<div class="lesson__choices">' + sw.syl.map(function (s, i) {
+          return '<button class="lesson__choice center" data-c="' + i + '" type="button" style="font-size:18px">' + EM.escapeHtml(s) + '</button>';
+        }).join("") + '</div>';
+    } else if (item.type === "tchoice") {
+      var KL = { intonation: "イントネーション", rhythm: "リズム", chunk: "チャンク（意味の区切り）",
+        thinking: "英語思考", culture: "異文化コミュニケーション", discussion: "ディスカッション", collocation: "コロケーション" };
+      var tt = item.t;
+      body = qHead(KL[item.kind] || "問題") +
+        '<div class="lesson__prompt"><p class="lesson__sentence" style="font-size:16px">' + EM.escapeHtml(tt.text) + '</p>' +
+        (tt.q ? '<p class="lesson__ja mt-4">' + EM.escapeHtml(tt.q) + '</p>' : '') +
+        ((item.kind === "intonation" || item.kind === "rhythm") ? '<div class="center mt-4"><button class="audio-btn" id="ls-say" type="button">▶ お手本</button></div>' : '') +
+        '</div>' +
+        choices(item.choices);
+    } else if (item.type === "qrt") {
+      body = qHead("瞬間英作文：日本語を英語にしよう") +
+        '<div class="lesson__prompt"><p class="lesson__big" style="font-size:20px">' + EM.escapeHtml(item.t.ja) + '</p>' +
+        '<p class="setting-row__hint mt-4">頭の中で英文を作ってから入力。多少の表現違いはOK。</p></div>' +
+        '<input class="input mt-4" id="ls-qrt" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="英語で入力" />';
     }
     root().innerHTML = '<div class="lesson">' + barHtml() +
       '<div class="lesson__body">' + body + '</div>' +
@@ -193,6 +273,8 @@
   }
   function footFor(item) {
     if (item.type === "reorder") return '<button class="btn btn--primary btn--block" id="ls-check" type="button" disabled>確認する</button>';
+    if (item.type === "dictation") return '<button class="btn btn--primary btn--block" id="ls-dcheck" type="button">確認する</button>';
+    if (item.type === "qrt") return '<button class="btn btn--primary btn--block" id="ls-qcheck" type="button">確認する</button>';
     if (item.type === "speak") {
       return SR
         ? '<button class="btn btn--primary btn--block" id="ls-mic" type="button">🎤 録音して判定する</button>'
@@ -205,15 +287,23 @@
     document.getElementById("ls-quit").addEventListener("click", function () { EM.stopSpeak(); drawPick(); });
     var say = document.getElementById("ls-say");
     if (say) {
-      var text = item.w ? item.w.en : (item.q ? item.q.text : (item.s ? item.s.en : ""));
+      var text = item.w ? item.w.en : (item.q ? item.q.text : (item.s ? item.s.en : (item.text ? item.text :
+        (item.type === "stress" ? (item.t.say || item.t.word) : (item.type === "tchoice" ? item.t.text : "")))));
       say.addEventListener("click", function () { EM.speak(text); });
-      if (item.type === "listen_word" || item.type === "linking") EM.speak(text);
+      if (item.type === "listen_word" || item.type === "linking" || item.type === "dictation") EM.speak(text);
     }
     var slow = document.getElementById("ls-slow");
     if (slow) slow.addEventListener("click", function () { EM.speak(item.q.text, { rate: 0.6 }); });
+    var slowd = document.getElementById("ls-slowd");
+    if (slowd) slowd.addEventListener("click", function () { EM.speak(item.text, { rate: 0.6 }); });
 
     if (item.type === "reorder") return bindReorder(item);
     if (item.type === "speak") return bindSpeak(item);
+    if (item.type === "dictation") return bindDictation(item);
+    if (item.type === "training") return bindTraining(item);
+    if (item.type === "stress") return bindStress(item);
+    if (item.type === "tchoice") return bindTchoice(item);
+    if (item.type === "qrt") return bindQrt(item);
 
     root().querySelectorAll(".lesson__choice").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -248,6 +338,95 @@
         item.type === "linking" ? item.choices[i].text === item.q.text : item.choices[i].id === item.w.id;
       if (good) b.classList.add("is-right");
       b.disabled = true;
+    });
+  }
+
+  /* 高次トレーニング（4択：先頭が正解。choicesはシャッフル済みなので正解判定はテキスト一致） */
+  function bindTraining(item) {
+    var correct = item.t.choices[0];
+    root().querySelectorAll(".lesson__choice").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var i = parseInt(b.getAttribute("data-c"), 10);
+        var ok = item.choices[i] === correct;
+        root().querySelectorAll(".lesson__choice").forEach(function (x) {
+          var j = parseInt(x.getAttribute("data-c"), 10);
+          if (item.choices[j] === correct) x.classList.add("is-right");
+          else if (x === b) x.classList.add("is-wrong");
+          x.disabled = true;
+        });
+        var fb = "<strong>" + EM.escapeHtml(correct) + "</strong>" + (item.t.explain ? "<br>" + EM.escapeHtml(item.t.explain) : "");
+        judge(ok, fb, item);
+      }, { once: true });
+    });
+  }
+
+  /* ディクテーション（聞いて入力） */
+  function bindDictation(item) {
+    var input = document.getElementById("ls-dict");
+    if (input) input.focus();
+    function norm2(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9' ]/g, " ").replace(/\s+/g, " ").trim(); }
+    document.getElementById("ls-dcheck").addEventListener("click", function () {
+      var ans = (input.value || "").trim();
+      var ok = norm2(ans) === norm2(item.text);
+      var fb = "<strong>" + EM.escapeHtml(item.text) + "</strong>" + (item.ja ? "<br>" + EM.escapeHtml(item.ja) : "");
+      if (!ok && ans) fb = "あなた：" + EM.escapeHtml(ans) + "<br>" + fb;
+      input.disabled = true;
+      judge(ok, fb, item);
+    });
+  }
+
+  /* アクセント（強い音節をindexで判定） */
+  function bindStress(item) {
+    var ans = item.t.ans;
+    root().querySelectorAll(".lesson__choice").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var i = parseInt(b.getAttribute("data-c"), 10);
+        var ok = i === ans;
+        root().querySelectorAll(".lesson__choice").forEach(function (x) {
+          var j = parseInt(x.getAttribute("data-c"), 10);
+          if (j === ans) x.classList.add("is-right");
+          else if (x === b) x.classList.add("is-wrong");
+          x.disabled = true;
+        });
+        var stressed = item.t.syl.map(function (s, k) { return k === ans ? s.toUpperCase() : s.toLowerCase(); }).join("-");
+        judge(ok, "<strong>" + EM.escapeHtml(stressed) + "</strong><br>強く長く読む音節は「" + EM.escapeHtml(item.t.syl[ans]) + "」です。", item);
+      }, { once: true });
+    });
+  }
+
+  /* 選択式トレーニング全般（先頭が正解） */
+  function bindTchoice(item) {
+    var correct = item.t.choices[0];
+    root().querySelectorAll(".lesson__choice").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var i = parseInt(b.getAttribute("data-c"), 10);
+        var ok = item.choices[i] === correct;
+        root().querySelectorAll(".lesson__choice").forEach(function (x) {
+          var j = parseInt(x.getAttribute("data-c"), 10);
+          if (item.choices[j] === correct) x.classList.add("is-right");
+          else if (x === b) x.classList.add("is-wrong");
+          x.disabled = true;
+        });
+        judge(ok, "<strong>" + EM.escapeHtml(correct) + "</strong>" + (item.t.explain ? "<br>" + EM.escapeHtml(item.t.explain) : ""), item);
+      }, { once: true });
+    });
+  }
+
+  /* 瞬間英作文（和文→英文ゼロ産出。模範＋別解と照合） */
+  function bindQrt(item) {
+    var input = document.getElementById("ls-qrt");
+    if (input) input.focus();
+    function norm3(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9' ]/g, " ").replace(/\s+/g, " ").trim(); }
+    document.getElementById("ls-qcheck").addEventListener("click", function () {
+      var ans = (input.value || "").trim();
+      var cands = [item.t.answer].concat(item.t.alts || []);
+      var ok = cands.some(function (c) { return norm3(c) === norm3(ans); });
+      var fb = "模範解答：<strong>" + EM.escapeHtml(item.t.answer) + "</strong>" +
+        ((item.t.alts && item.t.alts.length) ? "<br>別解：" + EM.escapeHtml(item.t.alts.join(" / ")) : "");
+      if (!ok && ans) fb = "あなた：" + EM.escapeHtml(ans) + "<br>" + fb + "<br><span class=\"setting-row__hint\">語順や語彙が違っても意味が同じなら自分でOKと判断してOKです。</span>";
+      input.disabled = true;
+      EM.speak(item.t.answer);
+      judge(ok, fb, item);
     });
   }
 
@@ -301,6 +480,19 @@
   }
 
   /* ---------- 判定 → 下部固定パネル ---------- */
+  // 問題から「読み上げ＆ハイライト対象の英文」を取り出す（無ければ空）
+  function sayTextOf(item) {
+    if (!item) return "";
+    if (item.type === "dictation") return item.text || "";
+    if (item.type === "qrt") return item.answer || "";
+    if (item.type === "linking") return (item.s && item.s.en) || item.text || "";
+    if (item.type === "reorder") return item.target || "";
+    if (item.type === "listen_word" || item.type === "word_ej" || item.type === "word_je") return (item.w && item.w.en) || "";
+    if (item.type === "speak") return (item.q && item.q.text) || "";
+    if (item.type === "gram") return item.answerSentence || "";
+    return "";
+  }
+
   function judge(ok, fbHtml, item) {
     EM.stopSpeak();
     if (ok) { st.ok++; st.combo++; st.best = Math.max(st.best, st.combo); }
@@ -309,12 +501,17 @@
       var key = st.idx + ":" + item.type;
       if (!st.retried[key]) { st.retried[key] = 1; st.queue.push(item); } // 間違いは最後にもう一度
     }
+    var sayText = sayTextOf(item);
     var foot = document.getElementById("ls-foot");
     foot.className = "lesson__foot " + (ok ? "lesson__foot--ok" : "lesson__foot--ng");
     foot.innerHTML =
       '<div class="lesson__fb"><p class="lesson__fb-head">' + (ok ? "⭕ 正解！" : "❌ もう一度最後に出ます") + '</p>' +
-      '<p class="lesson__fb-body">' + fbHtml + '</p></div>' +
+      '<p class="lesson__fb-body">' + fbHtml + '</p>' +
+      (sayText ? '<div class="ls-fb-chip" id="ls-fb-chip"></div>' : "") +
+      (sayText && window.Linking && window.Linking.explainHtml && /\s/.test(sayText.trim()) ? '<details class="ls-fb-sound"><summary>音声変化を見る</summary>' + window.Linking.explainHtml(sayText) + '</details>' : "") +
+      '</div>' +
       '<button class="btn ' + (ok ? "btn--primary" : "btn--danger") + ' btn--block" id="ls-next" type="button">つづける</button>';
+    if (sayText && EM.audioChip) EM.audioChip(document.getElementById("ls-fb-chip"), sayText);
     document.getElementById("ls-next").addEventListener("click", function () { st.idx++; drawQ(); });
   }
 

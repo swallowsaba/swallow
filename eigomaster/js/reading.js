@@ -90,7 +90,8 @@
 
     root().innerHTML =
       '<a class="back-link" id="to-setup" href="#/reading">‹ テキストを選び直す</a>' +
-      '<div class="notice notice--info"><span class="notice__icon">i</span><span>文をタップで読み上げ、単語をタップで意味を表示します。</span></div>' +
+      '<div class="notice notice--info"><span class="notice__icon">i</span><span>下のバーで再生位置を移動でき、読み上げ中の語が色でわかります。文をタップでその文を再生、単語タップで意味表示。</span></div>' +
+      '<div class="card mt-4"><p class="section-eyebrow">読み上げ（シークバー対応）</p><div id="ap-read"></div></div>' +
       '<div class="card mt-4"><div class="lyric" id="reader">' + lines + "</div></div>" +
       noteHtml +
 
@@ -103,6 +104,12 @@
         "</div></div>" +
 
       '<div id="dict-panel"></div>';
+
+    // 本文全体のシークバー付きプレイヤー
+    if (EM.audioPlayer) {
+      var fullText = st.cues.map(function (c) { return c.text; }).join(" ");
+      EM.audioPlayer(document.getElementById("ap-read"), fullText);
+    }
 
     // 解説内の語句再生
     root().querySelectorAll("[data-say-note]").forEach(function (b) {
