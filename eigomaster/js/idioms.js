@@ -88,7 +88,10 @@
     choices.push(x.ja);
     choices = shuffle(choices);
 
-    root().innerHTML = progressHtml() +
+    root().innerHTML =
+      '<div class="study-fit">' +
+      '<div class="study-fit__top">' + progressHtml() + '</div>' +
+      '<div class="study-fit__main">' +
       '<div class="flashcard" style="min-height:140px">' +
         '<div class="flashcard__pos">' + EM.escapeHtml(x.kind) + "</div>" +
         '<div class="flashcard__word" style="font-size:var(--fs-h1)">' + EM.escapeHtml(x.en) + "</div>" +
@@ -98,7 +101,10 @@
       '<p class="field__label mt-4">意味として正しいものは？</p>' +
       '<div id="choices">' + choices.map(function (c) {
         return '<button class="choice-btn" type="button" data-ja="' + EM.escapeHtml(c) + '">' + EM.escapeHtml(c) + "</button>";
-      }).join("") + "</div>";
+      }).join("") + "</div>" +
+      "</div>" +
+      '<div class="study-fit__foot" id="id-foot"></div>' +
+      "</div>";
 
     if (EM.audioChip) EM.audioChip(document.getElementById("id-chip"), x.en);
     document.getElementById("say").addEventListener("click", function () { EM.speak(x.en); });
@@ -118,7 +124,7 @@
         next.className = "btn btn--primary btn--block mt-4";
         next.textContent = st.idx + 1 >= st.session.length ? "結果を見る" : "次へ";
         next.addEventListener("click", function () { grade(x, correct ? "good" : "again"); });
-        root().appendChild(next);
+        (document.getElementById("id-foot") || root()).appendChild(next);
       });
     });
   }

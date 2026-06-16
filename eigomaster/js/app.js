@@ -1290,6 +1290,7 @@
 
     titleEl.textContent = def.title;
     setActiveTab(def.tab || "home");
+    highlightSideNav(routeKey);
     refreshStreakBadge();
 
     var result;
@@ -1323,6 +1324,7 @@
   }
 
   /* ---------- Service Worker ---------- */
+  var APP_VERSION = "v51";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;
@@ -1334,9 +1336,25 @@
       window.location.reload();
     });
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js").then(function (reg) {
-        // 既存ページに対しても更新確認を促す
+      // updateViaCache:"none" … ブラウザが sw.js 自体を古いままキャッシュして
+      // 新バージョンが永久に入らない問題を防ぐ（更新が届かない最大の原因対策）。
+      navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(function (reg) {
         if (reg && reg.update) { try { reg.update(); } catch (e) {} }
+        // 新SWが見つかってインストール完了したら、即座に有効化＆リロードを促す
+        if (reg) {
+          reg.addEventListener("updatefound", function () {
+            var nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener("statechange", function () {
+              if (nw.state === "installed" && navigator.serviceWorker.controller) {
+                EM.showToast("新しいバージョンに更新します…");
+                setTimeout(function () { window.location.reload(); }, 800);
+              }
+            });
+          });
+        }
+        // 起動後も定期的に更新確認（タブを開きっぱなしでも最新を取りに行く）
+        setInterval(function () { if (reg && reg.update) { try { reg.update(); } catch (e) {} } }, 60000);
       }).catch(function (e) {
         console.warn("[sw] 登録に失敗（オフライン非対応で続行）:", e);
       });
@@ -1374,10 +1392,72 @@
   function init() {
     mergeImported();
     applyTheme(Storage.getState().profile.theme);
+    var verEl = document.getElementById("app-version");
+    if (verEl) verEl.textContent = APP_VERSION;
+    buildSideNav();
     if (!EM.views[location.hash]) location.replace("#" + DEFAULT_ROUTE.slice(1));
     window.addEventListener("hashchange", navigate);
     navigate();
     registerServiceWorker();
+  }
+
+  /* ============================================================
+     デスクトップ用サイドバー（PCでのみ表示）
+     - 3つの巨大タブではなく、学習モードへ直接飛べる実用的なナビ。
+     - モバイルは従来の下部タブバーを使用（このside-navはCSSで非表示）。
+     ============================================================ */
+  var SIDE_NAV = [
+    { type: "brand", label: "EigoMaster" },
+    { type: "link", icon: "🏠", label: "ホーム", href: "#/home" },
+    { type: "head", label: "学ぶ" },
+    { type: "link", icon: "🎯", label: "今日のレッスン", href: "#/lesson" },
+    { type: "link", icon: "あ", label: "単語", href: "#/vocab" },
+    { type: "link", icon: "熟", label: "熟語・句動詞", href: "#/idioms" },
+    { type: "link", icon: "文", label: "文法", href: "#/grammar" },
+    { type: "link", icon: "🎧", label: "リスニング", href: "#/listening" },
+    { type: "link", icon: "読", label: "リーディング", href: "#/reading" },
+    { type: "link", icon: "▷", label: "シャドーイング", href: "#/video" },
+    { type: "head", label: "発音・音声変化" },
+    { type: "link", icon: "🎤", label: "発音チェック", href: "#/pron-check" },
+    { type: "link", icon: "æ", label: "フォニックス", href: "#/phonics" },
+    { type: "link", icon: "◠", label: "リンキング", href: "#/linking" },
+    { type: "head", label: "そのほか" },
+    { type: "link", icon: "◔", label: "レベル診断", href: "#/diagnosis" },
+    { type: "link", icon: "🗺", label: "学習マップ", href: "#/skills" },
+    { type: "link", icon: "帳", label: "単語帳", href: "#/wordbook" },
+    { type: "link", icon: "⚙", label: "設定", href: "#/settings" }
+  ];
+
+  function buildSideNav() {
+    var shell = document.querySelector(".app-shell");
+    if (!shell || document.querySelector(".side-nav")) return;
+    var nav = document.createElement("nav");
+    nav.className = "side-nav";
+    nav.setAttribute("aria-label", "メインナビゲーション（PC）");
+    var html = "";
+    SIDE_NAV.forEach(function (it) {
+      if (it.type === "brand") {
+        html += '<a class="side-nav__brand" href="#/home">' + EM.escapeHtml(it.label) + "</a>";
+      } else if (it.type === "head") {
+        html += '<p class="side-nav__head">' + EM.escapeHtml(it.label) + "</p>";
+      } else {
+        html += '<a class="side-nav__link" href="' + it.href + '" data-href="' + it.href + '">' +
+          '<span class="side-nav__icon">' + EM.escapeHtml(it.icon) + "</span>" +
+          '<span class="side-nav__label">' + EM.escapeHtml(it.label) + "</span></a>";
+      }
+    });
+    nav.innerHTML = html;
+    shell.appendChild(nav);
+    sideNavEl = nav;
+  }
+
+  var sideNavEl = null;
+  function highlightSideNav(routeKey) {
+    if (!sideNavEl) return;
+    sideNavEl.querySelectorAll(".side-nav__link").forEach(function (a) {
+      if (a.getAttribute("data-href") === routeKey) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
+    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

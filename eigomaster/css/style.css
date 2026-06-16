@@ -273,6 +273,9 @@ button {
 }
 
 /* ---------- 下部タブナビ ---------- */
+/* PC用サイドナビはモバイルでは非表示（デスクトップのメディアクエリで表示） */
+.side-nav { display: none; }
+
 .tab-bar {
   position: sticky;
   bottom: 0;
@@ -1105,7 +1108,7 @@ button {
 .app-header__mark  { font-size: 15px; }
 
 /* ---- 余白をさらに圧縮 ---- */
-.app-main { padding: var(--space-3) var(--space-3) calc(72px + var(--safe-bottom) + var(--space-4)); }
+.app-main { padding: var(--space-3) var(--space-3) calc(var(--safe-bottom) + var(--space-4)); }
 .home-hero { padding: var(--space-4); border-radius: var(--radius-lg); }
 .home-hero__greeting { font-size: 23px; margin-top: 4px; }
 .home-hero__sub { font-size: 12px; }
@@ -1827,7 +1830,9 @@ button, .btn { touch-action: manipulation; }
   }
   .app-header { grid-area: header; }
   .app-main   { grid-area: main; }
-  .tab-bar    { grid-area: nav; }
+  .side-nav   { grid-area: nav; }
+  /* PCでは下部タブバーを隠し、サイドナビを使う */
+  .tab-bar { display: none !important; }
 
   .app-header {
     position: sticky; top: 0;
@@ -1835,54 +1840,53 @@ button, .btn { touch-action: manipulation; }
     background: color-mix(in srgb, var(--c-bg) 92%, transparent);
   }
 
-  /* 下部ドック設定を完全に打ち消して縦サイドバーへ */
-  .tab-bar {
-    position: sticky;
-    top: 0; left: auto; right: auto; bottom: auto;
-    transform: none;
-    width: auto;
-    height: 100dvh;
-    max-height: 100dvh;
+  /* 実用的な左サイドナビ（学習モードへ直接アクセス） */
+  .side-nav {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    align-items: stretch;
-    gap: 6px;
-    padding: 22px 14px;
-    border: none;
+    gap: 2px;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    padding: 18px 12px 24px;
     border-right: 1px solid var(--c-line);
-    border-radius: 0;
-    box-shadow: none;
     background: var(--c-surface);
-    overflow: visible;
-    backdrop-filter: none; -webkit-backdrop-filter: none;
+    position: sticky;
+    top: 0;
   }
-  .tab-bar::before {
-    content: "EigoMaster";
-    display: block;
+  .side-nav__brand {
     font-weight: 800; font-size: 18px; letter-spacing: .02em;
-    color: var(--c-ink);
-    padding: 6px 14px 16px;
+    color: var(--c-ink); text-decoration: none;
+    padding: 4px 12px 10px;
   }
-  .tab {
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 13px;
-    width: 100%;
-    height: 50px; min-height: 50px;
-    padding: 0 14px;
-    border-radius: 12px;
+  .side-nav__head {
+    font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    color: var(--c-ink-soft); text-transform: none;
+    margin: 12px 0 2px; padding: 0 12px;
+  }
+  .side-nav__link {
+    display: flex; align-items: center; gap: 11px;
+    padding: 0 12px; height: 40px;
+    border-radius: 10px;
+    color: var(--c-ink); text-decoration: none;
+    font-size: 14px; font-weight: 600;
+    transition: background .12s ease;
+  }
+  .side-nav__link:hover { background: var(--c-surface-2); }
+  .side-nav__icon {
+    flex: none; width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    background: var(--c-surface-2); border-radius: 7px;
     color: var(--c-ink-soft);
   }
-  .tab__icon { width: 22px; height: 22px; }
-  .tab__icon svg { width: 22px; height: 22px; }
-  .tab__label { font-size: 15px; font-weight: 700; }
-  .tab:hover { background: var(--c-surface-2); }
-  .tab[aria-current="page"] {
-    background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+  .side-nav__link[aria-current="page"] {
+    background: color-mix(in srgb, var(--c-accent) 13%, transparent);
     color: var(--c-accent);
   }
-  .tab[aria-current="page"]::before { display: none; }
+  .side-nav__link[aria-current="page"] .side-nav__icon {
+    background: var(--c-accent); color: #fff;
+  }
 
   /* 本文：画面幅を使う。読み物だけ可読上限、その他は広く */
   .app-main {
@@ -2002,4 +2006,16 @@ button, .btn { touch-action: manipulation; }
   .app-shell { max-width: none; }
   .app-main { padding-left: var(--space-5); padding-right: var(--space-5); }
   .hub-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+}
+
+/* v50: バージョン表示バッジ（どの版を見ているか分かるように） */
+.app-header__ver {
+  font-size: 11px; font-weight: 700;
+  color: var(--c-ink-soft);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-left: 8px;
+  letter-spacing: .02em;
 }
