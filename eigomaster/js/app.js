@@ -29,6 +29,56 @@
   };
   window.EM = EM;
 
+  /* ============================================================
+     レベル細分化（EM.levels）
+     - 各CEFR帯（A1〜C1）を難易度で 3 段階（.1 易 / .2 中 / .3 難）に分割。
+     - 難易度スコア：単語は文字数、文は語数（長いほど難）。
+     - 同一CEFR帯の中で三分位（tertile）により均等に振り分ける。
+     - annotate() で各要素に _sub（例 "B1.2"）を付与する。再計算は安定（決定的）。
+     ============================================================ */
+  EM.levels = {
+    ORDER: ["A1", "A2", "B1", "B2", "C1"],
+    SUBS: [".1", ".2", ".3"],
+    SUB_LABEL: { ".1": "易", ".2": "中", ".3": "難" },
+    // 難易度スコア（テキストから算出）
+    scoreText: function (t) {
+      t = String(t == null ? "" : t).trim();
+      if (!t) return 0;
+      var w = t.split(/\s+/);
+      if (w.length > 1) return w.length;           // 文：語数
+      return t.replace(/[^A-Za-z']/g, "").length;  // 単語：文字数
+    },
+    // 配列に _sub を付与。getText で難易度算出用テキストを取り出す
+    annotate: function (items, getText) {
+      if (!items || !items.length) return items;
+      var byLv = {};
+      items.forEach(function (it) {
+        var lv = it.level || "B1";
+        (byLv[lv] = byLv[lv] || []).push(it);
+      });
+      var self = this;
+      Object.keys(byLv).forEach(function (lv) {
+        var arr = byLv[lv].map(function (it) {
+          var t = getText ? getText(it) : (it.en || it.text || it.answer || it.title || "");
+          return { it: it, s: self.scoreText(t) };
+        });
+        // スコア昇順（同点は元順）で安定ソート
+        arr.forEach(function (o, i) { o.i = i; });
+        arr.sort(function (a, b) { return a.s - b.s || a.i - b.i; });
+        var n = arr.length;
+        arr.forEach(function (o, idx) {
+          var sub = idx < n / 3 ? ".1" : (idx < 2 * n / 3 ? ".2" : ".3");
+          o.it._sub = lv + sub;
+        });
+      });
+      return items;
+    },
+    // 単一要素のサブレベル表示（_sub があればそれ、なければ level）
+    badge: function (it) {
+      return (it && it._sub) ? it._sub : (it && it.level ? it.level : "");
+    }
+  };
+
   // 画面を登録する。def = { title, tab, render }
   EM.registerView = function (routeKey, def) {
     EM.views[routeKey] = def;

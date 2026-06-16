@@ -11,6 +11,19 @@
   }
   function root() { return document.getElementById("wb-root"); }
 
+  // 語の細分レベルを語彙データから引く（注釈は EM.levels が決定的に付与）
+  var _lvIndex = null;
+  function subLevelOf(en) {
+    if (!EM.levels) return "";
+    if (!_lvIndex) {
+      var all = (window.EigoData && window.EigoData.words) || [];
+      EM.levels.annotate(all, function (w) { return w.en; });
+      _lvIndex = {};
+      all.forEach(function (w) { _lvIndex[w.en.toLowerCase()] = w._sub || w.level || ""; });
+    }
+    return _lvIndex[String(en || "").toLowerCase()] || "";
+  }
+
   function draw() {
     var book = Storage.getState().wordbook || [];
 
@@ -27,10 +40,12 @@
     }
 
     var rows = book.map(function (w, i) {
+      var sub = subLevelOf(w.en);
       return '<div class="list-row">' +
         '<div class="list-row__main">' +
           '<div class="list-row__title">' + EM.escapeHtml(w.en) +
-            (w.ipa ? ' <span class="flashcard__ipa" style="font-size:var(--fs-small)">' + EM.escapeHtml(w.ipa) + "</span>" : "") + "</div>" +
+            (w.ipa ? ' <span class="flashcard__ipa" style="font-size:var(--fs-small)">' + EM.escapeHtml(w.ipa) + "</span>" : "") +
+            (sub ? ' <span class="text-soft" style="font-size:var(--fs-tiny)">' + EM.escapeHtml(sub) + "</span>" : "") + "</div>" +
           (w.ja ? '<div class="list-row__sub">' + EM.escapeHtml(w.ja) + "</div>" : "") +
         "</div>" +
         '<button class="audio-btn" type="button" data-say-i="' + i + '" aria-label="再生">▶</button>' +

@@ -87,7 +87,46 @@
     return { html: html, soundKata: soundKata, rules: Object.keys(rulesUsed), words: words, tags: tags, links: links };
   }
 
-  window.Linking = { analyzeLinking: analyzeLinking, explainHtml: explainHtml, REASONS: REASONS };
+  window.Linking = { analyzeLinking: analyzeLinking, explainHtml: explainHtml, bindVisual: bindVisual, REASONS: REASONS };
+
+  // .lkv 視覚カードに再生ボタンを配線し、発話中の語をハイライトする。
+  // EM.speak の onboundary(charIndex) を使い、文字位置から語を特定して光らせる。
+  function bindVisual(scope) {
+    if (!scope) return;
+    var card = scope.querySelector ? (scope.matches && scope.matches(".lkv") ? scope : scope.querySelector(".lkv")) : null;
+    if (!card) return;
+    var sentence = card.getAttribute("data-sentence") || "";
+    var cells = Array.prototype.slice.call(card.querySelectorAll(".lkv__cell"));
+
+    // 各語の文字範囲 [start, end) を算出（onboundary の charIndex を語に対応づける）
+    var ranges = [];
+    var re = /\S+/g, m;
+    while ((m = re.exec(sentence)) !== null) ranges.push([m.index, m.index + m[0].length]);
+
+    function clearHi() { cells.forEach(function (c) { c.classList.remove("lkv__cell--on"); }); }
+    function highlightAt(charIndex) {
+      if (charIndex < 0) { clearHi(); return; }
+      var wi = -1;
+      for (var i = 0; i < ranges.length; i++) {
+        if (charIndex >= ranges[i][0] && charIndex < ranges[i][1]) { wi = i; break; }
+        if (charIndex < ranges[i][0]) { wi = i; break; }
+      }
+      clearHi();
+      if (wi >= 0 && cells[wi]) cells[wi].classList.add("lkv__cell--on");
+    }
+    function play(rate) {
+      EM.stopSpeak && EM.stopSpeak();
+      EM.speak(sentence, {
+        rate: rate,
+        onboundary: function (ci) { highlightAt(ci); },
+        onend: function () { setTimeout(clearHi, 250); }
+      });
+    }
+    var pb = card.querySelector("[data-lkv-play]");
+    var sb = card.querySelector("[data-lkv-slow]");
+    if (pb) pb.addEventListener("click", function () { play(1.0); });
+    if (sb) sb.addEventListener("click", function () { play(0.55); });
+  }
 
   // 文中の音声変化を「色分け文＋どこが・どの規則で・なぜ」まで説明するHTMLを返す。
   // リスニングの答え合わせやレッスンの解説から呼び出して、変化箇所を可視化する。
@@ -115,7 +154,7 @@
       var hasArc = links.some(function (l) { return l.from === i && l.rule !== "drop"; });
       var rule = linkedIdx[i];
       var col = rule ? RULE_COLORS[rule] : "";
-      return '<span class="lkv__cell">' +
+      return '<span class="lkv__cell" data-wi="' + i + '">' +
         (hasArc ? '<span class="lkv__arc" style="border-color:' + RULE_COLORS[links.find(function (l) { return l.from === i; }).rule] + '"></span>' : '') +
         '<span class="lkv__en"' + (col ? ' style="color:' + col + '"' : '') + '>' + EM.escapeHtml(w) + '</span>' +
         '<span class="lkv__ka"' + (col ? ' style="color:' + col + '"' : '') + '>' + EM.escapeHtml(kana[i] || "") + '</span>' +
@@ -123,10 +162,14 @@
     }).join("");
 
     var visual =
-      '<div class="lkv">' +
-        '<p class="lkv__title">リンキングが起こると発音が変わる</p>' +
+      '<div class="lkv" data-sentence="' + EM.escapeHtml(sentence) + '">' +
+        '<p class="lkv__title">単語のつながり（弧）と、いま読んでいる箇所が光ります</p>' +
         '<div class="lkv__row">' + wordsHtml + '</div>' +
         '<p class="lkv__full">≈ ' + EM.escapeHtml(res.soundKata) + '</p>' +
+        '<div class="lkv__controls">' +
+          '<button class="btn btn--primary" type="button" data-lkv-play>▶ つながりを聞く</button>' +
+          '<button class="btn btn--ghost" type="button" data-lkv-slow>🐢 ゆっくり</button>' +
+        '</div>' +
       '</div>';
 
     // 検出された規則の説明（なぜ）
@@ -161,7 +204,7 @@
      画面：タブ切替（クイズ／解析／ルール）で1画面完結
      - 既定はクイズ。開いたら即出題（だらだら縦長を廃止）
      ============================================================ */
-  var st = { tab: "quiz" };
+  var st = { tab: "analyze" };
   var qz = { qs: [], idx: 0, score: 0 };
 
   function rules() { return (window.EigoData && window.EigoData.linkingRules) || []; }
@@ -184,7 +227,7 @@
   function draw() {
     root().innerHTML =
       '<div class="pill-tabs" role="tablist">' +
-        tabBtn("quiz", "🎧 クイズ") + tabBtn("analyze", "🔍 解析") + tabBtn("rules", "📖 ルール") +
+        tabBtn("analyze", "🔗 つながり図") + tabBtn("quiz", "🎧 聞き取り") + tabBtn("rules", "📖 ルール") +
       '</div>' +
       '<div id="lk-body" class="mt-4"></div>';
     root().querySelectorAll("[data-tab]").forEach(function (b) {
@@ -244,7 +287,8 @@
     document.getElementById("lkq-fb").innerHTML =
       '<div class="lesson__foot ' + (ok ? "lesson__foot--ok" : "lesson__foot--ng") + '" style="margin:12px 0 0;border-radius:12px;padding:12px">' +
         '<p class="lesson__fb-head">' + (ok ? "⭕ 正解！" : "❌ 不正解") + '</p>' +
-        '<p class="lesson__fb-body"><strong>' + EM.escapeHtml(q.text) + '</strong>' +
+        explainHtml(q.text) +
+        '<p class="lesson__fb-body" style="margin-top:8px"><strong>' + EM.escapeHtml(q.text) + '</strong>' +
           (q.sound ? '　≈ ' + EM.escapeHtml(q.sound) : '') +
           (q.breakdown ? '<br>' + EM.escapeHtml(q.breakdown) : '') +
           '<br><span class="lk lk--' + q.ruleId + '">' + EM.escapeHtml(q.rule) + '</span> ' +
@@ -252,6 +296,7 @@
         '<button class="btn btn--primary btn--block mt-4" id="lkq-next" type="button">' +
           (qz.idx + 1 < qz.qs.length ? "次の問題 →" : "結果を見る") + '</button>' +
       '</div>';
+    if (window.Linking && window.Linking.bindVisual) window.Linking.bindVisual(document.getElementById("lkq-fb"));
     document.getElementById("lkq-next").addEventListener("click", function () {
       qz.idx++; EM.stopSpeak();
       if (qz.idx < qz.qs.length) showQ(); else showResult();
@@ -270,13 +315,13 @@
   }
   function drawQuiz() { startQuiz(); }
 
-  /* ---------- 解析タブ ---------- */
+  /* ---------- 解析タブ（可視化中心） ---------- */
   function drawAnalyze() {
     body().innerHTML =
-      '<div class="notice notice--info"><span class="notice__icon">i</span><span>英文を入れると、<strong>どこが・どの規則で・なぜ</strong>つながるかを色分けして解説します。</span></div>' +
-      '<div class="field mt-4"><span class="field__label">英文を解析</span>' +
+      '<div class="notice notice--info"><span class="notice__icon">i</span><span>英文を入れると、<strong>どの語とどの語がつながるか（弧）</strong>を図で示し、<strong>再生すると今読んでいる語が光ります</strong>。色つきの箇所で音が変化します。</span></div>' +
+      '<div class="field mt-4"><span class="field__label">英文を可視化</span>' +
         '<textarea class="textarea" id="lk-in" rows="2" placeholder="例：Could you check it out?">Could you check it out?</textarea></div>' +
-      '<button class="btn btn--primary btn--block" id="lk-go" type="button">音の変化を見る</button>' +
+      '<button class="btn btn--primary btn--block" id="lk-go" type="button">つながりを図で見る</button>' +
       '<div id="lk-out" class="mt-4"></div>';
     var input = document.getElementById("lk-in");
     var out = document.getElementById("lk-out");
@@ -294,17 +339,11 @@
       }).join("");
       out.innerHTML =
         '<div class="card">' +
-          '<p class="linking-out">' + res.html + '</p>' +
-          '<p class="linking-kata">≈ ' + EM.escapeHtml(res.soundKata) + '</p>' +
-          '<div class="grade-row" style="grid-template-columns:1fr 1fr">' +
-            '<button class="btn btn--ghost" id="lk-play" type="button">▶ 通常</button>' +
-            '<button class="btn btn--ghost" id="lk-slow" type="button">🐢 ゆっくり</button>' +
-          '</div>' +
+          explainHtml(text) +
           (detected ? '<div class="mt-4"><p class="setting-row__hint" style="margin-bottom:6px">この文の<strong>色つき箇所</strong>で起きている変化と理由：</p>' + detected + '</div>'
                     : '<p class="setting-row__hint mt-4">この文では大きな音声変化は検出されませんでした。</p>') +
         '</div>';
-      document.getElementById("lk-play").addEventListener("click", function () { EM.speak(text, { rate: 1.0 }); });
-      document.getElementById("lk-slow").addEventListener("click", function () { EM.speak(text, { rate: 0.6 }); });
+      if (window.Linking && window.Linking.bindVisual) window.Linking.bindVisual(out);
     }
     document.getElementById("lk-go").addEventListener("click", run);
     run();

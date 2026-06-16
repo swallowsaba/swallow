@@ -21,15 +21,19 @@
   /* ---------- 一覧 ---------- */
   function drawList() {
     currentId = null;
-    var cards = lessons().map(function (l) {
+    var cards = lessons().map(function (l, i) {
       var lv = l.level ? '<span class="quick-card__level">' + EM.escapeHtml(l.level) + '</span>' : "";
-      return '<button class="quick-card" type="button" data-lesson="' + l.id + '" style="text-align:left">' +
+      var step = '<span class="quick-card__step">' + (i + 1) + "</span>";
+      return '<button class="quick-card quick-card--step" type="button" data-lesson="' + l.id + '" style="text-align:left">' +
+        step +
+        '<span class="quick-card__body">' +
         '<span class="quick-card__title">' + lv + EM.escapeHtml(l.title) + "</span>" +
-        '<span class="quick-card__desc">' + EM.escapeHtml(l.ja.slice(0, 38)) + "…</span></button>";
+        '<span class="quick-card__desc">' + EM.escapeHtml(l.ja.slice(0, 38)) + "…</span>" +
+        "</span></button>";
     }).join("");
     root().innerHTML =
       '<p class="section-title">文法</p>' +
-      '<p class="text-soft" style="font-size:var(--fs-small);margin-bottom:var(--space-4)">易しい順（A1→C1）に並んでいます。上から順に進めると基礎から応用へ無理なく学べます。</p>' +
+      '<p class="text-soft" style="font-size:var(--fs-small);margin-bottom:var(--space-4)">基礎から応用へ、<strong>学習しやすい順番</strong>に並べた155ステップです。番号順に進めると、現在形→完了形→関係詞→受動態→仮定法→強調・倒置と、土台から無理なく積み上げられます。</p>' +
       '<div class="quick-grid">' + cards + "</div>";
     root().querySelectorAll("[data-lesson]").forEach(function (b) {
       b.addEventListener("click", function () { drawLesson(b.getAttribute("data-lesson")); });

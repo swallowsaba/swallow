@@ -292,6 +292,121 @@ window.EigoData.linkingRules = [
         "text": "star is out",
         "sound": "スターリザウト",
         "breakdown": "star/is/out が連結『スターリザウト』。"
+      },
+      {
+        "text": "far away",
+        "sound": "ファラウェイ",
+        "breakdown": "far/away が連結『ファラウェイ』。"
+      },
+      {
+        "text": "more often",
+        "sound": "モアロフン",
+        "breakdown": "more/often が連結『モアロフン』。"
+      },
+      {
+        "text": "after all",
+        "sound": "アフタロール",
+        "breakdown": "after/all が連結『アフタロール』。"
+      },
+      {
+        "text": "over and over",
+        "sound": "オウヴァランオウヴァ",
+        "breakdown": "over/and が連結『オウヴァラン』。"
+      },
+      {
+        "text": "here it is",
+        "sound": "ヒアリティズ",
+        "breakdown": "here/it/is が連結『ヒアリティズ』。"
+      },
+      {
+        "text": "where is it",
+        "sound": "ウェアリズィッ",
+        "breakdown": "where/is/it が連結『ウェアリズィッ』。"
+      },
+      {
+        "text": "pour out",
+        "sound": "ポーラウト",
+        "breakdown": "pour/out が連結『ポーラウト』。"
+      },
+      {
+        "text": "four eggs",
+        "sound": "フォアレッグズ",
+        "breakdown": "four/eggs が連結『フォアレッグズ』。"
+      },
+      {
+        "text": "your own",
+        "sound": "ユアロウン",
+        "breakdown": "your/own が連結『ユアロウン』。"
+      },
+      {
+        "text": "we are out",
+        "sound": "ウィアラウト",
+        "breakdown": "are/out が連結『アラウト』。"
+      },
+      {
+        "text": "go in",
+        "sound": "ゴウィン",
+        "breakdown": "go/in が連結『ゴウィン』。"
+      },
+      {
+        "text": "so old",
+        "sound": "ソウオウルド",
+        "breakdown": "so/old が連結『ソウオウルド』。"
+      },
+      {
+        "text": "two apples",
+        "sound": "トゥーアポーズ",
+        "breakdown": "two/apples が連結『トゥーアポーズ』。"
+      },
+      {
+        "text": "go away",
+        "sound": "ゴウアウェイ",
+        "breakdown": "go/away が連結『ゴウアウェイ』。"
+      },
+      {
+        "text": "see it",
+        "sound": "スィーイッ",
+        "breakdown": "see/it が連結『スィーイッ』。"
+      },
+      {
+        "text": "play it",
+        "sound": "プレイイッ",
+        "breakdown": "play/it が連結『プレイイッ』。"
+      },
+      {
+        "text": "my own",
+        "sound": "マイオウン",
+        "breakdown": "my/own が連結『マイオウン』。"
+      },
+      {
+        "text": "try again",
+        "sound": "トライアゲン",
+        "breakdown": "try/again が連結『トライアゲン』。"
+      },
+      {
+        "text": "who is",
+        "sound": "フーイズ",
+        "breakdown": "who/is が連結『フーイズ』。"
+      },
+      {
+        "text": "do it",
+        "sound": "ドゥーイッ",
+        "breakdown": "do/it が連結『ドゥーイッ』。"
+      },
+      {
+        "text": "now and again",
+        "sound": "ナウアンアゲン",
+        "breakdown": "now/and が連結『ナウアン』。"
+      },
+      {
+        "text": "far off",
+        "sound": "ファーロフ",
+        "breakdown": "far/off が連結『ファーロフ』。"
+      },
+      {
+        "text": "her own",
+        "sound": "ハーロウン",
+        "breakdown": "her/own が連結『ハーロウン』。"
       }
     ]
   },
@@ -582,6 +697,126 @@ window.EigoData.linkingRules = [
         "text": "shut it off",
         "sound": "シャリッオフ",
         "breakdown": "shut/it の t がフラップ化『シャリッ』。"
+      },
+      {
+        "text": "shut it",
+        "sound": "シャリッ",
+        "breakdown": "shut/it の t がフラップ化『シャリッ』。"
+      },
+      {
+        "text": "forgot about",
+        "sound": "フォガラバウト",
+        "breakdown": "forgot/about の t がフラップ化『フォガラ』。"
+      },
+      {
+        "text": "thought of",
+        "sound": "ソーロヴ",
+        "breakdown": "thought/of の t がフラップ化『ソーロヴ』。"
+      },
+      {
+        "text": "sort of",
+        "sound": "ソーロヴ",
+        "breakdown": "sort/of の t がフラップ化『ソーロヴ』。"
+      },
+      {
+        "text": "lot of",
+        "sound": "ロロヴ",
+        "breakdown": "lot/of の t がフラップ化『ロロヴ』。"
+      },
+      {
+        "text": "get over",
+        "sound": "ゲロウヴァ",
+        "breakdown": "get/over の t がフラップ化『ゲロウヴァ』。"
+      },
+      {
+        "text": "put off",
+        "sound": "プロフ",
+        "breakdown": "put/off の t がフラップ化『プロフ』。"
+      },
+      {
+        "text": "bit of",
+        "sound": "ビロヴ",
+        "breakdown": "bit/of の t がフラップ化『ビロヴ』。"
+      },
+      {
+        "text": "set up",
+        "sound": "セラップ",
+        "breakdown": "set/up の t がフラップ化『セラップ』。"
+      },
+      {
+        "text": "cut it out",
+        "sound": "カリラウト",
+        "breakdown": "cut/it/out の t がフラップ化『カリラウト』。"
+      },
+      {
+        "text": "what about",
+        "sound": "ワラバウト",
+        "breakdown": "what/about の t がフラップ化『ワラバウト』。"
+      },
+      {
+        "text": "got it",
+        "sound": "ガリッ",
+        "breakdown": "got/it の t がフラップ化『ガリッ』。"
+      },
+      {
+        "text": "note it",
+        "sound": "ノウリッ",
+        "breakdown": "note/it の t がフラップ化『ノウリッ』。"
+      },
+      {
+        "text": "wait a bit",
+        "sound": "ウェイラビッ",
+        "breakdown": "wait/a の t がフラップ化『ウェイラ』。"
+      },
+      {
+        "text": "got a lot",
+        "sound": "ガラロッ",
+        "breakdown": "got/a の t がフラップ化『ガラ』。"
+      },
+      {
+        "text": "hate it",
+        "sound": "ヘイリッ",
+        "breakdown": "hate/it の t がフラップ化『ヘイリッ』。"
+      },
+      {
+        "text": "meet again",
+        "sound": "ミーラゲン",
+        "breakdown": "meet/again の t がフラップ化『ミーラゲン』。"
+      },
+      {
+        "text": "sit on it",
+        "sound": "シロニッ",
+        "breakdown": "sit/on の t がフラップ化『シロン』。"
+      },
+      {
+        "text": "water it",
+        "sound": "ウォーラリッ",
+        "breakdown": "water/it の t がフラップ化『ウォーラリッ』。"
+      },
+      {
+        "text": "not a chance",
+        "sound": "ナラチャンス",
+        "breakdown": "not/a の t がフラップ化『ナラ』。"
+      },
+      {
+        "text": "wrote a note",
+        "sound": "ロウラノウト",
+        "breakdown": "wrote/a の t がフラップ化『ロウラ』。"
+      },
+      {
+        "text": "rate it",
+        "sound": "レイリッ",
+        "breakdown": "rate/it の t がフラップ化『レイリッ』。"
+      },
+      {
+        "text": "beat it",
+        "sound": "ビーリッ",
+        "breakdown": "beat/it の t がフラップ化『ビーリッ』。"
+      },
+      {
+        "text": "let it go",
+        "sound": "レリッゴウ",
+        "breakdown": "let/it の t がフラップ化『レリッ』。"
       }
     ]
   },
@@ -632,6 +867,126 @@ window.EigoData.linkingRules = [
         "text": "old",
         "sound": "オウォド",
         "breakdown": "o-l-d の l は子音 d の前でダークL→『オウォド』。"
+      },
+      {
+        "text": "feel it",
+        "sound": "フィーリッ",
+        "breakdown": "feel の暗いL＋連結『フィーリッ』。"
+      },
+      {
+        "text": "real apple",
+        "sound": "リアラポー",
+        "breakdown": "real/apple の暗いL＋連結『リアラポー』。"
+      },
+      {
+        "text": "cool air",
+        "sound": "クーレア",
+        "breakdown": "cool/air の暗いL＋連結『クーレア』。"
+      },
+      {
+        "text": "tell us",
+        "sound": "テラス",
+        "breakdown": "tell/us の暗いL＋連結『テラス』。"
+      },
+      {
+        "text": "sell out",
+        "sound": "セラウト",
+        "breakdown": "sell/out の暗いL＋連結『セラウト』。"
+      },
+      {
+        "text": "fill in",
+        "sound": "フィリン",
+        "breakdown": "fill/in の暗いL＋連結『フィリン』。"
+      },
+      {
+        "text": "all of us",
+        "sound": "オーロヴァス",
+        "breakdown": "all/of の暗いL＋連結『オーロヴァス』。"
+      },
+      {
+        "text": "call off",
+        "sound": "コーロフ",
+        "breakdown": "call/off の暗いL＋連結『コーロフ』。"
+      },
+      {
+        "text": "will it",
+        "sound": "ウィリッ",
+        "breakdown": "will/it の暗いL＋連結『ウィリッ』。"
+      },
+      {
+        "text": "mail it",
+        "sound": "メイリッ",
+        "breakdown": "mail/it の暗いL＋連結『メイリッ』。"
+      },
+      {
+        "text": "pull over",
+        "sound": "プロウヴァ",
+        "breakdown": "pull/over の暗いL＋連結『プロウヴァ』。"
+      },
+      {
+        "text": "school is",
+        "sound": "スクーリズ",
+        "breakdown": "school/is の暗いL＋連結『スクーリズ』。"
+      },
+      {
+        "text": "sell it",
+        "sound": "セリッ",
+        "breakdown": "sell の暗いL＋連結『セリッ』。"
+      },
+      {
+        "text": "cool off",
+        "sound": "クーロフ",
+        "breakdown": "cool/off の暗いL＋連結『クーロフ』。"
+      },
+      {
+        "text": "pull it",
+        "sound": "プリッ",
+        "breakdown": "pull/it の暗いL＋連結『プリッ』。"
+      },
+      {
+        "text": "tell him",
+        "sound": "テリム",
+        "breakdown": "tell/him の暗いL＋連結『テリム』。"
+      },
+      {
+        "text": "fall apart",
+        "sound": "フォーラパート",
+        "breakdown": "fall/apart の暗いL＋連結『フォーラパート』。"
+      },
+      {
+        "text": "feel it",
+        "sound": "フィーリッ",
+        "breakdown": "feel/it の暗いL＋連結『フィーリッ』。"
+      },
+      {
+        "text": "cool it",
+        "sound": "クーリッ",
+        "breakdown": "cool/it の暗いL＋連結『クーリッ』。"
+      },
+      {
+        "text": "still alive",
+        "sound": "スティラライヴ",
+        "breakdown": "still/alive の暗いL＋連結『スティラライヴ』。"
+      },
+      {
+        "text": "will it",
+        "sound": "ウィリッ",
+        "breakdown": "will/it の暗いL＋連結『ウィリッ』。"
+      },
+      {
+        "text": "all over",
+        "sound": "オーロウヴァ",
+        "breakdown": "all/over の暗いL＋連結『オーロウヴァ』。"
+      },
+      {
+        "text": "fill up",
+        "sound": "フィラップ",
+        "breakdown": "fill/up の暗いL＋連結『フィラップ』。"
+      },
+      {
+        "text": "call out",
+        "sound": "コーラウト",
+        "breakdown": "call/out の暗いL＋連結『コーラウト』。"
       }
     ]
   },
@@ -922,6 +1277,126 @@ window.EigoData.linkingRules = [
         "text": "most days",
         "sound": "モウスデイズ",
         "breakdown": "most の t が d の前で脱落『モウス』。"
+      },
+      {
+        "text": "next day",
+        "sound": "ネクスデイ",
+        "breakdown": "next の t が d の前で脱落『ネクス』。"
+      },
+      {
+        "text": "best friend",
+        "sound": "ベスフレンド",
+        "breakdown": "best の t が f の前で脱落『ベス』。"
+      },
+      {
+        "text": "first place",
+        "sound": "ファースプレイス",
+        "breakdown": "first の t が p の前で脱落『ファース』。"
+      },
+      {
+        "text": "left side",
+        "sound": "レフサイド",
+        "breakdown": "left の t が s の前で脱落『レフ』。"
+      },
+      {
+        "text": "kept quiet",
+        "sound": "ケプクワイエット",
+        "breakdown": "kept の t が q の前で脱落『ケプ』。"
+      },
+      {
+        "text": "cold cut",
+        "sound": "コウルカット",
+        "breakdown": "cold の d が c の前で脱落『コウル』。"
+      },
+      {
+        "text": "hand made",
+        "sound": "ハンメイド",
+        "breakdown": "hand の d が m の前で脱落『ハン』。"
+      },
+      {
+        "text": "grand piano",
+        "sound": "グランピアノ",
+        "breakdown": "grand の d が p の前で脱落『グラン』。"
+      },
+      {
+        "text": "old man",
+        "sound": "オウルマン",
+        "breakdown": "old の d が m の前で脱落『オウル』。"
+      },
+      {
+        "text": "background",
+        "sound": "バックグラウン",
+        "breakdown": "語尾 d が脱落気味『バックグラウン』。"
+      },
+      {
+        "text": "asked them",
+        "sound": "アスゼム",
+        "breakdown": "asked の連続子音＋th『アスゼム』。"
+      },
+      {
+        "text": "last chance",
+        "sound": "ラスチャンス",
+        "breakdown": "last の t が ch の前で脱落『ラス』。"
+      },
+      {
+        "text": "soft drink",
+        "sound": "ソフドリンク",
+        "breakdown": "soft の t が d の前で脱落『ソフ』。"
+      },
+      {
+        "text": "must go",
+        "sound": "マスゴウ",
+        "breakdown": "must の t が g の前で脱落『マス』。"
+      },
+      {
+        "text": "old friend",
+        "sound": "オウルフレンド",
+        "breakdown": "old の d が f の前で脱落『オウル』。"
+      },
+      {
+        "text": "kind gift",
+        "sound": "カインギフト",
+        "breakdown": "kind の d が g の前で脱落『カイン』。"
+      },
+      {
+        "text": "world cup",
+        "sound": "ワールカップ",
+        "breakdown": "world の d が c の前で脱落『ワール』。"
+      },
+      {
+        "text": "second chance",
+        "sound": "セカンチャンス",
+        "breakdown": "second の d が c の前で脱落『セカン』。"
+      },
+      {
+        "text": "first time",
+        "sound": "ファースタイム",
+        "breakdown": "first の t が t の前で脱落気味『ファース』。"
+      },
+      {
+        "text": "cold day",
+        "sound": "コウルデイ",
+        "breakdown": "cold の d が d の前で脱落『コウル』。"
+      },
+      {
+        "text": "most people",
+        "sound": "モウスピーポー",
+        "breakdown": "most の t が p の前で脱落『モウス』。"
+      },
+      {
+        "text": "kept quiet",
+        "sound": "ケプクワイエット",
+        "breakdown": "kept の t が q の前で脱落『ケプ』。"
+      },
+      {
+        "text": "left turn",
+        "sound": "レフターン",
+        "breakdown": "left の t が t の前で脱落気味『レフ』。"
+      },
+      {
+        "text": "last week",
+        "sound": "ラスウィーク",
+        "breakdown": "last の t が w の前で脱落『ラス』。"
       }
     ]
   },
@@ -1212,6 +1687,126 @@ window.EigoData.linkingRules = [
         "text": "because you",
         "sound": "ビコージュ",
         "breakdown": "because の z と you の y が同化『ジュ』。"
+      },
+      {
+        "text": "did you",
+        "sound": "ディヂュ",
+        "breakdown": "did の d と you の y が同化『ディヂュ』。"
+      },
+      {
+        "text": "would you",
+        "sound": "ウヂュ",
+        "breakdown": "would の d と you の y が同化『ウヂュ』。"
+      },
+      {
+        "text": "could you",
+        "sound": "クヂュ",
+        "breakdown": "could の d と you の y が同化『クヂュ』。"
+      },
+      {
+        "text": "got you",
+        "sound": "ガッチュ",
+        "breakdown": "got の t と you の y が同化『ガッチュ』。"
+      },
+      {
+        "text": "don't you",
+        "sound": "ドンチュ",
+        "breakdown": "don't の t と you の y が同化『ドンチュ』。"
+      },
+      {
+        "text": "meet you",
+        "sound": "ミーチュ",
+        "breakdown": "meet の t と you の y が同化『ミーチュ』。"
+      },
+      {
+        "text": "about you",
+        "sound": "アバウチュ",
+        "breakdown": "about の t と you の y が同化『アバウチュ』。"
+      },
+      {
+        "text": "as you know",
+        "sound": "アジュノウ",
+        "breakdown": "as の z と you の y が同化『アジュ』。"
+      },
+      {
+        "text": "is your",
+        "sound": "イジョア",
+        "breakdown": "is の z と your の y が同化『イジョア』。"
+      },
+      {
+        "text": "where's your",
+        "sound": "ウェアジョア",
+        "breakdown": "where's の z と your が同化『ウェアジョア』。"
+      },
+      {
+        "text": "tell you",
+        "sound": "テリュ",
+        "breakdown": "tell の l と you が滑らかに『テリュ』。"
+      },
+      {
+        "text": "call you",
+        "sound": "コーリュ",
+        "breakdown": "call の l と you が滑らかに『コーリュ』。"
+      },
+      {
+        "text": "won't you",
+        "sound": "ウォウンチュ",
+        "breakdown": "won't の t と you の y が同化『ウォウンチュ』。"
+      },
+      {
+        "text": "can't you",
+        "sound": "キャンチュ",
+        "breakdown": "can't の t と you の y が同化『キャンチュ』。"
+      },
+      {
+        "text": "need you",
+        "sound": "ニーヂュ",
+        "breakdown": "need の d と you の y が同化『ニーヂュ』。"
+      },
+      {
+        "text": "told you",
+        "sound": "トウルヂュ",
+        "breakdown": "told の d と you の y が同化『トウルヂュ』。"
+      },
+      {
+        "text": "set you up",
+        "sound": "セッチュアップ",
+        "breakdown": "set の t と you の y が同化『セッチュ』。"
+      },
+      {
+        "text": "mind your",
+        "sound": "マインヂョア",
+        "breakdown": "mind の d と your の y が同化『マインヂョア』。"
+      },
+      {
+        "text": "had your",
+        "sound": "ハヂョア",
+        "breakdown": "had の d と your の y が同化『ハヂョア』。"
+      },
+      {
+        "text": "miss you",
+        "sound": "ミシュ",
+        "breakdown": "miss の s と you の y が同化『ミシュ』。"
+      },
+      {
+        "text": "bless you",
+        "sound": "ブレシュ",
+        "breakdown": "bless の s と you の y が同化『ブレシュ』。"
+      },
+      {
+        "text": "this year",
+        "sound": "ディシュア",
+        "breakdown": "this の s と year の y が同化『ディシュア』。"
+      },
+      {
+        "text": "help you",
+        "sound": "ヘルピュ",
+        "breakdown": "help の p と you が滑らかに『ヘルピュ』。"
+      },
+      {
+        "text": "find you",
+        "sound": "ファインヂュ",
+        "breakdown": "find の d と you の y が同化『ファインヂュ』。"
       }
     ]
   },
@@ -1502,6 +2097,126 @@ window.EigoData.linkingRules = [
         "text": "free of charge",
         "sound": "フリーオヴチャージ",
         "breakdown": "of が弱形『ォヴ』。"
+      },
+      {
+        "text": "fish and chips",
+        "sound": "フィッシュアンチップス",
+        "breakdown": "and が弱形『アン』。"
+      },
+      {
+        "text": "rock and roll",
+        "sound": "ロッカンロール",
+        "breakdown": "and が弱形『アン』、rock と連結。"
+      },
+      {
+        "text": "salt and pepper",
+        "sound": "ソールタンペパ",
+        "breakdown": "and が弱形『アン』、salt と連結。"
+      },
+      {
+        "text": "now and then",
+        "sound": "ナウアンゼン",
+        "breakdown": "and が弱形『アン』。"
+      },
+      {
+        "text": "cup of coffee",
+        "sound": "カポヴコーフィ",
+        "breakdown": "of が弱形『ォヴ』、cup と連結。"
+      },
+      {
+        "text": "glass of water",
+        "sound": "グラソヴウォーター",
+        "breakdown": "of が弱形『ォヴ』、glass と連結。"
+      },
+      {
+        "text": "kind of like",
+        "sound": "カインダライク",
+        "breakdown": "kind of＝kinda『カインダ』。"
+      },
+      {
+        "text": "out of here",
+        "sound": "アウロヴヒア",
+        "breakdown": "of が弱形＋t のフラップ『アウロヴ』。"
+      },
+      {
+        "text": "for a while",
+        "sound": "フォアワイル",
+        "breakdown": "for が弱形『フォ』、a と連結。"
+      },
+      {
+        "text": "to the store",
+        "sound": "トゥザストア",
+        "breakdown": "to/the が弱形『トゥザ』。"
+      },
+      {
+        "text": "at the office",
+        "sound": "アッジオフィス",
+        "breakdown": "at/the が弱形『アッジ』。"
+      },
+      {
+        "text": "can you help",
+        "sound": "キャニュヘルプ",
+        "breakdown": "can が弱形『キャン』、you と連結。"
+      },
+      {
+        "text": "bread and butter",
+        "sound": "ブレッダンバタ",
+        "breakdown": "and が弱形『アン』、bread と連結。"
+      },
+      {
+        "text": "back and forth",
+        "sound": "バッカンフォース",
+        "breakdown": "and が弱形『アン』、back と連結。"
+      },
+      {
+        "text": "here and there",
+        "sound": "ヒアランゼア",
+        "breakdown": "and が弱形『アン』、here と連結。"
+      },
+      {
+        "text": "pros and cons",
+        "sound": "プロウザンコンズ",
+        "breakdown": "and が弱形『アン』、pros と連結。"
+      },
+      {
+        "text": "a glass of milk",
+        "sound": "アグラソヴミルク",
+        "breakdown": "of が弱形『ォヴ』、glass と連結。"
+      },
+      {
+        "text": "a piece of pie",
+        "sound": "アピーソヴパイ",
+        "breakdown": "of が弱形『ォヴ』、piece と連結。"
+      },
+      {
+        "text": "lots of fun",
+        "sound": "ロッツォヴファン",
+        "breakdown": "of が弱形『ォヴ』。"
+      },
+      {
+        "text": "time for tea",
+        "sound": "タイムフォティー",
+        "breakdown": "for が弱形『フォ』、time と連結。"
+      },
+      {
+        "text": "go to work",
+        "sound": "ゴウトゥワーク",
+        "breakdown": "to が弱形『トゥ』。"
+      },
+      {
+        "text": "at the door",
+        "sound": "アッザドア",
+        "breakdown": "at/the が弱形『アッザ』。"
+      },
+      {
+        "text": "on the table",
+        "sound": "オンザテイボー",
+        "breakdown": "on/the が弱形『オンザ』。"
+      },
+      {
+        "text": "do you know",
+        "sound": "ドュノウ",
+        "breakdown": "do you が弱形『ドュ』。"
       }
     ]
   },
@@ -1792,6 +2507,126 @@ window.EigoData.linkingRules = [
         "text": "let me help",
         "sound": "レミヘルプ",
         "breakdown": "let me が縮約 lemme『レミ』。"
+      },
+      {
+        "text": "I have got it",
+        "sound": "アイヴガリッ",
+        "breakdown": "I have が縮約 I've『アイヴ』。"
+      },
+      {
+        "text": "she will come",
+        "sound": "シール カム",
+        "breakdown": "she will が縮約 she'll『シール』。"
+      },
+      {
+        "text": "we have done",
+        "sound": "ウィヴダン",
+        "breakdown": "we have が縮約 we've『ウィヴ』。"
+      },
+      {
+        "text": "they are ready",
+        "sound": "ゼアレディ",
+        "breakdown": "they are が縮約 they're『ゼア』。"
+      },
+      {
+        "text": "it is fine",
+        "sound": "イッツファイン",
+        "breakdown": "it is が縮約 it's『イッツ』。"
+      },
+      {
+        "text": "that is right",
+        "sound": "ザッツライト",
+        "breakdown": "that is が縮約 that's『ザッツ』。"
+      },
+      {
+        "text": "who is there",
+        "sound": "フーズゼア",
+        "breakdown": "who is が縮約 who's『フーズ』。"
+      },
+      {
+        "text": "let us go",
+        "sound": "レッツゴウ",
+        "breakdown": "let us が縮約 let's『レッツ』。"
+      },
+      {
+        "text": "going to win",
+        "sound": "ガナウィン",
+        "breakdown": "going to が縮約 gonna『ガナ』。"
+      },
+      {
+        "text": "want to know",
+        "sound": "ワナノウ",
+        "breakdown": "want to が縮約 wanna『ワナ』。"
+      },
+      {
+        "text": "have to go",
+        "sound": "ハフタゴウ",
+        "breakdown": "have to が縮約『ハフタ』。"
+      },
+      {
+        "text": "ought to",
+        "sound": "オータ",
+        "breakdown": "ought to が縮約『オータ』。"
+      },
+      {
+        "text": "I have seen it",
+        "sound": "アイヴスィーニッ",
+        "breakdown": "I have が縮約 I've『アイヴ』。"
+      },
+      {
+        "text": "he will go",
+        "sound": "ヒール ゴウ",
+        "breakdown": "he will が縮約 he'll『ヒール』。"
+      },
+      {
+        "text": "you have won",
+        "sound": "ユーヴワン",
+        "breakdown": "you have が縮約 you've『ユーヴ』。"
+      },
+      {
+        "text": "we are here",
+        "sound": "ウィアヒア",
+        "breakdown": "we are が縮約 we're『ウィア』。"
+      },
+      {
+        "text": "she is ready",
+        "sound": "シーズレディ",
+        "breakdown": "she is が縮約 she's『シーズ』。"
+      },
+      {
+        "text": "it has been",
+        "sound": "イッツビン",
+        "breakdown": "it has が縮約 it's『イッツ』。"
+      },
+      {
+        "text": "what is it",
+        "sound": "ワッツィッ",
+        "breakdown": "what is が縮約 what's『ワッツ』。"
+      },
+      {
+        "text": "there is time",
+        "sound": "ゼアズタイム",
+        "breakdown": "there is が縮約 there's『ゼアズ』。"
+      },
+      {
+        "text": "going to go",
+        "sound": "ガナゴウ",
+        "breakdown": "going to が縮約 gonna『ガナ』。"
+      },
+      {
+        "text": "want to see",
+        "sound": "ワナスィー",
+        "breakdown": "want to が縮約 wanna『ワナ』。"
+      },
+      {
+        "text": "has to be",
+        "sound": "ハストゥビー",
+        "breakdown": "has to が縮約『ハストゥ』。"
+      },
+      {
+        "text": "used to be",
+        "sound": "ユーストゥビー",
+        "breakdown": "used to が縮約『ユーストゥ』。"
       }
     ]
   },
@@ -1842,6 +2677,126 @@ window.EigoData.linkingRules = [
         "text": "school",
         "sound": "スクーォ",
         "breakdown": "s の直後の k は帯気なし→『スクー』、語末ダークLで『ォ』。"
+      },
+      {
+        "text": "pin (息あり)",
+        "sound": "プヒン",
+        "breakdown": "語頭 p は強い息を伴う『プヒン』。"
+      },
+      {
+        "text": "top (息あり)",
+        "sound": "トップ",
+        "breakdown": "語頭 t は強い息を伴う。"
+      },
+      {
+        "text": "come (息あり)",
+        "sound": "クハム",
+        "breakdown": "語頭 k は強い息を伴う『クハム』。"
+      },
+      {
+        "text": "pen (息あり)",
+        "sound": "プヘン",
+        "breakdown": "語頭 p は強い息を伴う『プヘン』。"
+      },
+      {
+        "text": "tea (息あり)",
+        "sound": "トヒー",
+        "breakdown": "語頭 t は強い息を伴う『トヒー』。"
+      },
+      {
+        "text": "spin (息なし)",
+        "sound": "スピン",
+        "breakdown": "s の後の p は息を伴わない『スピン』。"
+      },
+      {
+        "text": "stop (息なし)",
+        "sound": "スタップ",
+        "breakdown": "s の後の t は息を伴わない『スタップ』。"
+      },
+      {
+        "text": "sky (息なし)",
+        "sound": "スカイ",
+        "breakdown": "s の後の k は息を伴わない『スカイ』。"
+      },
+      {
+        "text": "kit (息あり)",
+        "sound": "クヒット",
+        "breakdown": "語頭 k は強い息を伴う『クヒット』。"
+      },
+      {
+        "text": "pot (息あり)",
+        "sound": "プハット",
+        "breakdown": "語頭 p は強い息を伴う『プハット』。"
+      },
+      {
+        "text": "time (息あり)",
+        "sound": "トハイム",
+        "breakdown": "語頭 t は強い息を伴う『トハイム』。"
+      },
+      {
+        "text": "cool (息あり)",
+        "sound": "クフール",
+        "breakdown": "語頭 k は強い息を伴う『クフール』。"
+      },
+      {
+        "text": "paper (息あり)",
+        "sound": "ペイパ",
+        "breakdown": "語頭 p は強い息を伴う『ペイパ』。"
+      },
+      {
+        "text": "table (息あり)",
+        "sound": "テイボー",
+        "breakdown": "語頭 t は強い息を伴う『テイボー』。"
+      },
+      {
+        "text": "candle (息あり)",
+        "sound": "キャンドー",
+        "breakdown": "語頭 k は強い息を伴う『キャンドー』。"
+      },
+      {
+        "text": "pepper (息あり)",
+        "sound": "ペパ",
+        "breakdown": "語頭 p は強い息を伴う『ペパ』。"
+      },
+      {
+        "text": "target (息あり)",
+        "sound": "ターゲット",
+        "breakdown": "語頭 t は強い息を伴う『ターゲット』。"
+      },
+      {
+        "text": "spend (息なし)",
+        "sound": "スペンド",
+        "breakdown": "s の後の p は息を伴わない『スペンド』。"
+      },
+      {
+        "text": "stand (息なし)",
+        "sound": "スタンド",
+        "breakdown": "s の後の t は息を伴わない『スタンド』。"
+      },
+      {
+        "text": "scan (息なし)",
+        "sound": "スキャン",
+        "breakdown": "s の後の k は息を伴わない『スキャン』。"
+      },
+      {
+        "text": "kettle (息あり)",
+        "sound": "ケトー",
+        "breakdown": "語頭 k は強い息を伴う『ケトー』。"
+      },
+      {
+        "text": "pocket (息あり)",
+        "sound": "ポケット",
+        "breakdown": "語頭 p は強い息を伴う『ポケット』。"
+      },
+      {
+        "text": "ticket (息あり)",
+        "sound": "ティケット",
+        "breakdown": "語頭 t は強い息を伴う『ティケット』。"
+      },
+      {
+        "text": "corner (息あり)",
+        "sound": "コーナ",
+        "breakdown": "語頭 k は強い息を伴う『コーナ』。"
       }
     ]
   }

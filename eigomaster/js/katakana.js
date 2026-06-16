@@ -43,22 +43,101 @@
   function isVowel(ch) { return VOWELS.hasOwnProperty(ch); }
   function vowelKana(ch) { return ["ア", "イ", "ウ", "エ", "オ"][VOWELS[ch]]; }
 
-  // 1語をルールベースでカタカナに（近似）
+  // 語末パターン（発音に沿った定型。長いものから照合）
+  var ENDINGS = [
+    ["tional", "ショナル"], ["tion", "ション"], ["sion", "ション"], ["cion", "ション"],
+    ["tious", "シャス"], ["cious", "シャス"], ["geous", "ジャス"], ["gious", "ジャス"],
+    ["cial", "シャル"], ["tial", "シャル"], ["cture", "クチャー"], ["sure", "シャー"],
+    ["ture", "チャー"], ["dure", "ジャー"], ["able", "アボー"], ["ible", "イボー"],
+    ["stle", "ソー"], ["ckle", "コー"], ["ngle", "ンゴー"], ["nkle", "ンコー"],
+    ["ttle", "トー"], ["ddle", "ドー"], ["ssle", "ソー"], ["zzle", "ゾー"], ["ffle", "フォー"],
+    ["ggle", "ゴー"], [" pple", "ポー"], ["mble", "ンボー"], ["nble", "ンボー"],
+    ["ble", "ボー"], ["ple", "ポー"], ["dle", "ドー"],
+    ["tle", "トー"], ["gle", "ゴー"], ["kle", "コー"], ["zle", "ゾー"], ["fle", "フォー"],
+    ["cle", "コー"], ["sle", "ソー"], ["ought", "オート"], ["aught", "オート"],
+    ["ous", "アス"], ["ful", "フォー"], ["ment", "メント"], ["ness", "ネス"], ["less", "レス"],
+    ["ing", "イング"], ["ically", "イカリー"], ["ical", "イカル"], ["ically", "イカリー"],
+    ["ology", "オロジー"], ["ity", "イティ"], [" ", " "]
+  ];
+  // 子音二重音字（母音が続く場合は別途CV結合）
+  var CDI = [
+    ["tch", "チ"], ["dge", "ジ"], ["sch", "スク"], ["shr", "シュル"], ["thr", "スル"],
+    ["chr", "クル"], ["sh", "シュ"], ["ch", "チ"], ["th", "ス"], ["ph", "フ"], ["wh", "ホ"],
+    ["ck", "ック"], ["ng", "ング"], ["nk", "ンク"], ["gh", "グ"], ["wr", "ル"],
+    ["kn", "ヌ"], ["gn", "ヌ"], ["ps", "ス"], ["rh", "ル"]
+  ];
+  var SH5 = ["シャ", "シ", "シュ", "シェ", "ショ"];
+  var CH5 = ["チャ", "チ", "チュ", "チェ", "チョ"];
+  var TH5 = ["サ", "スィ", "ス", "セ", "ソ"];
+  var QU5 = ["クワ", "クウィ", "ク", "クウェ", "クウォ"];
+
+  // 1語をルールベースでカタカナに（音声準拠・近似）
   function ruleKatakana(raw) {
     var word = String(raw).toLowerCase().replace(/[^a-z]/g, "");
     if (!word) return "";
-    // 語末の黙字 e を落とす（make, name など）
+
+    // 語末の定型パターンを先に切り出す
+    var suffix = "";
+    for (var e = 0; e < ENDINGS.length; e++) {
+      var es = ENDINGS[e][0];
+      if (es === " ") continue;
+      if (word.length > es.length && word.slice(-es.length) === es) {
+        suffix = ENDINGS[e][1];
+        word = word.slice(0, -es.length);
+        break;
+      }
+    }
+
+    // magic-e（CVCe）：語末の黙字 e を落とす（make, name など）
     if (word.length > 2 && word.endsWith("e") && !isVowel(word[word.length - 2])) {
       word = word.slice(0, -1);
     }
+
     var out = "";
     var i = 0;
+    // 語頭 wa + 子音 → ウォ（water, want, watch, wash, wall）。was/wagは除外したいが近似。
+    if (/^wa[^aeiou]/.test(word) && word.slice(0,3) !== "was" && word.slice(0,3) !== "wag") { out = "ウォ"; i = 2; }
     while (i < word.length) {
-      // 連字照合
+      var rest = word.slice(i);
       var matched = false;
+
+      // 母音連字（DIGRAPHS の母音系）
       for (var d = 0; d < DIGRAPHS.length; d++) {
         var seq = DIGRAPHS[d][0];
-        if (word.substr(i, seq.length) === seq) { out += DIGRAPHS[d][1]; i += seq.length; matched = true; break; }
+        // 子音二重音字はこの後で母音結合を試すため、母音系のみここで処理
+        if (rest.indexOf(seq) === 0 && "aeiou".indexOf(seq[0]) >= 0) {
+          out += DIGRAPHS[d][1]; i += seq.length; matched = true; break;
+        }
+      }
+      if (matched) continue;
+
+      // r制御母音：子音 + 母音 + r（後ろが母音でない）→ 長音化（water→ウォーター, bird→バード）
+      var cR = word[i], vR = word[i+1], rR = word[i+2], aftR = word[i+3];
+      if (CV[cR] && vR && isVowel(vR) && rR === "r" && (!aftR || !isVowel(aftR))) {
+        // o+r が語末→アー段(doctor,actor)、o+r+子音→オ段(order,corn)
+        var oEnd = (vR === "o" && !aftR);
+        var idxR = (vR === "o" && !oEnd) ? 4 : 0;
+        var ccR = cR;
+        if (cR === "c") ccR = "k"; else if (cR === "g") ccR = "g"; else if (cR === "q") ccR = "k";
+        if (CV[ccR]) { out += CV[ccR][idxR] + "ー"; i += 3; continue; }
+      }
+      // 語頭・子音後の r制御母音（ar/er/ir/or/ur 単独）
+      if (isVowel(word[i]) && word[i+1] === "r" && (!word[i+2] || !isVowel(word[i+2]))) {
+        out += (word[i] === "o") ? "オー" : "アー"; i += 2; continue;
+      }
+
+      // 子音二重音字（母音が続けば結合、そうでなければ単独）
+      for (var k = 0; k < CDI.length; k++) {
+        var cs = CDI[k][0];
+        if (rest.indexOf(cs) === 0) {
+          var af = word[i + cs.length];
+          if (cs === "sh" && af && isVowel(af)) { out += SH5[VOWELS[af]]; i += cs.length + 1; matched = true; break; }
+          if (cs === "ch" && af && isVowel(af)) { out += CH5[VOWELS[af]]; i += cs.length + 1; matched = true; break; }
+          if (cs === "th" && af && isVowel(af)) { out += TH5[VOWELS[af]]; i += cs.length + 1; matched = true; break; }
+          if (cs === "ph" && af && isVowel(af)) { out += CV.f[VOWELS[af]]; i += cs.length + 1; matched = true; break; }
+          if (cs === "wh" && af && isVowel(af)) { out += (af === "o" ? "ホ" : CV.w[VOWELS[af]]); i += cs.length + 1; matched = true; break; }
+          out += CDI[k][1]; i += cs.length; matched = true; break;
+        }
       }
       if (matched) continue;
 
@@ -68,14 +147,21 @@
       if (isVowel(c)) { out += vowelKana(c); i += 1; continue; }
 
       // 同じ子音の連続 → 促音「ッ」
-      if (next === c && CV[c]) { out += "ッ"; i += 1; continue; }
+      if (next === c && c !== "h") { out += "ッ"; i += 1; continue; }
 
-      if (CV[c] && next && isVowel(next)) { out += CV[c][VOWELS[next]]; i += 2; continue; }
+      // soft c / soft g（e, i, y の前）
+      var cc = c;
+      if (c === "c") { cc = (next && "eiy".indexOf(next) >= 0) ? "s" : "k"; }
+      else if (c === "g") { cc = (next && "eiy".indexOf(next) >= 0) ? "j" : "g"; }
+      else if (c === "q") { cc = "k"; }
+      else if (c === "x") { out += "クス"; i += 1; continue; }
 
-      out += (STANDALONE[c] != null ? STANDALONE[c] : "");
+      if (CV[cc] && next && isVowel(next)) { out += CV[cc][VOWELS[next]]; i += 2; continue; }
+
+      out += (STANDALONE[cc] != null ? STANDALONE[cc] : (STANDALONE[c] != null ? STANDALONE[c] : ""));
       i += 1;
     }
-    return out;
+    return out + suffix;
   }
 
   // 1語をカタカナに（辞書優先）
@@ -89,7 +175,8 @@
   // 文章をカタカナに（語ごとに変換し、区切りはそのまま）
   function toKatakana(text) {
     if (!text) return "";
-    return String(text).split(/(\s+)/).map(function (tok) {
+    return String(text).split(/(\s+|-)/).map(function (tok) {
+      if (tok === "-") return "-";
       if (/^\s+$/.test(tok) || tok === "") return tok;
       // 前後の句読点を保持
       var m = tok.match(/^([^A-Za-z']*)([A-Za-z']+)([^A-Za-z']*)$/);

@@ -4882,6 +4882,1819 @@ window.EigoData.phonics = {
    "b": "door",
    "ipaA": "/gɔr/",
    "ipaB": "/dɔr/"
+  },
+  {
+   "focus": "R / L",
+   "a": "broil",
+   "b": "bloil",
+   "ipaA": "/brɔɪl/",
+   "ipaB": "/blɔɪl/"
+  },
+  {
+   "focus": "R / L",
+   "a": "cramp",
+   "b": "clamp",
+   "ipaA": "/kræmp/",
+   "ipaB": "/klæmp/"
+  },
+  {
+   "focus": "R / L",
+   "a": "grad",
+   "b": "glad",
+   "ipaA": "/græd/",
+   "ipaB": "/glæd/"
+  },
+  {
+   "focus": "R / L",
+   "a": "prank",
+   "b": "plank",
+   "ipaA": "/præŋk/",
+   "ipaB": "/plæŋk/"
+  },
+  {
+   "focus": "R / L",
+   "a": "crock",
+   "b": "clock",
+   "ipaA": "/krɑk/",
+   "ipaB": "/klɑk/"
+  },
+  {
+   "focus": "R / L",
+   "a": "breed",
+   "b": "bleed",
+   "ipaA": "/brid/",
+   "ipaB": "/blid/"
+  },
+  {
+   "focus": "R / L",
+   "a": "crank",
+   "b": "clank",
+   "ipaA": "/kræŋk/",
+   "ipaB": "/klæŋk/"
+  },
+  {
+   "focus": "R / L",
+   "a": "grouse",
+   "b": "blouse",
+   "ipaA": "/graʊs/",
+   "ipaB": "/blaʊs/"
+  },
+  {
+   "focus": "R / L",
+   "a": "prod",
+   "b": "plod",
+   "ipaA": "/prɑd/",
+   "ipaB": "/plɑd/"
+  },
+  {
+   "focus": "R / L",
+   "a": "grim",
+   "b": "glim",
+   "ipaA": "/grɪm/",
+   "ipaB": "/glɪm/"
+  },
+  {
+   "focus": "R / L",
+   "a": "trace",
+   "b": "place",
+   "ipaA": "/treɪs/",
+   "ipaB": "/pleɪs/"
+  },
+  {
+   "focus": "L / N",
+   "a": "late",
+   "b": "nate",
+   "ipaA": "/leɪt/",
+   "ipaB": "/neɪt/"
+  },
+  {
+   "focus": "L / N",
+   "a": "lice",
+   "b": "nice",
+   "ipaA": "/laɪs/",
+   "ipaB": "/naɪs/"
+  },
+  {
+   "focus": "L / N",
+   "a": "low",
+   "b": "no",
+   "ipaA": "/loʊ/",
+   "ipaB": "/noʊ/"
+  },
+  {
+   "focus": "L / N",
+   "a": "lead",
+   "b": "need",
+   "ipaA": "/lid/",
+   "ipaB": "/nid/"
+  },
+  {
+   "focus": "B / P",
+   "a": "bunch",
+   "b": "punch",
+   "ipaA": "/bʌntʃ/",
+   "ipaB": "/pʌntʃ/"
+  },
+  {
+   "focus": "B / P",
+   "a": "bath",
+   "b": "path",
+   "ipaA": "/bæθ/",
+   "ipaB": "/pæθ/"
+  },
+  {
+   "focus": "B / P",
+   "a": "bull",
+   "b": "pull",
+   "ipaA": "/bʊl/",
+   "ipaB": "/pʊl/"
+  },
+  {
+   "focus": "B / P",
+   "a": "bark",
+   "b": "park",
+   "ipaA": "/bɑrk/",
+   "ipaB": "/pɑrk/"
+  },
+  {
+   "focus": "B / P",
+   "a": "bride",
+   "b": "pride",
+   "ipaA": "/braɪd/",
+   "ipaB": "/praɪd/"
+  },
+  {
+   "focus": "D / T",
+   "a": "down",
+   "b": "town",
+   "ipaA": "/daʊn/",
+   "ipaB": "/taʊn/"
+  },
+  {
+   "focus": "D / T",
+   "a": "do",
+   "b": "too",
+   "ipaA": "/du/",
+   "ipaB": "/tu/"
+  },
+  {
+   "focus": "D / T",
+   "a": "dense",
+   "b": "tense",
+   "ipaA": "/dɛns/",
+   "ipaB": "/tɛns/"
+  },
+  {
+   "focus": "D / T",
+   "a": "dug",
+   "b": "tug",
+   "ipaA": "/dʌg/",
+   "ipaB": "/tʌg/"
+  },
+  {
+   "focus": "D / T",
+   "a": "dot",
+   "b": "tot",
+   "ipaA": "/dɑt/",
+   "ipaB": "/tɑt/"
+  },
+  {
+   "focus": "G / K",
+   "a": "goat",
+   "b": "coat",
+   "ipaA": "/goʊt/",
+   "ipaB": "/koʊt/"
+  },
+  {
+   "focus": "G / K",
+   "a": "gap",
+   "b": "cap",
+   "ipaA": "/gæp/",
+   "ipaB": "/kæp/"
+  },
+  {
+   "focus": "G / K",
+   "a": "gate",
+   "b": "Kate",
+   "ipaA": "/geɪt/",
+   "ipaB": "/keɪt/"
+  },
+  {
+   "focus": "G / K",
+   "a": "goal",
+   "b": "coal",
+   "ipaA": "/goʊl/",
+   "ipaB": "/koʊl/"
+  },
+  {
+   "focus": "G / K",
+   "a": "glue",
+   "b": "clue",
+   "ipaA": "/glu/",
+   "ipaB": "/klu/"
+  },
+  {
+   "focus": "V / F",
+   "a": "vat",
+   "b": "fat",
+   "ipaA": "/væt/",
+   "ipaB": "/fæt/"
+  },
+  {
+   "focus": "V / F",
+   "a": "vault",
+   "b": "fault",
+   "ipaA": "/vɔlt/",
+   "ipaB": "/fɔlt/"
+  },
+  {
+   "focus": "V / F",
+   "a": "vail",
+   "b": "fail",
+   "ipaA": "/veɪl/",
+   "ipaB": "/feɪl/"
+  },
+  {
+   "focus": "V / F",
+   "a": "vee",
+   "b": "fee",
+   "ipaA": "/vi/",
+   "ipaB": "/fi/"
+  },
+  {
+   "focus": "Z / S",
+   "a": "zoo",
+   "b": "sue",
+   "ipaA": "/zu/",
+   "ipaB": "/su/"
+  },
+  {
+   "focus": "Z / S",
+   "a": "zeal",
+   "b": "seal",
+   "ipaA": "/zil/",
+   "ipaB": "/sil/"
+  },
+  {
+   "focus": "Z / S",
+   "a": "zinc",
+   "b": "sink",
+   "ipaA": "/zɪŋk/",
+   "ipaB": "/sɪŋk/"
+  },
+  {
+   "focus": "ʃ / tʃ",
+   "a": "share",
+   "b": "chair",
+   "ipaA": "/ʃɛr/",
+   "ipaB": "/tʃɛr/"
+  },
+  {
+   "focus": "ʃ / tʃ",
+   "a": "shar",
+   "b": "char",
+   "ipaA": "/ʃɑr/",
+   "ipaB": "/tʃɑr/"
+  },
+  {
+   "focus": "iː / ɪ",
+   "a": "heel",
+   "b": "hill",
+   "ipaA": "/hil/",
+   "ipaB": "/hɪl/"
+  },
+  {
+   "focus": "iː / ɪ",
+   "a": "peel",
+   "b": "pill",
+   "ipaA": "/pil/",
+   "ipaB": "/pɪl/"
+  },
+  {
+   "focus": "iː / ɪ",
+   "a": "seek",
+   "b": "sick",
+   "ipaA": "/sik/",
+   "ipaB": "/sɪk/"
+  },
+  {
+   "focus": "ɛ / æ",
+   "a": "pen",
+   "b": "pan",
+   "ipaA": "/pɛn/",
+   "ipaB": "/pæn/"
+  },
+  {
+   "focus": "ɛ / æ",
+   "a": "bed",
+   "b": "bad",
+   "ipaA": "/bɛd/",
+   "ipaB": "/bæd/"
+  },
+  {
+   "focus": "ɛ / æ",
+   "a": "send",
+   "b": "sand",
+   "ipaA": "/sɛnd/",
+   "ipaB": "/sænd/"
+  },
+  {
+   "focus": "ɛ / æ",
+   "a": "lend",
+   "b": "land",
+   "ipaA": "/lɛnd/",
+   "ipaB": "/lænd/"
+  },
+  {
+   "focus": "ɑ / oʊ",
+   "a": "cot",
+   "b": "coat",
+   "ipaA": "/kɑt/",
+   "ipaB": "/koʊt/"
+  },
+  {
+   "focus": "ɑ / oʊ",
+   "a": "rod",
+   "b": "road",
+   "ipaA": "/rɑd/",
+   "ipaB": "/roʊd/"
+  },
+  {
+   "focus": "ɑ / oʊ",
+   "a": "sock",
+   "b": "soak",
+   "ipaA": "/sɑk/",
+   "ipaB": "/soʊk/"
+  },
+  {
+   "focus": "ʊ / ʌ",
+   "a": "look",
+   "b": "luck",
+   "ipaA": "/lʊk/",
+   "ipaB": "/lʌk/"
+  },
+  {
+   "focus": "ʊ / ʌ",
+   "a": "book",
+   "b": "buck",
+   "ipaA": "/bʊk/",
+   "ipaB": "/bʌk/"
+  },
+  {
+   "focus": "ʊ / ʌ",
+   "a": "took",
+   "b": "tuck",
+   "ipaA": "/tʊk/",
+   "ipaB": "/tʌk/"
+  },
+  {
+   "focus": "eɪ / ɛ",
+   "a": "wait",
+   "b": "wet",
+   "ipaA": "/weɪt/",
+   "ipaB": "/wɛt/"
+  },
+  {
+   "focus": "eɪ / ɛ",
+   "a": "paid",
+   "b": "ped",
+   "ipaA": "/peɪd/",
+   "ipaB": "/pɛd/"
+  },
+  {
+   "focus": "oʊ / aʊ",
+   "a": "tone",
+   "b": "town",
+   "ipaA": "/toʊn/",
+   "ipaB": "/taʊn/"
+  },
+  {
+   "focus": "aɪ / ɔɪ",
+   "a": "tie",
+   "b": "toy",
+   "ipaA": "/taɪ/",
+   "ipaB": "/tɔɪ/"
+  },
+  {
+   "focus": "aɪ / ɔɪ",
+   "a": "bile",
+   "b": "boil",
+   "ipaA": "/baɪl/",
+   "ipaB": "/bɔɪl/"
+  },
+  {
+   "focus": "ɝ / ɛr",
+   "a": "bird",
+   "b": "bared",
+   "ipaA": "/bɜrd/",
+   "ipaB": "/bɛrd/"
+  },
+  {
+   "focus": "m / n (語尾)",
+   "a": "some",
+   "b": "sun",
+   "ipaA": "/sʌm/",
+   "ipaB": "/sʌn/"
+  },
+  {
+   "focus": "m / n (語尾)",
+   "a": "rim",
+   "b": "rin",
+   "ipaA": "/rɪm/",
+   "ipaB": "/rɪn/"
+  },
+  {
+   "focus": "TH(無声) / TH(有声)",
+   "a": "thigh",
+   "b": "thy",
+   "ipaA": "/θaɪ/",
+   "ipaB": "/ðaɪ/"
+  },
+  {
+   "focus": "TH(無声) / TH(有声)",
+   "a": "ether",
+   "b": "either",
+   "ipaA": "/ˈiθɚ/",
+   "ipaB": "/ˈiðɚ/"
+  },
+  {
+   "focus": "TH / V",
+   "a": "thee",
+   "b": "vee",
+   "ipaA": "/ði/",
+   "ipaB": "/vi/"
+  },
+  {
+   "focus": "F / TH",
+   "a": "fin",
+   "b": "thin",
+   "ipaA": "/fɪn/",
+   "ipaB": "/θɪn/"
+  },
+  {
+   "focus": "F / TH",
+   "a": "first",
+   "b": "thirst",
+   "ipaA": "/fɜrst/",
+   "ipaB": "/θɜrst/"
+  },
+  {
+   "focus": "F / TH",
+   "a": "fought",
+   "b": "thought",
+   "ipaA": "/fɔt/",
+   "ipaB": "/θɔt/"
+  },
+  {
+   "focus": "W / R",
+   "a": "wing",
+   "b": "ring",
+   "ipaA": "/wɪŋ/",
+   "ipaB": "/rɪŋ/"
+  },
+  {
+   "focus": "W / R",
+   "a": "west",
+   "b": "rest",
+   "ipaA": "/wɛst/",
+   "ipaB": "/rɛst/"
+  },
+  {
+   "focus": "W / R",
+   "a": "wed",
+   "b": "red",
+   "ipaA": "/wɛd/",
+   "ipaB": "/rɛd/"
+  },
+  {
+   "focus": "W / R",
+   "a": "wide",
+   "b": "ride",
+   "ipaA": "/waɪd/",
+   "ipaB": "/raɪd/"
+  },
+  {
+   "focus": "Y / J",
+   "a": "yam",
+   "b": "jam",
+   "ipaA": "/jæm/",
+   "ipaB": "/dʒæm/"
+  },
+  {
+   "focus": "Y / J",
+   "a": "yes",
+   "b": "jess",
+   "ipaA": "/jɛs/",
+   "ipaB": "/dʒɛs/"
+  },
+  {
+   "focus": "Y / J",
+   "a": "use(名)",
+   "b": "juice",
+   "ipaA": "/jus/",
+   "ipaB": "/dʒus/"
+  },
+  {
+   "focus": "P / F",
+   "a": "pat",
+   "b": "fat",
+   "ipaA": "/pæt/",
+   "ipaB": "/fæt/"
+  },
+  {
+   "focus": "P / F",
+   "a": "pine",
+   "b": "fine",
+   "ipaA": "/paɪn/",
+   "ipaB": "/faɪn/"
+  },
+  {
+   "focus": "P / F",
+   "a": "pour",
+   "b": "four",
+   "ipaA": "/pɔr/",
+   "ipaB": "/fɔr/"
+  },
+  {
+   "focus": "K / H",
+   "a": "cat",
+   "b": "hat",
+   "ipaA": "/kæt/",
+   "ipaB": "/hæt/"
+  },
+  {
+   "focus": "K / H",
+   "a": "cold",
+   "b": "hold",
+   "ipaA": "/koʊld/",
+   "ipaB": "/hoʊld/"
+  },
+  {
+   "focus": "K / H",
+   "a": "core",
+   "b": "hore",
+   "ipaA": "/kɔr/",
+   "ipaB": "/hɔr/"
+  },
+  {
+   "focus": "T / TH",
+   "a": "tank",
+   "b": "thank",
+   "ipaA": "/tæŋk/",
+   "ipaB": "/θæŋk/"
+  },
+  {
+   "focus": "D / TH",
+   "a": "dare",
+   "b": "there",
+   "ipaA": "/dɛr/",
+   "ipaB": "/ðɛr/"
+  },
+  {
+   "focus": "D / TH",
+   "a": "doze",
+   "b": "those",
+   "ipaA": "/doʊz/",
+   "ipaB": "/ðoʊz/"
+  },
+  {
+   "focus": "CH / TR",
+   "a": "chip",
+   "b": "trip",
+   "ipaA": "/tʃɪp/",
+   "ipaB": "/trɪp/"
+  },
+  {
+   "focus": "CH / TR",
+   "a": "chain",
+   "b": "train",
+   "ipaA": "/tʃeɪn/",
+   "ipaB": "/treɪn/"
+  },
+  {
+   "focus": "J / DR",
+   "a": "jug",
+   "b": "drug",
+   "ipaA": "/dʒʌg/",
+   "ipaB": "/drʌg/"
+  },
+  {
+   "focus": "J / DR",
+   "a": "jaw",
+   "b": "draw",
+   "ipaA": "/dʒɔ/",
+   "ipaB": "/drɔ/"
+  },
+  {
+   "focus": "ɪ / ɛ",
+   "a": "bit",
+   "b": "bet",
+   "ipaA": "/bɪt/",
+   "ipaB": "/bɛt/"
+  },
+  {
+   "focus": "ɪ / ɛ",
+   "a": "sit",
+   "b": "set",
+   "ipaA": "/sɪt/",
+   "ipaB": "/sɛt/"
+  },
+  {
+   "focus": "ɔ / oʊ",
+   "a": "hall",
+   "b": "hole",
+   "ipaA": "/hɔl/",
+   "ipaB": "/hoʊl/"
+  },
+  {
+   "focus": "uː / oʊ",
+   "a": "fool",
+   "b": "foal",
+   "ipaA": "/ful/",
+   "ipaB": "/foʊl/"
+  },
+  {
+   "focus": "æ / aɪ",
+   "a": "pat",
+   "b": "pite",
+   "ipaA": "/pæt/",
+   "ipaB": "/paɪt/"
+  },
+  {
+   "focus": "æ / eɪ",
+   "a": "mad",
+   "b": "made",
+   "ipaA": "/mæd/",
+   "ipaB": "/meɪd/"
+  },
+  {
+   "focus": "æ / eɪ",
+   "a": "pan",
+   "b": "pane",
+   "ipaA": "/pæn/",
+   "ipaB": "/peɪn/"
+  },
+  {
+   "focus": "æ / eɪ",
+   "a": "tap",
+   "b": "tape",
+   "ipaA": "/tæp/",
+   "ipaB": "/teɪp/"
+  },
+  {
+   "focus": "æ / eɪ",
+   "a": "rad",
+   "b": "rade",
+   "ipaA": "/ræd/",
+   "ipaB": "/reɪd/"
+  },
+  {
+   "focus": "ʌ / ɑr",
+   "a": "hut",
+   "b": "heart",
+   "ipaA": "/hʌt/",
+   "ipaB": "/hɑrt/"
+  },
+  {
+   "focus": "ɪr / ɛr",
+   "a": "beer",
+   "b": "bear",
+   "ipaA": "/bɪr/",
+   "ipaB": "/bɛr/"
+  },
+  {
+   "focus": "ɪr / ɛr",
+   "a": "fear",
+   "b": "fair",
+   "ipaA": "/fɪr/",
+   "ipaB": "/fɛr/"
+  },
+  {
+   "focus": "ɪr / ɛr",
+   "a": "cheer",
+   "b": "chair",
+   "ipaA": "/tʃɪr/",
+   "ipaB": "/tʃɛr/"
+  },
+  {
+   "focus": "ɔr / oʊr",
+   "a": "or",
+   "b": "oar",
+   "ipaA": "/ɔr/",
+   "ipaB": "/oʊr/"
+  },
+  {
+   "focus": "ʊr / ɔr",
+   "a": "tour",
+   "b": "tore",
+   "ipaA": "/tʊr/",
+   "ipaB": "/tɔr/"
+  },
+  {
+   "focus": "s / z (語尾)",
+   "a": "use(名)",
+   "b": "use(動)",
+   "ipaA": "/jus/",
+   "ipaB": "/juz/"
+  },
+  {
+   "focus": "t / d (語尾)",
+   "a": "set",
+   "b": "said",
+   "ipaA": "/sɛt/",
+   "ipaB": "/sɛd/"
+  },
+  {
+   "focus": "t / d (語尾)",
+   "a": "hit",
+   "b": "hid",
+   "ipaA": "/hɪt/",
+   "ipaB": "/hɪd/"
+  },
+  {
+   "focus": "R / L",
+   "a": "fairy",
+   "b": "fairly",
+   "ipaA": "/ˈfɛri/",
+   "ipaB": "/ˈfɛrli/"
+  },
+  {
+   "focus": "V / B",
+   "a": "vote",
+   "b": "boat",
+   "ipaA": "/voʊt/",
+   "ipaB": "/boʊt/"
+  },
+  {
+   "focus": "V / B",
+   "a": "vest",
+   "b": "best",
+   "ipaA": "/vɛst/",
+   "ipaB": "/bɛst/"
+  },
+  {
+   "focus": "V / B",
+   "a": "van",
+   "b": "ban",
+   "ipaA": "/væn/",
+   "ipaB": "/bæn/"
+  },
+  {
+   "focus": "V / B",
+   "a": "vow",
+   "b": "bow",
+   "ipaA": "/vaʊ/",
+   "ipaB": "/baʊ/"
+  },
+  {
+   "focus": "ɑ / æ",
+   "a": "cot",
+   "b": "cat",
+   "ipaA": "/kɑt/",
+   "ipaB": "/kæt/"
+  },
+  {
+   "focus": "ɑ / æ",
+   "a": "lock",
+   "b": "lack",
+   "ipaA": "/lɑk/",
+   "ipaB": "/læk/"
+  },
+  {
+   "focus": "ɔɪ / oʊ",
+   "a": "boy",
+   "b": "bow",
+   "ipaA": "/bɔɪ/",
+   "ipaB": "/boʊ/"
+  },
+  {
+   "focus": "aʊ / aɪ",
+   "a": "loud",
+   "b": "lied",
+   "ipaA": "/laʊd/",
+   "ipaB": "/laɪd/"
+  },
+  {
+   "focus": "aʊ / aɪ",
+   "a": "found",
+   "b": "find",
+   "ipaA": "/faʊnd/",
+   "ipaB": "/faɪnd/"
+  },
+  {
+   "focus": "R / L",
+   "a": "crown",
+   "b": "clown",
+   "ipaA": "/kraʊn/",
+   "ipaB": "/klaʊn/"
+  },
+  {
+   "focus": "R / L",
+   "a": "crop",
+   "b": "clop",
+   "ipaA": "/krɑp/",
+   "ipaB": "/klɑp/"
+  },
+  {
+   "focus": "iː / ɪ",
+   "a": "each",
+   "b": "itch",
+   "ipaA": "/itʃ/",
+   "ipaB": "/ɪtʃ/"
+  },
+  {
+   "focus": "æ / ʌ",
+   "a": "bad",
+   "b": "bud",
+   "ipaA": "/bæd/",
+   "ipaB": "/bʌd/"
+  },
+  {
+   "focus": "V / F",
+   "a": "save",
+   "b": "safe",
+   "ipaA": "/seɪv/",
+   "ipaB": "/seɪf/"
+  },
+  {
+   "focus": "V / F",
+   "a": "believe",
+   "b": "belief",
+   "ipaA": "/bɪˈliv/",
+   "ipaB": "/bɪˈlif/"
+  },
+  {
+   "focus": "TH / T",
+   "a": "both",
+   "b": "boat",
+   "ipaA": "/boʊθ/",
+   "ipaB": "/boʊt/"
+  },
+  {
+   "focus": "TH / T",
+   "a": "math",
+   "b": "mat",
+   "ipaA": "/mæθ/",
+   "ipaB": "/mæt/"
+  },
+  {
+   "focus": "ʒ / ʃ",
+   "a": "azure",
+   "b": "asher",
+   "ipaA": "/ˈæʒɚ/",
+   "ipaB": "/ˈæʃɚ/"
+  },
+  {
+   "focus": "dʒ / ʒ",
+   "a": "lesion",
+   "b": "legion",
+   "ipaA": "/ˈliʒən/",
+   "ipaB": "/ˈlidʒən/"
+  },
+  {
+   "focus": "ŋ / ŋg",
+   "a": "singer",
+   "b": "finger",
+   "ipaA": "/ˈsɪŋɚ/",
+   "ipaB": "/ˈfɪŋgɚ/"
+  },
+  {
+   "focus": "kw / k",
+   "a": "quack",
+   "b": "knack",
+   "ipaA": "/kwæk/",
+   "ipaB": "/næk/"
+  },
+  {
+   "focus": "sp / sb",
+   "a": "spill",
+   "b": "sbill",
+   "ipaA": "/spɪl/",
+   "ipaB": "/zbɪl/"
+  },
+  {
+   "focus": "tw / t",
+   "a": "twin",
+   "b": "tin",
+   "ipaA": "/twɪn/",
+   "ipaB": "/tɪn/"
+  },
+  {
+   "focus": "sw / s",
+   "a": "sweet",
+   "b": "seat",
+   "ipaA": "/swit/",
+   "ipaB": "/sit/"
+  },
+  {
+   "focus": "R / L",
+   "a": "brood",
+   "b": "blood",
+   "ipaA": "/brud/",
+   "ipaB": "/blʌd/"
+  },
+  {
+   "focus": "R / L",
+   "a": "price",
+   "b": "plice",
+   "ipaA": "/praɪs/",
+   "ipaB": "/plaɪs/"
+  },
+  {
+   "focus": "R / L",
+   "a": "grace",
+   "b": "glace",
+   "ipaA": "/greɪs/",
+   "ipaB": "/gleɪs/"
+  },
+  {
+   "focus": "R / L",
+   "a": "frost",
+   "b": "flossed",
+   "ipaA": "/frɔst/",
+   "ipaB": "/flɔst/"
+  },
+  {
+   "focus": "R / L",
+   "a": "bride",
+   "b": "blide",
+   "ipaA": "/braɪd/",
+   "ipaB": "/blaɪd/"
+  },
+  {
+   "focus": "R / L",
+   "a": "trick",
+   "b": "tlick",
+   "ipaA": "/trɪk/",
+   "ipaB": "/tlɪk/"
+  },
+  {
+   "focus": "R / L",
+   "a": "present",
+   "b": "pleasant",
+   "ipaA": "/ˈprɛzənt/",
+   "ipaB": "/ˈplɛzənt/"
+  },
+  {
+   "focus": "R / L",
+   "a": "array",
+   "b": "allay",
+   "ipaA": "/əˈreɪ/",
+   "ipaB": "/əˈleɪ/"
+  },
+  {
+   "focus": "L / N",
+   "a": "lead",
+   "b": "knead",
+   "ipaA": "/lid/",
+   "ipaB": "/nid/"
+  },
+  {
+   "focus": "L / N",
+   "a": "lot",
+   "b": "not",
+   "ipaA": "/lɑt/",
+   "ipaB": "/nɑt/"
+  },
+  {
+   "focus": "L / N",
+   "a": "line",
+   "b": "nine",
+   "ipaA": "/laɪn/",
+   "ipaB": "/naɪn/"
+  },
+  {
+   "focus": "M / N",
+   "a": "meat",
+   "b": "neat",
+   "ipaA": "/mit/",
+   "ipaB": "/nit/"
+  },
+  {
+   "focus": "M / N",
+   "a": "mode",
+   "b": "node",
+   "ipaA": "/moʊd/",
+   "ipaB": "/noʊd/"
+  },
+  {
+   "focus": "B / P",
+   "a": "big",
+   "b": "pig",
+   "ipaA": "/bɪg/",
+   "ipaB": "/pɪg/"
+  },
+  {
+   "focus": "B / P",
+   "a": "buy",
+   "b": "pie",
+   "ipaA": "/baɪ/",
+   "ipaB": "/paɪ/"
+  },
+  {
+   "focus": "B / P",
+   "a": "bin",
+   "b": "pin",
+   "ipaA": "/bɪn/",
+   "ipaB": "/pɪn/"
+  },
+  {
+   "focus": "B / P",
+   "a": "bay",
+   "b": "pay",
+   "ipaA": "/beɪ/",
+   "ipaB": "/peɪ/"
+  },
+  {
+   "focus": "B / P",
+   "a": "rib",
+   "b": "rip",
+   "ipaA": "/rɪb/",
+   "ipaB": "/rɪp/"
+  },
+  {
+   "focus": "D / T",
+   "a": "die",
+   "b": "tie",
+   "ipaA": "/daɪ/",
+   "ipaB": "/taɪ/"
+  },
+  {
+   "focus": "D / T",
+   "a": "dear",
+   "b": "tear",
+   "ipaA": "/dɪr/",
+   "ipaB": "/tɪr/"
+  },
+  {
+   "focus": "D / T",
+   "a": "dime",
+   "b": "time",
+   "ipaA": "/daɪm/",
+   "ipaB": "/taɪm/"
+  },
+  {
+   "focus": "D / T",
+   "a": "bead",
+   "b": "beat",
+   "ipaA": "/bid/",
+   "ipaB": "/bit/"
+  },
+  {
+   "focus": "D / T",
+   "a": "ride",
+   "b": "write",
+   "ipaA": "/raɪd/",
+   "ipaB": "/raɪt/"
+  },
+  {
+   "focus": "G / K",
+   "a": "gold",
+   "b": "cold",
+   "ipaA": "/goʊld/",
+   "ipaB": "/koʊld/"
+  },
+  {
+   "focus": "G / K",
+   "a": "good",
+   "b": "could",
+   "ipaA": "/gʊd/",
+   "ipaB": "/kʊd/"
+  },
+  {
+   "focus": "G / K",
+   "a": "bag",
+   "b": "back",
+   "ipaA": "/bæg/",
+   "ipaB": "/bæk/"
+  },
+  {
+   "focus": "G / K",
+   "a": "pig",
+   "b": "pick",
+   "ipaA": "/pɪg/",
+   "ipaB": "/pɪk/"
+  },
+  {
+   "focus": "G / K",
+   "a": "dug",
+   "b": "duck",
+   "ipaA": "/dʌg/",
+   "ipaB": "/dʌk/"
+  },
+  {
+   "focus": "V / F",
+   "a": "vine",
+   "b": "fine",
+   "ipaA": "/vaɪn/",
+   "ipaB": "/faɪn/"
+  },
+  {
+   "focus": "V / F",
+   "a": "vase",
+   "b": "face",
+   "ipaA": "/veɪs/",
+   "ipaB": "/feɪs/"
+  },
+  {
+   "focus": "V / F",
+   "a": "leave",
+   "b": "leaf",
+   "ipaA": "/liv/",
+   "ipaB": "/lif/"
+  },
+  {
+   "focus": "V / F",
+   "a": "view",
+   "b": "few",
+   "ipaA": "/vju/",
+   "ipaB": "/fju/"
+  },
+  {
+   "focus": "Z / S",
+   "a": "zip",
+   "b": "sip",
+   "ipaA": "/zɪp/",
+   "ipaB": "/sɪp/"
+  },
+  {
+   "focus": "Z / S",
+   "a": "buzz",
+   "b": "bus",
+   "ipaA": "/bʌz/",
+   "ipaB": "/bʌs/"
+  },
+  {
+   "focus": "Z / S",
+   "a": "prize",
+   "b": "price",
+   "ipaA": "/praɪz/",
+   "ipaB": "/praɪs/"
+  },
+  {
+   "focus": "ʃ / s",
+   "a": "shy",
+   "b": "sigh",
+   "ipaA": "/ʃaɪ/",
+   "ipaB": "/saɪ/"
+  },
+  {
+   "focus": "ʃ / s",
+   "a": "shore",
+   "b": "sore",
+   "ipaA": "/ʃɔr/",
+   "ipaB": "/sɔr/"
+  },
+  {
+   "focus": "ʃ / s",
+   "a": "sheep",
+   "b": "seep",
+   "ipaA": "/ʃip/",
+   "ipaB": "/sip/"
+  },
+  {
+   "focus": "dʒ / tʃ",
+   "a": "gin",
+   "b": "chin",
+   "ipaA": "/dʒɪn/",
+   "ipaB": "/tʃɪn/"
+  },
+  {
+   "focus": "dʒ / tʃ",
+   "a": "joke",
+   "b": "choke",
+   "ipaA": "/dʒoʊk/",
+   "ipaB": "/tʃoʊk/"
+  },
+  {
+   "focus": "æ / ʌ",
+   "a": "hat",
+   "b": "hut",
+   "ipaA": "/hæt/",
+   "ipaB": "/hʌt/"
+  },
+  {
+   "focus": "æ / ʌ",
+   "a": "bag",
+   "b": "bug",
+   "ipaA": "/bæg/",
+   "ipaB": "/bʌg/"
+  },
+  {
+   "focus": "æ / ʌ",
+   "a": "rang",
+   "b": "rung",
+   "ipaA": "/ræŋ/",
+   "ipaB": "/rʌŋ/"
+  },
+  {
+   "focus": "æ / ʌ",
+   "a": "stamp",
+   "b": "stump",
+   "ipaA": "/stæmp/",
+   "ipaB": "/stʌmp/"
+  },
+  {
+   "focus": "ɛ / æ",
+   "a": "bet",
+   "b": "bat",
+   "ipaA": "/bɛt/",
+   "ipaB": "/bæt/"
+  },
+  {
+   "focus": "ɛ / æ",
+   "a": "men",
+   "b": "man",
+   "ipaA": "/mɛn/",
+   "ipaB": "/mæn/"
+  },
+  {
+   "focus": "ɛ / æ",
+   "a": "said",
+   "b": "sad",
+   "ipaA": "/sɛd/",
+   "ipaB": "/sæd/"
+  },
+  {
+   "focus": "ɛ / æ",
+   "a": "guess",
+   "b": "gas",
+   "ipaA": "/gɛs/",
+   "ipaB": "/gæs/"
+  },
+  {
+   "focus": "ɛ / æ",
+   "a": "dead",
+   "b": "dad",
+   "ipaA": "/dɛd/",
+   "ipaB": "/dæd/"
+  },
+  {
+   "focus": "ɛ / ɪ",
+   "a": "set",
+   "b": "sit",
+   "ipaA": "/sɛt/",
+   "ipaB": "/sɪt/"
+  },
+  {
+   "focus": "ʌ / ɑ",
+   "a": "cut",
+   "b": "cot",
+   "ipaA": "/kʌt/",
+   "ipaB": "/kɑt/"
+  },
+  {
+   "focus": "ʌ / ɑ",
+   "a": "nut",
+   "b": "not",
+   "ipaA": "/nʌt/",
+   "ipaB": "/nɑt/"
+  },
+  {
+   "focus": "ʌ / ɑ",
+   "a": "hut",
+   "b": "hot",
+   "ipaA": "/hʌt/",
+   "ipaB": "/hɑt/"
+  },
+  {
+   "focus": "eɪ / aɪ",
+   "a": "date",
+   "b": "diet",
+   "ipaA": "/deɪt/",
+   "ipaB": "/ˈdaɪət/"
+  },
+  {
+   "focus": "eɪ / aɪ",
+   "a": "rain",
+   "b": "rhine",
+   "ipaA": "/reɪn/",
+   "ipaB": "/raɪn/"
+  },
+  {
+   "focus": "aɪ / ɔɪ",
+   "a": "file",
+   "b": "foil",
+   "ipaA": "/faɪl/",
+   "ipaB": "/fɔɪl/"
+  },
+  {
+   "focus": "aʊ / oʊ",
+   "a": "how",
+   "b": "hoe",
+   "ipaA": "/haʊ/",
+   "ipaB": "/hoʊ/"
+  },
+  {
+   "focus": "aʊ / oʊ",
+   "a": "bow",
+   "b": "beau",
+   "ipaA": "/baʊ/",
+   "ipaB": "/boʊ/"
+  },
+  {
+   "focus": "ɪr / ɛr",
+   "a": "ear",
+   "b": "air",
+   "ipaA": "/ɪr/",
+   "ipaB": "/ɛr/"
+  },
+  {
+   "focus": "ɪr / ɛr",
+   "a": "hear",
+   "b": "hair",
+   "ipaA": "/hɪr/",
+   "ipaB": "/hɛr/"
+  },
+  {
+   "focus": "ɑr / ɔr",
+   "a": "car",
+   "b": "core",
+   "ipaA": "/kɑr/",
+   "ipaB": "/kɔr/"
+  },
+  {
+   "focus": "ɑr / ɔr",
+   "a": "far",
+   "b": "four",
+   "ipaA": "/fɑr/",
+   "ipaB": "/fɔr/"
+  },
+  {
+   "focus": "ɑr / ɔr",
+   "a": "star",
+   "b": "store",
+   "ipaA": "/stɑr/",
+   "ipaB": "/stɔr/"
+  },
+  {
+   "focus": "TH(有声) / Z",
+   "a": "bathe",
+   "b": "bays",
+   "ipaA": "/beɪð/",
+   "ipaB": "/beɪz/"
+  },
+  {
+   "focus": "TH(有声) / Z",
+   "a": "soothe",
+   "b": "sues",
+   "ipaA": "/suð/",
+   "ipaB": "/suz/"
+  },
+  {
+   "focus": "T / TH(無声)",
+   "a": "team",
+   "b": "theme",
+   "ipaA": "/tim/",
+   "ipaB": "/θim/"
+  },
+  {
+   "focus": "D / TH(有声)",
+   "a": "ladder",
+   "b": "lather",
+   "ipaA": "/ˈlædɚ/",
+   "ipaB": "/ˈlæðɚ/"
+  },
+  {
+   "focus": "V / TH(有声)",
+   "a": "vat",
+   "b": "that",
+   "ipaA": "/væt/",
+   "ipaB": "/ðæt/"
+  },
+  {
+   "focus": "V / TH(有声)",
+   "a": "van",
+   "b": "than",
+   "ipaA": "/væn/",
+   "ipaB": "/ðæn/"
+  },
+  {
+   "focus": "V / TH(無声)",
+   "a": "van",
+   "b": "thank",
+   "ipaA": "/væn/",
+   "ipaB": "/θæŋk/"
+  },
+  {
+   "focus": "ŋ / n",
+   "a": "sing",
+   "b": "sin",
+   "ipaA": "/sɪŋ/",
+   "ipaB": "/sɪn/"
+  },
+  {
+   "focus": "ŋ / n",
+   "a": "ring",
+   "b": "rin",
+   "ipaA": "/rɪŋ/",
+   "ipaB": "/rɪn/"
+  },
+  {
+   "focus": "ŋ / n",
+   "a": "tongue",
+   "b": "ton",
+   "ipaA": "/tʌŋ/",
+   "ipaB": "/tʌn/"
+  },
+  {
+   "focus": "ŋ / n",
+   "a": "wrong",
+   "b": "ron",
+   "ipaA": "/rɔŋ/",
+   "ipaB": "/rɑn/"
+  },
+  {
+   "focus": "ŋk / ŋ",
+   "a": "sink",
+   "b": "sing",
+   "ipaA": "/sɪŋk/",
+   "ipaB": "/sɪŋ/"
+  },
+  {
+   "focus": "ŋk / ŋ",
+   "a": "rink",
+   "b": "ring",
+   "ipaA": "/rɪŋk/",
+   "ipaB": "/rɪŋ/"
+  },
+  {
+   "focus": "ŋk / ŋ",
+   "a": "bank",
+   "b": "bang",
+   "ipaA": "/bæŋk/",
+   "ipaB": "/bæŋ/"
+  },
+  {
+   "focus": "h / 無音",
+   "a": "hand",
+   "b": "and",
+   "ipaA": "/hænd/",
+   "ipaB": "/ænd/"
+  },
+  {
+   "focus": "s / 無音(語尾)",
+   "a": "cars",
+   "b": "car",
+   "ipaA": "/kɑrz/",
+   "ipaB": "/kɑr/"
+  },
+  {
+   "focus": "R / L",
+   "a": "fear",
+   "b": "feel",
+   "ipaA": "/fɪr/",
+   "ipaB": "/fil/"
+  },
+  {
+   "focus": "R / L",
+   "a": "core",
+   "b": "coal",
+   "ipaA": "/kɔr/",
+   "ipaB": "/koʊl/"
+  },
+  {
+   "focus": "R / L",
+   "a": "tear",
+   "b": "teal",
+   "ipaA": "/tɪr/",
+   "ipaB": "/til/"
+  },
+  {
+   "focus": "R / L",
+   "a": "four",
+   "b": "fall",
+   "ipaA": "/fɔr/",
+   "ipaB": "/fɔl/"
+  },
+  {
+   "focus": "R / L",
+   "a": "hair",
+   "b": "hail",
+   "ipaA": "/hɛr/",
+   "ipaB": "/heɪl/"
+  },
+  {
+   "focus": "B / V",
+   "a": "bent",
+   "b": "vent",
+   "ipaA": "/bɛnt/",
+   "ipaB": "/vɛnt/"
+  },
+  {
+   "focus": "iː / eɪ",
+   "a": "bead",
+   "b": "bade",
+   "ipaA": "/bid/",
+   "ipaB": "/beɪd/"
+  },
+  {
+   "focus": "ɪ / eɪ",
+   "a": "pin",
+   "b": "pain",
+   "ipaA": "/pɪn/",
+   "ipaB": "/peɪn/"
+  },
+  {
+   "focus": "ɪ / eɪ",
+   "a": "mid",
+   "b": "made",
+   "ipaA": "/mɪd/",
+   "ipaB": "/meɪd/"
+  },
+  {
+   "focus": "ɪ / eɪ",
+   "a": "sit",
+   "b": "sate",
+   "ipaA": "/sɪt/",
+   "ipaB": "/seɪt/"
+  },
+  {
+   "focus": "oʊ / ɔ",
+   "a": "pole",
+   "b": "paul",
+   "ipaA": "/poʊl/",
+   "ipaB": "/pɔl/"
+  },
+  {
+   "focus": "uː / ʊ",
+   "a": "who would",
+   "b": "hood",
+   "ipaA": "/hud/",
+   "ipaB": "/hʊd/"
+  },
+  {
+   "focus": "eɪ / ɛ",
+   "a": "taste",
+   "b": "test",
+   "ipaA": "/teɪst/",
+   "ipaB": "/tɛst/"
+  },
+  {
+   "focus": "eɪ / ɛ",
+   "a": "main",
+   "b": "men",
+   "ipaA": "/meɪn/",
+   "ipaB": "/mɛn/"
+  },
+  {
+   "focus": "oʊ / aʊ",
+   "a": "phone",
+   "b": "fawn",
+   "ipaA": "/foʊn/",
+   "ipaB": "/fɔn/"
+  },
+  {
+   "focus": "f / h",
+   "a": "fall",
+   "b": "hall",
+   "ipaA": "/fɔl/",
+   "ipaB": "/hɔl/"
+  },
+  {
+   "focus": "f / h",
+   "a": "fear",
+   "b": "hear",
+   "ipaA": "/fɪr/",
+   "ipaB": "/hɪr/"
+  },
+  {
+   "focus": "P / F",
+   "a": "pin",
+   "b": "fin",
+   "ipaA": "/pɪn/",
+   "ipaB": "/fɪn/"
+  },
+  {
+   "focus": "P / F",
+   "a": "pile",
+   "b": "file",
+   "ipaA": "/paɪl/",
+   "ipaB": "/faɪl/"
+  },
+  {
+   "focus": "P / F",
+   "a": "cap",
+   "b": "calf",
+   "ipaA": "/kæp/",
+   "ipaB": "/kæf/"
+  },
+  {
+   "focus": "L / W",
+   "a": "led",
+   "b": "wed",
+   "ipaA": "/lɛd/",
+   "ipaB": "/wɛd/"
+  },
+  {
+   "focus": "L / W",
+   "a": "lent",
+   "b": "went",
+   "ipaA": "/lɛnt/",
+   "ipaB": "/wɛnt/"
+  },
+  {
+   "focus": "L / W",
+   "a": "line",
+   "b": "wine",
+   "ipaA": "/laɪn/",
+   "ipaB": "/waɪn/"
+  },
+  {
+   "focus": "L / R",
+   "a": "flame",
+   "b": "frame",
+   "ipaA": "/fleɪm/",
+   "ipaB": "/freɪm/"
+  },
+  {
+   "focus": "Z / ð",
+   "a": "tease",
+   "b": "teethe",
+   "ipaA": "/tiz/",
+   "ipaB": "/tið/"
+  },
+  {
+   "focus": "w / r",
+   "a": "way",
+   "b": "ray",
+   "ipaA": "/weɪ/",
+   "ipaB": "/reɪ/"
+  },
+  {
+   "focus": "j / dʒ",
+   "a": "yolk",
+   "b": "joke",
+   "ipaA": "/joʊk/",
+   "ipaB": "/dʒoʊk/"
+  },
+  {
+   "focus": "kw / k",
+   "a": "quick",
+   "b": "kick",
+   "ipaA": "/kwɪk/",
+   "ipaB": "/kɪk/"
+  },
+  {
+   "focus": "kw / k",
+   "a": "quiet",
+   "b": "kyat",
+   "ipaA": "/ˈkwaɪət/",
+   "ipaB": "/kjɑt/"
+  },
+  {
+   "focus": "sl / sw",
+   "a": "slip",
+   "b": "swip",
+   "ipaA": "/slɪp/",
+   "ipaB": "/swɪp/"
+  },
+  {
+   "focus": "sp / st",
+   "a": "spill",
+   "b": "still",
+   "ipaA": "/spɪl/",
+   "ipaB": "/stɪl/"
+  },
+  {
+   "focus": "sp / st",
+   "a": "spar",
+   "b": "star",
+   "ipaA": "/spɑr/",
+   "ipaB": "/stɑr/"
+  },
+  {
+   "focus": "sk / st",
+   "a": "skin",
+   "b": "stin",
+   "ipaA": "/skɪn/",
+   "ipaB": "/stɪn/"
+  },
+  {
+   "focus": "tr / t",
+   "a": "train",
+   "b": "tain",
+   "ipaA": "/treɪn/",
+   "ipaB": "/teɪn/"
+  },
+  {
+   "focus": "dr / d",
+   "a": "drain",
+   "b": "dane",
+   "ipaA": "/dreɪn/",
+   "ipaB": "/deɪn/"
+  },
+  {
+   "focus": "R / L",
+   "a": "rye",
+   "b": "lie",
+   "ipaA": "/raɪ/",
+   "ipaB": "/laɪ/"
+  },
+  {
+   "focus": "B / V",
+   "a": "bail",
+   "b": "vail",
+   "ipaA": "/beɪl/",
+   "ipaB": "/veɪl/"
+  },
+  {
+   "focus": "P / F",
+   "a": "past",
+   "b": "fast",
+   "ipaA": "/pæst/",
+   "ipaB": "/fæst/"
+  },
+  {
+   "focus": "P / F",
+   "a": "peel",
+   "b": "feel",
+   "ipaA": "/pil/",
+   "ipaB": "/fil/"
+  },
+  {
+   "focus": "iː / ɪ",
+   "a": "eat",
+   "b": "it",
+   "ipaA": "/it/",
+   "ipaB": "/ɪt/"
+  },
+  {
+   "focus": "æ / ʌ",
+   "a": "sack",
+   "b": "suck",
+   "ipaA": "/sæk/",
+   "ipaB": "/sʌk/"
+  },
+  {
+   "focus": "ɛ / æ",
+   "a": "beg",
+   "b": "bag",
+   "ipaA": "/bɛg/",
+   "ipaB": "/bæg/"
+  },
+  {
+   "focus": "TH / F",
+   "a": "thigh",
+   "b": "fie",
+   "ipaA": "/θaɪ/",
+   "ipaB": "/faɪ/"
+  },
+  {
+   "focus": "V / F",
+   "a": "verse",
+   "b": "force",
+   "ipaA": "/vɜrs/",
+   "ipaB": "/fɔrs/"
+  },
+  {
+   "focus": "k / g",
+   "a": "cut",
+   "b": "gut",
+   "ipaA": "/kʌt/",
+   "ipaB": "/gʌt/"
+  },
+  {
+   "focus": "ʃ / tʃ",
+   "a": "mush",
+   "b": "much",
+   "ipaA": "/mʌʃ/",
+   "ipaB": "/mʌtʃ/"
+  },
+  {
+   "focus": "ʃ / tʃ",
+   "a": "cash",
+   "b": "catch",
+   "ipaA": "/kæʃ/",
+   "ipaB": "/kætʃ/"
+  },
+  {
+   "focus": "dʒ / ʒ",
+   "a": "badge",
+   "b": "beige",
+   "ipaA": "/bædʒ/",
+   "ipaB": "/beɪʒ/"
+  },
+  {
+   "focus": "l / r (語中)",
+   "a": "pilot",
+   "b": "pirate",
+   "ipaA": "/ˈpaɪlət/",
+   "ipaB": "/ˈpaɪrət/"
+  },
+  {
+   "focus": "iː / eɪ",
+   "a": "leak",
+   "b": "lake",
+   "ipaA": "/lik/",
+   "ipaB": "/leɪk/"
+  },
+  {
+   "focus": "ʌ / ʊ",
+   "a": "buck",
+   "b": "book",
+   "ipaA": "/bʌk/",
+   "ipaB": "/bʊk/"
   }
  ]
 };

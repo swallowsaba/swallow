@@ -972,3 +972,226 @@ window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
   { type:"summary", level:"C1", text:"By rewarding teams for catching their own errors, the firm turned hidden mistakes into openly shared lessons that prevented repeat failures.", q:"最も適切な要約は？", choices:["自らの誤り発見を評価し、隠れたミスを共有教訓に変え再発を防いだ。","誤りを罰した。","ミスが隠れた。","再発が増えた。"], explain:"自己発見を評価→共有教訓→再発防止。" },
   { type:"paraphrase", level:"C1", text:"Let's take the long view.", q:"ほぼ同じ意味は？", choices:["Let's think about the long term.","Let's look far away.","Let's be shortsighted.","Let's take a photo."], explain:"take the long view ＝ 長期的に考える。" }
 ]);
+
+/* 増量セットAU：高次スキル第25弾 大量（5倍ペース完全維持） */
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The store extended its return window to 90 days. Shoppers felt less pressure, impulse returns dropped, and customer trust grew noticeably.", q:"最も適切な要約は？", choices:["返品期間延長で安心感が増し、衝動返品が減り信頼が高まった。","返品を禁止した。","返品が急増した。","信頼が下がった。"], explain:"返品期間延長→安心・返品減・信頼向上。" },
+  { type:"summary", level:"B1", text:"The library added cozy reading nooks. Visits increased, people stayed longer, and the space became a community hub.", q:"最も適切な要約は？", choices:["読書スペース追加で来館・滞在が増え地域の拠点になった。","席を撤去した。","来館が減った。","利用が落ちた。"], explain:"読書スペース→来館・滞在増・拠点化。" },
+  { type:"summary", level:"B2", text:"The company replaced annual reviews with weekly check-ins. Feedback became timely, problems surfaced earlier, and morale improved markedly.", q:"最も適切な要約は？", choices:["年次評価を週次面談に変え、迅速な意見と早期発見で士気が向上した。","評価を廃止した。","意見が遅くなった。","士気が下がった。"], explain:"週次面談→迅速な意見・早期発見・士気向上。" },
+  { type:"summary", level:"B2", text:"The school introduced peer tutoring. Struggling students caught up, tutors deepened their own understanding, and a culture of mutual help took root.", q:"最も適切な要約は？", choices:["ピア指導で遅れた生徒が追いつき、指導側も理解を深め相互扶助が根付いた。","指導をやめた。","理解が浅まった。","孤立が進んだ。"], explain:"ピア指導→追いつき・理解深化・相互扶助。" },
+  { type:"summary", level:"C1", text:"By publishing its failures alongside its successes, the lab built a reputation for honesty that attracted both funding and top researchers.", q:"最も適切な要約は？", choices:["失敗も成功と共に公開し、誠実さの評判で資金と人材を集めた。","失敗を隠した。","評判が落ちた。","人材が離れた。"], explain:"失敗の公開→誠実さの評判→資金・人材獲得。" },
+  { type:"paraphrase", level:"B1", text:"That's news to me.", q:"ほぼ同じ意味は？", choices:["I didn't know that.","That's on TV.","I knew that already.","That's a newspaper."], explain:"news to me ＝ 初耳だ。" },
+  { type:"paraphrase", level:"B1", text:"Let's take it step by step.", q:"ほぼ同じ意味は？", choices:["Let's do it gradually.","Let's run fast.","Let's skip steps.","Let's climb stairs."], explain:"step by step ＝ 順を追って。" },
+  { type:"paraphrase", level:"B2", text:"Let's get on the same page.", q:"ほぼ同じ意味は？", choices:["Let's reach a shared understanding.","Let's read a book.","Let's turn the page.","Let's disagree."], explain:"on the same page ＝ 認識を合わせる。" },
+  { type:"paraphrase", level:"B2", text:"There's room for improvement.", q:"ほぼ同じ意味は？", choices:["It could be better.","There's an empty room.","It's perfect already.","There's no space."], explain:"room for improvement ＝ 改善の余地。" },
+  { type:"paraphrase", level:"C1", text:"Let's account for the uncertainty.", q:"ほぼ同じ意味は？", choices:["Let's factor in the unknowns.","Let's count the money.","Let's ignore the risk.","Let's be certain."], explain:"account for ＝ 考慮に入れる。" },
+  { type:"intensive", level:"B2", text:"Seldom have I seen such effort.", q:"この文の意味は？", choices:["これほどの努力はめったに見ない。","よく見る。","努力は無かった。","一度見た。"], explain:"Seldom + 倒置で『めったに〜ない』。" },
+  { type:"intensive", level:"B2", text:"Not until later did it click.", q:"この文の意味は？", choices:["後になって初めて腑に落ちた。","すぐ分かった。","分からなかった。","早く分かった。"], explain:"Not until + 倒置で『〜して初めて』。" },
+  { type:"intensive", level:"C1", text:"Had they known, they would have acted.", q:"この文の意味は？", choices:["知っていたら行動していた。","知っていて行動した。","知らずに行動した。","行動しなかった理由は不明。"], explain:"Had + 主語 で仮定法過去完了の倒置。" },
+  { type:"intensive", level:"B2", text:"All things considered, it went well.", q:"All things considered の意味は？", choices:["すべてを考慮すると","急いで言うと","めったにないが","結論を避けて"], explain:"All things considered ＝ すべてを考慮すると。" },
+  { type:"question", level:"B1", text:"相手の都合を尋ねたい。", q:"最も適切な質問は？", choices:["Does this time work for you?","Why busy always?","Can you ever meet?","Is time hard?"], explain:"Does this time work for you? で都合を確認。" },
+  { type:"question", level:"B2", text:"提案の根拠を引き出したい。", q:"最も適切な質問は？", choices:["What's the reasoning behind this?","Why reason ever?","Is it real?","Can we skip it?"], explain:"提案の論拠を問う。" },
+  { type:"question", level:"C1", text:"主張が成り立つ条件を問いたい。", q:"最も適切な質問は？", choices:["Under what conditions does this hold?","Why hold ever?","Is it true now?","Can we ignore it?"], explain:"成立条件を問い議論を厳密にする。" },
+  { type:"response", level:"B1", text:"A: Could you double-check this?", q:"自然な応答は？", choices:["Sure, I'll go over it.","Yes check fast me.","Why check always?","Check is hard maybe."], explain:"依頼には Sure, I'll go over it. が自然。" },
+  { type:"response", level:"B2", text:"A: I'm not sure this is the right call.", q:"建設的な応答は？", choices:["Let's weigh the alternatives.","Then give up.","Why doubt?","Not my problem."], explain:"迷いに対し代替案の比較を提案。" },
+  { type:"response", level:"C1", text:"A: Let's ground this in data.", q:"自然な応答は？", choices:["Agreed—what does the evidence show?","No, trust your gut.","Why data?","You never decide."], explain:"データ重視に同意し証拠を尋ねる。" },
+  { type:"extensive", level:"B1", text:"Ken was nervous about speaking English. He joined a daily 10-minute call with a partner. In two months, his confidence soared.", q:"内容に合うものは？", choices:["毎日10分の通話を続け、2か月で自信が大きく伸びた。","英語をやめた。","変化は無かった。","通話は続かなかった。"], explain:"毎日10分→2か月で自信向上。" },
+  { type:"extensive", level:"B2", text:"The cafe let customers pay what they could for day-old pastries. Waste dropped sharply, goodwill spread, and regulars increased.", q:"内容に合うものは？", choices:["前日のパンを応分の支払いにし、廃棄減・好意・常連増を生んだ。","廃棄を増やした。","客が減った。","好意が薄れた。"], explain:"応分払い→廃棄減・好意・常連増。" },
+  { type:"extensive", level:"C1", text:"Dismissed as too cautious, the engineer's insistence on extra testing caught a flaw that would have caused a costly recall.", q:"内容に合うものは？", choices:["慎重すぎと退けられたが、追加検査が高くつくリコールを防いだ。","検査をやめた。","欠陥が残った。","慎重さが裏目に出た。"], explain:"追加検査→重大な欠陥を発見しリコール回避。" }
+]);
+
+/* 増量セットAW：高次スキル第26弾（5倍ペース） */
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The team started ending meetings five minutes early. People had time to reset, transitions felt smoother, and attendance improved.", q:"最も適切な要約は？", choices:["会議を5分早く終え、切り替えが楽になり出席も増えた。","会議を延長した。","切り替えが悪化した。","出席が減った。"], explain:"早め終了→切り替え改善・出席増。" },
+  { type:"summary", level:"B2", text:"The shop trained staff to greet every customer by name when possible. Loyalty rose, complaints fell, and word of mouth spread.", q:"最も適切な要約は？", choices:["名前で挨拶する訓練で、愛顧が増え苦情が減り口コミが広がった。","挨拶をやめた。","愛顧が落ちた。","苦情が増えた。"], explain:"名前で挨拶→愛顧・口コミ増・苦情減。" },
+  { type:"summary", level:"C1", text:"By open-sourcing its core tool, the firm sacrificed short-term revenue but gained a vast contributor community that accelerated its growth.", q:"最も適切な要約は？", choices:["中核ツールを公開し短期収益を犠牲にしたが、貢献者の community が成長を加速した。","公開をやめた。","成長が止まった。","収益だけ増えた。"], explain:"OSS化→短期収益犠牲も貢献者で成長加速。" },
+  { type:"paraphrase", level:"B1", text:"I'm all set.", q:"ほぼ同じ意味は？", choices:["I'm ready.","I'm seated.","I'm leaving.","I'm tired."], explain:"all set ＝ 準備完了。" },
+  { type:"paraphrase", level:"B2", text:"Let's work back from the deadline.", q:"ほぼ同じ意味は？", choices:["Let's plan in reverse from the due date.","Let's go back to work.","Let's miss the deadline.","Let's walk backward."], explain:"work back from ＝ 逆算する。" },
+  { type:"paraphrase", level:"C1", text:"Let's spot the one-way doors.", q:"ほぼ同じ意味は？", choices:["Let's identify the irreversible decisions.","Let's find the exits.","Let's open every door.","Let's lock the doors."], explain:"one-way doors ＝ 不可逆な決定。" },
+  { type:"intensive", level:"B2", text:"No sooner had we left than it rained.", q:"この文の意味は？", choices:["出たとたんに雨が降った。","出る前に降った。","降らなかった。","ゆっくり降った。"], explain:"No sooner … than ～で『〜するやいなや』。" },
+  { type:"intensive", level:"C1", text:"Scarcely had it begun when it stopped.", q:"この文の意味は？", choices:["始まったかと思うと止まった。","始まらなかった。","長く続いた。","止まらなかった。"], explain:"Scarcely … when ～で『〜するやいなや』。" },
+  { type:"question", level:"B1", text:"確認の念押しをしたい。", q:"最も適切な質問は？", choices:["Just to confirm, is that right?","Why confirm always?","Can it be wrong?","Is right hard?"], explain:"Just to confirm で念押し確認。" },
+  { type:"question", level:"C1", text:"主張の例外を問いたい。", q:"最も適切な質問は？", choices:["Are there cases where this doesn't hold?","Why hold ever?","Is it always?","Can we skip?"], explain:"例外の有無を問い精度を上げる。" },
+  { type:"response", level:"B1", text:"A: Could you take this on?", q:"自然な応答は？", choices:["Sure, I can handle it.","Yes take fast me.","Why take always?","Take is hard."], explain:"依頼には Sure, I can handle it. が自然。" },
+  { type:"response", level:"C1", text:"A: Let's quantify the benefit first.", q:"自然な応答は？", choices:["Good—what metric should we use?","No, just guess.","Why measure?","You never decide."], explain:"定量化に同意し指標を尋ねる。" },
+  { type:"extensive", level:"B2", text:"The office set 'no-email Fridays.' Deep work increased, weekend stress dropped, and important tasks moved faster.", q:"内容に合うものは？", choices:["メールなし金曜で集中が増え、週末ストレス減・重要業務が加速した。","メールを増やした。","集中が減った。","ストレスが増えた。"], explain:"メールなし日→集中増・ストレス減・加速。" },
+  { type:"extensive", level:"C1", text:"Mocked for over-preparing, the speaker's many rehearsals let her handle a technical failure so smoothly the audience never noticed.", q:"内容に合うものは？", choices:["準備しすぎと笑われたが、入念なリハで機材トラブルを気づかれず乗り切った。","準備をやめた。","失敗が露呈した。","準備が裏目に出た。"], explain:"入念なリハ→トラブルを気づかれず処理。" }
+]);
+
+/* 増量セットAX：高次スキル第27弾 大量（5倍ペース） */
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The gym added beginner-only hours. Newcomers felt less intimidated, sign-ups rose, and many became long-term members.", q:"最も適切な要約は？", choices:["初心者専用時間で気後れが減り、入会と定着が増えた。","時間を廃止した。","入会が減った。","定着が落ちた。"], explain:"初心者専用→気後れ減・入会・定着増。" },
+  { type:"summary", level:"B1", text:"The restaurant printed allergens on every menu. Diners felt safer, ordering got faster, and staff answered fewer questions.", q:"最も適切な要約は？", choices:["アレルゲン表示で安心が増し、注文が速まり質問が減った。","表示をやめた。","注文が遅くなった。","質問が増えた。"], explain:"アレルゲン表示→安心・注文速化・質問減。" },
+  { type:"summary", level:"B2", text:"The team began writing one-page decision memos. Choices became clearer, debates shortened, and past decisions were easy to revisit.", q:"最も適切な要約は？", choices:["1枚の決定メモで選択が明確化し、議論が短縮され見直しも容易になった。","メモを廃止した。","議論が長引いた。","見直しが困難になった。"], explain:"決定メモ→明確化・議論短縮・見直し容易。" },
+  { type:"summary", level:"C1", text:"By rotating staff through customer support, the firm ensured every employee understood user pain firsthand, which sharpened the whole product.", q:"最も適切な要約は？", choices:["全社員を顧客対応に回し、ユーザーの痛みを直接理解させ製品を磨いた。","対応を外注した。","理解が浅まった。","製品が悪化した。"], explain:"全社員が顧客対応→痛みの理解→製品改善。" },
+  { type:"paraphrase", level:"B1", text:"Could you be more specific?", q:"ほぼ同じ意味は？", choices:["Could you give more detail?","Could you be louder?","Could you be vague?","Could you be quick?"], explain:"more specific ＝ より具体的に。" },
+  { type:"paraphrase", level:"B2", text:"That's blocking success.", q:"ほぼ同じ意味は？", choices:["That's getting in the way of success.","That's a building.","That's helping us win.","That's a road."], explain:"blocking ＝ 妨げている。" },
+  { type:"paraphrase", level:"C1", text:"Which assumption is weakest?", q:"ほぼ同じ意味は？", choices:["Which premise is least reliable?","Which muscle is weak?","Which is strongest?","Which is heaviest?"], explain:"weakest assumption ＝ 最も脆い前提。" },
+  { type:"intensive", level:"B2", text:"Such was his skill that none could rival it.", q:"この文の意味は？", choices:["彼の技は誰も並べないほどだった。","技は平凡だった。","誰でも並べた。","技は無かった。"], explain:"Such was … that ～で『非常に〜なので』。" },
+  { type:"intensive", level:"C1", text:"Only by testing can we be sure.", q:"この文の意味は？", choices:["検証して初めて確信できる。","検証せず確信できる。","確信できない。","すぐ確信できる。"], explain:"Only by … + 倒置で『〜して初めて』。" },
+  { type:"question", level:"B1", text:"次の行動を促したい。", q:"最も適切な質問は？", choices:["What should we do next?","Why next always?","Can we ever act?","Is next hard?"], explain:"What should we do next? で次の行動を促す。" },
+  { type:"question", level:"C1", text:"見落としを洗い出したい。", q:"最も適切な質問は？", choices:["What are we overlooking here?","Why overlook ever?","Is it complete?","Can we skip?"], explain:"見落としを問い網羅性を高める。" },
+  { type:"response", level:"B1", text:"A: Could you walk me through it?", q:"自然な応答は？", choices:["Sure, let me explain step by step.","Yes walk fast me.","Why walk always?","Walk is hard."], explain:"依頼には Sure, let me explain … が自然。" },
+  { type:"response", level:"C1", text:"A: Let's stress-test this plan.", q:"自然な応答は？", choices:["Good idea—where could it break?","No, just launch.","Why test?","You never decide."], explain:"plan の検証に同意し弱点を問う。" },
+  { type:"extensive", level:"B2", text:"The library opened a tool-lending shelf. Neighbors borrowed instead of buying, saved money, and met new people in the process.", q:"内容に合うものは？", choices:["工具貸出で住民が購入せず借り、節約しつつ交流も生まれた。","貸出をやめた。","購入が増えた。","交流が減った。"], explain:"工具貸出→節約・交流。" },
+  { type:"extensive", level:"C1", text:"Criticized for moving slowly, the regulator's careful review prevented a rushed approval that later proved disastrous elsewhere.", q:"内容に合うものは？", choices:["遅いと批判されたが、慎重な審査が他所で災いを招いた拙速な承認を防いだ。","審査をやめた。","拙速に承認した。","慎重さが裏目に出た。"], explain:"慎重な審査→拙速な承認を回避。" }
+]);
+
+/* 増量セットAZ：高次スキル第28弾 大量（5倍ペース） */
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The museum offered free entry on Fridays. Attendance soared, new visitors discovered exhibits, and membership sign-ups followed.", q:"最も適切な要約は？", choices:["金曜無料で来館が急増し、新来館者が展示を知り会員も増えた。","無料をやめた。","来館が減った。","会員が減った。"], explain:"金曜無料→来館・会員増。" },
+  { type:"summary", level:"B2", text:"The startup shared its roadmap publicly. Users felt involved, feedback improved the plan, and trust in the brand deepened.", q:"最も適切な要約は？", choices:["ロードマップ公開で参加感が生まれ、意見が計画を改善し信頼が深まった。","公開をやめた。","参加感が減った。","信頼が落ちた。"], explain:"公開→参加感・改善・信頼。" },
+  { type:"summary", level:"C1", text:"By admitting uncertainty in its forecasts, the agency built credibility that, paradoxically, made people trust its confident predictions more.", q:"最も適切な要約は？", choices:["予測の不確実性を認めて信頼を築き、逆に自信ある予測も信じられた。","不確実性を隠した。","信頼が落ちた。","予測をやめた。"], explain:"不確実性を認める→信頼構築→自信ある予測も信頼。" },
+  { type:"paraphrase", level:"B1", text:"Either is fine.", q:"ほぼ同じ意味は？", choices:["I don't mind which one.","Both are bad.","Neither works.","Only one is fine."], explain:"Either is fine ＝ どちらでもいい。" },
+  { type:"paraphrase", level:"B2", text:"Let's stick to the key points.", q:"ほぼ同じ意味は？", choices:["Let's focus on what matters.","Let's use glue.","Let's add details.","Let's wander off."], explain:"stick to ＝ 〜に絞る。" },
+  { type:"paraphrase", level:"C1", text:"Let's question the premise.", q:"ほぼ同じ意味は？", choices:["Let's challenge the underlying assumption.","Let's ask a question.","Let's accept it fully.","Let's skip it."], explain:"question the premise ＝ 前提を問い直す。" },
+  { type:"intensive", level:"B2", text:"Rarely is the answer so simple.", q:"この文の意味は？", choices:["答えがこれほど単純なことはめったにない。","答えは単純だ。","答えは無い。","答えは難しい。"], explain:"Rarely + 倒置で『めったに〜ない』。" },
+  { type:"intensive", level:"C1", text:"Were it true, everything would change.", q:"この文の意味は？", choices:["もしそれが本当なら、すべてが変わる。","本当だから変わった。","本当ではない。","何も変わらない。"], explain:"Were it true で仮定法の倒置。" },
+  { type:"question", level:"B1", text:"理解度を確かめたい。", q:"最も適切な質問は？", choices:["Is that clear so far?","Why clear always?","Can you follow ever?","Is clear hard?"], explain:"Is that clear so far? で理解確認。" },
+  { type:"question", level:"C1", text:"判断のバイアスを問いたい。", q:"最も適切な質問は？", choices:["Could bias be influencing this?","Why bias ever?","Is it neutral?","Can we skip?"], explain:"バイアスの影響を問い客観性を保つ。" },
+  { type:"response", level:"B1", text:"A: Could you summarize the meeting?", q:"自然な応答は？", choices:["Sure, here are the highlights.","Yes sum fast me.","Why summary always?","Sum is hard."], explain:"依頼には Sure, here are the highlights. が自然。" },
+  { type:"response", level:"C1", text:"A: Let's separate symptoms from causes.", q:"自然な応答は？", choices:["Agreed—what's the underlying cause?","No, treat symptoms.","Why bother?","You never decide."], explain:"症状と原因の分離に同意。" },
+  { type:"extensive", level:"B2", text:"The office created a 'question of the week' board. Curiosity spread, quiet staff contributed, and cross-team learning grew.", q:"内容に合うものは？", choices:["週の問いの掲示で好奇心が広がり、無口な社員も参加し横断学習が増えた。","掲示をやめた。","好奇心が減った。","学習が落ちた。"], explain:"週の問い→好奇心・参加・横断学習。" },
+  { type:"extensive", level:"C1", text:"Faulted for spending on documentation, the team found that clear records let new hires contribute in days rather than weeks.", q:"内容に合うものは？", choices:["文書化への投資を責められたが、明確な記録で新人が数日で戦力化した。","文書化をやめた。","戦力化が遅れた。","投資が無駄だった。"], explain:"明確な記録→新人が早期に戦力化。" }
+]);
+
+/* 増量セットBB：高次スキル第29弾 仕上げ（5倍ペース完全維持） */
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The cafe added a community board for local events. Regulars connected, foot traffic rose, and the cafe became a neighborhood hub.", q:"最も適切な要約は？", choices:["地域掲示板で常連がつながり、来客が増え地域の拠点になった。","掲示板を撤去した。","来客が減った。","つながりが薄れた。"], explain:"地域掲示板→つながり・来客増・拠点化。" },
+  { type:"summary", level:"B2", text:"The team logged every recurring problem in one place. Patterns emerged, root causes got fixed, and the same issues stopped returning.", q:"最も適切な要約は？", choices:["再発問題を一元記録し、パターンから根本を直し再発が止まった。","記録をやめた。","再発が増えた。","原因が残った。"], explain:"一元記録→パターン把握・根本修正・再発防止。" },
+  { type:"summary", level:"C1", text:"By rewarding employees for flagging their own mistakes early, the firm caught small errors before they compounded into costly failures.", q:"最も適切な要約は？", choices:["早期のミス申告を評価し、小さな誤りが大失敗に膨らむ前に対処した。","ミスを罰した。","誤りが膨らんだ。","失敗が増えた。"], explain:"早期申告を評価→小さな誤りを早期対処。" },
+  { type:"paraphrase", level:"B1", text:"Let's take stock.", q:"ほぼ同じ意味は？", choices:["Let's review where we are.","Let's buy shares.","Let's ignore status.","Let's store goods."], explain:"take stock ＝ 状況を見直す。" },
+  { type:"paraphrase", level:"B2", text:"Let's build in a review.", q:"ほぼ同じ意味は？", choices:["Let's schedule a check-in.","Let's build a house.","Let's skip checking.","Let's read a review."], explain:"build in ＝ 組み込む。" },
+  { type:"paraphrase", level:"C1", text:"Let's separate symptoms from causes.", q:"ほぼ同じ意味は？", choices:["Let's tell effects apart from their sources.","Let's treat the symptoms.","Let's combine them.","Let's ignore causes."], explain:"症状と原因を区別する。" },
+  { type:"intensive", level:"B2", text:"Not only did it work, it thrived.", q:"この文の意味は？", choices:["うまくいっただけでなく、繁栄した。","失敗した。","変化は無かった。","衰えた。"], explain:"Not only + 倒置で『〜だけでなく』。" },
+  { type:"intensive", level:"C1", text:"So subtle was the change that few noticed.", q:"この文の意味は？", choices:["変化が微妙で気づく人は少なかった。","変化は大きかった。","誰も変えなかった。","皆気づいた。"], explain:"So + 形容詞 + 倒置で『非常に〜なので』。" },
+  { type:"question", level:"B1", text:"次の予定を確認したい。", q:"最も適切な質問は？", choices:["What's on the agenda next?","Why next always?","Can we ever plan?","Is next hard?"], explain:"What's on the agenda next? で次を確認。" },
+  { type:"question", level:"C1", text:"見解の根拠の強さを問いたい。", q:"最も適切な質問は？", choices:["How confident are we in this?","Why confident ever?","Is it sure?","Can we skip?"], explain:"確信度を問い不確実性を明示する。" },
+  { type:"response", level:"B1", text:"A: Could you keep me posted?", q:"自然な応答は？", choices:["Of course, I'll update you.","Yes post fast me.","Why update always?","Post is hard."], explain:"依頼には Of course, I'll update you. が自然。" },
+  { type:"response", level:"C1", text:"A: Let's define done before we start.", q:"自然な応答は？", choices:["Smart—what does done look like?","No, just start.","Why define?","You never decide."], explain:"完了の定義に同意し具体像を問う。" },
+  { type:"extensive", level:"B2", text:"The shop let customers name a new flavor. Engagement soared, the winning name drove sales, and customers felt real ownership.", q:"内容に合うものは？", choices:["新味の命名を客に委ね、関与が高まり売上と当事者意識が増した。","命名をやめた。","関与が減った。","売上が落ちた。"], explain:"命名を委ねる→関与・売上・当事者意識。" },
+  { type:"extensive", level:"C1", text:"Dismissed as needless ceremony, the team's short daily check-ins surfaced blockers early and kept everyone moving in the same direction.", q:"内容に合うものは？", choices:["無駄な儀式と退けられたが、短い日次確認が障害を早期発見し足並みをそろえた。","確認をやめた。","障害が残った。","足並みが乱れた。"], explain:"日次確認→障害の早期発見・足並み統一。" }
+]);
+
+/* 増量セットBD：高次スキル第30弾 最終（5倍ペース完全達成） */
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The team posted a weekly win on the wall. Morale lifted, people noticed progress, and motivation carried into the next week.", q:"最も適切な要約は？", choices:["週の成果を掲示し、士気が上がり進捗を実感し意欲が続いた。","掲示をやめた。","士気が下がった。","意欲が落ちた。"], explain:"週の成果掲示→士気・実感・意欲。" },
+  { type:"paraphrase", level:"B2", text:"Let's make it concrete.", q:"ほぼ同じ意味は？", choices:["Let's make it specific.","Let's pour cement.","Let's keep it vague.","Let's make it soft."], explain:"concrete ＝ 具体的な。" },
+  { type:"intensive", level:"C1", text:"Little did they realize the impact.", q:"この文の意味は？", choices:["彼らはその影響にほとんど気づいていなかった。","よく気づいていた。","影響は無かった。","すぐ気づいた。"], explain:"Little did … で『ほとんど〜なかった』。" },
+  { type:"question", level:"B2", text:"判断の前提条件を引き出したい。", q:"最も適切な質問は？", choices:["What needs to be true for this to work?","Why true always?","Is it real?","Can we skip?"], explain:"成立に必要な前提を問う。" },
+  { type:"response", level:"C1", text:"A: Let's pilot before a full rollout.", q:"自然な応答は？", choices:["Agreed—let's test on a small group.","No, launch fully.","Why pilot?","You never decide."], explain:"試験運用に同意し小規模検証を提案。" },
+  { type:"extensive", level:"B2", text:"The library extended evening hours. Working people could finally visit, study groups formed, and usage climbed steadily.", q:"内容に合うものは？", choices:["夜間延長で働く人が利用でき、勉強会ができ利用が着実に増えた。","時間を短縮した。","利用が減った。","勉強会が消えた。"], explain:"夜間延長→利用拡大・勉強会・増加。" },
+  { type:"summary", level:"C1", text:"By measuring what mattered rather than what was easy to count, the team finally aligned its metrics with its true goals.", q:"最も適切な要約は？", choices:["数えやすさでなく重要性で測り、指標を真の目標に合わせた。","測定をやめた。","目標とずれた。","指標が悪化した。"], explain:"重要性で測る→指標と目標の一致。" }
+]);
+
+/* 増量セットBE：高次スキル第31弾 大量（5倍ペース完全維持） */
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The company let staff choose their own hours. Productivity rose, sick days dropped, and people reported feeling more trusted.", q:"最も適切な要約は？", choices:["勤務時間の自由化で生産性が上がり、欠勤が減り信頼感も高まった。","時間を固定した。","生産性が落ちた。","欠勤が増えた。"], explain:"自由化→生産性・信頼向上・欠勤減。" },
+  { type:"summary", level:"B1", text:"The store placed a suggestion box by the door. Customers shared ideas, several were adopted, and loyalty grew.", q:"最も適切な要約は？", choices:["提案箱で客の意見が集まり、採用され、愛顧が高まった。","箱を撤去した。","意見が減った。","愛顧が落ちた。"], explain:"提案箱→意見・採用・愛顧。" },
+  { type:"summary", level:"B2", text:"The team adopted a 'no meeting Wednesday' rule. Focus time doubled, deep work flourished, and weekly output noticeably improved.", q:"最も適切な要約は？", choices:["会議なし水曜で集中時間が倍増し、深い仕事が増え週の成果が向上した。","会議を増やした。","集中が減った。","成果が落ちた。"], explain:"会議なし日→集中倍増・成果向上。" },
+  { type:"summary", level:"B2", text:"The school replaced grades with detailed written feedback. Students focused on learning, anxiety fell, and curiosity returned.", q:"最も適切な要約は？", choices:["成績を詳細な記述評価に替え、学びに集中し不安が減り好奇心が戻った。","評価を廃止した。","不安が増えた。","好奇心が消えた。"], explain:"記述評価→学びへの集中・不安減・好奇心。" },
+  { type:"summary", level:"C1", text:"By publishing its decision-making process openly, the city built trust that survived even unpopular choices, because residents understood the reasoning.", q:"最も適切な要約は？", choices:["意思決定過程を公開し、住民が理由を理解したため不人気な選択でも信頼が保たれた。","過程を隠した。","信頼が崩れた。","住民が反発した。"], explain:"過程の公開→理由の理解→信頼の維持。" },
+  { type:"paraphrase", level:"B1", text:"That slipped my mind.", q:"ほぼ同じ意味は？", choices:["I forgot it.","I lost it.","I remembered it.","I found it."], explain:"slip one's mind ＝ 忘れる。" },
+  { type:"paraphrase", level:"B1", text:"Let me run that by you.", q:"ほぼ同じ意味は？", choices:["Let me check it with you.","Let me run away.","Let me ignore you.","Let me race you."], explain:"run by ＝ 確認のため伝える。" },
+  { type:"paraphrase", level:"B2", text:"Let's take stock.", q:"ほぼ同じ意味は？", choices:["Let's assess the situation.","Let's buy shares.","Let's ignore it.","Let's store goods."], explain:"take stock ＝ 状況を見直す。" },
+  { type:"paraphrase", level:"B2", text:"That's a deal-breaker.", q:"ほぼ同じ意味は？", choices:["That makes the deal impossible.","That seals the deal.","That's a great deal.","That's a small issue."], explain:"deal-breaker ＝ 決裂の元。" },
+  { type:"paraphrase", level:"C1", text:"Let's not jump to conclusions.", q:"ほぼ同じ意味は？", choices:["Let's not decide too quickly.","Let's jump higher.","Let's conclude now.","Let's skip the end."], explain:"jump to conclusions ＝ 早合点する。" },
+  { type:"intensive", level:"B2", text:"Hardly had I arrived when it began.", q:"この文の意味は？", choices:["到着するやいなや始まった。","到着前に始まった。","始まらなかった。","ゆっくり始まった。"], explain:"Hardly … when ～で『〜するやいなや』。" },
+  { type:"intensive", level:"B2", text:"Not for a moment did I doubt it.", q:"この文の意味は？", choices:["一瞬たりとも疑わなかった。","ずっと疑った。","少し疑った。","信じなかった。"], explain:"Not for a moment + 倒置で強い否定。" },
+  { type:"intensive", level:"C1", text:"Such is life that plans often change.", q:"この文の意味は？", choices:["人生とはそういうもので、計画はよく変わる。","計画は変わらない。","人生は単純だ。","計画通りに進む。"], explain:"Such is … that ～の構文。" },
+  { type:"intensive", level:"B2", text:"By and large, the plan worked.", q:"By and large の意味は？", choices:["全体的に見て","急いで言うと","めったにないが","結論を避けて"], explain:"By and large ＝ 概して。" },
+  { type:"question", level:"B1", text:"相手の意向を確かめたい。", q:"最も適切な質問は？", choices:["What would you prefer?","Why prefer always?","Can you ever choose?","Is choice hard?"], explain:"What would you prefer? で意向を確認。" },
+  { type:"question", level:"B2", text:"成功の定義を引き出したい。", q:"最も適切な質問は？", choices:["What does success look like here?","Why succeed ever?","Is it done?","Can we skip?"], explain:"成功の定義を問い目標を明確化。" },
+  { type:"question", level:"C1", text:"判断の見落としを探りたい。", q:"最も適切な質問は？", choices:["What might we be missing?","Why miss ever?","Is it complete?","Can we ignore it?"], explain:"見落としを問い網羅性を高める。" },
+  { type:"response", level:"B1", text:"A: Could you send me the file?", q:"自然な応答は？", choices:["Sure, I'll send it now.","Yes send fast me.","Why send always?","Send is hard."], explain:"依頼には Sure, I'll send it now. が自然。" },
+  { type:"response", level:"B2", text:"A: I'm not sure this will work.", q:"建設的な応答は？", choices:["Let's test it on a small scale first.","Then give up.","Why doubt?","Not my problem."], explain:"不安に対し小規模検証を提案。" },
+  { type:"response", level:"C1", text:"A: Let's anchor this in evidence.", q:"自然な応答は？", choices:["Agreed—what does the data say?","No, trust your gut.","Why evidence?","You never decide."], explain:"証拠重視に同意しデータを尋ねる。" },
+  { type:"extensive", level:"B1", text:"Mia feared math. Her teacher broke each problem into tiny steps. Slowly, her confidence grew, and she began to enjoy it.", q:"内容に合うものは？", choices:["問題を細かく分けた指導で、自信がつき数学を楽しみ始めた。","数学をやめた。","自信が消えた。","嫌いになった。"], explain:"細分化→自信・楽しさ。" },
+  { type:"extensive", level:"B2", text:"The cafe trained baristas to remember regulars' orders. Customers felt valued, visits increased, and the cafe stood out from chains.", q:"内容に合うものは？", choices:["常連の注文を覚える訓練で、大切にされた感じが来店を増やし差別化した。","訓練をやめた。","来店が減った。","埋もれた。"], explain:"注文記憶→価値・来店増・差別化。" },
+  { type:"extensive", level:"C1", text:"Ridiculed for over-documenting, the engineer's detailed notes let the team rebuild a lost system in days instead of months.", q:"内容に合うものは？", choices:["文書化しすぎと笑われたが、詳細な記録で失われたシステムを数日で再建できた。","記録をやめた。","再建が遅れた。","記録が無駄だった。"], explain:"詳細な記録→失われたシステムを迅速に再建。" }
+]);
+
+/* 増量セットBG：高次スキル第32弾 大量（5倍ペース） */
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The office added standing desks. Workers felt more energetic, back pain complaints fell, and afternoon slumps lessened.", q:"最も適切な要約は？", choices:["スタンディングデスクで活力が増し、腰痛の訴えと午後のだるさが減った。","机を撤去した。","活力が落ちた。","腰痛が増えた。"], explain:"立ち机→活力・腰痛減・だるさ減。" },
+  { type:"summary", level:"B1", text:"The library lent out musical instruments. Beginners could try before buying, interest grew, and a community of players formed.", q:"最も適切な要約は？", choices:["楽器の貸出で購入前に試せ、関心が広がり演奏者の community ができた。","貸出をやめた。","関心が減った。","演奏者が消えた。"], explain:"楽器貸出→試用・関心・community。" },
+  { type:"summary", level:"B2", text:"The team wrote down assumptions before each project. Misunderstandings dropped, surprises were rarer, and post-mortems got shorter.", q:"最も適切な要約は？", choices:["各プロジェクト前に前提を書き出し、誤解が減り驚きが少なく振り返りも短縮された。","前提を無視した。","誤解が増えた。","驚きが増えた。"], explain:"前提の明文化→誤解減・驚き減・振り返り短縮。" },
+  { type:"summary", level:"B2", text:"The clinic sent appointment reminders by text. No-shows dropped sharply, schedules ran smoother, and patients appreciated it.", q:"最も適切な要約は？", choices:["予約リマインダーで無断キャンセルが激減し、予定が円滑になり患者にも好評だった。","通知をやめた。","欠席が増えた。","不評だった。"], explain:"リマインダー→無断キャンセル減・円滑・好評。" },
+  { type:"summary", level:"C1", text:"By rewarding questions rather than only answers, the teacher created a class where not knowing felt safe and curiosity could thrive.", q:"最も適切な要約は？", choices:["答えだけでなく問いを評価し、分からないことが安全で好奇心が育つ教室を作った。","質問を禁じた。","好奇心が消えた。","不安が増えた。"], explain:"問いを評価→無知が安全→好奇心が育つ。" },
+  { type:"paraphrase", level:"B1", text:"It depends.", q:"ほぼ同じ意味は？", choices:["It's not always the same.","It always works.","It never changes.","It's certain."], explain:"It depends ＝ 場合による。" },
+  { type:"paraphrase", level:"B2", text:"Let's close the gap.", q:"ほぼ同じ意味は？", choices:["Let's reduce the difference.","Let's open the door.","Let's widen it.","Let's jump over."], explain:"close the gap ＝ 差を縮める。" },
+  { type:"paraphrase", level:"C1", text:"Let's look for disconfirming evidence.", q:"ほぼ同じ意味は？", choices:["Let's seek evidence that could prove us wrong.","Let's confirm our view.","Let's hide the data.","Let's ignore facts."], explain:"disconfirming evidence ＝ 反証となる証拠。" },
+  { type:"intensive", level:"B2", text:"Nowhere is this clearer than here.", q:"この文の意味は？", choices:["これほど明確な所は他にない。","どこも不明確だ。","ここは不明確だ。","他の所が明確だ。"], explain:"Nowhere + 倒置で強調。" },
+  { type:"intensive", level:"C1", text:"Were we to fail, we would learn.", q:"この文の意味は？", choices:["仮に失敗しても学ぶだろう。","失敗したので学んだ。","失敗しなかった。","学ばなかった。"], explain:"Were we to … で仮定法の倒置。" },
+  { type:"question", level:"B1", text:"理解の確認をしたい。", q:"最も適切な質問は？", choices:["Does that make sense?","Why sense always?","Can you ever get it?","Is sense hard?"], explain:"Does that make sense? で理解確認。" },
+  { type:"question", level:"C1", text:"主張の限界を問いたい。", q:"最も適切な質問は？", choices:["Where does this argument break down?","Why break ever?","Is it perfect?","Can we skip?"], explain:"主張の限界を問い精度を上げる。" },
+  { type:"response", level:"B1", text:"A: Could you double-check the numbers?", q:"自然な応答は？", choices:["Sure, I'll verify them.","Yes check fast me.","Why check always?","Check is hard."], explain:"依頼には Sure, I'll verify them. が自然。" },
+  { type:"response", level:"C1", text:"A: Let's pressure-test the assumptions.", q:"自然な応答は？", choices:["Good—which one is shakiest?","No, just trust them.","Why test?","You never decide."], explain:"前提の検証に同意し弱点を問う。" },
+  { type:"extensive", level:"B2", text:"The shop added a repair counter. Customers fixed instead of replacing, saved money, and the shop earned lasting loyalty.", q:"内容に合うものは？", choices:["修理カウンターで客が買い替えず直し、節約し店は持続的な愛顧を得た。","修理をやめた。","買い替えが増えた。","愛顧が落ちた。"], explain:"修理→節約・愛顧。" },
+  { type:"extensive", level:"C1", text:"Faulted for slowing releases, the team's insistence on testing caught defects that would have damaged the brand's reputation.", q:"内容に合うものは？", choices:["リリースを遅らせると責められたが、検査の徹底が評判を傷つける欠陥を防いだ。","検査をやめた。","欠陥が残った。","評判が落ちた。"], explain:"検査の徹底→評判を守る欠陥発見。" }
+]);
+
+/* 増量セットBI：高次スキル第33弾 大量（5倍ペース） */
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The company offered free language classes. Employees gained skills, cross-team work improved, and morale rose noticeably.", q:"最も適切な要約は？", choices:["無料の語学講座でスキルが伸び、部門間連携が改善し士気が上がった。","講座を廃止した。","スキルが落ちた。","士気が下がった。"], explain:"語学講座→スキル・連携・士気。" },
+  { type:"summary", level:"B2", text:"The team rotated who ran the meetings. Engagement rose, quieter members spoke up, and meetings became more efficient.", q:"最も適切な要約は？", choices:["会議の司会を交代制にし、参加度が上がり静かな人も発言し効率も上がった。","司会を固定した。","参加度が落ちた。","効率が下がった。"], explain:"司会交代→参加・発言・効率。" },
+  { type:"summary", level:"C1", text:"By treating complaints as free consulting, the company turned its harshest critics into a steady source of product improvements.", q:"最も適切な要約は？", choices:["苦情を無料の助言とみなし、最も厳しい批判者を製品改善の源に変えた。","苦情を無視した。","批判者が離れた。","製品が悪化した。"], explain:"苦情＝無料の助言→批判者を改善源に。" },
+  { type:"paraphrase", level:"B1", text:"It's on schedule.", q:"ほぼ同じ意味は？", choices:["It's going as planned.","It's late.","It's cancelled.","It's early."], explain:"on schedule ＝ 予定通り。" },
+  { type:"paraphrase", level:"B2", text:"Let's re-evaluate the priorities.", q:"ほぼ同じ意味は？", choices:["Let's reconsider what matters most.","Let's lower the value.","Let's keep them fixed.","Let's ignore them."], explain:"re-evaluate ＝ 再評価する。" },
+  { type:"paraphrase", level:"C1", text:"Let's check for bias.", q:"ほぼ同じ意味は？", choices:["Let's look for hidden prejudice.","Let's add weight.","Let's stay neutral always.","Let's skip review."], explain:"check for bias ＝ バイアスを確認する。" },
+  { type:"intensive", level:"B2", text:"At no point did they give up.", q:"この文の意味は？", choices:["彼らは一度も諦めなかった。","すぐ諦めた。","時々諦めた。","最後に諦めた。"], explain:"At no point + 倒置で強い否定。" },
+  { type:"intensive", level:"C1", text:"Should the need arise, we'll act.", q:"この文の意味は？", choices:["必要が生じれば行動する。","必要はない。","すでに行動した。","行動しない。"], explain:"Should the need arise で仮定法の倒置。" },
+  { type:"question", level:"B1", text:"相手の準備状況を確かめたい。", q:"最も適切な質問は？", choices:["Are you all set?","Why set always?","Can you ever be ready?","Is set hard?"], explain:"Are you all set? で準備確認。" },
+  { type:"question", level:"C1", text:"判断の反証条件を問いたい。", q:"最も適切な質問は？", choices:["What would change our minds?","Why change ever?","Is it fixed?","Can we skip?"], explain:"反証条件を問い柔軟性を保つ。" },
+  { type:"response", level:"B1", text:"A: Could you keep me posted?", q:"自然な応答は？", choices:["Of course, I'll keep you updated.","Yes post fast me.","Why update always?","Post is hard."], explain:"依頼には Of course, I'll keep you updated. が自然。" },
+  { type:"response", level:"C1", text:"A: Let's quantify before deciding.", q:"自然な応答は？", choices:["Agreed—what should we measure?","No, just guess.","Why measure?","You never decide."], explain:"定量化に同意し指標を尋ねる。" },
+  { type:"extensive", level:"B2", text:"The office set up a 'kudos' channel. Recognition flowed freely, motivation grew, and teamwork strengthened over time.", q:"内容に合うものは？", choices:["称賛チャンネルで認め合いが広がり、意欲とチームワークが強まった。","廃止した。","意欲が落ちた。","対立が増えた。"], explain:"称賛の場→認め合い・意欲・チームワーク。" },
+  { type:"extensive", level:"C1", text:"Mocked for asking 'obvious' questions, the new hire's curiosity exposed flawed assumptions everyone else had quietly accepted.", q:"内容に合うものは？", choices:["当たり前の質問を笑われたが、新人の好奇心が皆が黙認していた誤った前提を暴いた。","質問をやめた。","前提が残った。","好奇心が裏目に出た。"], explain:"素朴な問い→黙認された誤った前提を露呈。" }
+]);
+
+/* 増量セットBK：高次スキル第34弾 大量（5倍ペース） */
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The cafe started a 'pay it forward' board. Customers prepaid coffees for strangers, kindness spread, and regulars felt connected.", q:"最も適切な要約は？", choices:["先払い掲示で見知らぬ人へのコーヒーが贈られ、親切が広がり常連がつながった。","掲示をやめた。","親切が減った。","客が離れた。"], explain:"先払い→親切の連鎖・つながり。" },
+  { type:"summary", level:"B2", text:"The team capped each task at one page of notes. Clarity improved, onboarding sped up, and knowledge stopped living in people's heads.", q:"最も適切な要約は？", choices:["各タスクのメモを1枚に制限し、明確化・新人受け入れ加速・知識の属人化解消を実現した。","メモを廃止した。","明確さが落ちた。","属人化が進んだ。"], explain:"1枚制限→明確化・加速・属人化解消。" },
+  { type:"summary", level:"C1", text:"By scheduling regular 'pre-mortems,' the team imagined failure in advance and fixed weaknesses before they could cause real damage.", q:"最も適切な要約は？", choices:["事前検死を定例化し、失敗を先に想像して弱点を実害前に修正した。","検証をやめた。","弱点が残った。","失敗が増えた。"], explain:"プレモーテム→失敗を先取りし弱点を事前修正。" },
+  { type:"paraphrase", level:"B1", text:"I'm counting on you.", q:"ほぼ同じ意味は？", choices:["I'm relying on you.","I'm counting numbers.","I'm leaving you.","I'm doubting you."], explain:"count on ＝ 頼りにする。" },
+  { type:"paraphrase", level:"B2", text:"Let's keep it constructive.", q:"ほぼ同じ意味は？", choices:["Let's stay positive and helpful.","Let's build something.","Let's be harsh.","Let's destroy it."], explain:"constructive ＝ 建設的な。" },
+  { type:"paraphrase", level:"C1", text:"Let's make our assumptions explicit.", q:"ほぼ同じ意味は？", choices:["Let's state what we're taking for granted.","Let's hide our ideas.","Let's stay vague.","Let's skip them."], explain:"make explicit ＝ 明示する。" },
+  { type:"intensive", level:"B2", text:"Only then did it make sense.", q:"この文の意味は？", choices:["その時になって初めて腑に落ちた。","すぐ分かった。","分からなかった。","早く分かった。"], explain:"Only then + 倒置で『その時初めて』。" },
+  { type:"intensive", level:"C1", text:"Far be it from me to object.", q:"この文の意味は？", choices:["反対する気は毛頭ない。","強く反対する。","反対した。","賛成しない。"], explain:"Far be it from me … で『〜する気はない』。" },
+  { type:"question", level:"B1", text:"相手の希望を尋ねたい。", q:"最も適切な質問は？", choices:["What works best for you?","Why best always?","Can you ever choose?","Is best hard?"], explain:"What works best for you? で希望を尋ねる。" },
+  { type:"question", level:"C1", text:"判断の前提を引き出したい。", q:"最も適切な質問は？", choices:["What are we taking for granted?","Why grant ever?","Is it given?","Can we skip?"], explain:"暗黙の前提を問い明示化する。" },
+  { type:"response", level:"B1", text:"A: Could you summarize this?", q:"自然な応答は？", choices:["Sure, here's the gist.","Yes sum fast me.","Why summary always?","Sum is hard."], explain:"依頼には Sure, here's the gist. が自然。" },
+  { type:"response", level:"C1", text:"A: Let's reason from first principles.", q:"自然な応答は？", choices:["Good—what do we know for certain?","No, just copy others.","Why think?","You never decide."], explain:"第一原理思考に同意し確実な事実を問う。" },
+  { type:"extensive", level:"B2", text:"The library opened a quiet 'focus zone.' Students concentrated better, productivity rose, and demand for the space grew fast.", q:"内容に合うものは？", choices:["静かな集中ゾーンで集中が高まり、生産性が上がり需要も急増した。","ゾーンを撤去した。","集中が落ちた。","需要が減った。"], explain:"集中ゾーン→集中・生産性・需要。" },
+  { type:"extensive", level:"C1", text:"Criticized for spending time on onboarding, the manager found that well-trained hires made fewer costly mistakes for years afterward.", q:"内容に合うものは？", choices:["受け入れに時間をかけると批判されたが、十分に育てた新人は何年も高くつく失敗を減らした。","受け入れをやめた。","失敗が増えた。","投資が無駄だった。"], explain:"丁寧な受け入れ→長期にわたり失敗減。" }
+]);
+
+/* 増量セットBL：高次スキル第35弾 仕上げ（5倍ペース完全達成） */
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The team posted its goals where everyone could see them. Focus sharpened, distractions fell, and progress became visible to all.", q:"最も適切な要約は？", choices:["目標を全員に見える所に掲示し、集中が増し脱線が減り進捗が可視化された。","目標を隠した。","集中が落ちた。","進捗が見えなくなった。"], explain:"目標の掲示→集中・脱線減・可視化。" },
+  { type:"summary", level:"B2", text:"The company let teams set their own metrics. Ownership grew, the numbers became meaningful, and gaming the system mostly stopped.", q:"最も適切な要約は？", choices:["チームが自ら指標を決め、当事者意識が育ち数値が意味を持ち不正操作も減った。","指標を廃止した。","意識が薄れた。","不正が増えた。"], explain:"自律的な指標→当事者意識・意味・不正減。" },
+  { type:"summary", level:"C1", text:"By rewarding people for surfacing problems rather than hiding them, the firm caught issues early and built a culture of candor.", q:"最も適切な要約は？", choices:["問題を隠さず表に出すことを評価し、早期発見と率直さの文化を築いた。","問題を隠した。","発見が遅れた。","率直さが消えた。"], explain:"問題の表出を評価→早期発見・率直な文化。" },
+  { type:"paraphrase", level:"B1", text:"I'll keep that in mind.", q:"ほぼ同じ意味は？", choices:["I'll remember that.","I'll forget it.","I'll lose it.","I'll ignore it."], explain:"keep in mind ＝ 心に留める。" },
+  { type:"paraphrase", level:"B2", text:"Let's surface the issues.", q:"ほぼ同じ意味は？", choices:["Let's bring the problems into the open.","Let's hide them.","Let's surf the web.","Let's ignore them."], explain:"surface ＝ 表に出す。" },
+  { type:"paraphrase", level:"C1", text:"Let's reason from first principles.", q:"ほぼ同じ意味は？", choices:["Let's build up from basic truths.","Let's copy others.","Let's guess randomly.","Let's skip thinking."], explain:"first principles ＝ 第一原理。" },
+  { type:"intensive", level:"B2", text:"Never before had we seen such growth.", q:"この文の意味は？", choices:["これほどの成長はかつてなかった。","よく見た。","成長は無かった。","少し成長した。"], explain:"Never before + 倒置で強調。" },
+  { type:"intensive", level:"C1", text:"Little does it matter now.", q:"この文の意味は？", choices:["今となってはほとんど重要でない。","とても重要だ。","重要だった。","少し重要だ。"], explain:"Little + 倒置で『ほとんど〜ない』。" },
+  { type:"question", level:"B1", text:"次の段取りを確認したい。", q:"最も適切な質問は？", choices:["What's the plan from here?","Why plan always?","Can we ever start?","Is plan hard?"], explain:"What's the plan from here? で段取り確認。" },
+  { type:"question", level:"C1", text:"主張の反例を探りたい。", q:"最も適切な質問は？", choices:["Can we think of a counterexample?","Why example ever?","Is it always true?","Can we skip?"], explain:"反例を問い主張を検証する。" },
+  { type:"response", level:"B1", text:"A: Could you take notes?", q:"自然な応答は？", choices:["Sure, I'll write them down.","Yes note fast me.","Why note always?","Note is hard."], explain:"依頼には Sure, I'll write them down. が自然。" },
+  { type:"response", level:"C1", text:"A: Let's define the scope first.", q:"自然な応答は？", choices:["Agreed—what's in and what's out?","No, just start.","Why scope?","You never decide."], explain:"範囲の定義に同意し境界を問う。" },
+  { type:"extensive", level:"B2", text:"The shop posted recipes using its ingredients. Sales rose, customers felt inspired, and food waste at home dropped.", q:"内容に合うものは？", choices:["食材を使うレシピを掲示し、売上が伸び客が刺激され家庭の食品ロスも減った。","レシピをやめた。","売上が落ちた。","ロスが増えた。"], explain:"レシピ掲示→売上・刺激・ロス減。" },
+  { type:"extensive", level:"C1", text:"Dismissed as overly cautious, the auditor's careful review uncovered an error that would have cost the firm a fortune.", q:"内容に合うものは？", choices:["慎重すぎと退けられたが、監査の精査が巨額の損失を招く誤りを発見した。","監査をやめた。","誤りが残った。","慎重さが裏目に出た。"], explain:"丁寧な監査→巨額損失を招く誤りを発見。" }
+]);
+
+/* 増量セットBN：高次スキル第36弾 最終（5倍ペース完全達成）*/
+window.EigoData.trainingItems = window.EigoData.trainingItems.concat([
+  { type:"summary", level:"B1", text:"The team started celebrating small wins weekly. Motivation stayed high, burnout dropped, and people felt their work mattered.", q:"最も適切な要約は？", choices:["毎週小さな成功を祝い、意欲が保たれ燃え尽きが減り仕事の意義を感じた。","祝うのをやめた。","意欲が落ちた。","燃え尽きが増えた。"], explain:"小さな成功を祝う→意欲・燃え尽き減・意義。" },
+  { type:"paraphrase", level:"B2", text:"Let's gauge the impact.", q:"ほぼ同じ意味は？", choices:["Let's estimate the effect.","Let's ignore it.","Let's increase it.","Let's measure water."], explain:"gauge ＝ 見積もる。" },
+  { type:"intensive", level:"C1", text:"Seldom does such a chance arise.", q:"この文の意味は？", choices:["そんな機会はめったに訪れない。","よく訪れる。","訪れない。","すぐ訪れる。"], explain:"Seldom + 倒置で『めったに〜ない』。" },
+  { type:"question", level:"B2", text:"判断の根拠を引き出したい。", q:"最も適切な質問は？", choices:["What's driving this decision?","Why drive always?","Is it real?","Can we skip?"], explain:"判断の根拠を問う。" },
+  { type:"response", level:"C1", text:"A: Let's sanity-check the result.", q:"自然な応答は？", choices:["Good—does it pass a basic gut check?","No, just publish.","Why check?","You never decide."], explain:"結果の妥当性確認に同意。" },
+  { type:"extensive", level:"B2", text:"The office added plants and natural light. Stress dropped, focus improved, and people lingered less reluctantly at their desks.", q:"内容に合うものは？", choices:["植物と自然光でストレスが減り集中が高まり、机に向かう気が楽になった。","植物を撤去した。","ストレスが増えた。","集中が落ちた。"], explain:"植物・自然光→ストレス減・集中。" },
+  { type:"summary", level:"C1", text:"By measuring outcomes rather than hours, the company freed people to work smarter, and results improved without longer days.", q:"最も適切な要約は？", choices:["時間でなく成果で測り、賢く働けるようになり長時間労働なしに成果が向上した。","時間で測った。","成果が落ちた。","労働時間が増えた。"], explain:"成果で測る→賢い働き方・成果向上。" }
+]);

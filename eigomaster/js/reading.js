@@ -11,10 +11,32 @@
 
   var WPM_OPTIONS = [150, 250, 350];
   var LEVELS = ["A2", "B1", "B2", "C1"];
-  var st = { cues: [], wpm: 250, timer: null, wordIdx: 0, words: [], level: "A2", note: null, noteTitle: "" };
+  var SUBS = [
+    { id: "all", label: "すべて" },
+    { id: ".1", label: ".1 易" },
+    { id: ".2", label: ".2 中" },
+    { id: ".3", label: ".3 難" }
+  ];
+  var st = { cues: [], wpm: 250, timer: null, wordIdx: 0, words: [], level: "A2", sub: "all", note: null, noteTitle: "" };
 
   function samples() { return (window.EigoData && window.EigoData.readingSamples) || []; }
-  function samplesOfLevel(lv) { return samples().filter(function (s) { return (s.level || "B1") === lv; }); }
+
+  var _annotated = false;
+  function ensureAnnotated() {
+    if (_annotated) return;
+    if (EM.levels) EM.levels.annotate(samples(), function (s) { return s.text; });
+    _annotated = true;
+  }
+  function samplesOfLevel(lv) {
+    ensureAnnotated();
+    return samples().filter(function (s) { return (s.level || "B1") === lv; });
+  }
+  // サブレベル絞り込み適用後の一覧
+  function samplesFiltered() {
+    var list = samplesOfLevel(st.level);
+    if (st.sub === "all") return list;
+    return list.filter(function (s) { return s._sub === st.level + st.sub; });
+  }
 
   function render() {
     return { html: '<section id="reading-root" class="view-enter"></section>', onMount: drawSetup };
@@ -40,10 +62,11 @@
     root().innerHTML =
       '<p class="section-title">リーディング</p>' +
       '<div class="notice notice--info"><span class="notice__icon">i</span>' +
-        '<span>読みたい教材を<strong>タップするだけ</strong>で本文が開きます。レベルで絞り込めます。</span></div>' +
+        '<span>読みたい教材を<strong>タップするだけ</strong>で本文が開きます。レベルと細分レベルで絞り込めます。</span></div>' +
       '<div class="card mt-4">' +
         '<p class="section-eyebrow">レベルで選ぶ</p>' +
         '<div class="seg-tabs" id="read-levels">' + levelTabs + '</div>' +
+        '<div class="chip-group mt-4" id="read-subs"></div>' +
         '<div class="read-sample-list" id="read-samples"></div>' +
       '</div>' +
       '<div class="card mt-4">' +
@@ -52,14 +75,17 @@
         '<button class="btn btn--primary btn--block mt-4" id="read-go" type="button">このテキストを読む</button>' +
       '</div>';
 
+    drawSubChips();
     drawSampleList();
 
     root().querySelectorAll("[data-level]").forEach(function (b) {
       b.addEventListener("click", function () {
         st.level = b.getAttribute("data-level");
+        st.sub = "all";
         root().querySelectorAll("[data-level]").forEach(function (x) {
           x.setAttribute("aria-pressed", x === b ? "true" : "false");
         });
+        drawSubChips();
         drawSampleList();
       });
     });
@@ -73,15 +99,42 @@
     });
   }
 
-  // サンプル一覧（選択レベル）を描画
+  // サブレベル絞り込みチップ
+  function drawSubChips() {
+    var box = document.getElementById("read-subs");
+    if (!box) return;
+    var lvList = samplesOfLevel(st.level);
+    function cnt(id) {
+      if (id === "all") return lvList.length;
+      return lvList.filter(function (s) { return s._sub === st.level + id; }).length;
+    }
+    box.innerHTML = SUBS.map(function (s) {
+      return '<button class="chip" type="button" data-sub="' + s.id + '" aria-pressed="' + (st.sub === s.id) + '">' +
+        s.label + ' <span class="text-soft" style="font-size:var(--fs-tiny)">' + cnt(s.id) + "</span></button>";
+    }).join("");
+    box.querySelectorAll("[data-sub]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        st.sub = b.getAttribute("data-sub");
+        box.querySelectorAll("[data-sub]").forEach(function (x) {
+          x.setAttribute("aria-pressed", x === b ? "true" : "false");
+        });
+        drawSampleList();
+      });
+    });
+  }
+
+  // サンプル一覧（選択レベル＋サブレベル）を描画
   function drawSampleList() {
     var box = document.getElementById("read-samples");
     if (!box) return;
-    var list = samplesOfLevel(st.level);
+    var list = samplesFiltered();
+    if (!list.length) { box.innerHTML = '<p class="text-soft mt-4" style="font-size:var(--fs-small)">この細分レベルの教材はありません。</p>'; return; }
     box.innerHTML = list.map(function (s) {
       var idx = samples().indexOf(s);
       return '<button class="read-sample" type="button" data-sample="' + idx + '">' +
-        '<span class="read-sample__title">' + EM.escapeHtml(s.title) + '</span>' +
+        '<span class="read-sample__title">' + EM.escapeHtml(s.title) +
+        (EM.levels ? ' <span class="text-soft" style="font-size:var(--fs-tiny)">' + EM.escapeHtml(EM.levels.badge(s)) + "</span>" : "") +
+        '</span>' +
         '<span class="read-sample__go" aria-hidden="true">›</span></button>';
     }).join("");
     box.querySelectorAll("[data-sample]").forEach(function (b) {

@@ -2335,3 +2335,1114 @@ window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
   {"level":"B2","ja":"的を射ています。","answer":"That's on point.","alts":[]},
   {"level":"B2","ja":"的外れです。","answer":"That misses the point.","alts":[]}
 ]);
+
+
+/* 増量：瞬間英作文 大量14（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"手伝いましょうか。","answer":"Can I help you?","alts":[]},
+  {"level":"A2","ja":"急がないで。","answer":"Take your time.","alts":[]},
+  {"level":"A2","ja":"少々お待ちを。","answer":"Just a moment.","alts":[]},
+  {"level":"B1","ja":"よく考えてみます。","answer":"Let me think it over.","alts":[]},
+  {"level":"B1","ja":"順番にやりましょう。","answer":"Let's take it step by step.","alts":[]},
+  {"level":"B1","ja":"無理しないでね。","answer":"Don't push yourself too hard.","alts":[]},
+  {"level":"B1","ja":"気が変わったら教えて。","answer":"Let me know if you change your mind.","alts":[]},
+  {"level":"B1","ja":"ちょうど話していたところです。","answer":"We were just talking about that.","alts":[]},
+  {"level":"B1","ja":"そう言ってもらえて嬉しいです。","answer":"It's nice of you to say that.","alts":[]},
+  {"level":"B2","ja":"前向きに検討します。","answer":"I'll give it serious thought.","alts":[]},
+  {"level":"B2","ja":"それは状況によります。","answer":"That depends on the situation.","alts":[]},
+  {"level":"B2","ja":"要点をまとめましょう。","answer":"Let's sum up the main points.","alts":[]},
+  {"level":"B2","ja":"誤解があったようです。","answer":"There seems to have been a misunderstanding.","alts":[]},
+  {"level":"B2","ja":"代替案を提案します。","answer":"Let me suggest an alternative.","alts":[]},
+  {"level":"B2","ja":"優先順位をつけましょう。","answer":"Let's set some priorities.","alts":[]},
+  {"level":"B2","ja":"期待に応えられるよう努めます。","answer":"I'll do my best to meet expectations.","alts":[]},
+  {"level":"B2","ja":"柔軟に対応します。","answer":"I'll be flexible about it.","alts":[]},
+  {"level":"B2","ja":"建設的に話し合いましょう。","answer":"Let's discuss this constructively.","alts":[]},
+  {"level":"B2","ja":"現実的に考えましょう。","answer":"Let's be realistic about this.","alts":[]},
+  {"level":"B2","ja":"早めに対処しましょう。","answer":"Let's address it sooner rather than later.","alts":[]},
+  {"level":"B2","ja":"根拠を示していただけますか。","answer":"Could you show me the basis for that?","alts":[]},
+  {"level":"B2","ja":"結論を急がないでおきましょう。","answer":"Let's not jump to conclusions.","alts":[]},
+  {"level":"B2","ja":"双方にとって良い案ですね。","answer":"It's a good outcome for both sides.","alts":[]},
+  {"level":"B2","ja":"改善の余地があります。","answer":"There's room for improvement.","alts":[]},
+  {"level":"B2","ja":"長い目で見ましょう。","answer":"Let's take the long view.","alts":[]},
+  {"level":"B2","ja":"きちんと記録に残します。","answer":"I'll make sure it's documented.","alts":[]},
+  {"level":"B2","ja":"筋が通っていますね。","answer":"That holds together well.","alts":[]},
+  {"level":"C1","ja":"前提を見直す必要があります。","answer":"We need to re-examine the premise.","alts":[]},
+  {"level":"C1","ja":"因果関係を確かめましょう。","answer":"Let's verify the causal link.","alts":[]},
+  {"level":"C1","ja":"可逆的な判断を優先します。","answer":"I'll favor a reversible decision.","alts":[]},
+  {"level":"C1","ja":"不確実性を織り込みましょう。","answer":"Let's account for the uncertainty.","alts":[]},
+  {"level":"C1","ja":"機会費用も考慮すべきです。","answer":"We should weigh the opportunity cost too.","alts":[]},
+  {"level":"C1","ja":"短期と長期を切り分けましょう。","answer":"Let's separate the short and long term.","alts":[]},
+  {"level":"C1","ja":"撤退条件を定めておきましょう。","answer":"Let's set clear exit criteria.","alts":[]},
+  {"level":"C1","ja":"根本原因にさかのぼりましょう。","answer":"Let's trace it to the root cause.","alts":[]},
+  {"level":"C1","ja":"反証可能な形で述べてください。","answer":"Please frame it in a falsifiable way.","alts":[]},
+  {"level":"C1","ja":"憶測ではなく証拠に基づきましょう。","answer":"Let's rely on evidence, not speculation.","alts":[]},
+  {"level":"C1","ja":"論点を切り分けて議論しましょう。","answer":"Let's break the issue into parts.","alts":[]},
+  {"level":"C1","ja":"前例にとらわれない発想が要ります。","answer":"We need to think beyond precedent.","alts":[]},
+  {"level":"C1","ja":"想定の範囲を明確にしましょう。","answer":"Let's clarify the scope of our assumptions.","alts":[]}
+]);
+
+
+/* 増量：瞬間英作文 大量15（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"お会いできて嬉しいです。","answer":"Nice to meet you.","alts":[]},
+  {"level":"A2","ja":"調子はどう？","answer":"How's it going?","alts":[]},
+  {"level":"A2","ja":"まあまあです。","answer":"Not too bad.","alts":[]},
+  {"level":"A2","ja":"元気です。","answer":"I'm doing well.","alts":[]},
+  {"level":"A2","ja":"久しぶり。","answer":"Long time no see.","alts":[]},
+  {"level":"A2","ja":"また会おうね。","answer":"Let's meet up again.","alts":[]},
+  {"level":"A2","ja":"連絡してね。","answer":"Keep in touch.","alts":[]},
+  {"level":"A2","ja":"よい週末を。","answer":"Have a good weekend.","alts":[]},
+  {"level":"A2","ja":"気をつけて帰ってね。","answer":"Get home safe.","alts":[]},
+  {"level":"A2","ja":"おめでとう。","answer":"Congratulations.","alts":[]},
+  {"level":"A2","ja":"頑張ってね。","answer":"Good luck.","alts":[]},
+  {"level":"A2","ja":"応援してるよ。","answer":"I'm rooting for you.","alts":[]},
+  {"level":"A2","ja":"お疲れさま。","answer":"Good job today.","alts":[]},
+  {"level":"B1","ja":"お手数おかけします。","answer":"Sorry for the trouble.","alts":[]},
+  {"level":"B1","ja":"恩に着ます。","answer":"I owe you one.","alts":[]},
+  {"level":"B1","ja":"無理のない範囲で。","answer":"Only if it's convenient.","alts":[]},
+  {"level":"B1","ja":"そのうちにね。","answer":"Sometime soon.","alts":[]},
+  {"level":"B1","ja":"念のためお伝えします。","answer":"Just so you know.","alts":[]},
+  {"level":"B1","ja":"参考までに。","answer":"For what it's worth.","alts":[]},
+  {"level":"B1","ja":"一応確認ですが。","answer":"Just to be sure.","alts":[]},
+  {"level":"B1","ja":"私の理解では。","answer":"The way I see it.","alts":[]},
+  {"level":"B1","ja":"正直なところ。","answer":"To be honest.","alts":[]},
+  {"level":"B1","ja":"率直に言うと。","answer":"Frankly speaking.","alts":[]},
+  {"level":"B2","ja":"論点を整理させてください。","answer":"Let me organize the points.","alts":[]},
+  {"level":"B2","ja":"前提を確認しましょう。","answer":"Let's confirm the assumptions.","alts":[]},
+  {"level":"B2","ja":"落としどころを探りましょう。","answer":"Let's look for a compromise.","alts":[]},
+  {"level":"B2","ja":"影響を見極めましょう。","answer":"Let's assess the impact.","alts":[]},
+  {"level":"B2","ja":"根拠を補強します。","answer":"Let me strengthen the basis.","alts":[]},
+  {"level":"B2","ja":"別の見方もできます。","answer":"There's another way to see it.","alts":[]},
+  {"level":"B2","ja":"分担を決めましょう。","answer":"Let's divide the work.","alts":[]},
+  {"level":"B2","ja":"期日を再調整します。","answer":"I'll adjust the deadline.","alts":[]},
+  {"level":"B2","ja":"懸念を明示します。","answer":"Let me make my concern clear.","alts":[]},
+  {"level":"B2","ja":"慎重に進めます。","answer":"I'll proceed with care.","alts":[]},
+  {"level":"B2","ja":"意見をすり合わせます。","answer":"Let me reconcile our views.","alts":[]},
+  {"level":"B2","ja":"先手を打ちましょう。","answer":"Let's get ahead of it.","alts":[]},
+  {"level":"B2","ja":"想定内の結果です。","answer":"It's within expectations.","alts":[]},
+  {"level":"B2","ja":"合意としましょう。","answer":"Let's call it agreed.","alts":[]},
+  {"level":"B2","ja":"現状維持も一案です。","answer":"The status quo is an option too.","alts":[]},
+  {"level":"B2","ja":"影響範囲を確認します。","answer":"Let me check the scope.","alts":[]},
+  {"level":"C1","ja":"成功条件を定義します。","answer":"Let me define success.","alts":[]},
+  {"level":"C1","ja":"機会費用を比べます。","answer":"Let me compare opportunity costs.","alts":[]},
+  {"level":"C1","ja":"最悪を想定します。","answer":"Let me assume the worst.","alts":[]},
+  {"level":"C1","ja":"短期と長期を分けます。","answer":"Let me separate horizons.","alts":[]},
+  {"level":"C1","ja":"因果を確かめます。","answer":"Let me confirm causation.","alts":[]},
+  {"level":"C1","ja":"仮説を立てます。","answer":"Let me form a hypothesis.","alts":[]},
+  {"level":"C1","ja":"前例を調べます。","answer":"Let me check for precedent.","alts":[]}
+]);
+
+/* 増量セットAV：高次スキル各種 大量7（5倍ペース） */
+window.EigoData.collocationItems = window.EigoData.collocationItems.concat([
+  { level:"B2", text:"Let's ___ a decision.", q:"自然な語は？", choices:["reach","make","do","take"], explain:"reach a decision（決定に至る）。makeも可だがreachが自然。" },
+  { level:"B2", text:"They ___ a risk.", q:"自然な語は？", choices:["took","made","did","gave"], explain:"take a risk（リスクを取る）。" },
+  { level:"B2", text:"Let's ___ progress.", q:"自然な語は？", choices:["make","do","take","give"], explain:"make progress（前進する）。" },
+  { level:"B2", text:"We ___ a conclusion.", q:"自然な語は？", choices:["drew","made","did","took"], explain:"draw a conclusion（結論を導く）。" },
+  { level:"B2", text:"Let's ___ attention to this.", q:"自然な語は？", choices:["draw","make","do","take"], explain:"draw attention（注意を引く）。" },
+  { level:"B2", text:"They ___ an effort.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make an effort（努力する）。" },
+  { level:"B2", text:"Let's ___ a deadline.", q:"自然な語は？", choices:["set","make","do","give"], explain:"set a deadline（締切を設ける）。" },
+  { level:"B2", text:"We ___ a profit.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make a profit（利益を上げる）。" },
+  { level:"C1", text:"Let's ___ ground.", q:"自然な語は？", choices:["break","make","do","take"], explain:"break ground（着工する・新境地を開く）。" },
+  { level:"C1", text:"They ___ a stand on it.", q:"自然な語は？", choices:["took","made","did","gave"], explain:"take a stand（立場を取る）。" },
+  { level:"C1", text:"Let's ___ light on the issue.", q:"自然な語は？", choices:["shed","make","do","take"], explain:"shed light（明らかにする）。" },
+  { level:"C1", text:"We must ___ the consequences.", q:"自然な語は？", choices:["face","make","do","give"], explain:"face the consequences（結果に向き合う）。" }
+]);
+window.EigoData.stressItems = window.EigoData.stressItems.concat([
+  { level:"B2", word:"photograph", syl:["PHO","to","graph"], ans:0, ja:"写真" },
+  { level:"B2", word:"photographer", syl:["pho","TOG","ra","pher"], ans:1, ja:"写真家" },
+  { level:"B2", word:"photographic", syl:["pho","to","GRAPH","ic"], ans:2, ja:"写真の" },
+  { level:"B2", word:"economy", syl:["e","CON","o","my"], ans:1, ja:"経済" },
+  { level:"B2", word:"economic", syl:["e","co","NOM","ic"], ans:2, ja:"経済の" },
+  { level:"C1", word:"economical", syl:["e","co","NOM","i","cal"], ans:2, ja:"経済的な" },
+  { level:"B2", word:"politics", syl:["POL","i","tics"], ans:0, ja:"政治" },
+  { level:"B2", word:"political", syl:["po","LIT","i","cal"], ans:1, ja:"政治の" },
+  { level:"B2", word:"politician", syl:["pol","i","TI","cian"], ans:2, ja:"政治家" },
+  { level:"B2", word:"object (名詞)", syl:["OB","ject"], ans:0, ja:"物体（名詞）", say:"object" },
+  { level:"B2", word:"object (動詞)", syl:["ob","JECT"], ans:1, ja:"反対する（動詞）", say:"object" },
+  { level:"B2", word:"conduct (名詞)", syl:["CON","duct"], ans:0, ja:"行為（名詞）", say:"conduct" },
+  { level:"B2", word:"conduct (動詞)", syl:["con","DUCT"], ans:1, ja:"行う（動詞）", say:"conduct" }
+]);
+window.EigoData.chunkItems = window.EigoData.chunkItems.concat([
+  { level:"B2", text:"After all, we tried our best.", q:"自然なチャンク区切りは？", choices:["After all, / we tried our best","After / all we tried / our best","After all we / tried our best","After all we tried / our best"], explain:"前置きの句/主節、で区切る。" },
+  { level:"B2", text:"In other words, it failed.", q:"自然なチャンク区切りは？", choices:["In other words, / it failed","In / other words it / failed","In other / words it failed","In other words it / failed"], explain:"談話標識/主節、で区切る。" },
+  { level:"C1", text:"Granted that it's hard, we proceed.", q:"自然なチャンク区切りは？", choices:["Granted that it's hard, / we proceed","Granted / that it's hard we / proceed","Granted that / it's hard we proceed","Granted that it's hard we / proceed"], explain:"譲歩節/主節、で区切る。" },
+  { level:"B2", text:"For the most part, it works.", q:"自然なチャンク区切りは？", choices:["For the most part, / it works","For / the most part it / works","For the / most part it works","For the most part it / works"], explain:"前置き句/主節、で区切る。" }
+]);
+window.EigoData.thinkingItems = window.EigoData.thinkingItems.concat([
+  { level:"B2", ja:"", text:"「念のため言っておくと」を伝えるなら？", choices:["Just to be clear,","Clear just now,","For sure say yes,","Note this please,"], explain:"Just to be clear ＝ 念のため明確にすると。" },
+  { level:"B2", ja:"", text:"「言いにくいのですが」を伝えるなら？", choices:["I hate to say this, but","Hard say this now,","Difficult talk yes,","Bad news maybe,"], explain:"I hate to say this, but ＝ 言いにくいのですが。" },
+  { level:"C1", ja:"", text:"「誤解のないように言うと」を伝えるなら？", choices:["To avoid any misunderstanding,","No mistake talk now,","Clear wrong yes,","Understand please maybe,"], explain:"To avoid any misunderstanding ＝ 誤解のないように。" },
+  { level:"B2", ja:"", text:"「要するに」を伝えるなら？", choices:["The bottom line is,","Bottom say now,","End point yes,","Short talk maybe,"], explain:"The bottom line is ＝ 要するに。" },
+  { level:"C1", ja:"", text:"「あくまで個人的見解ですが」を伝えるなら？", choices:["Speaking only for myself,","Only me talk now,","Personal alone yes,","I think maybe,"], explain:"Speaking only for myself ＝ あくまで個人的には。" },
+  { level:"B2", ja:"", text:"「順を追って言うと」を伝えるなら？", choices:["Step by step,","Step talk now,","Order say yes,","One by maybe,"], explain:"Step by step ＝ 順を追って。" }
+]);
+window.EigoData.cultureItems = window.EigoData.cultureItems.concat([
+  { level:"B2", text:"会議で発言の順番を譲る：", choices:["Please, go ahead—I'll follow.","I talk first always.","Be quiet now.","Skip your turn."], explain:"相手に発言を譲る丁寧な表現。" },
+  { level:"B2", text:"相手の懸念を受け止める：", choices:["I see where you're coming from.","You're overreacting.","That's irrelevant.","Stop worrying."], explain:"相手の立場を受け止める共感表現。" },
+  { level:"C1", text:"反対意見を尊重しつつ述べる：", choices:["I respect that view, though I see it differently.","You're simply wrong.","That makes no sense.","Don't argue with me."], explain:"相手を尊重しつつ異なる見解を述べる。" },
+  { level:"C1", text:"礼儀正しく催促する：", choices:["I just wanted to gently follow up.","Why so slow always?","Hurry up now.","You're too late."], explain:"gently follow up で柔らかく催促。" }
+]);
+window.EigoData.discussionItems = window.EigoData.discussionItems.concat([
+  { level:"B2", text:"全員の理解を確認する：", choices:["Are we all clear on this?","Only I understand.","No need to check.","Stop asking."], explain:"全員の理解を確認する。" },
+  { level:"B2", text:"話を本筋に戻す：", choices:["Let's get back to the main point.","Keep going off topic.","No focus needed.","Talk about anything."], explain:"本筋に戻して議論を整える。" },
+  { level:"C1", text:"建設的に異論を挟む：", choices:["I'd like to offer a different angle.","You're all wrong.","No other views allowed.","Stop thinking."], explain:"別角度を提示して議論を深める。" },
+  { level:"C1", text:"合意点を明確にして前進する：", choices:["It sounds like we agree on the essentials.","We'll never agree.","Decide nothing.","Keep arguing."], explain:"合意点を明確にし前進する。" }
+]);
+window.EigoData.intonationItems = window.EigoData.intonationItems.concat([
+  { level:"B2", text:"Sounds good to me.", q:"賛同の調子は？", choices:["明るく下げて言い切る↘","強く上げる↗","平坦に切る","ためらう"], explain:"賛同は明るく下げて。" },
+  { level:"B2", text:"I'm not so sure about that.", q:"控えめな疑問の調子は？", choices:["sure を伸ばし下げ気味","強く言い切る","明るく上げる","速く下げる"], explain:"控えめな疑問は伸ばし＋下げ気味。" },
+  { level:"C1", text:"Well, that's one way to put it.", q:"含みのある相づちの調子は？", choices:["ゆっくり下げ気味で含みを持たせる","明るく上げる","強く言い切る","速く上げる"], explain:"含みは間＋下げ気味で。" },
+  { level:"B2", text:"Could you say that again?", q:"丁寧な聞き返しの調子は？", choices:["again を上げる↗","下げて終える","平坦に切る","小さく言う"], explain:"丁寧な聞き返しは語尾を上げ↗。" }
+]);
+window.EigoData.rhythmItems = window.EigoData.rhythmItems.concat([
+  { level:"B2", text:"Let's FOCUS on what MATTERS most.", q:"強く読む語は？", choices:["focus / matters / most","let's / on / what","on / what","均等"], explain:"内容語を強く。" },
+  { level:"C1", text:"It's NOT about WINNING, it's about LEARNING.", q:"強く読む語は？", choices:["not / winning / learning","it's / about / it's","about / it's","均等"], explain:"対比される内容語を強く。" },
+  { level:"B2", text:"We HAVE to MAKE a CHOICE now.", q:"強く読む語は？", choices:["have / make / choice / now","we / to / a","to / a","均等"], explain:"内容語を強く、機能語は弱く。" },
+  { level:"C1", text:"LESS talk, MORE action.", q:"強く読む語は？", choices:["less / talk / more / action","none","the / a","均等"], explain:"対比の内容語を強く。" }
+]);
+
+
+/* 増量：瞬間英作文 大量16（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"ここで待ってます。","answer":"I'll wait here.","alts":[]},
+  {"level":"A2","ja":"先に行ってて。","answer":"Go on ahead.","alts":[]},
+  {"level":"A2","ja":"すぐ終わります。","answer":"I'll be done soon.","alts":[]},
+  {"level":"A2","ja":"もう少しで着きます。","answer":"I'm almost there.","alts":[]},
+  {"level":"A2","ja":"道に迷いました。","answer":"I got lost.","alts":[]},
+  {"level":"A2","ja":"案内します。","answer":"Let me show you the way.","alts":[]},
+  {"level":"A2","ja":"こっちです。","answer":"This way.","alts":[]},
+  {"level":"A2","ja":"そこを左です。","answer":"Turn left there.","alts":[]},
+  {"level":"A2","ja":"まっすぐ進んで。","answer":"Go straight ahead.","alts":[]},
+  {"level":"A2","ja":"すぐそこです。","answer":"It's right over there.","alts":[]},
+  {"level":"A2","ja":"時間どおりです。","answer":"We're on time.","alts":[]},
+  {"level":"A2","ja":"少し遅れます。","answer":"I'll be a little late.","alts":[]},
+  {"level":"A2","ja":"早めに着きました。","answer":"I arrived early.","alts":[]},
+  {"level":"A2","ja":"ちょうど良かった。","answer":"Perfect timing.","alts":[]},
+  {"level":"B1","ja":"順番に並びましょう。","answer":"Let's line up in order.","alts":[]},
+  {"level":"B1","ja":"交代でやりましょう。","answer":"Let's take turns.","alts":[]},
+  {"level":"B1","ja":"一緒に確認しましょう。","answer":"Let's check it together.","alts":[]},
+  {"level":"B1","ja":"あとで合流します。","answer":"I'll catch up with you later.","alts":[]},
+  {"level":"B1","ja":"準備はできています。","answer":"I'm all set.","alts":[]},
+  {"level":"B1","ja":"まだ準備中です。","answer":"I'm still getting ready.","alts":[]},
+  {"level":"B1","ja":"もう一度試してみます。","answer":"Let me try again.","alts":[]},
+  {"level":"B1","ja":"うまくいきました。","answer":"It worked out.","alts":[]},
+  {"level":"B1","ja":"残念ながらだめでした。","answer":"Unfortunately it didn't work.","alts":[]},
+  {"level":"B1","ja":"次はうまくやります。","answer":"I'll do better next time.","alts":[]},
+  {"level":"B1","ja":"あなたに任せます。","answer":"I'll leave it to you.","alts":[]},
+  {"level":"B2","ja":"段取りを決めましょう。","answer":"Let's plan the steps.","alts":[]},
+  {"level":"B2","ja":"役割を明確にしましょう。","answer":"Let's clarify the roles.","alts":[]},
+  {"level":"B2","ja":"締切から逆算しましょう。","answer":"Let's work back from the deadline.","alts":[]},
+  {"level":"B2","ja":"優先度の高い順にやりましょう。","answer":"Let's tackle the high-priority items first.","alts":[]},
+  {"level":"B2","ja":"無駄を省きましょう。","answer":"Let's cut out the waste.","alts":[]},
+  {"level":"B2","ja":"効率を上げましょう。","answer":"Let's improve efficiency.","alts":[]},
+  {"level":"B2","ja":"品質を保ちましょう。","answer":"Let's maintain quality.","alts":[]},
+  {"level":"B2","ja":"進捗を共有しましょう。","answer":"Let's share our progress.","alts":[]},
+  {"level":"B2","ja":"課題を可視化しましょう。","answer":"Let's make the issues visible.","alts":[]},
+  {"level":"B2","ja":"期待値をそろえましょう。","answer":"Let's align expectations.","alts":[]},
+  {"level":"B2","ja":"前提を明示しましょう。","answer":"Let's state the assumptions.","alts":[]},
+  {"level":"B2","ja":"合意事項を確認しましょう。","answer":"Let's confirm what we agreed.","alts":[]},
+  {"level":"B2","ja":"次の一手を決めましょう。","answer":"Let's decide the next move.","alts":[]},
+  {"level":"B2","ja":"教訓を残しましょう。","answer":"Let's capture the lessons.","alts":[]},
+  {"level":"C1","ja":"可逆な選択を優先しましょう。","answer":"Let's prioritize reversible choices.","alts":[]},
+  {"level":"C1","ja":"前提を疑いましょう。","answer":"Let's question the premise.","alts":[]},
+  {"level":"C1","ja":"長期で最適化しましょう。","answer":"Let's optimize for the long run.","alts":[]},
+  {"level":"C1","ja":"成功基準を先に決めましょう。","answer":"Let's define success criteria first.","alts":[]},
+  {"level":"C1","ja":"不確実性を織り込みましょう。","answer":"Let's bake in the uncertainty.","alts":[]},
+  {"level":"C1","ja":"機会費用を見積もりましょう。","answer":"Let's estimate the opportunity cost.","alts":[]},
+  {"level":"C1","ja":"時間軸を分けましょう。","answer":"Let's separate the time horizons.","alts":[]},
+  {"level":"C1","ja":"因果を確かめましょう。","answer":"Let's verify the causation.","alts":[]},
+  {"level":"C1","ja":"仮説を検証しましょう。","answer":"Let's test the hypothesis.","alts":[]},
+  {"level":"C1","ja":"前例から学びましょう。","answer":"Let's learn from precedent.","alts":[]}
+]);
+
+
+/* 増量：瞬間英作文 大量17（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"これは何ですか。","answer":"What is this?","alts":[]},
+  {"level":"A2","ja":"どこにありますか。","answer":"Where is it?","alts":[]},
+  {"level":"A2","ja":"いつ始まりますか。","answer":"When does it start?","alts":[]},
+  {"level":"A2","ja":"どうやって行きますか。","answer":"How do I get there?","alts":[]},
+  {"level":"A2","ja":"いくらですか。","answer":"How much is it?","alts":[]},
+  {"level":"A2","ja":"どちらですか。","answer":"Which one is it?","alts":[]},
+  {"level":"A2","ja":"どのくらいかかりますか。","answer":"How long does it take?","alts":[]},
+  {"level":"A2","ja":"何が必要ですか。","answer":"What do I need?","alts":[]},
+  {"level":"A2","ja":"誰に聞けばいいですか。","answer":"Who should I ask?","alts":[]},
+  {"level":"A2","ja":"どこで買えますか。","answer":"Where can I buy it?","alts":[]},
+  {"level":"A2","ja":"何が問題ですか。","answer":"What's the problem?","alts":[]},
+  {"level":"B1","ja":"もう少し詳しく。","answer":"A bit more detail, please.","alts":[]},
+  {"level":"B1","ja":"どういう意味ですか。","answer":"What do you mean?","alts":[]},
+  {"level":"B1","ja":"言い換えてもらえますか。","answer":"Could you rephrase that?","alts":[]},
+  {"level":"B1","ja":"なぜそう思いますか。","answer":"Why do you think so?","alts":[]},
+  {"level":"B1","ja":"根拠は何ですか。","answer":"What's your basis for that?","alts":[]},
+  {"level":"B1","ja":"代わりに何ができますか。","answer":"What can we do instead?","alts":[]},
+  {"level":"B1","ja":"どこから始めますか。","answer":"Where do we start?","alts":[]},
+  {"level":"B1","ja":"何を優先しますか。","answer":"What do we prioritize?","alts":[]},
+  {"level":"B1","ja":"誰が担当しますか。","answer":"Who's in charge?","alts":[]},
+  {"level":"B1","ja":"いつまでに必要ですか。","answer":"By when do you need it?","alts":[]},
+  {"level":"B1","ja":"どう進めますか。","answer":"How should we proceed?","alts":[]},
+  {"level":"B1","ja":"何か懸念はありますか。","answer":"Are there any concerns?","alts":[]},
+  {"level":"B2","ja":"前提は何ですか。","answer":"What are the assumptions?","alts":[]},
+  {"level":"B2","ja":"どんなリスクがありますか。","answer":"What risks are involved?","alts":[]},
+  {"level":"B2","ja":"成功の基準は何ですか。","answer":"What's the measure of success?","alts":[]},
+  {"level":"B2","ja":"何を犠牲にしますか。","answer":"What are we giving up?","alts":[]},
+  {"level":"B2","ja":"別の選択肢はありますか。","answer":"Are there other options?","alts":[]},
+  {"level":"B2","ja":"なぜ今なのですか。","answer":"Why now?","alts":[]},
+  {"level":"B2","ja":"誰が影響を受けますか。","answer":"Who's affected?","alts":[]},
+  {"level":"B2","ja":"どう検証しますか。","answer":"How do we verify it?","alts":[]},
+  {"level":"B2","ja":"何が変われば結論が変わりますか。","answer":"What would change the conclusion?","alts":[]},
+  {"level":"B2","ja":"どこに不確実性がありますか。","answer":"Where's the uncertainty?","alts":[]},
+  {"level":"B2","ja":"何を見落としていますか。","answer":"What are we missing?","alts":[]},
+  {"level":"B2","ja":"最悪の場合どうなりますか。","answer":"What's the worst case?","alts":[]},
+  {"level":"B2","ja":"それは可逆ですか。","answer":"Is that reversible?","alts":[]},
+  {"level":"B2","ja":"根拠はどれくらい強いですか。","answer":"How strong is the evidence?","alts":[]},
+  {"level":"B2","ja":"どう測定しますか。","answer":"How do we measure it?","alts":[]},
+  {"level":"B2","ja":"誰が決定しますか。","answer":"Who makes the call?","alts":[]},
+  {"level":"B2","ja":"いつ見直しますか。","answer":"When do we revisit it?","alts":[]},
+  {"level":"B2","ja":"何が成功を妨げますか。","answer":"What's blocking success?","alts":[]},
+  {"level":"B2","ja":"どこで妥協できますか。","answer":"Where can we compromise?","alts":[]},
+  {"level":"B2","ja":"次は何をしますか。","answer":"What's the next step?","alts":[]},
+  {"level":"C1","ja":"その前提は検証可能ですか。","answer":"Is that premise testable?","alts":[]},
+  {"level":"C1","ja":"因果と相関を区別していますか。","answer":"Are we separating cause and correlation?","alts":[]},
+  {"level":"C1","ja":"反証する証拠は何ですか。","answer":"What evidence would disprove it?","alts":[]},
+  {"level":"C1","ja":"どんなバイアスがありますか。","answer":"What biases are at play?","alts":[]},
+  {"level":"C1","ja":"機会費用はいくらですか。","answer":"What's the opportunity cost?","alts":[]},
+  {"level":"C1","ja":"撤退条件は何ですか。","answer":"What are the exit criteria?","alts":[]},
+  {"level":"C1","ja":"どの仮定が最も脆いですか。","answer":"Which assumption is weakest?","alts":[]},
+  {"level":"C1","ja":"長期的な影響は何ですか。","answer":"What's the long-term impact?","alts":[]},
+  {"level":"C1","ja":"前例はありますか。","answer":"Is there a precedent?","alts":[]},
+  {"level":"C1","ja":"それは根本原因ですか。","answer":"Is that the root cause?","alts":[]},
+  {"level":"C1","ja":"サンプルは代表的ですか。","answer":"Is the sample representative?","alts":[]},
+  {"level":"C1","ja":"誰の視点が欠けていますか。","answer":"Whose perspective is missing?","alts":[]},
+  {"level":"C1","ja":"どこで判断を保留すべきですか。","answer":"Where should we withhold judgment?","alts":[]},
+  {"level":"C1","ja":"最も単純な説明は何ですか。","answer":"What's the simplest explanation?","alts":[]}
+]);
+
+/* 増量セットAY：高次スキル各種 大量8（5倍ペース） */
+window.EigoData.collocationItems = window.EigoData.collocationItems.concat([
+  { level:"B2", text:"Let's ___ a compromise.", q:"自然な語は？", choices:["reach","make","do","take"], explain:"reach a compromise（妥協に至る）。" },
+  { level:"B2", text:"They ___ an exception.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make an exception（例外を設ける）。" },
+  { level:"B2", text:"Let's ___ control of this.", q:"自然な語は？", choices:["take","make","do","give"], explain:"take control（主導権を取る）。" },
+  { level:"C1", text:"We ___ a breakthrough.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make a breakthrough（突破口を開く）。" },
+  { level:"C1", text:"Let's ___ a fine line.", q:"自然な語は？", choices:["tread","make","do","take"], explain:"tread a fine line（際どい線を行く）。" }
+]);
+window.EigoData.thinkingItems = window.EigoData.thinkingItems.concat([
+  { level:"B2", ja:"", text:"「率直に申し上げると」を伝えるなら？", choices:["To be candid,","Candid talk now,","Honest alone yes,","Direct maybe,"], explain:"To be candid ＝ 率直に申し上げると。" },
+  { level:"C1", ja:"", text:"「誤解を恐れずに言えば」を伝えるなら？", choices:["At the risk of being misunderstood,","Risk wrong talk now,","No fear say yes,","Brave word maybe,"], explain:"At the risk of being misunderstood ＝ 誤解を恐れずに言えば。" },
+  { level:"B2", ja:"", text:"「言い方を変えると」を伝えるなら？", choices:["To put it differently,","Different say now,","Change word yes,","Other talk maybe,"], explain:"To put it differently ＝ 言い方を変えると。" }
+]);
+window.EigoData.discussionItems = window.EigoData.discussionItems.concat([
+  { level:"B2", text:"発言の意図を確認する：", choices:["If I understand you correctly, you mean...","I wasn't listening.","You're wrong.","No need to ask."], explain:"発言意図を確認して誤解を防ぐ。" },
+  { level:"C1", text:"議論を一段深める：", choices:["Let's dig a little deeper into that.","Let's stay shallow.","No深掘り needed.","Move on quickly."], explain:"論点を深掘りする。" }
+]);
+window.EigoData.cultureItems = window.EigoData.cultureItems.concat([
+  { level:"B2", text:"丁寧に異論を述べる：", choices:["I see it a little differently, if I may.","You're flat wrong.","That's nonsense.","Stop talking."], explain:"if I may で丁寧に異論を述べる。" },
+  { level:"C1", text:"相手の貢献を称える：", choices:["Your input really shaped this outcome.","I did it all.","It was nothing special.","Anyone could."], explain:"具体的に貢献を称える。" }
+]);
+window.EigoData.intonationItems = window.EigoData.intonationItems.concat([
+  { level:"B2", text:"That's a fair point.", q:"納得の調子は？", choices:["落ち着いて下げて言い切る↘","強く上げる↗","平坦に切る","ためらう"], explain:"納得は落ち着いて下げ↘。" },
+  { level:"C1", text:"Hmm, I'd push back on that.", q:"穏やかな反論の調子は？", choices:["柔らかく始め push back を強める","明るく上げる","速く言い切る","小さく言う"], explain:"穏やかな反論は柔らかく始め要点を強める。" }
+]);
+window.EigoData.rhythmItems = window.EigoData.rhythmItems.concat([
+  { level:"B2", text:"Let's THINK before we ACT.", q:"強く読む語は？", choices:["think / act","let's / before / we","before / we","均等"], explain:"内容語を強く。" },
+  { level:"C1", text:"FACTS first, OPINIONS later.", q:"強く読む語は？", choices:["facts / first / opinions / later","none","the / a","均等"], explain:"対比の内容語を強く。" }
+]);
+window.EigoData.chunkItems = window.EigoData.chunkItems.concat([
+  { level:"B2", text:"To sum up, we agree.", q:"自然なチャンク区切りは？", choices:["To sum up, / we agree","To / sum up we / agree","To sum / up we agree","To sum up we / agree"], explain:"前置きの句/主節、で区切る。" },
+  { level:"C1", text:"That said, risks remain.", q:"自然なチャンク区切りは？", choices:["That said, / risks remain","That / said risks / remain","That said / risks remain","That said risks / remain"], explain:"談話標識/主節、で区切る。" }
+]);
+window.EigoData.stressItems = window.EigoData.stressItems.concat([
+  { level:"B2", word:"democracy", syl:["de","MOC","ra","cy"], ans:1, ja:"民主主義" },
+  { level:"B2", word:"democratic", syl:["dem","o","CRAT","ic"], ans:2, ja:"民主的な" },
+  { level:"B2", word:"analysis", syl:["a","NAL","y","sis"], ans:1, ja:"分析" },
+  { level:"B2", word:"analytical", syl:["an","a","LYT","i","cal"], ans:2, ja:"分析的な" },
+  { level:"B2", word:"protest (名詞)", syl:["PRO","test"], ans:0, ja:"抗議（名詞）", say:"protest" },
+  { level:"B2", word:"protest (動詞)", syl:["pro","TEST"], ans:1, ja:"抗議する（動詞）", say:"protest" }
+]);
+
+
+/* 増量：瞬間英作文 大量18（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"もう行かなきゃ。","answer":"I have to go now.","alts":[]},
+  {"level":"A2","ja":"楽しんでね。","answer":"Enjoy yourself.","alts":[]},
+  {"level":"A2","ja":"気をつけて。","answer":"Be careful.","alts":[]},
+  {"level":"A2","ja":"ゆっくりして。","answer":"Make yourself at home.","alts":[]},
+  {"level":"A2","ja":"何か飲みますか。","answer":"Would you like a drink?","alts":[]},
+  {"level":"A2","ja":"手伝います。","answer":"Let me give you a hand.","alts":[]},
+  {"level":"A2","ja":"心配しないで。","answer":"Don't worry.","alts":[]},
+  {"level":"A2","ja":"落ち着いて。","answer":"Calm down.","alts":[]},
+  {"level":"B1","ja":"気を遣わないで。","answer":"Don't go to any trouble.","alts":[]},
+  {"level":"B1","ja":"遠慮しておきます。","answer":"I'll pass this time.","alts":[]},
+  {"level":"B1","ja":"ぜひお願いします。","answer":"I'd love that.","alts":[]},
+  {"level":"B1","ja":"またの機会に。","answer":"Maybe another time.","alts":[]},
+  {"level":"B1","ja":"お任せします。","answer":"I'll leave it up to you.","alts":[]},
+  {"level":"B1","ja":"どちらでもいいです。","answer":"Either is fine.","alts":[]},
+  {"level":"B1","ja":"お気遣いなく。","answer":"Please don't worry about me.","alts":[]},
+  {"level":"B1","ja":"助かりました。","answer":"You saved me.","alts":[]},
+  {"level":"B1","ja":"恐れ入ります。","answer":"I appreciate it.","alts":[]},
+  {"level":"B1","ja":"そうかもしれません。","answer":"That might be true.","alts":[]},
+  {"level":"B1","ja":"たぶん大丈夫です。","answer":"It should be fine.","alts":[]},
+  {"level":"B2","ja":"建設的に話しましょう。","answer":"Let's keep it constructive.","alts":[]},
+  {"level":"B2","ja":"要点に絞りましょう。","answer":"Let's stick to the key points.","alts":[]},
+  {"level":"B2","ja":"前向きに捉えましょう。","answer":"Let's look at the bright side.","alts":[]},
+  {"level":"B2","ja":"冷静に考えましょう。","answer":"Let's think it through calmly.","alts":[]},
+  {"level":"B2","ja":"事実を確認しましょう。","answer":"Let's check the facts.","alts":[]},
+  {"level":"B2","ja":"時間を有効に使いましょう。","answer":"Let's make good use of the time.","alts":[]},
+  {"level":"B2","ja":"柔軟に対応しましょう。","answer":"Let's stay flexible.","alts":[]},
+  {"level":"B2","ja":"期待を明確にしましょう。","answer":"Let's set clear expectations.","alts":[]},
+  {"level":"B2","ja":"懸念を共有しましょう。","answer":"Let's share any concerns.","alts":[]},
+  {"level":"B2","ja":"合意を確認しましょう。","answer":"Let's confirm our agreement.","alts":[]},
+  {"level":"B2","ja":"優先度を見直しましょう。","answer":"Let's revisit the priorities.","alts":[]},
+  {"level":"B2","ja":"早めに相談しましょう。","answer":"Let's consult early.","alts":[]},
+  {"level":"B2","ja":"状況を整理しましょう。","answer":"Let's organize the situation.","alts":[]},
+  {"level":"B2","ja":"代替案を持ちましょう。","answer":"Let's have a backup plan.","alts":[]},
+  {"level":"B2","ja":"根拠を共有しましょう。","answer":"Let's share the reasoning.","alts":[]},
+  {"level":"B2","ja":"次の手を考えましょう。","answer":"Let's think about the next move.","alts":[]},
+  {"level":"B2","ja":"教訓を活かしましょう。","answer":"Let's apply the lessons.","alts":[]},
+  {"level":"C1","ja":"可逆性を重視しましょう。","answer":"Let's value reversibility.","alts":[]},
+  {"level":"C1","ja":"長期で考えましょう。","answer":"Let's think long-term.","alts":[]},
+  {"level":"C1","ja":"成功を定義しましょう。","answer":"Let's define success.","alts":[]},
+  {"level":"C1","ja":"不確実性に備えましょう。","answer":"Let's prepare for uncertainty.","alts":[]},
+  {"level":"C1","ja":"機会費用を考えましょう。","answer":"Let's weigh the opportunity cost.","alts":[]},
+  {"level":"C1","ja":"一方通行を避けましょう。","answer":"Let's avoid irreversible moves.","alts":[]},
+  {"level":"C1","ja":"最悪を想定しましょう。","answer":"Let's assume the worst.","alts":[]},
+  {"level":"C1","ja":"時間軸を分けましょう。","answer":"Let's separate the horizons.","alts":[]},
+  {"level":"C1","ja":"因果を検証しましょう。","answer":"Let's test the causation.","alts":[]}
+]);
+
+/* 増量セットBA：高次スキル各種 大量9（5倍ペース） */
+window.EigoData.collocationItems = window.EigoData.collocationItems.concat([
+  { level:"B2", text:"Let's ___ a balance.", q:"自然な語は？", choices:["strike","make","do","take"], explain:"strike a balance（バランスを取る）。" },
+  { level:"B2", text:"They ___ a difference.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make a difference（違いを生む）。" },
+  { level:"B2", text:"Let's ___ note of this.", q:"自然な語は？", choices:["take","make","do","give"], explain:"take note（書き留める・注目する）。" },
+  { level:"C1", text:"We ___ headway on it.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make headway（進展する）。" },
+  { level:"C1", text:"Let's ___ the bullet.", q:"自然な語は？", choices:["bite","make","do","take"], explain:"bite the bullet（覚悟を決める）。" }
+]);
+window.EigoData.thinkingItems = window.EigoData.thinkingItems.concat([
+  { level:"B2", ja:"", text:"「言うまでもなく」を伝えるなら？", choices:["Needless to say,","No say need now,","Of course talk yes,","Obvious maybe,"], explain:"Needless to say ＝ 言うまでもなく。" },
+  { level:"C1", ja:"", text:"「公平を期すために言えば」を伝えるなら？", choices:["In all fairness,","Fair all talk now,","Just say yes,","Even word maybe,"], explain:"In all fairness ＝ 公平を期すために。" },
+  { level:"B2", ja:"", text:"「ありていに言えば」を伝えるなら？", choices:["Plainly put,","Plain say now,","Simple talk yes,","Flat word maybe,"], explain:"Plainly put ＝ ありていに言えば。" }
+]);
+window.EigoData.discussionItems = window.EigoData.discussionItems.concat([
+  { level:"B2", text:"発言を要約して返す：", choices:["So what you're saying is...","I didn't hear you.","You're wrong.","No need to recap."], explain:"発言を要約して理解を示す。" },
+  { level:"C1", text:"対立を共通目標で束ねる：", choices:["We're ultimately after the same thing.","One must lose.","No common ground.","Let's just fight."], explain:"共通目標で対立を束ねる。" }
+]);
+window.EigoData.cultureItems = window.EigoData.cultureItems.concat([
+  { level:"B2", text:"丁寧に時間を確認する：", choices:["Do you have a moment to talk?","Talk to me now.","You must listen.","Why so busy?"], explain:"Do you have a moment …? で丁寧に確認。" },
+  { level:"C1", text:"謝意を具体的に伝える：", choices:["Thank you—your patience made this possible.","Thanks, bye.","You owe me.","It's nothing."], explain:"具体的に謝意を伝える。" }
+]);
+window.EigoData.intonationItems = window.EigoData.intonationItems.concat([
+  { level:"B2", text:"I appreciate that.", q:"感謝の調子は？", choices:["温かく下げて言い切る↘","強く上げる↗","平坦に切る","ためらう"], explain:"感謝は温かく下げて。" },
+  { level:"C1", text:"Let's not get ahead of ourselves.", q:"たしなめる調子は？", choices:["落ち着いてゆっくり下げる","明るく上げる","速く言い切る","強く上げる"], explain:"たしなめは落ち着いて下げて。" }
+]);
+window.EigoData.rhythmItems = window.EigoData.rhythmItems.concat([
+  { level:"B2", text:"Let's KEEP it SHORT and SIMPLE.", q:"強く読む語は？", choices:["keep / short / simple","let's / it / and","it / and","均等"], explain:"内容語を強く。" },
+  { level:"C1", text:"SLOW and STEADY wins the RACE.", q:"強く読む語は？", choices:["slow / steady / wins / race","and / the","the / a","均等"], explain:"内容語を強く。" }
+]);
+window.EigoData.chunkItems = window.EigoData.chunkItems.concat([
+  { level:"B2", text:"By the way, did you finish?", q:"自然なチャンク区切りは？", choices:["By the way, / did you finish","By / the way did you / finish","By the / way did you finish","By the way did you / finish"], explain:"前置きの句/主節、で区切る。" },
+  { level:"C1", text:"Even so, we should try.", q:"自然なチャンク区切りは？", choices:["Even so, / we should try","Even / so we should / try","Even so / we should try","Even so we should / try"], explain:"談話標識/主節、で区切る。" }
+]);
+window.EigoData.stressItems = window.EigoData.stressItems.concat([
+  { level:"B2", word:"industry", syl:["IN","dus","try"], ans:0, ja:"産業" },
+  { level:"B2", word:"industrial", syl:["in","DUS","tri","al"], ans:1, ja:"産業の" },
+  { level:"C1", word:"industrious", syl:["in","DUS","tri","ous"], ans:1, ja:"勤勉な" },
+  { level:"B2", word:"rebel (名詞)", syl:["REB","el"], ans:0, ja:"反逆者（名詞）", say:"rebel" },
+  { level:"B2", word:"rebel (動詞)", syl:["re","BEL"], ans:1, ja:"反逆する（動詞）", say:"rebel" }
+]);
+
+
+/* 増量：瞬間英作文 大量19（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"今日は何曜日ですか。","answer":"What day is it today?","alts":[]},
+  {"level":"A2","ja":"今、何時頃ですか。","answer":"About what time is it?","alts":[]},
+  {"level":"A2","ja":"外は寒いですか。","answer":"Is it cold outside?","alts":[]},
+  {"level":"A2","ja":"傘は要りますか。","answer":"Do I need an umbrella?","alts":[]},
+  {"level":"A2","ja":"もう食べましたか。","answer":"Have you eaten yet?","alts":[]},
+  {"level":"A2","ja":"これでいいですか。","answer":"Is this okay?","alts":[]},
+  {"level":"A2","ja":"まだ時間ありますか。","answer":"Do we still have time?","alts":[]},
+  {"level":"A2","ja":"手伝いましょうか。","answer":"Shall I help?","alts":[]},
+  {"level":"A2","ja":"一緒に行きますか。","answer":"Shall we go together?","alts":[]},
+  {"level":"A2","ja":"始めましょうか。","answer":"Shall we begin?","alts":[]},
+  {"level":"A2","ja":"休みましょうか。","answer":"Shall we take a break?","alts":[]},
+  {"level":"A2","ja":"帰りましょうか。","answer":"Shall we head back?","alts":[]},
+  {"level":"A2","ja":"注文しましょうか。","answer":"Shall we order?","alts":[]},
+  {"level":"A2","ja":"電気を消しましょうか。","answer":"Shall I turn off the lights?","alts":[]},
+  {"level":"A2","ja":"窓を開けましょうか。","answer":"Shall I open the window?","alts":[]},
+  {"level":"B1","ja":"そろそろ決めましょうか。","answer":"Shall we decide now?","alts":[]},
+  {"level":"B1","ja":"先に進めましょうか。","answer":"Shall we move on?","alts":[]},
+  {"level":"B1","ja":"確認しておきましょうか。","answer":"Shall we double-check?","alts":[]},
+  {"level":"B1","ja":"もう一度やりましょうか。","answer":"Shall we try again?","alts":[]},
+  {"level":"B1","ja":"分担しましょうか。","answer":"Shall we divide it up?","alts":[]},
+  {"level":"B1","ja":"代わりましょうか。","answer":"Shall I take over?","alts":[]},
+  {"level":"B1","ja":"まとめておきましょうか。","answer":"Shall I sum it up?","alts":[]},
+  {"level":"B1","ja":"予定を立てましょうか。","answer":"Shall we make a plan?","alts":[]},
+  {"level":"B1","ja":"連絡しておきましょうか。","answer":"Shall I reach out?","alts":[]},
+  {"level":"B1","ja":"後で話しましょうか。","answer":"Shall we talk later?","alts":[]},
+  {"level":"B1","ja":"資料を送りましょうか。","answer":"Shall I send the documents?","alts":[]},
+  {"level":"B1","ja":"席を取りましょうか。","answer":"Shall I save a seat?","alts":[]},
+  {"level":"B1","ja":"先に始めましょうか。","answer":"Shall we start without them?","alts":[]},
+  {"level":"B1","ja":"確認を取りましょうか。","answer":"Shall I get confirmation?","alts":[]},
+  {"level":"B2","ja":"論点を絞りましょうか。","answer":"Shall we narrow the focus?","alts":[]},
+  {"level":"B2","ja":"優先順位をつけましょうか。","answer":"Shall we prioritize?","alts":[]},
+  {"level":"B2","ja":"前提を共有しましょうか。","answer":"Shall we share the assumptions?","alts":[]},
+  {"level":"B2","ja":"代替案を出しましょうか。","answer":"Shall I propose an alternative?","alts":[]},
+  {"level":"B2","ja":"影響を試算しましょうか。","answer":"Shall we estimate the impact?","alts":[]},
+  {"level":"B2","ja":"担当を決めましょうか。","answer":"Shall we assign owners?","alts":[]},
+  {"level":"B2","ja":"期日を調整しましょうか。","answer":"Shall we adjust the timeline?","alts":[]},
+  {"level":"B2","ja":"懸念を一覧化しましょうか。","answer":"Shall we list the concerns?","alts":[]},
+  {"level":"B2","ja":"方針を文書化しましょうか。","answer":"Shall I document the approach?","alts":[]},
+  {"level":"B2","ja":"合意を取りましょうか。","answer":"Shall we get sign-off?","alts":[]},
+  {"level":"B2","ja":"現状を整理しましょうか。","answer":"Shall we take stock?","alts":[]},
+  {"level":"B2","ja":"範囲を確認しましょうか。","answer":"Shall we confirm the scope?","alts":[]},
+  {"level":"B2","ja":"リスクを評価しましょうか。","answer":"Shall we assess the risks?","alts":[]},
+  {"level":"B2","ja":"根拠を補強しましょうか。","answer":"Shall I strengthen the rationale?","alts":[]},
+  {"level":"B2","ja":"進捗を共有しましょうか。","answer":"Shall we share progress?","alts":[]},
+  {"level":"B2","ja":"見直しを入れましょうか。","answer":"Shall we build in a review?","alts":[]},
+  {"level":"B2","ja":"早めに着手しましょうか。","answer":"Shall we start early?","alts":[]},
+  {"level":"B2","ja":"想定を確認しましょうか。","answer":"Shall we verify the assumptions?","alts":[]},
+  {"level":"B2","ja":"教訓を残しましょうか。","answer":"Shall we capture the lessons?","alts":[]},
+  {"level":"B2","ja":"次の手を決めましょうか。","answer":"Shall we decide the next step?","alts":[]},
+  {"level":"C1","ja":"可逆性を確認しましょうか。","answer":"Shall we check reversibility?","alts":[]},
+  {"level":"C1","ja":"前提を検証しましょうか。","answer":"Shall we validate the premise?","alts":[]},
+  {"level":"C1","ja":"長期影響を見ましょうか。","answer":"Shall we look at the long-term impact?","alts":[]},
+  {"level":"C1","ja":"成功条件を定めましょうか。","answer":"Shall we define success?","alts":[]},
+  {"level":"C1","ja":"機会費用を比べましょうか。","answer":"Shall we compare opportunity costs?","alts":[]},
+  {"level":"C1","ja":"最悪を想定しましょうか。","answer":"Shall we assume the worst?","alts":[]},
+  {"level":"C1","ja":"撤退条件を決めましょうか。","answer":"Shall we set exit criteria?","alts":[]},
+  {"level":"C1","ja":"因果を確かめましょうか。","answer":"Shall we verify causation?","alts":[]},
+  {"level":"C1","ja":"仮説を立てましょうか。","answer":"Shall we form a hypothesis?","alts":[]},
+  {"level":"C1","ja":"前例を調べましょうか。","answer":"Shall we check for precedent?","alts":[]},
+  {"level":"C1","ja":"根本原因を探りましょうか。","answer":"Shall we find the root cause?","alts":[]},
+  {"level":"C1","ja":"時間軸を分けましょうか。","answer":"Shall we separate the horizons?","alts":[]},
+  {"level":"C1","ja":"不確実性に備えましょうか。","answer":"Shall we prepare for uncertainty?","alts":[]},
+  {"level":"C1","ja":"一方通行を見極めましょうか。","answer":"Shall we spot the one-way doors?","alts":[]}
+]);
+
+
+/* 増量：瞬間英作文 大量20 仕上げ（5倍ペース達成） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"これでいいですよ。","answer":"This is fine.","alts":[]},
+  {"level":"A2","ja":"よくわかりました。","answer":"I understand now.","alts":[]},
+  {"level":"A2","ja":"やってみます。","answer":"I'll give it a try.","alts":[]},
+  {"level":"A2","ja":"大丈夫です。","answer":"It's all right.","alts":[]},
+  {"level":"B1","ja":"たぶんそうです。","answer":"Probably.","alts":[]},
+  {"level":"B1","ja":"一理ありますね。","answer":"You have a point.","alts":[]},
+  {"level":"B1","ja":"それは難しいですね。","answer":"That's tricky.","alts":[]},
+  {"level":"B1","ja":"考えてみますね。","answer":"I'll consider it.","alts":[]},
+  {"level":"B2","ja":"理にかなっています。","answer":"That's reasonable.","alts":[]},
+  {"level":"B2","ja":"根拠が必要です。","answer":"We need evidence.","alts":[]},
+  {"level":"B2","ja":"前提を確認したいです。","answer":"I'd like to check the premise.","alts":[]},
+  {"level":"B2","ja":"別の見方もあります。","answer":"There's another perspective.","alts":[]},
+  {"level":"B2","ja":"条件によります。","answer":"It depends on conditions.","alts":[]},
+  {"level":"B2","ja":"範囲を絞りましょう。","answer":"Let's narrow the scope.","alts":[]},
+  {"level":"B2","ja":"具体化しましょう。","answer":"Let's make it concrete.","alts":[]},
+  {"level":"B2","ja":"検証が必要です。","answer":"It needs verification.","alts":[]},
+  {"level":"C1","ja":"前提が揺らぎます。","answer":"The premise is shaky.","alts":[]},
+  {"level":"C1","ja":"最も単純な説明を選びます。","answer":"Let's choose the simplest explanation.","alts":[]},
+  {"level":"C1","ja":"前提を明示すべきです。","answer":"We should make the premise explicit.","alts":[]}
+]);
+
+/* 増量セットBC：高次スキル各種 最終仕上げ（5倍ペース達成） */
+window.EigoData.collocationItems = window.EigoData.collocationItems.concat([
+  { level:"B2", text:"Let's ___ sense of this.", q:"自然な語は？", choices:["make","do","take","give"], explain:"make sense of（理解する）。" },
+  { level:"B2", text:"They ___ a point.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make a point（主張する）。" },
+  { level:"B2", text:"Let's ___ action.", q:"自然な語は？", choices:["take","make","do","give"], explain:"take action（行動を起こす）。" },
+  { level:"C1", text:"We ___ amends.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make amends（埋め合わせをする）。" },
+  { level:"C1", text:"Let's ___ the initiative.", q:"自然な語は？", choices:["seize","make","do","give"], explain:"seize the initiative（主導権を握る）。" }
+]);
+window.EigoData.thinkingItems = window.EigoData.thinkingItems.concat([
+  { level:"B2", ja:"", text:"「正直なところ」を伝えるなら？", choices:["To tell the truth,","Truth tell now,","Honest alone yes,","Real talk maybe,"], explain:"To tell the truth ＝ 正直なところ。" },
+  { level:"C1", ja:"", text:"「結論を急げば」を伝えるなら？", choices:["To cut a long story short,","Cut long now,","Quick end yes,","Short talk maybe,"], explain:"To cut a long story short ＝ 結論を急げば。" },
+  { level:"B2", ja:"", text:"「逆の見方をすれば」を伝えるなら？", choices:["Looked at another way,","Other look now,","Reverse see yes,","Back view maybe,"], explain:"Looked at another way ＝ 逆の見方をすれば。" }
+]);
+window.EigoData.discussionItems = window.EigoData.discussionItems.concat([
+  { level:"B2", text:"発言を引き取って広げる：", choices:["Building on that, I'd add...","Stop right there.","You're wrong.","No more input."], explain:"発言を引き取り議論を広げる。" },
+  { level:"C1", text:"決定の前に異論を募る：", choices:["Before we decide, any objections?","Decide now, no talk.","Objections banned.","Skip discussion."], explain:"決定前に異論を募り合意を固める。" }
+]);
+window.EigoData.cultureItems = window.EigoData.cultureItems.concat([
+  { level:"B2", text:"丁寧に支援を申し出る：", choices:["Let me know if there's anything I can do.","I won't help.","Do it yourself.","Why ask me?"], explain:"控えめに支援を申し出る。" },
+  { level:"C1", text:"批判を改善提案に変える：", choices:["One thing that might help is...","This is all wrong.","You failed badly.","Give up now."], explain:"批判を建設的な提案に変える。" }
+]);
+window.EigoData.intonationItems = window.EigoData.intonationItems.concat([
+  { level:"B2", text:"That's a relief.", q:"安堵の調子は？", choices:["息を抜くように下げる↘","強く上げる↗","平坦に切る","ためらう"], explain:"安堵は息を抜くように下げて。" },
+  { level:"C1", text:"Let's circle back to that.", q:"保留の調子は？", choices:["落ち着いて下げ気味で","明るく上げる","速く言い切る","強く上げる"], explain:"保留は落ち着いて下げ気味で。" }
+]);
+window.EigoData.rhythmItems = window.EigoData.rhythmItems.concat([
+  { level:"B2", text:"Let's GIVE it our BEST shot.", q:"強く読む語は？", choices:["give / best / shot","let's / it / our","it / our","均等"], explain:"内容語を強く。" },
+  { level:"C1", text:"ACTIONS, not WORDS, define US.", q:"強く読む語は？", choices:["actions / words / define / us","not / the","the / a","均等"], explain:"対比の内容語を強く。" }
+]);
+window.EigoData.chunkItems = window.EigoData.chunkItems.concat([
+  { level:"B2", text:"In short, it succeeded.", q:"自然なチャンク区切りは？", choices:["In short, / it succeeded","In / short it / succeeded","In short it / succeeded","In short it succeeded /"], explain:"前置きの句/主節、で区切る。" },
+  { level:"C1", text:"Above all, stay honest.", q:"自然なチャンク区切りは？", choices:["Above all, / stay honest","Above / all stay / honest","Above all stay / honest","Above all / stay honest"], explain:"前置き句/主節、で区切る。" }
+]);
+window.EigoData.stressItems = window.EigoData.stressItems.concat([
+  { level:"B2", word:"history", syl:["HIS","to","ry"], ans:0, ja:"歴史" },
+  { level:"B2", word:"historic", syl:["his","TOR","ic"], ans:1, ja:"歴史的な" },
+  { level:"C1", word:"historical", syl:["his","TOR","i","cal"], ans:1, ja:"歴史の" },
+  { level:"B2", word:"convert (名詞)", syl:["CON","vert"], ans:0, ja:"改宗者（名詞）", say:"convert" },
+  { level:"B2", word:"convert (動詞)", syl:["con","VERT"], ans:1, ja:"変換する（動詞）", say:"convert" }
+]);
+
+
+/* 増量：瞬間英作文 大量21（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"ドアを閉めてもらえますか。","answer":"Could you close the door?","alts":[]},
+  {"level":"A2","ja":"窓を開けてもいいですか。","answer":"May I open the window?","alts":[]},
+  {"level":"A2","ja":"電気をつけてください。","answer":"Please turn on the light.","alts":[]},
+  {"level":"A2","ja":"もう少しゆっくり話して。","answer":"Please speak more slowly.","alts":[]},
+  {"level":"A2","ja":"見えますか。","answer":"Can you see it?","alts":[]},
+  {"level":"A2","ja":"わかりますか。","answer":"Do you understand?","alts":[]},
+  {"level":"A2","ja":"手伝ってくれますか。","answer":"Will you help me?","alts":[]},
+  {"level":"A2","ja":"ここに座ってもいいですか。","answer":"May I sit here?","alts":[]},
+  {"level":"A2","ja":"写真を撮ってもらえますか。","answer":"Could you take a photo?","alts":[]},
+  {"level":"A2","ja":"道を教えてください。","answer":"Please tell me the way.","alts":[]},
+  {"level":"A2","ja":"ちょっと待ってください。","answer":"Please wait a moment.","alts":[]},
+  {"level":"A2","ja":"これをください。","answer":"I'll take this one.","alts":[]},
+  {"level":"A2","ja":"お会計をお願いします。","answer":"Check, please.","alts":[]},
+  {"level":"B1","ja":"それを確認してもらえますか。","answer":"Could you check that for me?","alts":[]},
+  {"level":"B1","ja":"もう少し詳しく教えてください。","answer":"Could you tell me more?","alts":[]},
+  {"level":"B1","ja":"代わりに行ってもらえますか。","answer":"Could you go instead?","alts":[]},
+  {"level":"B1","ja":"今やる必要がありますか。","answer":"Do we need to do it now?","alts":[]},
+  {"level":"B1","ja":"後でやってもいいですか。","answer":"May I do it later?","alts":[]},
+  {"level":"B1","ja":"手順を教えてください。","answer":"Please show me the steps.","alts":[]},
+  {"level":"B1","ja":"いつ届きますか。","answer":"When will it arrive?","alts":[]},
+  {"level":"B1","ja":"どのくらいかかりますか。","answer":"How long will it take?","alts":[]},
+  {"level":"B1","ja":"別の方法はありますか。","answer":"Is there another way?","alts":[]},
+  {"level":"B1","ja":"これで合っていますか。","answer":"Is this correct?","alts":[]},
+  {"level":"B1","ja":"変更してもらえますか。","answer":"Could you change it?","alts":[]},
+  {"level":"B1","ja":"もう終わりましたか。","answer":"Are you done yet?","alts":[]},
+  {"level":"B2","ja":"期限を延ばしてもらえますか。","answer":"Could you extend the deadline?","alts":[]},
+  {"level":"B2","ja":"優先順位を見直しましょう。","answer":"Let's reprioritize.","alts":[]},
+  {"level":"B2","ja":"根拠を示してもらえますか。","answer":"Could you show the rationale?","alts":[]},
+  {"level":"B2","ja":"前提を確認させてください。","answer":"Let me confirm the assumptions.","alts":[]},
+  {"level":"B2","ja":"合意を文書化しましょう。","answer":"Let's document the agreement.","alts":[]},
+  {"level":"B2","ja":"懸念を共有させてください。","answer":"Let me share a concern.","alts":[]},
+  {"level":"B2","ja":"手戻りを避けましょう。","answer":"Let's avoid rework.","alts":[]},
+  {"level":"B2","ja":"状況を整理しましょう。","answer":"Let's take stock.","alts":[]},
+  {"level":"C1","ja":"長期で最適化しましょう。","answer":"Let's optimize for the long term.","alts":[]},
+  {"level":"C1","ja":"成功基準を定義しましょう。","answer":"Let's define the success criteria.","alts":[]},
+  {"level":"C1","ja":"不確実性を織り込みましょう。","answer":"Let's account for uncertainty.","alts":[]},
+  {"level":"C1","ja":"一方通行を見極めましょう。","answer":"Let's identify one-way doors.","alts":[]},
+  {"level":"C1","ja":"前例を調べましょう。","answer":"Let's look for precedent.","alts":[]}
+]);
+
+
+/* 増量：瞬間英作文 大量22（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"気に入りました。","answer":"I like it.","alts":[]},
+  {"level":"A2","ja":"問題ないです。","answer":"That's fine.","alts":[]},
+  {"level":"A2","ja":"難しいですね。","answer":"That's hard.","alts":[]},
+  {"level":"A2","ja":"簡単です。","answer":"It's easy.","alts":[]},
+  {"level":"A2","ja":"楽しかったです。","answer":"That was fun.","alts":[]},
+  {"level":"A2","ja":"疲れました。","answer":"I'm tired.","alts":[]},
+  {"level":"A2","ja":"お腹が空きました。","answer":"I'm hungry.","alts":[]},
+  {"level":"A2","ja":"喉が渇きました。","answer":"I'm thirsty.","alts":[]},
+  {"level":"A2","ja":"眠いです。","answer":"I'm sleepy.","alts":[]},
+  {"level":"A2","ja":"寒いです。","answer":"I'm cold.","alts":[]},
+  {"level":"A2","ja":"暑いです。","answer":"I'm hot.","alts":[]},
+  {"level":"A2","ja":"忙しいです。","answer":"I'm busy.","alts":[]},
+  {"level":"B1","ja":"あとで連絡します。","answer":"I'll contact you later.","alts":[]},
+  {"level":"B1","ja":"すぐに対応します。","answer":"I'll handle it right away.","alts":[]},
+  {"level":"B1","ja":"確認してから返事します。","answer":"I'll reply after checking.","alts":[]},
+  {"level":"B1","ja":"担当者につなぎます。","answer":"I'll connect you to the right person.","alts":[]},
+  {"level":"B1","ja":"少々お待ちください。","answer":"Please hold on a moment.","alts":[]},
+  {"level":"B1","ja":"お役に立てず申し訳ありません。","answer":"Sorry I couldn't help.","alts":[]},
+  {"level":"B1","ja":"何かあれば言ってください。","answer":"Let me know if you need anything.","alts":[]},
+  {"level":"B1","ja":"よく考えてから決めます。","answer":"I'll decide after thinking it over.","alts":[]},
+  {"level":"B1","ja":"まだ確定していません。","answer":"It's not finalized yet.","alts":[]},
+  {"level":"B1","ja":"予定通りです。","answer":"It's on schedule.","alts":[]},
+  {"level":"B2","ja":"論点を明確にしましょう。","answer":"Let's clarify the issue.","alts":[]},
+  {"level":"B2","ja":"具体例を挙げてもらえますか。","answer":"Could you give a concrete example?","alts":[]},
+  {"level":"B2","ja":"前提条件を確認しましょう。","answer":"Let's confirm the prerequisites.","alts":[]},
+  {"level":"B2","ja":"影響範囲を見積もりましょう。","answer":"Let's estimate the scope of impact.","alts":[]},
+  {"level":"B2","ja":"期待値をすり合わせましょう。","answer":"Let's align on expectations.","alts":[]},
+  {"level":"B2","ja":"懸念点を整理しましょう。","answer":"Let's organize the concerns.","alts":[]},
+  {"level":"B2","ja":"決定の根拠を残しましょう。","answer":"Let's record the rationale.","alts":[]},
+  {"level":"B2","ja":"手順を文書化しましょう。","answer":"Let's document the procedure.","alts":[]},
+  {"level":"B2","ja":"早期にフィードバックをもらいましょう。","answer":"Let's get feedback early.","alts":[]},
+  {"level":"B2","ja":"優先度を再評価しましょう。","answer":"Let's re-evaluate the priorities.","alts":[]},
+  {"level":"B2","ja":"リスクに備えましょう。","answer":"Let's prepare for the risks.","alts":[]},
+  {"level":"B2","ja":"想定外に対応できるようにしましょう。","answer":"Let's be ready for surprises.","alts":[]},
+  {"level":"B2","ja":"合意事項を再確認しましょう。","answer":"Let's reconfirm what we agreed.","alts":[]},
+  {"level":"B2","ja":"無駄な作業を省きましょう。","answer":"Let's cut unnecessary work.","alts":[]},
+  {"level":"B2","ja":"品質基準を満たしましょう。","answer":"Let's meet the quality bar.","alts":[]},
+  {"level":"B2","ja":"進め方を見直しましょう。","answer":"Let's rethink the approach.","alts":[]},
+  {"level":"B2","ja":"次のステップを明確にしましょう。","answer":"Let's clarify the next steps.","alts":[]},
+  {"level":"B2","ja":"学んだことを共有しましょう。","answer":"Let's share what we learned.","alts":[]},
+  {"level":"C1","ja":"前提の妥当性を検証しましょう。","answer":"Let's test the validity of the premise.","alts":[]},
+  {"level":"C1","ja":"因果関係を切り分けましょう。","answer":"Let's separate cause from effect.","alts":[]},
+  {"level":"C1","ja":"反証となる証拠を探しましょう。","answer":"Let's look for disconfirming evidence.","alts":[]},
+  {"level":"C1","ja":"バイアスの影響を確認しましょう。","answer":"Let's check for bias.","alts":[]},
+  {"level":"C1","ja":"撤退基準を明確にしましょう。","answer":"Let's clarify the exit criteria.","alts":[]},
+  {"level":"C1","ja":"最も脆い仮定を特定しましょう。","answer":"Let's identify the weakest assumption.","alts":[]},
+  {"level":"C1","ja":"長期的な影響を評価しましょう。","answer":"Let's evaluate the long-term impact.","alts":[]},
+  {"level":"C1","ja":"サンプルの代表性を確認しましょう。","answer":"Let's check the sample's representativeness.","alts":[]},
+  {"level":"C1","ja":"欠けている視点を探しましょう。","answer":"Let's look for missing perspectives.","alts":[]},
+  {"level":"C1","ja":"判断を保留すべき点を見極めましょう。","answer":"Let's find where to withhold judgment.","alts":[]}
+]);
+
+/* 増量セットBF：高次スキル各種 大量10（5倍ペース） */
+window.EigoData.collocationItems = window.EigoData.collocationItems.concat([
+  { level:"B2", text:"Let's ___ a risk assessment.", q:"自然な語は？", choices:["conduct","make","do","take"], explain:"conduct an assessment（評価を行う）。" },
+  { level:"B2", text:"They ___ a promise.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make a promise（約束する）。" },
+  { level:"B2", text:"Let's ___ a risk.", q:"自然な語は？", choices:["run","make","do","give"], explain:"run a risk（危険を冒す）。" },
+  { level:"B2", text:"We ___ an impression.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make an impression（印象を与える）。" },
+  { level:"B2", text:"Let's ___ a commitment.", q:"自然な語は？", choices:["make","do","take","give"], explain:"make a commitment（約束する）。" },
+  { level:"B2", text:"They ___ responsibility.", q:"自然な語は？", choices:["took","made","did","gave"], explain:"take responsibility（責任を取る）。" },
+  { level:"B2", text:"Let's ___ a comparison.", q:"自然な語は？", choices:["draw","make","do","take"], explain:"draw a comparison（比較する）。" },
+  { level:"B2", text:"We ___ an exception.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make an exception（例外を設ける）。" },
+  { level:"C1", text:"Let's ___ inroads into the market.", q:"自然な語は？", choices:["make","do","take","give"], explain:"make inroads（食い込む）。" },
+  { level:"C1", text:"They ___ a toll on us.", q:"自然な語は？", choices:["took","made","did","gave"], explain:"take a toll（打撃を与える）。" },
+  { level:"C1", text:"Let's ___ the groundwork.", q:"自然な語は？", choices:["lay","make","do","take"], explain:"lay the groundwork（下準備をする）。" },
+  { level:"C1", text:"We must ___ the gauntlet.", q:"自然な語は？", choices:["run","make","do","give"], explain:"run the gauntlet（試練を受ける）。" }
+]);
+window.EigoData.stressItems = window.EigoData.stressItems.concat([
+  { level:"B2", word:"comfortable", syl:["COM","fort","a","ble"], ans:0, ja:"快適な" },
+  { level:"B2", word:"comparable", syl:["COM","pa","ra","ble"], ans:0, ja:"比較できる" },
+  { level:"B2", word:"available", syl:["a","VAIL","a","ble"], ans:1, ja:"利用できる" },
+  { level:"B2", word:"reliable", syl:["re","LI","a","ble"], ans:1, ja:"信頼できる" },
+  { level:"B2", word:"necessary", syl:["NEC","es","sar","y"], ans:0, ja:"必要な" },
+  { level:"C1", word:"necessity", syl:["ne","CES","si","ty"], ans:1, ja:"必要性" },
+  { level:"B2", word:"category", syl:["CAT","e","go","ry"], ans:0, ja:"分類" },
+  { level:"C1", word:"categorical", syl:["cat","e","GOR","i","cal"], ans:2, ja:"断定的な" },
+  { level:"B2", word:"present (名詞)", syl:["PRES","ent"], ans:0, ja:"贈り物（名詞）", say:"present" },
+  { level:"B2", word:"present (動詞)", syl:["pre","SENT"], ans:1, ja:"提示する（動詞）", say:"present" },
+  { level:"B2", word:"contrast (名詞)", syl:["CON","trast"], ans:0, ja:"対比（名詞）", say:"contrast" },
+  { level:"B2", word:"contrast (動詞)", syl:["con","TRAST"], ans:1, ja:"対比する（動詞）", say:"contrast" }
+]);
+window.EigoData.chunkItems = window.EigoData.chunkItems.concat([
+  { level:"B2", text:"As a matter of fact, it works.", q:"自然なチャンク区切りは？", choices:["As a matter of fact, / it works","As a / matter of fact it / works","As a matter / of fact it works","As a matter of fact it / works"], explain:"談話標識/主節、で区切る。" },
+  { level:"B2", text:"To be fair, they tried.", q:"自然なチャンク区切りは？", choices:["To be fair, / they tried","To / be fair they / tried","To be / fair they tried","To be fair they / tried"], explain:"前置きの句/主節、で区切る。" },
+  { level:"C1", text:"Given the time, we postponed it.", q:"自然なチャンク区切りは？", choices:["Given the time, / we postponed it","Given / the time we / postponed it","Given the / time we postponed it","Given the time we / postponed it"], explain:"分詞句/主節、で区切る。" },
+  { level:"B2", text:"At the end of the day, it matters.", q:"自然なチャンク区切りは？", choices:["At the end of the day, / it matters","At the / end of the day it / matters","At the end / of the day it matters","At the end of the day it / matters"], explain:"前置き句/主節、で区切る。" }
+]);
+window.EigoData.thinkingItems = window.EigoData.thinkingItems.concat([
+  { level:"B2", ja:"", text:"「正直に言うと」を伝えるなら？", choices:["To be honest with you,","Honest you talk now,","True alone yes,","Real word maybe,"], explain:"To be honest with you ＝ 正直に言うと。" },
+  { level:"B2", ja:"", text:"「念のため確認ですが」を伝えるなら？", choices:["Just to make sure,","Sure make now,","Check alone yes,","Be word maybe,"], explain:"Just to make sure ＝ 念のため確認ですが。" },
+  { level:"C1", ja:"", text:"「誤解を招かないように言うと」を伝えるなら？", choices:["Lest there be any confusion,","No confuse talk now,","Clear wrong yes,","Avoid word maybe,"], explain:"Lest there be any confusion ＝ 誤解を招かないように。" },
+  { level:"B2", ja:"", text:"「端的に言えば」を伝えるなら？", choices:["Simply put,","Simple say now,","Short talk yes,","Plain word maybe,"], explain:"Simply put ＝ 端的に言えば。" },
+  { level:"C1", ja:"", text:"「言わせてもらえば」を伝えるなら？", choices:["If I may say so,","Say I may now,","Talk me yes,","Word allow maybe,"], explain:"If I may say so ＝ 言わせてもらえば。" },
+  { level:"B2", ja:"", text:"「結局のところ」を伝えるなら？", choices:["At the end of the day,","End day talk now,","Final say yes,","Last word maybe,"], explain:"At the end of the day ＝ 結局のところ。" }
+]);
+window.EigoData.cultureItems = window.EigoData.cultureItems.concat([
+  { level:"B2", text:"丁寧に意見を求める：", choices:["I'd love to hear your thoughts.","Tell me now.","You must answer.","Why silent?"], explain:"相手の意見を丁寧に求める。" },
+  { level:"B2", text:"反対を和らげて伝える：", choices:["I see it slightly differently.","You're totally wrong.","That's absurd.","Stop talking."], explain:"slightly differently で反対を和らげる。" },
+  { level:"C1", text:"相手の労をねぎらう：", choices:["I know how much work this took.","That was easy for you.","Anyone could do it.","It's nothing special."], explain:"相手の労を具体的にねぎらう。" },
+  { level:"C1", text:"丁寧に再考を促す：", choices:["Might it be worth reconsidering?","You must change it.","That's final, no.","Why even think?"], explain:"Might it be worth …? で丁寧に再考を促す。" }
+]);
+window.EigoData.discussionItems = window.EigoData.discussionItems.concat([
+  { level:"B2", text:"論点を一つに絞る：", choices:["Let's focus on one thing at a time.","Talk about everything.","No focus needed.","Skip the point."], explain:"一度に一つの論点に絞る。" },
+  { level:"B2", text:"全員に発言を促す：", choices:["I'd like to hear from everyone.","Only I speak.","No need to share.","Stay quiet all."], explain:"全員の発言を促す。" },
+  { level:"C1", text:"前提を共有してから議論する：", choices:["Let's agree on the basics first.","Skip the basics.","No common ground.","Just argue."], explain:"前提を共有してから議論する。" },
+  { level:"C1", text:"異論を歓迎する姿勢を示す：", choices:["Push back if you disagree.","No disagreement allowed.","Only agree with me.","Stop objecting."], explain:"異論を歓迎する姿勢を示す。" }
+]);
+window.EigoData.intonationItems = window.EigoData.intonationItems.concat([
+  { level:"B2", text:"That makes sense.", q:"納得の調子は？", choices:["落ち着いて下げて言い切る↘","強く上げる↗","平坦に切る","ためらう"], explain:"納得は落ち着いて下げ↘。" },
+  { level:"B2", text:"Wait, really?", q:"驚きの調子は？", choices:["really を上げる↗","下げて終える","平坦に切る","小さく言う"], explain:"驚きは語尾を上げ↗。" },
+  { level:"C1", text:"Hmm, I'm not so sure.", q:"控えめな疑念の調子は？", choices:["ゆっくり下げ気味で含みを持たせる","明るく上げる","強く言い切る","速く下げる"], explain:"控えめな疑念は下げ気味＋間。" },
+  { level:"B2", text:"Could you repeat that?", q:"丁寧な聞き返しの調子は？", choices:["that を上げる↗","下げて終える","平坦に切る","小さく言う"], explain:"丁寧な聞き返しは語尾を上げ↗。" }
+]);
+window.EigoData.rhythmItems = window.EigoData.rhythmItems.concat([
+  { level:"B2", text:"Let's MAKE every MOMENT count.", q:"強く読む語は？", choices:["make / moment / count","let's / every","every / the","均等"], explain:"内容語を強く。" },
+  { level:"C1", text:"PROGRESS, not PERFECTION, is the GOAL.", q:"強く読む語は？", choices:["progress / perfection / goal","not / is / the","is / the","均等"], explain:"対比の内容語を強く。" },
+  { level:"B2", text:"We LEARN by DOING things.", q:"強く読む語は？", choices:["learn / doing / things","we / by","by / the","均等"], explain:"内容語を強く。" },
+  { level:"C1", text:"THINK big, START small.", q:"強く読む語は？", choices:["think / big / start / small","none","the / a","均等"], explain:"対比の内容語を強く。" }
+]);
+
+
+/* 増量：瞬間英作文 大量23（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"今何をしていますか。","answer":"What are you doing now?","alts":[]},
+  {"level":"A2","ja":"どこへ行きますか。","answer":"Where are you going?","alts":[]},
+  {"level":"A2","ja":"何が欲しいですか。","answer":"What do you want?","alts":[]},
+  {"level":"A2","ja":"誰と来ましたか。","answer":"Who did you come with?","alts":[]},
+  {"level":"A2","ja":"いつ帰りますか。","answer":"When are you going home?","alts":[]},
+  {"level":"A2","ja":"どうやって知りましたか。","answer":"How did you find out?","alts":[]},
+  {"level":"A2","ja":"なぜ遅れましたか。","answer":"Why were you late?","alts":[]},
+  {"level":"A2","ja":"どこに住んでいますか。","answer":"Where do you live?","alts":[]},
+  {"level":"A2","ja":"何時に始まりますか。","answer":"What time does it start?","alts":[]},
+  {"level":"A2","ja":"誰が作りましたか。","answer":"Who made it?","alts":[]},
+  {"level":"A2","ja":"どれが好きですか。","answer":"Which one do you like?","alts":[]},
+  {"level":"A2","ja":"いくつ必要ですか。","answer":"How many do you need?","alts":[]},
+  {"level":"A2","ja":"何を持っていきますか。","answer":"What should I bring?","alts":[]},
+  {"level":"A2","ja":"誰に聞きましたか。","answer":"Who did you ask?","alts":[]},
+  {"level":"B1","ja":"どうしてそう思いますか。","answer":"Why do you think that?","alts":[]},
+  {"level":"B1","ja":"何が起きたのですか。","answer":"What happened?","alts":[]},
+  {"level":"B1","ja":"誰が決めるのですか。","answer":"Who decides?","alts":[]},
+  {"level":"B1","ja":"どう進めればいいですか。","answer":"How should I proceed?","alts":[]},
+  {"level":"B1","ja":"何を優先すべきですか。","answer":"What should I prioritize?","alts":[]},
+  {"level":"B1","ja":"どこを直せばいいですか。","answer":"What should I fix?","alts":[]},
+  {"level":"B1","ja":"なぜ変更したのですか。","answer":"Why did you change it?","alts":[]},
+  {"level":"B1","ja":"どのくらい時間がありますか。","answer":"How much time do we have?","alts":[]},
+  {"level":"B1","ja":"何か手伝えますか。","answer":"Can I help with anything?","alts":[]},
+  {"level":"B1","ja":"どこから始めますか。","answer":"Where do we begin?","alts":[]},
+  {"level":"B1","ja":"誰が担当ですか。","answer":"Who's responsible?","alts":[]},
+  {"level":"B1","ja":"何を確認すべきですか。","answer":"What should I check?","alts":[]},
+  {"level":"B2","ja":"前提条件は何ですか。","answer":"What are the conditions?","alts":[]},
+  {"level":"B2","ja":"どんなリスクがありますか。","answer":"What are the risks?","alts":[]},
+  {"level":"B2","ja":"成功の基準は何ですか。","answer":"What defines success?","alts":[]},
+  {"level":"B2","ja":"何を犠牲にしますか。","answer":"What do we sacrifice?","alts":[]},
+  {"level":"B2","ja":"代替案は何ですか。","answer":"What's the alternative?","alts":[]},
+  {"level":"B2","ja":"なぜ今やるのですか。","answer":"Why do it now?","alts":[]},
+  {"level":"B2","ja":"どう検証しますか。","answer":"How do we verify?","alts":[]},
+  {"level":"B2","ja":"何が結論を変えますか。","answer":"What changes the conclusion?","alts":[]},
+  {"level":"B2","ja":"何を見落としていますか。","answer":"What are we overlooking?","alts":[]},
+  {"level":"B2","ja":"それは可逆ですか。","answer":"Is it reversible?","alts":[]},
+  {"level":"B2","ja":"根拠はどれだけ強いですか。","answer":"How strong is the basis?","alts":[]},
+  {"level":"B2","ja":"誰が最終判断しますか。","answer":"Who makes the final call?","alts":[]},
+  {"level":"B2","ja":"いつ見直しますか。","answer":"When do we review?","alts":[]},
+  {"level":"B2","ja":"何が前進を妨げますか。","answer":"What blocks progress?","alts":[]},
+  {"level":"B2","ja":"次の一手は何ですか。","answer":"What's the next move?","alts":[]},
+  {"level":"C1","ja":"前提は反証可能ですか。","answer":"Is the premise falsifiable?","alts":[]},
+  {"level":"C1","ja":"何が反証になりますか。","answer":"What would count as disproof?","alts":[]},
+  {"level":"C1","ja":"長期的影響は何ですか。","answer":"What's the long-term effect?","alts":[]},
+  {"level":"C1","ja":"これは根本原因ですか。","answer":"Is this the root cause?","alts":[]},
+  {"level":"C1","ja":"誰の視点が欠けていますか。","answer":"Whose view is missing?","alts":[]},
+  {"level":"C1","ja":"判断を保留すべきはどこですか。","answer":"Where should we hold off?","alts":[]}
+]);
+
+/* 増量セットBH：高次スキル各種 大量11（5倍ペース） */
+window.EigoData.collocationItems = window.EigoData.collocationItems.concat([
+  { level:"B2", text:"Let's ___ progress on this.", q:"自然な語は？", choices:["make","do","take","give"], explain:"make progress（前進する）。" },
+  { level:"B2", text:"They ___ an effort to improve.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make an effort（努力する）。" },
+  { level:"B2", text:"Let's ___ a closer look.", q:"自然な語は？", choices:["take","make","do","give"], explain:"take a look（見る）。" },
+  { level:"C1", text:"We ___ a calculated risk.", q:"自然な語は？", choices:["took","made","did","gave"], explain:"take a risk（リスクを取る）。" },
+  { level:"C1", text:"Let's ___ common cause with them.", q:"自然な語は？", choices:["make","do","take","give"], explain:"make common cause（共闘する）。" }
+]);
+window.EigoData.thinkingItems = window.EigoData.thinkingItems.concat([
+  { level:"B2", ja:"", text:"「言うなれば」を伝えるなら？", choices:["So to speak,","Speak so now,","Say like yes,","Talk as maybe,"], explain:"So to speak ＝ 言うなれば。" },
+  { level:"C1", ja:"", text:"「率直に申し上げにくいのですが」を伝えるなら？", choices:["This is hard to say, but","Hard talk now me,","Difficult say yes,","Bad word maybe,"], explain:"This is hard to say, but ＝ 申し上げにくいのですが。" },
+  { level:"B2", ja:"", text:"「言ってみれば」を伝えるなら？", choices:["In a sense,","Sense in now,","Way some yes,","Like talk maybe,"], explain:"In a sense ＝ ある意味では。" }
+]);
+window.EigoData.discussionItems = window.EigoData.discussionItems.concat([
+  { level:"B2", text:"発言を促し沈黙を破る：", choices:["What's everyone thinking?","Only I think.","No thoughts needed.","Stay silent."], explain:"全員に発言を促す。" },
+  { level:"C1", text:"議論の前提を明確にする：", choices:["Let's be clear on what we're solving.","Skip the problem.","No clarity needed.","Just react."], explain:"何を解こうとしているか明確にする。" }
+]);
+window.EigoData.cultureItems = window.EigoData.cultureItems.concat([
+  { level:"B2", text:"丁寧に確認を求める：", choices:["Just so I'm clear, you mean...?","I don't care.","You're confusing.","Why unclear?"], explain:"Just so I'm clear で丁寧に確認。" },
+  { level:"C1", text:"相手の努力を認める：", choices:["You clearly put a lot into this.","You barely tried.","It shows no effort.","Anyone could."], explain:"相手の努力を具体的に認める。" }
+]);
+window.EigoData.intonationItems = window.EigoData.intonationItems.concat([
+  { level:"B2", text:"I'm on board with that.", q:"賛同の調子は？", choices:["明るく下げて言い切る↘","強く上げる↗","平坦に切る","ためらう"], explain:"賛同は明るく下げて。" },
+  { level:"C1", text:"Let me play devil's advocate.", q:"あえて反論する調子は？", choices:["軽やかに始め論点を強める","暗く言う","速く言い切る","小さく言う"], explain:"あえての反論は軽やかに始め要点を強める。" }
+]);
+window.EigoData.rhythmItems = window.EigoData.rhythmItems.concat([
+  { level:"B2", text:"We GROW through what we GO through.", q:"強く読む語は？", choices:["grow / go","we / through / we","through / we","均等"], explain:"内容語を強く。" },
+  { level:"C1", text:"DREAM big, WORK hard, STAY humble.", q:"強く読む語は？", choices:["dream / big / work / hard / stay / humble","none","the / a","均等"], explain:"内容語を強く。" }
+]);
+window.EigoData.chunkItems = window.EigoData.chunkItems.concat([
+  { level:"B2", text:"All in all, it went well.", q:"自然なチャンク区切りは？", choices:["All in all, / it went well","All / in all it / went well","All in / all it went well","All in all it / went well"], explain:"前置きの句/主節、で区切る。" },
+  { level:"C1", text:"That being said, risks remain.", q:"自然なチャンク区切りは？", choices:["That being said, / risks remain","That / being said risks / remain","That being / said risks remain","That being said risks / remain"], explain:"分詞句/主節、で区切る。" }
+]);
+window.EigoData.stressItems = window.EigoData.stressItems.concat([
+  { level:"B2", word:"origin", syl:["OR","i","gin"], ans:0, ja:"起源" },
+  { level:"B2", word:"original", syl:["o","RIG","i","nal"], ans:1, ja:"独創的な" },
+  { level:"C1", word:"originality", syl:["o","rig","i","NAL","i","ty"], ans:3, ja:"独創性" },
+  { level:"B2", word:"insult (名詞)", syl:["IN","sult"], ans:0, ja:"侮辱（名詞）", say:"insult" },
+  { level:"B2", word:"insult (動詞)", syl:["in","SULT"], ans:1, ja:"侮辱する（動詞）", say:"insult" }
+]);
+
+
+/* 増量：瞬間英作文 大量24（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"もう少しいかがですか。","answer":"Would you like some more?","alts":[]},
+  {"level":"A2","ja":"手伝いましょうか。","answer":"Shall I help you?","alts":[]},
+  {"level":"A2","ja":"窓を閉めましょうか。","answer":"Shall I close the window?","alts":[]},
+  {"level":"A2","ja":"タクシーを呼びましょうか。","answer":"Shall I call a taxi?","alts":[]},
+  {"level":"A2","ja":"お茶を入れましょうか。","answer":"Shall I make some tea?","alts":[]},
+  {"level":"A2","ja":"これを運びましょうか。","answer":"Shall I carry this?","alts":[]},
+  {"level":"A2","ja":"席を替わりましょうか。","answer":"Shall I switch seats?","alts":[]},
+  {"level":"A2","ja":"もう帰りましょうか。","answer":"Shall we head home?","alts":[]},
+  {"level":"A2","ja":"写真を撮りましょうか。","answer":"Shall I take a photo?","alts":[]},
+  {"level":"A2","ja":"何か飲みましょうか。","answer":"Shall we get a drink?","alts":[]},
+  {"level":"A2","ja":"始めましょうか。","answer":"Shall we get started?","alts":[]},
+  {"level":"A2","ja":"地図を見ましょうか。","answer":"Shall we check the map?","alts":[]},
+  {"level":"A2","ja":"休みましょうか。","answer":"Shall we take a rest?","alts":[]},
+  {"level":"B1","ja":"予約を取りましょうか。","answer":"Shall I make a reservation?","alts":[]},
+  {"level":"B1","ja":"もう一度説明しましょうか。","answer":"Shall I explain again?","alts":[]},
+  {"level":"B1","ja":"資料を共有しましょうか。","answer":"Shall I share the materials?","alts":[]},
+  {"level":"B1","ja":"候補を挙げましょうか。","answer":"Shall I list some options?","alts":[]},
+  {"level":"B1","ja":"スケジュールを組みましょうか。","answer":"Shall we set a schedule?","alts":[]},
+  {"level":"B1","ja":"チームに確認しましょうか。","answer":"Shall I check with the team?","alts":[]},
+  {"level":"B1","ja":"代案を考えましょうか。","answer":"Shall we think of alternatives?","alts":[]},
+  {"level":"B1","ja":"要点をまとめましょうか。","answer":"Shall I sum up the points?","alts":[]},
+  {"level":"B1","ja":"先に始めましょうか。","answer":"Shall we start first?","alts":[]},
+  {"level":"B1","ja":"手順を見直しましょうか。","answer":"Shall we review the steps?","alts":[]},
+  {"level":"B1","ja":"サンプルを送りましょうか。","answer":"Shall I send a sample?","alts":[]},
+  {"level":"B1","ja":"会議を設定しましょうか。","answer":"Shall I set up a meeting?","alts":[]},
+  {"level":"B2","ja":"論点を整理しましょうか。","answer":"Shall we organize the points?","alts":[]},
+  {"level":"B2","ja":"優先順位をつけましょうか。","answer":"Shall we set priorities?","alts":[]},
+  {"level":"B2","ja":"前提を共有しましょうか。","answer":"Shall we share assumptions?","alts":[]},
+  {"level":"B2","ja":"代替案を比較しましょうか。","answer":"Shall we compare alternatives?","alts":[]},
+  {"level":"B2","ja":"期日を調整しましょうか。","answer":"Shall we adjust the deadline?","alts":[]},
+  {"level":"C1","ja":"長期影響を見ましょうか。","answer":"Shall we examine the long-term impact?","alts":[]},
+  {"level":"C1","ja":"前例を調べましょうか。","answer":"Shall we look for precedent?","alts":[]},
+  {"level":"C1","ja":"時間軸を分けましょうか。","answer":"Shall we separate horizons?","alts":[]},
+  {"level":"C1","ja":"不確実性に備えましょうか。","answer":"Shall we hedge against uncertainty?","alts":[]},
+  {"level":"C1","ja":"盲点を探しましょうか。","answer":"Shall we look for blind spots?","alts":[]}
+]);
+
+/* 増量セットBJ：高次スキル各種 大量12（5倍ペース） */
+window.EigoData.collocationItems = window.EigoData.collocationItems.concat([
+  { level:"B2", text:"Let's ___ a decision by Friday.", q:"自然な語は？", choices:["reach","make","do","take"], explain:"reach a decision（決定に至る）。" },
+  { level:"B2", text:"They ___ progress quickly.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make progress（前進する）。" },
+  { level:"B2", text:"Let's ___ a chance.", q:"自然な語は？", choices:["take","make","do","give"], explain:"take a chance（賭けてみる）。" },
+  { level:"C1", text:"We ___ allowances for delays.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make allowances（考慮する）。" },
+  { level:"C1", text:"Let's ___ stock of where we are.", q:"自然な語は？", choices:["take","make","do","give"], explain:"take stock（状況を見直す）。" }
+]);
+window.EigoData.thinkingItems = window.EigoData.thinkingItems.concat([
+  { level:"B2", ja:"", text:"「言いかえると」を伝えるなら？", choices:["Put another way,","Way put now,","Other say yes,","Change talk maybe,"], explain:"Put another way ＝ 言いかえると。" },
+  { level:"C1", ja:"", text:"「率直なところ申し上げると」を伝えるなら？", choices:["In all candor,","Candor all now,","True alone yes,","Real word maybe,"], explain:"In all candor ＝ 率直なところ。" },
+  { level:"B2", ja:"", text:"「具体的に言うと」を伝えるなら？", choices:["To be specific,","Specific be now,","Detail say yes,","Clear talk maybe,"], explain:"To be specific ＝ 具体的に言うと。" }
+]);
+window.EigoData.discussionItems = window.EigoData.discussionItems.concat([
+  { level:"B2", text:"発言を簡潔にまとめ直す：", choices:["So, in short, you're suggesting...","I missed it all.","You're wrong.","No recap needed."], explain:"発言を簡潔にまとめ直す。" },
+  { level:"C1", text:"合意と相違を切り分ける：", choices:["We agree on the goal, but differ on the method.","We agree on nothing.","No difference exists.","Let's just fight."], explain:"合意点と相違点を切り分ける。" }
+]);
+window.EigoData.cultureItems = window.EigoData.cultureItems.concat([
+  { level:"B2", text:"丁寧に提案する：", choices:["Would it help if I...?","I'll just do it.","You need my help.","Why bother asking?"], explain:"Would it help if …? で丁寧に提案。" },
+  { level:"C1", text:"成果を他者と分かち合う：", choices:["This was truly a team effort.","I did it alone.","No one else helped.","It was all me."], explain:"成果をチームと分かち合う。" }
+]);
+window.EigoData.intonationItems = window.EigoData.intonationItems.concat([
+  { level:"B2", text:"That's reassuring.", q:"安心の調子は？", choices:["やわらかく下げて言い切る↘","強く上げる↗","平坦に切る","ためらう"], explain:"安心はやわらかく下げて。" },
+  { level:"C1", text:"Let's not jump ahead.", q:"たしなめる調子は？", choices:["落ち着いてゆっくり下げる","明るく上げる","速く言い切る","強く上げる"], explain:"たしなめは落ち着いて下げて。" }
+]);
+window.EigoData.rhythmItems = window.EigoData.rhythmItems.concat([
+  { level:"B2", text:"Let's TAKE it ONE step at a TIME.", q:"強く読む語は？", choices:["take / one / time","let's / it / at","at / a","均等"], explain:"内容語を強く。" },
+  { level:"C1", text:"DONE is better than PERFECT.", q:"強く読む語は？", choices:["done / better / perfect","is / than","than / the","均等"], explain:"対比の内容語を強く。" }
+]);
+window.EigoData.chunkItems = window.EigoData.chunkItems.concat([
+  { level:"B2", text:"For now, let's pause.", q:"自然なチャンク区切りは？", choices:["For now, / let's pause","For / now let's / pause","For now let's / pause","For now / let's pause /"], explain:"前置きの句/主節、で区切る。" },
+  { level:"C1", text:"With that in mind, we proceed.", q:"自然なチャンク区切りは？", choices:["With that in mind, / we proceed","With / that in mind we / proceed","With that / in mind we proceed","With that in mind we / proceed"], explain:"前置き句/主節、で区切る。" }
+]);
+window.EigoData.stressItems = window.EigoData.stressItems.concat([
+  { level:"B2", word:"educate", syl:["ED","u","cate"], ans:0, ja:"教育する" },
+  { level:"B2", word:"education", syl:["ed","u","CA","tion"], ans:2, ja:"教育" },
+  { level:"C1", word:"educational", syl:["ed","u","CA","tion","al"], ans:2, ja:"教育の" },
+  { level:"B2", word:"export (名詞)", syl:["EX","port"], ans:0, ja:"輸出（名詞）", say:"export" },
+  { level:"B2", word:"export (動詞)", syl:["ex","PORT"], ans:1, ja:"輸出する（動詞）", say:"export" }
+]);
+
+
+/* 増量：瞬間英作文 大量25（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"今日は楽しかったです。","answer":"I had a great day.","alts":[]},
+  {"level":"A2","ja":"また会いたいです。","answer":"I want to see you again.","alts":[]},
+  {"level":"A2","ja":"変わりないですか。","answer":"Anything new?","alts":[]},
+  {"level":"A2","ja":"お世話になりました。","answer":"Thank you for everything.","alts":[]},
+  {"level":"A2","ja":"気をつけて帰ってください。","answer":"Get home safely.","alts":[]},
+  {"level":"A2","ja":"ただいま。","answer":"I'm home.","alts":[]},
+  {"level":"A2","ja":"おかえりなさい。","answer":"Welcome back.","alts":[]},
+  {"level":"B1","ja":"お時間ありがとうございました。","answer":"Thank you for your time.","alts":[]},
+  {"level":"B1","ja":"またの機会によろしく。","answer":"I hope we can do this again.","alts":[]},
+  {"level":"B1","ja":"助かりました、ありがとう。","answer":"Thanks, that really helped.","alts":[]},
+  {"level":"B1","ja":"お大事にしてください。","answer":"Take good care of yourself.","alts":[]},
+  {"level":"B1","ja":"落ち着いたら連絡します。","answer":"I'll reach out once things settle.","alts":[]},
+  {"level":"B1","ja":"ぜひお願いします。","answer":"I'd really appreciate that.","alts":[]},
+  {"level":"B1","ja":"頼りにしています。","answer":"I'm counting on you.","alts":[]},
+  {"level":"B1","ja":"期待しています。","answer":"I have high hopes.","alts":[]},
+  {"level":"B1","ja":"お疲れさまでした。","answer":"Good work today.","alts":[]},
+  {"level":"B2","ja":"貴重なご意見ありがとうございます。","answer":"Thank you for your valuable input.","alts":[]},
+  {"level":"B2","ja":"前向きに検討いたします。","answer":"I'll give it serious consideration.","alts":[]},
+  {"level":"B2","ja":"改めてご連絡いたします。","answer":"I'll get back to you in due course.","alts":[]},
+  {"level":"B2","ja":"ご確認のほどお願いします。","answer":"Please confirm at your convenience.","alts":[]},
+  {"level":"B2","ja":"ご都合をお聞かせください。","answer":"Please let me know what suits you.","alts":[]},
+  {"level":"B2","ja":"引き続きよろしくお願いします。","answer":"I look forward to continuing.","alts":[]},
+  {"level":"B2","ja":"お力添えに感謝します。","answer":"I appreciate your support.","alts":[]},
+  {"level":"B2","ja":"ご配慮いただき感謝します。","answer":"Thank you for your consideration.","alts":[]},
+  {"level":"B2","ja":"率直なご意見を歓迎します。","answer":"I welcome your honest feedback.","alts":[]},
+  {"level":"B2","ja":"建設的な議論に感謝します。","answer":"Thank you for the constructive discussion.","alts":[]},
+  {"level":"B2","ja":"今後の参考にいたします。","answer":"I'll keep that in mind going forward.","alts":[]},
+  {"level":"B2","ja":"認識を共有できてよかったです。","answer":"I'm glad we're on the same page.","alts":[]},
+  {"level":"B2","ja":"誤解を解けてよかったです。","answer":"I'm glad we cleared that up.","alts":[]},
+  {"level":"B2","ja":"柔軟にご対応いただき感謝します。","answer":"Thank you for being flexible.","alts":[]},
+  {"level":"B2","ja":"迅速なご対応に感謝します。","answer":"Thank you for your prompt response.","alts":[]},
+  {"level":"B2","ja":"お手数をおかけして恐縮です。","answer":"I'm sorry to trouble you.","alts":[]},
+  {"level":"B2","ja":"ご無理を承知でお願いします。","answer":"I know it's a lot to ask.","alts":[]},
+  {"level":"B2","ja":"改善に努めます。","answer":"I'll strive to improve.","alts":[]},
+  {"level":"B2","ja":"教訓として生かします。","answer":"I'll learn from this.","alts":[]},
+  {"level":"C1","ja":"論拠を明確にいたします。","answer":"Let me clarify my reasoning.","alts":[]},
+  {"level":"C1","ja":"可逆な判断を優先します。","answer":"I'll favor reversible decisions.","alts":[]},
+  {"level":"C1","ja":"不確実性を踏まえて進めます。","answer":"I'll proceed mindful of uncertainty.","alts":[]},
+  {"level":"C1","ja":"機会費用も考慮いたします。","answer":"I'll factor in opportunity cost.","alts":[]},
+  {"level":"C1","ja":"長期的視点で判断します。","answer":"I'll judge with a long-term view.","alts":[]},
+  {"level":"C1","ja":"根拠に基づいて議論します。","answer":"I'll argue from evidence.","alts":[]},
+  {"level":"C1","ja":"反証可能な形で述べます。","answer":"I'll state it in a falsifiable way.","alts":[]},
+  {"level":"C1","ja":"前例を踏まえて検討します。","answer":"I'll consider the precedent.","alts":[]},
+  {"level":"C1","ja":"根本原因を特定します。","answer":"I'll identify the root cause.","alts":[]},
+  {"level":"C1","ja":"想定の範囲を明示します。","answer":"I'll make my assumptions explicit.","alts":[]},
+  {"level":"C1","ja":"撤退基準を定めておきます。","answer":"I'll set clear exit criteria.","alts":[]},
+  {"level":"C1","ja":"交絡要因を確認します。","answer":"I'll check for confounding factors.","alts":[]},
+  {"level":"C1","ja":"最も単純な説明を採ります。","answer":"I'll go with the simplest explanation.","alts":[]}
+]);
+
+
+/* 増量：瞬間英作文 大量26（5倍ペース） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"手を貸してもらえますか。","answer":"Could you lend me a hand?","alts":[]},
+  {"level":"A2","ja":"電話してもいいですか。","answer":"May I make a call?","alts":[]},
+  {"level":"A2","ja":"席を立ってもいいですか。","answer":"May I leave my seat?","alts":[]},
+  {"level":"A2","ja":"それを見せてください。","answer":"Please show me that.","alts":[]},
+  {"level":"A2","ja":"もう少し近づいてください。","answer":"Please come a bit closer.","alts":[]},
+  {"level":"A2","ja":"静かにしてください。","answer":"Please be quiet.","alts":[]},
+  {"level":"A2","ja":"急いでください。","answer":"Please hurry.","alts":[]},
+  {"level":"A2","ja":"気をつけてください。","answer":"Please be careful.","alts":[]},
+  {"level":"A2","ja":"ゆっくりしてください。","answer":"Please take your time.","alts":[]},
+  {"level":"A2","ja":"楽にしてください。","answer":"Please relax.","alts":[]},
+  {"level":"A2","ja":"入ってもいいですか。","answer":"May I come in?","alts":[]},
+  {"level":"A2","ja":"出てもいいですか。","answer":"May I leave?","alts":[]},
+  {"level":"A2","ja":"始めてもいいですか。","answer":"May I begin?","alts":[]},
+  {"level":"A2","ja":"これを試してもいいですか。","answer":"May I try this?","alts":[]},
+  {"level":"A2","ja":"借りてもいいですか。","answer":"May I borrow it?","alts":[]},
+  {"level":"B1","ja":"それを後回しにできますか。","answer":"Could we postpone that?","alts":[]},
+  {"level":"B1","ja":"これを優先できますか。","answer":"Could we prioritize this?","alts":[]},
+  {"level":"B1","ja":"もう一度確認できますか。","answer":"Could we double-check?","alts":[]},
+  {"level":"B1","ja":"時間をいただけますか。","answer":"Could you spare a moment?","alts":[]},
+  {"level":"B1","ja":"代わりにやってもらえますか。","answer":"Could you do it instead?","alts":[]},
+  {"level":"B1","ja":"これを手伝ってもらえますか。","answer":"Could you help with this?","alts":[]},
+  {"level":"B1","ja":"意見を聞かせてもらえますか。","answer":"Could you share your opinion?","alts":[]},
+  {"level":"B1","ja":"例を見せてもらえますか。","answer":"Could you show an example?","alts":[]},
+  {"level":"B1","ja":"手順を教えてもらえますか。","answer":"Could you explain the steps?","alts":[]},
+  {"level":"B1","ja":"締切を教えてもらえますか。","answer":"Could you tell me the deadline?","alts":[]},
+  {"level":"B1","ja":"担当者を教えてもらえますか。","answer":"Could you tell me who's in charge?","alts":[]},
+  {"level":"B1","ja":"資料を送ってもらえますか。","answer":"Could you send the documents?","alts":[]},
+  {"level":"B1","ja":"確認を取ってもらえますか。","answer":"Could you get confirmation?","alts":[]},
+  {"level":"B1","ja":"要点をまとめてもらえますか。","answer":"Could you summarize the points?","alts":[]},
+  {"level":"B2","ja":"論点を絞ってもらえますか。","answer":"Could you narrow the focus?","alts":[]},
+  {"level":"B2","ja":"前提を明確にしてもらえますか。","answer":"Could you clarify the premise?","alts":[]},
+  {"level":"B2","ja":"代替案を提示してもらえますか。","answer":"Could you propose an alternative?","alts":[]},
+  {"level":"B2","ja":"影響を見積もってもらえますか。","answer":"Could you estimate the impact?","alts":[]},
+  {"level":"B2","ja":"リスクを洗い出してもらえますか。","answer":"Could you identify the risks?","alts":[]},
+  {"level":"B2","ja":"根拠を補強してもらえますか。","answer":"Could you strengthen the rationale?","alts":[]},
+  {"level":"B2","ja":"範囲を確認してもらえますか。","answer":"Could you confirm the scope?","alts":[]},
+  {"level":"B2","ja":"担当を割り当ててもらえますか。","answer":"Could you assign owners?","alts":[]},
+  {"level":"B2","ja":"期日を調整してもらえますか。","answer":"Could you adjust the timeline?","alts":[]},
+  {"level":"B2","ja":"合意を取り付けてもらえますか。","answer":"Could you get sign-off?","alts":[]},
+  {"level":"B2","ja":"懸念を整理してもらえますか。","answer":"Could you organize the concerns?","alts":[]},
+  {"level":"B2","ja":"方針を文書化してもらえますか。","answer":"Could you document the approach?","alts":[]},
+  {"level":"B2","ja":"見直しを入れてもらえますか。","answer":"Could you build in a review?","alts":[]},
+  {"level":"B2","ja":"想定を確認してもらえますか。","answer":"Could you verify the assumptions?","alts":[]},
+  {"level":"B2","ja":"教訓をまとめてもらえますか。","answer":"Could you capture the lessons?","alts":[]},
+  {"level":"B2","ja":"次の手を決めてもらえますか。","answer":"Could you decide the next step?","alts":[]},
+  {"level":"B2","ja":"優先度を見直してもらえますか。","answer":"Could you revisit the priorities?","alts":[]},
+  {"level":"B2","ja":"状況を整理してもらえますか。","answer":"Could you take stock?","alts":[]},
+  {"level":"B2","ja":"認識を合わせてもらえますか。","answer":"Could you get us aligned?","alts":[]},
+  {"level":"C1","ja":"前提を検証してもらえますか。","answer":"Could you validate the premise?","alts":[]},
+  {"level":"C1","ja":"因果を切り分けてもらえますか。","answer":"Could you separate cause from effect?","alts":[]},
+  {"level":"C1","ja":"反証を探してもらえますか。","answer":"Could you look for counterevidence?","alts":[]},
+  {"level":"C1","ja":"バイアスを確認してもらえますか。","answer":"Could you check for bias?","alts":[]},
+  {"level":"C1","ja":"機会費用を見積もってもらえますか。","answer":"Could you estimate the opportunity cost?","alts":[]},
+  {"level":"C1","ja":"撤退条件を定めてもらえますか。","answer":"Could you set exit criteria?","alts":[]},
+  {"level":"C1","ja":"最弱の仮定を特定してもらえますか。","answer":"Could you identify the weakest assumption?","alts":[]},
+  {"level":"C1","ja":"長期影響を評価してもらえますか。","answer":"Could you evaluate the long-term impact?","alts":[]},
+  {"level":"C1","ja":"前例を調べてもらえますか。","answer":"Could you check for precedent?","alts":[]},
+  {"level":"C1","ja":"根本原因を探ってもらえますか。","answer":"Could you find the root cause?","alts":[]},
+  {"level":"C1","ja":"標本の偏りを確認してもらえますか。","answer":"Could you check for sampling bias?","alts":[]},
+  {"level":"C1","ja":"欠けた視点を探してもらえますか。","answer":"Could you look for missing perspectives?","alts":[]},
+  {"level":"C1","ja":"判断の保留点を示してもらえますか。","answer":"Could you flag where to withhold judgment?","alts":[]},
+  {"level":"C1","ja":"最も単純な説明を選んでもらえますか。","answer":"Could you choose the simplest explanation?","alts":[]}
+]);
+
+/* 増量セットBM：高次スキル各種 最終仕上げ（5倍ペース達成）*/
+window.EigoData.collocationItems = window.EigoData.collocationItems.concat([
+  { level:"B2", text:"Let's ___ a plan.", q:"自然な語は？", choices:["draw up","make do","do take","give in"], explain:"draw up a plan（計画を立てる）。" },
+  { level:"B2", text:"They ___ a fortune.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make a fortune（大金を稼ぐ）。" },
+  { level:"B2", text:"Let's ___ the lead.", q:"自然な語は？", choices:["take","make","do","give"], explain:"take the lead（主導する）。" },
+  { level:"C1", text:"We ___ a sacrifice.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make a sacrifice（犠牲を払う）。" },
+  { level:"C1", text:"Let's ___ a precedent.", q:"自然な語は？", choices:["set","make","do","take"], explain:"set a precedent（前例を作る）。" }
+]);
+window.EigoData.thinkingItems = window.EigoData.thinkingItems.concat([
+  { level:"B2", ja:"", text:"「言い直すと」を伝えるなら？", choices:["To rephrase,","Rephrase to now,","Change say yes,","Other word maybe,"], explain:"To rephrase ＝ 言い直すと。" },
+  { level:"C1", ja:"", text:"「誤解を恐れずに申し上げれば」を伝えるなら？", choices:["At the risk of overstating it,","Risk over now,","Bold say yes,","Brave word maybe,"], explain:"At the risk of overstating it ＝ 誇張を恐れずに言えば。" },
+  { level:"B2", ja:"", text:"「結論から言うと」を伝えるなら？", choices:["To get to the point,","Point get now,","End say yes,","Quick talk maybe,"], explain:"To get to the point ＝ 結論から言うと。" }
+]);
+window.EigoData.discussionItems = window.EigoData.discussionItems.concat([
+  { level:"B2", text:"建設的に話を進める：", choices:["Let's build on that idea.","Let's drop it.","No ideas allowed.","Stop talking."], explain:"相手の案を発展させる。" },
+  { level:"C1", text:"対立を解像度高く扱う：", choices:["Where exactly do we disagree?","We disagree on all.","No disagreement.","Just fight."], explain:"対立点を具体的に特定する。" }
+]);
+window.EigoData.cultureItems = window.EigoData.cultureItems.concat([
+  { level:"B2", text:"丁寧に手助けを申し出る：", choices:["Is there anything I can do to help?","Do it yourself.","I won't help.","Why ask me?"], explain:"控えめに手助けを申し出る。" },
+  { level:"C1", text:"批判より改善に焦点を当てる：", choices:["What would make this even stronger?","This is all bad.","You failed.","Give up now."], explain:"批判より改善に焦点を当てる。" }
+]);
+window.EigoData.intonationItems = window.EigoData.intonationItems.concat([
+  { level:"B2", text:"That's encouraging.", q:"励ましの調子は？", choices:["明るく下げて言い切る↘","強く上げる↗","平坦に切る","ためらう"], explain:"励ましは明るく下げて。" },
+  { level:"C1", text:"Let's take a step back.", q:"落ち着かせる調子は？", choices:["ゆっくり下げ気味で","明るく上げる","速く言い切る","強く上げる"], explain:"落ち着かせるのは下げ気味で。" }
+]);
+window.EigoData.rhythmItems = window.EigoData.rhythmItems.concat([
+  { level:"B2", text:"Let's KEEP it SIMPLE and CLEAR.", q:"強く読む語は？", choices:["keep / simple / clear","let's / it / and","and / it","均等"], explain:"内容語を強く。" },
+  { level:"C1", text:"MEASURE twice, CUT once.", q:"強く読む語は？", choices:["measure / twice / cut / once","none","the / a","均等"], explain:"内容語を強く。" }
+]);
+window.EigoData.chunkItems = window.EigoData.chunkItems.concat([
+  { level:"B2", text:"To begin with, let's plan.", q:"自然なチャンク区切りは？", choices:["To begin with, / let's plan","To / begin with let's / plan","To begin / with let's plan","To begin with let's / plan"], explain:"前置きの句/主節、で区切る。" },
+  { level:"C1", text:"On balance, it's worth it.", q:"自然なチャンク区切りは？", choices:["On balance, / it's worth it","On / balance it's / worth it","On balance it's / worth it","On balance / it's worth it"], explain:"前置き句/主節、で区切る。" }
+]);
+window.EigoData.stressItems = window.EigoData.stressItems.concat([
+  { level:"B2", word:"create", syl:["cre","ATE"], ans:1, ja:"創造する" },
+  { level:"B2", word:"creative", syl:["cre","A","tive"], ans:1, ja:"創造的な" },
+  { level:"C1", word:"creativity", syl:["cre","a","TIV","i","ty"], ans:2, ja:"創造性" },
+  { level:"B2", word:"survey (名詞)", syl:["SUR","vey"], ans:0, ja:"調査（名詞）", say:"survey" },
+  { level:"B2", word:"survey (動詞)", syl:["sur","VEY"], ans:1, ja:"調査する（動詞）", say:"survey" }
+]);
+
+
+/* 増量：瞬間英作文 大量27 仕上げ（5倍ペース達成） */
+window.EigoData.qrtItems = window.EigoData.qrtItems.concat([
+  {"level":"A2","ja":"もちろんいいですよ。","answer":"Sure, that's fine.","alts":[]},
+  {"level":"A2","ja":"喜んで。","answer":"I'd be glad to.","alts":[]},
+  {"level":"A2","ja":"あとでやります。","answer":"I'll do it later.","alts":[]},
+  {"level":"A2","ja":"もう終わりました。","answer":"I've already finished.","alts":[]},
+  {"level":"A2","ja":"まだ途中です。","answer":"I'm still working on it.","alts":[]},
+  {"level":"A2","ja":"うまくいきました。","answer":"It went well.","alts":[]},
+  {"level":"B1","ja":"状況を見て判断します。","answer":"I'll decide based on the situation.","alts":[]},
+  {"level":"B1","ja":"それなら大丈夫です。","answer":"In that case, it's fine.","alts":[]},
+  {"level":"B1","ja":"もう少し様子を見ます。","answer":"Let's wait and see a bit.","alts":[]},
+  {"level":"B1","ja":"早めに対応します。","answer":"I'll address it soon.","alts":[]},
+  {"level":"B1","ja":"前向きに考えます。","answer":"I'll think positively about it.","alts":[]},
+  {"level":"B1","ja":"柔軟に対応します。","answer":"I'll be flexible.","alts":[]},
+  {"level":"B2","ja":"事実と意見を分けましょう。","answer":"Let's separate facts from opinions.","alts":[]},
+  {"level":"B2","ja":"根拠を示してから議論しましょう。","answer":"Let's argue with evidence.","alts":[]},
+  {"level":"B2","ja":"前提を確認してから進めましょう。","answer":"Let's confirm the premise first.","alts":[]},
+  {"level":"B2","ja":"具体例で説明しましょう。","answer":"Let's explain with examples.","alts":[]},
+  {"level":"B2","ja":"代替案も用意しましょう。","answer":"Let's prepare a backup.","alts":[]},
+  {"level":"B2","ja":"懸念を率直に共有しましょう。","answer":"Let's share concerns openly.","alts":[]},
+  {"level":"C1","ja":"反証を探してから結論づけましょう。","answer":"Let's seek counterevidence before concluding.","alts":[]},
+  {"level":"C1","ja":"因果を確かめてから判断しましょう。","answer":"Let's verify causation before deciding.","alts":[]},
+  {"level":"C1","ja":"不確実性を明示しましょう。","answer":"Let's make the uncertainty explicit.","alts":[]},
+  {"level":"C1","ja":"機会費用を比較しましょう。","answer":"Let's weigh the opportunity costs.","alts":[]},
+  {"level":"C1","ja":"最弱の前提を検証しましょう。","answer":"Let's test the weakest premise.","alts":[]},
+  {"level":"C1","ja":"前例を踏まえましょう。","answer":"Let's draw on precedent.","alts":[]},
+  {"level":"C1","ja":"根本原因を突き止めましょう。","answer":"Let's pinpoint the root cause.","alts":[]},
+  {"level":"C1","ja":"盲点を洗い出しましょう。","answer":"Let's surface the blind spots.","alts":[]}
+]);
+
+/* 増量セットBO：高次スキル各種 最終達成（5倍ペース）*/
+window.EigoData.collocationItems = window.EigoData.collocationItems.concat([
+  { level:"B2", text:"Let's ___ a habit of it.", q:"自然な語は？", choices:["make","do","take","give"], explain:"make a habit（習慣にする）。" },
+  { level:"B2", text:"They ___ a living.", q:"自然な語は？", choices:["made","did","took","gave"], explain:"make a living（生計を立てる）。" },
+  { level:"C1", text:"Let's ___ the most of it.", q:"自然な語は？", choices:["make","do","take","give"], explain:"make the most of（最大限活用する）。" }
+]);
+window.EigoData.thinkingItems = window.EigoData.thinkingItems.concat([
+  { level:"B2", ja:"", text:"「まとめると」を伝えるなら？", choices:["To sum up,","Sum to now,","End say yes,","Close talk maybe,"], explain:"To sum up ＝ まとめると。" },
+  { level:"C1", ja:"", text:"「あえて言うなら」を伝えるなら？", choices:["If anything,","Any thing now,","Maybe say yes,","Bold word maybe,"], explain:"If anything ＝ あえて言うなら。" }
+]);
+window.EigoData.discussionItems = window.EigoData.discussionItems.concat([
+  { level:"B2", text:"次に進む合意を取る：", choices:["Shall we move forward, then?","Stop everything.","No moving on.","Stay stuck."], explain:"次に進む合意を取る。" },
+  { level:"C1", text:"判断を保留する合意を取る：", choices:["Let's park this until we know more.","Decide now blindly.","Never revisit.","Force a choice."], explain:"情報が増えるまで判断を保留する。" }
+]);
+window.EigoData.intonationItems = window.EigoData.intonationItems.concat([
+  { level:"B2", text:"That sounds promising.", q:"期待の調子は？", choices:["明るく下げて言い切る↘","強く上げる↗","平坦に切る","ためらう"], explain:"期待は明るく下げて。" },
+  { level:"C1", text:"Let's keep an open mind.", q:"穏やかに促す調子は？", choices:["落ち着いて下げ気味で","強く上げる","速く言い切る","小さく言う"], explain:"穏やかに促すのは下げ気味で。" }
+]);
+window.EigoData.rhythmItems = window.EigoData.rhythmItems.concat([
+  { level:"B2", text:"Let's FOCUS on the BIG picture.", q:"強く読む語は？", choices:["focus / big / picture","let's / on / the","on / the","均等"], explain:"内容語を強く。" },
+  { level:"C1", text:"LISTEN more, ASSUME less.", q:"強く読む語は？", choices:["listen / more / assume / less","none","the / a","均等"], explain:"対比の内容語を強く。" }
+]);
+window.EigoData.chunkItems = window.EigoData.chunkItems.concat([
+  { level:"B2", text:"In any case, we'll try.", q:"自然なチャンク区切りは？", choices:["In any case, / we'll try","In / any case we'll / try","In any / case we'll try","In any case we'll / try"], explain:"前置きの句/主節、で区切る。" },
+  { level:"C1", text:"All told, it succeeded.", q:"自然なチャンク区切りは？", choices:["All told, / it succeeded","All / told it / succeeded","All told it / succeeded","All / told it succeeded"], explain:"前置き句/主節、で区切る。" }
+]);
+window.EigoData.stressItems = window.EigoData.stressItems.concat([
+  { level:"B2", word:"decide", syl:["de","CIDE"], ans:1, ja:"決める" },
+  { level:"B2", word:"decision", syl:["de","CI","sion"], ans:1, ja:"決定" },
+  { level:"C1", word:"decisive", syl:["de","CI","sive"], ans:1, ja:"決定的な" }
+]);

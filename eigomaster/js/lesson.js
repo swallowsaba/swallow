@@ -31,21 +31,51 @@
     { id: "pron", icon: "🔊", name: "発音集中", desc: "TH・R/L・ダークL・リンキング・リズム", cat: "th" }
   ];
 
-  var st = { phase: "pick", level: "B2", theme: null, queue: [], idx: 0, ok: 0, total: 0, combo: 0, best: 0, retried: {} };
+  var st = { phase: "pick", level: "B2", diff: "all", theme: null, queue: [], idx: 0, ok: 0, total: 0, combo: 0, best: 0, retried: {} };
+
+  var DIFFS = [
+    { id: "all", label: "おまかせ" },
+    { id: ".1", label: "やさしめ" },
+    { id: ".2", label: "標準" },
+    { id: ".3", label: "むずかしめ" }
+  ];
+
+  // 各教材にサブレベル(_sub)を一度だけ付与（CEFR帯ごとに難易度で3分割）
+  var _annotated = false;
+  function ensureAnnotated() {
+    if (_annotated || !EM.levels) return;
+    var d = D();
+    EM.levels.annotate(d.words || [], function (w) { return w.en; });
+    EM.levels.annotate(d.idioms || [], function (w) { return w.en; });
+    EM.levels.annotate(d.listening || [], function (x) { return x.text; });
+    EM.levels.annotate(d.trainingItems || [], function (x) { return x.text || (x.choices ? x.choices.join(" ") : ""); });
+    EM.levels.annotate(d.qrtItems || [], function (x) { return x.answer; });
+    _annotated = true;
+  }
 
   /* ---------- ユーティリティ ---------- */
   function D() { return window.EigoData || {}; }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function pick(a, n) { return shuffle(a).slice(0, n); }
   function lv() { for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i].id === st.level) return LEVELS[i]; return LEVELS[2]; }
-  function inLevel(x) { return lv().levels.indexOf(x.level) >= 0; }
+  // CEFR帯に合致。難易度(st.diff)指定時は、サブレベルの末尾(.1/.2/.3)も一致を要求
+  function inLevel(x) {
+    if (lv().levels.indexOf(x.level) < 0) return false;
+    if (st.diff === "all") return true;
+    if (!x._sub) return true; // レベル未注釈の項目は通す
+    return x._sub.slice(-2) === st.diff;
+  }
   function norm(s) { return String(s || "").toLowerCase().replace(/[^a-z' ]/g, " ").replace(/\s+/g, " ").trim(); }
 
   /* ---------- 問題生成（複数スキルを1本に混ぜる） ---------- */
   function makeLesson(theme) {
+    ensureAnnotated();
     var d = D();
     var words = (d.words || []).filter(inLevel);
     var idioms = (d.idioms || []).filter(inLevel);
+    // 難易度絞り込みでプールが小さすぎる場合は、帯全体（難易度無視）にフォールバック
+    if (words.length < 6) words = (d.words || []).filter(function (x) { return lv().levels.indexOf(x.level) >= 0; });
+    if (idioms.length < 6) idioms = (d.idioms || []).filter(function (x) { return lv().levels.indexOf(x.level) >= 0; });
     var biz = idioms.filter(function (x) { return x.kind === "ビジネス"; });
     var coll = idioms.filter(function (x) { return x.kind === "コロケーション"; });
     var grams = (d.grammar || []).filter(function (g) { return g.blank && g.blank.explain; });
@@ -147,15 +177,23 @@
         '<span class="hub-row__desc">' + t.desc + '</span></span>' +
         '<span class="hub-row__arrow">›</span></button>';
     }).join("");
+    var diffChips = DIFFS.map(function (dd) {
+      return '<button class="chip' + (dd.id === st.diff ? " chip--on" : "") + '" data-diff="' + dd.id + '" type="button">' + dd.label + "</button>";
+    }).join("");
     root().innerHTML =
       '<p class="home-hero__eyebrow" style="color:var(--c-ink-soft)">LESSON · 今日のレッスン</p>' +
       '<div class="notice notice--info"><span class="notice__icon">i</span><span>1レッスン約12問。語彙・文法・英作文・リスニング・発音・リンキングに加え、<strong>ディクテーション・要約・言い換え・精読・質問力・即答力・多読</strong>まで<strong>ひとつの流れ</strong>で反復。間違いは最後にもう一度出ます。</span></div>' +
       '<p class="section-title mt-5">レベル（CEFR）</p>' +
       '<div class="chip-group">' + lvChips + '</div>' +
+      '<p class="section-title mt-5">難易度（レベル帯の中で細分化）</p>' +
+      '<div class="chip-group">' + diffChips + '</div>' +
       '<p class="section-title mt-5">コースを選ぶ</p>' +
       '<div class="hub-list">' + rows + '</div>';
     root().querySelectorAll("[data-lv]").forEach(function (b) {
       b.addEventListener("click", function () { st.level = b.getAttribute("data-lv"); drawPick(); });
+    });
+    root().querySelectorAll("[data-diff]").forEach(function (b) {
+      b.addEventListener("click", function () { st.diff = b.getAttribute("data-diff"); drawPick(); });
     });
     root().querySelectorAll("[data-th]").forEach(function (b) {
       b.addEventListener("click", function () { startLesson(THEMES[parseInt(b.getAttribute("data-th"), 10)]); });
