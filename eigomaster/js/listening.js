@@ -109,7 +109,9 @@
   function drawComprehension() {
     var q = st.session[st.idx];
     var choices = shuffle(q.choices.slice());
-    root().innerHTML = progressHtml() +
+    root().innerHTML = '<div class="study-fit">' +
+      '<div class="study-fit__top">' + progressHtml() + '</div>' +
+      '<div class="study-fit__main">' +
       '<div class="card center">' +
         '<p class="text-soft" style="font-size:var(--fs-small)">英文を聞いて、質問に答えてください。</p>' +
         '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr">' +
@@ -121,7 +123,8 @@
       '<div id="choices">' + choices.map(function (c) {
         return '<button class="choice-btn" type="button" data-c="' + EM.escapeHtml(c) + '">' + EM.escapeHtml(c) + "</button>";
       }).join("") + "</div>" +
-      '<div id="comp-result" class="mt-4"></div>';
+      '<div id="comp-result" class="mt-4"></div>' +
+      "</div></div>";
 
     document.getElementById("play").addEventListener("click", function () { EM.speak(q.text, { rate: 1.0 }); });
     document.getElementById("play-slow").addEventListener("click", function () { EM.speak(q.text, { rate: 0.6 }); });
