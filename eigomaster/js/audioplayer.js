@@ -99,10 +99,13 @@
       var pos = st.cumStart + elapsed;
       var idx = st.startIdx;
       while (idx < toks.length - 1 && pos >= cum[idx + 1]) idx++;
-      // 実音声の境界イベントが来ている間は、その語を信頼して推定で先走らせない
-      // （端末ボイスのboundary／オンライン音声のtimeupdate由来）。来ない環境のみ推定で進める。
-      var boundaryRecent = st.boundaryActive && (performance.now() - st.lastB < 1000);
-      if (boundaryRecent) idx = st.startIdx;
+      // 実音声の境界イベント（端末ボイスのboundary／オンライン音声のtimeupdate由来）が
+      // 来る場合はそれを唯一の語送りとし、推定で先走らせない。
+      // 開始直後の猶予中も推定で進めない（最初の境界が来た瞬間に語が巻き戻るのを防ぐ）。
+      var nowMs = performance.now();
+      var boundaryRecent = st.boundaryActive && (nowMs - st.lastB < 1200);
+      var inGrace = !st.boundaryActive && (nowMs - st.playStart < 700);
+      if (boundaryRecent || inGrace) idx = st.startIdx;
       if (idx !== st.idx) highlight(idx);
       setBar(Math.min(1, pos / totalDur));
       st.raf = requestAnimationFrame(tick);
@@ -116,7 +119,8 @@
       var sub = text.slice(toks[idx].start);
       var base = toks[idx].start;
       st.playing = true; st.startIdx = idx; st.cumStart = cum[idx];
-      st.t0 = performance.now(); st.boundaryActive = false; st.lastB = 0;
+      st.t0 = performance.now(); st.playStart = performance.now();
+      st.boundaryActive = false; st.lastB = 0;
       playBtn.textContent = "⏸";
       highlight(idx);
       st.raf = requestAnimationFrame(tick);
@@ -125,6 +129,8 @@
         onboundary: function (ci, len) {
           if (ci < 0) return;
           var gi = tokenAt(toks, base + ci);
+          // 境界は前進のみ（推定や端末の不規則な発火で手前へ戻らない）
+          if (gi < st.startIdx) gi = st.startIdx;
           st.startIdx = gi; st.cumStart = cum[gi]; st.t0 = performance.now();
           st.boundaryActive = true; st.lastB = performance.now();
           highlight(gi);

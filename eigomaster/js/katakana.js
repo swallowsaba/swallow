@@ -323,6 +323,7 @@
       return { prev: pf.core, cur: sylF + nextKana.slice(1) };
     }
     if (rule === "link") {
+      if (/ng$/.test(prevEng)) return null;         // 語末 -ng (/ŋ/) は /g/ として連結しない（long→ロンガ を防ぐ）
       var lv2 = nextKana.charAt(0);
       if (!pf.cons || LEAD_V[lv2] == null) return null;
       var syl = combineCV(pf.cons, lv2);

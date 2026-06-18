@@ -134,18 +134,23 @@
     while ((m = re.exec(sentence)) !== null) ranges.push([m.index, m.index + m[0].length]);
 
     function clearHi() { cells.forEach(function (c) { c.classList.remove("lkv__cell--on"); }); }
+    var lastWi = -1;
     function highlightAt(charIndex) {
-      if (charIndex < 0) { clearHi(); return; }
+      if (charIndex < 0) { clearHi(); lastWi = -1; return; }
       var wi = -1;
       for (var i = 0; i < ranges.length; i++) {
         if (charIndex >= ranges[i][0] && charIndex < ranges[i][1]) { wi = i; break; }
         if (charIndex < ranges[i][0]) { wi = i; break; }
       }
+      if (wi < 0) return;
+      if (wi < lastWi) wi = lastWi;           // 前進のみ（手前の語へ戻らない）
+      lastWi = wi;
       clearHi();
-      if (wi >= 0 && cells[wi]) cells[wi].classList.add("lkv__cell--on");
+      if (cells[wi]) cells[wi].classList.add("lkv__cell--on");
     }
     function play(rate) {
       EM.stopSpeak && EM.stopSpeak();
+      lastWi = -1;
       EM.speak(sentence, {
         rate: rate,
         onboundary: function (ci) { highlightAt(ci); },
