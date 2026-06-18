@@ -32,7 +32,8 @@
     if (!container || !text) return;
     var toks = tokenize(text);
     var kana = toks.map(function (t) {
-      try { return (window.Katakana && window.Katakana.wordToKatakana) ? window.Katakana.wordToKatakana(t.word) : ""; }
+      try { return (window.Katakana && window.Katakana.reduceTokenKana) ? window.Katakana.reduceTokenKana(t.word, false)
+                 : (window.Katakana && window.Katakana.wordToKatakana) ? window.Katakana.wordToKatakana(t.word) : ""; }
       catch (e) { return ""; }
     });
     var weights = toks.map(function (t) { return weightOf(t.word); });
@@ -68,7 +69,7 @@
     var thumb = container.querySelector("#ap-thumb");
 
     var RATES = [1.0, 0.75, 0.5, 1.25];
-    var st = { playing: false, idx: 0, rate: 1.0, raf: null, t0: 0, startIdx: 0, cumStart: 0 };
+    var st = { playing: false, idx: 0, rate: 1.0, raf: null, t0: 0, startIdx: 0, cumStart: 0, lastB: 0, boundaryActive: false };
 
     var cum = [0];
     for (var i = 0; i < weights.length; i++) cum.push(cum[i] + weights[i]);
@@ -98,6 +99,10 @@
       var pos = st.cumStart + elapsed;
       var idx = st.startIdx;
       while (idx < toks.length - 1 && pos >= cum[idx + 1]) idx++;
+      // 実音声の境界イベントが来ている間は、その語を信頼して推定で先走らせない
+      // （端末ボイスのboundary／オンライン音声のtimeupdate由来）。来ない環境のみ推定で進める。
+      var boundaryRecent = st.boundaryActive && (performance.now() - st.lastB < 1000);
+      if (boundaryRecent) idx = st.startIdx;
       if (idx !== st.idx) highlight(idx);
       setBar(Math.min(1, pos / totalDur));
       st.raf = requestAnimationFrame(tick);
@@ -111,7 +116,7 @@
       var sub = text.slice(toks[idx].start);
       var base = toks[idx].start;
       st.playing = true; st.startIdx = idx; st.cumStart = cum[idx];
-      st.t0 = performance.now();
+      st.t0 = performance.now(); st.boundaryActive = false; st.lastB = 0;
       playBtn.textContent = "⏸";
       highlight(idx);
       st.raf = requestAnimationFrame(tick);
@@ -121,6 +126,7 @@
           if (ci < 0) return;
           var gi = tokenAt(toks, base + ci);
           st.startIdx = gi; st.cumStart = cum[gi]; st.t0 = performance.now();
+          st.boundaryActive = true; st.lastB = performance.now();
           highlight(gi);
         },
         onend: function () { finish(); }
@@ -191,7 +197,7 @@
     if (!container || !text) return;
     var re = /(\S+)(\s*)/g, m, toks = [];
     while ((m = re.exec(text)) !== null) toks.push({ word: m[1], start: m.index });
-    var kana = toks.map(function (t) { try { return (window.Katakana && window.Katakana.wordToKatakana) ? window.Katakana.wordToKatakana(t.word) : ""; } catch (e) { return ""; } });
+    var kana = toks.map(function (t) { try { return (window.Katakana && window.Katakana.reduceTokenKana) ? window.Katakana.reduceTokenKana(t.word, false) : (window.Katakana && window.Katakana.wordToKatakana) ? window.Katakana.wordToKatakana(t.word) : ""; } catch (e) { return ""; } });
     function wt(w) { var s = (w.replace(/[^a-zA-Z]/g, "").match(/[aeiouy]+/gi) || []).length || 1; return 0.18 + s * 0.13; }
     var cum = [0]; toks.forEach(function (t) { cum.push(cum[cum.length - 1] + wt(t.word)); });
     var total = cum[cum.length - 1];

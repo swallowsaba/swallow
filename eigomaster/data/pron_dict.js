@@ -3466,3 +3466,13 @@ Object.assign(window.EigoData.pronDict, {
   "babble": { ipa: "/ˈbæbəl/", kata: "バボー" },
   "bellow": { ipa: "/ˈbɛloʊ/", kata: "ベロウ" }
 });
+
+/* v53 追記：ルール近似で誤変換しやすい高頻度語の補正（後勝ち上書き） */
+Object.assign(window.EigoData.pronDict, {
+  "bye": { ipa: "/baɪ/", kata: "バイ" },
+  "buy": { ipa: "/baɪ/", kata: "バイ" },
+  "guy": { ipa: "/ɡaɪ/", kata: "ガイ" },
+  "eye": { ipa: "/aɪ/", kata: "アイ" },
+  "dye": { ipa: "/daɪ/", kata: "ダイ" },
+  "rye": { ipa: "/raɪ/", kata: "ライ" }
+});

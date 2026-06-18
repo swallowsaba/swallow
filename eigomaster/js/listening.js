@@ -91,7 +91,7 @@
         '<div class="explain-card">' +
           '<p class="explain-head ' + (res.rate >= 0.8 ? "explain-head--ok" : "explain-head--ng") + '">正答率 ' + Math.round(res.rate * 100) + "%</p>" +
           '<p class="explain-line"><strong>正解：</strong>' + EM.escapeHtml(q.text) + "</p>" +
-          (window.Katakana ? '<p class="explain-line"><strong>聞こえ方：</strong>≈ ' + EM.escapeHtml(window.Katakana.toKatakana(q.text)) + "</p>" : "") +
+          (window.Katakana ? '<p class="explain-line"><strong>聞こえ方：</strong>≈ ' + EM.escapeHtml((window.Katakana.toKatakanaConnected || window.Katakana.toKatakana)(q.text)) + "</p>" : "") +
           (q.ja ? '<p class="explain-line"><strong>意味：</strong>' + EM.escapeHtml(q.ja) + "</p>" : "") +
           '<p class="explain-subhead">読み上げ（バーで位置を移動、語をタップでそこから再生）</p>' +
           '<div id="ap-mount"></div>' +
@@ -101,6 +101,7 @@
         "</div>";
       if (res.rate >= 0.8) st.correct += 1;
       if (EM.audioPlayer) EM.audioPlayer(document.getElementById("ap-mount"), q.text);
+      if (window.Linking && window.Linking.bindVisual) window.Linking.bindVisual(area);
       document.getElementById("next").addEventListener("click", function () { st.idx += 1; draw(); });
     });
   }
@@ -151,6 +152,7 @@
             '<button class="btn btn--primary btn--block mt-4" id="next" type="button">' + (st.idx + 1 >= st.session.length ? "結果を見る" : "次へ") + "</button>" +
           "</div>";
         if (EM.audioPlayer) EM.audioPlayer(document.getElementById("ap-mount2"), q.text);
+        if (window.Linking && window.Linking.bindVisual) window.Linking.bindVisual(document.getElementById("comp-result"));
       document.getElementById("next").addEventListener("click", function () { st.idx += 1; draw(); });
       });
     });

@@ -550,6 +550,7 @@
       '</div>' +
       '<button class="btn ' + (ok ? "btn--primary" : "btn--danger") + ' btn--block" id="ls-next" type="button">つづける</button>';
     if (sayText && EM.audioChip) EM.audioChip(document.getElementById("ls-fb-chip"), sayText);
+    if (window.Linking && window.Linking.bindVisual) window.Linking.bindVisual(foot);
     document.getElementById("ls-next").addEventListener("click", function () { st.idx++; drawQ(); });
   }
 

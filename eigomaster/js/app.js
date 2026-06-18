@@ -426,12 +426,32 @@
   function speakOnline(text, opts) {
     var voice = onlineVoiceId();
     var chunks = chunkText(text);
+    // 各チャンクの text 内での開始文字位置（再生位置→文字位置の擬似 boundary に使う）
+    var chunkStart = [];
+    (function () { var pos = 0; for (var c = 0; c < chunks.length; c++) { var at = text.indexOf(chunks[c], pos); if (at < 0) at = pos; chunkStart.push(at); pos = at + chunks[c].length; } })();
     var i = 0;          // チャンク番号
     var myToken = ++speakToken;   // 古い再生のコールバックを無効化（エコー対策）
+    var startedFired = false;
+
+    // 実際の再生位置(currentTime/duration)から、いま読んでいる文字位置を推定して通知。
+    // これにより端末ボイスの onboundary が無いオンライン音声でも、ハイライトが
+    // 推定タイマーではなく「実音声」に追従し、リーディング等のズレが解消する。
+    function emitBoundary(ratio) {
+      if (typeof opts.onboundary !== "function") return;
+      ratio = Math.max(0, Math.min(1, ratio));
+      var base = chunkStart[i] || 0;
+      var clen = (chunks[i] || "").length || 1;
+      var off = Math.min(clen - 1, Math.floor(ratio * clen));
+      opts.onboundary(base + off, 0);
+    }
 
     function playChunk(provIdx) {
       if (myToken !== speakToken) return;
-      if (i >= chunks.length) { if (typeof opts.onend === "function") opts.onend(); return; }
+      if (i >= chunks.length) {
+        if (typeof opts.onboundary === "function") opts.onboundary(-1, 0); // ハイライト解除
+        if (typeof opts.onend === "function") opts.onend();
+        return;
+      }
       if (provIdx >= TTS_PROVIDERS.length) {
         // すべての提供元で失敗 → 端末音声へ
         onlineFailover(text, opts); return;
@@ -443,6 +463,12 @@
       a.src = url;
       currentAudio = a;
       if (typeof opts.rate === "number") a.playbackRate = Math.max(0.5, Math.min(1, opts.rate));
+      a.ontimeupdate = function () {
+        if (myToken !== speakToken) return;
+        if (!startedFired) { startedFired = true; if (typeof opts.onstart === "function") opts.onstart(); }
+        var d = a.duration;
+        if (d && isFinite(d) && d > 0) emitBoundary(a.currentTime / d);
+      };
       a.onended = function () { if (myToken !== speakToken) return; i++; playChunk(0); };
       a.onerror = function () { if (myToken !== speakToken) return; playChunk(provIdx + 1); };
       var p = a.play();
@@ -1324,7 +1350,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v52";
+  var APP_VERSION = "v54";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;

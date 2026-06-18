@@ -44,8 +44,8 @@
         var startsVowel = /^[aeiou]/.test(nw);
         var startsCons = /^[^aeiou]/.test(nw);
 
-        // 同化：d/t + you/your
-        if (/[dt]$/.test(w) && /^(you|your)$/.test(nw)) tags[i].assim = true;
+        // 同化：d/t/s/z + you/your（could you→クッジュー, miss you→ミシュー）
+        if (/[dtsz]$|ss$/.test(w) && /^(you|your)$/.test(nw)) tags[i].assim = true;
         // 境界フラップ：…(母音)t + 母音始まり（get it 等）
         else if (/[aeiou]t$/.test(w) && startsVowel) tags[i].flap = true;
         // 連結：子音終わり + 母音始まり
@@ -74,17 +74,47 @@
       else if (tb.drop) links.push({ from: b, to: b + 1, rule: "drop" });
     }
 
-    // 参考カタカナ（縮約を反映してから変換）
-    var reduced = " " + sentence.toLowerCase() + " ";
-    reduced = reduced
-      .replace(/ want to /g, " wanna ")
-      .replace(/ going to /g, " gonna ")
-      .replace(/ got to /g, " gotta ")
-      .replace(/ have to /g, " hafta ")
-      .replace(/ kind of /g, " kinda ");
-    var soundKata = window.Katakana ? window.Katakana.toKatakana(reduced.trim()) : "";
+    // 参考カタカナ（連結発音）：弱化・脱促音/脱長音に加え、語境界の
+    // 連結(∪)は語間スペースを詰め、脱落(t/d+子音)は前語の末尾ト/ド/ッを落とす。
+    // ※ tags/links は元の words のインデックスに対応するため、語数を変える縮約は行わない。
+    var soundKata = buildConnectedKata(words, tags, links);
 
     return { html: html, soundKata: soundKata, rules: Object.keys(rulesUsed), words: words, tags: tags, links: links };
+  }
+
+  // 語配列＋tags から「実際のアメリカ英語の連結発音」カタカナを組み立てる。
+  // 各語は reduced 形にし、語境界で同化/連結/フラップ/脱落を実際に結合する。
+  function buildConnectedKata(words, tags, links) {
+    var K = window.Katakana;
+    if (!K || !K.reduceTokenKana) return "";
+    function cw(w) { return String(w).toLowerCase().replace(/[^a-z']/g, ""); }
+    var ks = [], engs = [], prevIdx = -1;
+    for (var i = 0; i < words.length; i++) {
+      var eng = cw(words[i]);
+      var kana = K.reduceTokenKana(words[i], true); // 冠詞 a 等は "" で脱落
+      if (kana === "") continue;
+      if (prevIdx < 0) { ks.push(kana); engs.push(eng); prevIdx = i; continue; }
+      var t = tags[prevIdx] || {};
+      var pEng = cw(words[prevIdx]);
+      // 境界の規則を1つ選ぶ（同化＞脱落＞境界フラップ＞連結）
+      var rule = t.assim ? "assim"
+               : t.drop ? "drop"
+               : (t.flap && /[aeiou]t$/.test(pEng)) ? "flap"
+               : t.link ? "link" : null;
+      var merged = rule && K.mergeBoundary ? K.mergeBoundary(ks[ks.length - 1], pEng, kana, eng, rule) : null;
+      if (merged) { ks[ks.length - 1] = merged.prev; ks.push("\u0001" + merged.cur); } // \u0001=前語と詰める
+      else ks.push(kana);
+      engs.push(eng);
+      prevIdx = i;
+    }
+    var out = "";
+    for (var j = 0; j < ks.length; j++) {
+      var piece = ks[j];
+      if (j === 0) { out = piece; continue; }
+      if (piece.charAt(0) === "\u0001") out += piece.slice(1);   // 連結：スペース無し
+      else out += " " + piece;                                    // 非連結：スペース
+    }
+    return out;
   }
 
   window.Linking = { analyzeLinking: analyzeLinking, explainHtml: explainHtml, bindVisual: bindVisual, REASONS: REASONS };
@@ -139,9 +169,9 @@
     var words = res.words || String(sentence).trim().split(/\s+/);
     var links = res.links || [];
 
-    // 各語のカタカナ（語単位）
+    // 各語のカタカナ（文中での聞こえ方＝reduced。1語1表示でハイライト整合）
     var kana = words.map(function (w) {
-      try { return (window.Katakana && window.Katakana.wordToKatakana) ? window.Katakana.wordToKatakana(w) : ""; }
+      try { return (window.Katakana && window.Katakana.reduceTokenKana) ? window.Katakana.reduceTokenKana(w, false) : ""; }
       catch (e) { return ""; }
     });
 

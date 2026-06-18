@@ -197,7 +197,159 @@
     }).join("");
   }
 
-  window.Katakana = { toKatakana: toKatakana, wordToKatakana: wordToKatakana };
+  /* ============================================================
+     連結発音（つながった話し言葉）のカタカナ
+     - 単独語の発音(wordToKatakana)は丁寧形（could→クッド）になりがちだが、
+       文中ではアメリカ英語特有の弱化・脱促音・脱長音が起きる（could→クド）。
+     - ここでは 1語ずつ「脱日本語化」した token カタカナを作り（reduceTokenKana）、
+       文単位では弱形機能語の置換・短縮を行う（toKatakanaConnected / connectedTokens）。
+     - 語境界をまたぐ連結(∪)・脱落の結合は linking.js が tags/links を使って組み立てる。
+       （ここで Linking を呼ぶと相互再帰になるため呼ばない）
+     ============================================================ */
+
+  // 機能語の弱形（文中では内容語より弱く短く発音される）。小文字・記号除去後のキー。
+  // 値が "" のものは「文の連結表記では脱落」（冠詞 a など）。token 表記では括弧で薄く出す。
+  var WEAK_FORMS = {
+    a: "",        an: "アン",   the: "ザ",    to: "トゥ",   of: "アヴ",
+    "for": "ファ", and: "アン",  or: "ア",     your: "ヤ",   you: "ユー",
+    can: "クン",  at: "アト",   from: "フラム", as: "アズ",   but: "バッ",
+    that: "ザッ", them: "エム",  than: "ザン",  was: "ワズ",  were: "ワ",
+    are: "ア",    is: "イズ",   has: "ハズ",   have: "ハヴ",  had: "ハド",
+    "do": "ドゥ",  does: "ダズ",  he: "ヒ",      him: "イム",  his: "イズ",
+    she: "シ",    we: "ウィ",   our: "アワ",   us: "アス",   will: "ウル",
+    would: "ウド", could: "クド", should: "シュド", must: "マス", just: "ジャス",
+    "in": "イン", on: "オン",   am: "アム",    me: "ミ",     my: "マイ"
+  };
+
+  function cleanWord(w) { return String(w).toLowerCase().replace(/[^a-z']/g, ""); }
+
+  // 末尾の不要な促音(ッ)・長音(ー)を取り除いて、アメリカ英語の聞こえに近づける。
+  function deJapanize(kana, eng) {
+    if (!kana) return kana;
+    // (1) 語末が単一の破裂音(b d g k p t / ck)で終わる語は、最後のモーラ直前の
+    //     促音ッを取り除く（クッド→クド, チェック→チェク, ビッグ→ビグ）。
+    if (/(ck|[bdgkpt])$/.test(eng)) {
+      kana = kana.replace(/ッ(?=[ァ-ヴ][ャュョ]?ー?$)/, "");
+    }
+    // (2) 弱い -er/-or/-ar（あいまい母音＋R）で終わる多音節語は、末尾の長音ーを外す
+    //     （bigger ビガー→ビガ, teacher ティーチャー→ティーチャ, doctor ダクター→ダクタ）。
+    if (eng.length >= 4 && /[bcdfghjklmnpqrstvwxyz](er|or|ar)$/.test(eng)) {
+      kana = kana.replace(/ー$/, "");
+    }
+    return kana;
+  }
+
+  // 1語の「文中での聞こえ方」カタカナ（1:1 で語数を保つ＝ハイライト整合用）。
+  // forStr=true のとき、脱落する冠詞 a を空文字で返す（連結文字列用）。
+  function reduceTokenKana(word, forStr) {
+    var key = cleanWord(word);
+    if (!key) return "";
+    if (Object.prototype.hasOwnProperty.call(WEAK_FORMS, key)) {
+      var wf = WEAK_FORMS[key];
+      if (wf === "") return forStr ? "" : "（ア）"; // a：文連結では脱落、token表記は薄く
+      return wf;
+    }
+    return deJapanize(wordToKatakana(word), key);
+  }
+
+  // 文 → 語ごとの reduced カタカナ配列（英語トークンと1:1対応）。
+  function connectedTokens(text) {
+    if (!text) return [];
+    return String(text).trim().split(/\s+/).map(function (w) { return reduceTokenKana(w, false); });
+  }
+
+  /* ---------- 語境界のマージ（実際のアメリカ英語の連結発音）----------
+     linking.js が検出した規則(rule)に従い、前後の語のカタカナを実際に結合する。
+     - assim（同化）: d/t/s/z + you/your → ジュ/チュ/シュ など（could you→クッジュー）
+     - link （連結）: 子音終わり + 母音始まり → 1音にまとめる（check it→チェキッ）
+     - flap （境界フラップ）: 母音+t + 母音始まり → ラ行で弾く（get it→ゲリッ）
+     - drop （脱落）: t/d + 子音始まり → 破裂させず詰める（good bye→グッバイ）
+     戻り値 { prev, cur }（結合後の前語・現語カタカナ）。適用不可なら null。
+  */
+  var FINAL_CONS = { "ク": "k", "グ": "g", "ト": "t", "ド": "d", "ス": "s", "ズ": "z",
+    "プ": "p", "ブ": "b", "フ": "f", "ヴ": "v", "ム": "m", "ン": "n", "ル": "r" };
+  var LEAD_V = { "ア": 0, "イ": 1, "ウ": 2, "エ": 3, "オ": 4 };
+  var VOICED_S = { was: 1, is: 1, his: 1, has: 1, as: 1, does: 1, goes: 1, these: 1, those: 1, whose: 1 };
+  function combineCV(consLetter, vowelKana) {
+    var idx = LEAD_V[vowelKana]; var row = CV[consLetter];
+    if (!row || idx == null) return null;
+    return row[idx];
+  }
+  // 英語綴りの語末子音（連結で次の母音に渡す音）。ck→k など。
+  function engFinalCons(eng) {
+    if (/ck$/.test(eng)) return "k";
+    var ch = eng.slice(-1);
+    if (/[bcdfghjklmnpqrstvwxz]/.test(ch)) return ({ c: "k", q: "k", x: "k" })[ch] || ch;
+    return null;
+  }
+  // 前語カタカナの「語末子音・閉鎖の有無・子音を除いた本体」を求める。
+  // 辞書が get→ゲッ / what→ワッ のように閉鎖をッで持つ形にも対応。
+  function prevFinal(prevKana, prevEng) {
+    if (/ッ$/.test(prevKana)) return { cons: engFinalCons(prevEng), stop: true, core: prevKana.slice(0, -1) };
+    var tail = prevKana.slice(-1);
+    if (FINAL_CONS[tail]) {
+      var c = FINAL_CONS[tail];
+      return { cons: c, stop: /[ktpbdg]/.test(c), core: prevKana.slice(0, -1) };
+    }
+    return { cons: null, stop: false, core: prevKana };
+  }
+  function mergeBoundary(prevKana, prevEng, nextKana, nextEng, rule) {
+    prevEng = String(prevEng).replace(/[^a-z]/g, "");
+    nextEng = String(nextEng).replace(/[^a-z]/g, "");
+    var pf = prevFinal(prevKana, prevEng);
+    if (rule === "assim") {
+      var last = pf.cons || prevEng.slice(-1);     // d / t / s / z
+      if (last === "s" && VOICED_S[prevEng]) last = "z";
+      var isYour = /^your$/.test(nextEng);
+      var p = pf.core;
+      if ((last === "d" || last === "t") && !/ン$/.test(p)) p += "ッ"; // 破裂音は閉鎖（ッ）を残す
+      var head;
+      if (last === "t") head = isYour ? "チャ" : "チュー";         // t + y → /tʃ/
+      else if (last === "s") head = isYour ? "シャ" : "シュー";    // s + y → /ʃ/
+      else head = isYour ? "ジャ" : "ジュー";                      // d/z + y → /dʒ,ʒ/
+      return { prev: p, cur: head };
+    }
+    if (rule === "drop") {
+      var pd = pf.core;
+      if (pf.stop && /[ァ-ヴ]$/.test(pd) && !/[スズンッー]$/.test(pd)) pd += "ッ"; // 未開放の閉鎖
+      else if (pf.stop && /ッ$/.test(prevKana)) pd = prevKana;       // 既に閉鎖を持つ形はそのまま
+      return { prev: pd, cur: nextKana };
+    }
+    if (rule === "flap") {
+      var lv = nextKana.charAt(0);
+      if (LEAD_V[lv] == null) return null;
+      var sylF = combineCV("r", lv);                // 母音間 t/d は弾き音（ラ行）
+      if (!sylF) return null;
+      return { prev: pf.core, cur: sylF + nextKana.slice(1) };
+    }
+    if (rule === "link") {
+      var lv2 = nextKana.charAt(0);
+      if (!pf.cons || LEAD_V[lv2] == null) return null;
+      var syl = combineCV(pf.cons, lv2);
+      if (!syl) return null;
+      return { prev: pf.core, cur: syl + nextKana.slice(1) };
+    }
+    return null;
+  }
+
+  // 文 → 連結発音カタカナ。Linking が使えれば規則に基づく結合（実際のアメリカ英語）を返す。
+  // 使えない場合は弱化・脱促音/脱長音のみ反映したスペース区切りにフォールバック。
+  function toKatakanaConnected(text) {
+    if (!text) return "";
+    if (window.Linking && window.Linking.analyzeLinking) {
+      try { var r = window.Linking.analyzeLinking(text); if (r && typeof r.soundKata === "string") return r.soundKata; }
+      catch (e) {}
+    }
+    return String(text).trim().split(/\s+/).map(function (w) {
+      return reduceTokenKana(w, true);
+    }).filter(function (s) { return s !== ""; }).join(" ");
+  }
+
+  window.Katakana = {
+    toKatakana: toKatakana, wordToKatakana: wordToKatakana,
+    reduceTokenKana: reduceTokenKana, connectedTokens: connectedTokens,
+    toKatakanaConnected: toKatakanaConnected, mergeBoundary: mergeBoundary
+  };
 
   /* ---------- 画面：カタカナ変換ツール ---------- */
   function render() {
