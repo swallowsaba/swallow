@@ -14,11 +14,34 @@
   "use strict";
 
   // 公開CORSプロキシ（先頭から順に試す）。設定で自分のWorkerを先頭に追加可能。
-  // POST対応が必要なInnertubeはWorker推奨。GET専用プロキシはHTML/字幕本文取得に使う。
+  // wrap:"contents" は JSON で包んで返すプロキシ（allorigins /get 等）の取り出しキー。
+  // enc:false は URL を素のまま末尾に付けるタイプ（thingproxy）。
   var PROXIES = [
-    "https://corsproxy.io/?url=",
-    "https://api.allorigins.win/raw?url=",
-    "https://thingproxy.freeboard.io/fetch/"
+    { u: "https://api.codetabs.com/v1/proxy/?quest=", wrap: null, enc: true },
+    { u: "https://corsproxy.io/?url=", wrap: null, enc: true },
+    { u: "https://api.allorigins.win/raw?url=", wrap: null, enc: true },
+    { u: "https://api.allorigins.win/get?url=", wrap: "contents", enc: true },
+    { u: "https://thingproxy.freeboard.io/fetch/", wrap: null, enc: false }
+  ];
+  var DEFAULT_PROXY_STR = "https://api.codetabs.com/v1/proxy/?quest=";
+
+  // CORS許可済みの公開YouTube API（Worker不要でブラウザから直接字幕取得できる）。
+  // インスタンスは入れ替わるため複数を順に試す。
+  var PIPED = [
+    "https://pipedapi.kavin.rocks",
+    "https://pipedapi.adminforge.de",
+    "https://api.piped.private.coffee",
+    "https://pipedapi.leptons.xyz",
+    "https://pipedapi.reallyaweso.me",
+    "https://pipedapi-libre.kavin.rocks"
+  ];
+  var INVIDIOUS = [
+    "https://inv.nadeko.net",
+    "https://invidious.nerdvpn.de",
+    "https://yewtu.be",
+    "https://invidious.jing.rocks",
+    "https://inv.tux.pizza",
+    "https://invidious.privacyredirect.com"
   ];
 
   // InnertubeのAPIキー（YouTube公開の固定WEBキー。HTML取得不要で叩ける）
@@ -33,12 +56,22 @@
 
   function proxyList() {
     var p = (Storage.getState().profile.captionProxy || "").trim();
-    return p ? [p].concat(PROXIES) : PROXIES.slice();
+    var list = PROXIES.slice();
+    if (p) list = [{ u: p, wrap: null, enc: true }].concat(list); // 自前プロキシ(?url=)を最優先
+    return list;
   }
 
   // 自前Worker（POST対応・パススルー型）が設定されているか
   function customProxy() {
     return (Storage.getState().profile.captionProxy || "").trim();
+  }
+
+  // 自前Workerの「スマート字幕エンドポイント」URL（?videoId=...）。?url= を外したベースに付ける。
+  function smartWorkerUrl(videoId) {
+    var p = customProxy();
+    if (!p) return null;
+    var base = p.split("?")[0];                 // 例 https://x.workers.dev/?url= → https://x.workers.dev/
+    return base + "?videoId=" + encodeURIComponent(videoId) + "&lang=en";
   }
 
   function decodeEntities(s) {
@@ -47,16 +80,22 @@
     return ta.value;
   }
 
-  // 任意URLをGETでプロキシ経由取得（順に試す）
+  // 任意URLをGETでプロキシ経由取得（順に試す）。JSON包み(allorigins /get)も解す。
   function fetchTextViaProxies(url) {
     var proxies = proxyList();
     return new Promise(function (resolve, reject) {
       (function attempt(i) {
         if (i >= proxies.length) { reject(new Error("プロキシ経由の取得に失敗")); return; }
-        var full = proxies[i] + encodeURIComponent(url);
+        var px = proxies[i];
+        var full = px.u + (px.enc === false ? url : encodeURIComponent(url));
         fetch(full, { method: "GET" })
           .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-          .then(function (txt) { if (txt && txt.length > 0) resolve(txt); else attempt(i + 1); })
+          .then(function (txt) {
+            if (px.wrap) {
+              try { var j = JSON.parse(txt); txt = j[px.wrap] || ""; } catch (e) { txt = ""; }
+            }
+            if (txt && txt.length > 0) resolve(txt); else attempt(i + 1);
+          })
           .catch(function () { attempt(i + 1); });
       })(0);
     });
@@ -234,17 +273,106 @@
     });
   }
 
-  // メイン：videoId から字幕を取得（A→B→C）
+  // 英語・手動字幕を優先するスコア（小さいほど優先）
+  function subScore(code, auto) {
+    var c = String(code || "").toLowerCase();
+    var isEn = (c.indexOf("en") === 0) ? 0 : 1;
+    return isEn * 2 + (auto ? 1 : 0);
+  }
+  // 候補リストを順に試し、最初に成功した結果を返す
+  function tryList(list, fn) {
+    return new Promise(function (resolve, reject) {
+      (function next(i) {
+        if (i >= list.length) { reject(new Error("全インスタンス失敗")); return; }
+        Promise.resolve().then(function () { return fn(list[i]); })
+          .then(resolve)
+          .catch(function () { next(i + 1); });
+      })(0);
+    });
+  }
+  function vttToCues(vtt) {
+    var cues = (window.Subtitle && window.Subtitle.parse) ? window.Subtitle.parse(vtt) : [];
+    // 自動生成VTTは同じ行が転がって重複しがちなので、連続重複を除去
+    var out = [];
+    cues.forEach(function (c) {
+      var last = out[out.length - 1];
+      if (last && last.text === c.text) { last.end = c.end; return; }
+      out.push({ index: out.length + 1, start: c.start || 0, end: (c.end != null ? c.end : (c.start || 0) + 2), text: c.text });
+    });
+    return out;
+  }
+
+  // Piped（CORS可）：/streams/{id} の subtitles[] から英語字幕を取得
+  function tryPiped(videoId) {
+    return tryList(PIPED, function (base) {
+      return fetch(base + "/streams/" + videoId, { headers: { "Accept": "application/json" } })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(function (d) {
+          var subs = (d && d.subtitles) || [];
+          if (!subs.length) throw new Error("no subs");
+          var pick = subs.slice().sort(function (a, b) { return subScore(a.code, a.autoGenerated) - subScore(b.code, b.autoGenerated); })[0];
+          if (!pick || !pick.url) throw new Error("no url");
+          return fetch(pick.url).then(function (r) { return r.text(); }).then(function (vtt) {
+            var cues = vttToCues(vtt);
+            if (!cues.length) throw new Error("empty");
+            return cues;
+          });
+        });
+    });
+  }
+
+  // Invidious（CORS可）：/api/v1/captions/{id} から英語字幕を取得
+  function tryInvidious(videoId) {
+    return tryList(INVIDIOUS, function (base) {
+      return fetch(base + "/api/v1/captions/" + videoId, { headers: { "Accept": "application/json" } })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(function (d) {
+          var caps = (d && d.captions) || [];
+          if (!caps.length) throw new Error("no caps");
+          var pick = caps.slice().sort(function (a, b) { return subScore(a.languageCode || a.label, /auto/i.test(a.label || "")) - subScore(b.languageCode || b.label, /auto/i.test(b.label || "")); })[0];
+          var url = pick.url || ("/api/v1/captions/" + videoId + "?label=" + encodeURIComponent(pick.label || "English"));
+          if (url.charAt(0) === "/") url = base + url;
+          return fetch(url).then(function (r) { return r.text(); }).then(function (vtt) {
+            var cues = vttToCues(vtt);
+            if (!cues.length) throw new Error("empty");
+            return cues;
+          });
+        });
+    });
+  }
+
+  // 0) スマートWorker：?videoId= で cues JSON を直接返す（最も確実）
+  function trySmartWorker(videoId) {
+    var url = smartWorkerUrl(videoId);
+    if (!url) return Promise.reject(new Error("no worker"));
+    return fetch(url, { method: "GET" }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (d) {
+      if (d && d.ok && d.cues && d.cues.length) {
+        return d.cues.map(function (c, i) {
+          return { index: i + 1, start: c.start || 0, end: (c.end != null ? c.end : (c.start || 0) + 2), text: c.text || "" };
+        }).filter(function (c) { return c.text; });
+      }
+      throw new Error((d && d.error) || "Workerが字幕を返しませんでした");
+    });
+  }
+
+  // メイン：videoId から字幕を取得。
+  // ゼロ設定で動く公開API(Piped/Invidious)を最優先 → 自前Worker → プロキシ各種。
   function fetchCaptions(videoId) {
     if (!videoId) return Promise.reject(new Error("動画IDが不正です"));
-    return tryInnertube(videoId)
+    return trySmartWorker(videoId)
+      .catch(function () { return tryPiped(videoId); })
+      .catch(function () { return tryInvidious(videoId); })
+      .catch(function () { return tryInnertube(videoId); })
       .catch(function () { return tryHtml(videoId); })
       .catch(function () { return tryTimedText(videoId); });
   }
 
   window.Captions = {
     PROXIES: PROXIES,
-    DEFAULT_PROXY: PROXIES[0],
+    DEFAULT_PROXY: DEFAULT_PROXY_STR,
     fetchCaptions: fetchCaptions,
     parseTimedTextXML: parseTimedTextXML,
     parseJson3: parseJson3,

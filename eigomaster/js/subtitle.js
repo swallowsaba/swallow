@@ -34,8 +34,8 @@
       var timeLine = lines[0];
       if (!TIME_LINE.test(timeLine)) return; // 時刻行が無いブロックは無視
       var m = timeLine.split("-->");
-      var start = timeToSeconds(m[0]);
-      var end = timeToSeconds(m[1].replace(/\s.*$/, "")); // 末尾の位置指定を除去
+      var start = timeToSeconds(m[0].trim());
+      var end = timeToSeconds(m[1].trim().replace(/\s.*$/, "")); // 時刻のみ（align/position等を除去）
       var body = lines.slice(1).join(" ").replace(/<[^>]+>/g, "").trim(); // タグ除去
       if (body) cues.push({ index: cues.length + 1, start: start, end: end, text: body });
     });

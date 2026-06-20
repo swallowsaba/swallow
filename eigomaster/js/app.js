@@ -926,7 +926,7 @@
         '<div class="setting-group">' +
           '<p class="section-title">動画字幕の自動取得</p>' +
           '<div class="card">' +
-            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">字幕の自動取得に使うCORSプロキシです（音声には不要）。空欄でも公開プロキシで試しますが、近年のYouTube仕様変更で<strong>失敗しやすく</strong>なっています。<strong>自動生成字幕（英語(自動生成)）も含めて安定して取得</strong>するには、無料のCloudflare Workerを立ててそのURLをここに入れてください。下に手順とコードがあります。</p>' +
+            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">字幕の自動取得は、まず<strong>公開のYouTube字幕API（Piped/Invidious・設定不要）</strong>を試すので、字幕付きの多くの動画はこの欄が空でも取得できます。ただし混雑時や<strong>自動生成字幕のみ</strong>の動画は失敗することがあります。<strong>どんな動画でも確実に</strong>取りたい場合は、無料のCloudflare Workerを立ててそのURLをここに入れてください（下に手順とコードがあります）。設定すると最優先で使われます。</p>' +
             '<input class="input" id="proxy-input" type="text" placeholder="' + EM.escapeHtml(window.Captions ? window.Captions.DEFAULT_PROXY : "") + '" value="' + EM.escapeHtml(state.profile.captionProxy || "") + '" />' +
             '<p class="setting-row__hint mt-4" id="proxy-status"></p>' +
             '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr 1fr">' +
@@ -1350,7 +1350,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v55";
+  var APP_VERSION = "v57";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;
