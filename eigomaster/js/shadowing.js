@@ -337,8 +337,9 @@
       '<p class="text-soft mt-4" id="cc-status" style="font-size:var(--fs-small)"></p>' +
 
       '<div class="notice notice--info mt-4"><span class="notice__icon">i</span><span>' +
-        '<strong>字幕が無い動画・Netflix等</strong>でも練習できます。下の<strong>「マイクで字幕を作る（ライブ文字起こし）」</strong>を使うと、端末で動画を再生しながら音声を聞き取って字幕を自動生成します。' +
+        '<strong>字幕が無い動画・Netflix等</strong>でも練習できます。下の<strong>「🤖 AIで字幕を生成（マイク不要）」</strong>なら、タブ/画面の音声から自動で字幕を作れます（端末で動画を再生するだけ・マイク不要）。マイクで作る方式も併設しています。' +
       '</span></div>' +
+      '<button class="btn btn--primary btn--block mt-4" id="ai-cc" type="button">🤖 AIで字幕を生成（マイク不要）</button>' +
       '<button class="btn btn--ghost btn--block mt-4" id="live-cc" type="button">🎙 マイクで字幕を作る（ライブ文字起こし）</button>' +
 
       '<details class="cc-manual mt-4"' + (sub ? " open" : "") + '>' +
@@ -355,6 +356,7 @@
 
     document.getElementById("form-back").addEventListener("click", function (e) { e.preventDefault(); drawSetup(); });
     document.getElementById("fetch-cc").addEventListener("click", autoFetch);
+    document.getElementById("ai-cc").addEventListener("click", function () { startAICaption(title); });
     document.getElementById("live-cc").addEventListener("click", function () { startLiveCaption(title); });
     document.getElementById("silent-go").addEventListener("click", function () {
       var subRaw = document.getElementById("sub-in").value || "";
@@ -391,6 +393,135 @@
   function openManual() {
     var d = document.querySelector(".cc-manual");
     if (d) d.open = true;
+  }
+
+  // ====== マイク不要：AIで字幕を自動生成 ======
+  // 主経路：UI に入力した URL から音声を取得して Whisper で文字起こし。
+  //  - YouTube: 公開API(Piped/Invidious)の音声ストリームURL(CORS可)を取得 → 文字起こし
+  //  - 動画ファイルURL(.mp4等): 直接取得 → 文字起こし
+  // 取得不可(Netflix等)の場合のみ、タブ/画面音声キャプチャに切替。
+  function startAICaption(title) {
+    if (!window.AICaption || !window.AICaption.isSupported()) {
+      EM.showToast("この端末ではAI字幕生成に対応していません（Chrome系の最新版・HTTPS環境を推奨）", true);
+      return;
+    }
+    var url = (document.getElementById("yt-url").value || "").trim();
+    var src = detectSource(url);
+    var canFromUrl = (src.type === "youtube" || src.type === "file");
+
+    var overlay = document.createElement("div");
+    overlay.className = "live-cc-overlay";
+    overlay.innerHTML =
+      '<div class="live-cc-card">' +
+        '<p class="live-cc__title">🤖 AIで字幕を生成（マイク不要）</p>' +
+        '<p class="live-cc__hint">ブラウザ内のAI音声認識で字幕を作ります。音声はどこにも送信されません。初回はAIモデル（約40MB）の読み込みに数十秒かかります（次回以降は不要）。英語の動画に対応。</p>' +
+        (url
+          ? '<p class="ai-cc__url">対象URL：<span>' + EM.escapeHtml(url) + "</span></p>"
+          : '<div class="notice notice--warn"><span class="notice__icon">!</span><span>上の「動画URL」欄にYouTubeまたは動画ファイル(.mp4等)のURLを入力してから実行してください。</span></div>') +
+        '<div class="ai-cc__choices">' +
+          (canFromUrl
+            ? '<button class="btn btn--primary btn--block" id="ai-from-url" type="button">▶ このURLから字幕を生成</button>'
+            : (url ? '<div class="notice notice--info"><span class="notice__icon">i</span><span>このURL（' + EM.escapeHtml(src.label || "外部") + '）からは音声を直接取得できません。下の「タブ/画面の音声から生成」をお使いください（動画を再生中のタブを共有）。</span></div>' : "")) +
+          '<button class="btn ' + (canFromUrl ? "btn--ghost" : "btn--primary") + ' btn--block mt-4" id="ai-from-tab" type="button">🖥 タブ/画面の音声から生成（Netflix等もOK・マイク不要）</button>' +
+        '</div>' +
+        (src.type === "external" && url ? '<p class="mt-4" style="font-size:13px"><a href="' + EM.escapeHtml(url) + '" target="_blank" rel="noopener">▶ 動画を別タブで開く</a></p>' : "") +
+        '<div class="ai-cc__status mt-4" id="ai-status" style="display:none">' +
+          '<p class="live-cc__interim" id="ai-msg">準備中…</p>' +
+          '<div class="ai-cc__bar"><div class="ai-cc__bar-fill" id="ai-bar"></div></div>' +
+        '</div>' +
+        '<div class="live-cc__btns mt-4">' +
+          '<button class="btn btn--danger" id="ai-stop" type="button" style="display:none">■ 停止して文字起こし</button>' +
+          '<button class="btn btn--ghost" id="ai-cancel" type="button">閉じる</button>' +
+        '</div>' +
+      "</div>";
+    document.body.appendChild(overlay);
+
+    var msg = overlay.querySelector("#ai-msg");
+    var bar = overlay.querySelector("#ai-bar");
+    var statusBox = overlay.querySelector("#ai-status");
+    var stopBtn = overlay.querySelector("#ai-stop");
+    var cancelBtn = overlay.querySelector("#ai-cancel");
+    var fromUrl = overlay.querySelector("#ai-from-url");
+    var fromTab = overlay.querySelector("#ai-from-tab");
+    var choices = overlay.querySelector(".ai-cc__choices");
+    var session = null;
+    var closed = false;
+
+    function setMsg(t) { if (msg) msg.textContent = t; }
+    function setBar(r) { if (bar) bar.style.width = Math.round(Math.max(0, Math.min(1, r)) * 100) + "%"; }
+    function showStatus() { if (statusBox) statusBox.style.display = "block"; }
+    function hideChoices() { if (choices) choices.style.display = "none"; }
+    function onProgress(p) {
+      if (!p) return;
+      if (p.phase === "model") { setMsg("AIモデルを準備中… " + Math.round((p.ratio || 0) * 100) + "%"); setBar((p.ratio || 0) * 0.5); }
+      else if (p.phase === "fetch") { setMsg("音声を取得中…"); setBar(0.3); }
+      else if (p.phase === "decode") { setMsg("音声を解析中…"); setBar(0.55); }
+      else if (p.phase === "transcribe") { setMsg(p.ratio >= 1 ? "字幕を整えています…" : "文字起こし中…（長い動画ほど時間がかかります）"); setBar(0.6 + (p.ratio || 0) * 0.38); }
+    }
+    function finishWithCues(cues) {
+      if (closed) return;
+      if (!cues || !cues.length) { EM.showToast("字幕を生成できませんでした。音声が小さい/無音、または対応外の可能性があります。", true); cleanup(); return; }
+      document.getElementById("sub-in").value = cuesToSRT(cues);
+      openManual();
+      var st = document.getElementById("cc-status");
+      if (st) { st.style.color = "var(--c-good)"; st.textContent = "✓ AIで " + cues.length + " 行の字幕を生成しました。下の保存・練習へ。"; }
+      EM.showToast("AIで字幕を生成しました（" + cues.length + " 行）");
+      cleanup();
+    }
+    function fail(e) {
+      if (closed) return;
+      setBar(0);
+      setMsg("");
+      var m = (e && e.message) ? e.message : "AI字幕生成に失敗しました";
+      if (e && /CORS|HTTP|取得/.test(m) && fromTab) m = "URLから音声を取得できませんでした（混雑/制限の可能性）。『タブ/画面の音声から生成』をお試しください。";
+      EM.showToast(m, true);
+      if (choices) choices.style.display = "";
+      if (stopBtn) stopBtn.style.display = "none";
+    }
+    function cleanup() {
+      closed = true;
+      try { if (session && session.cancel) session.cancel(); } catch (e) {}
+      if (overlay.parentNode) document.body.removeChild(overlay);
+    }
+
+    // ① UIのURLから生成
+    if (fromUrl) fromUrl.addEventListener("click", function () {
+      hideChoices(); showStatus(); setMsg("音声URLを準備中…"); setBar(0.1);
+      var audioP;
+      if (src.type === "file") {
+        audioP = Promise.resolve(src.fileUrl || url);
+      } else { // youtube
+        if (!window.Captions || !window.Captions.getAudioStreamUrl) { fail(new Error("音声取得モジュールが見つかりません")); return; }
+        audioP = window.Captions.getAudioStreamUrl(src.id).then(function (a) { return a.url; });
+      }
+      audioP.then(function (audioUrl) {
+        return window.AICaption.transcribeFromUrl(audioUrl, { model: "fast", onProgress: onProgress });
+      }).then(finishWithCues).catch(fail);
+    });
+
+    // ② タブ/画面音声から生成（フォールバック）
+    if (fromTab) fromTab.addEventListener("click", function () {
+      hideChoices(); showStatus(); setMsg("画面/タブ共有を許可してください…"); setBar(0.05);
+      window.AICaption.startCaptureSession({
+        model: "fast",
+        onTick: function (sec) { if (stopBtn.style.display !== "none") setMsg("録音中… " + sec.toFixed(0) + " 秒（動画を再生して、終わったら停止）"); },
+        onProgress: onProgress,
+        onAutoEnd: function () { if (stopBtn.style.display !== "none") stopBtn.click(); }
+      }).then(function (sess) {
+        session = sess;
+        setMsg("録音中… 動画を再生してください。必要な範囲を再生したら「停止して文字起こし」を押します。");
+        stopBtn.style.display = "";
+      }).catch(fail);
+    });
+
+    stopBtn.addEventListener("click", function () {
+      if (!session) return;
+      stopBtn.style.display = "none";
+      setMsg("録音を停止しました。文字起こしを開始します…");
+      session.stop().then(finishWithCues).catch(fail);
+    });
+
+    cancelBtn.addEventListener("click", cleanup);
   }
 
   // ライブ文字起こし：マイクで音声を聞き取り、字幕を生成して textarea に書き込む

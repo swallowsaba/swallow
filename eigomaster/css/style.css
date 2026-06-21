@@ -1723,6 +1723,15 @@ button, .btn { touch-action: manipulation; }
 .live-cc__btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .live-cc__btns #live-cancel { grid-column: 1 / -1; }
 
+/* v58 AIで字幕生成（マイク不要）の進捗UI */
+.btn--sm { padding: 6px 12px; font-size: 13px; }
+.ai-cc__choices { margin-top: 4px; }
+.ai-cc__status { background: var(--c-surface-2); border-radius: 12px; padding: 12px; }
+.ai-cc__bar { height: 8px; background: var(--c-line); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+.ai-cc__bar-fill { height: 100%; width: 0%; background: var(--c-accent); border-radius: 999px; transition: width .3s ease; }
+.ai-cc__url { font-size: 12px; color: var(--c-ink-soft); margin-bottom: 12px; word-break: break-all; }
+.ai-cc__url span { color: var(--c-ink); }
+
 /* v34 外部サイト(Netflix等)の練習画面 */
 .ext-hero {
   background: var(--c-surface); border: 2px solid var(--c-line); border-bottom-width: 3px;

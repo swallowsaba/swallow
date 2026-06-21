@@ -80,6 +80,16 @@
     return ta.value;
   }
 
+  // タイムアウト付き fetch（無応答で固まらないように）
+  function fetchT(url, opts, ms) {
+    opts = opts || {}; ms = ms || 12000;
+    if (typeof AbortController === "undefined") return fetch(url, opts);
+    var ac = new AbortController();
+    var t = setTimeout(function () { ac.abort(); }, ms);
+    opts.signal = ac.signal;
+    return fetch(url, opts).then(function (r) { clearTimeout(t); return r; }, function (e) { clearTimeout(t); throw e; });
+  }
+
   // 任意URLをGETでプロキシ経由取得（順に試す）。JSON包み(allorigins /get)も解す。
   function fetchTextViaProxies(url) {
     var proxies = proxyList();
@@ -305,7 +315,7 @@
   // Piped（CORS可）：/streams/{id} の subtitles[] から英語字幕を取得
   function tryPiped(videoId) {
     return tryList(PIPED, function (base) {
-      return fetch(base + "/streams/" + videoId, { headers: { "Accept": "application/json" } })
+      return fetchT(base + "/streams/" + videoId, { headers: { "Accept": "application/json" } })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then(function (d) {
           var subs = (d && d.subtitles) || [];
@@ -324,7 +334,7 @@
   // Invidious（CORS可）：/api/v1/captions/{id} から英語字幕を取得
   function tryInvidious(videoId) {
     return tryList(INVIDIOUS, function (base) {
-      return fetch(base + "/api/v1/captions/" + videoId, { headers: { "Accept": "application/json" } })
+      return fetchT(base + "/api/v1/captions/" + videoId, { headers: { "Accept": "application/json" } })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then(function (d) {
           var caps = (d && d.captions) || [];
@@ -339,6 +349,39 @@
           });
         });
     });
+  }
+
+  // ---- 音声ストリームURL（AI字幕生成用。CORS可のプロキシ済みURLを返す）----
+  // Piped: audioStreams[] の最小ビットレート（小さく速い）を優先。
+  function tryPipedAudio(videoId) {
+    return tryList(PIPED, function (base) {
+      return fetchT(base + "/streams/" + videoId, { headers: { "Accept": "application/json" } })
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(function (d) {
+          var a = (d && d.audioStreams) || [];
+          if (!a.length) throw new Error("no audio");
+          a = a.slice().sort(function (x, y) { return (x.bitrate || 1e9) - (y.bitrate || 1e9); });
+          var pick = a[0];
+          if (!pick || !pick.url) throw new Error("no url");
+          return { url: pick.url, mime: pick.mimeType || "", bitrate: pick.bitrate || 0, source: "piped" };
+        });
+    });
+  }
+  // Invidious: /latest_version?...&local=true でInvidious経由プロキシ（CORS可）。itag140=m4a(128k)。
+  function tryInvidiousAudio(videoId) {
+    return tryList(INVIDIOUS, function (base) {
+      var url = base + "/latest_version?id=" + encodeURIComponent(videoId) + "&itag=140&local=true";
+      // 実体取得可能か軽く確認（HEAD不可な実装もあるのでGETのRangeで先頭だけ）
+      return fetchT(url, { method: "GET", headers: { "Range": "bytes=0-1" } }, 12000).then(function (r) {
+        if (!(r.ok || r.status === 206)) throw new Error("HTTP " + r.status);
+        return { url: url, mime: "audio/mp4", bitrate: 128000, source: "invidious" };
+      });
+    });
+  }
+  // YouTube動画IDから、ブラウザでfetch可能な音声URLを返す
+  function getAudioStreamUrl(videoId) {
+    if (!videoId) return Promise.reject(new Error("動画IDが不正です"));
+    return tryPipedAudio(videoId).catch(function () { return tryInvidiousAudio(videoId); });
   }
 
   // 0) スマートWorker：?videoId= で cues JSON を直接返す（最も確実）
@@ -374,6 +417,7 @@
     PROXIES: PROXIES,
     DEFAULT_PROXY: DEFAULT_PROXY_STR,
     fetchCaptions: fetchCaptions,
+    getAudioStreamUrl: getAudioStreamUrl,
     parseTimedTextXML: parseTimedTextXML,
     parseJson3: parseJson3,
     extractPlayerResponse: extractPlayerResponse,

@@ -9,7 +9,7 @@
    ============================================================ */
 
 // 更新のたびに上げる。これで古いキャッシュは確実に破棄される。
-var CACHE_VERSION = "eigomaster-v57";
+var CACHE_VERSION = "eigomaster-v60";
 
 // 事前キャッシュ（オフライン初期動作用。失敗しても全体は止めない）
 var APP_SHELL = [
@@ -19,7 +19,7 @@ var APP_SHELL = [
   "./js/linking.js", "./js/subtitle.js", "./js/captions.js", "./js/vocab.js",
   "./js/wordbook.js", "./js/idioms.js", "./js/shadowing.js", "./js/pronunciation.js",
   "./js/phonics.js", "./js/grammar.js", "./js/reading.js", "./js/listening.js",
-  "./js/diagnosis.js",
+  "./js/diagnosis.js", "./js/aicaption.js",
   "./data/words.js", "./data/grammar.js", "./data/phonics.js", "./data/linking_rules.js",
   "./data/pron_dict.js", "./data/diagnosis.js", "./data/reading.js", "./data/idioms.js",
   "./data/listening.js", "./data/worker_code.js"
