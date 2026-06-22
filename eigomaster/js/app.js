@@ -933,8 +933,9 @@
         '<div class="setting-group">' +
           '<p class="section-title">動画字幕の自動取得</p>' +
           '<div class="card">' +
-            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">字幕の自動取得は、まず<strong>公開のYouTube字幕API（Piped/Invidious・設定不要）</strong>を試すので、字幕付きの多くの動画はこの欄が空でも取得できます。ただし混雑時や<strong>自動生成字幕のみ</strong>の動画は失敗することがあります。<strong>どんな動画でも確実に</strong>取りたい場合は、無料のCloudflare Workerを立ててそのURLをここに入れてください（下に手順とコードがあります）。設定すると最優先で使われます。</p>' +
-            '<input class="input" id="proxy-input" type="text" placeholder="' + EM.escapeHtml(window.Captions ? window.Captions.DEFAULT_PROXY : "") + '" value="' + EM.escapeHtml(state.profile.captionProxy || "") + '" />' +
+            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">字幕の自動取得は、まず<strong>公開のYouTube字幕API（設定不要）</strong>を試します。ただし公開サーバーは混雑・停止が多く、<strong>現在は失敗しがち</strong>です。<strong>どんな動画でも確実に</strong>取りたい場合は、無料の<strong>Cloudflare Worker</strong>を立てて、その<strong>WorkerのURL</strong>を下の欄に入れてください（下に手順とコード）。設定すると最優先で使われ、字幕もAI音声も確実になります。</p>' +
+            '<label class="field__label" for="proxy-input">あなたのWorkerのURL（動画URLではありません）</label>' +
+            '<input class="input" id="proxy-input" type="text" placeholder="https://あなたの名前.workers.dev/" value="' + EM.escapeHtml(state.profile.captionProxy || "") + '" />' +
             '<p class="setting-row__hint mt-4" id="proxy-status"></p>' +
             '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr 1fr">' +
               '<button class="btn btn--ghost" id="proxy-save" type="button">保存</button>' +
@@ -1117,32 +1118,50 @@
       });
     }
 
-    // 字幕取得プロキシ
+    // 字幕取得プロキシ / 自前Worker
+    function looksLikeVideoUrl(v) { return /youtube\.com|youtu\.be|netflix\.com|\/watch\?v=/i.test(v); }
+    function validWorker(v) { return /^https:\/\//i.test(v) && !looksLikeVideoUrl(v); }
+    function workerInputError(st) {
+      if (st) st.innerHTML = '<span style="color:var(--danger,#c62828)">⚠ ここには<strong>動画URLではなく</strong>、あなたが作った<strong>Cloudflare WorkerのURL</strong>（例 <code>https://あなたの名前.workers.dev/</code>）を入れてください。下の「Cloudflare Workerの作り方」を参照。</span>';
+      EM.showToast("動画URLではなく、WorkerのURLを入れてください", true);
+    }
     bindClick("proxy-save", function () {
       var v = document.getElementById("proxy-input").value.trim();
+      var st = document.getElementById("proxy-status");
+      if (v && !validWorker(v)) { workerInputError(st); return; }
       Storage.update(function (s) { s.profile.captionProxy = v || null; return s; });
-      EM.showToast("プロキシを保存しました");
+      EM.showToast(v ? "WorkerのURLを保存しました" : "空にしました（公開サーバーを使用）");
+      if (st) st.innerHTML = v ? '<span style="color:var(--ok,#2e7d32)">保存しました。「接続テスト」で動作確認できます。</span>' : "";
     });
     bindClick("proxy-reset", function () {
       Storage.update(function (s) { s.profile.captionProxy = null; return s; });
       var el = document.getElementById("proxy-input"); if (el) el.value = "";
       EM.showToast("既定に戻しました");
     });
-    // 接続テスト：入力中のプロキシで既知の動画から字幕が取れるか試す
+    // 接続テスト：Workerが設定されていればスマートエンドポイントを直接叩いて明確に判定する
     bindClick("proxy-test", function () {
       var st = document.getElementById("proxy-status");
       var input = document.getElementById("proxy-input");
       var v = (input ? input.value.trim() : "");
-      // 入力値を一時保存して試す（保存前でもテスト可能に）
+      if (v && !validWorker(v)) { workerInputError(st); return; }
       Storage.update(function (s) { s.profile.captionProxy = v || null; return s; });
       if (st) st.innerHTML = "テスト中… 数秒お待ちください。";
-      // 字幕が確実にある公開動画（YouTube公式の字幕付きサンプル）
-      window.Captions.fetchCaptions("PNLHxR4EtYs").then(function (cues) {
-        if (st) st.innerHTML = '<span style="color:var(--ok,#2e7d32)">✅ 成功：' + cues.length + ' 行の字幕を取得できました。「保存」を押せば設定完了です。</span>';
-      }).catch(function () {
-        // サンプルが取れなくても他の動画で取れる場合があるため文言は穏当に
-        if (st) st.innerHTML = '<span style="color:var(--danger,#c62828)">⚠ このプロキシでは取得できませんでした。URLの末尾が <code>/?url=</code> で終わっているか、Workerが正しくDeployされているかご確認ください。公開プロキシ（空欄）でも動画によっては取得できます。</span>';
-      });
+      var SAMPLE = "PNLHxR4EtYs";
+      function ok(n) { if (st) st.innerHTML = '<span style="color:var(--ok,#2e7d32)">✅ 成功：' + n + ' 行の字幕を取得できました。「保存」で設定完了です。</span>'; }
+      function ngWorker(msg) { if (st) st.innerHTML = '<span style="color:var(--danger,#c62828)">⚠ Workerに接続できましたが字幕を返しませんでした（' + EM.escapeHtml(msg || "") + "）。コードが最新か、Deployできているかご確認ください。</span>"; }
+      function ngPublic() { if (st) st.innerHTML = '<span style="color:var(--danger,#c62828)">⚠ 取得できませんでした。<strong>公開サーバーは現在ほぼ利用できません</strong>。確実に使うには下の手順で<strong>無料のCloudflare Worker</strong>を立て、そのURL（<code>https://xxx.workers.dev/</code>）をこの欄に入れてください。</span>'; }
+      if (v) {
+        // Workerのスマート字幕エンドポイントを直接テスト
+        var base = v.split("?")[0];
+        fetch(base + "?videoId=" + SAMPLE + "&lang=en").then(function (r) { return r.json(); }).then(function (d) {
+          if (d && d.ok && d.cues && d.cues.length) { ok(d.cues.length); }
+          else { ngWorker(d && d.error); }
+        }).catch(function (e) {
+          ngWorker("接続失敗：URLが正しいか（末尾は / でOK）、Deploy済みかをご確認ください");
+        });
+      } else {
+        window.Captions.fetchCaptions(SAMPLE).then(function (cues) { ok(cues.length); }).catch(ngPublic);
+      }
     });
     // Workerコードをクリップボードへ
     bindClick("proxy-copy-code", function () {
@@ -1357,7 +1376,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v62";
+  var APP_VERSION = "v63";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;

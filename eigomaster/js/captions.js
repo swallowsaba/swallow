@@ -54,23 +54,28 @@
     { clientName: "WEB", clientVersion: "2.20250101.00.00" }
   ];
 
-  function proxyList() {
+  // 自前Workerのベース（末尾の ?url= 等を除いた https://xxx.workers.dev/ 部分）
+  function workerBase() {
     var p = (Storage.getState().profile.captionProxy || "").trim();
+    if (!p) return null;
+    return p.split("?")[0];
+  }
+  function proxyList() {
+    var base = workerBase();
     var list = PROXIES.slice();
-    if (p) list = [{ u: p, wrap: null, enc: true }].concat(list); // 自前プロキシ(?url=)を最優先
+    if (base) list = [{ u: base + "?url=", wrap: null, enc: true }].concat(list); // 自前Worker(パススルー)を最優先
     return list;
   }
 
-  // 自前Worker（POST対応・パススルー型）が設定されているか
+  // 自前Workerが設定されているか
   function customProxy() {
     return (Storage.getState().profile.captionProxy || "").trim();
   }
 
-  // 自前Workerの「スマート字幕エンドポイント」URL（?videoId=...）。?url= を外したベースに付ける。
+  // 自前Workerの「スマート字幕エンドポイント」URL（?videoId=...）。
   function smartWorkerUrl(videoId) {
-    var p = customProxy();
-    if (!p) return null;
-    var base = p.split("?")[0];                 // 例 https://x.workers.dev/?url= → https://x.workers.dev/
+    var base = workerBase();
+    if (!base) return null;
     return base + "?videoId=" + encodeURIComponent(videoId) + "&lang=en";
   }
 
@@ -380,14 +385,13 @@
   }
   // 自前Worker：?audio=ID で音声URLを取得し、googlevideoはCORS無しのため ?url= パススルー経由で取得する形に。
   function tryWorkerAudio(videoId) {
-    var p = customProxy();
-    if (!p) return Promise.reject(new Error("no worker"));
-    var base = p.split("?")[0];
+    var base = workerBase();
+    if (!base) return Promise.reject(new Error("no worker"));
     return fetchT(base + "?audio=" + encodeURIComponent(videoId), {}, 15000)
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (d) {
         if (d && d.ok && d.url) {
-          return { url: p + encodeURIComponent(d.url), mime: d.mime || "", bitrate: d.bitrate || 0, source: "worker" };
+          return { url: base + "?url=" + encodeURIComponent(d.url), mime: d.mime || "", bitrate: d.bitrate || 0, source: "worker" };
         }
         throw new Error((d && d.error) || "worker no audio");
       });
