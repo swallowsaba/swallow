@@ -553,7 +553,14 @@
   };
 
   // ナビゲーション（再描画）
-  EM.navigate = function () { navigate(); };
+  EM.navigate = function (hash) {
+    if (hash && typeof hash === "string" && hash.charAt(0) === "#") {
+      if (location.hash === hash) navigate();   // 同じ画面なら再描画
+      else location.hash = hash;                // 変更 → hashchange で navigate()
+    } else {
+      navigate();
+    }
+  };
 
   // ストリークバッジ更新
   function refreshStreakBadge() {
@@ -1350,7 +1357,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v60";
+  var APP_VERSION = "v62";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;

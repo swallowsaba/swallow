@@ -328,6 +328,16 @@
     root().innerHTML =
       '<a class="back-link" id="form-back" href="#/video">‹ 一覧へ戻る</a>' +
       '<p class="section-title">' + (editing ? "動画を編集" : (quickOnly ? "すぐ練習" : "動画を追加")) + "</p>" +
+      (location.protocol === "file:" ?
+        '<div class="notice notice--warn"><span class="notice__icon">!</span><span>' +
+          '<strong>重要：いまアプリを「ファイル(file://)」として開いています。</strong>この状態ではブラウザの制限で<strong>字幕の自動取得もAI生成もできません</strong>（外部通信が全てブロックされます）。<br>' +
+          '次のいずれかで <strong>http(s) として開く</strong>と動きます：<br>' +
+          '① <strong>GitHub Pages 等にアップ</strong>して公開URLで開く（おすすめ）。<br>' +
+          '② このフォルダで簡易サーバを起動：<br>' +
+          '&nbsp;&nbsp;・Python: <code>python -m http.server 8000</code> → <code>http://localhost:8000/</code> を開く<br>' +
+          '&nbsp;&nbsp;・Node: <code>npx serve</code> / VS Codeなら拡張「Live Server」。<br>' +
+          '※ 貼り付けでの字幕登録とローカル練習は file:// でも使えます。' +
+        '</span></div>' : "") +
       (quickOnly ? "" :
         '<div class="field"><label class="field__label" for="vid-title">タイトル（任意）</label>' +
           '<input class="input" id="vid-title" type="text" placeholder="例：TED 〇〇 のスピーチ" value="' + EM.escapeHtml(title) + '" /></div>') +
@@ -401,6 +411,10 @@
   //  - 動画ファイルURL(.mp4等): 直接取得 → 文字起こし
   // 取得不可(Netflix等)の場合のみ、タブ/画面音声キャプチャに切替。
   function startAICaption(title) {
+    if (location.protocol === "file:") {
+      EM.showToast("ファイル(file://)で開いているためAI生成できません。http(s)で開いてください（フォームの赤い案内を参照）。", true);
+      return;
+    }
     if (!window.AICaption || !window.AICaption.isSupported()) {
       EM.showToast("この端末ではAI字幕生成に対応していません（Chrome系の最新版・HTTPS環境を推奨）", true);
       return;
@@ -424,6 +438,7 @@
             : (url ? '<div class="notice notice--info"><span class="notice__icon">i</span><span>このURL（' + EM.escapeHtml(src.label || "外部") + '）からは音声を直接取得できません。下の「タブ/画面の音声から生成」をお使いください（動画を再生中のタブを共有）。</span></div>' : "")) +
           '<button class="btn ' + (canFromUrl ? "btn--ghost" : "btn--primary") + ' btn--block mt-4" id="ai-from-tab" type="button">🖥 タブ/画面の音声から生成（Netflix等もOK・マイク不要）</button>' +
         '</div>' +
+        '<p class="ai-cc__tip mt-4">※「このURLから生成」は公開字幕サーバー（混雑・停止しがち）か自前Workerが必要です。<strong>うまくいかない時は「タブ/画面の音声から生成」が確実</strong>（外部サーバー不要・設定不要）。動画を再生中のタブを共有するだけです。</p>' +
         (src.type === "external" && url ? '<p class="mt-4" style="font-size:13px"><a href="' + EM.escapeHtml(url) + '" target="_blank" rel="noopener">▶ 動画を別タブで開く</a></p>' : "") +
         '<div class="ai-cc__status mt-4" id="ai-status" style="display:none">' +
           '<p class="live-cc__interim" id="ai-msg">準備中…</p>' +
@@ -473,9 +488,13 @@
       setBar(0);
       setMsg("");
       var m = (e && e.message) ? e.message : "AI字幕生成に失敗しました";
-      if (e && /CORS|HTTP|取得/.test(m) && fromTab) m = "URLから音声を取得できませんでした（混雑/制限の可能性）。『タブ/画面の音声から生成』をお試しください。";
+      if (e && /CORS|HTTP|取得|worker|audio|no /i.test(m) && fromTab) {
+        m = "URLからの音声取得に失敗（公開サーバー混雑/停止の可能性）。下の『🖥 タブ/画面の音声から生成』をお使いください（確実・設定不要）。";
+        if (statusBox) statusBox.style.display = "none";
+        if (choices) choices.style.display = "";
+        try { fromTab.classList.remove("btn--ghost"); fromTab.classList.add("btn--primary"); fromTab.scrollIntoView({ block: "center" }); } catch (x) {}
+      }
       EM.showToast(m, true);
-      if (choices) choices.style.display = "";
       if (stopBtn) stopBtn.style.display = "none";
     }
     function cleanup() {
@@ -608,6 +627,13 @@
     var status = document.getElementById("cc-status");
     var url = (document.getElementById("yt-url").value || "").trim();
     var src = detectSource(url);
+
+    if (location.protocol === "file:") {
+      status.style.color = "var(--c-warm)";
+      status.innerHTML = "<strong>ファイル(file://)で開いているため自動取得できません。</strong>ブラウザが外部通信を全てブロックします。上の赤い案内のとおり <strong>http(s)</strong> で開いてください（例：<code>python -m http.server</code> → <code>http://localhost:8000/</code>、またはGitHub Pages）。<br>※ 字幕の貼り付けは file:// でも使えます。";
+      openManual();
+      return;
+    }
 
     // YouTube以外は字幕APIが無い → ライブ文字起こしへ誘導
     if (src.type !== "youtube") {

@@ -1731,6 +1731,7 @@ button, .btn { touch-action: manipulation; }
 .ai-cc__bar-fill { height: 100%; width: 0%; background: var(--c-accent); border-radius: 999px; transition: width .3s ease; }
 .ai-cc__url { font-size: 12px; color: var(--c-ink-soft); margin-bottom: 12px; word-break: break-all; }
 .ai-cc__url span { color: var(--c-ink); }
+.ai-cc__tip { font-size: 12px; color: var(--c-ink-soft); line-height: 1.6; }
 
 /* v34 外部サイト(Netflix等)の練習画面 */
 .ext-hero {

@@ -378,10 +378,26 @@
       });
     });
   }
+  // 自前Worker：?audio=ID で音声URLを取得し、googlevideoはCORS無しのため ?url= パススルー経由で取得する形に。
+  function tryWorkerAudio(videoId) {
+    var p = customProxy();
+    if (!p) return Promise.reject(new Error("no worker"));
+    var base = p.split("?")[0];
+    return fetchT(base + "?audio=" + encodeURIComponent(videoId), {}, 15000)
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (d) {
+        if (d && d.ok && d.url) {
+          return { url: p + encodeURIComponent(d.url), mime: d.mime || "", bitrate: d.bitrate || 0, source: "worker" };
+        }
+        throw new Error((d && d.error) || "worker no audio");
+      });
+  }
   // YouTube動画IDから、ブラウザでfetch可能な音声URLを返す
   function getAudioStreamUrl(videoId) {
     if (!videoId) return Promise.reject(new Error("動画IDが不正です"));
-    return tryPipedAudio(videoId).catch(function () { return tryInvidiousAudio(videoId); });
+    return tryWorkerAudio(videoId)
+      .catch(function () { return tryPipedAudio(videoId); })
+      .catch(function () { return tryInvidiousAudio(videoId); });
   }
 
   // 0) スマートWorker：?videoId= で cues JSON を直接返す（最も確実）
