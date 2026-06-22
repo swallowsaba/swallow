@@ -664,12 +664,12 @@
       status.textContent = "✓ 字幕を取得しました（" + cuesFetched.length + " 行）。下の「保存してすぐ練習」へ。";
     }).catch(function (err) {
       status.style.color = "var(--c-warm)";
-      status.innerHTML = "字幕を自動取得できませんでした（公開字幕サーバーが混雑中か、字幕が無い動画の可能性）。<br>" +
-        "▶ <strong>もう一度「字幕を自動取得」を押す</strong>と、別のサーバーで再取得できることがあります。<br>" +
-        "▶ <strong>確実に取得するには</strong>：設定の「動画字幕の自動取得」で、無料のCloudflare Workerを5分で立ててURLを登録してください。<strong>「英語(自動生成)」しかない動画でも取得</strong>できます。<br>" +
-        '<button class="btn btn--primary btn--sm mt-4" id="cc-open-settings" type="button">⚙ 設定を開く（Workerの作り方）</button><br>' +
-        "▶ 字幕が全く無い動画・Netflix等は、上の<strong>「🎙 マイクで字幕を作る」</strong>で生成できます。<br>" +
-        "▶ または下の欄に字幕を貼り付けてください。";
+      status.innerHTML = "字幕を自動取得できませんでした（稼働中の公開字幕サーバーを探しましたが、いまは応答がありませんでした）。<br>" +
+        "▶ <strong>もう一度「字幕を自動取得」を押す</strong>と、別の稼働サーバーで取得できることがあります（時間をおくと復活することも）。<br>" +
+        "▶ 字幕が全く無い動画・Netflix等は、上の<strong>「🤖 AIで字幕を生成（マイク不要）」</strong>で作れます。<br>" +
+        "▶ または下の欄に字幕を貼り付けてください。<br>" +
+        '<span style="font-size:12px">※ どうしても安定させたい場合のみ、任意で無料Cloudflare Workerを設定できます（設定→動画字幕の自動取得）。必須ではありません。</span><br>' +
+        '<button class="btn btn--ghost btn--sm mt-4" id="cc-open-settings" type="button">⚙ 設定（任意のWorker）</button>';
       openManual();
       var openBtn = document.getElementById("cc-open-settings");
       if (openBtn) openBtn.addEventListener("click", function () { EM.navigate("#/settings"); });

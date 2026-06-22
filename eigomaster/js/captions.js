@@ -319,7 +319,7 @@
 
   // Piped（CORS可）：/streams/{id} の subtitles[] から英語字幕を取得
   function tryPiped(videoId) {
-    return tryList(PIPED, function (base) {
+    return getPipedInstances().then(function (LIST) { return tryList(LIST, function (base) {
       return fetchT(base + "/streams/" + videoId, { headers: { "Accept": "application/json" } })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then(function (d) {
@@ -333,12 +333,12 @@
             return cues;
           });
         });
-    });
+    }); });
   }
 
   // Invidious（CORS可）：/api/v1/captions/{id} から英語字幕を取得
   function tryInvidious(videoId) {
-    return tryList(INVIDIOUS, function (base) {
+    return getInvidiousInstances().then(function (LIST) { return tryList(LIST, function (base) {
       return fetchT(base + "/api/v1/captions/" + videoId, { headers: { "Accept": "application/json" } })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then(function (d) {
@@ -353,13 +353,13 @@
             return cues;
           });
         });
-    });
+    }); });
   }
 
   // ---- 音声ストリームURL（AI字幕生成用。CORS可のプロキシ済みURLを返す）----
   // Piped: audioStreams[] の最小ビットレート（小さく速い）を優先。
   function tryPipedAudio(videoId) {
-    return tryList(PIPED, function (base) {
+    return getPipedInstances().then(function (LIST) { return tryList(LIST, function (base) {
       return fetchT(base + "/streams/" + videoId, { headers: { "Accept": "application/json" } })
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then(function (d) {
@@ -370,18 +370,18 @@
           if (!pick || !pick.url) throw new Error("no url");
           return { url: pick.url, mime: pick.mimeType || "", bitrate: pick.bitrate || 0, source: "piped" };
         });
-    });
+    }); });
   }
   // Invidious: /latest_version?...&local=true でInvidious経由プロキシ（CORS可）。itag140=m4a(128k)。
   function tryInvidiousAudio(videoId) {
-    return tryList(INVIDIOUS, function (base) {
+    return getInvidiousInstances().then(function (LIST) { return tryList(LIST, function (base) {
       var url = base + "/latest_version?id=" + encodeURIComponent(videoId) + "&itag=140&local=true";
       // 実体取得可能か軽く確認（HEAD不可な実装もあるのでGETのRangeで先頭だけ）
       return fetchT(url, { method: "GET", headers: { "Range": "bytes=0-1" } }, 12000).then(function (r) {
         if (!(r.ok || r.status === 206)) throw new Error("HTTP " + r.status);
         return { url: url, mime: "audio/mp4", bitrate: 128000, source: "invidious" };
       });
-    });
+    }); });
   }
   // 自前Worker：?audio=ID で音声URLを取得し、googlevideoはCORS無しのため ?url= パススルー経由で取得する形に。
   function tryWorkerAudio(videoId) {
@@ -402,6 +402,32 @@
     return tryWorkerAudio(videoId)
       .catch(function () { return tryPipedAudio(videoId); })
       .catch(function () { return tryInvidiousAudio(videoId); });
+  }
+
+  // 稼働中インスタンスを実行時に取得（一覧APIはCORS対応）。失敗時はハードコードへフォールバック。
+  var _inst = { piped: null, inv: null };
+  function uniq(arr) { var seen = {}, out = []; arr.forEach(function (x) { if (x && !seen[x]) { seen[x] = 1; out.push(x.replace(/\/$/, "")); } }); return out; }
+  function getPipedInstances() {
+    if (_inst.piped) return Promise.resolve(_inst.piped);
+    return fetchT("https://piped-instances.kavin.rocks/", { headers: { "Accept": "application/json" } }, 8000)
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (list) {
+        var apis = (list || []).map(function (x) { return x.api_url; }).filter(Boolean);
+        _inst.piped = uniq(apis.concat(PIPED));
+        return _inst.piped;
+      }).catch(function () { _inst.piped = uniq(PIPED.slice()); return _inst.piped; });
+  }
+  function getInvidiousInstances() {
+    if (_inst.inv) return Promise.resolve(_inst.inv);
+    return fetchT("https://api.invidious.io/instances.json?sort_by=health", { headers: { "Accept": "application/json" } }, 8000)
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (list) {
+        // list = [[host, {uri, cors, api, type}], ...] CORS・API有効・httpsのみ採用
+        var apis = (list || []).filter(function (e) { return e[1] && e[1].cors && e[1].api && e[1].type === "https"; })
+          .map(function (e) { return e[1].uri; });
+        _inst.inv = uniq(apis.concat(INVIDIOUS));
+        return _inst.inv;
+      }).catch(function () { _inst.inv = uniq(INVIDIOUS.slice()); return _inst.inv; });
   }
 
   // 0) スマートWorker：?videoId= で cues JSON を直接返す（最も確実）
