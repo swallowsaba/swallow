@@ -45,6 +45,54 @@
   function parseSRT(raw) { return parseTimed(raw); }
   function parseVTT(raw) { return parseTimed(raw); }
 
+  // YouTubeの「文字起こしを表示」からコピペした形式を解析する。
+  //  例) "0:00 Hello everyone" / 連続行で「0:00」の次行に本文、のどちらにも対応。
+  //  → 外部通信なしで、字幕付きYouTube動画を確実に取り込める。
+  var YT_TS = /^\s*((?:\d{1,2}:)?\d{1,2}:\d{2})(?:\.\d+)?\s*(.*)$/;
+  function looksLikeYouTubeTranscript(raw) {
+    var lines = String(raw).replace(/\r/g, "").split("\n");
+    var hit = 0, total = 0;
+    for (var i = 0; i < lines.length; i++) {
+      var t = lines[i].trim(); if (!t) continue; total++;
+      if (YT_TS.test(t)) hit++;
+      if (total >= 6) break;
+    }
+    return total >= 2 && hit >= 2;
+  }
+  function parseYouTubeTranscript(raw) {
+    var lines = String(raw).replace(/^\uFEFF/, "").replace(/\r/g, "").split("\n");
+    var cues = [];
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      var m = line.match(YT_TS);
+      if (!m) {
+        // タイムスタンプの無い行（タイトル等）。直前のcueがあれば本文として連結。
+        if (cues.length && !cues[cues.length - 1]._needText) cues[cues.length - 1].text += " " + line;
+        continue;
+      }
+      var start = timeToSeconds(m[1]);
+      var body = (m[2] || "").trim();
+      if (body) {
+        cues.push({ index: cues.length + 1, start: start, end: null, text: body });
+      } else {
+        // タイムスタンプ単独行 → 次の非空行が本文
+        var j = i + 1;
+        while (j < lines.length && !lines[j].trim()) j++;
+        if (j < lines.length) {
+          cues.push({ index: cues.length + 1, start: start, end: null, text: lines[j].trim() });
+          i = j;
+        }
+      }
+    }
+    // end を次cueのstartで補完
+    for (var k = 0; k < cues.length; k++) {
+      cues[k].end = (k + 1 < cues.length) ? cues[k + 1].start : (cues[k].start != null ? cues[k].start + 3 : null);
+      delete cues[k]._needText;
+    }
+    return cues;
+  }
+
   // タイムスタンプ無し：文・行ごとに分割（start/end は null）
   function parsePlainText(raw) {
     var text = String(raw).replace(/\r/g, "").trim();
@@ -60,7 +108,8 @@
 
   // 自動判定
   function parse(raw) {
-    if (TIME_LINE.test(String(raw))) return parseTimed(raw);
+    if (TIME_LINE.test(String(raw))) return parseTimed(raw);          // SRT / VTT
+    if (looksLikeYouTubeTranscript(raw)) return parseYouTubeTranscript(raw); // YouTube文字起こしコピペ
     return parsePlainText(raw);
   }
 

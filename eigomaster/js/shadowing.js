@@ -324,6 +324,7 @@
     var title = editing ? editing.title : "";
     var url = editing ? editing.url : "";
     var sub = editing ? editing.subtitles : "";
+    var yid = extractVideoId(url || "");
 
     root().innerHTML =
       '<a class="back-link" id="form-back" href="#/video">‹ 一覧へ戻る</a>' +
@@ -353,9 +354,17 @@
       '<button class="btn btn--ghost btn--block mt-4" id="live-cc" type="button">🎙 マイクで字幕を作る（ライブ文字起こし）</button>' +
 
       '<details class="cc-manual mt-4"' + (sub ? " open" : "") + '>' +
-        '<summary>自動取得できないとき：字幕を貼り付け（SRT/VTT/テキスト）</summary>' +
+        '<summary>字幕を貼り付け（最も確実：YouTubeの「文字起こし」をコピペ）</summary>' +
+        '<div class="notice notice--info mt-4"><span class="notice__icon">i</span><span>' +
+          '<strong>自動取得が不調でも、これなら確実に取り込めます（CORS・外部サーバー不要）。</strong><br>' +
+          '① 下のボタンで動画をYouTubeで開く →<br>' +
+          '② 説明欄の <strong>「…もっと見る」→「文字起こしを表示」</strong>（PCは概要欄の下、スマホは⋯メニュー）。<br>' +
+          '③ 出てきた文字起こしを<strong>全選択してコピー</strong>。<br>' +
+          '④ 下の枠に<strong>貼り付け</strong>。タイムスタンプ付き（例 <code>0:00 Hello…</code>）も自動で時刻同期します。' +
+        '</span></div>' +
+        '<button class="btn btn--ghost btn--block mt-4" id="open-yt" type="button">▶ この動画をYouTubeで開く（文字起こしを表示）</button>' +
         '<div class="field mt-4">' +
-          '<textarea class="textarea" id="sub-in" placeholder="字幕を貼り付け">' + EM.escapeHtml(sub) + "</textarea></div>" +
+          '<textarea class="textarea" id="sub-in" placeholder="ここに字幕を貼り付け（YouTubeの文字起こし / SRT / VTT / テキスト）">' + EM.escapeHtml(sub) + "</textarea></div>" +
       "</details>" +
 
       (quickOnly
@@ -366,6 +375,14 @@
 
     document.getElementById("form-back").addEventListener("click", function (e) { e.preventDefault(); drawSetup(); });
     document.getElementById("fetch-cc").addEventListener("click", autoFetch);
+    var openYt = document.getElementById("open-yt");
+    if (openYt) openYt.addEventListener("click", function () {
+      var u = (document.getElementById("yt-url").value || "").trim();
+      var id = extractVideoId(u);
+      var target = id ? ("https://www.youtube.com/watch?v=" + id) : u;
+      if (!target) { EM.showToast("先に動画URLを入力してください", true); return; }
+      window.open(target, "_blank", "noopener");
+    });
     document.getElementById("ai-cc").addEventListener("click", function () { startAICaption(title); });
     document.getElementById("live-cc").addEventListener("click", function () { startLiveCaption(title); });
     document.getElementById("silent-go").addEventListener("click", function () {
@@ -664,15 +681,12 @@
       status.textContent = "✓ 字幕を取得しました（" + cuesFetched.length + " 行）。下の「保存してすぐ練習」へ。";
     }).catch(function (err) {
       status.style.color = "var(--c-warm)";
-      status.innerHTML = "字幕を自動取得できませんでした（稼働中の公開字幕サーバーを探しましたが、いまは応答がありませんでした）。<br>" +
-        "▶ <strong>もう一度「字幕を自動取得」を押す</strong>と、別の稼働サーバーで取得できることがあります（時間をおくと復活することも）。<br>" +
-        "▶ 字幕が全く無い動画・Netflix等は、上の<strong>「🤖 AIで字幕を生成（マイク不要）」</strong>で作れます。<br>" +
-        "▶ または下の欄に字幕を貼り付けてください。<br>" +
-        '<span style="font-size:12px">※ どうしても安定させたい場合のみ、任意で無料Cloudflare Workerを設定できます（設定→動画字幕の自動取得）。必須ではありません。</span><br>' +
-        '<button class="btn btn--ghost btn--sm mt-4" id="cc-open-settings" type="button">⚙ 設定（任意のWorker）</button>';
+      status.innerHTML = "自動取得できませんでした（いま公開字幕サーバーが世界的に不調のようです）。<br>" +
+        "▶ <strong>確実な方法：下の「字幕を貼り付け」を開き、YouTubeの「文字起こし」をコピペ</strong>してください（CORS・外部サーバー不要で必ず動きます）。<br>" +
+        "▶ もう一度「自動取得」を押すと別サーバーで取れることもあります。<br>" +
+        "▶ 字幕が全く無い動画は「🤖 AIで字幕を生成」も使えます。";
       openManual();
-      var openBtn = document.getElementById("cc-open-settings");
-      if (openBtn) openBtn.addEventListener("click", function () { EM.navigate("#/settings"); });
+      var d = document.querySelector(".cc-manual"); if (d) d.setAttribute("open", "");
     }).finally(function () { btn.disabled = false; });
   }
 
