@@ -54,25 +54,33 @@
     { clientName: "WEB", clientVersion: "2.20250101.00.00" }
   ];
 
-  // 自前Workerのベース（末尾の ?url= 等を除いた https://xxx.workers.dev/ 部分）
+  // 中継URLの決定：①各ユーザーの個別設定（上書き）→ ②config.jsの全ユーザー共通中継。
+  function sharedRelay() {
+    try { return ((window.EIGO_CONFIG && window.EIGO_CONFIG.RELAY_URL) || "").trim(); } catch (e) { return ""; }
+  }
+  function relayUrl() {
+    var personal = (Storage.getState().profile.captionProxy || "").trim();
+    return personal || sharedRelay();
+  }
+  // 中継のベース（末尾の ?url= 等を除いた https://xxx.workers.dev/ 部分）
   function workerBase() {
-    var p = (Storage.getState().profile.captionProxy || "").trim();
+    var p = relayUrl();
     if (!p) return null;
     return p.split("?")[0];
   }
   function proxyList() {
     var base = workerBase();
     var list = PROXIES.slice();
-    if (base) list = [{ u: base + "?url=", wrap: null, enc: true }].concat(list); // 自前Worker(パススルー)を最優先
+    if (base) list = [{ u: base + "?url=", wrap: null, enc: true }].concat(list); // 中継(パススルー)を最優先
     return list;
   }
 
-  // 自前Workerが設定されているか
+  // 中継が設定されているか（個別 or 共通）
   function customProxy() {
-    return (Storage.getState().profile.captionProxy || "").trim();
+    return relayUrl();
   }
 
-  // 自前Workerの「スマート字幕エンドポイント」URL（?videoId=...）。
+  // 中継の「スマート字幕エンドポイント」URL（?videoId=...）。
   function smartWorkerUrl(videoId) {
     var base = workerBase();
     if (!base) return null;
@@ -430,6 +438,26 @@
       }).catch(function () { _inst.inv = uniq(INVIDIOUS.slice()); return _inst.inv; });
   }
 
+  // Jina AI Reader（CORS対応の別系統）：YouTubeのトランスクリプトを返すことがある。
+  // Piped/Invidiousが全滅していても通る可能性がある自動経路。タイムスタンプ付きのみ採用。
+  function tryJina(videoId) {
+    var url = "https://r.jina.ai/https://www.youtube.com/watch?v=" + encodeURIComponent(videoId);
+    return fetchT(url, { headers: { "Accept": "text/plain", "X-Return-Format": "text" } }, 20000)
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+      .then(function (txt) {
+        var S = window.Subtitle;
+        if (!S || !txt) throw new Error("no text");
+        // タイムスタンプ付きトランスクリプトとして解釈できる時だけ採用
+        if (S.looksLikeYouTubeTranscript && S.looksLikeYouTubeTranscript(txt)) {
+          var cues = S.parse(txt);
+          if (cues && cues.length >= 5) {
+            return cues.map(function (c, i) { return { index: i + 1, start: c.start || 0, end: (c.end != null ? c.end : (c.start || 0) + 3), text: c.text }; });
+          }
+        }
+        throw new Error("Jina: トランスクリプト無し");
+      });
+  }
+
   // 0) スマートWorker：?videoId= で cues JSON を直接返す（最も確実）
   function trySmartWorker(videoId) {
     var url = smartWorkerUrl(videoId);
@@ -452,6 +480,7 @@
   function fetchCaptions(videoId) {
     if (!videoId) return Promise.reject(new Error("動画IDが不正です"));
     return trySmartWorker(videoId)
+      .catch(function () { return tryJina(videoId); })
       .catch(function () { return tryPiped(videoId); })
       .catch(function () { return tryInvidious(videoId); })
       .catch(function () { return tryInnertube(videoId); })

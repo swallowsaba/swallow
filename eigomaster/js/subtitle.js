@@ -118,6 +118,8 @@
     parseSRT: parseSRT,
     parseVTT: parseVTT,
     parsePlainText: parsePlainText,
+    parseYouTubeTranscript: parseYouTubeTranscript,
+    looksLikeYouTubeTranscript: looksLikeYouTubeTranscript,
     timeToSeconds: timeToSeconds
   };
 })();

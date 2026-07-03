@@ -9,13 +9,13 @@
    ============================================================ */
 
 // 更新のたびに上げる。これで古いキャッシュは確実に破棄される。
-var CACHE_VERSION = "eigomaster-v66";
+var CACHE_VERSION = "eigomaster-v68";
 
 // 事前キャッシュ（オフライン初期動作用。失敗しても全体は止めない）
 var APP_SHELL = [
   "./", "./index.html", "./css/style.css", "./manifest.json",
   "./icons/icon.svg", "./icons/icon-192.png", "./icons/icon-512.png",
-  "./js/storage.js", "./js/app.js", "./js/srs.js", "./js/katakana.js",
+  "./js/config.js", "./js/storage.js", "./js/app.js", "./js/srs.js", "./js/katakana.js",
   "./js/linking.js", "./js/subtitle.js", "./js/captions.js", "./js/vocab.js",
   "./js/wordbook.js", "./js/idioms.js", "./js/shadowing.js", "./js/pronunciation.js",
   "./js/phonics.js", "./js/grammar.js", "./js/reading.js", "./js/listening.js",

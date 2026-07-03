@@ -933,8 +933,9 @@
         '<div class="setting-group">' +
           '<p class="section-title">動画字幕の自動取得</p>' +
           '<div class="card">' +
-            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">字幕の自動取得は、<strong>設定不要で動く方式</strong>に変わりました。アプリが<strong>「いま稼働中の公開字幕サーバー」を自動で探して</strong>取得します（Worker不要）。混雑時に失敗したら数秒後に再実行すると別サーバーに切り替わります。<br><strong>この欄は空のままでOK</strong>です。どうしても毎回確実にしたい人だけ、任意で下の無料Workerを設定できます（必須ではありません）。</p>' +
-            '<label class="field__label" for="proxy-input">（任意）あなたのWorkerのURL — 動画URLではありません</label>' +
+            '<p class="setting-row__hint" style="margin-bottom:var(--space-3)">字幕取得は、<strong>開発者が用意した「全ユーザー共通の中継」</strong>があればそれを最優先で使います（各自の設定は不要）。共通中継は <code>js/config.js</code> の <code>RELAY_URL</code> に1回だけ記入すれば全員に反映されます。<br>共通中継が未設定でも、公開サーバー→YouTube文字起こしコピペで取得できます。<br>下の欄は<strong>この端末だけの上書き</strong>（共通中継を使わず自分専用の中継を試したい人向け・任意）です。</p>' +
+            '<p class="setting-row__hint" id="relay-status" style="margin-bottom:var(--space-3)"></p>' +
+            '<label class="field__label" for="proxy-input">（任意・この端末のみ）中継URLの上書き — 動画URLではありません</label>' +
             '<input class="input" id="proxy-input" type="text" placeholder="https://あなたの名前.workers.dev/" value="' + EM.escapeHtml(state.profile.captionProxy || "") + '" />' +
             '<p class="setting-row__hint mt-4" id="proxy-status"></p>' +
             '<div class="grade-row mt-4" style="grid-template-columns:1fr 1fr 1fr">' +
@@ -944,20 +945,18 @@
             '</div>' +
             '<details class="mt-4"><summary class="setting-row__hint" style="cursor:pointer"><strong>▶ なぜ字幕が取れないことがある？（仕組み）</strong></summary>' +
               '<p class="setting-row__hint mt-4">このアプリは通信を持たない静的サイトのため、ブラウザから直接YouTubeへ字幕を取りに行くと<strong>CORS</strong>という仕組みでブロックされます。そのため中継役（プロキシ）が必要です。公開プロキシは混雑や制限で失敗しがちで、YouTube側も自動生成字幕の取得を年々厳しくしています。自分専用のCloudflare Worker（無料枠で十分）を中継にすると、この両方を回避でき、<strong>「英語(自動生成)」しかない動画でも取得</strong>できるようになります。</p></details>' +
-            '<details class="mt-4"><summary class="setting-row__hint" style="cursor:pointer"><strong>▶（任意）Cloudflare Workerの作り方（最新画面に対応）</strong></summary>' +
-              '<p class="setting-row__hint mt-4">※ Cloudflareは表記が時々変わります。下の<strong>太字キーワード</strong>を画面から探せばOK（多少ボタン名が違っても流れは同じ）。</p>' +
-              '<ol class="setting-row__hint mt-4" style="padding-left:1.2em;line-height:1.9">' +
-                '<li><a href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noopener">dash.cloudflare.com</a> で無料アカウント作成（カード不要）。</li>' +
-                '<li>左メニューの <strong>「Compute (Workers)」</strong>（または <strong>「Workers &amp; Pages」</strong>）を開く。</li>' +
-                '<li><strong>「Create」</strong> →（<strong>「Start with Hello World!」</strong>の）<strong>「Get started」</strong>。古い画面なら「Create application」→「Create Worker」。</li>' +
-                '<li>名前は任意のまま <strong>「Deploy」</strong>。</li>' +
-                '<li>デプロイ後、<strong>「Edit code」</strong>（<code>&lt;/&gt;</code> アイコン。無ければ「Continue to project」→「Edit code」）を開く。</li>' +
-                '<li>エディタのコードを<strong>全選択して削除</strong>→ 下の<strong>「📋 Workerコードをコピー」</strong>で貼り付け → 右上 <strong>「Deploy」</strong>。</li>' +
-                '<li>表示される <code>https://〇〇.workers.dev</code> を<strong>そのまま</strong>上の欄に貼り、<strong>「接続テスト」→「保存」</strong>。（末尾 <code>/?url=</code> は付けても付けなくてもOK）</li>' +
-                '<li>接続テストで ✅ が出れば完了。</li>' +
+            '<details class="mt-4"><summary class="setting-row__hint" style="cursor:pointer"><strong>▶ 全ユーザー共通の中継の作り方（1回だけ・Deno Deployが簡単）</strong></summary>' +
+              '<p class="setting-row__hint mt-4"><strong>開発者の方へ：中継を1つ作って <code>js/config.js</code> の <code>RELAY_URL</code> に貼れば、全ユーザーが設定不要で使えます。</strong>同じコードが Deno Deploy / Cloudflare の両方で動きます。</p>' +
+              '<p class="setting-row__hint mt-4"><strong>● Deno Deploy（おすすめ・画面が簡単）</strong></p>' +
+              '<ol class="setting-row__hint" style="padding-left:1.2em;line-height:1.9">' +
+                '<li><a href="https://dash.deno.com/new_playground" target="_blank" rel="noopener">dash.deno.com</a> に GitHub等で無料ログイン →「<strong>New Playground</strong>」。</li>' +
+                '<li>エディタを全消去し、下の<strong>「📋 中継コードをコピー」</strong>を貼り付け（保存で即デプロイ）。</li>' +
+                '<li>右上に出る <code>https://〇〇.deno.dev</code> をコピー。</li>' +
+                '<li>それを <code>js/config.js</code> の <code>RELAY_URL: ""</code> の中に貼って、サイトを再アップロード。→ 全ユーザーで有効。</li>' +
               '</ol>' +
-              '<p class="setting-row__hint mt-4">作れなくても<strong>欄は空のままでOK</strong>。アプリが稼働中の公開サーバーを自動で探して取得します。</p>' +
-              '<button class="btn btn--ghost btn--block mt-4" id="proxy-copy-code" type="button">📋 Workerコードをコピー</button>' +
+              '<p class="setting-row__hint mt-4"><strong>● Cloudflare Workers（こちらでも可）</strong>：Compute (Workers) →「Create」→「Start with Hello World!」の Get started → Deploy →「Edit code」(<code>&lt;/&gt;</code>) → 全消去して貼り付け → Deploy → 出た <code>https://〇〇.workers.dev</code> を config.js に。</p>' +
+              '<p class="setting-row__hint mt-4">無料枠で十分動きます（小規模個人利用なら上限内）。動作確認だけしたい時は、上の入力欄にそのURLを貼って「接続テスト」。</p>' +
+              '<button class="btn btn--ghost btn--block mt-4" id="proxy-copy-code" type="button">📋 中継コードをコピー</button>' +
               '<p class="setting-row__hint mt-4">このWorkerはGET（HTML・字幕本文）とPOST（YouTube内部API）の両方を中継し、CORSヘッダーを付けて返します。自動生成字幕の安定取得にはPOST中継が効きます。</p>' +
             '</details>' +
           '</div>' +
@@ -1125,6 +1124,18 @@
     // 字幕取得プロキシ / 自前Worker
     function looksLikeVideoUrl(v) { return /youtube\.com|youtu\.be|netflix\.com|\/watch\?v=/i.test(v); }
     function validWorker(v) { return /^https:\/\//i.test(v) && !looksLikeVideoUrl(v); }
+    // 現在有効な「共通中継」の状態を表示
+    (function () {
+      var rs = document.getElementById("relay-status");
+      if (!rs) return;
+      var shared = "";
+      try { shared = ((window.EIGO_CONFIG && window.EIGO_CONFIG.RELAY_URL) || "").trim(); } catch (e) {}
+      if (shared) {
+        rs.innerHTML = '<span style="color:var(--ok,#2e7d32)">✅ 共通中継が設定されています：<code>' + EM.escapeHtml(shared) + "</code>（全ユーザーが自動で使用）</span>";
+      } else {
+        rs.innerHTML = '<span style="color:var(--c-ink-soft)">共通中継は未設定です（<code>js/config.js</code> の <code>RELAY_URL</code> に入れると全ユーザーで有効になります）。</span>';
+      }
+    })();
     function workerInputError(st) {
       if (st) st.innerHTML = '<span style="color:var(--danger,#c62828)">⚠ ここには<strong>動画URLではなく</strong>、あなたが作った<strong>Cloudflare WorkerのURL</strong>（例 <code>https://あなたの名前.workers.dev/</code>）を入れてください。下の「Cloudflare Workerの作り方」を参照。</span>';
       EM.showToast("動画URLではなく、WorkerのURLを入れてください", true);
@@ -1171,7 +1182,7 @@
     bindClick("proxy-copy-code", function () {
       var code = (window.EigoData && window.EigoData.workerCode) ? window.EigoData.workerCode : "";
       if (!code) { EM.showToast("コードを読み込めませんでした", true); return; }
-      function done() { EM.showToast("Workerコードをコピーしました"); }
+      function done() { EM.showToast("中継コードをコピーしました"); }
       function fallback() {
         try {
           var ta = document.createElement("textarea");
@@ -1380,7 +1391,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v66";
+  var APP_VERSION = "v68";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;
