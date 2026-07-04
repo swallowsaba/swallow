@@ -12,5 +12,5 @@
    ============================================================ */
 window.EIGO_CONFIG = {
   // ↓↓↓ ここにデプロイ後のURLを貼るだけ（末尾の /?url= は付けても付けなくてもOK） ↓↓↓
-  RELAY_URL: ""
+  RELAY_URL: "https://firm-wolf-2949.swallowsaba.deno.net/"
 };
