@@ -1137,12 +1137,17 @@
     (function () {
       var rs = document.getElementById("relay-status");
       if (!rs) return;
-      var shared = "";
-      try { shared = ((window.EIGO_CONFIG && window.EIGO_CONFIG.RELAY_URL) || "").trim(); } catch (e) {}
-      if (shared) {
-        rs.innerHTML = '<span style="color:var(--ok,#2e7d32)">✅ 共通中継が設定されています：<code>' + EM.escapeHtml(shared) + "</code>（全ユーザーが自動で使用）</span>";
+      var active = "";
+      var hasFn = false;
+      try { if (window.Captions && typeof window.Captions.activeRelay === "function") { hasFn = true; active = (window.Captions.activeRelay() || "").trim(); } } catch (e) {}
+      if (!hasFn) {
+        rs.innerHTML = '<span style="color:var(--danger,#c62828)">⚠ 配信されている <code>js/captions.js</code> が<strong>古い版</strong>です。zip内の<strong>全ファイル（特に js フォルダ）を丸ごと再アップロード</strong>してください（index.htmlだけの更新では不足です）。</span>';
+        return;
+      }
+      if (active) {
+        rs.innerHTML = '<span style="color:var(--ok,#2e7d32)">✅ いまアプリが使う中継：<code>' + EM.escapeHtml(active) + "</code></span>";
       } else {
-        rs.innerHTML = '<span style="color:var(--c-ink-soft)">共通中継は未設定です（<code>js/config.js</code> の <code>RELAY_URL</code> に入れると全ユーザーで有効になります）。</span>';
+        rs.innerHTML = '<span style="color:var(--c-ink-soft)">中継は未設定です（公開サーバー／コピペで取得します）。</span>';
       }
     })();
     function workerInputError(st) {
@@ -1400,7 +1405,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v71";
+  var APP_VERSION = "v72";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;

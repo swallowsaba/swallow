@@ -504,6 +504,8 @@
     DEFAULT_PROXY: DEFAULT_PROXY_STR,
     fetchCaptions: fetchCaptions,
     getAudioStreamUrl: getAudioStreamUrl,
+    activeRelay: function () { return relayUrl(); },
+    builtinRelay: BUILTIN_RELAY,
     parseTimedTextXML: parseTimedTextXML,
     parseJson3: parseJson3,
     extractPlayerResponse: extractPlayerResponse,
