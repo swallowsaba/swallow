@@ -60,7 +60,11 @@
   }
   function relayUrl() {
     var personal = (Storage.getState().profile.captionProxy || "").trim();
-    return personal || sharedRelay();
+    // 個人設定が「正しい中継URL」の時だけ採用。動画URL等の誤設定は無視して共通中継へ。
+    if (personal && /^https:\/\//i.test(personal) && !/youtube\.com|youtu\.be|netflix\.com|\/watch\?/i.test(personal)) {
+      return personal;
+    }
+    return sharedRelay();
   }
   // 中継のベース（末尾の ?url= 等を除いた https://xxx.workers.dev/ 部分）
   function workerBase() {

@@ -1124,6 +1124,15 @@
     // 字幕取得プロキシ / 自前Worker
     function looksLikeVideoUrl(v) { return /youtube\.com|youtu\.be|netflix\.com|\/watch\?v=/i.test(v); }
     function validWorker(v) { return /^https:\/\//i.test(v) && !looksLikeVideoUrl(v); }
+    // 過去に誤って保存された「動画URL」等の不正な個人設定は自動でクリア（共通中継を邪魔しないため）
+    (function () {
+      var cur = (Storage.getState().profile.captionProxy || "").trim();
+      if (cur && !validWorker(cur)) {
+        Storage.update(function (s) { s.profile.captionProxy = null; return s; });
+        var inp = document.getElementById("proxy-input"); if (inp) inp.value = "";
+        EM.showToast("以前保存された無効なURLを削除しました（共通中継を使います）");
+      }
+    })();
     // 現在有効な「共通中継」の状態を表示
     (function () {
       var rs = document.getElementById("relay-status");
@@ -1391,7 +1400,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v68";
+  var APP_VERSION = "v69";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;
