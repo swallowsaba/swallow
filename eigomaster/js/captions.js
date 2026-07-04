@@ -55,8 +55,15 @@
   ];
 
   // 中継URLの決定：①各ユーザーの個別設定（上書き）→ ②config.jsの全ユーザー共通中継。
+  // 全ユーザー共通の中継（既定）。config.js の RELAY_URL があればそちらを優先。
+  // ここに直接書くことで、config.js が未アップロード/空でも確実に使われる。
+  var BUILTIN_RELAY = "https://firm-wolf-2949.swallowsaba.deno.net/";
   function sharedRelay() {
-    try { return ((window.EIGO_CONFIG && window.EIGO_CONFIG.RELAY_URL) || "").trim(); } catch (e) { return ""; }
+    try {
+      var c = ((window.EIGO_CONFIG && window.EIGO_CONFIG.RELAY_URL) || "").trim();
+      if (c) return c;
+    } catch (e) {}
+    return BUILTIN_RELAY;
   }
   function relayUrl() {
     var personal = (Storage.getState().profile.captionProxy || "").trim();
