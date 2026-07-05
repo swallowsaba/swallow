@@ -269,6 +269,7 @@
     // ボイス一覧が未確定の間は lang=en-US 指定で即時発話（待つとタップ起点を失い、スマホ初回が無音になるため）
     var myToken = ++speakToken;
     var u = new SpeechSynthesisUtterance(text);
+    var started = false, ended = false;   // 実際に発話が始まった/終わったかを記録（誤再生防止）
     currentUtterance = u;   // 参照を保持（ChromeはutteranceがGCされると無音になる既知バグがある）
     if (voice) {
       u.voice = voice;
@@ -284,8 +285,9 @@
       if (myToken !== speakToken) return;
       if (typeof opts.onboundary === "function") opts.onboundary(ev.charIndex, ev.charLength || 0);
     };
-    u.onstart = function () { if (myToken === speakToken && typeof opts.onstart === "function") opts.onstart(); };
+    u.onstart = function () { started = true; if (myToken === speakToken && typeof opts.onstart === "function") opts.onstart(); };
     u.onend = function () {
+      ended = true;
       stopResumeTimer();
       if (myToken === speakToken && typeof opts.onboundary === "function") opts.onboundary(-1, 0); // 終了マーク
       if (myToken === speakToken && typeof opts.onend === "function") opts.onend();
@@ -301,6 +303,7 @@
       //（Chromeの「cancel直後のspeakが無視される」バグ、英語ボイス0のPC などをすべて拾う）
       setTimeout(function () {
         if (myToken !== speakToken) return;
+        if (started || ended) return;            // 既に発話が始まった/終わった → 成功。再試行しない（短い単語の誤再生対策）
         var ss = window.speechSynthesis;
         if (ss.speaking || ss.pending) return;   // 正常に再生中
         if (!retried) {
@@ -1405,7 +1408,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v76";
+  var APP_VERSION = "v77";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;
