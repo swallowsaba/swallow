@@ -224,12 +224,12 @@
     var body = "";
     if (item.type === "word_ej" || item.type === "idiom_ej") {
       body = qHead("この意味は？") +
-        '<div class="lesson__prompt"><button class="audio-btn" id="ls-say" type="button">▶</button>' +
-        '<span class="lesson__big">' + EM.escapeHtml(item.w.en) + '</span></div>' +
+        '<div class="wordq"><button class="wordq__play" id="ls-say" type="button" aria-label="発音を再生">▶</button>' +
+        '<span class="wordq__en">' + EM.escapeHtml(item.w.en) + '</span></div>' +
         choices(item.choices.map(function (c) { return c.ja; }));
     } else if (item.type === "word_je") {
       body = qHead("英語で言うと？") +
-        '<div class="lesson__prompt"><span class="lesson__big">' + EM.escapeHtml(item.w.ja) + '</span></div>' +
+        '<div class="wordq wordq--noplay"><span class="wordq__ja">' + EM.escapeHtml(item.w.ja) + '</span></div>' +
         choices(item.choices.map(function (c) { return c.en; }));
     } else if (item.type === "listen_word") {
       body = qHead("聞こえた単語の意味は？") +
