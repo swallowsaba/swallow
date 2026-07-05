@@ -1408,7 +1408,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v79";
+  var APP_VERSION = "v80";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;

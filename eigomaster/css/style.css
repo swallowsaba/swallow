@@ -1637,15 +1637,16 @@ button, .btn { touch-action: manipulation; }
 .lkv {
   border: 3px solid var(--c-accent); border-radius: 14px;
   padding: 16px 12px 12px; margin: 10px 0; background: var(--c-surface);
-  text-align: center; overflow-x: auto;
+  text-align: center; overflow-x: hidden;
 }
 .lkv__title {
   font-size: 13px; font-weight: 800; color: var(--c-accent);
   margin-bottom: 14px;
 }
 .lkv__row {
-  display: inline-flex; align-items: flex-end; gap: 4px;
-  white-space: nowrap; padding: 0 4px;
+  display: flex; flex-wrap: wrap; justify-content: center;
+  align-items: flex-end; gap: 10px 6px;
+  white-space: normal; padding: 0 2px;
 }
 .lkv__cell { position: relative; display: inline-flex; flex-direction: column; align-items: center; padding: 0 4px; }
 /* 連結の弧：単語の右上に半円を描き、次の語へつながる感じを出す */
@@ -1657,7 +1658,7 @@ button, .btn { touch-action: manipulation; }
   animation: lkv-arc 1.6s ease-in-out infinite;
 }
 @keyframes lkv-arc { 0%,100% { transform: translateY(0); opacity: .8; } 50% { transform: translateY(-3px); opacity: 1; } }
-.lkv__en { font-size: 22px; font-weight: 800; letter-spacing: .01em; line-height: 1.2; }
+.lkv__en { font-size: clamp(16px, 4.6vw, 22px); font-weight: 800; letter-spacing: .01em; line-height: 1.2; }
 .lkv__ka { font-size: 12px; font-weight: 700; margin-top: 3px; color: var(--c-ink-soft); }
 .lkv__full {
   margin-top: 12px; font-size: 15px; font-weight: 800; color: var(--c-accent);
