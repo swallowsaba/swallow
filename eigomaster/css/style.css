@@ -2054,3 +2054,35 @@ button, .btn { touch-action: manipulation; }
   margin-left: 8px;
   letter-spacing: .02em;
 }
+
+/* ============================================================
+   v76: iOSアドレスバー対応の動的フィット（JS実測 --app-h を使用）
+   - body全体スクロールを止め、アプリ枠を「今見えている高さ」に固定。
+   - main だけを内部スクロールにするので、ヘッダー/タブバーは常に画面内。
+   - レッスン中は .app-main:has(.lesson){overflow:hidden}（既存・高特異性）が
+     優先されるため、演習は main 内で無スクロールに収まる。
+   ============================================================ */
+@media (max-width: 899px) {
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  .app-shell {
+    height: var(--app-h, 100dvh);
+    min-height: var(--app-h, 100dvh);
+    max-height: var(--app-h, 100dvh);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    overflow: hidden;
+  }
+  .app-main {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+    /* タブバーはグリッドの最下段（実体）になったので、大きな下余白は不要 */
+    padding-bottom: var(--space-4) !important;
+  }
+  .app-header { position: static; }
+  .tab-bar { position: static; }
+}

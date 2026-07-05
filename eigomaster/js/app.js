@@ -1405,7 +1405,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v75";
+  var APP_VERSION = "v76";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;
@@ -1473,6 +1473,7 @@
   function init() {
     mergeImported();
     applyTheme(Storage.getState().profile.theme);
+    setupAppHeight();
     var verEl = document.getElementById("app-version");
     if (verEl) verEl.textContent = APP_VERSION;
     buildSideNav();
@@ -1480,6 +1481,30 @@
     window.addEventListener("hashchange", navigate);
     navigate();
     registerServiceWorker();
+  }
+
+  // 実際の表示高さ（iOSのアドレスバー/ツールバーを除いた可視領域）を測って --app-h に反映。
+  // これによりCSSは固定値ではなく「今この瞬間の見える高さ」に合わせられ、スクロールを防げる。
+  function setupAppHeight() {
+    var raf = 0;
+    function apply() {
+      raf = 0;
+      var vv = window.visualViewport;
+      var h = (vv && vv.height) ? vv.height : window.innerHeight;
+      // 端数で1pxのはみ出しが出ないよう切り捨て
+      document.documentElement.style.setProperty("--app-h", Math.floor(h) + "px");
+    }
+    function schedule() { if (!raf) raf = requestAnimationFrame(apply); }
+    apply();
+    window.addEventListener("resize", schedule);
+    window.addEventListener("orientationchange", function () { setTimeout(apply, 300); });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", schedule);
+      window.visualViewport.addEventListener("scroll", schedule);
+    }
+    // 起動直後のアドレスバー確定後にもう一度測る
+    setTimeout(apply, 300);
+    window.addEventListener("load", function () { setTimeout(apply, 100); });
   }
 
   /* ============================================================
