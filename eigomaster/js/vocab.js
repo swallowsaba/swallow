@@ -137,16 +137,22 @@
     choices.push(w.ja);
     choices = shuffle(choices);
 
+    var kanaApprox = "";
+    try { kanaApprox = (window.Katakana && window.Katakana.reduceTokenKana) ? window.Katakana.reduceTokenKana(w.en, false) : ""; } catch (e) { kanaApprox = ""; }
+
     root().innerHTML =
       '<div class="study-fit">' +
       '<div class="study-fit__top">' + progressHtml() + '</div>' +
       '<div class="study-fit__main">' +
-      '<div class="flashcard" style="min-height:150px">' +
-        '<div class="flashcard__word">' + EM.escapeHtml(w.en) + "</div>" +
-        (w.ipa ? '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
-        (EM.levels ? '<div class="center mt-4"><span class="chip chip--on" style="pointer-events:none">' + EM.escapeHtml(EM.levels.badge(w)) + "</span></div>" : "") +
-        '<div id="vc-chip" class="mt-4"></div>' +
-        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button> <button class="audio-btn" id="mic" type="button" aria-label="発音チェック">🎤</button></div>' +
+      '<div class="flashcard vcard">' +
+        (EM.levels ? '<span class="chip chip--on vcard__badge" style="pointer-events:none">' + EM.escapeHtml(EM.levels.badge(w)) + "</span>" : "") +
+        '<div class="vcard__word">' + EM.escapeHtml(w.en) + "</div>" +
+        (w.ipa ? '<div class="vcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
+        (kanaApprox ? '<div class="vcard__kana">≈ ' + EM.escapeHtml(kanaApprox) + "</div>" : "") +
+        '<div class="vcard__actions">' +
+          '<button class="vcard__btn vcard__btn--play" id="say" type="button" aria-label="発音を再生">▶</button>' +
+          '<button class="vcard__btn" id="mic" type="button" aria-label="発音チェック">🎤</button>' +
+        "</div>" +
       "</div>" +
       '<p class="field__label mt-4">意味として正しいものは？</p>' +
       '<div id="choices">' + choices.map(function (c) {
@@ -156,8 +162,9 @@
       '<div class="study-fit__foot" id="vc-foot"></div>' +
       "</div>";
 
-    if (EM.audioChip) EM.audioChip(document.getElementById("vc-chip"), w.en);
     document.getElementById("say").addEventListener("click", function () { EM.speak(w.en); });
+    var vqMic = document.getElementById("mic");
+    if (vqMic) vqMic.addEventListener("click", function () { EM.micCheck(w.en); });
     EM.speak(w.en);
 
     root().querySelectorAll(".choice-btn").forEach(function (b) {
@@ -180,12 +187,15 @@
       '<div class="study-fit">' +
       '<div class="study-fit__top">' + progressHtml() + '</div>' +
       '<div class="study-fit__main">' +
-      '<div class="flashcard" style="min-height:150px">' +
-        '<div class="flashcard__pos">' + EM.escapeHtml(w.pos || "") + "</div>" +
-        '<div class="flashcard__ja">' + EM.escapeHtml(w.ja) + "</div>" +
-        (w.ipa ? '<div class="flashcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
-        (EM.levels ? '<div class="center mt-4"><span class="chip chip--on" style="pointer-events:none">' + EM.escapeHtml(EM.levels.badge(w)) + "</span></div>" : "") +
-        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button> <button class="audio-btn" id="mic" type="button" aria-label="発音チェック">🎤</button></div>' +
+      '<div class="flashcard vcard">' +
+        (EM.levels ? '<span class="chip chip--on vcard__badge" style="pointer-events:none">' + EM.escapeHtml(EM.levels.badge(w)) + "</span>" : "") +
+        (w.pos ? '<div class="vcard__ipa">' + EM.escapeHtml(w.pos) + "</div>" : "") +
+        '<div class="vcard__word">' + EM.escapeHtml(w.ja) + "</div>" +
+        (w.ipa ? '<div class="vcard__ipa">' + EM.escapeHtml(w.ipa) + "</div>" : "") +
+        '<div class="vcard__actions">' +
+          '<button class="vcard__btn vcard__btn--play" id="say" type="button" aria-label="発音を再生">▶</button>' +
+          '<button class="vcard__btn" id="mic" type="button" aria-label="発音チェック">🎤</button>' +
+        "</div>" +
       "</div>" +
       '<div class="field mt-4"><input class="input" id="type-in" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="英単語を入力" /></div>' +
       '<div id="type-result" class="mt-4"></div>' +
@@ -194,6 +204,8 @@
       "</div>";
 
     document.getElementById("say").addEventListener("click", function () { EM.speak(w.en); });
+    var vtMic = document.getElementById("mic");
+    if (vtMic) vtMic.addEventListener("click", function () { EM.micCheck(w.en); });
     var input = document.getElementById("type-in");
     input.focus();
     function check() {

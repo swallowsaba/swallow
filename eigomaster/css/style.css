@@ -737,6 +737,23 @@ button {
   justify-content: center;
   gap: var(--space-3);
 }
+
+/* v79: 単語カードの刷新（はみ出し・重複再生ボタンを排除。中央寄せの1枚に統一） */
+.vcard { gap: 6px; padding: 20px 18px; min-height: 0; overflow: hidden; }
+.vcard__badge { align-self: center; margin-bottom: 2px; }
+.vcard__word { font-size: 34px; font-weight: 800; letter-spacing: -0.01em; word-break: break-word; line-height: 1.15; }
+.vcard__ipa { color: var(--c-ink-soft); font-size: 15px; }
+.vcard__kana { color: var(--c-ink-soft); font-size: 18px; }
+.vcard__actions { display: flex; justify-content: center; gap: 14px; margin-top: 8px; }
+.vcard__btn {
+  flex: 0 0 auto;
+  width: 52px; height: 52px; border-radius: 50%; border: none;
+  background: var(--c-surface-2); color: var(--c-ink); font-size: 20px;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.vcard__btn--play { background: var(--c-accent); color: #fff; }
+.vcard__btn:active { transform: scale(0.94); }
+.vcard__word--phrase { font-size: 26px; }
 .flashcard__word { font-size: var(--fs-display); font-weight: 800; letter-spacing: 0.01em; }
 .flashcard__ipa { font-family: var(--font-mono); font-size: var(--fs-h2); color: var(--c-accent); }
 .flashcard__kata { font-size: var(--fs-body); color: var(--c-ink-soft); }
@@ -1997,6 +2014,11 @@ button, .btn { touch-action: manipulation; }
   /* 学習中はカード・ボタンの縦余白を圧縮して1画面に収める */
   .study-fit .flashcard { min-height: 0 !important; padding: 14px; }
   .study-fit .flashcard__word { font-size: 30px; }
+  .study-fit .vcard { padding: 12px 14px; gap: 4px; }
+  .study-fit .vcard__word { font-size: 30px; }
+  .study-fit .vcard__kana { font-size: 16px; }
+  .study-fit .vcard__actions { margin-top: 6px; gap: 12px; }
+  .study-fit .vcard__btn { width: 48px; height: 48px; font-size: 18px; }
   .study-fit .flashcard__ja { font-size: 22px; }
   .study-fit .choice-btn { padding: 13px 14px; margin-top: 8px; }
   .study-fit .field__label { margin-top: 6px; }
@@ -2044,6 +2066,8 @@ button, .btn { touch-action: manipulation; }
 @media (max-width: 899px) and (max-height: 700px) {
   .study-fit .flashcard__word { font-size: 25px; }
   .study-fit .flashcard__ja { font-size: 19px; }
+  .study-fit .vcard__word { font-size: 25px; }
+  .study-fit .vcard__btn { width: 44px; height: 44px; }
   .study-fit .choice-btn { padding: 10px 12px; margin-top: 6px; }
 }
 

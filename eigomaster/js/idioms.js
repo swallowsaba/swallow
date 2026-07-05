@@ -92,11 +92,13 @@
       '<div class="study-fit">' +
       '<div class="study-fit__top">' + progressHtml() + '</div>' +
       '<div class="study-fit__main">' +
-      '<div class="flashcard" style="min-height:140px">' +
-        '<div class="flashcard__pos">' + EM.escapeHtml(x.kind) + "</div>" +
-        '<div class="flashcard__word" style="font-size:var(--fs-h1)">' + EM.escapeHtml(x.en) + "</div>" +
-        '<div id="id-chip" class="mt-4"></div>' +
-        '<div class="center mt-4"><button class="audio-btn" id="say" type="button" aria-label="再生">▶</button> <button class="audio-btn" id="mic" type="button" aria-label="発音チェック">🎤</button></div>' +
+      '<div class="flashcard vcard">' +
+        (x.kind ? '<div class="vcard__ipa">' + EM.escapeHtml(x.kind) + "</div>" : "") +
+        '<div class="vcard__word vcard__word--phrase">' + EM.escapeHtml(x.en) + "</div>" +
+        '<div class="vcard__actions">' +
+          '<button class="vcard__btn vcard__btn--play" id="say" type="button" aria-label="発音を再生">▶</button>' +
+          '<button class="vcard__btn" id="mic" type="button" aria-label="発音チェック">🎤</button>' +
+        "</div>" +
       "</div>" +
       '<p class="field__label mt-4">意味として正しいものは？</p>' +
       '<div id="choices">' + choices.map(function (c) {
@@ -106,7 +108,6 @@
       '<div class="study-fit__foot" id="id-foot"></div>' +
       "</div>";
 
-    if (EM.audioChip) EM.audioChip(document.getElementById("id-chip"), x.en);
     document.getElementById("say").addEventListener("click", function () { EM.speak(x.en); });
     var mic2 = document.getElementById("mic");
     if (mic2) mic2.addEventListener("click", function () { EM.micCheck(x.en); });
