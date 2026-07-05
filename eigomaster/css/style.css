@@ -1979,6 +1979,31 @@ button, .btn { touch-action: manipulation; }
   .app-main:has(.lesson) > section > .lesson,
   .lesson { height: 100%; min-height: 0 !important; }
   .lesson__body { overflow: auto; min-height: 0; }
+
+  /* v74: 単語ドリル等を1画面に収める（中段スクロール解消）。
+     選択肢・プロンプトの縦余白を圧縮し、本文を縦中央寄せにして無スクロール化。 */
+  .lesson__body { justify-content: center; gap: 8px; padding: 0; }
+  .lesson__top { padding: 2px 0 6px; }
+  .lesson__q { font-size: 12px; }
+  .lesson__prompt { gap: 4px; }
+  .lesson__big { font-size: 24px; }
+  .lesson__choices { gap: 8px; margin-top: 2px; }
+  .lesson__choice { padding: 12px 14px; border-bottom-width: 3px; }
+  .lesson__choice:active { border-bottom-width: 2px; }
+}
+
+/* 背の低い/小型スマホではさらに圧縮して確実に収める */
+@media (max-width: 899px) and (max-height: 760px) {
+  .lesson__big { font-size: 21px; }
+  .lesson__q { font-size: 11px; }
+  .lesson__choices { gap: 6px; }
+  .lesson__choice { padding: 10px 12px; font-size: 15px; }
+  .lesson__sentence { font-size: 17px; line-height: 1.5; }
+}
+@media (max-width: 899px) and (max-height: 640px) {
+  .lesson__big { font-size: 19px; }
+  .lesson__choice { padding: 8px 11px; font-size: 14px; }
+  .lesson__choices { gap: 5px; }
 }
 
 /* ごく背の低い画面ではさらに圧縮 */
