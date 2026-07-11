@@ -9,7 +9,7 @@
    ============================================================ */
 
 // 更新のたびに上げる。これで古いキャッシュは確実に破棄される。
-var CACHE_VERSION = "eigomaster-v80";
+var CACHE_VERSION = "eigomaster-v91";
 
 // 事前キャッシュ（オフライン初期動作用。失敗しても全体は止めない）
 var APP_SHELL = [
@@ -20,9 +20,7 @@ var APP_SHELL = [
   "./js/wordbook.js", "./js/idioms.js", "./js/shadowing.js", "./js/pronunciation.js",
   "./js/phonics.js", "./js/grammar.js", "./js/reading.js", "./js/listening.js",
   "./js/diagnosis.js", "./js/aicaption.js",
-  "./data/words.js", "./data/grammar.js", "./data/phonics.js", "./data/linking_rules.js",
-  "./data/pron_dict.js", "./data/diagnosis.js", "./data/reading.js", "./data/idioms.js",
-  "./data/listening.js", "./data/worker_code.js"
+  "./data/loader.js", "./data/worker_code.js", "./data/packs/manifest.json"
 ];
 
 self.addEventListener("install", function (event) {
@@ -30,7 +28,16 @@ self.addEventListener("install", function (event) {
     caches.open(CACHE_VERSION).then(function (cache) {
       return Promise.all(APP_SHELL.map(function (url) {
         return cache.add(url).catch(function (e) { console.warn("[sw] precache失敗:", url, e); });
-      }));
+      })).then(function () {
+        // 教材JSONパックを manifest から動的にプリキャッシュ（オフライン学習用）
+        return fetch("./data/packs/manifest.json").then(function (r) { return r.json(); }).then(function (man) {
+          var packs = (man && man.packs) || [];
+          return Promise.all(packs.map(function (p) {
+            var u = "./data/packs/" + p;
+            return cache.add(u).catch(function (e) { console.warn("[sw] pack precache失敗:", u, e); });
+          }));
+        }).catch(function (e) { console.warn("[sw] manifest取得失敗（オンライン時に再取得されます）:", e); });
+      });
     })
   );
   self.skipWaiting(); // 新SWを即時待機解除

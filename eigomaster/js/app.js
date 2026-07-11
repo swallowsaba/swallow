@@ -1408,7 +1408,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v80";
+  var APP_VERSION = "v91";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;
@@ -1569,6 +1569,14 @@
     });
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+  function boot() {
+    // data/loader.js の JSON パック読込完了を待ってから初期化（v90〜）
+    if (window.EigoDataReady && typeof window.EigoDataReady.then === "function") {
+      window.EigoDataReady.then(init).catch(function (e) { console.error("[boot] データ読込エラー:", e); init(); });
+    } else {
+      init();
+    }
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
 })();
