@@ -23,7 +23,11 @@
   }
   function weightOf(word) {
     var syl = (word.replace(/[^a-zA-Z]/g, "").match(/[aeiouy]+/gi) || []).length || 1;
-    return 0.18 + syl * 0.13; // 秒（基準1.0×）
+    var w = 0.18 + syl * 0.13; // 秒（基準1.0×）
+    // 【v92】実音声は句読点で息継ぎするため、推定にも同じポーズを織り込む
+    if (/[.!?;:]$/.test(word)) w += 0.30;
+    else if (/,$/.test(word)) w += 0.15;
+    return w;
   }
 
   EM.audioPlayer = function (container, text, opts) {
@@ -99,13 +103,20 @@
       var pos = st.cumStart + elapsed;
       var idx = st.startIdx;
       while (idx < toks.length - 1 && pos >= cum[idx + 1]) idx++;
-      // 実音声の境界イベント（端末ボイスのboundary／オンライン音声のtimeupdate由来）が
-      // 来る場合はそれを唯一の語送りとし、推定で先走らせない。
-      // 開始直後の猶予中も推定で進めない（最初の境界が来た瞬間に語が巻き戻るのを防ぐ）。
       var nowMs = performance.now();
-      var boundaryRecent = st.boundaryActive && (nowMs - st.lastB < 1200);
-      var inGrace = !st.boundaryActive && (nowMs - st.playStart < 700);
-      if (boundaryRecent || inGrace) idx = st.startIdx;
+      // 【v92修正】実音声の境界イベントが一度でも来ている間は「境界が唯一の語送り」。
+      // 従来は境界が1.2秒途切れると定速推定が再開し、実際の発声（長い語・ポーズ）と
+      // 無関係にカタカナが一定速度で流れるバグがあった。
+      // 修正後: 境界イベント駆動中は、推定は最後の境界語から最大+1語まで
+      // （長い無音でも先走らない）。境界が全く無い環境のみ従来の推定で進める。
+      if (st.boundaryActive) {
+        var boundaryRecent = (nowMs - st.lastB < 1500);
+        var cap = st.startIdx + (boundaryRecent ? 0 : 1);
+        if (idx > cap) idx = cap;
+      } else if (nowMs - st.playStart < 700) {
+        // 開始直後の猶予中は推定で進めない（最初の境界で語が巻き戻るのを防ぐ）
+        idx = st.startIdx;
+      }
       if (idx !== st.idx) highlight(idx);
       setBar(Math.min(1, pos / totalDur));
       st.raf = requestAnimationFrame(tick);
@@ -204,7 +215,7 @@
     var re = /(\S+)(\s*)/g, m, toks = [];
     while ((m = re.exec(text)) !== null) toks.push({ word: m[1], start: m.index });
     var kana = toks.map(function (t) { try { return (window.Katakana && window.Katakana.reduceTokenKana) ? window.Katakana.reduceTokenKana(t.word, false) : (window.Katakana && window.Katakana.wordToKatakana) ? window.Katakana.wordToKatakana(t.word) : ""; } catch (e) { return ""; } });
-    function wt(w) { var s = (w.replace(/[^a-zA-Z]/g, "").match(/[aeiouy]+/gi) || []).length || 1; return 0.18 + s * 0.13; }
+    function wt(w) { var s = (w.replace(/[^a-zA-Z]/g, "").match(/[aeiouy]+/gi) || []).length || 1; var v = 0.18 + s * 0.13; if (/[.!?;:]$/.test(w)) v += 0.30; else if (/,$/.test(w)) v += 0.15; return v; }
     var cum = [0]; toks.forEach(function (t) { cum.push(cum[cum.length - 1] + wt(t.word)); });
     var total = cum[cum.length - 1];
 
@@ -220,7 +231,7 @@
     var play = container.querySelector(".achip__play");
     var enEls = container.querySelectorAll(".achip__w");
     var kaEls = container.querySelectorAll(".achip__k");
-    var stt = { playing: false, idx: 0, raf: null, t0: 0, startIdx: 0 };
+    var stt = { playing: false, idx: 0, raf: null, t0: 0, startIdx: 0, boundaryActive: false, lastB: 0 };
 
     function hl(i) {
       stt.idx = i;
@@ -231,6 +242,11 @@
       if (!stt.playing) return;
       var pos = cum[stt.startIdx] + (performance.now() - stt.t0) / 1000;
       var idx = stt.startIdx; while (idx < toks.length - 1 && pos >= cum[idx + 1]) idx++;
+      // 【v92】実境界イベント駆動中は推定を先走らせない（最大+1語）
+      if (stt.boundaryActive) {
+        var cap = stt.startIdx + ((performance.now() - stt.lastB < 1500) ? 0 : 1);
+        if (idx > cap) idx = cap;
+      }
       if (idx !== stt.idx) hl(idx);
       stt.raf = requestAnimationFrame(tick);
     }
@@ -238,10 +254,10 @@
     function from(idx) {
       EM.stopSpeak(); cancelAnimationFrame(stt.raf);
       if (idx >= toks.length) { fin(); return; }
-      stt.playing = true; stt.startIdx = idx; stt.t0 = performance.now(); play.textContent = "⏸"; hl(idx);
+      stt.playing = true; stt.startIdx = idx; stt.t0 = performance.now(); stt.boundaryActive = false; stt.lastB = 0; play.textContent = "⏸"; hl(idx);
       stt.raf = requestAnimationFrame(tick);
       EM.speak(text.slice(toks[idx].start), {
-        onboundary: function (ci) { if (ci < 0) return; var gi = 0; var g = toks[idx].start + ci; while (gi < toks.length - 1 && toks[gi + 1].start <= g) gi++; stt.startIdx = gi; stt.t0 = performance.now(); hl(gi); },
+        onboundary: function (ci) { if (ci < 0) return; var gi = 0; var g = toks[idx].start + ci; while (gi < toks.length - 1 && toks[gi + 1].start <= g) gi++; if (gi < stt.startIdx) gi = stt.startIdx; stt.startIdx = gi; stt.t0 = performance.now(); stt.boundaryActive = true; stt.lastB = performance.now(); hl(gi); },
         onend: fin
       });
     }

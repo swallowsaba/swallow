@@ -41,10 +41,33 @@
   }
 
   /* ---------- レッスン ---------- */
+  // 【v93修正】増量分のレッスンには reorder / writing / examples が無いものがあり、
+  // 未定義参照の例外で詳細ページが描画されず「タップしても遷移しない」バグになっていた。
+  // 欠けているフィールドは穴埋め問題文から自動合成し、全レッスンで詳細ページを成立させる。
+  function normalizeLesson(l) {
+    if (!l) return l;
+    if (!l.blank) l.blank = { before: "", after: "", options: [], answer: "", ja: l.ja || "", explain: {} };
+    var sentence = ((l.blank.before || "") + (l.blank.answer || "") + (l.blank.after || "")).replace(/\s+/g, " ").trim();
+    if (!l.examples || !l.examples.length ||
+        (l.examples[0] && l.examples[0].en === "(see blank)")) {
+      l.examples = sentence ? [{ en: sentence, ja: l.blank.ja || l.ja || "" }] : (l.examples || []);
+    }
+    if (!l.reorder || !l.reorder.answer) {
+      l.reorder = { ja: l.blank.ja || l.ja || "", answer: sentence || (l.examples[0] ? l.examples[0].en : "") };
+    }
+    if (!l.writing || !l.writing.model) {
+      l.writing = {
+        prompt: "「" + (l.title || "この文法") + "」を使って、自分のことを1文書いてみましょう。",
+        model: (l.examples[0] ? l.examples[0].en : sentence)
+      };
+    }
+    return l;
+  }
+
   function drawLesson(id) {
     currentId = id;
-    var l = findLesson(id);
-    if (!l) return drawList();
+    var l = normalizeLesson(findLesson(id));
+    if (!l || !l.reorder.answer) return drawList();
 
     // 並べ替えの初期化
     reorder.target = l.reorder.answer;

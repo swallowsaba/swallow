@@ -259,6 +259,7 @@
         "</div>" +
         '<p class="list-row__sub mt-4">' + EM.escapeHtml(d.kata) + (d.ja ? " ・ " + EM.escapeHtml(d.ja) : "") + "</p>" +
         '<button class="btn btn--ghost btn--block mt-4" id="dict-add" type="button">＋ 単語帳に追加</button>' +
+        (EM.etymHtml ? EM.etymHtml(d.en) : "") +
       "</div>";
     panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
     document.getElementById("dict-say").addEventListener("click", function () { EM.speak(d.en); });

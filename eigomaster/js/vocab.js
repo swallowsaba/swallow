@@ -228,6 +228,14 @@
 
   // 「次へ」ボタンを出す（4択・タイピング用）
   function showNext(w, autoGrade) {
+    // 【v93】答え合わせ後に語源・成り立ちを表示（学習の定着を助ける）
+    if (EM.etymHtml) {
+      var et = EM.etymHtml(w.en);
+      if (et) {
+        var main = root().querySelector(".study-fit__main");
+        if (main && !main.querySelector(".etym")) main.insertAdjacentHTML("beforeend", et);
+      }
+    }
     var btn = document.createElement("button");
     btn.className = "btn btn--primary btn--block mt-4";
     btn.textContent = st.idx + 1 >= st.session.length ? "結果を見る" : "次の単語へ";

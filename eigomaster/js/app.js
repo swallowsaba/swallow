@@ -436,16 +436,39 @@
     var myToken = ++speakToken;   // 古い再生のコールバックを無効化（エコー対策）
     var startedFired = false;
 
-    // 実際の再生位置(currentTime/duration)から、いま読んでいる文字位置を推定して通知。
-    // これにより端末ボイスの onboundary が無いオンライン音声でも、ハイライトが
-    // 推定タイマーではなく「実音声」に追従し、リーディング等のズレが解消する。
+    // 実際の再生位置(currentTime/duration)から、いま読んでいる語の文字位置を推定して通知。
+    // 【v92修正】従来は「文字数で線形」に変換していたため、長い語も短い語も同じ文字速度で
+    // 進み、カタカナ表示が発声と無関係な一定速度で流れるバグがあった。
+    // 語ごとの音節数を重み（読み上げ所要時間の近似）として、実音声の再生比率を
+    // 「語の重み累積」に写像することで、長い語ほど長く留まる実発声追従ハイライトになる。
+    var chunkWeightCache = [];
+    function chunkWeightsOf(ci) {
+      if (chunkWeightCache[ci]) return chunkWeightCache[ci];
+      var ck = chunks[ci] || "";
+      var toks = [], re = /(\S+)/g, m;
+      while ((m = re.exec(ck)) !== null) toks.push({ start: m.index, word: m[1] });
+      var cum = [0];
+      toks.forEach(function (t) {
+        var syl = (t.word.replace(/[^a-zA-Z]/g, "").match(/[aeiouy]+/gi) || []).length || 1;
+        var w = 0.18 + syl * 0.13;                       // 語の基礎時間（音節比例）
+        if (/[.!?;:]$/.test(t.word)) w += 0.30;          // 文末ポーズ
+        else if (/,$/.test(t.word)) w += 0.15;           // 読点ポーズ
+        cum.push(cum[cum.length - 1] + w);
+      });
+      var info = { toks: toks, cum: cum, total: cum[cum.length - 1] || 1 };
+      chunkWeightCache[ci] = info;
+      return info;
+    }
     function emitBoundary(ratio) {
       if (typeof opts.onboundary !== "function") return;
       ratio = Math.max(0, Math.min(1, ratio));
       var base = chunkStart[i] || 0;
-      var clen = (chunks[i] || "").length || 1;
-      var off = Math.min(clen - 1, Math.floor(ratio * clen));
-      opts.onboundary(base + off, 0);
+      var wi = chunkWeightsOf(i);
+      if (!wi.toks.length) { opts.onboundary(base, 0); return; }
+      var pos = ratio * wi.total;
+      var idx = 0;
+      while (idx < wi.toks.length - 1 && pos >= wi.cum[idx + 1]) idx++;
+      opts.onboundary(base + wi.toks[idx].start, wi.toks[idx].word.length);
     }
 
     function playChunk(provIdx) {
@@ -1408,7 +1431,7 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v91";
+  var APP_VERSION = "v93";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;

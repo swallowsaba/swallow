@@ -2145,3 +2145,14 @@ button, .btn { touch-action: manipulation; }
   .app-header { position: static; }
   .tab-bar { position: static; }
 }
+
+/* ===== 語源・成り立ち（v93） ===== */
+.etym { background: var(--c-bg-soft, #f7f5f0); }
+.etym__head { font-size: var(--fs-tiny); font-weight: 700; color: var(--c-warm, #b5651d); letter-spacing: .06em; margin-bottom: var(--space-2); }
+.etym__origin { font-size: var(--fs-small); font-weight: 600; margin-bottom: var(--space-2); }
+.etym__story { font-size: var(--fs-small); line-height: 1.7; color: var(--c-text-soft, #555); }
+.etym__parts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: var(--space-2); }
+.etym__chip { display: inline-flex; flex-direction: column; align-items: center; padding: 4px 10px; border-radius: 10px; background: var(--c-surface, #fff); border: 1px solid var(--c-border, #e3ded4); }
+.etym__chip strong { font-size: var(--fs-small); }
+.etym__chip small { font-size: var(--fs-tiny); color: var(--c-text-soft, #777); }
+.etym__plus { color: var(--c-text-soft, #999); font-weight: 700; }

@@ -95,6 +95,7 @@
       '<div class="flashcard vcard">' +
         (x.kind ? '<div class="vcard__ipa">' + EM.escapeHtml(x.kind) + "</div>" : "") +
         '<div class="vcard__word vcard__word--phrase">' + EM.escapeHtml(x.en) + "</div>" +
+        (kata(x.en) ? '<div class="vcard__kana">≈ ' + EM.escapeHtml(kata(x.en)) + "</div>" : "") +
         '<div class="vcard__actions">' +
           '<button class="vcard__btn vcard__btn--play" id="say" type="button" aria-label="発音を再生">▶</button>' +
           '<button class="vcard__btn" id="mic" type="button" aria-label="発音チェック">🎤</button>' +
