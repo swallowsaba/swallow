@@ -94,7 +94,12 @@
     "val": "強い・価値", "ven": "来る", "vent": "来る", "ver": "真実",
     "vers": "回す・向ける", "vert": "回す・向ける", "vid": "見る", "vis": "見る",
     "vit": "生命", "viv": "生きる", "voc": "声・呼ぶ", "vok": "呼ぶ",
-    "vol": "意志・回る", "volv": "回る"
+    "vol": "意志・回る", "volv": "回る",
+    "litig": "争う・訴える", "narr": "語る", "nounc": "告げる", "nunci": "告げる",
+    "sper": "希望する", "sacr": "神聖な", "sanct": "神聖な", "secut": "追う",
+    "sequ": "続く", "simil": "似た", "solu": "解く", "sort": "運命・種類",
+    "spond": "約束する", "spons": "約束する", "tempt": "試みる", "tribut": "与える",
+    "vad": "行く", "vas": "行く", "vict": "征服する", "vinc": "征服する"
   };
 
   function clean(word) {
