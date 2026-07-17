@@ -1431,7 +1431,9 @@
   }
 
   /* ---------- Service Worker ---------- */
-  var APP_VERSION = "v103";
+  // v104〜: バージョンは data/packs/manifest.json の "version" が唯一の情報源。
+  // APP_VERSION はデータ読込前・読込失敗時のフォールバック表示のみ。
+  var APP_VERSION = "v104";
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     if (location.protocol !== "http:" && location.protocol !== "https:") return;
@@ -1501,7 +1503,13 @@
     applyTheme(Storage.getState().profile.theme);
     setupAppHeight();
     var verEl = document.getElementById("app-version");
-    if (verEl) verEl.textContent = APP_VERSION;
+    if (verEl) verEl.textContent = window.EigoDataVersion ? ("v" + window.EigoDataVersion) : APP_VERSION;
+    // データ読込完了後に manifest.version で上書き（loader より先に実行された場合に備える）
+    if (window.EigoDataReady && typeof window.EigoDataReady.then === "function") {
+      window.EigoDataReady.then(function () {
+        if (verEl && window.EigoDataVersion) verEl.textContent = "v" + window.EigoDataVersion;
+      });
+    }
     buildSideNav();
     if (!EM.views[location.hash]) location.replace("#" + DEFAULT_ROUTE.slice(1));
     window.addEventListener("hashchange", navigate);

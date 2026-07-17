@@ -8,8 +8,12 @@
    - バージョンを上げると古いキャッシュは activate 時に削除。
    ============================================================ */
 
-// 更新のたびに上げる。これで古いキャッシュは確実に破棄される。
-var CACHE_VERSION = "eigomaster-v103";
+// v104〜: キャッシュ名は固定。fetch がネットワーク優先＋ランタイムキャッシュ更新のため、
+// 教材追加時にこのファイルを変更する必要はない。
+// （データの鮮度は data/packs/manifest.json の "version" が管理する。
+//   新パックは初回オンラインアクセス時に自動でランタイムキャッシュへ追加される。）
+// SW自体のロジックを変更した時だけ、この名前を変えて古いキャッシュを破棄する。
+var CACHE_VERSION = "eigomaster-static-1";
 
 // 事前キャッシュ（オフライン初期動作用。失敗しても全体は止めない）
 var APP_SHELL = [
@@ -30,7 +34,7 @@ self.addEventListener("install", function (event) {
         return cache.add(url).catch(function (e) { console.warn("[sw] precache失敗:", url, e); });
       })).then(function () {
         // 教材JSONパックを manifest から動的にプリキャッシュ（オフライン学習用）
-        return fetch("./data/packs/manifest.json").then(function (r) { return r.json(); }).then(function (man) {
+        return fetch("./data/packs/manifest.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (man) {
           var packs = (man && man.packs) || [];
           return Promise.all(packs.map(function (p) {
             var u = "./data/packs/" + p;
