@@ -1,89 +1,135 @@
 # ============================================================================
-#  これは「GitHub Actions」の設定ファイルです。
-#  GitHub Actions = GitHubが無料で用意してくれる“自動作業ロボット”のこと。
-#  このファイルに「いつ・何をするか」を書いておくと、その通りに自動で動きます。
-#  ここでやりたいこと:「mainに変更を上げたら、自動でWebサイトを公開する」
-#  ※ 行頭の # から始まる行は「コメント（人間用のメモ）」で、動作には影響しません。
+#  Swallow + Build 版 GitHub Actions 設定ファイル
+#  ----------------------------------------------------------------------------
+#  元の Swallow（静的サイトを並べて目次を自動生成する仕組み）に加えて、
+#  「package.json があるサブフォルダは npm でビルドしてから公開する」機能を
+#  足したものです。これで RAW Studio のような Vite/React/TypeScript の
+#  “要ビルド”プロジェクトも、あなたのPCで install せずに公開できます。
+#  （install は GitHub の貸しパソコン上で走ります）
+#
+#  想定する置き方:
+#    swallow-repo/
+#      ├─ raw-studio/        ← package.json あり → 自動で npm run build
+#      │    └─ (Viteのソース一式)
+#      ├─ some-static-site/  ← index.html だけの静的サイト → そのままコピー
+#      └─ .github/workflows/deploy.yml  ← このファイル
+#
+#  公開後URL: https://<ユーザー名>.github.io/<リポジトリ名>/raw-studio/
 # ============================================================================
 
-# name: この自動作業の名前。GitHubの「Actions」タブにこの名前で表示されるだけ。
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (Swallow + build)
 
-# on: 「どういう時にこのロボットを動かすか」を決める引き金（トリガー）の設定。
+# on: いつ動かすか。main への push と、手動ボタン。
 on:
-  # push: 誰かがコードをGitHubに「アップロード（push）」したら動かす、という意味。
   push:
-    # branches: その中でも「main」という名前の保管場所に上げた時だけ動かす。
     branches: ["main"]
-  # workflow_dispatch: GitHubの画面にある手動ボタンからも動かせるようにする設定。
   workflow_dispatch:
 
-# permissions: このロボットに与える“権限（できること）”の設定。
+# permissions: ロボットに与える権限。
 permissions:
-  # contents: read = リポジトリの中身を「読む」ことを許可。
   contents: read
-  # pages: write = GitHub Pages（Web公開機能）に「書き込む＝公開する」ことを許可。
   pages: write
-  # id-token: write = 公開時の本人確認に使う電子的な合言葉の発行を許可（おまじない）。
   id-token: write
 
-# concurrency: 同じ作業が同時に何個も走らないように交通整理する設定。
+# concurrency: 公開作業が同時多発しないよう交通整理。
 concurrency:
-  # group: "pages" = 「pages」という名札のグループは同時に1つだけ、というルール。
   group: "pages"
-  # cancel-in-progress: false = すでに動いている公開作業は中断せず、最後までやらせる。
   cancel-in-progress: false
 
-# jobs: 実際にやる「仕事（ジョブ）」の中身。ここから下が作業内容の本体。
 jobs:
-  # deploy: この仕事につけた名前（自由に決めてよい）。「公開する仕事」の意味で命名。
   deploy:
-    # environment: 公開先の環境名。GitHub Pagesでは「github-pages」と書く決まり。
     environment:
-      # name: 環境の名前（固定でこう書く）。
       name: github-pages
-      # url: 公開が終わったら、出来上がったサイトのURLをここに自動で表示する。
       url: ${{ steps.deployment.outputs.page_url }}
-    # runs-on: この作業を動かす“貸しパソコン”の種類。ubuntu-latest = 最新のLinux。
     runs-on: ubuntu-latest
-    # env: この仕事の間ずっと有効な環境変数（設定値）。
-    # ↓ 「Node 20はもう古い」という警告を消すため、新しいNode 24で動かす指定。
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    # steps: 作業の手順を、上から順番に1ステップずつ並べたもの。
     steps:
-      # 【手順1】リポジトリ（あなたのファイル一式）を貸しパソコンにコピーしてくる。
+      # 【手順1】リポジトリのファイル一式を貸しパソコンに取得。
       - name: Checkout
-        # uses: 既製の便利ツールを使う宣言。actions/checkout = 公式の「取得ツール」。
         uses: actions/checkout@v4
 
-      # 【手順2】トップページ(index.html)が無ければ、自動で“目次ページ”を作る。
-      - name: Generate landing page if root index.html is missing
-        # run: | = ここから下は普通のコマンド（シェルスクリプト）を実行する、の意味。
+      # 【手順2】Node.js（npm を動かすための実行環境）を用意。
+      #          ※ 速度を上げたい場合は、各プロジェクトに package-lock.json を
+      #            コミットした上で、下に
+      #              cache: npm
+      #              cache-dependency-path: "**/package-lock.json"
+      #            を足すとダウンロードを再利用できる（lockfile必須なので既定では無効）。
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 【手順3】サブプロジェクトをビルドし、公開用フォルダ(_site)を組み立て、
+      #          最後に目次(index.html)を自動生成する。ここが心臓部。
+      - name: Build subprojects and assemble site
         run: |
-          # もしトップ階層に index.html が「すでにある」なら、
-          if [ -f index.html ]; then
-            # メッセージだけ出して、
-            echo "Root index.html already exists — keeping it as-is."
-            # この手順を途中終了する（自作の目次で上書きしないため）。
-            exit 0
-          fi
+          set -euo pipefail
+          shopt -s nullglob
 
-          # ここから下は「index.htmlが無かった場合」の処理。
-          echo "No root index.html — generating landing page from subdirectories..."
+          # リポジトリ名（例: raw-studio ではなく Swallow 側のリポジトリ名）。
+          # Vite の base（アセットの参照先パス）を組み立てるのに使う。
+          REPO_SHORT="${{ github.event.repository.name }}"
 
-          # 各サブフォルダの中にある index.html を探して、フォルダ名の一覧を作る。
-          # （.git や .github のような隠しフォルダは対象から外している）
-          mapfile -t DIRS < <(find . -maxdepth 2 -name index.html -not -path "./index.html" -not -path "./.*/*" \
-                                | sed -E 's|^\./||;s|/index\.html$||' | sort)
+          # 公開用の出力フォルダ。ここに入れた中身だけが Web に出る。
+          OUT="_site"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
 
-          # ↓ ここから、目次となるHTMLファイルの中身を組み立てて index.html に書き出す。
-          # 【重要】次の「HTML_HEAD」から始まる枠の“中”は、書いた文字がそのまま
-          #         HTMLファイルになって出力されます。だからこの枠の中には
-          #         説明コメントを入れられません（入れると画面に表示されてしまう）。
+          # トップ階層のフォルダを1つずつ処理する。
+          for dir in */ ; do
+            name="${dir%/}"
+
+            # 隠しフォルダ・出力フォルダ・node_modules は対象外。
+            case "$name" in
+              .*|_site|node_modules) continue ;;
+            esac
+
+            if [ -f "$name/package.json" ]; then
+              # --- 要ビルドのプロジェクト（Vite など） ---
+              echo "::group::Building $name"
+
+              # 公開URLが /<repo>/<name>/ になるので、アセット参照も同じ絶対パスに
+              # 合わせる。RAW Studio の vite.config.ts はこの VITE_BASE を読む。
+              export VITE_BASE="/$REPO_SHORT/$name/"
+
+              (
+                cd "$name"
+                # lockfile があれば再現性の高い npm ci、無ければ npm install。
+                if [ -f package-lock.json ]; then
+                  npm ci
+                else
+                  npm install
+                fi
+                npm run build
+              )
+
+              # Vite の出力先は既定で dist/。その中身を _site/<name>/ へ複製。
+              if [ -d "$name/dist" ]; then
+                mkdir -p "$OUT/$name"
+                cp -r "$name/dist/." "$OUT/$name/"
+              else
+                echo "ERROR: '$name' has package.json but produced no dist/." >&2
+                exit 1
+              fi
+
+              echo "::endgroup::"
+
+            elif [ -f "$name/index.html" ]; then
+              # --- ビルド不要の静的サイト。そのままコピー。 ---
+              echo "Copying static project: $name"
+              mkdir -p "$OUT/$name"
+              cp -r "$name/." "$OUT/$name/"
+            fi
+          done
+
+          # 組み立てた _site の中から、index.html を持つ直下フォルダを列挙して目次を作る。
+          mapfile -t DIRS < <(find "$OUT" -mindepth 2 -maxdepth 2 -name index.html \
+                                | sed -E "s|^$OUT/||;s|/index\.html$||" | sort)
+
+          # --- ここから目次HTMLの組み立て（Swallow の見た目を踏襲） ---
+          # 【重要】次の HTML_HEAD 〜 HTML_HEAD の“中”はそのままHTMLとして出力される。
+          #         だから枠の中には説明コメントを書けない（画面に出てしまう）。
           {
-            # cat <<'HTML_HEAD' … HTML_HEAD = この2つの目印に挟まれた部分を丸ごと出力。
-            cat <<'HTML_HEAD'
+          cat <<'HTML_HEAD'
           <!DOCTYPE html>
           <html lang="ja">
           <head>
@@ -91,29 +137,16 @@ jobs:
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Swallow — Projects</title>
           <style>
-            :root {
-              --bg:#0d1117; --panel:#161b22; --border:#30363d;
-              --text:#e6edf3; --text-dim:#8d96a0; --accent:#58a6ff;
-              --purple:#a371f7;
-            }
+            :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--text:#e6edf3;--text-dim:#8d96a0;--accent:#58a6ff;--purple:#a371f7}
             *{box-sizing:border-box}
-            body{margin:0;padding:40px 20px;background:var(--bg);color:var(--text);
-              font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans",sans-serif;
-              min-height:100vh;display:flex;flex-direction:column;align-items:center}
-            h1{font-size:32px;margin:0 0 8px;
-              background:linear-gradient(135deg,var(--accent),var(--purple));
-              -webkit-background-clip:text;background-clip:text;color:transparent}
+            body{margin:0;padding:40px 20px;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+            h1{font-size:32px;margin:0 0 8px;background:linear-gradient(135deg,var(--accent),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
             .sub{color:var(--text-dim);margin-bottom:32px;font-size:14px}
-            .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-              gap:14px;max-width:900px;width:100%}
-            a.card{display:block;padding:18px 20px;background:var(--panel);border:1px solid var(--border);
-              border-radius:10px;color:var(--text);text-decoration:none;
-              transition:border-color .15s,transform .1s,box-shadow .15s}
-            a.card:hover{border-color:var(--accent);transform:translateY(-2px);
-              box-shadow:0 4px 16px rgba(88,166,255,0.15)}
+            .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;max-width:900px;width:100%}
+            a.card{display:block;padding:18px 20px;background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--text);text-decoration:none;transition:border-color .15s,transform .1s,box-shadow .15s}
+            a.card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 16px rgba(88,166,255,0.15)}
             a.card .name{font-size:16px;font-weight:600}
-            a.card .path{color:var(--text-dim);font-size:12px;font-family:"SFMono-Regular",Menlo,monospace;
-              margin-top:4px}
+            a.card .path{color:var(--text-dim);font-size:12px;font-family:"SFMono-Regular",Menlo,monospace;margin-top:4px}
             .empty{color:var(--text-dim);font-style:italic;margin-top:20px}
             footer{margin-top:auto;padding-top:40px;color:var(--text-dim);font-size:11px}
             footer a{color:var(--accent);text-decoration:none}
@@ -125,49 +158,42 @@ jobs:
           <div class="grid">
           HTML_HEAD
 
-            # ↓ ここは枠の“外”なので、またコメントを書けます。
-            # もし index.html を持つサブフォルダが1つも無かったら、
-            if [ ${#DIRS[@]} -eq 0 ]; then
-              # 「見つかりませんでした」という案内文を出す。
-              echo '<div class="empty">No subdirectories with index.html were found.</div>'
-            else
-              # 見つかったフォルダの数だけ繰り返して、
-              for d in "${DIRS[@]}"; do
-                # フォルダごとに「クリックできるカード」を1枚ずつ作る。
-                echo "<a class=\"card\" href=\"${d}/\"><div class=\"name\">${d}</div><div class=\"path\">/${d}/</div></a>"
-              done
-            fi
+          if [ ${#DIRS[@]} -eq 0 ]; then
+            echo '<div class="empty">No subdirectories with index.html were found.</div>'
+          else
+            for d in "${DIRS[@]}"; do
+              echo "<a class=\"card\" href=\"${d}/\"><div class=\"name\">${d}</div><div class=\"path\">/${d}/</div></a>"
+            done
+          fi
 
-            # ↓ 再びそのまま出力される枠（フッター部分）。中にはコメントを書けない。
-            cat <<HTML_FOOT
+          cat <<HTML_FOOT
           </div>
           <footer>
-            Auto-generated on $(date -u +"%Y-%m-%d %H:%M UTC") · 
+            Auto-generated on $(date -u +"%Y-%m-%d %H:%M UTC") &middot;
             <a href="https://github.com/${{ github.repository }}">${{ github.repository }}</a>
           </footer>
           </body>
           </html>
           HTML_FOOT
-          # } > index.html = ここまで組み立てた中身を、まとめて index.html に保存する。
-          } > index.html
+          } > "$OUT/index.html"
 
-          # 最後に「何個のプロジェクトを目次に入れたか」をログに出して完了。
-          echo "Generated landing page with ${#DIRS[@]} project(s)."
+          # Jekyll処理を無効化（Actions公開では基本不要だが、保険として置く）。
+          touch "$OUT/.nojekyll"
 
-      # 【手順3】GitHub Pages（Web公開機能）を使う準備をする公式ツール。
+          echo "Assembled '$OUT' with ${#DIRS[@]} project(s)."
+
+      # 【手順4】GitHub Pages を使う準備。
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # 【手順4】公開したいファイル一式を“荷物（アーティファクト）”としてまとめる。
+      # 【手順5】公開用フォルダ(_site)だけを荷物にまとめる。
+      #          path を '.' から '_site' に変えたのが元ファイルとの最大の違い。
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
-        # with: ツールに渡す追加の設定。
         with:
-          # path: '.' = 「今いるフォルダの全部（＝リポジトリ全体）」を荷物に入れる。
-          path: '.'
+          path: "_site"
 
-      # 【手順5】まとめた荷物を実際にGitHub Pagesへ届けて、Webに公開する。
+      # 【手順6】まとめた荷物を GitHub Pages へ届けて公開。
       - name: Deploy to GitHub Pages
-        # id: この手順に付ける名札。上のほうの url: で結果を呼び出すのに使っている。
         id: deployment
         uses: actions/deploy-pages@v4
