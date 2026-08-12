@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dialog';
 import type { Preset, PresetCategory } from '@/types';
 import { selectCurrentEdit, useEditorStore } from '@/features/editor';
-import { applyPresetToEdit } from '../model/preset-apply';
 import { selectFilteredPresets, usePresetStore } from '../model/preset-store';
 import { PresetItem } from './preset-item';
 
