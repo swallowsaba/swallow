@@ -25,7 +25,11 @@ const api: DecodeApi = {
 
     if (info.imageClass === 'raw') {
       const { pixels, metadata } = await rawDecoder.decode(buffer);
-      const imageData = new ImageData(pixels.data, pixels.width, pixels.height);
+      // Newer TypeScript types Uint8ClampedArray as possibly SharedArrayBuffer-backed,
+      // while the ImageData constructor requires a plain ArrayBuffer-backed one. Copy
+      // into a fresh Uint8ClampedArray to guarantee that regardless of the source.
+      const data = new Uint8ClampedArray(pixels.data);
+      const imageData = new ImageData(data, pixels.width, pixels.height);
       const bitmap = await createImageBitmap(imageData);
       const result: DecodedImageResult = {
         bitmap,
