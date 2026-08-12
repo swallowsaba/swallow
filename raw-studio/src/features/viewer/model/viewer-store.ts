@@ -1,0 +1,70 @@
+import { create } from 'zustand';
+import type { FitMode, Point, Size } from './viewport';
+import { clampScale } from './viewport';
+
+/**
+ * View state for the center stage: which image bitmap is shown and how it is
+ * framed (fit/fill/custom scale, pan offset, rotation). Actual fit/fill scale is
+ * computed in the canvas component from the measured container; this store holds
+ * the user's *intent*.
+ */
+export interface ViewerState {
+  bitmap: ImageBitmap | null;
+  imageSize: Size | null;
+
+  mode: FitMode;
+  /** Scale used when mode === 'custom'. */
+  scale: number;
+  offset: Point;
+  rotationDeg: number;
+  showBefore: boolean;
+
+  loadBitmap: (bitmap: ImageBitmap, size: Size) => void;
+  clearBitmap: () => void;
+
+  setMode: (mode: FitMode) => void;
+  setCustomScale: (scale: number) => void;
+  setOffset: (offset: Point) => void;
+  rotateCw: () => void;
+  resetView: () => void;
+  setShowBefore: (value: boolean) => void;
+}
+
+const INITIAL = {
+  mode: 'fit' as FitMode,
+  scale: 1,
+  offset: { x: 0, y: 0 } as Point,
+  rotationDeg: 0,
+  showBefore: false,
+};
+
+export const useViewerStore = create<ViewerState>((set) => ({
+  bitmap: null,
+  imageSize: null,
+  ...INITIAL,
+
+  loadBitmap: (bitmap, size) => {
+    set({ bitmap, imageSize: size, ...INITIAL });
+  },
+  clearBitmap: () => {
+    set({ bitmap: null, imageSize: null, ...INITIAL });
+  },
+  setMode: (mode) => {
+    set({ mode });
+  },
+  setCustomScale: (scale) => {
+    set({ mode: 'custom', scale: clampScale(scale) });
+  },
+  setOffset: (offset) => {
+    set({ offset });
+  },
+  rotateCw: () => {
+    set((s) => ({ rotationDeg: (s.rotationDeg + 90) % 360, offset: { x: 0, y: 0 } }));
+  },
+  resetView: () => {
+    set({ ...INITIAL });
+  },
+  setShowBefore: (showBefore) => {
+    set({ showBefore });
+  },
+}));
