@@ -1,112 +1,119 @@
 # ============================================================================
-#  Swallow + Build 版 GitHub Actions 設定ファイル
+#  GitHub Pages デプロイ設定（Swallow + 自動ビルド版）
 #  ----------------------------------------------------------------------------
-#  元の Swallow（静的サイトを並べて目次を自動生成する仕組み）に加えて、
-#  「package.json があるサブフォルダは npm でビルドしてから公開する」機能を
-#  足したものです。これで RAW Studio のような Vite/React/TypeScript の
-#  “要ビルド”プロジェクトも、あなたのPCで install せずに公開できます。
-#  （install は GitHub の貸しパソコン上で走ります）
+#  役割:
+#   ・複数の静的サイトをサブフォルダに並べて「目次ページ」を自動生成する
+#     （元の Swallow の機能）
+#   ・加えて、package.json があるサブフォルダは npm でビルドしてから公開する
+#     （RAW Studio のような Vite/React/TypeScript の“要ビルド”プロジェクト対応）
 #
-#  想定する置き方:
-#    swallow-repo/
+#  重要: あなたのPCでは何もインストールしません。
+#        npm のインストール／ビルドは、この GitHub の貸しマシン上で走ります。
+#
+#  想定フォルダ構成:
+#    <リポジトリ>/
 #      ├─ raw-studio/        ← package.json あり → 自動で npm run build
-#      │    └─ (Viteのソース一式)
-#      ├─ some-static-site/  ← index.html だけの静的サイト → そのままコピー
+#      ├─ some-static-site/  ← index.html だけ   → そのままコピー
 #      └─ .github/workflows/deploy.yml  ← このファイル
 #
-#  公開後URL: https://<ユーザー名>.github.io/<リポジトリ名>/raw-studio/
+#  公開後URL:
+#    目次    : https://<ユーザー名>.github.io/<リポジトリ名>/
+#    アプリ  : https://<ユーザー名>.github.io/<リポジトリ名>/raw-studio/
 # ============================================================================
 
+# ワークフローの名前（Actions タブに表示される）
 name: Deploy to GitHub Pages (Swallow + build)
 
-# on: いつ動かすか。main への push と、手動ボタン。
+# いつ実行するか
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
+    branches: ["main"]   # main ブランチに push されたら実行
+  workflow_dispatch:     # Actions タブから手動でも実行できるようにする
 
-# permissions: ロボットに与える権限。
+# このワークフローに与える権限（Pages 公開に必要な最小限）
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: read   # リポジトリの中身を読む
+  pages: write     # GitHub Pages へ書き込む
+  id-token: write  # デプロイ時の認証トークン発行に必要
 
-# concurrency: 公開作業が同時多発しないよう交通整理。
+# 公開作業の同時実行を防ぐ交通整理（同時に複数走らないようにする）
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: false  # 進行中のデプロイは中断せず、順番に処理する
 
 jobs:
   deploy:
+    # このジョブが「github-pages」環境へのデプロイであることを宣言
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}  # 公開URLを結果に表示
+    # 実行マシン（GitHub提供のUbuntu）
     runs-on: ubuntu-latest
     steps:
-      # 【手順1】リポジトリのファイル一式を貸しパソコンに取得。
+      # 【手順1】リポジトリのファイル一式を貸しマシンに取得
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 【手順2】Node.js（npm を動かすための実行環境）を用意。
-      #          ※ 速度を上げたい場合は、各プロジェクトに package-lock.json を
-      #            コミットした上で、下に
-      #              cache: npm
-      #              cache-dependency-path: "**/package-lock.json"
-      #            を足すとダウンロードを再利用できる（lockfile必須なので既定では無効）。
+      # 【手順2】Node.js（npm を動かす実行環境）を用意
+      #   ※ 高速化したい場合は、各プロジェクトに package-lock.json をコミットした上で
+      #     下に  cache: npm  /  cache-dependency-path: "**/package-lock.json"  を
+      #     足すとダウンロードを再利用できる（lockfile 必須のため既定では無効）
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       # 【手順3】サブプロジェクトをビルドし、公開用フォルダ(_site)を組み立て、
-      #          最後に目次(index.html)を自動生成する。ここが心臓部。
+      #          最後に目次(index.html)を自動生成する（ここが心臓部）
       - name: Build subprojects and assemble site
         run: |
+          # エラーが出たら即停止（安全のため）
           set -euo pipefail
+          # 該当フォルダが無いときに for ループが空回りしないようにする
           shopt -s nullglob
 
-          # リポジトリ名（例: raw-studio ではなく Swallow 側のリポジトリ名）。
-          # Vite の base（アセットの参照先パス）を組み立てるのに使う。
+          # リポジトリ名（例: swallow-repo）。Vite の base パス組み立てに使う
           REPO_SHORT="${{ github.event.repository.name }}"
 
-          # 公開用の出力フォルダ。ここに入れた中身だけが Web に出る。
+          # 公開用の出力フォルダ。ここに入れた中身だけが Web に出る
           OUT="_site"
-          rm -rf "$OUT"
-          mkdir -p "$OUT"
+          rm -rf "$OUT"      # 前回分を掃除
+          mkdir -p "$OUT"    # 空の出力フォルダを作る
 
-          # トップ階層のフォルダを1つずつ処理する。
+          # トップ階層のフォルダを 1 つずつ処理する
           for dir in */ ; do
-            name="${dir%/}"
+            name="${dir%/}"   # 末尾のスラッシュを外してフォルダ名だけにする
 
-            # 隠しフォルダ・出力フォルダ・node_modules は対象外。
+            # 隠しフォルダ・出力フォルダ・node_modules は対象外にする
             case "$name" in
               .*|_site|node_modules) continue ;;
             esac
 
             if [ -f "$name/package.json" ]; then
-              # --- 要ビルドのプロジェクト（Vite など） ---
-              echo "::group::Building $name"
+              # --- ここは「要ビルド」のプロジェクト（Vite など） ---
+              echo "::group::Building $name"   # ログを折りたたみ表示
 
               # 公開URLが /<repo>/<name>/ になるので、アセット参照も同じ絶対パスに
-              # 合わせる。RAW Studio の vite.config.ts はこの VITE_BASE を読む。
+              # 合わせる。RAW Studio の vite.config.ts はこの VITE_BASE を読む
               export VITE_BASE="/$REPO_SHORT/$name/"
 
               (
-                cd "$name"
-                # lockfile があれば再現性の高い npm ci、無ければ npm install。
+                cd "$name"   # そのプロジェクトの中に入る
+                # lockfile があれば再現性の高い npm ci、無ければ npm install
                 if [ -f package-lock.json ]; then
                   npm ci
                 else
                   npm install
                 fi
-                npm run build
+                npm run build   # 本番ビルド（dist/ が生成される）
               )
 
-              # Vite の出力先は既定で dist/。その中身を _site/<name>/ へ複製。
+              # Vite の出力先は既定で dist/。その中身を _site/<name>/ へ複製する
               if [ -d "$name/dist" ]; then
                 mkdir -p "$OUT/$name"
                 cp -r "$name/dist/." "$OUT/$name/"
               else
+                # package.json はあるのに dist/ が無い＝ビルド失敗として止める
                 echo "ERROR: '$name' has package.json but produced no dist/." >&2
                 exit 1
               fi
@@ -114,20 +121,21 @@ jobs:
               echo "::endgroup::"
 
             elif [ -f "$name/index.html" ]; then
-              # --- ビルド不要の静的サイト。そのままコピー。 ---
+              # --- ここは「ビルド不要」の静的サイト。そのままコピー ---
               echo "Copying static project: $name"
               mkdir -p "$OUT/$name"
               cp -r "$name/." "$OUT/$name/"
             fi
           done
 
-          # 組み立てた _site の中から、index.html を持つ直下フォルダを列挙して目次を作る。
+          # 組み立てた _site の中から、index.html を持つ直下フォルダを列挙して
+          # 目次に載せる項目リスト(DIRS)を作る
           mapfile -t DIRS < <(find "$OUT" -mindepth 2 -maxdepth 2 -name index.html \
                                 | sed -E "s|^$OUT/||;s|/index\.html$||" | sort)
 
-          # --- ここから目次HTMLの組み立て（Swallow の見た目を踏襲） ---
-          # 【重要】次の HTML_HEAD 〜 HTML_HEAD の“中”はそのままHTMLとして出力される。
-          #         だから枠の中には説明コメントを書けない（画面に出てしまう）。
+          # ===== ここから目次HTMLの組み立て（Swallow の見た目を踏襲）=====
+          # 【注意】次の HTML_HEAD 〜 HTML_HEAD の“中”はそのままHTMLとして出力される。
+          #         そのため枠の中には説明コメントを書けない（画面に出てしまう）
           {
           cat <<'HTML_HEAD'
           <!DOCTYPE html>
@@ -158,14 +166,18 @@ jobs:
           <div class="grid">
           HTML_HEAD
 
+          # プロジェクトが1つも見つからなければ、その旨を表示
           if [ ${#DIRS[@]} -eq 0 ]; then
             echo '<div class="empty">No subdirectories with index.html were found.</div>'
           else
+            # 見つかったフォルダごとに、リンクカードを1枚ずつ出力する
             for d in "${DIRS[@]}"; do
               echo "<a class=\"card\" href=\"${d}/\"><div class=\"name\">${d}</div><div class=\"path\">/${d}/</div></a>"
             done
           fi
 
+          # フッター（生成日時とリポジトリへのリンク）
+          # ここは <<HTML_FOOT （クォート無し）なので $(date) 等が展開される
           cat <<HTML_FOOT
           </div>
           <footer>
@@ -177,23 +189,25 @@ jobs:
           HTML_FOOT
           } > "$OUT/index.html"
 
-          # Jekyll処理を無効化（Actions公開では基本不要だが、保険として置く）。
+          # Jekyll の自動処理を無効化（"_"始まりのフォルダ等が無視されるのを防ぐ保険）
           touch "$OUT/.nojekyll"
 
+          # 何個のプロジェクトを組み込んだかをログに出す
           echo "Assembled '$OUT' with ${#DIRS[@]} project(s)."
 
-      # 【手順4】GitHub Pages を使う準備。
+      # 【手順4】GitHub Pages を使う準備をする
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # 【手順5】公開用フォルダ(_site)だけを荷物にまとめる。
-      #          path を '.' から '_site' に変えたのが元ファイルとの最大の違い。
+      # 【手順5】公開用フォルダ(_site)だけを“荷物”としてアップロードする
+      #   ※ 元の「path: '.'（リポジトリ丸ごと）」との最大の違いがここ。
+      #     ビルド済みの成果物だけを公開するので、真っ白画面にならない
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: "_site"
 
-      # 【手順6】まとめた荷物を GitHub Pages へ届けて公開。
+      # 【手順6】アップロードした荷物を GitHub Pages へ届けて公開する
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
