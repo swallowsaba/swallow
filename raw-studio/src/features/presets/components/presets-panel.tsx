@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Download, Plus, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +46,11 @@ const CATEGORY_LABEL: Record<PresetCategory, string> = {
 export function PresetsPanel(): React.JSX.Element {
   const query = usePresetStore((s) => s.query);
   const setQuery = usePresetStore((s) => s.setQuery);
-  const filtered = usePresetStore(selectFilteredPresets);
+  // selectFilteredPresets builds a new array on every call while a search
+  // query is active. `filter()` keeps the same Preset object references
+  // though, so a shallow comparison correctly treats "same elements" as
+  // "unchanged" and avoids the useSyncExternalStore infinite-loop pitfall.
+  const filtered = usePresetStore(useShallow(selectFilteredPresets));
   const toggleFavorite = usePresetStore((s) => s.toggleFavorite);
   const duplicate = usePresetStore((s) => s.duplicate);
   const remove = usePresetStore((s) => s.remove);

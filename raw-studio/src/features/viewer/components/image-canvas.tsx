@@ -15,7 +15,7 @@ import {
   NEUTRAL_UNIFORMS,
   toAdjustmentUniforms,
 } from '@/features/adjustments/model/adjustment-math';
-import { selectRenderEdit, useEditorStore } from '@/features/editor';
+import { useRenderEdit } from '@/features/editor';
 
 /** Effective scale for the current mode + measured container. */
 function effectiveScale(
@@ -47,7 +47,7 @@ export function ImageCanvas(): React.JSX.Element {
   const showBefore = useViewerStore((s) => s.showBefore);
 
   // Adjustment uniforms from the current render state (present + live preview).
-  const renderEdit = useEditorStore(selectRenderEdit);
+  const renderEdit = useRenderEdit();
   const uniforms = React.useMemo(
     () =>
       showBefore || !renderEdit

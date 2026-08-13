@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import {
-  selectHistoryRows,
   selectSnapshots,
   useEditorStore,
+  useHistoryRows,
 } from '@/features/editor';
 
 export function HistoryPanel(): React.JSX.Element {
-  const rows = useEditorStore(selectHistoryRows);
+  const rows = useHistoryRows();
   const snapshots = useEditorStore(selectSnapshots);
   const jumpToHistory = useEditorStore((s) => s.jumpToHistory);
   const addSnapshot = useEditorStore((s) => s.addSnapshot);

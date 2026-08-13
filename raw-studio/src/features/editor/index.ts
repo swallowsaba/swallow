@@ -7,6 +7,8 @@ export {
   selectRenderEdit,
   selectHistoryRows,
   selectSnapshots,
+  useRenderEdit,
+  useHistoryRows,
 } from './model/editor-store';
 export type { EditorState, HistoryRow } from './model/editor-store';
 export { applyAdjustments, applyGeometry, mergeAdjustments } from './model/apply';

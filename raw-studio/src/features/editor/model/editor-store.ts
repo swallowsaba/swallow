@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import type {
   EditHistory,
   EditState,
   Geometry,
   PresetAdjustments,
+  Snapshot,
   SourceImageMeta,
 } from '@/types';
 import {
@@ -125,11 +127,34 @@ function mergePreview(
 
 /* ----------------------------- selectors ------------------------------ */
 
-/** The edit state to render: present state with the live preview overlaid. */
+/**
+ * Pitfall: a selector passed straight to `useStore(selector)` must return a
+ * value that's referentially stable when the underlying state hasn't
+ * actually changed. Selectors below that build a new array/object every call
+ * (marked accordingly) will make React's `useSyncExternalStore` see a
+ * "different" snapshot on every check and can trigger an infinite update
+ * loop (React error #185). Use the paired `use...()` hook instead — it reads
+ * only the raw, referentially-stable store fields and memoizes the derived
+ * value with `useMemo`, recomputing only when those fields actually change.
+ */
+
+/** The edit state to render: present state with the live preview overlaid.
+ *  NEW OBJECT EVERY CALL while a preview is active — do not pass directly to
+ *  `useStore(selectRenderEdit)`. Use `useRenderEdit()` in components. */
 export function selectRenderEdit(state: EditorState): EditState | null {
   const present = state.history?.present.state ?? null;
   if (!present) return null;
   return state.preview ? applyAdjustments(present, state.preview) : present;
+}
+
+/** Memoized version of {@link selectRenderEdit} safe to use in components. */
+export function useRenderEdit(): EditState | null {
+  const present = useEditorStore((s) => s.history?.present.state ?? null);
+  const preview = useEditorStore((s) => s.preview);
+  return useMemo(
+    () => (present && preview ? applyAdjustments(present, preview) : present),
+    [present, preview],
+  );
 }
 
 
@@ -146,8 +171,12 @@ export function selectCanRedo(state: EditorState): boolean {
   return state.history ? canRedoOp(state.history) : false;
 }
 
+const EMPTY_LABELS: readonly string[] = [];
+
+/** NEW ARRAY EVERY CALL while history exists — fine for one-off reads (e.g.
+ *  tests), but avoid passing directly to `useStore` in a component. */
 export function selectHistoryLabels(state: EditorState): readonly string[] {
-  if (!state.history) return [];
+  if (!state.history) return EMPTY_LABELS;
   return [...state.history.past, state.history.present].map((entry) => entry.label);
 }
 
@@ -157,8 +186,10 @@ export interface HistoryRow {
   active: boolean;
 }
 
+/** NEW ARRAY EVERY CALL — do not pass directly to `useStore`. Use
+ *  `useHistoryRows()` in components. */
 export function selectHistoryRows(state: EditorState): readonly HistoryRow[] {
-  if (!state.history) return [];
+  if (!state.history) return EMPTY_HISTORY_ROWS;
   const presentId = state.history.present.id;
   return timelineOp(state.history).map((entry) => ({
     id: entry.id,
@@ -167,6 +198,27 @@ export function selectHistoryRows(state: EditorState): readonly HistoryRow[] {
   }));
 }
 
-export function selectSnapshots(state: EditorState) {
-  return state.history?.snapshots ?? [];
+const EMPTY_HISTORY_ROWS: readonly HistoryRow[] = [];
+
+/** Memoized version of {@link selectHistoryRows} safe to use in components. */
+export function useHistoryRows(): readonly HistoryRow[] {
+  const history = useEditorStore((s) => s.history);
+  return useMemo(() => {
+    if (!history) return EMPTY_HISTORY_ROWS;
+    const presentId = history.present.id;
+    return timelineOp(history).map((entry) => ({
+      id: entry.id,
+      label: entry.label,
+      active: entry.id === presentId,
+    }));
+  }, [history]);
+}
+
+/** Stable empty array so callers with no open image get the same reference
+ *  every time, instead of a fresh `[]` (which would look "changed" to
+ *  `useSyncExternalStore` on every render and can trigger an infinite loop). */
+const EMPTY_SNAPSHOTS: readonly Snapshot[] = [];
+
+export function selectSnapshots(state: EditorState): readonly Snapshot[] {
+  return state.history?.snapshots ?? EMPTY_SNAPSHOTS;
 }
