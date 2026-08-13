@@ -33,7 +33,7 @@ uniform float u_toneShadows, u_toneMid, u_toneHighlights;
 uniform float u_hslHue[8], u_hslSat[8], u_hslLum[8];
 uniform float u_clarity, u_texture, u_dehaze, u_sharpenAmount, u_sharpenRadius;
 uniform float u_noiseReduction, u_colorNoiseReduction;
-uniform float u_distortion, u_vignetting, u_chromaticAberration;
+uniform float u_distortion, u_vignetting, u_chromaticAberration, u_fisheye;
 uniform vec2 u_texel;
 out vec4 outColor;
 
@@ -47,13 +47,15 @@ vec3 lin2srgb(vec3 c) {
   return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
 }
 
-// --- lens: barrel/pincushion UV remap, mirrors distortUv() ---
-vec2 distortUv(vec2 uv, float amount, float aspect) {
-  float k = amount / 300.0;
+// --- lens: barrel/pincushion (or fisheye) UV remap, mirrors distortUv() ---
+vec2 distortUv(vec2 uv, float amount, float aspect, float fisheye) {
   float cx = uv.x - 0.5;
   float cy = (uv.y - 0.5) / aspect;
   float r2 = cx * cx + cy * cy;
-  float f = 1.0 + k * r2;
+  float fBarrel = 1.0 + (amount / 300.0) * r2;
+  float kFish = amount / 120.0;
+  float fFish = 1.0 + kFish * r2 + kFish * kFish * r2 * r2 * 2.0;
+  float f = mix(fBarrel, fFish, fisheye);
   return vec2(0.5 + cx * f, 0.5 + cy * f * aspect);
 }
 
@@ -67,16 +69,24 @@ float vignetteFactor(vec2 uv, float amount) {
   return max(0.0, 1.0 - strength * falloff * 0.8);
 }
 
-// --- tone curve: 3-point piecewise-quadratic, mirrors evalToneCurve() ---
+// --- tone curve: 5-point piecewise-linear, mirrors evalToneCurve() ---
+// Endpoints (0,0) and (1,1) are fixed (pure black/white never move); the
+// shadows/midtones/highlights sliders control interior points at x=0.25,
+// 0.5, 0.75. Anchoring shadows/highlights at the absolute 0/1 endpoints
+// instead (an earlier bug) left them no room to move in one direction.
 vec3 toneCurve3(vec3 x, float sh, float mid, float hi) {
-  vec3 y0 = clamp(vec3(0.0 + sh / 200.0), 0.0, 1.0);
-  vec3 y1 = clamp(vec3(0.5 + mid / 200.0), 0.0, 1.0);
-  vec3 y2 = clamp(vec3(1.0 + hi / 200.0), 0.0, 1.0);
-  vec3 tA = clamp(x / 0.5, 0.0, 1.0);
-  vec3 loBranch = clamp(y0 + (y1 - y0) * tA * (2.0 - tA), 0.0, 1.0);
-  vec3 tB = clamp((x - 0.5) / 0.5, 0.0, 1.0);
-  vec3 hiBranch = clamp(y1 + (y2 - y1) * tB, 0.0, 1.0);
-  return mix(loBranch, hiBranch, step(0.5, x));
+  vec3 yShadow = clamp(vec3(0.25 + sh / 200.0), 0.0, 1.0);
+  vec3 yMid = clamp(vec3(0.5 + mid / 200.0), 0.0, 1.0);
+  vec3 yHigh = clamp(vec3(0.75 + hi / 200.0), 0.0, 1.0);
+
+  vec3 seg0 = mix(vec3(0.0), yShadow, clamp(x / 0.25, 0.0, 1.0));
+  vec3 seg1 = mix(yShadow, yMid, clamp((x - 0.25) / 0.25, 0.0, 1.0));
+  vec3 seg2 = mix(yMid, yHigh, clamp((x - 0.5) / 0.25, 0.0, 1.0));
+  vec3 seg3 = mix(yHigh, vec3(1.0), clamp((x - 0.75) / 0.25, 0.0, 1.0));
+
+  vec3 out0 = mix(seg0, seg1, step(0.25, x));
+  vec3 out1 = mix(out0, seg2, step(0.5, x));
+  return clamp(mix(out1, seg3, step(0.75, x)), 0.0, 1.0);
 }
 
 // --- HSL: rgb<->hsl + 8-band shift, mirrors rgbToHsl/hslToRgb/applyHslBands ---
@@ -136,7 +146,7 @@ vec3 applyHslBands(vec3 c) {
 
 void main() {
   float aspect = u_texel.y / max(u_texel.x, 1e-6);
-  vec2 duv = distortUv(v_uv, u_distortion, aspect);
+  vec2 duv = distortUv(v_uv, u_distortion, aspect, u_fisheye);
 
   vec3 texRgb;
   if (abs(u_chromaticAberration) > 0.01) {
@@ -247,6 +257,7 @@ const UNIFORM_NAMES = [
   'u_distortion',
   'u_vignetting',
   'u_chromaticAberration',
+  'u_fisheye',
 ] as const;
 
 /** Uniforms that aren't plain floats (arrays / vec2) — set separately from
@@ -393,6 +404,7 @@ export class WebGLImageRenderer {
     gl.uniform1f(this.uniforms.u_distortion ?? null, adv.distortion);
     gl.uniform1f(this.uniforms.u_vignetting ?? null, adv.vignetting);
     gl.uniform1f(this.uniforms.u_chromaticAberration ?? null, adv.chromaticAberration);
+    gl.uniform1f(this.uniforms.u_fisheye ?? null, adv.fisheye ? 1 : 0);
 
     gl.uniform1fv(this.uniforms.u_hslHue ?? null, adv.hslHue);
     gl.uniform1fv(this.uniforms.u_hslSat ?? null, adv.hslSat);

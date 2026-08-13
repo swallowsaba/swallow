@@ -14,6 +14,8 @@ import type { Preset, PresetCategory } from '@/types';
 import { selectCurrentEdit, useEditorStore } from '@/features/editor';
 import { selectFilteredPresets, usePresetStore } from '../model/preset-store';
 import { PresetItem } from './preset-item';
+import { useT } from '@/i18n';
+import type { TranslationKey } from '@/i18n';
 
 const CATEGORY_ORDER: readonly PresetCategory[] = [
   'user',
@@ -29,21 +31,22 @@ const CATEGORY_ORDER: readonly PresetCategory[] = [
   'bw',
 ];
 
-const CATEGORY_LABEL: Record<PresetCategory, string> = {
-  user: 'My Presets',
-  portrait: 'Portrait',
-  landscape: 'Landscape',
-  night: 'Night',
-  vintage: 'Vintage',
-  film: 'Film',
-  cinematic: 'Cinematic',
-  street: 'Street',
-  wedding: 'Wedding',
-  travel: 'Travel',
-  bw: 'Black & White',
+const CATEGORY_KEY: Record<PresetCategory, TranslationKey> = {
+  user: 'presets.category.user',
+  portrait: 'presets.category.portrait',
+  landscape: 'presets.category.landscape',
+  night: 'presets.category.night',
+  vintage: 'presets.category.vintage',
+  film: 'presets.category.film',
+  cinematic: 'presets.category.cinematic',
+  street: 'presets.category.street',
+  wedding: 'presets.category.wedding',
+  travel: 'presets.category.travel',
+  bw: 'presets.category.bw',
 };
 
 export function PresetsPanel(): React.JSX.Element {
+  const t = useT();
   const query = usePresetStore((s) => s.query);
   const setQuery = usePresetStore((s) => s.setQuery);
   // selectFilteredPresets builds a new array on every call while a search
@@ -130,14 +133,14 @@ export function PresetsPanel(): React.JSX.Element {
           onChange={(e) => {
             setQuery(e.target.value);
           }}
-          placeholder="Search presets"
+          placeholder={t('presets.searchPlaceholder')}
           className="h-7 text-xs"
         />
         <Button
           variant="ghost"
           size="icon"
           className="h-7 w-7 shrink-0"
-          aria-label="Create preset from current"
+          aria-label={t('presets.createFromCurrent')}
           disabled={disabled}
           onClick={() => {
             setCreateOpen(true);
@@ -149,7 +152,7 @@ export function PresetsPanel(): React.JSX.Element {
           variant="ghost"
           size="icon"
           className="h-7 w-7 shrink-0"
-          aria-label="Import presets"
+          aria-label={t('presets.import')}
           onClick={() => importRef.current?.click()}
         >
           <Upload />
@@ -158,7 +161,7 @@ export function PresetsPanel(): React.JSX.Element {
           variant="ghost"
           size="icon"
           className="h-7 w-7 shrink-0"
-          aria-label="Export presets"
+          aria-label={t('presets.export')}
           onClick={handleExport}
         >
           <Download />
@@ -173,7 +176,7 @@ export function PresetsPanel(): React.JSX.Element {
         {favorites.length > 0 ? (
           <section className="mb-2">
             <h4 className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Favorites
+              {t('presets.favorites')}
             </h4>
             {favorites.map((p) => (
               <PresetItem key={`fav-${p.id}`} {...itemProps(p)} />
@@ -184,7 +187,7 @@ export function PresetsPanel(): React.JSX.Element {
         {byCategory.map((group) => (
           <section key={group.category} className="mb-2">
             <h4 className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {CATEGORY_LABEL[group.category]}
+              {t(CATEGORY_KEY[group.category])}
             </h4>
             {group.items.map((p) => (
               <PresetItem key={p.id} {...itemProps(p)} />
@@ -193,7 +196,7 @@ export function PresetsPanel(): React.JSX.Element {
         ))}
 
         {filtered.length === 0 ? (
-          <div className="p-6 text-center text-xs text-muted-foreground">No presets match.</div>
+          <div className="p-6 text-center text-xs text-muted-foreground">{t('presets.noMatch')}</div>
         ) : null}
       </div>
 
@@ -212,7 +215,7 @@ export function PresetsPanel(): React.JSX.Element {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create preset from current settings</DialogTitle>
+            <DialogTitle>{t('presets.createDialogTitle')}</DialogTitle>
           </DialogHeader>
           <Input
             autoFocus
@@ -220,7 +223,7 @@ export function PresetsPanel(): React.JSX.Element {
             onChange={(e) => {
               setNewName(e.target.value);
             }}
-            placeholder="Preset name"
+            placeholder={t('presets.namePlaceholder')}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleCreate();
             }}
@@ -232,10 +235,10 @@ export function PresetsPanel(): React.JSX.Element {
                 setCreateOpen(false);
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleCreate} disabled={!newName.trim()}>
-              Create
+              {t('presets.create')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -127,6 +127,9 @@ export interface LensCorrections {
   readonly vignetting: number;
   /** -100..100 */
   readonly chromaticAberration: number;
+  /** When true, the Distortion slider produces a strong spherical fisheye
+   *  bulge instead of a subtle barrel/pincushion correction curve. */
+  readonly fisheye: boolean;
 }
 
 /**

@@ -8,8 +8,10 @@ import {
   useEditorStore,
   useHistoryRows,
 } from '@/features/editor';
+import { useT } from '@/i18n';
 
 export function HistoryPanel(): React.JSX.Element {
+  const t = useT();
   const rows = useHistoryRows();
   const snapshots = useEditorStore(selectSnapshots);
   const jumpToHistory = useEditorStore((s) => s.jumpToHistory);
@@ -21,7 +23,7 @@ export function HistoryPanel(): React.JSX.Element {
   if (!hasImage) {
     return (
       <div className="grid h-full place-items-center p-6 text-center text-xs text-muted-foreground">
-        Open an image to see its history.
+        {t('history.openImagePrompt')}
       </div>
     );
   }
@@ -34,7 +36,7 @@ export function HistoryPanel(): React.JSX.Element {
       <div className="flex items-center gap-2 px-3 py-2">
         <Camera className="size-3.5 text-muted-foreground" />
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Snapshots
+          {t('history.snapshots')}
         </span>
         <Button
           variant="ghost"
@@ -44,13 +46,13 @@ export function HistoryPanel(): React.JSX.Element {
             addSnapshot(`Snapshot ${String(snapshots.length + 1)}`);
           }}
         >
-          Add
+          {t('common.add')}
         </Button>
       </div>
 
       <div className="max-h-40 overflow-y-auto px-1">
         {snapshots.length === 0 ? (
-          <div className="px-3 pb-2 text-[11px] text-muted-foreground">No snapshots yet.</div>
+          <div className="px-3 pb-2 text-[11px] text-muted-foreground">{t('history.noSnapshots')}</div>
         ) : (
           snapshots.map((snap) => (
             <div key={snap.id} className="group flex items-center gap-1 rounded px-2 py-1 hover:bg-accent">
@@ -66,7 +68,7 @@ export function HistoryPanel(): React.JSX.Element {
               </button>
               <button
                 type="button"
-                aria-label="Delete snapshot"
+                aria-label={t('history.deleteSnapshot')}
                 onClick={() => {
                   removeSnapshot(snap.id);
                 }}
@@ -84,7 +86,7 @@ export function HistoryPanel(): React.JSX.Element {
       <div className="flex items-center gap-2 px-3 py-2">
         <Clock className="size-3.5 text-muted-foreground" />
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          History
+          {t('history.title')}
         </span>
       </div>
 

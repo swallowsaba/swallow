@@ -137,10 +137,41 @@ function mergePreview(
     ...(patch.toneCurves ? { toneCurves: { ...base.toneCurves, ...patch.toneCurves } } : {}),
     ...(patch.detail ? { detail: { ...base.detail, ...patch.detail } } : {}),
     ...(patch.lens ? { lens: { ...base.lens, ...patch.lens } } : {}),
-    ...(patch.hsl ? { hsl: { ...base.hsl, ...patch.hsl } } : {}),
+    ...(patch.hsl ? { hsl: mergeHslPreview(base.hsl, patch.hsl) } : {}),
     ...(patch.colorGrading
-      ? { colorGrading: { ...base.colorGrading, ...patch.colorGrading } }
+      ? { colorGrading: mergeColorGradingPreview(base.colorGrading, patch.colorGrading) }
       : {}),
+  };
+}
+
+/** Like {@link mergeHsl} in apply.ts, but both sides are partial here (this
+ *  merges one preview patch onto the previous preview overlay, not onto a
+ *  full committed Adjustments). Still needs a per-band merge so touching one
+ *  field (e.g. saturation) doesn't erase a sibling field (hue/luminance)
+ *  already present in the accumulated preview. */
+function mergeHslPreview(
+  base: PresetAdjustments['hsl'],
+  patch: NonNullable<PresetAdjustments['hsl']>,
+): NonNullable<PresetAdjustments['hsl']> {
+  const next = { ...base };
+  for (const band of Object.keys(patch) as (keyof NonNullable<PresetAdjustments['hsl']>)[]) {
+    const bandPatch = patch[band];
+    if (bandPatch) next[band] = { ...base?.[band], ...bandPatch };
+  }
+  return next;
+}
+
+function mergeColorGradingPreview(
+  base: PresetAdjustments['colorGrading'],
+  patch: NonNullable<PresetAdjustments['colorGrading']>,
+): NonNullable<PresetAdjustments['colorGrading']> {
+  return {
+    ...base,
+    ...patch,
+    ...(patch.shadows ? { shadows: { ...base?.shadows, ...patch.shadows } } : {}),
+    ...(patch.midtones ? { midtones: { ...base?.midtones, ...patch.midtones } } : {}),
+    ...(patch.highlights ? { highlights: { ...base?.highlights, ...patch.highlights } } : {}),
+    ...(patch.global ? { global: { ...base?.global, ...patch.global } } : {}),
   };
 }
 

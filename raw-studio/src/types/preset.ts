@@ -1,8 +1,9 @@
 import type {
   BasicAdjustments,
-  ColorGrading,
+  ColorWheel,
   DetailAdjustments,
-  HslAdjustments,
+  HslBand,
+  HslChannel,
   LensCorrections,
   ToneCurves,
 } from './adjustments';
@@ -26,14 +27,23 @@ export type PresetCategory =
   | 'bw'
   | 'user';
 
-/** The adjustment groups a preset may override (all optional). */
+/** The adjustment groups a preset may override (all optional). Each HSL band
+ *  and color-grading wheel is itself partial, so a patch can touch just one
+ *  field (e.g. only saturation) without having to restate the others. */
 export interface PresetAdjustments {
   readonly basic?: Partial<BasicAdjustments>;
   readonly toneCurves?: Partial<ToneCurves>;
   readonly detail?: Partial<DetailAdjustments>;
   readonly lens?: Partial<LensCorrections>;
-  readonly hsl?: Partial<HslAdjustments>;
-  readonly colorGrading?: Partial<ColorGrading>;
+  readonly hsl?: Partial<Record<HslBand, Partial<HslChannel>>>;
+  readonly colorGrading?: Partial<{
+    shadows: Partial<ColorWheel>;
+    midtones: Partial<ColorWheel>;
+    highlights: Partial<ColorWheel>;
+    global: Partial<ColorWheel>;
+    blending: number;
+    balance: number;
+  }>;
 }
 
 export interface Preset {

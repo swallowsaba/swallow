@@ -2,99 +2,101 @@ import * as React from 'react';
 import { AdjustmentSlider } from './adjustment-slider';
 import { selectCurrentEdit, useEditorStore } from '@/features/editor';
 import { HelpMark } from '@/components/ui/help-mark';
+import { useT } from '@/i18n';
+import type { TranslationKey } from '@/i18n';
 import type { DetailAdjustments } from '@/types';
 
 interface SliderSpec {
   key: keyof DetailAdjustments;
-  label: string;
+  labelKey: TranslationKey;
+  helpKey: TranslationKey;
   min: number;
   max: number;
   step: number;
   defaultValue: number;
-  help: string;
 }
 
 interface Group {
-  title: string;
+  titleKey: TranslationKey;
   sliders: readonly SliderSpec[];
 }
 
 const GROUPS: readonly Group[] = [
   {
-    title: 'Presence',
+    titleKey: 'detail.presence',
     sliders: [
       {
         key: 'clarity',
-        label: 'Clarity',
+        labelKey: 'detail.clarity',
+        helpKey: 'detail.clarityHelp',
         min: -100,
         max: 100,
         step: 1,
         defaultValue: 0,
-        help: 'Boosts (or softens) local contrast in the midtones for a punchier or dreamier look.',
       },
       {
         key: 'texture',
-        label: 'Texture',
+        labelKey: 'detail.texture',
+        helpKey: 'detail.textureHelp',
         min: -100,
         max: 100,
         step: 1,
         defaultValue: 0,
-        help: 'Enhances fine surface detail without affecting overall contrast as much as Clarity.',
       },
       {
         key: 'dehaze',
-        label: 'Dehaze',
+        labelKey: 'detail.dehaze',
+        helpKey: 'detail.dehazeHelp',
         min: -100,
         max: 100,
         step: 1,
         defaultValue: 0,
-        help: 'Cuts through atmospheric haze by boosting contrast — a simplified approximation, not a full dark-channel dehaze.',
       },
     ],
   },
   {
-    title: 'Sharpening',
+    titleKey: 'detail.sharpening',
     sliders: [
       {
         key: 'sharpenAmount',
-        label: 'Amount',
+        labelKey: 'detail.amount',
+        helpKey: 'detail.amountHelp',
         min: 0,
         max: 100,
         step: 1,
         defaultValue: 0,
-        help: 'How strongly edges are sharpened.',
       },
       {
         key: 'sharpenRadius',
-        label: 'Radius',
+        labelKey: 'detail.radius',
+        helpKey: 'detail.radiusHelp',
         min: 0.5,
         max: 3,
         step: 0.1,
         defaultValue: 1,
-        help: 'How wide an area around each edge is considered when sharpening.',
       },
     ],
   },
   {
-    title: 'Noise Reduction',
+    titleKey: 'detail.noiseReduction',
     sliders: [
       {
         key: 'noiseReduction',
-        label: 'Luminance',
+        labelKey: 'detail.luminanceNr',
+        helpKey: 'detail.luminanceNrHelp',
         min: 0,
         max: 100,
         step: 1,
         defaultValue: 0,
-        help: 'Smooths brightness noise (grain). Higher values can soften fine detail.',
       },
       {
         key: 'colorNoiseReduction',
-        label: 'Color',
+        labelKey: 'detail.colorNr',
+        helpKey: 'detail.colorNrHelp',
         min: 0,
         max: 100,
         step: 1,
         defaultValue: 0,
-        help: 'Smooths color speckling (chroma noise) without affecting brightness detail.',
       },
     ],
   },
@@ -104,6 +106,7 @@ export function DetailPanel(): React.JSX.Element {
   const currentEdit = useEditorStore(selectCurrentEdit);
   const commitAdjustments = useEditorStore((s) => s.commitAdjustments);
   const setPreview = useEditorStore((s) => s.setPreview);
+  const t = useT();
   const [pending, setPending] = React.useState<Partial<Record<keyof DetailAdjustments, number>>>(
     {},
   );
@@ -111,7 +114,7 @@ export function DetailPanel(): React.JSX.Element {
   if (!currentEdit) {
     return (
       <div className="grid place-items-center p-8 text-center text-xs text-muted-foreground">
-        Open an image to start editing.
+        {t('common.openImagePrompt')}
       </div>
     );
   }
@@ -124,7 +127,7 @@ export function DetailPanel(): React.JSX.Element {
   };
 
   const handleCommit = (spec: SliderSpec, value: number) => {
-    commitAdjustments({ detail: { [spec.key]: value } }, `${spec.label} ${String(value)}`);
+    commitAdjustments({ detail: { [spec.key]: value } }, `${t(spec.labelKey)} ${String(value)}`);
     setPending((prev) => {
       const rest = { ...prev };
       delete rest[spec.key];
@@ -135,15 +138,15 @@ export function DetailPanel(): React.JSX.Element {
   return (
     <div className="flex flex-col gap-5 p-4">
       {GROUPS.map((group) => (
-        <section key={group.title} className="flex flex-col gap-3">
+        <section key={group.titleKey} className="flex flex-col gap-3">
           <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {group.title}
+            {t(group.titleKey)}
           </h3>
           {group.sliders.map((spec) => (
             <div key={spec.key} className="flex items-start gap-1.5">
               <div className="flex-1">
                 <AdjustmentSlider
-                  label={spec.label}
+                  label={t(spec.labelKey)}
                   min={spec.min}
                   max={spec.max}
                   step={spec.step}
@@ -157,7 +160,7 @@ export function DetailPanel(): React.JSX.Element {
                   }}
                 />
               </div>
-              <HelpMark text={spec.help} className="mt-0.5" />
+              <HelpMark text={t(spec.helpKey)} className="mt-0.5" />
             </div>
           ))}
         </section>

@@ -14,9 +14,16 @@ function clamp01(x: number): number {
 /* --------------------------- tone curve --------------------------- */
 
 /**
- * A simplified 3-point tone curve (shadows/midtones/highlights sliders,
- * -100..100) rather than the full free-form point editor. Quadratic
- * interpolation through (0, y0), (0.5, y1), (1, y2).
+ * A simplified 5-point tone curve (shadows/midtones/highlights sliders,
+ * -100..100) rather than the full free-form point editor: (0,0) and (1,1) are
+ * fixed (pure black/white never move), and the three sliders control interior
+ * points at x=0.25 (shadows), x=0.5 (midtones), x=0.75 (highlights).
+ *
+ * Anchoring shadows/highlights at the curve's absolute endpoints (0 and 1)
+ * instead of interior points was a real bug in an earlier version: a point
+ * that already sits at y=0 has no room to move further down, so a negative
+ * "shadows" delta always clamped straight back to 0 (and symmetrically for a
+ * positive "highlights" delta at y=1). Interior anchors fix that.
  */
 export interface ToneCurveDeltas {
   shadows: number; // -100..100
@@ -26,54 +33,65 @@ export interface ToneCurveDeltas {
 
 export const NEUTRAL_TONE_CURVE: ToneCurveDeltas = { shadows: 0, midtones: 0, highlights: 0 };
 
-/** Evaluate the 3-point curve at input x (0..1), given slider deltas. */
-export function evalToneCurve(x: number, d: ToneCurveDeltas): number {
-  const y0 = clamp01(0 + d.shadows / 200);
-  const y1 = clamp01(0.5 + d.midtones / 200);
-  const y2 = clamp01(1 + d.highlights / 200);
-  // Piecewise-quadratic through the 3 points, continuous at x=0.5.
-  if (x <= 0.5) {
-    const t = x / 0.5;
-    return clamp01(y0 + (y1 - y0) * t * (2 - t));
-  }
-  const t = (x - 0.5) / 0.5;
-  return clamp01(y1 + (y2 - y1) * t);
+interface CurvePointLike {
+  x: number;
+  y: number;
 }
 
-/** Build a 3-point CurvePoint[] from slider deltas (for storing into
+/** Evaluate an arbitrary set of curve points (sorted by x) as a piecewise
+ *  linear curve at a given x, clamping to the end points outside their range. */
+function evalCurveAt(curve: readonly CurvePointLike[], x: number): number {
+  if (curve.length === 0) return x;
+  const sorted = [...curve].sort((a, b) => a.x - b.x);
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+  if (!first || !last) return x;
+  if (x <= first.x) return first.y;
+  if (x >= last.x) return last.y;
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const a = sorted[i];
+    const b = sorted[i + 1];
+    if (!a || !b) continue;
+    if (x >= a.x && x <= b.x) {
+      const t = b.x === a.x ? 0 : (x - a.x) / (b.x - a.x);
+      return a.y + (b.y - a.y) * t;
+    }
+  }
+  return x;
+}
+
+/** Build the 5-point curve from slider deltas (for storing into
  *  Adjustments.toneCurves.rgb). */
-export function curveFromToneSliders(d: ToneCurveDeltas): { x: number; y: number }[] {
+export function curveFromToneSliders(d: ToneCurveDeltas): CurvePointLike[] {
   return [
-    { x: 0, y: clamp01(0 + d.shadows / 200) },
+    { x: 0, y: 0 },
+    { x: 0.25, y: clamp01(0.25 + d.shadows / 200) },
     { x: 0.5, y: clamp01(0.5 + d.midtones / 200) },
-    { x: 1, y: clamp01(1 + d.highlights / 200) },
+    { x: 0.75, y: clamp01(0.75 + d.highlights / 200) },
+    { x: 1, y: 1 },
   ];
 }
 
-function nearestY(curve: readonly { x: number; y: number }[], x: number): number | undefined {
-  let best: { x: number; y: number } | undefined;
-  let bestDist = Infinity;
-  for (const p of curve) {
-    const dist = Math.abs(p.x - x);
-    if (dist < bestDist) {
-      bestDist = dist;
-      best = p;
-    }
-  }
-  return best?.y;
+/** Evaluate the tone curve at input x (0..1), given slider deltas. Built from
+ *  the same points {@link curveFromToneSliders} stores, so the preview and
+ *  the stored curve can never disagree. */
+export function evalToneCurve(x: number, d: ToneCurveDeltas): number {
+  return clamp01(evalCurveAt(curveFromToneSliders(d), x));
 }
 
-/** Read slider deltas back out of a curve (e.g. to restore UI state). Curves
- *  with fewer than 3 points (like the default identity line) yield 0
- *  midtones since there's no explicit midpoint to read. */
-export function toneSlidersFromCurve(curve: readonly { x: number; y: number }[]): ToneCurveDeltas {
-  const y0 = nearestY(curve, 0) ?? 0;
-  const y2 = nearestY(curve, 1) ?? 1;
-  const y1 = curve.length >= 3 ? (nearestY(curve, 0.5) ?? 0.5) : 0.5;
+/** Read slider deltas back out of an arbitrary curve (e.g. to restore UI
+ *  state). Uses interpolated evaluation at x=0.25/0.5/0.75 rather than a
+ *  nearest-point search, so it degrades gracefully for curves that don't
+ *  happen to have a point at exactly those x values (like the default
+ *  2-point identity line, which correctly reads back as all-zero deltas). */
+export function toneSlidersFromCurve(curve: readonly CurvePointLike[]): ToneCurveDeltas {
+  const yShadow = evalCurveAt(curve, 0.25);
+  const yMid = evalCurveAt(curve, 0.5);
+  const yHighlight = evalCurveAt(curve, 0.75);
   return {
-    shadows: (y0 - 0) * 200,
-    midtones: (y1 - 0.5) * 200,
-    highlights: (y2 - 1) * 200,
+    shadows: (yShadow - 0.25) * 200,
+    midtones: (yMid - 0.5) * 200,
+    highlights: (yHighlight - 0.75) * 200,
   };
 }
 
@@ -96,6 +114,7 @@ export interface AdvancedUniforms {
   distortion: number;
   vignetting: number;
   chromaticAberration: number;
+  fisheye: boolean;
 }
 
 export const NEUTRAL_ADVANCED: AdvancedUniforms = {
@@ -115,6 +134,7 @@ export const NEUTRAL_ADVANCED: AdvancedUniforms = {
   distortion: 0,
   vignetting: 0,
   chromaticAberration: 0,
+  fisheye: false,
 };
 
 /** Map the full Adjustments object (Tone/Color/Detail/Lens groups) to the
@@ -147,6 +167,7 @@ export function toAdvancedUniforms(a: Adjustments): AdvancedUniforms {
     distortion: a.lens.distortion,
     vignetting: a.lens.vignetting,
     chromaticAberration: a.lens.chromaticAberration,
+    fisheye: a.lens.fisheye,
   };
 }
 
@@ -239,16 +260,31 @@ export function applyHslBands(
  * Remap a sample UV for barrel/pincushion distortion, centered at (0.5,0.5).
  * `amount` -100..100 (negative = pincushion, positive = barrel).
  */
+/**
+ * Remap a sample UV for barrel/pincushion distortion, centered at (0.5,0.5).
+ * `amount` -100..100 (negative = pincushion, positive = barrel). When
+ * `fisheye` is true, uses a stronger, higher-order bulge (a much more
+ * pronounced spherical-lens look) instead of the subtle correction curve.
+ */
 export function distortUv(
   uv: readonly [number, number],
   amount: number,
   aspect: number,
+  fisheye = false,
 ): [number, number] {
-  const k = amount / 300; // keep the effect subtle across the -100..100 range
   const cx = uv[0] - 0.5;
   const cy = (uv[1] - 0.5) / aspect;
   const r2 = cx * cx + cy * cy;
-  const f = 1 + k * r2;
+  let f: number;
+  if (fisheye) {
+    // A stronger, higher-order bulge: quartic term on top of the quadratic
+    // one gives the exaggerated, curved-toward-the-edges fisheye look.
+    const k = amount / 120;
+    f = 1 + k * r2 + k * k * r2 * r2 * 2;
+  } else {
+    const k = amount / 300; // keep the effect subtle across the -100..100 range
+    f = 1 + k * r2;
+  }
   return [0.5 + cx * f, 0.5 + cy * f * aspect];
 }
 

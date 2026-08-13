@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyHslBands,
+  curveFromToneSliders,
   distortUv,
   evalToneCurve,
   hslToRgb,
   NEUTRAL_TONE_CURVE,
   rgbToHsl,
+  toneSlidersFromCurve,
   vignetteFactor,
 } from './advanced-math';
 import { applyClarity, applyDehaze, applyDenoise, applySharpen } from './detail-math';
@@ -13,19 +15,42 @@ import { applyClarity, applyDehaze, applyDenoise, applySharpen } from './detail-
 describe('tone curve', () => {
   it('is the identity line when all deltas are 0', () => {
     expect(evalToneCurve(0, NEUTRAL_TONE_CURVE)).toBeCloseTo(0, 3);
+    expect(evalToneCurve(0.25, NEUTRAL_TONE_CURVE)).toBeCloseTo(0.25, 3);
     expect(evalToneCurve(0.5, NEUTRAL_TONE_CURVE)).toBeCloseTo(0.5, 3);
+    expect(evalToneCurve(0.75, NEUTRAL_TONE_CURVE)).toBeCloseTo(0.75, 3);
     expect(evalToneCurve(1, NEUTRAL_TONE_CURVE)).toBeCloseTo(1, 3);
   });
 
-  it('raising shadows lifts the low end without moving the highlight end', () => {
-    const d = { shadows: 50, midtones: 0, highlights: 0 };
-    expect(evalToneCurve(0, d)).toBeGreaterThan(0);
+  it('the absolute black/white endpoints never move, at any slider value', () => {
+    const d = { shadows: -100, midtones: 100, highlights: 100 };
+    expect(evalToneCurve(0, d)).toBeCloseTo(0, 3);
     expect(evalToneCurve(1, d)).toBeCloseTo(1, 3);
   });
 
-  it('lowering highlights pulls the top end down', () => {
+  it('regression: negative shadows must actually move the shadow region down', () => {
+    // Anchoring the shadow point at the curve's absolute floor (x=0, y=0) was
+    // a real bug: there was no room to go any lower, so a negative delta
+    // always clamped straight back to 0 and the slider silently did nothing.
+    const d = { shadows: -20, midtones: 0, highlights: 0 };
+    expect(evalToneCurve(0.25, d)).toBeLessThan(0.25);
+    expect(evalToneCurve(0.25, d)).toBeGreaterThan(0); // and it isn't just clamped to 0
+  });
+
+  it('regression: positive highlights must actually move the highlight region up', () => {
+    const d = { shadows: 0, midtones: 0, highlights: 20 };
+    expect(evalToneCurve(0.75, d)).toBeGreaterThan(0.75);
+    expect(evalToneCurve(0.75, d)).toBeLessThan(1); // and it isn't just clamped to 1
+  });
+
+  it('raising shadows lifts the shadow region without moving the highlight region', () => {
+    const d = { shadows: 50, midtones: 0, highlights: 0 };
+    expect(evalToneCurve(0.25, d)).toBeGreaterThan(0.25);
+    expect(evalToneCurve(0.75, d)).toBeCloseTo(0.75, 3);
+  });
+
+  it('lowering highlights pulls the highlight region down', () => {
     const d = { shadows: 0, midtones: 0, highlights: -50 };
-    expect(evalToneCurve(1, d)).toBeLessThan(1);
+    expect(evalToneCurve(0.75, d)).toBeLessThan(0.75);
   });
 
   it('stays within 0..1', () => {
@@ -35,6 +60,26 @@ describe('tone curve', () => {
       expect(y).toBeGreaterThanOrEqual(0);
       expect(y).toBeLessThanOrEqual(1);
     }
+  });
+
+  it('round-trips through curveFromToneSliders / toneSlidersFromCurve', () => {
+    const d = { shadows: -30, midtones: 15, highlights: 40 };
+    const curve = curveFromToneSliders(d);
+    const back = toneSlidersFromCurve(curve);
+    expect(back.shadows).toBeCloseTo(d.shadows, 3);
+    expect(back.midtones).toBeCloseTo(d.midtones, 3);
+    expect(back.highlights).toBeCloseTo(d.highlights, 3);
+  });
+
+  it('reads the default 2-point identity curve back as all-zero deltas', () => {
+    const identity = [
+      { x: 0, y: 0 },
+      { x: 1, y: 1 },
+    ];
+    const d = toneSlidersFromCurve(identity);
+    expect(d.shadows).toBeCloseTo(0, 3);
+    expect(d.midtones).toBeCloseTo(0, 3);
+    expect(d.highlights).toBeCloseTo(0, 3);
   });
 });
 
@@ -113,6 +158,21 @@ describe('lens: distortUv', () => {
   it('pulls corners inward for negative (pincushion) amounts', () => {
     const [u] = distortUv([1, 0.5], -100, 1);
     expect(u).toBeLessThan(1);
+  });
+
+  it('fisheye mode still leaves the center unchanged and is a no-op at 0', () => {
+    const [u, v] = distortUv([0.5, 0.5], 80, 1.5, true);
+    expect(u).toBeCloseTo(0.5, 5);
+    expect(v).toBeCloseTo(0.5, 5);
+    const [u2, v2] = distortUv([0.9, 0.2], 0, 1.5, true);
+    expect(u2).toBeCloseTo(0.9, 5);
+    expect(v2).toBeCloseTo(0.2, 5);
+  });
+
+  it('fisheye mode pushes corners out more strongly than normal barrel distortion', () => {
+    const [uNormal] = distortUv([1, 0.5], 80, 1, false);
+    const [uFisheye] = distortUv([1, 0.5], 80, 1, true);
+    expect(uFisheye - 1).toBeGreaterThan(uNormal - 1);
   });
 });
 

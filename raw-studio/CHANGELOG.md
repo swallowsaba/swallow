@@ -57,6 +57,36 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   metadata and the real file size; both are now captured and surfaced in the
   new info popover.
 
+## [Unreleased]
+
+### Fixed (critical)
+- **HSL color bands corrupting adjacent fields.** `mergeAdjustments`/
+  `mergePreview` shallow-merged each HSL band, so editing just one field (e.g.
+  saturation) silently erased that band's hue and luminance. The corrupted
+  value fed the shader as NaN, which is why touching the red/orange band
+  could darken the whole image and made other controls appear to stop
+  responding. Now merges per-band (and per color-grading wheel) correctly.
+  Added regression tests.
+- **Shadows/Highlights sliders always snapping back to 0.** The Tone tab's
+  shadow point sat at x=0 (the curve's absolute floor) and the highlight
+  point at x=1 (the absolute ceiling) — there was no room to move a negative
+  shadows delta or a positive highlights delta, so they always clamped
+  straight back to neutral. Shadow/highlight points now sit at interior
+  x=0.25/0.75 anchors (black/white points themselves stay fixed), matching
+  how parametric tone curves normally work. Fixed in both the TypeScript
+  math and the mirrored GLSL shader code; added 8 regression tests.
+- Fixed a build-breaking `exactOptionalPropertyTypes` violation in the
+  Beginner panel (explicit `undefined` assignment); switched to the same
+  `delete`-based pattern already used elsewhere.
+
+### Added
+- Fisheye toggle in the Lens panel: switches the Distortion slider from a
+  subtle barrel/pincushion correction curve to a much stronger spherical
+  bulge.
+- Japanese translations for the Tone, Color, Detail, Lens, Presets, and
+  History panels (previously only the toolbar/tabs/Basic panel were
+  translated).
+
 ## [1.0.0] - 2026-08-12
 
 ### Added

@@ -92,7 +92,7 @@ export function createDefaultDetail(): DetailAdjustments {
 }
 
 export function createDefaultLens(): LensCorrections {
-  return { distortion: 0, vignetting: 0, chromaticAberration: 0 };
+  return { distortion: 0, vignetting: 0, chromaticAberration: 0, fisheye: false };
 }
 
 export function createDefaultAdjustments(): Adjustments {

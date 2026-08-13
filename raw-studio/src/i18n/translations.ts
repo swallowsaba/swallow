@@ -72,6 +72,30 @@ const DICT = {
   'color.hue': { ja: '色相', en: 'Hue' },
   'color.saturation': { ja: '彩度', en: 'Saturation' },
   'color.luminance': { ja: '輝度', en: 'Luminance' },
+  'color.band.red': { ja: '赤', en: 'Red' },
+  'color.band.orange': { ja: 'オレンジ', en: 'Orange' },
+  'color.band.yellow': { ja: '黄', en: 'Yellow' },
+  'color.band.green': { ja: '緑', en: 'Green' },
+  'color.band.aqua': { ja: '水色', en: 'Aqua' },
+  'color.band.blue': { ja: '青', en: 'Blue' },
+  'color.band.purple': { ja: '紫', en: 'Purple' },
+  'color.band.magenta': { ja: 'マゼンタ', en: 'Magenta' },
+  'color.mixerHelp': {
+    ja: '画像全体ではなく、特定の色（赤や青など）だけを調整します。',
+    en: 'Adjust individual color bands (like the reds or the blues) instead of the whole image at once.',
+  },
+  'color.hueHelp': {
+    ja: 'この色を隣の色相へ少しずらします。',
+    en: 'Shifts this color band toward a neighboring hue.',
+  },
+  'color.saturationHelp': {
+    ja: 'この色の鮮やかさを上げ下げします。',
+    en: 'Makes this color band more or less vivid.',
+  },
+  'color.luminanceHelp': {
+    ja: 'この色の明るさを上げ下げします。',
+    en: 'Makes this color band lighter or darker.',
+  },
 
   // Detail panel
   'detail.presence': { ja: '質感', en: 'Presence' },
@@ -84,12 +108,54 @@ const DICT = {
   'detail.radius': { ja: '半径', en: 'Radius' },
   'detail.luminanceNr': { ja: '輝度', en: 'Luminance' },
   'detail.colorNr': { ja: 'カラー', en: 'Color' },
+  'detail.clarityHelp': {
+    ja: '中間調の局所コントラストを強めて（または弱めて）、力強い、または柔らかい印象にします。',
+    en: 'Boosts (or softens) local contrast in the midtones for a punchier or dreamier look.',
+  },
+  'detail.textureHelp': {
+    ja: 'クラリティほど全体のコントラストに影響を与えず、細部の質感を強調します。',
+    en: 'Enhances fine surface detail without affecting overall contrast as much as Clarity.',
+  },
+  'detail.dehazeHelp': {
+    ja: 'コントラストを上げることで、かすみを軽減します（簡易的な近似で、本格的なdark-channel方式ではありません）。',
+    en: 'Cuts through atmospheric haze by boosting contrast — a simplified approximation, not a full dark-channel dehaze.',
+  },
+  'detail.amountHelp': { ja: 'シャープの強さです。', en: 'How strongly edges are sharpened.' },
+  'detail.radiusHelp': {
+    ja: 'シャープ処理を行う際に、輪郭の周囲をどれくらいの範囲まで考慮するかです。',
+    en: 'How wide an area around each edge is considered when sharpening.',
+  },
+  'detail.luminanceNrHelp': {
+    ja: '明るさのノイズ（粒状感）を滑らかにします。値を上げすぎると細部がぼやけることがあります。',
+    en: 'Smooths brightness noise (grain). Higher values can soften fine detail.',
+  },
+  'detail.colorNrHelp': {
+    ja: '明るさの細部に影響を与えず、色のちらつき（カラーノイズ）を滑らかにします。',
+    en: 'Smooths color speckling (chroma noise) without affecting brightness detail.',
+  },
 
   // Lens panel
   'lens.title': { ja: 'レンズ補正', en: 'Lens Corrections' },
   'lens.distortion': { ja: '歪み補正', en: 'Distortion' },
   'lens.vignetting': { ja: '周辺光量', en: 'Vignetting' },
   'lens.chromaticAberration': { ja: '色収差', en: 'Chromatic Aberration' },
+  'lens.distortionHelp': {
+    ja: 'レンズの樽型（膨らみ）または糸巻き型（へこみ）の歪みを補正します。プラスで外側に押し出し、マイナスで内側に引き込みます。',
+    en: 'Corrects barrel (bulging) or pincushion (pinched) lens distortion. Positive pushes edges outward, negative pulls them inward.',
+  },
+  'lens.vignettingHelp': {
+    ja: '画像の四隅を中心に対して暗く、または明るくします。',
+    en: 'Darkens or brightens the corners relative to the center.',
+  },
+  'lens.chromaticAberrationHelp': {
+    ja: 'コントラストの高い輪郭付近に出る色にじみを軽減します（逆方向にすると、あえて色にじみを追加できます）。',
+    en: 'Reduces (or, if pushed the other way, adds) color fringing near high-contrast edges.',
+  },
+  'lens.fisheye': { ja: '魚眼レンズ風', en: 'Fisheye' },
+  'lens.fisheyeHelp': {
+    ja: 'オンにすると、歪み補正スライダーが魚眼レンズのような強い球面歪みになります。',
+    en: 'When on, the Distortion slider produces a strong spherical fisheye-style bulge instead of a subtle correction curve.',
+  },
 
   // Export dialog
   'export.title': { ja: '画像を書き出し', en: 'Export image' },
@@ -107,11 +173,34 @@ const DICT = {
   'presets.export': { ja: 'プリセットを書き出し', en: 'Export presets' },
   'presets.favorites': { ja: 'お気に入り', en: 'Favorites' },
   'presets.myPresets': { ja: 'マイプリセット', en: 'My Presets' },
+  'presets.noMatch': { ja: '該当するプリセットがありません', en: 'No presets match.' },
+  'presets.createDialogTitle': {
+    ja: '現在の設定からプリセットを作成',
+    en: 'Create preset from current settings',
+  },
+  'presets.namePlaceholder': { ja: 'プリセット名', en: 'Preset name' },
+  'presets.create': { ja: '作成', en: 'Create' },
+  'presets.category.user': { ja: 'マイプリセット', en: 'My Presets' },
+  'presets.category.portrait': { ja: 'ポートレート', en: 'Portrait' },
+  'presets.category.landscape': { ja: '風景', en: 'Landscape' },
+  'presets.category.night': { ja: '夜景', en: 'Night' },
+  'presets.category.vintage': { ja: 'ビンテージ', en: 'Vintage' },
+  'presets.category.film': { ja: 'フィルム', en: 'Film' },
+  'presets.category.cinematic': { ja: 'シネマティック', en: 'Cinematic' },
+  'presets.category.street': { ja: 'ストリート', en: 'Street' },
+  'presets.category.wedding': { ja: 'ウェディング', en: 'Wedding' },
+  'presets.category.travel': { ja: '旅行', en: 'Travel' },
+  'presets.category.bw': { ja: '白黒', en: 'Black & White' },
 
   // History panel
   'history.snapshots': { ja: 'スナップショット', en: 'Snapshots' },
   'history.title': { ja: '履歴', en: 'History' },
   'history.noSnapshots': { ja: 'スナップショットはまだありません', en: 'No snapshots yet.' },
+  'history.openImagePrompt': {
+    ja: '画像を開くと履歴が表示されます',
+    en: 'Open an image to see its history.',
+  },
+  'history.deleteSnapshot': { ja: 'スナップショットを削除', en: 'Delete snapshot' },
 
   // AI panel
   'ai.detectSubject': { ja: '被写体・背景を検出', en: 'Detect subject / background' },
