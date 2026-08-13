@@ -15,6 +15,10 @@ import {
   NEUTRAL_UNIFORMS,
   toAdjustmentUniforms,
 } from '@/features/adjustments/model/adjustment-math';
+import {
+  NEUTRAL_ADVANCED,
+  toAdvancedUniforms,
+} from '@/features/adjustments/model/advanced-math';
 import { useRenderEdit } from '@/features/editor';
 
 /** Effective scale for the current mode + measured container. */
@@ -53,6 +57,11 @@ export function ImageCanvas(): React.JSX.Element {
       showBefore || !renderEdit
         ? NEUTRAL_UNIFORMS
         : toAdjustmentUniforms(renderEdit.adjustments.basic),
+    [showBefore, renderEdit],
+  );
+  const advancedUniforms = React.useMemo(
+    () =>
+      showBefore || !renderEdit ? NEUTRAL_ADVANCED : toAdvancedUniforms(renderEdit.adjustments),
     [showBefore, renderEdit],
   );
 
@@ -98,8 +107,24 @@ export function ImageCanvas(): React.JSX.Element {
 
   // Keep the latest render params in a ref so the rAF scheduler always draws the
   // newest state, coalescing rapid updates (slider drags) to one draw per frame.
-  const paramsRef = React.useRef({ drawScale, offset, rotationDeg, container, uniforms, imageSize });
-  paramsRef.current = { drawScale, offset, rotationDeg, container, uniforms, imageSize };
+  const paramsRef = React.useRef({
+    drawScale,
+    offset,
+    rotationDeg,
+    container,
+    uniforms,
+    advancedUniforms,
+    imageSize,
+  });
+  paramsRef.current = {
+    drawScale,
+    offset,
+    rotationDeg,
+    container,
+    uniforms,
+    advancedUniforms,
+    imageSize,
+  };
 
   const schedulerRef = React.useRef<RafScheduler | null>(null);
   if (!schedulerRef.current) {
@@ -113,6 +138,7 @@ export function ImageCanvas(): React.JSX.Element {
         p.container,
         dpr,
         p.uniforms,
+        p.advancedUniforms,
       );
     });
   }
@@ -120,7 +146,7 @@ export function ImageCanvas(): React.JSX.Element {
   // Request a coalesced render whenever inputs change.
   React.useEffect(() => {
     schedulerRef.current?.schedule();
-  }, [imageSize, drawScale, offset, rotationDeg, container, uniforms]);
+  }, [imageSize, drawScale, offset, rotationDeg, container, uniforms, advancedUniforms]);
 
   React.useEffect(() => {
     return () => {

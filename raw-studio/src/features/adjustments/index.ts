@@ -21,3 +21,22 @@ export {
   NEUTRAL_UNIFORMS,
 } from './model/adjustment-math';
 export type { AdjustmentUniforms } from './model/adjustment-math';
+export {
+  evalToneCurve,
+  curveFromToneSliders,
+  toneSlidersFromCurve,
+  NEUTRAL_TONE_CURVE,
+  rgbToHsl,
+  hslToRgb,
+  applyHslBands,
+  HSL_BAND_HUES,
+  distortUv,
+  vignetteFactor,
+  toAdvancedUniforms,
+  NEUTRAL_ADVANCED,
+} from './model/advanced-math';
+export type { ToneCurveDeltas, HslBandAdjust, AdvancedUniforms } from './model/advanced-math';
+export { TonePanel } from './components/tone-panel';
+export { ColorPanel } from './components/color-panel';
+export { DetailPanel } from './components/detail-panel';
+export { LensPanel } from './components/lens-panel';

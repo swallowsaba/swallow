@@ -1,4 +1,5 @@
 import { toAdjustmentUniforms } from '@/features/adjustments/model/adjustment-math';
+import { toAdvancedUniforms } from '@/features/adjustments/model/advanced-math';
 import { WebGLImageRenderer } from '@/features/viewer/model/webgl-renderer';
 import type { EditState } from '@/types';
 import type { ExportOptions, WatermarkPosition } from './export-options';
@@ -28,6 +29,7 @@ export async function renderExport(
       { width: target.width, height: target.height },
       1,
       toAdjustmentUniforms(edit.adjustments.basic),
+      toAdvancedUniforms(edit.adjustments),
     );
   } finally {
     // Keep the renderer alive until after we read pixels below.

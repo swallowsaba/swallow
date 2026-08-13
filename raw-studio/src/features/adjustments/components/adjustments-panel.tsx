@@ -5,29 +5,28 @@ import { useUiStore } from '@/stores';
 import type { RightTab } from '@/stores';
 import { PresetsPanel } from '@/features/presets';
 import { AiPanel } from '@/features/ai';
+import { useT } from '@/i18n';
+import type { TranslationKey } from '@/i18n';
 import { BasicPanel } from './basic-panel';
+import { TonePanel } from './tone-panel';
+import { ColorPanel } from './color-panel';
+import { DetailPanel } from './detail-panel';
+import { LensPanel } from './lens-panel';
 
-const TABS: readonly { value: RightTab; label: string; phase: string }[] = [
-  { value: 'presets', label: 'Presets', phase: '' },
-  { value: 'basic', label: 'Basic', phase: '' },
-  { value: 'tone', label: 'Tone', phase: 'Phase 7+' },
-  { value: 'color', label: 'Color', phase: 'Phase 7+' },
-  { value: 'detail', label: 'Detail', phase: 'Phase 7+' },
-  { value: 'lens', label: 'Lens', phase: 'Phase 7+' },
-  { value: 'ai', label: 'AI', phase: '' },
+const TAB_KEYS: readonly { value: RightTab; key: TranslationKey }[] = [
+  { value: 'presets', key: 'tab.presets' },
+  { value: 'basic', key: 'tab.basic' },
+  { value: 'tone', key: 'tab.tone' },
+  { value: 'color', key: 'tab.color' },
+  { value: 'detail', key: 'tab.detail' },
+  { value: 'lens', key: 'tab.lens' },
+  { value: 'ai', key: 'tab.ai' },
 ];
-
-function Placeholder({ phase }: { phase: string }): React.JSX.Element {
-  return (
-    <div className="grid place-items-center p-8 text-center text-xs text-muted-foreground">
-      Controls arrive in {phase}.
-    </div>
-  );
-}
 
 export function AdjustmentsPanel(): React.JSX.Element {
   const rightTab = useUiStore((s) => s.rightTab);
   const setRightTab = useUiStore((s) => s.setRightTab);
+  const t = useT();
 
   return (
     <Tabs
@@ -39,9 +38,9 @@ export function AdjustmentsPanel(): React.JSX.Element {
     >
       <div className="px-2 pt-2">
         <TabsList className="grid w-full grid-cols-7">
-          {TABS.map((tab) => (
+          {TAB_KEYS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value} className="px-1 text-[10px]">
-              {tab.label}
+              {t(tab.key)}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -54,14 +53,21 @@ export function AdjustmentsPanel(): React.JSX.Element {
         <TabsContent value="basic" className="mt-0">
           <BasicPanel />
         </TabsContent>
+        <TabsContent value="tone" className="mt-0">
+          <TonePanel />
+        </TabsContent>
+        <TabsContent value="color" className="mt-0">
+          <ColorPanel />
+        </TabsContent>
+        <TabsContent value="detail" className="mt-0">
+          <DetailPanel />
+        </TabsContent>
+        <TabsContent value="lens" className="mt-0">
+          <LensPanel />
+        </TabsContent>
         <TabsContent value="ai" className="mt-0">
           <AiPanel />
         </TabsContent>
-        {TABS.filter((t) => t.value !== 'basic' && t.value !== 'presets' && t.value !== 'ai').map((tab) => (
-          <TabsContent key={tab.value} value={tab.value} className="mt-0">
-            <Placeholder phase={tab.phase} />
-          </TabsContent>
-        ))}
       </ScrollArea>
     </Tabs>
   );
