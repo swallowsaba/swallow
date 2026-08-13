@@ -49,7 +49,11 @@ export function BeginnerPanel(): React.JSX.Element {
     };
     if (commit) {
       commitAdjustments(patch, `${t('beginner.brighten')} ${String(amount)}`);
-      setPending((p) => ({ ...p, brighten: undefined }));
+      setPending((p) => {
+        const rest = { ...p };
+        delete rest.brighten;
+        return rest;
+      });
     } else {
       setPending((p) => ({ ...p, brighten: amount }));
       setPreview(patch);
@@ -60,7 +64,11 @@ export function BeginnerPanel(): React.JSX.Element {
     const patch = { basic: { vibrance: amount, saturation: amount * 0.3 } };
     if (commit) {
       commitAdjustments(patch, `${t('beginner.vivid')} ${String(amount)}`);
-      setPending((p) => ({ ...p, vivid: undefined }));
+      setPending((p) => {
+        const rest = { ...p };
+        delete rest.vivid;
+        return rest;
+      });
     } else {
       setPending((p) => ({ ...p, vivid: amount }));
       setPreview(patch);
