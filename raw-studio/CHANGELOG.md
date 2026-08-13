@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Images (RAW and native formats alike) rendered upside down. Root cause:
+  `UNPACK_FLIP_Y_WEBGL` behaves inconsistently across browsers when the
+  texture source is an `ImageBitmap`. Fixed by uploading textures as-is and
+  controlling orientation entirely via UV coordinates instead.
+- Fixed two zustand selectors that built a new object/array on every call
+  (`selectRenderEdit`, `selectHistoryRows`, `selectSnapshots`), which could
+  trigger a React "Maximum update depth exceeded" crash (error #185). Replaced
+  with memoized `useRenderEdit()` / `useHistoryRows()` hooks and a shared
+  empty-array constant; `useShallow` where element identity is already stable.
+
+### Added
+- Tone, Color, Detail, and Lens tabs are now fully implemented (previously
+  placeholders): 3-point tone curve, 8-band HSL color mixer, clarity/texture/
+  dehaze/sharpen/noise-reduction, and lens distortion/vignette/chromatic
+  aberration — all mirrored between tested TypeScript and the GLSL shader, and
+  applied consistently in both the live preview and full-resolution export.
+- Japanese/English UI toggle (toolbar button) covering the toolbar, both tab
+  bars, and the Basic panel; persisted like the theme setting.
+- A "?" help mark next to adjustment controls in Basic/Tone/Color/Detail/Lens
+  that shows an explanation on hover or tap.
+
 ## [1.0.0] - 2026-08-12
 
 ### Added
