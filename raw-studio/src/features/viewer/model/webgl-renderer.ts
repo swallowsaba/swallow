@@ -226,11 +226,31 @@ void main() {
   s += (s - blur) * (u_texture / 100.0) * 0.45;
 
   float denoiseT = clamp(u_noiseReduction / 100.0, 0.0, 1.0);
-  s = mix(s, blur, denoiseT);
-  float lumS = dot(s, LUMA);
-  float lumB = dot(blur, LUMA);
-  vec3 chroma = mix(s - vec3(lumS), blur - vec3(lumB), clamp(u_colorNoiseReduction / 100.0, 0.0, 1.0));
-  s = vec3(lumS) + chroma;
+  float colorDenoiseT = clamp(u_colorNoiseReduction / 100.0, 0.0, 1.0);
+  if (denoiseT > 0.0 || colorDenoiseT > 0.0) {
+    // Noise reduction needs a much wider averaging radius than
+    // sharpen/clarity's tight edge-detection radius to meaningfully smooth
+    // grain — reusing that 1-texel radius (an earlier version) was too
+    // narrow to visibly do anything. This is a separate, wider blur so
+    // sharpen/clarity keep their precise, narrow radius.
+    vec2 wideTexel = u_texel * 4.0;
+    vec3 wideBlur = (
+      basePipeline(duv + vec2(wideTexel.x, 0.0)) +
+      basePipeline(duv - vec2(wideTexel.x, 0.0)) +
+      basePipeline(duv + vec2(0.0, wideTexel.y)) +
+      basePipeline(duv - vec2(0.0, wideTexel.y)) +
+      basePipeline(duv + wideTexel) +
+      basePipeline(duv - wideTexel) +
+      basePipeline(duv + vec2(wideTexel.x, -wideTexel.y)) +
+      basePipeline(duv + vec2(-wideTexel.x, wideTexel.y))
+    ) * 0.125;
+
+    s = mix(s, wideBlur, denoiseT);
+    float lumS = dot(s, LUMA);
+    float lumB = dot(wideBlur, LUMA);
+    vec3 chroma = mix(s - vec3(lumS), wideBlur - vec3(lumB), colorDenoiseT);
+    s = vec3(lumS) + chroma;
+  }
 
   float dehazeT = max(u_dehaze, 0.0) / 100.0;
   s = (s - 0.5) * (1.0 + dehazeT * 0.5) + 0.5 - dehazeT * 0.1 * (1.0 - s);

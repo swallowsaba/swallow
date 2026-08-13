@@ -126,6 +126,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   rest. Also gave Texture a slightly stronger multiplier for better
   visibility. Added a regression test.
 
+## [Unreleased]
+
+### Fixed
+- Noise Reduction (Luminance/Color) had little to no visible effect. It was
+  reusing the same 1-texel-radius blur built for Sharpen/Clarity's edge
+  detection, which is far too narrow to meaningfully smooth photographic
+  grain. Added a separate, wider 8-sample blur (radius scales with the
+  texel size, independent of the sharpen radius) used only for noise
+  reduction, so raising the sliders now visibly smooths detail. Skipped
+  when both noise-reduction sliders are at 0, so images that don't use it
+  pay no extra cost.
+
 ## [1.0.0] - 2026-08-12
 
 ### Added
