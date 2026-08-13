@@ -4,6 +4,7 @@ import type {
   DetailAdjustments,
   HslAdjustments,
   LensCorrections,
+  ToneCurves,
 } from './adjustments';
 
 /**
@@ -28,6 +29,7 @@ export type PresetCategory =
 /** The adjustment groups a preset may override (all optional). */
 export interface PresetAdjustments {
   readonly basic?: Partial<BasicAdjustments>;
+  readonly toneCurves?: Partial<ToneCurves>;
   readonly detail?: Partial<DetailAdjustments>;
   readonly lens?: Partial<LensCorrections>;
   readonly hsl?: Partial<HslAdjustments>;

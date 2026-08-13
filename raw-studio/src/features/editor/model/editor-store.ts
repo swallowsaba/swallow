@@ -116,6 +116,7 @@ function mergePreview(
     ...base,
     ...patch,
     ...(patch.basic ? { basic: { ...base.basic, ...patch.basic } } : {}),
+    ...(patch.toneCurves ? { toneCurves: { ...base.toneCurves, ...patch.toneCurves } } : {}),
     ...(patch.detail ? { detail: { ...base.detail, ...patch.detail } } : {}),
     ...(patch.lens ? { lens: { ...base.lens, ...patch.lens } } : {}),
     ...(patch.hsl ? { hsl: { ...base.hsl, ...patch.hsl } } : {}),

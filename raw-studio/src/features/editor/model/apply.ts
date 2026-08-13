@@ -10,13 +10,13 @@ import type { Adjustments, EditState, Geometry, PresetAdjustments } from '@/type
 export function mergeAdjustments(base: Adjustments, patch: PresetAdjustments): Adjustments {
   return {
     basic: patch.basic ? { ...base.basic, ...patch.basic } : base.basic,
+    toneCurves: patch.toneCurves ? { ...base.toneCurves, ...patch.toneCurves } : base.toneCurves,
     detail: patch.detail ? { ...base.detail, ...patch.detail } : base.detail,
     lens: patch.lens ? { ...base.lens, ...patch.lens } : base.lens,
     hsl: patch.hsl ? { ...base.hsl, ...patch.hsl } : base.hsl,
     colorGrading: patch.colorGrading
       ? { ...base.colorGrading, ...patch.colorGrading }
       : base.colorGrading,
-    toneCurves: base.toneCurves,
   };
 }
 

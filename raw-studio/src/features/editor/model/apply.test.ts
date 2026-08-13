@@ -14,6 +14,21 @@ describe('editor apply', () => {
     expect(merged.toneCurves).toBe(base.toneCurves);
   });
 
+  it('merges a toneCurves patch (regression: this used to be silently dropped)', () => {
+    const base = createDefaultEditState('img', 0).adjustments;
+    const newRgb = [
+      { x: 0, y: 0.1 },
+      { x: 0.5, y: 0.5 },
+      { x: 1, y: 0.9 },
+    ];
+    const merged = mergeAdjustments(base, { toneCurves: { rgb: newRgb } });
+    expect(merged.toneCurves.rgb).toEqual(newRgb);
+    // Untouched channels remain.
+    expect(merged.toneCurves.red).toBe(base.toneCurves.red);
+    // Other groups are untouched (same reference).
+    expect(merged.basic).toBe(base.basic);
+  });
+
   it('does not mutate the source state', () => {
     const state = createDefaultEditState('img', 0);
     const next = applyAdjustments(state, { basic: { saturation: 20 } }, 123);
