@@ -20,3 +20,11 @@ export {
   ZOOM_PRESETS,
 } from './model/viewport';
 export type { Size, Point, FitMode } from './model/viewport';
+export {
+  aspectRatioValue,
+  clampCropRect,
+  cropRectForAspect,
+  croppedImageSize,
+  FULL_CROP,
+} from './model/crop-math';
+export { CropOverlay } from './components/crop-overlay';

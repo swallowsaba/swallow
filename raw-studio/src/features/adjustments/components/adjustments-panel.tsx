@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { Sparkles, SlidersHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUiStore } from '@/stores';
@@ -12,6 +14,7 @@ import { TonePanel } from './tone-panel';
 import { ColorPanel } from './color-panel';
 import { DetailPanel } from './detail-panel';
 import { LensPanel } from './lens-panel';
+import { BeginnerPanel } from './beginner-panel';
 
 const TAB_KEYS: readonly { value: RightTab; key: TranslationKey }[] = [
   { value: 'presets', key: 'tab.presets' },
@@ -23,10 +26,43 @@ const TAB_KEYS: readonly { value: RightTab; key: TranslationKey }[] = [
   { value: 'ai', key: 'tab.ai' },
 ];
 
+function ModeToggle(): React.JSX.Element {
+  const uiMode = useUiStore((s) => s.uiMode);
+  const toggleUiMode = useUiStore((s) => s.toggleUiMode);
+  const t = useT();
+  const isBeginner = uiMode === 'beginner';
+
+  return (
+    <div className="flex items-center justify-end px-2 pt-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={toggleUiMode}
+        className="h-6 gap-1 px-2 text-[11px]"
+      >
+        {isBeginner ? <SlidersHorizontal className="size-3" /> : <Sparkles className="size-3" />}
+        {isBeginner ? t('mode.pro') : t('mode.beginner')}
+      </Button>
+    </div>
+  );
+}
+
 export function AdjustmentsPanel(): React.JSX.Element {
   const rightTab = useUiStore((s) => s.rightTab);
   const setRightTab = useUiStore((s) => s.setRightTab);
+  const uiMode = useUiStore((s) => s.uiMode);
   const t = useT();
+
+  if (uiMode === 'beginner') {
+    return (
+      <div className="flex h-full flex-col">
+        <ModeToggle />
+        <ScrollArea className="min-h-0 flex-1">
+          <BeginnerPanel />
+        </ScrollArea>
+      </div>
+    );
+  }
 
   return (
     <Tabs
@@ -36,7 +72,8 @@ export function AdjustmentsPanel(): React.JSX.Element {
       }}
       className="flex h-full flex-col"
     >
-      <div className="px-2 pt-2">
+      <ModeToggle />
+      <div className="px-2 pb-2">
         <TabsList className="grid w-full grid-cols-7">
           {TAB_KEYS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value} className="px-1 text-[10px]">

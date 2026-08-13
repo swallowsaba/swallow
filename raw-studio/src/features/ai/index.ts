@@ -8,5 +8,6 @@ export { rgbaToNchw, outputToMask, IMAGENET_NORM } from './model/tensor';
 export type { Normalization } from './model/tensor';
 export { segment } from './model/segmentation';
 export type { SegmentationResult } from './model/segmentation';
+export { blurBackground } from './model/background-blur';
 export { MODELS, getModel } from './model/model-registry';
 export type { ModelDef } from './model/model-registry';

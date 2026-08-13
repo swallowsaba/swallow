@@ -6,8 +6,8 @@ import { createDefaultEditState } from '@/features/adjustments/model/defaults';
 import type { Preset } from '@/types';
 
 describe('presets', () => {
-  it('ships ten built-in presets', () => {
-    expect(BUILTIN_PRESETS.length).toBe(10);
+  it('ships thirteen built-in presets', () => {
+    expect(BUILTIN_PRESETS.length).toBe(13);
     expect(BUILTIN_PRESETS.every((p) => p.builtin)).toBe(true);
   });
 

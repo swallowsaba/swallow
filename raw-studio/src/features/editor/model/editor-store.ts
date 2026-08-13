@@ -22,6 +22,10 @@ import {
   undo as undoOp,
 } from '@/features/history/model/history';
 import { applyAdjustments, applyGeometry } from './apply';
+import {
+  createDefaultAdjustments,
+  createDefaultGeometry,
+} from '@/features/adjustments/model/defaults';
 
 /**
  * The single source of truth for the currently open image and its edit history.
@@ -48,6 +52,7 @@ export interface EditorState {
   addSnapshot: (name: string) => void;
   removeSnapshot: (id: string) => void;
   restoreSnapshot: (id: string) => void;
+  resetEdit: () => void;
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
@@ -103,6 +108,19 @@ export const useEditorStore = create<EditorState>((set) => ({
   },
   restoreSnapshot: (id) => {
     set((state) => (state.history ? { history: restoreSnapshotOp(state.history, id) } : state));
+  },
+  resetEdit: () => {
+    set((state) => {
+      if (!state.history) return state;
+      const current = state.history.present.state;
+      const reset = {
+        ...current,
+        adjustments: createDefaultAdjustments(),
+        geometry: createDefaultGeometry(),
+        updatedAt: Date.now(),
+      };
+      return { history: pushEdit(state.history, 'Reset', reset), preview: null };
+    });
   },
 }));
 

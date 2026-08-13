@@ -1,6 +1,8 @@
 import type { AdjustmentUniforms } from '@/features/adjustments/model/adjustment-math';
 import type { AdvancedUniforms } from '@/features/adjustments/model/advanced-math';
 import { NEUTRAL_ADVANCED } from '@/features/adjustments/model/advanced-math';
+import type { CropRect } from '@/types';
+import { FULL_CROP } from './crop-math';
 import type { Point, Size } from './viewport';
 
 /**
@@ -407,6 +409,7 @@ export class WebGLImageRenderer {
     dpr: number,
     adjustments: AdjustmentUniforms,
     advanced: AdvancedUniforms = NEUTRAL_ADVANCED,
+    crop: CropRect = FULL_CROP,
   ): void {
     const gl = this.gl;
     this.resize(Math.round(cssSize.width * dpr), Math.round(cssSize.height * dpr));
@@ -415,8 +418,13 @@ export class WebGLImageRenderer {
     gl.clear(gl.COLOR_BUFFER_BIT);
     if (this.imageSize.width === 0) return;
 
-    const halfW = (this.imageSize.width * view.scale) / 2;
-    const halfH = (this.imageSize.height * view.scale) / 2;
+    // The crop rect is normalized (0..1) against the FULL source image. The
+    // geometry uses the cropped (effective) pixel size so "scale" continues
+    // to mean "cropped image at 1x", matching the viewport fit/fill math.
+    const croppedW = this.imageSize.width * crop.width;
+    const croppedH = this.imageSize.height * crop.height;
+    const halfW = (croppedW * view.scale) / 2;
+    const halfH = (croppedH * view.scale) / 2;
     const rad = (view.rotationDeg * Math.PI) / 180;
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
@@ -426,12 +434,17 @@ export class WebGLImageRenderer {
     // UV v=0 samples the texture's first stored row. Since setImage() no
     // longer flips on upload, texture row 0 = source row 0 = the TOP of the
     // image. So the screen-top corners (ly = -halfH) must use v=0, and the
-    // screen-bottom corners (ly = +halfH) must use v=1.
+    // screen-bottom corners (ly = +halfH) must use v=1. UVs are remapped from
+    // the full [0,1] range to the crop sub-rectangle.
+    const u0 = crop.x;
+    const u1 = crop.x + crop.width;
+    const v0 = crop.y;
+    const v1 = crop.y + crop.height;
     const corners: readonly (readonly [number, number, number, number])[] = [
-      [-halfW, -halfH, 0, 0],
-      [halfW, -halfH, 1, 0],
-      [-halfW, halfH, 0, 1],
-      [halfW, halfH, 1, 1],
+      [-halfW, -halfH, u0, v0],
+      [halfW, -halfH, u1, v0],
+      [-halfW, halfH, u0, v1],
+      [halfW, halfH, u1, v1],
     ];
 
     for (let i = 0; i < 4; i++) {

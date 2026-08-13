@@ -8,8 +8,10 @@ import {
   type Point,
   type Size,
 } from '../model/viewport';
+import { croppedImageSize, FULL_CROP } from '../model/crop-math';
 import { useViewerStore } from '../model/viewer-store';
 import { ViewerControls } from './viewer-controls';
+import { CropOverlay } from './crop-overlay';
 import { createRafScheduler, type RafScheduler } from '@/features/perf';
 import {
   NEUTRAL_UNIFORMS,
@@ -49,6 +51,7 @@ export function ImageCanvas(): React.JSX.Element {
   const setOffset = useViewerStore((s) => s.setOffset);
   const setCustomScale = useViewerStore((s) => s.setCustomScale);
   const showBefore = useViewerStore((s) => s.showBefore);
+  const cropMode = useViewerStore((s) => s.cropMode);
 
   // Adjustment uniforms from the current render state (present + live preview).
   const renderEdit = useRenderEdit();
@@ -64,6 +67,13 @@ export function ImageCanvas(): React.JSX.Element {
       showBefore || !renderEdit ? NEUTRAL_ADVANCED : toAdvancedUniforms(renderEdit.adjustments),
     [showBefore, renderEdit],
   );
+
+  // The crop rect (normalized to the source image) and the effective size it
+  // implies. Fit/fill/pan math all use the cropped size, since a cropped
+  // image should behave like a smaller image for viewport purposes. While
+  // actively cropping, show the full frame so the user can reposition freely.
+  const crop = cropMode ? FULL_CROP : (renderEdit?.geometry.crop ?? FULL_CROP);
+  const croppedSize = imageSize ? croppedImageSize(imageSize, crop) : null;
 
   // Create the renderer once.
   React.useEffect(() => {
@@ -101,8 +111,8 @@ export function ImageCanvas(): React.JSX.Element {
   }, [bitmap]);
 
   const drawScale =
-    imageSize && container.width > 0
-      ? clampScale(effectiveScale(mode, scale, imageSize, container, rotationDeg))
+    croppedSize && container.width > 0
+      ? clampScale(effectiveScale(mode, scale, croppedSize, container, rotationDeg))
       : 1;
 
   // Keep the latest render params in a ref so the rAF scheduler always draws the
@@ -114,6 +124,7 @@ export function ImageCanvas(): React.JSX.Element {
     container,
     uniforms,
     advancedUniforms,
+    crop,
     imageSize,
   });
   paramsRef.current = {
@@ -123,6 +134,7 @@ export function ImageCanvas(): React.JSX.Element {
     container,
     uniforms,
     advancedUniforms,
+    crop,
     imageSize,
   };
 
@@ -139,6 +151,7 @@ export function ImageCanvas(): React.JSX.Element {
         dpr,
         p.uniforms,
         p.advancedUniforms,
+        p.crop,
       );
     });
   }
@@ -146,7 +159,7 @@ export function ImageCanvas(): React.JSX.Element {
   // Request a coalesced render whenever inputs change.
   React.useEffect(() => {
     schedulerRef.current?.schedule();
-  }, [imageSize, drawScale, offset, rotationDeg, container, uniforms, advancedUniforms]);
+  }, [imageSize, drawScale, offset, rotationDeg, container, uniforms, advancedUniforms, crop]);
 
   React.useEffect(() => {
     return () => {
@@ -157,20 +170,20 @@ export function ImageCanvas(): React.JSX.Element {
   // Panning.
   const dragRef = React.useRef<{ start: Point; origin: Point } | null>(null);
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!imageSize) return;
+    if (!croppedSize) return;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     dragRef.current = { start: { x: e.clientX, y: e.clientY }, origin: offset };
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const drag = dragRef.current;
-    if (!drag || !imageSize) return;
+    if (!drag || !croppedSize) return;
     const next: Point = {
       x: drag.origin.x + (e.clientX - drag.start.x),
       y: drag.origin.y + (e.clientY - drag.start.y),
     };
     const scaled: Size = {
-      width: imageSize.width * drawScale,
-      height: imageSize.height * drawScale,
+      width: croppedSize.width * drawScale,
+      height: croppedSize.height * drawScale,
     };
     setOffset(clampOffset(next, scaled, container));
   };
@@ -181,7 +194,7 @@ export function ImageCanvas(): React.JSX.Element {
 
   // Wheel zoom (Ctrl/trackpad pinch or plain wheel).
   const onWheel = (e: React.WheelEvent) => {
-    if (!imageSize) return;
+    if (!croppedSize) return;
     const factor = Math.exp(-e.deltaY * 0.0015);
     setCustomScale(clampScale(drawScale * factor));
   };
@@ -190,17 +203,20 @@ export function ImageCanvas(): React.JSX.Element {
     <div
       ref={containerRef}
       className="relative h-full w-full overflow-hidden bg-black/30"
-      onWheel={onWheel}
+      onWheel={cropMode ? undefined : onWheel}
     >
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full touch-none"
-        style={{ cursor: dragRef.current ? 'grabbing' : 'grab' }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
+        style={{ cursor: cropMode ? 'default' : dragRef.current ? 'grabbing' : 'grab' }}
+        onPointerDown={cropMode ? undefined : onPointerDown}
+        onPointerMove={cropMode ? undefined : onPointerMove}
+        onPointerUp={cropMode ? undefined : onPointerUp}
       />
-      {imageSize ? <ViewerControls effectiveScale={drawScale} /> : null}
+      {imageSize && cropMode ? (
+        <CropOverlay imageSize={imageSize} container={container} rotationDeg={rotationDeg} />
+      ) : null}
+      {imageSize && !cropMode ? <ViewerControls effectiveScale={drawScale} /> : null}
     </div>
   );
 }

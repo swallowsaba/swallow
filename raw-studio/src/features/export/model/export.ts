@@ -1,4 +1,5 @@
 import type { EditState } from '@/types';
+import { croppedImageSize } from '@/features/viewer/model/crop-math';
 import { EXTENSION, type ExportOptions } from './export-options';
 import { renderExport } from './export-renderer';
 import { expandFilename } from './filename';
@@ -18,7 +19,8 @@ export async function exportImage(
   options: ExportOptions,
 ): Promise<ExportResult> {
   const blob = await renderExport(bitmap, edit, options);
-  const size = computeExportSize({ width: bitmap.width, height: bitmap.height }, options.resize);
+  const cropped = croppedImageSize({ width: bitmap.width, height: bitmap.height }, edit.geometry.crop);
+  const size = computeExportSize(cropped, options.resize);
   const baseName = sourceName.replace(/\.[^.]+$/, '');
   const filename = expandFilename(options.filenameTemplate, {
     name: baseName,

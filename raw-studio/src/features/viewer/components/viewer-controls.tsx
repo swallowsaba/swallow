@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Eye, Maximize, Minus, Plus, RotateCw, Scan } from 'lucide-react';
+import { Crop, Eye, Maximize, Minus, Plus, RotateCw, Scan } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Toggle } from '@/components/ui/toggle';
@@ -39,6 +39,7 @@ export function ViewerControls({ effectiveScale }: ControlsProps): React.JSX.Ele
   const rotateCw = useViewerStore((s) => s.rotateCw);
   const showBefore = useViewerStore((s) => s.showBefore);
   const setShowBefore = useViewerStore((s) => s.setShowBefore);
+  const setCropMode = useViewerStore((s) => s.setCropMode);
 
   const percent = Math.round(effectiveScale * 100);
 
@@ -98,6 +99,14 @@ export function ViewerControls({ effectiveScale }: ControlsProps): React.JSX.Ele
 
       <IconBtn label="Rotate 90°" onClick={rotateCw}>
         <RotateCw />
+      </IconBtn>
+      <IconBtn
+        label="Crop"
+        onClick={() => {
+          setCropMode(true);
+        }}
+      >
+        <Crop />
       </IconBtn>
       <Toggle
         size="sm"

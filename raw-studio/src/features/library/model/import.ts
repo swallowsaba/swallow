@@ -55,11 +55,26 @@ export async function activateItem(id: string): Promise<void> {
     id,
     fileName: item.fileName,
     kind: item.kind as SourceImageKind,
-    byteSize: 0,
+    byteSize: item.byteSize,
     dimensions: { width: item.width, height: item.height },
     colorSpace: 'srgb',
     exifOrientation: 1,
     importedAt: Date.now(),
+    ...(item.raw
+      ? {
+          camera: {
+            ...(item.raw.make !== undefined ? { make: item.raw.make } : {}),
+            ...(item.raw.model !== undefined ? { model: item.raw.model } : {}),
+            ...(item.raw.iso !== undefined ? { iso: item.raw.iso } : {}),
+            ...(item.raw.shutter !== undefined ? { shutter: item.raw.shutter } : {}),
+            ...(item.raw.aperture !== undefined ? { aperture: item.raw.aperture } : {}),
+            ...(item.raw.focalLength !== undefined
+              ? { focalLength: item.raw.focalLength }
+              : {}),
+            ...(item.raw.timestamp !== undefined ? { capturedAt: item.raw.timestamp } : {}),
+          },
+        }
+      : {}),
   };
   useEditorStore.getState().loadImage(meta, persisted?.editState ?? createDefaultEditState(id));
   useViewerStore.getState().loadBitmap(bitmap, { width: bitmap.width, height: bitmap.height });
@@ -83,6 +98,8 @@ async function importOne(file: File): Promise<void> {
       width: result.width,
       height: result.height,
       thumbUrl,
+      byteSize: file.size,
+      raw: result.raw,
     });
     if (wasEmpty) await activateItem(id);
   } catch (error) {

@@ -18,6 +18,8 @@ export interface ViewerState {
   offset: Point;
   rotationDeg: number;
   showBefore: boolean;
+  /** Whether the crop overlay is active (shows the full uncropped image). */
+  cropMode: boolean;
 
   loadBitmap: (bitmap: ImageBitmap, size: Size) => void;
   clearBitmap: () => void;
@@ -28,6 +30,7 @@ export interface ViewerState {
   rotateCw: () => void;
   resetView: () => void;
   setShowBefore: (value: boolean) => void;
+  setCropMode: (value: boolean) => void;
 }
 
 const INITIAL = {
@@ -36,6 +39,7 @@ const INITIAL = {
   offset: { x: 0, y: 0 } as Point,
   rotationDeg: 0,
   showBefore: false,
+  cropMode: false,
 };
 
 export const useViewerStore = create<ViewerState>((set) => ({
@@ -66,5 +70,8 @@ export const useViewerStore = create<ViewerState>((set) => ({
   },
   setShowBefore: (showBefore) => {
     set({ showBefore });
+  },
+  setCropMode: (cropMode) => {
+    set({ cropMode });
   },
 }));

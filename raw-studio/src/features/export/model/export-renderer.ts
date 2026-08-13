@@ -1,6 +1,7 @@
 import { toAdjustmentUniforms } from '@/features/adjustments/model/adjustment-math';
 import { toAdvancedUniforms } from '@/features/adjustments/model/advanced-math';
 import { WebGLImageRenderer } from '@/features/viewer/model/webgl-renderer';
+import { croppedImageSize } from '@/features/viewer/model/crop-math';
 import type { EditState } from '@/types';
 import type { ExportOptions, WatermarkPosition } from './export-options';
 import { MIME } from './export-options';
@@ -9,27 +10,31 @@ import { computeExportSize, type Size } from './resize';
 /**
  * Render an edited image at export resolution and encode it to a Blob. Uses the
  * same WebGL adjustment pipeline as the viewer (so the export matches the
- * preview), then composites an optional watermark on a 2D canvas.
+ * preview, crop included), then composites an optional watermark on a 2D
+ * canvas.
  */
 export async function renderExport(
   bitmap: ImageBitmap,
   edit: EditState,
   options: ExportOptions,
 ): Promise<Blob> {
-  const target = computeExportSize({ width: bitmap.width, height: bitmap.height }, options.resize);
+  const crop = edit.geometry.crop;
+  const cropped = croppedImageSize({ width: bitmap.width, height: bitmap.height }, crop);
+  const target = computeExportSize(cropped, options.resize);
 
   // 1) Adjustments pass on a WebGL offscreen canvas.
   const glCanvas = new OffscreenCanvas(target.width, target.height);
   const renderer = new WebGLImageRenderer(glCanvas);
   try {
     renderer.setImage(bitmap);
-    const scale = target.width / bitmap.width;
+    const scale = target.width / cropped.width;
     renderer.render(
       { scale, offset: { x: 0, y: 0 }, rotationDeg: 0 },
       { width: target.width, height: target.height },
       1,
       toAdjustmentUniforms(edit.adjustments.basic),
       toAdvancedUniforms(edit.adjustments),
+      crop,
     );
   } finally {
     // Keep the renderer alive until after we read pixels below.
