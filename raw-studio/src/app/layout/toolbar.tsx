@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { selectCanRedo, selectCanUndo, useEditorStore } from '@/features/editor';
 import { useUiStore } from '@/stores';
 import { ExportButton } from '@/features/export';
+import { useT } from '@/i18n';
 
 function IconButton({
   label,
@@ -33,6 +34,8 @@ function IconButton({
 export function Toolbar(): React.JSX.Element {
   const theme = useUiStore((s) => s.theme);
   const toggleTheme = useUiStore((s) => s.toggleTheme);
+  const locale = useUiStore((s) => s.locale);
+  const toggleLocale = useUiStore((s) => s.toggleLocale);
   const toggleLeftPanel = useUiStore((s) => s.toggleLeftPanel);
   const toggleFilmstrip = useUiStore((s) => s.toggleFilmstrip);
   const undo = useEditorStore((s) => s.undo);
@@ -40,10 +43,11 @@ export function Toolbar(): React.JSX.Element {
   const canUndo = useEditorStore(selectCanUndo);
   const canRedo = useEditorStore(selectCanRedo);
   const image = useEditorStore((s) => s.image);
+  const t = useT();
 
   return (
     <header className="flex h-11 shrink-0 items-center gap-1 border-b px-2">
-      <span className="px-2 text-sm font-semibold tracking-tight">RAW Studio</span>
+      <span className="px-2 text-sm font-semibold tracking-tight">{t('app.title')}</span>
       <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
         v1.0
       </span>
@@ -59,10 +63,10 @@ export function Toolbar(): React.JSX.Element {
 
       <Separator orientation="vertical" className="mx-1 h-6" />
 
-      <IconButton label="Undo (Ctrl/Cmd+Z)" onClick={undo} disabled={!canUndo}>
+      <IconButton label={t('toolbar.undo')} onClick={undo} disabled={!canUndo}>
         <Undo2 />
       </IconButton>
-      <IconButton label="Redo (Ctrl/Cmd+Shift+Z)" onClick={redo} disabled={!canRedo}>
+      <IconButton label={t('toolbar.redo')} onClick={redo} disabled={!canRedo}>
         <Redo2 />
       </IconButton>
 
@@ -72,7 +76,21 @@ export function Toolbar(): React.JSX.Element {
 
       <div className="ml-auto flex items-center gap-1">
         <ExportButton />
-        <IconButton label={theme === 'dark' ? 'Light mode' : 'Dark mode'} onClick={toggleTheme}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleLocale}
+              aria-label={t('toolbar.language')}
+              className="h-8 px-2 text-xs font-semibold"
+            >
+              {locale === 'ja' ? 'EN' : '日本語'}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t('toolbar.language')}</TooltipContent>
+        </Tooltip>
+        <IconButton label={t('toolbar.theme')} onClick={toggleTheme}>
           {theme === 'dark' ? <Sun /> : <Moon />}
         </IconButton>
       </div>
