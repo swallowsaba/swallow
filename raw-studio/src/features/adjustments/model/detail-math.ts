@@ -18,9 +18,13 @@ export function applySharpen(pixel: number, blurred: number, amount: number): nu
 
 /** Clarity: same idea as sharpen but a gentler, wider-radius push (midtones). */
 export function applyClarity(pixel: number, blurred: number, amount: number): number {
-  // Weight the push down near black/white so clarity doesn't clip extremes.
-  const midWeight = 1 - Math.abs(pixel - 0.5) * 2;
-  return clamp01(pixel + (pixel - blurred) * (amount / 100) * 0.6 * Math.max(0, midWeight));
+  // Only taper the push down near the TRUE extremes (within ~12% of pure
+  // black/white) to avoid clipping/halos there. An earlier version tapered
+  // linearly across the whole 0..1 range, which attenuated clarity across
+  // most of a typical photo and made the slider feel like it did nothing.
+  const distFromExtreme = Math.min(pixel, 1 - pixel);
+  const midWeight = clamp01(distFromExtreme / 0.12);
+  return clamp01(pixel + (pixel - blurred) * (amount / 100) * 0.6 * midWeight);
 }
 
 /** Noise reduction: blend the pixel toward its local blur. */

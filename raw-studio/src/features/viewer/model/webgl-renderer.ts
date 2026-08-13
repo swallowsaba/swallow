@@ -215,9 +215,15 @@ void main() {
   ) * 0.25;
 
   s += (s - blur) * (u_sharpenAmount / 100.0) * 1.5;
-  float midWeight = max(0.0, 1.0 - abs(dot(s, LUMA) - 0.5) * 2.0);
+  // Only taper clarity near the TRUE extremes (within ~12% of pure black or
+  // white) to avoid clipping/halos there — a full linear falloff across the
+  // whole tonal range (an earlier version) attenuated clarity across most of
+  // a typical photo, making it feel like it "didn't work".
+  float lumC = dot(s, LUMA);
+  float distFromExtreme = min(lumC, 1.0 - lumC);
+  float midWeight = smoothstep(0.0, 0.12, distFromExtreme);
   s += (s - blur) * (u_clarity / 100.0) * 0.6 * midWeight;
-  s += (s - blur) * (u_texture / 100.0) * 0.3;
+  s += (s - blur) * (u_texture / 100.0) * 0.45;
 
   float denoiseT = clamp(u_noiseReduction / 100.0, 0.0, 1.0);
   s = mix(s, blur, denoiseT);

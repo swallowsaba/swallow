@@ -29,8 +29,14 @@ export interface InferenceApi {
 const api: InferenceApi = {
   async load(id, modelBytes) {
     if (loadedFor === id && session) return;
+    // WebGPU intentionally excluded: onnxruntime-web's WebGPU execution
+    // provider doesn't yet support MaxPool with ceil_mode (which u2netp
+    // uses), producing a hard runtime error ("using ceil() in shape
+    // computation is not yet supported for MaxPool"). WASM has full op
+    // coverage. Segmentation is a one-shot action rather than a live
+    // preview, so the extra latency is a reasonable trade for correctness.
     session = await ort.InferenceSession.create(modelBytes, {
-      executionProviders: ['webgpu', 'wasm'],
+      executionProviders: ['wasm'],
     });
     loadedFor = id;
   },

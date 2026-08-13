@@ -106,6 +106,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   per-pixel GPU cost (5x the shared pipeline instead of 1x); unverified in
   this environment whether that's noticeable on lower-end hardware.
 
+## [Unreleased]
+
+### Fixed
+- AI segmentation ("Detect subject / background") failed with "using ceil()
+  in shape computation is not yet supported for MaxPool" — a known gap in
+  onnxruntime-web's WebGPU execution provider (it doesn't yet support
+  MaxPool's ceil_mode, which the u2netp model uses). Switched to the WASM
+  execution provider only, which has full op coverage. Segmentation is a
+  one-shot action rather than a live preview, so the extra latency is an
+  acceptable trade for correctness; unverified in this environment whether
+  it's noticeably slower.
+- Detail tab's Clarity sometimes had almost no visible effect. Its
+  extremes-taper (meant to avoid clipping near pure black/white) fell off
+  *linearly across the entire tonal range*, so ordinary tones far from exact
+  middle gray (e.g. luma 0.25 or 0.75 — common in real photos) were already
+  running at reduced strength. Narrowed the taper to only the outer ~12% of
+  the range near true black/white; Clarity is now full-strength across the
+  rest. Also gave Texture a slightly stronger multiplier for better
+  visibility. Added a regression test.
+
 ## [1.0.0] - 2026-08-12
 
 ### Added

@@ -219,6 +219,16 @@ describe('detail combining formulas', () => {
     expect(Math.abs(highlightPush)).toBeLessThan(Math.abs(midPush));
   });
 
+  it('regression: clarity stays at full strength across ordinary tones, not just exactly at 0.5', () => {
+    // An earlier linear falloff (full strength only right at luma 0.5)
+    // attenuated clarity across most of a typical photo, making the slider
+    // feel broken. It should now be full-strength anywhere reasonably far
+    // from pure black/white — e.g. at 0.25 or 0.75.
+    const pushAt025 = applyClarity(0.3, 0.25, 60) - 0.3;
+    const pushAt050 = applyClarity(0.55, 0.5, 60) - 0.55;
+    expect(pushAt025).toBeCloseTo(pushAt050, 5);
+  });
+
   it('denoise blends toward the local blur, full amount snaps to it', () => {
     expect(applyDenoise(0.8, 0.5, 100)).toBeCloseTo(0.5, 5);
     expect(applyDenoise(0.8, 0.5, 0)).toBeCloseTo(0.8, 5);
