@@ -4,9 +4,14 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
 ### Fixed
+- Build failure: `PresetAdjustments` (the type used by preset/preview/commit
+  patches) was missing `toneCurves`, so the new Tone panel didn't type-check.
+  Added the field.
+- Found while fixing the above: `mergeAdjustments` (the commit-time merge)
+  unconditionally discarded any `toneCurves` patch and kept the old curve —
+  tone curve edits would have silently failed to save even after the type fix.
+  Fixed the merge and added a regression test.
 - Images (RAW and native formats alike) rendered upside down. Root cause:
   `UNPACK_FLIP_Y_WEBGL` behaves inconsistently across browsers when the
   texture source is an `ImageBitmap`. Fixed by uploading textures as-is and
@@ -27,6 +32,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   bars, and the Basic panel; persisted like the theme setting.
 - A "?" help mark next to adjustment controls in Basic/Tone/Color/Detail/Lens
   that shows an explanation on hover or tap.
+
+## [Unreleased]
+
+### Added
+- Photo info popover (toolbar "i" button): filename, dimensions, file size,
+  format, and camera EXIF-style data (make/model/ISO/shutter/aperture/focal
+  length/captured date) for RAW files.
+- Reset button: restores the current image's adjustments and geometry to
+  their defaults as one undo step.
+- Three more built-in presets: Night Sports, High Key, Moody (13 total).
+- Beginner Mode: a simplified panel (Brighten / Vivid sliders, using the same
+  non-destructive Basic adjustments as Pro mode) plus a one-shot "Blur
+  Background" action (AI subject segmentation + background blur, downloaded
+  as a separate file rather than a live slider — see background-blur.ts for
+  why). Toggle between Beginner/Pro from the right panel.
+- Crop tool: drag-resize crop rectangle with corner handles, aspect-ratio
+  presets including 16:9 and 9:16 (phone portrait). Crop is applied
+  consistently in the live viewer (fit/fill/pan account for the cropped
+  size) and in full-resolution export.
+
+### Fixed
+- `LibraryItem`/`SourceImageMeta` were dropping the RAW decoder's camera
+  metadata and the real file size; both are now captured and surfaced in the
+  new info popover.
 
 ## [1.0.0] - 2026-08-12
 
