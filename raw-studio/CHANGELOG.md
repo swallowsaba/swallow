@@ -87,6 +87,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   History panels (previously only the toolbar/tabs/Basic panel were
   translated).
 
+## [Unreleased]
+
+### Fixed (critical)
+- **Sharpen/Clarity/Noise-Reduction comparing against the wrong reference,
+  causing unwanted color/brightness shifts.** The "local blur" these effects
+  use as a reference was sampled from the raw, unedited texture, while the
+  pixel being compared against it (`s`) had already gone through exposure,
+  white balance, tone curve, and color adjustments. Any of those edits made
+  the two wildly different in a way that had nothing to do with local detail:
+  Sharpen/Clarity effectively added a large, roughly uniform push instead of
+  enhancing edges, and Noise Reduction pulled the image back toward its
+  unedited raw colors instead of smoothing grain — matching reports that
+  these controls "didn't work" and shifted colors unexpectedly. Fixed by
+  extracting the tonal/color pipeline into a shared `basePipeline()` and
+  running it for the blur's neighbor samples too, so the comparison is
+  apples-to-apples (edited vs. locally-smoothed-edited). This does increase
+  per-pixel GPU cost (5x the shared pipeline instead of 1x); unverified in
+  this environment whether that's noticeable on lower-end hardware.
+
 ## [1.0.0] - 2026-08-12
 
 ### Added

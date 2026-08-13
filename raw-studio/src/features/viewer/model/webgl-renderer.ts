@@ -144,22 +144,24 @@ vec3 applyHslBands(vec3 c) {
   return hsl2rgb(hsl.x + hueShift, clamp(hsl.y * (1.0 + satAdd), 0.0, 1.0), clamp(hsl.z + lumAdd, 0.0, 1.0));
 }
 
-void main() {
-  float aspect = u_texel.y / max(u_texel.x, 1e-6);
-  vec2 duv = distortUv(v_uv, u_distortion, aspect, u_fisheye);
-
+// Everything from the raw texture sample through Tone/Color (HSL). Used both
+// for the center pixel and for the neighbor samples the Detail effects blur
+// together — sampling those neighbors from the RAW texture instead (an
+// earlier bug) compared an edited pixel against unedited neighbors, so
+// Sharpen/Clarity/Denoise measured the size of the user's OTHER edits rather
+// than local detail, and pushed colors around unpredictably.
+vec3 basePipeline(vec2 uv) {
   vec3 texRgb;
   if (abs(u_chromaticAberration) > 0.01) {
-    vec2 caOff = (duv - 0.5) * (u_chromaticAberration / 1000.0);
+    vec2 caOff = (uv - 0.5) * (u_chromaticAberration / 1000.0);
     texRgb = vec3(
-      texture(u_tex, duv + caOff).r,
-      texture(u_tex, duv).g,
-      texture(u_tex, duv - caOff).b
+      texture(u_tex, uv + caOff).r,
+      texture(u_tex, uv).g,
+      texture(u_tex, uv - caOff).b
     );
   } else {
-    texRgb = texture(u_tex, duv).rgb;
+    texRgb = texture(u_tex, uv).rgb;
   }
-  float texA = texture(u_tex, duv).a;
 
   vec3 lin = srgb2lin(texRgb);
 
@@ -189,19 +191,27 @@ void main() {
   s = vec3(lum) + (s - vec3(lum)) * vibF;
   s = clamp(s, 0.0, 1.0);
 
-  // Tone tab (3-point curve) and Color tab (8-band HSL).
   s = toneCurve3(s, u_toneShadows, u_toneMid, u_toneHighlights);
   s = applyHslBands(s);
+  return s;
+}
 
-  // Detail tab: cheap 4-neighbor box blur used as the "local average" for
-  // clarity, sharpening, and noise reduction (an approximation — a real
-  // bilateral/gaussian pass would need a separate blur target).
+void main() {
+  float aspect = u_texel.y / max(u_texel.x, 1e-6);
+  vec2 duv = distortUv(v_uv, u_distortion, aspect, u_fisheye);
+
+  vec3 s = basePipeline(duv);
+  float texA = texture(u_tex, duv).a;
+
+  // Detail tab: cheap 4-neighbor box blur, computed from the SAME processed
+  // pipeline (not the raw texture — see basePipeline's comment) so it's a
+  // fair local-detail reference for clarity/sharpening/noise reduction.
   vec2 texel = u_texel * max(u_sharpenRadius, 0.5);
   vec3 blur = (
-    texture(u_tex, duv + vec2(texel.x, 0.0)).rgb +
-    texture(u_tex, duv - vec2(texel.x, 0.0)).rgb +
-    texture(u_tex, duv + vec2(0.0, texel.y)).rgb +
-    texture(u_tex, duv - vec2(0.0, texel.y)).rgb
+    basePipeline(duv + vec2(texel.x, 0.0)) +
+    basePipeline(duv - vec2(texel.x, 0.0)) +
+    basePipeline(duv + vec2(0.0, texel.y)) +
+    basePipeline(duv - vec2(0.0, texel.y))
   ) * 0.25;
 
   s += (s - blur) * (u_sharpenAmount / 100.0) * 1.5;
