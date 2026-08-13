@@ -9,6 +9,7 @@ export type {
   SourceImageKind,
   ImageDimensions,
   SourceImageMeta,
+  CameraMeta,
 } from './image';
 
 export type {

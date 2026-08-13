@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Columns2, Moon, PanelBottom, Redo2, Sun, Undo2 } from 'lucide-react';
+import { Columns2, Moon, PanelBottom, Redo2, RotateCcw, Sun, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -7,6 +7,7 @@ import { selectCanRedo, selectCanUndo, useEditorStore } from '@/features/editor'
 import { useUiStore } from '@/stores';
 import { ExportButton } from '@/features/export';
 import { useT } from '@/i18n';
+import { InfoButton } from './info-button';
 
 function IconButton({
   label,
@@ -40,6 +41,7 @@ export function Toolbar(): React.JSX.Element {
   const toggleFilmstrip = useUiStore((s) => s.toggleFilmstrip);
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
+  const resetEdit = useEditorStore((s) => s.resetEdit);
   const canUndo = useEditorStore(selectCanUndo);
   const canRedo = useEditorStore(selectCanRedo);
   const image = useEditorStore((s) => s.image);
@@ -69,12 +71,22 @@ export function Toolbar(): React.JSX.Element {
       <IconButton label={t('toolbar.redo')} onClick={redo} disabled={!canRedo}>
         <Redo2 />
       </IconButton>
+      <IconButton
+        label={t('toolbar.reset')}
+        onClick={() => {
+          if (image) resetEdit();
+        }}
+        disabled={!image}
+      >
+        <RotateCcw />
+      </IconButton>
 
       <div className="mx-2 truncate text-xs text-muted-foreground">
         {image ? image.fileName : 'No image'}
       </div>
 
       <div className="ml-auto flex items-center gap-1">
+        <InfoButton />
         <ExportButton />
         <Tooltip>
           <TooltipTrigger asChild>

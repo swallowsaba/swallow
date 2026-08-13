@@ -21,7 +21,8 @@ export type AspectRatioLock =
   | '4:3'
   | '5:4'
   | '7:5'
-  | '16:9';
+  | '16:9'
+  | '9:16';
 
 /** 90-degree orientation steps applied on top of EXIF orientation. */
 export type OrientationStep = 0 | 90 | 180 | 270;

@@ -115,6 +115,32 @@ const DICT = {
 
   // AI panel
   'ai.detectSubject': { ja: '被写体・背景を検出', en: 'Detect subject / background' },
+
+  // Info popover
+  'info.title': { ja: '写真の情報', en: 'Photo Info' },
+  'info.noCameraData': {
+    ja: 'カメラ情報はRAWファイルでのみ表示されます',
+    en: 'Camera data is only available for RAW files.',
+  },
+
+  // Reset
+  'toolbar.reset': { ja: '編集をリセット', en: 'Reset edits' },
+
+  // Beginner mode
+  'mode.beginner': { ja: 'かんたんモード', en: 'Beginner Mode' },
+  'mode.pro': { ja: 'プロモード', en: 'Pro Mode' },
+  'beginner.brighten': { ja: '明るく', en: 'Brighten' },
+  'beginner.vivid': { ja: '鮮やかに', en: 'Vivid' },
+  'beginner.softBackground': { ja: '背景をぼかす', en: 'Blur Background' },
+  'beginner.softBackgroundHelp': {
+    ja: 'AIで被写体を検出し、背景だけをぼかします（初回はモデルのダウンロードが必要です）。',
+    en: 'Uses AI to detect the subject and blur only the background (downloads a model on first use).',
+  },
+
+  // Crop / aspect presets
+  'crop.title': { ja: 'トリミング', en: 'Crop' },
+  'crop.free': { ja: '自由', en: 'Free' },
+  'crop.original': { ja: '元の比率', en: 'Original' },
 } as const;
 
 export function translate(locale: 'ja' | 'en', key: TranslationKey): string {

@@ -6,6 +6,7 @@ export type ThemeMode = 'dark' | 'light';
 export type RightTab = 'presets' | 'basic' | 'tone' | 'color' | 'detail' | 'lens' | 'ai';
 export type LeftTab = 'library' | 'history';
 export type Locale = 'ja' | 'en';
+export type UiMode = 'beginner' | 'pro';
 
 const THEME_KEY = 'raw-studio:theme';
 const LOCALE_KEY = 'raw-studio:locale';
@@ -42,6 +43,7 @@ export function getInitialLocale(): Locale {
 export interface UiState {
   theme: ThemeMode;
   locale: Locale;
+  uiMode: UiMode;
   rightTab: RightTab;
   leftTab: LeftTab;
   leftPanelOpen: boolean;
@@ -51,6 +53,8 @@ export interface UiState {
   toggleTheme: () => void;
   setLocale: (locale: Locale) => void;
   toggleLocale: () => void;
+  setUiMode: (mode: UiMode) => void;
+  toggleUiMode: () => void;
   setRightTab: (tab: RightTab) => void;
   setLeftTab: (tab: LeftTab) => void;
   toggleLeftPanel: () => void;
@@ -60,6 +64,7 @@ export interface UiState {
 export const useUiStore = create<UiState>((set) => ({
   theme: getInitialTheme(),
   locale: getInitialLocale(),
+  uiMode: 'pro',
   rightTab: 'basic',
   leftTab: 'library',
   leftPanelOpen: true,
@@ -76,6 +81,12 @@ export const useUiStore = create<UiState>((set) => ({
   },
   toggleLocale: () => {
     set((s) => ({ locale: s.locale === 'ja' ? 'en' : 'ja' }));
+  },
+  setUiMode: (uiMode) => {
+    set({ uiMode });
+  },
+  toggleUiMode: () => {
+    set((s) => ({ uiMode: s.uiMode === 'pro' ? 'beginner' : 'pro' }));
   },
   setRightTab: (rightTab) => {
     set({ rightTab });

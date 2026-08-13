@@ -28,4 +28,16 @@ export interface SourceImageMeta {
   readonly exifOrientation: ExifOrientation;
   /** Epoch millis when the image was imported into the app. */
   readonly importedAt: number;
+  readonly camera?: CameraMeta;
+}
+
+/** Camera/shooting metadata, available for RAW files (read via LibRaw). */
+export interface CameraMeta {
+  readonly make?: string;
+  readonly model?: string;
+  readonly iso?: number;
+  readonly shutter?: number;
+  readonly aperture?: number;
+  readonly focalLength?: number;
+  readonly capturedAt?: number;
 }
