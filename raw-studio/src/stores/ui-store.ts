@@ -5,8 +5,10 @@ import { create } from 'zustand';
 export type ThemeMode = 'dark' | 'light';
 export type RightTab = 'presets' | 'basic' | 'tone' | 'color' | 'detail' | 'lens' | 'ai';
 export type LeftTab = 'library' | 'history';
+export type Locale = 'ja' | 'en';
 
 const THEME_KEY = 'raw-studio:theme';
+const LOCALE_KEY = 'raw-studio:locale';
 
 /** Read the initial theme from storage, falling back to the OS preference. */
 export function getInitialTheme(): ThemeMode {
@@ -22,8 +24,24 @@ export function getInitialTheme(): ThemeMode {
   return 'dark';
 }
 
+/** Read the initial locale from storage, falling back to the browser's
+ *  language (Japanese if it starts with "ja", English otherwise). */
+export function getInitialLocale(): Locale {
+  try {
+    const stored = localStorage.getItem(LOCALE_KEY);
+    if (stored === 'ja' || stored === 'en') return stored;
+  } catch {
+    // localStorage may be unavailable (private mode); fall through.
+  }
+  if (typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('ja')) {
+    return 'ja';
+  }
+  return 'en';
+}
+
 export interface UiState {
   theme: ThemeMode;
+  locale: Locale;
   rightTab: RightTab;
   leftTab: LeftTab;
   leftPanelOpen: boolean;
@@ -31,6 +49,8 @@ export interface UiState {
 
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
+  setLocale: (locale: Locale) => void;
+  toggleLocale: () => void;
   setRightTab: (tab: RightTab) => void;
   setLeftTab: (tab: LeftTab) => void;
   toggleLeftPanel: () => void;
@@ -39,6 +59,7 @@ export interface UiState {
 
 export const useUiStore = create<UiState>((set) => ({
   theme: getInitialTheme(),
+  locale: getInitialLocale(),
   rightTab: 'basic',
   leftTab: 'library',
   leftPanelOpen: true,
@@ -49,6 +70,12 @@ export const useUiStore = create<UiState>((set) => ({
   },
   toggleTheme: () => {
     set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' }));
+  },
+  setLocale: (locale) => {
+    set({ locale });
+  },
+  toggleLocale: () => {
+    set((s) => ({ locale: s.locale === 'ja' ? 'en' : 'ja' }));
   },
   setRightTab: (rightTab) => {
     set({ rightTab });
@@ -68,6 +95,15 @@ export const useUiStore = create<UiState>((set) => ({
 export function persistTheme(theme: ThemeMode): void {
   try {
     localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // ignore
+  }
+}
+
+/** Persist the locale choice. Safe to call when storage is unavailable. */
+export function persistLocale(locale: Locale): void {
+  try {
+    localStorage.setItem(LOCALE_KEY, locale);
   } catch {
     // ignore
   }
