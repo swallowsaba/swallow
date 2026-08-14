@@ -154,7 +154,7 @@ export function LookMixerPanel(): React.JSX.Element {
             options={optionsList}
             inputs={inputs}
             onChange={(ref) => {
-              setA(ref);
+              if (ref) setA(ref);
             }}
           />
           <LookSelect
@@ -163,7 +163,7 @@ export function LookMixerPanel(): React.JSX.Element {
             options={optionsList}
             inputs={inputs}
             onChange={(ref) => {
-              setB(ref);
+              if (ref) setB(ref);
             }}
           />
           <div className="flex items-center gap-2 pt-1">
@@ -344,5 +344,3 @@ function BlendPad({
     </div>
   );
 }
-
-export { HelpMark };
