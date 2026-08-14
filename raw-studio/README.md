@@ -16,6 +16,9 @@ build step for the end user.
 - **View** with WebGL2: fit/fill, 25–400 % zoom, pan, rotate, before/after.
 - **Develop** on the GPU: exposure, contrast, highlights/shadows, whites/blacks,
   brightness, temperature/tint, saturation, vibrance, gamma — live preview.
+- **Local masks**: brush, radial, and graduated masks, each carrying its own
+  light/color/clarity adjustments, composited on the GPU by per-pixel coverage —
+  the piece Lightroom-class local editing needs.
 - **Auto** corrections (exposure, white balance, contrast, color) from image
   analysis, plus in-browser ONNX models (subject/background segmentation).
 - **Presets**: ten built-ins, plus create/rename/duplicate/delete, favorites,
@@ -78,6 +81,7 @@ src/
 │  ├─ export/      full-res render + encode + watermark
 │  ├─ history/     undo/redo/snapshots + timeline UI
 │  ├─ library/     RAW decode worker, format detection, thumbnails, grid
+│  ├─ masks/       local-adjustment masks: alpha math, ops, overlay, panel
 │  ├─ perf/        LRU cache, rAF coalescer, concurrency limiter, virtualization
 │  ├─ persistence/ Dexie/IndexedDB repository + migrations
 │  ├─ presets/     built-ins, apply, JSON IO, store

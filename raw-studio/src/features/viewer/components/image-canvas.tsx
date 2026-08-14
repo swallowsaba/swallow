@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { WebGLImageRenderer } from '../model/webgl-renderer';
+import { WebGLImageRenderer, type MaskLayer } from '../model/webgl-renderer';
 import {
   clampOffset,
   clampScale,
@@ -14,6 +14,11 @@ import { ViewerControls } from './viewer-controls';
 import { CropOverlay } from './crop-overlay';
 import { RemoveObjectOverlay } from './remove-object-overlay';
 import { WhiteBalancePickerOverlay } from './white-balance-picker-overlay';
+import { MaskOverlay } from '@/features/masks/components/mask-overlay';
+import { useMaskUiStore } from '@/features/masks/model/mask-ui-store';
+import { activeMasks } from '@/features/masks/model/mask-ops';
+import { rasterizeMaskAlpha } from '@/features/masks/model/mask-alpha';
+import { layerUniforms } from '@/features/masks/model/mask-adjust';
 import { createRafScheduler, type RafScheduler } from '@/features/perf';
 import {
   NEUTRAL_UNIFORMS,
@@ -56,6 +61,7 @@ export function ImageCanvas(): React.JSX.Element {
   const cropMode = useViewerStore((s) => s.cropMode);
   const removeMode = useViewerStore((s) => s.removeMode);
   const wbPickMode = useViewerStore((s) => s.wbPickMode);
+  const maskMode = useMaskUiStore((s) => s.maskMode);
 
   // Adjustment uniforms from the current render state (present + live preview).
   const renderEdit = useRenderEdit();
@@ -71,6 +77,31 @@ export function ImageCanvas(): React.JSX.Element {
       showBefore || !renderEdit ? NEUTRAL_ADVANCED : toAdvancedUniforms(renderEdit.adjustments),
     [showBefore, renderEdit],
   );
+
+  // Rasterize each enabled, non-empty mask into a coverage buffer and pair it
+  // with the uniforms for (global + local) adjustments. Recomputed only when
+  // the masks or the global adjustments actually change. "Before" view and the
+  // full-frame edit modes (crop/remove/wb) suppress masks so the base image is
+  // shown cleanly. Rasterized at a bounded resolution — masks are smooth.
+  const maskLayers = React.useMemo<readonly MaskLayer[]>(() => {
+    if (showBefore || !renderEdit) return [];
+    const masks = activeMasks(renderEdit.masks);
+    if (masks.length === 0) return [];
+    const longEdge = 1024;
+    const aspect = imageSize ? imageSize.width / imageSize.height : 1;
+    const aw = aspect >= 1 ? longEdge : Math.max(1, Math.round(longEdge * aspect));
+    const ah = aspect >= 1 ? Math.max(1, Math.round(longEdge / aspect)) : longEdge;
+    return masks.map((mask) => {
+      const { uniforms: u, advanced } = layerUniforms(renderEdit.adjustments, mask.adjustments);
+      return {
+        uniforms: u,
+        advanced,
+        alpha: rasterizeMaskAlpha(mask, aw, ah),
+        alphaWidth: aw,
+        alphaHeight: ah,
+      };
+    });
+  }, [showBefore, renderEdit, imageSize]);
 
   // The crop rect (normalized to the source image) and the effective size it
   // implies. Fit/fill/pan math all use the cropped size, since a cropped
@@ -133,6 +164,7 @@ export function ImageCanvas(): React.JSX.Element {
     advancedUniforms,
     crop,
     imageSize,
+    maskLayers,
   });
   paramsRef.current = {
     drawScale,
@@ -143,6 +175,7 @@ export function ImageCanvas(): React.JSX.Element {
     advancedUniforms,
     crop,
     imageSize,
+    maskLayers,
   };
 
   const schedulerRef = React.useRef<RafScheduler | null>(null);
@@ -152,21 +185,43 @@ export function ImageCanvas(): React.JSX.Element {
       const p = paramsRef.current;
       if (!renderer || !p.imageSize) return;
       const dpr = window.devicePixelRatio || 1;
-      renderer.render(
-        { scale: p.drawScale, offset: p.offset, rotationDeg: p.rotationDeg },
-        p.container,
-        dpr,
-        p.uniforms,
-        p.advancedUniforms,
-        p.crop,
-      );
+      const viewTransform = { scale: p.drawScale, offset: p.offset, rotationDeg: p.rotationDeg };
+      if (p.maskLayers.length > 0) {
+        renderer.renderWithMasks(
+          viewTransform,
+          p.container,
+          dpr,
+          { uniforms: p.uniforms, advanced: p.advancedUniforms },
+          p.crop,
+          p.maskLayers,
+        );
+      } else {
+        renderer.render(
+          viewTransform,
+          p.container,
+          dpr,
+          p.uniforms,
+          p.advancedUniforms,
+          p.crop,
+        );
+      }
     });
   }
 
   // Request a coalesced render whenever inputs change.
   React.useEffect(() => {
     schedulerRef.current?.schedule();
-  }, [imageSize, drawScale, offset, rotationDeg, container, uniforms, advancedUniforms, crop]);
+  }, [
+    imageSize,
+    drawScale,
+    offset,
+    rotationDeg,
+    container,
+    uniforms,
+    advancedUniforms,
+    crop,
+    maskLayers,
+  ]);
 
   React.useEffect(() => {
     return () => {
@@ -206,26 +261,35 @@ export function ImageCanvas(): React.JSX.Element {
     setCustomScale(clampScale(drawScale * factor));
   };
 
+  // Any full-frame editing overlay locks pan/zoom so screen↔image mapping the
+  // overlays rely on stays a simple fit placement.
+  const interactionLocked = cropMode || removeMode || wbPickMode || maskMode;
+
+  const setMode = useViewerStore((s) => s.setMode);
+  // On entering mask mode, snap to a stable fit view so the overlay's
+  // fit-based coordinate mapping lines up with what's on screen.
+  React.useEffect(() => {
+    if (maskMode) {
+      setMode('fit');
+      setOffset({ x: 0, y: 0 });
+    }
+  }, [maskMode, setMode, setOffset]);
+
   return (
     <div
       ref={containerRef}
       className="relative h-full w-full overflow-hidden bg-black/30"
-      onWheel={cropMode || removeMode || wbPickMode ? undefined : onWheel}
+      onWheel={interactionLocked ? undefined : onWheel}
     >
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full touch-none"
         style={{
-          cursor:
-            cropMode || removeMode || wbPickMode
-              ? 'default'
-              : dragRef.current
-                ? 'grabbing'
-                : 'grab',
+          cursor: interactionLocked ? 'default' : dragRef.current ? 'grabbing' : 'grab',
         }}
-        onPointerDown={cropMode || removeMode || wbPickMode ? undefined : onPointerDown}
-        onPointerMove={cropMode || removeMode || wbPickMode ? undefined : onPointerMove}
-        onPointerUp={cropMode || removeMode || wbPickMode ? undefined : onPointerUp}
+        onPointerDown={interactionLocked ? undefined : onPointerDown}
+        onPointerMove={interactionLocked ? undefined : onPointerMove}
+        onPointerUp={interactionLocked ? undefined : onPointerUp}
       />
       {imageSize && cropMode ? (
         <CropOverlay imageSize={imageSize} container={container} rotationDeg={rotationDeg} />
@@ -236,9 +300,10 @@ export function ImageCanvas(): React.JSX.Element {
       {imageSize && wbPickMode ? (
         <WhiteBalancePickerOverlay imageSize={imageSize} container={container} />
       ) : null}
-      {imageSize && !cropMode && !removeMode && !wbPickMode ? (
-        <ViewerControls effectiveScale={drawScale} />
+      {imageSize && maskMode && croppedSize ? (
+        <MaskOverlay croppedSize={croppedSize} container={container} />
       ) : null}
+      {imageSize && !interactionLocked ? <ViewerControls effectiveScale={drawScale} /> : null}
     </div>
   );
 }

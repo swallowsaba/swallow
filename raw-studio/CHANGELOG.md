@@ -23,6 +23,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty-array constant; `useShallow` where element identity is already stable.
 
 ### Added
+- **Local-adjustment masks** (brush, radial, graduated). Each mask carries its
+  own subset of light/color/clarity adjustments that apply only inside it. The
+  data model already existed on `EditState`; this adds the rest:
+  - Pure, unit-tested coverage math (`mask-alpha`): elliptical radial falloff
+    with rotation/feather/invert, graduated linear ramps, and brush stroke
+    stamping with pressure/flow/feather and erase strokes — rasterized to an
+    8-bit coverage buffer.
+  - Pure `EditState` transitions (`mask-ops`) wired through the editor store, so
+    every add/paint/move/adjust/reorder/delete is one undo step and persists via
+    the existing IndexedDB path (masks ride along inside `editState`).
+  - GPU multi-pass compositing in the WebGL2 renderer: the global result renders
+    to an offscreen buffer, then each mask's adjusted variant is folded in by its
+    coverage (`mix(dst, src, alpha)`) with ping-pong framebuffers, presented with
+    the view transform. The single-pass path is used unchanged when there are no
+    masks (no regression to the common case).
+  - On-canvas overlay with drag handles (radial/linear) and painting (brush), a
+    faint coverage tint, plus a Masks panel and per-mask local sliders. Reuses
+    the tested adjustment uniform builders, so a mask's exposure/clarity behaves
+    exactly like the global sliders, confined to the mask.
 - Tone, Color, Detail, and Lens tabs are now fully implemented (previously
   placeholders): 3-point tone curve, 8-band HSL color mixer, clarity/texture/
   dehaze/sharpen/noise-reduction, and lens distortion/vignette/chromatic

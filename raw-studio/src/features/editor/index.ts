@@ -8,9 +8,11 @@ export {
   selectHistoryRows,
   selectSnapshots,
   useRenderEdit,
+  useActiveMask,
   useHistoryRows,
+  applyMaskPreview,
 } from './model/editor-store';
-export type { EditorState, HistoryRow } from './model/editor-store';
+export type { EditorState, HistoryRow, MaskPreview } from './model/editor-store';
 export { applyAdjustments, applyGeometry, mergeAdjustments } from './model/apply';
 export { resolveShortcut } from './model/shortcuts';
 export type { ShortcutAction, KeyEventLike } from './model/shortcuts';

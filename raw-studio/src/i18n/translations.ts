@@ -29,7 +29,53 @@ const DICT = {
   'tab.color': { ja: 'カラー', en: 'Color' },
   'tab.detail': { ja: 'ディテール', en: 'Detail' },
   'tab.lens': { ja: 'レンズ', en: 'Lens' },
+  'tab.masks': { ja: 'マスク', en: 'Masks' },
   'tab.ai': { ja: 'AI', en: 'AI' },
+
+  // Masks
+  'masks.intro': {
+    ja: '画像の一部にだけ効く補正を作れます。ブラシで塗る／円形／グラデーションでマスクを作り、そのマスク内だけに露出や色を効かせます。',
+    en: 'Apply adjustments to just part of the image. Paint a brush mask, or drop a radial or graduated mask, then tune light and color inside it only.',
+  },
+  'masks.addLabel': { ja: 'マスクを追加', en: 'Add mask' },
+  'masks.brush': { ja: 'ブラシ', en: 'Brush' },
+  'masks.radial': { ja: '円形', en: 'Radial' },
+  'masks.linear': { ja: 'グラデ', en: 'Linear' },
+  'masks.empty': {
+    ja: 'まだマスクはありません。上のボタンから追加してください。',
+    en: 'No masks yet. Add one with the buttons above.',
+  },
+  'masks.toggleLabel': { ja: 'マスクの表示切替', en: 'Toggle mask' },
+  'masks.noEffect': { ja: '（効果なし）', en: '(no effect)' },
+  'masks.moveUp': { ja: '上へ', en: 'Move up' },
+  'masks.moveDown': { ja: '下へ', en: 'Move down' },
+  'masks.reorderLabel': { ja: 'マスクを並べ替え', en: 'Reorder mask' },
+  'masks.delete': { ja: '削除', en: 'Delete' },
+  'masks.deleteLabel': { ja: 'マスクを削除', en: 'Delete mask' },
+  'masks.renameLabel': { ja: 'マスク名を変更', en: 'Rename mask' },
+  'masks.invert': { ja: '反転', en: 'Invert' },
+  'masks.invertLabel': { ja: '補正値を反転', en: 'Invert adjustments' },
+  'masks.invertHelp': {
+    ja: 'このマスクの補正値の符号をすべて反転します（例：明るくを暗くに）。',
+    en: 'Flips the sign of every adjustment in this mask (e.g. brighten becomes darken).',
+  },
+  'masks.editShapeLabel': { ja: 'マスク形状を編集', en: 'Edit mask shape' },
+  'masks.localAdjustments': { ja: 'このマスク内の補正', en: 'Adjustments in this mask' },
+  'masks.localHelp': {
+    ja: 'ここでの補正はマスクのかかった範囲だけに、カバレッジの濃さに応じて適用されます。',
+    en: 'These adjustments apply only within the mask, scaled by how strongly each pixel is covered.',
+  },
+  'masks.paint': { ja: '塗る', en: 'Paint' },
+  'masks.erase': { ja: '消す', en: 'Erase' },
+  'masks.size': { ja: 'サイズ', en: 'Size' },
+  'masks.feather': { ja: 'ぼかし', en: 'Feather' },
+  'masks.flow': { ja: '流量', en: 'Flow' },
+  'masks.brushSettingsLabel': { ja: 'ブラシ設定', en: 'Brush settings' },
+  'masks.invertArea': { ja: '範囲を反転', en: 'Invert area' },
+  'masks.invertAreaHelp': {
+    ja: '楕円の内側ではなく外側に効果をかけます。',
+    en: 'Affect outside the ellipse instead of inside.',
+  },
 
   // Common
   'common.openImagePrompt': { ja: '画像を開いて編集を開始', en: 'Open an image to start editing.' },

@@ -10,6 +10,7 @@ export type RightTab =
   | 'color'
   | 'detail'
   | 'lens'
+  | 'masks'
   | 'ai'
   | 'gif'
   | 'collage';

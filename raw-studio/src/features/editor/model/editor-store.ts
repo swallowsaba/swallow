@@ -4,6 +4,9 @@ import type {
   EditHistory,
   EditState,
   Geometry,
+  LocalAdjustments,
+  Mask,
+  MaskGeometry,
   PresetAdjustments,
   Snapshot,
   SourceImageMeta,
@@ -26,6 +29,25 @@ import {
   createDefaultAdjustments,
   createDefaultGeometry,
 } from '@/features/adjustments/model/defaults';
+import {
+  addMask as addMaskOp,
+  invertMaskAdjustments as invertMaskAdjustmentsOp,
+  removeMask as removeMaskOp,
+  renameMask as renameMaskOp,
+  reorderMask as reorderMaskOp,
+  setMaskEnabled as setMaskEnabledOp,
+  updateMaskAdjustments as updateMaskAdjustmentsOp,
+  updateMaskGeometry as updateMaskGeometryOp,
+} from '@/features/masks/model/mask-ops';
+
+/** A live, uncommitted overlay for one mask while dragging/painting or moving a
+ *  local-adjustment slider. Applied for rendering only; committed to history on
+ *  release. */
+export interface MaskPreview {
+  readonly id: string;
+  readonly geometry?: MaskGeometry;
+  readonly adjustments?: LocalAdjustments;
+}
 
 /**
  * The single source of truth for the currently open image and its edit history.
@@ -37,6 +59,8 @@ export interface EditorState {
   history: EditHistory | null;
   /** Uncommitted live-drag overlay applied for rendering only (not in history). */
   preview: PresetAdjustments | null;
+  /** Uncommitted live overlay for a single mask (geometry or local adjustments). */
+  maskPreview: MaskPreview | null;
 
   loadImage: (image: SourceImageMeta, initial: EditState) => void;
   closeImage: () => void;
@@ -45,6 +69,18 @@ export interface EditorState {
   clearPreview: () => void;
   commitAdjustments: (patch: PresetAdjustments, label: string) => void;
   commitGeometry: (patch: Partial<Geometry>, label: string) => void;
+
+  /* masks */
+  setMaskPreview: (preview: MaskPreview) => void;
+  clearMaskPreview: () => void;
+  addMask: (mask: Mask, label: string) => void;
+  commitMaskGeometry: (id: string, geometry: MaskGeometry, label: string) => void;
+  commitMaskAdjustments: (id: string, patch: LocalAdjustments, label: string) => void;
+  setMaskEnabled: (id: string, enabled: boolean, label: string) => void;
+  renameMask: (id: string, name: string, label: string) => void;
+  removeMask: (id: string, label: string) => void;
+  reorderMask: (id: string, direction: 'up' | 'down', label: string) => void;
+  invertMaskAdjustments: (id: string, label: string) => void;
 
   undo: () => void;
   redo: () => void;
@@ -59,13 +95,14 @@ export const useEditorStore = create<EditorState>((set) => ({
   image: null,
   history: null,
   preview: null,
+  maskPreview: null,
 
   loadImage: (image, initial) => {
-    set({ image, history: createHistory(initial), preview: null });
+    set({ image, history: createHistory(initial), preview: null, maskPreview: null });
   },
 
   closeImage: () => {
-    set({ image: null, history: null, preview: null });
+    set({ image: null, history: null, preview: null, maskPreview: null });
   },
 
   setPreview: (patch) => {
@@ -88,6 +125,71 @@ export const useEditorStore = create<EditorState>((set) => ({
       if (!state.history) return state;
       const next = applyGeometry(state.history.present.state, patch);
       return { history: pushEdit(state.history, label, next) };
+    });
+  },
+
+  /* ------------------------------- masks -------------------------------- */
+
+  setMaskPreview: (maskPreview) => {
+    set({ maskPreview });
+  },
+  clearMaskPreview: () => {
+    set({ maskPreview: null });
+  },
+  addMask: (mask, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = addMaskOp(state.history.present.state, mask);
+      return { history: pushEdit(state.history, label, next), maskPreview: null };
+    });
+  },
+  commitMaskGeometry: (id, geometry, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = updateMaskGeometryOp(state.history.present.state, id, geometry);
+      return { history: pushEdit(state.history, label, next), maskPreview: null };
+    });
+  },
+  commitMaskAdjustments: (id, patch, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = updateMaskAdjustmentsOp(state.history.present.state, id, patch);
+      return { history: pushEdit(state.history, label, next), maskPreview: null };
+    });
+  },
+  setMaskEnabled: (id, enabled, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = setMaskEnabledOp(state.history.present.state, id, enabled);
+      return { history: pushEdit(state.history, label, next) };
+    });
+  },
+  renameMask: (id, name, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = renameMaskOp(state.history.present.state, id, name);
+      return { history: pushEdit(state.history, label, next) };
+    });
+  },
+  removeMask: (id, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = removeMaskOp(state.history.present.state, id);
+      return { history: pushEdit(state.history, label, next), maskPreview: null };
+    });
+  },
+  reorderMask: (id, direction, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = reorderMaskOp(state.history.present.state, id, direction);
+      return { history: pushEdit(state.history, label, next) };
+    });
+  },
+  invertMaskAdjustments: (id, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = invertMaskAdjustmentsOp(state.history.present.state, id);
+      return { history: pushEdit(state.history, label, next), maskPreview: null };
     });
   },
 
@@ -194,17 +296,59 @@ function mergeColorGradingPreview(
 export function selectRenderEdit(state: EditorState): EditState | null {
   const present = state.history?.present.state ?? null;
   if (!present) return null;
-  return state.preview ? applyAdjustments(present, state.preview) : present;
+  const withPreview = state.preview ? applyAdjustments(present, state.preview) : present;
+  return state.maskPreview ? applyMaskPreview(withPreview, state.maskPreview) : withPreview;
+}
+
+/** Overlay a live mask preview (geometry and/or local adjustments) onto the
+ *  matching mask, without touching history. */
+export function applyMaskPreview(state: EditState, preview: MaskPreview): EditState {
+  let changed = false;
+  const masks = state.masks.map((m) => {
+    if (m.id !== preview.id) return m;
+    changed = true;
+    return {
+      ...m,
+      ...(preview.geometry ? { geometry: preview.geometry } : {}),
+      ...(preview.adjustments
+        ? { adjustments: { ...m.adjustments, ...preview.adjustments } }
+        : {}),
+    };
+  });
+  return changed ? { ...state, masks } : state;
 }
 
 /** Memoized version of {@link selectRenderEdit} safe to use in components. */
 export function useRenderEdit(): EditState | null {
   const present = useEditorStore((s) => s.history?.present.state ?? null);
   const preview = useEditorStore((s) => s.preview);
-  return useMemo(
-    () => (present && preview ? applyAdjustments(present, preview) : present),
-    [present, preview],
-  );
+  const maskPreview = useEditorStore((s) => s.maskPreview);
+  return useMemo(() => {
+    if (!present) return null;
+    const withPreview = preview ? applyAdjustments(present, preview) : present;
+    return maskPreview ? applyMaskPreview(withPreview, maskPreview) : withPreview;
+  }, [present, preview, maskPreview]);
+}
+
+/** The mask currently selected for editing, resolved against present state. */
+export function useActiveMask(activeMaskId: string | null): Mask | null {
+  const present = useEditorStore((s) => s.history?.present.state ?? null);
+  const maskPreview = useEditorStore((s) => s.maskPreview);
+  return useMemo(() => {
+    if (!present || !activeMaskId) return null;
+    const base = present.masks.find((m) => m.id === activeMaskId) ?? null;
+    if (!base) return null;
+    if (maskPreview && maskPreview.id === activeMaskId) {
+      return {
+        ...base,
+        ...(maskPreview.geometry ? { geometry: maskPreview.geometry } : {}),
+        ...(maskPreview.adjustments
+          ? { adjustments: { ...base.adjustments, ...maskPreview.adjustments } }
+          : {}),
+      };
+    }
+    return base;
+  }, [present, activeMaskId, maskPreview]);
 }
 
 

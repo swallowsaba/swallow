@@ -283,6 +283,68 @@ void main() {
   outColor = vec4(clamp(s, 0.0, 1.0), texA);
 }`;
 
+/**
+ * Present shader: draw a finished offscreen texture (already fully adjusted and
+ * mask-composited, in cropped-image space) to the screen. The vertex positions
+ * carry the view transform (zoom/pan/rotate) computed on the CPU, exactly like
+ * the main pass; here the fragment stage is a plain sampler.
+ */
+const PRESENT_VERTEX_SRC = `#version 300 es
+in vec2 a_pos;
+in vec2 a_uv;
+out vec2 v_uv;
+void main() {
+  v_uv = a_uv;
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}`;
+
+const PRESENT_FRAGMENT_SRC = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+uniform sampler2D u_tex;
+out vec4 outColor;
+void main() {
+  outColor = texture(u_tex, v_uv);
+}`;
+
+/**
+ * Composite shader: blend a mask layer (src) over the accumulator (dst) by the
+ * mask's coverage. `out = mix(dst, src, maskAlpha)`. The mask texture is stored
+ * top-row-first (v=0 at image top) while the framebuffers put image-top at t=1,
+ * so the mask is sampled with a flipped t to line up.
+ */
+const COMPOSITE_FRAGMENT_SRC = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+uniform sampler2D u_dst;
+uniform sampler2D u_src;
+uniform sampler2D u_mask;
+uniform float u_strength;
+out vec4 outColor;
+void main() {
+  vec4 dst = texture(u_dst, v_uv);
+  vec4 src = texture(u_src, v_uv);
+  float a = texture(u_mask, vec2(v_uv.x, 1.0 - v_uv.y)).r * u_strength;
+  outColor = mix(dst, src, clamp(a, 0.0, 1.0));
+}`;
+
+/** One mask layer to composite: the adjustments to apply inside it, plus its
+ *  rasterized coverage (8-bit, row 0 = image top). */
+export interface MaskLayer {
+  readonly uniforms: AdjustmentUniforms;
+  readonly advanced: AdvancedUniforms;
+  readonly alpha: Uint8ClampedArray;
+  readonly alphaWidth: number;
+  readonly alphaHeight: number;
+  /** Overall strength 0..1 (e.g. a disabled-but-previewed mask). Default 1. */
+  readonly strength?: number;
+}
+
+/** Longest edge of the offscreen working buffers used for mask compositing.
+ *  Keeps memory/fill bounded on huge RAW files; masks are smooth so the mild
+ *  downscale is visually harmless and the final present still samples this. */
+const MAX_MASK_WORK = 2048;
+
 export interface ViewTransform {
   readonly scale: number;
   readonly offset: Point;
@@ -360,6 +422,25 @@ export class WebGLImageRenderer {
   private texelLoc: WebGLUniformLocation | null = null;
   private imageSize: Size = { width: 0, height: 0 };
   private readonly vertexData = new Float32Array(16);
+
+  // Lazily-created GL objects for masked (multi-pass) rendering. Null until the
+  // first masked render, so the common no-mask path allocates nothing extra.
+  private presentProgram: WebGLProgram | null = null;
+  private presentVao: WebGLVertexArrayObject | null = null;
+  private presentTexLoc: WebGLUniformLocation | null = null;
+  private compositeProgram: WebGLProgram | null = null;
+  private compositeVao: WebGLVertexArrayObject | null = null;
+  private compositeLocs: {
+    dst: WebGLUniformLocation | null;
+    src: WebGLUniformLocation | null;
+    mask: WebGLUniformLocation | null;
+    strength: WebGLUniformLocation | null;
+  } | null = null;
+  private maskTexture: WebGLTexture | null = null;
+  private fboSize: Size = { width: 0, height: 0 };
+  private fboA: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
+  private fboB: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
+  private fboTemp: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
 
   constructor(canvas: HTMLCanvasElement | OffscreenCanvas) {
     const gl = canvas.getContext('webgl2', {
@@ -544,11 +625,325 @@ export class WebGLImageRenderer {
     gl.bindVertexArray(null);
   }
 
+  /* --------------------- masked (multi-pass) rendering -------------------- */
+
+  /** Compile the extra programs used for masking, once, on first use. */
+  private ensureMaskPrograms(): void {
+    if (this.presentProgram && this.compositeProgram) return;
+    const gl = this.gl;
+
+    const pvs = compileShader(gl, gl.VERTEX_SHADER, PRESENT_VERTEX_SRC);
+    const pfs = compileShader(gl, gl.FRAGMENT_SHADER, PRESENT_FRAGMENT_SRC);
+    this.presentProgram = linkProgram(gl, pvs, pfs);
+    gl.deleteShader(pvs);
+    gl.deleteShader(pfs);
+    this.presentTexLoc = gl.getUniformLocation(this.presentProgram, 'u_tex');
+    this.presentVao = this.makeQuadVao(this.presentProgram);
+
+    const cvs = compileShader(gl, gl.VERTEX_SHADER, PRESENT_VERTEX_SRC);
+    const cfs = compileShader(gl, gl.FRAGMENT_SHADER, COMPOSITE_FRAGMENT_SRC);
+    this.compositeProgram = linkProgram(gl, cvs, cfs);
+    gl.deleteShader(cvs);
+    gl.deleteShader(cfs);
+    this.compositeLocs = {
+      dst: gl.getUniformLocation(this.compositeProgram, 'u_dst'),
+      src: gl.getUniformLocation(this.compositeProgram, 'u_src'),
+      mask: gl.getUniformLocation(this.compositeProgram, 'u_mask'),
+      strength: gl.getUniformLocation(this.compositeProgram, 'u_strength'),
+    };
+    this.compositeVao = this.makeQuadVao(this.compositeProgram);
+
+    const maskTex = gl.createTexture();
+    if (!maskTex) throw new Error('Failed to allocate mask texture');
+    this.maskTexture = maskTex;
+    gl.bindTexture(gl.TEXTURE_2D, maskTex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  }
+
+  /** A VAO wired to `this.buffer` (interleaved pos+uv) for the given program. */
+  private makeQuadVao(program: WebGLProgram): WebGLVertexArrayObject {
+    const gl = this.gl;
+    const vao = gl.createVertexArray();
+    if (!vao) throw new Error('Failed to allocate VAO');
+    const posLoc = gl.getAttribLocation(program, 'a_pos');
+    const uvLoc = gl.getAttribLocation(program, 'a_uv');
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 16, 0);
+    gl.enableVertexAttribArray(uvLoc);
+    gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 16, 8);
+    gl.bindVertexArray(null);
+    return vao;
+  }
+
+  private makeFbo(w: number, h: number): { fb: WebGLFramebuffer; tex: WebGLTexture } {
+    const gl = this.gl;
+    const tex = gl.createTexture();
+    const fb = gl.createFramebuffer();
+    if (!tex || !fb) throw new Error('Failed to allocate framebuffer');
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return { fb, tex };
+  }
+
+  private ensureFbos(w: number, h: number): void {
+    if (this.fboA && this.fboSize.width === w && this.fboSize.height === h) return;
+    this.disposeFbos();
+    this.fboA = this.makeFbo(w, h);
+    this.fboB = this.makeFbo(w, h);
+    this.fboTemp = this.makeFbo(w, h);
+    this.fboSize = { width: w, height: h };
+  }
+
+  private disposeFbos(): void {
+    const gl = this.gl;
+    for (const fbo of [this.fboA, this.fboB, this.fboTemp]) {
+      if (fbo) {
+        gl.deleteFramebuffer(fbo.fb);
+        gl.deleteTexture(fbo.tex);
+      }
+    }
+    this.fboA = this.fboB = this.fboTemp = null;
+    this.fboSize = { width: 0, height: 0 };
+  }
+
+  /** Write a full-target quad (clip -1..1) with the given source UV sub-rect. */
+  private writeFboQuad(crop: CropRect): void {
+    const u0 = crop.x;
+    const u1 = crop.x + crop.width;
+    const v0 = crop.y;
+    const v1 = crop.y + crop.height;
+    // clip x, clip y, u, v — TRIANGLE_STRIP order. clip y=+1 (fbo top, t=1)
+    // samples image top (v0), so fbo row t=1 == image top.
+    this.vertexData.set([
+      -1, -1, u0, v1,
+      1, -1, u1, v1,
+      -1, 1, u0, v0,
+      1, 1, u1, v0,
+    ]);
+    const gl = this.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertexData);
+  }
+
+  /** Write a full-target quad with plain 0..1 UVs (for composite/present when
+   *  sampling an already-cropped fbo texture). */
+  private writeFullQuad(): void {
+    this.vertexData.set([
+      -1, -1, 0, 0,
+      1, -1, 1, 0,
+      -1, 1, 0, 1,
+      1, 1, 1, 1,
+    ]);
+    const gl = this.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertexData);
+  }
+
+  /** Render the adjustment pipeline for one uniform set into a framebuffer. */
+  private drawAdjustToFbo(
+    target: { fb: WebGLFramebuffer },
+    w: number,
+    h: number,
+    a: AdjustmentUniforms,
+    adv: AdvancedUniforms,
+    crop: CropRect,
+  ): void {
+    const gl = this.gl;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target.fb);
+    gl.viewport(0, 0, w, h);
+    gl.useProgram(this.program);
+    this.setUniforms(a, adv);
+    this.writeFboQuad(crop);
+    gl.bindVertexArray(this.vao);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.uniform1i(this.texLoc ?? null, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindVertexArray(null);
+  }
+
+  /**
+   * Masked render. Falls back to the plain single pass when there are no
+   * layers. Otherwise: render the global result to an accumulator, then for
+   * each mask render its adjusted variant and blend it in by coverage, and
+   * finally present the accumulator to screen with the view transform.
+   *
+   * Unverified in this environment: the multi-pass GL path needs a real WebGL2
+   * context to confirm visually. The single-pass path (no masks) is unchanged.
+   */
+  renderWithMasks(
+    view: ViewTransform,
+    cssSize: Size,
+    dpr: number,
+    base: { uniforms: AdjustmentUniforms; advanced: AdvancedUniforms },
+    crop: CropRect,
+    layers: readonly MaskLayer[],
+  ): void {
+    if (layers.length === 0) {
+      this.render(view, cssSize, dpr, base.uniforms, base.advanced, crop);
+      return;
+    }
+    const gl = this.gl;
+    if (this.imageSize.width === 0) return;
+    this.ensureMaskPrograms();
+
+    // Working buffer size: the cropped image, capped to MAX_MASK_WORK.
+    const croppedW = Math.max(1, Math.round(this.imageSize.width * crop.width));
+    const croppedH = Math.max(1, Math.round(this.imageSize.height * crop.height));
+    const scale = Math.min(1, MAX_MASK_WORK / Math.max(croppedW, croppedH));
+    const w = Math.max(1, Math.round(croppedW * scale));
+    const h = Math.max(1, Math.round(croppedH * scale));
+    this.ensureFbos(w, h);
+
+    const A = this.fboA;
+    const B = this.fboB;
+    const temp = this.fboTemp;
+    const comp = this.compositeProgram;
+    const locs = this.compositeLocs;
+    const maskTex = this.maskTexture;
+    if (!A || !B || !temp || !comp || !locs || !maskTex || !this.compositeVao) return;
+
+    gl.disable(gl.BLEND);
+
+    // Pass 0: global adjustments → accumulator A.
+    this.drawAdjustToFbo(A, w, h, base.uniforms, base.advanced, crop);
+
+    // Ping-pong accumulator: `src`/`dst` alternate as we fold in each layer.
+    let acc = A;
+    let other = B;
+    for (const layer of layers) {
+      // Layer color → temp.
+      this.drawAdjustToFbo(temp, w, h, layer.uniforms, layer.advanced, crop);
+
+      // Upload this layer's coverage. Single-channel rows may not be a
+      // multiple of 4 bytes, so relax the unpack alignment to avoid row skew.
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, maskTex);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.R8,
+        layer.alphaWidth,
+        layer.alphaHeight,
+        0,
+        gl.RED,
+        gl.UNSIGNED_BYTE,
+        layer.alpha,
+      );
+
+      // Composite temp over acc, into other.
+      gl.bindFramebuffer(gl.FRAMEBUFFER, other.fb);
+      gl.viewport(0, 0, w, h);
+      gl.useProgram(comp);
+      this.writeFullQuad();
+      gl.bindVertexArray(this.compositeVao);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, acc.tex);
+      gl.uniform1i(locs.dst, 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, temp.tex);
+      gl.uniform1i(locs.src, 1);
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, maskTex);
+      gl.uniform1i(locs.mask, 2);
+      gl.uniform1f(locs.strength, layer.strength ?? 1);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindVertexArray(null);
+
+      const swap = acc;
+      acc = other;
+      other = swap;
+    }
+
+    // Present `acc` to screen with the view transform.
+    this.presentToScreen(acc.tex, view, cssSize, dpr, croppedW, croppedH);
+  }
+
+  /** Draw a finished offscreen texture to the default framebuffer, positioned
+   *  by the view transform (mirrors the corner math in `render`). */
+  private presentToScreen(
+    tex: WebGLTexture,
+    view: ViewTransform,
+    cssSize: Size,
+    dpr: number,
+    croppedW: number,
+    croppedH: number,
+  ): void {
+    const gl = this.gl;
+    const program = this.presentProgram;
+    const vao = this.presentVao;
+    if (!program || !vao) return;
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    this.resize(Math.round(cssSize.width * dpr), Math.round(cssSize.height * dpr));
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const halfW = (croppedW * view.scale) / 2;
+    const halfH = (croppedH * view.scale) / 2;
+    const rad = (view.rotationDeg * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const cx = cssSize.width / 2 + view.offset.x;
+    const cy = cssSize.height / 2 + view.offset.y;
+
+    // UV v=1 = image top (fbo t=1), so screen-top corners use v=1.
+    const corners: readonly (readonly [number, number, number, number])[] = [
+      [-halfW, -halfH, 0, 1],
+      [halfW, -halfH, 1, 1],
+      [-halfW, halfH, 0, 0],
+      [halfW, halfH, 1, 0],
+    ];
+    for (let i = 0; i < 4; i++) {
+      const corner = corners[i];
+      if (!corner) continue;
+      const [lx, ly, u, v] = corner;
+      const rx = lx * cos - ly * sin;
+      const ry = lx * sin + ly * cos;
+      const clipX = ((cx + rx) / cssSize.width) * 2 - 1;
+      const clipY = 1 - ((cy + ry) / cssSize.height) * 2;
+      const base = i * 4;
+      this.vertexData[base] = clipX;
+      this.vertexData[base + 1] = clipY;
+      this.vertexData[base + 2] = u;
+      this.vertexData[base + 3] = v;
+    }
+
+    gl.useProgram(program);
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertexData);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(this.presentTexLoc ?? null, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindVertexArray(null);
+  }
+
   dispose(): void {
     const gl = this.gl;
     gl.deleteBuffer(this.buffer);
     gl.deleteVertexArray(this.vao);
     gl.deleteTexture(this.texture);
     gl.deleteProgram(this.program);
+    this.disposeFbos();
+    if (this.maskTexture) gl.deleteTexture(this.maskTexture);
+    if (this.presentVao) gl.deleteVertexArray(this.presentVao);
+    if (this.compositeVao) gl.deleteVertexArray(this.compositeVao);
+    if (this.presentProgram) gl.deleteProgram(this.presentProgram);
+    if (this.compositeProgram) gl.deleteProgram(this.compositeProgram);
   }
 }
