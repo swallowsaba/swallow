@@ -180,6 +180,46 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   disclosed limitation of this v1, most noticeable removing small/thin
   objects on high-resolution photos.
 
+## [Unreleased]
+
+### Fixed
+- Noise Reduction (Luminance) still felt weak/inconsistent after the earlier
+  edge-aware fix: the threshold (0.02-0.12 local difference) was too tight —
+  real photographic noise easily falls in that exact range, so the gate was
+  suppressing smoothing almost everywhere it was actually needed. Widened to
+  0.06-0.30 so typical noise stays fully smoothable and only much larger
+  jumps (genuine edges) are protected. Updated tests accordingly.
+- Texture still had very little visible effect; increased its strength
+  multiplier further (0.45 → 0.8).
+- AI inference: input tensor name is read from the loaded model itself
+  (already fixed last round); this round also makes segmentation's status
+  text clearer about download progress.
+
+### Changed
+- Renamed Detail's "Color" noise-reduction slider to "Color Noise" and
+  rewrote its help text to describe the visible symptom (colored speckles in
+  shadows) rather than just the technical term — several people found the
+  original label unclear.
+- Basic/Tone/Color/Lens/Beginner sliders now range −300..300 (previously
+  −100..100) for stronger effects; Detail's Clarity/Texture/Dehaze and
+  Sharpen Amount likewise. Noise Reduction's two sliders stay at 0..100 —
+  their blend formula already saturates at 100, so a wider range there would
+  do nothing beyond just being misleading.
+- AI tab rewritten with clearer, translated explanations of what each tool
+  does (previously unclear what "Detect subject/background" was for on its
+  own) and a shortcut to Remove Object.
+- Remove Object no longer downloads automatically after "Apply" — it now
+  shows a preview first, with separate "Redo" and "Download" actions, so
+  nothing is saved until explicitly requested.
+
+### Added
+- Photo info now includes the lens model and GPS coordinates when a RAW file
+  has them (read defensively, since the exact field names aren't fully
+  documented by the decoder library), a "View on map" link, and an opt-in
+  "Look up place name" button (queries OpenStreetMap's free Nominatim
+  service — the one place in the app that sends anything external, and only
+  when explicitly clicked).
+
 ## [1.0.0] - 2026-08-12
 
 ### Added

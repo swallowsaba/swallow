@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { Info } from 'lucide-react';
+import { Info, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useEditorStore } from '@/features/editor';
 import { useT } from '@/i18n';
+import { lookupPlace, mapsUrl } from './geocode';
 
 function formatBytes(n: number): string {
   if (n <= 0) return '\u2014';
@@ -32,6 +33,9 @@ export function InfoButton(): React.JSX.Element {
   const image = useEditorStore((s) => s.image);
   const t = useT();
   const [open, setOpen] = React.useState(false);
+  const [place, setPlace] = React.useState<string | null>(null);
+  const [placeBusy, setPlaceBusy] = React.useState(false);
+  const [placeError, setPlaceError] = React.useState<string | null>(null);
   const rootRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -57,6 +61,7 @@ export function InfoButton(): React.JSX.Element {
   if (cam) {
     const cameraName = [cam.make, cam.model].filter(Boolean).join(' ');
     if (cameraName) rows.push({ label: 'Camera', value: cameraName });
+    if (cam.lens) rows.push({ label: 'Lens', value: cam.lens });
     if (cam.focalLength !== undefined) rows.push({ label: 'Focal length', value: `${String(cam.focalLength)}mm` });
     if (cam.aperture !== undefined) rows.push({ label: 'Aperture', value: `f/${cam.aperture}` });
     if (cam.shutter !== undefined) rows.push({ label: 'Shutter', value: formatShutter(cam.shutter) });
@@ -65,6 +70,20 @@ export function InfoButton(): React.JSX.Element {
       rows.push({ label: 'Captured', value: new Date(cam.capturedAt * 1000).toLocaleString() });
     }
   }
+  const hasGps = cam?.gpsLatitude !== undefined && cam.gpsLongitude !== undefined;
+
+  const runLookup = async () => {
+    if (!cam?.gpsLatitude || !cam.gpsLongitude) return;
+    setPlaceBusy(true);
+    setPlaceError(null);
+    try {
+      setPlace(await lookupPlace(cam.gpsLatitude, cam.gpsLongitude));
+    } catch (err) {
+      setPlaceError(err instanceof Error ? err.message : 'Lookup failed.');
+    } finally {
+      setPlaceBusy(false);
+    }
+  };
 
   return (
     <div ref={rootRef} className="relative">
@@ -101,6 +120,38 @@ export function InfoButton(): React.JSX.Element {
           {!cam ? (
             <div className="mt-2 text-[10px] text-muted-foreground">
               {t('info.noCameraData')}
+            </div>
+          ) : null}
+          {hasGps && cam?.gpsLatitude !== undefined && cam.gpsLongitude !== undefined ? (
+            <div className="mt-2 flex flex-col gap-1 border-t pt-2">
+              <a
+                href={mapsUrl(cam.gpsLatitude, cam.gpsLongitude)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+              >
+                <MapPin className="size-3" />
+                {t('info.viewOnMap')}
+              </a>
+              {place ? (
+                <div className="text-[11px] font-medium">{place}</div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 justify-start px-0 text-[11px] text-muted-foreground"
+                  disabled={placeBusy}
+                  onClick={() => {
+                    void runLookup();
+                  }}
+                >
+                  {placeBusy ? t('info.lookingUp') : t('info.lookUpPlace')}
+                </Button>
+              )}
+              {placeError ? (
+                <div className="text-[10px] text-destructive">{placeError}</div>
+              ) : null}
+              <div className="text-[10px] text-muted-foreground">{t('info.placeLookupNote')}</div>
             </div>
           ) : null}
         </div>

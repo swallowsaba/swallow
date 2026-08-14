@@ -65,6 +65,7 @@ export async function activateItem(id: string): Promise<void> {
           camera: {
             ...(item.raw.make !== undefined ? { make: item.raw.make } : {}),
             ...(item.raw.model !== undefined ? { model: item.raw.model } : {}),
+            ...(item.raw.lens !== undefined ? { lens: item.raw.lens } : {}),
             ...(item.raw.iso !== undefined ? { iso: item.raw.iso } : {}),
             ...(item.raw.shutter !== undefined ? { shutter: item.raw.shutter } : {}),
             ...(item.raw.aperture !== undefined ? { aperture: item.raw.aperture } : {}),
@@ -72,6 +73,12 @@ export async function activateItem(id: string): Promise<void> {
               ? { focalLength: item.raw.focalLength }
               : {}),
             ...(item.raw.timestamp !== undefined ? { capturedAt: item.raw.timestamp } : {}),
+            ...(item.raw.gpsLatitude !== undefined
+              ? { gpsLatitude: item.raw.gpsLatitude }
+              : {}),
+            ...(item.raw.gpsLongitude !== undefined
+              ? { gpsLongitude: item.raw.gpsLongitude }
+              : {}),
           },
         }
       : {}),

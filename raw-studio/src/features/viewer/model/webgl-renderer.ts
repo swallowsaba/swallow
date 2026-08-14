@@ -225,7 +225,7 @@ void main() {
   float distFromExtreme = min(lumC, 1.0 - lumC);
   float midWeight = smoothstep(0.0, 0.12, distFromExtreme);
   s += (s - blur) * (u_clarity / 100.0) * 0.6 * midWeight;
-  s += (s - blur) * (u_texture / 100.0) * 0.45;
+  s += (s - blur) * (u_texture / 100.0) * 0.8;
 
   float denoiseT = clamp(u_noiseReduction / 100.0, 0.0, 1.0);
   float colorDenoiseT = clamp(u_colorNoiseReduction / 100.0, 0.0, 1.0);
@@ -255,7 +255,13 @@ void main() {
     // and keep it at full strength in flat, low-detail areas where noise
     // actually shows up.
     float localDiff = length(s - wideBlur);
-    float edgeAware = 1.0 - smoothstep(0.02, 0.12, localDiff);
+    // The previous threshold (0.02-0.12) was too tight: real photographic
+    // noise easily creates local differences in that exact range, so the
+    // edge-aware gate was suppressing noise reduction almost everywhere it
+    // was actually needed, making the effect feel weak or absent. Widened so
+    // typical noise stays fully smoothable, and only much larger jumps
+    // (genuine edges) get protected.
+    float edgeAware = 1.0 - smoothstep(0.06, 0.30, localDiff);
     float lumDenoise = denoiseT * edgeAware;
     // Color noise is diffuse chroma speckling rather than structural detail,
     // so it can stay more effective near edges than luminance smoothing.

@@ -115,8 +115,8 @@ export function ColorPanel(): React.JSX.Element {
             <div className="flex-1">
               <AdjustmentSlider
                 label={t(CHANNEL_KEY[key])}
-                min={-100}
-                max={100}
+                min={-300}
+                max={300}
                 step={1}
                 defaultValue={0}
                 value={pending[key] ?? channel[key]}

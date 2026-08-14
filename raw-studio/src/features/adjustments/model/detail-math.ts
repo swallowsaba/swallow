@@ -34,7 +34,12 @@ export function applyClarity(pixel: number, blurred: number, amount: number): nu
  *  the magnitude of the difference between the pixel and its neighborhood
  *  average. */
 export function edgeAwareWeight(localDiff: number): number {
-  const t = clamp01((localDiff - 0.02) / (0.12 - 0.02));
+  // Real photographic noise easily creates local differences in the
+  // 0.02-0.12 range (an earlier, too-tight threshold), so that range
+  // suppressed noise reduction almost everywhere it was actually needed.
+  // Widened: typical noise stays fully smoothable, and only much larger
+  // local jumps (genuine edges) get protected.
+  const t = clamp01((localDiff - 0.06) / (0.3 - 0.06));
   return 1 - t;
 }
 

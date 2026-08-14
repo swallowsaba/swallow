@@ -99,8 +99,8 @@ export function BeginnerPanel(): React.JSX.Element {
         <div className="flex-1">
           <AdjustmentSlider
             label={t('beginner.brighten')}
-            min={-100}
-            max={100}
+            min={-300}
+            max={300}
             step={1}
             defaultValue={0}
             value={brightenAmount}
@@ -119,8 +119,8 @@ export function BeginnerPanel(): React.JSX.Element {
         <div className="flex-1">
           <AdjustmentSlider
             label={t('beginner.vivid')}
-            min={-100}
-            max={100}
+            min={-300}
+            max={300}
             step={1}
             defaultValue={0}
             value={vividAmount}

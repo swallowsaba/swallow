@@ -259,18 +259,18 @@ describe('detail combining formulas', () => {
     expect(applyDenoise(0.8, 0.5, 50)).toBeCloseTo(0.65, 5);
   });
 
-  it('edgeAwareWeight is full strength in flat areas and fades near real edges', () => {
+  it('edgeAwareWeight is full strength for typical noise and fades near real edges', () => {
     expect(edgeAwareWeight(0)).toBeCloseTo(1, 5);
-    expect(edgeAwareWeight(0.02)).toBeCloseTo(1, 5);
-    expect(edgeAwareWeight(0.12)).toBeCloseTo(0, 5);
-    expect(edgeAwareWeight(0.5)).toBeCloseTo(0, 5);
-    expect(edgeAwareWeight(0.07)).toBeGreaterThan(0);
-    expect(edgeAwareWeight(0.07)).toBeLessThan(1);
+    expect(edgeAwareWeight(0.06)).toBeCloseTo(1, 5); // typical noise stays fully smoothable
+    expect(edgeAwareWeight(0.3)).toBeCloseTo(0, 5);
+    expect(edgeAwareWeight(0.6)).toBeCloseTo(0, 5);
+    expect(edgeAwareWeight(0.18)).toBeGreaterThan(0);
+    expect(edgeAwareWeight(0.18)).toBeLessThan(1);
   });
 
   it('regression: denoise preserves a strong edge instead of blurring it away', () => {
     // A flat/noisy area (small local difference) should smooth normally...
-    const flatArea = applyDenoise(0.52, 0.5, 100, edgeAwareWeight(0.02));
+    const flatArea = applyDenoise(0.52, 0.5, 100, edgeAwareWeight(0.05));
     expect(flatArea).toBeCloseTo(0.5, 3);
     // ...but a real edge (large local difference) should barely move, even
     // at 100% amount — an earlier version had no edge awareness and would

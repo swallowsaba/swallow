@@ -84,8 +84,8 @@ export function LensPanel(): React.JSX.Element {
             <div className="flex-1">
               <AdjustmentSlider
                 label={t(spec.labelKey)}
-                min={-100}
-                max={100}
+                min={-300}
+                max={300}
                 step={1}
                 defaultValue={0}
                 value={pending[spec.key] ?? lens[spec.key]}

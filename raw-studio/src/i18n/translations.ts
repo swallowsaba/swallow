@@ -107,7 +107,7 @@ const DICT = {
   'detail.amount': { ja: '量', en: 'Amount' },
   'detail.radius': { ja: '半径', en: 'Radius' },
   'detail.luminanceNr': { ja: '輝度', en: 'Luminance' },
-  'detail.colorNr': { ja: 'カラー', en: 'Color' },
+  'detail.colorNr': { ja: 'カラーノイズ', en: 'Color Noise' },
   'detail.clarityHelp': {
     ja: '中間調の局所コントラストを強めて（または弱めて）、力強い、または柔らかい印象にします。',
     en: 'Boosts (or softens) local contrast in the midtones for a punchier or dreamier look.',
@@ -130,8 +130,8 @@ const DICT = {
     en: 'Smooths brightness noise (grain). Higher values can soften fine detail.',
   },
   'detail.colorNrHelp': {
-    ja: '明るさの細部に影響を与えず、色のちらつき（カラーノイズ）を滑らかにします。',
-    en: 'Smooths color speckling (chroma noise) without affecting brightness detail.',
+    ja: '暗い部分などに出る、赤や緑の細かい色ムラ（カラーノイズ）を滑らかにします。明るさの細かい模様（輝度のディテール）はそのまま保ちます。「輝度」スライダーとは別に、色のにじみだけを狙って抑えます。',
+    en: 'Smooths the small red/green/blue color speckles that show up in noisy areas (e.g. shadows on a high-ISO photo), without softening brightness detail. This targets color blotches specifically — separate from the Luminance slider above.',
   },
 
   // Lens panel
@@ -204,12 +204,39 @@ const DICT = {
 
   // AI panel
   'ai.detectSubject': { ja: '被写体・背景を検出', en: 'Detect subject / background' },
+  'ai.title': { ja: 'AI機能', en: 'AI Tools' },
+  'ai.intro': {
+    ja: '写真の内容をAIが自動で認識するツール群です。モデルは初回のみダウンロードし、以降はブラウザ内で動作します（外部サーバーには送信されません）。',
+    en: 'AI tools that automatically recognize what\u2019s in your photo. Models download once and then run entirely in your browser \u2014 nothing is sent to a server.',
+  },
+  'ai.detectSubjectHelp': {
+    ja: '写真のどこが被写体で、どこが背景かをAIが判定します。判定結果（マスク）は「かんたんモード」の背景ぼかし機能などで使われます。単体では画像は変化しません。',
+    en: 'Judges which part of the photo is the subject vs. the background. The result (a mask) is used by features like Beginner Mode\u2019s Blur Background \u2014 running it here by itself doesn\u2019t change the photo.',
+  },
+  'ai.maskReady': { ja: '判定完了', en: 'Ready' },
+  'ai.removeObjectTitle': { ja: 'オブジェクト除去', en: 'Remove Object' },
+  'ai.removeObjectHelp': {
+    ja: 'ネットや通行人など、消したい部分をブラシで塗って自動で埋める機能です。ビューア下部のツールバーにある消しゴムアイコンから使えます。',
+    en: 'Paint over anything you want removed (a net, a passerby) and the AI fills it in. Available from the eraser icon in the viewer\u2019s toolbar.',
+  },
+  'ai.openRemoveObject': { ja: 'オブジェクト除去を開く', en: 'Open Remove Object' },
+  'ai.roadmap': {
+    ja: '今後追加予定：ノイズ除去・高画質化（拡大）などの追加AI機能。',
+    en: 'Coming next: additional AI tools such as denoise and upscaling.',
+  },
 
   // Info popover
   'info.title': { ja: '写真の情報', en: 'Photo Info' },
   'info.noCameraData': {
     ja: 'カメラ情報はRAWファイルでのみ表示されます',
     en: 'Camera data is only available for RAW files.',
+  },
+  'info.viewOnMap': { ja: '地図で見る', en: 'View on map' },
+  'info.lookUpPlace': { ja: '地名を調べる', en: 'Look up place name' },
+  'info.lookingUp': { ja: '調べています…', en: 'Looking up…' },
+  'info.placeLookupNote': {
+    ja: '外部サービス（OpenStreetMap）に座標を送信して調べます。',
+    en: 'This sends the coordinates to an external service (OpenStreetMap).',
   },
 
   // Reset
@@ -239,6 +266,12 @@ const DICT = {
     en: 'Paint over what you want to remove, then Apply',
   },
   'remove.apply': { ja: '適用', en: 'Apply' },
+  'remove.download': { ja: 'ダウンロード', en: 'Download' },
+  'remove.redo': { ja: 'やり直す', en: 'Redo' },
+  'remove.previewReady': {
+    ja: '完成しました。問題なければダウンロードしてください。',
+    en: 'Ready. Download it if it looks good.',
+  },
 } as const;
 
 export function translate(locale: 'ja' | 'en', key: TranslationKey): string {

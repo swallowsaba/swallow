@@ -39,6 +39,42 @@ function str(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
+/** Try several plausible key names on an object (naming conventions for
+ *  fields not clearly documented by the library vary between wrappers). */
+function firstStr(obj: Record<string, unknown>, keys: readonly string[]): string | undefined {
+  for (const k of keys) {
+    const v = str(obj[k]);
+    if (v !== undefined) return v;
+  }
+  return undefined;
+}
+function firstNum(obj: Record<string, unknown>, keys: readonly string[]): number | undefined {
+  for (const k of keys) {
+    const v = num(obj[k]);
+    if (v !== undefined) return v;
+  }
+  return undefined;
+}
+
+/** GPS coordinates aren't consistently named across LibRaw JS wrappers;
+ *  check a few likely shapes (flat fields, or a nested gps/gpsdata object). */
+function readGps(meta: Record<string, unknown>): { lat?: number; lon?: number } {
+  const flatLat = firstNum(meta, ['gpsLatitude', 'gps_latitude', 'latitude']);
+  const flatLon = firstNum(meta, ['gpsLongitude', 'gps_longitude', 'longitude']);
+  if (flatLat !== undefined && flatLon !== undefined) return { lat: flatLat, lon: flatLon };
+
+  for (const key of ['gps', 'gpsdata', 'gpsData', 'parsed_gps', 'parsedGps']) {
+    const nested = meta[key];
+    if (nested && typeof nested === 'object') {
+      const n = nested as Record<string, unknown>;
+      const lat = firstNum(n, ['latitude', 'lat']);
+      const lon = firstNum(n, ['longitude', 'lon', 'lng']);
+      if (lat !== undefined && lon !== undefined) return { lat, lon };
+    }
+  }
+  return {};
+}
+
 /** Convert whatever `imageData()` returns into normalized RGBA pixels. */
 function toRgba(image: unknown, meta: Record<string, unknown>): DecodedPixels {
   const metaW = num(meta.width) ?? 0;
@@ -93,21 +129,26 @@ function packRgba(
 function toMetadata(meta: Record<string, unknown>): RawMetadata {
   const make = str(meta.make);
   const model = str(meta.model);
+  const lens = firstStr(meta, ['lens', 'Lens', 'lens_info', 'lensInfo', 'lensModel']);
   const iso = num(meta.iso);
   const shutter = num(meta.shutter);
   const aperture = num(meta.aperture);
   const focalLength = num(meta.focal_len);
   const timestamp = num(meta.timestamp);
+  const gps = readGps(meta);
   return {
     width: num(meta.width) ?? 0,
     height: num(meta.height) ?? 0,
     ...(make !== undefined ? { make } : {}),
     ...(model !== undefined ? { model } : {}),
+    ...(lens !== undefined ? { lens } : {}),
     ...(iso !== undefined ? { iso } : {}),
     ...(shutter !== undefined ? { shutter } : {}),
     ...(aperture !== undefined ? { aperture } : {}),
     ...(focalLength !== undefined ? { focalLength } : {}),
     ...(timestamp !== undefined ? { timestamp } : {}),
+    ...(gps.lat !== undefined ? { gpsLatitude: gps.lat } : {}),
+    ...(gps.lon !== undefined ? { gpsLongitude: gps.lon } : {}),
   };
 }
 

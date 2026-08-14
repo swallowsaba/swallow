@@ -16,11 +16,14 @@ export interface RawMetadata {
   readonly height: number;
   readonly make?: string;
   readonly model?: string;
+  readonly lens?: string;
   readonly iso?: number;
   readonly shutter?: number;
   readonly aperture?: number;
   readonly focalLength?: number;
   readonly timestamp?: number;
+  readonly gpsLatitude?: number;
+  readonly gpsLongitude?: number;
 }
 
 export interface RawDecodeResult {

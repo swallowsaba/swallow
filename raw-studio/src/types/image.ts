@@ -35,9 +35,12 @@ export interface SourceImageMeta {
 export interface CameraMeta {
   readonly make?: string;
   readonly model?: string;
+  readonly lens?: string;
   readonly iso?: number;
   readonly shutter?: number;
   readonly aperture?: number;
   readonly focalLength?: number;
   readonly capturedAt?: number;
+  readonly gpsLatitude?: number;
+  readonly gpsLongitude?: number;
 }
