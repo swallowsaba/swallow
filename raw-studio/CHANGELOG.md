@@ -138,6 +138,40 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   when both noise-reduction sliders are at 0, so images that don't use it
   pay no extra cost.
 
+## [Unreleased]
+
+### Fixed
+- Noise Reduction acted like a plain blur (smoothed real edges/detail as much
+  as actual grain). Made it edge-aware: the effect now scales down wherever a
+  pixel differs a lot from its local neighborhood (much more likely to be a
+  genuine edge than noise), and stays at full strength in flat, low-detail
+  areas where noise actually shows up. Color noise reduction stays a bit more
+  effective near edges than luminance smoothing, matching how real denoise
+  tools behave. Added regression tests.
+- Color Mixer (HSL) sliders felt unpredictable: adjacent bands are only
+  30-40deg apart, but each slider's influence extended 60deg in both
+  directions, so moving "Red" visibly nudged "Orange" pixels too. Narrowed
+  the falloff radius to 20deg so each band stays mostly independent while
+  still blending smoothly rather than cutting off hard. Added a regression
+  test.
+- AI inference: the input tensor name is now read from the loaded model
+  itself instead of a hardcoded guess, so a mismatched name in the model
+  registry can no longer cause a hard "missing input" failure.
+
+### Added
+- Remove Object (AI inpainting): paint a brush mask over anything you want
+  removed (a net, a passerby, a stray object) and the AI fills it in based on
+  the surrounding image, using the LaMa model (Apache-2.0, ~200 MB,
+  downloaded and cached on first use — see the model card at
+  huggingface.co/sapienkit/LaMa-ONNX for its exact documented I/O contract).
+  Access it from the crop/eraser icon in the viewer's bottom toolbar.
+  Produces a downloaded result rather than a live non-destructive edit (same
+  reasoning as Beginner Mode's Blur Background). The model only sees a fixed
+  512x512 view of the whole photo, so the filled area is correspondingly
+  softer than the untouched surrounding pixels on a large image — a known,
+  disclosed limitation of this v1, most noticeable removing small/thin
+  objects on high-resolution photos.
+
 ## [1.0.0] - 2026-08-12
 
 ### Added

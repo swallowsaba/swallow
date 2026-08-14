@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Crop, Eye, Maximize, Minus, Plus, RotateCw, Scan } from 'lucide-react';
+import { Crop, Eraser, Eye, Maximize, Minus, Plus, RotateCw, Scan } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Toggle } from '@/components/ui/toggle';
@@ -40,6 +40,7 @@ export function ViewerControls({ effectiveScale }: ControlsProps): React.JSX.Ele
   const showBefore = useViewerStore((s) => s.showBefore);
   const setShowBefore = useViewerStore((s) => s.setShowBefore);
   const setCropMode = useViewerStore((s) => s.setCropMode);
+  const setRemoveMode = useViewerStore((s) => s.setRemoveMode);
 
   const percent = Math.round(effectiveScale * 100);
 
@@ -107,6 +108,14 @@ export function ViewerControls({ effectiveScale }: ControlsProps): React.JSX.Ele
         }}
       >
         <Crop />
+      </IconBtn>
+      <IconBtn
+        label="Remove Object (AI)"
+        onClick={() => {
+          setRemoveMode(true);
+        }}
+      >
+        <Eraser />
       </IconBtn>
       <Toggle
         size="sm"

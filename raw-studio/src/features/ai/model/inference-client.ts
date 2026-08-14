@@ -24,6 +24,16 @@ export async function runModel(
   outputName: string,
   data: Float32Array,
   size: number,
+  maskInputName?: string,
+  maskData?: Float32Array,
 ): Promise<Float32Array> {
-  return getProxy().run(id, inputName, outputName, Comlink.transfer(data, [data.buffer]), size);
+  return getProxy().run(
+    id,
+    inputName,
+    outputName,
+    Comlink.transfer(data, [data.buffer]),
+    size,
+    maskInputName,
+    maskData ? Comlink.transfer(maskData, [maskData.buffer]) : undefined,
+  );
 }

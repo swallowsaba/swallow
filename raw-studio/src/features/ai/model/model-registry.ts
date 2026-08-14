@@ -13,7 +13,9 @@ export interface ModelDef {
   readonly inputName: string;
   readonly outputName: string;
   readonly normalization: Normalization;
-  readonly kind: 'segmentation';
+  readonly kind: 'segmentation' | 'inpaint';
+  /** Only for kind:'inpaint' — the second input's tensor name (the mask). */
+  readonly maskInputName?: string;
 }
 
 /**
@@ -34,6 +36,24 @@ export const MODELS: Record<string, ModelDef> = {
     outputName: '1959',
     normalization: IMAGENET_NORM,
     kind: 'segmentation',
+  },
+  'lama-inpaint': {
+    id: 'lama-inpaint',
+    label: 'Remove Object',
+    url: 'https://huggingface.co/sapienkit/LaMa-ONNX/resolve/main/lama_fp32.onnx',
+    license: 'Apache-2.0 (LaMa, trained on Places2 / CC-BY 4.0)',
+    // Real 51M-parameter model, fp32 — much larger than the segmentation
+    // model. Documented I/O contract (from the model card): inputs `image`
+    // float32[1,3,512,512] (plain /255, no ImageNet mean/std) and `mask`
+    // float32[1,1,512,512] (1=erase, 0=keep); output `output`
+    // float32[1,3,512,512] already in 0..255 (no re-scaling needed).
+    approxSizeMb: 200,
+    inputSize: 512,
+    inputName: 'image',
+    maskInputName: 'mask',
+    outputName: 'output',
+    normalization: { mean: [0, 0, 0], std: [1, 1, 1] },
+    kind: 'inpaint',
   },
 };
 

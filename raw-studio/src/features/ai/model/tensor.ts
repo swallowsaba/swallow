@@ -36,6 +36,34 @@ export function rgbaToNchw(
   return out;
 }
 
+/**
+ * Convert an 8-bit alpha mask (size×size, 255=erase/inpaint, 0=keep) into the
+ * single-channel float32[1,size,size] tensor LaMa-style inpainting models
+ * expect (1.0=erase, 0.0=keep).
+ */
+export function maskToNchw1(mask: Uint8ClampedArray, size: number): Float32Array {
+  const out = new Float32Array(size * size);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = (mask[i] ?? 0) / 255;
+  }
+  return out;
+}
+
+/**
+ * Convert a planar CHW float32 tensor already in 0..255 range (LaMa's output
+ * contract) back into an interleaved RGBA Uint8ClampedArray, alpha opaque.
+ */
+export function chw255ToRgba(chw: Float32Array, size: number): Uint8ClampedArray {
+  const plane = size * size;
+  const out = new Uint8ClampedArray(plane * 4);
+  for (let p = 0; p < plane; p++) {
+    out[p * 4] = chw[p] ?? 0;
+    out[p * 4 + 1] = chw[plane + p] ?? 0;
+    out[p * 4 + 2] = chw[2 * plane + p] ?? 0;
+    out[p * 4 + 3] = 255;
+  }
+  return out;
+}
 function sigmoid(x: number): number {
   return 1 / (1 + Math.exp(-x));
 }

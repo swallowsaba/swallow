@@ -23,6 +23,9 @@ export interface InferenceApi {
     outputName: string,
     data: Float32Array,
     size: number,
+    /** Optional second input (e.g. an inpainting mask) and its tensor name. */
+    maskInputName?: string,
+    maskData?: Float32Array,
   ): Promise<Float32Array>;
 }
 
@@ -41,12 +44,23 @@ const api: InferenceApi = {
     loadedFor = id;
   },
 
-  async run(id, inputName, outputName, data, size) {
+  async run(id, inputName, outputName, data, size, maskInputName, maskData) {
     if (!session || loadedFor !== id) {
       throw new Error('Model not loaded.');
     }
     const tensor = new ort.Tensor('float32', data, [1, 3, size, size]);
-    const feeds: Record<string, ort.Tensor> = { [inputName]: tensor };
+    // Prefer the session's own reported input name over the one in
+    // model-registry.ts: community ONNX exports can use a different name
+    // than expected, and onnxruntime-web throws a hard "missing input"
+    // error if the feeds object doesn't match exactly. Segmentation models
+    // like this one only have a single input, so this is safe. Models with
+    // a second (mask) input keep the configured name for that one, since we
+    // can't as reliably guess "which of the two names is the mask".
+    const actualInputName = session.inputNames[0] ?? inputName;
+    const feeds: Record<string, ort.Tensor> = { [actualInputName]: tensor };
+    if (maskInputName && maskData) {
+      feeds[maskInputName] = new ort.Tensor('float32', maskData, [1, 1, size, size]);
+    }
     const results = await session.run(feeds);
     const output = results[outputName] ?? Object.values(results)[0];
     if (!output) throw new Error('Model produced no output.');

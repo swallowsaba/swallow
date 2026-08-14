@@ -243,7 +243,11 @@ export function applyHslBands(
     const center = HSL_BAND_HUES[i];
     if (!band || center === undefined) continue;
     const dist = hueDist(h, center);
-    const weight = Math.max(0, 1 - dist / 60); // triangular falloff over +-60deg
+    // Bands sit only 30-40deg apart, so a wide falloff radius makes adjacent
+    // sliders visibly affect each other's colors — confusing behavior. 20deg
+    // keeps each band mostly independent while still blending smoothly
+    // rather than cutting off hard.
+    const weight = Math.max(0, 1 - dist / 20);
     if (weight <= 0) continue;
     hueShift += band.hue * 0.3 * weight; // -100..100 -> up to +-30deg per band
     satAdd += (band.saturation / 100) * weight;

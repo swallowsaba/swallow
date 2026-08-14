@@ -20,6 +20,8 @@ export interface ViewerState {
   showBefore: boolean;
   /** Whether the crop overlay is active (shows the full uncropped image). */
   cropMode: boolean;
+  /** Whether the Remove Object brush overlay is active. */
+  removeMode: boolean;
 
   loadBitmap: (bitmap: ImageBitmap, size: Size) => void;
   clearBitmap: () => void;
@@ -31,6 +33,7 @@ export interface ViewerState {
   resetView: () => void;
   setShowBefore: (value: boolean) => void;
   setCropMode: (value: boolean) => void;
+  setRemoveMode: (value: boolean) => void;
 }
 
 const INITIAL = {
@@ -40,6 +43,7 @@ const INITIAL = {
   rotationDeg: 0,
   showBefore: false,
   cropMode: false,
+  removeMode: false,
 };
 
 export const useViewerStore = create<ViewerState>((set) => ({
@@ -73,5 +77,8 @@ export const useViewerStore = create<ViewerState>((set) => ({
   },
   setCropMode: (cropMode) => {
     set({ cropMode });
+  },
+  setRemoveMode: (removeMode) => {
+    set({ removeMode });
   },
 }));

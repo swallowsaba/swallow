@@ -28,8 +28,27 @@ export function applyClarity(pixel: number, blurred: number, amount: number): nu
 }
 
 /** Noise reduction: blend the pixel toward its local blur. */
-export function applyDenoise(pixel: number, blurred: number, amount: number): number {
-  const t = clamp01(amount / 100);
+/** Edge-aware weight (0..1): 1 in flat, low-detail areas (likely noise), 0
+ *  near a genuine edge (a large difference between the pixel and its local
+ *  average is much more likely to be real detail than grain). `localDiff` is
+ *  the magnitude of the difference between the pixel and its neighborhood
+ *  average. */
+export function edgeAwareWeight(localDiff: number): number {
+  const t = clamp01((localDiff - 0.02) / (0.12 - 0.02));
+  return 1 - t;
+}
+
+/** Noise reduction: blend the pixel toward its local blur, scaled down near
+ *  edges so real detail isn't smoothed away along with the noise (an earlier
+ *  version had no edge awareness at all, so any real strength just blurred
+ *  the whole image, indistinguishable from a plain blur tool). */
+export function applyDenoise(
+  pixel: number,
+  blurred: number,
+  amount: number,
+  edgeWeight = 1,
+): number {
+  const t = clamp01(amount / 100) * clamp01(edgeWeight);
   return pixel + (blurred - pixel) * t;
 }
 

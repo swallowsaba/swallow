@@ -28,3 +28,4 @@ export {
   FULL_CROP,
 } from './model/crop-math';
 export { CropOverlay } from './components/crop-overlay';
+export { RemoveObjectOverlay } from './components/remove-object-overlay';

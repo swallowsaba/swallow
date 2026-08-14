@@ -10,7 +10,7 @@ import {
   toneSlidersFromCurve,
   vignetteFactor,
 } from './advanced-math';
-import { applyClarity, applyDehaze, applyDenoise, applySharpen } from './detail-math';
+import { applyClarity, applyDehaze, applyDenoise, applySharpen, edgeAwareWeight } from './detail-math';
 
 describe('tone curve', () => {
   it('is the identity line when all deltas are 0', () => {
@@ -135,6 +135,30 @@ describe('applyHslBands', () => {
     expect(g).toBeCloseTo(0.1, 2);
     expect(b).toBeCloseTo(0.1, 2);
   });
+
+  it('regression: adjacent bands (e.g. red/orange, only 30deg apart) mostly stay independent', () => {
+    // A wide falloff radius (an earlier version) made a pixel roughly
+    // halfway between two adjacent bands respond almost as strongly as one
+    // sitting right on a band's center — so moving "Red" visibly nudged
+    // "Orange" pixels too, which felt confusing. The effect should now fall
+    // off with distance from the band's center, and disappear well before
+    // reaching the neighboring band 30deg away.
+    const redOnly = bands.map((b, i) => (i === 0 ? { ...b, luminance: -80 } : b));
+    const atCenter = hslToRgb(0, 0.8, 0.5); // exactly on the red band's center
+    const at15deg = hslToRgb(15, 0.8, 0.5); // halfway to the orange band
+    const at30deg = hslToRgb(30, 0.8, 0.5); // exactly on the orange band's center
+
+    const deltaAt = (rgb: [number, number, number]) =>
+      Math.abs(applyHslBands(rgb, redOnly)[1] - applyHslBands(rgb, bands)[1]);
+
+    const deltaCenter = deltaAt(atCenter);
+    const delta15 = deltaAt(at15deg);
+    const delta30 = deltaAt(at30deg);
+
+    expect(delta15).toBeGreaterThan(0); // still some smooth blending partway there
+    expect(delta15).toBeLessThan(deltaCenter); // but clearly weaker than at its own center
+    expect(delta30).toBeCloseTo(0, 5); // and gone entirely by the neighboring band
+  });
 });
 
 describe('lens: distortUv', () => {
@@ -233,6 +257,27 @@ describe('detail combining formulas', () => {
     expect(applyDenoise(0.8, 0.5, 100)).toBeCloseTo(0.5, 5);
     expect(applyDenoise(0.8, 0.5, 0)).toBeCloseTo(0.8, 5);
     expect(applyDenoise(0.8, 0.5, 50)).toBeCloseTo(0.65, 5);
+  });
+
+  it('edgeAwareWeight is full strength in flat areas and fades near real edges', () => {
+    expect(edgeAwareWeight(0)).toBeCloseTo(1, 5);
+    expect(edgeAwareWeight(0.02)).toBeCloseTo(1, 5);
+    expect(edgeAwareWeight(0.12)).toBeCloseTo(0, 5);
+    expect(edgeAwareWeight(0.5)).toBeCloseTo(0, 5);
+    expect(edgeAwareWeight(0.07)).toBeGreaterThan(0);
+    expect(edgeAwareWeight(0.07)).toBeLessThan(1);
+  });
+
+  it('regression: denoise preserves a strong edge instead of blurring it away', () => {
+    // A flat/noisy area (small local difference) should smooth normally...
+    const flatArea = applyDenoise(0.52, 0.5, 100, edgeAwareWeight(0.02));
+    expect(flatArea).toBeCloseTo(0.5, 3);
+    // ...but a real edge (large local difference) should barely move, even
+    // at 100% amount — an earlier version had no edge awareness and would
+    // have smoothed this exactly as much as the flat area, indistinguishable
+    // from a plain blur.
+    const realEdge = applyDenoise(0.9, 0.3, 100, edgeAwareWeight(0.6));
+    expect(realEdge).toBeCloseTo(0.9, 3);
   });
 
   it('dehaze at 0 amount is a no-op', () => {

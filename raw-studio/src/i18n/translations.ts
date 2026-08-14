@@ -230,6 +230,15 @@ const DICT = {
   'crop.title': { ja: 'トリミング', en: 'Crop' },
   'crop.free': { ja: '自由', en: 'Free' },
   'crop.original': { ja: '元の比率', en: 'Original' },
+
+  // Remove Object (AI inpainting)
+  'remove.title': { ja: 'オブジェクトを消去', en: 'Remove Object' },
+  'remove.brush': { ja: 'ブラシ', en: 'Brush' },
+  'remove.help': {
+    ja: '消したい部分を塗って「適用」を押してください',
+    en: 'Paint over what you want to remove, then Apply',
+  },
+  'remove.apply': { ja: '適用', en: 'Apply' },
 } as const;
 
 export function translate(locale: 'ja' | 'en', key: TranslationKey): string {

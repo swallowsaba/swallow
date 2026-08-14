@@ -135,7 +135,9 @@ vec3 applyHslBands(vec3 c) {
   float hueShift = 0.0, satAdd = 0.0, lumAdd = 0.0;
   for (int i = 0; i < 8; i++) {
     float dist = hueDist(hsl.x, HUES[i]);
-    float weight = max(0.0, 1.0 - dist / 60.0);
+    // Bands sit only 30-40deg apart; a wide radius (mirrors advanced-math.ts)
+    // made adjacent sliders visibly affect each other's colors.
+    float weight = max(0.0, 1.0 - dist / 20.0);
     if (weight <= 0.0) continue;
     hueShift += u_hslHue[i] * 0.3 * weight;
     satAdd += (u_hslSat[i] / 100.0) * weight;
@@ -245,10 +247,24 @@ void main() {
       basePipeline(duv + vec2(-wideTexel.x, wideTexel.y))
     ) * 0.125;
 
-    s = mix(s, wideBlur, denoiseT);
+    // Edge-aware weighting: a plain mix toward the blur (an earlier version)
+    // smooths real edges and detail just as much as actual noise, which is
+    // indistinguishable from simply blurring the whole image. Scale the
+    // effect down wherever the pixel differs a lot from its neighborhood
+    // average — that's much more likely to be a genuine edge than noise —
+    // and keep it at full strength in flat, low-detail areas where noise
+    // actually shows up.
+    float localDiff = length(s - wideBlur);
+    float edgeAware = 1.0 - smoothstep(0.02, 0.12, localDiff);
+    float lumDenoise = denoiseT * edgeAware;
+    // Color noise is diffuse chroma speckling rather than structural detail,
+    // so it can stay more effective near edges than luminance smoothing.
+    float chromaDenoise = colorDenoiseT * mix(1.0, edgeAware, 0.5);
+
+    s = mix(s, wideBlur, lumDenoise);
     float lumS = dot(s, LUMA);
     float lumB = dot(wideBlur, LUMA);
-    vec3 chroma = mix(s - vec3(lumS), wideBlur - vec3(lumB), colorDenoiseT);
+    vec3 chroma = mix(s - vec3(lumS), wideBlur - vec3(lumB), chromaDenoise);
     s = vec3(lumS) + chroma;
   }
 
