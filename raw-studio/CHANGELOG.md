@@ -23,6 +23,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty-array constant; `useShallow` where element identity is already stable.
 
 ### Added
+- **Look Mixer** — a genuinely new tool that other editors don't offer: blend
+  *continuously* across entire develops. Because a develop is just serializable
+  numbers, any set of looks can be weight-averaged into a new valid develop.
+  - Pure, unit-tested blending (`blend-edit`): weighted average of every numeric
+    field across basic/detail/lens/HSL/color-grading, plus tone-curve output
+    blended on the dominant look's grid; booleans resolve to the dominant look.
+    Includes `lerpAdjustments` (2-way) and `bilinearWeights` (4-way pad).
+  - `look-source` resolves snapshots, presets (merged onto the current base),
+    the current edit, or a neutral reset into full adjustment stacks so they mix
+    uniformly.
+  - A Mix panel with a 2-way A↔B slider and a 4-way 2D pad; the blend previews
+    live through the existing preview pipeline (no renderer changes) and Apply
+    commits it as one normal, undoable adjustment step.
 - **Local-adjustment masks** (brush, radial, graduated). Each mask carries its
   own subset of light/color/clarity adjustments that apply only inside it. The
   data model already existed on `EditState`; this adds the rest:

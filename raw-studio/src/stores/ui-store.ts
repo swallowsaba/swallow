@@ -11,6 +11,7 @@ export type RightTab =
   | 'detail'
   | 'lens'
   | 'masks'
+  | 'mix'
   | 'ai'
   | 'gif'
   | 'collage';

@@ -18,6 +18,7 @@ import { BeginnerPanel } from './beginner-panel';
 import { GifPanel } from '@/features/gif';
 import { CollagePanel } from '@/features/collage';
 import { MasksPanel } from '@/features/masks';
+import { LookMixerPanel } from '@/features/look-mixer';
 
 const TAB_KEYS: readonly { value: RightTab; key: TranslationKey }[] = [
   { value: 'presets', key: 'tab.presets' },
@@ -27,6 +28,7 @@ const TAB_KEYS: readonly { value: RightTab; key: TranslationKey }[] = [
   { value: 'detail', key: 'tab.detail' },
   { value: 'lens', key: 'tab.lens' },
   { value: 'masks', key: 'tab.masks' },
+  { value: 'mix', key: 'tab.mix' },
   { value: 'ai', key: 'tab.ai' },
   { value: 'gif', key: 'tab.gif' },
   { value: 'collage', key: 'tab.collage' },
@@ -80,7 +82,7 @@ export function AdjustmentsPanel(): React.JSX.Element {
     >
       <ModeToggle />
       <div className="px-2 pb-2">
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="grid w-full grid-cols-11">
           {TAB_KEYS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value} className="px-1 text-[10px]">
               {t(tab.key)}
@@ -110,6 +112,9 @@ export function AdjustmentsPanel(): React.JSX.Element {
         </TabsContent>
         <TabsContent value="masks" className="mt-0">
           <MasksPanel />
+        </TabsContent>
+        <TabsContent value="mix" className="mt-0">
+          <LookMixerPanel />
         </TabsContent>
         <TabsContent value="ai" className="mt-0">
           <AiPanel />

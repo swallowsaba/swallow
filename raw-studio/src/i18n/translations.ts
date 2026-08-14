@@ -30,7 +30,19 @@ const DICT = {
   'tab.detail': { ja: 'ディテール', en: 'Detail' },
   'tab.lens': { ja: 'レンズ', en: 'Lens' },
   'tab.masks': { ja: 'マスク', en: 'Masks' },
+  'tab.mix': { ja: 'ミックス', en: 'Mix' },
   'tab.ai': { ja: 'AI', en: 'AI' },
+
+  // Look Mixer
+  'mix.intro': {
+    ja: '2つ〜4つのルック（スナップショット／プリセット／現在／ニュートラル）の間を、現像全体で連続的にブレンドします。気に入った配合を「適用」で確定できます。',
+    en: 'Blend continuously across the whole develop between two to four looks (snapshots, presets, current, neutral). Apply the mix you like.',
+  },
+  'mix.blend2': { ja: '2つ', en: '2-way' },
+  'mix.blend4': { ja: '4つ', en: '4-way' },
+  'mix.apply': { ja: '適用', en: 'Apply' },
+  'mix.applyLabel': { ja: 'ルックをミックス', en: 'Mix looks' },
+  'mix.reset': { ja: 'リセット', en: 'Reset' },
 
   // Masks
   'masks.intro': {

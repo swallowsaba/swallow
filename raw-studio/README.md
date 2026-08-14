@@ -23,8 +23,11 @@ build step for the end user.
   analysis, plus in-browser ONNX models (subject/background segmentation).
 - **Presets**: ten built-ins, plus create/rename/duplicate/delete, favorites,
   search, and JSON import/export.
-- **Non-destructive**: full undo/redo timeline with jump-to-step and snapshots.
-- **Persistent**: presets, per-image edits, and settings are saved to IndexedDB
+- **Look Mixer**: blend continuously across the whole develop between two looks
+  (a slider) or four (a 2D pad) — snapshots, presets, the current edit, or a
+  neutral reset — then apply the mix you like. Only possible because an entire
+  develop is a serializable bag of numbers.
+- **Non-destructive**: full undo/redo timeline with jump-to-step and snapshots.- **Persistent**: presets, per-image edits, and settings are saved to IndexedDB
   and restored on reload — all locally, nothing leaves your device.
 - **Export** to JPEG/PNG/WebP/AVIF with quality, resize, filename templates, and
   a watermark.
@@ -81,6 +84,7 @@ src/
 │  ├─ export/      full-res render + encode + watermark
 │  ├─ history/     undo/redo/snapshots + timeline UI
 │  ├─ library/     RAW decode worker, format detection, thumbnails, grid
+│  ├─ look-mixer/  continuous blend across full develops (snapshots/presets)
 │  ├─ masks/       local-adjustment masks: alpha math, ops, overlay, panel
 │  ├─ perf/        LRU cache, rAF coalescer, concurrency limiter, virtualization
 │  ├─ persistence/ Dexie/IndexedDB repository + migrations
