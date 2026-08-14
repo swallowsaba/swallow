@@ -59,6 +59,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- Build failure: `inpaint.ts` passed a `Uint8ClampedArray` straight to
+  `new ImageData(...)`, which newer TypeScript rejects (it now types
+  `Uint8ClampedArray` as possibly `SharedArrayBuffer`-backed, which the
+  `ImageData` constructor doesn't accept) — the same issue fixed in
+  `decode.worker.ts` back in an earlier round, missed here since this file
+  didn't exist yet. Copies into a fresh `Uint8ClampedArray` first, same fix.
+
 ### Fixed (critical)
 - **HSL color bands corrupting adjacent fields.** `mergeAdjustments`/
   `mergePreview` shallow-merged each HSL band, so editing just one field (e.g.

@@ -71,7 +71,11 @@ export async function inpaint(
   const filledSmall = new OffscreenCanvas(size, size);
   const filledSmallCtx = filledSmall.getContext('2d');
   if (!filledSmallCtx) throw new Error('2D context unavailable.');
-  filledSmallCtx.putImageData(new ImageData(filledRgba, size, size), 0, 0);
+  // Newer TypeScript types Uint8ClampedArray as possibly SharedArrayBuffer-backed,
+  // while the ImageData constructor requires a plain ArrayBuffer-backed one. Copy
+  // into a fresh Uint8ClampedArray to guarantee that regardless of the source.
+  const filledRgbaCopy = new Uint8ClampedArray(filledRgba);
+  filledSmallCtx.putImageData(new ImageData(filledRgbaCopy, size, size), 0, 0);
 
   const filledFull = new OffscreenCanvas(w, h);
   const filledFullCtx = filledFull.getContext('2d');
