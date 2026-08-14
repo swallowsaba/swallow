@@ -15,6 +15,8 @@ import { ColorPanel } from './color-panel';
 import { DetailPanel } from './detail-panel';
 import { LensPanel } from './lens-panel';
 import { BeginnerPanel } from './beginner-panel';
+import { GifPanel } from '@/features/gif';
+import { CollagePanel } from '@/features/collage';
 
 const TAB_KEYS: readonly { value: RightTab; key: TranslationKey }[] = [
   { value: 'presets', key: 'tab.presets' },
@@ -24,6 +26,8 @@ const TAB_KEYS: readonly { value: RightTab; key: TranslationKey }[] = [
   { value: 'detail', key: 'tab.detail' },
   { value: 'lens', key: 'tab.lens' },
   { value: 'ai', key: 'tab.ai' },
+  { value: 'gif', key: 'tab.gif' },
+  { value: 'collage', key: 'tab.collage' },
 ];
 
 function ModeToggle(): React.JSX.Element {
@@ -74,7 +78,7 @@ export function AdjustmentsPanel(): React.JSX.Element {
     >
       <ModeToggle />
       <div className="px-2 pb-2">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-9">
           {TAB_KEYS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value} className="px-1 text-[10px]">
               {t(tab.key)}
@@ -104,6 +108,12 @@ export function AdjustmentsPanel(): React.JSX.Element {
         </TabsContent>
         <TabsContent value="ai" className="mt-0">
           <AiPanel />
+        </TabsContent>
+        <TabsContent value="gif" className="mt-0">
+          <GifPanel />
+        </TabsContent>
+        <TabsContent value="collage" className="mt-0">
+          <CollagePanel />
         </TabsContent>
       </ScrollArea>
     </Tabs>

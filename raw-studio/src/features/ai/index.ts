@@ -9,5 +9,16 @@ export type { Normalization } from './model/tensor';
 export { segment } from './model/segmentation';
 export type { SegmentationResult } from './model/segmentation';
 export { blurBackground } from './model/background-blur';
+export { smoothPortrait } from './model/portrait-smooth';
+export { computeAutoGrade } from './model/auto-grade';
+export { suggestMeshMask } from './model/suggest-mask';
+export {
+  toLuminance,
+  sobelMagnitude,
+  thresholdMask,
+  dilateMask,
+  maskCoverage,
+  autoThreshold,
+} from './model/edge-detect';
 export { MODELS, getModel } from './model/model-registry';
 export type { ModelDef } from './model/model-registry';

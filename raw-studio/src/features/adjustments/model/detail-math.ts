@@ -22,8 +22,13 @@ export function applyClarity(pixel: number, blurred: number, amount: number): nu
   // black/white) to avoid clipping/halos there. An earlier version tapered
   // linearly across the whole 0..1 range, which attenuated clarity across
   // most of a typical photo and made the slider feel like it did nothing.
+  //
+  // Mirrors GLSL's smoothstep() exactly (cubic Hermite) — an earlier version
+  // here used a plain linear ramp, which shares the same two endpoints as
+  // the shader's smoothstep() but not the same curve shape in between.
   const distFromExtreme = Math.min(pixel, 1 - pixel);
-  const midWeight = clamp01(distFromExtreme / 0.12);
+  const t = clamp01(distFromExtreme / 0.12);
+  const midWeight = t * t * (3 - 2 * t);
   return clamp01(pixel + (pixel - blurred) * (amount / 100) * 0.6 * midWeight);
 }
 
@@ -39,8 +44,14 @@ export function edgeAwareWeight(localDiff: number): number {
   // suppressed noise reduction almost everywhere it was actually needed.
   // Widened: typical noise stays fully smoothable, and only much larger
   // local jumps (genuine edges) get protected.
+  //
+  // Mirrors GLSL's smoothstep() exactly (cubic Hermite, not a linear ramp) —
+  // an earlier version here used a plain linear interpolation between the
+  // same two edges, which shares the same endpoints as the shader's
+  // smoothstep() but not the same curve shape in between, so it wasn't
+  // actually a faithful test of the shader's real behavior.
   const t = clamp01((localDiff - 0.06) / (0.3 - 0.06));
-  return 1 - t;
+  return 1 - t * t * (3 - 2 * t);
 }
 
 /** Noise reduction: blend the pixel toward its local blur, scaled down near

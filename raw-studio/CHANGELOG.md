@@ -220,6 +220,119 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   service — the one place in the app that sends anything external, and only
   when explicitly clicked).
 
+## [Unreleased]
+
+### Fixed
+- Background Blur (Beginner Mode) barely visibly blurred anything. The blur
+  radius was a fixed 14 CSS pixels regardless of photo size — on a
+  4000px-wide photo that's under 0.4% of the width, effectively invisible.
+  Radius now scales with the image's resolution. Added tests.
+
+### Added
+- Camera/lens metadata (make, model, lens, ISO, shutter, aperture, focal
+  length, capture date, GPS) is now read from JPEG and other non-RAW formats
+  too via EXIF (previously RAW-only, via LibRaw). Uses the `exifr` library.
+- Photo Info panel: lens model row; GPS section with a "View on map" link and
+  an opt-in "Look up place name" button (queries OpenStreetMap's free
+  Nominatim service — the only place in the app that sends anything
+  external, and only on click).
+- Export dialog: a Share button (Web Share API) alongside Export, for
+  handing the finished photo to the OS share sheet — Instagram, Messages,
+  Files, etc. on supported devices (mainly mobile). There's no public API for
+  a website to post directly into a specific app like Instagram; this is the
+  standard, actually-available mechanism browsers offer for "send this photo
+  to another app."
+
+## [Unreleased]
+
+### Added
+- GIF tab: create an animated GIF from 2+ photos in your library. Pick images
+  (numbered in tap order), reorder them, set the per-frame delay and output
+  size, then generate and download. Uses `gifenc` (mattdesl, MIT) — a small,
+  well-documented pure-JS encoder — rather than a hand-rolled GIF/LZW
+  implementation, since getting that byte format exactly right without a
+  browser to test against would be too risky. Mixed-size source photos are
+  cropped to fill a shared canvas size (like CSS `object-fit: cover`), and
+  the color palette is quantized once from the first frame and reused for
+  the rest. Output is capped at a configurable long-edge size (default
+  480px) since GIFs get large fast.
+
+## [Unreleased]
+
+### Added
+- Collage tab: combine 2+ photos into a single grid image (2 side by side, 4
+  in a 2×2 grid, etc — arranged automatically from how many you pick), with
+  an optional caption (9 anchor positions, adjustable size and color).
+  Unlike the GIF tab, this doesn't depend on an external library — it's
+  pure Canvas 2D compositing, and the grid/cover-fit/text-position math is
+  fully unit-tested (18 tests) since nothing here needs a real browser to
+  verify.
+
+## [Unreleased]
+
+### Added
+- Portrait Smooth (AI panel): reuses the existing subject-segmentation model
+  to gently soften texture within the detected subject only — background
+  stays untouched. Deliberately scoped to NOT reshape any facial features or
+  alter identity (no eye/face-contour warping); that's a separate, larger
+  feature that would need a dedicated face-landmark model (Google's official
+  MediaPipe Face Landmarker looks like the right fit — investigated, not yet
+  integrated) to precisely target individual features like eyes or teeth.
+
+## [Unreleased]
+
+### Added
+- Remove Object: a "Suggest area" button that finds dense, regular fine-edge
+  patterns (like a net or chain-link fence) and pre-fills the brush mask, for
+  the person to review and refine before applying. This is classical Sobel
+  edge detection + auto-thresholding + dilation (no AI model — there's no
+  reliable free model specifically trained to recognize nets/fences, and a
+  wrong automatic mask silently erasing the wrong thing would be worse than
+  no suggestion). The person stays in control: it always starts as an
+  editable suggestion, never applies on its own. Pure detection math is
+  unit-tested against synthetic flat/striped pixel data (12 tests).
+
+## [Unreleased]
+
+### Added
+- White Balance Picker (eyedropper): click any spot in the photo that should
+  be neutral gray or white — the same "gray point" tool found in Lightroom
+  and Camera Raw — and it computes and applies the exact temperature/tint
+  correction that neutralizes that sample. Solved by inverting the shader's
+  own white-balance formula in linear light for accuracy. Directly addresses
+  "photo looks yellowish, restore normal color" with a precise, one-click
+  tool rather than only the existing gray-world Auto WB. Available from the
+  eyedropper icon in the viewer's toolbar. Verified with round-trip tests:
+  applying the computed correction to the original sample actually
+  neutralizes it (9 tests).
+
+## [Unreleased]
+
+### Added
+- AI Auto Grade (AI panel): one click applies the same corrective
+  exposure/white-balance/contrast analysis as the plain Auto button, plus a
+  curated, deterministic "editorial" style overlay (gently lifted shadows,
+  soft highlight rolloff, slightly less overall saturation traded for more
+  vibrance) evoking the restrained, matte-but-rich look common in edited
+  photo books. Applied as a normal, fully undoable adjustment (not a
+  separate download) — no machine-learned style transfer is involved, since
+  there's no verified free model for "make this look like a photographer's
+  book" and a black-box reinterpretation of every photo would be
+  unpredictable. The style recipe is fixed and documented; only the
+  corrective portion adapts to each photo's own statistics. 5 tests.
+
+## [Unreleased]
+
+### Fixed
+- Final audit pass: found that Clarity's midtone-protection curve and the
+  Noise Reduction edge-detection curve used a plain linear ramp on the CPU
+  side while the shader used GLSL's `smoothstep()` (a smooth cubic curve,
+  not linear) for the same formula. Both curves shared the same two
+  endpoints, so this wasn't a functional break, but it meant the CPU tests
+  weren't actually verifying the shader's real intermediate behavior. Fixed
+  the CPU functions to implement the same cubic formula smoothstep() uses,
+  restoring an exact mirror between the tested code and the shader.
+
 ## [1.0.0] - 2026-08-12
 
 ### Added

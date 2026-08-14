@@ -13,6 +13,7 @@ import { useViewerStore } from '../model/viewer-store';
 import { ViewerControls } from './viewer-controls';
 import { CropOverlay } from './crop-overlay';
 import { RemoveObjectOverlay } from './remove-object-overlay';
+import { WhiteBalancePickerOverlay } from './white-balance-picker-overlay';
 import { createRafScheduler, type RafScheduler } from '@/features/perf';
 import {
   NEUTRAL_UNIFORMS,
@@ -54,6 +55,7 @@ export function ImageCanvas(): React.JSX.Element {
   const showBefore = useViewerStore((s) => s.showBefore);
   const cropMode = useViewerStore((s) => s.cropMode);
   const removeMode = useViewerStore((s) => s.removeMode);
+  const wbPickMode = useViewerStore((s) => s.wbPickMode);
 
   // Adjustment uniforms from the current render state (present + live preview).
   const renderEdit = useRenderEdit();
@@ -75,7 +77,9 @@ export function ImageCanvas(): React.JSX.Element {
   // image should behave like a smaller image for viewport purposes. While
   // actively cropping, show the full frame so the user can reposition freely.
   const crop =
-    cropMode || removeMode ? FULL_CROP : (renderEdit?.geometry.crop ?? FULL_CROP);
+    cropMode || removeMode || wbPickMode
+      ? FULL_CROP
+      : (renderEdit?.geometry.crop ?? FULL_CROP);
   const croppedSize = imageSize ? croppedImageSize(imageSize, crop) : null;
 
   // Create the renderer once.
@@ -206,17 +210,22 @@ export function ImageCanvas(): React.JSX.Element {
     <div
       ref={containerRef}
       className="relative h-full w-full overflow-hidden bg-black/30"
-      onWheel={cropMode || removeMode ? undefined : onWheel}
+      onWheel={cropMode || removeMode || wbPickMode ? undefined : onWheel}
     >
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full touch-none"
         style={{
-          cursor: cropMode || removeMode ? 'default' : dragRef.current ? 'grabbing' : 'grab',
+          cursor:
+            cropMode || removeMode || wbPickMode
+              ? 'default'
+              : dragRef.current
+                ? 'grabbing'
+                : 'grab',
         }}
-        onPointerDown={cropMode || removeMode ? undefined : onPointerDown}
-        onPointerMove={cropMode || removeMode ? undefined : onPointerMove}
-        onPointerUp={cropMode || removeMode ? undefined : onPointerUp}
+        onPointerDown={cropMode || removeMode || wbPickMode ? undefined : onPointerDown}
+        onPointerMove={cropMode || removeMode || wbPickMode ? undefined : onPointerMove}
+        onPointerUp={cropMode || removeMode || wbPickMode ? undefined : onPointerUp}
       />
       {imageSize && cropMode ? (
         <CropOverlay imageSize={imageSize} container={container} rotationDeg={rotationDeg} />
@@ -224,7 +233,10 @@ export function ImageCanvas(): React.JSX.Element {
       {imageSize && removeMode ? (
         <RemoveObjectOverlay imageSize={imageSize} container={container} />
       ) : null}
-      {imageSize && !cropMode && !removeMode ? (
+      {imageSize && wbPickMode ? (
+        <WhiteBalancePickerOverlay imageSize={imageSize} container={container} />
+      ) : null}
+      {imageSize && !cropMode && !removeMode && !wbPickMode ? (
         <ViewerControls effectiveScale={drawScale} />
       ) : null}
     </div>

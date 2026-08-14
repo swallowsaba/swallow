@@ -3,7 +3,16 @@ import { create } from 'zustand';
 /** UI-only preferences, kept separate from image edit state. */
 
 export type ThemeMode = 'dark' | 'light';
-export type RightTab = 'presets' | 'basic' | 'tone' | 'color' | 'detail' | 'lens' | 'ai';
+export type RightTab =
+  | 'presets'
+  | 'basic'
+  | 'tone'
+  | 'color'
+  | 'detail'
+  | 'lens'
+  | 'ai'
+  | 'gif'
+  | 'collage';
 export type LeftTab = 'library' | 'history';
 export type Locale = 'ja' | 'en';
 export type UiMode = 'beginner' | 'pro';

@@ -165,6 +165,7 @@ const DICT = {
   'export.filenameTemplate': { ja: 'ファイル名テンプレート', en: 'Filename template' },
   'export.watermark': { ja: '透かし', en: 'Watermark' },
   'export.button': { ja: '書き出す', en: 'Export' },
+  'export.share': { ja: '共有', en: 'Share' },
 
   // Presets panel
   'presets.searchPlaceholder': { ja: 'プリセットを検索', en: 'Search presets' },
@@ -221,15 +222,27 @@ const DICT = {
   },
   'ai.openRemoveObject': { ja: 'オブジェクト除去を開く', en: 'Open Remove Object' },
   'ai.roadmap': {
-    ja: '今後追加予定：ノイズ除去・高画質化（拡大）などの追加AI機能。',
-    en: 'Coming next: additional AI tools such as denoise and upscaling.',
+    ja: '今後追加予定：目・歯だけを狙った補正など、より高精度な顔認識AI機能（現状は被写体全体への穏やかな効果にとどめています）。',
+    en: 'Coming next: more precise face-aware tools (like eyes/teeth-only adjustments) using a dedicated face landmark model \u2014 today\u2019s tools apply gentle, whole-subject effects rather than targeting individual features.',
+  },
+  'ai.portraitSmoothTitle': { ja: 'ポートレート肌なめらか', en: 'Portrait Smooth' },
+  'ai.portraitSmoothHelp': {
+    ja: '被写体だけを検出し、その範囲の質感を穏やかに滑らかにします（背景はそのまま）。顔の形や目・鼻・口の位置を変える機能ではありません。',
+    en: 'Detects the subject and gently softens texture within it only \u2014 the background stays untouched. This does not reshape any facial features or change identity.',
+  },
+  'ai.strength': { ja: '強さ', en: 'Strength' },
+  'ai.done': { ja: '完成しました', en: 'Done.' },
+  'ai.autoGradeTitle': { ja: 'AIオートグレード', en: 'AI Auto Grade' },
+  'ai.autoGradeHelp': {
+    ja: '露出・ホワイトバランス・コントラストを自動補正した上で、写真集などで見られる落ち着いた発色（マット気味の階調・穏やかなハイライト）を1クリックで適用します。編集内容は他の調整と同じく後から取り消せます。',
+    en: 'Auto-corrects exposure/white balance/contrast, then applies a restrained, editorial-style grade (a touch of matte tonality, soft highlights) in one click. Fully undoable, like any other adjustment.',
   },
 
   // Info popover
   'info.title': { ja: '写真の情報', en: 'Photo Info' },
   'info.noCameraData': {
-    ja: 'カメラ情報はRAWファイルでのみ表示されます',
-    en: 'Camera data is only available for RAW files.',
+    ja: 'この写真にはカメラ情報が含まれていません',
+    en: 'This photo doesn\u2019t have camera metadata.',
   },
   'info.viewOnMap': { ja: '地図で見る', en: 'View on map' },
   'info.lookUpPlace': { ja: '地名を調べる', en: 'Look up place name' },
@@ -266,12 +279,65 @@ const DICT = {
     en: 'Paint over what you want to remove, then Apply',
   },
   'remove.apply': { ja: '適用', en: 'Apply' },
+  'remove.suggest': { ja: '候補を提案', en: 'Suggest area' },
+
+  // White balance eyedropper
+  'wb.pickerLabel': { ja: 'ホワイトバランス（スポイト）', en: 'White Balance (Picker)' },
+  'wb.pickerHelp': {
+    ja: '本来グレーや白であるはずの場所をクリックしてください',
+    en: 'Click a spot that should be neutral gray or white',
+  },
   'remove.download': { ja: 'ダウンロード', en: 'Download' },
   'remove.redo': { ja: 'やり直す', en: 'Redo' },
   'remove.previewReady': {
     ja: '完成しました。問題なければダウンロードしてください。',
     en: 'Ready. Download it if it looks good.',
   },
+  // GIF panel
+  'tab.gif': { ja: 'GIF', en: 'GIF' },
+  'gif.title': { ja: 'GIFアニメーションを作成', en: 'Create an animated GIF' },
+  'gif.intro': {
+    ja: '複数の写真を選んで、順番に切り替わるGIFアニメーションを作ります。',
+    en: 'Pick several photos to create a GIF that plays through them in order.',
+  },
+  'gif.pickImages': { ja: '画像を選択（2枚以上）', en: 'Pick images (2 or more)' },
+  'gif.pickImagesHelp': {
+    ja: 'ライブラリに読み込んだ画像から選びます。タップした順に番号が付き、その順番で再生されます。',
+    en: 'Choose from the images you\u2019ve loaded into the library. They\u2019re numbered in the order you tap them, and play back in that order.',
+  },
+  'gif.noImages': {
+    ja: '先にライブラリへ画像を読み込んでください',
+    en: 'Load some images into the library first.',
+  },
+  'gif.order': { ja: '再生順', en: 'Playback order' },
+  'gif.delay': { ja: '表示時間', en: 'Frame delay' },
+  'gif.size': { ja: 'サイズ', en: 'Size' },
+  'gif.generate': { ja: 'GIFを生成', en: 'Generate GIF' },
+  'gif.done': { ja: '完成しました', en: 'Done.' },
+
+  // Collage panel
+  'tab.collage': { ja: 'コラージュ', en: 'Collage' },
+  'collage.title': { ja: 'コラージュを作成', en: 'Create a collage' },
+  'collage.intro': {
+    ja: '複数の写真を1枚にまとめ、文字を入れることもできます。',
+    en: 'Combine several photos into one image, with an optional caption.',
+  },
+  'collage.pickImages': { ja: '画像を選択（2枚以上）', en: 'Pick images (2 or more)' },
+  'collage.pickImagesHelp': {
+    ja: 'タップした枚数に応じて自動的にグリッド配置されます（2枚は横並び、4枚は2×2など）。',
+    en: 'Automatically arranged into a grid based on how many you pick (2 side by side, 4 in a 2\u00d72 grid, etc).',
+  },
+  'collage.noImages': {
+    ja: '先にライブラリへ画像を読み込んでください',
+    en: 'Load some images into the library first.',
+  },
+  'collage.gap': { ja: '画像の間隔', en: 'Gap' },
+  'collage.addText': { ja: '文字を入れる', en: 'Add text' },
+  'collage.textPlaceholder': { ja: '文字を入力', en: 'Enter text' },
+  'collage.textSize': { ja: '文字サイズ', en: 'Text size' },
+  'collage.generate': { ja: 'コラージュを生成', en: 'Generate collage' },
+  'collage.done': { ja: '完成しました', en: 'Done.' },
+  'collage.needTwo': { ja: 'あと1枚以上選んでください', en: 'Pick at least one more image.' },
 } as const;
 
 export function translate(locale: 'ja' | 'en', key: TranslationKey): string {

@@ -11,6 +11,7 @@ import {
 } from '@/features/persistence';
 import { LruCache, createLimiter } from '@/features/perf';
 import { decodeFile } from './decode-client';
+import { readImageExif } from './read-exif';
 import { createThumbnailBlob } from './thumbnail';
 import { useLibraryStore } from './library-store';
 
@@ -40,6 +41,14 @@ function toKind(format: string | null, imageClass: 'raw' | 'native'): SourceImag
     default:
       return 'jpeg';
   }
+}
+
+/** Look up a cached decoded bitmap by library item id, if still resident in
+ *  the LRU (evicted items return undefined — re-selecting them re-decodes).
+ *  Exposed for features that need more than just the active image, like GIF
+ *  export from multiple library items. */
+export function getCachedBitmap(id: string): ImageBitmap | undefined {
+  return bitmapCache.get(id);
 }
 
 /** Make a decoded image the active one in the editor and viewer. */
@@ -100,13 +109,17 @@ async function importOne(file: File): Promise<void> {
     const thumbBlob = await createThumbnailBlob(result.bitmap);
     const thumbUrl = URL.createObjectURL(thumbBlob);
     const wasEmpty = useLibraryStore.getState().activeId === null;
+    // RAW files get camera/lens/GPS metadata from LibRaw (result.raw).
+    // Non-RAW files (JPEG etc.) didn't have any metadata at all before —
+    // read it via EXIF instead, so the Info panel isn't RAW-only.
+    const raw = result.raw ?? (await readImageExif(file));
     useLibraryStore.getState().setReady(id, {
       kind: toKind(result.format, result.imageClass),
       width: result.width,
       height: result.height,
       thumbUrl,
       byteSize: file.size,
-      raw: result.raw,
+      raw,
     });
     if (wasEmpty) await activateItem(id);
   } catch (error) {

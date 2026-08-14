@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Crop, Eraser, Eye, Maximize, Minus, Plus, RotateCw, Scan } from 'lucide-react';
+import { Crop, Eraser, Eye, Maximize, Minus, Pipette, Plus, RotateCw, Scan } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Toggle } from '@/components/ui/toggle';
@@ -41,6 +41,7 @@ export function ViewerControls({ effectiveScale }: ControlsProps): React.JSX.Ele
   const setShowBefore = useViewerStore((s) => s.setShowBefore);
   const setCropMode = useViewerStore((s) => s.setCropMode);
   const setRemoveMode = useViewerStore((s) => s.setRemoveMode);
+  const setWbPickMode = useViewerStore((s) => s.setWbPickMode);
 
   const percent = Math.round(effectiveScale * 100);
 
@@ -116,6 +117,14 @@ export function ViewerControls({ effectiveScale }: ControlsProps): React.JSX.Ele
         }}
       >
         <Eraser />
+      </IconBtn>
+      <IconBtn
+        label="White Balance Picker"
+        onClick={() => {
+          setWbPickMode(true);
+        }}
+      >
+        <Pipette />
       </IconBtn>
       <Toggle
         size="sm"

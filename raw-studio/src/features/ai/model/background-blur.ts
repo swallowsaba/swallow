@@ -1,4 +1,7 @@
 import { segment } from './segmentation';
+import { backgroundBlurRadiusPx } from './blur-math';
+
+export { backgroundBlurRadiusPx } from './blur-math';
 
 /**
  * Produce a "blur the background, keep the subject sharp" composite as a
@@ -13,13 +16,15 @@ import { segment } from './segmentation';
  */
 export async function blurBackground(
   bitmap: ImageBitmap,
-  blurPx: number,
+  /** Blur strength, 0..100 (not a raw pixel count — see below). */
+  strength: number,
   onProgress?: (received: number, total: number) => void,
 ): Promise<Blob> {
   const { mask, size } = await segment('u2netp-subject', bitmap, onProgress);
 
   const w = bitmap.width;
   const h = bitmap.height;
+  const blurPx = backgroundBlurRadiusPx(strength, Math.max(w, h));
 
   // 1) Full-size mask canvas, scaled up from the model's resolution.
   const maskSmall = new OffscreenCanvas(size, size);
@@ -52,7 +57,7 @@ export async function blurBackground(
   const out = new OffscreenCanvas(w, h);
   const outCtx = out.getContext('2d');
   if (!outCtx) throw new Error('2D context unavailable.');
-  outCtx.filter = `blur(${String(Math.max(0, blurPx))}px)`;
+  outCtx.filter = `blur(${String(blurPx)}px)`;
   outCtx.drawImage(bitmap, 0, 0);
   outCtx.filter = 'none';
   outCtx.drawImage(subject, 0, 0);

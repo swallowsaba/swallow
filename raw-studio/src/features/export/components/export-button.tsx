@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
@@ -20,6 +20,7 @@ import {
   type ResizeMode,
 } from '../model/export-options';
 import { downloadBlob, exportImage } from '../model/export';
+import { useT } from '@/i18n';
 
 const FORMATS: readonly ExportFormat[] = ['jpeg', 'png', 'webp', 'avif'];
 const RESIZE_MODES: readonly { value: ResizeMode; label: string }[] = [
@@ -34,6 +35,7 @@ export function ExportButton(): React.JSX.Element {
   const bitmap = useViewerStore((s) => s.bitmap);
   const edit = useEditorStore(selectCurrentEdit);
   const image = useEditorStore((s) => s.image);
+  const t = useT();
 
   const [open, setOpen] = React.useState(false);
   const [options, setOptions] = React.useState(DEFAULT_EXPORT_OPTIONS);
@@ -52,6 +54,40 @@ export function ExportButton(): React.JSX.Element {
       setOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Export failed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Web Share API: hands the exported image to the OS share sheet (Instagram,
+  // Messages, Files, etc. on supported devices — mainly mobile browsers).
+  // There's no public API to post directly into a specific app like
+  // Instagram from a website; this is the standard, actually-available way
+  // browsers offer "send this image to another app".
+  const canShareFiles =
+    typeof navigator !== 'undefined' &&
+    'share' in navigator &&
+    typeof navigator.canShare === 'function';
+
+  const runShare = async () => {
+    if (!bitmap || !edit || !image) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const { blob, filename } = await exportImage(bitmap, edit, image.fileName, 1, options);
+      const file = new File([blob], filename, { type: blob.type });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
+        setOpen(false);
+      } else {
+        downloadBlob(blob, filename);
+        setOpen(false);
+      }
+    } catch (err) {
+      // AbortError happens when the person just cancels the share sheet —
+      // not a real failure, so don't show it as an error.
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setError(err instanceof Error ? err.message : 'Share failed.');
     } finally {
       setBusy(false);
     }
@@ -197,8 +233,20 @@ export function ExportButton(): React.JSX.Element {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => { setOpen(false); }}>
-            Cancel
+            {t('common.cancel')}
           </Button>
+          {canShareFiles ? (
+            <Button
+              variant="outline"
+              onClick={() => {
+                void runShare();
+              }}
+              disabled={disabled || busy}
+            >
+              {busy ? <Loader2 className="animate-spin" /> : <Share2 />}
+              {t('export.share')}
+            </Button>
+          ) : null}
           <Button
             onClick={() => {
               void runExport();
@@ -206,7 +254,7 @@ export function ExportButton(): React.JSX.Element {
             disabled={disabled || busy}
           >
             {busy ? <Loader2 className="animate-spin" /> : <Download />}
-            Export
+            {t('export.button')}
           </Button>
         </DialogFooter>
       </DialogContent>

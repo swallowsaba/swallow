@@ -1,7 +1,7 @@
 export { LibraryGrid } from './components/library-grid';
 export { useLibraryStore } from './model/library-store';
 export type { LibraryItem, LibraryState } from './model/library-store';
-export { importFiles, activateItem } from './model/import';
+export { importFiles, activateItem, getCachedBitmap } from './model/import';
 export { decodeFile } from './model/decode-client';
 export type { DecodeApi, DecodedImageResult } from './model/decode-api';
 export { detectFormat, detectRawByMagic, extensionOf } from './model/raw-format';

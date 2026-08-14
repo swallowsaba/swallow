@@ -80,7 +80,7 @@ export function BeginnerPanel(): React.JSX.Element {
     setBlurBusy(true);
     setBlurStatus('Preparing…');
     try {
-      const blob = await blurBackground(bitmap, 14, (received, total) => {
+      const blob = await blurBackground(bitmap, 60, (received, total) => {
         const mb = (received / 1_000_000).toFixed(1);
         setBlurStatus(total ? `Downloading model ${mb} MB…` : `Downloading model ${mb} MB…`);
       });

@@ -22,6 +22,8 @@ export interface ViewerState {
   cropMode: boolean;
   /** Whether the Remove Object brush overlay is active. */
   removeMode: boolean;
+  /** Whether the white-balance eyedropper (click-to-neutralize) is active. */
+  wbPickMode: boolean;
 
   loadBitmap: (bitmap: ImageBitmap, size: Size) => void;
   clearBitmap: () => void;
@@ -34,6 +36,7 @@ export interface ViewerState {
   setShowBefore: (value: boolean) => void;
   setCropMode: (value: boolean) => void;
   setRemoveMode: (value: boolean) => void;
+  setWbPickMode: (value: boolean) => void;
 }
 
 const INITIAL = {
@@ -44,6 +47,7 @@ const INITIAL = {
   showBefore: false,
   cropMode: false,
   removeMode: false,
+  wbPickMode: false,
 };
 
 export const useViewerStore = create<ViewerState>((set) => ({
@@ -80,5 +84,8 @@ export const useViewerStore = create<ViewerState>((set) => ({
   },
   setRemoveMode: (removeMode) => {
     set({ removeMode });
+  },
+  setWbPickMode: (wbPickMode) => {
+    set({ wbPickMode });
   },
 }));

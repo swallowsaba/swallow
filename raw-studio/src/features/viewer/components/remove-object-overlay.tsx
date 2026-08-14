@@ -1,11 +1,12 @@
 import * as React from 'react';
-import { Check, Download, Eraser, Loader2, X } from 'lucide-react';
+import { Check, Download, Eraser, Loader2, Wand2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { computeFitScale, type Size } from '../model/viewport';
 import { useViewerStore } from '../model/viewer-store';
 import { MODELS } from '@/features/ai/model/model-registry';
 import { inpaint } from '@/features/ai/model/inpaint';
+import { suggestMeshMask } from '@/features/ai/model/suggest-mask';
 import { downloadBlob } from '@/features/export/model/export';
 import { useT } from '@/i18n';
 
@@ -29,6 +30,7 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
   const lastPointRef = React.useRef<{ x: number; y: number } | null>(null);
   const [brushPct, setBrushPct] = React.useState(4); // % of the image's long edge
   const [busy, setBusy] = React.useState(false);
+  const [suggestBusy, setSuggestBusy] = React.useState(false);
   const [status, setStatus] = React.useState<string | null>(null);
   const [hasPaint, setHasPaint] = React.useState(false);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -114,6 +116,23 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
     setHasPaint(false);
   };
 
+  const suggestMask = async () => {
+    if (!bitmap) return;
+    setSuggestBusy(true);
+    try {
+      const suggested = await suggestMeshMask(bitmap);
+      const canvas = maskCanvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (!canvas || !ctx) return;
+      ctx.drawImage(suggested, 0, 0);
+      setHasPaint(true);
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Suggestion failed.');
+    } finally {
+      setSuggestBusy(false);
+    }
+  };
+
   const cancel = () => {
     setRemoveMode(false);
   };
@@ -191,6 +210,24 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
       </div>
 
       <div className="pointer-events-auto absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
+        {!previewUrl ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 px-3 text-xs"
+            disabled={suggestBusy}
+            onClick={() => {
+              void suggestMask();
+            }}
+          >
+            {suggestBusy ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Wand2 className="size-3.5" />
+            )}
+            {t('remove.suggest')}
+          </Button>
+        ) : null}
         {!previewUrl ? (
           <div className="flex w-72 items-center gap-2 rounded-lg border bg-background/95 px-3 py-2 shadow-md backdrop-blur">
             <span className="text-[11px] text-muted-foreground">{t('remove.brush')}</span>

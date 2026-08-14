@@ -29,3 +29,4 @@ export {
 } from './model/crop-math';
 export { CropOverlay } from './components/crop-overlay';
 export { RemoveObjectOverlay } from './components/remove-object-overlay';
+export { WhiteBalancePickerOverlay } from './components/white-balance-picker-overlay';

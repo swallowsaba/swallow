@@ -36,6 +36,12 @@ export {
   NEUTRAL_ADVANCED,
 } from './model/advanced-math';
 export type { ToneCurveDeltas, HslBandAdjust, AdvancedUniforms } from './model/advanced-math';
+export {
+  computeWhiteBalanceFromSample,
+  applyWhiteBalanceLinear,
+  previewCorrectedSample,
+} from './model/white-balance-picker';
+export type { WhiteBalanceResult } from './model/white-balance-picker';
 export { TonePanel } from './components/tone-panel';
 export { ColorPanel } from './components/color-panel';
 export { DetailPanel } from './components/detail-panel';
