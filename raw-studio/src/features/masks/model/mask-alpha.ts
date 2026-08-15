@@ -4,7 +4,9 @@ import type {
   Mask,
   MaskGeometry,
   RadialMaskData,
+  RasterMaskData,
 } from '@/types';
+import { decodeRaster, rasterizeRaster, sampleRasterAt } from './raster-mask';
 
 /**
  * Pure mask rasterization: turn a {@link Mask}'s normalized geometry into a
@@ -142,12 +144,23 @@ export function maskAlphaAt(geometry: MaskGeometry, u: number, v: number): numbe
       return linearAlphaAt(geometry, u, v);
     case 'brush':
       return brushAlphaAt(geometry, u, v);
+    case 'raster':
+      return rasterAlphaAt(geometry, u, v);
     default: {
       // Exhaustiveness guard: a new kind must be handled above.
       const _never: never = geometry;
       return _never;
     }
   }
+}
+
+/** Point sample of a raster mask (decodes via cache). For per-pixel work prefer
+ *  {@link rasterizeMaskAlpha}, which decodes once. */
+export function rasterAlphaAt(m: RasterMaskData, u: number, v: number): number {
+  const decoded = decodeRaster(m.data);
+  let a = sampleRasterAt(decoded, m.width, m.height, u, v);
+  if (m.invert) a = 1 - a;
+  return a;
 }
 
 /**
@@ -162,8 +175,14 @@ export function rasterizeMaskAlpha(
   width: number,
   height: number,
 ): Uint8ClampedArray {
+  if (!mask.enabled || width <= 0 || height <= 0) {
+    return new Uint8ClampedArray(width > 0 && height > 0 ? width * height : 0);
+  }
+  // Raster masks decode their stored bitmap once and resample — never per pixel.
+  if (mask.geometry.kind === 'raster') {
+    return rasterizeRaster(mask.geometry, width, height);
+  }
   const out = new Uint8ClampedArray(width * height);
-  if (!mask.enabled || width <= 0 || height <= 0) return out;
   for (let y = 0; y < height; y++) {
     const v = (y + 0.5) / height;
     const row = y * width;

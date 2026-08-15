@@ -5,7 +5,7 @@ import type { LocalAdjustments } from './adjustments';
  * cropped image so masks survive zoom, resize and export unchanged.
  */
 
-export type MaskKind = 'brush' | 'radial' | 'linear';
+export type MaskKind = 'brush' | 'radial' | 'linear' | 'raster';
 
 export interface MaskStrokePoint {
   readonly x: number;
@@ -47,7 +47,24 @@ export interface LinearMaskData {
   readonly feather: number;
 }
 
-export type MaskGeometry = BrushMaskData | RadialMaskData | LinearMaskData;
+/**
+ * A pixel-precise coverage bitmap (e.g. from AI subject detection), stored at a
+ * bounded resolution in the cropped-image's normalized space. `data` is the
+ * base64 of a width×height 8-bit alpha buffer, row-major, row 0 = image top.
+ * `feather` softens the edge (0..1) and `invert` selects the complement.
+ */
+export interface RasterMaskData {
+  readonly kind: 'raster';
+  /** Where the bitmap came from, e.g. 'ai-subject'. Informational. */
+  readonly source: string;
+  readonly width: number;
+  readonly height: number;
+  readonly data: string;
+  readonly feather: number;
+  readonly invert: boolean;
+}
+
+export type MaskGeometry = BrushMaskData | RadialMaskData | LinearMaskData | RasterMaskData;
 
 export interface Mask {
   readonly id: string;

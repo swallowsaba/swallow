@@ -35,6 +35,7 @@ export type {
   BrushMaskData,
   RadialMaskData,
   LinearMaskData,
+  RasterMaskData,
   MaskGeometry,
   Mask,
 } from './mask';

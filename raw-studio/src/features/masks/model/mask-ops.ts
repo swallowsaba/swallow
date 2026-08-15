@@ -6,8 +6,10 @@ import type {
   MaskGeometry,
   MaskKind,
   RadialMaskData,
+  RasterMaskData,
 } from '@/types';
 import { createId } from '@/utils/id';
+import { encodeBase64 } from './raster-mask';
 
 /**
  * Pure transitions over {@link EditState.masks}. The editor store wraps each of
@@ -54,9 +56,24 @@ export function defaultLinearGeometry(): LinearMaskData {
   };
 }
 
+/** An empty raster (used only as a fallback; real raster masks come from
+ *  {@link createRasterMask}). */
+export function emptyRasterGeometry(): RasterMaskData {
+  return {
+    kind: 'raster',
+    source: 'empty',
+    width: 1,
+    height: 1,
+    data: encodeBase64(new Uint8ClampedArray(1)),
+    feather: 0,
+    invert: false,
+  };
+}
+
 export function defaultGeometryFor(kind: MaskKind): MaskGeometry {
   if (kind === 'radial') return defaultRadialGeometry();
   if (kind === 'linear') return defaultLinearGeometry();
+  if (kind === 'raster') return emptyRasterGeometry();
   return defaultBrushGeometry();
 }
 
@@ -64,6 +81,7 @@ const KIND_LABEL: Record<MaskKind, string> = {
   brush: 'Brush',
   radial: 'Radial',
   linear: 'Linear',
+  raster: 'AI',
 };
 
 /** Build a fresh, empty mask of the given kind with a sensible unique name. */
@@ -74,6 +92,29 @@ export function createMask(kind: MaskKind, existing: readonly Mask[]): Mask {
     name: `${KIND_LABEL[kind]} ${sameKind + 1}`,
     enabled: true,
     geometry: defaultGeometryFor(kind),
+    adjustments: {},
+  };
+}
+
+/**
+ * Build a raster mask from an already-encoded coverage bitmap (base64 of a
+ * width×height 8-bit alpha, cropped-image normalized space, row 0 = top). Used
+ * by the AI subject flow; keeping it here means the transition stays pure.
+ */
+export function createRasterMask(
+  data: string,
+  width: number,
+  height: number,
+  source: string,
+  name: string,
+  existing: readonly Mask[],
+): Mask {
+  const sameKind = existing.filter((m) => m.geometry.kind === 'raster').length;
+  return {
+    id: createId('mask'),
+    name: `${name} ${sameKind + 1}`,
+    enabled: true,
+    geometry: { kind: 'raster', source, width, height, data, feather: 0, invert: false },
     adjustments: {},
   };
 }

@@ -6,7 +6,9 @@ import {
   Circle as CircleIcon,
   Eraser,
   FlipHorizontal2,
+  Loader2,
   Minus,
+  Sparkles,
   Trash2,
 } from 'lucide-react';
 import type {
@@ -15,21 +17,26 @@ import type {
   Mask,
   MaskKind,
   RadialMaskData,
+  RasterMaskData,
 } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { HelpMark } from '@/components/ui/help-mark';
 import { selectCurrentEdit, useActiveMask, useEditorStore } from '@/features/editor';
 import { AdjustmentSlider } from '@/features/adjustments/components/adjustment-slider';
+import { segment, MODELS } from '@/features/ai';
+import { useViewerStore } from '@/features/viewer';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { createMask, maskHasEffect } from '../model/mask-ops';
+import { createMask, createRasterMask, maskHasEffect } from '../model/mask-ops';
+import { alphaToCroppedRaster, encodeBase64 } from '../model/raster-mask';
 import { useMaskUiStore } from '../model/mask-ui-store';
 
 const KIND_ICON: Record<MaskKind, React.ComponentType<{ className?: string }>> = {
   brush: Brush,
   radial: CircleIcon,
   linear: Minus,
+  raster: Sparkles,
 };
 
 /** Local-adjustment sliders a mask can carry, mirroring the global ranges. */
@@ -70,6 +77,10 @@ export function MasksPanel(): React.JSX.Element {
   const setMaskMode = useMaskUiStore((s) => s.setMaskMode);
   const exit = useMaskUiStore((s) => s.exit);
 
+  const bitmap = useViewerStore((s) => s.bitmap);
+  const [aiBusy, setAiBusy] = React.useState(false);
+  const [aiError, setAiError] = React.useState<string | null>(null);
+
   // Keep the on-canvas overlay active whenever this panel is showing and a mask
   // is selected; leave it when the panel unmounts.
   React.useEffect(() => {
@@ -95,6 +106,33 @@ export function MasksPanel(): React.JSX.Element {
     editMask(mask.id);
   };
 
+  const runAiSubject = async () => {
+    const model = MODELS['u2netp-subject'];
+    if (!bitmap || !model || aiBusy) return;
+    setAiBusy(true);
+    setAiError(null);
+    try {
+      const seg = await segment(model.id, bitmap);
+      const crop = edit.geometry.crop;
+      // Store at a bounded resolution matching the cropped pixel aspect.
+      const cropPxW = Math.max(1, bitmap.width * crop.width);
+      const cropPxH = Math.max(1, bitmap.height * crop.height);
+      const aspect = cropPxW / cropPxH;
+      const longEdge = 256;
+      const outW = aspect >= 1 ? longEdge : Math.max(1, Math.round(longEdge * aspect));
+      const outH = aspect >= 1 ? Math.max(1, Math.round(longEdge / aspect)) : longEdge;
+      const alpha = alphaToCroppedRaster(seg.mask, seg.size, crop, outW, outH);
+      const data = encodeBase64(alpha);
+      const mask = createRasterMask(data, outW, outH, 'ai-subject', t('masks.aiSubject'), masks);
+      addMask(mask, t('masks.aiSubjectLabel'));
+      editMask(mask.id);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-3 p-3">
       <p className="text-xs leading-relaxed text-muted-foreground">
@@ -112,6 +150,24 @@ export function MasksPanel(): React.JSX.Element {
           <Minus className="size-3.5" /> {t('masks.linear')}
         </Button>
       </div>
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full gap-1"
+        disabled={!bitmap || aiBusy}
+        onClick={() => {
+          void runAiSubject();
+        }}
+      >
+        {aiBusy ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <Sparkles className="size-3.5" />
+        )}
+        {aiBusy ? t('masks.aiWorking') : t('masks.aiSubjectBtn')}
+      </Button>
+      {aiError ? <p className="text-[11px] text-destructive">{aiError}</p> : null}
 
       {masks.length === 0 ? (
         <p className="rounded border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
@@ -240,6 +296,17 @@ function ActiveMaskEditor(): React.JSX.Element | null {
           mask={mask}
           onCommit={(geom) => {
             commitMaskGeometry(activeMaskId, geom, t('masks.editShapeLabel'));
+          }}
+        />
+      ) : null}
+      {mask.geometry.kind === 'raster' ? (
+        <RasterControls
+          mask={mask}
+          onCommit={(geom) => {
+            commitMaskGeometry(activeMaskId, geom, t('masks.editShapeLabel'));
+          }}
+          onPreview={(geom) => {
+            setMaskPreview({ id: activeMaskId, geometry: geom });
           }}
         />
       ) : null}
@@ -394,6 +461,51 @@ function RadialControls({
           checked={geom.inverted}
           onChange={(e) => {
             onCommit({ ...geom, inverted: e.target.checked });
+          }}
+          className="size-3.5 accent-primary"
+        />
+        {t('masks.invertArea')}
+        <HelpMark text={t('masks.invertAreaHelp')} />
+      </label>
+    </div>
+  );
+}
+
+function RasterControls({
+  mask,
+  onCommit,
+  onPreview,
+}: {
+  mask: Mask;
+  onCommit: (geom: RasterMaskData) => void;
+  onPreview: (geom: RasterMaskData) => void;
+}): React.JSX.Element {
+  const geom = mask.geometry as RasterMaskData;
+  const t = useT();
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <p className="text-[11px] text-muted-foreground">{t('masks.aiSubjectHint')}</p>
+      <AdjustmentSlider
+        label={t('masks.feather')}
+        value={Math.round(geom.feather * 100)}
+        min={0}
+        max={100}
+        step={1}
+        defaultValue={0}
+        onChange={(v) => {
+          onPreview({ ...geom, feather: v / 100 });
+        }}
+        onCommit={(v) => {
+          onCommit({ ...geom, feather: v / 100 });
+        }}
+      />
+      <label className="flex items-center gap-2 text-xs text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={geom.invert}
+          onChange={(e) => {
+            onCommit({ ...geom, invert: e.target.checked });
           }}
           className="size-3.5 accent-primary"
         />

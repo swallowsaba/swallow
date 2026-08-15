@@ -90,16 +90,18 @@ export function MaskOverlay({ croppedSize, container }: Props): React.JSX.Elemen
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
+    const geom = mask.geometry;
+    // Raster (AI) masks have no on-canvas handles or painting — just a tint.
+    if (geom.kind === 'raster') return;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     const { x, y } = localPoint(e);
-    const geom = mask.geometry;
     if (geom.kind === 'radial') {
       const handle = pickRadialHandle(geom, x, y, HANDLE_TOLERANCE) ?? 'center';
       dragRef.current = { kind: 'radial', handle };
     } else if (geom.kind === 'linear') {
       const handle = pickLinearHandle(geom, x, y, HANDLE_TOLERANCE) ?? 'line';
       dragRef.current = { kind: 'linear', handle, lastX: x, lastY: y };
-    } else {
+    } else if (geom.kind === 'brush') {
       const pressure = e.pressure > 0 ? e.pressure : 1;
       dragRef.current = { kind: 'brush', points: [{ x, y, pressure }] };
       previewBrush(geom, [{ x, y, pressure }]);
@@ -137,8 +139,8 @@ export function MaskOverlay({ croppedSize, container }: Props): React.JSX.Elemen
   const onPointerUp = (e: React.PointerEvent) => {
     const drag = dragRef.current;
     dragRef.current = null;
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     if (!drag) return;
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     const geom = mask.geometry;
     if (drag.kind === 'radial' && geom.kind === 'radial') {
       const { x, y } = localPoint(e);

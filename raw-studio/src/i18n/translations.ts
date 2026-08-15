@@ -53,6 +53,14 @@ const DICT = {
   'masks.brush': { ja: 'ブラシ', en: 'Brush' },
   'masks.radial': { ja: '円形', en: 'Radial' },
   'masks.linear': { ja: 'グラデ', en: 'Linear' },
+  'masks.aiSubjectBtn': { ja: 'AIで被写体を選択', en: 'Select subject with AI' },
+  'masks.aiSubject': { ja: 'AI被写体', en: 'AI Subject' },
+  'masks.aiSubjectLabel': { ja: 'AI被写体マスクを追加', en: 'Add AI subject mask' },
+  'masks.aiWorking': { ja: '解析中…', en: 'Analyzing…' },
+  'masks.aiSubjectHint': {
+    ja: 'AIが検出した被写体の範囲です。ぼかしや反転で調整し、下のスライダーでこの範囲だけを補正できます。',
+    en: 'The subject AI detected. Feather or invert it, then use the sliders below to adjust just this area.',
+  },
   'masks.empty': {
     ja: 'まだマスクはありません。上のボタンから追加してください。',
     en: 'No masks yet. Add one with the buttons above.',

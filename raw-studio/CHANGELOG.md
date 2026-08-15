@@ -23,6 +23,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty-array constant; `useShallow` where element identity is already stable.
 
 ### Added
+- **AI subject masks**. A new `raster` mask kind holds a pixel-precise coverage
+  bitmap; the Masks panel's "Select subject with AI" runs the existing on-device
+  U²-Net segmentation and turns the result into a local-adjustment mask.
+  - Reuses the existing `segment()` / model pipeline — no new model or network
+    path. The result is mapped into the cropped image's normalized space, stored
+    at a bounded resolution (≤256px long edge) as base64, and rides along in
+    `EditState` like every other mask (undoable, persisted).
+  - Pure, unit-tested raster helpers (`raster-mask`): a dependency-free base64
+    codec (works in browser/worker/Node), bilinear sampling, resampling with
+    invert and box-blur feather, and crop-space mapping.
+  - The renderer is unchanged: a raster mask rasterizes to the same coverage
+    buffer every mask produces, so it composites through the existing path.
+  - Feather and invert controls on the mask, plus the usual per-mask local
+    adjustment sliders.
 - **Look Mixer** — a genuinely new tool that other editors don't offer: blend
   *continuously* across entire develops. Because a develop is just serializable
   numbers, any set of looks can be weight-averaged into a new valid develop.
