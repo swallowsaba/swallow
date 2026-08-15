@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Download, GripVertical, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -10,7 +11,9 @@ import { encodeGif, DEFAULT_GIF_OPTIONS, type GifOptions } from '../model/gif-en
 
 /** Pick 2+ ready images from the library, in order, then encode a GIF. */
 export function GifPanel(): React.JSX.Element {
-  const items = useLibraryStore((s) => s.items.filter((it) => it.status === 'ready'));
+  // `filter()` returns a fresh array each call; a shallow compare keeps the
+  // snapshot stable (same item refs) and avoids a useSyncExternalStore loop.
+  const items = useLibraryStore(useShallow((s) => s.items.filter((it) => it.status === 'ready')));
   const t = useT();
 
   const [selected, setSelected] = React.useState<string[]>([]);

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Download, Loader2, Type, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +28,9 @@ const ANCHORS: readonly TextAnchor[] = [
 ];
 
 export function CollagePanel(): React.JSX.Element {
-  const items = useLibraryStore((s) => s.items.filter((it) => it.status === 'ready'));
+  // `filter()` returns a fresh array each call; a shallow compare keeps the
+  // snapshot stable (same item refs) and avoids a useSyncExternalStore loop.
+  const items = useLibraryStore(useShallow((s) => s.items.filter((it) => it.status === 'ready')));
   const t = useT();
 
   const [selected, setSelected] = React.useState<string[]>([]);
