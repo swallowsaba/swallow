@@ -24,6 +24,10 @@ export interface MixerState {
   /** 2D puck position in the unit square. */
   padX: number;
   padY: number;
+  /** Compare mode: show one endpoint at a time instead of the blend. */
+  compareMode: boolean;
+  /** Which endpoint compare mode shows. */
+  compareShow: 'a' | 'b';
 
   setMode: (mode: MixMode) => void;
   setA: (ref: LookRef) => void;
@@ -31,6 +35,9 @@ export interface MixerState {
   setT: (t: number) => void;
   setCorner: (slot: CornerSlot, ref: LookRef | null) => void;
   setPad: (x: number, y: number) => void;
+  setCompareMode: (on: boolean) => void;
+  setCompareShow: (which: 'a' | 'b') => void;
+  toggleCompareShow: () => void;
   /** Collapse controls to a no-op blend that equals the current edit — used
    *  after Apply so committing doesn't make the live preview jump. */
   settleToCurrent: () => void;
@@ -45,6 +52,8 @@ const INITIAL = {
   corners: [{ kind: 'current' }, null, null, null] as MixerState['corners'],
   padX: 0,
   padY: 0,
+  compareMode: false,
+  compareShow: 'a' as 'a' | 'b',
 };
 
 export const useMixerStore = create<MixerState>((set) => ({
@@ -79,6 +88,15 @@ export const useMixerStore = create<MixerState>((set) => ({
       padX: padX < 0 ? 0 : padX > 1 ? 1 : padX,
       padY: padY < 0 ? 0 : padY > 1 ? 1 : padY,
     });
+  },
+  setCompareMode: (compareMode) => {
+    set({ compareMode });
+  },
+  setCompareShow: (compareShow) => {
+    set({ compareShow });
+  },
+  toggleCompareShow: () => {
+    set((s) => ({ compareShow: s.compareShow === 'a' ? 'b' : 'a' }));
   },
   settleToCurrent: () => {
     // In 1D this makes blend = a = current (t=0); in 2D the puck at the top-left

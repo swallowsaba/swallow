@@ -50,6 +50,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - A Mix panel with a 2-way A↔B slider and a 4-way 2D pad; the blend previews
     live through the existing preview pipeline (no renderer changes) and Apply
     commits it as one normal, undoable adjustment step.
+  - **Compare view**: an A/B compare toggle flips the viewport between the two
+    endpoints in place (any two looks, not just before/after), and a parametric
+    "A → B differences" readout lists exactly which controls differ and by how
+    much — a develop diff only a numeric-EditState editor can show.
 - **Local-adjustment masks** (brush, radial, graduated). Each mask carries its
   own subset of light/color/clarity adjustments that apply only inside it. The
   data model already existed on `EditState`; this adds the rest:

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Check, Grid2x2, Minus, RotateCcw } from 'lucide-react';
+import { Check, Columns2, Grid2x2, Minus, RotateCcw } from 'lucide-react';
 import type { Adjustments } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -25,6 +25,7 @@ import {
   type LookRef,
   type ResolvedLook,
 } from '../model/look-source';
+import { diffAdjustments, formatDelta, type DiffEntry } from '../model/diff-edit';
 import { useMixerStore, type CornerSlot } from '../model/mixer-store';
 
 const CORNER_LABELS = ['↖', '↗', '↙', '↘'] as const;
@@ -53,6 +54,10 @@ export function LookMixerPanel(): React.JSX.Element {
   const setPad = useMixerStore((s) => s.setPad);
   const resetMixer = useMixerStore((s) => s.reset);
   const settleToCurrent = useMixerStore((s) => s.settleToCurrent);
+  const compareMode = useMixerStore((s) => s.compareMode);
+  const compareShow = useMixerStore((s) => s.compareShow);
+  const setCompareMode = useMixerStore((s) => s.setCompareMode);
+  const setCompareShow = useMixerStore((s) => s.setCompareShow);
 
   const current = edit?.adjustments ?? null;
 
@@ -78,7 +83,8 @@ export function LookMixerPanel(): React.JSX.Element {
     return base;
   }, [snapshots, presets]);
 
-  // Compute the blended adjustments for the current controls.
+  // Compute the blended adjustments for the current controls. In compare mode
+  // we show one endpoint at a time instead of the blend.
   const blended: Adjustments | null = React.useMemo(() => {
     if (!inputs || !current) return null;
     if (mode === '1d') {
@@ -86,6 +92,7 @@ export function LookMixerPanel(): React.JSX.Element {
       const rb = resolveLook(b, inputs);
       const from = ra?.adjustments ?? current;
       const to = rb?.adjustments ?? current;
+      if (compareMode) return compareShow === 'a' ? from : to;
       return lerpAdjustments(from, to, tVal);
     }
     const weights = bilinearWeights(padX, padY);
@@ -97,7 +104,16 @@ export function LookMixerPanel(): React.JSX.Element {
     });
     if (entries.length === 0) return current;
     return blendAdjustments(entries);
-  }, [inputs, current, mode, a, b, tVal, corners, padX, padY]);
+  }, [inputs, current, mode, a, b, tVal, corners, padX, padY, compareMode, compareShow]);
+
+  // Parametric diff between the two endpoints (1D only), for the compare readout.
+  const diff = React.useMemo(() => {
+    if (!inputs || mode !== '1d') return [];
+    const ra = resolveLook(a, inputs);
+    const rb = resolveLook(b, inputs);
+    if (!ra || !rb) return [];
+    return diffAdjustments(ra.adjustments, rb.adjustments);
+  }, [inputs, mode, a, b]);
 
   // Drive the live preview; clear it when leaving the mixer.
   React.useEffect(() => {
@@ -120,6 +136,7 @@ export function LookMixerPanel(): React.JSX.Element {
     clearPreview();
     // Collapse to a no-op blend so the just-committed look stays on screen
     // instead of the preview re-blending against the new current edit.
+    setCompareMode(false);
     settleToCurrent();
   };
 
@@ -177,6 +194,7 @@ export function LookMixerPanel(): React.JSX.Element {
               min={0}
               max={100}
               step={1}
+              disabled={compareMode}
               onValueChange={(v) => {
                 const next = v[0];
                 if (next !== undefined) setT(next / 100);
@@ -185,9 +203,54 @@ export function LookMixerPanel(): React.JSX.Element {
             />
             <span className="w-4 text-center text-[11px] text-muted-foreground">B</span>
           </div>
-          <p className="text-center text-[11px] tabular-nums text-muted-foreground">
-            {Math.round((1 - tVal) * 100)}% / {Math.round(tVal * 100)}%
-          </p>
+          {!compareMode ? (
+            <p className="text-center text-[11px] tabular-nums text-muted-foreground">
+              {Math.round((1 - tVal) * 100)}% / {Math.round(tVal * 100)}%
+            </p>
+          ) : null}
+
+          <div className="flex items-center gap-2 border-t border-border pt-2">
+            <Toggle
+              size="sm"
+              pressed={compareMode}
+              onPressedChange={(on) => {
+                setCompareMode(on);
+              }}
+              className="h-7 gap-1 text-[11px]"
+            >
+              <Columns2 className="size-3" /> {t('mix.compare')}
+            </Toggle>
+            {compareMode ? (
+              <div className="flex flex-1 overflow-hidden rounded border border-border">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCompareShow('a');
+                  }}
+                  className={cn(
+                    'flex-1 py-1 text-[11px]',
+                    compareShow === 'a' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+                  )}
+                >
+                  A
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCompareShow('b');
+                  }}
+                  className={cn(
+                    'flex-1 py-1 text-[11px]',
+                    compareShow === 'b' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+                  )}
+                >
+                  B
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          {compareMode ? <DiffReadout diff={diff} t={t} /> : null}
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
@@ -226,6 +289,36 @@ export function LookMixerPanel(): React.JSX.Element {
           <RotateCcw className="size-3.5" /> {t('mix.reset')}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function DiffReadout({
+  diff,
+  t,
+}: {
+  diff: readonly DiffEntry[];
+  t: (key: 'mix.same' | 'mix.diffTitle') => string;
+}): React.JSX.Element {
+  if (diff.length === 0) {
+    return <p className="text-center text-[11px] text-muted-foreground">{t('mix.same')}</p>;
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-[11px] font-medium text-muted-foreground">{t('mix.diffTitle')}</p>
+      <ul className="max-h-40 overflow-y-auto rounded border border-border">
+        {diff.map((e) => (
+          <li
+            key={e.label}
+            className="flex items-center justify-between px-2 py-0.5 text-[11px] odd:bg-muted/30"
+          >
+            <span className="truncate text-muted-foreground">{e.label}</span>
+            <span className="ml-2 shrink-0 tabular-nums">
+              {e.note !== undefined ? e.note : formatDelta(e.from ?? 0, e.to ?? 0)}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

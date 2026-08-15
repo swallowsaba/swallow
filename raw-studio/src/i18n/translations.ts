@@ -43,6 +43,9 @@ const DICT = {
   'mix.apply': { ja: '適用', en: 'Apply' },
   'mix.applyLabel': { ja: 'ルックをミックス', en: 'Mix looks' },
   'mix.reset': { ja: 'リセット', en: 'Reset' },
+  'mix.compare': { ja: 'A/B比較', en: 'Compare A/B' },
+  'mix.same': { ja: 'AとBは同じ現像です', en: 'A and B are identical' },
+  'mix.diffTitle': { ja: 'A → B の差分', en: 'A → B differences' },
 
   // Masks
   'masks.intro': {

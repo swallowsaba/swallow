@@ -11,3 +11,5 @@ export {
 export type { BlendEntry } from './model/blend-edit';
 export { resolveLook, lookKey } from './model/look-source';
 export type { LookRef, LookInputs, ResolvedLook } from './model/look-source';
+export { diffAdjustments, diffCount, formatDelta } from './model/diff-edit';
+export type { DiffEntry } from './model/diff-edit';
