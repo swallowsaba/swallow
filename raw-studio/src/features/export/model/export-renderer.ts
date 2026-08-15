@@ -6,6 +6,12 @@ import type { EditState } from '@/types';
 import type { ExportOptions, WatermarkPosition } from './export-options';
 import { MIME } from './export-options';
 import { computeExportSize, type Size } from './resize';
+import { drawOverlays } from '@/features/overlays/model/overlay-draw';
+import { activeMasks } from '@/features/masks/model/mask-ops';
+import { rasterizeMaskAlpha } from '@/features/masks/model/mask-alpha';
+import { layerUniforms } from '@/features/masks/model/mask-adjust';
+import { rasterizeWarpField, WARP_MAX_DISP } from '@/features/liquify/model/warp-field';
+import type { MaskLayer, WarpField } from '@/features/viewer/model/webgl-renderer';
 
 /**
  * Render an edited image at export resolution and encode it to a Blob. Uses the
@@ -28,13 +34,50 @@ export async function renderExport(
   try {
     renderer.setImage(bitmap);
     const scale = target.width / cropped.width;
-    renderer.render(
+
+    // Build local-mask layers and the liquify field so the export matches the
+    // preview exactly (adjustments + masks + warp). The alpha/field buffers are
+    // rasterized at a bounded resolution and upsampled on the GPU (they are
+    // smooth), while the FBO itself runs at full export resolution.
+    const masks = activeMasks(edit.masks);
+    const fieldLong = 1536;
+    const fAspect = target.width / target.height;
+    const fw = fAspect >= 1 ? fieldLong : Math.max(1, Math.round(fieldLong * fAspect));
+    const fh = fAspect >= 1 ? Math.max(1, Math.round(fieldLong / fAspect)) : fieldLong;
+    const maskLayers: MaskLayer[] = masks.map((mask) => {
+      const { uniforms, advanced } = layerUniforms(edit.adjustments, mask.adjustments);
+      return {
+        uniforms,
+        advanced,
+        alpha: rasterizeMaskAlpha(mask, fw, fh),
+        alphaWidth: fw,
+        alphaHeight: fh,
+      };
+    });
+    const warpW = Math.min(512, fw);
+    const warpH = Math.min(512, fh);
+    const warpField: WarpField | null =
+      edit.warp.length > 0
+        ? {
+            data: rasterizeWarpField(edit.warp, warpW, warpH),
+            width: warpW,
+            height: warpH,
+            maxDisp: WARP_MAX_DISP,
+          }
+        : null;
+
+    renderer.renderWithMasks(
       { scale, offset: { x: 0, y: 0 }, rotationDeg: 0 },
       { width: target.width, height: target.height },
       1,
-      toAdjustmentUniforms(edit.adjustments.basic),
-      toAdvancedUniforms(edit.adjustments),
+      {
+        uniforms: toAdjustmentUniforms(edit.adjustments.basic),
+        advanced: toAdvancedUniforms(edit.adjustments),
+      },
       crop,
+      maskLayers,
+      warpField,
+      Math.max(target.width, target.height),
     );
   } finally {
     // Keep the renderer alive until after we read pixels below.
@@ -46,6 +89,12 @@ export async function renderExport(
   if (!ctx) throw new Error('2D context unavailable for export.');
   ctx.drawImage(glCanvas, 0, 0);
   renderer.dispose();
+
+  // Bake text/sticker overlays on top of the developed image (before the
+  // watermark, which should stay on top).
+  if (edit.overlays.length > 0) {
+    drawOverlays(ctx, edit.overlays, target);
+  }
 
   if (options.watermark.enabled && options.watermark.text.trim()) {
     drawWatermark(ctx, target, options);

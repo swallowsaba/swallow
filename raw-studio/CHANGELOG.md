@@ -23,6 +23,45 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty-array constant; `useShallow` where element identity is already stable.
 
 ### Added
+- **Face reshape — manual refinement of the auto estimate.** After auto-detect,
+  the estimated eye/jaw landmarks show as draggable handles on the preview;
+  dragging them re-derives the warp live (moving an eye also rescales its bloat
+  radius by the inter-eye distance). Pure, unit-tested point movement and
+  hit-testing, so "auto rough-in, then hand-perfect" is one flow.
+- **Face reshape (auto)** — one click detects the subject and reshapes the face:
+  bigger eyes and a slimmer jawline, tunable with two sliders, previewed live and
+  applied as liquify warp ops (so it's undoable and baked into the export).
+  - Pure, unit-tested reshape core (`face-reshape`): a compact landmark schema,
+    proportion-based landmark estimation from a face box, a subject-mask →
+    face-box heuristic, and `proposeFaceReshape` turning intensities into warp
+    ops (eye bloats + inward jaw pushes).
+  - Landmarks come from the existing on-device subject segmentation plus
+    portrait-proportion estimation — approximate (not a true facial-landmark
+    model), best on centered frontal portraits, and designed so a real landmark
+    model can drop in behind the same interface later.
+- **Liquify (manual warp)** — reshape parts of the photo by hand: `push` along a
+  drag, `bloat` to magnify (e.g. bigger eyes) and `pinch` to slim (e.g. a
+  narrower jawline), with brush size and strength. Strokes are undoable and
+  persisted, and are **baked into the export** so what you see is what you get.
+  - Pure, unit-tested warp math (`warp-field`): an inverse displacement field
+    summed from soft-falloff ops, rasterized into an 8-bit displacement map; the
+    GPU present pass offsets sampling by the decoded displacement.
+  - The renderer gains one warp-present pass reusing the mask FBO pipeline, so
+    liquify composes with adjustments, local masks and text overlays. Export now
+    routes through the same masked/warped path (this also fixes local masks not
+    being baked into exports before).
+- **Text overlays** — add text on the photo for SNS-style posts. Font, weight,
+  italic, color, **outline (stroke)**, shadow, alignment, rotation, size and
+  opacity; drag on the preview to position it. Overlays live in `EditState`
+  (undoable, persisted) and are **baked into the exported image** on the 2D
+  canvas after the WebGL develop pass, so what you see is what you export.
+  - Pure, unit-tested transitions and layout math (`overlay-ops`): add / update /
+    move (clamped) / remove / reorder, plus a shared layout resolver so the
+    on-screen SVG preview and the canvas export baker size and place text
+    identically (font size as a fraction of the shorter edge).
+  - No renderer change — overlays are an SVG layer over the stage and a
+    2D-canvas draw at export time.
+  - Old saved edits without an `overlays` field migrate to an empty list.
 - **Auto Local** — one click analyzes the image and drops a *set* of corrective
   region masks (sky, shadows, blown highlights), each with sensible local
   adjustments. Ordinary auto tools only nudge the whole frame; proposing

@@ -1,6 +1,8 @@
 import type { Adjustments } from './adjustments';
 import type { Geometry } from './geometry';
 import type { Mask } from './mask';
+import type { Overlay } from './overlay';
+import type { WarpOp } from './warp';
 
 /**
  * The complete non-destructive edit for a single image.
@@ -16,6 +18,10 @@ export interface EditState {
   readonly adjustments: Adjustments;
   readonly geometry: Geometry;
   readonly masks: readonly Mask[];
+  /** Text/sticker overlays composited on top of the developed image. */
+  readonly overlays: readonly Overlay[];
+  /** Liquify (manual warp) operations applied as a displacement at present time. */
+  readonly warp: readonly WarpOp[];
   /** Epoch millis of the last modification. */
   readonly updatedAt: number;
 }

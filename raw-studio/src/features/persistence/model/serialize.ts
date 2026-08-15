@@ -62,10 +62,20 @@ export function migrateEdit(raw: unknown): PersistedEdit | null {
   // v0 -> v1: records without a snapshots array get an empty one.
   const snapshots = Array.isArray(raw.snapshots) ? (raw.snapshots as Snapshot[]) : [];
 
+  // Normalize newer EditState fields that older records may lack, so consumers
+  // can rely on them being present.
+  const rawEdit = raw.editState;
+  const editState = {
+    ...rawEdit,
+    masks: Array.isArray(rawEdit.masks) ? rawEdit.masks : [],
+    overlays: Array.isArray(rawEdit.overlays) ? rawEdit.overlays : [],
+    warp: Array.isArray(rawEdit.warp) ? rawEdit.warp : [],
+  } as unknown as EditState;
+
   return {
     sourceKey: raw.sourceKey,
     version: SCHEMA_VERSION,
-    editState: raw.editState as unknown as EditState,
+    editState,
     snapshots,
     updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : Date.now(),
   };

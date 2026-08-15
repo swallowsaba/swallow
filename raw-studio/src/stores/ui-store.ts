@@ -12,6 +12,9 @@ export type RightTab =
   | 'lens'
   | 'masks'
   | 'mix'
+  | 'text'
+  | 'liquify'
+  | 'face'
   | 'ai'
   | 'gif'
   | 'collage';

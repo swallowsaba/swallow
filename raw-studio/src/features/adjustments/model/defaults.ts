@@ -123,6 +123,8 @@ export function createDefaultEditState(imageId: string, at: number = Date.now())
     adjustments: createDefaultAdjustments(),
     geometry: createDefaultGeometry(),
     masks: [],
+    overlays: [],
+    warp: [],
     updatedAt: at,
   };
 }

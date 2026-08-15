@@ -31,7 +31,83 @@ const DICT = {
   'tab.lens': { ja: 'レンズ', en: 'Lens' },
   'tab.masks': { ja: 'マスク', en: 'Masks' },
   'tab.mix': { ja: 'ミックス', en: 'Mix' },
+  'tab.text': { ja: 'テキスト', en: 'Text' },
+  'tab.liquify': { ja: 'リキファイ', en: 'Liquify' },
+  'tab.face': { ja: '顔', en: 'Face' },
   'tab.ai': { ja: 'AI', en: 'AI' },
+
+  // Face reshape
+  'face.intro': {
+    ja: '被写体を検出して、目を大きく・輪郭を細く自動でリシェイプします。検出後は、目・輪郭のハンドルをドラッグして位置を微調整でき、スライダーで強さを調整して適用します。',
+    en: 'Detect the subject and auto-reshape — bigger eyes, a slimmer jawline. After detection, drag the eye/jaw handles to fine-tune the positions, tune strength with the sliders, and apply.',
+  },
+  'face.dragHint': {
+    ja: '青=目 / 赤=輪郭のハンドルをプレビュー上でドラッグして合わせてください。',
+    en: 'Drag the handles on the preview — blue = eyes, red = jaw/contour — to line them up.',
+  },
+  'face.detect': { ja: '顔を検出', en: 'Detect face' },
+  'face.detecting': { ja: '検出中…', en: 'Detecting…' },
+  'face.eyeSize': { ja: '目の大きさ', en: 'Eye size' },
+  'face.slim': { ja: '小顔（輪郭）', en: 'Face slim' },
+  'face.apply': { ja: 'リシェイプを適用', en: 'Apply reshape' },
+  'face.applyLabel': { ja: '顔リシェイプを適用', en: 'Apply face reshape' },
+  'face.applied': { ja: 'リシェイプを適用しました。', en: 'Reshape applied.' },
+  'face.notFound': {
+    ja: '被写体を検出できませんでした。別の画像でお試しください。',
+    en: 'Could not detect a subject. Try another image.',
+  },
+  'face.disclaimer': {
+    ja: '※ 目・輪郭の位置は顔の比率からの推定です。正面・中央寄りのポートレートで最も自然に働きます。',
+    en: 'Note: eye/jaw positions are estimated from face proportions; works best on centered, frontal portraits.',
+  },
+
+  // Liquify
+  'liquify.intro': {
+    ja: '画像を部分的に押し出し・膨張・収縮して形を整えます。目を大きく、輪郭を細く、など。プレビュー上でドラッグしてください。',
+    en: 'Reshape parts of the photo — push, bloat or pinch. Bigger eyes, a slimmer jawline, and so on. Drag on the preview.',
+  },
+  'liquify.tool.push': { ja: '押す', en: 'Push' },
+  'liquify.tool.bloat': { ja: '膨張', en: 'Bloat' },
+  'liquify.tool.pinch': { ja: '収縮', en: 'Pinch' },
+  'liquify.size': { ja: 'ブラシ サイズ', en: 'Brush size' },
+  'liquify.strength': { ja: '強さ', en: 'Strength' },
+  'liquify.undoDab': { ja: '1つ戻す', en: 'Undo dab' },
+  'liquify.undoLabel': { ja: 'リキファイを1つ戻す', en: 'Undo liquify dab' },
+  'liquify.reset': { ja: 'リセット', en: 'Reset' },
+  'liquify.resetLabel': { ja: 'リキファイをリセット', en: 'Reset liquify' },
+  'liquify.count': { ja: '適用数', en: 'Applied' },
+
+  // Text overlays
+  'text.intro': {
+    ja: '写真に文字を重ねます。フォント・色・縁取り・影・回転を設定でき、書き出し画像にも焼き込まれます。プレビュー上でドラッグして移動できます。',
+    en: 'Add text on your photo — font, color, outline, shadow and rotation, baked into the exported image. Drag on the preview to position it.',
+  },
+  'text.add': { ja: 'テキストを追加', en: 'Add text' },
+  'text.addLabel': { ja: 'テキストを追加', en: 'Add text' },
+  'text.defaultText': { ja: 'ダブルタップで編集', en: 'Your text' },
+  'text.empty': { ja: 'テキストはまだありません。', en: 'No text yet.' },
+  'text.moveUp': { ja: '前面へ', en: 'Bring forward' },
+  'text.moveDown': { ja: '背面へ', en: 'Send backward' },
+  'text.reorderLabel': { ja: 'テキストの重なりを変更', en: 'Reorder text' },
+  'text.delete': { ja: '削除', en: 'Delete' },
+  'text.deleteLabel': { ja: 'テキストを削除', en: 'Delete text' },
+  'text.editLabel': { ja: 'テキストを編集', en: 'Edit text' },
+  'text.color': { ja: '色', en: 'Color' },
+  'text.outlineColor': { ja: '縁の色', en: 'Outline' },
+  'text.outline': { ja: '縁取り', en: 'Outline width' },
+  'text.shadow': { ja: '影', en: 'Shadow' },
+  'text.bold': { ja: '太字', en: 'Bold' },
+  'text.italic': { ja: '斜体', en: 'Italic' },
+  'text.size': { ja: 'サイズ', en: 'Size' },
+  'text.rotation': { ja: '回転', en: 'Rotation' },
+  'text.opacity': { ja: '不透明度', en: 'Opacity' },
+  'text.dragHint': {
+    ja: 'ヒント: プレビュー上で文字をドラッグして配置できます。',
+    en: 'Tip: drag the text on the preview to position it.',
+  },
+  'text.align.left': { ja: '左', en: 'Left' },
+  'text.align.center': { ja: '中央', en: 'Center' },
+  'text.align.right': { ja: '右', en: 'Right' },
 
   // Look Mixer
   'mix.intro': {

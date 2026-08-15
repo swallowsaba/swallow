@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { WebGLImageRenderer, type MaskLayer } from '../model/webgl-renderer';
+import { WebGLImageRenderer, type MaskLayer, type WarpField } from '../model/webgl-renderer';
 import {
   clampOffset,
   clampScale,
@@ -19,6 +19,12 @@ import { useMaskUiStore } from '@/features/masks/model/mask-ui-store';
 import { activeMasks } from '@/features/masks/model/mask-ops';
 import { rasterizeMaskAlpha } from '@/features/masks/model/mask-alpha';
 import { layerUniforms } from '@/features/masks/model/mask-adjust';
+import { TextOverlayLayer } from '@/features/overlays/components/text-overlay-layer';
+import { useOverlayUiStore } from '@/features/overlays/model/overlay-ui-store';
+import { LiquifyOverlay } from '@/features/liquify/components/liquify-overlay';
+import { FaceLandmarkLayer } from '@/features/liquify/components/face-landmark-layer';
+import { useLiquifyUiStore } from '@/features/liquify/model/liquify-ui-store';
+import { rasterizeWarpField, WARP_MAX_DISP } from '@/features/liquify/model/warp-field';
 import { createRafScheduler, type RafScheduler } from '@/features/perf';
 import {
   NEUTRAL_UNIFORMS,
@@ -62,6 +68,9 @@ export function ImageCanvas(): React.JSX.Element {
   const removeMode = useViewerStore((s) => s.removeMode);
   const wbPickMode = useViewerStore((s) => s.wbPickMode);
   const maskMode = useMaskUiStore((s) => s.maskMode);
+  const overlayMode = useOverlayUiStore((s) => s.overlayMode);
+  const liquifyMode = useLiquifyUiStore((s) => s.liquifyMode);
+  const faceMode = useLiquifyUiStore((s) => s.faceMode);
 
   // Adjustment uniforms from the current render state (present + live preview).
   const renderEdit = useRenderEdit();
@@ -91,6 +100,20 @@ export function ImageCanvas(): React.JSX.Element {
   const croppedSize = imageSize ? croppedImageSize(imageSize, crop) : null;
   const croppedW = croppedSize?.width ?? null;
   const croppedH = croppedSize?.height ?? null;
+
+  // Rasterize the liquify displacement field when any warp is present. Keyed on
+  // the warp ops (stable across unrelated changes) and the cropped aspect.
+  const warp = renderEdit?.warp;
+  const warpField = React.useMemo<WarpField | null>(() => {
+    if (showBefore || !warp || warp.length === 0 || croppedW === null || croppedH === null) {
+      return null;
+    }
+    const longEdge = 320;
+    const aspect = croppedW / croppedH;
+    const fw = aspect >= 1 ? longEdge : Math.max(1, Math.round(longEdge * aspect));
+    const fh = aspect >= 1 ? Math.max(1, Math.round(longEdge / aspect)) : longEdge;
+    return { data: rasterizeWarpField(warp, fw, fh), width: fw, height: fh, maxDisp: WARP_MAX_DISP };
+  }, [showBefore, warp, croppedW, croppedH]);
 
   // Active masks (enabled + non-empty). `applyAdjustments` keeps the same masks
   // array reference, so `masks` (and the rasterization below) stay referentially
@@ -190,6 +213,7 @@ export function ImageCanvas(): React.JSX.Element {
     crop,
     imageSize,
     maskLayers,
+    warpField,
   });
   paramsRef.current = {
     drawScale,
@@ -201,6 +225,7 @@ export function ImageCanvas(): React.JSX.Element {
     crop,
     imageSize,
     maskLayers,
+    warpField,
   };
 
   const schedulerRef = React.useRef<RafScheduler | null>(null);
@@ -211,7 +236,7 @@ export function ImageCanvas(): React.JSX.Element {
       if (!renderer || !p.imageSize) return;
       const dpr = window.devicePixelRatio || 1;
       const viewTransform = { scale: p.drawScale, offset: p.offset, rotationDeg: p.rotationDeg };
-      if (p.maskLayers.length > 0) {
+      if (p.maskLayers.length > 0 || p.warpField) {
         renderer.renderWithMasks(
           viewTransform,
           p.container,
@@ -219,6 +244,7 @@ export function ImageCanvas(): React.JSX.Element {
           { uniforms: p.uniforms, advanced: p.advancedUniforms },
           p.crop,
           p.maskLayers,
+          p.warpField,
         );
       } else {
         renderer.render(
@@ -246,6 +272,7 @@ export function ImageCanvas(): React.JSX.Element {
     advancedUniforms,
     crop,
     maskLayers,
+    warpField,
   ]);
 
   React.useEffect(() => {
@@ -288,17 +315,18 @@ export function ImageCanvas(): React.JSX.Element {
 
   // Any full-frame editing overlay locks pan/zoom so screen↔image mapping the
   // overlays rely on stays a simple fit placement.
-  const interactionLocked = cropMode || removeMode || wbPickMode || maskMode;
+  const interactionLocked =
+    cropMode || removeMode || wbPickMode || maskMode || overlayMode || liquifyMode || faceMode;
 
   const setMode = useViewerStore((s) => s.setMode);
-  // On entering mask mode, snap to a stable fit view so the overlay's
-  // fit-based coordinate mapping lines up with what's on screen.
+  // On entering mask/overlay/liquify/face mode, snap to a stable fit view so
+  // overlay coordinate mapping lines up with what's on screen.
   React.useEffect(() => {
-    if (maskMode) {
+    if (maskMode || overlayMode || liquifyMode || faceMode) {
       setMode('fit');
       setOffset({ x: 0, y: 0 });
     }
-  }, [maskMode, setMode, setOffset]);
+  }, [maskMode, overlayMode, liquifyMode, faceMode, setMode, setOffset]);
 
   return (
     <div
@@ -327,6 +355,19 @@ export function ImageCanvas(): React.JSX.Element {
       ) : null}
       {imageSize && maskMode && croppedSize ? (
         <MaskOverlay croppedSize={croppedSize} container={container} />
+      ) : null}
+      {imageSize && liquifyMode && croppedSize ? (
+        <LiquifyOverlay croppedSize={croppedSize} container={container} />
+      ) : null}
+      {imageSize && faceMode && croppedSize ? (
+        <FaceLandmarkLayer croppedSize={croppedSize} container={container} />
+      ) : null}
+      {imageSize && croppedSize && !cropMode && !removeMode && !wbPickMode ? (
+        <TextOverlayLayer
+          croppedSize={croppedSize}
+          container={container}
+          interactive={overlayMode}
+        />
       ) : null}
       {imageSize && !interactionLocked ? <ViewerControls effectiveScale={drawScale} /> : null}
     </div>

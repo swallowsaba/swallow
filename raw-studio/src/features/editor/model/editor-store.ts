@@ -7,9 +7,12 @@ import type {
   LocalAdjustments,
   Mask,
   MaskGeometry,
+  Overlay,
   PresetAdjustments,
   Snapshot,
   SourceImageMeta,
+  TextOverlay,
+  WarpOp,
 } from '@/types';
 import {
   addSnapshot as addSnapshotOp,
@@ -39,6 +42,18 @@ import {
   updateMaskAdjustments as updateMaskAdjustmentsOp,
   updateMaskGeometry as updateMaskGeometryOp,
 } from '@/features/masks/model/mask-ops';
+import {
+  addOverlay as addOverlayOp,
+  moveOverlay as moveOverlayOp,
+  removeOverlay as removeOverlayOp,
+  reorderOverlay as reorderOverlayOp,
+  updateOverlay as updateOverlayOp,
+} from '@/features/overlays/model/overlay-ops';
+import {
+  addWarpOps as addWarpOpsOp,
+  clearWarp as clearWarpOp,
+  popWarpOp as popWarpOpOp,
+} from '@/features/liquify/model/warp-field';
 
 /** A live, uncommitted overlay for one mask while dragging/painting or moving a
  *  local-adjustment slider. Applied for rendering only; committed to history on
@@ -47,6 +62,13 @@ export interface MaskPreview {
   readonly id: string;
   readonly geometry?: MaskGeometry;
   readonly adjustments?: LocalAdjustments;
+}
+
+/** A live, uncommitted overlay position while dragging a text overlay. */
+export interface OverlayPreview {
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
 }
 
 /**
@@ -61,6 +83,10 @@ export interface EditorState {
   preview: PresetAdjustments | null;
   /** Uncommitted live overlay for a single mask (geometry or local adjustments). */
   maskPreview: MaskPreview | null;
+  /** Uncommitted live position for a text overlay being dragged. */
+  overlayPreview: OverlayPreview | null;
+  /** Uncommitted live liquify stroke ops applied for rendering only. */
+  warpPreview: readonly WarpOp[] | null;
 
   loadImage: (image: SourceImageMeta, initial: EditState) => void;
   closeImage: () => void;
@@ -82,6 +108,26 @@ export interface EditorState {
   reorderMask: (id: string, direction: 'up' | 'down', label: string) => void;
   invertMaskAdjustments: (id: string, label: string) => void;
 
+  /* overlays */
+  setOverlayPreview: (preview: OverlayPreview) => void;
+  clearOverlayPreview: () => void;
+  addOverlay: (overlay: Overlay, label: string) => void;
+  updateOverlay: (
+    id: string,
+    patch: Partial<Omit<TextOverlay, 'id' | 'kind'>>,
+    label: string,
+  ) => void;
+  commitOverlayMove: (id: string, x: number, y: number, label: string) => void;
+  removeOverlay: (id: string, label: string) => void;
+  reorderOverlay: (id: string, direction: 'up' | 'down', label: string) => void;
+
+  /* liquify */
+  setWarpPreview: (ops: readonly WarpOp[]) => void;
+  clearWarpPreview: () => void;
+  commitWarp: (ops: readonly WarpOp[], label: string) => void;
+  popWarp: (label: string) => void;
+  clearWarp: (label: string) => void;
+
   undo: () => void;
   redo: () => void;
   jumpToHistory: (entryId: string) => void;
@@ -96,13 +142,15 @@ export const useEditorStore = create<EditorState>((set) => ({
   history: null,
   preview: null,
   maskPreview: null,
+  overlayPreview: null,
+  warpPreview: null,
 
   loadImage: (image, initial) => {
-    set({ image, history: createHistory(initial), preview: null, maskPreview: null });
+    set({ image, history: createHistory(initial), preview: null, maskPreview: null, overlayPreview: null, warpPreview: null });
   },
 
   closeImage: () => {
-    set({ image: null, history: null, preview: null, maskPreview: null });
+    set({ image: null, history: null, preview: null, maskPreview: null, overlayPreview: null, warpPreview: null });
   },
 
   setPreview: (patch) => {
@@ -190,6 +238,80 @@ export const useEditorStore = create<EditorState>((set) => ({
       if (!state.history) return state;
       const next = invertMaskAdjustmentsOp(state.history.present.state, id);
       return { history: pushEdit(state.history, label, next), maskPreview: null };
+    });
+  },
+
+  /* ------------------------------ overlays ------------------------------ */
+
+  setOverlayPreview: (overlayPreview) => {
+    set({ overlayPreview });
+  },
+  clearOverlayPreview: () => {
+    set({ overlayPreview: null });
+  },
+  addOverlay: (overlay, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = addOverlayOp(state.history.present.state, overlay);
+      return { history: pushEdit(state.history, label, next), overlayPreview: null };
+    });
+  },
+  updateOverlay: (id, patch, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = updateOverlayOp(state.history.present.state, id, patch);
+      return { history: pushEdit(state.history, label, next) };
+    });
+  },
+  commitOverlayMove: (id, x, y, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = moveOverlayOp(state.history.present.state, id, x, y);
+      return { history: pushEdit(state.history, label, next), overlayPreview: null };
+    });
+  },
+  removeOverlay: (id, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = removeOverlayOp(state.history.present.state, id);
+      return { history: pushEdit(state.history, label, next), overlayPreview: null };
+    });
+  },
+  reorderOverlay: (id, direction, label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = reorderOverlayOp(state.history.present.state, id, direction);
+      return { history: pushEdit(state.history, label, next) };
+    });
+  },
+
+  /* ------------------------------ liquify ------------------------------ */
+
+  setWarpPreview: (warpPreview) => {
+    set({ warpPreview });
+  },
+  clearWarpPreview: () => {
+    set({ warpPreview: null });
+  },
+  commitWarp: (ops, label) => {
+    set((state) => {
+      if (!state.history || ops.length === 0) return { warpPreview: null };
+      const next = addWarpOpsOp(state.history.present.state, ops);
+      return { history: pushEdit(state.history, label, next), warpPreview: null };
+    });
+  },
+  popWarp: (label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = popWarpOpOp(state.history.present.state);
+      return { history: pushEdit(state.history, label, next) };
+    });
+  },
+  clearWarp: (label) => {
+    set((state) => {
+      if (!state.history) return state;
+      const next = clearWarpOp(state.history.present.state);
+      return { history: pushEdit(state.history, label, next), warpPreview: null };
     });
   },
 
@@ -297,7 +419,26 @@ export function selectRenderEdit(state: EditorState): EditState | null {
   const present = state.history?.present.state ?? null;
   if (!present) return null;
   const withPreview = state.preview ? applyAdjustments(present, state.preview) : present;
-  return state.maskPreview ? applyMaskPreview(withPreview, state.maskPreview) : withPreview;
+  const withMask = state.maskPreview ? applyMaskPreview(withPreview, state.maskPreview) : withPreview;
+  const withOverlay = state.overlayPreview ? applyOverlayPreview(withMask, state.overlayPreview) : withMask;
+  return state.warpPreview ? applyWarpPreview(withOverlay, state.warpPreview) : withOverlay;
+}
+
+/** Append live liquify stroke ops for rendering only (no history). */
+export function applyWarpPreview(state: EditState, ops: readonly WarpOp[]): EditState {
+  if (ops.length === 0) return state;
+  return { ...state, warp: [...state.warp, ...ops] };
+}
+
+/** Overlay a live drag position onto the matching text overlay, no history. */
+export function applyOverlayPreview(state: EditState, preview: OverlayPreview): EditState {
+  let changed = false;
+  const overlays = state.overlays.map((o) => {
+    if (o.id !== preview.id) return o;
+    changed = true;
+    return { ...o, x: preview.x, y: preview.y };
+  });
+  return changed ? { ...state, overlays } : state;
 }
 
 /** Overlay a live mask preview (geometry and/or local adjustments) onto the
@@ -323,11 +464,30 @@ export function useRenderEdit(): EditState | null {
   const present = useEditorStore((s) => s.history?.present.state ?? null);
   const preview = useEditorStore((s) => s.preview);
   const maskPreview = useEditorStore((s) => s.maskPreview);
+  const overlayPreview = useEditorStore((s) => s.overlayPreview);
+  const warpPreview = useEditorStore((s) => s.warpPreview);
   return useMemo(() => {
     if (!present) return null;
     const withPreview = preview ? applyAdjustments(present, preview) : present;
-    return maskPreview ? applyMaskPreview(withPreview, maskPreview) : withPreview;
-  }, [present, preview, maskPreview]);
+    const withMask = maskPreview ? applyMaskPreview(withPreview, maskPreview) : withPreview;
+    const withOverlay = overlayPreview ? applyOverlayPreview(withMask, overlayPreview) : withMask;
+    return warpPreview ? applyWarpPreview(withOverlay, warpPreview) : withOverlay;
+  }, [present, preview, maskPreview, overlayPreview, warpPreview]);
+}
+
+/** The text overlay currently selected for editing, with any live drag applied. */
+export function useActiveOverlay(activeOverlayId: string | null): Overlay | null {
+  const present = useEditorStore((s) => s.history?.present.state ?? null);
+  const overlayPreview = useEditorStore((s) => s.overlayPreview);
+  return useMemo(() => {
+    if (!present || !activeOverlayId) return null;
+    const base = present.overlays.find((o) => o.id === activeOverlayId) ?? null;
+    if (!base) return null;
+    if (overlayPreview && overlayPreview.id === activeOverlayId) {
+      return { ...base, x: overlayPreview.x, y: overlayPreview.y };
+    }
+    return base;
+  }, [present, activeOverlayId, overlayPreview]);
 }
 
 /** The mask currently selected for editing, resolved against present state. */

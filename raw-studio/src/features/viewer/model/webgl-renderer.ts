@@ -328,6 +328,36 @@ void main() {
   outColor = mix(dst, src, clamp(a, 0.0, 1.0));
 }`;
 
+/**
+ * Warp-present shader: like the plain present pass, but the sample position is
+ * offset by a displacement read from a small field texture (liquify). The field
+ * encodes (du, dv) in R,G over [-maxDisp, maxDisp]; it is stored row 0 = image
+ * top (sampled with a flipped t like masks), and dv is image-space (down
+ * positive) while the accumulator's t is up positive, so v is offset by -dv.
+ */
+const WARP_PRESENT_FRAGMENT_SRC = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+uniform sampler2D u_tex;
+uniform sampler2D u_warp;
+uniform float u_maxDisp;
+out vec4 outColor;
+void main() {
+  vec2 w = texture(u_warp, vec2(v_uv.x, 1.0 - v_uv.y)).rg;
+  vec2 d = (w * 2.0 - 1.0) * u_maxDisp;
+  vec2 src = vec2(v_uv.x + d.x, v_uv.y - d.y);
+  outColor = texture(u_tex, clamp(src, 0.0, 1.0));
+}`;
+
+/** A rasterized liquify displacement field (8-bit RGBA, row 0 = image top). */
+export interface WarpField {
+  readonly data: Uint8ClampedArray;
+  readonly width: number;
+  readonly height: number;
+  /** Must match the CPU encoder's WARP_MAX_DISP. */
+  readonly maxDisp: number;
+}
+
 /** One mask layer to composite: the adjustments to apply inside it, plus its
  *  rasterized coverage (8-bit, row 0 = image top). */
 export interface MaskLayer {
@@ -437,6 +467,14 @@ export class WebGLImageRenderer {
     strength: WebGLUniformLocation | null;
   } | null = null;
   private maskTexture: WebGLTexture | null = null;
+  private warpProgram: WebGLProgram | null = null;
+  private warpVao: WebGLVertexArrayObject | null = null;
+  private warpTexture: WebGLTexture | null = null;
+  private warpLocs: {
+    tex: WebGLUniformLocation | null;
+    warp: WebGLUniformLocation | null;
+    maxDisp: WebGLUniformLocation | null;
+  } | null = null;
   private fboSize: Size = { width: 0, height: 0 };
   private fboA: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
   private fboB: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
@@ -663,6 +701,31 @@ export class WebGLImageRenderer {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   }
 
+  /** Compile the warp-present program and its field texture, once. */
+  private ensureWarpProgram(): void {
+    if (this.warpProgram) return;
+    const gl = this.gl;
+    const vs = compileShader(gl, gl.VERTEX_SHADER, PRESENT_VERTEX_SRC);
+    const fs = compileShader(gl, gl.FRAGMENT_SHADER, WARP_PRESENT_FRAGMENT_SRC);
+    this.warpProgram = linkProgram(gl, vs, fs);
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
+    this.warpLocs = {
+      tex: gl.getUniformLocation(this.warpProgram, 'u_tex'),
+      warp: gl.getUniformLocation(this.warpProgram, 'u_warp'),
+      maxDisp: gl.getUniformLocation(this.warpProgram, 'u_maxDisp'),
+    };
+    this.warpVao = this.makeQuadVao(this.warpProgram);
+    const tex = gl.createTexture();
+    if (!tex) throw new Error('Failed to allocate warp texture');
+    this.warpTexture = tex;
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  }
+
   /** A VAO wired to `this.buffer` (interleaved pos+uv) for the given program. */
   private makeQuadVao(program: WebGLProgram): WebGLVertexArrayObject {
     const gl = this.gl;
@@ -790,19 +853,23 @@ export class WebGLImageRenderer {
     base: { uniforms: AdjustmentUniforms; advanced: AdvancedUniforms },
     crop: CropRect,
     layers: readonly MaskLayer[],
+    warp: WarpField | null = null,
+    maxWork: number = MAX_MASK_WORK,
   ): void {
-    if (layers.length === 0) {
+    if (layers.length === 0 && !warp) {
       this.render(view, cssSize, dpr, base.uniforms, base.advanced, crop);
       return;
     }
     const gl = this.gl;
     if (this.imageSize.width === 0) return;
     this.ensureMaskPrograms();
+    if (warp) this.ensureWarpProgram();
 
-    // Working buffer size: the cropped image, capped to MAX_MASK_WORK.
+    // Working buffer size: the cropped image, capped to maxWork (viewer uses a
+    // modest cap for perf; export passes the full target for crisp output).
     const croppedW = Math.max(1, Math.round(this.imageSize.width * crop.width));
     const croppedH = Math.max(1, Math.round(this.imageSize.height * crop.height));
-    const scale = Math.min(1, MAX_MASK_WORK / Math.max(croppedW, croppedH));
+    const scale = Math.min(1, maxWork / Math.max(croppedW, croppedH));
     const w = Math.max(1, Math.round(croppedW * scale));
     const h = Math.max(1, Math.round(croppedH * scale));
     this.ensureFbos(w, h);
@@ -868,8 +935,12 @@ export class WebGLImageRenderer {
       other = swap;
     }
 
-    // Present `acc` to screen with the view transform.
-    this.presentToScreen(acc.tex, view, cssSize, dpr, croppedW, croppedH);
+    // Present `acc` to screen with the view transform (warped if requested).
+    if (warp) {
+      this.presentWarpedToScreen(acc.tex, view, cssSize, dpr, croppedW, croppedH, warp);
+    } else {
+      this.presentToScreen(acc.tex, view, cssSize, dpr, croppedW, croppedH);
+    }
   }
 
   /** Draw a finished offscreen texture to the default framebuffer, positioned
@@ -933,6 +1004,89 @@ export class WebGLImageRenderer {
     gl.bindVertexArray(null);
   }
 
+  /** Like presentToScreen, but offsets sampling by a liquify displacement field. */
+  private presentWarpedToScreen(
+    tex: WebGLTexture,
+    view: ViewTransform,
+    cssSize: Size,
+    dpr: number,
+    croppedW: number,
+    croppedH: number,
+    warp: WarpField,
+  ): void {
+    const gl = this.gl;
+    const program = this.warpProgram;
+    const vao = this.warpVao;
+    const locs = this.warpLocs;
+    const warpTex = this.warpTexture;
+    if (!program || !vao || !locs || !warpTex) {
+      this.presentToScreen(tex, view, cssSize, dpr, croppedW, croppedH);
+      return;
+    }
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    this.resize(Math.round(cssSize.width * dpr), Math.round(cssSize.height * dpr));
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const halfW = (croppedW * view.scale) / 2;
+    const halfH = (croppedH * view.scale) / 2;
+    const rad = (view.rotationDeg * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const cx = cssSize.width / 2 + view.offset.x;
+    const cy = cssSize.height / 2 + view.offset.y;
+    const corners: readonly (readonly [number, number, number, number])[] = [
+      [-halfW, -halfH, 0, 1],
+      [halfW, -halfH, 1, 1],
+      [-halfW, halfH, 0, 0],
+      [halfW, halfH, 1, 0],
+    ];
+    for (let i = 0; i < 4; i++) {
+      const corner = corners[i];
+      if (!corner) continue;
+      const [lx, ly, u, v] = corner;
+      const rx = lx * cos - ly * sin;
+      const ry = lx * sin + ly * cos;
+      const clipX = ((cx + rx) / cssSize.width) * 2 - 1;
+      const clipY = 1 - ((cy + ry) / cssSize.height) * 2;
+      const base = i * 4;
+      this.vertexData[base] = clipX;
+      this.vertexData[base + 1] = clipY;
+      this.vertexData[base + 2] = u;
+      this.vertexData[base + 3] = v;
+    }
+
+    gl.useProgram(program);
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertexData);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(locs.tex, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, warpTex);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      warp.width,
+      warp.height,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      warp.data,
+    );
+    gl.uniform1i(locs.warp, 1);
+    gl.uniform1f(locs.maxDisp, warp.maxDisp);
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindVertexArray(null);
+  }
+
   dispose(): void {
     const gl = this.gl;
     gl.deleteBuffer(this.buffer);
@@ -941,9 +1095,12 @@ export class WebGLImageRenderer {
     gl.deleteProgram(this.program);
     this.disposeFbos();
     if (this.maskTexture) gl.deleteTexture(this.maskTexture);
+    if (this.warpTexture) gl.deleteTexture(this.warpTexture);
     if (this.presentVao) gl.deleteVertexArray(this.presentVao);
     if (this.compositeVao) gl.deleteVertexArray(this.compositeVao);
+    if (this.warpVao) gl.deleteVertexArray(this.warpVao);
     if (this.presentProgram) gl.deleteProgram(this.presentProgram);
     if (this.compositeProgram) gl.deleteProgram(this.compositeProgram);
+    if (this.warpProgram) gl.deleteProgram(this.warpProgram);
   }
 }
