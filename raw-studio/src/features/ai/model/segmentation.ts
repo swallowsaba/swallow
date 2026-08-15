@@ -1,5 +1,5 @@
 import { fetchModel } from './model-cache';
-import { getModel } from './model-registry';
+import { getModel, type ModelDef } from './model-registry';
 import { loadModel, runModel } from './inference-client';
 import { outputToMask, rgbaToNchw } from './tensor';
 
@@ -19,6 +19,22 @@ function bitmapToSquareRgba(bitmap: ImageBitmap, size: number): Uint8ClampedArra
 }
 
 /**
+ * Fetch + load + run a model on an already-square RGBA buffer (size = the
+ * model's inputSize), returning the raw output tensor. Shared by segmentation
+ * and any other single-input/single-output model (e.g. face landmarks).
+ */
+export async function runModelRaw(
+  model: ModelDef,
+  rgba: Uint8ClampedArray,
+  onProgress?: (received: number, total: number) => void,
+): Promise<Float32Array> {
+  const bytes = await fetchModel(model.url, onProgress);
+  await loadModel(model.id, bytes);
+  const input = rgbaToNchw(rgba, model.inputSize, model.normalization);
+  return runModel(model.id, model.inputName, model.outputName, input, model.inputSize);
+}
+
+/**
  * Run a segmentation model over a bitmap and return an alpha mask. Downloads and
  * caches the model on first use. Progress is reported for the download phase.
  */
@@ -30,12 +46,8 @@ export async function segment(
   const model = getModel(modelId);
   if (!model) throw new Error(`Unknown model: ${modelId}`);
 
-  const bytes = await fetchModel(model.url, onProgress);
-  await loadModel(model.id, bytes);
-
   const rgba = bitmapToSquareRgba(bitmap, model.inputSize);
-  const input = rgbaToNchw(rgba, model.inputSize, model.normalization);
-  const output = await runModel(model.id, model.inputName, model.outputName, input, model.inputSize);
+  const output = await runModelRaw(model, rgba, onProgress);
 
   return { mask: outputToMask(output, model.inputSize), size: model.inputSize };
 }

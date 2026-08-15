@@ -18,6 +18,14 @@ export {
 export type { Box, FaceLandmarks, FaceReshapeParams, LandmarkPoint } from './model/face-reshape';
 export { detectFaceLandmarks } from './model/face-detect';
 export {
+  decodeCropLandmarks,
+  landmarksFromCropPoints,
+  plausibleLandmarks,
+  readPoint,
+  selectLandmarks,
+} from './model/landmark-decode';
+export type { LandmarkLayout, LandmarkChoice, CropPoints } from './model/landmark-decode';
+export {
   WARP_MAX_DISP,
   addWarpOp,
   addWarpOps,

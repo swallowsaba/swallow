@@ -56,6 +56,14 @@ const DICT = {
     ja: '被写体を検出できませんでした。別の画像でお試しください。',
     en: 'Could not detect a subject. Try another image.',
   },
+  'face.sourceModel': {
+    ja: 'AIランドマークで検出しました。ハンドルで微調整できます。',
+    en: 'Detected with AI landmarks. Fine-tune with the handles.',
+  },
+  'face.sourceEstimate': {
+    ja: '顔の比率から推定しました。ハンドルをドラッグして合わせてください。',
+    en: 'Estimated from face proportions. Drag the handles to line them up.',
+  },
   'face.disclaimer': {
     ja: '※ 目・輪郭の位置は顔の比率からの推定です。正面・中央寄りのポートレートで最も自然に働きます。',
     en: 'Note: eye/jaw positions are estimated from face proportions; works best on centered, frontal portraits.',

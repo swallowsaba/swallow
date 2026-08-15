@@ -23,6 +23,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty-array constant; `useShallow` where element identity is already stable.
 
 ### Added
+- **Face reshape — pluggable real-landmark pipeline.** Detection now runs a
+  registered facial-landmark model on the face crop when one is available,
+  decodes its output into the landmark set, and uses it only if it passes a
+  plausibility check — otherwise it keeps the proportion estimate. The panel
+  shows which source was used, and the handles still let you fine-tune either.
+  - Pure, unit-tested decode/mapping/validation (`landmark-decode`): read points
+    from a flat model output (xy/yx, normalized or pixel), map face-crop coords
+    into image space, reject implausible faces, and choose model-vs-estimate.
+  - A reusable `runModelRaw` in the AI layer runs any single-in/single-out model
+    on a square RGBA and returns the raw tensor (segmentation now shares it).
+  - No landmark model ships by default: exact tensor names and point indices
+    must be verified against a model card, so shipping guessed values (which
+    would silently misalign the reshape) is avoided. Enabling one is a small
+    registry + layout addition; the whole decode pipeline is ready and tested.
 - **Stickers & frames** — the overlay system now also does emoji stickers and
   decorative frames, for SNS-ready composites. Emoji stickers use the platform
   emoji font (license-free) and drag/rotate/scale like text. Frames come in two

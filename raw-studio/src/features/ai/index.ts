@@ -6,7 +6,7 @@ export { autoExposure, autoWhiteBalance, autoContrast, autoColor, autoAll, runAu
 export type { AutoKind } from './model/auto-adjust';
 export { rgbaToNchw, outputToMask, IMAGENET_NORM } from './model/tensor';
 export type { Normalization } from './model/tensor';
-export { segment } from './model/segmentation';
+export { segment, runModelRaw } from './model/segmentation';
 export type { SegmentationResult } from './model/segmentation';
 export { blurBackground } from './model/background-blur';
 export { smoothPortrait } from './model/portrait-smooth';

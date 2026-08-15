@@ -33,7 +33,8 @@ build step for the end user.
 - **Liquify**: push/bloat/pinch to reshape by hand (bigger eyes, slimmer
   jawline); undoable, and baked into the export.
 - **Face reshape**: detect the subject and auto-enlarge eyes / slim the jaw
-  with two sliders, then drag the eye/jaw handles on the preview to fine-tune.
+  with two sliders, then drag the eye/jaw handles to fine-tune. Uses a real
+  facial-landmark model when one is registered, else a proportion estimate.
 - **Non-destructive**: full undo/redo timeline with jump-to-step and snapshots.- **Persistent**: presets, per-image edits, and settings are saved to IndexedDB
   and restored on reload — all locally, nothing leaves your device.
 - **Export** to JPEG/PNG/WebP/AVIF with quality, resize, filename templates, and

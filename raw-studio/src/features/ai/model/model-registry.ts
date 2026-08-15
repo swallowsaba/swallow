@@ -13,7 +13,7 @@ export interface ModelDef {
   readonly inputName: string;
   readonly outputName: string;
   readonly normalization: Normalization;
-  readonly kind: 'segmentation' | 'inpaint';
+  readonly kind: 'segmentation' | 'inpaint' | 'landmark';
   /** Only for kind:'inpaint' — the second input's tensor name (the mask). */
   readonly maskInputName?: string;
 }

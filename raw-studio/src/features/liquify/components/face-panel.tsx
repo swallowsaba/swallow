@@ -59,13 +59,14 @@ export function FacePanel(): React.JSX.Element {
     setBusy(true);
     setNote(null);
     try {
-      const lm = await detectFaceLandmarks(bitmap, edit.geometry.crop);
-      if (!lm) {
+      const result = await detectFaceLandmarks(bitmap, edit.geometry.crop);
+      if (!result) {
         setNote(t('face.notFound'));
         setLandmarks(null);
         return;
       }
-      setLandmarks(lm);
+      setLandmarks(result.landmarks);
+      setNote(result.source === 'model' ? t('face.sourceModel') : t('face.sourceEstimate'));
     } catch (err) {
       setNote(err instanceof Error ? err.message : String(err));
     } finally {
