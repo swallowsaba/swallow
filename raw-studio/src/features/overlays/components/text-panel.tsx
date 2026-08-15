@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { ArrowDown, ArrowUp, Smile, Square, Trash2, Type } from 'lucide-react';
-import type { TextAlign, TextOverlay } from '@/types';
+import type { TextAlign } from '@/types';
 import { Button } from '@/components/ui/button';
 import { selectCurrentEdit, useActiveOverlay, useEditorStore } from '@/features/editor';
 import { AdjustmentSlider } from '@/features/adjustments/components/adjustment-slider';

@@ -22,6 +22,8 @@ function emptyState(): EditState {
     adjustments: createDefaultAdjustments(),
     geometry: createDefaultGeometry(),
     masks: [],
+    overlays: [],
+    warp: [],
     updatedAt: 0,
   };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { EditState } from '@/types';
+import type { EditState, Overlay, TextOverlay } from '@/types';
 import { createDefaultEditState } from '@/features/adjustments/model/defaults';
 import {
   addOverlay,
@@ -21,30 +21,36 @@ function state(): EditState {
   return createDefaultEditState('img1', 0);
 }
 
+/** Narrow an overlay to a text overlay in tests (throws if it isn't one). */
+function asText(o: Overlay | undefined): TextOverlay {
+  if (!o || o.kind !== 'text') throw new Error('expected a text overlay');
+  return o;
+}
+
 describe('overlay transitions', () => {
   it('adds without mutating input', () => {
     const s0 = state();
     const s1 = addOverlay(s0, defaultTextOverlay('Hi'));
     expect(s0.overlays.length).toBe(0);
     expect(s1.overlays.length).toBe(1);
-    expect(s1.overlays[0]?.text).toBe('Hi');
+    expect(asText(s1.overlays[0]).text).toBe('Hi');
   });
 
   it('updates fields by id', () => {
     let s = addOverlay(state(), defaultTextOverlay('Hi'));
     const id = s.overlays[0]!.id;
     s = updateOverlay(s, id, { text: 'Bye', color: '#ff0000', fontSize: 0.2 });
-    expect(s.overlays[0]?.text).toBe('Bye');
-    expect(s.overlays[0]?.color).toBe('#ff0000');
-    expect(s.overlays[0]?.fontSize).toBe(0.2);
+    expect(asText(s.overlays[0]).text).toBe('Bye');
+    expect(asText(s.overlays[0]).color).toBe('#ff0000');
+    expect(asText(s.overlays[0]).fontSize).toBe(0.2);
   });
 
   it('moves and clamps position', () => {
     let s = addOverlay(state(), defaultTextOverlay('Hi'));
     const id = s.overlays[0]!.id;
     s = moveOverlay(s, id, 1.5, -0.5);
-    expect(s.overlays[0]?.x).toBe(1);
-    expect(s.overlays[0]?.y).toBe(0);
+    expect(asText(s.overlays[0]).x).toBe(1);
+    expect(asText(s.overlays[0]).y).toBe(0);
   });
 
   it('removes and reorders', () => {
@@ -62,7 +68,8 @@ describe('overlay transitions', () => {
   it('getOverlay resolves by id', () => {
     const s = addOverlay(state(), defaultTextOverlay('Hi'));
     const id = s.overlays[0]!.id;
-    expect(getOverlay(s, id)?.text).toBe('Hi');
+    const got = getOverlay(s, id);
+    expect(got?.kind === 'text' && got.text).toBe('Hi');
     expect(getOverlay(s, null)).toBeNull();
     expect(getOverlay(s, 'nope')).toBeNull();
   });
@@ -119,7 +126,7 @@ describe('emoji overlays', () => {
     const o = s.overlays[0];
     expect(o?.kind).toBe('emoji');
     expect(o?.kind === 'emoji' && o.size).toBe(0.3);
-    expect(o?.rotationDeg).toBe(45);
+    expect(o?.kind === 'emoji' && o.rotationDeg).toBe(45);
   });
 });
 
