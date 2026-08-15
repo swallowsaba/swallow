@@ -7,6 +7,7 @@ export {
   addMask,
   createMask,
   createRasterMask,
+  makeRasterMask,
   defaultGeometryFor,
   invertMaskAdjustments,
   maskHasEffect,
@@ -32,4 +33,6 @@ export {
   encodeBase64,
   rasterizeRaster,
 } from './model/raster-mask';
+export { proposeAutoLocalMasks, meanCoverage } from './model/auto-local';
+export type { AutoLocalProposal, AutoRegionKind } from './model/auto-local';
 export { layerUniforms, mergeLocalIntoAdjustments } from './model/mask-adjust';

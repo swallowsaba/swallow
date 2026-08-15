@@ -23,6 +23,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty-array constant; `useShallow` where element identity is already stable.
 
 ### Added
+- **Auto Local** — one click analyzes the image and drops a *set* of corrective
+  region masks (sky, shadows, blown highlights), each with sensible local
+  adjustments. Ordinary auto tools only nudge the whole frame; proposing
+  separate region masks is the differentiator, and it reuses the raster-mask
+  machinery so the renderer is untouched.
+  - Pure, unit-tested region detection (`auto-local`): sky (bright, low-sat,
+    blue, top-weighted), shadows (dark), and highlights (near-blown), each a
+    soft coverage buffer, with coverage gating so near-empty or whole-frame
+    detections are skipped (those belong to global adjustments).
+  - Runs synchronously on a downscaled, crop-aware sample — no model or network.
 - **AI subject masks**. A new `raster` mask kind holds a pixel-precise coverage
   bitmap; the Masks panel's "Select subject with AI" runs the existing on-device
   U²-Net segmentation and turns the result into a local-adjustment mask.

@@ -97,6 +97,28 @@ export function createMask(kind: MaskKind, existing: readonly Mask[]): Mask {
 }
 
 /**
+ * Build a raster mask with an explicit name and optional local adjustments —
+ * the low-level maker used by both the AI-subject flow (numbered names) and
+ * Auto Local (fixed region names, pre-filled adjustments).
+ */
+export function makeRasterMask(
+  name: string,
+  data: string,
+  width: number,
+  height: number,
+  source: string,
+  adjustments: LocalAdjustments = {},
+): Mask {
+  return {
+    id: createId('mask'),
+    name,
+    enabled: true,
+    geometry: { kind: 'raster', source, width, height, data, feather: 0, invert: false },
+    adjustments,
+  };
+}
+
+/**
  * Build a raster mask from an already-encoded coverage bitmap (base64 of a
  * width×height 8-bit alpha, cropped-image normalized space, row 0 = top). Used
  * by the AI subject flow; keeping it here means the transition stays pure.
@@ -110,13 +132,7 @@ export function createRasterMask(
   existing: readonly Mask[],
 ): Mask {
   const sameKind = existing.filter((m) => m.geometry.kind === 'raster').length;
-  return {
-    id: createId('mask'),
-    name: `${name} ${sameKind + 1}`,
-    enabled: true,
-    geometry: { kind: 'raster', source, width, height, data, feather: 0, invert: false },
-    adjustments: {},
-  };
+  return makeRasterMask(`${name} ${sameKind + 1}`, data, width, height, source);
 }
 
 function withMasks(state: EditState, masks: readonly Mask[]): EditState {

@@ -60,6 +60,15 @@ const DICT = {
   'masks.aiSubject': { ja: 'AI被写体', en: 'AI Subject' },
   'masks.aiSubjectLabel': { ja: 'AI被写体マスクを追加', en: 'Add AI subject mask' },
   'masks.aiWorking': { ja: '解析中…', en: 'Analyzing…' },
+  'masks.autoLocalBtn': { ja: 'Auto Local（自動で領域補正）', en: 'Auto Local (region masks)' },
+  'masks.autoLabel': { ja: 'Auto Localマスクを追加', en: 'Add Auto Local mask' },
+  'masks.autoNone': {
+    ja: '自動補正できる領域が見つかりませんでした。',
+    en: 'No regions to auto-correct were found.',
+  },
+  'masks.regionSky': { ja: '空', en: 'Sky' },
+  'masks.regionShadows': { ja: 'シャドウ', en: 'Shadows' },
+  'masks.regionHighlights': { ja: 'ハイライト', en: 'Highlights' },
   'masks.aiSubjectHint': {
     ja: 'AIが検出した被写体の範囲です。ぼかしや反転で調整し、下のスライダーでこの範囲だけを補正できます。',
     en: 'The subject AI detected. Feather or invert it, then use the sliders below to adjust just this area.',

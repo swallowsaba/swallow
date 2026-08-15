@@ -10,6 +10,7 @@ import {
   Minus,
   Sparkles,
   Trash2,
+  Wand2,
 } from 'lucide-react';
 import type {
   BrushMaskData,
@@ -28,8 +29,9 @@ import { segment, MODELS } from '@/features/ai';
 import { useViewerStore } from '@/features/viewer';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { createMask, createRasterMask, maskHasEffect } from '../model/mask-ops';
+import { createMask, createRasterMask, makeRasterMask, maskHasEffect } from '../model/mask-ops';
 import { alphaToCroppedRaster, encodeBase64 } from '../model/raster-mask';
+import { proposeAutoLocalMasks, type AutoRegionKind } from '../model/auto-local';
 import { useMaskUiStore } from '../model/mask-ui-store';
 
 const KIND_ICON: Record<MaskKind, React.ComponentType<{ className?: string }>> = {
@@ -80,6 +82,7 @@ export function MasksPanel(): React.JSX.Element {
   const bitmap = useViewerStore((s) => s.bitmap);
   const [aiBusy, setAiBusy] = React.useState(false);
   const [aiError, setAiError] = React.useState<string | null>(null);
+  const [autoNote, setAutoNote] = React.useState<string | null>(null);
 
   // Keep the on-canvas overlay active whenever this panel is showing and a mask
   // is selected; leave it when the panel unmounts.
@@ -133,6 +136,58 @@ export function MasksPanel(): React.JSX.Element {
     }
   };
 
+  const regionName = (kind: AutoRegionKind): string =>
+    kind === 'sky'
+      ? t('masks.regionSky')
+      : kind === 'shadows'
+        ? t('masks.regionShadows')
+        : t('masks.regionHighlights');
+
+  const runAutoLocal = () => {
+    if (!bitmap) return;
+    setAutoNote(null);
+    try {
+      const crop = edit.geometry.crop;
+      const sx = crop.x * bitmap.width;
+      const sy = crop.y * bitmap.height;
+      const sw = Math.max(1, crop.width * bitmap.width);
+      const sh = Math.max(1, crop.height * bitmap.height);
+      const longEdge = 256;
+      const scale = Math.min(1, longEdge / Math.max(sw, sh));
+      const w = Math.max(1, Math.round(sw * scale));
+      const h = Math.max(1, Math.round(sh * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, w, h);
+      const rgba = ctx.getImageData(0, 0, w, h).data;
+      const proposals = proposeAutoLocalMasks(rgba, w, h);
+      if (proposals.length === 0) {
+        setAutoNote(t('masks.autoNone'));
+        return;
+      }
+      let firstId: string | null = null;
+      for (const p of proposals) {
+        const data = encodeBase64(p.alpha);
+        const mask = makeRasterMask(
+          regionName(p.kind),
+          data,
+          p.width,
+          p.height,
+          `auto-${p.kind}`,
+          p.adjustments,
+        );
+        addMask(mask, t('masks.autoLabel'));
+        if (!firstId) firstId = mask.id;
+      }
+      if (firstId) editMask(firstId);
+    } catch (err) {
+      setAutoNote(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   return (
     <div className="flex flex-col gap-3 p-3">
       <p className="text-xs leading-relaxed text-muted-foreground">
@@ -168,6 +223,19 @@ export function MasksPanel(): React.JSX.Element {
         {aiBusy ? t('masks.aiWorking') : t('masks.aiSubjectBtn')}
       </Button>
       {aiError ? <p className="text-[11px] text-destructive">{aiError}</p> : null}
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full gap-1"
+        disabled={!bitmap}
+        onClick={() => {
+          runAutoLocal();
+        }}
+      >
+        <Wand2 className="size-3.5" /> {t('masks.autoLocalBtn')}
+      </Button>
+      {autoNote ? <p className="text-[11px] text-muted-foreground">{autoNote}</p> : null}
 
       {masks.length === 0 ? (
         <p className="rounded border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
