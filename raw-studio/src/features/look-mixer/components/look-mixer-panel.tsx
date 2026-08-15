@@ -52,6 +52,7 @@ export function LookMixerPanel(): React.JSX.Element {
   const padY = useMixerStore((s) => s.padY);
   const setPad = useMixerStore((s) => s.setPad);
   const resetMixer = useMixerStore((s) => s.reset);
+  const settleToCurrent = useMixerStore((s) => s.settleToCurrent);
 
   const current = edit?.adjustments ?? null;
 
@@ -117,6 +118,9 @@ export function LookMixerPanel(): React.JSX.Element {
   const apply = () => {
     if (blended) commitAdjustments(blended, t('mix.applyLabel'));
     clearPreview();
+    // Collapse to a no-op blend so the just-committed look stays on screen
+    // instead of the preview re-blending against the new current edit.
+    settleToCurrent();
   };
 
   return (

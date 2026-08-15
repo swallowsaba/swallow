@@ -78,40 +78,65 @@ export function ImageCanvas(): React.JSX.Element {
     [showBefore, renderEdit],
   );
 
-  // Rasterize each enabled, non-empty mask into a coverage buffer and pair it
-  // with the uniforms for (global + local) adjustments. Recomputed only when
-  // the masks or the global adjustments actually change. "Before" view and the
-  // full-frame edit modes (crop/remove/wb) suppress masks so the base image is
-  // shown cleanly. Rasterized at a bounded resolution — masks are smooth.
-  const maskLayers = React.useMemo<readonly MaskLayer[]>(() => {
-    if (showBefore || !renderEdit) return [];
-    const masks = activeMasks(renderEdit.masks);
-    if (masks.length === 0) return [];
-    const longEdge = 1024;
-    const aspect = imageSize ? imageSize.width / imageSize.height : 1;
-    const aw = aspect >= 1 ? longEdge : Math.max(1, Math.round(longEdge * aspect));
-    const ah = aspect >= 1 ? Math.max(1, Math.round(longEdge / aspect)) : longEdge;
-    return masks.map((mask) => {
-      const { uniforms: u, advanced } = layerUniforms(renderEdit.adjustments, mask.adjustments);
-      return {
-        uniforms: u,
-        advanced,
-        alpha: rasterizeMaskAlpha(mask, aw, ah),
-        alphaWidth: aw,
-        alphaHeight: ah,
-      };
-    });
-  }, [showBefore, renderEdit, imageSize]);
-
   // The crop rect (normalized to the source image) and the effective size it
   // implies. Fit/fill/pan math all use the cropped size, since a cropped
   // image should behave like a smaller image for viewport purposes. While
   // actively cropping, show the full frame so the user can reposition freely.
+  // Computed before the mask memos so rasterization can size to the cropped
+  // aspect.
   const crop =
     cropMode || removeMode || wbPickMode
       ? FULL_CROP
       : (renderEdit?.geometry.crop ?? FULL_CROP);
   const croppedSize = imageSize ? croppedImageSize(imageSize, crop) : null;
+  const croppedW = croppedSize?.width ?? null;
+  const croppedH = croppedSize?.height ?? null;
+
+  // Active masks (enabled + non-empty). `applyAdjustments` keeps the same masks
+  // array reference, so `masks` (and the rasterization below) stay referentially
+  // stable during a global slider drag and are NOT recomputed every frame — only
+  // editing a mask changes the array.
+  const masks = renderEdit?.masks;
+  const adjustments = renderEdit?.adjustments;
+  const activeMaskList = React.useMemo(
+    () => (showBefore || !masks ? [] : activeMasks(masks)),
+    [showBefore, masks],
+  );
+
+  // Rasterize each active mask's coverage once, keyed on the mask set and the
+  // cropped size — the costly part, deliberately decoupled from adjustments.
+  const maskAlphas = React.useMemo(() => {
+    if (activeMaskList.length === 0 || croppedW === null || croppedH === null) return [];
+    const longEdge = 1024;
+    const aspect = croppedW / croppedH;
+    const aw = aspect >= 1 ? longEdge : Math.max(1, Math.round(longEdge * aspect));
+    const ah = aspect >= 1 ? Math.max(1, Math.round(longEdge / aspect)) : longEdge;
+    return activeMaskList.map((mask) => ({
+      alpha: rasterizeMaskAlpha(mask, aw, ah),
+      alphaWidth: aw,
+      alphaHeight: ah,
+    }));
+  }, [activeMaskList, croppedW, croppedH]);
+
+  // Pair each coverage buffer with uniforms for (global + local) adjustments.
+  // Cheap, so it can track adjustment changes every frame without re-rasterizing.
+  const maskLayers = React.useMemo<readonly MaskLayer[]>(() => {
+    if (!adjustments || maskAlphas.length === 0) return [];
+    const layers: MaskLayer[] = [];
+    activeMaskList.forEach((mask, i) => {
+      const a = maskAlphas[i];
+      if (!a) return;
+      const { uniforms: u, advanced } = layerUniforms(adjustments, mask.adjustments);
+      layers.push({
+        uniforms: u,
+        advanced,
+        alpha: a.alpha,
+        alphaWidth: a.alphaWidth,
+        alphaHeight: a.alphaHeight,
+      });
+    });
+    return layers;
+  }, [activeMaskList, maskAlphas, adjustments]);
 
   // Create the renderer once.
   React.useEffect(() => {

@@ -31,6 +31,9 @@ export interface MixerState {
   setT: (t: number) => void;
   setCorner: (slot: CornerSlot, ref: LookRef | null) => void;
   setPad: (x: number, y: number) => void;
+  /** Collapse controls to a no-op blend that equals the current edit — used
+   *  after Apply so committing doesn't make the live preview jump. */
+  settleToCurrent: () => void;
   reset: () => void;
 }
 
@@ -75,6 +78,18 @@ export const useMixerStore = create<MixerState>((set) => ({
     set({
       padX: padX < 0 ? 0 : padX > 1 ? 1 : padX,
       padY: padY < 0 ? 0 : padY > 1 ? 1 : padY,
+    });
+  },
+  settleToCurrent: () => {
+    // In 1D this makes blend = a = current (t=0); in 2D the puck at the top-left
+    // corner (weights [1,0,0,0]) with corner 0 = current does the same. Either
+    // way the resulting blend equals the current edit, so applying is seamless.
+    set({
+      a: { kind: 'current' },
+      t: 0,
+      corners: [{ kind: 'current' }, null, null, null],
+      padX: 0,
+      padY: 0,
     });
   },
   reset: () => {
