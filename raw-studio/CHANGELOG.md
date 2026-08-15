@@ -23,6 +23,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty-array constant; `useShallow` where element identity is already stable.
 
 ### Added
+- **Stickers & frames** — the overlay system now also does emoji stickers and
+  decorative frames, for SNS-ready composites. Emoji stickers use the platform
+  emoji font (license-free) and drag/rotate/scale like text. Frames come in two
+  styles — a stroked `border` (inset + corner radius) and a solid `matte` that
+  mats the image down to a rounded inner window. Both are undoable, persisted and
+  baked into the export.
+  - Pure, unit-tested layout/geometry (`resolveEmojiLayout`,
+    `resolveFrameGeometry`) shared by the SVG preview and the canvas export, plus
+    a kind-safe overlay patch so text/emoji/frame edits share one update path.
 - **Face reshape — manual refinement of the auto estimate.** After auto-detect,
   the estimated eye/jaw landmarks show as draggable handles on the preview;
   dragging them re-derives the warp live (moving an eye also rescales its bloat

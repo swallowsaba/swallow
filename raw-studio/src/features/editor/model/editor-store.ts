@@ -11,7 +11,6 @@ import type {
   PresetAdjustments,
   Snapshot,
   SourceImageMeta,
-  TextOverlay,
   WarpOp,
 } from '@/types';
 import {
@@ -42,6 +41,7 @@ import {
   updateMaskAdjustments as updateMaskAdjustmentsOp,
   updateMaskGeometry as updateMaskGeometryOp,
 } from '@/features/masks/model/mask-ops';
+import type { OverlayPatch } from '@/features/overlays/model/overlay-ops';
 import {
   addOverlay as addOverlayOp,
   moveOverlay as moveOverlayOp,
@@ -114,7 +114,7 @@ export interface EditorState {
   addOverlay: (overlay: Overlay, label: string) => void;
   updateOverlay: (
     id: string,
-    patch: Partial<Omit<TextOverlay, 'id' | 'kind'>>,
+    patch: OverlayPatch,
     label: string,
   ) => void;
   commitOverlayMove: (id: string, x: number, y: number, label: string) => void;

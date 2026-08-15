@@ -49,7 +49,15 @@ export type {
 } from './geometry';
 
 export type { EditState } from './edit-state';
-export type { Overlay, TextOverlay, OverlayKind, TextAlign } from './overlay';
+export type {
+  Overlay,
+  TextOverlay,
+  EmojiOverlay,
+  FrameOverlay,
+  FrameStyle,
+  OverlayKind,
+  TextAlign,
+} from './overlay';
 export type { WarpOp, WarpTool } from './warp';
 export type { HistoryEntry, Snapshot, EditHistory } from './history';
 export type {
