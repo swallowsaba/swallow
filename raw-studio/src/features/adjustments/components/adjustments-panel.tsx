@@ -87,9 +87,13 @@ export function AdjustmentsPanel(): React.JSX.Element {
     >
       <ModeToggle />
       <div className="px-2 pb-2">
-        <TabsList className="grid w-full grid-cols-14">
+        <TabsList className="flex w-full justify-start gap-0.5 overflow-x-auto">
           {TAB_KEYS.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value} className="px-1 text-[10px]">
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="shrink-0 px-2 text-[10px]"
+            >
               {t(tab.key)}
             </TabsTrigger>
           ))}
