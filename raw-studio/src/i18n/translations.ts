@@ -23,6 +23,11 @@ const DICT = {
   'tab.history': { ja: '履歴', en: 'History' },
 
   // Right panel tabs
+  'tabGroup.adjust': { ja: '調整', en: 'Adjust' },
+  'tabGroup.retouch': { ja: '加工', en: 'Retouch' },
+  'tabGroup.decorate': { ja: '装飾', en: 'Decorate' },
+  'tabGroup.ai': { ja: 'AI', en: 'AI' },
+  'tabGroup.create': { ja: '作成', en: 'Create' },
   'tab.presets': { ja: 'プリセット', en: 'Presets' },
   'tab.basic': { ja: '基本', en: 'Basic' },
   'tab.tone': { ja: 'トーン', en: 'Tone' },
@@ -474,6 +479,7 @@ const DICT = {
     en: 'Pick several photos to create a GIF that plays through them in order.',
   },
   'gif.pickImages': { ja: '画像を選択（2枚以上）', en: 'Pick images (2 or more)' },
+  'gif.addImages': { ja: '画像を追加', en: 'Add images' },
   'gif.pickImagesHelp': {
     ja: 'ライブラリに読み込んだ画像から選びます。タップした順に番号が付き、その順番で再生されます。',
     en: 'Choose from the images you\u2019ve loaded into the library. They\u2019re numbered in the order you tap them, and play back in that order.',
@@ -496,6 +502,7 @@ const DICT = {
     en: 'Combine several photos into one image, with an optional caption.',
   },
   'collage.pickImages': { ja: '画像を選択（2枚以上）', en: 'Pick images (2 or more)' },
+  'collage.addImages': { ja: '画像を追加', en: 'Add images' },
   'collage.pickImagesHelp': {
     ja: 'タップした枚数に応じて自動的にグリッド配置されます（2枚は横並び、4枚は2×2など）。',
     en: 'Automatically arranged into a grid based on how many you pick (2 side by side, 4 in a 2\u00d72 grid, etc).',

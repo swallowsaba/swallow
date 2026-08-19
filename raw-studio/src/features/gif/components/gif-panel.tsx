@@ -4,7 +4,7 @@ import { Download, GripVertical, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { HelpMark } from '@/components/ui/help-mark';
-import { useLibraryStore, getCachedBitmap } from '@/features/library';
+import { useLibraryStore, getCachedBitmap, AddImagesButton } from '@/features/library';
 import { downloadBlob } from '@/features/export/model/export';
 import { useT } from '@/i18n';
 import { encodeGif, DEFAULT_GIF_OPTIONS, type GifOptions } from '../model/gif-encode';
@@ -79,6 +79,7 @@ export function GifPanel(): React.JSX.Element {
           {t('gif.pickImages')}
           <HelpMark text={t('gif.pickImagesHelp')} />
         </div>
+        <AddImagesButton label={t('gif.addImages')} />
         <div className="grid grid-cols-4 gap-1.5">
           {items.map((item) => {
             const isSelected = selected.includes(item.id);

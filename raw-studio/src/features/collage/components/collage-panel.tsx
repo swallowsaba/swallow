@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { HelpMark } from '@/components/ui/help-mark';
-import { useLibraryStore, getCachedBitmap } from '@/features/library';
+import { useLibraryStore, getCachedBitmap, AddImagesButton } from '@/features/library';
 import { downloadBlob } from '@/features/export/model/export';
 import { useT } from '@/i18n';
 import {
@@ -93,6 +93,7 @@ export function CollagePanel(): React.JSX.Element {
           {t('collage.pickImages')}
           <HelpMark text={t('collage.pickImagesHelp')} />
         </div>
+        <AddImagesButton label={t('collage.addImages')} />
         <div className="grid grid-cols-4 gap-1.5">
           {items.map((item) => {
             const isSelected = selected.includes(item.id);

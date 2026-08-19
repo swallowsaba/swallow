@@ -8,6 +8,7 @@ import type { RightTab } from '@/stores';
 import { PresetsPanel } from '@/features/presets';
 import { AiPanel } from '@/features/ai';
 import { useT } from '@/i18n';
+import { cn } from '@/lib/utils';
 import type { TranslationKey } from '@/i18n';
 import { BasicPanel } from './basic-panel';
 import { TonePanel } from './tone-panel';
@@ -38,6 +39,28 @@ const TAB_KEYS: readonly { value: RightTab; key: TranslationKey }[] = [
   { value: 'gif', key: 'tab.gif' },
   { value: 'collage', key: 'tab.collage' },
 ];
+
+/** Top-level groups so the (many) tabs fit without horizontal scrolling. */
+const TAB_GROUPS: readonly { key: TranslationKey; tabs: readonly RightTab[] }[] = [
+  { key: 'tabGroup.adjust', tabs: ['presets', 'basic', 'tone', 'color', 'detail', 'lens'] },
+  { key: 'tabGroup.retouch', tabs: ['masks', 'mix', 'liquify', 'face'] },
+  { key: 'tabGroup.decorate', tabs: ['text'] },
+  { key: 'tabGroup.ai', tabs: ['ai'] },
+  { key: 'tabGroup.create', tabs: ['gif', 'collage'] },
+];
+
+function groupIndexOf(tab: RightTab): number {
+  const i = TAB_GROUPS.findIndex((g) => g.tabs.includes(tab));
+  return i === -1 ? 0 : i;
+}
+
+const TAB_LABEL: Record<RightTab, TranslationKey> = TAB_KEYS.reduce(
+  (acc, t) => {
+    acc[t.value] = t.key;
+    return acc;
+  },
+  {} as Record<RightTab, TranslationKey>,
+);
 
 function ModeToggle(): React.JSX.Element {
   const uiMode = useUiStore((s) => s.uiMode);
@@ -86,18 +109,42 @@ export function AdjustmentsPanel(): React.JSX.Element {
       className="flex h-full flex-col"
     >
       <ModeToggle />
-      <div className="px-2 pb-2">
-        <TabsList className="flex w-full justify-start gap-0.5 overflow-x-auto">
-          {TAB_KEYS.map((tab) => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              className="shrink-0 px-2 text-[10px]"
-            >
-              {t(tab.key)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <div className="flex flex-col gap-1.5 px-2 pb-2">
+        {/* Top-level group selector. */}
+        <div className="grid grid-cols-5 gap-0.5 rounded-lg bg-muted p-1">
+          {TAB_GROUPS.map((group, i) => {
+            const active = groupIndexOf(rightTab) === i;
+            return (
+              <button
+                key={group.key}
+                type="button"
+                onClick={() => {
+                  const first = group.tabs[0];
+                  if (first && !group.tabs.includes(rightTab)) setRightTab(first);
+                }}
+                className={cn(
+                  'rounded-md px-1 py-1 text-[11px] font-medium transition-colors',
+                  active
+                    ? 'bg-background text-foreground shadow'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {t(group.key)}
+              </button>
+            );
+          })}
+        </div>
+        {/* Sub-tabs for the active group (only shown when it has more than one). */}
+        {TAB_GROUPS[groupIndexOf(rightTab)] &&
+        (TAB_GROUPS[groupIndexOf(rightTab)]?.tabs.length ?? 0) > 1 ? (
+          <TabsList className="flex w-full justify-start gap-0.5 overflow-x-auto">
+            {TAB_GROUPS[groupIndexOf(rightTab)]?.tabs.map((tab) => (
+              <TabsTrigger key={tab} value={tab} className="shrink-0 whitespace-nowrap px-2 text-[11px]">
+                {t(TAB_LABEL[tab])}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        ) : null}
       </div>
 
       <ScrollArea className="min-h-0 flex-1">

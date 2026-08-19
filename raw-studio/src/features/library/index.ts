@@ -1,4 +1,5 @@
 export { LibraryGrid } from './components/library-grid';
+export { AddImagesButton } from './components/add-images-button';
 export { useLibraryStore } from './model/library-store';
 export type { LibraryItem, LibraryState } from './model/library-store';
 export { importFiles, activateItem, getCachedBitmap } from './model/import';
