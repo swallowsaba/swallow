@@ -27,13 +27,15 @@ export function LiquifyPanel(): React.JSX.Element {
   const strength = useLiquifyUiStore((s) => s.strength);
   const setStrength = useLiquifyUiStore((s) => s.setStrength);
   const setLiquifyMode = useLiquifyUiStore((s) => s.setLiquifyMode);
+  const clearWarpPreview = useEditorStore((s) => s.clearWarpPreview);
 
   React.useEffect(() => {
     setLiquifyMode(true);
     return () => {
       setLiquifyMode(false);
+      clearWarpPreview();
     };
-  }, [setLiquifyMode]);
+  }, [setLiquifyMode, clearWarpPreview]);
 
   if (!edit) {
     return (
