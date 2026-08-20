@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { AdjustmentSlider } from './adjustment-slider';
+import { ToneCurveEditor } from './tone-curve-editor';
 import { curveFromToneSliders, toneSlidersFromCurve } from '../model/advanced-math';
 import { selectCurrentEdit, useEditorStore } from '@/features/editor';
 import { HelpMark } from '@/components/ui/help-mark';
@@ -77,6 +78,7 @@ export function TonePanel(): React.JSX.Element {
 
   return (
     <div className="flex flex-col gap-5 p-4">
+      <ToneCurveEditor />
       <section className="flex flex-col gap-3">
         <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           {t('tone.title')}

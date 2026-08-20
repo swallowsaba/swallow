@@ -23,6 +23,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty-array constant; `useShallow` where element identity is already stable.
 
 ### Added
+- **Tone curve editor (RGB).** A point-based master curve in the Tone tab: click
+  to add points, drag to shape, double-click to remove. Writes the standard
+  `toneCurves.rgb`, so edits render live through the existing pipeline. Pure,
+  unit-tested curve math (eval, point add/move/remove, 256-LUT builder ready for
+  a future faithful per-channel GPU pass).
+
+- **Histogram with drag-to-adjust.** A live RGB + luma histogram sits above the
+  adjustment tabs (pro mode). Drag left/right across its five tonal zones —
+  Blacks, Shadows, Exposure, Highlights, Whites — to change the matching Basic
+  slider directly, Lightroom-style. Pure, unit-tested histogram/zone math; the
+  display is computed from the source image (live-developed readback can come
+  later).
+
+- **13 more built-in presets** (26 total) — Golden Hour, Teal & Orange, Bright &
+  Airy, Matte Fade, Cool Blue, Warm Sunset, Vivid Pop, Soft Pastel, Autumn,
+  Winter, Dramatic B&W, Clean, and Noir — tasteful Basic-group starting points.
 - **Privacy (mosaic / blur / block).** Redact faces, plates or personal info with
   a movable region: pixelate, blur, or a solid block, with adjustable strength
   and size. The real mosaic/blur is baked into the export (so shared images are
