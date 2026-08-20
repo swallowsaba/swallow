@@ -111,7 +111,12 @@ export function TextOverlayLayer({ croppedSize, container, interactive }: Props)
             />
           );
         }
-        return <FrameNode key={o.id} overlay={o} placement={placement} />;
+        if (o.kind === 'frame') {
+          return <FrameNode key={o.id} overlay={o} placement={placement} />;
+        }
+        // Privacy regions are drawn by the separate PrivacyLayer (HTML, so it can
+        // use backdrop-filter); nothing to render here.
+        return null;
       })}
     </svg>
   );
