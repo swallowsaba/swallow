@@ -27,9 +27,10 @@ build step for the end user.
   (a slider) or four (a 2D pad) — snapshots, presets, the current edit, or a
   neutral reset — then apply the mix you like. Only possible because an entire
   develop is a serializable bag of numbers.
-- **Text, stickers & frames**: add text (font, color, outline, shadow,
-  rotation), emoji stickers, and decorative border/matte frames; drag to
-  position, all baked into the exported image.
+- **Text, stickers, frames & privacy**: add text (font, color, outline,
+  shadow, rotation), emoji stickers, border/matte frames, and privacy regions
+  (mosaic/blur/block to redact faces or plates); drag to position, all baked
+  into the exported image.
 - **Liquify**: push/bloat/pinch to reshape by hand (bigger eyes, slimmer
   jawline); undoable, and baked into the export.
 - **Face reshape**: detect the subject and auto-enlarge eyes / slim the jaw

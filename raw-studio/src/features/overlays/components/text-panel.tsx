@@ -1,13 +1,18 @@
 import * as React from 'react';
-import { ArrowDown, ArrowUp, Smile, Square, Trash2, Type } from 'lucide-react';
+import { ArrowDown, ArrowUp, EyeOff, Smile, Square, Trash2, Type } from 'lucide-react';
 import type { TextAlign } from '@/types';
 import { Button } from '@/components/ui/button';
 import { selectCurrentEdit, useActiveOverlay, useEditorStore } from '@/features/editor';
 import { AdjustmentSlider } from '@/features/adjustments/components/adjustment-slider';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
-import type { EmojiOverlay, FrameOverlay, FrameStyle, TextOverlay } from '@/types';
-import { defaultEmojiOverlay, defaultFrameOverlay, defaultTextOverlay } from '../model/overlay-ops';
+import type { EmojiOverlay, FrameOverlay, FrameStyle, PrivacyOverlay, PrivacyStyle, TextOverlay } from '@/types';
+import {
+  defaultEmojiOverlay,
+  defaultFrameOverlay,
+  defaultPrivacyOverlay,
+  defaultTextOverlay,
+} from '../model/overlay-ops';
 import { useOverlayUiStore } from '../model/overlay-ui-store';
 
 const EMOJI_PALETTE = [
@@ -35,14 +40,16 @@ export function TextPanel(): React.JSX.Element {
   const editOverlay = useOverlayUiStore((s) => s.editOverlay);
   const setOverlayMode = useOverlayUiStore((s) => s.setOverlayMode);
   const exit = useOverlayUiStore((s) => s.exit);
+  const clearOverlayPreview = useEditorStore((s) => s.clearOverlayPreview);
   const [pickerOpen, setPickerOpen] = React.useState(false);
 
   React.useEffect(() => {
     setOverlayMode(true);
     return () => {
       setOverlayMode(false);
+      clearOverlayPreview();
     };
-  }, [setOverlayMode]);
+  }, [setOverlayMode, clearOverlayPreview]);
 
   if (!edit) {
     return (
@@ -73,6 +80,12 @@ export function TextPanel(): React.JSX.Element {
     editOverlay(o.id);
   };
 
+  const addPrivacy = () => {
+    const o = defaultPrivacyOverlay();
+    addOverlay(o, t('privacy.addLabel'));
+    editOverlay(o.id);
+  };
+
   return (
     <div className="flex flex-col gap-3 p-3">
       <p className="text-xs leading-relaxed text-muted-foreground">{t('text.intro')}</p>
@@ -95,6 +108,10 @@ export function TextPanel(): React.JSX.Element {
           <Square className="size-3.5" /> {t('text.frame')}
         </Button>
       </div>
+
+      <Button variant="outline" size="sm" className="w-full gap-1" onClick={addPrivacy}>
+        <EyeOff className="size-3.5" /> {t('privacy.add')}
+      </Button>
 
       {pickerOpen ? (
         <div className="grid grid-cols-10 gap-1 rounded border border-border p-2">
@@ -138,6 +155,8 @@ export function TextPanel(): React.JSX.Element {
                   <span className="shrink-0 text-sm leading-none">{o.emoji}</span>
                 ) : o.kind === 'frame' ? (
                   <Square className="size-3.5 shrink-0 text-muted-foreground" />
+                ) : o.kind === 'privacy' ? (
+                  <EyeOff className="size-3.5 shrink-0 text-muted-foreground" />
                 ) : (
                   <Type className="size-3.5 shrink-0 text-muted-foreground" />
                 )}
@@ -146,7 +165,9 @@ export function TextPanel(): React.JSX.Element {
                     ? o.text || t('text.empty')
                     : o.kind === 'emoji'
                       ? t('text.stickerItem')
-                      : t('text.frameItem')}
+                      : o.kind === 'frame'
+                        ? t('text.frameItem')
+                        : t('privacy.item')}
                 </span>
               </button>
               <button
@@ -190,6 +211,7 @@ export function TextPanel(): React.JSX.Element {
       <ActiveTextEditor />
       <ActiveEmojiEditor />
       <ActiveFrameEditor />
+      <ActivePrivacyEditor />
     </div>
   );
 }
@@ -587,6 +609,102 @@ function ActiveFrameEditor(): React.JSX.Element | null {
           set({ opacity: v / 100 });
         }}
       />
+    </div>
+  );
+}
+
+function ActivePrivacyEditor(): React.JSX.Element | null {
+  const activeOverlayId = useOverlayUiStore((s) => s.activeOverlayId);
+  const overlay = useActiveOverlay(activeOverlayId);
+  const t = useT();
+  const updateOverlay = useEditorStore((s) => s.updateOverlay);
+
+  if (!overlay || overlay.kind !== 'privacy' || !activeOverlayId) return null;
+  const o: PrivacyOverlay = overlay;
+  const set = (
+    patch: Partial<Pick<PrivacyOverlay, 'style' | 'strength' | 'w' | 'h' | 'color'>>,
+  ) => {
+    updateOverlay(activeOverlayId, patch, t('privacy.editLabel'));
+  };
+  const styles: readonly PrivacyStyle[] = ['pixelate', 'blur', 'block'];
+
+  return (
+    <div className="flex flex-col gap-3 border-t border-border pt-3">
+      <div className="flex overflow-hidden rounded border border-border">
+        {styles.map((st) => (
+          <button
+            key={st}
+            type="button"
+            onClick={() => {
+              set({ style: st });
+            }}
+            className={cn(
+              'flex-1 py-1 text-[11px]',
+              o.style === st ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+            )}
+          >
+            {t(`privacy.style.${st}`)}
+          </button>
+        ))}
+      </div>
+      {o.style !== 'block' ? (
+        <AdjustmentSlider
+          label={t('privacy.strength')}
+          value={Math.round(o.strength * 100)}
+          min={0}
+          max={100}
+          step={1}
+          defaultValue={50}
+          onChange={(v) => {
+            set({ strength: v / 100 });
+          }}
+          onCommit={(v) => {
+            set({ strength: v / 100 });
+          }}
+        />
+      ) : (
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <input
+            type="color"
+            value={o.color}
+            onChange={(e) => {
+              set({ color: e.target.value });
+            }}
+            className="size-6 cursor-pointer rounded border border-border bg-transparent"
+            aria-label={t('text.color')}
+          />
+          {t('text.color')}
+        </label>
+      )}
+      <AdjustmentSlider
+        label={t('privacy.width')}
+        value={Math.round(o.w * 100)}
+        min={3}
+        max={100}
+        step={1}
+        defaultValue={28}
+        onChange={(v) => {
+          set({ w: v / 100 });
+        }}
+        onCommit={(v) => {
+          set({ w: v / 100 });
+        }}
+      />
+      <AdjustmentSlider
+        label={t('privacy.height')}
+        value={Math.round(o.h * 100)}
+        min={3}
+        max={100}
+        step={1}
+        defaultValue={20}
+        onChange={(v) => {
+          set({ h: v / 100 });
+        }}
+        onCommit={(v) => {
+          set({ h: v / 100 });
+        }}
+      />
+      <p className="text-[11px] leading-relaxed text-muted-foreground">{t('privacy.note')}</p>
     </div>
   );
 }

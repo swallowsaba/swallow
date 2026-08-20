@@ -10,7 +10,7 @@
  * `strokeWidth` is a fraction of the resolved font pixels.
  */
 
-export type OverlayKind = 'text' | 'emoji' | 'frame';
+export type OverlayKind = 'text' | 'emoji' | 'frame' | 'privacy';
 
 export type TextAlign = 'left' | 'center' | 'right';
 
@@ -37,7 +37,29 @@ export interface TextOverlay {
   readonly opacity: number;
 }
 
-export type Overlay = TextOverlay | EmojiOverlay | FrameOverlay;
+export type Overlay = TextOverlay | EmojiOverlay | FrameOverlay | PrivacyOverlay;
+
+export type PrivacyStyle = 'pixelate' | 'blur' | 'block';
+
+/**
+ * A privacy region that obscures part of the image (faces, plates, personal
+ * info). The area is a rectangle in the cropped image's normalized space; the
+ * effect is baked into the export so shared images are actually redacted.
+ */
+export interface PrivacyOverlay {
+  readonly id: string;
+  readonly kind: 'privacy';
+  readonly style: PrivacyStyle;
+  /** Rectangle center + size, normalized to the cropped image. */
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+  /** Effect strength 0..1 (mosaic cell size / blur radius; ignored for block). */
+  readonly strength: number;
+  /** Fill color for the `block` style. */
+  readonly color: string;
+}
 
 /** An emoji sticker (rendered with the platform emoji font — license-free). */
 export interface EmojiOverlay {

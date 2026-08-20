@@ -2,7 +2,10 @@ import type {
   EditState,
   EmojiOverlay,
   FrameOverlay,
+  FrameStyle,
   Overlay,
+  PrivacyOverlay,
+  PrivacyStyle,
   TextOverlay,
 } from '@/types';
 import { createId } from '@/utils/id';
@@ -65,16 +68,35 @@ export function defaultFrameOverlay(): FrameOverlay {
   };
 }
 
+export function defaultPrivacyOverlay(): PrivacyOverlay {
+  return {
+    id: createId('prv'),
+    kind: 'privacy',
+    style: 'pixelate',
+    x: 0.5,
+    y: 0.5,
+    w: 0.28,
+    h: 0.2,
+    strength: 0.5,
+    color: '#000000',
+  };
+}
+
 export function addOverlay(state: EditState, overlay: Overlay): EditState {
   return withOverlays(state, [...state.overlays, overlay]);
 }
 
-/** A patch over any overlay's editable fields (never id/kind). Built from
- *  non-overlapping field sets so the union kinds don't collapse to `never`. */
+/** A patch over any overlay's editable fields (never id/kind). The shared but
+ *  differently-typed fields (`style`, `color`) are given explicit union types so
+ *  the kinds don't collapse to `never`. */
 export type OverlayPatch = Partial<
-  Omit<TextOverlay, 'id' | 'kind'> &
+  Omit<TextOverlay, 'id' | 'kind' | 'color'> &
     Pick<EmojiOverlay, 'emoji' | 'size'> &
-    Pick<FrameOverlay, 'style' | 'thickness' | 'inset' | 'cornerRadius'>
+    Pick<FrameOverlay, 'thickness' | 'inset' | 'cornerRadius'> &
+    Pick<PrivacyOverlay, 'w' | 'h' | 'strength'> & {
+      color: string;
+      style: FrameStyle | PrivacyStyle;
+    }
 >;
 
 export function updateOverlay(state: EditState, id: string, patch: OverlayPatch): EditState {
@@ -232,4 +254,46 @@ export function resolveFrameGeometry(
     thicknessPx: t,
     radiusPx: radius,
   };
+}
+
+export interface RectPx {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+}
+
+/** Resolve a privacy region's center+size (normalized) into a pixel rect,
+ *  clamped to the target bounds. */
+export function resolvePrivacyRect(
+  o: PrivacyOverlay,
+  size: { width: number; height: number },
+): RectPx {
+  const w = Math.max(0, o.w) * size.width;
+  const h = Math.max(0, o.h) * size.height;
+  let x = o.x * size.width - w / 2;
+  let y = o.y * size.height - h / 2;
+  x = Math.max(0, Math.min(x, size.width));
+  y = Math.max(0, Math.min(y, size.height));
+  const cw = Math.min(w, size.width - x);
+  const ch = Math.min(h, size.height - y);
+  return { x, y, w: Math.max(0, cw), h: Math.max(0, ch) };
+}
+
+/**
+ * Mosaic cell size in pixels for a region, from strength 0..1. Higher strength
+ * → coarser blocks. Always at least one pixel and never larger than the region.
+ */
+export function mosaicCellPx(rect: RectPx, strength: number): number {
+  const s = strength < 0 ? 0 : strength > 1 ? 1 : strength;
+  const minDim = Math.max(1, Math.min(rect.w, rect.h));
+  const cell = minDim * (0.02 + s * 0.2);
+  return Math.max(1, Math.min(Math.round(cell), Math.round(minDim)));
+}
+
+/** Blur radius in pixels for a region, from strength 0..1. */
+export function blurRadiusPx(rect: RectPx, strength: number): number {
+  const s = strength < 0 ? 0 : strength > 1 ? 1 : strength;
+  const minDim = Math.max(1, Math.min(rect.w, rect.h));
+  return Math.max(1, Math.round(minDim * (0.02 + s * 0.12)));
 }

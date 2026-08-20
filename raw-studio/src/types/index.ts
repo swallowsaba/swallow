@@ -55,6 +55,8 @@ export type {
   EmojiOverlay,
   FrameOverlay,
   FrameStyle,
+  PrivacyOverlay,
+  PrivacyStyle,
   OverlayKind,
   TextAlign,
 } from './overlay';

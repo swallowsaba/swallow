@@ -3,16 +3,20 @@ import type { EditState, Overlay, TextOverlay } from '@/types';
 import { createDefaultEditState } from '@/features/adjustments/model/defaults';
 import {
   addOverlay,
+  blurRadiusPx,
   defaultEmojiOverlay,
   defaultFrameOverlay,
+  defaultPrivacyOverlay,
   defaultTextOverlay,
   fontString,
   getOverlay,
+  mosaicCellPx,
   moveOverlay,
   removeOverlay,
   reorderOverlay,
   resolveEmojiLayout,
   resolveFrameGeometry,
+  resolvePrivacyRect,
   resolveTextLayout,
   updateOverlay,
 } from './overlay-ops';
@@ -156,5 +160,49 @@ describe('frame overlays', () => {
     const g = resolveFrameGeometry(o, { width: 100, height: 100 });
     expect(g.rw).toBeGreaterThanOrEqual(0);
     expect(g.rh).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('privacy overlays', () => {
+  it('adds a privacy region and keeps its kind on update', () => {
+    let s = addOverlay(state(), defaultPrivacyOverlay());
+    const id = s.overlays[0]!.id;
+    s = updateOverlay(s, id, { style: 'blur', strength: 0.8, w: 0.4 });
+    const o = s.overlays[0];
+    expect(o?.kind).toBe('privacy');
+    expect(o?.kind === 'privacy' && o.style).toBe('blur');
+    expect(o?.kind === 'privacy' && o.strength).toBe(0.8);
+    expect(o?.kind === 'privacy' && o.w).toBe(0.4);
+  });
+
+  it('resolves a centered rect clamped to bounds', () => {
+    const o = { ...defaultPrivacyOverlay(), x: 0.5, y: 0.5, w: 0.4, h: 0.2 };
+    const r = resolvePrivacyRect(o, { width: 1000, height: 1000 });
+    expect(r.w).toBeCloseTo(400, 5);
+    expect(r.h).toBeCloseTo(200, 5);
+    expect(r.x).toBeCloseTo(300, 5); // 500 - 200
+    expect(r.y).toBeCloseTo(400, 5); // 500 - 100
+  });
+
+  it('clamps a rect that would spill past the edge', () => {
+    const o = { ...defaultPrivacyOverlay(), x: 0.95, y: 0.5, w: 0.4, h: 0.2 };
+    const r = resolvePrivacyRect(o, { width: 1000, height: 1000 });
+    expect(r.x + r.w).toBeLessThanOrEqual(1000);
+    expect(r.w).toBeGreaterThan(0);
+  });
+
+  it('mosaic cell grows with strength and stays within the region', () => {
+    const rect = { x: 0, y: 0, w: 200, h: 100 };
+    const fine = mosaicCellPx(rect, 0);
+    const coarse = mosaicCellPx(rect, 1);
+    expect(coarse).toBeGreaterThan(fine);
+    expect(fine).toBeGreaterThanOrEqual(1);
+    expect(coarse).toBeLessThanOrEqual(100); // never bigger than the smaller side
+  });
+
+  it('blur radius grows with strength', () => {
+    const rect = { x: 0, y: 0, w: 200, h: 100 };
+    expect(blurRadiusPx(rect, 1)).toBeGreaterThan(blurRadiusPx(rect, 0));
+    expect(blurRadiusPx(rect, 0)).toBeGreaterThanOrEqual(1);
   });
 });

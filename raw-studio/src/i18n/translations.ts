@@ -107,6 +107,22 @@ const DICT = {
   'text.corner': { ja: '角丸', en: 'Corner' },
   'text.frameStyle.border': { ja: '枠線', en: 'Border' },
   'text.frameStyle.matte': { ja: 'マット', en: 'Matte' },
+
+  // Privacy
+  'privacy.add': { ja: 'プライバシー（モザイク）', en: 'Privacy (mosaic)' },
+  'privacy.addLabel': { ja: 'プライバシー領域を追加', en: 'Add privacy region' },
+  'privacy.item': { ja: 'プライバシー', en: 'Privacy' },
+  'privacy.editLabel': { ja: 'プライバシーを編集', en: 'Edit privacy' },
+  'privacy.strength': { ja: '強さ', en: 'Strength' },
+  'privacy.width': { ja: '幅', en: 'Width' },
+  'privacy.height': { ja: '高さ', en: 'Height' },
+  'privacy.style.pixelate': { ja: 'モザイク', en: 'Mosaic' },
+  'privacy.style.blur': { ja: 'ぼかし', en: 'Blur' },
+  'privacy.style.block': { ja: 'ベタ塗り', en: 'Block' },
+  'privacy.note': {
+    ja: '領域はドラッグで移動、幅・高さ・強さはスライダーで調整します。書き出し時に実際のモザイク／ぼかしが焼き込まれます（プレビューは近似表示）。',
+    en: 'Drag to move; set size and strength with the sliders. The real mosaic/blur is baked into the export (the preview is an approximation).',
+  },
   'text.addLabel': { ja: 'テキストを追加', en: 'Add text' },
   'text.defaultText': { ja: 'ダブルタップで編集', en: 'Your text' },
   'text.empty': { ja: 'テキストはまだありません。', en: 'No text yet.' },

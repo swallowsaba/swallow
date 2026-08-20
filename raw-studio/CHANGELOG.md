@@ -23,6 +23,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty-array constant; `useShallow` where element identity is already stable.
 
 ### Added
+- **Privacy (mosaic / blur / block).** Redact faces, plates or personal info with
+  a movable region: pixelate, blur, or a solid block, with adjustable strength
+  and size. The real mosaic/blur is baked into the export (so shared images are
+  actually redacted); the on-canvas preview approximates it with a CSS filter.
+  - Pure, unit-tested geometry (`resolvePrivacyRect`, `mosaicCellPx`,
+    `blurRadiusPx`) shared by preview and export; the export downscale+upscale
+    mosaic/blur reads back the drawn pixels after the image.
+  - Lives in the Decorate tab beside text/stickers/frames; undoable and persisted.
 - **Face reshape — pluggable real-landmark pipeline.** Detection now runs a
   registered facial-landmark model on the face crop when one is available,
   decodes its output into the landmark set, and uses it only if it passes a

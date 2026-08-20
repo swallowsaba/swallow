@@ -1,8 +1,18 @@
-import type { EmojiOverlay, FrameOverlay, Overlay, TextAlign, TextOverlay } from '@/types';
+import type {
+  EmojiOverlay,
+  FrameOverlay,
+  Overlay,
+  PrivacyOverlay,
+  TextAlign,
+  TextOverlay,
+} from '@/types';
 import {
+  blurRadiusPx,
   fontString,
+  mosaicCellPx,
   resolveEmojiLayout,
   resolveFrameGeometry,
+  resolvePrivacyRect,
   resolveTextLayout,
 } from './overlay-ops';
 
@@ -111,6 +121,68 @@ function drawFrame(ctx: Ctx, o: FrameOverlay, size: { width: number; height: num
   ctx.restore();
 }
 
+/**
+ * Redact a region by mosaic (downscale+upscale nearest), blur (stacked box
+ * blur via scaling), or a solid block. Reads back the already-drawn pixels, so
+ * it must run after the image is on the canvas. Baked into the export.
+ */
+function drawPrivacy(ctx: Ctx, o: PrivacyOverlay, size: { width: number; height: number }): void {
+  const rect = resolvePrivacyRect(o, size);
+  const rw = Math.round(rect.w);
+  const rh = Math.round(rect.h);
+  const rx = Math.round(rect.x);
+  const ry = Math.round(rect.y);
+  if (rw <= 0 || rh <= 0) return;
+
+  if (o.style === 'block') {
+    ctx.save();
+    ctx.fillStyle = o.color;
+    ctx.fillRect(rx, ry, rw, rh);
+    ctx.restore();
+    return;
+  }
+
+  // Work on an offscreen copy of the region so we can shrink/grow it.
+  const tmp = new OffscreenCanvas(rw, rh);
+  const tctx = tmp.getContext('2d');
+  if (!tctx) return;
+  tctx.drawImage(
+    (ctx.canvas as unknown) as CanvasImageSource,
+    rx,
+    ry,
+    rw,
+    rh,
+    0,
+    0,
+    rw,
+    rh,
+  );
+
+  let smallW: number;
+  let smallH: number;
+  if (o.style === 'pixelate') {
+    const cell = mosaicCellPx(rect, o.strength);
+    smallW = Math.max(1, Math.round(rw / cell));
+    smallH = Math.max(1, Math.round(rh / cell));
+  } else {
+    // Blur: shrink hard, then let the smooth upscale blur it.
+    const radius = blurRadiusPx(rect, o.strength);
+    smallW = Math.max(1, Math.round(rw / Math.max(2, radius)));
+    smallH = Math.max(1, Math.round(rh / Math.max(2, radius)));
+  }
+
+  const small = new OffscreenCanvas(smallW, smallH);
+  const sctx = small.getContext('2d');
+  if (!sctx) return;
+  sctx.imageSmoothingEnabled = o.style === 'blur';
+  sctx.drawImage(tmp, 0, 0, rw, rh, 0, 0, smallW, smallH);
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = o.style === 'blur';
+  ctx.drawImage(small, 0, 0, smallW, smallH, rx, ry, rw, rh);
+  ctx.restore();
+}
+
 export function drawOverlays(
   ctx: Ctx,
   overlays: readonly Overlay[],
@@ -119,6 +191,7 @@ export function drawOverlays(
   for (const o of overlays) {
     if (o.kind === 'text') drawText(ctx, o, size);
     else if (o.kind === 'emoji') drawEmoji(ctx, o, size);
-    else drawFrame(ctx, o, size);
+    else if (o.kind === 'frame') drawFrame(ctx, o, size);
+    else drawPrivacy(ctx, o, size);
   }
 }
