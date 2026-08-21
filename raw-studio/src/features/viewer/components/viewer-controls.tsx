@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Crop, Eraser, Eye, Maximize, Minus, Pipette, Plus, RotateCw, Scan } from 'lucide-react';
+import { Columns2, Crop, Eraser, Eye, Maximize, Minus, Pipette, Plus, RotateCw, Scan } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Toggle } from '@/components/ui/toggle';
@@ -39,6 +39,8 @@ export function ViewerControls({ effectiveScale }: ControlsProps): React.JSX.Ele
   const rotateCw = useViewerStore((s) => s.rotateCw);
   const showBefore = useViewerStore((s) => s.showBefore);
   const setShowBefore = useViewerStore((s) => s.setShowBefore);
+  const compareSplit = useViewerStore((s) => s.compareSplit);
+  const setCompareSplit = useViewerStore((s) => s.setCompareSplit);
   const setCropMode = useViewerStore((s) => s.setCropMode);
   const setRemoveMode = useViewerStore((s) => s.setRemoveMode);
   const setWbPickMode = useViewerStore((s) => s.setWbPickMode);
@@ -129,11 +131,28 @@ export function ViewerControls({ effectiveScale }: ControlsProps): React.JSX.Ele
       <Toggle
         size="sm"
         pressed={showBefore}
-        onPressedChange={setShowBefore}
+        onPressedChange={(on) => {
+          setShowBefore(on);
+          // Whole-image "before" and the split view would fight over the same
+          // pixels, so turning one on turns the other off.
+          if (on) setCompareSplit(null);
+        }}
         aria-label="Show before"
         title="Before / After"
       >
         <Eye />
+      </Toggle>
+      <Toggle
+        size="sm"
+        pressed={compareSplit !== null}
+        onPressedChange={(on) => {
+          setCompareSplit(on ? 0.5 : null);
+          if (on) setShowBefore(false);
+        }}
+        aria-label="Split compare"
+        title="Split compare"
+      >
+        <Columns2 />
       </Toggle>
     </div>
   );

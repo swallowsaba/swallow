@@ -21,6 +21,7 @@ import { rasterizeMaskAlpha } from '@/features/masks/model/mask-alpha';
 import { layerUniforms } from '@/features/masks/model/mask-adjust';
 import { TextOverlayLayer } from '@/features/overlays/components/text-overlay-layer';
 import { PrivacyLayer } from '@/features/overlays/components/privacy-layer';
+import { CompareSplitOverlay } from './compare-split-overlay';
 import { useOverlayUiStore } from '@/features/overlays/model/overlay-ui-store';
 import { LiquifyOverlay } from '@/features/liquify/components/liquify-overlay';
 import { FaceLandmarkLayer } from '@/features/liquify/components/face-landmark-layer';
@@ -387,6 +388,9 @@ export function ImageCanvas(): React.JSX.Element {
           container={container}
           interactive={overlayMode}
         />
+      ) : null}
+      {imageSize ? (
+        <CompareSplitOverlay unavailable={maskLayers.length > 0 || warpField !== null} />
       ) : null}
       {imageSize && !interactionLocked ? <ViewerControls effectiveScale={drawScale} /> : null}
     </div>

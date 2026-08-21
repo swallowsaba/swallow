@@ -32,6 +32,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   camera's own embedded preview (and Explorer) shows.
 
 ### Added
+- **Before/after split compare.** A toggle in the viewer controls splits the
+  image down a draggable divider: original on the left, current edit on the
+  right. Both halves are drawn from the same quad (scissored in the renderer) so
+  they line up exactly. Mutually exclusive with the whole-image before toggle;
+  shows a notice while masks/liquify route through the multi-pass path.
+
 - **AI mask refinement — expand / contract.** AI subject (raster) masks can now be
   grown or shrunk by a couple of pixels to fix hair edges or pull in from a
   haloed border, alongside the existing feather and invert-area controls. Pure,
