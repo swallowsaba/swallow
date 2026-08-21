@@ -18,6 +18,8 @@ export interface ViewerState {
   offset: Point;
   rotationDeg: number;
   showBefore: boolean;
+  /** Before/after split compare: null = off, else divider position 0..1. */
+  compareSplit: number | null;
   /** Whether the crop overlay is active (shows the full uncropped image). */
   cropMode: boolean;
   /** Whether the Remove Object brush overlay is active. */
@@ -34,6 +36,7 @@ export interface ViewerState {
   rotateCw: () => void;
   resetView: () => void;
   setShowBefore: (value: boolean) => void;
+  setCompareSplit: (value: number | null) => void;
   setCropMode: (value: boolean) => void;
   setRemoveMode: (value: boolean) => void;
   setWbPickMode: (value: boolean) => void;
@@ -45,6 +48,7 @@ const INITIAL = {
   offset: { x: 0, y: 0 } as Point,
   rotationDeg: 0,
   showBefore: false,
+  compareSplit: null,
   cropMode: false,
   removeMode: false,
   wbPickMode: false,
@@ -78,6 +82,9 @@ export const useViewerStore = create<ViewerState>((set) => ({
   },
   setShowBefore: (showBefore) => {
     set({ showBefore });
+  },
+  setCompareSplit: (compareSplit) => {
+    set({ compareSplit });
   },
   setCropMode: (cropMode) => {
     set({ cropMode });

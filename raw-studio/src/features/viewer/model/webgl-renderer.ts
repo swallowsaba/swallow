@@ -635,6 +635,11 @@ export class WebGLImageRenderer {
     adjustments: AdjustmentUniforms,
     advanced: AdvancedUniforms = NEUTRAL_ADVANCED,
     crop: CropRect = FULL_CROP,
+    split?: {
+      divider: number;
+      beforeUniforms: AdjustmentUniforms;
+      beforeAdvanced: AdvancedUniforms;
+    },
   ): void {
     const gl = this.gl;
     this.resize(Math.round(cssSize.width * dpr), Math.round(cssSize.height * dpr));
@@ -696,10 +701,24 @@ export class WebGLImageRenderer {
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     gl.uniform1i(this.texLoc ?? null, 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+    // Compare split: re-draw the left region with the "before" (neutral)
+    // uniforms. Same quad, so the two halves line up exactly.
+    if (split) {
+      const wpx = gl.drawingBufferWidth;
+      const hpx = gl.drawingBufferHeight;
+      const dx = Math.max(0, Math.min(wpx, Math.round(split.divider * wpx)));
+      gl.enable(gl.SCISSOR_TEST);
+      gl.scissor(0, 0, dx, hpx);
+      this.setUniforms(split.beforeUniforms, split.beforeAdvanced);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.texture);
+      gl.uniform1i(this.texLoc ?? null, 0);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.disable(gl.SCISSOR_TEST);
+    }
     gl.bindVertexArray(null);
   }
-
-  /* --------------------- masked (multi-pass) rendering -------------------- */
 
   /** Compile the extra programs used for masking, once, on first use. */
   private ensureMaskPrograms(): void {

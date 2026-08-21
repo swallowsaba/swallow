@@ -98,7 +98,7 @@ export function ToneCurveEditor(): React.JSX.Element | null {
     draggingRef.current = false;
     commitAdjustments({ toneCurves: { [channel]: working } }, t('curve.editLabel'));
   };
-  const onDoubleClick = (e: React.PointerEvent) => {
+  const onDoubleClick = (e: React.MouseEvent<SVGSVGElement>) => {
     const { x, y } = toNorm(e.clientX, e.clientY);
     const idx = findPoint(working, x, y, 0.05);
     if (idx <= 0 || idx >= working.length - 1) return;

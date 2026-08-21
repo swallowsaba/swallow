@@ -65,6 +65,7 @@ export function ImageCanvas(): React.JSX.Element {
   const setOffset = useViewerStore((s) => s.setOffset);
   const setCustomScale = useViewerStore((s) => s.setCustomScale);
   const showBefore = useViewerStore((s) => s.showBefore);
+  const compareSplit = useViewerStore((s) => s.compareSplit);
   const cropMode = useViewerStore((s) => s.cropMode);
   const removeMode = useViewerStore((s) => s.removeMode);
   const wbPickMode = useViewerStore((s) => s.wbPickMode);
@@ -215,6 +216,7 @@ export function ImageCanvas(): React.JSX.Element {
     imageSize,
     maskLayers,
     warpField,
+    compareSplit,
   });
   paramsRef.current = {
     drawScale,
@@ -227,6 +229,7 @@ export function ImageCanvas(): React.JSX.Element {
     imageSize,
     maskLayers,
     warpField,
+    compareSplit,
   };
 
   const schedulerRef = React.useRef<RafScheduler | null>(null);
@@ -255,6 +258,13 @@ export function ImageCanvas(): React.JSX.Element {
           p.uniforms,
           p.advancedUniforms,
           p.crop,
+          p.compareSplit !== null
+            ? {
+                divider: p.compareSplit,
+                beforeUniforms: NEUTRAL_UNIFORMS,
+                beforeAdvanced: NEUTRAL_ADVANCED,
+              }
+            : undefined,
         );
       }
     });
@@ -274,6 +284,7 @@ export function ImageCanvas(): React.JSX.Element {
     crop,
     maskLayers,
     warpField,
+    compareSplit,
   ]);
 
   React.useEffect(() => {
