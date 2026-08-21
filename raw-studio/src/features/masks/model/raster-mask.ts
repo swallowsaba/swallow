@@ -205,3 +205,63 @@ export function alphaToCroppedRaster(
   }
   return out;
 }
+
+/**
+ * Separable morphological grow (max filter): expands the covered region by
+ * `radius` pixels. Pure. Used to enlarge an AI mask so it fully covers a subject
+ * (e.g. hair edges) before applying local adjustments.
+ */
+export function dilateAlpha(
+  alpha: Uint8ClampedArray,
+  width: number,
+  height: number,
+  radius: number,
+): Uint8ClampedArray {
+  return morph(alpha, width, height, Math.max(0, Math.round(radius)), true);
+}
+
+/** Separable morphological shrink (min filter): contracts the region by
+ *  `radius` pixels — handy to pull a mask in from a haloed edge. Pure. */
+export function erodeAlpha(
+  alpha: Uint8ClampedArray,
+  width: number,
+  height: number,
+  radius: number,
+): Uint8ClampedArray {
+  return morph(alpha, width, height, Math.max(0, Math.round(radius)), false);
+}
+
+function morph(
+  alpha: Uint8ClampedArray,
+  width: number,
+  height: number,
+  radius: number,
+  grow: boolean,
+): Uint8ClampedArray {
+  if (radius <= 0 || width <= 0 || height <= 0) return alpha.slice();
+  const pick = (a: number, b: number): number => (grow ? Math.max(a, b) : Math.min(a, b));
+  const tmp = new Uint8ClampedArray(width * height);
+  // horizontal pass
+  for (let y = 0; y < height; y++) {
+    const row = y * width;
+    for (let x = 0; x < width; x++) {
+      let v = grow ? 0 : 255;
+      const x0 = Math.max(0, x - radius);
+      const x1 = Math.min(width - 1, x + radius);
+      for (let xx = x0; xx <= x1; xx++) v = pick(v, alpha[row + xx] ?? 0);
+      tmp[row + x] = v;
+    }
+  }
+  // vertical pass
+  const out = new Uint8ClampedArray(width * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let v = grow ? 0 : 255;
+      const y0 = Math.max(0, y - radius);
+      const y1 = Math.min(height - 1, y + radius);
+      for (let yy = y0; yy <= y1; yy++) v = pick(v, tmp[yy * width + x] ?? 0);
+      out[y * width + x] = v;
+    }
+  }
+  return out;
+}

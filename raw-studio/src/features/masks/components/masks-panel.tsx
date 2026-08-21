@@ -30,7 +30,13 @@ import { useViewerStore } from '@/features/viewer';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { createMask, createRasterMask, makeRasterMask, maskHasEffect } from '../model/mask-ops';
-import { alphaToCroppedRaster, encodeBase64 } from '../model/raster-mask';
+import {
+  alphaToCroppedRaster,
+  decodeRaster,
+  dilateAlpha,
+  encodeBase64,
+  erodeAlpha,
+} from '../model/raster-mask';
 import { proposeAutoLocalMasks, type AutoRegionKind } from '../model/auto-local';
 import { useMaskUiStore } from '../model/mask-ui-store';
 
@@ -580,6 +586,31 @@ function RasterControls({
         {t('masks.invertArea')}
         <HelpMark text={t('masks.invertAreaHelp')} />
       </label>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className="flex-1 rounded border border-border py-1 text-[11px] text-muted-foreground hover:text-foreground"
+          onClick={() => {
+            const alpha = decodeRaster(geom.data);
+            const next = dilateAlpha(alpha, geom.width, geom.height, 2);
+            onCommit({ ...geom, data: encodeBase64(next) });
+          }}
+        >
+          {t('masks.expand')}
+        </button>
+        <button
+          type="button"
+          className="flex-1 rounded border border-border py-1 text-[11px] text-muted-foreground hover:text-foreground"
+          onClick={() => {
+            const alpha = decodeRaster(geom.data);
+            const next = erodeAlpha(alpha, geom.width, geom.height, 2);
+            onCommit({ ...geom, data: encodeBase64(next) });
+          }}
+        >
+          {t('masks.contract')}
+        </button>
+      </div>
+      <p className="text-[10px] leading-tight text-muted-foreground">{t('masks.morphHint')}</p>
     </div>
   );
 }

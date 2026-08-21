@@ -5,7 +5,9 @@ import {
   boxBlurAlpha,
   decodeBase64,
   decodeRaster,
+  dilateAlpha,
   encodeBase64,
+  erodeAlpha,
   rasterizeRaster,
   sampleRasterAt,
 } from './raster-mask';
@@ -119,5 +121,45 @@ describe('alphaToCroppedRaster', () => {
     const left = alphaToCroppedRaster(seg, 2, { x: 0, y: 0, width: 0.5, height: 1 }, 4, 4);
     const right = alphaToCroppedRaster(seg, 2, { x: 0.5, y: 0, width: 0.5, height: 1 }, 4, 4);
     expect(avg(right)).toBeLessThan(avg(left));
+  });
+});
+
+describe('dilate/erode morphology', () => {
+  // 5x5 with a single covered pixel in the center.
+  const W = 5;
+  const H = 5;
+  const single = (): Uint8ClampedArray => {
+    const a = new Uint8ClampedArray(W * H);
+    a[2 * W + 2] = 255;
+    return a;
+  };
+
+  it('dilate grows the covered region', () => {
+    const d = dilateAlpha(single(), W, H, 1);
+    // The 3x3 block around the center becomes covered.
+    for (let y = 1; y <= 3; y++) for (let x = 1; x <= 3; x++) expect(d[y * W + x]).toBe(255);
+    expect(d[0]).toBe(0); // far corner untouched
+  });
+
+  it('erode shrinks the covered region', () => {
+    // full 3x3 block eroded by 1 -> only the center survives.
+    const a = new Uint8ClampedArray(W * H);
+    for (let y = 1; y <= 3; y++) for (let x = 1; x <= 3; x++) a[y * W + x] = 255;
+    const e = erodeAlpha(a, W, H, 1);
+    expect(e[2 * W + 2]).toBe(255);
+    expect(e[1 * W + 1]).toBe(0); // corner of the block eroded away
+  });
+
+  it('radius 0 is a no-op copy', () => {
+    const a = single();
+    const d = dilateAlpha(a, W, H, 0);
+    expect(Array.from(d)).toEqual(Array.from(a));
+    expect(d).not.toBe(a); // returns a copy
+  });
+
+  it('dilate then erode (close) restores an isolated pixel region size', () => {
+    const grown = dilateAlpha(single(), W, H, 1);
+    const back = erodeAlpha(grown, W, H, 1);
+    expect(back[2 * W + 2]).toBe(255);
   });
 });

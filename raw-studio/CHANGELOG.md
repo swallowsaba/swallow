@@ -23,6 +23,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty-array constant; `useShallow` where element identity is already stable.
 
 ### Added
+- **AI mask refinement — expand / contract.** AI subject (raster) masks can now be
+  grown or shrunk by a couple of pixels to fix hair edges or pull in from a
+  haloed border, alongside the existing feather and invert-area controls. Pure,
+  unit-tested morphology (separable dilate/erode).
+
 - **Per-channel tone curves + faithful GPU LUT.** The tone curve editor now has
   RGB / R / G / B channels, and the renderer applies all four through a 256-entry
   lookup-table texture (per-channel first, then master) — so multi-point curves
