@@ -30,6 +30,7 @@ uniform sampler2D u_tex;
 uniform float u_exposure, u_contrast, u_highlights, u_shadows, u_whites, u_blacks;
 uniform float u_brightness, u_gamma, u_temp, u_tint, u_saturation, u_vibrance;
 uniform float u_toneShadows, u_toneMid, u_toneHighlights;
+uniform sampler2D u_curveLut;
 uniform float u_hslHue[8], u_hslSat[8], u_hslLum[8];
 uniform float u_clarity, u_texture, u_dehaze, u_sharpenAmount, u_sharpenRadius;
 uniform float u_noiseReduction, u_colorNoiseReduction;
@@ -87,6 +88,19 @@ vec3 toneCurve3(vec3 x, float sh, float mid, float hi) {
   vec3 out0 = mix(seg0, seg1, step(0.25, x));
   vec3 out1 = mix(out0, seg2, step(0.5, x));
   return clamp(mix(out1, seg3, step(0.75, x)), 0.0, 1.0);
+}
+
+// Free-form tone curves via a 256x1 LUT: per-channel R/G/B (.r/.g/.b) applied
+// first, then the master rgb curve (.a). Identity LUT => no-op.
+vec3 applyCurves(vec3 c) {
+  vec3 s = clamp(c, 0.0, 1.0);
+  float r1 = texture(u_curveLut, vec2(s.r, 0.5)).r;
+  float g1 = texture(u_curveLut, vec2(s.g, 0.5)).g;
+  float b1 = texture(u_curveLut, vec2(s.b, 0.5)).b;
+  float r2 = texture(u_curveLut, vec2(r1, 0.5)).a;
+  float g2 = texture(u_curveLut, vec2(g1, 0.5)).a;
+  float b2 = texture(u_curveLut, vec2(b1, 0.5)).a;
+  return vec3(r2, g2, b2);
 }
 
 // --- HSL: rgb<->hsl + 8-band shift, mirrors rgbToHsl/hslToRgb/applyHslBands ---
@@ -193,7 +207,7 @@ vec3 basePipeline(vec2 uv) {
   s = vec3(lum) + (s - vec3(lum)) * vibF;
   s = clamp(s, 0.0, 1.0);
 
-  s = toneCurve3(s, u_toneShadows, u_toneMid, u_toneHighlights);
+  s = applyCurves(s);
   s = applyHslBands(s);
   return s;
 }
@@ -397,6 +411,7 @@ const UNIFORM_NAMES = [
   'u_toneShadows',
   'u_toneMid',
   'u_toneHighlights',
+  'u_curveLut',
   'u_clarity',
   'u_texture',
   'u_dehaze',
@@ -447,6 +462,7 @@ export class WebGLImageRenderer {
   private readonly vao: WebGLVertexArrayObject;
   private readonly buffer: WebGLBuffer;
   private readonly texture: WebGLTexture;
+  private readonly curveLutTex: WebGLTexture;
   private readonly uniforms: Record<string, WebGLUniformLocation | null> = {};
   private readonly texLoc: WebGLUniformLocation | null;
   private texelLoc: WebGLUniformLocation | null = null;
@@ -529,6 +545,17 @@ export class WebGLImageRenderer {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    // 256×1 RGBA tone-curve LUT, sampled with LINEAR for smooth interpolation.
+    const curveLutTex = gl.createTexture();
+    if (!curveLutTex) throw new Error('Failed to allocate curve LUT texture');
+    this.curveLutTex = curveLutTex;
+    gl.bindTexture(gl.TEXTURE_2D, curveLutTex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
   setImage(bitmap: ImageBitmap): void {
@@ -555,6 +582,15 @@ export class WebGLImageRenderer {
 
   private setUniforms(a: AdjustmentUniforms, adv: AdvancedUniforms): void {
     const gl = this.gl;
+
+    // Upload + bind the tone-curve LUT on texture unit 7 (0/1/2 are used by the
+    // image and mask/composite passes). Sampled by applyCurves() in the shader.
+    gl.activeTexture(gl.TEXTURE7);
+    gl.bindTexture(gl.TEXTURE_2D, this.curveLutTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, adv.curveLut);
+    gl.uniform1i(this.uniforms.u_curveLut ?? null, 7);
+    gl.activeTexture(gl.TEXTURE0);
+
     gl.uniform1f(this.uniforms.u_exposure ?? null, a.exposure);
     gl.uniform1f(this.uniforms.u_contrast ?? null, a.contrast);
     gl.uniform1f(this.uniforms.u_highlights ?? null, a.highlights);

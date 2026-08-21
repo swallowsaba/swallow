@@ -1,6 +1,7 @@
 import * as React from 'react';
-import type { CurvePoint } from '@/types';
+import type { CurvePoint, RgbChannel } from '@/types';
 import { selectCurrentEdit, useEditorStore } from '@/features/editor';
+import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
 import {
   addPoint,
@@ -21,11 +22,18 @@ const IH = H - PAD * 2;
 const toSvgX = (x: number): number => PAD + x * IW;
 const toSvgY = (y: number): number => PAD + (1 - y) * IH;
 
+const CHANNELS: readonly { key: RgbChannel; stroke: string; dot: string }[] = [
+  { key: 'rgb', stroke: 'rgb(230,230,230)', dot: 'rgb(80,140,255)' },
+  { key: 'red', stroke: 'rgb(255,90,90)', dot: 'rgb(255,90,90)' },
+  { key: 'green', stroke: 'rgb(80,210,120)', dot: 'rgb(80,210,120)' },
+  { key: 'blue', stroke: 'rgb(90,140,255)', dot: 'rgb(90,140,255)' },
+];
+
 /**
- * Free-form master (RGB) tone curve: click to add points, drag to shape,
- * double-click a point to remove it. Writes to `toneCurves.rgb`; the renderer
- * samples that curve so edits show live. (Per-channel R/G/B curves and a fully
- * faithful multi-point LUT are a later step.)
+ * Free-form tone curves per channel (master RGB + red/green/blue): click to add
+ * points, drag to shape, double-click a point to remove it. Writes
+ * `toneCurves[channel]`; the renderer applies all four via a 256-entry LUT, so
+ * edits show live and bake into the export.
  */
 export function ToneCurveEditor(): React.JSX.Element | null {
   const edit = useEditorStore(selectCurrentEdit);
@@ -34,17 +42,20 @@ export function ToneCurveEditor(): React.JSX.Element | null {
   const t = useT();
   const svgRef = React.useRef<SVGSVGElement>(null);
   const dragIndexRef = React.useRef<number | null>(null);
+  const [channel, setChannel] = React.useState<RgbChannel>('rgb');
 
-  const stored = edit?.adjustments.toneCurves.rgb ?? IDENTITY_CURVE;
+  const stored = edit?.adjustments.toneCurves[channel] ?? IDENTITY_CURVE;
   const [working, setWorking] = React.useState<readonly CurvePoint[]>(stored);
   const draggingRef = React.useRef(false);
 
-  // Keep in sync with the store when not actively dragging.
+  // Keep in sync with the store (channel switch or external change) when idle.
   React.useEffect(() => {
     if (!draggingRef.current) setWorking(stored);
   }, [stored]);
 
   if (!edit) return null;
+
+  const chan = CHANNELS.find((c) => c.key === channel) ?? CHANNELS[0]!;
 
   const toNorm = (clientX: number, clientY: number): { x: number; y: number } => {
     const rect = svgRef.current?.getBoundingClientRect();
@@ -59,7 +70,7 @@ export function ToneCurveEditor(): React.JSX.Element | null {
 
   const push = (pts: readonly CurvePoint[]): void => {
     setWorking(pts);
-    setPreview({ toneCurves: { rgb: pts } });
+    setPreview({ toneCurves: { [channel]: pts } });
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -85,7 +96,7 @@ export function ToneCurveEditor(): React.JSX.Element | null {
     if (dragIndexRef.current === null) return;
     dragIndexRef.current = null;
     draggingRef.current = false;
-    commitAdjustments({ toneCurves: { rgb: working } }, t('curve.editLabel'));
+    commitAdjustments({ toneCurves: { [channel]: working } }, t('curve.editLabel'));
   };
   const onDoubleClick = (e: React.PointerEvent) => {
     const { x, y } = toNorm(e.clientX, e.clientY);
@@ -93,12 +104,12 @@ export function ToneCurveEditor(): React.JSX.Element | null {
     if (idx <= 0 || idx >= working.length - 1) return;
     const pts = removePoint(working, idx);
     setWorking(pts);
-    commitAdjustments({ toneCurves: { rgb: pts } }, t('curve.removeLabel'));
+    commitAdjustments({ toneCurves: { [channel]: pts } }, t('curve.removeLabel'));
   };
 
   const reset = () => {
     setWorking(IDENTITY_CURVE);
-    commitAdjustments({ toneCurves: { rgb: IDENTITY_CURVE } }, t('curve.resetLabel'));
+    commitAdjustments({ toneCurves: { [channel]: IDENTITY_CURVE } }, t('curve.resetLabel'));
   };
 
   // Sample the curve as a smooth polyline.
@@ -111,7 +122,23 @@ export function ToneCurveEditor(): React.JSX.Element | null {
   return (
     <div className="flex flex-col gap-1.5 p-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium">{t('curve.title')}</span>
+        <div className="flex overflow-hidden rounded border border-border">
+          {CHANNELS.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => {
+                setChannel(c.key);
+              }}
+              className={cn(
+                'px-2 py-0.5 text-[10px] font-medium',
+                channel === c.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+              )}
+            >
+              {t(`curve.channel.${c.key}`)}
+            </button>
+          ))}
+        </div>
         {!isIdentityCurve(working) ? (
           <button
             type="button"
@@ -139,7 +166,7 @@ export function ToneCurveEditor(): React.JSX.Element | null {
           </React.Fragment>
         ))}
         <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={PAD} stroke="rgba(255,255,255,0.12)" />
-        <polyline points={line.join(' ')} fill="none" stroke="rgb(230,230,230)" strokeWidth={1.5} />
+        <polyline points={line.join(' ')} fill="none" stroke={chan.stroke} strokeWidth={1.5} />
         {working.map((p, i) => (
           <circle
             key={i}
@@ -147,7 +174,7 @@ export function ToneCurveEditor(): React.JSX.Element | null {
             cy={toSvgY(p.y)}
             r={4}
             fill="#fff"
-            stroke="rgb(80,140,255)"
+            stroke={chan.dot}
             strokeWidth={2}
           />
         ))}

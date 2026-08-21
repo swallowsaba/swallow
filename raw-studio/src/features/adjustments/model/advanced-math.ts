@@ -1,5 +1,6 @@
 import type { Adjustments } from '@/types';
 import { HSL_BANDS } from '@/types';
+import { IDENTITY_CURVE, packCurveLutRgba } from './tone-curve';
 
 /**
  * Tone curve, HSL color-band, and lens math for the Tone/Color/Lens panels.
@@ -115,6 +116,8 @@ export interface AdvancedUniforms {
   vignetting: number;
   chromaticAberration: number;
   fisheye: boolean;
+  /** 256×1 RGBA tone-curve LUT: .r/.g/.b = R/G/B curves, .a = master (rgb). */
+  curveLut: Uint8ClampedArray;
 }
 
 export const NEUTRAL_ADVANCED: AdvancedUniforms = {
@@ -135,6 +138,7 @@ export const NEUTRAL_ADVANCED: AdvancedUniforms = {
   vignetting: 0,
   chromaticAberration: 0,
   fisheye: false,
+  curveLut: packCurveLutRgba(IDENTITY_CURVE, IDENTITY_CURVE, IDENTITY_CURVE, IDENTITY_CURVE),
 };
 
 /** Map the full Adjustments object (Tone/Color/Detail/Lens groups) to the
@@ -168,6 +172,12 @@ export function toAdvancedUniforms(a: Adjustments): AdvancedUniforms {
     vignetting: a.lens.vignetting,
     chromaticAberration: a.lens.chromaticAberration,
     fisheye: a.lens.fisheye,
+    curveLut: packCurveLutRgba(
+      a.toneCurves.rgb,
+      a.toneCurves.red,
+      a.toneCurves.green,
+      a.toneCurves.blue,
+    ),
   };
 }
 

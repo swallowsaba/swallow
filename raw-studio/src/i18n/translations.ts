@@ -24,6 +24,10 @@ const DICT = {
 
   // Right panel tabs
   'curve.title': { ja: 'トーンカーブ（RGB）', en: 'Tone curve (RGB)' },
+  'curve.channel.rgb': { ja: 'RGB', en: 'RGB' },
+  'curve.channel.red': { ja: 'R', en: 'R' },
+  'curve.channel.green': { ja: 'G', en: 'G' },
+  'curve.channel.blue': { ja: 'B', en: 'B' },
   'curve.hint': { ja: 'クリックで点を追加、ドラッグで曲線を調整、点をダブルクリックで削除。', en: 'Click to add a point, drag to shape the curve, double-click a point to remove it.' },
   'curve.reset': { ja: 'リセット', en: 'Reset' },
   'curve.editLabel': { ja: 'トーンカーブ調整', en: 'Tone curve edit' },

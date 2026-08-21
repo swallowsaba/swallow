@@ -23,6 +23,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   empty-array constant; `useShallow` where element identity is already stable.
 
 ### Added
+- **Per-channel tone curves + faithful GPU LUT.** The tone curve editor now has
+  RGB / R / G / B channels, and the renderer applies all four through a 256-entry
+  lookup-table texture (per-channel first, then master) — so multi-point curves
+  render exactly (not a 3-point approximation) and bake into the export. Identity
+  curves are a no-op, so existing edits are unchanged.
+
 - **Tone curve editor (RGB).** A point-based master curve in the Tone tab: click
   to add points, drag to shape, double-click to remove. Writes the standard
   `toneCurves.rgb`, so edits render live through the existing pipeline. Pure,
