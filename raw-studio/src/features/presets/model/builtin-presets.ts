@@ -1,10 +1,9 @@
 import type { Preset } from '@/types';
 
 /**
- * The ten shipped presets. They intentionally use only the Basic group so they
- * visibly change the image with the Phase 7 shader pipeline (Tone/HSL/Color
- * grading rendering arrives in later phases). Values are chosen to be tasteful
- * starting points, not destructive looks.
+ * The shipped presets. They intentionally use only the Basic group so they
+ * visibly change the image with the current shader pipeline. Values are chosen
+ * to be tasteful starting points, not destructive looks.
  */
 
 const AT = 0; // stable timestamp for built-ins (not user-created)
@@ -153,5 +152,130 @@ export const BUILTIN_PRESETS: readonly Preset[] = [
     tint: 2,
     saturation: -12,
     vibrance: 6,
+  }),
+  preset('builtin-golden-hour', 'Golden Hour', 'landscape', {
+    exposure: 0.15,
+    contrast: 8,
+    highlights: -12,
+    shadows: 18,
+    whites: 8,
+    temperature: 22,
+    tint: 6,
+    vibrance: 18,
+    saturation: 4,
+  }),
+  preset('builtin-teal-orange', 'Teal & Orange', 'cinematic', {
+    contrast: 16,
+    highlights: -14,
+    shadows: 8,
+    blacks: 6,
+    temperature: 10,
+    tint: -6,
+    vibrance: 20,
+    saturation: -2,
+  }),
+  preset('builtin-airy', 'Bright & Airy', 'wedding', {
+    exposure: 0.35,
+    contrast: -14,
+    highlights: -10,
+    shadows: 26,
+    whites: 12,
+    blacks: 12,
+    temperature: 4,
+    tint: 2,
+    vibrance: 8,
+    saturation: -4,
+  }),
+  preset('builtin-matte-fade', 'Matte Fade', 'film', {
+    contrast: -18,
+    highlights: -8,
+    shadows: 14,
+    blacks: 20,
+    whites: -6,
+    temperature: 3,
+    saturation: -10,
+    vibrance: 6,
+  }),
+  preset('builtin-cool-blue', 'Cool Blue', 'landscape', {
+    contrast: 12,
+    highlights: -10,
+    shadows: 10,
+    temperature: -20,
+    tint: -4,
+    vibrance: 16,
+    saturation: 2,
+  }),
+  preset('builtin-warm-sunset', 'Warm Sunset', 'travel', {
+    exposure: 0.1,
+    contrast: 10,
+    highlights: -18,
+    shadows: 16,
+    temperature: 28,
+    tint: 8,
+    vibrance: 20,
+    saturation: 6,
+  }),
+  preset('builtin-vivid-pop', 'Vivid Pop', 'travel', {
+    contrast: 22,
+    highlights: -12,
+    shadows: 12,
+    whites: 10,
+    blacks: -6,
+    vibrance: 35,
+    saturation: 12,
+  }),
+  preset('builtin-soft-pastel', 'Soft Pastel', 'portrait', {
+    exposure: 0.2,
+    contrast: -16,
+    highlights: -12,
+    shadows: 20,
+    whites: 6,
+    temperature: 6,
+    tint: 4,
+    saturation: -14,
+    vibrance: 6,
+  }),
+  preset('builtin-autumn', 'Autumn', 'landscape', {
+    contrast: 12,
+    highlights: -14,
+    shadows: 12,
+    temperature: 16,
+    tint: 6,
+    vibrance: 22,
+    saturation: 4,
+  }),
+  preset('builtin-winter', 'Winter', 'landscape', {
+    exposure: 0.1,
+    contrast: 14,
+    highlights: -8,
+    shadows: 10,
+    temperature: -16,
+    tint: -2,
+    vibrance: 10,
+    saturation: -4,
+  }),
+  preset('builtin-dramatic-bw', 'Dramatic B&W', 'bw', {
+    contrast: 30,
+    highlights: -24,
+    shadows: -8,
+    whites: 12,
+    blacks: 14,
+    saturation: -100,
+  }),
+  preset('builtin-clean', 'Clean', 'portrait', {
+    contrast: 6,
+    highlights: -8,
+    shadows: 10,
+    whites: 6,
+    blacks: 4,
+    vibrance: 8,
+  }),
+  preset('builtin-noir', 'Noir', 'bw', {
+    exposure: -0.1,
+    contrast: 34,
+    highlights: -18,
+    shadows: -14,
+    blacks: 18,
+    saturation: -100,
   }),
 ];

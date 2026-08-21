@@ -16,6 +16,7 @@ import { ColorPanel } from './color-panel';
 import { DetailPanel } from './detail-panel';
 import { LensPanel } from './lens-panel';
 import { BeginnerPanel } from './beginner-panel';
+import { Histogram } from './histogram';
 import { GifPanel } from '@/features/gif';
 import { CollagePanel } from '@/features/collage';
 import { MasksPanel } from '@/features/masks';
@@ -109,6 +110,7 @@ export function AdjustmentsPanel(): React.JSX.Element {
       className="flex h-full flex-col"
     >
       <ModeToggle />
+      <Histogram />
       <div className="flex flex-col gap-1.5 px-2 pb-2">
         {/* Top-level group selector. */}
         <div className="grid grid-cols-5 gap-0.5 rounded-lg bg-muted p-1">
