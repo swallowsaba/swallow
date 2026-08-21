@@ -100,6 +100,29 @@ const GROUPS: readonly Group[] = [
       },
     ],
   },
+  {
+    titleKey: 'detail.grain',
+    sliders: [
+      {
+        key: 'grain',
+        labelKey: 'detail.grainAmount',
+        helpKey: 'detail.grainAmountHelp',
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultValue: 0,
+      },
+      {
+        key: 'grainSize',
+        labelKey: 'detail.grainSize',
+        helpKey: 'detail.grainSizeHelp',
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultValue: 40,
+      },
+    ],
+  },
 ];
 
 export function DetailPanel(): React.JSX.Element {

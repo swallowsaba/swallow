@@ -117,6 +117,10 @@ export interface DetailAdjustments {
   readonly noiseReduction: number;
   /** 0..100 (chroma) */
   readonly colorNoiseReduction: number;
+  /** 0..100 film grain amount */
+  readonly grain: number;
+  /** 0..100 grain size (larger = coarser) */
+  readonly grainSize: number;
 }
 
 /** Lens-based geometric and optical corrections. */

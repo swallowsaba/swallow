@@ -107,6 +107,8 @@ function blendDetail(e: readonly BlendEntry[], n: readonly number[]): DetailAdju
     sharpenDetail: wavg(e, n, g('sharpenDetail')),
     noiseReduction: wavg(e, n, g('noiseReduction')),
     colorNoiseReduction: wavg(e, n, g('colorNoiseReduction')),
+    grain: wavg(e, n, g('grain')),
+    grainSize: wavg(e, n, g('grainSize')),
   };
 }
 

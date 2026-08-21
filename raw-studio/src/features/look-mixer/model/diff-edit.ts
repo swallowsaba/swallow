@@ -65,6 +65,8 @@ const DETAIL_LABELS: Record<keyof Adjustments['detail'], string> = {
   sharpenDetail: 'Sharpen detail',
   noiseReduction: 'Noise',
   colorNoiseReduction: 'Color noise',
+  grain: 'Grain',
+  grainSize: 'Grain size',
 };
 
 function curvesEqual(a: Adjustments['toneCurves'], b: Adjustments['toneCurves']): boolean {

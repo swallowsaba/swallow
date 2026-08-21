@@ -32,6 +32,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   camera's own embedded preview (and Explorer) shows.
 
 ### Added
+- **Film grain.** A grain amount and size in the Detail panel add film-like
+  luminance-weighted noise (strongest in the midtones), rendered in the shader
+  and baked into the export. Skipped entirely at amount 0, so existing edits are
+  unchanged. Pure, unit-tested UI->shader parameter mapping (amplitude and cell
+  frequency).
+
 - **Selective paste settings.** The paste control now has a caret that opens a
   group picker — paste only Basic, Tone curves, HSL, Color grading, Detail or
   Lens instead of everything. Groups the copied image doesn't actually carry are

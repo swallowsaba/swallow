@@ -37,6 +37,7 @@ uniform float u_hslHue[8], u_hslSat[8], u_hslLum[8];
 uniform float u_clarity, u_texture, u_dehaze, u_sharpenAmount, u_sharpenRadius;
 uniform float u_noiseReduction, u_colorNoiseReduction;
 uniform float u_distortion, u_vignetting, u_chromaticAberration, u_fisheye;
+uniform float u_grainAmount, u_grainFrequency, u_grainActive;
 uniform vec2 u_texel;
 out vec4 outColor;
 
@@ -336,6 +337,15 @@ void main() {
   s = clamp(s, 0.0, 1.0) * vignetteFactor(duv, u_vignetting);
 
   s = pow(max(s, 0.0), vec3(1.0 / u_gamma));
+  if (u_grainActive > 0.5) {
+    // Value-noise grain: hash a quantized UV cell, luminance-weighted so
+    // midtones get the most grain (like real film).
+    vec2 cell = floor(v_uv * u_grainFrequency);
+    float n = fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
+    float luma = dot(s, vec3(0.299, 0.587, 0.114));
+    float weight = 1.0 - abs(luma - 0.5) * 1.4; // peak at mid-grey
+    s += n * u_grainAmount * max(0.0, weight);
+  }
   outColor = vec4(clamp(s, 0.0, 1.0), texA);
 }`;
 
@@ -461,6 +471,9 @@ const UNIFORM_NAMES = [
   'u_gradeBlending',
   'u_gradeBalance',
   'u_gradeActive',
+  'u_grainAmount',
+  'u_grainFrequency',
+  'u_grainActive',
   'u_clarity',
   'u_texture',
   'u_dehaze',
@@ -648,6 +661,9 @@ export class WebGLImageRenderer {
     gl.uniform1f(this.uniforms.u_gradeBlending ?? null, adv.gradeBlending);
     gl.uniform1f(this.uniforms.u_gradeBalance ?? null, adv.gradeBalance);
     gl.uniform1f(this.uniforms.u_gradeActive ?? null, adv.gradeActive ? 1 : 0);
+    gl.uniform1f(this.uniforms.u_grainAmount ?? null, adv.grainAmount);
+    gl.uniform1f(this.uniforms.u_grainFrequency ?? null, adv.grainFrequency);
+    gl.uniform1f(this.uniforms.u_grainActive ?? null, adv.grainActive ? 1 : 0);
 
     gl.uniform1f(this.uniforms.u_exposure ?? null, a.exposure);
     gl.uniform1f(this.uniforms.u_contrast ?? null, a.contrast);

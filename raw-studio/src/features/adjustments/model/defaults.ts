@@ -88,6 +88,8 @@ export function createDefaultDetail(): DetailAdjustments {
     sharpenDetail: 25,
     noiseReduction: 0,
     colorNoiseReduction: 25,
+    grain: 0,
+    grainSize: 40,
   };
 }
 

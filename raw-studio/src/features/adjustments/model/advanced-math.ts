@@ -2,6 +2,7 @@ import type { Adjustments } from '@/types';
 import { HSL_BANDS } from '@/types';
 import { IDENTITY_CURVE, packCurveLutRgba } from './tone-curve';
 import { isNeutralGrading } from './color-grading';
+import { grainAmplitude, grainFrequency, isGrainNeutral } from './grain';
 
 /**
  * Tone curve, HSL color-band, and lens math for the Tone/Color/Lens panels.
@@ -128,6 +129,10 @@ export interface AdvancedUniforms {
   gradeBalance: number;
   /** 0 when every wheel is neutral, so the shader can skip the whole block. */
   gradeActive: boolean;
+  /** Film grain: noise amplitude, cell frequency, and an active flag. */
+  grainAmount: number;
+  grainFrequency: number;
+  grainActive: boolean;
 }
 
 export const NEUTRAL_ADVANCED: AdvancedUniforms = {
@@ -156,6 +161,9 @@ export const NEUTRAL_ADVANCED: AdvancedUniforms = {
   gradeBlending: 50,
   gradeBalance: 0,
   gradeActive: false,
+  grainAmount: 0,
+  grainFrequency: grainFrequency(40),
+  grainActive: false,
 };
 
 /** Map the full Adjustments object (Tone/Color/Detail/Lens groups) to the
@@ -202,6 +210,9 @@ export function toAdvancedUniforms(a: Adjustments): AdvancedUniforms {
     gradeBlending: a.colorGrading.blending,
     gradeBalance: a.colorGrading.balance,
     gradeActive: !isNeutralGrading(a.colorGrading),
+    grainAmount: grainAmplitude(a.detail.grain),
+    grainFrequency: grainFrequency(a.detail.grainSize),
+    grainActive: !isGrainNeutral(a.detail.grain),
   };
 }
 
