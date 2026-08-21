@@ -10,7 +10,7 @@ import type {
  *
  * API used (from the package's documented interface):
  *   const raw = new LibRaw();
- *   await raw.open(new Uint8Array(buffer), options?);
+ *   await raw.open(new Uint8Array(buffer), options);  // options matter — see below
  *   const meta  = await raw.metadata();     // { width, height, make, ... }
  *   const image = await raw.imageData();     // decoded pixels (RGB or RGBA)
  *
@@ -152,6 +152,23 @@ function toMetadata(meta: Record<string, unknown>): RawMetadata {
   };
 }
 
+/**
+ * Processing options passed to LibRaw. These matter a lot: with no options,
+ * libraw-wasm defaults to `useCameraWb: false`, which ignores the white balance
+ * the camera recorded and develops at LibRaw's built-in daylight balance. On
+ * Sony ARW (and most sensors) that lands well off-neutral — greens and whites
+ * come out yellow/olive. `useCameraWb: true` is the "as shot" balance every
+ * other viewer (and the camera's own embedded JPEG) shows.
+ */
+const DEVELOP_OPTIONS = {
+  /** -w : develop with the camera's recorded WB ("as shot"), not daylight. */
+  useCameraWb: true,
+  /** -o 1 : output in sRGB, matching the canvas/monitor pipeline. */
+  outputColor: 1,
+  /** 8-bit RGB out; the pipeline works on Uint8 RGBA. */
+  outputBps: 8,
+} as const;
+
 export class LibRawAdapter implements RawDecoder {
   async decode(buffer: ArrayBuffer): Promise<RawDecodeResult> {
     // Dynamic import so the (large) WASM only loads inside the worker on demand.
@@ -159,7 +176,7 @@ export class LibRawAdapter implements RawDecoder {
     const LibRaw = mod.default;
     const raw = new LibRaw();
     try {
-      await raw.open(new Uint8Array(buffer));
+      await raw.open(new Uint8Array(buffer), DEVELOP_OPTIONS);
       const meta = await raw.metadata();
       const image = await raw.imageData();
       return { pixels: toRgba(image, meta), metadata: toMetadata(meta) };

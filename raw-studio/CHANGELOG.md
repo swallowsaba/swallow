@@ -22,6 +22,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   with memoized `useRenderEdit()` / `useHistoryRows()` hooks and a shared
   empty-array constant; `useShallow` where element identity is already stable.
 
+### Fixed
+- **RAW files developed with a yellow/green cast.** The LibRaw decoder was opened
+  with no processing options, and libraw-wasm defaults to `useCameraWb: false` —
+  so the camera's recorded ("as shot") white balance was ignored and files were
+  developed at LibRaw's built-in daylight balance. On Sony ARW that lands well
+  off-neutral: greens go olive and whites go cream. Now opened with
+  `useCameraWb: true` plus explicit sRGB / 8-bit output, matching what the
+  camera's own embedded preview (and Explorer) shows.
+
 ### Added
 - **AI mask refinement — expand / contract.** AI subject (raster) masks can now be
   grown or shrunk by a couple of pixels to fix hair edges or pull in from a
