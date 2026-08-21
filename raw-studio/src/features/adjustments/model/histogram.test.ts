@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  channelMeanPercent,
   clampBasicField,
   computeChannelHistogram,
   histogramPolyline,
@@ -60,6 +61,32 @@ describe('peakCount', () => {
     bins[128] = 40;
     expect(peakCount(bins)).toBe(40);
     expect(peakCount(bins, false)).toBe(1000);
+  });
+});
+
+describe('channelMeanPercent', () => {
+  it('is 0 for an empty channel', () => {
+    expect(channelMeanPercent(new Uint32Array(256))).toBe(0);
+  });
+
+  it('is 100 when all pixels are at full scale', () => {
+    const bins = new Uint32Array(256);
+    bins[255] = 500;
+    expect(channelMeanPercent(bins)).toBeCloseTo(100, 6);
+  });
+
+  it('is ~50 for a mid-grey channel', () => {
+    const bins = new Uint32Array(256);
+    bins[128] = 10;
+    expect(channelMeanPercent(bins)).toBeCloseTo((128 / 255) * 100, 4);
+  });
+
+  it('weights by count', () => {
+    const bins = new Uint32Array(256);
+    bins[0] = 3; // three black
+    bins[255] = 1; // one white
+    // mean level = (0*3 + 255*1) / 4 = 63.75 -> /255*100 = 25
+    expect(channelMeanPercent(bins)).toBeCloseTo(25, 4);
   });
 });
 

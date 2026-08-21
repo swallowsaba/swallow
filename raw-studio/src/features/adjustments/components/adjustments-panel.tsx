@@ -17,6 +17,7 @@ import { DetailPanel } from './detail-panel';
 import { LensPanel } from './lens-panel';
 import { BeginnerPanel } from './beginner-panel';
 import { Histogram } from './histogram';
+import { CopyPasteSettings } from './copy-paste-settings';
 import { GifPanel } from '@/features/gif';
 import { CollagePanel } from '@/features/collage';
 import { MasksPanel } from '@/features/masks';
@@ -110,6 +111,7 @@ export function AdjustmentsPanel(): React.JSX.Element {
       className="flex h-full flex-col"
     >
       <ModeToggle />
+      <CopyPasteSettings />
       <Histogram />
       <div className="flex flex-col gap-1.5 px-2 pb-2">
         {/* Top-level group selector. */}

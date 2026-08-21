@@ -55,6 +55,23 @@ export function peakCount(bins: Uint32Array, ignoreEnds = true): number {
 }
 
 /**
+ * The mean level of a channel as a percentage (0..100) of full scale — a quick
+ * read on colour balance (equal R/G/B means a neutral image; a high R with low
+ * B means a warm cast). Empty channel -> 0.
+ */
+export function channelMeanPercent(bins: Uint32Array): number {
+  let sum = 0;
+  let count = 0;
+  for (let i = 0; i < 256; i++) {
+    const c = bins[i] ?? 0;
+    sum += i * c;
+    count += c;
+  }
+  if (count === 0) return 0;
+  return (sum / count / 255) * 100;
+}
+
+/**
  * Build an SVG polyline `points` string for a channel over a `width`×`height`
  * box, using a log-ish scale so small populations stay visible. The path spans
  * x=0..width (256 bins) and y=height (0 count) up to y=0 (peak).

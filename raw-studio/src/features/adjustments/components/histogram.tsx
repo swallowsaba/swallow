@@ -5,6 +5,7 @@ import { useViewerStore } from '@/features/viewer';
 import { useT } from '@/i18n';
 import { exposureSummary, formatCamera } from '../model/camera-info';
 import {
+  channelMeanPercent,
   computeChannelHistogram,
   histogramPolyline,
   peakCount,
@@ -111,6 +112,9 @@ export function Histogram(): React.JSX.Element | null {
     commitAdjustments({ basic: { [d.field]: current } }, t('histogram.adjustLabel'));
   };
 
+  const rMean = channelMeanPercent(hist.r);
+  const gMean = channelMeanPercent(hist.g);
+  const bMean = channelMeanPercent(hist.b);
   const rPeak = peakCount(hist.r);
   const gPeak = peakCount(hist.g);
   const bPeak = peakCount(hist.b);
@@ -153,6 +157,12 @@ export function Histogram(): React.JSX.Element | null {
           strokeWidth={1}
         />
       </svg>
+      <div className="mt-1 flex items-center gap-2 text-[10px]">
+        <span style={{ color: 'rgb(255,120,120)' }}>R {rMean.toFixed(1)}</span>
+        <span style={{ color: 'rgb(120,220,140)' }}>G {gMean.toFixed(1)}</span>
+        <span style={{ color: 'rgb(130,160,255)' }}>B {bMean.toFixed(1)}</span>
+        <span className="text-muted-foreground">%</span>
+      </div>
       <div className="mt-1 flex justify-between text-[9px] text-muted-foreground">
         <span>{t('histogram.blacks')}</span>
         <span>{t('histogram.shadows')}</span>

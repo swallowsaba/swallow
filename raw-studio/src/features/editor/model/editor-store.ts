@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import type {
+  Adjustments,
   EditHistory,
   EditState,
   Geometry,
@@ -27,6 +28,7 @@ import {
   undo as undoOp,
 } from '@/features/history/model/history';
 import { applyAdjustments, applyGeometry } from './apply';
+import { ALL_GROUPS, pickAdjustments, type SettingsGroup } from './copy-settings';
 import {
   createDefaultAdjustments,
   createDefaultGeometry,
@@ -87,6 +89,8 @@ export interface EditorState {
   overlayPreview: OverlayPreview | null;
   /** Uncommitted live liquify stroke ops applied for rendering only. */
   warpPreview: readonly WarpOp[] | null;
+  /** Copied adjustments, held to paste onto another image ("copy settings"). */
+  copiedAdjustments: Adjustments | null;
 
   loadImage: (image: SourceImageMeta, initial: EditState) => void;
   closeImage: () => void;
@@ -95,6 +99,10 @@ export interface EditorState {
   clearPreview: () => void;
   commitAdjustments: (patch: PresetAdjustments, label: string) => void;
   commitGeometry: (patch: Partial<Geometry>, label: string) => void;
+  /** Copy the current image's adjustments to the clipboard. */
+  copyAdjustments: () => void;
+  /** Paste the copied adjustments (optionally only some groups) onto the image. */
+  pasteAdjustments: (groups?: readonly SettingsGroup[]) => void;
 
   /* masks */
   setMaskPreview: (preview: MaskPreview) => void;
@@ -144,6 +152,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   maskPreview: null,
   overlayPreview: null,
   warpPreview: null,
+  copiedAdjustments: null,
 
   loadImage: (image, initial) => {
     set({ image, history: createHistory(initial), preview: null, maskPreview: null, overlayPreview: null, warpPreview: null });
@@ -165,6 +174,22 @@ export const useEditorStore = create<EditorState>((set) => ({
       if (!state.history) return state;
       const next = applyAdjustments(state.history.present.state, patch);
       return { history: pushEdit(state.history, label, next), preview: null };
+    });
+  },
+
+  copyAdjustments: () => {
+    set((state) => {
+      if (!state.history) return state;
+      return { copiedAdjustments: state.history.present.state.adjustments };
+    });
+  },
+
+  pasteAdjustments: (groups = ALL_GROUPS) => {
+    set((state) => {
+      if (!state.history || !state.copiedAdjustments) return state;
+      const patch = pickAdjustments(state.copiedAdjustments, groups);
+      const next = applyAdjustments(state.history.present.state, patch);
+      return { history: pushEdit(state.history, 'Paste settings', next), preview: null };
     });
   },
 

@@ -32,6 +32,28 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   camera's own embedded preview (and Explorer) shows.
 
 ### Added
+- **Selective paste settings.** The paste control now has a caret that opens a
+  group picker — paste only Basic, Tone curves, HSL, Color grading, Detail or
+  Lens instead of everything. Groups the copied image doesn't actually carry are
+  marked "(none)". Built on the same unit-tested group selection.
+
+- **Export presets.** The export dialog now has one-tap presets — Original,
+  Instagram square/portrait, Story, X post, 4K, Web (small, WebP) and Print PNG —
+  that set format, quality and long-edge size together; the matching chip
+  highlights and your filename template and watermark are kept. Pure and
+  unit-tested.
+
+- **Copy / paste settings between images.** Copy the current image's adjustments
+  and paste them onto another — the classic Lightroom pair. Paste lights up once
+  something is copied. Pure, unit-tested group selection (basic / tone curves /
+  HSL / color grading / detail / lens) under the hood, applied through the normal
+  history-aware commit so it's undoable.
+
+- **RGB balance readout on the histogram.** The mean level of each channel now
+  shows as a percentage (R / G / B) beneath the histogram — a quick read on
+  colour balance: equal values mean neutral, a high R with a low B means a warm
+  cast. Pure and unit-tested (count-weighted mean of the channel bins).
+
 - **Per-mask tone curve.** A selected mask now has its own RGB tone curve in the
   local adjustments, alongside the local sliders — point-based, same editing as
   the global curve. It flows through the layer's curve LUT, so it renders within

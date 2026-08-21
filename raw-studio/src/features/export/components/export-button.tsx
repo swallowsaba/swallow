@@ -21,6 +21,7 @@ import {
 } from '../model/export-options';
 import { downloadBlob, exportImage } from '../model/export';
 import { useT } from '@/i18n';
+import { EXPORT_PRESETS, applyExportPreset, matchExportPreset } from '../model/export-presets';
 
 const FORMATS: readonly ExportFormat[] = ['jpeg', 'png', 'webp', 'avif'];
 const RESIZE_MODES: readonly { value: ResizeMode; label: string }[] = [
@@ -112,6 +113,28 @@ export function ExportButton(): React.JSX.Element {
         </DialogHeader>
 
         <div className="flex flex-col gap-4 text-sm">
+          <div>
+            <div className="mb-1 text-xs font-medium text-muted-foreground">{t('exportPreset.title')}</div>
+            <div className="flex flex-wrap gap-1">
+              {EXPORT_PRESETS.map((p) => {
+                const active = matchExportPreset(options) === p.id;
+                return (
+                  <Button
+                    key={p.id}
+                    variant={active ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 px-2 text-[11px]"
+                    onClick={() => {
+                      setOptions((o) => applyExportPreset(o, p.id));
+                    }}
+                  >
+                    {t(p.labelKey)}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
           <div>
             <div className="mb-1 text-xs font-medium text-muted-foreground">Format</div>
             <div className="flex gap-1">
