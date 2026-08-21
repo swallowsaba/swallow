@@ -59,6 +59,12 @@ export function mergeLocalIntoAdjustments(
     ...global,
     basic: { ...global.basic, ...basic },
     detail: { ...global.detail, ...detail },
+    // A mask's own RGB curve overrides the global one within the layer. It flows
+    // through toAdvancedUniforms -> the curve LUT, so the mask composite applies
+    // it with no shader change.
+    ...(local.toneCurve
+      ? { toneCurves: { ...global.toneCurves, rgb: local.toneCurve } }
+      : {}),
   };
 }
 

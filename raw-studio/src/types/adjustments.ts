@@ -150,4 +150,7 @@ export interface Adjustments {
  * masks tune light/color/clarity, not lens geometry.
  */
 export type LocalAdjustments = Partial<BasicAdjustments> &
-  Partial<Pick<DetailAdjustments, 'clarity' | 'texture' | 'sharpenAmount' | 'noiseReduction'>>;
+  Partial<Pick<DetailAdjustments, 'clarity' | 'texture' | 'sharpenAmount' | 'noiseReduction'>> & {
+    /** Optional RGB tone curve applied only within the mask. */
+    readonly toneCurve?: readonly CurvePoint[];
+  };

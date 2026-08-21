@@ -31,6 +31,7 @@ const DICT = {
   'curve.hint': { ja: 'クリックで点を追加、ドラッグで曲線を調整、点をダブルクリックで削除。', en: 'Click to add a point, drag to shape the curve, double-click a point to remove it.' },
   'curve.reset': { ja: 'リセット', en: 'Reset' },
   'curve.editLabel': { ja: 'トーンカーブ調整', en: 'Tone curve edit' },
+  'curve.maskTitle': { ja: 'マスク内トーンカーブ', en: 'Mask tone curve' },
   'curve.removeLabel': { ja: 'カーブ点を削除', en: 'Remove curve point' },
   'curve.resetLabel': { ja: 'トーンカーブをリセット', en: 'Reset tone curve' },
   'grading.title': { ja: 'カラーグレーディング', en: 'Color grading' },

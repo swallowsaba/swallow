@@ -32,6 +32,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   camera's own embedded preview (and Explorer) shows.
 
 ### Added
+- **Per-mask tone curve.** A selected mask now has its own RGB tone curve in the
+  local adjustments, alongside the local sliders — point-based, same editing as
+  the global curve. It flows through the layer's curve LUT, so it renders within
+  the mask and bakes into the export with no shader change. (A mask's curve
+  overrides the global RGB curve within that layer.)
+
 - **Mask thumbnails.** Each mask in the list now shows a small preview of its
   coverage — radial, linear, brushed or AI shape — so the list is scannable at a
   glance instead of reading names. Rendered from the same pure coverage math as

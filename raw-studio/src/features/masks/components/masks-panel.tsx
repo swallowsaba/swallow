@@ -31,6 +31,7 @@ import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { createMask, createRasterMask, makeRasterMask, maskHasEffect } from '../model/mask-ops';
 import { MaskThumbnail } from './mask-thumbnail';
+import { MaskToneCurve } from './mask-tone-curve';
 import {
   alphaToCroppedRaster,
   decodeRaster,
@@ -412,6 +413,15 @@ function ActiveMaskEditor(): React.JSX.Element | null {
             />
           );
         })}
+        <MaskToneCurve
+          curve={mask.adjustments.toneCurve}
+          onPreview={(pts) => {
+            setMaskPreview({ id: activeMaskId, adjustments: { toneCurve: pts } });
+          }}
+          onCommit={(pts) => {
+            commitMaskAdjustments(activeMaskId, { toneCurve: pts }, t('curve.maskTitle'));
+          }}
+        />
       </div>
     </div>
   );
