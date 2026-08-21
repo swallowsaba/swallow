@@ -30,6 +30,7 @@ import { useViewerStore } from '@/features/viewer';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { createMask, createRasterMask, makeRasterMask, maskHasEffect } from '../model/mask-ops';
+import { MaskThumbnail } from './mask-thumbnail';
 import {
   alphaToCroppedRaster,
   decodeRaster,
@@ -276,7 +277,8 @@ export function MasksPanel(): React.JSX.Element {
                     editMask(mask.id);
                   }}
                 >
-                  <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+                  <MaskThumbnail mask={mask} />
+                  <Icon className="size-3 shrink-0 text-muted-foreground" />
                   <span className="truncate">{mask.name}</span>
                   {!maskHasEffect(mask) ? (
                     <span className="shrink-0 text-[10px] text-muted-foreground">

@@ -3,6 +3,7 @@ import type { BasicAdjustments } from '@/types';
 import { selectCurrentEdit, useEditorStore } from '@/features/editor';
 import { useViewerStore } from '@/features/viewer';
 import { useT } from '@/i18n';
+import { exposureSummary, formatCamera } from '../model/camera-info';
 import {
   computeChannelHistogram,
   histogramPolyline,
@@ -53,6 +54,7 @@ function useHistogram(bitmap: ImageBitmap | null): ChannelHistogram | null {
 export function Histogram(): React.JSX.Element | null {
   const bitmap = useViewerStore((s) => s.bitmap);
   const edit = useEditorStore(selectCurrentEdit);
+  const image = useEditorStore((s) => s.image);
   const setPreview = useEditorStore((s) => s.setPreview);
   const commitAdjustments = useEditorStore((s) => s.commitAdjustments);
   const t = useT();
@@ -69,6 +71,9 @@ export function Histogram(): React.JSX.Element | null {
   if (!edit || !hist) return null;
 
   const basic = edit.adjustments.basic;
+  const cameraMeta = image?.camera;
+  const exposure = exposureSummary(cameraMeta);
+  const camera = formatCamera(cameraMeta);
 
   const localX = (clientX: number): number => {
     const rect = svgRef.current?.getBoundingClientRect();
@@ -155,6 +160,14 @@ export function Histogram(): React.JSX.Element | null {
         <span>{t('histogram.highlights')}</span>
         <span>{t('histogram.whites')}</span>
       </div>
+      {exposure.length > 0 || camera ? (
+        <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+          {exposure.map((part) => (
+            <span key={part}>{part}</span>
+          ))}
+          {camera ? <span className="opacity-70">{camera}</span> : null}
+        </div>
+      ) : null}
       <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">{t('histogram.hint')}</p>
     </div>
   );

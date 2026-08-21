@@ -32,6 +32,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   camera's own embedded preview (and Explorer) shows.
 
 ### Added
+- **Mask thumbnails.** Each mask in the list now shows a small preview of its
+  coverage — radial, linear, brushed or AI shape — so the list is scannable at a
+  glance instead of reading names. Rendered from the same pure coverage math as
+  the real render, at thumbnail size.
+
+- **Shooting info under the histogram.** ISO, focal length, aperture and shutter
+  (plus the camera body) now show beneath the histogram, read from the RAW
+  metadata already captured at import. Pure, unit-tested formatters — shutter
+  renders as 1/4000 or 2.5\", aperture drops the decimal on whole stops, and any
+  field the file doesn't carry is simply omitted.
+
 - **Color grading (Lightroom-style).** The Color tab now has a hue/saturation
   wheel per tonal zone — shadows, midtones, highlights and global — with
   luminance per wheel plus shared blending and balance. Drag on the wheel or use
