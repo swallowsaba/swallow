@@ -32,6 +32,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   camera's own embedded preview (and Explorer) shows.
 
 ### Added
+- **Color grading (Lightroom-style).** The Color tab now has a hue/saturation
+  wheel per tonal zone — shadows, midtones, highlights and global — with
+  luminance per wheel plus shared blending and balance. Drag on the wheel or use
+  the sliders; the grade renders live and bakes into the export. Pure,
+  unit-tested grading math mirrored line-for-line in the shader, and skipped
+  entirely when every wheel is neutral. (The data model existed but had no UI or
+  shader pass until now.)
+
 - **Before/after split compare.** A toggle in the viewer controls splits the
   image down a draggable divider: original on the left, current edit on the
   right. Both halves are drawn from the same quad (scissored in the renderer) so

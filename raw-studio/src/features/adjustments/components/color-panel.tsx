@@ -3,6 +3,7 @@ import { AdjustmentSlider } from './adjustment-slider';
 import { selectCurrentEdit, useEditorStore } from '@/features/editor';
 import { HelpMark } from '@/components/ui/help-mark';
 import { HSL_BANDS, type HslBand, type HslChannel } from '@/types';
+import { ColorGradingPanel } from './color-grading-panel';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
 import type { TranslationKey } from '@/i18n';
@@ -131,6 +132,13 @@ export function ColorPanel(): React.JSX.Element {
             <HelpMark text={t(CHANNEL_HELP_KEY[key])} className="mt-0.5" />
           </div>
         ))}
+      </section>
+
+      <section className="border-t border-border pt-3">
+        <h3 className="px-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {t('grading.title')}
+        </h3>
+        <ColorGradingPanel />
       </section>
     </div>
   );

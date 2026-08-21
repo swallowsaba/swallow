@@ -31,6 +31,8 @@ uniform float u_exposure, u_contrast, u_highlights, u_shadows, u_whites, u_black
 uniform float u_brightness, u_gamma, u_temp, u_tint, u_saturation, u_vibrance;
 uniform float u_toneShadows, u_toneMid, u_toneHighlights;
 uniform sampler2D u_curveLut;
+uniform vec3 u_gradeShadows, u_gradeMidtones, u_gradeHighlights, u_gradeGlobal;
+uniform float u_gradeBlending, u_gradeBalance, u_gradeActive;
 uniform float u_hslHue[8], u_hslSat[8], u_hslLum[8];
 uniform float u_clarity, u_texture, u_dehaze, u_sharpenAmount, u_sharpenRadius;
 uniform float u_noiseReduction, u_colorNoiseReduction;
@@ -101,6 +103,45 @@ vec3 applyCurves(vec3 c) {
   float g2 = texture(u_curveLut, vec2(g1, 0.5)).a;
   float b2 = texture(u_curveLut, vec2(b1, 0.5)).a;
   return vec3(r2, g2, b2);
+}
+
+// --- color grading (mirrors color-grading.ts) ---
+vec3 gradeTint(float hue) {
+  float h = mod(hue, 360.0);
+  float x = 1.0 - abs(mod(h / 60.0, 2.0) - 1.0);
+  if (h < 60.0) return vec3(1.0, x, 0.0);
+  if (h < 120.0) return vec3(x, 1.0, 0.0);
+  if (h < 180.0) return vec3(0.0, 1.0, x);
+  if (h < 240.0) return vec3(0.0, x, 1.0);
+  if (h < 300.0) return vec3(x, 0.0, 1.0);
+  return vec3(1.0, 0.0, x);
+}
+
+// wheel = vec3(hue, saturation -100..100, luminance -100..100)
+vec3 gradeWheel(vec3 c, vec3 wheel, float weight) {
+  if (weight <= 0.0 || (wheel.y == 0.0 && wheel.z == 0.0)) return c;
+  vec3 tint = gradeTint(wheel.x);
+  float sat = (clamp(wheel.y, -100.0, 100.0) / 100.0) * weight;
+  float lum = (clamp(wheel.z, -100.0, 100.0) / 100.0) * weight * 0.5;
+  vec3 mixed = c + (tint - c) * max(0.0, sat) * 0.5;
+  return clamp(mixed + lum, 0.0, 1.0);
+}
+
+vec3 applyGrading(vec3 c) {
+  if (u_gradeActive < 0.5) return c;
+  float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  float mid = 0.5 + clamp(u_gradeBalance, -100.0, 100.0) / 500.0;
+  float sh = 1.0 - smoothstep(0.0, mid, luma);
+  float hi = smoothstep(mid, 1.0, luma);
+  float md = max(0.0, 1.0 - sh - hi);
+  float sum = sh + md + hi;
+  if (sum <= 0.0) { sh = 0.0; md = 1.0; hi = 0.0; }
+  else { sh /= sum; md /= sum; hi /= sum; }
+  float blend = clamp(u_gradeBlending, 0.0, 100.0) / 100.0;
+  vec3 out0 = gradeWheel(c, u_gradeShadows, sh * blend);
+  out0 = gradeWheel(out0, u_gradeMidtones, md * blend);
+  out0 = gradeWheel(out0, u_gradeHighlights, hi * blend);
+  return gradeWheel(out0, u_gradeGlobal, 1.0);
 }
 
 // --- HSL: rgb<->hsl + 8-band shift, mirrors rgbToHsl/hslToRgb/applyHslBands ---
@@ -209,6 +250,7 @@ vec3 basePipeline(vec2 uv) {
 
   s = applyCurves(s);
   s = applyHslBands(s);
+  s = applyGrading(s);
   return s;
 }
 
@@ -412,6 +454,13 @@ const UNIFORM_NAMES = [
   'u_toneMid',
   'u_toneHighlights',
   'u_curveLut',
+  'u_gradeShadows',
+  'u_gradeMidtones',
+  'u_gradeHighlights',
+  'u_gradeGlobal',
+  'u_gradeBlending',
+  'u_gradeBalance',
+  'u_gradeActive',
   'u_clarity',
   'u_texture',
   'u_dehaze',
@@ -590,6 +639,15 @@ export class WebGLImageRenderer {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, adv.curveLut);
     gl.uniform1i(this.uniforms.u_curveLut ?? null, 7);
     gl.activeTexture(gl.TEXTURE0);
+
+    const w3 = (v: readonly number[]): [number, number, number] => [v[0] ?? 0, v[1] ?? 0, v[2] ?? 0];
+    gl.uniform3fv(this.uniforms.u_gradeShadows ?? null, w3(adv.gradeShadows));
+    gl.uniform3fv(this.uniforms.u_gradeMidtones ?? null, w3(adv.gradeMidtones));
+    gl.uniform3fv(this.uniforms.u_gradeHighlights ?? null, w3(adv.gradeHighlights));
+    gl.uniform3fv(this.uniforms.u_gradeGlobal ?? null, w3(adv.gradeGlobal));
+    gl.uniform1f(this.uniforms.u_gradeBlending ?? null, adv.gradeBlending);
+    gl.uniform1f(this.uniforms.u_gradeBalance ?? null, adv.gradeBalance);
+    gl.uniform1f(this.uniforms.u_gradeActive ?? null, adv.gradeActive ? 1 : 0);
 
     gl.uniform1f(this.uniforms.u_exposure ?? null, a.exposure);
     gl.uniform1f(this.uniforms.u_contrast ?? null, a.contrast);

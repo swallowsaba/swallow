@@ -1,6 +1,7 @@
 import type { Adjustments } from '@/types';
 import { HSL_BANDS } from '@/types';
 import { IDENTITY_CURVE, packCurveLutRgba } from './tone-curve';
+import { isNeutralGrading } from './color-grading';
 
 /**
  * Tone curve, HSL color-band, and lens math for the Tone/Color/Lens panels.
@@ -118,6 +119,15 @@ export interface AdvancedUniforms {
   fisheye: boolean;
   /** 256×1 RGBA tone-curve LUT: .r/.g/.b = R/G/B curves, .a = master (rgb). */
   curveLut: Uint8ClampedArray;
+  /** Color grading: [hue, sat, lum] per wheel, plus blending/balance. */
+  gradeShadows: readonly number[];
+  gradeMidtones: readonly number[];
+  gradeHighlights: readonly number[];
+  gradeGlobal: readonly number[];
+  gradeBlending: number;
+  gradeBalance: number;
+  /** 0 when every wheel is neutral, so the shader can skip the whole block. */
+  gradeActive: boolean;
 }
 
 export const NEUTRAL_ADVANCED: AdvancedUniforms = {
@@ -139,6 +149,13 @@ export const NEUTRAL_ADVANCED: AdvancedUniforms = {
   chromaticAberration: 0,
   fisheye: false,
   curveLut: packCurveLutRgba(IDENTITY_CURVE, IDENTITY_CURVE, IDENTITY_CURVE, IDENTITY_CURVE),
+  gradeShadows: [0, 0, 0],
+  gradeMidtones: [0, 0, 0],
+  gradeHighlights: [0, 0, 0],
+  gradeGlobal: [0, 0, 0],
+  gradeBlending: 50,
+  gradeBalance: 0,
+  gradeActive: false,
 };
 
 /** Map the full Adjustments object (Tone/Color/Detail/Lens groups) to the
@@ -178,7 +195,19 @@ export function toAdvancedUniforms(a: Adjustments): AdvancedUniforms {
       a.toneCurves.green,
       a.toneCurves.blue,
     ),
+    gradeShadows: wheelArray(a.colorGrading.shadows),
+    gradeMidtones: wheelArray(a.colorGrading.midtones),
+    gradeHighlights: wheelArray(a.colorGrading.highlights),
+    gradeGlobal: wheelArray(a.colorGrading.global),
+    gradeBlending: a.colorGrading.blending,
+    gradeBalance: a.colorGrading.balance,
+    gradeActive: !isNeutralGrading(a.colorGrading),
   };
+}
+
+/** Flatten a wheel to the [hue, saturation, luminance] the shader expects. */
+function wheelArray(w: { hue: number; saturation: number; luminance: number }): number[] {
+  return [w.hue, w.saturation, w.luminance];
 }
 
 export const HSL_BAND_HUES: readonly number[] = [0, 30, 60, 120, 180, 240, 280, 320];
