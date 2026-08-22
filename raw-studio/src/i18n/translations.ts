@@ -49,6 +49,8 @@ const DICT = {
   'compare.after': { ja: '編集後', en: 'After' },
   'compare.divider': { ja: '比較の仕切り', en: 'Compare divider' },
   'compare.unavailable': { ja: 'マスク／リキファイの使用中は分割比較を利用できません。', en: 'Split compare is unavailable while masks or liquify are in use.' },
+  'batchExport.title': { ja: '複数サイズで一括書き出し', en: 'Export multiple sizes' },
+  'batchExport.run': { ja: '選択したサイズを書き出し', en: 'Export selected sizes' },
   'exportPreset.title': { ja: '書き出しプリセット', en: 'Export preset' },
   'exportPreset.original': { ja: 'オリジナル', en: 'Original' },
   'exportPreset.instaSquare': { ja: 'Instagram 正方形', en: 'Instagram square' },

@@ -32,6 +32,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   camera's own embedded preview (and Explorer) shows.
 
 ### Added
+- **Export multiple sizes at once.** In the export dialog, pick any set of
+  presets and export the current image to all of them in one go — each written
+  with a size suffix so files don't overwrite each other (e.g. photo_1080px.jpg,
+  photo_3840px.jpg). Pure, unit-tested filename/collision logic; the render reuses
+  the single-image export path per preset.
+
 - **Film grain.** A grain amount and size in the Detail panel add film-like
   luminance-weighted noise (strongest in the midtones), rendered in the shader
   and baked into the export. Skipped entirely at amount 0, so existing edits are

@@ -22,6 +22,7 @@ import {
 import { downloadBlob, exportImage } from '../model/export';
 import { useT } from '@/i18n';
 import { EXPORT_PRESETS, applyExportPreset, matchExportPreset } from '../model/export-presets';
+import { batchOptionsFor, dedupePresetIds } from '../model/batch-export';
 
 const FORMATS: readonly ExportFormat[] = ['jpeg', 'png', 'webp', 'avif'];
 const RESIZE_MODES: readonly { value: ResizeMode; label: string }[] = [
@@ -40,6 +41,7 @@ export function ExportButton(): React.JSX.Element {
 
   const [open, setOpen] = React.useState(false);
   const [options, setOptions] = React.useState(DEFAULT_EXPORT_OPTIONS);
+  const [batchIds, setBatchIds] = React.useState<string[]>([]);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -52,6 +54,28 @@ export function ExportButton(): React.JSX.Element {
     try {
       const { blob, filename } = await exportImage(bitmap, edit, image.fileName, 1, options);
       downloadBlob(blob, filename);
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export failed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const runBatchExport = async () => {
+    if (!bitmap || !edit || !image || batchIds.length === 0) return;
+    setBusy(true);
+    setError(null);
+    try {
+      let seq = 1;
+      for (const id of dedupePresetIds(batchIds)) {
+        const preset = EXPORT_PRESETS.find((p) => p.id === id);
+        if (!preset) continue;
+        const opts = batchOptionsFor(options, preset);
+        const { blob, filename } = await exportImage(bitmap, edit, image.fileName, seq, opts);
+        downloadBlob(blob, filename);
+        seq += 1;
+      }
       setOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Export failed.');
@@ -248,6 +272,46 @@ export function ExportButton(): React.JSX.Element {
                 className="mt-1 h-8"
                 placeholder="Watermark text"
               />
+            ) : null}
+          </div>
+
+          <div>
+            <div className="mb-1 text-xs font-medium text-muted-foreground">
+              {t('batchExport.title')}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {EXPORT_PRESETS.map((p) => {
+                const on = batchIds.includes(p.id);
+                return (
+                  <Button
+                    key={p.id}
+                    variant={on ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 px-2 text-[11px]"
+                    onClick={() => {
+                      setBatchIds((prev) =>
+                        prev.includes(p.id) ? prev.filter((x) => x !== p.id) : [...prev, p.id],
+                      );
+                    }}
+                  >
+                    {t(p.labelKey)}
+                  </Button>
+                );
+              })}
+            </div>
+            {batchIds.length > 0 ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-1.5 h-7 w-full gap-1 text-[11px]"
+                disabled={disabled || busy}
+                onClick={() => {
+                  void runBatchExport();
+                }}
+              >
+                {busy ? <Loader2 className="animate-spin" /> : <Download />}
+                {t('batchExport.run')} ({batchIds.length})
+              </Button>
             ) : null}
           </div>
 
