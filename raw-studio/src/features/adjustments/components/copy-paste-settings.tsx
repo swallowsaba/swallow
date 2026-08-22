@@ -9,9 +9,9 @@ import {
   type SettingsGroup,
 } from '@/features/editor';
 import { createDefaultAdjustments } from '@/features/adjustments/model/defaults';
-import { useT } from '@/i18n';
+import { useT, type TranslationKey } from '@/i18n';
 
-const GROUP_LABEL: Record<SettingsGroup, string> = {
+const GROUP_LABEL: Record<SettingsGroup, TranslationKey> = {
   basic: 'copySettings.group.basic',
   toneCurves: 'copySettings.group.toneCurves',
   hsl: 'copySettings.group.hsl',

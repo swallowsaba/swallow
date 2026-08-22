@@ -1,4 +1,5 @@
 import type { ExportOptions } from './export-options';
+import type { TranslationKey } from '@/i18n/translations';
 import { DEFAULT_EXPORT_OPTIONS } from './export-options';
 
 /**
@@ -11,7 +12,7 @@ import { DEFAULT_EXPORT_OPTIONS } from './export-options';
 export interface ExportPreset {
   readonly id: string;
   /** i18n key for the label. */
-  readonly labelKey: string;
+  readonly labelKey: TranslationKey;
   readonly format: ExportOptions['format'];
   readonly quality: number;
   readonly resize: ExportOptions['resize'];
