@@ -121,6 +121,14 @@ export interface DetailAdjustments {
   readonly grain: number;
   /** 0..100 grain size (larger = coarser) */
   readonly grainSize: number;
+  /** Post-crop vignette: -100..100 amount (neg brightens, pos darkens). */
+  readonly vignetteAmount: number;
+  /** 0..100 where the effect starts (bigger = larger clear center). */
+  readonly vignetteMidpoint: number;
+  /** -100..100 rectangular..circular falloff. */
+  readonly vignetteRoundness: number;
+  /** 0..100 edge softness. */
+  readonly vignetteFeather: number;
 }
 
 /** Lens-based geometric and optical corrections. */

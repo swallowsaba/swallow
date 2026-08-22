@@ -3,6 +3,7 @@ import { HSL_BANDS } from '@/types';
 import { IDENTITY_CURVE, packCurveLutRgba } from './tone-curve';
 import { isNeutralGrading } from './color-grading';
 import { grainAmplitude, grainFrequency, isGrainNeutral } from './grain';
+import { isVignetteNeutral } from './postcrop-vignette';
 
 /**
  * Tone curve, HSL color-band, and lens math for the Tone/Color/Lens panels.
@@ -133,6 +134,12 @@ export interface AdvancedUniforms {
   grainAmount: number;
   grainFrequency: number;
   grainActive: boolean;
+  /** Post-crop vignette params + active flag. */
+  pcvAmount: number;
+  pcvMidpoint: number;
+  pcvRoundness: number;
+  pcvFeather: number;
+  pcvActive: boolean;
 }
 
 export const NEUTRAL_ADVANCED: AdvancedUniforms = {
@@ -164,6 +171,11 @@ export const NEUTRAL_ADVANCED: AdvancedUniforms = {
   grainAmount: 0,
   grainFrequency: grainFrequency(40),
   grainActive: false,
+  pcvAmount: 0,
+  pcvMidpoint: 50,
+  pcvRoundness: 0,
+  pcvFeather: 50,
+  pcvActive: false,
 };
 
 /** Map the full Adjustments object (Tone/Color/Detail/Lens groups) to the
@@ -213,6 +225,11 @@ export function toAdvancedUniforms(a: Adjustments): AdvancedUniforms {
     grainAmount: grainAmplitude(a.detail.grain),
     grainFrequency: grainFrequency(a.detail.grainSize),
     grainActive: !isGrainNeutral(a.detail.grain),
+    pcvAmount: a.detail.vignetteAmount,
+    pcvMidpoint: a.detail.vignetteMidpoint,
+    pcvRoundness: a.detail.vignetteRoundness,
+    pcvFeather: a.detail.vignetteFeather,
+    pcvActive: !isVignetteNeutral(a.detail.vignetteAmount),
   };
 }
 

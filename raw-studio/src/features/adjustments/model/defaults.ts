@@ -90,6 +90,10 @@ export function createDefaultDetail(): DetailAdjustments {
     colorNoiseReduction: 25,
     grain: 0,
     grainSize: 40,
+    vignetteAmount: 0,
+    vignetteMidpoint: 50,
+    vignetteRoundness: 0,
+    vignetteFeather: 50,
   };
 }
 

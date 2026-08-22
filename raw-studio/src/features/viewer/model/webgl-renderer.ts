@@ -38,6 +38,7 @@ uniform float u_clarity, u_texture, u_dehaze, u_sharpenAmount, u_sharpenRadius;
 uniform float u_noiseReduction, u_colorNoiseReduction;
 uniform float u_distortion, u_vignetting, u_chromaticAberration, u_fisheye;
 uniform float u_grainAmount, u_grainFrequency, u_grainActive;
+uniform float u_pcvAmount, u_pcvMidpoint, u_pcvRoundness, u_pcvFeather, u_pcvActive;
 uniform vec2 u_texel;
 out vec4 outColor;
 
@@ -64,6 +65,22 @@ vec2 distortUv(vec2 uv, float amount, float aspect, float fisheye) {
 }
 
 // --- lens: radial vignette, mirrors vignetteFactor() ---
+// --- post-crop vignette (mirrors postcrop-vignette.ts), in cropped uv space ---
+float postCropVignette(vec2 uv) {
+  float amt = clamp(u_pcvAmount, -100.0, 100.0) / 100.0;
+  if (amt == 0.0) return 1.0;
+  float cx = uv.x - 0.5;
+  float cy = uv.y - 0.5;
+  float circular = min(1.0, length(vec2(cx, cy)) / 0.70710678);
+  float rect = min(1.0, max(abs(cx), abs(cy)) / 0.5);
+  float round = clamp(u_pcvRoundness, -100.0, 100.0) / 100.0;
+  float r = mix(rect, circular, (round + 1.0) * 0.5);
+  float mid = clamp(u_pcvMidpoint, 0.0, 100.0) / 100.0;
+  float feather = max(0.001, clamp(u_pcvFeather, 0.0, 100.0) / 100.0);
+  float t = smoothstep(mid, min(1.0, mid + feather), r);
+  return 1.0 - amt * t;
+}
+
 float vignetteFactor(vec2 uv, float amount) {
   float cx = uv.x - 0.5;
   float cy = uv.y - 0.5;
@@ -337,6 +354,9 @@ void main() {
   s = clamp(s, 0.0, 1.0) * vignetteFactor(duv, u_vignetting);
 
   s = pow(max(s, 0.0), vec3(1.0 / u_gamma));
+  if (u_pcvActive > 0.5) {
+    s *= postCropVignette(v_uv);
+  }
   if (u_grainActive > 0.5) {
     // Value-noise grain: hash a quantized UV cell, luminance-weighted so
     // midtones get the most grain (like real film).
@@ -474,6 +494,11 @@ const UNIFORM_NAMES = [
   'u_grainAmount',
   'u_grainFrequency',
   'u_grainActive',
+  'u_pcvAmount',
+  'u_pcvMidpoint',
+  'u_pcvRoundness',
+  'u_pcvFeather',
+  'u_pcvActive',
   'u_clarity',
   'u_texture',
   'u_dehaze',
@@ -664,6 +689,11 @@ export class WebGLImageRenderer {
     gl.uniform1f(this.uniforms.u_grainAmount ?? null, adv.grainAmount);
     gl.uniform1f(this.uniforms.u_grainFrequency ?? null, adv.grainFrequency);
     gl.uniform1f(this.uniforms.u_grainActive ?? null, adv.grainActive ? 1 : 0);
+    gl.uniform1f(this.uniforms.u_pcvAmount ?? null, adv.pcvAmount);
+    gl.uniform1f(this.uniforms.u_pcvMidpoint ?? null, adv.pcvMidpoint);
+    gl.uniform1f(this.uniforms.u_pcvRoundness ?? null, adv.pcvRoundness);
+    gl.uniform1f(this.uniforms.u_pcvFeather ?? null, adv.pcvFeather);
+    gl.uniform1f(this.uniforms.u_pcvActive ?? null, adv.pcvActive ? 1 : 0);
 
     gl.uniform1f(this.uniforms.u_exposure ?? null, a.exposure);
     gl.uniform1f(this.uniforms.u_contrast ?? null, a.contrast);

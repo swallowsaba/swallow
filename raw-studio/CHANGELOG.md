@@ -32,6 +32,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   camera's own embedded preview (and Explorer) shows.
 
 ### Added
+- **Post-crop vignette.** A proper effects vignette in the Detail panel — amount
+  (darken or brighten the corners), midpoint, roundness and feather — applied in
+  the cropped image space, separate from the lens-correction vignette. Renders in
+  the shader and bakes into the export; skipped at amount 0. Pure, unit-tested
+  falloff math mirrored in the shader.
+
 - **Export multiple sizes at once.** In the export dialog, pick any set of
   presets and export the current image to all of them in one go — each written
   with a size suffix so files don't overwrite each other (e.g. photo_1080px.jpg,

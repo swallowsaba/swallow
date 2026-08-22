@@ -67,6 +67,10 @@ const DETAIL_LABELS: Record<keyof Adjustments['detail'], string> = {
   colorNoiseReduction: 'Color noise',
   grain: 'Grain',
   grainSize: 'Grain size',
+  vignetteAmount: 'Vignette',
+  vignetteMidpoint: 'Vignette midpoint',
+  vignetteRoundness: 'Vignette roundness',
+  vignetteFeather: 'Vignette feather',
 };
 
 function curvesEqual(a: Adjustments['toneCurves'], b: Adjustments['toneCurves']): boolean {

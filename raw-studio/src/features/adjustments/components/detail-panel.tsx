@@ -123,6 +123,47 @@ const GROUPS: readonly Group[] = [
       },
     ],
   },
+  {
+    titleKey: 'detail.vignette',
+    sliders: [
+      {
+        key: 'vignetteAmount',
+        labelKey: 'detail.vignetteAmount',
+        helpKey: 'detail.vignetteAmountHelp',
+        min: -100,
+        max: 100,
+        step: 1,
+        defaultValue: 0,
+      },
+      {
+        key: 'vignetteMidpoint',
+        labelKey: 'detail.vignetteMidpoint',
+        helpKey: 'detail.vignetteMidpointHelp',
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultValue: 50,
+      },
+      {
+        key: 'vignetteRoundness',
+        labelKey: 'detail.vignetteRoundness',
+        helpKey: 'detail.vignetteRoundnessHelp',
+        min: -100,
+        max: 100,
+        step: 1,
+        defaultValue: 0,
+      },
+      {
+        key: 'vignetteFeather',
+        labelKey: 'detail.vignetteFeather',
+        helpKey: 'detail.vignetteFeatherHelp',
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultValue: 50,
+      },
+    ],
+  },
 ];
 
 export function DetailPanel(): React.JSX.Element {

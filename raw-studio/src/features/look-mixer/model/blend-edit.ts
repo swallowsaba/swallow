@@ -109,6 +109,10 @@ function blendDetail(e: readonly BlendEntry[], n: readonly number[]): DetailAdju
     colorNoiseReduction: wavg(e, n, g('colorNoiseReduction')),
     grain: wavg(e, n, g('grain')),
     grainSize: wavg(e, n, g('grainSize')),
+    vignetteAmount: wavg(e, n, g('vignetteAmount')),
+    vignetteMidpoint: wavg(e, n, g('vignetteMidpoint')),
+    vignetteRoundness: wavg(e, n, g('vignetteRoundness')),
+    vignetteFeather: wavg(e, n, g('vignetteFeather')),
   };
 }
 
