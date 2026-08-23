@@ -39,6 +39,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **More keyboard shortcuts.** Beyond undo/redo: Ctrl/Cmd +/- to zoom, Ctrl/Cmd+0
+  to fit, Ctrl/Cmd+1 for actual pixels, Ctrl/Cmd+C / +V to copy and paste
+  settings, and un-modified \\ for before/after and X for split compare. Pure,
+  unit-tested key resolution; the global hook now dispatches each action.
+
 - **Post-crop vignette.** A proper effects vignette in the Detail panel — amount
   (darken or brighten the corners), midpoint, roundness and feather — applied in
   the cropped image space, separate from the lens-correction vignette. Renders in
