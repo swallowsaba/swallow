@@ -68,6 +68,7 @@ export function Histogram(): React.JSX.Element | null {
     startX: number;
     base: number;
   } | null>(null);
+  const [channel, setChannel] = React.useState<'rgb' | 'r' | 'g' | 'b' | 'luma'>('rgb');
   const svgRef = React.useRef<SVGSVGElement>(null);
 
   if (!edit || !hist) return null;
@@ -125,6 +126,28 @@ export function Histogram(): React.JSX.Element | null {
 
   return (
     <div className="px-2 pt-2">
+      <div className="mb-1 flex gap-0.5">
+        {(['rgb', 'r', 'g', 'b', 'luma'] as const).map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => {
+              setChannel(c);
+            }}
+            className={
+              'flex-1 rounded py-0.5 text-[9px] uppercase ' +
+              (channel === c ? 'bg-accent text-foreground' : 'text-muted-foreground')
+            }
+            style={
+              channel === c && c !== 'rgb' && c !== 'luma'
+                ? { color: c === 'r' ? 'rgb(255,120,120)' : c === 'g' ? 'rgb(120,220,140)' : 'rgb(130,160,255)' }
+                : undefined
+            }
+          >
+            {t(`histogram.ch.${c}`)}
+          </button>
+        ))}
+      </div>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${String(W)} ${String(H)}`}
@@ -161,16 +184,24 @@ export function Histogram(): React.JSX.Element | null {
         ))}
         {/* channels (screen-blended so overlaps read like Lightroom) */}
         <g style={{ mixBlendMode: 'screen' }}>
-          <polygon points={closed(histogramPolyline(hist.r, W, H, rPeak))} fill="rgba(255,60,60,0.5)" />
-          <polygon points={closed(histogramPolyline(hist.g, W, H, gPeak))} fill="rgba(60,220,90,0.5)" />
-          <polygon points={closed(histogramPolyline(hist.b, W, H, bPeak))} fill="rgba(70,120,255,0.5)" />
+          {(channel === 'rgb' || channel === 'r') && (
+            <polygon points={closed(histogramPolyline(hist.r, W, H, rPeak))} fill="rgba(255,60,60,0.5)" />
+          )}
+          {(channel === 'rgb' || channel === 'g') && (
+            <polygon points={closed(histogramPolyline(hist.g, W, H, gPeak))} fill="rgba(60,220,90,0.5)" />
+          )}
+          {(channel === 'rgb' || channel === 'b') && (
+            <polygon points={closed(histogramPolyline(hist.b, W, H, bPeak))} fill="rgba(70,120,255,0.5)" />
+          )}
         </g>
-        <polyline
-          points={histogramPolyline(hist.luma, W, H, lPeak)}
-          fill="none"
-          stroke="rgba(255,255,255,0.55)"
-          strokeWidth={1}
-        />
+        {(channel === 'rgb' || channel === 'luma') && (
+          <polyline
+            points={histogramPolyline(hist.luma, W, H, lPeak)}
+            fill="none"
+            stroke="rgba(255,255,255,0.55)"
+            strokeWidth={1}
+          />
+        )}
       </svg>
       <div className="mt-1 flex items-center gap-2 text-[10px]">
         <span style={{ color: 'rgb(255,120,120)' }}>R {rMean.toFixed(1)}</span>

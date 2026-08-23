@@ -39,6 +39,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Histogram channel view toggle.** The histogram can now be filtered to RGB
+  (all), a single R/G/B channel, or luma, instead of always showing every channel
+  overlaid — handy for reading one channel's distribution.
+
 - **Reset settings by group.** The settings group picker now has a "Reset
   selected" action alongside paste, restoring the chosen groups (basic / tone
   curves / HSL / color grading / detail / lens) to their defaults through the
