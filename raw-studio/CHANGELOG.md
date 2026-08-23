@@ -39,6 +39,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Auto denoise from ISO.** The noise-reduction group has an "Auto from ISO"
+  action that reads the shot's ISO and sets sensible luminance and chroma
+  noise-reduction amounts (stronger as ISO climbs, capped at the top). Pure,
+  unit-tested ISO->strength mapping. Addresses cleaning up high-ISO grain.
+
 - **Histogram channel view toggle.** The histogram can now be filtered to RGB
   (all), a single R/G/B channel, or luma, instead of always showing every channel
   overlaid — handy for reading one channel's distribution.

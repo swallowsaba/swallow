@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { AdjustmentSlider } from './adjustment-slider';
+import { suggestDenoiseFromIso } from '../model/iso-denoise';
 import { selectCurrentEdit, useEditorStore } from '@/features/editor';
 import { HelpMark } from '@/components/ui/help-mark';
 import { useT } from '@/i18n';
@@ -170,6 +171,7 @@ export function DetailPanel(): React.JSX.Element {
   const currentEdit = useEditorStore(selectCurrentEdit);
   const commitAdjustments = useEditorStore((s) => s.commitAdjustments);
   const setPreview = useEditorStore((s) => s.setPreview);
+  const iso = useEditorStore((s) => s.image?.camera?.iso);
   const t = useT();
   const [pending, setPending] = React.useState<Partial<Record<keyof DetailAdjustments, number>>>(
     {},
@@ -203,9 +205,27 @@ export function DetailPanel(): React.JSX.Element {
     <div className="flex flex-col gap-5 p-4">
       {GROUPS.map((group) => (
         <section key={group.titleKey} className="flex flex-col gap-3">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {t(group.titleKey)}
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {t(group.titleKey)}
+            </h3>
+            {group.titleKey === 'detail.noiseReduction' && iso ? (
+              <button
+                type="button"
+                className="text-[10px] text-primary hover:underline"
+                onClick={() => {
+                  const s = suggestDenoiseFromIso(iso);
+                  commitAdjustments(
+                    { detail: { noiseReduction: s.noiseReduction, colorNoiseReduction: s.colorNoiseReduction } },
+                    t('detail.autoDenoise'),
+                  );
+                }}
+                title={`ISO ${String(iso)}`}
+              >
+                {t('detail.autoDenoise')}
+              </button>
+            ) : null}
+          </div>
           {group.sliders.map((spec) => (
             <div key={spec.key} className="flex items-start gap-1.5">
               <div className="flex-1">

@@ -376,6 +376,7 @@ const DICT = {
   'detail.presence': { ja: '質感', en: 'Presence' },
   'detail.sharpening': { ja: 'シャープ', en: 'Sharpening' },
   'detail.noiseReduction': { ja: 'ノイズ低減', en: 'Noise Reduction' },
+  'detail.autoDenoise': { ja: 'ISOから自動', en: 'Auto from ISO' },
   'detail.clarity': { ja: '明瞭度', en: 'Clarity' },
   'detail.texture': { ja: 'テクスチャ', en: 'Texture' },
   'detail.dehaze': { ja: 'かすみの除去', en: 'Dehaze' },
