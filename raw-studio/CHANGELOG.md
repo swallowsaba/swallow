@@ -39,6 +39,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Straighten & flip in the crop tool.** The crop overlay now has a straighten
+  slider (-45..45 degrees, baked before crop) and horizontal / vertical flip
+  buttons — editing the Geometry.rotation and flip that the pipeline already
+  supported but had no UI for. Pure, unit-tested flip state machine.
+
 - **Color-grading preset looks.** Four new built-in presets use the color grading
   wheels for split-tone film looks — Cine Teal/Orange, Warm Shadows, Cold Film
   and Vintage Fade — the first shipped presets to exercise color grading (the

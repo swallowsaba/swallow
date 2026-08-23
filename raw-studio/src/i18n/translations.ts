@@ -535,6 +535,9 @@ const DICT = {
 
   // Crop / aspect presets
   'crop.title': { ja: 'トリミング', en: 'Crop' },
+  'crop.straighten': { ja: '傾き補正', en: 'Straighten' },
+  'crop.flipH': { ja: '左右反転', en: 'Flip horizontal' },
+  'crop.flipV': { ja: '上下反転', en: 'Flip vertical' },
   'crop.free': { ja: '自由', en: 'Free' },
   'crop.original': { ja: '元の比率', en: 'Original' },
 

@@ -1,9 +1,11 @@
 import * as React from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, FlipHorizontal, FlipVertical, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { computeFitScale, type Size } from '../model/viewport';
 import { clampCropRect, cropRectForAspect, aspectRatioValue, FULL_CROP } from '../model/crop-math';
 import { useViewerStore } from '../model/viewer-store';
+import { toggleFlip, isFlippedH, isFlippedV } from '../model/flip-ops';
 import { selectCurrentEdit, useEditorStore } from '@/features/editor';
 import type { AspectRatioLock, CropRect } from '@/types';
 import { useT } from '@/i18n';
@@ -169,6 +171,53 @@ export function CropOverlay({ imageSize, container }: Props): React.JSX.Element 
               {a.label}
             </Button>
           ))}
+        </div>
+
+        <div className="flex items-center gap-2 rounded-lg border bg-background/95 px-3 py-1.5 shadow-md backdrop-blur">
+          <span className="text-[11px] text-muted-foreground">{t('crop.straighten')}</span>
+          <Slider
+            value={[currentEdit?.geometry.rotation ?? 0]}
+            min={-45}
+            max={45}
+            step={0.1}
+            className="w-32"
+            onValueChange={(v) => {
+              commitGeometry({ rotation: v[0] ?? 0 }, t('crop.straighten'));
+            }}
+          />
+          <span className="w-8 text-right text-[11px] tabular-nums text-muted-foreground">
+            {(currentEdit?.geometry.rotation ?? 0).toFixed(1)}
+          </span>
+          <Button
+            variant={isFlippedH(currentEdit?.geometry.flip ?? 'none') ? 'default' : 'outline'}
+            size="sm"
+            className="h-6 px-2"
+            aria-label={t('crop.flipH')}
+            title={t('crop.flipH')}
+            onClick={() => {
+              commitGeometry(
+                { flip: toggleFlip(currentEdit?.geometry.flip ?? 'none', 'horizontal') },
+                t('crop.flipH'),
+              );
+            }}
+          >
+            <FlipHorizontal className="size-3.5" />
+          </Button>
+          <Button
+            variant={isFlippedV(currentEdit?.geometry.flip ?? 'none') ? 'default' : 'outline'}
+            size="sm"
+            className="h-6 px-2"
+            aria-label={t('crop.flipV')}
+            title={t('crop.flipV')}
+            onClick={() => {
+              commitGeometry(
+                { flip: toggleFlip(currentEdit?.geometry.flip ?? 'none', 'vertical') },
+                t('crop.flipV'),
+              );
+            }}
+          >
+            <FlipVertical className="size-3.5" />
+          </Button>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={cancel} className="h-7 gap-1 px-3 text-xs">
