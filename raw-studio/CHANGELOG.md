@@ -519,6 +519,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   text clearer about download progress.
 
 ### Changed
+- **Manual Remove Object "suggest mask" now uses the improved detector.** The
+  one-click mask suggestion in the manual remove tool switched from the old
+  edge+dilate heuristic to the connected-component thin-structure detector, so
+  the starting mask no longer grabs textured walls or the subject. You can still
+  paint to add/erase and refine before inpainting — the reliable path for clean
+  results on complex backgrounds.
+
+### Changed
 - Renamed Detail's "Color" noise-reduction slider to "Color Noise" and
   rewrote its help text to describe the visible symptom (colored speckles in
   shadows) rather than just the technical term — several people found the
