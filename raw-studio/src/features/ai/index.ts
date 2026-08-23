@@ -22,3 +22,5 @@ export {
 } from './model/edge-detect';
 export { MODELS, getModel } from './model/model-registry';
 export type { ModelDef } from './model/model-registry';
+export { autoRemoveThinStructures, maskToInpaintCanvas } from './model/auto-remove';
+export { detectThinStructures } from './model/thin-structure';

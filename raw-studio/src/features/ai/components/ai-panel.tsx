@@ -8,6 +8,7 @@ import { downloadBlob } from '@/features/export/model/export';
 import { useT } from '@/i18n';
 import { MODELS } from '../model/model-registry';
 import { segment, type SegmentationResult } from '../model/segmentation';
+import { autoRemoveThinStructures } from '../model/auto-remove';
 import { smoothPortrait } from '../model/portrait-smooth';
 import { computeImageStats } from '../model/image-stats';
 import { computeAutoGrade } from '../model/auto-grade';
@@ -22,6 +23,8 @@ export function AiPanel(): React.JSX.Element {
   const [smoothStrength, setSmoothStrength] = React.useState(50);
   const [smoothBusy, setSmoothBusy] = React.useState(false);
   const [smoothStatus, setSmoothStatus] = React.useState<string | null>(null);
+  const [removeBusy, setRemoveBusy] = React.useState(false);
+  const [removeStatus, setRemoveStatus] = React.useState<string | null>(null);
   const t = useT();
 
   const model = MODELS['u2netp-subject'];
@@ -63,6 +66,34 @@ export function AiPanel(): React.JSX.Element {
       setSmoothStatus(err instanceof Error ? err.message : 'Failed.');
     } finally {
       setSmoothBusy(false);
+    }
+  };
+
+  const runRemoveDistractions = async () => {
+    if (!bitmap) return;
+    setRemoveBusy(true);
+    setRemoveStatus(t('ai.removePreparing'));
+    try {
+      const { blob, coverage } = await autoRemoveThinStructures(
+        'lama-inpaint',
+        bitmap,
+        {},
+        (received, total) => {
+          const mb = (received / 1_000_000).toFixed(0);
+          const totalMb = total ? (total / 1_000_000).toFixed(0) : '?';
+          setRemoveStatus(`${mb}/${totalMb} MB…`);
+        },
+      );
+      if (!blob) {
+        setRemoveStatus(t('ai.removeNothing'));
+        return;
+      }
+      downloadBlob(blob, 'distractions-removed.jpg');
+      setRemoveStatus(`${t('ai.done')} (${(coverage * 100).toFixed(1)}%)`);
+    } catch (err) {
+      setRemoveStatus(err instanceof Error ? err.message : 'Failed.');
+    } finally {
+      setRemoveBusy(false);
     }
   };
 
@@ -179,6 +210,27 @@ export function AiPanel(): React.JSX.Element {
         </Button>
         {smoothStatus ? (
           <div className="text-[11px] text-muted-foreground">{smoothStatus}</div>
+        ) : null}
+      </section>
+
+      <section className="flex flex-col gap-2 border-t border-border pt-3">
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {t('ai.removeTitle')}
+        </div>
+        <div className="text-[11px] text-muted-foreground">{t('ai.removeDesc')}</div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!bitmap || removeBusy}
+          onClick={() => {
+            void runRemoveDistractions();
+          }}
+        >
+          {removeBusy ? <Loader2 className="animate-spin" /> : <Sparkle />}
+          {t('ai.removeRun')}
+        </Button>
+        {removeStatus ? (
+          <div className="text-[11px] text-muted-foreground">{removeStatus}</div>
         ) : null}
       </section>
 

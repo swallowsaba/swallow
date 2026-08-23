@@ -39,6 +39,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Auto-remove distractions (wires / nets / fences).** A one-click AI tool that
+  automatically detects thin linear/lattice structures — power lines, cables,
+  sports nets, fences — and inpaints them away with the LaMa model, filling the
+  gap from the surrounding context. Detection is a pure, unit-tested pipeline
+  (Sobel edges -> coverage-tuned threshold -> morphological opening to isolate
+  thin structures from solid subjects -> dilate), then handed to the existing
+  inpaint path. Tells you when nothing distracting was found instead of running
+  the model pointlessly.
+
 - **Deblur / focus recovery.** A new Detail slider that crisps up soft-focus
   shots with a wider-radius unsharp that has a noise-floor threshold (so it
   doesn't amplify grain) and overshoot clamping (so strong settings don't create

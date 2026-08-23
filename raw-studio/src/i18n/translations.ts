@@ -501,6 +501,11 @@ const DICT = {
     ja: '今後追加予定：目・歯だけを狙った補正など、より高精度な顔認識AI機能（現状は被写体全体への穏やかな効果にとどめています）。',
     en: 'Coming next: more precise face-aware tools (like eyes/teeth-only adjustments) using a dedicated face landmark model \u2014 today\u2019s tools apply gentle, whole-subject effects rather than targeting individual features.',
   },
+  'ai.removeTitle': { ja: '邪魔なものを除去', en: 'Remove distractions' },
+  'ai.removeDesc': { ja: '電線・フェンス・ネットなどの細い構造を自動検出し、AIで背景を補完して消します。', en: 'Auto-detects thin structures (wires, fences, nets) and erases them, filling the background with AI.' },
+  'ai.removeRun': { ja: '自動検出して除去', en: 'Detect & remove' },
+  'ai.removePreparing': { ja: 'モデル準備中…', en: 'Preparing model…' },
+  'ai.removeNothing': { ja: '除去対象が見つかりませんでした。', en: 'No distracting structures found.' },
   'ai.portraitSmoothTitle': { ja: 'ポートレート肌なめらか', en: 'Portrait Smooth' },
   'ai.portraitSmoothHelp': {
     ja: '被写体だけを検出し、その範囲の質感を穏やかに滑らかにします（背景はそのまま）。顔の形や目・鼻・口の位置を変える機能ではありません。',
