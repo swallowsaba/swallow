@@ -39,6 +39,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Crop composition grids.** While cropping you can switch the overlay guide
+  between rule-of-thirds, golden ratio, a 4x4 grid, diagonals, or none, to help
+  compose the shot. Pure, unit-tested line generation in normalized crop space.
+
 - **Straighten & flip in the crop tool.** The crop overlay now has a straighten
   slider (-45..45 degrees, baked before crop) and horizontal / vertical flip
   buttons — editing the Geometry.rotation and flip that the pipeline already

@@ -536,6 +536,12 @@ const DICT = {
   // Crop / aspect presets
   'crop.title': { ja: 'トリミング', en: 'Crop' },
   'crop.straighten': { ja: '傾き補正', en: 'Straighten' },
+  'crop.grid': { ja: 'グリッド', en: 'Grid' },
+  'crop.grid.none': { ja: 'なし', en: 'None' },
+  'crop.grid.thirds': { ja: '三分割', en: 'Thirds' },
+  'crop.grid.golden': { ja: '黄金比', en: 'Golden' },
+  'crop.grid.grid': { ja: '格子', en: 'Grid' },
+  'crop.grid.diagonal': { ja: '対角', en: 'Diagonal' },
   'crop.flipH': { ja: '左右反転', en: 'Flip horizontal' },
   'crop.flipV': { ja: '上下反転', en: 'Flip vertical' },
   'crop.free': { ja: '自由', en: 'Free' },

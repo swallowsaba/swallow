@@ -6,6 +6,7 @@ import { computeFitScale, type Size } from '../model/viewport';
 import { clampCropRect, cropRectForAspect, aspectRatioValue, FULL_CROP } from '../model/crop-math';
 import { useViewerStore } from '../model/viewer-store';
 import { toggleFlip, isFlippedH, isFlippedV } from '../model/flip-ops';
+import { CROP_GRIDS, cropGridLines, type CropGrid } from '../model/crop-grid';
 import { selectCurrentEdit, useEditorStore } from '@/features/editor';
 import type { AspectRatioLock, CropRect } from '@/types';
 import { useT } from '@/i18n';
@@ -40,6 +41,7 @@ export function CropOverlay({ imageSize, container }: Props): React.JSX.Element 
   const t = useT();
 
   const [rect, setRect] = React.useState<CropRect>(() => currentEdit?.geometry.crop ?? FULL_CROP);
+  const [grid, setGrid] = React.useState<CropGrid>('thirds');
   const dragRef = React.useRef<{ handle: Handle; start: { x: number; y: number }; rect: CropRect } | null>(
     null,
   );
@@ -134,6 +136,26 @@ export function CropOverlay({ imageSize, container }: Props): React.JSX.Element 
           className="absolute inset-0 cursor-move"
           onPointerDown={onHandleDown('move')}
         />
+        {grid !== 'none' ? (
+          <svg
+            className="pointer-events-none absolute inset-0 size-full"
+            viewBox="0 0 1 1"
+            preserveAspectRatio="none"
+          >
+            {cropGridLines(grid).map((l, i) => (
+              <line
+                key={i}
+                x1={l.x1}
+                y1={l.y1}
+                x2={l.x2}
+                y2={l.y2}
+                stroke="rgba(255,255,255,0.5)"
+                strokeWidth={0.003}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          </svg>
+        ) : null}
         <div
           className={handleCls}
           style={{ left: -6, top: -6, cursor: 'nwse-resize' }}
@@ -218,6 +240,23 @@ export function CropOverlay({ imageSize, container }: Props): React.JSX.Element 
           >
             <FlipVertical className="size-3.5" />
           </Button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-1 rounded-lg border bg-background/95 px-2 py-1 shadow-md backdrop-blur">
+          <span className="mr-1 text-[10px] text-muted-foreground">{t('crop.grid')}</span>
+          {CROP_GRIDS.map((g) => (
+            <Button
+              key={g}
+              variant={grid === g ? 'default' : 'outline'}
+              size="sm"
+              className="h-6 px-2 text-[10px]"
+              onClick={() => {
+                setGrid(g);
+              }}
+            >
+              {t(`crop.grid.${g}`)}
+            </Button>
+          ))}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={cancel} className="h-7 gap-1 px-3 text-xs">
