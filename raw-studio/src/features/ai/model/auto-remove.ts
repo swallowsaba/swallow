@@ -32,13 +32,17 @@ export interface AutoRemoveResult {
   readonly blob: Blob | null;
   /** Fraction of the image the detected mask covered. */
   readonly coverage: number;
+  /** Set when detection found too much area to safely auto-fill. */
+  readonly abortedTooLarge?: boolean;
 }
 
 /**
  * One-shot "remove distractions": detect thin structures (wires, nets, fences)
  * and inpaint them away with LaMa. Returns null blob when the detected mask is
  * essentially empty, so the UI can tell the user nothing was found rather than
- * running the model pointlessly.
+ * running the model pointlessly. Also aborts (without inpainting) when the mask
+ * covers too much of the frame — LaMa only sees a 512² view, so filling a large
+ * area produces a blurry smear; better to decline than to wreck the photo.
  */
 export async function autoRemoveThinStructures(
   modelId: string,
@@ -58,6 +62,8 @@ export async function autoRemoveThinStructures(
   const coverage = maskCoverage(mask);
   // Below ~0.1% coverage there's effectively nothing to remove.
   if (coverage < 0.001) return { blob: null, coverage };
+  // Above ~4% the fill would be a visible smear at LaMa's working resolution.
+  if (coverage > 0.04) return { blob: null, coverage, abortedTooLarge: true };
 
   const maskCanvas = maskToInpaintCanvas(mask, w, h);
   const blob = await inpaint(modelId, bitmap, maskCanvas, onProgress);

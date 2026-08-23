@@ -74,7 +74,7 @@ export function AiPanel(): React.JSX.Element {
     setRemoveBusy(true);
     setRemoveStatus(t('ai.removePreparing'));
     try {
-      const { blob, coverage } = await autoRemoveThinStructures(
+      const res = await autoRemoveThinStructures(
         'lama-inpaint',
         bitmap,
         {},
@@ -84,8 +84,9 @@ export function AiPanel(): React.JSX.Element {
           setRemoveStatus(`${mb}/${totalMb} MB…`);
         },
       );
+      const { blob, coverage } = res;
       if (!blob) {
-        setRemoveStatus(t('ai.removeNothing'));
+        setRemoveStatus(res.abortedTooLarge ? t('ai.removeTooLarge') : t('ai.removeNothing'));
         return;
       }
       downloadBlob(blob, 'distractions-removed.jpg');

@@ -506,6 +506,7 @@ const DICT = {
   'ai.removeRun': { ja: '自動検出して除去', en: 'Detect & remove' },
   'ai.removePreparing': { ja: 'モデル準備中…', en: 'Preparing model…' },
   'ai.removeNothing': { ja: '除去対象が見つかりませんでした。', en: 'No distracting structures found.' },
+  'ai.removeTooLarge': { ja: '検出範囲が広すぎるため自動除去を中止しました。手動マスクでの除去をお試しください。', en: 'Detected area too large; auto-remove stopped to avoid a blurry fill. Try a manual mask instead.' },
   'ai.portraitSmoothTitle': { ja: 'ポートレート肌なめらか', en: 'Portrait Smooth' },
   'ai.portraitSmoothHelp': {
     ja: '被写体だけを検出し、その範囲の質感を穏やかに滑らかにします（背景はそのまま）。顔の形や目・鼻・口の位置を変える機能ではありません。',

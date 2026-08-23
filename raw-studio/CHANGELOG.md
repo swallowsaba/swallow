@@ -5,6 +5,16 @@ All notable changes to this project are documented here. The format is based on
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
+- **Auto-remove distractions: far fewer false positives, no more smears.** The
+  detector now runs connected-component analysis and keeps only components that
+  are genuinely thin (they don't fill their bounding box) AND elongated AND
+  small — so textured walls, grass and large subjects are no longer selected and
+  smeared. Defaults are much more conservative, and if the detected area still
+  exceeds ~4% of the frame the tool declines to inpaint (which at the model's
+  512px working size would blur a large region) and tells you to use a manual
+  mask instead. Connected-component and thinness logic is pure and unit-tested.
+
+### Fixed
 - Build failure: `PresetAdjustments` (the type used by preset/preview/commit
   patches) was missing `toneCurves`, so the new Tone panel didn't type-check.
   Added the field.

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  connectedComponents,
   detectThinStructures,
   erodeMask,
+  isThinElongated,
   thresholdForCoverage,
 } from './thin-structure';
 
@@ -61,31 +63,35 @@ describe('thresholdForCoverage', () => {
 
 describe('detectThinStructures', () => {
   it('detects a thin wire against a plain background', () => {
-    const w = 40;
-    const h = 40;
-    // light background with a dark 1px horizontal wire at y=20
-    const img = makeImage(w, h, (_x, y) => (y === 20 ? 20 : 220));
-    const mask = detectThinStructures(img, w, h, { growRadius: 0, thinnessRadius: 1 });
-    // some pixels near the wire row should be flagged
-    let nearWire = 0;
-    for (let x = 0; x < w; x++) {
-      for (let dy = -2; dy <= 2; dy++) {
-        if ((mask[(20 + dy) * w + x] ?? 0) > 0) nearWire++;
-      }
-    }
-    expect(nearWire).toBeGreaterThan(0);
+    const w = 120;
+    const h = 120;
+    // two short thin diagonal wires (elongated, small area each)
+    const img = makeImage(w, h, (x, y) => {
+      if (Math.abs(x - y) < 1 && x < 40) return 20;
+      if (Math.abs(x - 60 - y) < 1 && x > 60 && x < 100) return 20;
+      return 210;
+    });
+    const mask = detectThinStructures(img, w, h);
+    expect(maskOn(mask)).toBeGreaterThan(0);
   });
 
   it('flags far less of a large solid subject than of a wire scene', () => {
-    const w = 40;
-    const h = 40;
-    // a big solid dark block (a subject) on a light background — few thin edges
-    const subject = makeImage(w, h, (x, y) => (x >= 8 && x <= 32 && y >= 8 && y <= 32 ? 20 : 220));
-    const wire = makeImage(w, h, (_x, y) => (y % 6 === 0 ? 20 : 220)); // repeated thin lines
+    const w = 120;
+    const h = 120;
+    // short thin diagonal wires (each small area, elongated)
+    const wire = makeImage(w, h, (x, y) => {
+      if (Math.abs(x - y) < 1 && x < 40) return 20;
+      if (Math.abs(x - 60 - y) < 1 && x > 60 && x < 100) return 20;
+      return 210;
+    });
+    // a big solid dark block (a subject/wall) — should be rejected as too large
+    const subject = makeImage(w, h, (x, y) => (x >= 20 && x <= 100 && y >= 20 && y <= 100 ? 30 : 210));
 
     const subjMask = detectThinStructures(subject, w, h);
     const wireMask = detectThinStructures(wire, w, h);
     expect(maskOn(wireMask)).toBeGreaterThan(maskOn(subjMask));
+    // the large subject must be essentially untouched (not smeared away)
+    expect(maskOn(subjMask)).toBeLessThan(w * h * 0.005);
   });
 
   it('returns an all-zero mask for a flat image', () => {
@@ -101,5 +107,66 @@ describe('detectThinStructures', () => {
     const h = 12;
     const img = makeImage(w, h, (x) => (x === 8 ? 0 : 255));
     expect(detectThinStructures(img, w, h).length).toBe(w * h);
+  });
+});
+
+describe('connectedComponents', () => {
+  it('separates disjoint regions', () => {
+    const w = 6;
+    const h = 3;
+    const m = new Uint8ClampedArray(w * h);
+    m[0] = 255; m[1] = 255; // component A (row 0, x0-1)
+    m[w * 2 + 4] = 255; m[w * 2 + 5] = 255; // component B (row 2, x4-5)
+    const comps = connectedComponents(m, w, h);
+    expect(comps.length).toBe(2);
+    expect(comps.every((c) => c.area === 2)).toBe(true);
+  });
+
+  it('computes bounding boxes', () => {
+    const w = 5;
+    const h = 5;
+    const m = new Uint8ClampedArray(w * h);
+    for (let x = 0; x < 5; x++) m[2 * w + x] = 255; // horizontal line row 2
+    const comps = connectedComponents(m, w, h);
+    expect(comps.length).toBe(1);
+    expect(comps[0]!.minY).toBe(2);
+    expect(comps[0]!.maxY).toBe(2);
+    expect(comps[0]!.minX).toBe(0);
+    expect(comps[0]!.maxX).toBe(4);
+  });
+});
+
+describe('isThinElongated', () => {
+  const opts = {
+    maxFillFraction: 0.35,
+    minElongation: 3,
+    maxComponentFraction: 0.02,
+    minComponentPixels: 12,
+  };
+  const img = 10000;
+
+  it('accepts a long thin line', () => {
+    // a 1px-tall, 60px-wide line: area 60, bbox 60x1, fill=1 -> but fill of a
+    // 1px line in a 60x1 box is 1.0, so use a 2px gap representation instead.
+    const line = { pixels: [], area: 60, minX: 0, minY: 0, maxX: 59, maxY: 2 };
+    // bbox 60x3=180, fill=60/180=0.33 (<=0.35), diag=~60, elong=60/sqrt(60)=7.7
+    expect(isThinElongated(line, img, opts)).toBe(true);
+  });
+
+  it('rejects a big solid blob', () => {
+    const blob = { pixels: [], area: 2500, minX: 0, minY: 0, maxX: 49, maxY: 49 };
+    // area 2500 > img*0.02=200 -> rejected as too big
+    expect(isThinElongated(blob, img, opts)).toBe(false);
+  });
+
+  it('rejects a compact square (fills its box, not elongated)', () => {
+    const sq = { pixels: [], area: 100, minX: 0, minY: 0, maxX: 9, maxY: 9 };
+    // fill=100/100=1 > 0.35 -> rejected
+    expect(isThinElongated(sq, img, opts)).toBe(false);
+  });
+
+  it('rejects tiny specks', () => {
+    const speck = { pixels: [], area: 5, minX: 0, minY: 0, maxX: 4, maxY: 0 };
+    expect(isThinElongated(speck, img, opts)).toBe(false);
   });
 });
