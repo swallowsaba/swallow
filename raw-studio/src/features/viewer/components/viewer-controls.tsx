@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Columns2, Crop, Eraser, Eye, Maximize, Minus, Pipette, Plus, RotateCw, Scan } from 'lucide-react';
+import { Columns2, Crop, Eraser, Eye, Maximize, Minus, Pipette, Plus, RotateCw, Scan, TriangleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Toggle } from '@/components/ui/toggle';
@@ -41,6 +41,8 @@ export function ViewerControls({ effectiveScale }: ControlsProps): React.JSX.Ele
   const setShowBefore = useViewerStore((s) => s.setShowBefore);
   const compareSplit = useViewerStore((s) => s.compareSplit);
   const setCompareSplit = useViewerStore((s) => s.setCompareSplit);
+  const showClipping = useViewerStore((s) => s.showClipping);
+  const setShowClipping = useViewerStore((s) => s.setShowClipping);
   const setCropMode = useViewerStore((s) => s.setCropMode);
   const setRemoveMode = useViewerStore((s) => s.setRemoveMode);
   const setWbPickMode = useViewerStore((s) => s.setWbPickMode);
@@ -153,6 +155,15 @@ export function ViewerControls({ effectiveScale }: ControlsProps): React.JSX.Ele
         title="Split compare"
       >
         <Columns2 />
+      </Toggle>
+      <Toggle
+        size="sm"
+        pressed={showClipping}
+        onPressedChange={setShowClipping}
+        aria-label="Clipping warning"
+        title="Clipping warning"
+      >
+        <TriangleAlert />
       </Toggle>
     </div>
   );

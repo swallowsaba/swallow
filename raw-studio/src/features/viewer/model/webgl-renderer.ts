@@ -39,6 +39,7 @@ uniform float u_noiseReduction, u_colorNoiseReduction;
 uniform float u_distortion, u_vignetting, u_chromaticAberration, u_fisheye;
 uniform float u_grainAmount, u_grainFrequency, u_grainActive;
 uniform float u_pcvAmount, u_pcvMidpoint, u_pcvRoundness, u_pcvFeather, u_pcvActive;
+uniform float u_showClipping;
 uniform vec2 u_texel;
 out vec4 outColor;
 
@@ -371,6 +372,13 @@ void main() {
     float weight = 1.0 - abs(luma - 0.5) * 1.4; // peak at mid-grey
     s += n * u_grainAmount * max(0.0, weight);
   }
+  if (u_showClipping > 0.5) {
+    vec3 c = clamp(s, 0.0, 1.0);
+    float mx = max(max(c.r, c.g), c.b);
+    float mn = min(min(c.r, c.g), c.b);
+    if (mx >= 0.996) s = vec3(1.0, 0.0, 0.0);      // highlight clip
+    else if (mn <= 0.004) s = vec3(0.0, 0.4, 1.0); // shadow clip
+  }
   outColor = vec4(clamp(s, 0.0, 1.0), texA);
 }`;
 
@@ -504,6 +512,7 @@ const UNIFORM_NAMES = [
   'u_pcvRoundness',
   'u_pcvFeather',
   'u_pcvActive',
+  'u_showClipping',
   'u_clarity',
   'u_texture',
   'u_dehaze',
@@ -672,6 +681,13 @@ export class WebGLImageRenderer {
     this.gl.viewport(0, 0, pixelWidth, pixelHeight);
   }
 
+  private showClipping = false;
+
+  /** Toggle the on-image clipping overlay ("blinkies"). */
+  setClipping(on: boolean): void {
+    this.showClipping = on;
+  }
+
   private setUniforms(a: AdjustmentUniforms, adv: AdvancedUniforms): void {
     const gl = this.gl;
 
@@ -699,6 +715,7 @@ export class WebGLImageRenderer {
     gl.uniform1f(this.uniforms.u_pcvRoundness ?? null, adv.pcvRoundness);
     gl.uniform1f(this.uniforms.u_pcvFeather ?? null, adv.pcvFeather);
     gl.uniform1f(this.uniforms.u_pcvActive ?? null, adv.pcvActive ? 1 : 0);
+    gl.uniform1f(this.uniforms.u_showClipping ?? null, this.showClipping ? 1 : 0);
 
     gl.uniform1f(this.uniforms.u_exposure ?? null, a.exposure);
     gl.uniform1f(this.uniforms.u_contrast ?? null, a.contrast);

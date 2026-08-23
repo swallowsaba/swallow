@@ -39,6 +39,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **On-image clipping overlay ("blinkies").** A viewer toggle paints blown
+  highlights red and crushed shadows blue directly on the photo, so you can see
+  exactly where detail is lost. Evaluated on the final rendered color in the
+  shader; pure, unit-tested classifier mirrored in the GLSL.
+
 - **Histogram clipping indicators.** The histogram now shows Lightroom-style
   corner triangles that light up (blue for shadows, red for highlights) when the
   image clips past a small fraction of pixels, using the clip counts already

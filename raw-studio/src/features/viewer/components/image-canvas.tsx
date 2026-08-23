@@ -67,6 +67,7 @@ export function ImageCanvas(): React.JSX.Element {
   const setCustomScale = useViewerStore((s) => s.setCustomScale);
   const showBefore = useViewerStore((s) => s.showBefore);
   const compareSplit = useViewerStore((s) => s.compareSplit);
+  const showClipping = useViewerStore((s) => s.showClipping);
   const cropMode = useViewerStore((s) => s.cropMode);
   const removeMode = useViewerStore((s) => s.removeMode);
   const wbPickMode = useViewerStore((s) => s.wbPickMode);
@@ -218,6 +219,7 @@ export function ImageCanvas(): React.JSX.Element {
     maskLayers,
     warpField,
     compareSplit,
+    showClipping,
   });
   paramsRef.current = {
     drawScale,
@@ -231,6 +233,7 @@ export function ImageCanvas(): React.JSX.Element {
     maskLayers,
     warpField,
     compareSplit,
+    showClipping,
   };
 
   const schedulerRef = React.useRef<RafScheduler | null>(null);
@@ -239,6 +242,7 @@ export function ImageCanvas(): React.JSX.Element {
       const renderer = rendererRef.current;
       const p = paramsRef.current;
       if (!renderer || !p.imageSize) return;
+      renderer.setClipping(p.showClipping);
       const dpr = window.devicePixelRatio || 1;
       const viewTransform = { scale: p.drawScale, offset: p.offset, rotationDeg: p.rotationDeg };
       if (p.maskLayers.length > 0 || p.warpField) {
@@ -286,6 +290,7 @@ export function ImageCanvas(): React.JSX.Element {
     maskLayers,
     warpField,
     compareSplit,
+    showClipping,
   ]);
 
   React.useEffect(() => {
