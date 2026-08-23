@@ -13,6 +13,7 @@ function preset(
   name: string,
   category: Preset['category'],
   basic: NonNullable<Preset['adjustments']['basic']>,
+  colorGrading?: Preset['adjustments']['colorGrading'],
 ): Preset {
   return {
     id,
@@ -22,7 +23,7 @@ function preset(
     builtin: true,
     createdAt: AT,
     updatedAt: AT,
-    adjustments: { basic },
+    adjustments: { basic, ...(colorGrading ? { colorGrading } : {}) },
   };
 }
 
@@ -278,4 +279,62 @@ export const BUILTIN_PRESETS: readonly Preset[] = [
     blacks: 18,
     saturation: -100,
   }),
+
+  // Split-tone / color-grading looks (use the color grading wheels).
+  preset(
+    'builtin-cine-tealorange',
+    'Cine Teal/Orange',
+    'cinematic',
+    { contrast: 12, highlights: -10, shadows: 8, vibrance: 10 },
+    {
+      shadows: { hue: 200, saturation: 30, luminance: 0 },
+      midtones: { hue: 0, saturation: 0, luminance: 0 },
+      highlights: { hue: 32, saturation: 28, luminance: 0 },
+      global: { hue: 0, saturation: 0, luminance: 0 },
+      blending: 55,
+      balance: 0,
+    },
+  ),
+  preset(
+    'builtin-warm-shadows',
+    'Warm Shadows',
+    'portrait',
+    { exposure: 0.1, contrast: 6, shadows: 12 },
+    {
+      shadows: { hue: 34, saturation: 22, luminance: 0 },
+      midtones: { hue: 0, saturation: 0, luminance: 0 },
+      highlights: { hue: 48, saturation: 10, luminance: 0 },
+      global: { hue: 0, saturation: 0, luminance: 0 },
+      blending: 50,
+      balance: 10,
+    },
+  ),
+  preset(
+    'builtin-cold-film',
+    'Cold Film',
+    'film',
+    { contrast: 8, highlights: -6, blacks: 10, vibrance: -6 },
+    {
+      shadows: { hue: 220, saturation: 26, luminance: 0 },
+      midtones: { hue: 210, saturation: 8, luminance: 0 },
+      highlights: { hue: 190, saturation: 14, luminance: 0 },
+      global: { hue: 0, saturation: 0, luminance: 0 },
+      blending: 60,
+      balance: -10,
+    },
+  ),
+  preset(
+    'builtin-vintage-fade',
+    'Vintage Fade',
+    'vintage',
+    { contrast: -8, highlights: -12, blacks: 22, saturation: -10 },
+    {
+      shadows: { hue: 60, saturation: 18, luminance: 6 },
+      midtones: { hue: 0, saturation: 0, luminance: 0 },
+      highlights: { hue: 40, saturation: 20, luminance: 0 },
+      global: { hue: 30, saturation: 8, luminance: 0 },
+      blending: 50,
+      balance: 0,
+    },
+  ),
 ];

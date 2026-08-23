@@ -39,6 +39,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Color-grading preset looks.** Four new built-in presets use the color grading
+  wheels for split-tone film looks — Cine Teal/Orange, Warm Shadows, Cold Film
+  and Vintage Fade — the first shipped presets to exercise color grading (the
+  rest are Basic-only). Pure data, unit-tested for count, unique ids and shape.
+
 - **On-image clipping overlay ("blinkies").** A viewer toggle paints blown
   highlights red and crushed shadows blue directly on the photo, so you can see
   exactly where detail is lost. Evaluated on the final rendered color in the
