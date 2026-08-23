@@ -21,6 +21,7 @@ export {
   ALL_GROUPS,
   pickAdjustments,
   nonNeutralGroups,
+  resetGroupsPatch,
   type SettingsGroup,
 } from './model/copy-settings';
 export { resolveShortcut } from './model/shortcuts';

@@ -39,6 +39,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Reset settings by group.** The settings group picker now has a "Reset
+  selected" action alongside paste, restoring the chosen groups (basic / tone
+  curves / HSL / color grading / detail / lens) to their defaults through the
+  normal undoable commit. Pure, unit-tested reset patch built on the same group
+  selection.
+
 - **Crop composition grids.** While cropping you can switch the overlay guide
   between rule-of-thirds, golden ratio, a 4x4 grid, diagonals, or none, to help
   compose the shot. Pure, unit-tested line generation in normalized crop space.

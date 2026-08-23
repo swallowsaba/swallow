@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Adjustments } from '@/types';
 import { createDefaultAdjustments } from '@/features/adjustments/model/defaults';
-import { ALL_GROUPS, nonNeutralGroups, pickAdjustments } from './copy-settings';
+import { ALL_GROUPS, nonNeutralGroups, pickAdjustments, resetGroupsPatch } from './copy-settings';
 
 function withEdits(): Adjustments {
   const a = createDefaultAdjustments();
@@ -58,5 +58,28 @@ describe('nonNeutralGroups', () => {
   it('returns nothing for an unedited image', () => {
     const neutral = createDefaultAdjustments();
     expect(nonNeutralGroups(neutral, neutral)).toEqual([]);
+  });
+});
+
+
+describe('resetGroupsPatch', () => {
+  it('returns default values for the selected groups', () => {
+    const neutral = createDefaultAdjustments();
+    const patch = resetGroupsPatch(neutral, ['basic']);
+    expect(patch.basic).toEqual(neutral.basic);
+    expect(patch.detail).toBeUndefined();
+  });
+
+  it('applying it over an edited image restores those groups to neutral', () => {
+    const neutral = createDefaultAdjustments();
+    const edited = withEdits();
+    // Simulate a merge: reset patch overrides the edited basic with neutral basic.
+    const patch = resetGroupsPatch(neutral, ['basic']);
+    expect(patch.basic).toEqual(neutral.basic);
+    expect(patch.basic).not.toEqual(edited.basic);
+  });
+
+  it('an empty selection resets nothing', () => {
+    expect(resetGroupsPatch(createDefaultAdjustments(), [])).toEqual({});
   });
 });

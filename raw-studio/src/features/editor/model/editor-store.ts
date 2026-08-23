@@ -29,7 +29,7 @@ import {
   undo as undoOp,
 } from '@/features/history/model/history';
 import { applyAdjustments, applyGeometry } from './apply';
-import { ALL_GROUPS, pickAdjustments, type SettingsGroup } from './copy-settings';
+import { ALL_GROUPS, pickAdjustments, resetGroupsPatch, type SettingsGroup } from './copy-settings';
 import {
   createDefaultAdjustments,
   createDefaultGeometry,
@@ -104,6 +104,8 @@ export interface EditorState {
   copyAdjustments: () => void;
   /** Paste the copied adjustments (optionally only some groups) onto the image. */
   pasteAdjustments: (groups?: readonly SettingsGroup[]) => void;
+  /** Reset the given groups (default: all) back to neutral. */
+  resetAdjustments: (groups?: readonly SettingsGroup[]) => void;
 
   /* masks */
   setMaskPreview: (preview: MaskPreview) => void;
@@ -192,6 +194,15 @@ export const useEditorStore = create<EditorState>((set) => ({
       const patch = pickAdjustments(state.copiedAdjustments, groups);
       const next = applyAdjustments(state.history.present.state, patch);
       return { history: pushEdit(state.history, 'Paste settings', next), preview: null };
+    });
+  },
+
+  resetAdjustments: (groups = ALL_GROUPS) => {
+    set((state) => {
+      if (!state.history) return state;
+      const patch = resetGroupsPatch(createDefaultAdjustments(), groups);
+      const next = applyAdjustments(state.history.present.state, patch);
+      return { history: pushEdit(state.history, 'Reset', next), preview: null };
     });
   },
 

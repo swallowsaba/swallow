@@ -30,6 +30,7 @@ export function CopyPasteSettings(): React.JSX.Element | null {
   const copied = useEditorStore((s) => s.copiedAdjustments);
   const copyAdjustments = useEditorStore((s) => s.copyAdjustments);
   const pasteAdjustments = useEditorStore((s) => s.pasteAdjustments);
+  const resetAdjustments = useEditorStore((s) => s.resetAdjustments);
   const t = useT();
   const [open, setOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<Set<SettingsGroup>>(new Set(ALL_GROUPS));
@@ -122,17 +123,31 @@ export function CopyPasteSettings(): React.JSX.Element | null {
               </button>
             );
           })}
-          <Button
-            size="sm"
-            className="mt-1 h-6 text-[11px]"
-            disabled={selected.size === 0}
-            onClick={() => {
-              pasteAdjustments(ALL_GROUPS.filter((g) => selected.has(g)));
-              setOpen(false);
-            }}
-          >
-            {t('copySettings.pasteSelected')}
-          </Button>
+          <div className="mt-1 flex gap-1">
+            <Button
+              size="sm"
+              className="h-6 flex-1 text-[11px]"
+              disabled={selected.size === 0}
+              onClick={() => {
+                pasteAdjustments(ALL_GROUPS.filter((g) => selected.has(g)));
+                setOpen(false);
+              }}
+            >
+              {t('copySettings.pasteSelected')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 flex-1 text-[11px]"
+              disabled={selected.size === 0}
+              onClick={() => {
+                resetAdjustments(ALL_GROUPS.filter((g) => selected.has(g)));
+                setOpen(false);
+              }}
+            >
+              {t('copySettings.resetSelected')}
+            </Button>
+          </div>
         </div>
       ) : null}
     </div>

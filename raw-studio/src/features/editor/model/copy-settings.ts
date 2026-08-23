@@ -48,3 +48,16 @@ export function nonNeutralGroups(
 ): SettingsGroup[] {
   return ALL_GROUPS.filter((g) => JSON.stringify(source[g]) !== JSON.stringify(neutral[g]));
 }
+
+/**
+ * A paste patch that resets the given groups back to their default values. Built
+ * from a neutral Adjustments (createDefaultAdjustments) so applying it through
+ * the normal merge path restores those groups. Reuses pickAdjustments, so it's
+ * covered by the same guarantees.
+ */
+export function resetGroupsPatch(
+  neutral: Adjustments,
+  groups: readonly SettingsGroup[],
+): PresetAdjustments {
+  return pickAdjustments(neutral, groups);
+}
