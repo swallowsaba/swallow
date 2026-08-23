@@ -383,10 +383,7 @@ const DICT = {
     ja: 'クラリティほど全体のコントラストに影響を与えず、細部の質感を強調します。',
     en: 'Enhances fine surface detail without affecting overall contrast as much as Clarity.',
   },
-  'detail.dehazeHelp': {
-    ja: 'コントラストを上げることで、かすみを軽減します（簡易的な近似で、本格的なdark-channel方式ではありません）。',
-    en: 'Cuts through atmospheric haze by boosting contrast — a simplified approximation, not a full dark-channel dehaze.',
-  },
+  'detail.dehazeHelp': { ja: 'プラスでかすみを除去（コントラスト増・黒を締める）、マイナスでかすみを追加します。', en: 'Positive clears haze (more contrast, deeper blacks); negative adds haze.' },
   'detail.amountHelp': { ja: 'シャープの強さです。', en: 'How strongly edges are sharpened.' },
   'detail.radiusHelp': {
     ja: 'シャープ処理を行う際に、輪郭の周囲をどれくらいの範囲まで考慮するかです。',

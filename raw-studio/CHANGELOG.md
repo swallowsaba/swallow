@@ -31,6 +31,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `useCameraWb: true` plus explicit sRGB / 8-bit output, matching what the
   camera's own embedded preview (and Explorer) shows.
 
+### Fixed
+- **Dehaze now works in both directions.** The shader clamped the amount to >= 0,
+  so negative dehaze (adding atmospheric haze / softening) did nothing. It's now
+  bidirectional — positive clears haze, negative adds a veil — with contrast
+  floored and the black-lift clamped so strong negative values flatten to haze
+  instead of solarizing. Pure, unit-tested transform mirrored in the shader.
+
 ### Added
 - **Post-crop vignette.** A proper effects vignette in the Detail panel — amount
   (darken or brighten the corners), midpoint, roundness and feather — applied in

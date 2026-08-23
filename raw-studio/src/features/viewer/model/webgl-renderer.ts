@@ -348,8 +348,13 @@ void main() {
     s = vec3(lumS) + chroma;
   }
 
-  float dehazeT = max(u_dehaze, 0.0) / 100.0;
-  s = (s - 0.5) * (1.0 + dehazeT * 0.5) + 0.5 - dehazeT * 0.1 * (1.0 - s);
+  // Dehaze, bidirectional (mirrors dehaze.ts): positive clears haze, negative
+  // adds a veil. Contrast is floored at 0 and the black-lift is clamped so the
+  // transform never inverts.
+  float dehazeT = clamp(u_dehaze, -300.0, 300.0) / 100.0;
+  float dehazeC = max(0.0, 1.0 + dehazeT * 0.5);
+  float dehazeB = max(dehazeT * 0.1, -dehazeC);
+  s = (s - 0.5) * dehazeC + 0.5 - dehazeB * (1.0 - s);
 
   s = clamp(s, 0.0, 1.0) * vignetteFactor(duv, u_vignetting);
 
