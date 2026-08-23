@@ -55,6 +55,21 @@ export function peakCount(bins: Uint32Array, ignoreEnds = true): number {
 }
 
 /**
+ * Whether the shadows / highlights are clipping past a small fraction of the
+ * image, for the histogram's corner indicators. The default threshold ignores a
+ * few stray pixels so the indicators don't flicker on essentially-clean images.
+ */
+export function clipState(
+  hist: Pick<ChannelHistogram, 'clipLow' | 'clipHigh'>,
+  threshold = 0.001,
+): { shadows: boolean; highlights: boolean } {
+  return {
+    shadows: hist.clipLow > threshold,
+    highlights: hist.clipHigh > threshold,
+  };
+}
+
+/**
  * The mean level of a channel as a percentage (0..100) of full scale — a quick
  * read on colour balance (equal R/G/B means a neutral image; a high R with low
  * B means a warm cast). Empty channel -> 0.

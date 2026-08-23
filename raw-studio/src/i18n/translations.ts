@@ -87,6 +87,8 @@ const DICT = {
   'copySettings.group.detail': { ja: 'ディテール', en: 'Detail' },
   'copySettings.group.lens': { ja: 'レンズ補正', en: 'Lens' },
   'histogram.blacks': { ja: 'ブラック', en: 'Blacks' },
+  'histogram.clipShadows': { ja: '黒つぶれ（シャドウのクリッピング）', en: 'Shadow clipping' },
+  'histogram.clipHighlights': { ja: '白飛び（ハイライトのクリッピング）', en: 'Highlight clipping' },
   'histogram.shadows': { ja: 'シャドウ', en: 'Shadows' },
   'histogram.exposure': { ja: '露光', en: 'Exposure' },
   'histogram.highlights': { ja: 'ハイライト', en: 'Highlights' },

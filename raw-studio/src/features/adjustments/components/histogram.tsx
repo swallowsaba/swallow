@@ -6,6 +6,7 @@ import { useT } from '@/i18n';
 import { exposureSummary, formatCamera } from '../model/camera-info';
 import {
   channelMeanPercent,
+  clipState,
   computeChannelHistogram,
   histogramPolyline,
   peakCount,
@@ -119,6 +120,7 @@ export function Histogram(): React.JSX.Element | null {
   const gPeak = peakCount(hist.g);
   const bPeak = peakCount(hist.b);
   const lPeak = peakCount(hist.luma);
+  const clip = clipState(hist);
   const closed = (poly: string): string => `0,${String(H)} ${poly} ${String(W)},${String(H)}`;
 
   return (
@@ -132,6 +134,19 @@ export function Histogram(): React.JSX.Element | null {
         onPointerMove={onMove}
         onPointerUp={onUp}
       >
+        {/* clipping indicators (Lightroom-style corner triangles) */}
+        <polygon
+          points={`0,0 12,0 0,12`}
+          fill={clip.shadows ? 'rgba(120,160,255,0.95)' : 'rgba(255,255,255,0.18)'}
+        >
+          <title>{t('histogram.clipShadows')}</title>
+        </polygon>
+        <polygon
+          points={`${String(W)},0 ${String(W - 12)},0 ${String(W)},12`}
+          fill={clip.highlights ? 'rgba(255,120,120,0.95)' : 'rgba(255,255,255,0.18)'}
+        >
+          <title>{t('histogram.clipHighlights')}</title>
+        </polygon>
         {/* zone dividers */}
         {TONE_ZONES.slice(1).map((z) => (
           <line

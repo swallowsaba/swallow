@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   channelMeanPercent,
   clampBasicField,
+  clipState,
   computeChannelHistogram,
   histogramPolyline,
   peakCount,
@@ -136,5 +137,26 @@ describe('clampBasicField', () => {
     expect(clampBasicField('shadows', 150)).toBe(100);
     expect(clampBasicField('whites', -150)).toBe(-100);
     expect(clampBasicField('gamma', 10)).toBe(4);
+  });
+});
+
+
+describe('clipState', () => {
+  it('flags shadows and highlights past the threshold', () => {
+    expect(clipState({ clipLow: 0.02, clipHigh: 0 })).toEqual({ shadows: true, highlights: false });
+    expect(clipState({ clipLow: 0, clipHigh: 0.05 })).toEqual({ shadows: false, highlights: true });
+    expect(clipState({ clipLow: 0.02, clipHigh: 0.05 })).toEqual({ shadows: true, highlights: true });
+  });
+
+  it('ignores a few stray clipped pixels below the threshold', () => {
+    expect(clipState({ clipLow: 0.0005, clipHigh: 0.0005 })).toEqual({
+      shadows: false,
+      highlights: false,
+    });
+  });
+
+  it('respects a custom threshold', () => {
+    expect(clipState({ clipLow: 0.03, clipHigh: 0 }, 0.05).shadows).toBe(false);
+    expect(clipState({ clipLow: 0.06, clipHigh: 0 }, 0.05).shadows).toBe(true);
   });
 });

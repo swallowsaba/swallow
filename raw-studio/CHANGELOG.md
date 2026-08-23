@@ -39,6 +39,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Histogram clipping indicators.** The histogram now shows Lightroom-style
+  corner triangles that light up (blue for shadows, red for highlights) when the
+  image clips past a small fraction of pixels, using the clip counts already
+  computed. Pure, unit-tested threshold logic.
+
 - **Named & renamable snapshots.** Snapshots can now be given a name when saved
   (type it and press Add/Enter) and renamed later by double-clicking — instead of
   the auto "Snapshot N". Pure, unit-tested rename op (trims, ignores blanks,
