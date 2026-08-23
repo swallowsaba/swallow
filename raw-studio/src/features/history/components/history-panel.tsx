@@ -1,6 +1,7 @@
 import * as React from 'react';
-import { Camera, Clock, Trash2 } from 'lucide-react';
+import { Camera, Check, Clock, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import {
@@ -18,7 +19,23 @@ export function HistoryPanel(): React.JSX.Element {
   const addSnapshot = useEditorStore((s) => s.addSnapshot);
   const restoreSnapshot = useEditorStore((s) => s.restoreSnapshot);
   const removeSnapshot = useEditorStore((s) => s.removeSnapshot);
+  const renameSnapshot = useEditorStore((s) => s.renameSnapshot);
   const hasImage = useEditorStore((s) => s.image !== null);
+
+  const [newName, setNewName] = React.useState('');
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [editingName, setEditingName] = React.useState('');
+
+  const commitAdd = () => {
+    const name = newName.trim() || `Snapshot ${String(snapshots.length + 1)}`;
+    addSnapshot(name);
+    setNewName('');
+  };
+  const commitRename = () => {
+    if (editingId) renameSnapshot(editingId, editingName);
+    setEditingId(null);
+    setEditingName('');
+  };
 
   if (!hasImage) {
     return (
@@ -38,13 +55,25 @@ export function HistoryPanel(): React.JSX.Element {
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {t('history.snapshots')}
         </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="ml-auto h-6 px-2 text-[11px]"
-          onClick={() => {
-            addSnapshot(`Snapshot ${String(snapshots.length + 1)}`);
+      </div>
+
+      <div className="flex gap-1 px-2 pb-1">
+        <Input
+          value={newName}
+          onChange={(e) => {
+            setNewName(e.target.value);
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commitAdd();
+          }}
+          placeholder={t('history.snapshotNamePlaceholder')}
+          className="h-6 flex-1 text-[11px]"
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-6 px-2 text-[11px]"
+          onClick={commitAdd}
         >
           {t('common.add')}
         </Button>
@@ -56,26 +85,60 @@ export function HistoryPanel(): React.JSX.Element {
         ) : (
           snapshots.map((snap) => (
             <div key={snap.id} className="group flex items-center gap-1 rounded px-2 py-1 hover:bg-accent">
-              <button
-                type="button"
-                className="flex-1 truncate text-left text-sm"
-                onClick={() => {
-                  restoreSnapshot(snap.id);
-                }}
-                title={`Restore "${snap.name}"`}
-              >
-                {snap.name}
-              </button>
-              <button
-                type="button"
-                aria-label={t('history.deleteSnapshot')}
-                onClick={() => {
-                  removeSnapshot(snap.id);
-                }}
-                className="text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
+              {editingId === snap.id ? (
+                <>
+                  <Input
+                    autoFocus
+                    value={editingName}
+                    onChange={(e) => {
+                      setEditingName(e.target.value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitRename();
+                      else if (e.key === 'Escape') {
+                        setEditingId(null);
+                      }
+                    }}
+                    onBlur={commitRename}
+                    className="h-6 flex-1 text-[13px]"
+                  />
+                  <button
+                    type="button"
+                    aria-label={t('common.add')}
+                    onClick={commitRename}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Check className="size-3.5" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="flex-1 truncate text-left text-sm"
+                    onClick={() => {
+                      restoreSnapshot(snap.id);
+                    }}
+                    onDoubleClick={() => {
+                      setEditingId(snap.id);
+                      setEditingName(snap.name);
+                    }}
+                    title={`Restore "${snap.name}"`}
+                  >
+                    {snap.name}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t('history.deleteSnapshot')}
+                    onClick={() => {
+                      removeSnapshot(snap.id);
+                    }}
+                    className="text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </>
+              )}
             </div>
           ))
         )}

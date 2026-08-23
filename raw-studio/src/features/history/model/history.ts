@@ -104,6 +104,22 @@ export function removeSnapshot(history: EditHistory, snapshotId: string): EditHi
   return { ...history, snapshots: history.snapshots.filter((s) => s.id !== snapshotId) };
 }
 
+/** Rename a snapshot. A blank name is ignored (keeps the existing name). */
+export function renameSnapshot(
+  history: EditHistory,
+  snapshotId: string,
+  name: string,
+): EditHistory {
+  const trimmed = name.trim();
+  if (trimmed.length === 0) return history;
+  return {
+    ...history,
+    snapshots: history.snapshots.map((s) =>
+      s.id === snapshotId ? { ...s, name: trimmed } : s,
+    ),
+  };
+}
+
 /** Jump the current edit to a saved snapshot, pushing the jump onto the stack. */
 export function restoreSnapshot(history: EditHistory, snapshotId: string): EditHistory {
   const snapshot = history.snapshots.find((s) => s.id === snapshotId);

@@ -3,6 +3,8 @@ import { createDefaultEditState } from '@/features/adjustments/model/defaults';
 import {
   addSnapshot,
   canRedo,
+  removeSnapshot,
+  renameSnapshot,
   canUndo,
   createHistory,
   MAX_HISTORY,
@@ -78,5 +80,43 @@ describe('history', () => {
     const snapId = h.snapshots[0]?.id ?? '';
     h = restoreSnapshot(h, snapId);
     expect(h.present.state.adjustments.basic.exposure).toBe(3);
+  });
+});
+
+
+describe('renameSnapshot', () => {
+  it('renames a snapshot by id', () => {
+    let h = createHistory(stateAt(0));
+    h = addSnapshot(h, 'Original');
+    const id = h.snapshots[0]!.id;
+    h = renameSnapshot(h, id, '  Warm look  ');
+    expect(h.snapshots[0]!.name).toBe('Warm look'); // trimmed
+  });
+
+  it('ignores a blank name', () => {
+    let h = createHistory(stateAt(0));
+    h = addSnapshot(h, 'Keep');
+    const id = h.snapshots[0]!.id;
+    h = renameSnapshot(h, id, '   ');
+    expect(h.snapshots[0]!.name).toBe('Keep');
+  });
+
+  it('leaves other snapshots untouched and no-ops an unknown id', () => {
+    let h = createHistory(stateAt(0));
+    h = addSnapshot(h, 'A');
+    h = addSnapshot(h, 'B');
+    h = renameSnapshot(h, 'nope', 'C');
+    expect(h.snapshots.map((s) => s.name)).toEqual(['A', 'B']);
+  });
+});
+
+describe('removeSnapshot', () => {
+  it('removes the matching snapshot only', () => {
+    let h = createHistory(stateAt(0));
+    h = addSnapshot(h, 'A');
+    h = addSnapshot(h, 'B');
+    const idA = h.snapshots[0]!.id;
+    h = removeSnapshot(h, idA);
+    expect(h.snapshots.map((s) => s.name)).toEqual(['B']);
   });
 });

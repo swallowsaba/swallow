@@ -22,6 +22,7 @@ import {
   pushEdit,
   redo as redoOp,
   removeSnapshot as removeSnapshotOp,
+  renameSnapshot as renameSnapshotOp,
   restoreSnapshot as restoreSnapshotOp,
   timeline as timelineOp,
   jumpTo as jumpToOp,
@@ -141,6 +142,7 @@ export interface EditorState {
   jumpToHistory: (entryId: string) => void;
   addSnapshot: (name: string) => void;
   removeSnapshot: (id: string) => void;
+  renameSnapshot: (id: string, name: string) => void;
   restoreSnapshot: (id: string) => void;
   resetEdit: () => void;
 }
@@ -354,6 +356,9 @@ export const useEditorStore = create<EditorState>((set) => ({
   },
   removeSnapshot: (id) => {
     set((state) => (state.history ? { history: removeSnapshotOp(state.history, id) } : state));
+  },
+  renameSnapshot: (id, name) => {
+    set((state) => (state.history ? { history: renameSnapshotOp(state.history, id, name) } : state));
   },
   restoreSnapshot: (id) => {
     set((state) => (state.history ? { history: restoreSnapshotOp(state.history, id) } : state));

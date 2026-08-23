@@ -459,6 +459,7 @@ const DICT = {
 
   // History panel
   'history.snapshots': { ja: 'スナップショット', en: 'Snapshots' },
+  'history.snapshotNamePlaceholder': { ja: '名前を付けて保存…', en: 'Name this snapshot…' },
   'history.title': { ja: '履歴', en: 'History' },
   'history.noSnapshots': { ja: 'スナップショットはまだありません', en: 'No snapshots yet.' },
   'history.openImagePrompt': {

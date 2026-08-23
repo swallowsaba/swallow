@@ -39,6 +39,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Named & renamable snapshots.** Snapshots can now be given a name when saved
+  (type it and press Add/Enter) and renamed later by double-clicking — instead of
+  the auto "Snapshot N". Pure, unit-tested rename op (trims, ignores blanks,
+  no-ops unknown ids).
+
 - **More keyboard shortcuts.** Beyond undo/redo: Ctrl/Cmd +/- to zoom, Ctrl/Cmd+0
   to fit, Ctrl/Cmd+1 for actual pixels, Ctrl/Cmd+C / +V to copy and paste
   settings, and un-modified \\ for before/after and X for split compare. Pure,
