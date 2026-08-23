@@ -4,6 +4,7 @@ import {
   detectThinStructures,
   erodeMask,
   isThinElongated,
+  optionsForSensitivity,
   thresholdForCoverage,
 } from './thin-structure';
 
@@ -168,5 +169,27 @@ describe('isThinElongated', () => {
   it('rejects tiny specks', () => {
     const speck = { pixels: [], area: 5, minX: 0, minY: 0, maxX: 4, maxY: 0 };
     expect(isThinElongated(speck, img, opts)).toBe(false);
+  });
+});
+
+describe('optionsForSensitivity', () => {
+  it('widens the net as sensitivity increases', () => {
+    const lo = optionsForSensitivity(0);
+    const hi = optionsForSensitivity(100);
+    expect(hi.targetCoverage!).toBeGreaterThan(lo.targetCoverage!);
+    expect(hi.maxFillFraction!).toBeGreaterThan(lo.maxFillFraction!);
+    expect(hi.minElongation!).toBeLessThan(lo.minElongation!); // looser
+    expect(hi.maxComponentFraction!).toBeGreaterThan(lo.maxComponentFraction!);
+  });
+
+  it('clamps out-of-range input', () => {
+    expect(optionsForSensitivity(-50)).toEqual(optionsForSensitivity(0));
+    expect(optionsForSensitivity(500)).toEqual(optionsForSensitivity(100));
+  });
+
+  it('never allows a huge component fraction', () => {
+    for (const s of [0, 50, 100]) {
+      expect(optionsForSensitivity(s).maxComponentFraction!).toBeLessThanOrEqual(0.03);
+    }
   });
 });

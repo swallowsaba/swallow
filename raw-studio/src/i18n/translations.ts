@@ -504,6 +504,7 @@ const DICT = {
   'ai.removeTitle': { ja: '邪魔なものを除去', en: 'Remove distractions' },
   'ai.removeDesc': { ja: '電線・フェンス・ネットなどの細い構造を自動検出し、AIで背景を補完して消します。', en: 'Auto-detects thin structures (wires, fences, nets) and erases them, filling the background with AI.' },
   'ai.removeRun': { ja: '自動検出して除去', en: 'Detect & remove' },
+  'ai.removeSensitivity': { ja: '検出感度', en: 'Sensitivity' },
   'ai.removePreparing': { ja: 'モデル準備中…', en: 'Preparing model…' },
   'ai.removeNothing': { ja: '除去対象が見つかりませんでした。', en: 'No distracting structures found.' },
   'ai.removeTooLarge': { ja: '検出範囲が広すぎるため自動除去を中止しました。手動マスクでの除去をお試しください。', en: 'Detected area too large; auto-remove stopped to avoid a blurry fill. Try a manual mask instead.' },

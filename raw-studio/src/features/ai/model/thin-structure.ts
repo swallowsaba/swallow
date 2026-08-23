@@ -43,6 +43,25 @@ export interface ThinStructureOptions {
   readonly minComponentPixels?: number;
 }
 
+/**
+ * Map a single user-facing "sensitivity" (0..100) to the detection options.
+ * Higher sensitivity casts a wider net (more coverage, accepts slightly thicker
+ * and less-elongated structures) at the cost of more false positives; lower is
+ * stricter. This keeps the UI to one slider instead of seven knobs.
+ */
+export function optionsForSensitivity(sensitivity: number): ThinStructureOptions {
+  const s = Math.max(0, Math.min(100, sensitivity)) / 100;
+  return {
+    targetCoverage: 0.015 + s * 0.045, // 1.5%..6%
+    thinnessRadius: 1,
+    growRadius: 1,
+    maxFillFraction: 0.25 + s * 0.2, // 0.25..0.45
+    minElongation: 4 - s * 1.5, // 4..2.5
+    maxComponentFraction: 0.015 + s * 0.015, // 1.5%..3%
+    minComponentPixels: 12,
+  };
+}
+
 /** Morphological erosion: a pixel stays ON only if all neighbors within radius
  *  are ON. Thin lines (with OFF neighbors) get erased; thick blobs survive. */
 export function erodeMask(

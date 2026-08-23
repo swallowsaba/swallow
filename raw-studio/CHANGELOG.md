@@ -49,6 +49,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Auto-remove: a sensitivity slider.** The distraction remover now has one
+  Sensitivity control (0..100) that widens or tightens detection — low is strict
+  (only obvious thin wires), high casts a wider net. It maps to the seven
+  internal detection parameters via a pure, unit-tested function, and still
+  respects the too-large safety abort.
+
 - **Auto-remove distractions (wires / nets / fences).** A one-click AI tool that
   automatically detects thin linear/lattice structures — power lines, cables,
   sports nets, fences — and inpaints them away with the LaMa model, filling the

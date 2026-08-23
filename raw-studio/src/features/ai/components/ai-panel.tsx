@@ -9,6 +9,7 @@ import { useT } from '@/i18n';
 import { MODELS } from '../model/model-registry';
 import { segment, type SegmentationResult } from '../model/segmentation';
 import { autoRemoveThinStructures } from '../model/auto-remove';
+import { optionsForSensitivity } from '../model/thin-structure';
 import { smoothPortrait } from '../model/portrait-smooth';
 import { computeImageStats } from '../model/image-stats';
 import { computeAutoGrade } from '../model/auto-grade';
@@ -25,6 +26,7 @@ export function AiPanel(): React.JSX.Element {
   const [smoothStatus, setSmoothStatus] = React.useState<string | null>(null);
   const [removeBusy, setRemoveBusy] = React.useState(false);
   const [removeStatus, setRemoveStatus] = React.useState<string | null>(null);
+  const [removeSensitivity, setRemoveSensitivity] = React.useState(40);
   const t = useT();
 
   const model = MODELS['u2netp-subject'];
@@ -77,7 +79,7 @@ export function AiPanel(): React.JSX.Element {
       const res = await autoRemoveThinStructures(
         'lama-inpaint',
         bitmap,
-        {},
+        optionsForSensitivity(removeSensitivity),
         (received, total) => {
           const mb = (received / 1_000_000).toFixed(0);
           const totalMb = total ? (total / 1_000_000).toFixed(0) : '?';
@@ -219,6 +221,22 @@ export function AiPanel(): React.JSX.Element {
           {t('ai.removeTitle')}
         </div>
         <div className="text-[11px] text-muted-foreground">{t('ai.removeDesc')}</div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground">{t('ai.removeSensitivity')}</span>
+          <Slider
+            value={[removeSensitivity]}
+            min={0}
+            max={100}
+            step={1}
+            className="flex-1"
+            onValueChange={(v) => {
+              setRemoveSensitivity(v[0] ?? 40);
+            }}
+          />
+          <span className="w-6 text-right text-[10px] tabular-nums text-muted-foreground">
+            {removeSensitivity}
+          </span>
+        </div>
         <Button
           variant="outline"
           size="sm"
