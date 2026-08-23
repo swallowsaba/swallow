@@ -398,6 +398,8 @@ const DICT = {
     ja: 'シャープ処理を行う際に、輪郭の周囲をどれくらいの範囲まで考慮するかです。',
     en: 'How wide an area around each edge is considered when sharpening.',
   },
+  'detail.deblur': { ja: 'ピンぼけ補正', en: 'Deblur' },
+  'detail.deblurHelp': { ja: 'ピントの甘さを回復して輪郭をくっきりさせます（ハロー抑制付き）。', en: 'Recovers soft focus and crisps up edges, with halo suppression.' },
   'detail.luminanceNrHelp': {
     ja: '明るさのノイズ（粒状感）を滑らかにします。値を上げすぎると細部がぼやけることがあります。',
     en: 'Smooths brightness noise (grain). Higher values can soften fine detail.',

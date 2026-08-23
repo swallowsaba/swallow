@@ -117,6 +117,8 @@ export interface DetailAdjustments {
   readonly noiseReduction: number;
   /** 0..100 (chroma) */
   readonly colorNoiseReduction: number;
+  /** 0..100 focus recovery / deblur (halo-suppressed unsharp). */
+  readonly deblur: number;
   /** 0..100 film grain amount */
   readonly grain: number;
   /** 0..100 grain size (larger = coarser) */

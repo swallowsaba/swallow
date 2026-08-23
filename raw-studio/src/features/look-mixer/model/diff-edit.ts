@@ -65,6 +65,7 @@ const DETAIL_LABELS: Record<keyof Adjustments['detail'], string> = {
   sharpenDetail: 'Sharpen detail',
   noiseReduction: 'Noise',
   colorNoiseReduction: 'Color noise',
+  deblur: 'Deblur',
   grain: 'Grain',
   grainSize: 'Grain size',
   vignetteAmount: 'Vignette',

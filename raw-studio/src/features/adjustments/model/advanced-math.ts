@@ -4,6 +4,7 @@ import { IDENTITY_CURVE, packCurveLutRgba } from './tone-curve';
 import { isNeutralGrading } from './color-grading';
 import { grainAmplitude, grainFrequency, isGrainNeutral } from './grain';
 import { isVignetteNeutral } from './postcrop-vignette';
+import { isDeblurNeutral } from './deblur';
 
 /**
  * Tone curve, HSL color-band, and lens math for the Tone/Color/Lens panels.
@@ -130,6 +131,9 @@ export interface AdvancedUniforms {
   gradeBalance: number;
   /** 0 when every wheel is neutral, so the shader can skip the whole block. */
   gradeActive: boolean;
+  /** Focus recovery / deblur amount + active flag. */
+  deblurAmount: number;
+  deblurActive: boolean;
   /** Film grain: noise amplitude, cell frequency, and an active flag. */
   grainAmount: number;
   grainFrequency: number;
@@ -168,6 +172,8 @@ export const NEUTRAL_ADVANCED: AdvancedUniforms = {
   gradeBlending: 50,
   gradeBalance: 0,
   gradeActive: false,
+  deblurAmount: 0,
+  deblurActive: false,
   grainAmount: 0,
   grainFrequency: grainFrequency(40),
   grainActive: false,
@@ -224,6 +230,8 @@ export function toAdvancedUniforms(a: Adjustments): AdvancedUniforms {
     gradeActive: !isNeutralGrading(a.colorGrading),
     grainAmount: grainAmplitude(a.detail.grain),
     grainFrequency: grainFrequency(a.detail.grainSize),
+    deblurAmount: a.detail.deblur,
+    deblurActive: !isDeblurNeutral(a.detail.deblur),
     grainActive: !isGrainNeutral(a.detail.grain),
     pcvAmount: a.detail.vignetteAmount,
     pcvMidpoint: a.detail.vignetteMidpoint,

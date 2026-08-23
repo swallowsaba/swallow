@@ -76,6 +76,15 @@ const GROUPS: readonly Group[] = [
         step: 0.1,
         defaultValue: 1,
       },
+      {
+        key: 'deblur',
+        labelKey: 'detail.deblur',
+        helpKey: 'detail.deblurHelp',
+        min: 0,
+        max: 100,
+        step: 1,
+        defaultValue: 0,
+      },
     ],
   },
   {

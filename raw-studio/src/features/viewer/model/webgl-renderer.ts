@@ -35,6 +35,7 @@ uniform vec3 u_gradeShadows, u_gradeMidtones, u_gradeHighlights, u_gradeGlobal;
 uniform float u_gradeBlending, u_gradeBalance, u_gradeActive;
 uniform float u_hslHue[8], u_hslSat[8], u_hslLum[8];
 uniform float u_clarity, u_texture, u_dehaze, u_sharpenAmount, u_sharpenRadius;
+uniform float u_deblurAmount, u_deblurActive;
 uniform float u_noiseReduction, u_colorNoiseReduction;
 uniform float u_distortion, u_vignetting, u_chromaticAberration, u_fisheye;
 uniform float u_grainAmount, u_grainFrequency, u_grainActive;
@@ -292,6 +293,31 @@ void main() {
   ) * 0.25;
 
   s += (s - blur) * (u_sharpenAmount / 100.0) * 1.5;
+  // Focus recovery / deblur: wider-radius, halo-suppressed unsharp per channel
+  // (mirrors deblur.ts). Wider blur reference than the sharpen radius.
+  if (u_deblurActive > 0.5) {
+    vec2 wtexel = u_texel * 2.5;
+    vec3 wblur = (
+      basePipeline(duv + vec2(wtexel.x, 0.0)) +
+      basePipeline(duv - vec2(wtexel.x, 0.0)) +
+      basePipeline(duv + vec2(0.0, wtexel.y)) +
+      basePipeline(duv - vec2(0.0, wtexel.y)) +
+      basePipeline(duv + wtexel) +
+      basePipeline(duv - wtexel)
+    ) / 6.0;
+    float amt = clamp(u_deblurAmount, 0.0, 100.0) / 100.0;
+    float thresh = 0.02;
+    vec3 detail = s - wblur;
+    vec3 mag = abs(detail);
+    vec3 sgn = sign(detail);
+    vec3 soft = detail - sgn * thresh;
+    vec3 boost = soft * amt * 2.0;
+    vec3 limit = mag * 1.5;
+    vec3 limited = clamp(boost, -limit, limit);
+    // Only apply where detail exceeds the noise threshold.
+    vec3 mask = step(vec3(thresh), mag);
+    s = clamp(s + limited * mask, 0.0, 1.0);
+  }
   // Only taper clarity near the TRUE extremes (within ~12% of pure black or
   // white) to avoid clipping/halos there — a full linear falloff across the
   // whole tonal range (an earlier version) attenuated clarity across most of
@@ -518,6 +544,8 @@ const UNIFORM_NAMES = [
   'u_dehaze',
   'u_sharpenAmount',
   'u_sharpenRadius',
+  'u_deblurAmount',
+  'u_deblurActive',
   'u_noiseReduction',
   'u_colorNoiseReduction',
   'u_distortion',
@@ -738,6 +766,8 @@ export class WebGLImageRenderer {
     gl.uniform1f(this.uniforms.u_dehaze ?? null, adv.dehaze);
     gl.uniform1f(this.uniforms.u_sharpenAmount ?? null, adv.sharpenAmount);
     gl.uniform1f(this.uniforms.u_sharpenRadius ?? null, adv.sharpenRadius);
+    gl.uniform1f(this.uniforms.u_deblurAmount ?? null, adv.deblurAmount);
+    gl.uniform1f(this.uniforms.u_deblurActive ?? null, adv.deblurActive ? 1 : 0);
     gl.uniform1f(this.uniforms.u_noiseReduction ?? null, adv.noiseReduction);
     gl.uniform1f(this.uniforms.u_colorNoiseReduction ?? null, adv.colorNoiseReduction);
     gl.uniform1f(this.uniforms.u_distortion ?? null, adv.distortion);

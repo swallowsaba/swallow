@@ -39,6 +39,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Deblur / focus recovery.** A new Detail slider that crisps up soft-focus
+  shots with a wider-radius unsharp that has a noise-floor threshold (so it
+  doesn't amplify grain) and overshoot clamping (so strong settings don't create
+  white/black edge halos). Pure, unit-tested transform mirrored in the shader.
+
 - **Auto denoise from ISO.** The noise-reduction group has an "Auto from ISO"
   action that reads the shot's ISO and sets sensible luminance and chroma
   noise-reduction amounts (stronger as ISO climbs, capped at the top). Pure,
