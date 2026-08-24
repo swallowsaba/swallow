@@ -972,15 +972,36 @@ export class WebGLImageRenderer {
       this.vertexData[base + 3] = v;
     }
 
+    // If denoise/sharpen is requested (and we're not doing a split compare, which
+    // re-draws with different uniforms per half), route through the multipass
+    // detail pipeline: draw the developed image to an FBO, run the bilateral +
+    // noise-aware sharpen passes, then present the cleaned texture with the view
+    // transform. Otherwise fall through to the plain single-pass draw below.
+    const dparams = detailParamsFromAdvanced(advanced);
+    const detailActive =
+      dparams.denoiseRadius > 0 || dparams.colorDenoise > 0 || dparams.sharpenAmount > 0;
+    if (detailActive && !split) {
+      const croppedWpx = Math.max(1, Math.round(this.imageSize.width * crop.width));
+      const croppedHpx = Math.max(1, Math.round(this.imageSize.height * crop.height));
+      const dscale = Math.min(1, MAX_MASK_WORK / Math.max(croppedWpx, croppedHpx));
+      const dw = Math.max(1, Math.round(croppedWpx * dscale));
+      const dh = Math.max(1, Math.round(croppedHpx * dscale));
+      this.ensureMaskPrograms();
+      this.ensureFbos(dw, dh);
+      const A = this.fboA;
+      const B = this.fboB;
+      const detFbo = this.fboDetail;
+      if (A && B && detFbo) {
+        gl.disable(gl.BLEND);
+        // Draw developed image (in-shader detail OFF) to A.
+        this.drawAdjustToFbo(A, dw, dh, adjustments, advanced, crop);
+        const result = this.applyDetailPasses(A, B, detFbo, dw, dh, dparams);
+        this.presentToScreen(result.tex, view, cssSize, dpr, croppedWpx, croppedHpx);
+        return;
+      }
+    }
+
     gl.useProgram(this.program);
-    this.setUniforms(adjustments, advanced);
-    gl.bindVertexArray(this.vao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertexData);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.uniform1i(this.texLoc ?? null, 0);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     // Compare split: re-draw the left region with the "before" (neutral)
     // uniforms. Same quad, so the two halves line up exactly.

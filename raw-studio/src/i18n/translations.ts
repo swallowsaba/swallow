@@ -393,21 +393,15 @@ const DICT = {
     en: 'Enhances fine surface detail without affecting overall contrast as much as Clarity.',
   },
   'detail.dehazeHelp': { ja: 'プラスでかすみを除去（コントラスト増・黒を締める）、マイナスでかすみを追加します。', en: 'Positive clears haze (more contrast, deeper blacks); negative adds haze.' },
-  'detail.amountHelp': { ja: 'シャープの強さです。', en: 'How strongly edges are sharpened.' },
+  'detail.amountHelp': { ja: 'シャープの強さ。ノイズフロア以上の構造だけを強調し、ざらつきは増幅しません。', en: 'Sharpen strength. Only structure above the noise floor is boosted, so grain is not amplified.' },
   'detail.radiusHelp': {
     ja: 'シャープ処理を行う際に、輪郭の周囲をどれくらいの範囲まで考慮するかです。',
     en: 'How wide an area around each edge is considered when sharpening.',
   },
   'detail.deblur': { ja: 'ピンぼけ補正', en: 'Deblur' },
   'detail.deblurHelp': { ja: 'ピントの甘さを回復して輪郭をくっきりさせます（ハロー抑制付き）。', en: 'Recovers soft focus and crisps up edges, with halo suppression.' },
-  'detail.luminanceNrHelp': {
-    ja: '明るさのノイズ（粒状感）を滑らかにします。値を上げすぎると細部がぼやけることがあります。',
-    en: 'Smooths brightness noise (grain). Higher values can soften fine detail.',
-  },
-  'detail.colorNrHelp': {
-    ja: '暗い部分などに出る、赤や緑の細かい色ムラ（カラーノイズ）を滑らかにします。明るさの細かい模様（輝度のディテール）はそのまま保ちます。「輝度」スライダーとは別に、色のにじみだけを狙って抑えます。',
-    en: 'Smooths the small red/green/blue color speckles that show up in noisy areas (e.g. shadows on a high-ISO photo), without softening brightness detail. This targets color blotches specifically — separate from the Luminance slider above.',
-  },
+  'detail.luminanceNrHelp': { ja: '輝度ノイズのざらつきを低減します。エッジ保持のバイラテラル処理で、輪郭を残しつつ平坦部だけを滑らかにします。', en: 'Reduces luminance grain with an edge-preserving bilateral filter — smooths flat areas while keeping edges sharp.' },
+  'detail.colorNrHelp': { ja: 'カラーノイズ（色斑）を低減します。輝度を保ったまま色成分だけを平滑化します。', en: 'Reduces color speckle, smoothing chroma while preserving luminance detail.' },
 
   // Lens panel
   'lens.title': { ja: 'レンズ補正', en: 'Lens Corrections' },

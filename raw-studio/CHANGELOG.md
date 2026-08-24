@@ -532,6 +532,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   text clearer about download progress.
 
 ### Changed
+- **Multipass denoise/sharpen now drives the normal (no-mask) view too.** The
+  plain render path routes through the FBO detail pipeline whenever denoise or
+  sharpen is active (falling back to the inline path only for split-compare), so
+  the new edge-preserving bilateral denoise and noise-aware sharpen apply in
+  everyday editing — not just when masks are present. The existing Detail sliders
+  (Sharpen amount/radius, Luminance NR, Color NR) drive the engine directly;
+  their help text now describes the edge-preserving / grain-safe behaviour.
+
+### Changed
 - **Denoise & sharpen rebuilt from scratch.** The old box-blur denoise (which
   softened real detail) and naive unsharp (which amplified grain) are replaced:
   denoise is now an edge-preserving **bilateral filter** (averages only
