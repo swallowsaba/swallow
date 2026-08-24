@@ -49,6 +49,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **Multipass denoise/sharpen engine (FBO pipeline).** New ground-up detail
+  engine that runs denoise and sharpen as dedicated GPU passes into ping-pong
+  framebuffers instead of a single inline shader step: a **separable bilateral**
+  denoise (horizontal + vertical, iterated for stronger settings, with a large
+  adaptive radius that a single pass can't afford) followed by a **noise-aware
+  sharpen** on the cleaned result. Luma and chroma denoise are separated. The
+  kernel math (spatial/range weights, 1-D bilateral accumulation, strength->
+  radius/sigma/iteration mappings, param resolver) is pure and unit-tested; the
+  two new fragment shaders mirror it. Wired into the masked-render path's global
+  pass; the no-mask path keeps the inline detail step. In-shader detail is gated
+  so the two never double-apply.
+
+
 - **Auto-remove: a sensitivity slider.** The distraction remover now has one
   Sensitivity control (0..100) that widens or tightens detection — low is strict
   (only obvious thin wires), high casts a wider net. It maps to the seven
