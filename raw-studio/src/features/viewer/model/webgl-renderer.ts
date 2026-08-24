@@ -281,9 +281,57 @@ void main() {
   vec3 s = basePipeline(duv);
   float texA = texture(u_tex, duv).a;
 
-  // Detail tab: cheap 4-neighbor box blur, computed from the SAME processed
-  // pipeline (not the raw texture — see basePipeline's comment) so it's a
-  // fair local-detail reference for clarity/sharpening/noise reduction.
+  // ===== Detail pipeline v2: denoise FIRST (bilateral, edge-preserving), then
+  // sharpen the cleaned result with a noise-aware unsharp. This ordering is the
+  // fix for "sharpen makes noise worse": we never sharpen raw grain. Mirrors
+  // detail-v2.ts. =====
+  float denoiseT = clamp(u_noiseReduction / 100.0, 0.0, 1.0);
+  float colorDenoiseT = clamp(u_colorNoiseReduction / 100.0, 0.0, 1.0);
+  // denoise range sigma (mirrors denoiseSigma): 0 disables, else 0.03..0.25
+  float dnSigma = denoiseT <= 0.0 ? 0.0 : 0.03 + denoiseT * 0.22;
+
+  if (dnSigma > 0.0 || colorDenoiseT > 0.0) {
+    // 8-neighbor bilateral over a moderate radius. Spatial weight is 1.0 for
+    // 4-neighbors and ~0.7 for diagonals; range weight uses luma difference so
+    // color speckle doesn't break luminance edges.
+    vec2 dt = u_texel * 2.0;
+    vec3 n0 = basePipeline(duv + vec2(dt.x, 0.0));
+    vec3 n1 = basePipeline(duv - vec2(dt.x, 0.0));
+    vec3 n2 = basePipeline(duv + vec2(0.0, dt.y));
+    vec3 n3 = basePipeline(duv - vec2(0.0, dt.y));
+    vec3 n4 = basePipeline(duv + dt);
+    vec3 n5 = basePipeline(duv - dt);
+    vec3 n6 = basePipeline(duv + vec2(dt.x, -dt.y));
+    vec3 n7 = basePipeline(duv + vec2(-dt.x, dt.y));
+    float lc = dot(s, LUMA);
+    // sigma is on luma; guard against 0.
+    float sig = max(dnSigma, 0.0001);
+    // accumulate bilateral for luma smoothing
+    vec3 accum = s;
+    float wsum = 1.0;
+    #define BILAT(nv, sp) { float dl = (dot((nv),LUMA)-lc)/sig; float w = (sp) * exp(-0.5 * dl * dl); accum += (nv) * w; wsum += w; }
+    BILAT(n0, 1.0) BILAT(n1, 1.0) BILAT(n2, 1.0) BILAT(n3, 1.0)
+    BILAT(n4, 0.7) BILAT(n5, 0.7) BILAT(n6, 0.7) BILAT(n7, 0.7)
+    #undef BILAT
+    vec3 denoised = accum / wsum;
+
+    // Luminance denoise: keep chroma of s, take luma from the bilateral result.
+    float lumD = dot(denoised, LUMA);
+    vec3 lumaDenoised = s + (lumD - lc); // shift luma only
+    s = (dnSigma > 0.0) ? lumaDenoised : s;
+
+    // Chroma denoise: pull chroma toward a plain wide average (chroma noise is
+    // low-frequency speckle; a mean is fine and stronger near edges is OK).
+    if (colorDenoiseT > 0.0) {
+      vec3 mean = (n0+n1+n2+n3+n4+n5+n6+n7) * 0.125;
+      float lumS = dot(s, LUMA);
+      float lumM = dot(mean, LUMA);
+      vec3 chroma = mix(s - vec3(lumS), mean - vec3(lumM), colorDenoiseT);
+      s = vec3(lumS) + chroma;
+    }
+  }
+
+  // Local average for sharpen/clarity/texture, from the (now denoised) pipeline.
   vec2 texel = u_texel * max(u_sharpenRadius, 0.5);
   vec3 blur = (
     basePipeline(duv + vec2(texel.x, 0.0)) +
@@ -291,10 +339,19 @@ void main() {
     basePipeline(duv + vec2(0.0, texel.y)) +
     basePipeline(duv - vec2(0.0, texel.y))
   ) * 0.25;
+  // Noise-aware sharpen (mirrors noiseAwareSharpen): boost only detail above the
+  // noise floor, so residual grain isn't amplified. Per-channel.
+  if (u_sharpenAmount > 0.0) {
+    float amt = clamp(u_sharpenAmount, 0.0, 300.0) / 100.0;
+    float floorN = 0.015;
+    vec3 detail = s - blur;
+    vec3 mag = abs(detail) + 1e-6;
+    vec3 gated = detail * max(vec3(0.0), 1.0 - floorN / mag);
+    s = clamp(s + gated * amt, 0.0, 1.0);
+  }
 
-  s += (s - blur) * (u_sharpenAmount / 100.0) * 1.5;
   // Focus recovery / deblur: wider-radius, halo-suppressed unsharp per channel
-  // (mirrors deblur.ts). Wider blur reference than the sharpen radius.
+  // (mirrors deblur.ts). Applied after denoise+sharpen on the cleaned signal.
   if (u_deblurActive > 0.5) {
     vec2 wtexel = u_texel * 2.5;
     vec3 wblur = (
@@ -314,66 +371,16 @@ void main() {
     vec3 boost = soft * amt * 2.0;
     vec3 limit = mag * 1.5;
     vec3 limited = clamp(boost, -limit, limit);
-    // Only apply where detail exceeds the noise threshold.
     vec3 mask = step(vec3(thresh), mag);
     s = clamp(s + limited * mask, 0.0, 1.0);
   }
-  // Only taper clarity near the TRUE extremes (within ~12% of pure black or
-  // white) to avoid clipping/halos there — a full linear falloff across the
-  // whole tonal range (an earlier version) attenuated clarity across most of
-  // a typical photo, making it feel like it "didn't work".
+  // Clarity/texture: local-contrast on the cleaned signal. Taper clarity only
+  // near the true extremes to avoid halos.
   float lumC = dot(s, LUMA);
   float distFromExtreme = min(lumC, 1.0 - lumC);
   float midWeight = smoothstep(0.0, 0.12, distFromExtreme);
   s += (s - blur) * (u_clarity / 100.0) * 0.6 * midWeight;
   s += (s - blur) * (u_texture / 100.0) * 0.8;
-
-  float denoiseT = clamp(u_noiseReduction / 100.0, 0.0, 1.0);
-  float colorDenoiseT = clamp(u_colorNoiseReduction / 100.0, 0.0, 1.0);
-  if (denoiseT > 0.0 || colorDenoiseT > 0.0) {
-    // Noise reduction needs a much wider averaging radius than
-    // sharpen/clarity's tight edge-detection radius to meaningfully smooth
-    // grain — reusing that 1-texel radius (an earlier version) was too
-    // narrow to visibly do anything. This is a separate, wider blur so
-    // sharpen/clarity keep their precise, narrow radius.
-    vec2 wideTexel = u_texel * 4.0;
-    vec3 wideBlur = (
-      basePipeline(duv + vec2(wideTexel.x, 0.0)) +
-      basePipeline(duv - vec2(wideTexel.x, 0.0)) +
-      basePipeline(duv + vec2(0.0, wideTexel.y)) +
-      basePipeline(duv - vec2(0.0, wideTexel.y)) +
-      basePipeline(duv + wideTexel) +
-      basePipeline(duv - wideTexel) +
-      basePipeline(duv + vec2(wideTexel.x, -wideTexel.y)) +
-      basePipeline(duv + vec2(-wideTexel.x, wideTexel.y))
-    ) * 0.125;
-
-    // Edge-aware weighting: a plain mix toward the blur (an earlier version)
-    // smooths real edges and detail just as much as actual noise, which is
-    // indistinguishable from simply blurring the whole image. Scale the
-    // effect down wherever the pixel differs a lot from its neighborhood
-    // average — that's much more likely to be a genuine edge than noise —
-    // and keep it at full strength in flat, low-detail areas where noise
-    // actually shows up.
-    float localDiff = length(s - wideBlur);
-    // The previous threshold (0.02-0.12) was too tight: real photographic
-    // noise easily creates local differences in that exact range, so the
-    // edge-aware gate was suppressing noise reduction almost everywhere it
-    // was actually needed, making the effect feel weak or absent. Widened so
-    // typical noise stays fully smoothable, and only much larger jumps
-    // (genuine edges) get protected.
-    float edgeAware = 1.0 - smoothstep(0.06, 0.30, localDiff);
-    float lumDenoise = denoiseT * edgeAware;
-    // Color noise is diffuse chroma speckling rather than structural detail,
-    // so it can stay more effective near edges than luminance smoothing.
-    float chromaDenoise = colorDenoiseT * mix(1.0, edgeAware, 0.5);
-
-    s = mix(s, wideBlur, lumDenoise);
-    float lumS = dot(s, LUMA);
-    float lumB = dot(wideBlur, LUMA);
-    vec3 chroma = mix(s - vec3(lumS), wideBlur - vec3(lumB), chromaDenoise);
-    s = vec3(lumS) + chroma;
-  }
 
   // Dehaze, bidirectional (mirrors dehaze.ts): positive clears haze, negative
   // adds a veil. Contrast is floored at 0 and the black-lift is clamped so the

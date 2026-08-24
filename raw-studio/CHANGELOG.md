@@ -519,6 +519,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   text clearer about download progress.
 
 ### Changed
+- **Denoise & sharpen rebuilt from scratch.** The old box-blur denoise (which
+  softened real detail) and naive unsharp (which amplified grain) are replaced:
+  denoise is now an edge-preserving **bilateral filter** (averages only
+  similar-valued neighbours, so edges survive while flat-area grain is smoothed),
+  and it runs **before** a **noise-aware sharpen** that boosts only detail above
+  a noise floor — so grain is never sharpened. Luminance and chroma denoise are
+  separated. The per-sample math (range weight, bilateral combine, noise-gated
+  unsharp) is pure and unit-tested; the shader mirrors it across an 8-neighbour
+  kernel.
+
+### Changed
 - **Manual Remove Object "suggest mask" now uses the improved detector.** The
   one-click mask suggestion in the manual remove tool switched from the old
   edge+dilate heuristic to the connected-component thin-structure detector, so
