@@ -30,8 +30,11 @@ export function rangeWeight(d: number, sigma: number): number {
  *  sigma -> tolerates bigger value differences -> smooths more aggressively. */
 export function denoiseSigma(strength: number): number {
   const s = Math.max(0, Math.min(100, strength)) / 100;
-  // 0 disables; otherwise 0.03..0.25 in value units (0..1 range).
-  return s === 0 ? 0 : 0.03 + s * 0.22;
+  // Range sigma must stay SMALL: photographic noise is low-amplitude, so a small
+  // sigma smooths grain while a real edge (a large luma jump) keeps a near-zero
+  // range weight and is preserved. A large sigma (an earlier version) treated
+  // edges as "similar" and blurred the whole image. 0 disables; else 0.012..0.05.
+  return s === 0 ? 0 : 0.012 + s * 0.038;
 }
 
 export interface Sample {

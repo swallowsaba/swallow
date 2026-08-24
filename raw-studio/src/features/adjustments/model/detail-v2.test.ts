@@ -95,3 +95,28 @@ describe('noiseAwareSharpen', () => {
     }
   });
 });
+
+describe('denoiseSigma stays edge-preserving', () => {
+  const near = (v: number) => ({ v, spatial: 1 });
+
+  it('keeps sigma small even at full strength', () => {
+    expect(denoiseSigma(100)).toBeLessThanOrEqual(0.06);
+  });
+
+  it('preserves a strong edge at full denoise strength', () => {
+    // center on the dark side of a high-contrast edge (helmet vs background):
+    // half the neighbors are bright (across the edge). With the corrected small
+    // sigma, those bright neighbors get ~0 weight, so the center barely moves.
+    const sigma = denoiseSigma(100);
+    const out = bilateral(0.15, [near(0.16), near(0.14), near(0.85), near(0.88)], sigma);
+    expect(Math.abs(out - 0.15)).toBeLessThan(0.05); // edge preserved
+  });
+
+  it('still smooths low-amplitude grain in a flat area', () => {
+    const sigma = denoiseSigma(80);
+    // center is a small grain spike; neighbors cluster tightly around 0.5
+    const out = bilateral(0.53, [near(0.5), near(0.49), near(0.51), near(0.5)], sigma);
+    expect(out).toBeLessThan(0.53); // pulled toward the flat neighborhood
+    expect(out).toBeGreaterThan(0.5);
+  });
+});

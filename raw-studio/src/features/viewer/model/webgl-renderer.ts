@@ -287,14 +287,16 @@ void main() {
   // detail-v2.ts. =====
   float denoiseT = clamp(u_noiseReduction / 100.0, 0.0, 1.0);
   float colorDenoiseT = clamp(u_colorNoiseReduction / 100.0, 0.0, 1.0);
-  // denoise range sigma (mirrors denoiseSigma): 0 disables, else 0.03..0.25
-  float dnSigma = denoiseT <= 0.0 ? 0.0 : 0.03 + denoiseT * 0.22;
+  // denoise range sigma (mirrors denoiseSigma): small so edges are preserved.
+  float dnSigma = denoiseT <= 0.0 ? 0.0 : 0.012 + denoiseT * 0.038;
 
   if (dnSigma > 0.0 || colorDenoiseT > 0.0) {
     // 8-neighbor bilateral over a moderate radius. Spatial weight is 1.0 for
     // 4-neighbors and ~0.7 for diagonals; range weight uses luma difference so
     // color speckle doesn't break luminance edges.
-    vec2 dt = u_texel * 2.0;
+    // Tighter radius: noise is high-frequency, so a small radius removes grain
+    // without reaching across into nearby detail.
+    vec2 dt = u_texel * 1.3;
     vec3 n0 = basePipeline(duv + vec2(dt.x, 0.0));
     vec3 n1 = basePipeline(duv - vec2(dt.x, 0.0));
     vec3 n2 = basePipeline(duv + vec2(0.0, dt.y));
@@ -315,10 +317,11 @@ void main() {
     #undef BILAT
     vec3 denoised = accum / wsum;
 
-    // Luminance denoise: keep chroma of s, take luma from the bilateral result.
+    // Luminance denoise: keep chroma of s, take luma from the bilateral result,
+    // and blend by strength so low slider values stay subtle.
     float lumD = dot(denoised, LUMA);
     vec3 lumaDenoised = s + (lumD - lc); // shift luma only
-    s = (dnSigma > 0.0) ? lumaDenoised : s;
+    s = mix(s, lumaDenoised, denoiseT);
 
     // Chroma denoise: pull chroma toward a plain wide average (chroma noise is
     // low-frequency speckle; a mean is fine and stronger near edges is OK).

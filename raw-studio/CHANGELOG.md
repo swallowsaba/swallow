@@ -5,6 +5,16 @@ All notable changes to this project are documented here. The format is based on
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
+- **Noise reduction no longer blurs the whole image.** The bilateral denoise
+  range sigma was far too large (up to 0.25), so high-contrast edges — helmet
+  outlines, jersey seams, lettering — were treated as "similar" and smoothed
+  away along with the grain. Sigma is now small (0.012..0.05) so real edges keep
+  a near-zero range weight and are preserved, the sample radius is tightened
+  (2.0->1.3 px) so denoise doesn't reach into nearby detail, and the luminance
+  denoise is now blended by strength so low slider values stay subtle. Edge
+  preservation is unit-tested at full strength.
+
+### Fixed
 - **Reverted the multipass detail routing that broke the normal view.** The
   render-path change that sent normal (and masked) viewing through the
   unverified multipass FBO pipeline caused two regressions seen in testing: the
