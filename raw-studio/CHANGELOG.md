@@ -532,6 +532,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   text clearer about download progress.
 
 ### Changed
+- **Sharper object removal via crop-based inpainting.** Instead of always
+  downscaling the whole photo into LaMa's fixed 512² input (which made fills soft
+  on big images), inpaint now crops a padded square region around the mask and
+  feeds only that. For small/thin targets (wires, nets, signs) the crop is far
+  smaller than the frame, so the fill is reconstructed at a much higher effective
+  resolution and stays crisp; large/spread-out masks fall back to whole-image
+  processing. All models remain free, open-source and fully on-device (U^2-Net,
+  LaMa; no API, no cost). The crop geometry (mask bounds, padded square, clamp,
+  resolution-gain) is pure and unit-tested.
+
+### Changed
 - **Multipass denoise/sharpen now drives the normal (no-mask) view too.** The
   plain render path routes through the FBO detail pipeline whenever denoise or
   sharpen is active (falling back to the inline path only for split-compare), so
