@@ -32,9 +32,9 @@ export function denoiseSigma(strength: number): number {
   const s = Math.max(0, Math.min(100, strength)) / 100;
   // Range sigma must stay SMALL: photographic noise is low-amplitude, so a small
   // sigma smooths grain while a real edge (a large luma jump) keeps a near-zero
-  // range weight and is preserved. A large sigma (an earlier version) treated
-  // edges as "similar" and blurred the whole image. 0 disables; else 0.012..0.05.
-  return s === 0 ? 0 : 0.012 + s * 0.038;
+  // range weight and is preserved. Tuned down further after user feedback that
+  // it still softened detail. 0 disables; else 0.008..0.032.
+  return s === 0 ? 0 : 0.008 + s * 0.024;
 }
 
 export interface Sample {

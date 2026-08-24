@@ -100,7 +100,7 @@ describe('denoiseSigma stays edge-preserving', () => {
   const near = (v: number) => ({ v, spatial: 1 });
 
   it('keeps sigma small even at full strength', () => {
-    expect(denoiseSigma(100)).toBeLessThanOrEqual(0.06);
+    expect(denoiseSigma(100)).toBeLessThanOrEqual(0.04);
   });
 
   it('preserves a strong edge at full denoise strength', () => {
@@ -109,7 +109,7 @@ describe('denoiseSigma stays edge-preserving', () => {
     // sigma, those bright neighbors get ~0 weight, so the center barely moves.
     const sigma = denoiseSigma(100);
     const out = bilateral(0.15, [near(0.16), near(0.14), near(0.85), near(0.88)], sigma);
-    expect(Math.abs(out - 0.15)).toBeLessThan(0.05); // edge preserved
+    expect(Math.abs(out - 0.15)).toBeLessThan(0.03); // edge preserved
   });
 
   it('still smooths low-amplitude grain in a flat area', () => {

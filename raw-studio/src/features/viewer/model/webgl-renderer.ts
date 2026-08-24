@@ -288,7 +288,7 @@ void main() {
   float denoiseT = clamp(u_noiseReduction / 100.0, 0.0, 1.0);
   float colorDenoiseT = clamp(u_colorNoiseReduction / 100.0, 0.0, 1.0);
   // denoise range sigma (mirrors denoiseSigma): small so edges are preserved.
-  float dnSigma = denoiseT <= 0.0 ? 0.0 : 0.012 + denoiseT * 0.038;
+  float dnSigma = denoiseT <= 0.0 ? 0.0 : 0.008 + denoiseT * 0.024;
 
   if (dnSigma > 0.0 || colorDenoiseT > 0.0) {
     // 8-neighbor bilateral over a moderate radius. Spatial weight is 1.0 for
@@ -296,7 +296,7 @@ void main() {
     // color speckle doesn't break luminance edges.
     // Tighter radius: noise is high-frequency, so a small radius removes grain
     // without reaching across into nearby detail.
-    vec2 dt = u_texel * 1.3;
+    vec2 dt = u_texel * 1.1;
     vec3 n0 = basePipeline(duv + vec2(dt.x, 0.0));
     vec3 n1 = basePipeline(duv - vec2(dt.x, 0.0));
     vec3 n2 = basePipeline(duv + vec2(0.0, dt.y));

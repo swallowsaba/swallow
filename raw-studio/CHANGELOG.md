@@ -553,6 +553,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   text clearer about download progress.
 
 ### Changed
+- **Denoise tuned to blur even less.** After feedback that it still softened
+  detail slightly, the range sigma was reduced again (now 0.008..0.032) and the
+  sample radius tightened (1.3->1.1 px), so edges and fine texture are protected
+  harder while flat-area grain is still smoothed. Edge preservation remains
+  unit-tested (now within 0.03 at full strength).
+
+### Changed
 - **Sharper object removal via crop-based inpainting.** Instead of always
   downscaling the whole photo into LaMa's fixed 512² input (which made fills soft
   on big images), inpaint now crops a padded square region around the mask and
