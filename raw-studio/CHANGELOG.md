@@ -5,6 +5,17 @@ All notable changes to this project are documented here. The format is based on
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
+- **Reverted the multipass detail routing that broke the normal view.** The
+  render-path change that sent normal (and masked) viewing through the
+  unverified multipass FBO pipeline caused two regressions seen in testing: the
+  displayed region shifted ("applied to a different place") and denoise
+  over-smeared flat areas like grass. Both the render() and renderWithMasks()
+  paths are restored to the known-good single-pass detail (in-shader
+  denoise/sharpen), which positions correctly. The pure multipass kernel math
+  (detail-pipeline.ts) is kept and unit-tested for a future, properly
+  browser-verified re-introduction, but no longer drives rendering.
+
+### Fixed
 - **Auto-remove distractions: far fewer false positives, no more smears.** The
   detector now runs connected-component analysis and keeps only components that
   are genuinely thin (they don't fill their bounding box) AND elongated AND

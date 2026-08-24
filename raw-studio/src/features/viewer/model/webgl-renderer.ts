@@ -1,7 +1,6 @@
 import type { AdjustmentUniforms } from '@/features/adjustments/model/adjustment-math';
 import type { AdvancedUniforms } from '@/features/adjustments/model/advanced-math';
 import { NEUTRAL_ADVANCED } from '@/features/adjustments/model/advanced-math';
-import { resolveDetailParams } from '@/features/adjustments/model/detail-pipeline';
 import type { CropRect } from '@/types';
 import { FULL_CROP } from './crop-math';
 import type { Point, Size } from './viewport';
@@ -38,7 +37,6 @@ uniform float u_hslHue[8], u_hslSat[8], u_hslLum[8];
 uniform float u_clarity, u_texture, u_dehaze, u_sharpenAmount, u_sharpenRadius;
 uniform float u_deblurAmount, u_deblurActive;
 uniform float u_noiseReduction, u_colorNoiseReduction;
-uniform float u_detailInShader;
 uniform float u_distortion, u_vignetting, u_chromaticAberration, u_fisheye;
 uniform float u_grainAmount, u_grainFrequency, u_grainActive;
 uniform float u_pcvAmount, u_pcvMidpoint, u_pcvRoundness, u_pcvFeather, u_pcvActive;
@@ -292,7 +290,7 @@ void main() {
   // denoise range sigma (mirrors denoiseSigma): 0 disables, else 0.03..0.25
   float dnSigma = denoiseT <= 0.0 ? 0.0 : 0.03 + denoiseT * 0.22;
 
-  if (u_detailInShader > 0.5 && (dnSigma > 0.0 || colorDenoiseT > 0.0)) {
+  if (dnSigma > 0.0 || colorDenoiseT > 0.0) {
     // 8-neighbor bilateral over a moderate radius. Spatial weight is 1.0 for
     // 4-neighbors and ~0.7 for diagonals; range weight uses luma difference so
     // color speckle doesn't break luminance edges.
@@ -343,7 +341,7 @@ void main() {
   ) * 0.25;
   // Noise-aware sharpen (mirrors noiseAwareSharpen): boost only detail above the
   // noise floor, so residual grain isn't amplified. Per-channel.
-  if (u_detailInShader > 0.5 && u_sharpenAmount > 0.0) {
+  if (u_sharpenAmount > 0.0) {
     float amt = clamp(u_sharpenAmount, 0.0, 300.0) / 100.0;
     float floorN = 0.015;
     vec3 detail = s - blur;
@@ -463,94 +461,6 @@ void main() {
 }`;
 
 /**
- * Separable bilateral denoise pass (mirrors detail-pipeline.ts). Runs once per
- * axis (u_dir = (1,0) then (0,1)); iterate H+V for stronger denoise. For each
- * output pixel it walks up to u_radius taps each side, weighting by a Gaussian
- * spatial falloff and a luma-difference range weight, so edges (big luma jumps)
- * stop the blur while flat-area grain is averaged. Chroma is smoothed with the
- * same spatial weights but its own strength.
- */
-const DENOISE_FRAGMENT_SRC = `#version 300 es
-precision highp float;
-in vec2 v_uv;
-uniform sampler2D u_tex;
-uniform vec2 u_texel;
-uniform vec2 u_dir;
-uniform float u_radius;
-uniform float u_sigmaSpatial;
-uniform float u_sigmaRange;
-uniform float u_chroma;
-out vec4 outColor;
-const vec3 LUMA = vec3(0.299, 0.587, 0.114);
-void main() {
-  vec4 c = texture(u_tex, v_uv);
-  int r = int(u_radius + 0.5);
-  if (r <= 0 || u_sigmaRange <= 0.0) { outColor = c; return; }
-  float cl = dot(c.rgb, LUMA);
-  float sigS = max(u_sigmaSpatial, 1e-4);
-  float sigR = max(u_sigmaRange, 1e-4);
-  vec3 acc = c.rgb;
-  float wsum = 1.0;
-  vec3 chromaAcc = c.rgb;
-  float chromaW = 1.0;
-  for (int i = 1; i <= 32; i++) {
-    if (i > r) break;
-    float sp = exp(-0.5 * (float(i)/sigS) * (float(i)/sigS));
-    vec2 off = u_dir * u_texel * float(i);
-    vec3 p = texture(u_tex, v_uv + off).rgb;
-    vec3 n = texture(u_tex, v_uv - off).rgb;
-    float dp = (dot(p, LUMA) - cl) / sigR;
-    float dn = (dot(n, LUMA) - cl) / sigR;
-    float wp = sp * exp(-0.5 * dp * dp);
-    float wn = sp * exp(-0.5 * dn * dn);
-    acc += p * wp + n * wn;
-    wsum += wp + wn;
-    chromaAcc += (p + n) * sp;
-    chromaW += 2.0 * sp;
-  }
-  vec3 denoised = acc / wsum;
-  float ld = dot(denoised, LUMA);
-  vec3 lumaOut = c.rgb + (ld - cl);
-  vec3 mean = chromaAcc / chromaW;
-  float lm = dot(mean, LUMA);
-  float lo = dot(lumaOut, LUMA);
-  vec3 chromaSmoothed = vec3(lo) + mix(lumaOut - vec3(lo), mean - vec3(lm), u_chroma);
-  outColor = vec4(chromaSmoothed, c.a);
-}`;
-
-/**
- * Noise-aware sharpen pass (mirrors noiseAwareSharpen). Samples a small local
- * average of the ALREADY-DENOISED texture and boosts only detail whose
- * magnitude exceeds a noise floor, so residual grain isn't amplified.
- */
-const SHARPEN_FRAGMENT_SRC = `#version 300 es
-precision highp float;
-in vec2 v_uv;
-uniform sampler2D u_tex;
-uniform vec2 u_texel;
-uniform float u_amount;
-uniform float u_radius;
-uniform float u_floor;
-out vec4 outColor;
-void main() {
-  vec4 c = texture(u_tex, v_uv);
-  if (u_amount <= 0.0) { outColor = c; return; }
-  float rad = max(u_radius, 0.5);
-  vec2 tx = u_texel * rad;
-  vec3 blur = (
-    texture(u_tex, v_uv + vec2(tx.x, 0.0)).rgb +
-    texture(u_tex, v_uv - vec2(tx.x, 0.0)).rgb +
-    texture(u_tex, v_uv + vec2(0.0, tx.y)).rgb +
-    texture(u_tex, v_uv - vec2(0.0, tx.y)).rgb
-  ) * 0.25;
-  float amt = clamp(u_amount, 0.0, 300.0) / 100.0;
-  vec3 detail = c.rgb - blur;
-  vec3 mag = abs(detail) + 1e-6;
-  vec3 gated = detail * max(vec3(0.0), 1.0 - u_floor / mag);
-  outColor = vec4(clamp(c.rgb + gated * amt, 0.0, 1.0), c.a);
-}`;
-
-/**
  * Warp-present shader: like the plain present pass, but the sample position is
  * offset by a displacement read from a small field texture (liquify). The field
  * encodes (du, dv) in R,G over [-maxDisp, maxDisp]; it is stored row 0 = image
@@ -597,20 +507,6 @@ export interface MaskLayer {
  *  downscale is visually harmless and the final present still samples this. */
 const MAX_MASK_WORK = 2048;
 
-/** Resolved parameters for the multipass denoise+sharpen pipeline (from the
- *  pure resolver in detail-pipeline.ts). */
-type DetailPassParams = ReturnType<typeof resolveDetailParams>;
-
-/** Build multipass detail params from an AdvancedUniforms set. */
-function detailParamsFromAdvanced(adv: AdvancedUniforms): DetailPassParams {
-  return resolveDetailParams({
-    noiseReduction: adv.noiseReduction,
-    colorNoiseReduction: adv.colorNoiseReduction,
-    sharpenAmount: adv.sharpenAmount,
-    sharpenRadius: adv.sharpenRadius,
-  });
-}
-
 
 
 export interface ViewTransform {
@@ -652,7 +548,6 @@ const UNIFORM_NAMES = [
   'u_pcvFeather',
   'u_pcvActive',
   'u_showClipping',
-  'u_detailInShader',
   'u_clarity',
   'u_texture',
   'u_dehaze',
@@ -728,13 +623,6 @@ export class WebGLImageRenderer {
   private maskTexture: WebGLTexture | null = null;
   private warpProgram: WebGLProgram | null = null;
 
-  // Multipass detail (denoise + sharpen) programs and their uniform locations.
-  private denoiseProgram: WebGLProgram | null = null;
-  private denoiseLocs: Record<string, WebGLUniformLocation | null> = {};
-  private denoiseVao: WebGLVertexArrayObject | null = null;
-  private sharpenProgram: WebGLProgram | null = null;
-  private sharpenLocs: Record<string, WebGLUniformLocation | null> = {};
-  private fboDetail: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
   private warpVao: WebGLVertexArrayObject | null = null;
   private warpTexture: WebGLTexture | null = null;
   private warpLocs: {
@@ -832,7 +720,6 @@ export class WebGLImageRenderer {
   }
 
   private showClipping = false;
-  private detailInShader = true;
 
   /** Toggle the on-image clipping overlay ("blinkies"). */
   setClipping(on: boolean): void {
@@ -867,7 +754,6 @@ export class WebGLImageRenderer {
     gl.uniform1f(this.uniforms.u_pcvFeather ?? null, adv.pcvFeather);
     gl.uniform1f(this.uniforms.u_pcvActive ?? null, adv.pcvActive ? 1 : 0);
     gl.uniform1f(this.uniforms.u_showClipping ?? null, this.showClipping ? 1 : 0);
-    gl.uniform1f(this.uniforms.u_detailInShader ?? null, this.detailInShader ? 1 : 0);
 
     gl.uniform1f(this.uniforms.u_exposure ?? null, a.exposure);
     gl.uniform1f(this.uniforms.u_contrast ?? null, a.contrast);
@@ -972,36 +858,15 @@ export class WebGLImageRenderer {
       this.vertexData[base + 3] = v;
     }
 
-    // If denoise/sharpen is requested (and we're not doing a split compare, which
-    // re-draws with different uniforms per half), route through the multipass
-    // detail pipeline: draw the developed image to an FBO, run the bilateral +
-    // noise-aware sharpen passes, then present the cleaned texture with the view
-    // transform. Otherwise fall through to the plain single-pass draw below.
-    const dparams = detailParamsFromAdvanced(advanced);
-    const detailActive =
-      dparams.denoiseRadius > 0 || dparams.colorDenoise > 0 || dparams.sharpenAmount > 0;
-    if (detailActive && !split) {
-      const croppedWpx = Math.max(1, Math.round(this.imageSize.width * crop.width));
-      const croppedHpx = Math.max(1, Math.round(this.imageSize.height * crop.height));
-      const dscale = Math.min(1, MAX_MASK_WORK / Math.max(croppedWpx, croppedHpx));
-      const dw = Math.max(1, Math.round(croppedWpx * dscale));
-      const dh = Math.max(1, Math.round(croppedHpx * dscale));
-      this.ensureMaskPrograms();
-      this.ensureFbos(dw, dh);
-      const A = this.fboA;
-      const B = this.fboB;
-      const detFbo = this.fboDetail;
-      if (A && B && detFbo) {
-        gl.disable(gl.BLEND);
-        // Draw developed image (in-shader detail OFF) to A.
-        this.drawAdjustToFbo(A, dw, dh, adjustments, advanced, crop);
-        const result = this.applyDetailPasses(A, B, detFbo, dw, dh, dparams);
-        this.presentToScreen(result.tex, view, cssSize, dpr, croppedWpx, croppedHpx);
-        return;
-      }
-    }
-
     gl.useProgram(this.program);
+    this.setUniforms(adjustments, advanced);
+    gl.bindVertexArray(this.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertexData);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.uniform1i(this.texLoc ?? null, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     // Compare split: re-draw the left region with the "before" (neutral)
     // uniforms. Same quad, so the two halves line up exactly.
@@ -1021,154 +886,6 @@ export class WebGLImageRenderer {
     gl.bindVertexArray(null);
   }
 
-  /**
-   * Compile the denoise + sharpen programs and allocate the detail FBO, once.
-   * Separate from mask programs so it's only paid for when denoise/sharpen is
-   * actually used.
-   */
-  private ensureDetailPrograms(): void {
-    if (this.denoiseProgram && this.sharpenProgram) return;
-    const gl = this.gl;
-
-    const dvs = compileShader(gl, gl.VERTEX_SHADER, PRESENT_VERTEX_SRC);
-    const dfs = compileShader(gl, gl.FRAGMENT_SHADER, DENOISE_FRAGMENT_SRC);
-    this.denoiseProgram = linkProgram(gl, dvs, dfs);
-    gl.deleteShader(dvs);
-    gl.deleteShader(dfs);
-    for (const n of [
-      'u_tex',
-      'u_texel',
-      'u_dir',
-      'u_radius',
-      'u_sigmaSpatial',
-      'u_sigmaRange',
-      'u_chroma',
-    ]) {
-      this.denoiseLocs[n] = gl.getUniformLocation(this.denoiseProgram, n);
-    }
-    this.denoiseVao = this.makeQuadVao(this.denoiseProgram);
-
-    const svs = compileShader(gl, gl.VERTEX_SHADER, PRESENT_VERTEX_SRC);
-    const sfs = compileShader(gl, gl.FRAGMENT_SHADER, SHARPEN_FRAGMENT_SRC);
-    this.sharpenProgram = linkProgram(gl, svs, sfs);
-    gl.deleteShader(svs);
-    gl.deleteShader(sfs);
-    for (const n of ['u_tex', 'u_texel', 'u_amount', 'u_radius', 'u_floor']) {
-      this.sharpenLocs[n] = gl.getUniformLocation(this.sharpenProgram, n);
-    }
-  }
-
-  /** Run one detail pass sampling `srcTex` into `target`, using `program`. The
-   *  caller sets program-specific uniforms via `setup`. */
-  private runDetailPass(
-    program: WebGLProgram,
-    vao: WebGLVertexArrayObject | null,
-    srcTex: WebGLTexture,
-    target: { fb: WebGLFramebuffer } | null,
-    w: number,
-    h: number,
-    setup: () => void,
-  ): void {
-    const gl = this.gl;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, target ? target.fb : null);
-    gl.viewport(0, 0, w, h);
-    gl.useProgram(program);
-    gl.bindVertexArray(vao);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, srcTex);
-    setup();
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    gl.bindVertexArray(null);
-  }
-
-  /**
-   * Multipass denoise + sharpen over a texture already containing the developed
-   * image (in an FBO). Ping-pongs between `fboA`/`fboB` (+ a dedicated detail
-   * FBO) and returns the FBO holding the final result. Does nothing (returns
-   * `input`) when both effects are neutral.
-   *
-   * Steps: for each denoise iteration, run a horizontal then a vertical
-   * bilateral pass; then one noise-aware sharpen pass. All at working
-   * resolution `w`x`h`.
-   *
-   * Unverified in this environment: needs a real WebGL2 context to confirm.
-   */
-  private applyDetailPasses(
-    input: { fb: WebGLFramebuffer; tex: WebGLTexture },
-    scratch1: { fb: WebGLFramebuffer; tex: WebGLTexture },
-    scratch2: { fb: WebGLFramebuffer; tex: WebGLTexture },
-    w: number,
-    h: number,
-    p: DetailPassParams,
-  ): { fb: WebGLFramebuffer; tex: WebGLTexture } {
-    if (p.denoiseRadius <= 0 && p.colorDenoise <= 0 && p.sharpenAmount <= 0) {
-      return input;
-    }
-    this.ensureDetailPrograms();
-    const gl = this.gl;
-    const texelX = 1 / w;
-    const texelY = 1 / h;
-
-    let cur = input;
-    let free1 = scratch1;
-    let free2 = scratch2;
-
-    const denoiseActive = (p.denoiseRadius > 0 && p.denoiseRange > 0) || p.colorDenoise > 0;
-    if (denoiseActive && this.denoiseProgram) {
-      const prog = this.denoiseProgram;
-      const L = this.denoiseLocs;
-      for (let iter = 0; iter < Math.max(1, p.denoiseIterations); iter++) {
-        // Horizontal: cur -> free1
-        this.runDetailPass(prog, this.denoiseVao, cur.tex, free1, w, h, () => {
-          gl.uniform1i(L.u_tex ?? null, 0);
-          gl.uniform2f(L.u_texel ?? null, texelX, texelY);
-          gl.uniform2f(L.u_dir ?? null, 1, 0);
-          gl.uniform1f(L.u_radius ?? null, p.denoiseRadius);
-          gl.uniform1f(L.u_sigmaSpatial ?? null, p.sigmaSpatial);
-          gl.uniform1f(L.u_sigmaRange ?? null, p.denoiseRange);
-          gl.uniform1f(L.u_chroma ?? null, p.colorDenoise);
-        });
-        // Vertical: free1 -> free2
-        this.runDetailPass(prog, this.denoiseVao, free1.tex, free2, w, h, () => {
-          gl.uniform1i(L.u_tex ?? null, 0);
-          gl.uniform2f(L.u_texel ?? null, texelX, texelY);
-          gl.uniform2f(L.u_dir ?? null, 0, 1);
-          gl.uniform1f(L.u_radius ?? null, p.denoiseRadius);
-          gl.uniform1f(L.u_sigmaSpatial ?? null, p.sigmaSpatial);
-          gl.uniform1f(L.u_sigmaRange ?? null, p.denoiseRange);
-          gl.uniform1f(L.u_chroma ?? null, p.colorDenoise);
-        });
-        // rotate: result is free2; next reads from it. Recycle old cur unless
-        // it's the input (input must not be written).
-        const produced = free2;
-        const nextFree2 = cur === input ? free1 : cur;
-        cur = produced;
-        free2 = nextFree2;
-        // free1 stays as a scratch (it held the H result, now reusable)
-      }
-    }
-
-    if (p.sharpenAmount > 0 && this.sharpenProgram) {
-      const prog = this.sharpenProgram;
-      const L = this.sharpenLocs;
-      // sharpen cur -> a free target (must differ from cur; avoid input)
-      const target = cur === free1 ? free2 : free1;
-      const dest = target === input ? free2 : target;
-      this.runDetailPass(prog, this.denoiseVao, cur.tex, dest, w, h, () => {
-        gl.uniform1i(L.u_tex ?? null, 0);
-        gl.uniform2f(L.u_texel ?? null, texelX, texelY);
-        gl.uniform1f(L.u_amount ?? null, p.sharpenAmount);
-        gl.uniform1f(L.u_radius ?? null, p.sharpenRadius);
-        gl.uniform1f(L.u_floor ?? null, p.noiseFloor);
-      });
-      cur = dest;
-    }
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    return cur;
-  }
-
-  /** Compile the extra programs used for masking, once, on first use. */
   private ensureMaskPrograms(): void {
     if (this.presentProgram && this.compositeProgram) return;
     const gl = this.gl;
@@ -1269,20 +986,18 @@ export class WebGLImageRenderer {
     this.fboA = this.makeFbo(w, h);
     this.fboB = this.makeFbo(w, h);
     this.fboTemp = this.makeFbo(w, h);
-    this.fboDetail = this.makeFbo(w, h);
     this.fboSize = { width: w, height: h };
   }
 
   private disposeFbos(): void {
     const gl = this.gl;
-    for (const fbo of [this.fboA, this.fboB, this.fboTemp, this.fboDetail]) {
+    for (const fbo of [this.fboA, this.fboB, this.fboTemp]) {
       if (fbo) {
         gl.deleteFramebuffer(fbo.fb);
         gl.deleteTexture(fbo.tex);
       }
     }
     this.fboA = this.fboB = this.fboTemp = null;
-    this.fboDetail = null;
     this.fboSize = { width: 0, height: 0 };
   }
 
@@ -1332,11 +1047,7 @@ export class WebGLImageRenderer {
     gl.bindFramebuffer(gl.FRAMEBUFFER, target.fb);
     gl.viewport(0, 0, w, h);
     gl.useProgram(this.program);
-    // The multipass pipeline applies denoise/sharpen after this draw, so switch
-    // OFF the in-shader versions here to avoid applying them twice.
-    this.detailInShader = false;
     this.setUniforms(a, adv);
-    this.detailInShader = true;
     this.writeFboQuad(crop);
     gl.bindVertexArray(this.vao);
     gl.activeTexture(gl.TEXTURE0);
@@ -1396,12 +1107,9 @@ export class WebGLImageRenderer {
     // Pass 0: global adjustments → accumulator A.
     this.drawAdjustToFbo(A, w, h, base.uniforms, base.advanced, crop);
 
-    // Multipass denoise + sharpen on the global result, if requested. The
-    // returned FBO holds the cleaned image; adopt it as the accumulator.
-    const detailParams = detailParamsFromAdvanced(base.advanced);
-    const detailed = this.applyDetailPasses(A, B, this.fboDetail ?? A, w, h, detailParams);
-    let acc = detailed;
-    let other = detailed === A ? B : A;
+    // Ping-pong accumulator: `src`/`dst` alternate as we fold in each layer.
+    let acc = A;
+    let other = B;
     for (const layer of layers) {
       // Layer color → temp.
       this.drawAdjustToFbo(temp, w, h, layer.uniforms, layer.advanced, crop);
