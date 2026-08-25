@@ -27,6 +27,10 @@ export interface InferenceApi {
     maskInputName?: string,
     maskData?: Float32Array,
   ): Promise<Float32Array>;
+  /** Run a single-input model at an arbitrary H x W (NCHW). Input/output tensor
+   *  names are taken from the session, so community exports with unknown names
+   *  still work. Used for dynamic-size restoration models (denoise). */
+  runDynamic(id: string, data: Float32Array, w: number, h: number): Promise<Float32Array>;
 }
 
 const api: InferenceApi = {
@@ -63,6 +67,20 @@ const api: InferenceApi = {
     }
     const results = await session.run(feeds);
     const output = results[outputName] ?? Object.values(results)[0];
+    if (!output) throw new Error('Model produced no output.');
+    const out = output.data as Float32Array;
+    return Comlink.transfer(out, [out.buffer]);
+  },
+
+  async runDynamic(id, data, w, h) {
+    if (!session || loadedFor !== id) {
+      throw new Error('Model not loaded.');
+    }
+    const tensor = new ort.Tensor('float32', data, [1, 3, h, w]);
+    const inName = session.inputNames[0];
+    if (!inName) throw new Error('Model has no inputs.');
+    const results = await session.run({ [inName]: tensor });
+    const output = results[session.outputNames[0] ?? ''] ?? Object.values(results)[0];
     if (!output) throw new Error('Model produced no output.');
     const out = output.data as Float32Array;
     return Comlink.transfer(out, [out.buffer]);

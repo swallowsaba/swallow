@@ -37,3 +37,13 @@ export async function runModel(
     maskData ? Comlink.transfer(maskData, [maskData.buffer]) : undefined,
   );
 }
+
+/** Run a single-input restoration model at an arbitrary width/height. */
+export async function runModelDynamic(
+  id: string,
+  data: Float32Array,
+  w: number,
+  h: number,
+): Promise<Float32Array> {
+  return getProxy().runDynamic(id, Comlink.transfer(data, [data.buffer]), w, h);
+}

@@ -70,6 +70,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **AI Denoise (PC), on-device.** A real deep-learning denoiser (SCUNet,
+  MIT-licensed, single-file 91MB ONNX) added to the existing on-device ONNX
+  Runtime Web pipeline — no API, no cost, nothing leaves the browser. This is the
+  AI-based approach the requirement asked for (the earlier bilateral work was
+  classic DSP, not AI). Found under the AI panel -> "AI Denoise" -> "Denoise with
+  AI"; it downloads the model on first use, runs it at a device-appropriate
+  working size (desktop up to 1024px; mobile capped harder), and saves the
+  cleaned image. Sizing math (multiple-of-8 rounding, max-edge fit, device cap)
+  is pure and unit-tested. Input/output tensor names are read from the session at
+  runtime, so the exact export names don't need to be hard-coded. Dynamic-size,
+  single-input inference path (runDynamic) added to the worker/client. Mobile
+  gets a lighter model later (this ships PC first, per request).
+
+### Added
 - **Multipass denoise/sharpen engine (FBO pipeline).** New ground-up detail
   engine that runs denoise and sharpen as dedicated GPU passes into ping-pong
   framebuffers instead of a single inline shader step: a **separable bilateral**

@@ -13,9 +13,15 @@ export interface ModelDef {
   readonly inputName: string;
   readonly outputName: string;
   readonly normalization: Normalization;
-  readonly kind: 'segmentation' | 'inpaint' | 'landmark';
+  readonly kind: 'segmentation' | 'inpaint' | 'landmark' | 'denoise';
   /** Only for kind:'inpaint' — the second input's tensor name (the mask). */
   readonly maskInputName?: string;
+  /** For models that accept a variable (dynamic) H/W instead of a fixed square.
+   *  Input must be a multiple of `sizeMultiple` on each side. */
+  readonly dynamicSize?: boolean;
+  readonly sizeMultiple?: number;
+  /** Max working edge for dynamic models (keeps memory/time bounded). */
+  readonly maxEdge?: number;
 }
 
 /**
@@ -54,6 +60,25 @@ export const MODELS: Record<string, ModelDef> = {
     outputName: 'output',
     normalization: { mean: [0, 0, 0], std: [1, 1, 1] },
     kind: 'inpaint',
+  },
+  'scunet-denoise': {
+    id: 'scunet-denoise',
+    label: 'AI Denoise (SCUNet)',
+    // Single-file ONNX export (no external .data), MIT-licensed. Verify the I/O
+    // contract against the model card before relying on it: input `image`
+    // float32[1,3,H,W] plain /255 (no ImageNet norm), H/W multiples of 8; output
+    // same shape, 0..1. It's a blind real-photo denoiser (Swin-Conv-UNet).
+    url: 'https://huggingface.co/deepghs/image_restoration/resolve/refs%2Fpr%2F1/SCUNet-PSNR.onnx',
+    license: 'MIT (SCUNet, Zhang et al. 2022)',
+    approxSizeMb: 91,
+    inputSize: 0, // unused for dynamic models
+    inputName: 'image',
+    outputName: 'output',
+    normalization: { mean: [0, 0, 0], std: [1, 1, 1] },
+    kind: 'denoise',
+    dynamicSize: true,
+    sizeMultiple: 8,
+    maxEdge: 1024,
   },
 };
 

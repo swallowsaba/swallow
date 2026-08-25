@@ -9,6 +9,7 @@ import { useT } from '@/i18n';
 import { MODELS } from '../model/model-registry';
 import { segment, type SegmentationResult } from '../model/segmentation';
 import { autoRemoveThinStructures } from '../model/auto-remove';
+import { aiDenoise } from '../model/ai-denoise';
 import { optionsForSensitivity } from '../model/thin-structure';
 import { smoothPortrait } from '../model/portrait-smooth';
 import { computeImageStats } from '../model/image-stats';
@@ -27,6 +28,8 @@ export function AiPanel(): React.JSX.Element {
   const [removeBusy, setRemoveBusy] = React.useState(false);
   const [removeStatus, setRemoveStatus] = React.useState<string | null>(null);
   const [removeSensitivity, setRemoveSensitivity] = React.useState(40);
+  const [denoiseBusy, setDenoiseBusy] = React.useState(false);
+  const [denoiseStatus, setDenoiseStatus] = React.useState<string | null>(null);
   const t = useT();
 
   const model = MODELS['u2netp-subject'];
@@ -68,6 +71,25 @@ export function AiPanel(): React.JSX.Element {
       setSmoothStatus(err instanceof Error ? err.message : 'Failed.');
     } finally {
       setSmoothBusy(false);
+    }
+  };
+
+  const runAiDenoise = async () => {
+    if (!bitmap) return;
+    setDenoiseBusy(true);
+    setDenoiseStatus(t('ai.denoisePreparing'));
+    try {
+      const blob = await aiDenoise(bitmap, {}, (received, total) => {
+        const mb = (received / 1_000_000).toFixed(0);
+        const totalMb = total ? (total / 1_000_000).toFixed(0) : '?';
+        setDenoiseStatus(`${mb}/${totalMb} MB…`);
+      });
+      downloadBlob(blob, 'denoised.jpg');
+      setDenoiseStatus(t('ai.done'));
+    } catch (err) {
+      setDenoiseStatus(err instanceof Error ? err.message : 'Failed.');
+    } finally {
+      setDenoiseBusy(false);
     }
   };
 
@@ -250,6 +272,27 @@ export function AiPanel(): React.JSX.Element {
         </Button>
         {removeStatus ? (
           <div className="text-[11px] text-muted-foreground">{removeStatus}</div>
+        ) : null}
+      </section>
+
+      <section className="flex flex-col gap-2 border-t border-border pt-3">
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {t('ai.denoiseTitle')}
+        </div>
+        <div className="text-[11px] text-muted-foreground">{t('ai.denoiseDesc')}</div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!bitmap || denoiseBusy}
+          onClick={() => {
+            void runAiDenoise();
+          }}
+        >
+          {denoiseBusy ? <Loader2 className="animate-spin" /> : <Sparkle />}
+          {t('ai.denoiseRun')}
+        </Button>
+        {denoiseStatus ? (
+          <div className="text-[11px] text-muted-foreground">{denoiseStatus}</div>
         ) : null}
       </section>
 
