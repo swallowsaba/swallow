@@ -122,3 +122,33 @@ export function resolveDetailParams(s: DetailStrengths): ResolvedDetailParams {
     noiseFloor: 0.015,
   };
 }
+
+/**
+ * Plan the ping-pong sequence for the detail pipeline: which passes run and how
+ * many, given the resolved params. Pure so the FBO-driving code in the renderer
+ * can be validated without a GPU. Each entry names the pass; the renderer maps
+ * them onto its ping-pong FBOs in order.
+ */
+export type DetailPass =
+  | { readonly kind: 'denoiseH' }
+  | { readonly kind: 'denoiseV' }
+  | { readonly kind: 'sharpen' };
+
+export function planDetailPasses(p: ResolvedDetailParams): DetailPass[] {
+  const passes: DetailPass[] = [];
+  const denoiseOn = (p.denoiseRadius > 0 && p.denoiseRange > 0) || p.colorDenoise > 0;
+  if (denoiseOn) {
+    const iters = Math.max(1, p.denoiseIterations);
+    for (let i = 0; i < iters; i++) {
+      passes.push({ kind: 'denoiseH' });
+      passes.push({ kind: 'denoiseV' });
+    }
+  }
+  if (p.sharpenAmount > 0) passes.push({ kind: 'sharpen' });
+  return passes;
+}
+
+/** Whether any detail pass will run for these params. */
+export function hasDetailWork(p: ResolvedDetailParams): boolean {
+  return planDetailPasses(p).length > 0;
+}

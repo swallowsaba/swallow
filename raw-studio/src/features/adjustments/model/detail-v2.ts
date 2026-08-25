@@ -77,10 +77,18 @@ export function noiseAwareSharpen(
   if (amt === 0) return clamp01(denoised);
   const detail = denoised - localAvg;
   const mag = Math.abs(detail);
-  if (mag <= noiseFloor) return clamp01(denoised); // grain-level: don't touch
-  // Soft-knee above the floor so there's no hard switching artifact.
-  const gated = detail * (1 - noiseFloor / mag);
-  return clamp01(denoised + gated * amt);
+  // Smooth gate: fully suppressed below the floor, ramping to full over a band
+  // up to 2x the floor. This avoids both amplifying grain (hard floor) and the
+  // abrupt switching artifact a hard cutoff produces near the threshold.
+  const gate = smoothstep(noiseFloor, noiseFloor * 2, mag);
+  return clamp01(denoised + detail * amt * gate);
+}
+
+/** Hermite smoothstep, matching GLSL's smoothstep. */
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  if (edge0 === edge1) return x < edge0 ? 0 : 1;
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
 }
 
 function clamp01(x: number): number {

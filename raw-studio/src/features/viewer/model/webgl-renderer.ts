@@ -1,6 +1,11 @@
 import type { AdjustmentUniforms } from '@/features/adjustments/model/adjustment-math';
 import type { AdvancedUniforms } from '@/features/adjustments/model/advanced-math';
 import { NEUTRAL_ADVANCED } from '@/features/adjustments/model/advanced-math';
+import {
+  planDetailPasses,
+  resolveDetailParams,
+  type ResolvedDetailParams,
+} from '@/features/adjustments/model/detail-pipeline';
 import type { CropRect } from '@/types';
 import { FULL_CROP } from './crop-math';
 import type { Point, Size } from './viewport';
@@ -281,60 +286,12 @@ void main() {
   vec3 s = basePipeline(duv);
   float texA = texture(u_tex, duv).a;
 
-  // ===== Detail pipeline v2: denoise FIRST (bilateral, edge-preserving), then
-  // sharpen the cleaned result with a noise-aware unsharp. This ordering is the
-  // fix for "sharpen makes noise worse": we never sharpen raw grain. Mirrors
-  // detail-v2.ts. =====
-  float denoiseT = clamp(u_noiseReduction / 100.0, 0.0, 1.0);
-  float colorDenoiseT = clamp(u_colorNoiseReduction / 100.0, 0.0, 1.0);
-  // denoise range sigma (mirrors denoiseSigma): small so edges are preserved.
-  float dnSigma = denoiseT <= 0.0 ? 0.0 : 0.008 + denoiseT * 0.024;
+  // ===== Denoise and sharpen are handled by a dedicated multipass FBO pipeline
+  // (see the denoise/sharpen shaders and applyDetailPasses). They are NOT done
+  // here anymore. Clarity/texture/deblur/dehaze remain below since they're local
+  // contrast operations that compose fine in this pass. =====
 
-  if (dnSigma > 0.0 || colorDenoiseT > 0.0) {
-    // 8-neighbor bilateral over a moderate radius. Spatial weight is 1.0 for
-    // 4-neighbors and ~0.7 for diagonals; range weight uses luma difference so
-    // color speckle doesn't break luminance edges.
-    // Tighter radius: noise is high-frequency, so a small radius removes grain
-    // without reaching across into nearby detail.
-    vec2 dt = u_texel * 1.1;
-    vec3 n0 = basePipeline(duv + vec2(dt.x, 0.0));
-    vec3 n1 = basePipeline(duv - vec2(dt.x, 0.0));
-    vec3 n2 = basePipeline(duv + vec2(0.0, dt.y));
-    vec3 n3 = basePipeline(duv - vec2(0.0, dt.y));
-    vec3 n4 = basePipeline(duv + dt);
-    vec3 n5 = basePipeline(duv - dt);
-    vec3 n6 = basePipeline(duv + vec2(dt.x, -dt.y));
-    vec3 n7 = basePipeline(duv + vec2(-dt.x, dt.y));
-    float lc = dot(s, LUMA);
-    // sigma is on luma; guard against 0.
-    float sig = max(dnSigma, 0.0001);
-    // accumulate bilateral for luma smoothing
-    vec3 accum = s;
-    float wsum = 1.0;
-    #define BILAT(nv, sp) { float dl = (dot((nv),LUMA)-lc)/sig; float w = (sp) * exp(-0.5 * dl * dl); accum += (nv) * w; wsum += w; }
-    BILAT(n0, 1.0) BILAT(n1, 1.0) BILAT(n2, 1.0) BILAT(n3, 1.0)
-    BILAT(n4, 0.7) BILAT(n5, 0.7) BILAT(n6, 0.7) BILAT(n7, 0.7)
-    #undef BILAT
-    vec3 denoised = accum / wsum;
-
-    // Luminance denoise: keep chroma of s, take luma from the bilateral result,
-    // and blend by strength so low slider values stay subtle.
-    float lumD = dot(denoised, LUMA);
-    vec3 lumaDenoised = s + (lumD - lc); // shift luma only
-    s = mix(s, lumaDenoised, denoiseT);
-
-    // Chroma denoise: pull chroma toward a plain wide average (chroma noise is
-    // low-frequency speckle; a mean is fine and stronger near edges is OK).
-    if (colorDenoiseT > 0.0) {
-      vec3 mean = (n0+n1+n2+n3+n4+n5+n6+n7) * 0.125;
-      float lumS = dot(s, LUMA);
-      float lumM = dot(mean, LUMA);
-      vec3 chroma = mix(s - vec3(lumS), mean - vec3(lumM), colorDenoiseT);
-      s = vec3(lumS) + chroma;
-    }
-  }
-
-  // Local average for sharpen/clarity/texture, from the (now denoised) pipeline.
+  // Local average for clarity/texture/deblur.
   vec2 texel = u_texel * max(u_sharpenRadius, 0.5);
   vec3 blur = (
     basePipeline(duv + vec2(texel.x, 0.0)) +
@@ -342,19 +299,9 @@ void main() {
     basePipeline(duv + vec2(0.0, texel.y)) +
     basePipeline(duv - vec2(0.0, texel.y))
   ) * 0.25;
-  // Noise-aware sharpen (mirrors noiseAwareSharpen): boost only detail above the
-  // noise floor, so residual grain isn't amplified. Per-channel.
-  if (u_sharpenAmount > 0.0) {
-    float amt = clamp(u_sharpenAmount, 0.0, 300.0) / 100.0;
-    float floorN = 0.015;
-    vec3 detail = s - blur;
-    vec3 mag = abs(detail) + 1e-6;
-    vec3 gated = detail * max(vec3(0.0), 1.0 - floorN / mag);
-    s = clamp(s + gated * amt, 0.0, 1.0);
-  }
 
   // Focus recovery / deblur: wider-radius, halo-suppressed unsharp per channel
-  // (mirrors deblur.ts). Applied after denoise+sharpen on the cleaned signal.
+  // (mirrors deblur.ts).
   if (u_deblurActive > 0.5) {
     vec2 wtexel = u_texel * 2.5;
     vec3 wblur = (
@@ -461,6 +408,92 @@ void main() {
   vec4 src = texture(u_src, v_uv);
   float a = texture(u_mask, vec2(v_uv.x, 1.0 - v_uv.y)).r * u_strength;
   outColor = mix(dst, src, clamp(a, 0.0, 1.0));
+}`;
+
+/**
+ * Separable bilateral denoise pass. Run once per axis (u_dir=(1,0) then (0,1));
+ * iterate for stronger denoise. Walks up to u_radius taps each side, weighting
+ * by a Gaussian spatial falloff and a luma-difference range weight so edges (big
+ * luma jumps) stop the blur while flat grain is averaged. Luma is smoothed by
+ * u_lumaAmt; chroma is pulled toward the spatial mean by u_chromaAmt (chroma
+ * noise is diffuse, so it tolerates stronger smoothing).
+ */
+const DENOISE_FRAGMENT_SRC = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+uniform sampler2D u_tex;
+uniform vec2 u_texel;
+uniform vec2 u_dir;
+uniform float u_radius;
+uniform float u_sigmaSpatial;
+uniform float u_sigmaRange;
+uniform float u_lumaAmt;
+uniform float u_chromaAmt;
+out vec4 outColor;
+const vec3 LUMA = vec3(0.299, 0.587, 0.114);
+void main() {
+  vec4 c = texture(u_tex, v_uv);
+  int r = int(u_radius + 0.5);
+  if (r <= 0) { outColor = c; return; }
+  float cl = dot(c.rgb, LUMA);
+  float sigS = max(u_sigmaSpatial, 1e-4);
+  float sigR = max(u_sigmaRange, 1e-4);
+  vec3 lumaAcc = c.rgb; float lumaW = 1.0;
+  vec3 meanAcc = c.rgb; float meanW = 1.0;
+  for (int i = 1; i <= 24; i++) {
+    if (i > r) break;
+    float sp = exp(-0.5 * (float(i)/sigS) * (float(i)/sigS));
+    vec2 off = u_dir * u_texel * float(i);
+    vec3 pp = texture(u_tex, v_uv + off).rgb;
+    vec3 nn = texture(u_tex, v_uv - off).rgb;
+    float dp = (dot(pp, LUMA) - cl) / sigR;
+    float dn = (dot(nn, LUMA) - cl) / sigR;
+    float wp = sp * exp(-0.5 * dp * dp);
+    float wn = sp * exp(-0.5 * dn * dn);
+    lumaAcc += pp * wp + nn * wn; lumaW += wp + wn;
+    meanAcc += (pp + nn) * sp;    meanW += 2.0 * sp;
+  }
+  vec3 bilat = lumaAcc / lumaW;   // edge-preserving
+  vec3 mean = meanAcc / meanW;    // plain blur (for chroma)
+  // Luma: shift c's luma toward the bilateral luma, scaled by amount.
+  float lb = dot(bilat, LUMA);
+  vec3 lumaOut = c.rgb + (lb - cl) * u_lumaAmt;
+  // Chroma: pull chroma toward the mean's chroma, scaled by amount.
+  float lo = dot(lumaOut, LUMA);
+  float lm = dot(mean, LUMA);
+  vec3 chroma = mix(lumaOut - vec3(lo), mean - vec3(lm), u_chromaAmt);
+  outColor = vec4(vec3(lo) + chroma, c.a);
+}`;
+
+/**
+ * Sharpen pass on LUMINANCE ONLY, with a smooth noise gate. Boosts luma detail
+ * (current minus a small local average) above the noise floor, so edges get
+ * crisp without amplifying color noise or painting colored fringes.
+ */
+const SHARPEN_FRAGMENT_SRC = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+uniform sampler2D u_tex;
+uniform vec2 u_texel;
+uniform float u_amount;
+uniform float u_radius;
+uniform float u_floor;
+out vec4 outColor;
+const vec3 LUMA = vec3(0.299, 0.587, 0.114);
+void main() {
+  vec4 c = texture(u_tex, v_uv);
+  if (u_amount <= 0.0) { outColor = c; return; }
+  vec2 tx = u_texel * max(u_radius, 0.5);
+  vec3 blur = (
+    texture(u_tex, v_uv + vec2(tx.x, 0.0)).rgb +
+    texture(u_tex, v_uv - vec2(tx.x, 0.0)).rgb +
+    texture(u_tex, v_uv + vec2(0.0, tx.y)).rgb +
+    texture(u_tex, v_uv - vec2(0.0, tx.y)).rgb
+  ) * 0.25;
+  float amt = clamp(u_amount, 0.0, 300.0) / 100.0;
+  float d = dot(c.rgb, LUMA) - dot(blur, LUMA);
+  float gate = smoothstep(u_floor, u_floor * 2.0, abs(d));
+  outColor = vec4(clamp(c.rgb + vec3(d * amt * gate), 0.0, 1.0), c.a);
 }`;
 
 /**
@@ -625,6 +658,17 @@ export class WebGLImageRenderer {
   } | null = null;
   private maskTexture: WebGLTexture | null = null;
   private warpProgram: WebGLProgram | null = null;
+
+  // Multipass detail (denoise + sharpen) pipeline.
+  private denoiseProgram: WebGLProgram | null = null;
+  private denoiseLocs: Record<string, WebGLUniformLocation | null> = {};
+  private sharpenProgram: WebGLProgram | null = null;
+  private sharpenLocs: Record<string, WebGLUniformLocation | null> = {};
+  private detailVao: WebGLVertexArrayObject | null = null;
+  private fboDetailA: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
+  private fboDetailB: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
+  private fboDevelop: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
+  private detailFboSize: Size | null = null;
 
   private warpVao: WebGLVertexArrayObject | null = null;
   private warpTexture: WebGLTexture | null = null;
@@ -830,6 +874,36 @@ export class WebGLImageRenderer {
     const cx = cssSize.width / 2 + view.offset.x;
     const cy = cssSize.height / 2 + view.offset.y;
 
+    // Detail pipeline (denoise + sharpen) as dedicated multipass FBOs. Runs on
+    // the FULL developed frame (no crop/rotation) and yields a texture that we
+    // then present with the usual crop UVs + view transform — so positioning is
+    // identical to the plain path. Split-compare keeps the plain path.
+    const dparams = resolveDetailParams({
+      noiseReduction: advanced.noiseReduction,
+      colorNoiseReduction: advanced.colorNoiseReduction,
+      sharpenAmount: advanced.sharpenAmount,
+      sharpenRadius: advanced.sharpenRadius,
+    });
+    const detailActive = !split && planDetailPasses(dparams).length > 0;
+    if (detailActive) {
+      const fw = this.imageSize.width;
+      const fh = this.imageSize.height;
+      const dscale = Math.min(1, MAX_MASK_WORK / Math.max(fw, fh));
+      const dw = Math.max(1, Math.round(fw * dscale));
+      const dh = Math.max(1, Math.round(fh * dscale));
+      this.ensureDetailPipeline(dw, dh);
+      if (this.fboDevelop) {
+        // Develop the FULL frame (crop=full) into fboDevelop, run detail passes,
+        // then present the resulting texture with crop + view transform.
+        this.drawAdjustToFbo(this.fboDevelop, dw, dh, adjustments, advanced, FULL_CROP);
+        const resultTex = this.runDetailPipeline(this.fboDevelop.tex, dw, dh, dparams);
+        const croppedW = Math.max(1, Math.round(fw * crop.width));
+        const croppedH = Math.max(1, Math.round(fh * crop.height));
+        this.presentCroppedToScreen(resultTex, view, cssSize, dpr, croppedW, croppedH, crop);
+        return;
+      }
+    }
+
     // UV v=0 samples the texture's first stored row. Since setImage() no
     // longer flips on upload, texture row 0 = source row 0 = the TOP of the
     // image. So the screen-top corners (ly = -halfH) must use v=0, and the
@@ -1002,6 +1076,138 @@ export class WebGLImageRenderer {
     }
     this.fboA = this.fboB = this.fboTemp = null;
     this.fboSize = { width: 0, height: 0 };
+  }
+
+  /** Compile denoise+sharpen programs and allocate detail FBOs at size w x h. */
+  private ensureDetailPipeline(w: number, h: number): void {
+    const gl = this.gl;
+    if (!this.denoiseProgram) {
+      const v1 = compileShader(gl, gl.VERTEX_SHADER, PRESENT_VERTEX_SRC);
+      const f1 = compileShader(gl, gl.FRAGMENT_SHADER, DENOISE_FRAGMENT_SRC);
+      this.denoiseProgram = linkProgram(gl, v1, f1);
+      gl.deleteShader(v1);
+      gl.deleteShader(f1);
+      for (const n of [
+        'u_tex',
+        'u_texel',
+        'u_dir',
+        'u_radius',
+        'u_sigmaSpatial',
+        'u_sigmaRange',
+        'u_lumaAmt',
+        'u_chromaAmt',
+      ]) {
+        this.denoiseLocs[n] = gl.getUniformLocation(this.denoiseProgram, n);
+      }
+      this.detailVao = this.makeQuadVao(this.denoiseProgram);
+    }
+    if (!this.sharpenProgram) {
+      const v2 = compileShader(gl, gl.VERTEX_SHADER, PRESENT_VERTEX_SRC);
+      const f2 = compileShader(gl, gl.FRAGMENT_SHADER, SHARPEN_FRAGMENT_SRC);
+      this.sharpenProgram = linkProgram(gl, v2, f2);
+      gl.deleteShader(v2);
+      gl.deleteShader(f2);
+      for (const n of ['u_tex', 'u_texel', 'u_amount', 'u_radius', 'u_floor']) {
+        this.sharpenLocs[n] = gl.getUniformLocation(this.sharpenProgram, n);
+      }
+    }
+    if (
+      !this.detailFboSize ||
+      this.detailFboSize.width !== w ||
+      this.detailFboSize.height !== h
+    ) {
+      for (const f of [this.fboDetailA, this.fboDetailB, this.fboDevelop]) {
+        if (f) {
+          gl.deleteFramebuffer(f.fb);
+          gl.deleteTexture(f.tex);
+        }
+      }
+      this.fboDetailA = this.makeFbo(w, h);
+      this.fboDetailB = this.makeFbo(w, h);
+      this.fboDevelop = this.makeFbo(w, h);
+      this.detailFboSize = { width: w, height: h };
+    }
+  }
+
+  /** Draw a full-frame quad sampling `srcTex` into `target` with `program`. */
+  private detailBlit(
+    program: WebGLProgram,
+    srcTex: WebGLTexture,
+    target: { fb: WebGLFramebuffer } | null,
+    w: number,
+    h: number,
+    setup: () => void,
+  ): void {
+    const gl = this.gl;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target ? target.fb : null);
+    gl.viewport(0, 0, w, h);
+    gl.useProgram(program);
+    gl.bindVertexArray(this.detailVao);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, srcTex);
+    setup();
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindVertexArray(null);
+  }
+
+  /**
+   * Run the multipass denoise+sharpen pipeline over a developed texture. All
+   * passes operate on full-frame, undistorted FBOs (crop/rotation are applied
+   * later by presentToScreen). Returns the texture holding the result.
+   */
+  private runDetailPipeline(
+    developedTex: WebGLTexture,
+    w: number,
+    h: number,
+    p: ResolvedDetailParams,
+  ): WebGLTexture {
+    const plan = planDetailPasses(p);
+    if (plan.length === 0) return developedTex;
+    this.ensureDetailPipeline(w, h);
+    const A = this.fboDetailA;
+    const B = this.fboDetailB;
+    if (!A || !B || !this.denoiseProgram || !this.sharpenProgram) return developedTex;
+    const gl = this.gl;
+    gl.disable(gl.BLEND);
+    const texelX = 1 / w;
+    const texelY = 1 / h;
+
+    let srcTex = developedTex;
+    let dst = A;
+    let spare = B;
+    const dL = this.denoiseLocs;
+    const sL = this.sharpenLocs;
+
+    for (const pass of plan) {
+      if (pass.kind === 'denoiseH' || pass.kind === 'denoiseV') {
+        const dirX = pass.kind === 'denoiseH' ? 1 : 0;
+        const dirY = pass.kind === 'denoiseH' ? 0 : 1;
+        this.detailBlit(this.denoiseProgram, srcTex, dst, w, h, () => {
+          gl.uniform1i(dL.u_tex ?? null, 0);
+          gl.uniform2f(dL.u_texel ?? null, texelX, texelY);
+          gl.uniform2f(dL.u_dir ?? null, dirX, dirY);
+          gl.uniform1f(dL.u_radius ?? null, p.denoiseRadius);
+          gl.uniform1f(dL.u_sigmaSpatial ?? null, p.sigmaSpatial);
+          gl.uniform1f(dL.u_sigmaRange ?? null, p.denoiseRange);
+          gl.uniform1f(dL.u_lumaAmt ?? null, p.denoiseRange > 0 ? 1 : 0);
+          gl.uniform1f(dL.u_chromaAmt ?? null, p.colorDenoise);
+        });
+      } else {
+        this.detailBlit(this.sharpenProgram, srcTex, dst, w, h, () => {
+          gl.uniform1i(sL.u_tex ?? null, 0);
+          gl.uniform2f(sL.u_texel ?? null, texelX, texelY);
+          gl.uniform1f(sL.u_amount ?? null, p.sharpenAmount);
+          gl.uniform1f(sL.u_radius ?? null, p.sharpenRadius);
+          gl.uniform1f(sL.u_floor ?? null, p.noiseFloor);
+        });
+      }
+      srcTex = dst.tex;
+      const nextDst = spare;
+      spare = dst;
+      dst = nextDst;
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return srcTex;
   }
 
   /** Write a full-target quad (clip -1..1) with the given source UV sub-rect. */
@@ -1227,6 +1433,78 @@ export class WebGLImageRenderer {
     gl.bindVertexArray(null);
   }
 
+  /**
+   * Like presentToScreen, but samples only the crop sub-rectangle of the source
+   * texture. Used to present the detail-pipeline result (a full-frame FBO) with
+   * the active crop and view transform. The FBO's row 0 is the image TOP and the
+   * present pass samples with t=1 at the top (see presentToScreen), so the crop's
+   * y maps to v with (1 - y) at the top edge.
+   */
+  private presentCroppedToScreen(
+    tex: WebGLTexture,
+    view: ViewTransform,
+    cssSize: Size,
+    dpr: number,
+    croppedW: number,
+    croppedH: number,
+    crop: CropRect,
+  ): void {
+    const gl = this.gl;
+    const program = this.presentProgram;
+    const vao = this.presentVao;
+    if (!program || !vao) return;
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    this.resize(Math.round(cssSize.width * dpr), Math.round(cssSize.height * dpr));
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const halfW = (croppedW * view.scale) / 2;
+    const halfH = (croppedH * view.scale) / 2;
+    const rad = (view.rotationDeg * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const cx = cssSize.width / 2 + view.offset.x;
+    const cy = cssSize.height / 2 + view.offset.y;
+
+    const u0 = crop.x;
+    const u1 = crop.x + crop.width;
+    // present samples with t=1 at the image top; crop.y is measured from the top,
+    // so the top edge uses v = 1 - crop.y and the bottom uses v = 1 - (y+height).
+    const vTop = 1 - crop.y;
+    const vBot = 1 - (crop.y + crop.height);
+    const corners: readonly (readonly [number, number, number, number])[] = [
+      [-halfW, -halfH, u0, vTop],
+      [halfW, -halfH, u1, vTop],
+      [-halfW, halfH, u0, vBot],
+      [halfW, halfH, u1, vBot],
+    ];
+    for (let i = 0; i < 4; i++) {
+      const corner = corners[i];
+      if (!corner) continue;
+      const [lx, ly, u, v] = corner;
+      const rx = lx * cos - ly * sin;
+      const ry = lx * sin + ly * cos;
+      const clipX = ((cx + rx) / cssSize.width) * 2 - 1;
+      const clipY = 1 - ((cy + ry) / cssSize.height) * 2;
+      const base = i * 4;
+      this.vertexData[base] = clipX;
+      this.vertexData[base + 1] = clipY;
+      this.vertexData[base + 2] = u;
+      this.vertexData[base + 3] = v;
+    }
+
+    gl.useProgram(program);
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertexData);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(this.presentTexLoc ?? null, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindVertexArray(null);
+  }
+
   /** Like presentToScreen, but offsets sampling by a liquify displacement field. */
   private presentWarpedToScreen(
     tex: WebGLTexture,
@@ -1325,5 +1603,14 @@ export class WebGLImageRenderer {
     if (this.presentProgram) gl.deleteProgram(this.presentProgram);
     if (this.compositeProgram) gl.deleteProgram(this.compositeProgram);
     if (this.warpProgram) gl.deleteProgram(this.warpProgram);
+    if (this.denoiseProgram) gl.deleteProgram(this.denoiseProgram);
+    if (this.sharpenProgram) gl.deleteProgram(this.sharpenProgram);
+    if (this.detailVao) gl.deleteVertexArray(this.detailVao);
+    for (const f of [this.fboDetailA, this.fboDetailB, this.fboDevelop]) {
+      if (f) {
+        gl.deleteFramebuffer(f.fb);
+        gl.deleteTexture(f.tex);
+      }
+    }
   }
 }

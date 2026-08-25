@@ -4,6 +4,8 @@ import {
   denoiseIterations,
   denoiseRadius,
   denoiseRangeSigma,
+  hasDetailWork,
+  planDetailPasses,
   rangeWeight,
   resolveDetailParams,
   spatialWeights,
@@ -121,5 +123,50 @@ describe('resolveDetailParams', () => {
       sharpenRadius: 1,
     });
     expect(r.sigmaSpatial).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('planDetailPasses', () => {
+  const base = {
+    denoiseRadius: 4,
+    denoiseRange: 0.03,
+    sigmaSpatial: 2,
+    denoiseIterations: 1,
+    colorDenoise: 0.3,
+    sharpenAmount: 100,
+    sharpenRadius: 1,
+    noiseFloor: 0.015,
+  };
+
+  it('plans H+V denoise then sharpen', () => {
+    const passes = planDetailPasses(base);
+    expect(passes.map((p) => p.kind)).toEqual(['denoiseH', 'denoiseV', 'sharpen']);
+  });
+
+  it('doubles denoise passes for 2 iterations', () => {
+    const passes = planDetailPasses({ ...base, denoiseIterations: 2, sharpenAmount: 0 });
+    expect(passes.map((p) => p.kind)).toEqual(['denoiseH', 'denoiseV', 'denoiseH', 'denoiseV']);
+  });
+
+  it('sharpen only when denoise is off', () => {
+    const passes = planDetailPasses({
+      ...base,
+      denoiseRadius: 0,
+      denoiseRange: 0,
+      colorDenoise: 0,
+    });
+    expect(passes.map((p) => p.kind)).toEqual(['sharpen']);
+  });
+
+  it('empty when everything is neutral', () => {
+    const passes = planDetailPasses({
+      ...base,
+      denoiseRadius: 0,
+      denoiseRange: 0,
+      colorDenoise: 0,
+      sharpenAmount: 0,
+    });
+    expect(passes).toEqual([]);
+    expect(hasDetailWork({ ...base, denoiseRadius: 0, denoiseRange: 0, colorDenoise: 0, sharpenAmount: 0 })).toBe(false);
   });
 });

@@ -120,3 +120,28 @@ describe('denoiseSigma stays edge-preserving', () => {
     expect(out).toBeGreaterThan(0.5);
   });
 });
+
+describe('noiseAwareSharpen smooth gate', () => {
+  it('barely boosts detail right at the noise floor', () => {
+    // mag == floor (0.015) -> gate ~0
+    const out = noiseAwareSharpen(0.515, 0.5, 100, 0.015);
+    expect(Math.abs(out - 0.515)).toBeLessThan(0.003);
+  });
+
+  it('fully boosts detail well above the floor', () => {
+    // mag 0.05 >> 2*floor -> full gate
+    const out = noiseAwareSharpen(0.55, 0.5, 100, 0.015);
+    expect(out).toBeGreaterThan(0.55);
+  });
+
+  it('ramps monotonically across the gate band', () => {
+    const a = noiseAwareSharpen(0.5 + 0.018, 0.5, 100);
+    const b = noiseAwareSharpen(0.5 + 0.024, 0.5, 100);
+    const c = noiseAwareSharpen(0.5 + 0.030, 0.5, 100);
+    const boostA = a - (0.5 + 0.018);
+    const boostB = b - (0.5 + 0.024);
+    const boostC = c - (0.5 + 0.030);
+    expect(boostB).toBeGreaterThanOrEqual(boostA - 1e-9);
+    expect(boostC).toBeGreaterThanOrEqual(boostB - 1e-9);
+  });
+});

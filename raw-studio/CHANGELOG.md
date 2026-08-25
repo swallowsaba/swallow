@@ -553,6 +553,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   text clearer about download progress.
 
 ### Changed
+- **Denoise/sharpen rebuilt as a real multipass FBO pipeline (not an inline
+  shader step).** Denoise and sharpen are removed from the main develop shader
+  and now run as dedicated GPU passes into ping-pong framebuffers:
+  a **separable bilateral** denoise (horizontal then vertical, up to 24 taps per
+  side, iterated for strong settings — a large adaptive kernel a single pass
+  can't afford), with separate luminance (edge-preserving) and chroma (diffuse)
+  smoothing, followed by a **luminance-only noise-gated sharpen**. The develop
+  pass renders the full frame to an FBO; detail passes run undistorted; crop and
+  view transform are applied only at final present (a dedicated
+  presentCroppedToScreen), which keeps positioning correct. Clarity, texture,
+  deblur and dehaze remain in the develop pass. Pass planning and all kernel math
+  are pure and unit-tested; the shaders mirror them. Split-compare keeps the
+  inline path.
+
+### Changed
+- **Sharpen reworked to match the denoise fix.** Sharpening now acts on
+  LUMINANCE ONLY instead of each RGB channel independently, so it no longer
+  amplifies color noise or paints colored fringes along edges — edges get crisp
+  cleanly. The grain gate is now a smooth ramp (fully off below the noise floor,
+  ramping to full just above it) instead of a hard cutoff, removing the abrupt
+  switching near the threshold. Pure gate logic is unit-tested (floor suppression,
+  full boost above, monotonic ramp).
+
+### Changed
 - **Denoise tuned to blur even less.** After feedback that it still softened
   detail slightly, the range sigma was reduced again (now 0.008..0.032) and the
   sample radius tightened (1.3->1.1 px), so edges and fine texture are protected
