@@ -16,6 +16,7 @@ import { ColorPanel } from './color-panel';
 import { DetailPanel } from './detail-panel';
 import { LensPanel } from './lens-panel';
 import { BeginnerPanel } from './beginner-panel';
+import { TaskLauncher } from './task-launcher';
 import { Histogram } from './histogram';
 import { CopyPasteSettings } from './copy-paste-settings';
 import { GifPanel } from '@/features/gif';
@@ -113,6 +114,9 @@ export function AdjustmentsPanel(): React.JSX.Element {
       <ModeToggle />
       <CopyPasteSettings />
       <Histogram />
+      <div className="px-2 pb-2">
+        <TaskLauncher />
+      </div>
       <div className="flex flex-col gap-1.5 px-2 pb-2">
         {/* Top-level group selector. */}
         <div className="grid grid-cols-5 gap-0.5 rounded-lg bg-muted p-1">

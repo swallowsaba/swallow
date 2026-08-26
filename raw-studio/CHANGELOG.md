@@ -19,6 +19,17 @@ cannot run in the build sandbox.
 
 ---
 
+## UI — Task Launcher (goal-based entry point)
+
+- **New "What do you want to do?" launcher** pinned to the top of the right
+  panel. Instead of hunting through 14 tabs, users pick an intent — Remove
+  (nets/wires), Brightness, Color, Denoise, Sharpen, Crop, Tidy for social — and
+  it routes to the right tab or starts the matching on-canvas mode. Existing tabs
+  (including GIF/Collage under "Create") stay below unchanged. Fixes "I can't
+  find how to do X". SNS mode added to the UI store (aspect crop only, keeps
+  resolution — the overlay screen comes next). React/store code can't be
+  type-checked in this sandbox; needs a real build to confirm.
+
 ## Fix — image not displaying when denoise/sharpen active
 
 - **Critical: the preview went blank whenever denoise/sharpen was active** (e.g.

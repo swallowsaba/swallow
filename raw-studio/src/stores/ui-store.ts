@@ -62,6 +62,8 @@ export interface UiState {
   leftTab: LeftTab;
   leftPanelOpen: boolean;
   filmstripOpen: boolean;
+  /** SNS "tidy for social" overlay open (aspect crop only, keeps resolution). */
+  snsMode: boolean;
 
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
@@ -73,6 +75,7 @@ export interface UiState {
   setLeftTab: (tab: LeftTab) => void;
   toggleLeftPanel: () => void;
   toggleFilmstrip: () => void;
+  setSnsMode: (value: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -83,6 +86,7 @@ export const useUiStore = create<UiState>((set) => ({
   leftTab: 'library',
   leftPanelOpen: true,
   filmstripOpen: true,
+  snsMode: false,
 
   setTheme: (theme) => {
     set({ theme });
@@ -104,6 +108,9 @@ export const useUiStore = create<UiState>((set) => ({
   },
   setRightTab: (rightTab) => {
     set({ rightTab });
+  },
+  setSnsMode: (snsMode) => {
+    set({ snsMode });
   },
   setLeftTab: (leftTab) => {
     set({ leftTab });
