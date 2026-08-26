@@ -19,6 +19,16 @@ cannot run in the build sandbox.
 
 ---
 
+## UI — clearer object removal
+
+- **Remove mode now shows a prominent step guide.** On entering "Remove", a
+  pill at the top center spells out "1 Brush over what to remove -> 2 Press
+  Remove", so it's obvious what to do (previously only a tiny grey hint buried
+  next to the model size). The Apply button is relabelled "Remove", the
+  auto-detect button now reads "Auto-detect (nets, wires)" so its purpose is
+  clear, and the bottom help text no longer mixes in the model download size.
+  Wiring only; needs a real build to see.
+
 ## UI — Task Launcher (goal-based entry point)
 
 - **New "What do you want to do?" launcher** pinned to the top of the right

@@ -586,11 +586,14 @@ const DICT = {
   'remove.title': { ja: 'オブジェクトを消去', en: 'Remove Object' },
   'remove.brush': { ja: 'ブラシ', en: 'Brush' },
   'remove.help': {
-    ja: '消したい部分を塗って「適用」を押してください',
-    en: 'Paint over what you want to remove, then Apply',
+    ja: '消したいものを指でなぞってから「消す」を押してください',
+    en: 'Brush over what you want to remove, then press Remove',
   },
   'remove.apply': { ja: '適用', en: 'Apply' },
-  'remove.suggest': { ja: '候補を提案', en: 'Suggest area' },
+  'remove.step1': { ja: '消したいものを指でなぞる', en: 'Brush over what to remove' },
+  'remove.step2': { ja: '「消す」を押す', en: 'Press Remove' },
+  'remove.doRemove': { ja: '消す', en: 'Remove' },
+  'remove.suggest': { ja: '自動で探す（ネット・電線）', en: 'Auto-detect (nets, wires)' },
 
   // White balance eyedropper
   'wb.pickerLabel': { ja: 'ホワイトバランス（スポイト）', en: 'White Balance (Picker)' },

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { computeFitScale, type Size } from '../model/viewport';
 import { useViewerStore } from '../model/viewer-store';
-import { MODELS } from '@/features/ai/model/model-registry';
 import { inpaint } from '@/features/ai/model/inpaint';
 import { suggestMeshMask } from '@/features/ai/model/suggest-mask';
 import { downloadBlob } from '@/features/export/model/export';
@@ -36,7 +35,6 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = React.useState<Blob | null>(null);
 
-  const model = MODELS['lama-inpaint'];
 
   const fitScale = computeFitScale(imageSize, container, 0);
   const dispW = imageSize.width * fitScale;
@@ -181,6 +179,23 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
 
   return (
     <div className="absolute inset-0">
+      {/* Prominent first-time guide: makes it obvious what to do on entering
+          remove mode (the old hint was tiny grey text lost among model info). */}
+      {!previewUrl && !hasPaint ? (
+        <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2">
+          <div className="flex items-center gap-3 rounded-full border bg-background/95 px-4 py-2 shadow-lg backdrop-blur">
+            <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+              1
+            </span>
+            <span className="text-sm font-medium text-foreground">{t('remove.step1')}</span>
+            <span className="text-muted-foreground">→</span>
+            <span className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+              2
+            </span>
+            <span className="text-sm text-muted-foreground">{t('remove.step2')}</span>
+          </div>
+        </div>
+      ) : null}
       <div
         className="absolute touch-none"
         style={{
@@ -249,10 +264,7 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
         ) : null}
 
         <div className="rounded bg-background/95 px-2 py-1 text-[11px] text-muted-foreground shadow">
-          {status ??
-            (previewUrl
-              ? t('remove.previewReady')
-              : `${t('remove.help')} (${model?.approxSizeMb ?? 200} MB, ${model?.license ?? ''})`)}
+          {status ?? (previewUrl ? t('remove.previewReady') : t('remove.help'))}
         </div>
 
         <div className="flex items-center gap-2">
@@ -290,7 +302,7 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
               ) : (
                 <Check className="size-3.5" />
               )}
-              {t('remove.apply')}
+              {t('remove.doRemove')}
             </Button>
           )}
         </div>
