@@ -9,7 +9,7 @@ import { useT } from '@/i18n';
 import { MODELS } from '../model/model-registry';
 import { segment, type SegmentationResult } from '../model/segmentation';
 import { autoRemoveThinStructures } from '../model/auto-remove';
-import { aiDenoise } from '../model/ai-denoise';
+import { aiDenoise, isMobileDevice } from '../model/ai-denoise';
 import { optionsForSensitivity } from '../model/thin-structure';
 import { smoothPortrait } from '../model/portrait-smooth';
 import { computeImageStats } from '../model/image-stats';
@@ -280,6 +280,9 @@ export function AiPanel(): React.JSX.Element {
           {t('ai.denoiseTitle')}
         </div>
         <div className="text-[11px] text-muted-foreground">{t('ai.denoiseDesc')}</div>
+        <div className="text-[11px] text-muted-foreground">
+          {isMobileDevice() ? t('ai.denoiseModeMobile') : t('ai.denoiseModePc')}
+        </div>
         <Button
           variant="outline"
           size="sm"

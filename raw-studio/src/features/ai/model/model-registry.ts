@@ -85,3 +85,14 @@ export const MODELS: Record<string, ModelDef> = {
 export function getModel(id: string): ModelDef | undefined {
   return MODELS[id];
 }
+
+/**
+ * Pick the denoise model for a device class. PC uses the full SCUNet; mobile
+ * currently uses the same model but is driven at a much smaller working size by
+ * the caller (see maxEdgeForDevice), which keeps it responsive. This is the
+ * single extension point: when a dedicated lightweight mobile model is verified,
+ * register it and return its id here for `mobile === true`.
+ */
+export function getDenoiseModelId(_mobile: boolean): string {
+  return 'scunet-denoise';
+}

@@ -1,5 +1,5 @@
 import { fetchModel } from './model-cache';
-import { getModel } from './model-registry';
+import { getDenoiseModelId, getModel } from './model-registry';
 import { loadModel, runModelDynamic } from './inference-client';
 import { denoiseWorkSize, maxEdgeForDevice } from './denoise-size';
 
@@ -28,13 +28,13 @@ export async function aiDenoise(
   opts: { mobile?: boolean } = {},
   onProgress?: (received: number, total: number) => void,
 ): Promise<Blob> {
-  const model = getModel('scunet-denoise');
+  const mobile = opts.mobile ?? isMobileDevice();
+  const model = getModel(getDenoiseModelId(mobile));
   if (!model || model.kind !== 'denoise') throw new Error('Denoise model missing.');
 
   const bytes = await fetchModel(model.url, onProgress);
   await loadModel(model.id, bytes);
 
-  const mobile = opts.mobile ?? isMobileDevice();
   const maxEdge = maxEdgeForDevice(mobile, model.maxEdge ?? 1024);
   const { width: w, height: h } = denoiseWorkSize(
     bitmap.width,

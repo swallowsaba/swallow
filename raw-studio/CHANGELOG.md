@@ -70,6 +70,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **AI Denoise device-aware mode (PC / mobile).** The denoise action now detects
+  device class (UA + coarse-pointer/small-viewport) and drives the model
+  accordingly: PC runs at up to 1024px, mobile is capped at 640px so it stays
+  responsive and within memory limits on phones. The AI panel shows which mode is
+  active. Model selection goes through a single extension point
+  (getDenoiseModelId) so a dedicated lightweight mobile model can be dropped in
+  later without touching the pipeline; for now both classes use the verified
+  single-file SCUNet, differentiated by working size. Device detection and mode
+  labels added; sizing remains pure and unit-tested.
+
+### Added
 - **AI Denoise (PC), on-device.** A real deep-learning denoiser (SCUNet,
   MIT-licensed, single-file 91MB ONNX) added to the existing on-device ONNX
   Runtime Web pipeline — no API, no cost, nothing leaves the browser. This is the

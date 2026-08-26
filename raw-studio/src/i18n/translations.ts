@@ -499,6 +499,8 @@ const DICT = {
   'ai.denoiseDesc': { ja: 'ディープラーニング(SCUNet)でざらつきを除去します。ディテールを保ちつつノイズだけを消します。初回はモデル(約91MB)を読み込みます。', en: 'Removes grain with a deep-learning model (SCUNet), preserving detail. Downloads the model (~91MB) on first use.' },
   'ai.denoiseRun': { ja: 'AIでノイズ除去', en: 'Denoise with AI' },
   'ai.denoisePreparing': { ja: 'モデル準備中…', en: 'Preparing model…' },
+  'ai.denoiseModePc': { ja: 'PCモード（高品質・最大1024px）', en: 'PC mode (high quality, up to 1024px)' },
+  'ai.denoiseModeMobile': { ja: 'スマホモード（軽量・最大640px）', en: 'Mobile mode (lightweight, up to 640px)' },
   'ai.removeTitle': { ja: '邪魔なものを除去', en: 'Remove distractions' },
   'ai.removeDesc': { ja: '電線・フェンス・ネットなどの細い構造を自動検出し、AIで背景を補完して消します。', en: 'Auto-detects thin structures (wires, fences, nets) and erases them, filling the background with AI.' },
   'ai.removeRun': { ja: '自動検出して除去', en: 'Detect & remove' },
