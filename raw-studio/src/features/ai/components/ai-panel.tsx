@@ -10,6 +10,7 @@ import { MODELS } from '../model/model-registry';
 import { segment, type SegmentationResult } from '../model/segmentation';
 import { autoRemoveThinStructures } from '../model/auto-remove';
 import { aiDenoise, isMobileDevice } from '../model/ai-denoise';
+import { aiSharpen } from '../model/ai-restore';
 import { optionsForSensitivity } from '../model/thin-structure';
 import { smoothPortrait } from '../model/portrait-smooth';
 import { computeImageStats } from '../model/image-stats';
@@ -30,6 +31,8 @@ export function AiPanel(): React.JSX.Element {
   const [removeSensitivity, setRemoveSensitivity] = React.useState(40);
   const [denoiseBusy, setDenoiseBusy] = React.useState(false);
   const [denoiseStatus, setDenoiseStatus] = React.useState<string | null>(null);
+  const [sharpenBusy, setSharpenBusy] = React.useState(false);
+  const [sharpenStatus, setSharpenStatus] = React.useState<string | null>(null);
   const t = useT();
 
   const model = MODELS['u2netp-subject'];
@@ -90,6 +93,25 @@ export function AiPanel(): React.JSX.Element {
       setDenoiseStatus(err instanceof Error ? err.message : 'Failed.');
     } finally {
       setDenoiseBusy(false);
+    }
+  };
+
+  const runAiSharpen = async () => {
+    if (!bitmap) return;
+    setSharpenBusy(true);
+    setSharpenStatus(t('ai.sharpenPreparing'));
+    try {
+      const blob = await aiSharpen(bitmap, {}, (received, total) => {
+        const mb = (received / 1_000_000).toFixed(0);
+        const totalMb = total ? (total / 1_000_000).toFixed(0) : '?';
+        setSharpenStatus(`${mb}/${totalMb} MB…`);
+      });
+      downloadBlob(blob, 'sharpened.jpg');
+      setSharpenStatus(t('ai.done'));
+    } catch (err) {
+      setSharpenStatus(err instanceof Error ? err.message : 'Failed.');
+    } finally {
+      setSharpenBusy(false);
     }
   };
 
@@ -296,6 +318,27 @@ export function AiPanel(): React.JSX.Element {
         </Button>
         {denoiseStatus ? (
           <div className="text-[11px] text-muted-foreground">{denoiseStatus}</div>
+        ) : null}
+      </section>
+
+      <section className="flex flex-col gap-2 border-t border-border pt-3">
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {t('ai.sharpenTitle')}
+        </div>
+        <div className="text-[11px] text-muted-foreground">{t('ai.sharpenDesc')}</div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!bitmap || sharpenBusy}
+          onClick={() => {
+            void runAiSharpen();
+          }}
+        >
+          {sharpenBusy ? <Loader2 className="animate-spin" /> : <Sparkle />}
+          {t('ai.sharpenRun')}
+        </Button>
+        {sharpenStatus ? (
+          <div className="text-[11px] text-muted-foreground">{sharpenStatus}</div>
         ) : null}
       </section>
 

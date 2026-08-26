@@ -13,7 +13,7 @@ export interface ModelDef {
   readonly inputName: string;
   readonly outputName: string;
   readonly normalization: Normalization;
-  readonly kind: 'segmentation' | 'inpaint' | 'landmark' | 'denoise';
+  readonly kind: 'segmentation' | 'inpaint' | 'landmark' | 'denoise' | 'restore';
   /** Only for kind:'inpaint' — the second input's tensor name (the mask). */
   readonly maskInputName?: string;
   /** For models that accept a variable (dynamic) H/W instead of a fixed square.
@@ -76,6 +76,25 @@ export const MODELS: Record<string, ModelDef> = {
     outputName: 'output',
     normalization: { mean: [0, 0, 0], std: [1, 1, 1] },
     kind: 'denoise',
+    dynamicSize: true,
+    sizeMultiple: 8,
+    maxEdge: 1024,
+  },
+  'nafnet-restore': {
+    id: 'nafnet-restore',
+    label: 'AI Sharpen / Restore (NAFNet)',
+    // Single-file ONNX (deepghs/image_restoration), MIT-licensed. NAFNet-REDS is
+    // a general restoration / deblur model — it recovers crisp detail, which is
+    // the "AI sharpen" role. Same I/O contract as SCUNet: float32 [1,3,H,W] in
+    // 0..1, sides multiples of 8; tensor names read from the session at runtime.
+    url: 'https://huggingface.co/deepghs/image_restoration/resolve/main/NAFNet-REDS.onnx',
+    license: 'MIT (NAFNet, Chen et al. 2022)',
+    approxSizeMb: 100,
+    inputSize: 0,
+    inputName: 'input',
+    outputName: 'output',
+    normalization: { mean: [0, 0, 0], std: [1, 1, 1] },
+    kind: 'restore',
     dynamicSize: true,
     sizeMultiple: 8,
     maxEdge: 1024,

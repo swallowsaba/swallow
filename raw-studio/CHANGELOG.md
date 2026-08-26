@@ -70,6 +70,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of solarizing. Pure, unit-tested transform mirrored in the shader.
 
 ### Added
+- **AI Sharpen / Restore (NAFNet), on-device.** A deep-learning restoration model
+  (NAFNet-REDS, MIT-licensed, single-file ONNX from deepghs/image_restoration)
+  added alongside AI Denoise — this is the AI version of "make it crisp". Found
+  under the AI panel -> "AI Sharpen / Restore" -> "Sharpen with AI". Shares the
+  denoise pipeline: same dynamic-size (multiple-of-8) single-input inference,
+  device-aware working size (PC up to 1024px, mobile capped), session-read tensor
+  names, and on-device/no-API/no-cost operation. Denoise and sharpen now share a
+  single restoration runner (runRestorationModel) to avoid duplicated pre/post
+  processing.
+
+### Added
 - **AI Denoise device-aware mode (PC / mobile).** The denoise action now detects
   device class (UA + coarse-pointer/small-viewport) and drives the model
   accordingly: PC runs at up to 1024px, mobile is capped at 640px so it stays

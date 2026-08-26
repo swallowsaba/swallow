@@ -25,3 +25,4 @@ export type { ModelDef } from './model/model-registry';
 export { autoRemoveThinStructures, maskToInpaintCanvas } from './model/auto-remove';
 export { detectThinStructures } from './model/thin-structure';
 export { aiDenoise, isMobileDevice } from './model/ai-denoise';
+export { aiSharpen } from './model/ai-restore';
