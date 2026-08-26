@@ -892,7 +892,8 @@ export class WebGLImageRenderer {
       const dw = Math.max(1, Math.round(fw * dscale));
       const dh = Math.max(1, Math.round(fh * dscale));
       this.ensureDetailPipeline(dw, dh);
-      if (this.fboDevelop) {
+      this.ensureMaskPrograms(); // presentCroppedToScreen needs presentProgram/VAO
+      if (this.fboDevelop && this.presentProgram && this.presentVao) {
         // Develop the FULL frame (crop=full) into fboDevelop, run detail passes,
         // then present the resulting texture with crop + view transform.
         this.drawAdjustToFbo(this.fboDevelop, dw, dh, adjustments, advanced, FULL_CROP);
@@ -902,6 +903,8 @@ export class WebGLImageRenderer {
         this.presentCroppedToScreen(resultTex, view, cssSize, dpr, croppedW, croppedH, crop);
         return;
       }
+      // else: fall through to the plain single-pass draw below (image still shows,
+      // just without the multipass detail) rather than rendering nothing.
     }
 
     // UV v=0 samples the texture's first stored row. Since setImage() no

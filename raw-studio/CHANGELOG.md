@@ -19,6 +19,17 @@ cannot run in the build sandbox.
 
 ---
 
+## Fix — image not displaying when denoise/sharpen active
+
+- **Critical: the preview went blank whenever denoise/sharpen was active** (e.g.
+  the default Color Noise = 25). The multipass detail path presents via
+  presentCroppedToScreen, which needs the present program/VAO — but that path
+  never called ensureMaskPrograms(), so presentProgram was null and the present
+  early-returned, drawing nothing. Now the detail path compiles the present
+  program first, and if it still isn't available it falls through to the plain
+  single-pass draw instead of rendering an empty frame. (GPU output still needs
+  in-browser confirmation.)
+
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
