@@ -1,5 +1,24 @@
 # Changelog
 
+## Full snapshot v7 — AI denoise/sharpen + multipass detail
+
+This snapshot consolidates the detail-processing rebuild and the move to AI:
+
+- **AI Denoise (SCUNet)** and **AI Sharpen/Restore (NAFNet)** — on-device, free,
+  open-source (MIT), no API. Device-aware working size (PC up to 1024px, mobile
+  capped). Found in the AI panel. First use downloads the model.
+- **Multipass FBO denoise/sharpen** — separable bilateral (edge-preserving luma +
+  diffuse chroma) then luminance-only noise-gated sharpen, as dedicated GPU passes
+  with crop/view applied only at final present. Split-compare uses the inline path.
+- **Crop-based inpainting** — higher effective resolution for small/thin removals.
+- Denoise/sharpen tuning: small edge-preserving range sigma, luma-only sharpen.
+
+All pure math (kernels, pass planning, sizing, crop geometry) is unit-tested (58
+test files). GPU shaders and ONNX inference require in-browser verification — they
+cannot run in the build sandbox.
+
+---
+
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
