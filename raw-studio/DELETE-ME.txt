@@ -1,0 +1,1 @@
+推奨: このファイルは削除可。rm src/features/ai/components/defence-guidance.tsx

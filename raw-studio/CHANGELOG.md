@@ -1,5 +1,17 @@
 # Changelog
 
+## Fix build — stale defence-guidance.tsx
+
+- **Build broke because defence-guidance.tsx still referenced deleted i18n keys.**
+  When the de-fencing guidance was removed, its translation keys were deleted but
+  the component file remained on disk (a zip can't express a file deletion), so
+  tsc failed on defence.explain / defence.privacy. The file is now overwritten
+  with a harmless, unused placeholder (`export {}`) so the build passes; you can
+  delete it entirely. Verified: all 460 i18n keys cross-checked against every
+  t() call — no other dangling references.
+
+
+
 ## WSL2 / Docker setup
 
 - **Added a full local setup for WSL2 Ubuntu.** New Dockerfile.dev (Vite dev
