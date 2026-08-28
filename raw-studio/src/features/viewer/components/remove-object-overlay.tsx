@@ -1,11 +1,14 @@
 import * as React from 'react';
-import { Check, Download, Eraser, Loader2, Wand2, X } from 'lucide-react';
+import { Check, Download, Eraser, Loader2, Sparkles, Wand2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { computeFitScale, type Size } from '../model/viewport';
 import { useViewerStore } from '../model/viewer-store';
 import { inpaint } from '@/features/ai/model/inpaint';
 import { suggestMeshMask } from '@/features/ai/model/suggest-mask';
+import { autoRemoveThinStructures } from '@/features/ai/model/auto-remove';
+import { optionsForSensitivity } from '@/features/ai/model/thin-structure';
+import { DefenceGuidance } from '@/features/ai/components/defence-guidance';
 import { downloadBlob } from '@/features/export/model/export';
 import { useT } from '@/i18n';
 
@@ -30,6 +33,8 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
   const [brushPct, setBrushPct] = React.useState(4); // % of the image's long edge
   const [busy, setBusy] = React.useState(false);
   const [suggestBusy, setSuggestBusy] = React.useState(false);
+  const [autoBusy, setAutoBusy] = React.useState(false);
+  const [autoFailed, setAutoFailed] = React.useState(false);
   const [status, setStatus] = React.useState<string | null>(null);
   const [hasPaint, setHasPaint] = React.useState(false);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -135,6 +140,39 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
     setRemoveMode(false);
   };
 
+  /** Fully automatic: detect thin distractions (nets/wires) AND remove them in
+   *  one step, then show a preview. No painting needed. */
+  const autoRemoveAll = async () => {
+    if (!bitmap) return;
+    setAutoBusy(true);
+    setStatus(t('remove.autoWorking'));
+    try {
+      const res = await autoRemoveThinStructures(
+        'lama-inpaint',
+        bitmap,
+        optionsForSensitivity(50),
+        (received, total) => {
+          const mb = (received / 1_000_000).toFixed(0);
+          const totalMb = total ? (total / 1_000_000).toFixed(0) : '?';
+          setStatus(`${mb}/${totalMb} MB…`);
+        },
+      );
+      if (!res.blob) {
+        setAutoFailed(true);
+        setStatus(res.abortedTooLarge ? t('remove.autoTooLarge') : t('remove.autoNothing'));
+        return;
+      }
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewBlob(res.blob);
+      setPreviewUrl(URL.createObjectURL(res.blob));
+      setStatus(null);
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Failed.');
+    } finally {
+      setAutoBusy(false);
+    }
+  };
+
   /** Run inpainting and show a preview — does NOT save/download anything. */
   const runInpaint = async () => {
     const canvas = maskCanvasRef.current;
@@ -179,8 +217,13 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
 
   return (
     <div className="absolute inset-0">
-      {/* Prominent first-time guide: makes it obvious what to do on entering
-          remove mode (the old hint was tiny grey text lost among model info). */}
+      {/* When auto-remove found nothing usable (e.g. a regular net it can't
+          handle), be honest and point to external de-fencing tools. */}
+      {autoFailed && !previewUrl ? (
+        <div className="pointer-events-auto absolute left-1/2 top-16 z-10 w-[min(92%,420px)] -translate-x-1/2">
+          <DefenceGuidance />
+        </div>
+      ) : null}
       {!previewUrl && !hasPaint ? (
         <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2">
           <div className="flex items-center gap-3 rounded-full border bg-background/95 px-4 py-2 shadow-lg backdrop-blur">
@@ -225,6 +268,26 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
       </div>
 
       <div className="pointer-events-auto absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
+        {!previewUrl ? (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="h-8 gap-1 px-3 text-xs"
+              disabled={autoBusy || suggestBusy}
+              onClick={() => {
+                void autoRemoveAll();
+              }}
+            >
+              {autoBusy ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="size-3.5" />
+              )}
+              {t('remove.autoAll')}
+            </Button>
+            <span className="text-[11px] text-muted-foreground">{t('remove.or')}</span>
+          </div>
+        ) : null}
         {!previewUrl ? (
           <Button
             variant="outline"

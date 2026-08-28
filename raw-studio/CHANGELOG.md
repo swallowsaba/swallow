@@ -19,6 +19,28 @@ cannot run in the build sandbox.
 
 ---
 
+## Honest handling of net/fence removal (de-fencing)
+
+- **Regular nets/fences can't be removed accurately in-app — now handled
+  honestly.** The generic thin-structure detector + LaMa mis-selects a net's
+  grid (it's one big connected pattern, not small thin blobs) and smears the
+  result, and there is no free browser ONNX de-fencing model to embed; training
+  one isn't possible here (data/GPU). Rather than ship broken output, the app
+  now explains the limitation and links to free, purpose-built external
+  de-fencing web tools (sparkpix, EditThisPic, OpenArt). The guidance appears in
+  the AI panel and when in-app auto-remove finds nothing usable. These are
+  external sites the user uploads to themselves — the app sends nothing
+  automatically and stays on-device for everything it does do.
+
+## UI — one-tap automatic removal inside Remove mode
+
+- **"Auto-remove all" is now the primary button in Remove mode.** Previously the
+  fully-automatic detect-and-remove (nets/wires) lived only in the AI tab, hard
+  to find. Now entering "Remove" shows a prominent "Auto-remove all" button
+  (detects thin distractions and inpaints them in one step, then previews) with
+  "or paint manually" below it — so both automatic and manual removal are in one
+  place. No need to hunt through the AI tab. Wiring only; needs a real build.
+
 ## UI — clearer object removal
 
 - **Remove mode now shows a prominent step guide.** On entering "Remove", a
