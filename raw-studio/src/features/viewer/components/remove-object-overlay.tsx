@@ -64,8 +64,12 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
   const brushRadiusPx = (brushPct / 100) * Math.max(imageSize.width, imageSize.height);
 
   const toImageCoords = (clientX: number, clientY: number, rect: DOMRect) => {
-    const screenX = clientX - rect.left - originX;
-    const screenY = clientY - rect.top - originY;
+    // The pointer-receiving div is already positioned at (originX, originY) and
+    // sized to the displayed image, so rect.left/top already include that
+    // offset. Subtracting originX/Y again would double-count it (that caused the
+    // "click center, mask lands at the edge" bug). Just go to div-local coords.
+    const screenX = clientX - rect.left;
+    const screenY = clientY - rect.top;
     return { x: screenX / fitScale, y: screenY / fitScale };
   };
 

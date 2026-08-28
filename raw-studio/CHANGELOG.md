@@ -1,5 +1,21 @@
 # Changelog
 
+## Fix — brush/mask coordinate offset (click landed at the wrong place)
+
+- **Critical: clicking the center of the image painted the mask off to the
+  side.** The pointer-receiving div is positioned at (originX, originY) and
+  sized to the displayed image, so its getBoundingClientRect() already includes
+  that centering offset — but toImageCoords subtracted originX/Y *again*,
+  double-counting it. Removed the extra subtraction; the mask now lands under
+  the cursor. This also means the auto-detect mask maps to the right place.
+- **Auto-detect relabelled "thin lines only" and its empty-result message now
+  says to paint posts/thick lines/nets manually** — it only ever detected thin
+  wire-like structures, so a thick vertical pole (or a net) was never going to
+  be found; saying so avoids the "it detected something totally unrelated"
+  confusion (that was the mis-detected crowd texture). Needs in-browser check.
+
+
+
 ## Full snapshot v7 — AI denoise/sharpen + multipass detail
 
 This snapshot consolidates the detail-processing rebuild and the move to AI:
