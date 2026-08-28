@@ -1,5 +1,22 @@
 # Changelog
 
+## Sharper removal of elongated objects (posts, wires) via tiling
+
+- **Inpaint now splits a long thin mask into near-square tiles.** A post squared
+  off as one crop became a huge low-res region that LaMa smeared (the "melted
+  band" over the erased pillar). The mask's bounding box is now divided along its
+  long axis into near-square tiles, each inpainted at high effective resolution
+  and composited back with a soft mask edge to blend seams. Compact masks stay a
+  single tile; very large/spread masks still fall back to whole-image. Tiling
+  geometry is pure and unit-tested (near-square->1 tile, tall/wide->many, all
+  tiles clamped to the image, tiles cover the full long axis).
+- Honest note: this improves elongated removals but doesn't make LaMa omniscient
+  — reconstructing a complex background hidden behind a wide pillar can still
+  look imperfect. Nets remain out of scope (external tools). Needs in-browser
+  check for actual quality.
+
+
+
 ## Remove UI rebuilt — controls moved to the right panel
 
 - **All remove controls now live in the right panel, not floating on the image.**

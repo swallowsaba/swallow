@@ -4,7 +4,7 @@ import {
   isWorthCropping,
   maskBounds,
   resolutionGain,
-  type Rect,
+  type Rect,  tileRegionsForMask,
 } from './inpaint-crop';
 
 function maskWithRect(w: number, h: number, r: Rect): Uint8ClampedArray {
@@ -80,5 +80,43 @@ describe('resolutionGain', () => {
 
   it('is 1 when the crop is the whole image', () => {
     expect(resolutionGain({ x: 0, y: 0, width: 1000, height: 1000 }, 1000, 1000)).toBe(1);
+  });
+});
+
+describe('tileRegionsForMask', () => {
+  it('returns a single tile for a near-square mask', () => {
+    const tiles = tileRegionsForMask({ x: 100, y: 100, width: 100, height: 100 }, 1000, 1000);
+    expect(tiles.length).toBe(1);
+  });
+
+  it('splits a tall thin mask into multiple tiles', () => {
+    // a post: 60 wide, 800 tall
+    const tiles = tileRegionsForMask({ x: 50, y: 50, width: 60, height: 800 }, 1000, 1000);
+    expect(tiles.length).toBeGreaterThan(1);
+  });
+
+  it('splits a wide thin mask into multiple tiles', () => {
+    // a horizontal wire: 800 wide, 40 tall
+    const tiles = tileRegionsForMask({ x: 50, y: 400, width: 800, height: 40 }, 1000, 1000);
+    expect(tiles.length).toBeGreaterThan(1);
+  });
+
+  it('every tile stays within the image', () => {
+    const tiles = tileRegionsForMask({ x: 0, y: 0, width: 40, height: 900 }, 1000, 1000);
+    for (const tRect of tiles) {
+      expect(tRect.x).toBeGreaterThanOrEqual(0);
+      expect(tRect.y).toBeGreaterThanOrEqual(0);
+      expect(tRect.x + tRect.width).toBeLessThanOrEqual(1000);
+      expect(tRect.y + tRect.height).toBeLessThanOrEqual(1000);
+    }
+  });
+
+  it('tiles cover the whole long axis of the mask', () => {
+    const bounds = { x: 50, y: 50, width: 60, height: 800 };
+    const tiles = tileRegionsForMask(bounds, 1000, 1000);
+    const top = Math.min(...tiles.map((r) => r.y));
+    const bottom = Math.max(...tiles.map((r) => r.y + r.height));
+    expect(top).toBeLessThanOrEqual(bounds.y);
+    expect(bottom).toBeGreaterThanOrEqual(bounds.y + bounds.height);
   });
 });

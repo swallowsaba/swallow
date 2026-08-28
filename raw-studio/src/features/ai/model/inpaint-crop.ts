@@ -134,3 +134,45 @@ export function resolutionGain(
   const imgMax = Math.max(imageWidth, imageHeight);
   return cropMax === 0 ? 1 : imgMax / cropMax;
 }
+
+/**
+ * Split a mask's bounding box into a sequence of near-square tiles for
+ * high-resolution inpainting. A tall thin target (a post) squared off as one
+ * crop becomes a huge region — most of it irrelevant — so the fill is low-res
+ * and smears. Splitting the long axis into near-square tiles keeps each tile
+ * small, so each is processed at high effective resolution. Each tile is padded
+ * (for LaMa context) and clamped to the image; tiles overlap slightly via the
+ * padding so seams blend. Returns one tile when the box is already near-square.
+ */
+export function tileRegionsForMask(
+  bounds: Rect,
+  imageWidth: number,
+  imageHeight: number,
+  padFraction = 0.5,
+  minPad = 16,
+): Rect[] {
+  const aspect = bounds.width / Math.max(1, bounds.height);
+  // Near-square (0.5..2): a single padded square crop is fine.
+  if (aspect >= 0.5 && aspect <= 2) {
+    return [cropRegionForMask(bounds, imageWidth, imageHeight, padFraction, minPad)];
+  }
+
+  const vertical = bounds.height > bounds.width; // tall => split along Y
+  const longLen = vertical ? bounds.height : bounds.width;
+  const shortLen = vertical ? bounds.width : bounds.height;
+  // Tile step ~ the short side, so each tile is roughly square.
+  const step = Math.max(1, shortLen);
+  const count = Math.max(1, Math.ceil(longLen / step));
+
+  const tiles: Rect[] = [];
+  for (let i = 0; i < count; i++) {
+    const segStart = (vertical ? bounds.y : bounds.x) + i * step;
+    const segLen = Math.min(step, longLen - i * step);
+    if (segLen <= 0) break;
+    const segBounds: Rect = vertical
+      ? { x: bounds.x, y: segStart, width: bounds.width, height: segLen }
+      : { x: segStart, y: bounds.y, width: segLen, height: bounds.height };
+    tiles.push(cropRegionForMask(segBounds, imageWidth, imageHeight, padFraction, minPad));
+  }
+  return tiles;
+}

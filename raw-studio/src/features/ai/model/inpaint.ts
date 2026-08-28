@@ -2,25 +2,27 @@ import { fetchModel } from './model-cache';
 import { getModel } from './model-registry';
 import { loadModel, runModel } from './inference-client';
 import { chw255ToRgba, maskToNchw1, rgbaToNchw } from './tensor';
-import { cropRegionForMask, isWorthCropping, maskBounds, type Rect } from './inpaint-crop';
+import {
+  isWorthCropping,
+  maskBounds,
+  tileRegionsForMask,
+  type Rect,
+} from './inpaint-crop';
 
 /**
  * Remove the content under a user-painted mask and fill it in with an
  * AI-generated, context-aware fill (LaMa inpainting).
  *
- * LaMa accepts a fixed square input (512²). Rather than always downscaling the
- * WHOLE image into that square (which makes the fill soft on big photos), we
- * crop a padded square region around the mask and feed only that. When the mask
- * covers a small part of the frame — a wire, a net, a sign — the crop is much
- * smaller than the whole image, so the fill is reconstructed at a far higher
- * effective resolution and stays crisp. For masks that cover most of the frame
- * we fall back to whole-image processing (no resolution gain to be had).
+ * LaMa accepts a fixed square input (512²). Feeding the whole downscaled image
+ * makes fills soft; instead we crop the mask's neighbourhood. For an elongated
+ * target (a post, a wire) a single square crop is still huge and low-res, so we
+ * split the mask's bounding box into near-square TILES and inpaint each at high
+ * effective resolution, compositing them back. Small compact masks are a single
+ * tile; large/spread masks fall back to whole-image.
  */
 export async function inpaint(
   modelId: string,
   bitmap: ImageBitmap,
-  /** A full-resolution mask canvas matching the bitmap's size: 255 where the
-   *  user painted "remove this" (in the ALPHA channel), 0 elsewhere. */
   maskCanvas: OffscreenCanvas,
   onProgress?: (received: number, total: number) => void,
 ): Promise<Blob> {
@@ -45,100 +47,103 @@ export async function inpaint(
     maskAlphaFull[i] = maskFullData[i * 4 + 3] ?? 0;
   }
 
-  // Decide the region to feed the model: a padded square around the mask, or
-  // the whole image if the mask is large/spread out.
   const bounds = maskBounds(maskAlphaFull, w, h);
-  if (!bounds) {
-    // Nothing painted — return the original image unchanged.
-    const passthrough = new OffscreenCanvas(w, h);
-    const pctx = passthrough.getContext('2d');
-    if (!pctx) throw new Error('2D context unavailable.');
-    pctx.drawImage(bitmap, 0, 0);
-    return passthrough.convertToBlob({ type: 'image/jpeg', quality: 0.92 });
-  }
-  const crop: Rect = cropRegionForMask(bounds, w, h);
-  const useCrop = isWorthCropping(crop, w, h);
-  const region: Rect = useCrop ? crop : { x: 0, y: 0, width: w, height: h };
 
-  // 1) Draw the region's image into the model's square input.
-  const imgCanvas = new OffscreenCanvas(size, size);
-  const imgCtx = imgCanvas.getContext('2d');
-  if (!imgCtx) throw new Error('2D context unavailable.');
-  imgCtx.drawImage(bitmap, region.x, region.y, region.width, region.height, 0, 0, size, size);
-  const imgRgba = imgCtx.getImageData(0, 0, size, size).data;
-
-  // Region's mask into the same square.
-  const maskSmall = new OffscreenCanvas(size, size);
-  const maskSmallCtx = maskSmall.getContext('2d');
-  if (!maskSmallCtx) throw new Error('2D context unavailable.');
-  maskSmallCtx.drawImage(
-    maskCanvas,
-    region.x,
-    region.y,
-    region.width,
-    region.height,
-    0,
-    0,
-    size,
-    size,
-  );
-  const maskRgba = maskSmallCtx.getImageData(0, 0, size, size).data;
-  const maskAlpha = new Uint8ClampedArray(size * size);
-  for (let i = 0; i < maskAlpha.length; i++) {
-    maskAlpha[i] = maskRgba[i * 4 + 3] ?? 0;
-  }
-
-  // 2) Run the model on the region.
-  const imageTensor = rgbaToNchw(imgRgba, size, model.normalization);
-  const maskTensor = maskToNchw1(maskAlpha, size);
-  const output = await runModel(
-    model.id,
-    model.inputName,
-    model.outputName,
-    imageTensor,
-    size,
-    model.maskInputName,
-    maskTensor,
-  );
-  const filledRgba = chw255ToRgba(output, size);
-
-  // 3) Put the model's square result back at the region's size.
-  const filledSmall = new OffscreenCanvas(size, size);
-  const filledSmallCtx = filledSmall.getContext('2d');
-  if (!filledSmallCtx) throw new Error('2D context unavailable.');
-  const filledRgbaCopy = new Uint8ClampedArray(filledRgba);
-  filledSmallCtx.putImageData(new ImageData(filledRgbaCopy, size, size), 0, 0);
-
-  // Upscale the filled square to the region's pixel size.
-  const filledRegion = new OffscreenCanvas(region.width, region.height);
-  const filledRegionCtx = filledRegion.getContext('2d');
-  if (!filledRegionCtx) throw new Error('2D context unavailable.');
-  filledRegionCtx.imageSmoothingEnabled = true;
-  filledRegionCtx.drawImage(filledSmall, 0, 0, region.width, region.height);
-
-  // Clip the fill to the mask (within the region) so only erased pixels change.
-  // Slight blur on the mask edge blends the seam.
-  filledRegionCtx.globalCompositeOperation = 'destination-in';
-  filledRegionCtx.filter = 'blur(2px)';
-  filledRegionCtx.drawImage(
-    maskCanvas,
-    region.x,
-    region.y,
-    region.width,
-    region.height,
-    0,
-    0,
-    region.width,
-    region.height,
-  );
-  filledRegionCtx.filter = 'none';
-
-  // 4) Composite: original full image, then the filled region pasted back in.
+  // Output starts as the original image; each processed tile is pasted in.
   const out = new OffscreenCanvas(w, h);
   const outCtx = out.getContext('2d');
   if (!outCtx) throw new Error('2D context unavailable.');
   outCtx.drawImage(bitmap, 0, 0);
-  outCtx.drawImage(filledRegion, region.x, region.y);
+
+  if (!bounds) {
+    // Nothing painted — return original unchanged.
+    return out.convertToBlob({ type: 'image/jpeg', quality: 0.92 });
+  }
+
+  // Decide tiles: near-square small masks -> 1 tile; elongated -> several;
+  // very large/spread -> whole image.
+  const singleCrop = tileRegionsForMask(bounds, w, h);
+  const tiles: Rect[] =
+    singleCrop.length === 1 && !isWorthCropping(singleCrop[0]!, w, h)
+      ? [{ x: 0, y: 0, width: w, height: h }]
+      : singleCrop;
+
+  // Process each tile: crop image+mask into the model square, run LaMa, paste
+  // the masked fill back (mask-clipped with a soft edge to blend seams).
+  for (const region of tiles) {
+    // Skip tiles that contain no mask (can happen at padded ends).
+    const imgCanvas = new OffscreenCanvas(size, size);
+    const imgCtx = imgCanvas.getContext('2d');
+    if (!imgCtx) throw new Error('2D context unavailable.');
+    imgCtx.drawImage(bitmap, region.x, region.y, region.width, region.height, 0, 0, size, size);
+    const imgRgba = imgCtx.getImageData(0, 0, size, size).data;
+
+    const maskSmall = new OffscreenCanvas(size, size);
+    const maskSmallCtx = maskSmall.getContext('2d');
+    if (!maskSmallCtx) throw new Error('2D context unavailable.');
+    maskSmallCtx.drawImage(
+      maskCanvas,
+      region.x,
+      region.y,
+      region.width,
+      region.height,
+      0,
+      0,
+      size,
+      size,
+    );
+    const maskRgba = maskSmallCtx.getImageData(0, 0, size, size).data;
+    const maskAlpha = new Uint8ClampedArray(size * size);
+    let any = false;
+    for (let i = 0; i < maskAlpha.length; i++) {
+      const a = maskRgba[i * 4 + 3] ?? 0;
+      maskAlpha[i] = a;
+      if (a > 0) any = true;
+    }
+    if (!any) continue; // no mask in this tile
+
+    const imageTensor = rgbaToNchw(imgRgba, size, model.normalization);
+    const maskTensor = maskToNchw1(maskAlpha, size);
+    const output = await runModel(
+      model.id,
+      model.inputName,
+      model.outputName,
+      imageTensor,
+      size,
+      model.maskInputName,
+      maskTensor,
+    );
+    const filledRgba = chw255ToRgba(output, size);
+
+    const filledSmall = new OffscreenCanvas(size, size);
+    const filledSmallCtx = filledSmall.getContext('2d');
+    if (!filledSmallCtx) throw new Error('2D context unavailable.');
+    filledSmallCtx.putImageData(new ImageData(new Uint8ClampedArray(filledRgba), size, size), 0, 0);
+
+    const filledRegion = new OffscreenCanvas(region.width, region.height);
+    const frCtx = filledRegion.getContext('2d');
+    if (!frCtx) throw new Error('2D context unavailable.');
+    frCtx.imageSmoothingEnabled = true;
+    frCtx.drawImage(filledSmall, 0, 0, region.width, region.height);
+
+    // Clip fill to the mask (soft edge) so only erased pixels change.
+    frCtx.globalCompositeOperation = 'destination-in';
+    frCtx.filter = 'blur(2px)';
+    frCtx.drawImage(
+      maskCanvas,
+      region.x,
+      region.y,
+      region.width,
+      region.height,
+      0,
+      0,
+      region.width,
+      region.height,
+    );
+    frCtx.filter = 'none';
+
+    outCtx.drawImage(filledRegion, region.x, region.y);
+  }
 
   return out.convertToBlob({ type: 'image/jpeg', quality: 0.92 });
 }
