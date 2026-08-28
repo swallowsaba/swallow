@@ -1,5 +1,14 @@
 # Changelog
 
+## Removed the external de-fencing guidance
+
+- **Removed the "Removing nets or fences?" box and its external tool links**
+  (sparkpix / EditThisPic / OpenArt) from both the AI panel and the remove
+  panel — it was confusing and unwanted. The DefenceGuidance component and its
+  strings are deleted entirely.
+
+
+
 ## Sharper removal of elongated objects (posts, wires) via tiling
 
 - **Inpaint now splits a long thin mask into near-square tiles.** A post squared

@@ -610,9 +610,6 @@ const DICT = {
   'remove.autoWorking': { ja: 'ネット・電線を検出して除去中…', en: 'Detecting and removing nets/wires…' },
   'remove.autoNothing': { ja: '自動検出は細い線（電線など）専用です。柱・太い線・ネットは手動でなぞって「消す」を押してください。', en: 'Auto-detect only finds thin lines (e.g. wires). For posts, thick lines or nets, brush over them manually and press Remove.' },
   'remove.autoTooLarge': { ja: '検出範囲が大きすぎます。手動でなぞってください。', en: 'Detected area too large. Paint manually instead.' },
-  'defence.explain': { ja: 'ネット・フェンス・金網のような規則的な網目は、アプリ内のAIでは正確に消せません（専用のAIが必要な難しい処理です）。下の無料の専用ツールに写真をアップロードすると、きれいに消せる場合があります。', en: 'Regular nets, fences and wire mesh can\'t be removed accurately by the in-app AI — that needs a purpose-built model. These free, specialised web tools often handle them well; upload your photo there.' },
-  'defence.privacy': { ja: '※ これらは外部サイトです。写真は自動送信されません（あなたが手動でアップロードします）。', en: 'These are external sites. Your photo is not sent automatically — you upload it yourself.' },
-  'defence.title': { ja: 'ネット・フェンスを消したい場合', en: 'Removing nets or fences?' },
   'remove.suggest': { ja: '自動で探す（細い線のみ）', en: 'Auto-detect (thin lines only)' },
 
   // White balance eyedropper

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useViewerStore } from '@/features/viewer';
 import { useT } from '@/i18n';
-import { DefenceGuidance } from './defence-guidance';
 
 /**
  * Remove-object controls, living in the RIGHT PANEL (not floating on the image).
@@ -159,12 +158,6 @@ export function RemovePanel(): React.JSX.Element {
         <X className="size-3.5" />
         {t('remove.close')}
       </Button>
-
-      {/* Nets/fences can't be done in-app — point to external tools. */}
-      <div className="mt-1 border-t border-border pt-2">
-        <div className="mb-1 text-[11px] font-medium text-foreground">{t('defence.title')}</div>
-        <DefenceGuidance />
-      </div>
     </div>
   );
 }

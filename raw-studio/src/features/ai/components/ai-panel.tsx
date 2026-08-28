@@ -11,7 +11,6 @@ import { segment, type SegmentationResult } from '../model/segmentation';
 import { autoRemoveThinStructures } from '../model/auto-remove';
 import { aiDenoise, isMobileDevice } from '../model/ai-denoise';
 import { aiSharpen } from '../model/ai-restore';
-import { DefenceGuidance } from './defence-guidance';
 import { optionsForSensitivity } from '../model/thin-structure';
 import { smoothPortrait } from '../model/portrait-smooth';
 import { computeImageStats } from '../model/image-stats';
@@ -296,8 +295,6 @@ export function AiPanel(): React.JSX.Element {
         {removeStatus ? (
           <div className="text-[11px] text-muted-foreground">{removeStatus}</div>
         ) : null}
-        <div className="mt-1 text-[11px] font-medium text-foreground">{t('defence.title')}</div>
-        <DefenceGuidance />
       </section>
 
       <section className="flex flex-col gap-2 border-t border-border pt-3">
