@@ -1,5 +1,18 @@
 # Changelog
 
+## WSL2 / Docker setup
+
+- **Added a full local setup for WSL2 Ubuntu.** New Dockerfile.dev (Vite dev
+  server), Dockerfile (build + Caddy static serve), docker-compose.yml (dev/prod
+  profiles), deploy/Caddyfile, .dockerignore, and scripts/setup.sh (one-shot:
+  Docker if present, else native Node, plus a build mode). All paths set the
+  COOP/COEP cross-origin-isolation headers the app needs for ONNX / libraw WASM
+  threads — dev via vite.config, prod via Caddy. VITE_BASE=/ is used locally
+  (GitHub Pages keeps /raw-studio/). README gains a "Run on WSL2 Ubuntu" section
+  with Docker, native, and WSL2-specific guidance.
+
+
+
 ## Removed the external de-fencing guidance
 
 - **Removed the "Removing nets or fences?" box and its external tool links**

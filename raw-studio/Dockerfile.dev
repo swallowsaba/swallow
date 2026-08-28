@@ -1,0 +1,25 @@
+# Development image: runs the Vite dev server with hot-reload.
+# The Vite config already sets the COOP/COEP headers that ONNX / libraw need for
+# SharedArrayBuffer, so `npm run dev` is fully functional in the container.
+FROM node:20-bookworm-slim
+
+# Non-root for safety; node image ships a `node` user.
+WORKDIR /app
+
+# Install dependencies first (better layer caching). Copy only manifests.
+COPY package.json package-lock.json* ./
+# Use npm ci when a lockfile exists, else fall back to npm install.
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+# Copy the rest of the source. In compose we also bind-mount over this, so the
+# COPY mainly matters for a standalone `docker build`.
+COPY . .
+
+# Vite dev server port.
+EXPOSE 5173
+
+# Bind to 0.0.0.0 so the server is reachable from the Windows host / browser
+# when running under WSL2. VITE_BASE=/ so assets resolve at the root locally
+# (production uses /raw-studio/ for GitHub Pages).
+ENV VITE_BASE=/
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

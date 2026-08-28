@@ -59,6 +59,68 @@ npm run lint         # ESLint (no-explicit-any enforced)
 npm run typecheck    # tsc, strict
 ```
 
+## Run on WSL2 Ubuntu (Docker or native)
+
+RAW Studio is a static single-page app, but it **requires cross-origin isolation**
+(the `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp` headers) so that ONNX Runtime Web and
+libraw-wasm can use `SharedArrayBuffer` / WASM threads. The dev server and the
+provided Caddy config set these for you — if you serve the build with something
+else, you must add those headers yourself or the AI / RAW features won't work.
+
+### Fastest path — one script
+
+```bash
+# from the repo root, inside WSL2 Ubuntu
+chmod +x scripts/setup.sh
+./scripts/setup.sh          # uses Docker if installed, else native Node
+```
+
+Then open http://localhost:5173.
+
+Force a specific path if you like:
+
+```bash
+./scripts/setup.sh docker   # Docker dev server (hot reload)
+./scripts/setup.sh native   # native Node dev server (needs Node 20+)
+./scripts/setup.sh build     # native production build into ./dist
+```
+
+### Docker Compose directly
+
+```bash
+# Dev server with hot reload on http://localhost:5173
+docker compose --profile dev up --build
+
+# Production-like static serve (Caddy, with COOP/COEP) on http://localhost:8080
+docker compose --profile prod up --build
+```
+
+### Native (no Docker)
+
+Requires **Node.js 20+** (Vite 6 / React 19). Under WSL2, install Node inside
+Ubuntu (nvm recommended), not on Windows:
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+nvm install 20
+npm ci
+VITE_BASE=/ npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+`VITE_BASE=/` makes assets resolve at the root locally; the GitHub Pages build
+uses `/raw-studio/` instead. `--host 0.0.0.0` lets the Windows browser reach the
+server across the WSL2 boundary.
+
+### WSL2 notes
+
+- Open the app from the **Windows browser** at `http://localhost:5173` — WSL2
+  forwards localhost automatically.
+- Keep the project on the **Linux filesystem** (e.g. `~/raw-studio`), not under
+  `/mnt/c/...`; bind-mount file watching and install speed are much better.
+- Hot reload over bind mounts uses polling (`CHOKIDAR_USEPOLLING`), already set
+  in `docker-compose.yml`.
+
 ## Deploy to GitHub Pages
 
 **Enable once:** repository **Settings → Pages → Source → GitHub Actions**.

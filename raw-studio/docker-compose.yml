@@ -1,0 +1,44 @@
+# RAW Studio — Docker Compose for local / WSL2 use.
+#
+# Two services, selected by profile:
+#   dev  : Vite dev server with hot-reload on http://localhost:5173
+#   prod : production build served by Caddy on http://localhost:8080
+#
+# Both expose the COOP/COEP headers the app needs (dev via vite.config.ts,
+# prod via deploy/Caddyfile), so the AI / RAW features work in the browser.
+#
+# Usage:
+#   docker compose --profile dev up         # hot-reload dev
+#   docker compose --profile prod up --build # production-like static serve
+
+services:
+  dev:
+    profiles: ['dev']
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - '5173:5173'
+    volumes:
+      # Bind-mount the source for hot reload, but keep the container's
+      # node_modules (named volume) so host/container arch differences and a
+      # missing host install don't break things.
+      - .:/app
+      - node_modules:/app/node_modules
+    environment:
+      - VITE_BASE=/
+      # Poll for file changes — needed for reliable hot reload on WSL2/Windows
+      # bind mounts.
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+
+  prod:
+    profiles: ['prod']
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '8080:8080'
+
+volumes:
+  node_modules:

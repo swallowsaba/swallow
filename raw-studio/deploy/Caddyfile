@@ -1,0 +1,23 @@
+# Serves the built static site on :8080 with the cross-origin isolation headers
+# that ONNX Runtime Web and libraw-wasm require (SharedArrayBuffer / WASM
+# threads). Without COOP+COEP, `crossOriginIsolated` is false and those features
+# fail. Also does SPA-style fallback to index.html.
+:8080 {
+	root * /srv
+	encode gzip zstd
+
+	# Cross-origin isolation — required for SharedArrayBuffer.
+	header {
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Embedder-Policy "require-corp"
+		# Long-cache the hashed assets; the HTML is revalidated.
+		?Cache-Control "no-cache"
+	}
+	@assets {
+		path *.js *.css *.wasm *.woff2 *.png *.jpg *.svg *.data
+	}
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+
+	try_files {path} /index.html
+	file_server
+}
