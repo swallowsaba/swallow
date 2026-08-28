@@ -17,6 +17,8 @@ import { DetailPanel } from './detail-panel';
 import { LensPanel } from './lens-panel';
 import { BeginnerPanel } from './beginner-panel';
 import { TaskLauncher } from './task-launcher';
+import { RemovePanel } from '@/features/ai/components/remove-panel';
+import { useViewerStore } from '@/features/viewer';
 import { Histogram } from './histogram';
 import { CopyPasteSettings } from './copy-paste-settings';
 import { GifPanel } from '@/features/gif';
@@ -89,6 +91,7 @@ function ModeToggle(): React.JSX.Element {
 export function AdjustmentsPanel(): React.JSX.Element {
   const rightTab = useUiStore((s) => s.rightTab);
   const setRightTab = useUiStore((s) => s.setRightTab);
+  const removeMode = useViewerStore((s) => s.removeMode);
   const uiMode = useUiStore((s) => s.uiMode);
   const t = useT();
 
@@ -114,6 +117,12 @@ export function AdjustmentsPanel(): React.JSX.Element {
       <ModeToggle />
       <CopyPasteSettings />
       <Histogram />
+      {removeMode ? (
+        <ScrollArea className="min-h-0 flex-1">
+          <RemovePanel />
+        </ScrollArea>
+      ) : (
+        <>
       <div className="px-2 pb-2">
         <TaskLauncher />
       </div>
@@ -199,6 +208,8 @@ export function AdjustmentsPanel(): React.JSX.Element {
           <CollagePanel />
         </TabsContent>
       </ScrollArea>
+        </>
+      )}
     </Tabs>
   );
 }

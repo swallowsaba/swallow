@@ -8,6 +8,9 @@ import { clampScale } from './viewport';
  * computed in the canvas component from the measured container; this store holds
  * the user's *intent*.
  */
+/** Commands the right-panel remove controls fire for the overlay to execute. */
+export type RemoveCommand = 'remove' | 'redo' | 'autoDetect' | 'clear';
+
 export interface ViewerState {
   bitmap: ImageBitmap | null;
   imageSize: Size | null;
@@ -25,6 +28,22 @@ export interface ViewerState {
   cropMode: boolean;
   /** Whether the Remove Object brush overlay is active. */
   removeMode: boolean;
+  /** Remove-mode: brush size as % of the image's long edge. */
+  removeBrushPct: number;
+  /** Remove-mode: 'manual' (paint) or 'auto' (detect thin lines, then editable). */
+  removeSubMode: 'manual' | 'auto';
+  /** Remove-mode: whether the mask has any paint (drives Remove button enabled). */
+  removeHasPaint: boolean;
+  /** Remove-mode: busy running inpaint/detection. */
+  removeBusy: boolean;
+  /** Remove-mode: status line shown in the right panel. */
+  removeStatus: string | null;
+  /** Remove-mode: whether a preview result is showing. */
+  removeHasPreview: boolean;
+  /** Remove-mode: monotonically-increasing command trigger. The overlay watches
+   *  this and runs the named command once. Lets the right-panel buttons drive
+   *  the canvas that lives in the overlay. */
+  removeCommand: { readonly id: number; readonly name: RemoveCommand } | null;
   /** Whether the white-balance eyedropper (click-to-neutralize) is active. */
   wbPickMode: boolean;
 
@@ -41,6 +60,14 @@ export interface ViewerState {
   setCompareSplit: (value: number | null) => void;
   setCropMode: (value: boolean) => void;
   setRemoveMode: (value: boolean) => void;
+  setRemoveBrushPct: (value: number) => void;
+  setRemoveSubMode: (value: 'manual' | 'auto') => void;
+  setRemoveHasPaint: (value: boolean) => void;
+  setRemoveBusy: (value: boolean) => void;
+  setRemoveStatus: (value: string | null) => void;
+  setRemoveHasPreview: (value: boolean) => void;
+  /** Fire a command for the overlay to execute (remove/redo/auto-detect/clear). */
+  dispatchRemoveCommand: (name: RemoveCommand) => void;
   setWbPickMode: (value: boolean) => void;
 }
 
@@ -54,6 +81,13 @@ const INITIAL = {
   compareSplit: null,
   cropMode: false,
   removeMode: false,
+  removeBrushPct: 4,
+  removeSubMode: 'manual' as 'manual' | 'auto',
+  removeHasPaint: false,
+  removeBusy: false,
+  removeStatus: null as string | null,
+  removeHasPreview: false,
+  removeCommand: null as { readonly id: number; readonly name: RemoveCommand } | null,
   wbPickMode: false,
 };
 
@@ -96,7 +130,39 @@ export const useViewerStore = create<ViewerState>((set) => ({
     set({ cropMode });
   },
   setRemoveMode: (removeMode) => {
-    set({ removeMode });
+    // Reset transient remove state whenever we enter/leave the mode.
+    set({
+      removeMode,
+      removeHasPaint: false,
+      removeBusy: false,
+      removeStatus: null,
+      removeHasPreview: false,
+      removeCommand: null,
+      removeSubMode: 'manual',
+    });
+  },
+  setRemoveBrushPct: (removeBrushPct) => {
+    set({ removeBrushPct });
+  },
+  setRemoveSubMode: (removeSubMode) => {
+    set({ removeSubMode });
+  },
+  setRemoveHasPaint: (removeHasPaint) => {
+    set({ removeHasPaint });
+  },
+  setRemoveBusy: (removeBusy) => {
+    set({ removeBusy });
+  },
+  setRemoveStatus: (removeStatus) => {
+    set({ removeStatus });
+  },
+  setRemoveHasPreview: (removeHasPreview) => {
+    set({ removeHasPreview });
+  },
+  dispatchRemoveCommand: (name) => {
+    set((s) => ({
+      removeCommand: { id: (s.removeCommand?.id ?? 0) + 1, name },
+    }));
   },
   setWbPickMode: (wbPickMode) => {
     set({ wbPickMode });

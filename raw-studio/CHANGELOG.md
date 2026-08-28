@@ -1,5 +1,25 @@
 # Changelog
 
+## Remove UI rebuilt — controls moved to the right panel
+
+- **All remove controls now live in the right panel, not floating on the image.**
+  Previously every button (auto-remove, detect, brush, Remove) was absolutely
+  positioned over the photo, so they overlapped, blocked the image, and some
+  couldn't be clicked. Now the image area is paint-only (just the mask canvas +
+  a one-line hint); a new right-panel RemovePanel holds the Manual/Auto toggle,
+  brush size, Detect, Remove, Redo, Download, Close, and the de-fencing links.
+- **Auto-detect result is now editable.** Detect paints thin-line candidates
+  onto the same mask you paint on, so you can add or fix the selection by hand
+  before pressing Remove (previously auto and manual were separate dead-ends).
+- **Auto no longer auto-aborts before running.** The old auto-remove bailed out
+  on coverage thresholds before ever calling the AI ("nothing happened"). Detect
+  now just proposes a mask; you decide and press Remove.
+- Remove-mode state moved into the viewer store; the panel drives the overlay's
+  canvas via a command trigger. Coordinate double-offset fix retained. React/UI
+  can't be verified in this sandbox — needs a real build.
+
+
+
 ## Fix — brush/mask coordinate offset (click landed at the wrong place)
 
 - **Critical: clicking the center of the image painted the mask off to the

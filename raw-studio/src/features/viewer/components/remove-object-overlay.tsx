@@ -1,14 +1,7 @@
 import * as React from 'react';
-import { Check, Download, Eraser, Loader2, Sparkles, Wand2, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import { computeFitScale, type Size } from '../model/viewport';
 import { useViewerStore } from '../model/viewer-store';
 import { inpaint } from '@/features/ai/model/inpaint';
-import { suggestMeshMask } from '@/features/ai/model/suggest-mask';
-import { autoRemoveThinStructures } from '@/features/ai/model/auto-remove';
-import { optionsForSensitivity } from '@/features/ai/model/thin-structure';
-import { DefenceGuidance } from '@/features/ai/components/defence-guidance';
 import { downloadBlob } from '@/features/export/model/export';
 import { useT } from '@/i18n';
 
@@ -17,29 +10,30 @@ interface Props {
   container: Size;
 }
 
-/** Overlay for painting a "remove this" mask over the full image, then
- *  running AI inpainting. Shows a preview before downloading — nothing is
- *  saved until the person explicitly clicks Download. Rotation is not
- *  accounted for in this overlay's own placement math (a scoped
- *  simplification, same as the crop overlay). */
+/**
+ * Remove-object overlay — the PAINT SURFACE ONLY. All buttons/sliders now live
+ * in the right-panel RemovePanel; this component just hosts the mask canvas the
+ * user paints on and executes commands the panel dispatches through the viewer
+ * store. Nothing floats on top of the image except a one-line hint, so controls
+ * never overlap or block the photo.
+ */
 export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.Element {
   const bitmap = useViewerStore((s) => s.bitmap);
   const setRemoveMode = useViewerStore((s) => s.setRemoveMode);
+  const brushPct = useViewerStore((s) => s.removeBrushPct);
+  const subMode = useViewerStore((s) => s.removeSubMode);
+  const setHasPaintStore = useViewerStore((s) => s.setRemoveHasPaint);
+  const setBusyStore = useViewerStore((s) => s.setRemoveBusy);
+  const setStatusStore = useViewerStore((s) => s.setRemoveStatus);
+  const setHasPreviewStore = useViewerStore((s) => s.setRemoveHasPreview);
+  const command = useViewerStore((s) => s.removeCommand);
   const t = useT();
 
   const maskCanvasRef = React.useRef<HTMLCanvasElement>(null);
   const drawingRef = React.useRef(false);
   const lastPointRef = React.useRef<{ x: number; y: number } | null>(null);
-  const [brushPct, setBrushPct] = React.useState(4); // % of the image's long edge
-  const [busy, setBusy] = React.useState(false);
-  const [suggestBusy, setSuggestBusy] = React.useState(false);
-  const [autoBusy, setAutoBusy] = React.useState(false);
-  const [autoFailed, setAutoFailed] = React.useState(false);
-  const [status, setStatus] = React.useState<string | null>(null);
-  const [hasPaint, setHasPaint] = React.useState(false);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
-  const [previewBlob, setPreviewBlob] = React.useState<Blob | null>(null);
-
+  const previewBlobRef = React.useRef<Blob | null>(null);
 
   const fitScale = computeFitScale(imageSize, container, 0);
   const dispW = imageSize.width * fitScale;
@@ -54,7 +48,6 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
     canvas.height = imageSize.height;
   }, [imageSize.width, imageSize.height]);
 
-  // Revoke the preview object URL when it's replaced or the overlay closes.
   React.useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -64,23 +57,17 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
   const brushRadiusPx = (brushPct / 100) * Math.max(imageSize.width, imageSize.height);
 
   const toImageCoords = (clientX: number, clientY: number, rect: DOMRect) => {
-    // The pointer-receiving div is already positioned at (originX, originY) and
-    // sized to the displayed image, so rect.left/top already include that
-    // offset. Subtracting originX/Y again would double-count it (that caused the
-    // "click center, mask lands at the edge" bug). Just go to div-local coords.
-    const screenX = clientX - rect.left;
-    const screenY = clientY - rect.top;
-    return { x: screenX / fitScale, y: screenY / fitScale };
+    // rect already includes the (originX, originY) offset since the div is
+    // positioned there, so we only go to div-local coords (no double offset).
+    return { x: (clientX - rect.left) / fitScale, y: (clientY - rect.top) / fitScale };
   };
 
   const paintAt = (x: number, y: number, from: { x: number; y: number } | null) => {
-    const canvas = maskCanvasRef.current;
-    const ctx = canvas?.getContext('2d');
+    const ctx = maskCanvasRef.current?.getContext('2d');
     if (!ctx) return;
     ctx.fillStyle = ctx.strokeStyle = 'rgba(255,60,60,1)';
     ctx.lineWidth = brushRadiusPx * 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    ctx.lineCap = ctx.lineJoin = 'round';
     if (from) {
       ctx.beginPath();
       ctx.moveTo(from.x, from.y);
@@ -91,11 +78,11 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
       ctx.arc(x, y, brushRadiusPx, 0, Math.PI * 2);
       ctx.fill();
     }
-    setHasPaint(true);
+    setHasPaintStore(true);
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (previewUrl) return; // painting is locked once a preview is showing
+    if (previewUrl) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const p = toImageCoords(e.clientX, e.clientY, rect);
     drawingRef.current = true;
@@ -115,134 +102,107 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
     lastPointRef.current = null;
   };
 
-  const clearMask = () => {
+  const clearMask = React.useCallback(() => {
     const canvas = maskCanvasRef.current;
     const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasPaint(false);
-  };
+    if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasPaintStore(false);
+  }, [setHasPaintStore]);
 
-  const suggestMask = async () => {
+  const autoDetect = React.useCallback(async () => {
     if (!bitmap) return;
-    setSuggestBusy(true);
+    setBusyStore(true);
+    setStatusStore(t('remove.autoWorking'));
     try {
+      const { suggestMeshMask } = await import('@/features/ai/model/suggest-mask');
       const suggested = await suggestMeshMask(bitmap);
-      const canvas = maskCanvasRef.current;
-      const ctx = canvas?.getContext('2d');
-      if (!canvas || !ctx) return;
-      ctx.drawImage(suggested, 0, 0);
-      setHasPaint(true);
-    } catch (err) {
-      setStatus(err instanceof Error ? err.message : 'Suggestion failed.');
-    } finally {
-      setSuggestBusy(false);
-    }
-  };
-
-  const cancel = () => {
-    setRemoveMode(false);
-  };
-
-  /** Fully automatic: detect thin distractions (nets/wires) AND remove them in
-   *  one step, then show a preview. No painting needed. */
-  const autoRemoveAll = async () => {
-    if (!bitmap) return;
-    setAutoBusy(true);
-    setStatus(t('remove.autoWorking'));
-    try {
-      const res = await autoRemoveThinStructures(
-        'lama-inpaint',
-        bitmap,
-        optionsForSensitivity(50),
-        (received, total) => {
-          const mb = (received / 1_000_000).toFixed(0);
-          const totalMb = total ? (total / 1_000_000).toFixed(0) : '?';
-          setStatus(`${mb}/${totalMb} MB…`);
-        },
-      );
-      if (!res.blob) {
-        setAutoFailed(true);
-        setStatus(res.abortedTooLarge ? t('remove.autoTooLarge') : t('remove.autoNothing'));
-        return;
+      const ctx = maskCanvasRef.current?.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(suggested, 0, 0);
+        setHasPaintStore(true);
+        setStatusStore(t('remove.autoDetected'));
       }
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewBlob(res.blob);
-      setPreviewUrl(URL.createObjectURL(res.blob));
-      setStatus(null);
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : 'Failed.');
+      setStatusStore(err instanceof Error ? err.message : 'Failed.');
     } finally {
-      setAutoBusy(false);
+      setBusyStore(false);
     }
-  };
+  }, [bitmap, setBusyStore, setStatusStore, setHasPaintStore, t]);
 
-  /** Run inpainting and show a preview — does NOT save/download anything. */
-  const runInpaint = async () => {
+  const runInpaint = React.useCallback(async () => {
     const canvas = maskCanvasRef.current;
-    if (!bitmap || !canvas || !hasPaint) return;
-    setBusy(true);
-    setStatus('Preparing model…');
+    if (!bitmap || !canvas) return;
+    setBusyStore(true);
+    setStatusStore(t('remove.filling'));
     try {
-      const maskOffscreen = new OffscreenCanvas(canvas.width, canvas.height);
+      const maskOffscreen = new OffscreenCanvas(imageSize.width, imageSize.height);
       const mctx = maskOffscreen.getContext('2d');
       if (!mctx) throw new Error('2D context unavailable.');
       mctx.drawImage(canvas, 0, 0);
-
       const blob = await inpaint('lama-inpaint', bitmap, maskOffscreen, (received, total) => {
         const mb = (received / 1_000_000).toFixed(0);
         const totalMb = total ? (total / 1_000_000).toFixed(0) : '?';
-        setStatus(`${mb}/${totalMb} MB…`);
+        setStatusStore(`${mb}/${totalMb} MB…`);
       });
-      setStatus('Filling…');
-      setPreviewBlob(blob);
+      previewBlobRef.current = blob;
       setPreviewUrl(URL.createObjectURL(blob));
-      setStatus(null);
+      setHasPreviewStore(true);
+      setStatusStore(null);
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : 'Failed.');
+      setStatusStore(err instanceof Error ? err.message : 'Failed.');
     } finally {
-      setBusy(false);
+      setBusyStore(false);
     }
-  };
+  }, [bitmap, imageSize.width, imageSize.height, setBusyStore, setStatusStore, setHasPreviewStore, t]);
 
-  /** The only place a download happens — an explicit, separate click. */
-  const saveDownload = () => {
-    if (previewBlob) downloadBlob(previewBlob, 'object-removed.jpg');
+  const download = React.useCallback(() => {
+    if (previewBlobRef.current) downloadBlob(previewBlobRef.current, 'object-removed.jpg');
     setRemoveMode(false);
-  };
+  }, [setRemoveMode]);
 
-  const redo = () => {
+  const redo = React.useCallback(() => {
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
-    setPreviewBlob(null);
-  };
+    previewBlobRef.current = null;
+    setHasPreviewStore(false);
+    clearMask();
+  }, [setHasPreviewStore, clearMask]);
+
+  const lastCmdId = React.useRef(0);
+  React.useEffect(() => {
+    if (!command || command.id === lastCmdId.current) return;
+    lastCmdId.current = command.id;
+    switch (command.name) {
+      case 'remove':
+        if (previewUrl) void download();
+        else void runInpaint();
+        break;
+      case 'redo':
+        redo();
+        break;
+      case 'autoDetect':
+        void autoDetect();
+        break;
+      case 'clear':
+        clearMask();
+        break;
+    }
+  }, [command, previewUrl, download, runInpaint, redo, autoDetect, clearMask]);
 
   return (
     <div className="absolute inset-0">
-      {/* When auto-remove found nothing usable (e.g. a regular net it can't
-          handle), be honest and point to external de-fencing tools. */}
-      {autoFailed && !previewUrl ? (
-        <div className="pointer-events-auto absolute left-1/2 top-16 z-10 w-[min(92%,420px)] -translate-x-1/2">
-          <DefenceGuidance />
+      <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2">
+        <div className="rounded-full border bg-background/95 px-4 py-1.5 text-sm text-foreground shadow-lg backdrop-blur">
+          {previewUrl
+            ? t('remove.previewReady')
+            : subMode === 'manual'
+              ? t('remove.hintManual')
+              : t('remove.hintAuto')}
         </div>
-      ) : null}
-      {!previewUrl && !hasPaint ? (
-        <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2">
-          <div className="flex items-center gap-3 rounded-full border bg-background/95 px-4 py-2 shadow-lg backdrop-blur">
-            <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-              1
-            </span>
-            <span className="text-sm font-medium text-foreground">{t('remove.step1')}</span>
-            <span className="text-muted-foreground">→</span>
-            <span className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
-              2
-            </span>
-            <span className="text-sm text-muted-foreground">{t('remove.step2')}</span>
-          </div>
-        </div>
-      ) : null}
+      </div>
+
       <div
         className="absolute touch-none"
         style={{
@@ -265,114 +225,10 @@ export function RemoveObjectOverlay({ imageSize, container }: Props): React.JSX.
         {previewUrl ? (
           <img
             src={previewUrl}
-            alt="Inpainting preview"
+            alt="preview"
             className="pointer-events-none absolute inset-0 h-full w-full object-contain"
           />
         ) : null}
-      </div>
-
-      <div className="pointer-events-auto absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
-        {!previewUrl ? (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              className="h-8 gap-1 px-3 text-xs"
-              disabled={autoBusy || suggestBusy}
-              onClick={() => {
-                void autoRemoveAll();
-              }}
-            >
-              {autoBusy ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Sparkles className="size-3.5" />
-              )}
-              {t('remove.autoAll')}
-            </Button>
-            <span className="text-[11px] text-muted-foreground">{t('remove.or')}</span>
-          </div>
-        ) : null}
-        {!previewUrl ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 gap-1 px-3 text-xs"
-            disabled={suggestBusy}
-            onClick={() => {
-              void suggestMask();
-            }}
-          >
-            {suggestBusy ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Wand2 className="size-3.5" />
-            )}
-            {t('remove.suggest')}
-          </Button>
-        ) : null}
-        {!previewUrl ? (
-          <div className="flex w-72 items-center gap-2 rounded-lg border bg-background/95 px-3 py-2 shadow-md backdrop-blur">
-            <span className="text-[11px] text-muted-foreground">{t('remove.brush')}</span>
-            <Slider
-              min={1}
-              max={15}
-              step={0.5}
-              value={[brushPct]}
-              onValueChange={(v) => {
-                const n = v[0];
-                if (n !== undefined) setBrushPct(n);
-              }}
-              className="flex-1"
-            />
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={clearMask}>
-              <Eraser className="size-3.5" />
-            </Button>
-          </div>
-        ) : null}
-
-        <div className="rounded bg-background/95 px-2 py-1 text-[11px] text-muted-foreground shadow">
-          {status ?? (previewUrl ? t('remove.previewReady') : t('remove.help'))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={cancel} className="h-7 gap-1 px-3 text-xs">
-            <X className="size-3.5" />
-            {t('common.cancel')}
-          </Button>
-
-          {previewUrl ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={redo}
-                className="h-7 gap-1 px-3 text-xs"
-              >
-                {t('remove.redo')}
-              </Button>
-              <Button size="sm" onClick={saveDownload} className="h-7 gap-1 px-3 text-xs">
-                <Download className="size-3.5" />
-                {t('remove.download')}
-              </Button>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              onClick={() => {
-                void runInpaint();
-              }}
-              disabled={!hasPaint || busy}
-              className="h-7 gap-1 px-3 text-xs"
-            >
-              {busy ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Check className="size-3.5" />
-              )}
-              {t('remove.doRemove')}
-            </Button>
-          )}
-        </div>
       </div>
     </div>
   );
