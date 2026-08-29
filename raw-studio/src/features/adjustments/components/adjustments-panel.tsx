@@ -117,12 +117,6 @@ export function AdjustmentsPanel(): React.JSX.Element {
       <ModeToggle />
       <CopyPasteSettings />
       <Histogram />
-      {removeMode ? (
-        <ScrollArea className="min-h-0 flex-1">
-          <RemovePanel />
-        </ScrollArea>
-      ) : (
-        <>
       <div className="px-2 pb-2">
         <TaskLauncher />
       </div>
@@ -199,6 +193,7 @@ export function AdjustmentsPanel(): React.JSX.Element {
           <FacePanel />
         </TabsContent>
         <TabsContent value="ai" className="mt-0">
+          {removeMode ? <RemovePanel /> : null}
           <AiPanel />
         </TabsContent>
         <TabsContent value="gif" className="mt-0">
@@ -208,8 +203,6 @@ export function AdjustmentsPanel(): React.JSX.Element {
           <CollagePanel />
         </TabsContent>
       </ScrollArea>
-        </>
-      )}
     </Tabs>
   );
 }

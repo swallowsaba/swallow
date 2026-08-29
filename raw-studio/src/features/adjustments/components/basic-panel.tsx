@@ -5,6 +5,9 @@ import { selectCurrentEdit, useEditorStore } from '@/features/editor';
 import { useT } from '@/i18n';
 import type { TranslationKey } from '@/i18n';
 import { HelpMark } from '@/components/ui/help-mark';
+import { Button } from '@/components/ui/button';
+import { Crop } from 'lucide-react';
+import { useViewerStore } from '@/features/viewer';
 import type { BasicAdjustments } from '@/types';
 
 interface SliderSpec {
@@ -148,6 +151,7 @@ export function BasicPanel(): React.JSX.Element {
   const commitAdjustments = useEditorStore((s) => s.commitAdjustments);
   const setPreview = useEditorStore((s) => s.setPreview);
   const t = useT();
+  const setCropMode = useViewerStore((s) => s.setCropMode);
 
   // Live (uncommitted) drag values keyed by field.
   const [pending, setPending] = React.useState<Partial<Record<keyof BasicAdjustments, number>>>({});
@@ -180,6 +184,19 @@ export function BasicPanel(): React.JSX.Element {
     <div className="flex flex-col">
       <AutoBar />
       <div className="flex flex-col gap-5 p-4">
+      {/* Trimming is a common, standalone operation — keep it always reachable
+          here at the top of Basic, not only via a toolbar icon. */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="justify-start gap-2"
+        onClick={() => {
+          setCropMode(true);
+        }}
+      >
+        <Crop className="size-4" />
+        {t('basic.cropTrim')}
+      </Button>
       {GROUPS.map((group) => (
         <section key={group.titleKey} className="flex flex-col gap-3">
           <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

@@ -1,5 +1,21 @@
 # Changelog
 
+## UI consistency — remove launcher parity + always-available Trim
+
+- **"Remove" launcher button now behaves like the others.** It used to replace
+  the whole tab area with the remove panel (tabs vanished); every other launcher
+  button just switches the tab below. Now "Remove" switches to the AI tab and
+  shows the remove controls at the top of it, so the tab structure stays put and
+  all launcher buttons feel the same.
+- **Trim/Crop is always reachable.** Added a persistent "Crop / Trim" button at
+  the top of the Basic tab, since trimming is a common standalone task and
+  shouldn't require hunting for a toolbar icon. (The toolbar/launcher entries
+  still work too.)
+- Note: the SNS button still needs its panel — that's next. React/UI needs a
+  real build to confirm.
+
+
+
 ## Fix build — stale defence-guidance.tsx
 
 - **Build broke because defence-guidance.tsx still referenced deleted i18n keys.**

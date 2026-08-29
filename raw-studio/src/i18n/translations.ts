@@ -330,6 +330,7 @@ const DICT = {
   'common.add': { ja: '追加', en: 'Add' },
 
   // Basic panel
+  'basic.cropTrim': { ja: '切り抜き・トリミング', en: 'Crop / Trim' },
   'basic.groupLight': { ja: 'ライト', en: 'Light' },
   'basic.groupColor': { ja: 'カラー', en: 'Color' },
   'basic.exposure': { ja: '露出', en: 'Exposure' },

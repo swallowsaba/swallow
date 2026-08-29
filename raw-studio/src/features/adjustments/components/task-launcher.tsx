@@ -97,6 +97,7 @@ export function TaskLauncher(): React.JSX.Element {
         break;
       case 'removeMode':
         setRemoveMode(true);
+        setRightTab('ai'); // show the AI tab, where RemovePanel appears on top
         break;
       case 'cropMode':
         setCropMode(true);
