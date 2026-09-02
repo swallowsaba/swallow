@@ -92,6 +92,7 @@ export function AdjustmentsPanel(): React.JSX.Element {
   const rightTab = useUiStore((s) => s.rightTab);
   const setRightTab = useUiStore((s) => s.setRightTab);
   const removeMode = useViewerStore((s) => s.removeMode);
+  const setRemoveMode = useViewerStore((s) => s.setRemoveMode);
   const uiMode = useUiStore((s) => s.uiMode);
   const t = useT();
 
@@ -110,7 +111,13 @@ export function AdjustmentsPanel(): React.JSX.Element {
     <Tabs
       value={rightTab}
       onValueChange={(v) => {
-        setRightTab(v as RightTab);
+        const next = v as RightTab;
+        // Overlay modes (remove) live on the AI tab. If the user switches to a
+        // different tab without closing the overlay, clear the mode — otherwise
+        // removeMode stays true and the normal edited image stops rendering
+        // ("edits don't show up anymore"). crop/wb overlays are their own UIs.
+        if (next !== 'ai' && removeMode) setRemoveMode(false);
+        setRightTab(next);
       }}
       className="flex h-full flex-col"
     >

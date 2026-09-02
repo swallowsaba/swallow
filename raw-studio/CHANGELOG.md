@@ -1,5 +1,20 @@
 # Changelog
 
+## Fix — edits stop showing after leaving an overlay mode
+
+- **Fixed "sometimes edits stop appearing on the image."** The normal edited
+  render only draws when no overlay mode (crop / remove / white-balance pick) is
+  active. If you entered Remove and then switched tabs (or opened another overlay)
+  without closing it, removeMode stayed true and the edited image stopped
+  updating — every adjustment looked like it did nothing. Two guards added:
+  (1) switching to a non-AI tab exits remove mode; (2) the three overlay modes are
+  now mutually exclusive in the store — entering one clears the others — so no
+  mode can be left stuck on. (The console's `toolbarContentscript.js` message and
+  the favicon 404 are unrelated: a browser extension and a missing icon, not the
+  app.) Needs an in-browser check.
+
+
+
 ## UI consistency — remove launcher parity + always-available Trim
 
 - **"Remove" launcher button now behaves like the others.** It used to replace

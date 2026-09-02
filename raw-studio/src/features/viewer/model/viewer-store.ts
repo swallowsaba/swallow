@@ -127,12 +127,16 @@ export const useViewerStore = create<ViewerState>((set) => ({
     set({ compareSplit });
   },
   setCropMode: (cropMode) => {
-    set({ cropMode });
+    // Overlay modes are mutually exclusive: entering one exits the others, so a
+    // leftover mode can't keep blocking the normal edited render.
+    set(cropMode ? { cropMode, removeMode: false, wbPickMode: false } : { cropMode });
   },
   setRemoveMode: (removeMode) => {
-    // Reset transient remove state whenever we enter/leave the mode.
+    // Reset transient remove state whenever we enter/leave the mode, and make
+    // overlay modes mutually exclusive so none is left stuck-on.
     set({
       removeMode,
+      ...(removeMode ? { cropMode: false, wbPickMode: false } : {}),
       removeHasPaint: false,
       removeBusy: false,
       removeStatus: null,
@@ -165,6 +169,6 @@ export const useViewerStore = create<ViewerState>((set) => ({
     }));
   },
   setWbPickMode: (wbPickMode) => {
-    set({ wbPickMode });
+    set(wbPickMode ? { wbPickMode, cropMode: false, removeMode: false } : { wbPickMode });
   },
 }));
