@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="首都圏(都営・東京メトロ ほか)の公共交通オープンデータを使ったルート検索。所要時間と乗換回数で比較できます。">
+<meta name="color-scheme" content="light dark">
+<title>首都圏ルート検索</title>
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#results">検索結果へ移動</a>
+
+<header class="app-header">
+  <div class="app-header__inner">
+    <div class="brand">
+      <span class="brand__mark" aria-hidden="true">◎</span>
+      <div>
+        <h1 class="brand__title">首都圏ルート検索</h1>
+        <p class="brand__sub">公共交通オープンデータ(ODPT)  運賃表示なし</p>
+      </div>
+    </div>
+    <button type="button" class="btn btn--ghost" id="coverage-toggle" aria-expanded="false" aria-controls="coverage-panel">
+      対応範囲
+    </button>
+  </div>
+</header>
+
+<!-- 対応/非対応事業者 -->
+<section id="coverage-panel" class="coverage" hidden>
+  <div class="coverage__inner">
+    <div>
+      <h2 class="coverage__h">対応している事業者</h2>
+      <ul class="coverage__list" id="coverage-supported"><li class="muted">読み込み中…</li></ul>
+    </div>
+    <div>
+      <h2 class="coverage__h">対応していない事業者</h2>
+      <ul class="coverage__list coverage__list--no" id="coverage-unsupported"><li class="muted">読み込み中…</li></ul>
+      <p class="coverage__note">
+        JR東日本や大手私鉄のデータは「公共交通オープンデータチャレンジ限定ライセンス」で提供されており、
+        コンテスト目的以外での利用が認められていません。そのため本アプリでは扱っていません。
+      </p>
+    </div>
+  </div>
+</section>
+
+<main class="app-main">
+
+  <!-- ================= 検索フォーム ================= -->
+  <form class="search card" id="search-form" autocomplete="off">
+    <div class="search__row">
+      <div class="field">
+        <label class="field__label" for="from-input">出発</label>
+        <div class="field__control">
+          <input class="input" type="text" id="from-input" placeholder="駅名・住所" aria-describedby="from-hint"
+                 role="combobox" aria-expanded="false" aria-controls="from-list" aria-autocomplete="list">
+          <button type="button" class="btn btn--icon" id="locate-btn" title="現在地から最寄駅を探す" aria-label="現在地から最寄駅を探す">現在地</button>
+        </div>
+        <ul class="suggest" id="from-list" role="listbox" hidden></ul>
+        <p class="field__hint" id="from-hint"></p>
+      </div>
+
+      <button type="button" class="btn btn--swap" id="swap-btn" title="出発と到着を入れ替える" aria-label="出発と到着を入れ替える">⇅</button>
+
+      <div class="field">
+        <label class="field__label" for="to-input">到着</label>
+        <div class="field__control">
+          <input class="input" type="text" id="to-input" placeholder="駅名・住所" aria-describedby="to-hint"
+                 role="combobox" aria-expanded="false" aria-controls="to-list" aria-autocomplete="list">
+        </div>
+        <ul class="suggest" id="to-list" role="listbox" hidden></ul>
+        <p class="field__hint" id="to-hint"></p>
+      </div>
+    </div>
+
+    <div class="search__row search__row--bottom">
+      <div class="field field--time">
+        <label class="field__label" for="depart-input">出発時刻</label>
+        <input class="input" type="datetime-local" id="depart-input">
+      </div>
+      <div class="field field--now">
+        <button type="button" class="btn btn--ghost" id="now-btn">現在時刻</button>
+      </div>
+      <button class="btn btn--primary" type="submit" id="search-btn">経路を検索</button>
+    </div>
+
+    <p class="calendar-note" id="calendar-note"></p>
+  </form>
+
+  <!-- ================= 通知・エラー ================= -->
+  <div id="alerts" class="alerts" aria-live="polite"></div>
+
+  <!-- ================= 運行情報 ================= -->
+  <section class="card status" id="status-card" hidden>
+    <div class="status__head">
+      <h2 class="card__h">運行情報</h2>
+      <span class="stamp" id="status-stamp"></span>
+    </div>
+    <div id="status-body"></div>
+  </section>
+
+  <!-- ================= 除外設定 ================= -->
+  <section class="card excludes" id="excludes-card" hidden>
+    <div class="excludes__head">
+      <h2 class="card__h">除外する路線・区間</h2>
+      <button type="button" class="btn btn--ghost btn--sm" id="excludes-clear">すべて解除</button>
+    </div>
+    <p class="excludes__note">
+      運転見合わせの区間は運行情報の本文からは機械的に特定できません。避けたい路線・区間をここで指定すると、
+      その区間を通らない経路を計算します。<strong>再計算はブラウザ内で行うため即座に反映されます。</strong>
+    </p>
+    <div class="excludes__body" id="excludes-body"></div>
+    <details class="excludes__add">
+      <summary>区間を指定して除外する</summary>
+      <div class="excludes__form">
+        <label class="field__label" for="ex-railway">路線</label>
+        <select class="input" id="ex-railway"></select>
+        <div class="excludes__range">
+          <label class="field__label" for="ex-from">区間(始点)</label>
+          <select class="input" id="ex-from"></select>
+          <label class="field__label" for="ex-to">区間(終点)</label>
+          <select class="input" id="ex-to"></select>
+        </div>
+        <div class="excludes__actions">
+          <button type="button" class="btn btn--ghost btn--sm" id="ex-add-line">路線ごと除外</button>
+          <button type="button" class="btn btn--ghost btn--sm" id="ex-add-range">この区間を除外</button>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ================= 結果 ================= -->
+  <section id="results" class="results" aria-live="polite">
+    <div class="results__head" id="results-head" hidden>
+      <div class="results__count" id="results-count"></div>
+      <div class="sorter" role="group" aria-label="並べ替え">
+        <button type="button" class="sorter__btn is-active" data-sort="time">所要時間</button>
+        <button type="button" class="sorter__btn" data-sort="transfers">乗換回数</button>
+        <button type="button" class="sorter__btn" data-sort="arrival">到着が早い順</button>
+      </div>
+    </div>
+    <div id="results-body"></div>
+  </section>
+
+</main>
+
+<footer class="app-footer">
+  <div class="app-footer__inner">
+    <p class="stamp-row">
+      <span class="stamp" id="foot-network-stamp">路線データ: —</span>
+      <span class="stamp" id="foot-timetable-stamp">時刻表: —</span>
+      <span class="stamp" id="foot-status-stamp">運行情報: —</span>
+    </p>
+    <p>
+      本アプリは<strong>公共交通オープンデータセンター</strong>のデータを利用しています。
+      データの正確性・完全性は保証されません。ダイヤ・運行情報の詳細は各事業者の公式情報をご確認ください。
+      本アプリの内容について事業者への問い合わせはご遠慮ください。
+    </p>
+    <p class="muted">
+      運賃・料金は表示しません(無料データでは正確な金額を算出できないため)。比較軸は所要時間と乗換回数のみです。
+      年末年始などの臨時ダイヤには対応していません。
+    </p>
+  </div>
+</footer>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>
