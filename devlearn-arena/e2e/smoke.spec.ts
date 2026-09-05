@@ -38,7 +38,7 @@ test('サンドボックスでコマンドを実行するとファイルツリ�
   await expect(tree).not.toContainText('reports');
 
   await page.getByLabel('コマンドを入力').fill('mkdir reports');
-  await page.getByRole('button', { name: '実行' }).click();
+  await page.getByLabel('コマンドを入力').press('Enter');
 
   await expect(tree).toContainText('reports');
   // 状態アサーションで手順が進む

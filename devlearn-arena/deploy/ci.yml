@@ -80,19 +80,20 @@ jobs:
       - name: 結果をまとめる
         if: always()
         run: |
+          # Summary ページとこのステップのログの両方に出す
+          say() { tee -a "$GITHUB_STEP_SUMMARY"; }
+
           report() {
             name="$1"; outcome="$2"; file="$3"
             if [ "$outcome" = "success" ]; then
-              echo "### ✅ $name" >> "$GITHUB_STEP_SUMMARY"
+              echo "### OK $name" | say
               return
             fi
-            echo "### ❌ $name" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            if [ -f "$file" ]; then tail -n 200 "$file" >> "$GITHUB_STEP_SUMMARY"; else echo "(ログなし)" >> "$GITHUB_STEP_SUMMARY"; fi
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "### NG $name" | say
+            if [ -f "$file" ]; then tail -n 200 "$file" | say; else echo "(ログなし)" | say; fi
           }
 
-          echo "## 検証結果" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 検証結果" | say
           report "型チェック"     "${{ steps.typecheck.outcome }}" /tmp/typecheck.log
           report "Lint"           "${{ steps.lint.outcome }}"      /tmp/lint.log
           report "ユニットテスト" "${{ steps.test.outcome }}"      /tmp/test.log
@@ -132,12 +133,11 @@ jobs:
       - name: 結果をまとめる
         if: always()
         run: |
+          say() { tee -a "$GITHUB_STEP_SUMMARY"; }
           if [ "${{ steps.e2e.outcome }}" = "success" ]; then
-            echo "### ✅ E2E" >> "$GITHUB_STEP_SUMMARY"
+            echo "### OK E2E" | say
           else
-            echo "### ❌ E2E" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            tail -n 200 /tmp/e2e.log >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "### NG E2E" | say
+            tail -n 200 /tmp/e2e.log | say
             exit 1
           fi

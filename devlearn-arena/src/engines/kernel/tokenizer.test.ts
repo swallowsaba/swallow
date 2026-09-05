@@ -56,6 +56,22 @@ describe('tokenize', () => {
     expect(tokenize("cat <<'EOF'")[1]).toEqual({ type: 'heredoc', delimiter: 'EOF' });
   });
 
+  it('$( ... ) は中に空白があっても1単語', () => {
+    expect(words('echo $(echo a b) tail')).toEqual(['echo', '$(echo a b)', 'tail']);
+  });
+
+  it('$( ... ) の中の演算子は単語の一部として扱う', () => {
+    expect(words('echo $(cat f | wc -l)')).toEqual(['echo', '$(cat f | wc -l)']);
+  });
+
+  it('入れ子の $( ... ) も対応が取れる', () => {
+    expect(words('echo $(echo $(echo x))')).toEqual(['echo', '$(echo $(echo x))']);
+  });
+
+  it('閉じない $( はエラー', () => {
+    expect(() => tokenize('echo $(echo x')).toThrow(ParseError);
+  });
+
   it('閉じないクォートはエラー', () => {
     expect(() => tokenize('echo "abc')).toThrow(ParseError);
     expect(() => tokenize("echo 'abc")).toThrow(ParseError);

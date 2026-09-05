@@ -184,7 +184,13 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
     const disposable = term.onData(onKey);
     term.write(`DevLearn Arena shell — help でコマンド一覧\r\n${prompt()}`);
 
+    // fit() が端末のサイズを変え、それがまた ResizeObserver を呼ぶ循環を避ける。
+    // 実際に行桁が変わるときだけ適用する
     const observer = new ResizeObserver(() => {
+      const dims = fit.proposeDimensions();
+      if (!dims) return;
+      if (!Number.isFinite(dims.cols) || !Number.isFinite(dims.rows)) return;
+      if (dims.cols === term.cols && dims.rows === term.rows) return;
       fit.fit();
     });
     observer.observe(host);

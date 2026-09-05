@@ -113,6 +113,33 @@ export function tokenize(input: string): Token[] {
       continue;
     }
 
+    // $( ... ) は中に空白や演算子があっても1つの単語として読む。
+    // 括弧の対応を数えて丸ごと取り込む（ネスト対応）
+    if (ch === '$' && input[i + 1] === '(') {
+      let depth = 0;
+      let j = i + 1;
+      let closed = false;
+      while (j < input.length) {
+        const c = input[j];
+        if (c === '(') depth += 1;
+        else if (c === ')') {
+          depth -= 1;
+          if (depth === 0) {
+            j += 1;
+            closed = true;
+            break;
+          }
+        }
+        j += 1;
+      }
+      if (!closed) throw new ParseError('$( が ) で閉じられていません');
+      const body = input.slice(i, j);
+      push(body, true, true);
+      raw += body;
+      i = j;
+      continue;
+    }
+
     if (OPERATOR_CHARS.has(ch)) {
       flush();
       const two = input.slice(i, i + 2);
