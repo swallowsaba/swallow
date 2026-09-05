@@ -65,21 +65,21 @@ export function historyMove(
   direction: -1 | 1,
 ): LineState {
   if (history.length === 0) return state;
-  const atDraft = state.historyIndex === null;
+  const currentIndex = state.historyIndex;
 
   if (direction === -1) {
-    const nextIndex = atDraft ? history.length - 1 : Math.max(0, state.historyIndex - 1);
+    const nextIndex = currentIndex === null ? history.length - 1 : Math.max(0, currentIndex - 1);
     const line = history[nextIndex] ?? '';
     return {
       line,
       cursor: line.length,
       historyIndex: nextIndex,
-      draft: atDraft ? state.line : state.draft,
+      draft: currentIndex === null ? state.line : state.draft,
     };
   }
 
-  if (atDraft) return state;
-  const nextIndex = state.historyIndex + 1;
+  if (currentIndex === null) return state;
+  const nextIndex = currentIndex + 1;
   if (nextIndex >= history.length) {
     return { line: state.draft, cursor: state.draft.length, historyIndex: null, draft: '' };
   }

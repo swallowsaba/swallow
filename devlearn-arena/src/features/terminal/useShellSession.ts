@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useMemo, useReducer } from 'react';
 import { createClock, type MutableClock } from '@/engines/kernel/clock';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
 import {
@@ -7,6 +7,7 @@ import {
 import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { createShellState, type SessionOptions } from '@/engines/kernel/session';
 import { execute, type OutputChunk } from '@/engines/kernel/shell';
+import { useConst } from './useConst';
 
 export interface ShellSession {
   state: ShellState;
@@ -30,56 +31,43 @@ export interface ShellSession {
  */
 export function useShellSession(options: SessionOptions = {}): ShellSession {
   const registry = useMemo(() => options.registry ?? createDefaultRegistry(), [options.registry]);
-  const clockRef = useRef<MutableClock | null>(null);
-  clockRef.current ??= createClock(options.tickDurationMs ?? 500);
-
-  const initial = useRef<ShellState | null>(null);
-  initial.current ??= createShellState(options);
-
-  const journalRef = useRef<Journal<ShellState> | null>(null);
-  journalRef.current ??= createJournal(initial.current, 'initial');
-
+  const clock = useConst<MutableClock>(() => createClock(options.tickDurationMs ?? 500));
+  // 初回だけ生成する可変ホルダ。毎レンダーで初期状態を作り直さない
+  const journalRef = useConst(() => ({
+    current: createJournal(createShellState(options), 'initial'),
+  }));
   const [, bump] = useReducer((n: number) => n + 1, 0);
 
-  const getState = useCallback(() => current(journalRef.current ?? createJournal(createShellState())), []);
-
-  const getTimeline = useCallback(
-    () => (journalRef.current?.entries ?? []).map((e) => e.state),
-    [],
-  );
+  const getState = useCallback(() => current(journalRef.current), []);
+  const getTimeline = useCallback(() => journalRef.current.entries.map((e) => e.state), []);
 
   const run = useCallback(
     (line: string): OutputChunk[] => {
       const journal = journalRef.current;
-      const clock = clockRef.current;
-      if (!journal || !clock) return [];
       const outcome = execute(current(journal), line, registry, clock);
       journalRef.current = push(journal, outcome.state, line.split('\n')[0] ?? line);
       bump();
       return outcome.chunks;
     },
-    [registry],
+    [registry, clock],
   );
 
   const seekTo = useCallback((index: number) => {
-    const journal = journalRef.current;
-    if (!journal) return;
-    journalRef.current = seek(journal, index);
+    journalRef.current = seek(journalRef.current, index);
     bump();
   }, []);
 
   const reset = useCallback(() => {
-    const fresh = createShellState(options);
-    journalRef.current = createJournal(fresh, 'initial');
-    clockRef.current?.reset();
+    journalRef.current = createJournal(createShellState(options), 'initial');
+    clock.reset();
     bump();
-  }, [options]);
+  }, [options, clock]);
 
   const journal = journalRef.current;
   return {
     state: current(journal),
     registry,
-    clock: clockRef.current,
+    clock,
     journal,
     atLatest: isAtLatest(journal),
     run,

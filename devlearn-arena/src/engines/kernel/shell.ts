@@ -3,7 +3,7 @@ import type { MutableClock } from './clock';
 import { expandWord, expandWordFields, type ExpandContext } from './expand';
 import { expandGlob, hasMagic } from './glob';
 import { parse } from './parser';
-import { CommandRegistry, type CommandResult, type RunLineResult, type ShellState } from './registry';
+import type { CommandRegistry, CommandResult, RunLineResult, ShellState } from './registry';
 import { ParseError } from './tokenizer';
 import { appendFile, at, readFile, VfsError, writeFile } from './vfs';
 

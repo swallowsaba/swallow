@@ -2,13 +2,11 @@
 # 新規ファイル。リポジトリの .github/workflows/ci.yml として置く。
 # deploy.yml には一切触らない。
 #
-# 手元に Node / npm が無くても、このワークフローが GitHub の貸しマシン上で
-# 型チェック・lint・テスト・E2E を回す。結果は Actions タブのログで読む。
+# 手元に Node / npm が無くても、GitHub の貸しマシン上で
+# 型チェック・lint・ユニットテスト・ビルド・E2E を回す。
 #
-# package-lock.json が無い状態でも動くようにしてある（deploy.yml と同じ方針）。
-# 初回実行後、生成された lockfile を artifact からダウンロードして
-# devlearn-arena/package-lock.json としてコミットすると、
-# 以降は npm ci になり再現性とキャッシュが効くようになる。
+# 失敗したときのエラー本文は、実行の「Summary」ページに直接出る。
+# ジョブやステップを開いて掘る必要はない。
 # ============================================================================
 name: CI (devlearn-arena)
 
@@ -37,12 +35,10 @@ jobs:
         with:
           node-version: 20
 
-      # lockfile があれば再現性のある npm ci、無ければ npm install
       - name: 依存をインストール
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-      # 生成された lockfile を持ち帰れるようにする（コミットすれば次回から npm ci）
       - name: lockfile をアップロード
         if: always()
         uses: actions/upload-artifact@v4
@@ -51,34 +47,57 @@ jobs:
           path: devlearn-arena/package-lock.json
           if-no-files-found: warn
 
-      # 以降は失敗しても後続を走らせる。1回のログで全部の不具合を集めたいため
+      # 4つとも最後まで走らせる。1回のログで全部の不具合を集めたいため
       - name: 型チェック
         id: typecheck
         continue-on-error: true
-        run: npm run typecheck
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee /tmp/typecheck.log
 
       - name: Lint
         id: lint
         continue-on-error: true
-        run: npm run lint
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee /tmp/lint.log
 
       - name: ユニットテスト
         id: test
         continue-on-error: true
-        run: npm run test -- --reporter=verbose
+        run: |
+          set -o pipefail
+          npm run test 2>&1 | tee /tmp/test.log
 
       - name: 本番ビルド
         id: build
         continue-on-error: true
-        run: npm run build
-
-      # どれか1つでも落ちていればジョブを失敗させる
-      - name: 結果をまとめる
         run: |
-          echo "typecheck : ${{ steps.typecheck.outcome }}"
-          echo "lint      : ${{ steps.lint.outcome }}"
-          echo "test      : ${{ steps.test.outcome }}"
-          echo "build     : ${{ steps.build.outcome }}"
+          set -o pipefail
+          npm run build 2>&1 | tee /tmp/build.log
+
+      # 失敗したものの本文を Summary ページに出す。掘らなくても読める
+      - name: 結果をまとめる
+        if: always()
+        run: |
+          report() {
+            name="$1"; outcome="$2"; file="$3"
+            if [ "$outcome" = "success" ]; then
+              echo "### ✅ $name" >> "$GITHUB_STEP_SUMMARY"
+              return
+            fi
+            echo "### ❌ $name" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            if [ -f "$file" ]; then tail -n 200 "$file" >> "$GITHUB_STEP_SUMMARY"; else echo "(ログなし)" >> "$GITHUB_STEP_SUMMARY"; fi
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          }
+
+          echo "## 検証結果" >> "$GITHUB_STEP_SUMMARY"
+          report "型チェック"     "${{ steps.typecheck.outcome }}" /tmp/typecheck.log
+          report "Lint"           "${{ steps.lint.outcome }}"      /tmp/lint.log
+          report "ユニットテスト" "${{ steps.test.outcome }}"      /tmp/test.log
+          report "ビルド"         "${{ steps.build.outcome }}"     /tmp/build.log
+
           if [ "${{ steps.typecheck.outcome }}" != "success" ] \
             || [ "${{ steps.lint.outcome }}" != "success" ] \
             || [ "${{ steps.test.outcome }}" != "success" ] \
@@ -89,7 +108,6 @@ jobs:
   e2e:
     name: E2E（サブディレクトリ配信）
     needs: verify
-    # verify が落ちても E2E の結果は知りたいので always
     if: always()
     runs-on: ubuntu-latest
     defaults:
@@ -106,10 +124,20 @@ jobs:
       - name: ブラウザを用意
         run: npx playwright install --with-deps chromium
       - name: E2E
-        run: npm run e2e
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-report
-          path: devlearn-arena/playwright-report
-          retention-days: 7
+        id: e2e
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run e2e 2>&1 | tee /tmp/e2e.log
+      - name: 結果をまとめる
+        if: always()
+        run: |
+          if [ "${{ steps.e2e.outcome }}" = "success" ]; then
+            echo "### ✅ E2E" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### ❌ E2E" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 200 /tmp/e2e.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi

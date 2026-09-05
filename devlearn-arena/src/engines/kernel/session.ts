@@ -1,6 +1,6 @@
 import { createClock, type MutableClock } from './clock';
 import { createDefaultRegistry } from './commands';
-import { CommandRegistry, type ShellState } from './registry';
+import type { CommandRegistry, ShellState } from './registry';
 import { HOME } from './path';
 import { createVfs, type VfsState } from './vfs';
 

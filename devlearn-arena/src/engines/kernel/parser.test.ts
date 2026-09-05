@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from './parser';
-import { wordText } from './tokenizer';
-import { ParseError } from './tokenizer';
+import { ParseError, wordText } from './tokenizer';
 
 describe('parse', () => {
   it('パイプで1つのパイプラインにまとめる', () => {

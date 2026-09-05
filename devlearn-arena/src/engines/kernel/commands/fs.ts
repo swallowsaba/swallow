@@ -1,7 +1,7 @@
 import { globMatch } from '../glob';
 import { basename, HOME, resolve } from '../path';
 import type { CommandSpec } from '../registry';
-import { copy, isDir, list, mkdir, move, readFile, remove, stat, touch, VfsError } from '../vfs';
+import { copy, list, mkdir, move, readFile, remove, stat, touch, VfsError } from '../vfs';
 import { fromLines, parseArgs } from './args';
 
 export const fsCommands: CommandSpec[] = [
