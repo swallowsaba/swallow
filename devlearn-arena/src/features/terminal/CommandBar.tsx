@@ -3,16 +3,14 @@ import type { TerminalHandle } from './TerminalView';
 
 interface Props {
   terminal: RefObject<TerminalHandle>;
-  /** よく使うコマンド。トラックごとに差し替える */
   chips?: readonly string[];
 }
 
-const DEFAULT_CHIPS = ['help', 'ls -la', 'pwd', 'cat README.txt', 'cd ..'] as const;
+const DEFAULT_CHIPS = ['help', 'ls -la', 'pwd', 'cat README.txt', 'mkdir reports', 'cd ..'] as const;
 
 /**
- * モバイルでも確実に入力できる行入力。
- * xterm は端末によってソフトキーボードが出ないことがあるため、
- * 画面上の入力欄を常設し、デスクトップのキーボード入力と同じ経路に流す。
+ * 常設の行入力。xterm に直接打つのが速い人はそちらでもよいが、
+ * 「どこに入力するのか分からない」を無くすために必ず見える場所に置く。
  */
 export function CommandBar({ terminal, chips = DEFAULT_CHIPS }: Props) {
   const [value, setValue] = useState('');
@@ -25,8 +23,8 @@ export function CommandBar({ terminal, chips = DEFAULT_CHIPS }: Props) {
   }
 
   return (
-    <div className="border-t border-line bg-panel/60">
-      <div className="flex gap-1.5 overflow-x-auto px-2 pt-2">
+    <div className="border-t border-line bg-panel/70">
+      <div className="flex flex-wrap gap-2 px-4 pt-4">
         {chips.map((chip) => (
           <button
             key={chip}
@@ -34,14 +32,14 @@ export function CommandBar({ terminal, chips = DEFAULT_CHIPS }: Props) {
             onClick={() => {
               setValue(chip);
             }}
-            className="whitespace-nowrap border border-line px-2 py-1 font-mono text-[11px] text-muted hover:border-accent hover:text-ink"
+            className="border border-line px-3 py-1.5 font-mono text-sm text-muted transition-colors hover:border-accent hover:text-accent"
           >
             {chip}
           </button>
         ))}
       </div>
-      <form onSubmit={submit} className="flex items-center gap-2 p-2">
-        <span aria-hidden className="font-mono text-xs text-accent">
+      <form onSubmit={submit} className="flex items-center gap-3 p-4">
+        <span aria-hidden className="font-mono text-lg text-accent">
           $
         </span>
         <input
@@ -54,21 +52,21 @@ export function CommandBar({ terminal, chips = DEFAULT_CHIPS }: Props) {
           autoCorrect="off"
           spellCheck={false}
           enterKeyHint="send"
-          placeholder="コマンドを入力して送信"
-          className="min-w-0 flex-1 border border-line bg-void px-2 py-1.5 font-mono text-sm text-ink placeholder:text-muted/60"
+          placeholder="ここにコマンドを入力して Enter"
+          className="min-w-0 flex-1 border-2 border-line bg-void px-4 py-3 font-mono text-base text-ink placeholder:text-muted/70 focus:border-accent"
         />
         <button
           type="button"
           onClick={() => {
             terminal.current?.requestComplete();
           }}
-          className="border border-line px-2 py-1.5 font-mono text-[11px] text-muted hover:border-accent"
+          className="border-2 border-line px-4 py-3 font-mono text-sm text-muted transition-colors hover:border-accent"
         >
           Tab
         </button>
         <button
           type="submit"
-          className="border border-accent px-3 py-1.5 font-mono text-[11px] text-accent hover:bg-accent hover:text-void"
+          className="border-2 border-accent px-6 py-3 font-mono text-base font-bold text-accent transition-colors hover:bg-accent hover:text-void"
         >
           実行
         </button>

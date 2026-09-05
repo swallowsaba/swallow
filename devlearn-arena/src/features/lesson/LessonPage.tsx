@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { getLesson, getTrack } from '@/content/catalog';
 import { useT } from '@/i18n/useT';
 import { appendJournal } from '@/lib/storage/idb';
-import { Tag } from '@/ui/components/Tag';
+import { Badge } from '@/ui/components/Badge';
 import NotFoundPage from '../NotFoundPage';
 import { SplitLayout } from './SplitLayout';
 
@@ -28,8 +28,8 @@ export default function LessonPage() {
           {t('lesson.back')}
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-semibold tracking-tight">{lesson.title}</h1>
-          <Tag tone="accent">{lesson.kind}</Tag>
+          <h1 className="display text-3xl">{lesson.title}</h1>
+          <Badge tone="accent">{lesson.kind}</Badge>
           <span className="font-mono text-xs text-muted">{lessonId}</span>
         </div>
       </header>

@@ -4,7 +4,7 @@ import { useT } from '@/i18n/useT';
 import { readJournal, type JournalEntry } from '@/lib/storage/idb';
 import { xpProgress } from '@/lib/xp';
 import { useStore } from '@/store';
-import { Meter } from '@/ui/components/Meter';
+import { ProgressBar } from '@/ui/components/ProgressBar';
 
 export default function DashboardPage() {
   const t = useT();
@@ -31,7 +31,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-2xl font-semibold tracking-tight">{t('dash.title')}</h1>
+      <h1 className="display text-5xl">{t('dash.title')}</h1>
 
       <section className="border border-line bg-panel/70 p-5">
         <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
@@ -42,7 +42,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="mt-4">
-          <Meter
+          <ProgressBar
             ratio={progress.ratio}
             label={t('dash.rank')}
             valueText={t('dash.xp', { a: progress.intoLevel, b: progress.levelSpan })}

@@ -49,7 +49,7 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
     const term = new Terminal({
       convertEol: true,
       cursorBlink: true,
-      fontSize: 13,
+      fontSize: 15,
       fontFamily: cssVar('--f-mono', 'monospace'),
       theme: {
         background: cssVar('--c-void', '#070a0f'),
@@ -223,5 +223,5 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
     },
   }));
 
-  return <div ref={hostRef} className="h-full min-h-[280px] w-full p-2" />;
+  return <div ref={hostRef} className="h-full min-h-[320px] w-full p-3" />;
 });

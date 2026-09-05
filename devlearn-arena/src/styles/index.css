@@ -3,33 +3,30 @@
 @tailwind utilities;
 
 /*
-  デザイントークン。色は全てここが単一の情報源。
-  トラックのアクセント色は --c-accent を data-track で差し替えて使う。
+  デザイントークン。
+  方針: ゲーム的に大きく・強い色。PC を主対象に情報密度より視認性を優先する。
+  文字は 16px を基準にし、11px 以下は使わない。
 */
 :root {
-  --c-void: #070a0f;
-  --c-panel: #0d131b;
-  --c-raised: #131b25;
-  --c-line: #1e2a37;
-  --c-text: #dbe5f0;
-  --c-muted: #7d8da2;
+  --c-void: #05070d;
+  --c-panel: #0e1522;
+  --c-raised: #172133;
+  --c-line: #24334a;
+  --c-text: #eef4fd;
+  --c-muted: #93a7c4;
 
-  --c-k8s: #3f8cff;
-  --c-net: #22d3ee;
-  --c-git: #f97316;
-  --c-github: #a78bfa;
+  --c-k8s: #4d9bff;
+  --c-net: #22e3d3;
+  --c-git: #ff8a3d;
+  --c-github: #b98bff;
   --c-accent: var(--c-k8s);
 
-  --c-ok: #3ddc97;
-  --c-warn: #f5b833;
-  --c-bad: #ff6b6b;
+  --c-ok: #35f0b4;
+  --c-warn: #ffd23f;
+  --c-bad: #ff5c6c;
 
-  /* 外部フェッチ禁止のため Web フォント CDN は使わない。
-     自前ホストする場合は @fontsource を依存に追加して差し替える。 */
   --f-mono: 'JetBrains Mono', 'SFMono-Regular', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --f-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
-
-  --rail: 2px;
 }
 
 [data-track='k8s'] { --c-accent: var(--c-k8s); }
@@ -41,25 +38,46 @@ html, body, #root { height: 100%; }
 
 body {
   background-color: var(--c-void);
-  background-image:
-    linear-gradient(var(--c-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--c-line) 1px, transparent 1px);
-  background-size: 96px 96px, 96px 96px;
-  background-position: -1px -1px;
   color: var(--c-text);
   font-family: var(--f-sans);
+  font-size: 16px;
+  line-height: 1.7;
   -webkit-font-smoothing: antialiased;
 }
 
-:focus-visible {
-  outline: 2px solid var(--c-accent);
-  outline-offset: 2px;
+/* 装飾は画面上部の淡い光だけ。模様やグリッドは敷かない */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(900px 400px at 50% -10%, rgb(77 155 255 / 10%), transparent 70%);
 }
 
-.hairline { box-shadow: inset 0 0 0 1px var(--c-line); }
+#root { position: relative; z-index: 1; }
 
-.rail { background: var(--c-line); height: var(--rail); }
-.rail--done { background: var(--c-accent); }
+:focus-visible {
+  outline: 3px solid var(--c-accent);
+  outline-offset: 3px;
+}
+
+/* 角を落とした板。ゲーム機のパネルらしさを出す最小限の形 */
+.cut {
+  clip-path: polygon(
+    0 0, calc(100% - 18px) 0, 100% 18px,
+    100% 100%, 18px 100%, 0 calc(100% - 18px)
+  );
+}
+
+.glow { box-shadow: 0 0 0 1px var(--c-accent), 0 0 40px -12px var(--c-accent); }
+
+.display {
+  font-family: var(--f-mono);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

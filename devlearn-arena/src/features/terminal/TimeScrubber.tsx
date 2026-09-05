@@ -11,8 +11,8 @@ export function TimeScrubber({ session }: Props) {
   const label = journal.entries[journal.cursor]?.label ?? 'initial';
 
   return (
-    <div className="flex items-center gap-3 border-t border-line px-3 py-2">
-      <span className="font-mono text-[11px] text-muted">履歴</span>
+    <div className="flex flex-wrap items-center gap-4 border-t border-line px-4 py-3">
+      <span className="font-mono text-sm uppercase tracking-[0.2em] text-muted">時間</span>
       <input
         type="range"
         min={0}
@@ -23,10 +23,10 @@ export function TimeScrubber({ session }: Props) {
         }}
         aria-label="実行履歴をたどる"
         aria-valuetext={label}
-        className="min-w-0 flex-1 accent-[var(--c-accent)]"
+        className="h-2 min-w-[200px] flex-1 accent-[var(--c-accent)]"
         disabled={last === 0}
       />
-      <span className="max-w-[40%] truncate font-mono text-[11px] text-muted" title={label}>
+      <span className="max-w-[45%] truncate font-mono text-sm text-muted" title={label}>
         {journal.cursor}/{last} {label}
       </span>
       {!atLatest ? (
@@ -35,7 +35,7 @@ export function TimeScrubber({ session }: Props) {
           onClick={() => {
             seekTo(last);
           }}
-          className="border border-accent px-2 py-0.5 font-mono text-[11px] text-accent"
+          className="border-2 border-accent px-4 py-1.5 font-mono text-sm text-accent hover:bg-accent hover:text-void"
         >
           最新へ
         </button>

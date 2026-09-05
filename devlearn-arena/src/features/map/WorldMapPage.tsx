@@ -1,16 +1,14 @@
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { countAll, countTrack, TRACKS } from '@/content/catalog';
 import { useT } from '@/i18n/useT';
 import { useStore } from '@/store';
-import { Tag } from '@/ui/components/Tag';
-import { useMotionEnabled } from '@/ui/motion';
-import { ChapterRail } from './ChapterRail';
+import { Badge } from '@/ui/components/Badge';
+import { ProgressBar } from '@/ui/components/ProgressBar';
+import { ChapterTile } from './ChapterTile';
 
 export default function WorldMapPage() {
   const t = useT();
   const lessons = useStore((s) => s.lessons);
-  const animate = useMotionEnabled();
   const cleared = new Set(
     Object.entries(lessons)
       .filter(([, p]) => p.cleared)
@@ -19,61 +17,62 @@ export default function WorldMapPage() {
   const totals = countAll();
 
   return (
-    <div className="flex flex-col gap-10">
-      <section className="max-w-2xl">
-        <h1 className="text-2xl font-semibold tracking-tight">{t('map.title')}</h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted">{t('map.lead')}</p>
-        <p className="mt-3 font-mono text-xs text-muted">
-          {totals.lessons} {t('map.lessons')} / {totals.bosses} {t('map.bosses')} / {totals.ready}{' '}
+    <div className="flex flex-col gap-14">
+      <header className="max-w-3xl">
+        <h1 className="display text-5xl">{t('map.title')}</h1>
+        <p className="mt-4 text-lg text-muted">{t('map.lead')}</p>
+        <p className="mt-4 font-mono text-base text-muted">
+          {totals.lessons} {t('map.lessons')} · {totals.bosses} {t('map.bosses')} · {totals.ready}{' '}
           {t('map.ready')}
         </p>
-      </section>
+      </header>
 
-      <div className="flex flex-col gap-8">
-        {TRACKS.map((track, i) => {
-          const counts = countTrack(track);
-          return (
-            <motion.section
-              key={track.id}
-              data-track={track.id}
-              initial={animate ? { opacity: 0, y: 8 } : false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: animate ? i * 0.06 : 0, duration: 0.3 }}
-              className="border border-line bg-panel/70 p-5"
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h2 className="flex items-baseline gap-3 text-lg font-semibold">
-                  <span aria-hidden className="inline-block h-3 w-3 bg-accent" />
+      {TRACKS.map((track) => {
+        const counts = countTrack(track);
+        const done = track.chapters
+          .flatMap((c) => c.lessons)
+          .filter((l) => cleared.has(l.id)).length;
+        return (
+          <section key={track.id} data-track={track.id}>
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-accent pb-4">
+              <div>
+                <Link to={`/track/${track.id}`} className="display text-4xl text-accent hover:underline">
                   {track.title}
-                </h2>
-                <div className="flex items-center gap-2">
-                  <Tag tone="muted">
-                    {track.chapters.length} {t('map.chapters')}
-                  </Tag>
-                  <Tag tone="muted">
-                    {counts.lessons} {t('map.lessons')}
-                  </Tag>
-                  <Tag tone="accent">
-                    {t('map.phase')} {track.phase}
-                  </Tag>
-                </div>
+                </Link>
+                <p className="mt-2 max-w-3xl text-base text-muted">{track.goal}</p>
               </div>
-              <p className="mt-2 max-w-3xl text-sm text-muted">{track.goal}</p>
-
-              <div className="mt-5">
-                <ChapterRail chapters={track.chapters} clearedLessonIds={cleared} />
+              <div className="flex items-center gap-3">
+                <Badge tone="accent" size="sm">
+                  {t('map.phase')} {track.phase}
+                </Badge>
+                <span className="font-mono text-sm text-muted">
+                  {done}/{counts.lessons} {t('map.lessons')}
+                </span>
               </div>
+            </div>
 
-              <Link
-                to={`/track/${track.id}`}
-                className="mt-4 inline-block border border-accent px-3 py-1.5 font-mono text-xs text-accent hover:bg-accent hover:text-void"
-              >
-                {t('map.openTrack')}
-              </Link>
-            </motion.section>
-          );
-        })}
-      </div>
+            <div className="mt-4">
+              <ProgressBar
+                ratio={counts.lessons === 0 ? 0 : done / counts.lessons}
+                size="sm"
+                label={track.title}
+                valueText={`${String(done)}/${String(counts.lessons)}`}
+              />
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7">
+              {track.chapters.map((chapter, i) => (
+                <ChapterTile
+                  key={chapter.id}
+                  chapter={chapter}
+                  index={i}
+                  clearedLessonIds={cleared}
+                />
+              ))}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

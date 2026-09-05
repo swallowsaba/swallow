@@ -3,14 +3,31 @@ export const ja = {
   'app.name': 'DevLearn Arena',
   'app.tagline': 'コマンドを打つ。状態が変わる。図が動く。',
 
-  'nav.map': 'ワールドマップ',
+  'nav.home': 'ホーム',
+  'nav.map': '冒険の地図',
   'nav.sandbox': 'サンドボックス',
   'nav.dashboard': '記録',
   'nav.settings': '設定',
   'nav.skip': '本文へ移動',
 
-  'map.title': 'ワールドマップ',
-  'map.lead': '4 つのトラックを、章ごとに進めます。各章の最後にはインシデント対応が待っています。',
+  'home.next': '次にやること',
+  'home.warmupLead':
+    'まずはターミナルに慣れるところから。コマンドを打つと画面の図がその場で変わります。3つの手順を達成すればクリアです。',
+  'home.start': '訓練場ではじめる',
+  'home.clearedLead': 'クリアしたレッスンの数です。',
+  'home.buildStatus': '実装フェーズ',
+  'home.buildLead': 'シェルと仮想ファイルシステムが動きます。Git / Kubernetes / Network は準備中です。',
+  'home.worlds': '4つの世界',
+  'home.worldsLead': '進めたい分野を選んで、章ごとに攻略していきます。',
+
+  'sandbox.title': '訓練場',
+  'sandbox.lead':
+    'カリキュラム外で自由に試せる場所です。コマンドを打つと右のファイルツリーが変わり、下の「時間」を動かすと過去の状態に戻れます。',
+  'sandbox.fileTree': 'ファイルツリー',
+  'sandbox.snapshots': 'スナップショット {n} 件 / 仮想時計 tick {tick}',
+
+  'map.title': '冒険の地図',
+  'map.lead': '4 つの世界を、章ごとに進めます。各章の最後にはインシデント対応が待っています。',
   'map.chapters': '章',
   'map.lessons': 'レッスン',
   'map.bosses': 'インシデント',

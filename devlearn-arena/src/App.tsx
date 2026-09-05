@@ -1,10 +1,11 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { Shell } from './ui/Shell';
 import { Loading } from './ui/components/Loading';
 
 // ルート単位のコード分割。コンテンツ本体は各画面から動的 import する。
+const HomePage = lazy(() => import('./features/home/HomePage'));
 const WorldMapPage = lazy(() => import('./features/map/WorldMapPage'));
 const TrackPage = lazy(() => import('./features/track/TrackPage'));
 const LessonPage = lazy(() => import('./features/lesson/LessonPage'));
@@ -20,7 +21,7 @@ export function App() {
         <ErrorBoundary>
           <Suspense fallback={<Loading />}>
             <Routes>
-              <Route path="/" element={<Navigate to="/map" replace />} />
+              <Route path="/" element={<HomePage />} />
               <Route path="/map" element={<WorldMapPage />} />
               <Route path="/track/:trackId" element={<TrackPage />} />
               <Route path="/lesson/:trackId/:chapterNo/:lessonSlug" element={<LessonPage />} />

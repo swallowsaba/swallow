@@ -34,7 +34,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-8">
-      <h1 className="text-2xl font-semibold tracking-tight">{t('settings.title')}</h1>
+      <h1 className="display text-5xl">{t('settings.title')}</h1>
 
       <section className="flex flex-col gap-3">
         <h2 className="font-mono text-xs text-muted">{t('settings.motion')}</h2>

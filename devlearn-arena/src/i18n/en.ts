@@ -4,6 +4,7 @@ import type { TKey } from './ja';
 export const en: Partial<Record<TKey, string>> = {
   'app.name': 'DevLearn Arena',
   'app.tagline': 'Type a command. Watch the state change.',
+  'nav.home': 'Home',
   'nav.map': 'World map',
   'nav.sandbox': 'Sandbox',
   'nav.dashboard': 'Progress',

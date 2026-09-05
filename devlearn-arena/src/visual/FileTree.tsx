@@ -15,17 +15,19 @@ function changeOf(path: string, vfs: VfsState, previous: VfsState | undefined): 
   const before = previous.nodes.get(path);
   const after = vfs.nodes.get(path);
   if (!before) return 'added';
-  if (before.kind === 'file' && after?.kind === 'file' && before.content !== after.content) return 'changed';
+  if (before.kind === 'file' && after?.kind === 'file' && before.content !== after.content) {
+    return 'changed';
+  }
   return 'none';
 }
 
-/** VFS の状態から描くだけの純粋な表示。差分は色と印で示す（色だけに頼らない）。 */
+/** VFS の状態から描くだけの純粋な表示。差分は色と文字の両方で示す。 */
 export function FileTree({ vfs, previous, cwd }: Props) {
   const animate = useMotionEnabled();
   const paths = [...vfs.nodes.keys()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
   return (
-    <ul className="overflow-auto p-3 font-mono text-xs leading-6">
+    <ul className="p-4 font-mono text-base leading-8">
       <AnimatePresence initial={false}>
         {paths.map((path) => {
           const node = vfs.nodes.get(path);
@@ -34,31 +36,31 @@ export function FileTree({ vfs, previous, cwd }: Props) {
           const name = path === '/' ? '/' : (path.split('/').pop() ?? path);
           const change = changeOf(path, vfs, previous);
           const isCwd = path === cwd;
+          const color =
+            change === 'added'
+              ? 'text-[var(--c-ok)]'
+              : change === 'changed'
+                ? 'text-[var(--c-warn)]'
+                : isCwd
+                  ? 'text-accent'
+                  : 'text-muted';
           return (
             <motion.li
               key={path}
               layout={animate}
-              initial={animate ? { opacity: 0, x: -6 } : false}
+              initial={animate ? { opacity: 0, x: -10 } : false}
               animate={{ opacity: 1, x: 0 }}
-              exit={animate ? { opacity: 0, x: 6 } : undefined}
-              transition={{ duration: 0.18 }}
-              style={{ paddingLeft: `${String(depth * 12)}px` }}
-              className={
-                change === 'added'
-                  ? 'text-[var(--c-ok)]'
-                  : change === 'changed'
-                    ? 'text-[var(--c-warn)]'
-                    : isCwd
-                      ? 'text-accent'
-                      : 'text-muted'
-              }
+              exit={animate ? { opacity: 0, x: 10 } : undefined}
+              transition={{ duration: 0.2 }}
+              style={{ paddingLeft: `${String(depth * 18)}px` }}
+              className={color}
             >
               <span aria-hidden>{node.kind === 'dir' ? '▸ ' : '· '}</span>
               {name}
               {node.kind === 'dir' && path !== '/' ? '/' : ''}
-              {change === 'added' ? <span className="ml-2 text-[10px]">新規</span> : null}
-              {change === 'changed' ? <span className="ml-2 text-[10px]">更新</span> : null}
-              {isCwd ? <span className="ml-2 text-[10px]">現在地</span> : null}
+              {change === 'added' ? <span className="ml-3 text-sm">＋新規</span> : null}
+              {change === 'changed' ? <span className="ml-3 text-sm">✎更新</span> : null}
+              {isCwd ? <span className="ml-3 text-sm">◀現在地</span> : null}
             </motion.li>
           );
         })}
