@@ -1,0 +1,115 @@
+# ============================================================================
+# 新規ファイル。リポジトリの .github/workflows/ci.yml として置く。
+# deploy.yml には一切触らない。
+#
+# 手元に Node / npm が無くても、このワークフローが GitHub の貸しマシン上で
+# 型チェック・lint・テスト・E2E を回す。結果は Actions タブのログで読む。
+#
+# package-lock.json が無い状態でも動くようにしてある（deploy.yml と同じ方針）。
+# 初回実行後、生成された lockfile を artifact からダウンロードして
+# devlearn-arena/package-lock.json としてコミットすると、
+# 以降は npm ci になり再現性とキャッシュが効くようになる。
+# ============================================================================
+name: CI (devlearn-arena)
+
+on:
+  push:
+    branches: ["main"]
+    paths: ["devlearn-arena/**", ".github/workflows/ci.yml"]
+  pull_request:
+    paths: ["devlearn-arena/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: 型チェック / lint / ユニットテスト
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: devlearn-arena
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # lockfile があれば再現性のある npm ci、無ければ npm install
+      - name: 依存をインストール
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      # 生成された lockfile を持ち帰れるようにする（コミットすれば次回から npm ci）
+      - name: lockfile をアップロード
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-lock
+          path: devlearn-arena/package-lock.json
+          if-no-files-found: warn
+
+      # 以降は失敗しても後続を走らせる。1回のログで全部の不具合を集めたいため
+      - name: 型チェック
+        id: typecheck
+        continue-on-error: true
+        run: npm run typecheck
+
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        run: npm run lint
+
+      - name: ユニットテスト
+        id: test
+        continue-on-error: true
+        run: npm run test -- --reporter=verbose
+
+      - name: 本番ビルド
+        id: build
+        continue-on-error: true
+        run: npm run build
+
+      # どれか1つでも落ちていればジョブを失敗させる
+      - name: 結果をまとめる
+        run: |
+          echo "typecheck : ${{ steps.typecheck.outcome }}"
+          echo "lint      : ${{ steps.lint.outcome }}"
+          echo "test      : ${{ steps.test.outcome }}"
+          echo "build     : ${{ steps.build.outcome }}"
+          if [ "${{ steps.typecheck.outcome }}" != "success" ] \
+            || [ "${{ steps.lint.outcome }}" != "success" ] \
+            || [ "${{ steps.test.outcome }}" != "success" ] \
+            || [ "${{ steps.build.outcome }}" != "success" ]; then
+            exit 1
+          fi
+
+  e2e:
+    name: E2E（サブディレクトリ配信）
+    needs: verify
+    # verify が落ちても E2E の結果は知りたいので always
+    if: always()
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: devlearn-arena
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 依存をインストール
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: ブラウザを用意
+        run: npx playwright install --with-deps chromium
+      - name: E2E
+        run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: devlearn-arena/playwright-report
+          retention-days: 7
