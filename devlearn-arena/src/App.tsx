@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 import { Shell } from './ui/Shell';
 import { Loading } from './ui/components/Loading';
 
@@ -16,18 +17,20 @@ export function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Shell>
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            <Route path="/" element={<Navigate to="/map" replace />} />
-            <Route path="/map" element={<WorldMapPage />} />
-            <Route path="/track/:trackId" element={<TrackPage />} />
-            <Route path="/lesson/:trackId/:chapterNo/:lessonSlug" element={<LessonPage />} />
-            <Route path="/sandbox" element={<SandboxPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/map" replace />} />
+              <Route path="/map" element={<WorldMapPage />} />
+              <Route path="/track/:trackId" element={<TrackPage />} />
+              <Route path="/lesson/:trackId/:chapterNo/:lessonSlug" element={<LessonPage />} />
+              <Route path="/sandbox" element={<SandboxPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </Shell>
     </BrowserRouter>
   );

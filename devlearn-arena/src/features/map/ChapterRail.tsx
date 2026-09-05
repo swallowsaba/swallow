@@ -8,25 +8,28 @@ interface Props {
   clearedLessonIds: ReadonlySet<string>;
 }
 
-/** 章を進行順のウェイポイントとして一本のレール上に並べる。 */
+/**
+ * 章を進行順のウェイポイントとして並べる。
+ * 横スクロールにすると全体像が隠れてしまうので、折り返して全章を常に見せる。
+ */
 export function ChapterRail({ chapters, clearedLessonIds }: Props) {
   const animate = useMotionEnabled();
+
   return (
-    <ol className="flex items-stretch gap-0 overflow-x-auto pb-2">
+    <ol className="flex flex-wrap gap-y-4">
       {chapters.map((ch, i) => {
         const total = ch.lessons.length;
         const done = ch.lessons.filter((l) => clearedLessonIds.has(l.id)).length;
         const complete = total > 0 && done === total;
         return (
-          <li key={ch.id} className="flex min-w-[132px] flex-1 flex-col gap-2">
-            <div className="flex items-center">
+          <li key={ch.id} className="flex w-1/3 min-w-[110px] flex-col gap-2 sm:w-1/5 lg:w-[12.5%]">
+            <div className="flex items-center" aria-hidden>
               <span className={`rail flex-1 ${i === 0 ? 'opacity-0' : ''} ${complete ? 'rail--done' : ''}`} />
               <motion.span
                 initial={animate ? { scale: 0.6, opacity: 0 } : false}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: animate ? i * 0.03 : 0, duration: 0.25 }}
-                aria-hidden
-                className={`grid h-7 w-7 place-items-center border font-mono text-xs ${
+                transition={{ delay: animate ? i * 0.02 : 0, duration: 0.25 }}
+                className={`grid h-7 w-7 shrink-0 place-items-center border font-mono text-xs ${
                   complete ? 'border-accent text-accent' : 'border-line text-muted'
                 }`}
               >

@@ -64,6 +64,7 @@ export const ja = {
   'notfound.cta': 'ワールドマップへ',
 
   'common.loading': '読み込み中',
+  'error.title': '画面の描画に失敗しました',
 } as const;
 
 export type TKey = keyof typeof ja;

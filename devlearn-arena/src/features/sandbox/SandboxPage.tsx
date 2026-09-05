@@ -58,7 +58,7 @@ export default function SandboxPage() {
             ライブ図解 — 仮想ファイルシステム
           </h2>
           <div className="flex-1 overflow-auto">
-            <FileTree vfs={session.state.vfs} previous={previous} cwd={session.state.cwd} />
+            <FileTree vfs={session.state.vfs} previous={previous?.vfs} cwd={session.state.cwd} />
           </div>
         </section>
       </div>
