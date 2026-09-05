@@ -38,8 +38,11 @@ export function useShellSession(options: SessionOptions = {}): ShellSession {
   }));
   const [, bump] = useReducer((n: number) => n + 1, 0);
 
-  const getState = useCallback(() => current(journalRef.current), []);
-  const getTimeline = useCallback(() => journalRef.current.entries.map((e) => e.state), []);
+  const getState = useCallback(() => current(journalRef.current), [journalRef]);
+  const getTimeline = useCallback(
+    () => journalRef.current.entries.map((e) => e.state),
+    [journalRef],
+  );
 
   const run = useCallback(
     (line: string): OutputChunk[] => {
@@ -49,19 +52,22 @@ export function useShellSession(options: SessionOptions = {}): ShellSession {
       bump();
       return outcome.chunks;
     },
-    [registry, clock],
+    [registry, clock, journalRef],
   );
 
-  const seekTo = useCallback((index: number) => {
-    journalRef.current = seek(journalRef.current, index);
-    bump();
-  }, []);
+  const seekTo = useCallback(
+    (index: number) => {
+      journalRef.current = seek(journalRef.current, index);
+      bump();
+    },
+    [journalRef],
+  );
 
   const reset = useCallback(() => {
     journalRef.current = createJournal(createShellState(options), 'initial');
     clock.reset();
     bump();
-  }, [options, clock]);
+  }, [options, clock, journalRef]);
 
   const journal = journalRef.current;
   return {

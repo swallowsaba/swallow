@@ -201,8 +201,7 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
       term.dispose();
       termRef.current = null;
     };
-    // session は ref 経由で参照するため、依存に入れて作り直さない
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // session は ref 経由で参照するため、依存に入れて端末を作り直さない
   }, []);
 
   useImperativeHandle(ref, () => ({

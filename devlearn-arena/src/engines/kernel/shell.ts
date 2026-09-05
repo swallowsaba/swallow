@@ -1,4 +1,4 @@
-import type { CommandList, SimpleCommand, Word } from './ast';
+import type { CommandList, SimpleCommand } from './ast';
 import type { MutableClock } from './clock';
 import { expandWord, expandWordFields, type ExpandContext } from './expand';
 import { expandGlob, hasMagic } from './glob';
@@ -62,7 +62,7 @@ function runCommand(
 
   // 展開 → 単語分割 → パス名展開 の順（bash と同じ順序）
   const argv: string[] = [];
-  for (const word of command.words as Word[]) {
+  for (const word of command.words) {
     for (const field of expandWordFields(word, expandCtx)) {
       if (word.quoted || !hasMagic(field)) {
         argv.push(field);
