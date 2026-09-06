@@ -38,6 +38,26 @@ describe('save schema', () => {
     if (!r.ok) expect(r.reason).toBe('schema');
   });
 
+  it('分割比率が既定で埋まる（古い保存データを壊さない）', () => {
+    const save = createEmptySave(1);
+    const raw = JSON.parse(JSON.stringify(save)) as Record<string, unknown>;
+    const settings = raw['settings'] as Record<string, unknown>;
+    delete settings['paneMain'];
+    delete settings['paneMap'];
+    const r = parseSave(JSON.stringify(raw));
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.settings.paneMain).toBe(55);
+      expect(r.data.settings.paneMap).toBe(62);
+    }
+  });
+
+  it('範囲外の比率を弾く', () => {
+    const save = createEmptySave(1);
+    save.settings.paneMain = 99;
+    expect(parseSave(JSON.stringify(save)).ok).toBe(false);
+  });
+
   it('未知バージョンを弾く', () => {
     const save = { ...createEmptySave(1), version: 99 };
     const r = parseSave(JSON.stringify(save));

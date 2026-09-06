@@ -34,6 +34,10 @@ export const settingsSchema = z.object({
   /** 仮想時計の 1 tick の実時間（ms） */
   tickMs: z.number().int().min(50).max(5000),
   soundEnabled: z.boolean(),
+  /** 左（ターミナル側）の横幅の割合(%) */
+  paneMain: z.number().min(25).max(80).default(55),
+  /** 右側のうち地図が占める高さの割合(%) */
+  paneMap: z.number().min(25).max(85).default(62),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
@@ -61,6 +65,8 @@ export const defaultSettings: Settings = {
   motion: 'system',
   tickMs: 500,
   soundEnabled: false,
+  paneMain: 55,
+  paneMap: 62,
 };
 
 export function createEmptySave(now: number): SaveData {

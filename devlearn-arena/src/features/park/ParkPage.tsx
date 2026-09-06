@@ -14,6 +14,7 @@ import { levelFromXp, rankFromLevel, scoreAttempt, xpForScore } from '@/lib/xp';
 import { useStore } from '@/store';
 import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
+import { Splitter } from '@/ui/Splitter';
 import { FileWorld } from '@/visual/FileWorld';
 import { describeChange } from './describe';
 
@@ -52,6 +53,9 @@ function Park({
   const soundEnabled = useStore((s) => s.settings.soundEnabled);
   const grantXp = useStore((s) => s.grantXp);
   const clearLesson = useStore((s) => s.clearLesson);
+  const paneMain = useStore((s) => s.settings.paneMain);
+  const paneMap = useStore((s) => s.settings.paneMap);
+  const updateSettings = useStore((s) => s.updateSettings);
 
   const entries = session.journal.entries;
   const cursor = session.journal.cursor;
@@ -215,9 +219,12 @@ function Park({
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div
+        className="grid min-h-0 flex-1"
+        style={{ gridTemplateColumns: `minmax(0, ${String(paneMain)}fr) auto minmax(0, ${String(100 - paneMain)}fr)` }}
+      >
         {/* 左：手を動かす場所 */}
-        <div className="flex min-h-0 min-w-0 flex-col border-r-4 border-wood-dark">
+        <div className="flex min-h-0 min-w-0 flex-col">
           <div className="border-b-2 border-wood-dark bg-[var(--cream-dark)] px-5 py-4">
             <p className="text-sm font-bold text-ink-soft">
               {progress.cleared ? '完了' : `やること ${String(progress.stepIndex + 1)}`}
@@ -278,10 +285,24 @@ function Park({
           <CommandBar terminal={terminalRef} />
         </div>
 
+        <Splitter
+          orientation="vertical"
+          value={paneMain}
+          min={30}
+          max={75}
+          label="ターミナルと地図の幅"
+          onChange={(next) => {
+            updateSettings({ paneMain: next });
+          }}
+        />
+
         {/* 右：結果を見る場所 */}
-        <div className="flex min-h-0 min-w-0 flex-col">
+        <div
+          className="grid min-h-0 min-w-0"
+          style={{ gridTemplateRows: `minmax(0, ${String(paneMap)}fr) auto minmax(0, ${String(100 - paneMap)}fr)` }}
+        >
           <div
-            className="min-h-[280px] flex-1"
+            className="min-h-0 overflow-hidden"
             style={{
               backgroundColor: 'var(--grass)',
               backgroundImage:
@@ -289,13 +310,29 @@ function Park({
               backgroundSize: '46px 26px',
             }}
           >
-            <FileWorld vfs={session.state.vfs} previous={previous?.vfs} cwd={session.state.cwd} />
+            <div className="flex h-full flex-col">
+              <div className="min-h-0 flex-1">
+                <FileWorld vfs={session.state.vfs} previous={previous?.vfs} cwd={session.state.cwd} />
+              </div>
+              <div className="bg-cream">
+                <TimeScrubber session={session} />
+              </div>
+            </div>
           </div>
 
-          <TimeScrubber session={session} />
+          <Splitter
+            orientation="horizontal"
+            value={paneMap}
+            min={30}
+            max={85}
+            label="地図と記録の高さ"
+            onChange={(next) => {
+              updateSettings({ paneMap: next });
+            }}
+          />
 
           {/* 何が起きたかを言葉で残す */}
-          <div className="h-[190px] overflow-auto border-t-4 border-wood-dark bg-cream px-5 py-3">
+          <div className="flex min-h-0 flex-col overflow-auto bg-cream px-5 py-3">
             <p className="text-sm font-bold text-ink-soft">実行の記録</p>
             {log.length === 0 ? (
               <p className="mt-2 text-sm text-ink-soft">

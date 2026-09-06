@@ -58,6 +58,23 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
+        <h2 className="font-mono text-base text-ink-soft">画面の分割</h2>
+        <p className="text-sm text-ink-soft">
+          ターミナルと地図の境目はドラッグで動かせます（矢印キーでも調整できます）。
+          現在の比率は 左 {settings.paneMain}% / 地図の高さ {settings.paneMap}% です。
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            updateSettings({ paneMain: 55, paneMap: 62 });
+          }}
+          className="knob w-fit px-5 py-2.5 text-base"
+        >
+          既定の配置に戻す
+        </button>
+      </section>
+
+      <section className="flex flex-col gap-3">
         <h2 className="font-mono text-base text-ink-soft">効果音</h2>
         <button
           type="button"
