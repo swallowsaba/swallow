@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { findMission, missions } from '@/engines/lesson/missions';
 import { advance, createProgress, currentStep, useHint } from '@/engines/lesson/runner';
@@ -13,14 +13,11 @@ import { useStore } from '@/store';
 import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { FileWorld } from '@/visual/FileWorld';
+import { describeChange } from './describe';
 
 const STEP_XP = 10;
 const FALLBACK = missions[0];
 
-/**
- * 1枚の画面で完結させる。景色が主役で、案内板と操作盤がその上に乗る。
- * 別ページへ移動しないと遊べない作りをやめた。
- */
 export default function ParkPage() {
   const [missionId, setMissionId] = useState(FALLBACK?.id ?? '');
   const mission = findMission(missionId) ?? FALLBACK;
@@ -28,6 +25,11 @@ export default function ParkPage() {
   return <Park key={mission.id} mission={mission} onSwitch={setMissionId} />;
 }
 
+/**
+ * 学習画面。
+ * 左＝手を動かす場所（やること・ターミナル・入力）、右＝結果を見る場所（図・説明・履歴）。
+ * 重なる浮きパネルはやめ、左右で役割を分ける。
+ */
 function Park({
   mission,
   onSwitch,
@@ -42,15 +44,33 @@ function Park({
   const [revealedHints, setRevealedHints] = useState(0);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
-  const [guideOpen, setGuideOpen] = useState(true);
 
   const xp = useStore((s) => s.profile.xp);
   const soundEnabled = useStore((s) => s.settings.soundEnabled);
   const grantXp = useStore((s) => s.grantXp);
   const clearLesson = useStore((s) => s.clearLesson);
 
-  const previous = session.journal.entries[session.journal.cursor - 1]?.state;
+  const entries = session.journal.entries;
+  const cursor = session.journal.cursor;
+  const previous = entries[cursor - 1]?.state;
   const step = currentStep(mission, progress);
+
+  /** 直近の操作を、コマンドと「何が起きたか」の対で並べる */
+  const log = useMemo(() => {
+    const rows: { key: number; command: string; text: string }[] = [];
+    for (let i = Math.max(1, cursor - 5); i <= cursor; i += 1) {
+      const entry = entries[i];
+      const before = entries[i - 1];
+      if (!entry || !before) continue;
+      rows.push({
+        key: i,
+        command: entry.label,
+        text: describeChange(before.state.vfs, entry.state.vfs, before.state.cwd, entry.state.cwd, 0)
+          .text,
+      });
+    }
+    return rows.reverse();
+  }, [entries, cursor]);
 
   const pushToast = useCallback((text: string) => {
     const key = Date.now() + Math.random();
@@ -67,7 +87,6 @@ function Park({
       const justCleared = next.cleared && !progress.cleared;
       setProgress(next);
       setRevealedHints(0);
-      if (exitCode !== 0 && soundEnabled) sfx.error();
 
       const now = Date.now();
       if (justCleared) {
@@ -82,7 +101,7 @@ function Park({
         clearLesson({ lessonId: mission.id, score, xp: reward, now });
         setCelebration({
           key: now,
-          title: mission.kind === 'boss' ? '営業再開' : 'クリア',
+          title: 'クリア',
           subtitle: `${mission.title} — スコア ${String(score)}`,
           xp: reward,
           levelUp: after > before ? { level: after, rank: rankFromLevel(after) } : undefined,
@@ -107,15 +126,7 @@ function Park({
   }, [mission, session]);
 
   return (
-    <div
-      className="relative h-full w-full overflow-hidden"
-      style={{
-        backgroundColor: 'var(--grass)',
-        backgroundImage:
-          'radial-gradient(circle at 12px 9px, var(--grass-dark) 2.5px, transparent 2.6px), radial-gradient(circle at 33px 19px, var(--grass-dark) 2px, transparent 2.1px)',
-        backgroundSize: '46px 26px',
-      }}
-    >
+    <div className="flex h-full flex-col bg-cream">
       <XpToast toasts={toasts} />
       <Celebration
         data={celebration}
@@ -124,129 +135,116 @@ function Park({
         }}
       />
 
-      {/* 景色。画面いっぱいに広がる */}
-      <div className="absolute inset-0">
-        <FileWorld vfs={session.state.vfs} previous={previous?.vfs} cwd={session.state.cwd} />
-      </div>
-
-      {/* 上部：看板と持ち物 */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap items-start justify-between gap-3 p-4">
-        <div className="sign pointer-events-auto px-5 py-2">
-          <span className="title text-xl">DEVLEARN PARK</span>
-        </div>
-
-        <div className="pointer-events-auto flex flex-wrap items-center gap-2">
-          {missions.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              aria-pressed={m.id === mission.id}
-              onClick={() => {
-                onSwitch(m.id);
-              }}
-              className="knob px-4 py-2 text-sm font-bold"
-            >
-              {m.kind === 'boss' ? '★ ' : ''}
-              {m.title}
-            </button>
-          ))}
-          <Link to="/map" className="knob px-4 py-2 text-sm font-bold">
+      {/* 上部：任務の切り替えと現在地 */}
+      <header className="flex flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-5 py-3">
+        <span className="sign px-4 py-1.5 text-lg font-extrabold">DEVLEARN</span>
+        {missions.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            aria-pressed={m.id === mission.id}
+            onClick={() => {
+              onSwitch(m.id);
+            }}
+            className="knob px-4 py-2 text-sm font-bold"
+          >
+            {m.title}
+          </button>
+        ))}
+        <div className="ml-auto flex items-center gap-3">
+          <span className="font-mono text-sm text-cream">
+            進捗 {Math.min(progress.stepIndex + (progress.cleared ? 1 : 0), mission.steps.length)} /{' '}
+            {mission.steps.length}
+          </span>
+          <button type="button" onClick={retry} className="knob px-3 py-2 text-sm">
+            やり直す
+          </button>
+          <Link to="/map" className="knob px-3 py-2 text-sm">
             全体図
           </Link>
-          <Link to="/settings" className="knob px-4 py-2 text-sm font-bold">
+          <Link to="/settings" className="knob px-3 py-2 text-sm">
             設定
           </Link>
         </div>
-      </div>
+      </header>
 
-      {/* 右上：進行と HP */}
-      <div className="bevel absolute right-4 top-20 w-[260px] p-4">
-        <p className="text-sm font-bold text-ink-soft">
-          {mission.kind === 'boss' ? '★ 障害対応' : '案内つき見学'}
-        </p>
-        <p className="title text-lg">{mission.title}</p>
-        <p className="mt-2 text-sm text-ink-soft">
-          停留所 {Math.min(progress.stepIndex + 1, mission.steps.length)} / {mission.steps.length}
-        </p>
-        <div className="mt-2 flex gap-1">
-          {mission.steps.map((_, i) => (
-            <span
-              key={i}
-              aria-hidden
-              className={`h-3 flex-1 border-2 border-wood-dark ${
-                progress.cleared || i < progress.stepIndex ? 'bg-ok' : 'bg-cream-dark'
-              }`}
-            />
-          ))}
-        </div>
-        <p className="mt-3 text-sm font-bold text-ink-soft">
-          修理費 {progress.hp} / {mission.maxHp}
-        </p>
-        <div className="mt-1 flex gap-1" role="img" aria-label={`残り HP ${String(progress.hp)}`}>
-          {Array.from({ length: mission.maxHp }, (_, i) => (
-            <span
-              key={i}
-              aria-hidden
-              className={`h-4 w-4 border-2 border-wood-dark ${i < progress.hp ? 'bg-bad' : 'bg-cream-dark'}`}
-            />
-          ))}
-        </div>
-        <button type="button" onClick={retry} className="knob mt-4 w-full px-3 py-2 text-sm font-bold">
-          最初からやり直す
-        </button>
-      </div>
-
-      {/* 左下：案内板 */}
-      <div className="absolute bottom-4 left-4 w-[min(680px,calc(100%-2rem))]">
-        <div className="bevel min-h-[132px] p-4">
-          <div className="flex items-start justify-between gap-3">
-            <p className="text-base font-bold">
-              {progress.cleared ? '見学完了' : `やること: ${step?.prompt ?? ''}`}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        {/* 左：手を動かす場所 */}
+        <div className="flex min-h-0 flex-col border-r-4 border-wood-dark">
+          <div className="border-b-2 border-wood-dark bg-[var(--cream-dark)] px-5 py-4">
+            <p className="text-sm font-bold text-ink-soft">
+              {progress.cleared ? '完了' : `やること ${String(progress.stepIndex + 1)}`}
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                setGuideOpen((v) => !v);
-              }}
-              className="knob shrink-0 px-3 py-1 text-sm"
-            >
-              {guideOpen ? '案内を隠す ▴' : '案内を出す ▾'}
-            </button>
+            <p className="mt-1 text-xl font-bold leading-snug">
+              {progress.cleared ? '全部できました。次の任務へ進めます。' : (step?.prompt ?? '')}
+            </p>
+
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setProgress(useHint);
+                  setRevealedHints((n) => n + 1);
+                }}
+                disabled={step === undefined || revealedHints >= step.hints.length}
+                className="knob px-4 py-1.5 text-sm disabled:opacity-50"
+              >
+                ヒント
+              </button>
+              {step?.hints.slice(0, revealedHints).map((hint) => (
+                <span key={hint} className="font-mono text-sm text-ink">
+                  › {hint}
+                </span>
+              ))}
+            </div>
           </div>
 
-          {guideOpen ? (
-            <>
-              <p className="mt-2 text-sm text-ink-soft">
-                {progress.cleared ? step?.explain : '下の入力欄にコマンドを打つと、園内の建物と荷物が動きます。'}
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProgress(useHint);
-                    setRevealedHints((n) => n + 1);
-                  }}
-                  disabled={step === undefined || revealedHints >= step.hints.length}
-                  className="knob px-3 py-1.5 text-sm disabled:opacity-50"
-                >
-                  ヒント
-                </button>
-                {step?.hints.slice(0, revealedHints).map((hint) => (
-                  <span key={hint} className="font-mono text-sm text-ink-soft">
-                    › {hint}
-                  </span>
-                ))}
-              </div>
-            </>
-          ) : null}
+          <div className="min-h-0 flex-1 bg-[var(--wood-dark)]">
+            <TerminalView
+              key={attempt}
+              ref={terminalRef}
+              session={session}
+              onExecuted={handleExecuted}
+            />
+          </div>
+
+          <CommandBar terminal={terminalRef} />
         </div>
 
-        <div className="bevel mt-3">
-          <div className="h-[340px] overflow-hidden bg-[var(--wood-dark)]">
-            <TerminalView key={attempt} ref={terminalRef} session={session} onExecuted={handleExecuted} />
+        {/* 右：結果を見る場所 */}
+        <div className="flex min-h-0 flex-col">
+          <div
+            className="min-h-[280px] flex-1"
+            style={{
+              backgroundColor: 'var(--grass)',
+              backgroundImage:
+                'radial-gradient(circle at 12px 9px, var(--grass-dark) 2.5px, transparent 2.6px), radial-gradient(circle at 33px 19px, var(--grass-dark) 2px, transparent 2.1px)',
+              backgroundSize: '46px 26px',
+            }}
+          >
+            <FileWorld vfs={session.state.vfs} previous={previous?.vfs} cwd={session.state.cwd} />
           </div>
-          <CommandBar terminal={terminalRef} />
+
           <TimeScrubber session={session} />
+
+          {/* 何が起きたかを言葉で残す */}
+          <div className="h-[190px] overflow-auto border-t-4 border-wood-dark bg-cream px-5 py-3">
+            <p className="text-sm font-bold text-ink-soft">実行の記録</p>
+            {log.length === 0 ? (
+              <p className="mt-2 text-sm text-ink-soft">
+                下の入力欄にコマンドを打つと、ここに「何が起きたか」が残ります。
+              </p>
+            ) : (
+              <ul className="mt-2 flex flex-col gap-2">
+                {log.map((row) => (
+                  <li key={row.key} className="border-l-4 border-[var(--gold-dark)] pl-3">
+                    <p className="font-mono text-sm text-ink">$ {row.command}</p>
+                    <p className="text-sm text-ink-soft">{row.text}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </div>

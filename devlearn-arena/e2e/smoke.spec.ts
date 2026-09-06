@@ -7,7 +7,7 @@ test('園内が1枚で開き、コマンドで景色が変わる', async ({ page
   });
 
   await page.goto('./');
-  await expect(page.getByText('DEVLEARN PARK')).toBeVisible();
+  await expect(page.getByText('DEVLEARN', { exact: true })).toBeVisible();
   await expect(page.getByRole('img', { name: 'ファイルシステムの園内図' })).toBeVisible();
 
   const world = page.getByRole('img', { name: 'ファイルシステムの園内図' });
@@ -20,12 +20,11 @@ test('園内が1枚で開き、コマンドで景色が変わる', async ({ page
   expect(failed, `失敗したリクエスト: ${failed.join(', ')}`).toEqual([]);
 });
 
-test('コマンドが失敗すると修理費が減る', async ({ page }) => {
+test('実行の記録に「何が起きたか」が残る', async ({ page }) => {
   await page.goto('./');
-  await expect(page.getByRole('img', { name: '残り HP 5' })).toBeVisible();
-  await page.getByLabel('コマンドを入力').fill('cat /nope');
+  await page.getByLabel('コマンドを入力').fill('mkdir reports');
   await page.getByLabel('コマンドを入力').press('Enter');
-  await expect(page.getByRole('img', { name: '残り HP 4' })).toBeVisible();
+  await expect(page.getByText('ディレクトリ ~/reports を作りました')).toBeVisible();
 });
 
 test('全体図と設定へ行ける', async ({ page }) => {

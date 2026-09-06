@@ -13,7 +13,6 @@ function floodedLog(lines: number): string {
 export const shellWarmup: LessonDefinition = {
   id: 'kernel/00/shell-warmup',
   kind: 'training',
-  maxHp: 5,
   title: 'シェルに慣れる',
   objectives: ['ディレクトリを作って移動できる', 'リダイレクトで書き出せる', 'パイプで繋げる'],
   parCommands: 5,
@@ -51,7 +50,6 @@ export const shellWarmup: LessonDefinition = {
 export const diskFullBoss: LessonDefinition = {
   id: 'kernel/00/disk-full',
   kind: 'boss',
-  maxHp: 3,
   title: 'ディスク逼迫',
   objectives: ['溢れたログを止める', '不要な世代を消す', '対応記録を残す'],
   parCommands: 8,
