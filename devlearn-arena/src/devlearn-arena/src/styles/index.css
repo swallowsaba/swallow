@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  デザイントークン。
+  参照した手触り: 遊園地経営ゲームの外装（木枠・べベル・金の看板）と、
+  明るい園内の景色。暗いターミナル配色はやめる。
+*/
+:root {
+  /* 外装（chrome） */
+  --wood: #7a5230;
+  --wood-light: #b07f4a;
+  --wood-dark: #422a15;
+  --cream: #f6e8cd;
+  --cream-dark: #ddc79f;
+  --gold: #f2c14e;
+  --gold-dark: #b8862b;
+  --ink: #2c1d10;
+  --ink-soft: #5d4630;
+
+  /* 園内 */
+  --sky: #bfe3f5;
+  --grass: #77b356;
+  --grass-dark: #5c8f42;
+  --path: #d9c39a;
+  --water: #64b6d8;
+
+  /* 建物・荷物の色 */
+  --brick: #c9705b;
+  --roof: #8f4b3f;
+  --steel: #9fb0bd;
+  --crate: #d9a441;
+  --crate-new: #79c46a;
+  --crate-hot: #e8823c;
+
+  --ok: #4e9a3f;
+  --warn: #d99b2b;
+  --bad: #c0442f;
+
+  --f-mono: 'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+  --f-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+}
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--sky);
+  color: var(--ink);
+  font-family: var(--f-sans);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* 木枠のパネル。外側が濃く、内側に明るいべベルを入れて厚みを出す */
+.bevel {
+  background: var(--cream);
+  border: 4px solid var(--wood-dark);
+  box-shadow:
+    inset 0 0 0 3px var(--wood),
+    inset 0 0 0 6px var(--wood-light),
+    inset 0 0 0 9px var(--cream),
+    0 6px 0 0 rgb(0 0 0 / 25%);
+}
+
+/* 金の看板 */
+.sign {
+  background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: var(--wood-dark);
+  border: 3px solid var(--wood-dark);
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / 55%), 0 3px 0 rgb(0 0 0 / 25%);
+  text-shadow: 0 1px 0 rgb(255 255 255 / 45%);
+}
+
+/* 押せるボタン。押し込みを表現する */
+.knob {
+  background: linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%);
+  border: 3px solid var(--wood-dark);
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / 70%), 0 4px 0 var(--wood);
+  color: var(--ink);
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+.knob:hover { background: linear-gradient(180deg, #fff6e3 0%, var(--cream) 100%); }
+.knob:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / 70%), 0 1px 0 var(--wood);
+}
+.knob[aria-pressed='true'] {
+  background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
+}
+
+.title {
+  font-family: var(--f-sans);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

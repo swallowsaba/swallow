@@ -1,0 +1,143 @@
+# ============================================================================
+# 新規ファイル。リポジトリの .github/workflows/ci.yml として置く。
+# deploy.yml には一切触らない。
+#
+# 手元に Node / npm が無くても、GitHub の貸しマシン上で
+# 型チェック・lint・ユニットテスト・ビルド・E2E を回す。
+#
+# 失敗したときのエラー本文は、実行の「Summary」ページに直接出る。
+# ジョブやステップを開いて掘る必要はない。
+# ============================================================================
+name: CI (devlearn-arena)
+
+on:
+  push:
+    branches: ["main"]
+    paths: ["devlearn-arena/**", ".github/workflows/ci.yml"]
+  pull_request:
+    paths: ["devlearn-arena/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: 型チェック / lint / ユニットテスト
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: devlearn-arena
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 依存をインストール
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: lockfile をアップロード
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-lock
+          path: devlearn-arena/package-lock.json
+          if-no-files-found: warn
+
+      # 4つとも最後まで走らせる。1回のログで全部の不具合を集めたいため
+      - name: 型チェック
+        id: typecheck
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee /tmp/typecheck.log
+
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee /tmp/lint.log
+
+      - name: ユニットテスト
+        id: test
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test 2>&1 | tee /tmp/test.log
+
+      - name: 本番ビルド
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee /tmp/build.log
+
+      # 失敗したものの本文を Summary ページに出す。掘らなくても読める
+      - name: 結果をまとめる
+        if: always()
+        run: |
+          # Summary ページとこのステップのログの両方に出す
+          say() { tee -a "$GITHUB_STEP_SUMMARY"; }
+
+          report() {
+            name="$1"; outcome="$2"; file="$3"
+            if [ "$outcome" = "success" ]; then
+              echo "### OK $name" | say
+              return
+            fi
+            echo "### NG $name" | say
+            if [ -f "$file" ]; then tail -n 200 "$file" | say; else echo "(ログなし)" | say; fi
+          }
+
+          echo "## 検証結果" | say
+          report "型チェック"     "${{ steps.typecheck.outcome }}" /tmp/typecheck.log
+          report "Lint"           "${{ steps.lint.outcome }}"      /tmp/lint.log
+          report "ユニットテスト" "${{ steps.test.outcome }}"      /tmp/test.log
+          report "ビルド"         "${{ steps.build.outcome }}"     /tmp/build.log
+
+          if [ "${{ steps.typecheck.outcome }}" != "success" ] \
+            || [ "${{ steps.lint.outcome }}" != "success" ] \
+            || [ "${{ steps.test.outcome }}" != "success" ] \
+            || [ "${{ steps.build.outcome }}" != "success" ]; then
+            exit 1
+          fi
+
+  e2e:
+    name: E2E（サブディレクトリ配信）
+    needs: verify
+    if: always()
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: devlearn-arena
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 依存をインストール
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: ブラウザを用意
+        run: npx playwright install --with-deps chromium
+      - name: E2E
+        id: e2e
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run e2e 2>&1 | tee /tmp/e2e.log
+      - name: 結果をまとめる
+        if: always()
+        run: |
+          say() { tee -a "$GITHUB_STEP_SUMMARY"; }
+          if [ "${{ steps.e2e.outcome }}" = "success" ]; then
+            echo "### OK E2E" | say
+          else
+            echo "### NG E2E" | say
+            tail -n 200 /tmp/e2e.log | say
+            exit 1
+          fi
