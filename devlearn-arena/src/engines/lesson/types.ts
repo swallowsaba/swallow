@@ -17,6 +17,11 @@ export interface LessonStep {
   hints: readonly string[];
   /** 最終状態を検証する。別解を許容するため、コマンド文字列は見ない */
   assert: (ctx: AssertContext) => boolean;
+  /**
+   * 通らなかったときに、何が惜しいのかを返す。
+   * 失敗を黙って捨てず、次の一手が分かるようにするため。
+   */
+  diagnose?: (ctx: AssertContext) => string | null;
   explain: string;
 }
 
