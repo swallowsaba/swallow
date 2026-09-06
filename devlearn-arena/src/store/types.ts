@@ -1,4 +1,6 @@
-import type { LessonProgress, Profile, ReviewItem, SaveData, Settings } from '@/lib/storage/schema';
+import type {
+  LessonProgress, MissionProgress, Profile, ReviewItem, SaveData, Settings, ShellSnapshot,
+} from '@/lib/storage/schema';
 
 export interface ProgressSlice {
   hydrated: boolean;
@@ -9,6 +11,12 @@ export interface ProgressSlice {
   hydrate: (data: SaveData) => void;
   attemptLesson: (lessonId: string) => void;
   grantXp: (amount: number, now: number) => void;
+  missionProgress: Record<string, MissionProgress>;
+  missionState: Record<string, ShellSnapshot>;
+  lastMissionId: string | null;
+  saveMission: (id: string, progress: MissionProgress, state: ShellSnapshot) => void;
+  setLastMission: (id: string) => void;
+  resetMission: (id: string) => void;
   useHint: (lessonId: string) => void;
   clearLesson: (input: { lessonId: string; score: number; xp: number; now: number }) => void;
   resetProgress: (now: number) => void;
@@ -30,5 +38,8 @@ export function toSaveData(state: AppState, now: number): SaveData {
     lessons: state.lessons,
     reviewQueue: state.reviewQueue,
     settings: state.settings,
+    missionProgress: state.missionProgress,
+    missionState: state.missionState,
+    lastMissionId: state.lastMissionId,
   };
 }

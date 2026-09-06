@@ -49,6 +49,27 @@ export const profileSchema = z.object({
 });
 export type Profile = z.infer<typeof profileSchema>;
 
+/** シェルの状態そのもの。リロードしても続きから触れるように丸ごと保存する */
+export const shellSnapshotSchema = z.object({
+  cwd: z.string().min(1),
+  vars: z.record(z.string(), z.string()),
+  files: z.record(
+    z.string(),
+    z.object({ kind: z.enum(['dir', 'file']), content: z.string().optional() }),
+  ),
+  history: z.array(z.string()).default([]),
+});
+export type ShellSnapshot = z.infer<typeof shellSnapshotSchema>;
+
+export const missionProgressSchema = z.object({
+  stepIndex: z.number().int().min(0),
+  cleared: z.boolean(),
+  hintsUsed: z.number().int().min(0),
+  commandsUsed: z.number().int().min(0),
+  mistakes: z.number().int().min(0),
+});
+export type MissionProgress = z.infer<typeof missionProgressSchema>;
+
 export const saveDataSchema = z.object({
   version: z.literal(SAVE_VERSION),
   createdAt: z.number().int(),
@@ -57,6 +78,12 @@ export const saveDataSchema = z.object({
   lessons: z.record(z.string(), lessonProgressSchema),
   reviewQueue: z.array(reviewItemSchema),
   settings: settingsSchema,
+  /** 任務ごとの手順の進み具合 */
+  missionProgress: z.record(z.string(), missionProgressSchema).default({}),
+  /** 任務ごとのシェルの状態 */
+  missionState: z.record(z.string(), shellSnapshotSchema).default({}),
+  /** 最後に開いていた任務 */
+  lastMissionId: z.string().nullable().default(null),
 });
 export type SaveData = z.infer<typeof saveDataSchema>;
 
@@ -78,6 +105,9 @@ export function createEmptySave(now: number): SaveData {
     lessons: {},
     reviewQueue: [],
     settings: { ...defaultSettings },
+    missionProgress: {},
+    missionState: {},
+    lastMissionId: null,
   };
 }
 

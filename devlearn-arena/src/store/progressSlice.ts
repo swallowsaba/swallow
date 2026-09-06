@@ -9,6 +9,9 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
   profile: { xp: 0, streakDays: 0, lastActiveDay: null },
   lessons: {},
   reviewQueue: [],
+  missionProgress: {},
+  missionState: {},
+  lastMissionId: null,
 
   hydrate: (data) =>
     set({
@@ -18,6 +21,26 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       lessons: data.lessons,
       reviewQueue: data.reviewQueue,
       settings: data.settings,
+      missionProgress: data.missionProgress,
+      missionState: data.missionState,
+      lastMissionId: data.lastMissionId,
+    }),
+
+  saveMission: (id, progress, state) =>
+    set((s) => ({
+      missionProgress: { ...s.missionProgress, [id]: progress },
+      missionState: { ...s.missionState, [id]: state },
+    })),
+
+  setLastMission: (id) => set({ lastMissionId: id }),
+
+  resetMission: (id) =>
+    set((s) => {
+      const progress = { ...s.missionProgress };
+      const state = { ...s.missionState };
+      delete progress[id];
+      delete state[id];
+      return { missionProgress: progress, missionState: state };
     }),
 
   attemptLesson: (lessonId) =>
@@ -73,6 +96,9 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       profile: empty.profile,
       lessons: empty.lessons,
       reviewQueue: empty.reviewQueue,
+      missionProgress: {},
+      missionState: {},
+      lastMissionId: null,
     });
   },
 });

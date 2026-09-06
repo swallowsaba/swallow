@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { restoreShell, snapshotShell } from '@/engines/kernel/session';
 import { findMission, missions } from '@/engines/lesson/missions';
 import {
   buildContext, createProgress, currentStep, evaluate, passes, useHint,
@@ -20,10 +21,29 @@ const STEP_XP = 10;
 const FALLBACK = missions[0];
 
 export default function ParkPage() {
-  const [missionId, setMissionId] = useState(FALLBACK?.id ?? '');
+  const lastMissionId = useStore((s) => s.lastMissionId);
+  const setLastMission = useStore((s) => s.setLastMission);
+  const resetMission = useStore((s) => s.resetMission);
+  const [missionId, setMissionId] = useState(lastMissionId ?? FALLBACK?.id ?? '');
+  const [attempt, setAttempt] = useState(0);
   const mission = findMission(missionId) ?? FALLBACK;
+
+  useEffect(() => {
+    if (mission) setLastMission(mission.id);
+  }, [mission, setLastMission]);
+
   if (!mission) return null;
-  return <Park key={mission.id} mission={mission} onSwitch={setMissionId} />;
+  return (
+    <Park
+      key={`${mission.id}:${String(attempt)}`}
+      mission={mission}
+      onSwitch={setMissionId}
+      onRetry={() => {
+        resetMission(mission.id);
+        setAttempt((n) => n + 1);
+      }}
+    />
+  );
 }
 
 /**
@@ -34,14 +54,27 @@ export default function ParkPage() {
 function Park({
   mission,
   onSwitch,
+  onRetry,
 }: {
   mission: LessonDefinition;
   onSwitch: (id: string) => void;
+  onRetry: () => void;
 }) {
-  const session = useShellSession(mission.initial);
+  const saveMission = useStore((s) => s.saveMission);
+  const savedProgress = useStore((s) => s.missionProgress[mission.id]);
+  const savedState = useStore((s) => s.missionState[mission.id]);
+
+  // 復元は開いた瞬間の1回だけ。以後の保存で作り直さない
+  const [options] = useState(() =>
+    savedState ? { ...mission.initial, restore: restoreShell(savedState) } : mission.initial,
+  );
+  const [initialProgress] = useState(() =>
+    savedProgress ? { ...createProgress(mission), ...savedProgress } : createProgress(mission),
+  );
+
+  const session = useShellSession(options);
   const terminalRef = useRef<TerminalHandle>(null);
-  const [attempt, setAttempt] = useState(0);
-  const [progress, setProgress] = useState<LessonProgressState>(() => createProgress(mission));
+  const [progress, setProgress] = useState<LessonProgressState>(initialProgress);
   const [revealedHints, setRevealedHints] = useState(0);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
@@ -69,6 +102,23 @@ function Park({
     }
   }, [step, session]);
 
+  const shellState = session.state;
+
+  // 状態が変わるたびに保存する（書き込み自体はストア側で間引かれる）
+  useEffect(() => {
+    saveMission(
+      mission.id,
+      {
+        stepIndex: progress.stepIndex,
+        cleared: progress.cleared,
+        hintsUsed: progress.hintsUsed,
+        commandsUsed: progress.commandsUsed,
+        mistakes: progress.mistakes,
+      },
+      snapshotShell(shellState),
+    );
+  }, [mission.id, progress, shellState, saveMission]);
+
   const pushToast = useCallback((text: string) => {
     const key = Date.now() + Math.random();
     setToasts((list) => [...list, { key, text }]);
@@ -91,7 +141,6 @@ function Park({
   );
 
   // 状態が変われば必ず judge する。コマンド実行の瞬間だけに頼らない
-  const shellState = session.state;
   useEffect(() => {
     setProgress((p) => evaluate(mission, p, session.getTimeline()));
     // session は毎描画で作り直されるため、状態そのものを依存に置く
@@ -149,12 +198,8 @@ function Park({
   }, [shellState, passingNow, progress.cleared, progress.commandsUsed]);
 
   const retry = useCallback(() => {
-    session.reset();
-    setProgress(createProgress(mission));
-    setRevealedHints(0);
-    setDiagnosis(null);
-    setAttempt((n) => n + 1);
-  }, [mission, session]);
+    onRetry();
+  }, [onRetry]);
 
   return (
     <div className="flex h-full min-w-0 flex-col overflow-x-hidden bg-cream">
@@ -255,7 +300,6 @@ function Park({
 
           <div className="min-h-0 min-w-0 flex-1 overflow-hidden bg-[var(--wood-dark)]">
             <TerminalView
-              key={attempt}
               ref={terminalRef}
               session={session}
               onExecuted={handleExecuted}
