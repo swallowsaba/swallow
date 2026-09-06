@@ -76,6 +76,23 @@ describe('パス名展開', () => {
   });
 });
 
+describe('ブレース展開', () => {
+  it('mv file{,.txt} が2引数になる', () => {
+    run('mkdir reports');
+    run('cp a.txt reports/hosts');
+    run('mv reports/hosts{,.txt}');
+    expect(run('cat reports/hosts.txt').out).toBe('A\n');
+  });
+
+  it('クォートすると展開しない', () => {
+    expect(run('echo "a{1,2}"').out).toBe('a{1,2}\n');
+  });
+
+  it('範囲展開が引数になる', () => {
+    expect(run('echo {1..3}').out).toBe('1 2 3\n');
+  });
+});
+
 describe('パイプはサブシェル', () => {
   it('パイプ内の cd は外に漏れない', () => {
     run('cd /etc | cat');

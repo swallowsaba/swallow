@@ -1,6 +1,7 @@
 import type { CommandList, SimpleCommand } from './ast';
 import type { MutableClock } from './clock';
 import { expandWord, expandWordFields, type ExpandContext } from './expand';
+import { expandBraces } from './brace';
 import { expandGlob, hasMagic } from './glob';
 import { parse } from './parser';
 import type { CommandRegistry, CommandResult, RunLineResult, ShellState } from './registry';
@@ -64,14 +65,18 @@ function runCommand(
   const argv: string[] = [];
   for (const word of command.words) {
     for (const field of expandWordFields(word, expandCtx)) {
-      if (word.quoted || !hasMagic(field)) {
-        argv.push(field);
-        continue;
+      // ブレース展開 → パス名展開 の順に広げる
+      const braced = word.quoted ? [field] : expandBraces(field);
+      for (const item of braced) {
+        if (word.quoted || !hasMagic(item)) {
+          argv.push(item);
+          continue;
+        }
+        const matches = expandGlob(state.vfs, state.cwd, item);
+        // 一致が無ければパターンをそのまま渡す（bash の既定動作）
+        if (matches.length === 0) argv.push(item);
+        else argv.push(...matches);
       }
-      const matches = expandGlob(state.vfs, state.cwd, field);
-      // 一致が無ければパターンをそのまま渡す（bash の既定動作）
-      if (matches.length === 0) argv.push(field);
-      else argv.push(...matches);
     }
   }
   const name = argv[0];

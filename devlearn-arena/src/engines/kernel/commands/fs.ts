@@ -126,7 +126,13 @@ export const fsCommands: CommandSpec[] = [
       const { flags, operands } = parseArgs(argv);
       const source = operands[0];
       const dest = operands[1];
-      if (source === undefined || dest === undefined) return { stderr: 'cp: missing file operand\n', code: 1 };
+      if (source === undefined || dest === undefined) {
+        const got = operands.length === 0 ? 'なし' : operands.join(' ');
+        return {
+          stderr: `cp: missing file operand\ncp: コピー元とコピー先の2つが要ります（受け取った引数: ${got}）\n`,
+          code: 1,
+        };
+      }
       const vfs = copy(shell.vfs, resolve(shell.cwd, source), resolve(shell.cwd, dest), flags.has('r') || flags.has('R'));
       return { patch: { vfs } };
     },
@@ -138,7 +144,13 @@ export const fsCommands: CommandSpec[] = [
       const { operands } = parseArgs(argv);
       const source = operands[0];
       const dest = operands[1];
-      if (source === undefined || dest === undefined) return { stderr: 'mv: missing file operand\n', code: 1 };
+      if (source === undefined || dest === undefined) {
+        const got = operands.length === 0 ? 'なし' : operands.join(' ');
+        return {
+          stderr: `mv: missing file operand\nmv: 移動元と移動先の2つが要ります（受け取った引数: ${got}）\n`,
+          code: 1,
+        };
+      }
       const vfs = move(shell.vfs, resolve(shell.cwd, source), resolve(shell.cwd, dest));
       return { patch: { vfs } };
     },
