@@ -125,8 +125,8 @@ export function buildWorld(vfs: VfsState): World {
 
   // 建物が少ないうちに拡大されすぎると看板だけ巨大になるので、
   // 最低限の広さを確保して中央に寄せる
-  const MIN_W = 1500;
-  const MIN_H = 900;
+  const MIN_W = 900;
+  const MIN_H = 560;
   const cx = (minX + maxX) / 2;
   const cy = (minY + maxY) / 2;
   const width = Math.max(maxX - minX, MIN_W);

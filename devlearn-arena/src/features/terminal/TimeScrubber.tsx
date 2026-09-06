@@ -34,7 +34,7 @@ export function TimeScrubber({ session }: Props) {
   }, [playing, journal.cursor, last, speed, seekTo]);
 
   return (
-    <div className="flex flex-wrap items-center gap-3 border-t border-wood-dark px-4 py-3">
+    <div className="flex flex-nowrap items-center gap-2 overflow-hidden border-t border-wood-dark px-4 py-3">
       <button
         type="button"
         onClick={() => {
@@ -90,26 +90,30 @@ export function TimeScrubber({ session }: Props) {
         }}
         aria-label="実行履歴をたどる"
         aria-valuetext={label}
-        className="h-2 min-w-[160px] flex-1 accent-[var(--gold-dark)]"
+        className="h-2 min-w-[80px] flex-1 accent-[var(--gold-dark)]"
         disabled={last === 0}
       />
 
-      <span className="max-w-[40%] truncate font-mono text-sm text-ink-soft" title={label}>
+      {/* 幅と有無を固定する。ここが伸び縮みすると枠全体の高さが変わり、
+          Enter のたびにターミナルが上下にずれてしまう */}
+      <span
+        className="w-[140px] shrink-0 truncate font-mono text-sm text-ink-soft"
+        title={label}
+      >
         {journal.cursor}/{last} {label}
       </span>
 
-      {!atLatest ? (
-        <button
-          type="button"
-          onClick={() => {
-            setPlaying(false);
-            seekTo(last);
-          }}
-          className="border-2 border-wood-dark px-3 py-1.5 font-mono text-sm text-[var(--gold-dark)] hover:bg-gold hover:text-ink"
-        >
-          最新へ
-        </button>
-      ) : null}
+      <button
+        type="button"
+        onClick={() => {
+          setPlaying(false);
+          seekTo(last);
+        }}
+        disabled={atLatest}
+        className="knob shrink-0 px-3 py-1.5 font-mono text-sm disabled:opacity-40"
+      >
+        最新へ
+      </button>
     </div>
   );
 }

@@ -197,8 +197,8 @@ function Park({
       </div>
 
       {/* 左下：案内板 */}
-      <div className="absolute bottom-4 left-4 w-[min(560px,calc(100%-2rem))]">
-        <div className="bevel p-4">
+      <div className="absolute bottom-4 left-4 w-[min(680px,calc(100%-2rem))]">
+        <div className="bevel min-h-[132px] p-4">
           <div className="flex items-start justify-between gap-3">
             <p className="text-base font-bold">
               {progress.cleared ? '見学完了' : `やること: ${step?.prompt ?? ''}`}
@@ -242,7 +242,7 @@ function Park({
         </div>
 
         <div className="bevel mt-3">
-          <div className="h-[190px] overflow-hidden bg-[var(--wood-dark)]">
+          <div className="h-[340px] overflow-hidden bg-[var(--wood-dark)]">
             <TerminalView key={attempt} ref={terminalRef} session={session} onExecuted={handleExecuted} />
           </div>
           <CommandBar terminal={terminalRef} />

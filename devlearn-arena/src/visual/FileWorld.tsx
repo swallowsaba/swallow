@@ -109,6 +109,23 @@ export function FileWorld({ vfs, previous, cwd }: Props) {
   const changedSet = new Set(diff.changed);
   const pad = 90;
 
+  const trees = useMemo(() => {
+    const out: { x: number; y: number; size: number }[] = [];
+    const { x, y, width, height } = world.view;
+    for (let gx = 0; gx < 9; gx += 1) {
+      for (let gy = 0; gy < 7; gy += 1) {
+        const px = x + ((gx + (gy % 2) * 0.5) / 9) * width;
+        const py = y + (gy / 7) * height;
+        const tooClose = world.plots.some(
+          (plot) => Math.hypot(plot.center.x - px, plot.center.y - py) < 190,
+        );
+        if (tooClose) continue;
+        out.push({ x: px, y: py, size: 0.8 + ((gx * 7 + gy * 13) % 5) * 0.1 });
+      }
+    }
+    return out;
+  }, [world]);
+
   return (
     <svg
       viewBox={`${String(world.view.x - pad)} ${String(world.view.y - pad)} ${String(world.view.width + pad * 2)} ${String(world.view.height + pad * 2)}`}
@@ -116,6 +133,18 @@ export function FileWorld({ vfs, previous, cwd }: Props) {
       role="img"
       aria-label="ファイルシステムの園内図"
     >
+      {/* 園内の木 */}
+      {trees.map((tree) => (
+        <g key={`tree-${String(tree.x)}-${String(tree.y)}`} transform={`translate(${String(tree.x)} ${String(tree.y)}) scale(${String(tree.size)})`}>
+          <ellipse cx={0} cy={4} rx={16} ry={7} fill="rgb(0 0 0 / 12%)" />
+          <rect x={-4} y={-16} width={8} height={20} fill="var(--wood)" />
+          <circle cx={0} cy={-26} r={17} fill="var(--grass-dark)" />
+          <circle cx={-10} cy={-19} r={12} fill="var(--grass-dark)" />
+          <circle cx={10} cy={-19} r={12} fill="var(--grass-dark)" />
+          <circle cx={-3} cy={-31} r={10} fill="var(--grass)" opacity={0.8} />
+        </g>
+      ))}
+
       {/* 園内の道 */}
       {world.plots.map((plot) => {
         const parent = plot.parent === null ? undefined : world.byPath.get(plot.parent);
@@ -176,33 +205,39 @@ export function FileWorld({ vfs, previous, cwd }: Props) {
                 })}
               </AnimatePresence>
 
-              {/* 看板 */}
-              <g>
-                <rect
-                  x={plot.center.x - 44}
-                  y={plot.center.y + TILE_H / 2 + 2}
-                  width={88}
-                  height={22}
-                  rx={3}
-                  fill="var(--gold)"
-                  stroke="var(--wood-dark)"
-                  strokeWidth={2}
-                />
-                <text
-                  x={plot.center.x}
-                  y={plot.center.y + TILE_H / 2 + 17}
-                  textAnchor="middle"
-                  fill="var(--wood-dark)"
-                  fontSize={13}
-                  fontWeight={700}
-                >
-                  {plot.name}
-                  {plot.hiddenCount > 0 ? ` +${String(plot.hiddenCount)}` : ''}
-                </text>
-              </g>
             </motion.g>
           );
         })}
+
+      {/* 看板は最後にまとめて描く。手前の建物に隠されないようにするため */}
+      {world.plots.map((plot) => {
+        const label = plot.name + (plot.hiddenCount > 0 ? ` +${String(plot.hiddenCount)}` : '');
+        const width = Math.max(64, label.length * 11 + 20);
+        return (
+          <g key={`sign-${plot.path}`}>
+            <rect
+              x={plot.center.x - width / 2}
+              y={plot.center.y + TILE_H / 2 + 2}
+              width={width}
+              height={22}
+              rx={3}
+              fill="var(--gold)"
+              stroke="var(--wood-dark)"
+              strokeWidth={2}
+            />
+            <text
+              x={plot.center.x}
+              y={plot.center.y + TILE_H / 2 + 17}
+              textAnchor="middle"
+              fill="var(--wood-dark)"
+              fontSize={13}
+              fontWeight={700}
+            >
+              {label}
+            </text>
+          </g>
+        );
+      })}
 
       {/* 運搬車 */}
       <motion.g
