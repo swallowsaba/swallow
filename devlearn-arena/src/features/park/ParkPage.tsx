@@ -104,6 +104,16 @@ function Park({
     }
   }, [step, session]);
 
+  const lessons = useStore((s) => s.lessons);
+  const clearedIds = useMemo(
+    () => new Set(missions.filter((m) => lessons[m.id]?.cleared === true).map((m) => m.id)),
+    [lessons],
+  );
+  const nextMission = useMemo(
+    () => missions.find((m) => m.id !== mission.id && !clearedIds.has(m.id)) ?? null,
+    [clearedIds, mission.id],
+  );
+
   const shellState = session.state;
 
   // 状態が変わるたびに保存する（書き込み自体はストア側で間引かれる）
@@ -208,6 +218,15 @@ function Park({
       <XpToast toasts={toasts} />
       <Celebration
         data={celebration}
+        nextLabel={nextMission?.title}
+        onNext={
+          nextMission
+            ? () => {
+                setCelebration(null);
+                onSwitch(nextMission.id);
+              }
+            : undefined
+        }
         onDismiss={() => {
           setCelebration(null);
         }}
@@ -216,19 +235,28 @@ function Park({
       {/* 上部：任務の切り替えと現在地 */}
       <header className="flex flex-wrap items-center gap-3 border-b-8 border-wood-dark bg-[var(--wood)] px-5 py-3 shadow-[inset_0_-6px_0_rgba(0,0,0,0.2)]">
         <span className="sign px-4 py-1.5 text-lg font-extrabold">DEVLEARN</span>
-        {missions.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            aria-pressed={m.id === mission.id}
-            onClick={() => {
-              onSwitch(m.id);
-            }}
-            className="knob px-4 py-2 text-sm font-bold"
-          >
-            {m.title}
-          </button>
-        ))}
+        <span className="font-mono text-sm font-bold text-cream">任務</span>
+        {missions.map((m) => {
+          const done = clearedIds.has(m.id);
+          const active = m.id === mission.id;
+          return (
+            <button
+              key={m.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => {
+                onSwitch(m.id);
+              }}
+              className="knob flex items-center gap-2 px-4 py-2 text-sm font-bold"
+            >
+              <span aria-hidden>{done ? '✓' : active ? '▶' : '・'}</span>
+              {m.title}
+            </button>
+          );
+        })}
+        <span className="font-mono text-sm text-cream">
+          {clearedIds.size} / {missions.length} クリア
+        </span>
         <div className="ml-auto flex items-center gap-3">
           <span className="font-mono text-sm text-cream">
             進捗 {Math.min(progress.stepIndex + (progress.cleared ? 1 : 0), mission.steps.length)} /{' '}
@@ -257,8 +285,58 @@ function Park({
               {progress.cleared ? '完了' : `やること ${String(progress.stepIndex + 1)}`}
             </p>
             <p className="mt-1 text-xl font-bold leading-snug">
-              {progress.cleared ? '全部できました。次の任務へ進めます。' : (step?.prompt ?? '')}
+              {progress.cleared ? 'この任務は完了しました。' : (step?.prompt ?? '')}
             </p>
+
+            {progress.cleared ? (
+              <div className="mt-4 flex flex-col gap-3">
+                {nextMission ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSwitch(nextMission.id);
+                    }}
+                    className="sign w-fit px-6 py-3 text-lg font-extrabold"
+                  >
+                    次の任務へ: {nextMission.title} →
+                  </button>
+                ) : (
+                  <p className="text-base font-bold text-[var(--ok)]">
+                    今ある任務はすべてクリアしました。新しい任務は実装が進むたびに増えます。
+                  </p>
+                )}
+
+                <div>
+                  <p className="text-sm font-bold text-ink-soft">任務の一覧</p>
+                  <ul className="mt-2 flex flex-col gap-1">
+                    {missions.map((m) => {
+                      const done = clearedIds.has(m.id);
+                      return (
+                        <li key={m.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onSwitch(m.id);
+                            }}
+                            className={`flex w-full items-center gap-3 border-2 px-3 py-2 text-left text-base ${
+                              m.id === mission.id
+                                ? 'border-wood-dark bg-gold'
+                                : 'border-[var(--cream-dark)] bg-white/60 hover:border-wood-dark'
+                            }`}
+                          >
+                            <span aria-hidden>{done ? '✓' : '・'}</span>
+                            <span className="flex-1">{m.title}</span>
+                            <span className="font-mono text-xs text-ink-soft">
+                              {m.kind === 'boss' ? '障害対応' : '練習'} · {m.steps.length} 手順
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
 
             {!progress.cleared && step ? (
               <p

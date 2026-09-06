@@ -13,10 +13,13 @@ export interface CelebrationData {
 interface Props {
   data: CelebrationData | null;
   onDismiss: () => void;
+  /** 次の任務へ進む導線。無ければ表示しない */
+  nextLabel?: string | undefined;
+  onNext?: (() => void) | undefined;
 }
 
 /** ミッション達成の全画面演出。クリックか3秒で閉じる。 */
-export function Celebration({ data, onDismiss }: Props) {
+export function Celebration({ data, onDismiss, nextLabel, onNext }: Props) {
   const animate = useMotionEnabled();
 
   return (
@@ -63,7 +66,20 @@ export function Celebration({ data, onDismiss }: Props) {
               </motion.p>
             ) : null}
 
-            <p className="mt-8 font-mono text-sm text-ink-soft">クリックで閉じる</p>
+            {nextLabel !== undefined && onNext ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNext();
+                }}
+                className="sign mt-8 px-8 py-4 text-xl font-extrabold"
+              >
+                次の任務へ: {nextLabel} →
+              </button>
+            ) : null}
+
+            <p className="mt-6 font-mono text-sm text-ink-soft">背景をクリックで閉じる</p>
           </motion.div>
         </motion.div>
       ) : null}
