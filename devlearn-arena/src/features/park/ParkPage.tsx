@@ -107,7 +107,15 @@ function Park({
   }, [mission, session]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div
+      className="relative h-full w-full overflow-hidden"
+      style={{
+        backgroundColor: 'var(--grass)',
+        backgroundImage:
+          'radial-gradient(circle at 12px 9px, var(--grass-dark) 2.5px, transparent 2.6px), radial-gradient(circle at 33px 19px, var(--grass-dark) 2px, transparent 2.1px)',
+        backgroundSize: '46px 26px',
+      }}
+    >
       <XpToast toasts={toasts} />
       <Celebration
         data={celebration}

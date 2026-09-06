@@ -3,6 +3,8 @@ import type { VfsState } from '@/engines/kernel/vfs';
 /** アイソメトリック投影の寸法 */
 export const TILE_W = 116;
 export const TILE_H = 58;
+/** 区画どうしの間隔。1.0 だと敷地が密着して1枚の板に見えるので広げる */
+export const SPACING = 1.9;
 export const TILE_D = 16;
 export const CRATE = 22;
 
@@ -13,6 +15,11 @@ export interface Point {
 
 /** 格子座標 → 画面座標。col が右下、row が左下に伸びる */
 export function iso(col: number, row: number): Point {
+  return { x: (col - row) * (TILE_W / 2) * SPACING, y: (col + row) * (TILE_H / 2) * SPACING };
+}
+
+/** タイル内の小物用。間隔を掛けない座標変換 */
+export function isoLocal(col: number, row: number): Point {
   return { x: (col - row) * (TILE_W / 2), y: (col + row) * (TILE_H / 2) };
 }
 
@@ -103,7 +110,7 @@ export function buildWorld(vfs: VfsState): World {
       parent: parentOf(path),
       hiddenCount: files.length - shown.length,
       crates: shown.map((filePath, i) => {
-        const sub = iso((i % 3) * 0.26 - 0.26, Math.floor(i / 3) * 0.26 - 0.13);
+        const sub = isoLocal((i % 3) * 0.3 - 0.3, Math.floor(i / 3) * 0.3 - 0.15);
         return { path: filePath, name: nameOf(filePath), offset: sub };
       }),
     });
@@ -113,13 +120,22 @@ export function buildWorld(vfs: VfsState): World {
   const ys = plots.map((p) => p.center.y);
   const minX = Math.min(...xs, 0) - TILE_W;
   const maxX = Math.max(...xs, 0) + TILE_W;
-  const minY = Math.min(...ys, 0) - TILE_H * 2;
-  const maxY = Math.max(...ys, 0) + TILE_H * 2;
+  const minY = Math.min(...ys, 0) - TILE_H * 3;
+  const maxY = Math.max(...ys, 0) + TILE_H * 3;
+
+  // 建物が少ないうちに拡大されすぎると看板だけ巨大になるので、
+  // 最低限の広さを確保して中央に寄せる
+  const MIN_W = 1500;
+  const MIN_H = 900;
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const width = Math.max(maxX - minX, MIN_W);
+  const height = Math.max(maxY - minY, MIN_H);
 
   return {
     plots,
     byPath: new Map(plots.map((p) => [p.path, p])),
-    view: { x: minX, y: minY, width: maxX - minX, height: maxY - minY },
+    view: { x: cx - width / 2, y: cy - height / 2, width, height },
   };
 }
 

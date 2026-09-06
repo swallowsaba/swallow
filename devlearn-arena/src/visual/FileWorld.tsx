@@ -13,7 +13,7 @@ interface Props {
 const CRATE_W = 24;
 const CRATE_H = 12;
 const CRATE_D = 16;
-const WALL = 30;
+const WALL = 52;
 
 function rhombus(cx: number, cy: number, scale = 1): string {
   const w = (TILE_W / 2) * scale;
@@ -116,23 +116,6 @@ export function FileWorld({ vfs, previous, cwd }: Props) {
       role="img"
       aria-label="ファイルシステムの園内図"
     >
-      <defs>
-        <pattern id="grass" width="46" height="26" patternUnits="userSpaceOnUse">
-          <rect width="46" height="26" fill="var(--grass)" />
-          <circle cx="12" cy="9" r="2.5" fill="var(--grass-dark)" opacity="0.5" />
-          <circle cx="33" cy="19" r="2" fill="var(--grass-dark)" opacity="0.4" />
-        </pattern>
-      </defs>
-
-      {/* 芝生 */}
-      <rect
-        x={world.view.x - pad}
-        y={world.view.y - pad}
-        width={world.view.width + pad * 2}
-        height={world.view.height + pad * 2}
-        fill="url(#grass)"
-      />
-
       {/* 園内の道 */}
       {world.plots.map((plot) => {
         const parent = plot.parent === null ? undefined : world.byPath.get(plot.parent);
@@ -196,21 +179,21 @@ export function FileWorld({ vfs, previous, cwd }: Props) {
               {/* 看板 */}
               <g>
                 <rect
-                  x={plot.center.x - 52}
-                  y={plot.center.y + TILE_H / 2 + 4}
-                  width={104}
-                  height={26}
-                  rx={4}
+                  x={plot.center.x - 44}
+                  y={plot.center.y + TILE_H / 2 + 2}
+                  width={88}
+                  height={22}
+                  rx={3}
                   fill="var(--gold)"
                   stroke="var(--wood-dark)"
                   strokeWidth={2}
                 />
                 <text
                   x={plot.center.x}
-                  y={plot.center.y + TILE_H / 2 + 22}
+                  y={plot.center.y + TILE_H / 2 + 17}
                   textAnchor="middle"
                   fill="var(--wood-dark)"
-                  fontSize={14}
+                  fontSize={13}
                   fontWeight={700}
                 >
                   {plot.name}
