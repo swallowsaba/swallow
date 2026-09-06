@@ -12,6 +12,8 @@ export interface AssertContext {
 
 export interface LessonStep {
   prompt: string;
+  /** 何を満たせば通るのかを人が読める形で示す。隠さない */
+  check: string;
   hints: readonly string[];
   /** 最終状態を検証する。別解を許容するため、コマンド文字列は見ない */
   assert: (ctx: AssertContext) => boolean;

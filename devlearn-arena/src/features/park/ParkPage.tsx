@@ -179,6 +179,13 @@ function Park({
               {progress.cleared ? '全部できました。次の任務へ進めます。' : (step?.prompt ?? '')}
             </p>
 
+            {!progress.cleared && step ? (
+              <p className="mt-2 text-sm text-ink-soft">
+                <span className="font-bold">通過の条件: </span>
+                {step.check}
+              </p>
+            ) : null}
+
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <button
                 type="button"

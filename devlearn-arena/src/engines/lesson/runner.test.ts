@@ -67,7 +67,9 @@ describe('レッスンランナー', () => {
   it('assert が例外を投げても落ちない', () => {
     const broken = {
       ...shellWarmup,
-      steps: [{ prompt: 'x', hints: [], explain: '', assert: () => { throw new Error('boom'); } }],
+      steps: [
+        { prompt: 'x', check: 'x', hints: [], explain: '', assert: () => { throw new Error('boom'); } },
+      ],
     };
     let p = createProgress(shellWarmup);
     run('echo hi');

@@ -20,12 +20,14 @@ export const shellWarmup: LessonDefinition = {
   steps: [
     {
       prompt: 'ホームに reports ディレクトリを作れ。',
+      check: '~/reports がディレクトリとして存在すること',
       hints: ['mkdir でディレクトリを作れる', 'mkdir reports'],
       assert: ({ shell }) => isDir(shell.vfs, `${HOME}/reports`),
       explain: 'mkdir は親が無いと失敗する。深い階層をまとめて作るなら -p を付ける。',
     },
     {
       prompt: 'reports/hosts.txt に /etc/hosts の中身を書き出せ。',
+      check: '~/reports/hosts.txt が存在し、中身に localhost が含まれること',
       hints: ['> はコマンドの標準出力をファイルに向ける', 'cat /etc/hosts > reports/hosts.txt'],
       assert: ({ shell }) => {
         const path = `${HOME}/reports/hosts.txt`;
@@ -35,6 +37,7 @@ export const shellWarmup: LessonDefinition = {
     },
     {
       prompt: 'そのファイルから localhost を含む行だけを reports/local.txt に残せ。',
+      check: '~/reports/local.txt の全ての行に localhost が含まれること（空でないこと）',
       hints: ['grep とリダイレクトを組み合わせる', 'grep localhost reports/hosts.txt > reports/local.txt'],
       assert: ({ shell }) => {
         const path = `${HOME}/reports/local.txt`;
@@ -68,6 +71,7 @@ export const diskFullBoss: LessonDefinition = {
   steps: [
     {
       prompt: '容量を食っているログを特定し、中身を空にせよ。ファイル自体は消すな。',
+      check: '/var/log/app.log が存在し、中身が空であること',
       hints: [
         'ls -l で大きさが見える。wc -l でも行数を比べられる',
         '> /var/log/app.log と打つと、ファイルを残したまま中身だけ空にできる',
@@ -79,6 +83,7 @@ export const diskFullBoss: LessonDefinition = {
     },
     {
       prompt: '/var/log/old に残っている古い世代のログを片付けろ。',
+      check: '/var/log/old に .log ファイルが1つも無いこと（ディレクトリごと消してもよい）',
       hints: ['ディレクトリごと消すなら rm -r', 'rm -r /var/log/old'],
       assert: ({ shell }) => {
         if (!exists(shell.vfs, '/var/log/old')) return true;
@@ -88,6 +93,7 @@ export const diskFullBoss: LessonDefinition = {
     },
     {
       prompt: '/srv/app/RECOVERY.md に対応記録を残せ。再発防止として rotate の方針を書くこと。',
+      check: '/srv/app/RECOVERY.md が存在し、中身に rotate が含まれること',
       hints: [
         'echo とリダイレクトで書ける',
         'echo "logrotate を導入して日次で rotate する" > /srv/app/RECOVERY.md',
