@@ -55,7 +55,7 @@ const headSchema = z.union([
   z.object({ type: z.literal('detached'), hash: z.string() }),
 ]);
 
-export const gitSnapshotSchema = z.object({
+const gitSnapshotBaseSchema = z.object({
   root: z.string(),
   head: headSchema,
   refs: z.array(z.tuple([z.string(), z.string()])),
@@ -74,6 +74,12 @@ export const gitSnapshotSchema = z.object({
   objects: z.array(
     z.object({ type: z.enum(['blob', 'tree', 'commit', 'tag']), body: z.string() }),
   ),
+});
+
+export const gitSnapshotSchema = gitSnapshotBaseSchema.extend({
+  remotes: z
+    .array(z.object({ name: z.string(), url: z.string(), state: gitSnapshotBaseSchema }))
+    .default([]),
 });
 
 export const shellSnapshotSchema = z.object({

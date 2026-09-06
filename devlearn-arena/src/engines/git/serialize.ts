@@ -16,7 +16,7 @@ function fromBase64(text: string): Uint8Array {
   return out;
 }
 
-export interface GitSnapshot {
+export interface GitSnapshotBase {
   root: string;
   head: Head;
   refs: [string, string][];
@@ -28,7 +28,11 @@ export interface GitSnapshot {
   objects: { type: GitObjectType; body: string }[];
 }
 
-export function snapshotGit(git: GitState): GitSnapshot {
+export interface GitSnapshot extends GitSnapshotBase {
+  remotes: { name: string; url: string; state: GitSnapshotBase }[];
+}
+
+function snapshotBase(git: GitState): GitSnapshotBase {
   const objects: { type: GitObjectType; body: string }[] = [];
   for (const hash of git.objects.hashes()) {
     const object = git.objects.read(hash);
@@ -47,7 +51,18 @@ export function snapshotGit(git: GitState): GitSnapshot {
   };
 }
 
-export function restoreGit(snapshot: GitSnapshot): GitState {
+export function snapshotGit(git: GitState): GitSnapshot {
+  return {
+    ...snapshotBase(git),
+    remotes: [...git.remotes.values()].map((r) => ({
+      name: r.name,
+      url: r.url,
+      state: snapshotBase(r.state),
+    })),
+  };
+}
+
+function restoreBase(snapshot: GitSnapshotBase): GitState {
   const objects = new ObjectStore();
   for (const object of snapshot.objects) objects.write(object.type, fromBase64(object.body));
   return {
@@ -60,5 +75,14 @@ export function restoreGit(snapshot: GitSnapshot): GitState {
     stash: snapshot.stash,
     author: { ...defaultAuthor, ...snapshot.author },
     origHead: snapshot.origHead,
+    remotes: new Map(),
   };
+}
+
+export function restoreGit(snapshot: GitSnapshot): GitState {
+  const base = restoreBase(snapshot);
+  const remotes = new Map(
+    snapshot.remotes.map((r) => [r.name, { name: r.name, url: r.url, state: restoreBase(r.state) }]),
+  );
+  return { ...base, remotes };
 }

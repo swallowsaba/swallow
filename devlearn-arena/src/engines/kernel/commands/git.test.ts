@@ -347,3 +347,49 @@ describe('履歴の作り直し', () => {
     expect(run('git stash pop').code).toBe(1);
   });
 });
+
+describe('リモート', () => {
+  beforeEach(() => {
+    run('git init');
+    run('git add .');
+    run('git commit -m "first"');
+    run('git remote add origin https://example.invalid/demo.git');
+  });
+
+  it('remote -v に登録が出る', () => {
+    const out = run('git remote -v').out;
+    expect(out).toContain('origin');
+    expect(out).toContain('(push)');
+  });
+
+  it('同じ名前は登録できない', () => {
+    expect(run('git remote add origin x').code).toBe(3);
+  });
+
+  it('push すると追跡参照が進む', () => {
+    expect(run('git push origin main').out).toContain('main -> main');
+    expect(run('git status').out).not.toContain('ahead');
+  });
+
+  it('push 前は ahead と出る', () => {
+    run('git push origin main');
+    run('echo more > c.txt');
+    run('git add c.txt');
+    run('git commit -m "second"');
+    expect(run('git status').out).toContain("ahead of 'origin/main' by 1");
+  });
+
+  it('存在しないリモートには push できない', () => {
+    expect(run('git push upstream main').code).toBe(128);
+  });
+
+  it('fetch は同じ内容なら何も出さない', () => {
+    run('git push origin main');
+    expect(run('git fetch origin').out).toBe('');
+  });
+
+  it('pull は取り込むものが無ければそう言う', () => {
+    run('git push origin main');
+    expect(run('git pull origin main').out).toContain('Already up to date.');
+  });
+});

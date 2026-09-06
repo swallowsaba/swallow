@@ -1,5 +1,8 @@
 import { mergeThreeWay } from '@/engines/git/merge';
 import {
+  aheadBehind, createRemote, fetch as fetchRemote, push as pushRemote,
+} from '@/engines/git/remote';
+import {
   addPaths, branches, commit, commitMerge, createBranch, currentBranch, defaultAuthor,
   diffStaged, diffWorktree, fastForwardTo, headCommit, initRepository, log, materialize,
   planMerge, popStash, pushStash, rebaseOnto, replayCommit, reset, revertCommit, status,
@@ -31,6 +34,19 @@ function formatStatus(git: GitState, shell: ShellState): string {
       ? `HEAD detached at ${short(report.detached ?? '')}`
       : `On branch ${report.branch}`,
   );
+
+  const branch = report.branch;
+  if (branch !== null && git.refs.has(`refs/remotes/origin/${branch}`)) {
+    const gap = aheadBehind(git, 'origin', branch);
+    if (gap.ahead > 0 && gap.behind > 0) {
+      lines.push(`Your branch and 'origin/${branch}' have diverged,`);
+      lines.push(`and have ${String(gap.ahead)} and ${String(gap.behind)} different commits each.`);
+    } else if (gap.ahead > 0) {
+      lines.push(`Your branch is ahead of 'origin/${branch}' by ${String(gap.ahead)} commit(s).`);
+    } else if (gap.behind > 0) {
+      lines.push(`Your branch is behind 'origin/${branch}' by ${String(gap.behind)} commit(s).`);
+    }
+  }
 
   if (headCommit(git) === null && report.staged.length === 0) {
     lines.push('', 'No commits yet');
@@ -80,6 +96,7 @@ function runSubcommand(
   switch (sub) {
     case 'status':
       return { stdout: formatStatus(git, shell) };
+
 
     case 'add': {
       const { operands } = parseArgs(['add', ...rest]);
@@ -398,6 +415,92 @@ function runSubcommand(
       return { stdout: 'Saved working directory\n', patch: { git: next, vfs } };
     }
 
+    case 'remote': {
+      const { flags, operands } = parseArgs(['remote', ...rest]);
+      if (operands[0] === 'add') {
+        const name = operands[1];
+        const url = operands[2] ?? `https://example.invalid/${name ?? 'repo'}.git`;
+        if (name === undefined) return { stderr: 'usage: git remote add <name> <url>\n', code: 129 };
+        if (git.remotes.has(name)) {
+          return { stderr: `error: remote ${name} already exists.\n`, code: 3 };
+        }
+        const bare = initRepository(`/remote/${name}`, git.author);
+        const remotes = new Map(git.remotes);
+        remotes.set(name, createRemote(name, url, bare));
+        return { patch: { git: { ...git, remotes } } };
+      }
+      const names = [...git.remotes.values()];
+      if (flags.has('v')) {
+        return {
+          stdout: fromLines(
+            names.flatMap((r) => [`${r.name}\t${r.url} (fetch)`, `${r.name}\t${r.url} (push)`]),
+          ),
+        };
+      }
+      return { stdout: fromLines(names.map((r) => r.name)) };
+    }
+
+    case 'push': {
+      const { flags, operands } = parseArgs(['push', ...rest]);
+      const remoteName = operands[0] ?? 'origin';
+      const branch = operands[1] ?? currentBranch(git) ?? 'main';
+      const remote = git.remotes.get(remoteName);
+      if (!remote) {
+        return { stderr: `fatal: '${remoteName}' does not appear to be a git repository\n`, code: 128 };
+      }
+      const result = pushRemote(git, remote, branch, {
+        force: flags.has('f') || rest.includes('--force'),
+        forceWithLease: rest.includes('--force-with-lease'),
+      });
+      const remotes = new Map(git.remotes);
+      remotes.set(remoteName, result.remote);
+      if (!result.ok) {
+        return { stderr: result.message, code: 1, patch: { git: { ...git, remotes } } };
+      }
+      return { stdout: result.message, patch: { git: { ...result.git, remotes } } };
+    }
+
+    case 'fetch': {
+      const { operands } = parseArgs(['fetch', ...rest]);
+      const remoteName = operands[0] ?? 'origin';
+      const remote = git.remotes.get(remoteName);
+      if (!remote) {
+        return { stderr: `fatal: '${remoteName}' does not appear to be a git repository\n`, code: 128 };
+      }
+      const result = fetchRemote(git, remote);
+      return {
+        stdout:
+          result.updated.length === 0
+            ? ''
+            : `From ${remote.url}\n${result.updated.map((b) => `   ${b} -> ${remoteName}/${b}`).join('\n')}\n`,
+        patch: { git: result.git },
+      };
+    }
+
+    case 'pull': {
+      const { operands } = parseArgs(['pull', ...rest]);
+      const remoteName = operands[0] ?? 'origin';
+      const branch = operands[1] ?? currentBranch(git) ?? 'main';
+      const remote = git.remotes.get(remoteName);
+      if (!remote) {
+        return { stderr: `fatal: '${remoteName}' does not appear to be a git repository\n`, code: 128 };
+      }
+      const fetched = fetchRemote(git, remote);
+      const target = fetched.git.refs.get(`refs/remotes/${remoteName}/${branch}`);
+      if (target === undefined) return { stdout: 'Already up to date.\n', patch: { git: fetched.git } };
+
+      const head = headCommit(fetched.git);
+      if (head === target) return { stdout: 'Already up to date.\n', patch: { git: fetched.git } };
+
+      const moved = fastForwardTo(fetched.git, target);
+      let vfs = shell.vfs;
+      for (const [path, content] of materialize(moved, target)) {
+        vfs = writeFile(vfs, resolve(moved.root, path), content, true);
+      }
+      const staged = addPaths(moved, vfs, ['.']);
+      return { stdout: 'Fast-forward\n', patch: { git: staged.git, vfs } };
+    }
+
     case 'ls-files':
       return { stdout: fromLines([...git.index.keys()].sort()) };
 
@@ -432,6 +535,7 @@ export const gitCommands: CommandSpec[] = [
       [
         'init', 'add', 'commit', 'status', 'log', 'branch', 'switch', 'checkout',
         'diff', 'restore', 'reset', 'merge', 'rebase', 'cherry-pick', 'revert', 'stash',
+        'remote', 'push', 'fetch', 'pull',
         'cat-file', 'hash-object', 'ls-files', 'reflog',
       ].filter((s) => s.startsWith(prefix)),
     handler: ({ argv, shell, clock }) => {
@@ -441,7 +545,7 @@ export const gitCommands: CommandSpec[] = [
           stdout:
             'usage: git <command>\n' +
             '  init add commit status log branch switch checkout diff restore reset merge\n' +
-            '  rebase cherry-pick revert stash\n' +
+            '  rebase cherry-pick revert stash remote push fetch pull\n' +
             '  cat-file hash-object ls-files reflog\n',
         };
       }

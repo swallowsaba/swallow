@@ -28,6 +28,7 @@ export function initRepository(root: string, author: Signature = defaultAuthor):
     origHead: null,
     reflog: [],
     stash: [],
+    remotes: new Map(),
   };
 }
 

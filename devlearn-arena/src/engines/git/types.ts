@@ -27,6 +27,14 @@ export interface GitState {
   readonly origHead: string | null;
   readonly reflog: readonly ReflogEntry[];
   readonly stash: readonly StashEntry[];
+  readonly remotes: ReadonlyMap<string, RemoteRef>;
+}
+
+/** 仮想リモート。相手側のリポジトリ状態をそのまま持つ */
+export interface RemoteRef {
+  name: string;
+  url: string;
+  state: GitState;
 }
 
 export interface StashEntry {
