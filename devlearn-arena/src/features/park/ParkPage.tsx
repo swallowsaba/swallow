@@ -1,7 +1,9 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { findMission, missions } from '@/engines/lesson/missions';
-import { advance, createProgress, currentStep, useHint } from '@/engines/lesson/runner';
+import {
+  buildContext, createProgress, currentStep, evaluate, passes, useHint,
+} from '@/engines/lesson/runner';
 import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
 import { CommandBar } from '@/features/terminal/CommandBar';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
@@ -44,6 +46,7 @@ function Park({
   const [revealedHints, setRevealedHints] = useState(0);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
+  const [diagnosis, setDiagnosis] = useState<string | null>(null);
 
   const xp = useStore((s) => s.profile.xp);
   const soundEnabled = useStore((s) => s.settings.soundEnabled);
@@ -72,6 +75,16 @@ function Park({
     return rows.reverse();
   }, [entries, cursor]);
 
+  // いま条件を満たしているか。毎回描画時に評価する
+  const passingNow = useMemo(() => {
+    if (!step) return false;
+    try {
+      return passes(step, buildContext(session.getTimeline()));
+    } catch {
+      return false;
+    }
+  }, [step, session]);
+
   const pushToast = useCallback((text: string) => {
     const key = Date.now() + Math.random();
     setToasts((list) => [...list, { key, text }]);
@@ -80,53 +93,87 @@ function Park({
     }, 2000);
   }, []);
 
+  /** コマンド実行では回数と失敗数だけを数える。合否の判定は下の効果で行う */
   const handleExecuted = useCallback(
     (_line: string, exitCode: number) => {
-      const next = advance(mission, progress, session.getTimeline(), exitCode);
-      const stepped = next.stepIndex > progress.stepIndex;
-      const justCleared = next.cleared && !progress.cleared;
-      setProgress(next);
+      setProgress((p) => ({
+        ...p,
+        commandsUsed: p.commandsUsed + 1,
+        mistakes: p.mistakes + (exitCode === 0 ? 0 : 1),
+      }));
       setRevealedHints(0);
-
-      const now = Date.now();
-      if (justCleared) {
-        const score = scoreAttempt({
-          hintsUsed: next.hintsUsed,
-          commandsUsed: next.commandsUsed,
-          parCommands: mission.parCommands,
-        });
-        const reward = xpForScore(score, mission.kind === 'boss' ? 'boss' : 'drill');
-        const before = levelFromXp(xp);
-        const after = levelFromXp(xp + reward);
-        clearLesson({ lessonId: mission.id, score, xp: reward, now });
-        setCelebration({
-          key: now,
-          title: 'クリア',
-          subtitle: `${mission.title} — スコア ${String(score)}`,
-          xp: reward,
-          levelUp: after > before ? { level: after, rank: rankFromLevel(after) } : undefined,
-        });
-        if (soundEnabled) sfx.clear();
-        return;
-      }
-      if (stepped) {
-        grantXp(STEP_XP, now);
-        pushToast(`+${String(STEP_XP)} XP`);
-        if (soundEnabled) sfx.step();
-      }
     },
-    [mission, progress, session, xp, soundEnabled, grantXp, clearLesson, pushToast],
+    [],
   );
+
+  // 状態が変われば必ず judge する。コマンド実行の瞬間だけに頼らない
+  const shellState = session.state;
+  useEffect(() => {
+    setProgress((p) => evaluate(mission, p, session.getTimeline()));
+    // session は毎描画で作り直されるため、状態そのものを依存に置く
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shellState, mission]);
+
+  // 進んだ / 通らなかった に応じて見返りと助言を出す
+  const prevStep = useRef(progress.stepIndex);
+  const prevCleared = useRef(progress.cleared);
+  useEffect(() => {
+    const now = Date.now();
+    if (progress.cleared && !prevCleared.current) {
+      const score = scoreAttempt({
+        hintsUsed: progress.hintsUsed,
+        commandsUsed: progress.commandsUsed,
+        parCommands: mission.parCommands,
+      });
+      const reward = xpForScore(score, mission.kind === 'boss' ? 'boss' : 'drill');
+      const after = levelFromXp(xp + reward);
+      clearLesson({ lessonId: mission.id, score, xp: reward, now });
+      setCelebration({
+        key: now,
+        title: 'クリア',
+        subtitle: `${mission.title} — スコア ${String(score)}`,
+        xp: reward,
+        levelUp: after > levelFromXp(xp) ? { level: after, rank: rankFromLevel(after) } : undefined,
+      });
+      setDiagnosis(null);
+      if (soundEnabled) sfx.clear();
+    } else if (progress.stepIndex > prevStep.current) {
+      grantXp(STEP_XP, now);
+      pushToast(`+${String(STEP_XP)} XP`);
+      setDiagnosis(null);
+      if (soundEnabled) sfx.step();
+    }
+    prevStep.current = progress.stepIndex;
+    prevCleared.current = progress.cleared;
+    // xp を依存に入れると付与のたびに再実行されるため、進行の変化だけを見る
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progress.stepIndex, progress.cleared]);
+
+  // 通らなかったときの助言
+  useEffect(() => {
+    if (passingNow || progress.cleared || !step) {
+      setDiagnosis(null);
+      return;
+    }
+    if (progress.commandsUsed === 0) return;
+    try {
+      setDiagnosis(step.diagnose?.(buildContext(session.getTimeline())) ?? null);
+    } catch {
+      setDiagnosis(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shellState, passingNow, progress.cleared, progress.commandsUsed]);
 
   const retry = useCallback(() => {
     session.reset();
     setProgress(createProgress(mission));
     setRevealedHints(0);
+    setDiagnosis(null);
     setAttempt((n) => n + 1);
   }, [mission, session]);
 
   return (
-    <div className="flex h-full flex-col bg-cream">
+    <div className="flex h-full min-w-0 flex-col overflow-x-hidden bg-cream">
       <XpToast toasts={toasts} />
       <Celebration
         data={celebration}
@@ -170,7 +217,7 @@ function Park({
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         {/* 左：手を動かす場所 */}
-        <div className="flex min-h-0 flex-col border-r-4 border-wood-dark">
+        <div className="flex min-h-0 min-w-0 flex-col border-r-4 border-wood-dark">
           <div className="border-b-2 border-wood-dark bg-[var(--cream-dark)] px-5 py-4">
             <p className="text-sm font-bold text-ink-soft">
               {progress.cleared ? '完了' : `やること ${String(progress.stepIndex + 1)}`}
@@ -180,9 +227,22 @@ function Park({
             </p>
 
             {!progress.cleared && step ? (
-              <p className="mt-2 text-sm text-ink-soft">
-                <span className="font-bold">通過の条件: </span>
+              <p
+                className={`mt-2 border-l-4 px-3 py-1.5 text-sm ${
+                  passingNow
+                    ? 'border-[var(--ok)] bg-[var(--ok)]/15'
+                    : 'border-[var(--cream-dark)] text-ink-soft'
+                }`}
+              >
+                <span className="font-bold">{passingNow ? '達成 ' : '未達成 '}</span>
                 {step.check}
+              </p>
+            ) : null}
+
+            {diagnosis !== null && !progress.cleared ? (
+              <p className="mt-3 border-l-4 border-[var(--warn)] bg-[var(--gold)]/25 px-3 py-2 text-sm">
+                <span className="font-bold">惜しい: </span>
+                {diagnosis}
               </p>
             ) : null}
 
@@ -206,7 +266,7 @@ function Park({
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 bg-[var(--wood-dark)]">
+          <div className="min-h-0 min-w-0 flex-1 overflow-hidden bg-[var(--wood-dark)]">
             <TerminalView
               key={attempt}
               ref={terminalRef}
@@ -219,7 +279,7 @@ function Park({
         </div>
 
         {/* 右：結果を見る場所 */}
-        <div className="flex min-h-0 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-col">
           <div
             className="min-h-[280px] flex-1"
             style={{

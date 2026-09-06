@@ -1,5 +1,5 @@
 import type { ShellState } from '@/engines/kernel/registry';
-import type { AssertContext, LessonDefinition, LessonProgressState } from './types';
+import type { AssertContext, LessonDefinition, LessonProgressState, LessonStep } from './types';
 
 export function createProgress(lesson: LessonDefinition): LessonProgressState {
   void lesson;
@@ -23,29 +23,44 @@ export function advance(
   timeline: readonly ShellState[],
   exitCode = 0,
 ): LessonProgressState {
+  const counted: LessonProgressState = {
+    ...progress,
+    mistakes: progress.mistakes + (exitCode === 0 ? 0 : 1),
+    commandsUsed: progress.commandsUsed + 1,
+  };
+  return evaluate(lesson, counted, timeline);
+}
+
+/** 手順の合否だけを判定する。回数は数えない。状態が変わるたびに呼べる。 */
+export function evaluate(
+  lesson: LessonDefinition,
+  progress: LessonProgressState,
+  timeline: readonly ShellState[],
+): LessonProgressState {
   if (progress.cleared) return progress;
-  const mistakes = progress.mistakes + (exitCode === 0 ? 0 : 1);
   const ctx = buildContext(timeline);
   let index = progress.stepIndex;
   while (index < lesson.steps.length) {
     const step = lesson.steps[index];
     if (!step) break;
-    let passed = false;
-    try {
-      passed = step.assert(ctx);
-    } catch {
-      passed = false;
-    }
-    if (!passed) break;
+    if (!passes(step, ctx)) break;
     index += 1;
   }
+  if (index === progress.stepIndex) return progress;
   return {
     ...progress,
     stepIndex: Math.min(index, lesson.steps.length - 1),
     cleared: index >= lesson.steps.length,
-    mistakes,
-    commandsUsed: progress.commandsUsed + 1,
   };
+}
+
+/** assert が例外を投げても落とさない */
+export function passes(step: LessonStep, ctx: AssertContext): boolean {
+  try {
+    return step.assert(ctx);
+  } catch {
+    return false;
+  }
 }
 
 export function useHint(progress: LessonProgressState): LessonProgressState {
