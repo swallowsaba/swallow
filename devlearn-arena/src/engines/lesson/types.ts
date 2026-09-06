@@ -18,7 +18,13 @@ export interface LessonStep {
   explain: string;
 }
 
+export type MissionKind = 'training' | 'boss';
+
 export interface LessonDefinition {
+  /** training=練習, boss=インシデント討伐 */
+  kind: MissionKind;
+  /** 失敗できる回数。0 になると撤退 */
+  maxHp: number;
   /** カタログの LessonMeta.id と一致させる */
   id: string;
   title: string;
@@ -35,4 +41,8 @@ export interface LessonProgressState {
   cleared: boolean;
   hintsUsed: number;
   commandsUsed: number;
+  /** 残り HP。コマンドが失敗するたびに 1 減る */
+  hp: number;
+  /** HP が尽きた状態 */
+  defeated: boolean;
 }

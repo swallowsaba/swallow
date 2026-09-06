@@ -23,13 +23,13 @@ function run(line: string) {
 
 describe('レッスンランナー', () => {
   it('最初は手順0で未クリア', () => {
-    const p = createProgress();
+    const p = createProgress(shellWarmup);
     expect(p.stepIndex).toBe(0);
     expect(currentStep(shellWarmup, p)?.prompt).toContain('reports');
   });
 
   it('条件を満たすと次の手順へ進む', () => {
-    let p = createProgress();
+    let p = createProgress(shellWarmup);
     run('mkdir reports');
     p = advance(shellWarmup, p, timeline);
     expect(p.stepIndex).toBe(1);
@@ -37,7 +37,7 @@ describe('レッスンランナー', () => {
   });
 
   it('関係ないコマンドでは進まない', () => {
-    let p = createProgress();
+    let p = createProgress(shellWarmup);
     run('echo hello');
     p = advance(shellWarmup, p, timeline);
     expect(p.stepIndex).toBe(0);
@@ -45,7 +45,7 @@ describe('レッスンランナー', () => {
   });
 
   it('別解でもクリアできる（パイプ版）', () => {
-    let p = createProgress();
+    let p = createProgress(shellWarmup);
     for (const line of [
       'mkdir reports',
       'cat /etc/hosts > reports/hosts.txt',
@@ -58,7 +58,7 @@ describe('レッスンランナー', () => {
   });
 
   it('1コマンドで複数手順を満たしても正しく進む', () => {
-    let p = createProgress();
+    let p = createProgress(shellWarmup);
     run('mkdir reports && cat /etc/hosts > reports/hosts.txt');
     p = advance(shellWarmup, p, timeline);
     expect(p.stepIndex).toBe(2);
@@ -69,13 +69,13 @@ describe('レッスンランナー', () => {
       ...shellWarmup,
       steps: [{ prompt: 'x', hints: [], explain: '', assert: () => { throw new Error('boom'); } }],
     };
-    let p = createProgress();
+    let p = createProgress(shellWarmup);
     run('echo hi');
     p = advance(broken, p, timeline);
     expect(p.cleared).toBe(false);
   });
 
   it('ヒント使用を数える', () => {
-    expect(useHint(createProgress()).hintsUsed).toBe(1);
+    expect(useHint(createProgress(shellWarmup)).hintsUsed).toBe(1);
   });
 });

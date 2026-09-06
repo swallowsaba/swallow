@@ -84,7 +84,21 @@ function runCommand(
     return { state: { ...state, vars }, result: { code: 0 } };
   }
 
-  if (name === undefined) return { state, result: { code: 0 } };
+  // コマンドの無い `> file` は、ファイルを空にする（実シェルと同じ）
+  if (name === undefined) {
+    const only = command.redirects.find((r) => r.kind === '>' || r.kind === '>>');
+    if (!only) return { state, result: { code: 0 } };
+    const path = at(state.cwd, expandWord(only.target, expandCtx));
+    try {
+      const vfs = only.kind === '>' ? writeFile(state.vfs, path, '') : appendFile(state.vfs, path, '');
+      return { state: { ...state, vfs }, result: { code: 0 } };
+    } catch (error) {
+      if (error instanceof VfsError) {
+        return { state, result: { stderr: `${vfsMessage('bash', error)}\n`, code: EXIT_ERROR } };
+      }
+      throw error;
+    }
+  }
 
   const spec = registry.get(name);
   if (!spec) {

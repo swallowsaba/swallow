@@ -15,8 +15,8 @@ export interface ShellSession {
   clock: MutableClock;
   journal: Journal<ShellState>;
   atLatest: boolean;
-  /** 1行実行して出力を返す。状態はジャーナルに積まれる。 */
-  run: (line: string) => OutputChunk[];
+  /** 1行実行して出力と終了コードを返す。状態はジャーナルに積まれる。 */
+  run: (line: string) => { chunks: OutputChunk[]; exitCode: number };
   /** 現在の状態を同期で取り出す（xterm のコールバックから使う） */
   getState: () => ShellState;
   /** 最新のスナップショット列。再描画を待たずに読める */
@@ -45,12 +45,12 @@ export function useShellSession(options: SessionOptions = {}): ShellSession {
   );
 
   const run = useCallback(
-    (line: string): OutputChunk[] => {
+    (line: string): { chunks: OutputChunk[]; exitCode: number } => {
       const journal = journalRef.current;
       const outcome = execute(current(journal), line, registry, clock);
       journalRef.current = push(journal, outcome.state, line.split('\n')[0] ?? line);
       bump();
-      return outcome.chunks;
+      return { chunks: outcome.chunks, exitCode: outcome.exitCode };
     },
     [registry, clock, journalRef],
   );

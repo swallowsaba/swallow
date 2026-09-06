@@ -42,7 +42,7 @@ export default function HomePage() {
         </ul>
 
         <Link
-          to="/sandbox"
+          to="/quest/shell-warmup"
           className="mt-8 inline-flex items-center gap-3 border-2 border-accent bg-accent/10 px-8 py-4 text-xl font-bold text-accent transition-colors hover:bg-accent hover:text-void"
         >
           {t('home.start')}

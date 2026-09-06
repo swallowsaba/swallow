@@ -5,7 +5,7 @@ export const ja = {
 
   'nav.home': 'ホーム',
   'nav.map': '冒険の地図',
-  'nav.sandbox': 'サンドボックス',
+  'nav.sandbox': '任務',
   'nav.dashboard': '記録',
   'nav.settings': '設定',
   'nav.skip': '本文へ移動',
@@ -13,7 +13,7 @@ export const ja = {
   'home.next': '次にやること',
   'home.warmupLead':
     'まずはターミナルに慣れるところから。コマンドを打つと画面の図がその場で変わります。3つの手順を達成すればクリアです。',
-  'home.start': '訓練場ではじめる',
+  'home.start': '任務に出る',
   'home.clearedLead': 'クリアしたレッスンの数です。',
   'home.buildStatus': '実装フェーズ',
   'home.buildLead': 'シェルと仮想ファイルシステムが動きます。Git / Kubernetes / Network は準備中です。',
@@ -27,10 +27,10 @@ export const ja = {
   'sandbox.snapshots': 'スナップショット {n} 件 / 仮想時計 tick {tick}',
 
   'map.title': '冒険の地図',
-  'map.lead': '4 つの世界を、章ごとに進めます。各章の最後にはインシデント対応が待っています。',
-  'map.chapters': '章',
-  'map.lessons': 'レッスン',
-  'map.bosses': 'インシデント',
+  'map.lead': '道を辿って世界を踏破します。各エリアの終わりにはボス（実際の障害対応）が待っています。',
+  'map.chapters': 'エリア',
+  'map.lessons': 'クエスト',
+  'map.bosses': 'ボス',
   'map.ready': '遊べる',
   'map.planned': '準備中',
   'map.phase': '実装フェーズ',

@@ -20,8 +20,8 @@ export interface TerminalHandle {
 
 interface Props {
   session: ShellSession;
-  /** コマンド実行後に呼ばれる（レッスン判定に使う） */
-  onExecuted?: (line: string) => void;
+  /** コマンド実行後に呼ばれる（任務の判定に使う） */
+  onExecuted?: (line: string, exitCode: number) => void;
 }
 
 function cssVar(name: string, fallback: string): string {
@@ -81,12 +81,12 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
       const { line: expanded, expanded: didExpand } = expandBang(raw, sessionRef.current.getState().history);
       if (didExpand) term.write(`\r\u001b[K${prompt()}${expanded}`);
       term.write('\r\n');
-      const chunks = sessionRef.current.run(expanded);
+      const { chunks, exitCode } = sessionRef.current.run(expanded);
       for (const chunk of chunks) {
         const text = chunk.text.replace(/\n/g, '\r\n');
         term.write(chunk.stream === 'stderr' ? `\u001b[31m${text}\u001b[0m` : text);
       }
-      executedRef.current?.(expanded);
+      executedRef.current?.(expanded, exitCode);
       lineRef.current = createLineState();
       term.write(prompt());
     };

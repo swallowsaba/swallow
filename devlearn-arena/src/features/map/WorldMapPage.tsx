@@ -1,12 +1,10 @@
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { countAll, countTrack, TRACKS } from '@/content/catalog';
+import { countAll, TRACKS } from '@/content/catalog';
+import { missions } from '@/engines/lesson/missions';
 import { useT } from '@/i18n/useT';
 import { useStore } from '@/store';
 import { Badge } from '@/ui/components/Badge';
 import { ProgressBar } from '@/ui/components/ProgressBar';
-import { useMotionEnabled } from '@/ui/motion';
-import { ChapterTile } from './ChapterTile';
+import { WorldPath, type MapNode } from './WorldPath';
 
 export default function WorldMapPage() {
   const t = useT();
@@ -17,11 +15,25 @@ export default function WorldMapPage() {
       .map(([id]) => id),
   );
   const totals = countAll();
-  const animate = useMotionEnabled();
-  const prologueCleared = cleared.has('kernel/00/shell-warmup');
+
+  // 序章。いま実際に戦える場所はここだけ
+  let firstOpen = true;
+  const prologue: MapNode[] = missions.map((m, i) => {
+    const done = cleared.has(m.id);
+    const current = !done && firstOpen;
+    if (current) firstOpen = false;
+    return {
+      id: m.id,
+      mark: m.kind === 'boss' ? '★' : String(i + 1),
+      label: m.title,
+      state: done ? 'clear' : current ? 'current' : 'open',
+      boss: m.kind === 'boss',
+      to: `/quest/${m.id.split('/').pop() ?? ''}`,
+    };
+  });
 
   return (
-    <div className="flex flex-col gap-14">
+    <div className="flex flex-col gap-16">
       <header className="max-w-3xl">
         <h1 className="display text-5xl">{t('map.title')}</h1>
         <p className="mt-4 text-lg text-muted">{t('map.lead')}</p>
@@ -31,74 +43,58 @@ export default function WorldMapPage() {
         </p>
       </header>
 
-      {/* いま実際に挑戦できる唯一のノード。地図が飾りにならないように先頭に置く */}
       <section data-track="git">
         <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-accent pb-4">
-          <h2 className="display text-4xl text-accent">序章</h2>
-          <Badge tone={prologueCleared ? 'ok' : 'accent'} size="sm">
-            {prologueCleared ? 'CLEAR' : '挑戦できます'}
-          </Badge>
+          <h2 className="display text-4xl text-accent">序章 — 端末を手に入れる</h2>
+          <Badge tone="accent" size="sm">挑戦できます</Badge>
         </div>
-        <motion.div
-          animate={animate && !prologueCleared ? { scale: [1, 1.015, 1] } : {}}
-          transition={{ repeat: Infinity, duration: 2.4 }}
-          className="mt-6"
-        >
-          <Link
-            to="/sandbox"
-            className="cut glow flex flex-col gap-3 border-2 border-accent bg-panel p-8 transition-colors hover:bg-raised"
-          >
-            <span className="display text-3xl">シェルに慣れる</span>
-            <span className="text-lg text-muted">
-              ターミナルの基本操作。ここだけが今すぐ遊べます。
-            </span>
-            <span className="font-mono text-base text-accent">▶ 訓練場へ</span>
-          </Link>
-        </motion.div>
+        <div className="mt-6">
+          <WorldPath nodes={prologue} />
+        </div>
       </section>
 
       {TRACKS.map((track) => {
-        const counts = countTrack(track);
-        const done = track.chapters
-          .flatMap((c) => c.lessons)
-          .filter((l) => cleared.has(l.id)).length;
+        const allLessons = track.chapters.flatMap((c) => c.lessons);
+        const done = allLessons.filter((l) => cleared.has(l.id)).length;
+        const nodes: MapNode[] = track.chapters.map((ch) => {
+          const chDone = ch.lessons.filter((l) => cleared.has(l.id)).length;
+          const complete = chDone === ch.lessons.length && ch.lessons.length > 0;
+          return {
+            id: ch.id,
+            mark: String(ch.no).padStart(2, '0'),
+            label: ch.title,
+            state: complete ? 'clear' : 'locked',
+            boss: ch.lessons.some((l) => l.kind === 'boss'),
+            to: `/track/${track.id}#${ch.id.replace('/', '-')}`,
+          };
+        });
+
         return (
           <section key={track.id} data-track={track.id}>
             <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-accent pb-4">
               <div>
-                <Link to={`/track/${track.id}`} className="display text-4xl text-accent hover:underline">
-                  {track.title}
-                </Link>
+                <h2 className="display text-4xl text-accent">{track.title}</h2>
                 <p className="mt-2 max-w-3xl text-base text-muted">{track.goal}</p>
               </div>
               <div className="flex items-center gap-3">
-                <Badge tone="accent" size="sm">
+                <Badge tone="muted" size="sm">
                   {t('map.phase')} {track.phase}
                 </Badge>
                 <span className="font-mono text-sm text-muted">
-                  {done}/{counts.lessons} {t('map.lessons')}
+                  {done}/{allLessons.length}
                 </span>
               </div>
             </div>
-
             <div className="mt-4">
               <ProgressBar
-                ratio={counts.lessons === 0 ? 0 : done / counts.lessons}
+                ratio={allLessons.length === 0 ? 0 : done / allLessons.length}
                 size="sm"
                 label={track.title}
-                valueText={`${String(done)}/${String(counts.lessons)}`}
+                valueText={`${String(done)}/${String(allLessons.length)}`}
               />
             </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7">
-              {track.chapters.map((chapter, i) => (
-                <ChapterTile
-                  key={chapter.id}
-                  chapter={chapter}
-                  index={i}
-                  clearedLessonIds={cleared}
-                />
-              ))}
+            <div className="mt-6">
+              <WorldPath nodes={nodes} />
             </div>
           </section>
         );

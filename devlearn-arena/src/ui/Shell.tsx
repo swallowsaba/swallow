@@ -40,7 +40,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <NavLink to="/map" className={navClass}>
               {t('nav.map')}
             </NavLink>
-            <NavLink to="/sandbox" className={navClass}>
+            <NavLink to="/quest/shell-warmup" className={navClass}>
               {t('nav.sandbox')}
             </NavLink>
             <NavLink to="/dashboard" className={navClass}>

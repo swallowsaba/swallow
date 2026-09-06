@@ -9,7 +9,7 @@ const HomePage = lazy(() => import('./features/home/HomePage'));
 const WorldMapPage = lazy(() => import('./features/map/WorldMapPage'));
 const TrackPage = lazy(() => import('./features/track/TrackPage'));
 const LessonPage = lazy(() => import('./features/lesson/LessonPage'));
-const SandboxPage = lazy(() => import('./features/sandbox/SandboxPage'));
+const QuestPage = lazy(() => import('./features/quest/QuestPage'));
 const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage'));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 const NotFoundPage = lazy(() => import('./features/NotFoundPage'));
@@ -25,7 +25,7 @@ export function App() {
               <Route path="/map" element={<WorldMapPage />} />
               <Route path="/track/:trackId" element={<TrackPage />} />
               <Route path="/lesson/:trackId/:chapterNo/:lessonSlug" element={<LessonPage />} />
-              <Route path="/sandbox" element={<SandboxPage />} />
+              <Route path="/quest/:missionId" element={<QuestPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFoundPage />} />
