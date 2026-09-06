@@ -1,16 +1,6 @@
 import { motion } from 'framer-motion';
-import type { Chapter } from '@/content/types';
 import { useMotionEnabled } from '@/ui/motion';
-
-export interface StageNode {
-  id: string;
-  no: number;
-  title: string;
-  state: 'clear' | 'open' | 'locked';
-  boss: boolean;
-  done: number;
-  total: number;
-}
+import type { StageNode } from './stages';
 
 interface Props {
   title: string;
@@ -145,18 +135,3 @@ export function IslandBoard({ title, stages, onPick, selectedId }: Props) {
   );
 }
 
-export function toStages(chapters: readonly Chapter[], cleared: ReadonlySet<string>): StageNode[] {
-  return chapters.map((ch) => {
-    const done = ch.lessons.filter((l) => cleared.has(l.id)).length;
-    const ready = ch.lessons.some((l) => l.status === 'ready');
-    return {
-      id: ch.id,
-      no: ch.no,
-      title: ch.title,
-      state: done === ch.lessons.length && ch.lessons.length > 0 ? 'clear' : ready ? 'open' : 'locked',
-      boss: ch.lessons.some((l) => l.kind === 'boss'),
-      done,
-      total: ch.lessons.length,
-    };
-  });
-}

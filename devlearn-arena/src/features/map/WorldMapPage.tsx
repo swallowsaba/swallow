@@ -5,7 +5,8 @@ import { missions } from '@/engines/lesson/missions';
 import { useT } from '@/i18n/useT';
 import { xpProgress } from '@/lib/xp';
 import { useStore } from '@/store';
-import { IslandBoard, toStages } from './IslandBoard';
+import { IslandBoard } from './IslandBoard';
+import { toStages } from './stages';
 import { Overworld, type IslandInfo } from './Overworld';
 
 const PROLOGUE = 'prologue';
