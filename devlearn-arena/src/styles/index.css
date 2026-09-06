@@ -43,6 +43,7 @@
 }
 
 html, body, #root { height: 100%; }
+html, body { overflow-x: hidden; }
 
 body {
   margin: 0;
@@ -68,6 +69,24 @@ body {
     inset 0 0 0 6px var(--wood-light),
     inset 0 0 0 9px var(--cream),
     0 6px 0 0 rgb(0 0 0 / 25%);
+}
+
+/* 羊皮紙。任務の書き付けに使う */
+.scroll {
+  background:
+    radial-gradient(circle at 8px 8px, rgb(0 0 0 / 5%) 2px, transparent 3px),
+    linear-gradient(180deg, #fbf1dc 0%, #f0dfba 100%);
+  background-size: 34px 34px, 100% 100%;
+  border: 3px solid var(--wood);
+  box-shadow: inset 0 0 22px rgb(122 82 48 / 22%), 0 4px 0 rgb(0 0 0 / 22%);
+}
+
+/* 木の銘板。パネルの見出しに使う */
+.plate {
+  background: linear-gradient(180deg, var(--wood-light) 0%, var(--wood) 100%);
+  color: var(--cream);
+  border-bottom: 4px solid var(--wood-dark);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 35%);
 }
 
 /* 金の看板 */

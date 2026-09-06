@@ -212,7 +212,7 @@ function Park({
       />
 
       {/* 上部：任務の切り替えと現在地 */}
-      <header className="flex flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-5 py-3">
+      <header className="flex flex-wrap items-center gap-3 border-b-8 border-wood-dark bg-[var(--wood)] px-5 py-3 shadow-[inset_0_-6px_0_rgba(0,0,0,0.2)]">
         <span className="sign px-4 py-1.5 text-lg font-extrabold">DEVLEARN</span>
         {missions.map((m) => (
           <button
@@ -250,7 +250,7 @@ function Park({
       >
         {/* 左：手を動かす場所 */}
         <div className="flex min-h-0 min-w-0 flex-col">
-          <div className="border-b-2 border-wood-dark bg-[var(--cream-dark)] px-5 py-4">
+          <div className="scroll m-3 px-6 py-5">
             <p className="text-sm font-bold text-ink-soft">
               {progress.cleared ? '完了' : `やること ${String(progress.stepIndex + 1)}`}
             </p>
@@ -298,12 +298,20 @@ function Park({
             </div>
           </div>
 
-          <div className="min-h-0 min-w-0 flex-1 overflow-hidden bg-[var(--wood-dark)]">
+          <div className="mx-3 mb-3 flex min-h-0 min-w-0 flex-1 flex-col border-4 border-wood-dark">
+            <div className="plate flex items-center gap-2 px-4 py-1.5 text-sm font-extrabold">
+              <span aria-hidden>🖥</span> 端末
+              <span className="ml-auto font-mono text-xs opacity-80">
+                {session.state.cwd}
+              </span>
+            </div>
+            <div className="min-h-0 min-w-0 flex-1 overflow-hidden bg-[var(--wood-dark)]">
             <TerminalView
               ref={terminalRef}
               session={session}
               onExecuted={handleExecuted}
             />
+            </div>
           </div>
         </div>
 
@@ -320,6 +328,9 @@ function Park({
 
         {/* 右：結果を見る場所 */}
         <div className="flex min-h-0 min-w-0 flex-col">
+          <div className="plate flex items-center gap-2 px-4 py-1.5 text-sm font-extrabold">
+            <span aria-hidden>🗺</span> 村のようす
+          </div>
           <div
             className="min-h-0 flex-1 overflow-hidden"
             style={{
