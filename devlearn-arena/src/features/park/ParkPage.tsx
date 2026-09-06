@@ -15,6 +15,7 @@ import { useStore } from '@/store';
 import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
+import { CommitGraph } from '@/visual/CommitGraph';
 import { FileWorld } from '@/visual/FileWorld';
 
 const STEP_XP = 10;
@@ -79,6 +80,7 @@ function Park({
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
+  const [rightTab, setRightTab] = useState<'world' | 'git'>('world');
 
   const xp = useStore((s) => s.profile.xp);
   const soundEnabled = useStore((s) => s.settings.soundEnabled);
@@ -328,8 +330,27 @@ function Park({
 
         {/* 右：結果を見る場所 */}
         <div className="flex min-h-0 min-w-0 flex-col">
-          <div className="plate flex items-center gap-2 px-4 py-1.5 text-sm font-extrabold">
-            <span aria-hidden>🗺</span> 村のようす
+          <div className="plate flex items-center gap-2 px-3 py-1 text-sm font-extrabold">
+            <button
+              type="button"
+              aria-pressed={rightTab === 'world'}
+              onClick={() => {
+                setRightTab('world');
+              }}
+              className={`px-3 py-1 ${rightTab === 'world' ? 'bg-gold text-ink' : 'text-cream'}`}
+            >
+              🗺 村のようす
+            </button>
+            <button
+              type="button"
+              aria-pressed={rightTab === 'git'}
+              onClick={() => {
+                setRightTab('git');
+              }}
+              className={`px-3 py-1 ${rightTab === 'git' ? 'bg-gold text-ink' : 'text-cream'}`}
+            >
+              ⑂ 履歴
+            </button>
           </div>
           <div
             className="min-h-0 flex-1 overflow-hidden"
@@ -342,7 +363,13 @@ function Park({
           >
             <div className="flex h-full flex-col">
               <div className="min-h-0 flex-1">
-                <FileWorld vfs={session.state.vfs} previous={previous?.vfs} cwd={session.state.cwd} />
+                {rightTab === 'world' ? (
+                  <FileWorld vfs={session.state.vfs} previous={previous?.vfs} cwd={session.state.cwd} />
+                ) : (
+                  <div className="h-full bg-cream">
+                    <CommitGraph git={session.state.git} />
+                  </div>
+                )}
               </div>
               <div className="bg-cream">
                 <TimeScrubber session={session} />

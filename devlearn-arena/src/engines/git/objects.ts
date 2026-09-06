@@ -185,6 +185,10 @@ export class ObjectStore {
     return this.objects.size;
   }
 
+  hashes(): string[] {
+    return [...this.objects.keys()];
+  }
+
   /** 短縮ハッシュから一意に定まるものを引く */
   resolve(prefix: string): string | undefined {
     if (this.objects.has(prefix)) return prefix;

@@ -1,4 +1,5 @@
 import { HOME } from '@/engines/kernel/path';
+import { headCommit, log, status } from '@/engines/git/repository';
 import { exists, isDir, list, readFile } from '@/engines/kernel/vfs';
 import type { LessonDefinition } from './types';
 
@@ -23,6 +24,15 @@ export const shellWarmup: LessonDefinition = {
       check: '~/reports がディレクトリとして存在すること',
       hints: ['mkdir でディレクトリを作れる', 'mkdir reports'],
       assert: ({ shell }) => isDir(shell.vfs, `${HOME}/reports`),
+      diagnose: ({ shell }) => {
+        const wrongPlace = [...shell.vfs.nodes.keys()].find(
+          (p) => p.endsWith('/reports') && p !== `${HOME}/reports`,
+        );
+        if (wrongPlace !== undefined) {
+          return `reports は ${wrongPlace} にできています。作る場所はホーム（${HOME}）です。cd ~ で戻れます。`;
+        }
+        return null;
+      },
       explain: 'mkdir は親が無いと失敗する。深い階層をまとめて作るなら -p を付ける。',
     },
     {
@@ -32,6 +42,23 @@ export const shellWarmup: LessonDefinition = {
       assert: ({ shell }) => {
         const path = `${HOME}/reports/hosts.txt`;
         return exists(shell.vfs, path) && readFile(shell.vfs, path).includes('localhost');
+      },
+      diagnose: ({ shell }) => {
+        const dir = `${HOME}/reports`;
+        if (!isDir(shell.vfs, dir)) return null;
+        const path = `${dir}/hosts.txt`;
+        if (exists(shell.vfs, path)) {
+          return 'hosts.txt はできていますが、中身に localhost が見当たりません。/etc/hosts の中身がそのまま入っているか確かめてください。';
+        }
+        const others = list(shell.vfs, dir).filter((n) => n !== 'hosts.txt');
+        const near = others.find((n) => n.startsWith('hosts'));
+        if (near !== undefined) {
+          return `reports/${near} ができていますが、求めているのは hosts.txt です。コピー先にディレクトリを指定すると元の名前のままコピーされます。mv reports/${near} reports/hosts.txt で直せます。`;
+        }
+        if (others.length > 0) {
+          return `reports の中にあるのは ${others.join(', ')} です。hosts.txt という名前で作ってください。`;
+        }
+        return null;
       },
       explain: '> は毎回ファイルを空にしてから書く。追記したいときは >> を使う。',
     },
@@ -44,6 +71,17 @@ export const shellWarmup: LessonDefinition = {
         if (!exists(shell.vfs, path)) return false;
         const lines = readFile(shell.vfs, path).split('\n').filter((l) => l !== '');
         return lines.length > 0 && lines.every((l) => l.includes('localhost'));
+      },
+      diagnose: ({ shell }) => {
+        const path = `${HOME}/reports/local.txt`;
+        if (!exists(shell.vfs, path)) return null;
+        const lines = readFile(shell.vfs, path).split('\n').filter((l) => l !== '');
+        if (lines.length === 0) return 'local.txt が空です。grep の結果が0件だった可能性があります。';
+        const bad = lines.find((l) => !l.includes('localhost'));
+        if (bad !== undefined) {
+          return `local.txt に localhost を含まない行が混ざっています（例: ${bad}）。grep で絞り込めているか確かめてください。`;
+        }
+        return null;
       },
       explain: '判定は最終的な中身を見ている。パイプで解いてもリダイレクトで解いても正解になる。',
     },
@@ -78,6 +116,12 @@ export const diskFullBoss: LessonDefinition = {
       ],
       assert: ({ shell }) =>
         exists(shell.vfs, '/var/log/app.log') && readFile(shell.vfs, '/var/log/app.log') === '',
+      diagnose: ({ shell }) => {
+        if (!exists(shell.vfs, '/var/log/app.log')) {
+          return 'app.log ごと消えています。ファイルは残したまま中身だけ空にしてください。書き込み中のプロセスが掴んだままだと容量が戻らないためです。';
+        }
+        return null;
+      },
       explain:
         'ログファイルを rm すると、書き込み中のプロセスがファイルを掴んだままになり容量が戻らないことがある。中身だけ空にするのが定石。',
     },
@@ -102,12 +146,84 @@ export const diskFullBoss: LessonDefinition = {
         const path = '/srv/app/RECOVERY.md';
         return exists(shell.vfs, path) && readFile(shell.vfs, path).includes('rotate');
       },
+      diagnose: ({ shell }) => {
+        const path = '/srv/app/RECOVERY.md';
+        if (exists(shell.vfs, path)) return '記録はありますが、rotate という語が含まれていません。';
+        return null;
+      },
       explain: '記録が無い対応は再発する。何を見て、何をして、次にどう防ぐかを残すまでが復旧作業。',
     },
   ],
 };
 
-export const missions: readonly LessonDefinition[] = [shellWarmup, diskFullBoss];
+export const gitFirstCommit: LessonDefinition = {
+  id: 'git/01/first-commit',
+  kind: 'training',
+  title: '最初のコミットを刻む',
+  objectives: ['リポジトリを作る', '3面（作業ツリー・インデックス・HEAD）を動かす', '履歴を残す'],
+  parCommands: 6,
+  initial: {
+    files: {
+      [HOME]: null,
+      [`${HOME}/notes.md`]: '# 覚え書き\n\n- git は差分ではなくスナップショットを保存する\n',
+      [`${HOME}/draft.txt`]: 'まだ途中\n',
+      '/etc/hosts': '127.0.0.1\tlocalhost\n',
+    },
+  },
+  steps: [
+    {
+      prompt: 'ここをリポジトリにせよ。',
+      check: 'git のリポジトリが作られていること',
+      hints: ['git init と打つ'],
+      assert: ({ shell }) => shell.git !== null,
+      explain:
+        'init で作られるのは .git というディレクトリだけ。ファイルの中身はまだ1つも記録されていない。',
+    },
+    {
+      prompt: 'notes.md だけをインデックスに載せよ。draft.txt はまだ載せるな。',
+      check: 'インデックスに notes.md があり、draft.txt が無いこと',
+      hints: ['git add <ファイル名>', 'git add notes.md'],
+      assert: ({ shell }) =>
+        shell.git !== null && shell.git.index.has('notes.md') && !shell.git.index.has('draft.txt'),
+      explain:
+        'add は「次のコミットに含めるものを選ぶ」操作。全部を無条件に含めないのが index の存在理由。',
+    },
+    {
+      prompt: 'メッセージを付けてコミットせよ。',
+      check: 'コミットが1つ以上あり、notes.md が記録されていること',
+      hints: ['git commit -m "メッセージ"'],
+      assert: ({ shell }) => {
+        if (shell.git === null) return false;
+        if (headCommit(shell.git) === null) return false;
+        return log(shell.git).length >= 1;
+      },
+      diagnose: ({ shell }) => {
+        if (shell.git === null) return null;
+        if (shell.git.index.size === 0) return 'インデックスが空です。先に git add をしてください。';
+        return null;
+      },
+      explain:
+        'コミットは、その時点のツリー全体を指すスナップショット。親を1つ持ち、履歴は数珠つなぎになる。',
+    },
+    {
+      prompt: 'draft.txt を追跡外のまま、作業ツリーが汚れていない状態にせよ（notes.md を編集していたら戻すか、コミットせよ）。',
+      check: 'notes.md に未ステージの変更が無いこと（draft.txt は追跡外のままでよい）',
+      hints: [
+        'git status で今どうなっているかを見る',
+        '編集してしまったら git add と git commit でもう一度記録する',
+      ],
+      assert: ({ shell }) => {
+        if (shell.git === null) return false;
+        const report = status(shell.git, shell.vfs);
+        return report.unstaged.length === 0 && report.staged.length === 0;
+      },
+      explain:
+        'status が読めれば、3面のどこに差があるかが分かる。untracked は「まだ git が知らない」だけで、汚れではない。',
+    },
+  ],
+};
+
+export const missions: readonly LessonDefinition[] = [shellWarmup, gitFirstCommit, diskFullBoss];
 
 export function findMission(id: string): LessonDefinition | undefined {
   return missions.find((m) => m.id === id || m.id.endsWith(`/${id}`));

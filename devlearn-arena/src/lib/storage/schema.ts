@@ -50,6 +50,29 @@ export const profileSchema = z.object({
 export type Profile = z.infer<typeof profileSchema>;
 
 /** シェルの状態そのもの。リロードしても続きから触れるように丸ごと保存する */
+const headSchema = z.union([
+  z.object({ type: z.literal('branch'), name: z.string() }),
+  z.object({ type: z.literal('detached'), hash: z.string() }),
+]);
+
+export const gitSnapshotSchema = z.object({
+  root: z.string(),
+  head: headSchema,
+  refs: z.array(z.tuple([z.string(), z.string()])),
+  index: z.array(z.object({ path: z.string(), mode: z.string(), hash: z.string() })),
+  reflog: z.array(z.object({ hash: z.string(), message: z.string() })),
+  author: z.object({
+    name: z.string(),
+    email: z.string(),
+    timestamp: z.number(),
+    timezone: z.string(),
+  }),
+  origHead: z.string().nullable(),
+  objects: z.array(
+    z.object({ type: z.enum(['blob', 'tree', 'commit', 'tag']), body: z.string() }),
+  ),
+});
+
 export const shellSnapshotSchema = z.object({
   cwd: z.string().min(1),
   vars: z.record(z.string(), z.string()),
@@ -58,6 +81,7 @@ export const shellSnapshotSchema = z.object({
     z.object({ kind: z.enum(['dir', 'file']), content: z.string().optional() }),
   ),
   history: z.array(z.string()).default([]),
+  git: gitSnapshotSchema.nullable().default(null),
 });
 export type ShellSnapshot = z.infer<typeof shellSnapshotSchema>;
 

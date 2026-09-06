@@ -2,6 +2,7 @@ import { createClock, type MutableClock } from './clock';
 import { createDefaultRegistry } from './commands';
 import type { CommandRegistry, ShellState } from './registry';
 import { HOME } from './path';
+import { restoreGit, snapshotGit, type GitSnapshot } from '@/engines/git/serialize';
 import { createVfs, type VfsNode, type VfsState } from './vfs';
 
 export interface SessionOptions {
@@ -48,7 +49,7 @@ export function createShellState(options: SessionOptions = {}): ShellState {
       ...options.vars,
     }),
   );
-  return { vfs, cwd, vars, lastExit: 0, history: [] };
+  return { vfs, git: null, cwd, vars, lastExit: 0, history: [] };
 }
 
 export interface ShellSnapshotData {
@@ -56,6 +57,7 @@ export interface ShellSnapshotData {
   vars: Record<string, string>;
   files: Record<string, { kind: 'dir' | 'file'; content?: string }>;
   history: string[];
+  git: GitSnapshot | null;
 }
 
 /** 保存できる素のデータに落とす */
@@ -69,6 +71,7 @@ export function snapshotShell(state: ShellState): ShellSnapshotData {
     vars: Object.fromEntries(state.vars),
     files,
     history: [...state.history],
+    git: state.git === null ? null : snapshotGit(state.git),
   };
 }
 
@@ -81,6 +84,7 @@ export function restoreShell(snapshot: ShellSnapshotData): ShellState {
   if (!nodes.has('/')) nodes.set('/', { kind: 'dir' });
   return {
     vfs: { nodes },
+    git: snapshot.git === null ? null : restoreGit(snapshot.git),
     cwd: snapshot.cwd,
     vars: new Map(Object.entries(snapshot.vars)),
     lastExit: 0,
