@@ -5,7 +5,6 @@ import {
   buildContext, createProgress, currentStep, evaluate, passes, useHint,
 } from '@/engines/lesson/runner';
 import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
-import { CommandBar } from '@/features/terminal/CommandBar';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
 import { TimeScrubber } from '@/features/terminal/TimeScrubber';
 import { useShellSession } from '@/features/terminal/useShellSession';
@@ -16,7 +15,6 @@ import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
 import { FileWorld } from '@/visual/FileWorld';
-import { describeChange } from './describe';
 
 const STEP_XP = 10;
 const FALLBACK = missions[0];
@@ -54,30 +52,12 @@ function Park({
   const grantXp = useStore((s) => s.grantXp);
   const clearLesson = useStore((s) => s.clearLesson);
   const paneMain = useStore((s) => s.settings.paneMain);
-  const paneMap = useStore((s) => s.settings.paneMap);
   const updateSettings = useStore((s) => s.updateSettings);
 
   const entries = session.journal.entries;
   const cursor = session.journal.cursor;
   const previous = entries[cursor - 1]?.state;
   const step = currentStep(mission, progress);
-
-  /** 直近の操作を、コマンドと「何が起きたか」の対で並べる */
-  const log = useMemo(() => {
-    const rows: { key: number; command: string; text: string }[] = [];
-    for (let i = Math.max(1, cursor - 5); i <= cursor; i += 1) {
-      const entry = entries[i];
-      const before = entries[i - 1];
-      if (!entry || !before) continue;
-      rows.push({
-        key: i,
-        command: entry.label,
-        text: describeChange(before.state.vfs, entry.state.vfs, before.state.cwd, entry.state.cwd, 0)
-          .text,
-      });
-    }
-    return rows.reverse();
-  }, [entries, cursor]);
 
   // いま条件を満たしているか。毎回描画時に評価する
   const passingNow = useMemo(() => {
@@ -281,8 +261,6 @@ function Park({
               onExecuted={handleExecuted}
             />
           </div>
-
-          <CommandBar terminal={terminalRef} />
         </div>
 
         <Splitter
@@ -297,12 +275,9 @@ function Park({
         />
 
         {/* 右：結果を見る場所 */}
-        <div
-          className="grid min-h-0 min-w-0"
-          style={{ gridTemplateRows: `minmax(0, ${String(paneMap)}fr) auto minmax(0, ${String(100 - paneMap)}fr)` }}
-        >
+        <div className="flex min-h-0 min-w-0 flex-col">
           <div
-            className="min-h-0 overflow-hidden"
+            className="min-h-0 flex-1 overflow-hidden"
             style={{
               backgroundColor: 'var(--grass)',
               backgroundImage:
@@ -320,35 +295,6 @@ function Park({
             </div>
           </div>
 
-          <Splitter
-            orientation="horizontal"
-            value={paneMap}
-            min={30}
-            max={85}
-            label="地図と記録の高さ"
-            onChange={(next) => {
-              updateSettings({ paneMap: next });
-            }}
-          />
-
-          {/* 何が起きたかを言葉で残す */}
-          <div className="flex min-h-0 flex-col overflow-auto bg-cream px-5 py-3">
-            <p className="text-sm font-bold text-ink-soft">実行の記録</p>
-            {log.length === 0 ? (
-              <p className="mt-2 text-sm text-ink-soft">
-                下の入力欄にコマンドを打つと、ここに「何が起きたか」が残ります。
-              </p>
-            ) : (
-              <ul className="mt-2 flex flex-col gap-2">
-                {log.map((row) => (
-                  <li key={row.key} className="border-l-4 border-[var(--gold-dark)] pl-3">
-                    <p className="font-mono text-sm text-ink">$ {row.command}</p>
-                    <p className="text-sm text-ink-soft">{row.text}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </div>
       </div>
     </div>

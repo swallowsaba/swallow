@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 
-test('園内が1枚で開き、コマンドで景色が変わる', async ({ page }) => {
+async function type(page: import('@playwright/test').Page, line: string): Promise<void> {
+  await page.locator('.xterm-screen').click();
+  await page.keyboard.type(line);
+  await page.keyboard.press('Enter');
+}
+
+test('1枚の画面が開き、コマンドで景色が変わる', async ({ page }) => {
   const failed: string[] = [];
   page.on('response', (res) => {
     if (res.status() >= 400) failed.push(`${String(res.status())} ${res.url()}`);
@@ -8,23 +14,22 @@ test('園内が1枚で開き、コマンドで景色が変わる', async ({ page
 
   await page.goto('./');
   await expect(page.getByText('DEVLEARN', { exact: true })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'ファイルシステムの園内図' })).toBeVisible();
 
   const world = page.getByRole('img', { name: 'ファイルシステムの園内図' });
+  await expect(world).toBeVisible();
   await expect(world).not.toContainText('reports');
 
-  await page.getByLabel('コマンドを入力').fill('mkdir reports');
-  await page.getByLabel('コマンドを入力').press('Enter');
+  await type(page, 'mkdir reports');
   await expect(world).toContainText('reports');
 
   expect(failed, `失敗したリクエスト: ${failed.join(', ')}`).toEqual([]);
 });
 
-test('実行の記録に「何が起きたか」が残る', async ({ page }) => {
+test('条件を満たすと手順が進む', async ({ page }) => {
   await page.goto('./');
-  await page.getByLabel('コマンドを入力').fill('mkdir reports');
-  await page.getByLabel('コマンドを入力').press('Enter');
-  await expect(page.getByText('ディレクトリ ~/reports を作りました')).toBeVisible();
+  await expect(page.getByText('未達成', { exact: false })).toBeVisible();
+  await type(page, 'mkdir reports');
+  await expect(page.getByText('やること 2')).toBeVisible();
 });
 
 test('全体図と設定へ行ける', async ({ page }) => {

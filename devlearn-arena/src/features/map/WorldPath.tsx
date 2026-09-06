@@ -52,19 +52,18 @@ export function WorldPath({ nodes }: { nodes: readonly MapNode[] }) {
       <polyline
         points={line}
         fill="none"
-        stroke="var(--c-line)"
-        strokeWidth={6}
+        stroke="var(--cream-dark)"
+        strokeWidth={10}
         strokeLinecap="round"
-        strokeDasharray="2 14"
+        strokeDasharray="4 16"
       />
       {/* 踏破済みの道 */}
       <polyline
         points={travelled.map((p) => `${String(p.x)},${String(p.y)}`).join(' ')}
         fill="none"
-        stroke="var(--gold-dark)"
-        strokeWidth={6}
+        stroke="var(--path)"
+        strokeWidth={12}
         strokeLinecap="round"
-        opacity={0.9}
       />
 
       {nodes.map((node, i) => {
@@ -98,7 +97,7 @@ export function WorldPath({ nodes }: { nodes: readonly MapNode[] }) {
                 cy={p.y}
                 r={RADIUS + 8}
                 fill="none"
-                stroke="var(--gold-dark)"
+                stroke="var(--path)"
                 strokeWidth={2}
                 animate={animate ? { r: [RADIUS + 6, RADIUS + 16], opacity: [0.8, 0] } : {}}
                 transition={{ repeat: Infinity, duration: 1.8 }}
@@ -113,7 +112,7 @@ export function WorldPath({ nodes }: { nodes: readonly MapNode[] }) {
                 height={RADIUS * 2}
                 transform={`rotate(45 ${String(p.x)} ${String(p.y)})`}
                 fill={fill}
-                stroke={node.state === 'locked' ? stroke : 'var(--warn)'}
+                stroke={node.state === 'locked' ? stroke : 'var(--bad)'}
                 strokeWidth={3}
               />
             ) : (
@@ -138,8 +137,9 @@ export function WorldPath({ nodes }: { nodes: readonly MapNode[] }) {
                 x={p.x}
                 y={p.y + RADIUS + 22 + li * 18}
                 textAnchor="middle"
-                fill="var(--ink-soft)"
-                fontSize={13}
+                fill="var(--ink)"
+                fontSize={14}
+                fontWeight={600}
               >
                 {part}
               </text>

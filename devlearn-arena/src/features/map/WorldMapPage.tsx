@@ -35,7 +35,7 @@ export default function WorldMapPage() {
   return (
     <div className="flex flex-col gap-16">
       <header className="max-w-3xl">
-        <h1 className="title text-5xl">{t('map.title')}</h1>
+        <h1 className="sign inline-block px-6 py-2 text-4xl font-extrabold">{t('map.title')}</h1>
         <p className="mt-4 text-lg text-ink-soft">{t('map.lead')}</p>
         <p className="mt-4 font-mono text-base text-ink-soft">
           {totals.lessons} {t('map.lessons')} · {totals.bosses} {t('map.bosses')} · {totals.ready}{' '}
@@ -43,12 +43,12 @@ export default function WorldMapPage() {
         </p>
       </header>
 
-      <section data-track="git">
-        <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-wood-dark pb-4">
-          <h2 className="title text-4xl text-[var(--gold-dark)]">序章 — 端末を手に入れる</h2>
+      <section className="bevel p-6">
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b-4 border-wood-dark pb-3">
+          <h2 className="sign inline-block px-4 py-1.5 text-2xl font-extrabold">序章 — 端末を手に入れる</h2>
           <Badge tone="accent" size="sm">挑戦できます</Badge>
         </div>
-        <div className="mt-6">
+        <div className="mt-6 rounded-sm bg-[var(--grass)] p-4">
           <WorldPath nodes={prologue} />
         </div>
       </section>
@@ -70,10 +70,10 @@ export default function WorldMapPage() {
         });
 
         return (
-          <section key={track.id} data-track={track.id}>
-            <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-wood-dark pb-4">
+          <section key={track.id} className="bevel p-6">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b-4 border-wood-dark pb-3">
               <div>
-                <h2 className="title text-4xl text-[var(--gold-dark)]">{track.title}</h2>
+                <h2 className="sign inline-block px-4 py-1.5 text-2xl font-extrabold">{track.title}</h2>
                 <p className="mt-2 max-w-3xl text-base text-ink-soft">{track.goal}</p>
               </div>
               <div className="flex items-center gap-3">
@@ -93,7 +93,7 @@ export default function WorldMapPage() {
                 valueText={`${String(done)}/${String(allLessons.length)}`}
               />
             </div>
-            <div className="mt-6">
+            <div className="mt-6 rounded-sm bg-[var(--grass)] p-4">
               <WorldPath nodes={nodes} />
             </div>
           </section>
