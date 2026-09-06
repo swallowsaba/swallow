@@ -4,6 +4,9 @@ import type { VfsState } from '@/engines/kernel/vfs';
 import { useMotionEnabled } from '@/ui/motion';
 import { CHIP_H, COL_W, diffVfs, layoutTree, NODE_H } from './treeLayout';
 
+/** 読み上げ名。E2E からも参照するので定数にする */
+export const FILE_WORLD_LABEL = 'ファイルシステムの階層図';
+
 interface Props {
   vfs: VfsState;
   previous?: VfsState | undefined;
@@ -28,7 +31,7 @@ export function FileWorld({ vfs, previous, cwd }: Props) {
         className="relative"
         style={{ width: layout.width, height: layout.height, minWidth: '100%' }}
         role="img"
-        aria-label="ファイルシステムの階層図"
+        aria-label={FILE_WORLD_LABEL}
       >
         {/* 親子をつなぐ線 */}
         <svg

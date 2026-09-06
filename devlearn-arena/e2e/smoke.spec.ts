@@ -15,7 +15,7 @@ test('1枚の画面が開き、コマンドで景色が変わる', async ({ page
   await page.goto('./');
   await expect(page.getByText('DEVLEARN', { exact: true })).toBeVisible();
 
-  const world = page.getByRole('img', { name: 'ファイルシステムの園内図' });
+  const world = page.getByRole('img', { name: 'ファイルシステムの階層図' });
   await expect(world).toBeVisible();
   await expect(world).not.toContainText('reports');
 
