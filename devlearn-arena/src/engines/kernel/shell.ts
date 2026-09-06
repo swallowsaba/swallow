@@ -4,7 +4,7 @@ import { expandWord, expandWordFields, type ExpandContext } from './expand';
 import { expandBraces } from './brace';
 import { expandGlob, hasMagic } from './glob';
 import { parse } from './parser';
-import type { CommandRegistry, CommandResult, RunLineResult, ShellState } from './registry';
+import type { CommandRegistry, CommandResult, EditorRequest, RunLineResult, ShellState } from './registry';
 import { ParseError } from './tokenizer';
 import { appendFile, at, readFile, VfsError, writeFile } from './vfs';
 
@@ -17,6 +17,8 @@ export interface ExecOutcome {
   state: ShellState;
   chunks: OutputChunk[];
   exitCode: number;
+  /** 画面側にエディタを開かせる要求 */
+  editor: EditorRequest | null;
 }
 
 export const EXIT_NOT_FOUND = 127;
@@ -179,6 +181,7 @@ function runList(
   const chunks: OutputChunk[] = [];
   let exitCode = 0;
   let skipNext = false;
+  let editor: EditorRequest | null = null;
 
   for (const item of list.items) {
     if (!skipNext) {
@@ -202,6 +205,7 @@ function runList(
         } else {
           pipedStdin = stdout;
         }
+        if (step.result.editor !== undefined) editor = step.result.editor;
         state = { ...state, lastExit: exitCode };
       }
     }
@@ -210,7 +214,7 @@ function runList(
     else skipNext = false;
   }
 
-  return { state, chunks, exitCode };
+  return { state, chunks, exitCode, editor };
 }
 
 /** 1行（またはヒアドキュメント付き複数行）を実行する。 */
@@ -223,7 +227,7 @@ export function execute(
   const trimmed = input.trim();
   const history = trimmed === '' ? state.history : [...state.history, input];
   const withHistory: ShellState = { ...state, history };
-  if (trimmed === '') return { state: withHistory, chunks: [], exitCode: state.lastExit };
+  if (trimmed === '') return { state: withHistory, chunks: [], exitCode: state.lastExit, editor: null };
 
   let list: CommandList;
   try {
@@ -234,6 +238,7 @@ export function execute(
       state: { ...withHistory, lastExit: EXIT_ERROR },
       chunks: [{ stream: 'stderr', text: `syntax error: ${message}\n` }],
       exitCode: EXIT_ERROR,
+      editor: null,
     };
   }
 

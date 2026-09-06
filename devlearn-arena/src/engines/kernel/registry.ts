@@ -1,8 +1,11 @@
+import type { GitState } from '@/engines/git/types';
 import type { MutableClock } from './clock';
 import type { VfsState } from './vfs';
 
 export interface ShellState {
   vfs: VfsState;
+  /** git リポジトリ。まだ init していなければ null */
+  git: GitState | null;
   cwd: string;
   vars: ReadonlyMap<string, string>;
   lastExit: number;
@@ -36,6 +39,15 @@ export interface CommandResult {
   code?: number;
   /** 変更したシェル状態（差分） */
   patch?: Partial<ShellState>;
+  /** 画面側にエディタを開かせる要求 */
+  editor?: EditorRequest;
+}
+
+export interface EditorRequest {
+  path: string;
+  content: string;
+  /** 表示に使う名前（vi / nano） */
+  tool: string;
 }
 
 export type CommandHandler = (ctx: CommandContext) => CommandResult;

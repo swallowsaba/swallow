@@ -16,6 +16,7 @@ import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
 import { CommitGraph } from '@/visual/CommitGraph';
+import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { FileWorld } from '@/visual/FileWorld';
 
 const STEP_XP = 10;
@@ -81,6 +82,7 @@ function Park({
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<'world' | 'git'>('world');
+  const [editing, setEditing] = useState<EditorTarget | null>(null);
 
   const xp = useStore((s) => s.profile.xp);
   const soundEnabled = useStore((s) => s.settings.soundEnabled);
@@ -233,6 +235,19 @@ function Park({
       />
 
       {/* 上部：任務の切り替えと現在地 */}
+      {editing ? (
+        <EditorPanel
+          target={editing}
+          onSave={(content) => {
+            session.saveFile(editing.path, content);
+            setEditing(null);
+          }}
+          onCancel={() => {
+            setEditing(null);
+          }}
+        />
+      ) : null}
+
       <header className="flex flex-wrap items-center gap-3 border-b-8 border-wood-dark bg-[var(--wood)] px-5 py-3 shadow-[inset_0_-6px_0_rgba(0,0,0,0.2)]">
         <span className="sign px-4 py-1.5 text-lg font-extrabold">DEVLEARN</span>
         <span className="font-mono text-sm font-bold text-cream">任務</span>
@@ -390,6 +405,7 @@ function Park({
               ref={terminalRef}
               session={session}
               onExecuted={handleExecuted}
+              onEditor={setEditing}
             />
             </div>
           </div>

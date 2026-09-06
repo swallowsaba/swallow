@@ -1,5 +1,7 @@
 import { CommandRegistry } from '../registry';
+import { editorCommands } from './editor';
 import { fsCommands } from './fs';
+import { gitCommands } from './git';
 import { miscCommands } from './misc';
 import { textCommands } from './text';
 import { textToolCommands } from './textTools';
@@ -12,10 +14,12 @@ import { textToolCommands } from './textTools';
 export function createDefaultRegistry(): CommandRegistry {
   return new CommandRegistry().registerAll([
     ...fsCommands,
+    ...editorCommands,
+    ...gitCommands,
     ...textCommands,
     ...textToolCommands,
     ...miscCommands,
   ]);
 }
 
-export { fsCommands, textCommands, textToolCommands, miscCommands };
+export { editorCommands, fsCommands, gitCommands, textCommands, textToolCommands, miscCommands };

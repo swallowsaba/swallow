@@ -7,6 +7,8 @@ import {
 import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { createShellState, type SessionOptions } from '@/engines/kernel/session';
 import { execute, type OutputChunk } from '@/engines/kernel/shell';
+import type { EditorRequest } from '@/engines/kernel/registry';
+import { writeFile } from '@/engines/kernel/vfs';
 import { useConst } from './useConst';
 
 export interface ShellSession {
@@ -16,7 +18,9 @@ export interface ShellSession {
   journal: Journal<ShellState>;
   atLatest: boolean;
   /** 1行実行して出力と終了コードを返す。状態はジャーナルに積まれる。 */
-  run: (line: string) => { chunks: OutputChunk[]; exitCode: number };
+  run: (line: string) => { chunks: OutputChunk[]; exitCode: number; editor: EditorRequest | null };
+  /** 編集パネルの保存。仮想FSへ書き戻し、履歴に1つ積む */
+  saveFile: (path: string, content: string) => void;
   /** 現在の状態を同期で取り出す（xterm のコールバックから使う） */
   getState: () => ShellState;
   /** 最新のスナップショット列。再描画を待たずに読める */
@@ -45,14 +49,25 @@ export function useShellSession(options: SessionOptions = {}): ShellSession {
   );
 
   const run = useCallback(
-    (line: string): { chunks: OutputChunk[]; exitCode: number } => {
+    (line: string): { chunks: OutputChunk[]; exitCode: number; editor: EditorRequest | null } => {
       const journal = journalRef.current;
       const outcome = execute(current(journal), line, registry, clock);
       journalRef.current = push(journal, outcome.state, line.split('\n')[0] ?? line);
       bump();
-      return { chunks: outcome.chunks, exitCode: outcome.exitCode };
+      return { chunks: outcome.chunks, exitCode: outcome.exitCode, editor: outcome.editor };
     },
     [registry, clock, journalRef],
+  );
+
+  const saveFile = useCallback(
+    (path: string, content: string) => {
+      const journal = journalRef.current;
+      const state = current(journal);
+      const next = { ...state, vfs: writeFile(state.vfs, path, content, true) };
+      journalRef.current = push(journal, next, `保存 ${path}`);
+      bump();
+    },
+    [journalRef],
   );
 
   const seekTo = useCallback(
@@ -77,6 +92,7 @@ export function useShellSession(options: SessionOptions = {}): ShellSession {
     journal,
     atLatest: isAtLatest(journal),
     run,
+    saveFile,
     getState,
     getTimeline,
     seekTo,
