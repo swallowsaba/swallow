@@ -12,7 +12,7 @@ import { levelFromXp, rankFromLevel, scoreAttempt, xpForScore } from '@/lib/xp';
 import { useStore } from '@/store';
 import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
-import { FileTree } from '@/visual/FileTree';
+import { FileWorld } from '@/visual/FileWorld';
 import NotFoundPage from '../NotFoundPage';
 import { DefeatOverlay } from './DefeatOverlay';
 import { QuestHud } from './QuestHud';
@@ -169,16 +169,16 @@ function Quest({ mission }: { mission: LessonDefinition }) {
             <TerminalView key={attempt} ref={terminalRef} session={session} onExecuted={handleExecuted} />
           </div>
           <CommandBar terminal={terminalRef} />
-          <TimeScrubber session={session} />
         </section>
 
         <section
           aria-label="ファイルツリー"
           className="flex min-h-[560px] flex-col border-2 border-line bg-panel"
         >
-          <div className="flex-1 overflow-auto">
-            <FileTree vfs={session.state.vfs} previous={previous?.vfs} cwd={session.state.cwd} />
+          <div className="flex-1 overflow-hidden p-2">
+            <FileWorld vfs={session.state.vfs} previous={previous?.vfs} cwd={session.state.cwd} />
           </div>
+          <TimeScrubber session={session} />
         </section>
       </div>
     </div>
