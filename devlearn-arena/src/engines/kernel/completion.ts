@@ -39,7 +39,16 @@ function completePath(shell: ShellState, word: string): string[] {
   const namePart = word.endsWith('/') ? '' : basename(word);
   const absolute = resolve(shell.cwd, dirPart);
   if (!stat(shell.vfs, absolute)) return [];
-  const prefix = hasSlash ? (word.endsWith('/') ? word : `${dirPart === '.' ? '' : dirPart}/`) : '';
+  // ルート直下（dirPart === '/'）で `${dirPart}/` とすると '//' になるので分ける
+  const prefix = !hasSlash
+    ? ''
+    : word.endsWith('/')
+      ? word
+      : dirPart === '/'
+        ? '/'
+        : dirPart === '.'
+          ? ''
+          : `${dirPart}/`;
 
   return list(shell.vfs, absolute)
     .filter((name) => name.startsWith(namePart))

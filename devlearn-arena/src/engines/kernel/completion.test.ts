@@ -9,6 +9,7 @@ const session = createSession({
     '/home/learner/report.md': 'x',
     '/home/learner/work': null,
     '/home/learner/work/deep.txt': 'x',
+    '/etc/hosts': 'x',
   },
 });
 
@@ -43,6 +44,15 @@ describe('パスの補完', () => {
   it('一致しなければ空', () => {
     expect(candidates('cat zzz')).toEqual([]);
   });
+  it('ルート直下でスラッシュが重複しない', () => {
+    expect(candidates('cat /et')).toEqual(['/etc/']);
+    expect(candidates('cat /')).toContain('/etc/');
+  });
+
+  it('絶対パスの深い階層も補完できる', () => {
+    expect(candidates('cat /etc/ho')).toEqual(['/etc/hosts']);
+  });
+
   it('置換開始位置を返す', () => {
     const line = 'cat RE';
     expect(complete(line, line.length, { shell: session.state, registry: session.registry }).start).toBe(4);

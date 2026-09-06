@@ -101,7 +101,9 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
       if (result.commonPrefix.length > cursor - result.start) {
         const before = line.slice(0, result.start);
         const after = line.slice(cursor);
-        const suffix = result.candidates.length === 1 ? ' ' : '';
+        // 候補が1つに絞れたら空白を足す。ただしディレクトリ（末尾が /）には足さない
+        const only = result.candidates.length === 1 ? result.candidates[0] : undefined;
+        const suffix = only !== undefined && !only.endsWith('/') ? ' ' : '';
         const next = before + result.commonPrefix + suffix;
         lineRef.current = { ...lineRef.current, line: next + after, cursor: next.length };
         redraw();
