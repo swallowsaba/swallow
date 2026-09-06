@@ -8,6 +8,7 @@ export interface ProgressSlice {
   reviewQueue: ReviewItem[];
   hydrate: (data: SaveData) => void;
   attemptLesson: (lessonId: string) => void;
+  grantXp: (amount: number, now: number) => void;
   useHint: (lessonId: string) => void;
   clearLesson: (input: { lessonId: string; score: number; xp: number; now: number }) => void;
   resetProgress: (now: number) => void;

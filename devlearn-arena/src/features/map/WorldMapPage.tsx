@@ -1,9 +1,11 @@
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { countAll, countTrack, TRACKS } from '@/content/catalog';
 import { useT } from '@/i18n/useT';
 import { useStore } from '@/store';
 import { Badge } from '@/ui/components/Badge';
 import { ProgressBar } from '@/ui/components/ProgressBar';
+import { useMotionEnabled } from '@/ui/motion';
 import { ChapterTile } from './ChapterTile';
 
 export default function WorldMapPage() {
@@ -15,6 +17,8 @@ export default function WorldMapPage() {
       .map(([id]) => id),
   );
   const totals = countAll();
+  const animate = useMotionEnabled();
+  const prologueCleared = cleared.has('kernel/00/shell-warmup');
 
   return (
     <div className="flex flex-col gap-14">
@@ -26,6 +30,32 @@ export default function WorldMapPage() {
           {t('map.ready')}
         </p>
       </header>
+
+      {/* いま実際に挑戦できる唯一のノード。地図が飾りにならないように先頭に置く */}
+      <section data-track="git">
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-accent pb-4">
+          <h2 className="display text-4xl text-accent">序章</h2>
+          <Badge tone={prologueCleared ? 'ok' : 'accent'} size="sm">
+            {prologueCleared ? 'CLEAR' : '挑戦できます'}
+          </Badge>
+        </div>
+        <motion.div
+          animate={animate && !prologueCleared ? { scale: [1, 1.015, 1] } : {}}
+          transition={{ repeat: Infinity, duration: 2.4 }}
+          className="mt-6"
+        >
+          <Link
+            to="/sandbox"
+            className="cut glow flex flex-col gap-3 border-2 border-accent bg-panel p-8 transition-colors hover:bg-raised"
+          >
+            <span className="display text-3xl">シェルに慣れる</span>
+            <span className="text-lg text-muted">
+              ターミナルの基本操作。ここだけが今すぐ遊べます。
+            </span>
+            <span className="font-mono text-base text-accent">▶ 訓練場へ</span>
+          </Link>
+        </motion.div>
+      </section>
 
       {TRACKS.map((track) => {
         const counts = countTrack(track);

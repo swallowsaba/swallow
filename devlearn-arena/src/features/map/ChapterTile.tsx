@@ -16,6 +16,8 @@ export function ChapterTile({ chapter, index, clearedLessonIds }: Props) {
   const done = chapter.lessons.filter((l) => clearedLessonIds.has(l.id)).length;
   const complete = total > 0 && done === total;
   const bossCount = chapter.lessons.filter((l) => l.kind === 'boss').length;
+  // まだエンジンが無い章は「準備中」。押せば目次は読める
+  const locked = chapter.lessons.every((l) => l.status === 'planned') && done === 0;
 
   return (
     <motion.div
@@ -27,7 +29,7 @@ export function ChapterTile({ chapter, index, clearedLessonIds }: Props) {
         to={`/track/${chapter.trackId}#${chapter.id.replace('/', '-')}`}
         className={`cut flex h-full flex-col gap-2 border bg-panel p-5 transition-all hover:bg-raised ${
           complete ? 'border-accent glow' : 'border-line hover:border-accent'
-        }`}
+        } ${locked ? 'opacity-55' : ''}`}
       >
         <div className="flex items-baseline justify-between gap-2">
           <span className={`display text-3xl ${complete ? 'text-accent' : 'text-muted'}`}>
@@ -38,11 +40,16 @@ export function ChapterTile({ chapter, index, clearedLessonIds }: Props) {
           </span>
         </div>
         <p className="text-base font-medium leading-snug text-ink">{chapter.title}</p>
-        {bossCount > 0 ? (
-          <p className="mt-auto font-mono text-xs uppercase tracking-wider text-[var(--c-warn)]">
-            ★ BOSS ×{bossCount}
-          </p>
-        ) : null}
+        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+          {bossCount > 0 ? (
+            <span className="font-mono text-xs uppercase tracking-wider text-[var(--c-warn)]">
+              ★ BOSS ×{bossCount}
+            </span>
+          ) : (
+            <span />
+          )}
+          {locked ? <span className="font-mono text-xs text-muted">🔒 準備中</span> : null}
+        </div>
       </Link>
     </motion.div>
   );

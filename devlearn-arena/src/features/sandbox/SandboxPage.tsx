@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { shellWarmup } from '@/engines/lesson/missions';
 import { advance, createProgress, useHint } from '@/engines/lesson/runner';
 import type { LessonProgressState } from '@/engines/lesson/types';
@@ -7,8 +7,15 @@ import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalV
 import { TimeScrubber } from '@/features/terminal/TimeScrubber';
 import { useShellSession } from '@/features/terminal/useShellSession';
 import { useT } from '@/i18n/useT';
+import { sfx } from '@/lib/sfx';
+import { levelFromXp, rankFromLevel, scoreAttempt, xpForScore } from '@/lib/xp';
+import { useStore } from '@/store';
+import { Celebration, type CelebrationData } from '@/ui/Celebration';
+import { XpToast, type ToastData } from '@/ui/XpToast';
 import { FileTree } from '@/visual/FileTree';
 import { MissionPanel } from './MissionPanel';
+
+const STEP_XP = 10;
 
 export default function SandboxPage() {
   const t = useT();
@@ -16,11 +23,77 @@ export default function SandboxPage() {
   const terminalRef = useRef<TerminalHandle>(null);
   const [progress, setProgress] = useState<LessonProgressState>(createProgress);
   const [revealedHints, setRevealedHints] = useState(0);
+  const [toasts, setToasts] = useState<ToastData[]>([]);
+  const [celebration, setCelebration] = useState<CelebrationData | null>(null);
+
+  const xp = useStore((s) => s.profile.xp);
+  const soundEnabled = useStore((s) => s.settings.soundEnabled);
+  const grantXp = useStore((s) => s.grantXp);
+  const clearLesson = useStore((s) => s.clearLesson);
 
   const previous = session.journal.entries[session.journal.cursor - 1]?.state;
 
+  const pushToast = useCallback((text: string) => {
+    const key = Date.now() + Math.random();
+    setToasts((list) => [...list, { key, text }]);
+    setTimeout(() => {
+      setToasts((list) => list.filter((toast) => toast.key !== key));
+    }, 2000);
+  }, []);
+
+  /** コマンド実行のたびに、状態から手順の達成を判定して見返りを出す */
+  const handleExecuted = useCallback(() => {
+    const next = advance(shellWarmup, progress, session.getTimeline());
+    const stepped = next.stepIndex > progress.stepIndex;
+    const justCleared = next.cleared && !progress.cleared;
+    setProgress(next);
+    setRevealedHints(0);
+    if (!stepped && !justCleared) return;
+
+    const now = Date.now();
+
+    if (justCleared) {
+      const score = scoreAttempt({
+        hintsUsed: next.hintsUsed,
+        commandsUsed: next.commandsUsed,
+        parCommands: shellWarmup.parCommands,
+      });
+      const reward = xpForScore(score, 'drill');
+      const levelBefore = levelFromXp(xp);
+      const levelAfter = levelFromXp(xp + reward);
+      clearLesson({ lessonId: shellWarmup.id, score, xp: reward, now });
+      setCelebration({
+        key: now,
+        title: 'MISSION CLEAR',
+        subtitle: `${shellWarmup.title} — スコア ${String(score)}`,
+        xp: reward,
+        levelUp:
+          levelAfter > levelBefore
+            ? { level: levelAfter, rank: rankFromLevel(levelAfter) }
+            : undefined,
+      });
+      if (soundEnabled) {
+        sfx.clear();
+        if (levelAfter > levelBefore) setTimeout(() => { sfx.levelUp(); }, 500);
+      }
+      return;
+    }
+
+    grantXp(STEP_XP, now);
+    pushToast(`手順 ${String(progress.stepIndex + 1)} 達成  +${String(STEP_XP)} XP`);
+    if (soundEnabled) sfx.step();
+  }, [progress, session, xp, soundEnabled, grantXp, clearLesson, pushToast]);
+
   return (
     <div data-track="git" className="flex flex-col gap-8">
+      <XpToast toasts={toasts} />
+      <Celebration
+        data={celebration}
+        onDismiss={() => {
+          setCelebration(null);
+        }}
+      />
+
       <header>
         <h1 className="display text-5xl">{t('sandbox.title')}</h1>
         <p className="mt-3 max-w-3xl text-lg text-muted">{t('sandbox.lead')}</p>
@@ -46,14 +119,7 @@ export default function SandboxPage() {
             {t('lesson.terminal')}
           </h2>
           <div className="flex-1">
-            <TerminalView
-              ref={terminalRef}
-              session={session}
-              onExecuted={() => {
-                setProgress((p) => advance(shellWarmup, p, session.getTimeline()));
-                setRevealedHints(0);
-              }}
-            />
+            <TerminalView ref={terminalRef} session={session} onExecuted={handleExecuted} />
           </div>
           <CommandBar terminal={terminalRef} />
           <TimeScrubber session={session} />
@@ -80,4 +146,3 @@ export default function SandboxPage() {
     </div>
   );
 }
-

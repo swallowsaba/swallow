@@ -28,6 +28,15 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       };
     }),
 
+  grantXp: (amount, now) =>
+    set((state) => ({
+      profile: {
+        xp: state.profile.xp + Math.max(0, Math.round(amount)),
+        streakDays: nextStreak(state.profile.streakDays, state.profile.lastActiveDay, dayKey(now)),
+        lastActiveDay: dayKey(now),
+      },
+    })),
+
   useHint: (lessonId) =>
     set((state) => {
       const current = state.lessons[lessonId] ?? emptyLessonProgress();

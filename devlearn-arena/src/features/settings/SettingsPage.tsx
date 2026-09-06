@@ -58,6 +58,25 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
+        <h2 className="font-mono text-base text-muted">効果音</h2>
+        <button
+          type="button"
+          aria-pressed={settings.soundEnabled}
+          onClick={() => {
+            updateSettings({ soundEnabled: !settings.soundEnabled });
+          }}
+          className={`w-fit border-2 px-5 py-2.5 text-base ${
+            settings.soundEnabled ? 'border-accent text-accent' : 'border-line text-muted'
+          }`}
+        >
+          {settings.soundEnabled ? '効果音: オン' : '効果音: オフ'}
+        </button>
+        <p className="text-sm text-muted">
+          手順の達成やクリア時に短い音が鳴ります。音声ファイルは使わず、その場で合成しています。
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-3">
         <label htmlFor="tick" className="font-mono text-xs text-muted">
           {t('settings.tick')}
         </label>
