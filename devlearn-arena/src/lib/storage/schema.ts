@@ -61,6 +61,9 @@ export const gitSnapshotSchema = z.object({
   refs: z.array(z.tuple([z.string(), z.string()])),
   index: z.array(z.object({ path: z.string(), mode: z.string(), hash: z.string() })),
   reflog: z.array(z.object({ hash: z.string(), message: z.string() })),
+  stash: z
+    .array(z.object({ message: z.string(), files: z.array(z.tuple([z.string(), z.string()])) }))
+    .default([]),
   author: z.object({
     name: z.string(),
     email: z.string(),

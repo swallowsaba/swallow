@@ -1,6 +1,6 @@
 import { ObjectStore, type GitObjectType } from './objects';
 import { defaultAuthor } from './repository';
-import type { GitState, Head, IndexEntry, ReflogEntry } from './types';
+import type { GitState, Head, IndexEntry, ReflogEntry, StashEntry } from './types';
 
 /** バイト列を保存できる文字列にする（tree は binary を含むため base64） */
 function toBase64(bytes: Uint8Array): string {
@@ -22,6 +22,7 @@ export interface GitSnapshot {
   refs: [string, string][];
   index: IndexEntry[];
   reflog: ReflogEntry[];
+  stash: StashEntry[];
   author: { name: string; email: string; timestamp: number; timezone: string };
   origHead: string | null;
   objects: { type: GitObjectType; body: string }[];
@@ -39,6 +40,7 @@ export function snapshotGit(git: GitState): GitSnapshot {
     refs: [...git.refs.entries()],
     index: [...git.index.values()],
     reflog: [...git.reflog],
+    stash: [...git.stash],
     author: git.author,
     origHead: git.origHead,
     objects,
@@ -55,6 +57,7 @@ export function restoreGit(snapshot: GitSnapshot): GitState {
     refs: new Map(snapshot.refs),
     index: new Map(snapshot.index.map((e) => [e.path, e])),
     reflog: snapshot.reflog,
+    stash: snapshot.stash,
     author: { ...defaultAuthor, ...snapshot.author },
     origHead: snapshot.origHead,
   };

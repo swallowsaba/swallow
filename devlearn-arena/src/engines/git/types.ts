@@ -26,6 +26,12 @@ export interface GitState {
   /** 直前の HEAD。reset や checkout の取り消しに使う */
   readonly origHead: string | null;
   readonly reflog: readonly ReflogEntry[];
+  readonly stash: readonly StashEntry[];
+}
+
+export interface StashEntry {
+  message: string;
+  files: [string, string][];
 }
 
 export interface ReflogEntry {
