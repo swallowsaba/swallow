@@ -1,8 +1,11 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import type { VfsState } from '@/engines/kernel/vfs';
 import { useMotionEnabled } from '@/ui/motion';
-import { CHIP_H, COL_W, diffVfs, layoutTree, NODE_H } from './treeLayout';
+import { diffVfs } from './treeLayout';
+import {
+  buildWorld, leftDoor, rightDoor, roomCenter, TILE, walkPath, type Cell, type WorldGrid,
+} from './worldGrid';
 
 export const FILE_WORLD_LABEL = 'ファイルシステムの階層図';
 
@@ -12,213 +15,211 @@ interface Props {
   cwd: string;
 }
 
-const ROOM_W = COL_W - 44;
-const ROOF_H = 18;
+const STEP_MS = 110;
 
-/** 空き地に置く飾り。位置は座標から決まるので毎回同じ */
-function decorations(width: number, height: number, occupied: readonly { x: number; y: number; h: number }[]) {
-  const items: { x: number; y: number; kind: '🌳' | '🌲' | '🪨' | '🌼' }[] = [];
-  const kinds = ['🌳', '🌲', '🪨', '🌼'] as const;
-  for (let gx = 0; gx * 120 < width + 200; gx += 1) {
-    for (let gy = 0; gy * 110 < height + 160; gy += 1) {
-      const x = gx * 120 + (gy % 2) * 60 - 60;
-      const y = gy * 110 - 40;
-      const hit = occupied.some(
-        (o) => x > o.x - 90 && x < o.x + ROOM_W + 40 && y > o.y - 60 && y < o.y + o.h + 40,
+function px(cell: Cell): { left: number; top: number } {
+  return { left: cell.x * TILE, top: cell.y * TILE };
+}
+
+/** 部屋の床と壁。扉の位置だけ壁を空ける */
+function RoomTiles({ world, path, lit }: { world: WorldGrid; path: string; lit: boolean }) {
+  const room = world.byPath.get(path);
+  if (!room) return null;
+  const doors = new Set<string>();
+  if (room.parent !== null) {
+    const d = leftDoor(room);
+    doors.add(`${String(d.x + 1)},${String(d.y)}`);
+  }
+  const hasChild = [...world.byPath.values()].some((r) => r.parent === room.path);
+  if (hasChild) {
+    const d = rightDoor(room);
+    doors.add(`${String(d.x - 1)},${String(d.y)}`);
+  }
+
+  const tiles: ReactElement[] = [];
+  for (let y = room.y - 1; y <= room.y + room.h; y += 1) {
+    for (let x = room.x - 1; x <= room.x + room.w; x += 1) {
+      const isEdge = x < room.x || x >= room.x + room.w || y < room.y || y >= room.y + room.h;
+      const isDoor = doors.has(`${String(x)},${String(y)}`);
+      const floor = (x + y) % 2 === 0 ? '#cbb894' : '#c0ac86';
+      tiles.push(
+        <div
+          key={`${String(x)},${String(y)}`}
+          className="absolute"
+          style={{
+            left: x * TILE,
+            top: y * TILE,
+            width: TILE,
+            height: TILE,
+            backgroundColor: isEdge && !isDoor ? '#6f4a2a' : floor,
+            boxShadow: isEdge && !isDoor ? 'inset 0 0 0 2px rgba(0,0,0,0.25)' : 'inset 0 0 0 1px rgba(0,0,0,0.06)',
+            filter: lit ? undefined : 'brightness(0.62) saturate(0.5)',
+          }}
+        />,
       );
-      if (hit) continue;
-      const kind = kinds[(gx * 7 + gy * 5) % kinds.length] ?? '🌳';
-      items.push({ x, y, kind });
     }
   }
-  return items;
+  return <>{tiles}</>;
 }
 
 /**
- * ファイルシステムを村として描く。
- * ディレクトリが屋根つきの家、ファイルが中に置かれた木箱、
- * いま居る家に人物が立ち、まだ入っていない家は薄暗い。
+ * ファイルシステムを歩ける世界として描く。
+ * ディレクトリは壁と扉のある部屋、ファイルは床に置かれた物、
+ * cd は瞬間移動ではなく、扉を通って通路を歩く動きになる。
  */
 export function FileWorld({ vfs, previous, cwd }: Props) {
   const animate = useMotionEnabled();
-  const layout = useMemo(() => layoutTree(vfs), [vfs]);
+  const world = useMemo(() => buildWorld(vfs), [vfs]);
   const diff = useMemo(() => diffVfs(previous, vfs), [previous, vfs]);
   const added = new Set(diff.added);
   const changed = new Set(diff.changed);
 
   const [visited, setVisited] = useState<ReadonlySet<string>>(() => new Set([cwd]));
-  useEffect(() => {
-    setVisited((prev) => (prev.has(cwd) ? prev : new Set([...prev, cwd])));
-  }, [cwd]);
+  const [at, setAt] = useState<Cell>(() => {
+    const room = world.byPath.get(cwd);
+    return room ? roomCenter(room) : { x: 2, y: 2 };
+  });
+  const prevCwd = useRef(cwd);
 
-  const currentRef = useRef<HTMLDivElement>(null);
+  // cwd が変わったら、経路のマスを1つずつ辿って歩く
   useEffect(() => {
-    currentRef.current?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
-  }, [cwd]);
+    if (prevCwd.current === cwd) return;
+    const cells = walkPath(world, prevCwd.current, cwd);
+    prevCwd.current = cwd;
+    setVisited((prev) => new Set([...prev, cwd]));
+    if (cells.length === 0) return;
+    if (!animate) {
+      setAt(cells[cells.length - 1] ?? at);
+      return;
+    }
+    let i = 0;
+    const timer = setInterval(() => {
+      i += 1;
+      const next = cells[i];
+      if (!next) {
+        clearInterval(timer);
+        return;
+      }
+      setAt(next);
+    }, STEP_MS);
+    return () => {
+      clearInterval(timer);
+    };
+    // world は状態から作られるので、cwd の変化だけを追えばよい
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cwd, world]);
 
-  const props = useMemo(
-    () => decorations(layout.width, layout.height, layout.nodes.map((n) => ({ x: n.x, y: n.y, h: n.height }))),
-    [layout],
-  );
+  // 部屋が消えた/作り直された場合の座標補正
+  useEffect(() => {
+    if (world.byPath.has(cwd)) return;
+    const room = world.byPath.get('/');
+    if (room) setAt(roomCenter(room));
+  }, [world, cwd]);
+
+  const viewport = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = viewport.current;
+    if (!el) return;
+    el.scrollTo({
+      left: at.x * TILE - el.clientWidth / 2,
+      top: at.y * TILE - el.clientHeight / 2,
+      behavior: animate ? 'smooth' : 'auto',
+    });
+  }, [at, animate]);
 
   return (
-    <div className="h-full w-full overflow-auto p-8">
+    <div ref={viewport} className="h-full w-full overflow-auto" style={{ backgroundColor: '#3f6b34' }}>
       <div
         className="relative"
-        style={{ width: layout.width + 80, height: layout.height + 60, minWidth: '100%' }}
+        style={{ width: world.width * TILE, height: world.height * TILE }}
         role="img"
         aria-label={FILE_WORLD_LABEL}
       >
-        {/* 飾り */}
-        {props.map((item) => (
-          <span
-            key={`deco-${String(item.x)}-${String(item.y)}`}
-            aria-hidden
-            className="pointer-events-none absolute select-none text-3xl opacity-80"
-            style={{ left: item.x, top: item.y }}
-          >
-            {item.kind}
-          </span>
+        {/* 通路 */}
+        {[...world.halls.entries()].map(([childPath, cells]) => {
+          const lit = visited.has(childPath) || visited.has(world.byPath.get(childPath)?.parent ?? '');
+          return cells.map((cell) => (
+            <div
+              key={`hall-${childPath}-${String(cell.x)}-${String(cell.y)}`}
+              className="absolute"
+              style={{
+                ...px(cell),
+                width: TILE,
+                height: TILE,
+                backgroundColor: '#b79a6d',
+                boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.12)',
+                filter: lit ? undefined : 'brightness(0.6)',
+              }}
+            />
+          ));
+        })}
+
+        {/* 部屋 */}
+        {world.rooms.map((room) => (
+          <RoomTiles key={`room-${room.path}`} world={world} path={room.path} lit={visited.has(room.path)} />
         ))}
 
-        {/* 家をつなぐ小道 */}
-        <svg
-          className="pointer-events-none absolute left-0 top-0"
-          width={layout.width + 80}
-          height={layout.height + 60}
-          aria-hidden
-        >
-          {layout.nodes.map((node) => {
-            const parent = node.parent === null ? undefined : layout.byPath.get(node.parent);
-            if (!parent) return null;
-            const x1 = parent.x + ROOM_W;
-            const y1 = parent.y + ROOF_H + NODE_H / 2;
-            const x2 = node.x;
-            const y2 = node.y + ROOF_H + NODE_H / 2;
-            const mid = x1 + (x2 - x1) / 2;
-            const lit = visited.has(node.path) || visited.has(parent.path);
-            const d = `M ${String(x1)} ${String(y1)} H ${String(mid)} V ${String(y2)} H ${String(x2)}`;
+        {/* 部屋の名札 */}
+        {world.rooms.map((room) => (
+          <div
+            key={`sign-${room.path}`}
+            className="sign absolute z-10 truncate px-2 text-sm font-extrabold"
+            style={{
+              left: room.x * TILE,
+              top: (room.y - 1) * TILE - 12,
+              maxWidth: room.w * TILE,
+            }}
+          >
+            {room.name}
+            {room.hiddenCount > 0 ? ` +${String(room.hiddenCount)}` : ''}
+          </div>
+        ))}
+
+        {/* 床に置かれた物 */}
+        {world.rooms.flatMap((room) =>
+          room.items.map((item) => {
+            const isAdded = added.has(item.path);
+            const isChanged = changed.has(item.path);
             return (
-              <g key={`path-${node.path}`}>
-                <path d={d} fill="none" stroke="#5c8f42" strokeWidth={20} strokeLinecap="round" />
-                <path
-                  d={d}
-                  fill="none"
-                  stroke={lit ? 'var(--path)' : '#a89b7d'}
-                  strokeWidth={13}
-                  strokeLinecap="round"
-                  strokeDasharray="16 8"
-                />
-              </g>
-            );
-          })}
-        </svg>
-
-        {layout.nodes.map((node) => {
-          const isCwd = node.path === cwd;
-          const isNew = added.has(node.path);
-          const lit = visited.has(node.path);
-          return (
-            <motion.div
-              key={node.path}
-              ref={isCwd ? currentRef : undefined}
-              initial={animate && isNew ? { opacity: 0, scale: 0.8, y: -20 } : false}
-              animate={{ opacity: lit ? 1 : 0.7, scale: 1, y: 0 }}
-              transition={{ type: 'spring', stiffness: 240, damping: 18 }}
-              className="absolute"
-              style={{ left: node.x, top: node.y, width: ROOM_W }}
-            >
-              {/* 屋根 */}
-              <div
-                aria-hidden
-                className="mx-auto"
-                style={{
-                  width: ROOM_W + 16,
-                  marginLeft: -8,
-                  height: ROOF_H,
-                  background: isCwd ? 'var(--bad)' : node.path === '/' ? '#8f4b3f' : '#a8563f',
-                  clipPath: 'polygon(6% 100%, 50% 0, 94% 100%)',
-                }}
-              />
-              <div
-                className={`border-4 ${isCwd ? 'border-[var(--bad)]' : 'border-wood-dark'}`}
-                style={{
-                  backgroundColor: lit ? 'var(--cream)' : '#cdbf9d',
-                  boxShadow: isCwd
-                    ? '0 0 0 6px rgba(192,68,47,0.22), 0 6px 0 rgba(0,0,0,0.2)'
-                    : '0 6px 0 rgba(0,0,0,0.2)',
-                }}
+              <motion.div
+                key={`item-${item.path}`}
+                initial={animate ? { scale: 0, y: -TILE } : false}
+                animate={{ scale: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 16 }}
+                className="absolute z-10 grid place-items-center"
+                style={{ ...px(item), width: TILE, height: TILE }}
+                title={item.path}
               >
-                <div
-                  className={`flex items-center gap-2 px-3 ${
-                    isCwd ? 'bg-[var(--bad)] text-cream' : 'plate'
-                  }`}
-                  style={{ height: NODE_H }}
-                >
-                  <span aria-hidden className="text-lg leading-none">
-                    {node.path === '/' ? '🏰' : '🏠'}
-                  </span>
-                  <span className="truncate font-extrabold" title={node.path}>
-                    {node.name}
-                  </span>
-                </div>
+                <span aria-hidden className="text-2xl leading-none">
+                  {isAdded ? '✨' : isChanged ? '📜' : '📦'}
+                </span>
+                <span className="absolute -bottom-1 max-w-[74px] truncate bg-[rgb(0_0_0/45%)] px-1 font-mono text-[10px] text-white">
+                  {item.name}
+                </span>
+              </motion.div>
+            );
+          }),
+        )}
 
-                <div className="relative min-h-[46px] px-2 py-2">
-                  <ul>
-                    <AnimatePresence initial={false}>
-                      {node.files.map((file) => {
-                        const isAdded = added.has(file.path);
-                        const isChanged = changed.has(file.path);
-                        return (
-                          <motion.li
-                            key={file.path}
-                            initial={animate ? { opacity: 0, y: -16, scale: 0.7 } : false}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={animate ? { opacity: 0, scale: 0.5 } : undefined}
-                            transition={{ type: 'spring', stiffness: 320, damping: 17 }}
-                            className={`mb-1 flex items-center gap-2 border-2 px-2 font-mono text-sm ${
-                              isAdded
-                                ? 'border-[var(--ok)] bg-[var(--ok)]/25'
-                                : isChanged
-                                  ? 'border-[var(--warn)] bg-[var(--warn)]/30'
-                                  : 'border-[var(--cream-dark)] bg-white/70'
-                            }`}
-                            style={{ height: CHIP_H - 2 }}
-                            title={file.path}
-                          >
-                            <span aria-hidden>{isAdded ? '✨' : '📦'}</span>
-                            <span className="truncate">{file.name}</span>
-                          </motion.li>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </ul>
-                  {node.hiddenCount > 0 ? (
-                    <p className="font-mono text-sm text-ink-soft">ほか {node.hiddenCount} 個</p>
-                  ) : null}
-
-                  {isCwd ? (
-                    <motion.div
-                      layoutId="avatar"
-                      transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                      className="absolute -right-6 -top-8"
-                      aria-label="現在地"
-                      role="img"
-                    >
-                      <motion.div
-                        animate={animate ? { y: [0, -5, 0] } : {}}
-                        transition={{ repeat: Infinity, duration: 1.5 }}
-                        className="grid h-14 w-14 place-items-center rounded-full border-4 border-wood-dark bg-gold text-3xl shadow-[0_5px_0_rgba(0,0,0,0.25)]"
-                      >
-                        🧑‍🌾
-                      </motion.div>
-                    </motion.div>
-                  ) : null}
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
+        {/* 主人公 */}
+        <motion.div
+          className="absolute z-20 grid place-items-center"
+          animate={{ left: at.x * TILE, top: at.y * TILE }}
+          transition={{ duration: animate ? STEP_MS / 1000 : 0, ease: 'linear' }}
+          style={{ width: TILE, height: TILE }}
+          aria-label="現在地"
+          role="img"
+        >
+          <span className="absolute bottom-0 h-2 w-6 rounded-full bg-[rgb(0_0_0/35%)]" aria-hidden />
+          <motion.span
+            aria-hidden
+            className="text-3xl leading-none"
+            animate={animate ? { y: [0, -4, 0] } : {}}
+            transition={{ repeat: Infinity, duration: 0.9 }}
+          >
+            🧑‍🌾
+          </motion.span>
+        </motion.div>
       </div>
     </div>
   );
