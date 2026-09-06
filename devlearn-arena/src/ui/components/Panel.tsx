@@ -8,10 +8,10 @@ interface PanelProps {
   className?: string;
 }
 
-export function Panel({ children, cut = true, glow = false, className = '' }: PanelProps) {
+export function Panel({ children, bevel = true, = false, className = '' }: PanelProps) {
   return (
     <div
-      className={`border border-line bg-panel ${cut ? 'cut' : ''} ${glow ? 'glow' : ''} ${className}`}
+      className={`border border-wood-dark bg-cream ${bevel ? 'cut' : ''} ${? 'glow' : ''} ${className}`}
     >
       {children}
     </div>

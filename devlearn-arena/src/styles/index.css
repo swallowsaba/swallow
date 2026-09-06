@@ -4,79 +4,102 @@
 
 /*
   デザイントークン。
-  方針: ゲーム的に大きく・強い色。PC を主対象に情報密度より視認性を優先する。
-  文字は 16px を基準にし、11px 以下は使わない。
+  参照した手触り: 遊園地経営ゲームの外装（木枠・べベル・金の看板）と、
+  明るい園内の景色。暗いターミナル配色はやめる。
 */
 :root {
-  --c-void: #05070d;
-  --c-panel: #0e1522;
-  --c-raised: #172133;
-  --c-line: #24334a;
-  --c-text: #eef4fd;
-  --c-muted: #93a7c4;
+  /* 外装（chrome） */
+  --wood: #7a5230;
+  --wood-light: #b07f4a;
+  --wood-dark: #422a15;
+  --cream: #f6e8cd;
+  --cream-dark: #ddc79f;
+  --gold: #f2c14e;
+  --gold-dark: #b8862b;
+  --ink: #2c1d10;
+  --ink-soft: #5d4630;
 
-  --c-k8s: #4d9bff;
-  --c-net: #22e3d3;
-  --c-git: #ff8a3d;
-  --c-github: #b98bff;
-  --c-accent: var(--c-k8s);
+  /* 園内 */
+  --sky: #bfe3f5;
+  --grass: #77b356;
+  --grass-dark: #5c8f42;
+  --path: #d9c39a;
+  --water: #64b6d8;
 
-  --c-ok: #35f0b4;
-  --c-warn: #ffd23f;
-  --c-bad: #ff5c6c;
+  /* 建物・荷物の色 */
+  --brick: #c9705b;
+  --roof: #8f4b3f;
+  --steel: #9fb0bd;
+  --crate: #d9a441;
+  --crate-new: #79c46a;
+  --crate-hot: #e8823c;
 
-  --f-mono: 'JetBrains Mono', 'SFMono-Regular', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --ok: #4e9a3f;
+  --warn: #d99b2b;
+  --bad: #c0442f;
+
+  --f-mono: 'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
   --f-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
 }
-
-[data-track='k8s'] { --c-accent: var(--c-k8s); }
-[data-track='net'] { --c-accent: var(--c-net); }
-[data-track='git'] { --c-accent: var(--c-git); }
-[data-track='github'] { --c-accent: var(--c-github); }
 
 html, body, #root { height: 100%; }
 
 body {
-  background-color: var(--c-void);
-  color: var(--c-text);
+  margin: 0;
+  background: var(--sky);
+  color: var(--ink);
   font-family: var(--f-sans);
   font-size: 16px;
-  line-height: 1.7;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
 }
 
-/* 装飾は画面上部の淡い光だけ。模様やグリッドは敷かない */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: radial-gradient(900px 400px at 50% -10%, rgb(77 155 255 / 10%), transparent 70%);
-}
-
-#root { position: relative; z-index: 1; }
-
 :focus-visible {
-  outline: 3px solid var(--c-accent);
-  outline-offset: 3px;
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
 }
 
-/* 角を落とした板。ゲーム機のパネルらしさを出す最小限の形 */
-.cut {
-  clip-path: polygon(
-    0 0, calc(100% - 18px) 0, 100% 18px,
-    100% 100%, 18px 100%, 0 calc(100% - 18px)
-  );
+/* 木枠のパネル。外側が濃く、内側に明るいべベルを入れて厚みを出す */
+.bevel {
+  background: var(--cream);
+  border: 4px solid var(--wood-dark);
+  box-shadow:
+    inset 0 0 0 3px var(--wood),
+    inset 0 0 0 6px var(--wood-light),
+    inset 0 0 0 9px var(--cream),
+    0 6px 0 0 rgb(0 0 0 / 25%);
 }
 
-.glow { box-shadow: 0 0 0 1px var(--c-accent), 0 0 40px -12px var(--c-accent); }
+/* 金の看板 */
+.sign {
+  background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: var(--wood-dark);
+  border: 3px solid var(--wood-dark);
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / 55%), 0 3px 0 rgb(0 0 0 / 25%);
+  text-shadow: 0 1px 0 rgb(255 255 255 / 45%);
+}
 
-.display {
-  font-family: var(--f-mono);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+/* 押せるボタン。押し込みを表現する */
+.knob {
+  background: linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%);
+  border: 3px solid var(--wood-dark);
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / 70%), 0 4px 0 var(--wood);
+  color: var(--ink);
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+.knob:hover { background: linear-gradient(180deg, #fff6e3 0%, var(--cream) 100%); }
+.knob:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / 70%), 0 1px 0 var(--wood);
+}
+.knob[aria-pressed='true'] {
+  background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
+}
+
+.title {
+  font-family: var(--f-sans);
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 @media (prefers-reduced-motion: reduce) {

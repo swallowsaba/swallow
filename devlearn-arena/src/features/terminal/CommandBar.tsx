@@ -23,7 +23,7 @@ export function CommandBar({ terminal, chips = DEFAULT_CHIPS }: Props) {
   }
 
   return (
-    <div className="border-t border-line bg-panel/70">
+    <div className="border-t border-wood-dark bg-cream">
       <div className="flex flex-wrap gap-2 px-4 pt-4">
         {chips.map((chip) => (
           <button
@@ -32,14 +32,14 @@ export function CommandBar({ terminal, chips = DEFAULT_CHIPS }: Props) {
             onClick={() => {
               setValue(chip);
             }}
-            className="border border-line px-3 py-1.5 font-mono text-sm text-muted transition-colors hover:border-accent hover:text-accent"
+            className="border border-wood-dark px-3 py-1.5 font-mono text-sm text-ink-soft transition-colors hover:border-wood-dark hover:text-[var(--gold-dark)]"
           >
             {chip}
           </button>
         ))}
       </div>
       <form onSubmit={submit} className="flex items-center gap-3 p-4">
-        <span aria-hidden className="font-mono text-lg text-accent">
+        <span aria-hidden className="font-mono text-lg text-[var(--gold-dark)]">
           $
         </span>
         <input
@@ -53,20 +53,20 @@ export function CommandBar({ terminal, chips = DEFAULT_CHIPS }: Props) {
           spellCheck={false}
           enterKeyHint="send"
           placeholder="ここにコマンドを入力して Enter"
-          className="min-w-0 flex-1 border-2 border-line bg-void px-4 py-3 font-mono text-base text-ink placeholder:text-muted/70 focus:border-accent"
+          className="min-w-0 flex-1 border-2 border-wood-dark bg-[var(--wood-dark)] px-4 py-3 font-mono text-base text-ink placeholder:text-ink-soft focus:border-wood-dark"
         />
         <button
           type="button"
           onClick={() => {
             terminal.current?.requestComplete();
           }}
-          className="border-2 border-line px-4 py-3 font-mono text-sm text-muted transition-colors hover:border-accent"
+          className="border-2 border-wood-dark px-4 py-3 font-mono text-sm text-ink-soft transition-colors hover:border-wood-dark"
         >
           Tab
         </button>
         <button
           type="submit"
-          className="border-2 border-accent px-6 py-3 font-mono text-base font-bold text-accent transition-colors hover:bg-accent hover:text-void"
+          className="border-2 border-wood-dark px-6 py-3 font-mono text-base font-bold text-[var(--gold-dark)] transition-colors hover:bg-gold hover:text-ink"
         >
           実行
         </button>

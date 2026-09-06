@@ -14,14 +14,14 @@ interface Props {
 export function SplitLayout({ terminalLabel, visualLabel, terminal, visual }: Props) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-      <section aria-label={terminalLabel} className="flex min-h-[320px] flex-col border border-line bg-void">
-        <h2 className="border-b border-line px-3 py-1.5 font-mono text-[11px] text-muted">
+      <section aria-label={terminalLabel} className="flex min-h-[320px] flex-col border border-wood-dark bg-[var(--wood-dark)]">
+        <h2 className="border-b border-wood-dark px-3 py-1.5 font-mono text-[11px] text-ink-soft">
           {terminalLabel}
         </h2>
         <div className="flex-1">{terminal}</div>
       </section>
-      <section aria-label={visualLabel} className="flex min-h-[320px] flex-col border border-line bg-panel">
-        <h2 className="border-b border-line px-3 py-1.5 font-mono text-[11px] text-muted">
+      <section aria-label={visualLabel} className="flex min-h-[320px] flex-col border border-wood-dark bg-cream">
+        <h2 className="border-b border-wood-dark px-3 py-1.5 font-mono text-[11px] text-ink-soft">
           {visualLabel}
         </h2>
         <div className="flex-1">{visual}</div>

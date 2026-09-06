@@ -34,10 +34,10 @@ export default function SettingsPage() {
 
   return (
     <div className="flex max-w-2xl flex-col gap-8">
-      <h1 className="display text-5xl">{t('settings.title')}</h1>
+      <h1 className="title text-5xl">{t('settings.title')}</h1>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-mono text-xs text-muted">{t('settings.motion')}</h2>
+        <h2 className="font-mono text-xs text-ink-soft">{t('settings.motion')}</h2>
         <div className="flex gap-2">
           {(['system', 'reduced'] as const).map((value) => (
             <button
@@ -48,7 +48,7 @@ export default function SettingsPage() {
                 updateSettings({ motion: value });
               }}
               className={`border px-3 py-1.5 text-sm ${
-                settings.motion === value ? 'border-accent text-accent' : 'border-line text-muted'
+                settings.motion === value ? 'border-wood-dark text-[var(--gold-dark)]' : 'border-wood-dark text-ink-soft'
               }`}
             >
               {t(value === 'system' ? 'settings.motion.system' : 'settings.motion.reduced')}
@@ -58,7 +58,7 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-mono text-base text-muted">効果音</h2>
+        <h2 className="font-mono text-base text-ink-soft">効果音</h2>
         <button
           type="button"
           aria-pressed={settings.soundEnabled}
@@ -66,18 +66,18 @@ export default function SettingsPage() {
             updateSettings({ soundEnabled: !settings.soundEnabled });
           }}
           className={`w-fit border-2 px-5 py-2.5 text-base ${
-            settings.soundEnabled ? 'border-accent text-accent' : 'border-line text-muted'
+            settings.soundEnabled ? 'border-wood-dark text-[var(--gold-dark)]' : 'border-wood-dark text-ink-soft'
           }`}
         >
           {settings.soundEnabled ? '効果音: オン' : '効果音: オフ'}
         </button>
-        <p className="text-sm text-muted">
+        <p className="text-sm text-ink-soft">
           手順の達成やクリア時に短い音が鳴ります。音声ファイルは使わず、その場で合成しています。
         </p>
       </section>
 
       <section className="flex flex-col gap-3">
-        <label htmlFor="tick" className="font-mono text-xs text-muted">
+        <label htmlFor="tick" className="font-mono text-xs text-ink-soft">
           {t('settings.tick')}
         </label>
         <input
@@ -90,22 +90,22 @@ export default function SettingsPage() {
           onChange={(e) => {
             updateSettings({ tickMs: Number(e.target.value) });
           }}
-          className="w-64 accent-[var(--c-accent)]"
+          className="w-64 accent-[var(--gold-dark)]"
         />
-        <p className="font-mono text-xs text-muted">{settings.tickMs} ms / tick</p>
+        <p className="font-mono text-xs text-ink-soft">{settings.tickMs} ms / tick</p>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-mono text-xs text-muted">{t('settings.data')}</h2>
-        <p className="text-xs text-muted">{t('settings.storageNote')}</p>
+        <h2 className="font-mono text-xs text-ink-soft">{t('settings.data')}</h2>
+        <p className="text-xs text-ink-soft">{t('settings.storageNote')}</p>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={download} className="border border-line px-3 py-1.5 text-sm hover:border-accent">
+          <button type="button" onClick={download} className="border border-wood-dark px-3 py-1.5 text-sm hover:border-wood-dark">
             {t('settings.export')}
           </button>
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="border border-line px-3 py-1.5 text-sm hover:border-accent"
+            className="border border-wood-dark px-3 py-1.5 text-sm hover:border-wood-dark"
           >
             {t('settings.import')}
           </button>
@@ -125,7 +125,7 @@ export default function SettingsPage() {
             onClick={() => {
               if (window.confirm(t('settings.resetConfirm'))) resetAll();
             }}
-            className="border border-line px-3 py-1.5 text-sm text-[var(--c-bad)] hover:border-[var(--c-bad)]"
+            className="border border-wood-dark px-3 py-1.5 text-sm text-[var(--bad)] hover:border-[var(--bad)]"
           >
             {t('settings.reset')}
           </button>
@@ -133,7 +133,7 @@ export default function SettingsPage() {
         {notice ? (
           <p
             aria-live="polite"
-            className={`text-sm ${notice.tone === 'ok' ? 'text-[var(--c-ok)]' : 'text-[var(--c-bad)]'}`}
+            className={`text-sm ${notice.tone === 'ok' ? 'text-[var(--ok)]' : 'text-[var(--bad)]'}`}
           >
             {notice.text}
           </p>

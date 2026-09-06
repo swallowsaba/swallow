@@ -26,12 +26,12 @@ export default function TrackPage() {
   return (
     <div data-track={track.id} className="flex flex-col gap-12">
       <header>
-        <Link to="/map" className="font-mono text-base text-muted hover:text-ink">
+        <Link to="/map" className="font-mono text-base text-ink-soft hover:text-ink">
           ← {t('track.back')}
         </Link>
-        <h1 className="display mt-3 text-5xl text-accent">{track.title}</h1>
-        <p className="mt-4 max-w-3xl text-lg text-muted">
-          <span className="font-mono text-base text-accent">{t('track.goal')}: </span>
+        <h1 className="title mt-3 text-5xl text-[var(--gold-dark)]">{track.title}</h1>
+        <p className="mt-4 max-w-3xl text-lg text-ink-soft">
+          <span className="font-mono text-base text-[var(--gold-dark)]">{t('track.goal')}: </span>
           {track.goal}
         </p>
       </header>
@@ -39,10 +39,10 @@ export default function TrackPage() {
       {track.chapters.map((ch) => (
         <section key={ch.id} id={ch.id.replace('/', '-')}>
           <div className="flex items-baseline gap-5">
-            <span className="display text-5xl text-accent/40">{String(ch.no).padStart(2, '0')}</span>
+            <span className="title text-5xl text-[var(--gold-dark)]/40">{String(ch.no).padStart(2, '0')}</span>
             <div>
-              <h2 className="display text-2xl">{ch.title}</h2>
-              <p className="mt-1 text-base text-muted">{ch.summary}</p>
+              <h2 className="title text-2xl">{ch.title}</h2>
+              <p className="mt-1 text-base text-ink-soft">{ch.summary}</p>
             </div>
           </div>
 
@@ -54,8 +54,8 @@ export default function TrackPage() {
                 <li key={l.id}>
                   <Link
                     to={lessonHref(l)}
-                    className={`flex flex-wrap items-center gap-4 border-l-4 bg-panel/60 px-5 py-4 transition-colors hover:bg-raised ${
-                      boss ? 'border-[var(--c-warn)]' : done ? 'border-accent' : 'border-line'
+                    className={`flex flex-wrap items-center gap-4 border-l-4 bg-cream px-5 py-4 transition-colors hover:bg-cream-dark ${
+                      boss ? 'border-[var(--warn)]' : done ? 'border-wood-dark' : 'border-wood-dark'
                     }`}
                   >
                     <span className="flex-1 text-lg">{l.title}</span>
@@ -63,7 +63,7 @@ export default function TrackPage() {
                     <Badge tone={boss ? 'warn' : 'muted'} size="sm">
                       {t(kindKey[l.kind])}
                     </Badge>
-                    <span className="font-mono text-sm text-muted">
+                    <span className="font-mono text-sm text-ink-soft">
                       {t('track.minutes', { n: l.minutes })}
                     </span>
                   </Link>

@@ -35,17 +35,17 @@ export default function WorldMapPage() {
   return (
     <div className="flex flex-col gap-16">
       <header className="max-w-3xl">
-        <h1 className="display text-5xl">{t('map.title')}</h1>
-        <p className="mt-4 text-lg text-muted">{t('map.lead')}</p>
-        <p className="mt-4 font-mono text-base text-muted">
+        <h1 className="title text-5xl">{t('map.title')}</h1>
+        <p className="mt-4 text-lg text-ink-soft">{t('map.lead')}</p>
+        <p className="mt-4 font-mono text-base text-ink-soft">
           {totals.lessons} {t('map.lessons')} · {totals.bosses} {t('map.bosses')} · {totals.ready}{' '}
           {t('map.ready')}
         </p>
       </header>
 
       <section data-track="git">
-        <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-accent pb-4">
-          <h2 className="display text-4xl text-accent">序章 — 端末を手に入れる</h2>
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-wood-dark pb-4">
+          <h2 className="title text-4xl text-[var(--gold-dark)]">序章 — 端末を手に入れる</h2>
           <Badge tone="accent" size="sm">挑戦できます</Badge>
         </div>
         <div className="mt-6">
@@ -71,16 +71,16 @@ export default function WorldMapPage() {
 
         return (
           <section key={track.id} data-track={track.id}>
-            <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-accent pb-4">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-wood-dark pb-4">
               <div>
-                <h2 className="display text-4xl text-accent">{track.title}</h2>
-                <p className="mt-2 max-w-3xl text-base text-muted">{track.goal}</p>
+                <h2 className="title text-4xl text-[var(--gold-dark)]">{track.title}</h2>
+                <p className="mt-2 max-w-3xl text-base text-ink-soft">{track.goal}</p>
               </div>
               <div className="flex items-center gap-3">
                 <Badge tone="muted" size="sm">
                   {t('map.phase')} {track.phase}
                 </Badge>
-                <span className="font-mono text-sm text-muted">
+                <span className="font-mono text-sm text-ink-soft">
                   {done}/{allLessons.length}
                 </span>
               </div>

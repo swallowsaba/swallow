@@ -61,7 +61,7 @@ export function WorldPath({ nodes }: { nodes: readonly MapNode[] }) {
       <polyline
         points={travelled.map((p) => `${String(p.x)},${String(p.y)}`).join(' ')}
         fill="none"
-        stroke="var(--c-accent)"
+        stroke="var(--gold-dark)"
         strokeWidth={6}
         strokeLinecap="round"
         opacity={0.9}
@@ -72,10 +72,10 @@ export function WorldPath({ nodes }: { nodes: readonly MapNode[] }) {
         const isLocked = node.state === 'locked';
         const stroke =
           node.state === 'clear' || node.state === 'current' || node.state === 'open'
-            ? 'var(--c-accent)'
+            ? 'var(--gold-dark)'
             : 'var(--c-line)';
-        const fill = node.state === 'clear' ? 'var(--c-accent)' : 'var(--c-panel)';
-        const markFill = node.state === 'clear' ? 'var(--c-void)' : stroke;
+        const fill = node.state === 'clear' ? 'var(--gold-dark)' : 'var(--cream)';
+        const markFill = node.state === 'clear' ? 'var(--wood-dark)' : stroke;
 
         return (
           <g
@@ -98,7 +98,7 @@ export function WorldPath({ nodes }: { nodes: readonly MapNode[] }) {
                 cy={p.y}
                 r={RADIUS + 8}
                 fill="none"
-                stroke="var(--c-accent)"
+                stroke="var(--gold-dark)"
                 strokeWidth={2}
                 animate={animate ? { r: [RADIUS + 6, RADIUS + 16], opacity: [0.8, 0] } : {}}
                 transition={{ repeat: Infinity, duration: 1.8 }}
@@ -113,7 +113,7 @@ export function WorldPath({ nodes }: { nodes: readonly MapNode[] }) {
                 height={RADIUS * 2}
                 transform={`rotate(45 ${String(p.x)} ${String(p.y)})`}
                 fill={fill}
-                stroke={node.state === 'locked' ? stroke : 'var(--c-warn)'}
+                stroke={node.state === 'locked' ? stroke : 'var(--warn)'}
                 strokeWidth={3}
               />
             ) : (
@@ -124,7 +124,7 @@ export function WorldPath({ nodes }: { nodes: readonly MapNode[] }) {
               x={p.x}
               y={p.y + 6}
               textAnchor="middle"
-              fill={node.boss ? 'var(--c-warn)' : markFill}
+              fill={node.boss ? 'var(--warn)' : markFill}
               className="font-mono"
               fontSize={18}
               fontWeight={700}
@@ -138,7 +138,7 @@ export function WorldPath({ nodes }: { nodes: readonly MapNode[] }) {
                 x={p.x}
                 y={p.y + RADIUS + 22 + li * 18}
                 textAnchor="middle"
-                fill="var(--c-muted)"
+                fill="var(--ink-soft)"
                 fontSize={13}
               >
                 {part}

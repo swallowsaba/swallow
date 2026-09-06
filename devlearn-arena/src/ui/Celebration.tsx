@@ -31,23 +31,23 @@ export function Celebration({ data, onDismiss }: Props) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           onClick={onDismiss}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-void/85 p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--wood-dark)]/85 p-6"
         >
           <motion.div
             initial={animate ? { scale: 0.8, y: 24 } : false}
             animate={{ scale: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-            className="cut glow border-4 border-[var(--c-ok)] bg-panel px-12 py-10 text-center"
-            style={{ ['--c-accent' as string]: 'var(--c-ok)' }}
+            className="bevel border-4 border-[var(--ok)] bg-cream px-12 py-10 text-center"
+            style={{ ['--c-accent' as string]: 'var(--ok)' }}
           >
-            <p className="display text-6xl text-[var(--c-ok)] lg:text-8xl">{data.title}</p>
+            <p className="title text-6xl text-[var(--ok)] lg:text-8xl">{data.title}</p>
             <p className="mt-4 text-xl text-ink">{data.subtitle}</p>
 
             <motion.p
               initial={animate ? { scale: 0.6, opacity: 0 } : false}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.25, type: 'spring', stiffness: 300 }}
-              className="display mt-8 text-5xl text-[var(--c-warn)]"
+              className="title mt-8 text-5xl text-[var(--warn)]"
             >
               +{data.xp} XP
             </motion.p>
@@ -57,13 +57,13 @@ export function Celebration({ data, onDismiss }: Props) {
                 initial={animate ? { opacity: 0, y: 12 } : false}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="display mt-6 text-3xl text-accent"
+                className="title mt-6 text-3xl text-[var(--gold-dark)]"
               >
                 LEVEL {data.levelUp.level} — {data.levelUp.rank}
               </motion.p>
             ) : null}
 
-            <p className="mt-8 font-mono text-sm text-muted">クリックで閉じる</p>
+            <p className="mt-8 font-mono text-sm text-ink-soft">クリックで閉じる</p>
           </motion.div>
         </motion.div>
       ) : null}

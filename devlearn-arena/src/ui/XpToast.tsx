@@ -23,7 +23,7 @@ export function XpToast({ toasts }: Props) {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-            className="border-2 border-[var(--c-ok)] bg-panel px-5 py-3 font-mono text-lg font-bold text-[var(--c-ok)]"
+            className="border-2 border-[var(--ok)] bg-cream px-5 py-3 font-mono text-lg font-bold text-[var(--ok)]"
           >
             {toast.text}
           </motion.div>

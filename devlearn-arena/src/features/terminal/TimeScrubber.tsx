@@ -34,7 +34,7 @@ export function TimeScrubber({ session }: Props) {
   }, [playing, journal.cursor, last, speed, seekTo]);
 
   return (
-    <div className="flex flex-wrap items-center gap-3 border-t border-line px-4 py-3">
+    <div className="flex flex-wrap items-center gap-3 border-t border-wood-dark px-4 py-3">
       <button
         type="button"
         onClick={() => {
@@ -43,7 +43,7 @@ export function TimeScrubber({ session }: Props) {
         }}
         disabled={last === 0}
         aria-label={playing ? '再生を止める' : '履歴を再生する'}
-        className="border-2 border-accent px-4 py-1.5 font-mono text-base text-accent hover:bg-accent hover:text-void disabled:opacity-40"
+        className="border-2 border-wood-dark px-4 py-1.5 font-mono text-base text-[var(--gold-dark)] hover:bg-gold hover:text-ink disabled:opacity-40"
       >
         {playing ? '❙❙' : '▶'}
       </button>
@@ -56,7 +56,7 @@ export function TimeScrubber({ session }: Props) {
         }}
         disabled={journal.cursor >= last}
         aria-label="1つ進める"
-        className="border border-line px-3 py-1.5 font-mono text-base text-muted hover:border-accent disabled:opacity-40"
+        className="border border-wood-dark px-3 py-1.5 font-mono text-base text-ink-soft hover:border-wood-dark disabled:opacity-40"
       >
         ⇥
       </button>
@@ -71,7 +71,7 @@ export function TimeScrubber({ session }: Props) {
             }}
             aria-pressed={speed === s}
             className={`border px-2.5 py-1 font-mono text-sm ${
-              speed === s ? 'border-accent text-accent' : 'border-line text-muted'
+              speed === s ? 'border-wood-dark text-[var(--gold-dark)]' : 'border-wood-dark text-ink-soft'
             }`}
           >
             {s}×
@@ -90,11 +90,11 @@ export function TimeScrubber({ session }: Props) {
         }}
         aria-label="実行履歴をたどる"
         aria-valuetext={label}
-        className="h-2 min-w-[160px] flex-1 accent-[var(--c-accent)]"
+        className="h-2 min-w-[160px] flex-1 accent-[var(--gold-dark)]"
         disabled={last === 0}
       />
 
-      <span className="max-w-[40%] truncate font-mono text-sm text-muted" title={label}>
+      <span className="max-w-[40%] truncate font-mono text-sm text-ink-soft" title={label}>
         {journal.cursor}/{last} {label}
       </span>
 
@@ -105,7 +105,7 @@ export function TimeScrubber({ session }: Props) {
             setPlaying(false);
             seekTo(last);
           }}
-          className="border-2 border-accent px-3 py-1.5 font-mono text-sm text-accent hover:bg-accent hover:text-void"
+          className="border-2 border-wood-dark px-3 py-1.5 font-mono text-sm text-[var(--gold-dark)] hover:bg-gold hover:text-ink"
         >
           最新へ
         </button>

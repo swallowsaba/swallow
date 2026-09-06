@@ -9,11 +9,11 @@ interface BadgeProps {
 }
 
 const toneClass: Record<Tone, string> = {
-  accent: 'border-accent/70 text-accent',
-  muted: 'border-line text-muted',
-  ok: 'border-[var(--c-ok)]/60 text-[var(--c-ok)]',
-  warn: 'border-[var(--c-warn)]/60 text-[var(--c-warn)]',
-  bad: 'border-[var(--c-bad)]/60 text-[var(--c-bad)]',
+  accent: 'border-wood-dark text-[var(--gold-dark)]',
+  muted: 'border-wood-dark text-ink-soft',
+  ok: 'border-[var(--ok)]/60 text-[var(--ok)]',
+  warn: 'border-[var(--warn)]/60 text-[var(--warn)]',
+  bad: 'border-[var(--bad)]/60 text-[var(--bad)]',
 };
 
 /** 種別ラベル。色だけに意味を持たせず、必ず文字を入れる。 */

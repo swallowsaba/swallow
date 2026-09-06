@@ -31,12 +31,12 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!error) return this.props.children;
 
     return (
-      <div role="alert" className="mx-auto max-w-2xl border border-[var(--c-bad)] bg-panel p-5">
-        <h1 className="text-lg font-semibold text-[var(--c-bad)]">画面の描画に失敗しました</h1>
-        <p className="mt-2 text-sm text-muted">
+      <div role="alert" className="mx-auto max-w-2xl border border-[var(--bad)] bg-cream p-5">
+        <h1 className="text-lg font-semibold text-[var(--bad)]">画面の描画に失敗しました</h1>
+        <p className="mt-2 text-sm text-ink-soft">
           不具合です。下の内容を添えて報告してもらえると直せます。進捗は保存されているので失われません。
         </p>
-        <pre className="mt-3 max-h-64 overflow-auto border border-line bg-void p-3 font-mono text-[11px] text-ink">
+        <pre className="mt-3 max-h-64 overflow-auto border border-wood-dark bg-[var(--wood-dark)] p-3 font-mono text-[11px] text-ink">
           {error.message}
           {stack === '' ? '' : `\n${stack}`}
         </pre>
@@ -46,13 +46,13 @@ export class ErrorBoundary extends Component<Props, State> {
             onClick={() => {
               this.setState({ error: null, stack: '' });
             }}
-            className="border border-accent px-3 py-1.5 font-mono text-xs text-accent hover:bg-accent hover:text-void"
+            className="border border-wood-dark px-3 py-1.5 font-mono text-xs text-[var(--gold-dark)] hover:bg-gold hover:text-ink"
           >
             もう一度描画する
           </button>
           <a
             href={import.meta.env.BASE_URL}
-            className="border border-line px-3 py-1.5 font-mono text-xs text-muted hover:border-accent"
+            className="border border-wood-dark px-3 py-1.5 font-mono text-xs text-ink-soft hover:border-wood-dark"
           >
             トップへ戻る
           </a>

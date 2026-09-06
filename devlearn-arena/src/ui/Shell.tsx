@@ -8,8 +8,8 @@ import { ProgressBar } from './components/ProgressBar';
 const navClass = ({ isActive }: { isActive: boolean }): string =>
   `px-3 py-2 text-base font-medium transition-colors ${
     isActive
-      ? 'text-ink shadow-[inset_0_-3px_0_0_var(--c-accent)]'
-      : 'text-muted hover:text-ink'
+      ? 'text-ink shadow-[inset_0_-3px_0_0_var(--gold-dark)]'
+      : 'text-ink-soft hover:text-ink'
   }`;
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -21,27 +21,24 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="flex min-h-full flex-col">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:bg-raised focus:px-4 focus:py-3"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:bg-cream-dark focus:px-4 focus:py-3"
       >
         {t('nav.skip')}
       </a>
 
-      <header className="sticky top-0 z-20 border-b border-line bg-void/95 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-wood-dark bg-cream">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-8 gap-y-3 px-6 py-4">
-          <NavLink to="/" className="display text-xl text-ink">
+          <NavLink to="/" className="sign title px-4 py-1.5 text-xl">
             DEVLEARN
-            <span className="text-accent"> ARENA</span>
+            <span> PARK</span>
           </NavLink>
 
           <nav className="flex items-center gap-1" aria-label={t('app.name')}>
             <NavLink to="/" end className={navClass}>
-              {t('nav.home')}
+              園内へ戻る
             </NavLink>
             <NavLink to="/map" className={navClass}>
               {t('nav.map')}
-            </NavLink>
-            <NavLink to="/quest/shell-warmup" className={navClass}>
-              {t('nav.sandbox')}
             </NavLink>
             <NavLink to="/dashboard" className={navClass}>
               {t('nav.dashboard')}
@@ -52,7 +49,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="ml-auto flex min-w-[220px] items-center gap-3">
-            <span className="display text-lg text-accent">{progress.rank}</span>
+            <span className="title text-lg text-[var(--gold-dark)]">{progress.rank}</span>
             <div className="flex-1">
               <ProgressBar
                 ratio={progress.ratio}
@@ -61,7 +58,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 valueText={t('dash.xp', { a: progress.intoLevel, b: progress.levelSpan })}
               />
             </div>
-            <span className="font-mono text-sm text-muted">Lv.{progress.level}</span>
+            <span className="font-mono text-sm text-ink-soft">Lv.{progress.level}</span>
           </div>
         </div>
       </header>
@@ -70,8 +67,8 @@ export function Shell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      <footer className="border-t border-line px-6 py-5">
-        <p className="mx-auto max-w-[1400px] font-mono text-sm text-muted">{t('app.tagline')}</p>
+      <footer className="border-t border-wood-dark px-6 py-5">
+        <p className="mx-auto max-w-[1400px] font-mono text-sm text-ink-soft">{t('app.tagline')}</p>
       </footer>
     </div>
   );

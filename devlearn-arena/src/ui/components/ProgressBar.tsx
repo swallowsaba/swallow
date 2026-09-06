@@ -17,11 +17,11 @@ export function ProgressBar({ ratio, label, valueText, size = 'md' }: ProgressBa
       aria-valuemax={100}
       aria-label={label}
       aria-valuetext={valueText}
-      className={`w-full border border-line bg-void ${heights[size]}`}
+      className={`w-full border border-wood-dark bg-[var(--wood-dark)] ${heights[size]}`}
     >
       <div
-        className="h-full bg-accent transition-[width] duration-700"
-        style={{ width: `${String(pct)}%`, boxShadow: '0 0 24px -4px var(--c-accent)' }}
+        className="h-full bg-gold transition-[width] duration-700"
+        style={{ width: `${String(pct)}%`, boxShadow: '0 0 24px -4px var(--gold-dark)' }}
       />
     </div>
   );

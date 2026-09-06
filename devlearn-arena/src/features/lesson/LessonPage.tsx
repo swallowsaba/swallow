@@ -24,13 +24,13 @@ export default function LessonPage() {
   return (
     <div data-track={track.id} className="flex flex-col gap-6">
       <header>
-        <Link to={`/track/${track.id}`} className="font-mono text-xs text-muted hover:text-ink">
+        <Link to={`/track/${track.id}`} className="font-mono text-xs text-ink-soft hover:text-ink">
           {t('lesson.back')}
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="display text-3xl">{lesson.title}</h1>
+          <h1 className="title text-3xl">{lesson.title}</h1>
           <Badge tone="accent">{lesson.kind}</Badge>
-          <span className="font-mono text-xs text-muted">{lessonId}</span>
+          <span className="font-mono text-xs text-ink-soft">{lessonId}</span>
         </div>
       </header>
 
@@ -38,7 +38,7 @@ export default function LessonPage() {
         terminalLabel={t('lesson.terminal')}
         visualLabel={t('lesson.visualizer')}
         terminal={
-          <pre className="h-full overflow-auto p-3 font-mono text-xs leading-relaxed text-muted">
+          <pre className="h-full overflow-auto p-3 font-mono text-xs leading-relaxed text-ink-soft">
 {`$ # シェルは P1 で有効になります
 $ # ここに xterm.js とシェルパーサが入ります`}
           </pre>
@@ -47,7 +47,7 @@ $ # ここに xterm.js とシェルパーサが入ります`}
           <div className="grid h-full place-items-center p-6 text-center">
             <div>
               <p className="text-sm">{t('lesson.plannedTitle')}</p>
-              <p className="mt-2 max-w-sm text-xs leading-relaxed text-muted">
+              <p className="mt-2 max-w-sm text-xs leading-relaxed text-ink-soft">
                 {t('lesson.plannedBody', { phase: track.phase })}
               </p>
             </div>
@@ -56,7 +56,7 @@ $ # ここに xterm.js とシェルパーサが入ります`}
       />
 
       <section>
-        <h2 className="font-mono text-xs text-muted">{t('lesson.docs')}</h2>
+        <h2 className="font-mono text-xs text-ink-soft">{t('lesson.docs')}</h2>
         <ul className="mt-2 flex flex-col gap-1">
           {lesson.docs.map((d) => (
             <li key={d.url}>
@@ -64,7 +64,7 @@ $ # ここに xterm.js とシェルパーサが入ります`}
                 href={d.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-accent underline underline-offset-4"
+                className="text-sm text-[var(--gold-dark)] underline underline-offset-4"
               >
                 {d.label}
               </a>
