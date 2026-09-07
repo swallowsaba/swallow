@@ -9,6 +9,10 @@ import type { GitState, IndexEntry, StatusEntry, StatusReport } from './types';
 export const DEFAULT_BRANCH = 'main';
 const FILE_MODE = '100644';
 const DIR_MODE = '040000';
+/** submodule を指す gitlink。中身は別リポジトリのコミットハッシュ */
+export const GITLINK_MODE = '160000';
+/** リポジトリの管理領域。作業ツリーとしては扱わない */
+export const GIT_DIR = '.git';
 
 export const defaultAuthor: Signature = {
   name: 'Learner',
@@ -49,7 +53,11 @@ function relative(root: string, path: string): string | null {
   return path.startsWith(prefix) ? path.slice(prefix.length) : null;
 }
 
-/** 作業ツリーの全ファイル（.git 相当は持たないので除外は不要） */
+/**
+ * 作業ツリーの全ファイル。
+ * `.git` の下はリポジトリ自身の管理領域なので、本物と同じく追跡しない。
+ * hook や sparse-checkout の設定はそこに置くので、除外しないと自分自身をコミットしてしまう。
+ */
 export function walkWorktree(vfs: VfsState, root: string): Map<string, string> {
   const out = new Map<string, string>();
   const visit = (path: string): void => {
@@ -60,7 +68,10 @@ export function walkWorktree(vfs: VfsState, root: string): Map<string, string> {
       if (rel !== null && rel !== '') out.set(rel, node.content);
       return;
     }
-    for (const name of list(vfs, path)) visit(path === '/' ? `/${name}` : `${path}/${name}`);
+    for (const name of list(vfs, path)) {
+      if (name === GIT_DIR) continue;
+      visit(path === '/' ? `/${name}` : `${path}/${name}`);
+    }
   };
   visit(root);
   return out;
