@@ -1,4 +1,4 @@
-import type { Device, Interface, Link, Packet, Route, Topology } from './types';
+import type { Device, Interface, Link, NatConfig, Packet, Route, Topology } from './types';
 
 let macCounter = 0;
 
@@ -13,31 +13,81 @@ export function resetMac(): void {
   macCounter = 0;
 }
 
-export function iface(name: string, ip: string, prefix: number, up = true): Interface {
-  return { name, ip, prefix, mac: nextMac(), up };
-}
+export const DEFAULT_MTU = 1500;
+export const BROADCAST_MAC = 'ff:ff:ff:ff:ff:ff';
 
-export function host(
+export function iface(
   name: string,
-  interfaces: Interface[],
-  options: { routes?: Route[]; listening?: number[]; blockedPorts?: number[] } = {},
-): Device {
+  ip: string,
+  prefix: number,
+  options: boolean | { up?: boolean; vlan?: number | null; trunkVlans?: number[]; mtu?: number } = {},
+): Interface {
+  const opts = typeof options === 'boolean' ? { up: options } : options;
   return {
     name,
-    kind: 'host',
+    ip,
+    prefix,
+    mac: nextMac(),
+    up: opts.up ?? true,
+    vlan: opts.vlan ?? null,
+    trunkVlans: opts.trunkVlans ?? [],
+    mtu: opts.mtu ?? DEFAULT_MTU,
+  };
+}
+
+interface DeviceOptions {
+  routes?: Route[];
+  listening?: number[];
+  blockedPorts?: number[];
+  arp?: Record<string, string>;
+  macTable?: Record<string, string>;
+  nat?: NatConfig | null;
+}
+
+function build(name: string, kind: Device['kind'], interfaces: Interface[], options: DeviceOptions): Device {
+  return {
+    name,
+    kind,
     interfaces,
     routes: options.routes ?? [],
     listening: options.listening ?? [],
     blockedPorts: options.blockedPorts ?? [],
+    arp: options.arp ?? {},
+    macTable: options.macTable ?? {},
+    nat: options.nat ?? null,
   };
 }
 
-export function router(name: string, interfaces: Interface[], routes: Route[] = []): Device {
-  return { name, kind: 'router', interfaces, routes, listening: [], blockedPorts: [] };
+export function host(name: string, interfaces: Interface[], options: DeviceOptions = {}): Device {
+  return build(name, 'host', interfaces, options);
 }
 
-export function link(a: string, b: string, up = true): Link {
-  return { a, b, up };
+export function router(
+  name: string,
+  interfaces: Interface[],
+  routes: Route[] = [],
+  options: DeviceOptions = {},
+): Device {
+  return build(name, 'router', interfaces, { ...options, routes });
+}
+
+/** スイッチ。IP を持たず、MAC を見て転送する */
+export function switchDevice(name: string, ports: Interface[], options: DeviceOptions = {}): Device {
+  return build(name, 'switch', ports, options);
+}
+
+/** スイッチのポート。IP は持たない */
+export function port(name: string, options: { vlan?: number | null; trunkVlans?: number[]; up?: boolean } = {}): Interface {
+  return iface(name, '', 0, { ...options });
+}
+
+export function nat(insideCidr: string, outsideIp: string, firstPort = 50000): NatConfig {
+  return { insideCidr, outsideIp, table: [], nextPort: firstPort };
+}
+
+export function link(a: string, b: string, options: boolean | { up?: boolean; mtu?: number } = {}): Link {
+  const opts = typeof options === 'boolean' ? { up: options } : options;
+  return { a, b, up: opts.up ?? true, mtu: opts.mtu ?? DEFAULT_MTU };
 }
 
 export function topology(devices: Device[], links: Link[], dns: Record<string, string> = {}): Topology {
@@ -59,14 +109,23 @@ export function packet(
     dstPort?: number;
     ttl?: number;
     payload?: string;
+    size?: number;
+    dontFragment?: boolean;
+    vlan?: number | null;
   } = {},
 ): Packet {
   packetCounter += 1;
   const protocol = options.protocol ?? 'tcp';
   return {
     id: packetCounter,
-    ethernet: { srcMac: '02:00:00:00:00:00', dstMac: '02:00:00:00:00:01' },
-    ip: { srcIp, dstIp, ttl: options.ttl ?? 64, protocol },
+    ethernet: { srcMac: '02:00:00:00:00:00', dstMac: BROADCAST_MAC, vlan: options.vlan ?? null },
+    ip: {
+      srcIp,
+      dstIp,
+      ttl: options.ttl ?? 64,
+      protocol,
+      dontFragment: options.dontFragment ?? false,
+    },
     transport:
       protocol === 'icmp'
         ? null
@@ -78,6 +137,7 @@ export function packet(
             ack: 0,
           },
     payload: options.payload ?? '',
+    size: options.size ?? 64,
   };
 }
 

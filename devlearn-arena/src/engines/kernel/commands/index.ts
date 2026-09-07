@@ -5,6 +5,7 @@ import { ghCommands } from './gh';
 import { gitCommands } from './git';
 import { kubectlCommands } from './kubectl';
 import { netCommands } from './net';
+import { netToolCommands } from './netTools';
 import { miscCommands } from './misc';
 import { textCommands } from './text';
 import { textToolCommands } from './textTools';
@@ -22,10 +23,14 @@ export function createDefaultRegistry(): CommandRegistry {
     ...ghCommands,
     ...kubectlCommands,
     ...netCommands,
+    ...netToolCommands,
     ...textCommands,
     ...textToolCommands,
     ...miscCommands,
   ]);
 }
 
-export { editorCommands, fsCommands, ghCommands, gitCommands, kubectlCommands, netCommands, textCommands, textToolCommands, miscCommands };
+export {
+  editorCommands, fsCommands, ghCommands, gitCommands, kubectlCommands, netCommands,
+  netToolCommands, textCommands, textToolCommands, miscCommands,
+};
