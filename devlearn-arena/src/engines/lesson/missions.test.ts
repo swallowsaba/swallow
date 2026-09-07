@@ -68,7 +68,7 @@ describe('模範解答で実際にクリアできる', () => {
 
   it('最初のコミットを刻む', () => {
     expect(
-      play(mission('git/01/first-commit'), [
+      play(mission('git/01/objects'), [
         'git init',
         'git add notes.md',
         'git commit -m "first"',
@@ -78,7 +78,7 @@ describe('模範解答で実際にクリアできる', () => {
 
   it('ブランチを分けて統合する', () => {
     expect(
-      play(mission('git/04/branch-and-merge'), [
+      play(mission('git/04/three-way-merge'), [
         'git init',
         'git add .',
         'git commit -m "base"',
@@ -94,7 +94,7 @@ describe('模範解答で実際にクリアできる', () => {
 
   it('衝突を解く', () => {
     expect(
-      play(mission('git/05/conflict'), [
+      play(mission('git/05/resolve-drill'), [
         'git init',
         'git add app.txt',
         'git commit -m "base"',
@@ -138,7 +138,7 @@ describe('別解でもクリアできる', () => {
 
   it('ブランチを分けて統合する（branch と switch を分ける）', () => {
     expect(
-      play(mission('git/04/branch-and-merge'), [
+      play(mission('git/04/three-way-merge'), [
         'git init',
         'git add .',
         'git commit -m "base"',

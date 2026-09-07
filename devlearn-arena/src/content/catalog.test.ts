@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { implementedLessonIds } from '@/engines/lesson/implemented';
+import { missions } from '@/engines/lesson/missions';
 import { allLessons, countAll, getChapter, getLesson, getTrack, TRACKS } from './catalog';
 
 describe('catalog', () => {
@@ -55,5 +57,35 @@ describe('catalog', () => {
   it('未知のIDでは undefined', () => {
     expect(getLesson('nope/99/x')).toBeUndefined();
     expect(getTrack('nope')).toBeUndefined();
+  });
+});
+
+describe('目次と任務の対応', () => {
+  it('ready なレッスンには必ず任務がある', () => {
+    const ids = implementedLessonIds();
+    for (const l of allLessons()) {
+      expect(l.status === 'ready').toBe(ids.has(l.id));
+    }
+  });
+
+  it('任務の id は目次に存在する（序章の kernel を除く）', () => {
+    const known = new Set(allLessons().map((l) => l.id));
+    for (const m of missions) {
+      if (m.track === 'kernel') continue;
+      expect(known.has(m.id), `目次に無い任務: ${m.id}`).toBe(true);
+    }
+  });
+
+  it('boss かどうかが目次と任務で一致する', () => {
+    for (const m of missions) {
+      if (m.track === 'kernel') continue;
+      const meta = getLesson(m.id);
+      expect(meta).toBeDefined();
+      expect(m.kind === 'boss').toBe(meta?.kind === 'boss');
+    }
+  });
+
+  it('遊べるレッスンが1つ以上ある', () => {
+    expect(countAll().ready).toBeGreaterThan(0);
   });
 });

@@ -163,7 +163,7 @@ export const diskFullBoss: LessonDefinition = {
 };
 
 export const gitFirstCommit: LessonDefinition = {
-  id: 'git/01/first-commit',
+  id: 'git/01/objects',
   track: 'git',
   kind: 'training',
   title: '最初のコミットを刻む',
@@ -238,7 +238,7 @@ const GIT_FILES = {
 } as const;
 
 export const gitBranching: LessonDefinition = {
-  id: 'git/04/branch-and-merge',
+  id: 'git/04/three-way-merge',
   track: 'git',
   kind: 'training',
   title: 'ブランチを分けて統合する',
@@ -302,10 +302,10 @@ export const gitBranching: LessonDefinition = {
   ],
 };
 
-export const gitConflictBoss: LessonDefinition = {
-  id: 'git/05/conflict',
+export const gitConflictDrill: LessonDefinition = {
+  id: 'git/05/resolve-drill',
   track: 'git',
-  kind: 'boss',
+  kind: 'training',
   title: '衝突を解く',
   objectives: ['衝突マーカを読める', '意味を壊さず統合できる', '解決してコミットできる'],
   parCommands: 12,
@@ -389,7 +389,7 @@ function brokenServiceCluster() {
 }
 
 export const k8sFirstPod: LessonDefinition = {
-  id: 'k8s/01/first-look',
+  id: 'k8s/01/first-kubectl',
   track: 'k8s',
   kind: 'training',
   title: 'クラスタを覗く',
@@ -439,7 +439,7 @@ export const k8sFirstPod: LessonDefinition = {
 };
 
 export const k8sServiceBoss: LessonDefinition = {
-  id: 'k8s/07/no-endpoints',
+  id: 'k8s/07/boss-service-no-endpoint',
   track: 'k8s',
   kind: 'boss',
   title: 'Pod は動いているのに繋がらない',
@@ -509,7 +509,7 @@ function brokenServiceNet(listening: number[]) {
 }
 
 export const netFirstHop: LessonDefinition = {
-  id: 'net/01/first-hop',
+  id: 'net/05/ttl-hop',
   track: 'net',
   kind: 'training',
   title: '経路をたどる',
@@ -554,7 +554,7 @@ export const netFirstHop: LessonDefinition = {
 };
 
 export const netUnreachableBoss: LessonDefinition = {
-  id: 'net/14/ping-ok-curl-ng',
+  id: 'net/14/boss-final',
   track: 'net',
   kind: 'boss',
   title: 'ping は通るのに curl が失敗する',
@@ -625,7 +625,7 @@ jobs:
 `;
 
 export const ghPullRequest: LessonDefinition = {
-  id: 'github/04/protected-merge',
+  id: 'github/04/boss-blocked-merge',
   track: 'github',
   kind: 'boss',
   title: 'マージできない理由を全部潰す',
@@ -697,7 +697,7 @@ export const missions: readonly LessonDefinition[] = [
   shellWarmup,
   gitFirstCommit,
   gitBranching,
-  gitConflictBoss,
+  gitConflictDrill,
   k8sFirstPod,
   k8sServiceBoss,
   netFirstHop,

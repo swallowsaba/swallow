@@ -36,25 +36,25 @@ describe('シェルの保存と復元', () => {
   });
 
   it('Git のオブジェクトと参照が戻る', () => {
-    const restored = roundTrip('git/01/first-commit', ['git init', 'git add .', 'git commit -m "x"']);
+    const restored = roundTrip('git/01/objects', ['git init', 'git add .', 'git commit -m "x"']);
     expect(restored.git).not.toBeNull();
     expect(restored.git?.refs.get('refs/heads/main')).toBeDefined();
   });
 
   it('クラスタが戻る', () => {
-    const restored = roundTrip('k8s/01/first-look', ['kubectl get pods']);
+    const restored = roundTrip('k8s/01/first-kubectl', ['kubectl get pods']);
     expect(restored.cluster).not.toBeNull();
     expect(restored.cluster?.nodes.size ?? 0).toBeGreaterThan(0);
   });
 
   it('ネットワークが戻る', () => {
-    const restored = roundTrip('net/01/first-hop', ['ip addr']);
+    const restored = roundTrip('net/05/ttl-hop', ['ip addr']);
     expect(restored.net).not.toBeNull();
     expect(restored.net?.devices.size ?? 0).toBeGreaterThan(0);
   });
 
   it('GitHub のリポジトリが戻る', () => {
-    const restored = roundTrip('github/04/protected-merge', [
+    const restored = roundTrip('github/04/boss-blocked-merge', [
       'gh protect main --approvals=1 --checks=Build',
       'gh pr create -t "機能追加" -b feature',
     ]);
@@ -63,7 +63,7 @@ describe('シェルの保存と復元', () => {
   });
 
   it('クラスタを進めた結果もそのまま戻る', () => {
-    const mission = findMission('k8s/07/no-endpoints');
+    const mission = findMission('k8s/07/boss-service-no-endpoint');
     if (!mission) throw new Error('missing');
     const clock = createClock();
     let state = createShellState(mission.initial);

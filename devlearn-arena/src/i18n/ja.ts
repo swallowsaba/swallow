@@ -40,6 +40,7 @@ export const ja = {
   'track.back': 'ワールドマップへ戻る',
   'track.chapter': '第 {n} 章',
   'track.minutes': '約 {n} 分',
+  'track.cleared': 'クリア済み',
 
   'lesson.back': '章の一覧へ戻る',
   'lesson.terminal': 'ターミナル',
@@ -47,6 +48,9 @@ export const ja = {
   'lesson.plannedTitle': 'このレッスンはまだ動きません',
   'lesson.plannedBody':
     'シミュレータの実装フェーズ {phase} で有効になります。今は目次として全体像を示しています。',
+  'lesson.play': 'この任務に挑む',
+  'lesson.readyTitle': 'この任務は遊べます',
+  'lesson.readyBody': '左のターミナルで手を動かす画面に移ります。進み具合は自動で保存されます。',
   'lesson.docs': '出典',
   'lesson.kind.concept': '解説',
   'lesson.kind.drill': '反復',

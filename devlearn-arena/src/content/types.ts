@@ -20,6 +20,7 @@ export interface LessonMeta {
   slug: string;
   title: string;
   kind: LessonKind;
+  /** 目次の構築後に、任務の有無から決まる（`src/content/catalog.ts`） */
   status: ImplStatus;
   /** 想定所要時間（分） */
   minutes: number;

@@ -5,7 +5,6 @@ import { useT } from '@/i18n/useT';
 import { appendJournal } from '@/lib/storage/idb';
 import { Badge } from '@/ui/components/Badge';
 import NotFoundPage from '../NotFoundPage';
-import { SplitLayout } from './SplitLayout';
 
 export default function LessonPage() {
   const { trackId = '', chapterNo = '', lessonSlug = '' } = useParams();
@@ -34,26 +33,25 @@ export default function LessonPage() {
         </div>
       </header>
 
-      <SplitLayout
-        terminalLabel={t('lesson.terminal')}
-        visualLabel={t('lesson.visualizer')}
-        terminal={
-          <pre className="h-full overflow-auto p-3 font-mono text-xs leading-relaxed text-ink-soft">
-{`$ # シェルは P1 で有効になります
-$ # ここに xterm.js とシェルパーサが入ります`}
-          </pre>
-        }
-        visual={
-          <div className="grid h-full place-items-center p-6 text-center">
-            <div>
-              <p className="text-sm">{t('lesson.plannedTitle')}</p>
-              <p className="mt-2 max-w-sm text-xs leading-relaxed text-ink-soft">
-                {t('lesson.plannedBody', { phase: track.phase })}
-              </p>
-            </div>
-          </div>
-        }
-      />
+      {lesson.status === 'ready' ? (
+        <section className="border-l-4 border-[var(--gold-dark)] bg-cream px-5 py-4">
+          <p className="text-lg">{t('lesson.readyTitle')}</p>
+          <p className="mt-1 text-base text-ink-soft">{t('lesson.readyBody')}</p>
+          <Link
+            to={`/?mission=${encodeURIComponent(lesson.id)}`}
+            className="mt-3 inline-block border border-wood-dark px-4 py-2 font-mono text-base text-[var(--gold-dark)] hover:bg-cream-dark"
+          >
+            {t('lesson.play')} →
+          </Link>
+        </section>
+      ) : (
+        <section className="border-l-4 border-wood-dark bg-cream px-5 py-4">
+          <p className="text-lg">{t('lesson.plannedTitle')}</p>
+          <p className="mt-1 max-w-2xl text-base leading-relaxed text-ink-soft">
+            {t('lesson.plannedBody', { phase: track.phase })}
+          </p>
+        </section>
+      )}
 
       <section>
         <h2 className="font-mono text-xs text-ink-soft">{t('lesson.docs')}</h2>

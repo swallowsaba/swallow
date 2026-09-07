@@ -1,3 +1,4 @@
+import { implementedLessonIds } from '@/engines/lesson/implemented';
 import { gitTrack } from './tracks/git';
 import { githubTrack } from './tracks/github';
 import { k8sTrack } from './tracks/k8s';
@@ -11,10 +12,16 @@ const trackById = new Map<TrackId, Track>(TRACKS.map((t) => [t.id, t]));
 const chapterById = new Map<string, Chapter>();
 const lessonById = new Map<string, LessonMeta>();
 
+// 「遊べる」かどうかは任務の有無で決まる。目次側に手で書くと必ずずれるので、ここで刻む。
+const implemented = implementedLessonIds();
+
 for (const track of TRACKS) {
   for (const ch of track.chapters) {
     chapterById.set(ch.id, ch);
-    for (const lesson of ch.lessons) lessonById.set(lesson.id, lesson);
+    for (const lesson of ch.lessons) {
+      lesson.status = implemented.has(lesson.id) ? 'ready' : 'planned';
+      lessonById.set(lesson.id, lesson);
+    }
   }
 }
 

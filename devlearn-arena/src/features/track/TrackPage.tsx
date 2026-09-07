@@ -20,8 +20,11 @@ export default function TrackPage() {
   const track = getTrack(trackId);
   if (!track) return <NotFoundPage />;
 
+  // 遊べるものは学習画面へ直接、まだのものは目次の説明ページへ送る
   const lessonHref = (l: LessonMeta): string =>
-    `/lesson/${l.trackId}/${l.chapterId.split('/')[1] ?? ''}/${l.slug}`;
+    l.status === 'ready'
+      ? `/?mission=${encodeURIComponent(l.id)}`
+      : `/lesson/${l.trackId}/${l.chapterId.split('/')[1] ?? ''}/${l.slug}`;
 
   return (
     <div data-track={track.id} className="flex flex-col gap-12">
@@ -59,7 +62,10 @@ export default function TrackPage() {
                     }`}
                   >
                     <span className="flex-1 text-lg">{l.title}</span>
-                    {done ? <Badge tone="ok" size="sm">{t('map.ready')}</Badge> : null}
+                    {done ? <Badge tone="ok" size="sm">{t('track.cleared')}</Badge> : null}
+                    <Badge tone={l.status === 'ready' ? 'accent' : 'muted'} size="sm">
+                      {t(l.status === 'ready' ? 'map.ready' : 'map.planned')}
+                    </Badge>
                     <Badge tone={boss ? 'warn' : 'muted'} size="sm">
                       {t(kindKey[l.kind])}
                     </Badge>
