@@ -3,6 +3,7 @@ import { BROADCAST_MAC, packet } from '@/engines/net/factory';
 import { dhcpRequest, dhcpServer, runHttp, tlsHandshake, type Certificate } from '@/engines/net/services';
 import { deliver } from '@/engines/net/stack';
 import { advance, clientAction, openConnection, retransmit, retransmitTimeout, type Connection } from '@/engines/net/tcp';
+import { compress, expand, parseIpv6Cidr, scopeOf, slaac } from '@/engines/net/ipv6';
 import type { Topology } from '@/engines/net/types';
 import type { CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
@@ -106,7 +107,7 @@ export const netToolCommands: CommandSpec[] = [
         rows.push([
           `${entry.insideIp}:${String(entry.insidePort)}`,
           `${target.nat.outsideIp}:${String(entry.outsidePort)}`,
-          entry.destinationIp,
+          `${entry.destinationIp}:${String(entry.destinationPort)}`,
         ]);
       }
       if (rows.length === 1) {
@@ -301,6 +302,54 @@ export const netToolCommands: CommandSpec[] = [
           '2 は1接続に多重化するので、互いを待たない。',
         ]),
       };
+    },
+  },
+  {
+    name: 'ip6calc',
+    summary: 'IPv6 の展開・圧縮・プレフィックス計算と、SLAAC のアドレス生成',
+    handler: ({ argv }) => {
+      const target = argv[1];
+      if (target === undefined) {
+        return { stderr: 'usage: ip6calc <address[/prefix]> [MAC]\n', code: 2 };
+      }
+      try {
+        const mac = argv[2];
+        if (mac !== undefined) {
+          const address = slaac(target, mac);
+          return {
+            stdout: fromLines([
+              `Prefix:    ${target}`,
+              `MAC:       ${mac}`,
+              `EUI-64:    ${address}`,
+              `Scope:     ${scopeOf(address)}`,
+            ]),
+          };
+        }
+        if (target.includes('/')) {
+          const c = parseIpv6Cidr(target);
+          return {
+            stdout: fromLines([
+              `Address:   ${c.address}`,
+              `Expanded:  ${expand(c.address)}`,
+              `Prefix:    /${String(c.prefix)}`,
+              `Network:   ${c.network}/${String(c.prefix)}`,
+              `First:     ${c.first}`,
+              `Last:      ${c.last}`,
+              `Size:      ${c.size.toString()}`,
+              `Scope:     ${scopeOf(c.address)}`,
+            ]),
+          };
+        }
+        return {
+          stdout: fromLines([
+            `Address:   ${compress(target)}`,
+            `Expanded:  ${expand(target)}`,
+            `Scope:     ${scopeOf(target)}`,
+          ]),
+        };
+      } catch (error) {
+        return { stderr: `ip6calc: ${error instanceof Error ? error.message : ''}\n`, code: 1 };
+      }
     },
   },
 ];

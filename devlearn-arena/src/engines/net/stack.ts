@@ -171,11 +171,13 @@ function resolveArp(
 function translateOut(config: NatConfig, packet: Packet): { config: NatConfig; packet: Packet } {
   const transport = packet.transport;
   if (transport === null) return { config, packet };
+  // 対応は5つ組（内側 IP・内側ポート・相手 IP・相手ポート）で1つ。本物と同じ粒度
   const existing = config.table.find(
     (e) =>
       e.insideIp === packet.ip.srcIp &&
       e.insidePort === transport.srcPort &&
-      e.destinationIp === packet.ip.dstIp,
+      e.destinationIp === packet.ip.dstIp &&
+      e.destinationPort === transport.dstPort,
   );
   const outsidePort = existing?.outsidePort ?? config.nextPort;
   const nextConfig: NatConfig =
@@ -191,6 +193,7 @@ function translateOut(config: NatConfig, packet: Packet): { config: NatConfig; p
               insidePort: transport.srcPort,
               outsidePort,
               destinationIp: packet.ip.dstIp,
+              destinationPort: transport.dstPort,
             },
           ],
         };

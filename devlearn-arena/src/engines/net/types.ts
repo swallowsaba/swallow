@@ -65,6 +65,7 @@ export interface NatEntry {
   insidePort: number;
   outsidePort: number;
   destinationIp: string;
+  destinationPort: number;
 }
 
 export interface NatConfig {

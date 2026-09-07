@@ -12,6 +12,10 @@ import {
 } from './k8s2';
 import { diskFullBoss, shellWarmup } from './kernel';
 import { netFirstHop, netUnreachableBoss } from './net';
+import {
+  netArp, netDhcp, netDns, netDropVsReject, netHealthCheck, netIpv6, netLayers, netNat,
+  netSubnetting, netSwitching, netTcp, netTls, netVpcDesign,
+} from './net2';
 
 /**
  * 遊べる任務の一覧。
@@ -46,7 +50,20 @@ export const missions: readonly LessonDefinition[] = [
   k8sHpa,
   k8sDrain,
   k8sNoLimits,
+  netLayers,
+  netArp,
+  netSwitching,
+  netSubnetting,
+  netIpv6,
   netFirstHop,
+  netNat,
+  netTcp,
+  netDns,
+  netDhcp,
+  netTls,
+  netHealthCheck,
+  netDropVsReject,
+  netVpcDesign,
   netUnreachableBoss,
   ghPullRequest,
   diskFullBoss,
@@ -65,6 +82,10 @@ export {
 } from './k8s2';
 export { diskFullBoss, shellWarmup } from './kernel';
 export { netFirstHop, netUnreachableBoss } from './net';
+export {
+  netArp, netDhcp, netDns, netDropVsReject, netHealthCheck, netIpv6, netLayers, netNat,
+  netSubnetting, netSwitching, netTcp, netTls, netVpcDesign,
+} from './net2';
 
 export function findMission(id: string): LessonDefinition | undefined {
   return missions.find((m) => m.id === id || m.id.endsWith(`/${id}`));

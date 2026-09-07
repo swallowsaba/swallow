@@ -1,7 +1,7 @@
 import { packet } from '@/engines/net/factory';
 import { deliver } from '@/engines/net/stack';
 import { parseCidr } from '@/engines/net/subnet';
-import type { Topology } from '@/engines/net/types';
+import type { Device, Topology } from '@/engines/net/types';
 import type { CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
 
@@ -23,6 +23,12 @@ function resolve(topology: Topology, target: string): { ip: string | null; note:
   return { ip, note: `${target} has address ${ip}` };
 }
 
+/** 配送で学んだこと（ARP 表・MAC 表・NAT 表）を構成に書き戻す */
+function withLearned(net: Topology, learned: ReadonlyMap<string, Device>): Topology {
+  if (learned.size === 0) return net;
+  return { ...net, devices: new Map([...net.devices, ...learned]) };
+}
+
 export const netCommands: CommandSpec[] = [
   {
     name: 'ping',
@@ -38,11 +44,13 @@ export const netCommands: CommandSpec[] = [
 
       const me = selfName(shell);
       const result = deliver(net, me, packet(selfIp(net, me), resolved.ip, { protocol: 'icmp' }));
+      const patch = { net: withLearned(net, result.learned) };
       if (!result.delivered) {
         return {
           stdout: `PING ${target} (${resolved.ip})\n`,
           stderr: `${result.error ?? '到達できません'}\n`,
           code: 1,
+          patch,
         };
       }
       const hops = result.hops.length - 1;
@@ -53,6 +61,7 @@ export const netCommands: CommandSpec[] = [
             result.hops[result.hops.length - 1]?.packet.ip.ttl ?? 64,
           )} hops=${String(hops)}\n` +
           '\n1 packets transmitted, 1 received, 0% packet loss\n',
+        patch,
       };
     },
   },
@@ -77,7 +86,11 @@ export const netCommands: CommandSpec[] = [
         );
       });
       if (!result.delivered) lines.push(`  * * *  ${result.error ?? ''}`);
-      return { stdout: fromLines(lines), code: result.delivered ? 0 : 1 };
+      return {
+        stdout: fromLines(lines),
+        code: result.delivered ? 0 : 1,
+        patch: { net: withLearned(net, result.learned) },
+      };
     },
   },
   {
@@ -108,6 +121,7 @@ export const netCommands: CommandSpec[] = [
         for (const hop of result.hops) verbose.push(`* via ${hop.device} (ttl ${String(hop.packet.ip.ttl)})`);
       }
 
+      const patch = { net: withLearned(net, result.learned) };
       if (!result.delivered) {
         const reason = result.error ?? '';
         const code = reason.includes('Connection refused') ? 7 : 28;
@@ -115,6 +129,7 @@ export const netCommands: CommandSpec[] = [
           stdout: fromLines(verbose),
           stderr: `curl: (${String(code)}) ${reason}\n`,
           code,
+          patch,
         };
       }
       if (flags.has('v')) {
@@ -126,7 +141,10 @@ export const netCommands: CommandSpec[] = [
         verbose.push('< Content-Type: text/html');
         verbose.push('<');
       }
-      return { stdout: `${fromLines(verbose)}<html><body>It works: ${hostName}</body></html>\n` };
+      return {
+        stdout: `${fromLines(verbose)}<html><body>It works: ${hostName}</body></html>\n`,
+        patch,
+      };
     },
   },
   {

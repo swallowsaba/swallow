@@ -34,6 +34,7 @@ const deviceSchema = z.object({
           insidePort: z.number().int(),
           outsidePort: z.number().int(),
           destinationIp: z.string(),
+          destinationPort: z.number().int(),
         }),
       ),
       nextPort: z.number().int(),
