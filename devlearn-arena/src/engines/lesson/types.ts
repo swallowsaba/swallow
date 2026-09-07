@@ -27,9 +27,13 @@ export interface LessonStep {
 
 export type MissionKind = 'training' | 'boss';
 
+export type MissionTrack = 'kernel' | 'git' | 'k8s' | 'net' | 'github';
+
 export interface LessonDefinition {
   /** training=練習, boss=障害対応 */
   kind: MissionKind;
+  /** どの世界の任務か。地図の島に対応する */
+  track: MissionTrack;
   /** カタログの LessonMeta.id と一致させる */
   id: string;
   title: string;

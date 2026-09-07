@@ -1,5 +1,9 @@
 import { HOME } from '@/engines/kernel/path';
 import { branches, currentBranch, headCommit, log, status } from '@/engines/git/repository';
+import { container, deployment, emptyCluster, node, service } from '@/engines/k8s/factory';
+import { isReady } from '@/engines/k8s/kubelet';
+import { createRepo } from '@/engines/github/pr';
+import { host, iface, link, resetMac, router, topology } from '@/engines/net/factory';
 import { exists, isDir, list, readFile } from '@/engines/kernel/vfs';
 import type { LessonDefinition } from './types';
 
@@ -13,6 +17,7 @@ function floodedLog(lines: number): string {
 
 export const shellWarmup: LessonDefinition = {
   id: 'kernel/00/shell-warmup',
+  track: 'kernel',
   kind: 'training',
   title: 'シェルに慣れる',
   objectives: ['ディレクトリを作って移動できる', 'リダイレクトで書き出せる', 'パイプで繋げる'],
@@ -90,6 +95,7 @@ export const shellWarmup: LessonDefinition = {
 
 export const diskFullBoss: LessonDefinition = {
   id: 'kernel/00/disk-full',
+  track: 'kernel',
   kind: 'boss',
   title: 'ディスク逼迫',
   objectives: ['溢れたログを止める', '不要な世代を消す', '対応記録を残す'],
@@ -158,6 +164,7 @@ export const diskFullBoss: LessonDefinition = {
 
 export const gitFirstCommit: LessonDefinition = {
   id: 'git/01/first-commit',
+  track: 'git',
   kind: 'training',
   title: '最初のコミットを刻む',
   objectives: ['リポジトリを作る', '3面（作業ツリー・インデックス・HEAD）を動かす', '履歴を残す'],
@@ -232,6 +239,7 @@ const GIT_FILES = {
 
 export const gitBranching: LessonDefinition = {
   id: 'git/04/branch-and-merge',
+  track: 'git',
   kind: 'training',
   title: 'ブランチを分けて統合する',
   objectives: ['ブランチはポインタだと分かる', '分けた作業を統合できる', '早送りと統合の違いが分かる'],
@@ -296,6 +304,7 @@ export const gitBranching: LessonDefinition = {
 
 export const gitConflictBoss: LessonDefinition = {
   id: 'git/05/conflict',
+  track: 'git',
   kind: 'boss',
   title: '衝突を解く',
   objectives: ['衝突マーカを読める', '意味を壊さず統合できる', '解決してコミットできる'],
@@ -361,11 +370,333 @@ export const gitConflictBoss: LessonDefinition = {
   ],
 };
 
+/** ラベルが食い違っていて、Service から繋がらないクラスタ */
+function brokenServiceCluster() {
+  return {
+    ...emptyCluster([node('node-1', 2000, 4096), node('node-2', 2000, 4096)]),
+    deployments: new Map([
+      ['default/web', deployment('web', 2, [container('nginx', 'nginx:1.25')], { labels: { app: 'web' } })],
+    ]),
+    // selector が app=frontend になっており、Pod のラベル app=web と一致しない
+    services: new Map([['default/web', service('web', { app: 'frontend' })]]),
+  };
+}
+
+export const k8sFirstPod: LessonDefinition = {
+  id: 'k8s/01/first-look',
+  track: 'k8s',
+  kind: 'training',
+  title: 'クラスタを覗く',
+  objectives: ['資源の一覧を読める', 'Pod が消えても戻る理由が分かる', '数を変えられる'],
+  parCommands: 8,
+  initial: {
+    cluster: {
+      ...emptyCluster([node('node-1', 2000, 4096), node('node-2', 2000, 4096)]),
+      deployments: new Map([
+        ['default/web', deployment('web', 2, [container('nginx', 'nginx:1.25')], { labels: { app: 'web' } })],
+      ]),
+    },
+  },
+  steps: [
+    {
+      prompt: '時間を進めて、Pod を 2 つとも Running にせよ。',
+      check: 'Ready な Pod が 2 つあること',
+      hints: ['kubectl get pods で今の状態が見える', 'kubectl wait 10 で時間を進められる'],
+      assert: ({ shell }) =>
+        shell.cluster !== null &&
+        [...shell.cluster.pods.values()].filter(isReady).length === 2,
+      explain:
+        'apply は「こうあってほしい」を置くだけ。実際に Pod を作るのはコントローラで、tick ごとに差を埋めていく。',
+    },
+    {
+      prompt: 'Pod を 1 つ消し、時間を進めて、また 2 つに戻ることを確かめよ。',
+      check: 'Pod を削除した記録があり、Ready な Pod が再び 2 つあること',
+      hints: ['kubectl get pods で名前を確かめる', 'kubectl delete pod <名前>', 'kubectl wait 10'],
+      assert: ({ shell }) => {
+        if (shell.cluster === null) return false;
+        const deleted = shell.history.some((line) => line.includes('delete pod'));
+        return deleted && [...shell.cluster.pods.values()].filter(isReady).length === 2;
+      },
+      explain:
+        '消えたことに反応したのではない。「2 つあるべき」と「1 つしかない」の差を、次の tick で埋めただけ。これが宣言的ということ。',
+    },
+    {
+      prompt: 'replicas を 4 に増やし、全て Running にせよ。',
+      check: 'Ready な Pod が 4 つあること',
+      hints: ['kubectl scale deploy web --replicas=4', 'そのあと kubectl wait 12'],
+      assert: ({ shell }) =>
+        shell.cluster !== null &&
+        [...shell.cluster.pods.values()].filter(isReady).length === 4,
+      explain: 'スケジューラは requests と各ノードの空き容量を比べて配置先を決めている。',
+    },
+  ],
+};
+
+export const k8sServiceBoss: LessonDefinition = {
+  id: 'k8s/07/no-endpoints',
+  track: 'k8s',
+  kind: 'boss',
+  title: 'Pod は動いているのに繋がらない',
+  objectives: ['Endpoints に載る条件を知る', 'ラベルとセレクタの一致を確かめられる'],
+  parCommands: 10,
+  initial: { cluster: brokenServiceCluster() },
+  steps: [
+    {
+      prompt: 'まず Pod を Running にし、Service の Endpoints が空であることを確かめよ。',
+      check: 'Ready な Pod が 2 つあり、Service の Endpoints が空のままであること',
+      hints: ['kubectl wait 12', 'kubectl get svc で Endpoints の欄を見る'],
+      assert: ({ shell }) => {
+        if (shell.cluster === null) return false;
+        const running = [...shell.cluster.pods.values()].filter(isReady).length === 2;
+        const svc = shell.cluster.services.get('default/web');
+        return running && svc !== undefined && svc.status.endpoints.length === 0;
+      },
+      explain:
+        'Pod が Running でも Endpoints は自動では埋まらない。セレクタに一致し、かつ Ready であることが条件。',
+    },
+    {
+      prompt: '原因を突き止め、Service から Pod に繋がるようにせよ。',
+      check: 'Service の Endpoints に 2 つの Pod IP が載っていること',
+      hints: [
+        'kubectl endpoints web で、どの Pod が一致しているかが見える',
+        'Pod のラベルは app=web、Service のセレクタは app=frontend',
+        'kubectl set selector svc web app=web で直せる',
+      ],
+      assert: ({ shell }) => {
+        const svc = shell.cluster?.services.get('default/web');
+        return svc !== undefined && svc.status.endpoints.length === 2;
+      },
+      diagnose: ({ shell }) => {
+        const cluster = shell.cluster;
+        if (cluster === null) return null;
+        const svc = cluster.services.get('default/web');
+        if (svc === undefined) return 'Service が消えています。';
+        const running = [...cluster.pods.values()].filter(isReady).length;
+        if (running < 2) return 'まず Pod を Running にしてください（kubectl wait）。';
+        if (svc.spec.selector['app'] === 'frontend') {
+          return 'Service のセレクタが app=frontend のままです。Pod のラベルは app=web です。';
+        }
+        return null;
+      },
+      explain:
+        'この形の障害は現場で頻出する。Pod を見ても Running としか出ないので、Service 側のセレクタと Pod のラベルを突き合わせる癖をつけること。',
+    },
+  ],
+};
+
+/** web が待ち受けていないため、ping は通るのに curl が失敗する構成 */
+function brokenServiceNet(listening: number[]) {
+  resetMac();
+  const pc1 = host('pc1', [iface('eth0', '192.168.1.10', 24)], {
+    routes: [{ destination: '0.0.0.0/0', via: '192.168.1.1', dev: 'eth0' }],
+  });
+  const gw = router('gw', [iface('eth0', '192.168.1.1', 24), iface('eth1', '10.0.0.1', 24)]);
+  const web = host('web', [iface('eth0', '10.0.0.20', 24)], {
+    routes: [{ destination: '0.0.0.0/0', via: '10.0.0.1', dev: 'eth0' }],
+    listening,
+  });
+  return topology(
+    [pc1, gw, web],
+    [link('pc1:eth0', 'gw:eth0'), link('gw:eth1', 'web:eth0')],
+    { 'web.internal': '10.0.0.20' },
+  );
+}
+
+export const netFirstHop: LessonDefinition = {
+  id: 'net/01/first-hop',
+  track: 'net',
+  kind: 'training',
+  title: '経路をたどる',
+  objectives: ['自分のアドレスと経路を読める', 'ホップごとに何が変わるか分かる', 'CIDR を計算できる'],
+  parCommands: 8,
+  initial: {
+    net: brokenServiceNet([80]),
+    vars: { NET_SELF: 'pc1' },
+    files: { '/home/learner': null },
+  },
+  steps: [
+    {
+      prompt: '自分のアドレスと経路表を確認せよ。',
+      check: 'ip addr と ip route を実行したこと',
+      hints: ['ip addr', 'ip route'],
+      assert: ({ history }) =>
+        history.some((l) => l.includes('ip addr')) && history.some((l) => l.includes('ip route')),
+      explain:
+        '自分の IP とマスク、そしてデフォルトゲートウェイ。切り分けはここから始める。',
+    },
+    {
+      prompt: 'web.internal まで届くことを確かめ、経路を1ホップずつ表示せよ。',
+      check: 'ping と traceroute を実行したこと',
+      hints: ['ping web.internal', 'traceroute web.internal'],
+      assert: ({ history }) =>
+        history.some((l) => l.startsWith('ping')) && history.some((l) => l.startsWith('traceroute')),
+      explain:
+        'ホップごとに TTL が 1 ずつ減り、MAC は次の相手のものに書き換わる。IP だけが最後まで変わらない。',
+    },
+    {
+      prompt: '/home/learner/subnet.txt に、192.168.1.10/26 のネットワークアドレスを書き出せ。',
+      check: 'subnet.txt に 192.168.1.0 が含まれること',
+      hints: ['ipcalc 192.168.1.10/26 で計算できる', 'ipcalc の結果をそのまま書き出してもよい'],
+      assert: ({ shell }) => {
+        const node = shell.vfs.nodes.get('/home/learner/subnet.txt');
+        return node?.kind === 'file' && node.content.includes('192.168.1.0');
+      },
+      explain:
+        '/26 はホスト部が 6 ビット。62 台まで置ける。設計はこの計算が土台になる。',
+    },
+  ],
+};
+
+export const netUnreachableBoss: LessonDefinition = {
+  id: 'net/14/ping-ok-curl-ng',
+  track: 'net',
+  kind: 'boss',
+  title: 'ping は通るのに curl が失敗する',
+  objectives: ['層ごとに切り分けられる', '到達性と待ち受けの違いが分かる'],
+  parCommands: 10,
+  initial: {
+    net: brokenServiceNet([]),
+    vars: { NET_SELF: 'pc1' },
+    files: { '/home/learner': null },
+  },
+  steps: [
+    {
+      prompt: '症状を確かめよ。ping と curl の両方を試すこと。',
+      check: 'ping と curl を実行したこと',
+      hints: ['ping web.internal', 'curl -v http://web.internal/'],
+      assert: ({ history }) =>
+        history.some((l) => l.startsWith('ping')) && history.some((l) => l.startsWith('curl')),
+      explain:
+        'ping が通るなら、IP までは届いている。つまり経路とケーブルは生きている。問題はその上の層。',
+    },
+    {
+      prompt: '/home/learner/diagnosis.txt に、どの層まで到達していて何が原因かを書け。「refused」という語を含めること。',
+      check: 'diagnosis.txt に refused が含まれること',
+      hints: [
+        'curl -v の最後の行に理由が出ている',
+        'echo "IP までは到達。TCP 80 が Connection refused" > diagnosis.txt',
+      ],
+      assert: ({ shell }) => {
+        const node = shell.vfs.nodes.get('/home/learner/diagnosis.txt');
+        return node?.kind === 'file' && node.content.includes('refused');
+      },
+      diagnose: ({ shell }) => {
+        const node = shell.vfs.nodes.get('/home/learner/diagnosis.txt');
+        if (node === undefined) return null;
+        if (node.kind === 'file' && !node.content.includes('refused')) {
+          return 'ファイルはありますが refused の語がありません。curl の出力をもう一度読んでください。';
+        }
+        return null;
+      },
+      explain:
+        'Connection refused は「届いたが、そのポートで誰も待っていない」という意味。' +
+        'タイムアウト（届いていない）とは原因がまるで違う。この2つを混同しないことが切り分けの要。',
+    },
+  ],
+};
+
+const CI_YAML = `name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  lint:
+    name: Lint
+    steps:
+      - name: run eslint
+        run: npm run lint
+  test:
+    name: Test
+    steps:
+      - name: run vitest
+        run: npm test
+  build:
+    name: Build
+    needs: [lint, test]
+    steps:
+      - name: build
+        run: npm run build
+`;
+
+export const ghPullRequest: LessonDefinition = {
+  id: 'github/04/protected-merge',
+  track: 'github',
+  kind: 'boss',
+  title: 'マージできない理由を全部潰す',
+  objectives: ['保護ルールの意味が分かる', 'CI の依存関係を読める', 'レビューとチェックを揃えられる'],
+  parCommands: 12,
+  initial: {
+    repo: createRepo('acme', 'app'),
+    files: {
+      [HOME]: null,
+      [`${HOME}/.github/workflows/ci.yml`]: CI_YAML,
+    },
+  },
+  steps: [
+    {
+      prompt: 'main ブランチを保護せよ。承認を 1 件、必須チェックを Build にすること。',
+      check: 'main の保護ルールがあり、承認 1 件と Build が必須になっていること',
+      hints: ['gh protect main --approvals=1 --checks=Build'],
+      assert: ({ shell }) => {
+        const rule = shell.repo?.protections.find((p) => p.branch === 'main');
+        return rule !== undefined && rule.requiredApprovals >= 1 && rule.requiredChecks.includes('Build');
+      },
+      explain:
+        '保護ルールは「人が気を付ける」を「仕組みで止める」に変える。直 push を塞ぎ、条件を満たさない限りマージさせない。',
+    },
+    {
+      prompt: 'feature ブランチから Pull Request を作れ。',
+      check: 'open な Pull Request が1つ以上あること',
+      hints: ['gh pr create -t "機能追加" -b feature'],
+      assert: ({ shell }) => (shell.repo?.pulls.filter((p) => p.state === 'open').length ?? 0) >= 1,
+      explain: 'PR は差分を出す場所ではなく、意図を伝えて合意を取る場所。',
+    },
+    {
+      prompt: 'CI を走らせ、どのジョブが何に依存しているかを確かめよ。',
+      check: 'Pull Request にチェックの結果が記録されていること',
+      hints: ['gh workflow で構造が見える', 'gh pr checks 1 で実行できる'],
+      assert: ({ shell }) => (shell.repo?.pulls[0]?.checks.length ?? 0) > 0,
+      explain:
+        'Build は lint と test の両方に依存している。どちらかが失敗すれば Build は実行されず skipped になる。',
+    },
+    {
+      prompt: 'すべての条件を満たして、Pull Request をマージせよ。',
+      check: 'Pull Request が merged になっていること',
+      hints: [
+        'gh pr view 1 で、足りないものが全部出る',
+        'gh pr review 1 --approve -r mentor で承認する',
+        'gh pr checks 1 で Build を成功させる',
+        'gh pr merge 1 --squash',
+      ],
+      assert: ({ shell }) => shell.repo?.pulls.some((p) => p.state === 'merged') === true,
+      diagnose: ({ shell }) => {
+        const repo = shell.repo;
+        const pull = repo?.pulls[0];
+        if (!repo || !pull) return null;
+        const approvals = pull.reviews.filter((r) => r.state === 'approved').length;
+        const build = pull.checks.find((c) => c.name === 'Build');
+        if (approvals === 0) return 'まだ承認がありません。gh pr review 1 --approve -r mentor で承認してください。';
+        if (build === undefined) return 'Build のチェックが未実行です。gh pr checks 1 を実行してください。';
+        if (build.status !== 'success') return 'Build が成功していません。失敗の原因を取り除いて実行し直してください。';
+        return null;
+      },
+      explain:
+        'squash なら履歴に残るのは 1 コミット、merge ならマージコミットが増え、rebase なら載せ替えになる。' +
+        'チームの読みやすさに合わせて選ぶ。',
+    },
+  ],
+};
+
 export const missions: readonly LessonDefinition[] = [
   shellWarmup,
   gitFirstCommit,
   gitBranching,
   gitConflictBoss,
+  k8sFirstPod,
+  k8sServiceBoss,
+  netFirstHop,
+  netUnreachableBoss,
+  ghPullRequest,
   diskFullBoss,
 ];
 

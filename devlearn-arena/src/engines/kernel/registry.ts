@@ -1,4 +1,7 @@
 import type { GitState } from '@/engines/git/types';
+import type { ClusterState } from '@/engines/k8s/types';
+import type { Repo } from '@/engines/github/types';
+import type { Topology } from '@/engines/net/types';
 import type { MutableClock } from './clock';
 import type { VfsState } from './vfs';
 
@@ -6,6 +9,12 @@ export interface ShellState {
   vfs: VfsState;
   /** git リポジトリ。まだ init していなければ null */
   git: GitState | null;
+  /** Kubernetes クラスタ。用意されていなければ null */
+  cluster: ClusterState | null;
+  /** ネットワークの構成。用意されていなければ null */
+  net: Topology | null;
+  /** GitHub のリポジトリ。用意されていなければ null */
+  repo: Repo | null;
   cwd: string;
   vars: ReadonlyMap<string, string>;
   lastExit: number;

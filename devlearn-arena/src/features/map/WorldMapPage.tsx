@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getChapter, TRACKS } from '@/content/catalog';
-import { missions } from '@/engines/lesson/missions';
+import { missionsOf, progressOf } from '@/engines/lesson/catalog';
+import type { MissionTrack } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { xpProgress } from '@/lib/xp';
 import { useStore } from '@/store';
@@ -38,31 +39,33 @@ export default function WorldMapPage() {
   );
 
   const rank = xpProgress(xp);
-  const prologueDone = missions.filter((m) => cleared.has(m.id)).length;
+  const prologue = progressOf(cleared, 'kernel');
 
   const islands: IslandInfo[] = [
     {
       id: PROLOGUE,
       title: '序章の島',
       subtitle: '端末を手に入れる',
-      done: prologueDone,
-      total: missions.length,
-      ratio: missions.length === 0 ? 0 : prologueDone / missions.length,
+      done: prologue.done,
+      total: prologue.total,
+      ratio: prologue.total === 0 ? 0 : prologue.done / prologue.total,
       playable: true,
       current: lastMissionId !== null,
       color: ACCENT[PROLOGUE] ?? '#c0442f',
     },
     ...TRACKS.map((track) => {
+      const playable = progressOf(cleared, track.id as MissionTrack);
       const all = track.chapters.flatMap((c) => c.lessons);
-      const done = all.filter((l) => cleared.has(l.id)).length;
+      const done = all.filter((l) => cleared.has(l.id)).length + playable.done;
+      const total = all.length;
       return {
         id: track.id,
         title: track.title,
         subtitle: track.goal,
         done,
-        total: all.length,
-        ratio: all.length === 0 ? 0 : done / all.length,
-        playable: all.some((l) => l.status === 'ready'),
+        total,
+        ratio: total === 0 ? 0 : done / total,
+        playable: playable.total > 0,
         current: false,
         color: ACCENT[track.id] ?? '#4d9bff',
       };
@@ -112,38 +115,46 @@ export default function WorldMapPage() {
             <span className="text-base text-ink-soft">{selected?.subtitle}</span>
           </div>
 
-          {island === PROLOGUE ? (
-            <div className="bevel p-5">
-              <ul className="grid gap-3 sm:grid-cols-2">
-                {missions.map((m) => {
-                  const done = cleared.has(m.id);
-                  return (
-                    <li key={m.id}>
-                      <Link
-                        to="/"
-                        className="flex items-center gap-4 border-4 border-wood-dark bg-[var(--cream-dark)] px-4 py-4 hover:bg-white"
-                      >
-                        <span
-                          aria-hidden
-                          className={`grid h-12 w-12 shrink-0 place-items-center border-4 border-wood-dark text-2xl ${
-                            done ? 'bg-[var(--ok)]' : 'bg-gold'
-                          }`}
+          {(() => {
+            const trackId = (island === PROLOGUE ? 'kernel' : island) as MissionTrack;
+            const playable = missionsOf(trackId);
+            if (playable.length === 0) return null;
+            return (
+              <div className="bevel p-5">
+                <p className="text-lg font-extrabold">今すぐ挑戦できる任務</p>
+                <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {playable.map((m) => {
+                    const done = cleared.has(m.id);
+                    return (
+                      <li key={m.id}>
+                        <Link
+                          to={`/?mission=${encodeURIComponent(m.id)}`}
+                          className="flex items-center gap-4 border-4 border-wood-dark bg-[var(--cream-dark)] px-4 py-4 hover:bg-white"
                         >
-                          {m.kind === 'boss' ? '★' : '▶'}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block truncate text-lg font-extrabold">{m.title}</span>
-                          <span className="block text-sm text-ink-soft">
-                            {done ? 'クリア済み' : '挑戦できます'} · {m.steps.length} 手順
+                          <span
+                            aria-hidden
+                            className={`grid h-12 w-12 shrink-0 place-items-center border-4 border-wood-dark text-2xl ${
+                              done ? 'bg-[var(--ok)]' : 'bg-gold'
+                            }`}
+                          >
+                            {m.kind === 'boss' ? '★' : '▶'}
                           </span>
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ) : track ? (
+                          <span className="min-w-0">
+                            <span className="block truncate text-lg font-extrabold">{m.title}</span>
+                            <span className="block text-sm text-ink-soft">
+                              {done ? 'クリア済み' : '挑戦できます'} · {m.steps.length} 手順
+                            </span>
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })()}
+
+          {track ? (
             <>
               <div className="bevel overflow-hidden p-2">
                 <IslandBoard
@@ -160,7 +171,10 @@ export default function WorldMapPage() {
                     <h2 className="text-xl font-extrabold">
                       {String(stage.no).padStart(2, '0')} {stage.title}
                     </h2>
-                    <Link to={`/track/${track.id}#${stage.id.replace('/', '-')}`} className="knob px-4 py-2 text-sm font-bold">
+                    <Link
+                      to={`/track/${track.id}#${stage.id.replace('/', '-')}`}
+                      className="knob px-4 py-2 text-sm font-bold"
+                    >
                       詳しく見る
                     </Link>
                   </div>
@@ -177,14 +191,10 @@ export default function WorldMapPage() {
                     ))}
                   </ul>
                   <p className="mt-3 text-sm text-ink-soft">
-                    この島はまだ開拓中です。実装フェーズ {track.phase} で挑戦できるようになります。
+                    この章はまだ準備中です。実装フェーズ {track.phase} で挑戦できるようになります。
                   </p>
                 </div>
-              ) : (
-                <p className="text-base text-ink-soft">
-                  ステージを選ぶと、そこで学ぶ内容が表示されます。
-                </p>
-              )}
+              ) : null}
             </>
           ) : null}
         </>

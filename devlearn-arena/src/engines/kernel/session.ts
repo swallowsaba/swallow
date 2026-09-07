@@ -3,11 +3,20 @@ import { createDefaultRegistry } from './commands';
 import type { CommandRegistry, ShellState } from './registry';
 import { HOME } from './path';
 import { restoreGit, snapshotGit, type GitSnapshot } from '@/engines/git/serialize';
+import type { ClusterState } from '@/engines/k8s/types';
+import type { Repo } from '@/engines/github/types';
+import type { Topology } from '@/engines/net/types';
 import { createVfs, type VfsNode, type VfsState } from './vfs';
 
 export interface SessionOptions {
   /** 保存から復元する場合の初期状態 */
   restore?: ShellState;
+  /** Kubernetes の任務で使う初期クラスタ */
+  cluster?: ClusterState;
+  /** ネットワークの任務で使う初期構成 */
+  net?: Topology;
+  /** GitHub の任務で使う初期リポジトリ */
+  repo?: Repo;
   files?: Readonly<Record<string, string | null>>;
   cwd?: string;
   vars?: Readonly<Record<string, string>>;
@@ -49,7 +58,7 @@ export function createShellState(options: SessionOptions = {}): ShellState {
       ...options.vars,
     }),
   );
-  return { vfs, git: null, cwd, vars, lastExit: 0, history: [] };
+  return { vfs, git: null, cluster: options.cluster ?? null, net: options.net ?? null, repo: options.repo ?? null, cwd, vars, lastExit: 0, history: [] };
 }
 
 export interface ShellSnapshotData {
@@ -85,6 +94,10 @@ export function restoreShell(snapshot: ShellSnapshotData): ShellState {
   return {
     vfs: { nodes },
     git: snapshot.git === null ? null : restoreGit(snapshot.git),
+    // クラスタとネットワークは保存対象に含めていない（次の段階で直列化する）
+    cluster: null,
+    net: null,
+    repo: null,
     cwd: snapshot.cwd,
     vars: new Map(Object.entries(snapshot.vars)),
     lastExit: 0,

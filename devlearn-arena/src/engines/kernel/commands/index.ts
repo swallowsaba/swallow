@@ -1,7 +1,10 @@
 import { CommandRegistry } from '../registry';
 import { editorCommands } from './editor';
 import { fsCommands } from './fs';
+import { ghCommands } from './gh';
 import { gitCommands } from './git';
+import { kubectlCommands } from './kubectl';
+import { netCommands } from './net';
 import { miscCommands } from './misc';
 import { textCommands } from './text';
 import { textToolCommands } from './textTools';
@@ -16,10 +19,13 @@ export function createDefaultRegistry(): CommandRegistry {
     ...fsCommands,
     ...editorCommands,
     ...gitCommands,
+    ...ghCommands,
+    ...kubectlCommands,
+    ...netCommands,
     ...textCommands,
     ...textToolCommands,
     ...miscCommands,
   ]);
 }
 
-export { editorCommands, fsCommands, gitCommands, textCommands, textToolCommands, miscCommands };
+export { editorCommands, fsCommands, ghCommands, gitCommands, kubectlCommands, netCommands, textCommands, textToolCommands, miscCommands };
