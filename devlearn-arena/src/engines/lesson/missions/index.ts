@@ -6,6 +6,10 @@ import {
 } from './git2';
 import { ghPullRequest } from './github';
 import { k8sFirstPod, k8sServiceBoss } from './k8s';
+import {
+  k8sApply, k8sConfig, k8sCrashLoop, k8sDrain, k8sHpa, k8sJobs, k8sNoLimits, k8sPvcPending,
+  k8sRbacDenied, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
+} from './k8s2';
 import { diskFullBoss, shellWarmup } from './kernel';
 import { netFirstHop, netUnreachableBoss } from './net';
 
@@ -29,7 +33,19 @@ export const missions: readonly LessonDefinition[] = [
   gitFindRegression,
   gitRepoSize,
   k8sFirstPod,
+  k8sStuckPending,
+  k8sApply,
+  k8sJobs,
+  k8sStatefulSet,
+  k8sConfig,
+  k8sPvcPending,
   k8sServiceBoss,
+  k8sUnschedulable,
+  k8sCrashLoop,
+  k8sRbacDenied,
+  k8sHpa,
+  k8sDrain,
+  k8sNoLimits,
   netFirstHop,
   netUnreachableBoss,
   ghPullRequest,
@@ -43,6 +59,10 @@ export {
 } from './git2';
 export { ghPullRequest } from './github';
 export { k8sFirstPod, k8sServiceBoss } from './k8s';
+export {
+  k8sApply, k8sConfig, k8sCrashLoop, k8sDrain, k8sHpa, k8sJobs, k8sNoLimits, k8sPvcPending,
+  k8sRbacDenied, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
+} from './k8s2';
 export { diskFullBoss, shellWarmup } from './kernel';
 export { netFirstHop, netUnreachableBoss } from './net';
 

@@ -70,6 +70,7 @@ export function pod(name: string, containers: ContainerSpec[], options: {
   createdAt?: number;
   volumes?: PodVolume[];
   serviceAccountName?: string;
+  tolerations?: { key: string; effect: string }[];
 } = {}): Pod {
   return {
     kind: 'Pod',
@@ -82,7 +83,7 @@ export function pod(name: string, containers: ContainerSpec[], options: {
     spec: {
       containers,
       nodeSelector: options.nodeSelector ?? {},
-      tolerations: [],
+      tolerations: options.tolerations ?? [],
       restartPolicy: 'Always',
       terminationGracePeriodSeconds: 30,
       volumes: options.volumes ?? [],

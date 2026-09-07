@@ -158,6 +158,13 @@ function toVolumes(value: unknown): PodVolume[] {
   return out;
 }
 
+function toTolerations(value: unknown): { key: string; effect: string }[] {
+  return asArray(value).map((raw) => {
+    const entry = asRecord(raw);
+    return { key: asString(entry['key']), effect: asString(entry['effect'], 'NoSchedule') };
+  });
+}
+
 function toTemplate(value: unknown, fallbackLabels: Record<string, string>): PodTemplate {
   const template = asRecord(value);
   const templateMeta = asRecord(template['metadata']);
@@ -194,6 +201,7 @@ const BUILDERS: Record<string, Builder> = {
       nodeSelector: asStringMap(spec['nodeSelector']),
       volumes: toVolumes(spec['volumes']),
       serviceAccountName: asString(spec['serviceAccountName'], 'default'),
+      tolerations: toTolerations(spec['tolerations']),
     });
     return built satisfies Pod;
   },
