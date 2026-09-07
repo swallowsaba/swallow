@@ -3,6 +3,7 @@ import {
   addPaths, commitMerge, currentBranch, fastForwardTo, headCommit, planMerge, popStash,
   pushStash, replayCommit, reset, revertCommit, type ResetMode,
 } from '@/engines/git/repository';
+import { resolveRef } from '@/engines/git/refs';
 import { checkoutWorktree } from '@/engines/git/worktree';
 import { resolve } from '../path';
 import { writeFile } from '../vfs';
@@ -19,8 +20,12 @@ export const historySubcommands: Record<string, GitHandler> = {
         ? 'soft'
         : 'mixed';
     const target = operands[0] ?? 'HEAD';
+    const resolved = resolveRef(git, target);
+    if (resolved === undefined) {
+      return { stderr: `fatal: ambiguous argument '${target}'\n`, code: 128 };
+    }
     const before = headCommit(git);
-    const result = reset(git, target, mode);
+    const result = reset(git, resolved, mode);
     if (result.error !== undefined) return { stderr: `${result.error}\n`, code: 128 };
     const vfs = result.worktree === null
       ? shell.vfs
@@ -73,7 +78,7 @@ export const historySubcommands: Record<string, GitHandler> = {
     const { operands } = parseArgs(['cherry-pick', ...rest]);
     const ref = operands[0];
     if (ref === undefined) return { stderr: 'fatal: コミットを指定してください\n', code: 128 };
-    const target = git.refs.get(`refs/heads/${ref}`) ?? git.objects.resolve(ref);
+    const target = resolveRef(git, ref);
     const head = headCommit(git);
     if (target === undefined || head === null) {
       return { stderr: `fatal: bad revision '${ref}'\n`, code: 128 };
@@ -98,7 +103,7 @@ export const historySubcommands: Record<string, GitHandler> = {
     const { operands } = parseArgs(['revert', ...rest]);
     const ref = operands[0];
     if (ref === undefined) return { stderr: 'fatal: コミットを指定してください\n', code: 128 };
-    const target = git.objects.resolve(ref);
+    const target = resolveRef(git, ref);
     if (target === undefined) return { stderr: `fatal: bad revision '${ref}'\n`, code: 128 };
     const result = revertCommit(git, target, nowSeconds);
     if (result.error !== undefined) return { stderr: `${result.error}\n`, code: 128 };

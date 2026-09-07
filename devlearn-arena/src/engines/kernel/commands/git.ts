@@ -5,6 +5,7 @@ import type { CommandResult, CommandSpec, RunLineResult, ShellState } from '../r
 import { basicSubcommands } from './gitBasic';
 import { bisectSubcommands } from './gitBisect';
 import { historySubcommands } from './gitHistory';
+import { plumbingSubcommands } from './gitPlumbing';
 import { rebaseSubcommands } from './gitRebase';
 import { refSubcommands } from './gitRefs';
 import { remoteSubcommands } from './gitRemote';
@@ -17,6 +18,7 @@ import { NOT_A_REPO, type GitHandler } from './gitShared';
 const subcommands: Record<string, GitHandler> = {
   ...basicSubcommands,
   ...historySubcommands,
+  ...plumbingSubcommands,
   ...rebaseSubcommands,
   ...refSubcommands,
   ...bisectSubcommands,

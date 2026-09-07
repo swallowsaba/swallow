@@ -1,5 +1,9 @@
 import type { LessonDefinition } from '../types';
 import { gitBranching, gitConflictDrill, gitFirstCommit } from './git';
+import {
+  gitAmend, gitDivergedBoss, gitFindRegression, gitInteractiveRebase, gitParallelWork,
+  gitRecovery, gitRelease, gitRepoSize, gitSubmodule, gitThreeTrees,
+} from './git2';
 import { ghPullRequest } from './github';
 import { k8sFirstPod, k8sServiceBoss } from './k8s';
 import { diskFullBoss, shellWarmup } from './kernel';
@@ -12,8 +16,18 @@ import { netFirstHop, netUnreachableBoss } from './net';
 export const missions: readonly LessonDefinition[] = [
   shellWarmup,
   gitFirstCommit,
+  gitRelease,
+  gitThreeTrees,
+  gitAmend,
   gitBranching,
   gitConflictDrill,
+  gitInteractiveRebase,
+  gitRecovery,
+  gitParallelWork,
+  gitSubmodule,
+  gitDivergedBoss,
+  gitFindRegression,
+  gitRepoSize,
   k8sFirstPod,
   k8sServiceBoss,
   netFirstHop,
@@ -23,6 +37,10 @@ export const missions: readonly LessonDefinition[] = [
 ];
 
 export { gitBranching, gitConflictDrill, gitFirstCommit } from './git';
+export {
+  gitAmend, gitDivergedBoss, gitFindRegression, gitInteractiveRebase, gitParallelWork,
+  gitRecovery, gitRelease, gitRepoSize, gitSubmodule, gitThreeTrees,
+} from './git2';
 export { ghPullRequest } from './github';
 export { k8sFirstPod, k8sServiceBoss } from './k8s';
 export { diskFullBoss, shellWarmup } from './kernel';

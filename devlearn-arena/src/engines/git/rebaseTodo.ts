@@ -133,7 +133,8 @@ export function runTodo(
     if (line === undefined) continue;
     if (line.action === 'drop') continue;
 
-    const target = resolveRef(state, line.ref);
+    // 参照は台本を作った時点の状態で解く（実行中は HEAD が動くため）
+    const target = resolveRef(git, line.ref);
     if (target === undefined) {
       return {
         git: state, tip, conflicts: [`不明なコミット: ${line.ref}`],
