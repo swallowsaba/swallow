@@ -465,3 +465,49 @@ export const ghForkFlow: LessonDefinition = {
     },
   ],
 };
+
+export const ghRelease: LessonDefinition = {
+  id: 'github/08/tags-releases',
+  track: 'github',
+  kind: 'training',
+  title: 'どの版を配ったのかを残す',
+  objectives: ['タグとリリースの関係が分かる', '実在しないタグでは配れないと分かる'],
+  parCommands: 10,
+  initial: {
+    repo: createRepo('acme', 'app'),
+    files: { ...FILES, [`${HOME}/CHANGELOG.md`]: '# 変更履歴\n' },
+  },
+  steps: [
+    {
+      prompt: 'まだタグが無い状態で、v1.0.0 のリリースを作ろうとしてみよ。',
+      check: 'gh release create を試したこと',
+      hints: ['gh release create v1.0.0 -t "初回リリース"'],
+      assert: ({ history }) => history.some((l) => l.includes('gh release create')),
+      explain:
+        'リリースは「このコミットを配った」という記録。指す先が無ければ作れない。',
+    },
+    {
+      prompt: 'コミットして、注釈付きタグ v1.0.0 を打て。',
+      check: 'タグ v1.0.0 があること',
+      hints: [
+        'git init / git add . / git commit -m "first"',
+        'git tag -a v1.0.0 -m "初回リリース"',
+      ],
+      assert: ({ shell }) => shell.git?.refs.has('refs/tags/v1.0.0') === true,
+      explain:
+        'タグは動かない参照。ブランチと違って、後から中身が変わらないことが値打ち。',
+    },
+    {
+      prompt: 'そのタグからリリースを作れ。',
+      check: 'v1.0.0 のリリースがあること',
+      hints: ['gh release create v1.0.0 -t "初回リリース"'],
+      assert: ({ shell }) => (shell.repo?.releases ?? []).some((r) => r.tag === 'v1.0.0'),
+      diagnose: ({ shell }) =>
+        shell.git?.refs.has('refs/tags/v1.0.0') === true
+          ? null
+          : 'まだタグがありません。git tag -a v1.0.0 -m "..." を先に実行してください。',
+      explain:
+        'タグは git の中の話、リリースは GitHub の中の話。同じ名前で繋がっているだけで、別のものを指している。',
+    },
+  ],
+};

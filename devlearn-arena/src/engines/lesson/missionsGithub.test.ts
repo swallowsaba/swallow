@@ -121,3 +121,21 @@ describe('GitHub の任務が実際に解ける', () => {
     ]);
   });
 });
+
+describe('リリース', () => {
+  it('どの版を配ったのかを残す', () => {
+    expectCleared('github/08/tags-releases', [
+      'gh release create v1.0.0 -t "初回リリース"',
+      'git init',
+      'git add .',
+      'git commit -m "first"',
+      'git tag -a v1.0.0 -m "初回リリース"',
+      'gh release create v1.0.0 -t "初回リリース"',
+    ]);
+  });
+
+  it('タグが無ければリリースは作れない', () => {
+    const result = solve('github/08/tags-releases', ['gh release create v9.9.9 -t x']);
+    expect(result.cleared).toBe(false);
+  });
+});

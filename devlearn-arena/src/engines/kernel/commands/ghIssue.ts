@@ -211,4 +211,52 @@ export const issueSubcommands: Record<string, GhHandler> = {
           : `${numbers.map((n) => `#${String(n)}`).join(' ')}\n`,
     };
   },
+
+  release: ({ repo, shell, operands, values, rest }) => {
+    const action = operands[0] ?? 'list';
+
+    if (action === 'list') {
+      if (repo.releases.length === 0) return { stdout: 'no releases\n' };
+      return {
+        stdout: fromLines(
+          repo.releases.map(
+            (r) => `${r.tag}\t${r.title}${r.prerelease ? '\tPre-release' : ''}`,
+          ),
+        ),
+      };
+    }
+
+    if (action === 'create') {
+      const tag = operands[1];
+      if (tag === undefined) {
+        return { stderr: 'usage: gh release create <tag> -t <題名>\n', code: 1 };
+      }
+      // タグは手元のリポジトリに実在していないと打てない
+      const git = shell.git;
+      if (git === null) {
+        return { stderr: 'fatal: not a git repository（先に git init が要ります）\n', code: 1 };
+      }
+      if (!git.refs.has(`refs/tags/${tag}`)) {
+        return {
+          stderr: `error: タグ ${tag} がありません（git tag -a ${tag} -m "..." で作ってください）\n`,
+          code: 1,
+        };
+      }
+      if (repo.releases.some((r) => r.tag === tag)) {
+        return { stderr: `error: ${tag} のリリースはすでにあります\n`, code: 1 };
+      }
+      const release = {
+        tag,
+        title: values.get('t') ?? tag,
+        notes: values.get('n') ?? '',
+        prerelease: rest.includes('--prerelease'),
+      };
+      return {
+        stdout: `https://github.com/${repo.owner}/${repo.name}/releases/tag/${tag}\n`,
+        patch: { repo: { ...repo, releases: [...repo.releases, release] } },
+      };
+    }
+
+    return { stderr: 'usage: gh release <create|list>\n', code: 1 };
+  },
 };

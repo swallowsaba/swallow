@@ -7,7 +7,7 @@ import {
 import { ghPullRequest } from './github';
 import {
   ghActionsPractice, ghClone, ghCodeowners, ghForkFlow, ghIssuePlanning, ghMatrix, ghNeedsDag,
-  ghPrCreate, ghReusable,
+  ghPrCreate, ghRelease, ghReusable,
 } from './github2';
 import { k8sFirstPod, k8sServiceBoss } from './k8s';
 import {
@@ -78,6 +78,7 @@ export const missions: readonly LessonDefinition[] = [
   ghMatrix,
   ghActionsPractice,
   ghReusable,
+  ghRelease,
   ghForkFlow,
   diskFullBoss,
 ];
@@ -90,7 +91,7 @@ export {
 export { ghPullRequest } from './github';
 export {
   ghActionsPractice, ghClone, ghCodeowners, ghForkFlow, ghIssuePlanning, ghMatrix, ghNeedsDag,
-  ghPrCreate, ghReusable,
+  ghPrCreate, ghRelease, ghReusable,
 } from './github2';
 export { k8sFirstPod, k8sServiceBoss } from './k8s';
 export {

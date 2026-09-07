@@ -72,6 +72,13 @@ export interface OwnerRule {
   owners: string[];
 }
 
+export interface Release {
+  tag: string;
+  title: string;
+  notes: string;
+  prerelease: boolean;
+}
+
 /** fork 元。fork でなければ null */
 export interface Upstream {
   owner: string;
@@ -98,6 +105,7 @@ export interface Repo {
   upstream: Upstream | null;
   /** この リポジトリから作られた fork */
   forks: Upstream[];
+  releases: Release[];
 }
 
 export interface MergeCheck {

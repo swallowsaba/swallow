@@ -67,4 +67,12 @@ export const repoSnapshotSchema = z.object({
   secrets: z.record(z.string(), z.string()),
   upstream: z.object({ owner: z.string(), name: z.string() }).nullable(),
   forks: z.array(z.object({ owner: z.string(), name: z.string() })),
+  releases: z.array(
+    z.object({
+      tag: z.string(),
+      title: z.string(),
+      notes: z.string(),
+      prerelease: z.boolean(),
+    }),
+  ),
 });

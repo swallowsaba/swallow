@@ -1,4 +1,6 @@
-import type { BranchProtection, Issue, OwnerRule, Project, PullRequest, Repo, Upstream } from './types';
+import type {
+  BranchProtection, Issue, OwnerRule, Project, PullRequest, Release, Repo, Upstream,
+} from './types';
 
 /** GitHub のリポジトリ状態を、保存できる素のデータに落とす */
 export interface RepoSnapshot {
@@ -16,6 +18,7 @@ export interface RepoSnapshot {
   secrets: Record<string, string>;
   upstream: Upstream | null;
   forks: Upstream[];
+  releases: Release[];
 }
 
 export function snapshotRepo(repo: Repo): RepoSnapshot {
@@ -34,6 +37,7 @@ export function snapshotRepo(repo: Repo): RepoSnapshot {
     secrets: { ...repo.secrets },
     upstream: repo.upstream,
     forks: [...repo.forks],
+    releases: [...repo.releases],
   };
 }
 
@@ -53,5 +57,6 @@ export function restoreRepo(snapshot: RepoSnapshot): Repo {
     secrets: { ...snapshot.secrets },
     upstream: snapshot.upstream,
     forks: [...snapshot.forks],
+    releases: [...snapshot.releases],
   };
 }

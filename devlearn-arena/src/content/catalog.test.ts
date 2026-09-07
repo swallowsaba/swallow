@@ -85,6 +85,15 @@ describe('目次と任務の対応', () => {
     }
   });
 
+  it('どの章にも遊べる任務が1本以上ある', () => {
+    for (const track of TRACKS) {
+      for (const chapter of track.chapters) {
+        const ready = chapter.lessons.filter((l) => l.status === 'ready');
+        expect(ready.length, `${chapter.id} に遊べる任務がありません`).toBeGreaterThan(0);
+      }
+    }
+  });
+
   it('遊べるレッスンが1つ以上ある', () => {
     expect(countAll().ready).toBeGreaterThan(0);
   });

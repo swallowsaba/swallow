@@ -16,6 +16,7 @@ export function createRepo(owner: string, name: string): Repo {
     secrets: {},
     upstream: null,
     forks: [],
+    releases: [],
   };
 }
 
