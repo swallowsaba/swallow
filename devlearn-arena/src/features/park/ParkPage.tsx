@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { restoreShell, snapshotShell } from '@/engines/kernel/session';
 import { findMission, missions } from '@/engines/lesson/missions';
 import {
@@ -9,13 +9,18 @@ import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/typ
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
 import { TimeScrubber } from '@/features/terminal/TimeScrubber';
 import { useShellSession } from '@/features/terminal/useShellSession';
+import { dayKey } from '@/lib/date';
+import { shouldReview } from '@/lib/review';
 import { sfx } from '@/lib/sfx';
 import { levelFromXp, rankFromLevel, scoreAttempt, xpForScore } from '@/lib/xp';
 import { useStore } from '@/store';
 import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
+import { ClusterCanvas } from '@/visual/ClusterCanvas';
 import { CommitGraph } from '@/visual/CommitGraph';
+import { PacketFlow } from '@/visual/PacketFlow';
+import { PrTimeline } from '@/visual/PrTimeline';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { FileWorld } from '@/visual/FileWorld';
 
@@ -26,7 +31,16 @@ export default function ParkPage() {
   const lastMissionId = useStore((s) => s.lastMissionId);
   const setLastMission = useStore((s) => s.setLastMission);
   const resetMission = useStore((s) => s.resetMission);
-  const [missionId, setMissionId] = useState(lastMissionId ?? FALLBACK?.id ?? '');
+  const [params] = useSearchParams();
+  const requested = params.get('mission');
+  const [missionId, setMissionId] = useState(requested ?? lastMissionId ?? FALLBACK?.id ?? '');
+
+  // 地図から任務を指定して来たときは、そちらを開く
+  useEffect(() => {
+    if (requested !== null && requested !== missionId) setMissionId(requested);
+    // 指定が変わったときだけ反応する
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requested]);
   const [attempt, setAttempt] = useState(0);
   const mission = findMission(missionId) ?? FALLBACK;
 
@@ -81,13 +95,14 @@ function Park({
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
-  const [rightTab, setRightTab] = useState<'world' | 'git'>('world');
+  const [rightTab, setRightTab] = useState<'world' | 'git' | 'k8s' | 'net' | 'gh'>('world');
   const [editing, setEditing] = useState<EditorTarget | null>(null);
 
   const xp = useStore((s) => s.profile.xp);
   const soundEnabled = useStore((s) => s.settings.soundEnabled);
   const grantXp = useStore((s) => s.grantXp);
   const clearLesson = useStore((s) => s.clearLesson);
+  const scheduleReview = useStore((s) => s.scheduleReview);
   const paneMain = useStore((s) => s.settings.paneMain);
   const updateSettings = useStore((s) => s.updateSettings);
 
@@ -175,6 +190,10 @@ function Park({
       const reward = xpForScore(score, mission.kind === 'boss' ? 'boss' : 'drill');
       const after = levelFromXp(xp + reward);
       clearLesson({ lessonId: mission.id, score, xp: reward, now });
+      // 躓いた任務は、日を置いて見直しの対象にする
+      if (shouldReview({ hintsUsed: progress.hintsUsed, mistakes: progress.mistakes, score })) {
+        scheduleReview(mission.id, dayKey(now));
+      }
       setCelebration({
         key: now,
         title: 'クリア',
@@ -445,6 +464,36 @@ function Park({
             >
               ⑂ 履歴
             </button>
+            <button
+              type="button"
+              aria-pressed={rightTab === 'k8s'}
+              onClick={() => {
+                setRightTab('k8s');
+              }}
+              className={`px-3 py-1 ${rightTab === 'k8s' ? 'bg-gold text-ink' : 'text-cream'}`}
+            >
+              ☸ クラスタ
+            </button>
+            <button
+              type="button"
+              aria-pressed={rightTab === 'net'}
+              onClick={() => {
+                setRightTab('net');
+              }}
+              className={`px-3 py-1 ${rightTab === 'net' ? 'bg-gold text-ink' : 'text-cream'}`}
+            >
+              🔀 ネットワーク
+            </button>
+            <button
+              type="button"
+              aria-pressed={rightTab === 'gh'}
+              onClick={() => {
+                setRightTab('gh');
+              }}
+              className={`px-3 py-1 ${rightTab === 'gh' ? 'bg-gold text-ink' : 'text-cream'}`}
+            >
+              ⑃ PR
+            </button>
           </div>
           <div
             className="min-h-0 flex-1 overflow-hidden"
@@ -459,9 +508,24 @@ function Park({
               <div className="min-h-0 flex-1">
                 {rightTab === 'world' ? (
                   <FileWorld vfs={session.state.vfs} previous={previous?.vfs} cwd={session.state.cwd} />
-                ) : (
+                ) : rightTab === 'git' ? (
                   <div className="h-full bg-cream">
                     <CommitGraph git={session.state.git} />
+                  </div>
+                ) : rightTab === 'k8s' ? (
+                  <div className="h-full bg-cream">
+                    <ClusterCanvas cluster={session.state.cluster} />
+                  </div>
+                ) : rightTab === 'net' ? (
+                  <div className="h-full bg-cream">
+                    <PacketFlow
+                      net={session.state.net}
+                      self={session.state.vars.get('NET_SELF') ?? 'pc1'}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-full bg-cream">
+                    <PrTimeline repo={session.state.repo} />
                   </div>
                 )}
               </div>

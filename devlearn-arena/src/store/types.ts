@@ -17,6 +17,8 @@ export interface ProgressSlice {
   saveMission: (id: string, progress: MissionProgress, state: ShellSnapshot) => void;
   setLastMission: (id: string) => void;
   resetMission: (id: string) => void;
+  scheduleReview: (lessonId: string, today: string) => void;
+  gradeReview: (lessonId: string, grade: 'again' | 'hard' | 'good' | 'easy', today: string) => void;
   useHint: (lessonId: string) => void;
   clearLesson: (input: { lessonId: string; score: number; xp: number; now: number }) => void;
   resetProgress: (now: number) => void;

@@ -5,6 +5,7 @@ import { readJournal, type JournalEntry } from '@/lib/storage/idb';
 import { xpProgress } from '@/lib/xp';
 import { useStore } from '@/store';
 import { ProgressBar } from '@/ui/components/ProgressBar';
+import { ReviewQueue } from './ReviewQueue';
 
 export default function DashboardPage() {
   const t = useT();
@@ -52,6 +53,8 @@ export default function DashboardPage() {
           {t('dash.streak', { n: profile.streakDays })} · {t('dash.cleared', { n: clearedCount })}
         </p>
       </section>
+
+      <ReviewQueue />
 
       <section>
         <h2 className="font-mono text-xs text-ink-soft">{t('dash.recent')}</h2>

@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand';
 import { dayKey, nextStreak } from '@/lib/date';
+import { createItem, schedule, upsert } from '@/lib/review';
 import { createEmptySave, emptyLessonProgress } from '@/lib/storage/schema';
 import type { AppState, ProgressSlice } from './types';
 
@@ -33,6 +34,16 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
     })),
 
   setLastMission: (id) => set({ lastMissionId: id }),
+
+  scheduleReview: (lessonId, today) =>
+    set((s) => ({ reviewQueue: upsert(s.reviewQueue, createItem(lessonId, today)) })),
+
+  gradeReview: (lessonId, grade, today) =>
+    set((s) => {
+      const item = s.reviewQueue.find((q) => q.lessonId === lessonId);
+      if (!item) return {};
+      return { reviewQueue: upsert(s.reviewQueue, schedule(item, grade, today)) };
+    }),
 
   resetMission: (id) =>
     set((s) => {
