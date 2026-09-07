@@ -73,18 +73,18 @@ describe('ジョブの実行', () => {
   const workflow = parseWorkflow(yaml) as Workflow;
 
   it('依存順に並ぶ', () => {
-    const runs = runWorkflow(workflow);
+    const runs = runWorkflow(workflow).checks;
     const names = runs.map((r) => r.name);
     expect(names.indexOf('Build')).toBeGreaterThan(names.indexOf('Lint'));
     expect(names.indexOf('Build')).toBeGreaterThan(names.indexOf('Test'));
   });
 
   it('全部成功する', () => {
-    expect(runWorkflow(workflow).every((r) => r.status === 'success')).toBe(true);
+    expect(runWorkflow(workflow).checks.every((r) => r.status === 'success')).toBe(true);
   });
 
   it('失敗すると下流が skipped になる', () => {
-    const runs = runWorkflow(workflow, { failing: ['lint'] });
+    const runs = runWorkflow(workflow, { failing: ['lint'] }).checks;
     const byName = new Map(runs.map((r) => [r.name, r.status]));
     expect(byName.get('Lint')).toBe('failure');
     expect(byName.get('Test')).toBe('success');
@@ -92,12 +92,12 @@ describe('ジョブの実行', () => {
   });
 
   it('always() が付いたジョブは下流でも実行される', () => {
-    const runs = runWorkflow(workflow, { failing: ['lint'] });
+    const runs = runWorkflow(workflow, { failing: ['lint'] }).checks;
     expect(runs.find((r) => r.name === 'Notify')?.status).toBe('success');
   });
 
   it('失敗したジョブのログに位置が出る', () => {
-    const runs = runWorkflow(workflow, { failing: ['test'] });
+    const runs = runWorkflow(workflow, { failing: ['test'] }).checks;
     expect(runs.find((r) => r.name === 'Test')?.logs.join('\n')).toContain('ここで失敗');
   });
 });

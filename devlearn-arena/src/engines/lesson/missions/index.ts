@@ -5,6 +5,10 @@ import {
   gitRecovery, gitRelease, gitRepoSize, gitSubmodule, gitThreeTrees,
 } from './git2';
 import { ghPullRequest } from './github';
+import {
+  ghActionsPractice, ghClone, ghCodeowners, ghForkFlow, ghIssuePlanning, ghMatrix, ghNeedsDag,
+  ghPrCreate, ghReusable,
+} from './github2';
 import { k8sFirstPod, k8sServiceBoss } from './k8s';
 import {
   k8sApply, k8sConfig, k8sCrashLoop, k8sDrain, k8sHpa, k8sJobs, k8sNoLimits, k8sPvcPending,
@@ -65,7 +69,16 @@ export const missions: readonly LessonDefinition[] = [
   netDropVsReject,
   netVpcDesign,
   netUnreachableBoss,
+  ghClone,
+  ghPrCreate,
+  ghCodeowners,
   ghPullRequest,
+  ghIssuePlanning,
+  ghNeedsDag,
+  ghMatrix,
+  ghActionsPractice,
+  ghReusable,
+  ghForkFlow,
   diskFullBoss,
 ];
 
@@ -75,6 +88,10 @@ export {
   gitRecovery, gitRelease, gitRepoSize, gitSubmodule, gitThreeTrees,
 } from './git2';
 export { ghPullRequest } from './github';
+export {
+  ghActionsPractice, ghClone, ghCodeowners, ghForkFlow, ghIssuePlanning, ghMatrix, ghNeedsDag,
+  ghPrCreate, ghReusable,
+} from './github2';
 export { k8sFirstPod, k8sServiceBoss } from './k8s';
 export {
   k8sApply, k8sConfig, k8sCrashLoop, k8sDrain, k8sHpa, k8sJobs, k8sNoLimits, k8sPvcPending,

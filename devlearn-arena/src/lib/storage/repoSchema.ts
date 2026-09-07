@@ -43,4 +43,28 @@ export const repoSnapshotSchema = z.object({
   ),
   workflows: z.array(z.tuple([z.string(), z.string()])),
   nextPullNumber: z.number().int(),
+  issues: z.array(
+    z.object({
+      number: z.number().int(),
+      title: z.string(),
+      body: z.string(),
+      author: z.string(),
+      state: z.enum(['open', 'closed']),
+      labels: z.array(z.string()),
+      assignees: z.array(z.string()),
+      milestone: z.string().nullable(),
+      closedBy: z.number().int().nullable(),
+    }),
+  ),
+  nextIssueNumber: z.number().int(),
+  projects: z.array(
+    z.object({
+      name: z.string(),
+      columns: z.array(z.object({ name: z.string(), items: z.array(z.number().int()) })),
+    }),
+  ),
+  codeowners: z.array(z.object({ pattern: z.string(), owners: z.array(z.string()) })),
+  secrets: z.record(z.string(), z.string()),
+  upstream: z.object({ owner: z.string(), name: z.string() }).nullable(),
+  forks: z.array(z.object({ owner: z.string(), name: z.string() })),
 });

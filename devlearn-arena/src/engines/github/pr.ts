@@ -9,6 +9,13 @@ export function createRepo(owner: string, name: string): Repo {
     pulls: [],
     workflows: new Map(),
     nextPullNumber: 1,
+    issues: [],
+    nextIssueNumber: 1,
+    projects: [],
+    codeowners: [],
+    secrets: {},
+    upstream: null,
+    forks: [],
   };
 }
 

@@ -1,4 +1,4 @@
-import type { BranchProtection, PullRequest, Repo } from './types';
+import type { BranchProtection, Issue, OwnerRule, Project, PullRequest, Repo, Upstream } from './types';
 
 /** GitHub のリポジトリ状態を、保存できる素のデータに落とす */
 export interface RepoSnapshot {
@@ -9,6 +9,13 @@ export interface RepoSnapshot {
   pulls: PullRequest[];
   workflows: [string, string][];
   nextPullNumber: number;
+  issues: Issue[];
+  nextIssueNumber: number;
+  projects: Project[];
+  codeowners: OwnerRule[];
+  secrets: Record<string, string>;
+  upstream: Upstream | null;
+  forks: Upstream[];
 }
 
 export function snapshotRepo(repo: Repo): RepoSnapshot {
@@ -20,6 +27,13 @@ export function snapshotRepo(repo: Repo): RepoSnapshot {
     pulls: [...repo.pulls],
     workflows: [...repo.workflows.entries()],
     nextPullNumber: repo.nextPullNumber,
+    issues: [...repo.issues],
+    nextIssueNumber: repo.nextIssueNumber,
+    projects: [...repo.projects],
+    codeowners: [...repo.codeowners],
+    secrets: { ...repo.secrets },
+    upstream: repo.upstream,
+    forks: [...repo.forks],
   };
 }
 
@@ -32,5 +46,12 @@ export function restoreRepo(snapshot: RepoSnapshot): Repo {
     pulls: [...snapshot.pulls],
     workflows: new Map(snapshot.workflows),
     nextPullNumber: snapshot.nextPullNumber,
+    issues: [...snapshot.issues],
+    nextIssueNumber: snapshot.nextIssueNumber,
+    projects: [...snapshot.projects],
+    codeowners: [...snapshot.codeowners],
+    secrets: { ...snapshot.secrets },
+    upstream: snapshot.upstream,
+    forks: [...snapshot.forks],
   };
 }
