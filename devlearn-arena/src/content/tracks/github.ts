@@ -16,14 +16,14 @@ export const githubTrack: Track = {
         ['visibility', '公開範囲と、うっかり公開の防ぎ方', 'concept', 10],
       ]),
     chapter('github', 2, 'Pull Request', 'PR は差分ではなく、意図を伝える単位。',
-      [gh('About pull requests', 'pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests')], [
+      [gh('About pull requests', 'pull-requests/reference/pull-requests')], [
         ['pr-create', 'PR を作る（base と compare を間違えない）', 'drill', 12],
         ['pr-description', '読み手の時間を減らす説明の書き方', 'concept', 12],
         ['draft-pr', 'Draft PR と分割の判断', 'concept', 10],
         ['boss-huge-pr', 'BOSS: 巨大 PR を分割して通す', 'boss', 25],
       ]),
     chapter('github', 3, 'レビュー', '指摘の書き方が、チームの速度を決める。',
-      [gh('Reviewing changes in pull requests', 'pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/about-pull-request-reviews')], [
+      [gh('Reviewing changes in pull requests', 'pull-requests/reference/pull-request-reviews')], [
         ['review-types', 'approve / request changes / comment の使い分け', 'drill', 12],
         ['suggested-changes', '提案コミットで往復を減らす', 'drill', 10],
         ['review-writing', '人ではなくコードに向ける言い方', 'concept', 12],
@@ -38,14 +38,14 @@ export const githubTrack: Track = {
         ['boss-blocked-merge', 'BOSS: マージできない理由を全部潰す', 'boss', 22],
       ]),
     chapter('github', 5, 'Issue と計画', '作業を見えるところに置く。',
-      [gh('About issues', 'issues/tracking-your-work-with-issues/about-issues')], [
+      [gh('About issues', 'issues/tracking-your-work-with-issues/learning-about-issues/about-issues')], [
         ['issue-templates', 'テンプレートで必要な情報を最初から集める', 'drill', 12],
         ['labels-milestones', 'ラベルとマイルストーンの設計', 'concept', 10],
         ['projects', 'Projects でボードを回す', 'concept', 12],
         ['linking', 'PR と Issue を紐付けて自動クローズする', 'drill', 10],
       ]),
     chapter('github', 6, 'GitHub Actions の基礎', 'YAML が DAG になって実行される。',
-      [gh('Workflow syntax', 'actions/writing-workflows/workflow-syntax-for-github-actions')], [
+      [gh('Workflow syntax', 'actions/reference/workflows-and-actions/workflow-syntax')], [
         ['workflow-anatomy', 'on / jobs / steps の構造', 'concept', 15],
         ['triggers', 'push / pull_request / schedule / workflow_dispatch', 'drill', 15],
         ['needs-dag', 'needs で依存を作り、並列と直列を設計する', 'drill', 15],
@@ -53,27 +53,27 @@ export const githubTrack: Track = {
         ['boss-red-ci', 'BOSS: 落ちている CI の原因をログから特定する', 'boss', 25],
       ]),
     chapter('github', 7, 'Actions の実務', '速く、安全に、再利用できる形へ。',
-      [gh('Workflow syntax', 'actions/writing-workflows/workflow-syntax-for-github-actions')], [
+      [gh('Workflow syntax', 'actions/reference/workflows-and-actions/workflow-syntax')], [
         ['matrix', 'matrix で組み合わせを回す', 'drill', 15],
         ['cache-artifact', 'キャッシュと artifact の使い分け', 'drill', 15],
         ['secrets-environments', 'Secrets と Environments、承認付きデプロイ', 'concept', 15],
         ['permissions', 'GITHUB_TOKEN の権限を絞る', 'concept', 15,
-          [gh('Automatic token authentication', 'actions/security-for-github-actions/security-guides/automatic-token-authentication')]],
+          [gh('Automatic token authentication', 'actions/tutorials/authenticate-with-github_token')]],
         ['reusable-workflows', '再利用可能ワークフローと composite action', 'concept', 15],
         ['oidc', 'OIDC で長期クレデンシャルを置かない', 'concept', 15],
       ]),
     chapter('github', 8, 'リリースと Pages', 'このアプリ自身のデプロイを教材にする。',
-      [gh('About GitHub Pages', 'pages/getting-started-with-github-pages/about-github-pages')], [
+      [gh('About GitHub Pages', 'pages/getting-started-with-github-pages/what-is-github-pages')], [
         ['tags-releases', 'タグとリリース、変更履歴の自動生成', 'drill', 12],
         ['pages-deploy', 'Pages へのデプロイを1から組む（base path と 404.html）', 'challenge', 25],
         ['self-hosting-lesson', 'このアプリの deploy.yml を読み解く', 'concept', 20],
         ['boss-broken-pages', 'BOSS: デプロイは成功したのに真っ白なページ', 'boss', 25],
       ]),
     chapter('github', 9, 'セキュリティと OSS', '外に開くときに必要な作法。',
-      [gh('About Dependabot alerts', 'code-security/dependabot/dependabot-alerts/about-dependabot-alerts')], [
+      [gh('About Dependabot alerts', 'code-security/concepts/supply-chain-security/dependabot-alerts')], [
         ['dependabot', 'Dependabot の更新 PR を捌く', 'drill', 12],
         ['code-scanning', 'CodeQL とシークレットスキャン', 'concept', 12,
-          [gh('About code scanning', 'code-security/code-scanning/introduction-to-code-scanning/about-code-scanning')]],
+          [gh('About code scanning', 'code-security/concepts/code-scanning/code-scanning')]],
         ['fork-flow', 'Fork して PR を送る作法', 'drill', 15],
         ['branching-models', 'Git flow / GitHub flow / trunk-based の比較', 'concept', 18],
         ['boss-oss-contribution', 'BOSS: 初コントリビュートを最後まで通す', 'boss', 30],

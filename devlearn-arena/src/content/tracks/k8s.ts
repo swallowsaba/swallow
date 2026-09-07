@@ -122,7 +122,7 @@ export const k8sTrack: Track = {
         ['boss-rbac-denied', 'BOSS: CI だけが Forbidden になる', 'boss', 20],
       ]),
     chapter('k8s', 11, 'スケールと無停止', '止めずに増やす、止めずに置き換える。',
-      [doc('Horizontal Pod Autoscaling', K('tasks/run-application/horizontal-pod-autoscale/'))], [
+      [doc('Horizontal Pod Autoscaling', K('concepts/workloads/autoscaling/horizontal-pod-autoscale/'))], [
         ['hpa', 'HPA のメトリクスと安定化ウィンドウ', 'drill', 15],
         ['autoscaling-layers', 'HPA / VPA / Cluster Autoscaler の役割の違い', 'concept', 12],
         ['graceful-shutdown', 'preStop と terminationGracePeriodSeconds', 'concept', 15,
@@ -143,7 +143,7 @@ export const k8sTrack: Track = {
         ['boss-node-down', 'BOSS: ノードが1台落ちた。何が動き、何が止まったか', 'boss', 25],
       ]),
     chapter('k8s', 13, 'やってはいけない設定集', '事故の再現を通して、定石の理由を腹落ちさせる。',
-      [doc('Configuration Best Practices', K('concepts/configuration/overview/'))], [
+      [doc('Managing Resources', K('concepts/workloads/management/'))], [
         ['latest-tag', 'latest タグが引き起こす「戻せない」事故', 'challenge', 15,
           [doc('Images', K('concepts/containers/images/'))]],
         ['no-limits', 'limits 未設定のノイジーネイバー再現', 'challenge', 15],

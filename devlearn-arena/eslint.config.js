@@ -50,7 +50,7 @@ export default tseslint.config(
 
   // 型情報を使わない素の TypeScript lint
   {
-    files: ['e2e/**/*.ts', '*.config.ts'],
+    files: ['e2e/**/*.ts', 'scripts/**/*.mts', '*.config.ts'],
     extends: [...tseslint.configs.recommended],
     languageOptions: { globals: globals.node },
   },

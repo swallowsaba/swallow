@@ -1,7 +1,8 @@
 import { chapter, doc } from '../build';
 import type { Track } from '../types';
 
-const rfc = (num: number, label: string) => doc(label, `https://www.rfc-editor.org/rfc/rfc${String(num)}`);
+const rfc = (num: number, label: string) =>
+  doc(label, `https://www.rfc-editor.org/rfc/rfc${String(num)}.html`);
 const mdn = (label: string, path: string) => doc(label, `https://developer.mozilla.org/en-US/docs/${path}`);
 
 export const netTrack: Track = {
@@ -11,7 +12,7 @@ export const netTrack: Track = {
   phase: 'P4',
   chapters: [
     chapter('net', 1, 'レイヤの地図', '層に分けると、故障の切り分けが二分探索になる。',
-      [mdn('HTTP overview', 'Web/HTTP/Overview')], [
+      [mdn('HTTP overview', 'Web/HTTP/Guides/Overview')], [
         ['osi-tcpip', 'OSI 7層と TCP/IP 4層の対応', 'concept', 12],
         ['encapsulation', 'カプセル化：1つのデータが4枚の封筒に包まれる', 'concept', 12, [rfc(1122, 'Host Requirements')]],
         ['layer-bisection', '層ごとの二分探索で原因を半分に減らす', 'concept', 10],
@@ -83,14 +84,14 @@ export const netTrack: Track = {
         ['boss-cert-expired', 'BOSS: ブラウザは繋がるが、サーバ間通信だけ失敗する', 'boss', 25],
       ]),
     chapter('net', 11, 'ロードバランサとプロキシ', 'L4 と L7 の違いは、見えるものの違い。',
-      [mdn('Proxy servers and tunneling', 'Web/HTTP/Proxy_servers_and_tunneling')], [
+      [mdn('Proxy servers and tunneling', 'Web/HTTP/Guides/Proxy_servers_and_tunneling')], [
         ['l4-l7', 'L4 と L7 の分岐点', 'concept', 15],
         ['health-check', 'ヘルスチェックの設計とフラッピング', 'drill', 15],
         ['forward-reverse-proxy', 'フォワード / リバースプロキシと X-Forwarded-For', 'concept', 12],
         ['cdn', 'CDN のキャッシュキーと origin shield', 'concept', 12],
       ]),
     chapter('net', 12, 'ファイアウォールと境界', '「拒否」は静かに起きる。',
-      [mdn('CORS', 'Web/HTTP/CORS')], [
+      [mdn('CORS', 'Web/HTTP/Guides/CORS')], [
         ['stateful-firewall', 'ステートフルフィルタと戻りパケット', 'concept', 15],
         ['security-group', 'セキュリティグループと NACL の違い', 'concept', 12],
         ['drop-vs-reject', 'DROP と REJECT の症状の違い（タイムアウト vs 即時拒否）', 'drill', 15],

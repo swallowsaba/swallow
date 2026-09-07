@@ -96,7 +96,7 @@ export const gitTrack: Track = {
       [doc('git gc', 'https://git-scm.com/docs/git-gc')], [
         ['gc-packfile', 'packfile と gc、リポジトリが太る理由', 'concept', 15],
         ['lfs', '大きなファイルの扱い', 'concept', 12,
-          [doc('git lfs', 'https://git-scm.com/docs/git-lfs')]],
+          [doc('Git LFS', 'https://git-lfs.com/')]],
         ['monorepo', 'monorepo と polyrepo の運用差', 'concept', 15],
       ]),
   ],
