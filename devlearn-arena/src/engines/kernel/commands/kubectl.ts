@@ -1,262 +1,136 @@
-import { advanceCluster, matches } from '@/engines/k8s/controllers';
-import { isReady, tickPods } from '@/engines/k8s/kubelet';
-import type { ClusterState, Pod } from '@/engines/k8s/types';
+import type { ClusterState, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
-import { fromLines, parseArgs } from './args';
+import { parseArgs } from './args';
+import { describePod, describeResource, renderTable } from './kubectlGet';
+import { opsSubcommands } from './kubectlOps';
+import { parseOutput, renderResources } from './kubectlOutput';
+import {
+  CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, idFor, listOf, notFound,
+  type KubectlContext, type KubectlHandler,
+} from './kubectlShared';
 
-const NO_CLUSTER =
-  'The connection to the server localhost:8080 was refused - did you specify the right host or port?\n';
-
-const KINDS: Record<string, string> = {
-  po: 'pods', pod: 'pods', pods: 'pods',
-  no: 'nodes', node: 'nodes', nodes: 'nodes',
-  deploy: 'deployments', deployment: 'deployments', deployments: 'deployments',
-  rs: 'replicasets', replicaset: 'replicasets', replicasets: 'replicasets',
-  svc: 'services', service: 'services', services: 'services',
-  ev: 'events', event: 'events', events: 'events',
-};
-
-function age(tick: number, createdAt: number): string {
-  const seconds = Math.max(0, tick - createdAt);
-  if (seconds < 60) return `${String(seconds)}s`;
-  return `${String(Math.floor(seconds / 60))}m`;
+/** 名前で1つ引く。無ければ null */
+function findOne(
+  cluster: ClusterState,
+  kind: string,
+  namespace: string,
+  name: string,
+): Resource | null {
+  const items = listOf(cluster, kind, namespace);
+  return items.find((r) => r.metadata.name === name) ?? null;
 }
 
-function table(rows: string[][]): string {
-  if (rows.length === 0) return '';
-  const widths = (rows[0] ?? []).map((_, i) =>
-    Math.max(...rows.map((r) => (r[i] ?? '').length)),
-  );
-  return fromLines(
-    rows.map((row) => row.map((cell, i) => cell.padEnd(widths[i] ?? 0)).join('   ').trimEnd()),
-  );
-}
+const coreSubcommands: Record<string, KubectlHandler> = {
+  get: ({ cluster, namespace, operands, output, values }) => {
+    const raw = operands[0] ?? '';
+    const kind = KINDS[raw] ?? '';
+    if (kind === '') {
+      return { stderr: `error: the server doesn't have a resource type "${raw}"\n`, code: 1 };
+    }
+    const format = parseOutput(output);
 
-function podReady(pod: Pod): string {
-  const ready = pod.status.containerStatuses.filter((c) => c.ready).length;
-  return `${String(ready)}/${String(pod.status.containerStatuses.length)}`;
-}
+    let items = kind === 'events' ? [] : listOf(cluster, kind, namespace);
+    const name = operands[1];
+    if (name !== undefined) {
+      const one = findOne(cluster, kind, namespace, name);
+      if (one === null) return notFound(kind, name);
+      items = [one];
+    }
 
-function podStatus(pod: Pod): string {
-  const waiting = pod.status.containerStatuses.find((c) => c.waitingReason !== null);
-  if (waiting?.waitingReason !== undefined && waiting.waitingReason !== null) return waiting.waitingReason;
-  return pod.status.phase;
-}
-
-function restarts(pod: Pod): number {
-  return pod.status.containerStatuses.reduce((n, c) => n + c.restartCount, 0);
-}
-
-function listPods(cluster: ClusterState, namespace: string, wide: boolean): string {
-  const pods = [...cluster.pods.values()]
-    .filter((p) => p.metadata.namespace === namespace)
-    .sort((a, b) => (a.metadata.name < b.metadata.name ? -1 : 1));
-  if (pods.length === 0) return `No resources found in ${namespace} namespace.\n`;
-
-  const header = ['NAME', 'READY', 'STATUS', 'RESTARTS', 'AGE'];
-  if (wide) header.push('IP', 'NODE');
-  const rows = [header];
-  for (const pod of pods) {
-    const row = [
-      pod.metadata.name,
-      podReady(pod),
-      podStatus(pod),
-      String(restarts(pod)),
-      age(cluster.tick, pod.metadata.createdAt),
-    ];
-    if (wide) row.push(pod.status.podIP ?? '<none>', pod.status.nodeName ?? '<none>');
-    rows.push(row);
-  }
-  return table(rows);
-}
-
-function describePod(cluster: ClusterState, pod: Pod): string {
-  const lines = [
-    `Name:         ${pod.metadata.name}`,
-    `Namespace:    ${pod.metadata.namespace}`,
-    `Node:         ${pod.status.nodeName ?? '<none>'}`,
-    `Status:       ${podStatus(pod)}`,
-    `IP:           ${pod.status.podIP ?? '<none>'}`,
-    `Labels:       ${
-      Object.entries(pod.metadata.labels).map(([k, v]) => `${k}=${v}`).join(',') || '<none>'
-    }`,
-    'Containers:',
-  ];
-  for (const spec of pod.spec.containers) {
-    const status = pod.status.containerStatuses.find((c) => c.name === spec.name);
-    lines.push(`  ${spec.name}:`);
-    lines.push(`    Image:      ${spec.image}`);
-    lines.push(`    Ready:      ${status?.ready === true ? 'True' : 'False'}`);
-    lines.push(`    Restarts:   ${String(status?.restartCount ?? 0)}`);
-    lines.push(`    Requests:   cpu=${String(spec.requests.cpu)}m memory=${String(spec.requests.memory)}Mi`);
-  }
-  if (pod.status.message !== null) {
-    lines.push('', `Message:      ${pod.status.message}`);
-  }
-
-  const events = cluster.events.filter((e) => e.object === `pod/${pod.metadata.name}`).slice(-10);
-  lines.push('', 'Events:');
-  if (events.length === 0) lines.push('  <none>');
-  else {
-    lines.push('  TYPE      REASON              AGE   MESSAGE');
-    for (const e of events) {
-      lines.push(
-        `  ${e.type.padEnd(9)} ${e.reason.padEnd(19)} ${age(cluster.tick, e.tick).padEnd(5)} ${e.message}`,
+    const selector = values.get('l');
+    if (selector !== undefined) {
+      const wanted = Object.fromEntries(
+        selector.split(',').map((pair) => pair.split('=')).filter((p) => p.length === 2) as [string, string][],
       );
-    }
-  }
-  return `${lines.join('\n')}\n`;
-}
-
-function runSub(sub: string, argv: readonly string[], shell: ShellState): CommandResult {
-  const cluster = shell.cluster;
-  if (cluster === null) return { stderr: NO_CLUSTER, code: 1 };
-  const rest = argv.slice(2);
-  const { flags, values, operands } = parseArgs([sub, ...rest], { withValue: ['o', 'n', 'l'] });
-  const namespace = values.get('n') ?? 'default';
-  const output = values.get('o') ?? '';
-
-  switch (sub) {
-    case 'get': {
-      const kind = KINDS[operands[0] ?? ''] ?? '';
-      const wide = output === 'wide';
-      if (kind === 'pods') return { stdout: listPods(cluster, namespace, wide) };
-      if (kind === 'nodes') {
-        const rows = [['NAME', 'STATUS', 'CPU', 'MEMORY']];
-        for (const node of [...cluster.nodes.values()].sort((a, b) => (a.metadata.name < b.metadata.name ? -1 : 1))) {
-          rows.push([
-            node.metadata.name,
-            node.spec.unschedulable ? 'Ready,SchedulingDisabled' : node.status.ready ? 'Ready' : 'NotReady',
-            `${String(node.status.allocatable.cpu)}m`,
-            `${String(node.status.allocatable.memory)}Mi`,
-          ]);
-        }
-        return { stdout: table(rows) };
-      }
-      if (kind === 'deployments') {
-        const items = [...cluster.deployments.values()].filter((d) => d.metadata.namespace === namespace);
-        if (items.length === 0) return { stdout: `No resources found in ${namespace} namespace.\n` };
-        const rows = [['NAME', 'READY', 'UP-TO-DATE', 'AVAILABLE', 'AGE']];
-        for (const d of items) {
-          rows.push([
-            d.metadata.name,
-            `${String(d.status.readyReplicas)}/${String(d.spec.replicas)}`,
-            String(d.status.updatedReplicas),
-            String(d.status.readyReplicas),
-            age(cluster.tick, d.metadata.createdAt),
-          ]);
-        }
-        return { stdout: table(rows) };
-      }
-      if (kind === 'replicasets') {
-        const items = [...cluster.replicaSets.values()].filter((r) => r.metadata.namespace === namespace);
-        const rows = [['NAME', 'DESIRED', 'CURRENT', 'READY', 'AGE']];
-        for (const r of items) {
-          rows.push([
-            r.metadata.name,
-            String(r.spec.replicas),
-            String(r.status.replicas),
-            String(r.status.readyReplicas),
-            age(cluster.tick, r.metadata.createdAt),
-          ]);
-        }
-        return { stdout: table(rows) };
-      }
-      if (kind === 'services') {
-        const items = [...cluster.services.values()].filter((s) => s.metadata.namespace === namespace);
-        if (items.length === 0) return { stdout: `No resources found in ${namespace} namespace.\n` };
-        const rows = [['NAME', 'TYPE', 'CLUSTER-IP', 'PORT(S)', 'ENDPOINTS']];
-        for (const s of items) {
-          rows.push([
-            s.metadata.name,
-            s.spec.type,
-            s.spec.clusterIP,
-            s.spec.ports.map((p) => `${String(p.port)}/TCP`).join(','),
-            s.status.endpoints.length === 0 ? '<none>' : s.status.endpoints.join(','),
-          ]);
-        }
-        return { stdout: table(rows) };
-      }
-      if (kind === 'events') {
-        const rows = [['AGE', 'TYPE', 'REASON', 'OBJECT', 'MESSAGE']];
-        for (const e of cluster.events.slice(-20)) {
-          rows.push([age(cluster.tick, e.tick), e.type, e.reason, e.object, e.message]);
-        }
-        return { stdout: table(rows) };
-      }
-      return {
-        stderr: `error: the server doesn't have a resource type "${operands[0] ?? ''}"\n`,
-        code: 1,
-      };
+      items = items.filter((r) => Object.entries(wanted).every(([k, v]) => r.metadata.labels[k] === v));
     }
 
-    case 'describe': {
-      const kind = KINDS[operands[0] ?? ''] ?? '';
-      const name = operands[1];
-      if (kind !== 'pods' || name === undefined) {
-        return { stderr: 'usage: kubectl describe pod <name>\n', code: 1 };
-      }
+    if (format.kind !== 'table') return { stdout: renderResources(items, format) };
+    if (items.length === 0 && kind !== 'events') {
+      return { stdout: `No resources found in ${namespace} namespace.\n` };
+    }
+    return { stdout: renderTable(cluster, kind, items, format.wide) };
+  },
+
+  describe: ({ cluster, namespace, operands }) => {
+    const kind = KINDS[operands[0] ?? ''] ?? '';
+    const name = operands[1];
+    if (kind === '' || name === undefined) {
+      return { stderr: 'usage: kubectl describe <type> <name>\n', code: 1 };
+    }
+    if (kind === 'pods') {
       const pod = cluster.pods.get(key(namespace, name));
-      if (!pod) {
-        return { stderr: `Error from server (NotFound): pods "${name}" not found\n`, code: 1 };
-      }
+      if (pod === undefined) return notFound('pods', name);
       return { stdout: describePod(cluster, pod) };
     }
+    const one = findOne(cluster, kind, namespace, name);
+    if (one === null) return notFound(kind, name);
+    return { stdout: describeResource(cluster, kind, one) };
+  },
 
-    case 'delete': {
-      const kind = KINDS[operands[0] ?? ''] ?? '';
-      const name = operands[1];
-      if (name === undefined) return { stderr: 'error: 名前を指定してください\n', code: 1 };
-      if (kind === 'pods') {
-        const id = key(namespace, name);
-        if (!cluster.pods.has(id)) {
-          return { stderr: `Error from server (NotFound): pods "${name}" not found\n`, code: 1 };
-        }
-        const pods = new Map(cluster.pods);
-        pods.delete(id);
-        return { stdout: `pod "${name}" deleted\n`, patch: { cluster: { ...cluster, pods } } };
-      }
-      if (kind === 'deployments') {
-        const id = key(namespace, name);
-        if (!cluster.deployments.has(id)) {
-          return { stderr: `Error from server (NotFound): deployments.apps "${name}" not found\n`, code: 1 };
-        }
-        const deployments = new Map(cluster.deployments);
-        deployments.delete(id);
-        const replicaSets = new Map(
+  delete: ({ cluster, namespace, operands }) => {
+    const kind = KINDS[operands[0] ?? ''] ?? '';
+    const name = operands[1];
+    if (kind === '' || name === undefined) {
+      return { stderr: 'error: 種別と名前を指定してください\n', code: 1 };
+    }
+    const field = FIELD_OF[kind];
+    if (field === undefined) return { stderr: 'error: 未対応の種別です\n', code: 1 };
+    const collection = cluster[field];
+    if (!(collection instanceof Map)) return { stderr: 'error: 未対応の種別です\n', code: 1 };
+
+    const id = idFor(kind, namespace, name);
+    if (!collection.has(id)) return notFound(kind, name);
+    const next = new Map(collection as Map<string, Resource>);
+    next.delete(id);
+    let cluster2: ClusterState = { ...cluster, [field]: next };
+
+    // 所有関係のある資源は、下位もまとめて片付ける
+    if (kind === 'deployments') {
+      cluster2 = {
+        ...cluster2,
+        replicaSets: new Map(
           [...cluster.replicaSets].filter(
             ([, rs]) => !rs.metadata.ownerReferences.some((o) => o.name === name),
           ),
-        );
-        const pods = new Map(
+        ),
+        pods: new Map([...cluster.pods].filter(([, p]) => !p.metadata.name.startsWith(`${name}-`))),
+      };
+    }
+    if (kind === 'statefulsets' || kind === 'daemonsets' || kind === 'jobs') {
+      const ownerKind = kind === 'statefulsets' ? 'StatefulSet' : kind === 'daemonsets' ? 'DaemonSet' : 'Job';
+      cluster2 = {
+        ...cluster2,
+        pods: new Map(
           [...cluster.pods].filter(
-            ([, p]) => !p.metadata.name.startsWith(`${name}-`),
+            ([, p]) => !p.metadata.ownerReferences.some((o) => o.kind === ownerKind && o.name === name),
           ),
-        );
-        return {
-          stdout: `deployment.apps "${name}" deleted\n`,
-          patch: { cluster: { ...cluster, deployments, replicaSets, pods } },
-        };
-      }
-      return { stderr: `error: 未対応の種別です\n`, code: 1 };
+        ),
+      };
     }
 
-    case 'scale': {
-      const name = operands[1] ?? operands[0]?.split('/')[1] ?? '';
-      const replicas = Number(values.get('replicas') ?? rest.find((a) => a.startsWith('--replicas='))?.split('=')[1] ?? NaN);
-      const target = cluster.deployments.get(key(namespace, name));
-      if (!target) {
-        return { stderr: `Error from server (NotFound): deployments.apps "${name}" not found\n`, code: 1 };
-      }
-      if (!Number.isFinite(replicas)) {
-        return { stderr: 'error: --replicas=<数> を指定してください\n', code: 1 };
-      }
+    const label = CLUSTER_SCOPED.has(kind) ? kind.replace(/s$/, '') : kind.replace(/s$/, '');
+    return { stdout: `${label} "${name}" deleted\n`, patch: { cluster: cluster2 } };
+  },
+
+  scale: ({ cluster, namespace, operands, values, rest }) => {
+    const name = operands[1] ?? operands[0]?.split('/')[1] ?? '';
+    const replicas = Number(
+      values.get('replicas') ?? rest.find((a) => a.startsWith('--replicas='))?.split('=')[1] ?? NaN,
+    );
+    if (!Number.isFinite(replicas)) {
+      return { stderr: 'error: --replicas=<数> を指定してください\n', code: 1 };
+    }
+    const id = key(namespace, name);
+
+    const deployment = cluster.deployments.get(id);
+    if (deployment !== undefined) {
       const deployments = new Map(cluster.deployments);
-      deployments.set(key(namespace, name), {
-        ...target,
-        spec: { ...target.spec, replicas },
-        metadata: { ...target.metadata, resourceVersion: target.metadata.resourceVersion + 1 },
+      deployments.set(id, {
+        ...deployment,
+        spec: { ...deployment.spec, replicas },
+        metadata: { ...deployment.metadata, resourceVersion: deployment.metadata.resourceVersion + 1 },
       });
       return {
         stdout: `deployment.apps/${name} scaled\n`,
@@ -264,11 +138,20 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
       };
     }
 
-    case 'set': {
-      // kubectl set selector <type> <name> key=value
-      if (operands[0] !== 'selector') {
-        return { stderr: 'usage: kubectl set selector <type> <name> <key>=<value>\n', code: 1 };
-      }
+    const statefulSet = cluster.statefulSets.get(id);
+    if (statefulSet !== undefined) {
+      const statefulSets = new Map(cluster.statefulSets);
+      statefulSets.set(id, { ...statefulSet, spec: { ...statefulSet.spec, replicas } });
+      return {
+        stdout: `statefulset.apps/${name} scaled\n`,
+        patch: { cluster: { ...cluster, statefulSets } },
+      };
+    }
+    return notFound('deployments.apps', name);
+  },
+
+  set: ({ cluster, namespace, operands }) => {
+    if (operands[0] === 'selector') {
       const kind = KINDS[operands[1] ?? ''] ?? '';
       const name = operands[2];
       const pairs = operands.slice(3).filter((o) => o.includes('='));
@@ -276,9 +159,7 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
         return { stderr: 'usage: kubectl set selector svc <name> <key>=<value>\n', code: 1 };
       }
       const svc = cluster.services.get(key(namespace, name));
-      if (!svc) {
-        return { stderr: `Error from server (NotFound): services "${name}" not found\n`, code: 1 };
-      }
+      if (svc === undefined) return notFound('services', name);
       const selector: Record<string, string> = {};
       for (const pair of pairs) {
         const [k, v] = pair.split('=');
@@ -290,96 +171,121 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
         spec: { ...svc.spec, selector },
         metadata: { ...svc.metadata, resourceVersion: svc.metadata.resourceVersion + 1 },
       });
+      return { stdout: `service/${name} selector updated\n`, patch: { cluster: { ...cluster, services } } };
+    }
+
+    if (operands[0] === 'image') {
+      const kind = KINDS[operands[1] ?? ''] ?? operands[1]?.split('/')[0] ?? '';
+      const name = operands[2] ?? operands[1]?.split('/')[1] ?? '';
+      const pair = operands[3] ?? '';
+      const [containerName, image] = pair.split('=');
+      if (kind !== 'deployments' || containerName === undefined || image === undefined) {
+        return { stderr: 'usage: kubectl set image deployment <name> <container>=<image>\n', code: 1 };
+      }
+      const deployment = cluster.deployments.get(key(namespace, name));
+      if (deployment === undefined) return notFound('deployments.apps', name);
+      const containers = deployment.spec.template.containers.map((c) =>
+        c.name === containerName ? { ...c, image, failing: image.includes('does-not-exist'), crashing: image.includes('crash') } : c,
+      );
+      const deployments = new Map(cluster.deployments);
+      deployments.set(key(namespace, name), {
+        ...deployment,
+        spec: { ...deployment.spec, template: { ...deployment.spec.template, containers } },
+        metadata: {
+          ...deployment.metadata,
+          annotations: { ...deployment.metadata.annotations, 'kubernetes.io/change-cause': `image ${image}` },
+          resourceVersion: deployment.metadata.resourceVersion + 1,
+        },
+      });
       return {
-        stdout: `service/${name} selector updated\n`,
-        patch: { cluster: { ...cluster, services } },
+        stdout: `deployment.apps/${name} image updated\n`,
+        patch: { cluster: { ...cluster, deployments } },
       };
     }
 
-    case 'label': {
-      const kind = KINDS[operands[0] ?? ''] ?? '';
-      const name = operands[1];
-      const pairs = operands.slice(2).filter((o) => o.includes('='));
-      if (kind !== 'pods' || name === undefined || pairs.length === 0) {
-        return { stderr: 'usage: kubectl label pod <name> <key>=<value>\n', code: 1 };
-      }
-      const pod = cluster.pods.get(key(namespace, name));
-      if (!pod) {
-        return { stderr: `Error from server (NotFound): pods "${name}" not found\n`, code: 1 };
-      }
-      const labels = { ...pod.metadata.labels };
-      for (const pair of pairs) {
-        const [k, v] = pair.split('=');
-        if (k !== undefined && v !== undefined) labels[k] = v;
-      }
-      const pods = new Map(cluster.pods);
-      pods.set(key(namespace, name), { ...pod, metadata: { ...pod.metadata, labels } });
-      return { stdout: `pod/${name} labeled\n`, patch: { cluster: { ...cluster, pods } } };
-    }
+    return { stderr: 'usage: kubectl set <selector|image> ...\n', code: 1 };
+  },
 
-    case 'cordon':
-    case 'uncordon': {
-      const name = operands[0];
-      const node = name === undefined ? undefined : cluster.nodes.get(name);
-      if (!node || name === undefined) {
-        return { stderr: `Error from server (NotFound): nodes "${name ?? ''}" not found\n`, code: 1 };
-      }
-      const nodes = new Map(cluster.nodes);
-      nodes.set(name, { ...node, spec: { ...node.spec, unschedulable: sub === 'cordon' } });
-      return { stdout: `node/${name} ${sub}ed\n`, patch: { cluster: { ...cluster, nodes } } };
+  label: ({ cluster, namespace, operands }) => {
+    const kind = KINDS[operands[0] ?? ''] ?? '';
+    const name = operands[1];
+    const pairs = operands.slice(2).filter((o) => o.includes('='));
+    if (kind !== 'pods' || name === undefined || pairs.length === 0) {
+      return { stderr: 'usage: kubectl label pod <name> <key>=<value>\n', code: 1 };
     }
-
-    case 'wait': {
-      // 学習用。指定 tick ぶん時間を進める
-      const count = Number(values.get('for') ?? operands[0] ?? 5);
-      let next = cluster;
-      for (let i = 0; i < (Number.isFinite(count) ? count : 5); i += 1) {
-        next = advanceCluster(next, tickPods);
-      }
-      return { stdout: `${String(next.tick - cluster.tick)} tick 進めました\n`, patch: { cluster: next } };
+    const pod = cluster.pods.get(key(namespace, name));
+    if (pod === undefined) return notFound('pods', name);
+    const labels = { ...pod.metadata.labels };
+    for (const pair of pairs) {
+      const [k, v] = pair.split('=');
+      if (k !== undefined && v !== undefined) labels[k] = v;
     }
+    const pods = new Map(cluster.pods);
+    pods.set(key(namespace, name), { ...pod, metadata: { ...pod.metadata, labels } });
+    return { stdout: `pod/${name} labeled\n`, patch: { cluster: { ...cluster, pods } } };
+  },
 
-    case 'endpoints': {
-      const name = operands[0];
-      const svc = name === undefined ? undefined : cluster.services.get(key(namespace, name));
-      if (!svc) return { stderr: `Error from server (NotFound): services "${name ?? ''}" not found\n`, code: 1 };
-      const selected = [...cluster.pods.values()].filter(
-        (p) => p.metadata.namespace === namespace && matches(p.metadata.labels, svc.spec.selector),
-      );
-      const rows = [['POD', 'LABELS', 'READY', 'IN ENDPOINTS']];
-      for (const p of selected) {
-        rows.push([
-          p.metadata.name,
-          Object.entries(p.metadata.labels).map(([k, v]) => `${k}=${v}`).join(','),
-          isReady(p) ? 'True' : 'False',
-          isReady(p) ? 'yes' : 'no',
-        ]);
-      }
-      if (selected.length === 0) rows.push(['<selector に一致する Pod がありません>', '', '', '']);
-      return { stdout: table(rows) };
-    }
+  cordon: ({ cluster, sub, operands }) => {
+    const name = operands[0];
+    const node = name === undefined ? undefined : cluster.nodes.get(name);
+    if (node === undefined || name === undefined) return notFound('nodes', name ?? '');
+    const nodes = new Map(cluster.nodes);
+    nodes.set(name, { ...node, spec: { ...node.spec, unschedulable: sub === 'cordon' } });
+    return { stdout: `node/${name} ${sub}ed\n`, patch: { cluster: { ...cluster, nodes } } };
+  },
+};
+coreSubcommands['uncordon'] = coreSubcommands['cordon'] as KubectlHandler;
 
-    default:
-      void flags;
-      return { stderr: `error: unknown command "${sub}" for "kubectl"\n`, code: 1 };
+const subcommands: Record<string, KubectlHandler> = { ...coreSubcommands, ...opsSubcommands };
+
+/** `kubectl api-resources` を `api` に寄せる（引数の形が特殊なため） */
+const ALIASES: Record<string, string> = { 'api-resources': 'api' };
+
+const NAMES = [...new Set([...Object.keys(subcommands), ...Object.keys(ALIASES)])].sort();
+
+function runSub(sub: string, argv: readonly string[], shell: ShellState): CommandResult {
+  const cluster = shell.cluster;
+  if (cluster === null) return { stderr: NO_CLUSTER, code: 1 };
+  const rest = argv.slice(2);
+  const { flags, values, operands } = parseArgs([sub, ...rest], {
+    withValue: ['o', 'n', 'l', 'f', 'as'],
+  });
+
+  const handler = subcommands[ALIASES[sub] ?? sub];
+  if (handler === undefined) {
+    return { stderr: `error: unknown command "${sub}" for "kubectl"\n`, code: 1 };
   }
+
+  const ctx: KubectlContext = {
+    cluster,
+    shell,
+    sub,
+    rest,
+    namespace: values.get('n') ?? 'default',
+    output: values.get('o') ?? '',
+    flags,
+    values,
+    operands,
+  };
+  return handler(ctx);
 }
 
 export const kubectlCommands: CommandSpec[] = [
   {
     name: 'kubectl',
-    summary: 'Kubernetes を操作する（get/describe/delete/scale/cordon/wait ほか）',
-    complete: ({ prefix }) =>
-      ['get', 'describe', 'delete', 'scale', 'set', 'label', 'cordon', 'uncordon', 'wait', 'endpoints'].filter((s) =>
-        s.startsWith(prefix),
-      ),
+    summary: 'Kubernetes を操作する（get/describe/apply/rollout/drain/auth ほか）',
+    complete: ({ argv, prefix }) =>
+      (argv.length <= 2
+        ? NAMES
+        : [...new Set(Object.values(KINDS))].sort()
+      ).filter((s) => s.startsWith(prefix)),
     handler: ({ argv, shell }) => {
       const sub = argv[1];
       if (sub === undefined) {
         return {
           stdout:
             'usage: kubectl <command>\n' +
-            '  get describe delete scale set label cordon uncordon wait endpoints\n',
+            `  ${NAMES.join(' ')}\n`,
         };
       }
       return runSub(sub, argv, shell);

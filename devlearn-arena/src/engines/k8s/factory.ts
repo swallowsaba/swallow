@@ -1,5 +1,6 @@
 import type {
-  ClusterState, ContainerSpec, Deployment, Node, ObjectMeta, Pod, ResourceQuantity, Service,
+  ClusterState, ContainerSpec, Deployment, Node, ObjectMeta, Pod, PodVolume, Probe,
+  ResourceQuantity, Service,
 } from './types';
 
 export function meta(
@@ -28,10 +29,27 @@ export function container(name: string, image: string, options: Partial<Containe
     requests: options.requests ?? quantity(100, 128),
     limits: options.limits ?? null,
     env: options.env ?? {},
+    envFrom: options.envFrom ?? [],
     readyAfter: options.readyAfter ?? 2,
     // 存在しないイメージ名は取得に失敗する、という約束にする
     failing: options.failing ?? image.includes('does-not-exist'),
+    // 名前に crash を含むイメージは起動後に落ち続ける、という約束にする
+    crashing: options.crashing ?? image.includes('crash'),
     ports: options.ports ?? [80],
+    livenessProbe: options.livenessProbe ?? null,
+    readinessProbe: options.readinessProbe ?? null,
+    startupProbe: options.startupProbe ?? null,
+    volumeMounts: options.volumeMounts ?? [],
+  };
+}
+
+/** プローブのひな型。succeedsAfter が null なら通らない設定 */
+export function probe(options: Partial<Probe> = {}): Probe {
+  return {
+    initialDelaySeconds: options.initialDelaySeconds ?? 0,
+    periodSeconds: options.periodSeconds ?? 1,
+    failureThreshold: options.failureThreshold ?? 3,
+    succeedsAfter: options.succeedsAfter === undefined ? 1 : options.succeedsAfter,
   };
 }
 
@@ -50,6 +68,8 @@ export function pod(name: string, containers: ContainerSpec[], options: {
   nodeSelector?: Record<string, string>;
   owner?: { kind: string; name: string };
   createdAt?: number;
+  volumes?: PodVolume[];
+  serviceAccountName?: string;
 } = {}): Pod {
   return {
     kind: 'Pod',
@@ -65,6 +85,8 @@ export function pod(name: string, containers: ContainerSpec[], options: {
       tolerations: [],
       restartPolicy: 'Always',
       terminationGracePeriodSeconds: 30,
+      volumes: options.volumes ?? [],
+      serviceAccountName: options.serviceAccountName ?? 'default',
     },
     status: {
       phase: 'Pending',
@@ -76,6 +98,7 @@ export function pod(name: string, containers: ContainerSpec[], options: {
         restartCount: 0,
         waitingReason: null,
         restartAt: null,
+        started: false,
       })),
       message: null,
       startedAt: null,
@@ -129,6 +152,23 @@ export function emptyCluster(nodes: Node[] = []): ClusterState {
     deployments: new Map(),
     replicaSets: new Map(),
     services: new Map(),
+    configMaps: new Map(),
+    secrets: new Map(),
+    storageClasses: new Map(),
+    persistentVolumes: new Map(),
+    persistentVolumeClaims: new Map(),
+    statefulSets: new Map(),
+    daemonSets: new Map(),
+    jobs: new Map(),
+    cronJobs: new Map(),
+    ingresses: new Map(),
+    networkPolicies: new Map(),
+    serviceAccounts: new Map(),
+    roles: new Map(),
+    roleBindings: new Map(),
+    autoscalers: new Map(),
+    load: new Map(),
+    currentUser: { kind: 'User', name: 'learner', namespace: 'default' },
     events: [],
     ipCounter: 0,
     nameCounter: 0,

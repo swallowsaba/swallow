@@ -1,5 +1,8 @@
 import { pod as makePod } from './factory';
 import { isReady } from './kubelet';
+import { CHANGE_CAUSE_KEY, REVISION_KEY } from './rollout';
+import { bindClaims } from './storage';
+import { reconcileWorkloads } from './workloads';
 import type { ClusterState, Deployment, EventRecord, Pod, ReplicaSet } from './types';
 import { key } from './types';
 
@@ -64,13 +67,21 @@ export function reconcile(state: ClusterState): ReconcileResult {
     );
 
     if (!replicaSets.has(rsId)) {
+      // 世代番号は、その Deployment の既存 ReplicaSet の最大値 + 1
+      const revision =
+        mine.reduce((max, rs) => Math.max(max, Number(rs.metadata.annotations[REVISION_KEY] ?? '0')), 0) + 1;
       const created: ReplicaSet = {
         kind: 'ReplicaSet',
         metadata: {
           name: rsName,
           namespace: deployment.metadata.namespace,
           labels: { ...deployment.spec.template.labels, 'pod-template-hash': hash },
-          annotations: {},
+          annotations: {
+            [REVISION_KEY]: String(revision),
+            [CHANGE_CAUSE_KEY]:
+              deployment.metadata.annotations[CHANGE_CAUSE_KEY] ??
+              `image ${deployment.spec.template.containers[0]?.image ?? ''}`,
+          },
           resourceVersion: 1,
           createdAt: tick,
           ownerReferences: [{ kind: 'Deployment', name: deployment.metadata.name }],
@@ -229,19 +240,47 @@ export function reconcile(state: ClusterState): ReconcileResult {
   };
 }
 
-/** 1 tick 進める（reconcile → kubelet の順） */
+/** 1 tick 進める（PV 束ね → コントローラ → kubelet の順） */
 export function advanceCluster(state: ClusterState, tickPods: (s: ClusterState) => {
   pods: Map<string, Pod>;
   events: EventRecord[];
   ipCounter: number;
 }): ClusterState {
-  const reconciled = reconcile(state);
+  const bound = bindClaims(state);
+  const withStorage: ClusterState = {
+    ...state,
+    persistentVolumes: bound.persistentVolumes,
+    persistentVolumeClaims: bound.persistentVolumeClaims,
+    nameCounter: bound.nameCounter,
+  };
+
+  const workloads = reconcileWorkloads(withStorage);
+  const withWorkloads: ClusterState = {
+    ...withStorage,
+    pods: workloads.pods,
+    statefulSets: workloads.statefulSets,
+    daemonSets: workloads.daemonSets,
+    jobs: workloads.jobs,
+    cronJobs: workloads.cronJobs,
+    persistentVolumeClaims: workloads.persistentVolumeClaims,
+    autoscalers: workloads.autoscalers,
+    deployments: workloads.deployments,
+    nameCounter: workloads.nameCounter,
+  };
+
+  const reconciled = reconcile(withWorkloads);
   const ticked = tickPods(reconciled.state);
   return {
     ...reconciled.state,
     tick: state.tick + 1,
     pods: ticked.pods,
     ipCounter: ticked.ipCounter,
-    events: [...state.events, ...reconciled.events, ...ticked.events].slice(-200),
+    events: [
+      ...state.events,
+      ...bound.events,
+      ...workloads.events,
+      ...reconciled.events,
+      ...ticked.events,
+    ].slice(-200),
   };
 }
