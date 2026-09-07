@@ -393,3 +393,50 @@ describe('リモート', () => {
     expect(run('git pull origin main').out).toContain('Already up to date.');
   });
 });
+
+describe('衝突の解決とマージコミット', () => {
+  beforeEach(() => {
+    run('git init');
+    run('printf "l1\\nl2\\nl3\\n" > m.txt');
+    run('git add m.txt');
+    run('git commit -m "base"');
+    run('git switch -c topic');
+    run('printf "l1\\nTHEIRS\\nl3\\n" > m.txt');
+    run('git add m.txt');
+    run('git commit -m "topic"');
+    run('git switch main');
+    run('printf "l1\\nOURS\\nl3\\n" > m.txt');
+    run('git add m.txt');
+    run('git commit -m "main"');
+  });
+
+  it('衝突しても、衝突していない行は残る', () => {
+    run('git merge topic');
+    const content = run('cat m.txt').out;
+    expect(content).toContain('l1');
+    expect(content).toContain('l3');
+    expect(content).toContain('<<<<<<< HEAD');
+  });
+
+  it('status が未解決であることを伝える', () => {
+    run('git merge topic');
+    expect(run('git status').out).toContain('You have unmerged paths.');
+  });
+
+  it('解決してコミットするとマージコミットになる', () => {
+    run('git merge topic');
+    run('printf "l1\\nRESOLVED\\nl3\\n" > m.txt');
+    run('git add m.txt');
+    run('git commit -m "resolve"');
+    const entries = run('git log --oneline').out.trim().split('\n');
+    // base / topic / main / resolve の 4 つが見える
+    expect(entries).toHaveLength(4);
+    expect(run('git status').out).not.toContain('unmerged');
+  });
+
+  it('reset すると途中のマージは畳まれる', () => {
+    run('git merge topic');
+    run('git reset --hard HEAD');
+    expect(run('git status').out).not.toContain('unmerged');
+  });
+});

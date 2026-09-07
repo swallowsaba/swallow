@@ -26,6 +26,7 @@ export function initRepository(root: string, author: Signature = defaultAuthor):
     index: new Map(),
     author,
     origHead: null,
+    mergeHead: null,
     reflog: [],
     stash: [],
     remotes: new Map(),
@@ -164,19 +165,24 @@ export function commit(git: GitState, message: string, now: number): CommitResul
   const parent = headCommit(git);
   const tree = writeTreeFromIndex(git);
 
-  if (parent !== null) {
+  // 衝突を解いた直後の commit は、本物と同じくマージコミットになる
+  const merging = git.mergeHead;
+  if (parent !== null && merging === null) {
     const previous = git.objects.read(parent);
     if (previous && parseCommit(previous.body).tree === tree) {
       return { git, hash: parent, empty: true };
     }
   }
 
+  const parents = parent === null ? [] : [parent];
+  if (merging !== null) parents.push(merging);
+
   const signature: Signature = { ...git.author, timestamp: now };
   const hash = git.objects.write(
     'commit',
     serializeCommit({
       tree,
-      parents: parent === null ? [] : [parent],
+      parents,
       author: signature,
       committer: signature,
       message,
@@ -192,6 +198,7 @@ export function commit(git: GitState, message: string, now: number): CommitResul
       ...git,
       refs,
       origHead: parent,
+      mergeHead: null,
       head: branch === null ? { type: 'detached', hash } : git.head,
       reflog: [...git.reflog, { hash, message: `commit: ${message}` }],
     },
@@ -254,22 +261,72 @@ export interface LogEntry {
   parents: string[];
 }
 
+/**
+ * HEAD から辿れるコミットを、本物と同じ並びで返す。
+ * マージコミットの第2親も辿るので、統合した側の履歴も出る。
+ * 子より先に親が出ないよう位相順に並べ、同じ位置に複数並べるときは新しい方を先にする。
+ */
 export function log(git: GitState, limit = 50): LogEntry[] {
-  const out: LogEntry[] = [];
-  const seen = new Set<string>();
-  let current = headCommit(git);
-  while (current !== null && out.length < limit && !seen.has(current)) {
-    seen.add(current);
-    const object = git.objects.read(current);
-    if (!object) break;
+  const head = headCommit(git);
+  if (head === null) return [];
+
+  const nodes = new Map<string, LogEntry>();
+  const discovered: string[] = [];
+  const stack = [head];
+  while (stack.length > 0) {
+    const hash = stack.pop();
+    if (hash === undefined || nodes.has(hash)) continue;
+    const object = git.objects.read(hash);
+    if (!object || object.type !== 'commit') continue;
     const parsed = parseCommit(object.body);
-    out.push({
-      hash: current,
+    nodes.set(hash, {
+      hash,
       message: parsed.message.trim(),
       timestamp: parsed.author.timestamp,
       parents: [...parsed.parents],
     });
-    current = parsed.parents[0] ?? null;
+    discovered.push(hash);
+    stack.push(...parsed.parents);
+  }
+
+  // 子の数を数え、子を全て出し終えたコミットだけを候補にする（位相順）
+  const remaining = new Map<string, number>();
+  for (const hash of nodes.keys()) remaining.set(hash, 0);
+  for (const entry of nodes.values()) {
+    for (const parent of entry.parents) {
+      const count = remaining.get(parent);
+      if (count !== undefined) remaining.set(parent, count + 1);
+    }
+  }
+
+  const order = new Map(discovered.map((hash, index) => [hash, index]));
+  const ready = [head];
+  const out: LogEntry[] = [];
+  while (ready.length > 0 && out.length < limit) {
+    let best = 0;
+    for (let i = 1; i < ready.length; i += 1) {
+      const candidate = nodes.get(ready[i] ?? '');
+      const current = nodes.get(ready[best] ?? '');
+      if (!candidate || !current) continue;
+      if (candidate.timestamp > current.timestamp) best = i;
+      else if (
+        candidate.timestamp === current.timestamp &&
+        (order.get(candidate.hash) ?? 0) < (order.get(current.hash) ?? 0)
+      ) {
+        best = i;
+      }
+    }
+    const hash = ready.splice(best, 1)[0];
+    const entry = hash === undefined ? undefined : nodes.get(hash);
+    if (!entry) continue;
+    out.push(entry);
+    for (const parent of entry.parents) {
+      const count = remaining.get(parent);
+      if (count === undefined) continue;
+      const next = count - 1;
+      remaining.set(parent, next);
+      if (next === 0) ready.push(parent);
+    }
   }
   return out;
 }
@@ -476,6 +533,8 @@ export function reset(git: GitState, target: string, mode: ResetMode): ResetResu
     refs,
     index,
     origHead: headCommit(git),
+    // reset は途中のマージを畳む（本物の git merge --abort に当たる）
+    mergeHead: null,
     head: branch === null ? { type: 'detached', hash } : git.head,
     reflog: [...git.reflog, { hash, message: `reset: moving to ${target}` }],
   };

@@ -49,6 +49,11 @@ function formatStatus(git: GitState, shell: ShellState): string {
     }
   }
 
+  if (git.mergeHead !== null) {
+    lines.push('You have unmerged paths.');
+    lines.push('  (fix conflicts and run "git commit")');
+  }
+
   if (headCommit(git) === null && report.staged.length === 0) {
     lines.push('', 'No commits yet');
   }
@@ -290,7 +295,8 @@ function runSubcommand(
           stdout: `${conflicts.map((p) => `CONFLICT (content): Merge conflict in ${p}`).join('\n')}\n`,
           stderr: 'Automatic merge failed; fix conflicts and then commit the result.\n',
           code: 1,
-          patch: { vfs },
+          // MERGE_HEAD を覚えておき、解決後の commit をマージコミットにする
+          patch: { vfs, git: { ...git, mergeHead: plan.theirs } },
         };
       }
 

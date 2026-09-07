@@ -71,6 +71,7 @@ const gitSnapshotBaseSchema = z.object({
     timezone: z.string(),
   }),
   origHead: z.string().nullable(),
+  mergeHead: z.string().nullable().default(null),
   objects: z.array(
     z.object({ type: z.enum(['blob', 'tree', 'commit', 'tag']), body: z.string() }),
   ),

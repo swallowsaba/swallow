@@ -25,6 +25,7 @@ export interface GitSnapshotBase {
   stash: StashEntry[];
   author: { name: string; email: string; timestamp: number; timezone: string };
   origHead: string | null;
+  mergeHead: string | null;
   objects: { type: GitObjectType; body: string }[];
 }
 
@@ -47,6 +48,7 @@ function snapshotBase(git: GitState): GitSnapshotBase {
     stash: [...git.stash],
     author: git.author,
     origHead: git.origHead,
+    mergeHead: git.mergeHead,
     objects,
   };
 }
@@ -75,6 +77,7 @@ function restoreBase(snapshot: GitSnapshotBase): GitState {
     stash: snapshot.stash,
     author: { ...defaultAuthor, ...snapshot.author },
     origHead: snapshot.origHead,
+    mergeHead: snapshot.mergeHead ?? null,
     remotes: new Map(),
   };
 }

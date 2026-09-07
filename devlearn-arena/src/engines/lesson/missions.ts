@@ -340,7 +340,7 @@ export const gitConflictBoss: LessonDefinition = {
     },
     {
       prompt: 'topic を統合し、衝突を解いてコミットせよ。マーカを残すな。',
-      check: 'app.txt に衝突マーカが無く、作業ツリーが綺麗で、コミットが増えていること',
+      check: 'app.txt に衝突マーカが無く、変更が記録済みで、HEAD がマージコミットであること',
       hints: [
         'git merge topic を実行すると衝突する',
         'vi app.txt を開き、<<<<<<< と ======= と >>>>>>> の行を消して、正しい内容にする',
@@ -352,15 +352,21 @@ export const gitConflictBoss: LessonDefinition = {
         if (!node || node.kind !== 'file') return false;
         if (node.content.includes('<<<<<<<') || node.content.includes('>>>>>>>')) return false;
         const report = status(shell.git, shell.vfs);
-        return report.clean && log(shell.git).length >= 4;
+        // 追跡していないファイルは残っていてよい。統合した結果を記録できたかだけを見る
+        const recorded = report.staged.length === 0 && report.unstaged.length === 0;
+        const merge = log(shell.git)[0];
+        return recorded && merge !== undefined && merge.parents.length >= 2;
       },
       diagnose: ({ shell }) => {
         const node = shell.vfs.nodes.get(`${HOME}/app.txt`);
         if (node?.kind === 'file' && node.content.includes('<<<<<<<')) {
           return '衝突マーカがまだ残っています。vi app.txt を開いて、<<<<<<< / ======= / >>>>>>> の行を消してください。';
         }
-        if (shell.git !== null && !status(shell.git, shell.vfs).clean) {
-          return '直した内容をまだ記録していません。git add と git commit で確定させてください。';
+        if (shell.git !== null) {
+          const report = status(shell.git, shell.vfs);
+          if (report.staged.length > 0 || report.unstaged.length > 0) {
+            return '直した内容をまだ記録していません。git add と git commit で確定させてください。';
+          }
         }
         return null;
       },

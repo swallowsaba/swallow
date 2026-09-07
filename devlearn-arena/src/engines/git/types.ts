@@ -25,6 +25,8 @@ export interface GitState {
   readonly author: Signature;
   /** 直前の HEAD。reset や checkout の取り消しに使う */
   readonly origHead: string | null;
+  /** 衝突したマージの相手側（MERGE_HEAD）。解決後の commit がマージコミットになる */
+  readonly mergeHead: string | null;
   readonly reflog: readonly ReflogEntry[];
   readonly stash: readonly StashEntry[];
   readonly remotes: ReadonlyMap<string, RemoteRef>;
