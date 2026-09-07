@@ -35,7 +35,7 @@ describe('簡易エディタ', () => {
   });
 
   it('ディレクトリは開けない', () => {
-    const outcome = run('vi /etc');
+    const outcome = run('vi /home/learner');
     expect(outcome.exitCode).toBe(1);
     expect(outcome.editor).toBeNull();
   });

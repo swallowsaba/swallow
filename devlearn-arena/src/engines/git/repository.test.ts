@@ -98,7 +98,7 @@ describe('git commit', () => {
   it('同じ内容と同じ時刻なら同じハッシュ（決定論）', () => {
     addAll();
     const a = commit(git, 'x', 100).hash;
-    const b = commit(initRepository(ROOT) as GitState, 'x', 100);
+    const b = commit(initRepository(ROOT), 'x', 100);
     void b;
     const again = commit(addPaths(initRepository(ROOT), vfs, ['.']).git, 'x', 100).hash;
     expect(a).toBe(again);

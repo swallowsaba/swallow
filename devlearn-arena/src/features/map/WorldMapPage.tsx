@@ -54,7 +54,7 @@ export default function WorldMapPage() {
       color: ACCENT[PROLOGUE] ?? '#c0442f',
     },
     ...TRACKS.map((track) => {
-      const playable = progressOf(cleared, track.id as MissionTrack);
+      const playable = progressOf(cleared, track.id);
       const all = track.chapters.flatMap((c) => c.lessons);
       const done = all.filter((l) => cleared.has(l.id)).length + playable.done;
       const total = all.length;

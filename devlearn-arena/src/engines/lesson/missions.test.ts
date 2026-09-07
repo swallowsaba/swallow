@@ -4,11 +4,18 @@ import { createClock } from '@/engines/kernel/clock';
 import { createShellState } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import type { ShellState } from '@/engines/kernel/registry';
-import { missions } from './missions';
+import { findMission, missions } from './missions';
 import { createProgress, evaluate } from './runner';
 import type { LessonDefinition } from './types';
 
 const registry = createDefaultRegistry();
+
+/** id で任務を引く。配列の並び順に依存させない */
+function mission(id: string): LessonDefinition {
+  const found = findMission(id);
+  if (!found) throw new Error(`任務が見つかりません: ${id}`);
+  return found;
+}
 
 /** 任務を解いてみて、実際にクリアできるかを確かめる */
 function play(mission: LessonDefinition, lines: readonly string[]): boolean {
@@ -51,7 +58,7 @@ describe('任務の定義', () => {
 describe('模範解答で実際にクリアできる', () => {
   it('シェルに慣れる', () => {
     expect(
-      play(missions[0] as LessonDefinition, [
+      play(mission('kernel/00/shell-warmup'), [
         'mkdir reports',
         'cat /etc/hosts > reports/hosts.txt',
         'grep localhost reports/hosts.txt > reports/local.txt',
@@ -61,7 +68,7 @@ describe('模範解答で実際にクリアできる', () => {
 
   it('最初のコミットを刻む', () => {
     expect(
-      play(missions[1] as LessonDefinition, [
+      play(mission('git/01/first-commit'), [
         'git init',
         'git add notes.md',
         'git commit -m "first"',
@@ -71,7 +78,7 @@ describe('模範解答で実際にクリアできる', () => {
 
   it('ブランチを分けて統合する', () => {
     expect(
-      play(missions[2] as LessonDefinition, [
+      play(mission('git/04/branch-and-merge'), [
         'git init',
         'git add .',
         'git commit -m "base"',
@@ -87,7 +94,7 @@ describe('模範解答で実際にクリアできる', () => {
 
   it('衝突を解く', () => {
     expect(
-      play(missions[3] as LessonDefinition, [
+      play(mission('git/05/conflict'), [
         'git init',
         'git add app.txt',
         'git commit -m "base"',
@@ -109,7 +116,7 @@ describe('模範解答で実際にクリアできる', () => {
 
   it('ディスク逼迫', () => {
     expect(
-      play(missions[4] as LessonDefinition, [
+      play(mission('kernel/00/disk-full'), [
         '> /var/log/app.log',
         'rm -r /var/log/old',
         'echo "logrotate で日次 rotate する" > /srv/app/RECOVERY.md',
@@ -121,7 +128,7 @@ describe('模範解答で実際にクリアできる', () => {
 describe('別解でもクリアできる', () => {
   it('シェルに慣れる（パイプ版）', () => {
     expect(
-      play(missions[0] as LessonDefinition, [
+      play(mission('kernel/00/shell-warmup'), [
         'mkdir -p reports',
         'cp /etc/hosts reports/hosts.txt',
         'cat reports/hosts.txt | grep localhost > reports/local.txt',
@@ -131,7 +138,7 @@ describe('別解でもクリアできる', () => {
 
   it('ブランチを分けて統合する（branch と switch を分ける）', () => {
     expect(
-      play(missions[2] as LessonDefinition, [
+      play(mission('git/04/branch-and-merge'), [
         'git init',
         'git add .',
         'git commit -m "base"',

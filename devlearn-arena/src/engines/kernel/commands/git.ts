@@ -4,11 +4,12 @@ import {
 } from '@/engines/git/remote';
 import {
   addPaths, branches, commit, commitMerge, createBranch, currentBranch, defaultAuthor,
-  diffStaged, diffWorktree, fastForwardTo, headCommit, initRepository, log, materialize,
+  diffStaged, diffWorktree, fastForwardTo, headCommit, initRepository, log,
   planMerge, popStash, pushStash, rebaseOnto, replayCommit, reset, revertCommit, status,
   switchBranch, unstage, type ResetMode,
 } from '@/engines/git/repository';
 import type { GitState } from '@/engines/git/types';
+import { checkoutWorktree } from '@/engines/git/worktree';
 import { decode } from '@/engines/git/objects';
 import { resolve } from '../path';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
@@ -183,13 +184,7 @@ function runSubcommand(
       if (moved.error !== undefined) return { stderr: `${moved.error}\n`, code: 128 };
 
       // 作業ツリーを切り替え先の内容に合わせる
-      const hash = headCommit(moved.git);
-      let vfs = shell.vfs;
-      if (hash !== null) {
-        for (const [path, content] of materialize(moved.git, hash)) {
-          vfs = writeFile(vfs, resolve(moved.git.root, path), content, true);
-        }
-      }
+      const vfs = checkoutWorktree(shell.vfs, moved.git, headCommit(git), headCommit(moved.git));
       return {
         stdout: `Switched to branch '${name}'\n`,
         patch: { git: moved.git, vfs },
@@ -253,14 +248,12 @@ function runSubcommand(
           ? 'soft'
           : 'mixed';
       const target = operands[0] ?? 'HEAD';
+      const before = headCommit(git);
       const result = reset(git, target, mode);
       if (result.error !== undefined) return { stderr: `${result.error}\n`, code: 128 };
-      let vfs = shell.vfs;
-      if (result.worktree !== null) {
-        for (const [path, content] of result.worktree) {
-          vfs = writeFile(vfs, resolve(git.root, path), content, true);
-        }
-      }
+      const vfs = result.worktree === null
+        ? shell.vfs
+        : checkoutWorktree(shell.vfs, result.git, before, headCommit(result.git));
       return { patch: { git: result.git, vfs }, stdout: '' };
     }
 
@@ -273,10 +266,7 @@ function runSubcommand(
 
       if (plan.fastForward !== null) {
         const moved = fastForwardTo(git, plan.fastForward);
-        let vfs = shell.vfs;
-        for (const [path, content] of materialize(moved, plan.fastForward)) {
-          vfs = writeFile(vfs, resolve(moved.root, path), content, true);
-        }
+        const vfs = checkoutWorktree(shell.vfs, moved, headCommit(git), plan.fastForward);
         const staged = addPaths(moved, vfs, ['.']);
         return { stdout: 'Fast-forward\n', patch: { git: staged.git, vfs } };
       }
@@ -316,13 +306,7 @@ function runSubcommand(
       const result = rebaseOnto(git, onto, nowSeconds);
       if (result.error !== undefined) return { stderr: `${result.error}\n`, code: 128 };
 
-      const hash = headCommit(result.git);
-      let vfs = shell.vfs;
-      if (hash !== null) {
-        for (const [path, content] of materialize(result.git, hash)) {
-          vfs = writeFile(vfs, resolve(result.git.root, path), content, true);
-        }
-      }
+      const vfs = checkoutWorktree(shell.vfs, result.git, headCommit(git), headCommit(result.git));
       if (result.conflicts.length > 0) {
         return {
           stderr: `CONFLICT: ${result.conflicts.join(', ')} で衝突しました\n`,
@@ -354,10 +338,7 @@ function runSubcommand(
       if (branch !== null) refs.set(`refs/heads/${branch}`, result.hash);
       const next = { ...result.git, refs, head: git.head };
 
-      let vfs = shell.vfs;
-      for (const [path, content] of materialize(next, result.hash)) {
-        vfs = writeFile(vfs, resolve(next.root, path), content, true);
-      }
+      const vfs = checkoutWorktree(shell.vfs, next, head, result.hash);
       if (result.conflicts.length > 0) {
         return {
           stderr: `CONFLICT: ${result.conflicts.join(', ')}\n`,
@@ -376,10 +357,7 @@ function runSubcommand(
       if (target === undefined) return { stderr: `fatal: bad revision '${ref}'\n`, code: 128 };
       const result = revertCommit(git, target, nowSeconds);
       if (result.error !== undefined) return { stderr: `${result.error}\n`, code: 128 };
-      let vfs = shell.vfs;
-      for (const [path, content] of materialize(result.git, result.hash)) {
-        vfs = writeFile(vfs, resolve(result.git.root, path), content, true);
-      }
+      const vfs = checkoutWorktree(shell.vfs, result.git, headCommit(git), result.hash);
       return { stdout: `[${currentBranch(result.git) ?? 'HEAD'} ${short(result.hash)}] Revert\n`, patch: { git: result.git, vfs } };
     }
 
@@ -408,10 +386,7 @@ function runSubcommand(
       const head = headCommit(git);
       if (head === null) return { stderr: 'You do not have the initial commit yet\n', code: 1 };
       const next = pushStash(git, shell.vfs, `WIP on ${currentBranch(git) ?? 'HEAD'}`);
-      let vfs = shell.vfs;
-      for (const [path, content] of materialize(git, head)) {
-        vfs = writeFile(vfs, resolve(git.root, path), content, true);
-      }
+      const vfs = checkoutWorktree(shell.vfs, git, head, head);
       return { stdout: 'Saved working directory\n', patch: { git: next, vfs } };
     }
 
@@ -493,10 +468,7 @@ function runSubcommand(
       if (head === target) return { stdout: 'Already up to date.\n', patch: { git: fetched.git } };
 
       const moved = fastForwardTo(fetched.git, target);
-      let vfs = shell.vfs;
-      for (const [path, content] of materialize(moved, target)) {
-        vfs = writeFile(vfs, resolve(moved.root, path), content, true);
-      }
+      const vfs = checkoutWorktree(shell.vfs, moved, head, target);
       const staged = addPaths(moved, vfs, ['.']);
       return { stdout: 'Fast-forward\n', patch: { git: staged.git, vfs } };
     }

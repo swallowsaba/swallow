@@ -116,6 +116,9 @@ export function reconcile(state: ClusterState): ReconcileResult {
       let newReplicas = current.spec.replicas;
       if (newReplicas < desired && newReplicas + oldReplicas < totalAllowed) {
         newReplicas += 1;
+      } else if (newReplicas > desired) {
+        // replicas を減らされたときは、新しい側も 1 tick ずつ目標まで縮める
+        newReplicas -= 1;
       }
       replicaSets.set(rsId, { ...current, spec: { ...current.spec, replicas: newReplicas } });
 

@@ -182,16 +182,28 @@ export function aheadBehind(
   const remote = git.refs.get(`refs/remotes/${remoteName}/${branch}`);
   if (local === null || local === undefined || remote === undefined) return { ahead: 0, behind: 0 };
 
-  const count = (from: string, until: string): number => {
-    let n = 0;
-    let current: string | null = from;
-    while (current !== null && current !== until) {
-      const object = git.objects.read(current);
-      if (!object) break;
-      n += 1;
-      current = parseCommit(object.body).parents[0] ?? null;
+  /** そのコミットから辿れる全ての祖先（自身を含む） */
+  const reachable = (from: string): Set<string> => {
+    const seen = new Set<string>();
+    const queue = [from];
+    while (queue.length > 0) {
+      const hash = queue.pop();
+      if (hash === undefined || seen.has(hash)) continue;
+      const object = git.objects.read(hash);
+      if (!object || object.type !== 'commit') continue;
+      seen.add(hash);
+      queue.push(...parseCommit(object.body).parents);
     }
-    return n;
+    return seen;
   };
-  return { ahead: count(local, remote), behind: count(remote, local) };
+
+  // git rev-list --count local...remote と同じ数え方。
+  // 共通の祖先より先にある、それぞれの側だけのコミットを数える。
+  const fromLocal = reachable(local);
+  const fromRemote = reachable(remote);
+  let ahead = 0;
+  for (const hash of fromLocal) if (!fromRemote.has(hash)) ahead += 1;
+  let behind = 0;
+  for (const hash of fromRemote) if (!fromLocal.has(hash)) behind += 1;
+  return { ahead, behind };
 }

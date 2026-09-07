@@ -11,29 +11,52 @@ export interface MergeResult {
 
 type Op = { kind: 'equal' | 'insert' | 'delete'; line: string };
 
-/** base から side への変更を、行番号の対応として取り出す */
+/**
+ * base から side への変更を「base の何行目が何に置き換わるか」に直す。
+ *
+ * 連続する delete / insert をひとかたまり（hunk）として扱う。
+ * 1行ずつ見ると、削除した行の位置と挿入した行の位置がずれ、
+ * 後続の行を巻き込んで消してしまうため。
+ */
 function changeMap(base: readonly string[], side: readonly string[]): Map<number, string[]> {
+  const ops = diffLines(base, side) as Op[];
   const map = new Map<number, string[]>();
   let baseIndex = 0;
-  let pending: string[] = [];
+  let cursor = 0;
 
-  for (const op of diffLines(base, side) as Op[]) {
+  while (cursor < ops.length) {
+    const op = ops[cursor];
+    if (op === undefined) break;
     if (op.kind === 'equal') {
-      if (pending.length > 0) {
-        map.set(baseIndex, [...(map.get(baseIndex) ?? []), ...pending]);
-        pending = [];
+      baseIndex += 1;
+      cursor += 1;
+      continue;
+    }
+
+    const start = baseIndex;
+    const removed: number[] = [];
+    const added: string[] = [];
+    while (cursor < ops.length) {
+      const current = ops[cursor];
+      if (current === undefined || current.kind === 'equal') break;
+      if (current.kind === 'delete') {
+        removed.push(baseIndex);
+        baseIndex += 1;
+      } else {
+        added.push(current.line);
       }
-      baseIndex += 1;
-      continue;
+      cursor += 1;
     }
-    if (op.kind === 'delete') {
-      map.set(baseIndex, map.get(baseIndex) ?? []);
-      baseIndex += 1;
-      continue;
+
+    if (removed.length === 0) {
+      // 純粋な挿入。base[start] の手前に入るので、その行ごと置き換える形にする
+      const kept = base[start];
+      map.set(start, kept === undefined ? added : [...added, kept]);
+    } else {
+      map.set(start, added);
+      for (const index of removed.slice(1)) map.set(index, []);
     }
-    pending.push(op.line);
   }
-  if (pending.length > 0) map.set(baseIndex, [...(map.get(baseIndex) ?? []), ...pending]);
   return map;
 }
 

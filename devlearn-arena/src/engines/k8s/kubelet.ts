@@ -34,7 +34,7 @@ export function tickPods(state: ClusterState): TickResult {
   let ipCounter = state.ipCounter;
 
   for (const [id, original] of state.pods) {
-    let pod: Pod = {
+    const pod: Pod = {
       ...original,
       metadata: { ...original.metadata },
       spec: original.spec,

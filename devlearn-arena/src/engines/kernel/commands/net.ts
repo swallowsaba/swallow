@@ -2,7 +2,7 @@ import { packet } from '@/engines/net/factory';
 import { deliver } from '@/engines/net/stack';
 import { parseCidr } from '@/engines/net/subnet';
 import type { Topology } from '@/engines/net/types';
-import type { CommandResult, CommandSpec, ShellState } from '../registry';
+import type { CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
 
 const NO_NET = 'ネットワークが用意されていません。ネットワークの任務を選んでください。\n';

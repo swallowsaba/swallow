@@ -41,7 +41,7 @@ describe('補助コマンド', () => {
     expect(out).toContain('mkdir');
   });
   it('which は存在しないコマンドで 1 を返す', () => {
-    expect(run('which kubectl')).toContain('no kubectl');
+    expect(run('which nosuchtool')).toContain('no nosuchtool');
     expect(run('which ls')).toBe('/usr/bin/ls\n');
   });
   it('history は実行した行を番号付きで出す', () => {

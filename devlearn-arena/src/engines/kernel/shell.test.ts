@@ -32,9 +32,9 @@ describe('基本', () => {
   });
 
   it('未知のコマンドは 127 と本物風のメッセージ', () => {
-    const r = run('kubectl get pods');
+    const r = run('nosuchtool get pods');
     expect(r.code).toBe(EXIT_NOT_FOUND);
-    expect(r.err).toBe('kubectl: command not found\n');
+    expect(r.err).toBe('nosuchtool: command not found\n');
   });
 
   it('履歴に積まれる', () => {
