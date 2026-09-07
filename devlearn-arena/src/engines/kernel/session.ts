@@ -3,8 +3,11 @@ import { createDefaultRegistry } from './commands';
 import type { CommandRegistry, ShellState } from './registry';
 import { HOME } from './path';
 import { restoreGit, snapshotGit, type GitSnapshot } from '@/engines/git/serialize';
+import { restoreCluster, snapshotCluster, type ClusterSnapshot } from '@/engines/k8s/serialize';
 import type { ClusterState } from '@/engines/k8s/types';
+import { restoreRepo, snapshotRepo, type RepoSnapshot } from '@/engines/github/serialize';
 import type { Repo } from '@/engines/github/types';
+import { restoreTopology, snapshotTopology, type TopologySnapshot } from '@/engines/net/serialize';
 import type { Topology } from '@/engines/net/types';
 import { createVfs, type VfsNode, type VfsState } from './vfs';
 
@@ -67,6 +70,9 @@ export interface ShellSnapshotData {
   files: Record<string, { kind: 'dir' | 'file'; content?: string }>;
   history: string[];
   git: GitSnapshot | null;
+  cluster: ClusterSnapshot | null;
+  net: TopologySnapshot | null;
+  repo: RepoSnapshot | null;
 }
 
 /** 保存できる素のデータに落とす */
@@ -81,6 +87,9 @@ export function snapshotShell(state: ShellState): ShellSnapshotData {
     files,
     history: [...state.history],
     git: state.git === null ? null : snapshotGit(state.git),
+    cluster: state.cluster === null ? null : snapshotCluster(state.cluster),
+    net: state.net === null ? null : snapshotTopology(state.net),
+    repo: state.repo === null ? null : snapshotRepo(state.repo),
   };
 }
 
@@ -94,10 +103,9 @@ export function restoreShell(snapshot: ShellSnapshotData): ShellState {
   return {
     vfs: { nodes },
     git: snapshot.git === null ? null : restoreGit(snapshot.git),
-    // クラスタとネットワークは保存対象に含めていない（次の段階で直列化する）
-    cluster: null,
-    net: null,
-    repo: null,
+    cluster: snapshot.cluster === null ? null : restoreCluster(snapshot.cluster),
+    net: snapshot.net === null ? null : restoreTopology(snapshot.net),
+    repo: snapshot.repo === null ? null : restoreRepo(snapshot.repo),
     cwd: snapshot.cwd,
     vars: new Map(Object.entries(snapshot.vars)),
     lastExit: 0,

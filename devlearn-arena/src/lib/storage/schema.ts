@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { shellSnapshotSchema } from './shellSchema';
 
 /**
  * 保存データのスキーマ。localStorage への書き込みは必ずここを通す。
@@ -49,51 +50,18 @@ export const profileSchema = z.object({
 });
 export type Profile = z.infer<typeof profileSchema>;
 
-/** シェルの状態そのもの。リロードしても続きから触れるように丸ごと保存する */
-const headSchema = z.union([
-  z.object({ type: z.literal('branch'), name: z.string() }),
-  z.object({ type: z.literal('detached'), hash: z.string() }),
-]);
-
-const gitSnapshotBaseSchema = z.object({
-  root: z.string(),
-  head: headSchema,
-  refs: z.array(z.tuple([z.string(), z.string()])),
-  index: z.array(z.object({ path: z.string(), mode: z.string(), hash: z.string() })),
-  reflog: z.array(z.object({ hash: z.string(), message: z.string() })),
-  stash: z
-    .array(z.object({ message: z.string(), files: z.array(z.tuple([z.string(), z.string()])) }))
-    .default([]),
-  author: z.object({
-    name: z.string(),
-    email: z.string(),
-    timestamp: z.number(),
-    timezone: z.string(),
-  }),
-  origHead: z.string().nullable(),
-  mergeHead: z.string().nullable().default(null),
-  objects: z.array(
-    z.object({ type: z.enum(['blob', 'tree', 'commit', 'tag']), body: z.string() }),
-  ),
-});
-
-export const gitSnapshotSchema = gitSnapshotBaseSchema.extend({
-  remotes: z
-    .array(z.object({ name: z.string(), url: z.string(), state: gitSnapshotBaseSchema }))
-    .default([]),
-});
-
-export const shellSnapshotSchema = z.object({
-  cwd: z.string().min(1),
-  vars: z.record(z.string(), z.string()),
-  files: z.record(
-    z.string(),
-    z.object({ kind: z.enum(['dir', 'file']), content: z.string().optional() }),
-  ),
-  history: z.array(z.string()).default([]),
-  git: gitSnapshotSchema.nullable().default(null),
-});
-export type ShellSnapshot = z.infer<typeof shellSnapshotSchema>;
+/**
+ * シェルの状態そのもの。リロードしても続きから触れるように丸ごと保存する。
+ * 中身のスキーマは shellSchema.ts にある。
+ */
+export {
+  clusterSnapshotSchema,
+  gitSnapshotSchema,
+  repoSnapshotSchema,
+  shellSnapshotSchema,
+  topologySnapshotSchema,
+  type ShellSnapshot,
+} from './shellSchema';
 
 export const missionProgressSchema = z.object({
   stepIndex: z.number().int().min(0),
