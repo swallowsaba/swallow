@@ -1,7 +1,7 @@
 import {
-  addPaths, branches, commit, createBranch, currentBranch, diffStaged, diffWorktree,
-  headCommit, log, switchBranch, unstage,
+  addPaths, branches, commit, createBranch, currentBranch, headCommit, log, switchBranch,
 } from '@/engines/git/repository';
+import { diffStaged, diffWorktree, unstage } from '@/engines/git/diff';
 import { decode } from '@/engines/git/objects';
 import { resolveObject } from '@/engines/git/refs';
 import { checkoutWorktree } from '@/engines/git/worktree';

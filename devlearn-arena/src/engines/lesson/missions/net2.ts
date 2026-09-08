@@ -45,30 +45,7 @@ function nattedNet(): Topology {
   );
 }
 
-const DNS_WORLD = JSON.stringify({
-  now: 0,
-  cache: [],
-  zones: [
-    {
-      origin: '.',
-      server: 'a.root-servers.net',
-      records: [{ name: 'com.', type: 'NS', value: 'a.gtld-servers.net', ttl: 172800 }],
-    },
-    {
-      origin: 'com.',
-      server: 'a.gtld-servers.net',
-      records: [{ name: 'example.com.', type: 'NS', value: 'ns1.example.com', ttl: 172800 }],
-    },
-    {
-      origin: 'example.com.',
-      server: 'ns1.example.com',
-      records: [
-        { name: 'www.example.com.', type: 'A', value: '203.0.113.10', ttl: 30 },
-        { name: 'shop.example.com.', type: 'CNAME', value: 'www.example.com.', ttl: 30 },
-      ],
-    },
-  ],
-});
+import { DNS_WORLD } from './netFixtures';
 
 export const netLayers: LessonDefinition = {
   id: 'net/01/encapsulation',

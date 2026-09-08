@@ -18,6 +18,7 @@ import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
+import { MissionPanel } from './MissionPanel';
 import { VisualPanel, type VisualTab } from './VisualPanel';
 
 const STEP_XP = 10;
@@ -322,106 +323,21 @@ function Park({
         {/* 左：手を動かす場所 */}
         {/* 上＝やること（溢れたらこの中で送る）、下＝端末。端末が画面外へ出ないよう行を固定する */}
         <div className="grid min-h-0 min-w-0 grid-rows-[minmax(0,auto)_minmax(0,1fr)]">
-          <div className="scroll m-3 min-h-0 overflow-y-auto px-6 py-5">
-            <p className="text-sm font-bold text-ink-soft">
-              {progress.cleared ? '完了' : `やること ${String(progress.stepIndex + 1)}`}
-            </p>
-            <p className="mt-1 text-xl font-bold leading-snug">
-              {progress.cleared ? 'この任務は完了しました。' : (step?.prompt ?? '')}
-            </p>
-
-            {progress.cleared ? (
-              <div className="mt-4 flex flex-col gap-3">
-                {nextMission ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSwitch(nextMission.id);
-                    }}
-                    className="sign w-fit px-6 py-3 text-lg font-extrabold"
-                  >
-                    次の任務へ: {nextMission.title} →
-                  </button>
-                ) : (
-                  <p className="text-base font-bold text-[var(--ok)]">
-                    今ある任務はすべてクリアしました。新しい任務は実装が進むたびに増えます。
-                  </p>
-                )}
-
-                <div>
-                  <p className="text-sm font-bold text-ink-soft">任務の一覧</p>
-                  <ul className="mt-2 flex flex-col gap-1">
-                    {missions.map((m) => {
-                      const done = clearedIds.has(m.id);
-                      return (
-                        <li key={m.id}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onSwitch(m.id);
-                            }}
-                            className={`flex w-full items-center gap-3 border-2 px-3 py-2 text-left text-base ${
-                              m.id === mission.id
-                                ? 'border-wood-dark bg-gold'
-                                : 'border-[var(--cream-dark)] bg-white/60 hover:border-wood-dark'
-                            }`}
-                          >
-                            <span aria-hidden>{done ? '✓' : '・'}</span>
-                            <span className="flex-1">{m.title}</span>
-                            <span className="font-mono text-xs text-ink-soft">
-                              {m.kind === 'boss' ? '障害対応' : '練習'} · {m.steps.length} 手順
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              </div>
-            ) : null}
-
-            {!progress.cleared && step ? (
-              <p
-                className={`mt-2 border-l-4 px-3 py-1.5 text-sm ${
-                  passingNow
-                    ? 'border-[var(--ok)] bg-[var(--ok)]/15'
-                    : 'border-[var(--cream-dark)] text-ink-soft'
-                }`}
-              >
-                <span className="font-bold">{passingNow ? '達成 ' : '未達成 '}</span>
-                {step.check}
-              </p>
-            ) : null}
-
-            {/* 読み上げにも届くよう、指摘は live region に置く */}
-            <div role="status" aria-live="polite" className="empty:hidden">
-              {diagnosis !== null && !progress.cleared ? (
-                <p className="mt-3 border-l-4 border-[var(--warn)] bg-[var(--gold)]/25 px-3 py-2 text-sm">
-                  <span className="font-bold">惜しい: </span>
-                  {diagnosis}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setProgress(useHint);
-                  setRevealedHints((n) => n + 1);
-                }}
-                disabled={step === undefined || revealedHints >= step.hints.length}
-                className="knob px-4 py-1.5 text-sm disabled:opacity-50"
-              >
-                ヒント
-              </button>
-              {step?.hints.slice(0, revealedHints).map((hint) => (
-                <span key={hint} className="font-mono text-sm text-ink">
-                  › {hint}
-                </span>
-              ))}
-            </div>
-          </div>
+          <MissionPanel
+            mission={mission}
+            clearedIds={clearedIds}
+            progress={progress}
+            step={step}
+            passingNow={passingNow}
+            diagnosis={diagnosis}
+            revealedHints={revealedHints}
+            nextMission={nextMission}
+            onRevealHint={() => {
+              setProgress(useHint);
+              setRevealedHints((n) => n + 1);
+            }}
+            onSwitch={onSwitch}
+          />
 
           <div className="mx-3 mb-3 flex min-h-0 min-w-0 flex-1 flex-col border-4 border-wood-dark">
             <div className="plate flex items-center gap-2 px-4 py-1.5 text-sm font-extrabold">
