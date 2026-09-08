@@ -5,10 +5,10 @@ import {
   gitDivergedBoss, gitFindRegression, gitParallelWork, gitRelease, gitRepoSize, gitSubmodule,
 } from './git3';
 import { ghPullRequest } from './github';
+import { ghClone, ghCodeowners, ghIssuePlanning, ghNeedsDag, ghPrCreate } from './github2';
 import {
-  ghActionsPractice, ghClone, ghCodeowners, ghForkFlow, ghIssuePlanning, ghMatrix, ghNeedsDag,
-  ghPrCreate, ghRelease, ghReusable,
-} from './github2';
+  ghActionsPractice, ghForkFlow, ghMatrix, ghRelease, ghReusable,
+} from './github3';
 import { k8sFirstPod, k8sServiceBoss } from './k8s';
 import {
   k8sApply, k8sConfig, k8sJobs, k8sPvcPending, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
@@ -89,10 +89,8 @@ export {
   gitDivergedBoss, gitFindRegression, gitParallelWork, gitRelease, gitRepoSize, gitSubmodule,
 } from './git3';
 export { ghPullRequest } from './github';
-export {
-  ghActionsPractice, ghClone, ghCodeowners, ghForkFlow, ghIssuePlanning, ghMatrix, ghNeedsDag,
-  ghPrCreate, ghRelease, ghReusable,
-} from './github2';
+export { ghClone, ghCodeowners, ghIssuePlanning, ghNeedsDag, ghPrCreate } from './github2';
+export { ghActionsPractice, ghForkFlow, ghMatrix, ghRelease, ghReusable } from './github3';
 export { k8sFirstPod, k8sServiceBoss } from './k8s';
 export {
   k8sApply, k8sConfig, k8sJobs, k8sPvcPending, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
