@@ -1,9 +1,9 @@
 import type { LessonDefinition } from '../types';
 import { gitBranching, gitConflictDrill, gitFirstCommit } from './git';
+import { gitAmend, gitInteractiveRebase, gitRecovery, gitThreeTrees } from './git2';
 import {
-  gitAmend, gitDivergedBoss, gitFindRegression, gitInteractiveRebase, gitParallelWork,
-  gitRecovery, gitRelease, gitRepoSize, gitSubmodule, gitThreeTrees,
-} from './git2';
+  gitDivergedBoss, gitFindRegression, gitParallelWork, gitRelease, gitRepoSize, gitSubmodule,
+} from './git3';
 import { ghPullRequest } from './github';
 import {
   ghActionsPractice, ghClone, ghCodeowners, ghForkFlow, ghIssuePlanning, ghMatrix, ghNeedsDag,
@@ -11,15 +11,15 @@ import {
 } from './github2';
 import { k8sFirstPod, k8sServiceBoss } from './k8s';
 import {
-  k8sApply, k8sConfig, k8sCrashLoop, k8sDrain, k8sHpa, k8sJobs, k8sNoLimits, k8sPvcPending,
-  k8sRbacDenied, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
+  k8sApply, k8sConfig, k8sJobs, k8sPvcPending, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
 } from './k8s2';
+import { k8sCrashLoop, k8sDrain, k8sHpa, k8sNoLimits, k8sRbacDenied } from './k8s3';
 import { diskFullBoss, shellWarmup } from './kernel';
 import { netFirstHop, netUnreachableBoss } from './net';
 import {
-  netArp, netDhcp, netDns, netDropVsReject, netHealthCheck, netIpv6, netLayers, netNat,
-  netSubnetting, netSwitching, netTcp, netTls, netVpcDesign,
+  netArp, netDhcp, netDns, netIpv6, netLayers, netNat, netSubnetting, netSwitching, netTcp,
 } from './net2';
+import { netDropVsReject, netHealthCheck, netTls, netVpcDesign } from './net3';
 
 /**
  * 遊べる任務の一覧。
@@ -84,10 +84,10 @@ export const missions: readonly LessonDefinition[] = [
 ];
 
 export { gitBranching, gitConflictDrill, gitFirstCommit } from './git';
+export { gitAmend, gitInteractiveRebase, gitRecovery, gitThreeTrees } from './git2';
 export {
-  gitAmend, gitDivergedBoss, gitFindRegression, gitInteractiveRebase, gitParallelWork,
-  gitRecovery, gitRelease, gitRepoSize, gitSubmodule, gitThreeTrees,
-} from './git2';
+  gitDivergedBoss, gitFindRegression, gitParallelWork, gitRelease, gitRepoSize, gitSubmodule,
+} from './git3';
 export { ghPullRequest } from './github';
 export {
   ghActionsPractice, ghClone, ghCodeowners, ghForkFlow, ghIssuePlanning, ghMatrix, ghNeedsDag,
@@ -95,15 +95,15 @@ export {
 } from './github2';
 export { k8sFirstPod, k8sServiceBoss } from './k8s';
 export {
-  k8sApply, k8sConfig, k8sCrashLoop, k8sDrain, k8sHpa, k8sJobs, k8sNoLimits, k8sPvcPending,
-  k8sRbacDenied, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
+  k8sApply, k8sConfig, k8sJobs, k8sPvcPending, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
 } from './k8s2';
+export { k8sCrashLoop, k8sDrain, k8sHpa, k8sNoLimits, k8sRbacDenied } from './k8s3';
 export { diskFullBoss, shellWarmup } from './kernel';
 export { netFirstHop, netUnreachableBoss } from './net';
 export {
-  netArp, netDhcp, netDns, netDropVsReject, netHealthCheck, netIpv6, netLayers, netNat,
-  netSubnetting, netSwitching, netTcp, netTls, netVpcDesign,
+  netArp, netDhcp, netDns, netIpv6, netLayers, netNat, netSubnetting, netSwitching, netTcp,
 } from './net2';
+export { netDropVsReject, netHealthCheck, netTls, netVpcDesign } from './net3';
 
 export function findMission(id: string): LessonDefinition | undefined {
   return missions.find((m) => m.id === id || m.id.endsWith(`/${id}`));

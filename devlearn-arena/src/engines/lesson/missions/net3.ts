@@ -1,9 +1,30 @@
-import { host, iface, link, port, resetMac, switchDevice, topology } from '@/engines/net/factory';
+import { host, iface, link, nat, port, resetMac, router, switchDevice, topology } from '@/engines/net/factory';
 import { HOME } from '@/engines/kernel/path';
 import type { Topology } from '@/engines/net/types';
 import type { LessonDefinition } from '../types';
 
 const FILES = { [HOME]: null };
+
+/** 内側 → NAT ルータ → 外側 */
+function nattedNet(): Topology {
+  resetMac();
+  return topology(
+    [
+      host('pc1', [iface('eth0', '192.168.1.10', 24)], {
+        routes: [{ destination: '0.0.0.0/0', via: '192.168.1.1', dev: 'eth0' }],
+      }),
+      router(
+        'gw',
+        [iface('eth0', '192.168.1.1', 24), iface('eth1', '203.0.113.1', 24)],
+        [{ destination: '0.0.0.0/0', via: '203.0.113.2', dev: 'eth1' }],
+        { nat: nat('192.168.1.0/24', '203.0.113.1') },
+      ),
+      host('web', [iface('eth0', '203.0.113.2', 24)], { listening: [80, 443] }),
+    ],
+    [link('pc1:eth0', 'gw:eth0'), link('gw:eth1', 'web:eth0')],
+    { 'shop.example.com': '203.0.113.2' },
+  );
+}
 
 /** pc1 ── sw1 ── pc2 の1セグメント */
 function lan(): Topology {
@@ -51,6 +72,30 @@ function firewalled(): Topology {
     { 'app.internal': '10.0.0.20' },
   );
 }
+
+const CERTS = JSON.stringify({
+  'shop.example.com': {
+    subject: 'shop.example.com',
+    altNames: ['*.example.com'],
+    issuer: 'DevLearn CA',
+    notBefore: 0,
+    notAfter: 50,
+  },
+  'old.example.com': {
+    subject: 'old.example.com',
+    altNames: [],
+    issuer: 'DevLearn CA',
+    notBefore: 0,
+    notAfter: 10,
+  },
+  'self.example.com': {
+    subject: 'self.example.com',
+    altNames: [],
+    issuer: 'Self Signed',
+    notBefore: 0,
+    notAfter: 100,
+  },
+});
 
 /** 上位層と切り分け（10〜13 章） */
 

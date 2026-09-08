@@ -1,6 +1,5 @@
-import { container, deployment, emptyCluster, node, service } from '@/engines/k8s/factory';
+import { container, deployment, emptyCluster, node } from '@/engines/k8s/factory';
 import { isReady } from '@/engines/k8s/kubelet';
-import { canI } from '@/engines/k8s/policy';
 import { key, type ClusterState } from '@/engines/k8s/types';
 import { HOME } from '@/engines/kernel/path';
 import type { LessonDefinition } from '../types';

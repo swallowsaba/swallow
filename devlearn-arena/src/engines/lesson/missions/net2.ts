@@ -45,39 +45,6 @@ function nattedNet(): Topology {
   );
 }
 
-/** 3台のバックエンド。1台だけ待ち受けていない */
-function backends(): Topology {
-  resetMac();
-  return topology(
-    [
-      host('pc1', [iface('eth0', '10.0.0.10', 24)]),
-      host('be1', [iface('eth0', '10.0.0.21', 24)], { listening: [80] }),
-      host('be2', [iface('eth0', '10.0.0.22', 24)], { listening: [] }),
-      host('be3', [iface('eth0', '10.0.0.23', 24)], { listening: [80] }),
-      switchDevice('sw1', [port('p1'), port('p2'), port('p3'), port('p4')]),
-    ],
-    [
-      link('pc1:eth0', 'sw1:p1'),
-      link('be1:eth0', 'sw1:p2'),
-      link('be2:eth0', 'sw1:p3'),
-      link('be3:eth0', 'sw1:p4'),
-    ],
-  );
-}
-
-/** 落とし方の違いを見る構成。9000 は塞がれ、9001 は待ち受けていない */
-function firewalled(): Topology {
-  resetMac();
-  return topology(
-    [
-      host('pc1', [iface('eth0', '10.0.0.10', 24)]),
-      host('app', [iface('eth0', '10.0.0.20', 24)], { listening: [80], blockedPorts: [9000] }),
-    ],
-    [link('pc1:eth0', 'app:eth0')],
-    { 'app.internal': '10.0.0.20' },
-  );
-}
-
 const DNS_WORLD = JSON.stringify({
   now: 0,
   cache: [],
@@ -101,30 +68,6 @@ const DNS_WORLD = JSON.stringify({
       ],
     },
   ],
-});
-
-const CERTS = JSON.stringify({
-  'shop.example.com': {
-    subject: 'shop.example.com',
-    altNames: ['*.example.com'],
-    issuer: 'DevLearn CA',
-    notBefore: 0,
-    notAfter: 50,
-  },
-  'old.example.com': {
-    subject: 'old.example.com',
-    altNames: [],
-    issuer: 'DevLearn CA',
-    notBefore: 0,
-    notAfter: 10,
-  },
-  'self.example.com': {
-    subject: 'self.example.com',
-    altNames: [],
-    issuer: 'Self Signed',
-    notBefore: 0,
-    notAfter: 100,
-  },
 });
 
 export const netLayers: LessonDefinition = {

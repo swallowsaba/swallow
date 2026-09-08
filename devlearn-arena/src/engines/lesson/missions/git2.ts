@@ -1,6 +1,5 @@
-import { REBASE_TODO, gitPath, readGitFile, sparsePatterns } from '@/engines/git/gitdir';
-import { GITLINK_MODE, branches, headCommit, log, status } from '@/engines/git/repository';
-import { tagNames } from '@/engines/git/refs';
+import { REBASE_TODO, gitPath, readGitFile } from '@/engines/git/gitdir';
+import { branches, headCommit, log, status } from '@/engines/git/repository';
 import { HOME } from '@/engines/kernel/path';
 import { exists } from '@/engines/kernel/vfs';
 import type { LessonDefinition } from '../types';

@@ -1,4 +1,4 @@
-import { REBASE_TODO, gitPath, readGitFile, sparsePatterns } from '@/engines/git/gitdir';
+import { gitPath, sparsePatterns } from '@/engines/git/gitdir';
 import { GITLINK_MODE, branches, headCommit, log } from '@/engines/git/repository';
 import { tagNames } from '@/engines/git/refs';
 import { HOME } from '@/engines/kernel/path';
