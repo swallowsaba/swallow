@@ -35,10 +35,13 @@ export function Shell({ children }: { children: ReactNode }) {
 
           <nav className="flex items-center gap-1" aria-label={t('app.name')}>
             <NavLink to="/" end className={navClass}>
-              園内へ戻る
+              {t('nav.home')}
             </NavLink>
             <NavLink to="/map" className={navClass}>
               {t('nav.map')}
+            </NavLink>
+            <NavLink to="/sandbox" className={navClass}>
+              {t('nav.sandbox')}
             </NavLink>
             <NavLink to="/dashboard" className={navClass}>
               {t('nav.dashboard')}

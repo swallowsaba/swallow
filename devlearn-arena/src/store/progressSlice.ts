@@ -2,12 +2,26 @@ import type { StateCreator } from 'zustand';
 import { dayKey, nextStreak } from '@/lib/date';
 import { createItem, schedule, upsert } from '@/lib/review';
 import { createEmptySave, emptyLessonProgress } from '@/lib/storage/schema';
+import type { Profile } from '@/lib/storage/schema';
 import type { AppState, ProgressSlice } from './types';
+
+/** 取り組んだ日を1日ぶん記録する。連続日数と履歴はここでだけ動かす */
+const ACTIVE_DAYS_KEPT = 90;
+
+function touchDay(profile: Profile, today: string, xp: number): Profile {
+  return {
+    ...profile,
+    xp: profile.xp + xp,
+    streakDays: nextStreak(profile.streakDays, profile.lastActiveDay, today),
+    lastActiveDay: today,
+    activeDays: [...new Set([...profile.activeDays, today])].sort().slice(-ACTIVE_DAYS_KEPT),
+  };
+}
 
 export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> = (set) => ({
   hydrated: false,
   createdAt: 0,
-  profile: { xp: 0, streakDays: 0, lastActiveDay: null },
+  profile: { xp: 0, streakDays: 0, lastActiveDay: null, activeDays: [], onboarded: false },
   lessons: {},
   reviewQueue: [],
   missionProgress: {},
@@ -64,12 +78,11 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
 
   grantXp: (amount, now) =>
     set((state) => ({
-      profile: {
-        xp: state.profile.xp + Math.max(0, Math.round(amount)),
-        streakDays: nextStreak(state.profile.streakDays, state.profile.lastActiveDay, dayKey(now)),
-        lastActiveDay: dayKey(now),
-      },
+      profile: touchDay(state.profile, dayKey(now), Math.max(0, Math.round(amount))),
     })),
+
+  completeOnboarding: () =>
+    set((state) => ({ profile: { ...state.profile, onboarded: true } })),
 
   useHint: (lessonId) =>
     set((state) => {
@@ -91,11 +104,7 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
           ...state.lessons,
           [lessonId]: { ...current, cleared: true, bestScore: best, clearedAt: now },
         },
-        profile: {
-          xp: state.profile.xp + gained,
-          streakDays: nextStreak(state.profile.streakDays, state.profile.lastActiveDay, today),
-          lastActiveDay: today,
-        },
+        profile: touchDay(state.profile, today, gained),
       };
     }),
 

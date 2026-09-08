@@ -5,7 +5,7 @@ export const ja = {
 
   'nav.home': 'ホーム',
   'nav.map': '冒険の地図',
-  'nav.sandbox': '任務',
+  'nav.sandbox': '訓練場',
   'nav.dashboard': '記録',
   'nav.settings': '設定',
   'nav.skip': '本文へ移動',
@@ -16,13 +16,21 @@ export const ja = {
   'home.start': '任務に出る',
   'home.clearedLead': 'クリアしたレッスンの数です。',
   'home.buildStatus': '実装フェーズ',
-  'home.buildLead': 'シェルと仮想ファイルシステムが動きます。Git / Kubernetes / Network は準備中です。',
+  'home.buildLead': 'シェル・Git・Kubernetes・ネットワーク・GitHub のどれも、ブラウザの中だけで動きます。',
   'home.worlds': '4つの世界',
   'home.worldsLead': '進めたい分野を選んで、章ごとに攻略していきます。',
 
   'sandbox.title': '訓練場',
   'sandbox.lead':
     'カリキュラム外で自由に試せる場所です。コマンドを打つと右のファイルツリーが変わり、下の「時間」を動かすと過去の状態に戻れます。',
+  'sandbox.toMissions': '任務へ戻る',
+  'sandbox.viewLabel': '表示の切り替え',
+  'sandbox.splitLabel': '左右の幅',
+  'sandbox.tab.world': 'ファイル',
+  'sandbox.tab.git': 'Git',
+  'sandbox.tab.k8s': 'クラスタ',
+  'sandbox.tab.net': 'ネットワーク',
+  'sandbox.tab.gh': 'GitHub',
   'sandbox.fileTree': 'ファイルツリー',
   'sandbox.snapshots': 'スナップショット {n} 件 / 仮想時計 tick {tick}',
 
@@ -64,6 +72,11 @@ export const ja = {
   'dash.streak': '連続 {n} 日',
   'dash.cleared': 'クリア済み {n} レッスン',
   'dash.recent': '最近の動き',
+  'dash.streakTitle': '取り組んだ日',
+  'dash.dayActive': '{d} は取り組んだ',
+  'dash.dayIdle': '{d} は休み',
+  'dash.badges': '実績 {a} / {b}',
+  'dash.badgeEarned': '取得済み',
   'dash.empty': 'まだ記録がありません。ワールドマップから 1 つ目の章を開いてください。',
 
   'settings.title': '設定',
@@ -83,6 +96,15 @@ export const ja = {
   'notfound.title': 'そのページはありません',
   'notfound.body': 'URL が変わったか、まだ存在しないページです。',
   'notfound.cta': 'ワールドマップへ',
+
+  'onboarding.title': 'ようこそ',
+  'onboarding.lead':
+    'ここは、コマンドを打つと本当に状態が変わる練習場です。答えを覚えるのではなく、状態を動かして確かめます。',
+  'onboarding.step1': '左のターミナルにコマンドを打つ。Tab で補完、↑ で履歴が出ます。',
+  'onboarding.step2': '右の図が、いまの状態を映します。打つたびに変わります。',
+  'onboarding.step3': '各手順には「何を満たせば通るか」が書いてあります。解き方は1つではありません。',
+  'onboarding.note': '失敗しても失うものはありません。壊して確かめてください。',
+  'onboarding.start': 'はじめる',
 
   'common.loading': '読み込み中',
   'error.title': '画面の描画に失敗しました',

@@ -1,10 +1,33 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
-async function type(page: import('@playwright/test').Page, line: string): Promise<void> {
+async function type(page: Page, line: string): Promise<void> {
   await page.locator('.xterm-screen').click();
   await page.keyboard.type(line);
   await page.keyboard.press('Enter');
 }
+
+/** 初回だけ出る案内を閉じる */
+async function dismissOnboarding(page: Page): Promise<void> {
+  const dialog = page.getByRole('dialog', { name: 'ようこそ' });
+  if (await dialog.isVisible()) {
+    await page.getByRole('button', { name: 'はじめる' }).click();
+    await expect(dialog).toBeHidden();
+  }
+}
+
+async function open(page: Page, path = './'): Promise<void> {
+  await page.goto(path);
+  await dismissOnboarding(page);
+}
+
+test('初回だけ案内が出て、閉じたら二度と出ない', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.getByRole('dialog', { name: 'ようこそ' })).toBeVisible();
+  await page.getByRole('button', { name: 'はじめる' }).click();
+
+  await page.reload();
+  await expect(page.getByRole('dialog', { name: 'ようこそ' })).toBeHidden();
+});
 
 test('1枚の画面が開き、コマンドで景色が変わる', async ({ page }) => {
   const failed: string[] = [];
@@ -12,7 +35,7 @@ test('1枚の画面が開き、コマンドで景色が変わる', async ({ page
     if (res.status() >= 400) failed.push(`${String(res.status())} ${res.url()}`);
   });
 
-  await page.goto('./');
+  await open(page);
   await expect(page.getByText('DEVLEARN', { exact: true })).toBeVisible();
 
   const world = page.getByRole('img', { name: 'ファイルシステムの階層図' });
@@ -26,19 +49,47 @@ test('1枚の画面が開き、コマンドで景色が変わる', async ({ page
 });
 
 test('条件を満たすと手順が進む', async ({ page }) => {
-  await page.goto('./');
+  await open(page);
   await expect(page.getByText('未達成', { exact: false })).toBeVisible();
   await type(page, 'mkdir reports');
   await expect(page.getByText('やること 2')).toBeVisible();
 });
 
 test('全体図と設定へ行ける', async ({ page }) => {
-  await page.goto('./');
+  await open(page);
   await page.getByRole('link', { name: '全体図' }).click();
   await expect(page.getByRole('heading', { name: '冒険の地図', level: 1 })).toBeVisible();
 
-  await page.goto('./settings');
+  await open(page, './settings');
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: '進捗を書き出す' }).click();
   expect((await download).suggestedFilename()).toBe('devlearn-arena-progress.json');
+});
+
+test('訓練場では任務の縛り無しに全部のエンジンを触れる', async ({ page }) => {
+  await open(page, './sandbox');
+  await expect(page.getByRole('heading', { name: '訓練場', level: 1 })).toBeVisible();
+
+  await type(page, 'kubectl get pods');
+  await page.getByRole('tab', { name: 'クラスタ' }).click();
+  await expect(page.getByRole('tab', { name: 'クラスタ' })).toHaveAttribute('aria-selected', 'true');
+
+  await type(page, 'git init');
+  await page.getByRole('tab', { name: 'Git' }).click();
+  await expect(page.getByRole('tab', { name: 'Git' })).toHaveAttribute('aria-selected', 'true');
+});
+
+test('記録に実績と連続日数が出る', async ({ page }) => {
+  await open(page, './dashboard');
+  await expect(page.getByRole('heading', { name: '記録', level: 1 })).toBeVisible();
+  await expect(page.getByText('取り組んだ日')).toBeVisible();
+  await expect(page.getByText('実績 0 /', { exact: false })).toBeVisible();
+});
+
+test('目次から遊べるレッスンへ入れる', async ({ page }) => {
+  await open(page, './track/git');
+  const playable = page.getByRole('link', { name: /遊べる/ }).first();
+  await expect(playable).toBeVisible();
+  await playable.click();
+  await expect(page.locator('.xterm-screen')).toBeVisible();
 });

@@ -19,6 +19,9 @@ export default defineConfig({
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-motion': ['framer-motion'],
+          // 端末はページを開いてから読めばよい。初回に載せない
+          'vendor-term': ['@xterm/xterm', '@xterm/addon-fit'],
+          'vendor-yaml': ['js-yaml'],
         },
       },
     },

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { restoreShell, snapshotShell } from '@/engines/kernel/session';
+import { TRACK_LABEL } from '@/engines/lesson/catalog';
 import { findMission, missions } from '@/engines/lesson/missions';
 import {
   buildContext, createProgress, currentStep, evaluate, passes, useHint,
 } from '@/engines/lesson/runner';
-import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
+import type { LessonDefinition, LessonProgressState, MissionTrack } from '@/engines/lesson/types';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
 import { TimeScrubber } from '@/features/terminal/TimeScrubber';
 import { useShellSession } from '@/features/terminal/useShellSession';
@@ -25,6 +26,9 @@ import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { FileWorld } from '@/visual/FileWorld';
 
 const STEP_XP = 10;
+
+/** 選択欄に並べる順。序章から始めて、あとは目次と同じ並びにする */
+const TRACK_ORDER: MissionTrack[] = ['kernel', 'git', 'k8s', 'net', 'github'];
 const FALLBACK = missions[0];
 
 export default function ParkPage() {
@@ -269,25 +273,33 @@ function Park({
 
       <header className="flex flex-wrap items-center gap-3 border-b-8 border-wood-dark bg-[var(--wood)] px-5 py-3 shadow-[inset_0_-6px_0_rgba(0,0,0,0.2)]">
         <span className="sign px-4 py-1.5 text-lg font-extrabold">DEVLEARN</span>
-        <span className="font-mono text-sm font-bold text-cream">任務</span>
-        {missions.map((m) => {
-          const done = clearedIds.has(m.id);
-          const active = m.id === mission.id;
-          return (
-            <button
-              key={m.id}
-              type="button"
-              aria-pressed={active}
-              onClick={() => {
-                onSwitch(m.id);
-              }}
-              className="knob flex items-center gap-2 px-4 py-2 text-sm font-bold"
-            >
-              <span aria-hidden>{done ? '✓' : active ? '▶' : '・'}</span>
-              {m.title}
-            </button>
-          );
-        })}
+        <label htmlFor="mission-picker" className="font-mono text-sm font-bold text-cream">
+          任務
+        </label>
+        {/* 任務は 40 本を超える。全部を並べると見出しが画面を埋めるので、1つの選択欄にまとめる */}
+        <select
+          id="mission-picker"
+          value={mission.id}
+          onChange={(event) => {
+            onSwitch(event.target.value);
+          }}
+          className="knob max-w-[26rem] px-3 py-2 text-sm font-bold"
+        >
+          {TRACK_ORDER.map((track) => {
+            const items = missions.filter((m) => m.track === track);
+            if (items.length === 0) return null;
+            return (
+              <optgroup key={track} label={TRACK_LABEL[track]}>
+                {items.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {clearedIds.has(m.id) ? '✓ ' : '　'}
+                    {m.title}
+                  </option>
+                ))}
+              </optgroup>
+            );
+          })}
+        </select>
         <span className="font-mono text-sm text-cream">
           {clearedIds.size} / {missions.length} クリア
         </span>
@@ -313,8 +325,9 @@ function Park({
         style={{ gridTemplateColumns: `minmax(0, ${String(paneMain)}fr) auto minmax(0, ${String(100 - paneMain)}fr)` }}
       >
         {/* 左：手を動かす場所 */}
-        <div className="flex min-h-0 min-w-0 flex-col">
-          <div className="scroll m-3 px-6 py-5">
+        {/* 上＝やること（溢れたらこの中で送る）、下＝端末。端末が画面外へ出ないよう行を固定する */}
+        <div className="grid min-h-0 min-w-0 grid-rows-[minmax(0,auto)_minmax(0,1fr)]">
+          <div className="scroll m-3 min-h-0 overflow-y-auto px-6 py-5">
             <p className="text-sm font-bold text-ink-soft">
               {progress.cleared ? '完了' : `やること ${String(progress.stepIndex + 1)}`}
             </p>
@@ -385,12 +398,15 @@ function Park({
               </p>
             ) : null}
 
-            {diagnosis !== null && !progress.cleared ? (
-              <p className="mt-3 border-l-4 border-[var(--warn)] bg-[var(--gold)]/25 px-3 py-2 text-sm">
-                <span className="font-bold">惜しい: </span>
-                {diagnosis}
-              </p>
-            ) : null}
+            {/* 読み上げにも届くよう、指摘は live region に置く */}
+            <div role="status" aria-live="polite" className="empty:hidden">
+              {diagnosis !== null && !progress.cleared ? (
+                <p className="mt-3 border-l-4 border-[var(--warn)] bg-[var(--gold)]/25 px-3 py-2 text-sm">
+                  <span className="font-bold">惜しい: </span>
+                  {diagnosis}
+                </p>
+              ) : null}
+            </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <button

@@ -43,7 +43,8 @@ describe('local save', () => {
   });
 
   it('スキーマ違反のまま書き込めない', () => {
-    const bad = { ...createEmptySave(1), profile: { xp: -5, streakDays: 0, lastActiveDay: null } };
+    const base = createEmptySave(1);
+    const bad = { ...base, profile: { ...base.profile, xp: -5 } };
     expect(() => {
       writeSave(bad);
     }).toThrow();

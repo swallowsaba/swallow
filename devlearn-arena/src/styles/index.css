@@ -34,9 +34,13 @@
   --crate-new: #79c46a;
   --crate-hot: #e8823c;
 
-  --ok: #4e9a3f;
-  --warn: #d99b2b;
-  --bad: #c0442f;
+  --ok: #3d7a31;
+  --warn: #8a5f10;
+  --bad: #a5311f;
+
+  /* 実績の等級 */
+  --bronze: #8a5a2b;
+  --silver: #6b6b6b;
 
   --f-mono: 'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
   --f-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
@@ -56,8 +60,19 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid var(--gold);
+  /* クリーム地でも見えるよう、明るい金ではなく濃い金で縁取る */
+  outline: 3px solid var(--gold-dark);
   outline-offset: 2px;
+}
+
+/* 動きを減らす設定を尊重する */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* 木枠のパネル。外側が濃く、内側に明るいべベルを入れて厚みを出す */

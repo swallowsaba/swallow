@@ -11,6 +11,7 @@ export interface ProgressSlice {
   hydrate: (data: SaveData) => void;
   attemptLesson: (lessonId: string) => void;
   grantXp: (amount: number, now: number) => void;
+  completeOnboarding: () => void;
   missionProgress: Record<string, MissionProgress>;
   missionState: Record<string, ShellSnapshot>;
   lastMissionId: string | null;

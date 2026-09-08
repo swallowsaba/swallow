@@ -21,6 +21,20 @@ export function hydrateStore(): void {
   });
 }
 
+/**
+ * 溜めている書き込みを今すぐ流す。
+ * すぐにリロードされうる操作（案内を閉じる等）の直後に呼ぶ。
+ */
+export function flushSave(): void {
+  if (timer !== null) {
+    clearTimeout(timer);
+    timer = null;
+  }
+  const state = useStore.getState();
+  if (!state.hydrated) return;
+  writeSave(toSaveData(state, Date.now()));
+}
+
 export function exportSaveJson(): string {
   return JSON.stringify(toSaveData(useStore.getState(), Date.now()), null, 2);
 }

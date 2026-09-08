@@ -14,7 +14,11 @@ interface Props {
 export function XpToast({ toasts }: Props) {
   const animate = useMotionEnabled();
   return (
-    <div className="pointer-events-none fixed right-6 top-24 z-40 flex flex-col items-end gap-2">
+    <div
+      role="status"
+      aria-live="polite"
+      className="pointer-events-none fixed right-6 top-24 z-40 flex flex-col items-end gap-2"
+    >
       <AnimatePresence>
         {toasts.map((toast) => (
           <motion.div

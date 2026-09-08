@@ -6,6 +6,12 @@ export type { TKey };
 
 const dictionaries: Record<Locale, Partial<Record<TKey, string>>> = { ja, en };
 
+/** 訳が抜けている鍵。テストで空であることを確かめる */
+export function missingKeys(locale: Locale): TKey[] {
+  const dictionary = dictionaries[locale];
+  return (Object.keys(ja) as TKey[]).filter((key) => dictionary[key] === undefined);
+}
+
 /** {name} 形式のプレースホルダを置換する。 */
 export function translate(
   locale: Locale,

@@ -47,6 +47,10 @@ export const profileSchema = z.object({
   streakDays: z.number().int().min(0),
   /** YYYY-MM-DD */
   lastActiveDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  /** 取り組んだ日。連続日数の表示に使う。直近 90 日ぶんだけ持つ */
+  activeDays: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).default([]),
+  /** 初回の案内を読み終えたか */
+  onboarded: z.boolean().default(false),
 });
 export type Profile = z.infer<typeof profileSchema>;
 
@@ -103,7 +107,7 @@ export function createEmptySave(now: number): SaveData {
     version: SAVE_VERSION,
     createdAt: now,
     updatedAt: now,
-    profile: { xp: 0, streakDays: 0, lastActiveDay: null },
+    profile: { xp: 0, streakDays: 0, lastActiveDay: null, activeDays: [], onboarded: false },
     lessons: {},
     reviewQueue: [],
     settings: { ...defaultSettings },
