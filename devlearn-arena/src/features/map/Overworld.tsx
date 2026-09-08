@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from '@/ui/motion';
 
 export interface IslandInfo {
@@ -44,10 +45,11 @@ function blob(cx: number, cy: number, r: number, seed: number): string {
 }
 
 export function Overworld({ islands, onSelect }: Props) {
+  const t = useT();
   const animate = useMotionEnabled();
 
   return (
-    <svg viewBox="0 0 1280 800" className="h-auto w-full" role="group" aria-label="世界地図">
+    <svg viewBox="0 0 1280 800" className="h-auto w-full" role="group" aria-label={t('map.worldLabel')}>
       <defs>
         <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#7fc9e8" />
@@ -152,7 +154,7 @@ export function Overworld({ islands, onSelect }: Props) {
             </text>
             <text x={x} y={y + 96} textAnchor="middle" fill="#f6e8cd" fontSize={15} fontWeight={700}>
               {island.done}/{island.total}
-              {island.playable ? '' : '  準備中'}
+              {island.playable ? '' : `  ${t('map.islandPlanned')}`}
             </text>
 
             {/* いま居る島に船を置く */}

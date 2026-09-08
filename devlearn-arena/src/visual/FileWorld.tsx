@@ -1,13 +1,12 @@
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import type { VfsState } from '@/engines/kernel/vfs';
+import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from '@/ui/motion';
 import { diffVfs } from './treeLayout';
 import {
   buildWorld, leftDoor, rightDoor, roomCenter, TILE, walkPath, type Cell, type WorldGrid,
 } from './worldGrid';
-
-export const FILE_WORLD_LABEL = 'ファイルシステムの階層図';
 
 interface Props {
   vfs: VfsState;
@@ -68,6 +67,7 @@ function RoomTiles({ world, path, lit }: { world: WorldGrid; path: string; lit: 
  * cd は瞬間移動ではなく、扉を通って通路を歩く動きになる。
  */
 export function FileWorld({ vfs, previous, cwd }: Props) {
+  const t = useT();
   const animate = useMotionEnabled();
   const world = useMemo(() => buildWorld(vfs), [vfs]);
   const diff = useMemo(() => diffVfs(previous, vfs), [previous, vfs]);
@@ -133,7 +133,7 @@ export function FileWorld({ vfs, previous, cwd }: Props) {
         className="relative"
         style={{ width: world.width * TILE, height: world.height * TILE }}
         role="img"
-        aria-label={FILE_WORLD_LABEL}
+        aria-label={t('viz.fileTree')}
       >
         {/* 通路 */}
         {[...world.halls.entries()].map(([childPath, cells]) => {
@@ -207,7 +207,7 @@ export function FileWorld({ vfs, previous, cwd }: Props) {
           animate={{ left: at.x * TILE, top: at.y * TILE }}
           transition={{ duration: animate ? STEP_MS / 1000 : 0, ease: 'linear' }}
           style={{ width: TILE, height: TILE }}
-          aria-label="現在地"
+          aria-label={t('viz.here')}
           role="img"
         >
           <span className="absolute bottom-0 h-2 w-6 rounded-full bg-[rgb(0_0_0/35%)]" aria-hidden />

@@ -58,10 +58,10 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-mono text-base text-ink-soft">画面の分割</h2>
+        <h2 className="font-mono text-base text-ink-soft">{t('settings.panes')}</h2>
         <p className="text-sm text-ink-soft">
-          ターミナルと地図の境目はドラッグで動かせます（矢印キーでも調整できます）。
-          現在の比率は 左 {settings.paneMain}% / 地図の高さ {settings.paneMap}% です。
+          {t('settings.panesLead')}
+          {t('settings.panesNow', { a: settings.paneMain, b: settings.paneMap })}
         </p>
         <button
           type="button"
@@ -70,12 +70,12 @@ export default function SettingsPage() {
           }}
           className="knob w-fit px-5 py-2.5 text-base"
         >
-          既定の配置に戻す
+          {t('settings.panesReset')}
         </button>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-mono text-base text-ink-soft">効果音</h2>
+        <h2 className="font-mono text-base text-ink-soft">{t('settings.sound')}</h2>
         <button
           type="button"
           aria-pressed={settings.soundEnabled}
@@ -86,10 +86,10 @@ export default function SettingsPage() {
             settings.soundEnabled ? 'border-wood-dark text-[var(--gold-dark)]' : 'border-wood-dark text-ink-soft'
           }`}
         >
-          {settings.soundEnabled ? '効果音: オン' : '効果音: オフ'}
+          {settings.soundEnabled ? t('settings.soundOn') : t('settings.soundOff')}
         </button>
         <p className="text-sm text-ink-soft">
-          手順の達成やクリア時に短い音が鳴ります。音声ファイルは使わず、その場で合成しています。
+          {t('settings.soundLead')}
         </p>
       </section>
 

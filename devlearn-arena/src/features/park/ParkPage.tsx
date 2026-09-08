@@ -9,6 +9,7 @@ import {
 import type { LessonDefinition, LessonProgressState, MissionTrack } from '@/engines/lesson/types';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
 import { useShellSession } from '@/features/terminal/useShellSession';
+import { useT } from '@/i18n/useT';
 import { dayKey } from '@/lib/date';
 import { shouldReview } from '@/lib/review';
 import { sfx } from '@/lib/sfx';
@@ -76,6 +77,7 @@ function Park({
   onSwitch: (id: string) => void;
   onRetry: () => void;
 }) {
+  const t = useT();
   const saveMission = useStore((s) => s.saveMission);
   const savedProgress = useStore((s) => s.missionProgress[mission.id]);
   const savedState = useStore((s) => s.missionState[mission.id]);
@@ -196,8 +198,8 @@ function Park({
       }
       setCelebration({
         key: now,
-        title: 'クリア',
-        subtitle: `${mission.title} — スコア ${String(score)}`,
+        title: t('park.clear'),
+        subtitle: t('park.score', { title: mission.title, score }),
         xp: reward,
         levelUp: after > levelFromXp(xp) ? { level: after, rank: rankFromLevel(after) } : undefined,
       });
@@ -270,7 +272,7 @@ function Park({
       <header className="flex flex-wrap items-center gap-3 border-b-8 border-wood-dark bg-[var(--wood)] px-5 py-3 shadow-[inset_0_-6px_0_rgba(0,0,0,0.2)]">
         <span className="sign px-4 py-1.5 text-lg font-extrabold">DEVLEARN</span>
         <label htmlFor="mission-picker" className="font-mono text-sm font-bold text-cream">
-          任務
+          {t('park.mission')}
         </label>
         {/* 任務は 40 本を超える。全部を並べると見出しが画面を埋めるので、1つの選択欄にまとめる */}
         <select
@@ -297,21 +299,23 @@ function Park({
           })}
         </select>
         <span className="font-mono text-sm text-cream">
-          {clearedIds.size} / {missions.length} クリア
+          {t('park.clearedCount', { a: clearedIds.size, b: missions.length })}
         </span>
         <div className="ml-auto flex items-center gap-3">
           <span className="font-mono text-sm text-cream">
-            進捗 {Math.min(progress.stepIndex + (progress.cleared ? 1 : 0), mission.steps.length)} /{' '}
-            {mission.steps.length}
+            {t('park.progress', {
+              a: Math.min(progress.stepIndex + (progress.cleared ? 1 : 0), mission.steps.length),
+              b: mission.steps.length,
+            })}
           </span>
           <button type="button" onClick={retry} className="knob px-3 py-2 text-sm">
-            やり直す
+            {t('park.retry')}
           </button>
           <Link to="/map" className="knob px-3 py-2 text-sm">
-            全体図
+            {t('park.map')}
           </Link>
           <Link to="/settings" className="knob px-3 py-2 text-sm">
-            設定
+            {t('park.settings')}
           </Link>
         </div>
       </header>
@@ -341,7 +345,7 @@ function Park({
 
           <div className="mx-3 mb-3 flex min-h-0 min-w-0 flex-1 flex-col border-4 border-wood-dark">
             <div className="plate flex items-center gap-2 px-4 py-1.5 text-sm font-extrabold">
-              <span aria-hidden>🖥</span> 端末
+              <span aria-hidden>🖥</span> {t('park.terminal')}
               <span className="ml-auto font-mono text-xs opacity-80">
                 {session.state.cwd}
               </span>
@@ -362,7 +366,7 @@ function Park({
           value={paneMain}
           min={30}
           max={75}
-          label="ターミナルと地図の幅"
+          label={t('park.splitLabel')}
           onChange={(next) => {
             updateSettings({ paneMain: next });
           }}

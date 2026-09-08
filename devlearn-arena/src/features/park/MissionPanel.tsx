@@ -1,4 +1,5 @@
 import { missions } from '@/engines/lesson/missions';
+import { useT } from '@/i18n/useT';
 import type { LessonDefinition, LessonProgressState, LessonStep } from '@/engines/lesson/types';
 
 interface Props {
@@ -33,13 +34,14 @@ export function MissionPanel({
   onRevealHint,
   onSwitch,
 }: Props) {
+  const t = useT();
   return (
     <div className="scroll m-3 min-h-0 overflow-y-auto px-6 py-5">
       <p className="text-sm font-bold text-ink-soft">
-        {progress.cleared ? '完了' : `やること ${String(progress.stepIndex + 1)}`}
+        {progress.cleared ? t('park.done') : t('park.todo', { n: progress.stepIndex + 1 })}
       </p>
       <p className="mt-1 text-xl font-bold leading-snug">
-        {progress.cleared ? 'この任務は完了しました。' : (step?.prompt ?? '')}
+        {progress.cleared ? t('park.missionDone') : (step?.prompt ?? '')}
       </p>
 
       {progress.cleared ? (
@@ -52,16 +54,16 @@ export function MissionPanel({
               }}
               className="sign w-fit px-6 py-3 text-lg font-extrabold"
             >
-              次の任務へ: {nextMission.title} →
+              {t('park.nextMission', { title: nextMission.title })}
             </button>
           ) : (
             <p className="text-base font-bold text-[var(--ok)]">
-              今ある任務はすべてクリアしました。新しい任務は実装が進むたびに増えます。
+              {t('park.allDone')}
             </p>
           )}
 
           <div>
-            <p className="text-sm font-bold text-ink-soft">任務の一覧</p>
+            <p className="text-sm font-bold text-ink-soft">{t('park.missionList')}</p>
             <ul className="mt-2 flex flex-col gap-1">
               {missions.map((m) => {
                 const done = clearedIds.has(m.id);
@@ -81,7 +83,8 @@ export function MissionPanel({
                       <span aria-hidden>{done ? '✓' : '・'}</span>
                       <span className="flex-1">{m.title}</span>
                       <span className="font-mono text-xs text-ink-soft">
-                        {m.kind === 'boss' ? '障害対応' : '練習'} · {m.steps.length} 手順
+                        {m.kind === 'boss' ? t('park.kind.boss') : t('park.kind.training')} ·{' '}
+                      {t('park.steps', { n: m.steps.length })}
                       </span>
                     </button>
                   </li>
@@ -100,7 +103,9 @@ export function MissionPanel({
               : 'border-[var(--cream-dark)] text-ink-soft'
           }`}
         >
-          <span className="font-bold">{passingNow ? '達成 ' : '未達成 '}</span>
+          <span className="font-bold">
+            {passingNow ? t('park.passing') : t('park.notPassing')}{' '}
+          </span>
           {step.check}
         </p>
       ) : null}
@@ -109,7 +114,7 @@ export function MissionPanel({
       <div role="status" aria-live="polite" className="empty:hidden">
         {diagnosis !== null && !progress.cleared ? (
           <p className="mt-3 border-l-4 border-[var(--warn)] bg-[var(--gold)]/25 px-3 py-2 text-sm">
-            <span className="font-bold">惜しい: </span>
+            <span className="font-bold">{t('park.close')}: </span>
             {diagnosis}
           </p>
         ) : null}
@@ -124,7 +129,7 @@ export function MissionPanel({
           disabled={step === undefined || revealedHints >= step.hints.length}
           className="knob px-4 py-1.5 text-sm disabled:opacity-50"
         >
-          ヒント
+          {t('park.hint')}
         </button>
         {step?.hints.slice(0, revealedHints).map((hint) => (
           <span key={hint} className="font-mono text-sm text-ink">

@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { isReady } from '@/engines/k8s/kubelet';
 import type { ClusterState, Pod } from '@/engines/k8s/types';
 import { useMotionEnabled } from '@/ui/motion';
+import { useT } from '@/i18n/useT';
 
 interface Props {
   cluster: ClusterState | null;
@@ -22,6 +23,7 @@ function podTone(pod: Pod): { bg: string; label: string } {
  * Service からは、Endpoints に載っている Pod にだけ線が伸びる。
  */
 export function ClusterCanvas({ cluster }: Props) {
+  const t = useT();
   const animate = useMotionEnabled();
 
   const nodes = useMemo(
@@ -43,9 +45,9 @@ export function ClusterCanvas({ cluster }: Props) {
     return (
       <div className="grid h-full place-items-center p-6 text-center">
         <div>
-          <p className="text-lg font-bold">クラスタがありません</p>
+          <p className="text-lg font-bold">{t('viz.noCluster')}</p>
           <p className="mt-2 text-sm text-ink-soft">
-            Kubernetes の任務を選ぶと、ここにノードと Pod が並びます。
+            {t('viz.noClusterLead')}
           </p>
         </div>
       </div>
@@ -57,7 +59,11 @@ export function ClusterCanvas({ cluster }: Props) {
   return (
     <div className="h-full overflow-auto p-4">
       <p className="font-mono text-sm text-ink-soft">
-        tick {cluster.tick} / ノード {nodes.length} / Pod {pods.length}
+        {t('viz.clusterSummary', {
+          tick: cluster.tick,
+          nodes: nodes.length,
+          pods: pods.length,
+        })}
       </p>
 
       {/* Service と Endpoints */}
@@ -81,7 +87,7 @@ export function ClusterCanvas({ cluster }: Props) {
           </div>
           {svc.status.endpoints.length === 0 ? (
             <p className="mt-1 text-sm text-[var(--bad)]">
-              条件に合う Ready な Pod がありません。ラベルと Ready の状態を確かめてください。
+              {t('viz.noEndpoints')}
             </p>
           ) : null}
         </div>
@@ -140,7 +146,7 @@ export function ClusterCanvas({ cluster }: Props) {
                   })}
                 </AnimatePresence>
                 {mine.length === 0 ? (
-                  <p className="text-sm text-ink-soft">Pod なし</p>
+                  <p className="text-sm text-ink-soft">{t('viz.noPods')}</p>
                 ) : null}
               </div>
             </div>
@@ -151,7 +157,7 @@ export function ClusterCanvas({ cluster }: Props) {
       {/* 配置できていない Pod */}
       {pending.length > 0 ? (
         <div className="mt-4 border-4 border-[var(--bad)] bg-cream p-3">
-          <p className="font-bold text-[var(--bad)]">配置できていない Pod ({pending.length})</p>
+          <p className="font-bold text-[var(--bad)]">{t('viz.unplaced', { n: pending.length })}</p>
           <ul className="mt-2 flex flex-col gap-1">
             {pending.map((pod) => (
               <li key={pod.metadata.name} className="font-mono text-sm">

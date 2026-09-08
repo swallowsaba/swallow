@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ShellSession } from './useShellSession';
+import { useT } from '@/i18n/useT';
 
 interface Props {
   session: ShellSession;
@@ -13,6 +14,7 @@ const SPEEDS = [0.5, 1, 2, 4] as const;
  * どの時点にも飛べる。
  */
 export function TimeScrubber({ session }: Props) {
+  const t = useT();
   const { journal, atLatest, seekTo } = session;
   const last = journal.entries.length - 1;
   const label = journal.entries[journal.cursor]?.label ?? 'initial';
@@ -42,7 +44,7 @@ export function TimeScrubber({ session }: Props) {
           setPlaying((p) => !p);
         }}
         disabled={last === 0}
-        aria-label={playing ? '再生を止める' : '履歴を再生する'}
+        aria-label={playing ? t('time.pause') : t('time.play')}
         className="border-2 border-wood-dark px-4 py-1.5 font-mono text-base text-[var(--gold-dark)] hover:bg-gold hover:text-ink disabled:opacity-40"
       >
         {playing ? '❙❙' : '▶'}
@@ -55,13 +57,13 @@ export function TimeScrubber({ session }: Props) {
           seekTo(journal.cursor + 1);
         }}
         disabled={journal.cursor >= last}
-        aria-label="1つ進める"
+        aria-label={t('time.step')}
         className="border border-wood-dark px-3 py-1.5 font-mono text-base text-ink-soft hover:border-wood-dark disabled:opacity-40"
       >
         ⇥
       </button>
 
-      <div className="flex items-center gap-1" role="group" aria-label="再生速度">
+      <div className="flex items-center gap-1" role="group" aria-label={t('time.speed')}>
         {SPEEDS.map((s) => (
           <button
             key={s}
@@ -88,7 +90,7 @@ export function TimeScrubber({ session }: Props) {
           setPlaying(false);
           seekTo(Number(e.target.value));
         }}
-        aria-label="実行履歴をたどる"
+        aria-label={t('time.history')}
         aria-valuetext={label}
         className="h-2 min-w-[80px] flex-1 accent-[var(--gold-dark)]"
         disabled={last === 0}
@@ -112,7 +114,7 @@ export function TimeScrubber({ session }: Props) {
         disabled={atLatest}
         className="knob shrink-0 px-3 py-1.5 font-mono text-sm disabled:opacity-40"
       >
-        最新へ
+        {t('time.latest')}
       </button>
     </div>
   );

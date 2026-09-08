@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useT } from '@/i18n/useT';
 
 export interface EditorTarget {
   path: string;
@@ -17,6 +18,7 @@ interface Props {
  * vi の操作体系そのものではないが、ファイルを編集するという学習上の目的は満たす。
  */
 export function EditorPanel({ target, onSave, onCancel }: Props) {
+  const t = useT();
   const [text, setText] = useState(target.content);
   useEffect(() => {
     setText(target.content);
@@ -25,7 +27,7 @@ export function EditorPanel({ target, onSave, onCancel }: Props) {
   return (
     <div
       role="dialog"
-      aria-label={`${target.tool} で ${target.path} を編集`}
+      aria-label={t('editor.title', { tool: target.tool, path: target.path })}
       className="fixed inset-0 z-50 grid place-items-center bg-[rgb(44_29_16/85%)] p-6"
     >
       <div className="bevel flex h-[70vh] w-[min(900px,95vw)] flex-col p-4">
@@ -33,7 +35,7 @@ export function EditorPanel({ target, onSave, onCancel }: Props) {
           <span className="sign px-3 py-1 text-base font-extrabold">{target.tool}</span>
           <span className="font-mono text-base">{target.path}</span>
           <span className="ml-auto font-mono text-sm text-ink-soft">
-            Ctrl + S で保存 / Esc で取り消し
+            {t('editor.keys')}
           </span>
         </div>
 
@@ -51,7 +53,7 @@ export function EditorPanel({ target, onSave, onCancel }: Props) {
           }}
           spellCheck={false}
           autoFocus
-          aria-label="本文"
+          aria-label={t('editor.body')}
           className="mt-3 min-h-0 flex-1 resize-none border-4 border-wood-dark bg-[var(--wood-dark)] p-4 font-mono text-base text-cream"
         />
 
@@ -63,10 +65,10 @@ export function EditorPanel({ target, onSave, onCancel }: Props) {
             }}
             className="knob px-6 py-2 text-base font-bold"
           >
-            保存して閉じる
+            {t('editor.save')}
           </button>
           <button type="button" onClick={onCancel} className="knob px-6 py-2 text-base">
-            取り消す
+            {t('editor.cancel')}
           </button>
         </div>
       </div>

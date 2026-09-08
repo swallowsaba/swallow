@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from '@/ui/motion';
 import type { StageNode } from './stages';
 
@@ -23,6 +24,7 @@ function position(index: number): { x: number; y: number } {
 
 /** 島の中のステージ選択。道でつないだ標識として並べる。 */
 export function IslandBoard({ title, stages, onPick, selectedId }: Props) {
+  const t = useT();
   const animate = useMotionEnabled();
   const rows = Math.ceil(stages.length / COLS);
   const height = rows * CELL_H + 40;
@@ -36,7 +38,7 @@ export function IslandBoard({ title, stages, onPick, selectedId }: Props) {
       viewBox={`0 0 ${String(COLS * CELL_W)} ${String(height)}`}
       className="h-auto w-full"
       role="group"
-      aria-label={`${title} のステージ`}
+      aria-label={t('map.stagesOf', { title })}
     >
       <rect width={COLS * CELL_W} height={height} fill="#77b356" />
       {Array.from({ length: 60 }, (_, i) => (

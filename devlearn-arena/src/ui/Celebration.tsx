@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from './motion';
 
 export interface CelebrationData {
@@ -20,6 +21,7 @@ interface Props {
 
 /** ミッション達成の全画面演出。クリックか3秒で閉じる。 */
 export function Celebration({ data, onDismiss, nextLabel, onNext }: Props) {
+  const t = useT();
   const animate = useMotionEnabled();
 
   return (
@@ -75,11 +77,11 @@ export function Celebration({ data, onDismiss, nextLabel, onNext }: Props) {
                 }}
                 className="sign mt-8 px-8 py-4 text-xl font-extrabold"
               >
-                次の任務へ: {nextLabel} →
+                {t('celebration.next', { title: nextLabel })}
               </button>
             ) : null}
 
-            <p className="mt-6 font-mono text-sm text-ink-soft">背景をクリックで閉じる</p>
+            <p className="mt-6 font-mono text-sm text-ink-soft">{t('celebration.dismiss')}</p>
           </motion.div>
         </motion.div>
       ) : null}

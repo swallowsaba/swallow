@@ -1,4 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { translate } from '@/i18n';
+import { useStore } from '@/store';
 
 interface Props {
   children: ReactNode;
@@ -30,11 +32,15 @@ export class ErrorBoundary extends Component<Props, State> {
     const { error, stack } = this.state;
     if (!error) return this.props.children;
 
+    // フック無しでも訳を引けるよう、ストアから直接読む
+    const locale = useStore.getState().settings.locale;
+    const t = (key: Parameters<typeof translate>[1]): string => translate(locale, key);
+
     return (
       <div role="alert" className="mx-auto max-w-2xl border border-[var(--bad)] bg-cream p-5">
-        <h1 className="text-lg font-semibold text-[var(--bad)]">画面の描画に失敗しました</h1>
+        <h1 className="text-lg font-semibold text-[var(--bad)]">{t('error.title')}</h1>
         <p className="mt-2 text-sm text-ink-soft">
-          不具合です。下の内容を添えて報告してもらえると直せます。進捗は保存されているので失われません。
+          {t('error.body')}
         </p>
         <pre className="mt-3 max-h-64 overflow-auto border border-wood-dark bg-[var(--wood-dark)] p-3 font-mono text-[11px] text-ink">
           {error.message}
@@ -48,13 +54,13 @@ export class ErrorBoundary extends Component<Props, State> {
             }}
             className="border border-wood-dark px-3 py-1.5 font-mono text-xs text-[var(--gold-dark)] hover:bg-gold hover:text-ink"
           >
-            もう一度描画する
+            {t('error.retry')}
           </button>
           <a
             href={import.meta.env.BASE_URL}
             className="border border-wood-dark px-3 py-1.5 font-mono text-xs text-ink-soft hover:border-wood-dark"
           >
-            トップへ戻る
+            {t('error.home')}
           </a>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import type { CheckRun, PullRequest, Repo } from '@/engines/github/types';
 import { useMotionEnabled } from '@/ui/motion';
+import { useT } from '@/i18n/useT';
 
 interface Props {
   repo: Repo | null;
@@ -43,6 +44,7 @@ function levels(checks: readonly CheckRun[]): CheckRun[][] {
 }
 
 function PullCard({ pull }: { pull: PullRequest }) {
+  const t = useT();
   const animate = useMotionEnabled();
   const columns = levels(pull.checks);
 
@@ -67,9 +69,9 @@ function PullCard({ pull }: { pull: PullRequest }) {
       </div>
 
       <div className="p-3">
-        <p className="text-sm font-bold text-ink-soft">レビュー</p>
+        <p className="text-sm font-bold text-ink-soft">{t('viz.reviews')}</p>
         {pull.reviews.length === 0 ? (
-          <p className="text-sm text-ink-soft">まだありません</p>
+          <p className="text-sm text-ink-soft">{t('viz.none')}</p>
         ) : (
           <ul className="mt-1 flex flex-wrap gap-2">
             {pull.reviews.map((review) => (
@@ -85,15 +87,20 @@ function PullCard({ pull }: { pull: PullRequest }) {
                         : 'var(--cream-dark)',
                 }}
               >
-                {review.reviewer}: {review.state === 'approved' ? '承認' : review.state === 'changes_requested' ? '変更要求' : 'コメント'}
+                {review.reviewer}:{' '}
+                {review.state === 'approved'
+                  ? t('viz.approved')
+                  : review.state === 'changes_requested'
+                    ? t('viz.changesRequested')
+                    : t('viz.commented')}
               </li>
             ))}
           </ul>
         )}
 
-        <p className="mt-3 text-sm font-bold text-ink-soft">チェック（依存の順に左から）</p>
+        <p className="mt-3 text-sm font-bold text-ink-soft">{t('viz.checks')}</p>
         {pull.checks.length === 0 ? (
-          <p className="text-sm text-ink-soft">まだ実行されていません</p>
+          <p className="text-sm text-ink-soft">{t('viz.notRunYet')}</p>
         ) : (
           <div className="mt-2 flex items-start gap-3 overflow-auto">
             {columns.map((column, i) => (
@@ -126,13 +133,14 @@ function PullCard({ pull }: { pull: PullRequest }) {
 
 /** Pull Request の状態と、Actions のジョブ DAG を並べて見せる */
 export function PrTimeline({ repo }: Props) {
+  const t = useT();
   if (repo === null) {
     return (
       <div className="grid h-full place-items-center p-6 text-center">
         <div>
-          <p className="text-lg font-bold">リポジトリがありません</p>
+          <p className="text-lg font-bold">{t('viz.noGhRepo')}</p>
           <p className="mt-2 text-sm text-ink-soft">
-            GitHub の任務を選ぶと、ここに Pull Request が並びます。
+            {t('viz.noGhRepoLead')}
           </p>
         </div>
       </div>
@@ -142,16 +150,23 @@ export function PrTimeline({ repo }: Props) {
   return (
     <div className="h-full overflow-auto p-4">
       <p className="font-mono text-sm text-ink-soft">
-        {repo.owner}/{repo.name} · 既定ブランチ {repo.defaultBranch}
+        {t('viz.repoLine', {
+          owner: repo.owner,
+          name: repo.name,
+          branch: repo.defaultBranch,
+        })}
       </p>
 
       {repo.protections.length > 0 ? (
         <div className="mt-2 border-4 border-wood-dark bg-[var(--cream-dark)] p-3">
-          <p className="text-sm font-bold">保護ルール</p>
+          <p className="text-sm font-bold">{t('viz.protection')}</p>
           {repo.protections.map((rule) => (
             <p key={rule.branch} className="font-mono text-sm">
-              {rule.branch}: 承認 {rule.requiredApprovals} 件 / 必須チェック{' '}
-              {rule.requiredChecks.join(', ') || 'なし'}
+              {t('viz.protectionLine', {
+                branch: rule.branch,
+                approvals: rule.requiredApprovals,
+                checks: rule.requiredChecks.join(', ') || t('viz.noneShort'),
+              })}
             </p>
           ))}
         </div>
@@ -160,7 +175,7 @@ export function PrTimeline({ repo }: Props) {
       <div className="mt-3 flex flex-col gap-3">
         {repo.pulls.length === 0 ? (
           <p className="text-sm text-ink-soft">
-            まだ Pull Request がありません。端末で gh pr create -t "タイトル" -b ブランチ名 と打ってください。
+            {t('viz.noPulls')}
           </p>
         ) : (
           repo.pulls.map((pull) => <PullCard key={pull.number} pull={pull} />)

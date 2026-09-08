@@ -1,25 +1,27 @@
 import { Link } from 'react-router-dom';
 import { findMissionById } from '@/engines/lesson/catalog';
+import { useT } from '@/i18n/useT';
 import { dayKey } from '@/lib/date';
 import { dueItems } from '@/lib/review';
 import { useStore } from '@/store';
 
 /** 今日の見直し。躓いた任務が日を置いて戻ってくる */
 export function ReviewQueue() {
+  const t = useT();
   const queue = useStore((s) => s.reviewQueue);
   const today = dayKey(Date.now());
   const due = dueItems(queue, today);
 
   return (
     <section className="bevel p-5">
-      <h2 className="text-xl font-extrabold">今日の見直し</h2>
+      <h2 className="text-xl font-extrabold">{t('review.title')}</h2>
       {queue.length === 0 ? (
         <p className="mt-2 text-base text-ink-soft">
-          まだありません。ヒントを使ったり失敗した任務が、日を置いてここに戻ってきます。
+          {t('review.empty')}
         </p>
       ) : due.length === 0 ? (
         <p className="mt-2 text-base text-ink-soft">
-          今日の分は終わりました。次は {queue.map((q) => q.due).sort()[0] ?? ''} です。
+          {t('review.doneToday', { d: queue.map((q) => q.due).sort()[0] ?? '' })}
         </p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
@@ -39,10 +41,14 @@ export function ReviewQueue() {
                       {mission?.title ?? item.lessonId}
                     </span>
                     <span className="block font-mono text-sm text-ink-soft">
-                      {item.due} 予定 · 間隔 {item.intervalDays} 日 · 通算 {item.reps} 回
+                      {t('review.item', {
+                        d: item.due,
+                        n: item.intervalDays,
+                        r: item.reps,
+                      })}
                     </span>
                   </span>
-                  <span className="font-mono text-sm">もう一度やる →</span>
+                  <span className="font-mono text-sm">{t('review.again')}</span>
                 </Link>
               </li>
             );
@@ -52,7 +58,7 @@ export function ReviewQueue() {
 
       {queue.length > 0 ? (
         <p className="mt-3 font-mono text-sm text-ink-soft">
-          待ち行列 {queue.length} 件 / 今日の分 {due.length} 件
+          {t('review.counts', { a: queue.length, b: due.length })}
         </p>
       ) : null}
     </section>

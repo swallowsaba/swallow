@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 import type { Topology } from '@/engines/net/types';
 import { useMotionEnabled } from '@/ui/motion';
+import { useT } from '@/i18n/useT';
 
 interface Props {
   net: Topology | null;
@@ -84,6 +85,7 @@ function layout(net: Topology): { nodes: Placed[]; edges: { from: Placed; to: Pl
  * 線の上を粒が流れ、通信が動いていることを示す。
  */
 export function PacketFlow({ net, self }: Props) {
+  const t = useT();
   const animate = useMotionEnabled();
   const placed = useMemo(() => (net === null ? null : layout(net)), [net]);
 
@@ -91,9 +93,9 @@ export function PacketFlow({ net, self }: Props) {
     return (
       <div className="grid h-full place-items-center p-6 text-center">
         <div>
-          <p className="text-lg font-bold">ネットワークがありません</p>
+          <p className="text-lg font-bold">{t('viz.noNet')}</p>
           <p className="mt-2 text-sm text-ink-soft">
-            ネットワークの任務を選ぶと、ここに構成図が出ます。
+            {t('viz.noNetLead')}
           </p>
         </div>
       </div>
@@ -166,7 +168,11 @@ export function PacketFlow({ net, self }: Props) {
                     {ip}
                   </p>
                 ))}
-                {isSelf ? <p className="mt-1 font-mono text-xs text-[var(--bad)]">ここにいる</p> : null}
+                {isSelf ? (
+                  <p className="mt-1 font-mono text-xs text-[var(--bad)]">
+                    {t('viz.youAreHere')}
+                  </p>
+                ) : null}
               </div>
             </div>
           );
@@ -175,7 +181,7 @@ export function PacketFlow({ net, self }: Props) {
 
       {net.dns.size > 0 ? (
         <div className="mt-4 border-4 border-wood-dark bg-cream p-3">
-          <p className="text-sm font-bold">名前解決</p>
+          <p className="text-sm font-bold">{t('viz.dns')}</p>
           <ul className="mt-1">
             {[...net.dns.entries()].map(([name, ip]) => (
               <li key={name} className="font-mono text-sm">

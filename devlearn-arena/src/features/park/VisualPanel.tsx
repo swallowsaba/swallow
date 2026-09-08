@@ -1,3 +1,4 @@
+import { useT } from '@/i18n/useT';
 import type { ShellSession } from '@/features/terminal/useShellSession';
 import { TimeScrubber } from '@/features/terminal/TimeScrubber';
 import { ClusterCanvas } from '@/visual/ClusterCanvas';
@@ -22,60 +23,66 @@ interface Props {
  * 図は状態から毎回組み立てる。表示のための値をどこにも溜めない。
  */
 export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, previousVfs }: Props) {
+  const t = useT();
   const state = session.state;
   const previous = { vfs: previousVfs };
   return (
     <div className="flex min-h-0 min-w-0 flex-col">
-      <div className="plate flex items-center gap-2 px-3 py-1 text-sm font-extrabold">
+      <div role="tablist" aria-label={t('park.viewLabel')} className="plate flex items-center gap-2 px-3 py-1 text-sm font-extrabold">
         <button
           type="button"
-          aria-pressed={rightTab === 'world'}
+          role="tab"
+          aria-selected={rightTab === 'world'}
           onClick={() => {
             setRightTab('world');
           }}
           className={`px-3 py-1 ${rightTab === 'world' ? 'bg-gold text-ink' : 'text-cream'}`}
         >
-          🗺 村のようす
+          <span aria-hidden>🗺</span> {t('park.tab.world')}
         </button>
         <button
           type="button"
-          aria-pressed={rightTab === 'git'}
+          role="tab"
+          aria-selected={rightTab === 'git'}
           onClick={() => {
             setRightTab('git');
           }}
           className={`px-3 py-1 ${rightTab === 'git' ? 'bg-gold text-ink' : 'text-cream'}`}
         >
-          ⑂ 履歴
+          <span aria-hidden>⑂</span> {t('park.tab.git')}
         </button>
         <button
           type="button"
-          aria-pressed={rightTab === 'k8s'}
+          role="tab"
+          aria-selected={rightTab === 'k8s'}
           onClick={() => {
             setRightTab('k8s');
           }}
           className={`px-3 py-1 ${rightTab === 'k8s' ? 'bg-gold text-ink' : 'text-cream'}`}
         >
-          ☸ クラスタ
+          <span aria-hidden>☸</span> {t('park.tab.k8s')}
         </button>
         <button
           type="button"
-          aria-pressed={rightTab === 'net'}
+          role="tab"
+          aria-selected={rightTab === 'net'}
           onClick={() => {
             setRightTab('net');
           }}
           className={`px-3 py-1 ${rightTab === 'net' ? 'bg-gold text-ink' : 'text-cream'}`}
         >
-          🔀 ネットワーク
+          <span aria-hidden>🔀</span> {t('park.tab.net')}
         </button>
         <button
           type="button"
-          aria-pressed={rightTab === 'gh'}
+          role="tab"
+          aria-selected={rightTab === 'gh'}
           onClick={() => {
             setRightTab('gh');
           }}
           className={`px-3 py-1 ${rightTab === 'gh' ? 'bg-gold text-ink' : 'text-cream'}`}
         >
-          ⑃ PR
+          <span aria-hidden>⑃</span> {t('park.tab.gh')}
         </button>
       </div>
       <div

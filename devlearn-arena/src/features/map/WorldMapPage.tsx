@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getChapter, TRACKS } from '@/content/catalog';
+import { countAll, getChapter, TRACKS } from '@/content/catalog';
 import { missionsOf, progressOf } from '@/engines/lesson/catalog';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
@@ -44,8 +44,8 @@ export default function WorldMapPage() {
   const islands: IslandInfo[] = [
     {
       id: PROLOGUE,
-      title: '序章の島',
-      subtitle: '端末を手に入れる',
+      title: t('map.prologue'),
+      subtitle: t('map.prologueLead'),
       done: prologue.done,
       total: prologue.total,
       ratio: prologue.total === 0 ? 0 : prologue.done / prologue.total,
@@ -81,13 +81,18 @@ export default function WorldMapPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="sign inline-block px-6 py-2 text-3xl font-extrabold">{t('map.title')}</h1>
         <p className="font-mono text-base text-ink-soft">
-          {rank.rank} · Lv.{rank.level} · 攻略済み {cleared.size} / 210
+          {t('map.rankLine', {
+            rank: rank.rank,
+            level: rank.level,
+            a: cleared.size,
+            b: countAll().lessons,
+          })}
         </p>
       </div>
 
       {island === null ? (
         <>
-          <p className="text-base text-ink-soft">島をクリックすると、その中のステージが開きます。</p>
+          <p className="text-base text-ink-soft">{t('map.pickIsland')}</p>
           <div className="bevel overflow-hidden p-2">
             <Overworld
               islands={islands}
@@ -109,7 +114,7 @@ export default function WorldMapPage() {
               }}
               className="knob px-4 py-2 text-base font-bold"
             >
-              ← 海図へ戻る
+              {t('map.backToSea')}
             </button>
             <span className="text-xl font-extrabold">{selected?.title}</span>
             <span className="text-base text-ink-soft">{selected?.subtitle}</span>
@@ -121,7 +126,7 @@ export default function WorldMapPage() {
             if (playable.length === 0) return null;
             return (
               <div className="bevel p-5">
-                <p className="text-lg font-extrabold">今すぐ挑戦できる任務</p>
+                <p className="text-lg font-extrabold">{t('map.playableNow')}</p>
                 <ul className="mt-3 grid gap-3 sm:grid-cols-2">
                   {playable.map((m) => {
                     const done = cleared.has(m.id);
@@ -142,7 +147,8 @@ export default function WorldMapPage() {
                           <span className="min-w-0">
                             <span className="block truncate text-lg font-extrabold">{m.title}</span>
                             <span className="block text-sm text-ink-soft">
-                              {done ? 'クリア済み' : '挑戦できます'} · {m.steps.length} 手順
+                              {done ? t('map.missionDone') : t('map.missionOpen')} ·{' '}
+                              {t('map.missionSteps', { n: m.steps.length })}
                             </span>
                           </span>
                         </Link>
@@ -175,7 +181,7 @@ export default function WorldMapPage() {
                       to={`/track/${track.id}#${stage.id.replace('/', '-')}`}
                       className="knob px-4 py-2 text-sm font-bold"
                     >
-                      詳しく見る
+                      {t('map.details')}
                     </Link>
                   </div>
                   <p className="mt-2 text-base text-ink-soft">{stage.summary}</p>
@@ -191,7 +197,7 @@ export default function WorldMapPage() {
                     ))}
                   </ul>
                   <p className="mt-3 text-sm text-ink-soft">
-                    この章はまだ準備中です。実装フェーズ {track.phase} で挑戦できるようになります。
+                    {t('map.chapterPlanned', { phase: track.phase })}
                   </p>
                 </div>
               ) : null}

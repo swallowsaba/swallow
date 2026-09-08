@@ -1,4 +1,5 @@
 import { useCallback, useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { useT } from '@/i18n/useT';
 
 interface Props {
   /** 'vertical' は左右を分ける縦の仕切り、'horizontal' は上下を分ける横の仕切り */
@@ -18,6 +19,7 @@ const STEP = 2;
  * ドラッグだけでなく矢印キーでも動かせるようにする（細かい調整とキーボード操作のため）。
  */
 export function Splitter({ orientation, value, onChange, min = 25, max = 80, label }: Props) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const vertical = orientation === 'vertical';
 
@@ -74,7 +76,7 @@ export function Splitter({ orientation, value, onChange, min = 25, max = 80, lab
       className={`group flex shrink-0 items-center justify-center bg-[var(--wood)] ${
         vertical ? 'w-2.5 cursor-col-resize' : 'h-2.5 cursor-row-resize'
       }`}
-      title={`${label}（ドラッグ、または矢印キーで調整）`}
+      title={t('splitter.hint', { label })}
     >
       <span
         aria-hidden

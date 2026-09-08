@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { log } from '@/engines/git/repository';
 import type { GitState } from '@/engines/git/types';
 import { useMotionEnabled } from '@/ui/motion';
+import { useT } from '@/i18n/useT';
 
 interface Props {
   git: GitState | null;
@@ -13,6 +14,7 @@ const LEFT = 44;
 
 /** コミットの並びを、下から上へ積み上がる柱として描く */
 export function CommitGraph({ git }: Props) {
+  const t = useT();
   const animate = useMotionEnabled();
   const entries = useMemo(() => (git === null ? [] : log(git, 40)), [git]);
 
@@ -31,9 +33,9 @@ export function CommitGraph({ git }: Props) {
     return (
       <div className="grid h-full place-items-center p-6 text-center">
         <div>
-          <p className="text-lg font-bold">まだリポジトリがありません</p>
+          <p className="text-lg font-bold">{t('viz.noRepo')}</p>
           <p className="mt-2 text-sm text-ink-soft">
-            端末で <span className="font-mono">git init</span> と打つと、ここに履歴が積み上がります。
+            {t('viz.noRepoLead')}
           </p>
         </div>
       </div>
@@ -47,8 +49,7 @@ export function CommitGraph({ git }: Props) {
     <div className="h-full overflow-auto p-4">
       {entries.length === 0 ? (
         <p className="text-sm text-ink-soft">
-          コミットはまだありません。<span className="font-mono">git add</span> のあと{' '}
-          <span className="font-mono">git commit -m &quot;...&quot;</span> で最初の1つができます。
+          {t('viz.noCommits')}
         </p>
       ) : (
         <div className="relative" style={{ height }}>
