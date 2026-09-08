@@ -1,6 +1,11 @@
 import { parseCommit, serializeCommit, type Signature } from './objects';
 import { resolveRef } from './refs';
-import { materialize, replayCommit, writeTreeFromIndex } from './repository';
+import {
+  materialize, writeTreeFromIndex,
+} from './repository';
+import {
+  replayCommit,
+} from './history';
 import type { GitState, IndexEntry } from './types';
 
 /**

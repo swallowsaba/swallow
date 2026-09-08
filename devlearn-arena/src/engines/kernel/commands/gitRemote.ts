@@ -1,6 +1,9 @@
 import {
-  addPaths, currentBranch, fastForwardTo, headCommit, initRepository,
+  addPaths, currentBranch, headCommit, initRepository,
 } from '@/engines/git/repository';
+import {
+  fastForwardTo,
+} from '@/engines/git/history';
 import { createRemote, fetch as fetchRemote, push as pushRemote } from '@/engines/git/remote';
 import { checkoutWorktree } from '@/engines/git/worktree';
 import { fromLines, parseArgs } from './args';

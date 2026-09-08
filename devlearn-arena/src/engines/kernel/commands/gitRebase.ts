@@ -2,7 +2,12 @@ import { REBASE_DIR, REBASE_ONTO, REBASE_TODO, gitPath, readGitFile, removeGitFi
 import { parseCommit } from '@/engines/git/objects';
 import { buildTodo, parseTodo, runTodo, type TodoLine } from '@/engines/git/rebaseTodo';
 import { resolveRef } from '@/engines/git/refs';
-import { currentBranch, headCommit, isAncestor, mergeBase, rebaseOnto } from '@/engines/git/repository';
+import {
+  currentBranch, headCommit,
+} from '@/engines/git/repository';
+import {
+  isAncestor, mergeBase, rebaseOnto,
+} from '@/engines/git/history';
 import type { GitState } from '@/engines/git/types';
 import { checkoutWorktree } from '@/engines/git/worktree';
 import type { CommandResult } from '../registry';

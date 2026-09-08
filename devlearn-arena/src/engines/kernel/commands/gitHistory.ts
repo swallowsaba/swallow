@@ -1,8 +1,10 @@
 import { mergeThreeWay } from '@/engines/git/merge';
 import {
-  addPaths, commitMerge, currentBranch, fastForwardTo, headCommit, planMerge, popStash,
-  pushStash, replayCommit, reset, revertCommit, type ResetMode,
+  addPaths, currentBranch, headCommit,
 } from '@/engines/git/repository';
+import {
+  commitMerge, fastForwardTo, planMerge, popStash, pushStash, replayCommit, reset, revertCommit, type ResetMode,
+} from '@/engines/git/history';
 import { resolveRef } from '@/engines/git/refs';
 import { checkoutWorktree } from '@/engines/git/worktree';
 import { resolve } from '../path';

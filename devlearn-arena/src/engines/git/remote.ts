@@ -1,5 +1,10 @@
 import { parseCommit } from './objects';
-import { headCommit, isAncestor, DEFAULT_BRANCH } from './repository';
+import {
+  DEFAULT_BRANCH, headCommit,
+} from './repository';
+import {
+  isAncestor,
+} from './history';
 import type { GitState, RemoteRef as Remote } from './types';
 
 /**
