@@ -10,6 +10,7 @@ export const NO_CLUSTER =
 export const KINDS: Record<string, string> = {
   po: 'pods', pod: 'pods', pods: 'pods',
   no: 'nodes', node: 'nodes', nodes: 'nodes',
+  machine: 'machines', machines: 'machines',
   deploy: 'deployments', deployment: 'deployments', deployments: 'deployments',
   rs: 'replicasets', replicaset: 'replicasets', replicasets: 'replicasets',
   svc: 'services', service: 'services', services: 'services',

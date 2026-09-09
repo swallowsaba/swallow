@@ -1,3 +1,4 @@
+import { CNI_NAMES } from '@/engines/k8s/bootstrap';
 import { advanceCluster, matches } from '@/engines/k8s/controllers';
 import { isReady, tickPods } from '@/engines/k8s/kubelet';
 import { isParseError, parseManifests } from '@/engines/k8s/manifest';
@@ -72,6 +73,11 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
       const collection = next[FIELD_OF[plural] ?? 'pods'];
       const existed = collection instanceof Map && collection.has(id);
       next = upsert(next, plural, resource);
+      // CNI の DaemonSet を入れると、ノードに Pod 網の設定が書かれる。
+      // 実物でも設定が書かれた時点でノードが Ready になる。
+      if (resource.kind === 'DaemonSet' && CNI_NAMES.has(resource.metadata.name)) {
+        next = { ...next, controlPlane: { ...next.controlPlane, cni: resource.metadata.name } };
+      }
       lines.push(`${resource.kind.toLowerCase()}/${resource.metadata.name} ${existed ? 'configured' : 'created'}`);
     }
     return { stdout: fromLines(lines), patch: { cluster: next } };

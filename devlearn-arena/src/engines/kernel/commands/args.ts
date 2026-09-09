@@ -5,7 +5,7 @@ export interface ParsedArgs {
 }
 
 export interface ArgSpec {
-  /** 値を取るオプション（例: ['n'] なら -n 5 / -n5） */
+  /** 値を取るオプション（例: ['n'] なら -n 5 / -n5 / --n=5 / --n 5） */
   withValue?: readonly string[];
 }
 
@@ -25,8 +25,20 @@ export function parseArgs(argv: readonly string[], spec: ArgSpec = {}): ParsedAr
     }
     if (arg.startsWith('--')) {
       const eq = arg.indexOf('=');
-      if (eq === -1) flags.add(arg.slice(2));
-      else values.set(arg.slice(2, eq), arg.slice(eq + 1));
+      if (eq !== -1) {
+        values.set(arg.slice(2, eq), arg.slice(eq + 1));
+        continue;
+      }
+      const name = arg.slice(2);
+      // 本物の道具は --token x と --token=x のどちらも受け取る
+      if (withValue.has(name)) {
+        const next = rest[i + 1];
+        if (next === undefined) throw new Error(`option requires an argument -- '${name}'`);
+        values.set(name, next);
+        i += 1;
+        continue;
+      }
+      flags.add(name);
       continue;
     }
     if (arg.startsWith('-') && arg.length > 1) {

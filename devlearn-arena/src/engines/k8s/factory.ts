@@ -1,7 +1,16 @@
+import { caCertHashOf, emptyControlPlane, mintToken, type Machine } from './bootstrap';
 import type {
   ClusterState, ContainerSpec, Deployment, Node, ObjectMeta, Pod, PodVolume, Probe,
   ResourceQuantity, Service,
 } from './types';
+
+/** 既定で使う Kubernetes の版 */
+export const DEFAULT_VERSION = 'v1.31.2';
+
+/** 計算機のひな型 */
+export function machine(name: string, cpu: number, memory: number, kubeletVersion = DEFAULT_VERSION): Machine {
+  return { name, cpu, memory, kubeletVersion };
+}
 
 export function meta(
   name: string,
@@ -53,12 +62,30 @@ export function probe(options: Partial<Probe> = {}): Probe {
   };
 }
 
-export function node(name: string, cpu: number, memory: number, labels: Record<string, string> = {}): Node {
+export function node(
+  name: string,
+  cpu: number,
+  memory: number,
+  labels: Record<string, string> = {},
+  options: { role?: Node['spec']['role']; version?: string } = {},
+): Node {
+  const role = options.role ?? 'worker';
   return {
     kind: 'Node',
-    metadata: meta(name, { namespace: '', labels: { 'kubernetes.io/hostname': name, ...labels } }),
-    spec: { taints: [], unschedulable: false },
-    status: { allocatable: quantity(cpu, memory), ready: true },
+    metadata: meta(name, {
+      namespace: '',
+      labels: {
+        'kubernetes.io/hostname': name,
+        ...(role === 'control-plane' ? { 'node-role.kubernetes.io/control-plane': '' } : {}),
+        ...labels,
+      },
+    }),
+    spec: { role, taints: [], unschedulable: false },
+    status: {
+      allocatable: quantity(cpu, memory),
+      kubeletHealthy: true,
+      version: options.version ?? DEFAULT_VERSION,
+    },
   };
 }
 
@@ -145,9 +172,27 @@ export function service(
   };
 }
 
-export function emptyCluster(nodes: Node[] = []): ClusterState {
+/**
+ * 既に組み上がったクラスタ。
+ * 構築を学ぶ任務では `machines` だけを渡し、nodes は空にする。
+ */
+export function emptyCluster(nodes: Node[] = [], machines: Machine[] = []): ClusterState {
   return {
     tick: 0,
+    machines: new Map(machines.map((m) => [m.name, m])),
+    // ノードを直接渡した場合は「もう init 済み」とみなす
+    controlPlane:
+      nodes.length === 0
+        ? emptyControlPlane()
+        : {
+            ...emptyControlPlane(),
+            initialized: true,
+            podNetworkCidr: '10.244.0.0/16',
+            endpoint: nodes[0]?.metadata.name ?? null,
+            tokens: [mintToken('seed')],
+            caCertHash: caCertHashOf(nodes[0]?.metadata.name ?? 'cp'),
+            cni: 'pre-installed',
+          },
     nodes: new Map(nodes.map((n) => [n.metadata.name, n])),
     pods: new Map(),
     deployments: new Map(),

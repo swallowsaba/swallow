@@ -112,12 +112,21 @@ export interface Node {
   kind: 'Node';
   metadata: ObjectMeta;
   spec: {
+    /** kubeadm init で立てたか、join で足したか */
+    role: 'control-plane' | 'worker';
     taints: { key: string; value: string; effect: string }[];
     unschedulable: boolean;
   };
   status: {
     allocatable: ResourceQuantity;
-    ready: boolean;
+    /**
+     * kubelet が状態を報告できているか。
+     * Ready かどうかはこれと CNI の有無から導く（`bootstrap.nodeCondition`）。
+     * 保持するのは「機械が生きているか」だけにして、
+     * 条件そのものは状態から毎回計算する。
+     */
+    kubeletHealthy: boolean;
+    version: string;
   };
 }
 
@@ -172,6 +181,7 @@ export interface EventRecord {
   message: string;
 }
 
+import type { ControlPlane, Machine } from './bootstrap';
 import type {
   ConfigMap, CronJob, DaemonSet, HorizontalPodAutoscaler, Ingress, Job, NetworkPolicy,
   PersistentVolume, PersistentVolumeClaim, Role, RoleBinding, Secret, ServiceAccount,
@@ -179,6 +189,7 @@ import type {
 } from './resources';
 
 export type * from './resources';
+export type { ControlPlane, Machine } from './bootstrap';
 
 export type Resource =
   | Pod | Node | Deployment | ReplicaSet | Service
@@ -190,6 +201,9 @@ export type Resource =
 export interface ClusterState {
   /** tick 数。実時間は見ない */
   readonly tick: number;
+  /** まだ Kubernetes が入っていない計算機。kubeadm で Node になる */
+  readonly machines: ReadonlyMap<string, Machine>;
+  readonly controlPlane: ControlPlane;
   readonly nodes: ReadonlyMap<string, Node>;
   readonly pods: ReadonlyMap<string, Pod>;
   readonly deployments: ReadonlyMap<string, Deployment>;

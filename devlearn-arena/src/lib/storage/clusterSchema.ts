@@ -88,10 +88,34 @@ const nodeSchema = z.object({
   kind: z.literal('Node'),
   metadata: metaSchema,
   spec: z.object({
+    role: z.enum(['control-plane', 'worker']),
     taints: z.array(z.object({ key: z.string(), value: z.string(), effect: z.string() })),
     unschedulable: z.boolean(),
   }),
-  status: z.object({ allocatable: quantitySchema, ready: z.boolean() }),
+  status: z.object({
+    allocatable: quantitySchema,
+    kubeletHealthy: z.boolean(),
+    version: z.string(),
+  }),
+});
+
+const machineSchema = z.object({
+  name: z.string(),
+  cpu: z.number(),
+  memory: z.number(),
+  kubeletVersion: z.string(),
+});
+
+const controlPlaneSchema = z.object({
+  initialized: z.boolean(),
+  version: z.string(),
+  availableVersion: z.string(),
+  podNetworkCidr: z.string().nullable(),
+  serviceCidr: z.string(),
+  tokens: z.array(z.string()).readonly(),
+  endpoint: z.string().nullable(),
+  caCertHash: z.string().nullable(),
+  cni: z.string().nullable(),
 });
 
 const templateSchema = z.object({
@@ -348,6 +372,8 @@ function entries<T extends z.ZodTypeAny>(value: T) {
 
 export const clusterSnapshotSchema = z.object({
   tick: z.number().int(),
+  machines: z.array(z.tuple([z.string(), machineSchema])),
+  controlPlane: controlPlaneSchema,
   nodes: z.array(z.tuple([z.string(), nodeSchema])),
   pods: z.array(z.tuple([z.string(), podSchema])),
   deployments: z.array(z.tuple([z.string(), deploymentSchema])),

@@ -1,5 +1,5 @@
 import type {
-  ClusterState, ConfigMap, CronJob, DaemonSet, Deployment, EventRecord,
+  ClusterState, ConfigMap, ControlPlane, Machine, CronJob, DaemonSet, Deployment, EventRecord,
   HorizontalPodAutoscaler, Ingress, Job, NetworkPolicy, Node, PersistentVolume,
   PersistentVolumeClaim, Pod, ReplicaSet, Role, RoleBinding, Secret, Service, ServiceAccount,
   StatefulSet, StorageClass,
@@ -11,6 +11,8 @@ import type {
  */
 export interface ClusterSnapshot {
   tick: number;
+  machines: [string, Machine][];
+  controlPlane: ControlPlane;
   nodes: [string, Node][];
   pods: [string, Pod][];
   deployments: [string, Deployment][];
@@ -41,6 +43,8 @@ export interface ClusterSnapshot {
 export function snapshotCluster(cluster: ClusterState): ClusterSnapshot {
   return {
     tick: cluster.tick,
+    machines: [...cluster.machines.entries()],
+    controlPlane: cluster.controlPlane,
     nodes: [...cluster.nodes.entries()],
     pods: [...cluster.pods.entries()],
     deployments: [...cluster.deployments.entries()],
@@ -72,6 +76,8 @@ export function snapshotCluster(cluster: ClusterState): ClusterSnapshot {
 export function restoreCluster(snapshot: ClusterSnapshot): ClusterState {
   return {
     tick: snapshot.tick,
+    machines: new Map(snapshot.machines),
+    controlPlane: snapshot.controlPlane,
     nodes: new Map(snapshot.nodes),
     pods: new Map(snapshot.pods),
     deployments: new Map(snapshot.deployments),

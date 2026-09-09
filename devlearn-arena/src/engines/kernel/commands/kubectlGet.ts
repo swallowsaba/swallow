@@ -1,3 +1,4 @@
+import { isNodeReady, nodeCondition } from '@/engines/k8s/bootstrap';
 import { resolveEnv } from '@/engines/k8s/storage';
 import type {
   ClusterState, ConfigMap, CronJob, DaemonSet, Deployment, HorizontalPodAutoscaler, Ingress, Job,
@@ -36,15 +37,33 @@ export function renderTable(
     }
 
     case 'nodes': {
-      const rows = [['NAME', 'STATUS', 'CPU', 'MEMORY']];
+      const head = ['NAME', 'STATUS', 'ROLES', 'AGE', 'VERSION'];
+      const rows = [wide ? [...head, 'CPU', 'MEMORY'] : head];
       for (const node of items as Node[]) {
-        rows.push([
+        // 本物と同じく、Ready/NotReady と SchedulingDisabled は並べて出す
+        const state = isNodeReady(cluster, node) ? 'Ready' : 'NotReady';
+        const row = [
           node.metadata.name,
-          node.spec.unschedulable
-            ? 'Ready,SchedulingDisabled'
-            : node.status.ready ? 'Ready' : 'NotReady',
-          `${String(node.status.allocatable.cpu)}m`,
-          `${String(node.status.allocatable.memory)}Mi`,
+          node.spec.unschedulable ? `${state},SchedulingDisabled` : state,
+          node.spec.role === 'control-plane' ? 'control-plane' : '<none>',
+          age(cluster.tick, node.metadata.createdAt),
+          node.status.version,
+        ];
+        rows.push(wide ? [...row, `${String(node.status.allocatable.cpu)}m`, `${String(node.status.allocatable.memory)}Mi`] : row);
+      }
+      return table(rows);
+    }
+
+    case 'machines': {
+      // 実物の kubectl には無い。まだクラスタに入っていない計算機を見るための窓口
+      const rows = [['NAME', 'CPU', 'MEMORY', 'KUBELET', 'JOINED']];
+      for (const m of [...cluster.machines.values()].sort((a, b) => (a.name < b.name ? -1 : 1))) {
+        rows.push([
+          m.name,
+          `${String(m.cpu)}m`,
+          `${String(m.memory)}Mi`,
+          m.kubeletVersion,
+          cluster.nodes.has(m.name) ? 'true' : 'false',
         ]);
       }
       return table(rows);
@@ -361,6 +380,19 @@ export function describeResource(cluster: ClusterState, kind: string, resource: 
   if (annotations.length > 0) {
     lines.push('Annotations:');
     for (const [k, v] of annotations) lines.push(`  ${k}: ${v}`);
+  }
+  if (resource.kind === 'Node') {
+    const node = resource;
+    const condition = nodeCondition(cluster, node);
+    lines.push(
+      `Roles:        ${node.spec.role}`,
+      `Taints:       ${
+        node.spec.taints.map((t) => `${t.key}${t.value === '' ? '' : `=${t.value}`}:${t.effect}`).join(', ') || '<none>'
+      }`,
+      `Unschedulable: ${String(node.spec.unschedulable)}`,
+      'Conditions:',
+      `  Ready   ${condition.ready ? 'True' : 'False'}   ${condition.reason}   ${condition.message}`,
+    );
   }
   lines.push('', renderTable(cluster, kind, [resource], true).trimEnd());
 

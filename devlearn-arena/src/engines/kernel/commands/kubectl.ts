@@ -3,6 +3,7 @@ import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { parseArgs } from './args';
 import { describePod, describeResource, renderTable } from './kubectlGet';
+import { nodeCtl, taint } from './kubectlNodes';
 import { opsSubcommands } from './kubectlOps';
 import { parseOutput, renderResources } from './kubectlOutput';
 import {
@@ -30,7 +31,9 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     }
     const format = parseOutput(output);
 
-    let items = kind === 'events' ? [] : listOf(cluster, kind, namespace);
+    // events と machines は Resource の形をしていないので、表の側で組み立てる
+    const synthetic = kind === 'events' || kind === 'machines';
+    let items = synthetic ? [] : listOf(cluster, kind, namespace);
     const name = operands[1];
     if (name !== undefined) {
       const one = findOne(cluster, kind, namespace, name);
@@ -47,7 +50,7 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     }
 
     if (format.kind !== 'table') return { stdout: renderResources(items, format) };
-    if (items.length === 0 && kind !== 'events') {
+    if (items.length === 0 && !synthetic) {
       return { stdout: `No resources found in ${namespace} namespace.\n` };
     }
     return { stdout: renderTable(cluster, kind, items, format.wide) };
@@ -235,6 +238,9 @@ const coreSubcommands: Record<string, KubectlHandler> = {
   },
 };
 coreSubcommands['uncordon'] = coreSubcommands['cordon'] as KubectlHandler;
+coreSubcommands['taint'] = taint;
+coreSubcommands['node-down'] = nodeCtl;
+coreSubcommands['node-up'] = nodeCtl;
 
 const subcommands: Record<string, KubectlHandler> = { ...coreSubcommands, ...opsSubcommands };
 

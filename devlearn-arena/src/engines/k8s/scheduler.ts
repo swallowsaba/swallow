@@ -1,3 +1,4 @@
+import { isNodeReady } from './bootstrap';
 import type { ClusterState, Node, Pod, ResourceQuantity } from './types';
 
 /** そのノードに既に載っている Pod の要求量の合計 */
@@ -50,7 +51,7 @@ export function schedule(state: ClusterState, pod: Pod): ScheduleResult {
       reasons.push(`node(s) were unschedulable`);
       continue;
     }
-    if (!node.status.ready) {
+    if (!isNodeReady(state, node)) {
       reasons.push('node(s) were not ready');
       continue;
     }
