@@ -4,6 +4,7 @@ import { parseCidr } from '@/engines/net/subnet';
 import type { Device, Topology } from '@/engines/net/types';
 import type { CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
+import { ipAddr, ipLink, ipRoute } from './netBuild';
 
 const NO_NET = 'ネットワークが用意されていません。ネットワークの任務を選んでください。\n';
 
@@ -171,13 +172,37 @@ export const netCommands: CommandSpec[] = [
   },
   {
     name: 'ip',
-    summary: 'インタフェースと経路を表示する',
+    summary: 'インタフェースと経路を見る / 設定する（addr / link / route）',
+    complete: ({ argv, prefix }) =>
+      (argv.length <= 2 ? ['addr', 'link', 'route'] : ['add', 'del', 'set', 'show']).filter((s) =>
+        s.startsWith(prefix),
+      ),
     handler: ({ argv, shell }) => {
       const net = shell.net;
       if (net === null) return { stderr: NO_NET, code: 1 };
       const me = net.devices.get(selfName(shell));
       if (!me) return { stderr: '自分の機器が見つかりません\n', code: 1 };
       const what = argv[1] ?? 'addr';
+      const verb = argv[2] ?? '';
+
+      // 表示以外（add / del / set / replace / flush）は設定として扱う
+      if (verb !== '' && verb !== 'show' && verb !== 'list') {
+        const ctx = { net, me: me.name, argv };
+        if (what === 'addr' || what === 'address' || what === 'a') return ipAddr(ctx);
+        if (what === 'link' || what === 'l') return ipLink(ctx);
+        if (what === 'route' || what === 'r') return ipRoute(ctx);
+      }
+
+      if (what === 'link' || what === 'l') {
+        return {
+          stdout: fromLines(
+            me.interfaces.flatMap((i, index) => [
+              `${String(index + 1)}: ${i.name}: <${i.up ? 'UP,LOWER_UP' : 'DOWN'}> mtu ${String(i.mtu)}`,
+              `    link/ether ${i.mac}`,
+            ]),
+          ),
+        };
+      }
 
       if (what === 'route' || what === 'r') {
         const lines = me.routes.map((r) =>
@@ -186,7 +211,8 @@ export const netCommands: CommandSpec[] = [
             : `${r.destination === '0.0.0.0/0' ? 'default' : r.destination} via ${r.via} dev ${r.dev}`,
         );
         for (const i of me.interfaces) {
-          if (!i.up) continue;
+          // アドレスの付いていない口には直結経路が生えない
+          if (!i.up || i.prefix === 0) continue;
           lines.push(`${parseCidr(`${i.ip}/${String(i.prefix)}`).network}/${String(i.prefix)} dev ${i.name} proto kernel scope link src ${i.ip}`);
         }
         return { stdout: fromLines(lines.sort()) };

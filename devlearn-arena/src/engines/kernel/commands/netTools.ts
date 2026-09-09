@@ -5,14 +5,11 @@ import { deliver } from '@/engines/net/stack';
 import { advance, clientAction, openConnection, retransmit, retransmitTimeout, type Connection } from '@/engines/net/tcp';
 import { compress, expand, parseIpv6Cidr, scopeOf, slaac } from '@/engines/net/ipv6';
 import type { Topology } from '@/engines/net/types';
-import type { CommandSpec, ShellState } from '../registry';
+import type { CommandSpec } from '../registry';
 import { fromLines, parseArgs } from './args';
+import { bridgeVlan, natConfigure, selfName } from './netBuild';
 
 const NO_NET = 'ネットワークが用意されていません。ネットワークの任務を選んでください。\n';
-
-function selfName(shell: ShellState): string {
-  return shell.vars.get('NET_SELF') ?? 'pc1';
-}
 
 function selfIp(topology: Topology, name: string): string {
   return topology.devices.get(name)?.interfaces.find((i) => i.up && i.ip !== '')?.ip ?? '0.0.0.0';
@@ -67,10 +64,11 @@ export const netToolCommands: CommandSpec[] = [
 
   {
     name: 'bridge',
-    summary: 'スイッチの MAC アドレステーブルと VLAN を見る',
+    summary: 'スイッチの MAC テーブルを見る / ポートの VLAN を設定する',
     handler: ({ argv, shell }) => {
       const net = shell.net;
       if (net === null) return { stderr: NO_NET, code: 1 };
+      if (argv[1] === 'vlan') return bridgeVlan(net, argv);
       const { operands } = parseArgs(argv);
       const name = operands[1] ?? operands[0];
       const switches = [...net.devices.values()].filter((d) => d.kind === 'switch');
@@ -93,10 +91,13 @@ export const netToolCommands: CommandSpec[] = [
 
   {
     name: 'nat',
-    summary: 'NAT の変換表を見る',
+    summary: 'NAT の変換表を見る / 有効にする（enable / disable）',
     handler: ({ argv, shell }) => {
       const net = shell.net;
       if (net === null) return { stderr: NO_NET, code: 1 };
+      if (argv[1] === 'enable' || argv[1] === 'disable') {
+        return natConfigure(net, selfName(shell), argv);
+      }
       const { operands } = parseArgs(argv);
       const routers = [...net.devices.values()].filter((d) => d.nat !== null);
       const target = operands[0] === undefined ? routers[0] : net.devices.get(operands[0]);
