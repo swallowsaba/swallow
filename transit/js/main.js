@@ -9,6 +9,7 @@ import { TransitApi, ApiError, messageFor } from './api.js';
 import { loadNetwork, clearNetworkCache } from './network.js';
 import { findCandidateRoutes, bindSchedule, edgeKey } from './router.js';
 import { analyzeStatus, warningsForRoute, SEVERITY } from './status.js';
+import { findBusRoutes, findIntermodalRoutes } from './bus.js';
 import { currentPosition, GeoError, formatDistance } from './geo.js';
 import { toServiceMoment, calendarFor, dateKey } from './time.js';
 import * as ui from './ui.js';
@@ -34,6 +35,9 @@ const state = {
   statusErrors: [],
   stamps: { networkAt: null, timetableAt: null, statusAt: null },
   stores: { timetables: new Map(), trains: new Map() },
+  busStore: {}, // カレンダーなど、セッション中使い回すもの
+  includeBus: true,
+  includeIntermodal: true,
   searching: false,
   lastQuery: null,
 };
@@ -141,6 +145,19 @@ function bindStaticHandlers() {
   });
 
   $('#now-btn').addEventListener('click', setDepartToNow);
+
+  const busToggle = $('#include-bus');
+  const mixToggle = $('#include-intermodal');
+  state.includeBus = busToggle.checked;
+  state.includeIntermodal = mixToggle.checked;
+  const syncBusToggles = () => {
+    state.includeBus = busToggle.checked;
+    mixToggle.disabled = !busToggle.checked;
+    state.includeIntermodal = busToggle.checked && mixToggle.checked;
+    if (state.lastQuery) runSearch();
+  };
+  busToggle.addEventListener('change', syncBusToggles);
+  mixToggle.addEventListener('change', syncBusToggles);
   $('#depart-input').addEventListener('change', updateCalendarNote);
 
   $('#swap-btn').addEventListener('click', () => {
@@ -204,7 +221,13 @@ function setupAutocomplete(inputSel, listSel, hintSel, which) {
       await geocodeInto(which, item.query, input, list, hintSel);
       return;
     }
-    state[which] = { groupId: item.value, label: item.label };
+    if (item.kind === 'busstop') {
+      ui.hideSuggest(list);
+      input.setAttribute('aria-expanded', 'false');
+      await busStopInto(which, item.query, input, hintSel);
+      return;
+    }
+    state[which] = { groupId: item.value, label: item.label, busOnly: false };
     input.value = item.label;
     $(hintSel).textContent = item.sub || '';
     $(hintSel).classList.remove('is-error');
@@ -231,6 +254,13 @@ function setupAutocomplete(inputSel, listSel, hintSel, which) {
       }));
       if (q.length >= 2) {
         items.push({ type: 'section', label: '駅名で見つからないとき' });
+        items.push({
+          type: 'station',
+          kind: 'busstop',
+          label: `「${q}」をバス停として検索`,
+          sub: '都営バスの停留所名で指定します',
+          query: q,
+        });
         items.push({
           type: 'station',
           kind: 'geocode',
@@ -263,6 +293,32 @@ function railwaysOfGroup(group) {
     if (st) names.add(state.net.railwayTitle(st.railway));
   }
   return [...names];
+}
+
+/**
+ * バス停名として確定する。駅ではないので groupId は持たない。
+ * この場合、鉄道単独の経路は出せず、バス(と乗り継ぎ)だけが対象になる。
+ */
+async function busStopInto(which, query, input, hintSel) {
+  $(hintSel).textContent = 'バス停を探しています…';
+  $(hintSel).classList.remove('is-error');
+  try {
+    const { busStopNameCandidates } = await import('./bus.js');
+    const res = await state.api.busStops(busStopNameCandidates(query));
+    const stops = res.data.stops || [];
+    if (!stops.length) {
+      $(hintSel).textContent = 'そのバス停は見つかりませんでした(正式名で入力してください)';
+      $(hintSel).classList.add('is-error');
+      return;
+    }
+    const label = stops[0].title;
+    state[which] = { groupId: null, label, busOnly: true };
+    input.value = label;
+    $(hintSel).textContent = `都営バス「${label}」(鉄道の経路は対象外になります)`;
+  } catch (e) {
+    $(hintSel).textContent = e instanceof ApiError ? messageFor(e.code, e.message) : 'バス停を検索できませんでした';
+    $(hintSel).classList.add('is-error');
+  }
 }
 
 async function geocodeInto(which, query, input, list, hintSel) {
@@ -448,8 +504,19 @@ async function runSearch() {
     ui.addAlert('warn', { title: '出発地と到着地を選んでください', body: '候補の一覧から駅を選択すると検索できます。' });
     return;
   }
-  if (state.from.groupId === state.to.groupId) {
+  if (state.from.groupId && state.from.groupId === state.to.groupId) {
     ui.addAlert('warn', { title: '出発地と到着地が同じです', body: '別の駅を指定してください。' });
+    return;
+  }
+  if (state.from.busOnly && state.to.busOnly && state.from.label === state.to.label) {
+    ui.addAlert('warn', { title: '出発地と到着地が同じです', body: '別のバス停を指定してください。' });
+    return;
+  }
+  if ((state.from.busOnly || state.to.busOnly) && !state.includeBus) {
+    ui.addAlert('warn', {
+      title: 'バス停を指定するには「都営バスも使う」を有効にしてください',
+      body: 'バス停は鉄道の経路探索には使えません。',
+    });
     return;
   }
   if (state.api.isBlocked) {
@@ -470,61 +537,134 @@ async function runSearch() {
     /* --- 1) 運行情報(先に取る。警告と迂回の材料になる) --- */
     await refreshStatus();
 
-    /* --- 2) 候補経路(通信なし) --- */
+    /* --- 2) 鉄道の候補経路(通信なし) --- */
     const { excludedRailways, excludedEdges } = buildExclusionSets();
-    const candidates = findCandidateRoutes(state.net, state.from.groupId, state.to.groupId, {
-      excludedRailways,
-      excludedEdges,
-    });
+    // バス停を指定している側があるときは、鉄道単独の経路は成立しない
+    const candidates =
+      state.from.groupId && state.to.groupId
+        ? findCandidateRoutes(state.net, state.from.groupId, state.to.groupId, {
+            excludedRailways,
+            excludedEdges,
+          })
+        : [];
 
-    if (!candidates.length) {
-      ui.renderEmpty(
-        '条件に合う経路が見つかりませんでした',
-        state.excludes.length
-          ? '除外している路線・区間が多すぎる可能性があります。除外を1つずつ解除してみてください。'
-          : '対応範囲内の路線だけでは接続できない可能性があります。「対応範囲」をご確認ください。'
-      );
-      return;
-    }
-
-    /* --- 3) 時刻表をバインド(通信あり) --- */
+    /* --- 3) 鉄道の時刻表とバスを並行して取得 --- */
     ui.renderLoading('時刻表を取得しています…');
-    const bound = await bindSchedule(candidates, {
-      api: state.api,
-      net: state.net,
-      calendarUrn: cal.urn,
-      departAt: minutes,
-      stores: state.stores,
-    });
 
-    state.stamps.timetableAt = bound.fetchedAt || state.stamps.timetableAt;
+    const railPromise = candidates.length
+      ? bindSchedule(candidates, {
+          api: state.api,
+          net: state.net,
+          calendarUrn: cal.urn,
+          departAt: minutes,
+          stores: state.stores,
+        })
+      : Promise.resolve({ routes: [], warnings: [], fetchedAt: null });
+
+    /**
+     * 複合経路の中間区間を鉄道で解く。乗り継ぎ駅が変わるだけで
+     * 通常検索と同じ処理なので、時刻表のキャッシュはそのまま効く。
+     */
+    const railSearch = async (fromGroupId, toGroupId, at) => {
+      const cands = findCandidateRoutes(state.net, fromGroupId, toGroupId, {
+        excludedRailways,
+        excludedEdges,
+      });
+      if (!cands.length) return { routes: [], warnings: [], fetchedAt: null };
+      return bindSchedule(cands.slice(0, 2), {
+        api: state.api,
+        net: state.net,
+        calendarUrn: cal.urn,
+        departAt: at,
+        stores: state.stores,
+      });
+    };
+
+    const busPromise = state.includeBus
+      ? (async () => {
+          const direct = await findBusRoutes(state.api, state.from.label, state.to.label, {
+            departAt: minutes,
+            serviceDate,
+            store: state.busStore,
+          });
+          if (!state.includeIntermodal) return direct;
+          // バス停の検索結果は使い回して、無駄なリクエストを増やさない
+          const mixed = await findIntermodalRoutes(
+            { api: state.api, net: state.net, railSearch },
+            state.from.label,
+            state.to.label,
+            {
+              fromGroupId: state.from.groupId,
+              toGroupId: state.to.groupId,
+              departAt: minutes,
+              serviceDate,
+              store: state.busStore,
+              context: direct.context,
+            }
+          );
+          return {
+            routes: [...direct.routes, ...mixed.routes],
+            warnings: [...direct.warnings, ...mixed.warnings],
+            fetchedAt: mixed.fetchedAt || direct.fetchedAt,
+            searched: true,
+            directCount: direct.routes.length,
+            mixedCount: mixed.routes.length,
+          };
+        })().catch(() => ({ routes: [], warnings: [], fetchedAt: null, searched: false }))
+      : Promise.resolve({ routes: [], warnings: [], fetchedAt: null, searched: false });
+
+    const [bound, bus] = await Promise.all([railPromise, busPromise]);
+
+    state.stamps.timetableAt = bound.fetchedAt || bus.fetchedAt || state.stamps.timetableAt;
     ui.renderStamps({ ...state.stamps, statusFailed: state.statusFailed });
 
-    for (const w of bound.warnings) {
+    for (const w of [...bound.warnings, ...bus.warnings]) {
       ui.addAlert('warn', { title: '一部のデータを取得できませんでした', body: w.message });
     }
 
-    if (!bound.routes.length) {
-      ui.renderEmpty(
-        'この時刻に乗れる列車が見つかりませんでした',
-        '終電後の可能性があります。出発時刻を変えるか、翌日で検索してください。'
-      );
-      return;
-    }
-
-    /* --- 4) 運行情報の警告を付与 --- */
+    /* --- 4) 運行情報の警告を付与(鉄道のみ。バスの運行情報は ODPT に無い) --- */
     for (const r of bound.routes) {
       r.warnings = state.analysis ? warningsForRoute(r, state.analysis) : [];
     }
 
-    // 運転見合わせに当たる経路は後ろに回す(消しはしない。判断材料として残す)
-    state.routes = bound.routes;
+    const all = [...bound.routes, ...bus.routes];
+
+    if (!all.length) {
+      if (!candidates.length) {
+        ui.renderEmpty(
+          '条件に合う経路が見つかりませんでした',
+          state.excludes.length
+            ? '除外している路線・区間が多すぎる可能性があります。除外を1つずつ解除してみてください。'
+            : '対応範囲内の鉄道と都営バスでは接続できませんでした。「対応範囲」をご確認ください。'
+        );
+      } else {
+        ui.renderEmpty(
+          'この時刻に乗れる便が見つかりませんでした',
+          '終電・最終バスの後の可能性があります。出発時刻を変えるか、翌日で検索してください。'
+        );
+      }
+      return;
+    }
+
+    state.routes = all;
     renderSorted();
 
+    if (bus.routes.length) {
+      const parts = [];
+      if (bus.directCount) parts.push(`直通バス ${bus.directCount} 件`);
+      if (bus.mixedCount) parts.push(`バスと鉄道の乗り継ぎ ${bus.mixedCount} 件`);
+      ui.addAlert('info', {
+        title: `都営バスを使う経路が ${bus.routes.length} 件見つかりました`,
+        body:
+          `${parts.join(' / ')}。バス停と駅の間は徒歩 ${state.config?.busStationWalkMinutes ?? 5} 分として計算しています` +
+          '(実際の距離は考慮していません)。渋滞による遅れは反映されません。',
+      });
+    }
+
     const suspended = bound.routes.filter((r) => (r.warnings || []).some((w) => w.severity === SEVERITY.SUSPENDED));
-    if (suspended.length === bound.routes.length && bound.routes.length > 0) {
+    if (bound.routes.length > 0 && suspended.length === bound.routes.length) {
       ui.addAlert('warn', {
-        title: 'すべての候補が運転見合わせの影響を受けています',
+        title: 'すべての鉄道経路が運転見合わせの影響を受けています',
         body: '「除外する路線・区間」で該当路線を外すと、迂回する経路を計算します。',
       });
     }

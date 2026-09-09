@@ -85,6 +85,17 @@
       <button class="btn btn--primary" type="submit" id="search-btn">経路を検索</button>
     </div>
 
+    <div class="checks">
+      <label class="check" for="include-bus">
+        <input type="checkbox" id="include-bus" checked>
+        <span>都営バスも使う<small>直通便を鉄道と並べて表示します</small></span>
+      </label>
+      <label class="check" for="include-intermodal">
+        <input type="checkbox" id="include-intermodal" checked>
+        <span>バスと鉄道の乗り継ぎも探す<small>バス停と駅の間は徒歩5分として計算します</small></span>
+      </label>
+    </div>
+
     <p class="calendar-note" id="calendar-note"></p>
   </form>
 

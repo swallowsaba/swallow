@@ -98,6 +98,11 @@ export function renderCoverage(health) {
   }
   if (!sup.children.length) sup.append(el('li', 'muted', '対応事業者を取得できませんでした'));
 
+  for (const o of health?.bus?.operators || []) {
+    const li = el('li', null, `${o.title}(バス)`);
+    li.append(el('span', null, `直通便のみ検索(${o.license})`));
+    sup.append(li);
+  }
   for (const o of health?.unavailable || []) {
     const li = el('li', null, `${o.title}(現在無効)`);
     li.append(el('span', null, o.reason));
@@ -309,6 +314,14 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway }) {
   meta.append(el('div', null, `乗換 ${route.transfers} 回`));
   if (route.waitMinutes > 0) meta.append(el('div', 'muted', `待ち ${formatDuration(route.waitMinutes)}`));
   head.append(meta);
+  if (route.kind === 'bus' || route.kind === 'mixed') {
+    const b = el('span', 'badge badge--bus', route.kind === 'bus' ? 'バス' : 'バス+鉄道');
+    b.title =
+      route.kind === 'bus'
+        ? '都営バスの直通便です(乗り換えなし)。'
+        : 'バスと鉄道を乗り継ぐ経路です。バス停と駅の間は一律の徒歩時間で計算しています。';
+    head.append(b);
+  }
   if (route.estimatedOnly) {
     const b = el('span', 'badge badge--est', '一部推定');
     b.title = '列車時刻表を取得できなかった区間があり、駅数から所要時間を推定しています。';
@@ -345,24 +358,31 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway }) {
       legs.append(
         legRow({
           time: '',
-          station: net.stationTitle(leg.from) === net.stationTitle(leg.to) ? '' : `→ ${net.stationTitle(leg.to)}`,
+          station:
+            legTitle(net, leg, 'from') === legTitle(net, leg, 'to') ? '' : `→ ${legTitle(net, leg, 'to')}`,
           line: leg.kind === 'walk' ? `徒歩で乗り換え(約${Math.round(leg.minutes)}分)` : `乗り換え(約${Math.round(leg.minutes)}分)`,
           walk: true,
         })
       );
       return;
     }
-    const rw = net.railways.get(leg.railway);
+    const rw = leg.railway ? net.railways.get(leg.railway) : null;
     const detailParts = [];
-    if (leg.trainType) detailParts.push(trainTypeLabel(leg.trainType));
-    if (leg.destination) detailParts.push(`${net.stationTitle(leg.destination)}行`);
-    if (leg.trainNo) detailParts.push(`${leg.trainNo}`);
-    detailParts.push(`${leg.stops}駅`);
+    if (leg.bus) {
+      if (leg.operatorTitle) detailParts.push(leg.operatorTitle);
+      if (leg.destination) detailParts.push(`${leg.destination}行`);
+      detailParts.push(`${leg.stops}停留所`);
+    } else {
+      if (leg.trainType) detailParts.push(trainTypeLabel(leg.trainType));
+      if (leg.destination) detailParts.push(`${net.stationTitle(leg.destination)}行`);
+      if (leg.trainNo) detailParts.push(`${leg.trainNo}`);
+      detailParts.push(`${leg.stops}駅`);
+    }
 
     const row = legRow({
       time: toClockTime(leg.departure),
-      station: net.stationTitle(leg.from),
-      line: rw ? rw.title : leg.railway,
+      station: legTitle(net, leg, 'from'),
+      line: leg.lineTitle || (rw ? rw.title : leg.railway),
       lineColor: rw?.color || null,
       detail: detailParts.join(' / '),
       estimated: leg.estimated,
@@ -375,7 +395,7 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway }) {
       legs.append(
         legRow({
           time: toClockTime(leg.arrival),
-          station: net.stationTitle(leg.to),
+          station: legTitle(net, leg, 'to'),
           line: '到着',
           last: true,
         })
@@ -418,6 +438,16 @@ function legRow({ time, station, line, lineColor, detail, walk, last, estimated 
   }
   row.append(bodyEl);
   return row;
+}
+
+/**
+ * レグの駅名/バス停名。バスは ID から名前を復元できないので、
+ * 探索側が付けた fromTitle / toTitle を優先する。
+ */
+function legTitle(net, leg, which) {
+  const explicit = which === 'from' ? leg.fromTitle : leg.toTitle;
+  if (explicit) return explicit;
+  return net.stationTitle(leg[which]);
 }
 
 function trainTypeLabel(urn) {

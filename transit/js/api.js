@@ -145,6 +145,33 @@ export class TransitApi {
   geocode(q) {
     return this.#request(`/v1/geocode?q=${encodeURIComponent(q)}`, { retries: 1 });
   }
+
+  /* ---------------- バス ---------------- */
+
+  /** @param {string[]} names バス停名。最大 8 件 */
+  busStops(names) {
+    const qs = names.map((n) => `q=${encodeURIComponent(n)}`).join('&');
+    return this.#request(`/v1/bus/stops?${qs}`, { retries: 1 });
+  }
+
+  busCalendars() {
+    return this.#request('/v1/bus/calendars', { retries: 1 });
+  }
+
+  /** @param {string[]} ids 系統 ID。最大 20 件 */
+  busPatterns(ids) {
+    return this.#request('/v1/bus/patterns', { method: 'POST', body: { ids }, retries: 1 });
+  }
+
+  /** @param {string[]} poles バス停ポール ID。最大 20 件 */
+  busTimetables(poles) {
+    return this.#request('/v1/bus/timetables', { method: 'POST', body: { poles }, retries: 1 });
+  }
+
+  /** @param {Array<{pattern:string, calendar:string}>} runs 最大 10 件 */
+  busRuns(runs) {
+    return this.#request('/v1/bus/runs', { method: 'POST', body: { runs }, retries: 1 });
+  }
 }
 
 function sleep(ms) {

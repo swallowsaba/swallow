@@ -6,6 +6,9 @@
   "defaultInterOperatorTransferMinutes": 7,
   "defaultWalkMinutes": 8,
 
+  "_busStationWalkMinutes": "バス停と駅の間の徒歩(分)。ODPT にこのデータは無いため一律の既定値です。",
+  "busStationWalkMinutes": 5,
+
   "_hopMinutes": "駅間の平均所要時間。列車時刻表が引けなかった区間の推定にのみ使う。",
   "hopMinutes": {
     "odpt.Railway:TokyoMetro.Ginza": 1.9,

@@ -286,8 +286,9 @@ function guessTitle(urn) {
   return parts[parts.length - 1] || urn;
 }
 
+/** 事業者 ID にはハイフンを含むもの(JR-East など)があるので許可する */
 function operatorOf(railwayId) {
-  const m = /^odpt\.Railway:([A-Za-z0-9]+)\./.exec(railwayId || '');
+  const m = /^odpt\.Railway:([A-Za-z0-9-]+)\./.exec(railwayId || '');
   return m ? m[1] : null;
 }
 
