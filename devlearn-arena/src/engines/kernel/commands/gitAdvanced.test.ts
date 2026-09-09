@@ -304,6 +304,7 @@ describe('rebase -i', () => {
       state: {
         ...session.state,
         vfs: {
+          ...session.state.vfs,
           nodes: new Map(session.state.vfs.nodes).set(
             '/home/learner/.git/rebase-merge/git-rebase-todo',
             { kind: 'file', content: todo },
@@ -327,6 +328,7 @@ describe('rebase -i', () => {
       state: {
         ...session.state,
         vfs: {
+          ...session.state.vfs,
           nodes: new Map(session.state.vfs.nodes).set(
             '/home/learner/.git/rebase-merge/git-rebase-todo',
             { kind: 'file', content: todo },

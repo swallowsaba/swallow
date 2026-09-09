@@ -27,6 +27,9 @@ export interface LessonStep {
 
 export type MissionKind = 'training' | 'boss';
 
+/** 目次での見え方。`src/content/types.ts` の LessonKind と同じ語彙 */
+export type LessonKindMeta = 'concept' | 'drill' | 'challenge' | 'boss';
+
 export type MissionTrack = 'kernel' | 'git' | 'k8s' | 'net' | 'github';
 
 export interface LessonDefinition {

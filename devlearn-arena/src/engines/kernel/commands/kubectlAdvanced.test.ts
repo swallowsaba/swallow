@@ -41,6 +41,7 @@ function apply(name: string, yaml: string): { out: string; err: string; code: nu
     state: {
       ...session.state,
       vfs: {
+        ...session.state.vfs,
         nodes: new Map(session.state.vfs.nodes).set(`/home/learner/${name}`, {
           kind: 'file',
           content: yaml,
@@ -107,6 +108,7 @@ describe('kubectl apply と YAML', () => {
       state: {
         ...session.state,
         vfs: {
+          ...session.state.vfs,
           nodes: new Map(session.state.vfs.nodes).set('/home/learner/d.yaml', {
             kind: 'file',
             content: 'kind: ConfigMap\nmetadata:\n  name: dry\ndata: {}\n',

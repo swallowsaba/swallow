@@ -1,8 +1,10 @@
 import { globMatch } from '../glob';
 import { basename, HOME, resolve } from '../path';
 import type { CommandSpec } from '../registry';
-import { copy, list, mkdir, move, readFile, remove, stat, touch, VfsError } from '../vfs';
+import { formatMode } from '../perm';
+import { copy, list, metaOf, mkdir, move, readFile, remove, setMeta, stat, touch, VfsError } from '../vfs';
 import { fromLines, parseArgs } from './args';
+import { denied, deniedInParent, newFileMode } from './perm';
 
 export const fsCommands: CommandSpec[] = [
   {
@@ -19,6 +21,9 @@ export const fsCommands: CommandSpec[] = [
       const node = stat(shell.vfs, path);
       if (!node) return { stderr: `cd: ${target}: No such file or directory\n`, code: 1 };
       if (node.kind === 'file') return { stderr: `cd: ${target}: Not a directory\n`, code: 1 };
+      // ディレクトリに入るには実行権が要る
+      const blocked = denied(shell, path, 'exec', 'cd', target);
+      if (blocked) return blocked;
       const vars = new Map(shell.vars);
       vars.set('PWD', path);
       vars.set('OLDPWD', shell.cwd);
@@ -40,6 +45,9 @@ export const fsCommands: CommandSpec[] = [
         const path = resolve(shell.cwd, target);
         const node = stat(shell.vfs, path);
         if (!node) return { stderr: `ls: cannot access '${target}': No such file or directory\n`, code: 2 };
+        // 中身を並べるには読み権が要る
+        const blocked = denied(shell, path, 'read', 'ls', target);
+        if (blocked) return { ...blocked, code: 2 };
         let names = node.kind === 'dir' ? list(shell.vfs, path) : [basename(path)];
         if (all && node.kind === 'dir') names = ['.', '..', ...names];
         if (!all) names = names.filter((n) => !n.startsWith('.'));
@@ -50,8 +58,8 @@ export const fsCommands: CommandSpec[] = [
           const dir = child?.kind === 'dir';
           if (!long) return dir ? `${name}/` : name;
           const size = child?.kind === 'file' ? child.content.length : 0;
-          const mode = dir ? 'drwxr-xr-x' : '-rw-r--r--';
-          return `${mode} 1 learner learner ${String(size).padStart(6)} ${name}${dir ? '/' : ''}`;
+          const meta = metaOf(shell.vfs, childPath);
+          return `${formatMode(meta.mode, dir)} 1 ${meta.owner} ${meta.group} ${String(size).padStart(6)} ${name}${dir ? '/' : ''}`;
         });
 
         const header = targets.length > 1 ? `${target}:\n` : '';
@@ -68,6 +76,8 @@ export const fsCommands: CommandSpec[] = [
       if (operands.length === 0) return { stdout: stdin };
       let out = '';
       for (const target of operands) {
+        const blocked = denied(shell, target, 'read', 'cat');
+        if (blocked) return blocked;
         out += readFile(shell.vfs, resolve(shell.cwd, target));
       }
       return { stdout: out };
@@ -80,7 +90,13 @@ export const fsCommands: CommandSpec[] = [
       const { flags, operands } = parseArgs(argv);
       if (operands.length === 0) return { stderr: 'mkdir: missing operand\n', code: 1 };
       let vfs = shell.vfs;
-      for (const target of operands) vfs = mkdir(vfs, resolve(shell.cwd, target), flags.has('p'));
+      for (const target of operands) {
+        const blocked = deniedInParent(shell, target, 'mkdir', `cannot create directory '${target}'`);
+        if (blocked) return blocked;
+        const path = resolve(shell.cwd, target);
+        vfs = mkdir(vfs, path, flags.has('p'));
+        vfs = setMeta(vfs, path, { ...metaOf(vfs, path), mode: newFileMode(shell, true) });
+      }
       return { patch: { vfs } };
     },
   },
@@ -91,7 +107,15 @@ export const fsCommands: CommandSpec[] = [
       const { operands } = parseArgs(argv);
       if (operands.length === 0) return { stderr: 'touch: missing file operand\n', code: 1 };
       let vfs = shell.vfs;
-      for (const target of operands) vfs = touch(vfs, resolve(shell.cwd, target));
+      for (const target of operands) {
+        const path = resolve(shell.cwd, target);
+        if (stat(vfs, path) === undefined) {
+          const blocked = deniedInParent(shell, target, 'touch', `cannot touch '${target}'`);
+          if (blocked) return blocked;
+          vfs = touch(vfs, path);
+          vfs = setMeta(vfs, path, { ...metaOf(vfs, path), mode: newFileMode(shell, false) });
+        }
+      }
       return { patch: { vfs } };
     },
   },
@@ -106,6 +130,10 @@ export const fsCommands: CommandSpec[] = [
       let vfs = shell.vfs;
       for (const target of operands) {
         const path = resolve(shell.cwd, target);
+        if (stat(vfs, path) !== undefined) {
+          const blocked = deniedInParent(shell, target, 'rm', `cannot remove '${target}'`);
+          if (blocked) return blocked;
+        }
         try {
           vfs = remove(vfs, path, recursive);
         } catch (error) {

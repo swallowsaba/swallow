@@ -1,4 +1,5 @@
 import { basename, dirname, normalize, resolve, ROOT } from './path';
+import { defaultMeta, type FileMeta } from './perm';
 
 export type VfsNode = { kind: 'dir' } | { kind: 'file'; content: string };
 
@@ -10,6 +11,11 @@ export type VfsNode = { kind: 'dir' } | { kind: 'file'; content: string };
  */
 export interface VfsState {
   readonly nodes: ReadonlyMap<string, VfsNode>;
+  /**
+   * 権限と所有者。既定と違うものだけを持つ。
+   * 入っていないパスは `defaultMeta` の値として扱う。
+   */
+  readonly meta: ReadonlyMap<string, FileMeta>;
 }
 
 export type VfsErrorCode = 'ENOENT' | 'EEXIST' | 'ENOTDIR' | 'EISDIR' | 'ENOTEMPTY';
@@ -26,7 +32,7 @@ export class VfsError extends Error {
 
 export function createVfs(seed: Readonly<Record<string, string | null>> = {}): VfsState {
   const nodes = new Map<string, VfsNode>([[ROOT, { kind: 'dir' }]]);
-  let state: VfsState = { nodes };
+  let state: VfsState = { nodes, meta: new Map() };
   for (const [rawPath, content] of Object.entries(seed)) {
     const path = normalize(rawPath);
     state = content === null ? mkdir(state, path, true) : writeFile(state, path, content, true);
@@ -37,7 +43,27 @@ export function createVfs(seed: Readonly<Record<string, string | null>> = {}): V
 function withNodes(state: VfsState, mutate: (nodes: Map<string, VfsNode>) => void): VfsState {
   const next = new Map(state.nodes);
   mutate(next);
-  return { nodes: next };
+  return { ...state, nodes: next };
+}
+
+/** そのパスの権限。明示されていなければ種別ごとの既定を返す */
+export function metaOf(state: VfsState, path: string): FileMeta {
+  const p = normalize(path);
+  const found = state.meta.get(p);
+  if (found) return found;
+  return defaultMeta(state.nodes.get(p)?.kind === 'dir');
+}
+
+export function setMeta(state: VfsState, path: string, meta: FileMeta): VfsState {
+  const p = normalize(path);
+  return { ...state, meta: new Map([...state.meta, [p, meta]]) };
+}
+
+function dropMeta(state: VfsState, paths: readonly string[]): VfsState {
+  if (paths.every((p) => !state.meta.has(p))) return state;
+  const meta = new Map(state.meta);
+  for (const p of paths) meta.delete(p);
+  return { ...state, meta };
 }
 
 export function stat(state: VfsState, path: string): VfsNode | undefined {
@@ -144,12 +170,15 @@ export function remove(state: VfsState, path: string, recursive = false): VfsSta
   if (node.kind === 'dir') {
     const children = descendants(state, p);
     if (children.length > 0 && !recursive) throw new VfsError('ENOTEMPTY', p);
-    return withNodes(state, (n) => {
-      for (const key of children) n.delete(key);
-      n.delete(p);
-    });
+    return dropMeta(
+      withNodes(state, (n) => {
+        for (const key of children) n.delete(key);
+        n.delete(p);
+      }),
+      [...children, p],
+    );
   }
-  return withNodes(state, (n) => n.delete(p));
+  return dropMeta(withNodes(state, (n) => n.delete(p)), [p]);
 }
 
 export function copy(state: VfsState, from: string, to: string, recursive = false): VfsState {

@@ -8,6 +8,8 @@ import { kubectlCommands } from './kubectl';
 import { netCommands } from './net';
 import { netLabCommands } from './netBuild';
 import { netToolCommands } from './netTools';
+import { permCommands } from './perm';
+import { procCommands } from './proc';
 import { miscCommands } from './misc';
 import { textCommands } from './text';
 import { textToolCommands } from './textTools';
@@ -30,11 +32,13 @@ export function createDefaultRegistry(): CommandRegistry {
     ...netToolCommands,
     ...textCommands,
     ...textToolCommands,
+    ...permCommands,
+    ...procCommands,
     ...miscCommands,
   ]);
 }
 
 export {
   editorCommands, fsCommands, ghCommands, gitCommands, kubeadmCommands, kubectlCommands, netCommands,
-  netLabCommands, netToolCommands, textCommands, textToolCommands, miscCommands,
+  netLabCommands, netToolCommands, permCommands, procCommands, textCommands, textToolCommands, miscCommands,
 };
