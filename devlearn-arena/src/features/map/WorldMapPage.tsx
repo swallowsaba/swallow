@@ -7,6 +7,7 @@ import { useT } from '@/i18n/useT';
 import { xpProgress } from '@/lib/xp';
 import { useStore } from '@/store';
 import { IslandBoard } from './IslandBoard';
+import { PanZoom } from './PanZoom';
 import { toStages } from './stages';
 import { Overworld, type IslandInfo } from './Overworld';
 
@@ -94,13 +95,15 @@ export default function WorldMapPage() {
         <>
           <p className="text-base text-ink-soft">{t('map.pickIsland')}</p>
           <div className="bevel overflow-hidden p-2">
-            <Overworld
-              islands={islands}
-              onSelect={(id) => {
-                setIsland(id);
-                setStageId(null);
-              }}
-            />
+            <PanZoom>
+              <Overworld
+                islands={islands}
+                onSelect={(id) => {
+                  setIsland(id);
+                  setStageId(null);
+                }}
+              />
+            </PanZoom>
           </div>
         </>
       ) : (
@@ -163,12 +166,14 @@ export default function WorldMapPage() {
           {track ? (
             <>
               <div className="bevel overflow-hidden p-2">
-                <IslandBoard
-                  title={track.title}
-                  stages={toStages(track.chapters, cleared)}
-                  selectedId={stageId}
-                  onPick={setStageId}
-                />
+                <PanZoom>
+                  <IslandBoard
+                    title={track.title}
+                    stages={toStages(track.chapters, cleared)}
+                    selectedId={stageId}
+                    onPick={setStageId}
+                  />
+                </PanZoom>
               </div>
 
               {stage ? (

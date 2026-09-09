@@ -113,6 +113,11 @@ export const en: Record<TKey, string> = {
   'map.chapterPlanned': 'This chapter is not ready yet. It opens in build phase {phase}.',
   'map.worldLabel': 'World map',
   'map.islandPlanned': 'Planned',
+  'map.panZoom': 'Map (drag to pan, wheel to zoom)',
+  'map.zoomIn': 'Zoom in',
+  'map.zoomOut': 'Zoom out',
+  'map.zoomReset': 'Fit',
+  'map.panHint': 'Drag to pan / wheel to zoom / arrow keys and + − 0',
 
   'settings.panes': 'Pane split',
   'settings.panesLead': 'Drag the divider between the terminal and the diagram (the arrow keys work too).',

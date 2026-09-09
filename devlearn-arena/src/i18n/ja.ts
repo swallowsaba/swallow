@@ -110,6 +110,11 @@ export const ja = {
   'map.chapterPlanned': 'この章はまだ準備中です。実装フェーズ {phase} で挑戦できるようになります。',
   'map.worldLabel': '世界地図',
   'map.islandPlanned': '準備中',
+  'map.panZoom': '地図（ドラッグで移動、ホイールで拡大縮小）',
+  'map.zoomIn': '拡大',
+  'map.zoomOut': '縮小',
+  'map.zoomReset': '全体',
+  'map.panHint': 'ドラッグで移動 / ホイールで拡大縮小 / 矢印キーと + − 0',
 
   'settings.panes': '画面の分割',
   'settings.panesLead': 'ターミナルと地図の境目はドラッグで動かせます（矢印キーでも調整できます）。',

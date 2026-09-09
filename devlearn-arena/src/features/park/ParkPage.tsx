@@ -20,6 +20,7 @@ import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { MissionPanel } from './MissionPanel';
+import { NO_HINTS, reveal, revealedCount, stepKey, type HintReveal } from './hints';
 import { VisualPanel, type VisualTab } from './VisualPanel';
 
 const STEP_XP = 10;
@@ -93,7 +94,7 @@ function Park({
   const session = useShellSession(options);
   const terminalRef = useRef<TerminalHandle>(null);
   const [progress, setProgress] = useState<LessonProgressState>(initialProgress);
-  const [revealedHints, setRevealedHints] = useState(0);
+  const [hintReveal, setHintReveal] = useState<HintReveal>(NO_HINTS);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
@@ -112,6 +113,7 @@ function Park({
   const cursor = session.journal.cursor;
   const previous = entries[cursor - 1]?.state;
   const step = currentStep(mission, progress);
+  const hintKey = stepKey(mission.id, progress.stepIndex);
 
   // いま条件を満たしているか。毎回描画時に評価する
   const passingNow = useMemo(() => {
@@ -166,7 +168,6 @@ function Park({
         commandsUsed: p.commandsUsed + 1,
         mistakes: p.mistakes + (exitCode === 0 ? 0 : 1),
       }));
-      setRevealedHints(0);
     },
     [],
   );
@@ -334,11 +335,11 @@ function Park({
             step={step}
             passingNow={passingNow}
             diagnosis={diagnosis}
-            revealedHints={revealedHints}
+            revealedHints={revealedCount(hintReveal, hintKey)}
             nextMission={nextMission}
             onRevealHint={() => {
               setProgress(useHint);
-              setRevealedHints((n) => n + 1);
+              setHintReveal((h) => reveal(h, hintKey));
             }}
             onSwitch={onSwitch}
           />
