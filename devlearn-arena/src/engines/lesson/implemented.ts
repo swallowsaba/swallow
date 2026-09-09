@@ -1,4 +1,4 @@
-import { missions } from './missions';
+import { implementedIds } from './registry';
 
 /**
  * 任務として実装済みのレッスン id。
@@ -6,5 +6,5 @@ import { missions } from './missions';
  * 目次側に手で印を付けると実装とずれるため、実装から引く。
  */
 export function implementedLessonIds(): ReadonlySet<string> {
-  return new Set(missions.map((m) => m.id));
+  return implementedIds();
 }

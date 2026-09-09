@@ -2,11 +2,12 @@ import { implementedLessonIds } from '@/engines/lesson/implemented';
 import { gitTrack } from './tracks/git';
 import { githubTrack } from './tracks/github';
 import { k8sTrack } from './tracks/k8s';
+import { kernelTrack } from './tracks/kernel';
 import { netTrack } from './tracks/net';
 import type { Chapter, LessonMeta, Track, TrackId } from './types';
 
 /** 目次は最初から全カリキュラム分ある。実装済みかどうかは lesson.status で示す。 */
-export const TRACKS: readonly Track[] = [k8sTrack, netTrack, gitTrack, githubTrack];
+export const TRACKS: readonly Track[] = [kernelTrack, k8sTrack, netTrack, gitTrack, githubTrack];
 
 const trackById = new Map<TrackId, Track>(TRACKS.map((t) => [t.id, t]));
 const chapterById = new Map<string, Chapter>();

@@ -1,10 +1,47 @@
 import { globMatch } from '../glob';
 import { basename, HOME, resolve } from '../path';
-import type { CommandSpec } from '../registry';
+import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { formatMode } from '../perm';
 import { copy, list, metaOf, mkdir, move, readFile, remove, setMeta, stat, touch, VfsError } from '../vfs';
 import { fromLines, parseArgs } from './args';
 import { denied, deniedInParent, newFileMode } from './perm';
+
+interface TransferPlan {
+  sources: string[];
+  dest: string;
+}
+
+/**
+ * cp / mv の引数を読む。
+ * 本物と同じく、行き先がディレクトリなら元は何個でも受け取れる。
+ */
+function planTransfer(
+  shell: ShellState,
+  operands: readonly string[],
+  command: string,
+  what: string,
+): TransferPlan | { error: CommandResult } {
+  if (operands.length < 2) {
+    const got = operands.length === 0 ? 'なし' : operands.join(' ');
+    return {
+      error: {
+        stderr: `${command}: missing file operand\n${command}: ${what}の2つが要ります（受け取った引数: ${got}）\n`,
+        code: 1,
+      },
+    };
+  }
+  const dest = resolve(shell.cwd, operands[operands.length - 1] ?? '');
+  const sources = operands.slice(0, -1).map((p) => resolve(shell.cwd, p));
+  if (sources.length > 1 && stat(shell.vfs, dest)?.kind !== 'dir') {
+    return {
+      error: {
+        stderr: `${command}: target '${operands[operands.length - 1] ?? ''}' is not a directory\n`,
+        code: 1,
+      },
+    };
+  }
+  return { sources, dest };
+}
 
 export const fsCommands: CommandSpec[] = [
   {
@@ -152,16 +189,12 @@ export const fsCommands: CommandSpec[] = [
     summary: 'コピーする',
     handler: ({ argv, shell }) => {
       const { flags, operands } = parseArgs(argv);
-      const source = operands[0];
-      const dest = operands[1];
-      if (source === undefined || dest === undefined) {
-        const got = operands.length === 0 ? 'なし' : operands.join(' ');
-        return {
-          stderr: `cp: missing file operand\ncp: コピー元とコピー先の2つが要ります（受け取った引数: ${got}）\n`,
-          code: 1,
-        };
+      const plan = planTransfer(shell, operands, 'cp', 'コピー元とコピー先');
+      if ('error' in plan) return plan.error;
+      let vfs = shell.vfs;
+      for (const source of plan.sources) {
+        vfs = copy(vfs, source, plan.dest, flags.has('r') || flags.has('R'));
       }
-      const vfs = copy(shell.vfs, resolve(shell.cwd, source), resolve(shell.cwd, dest), flags.has('r') || flags.has('R'));
       return { patch: { vfs } };
     },
   },
@@ -170,16 +203,10 @@ export const fsCommands: CommandSpec[] = [
     summary: '移動・改名する',
     handler: ({ argv, shell }) => {
       const { operands } = parseArgs(argv);
-      const source = operands[0];
-      const dest = operands[1];
-      if (source === undefined || dest === undefined) {
-        const got = operands.length === 0 ? 'なし' : operands.join(' ');
-        return {
-          stderr: `mv: missing file operand\nmv: 移動元と移動先の2つが要ります（受け取った引数: ${got}）\n`,
-          code: 1,
-        };
-      }
-      const vfs = move(shell.vfs, resolve(shell.cwd, source), resolve(shell.cwd, dest));
+      const plan = planTransfer(shell, operands, 'mv', '移動元と移動先');
+      if ('error' in plan) return plan.error;
+      let vfs = shell.vfs;
+      for (const source of plan.sources) vfs = move(vfs, source, plan.dest);
       return { patch: { vfs } };
     },
   },

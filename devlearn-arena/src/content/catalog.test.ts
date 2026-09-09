@@ -4,8 +4,8 @@ import { missions } from '@/engines/lesson/missions';
 import { allLessons, countAll, getChapter, getLesson, getTrack, TRACKS } from './catalog';
 
 describe('catalog', () => {
-  it('4トラックある', () => {
-    expect(TRACKS.map((t) => t.id)).toEqual(['k8s', 'net', 'git', 'github']);
+  it('5トラックある', () => {
+    expect(TRACKS.map((t) => t.id)).toEqual(['kernel', 'k8s', 'net', 'git', 'github']);
   });
 
   it('レッスンIDが一意', () => {
@@ -15,7 +15,7 @@ describe('catalog', () => {
 
   it('IDが track/NN/slug の形になっている', () => {
     for (const l of allLessons()) {
-      expect(l.id).toMatch(/^(k8s|net|git|github)\/\d{2}\/[a-z0-9-]+$/);
+      expect(l.id).toMatch(/^(kernel|k8s|net|git|github)\/\d{2}\/[a-z0-9-]+$/);
       expect(l.id.startsWith(`${l.chapterId}/`)).toBe(true);
     }
   });
@@ -37,10 +37,13 @@ describe('catalog', () => {
     expect(counts.bosses).toBeGreaterThanOrEqual(20);
   });
 
-  it('章番号が1から連番', () => {
+  it('章番号が連番になっている', () => {
     for (const track of TRACKS) {
+      // Linux は序章を 0 から数える。それ以外は 1 から
+      const start = track.chapters[0]?.no ?? 1;
+      expect(start === 0 || start === 1).toBe(true);
       expect(track.chapters.map((c) => c.no)).toEqual(
-        track.chapters.map((_, i) => i + 1),
+        track.chapters.map((_, i) => start + i),
       );
     }
   });
@@ -68,17 +71,15 @@ describe('目次と任務の対応', () => {
     }
   });
 
-  it('任務の id は目次に存在する（序章の kernel を除く）', () => {
+  it('任務の id は目次に存在する', () => {
     const known = new Set(allLessons().map((l) => l.id));
     for (const m of missions) {
-      if (m.track === 'kernel') continue;
       expect(known.has(m.id), `目次に無い任務: ${m.id}`).toBe(true);
     }
   });
 
   it('boss かどうかが目次と任務で一致する', () => {
     for (const m of missions) {
-      if (m.track === 'kernel') continue;
       const meta = getLesson(m.id);
       expect(meta).toBeDefined();
       expect(m.kind === 'boss').toBe(meta?.kind === 'boss');

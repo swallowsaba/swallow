@@ -1,4 +1,4 @@
-export const TRACK_IDS = ['k8s', 'net', 'git', 'github'] as const;
+export const TRACK_IDS = ['kernel', 'k8s', 'net', 'git', 'github'] as const;
 export type TrackId = (typeof TRACK_IDS)[number];
 
 /** concept=解説+図, drill=コマンド反復, challenge=課題のみ, boss=インシデント対応 */
