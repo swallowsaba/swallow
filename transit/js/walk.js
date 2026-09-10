@@ -20,10 +20,16 @@ export const WALK_DEFAULTS = {
   speedMetersPerMinute: 80,
   /** 直線距離に対する実際の道のりの比。市街地のおおよその実測値 */
   detourFactor: 1.3,
-  /** これより遠い駅は徒歩の候補にしない(km) */
-  maxKm: 2.0,
+  /**
+   * 徒歩の距離に上限は設けない。
+   * 遠ければ「徒歩◯分」と正直に出すだけで、検索を止めることはしない。
+   * どうしても切りたい場合だけ config.json の walkMaxKm に数値を入れる。
+   */
+  maxKm: Infinity,
   /** 1 地点あたりに検討する駅の数 */
   maxCandidates: 2,
+  /** これを超える徒歩は「遠い」と注意書きを添える(分)。検索は止めない。 */
+  farWarningMinutes: 30,
 };
 
 export function walkSettings(config = {}) {
@@ -32,11 +38,15 @@ export function walkSettings(config = {}) {
     detourFactor: num(config.walkDetourFactor, WALK_DEFAULTS.detourFactor),
     maxKm: num(config.walkMaxKm, WALK_DEFAULTS.maxKm),
     maxCandidates: Math.max(1, Math.round(num(config.walkMaxCandidates, WALK_DEFAULTS.maxCandidates))),
+    farWarningMinutes: num(config.walkFarWarningMinutes, WALK_DEFAULTS.farWarningMinutes),
   };
 }
 
 function num(v, fallback) {
+  if (v === null || v === undefined || v === '') return fallback;
   const n = Number(v);
+  // Infinity(上限なし)も正しい設定値として通す
+  if (n === Infinity) return Infinity;
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
@@ -62,7 +72,8 @@ export function accessCandidates(point, net, settings = WALK_DEFAULTS) {
   const near = net.nearestGroups(point.lat, point.lon, settings.maxCandidates * 3);
   const out = [];
   for (const n of near) {
-    if (n.km > settings.maxKm) continue;
+    // 既定では maxKm は Infinity。距離で候補を捨てない。
+    if (Number.isFinite(settings.maxKm) && n.km > settings.maxKm) continue;
     out.push({
       groupId: n.group.id,
       title: n.group.title,
@@ -72,6 +83,17 @@ export function accessCandidates(point, net, settings = WALK_DEFAULTS) {
     if (out.length >= settings.maxCandidates) break;
   }
   return out;
+}
+
+/**
+ * 徒歩が長い経路かどうか。長くても検索は通す。呼び出し側で注意書きを出すためだけに使う。
+ * @returns {?{minutes:number, title:string, km:number}}
+ */
+export function farWalk(candidates, settings = WALK_DEFAULTS) {
+  const limit = settings.farWarningMinutes || WALK_DEFAULTS.farWarningMinutes;
+  const worst = (candidates || []).reduce((a, c) => (!a || c.minutes > a.minutes ? c : a), null);
+  if (!worst || worst.minutes <= limit) return null;
+  return { minutes: worst.minutes, title: worst.title, km: worst.km };
 }
 
 /** 地点かどうか(駅・バス停ではなく緯度経度で指定されたもの) */

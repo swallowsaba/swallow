@@ -126,6 +126,16 @@
       </div>
     </div>
     <div id="map" class="map" hidden></div>
+    <div class="map-legend" id="map-legend" hidden>
+      <span class="map-legend__item map-legend__item--rail"><i></i>乗降する駅</span>
+      <span class="map-legend__item map-legend__item--bus"><i></i>乗降するバス停</span>
+      <span class="map-legend__item map-legend__item--walk"><i></i>指定した地点</span>
+      <span class="map-legend__note">
+        検索すると、いちばん上の経路の<strong>乗り降りする地点</strong>に番号付きの印を出します。
+        他の案は経路カードの「地図で見る」で切り替えられます。
+        <strong>線は引きません</strong>(実際の線路・バス路線の形のデータが無く、直線でつないでも実際の経路とは違うためです)。
+      </span>
+    </div>
     <p class="map-note" id="map-note" hidden>
       駅をタップすると出発地・到着地に設定できます。
       <strong>バス停は、検索で見つかったものと経路上のものだけ</strong>表示されます

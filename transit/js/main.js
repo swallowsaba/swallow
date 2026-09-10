@@ -12,9 +12,9 @@ import { analyzeStatus, warningsForRoute, SEVERITY } from './status.js';
 import { findBusRoutes, findIntermodalRoutes } from './bus.js';
 import { currentPosition, GeoError, formatDistance } from './geo.js';
 import { toServiceMoment, calendarFor, dateKey } from './time.js';
-import { TransitMap, routeToPoints } from './map.js';
+import { TransitMap, routeToSegments } from './map.js';
 import { combineSegments, buildPoints, validatePoints } from './via.js';
-import { walkSettings, accessCombos, attachWalk, isPoint } from './walk.js';
+import { walkSettings, accessCombos, attachWalk, isPoint, walkMinutes, farWalk, accessCandidates } from './walk.js';
 import * as ui from './ui.js';
 
 const { $ } = ui;
@@ -43,6 +43,8 @@ const state = {
   map: null,
   mapOpen: false,
   knownBusStops: new Map(), // 地図に出せるバス停(名前検索や経路で見つかったもの)
+  sortedRoutes: [], // 画面に出ている並び順
+  shownRoute: null, // 地図に描いている経路
   includeBus: true,
   includeIntermodal: true,
   searching: false,
@@ -544,6 +546,7 @@ function toggleMap() {
   if (state.mapOpen) {
     el.hidden = true;
     note.hidden = true;
+    $('#map-legend').hidden = true;
     btn.textContent = '地図を開く';
     btn.setAttribute('aria-expanded', 'false');
     state.mapOpen = false;
@@ -552,6 +555,7 @@ function toggleMap() {
 
   el.hidden = false;
   note.hidden = false;
+  $('#map-legend').hidden = false;
   btn.textContent = '地図を閉じる';
   btn.setAttribute('aria-expanded', 'true');
   state.mapOpen = true;
@@ -580,7 +584,7 @@ function toggleMap() {
         };
         const near = state.net?.nearestGroups(pos.lat, pos.lon, 1) || [];
         const hint = near.length
-          ? `地図上の地点(最寄: ${near[0].group.title} ${formatDistance(near[0].km)})`
+          ? `地図上の地点(最寄: ${near[0].group.title} まで徒歩 約${walkMinutes(near[0].km, walkSettings(state.config || {}))}分・推定)`
           : '地図上の地点';
         const key = applyPick(which, spec, hint);
         if (key) state.map?.markPoint(key, pos.lat, pos.lon, spec.label);
@@ -588,10 +592,10 @@ function toggleMap() {
       /** ポップアップに出す説明 */
       describePoint: (lat, lon) => {
         const near = state.net?.nearestGroups(lat, lon, 1) || [];
-        if (!near.length) return '近くに対応範囲の駅がありません';
+        if (!near.length) return '対応範囲に駅がありません';
         const settings = walkSettings(state.config || {});
-        if (near[0].km > settings.maxKm) return `最寄の ${near[0].group.title} まで ${formatDistance(near[0].km)}(遠すぎます)`;
-        return `最寄: ${near[0].group.title} ${formatDistance(near[0].km)}`;
+        const min = walkMinutes(near[0].km, settings);
+        return `最寄: ${near[0].group.title} ${formatDistance(near[0].km)}(徒歩 約${min}分・推定)`;
       },
       onStationBusStops: (group) => loadBusStopsForStation(group),
     });
@@ -600,6 +604,7 @@ function toggleMap() {
   if (!state.map.init()) {
     el.hidden = true;
     note.hidden = true;
+    $('#map-legend').hidden = true;
     state.mapOpen = false;
     btn.textContent = '地図を開く';
     ui.addAlert('warn', {
@@ -612,6 +617,8 @@ function toggleMap() {
   if (state.net) state.map.renderStations(state.net);
   state.map.addBusStops([...state.knownBusStops.values()]);
   state.map.refresh();
+  // 検索済みなら、開いた時点で経路を描いておく
+  autoShowRouteOnMap();
 }
 
 /** 地点の表示名。座標を出しておかないと、あとで何処だったか判らなくなる。 */
@@ -676,11 +683,28 @@ function rememberBusStops(stops) {
   }
 }
 
-/** 選ばれた経路を地図に描く */
-function showRouteOnMap(route) {
-  if (!state.map || !state.mapOpen || !state.net) return;
-  const points = routeToPoints(route, state.net, state.knownBusStops);
-  state.map.renderRoute(points);
+/**
+ * 選ばれた経路を地図に描く。
+ * 地図が閉じていれば開いてから描く(「地図で見る」を押したとき)。
+ */
+function showRouteOnMap(route, { open = false } = {}) {
+  if (!state.net) return;
+  if (open && !state.mapOpen) toggleMap();
+  if (!state.map || !state.mapOpen || !state.map.ready) return;
+  state.shownRoute = route;
+  const segments = routeToSegments(route, state.net, state.knownBusStops);
+  state.map.renderRoute(segments);
+  // 経路に含まれるバス停も地図に出しておく
+  state.map.addBusStops([...state.knownBusStops.values()]);
+  ui.markShownRoute(route);
+}
+
+/** 検索のたびに、いちばん上の経路を自動で地図に描く */
+function autoShowRouteOnMap() {
+  if (!state.mapOpen || !state.map?.ready) return;
+  const first = state.sortedRoutes?.[0];
+  if (first) showRouteOnMap(first);
+  else state.map.clearRoute();
 }
 
 /* ------------------------------------------------------------------ *
@@ -802,6 +826,18 @@ async function searchSegmentWithWalk(fromSpec, toSpec, departAt, ctx) {
 
   const settings = walkSettings(state.config || {});
   const combos = accessCombos(fromSpec, toSpec, state.net, settings, MAX_WALK_COMBOS);
+
+  // 徒歩が長くても検索は止めない。長いことだけ伝える。
+  for (const spec of [fromSpec, toSpec]) {
+    if (!isPoint(spec)) continue;
+    const far = farWalk(accessCandidates(spec, state.net, settings), settings);
+    if (far) {
+      ui.addAlert('info', {
+        title: `「${spec.label}」から最寄駅まで徒歩 約${far.minutes}分あります`,
+        body: `いちばん近いのは ${far.title}(直線 ${formatDistance(far.km)})です。距離による打ち切りはしていないので、このまま経路を計算します。`,
+      });
+    }
+  }
   if (!combos.length) {
     return {
       routes: [],
@@ -1036,8 +1072,8 @@ async function runSearch() {
       const where = segCount === 1 ? '' : `区間 ${failedAt + 1}(${points[failedAt].label} → ${points[failedAt + 1].label})で `;
       if (seg.noStationNearby) {
         ui.renderEmpty(
-          `${where}指定した地点の近くに駅がありませんでした`,
-          `徒歩 ${walkSettings(state.config || {}).maxKm}km 以内に対応範囲の駅が見つかりません。もう少し駅に近い場所を指定してください。`
+          `${where}指定した地点から使える駅がありませんでした`,
+          '対応範囲(「対応範囲」ボタンで確認できます)に駅が 1 つも見つかりません。距離による制限はかけていません。'
         );
       } else if (!seg.candidateCount && !seg.busCount) {
         ui.renderEmpty(
@@ -1141,16 +1177,19 @@ function renderSorted() {
     if (state.sort === 'arrival') return a.arrival - b.arrival || a.transfers - b.transfers;
     return a.rideMinutes - b.rideMinutes || a.transfers - b.transfers;
   });
+  state.sortedRoutes = sorted;
   ui.renderRoutes(sorted, {
     net: state.net,
     analysis: state.analysis,
+    shownRoute: state.shownRoute,
     onExcludeRailway: (rw) => addExclude({ type: 'railway', railway: rw }),
     onShowOnMap: (route) => {
-      if (!state.mapOpen) toggleMap();
-      showRouteOnMap(route);
+      showRouteOnMap(route, { open: true });
       $('#map-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
   });
+  // 地図が開いていれば、先頭の経路をそのまま描く
+  autoShowRouteOnMap();
 }
 
 /* ------------------------------------------------------------------ *

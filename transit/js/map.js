@@ -20,6 +20,13 @@ const GSI_TILE = 'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png';
 const GSI_ATTRIBUTION =
   '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>';
 
+/** 区間ごとの線のスタイル。色だけでなく線の形でも区別する。 */
+export const SEGMENT_STYLE = {
+  rail: { color: '#00713c', weight: 5, opacity: 0.85, dashArray: null },
+  bus: { color: '#1c5fb0', weight: 5, opacity: 0.85, dashArray: '10 7' },
+  walk: { color: '#8a4b1c', weight: 4, opacity: 0.9, dashArray: '2 7' },
+};
+
 /** 初期表示(東京駅あたり) */
 const DEFAULT_CENTER = [35.6812, 139.7671];
 const DEFAULT_ZOOM = 12;
@@ -161,31 +168,50 @@ export class TransitMap {
   /* ---------------- 経路の表示 ---------------- */
 
   /**
-   * 選んだ経路を地図に描く。
-   * @param {Array<{lat:number, lon:number, title:string, bus:boolean}>} points 経由地(順番どおり)
+   * 選んだ経路の乗降地点を地図に示す。
+   *
+   * 【線は引かない】
+   * 線路やバス路線の実際の形(線形)のデータは持っていない。
+   * 駅どうしを直線で結んでも実際の走行経路とは違うものになり、
+   * 見た人を誤解させるだけなので描かない。
+   * 出すのは「どこで乗って、どこで降りるか」の位置だけにする。
+   *
+   * @param {Array} segments routeToSegments の結果
    */
-  renderRoute(points) {
+  renderRoute(segments) {
     if (!this.ready) return;
     const L = window.L;
     this.routeLayer.clearLayers();
-    const usable = (points || []).filter((p) => p.lat != null && p.lon != null);
-    if (!usable.length) return;
 
-    const latlngs = usable.map((p) => [p.lat, p.lon]);
-    L.polyline(latlngs, { color: '#00713c', weight: 4, opacity: 0.8 }).addTo(this.routeLayer);
-    usable.forEach((p, i) => {
-      const isEnd = i === 0 || i === usable.length - 1;
-      L.circleMarker([p.lat, p.lon], {
-        radius: isEnd ? 7 : 5,
-        weight: 3,
-        color: p.walk ? '#8a4b1c' : p.bus ? '#1c4f8a' : '#00713c',
-        fillColor: p.walk ? '#f6e5d6' : '#ffffff',
+    const list = Array.isArray(segments) ? segments : [];
+    const marks = [];
+    for (const seg of list) {
+      for (const p of seg.points || []) {
+        if (p.lat == null || p.lon == null) continue;
+        // 通過駅は出さない。乗る・降りる・歩く地点だけを示す。
+        if (!p.major) continue;
+        const last = marks[marks.length - 1];
+        if (last && last.lat === p.lat && last.lon === p.lon) continue;
+        marks.push(p);
+      }
+    }
+    if (!marks.length) return;
+
+    marks.forEach((p, i) => {
+      const isEnd = i === 0 || i === marks.length - 1;
+      const style = SEGMENT_STYLE[p.mode] || SEGMENT_STYLE.rail;
+      const marker = L.circleMarker([p.lat, p.lon], {
+        radius: isEnd ? 9 : 7,
+        weight: 4,
+        color: p.color || style.color,
+        fillColor: isEnd ? style.color : '#ffffff',
         fillOpacity: 1,
-      })
-        .bindTooltip(p.title, { direction: 'top' })
-        .addTo(this.routeLayer);
+      });
+      marker.bindTooltip(`${i + 1}. ${p.title}`, { direction: 'top', permanent: false });
+      marker.addTo(this.routeLayer);
     });
-    this.map.fitBounds(L.latLngBounds(latlngs).pad(0.2));
+
+    this.map.fitBounds(L.latLngBounds(marks.map((p) => [p.lat, p.lon])).pad(0.25));
   }
 
   clearRoute() {
@@ -327,43 +353,98 @@ export function distanceKm(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
-/** 経路から地図に描く点の並びを作る */
-export function routeToPoints(route, net, busStopIndex) {
-  const points = [];
-  const push = (lat, lon, title, bus, walk = false) => {
-    if (lat == null || lon == null) return;
-    const last = points[points.length - 1];
-    if (last && last.lat === lat && last.lon === lon) return;
-    points.push({ lat, lon, title, bus, walk });
-  };
+/**
+ * 経路を「区間の並び」にする。区間ごとに線の色と形を変えて描くため。
+ *
+ * 徒歩の区間は、地点と駅・バス停を結ぶ線として作る。
+ * 直前・直後に座標が判っている乗車地点があれば、そこまでを線でつなぐ。
+ *
+ * @returns {Array<{mode:'rail'|'bus'|'walk', color:?string, title:string, points:Array}>}
+ */
+export function routeToSegments(route, net, busStopIndex) {
+  const segments = [];
+  const index = busStopIndex || new Map();
+
+  /** 乗車区間の点(徒歩の線をつなぐときに使う) */
+  const rideEndpoints = [];
 
   for (const leg of route.legs || []) {
-    // 任意地点からの徒歩。地点そのものを線の端として描く。
-    if (leg.walkAccess) {
-      if (leg.lat != null && leg.lon != null) {
-        push(leg.lat, leg.lon, leg.side === 'from' ? leg.fromTitle : leg.toTitle, false, true);
-      }
-      continue;
-    }
     if (leg.transfer || leg.via) continue;
-    if (leg.bus) {
-      const a = busStopIndex.get(leg.from);
-      const b = busStopIndex.get(leg.to);
-      if (a) push(a.lat, a.lon, leg.fromTitle || a.title, true);
-      if (b) push(b.lat, b.lon, leg.toTitle || b.title, true);
+
+    if (leg.walkAccess) {
+      // 座標が判るのは地点側だけ。相手側は後で埋める。
+      segments.push({
+        mode: 'walk',
+        title: `徒歩 約${Math.round(leg.minutes)}分`,
+        pending: leg.side, // 'from' なら次の乗車地点へ、'to' なら前の乗車地点から
+        points:
+          leg.lat != null && leg.lon != null
+            ? [{ lat: leg.lat, lon: leg.lon, title: leg.side === 'from' ? leg.fromTitle : leg.toTitle, mode: 'walk', major: true }]
+            : [],
+      });
       continue;
     }
+
+    if (leg.bus) {
+      const pts = [];
+      const a = index.get(leg.from);
+      const b = index.get(leg.to);
+      if (a) pts.push({ lat: a.lat, lon: a.lon, title: leg.fromTitle || a.title, mode: 'bus', major: true });
+      if (b) pts.push({ lat: b.lat, lon: b.lon, title: leg.toTitle || b.title, mode: 'bus', major: true });
+      segments.push({ mode: 'bus', title: leg.lineTitle || 'バス', points: pts });
+      for (const p of pts) rideEndpoints.push({ seg: segments.length - 1, point: p });
+      continue;
+    }
+
     const railway = net.railways.get(leg.railway);
     if (!railway) continue;
     const fi = net.indexOnRailway(leg.railway, leg.from);
     const ti = net.indexOnRailway(leg.railway, leg.to);
     if (fi < 0 || ti < 0) continue;
     const step = ti > fi ? 1 : -1;
+    const pts = [];
     for (let i = fi; i !== ti + step; i += step) {
       const st = net.stations.get(railway.stations[i]);
-      if (!st) continue;
-      push(st.lat, st.lon, st.title, false);
+      if (!st || st.lat == null || st.lon == null) continue;
+      pts.push({
+        lat: st.lat,
+        lon: st.lon,
+        title: st.title,
+        mode: 'rail',
+        color: railway.color || null,
+        major: i === fi || i === ti,
+      });
     }
+    segments.push({ mode: 'rail', color: railway.color || null, title: railway.title || leg.railway, points: pts });
+    for (const p of pts) rideEndpoints.push({ seg: segments.length - 1, point: p });
+  }
+
+  // 徒歩の区間に、隣り合う乗車地点をつないで線にする
+  segments.forEach((seg, i) => {
+    if (seg.mode !== 'walk' || !seg.pending) return;
+    if (seg.pending === 'from') {
+      const next = segments.slice(i + 1).find((x) => x.points.length);
+      if (next) seg.points.push({ ...next.points[0], mode: 'walk', major: true });
+    } else {
+      const prev = [...segments.slice(0, i)].reverse().find((x) => x.points.length);
+      if (prev) seg.points.unshift({ ...prev.points[prev.points.length - 1], mode: 'walk', major: true });
+    }
+    delete seg.pending;
+  });
+
+  return segments.filter((seg) => seg.points.length);
+}
+
+/** 経路から地図に描く点の並びを作る(範囲合わせ・テスト用の平坦版) */
+export function routeToPoints(route, net, busStopIndex) {
+  const points = [];
+  const push = (p) => {
+    const last = points[points.length - 1];
+    if (last && last.lat === p.lat && last.lon === p.lon) return;
+    points.push({ lat: p.lat, lon: p.lon, title: p.title, bus: p.mode === 'bus', walk: p.mode === 'walk' });
+  };
+  for (const seg of routeToSegments(route, net, busStopIndex)) {
+    for (const p of seg.points) push(p);
   }
   return points;
 }

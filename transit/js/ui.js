@@ -144,6 +144,11 @@ export function renderCoverage(health) {
     li.append(el('span', null, o.reason));
     uns.append(li);
   }
+  for (const o of health?.bus?.discontinued || []) {
+    const li = el('li', null, `${o.title}(バス)`);
+    li.append(el('span', null, o.reason));
+    uns.append(li);
+  }
   for (const o of health?.unsupported || []) {
     const li = el('li', null, o.title);
     li.append(el('span', null, o.reason));
@@ -396,7 +401,16 @@ export function renderRoutes(routes, ctx) {
   });
 }
 
-function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap }) {
+/** 地図に描いている経路のカードに印を付ける */
+export function markShownRoute(route) {
+  for (const card of document.querySelectorAll('.route')) {
+    card.classList.toggle('route--shown', card.__route === route);
+    const btn = card.querySelector('.route__map');
+    if (btn) btn.textContent = card.__route === route ? '地図に表示中' : '地図で見る';
+  }
+}
+
+function renderRoute(route, rank, { net, analysis, shownRoute, onExcludeRailway, onShowOnMap }) {
   const warnings = route.warnings || [];
   const worst = warnings.reduce(
     (acc, w) => (w.severity === SEVERITY.SUSPENDED ? 'danger' : acc === 'danger' ? 'danger' : w.severity === SEVERITY.DELAY ? 'warn' : acc),
@@ -404,7 +418,8 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap
   );
 
   const kindClass = route.kind === 'bus' ? ' route--kind-bus' : route.kind === 'mixed' ? ' route--kind-mixed' : ' route--kind-rail';
-  const card = el('article', `route${kindClass}${worst ? ` route--${worst}` : ''}`);
+  const card = el('article', `route${kindClass}${worst ? ` route--${worst}` : ''}${route === shownRoute ? ' route--shown' : ''}`);
+  card.__route = route;
 
   /* --- ヘッダ --- */
   const head = el('div', 'route__head');
@@ -425,7 +440,7 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap
   if (route.waitMinutes > 0) meta.append(el('div', 'muted', `待ち ${formatDuration(route.waitMinutes)}`));
   head.append(meta);
   if (onShowOnMap) {
-    const m = el('button', 'btn btn--ghost btn--sm route__map', '地図で見る');
+    const m = el('button', 'btn btn--ghost btn--sm route__map', route === shownRoute ? '地図に表示中' : '地図で見る');
     m.type = 'button';
     m.addEventListener('click', () => onShowOnMap(route));
     head.append(m);
