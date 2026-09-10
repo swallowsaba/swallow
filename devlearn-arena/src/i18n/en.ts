@@ -50,6 +50,7 @@ export const en: Record<TKey, string> = {
   'park.nextMission': 'Next mission: {title} →',
   'park.allDone': 'You have cleared every mission there is. More arrive as the build goes on.',
   'park.missionList': 'All missions',
+  'park.pickMission': 'Choose a mission (now: {title})',
   'park.pickFromHeader': 'Pick another from the mission button above. You can filter by name, chapter, or id.',
   'park.search': 'Find a mission (name, chapter, id)',
   'park.searchHits': 'Showing {a} of {b}',

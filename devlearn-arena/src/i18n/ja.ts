@@ -48,6 +48,7 @@ export const ja = {
   'park.nextMission': '次の任務へ: {title} →',
   'park.allDone': '今ある任務はすべてクリアしました。新しい任務は実装が進むたびに増えます。',
   'park.missionList': '任務の一覧',
+  'park.pickMission': '任務を選ぶ（いま: {title}）',
   'park.pickFromHeader': '上の「任務」から選び直せます。名前・章・id で絞り込めます。',
   'park.search': '任務を探す（名前・章・id）',
   'park.searchHits': '{a} 件を表示（該当 {b} 件）',

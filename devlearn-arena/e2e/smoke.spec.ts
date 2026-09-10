@@ -93,3 +93,23 @@ test('目次から遊べるレッスンへ入れる', async ({ page }) => {
   await playable.click();
   await expect(page.locator('.xterm-screen')).toBeVisible();
 });
+
+test('任務は絞り込んで選べる', async ({ page }) => {
+  await open(page);
+
+  await page.getByRole('button', { name: /任務を選ぶ/ }).click();
+  const picker = page.getByRole('dialog', { name: '全ての任務' });
+  await expect(picker).toBeVisible();
+
+  await page.getByRole('searchbox').fill('kubeadm');
+  const first = picker.getByRole('button').nth(1);
+  await expect(first).toBeVisible();
+  await first.click();
+  await expect(picker).toBeHidden();
+});
+
+test('目次では本編と反復演習が分かれている', async ({ page }) => {
+  await open(page, './#/track/kernel');
+  await expect(page.getByRole('heading', { name: 'Linux とシェル' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '演習を開く' }).first()).toBeVisible();
+});

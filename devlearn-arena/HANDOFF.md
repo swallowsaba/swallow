@@ -25,8 +25,8 @@ exit 137（OOM）で落ち続けたため、CI に任せる取り決めになっ
 
 ## 現状
 
-テスト 791 件（56 ファイル）。カバレッジは行 93% / 分岐 81%。
-全 47 章に、遊べる任務が最低1本ずつ入っている。
+テスト 935 件（67 ファイル）。
+5 トラック 58 章、演習 1777 本。どの章にも遊べる任務が入っている。
 
 ### P0 基盤
 Vite + React 18 + TS(strict, noUncheckedIndexedAccess) + Tailwind + Zustand + zod。
@@ -40,6 +40,12 @@ base path は CI が `VITE_BASE=/<repo>/devlearn-arena/` を渡す。
 ヒアドキュメント、`&&`/`||`/`;`。仮想FSは平坦な Map。
 コマンド 60 個以上。Tab補完、行編集、履歴、ジャーナル（全スナップショット保持）。
 `vi`/`vim`/`nano` は画面側の編集パネルを開く。
+権限（chmod / chown / umask / stat と、読み書き実行の判定）。
+プロセス表（ps / top / free / pgrep / pkill / kill / lsof）。
+容量（df / du。掴まれたまま消したファイルの分は空きに戻らない）。
+実行権のあるファイルはスクリプトとして走る（$1 と $# が使える）。
+grep / sed は POSIX の基本正規表現として解釈する（-E で拡張、-F で文字どおり）。
+2> / &> で標準エラーを分けられる。
 
 ### P2 Git（`src/engines/git/`）
 本物と同じ形式でシリアライズして SHA-1（既知ハッシュのテストあり）。
@@ -53,6 +59,9 @@ hooks（`.git/hooks/pre-commit` を実際に実行）、rebase -i の todo。
 仮想リモートと push（非FF拒否・force-with-lease）/ fetch / pull。
 
 ### P3 Kubernetes（`src/engines/k8s/`）
+素の計算機の集合から組み立てられる。kubeadm init / join / token / upgrade / reset。
+ノードの Ready は保持せず状態から導く（CNI が入るまで NotReady）。
+kubectl は create / label / taint / set image / set resources / set probe まで。
 スケジューラ（requests と allocatable の実比較、nodeSelector、taint/toleration、cordon）。
 kubelet（Pending→Running、probe 3種、CrashLoopBackOff の指数バックオフ、イベント蓄積）。
 Deployment / ReplicaSet / StatefulSet / DaemonSet / Job / CronJob / HPA のコントローラ。
@@ -62,6 +71,8 @@ Ingress（最長一致）、NetworkPolicy（既定拒否）、RBAC（`auth can-i
 `rollout status/history/undo/restart`、`drain`、`logs`、`exec`。
 
 ### P4 Network（`src/engines/net/`）
+何も無いところから組み立てられる。netlab で機器とケーブルを用意し、
+ip addr / ip link / ip route / bridge vlan / nat enable / service / hosts で設定する。
 CIDR 計算（BigInt）と IPv6（展開・圧縮・プレフィックス・SLAAC）。
 パケットを構造体として運び、ホップごとに TTL 減算・MAC 書換・IP 不変。
 ARP（問い合わせと学習）、スイッチの MAC 学習とフラッディング、VLAN、
@@ -83,12 +94,23 @@ FileWorld（タイルの世界、部屋・通路・歩くキャラ）、CommitGr
 PacketFlow、PrTimeline。学習画面の右側でタブ切替。
 
 ### 学習の仕組み
-任務 55 本（`src/engines/lesson/missions/`）。うち 53 本は目次のレッスンに紐づき、
-残り2本は序章（`kernel/00/*`）で目次の外にある。判定は状態アサーションのみ。
+演習 1777 本。書き方は2通りある。
+- `src/engines/lesson/missions/` … 手で書いた任務（物語のあるもの）
+- `src/engines/lesson/drills/` … 「型」と「変える値」に分けて、値違いを並べたもの
+
+判定は状態アサーションのみ。
 各手順に `check`（人が読める通過条件）と `diagnose`（惜しい点の指摘）を持つ。
+通過条件は名前付きの小さな条件に分けられる（`conditions`）。
+分けておくと、画面に「どこまで満たせているか」を一覧で出せる。
 模範解答で実際にクリアできることを、トラックごとのテストで担保している。
 目次（`src/content`）の `status: 'ready'` は「その id の任務があるか」から刻む。
 手で印を付けないので実装とずれない。
+つまずいたときの助けが3つ入っている。
+- 通過条件の内訳を一覧で見せる（正しそうなのに通らないとき、何が足りないかが分かる）
+- 直前のコマンドが失敗していたら、判定の話より先にその出力を見せる
+- 同じ手順で3回つまずくとヒントを1つ開き、以後2回ごとに増やす。
+  出し切ってもなお通らなければ、その手順の答えを見せる
+
 XP・ランク・実績バッジ・連続日数・クリア演出・効果音・間隔反復・進捗の保存。
 `/sandbox` は任務の判定なしに全エンジンを触れる場所。
 
@@ -105,10 +127,19 @@ XP・ランク・実績バッジ・連続日数・クリア演出・効果音・
    CI で落ちていたら直すこと。
 
 3. **目次の残り**
-   210 レッスンのうち任務があるのは 53 本。残りは `status: 'planned'`。
-   章あたり2本目以降を足していく。足すときは
-   `src/engines/lesson/missions/` に置き、トラックごとの
-   `missions*.test.ts` に「模範解答で解ける」テストを必ず追加する。
+   目次に元から書いてあるレッスン 210 本のうち、まだ演習が無いものがある
+   （`status: 'planned'` のもの）。埋めていくときは
+   `src/engines/lesson/drills/` に型を1つ足し、値の表を用意する。
+   `drills/solvable.test.ts` が全ての演習について
+   「模範解答で解ける」「答えが用意されている」「条件がどこかで満たされる」
+   を自動で確かめるので、テストを個別に書き足す必要はない。
+
+4. **演習の型をさらに増やす**
+   いまは章あたり 4〜6 の型。まだ扱えていない題材
+   （StatefulSet / PV / Ingress / NetworkPolicy / RBAC / HPA、
+   TCP の状態遷移 / DNS / DHCP / TLS、rebase / bisect / submodule、
+   matrix / cache / artifact / 再利用可能ワークフロー）は
+   エンジン側が既に対応しているので、型を書けばそのまま増やせる。
 
 ## 守ること
 

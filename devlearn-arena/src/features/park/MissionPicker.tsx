@@ -56,6 +56,7 @@ export function MissionPicker({ currentId, cleared, onPick }: Props) {
         onClick={() => {
           setOpen(true);
         }}
+        aria-label={t('park.pickMission', { title: current?.title ?? '' })}
         className="knob max-w-[26rem] truncate px-3 py-2 text-sm font-bold"
       >
         {current?.title ?? t('park.mission')}
