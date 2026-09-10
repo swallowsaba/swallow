@@ -1,0 +1,6 @@
+﻿devlearn-arena/REWORK.md を読み、未完了の項目を上から順に実装しろ。
+終わった項目は REWORK.md のチェックボックスを [x] に変えてコミットしろ。
+各項目ごとに devlearn-arena で npm run typecheck と npm run lint と npm run test を通し、落ちたら自分で直してからコミットしろ。
+playwright は実行するな。
+確認を求めず、報告のために止まるな。全項目が [x] になるまで進めろ。
+全部終わっていたら ALLDONE とだけ出力して終われ。
