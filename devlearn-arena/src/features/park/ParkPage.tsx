@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { restoreShell, snapshotShell } from '@/engines/kernel/session';
-import { TRACK_LABEL } from '@/engines/lesson/catalog';
-import { findMission, missions } from '@/engines/lesson/missions';
+import { allMissions, missionById } from '@/engines/lesson/registry';
 import {
   buildContext, createProgress, currentStep, evaluate, passes, useHint,
 } from '@/engines/lesson/runner';
-import type { LessonDefinition, LessonProgressState, MissionTrack } from '@/engines/lesson/types';
+import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
 import { useShellSession } from '@/features/terminal/useShellSession';
 import { useT } from '@/i18n/useT';
@@ -20,6 +19,7 @@ import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { MissionPanel } from './MissionPanel';
+import { MissionPicker } from './MissionPicker';
 import {
   attemptsUntilNextHint, NO_HINTS, reveal, revealedCount, shouldShowAnswer, shownHints, stepKey,
   type HintReveal,
@@ -30,9 +30,8 @@ import { VisualPanel, type VisualTab } from './VisualPanel';
 
 const STEP_XP = 10;
 
-/** 選択欄に並べる順。序章から始めて、あとは目次と同じ並びにする */
-const TRACK_ORDER: MissionTrack[] = ['kernel', 'git', 'k8s', 'net', 'github'];
-const FALLBACK = missions[0];
+/** 何も指定が無いときに開く任務 */
+const FALLBACK = allMissions()[0];
 
 export default function ParkPage() {
   const lastMissionId = useStore((s) => s.lastMissionId);
@@ -49,7 +48,11 @@ export default function ParkPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requested]);
   const [attempt, setAttempt] = useState(0);
-  const mission = findMission(missionId) ?? FALLBACK;
+  // 初期状態の組み立ては開いたときだけ。一覧を作るために全部を組み立てたりはしない
+  const mission = useMemo(
+    () => missionById(missionId)?.build() ?? FALLBACK?.build() ?? null,
+    [missionId],
+  );
 
   useEffect(() => {
     if (mission) setLastMission(mission.id);
@@ -167,14 +170,20 @@ function Park({
   }, [step, session]);
 
   const lessons = useStore((s) => s.lessons);
+  const catalogue = allMissions();
   const clearedIds = useMemo(
-    () => new Set(missions.filter((m) => lessons[m.id]?.cleared === true).map((m) => m.id)),
-    [lessons],
+    () => new Set(catalogue.filter((m) => lessons[m.id]?.cleared === true).map((m) => m.id)),
+    [catalogue, lessons],
   );
-  const nextMission = useMemo(
-    () => missions.find((m) => m.id !== mission.id && !clearedIds.has(m.id)) ?? null,
-    [clearedIds, mission.id],
-  );
+  // 同じ章の続きを優先し、無ければ全体から次の1本を選ぶ
+  const nextMission = useMemo(() => {
+    const chapter = mission.id.split('/').slice(0, 2).join('/');
+    const inChapter = catalogue.find(
+      (m) => m.id !== mission.id && m.chapterId === chapter && !clearedIds.has(m.id),
+    );
+    const found = inChapter ?? catalogue.find((m) => m.id !== mission.id && !clearedIds.has(m.id));
+    return found ?? null;
+  }, [catalogue, clearedIds, mission.id]);
 
   const shellState = session.state;
 
@@ -318,32 +327,14 @@ function Park({
         <label htmlFor="mission-picker" className="font-mono text-sm font-bold text-cream">
           {t('park.mission')}
         </label>
-        {/* 任務は 40 本を超える。全部を並べると見出しが画面を埋めるので、1つの選択欄にまとめる */}
-        <select
-          id="mission-picker"
-          value={mission.id}
-          onChange={(event) => {
-            onSwitch(event.target.value);
-          }}
-          className="knob max-w-[26rem] px-3 py-2 text-sm font-bold"
-        >
-          {TRACK_ORDER.map((track) => {
-            const items = missions.filter((m) => m.track === track);
-            if (items.length === 0) return null;
-            return (
-              <optgroup key={track} label={TRACK_LABEL[track]}>
-                {items.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {clearedIds.has(m.id) ? '✓ ' : '　'}
-                    {m.title}
-                  </option>
-                ))}
-              </optgroup>
-            );
-          })}
-        </select>
+        {/* 任務は 700 本を超える。並べるのではなく、絞り込んで選ぶ */}
+        <MissionPicker
+          currentId={mission.id}
+          cleared={(id: string) => clearedIds.has(id)}
+          onPick={onSwitch}
+        />
         <span className="font-mono text-sm text-cream">
-          {t('park.clearedCount', { a: clearedIds.size, b: missions.length })}
+          {t('park.clearedCount', { a: clearedIds.size, b: catalogue.length })}
         </span>
         <div className="ml-auto flex items-center gap-3">
           <span className="font-mono text-sm text-cream">
@@ -374,6 +365,7 @@ function Park({
           <MissionPanel
             mission={mission}
             clearedIds={clearedIds}
+            total={catalogue.length}
             progress={progress}
             step={step}
             passingNow={passingNow}

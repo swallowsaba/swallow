@@ -1,4 +1,3 @@
-import { missions } from '@/engines/lesson/missions';
 import { useT } from '@/i18n/useT';
 import type { LessonDefinition, LessonProgressState, LessonStep } from '@/engines/lesson/types';
 import { Assist } from './Assist';
@@ -6,8 +5,10 @@ import { StepChecklist, type PartState } from './StepChecklist';
 
 interface Props {
   mission: LessonDefinition;
-  /** クリア済みの任務 id。一覧に印を付けるのに使う */
+  /** クリア済みの任務 id */
   clearedIds: ReadonlySet<string>;
+  /** 用意されている任務の総数 */
+  total: number;
   progress: LessonProgressState;
   step: LessonStep | undefined;
   /** いま条件を満たしているか */
@@ -26,7 +27,8 @@ interface Props {
   answer: string | null;
   /** ヒントが自動で開いたか */
   autoOpened: boolean;
-  nextMission: LessonDefinition | null;
+  /** 次に開くとよい任務。一覧の情報だけで足りるので組み立てない */
+  nextMission: { id: string; title: string } | null;
   onRevealHint: () => void;
   onSwitch: (id: string) => void;
   onInsert: (text: string) => void;
@@ -37,8 +39,8 @@ interface Props {
  * 通過条件（check）は隠さない。何を満たせば通るのかが分かるほうが速く学べる。
  */
 export function MissionPanel({
-  mission,
   clearedIds,
+  total,
   progress,
   step,
   passingNow,
@@ -85,33 +87,10 @@ export function MissionPanel({
 
           <div>
             <p className="text-sm font-bold text-ink-soft">{t('park.missionList')}</p>
-            <ul className="mt-2 flex flex-col gap-1">
-              {missions.map((m) => {
-                const done = clearedIds.has(m.id);
-                return (
-                  <li key={m.id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onSwitch(m.id);
-                      }}
-                      className={`flex w-full items-center gap-3 border-2 px-3 py-2 text-left text-base ${
-                        m.id === mission.id
-                          ? 'border-wood-dark bg-gold'
-                          : 'border-[var(--cream-dark)] bg-white/60 hover:border-wood-dark'
-                      }`}
-                    >
-                      <span aria-hidden>{done ? '✓' : '・'}</span>
-                      <span className="flex-1">{m.title}</span>
-                      <span className="font-mono text-xs text-ink-soft">
-                        {m.kind === 'boss' ? t('park.kind.boss') : t('park.kind.training')} ·{' '}
-                      {t('park.steps', { n: m.steps.length })}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            <p className="mt-1 text-sm text-ink-soft">{t('park.pickFromHeader')}</p>
+            <p className="mt-1 font-mono text-xs text-ink-soft">
+              {t('park.clearedCount', { a: clearedIds.size, b: total })}
+            </p>
           </div>
         </div>
       ) : null}
