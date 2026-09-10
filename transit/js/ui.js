@@ -121,7 +121,7 @@ export function renderStamps({ networkAt, timetableAt, statusAt, statusFailed, s
  *  対応範囲
  * ------------------------------------------------------------------ */
 
-export function renderCoverage(health) {
+export function renderCoverage(health, gtfsCatalog) {
   const sup = $('#coverage-supported');
   const uns = $('#coverage-unsupported');
   sup.replaceChildren();
@@ -144,9 +144,24 @@ export function renderCoverage(health) {
     li.append(el('span', null, o.reason));
     uns.append(li);
   }
-  for (const o of health?.bus?.discontinued || []) {
+  // GTFS から取り込んだ事業者は「対応している」側に出す。取り込み日を必ず添える。
+  const imported = new Map((gtfsCatalog?.operators || []).map((o) => [o.id, o]));
+  for (const o of imported.values()) {
     const li = el('li', null, `${o.title}(バス)`);
-    li.append(el('span', null, o.reason));
+    li.append(
+      el(
+        'span',
+        null,
+        `GTFS を取り込み済み(${o.generatedAt ? o.generatedAt.slice(0, 10) : '取得日不明'} 時点のダイヤ)` +
+          `${o.license ? `(${o.license})` : ''}`
+      )
+    );
+    sup.append(li);
+  }
+  for (const o of health?.bus?.discontinued || []) {
+    if (imported.has(o.id)) continue; // 取り込み済みなら「非対応」には出さない
+    const li = el('li', null, `${o.title}(バス)`);
+    li.append(el('span', null, `${o.reason}。GTFS の取り込みが未実行です。`));
     uns.append(li);
   }
   for (const o of health?.unsupported || []) {

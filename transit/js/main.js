@@ -10,6 +10,7 @@ import { loadNetwork, clearNetworkCache } from './network.js';
 import { findCandidateRoutes, bindSchedule, edgeKey } from './router.js';
 import { analyzeStatus, warningsForRoute, SEVERITY } from './status.js';
 import { findBusRoutes, findIntermodalRoutes } from './bus.js';
+import { findAllGtfsRoutes, loadCatalog } from './gtfs.js';
 import { currentPosition, GeoError, formatDistance } from './geo.js';
 import { toServiceMoment, calendarFor, dateKey } from './time.js';
 import { TransitMap, routeToSegments } from './map.js';
@@ -40,6 +41,7 @@ const state = {
   stamps: { networkAt: null, timetableAt: null, statusAt: null },
   stores: { timetables: new Map(), trains: new Map() },
   busStore: {}, // カレンダーなど、セッション中使い回すもの
+  gtfsCatalog: null, // GTFS から取り込んだ事業者の目録
   map: null,
   mapOpen: false,
   knownBusStops: new Map(), // 地図に出せるバス停(名前検索や経路で見つかったもの)
@@ -88,7 +90,10 @@ async function init() {
   try {
     const res = await state.api.health();
     state.health = res.data;
-    ui.renderCoverage(res.data);
+    // GTFS から取り込んだ事業者があれば、それも「対応している」側に出す
+    const catalog = await loadCatalog().catch(() => ({ operators: [] }));
+    state.gtfsCatalog = catalog;
+    ui.renderCoverage(res.data, catalog);
     if (!res.data.tokenConfigured) {
       ui.addAlert('warn', {
         title: 'ODPT のアクセストークンが未設定です',
@@ -354,6 +359,17 @@ async function busStopInto(place, query, input, hint) {
     const res = await state.api.busStops(busStopNameCandidates(query));
     const stops = res.data.stops || [];
     if (!stops.length) {
+      // ODPT に無くても、GTFS から取り込んだ事業者にあるかもしれない
+      const { suggestGtfsStops } = await import('./gtfs.js');
+      const alt = await suggestGtfsStops(query);
+      if (alt.length) {
+        const first = alt[0];
+        rememberBusStops(alt.map((a) => ({ id: `gtfs:${a.operator}:${a.title}`, title: a.title, lat: a.lat, lon: a.lon })));
+        place.set({ groupId: null, label: first.title, busOnly: true });
+        input.value = first.title;
+        hint.textContent = `${first.operatorTitle}「${first.title}」(取り込み済みダイヤ・鉄道の経路は対象外)`;
+        return;
+      }
       hint.textContent = 'そのバス停は見つかりませんでした(正式名で入力してください)';
       hint.classList.add('is-error');
       return;
@@ -958,7 +974,21 @@ async function searchSegment(fromSpec, toSpec, departAt, ctx) {
       })().catch(() => ({ routes: [], warnings: [], fetchedAt: null, searched: false, directCount: 0, mixedCount: 0 }))
     : Promise.resolve({ routes: [], warnings: [], fetchedAt: null, searched: false, directCount: 0, mixedCount: 0 });
 
-  const [bound, bus] = await Promise.all([railPromise, busPromise]);
+  /**
+   * ODPT が API 形式の提供をやめた事業者(京王バス等)は、
+   * GitHub Actions が作った GTFS 由来の索引から探す。Worker は通らない。
+   */
+  const gtfsPromise = state.includeBus
+    ? findAllGtfsRoutes(fromSpec.label, toSpec.label, { departAt, serviceDate }).catch((e) => ({
+        routes: [],
+        warnings: [{ message: `GTFS の索引を読めませんでした(${e.message})` }],
+        stops: [],
+        operators: [],
+      }))
+    : Promise.resolve({ routes: [], warnings: [], stops: [], operators: [] });
+
+  const [bound, bus, gtfs] = await Promise.all([railPromise, busPromise, gtfsPromise]);
+  rememberBusStops(gtfs.stops);
 
   // 運行情報の警告を付与(鉄道のみ。バスの運行情報は ODPT に無い)
   for (const r of bound.routes) {
@@ -966,14 +996,16 @@ async function searchSegment(fromSpec, toSpec, departAt, ctx) {
   }
 
   return {
-    routes: [...bound.routes, ...bus.routes],
+    routes: [...bound.routes, ...bus.routes, ...gtfs.routes],
     railRoutes: bound.routes,
-    warnings: [...bound.warnings, ...bus.warnings],
+    warnings: [...bound.warnings, ...bus.warnings, ...gtfs.warnings],
     fetchedAt: bound.fetchedAt || bus.fetchedAt || null,
     candidateCount: candidates.length,
-    directCount: bus.directCount || 0,
+    directCount: (bus.directCount || 0) + gtfs.routes.length,
     mixedCount: bus.mixedCount || 0,
-    busCount: bus.routes.length,
+    busCount: bus.routes.length + gtfs.routes.length,
+    gtfsCount: gtfs.routes.length,
+    gtfsOperators: gtfs.operators || [],
   };
 }
 
@@ -1117,6 +1149,20 @@ async function runSearch() {
         body:
           `${parts.join(' / ')}。バス停と駅の間は徒歩 ${state.config?.busStationWalkMinutes ?? 5} 分として計算しています` +
           '(実際の距離は考慮していません)。渋滞による遅れは反映されません。',
+      });
+    }
+
+    const gtfsOps = segments.flatMap((x) => x.gtfsOperators || []);
+    if (gtfsOps.length) {
+      const seen = new Map(gtfsOps.map((o) => [o.id, o]));
+      ui.addAlert('info', {
+        title: `${[...seen.values()].map((o) => o.title).join('・')} は取り込み済みのダイヤで計算しています`,
+        body:
+          `${[...seen.values()]
+            .map((o) => `${o.title}: ${o.generatedAt ? o.generatedAt.slice(0, 10) : '取得日不明'} 取り込み`)
+            .join(' / ')}。` +
+          'これらの事業者は ODPT が API 形式の提供を終了したため、GTFS を定期的に取り込んで使っています。' +
+          '取り込み後のダイヤ改正は反映されません。',
       });
     }
 
