@@ -9,6 +9,8 @@ function toWord(token: Extract<Token, { type: 'word' }>): Word {
  * 1入力をパースする。
  * ヒアドキュメントは「1行目がコマンド行、2行目以降が本文」という形で受け取る。
  */
+const REDIRECTS = new Set(['>', '>>', '<', '2>', '2>>', '&>', '&>>']);
+
 export function parse(input: string): CommandList {
   const lines = input.split('\n');
   const first = lines[0] ?? '';
@@ -60,10 +62,10 @@ export function parse(input: string): CommandList {
       continue;
     }
 
-    if (token.value === '>' || token.value === '>>' || token.value === '<') {
+    if (REDIRECTS.has(token.value)) {
       const next = tokens[i + 1];
       if (!next || next.type !== 'word') throw new ParseError(`${token.value} の後にファイル名がありません`);
-      const redirect: Redirect = { kind: token.value, target: toWord(next) };
+      const redirect: Redirect = { kind: token.value as Redirect['kind'], target: toWord(next) };
       current.redirects.push(redirect);
       i += 1;
       continue;
@@ -74,7 +76,11 @@ export function parse(input: string): CommandList {
       continue;
     }
 
-    endPipeline(token.value);
+    if (token.value === ';' || token.value === '&&' || token.value === '||') {
+      endPipeline(token.value);
+      continue;
+    }
+    throw new ParseError(`${token.value} は使えません`);
   }
 
   if (current.words.length > 0 || current.redirects.length > 0 || commands.length > 0) {

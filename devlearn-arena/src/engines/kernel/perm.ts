@@ -14,6 +14,13 @@ export interface FileMeta {
 
 export const DEFAULT_FILE_MODE = 0o644;
 export const DEFAULT_DIR_MODE = 0o755;
+/**
+ * 新しく作るときの出発点。ここから umask のぶんを落とす。
+ * ファイルに x が付かないのは、出発点が 666 だからで、
+ * umask が x を落としているわけではない。
+ */
+export const BASE_FILE_MODE = 0o666;
+export const BASE_DIR_MODE = 0o777;
 export const DEFAULT_OWNER = 'learner';
 
 export function defaultMeta(isDir: boolean, owner = DEFAULT_OWNER): FileMeta {

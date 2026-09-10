@@ -7,7 +7,8 @@ export interface Word {
 }
 
 export interface Redirect {
-  kind: '>' | '>>' | '<';
+  /** 2> は標準エラー、&> は両方をまとめて移す */
+  kind: '>' | '>>' | '<' | '2>' | '2>>' | '&>' | '&>>';
   target: Word;
 }
 

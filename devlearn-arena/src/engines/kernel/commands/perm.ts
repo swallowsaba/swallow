@@ -1,7 +1,7 @@
 import { dirname, resolve } from '../path';
 import {
-  allows, applyModeSpec, defaultMeta, formatMode, formatOctal, parseUmask, withUmask,
-  type AccessKind,
+  allows, applyModeSpec, BASE_DIR_MODE, BASE_FILE_MODE, formatMode, formatOctal, parseUmask,
+  withUmask, type AccessKind,
 } from '../perm';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { list, metaOf, setMeta, stat } from '../vfs';
@@ -197,7 +197,7 @@ export const permCommands: CommandSpec[] = [
   },
 ];
 
-/** 既定の権限に umask を反映した値 */
+/** 新しく作るものの権限。出発点から umask のぶんを落とす */
 export function newFileMode(shell: ShellState, isDir: boolean): number {
-  return withUmask(defaultMeta(isDir).mode, currentUmask(shell));
+  return withUmask(isDir ? BASE_DIR_MODE : BASE_FILE_MODE, currentUmask(shell));
 }

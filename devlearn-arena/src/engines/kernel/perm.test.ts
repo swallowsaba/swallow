@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  allows, applyModeSpec, defaultMeta, formatMode, formatOctal, parseUmask, withUmask,
+  allows, applyModeSpec, BASE_DIR_MODE, BASE_FILE_MODE, defaultMeta, formatMode, formatOctal,
+  parseUmask, withUmask,
 } from './perm';
 
 describe('権限の表示', () => {
@@ -68,10 +69,22 @@ describe('許可の判定', () => {
 });
 
 describe('umask', () => {
-  it('新しく作るものから権限を落とす', () => {
-    expect(withUmask(defaultMeta(false).mode, 0o022)).toBe(0o644);
-    expect(withUmask(defaultMeta(true).mode, 0o022)).toBe(0o755);
-    expect(withUmask(defaultMeta(true).mode, 0o077)).toBe(0o700);
+  it('出発点（ファイル 666 / ディレクトリ 777）から権限を落とす', () => {
+    expect(withUmask(BASE_FILE_MODE, 0o022)).toBe(0o644);
+    expect(withUmask(BASE_DIR_MODE, 0o022)).toBe(0o755);
+    expect(withUmask(BASE_FILE_MODE, 0o077)).toBe(0o600);
+    expect(withUmask(BASE_DIR_MODE, 0o077)).toBe(0o700);
+    expect(withUmask(BASE_FILE_MODE, 0o002)).toBe(0o664);
+  });
+
+  it('ファイルに x が付かないのは出発点に x が無いから', () => {
+    expect(BASE_FILE_MODE & 0o111).toBe(0);
+    expect(withUmask(BASE_FILE_MODE, 0)).toBe(0o666);
+  });
+
+  it('既定の権限は出発点とは別（読み込んだファイルに使う）', () => {
+    expect(defaultMeta(false).mode).toBe(0o644);
+    expect(defaultMeta(true).mode).toBe(0o755);
   });
 
   it('8 進数として読む', () => {

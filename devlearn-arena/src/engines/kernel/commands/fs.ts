@@ -111,13 +111,28 @@ export const fsCommands: CommandSpec[] = [
     handler: ({ argv, shell, stdin }) => {
       const { operands } = parseArgs(argv);
       if (operands.length === 0) return { stdout: stdin };
+      // 本物と同じく、読めないものがあっても残りは出す。終了コードだけ 1 にする
       let out = '';
+      let err = '';
       for (const target of operands) {
+        const path = resolve(shell.cwd, target);
+        const node = stat(shell.vfs, path);
+        if (node === undefined) {
+          err += `cat: ${target}: No such file or directory\n`;
+          continue;
+        }
+        if (node.kind === 'dir') {
+          err += `cat: ${target}: Is a directory\n`;
+          continue;
+        }
         const blocked = denied(shell, target, 'read', 'cat');
-        if (blocked) return blocked;
-        out += readFile(shell.vfs, resolve(shell.cwd, target));
+        if (blocked) {
+          err += blocked.stderr ?? '';
+          continue;
+        }
+        out += readFile(shell.vfs, path);
       }
-      return { stdout: out };
+      return { stdout: out, stderr: err, code: err === '' ? 0 : 1 };
     },
   },
   {

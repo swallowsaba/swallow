@@ -5,6 +5,7 @@ import { expandBraces } from './brace';
 import { expandGlob, hasMagic } from './glob';
 import { parse } from './parser';
 import type { CommandRegistry, CommandResult, EditorRequest, RunLineResult, ShellState } from './registry';
+import { findScript, scriptLines, withoutPositional, withPositional } from './script';
 import { ParseError } from './tokenizer';
 import { appendFile, at, readFile, VfsError, writeFile } from './vfs';
 
@@ -22,6 +23,8 @@ export interface ExecOutcome {
 }
 
 export const EXIT_NOT_FOUND = 127;
+/** スクリプトの中で入れ子に呼び出せる深さ。無限再帰を止めるため */
+const MAX_SCRIPT_DEPTH = 8;
 export const EXIT_ERROR = 1;
 
 function vfsMessage(command: string, error: VfsError): string {
@@ -108,8 +111,17 @@ function runCommand(
   }
 
   const spec = registry.get(name);
-  if (!spec) {
-    return { state, result: { stderr: `${name}: command not found\n`, code: EXIT_NOT_FOUND } };
+  // 組み込みに無ければ、実行できるファイルを探して走らせる
+  const script = spec ? null : findScript(state, name);
+  // 起動そのものに失敗した場合。この文言もリダイレクトの対象になる（本物と同じ）
+  const launchError: CommandResult | null =
+    !spec && script === null
+      ? { stderr: `${name}: command not found\n`, code: EXIT_NOT_FOUND }
+      : script?.denied === true
+        ? { stderr: `${name}: Permission denied\n`, code: 126 }
+        : null;
+  if (launchError !== null) {
+    return applyRedirects(state, command, expandCtx, launchError, name);
   }
 
   // 標準入力: << > < > パイプ の順で決める
@@ -136,30 +148,71 @@ function runCommand(
   };
 
   let result: CommandResult;
+  let scriptState: ShellState | null = null;
   try {
-    result = spec.handler({ argv, stdin, shell: state, clock, registry, runLine });
-  } catch (error) {
-    if (error instanceof VfsError) {
-      return { state, result: { stderr: `${vfsMessage(name, error)}\n`, code: EXIT_ERROR } };
+    if (script !== null) {
+      const ran = runScript(state, script.path, script.content, argv.slice(1), registry, clock);
+      result = ran.result;
+      scriptState = ran.state;
+    } else if (spec) {
+      result = spec.handler({ argv, stdin, shell: state, clock, registry, runLine });
+    } else {
+      result = { code: EXIT_NOT_FOUND };
     }
-    const message = error instanceof Error ? error.message : String(error);
-    return { state, result: { stderr: `${name}: ${message}\n`, code: EXIT_ERROR } };
+  } catch (error) {
+    // 失敗の文言もリダイレクトの対象になる
+    const message =
+      error instanceof VfsError
+        ? vfsMessage(name, error)
+        : `${name}: ${error instanceof Error ? error.message : String(error)}`;
+    return applyRedirects(
+      state,
+      command,
+      expandCtx,
+      { stderr: `${message}\n`, code: EXIT_ERROR },
+      name,
+    );
   }
 
-  let nextState = applyPatch(state, result.patch);
+  return applyRedirects(
+    applyPatch(scriptState ?? state, result.patch),
+    command,
+    expandCtx,
+    result,
+    name,
+  );
+}
 
-  // 出力リダイレクト
-  const outRedirect = command.redirects.find((r) => r.kind === '>' || r.kind === '>>');
-  if (outRedirect) {
-    const path = at(nextState.cwd, expandWord(outRedirect.target, expandCtx));
-    const text = result.stdout ?? '';
+/**
+ * 出力リダイレクトを書いた順に処理する。
+ * `> a 2> b` も `&> c` も、起動に失敗したときの文言も、同じ道を通る。
+ */
+function applyRedirects(
+  initial: ShellState,
+  command: SimpleCommand,
+  expandCtx: ExpandContext,
+  initialResult: CommandResult,
+  name: string,
+): { state: ShellState; result: CommandResult } {
+  let nextState = initial;
+  let result = initialResult;
+  for (const redirect of command.redirects) {
+    if (redirect.kind === '<') continue;
+    const append = redirect.kind.endsWith('>>');
+    const takesOut = redirect.kind !== '2>' && redirect.kind !== '2>>';
+    const takesErr = redirect.kind.startsWith('2') || redirect.kind.startsWith('&');
+    const path = at(nextState.cwd, expandWord(redirect.target, expandCtx));
+    const text = `${takesOut ? (result.stdout ?? '') : ''}${takesErr ? (result.stderr ?? '') : ''}`;
     try {
-      const vfs =
-        outRedirect.kind === '>'
-          ? writeFile(nextState.vfs, path, text)
-          : appendFile(nextState.vfs, path, text);
+      const vfs = append
+        ? appendFile(nextState.vfs, path, text)
+        : writeFile(nextState.vfs, path, text);
       nextState = { ...nextState, vfs };
-      result = { ...result, stdout: '' };
+      result = {
+        ...result,
+        ...(takesOut ? { stdout: '' } : {}),
+        ...(takesErr ? { stderr: '' } : {}),
+      };
     } catch (error) {
       if (error instanceof VfsError) {
         return { state: nextState, result: { stderr: `${vfsMessage(name, error)}\n`, code: EXIT_ERROR } };
@@ -169,6 +222,47 @@ function runCommand(
   }
 
   return { state: nextState, result };
+}
+
+/**
+ * ファイルに書かれた手順を上から順に実行する。
+ * 位置パラメータ（$1, $2, $#）はスクリプトの中だけで見えるようにする。
+ */
+function runScript(
+  state: ShellState,
+  path: string,
+  content: string,
+  args: readonly string[],
+  registry: CommandRegistry,
+  clock: MutableClock,
+): { state: ShellState; result: CommandResult } {
+  const depth = Number(state.vars.get('SHLVL') ?? '0');
+  if (depth >= MAX_SCRIPT_DEPTH) {
+    return { state, result: { stderr: `${path}: 呼び出しが深すぎます\n`, code: EXIT_ERROR } };
+  }
+
+  let inner = withPositional(state, path, args);
+  inner = { ...inner, vars: new Map([...inner.vars, ['SHLVL', String(depth + 1)]]) };
+
+  let stdout = '';
+  let stderr = '';
+  let code = 0;
+  for (const line of scriptLines(content)) {
+    const outcome = runList(inner, parse(line), registry, clock);
+    inner = outcome.state;
+    for (const chunk of outcome.chunks) {
+      if (chunk.stream === 'stdout') stdout += chunk.text;
+      else stderr += chunk.text;
+    }
+    code = outcome.exitCode;
+  }
+
+  const after = withoutPositional(inner, state);
+  const vars = new Map(after.vars);
+  if (state.vars.has('SHLVL')) vars.set('SHLVL', state.vars.get('SHLVL') ?? '0');
+  else vars.delete('SHLVL');
+  // スクリプトの中で移動しても、呼び出し元の場所は変わらない
+  return { state: { ...after, vars, cwd: state.cwd }, result: { stdout, stderr, code } };
 }
 
 function runList(

@@ -4,7 +4,13 @@
  * '...' の中は展開しない、"..." と裸の部分は展開する、という区別を
  * 後段（expand）に渡すために必要。
  */
-export type OperatorToken = '|' | '&&' | '||' | ';' | '>' | '>>' | '<';
+export type OperatorToken =
+  | '|' | '&&' | '||' | ';'
+  | '>' | '>>' | '<'
+  /** 標準エラーの行き先 */
+  | '2>' | '2>>'
+  /** 両方まとめて */
+  | '&>' | '&>>';
 
 export interface WordPart {
   text: string;
@@ -137,6 +143,22 @@ export function tokenize(input: string): Token[] {
       push(body, true, true);
       raw += body;
       i = j;
+      continue;
+    }
+
+    // `2>` `2>>` `&>` `&>>` は、単語の途中でなければリダイレクトとして読む
+    if (!started && (ch === '2' || ch === '&') && input[i + 1] === '>') {
+      const long = input[i + 2] === '>';
+      const op = `${ch}>${long ? '>' : ''}` as OperatorToken;
+      tokens.push({ type: 'op', value: op });
+      i += op.length;
+      continue;
+    }
+    // `1>` は `>` と同じ
+    if (!started && ch === '1' && input[i + 1] === '>') {
+      const long = input[i + 2] === '>';
+      tokens.push({ type: 'op', value: long ? '>>' : '>' });
+      i += long ? 3 : 2;
       continue;
     }
 
