@@ -1,6 +1,7 @@
 import { all, fileEquals, fileExists } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, family, man } from './shared';
+import { DIR_NAMES, FILE_STEMS, sequence } from './values';
 
 const CH = 'kernel/02';
 
@@ -20,20 +21,20 @@ interface EdgeSpec {
   label: string;
 }
 
-const EDGES: EdgeSpec[] = [
-  { file: 'access.log', lines: 40, take: 5, label: 'req' },
-  { file: 'error.log', lines: 25, take: 3, label: 'err' },
-  { file: 'audit.log', lines: 60, take: 10, label: 'audit' },
-  { file: 'build.log', lines: 33, take: 7, label: 'step' },
-  { file: 'query.log', lines: 18, take: 4, label: 'sql' },
-  { file: 'cron.log', lines: 50, take: 6, label: 'job' },
-  { file: 'boot.log', lines: 22, take: 8, label: 'unit' },
-  { file: 'deploy.log', lines: 45, take: 12, label: 'rollout' },
-  { file: 'gc.log', lines: 30, take: 2, label: 'gc' },
-  { file: 'sync.log', lines: 55, take: 9, label: 'sync' },
-  { file: 'mail.log', lines: 28, take: 5, label: 'mail' },
-  { file: 'nginx.log', lines: 70, take: 15, label: 'nginx' },
-];
+/** ログの名前と行数を機械的に散らす */
+const EDGES: EdgeSpec[] = FILE_STEMS.flatMap((stem, i) => {
+  const sizes = sequence(i + 1, 2, 60);
+  return sizes.map((raw, j) => {
+    const lines = 15 + raw;
+    const take = 2 + ((i + j) % 12);
+    return {
+      file: `${stem}${j === 0 ? '' : String(j + 1)}.log`,
+      lines,
+      take: Math.min(take, lines),
+      label: stem,
+    };
+  });
+});
 
 const edgeDrills = family<EdgeSpec>({
   track: 'kernel',
@@ -122,20 +123,20 @@ interface GrepSpec {
   noise: number;
 }
 
-const GREPS: GrepSpec[] = [
-  { needle: 'ERROR', hits: 4, noise: 20 },
-  { needle: 'WARN', hits: 7, noise: 18 },
-  { needle: 'timeout', hits: 3, noise: 25 },
-  { needle: 'refused', hits: 5, noise: 22 },
-  { needle: 'OutOfMemory', hits: 2, noise: 30 },
-  { needle: 'deadlock', hits: 6, noise: 15 },
-  { needle: 'panic', hits: 1, noise: 28 },
-  { needle: 'retry', hits: 9, noise: 12 },
-  { needle: 'denied', hits: 8, noise: 16 },
-  { needle: 'expired', hits: 3, noise: 24 },
-  { needle: 'throttled', hits: 5, noise: 19 },
-  { needle: 'unreachable', hits: 4, noise: 21 },
+const NEEDLES = [
+  'ERROR', 'WARN', 'timeout', 'refused', 'OutOfMemory', 'deadlock', 'panic', 'retry',
+  'denied', 'expired', 'throttled', 'unreachable', 'conflict', 'corrupt', 'stale',
+  'aborted', 'rejected', 'overflow', 'missing', 'locked',
 ];
+
+const GREPS: GrepSpec[] = NEEDLES.flatMap((needle, i) => {
+  const counts = sequence(i + 3, 2, 9);
+  return counts.map((raw, j) => ({
+    needle,
+    hits: 1 + raw,
+    noise: 10 + ((i * 3 + j * 7) % 25),
+  }));
+});
 
 /** 目印の行と雑音の行を混ぜる。順番は決まっているので答えも定まる */
 function mixed(needle: string, hits: number, noise: number): string {
@@ -161,7 +162,7 @@ const grepDrills = family<GrepSpec>({
   chapterId: CH,
   family: 'grep',
   docs: [man('grep')],
-  variants: GREPS.map((value) => ({ slug: value.needle.toLowerCase(), value })),
+  variants: GREPS.map((value, i) => ({ slug: `${value.needle.toLowerCase()}-${String(i)}`, value })),
   make: (spec) => {
     const body = mixed(spec.needle, spec.hits, spec.noise);
     const hitLines = body.trimEnd().split('\n').filter((l) => l.includes(spec.needle));
@@ -324,18 +325,20 @@ interface FindSpec {
   places: string[];
 }
 
-const FINDS: FindSpec[] = [
-  { slug: 'conf', ext: 'conf', places: ['etc', 'etc/nginx', 'opt/app'] },
-  { slug: 'log', ext: 'log', places: ['var/log', 'var/log/old', 'srv/app'] },
-  { slug: 'yaml', ext: 'yaml', places: ['manifests', 'manifests/base', 'manifests/overlays'] },
-  { slug: 'sql', ext: 'sql', places: ['db', 'db/migrations', 'db/seeds'] },
-  { slug: 'sh', ext: 'sh', places: ['bin', 'scripts', 'scripts/ci'] },
-  { slug: 'json', ext: 'json', places: ['config', 'config/dev', 'config/prod'] },
-  { slug: 'md', ext: 'md', places: ['docs', 'docs/api', 'docs/ops'] },
-  { slug: 'csv', ext: 'csv', places: ['data', 'data/raw', 'data/clean'] },
-  { slug: 'pem', ext: 'pem', places: ['certs', 'certs/old', 'certs/new'] },
-  { slug: 'bak', ext: 'bak', places: ['backup', 'backup/2025', 'backup/2026'] },
+const EXTENSIONS = [
+  'conf', 'log', 'yaml', 'sql', 'sh', 'json', 'md', 'csv', 'pem', 'bak',
+  'ini', 'toml', 'env', 'lock', 'tmpl', 'txt', 'xml', 'key', 'crt', 'service',
 ];
+
+const FINDS: FindSpec[] = EXTENSIONS.map((ext, i) => ({
+  slug: ext,
+  ext,
+  places: [
+    DIR_NAMES[i % DIR_NAMES.length] ?? 'srv',
+    `${DIR_NAMES[(i + 1) % DIR_NAMES.length] ?? 'opt'}/inner`,
+    `${DIR_NAMES[(i + 2) % DIR_NAMES.length] ?? 'data'}/deep/here`,
+  ],
+}));
 
 const findDrills = family<FindSpec>({
   track: 'kernel',
@@ -348,7 +351,8 @@ const findDrills = family<FindSpec>({
     for (const place of spec.places) {
       files[`/${place}`] = null;
       files[`/${place}/a.${spec.ext}`] = 'x\n';
-      files[`/${place}/b.txt`] = 'y\n';
+      // 紛らわしい相手。探す拡張子とは必ず違うものにする
+      files[`/${place}/decoy.other`] = 'y\n';
     }
     const found = spec.places.map((p) => `/${p}/a.${spec.ext}`).sort().join('\n');
     return {

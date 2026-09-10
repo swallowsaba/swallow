@@ -16,58 +16,29 @@ interface CutSpec {
   field: number;
 }
 
-const CUTS: CutSpec[] = [
-  {
-    slug: 'users', delimiter: ':', field: 1,
-    header: ['name', 'uid', 'shell'],
-    rows: [['alice', '1001', '/bin/sh'], ['bob', '1002', '/bin/devsh'], ['carol', '1003', '/bin/sh']],
-  },
-  {
-    slug: 'users-shell', delimiter: ':', field: 3,
-    header: ['name', 'uid', 'shell'],
-    rows: [['alice', '1001', '/bin/sh'], ['bob', '1002', '/bin/devsh'], ['carol', '1003', '/bin/sh']],
-  },
-  {
-    slug: 'orders', delimiter: ',', field: 2,
-    header: ['id', 'item', 'qty'],
-    rows: [['1', 'apple', '3'], ['2', 'pear', '1'], ['3', 'plum', '7']],
-  },
-  {
-    slug: 'orders-qty', delimiter: ',', field: 3,
-    header: ['id', 'item', 'qty'],
-    rows: [['1', 'apple', '3'], ['2', 'pear', '1'], ['3', 'plum', '7']],
-  },
-  {
-    slug: 'hosts', delimiter: ' ', field: 2,
-    header: ['ip', 'name'],
-    rows: [['10.0.0.1', 'web1'], ['10.0.0.2', 'web2'], ['10.0.0.3', 'db1']],
-  },
-  {
-    slug: 'hosts-ip', delimiter: ' ', field: 1,
-    header: ['ip', 'name'],
-    rows: [['10.0.0.1', 'web1'], ['10.0.0.2', 'web2'], ['10.0.0.3', 'db1']],
-  },
-  {
-    slug: 'services', delimiter: ':', field: 2,
-    header: ['name', 'port'],
-    rows: [['http', '80'], ['https', '443'], ['ssh', '22']],
-  },
-  {
-    slug: 'metrics', delimiter: ',', field: 2,
-    header: ['host', 'cpu', 'mem'],
-    rows: [['web1', '12', '340'], ['web2', '87', '900'], ['db1', '45', '2100']],
-  },
-  {
-    slug: 'metrics-mem', delimiter: ',', field: 3,
-    header: ['host', 'cpu', 'mem'],
-    rows: [['web1', '12', '340'], ['web2', '87', '900'], ['db1', '45', '2100']],
-  },
-  {
-    slug: 'routes', delimiter: ' ', field: 2,
-    header: ['dest', 'gw'],
-    rows: [['10.1.0.0/16', '10.0.0.254'], ['10.2.0.0/16', '10.0.0.253'], ['0.0.0.0/0', '10.0.0.1']],
-  },
+const TABLES: { name: string; delimiter: string; header: string[]; rows: string[][] }[] = [
+  { name: 'users', delimiter: ':', header: ['name', 'uid', 'shell'], rows: [['alice', '1001', '/bin/sh'], ['bob', '1002', '/bin/devsh'], ['carol', '1003', '/bin/sh']] },
+  { name: 'orders', delimiter: ',', header: ['id', 'item', 'qty'], rows: [['1', 'apple', '3'], ['2', 'pear', '1'], ['3', 'plum', '7']] },
+  { name: 'hosts', delimiter: ' ', header: ['ip', 'name'], rows: [['10.0.0.1', 'web1'], ['10.0.0.2', 'web2'], ['10.0.0.3', 'db1']] },
+  { name: 'services', delimiter: ':', header: ['name', 'port'], rows: [['http', '80'], ['https', '443'], ['ssh', '22']] },
+  { name: 'metrics', delimiter: ',', header: ['host', 'cpu', 'mem'], rows: [['web1', '12', '340'], ['web2', '87', '900'], ['db1', '45', '2100']] },
+  { name: 'routes', delimiter: ' ', header: ['dest', 'gw'], rows: [['10.1.0.0/16', '10.0.0.254'], ['10.2.0.0/16', '10.0.0.253'], ['0.0.0.0/0', '10.0.0.1']] },
+  { name: 'certs', delimiter: ',', header: ['domain', 'expires', 'issuer'], rows: [['a.example', '2026-06-01', 'ca1'], ['b.example', '2026-07-01', 'ca2'], ['c.example', '2026-08-01', 'ca1']] },
+  { name: 'quota', delimiter: ':', header: ['team', 'cpu', 'memory'], rows: [['pay', '4', '8Gi'], ['ops', '2', '4Gi'], ['data', '8', '32Gi']] },
+  { name: 'nodes', delimiter: ' ', header: ['node', 'role', 'version'], rows: [['n1', 'cp', 'v1.31'], ['n2', 'worker', 'v1.31'], ['n3', 'worker', 'v1.30']] },
+  { name: 'jobs', delimiter: ',', header: ['job', 'status', 'seconds'], rows: [['build', 'ok', '42'], ['test', 'fail', '91'], ['deploy', 'ok', '13']] },
 ];
+
+/** どの表も、列の数だけ演習になる */
+const CUTS: CutSpec[] = TABLES.flatMap((table) =>
+  table.header.map((_, i) => ({
+    slug: `${table.name}-${String(i + 1)}`,
+    header: table.header,
+    rows: table.rows,
+    delimiter: table.delimiter,
+    field: i + 1,
+  })),
+);
 
 const cutDrills = family<CutSpec>({
   track: 'kernel',
@@ -112,18 +83,32 @@ interface TallySpec {
   words: string[];
 }
 
-const TALLIES: TallySpec[] = [
-  { slug: 'status', words: ['200', '200', '500', '404', '200', '500'] },
-  { slug: 'method', words: ['GET', 'POST', 'GET', 'GET', 'DELETE'] },
-  { slug: 'host', words: ['web1', 'web2', 'web1', 'db1', 'web1', 'web2'] },
-  { slug: 'level', words: ['INFO', 'WARN', 'INFO', 'ERROR', 'WARN', 'INFO'] },
-  { slug: 'user', words: ['alice', 'bob', 'alice', 'carol'] },
-  { slug: 'path', words: ['/', '/api', '/', '/health', '/api', '/'] },
-  { slug: 'zone', words: ['a', 'b', 'a', 'c', 'b', 'a', 'a'] },
-  { slug: 'browser', words: ['chrome', 'firefox', 'chrome', 'safari'] },
-  { slug: 'region', words: ['tokyo', 'osaka', 'tokyo', 'tokyo', 'nagoya'] },
-  { slug: 'errorcode', words: ['E01', 'E02', 'E01', 'E03', 'E01', 'E02'] },
+const WORD_SETS: string[][] = [
+  ['200', '200', '500', '404', '200', '500'],
+  ['GET', 'POST', 'GET', 'GET', 'DELETE'],
+  ['web1', 'web2', 'web1', 'db1', 'web1', 'web2'],
+  ['INFO', 'WARN', 'INFO', 'ERROR', 'WARN', 'INFO'],
+  ['alice', 'bob', 'alice', 'carol'],
+  ['/', '/api', '/', '/health', '/api', '/'],
+  ['a', 'b', 'a', 'c', 'b', 'a', 'a'],
+  ['chrome', 'firefox', 'chrome', 'safari'],
+  ['tokyo', 'osaka', 'tokyo', 'tokyo', 'nagoya'],
+  ['E01', 'E02', 'E01', 'E03', 'E01', 'E02'],
+  ['prod', 'stg', 'prod', 'dev', 'prod'],
+  ['ok', 'fail', 'ok', 'ok', 'fail', 'fail'],
+  ['v1', 'v2', 'v2', 'v3', 'v1', 'v2'],
+  ['read', 'write', 'read', 'read', 'delete'],
+  ['cache', 'db', 'cache', 'api', 'db'],
+  ['mon', 'tue', 'mon', 'wed', 'tue', 'mon'],
 ];
+
+const TALLIES: TallySpec[] = WORD_SETS.flatMap((words, i) =>
+  [0, 1].map((k) => ({
+    slug: `set${String(i + 1)}-${String(k + 1)}`,
+    // 2つ目は並びを回して、同じ集計でも見え方を変える
+    words: k === 0 ? words : [...words.slice(1), words[0] ?? ''],
+  })),
+);
 
 const tallyDrills = family<TallySpec>({
   track: 'kernel',
@@ -184,18 +169,35 @@ interface ReplaceSpec {
   to: string;
 }
 
-const REPLACES: ReplaceSpec[] = [
-  { slug: 'host', before: 'server=old-host\nport=80\n', from: 'old-host', to: 'new-host' },
-  { slug: 'port', before: 'listen 8080;\nroot /srv;\n', from: '8080', to: '9090' },
-  { slug: 'env', before: 'ENV=staging\nDEBUG=1\n', from: 'staging', to: 'production' },
-  { slug: 'image', before: 'image: nginx:1.24\n', from: '1.24', to: '1.27' },
-  { slug: 'domain', before: 'url=https://old.example.com/v1\n', from: 'old.example.com', to: 'api.example.com' },
-  { slug: 'user', before: 'user = deploy\ngroup = deploy\n', from: 'deploy', to: 'runner' },
-  { slug: 'path', before: 'root=/var/www\nlog=/var/log\n', from: '/var/www', to: '/srv/www' },
-  { slug: 'level', before: 'log_level = debug\n', from: 'debug', to: 'warn' },
-  { slug: 'region', before: 'region: ap-northeast-1\n', from: 'ap-northeast-1', to: 'ap-northeast-3' },
-  { slug: 'replicas', before: 'replicas: 2\n', from: '2', to: '5' },
+/** [slug, 元の中身（行の配列）, 置き換え前, 置き換え後] */
+const REPLACE_PAIRS: [string, string[], string, string][] = [
+  ['host', ['server=old-host', 'port=80'], 'old-host', 'new-host'],
+  ['port', ['listen 8080;', 'root /srv;'], '8080', '9090'],
+  ['env', ['ENV=staging', 'DEBUG=1'], 'staging', 'production'],
+  ['image', ['image: nginx:1.24'], '1.24', '1.27'],
+  ['domain', ['url=https://old.example.com/v1'], 'old.example.com', 'api.example.com'],
+  ['user', ['user = deploy', 'group = deploy'], 'deploy', 'runner'],
+  ['path', ['root=/var/www', 'log=/var/log'], '/var/www', '/srv/www'],
+  ['level', ['log_level = debug'], 'debug', 'warn'],
+  ['region', ['region: ap-northeast-1'], 'ap-northeast-1', 'ap-northeast-3'],
+  ['replicas', ['replicas: 2'], '2', '5'],
+  ['timeout', ['timeout = 30', 'retries = 3'], '30', '60'],
+  ['scheme', ['endpoint=http://api'], 'http://', 'https://'],
+  ['branch', ['default_branch = master'], 'master', 'main'],
+  ['bucket', ['bucket: old-bucket'], 'old-bucket', 'new-bucket'],
+  ['tag', ['tag: v1.0.0'], 'v1.0.0', 'v1.1.0'],
+  ['owner', ['owner: alice', 'reviewer: alice'], 'alice', 'bob'],
+  ['nodeport', ['nodePort: 30080'], '30080', '31080'],
+  ['retention', ['retention = 7d'], '7d', '30d'],
+  ['limit', ['max_connections = 100'], '100', '500'],
 ];
+
+const REPLACES: ReplaceSpec[] = REPLACE_PAIRS.map(([slug = '', body = [], from = '', to = '']) => ({
+  slug,
+  before: [...body, ''].join('\n'),
+  from,
+  to,
+}));
 
 const replaceDrills = family<ReplaceSpec>({
   track: 'kernel',

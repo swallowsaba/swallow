@@ -30,18 +30,32 @@ interface IssueSpec {
   label: string;
 }
 
-const ISSUES: IssueSpec[] = [
-  { slug: 'login-bug', title: 'ログインできない', label: 'bug' },
-  { slug: 'slow-search', title: '検索が遅い', label: 'performance' },
-  { slug: 'add-export', title: 'CSV 書き出しがほしい', label: 'enhancement' },
-  { slug: 'broken-link', title: 'リンクが切れている', label: 'docs' },
-  { slug: 'flaky-test', title: 'テストが不安定', label: 'flaky' },
-  { slug: 'cert-expiry', title: '証明書が切れる', label: 'ops' },
-  { slug: 'a11y', title: 'キーボードで操作できない', label: 'a11y' },
-  { slug: 'i18n', title: '英語表示が崩れる', label: 'i18n' },
-  { slug: 'oom', title: 'バッチがメモリ不足で落ちる', label: 'bug' },
-  { slug: 'audit', title: '監査ログが残らない', label: 'security' },
+const ISSUE_ROWS: [string, string, string][] = [
+  ['login-bug', 'ログインできない', 'bug'],
+  ['slow-search', '検索が遅い', 'performance'],
+  ['add-export', 'CSV 書き出しがほしい', 'enhancement'],
+  ['broken-link', 'リンクが切れている', 'docs'],
+  ['flaky-test', 'テストが不安定', 'flaky'],
+  ['cert-expiry', '証明書が切れる', 'ops'],
+  ['a11y', 'キーボードで操作できない', 'a11y'],
+  ['i18n', '英語表示が崩れる', 'i18n'],
+  ['oom', 'バッチがメモリ不足で落ちる', 'bug'],
+  ['audit', '監査ログが残らない', 'security'],
+  ['timezone', '時刻がずれて表示される', 'bug'],
+  ['upload-limit', '大きいファイルが上げられない', 'enhancement'],
+  ['retry-storm', '再試行が集中する', 'reliability'],
+  ['cost', '請求が想定より高い', 'cost'],
+  ['dark-mode', '暗い配色に対応してほしい', 'enhancement'],
+  ['api-doc', 'API の説明が古い', 'docs'],
+  ['deadlock', '同時実行で固まる', 'bug'],
+  ['rollback', '切り戻せない', 'ops'],
 ];
+
+const ISSUES: IssueSpec[] = ISSUE_ROWS.map(([slug = '', title = '', label = '']) => ({
+  slug,
+  title,
+  label,
+}));
 
 const issueDrills = family<IssueSpec>({
   track: 'github',
@@ -103,16 +117,30 @@ interface PrSpec {
   branch: string;
 }
 
-const PRS: PrSpec[] = [
-  { slug: 'login', title: 'ログイン画面を追加', branch: 'feature/login' },
-  { slug: 'search', title: '検索を速くする', branch: 'perf/search' },
-  { slug: 'export', title: 'CSV 書き出し', branch: 'feature/export' },
-  { slug: 'docs', title: '手順書を直す', branch: 'docs/runbook' },
-  { slug: 'deps', title: '依存を更新', branch: 'chore/deps' },
-  { slug: 'crash', title: '落ちる不具合を直す', branch: 'fix/crash' },
-  { slug: 'a11y', title: 'キーボード操作に対応', branch: 'feature/a11y' },
-  { slug: 'i18n', title: '英語表示を直す', branch: 'fix/i18n' },
+const PR_ROWS: [string, string, string][] = [
+  ['login', 'ログイン画面を追加', 'feature/login'],
+  ['search', '検索を速くする', 'perf/search'],
+  ['export', 'CSV 書き出し', 'feature/export'],
+  ['docs', '手順書を直す', 'docs/runbook'],
+  ['deps', '依存を更新', 'chore/deps'],
+  ['crash', '落ちる不具合を直す', 'fix/crash'],
+  ['a11y', 'キーボード操作に対応', 'feature/a11y'],
+  ['i18n', '英語表示を直す', 'fix/i18n'],
+  ['cache', 'キャッシュを入れる', 'feature/cache'],
+  ['index', '索引を足す', 'perf/index'],
+  ['webhook', '通知を送る', 'feature/webhook'],
+  ['leak', '接続の閉じ忘れを直す', 'fix/leak'],
+  ['lint', '静的検査を入れる', 'chore/lint'],
+  ['report', '集計を追加', 'feature/report'],
+  ['race', '競合状態を直す', 'fix/race'],
+  ['upload', 'アップロードに対応', 'feature/upload'],
 ];
+
+const PRS: PrSpec[] = PR_ROWS.map(([slug = '', title = '', branch = '']) => ({
+  slug,
+  title,
+  branch,
+}));
 
 const prDrills = family<PrSpec>({
   track: 'github',
@@ -180,14 +208,19 @@ const prDrills = family<PrSpec>({
  * github/04 ブランチ保護
  * ------------------------------------------------------------------ */
 
-const PROTECTS: { slug: string; value: { branch: string; approvals: number; check: string } }[] = [
-  { slug: 'main-1-build', value: { branch: 'main', approvals: 1, check: 'Build' } },
-  { slug: 'main-2-test', value: { branch: 'main', approvals: 2, check: 'Test' } },
-  { slug: 'release-1-lint', value: { branch: 'release', approvals: 1, check: 'Lint' } },
-  { slug: 'develop-1-build', value: { branch: 'develop', approvals: 1, check: 'Build' } },
-  { slug: 'main-2-security', value: { branch: 'main', approvals: 2, check: 'Security' } },
-  { slug: 'hotfix-1-test', value: { branch: 'hotfix', approvals: 1, check: 'Test' } },
-];
+const PROTECT_BRANCHES = ['main', 'release', 'develop', 'hotfix', 'staging', 'production'];
+const PROTECT_CHECKS = ['Build', 'Test', 'Lint', 'Security', 'Typecheck', 'E2E'];
+
+const PROTECTS: { slug: string; value: { branch: string; approvals: number; check: string } }[] =
+  PROTECT_BRANCHES.flatMap((branch, i) =>
+    [1, 2].map((approvals) => {
+      const check = PROTECT_CHECKS[(i + approvals) % PROTECT_CHECKS.length] ?? 'Build';
+      return {
+        slug: `${branch}-${String(approvals)}-${check.toLowerCase()}`,
+        value: { branch, approvals, check },
+      };
+    }),
+  );
 
 const protectDrills = family<{ branch: string; approvals: number; check: string }>({
   track: 'github',
@@ -247,14 +280,14 @@ interface FlowSpec {
   step: string;
 }
 
-const FLOWS: FlowSpec[] = [
-  { slug: 'build', job: 'build', step: 'npm run build' },
-  { slug: 'test', job: 'test', step: 'npm test' },
-  { slug: 'lint', job: 'lint', step: 'npm run lint' },
-  { slug: 'typecheck', job: 'typecheck', step: 'npm run typecheck' },
-  { slug: 'audit', job: 'audit', step: 'npm audit' },
-  { slug: 'e2e', job: 'e2e', step: 'npm run e2e' },
+const FLOW_ROWS: [string, string][] = [
+  ['build', 'npm run build'], ['test', 'npm test'], ['lint', 'npm run lint'],
+  ['typecheck', 'npm run typecheck'], ['audit', 'npm audit'], ['e2e', 'npm run e2e'],
+  ['format', 'npm run format'], ['coverage', 'npm run coverage'], ['docs', 'npm run docs'],
+  ['bench', 'npm run bench'], ['package', 'npm pack'], ['publish', 'npm publish'],
 ];
+
+const FLOWS: FlowSpec[] = FLOW_ROWS.map(([job = '', step = '']) => ({ slug: job, job, step }));
 
 function workflowYaml(job: string, step: string): string {
   return [
@@ -347,14 +380,18 @@ const flowDrills = family<FlowSpec>({
  * github/09 秘密を安全に渡す
  * ------------------------------------------------------------------ */
 
-const SECRETS: { slug: string; value: { name: string; value: string } }[] = [
-  { slug: 'npm-token', value: { name: 'NPM_TOKEN', value: 'npm_abcdef' } },
-  { slug: 'aws-key', value: { name: 'AWS_ACCESS_KEY_ID', value: 'AKIAEXAMPLE' } },
-  { slug: 'slack', value: { name: 'SLACK_WEBHOOK', value: 'https://hooks.example/abc' } },
-  { slug: 'registry', value: { name: 'REGISTRY_PASSWORD', value: 'hunter2' } },
-  { slug: 'signing', value: { name: 'SIGNING_KEY', value: 'key-material' } },
-  { slug: 'deploy', value: { name: 'DEPLOY_TOKEN', value: 'dep_123456' } },
+const SECRET_ROWS: [string, string][] = [
+  ['NPM_TOKEN', 'npm_abcdef'], ['AWS_ACCESS_KEY_ID', 'AKIAEXAMPLE'],
+  ['SLACK_WEBHOOK', 'https://hooks.example/abc'], ['REGISTRY_PASSWORD', 'hunter2'],
+  ['SIGNING_KEY', 'key-material'], ['DEPLOY_TOKEN', 'dep_123456'],
+  ['DB_PASSWORD', 'pg_secret'], ['SENTRY_DSN', 'https://sentry.example/1'],
+  ['GPG_PASSPHRASE', 'pass-phrase'], ['CLOUD_SA_JSON', 'service-account'],
+  ['SSH_DEPLOY_KEY', 'ssh-ed25519'], ['API_KEY', 'ak_live_1'],
 ];
+
+const SECRETS: { slug: string; value: { name: string; value: string } }[] = SECRET_ROWS.map(
+  ([name = '', value = '']) => ({ slug: name.toLowerCase().replace(/_/g, '-'), value: { name, value } }),
+);
 
 const secretDrills = family<{ name: string; value: string }>({
   track: 'github',

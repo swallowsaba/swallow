@@ -2,6 +2,7 @@ import { fileEquals, fileExists, pathExists } from '../authoring/assert';
 import type { AssertContext } from '../types';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, family, man } from './shared';
+import { DIR_NAMES, FILE_STEMS, slugify } from './values';
 
 const CH = 'kernel/09';
 
@@ -14,16 +15,25 @@ function processGone(needle: string) {
  * 1. df と du の見ているものの違い
  * ------------------------------------------------------------------ */
 
-const SIZES: { slug: string; value: { dirs: { path: string; kb: number }[] } }[] = [
-  { slug: 'logs', value: { dirs: [{ path: '/var/log', kb: 40 }, { path: '/srv/app', kb: 12 }] } },
-  { slug: 'data', value: { dirs: [{ path: '/data/raw', kb: 60 }, { path: '/data/clean', kb: 8 }] } },
-  { slug: 'backup', value: { dirs: [{ path: '/backup/db', kb: 90 }, { path: '/backup/files', kb: 20 }] } },
-  { slug: 'cache', value: { dirs: [{ path: '/var/cache', kb: 35 }, { path: '/var/tmp', kb: 5 }] } },
-  { slug: 'build', value: { dirs: [{ path: '/build/out', kb: 70 }, { path: '/build/cache', kb: 25 }] } },
-  { slug: 'media', value: { dirs: [{ path: '/srv/media', kb: 120 }, { path: '/srv/thumbs', kb: 10 }] } },
-  { slug: 'db', value: { dirs: [{ path: '/var/lib/db', kb: 150 }, { path: '/var/lib/wal', kb: 30 }] } },
-  { slug: 'home', value: { dirs: [{ path: '/home/learner/work', kb: 45 }, { path: '/home/learner/tmp', kb: 15 }] } },
+const SIZE_ROOTS = [
+  ['/var/log', '/srv/app'], ['/data/raw', '/data/clean'], ['/backup/db', '/backup/files'],
+  ['/var/cache', '/var/tmp'], ['/build/out', '/build/cache'], ['/srv/media', '/srv/thumbs'],
+  ['/var/lib/db', '/var/lib/wal'], ['/home/learner/work', '/home/learner/tmp'],
+  ['/opt/tools', '/opt/share'], ['/mnt/cold', '/mnt/hot'], ['/srv/web', '/srv/api'],
+  ['/export/a', '/export/b'],
 ];
+
+const SIZES: { slug: string; value: { dirs: { path: string; kb: number }[] } }[] = SIZE_ROOTS.map(
+  (pair, i) => ({
+    slug: slugify(pair[0] ?? `pair${String(i)}`),
+    value: {
+      dirs: [
+        { path: pair[0] ?? '/a', kb: 30 + ((i * 17) % 120) },
+        { path: pair[1] ?? '/b', kb: 5 + ((i * 7) % 20) },
+      ],
+    },
+  }),
+);
 
 const biggestDrills = family<{ dirs: { path: string; kb: number }[] }>({
   track: 'kernel',
@@ -65,16 +75,10 @@ const biggestDrills = family<{ dirs: { path: string; kb: number }[] }>({
  * 2. 中身だけ空にする
  * ------------------------------------------------------------------ */
 
-const TRUNCATES: { slug: string; value: string }[] = [
-  { slug: 'app', value: '/var/log/app.log' },
-  { slug: 'access', value: '/var/log/access.log' },
-  { slug: 'error', value: '/var/log/error.log' },
-  { slug: 'debug', value: '/var/log/debug.log' },
-  { slug: 'query', value: '/var/log/query.log' },
-  { slug: 'audit', value: '/var/log/audit.log' },
-  { slug: 'gc', value: '/var/log/gc.log' },
-  { slug: 'batch', value: '/var/log/batch.log' },
-];
+const TRUNCATES: { slug: string; value: string }[] = FILE_STEMS.map((stem) => ({
+  slug: stem,
+  value: `/var/log/${stem}.log`,
+}));
 
 const truncateDrills = family<string>({
   track: 'kernel',
@@ -121,14 +125,12 @@ const truncateDrills = family<string>({
  * 3. 消したのに空きが戻らない
  * ------------------------------------------------------------------ */
 
-const PRESSURES: { slug: string; value: { log: string; holder: string } }[] = [
-  { slug: 'app', value: { log: '/var/log/app.log', holder: 'app-server' } },
-  { slug: 'worker', value: { log: '/var/log/worker.log', holder: 'queue-worker' } },
-  { slug: 'proxy', value: { log: '/var/log/proxy.log', holder: 'proxy-daemon' } },
-  { slug: 'db', value: { log: '/var/log/db.log', holder: 'db-writer' } },
-  { slug: 'sync', value: { log: '/var/log/sync.log', holder: 'sync-agent' } },
-  { slug: 'index', value: { log: '/var/log/index.log', holder: 'indexer' } },
-];
+const PRESSURES: { slug: string; value: { log: string; holder: string } }[] = FILE_STEMS.map(
+  (stem, i) => ({
+    slug: stem,
+    value: { log: `/var/log/${stem}.log`, holder: `${stem}-holder-${String(i)}` },
+  }),
+);
 
 const pressureDrills = family<{ log: string; holder: string }>({
   track: 'kernel',
@@ -196,14 +198,9 @@ const pressureDrills = family<{ log: string; holder: string }>({
  * 4. 使用量の見方
  * ------------------------------------------------------------------ */
 
-const REPORTS: { slug: string; value: { path: string; kb: number } }[] = [
-  { slug: 'log', value: { path: '/var/log', kb: 30 } },
-  { slug: 'srv', value: { path: '/srv', kb: 50 } },
-  { slug: 'data', value: { path: '/data', kb: 80 } },
-  { slug: 'opt', value: { path: '/opt', kb: 20 } },
-  { slug: 'cache', value: { path: '/var/cache', kb: 65 } },
-  { slug: 'backup', value: { path: '/backup', kb: 110 } },
-];
+const REPORTS: { slug: string; value: { path: string; kb: number } }[] = DIR_NAMES.map(
+  (name, i) => ({ slug: name, value: { path: `/${name}`, kb: 10 + ((i * 23) % 140) } }),
+);
 
 const reportDrills = family<{ path: string; kb: number }>({
   track: 'kernel',

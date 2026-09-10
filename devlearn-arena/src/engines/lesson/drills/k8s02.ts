@@ -5,6 +5,7 @@ import type { ClusterState, Deployment, Pod } from '@/engines/k8s/types';
 import { readyPods, resourceAbsent, resourceWhere, withCluster } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { family, k8sDoc } from './shared';
+import { APP_NAMES } from './values';
 
 const POD_DOC = k8sDoc('concepts/workloads/pods/', 'Pods');
 const LIFECYCLE = k8sDoc('concepts/workloads/pods/pod-lifecycle/', 'Pod Lifecycle');
@@ -33,16 +34,12 @@ interface PodSpec {
   ticks: number;
 }
 
-const PODS: PodSpec[] = [
-  { slug: 'nginx', name: 'web', image: 'nginx:1.27', ticks: 6 },
-  { slug: 'redis', name: 'cache', image: 'redis:7', ticks: 6 },
-  { slug: 'api', name: 'api', image: 'api:1.4', ticks: 8 },
-  { slug: 'worker', name: 'worker', image: 'worker:2.0', ticks: 8 },
-  { slug: 'front', name: 'front', image: 'front:3.1', ticks: 6 },
-  { slug: 'batch', name: 'batch', image: 'batch:0.9', ticks: 10 },
-  { slug: 'proxy', name: 'proxy', image: 'envoy:1.30', ticks: 6 },
-  { slug: 'search', name: 'search', image: 'search:5.2', ticks: 10 },
-];
+const PODS: PodSpec[] = APP_NAMES.map((name, i) => ({
+  slug: name,
+  name,
+  image: `${name}:1.${String(i)}.0`,
+  ticks: 6 + (i % 6),
+}));
 
 const lifecycleDrills = family<PodSpec>({
   track: 'k8s',
@@ -104,16 +101,13 @@ interface ReconcileSpec {
   replicas: number;
 }
 
-const RECONCILES: ReconcileSpec[] = [
-  { slug: 'web2', name: 'web', replicas: 2 },
-  { slug: 'web3', name: 'web', replicas: 3 },
-  { slug: 'api2', name: 'api', replicas: 2 },
-  { slug: 'api4', name: 'api', replicas: 4 },
-  { slug: 'worker3', name: 'worker', replicas: 3 },
-  { slug: 'front5', name: 'front', replicas: 5 },
-  { slug: 'cache1', name: 'cache', replicas: 1 },
-  { slug: 'proxy2', name: 'proxy', replicas: 2 },
-];
+const RECONCILES: ReconcileSpec[] = APP_NAMES.flatMap((name, i) =>
+  [1, 2, 3].map((k) => ({
+    slug: `${name}${String(k)}`,
+    name,
+    replicas: 1 + ((i + k) % 4),
+  })),
+);
 
 function deployed(name: string, replicas: number): ClusterState {
   return settled(
@@ -172,16 +166,19 @@ const reconcileDrills = family<ReconcileSpec>({
  * k8s/03 ラベルとセレクタ
  * ------------------------------------------------------------------ */
 
-const LABELS: { slug: string; value: { name: string; key: string; val: string } }[] = [
-  { slug: 'tier', value: { name: 'web', key: 'tier', val: 'front' } },
-  { slug: 'env', value: { name: 'api', key: 'env', val: 'prod' } },
-  { slug: 'team', value: { name: 'worker', key: 'team', val: 'payments' } },
-  { slug: 'release', value: { name: 'front', key: 'release', val: 'canary' } },
-  { slug: 'zone', value: { name: 'cache', key: 'zone', val: 'a' } },
-  { slug: 'role', value: { name: 'proxy', key: 'role', val: 'edge' } },
-  { slug: 'owner', value: { name: 'batch', key: 'owner', val: 'data' } },
-  { slug: 'stage', value: { name: 'search', key: 'stage', val: 'beta' } },
+const LABEL_KEYS: [string, string][] = [
+  ['tier', 'front'], ['env', 'prod'], ['team', 'payments'], ['release', 'canary'],
+  ['zone', 'a'], ['role', 'edge'], ['owner', 'data'], ['stage', 'beta'],
+  ['plan', 'gold'], ['shard', 'three'],
 ];
+
+const LABELS: { slug: string; value: { name: string; key: string; val: string } }[] =
+  APP_NAMES.flatMap((name, i) =>
+    LABEL_KEYS.slice(i % 3, (i % 3) + 2).map(([key = '', val = '']) => ({
+      slug: `${name}-${key}`,
+      value: { name, key, val },
+    })),
+  );
 
 const labelDrills = family<{ name: string; key: string; val: string }>({
   track: 'k8s',
@@ -223,16 +220,17 @@ const labelDrills = family<{ name: string; key: string; val: string }>({
  * k8s/04 Workloads：数を変える
  * ------------------------------------------------------------------ */
 
-const SCALES: { slug: string; value: { name: string; from: number; to: number } }[] = [
-  { slug: 'up-2-4', value: { name: 'web', from: 2, to: 4 } },
-  { slug: 'up-1-3', value: { name: 'api', from: 1, to: 3 } },
-  { slug: 'down-4-2', value: { name: 'worker', from: 4, to: 2 } },
-  { slug: 'down-3-1', value: { name: 'front', from: 3, to: 1 } },
-  { slug: 'up-2-5', value: { name: 'cache', from: 2, to: 5 } },
-  { slug: 'down-5-2', value: { name: 'proxy', from: 5, to: 2 } },
-  { slug: 'up-3-6', value: { name: 'search', from: 3, to: 6 } },
-  { slug: 'zero', value: { name: 'batch', from: 2, to: 0 } },
+const SCALE_PAIRS: [number, number][] = [
+  [2, 4], [1, 3], [4, 2], [3, 1], [2, 5], [5, 2], [3, 6], [2, 0], [1, 4], [4, 1],
 ];
+
+const SCALES: { slug: string; value: { name: string; from: number; to: number } }[] =
+  APP_NAMES.flatMap((name, i) =>
+    SCALE_PAIRS.slice(i % 4, (i % 4) + 2).map(([from = 1, to = 2]) => ({
+      slug: `${name}-${String(from)}-${String(to)}`,
+      value: { name, from, to },
+    })),
+  );
 
 const scaleDrills = family<{ name: string; from: number; to: number }>({
   track: 'k8s',
@@ -279,14 +277,10 @@ const scaleDrills = family<{ name: string; from: number; to: number }>({
  * k8s/04 いらなくなったものを片付ける
  * ------------------------------------------------------------------ */
 
-const DELETES: { slug: string; value: string }[] = [
-  { slug: 'web', value: 'web' },
-  { slug: 'api', value: 'api' },
-  { slug: 'worker', value: 'worker' },
-  { slug: 'front', value: 'front' },
-  { slug: 'cache', value: 'cache' },
-  { slug: 'proxy', value: 'proxy' },
-];
+const DELETES: { slug: string; value: string }[] = APP_NAMES.map((value) => ({
+  slug: value,
+  value,
+}));
 
 const deleteDrills = family<string>({
   track: 'k8s',

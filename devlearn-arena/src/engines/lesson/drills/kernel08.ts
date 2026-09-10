@@ -16,18 +16,15 @@ function executable(path: string) {
  * 1. 実行できるスクリプトにする
  * ------------------------------------------------------------------ */
 
-const SCRIPTS: { slug: string; value: { name: string; body: string } }[] = [
-  { slug: 'hello', value: { name: 'hello.sh', body: 'echo hello' } },
-  { slug: 'backup', value: { name: 'backup.sh', body: 'echo backing up' } },
-  { slug: 'deploy', value: { name: 'deploy.sh', body: 'echo deploying' } },
-  { slug: 'check', value: { name: 'check.sh', body: 'echo checking' } },
-  { slug: 'rotate', value: { name: 'rotate.sh', body: 'echo rotating' } },
-  { slug: 'clean', value: { name: 'clean.sh', body: 'echo cleaning' } },
-  { slug: 'notify', value: { name: 'notify.sh', body: 'echo notifying' } },
-  { slug: 'report', value: { name: 'report.sh', body: 'echo reporting' } },
-  { slug: 'restore', value: { name: 'restore.sh', body: 'echo restoring' } },
-  { slug: 'warmup', value: { name: 'warmup.sh', body: 'echo warming up' } },
+const SCRIPT_VERBS = [
+  'hello', 'backup', 'deploy', 'check', 'rotate', 'clean', 'notify', 'report',
+  'restore', 'warmup', 'drain', 'seed', 'migrate', 'verify', 'publish', 'collect',
+  'reindex', 'prune', 'sync', 'rollback',
 ];
+
+const SCRIPTS: { slug: string; value: { name: string; body: string } }[] = SCRIPT_VERBS.map(
+  (verb) => ({ slug: verb, value: { name: `${verb}.sh`, body: `echo ${verb}` } }),
+);
 
 const scriptDrills = family<{ name: string; body: string }>({
   track: 'kernel',
@@ -199,16 +196,16 @@ const chainDrills = family<{ ok: boolean; marker: string }>({
  * 4. 引数を受け取る
  * ------------------------------------------------------------------ */
 
-const ARGS: { slug: string; value: { name: string; arg: string } }[] = [
-  { slug: 'greet', value: { name: 'greet.sh', arg: 'alice' } },
-  { slug: 'ping', value: { name: 'ping.sh', arg: 'web1' } },
-  { slug: 'tag', value: { name: 'tag.sh', arg: 'v1.2.3' } },
-  { slug: 'env', value: { name: 'env.sh', arg: 'staging' } },
-  { slug: 'zone', value: { name: 'zone.sh', arg: 'ap-northeast-1a' } },
-  { slug: 'team', value: { name: 'team.sh', arg: 'payments' } },
-  { slug: 'branch', value: { name: 'branch.sh', arg: 'main' } },
-  { slug: 'ns', value: { name: 'ns.sh', arg: 'kube-system' } },
+const ARG_ROWS: [string, string][] = [
+  ['greet', 'alice'], ['ping', 'web1'], ['tag', 'v1.2.3'], ['env', 'staging'],
+  ['zone', 'ap-northeast-1a'], ['team', 'payments'], ['branch', 'main'], ['ns', 'kube-system'],
+  ['user', 'runner'], ['host', 'db1'], ['region', 'osaka'], ['plan', 'pro'],
+  ['shard', '7'], ['stage', 'canary'], ['role', 'admin'], ['bucket', 'artifacts'],
 ];
+
+const ARGS: { slug: string; value: { name: string; arg: string } }[] = ARG_ROWS.map(
+  ([stem = '', arg = '']) => ({ slug: stem, value: { name: `${stem}.sh`, arg } }),
+);
 
 const argDrills = family<{ name: string; arg: string }>({
   track: 'kernel',
@@ -259,14 +256,24 @@ const argDrills = family<{ name: string; arg: string }>({
  * 5. 手順書をスクリプトに落とす
  * ------------------------------------------------------------------ */
 
-const RUNBOOKS: { slug: string; value: { name: string; steps: string[] } }[] = [
-  { slug: 'rotate', value: { name: 'rotate.sh', steps: ['mkdir -p archive', 'mv app.log archive/'] } },
-  { slug: 'setup', value: { name: 'setup.sh', steps: ['mkdir -p config', 'echo ready > config/state'] } },
-  { slug: 'collect', value: { name: 'collect.sh', steps: ['mkdir -p out', 'cp app.log out/'] } },
-  { slug: 'seal', value: { name: 'seal.sh', steps: ['mkdir -p sealed', 'mv app.log sealed/'] } },
-  { slug: 'stage', value: { name: 'stage.sh', steps: ['mkdir -p stage', 'cp app.log stage/'] } },
-  { slug: 'snapshot', value: { name: 'snapshot.sh', steps: ['mkdir -p snap', 'cp app.log snap/'] } },
+const RUNBOOK_DIRS = [
+  'archive', 'config', 'out', 'sealed', 'stage', 'snap', 'backup', 'audit',
+  'export', 'staging', 'keep', 'ship',
 ];
+
+const RUNBOOKS: { slug: string; value: { name: string; steps: string[] } }[] = RUNBOOK_DIRS.flatMap(
+  (dir, i) =>
+    [0, 1].map((k) => ({
+      slug: `${dir}-${String(k + 1)}`,
+      value: {
+        name: `${dir}${String(k + 1)}.sh`,
+        steps:
+          k === 0
+            ? [`mkdir -p ${dir}${String(i)}`, `mv app.log ${dir}${String(i)}/`]
+            : [`mkdir -p ${dir}${String(i)}`, `cp app.log ${dir}${String(i)}/`],
+      },
+    })),
+);
 
 const runbookDrills = family<{ name: string; steps: string[] }>({
   track: 'kernel',

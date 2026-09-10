@@ -3,6 +3,7 @@ import {
 } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, family, fromNames, man } from './shared';
+import { DIR_NAMES, slugify } from './values';
 
 const CH = 'kernel/01';
 
@@ -15,20 +16,16 @@ interface WalkSpec {
   target: string;
 }
 
-const WALKS: { slug: string; value: WalkSpec }[] = [
-  { slug: 'srv-app-src', value: { tree: ['srv/app/src', 'srv/app/docs'], target: '/srv/app/src' } },
-  { slug: 'var-log-nginx', value: { tree: ['var/log/nginx', 'var/log/mysql'], target: '/var/log/nginx' } },
-  { slug: 'etc-conf-d', value: { tree: ['etc/conf.d', 'etc/init.d'], target: '/etc/conf.d' } },
-  { slug: 'opt-tools-bin', value: { tree: ['opt/tools/bin', 'opt/tools/lib'], target: '/opt/tools/bin' } },
-  { slug: 'home-work-2026', value: { tree: ['home/learner/work/2026', 'home/learner/work/2025'], target: `${HOME}/work/2026` } },
-  { slug: 'data-raw-may', value: { tree: ['data/raw/may', 'data/raw/june'], target: '/data/raw/may' } },
-  { slug: 'srv-web-static', value: { tree: ['srv/web/static', 'srv/web/templates'], target: '/srv/web/static' } },
-  { slug: 'usr-share-doc', value: { tree: ['usr/share/doc', 'usr/share/man'], target: '/usr/share/doc' } },
-  { slug: 'mnt-backup-db', value: { tree: ['mnt/backup/db', 'mnt/backup/files'], target: '/mnt/backup/db' } },
-  { slug: 'srv-api-v2', value: { tree: ['srv/api/v1', 'srv/api/v2'], target: '/srv/api/v2' } },
-  { slug: 'var-lib-app', value: { tree: ['var/lib/app', 'var/lib/cache'], target: '/var/lib/app' } },
-  { slug: 'etc-ssl-certs', value: { tree: ['etc/ssl/certs', 'etc/ssl/private'], target: '/etc/ssl/certs' } },
-];
+const WALKS: { slug: string; value: WalkSpec }[] = DIR_NAMES.flatMap((top, i) =>
+  ['src', 'conf', 'logs'].map((leaf, j) => {
+    const middle = DIR_NAMES[(i + j + 1) % DIR_NAMES.length] ?? 'app';
+    const target = `/${top}/${middle}/${leaf}`;
+    return {
+      slug: slugify(target),
+      value: { tree: [`${top}/${middle}/${leaf}`, `${top}/${middle}/other`], target },
+    };
+  }),
+);
 
 function treeFiles(paths: readonly string[]): Record<string, string | null> {
   const files: Record<string, string | null> = { [HOME]: null };
@@ -77,18 +74,24 @@ const walkDrills = family<WalkSpec>({
  * 2. mkdir -p で階層をまとめて掘る
  * ------------------------------------------------------------------ */
 
-const TREES: { slug: string; value: { root: string; leaves: string[] } }[] = [
-  { slug: 'project', value: { root: 'project', leaves: ['src/main', 'src/test', 'docs/api'] } },
-  { slug: 'service', value: { root: 'service', leaves: ['config/dev', 'config/prod', 'logs'] } },
-  { slug: 'site', value: { root: 'site', leaves: ['public/css', 'public/js', 'content/posts'] } },
-  { slug: 'infra', value: { root: 'infra', leaves: ['terraform/modules', 'ansible/roles', 'scripts'] } },
-  { slug: 'report', value: { root: 'report', leaves: ['2026/q1', '2026/q2', 'templates'] } },
-  { slug: 'dataset', value: { root: 'dataset', leaves: ['raw/images', 'raw/labels', 'processed'] } },
-  { slug: 'monorepo', value: { root: 'monorepo', leaves: ['apps/web', 'apps/api', 'packages/ui'] } },
-  { slug: 'archive', value: { root: 'archive', leaves: ['2024/jan', '2025/jan', '2026/jan'] } },
-  { slug: 'lab', value: { root: 'lab', leaves: ['exp/001', 'exp/002', 'notes'] } },
-  { slug: 'backup', value: { root: 'backup', leaves: ['daily/db', 'weekly/db', 'monthly/db'] } },
+const LEAF_SETS = [
+  ['src/main', 'src/test', 'docs/api'],
+  ['config/dev', 'config/prod', 'logs'],
+  ['public/css', 'public/js', 'content/posts'],
+  ['terraform/modules', 'ansible/roles', 'scripts'],
+  ['2026/q1', '2026/q2', 'templates'],
+  ['raw/images', 'raw/labels', 'processed'],
+  ['apps/web', 'apps/api', 'packages/ui'],
+  ['daily/db', 'weekly/db', 'monthly/db'],
 ];
+
+const TREES: { slug: string; value: { root: string; leaves: string[] } }[] = DIR_NAMES.flatMap(
+  (root, i) =>
+    [0, 1].map((k) => {
+      const leaves = LEAF_SETS[(i + k) % LEAF_SETS.length] ?? LEAF_SETS[0] ?? [];
+      return { slug: `${root}-${String(k + 1)}`, value: { root, leaves: [...leaves] } };
+    }),
+);
 
 const makeTreeDrills = family<{ root: string; leaves: string[] }>({
   track: 'kernel',
@@ -127,18 +130,21 @@ const makeTreeDrills = family<{ root: string; leaves: string[] }>({
  * 3. cp と mv を使い分ける
  * ------------------------------------------------------------------ */
 
-const MOVES: { slug: string; value: { file: string; from: string; to: string } }[] = [
-  { slug: 'config', value: { file: 'app.conf', from: 'draft', to: 'config' } },
-  { slug: 'report', value: { file: 'may.csv', from: 'inbox', to: 'reports' } },
-  { slug: 'image', value: { file: 'logo.svg', from: 'tmp', to: 'assets' } },
-  { slug: 'script', value: { file: 'deploy.sh', from: 'scratch', to: 'bin' } },
-  { slug: 'schema', value: { file: 'schema.sql', from: 'incoming', to: 'db' } },
-  { slug: 'cert', value: { file: 'server.crt', from: 'downloads', to: 'certs' } },
-  { slug: 'note', value: { file: 'meeting.md', from: 'inbox', to: 'notes' } },
-  { slug: 'backup', value: { file: 'dump.sql', from: 'tmp', to: 'backup' } },
-  { slug: 'log', value: { file: 'access.log', from: 'var', to: 'archive' } },
-  { slug: 'lock', value: { file: 'package-lock.json', from: 'old', to: 'current' } },
+const MOVE_FILES = [
+  'app.conf', 'may.csv', 'logo.svg', 'deploy.sh', 'schema.sql', 'server.crt',
+  'meeting.md', 'dump.sql', 'access.log', 'package-lock.json', 'notes.txt', 'index.html',
+  'values.yaml', 'seed.sql', 'report.pdf', 'chart.png', 'main.go', 'setup.py',
 ];
+
+const MOVES: { slug: string; value: { file: string; from: string; to: string } }[] =
+  MOVE_FILES.map((file, i) => ({
+    slug: slugify(file),
+    value: {
+      file,
+      from: DIR_NAMES[i % DIR_NAMES.length] ?? 'inbox',
+      to: DIR_NAMES[(i + 5) % DIR_NAMES.length] ?? 'archive',
+    },
+  }));
 
 const copyMoveDrills = family<{ file: string; from: string; to: string }>({
   track: 'kernel',
@@ -208,7 +214,7 @@ const copyMoveDrills = family<{ file: string; from: string; to: string }>({
 
 const CLEANUPS = fromNames([
   'tmp', 'cache', 'build', 'node_modules', 'dist', 'coverage', 'target', '.pytest_cache',
-  'vendor', 'out',
+  'vendor', 'out', 'obj', 'bin-tmp', 'logs-old', 'staging', 'scratch', 'artifacts',
 ]);
 
 const removeDrills = family<string>({
@@ -323,16 +329,18 @@ const sortingDrills = family<{ ext: string; dir: string; names: string[] }>({
  * 6. ファイルを作って中身を書く
  * ------------------------------------------------------------------ */
 
-const NOTES: { slug: string; value: { path: string; text: string } }[] = [
-  { slug: 'todo', value: { path: 'TODO.txt', text: 'ログを片付ける' } },
-  { slug: 'owner', value: { path: 'OWNER.txt', text: 'platform-team' } },
-  { slug: 'version', value: { path: 'VERSION', text: '1.4.2' } },
-  { slug: 'contact', value: { path: 'CONTACT.md', text: 'oncall@example.com' } },
-  { slug: 'runbook', value: { path: 'RUNBOOK.md', text: '再起動の前に必ず記録を残す' } },
-  { slug: 'motd', value: { path: 'motd', text: 'ようこそ' } },
-  { slug: 'flag', value: { path: 'FEATURE_FLAG', text: 'enabled' } },
-  { slug: 'endpoint', value: { path: 'ENDPOINT', text: 'https://api.example.com' } },
+const NOTE_PAIRS: [string, string][] = [
+  ['TODO.txt', 'ログを片付ける'], ['OWNER.txt', 'platform-team'], ['VERSION', '1.4.2'],
+  ['CONTACT.md', 'oncall@example.com'], ['RUNBOOK.md', '再起動の前に必ず記録を残す'],
+  ['motd', 'ようこそ'], ['FEATURE_FLAG', 'enabled'], ['ENDPOINT', 'https://api.example.com'],
+  ['REGION', 'ap-northeast-1'], ['TIER', 'standard'], ['MAINTAINER', 'infra'],
+  ['SCHEDULE', 'daily 03:00'], ['RETENTION', '30d'], ['LIMIT', '512'],
+  ['MODE', 'readonly'], ['CHANNEL', 'stable'],
 ];
+
+const NOTES: { slug: string; value: { path: string; text: string } }[] = NOTE_PAIRS.map(
+  ([path = '', text = '']) => ({ slug: slugify(path), value: { path, text } }),
+);
 
 const writeDrills = family<{ path: string; text: string }>({
   track: 'kernel',

@@ -2,6 +2,7 @@ import { fileEquals } from '../authoring/assert';
 import type { AssertContext } from '../types';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, family, man } from './shared';
+import { FILE_STEMS, slugify } from './values';
 
 const CH = 'kernel/07';
 
@@ -24,18 +25,23 @@ interface Culprit {
   bystander: string;
 }
 
-const CULPRITS: Culprit[] = [
-  { slug: 'batch', command: 'java -jar report-batch.jar', cpu: 96.2, memory: 3072, bystander: 'nginx: worker process' },
-  { slug: 'ffmpeg', command: 'ffmpeg -i in.mp4 out.mp4', cpu: 88.4, memory: 1200, bystander: 'sshd: listener' },
-  { slug: 'rsync', command: 'rsync -a /data /backup', cpu: 74.9, memory: 400, bystander: 'cron' },
-  { slug: 'mysqldump', command: 'mysqldump --all-databases', cpu: 81.1, memory: 900, bystander: 'nginx: worker process' },
-  { slug: 'webpack', command: 'node webpack --watch', cpu: 92.0, memory: 2400, bystander: 'redis-server' },
-  { slug: 'grepall', command: 'grep -R secret /', cpu: 99.1, memory: 120, bystander: 'sshd: listener' },
-  { slug: 'python', command: 'python train.py', cpu: 97.5, memory: 5120, bystander: 'postgres: writer' },
-  { slug: 'gzip', command: 'gzip -9 huge.tar', cpu: 85.0, memory: 300, bystander: 'cron' },
-  { slug: 'find', command: 'find / -name core', cpu: 70.2, memory: 90, bystander: 'redis-server' },
-  { slug: 'tar', command: 'tar czf backup.tar.gz /srv', cpu: 79.3, memory: 260, bystander: 'postgres: writer' },
+const HEAVY = [
+  'java -jar report-batch.jar', 'ffmpeg -i in.mp4 out.mp4', 'rsync -a /data /backup',
+  'mysqldump --all-databases', 'node webpack --watch', 'grep -R secret /',
+  'python train.py', 'gzip -9 huge.tar', 'find / -name core', 'tar czf backup.tar.gz /srv',
+  'pg_dump -Fc app', 'clamscan -r /', 'go build ./...', 'cargo build --release',
+  'convert big.tiff big.png', 'jq -s . huge.json', 'sort -S1G huge.csv', 'openssl speed',
 ];
+
+const BYSTANDERS = ['sshd: listener', 'cron', 'redis-server', 'postgres: writer', 'chronyd'];
+
+const CULPRITS: Culprit[] = HEAVY.map((command, i) => ({
+  slug: slugify(command.split(' ')[0] ?? `p${String(i)}`) + `-${String(i)}`,
+  command,
+  cpu: 60 + ((i * 7) % 40),
+  memory: 100 + ((i * 311) % 4000),
+  bystander: BYSTANDERS[i % BYSTANDERS.length] ?? 'cron',
+}));
 
 /* ------------------------------------------------------------------ *
  * 1. 犯人を見つける
@@ -85,16 +91,19 @@ const findDrills = family<Culprit>({
  * 2. 止める（TERM と KILL の違い）
  * ------------------------------------------------------------------ */
 
-const STUBBORN: { slug: string; value: { command: string; stubborn: boolean } }[] = [
-  { slug: 'batch', value: { command: 'java -jar report-batch.jar', stubborn: false } },
-  { slug: 'daemon', value: { command: 'stuck-daemon --no-exit', stubborn: true } },
-  { slug: 'worker', value: { command: 'worker --queue=default', stubborn: false } },
-  { slug: 'agent', value: { command: 'monitor-agent', stubborn: true } },
-  { slug: 'sync', value: { command: 'sync-loop.sh', stubborn: false } },
-  { slug: 'collector', value: { command: 'metrics-collector', stubborn: true } },
-  { slug: 'indexer', value: { command: 'search-indexer', stubborn: false } },
-  { slug: 'tailer', value: { command: 'log-tailer --follow', stubborn: true } },
+const TARGETS = [
+  'report-batch', 'stuck-daemon', 'queue-worker', 'monitor-agent', 'sync-loop',
+  'metrics-collector', 'search-indexer', 'log-tailer', 'mail-relay', 'thumb-maker',
+  'cache-warmer', 'audit-shipper', 'trace-agent', 'backup-runner', 'feed-poller',
+  'session-reaper',
 ];
+
+const STUBBORN: { slug: string; value: { command: string; stubborn: boolean } }[] = TARGETS.map(
+  (name, i) => ({
+    slug: slugify(name),
+    value: { command: `${name} --run`, stubborn: i % 2 === 1 },
+  }),
+);
 
 const killDrills = family<{ command: string; stubborn: boolean }>({
   track: 'kernel',
@@ -180,16 +189,12 @@ const killDrills = family<{ command: string; stubborn: boolean }>({
  * 3. 掴まれたファイルと容量
  * ------------------------------------------------------------------ */
 
-const HELD: { slug: string; value: { log: string; holder: string } }[] = [
-  { slug: 'app', value: { log: '/var/log/app.log', holder: 'app-server' } },
-  { slug: 'access', value: { log: '/var/log/access.log', holder: 'nginx: worker process' } },
-  { slug: 'query', value: { log: '/var/log/query.log', holder: 'postgres: logger' } },
-  { slug: 'batch', value: { log: '/var/log/batch.log', holder: 'batch-runner' } },
-  { slug: 'audit', value: { log: '/var/log/audit.log', holder: 'auditd' } },
-  { slug: 'gc', value: { log: '/var/log/gc.log', holder: 'java -jar app.jar' } },
-  { slug: 'sync', value: { log: '/var/log/sync.log', holder: 'sync-agent' } },
-  { slug: 'debug', value: { log: '/var/log/debug.log', holder: 'debug-collector' } },
-];
+const HELD: { slug: string; value: { log: string; holder: string } }[] = FILE_STEMS.map(
+  (stem, i) => ({
+    slug: stem,
+    value: { log: `/var/log/${stem}.log`, holder: `${stem}-writer-${String(i)}` },
+  }),
+);
 
 const heldDrills = family<{ log: string; holder: string }>({
   track: 'kernel',

@@ -5,6 +5,7 @@ import {
   staged, stashCountIs, tagExists,
 } from './gitAssert';
 import { HOME, family, gitDoc } from './shared';
+import { slugify } from './values';
 
 /* ------------------------------------------------------------------ *
  * git/01 最初のコミットまで
@@ -17,18 +18,33 @@ interface FirstSpec {
   message: string;
 }
 
-const FIRSTS: FirstSpec[] = [
-  { slug: 'readme', file: 'README.md', body: '# my-app', message: 'add README' },
-  { slug: 'index', file: 'index.html', body: 'hello page', message: 'add index page' },
-  { slug: 'main', file: 'main.py', body: 'print hi', message: 'add entry point' },
-  { slug: 'config', file: 'app.conf', body: 'port = 8080', message: 'add config' },
-  { slug: 'license', file: 'LICENSE', body: 'MIT', message: 'add license' },
-  { slug: 'makefile', file: 'Makefile', body: 'all:', message: 'add makefile' },
-  { slug: 'ignore', file: '.gitignore', body: 'node_modules/', message: 'ignore build output' },
-  { slug: 'schema', file: 'schema.sql', body: 'create table t (id int);', message: 'add schema' },
-  { slug: 'notes', file: 'NOTES.md', body: '- 調査中', message: 'add notes' },
-  { slug: 'script', file: 'run.sh', body: 'echo run', message: 'add run script' },
+const FIRST_ROWS: [string, string, string][] = [
+  ['README.md', 'my app', 'add README'],
+  ['index.html', 'hello page', 'add index page'],
+  ['main.py', 'print hi', 'add entry point'],
+  ['app.conf', 'port = 8080', 'add config'],
+  ['LICENSE', 'MIT', 'add license'],
+  ['Makefile', 'all:', 'add makefile'],
+  ['.gitignore', 'node_modules/', 'ignore build output'],
+  ['schema.sql', 'create table t (id int);', 'add schema'],
+  ['NOTES.md', 'work in progress', 'add notes'],
+  ['run.sh', 'echo run', 'add run script'],
+  ['CHANGELOG.md', 'unreleased', 'add changelog'],
+  ['Dockerfile', 'FROM scratch', 'add dockerfile'],
+  ['values.yaml', 'replicas: 1', 'add values'],
+  ['CODEOWNERS', '* @platform', 'add codeowners'],
+  ['.editorconfig', 'indent_size = 2', 'add editorconfig'],
+  ['go.mod', 'module app', 'add go module'],
+  ['pyproject.toml', 'name = app', 'add project file'],
+  ['docker-compose.yml', 'services:', 'add compose file'],
 ];
+
+const FIRSTS: FirstSpec[] = FIRST_ROWS.map(([file = '', body = '', message = '']) => ({
+  slug: slugify(file),
+  file,
+  body,
+  message,
+}));
 
 const firstCommitDrills = family<FirstSpec>({
   track: 'git',
@@ -100,16 +116,34 @@ interface BranchSpec {
   message: string;
 }
 
-const BRANCHES: BranchSpec[] = [
-  { slug: 'feature-login', branch: 'feature/login', file: 'login.js', body: 'login', message: 'add login' },
-  { slug: 'feature-search', branch: 'feature/search', file: 'search.js', body: 'search', message: 'add search' },
-  { slug: 'fix-typo', branch: 'fix/typo', file: 'typo.md', body: 'fixed', message: 'fix typo' },
-  { slug: 'chore-deps', branch: 'chore/deps', file: 'deps.txt', body: 'updated', message: 'update deps' },
-  { slug: 'feature-export', branch: 'feature/export', file: 'export.js', body: 'export', message: 'add export' },
-  { slug: 'fix-crash', branch: 'fix/crash', file: 'crash.md', body: 'handled', message: 'fix crash' },
-  { slug: 'docs-api', branch: 'docs/api', file: 'api.md', body: '# api', message: 'document api' },
-  { slug: 'feature-cache', branch: 'feature/cache', file: 'cache.js', body: 'cache', message: 'add cache' },
+const BRANCH_ROWS: [string, string, string, string][] = [
+  ['feature/login', 'login.js', 'login', 'add login'],
+  ['feature/search', 'search.js', 'search', 'add search'],
+  ['fix/typo', 'typo.md', 'fixed', 'fix typo'],
+  ['chore/deps', 'deps.txt', 'updated', 'update deps'],
+  ['feature/export', 'export.js', 'export', 'add export'],
+  ['fix/crash', 'crash.md', 'handled', 'fix crash'],
+  ['docs/api', 'api.md', 'api docs', 'document api'],
+  ['feature/cache', 'cache.js', 'cache', 'add cache'],
+  ['feature/upload', 'upload.js', 'upload', 'add upload'],
+  ['fix/leak', 'leak.md', 'closed', 'fix leak'],
+  ['perf/index', 'index.sql', 'create index', 'add index'],
+  ['chore/lint', 'lint.json', 'rules', 'configure lint'],
+  ['feature/webhook', 'webhook.js', 'webhook', 'add webhook'],
+  ['fix/race', 'race.md', 'locked', 'fix race'],
+  ['docs/runbook', 'runbook.md', 'steps', 'write runbook'],
+  ['feature/report', 'report.js', 'report', 'add report'],
 ];
+
+const BRANCHES: BranchSpec[] = BRANCH_ROWS.map(
+  ([branch = '', file = '', body = '', message = '']) => ({
+    slug: slugify(branch),
+    branch,
+    file,
+    body,
+    message,
+  }),
+);
 
 const branchDrills = family<BranchSpec>({
   track: 'git',
@@ -190,14 +224,31 @@ interface ConflictSpec {
   resolved: string;
 }
 
-const CONFLICTS: ConflictSpec[] = [
-  { slug: 'port', file: 'app.conf', base: 'port = 80', ours: 'port = 8080', theirs: 'port = 9090', resolved: 'port = 9090' },
-  { slug: 'version', file: 'VERSION', base: '1.0.0', ours: '1.1.0', theirs: '2.0.0', resolved: '2.0.0' },
-  { slug: 'title', file: 'title.txt', base: 'title a', ours: 'title b', theirs: 'title c', resolved: 'title c' },
-  { slug: 'owner', file: 'OWNER', base: 'alice', ours: 'bob', theirs: 'carol', resolved: 'carol' },
-  { slug: 'level', file: 'log.conf', base: 'level = info', ours: 'level = debug', theirs: 'level = warn', resolved: 'level = warn' },
-  { slug: 'image', file: 'deploy.yaml', base: 'image: app:1.0', ours: 'image: app:1.1', theirs: 'image: app:2.0', resolved: 'image: app:2.0' },
+const CONFLICT_ROWS: [string, string, string, string, string][] = [
+  ['app.conf', 'port = 80', 'port = 8080', 'port = 9090', 'port = 9090'],
+  ['VERSION', '1.0.0', '1.1.0', '2.0.0', '2.0.0'],
+  ['title.txt', 'title a', 'title b', 'title c', 'title c'],
+  ['OWNER', 'alice', 'bob', 'carol', 'carol'],
+  ['log.conf', 'level = info', 'level = debug', 'level = warn', 'level = warn'],
+  ['deploy.yaml', 'image: app:1.0', 'image: app:1.1', 'image: app:2.0', 'image: app:2.0'],
+  ['limits.conf', 'max = 100', 'max = 200', 'max = 500', 'max = 500'],
+  ['region.txt', 'tokyo', 'osaka', 'nagoya', 'nagoya'],
+  ['replicas.txt', '1', '2', '4', '4'],
+  ['branch.txt', 'master', 'develop', 'main', 'main'],
+  ['timeout.conf', 'timeout = 10', 'timeout = 20', 'timeout = 30', 'timeout = 30'],
+  ['plan.txt', 'free', 'pro', 'enterprise', 'enterprise'],
 ];
+
+const CONFLICTS: ConflictSpec[] = CONFLICT_ROWS.map(
+  ([file = '', base = '', ours = '', theirs = '', resolved = '']) => ({
+    slug: slugify(file),
+    file,
+    base,
+    ours,
+    theirs,
+    resolved,
+  }),
+);
 
 const conflictDrills = family<ConflictSpec>({
   track: 'git',
@@ -282,13 +333,9 @@ const conflictDrills = family<ConflictSpec>({
  * ------------------------------------------------------------------ */
 
 const STASHES: { slug: string; value: { file: string; body: string } }[] = [
-  { slug: 'wip', value: { file: 'wip.txt', body: '書きかけ' } },
-  { slug: 'draft', value: { file: 'draft.md', body: '下書き' } },
-  { slug: 'debug', value: { file: 'debug.log', body: 'デバッグ中' } },
-  { slug: 'patch', value: { file: 'patch.diff', body: '当てかけ' } },
-  { slug: 'style', value: { file: 'style.css', body: '調整中' } },
-  { slug: 'test', value: { file: 'test.js', body: 'テスト書きかけ' } },
-];
+  'wip.txt', 'draft.md', 'debug.log', 'patch.diff', 'style.css', 'test.js',
+  'notes.txt', 'sketch.svg', 'query.sql', 'todo.md', 'scratch.go', 'idea.txt',
+].map((file) => ({ slug: slugify(file), value: { file, body: `${file} 書きかけ` } }));
 
 const stashDrills = family<{ file: string; body: string }>({
   track: 'git',
@@ -353,13 +400,9 @@ const stashDrills = family<{ file: string; body: string }>({
  * ------------------------------------------------------------------ */
 
 const TAGS: { slug: string; value: string }[] = [
-  { slug: 'v1-0-0', value: 'v1.0.0' },
-  { slug: 'v1-1-0', value: 'v1.1.0' },
-  { slug: 'v2-0-0', value: 'v2.0.0' },
-  { slug: 'v0-9-1', value: 'v0.9.1' },
-  { slug: 'release-2026-05', value: 'release-2026-05' },
-  { slug: 'rc1', value: 'v1.0.0-rc1' },
-];
+  'v1.0.0', 'v1.1.0', 'v2.0.0', 'v0.9.1', 'release-2026-05', 'v1.0.0-rc1',
+  'v1.2.3', 'v2.1.0', 'v3.0.0-beta', 'v0.1.0', 'stable-2026', 'hotfix-1',
+].map((value) => ({ slug: slugify(value), value }));
 
 const tagDrills = family<string>({
   track: 'git',

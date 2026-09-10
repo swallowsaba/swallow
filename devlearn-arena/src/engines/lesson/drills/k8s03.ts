@@ -5,6 +5,7 @@ import type { ClusterState, Deployment, Pod, Service } from '@/engines/k8s/types
 import { readyPods, resourceWhere, withCluster } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { family, k8sDoc } from './shared';
+import { APP_NAMES } from './values';
 
 const SVC_DOC = k8sDoc('concepts/services-networking/service/', 'Service');
 const PROBE_DOC = k8sDoc(
@@ -30,16 +31,11 @@ interface SelectorSpec {
   wrong: string;
 }
 
-const SELECTORS: SelectorSpec[] = [
-  { slug: 'web', app: 'web', wrong: 'frontend' },
-  { slug: 'api', app: 'api', wrong: 'api-server' },
-  { slug: 'cache', app: 'cache', wrong: 'redis' },
-  { slug: 'worker', app: 'worker', wrong: 'workers' },
-  { slug: 'front', app: 'front', wrong: 'front-end' },
-  { slug: 'search', app: 'search', wrong: 'searcher' },
-  { slug: 'proxy', app: 'proxy', wrong: 'gateway' },
-  { slug: 'auth', app: 'auth', wrong: 'authn' },
-];
+const SELECTORS: SelectorSpec[] = APP_NAMES.map((app) => ({
+  slug: app,
+  app,
+  wrong: `${app}-svc`,
+}));
 
 function brokenService(v: SelectorSpec): ClusterState {
   return settled(
@@ -105,14 +101,11 @@ const selectorDrills = family<SelectorSpec>({
  * k8s/07 Service の種類
  * ------------------------------------------------------------------ */
 
-const TYPES: { slug: string; value: { name: string; type: 'NodePort' | 'LoadBalancer' } }[] = [
-  { slug: 'web-nodeport', value: { name: 'web', type: 'NodePort' } },
-  { slug: 'api-nodeport', value: { name: 'api', type: 'NodePort' } },
-  { slug: 'front-lb', value: { name: 'front', type: 'LoadBalancer' } },
-  { slug: 'gw-lb', value: { name: 'gateway', type: 'LoadBalancer' } },
-  { slug: 'search-nodeport', value: { name: 'search', type: 'NodePort' } },
-  { slug: 'shop-lb', value: { name: 'shop', type: 'LoadBalancer' } },
-];
+const TYPES: { slug: string; value: { name: string; type: 'NodePort' | 'LoadBalancer' } }[] =
+  APP_NAMES.map((name, i) => ({
+    slug: `${name}-${i % 2 === 0 ? 'nodeport' : 'lb'}`,
+    value: { name, type: i % 2 === 0 ? 'NodePort' : 'LoadBalancer' },
+  }));
 
 const typeDrills = family<{ name: string; type: 'NodePort' | 'LoadBalancer' }>({
   track: 'k8s',
@@ -168,14 +161,11 @@ const typeDrills = family<{ name: string; type: 'NodePort' | 'LoadBalancer' }>({
  * k8s/09 CrashLoopBackOff を直す
  * ------------------------------------------------------------------ */
 
-const CRASHES: { slug: string; value: { name: string; bad: string; good: string } }[] = [
-  { slug: 'web', value: { name: 'web', bad: 'web:crash', good: 'web:1.2.0' } },
-  { slug: 'api', value: { name: 'api', bad: 'api:crash', good: 'api:1.4.0' } },
-  { slug: 'worker', value: { name: 'worker', bad: 'worker:crash', good: 'worker:2.0.0' } },
-  { slug: 'front', value: { name: 'front', bad: 'front:crash', good: 'front:3.1.0' } },
-  { slug: 'batch', value: { name: 'batch', bad: 'batch:crash', good: 'batch:0.9.0' } },
-  { slug: 'search', value: { name: 'search', bad: 'search:crash', good: 'search:5.2.0' } },
-];
+const CRASHES: { slug: string; value: { name: string; bad: string; good: string } }[] =
+  APP_NAMES.map((name, i) => ({
+    slug: name,
+    value: { name, bad: `${name}:crash`, good: `${name}:1.${String(i)}.0` },
+  }));
 
 const crashDrills = family<{ name: string; bad: string; good: string }>({
   track: 'k8s',
@@ -248,13 +238,10 @@ const crashDrills = family<{ name: string; bad: string; good: string }>({
  * k8s/09 readiness を通す
  * ------------------------------------------------------------------ */
 
-const PROBES: { slug: string; value: { name: string } }[] = [
-  { slug: 'web', value: { name: 'web' } },
-  { slug: 'api', value: { name: 'api' } },
-  { slug: 'front', value: { name: 'front' } },
-  { slug: 'shop', value: { name: 'shop' } },
-  { slug: 'auth', value: { name: 'auth' } },
-];
+const PROBES: { slug: string; value: { name: string } }[] = APP_NAMES.map((name) => ({
+  slug: name,
+  value: { name },
+}));
 
 const probeDrills = family<{ name: string }>({
   track: 'k8s',
@@ -328,13 +315,11 @@ const probeDrills = family<{ name: string }>({
  * k8s/08 requests が大きすぎて置けない
  * ------------------------------------------------------------------ */
 
-const FITS: { slug: string; value: { name: string; cpu: number; nodeCpu: number } }[] = [
-  { slug: 'big-4000', value: { name: 'web', cpu: 4000, nodeCpu: 2000 } },
-  { slug: 'big-8000', value: { name: 'api', cpu: 8000, nodeCpu: 4000 } },
-  { slug: 'big-3000', value: { name: 'worker', cpu: 3000, nodeCpu: 2000 } },
-  { slug: 'big-6000', value: { name: 'batch', cpu: 6000, nodeCpu: 4000 } },
-  { slug: 'big-5000', value: { name: 'search', cpu: 5000, nodeCpu: 2000 } },
-];
+const FITS: { slug: string; value: { name: string; cpu: number; nodeCpu: number } }[] =
+  APP_NAMES.map((name, i) => {
+    const nodeCpu = 2000 + (i % 4) * 1000;
+    return { slug: name, value: { name, cpu: nodeCpu + 1000 + i * 100, nodeCpu } };
+  });
 
 const fitDrills = family<{ name: string; cpu: number; nodeCpu: number }>({
   track: 'k8s',

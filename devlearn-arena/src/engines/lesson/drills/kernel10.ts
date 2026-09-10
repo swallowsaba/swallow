@@ -1,6 +1,7 @@
 import { fileContains, fileEquals } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, family, man } from './shared';
+import { sequence } from './values';
 
 const CH = 'kernel/10';
 
@@ -96,16 +97,13 @@ const reproduceDrills = family<SymptomSpec>({
  * 2. 半分に割って絞る
  * ------------------------------------------------------------------ */
 
-const BISECTS: { slug: string; value: { total: number; broken: number } }[] = [
-  { slug: 'l8-3', value: { total: 8, broken: 3 } },
-  { slug: 'l8-6', value: { total: 8, broken: 6 } },
-  { slug: 'l16-11', value: { total: 16, broken: 11 } },
-  { slug: 'l16-2', value: { total: 16, broken: 2 } },
-  { slug: 'l32-25', value: { total: 32, broken: 25 } },
-  { slug: 'l32-7', value: { total: 32, broken: 7 } },
-  { slug: 'l12-9', value: { total: 12, broken: 9 } },
-  { slug: 'l20-14', value: { total: 20, broken: 14 } },
-];
+const BISECTS: { slug: string; value: { total: number; broken: number } }[] = sequence(11, 24, 40)
+  .map((raw, i) => {
+    const total = 8 + raw;
+    const broken = 1 + ((i * 13) % total);
+    return { slug: `l${String(total)}-${String(broken)}`, value: { total, broken } };
+  })
+  .filter((v, i, all) => all.findIndex((x) => x.slug === v.slug) === i);
 
 const bisectDrills = family<{ total: number; broken: number }>({
   track: 'kernel',
@@ -235,14 +233,30 @@ const readErrorDrills = family<StackSpec>({
  * 4. 対応記録を残す
  * ------------------------------------------------------------------ */
 
-const RECORDS: { slug: string; value: { title: string; cause: string; fix: string } }[] = [
-  { slug: 'disk', value: { title: 'ディスク逼迫', cause: 'ログが rotate されていなかった', fix: 'logrotate を日次で回す' } },
-  { slug: 'oom', value: { title: 'メモリ不足', cause: 'バッチが一度に全件読んでいた', fix: '分割して読む' } },
-  { slug: 'perm', value: { title: '権限不足', cause: 'デプロイで所有者が変わった', fix: 'デプロイ後に chown を入れる' } },
-  { slug: 'dns', value: { title: '名前が引けない', cause: '解決先の設定が古かった', fix: '設定を配布し直す' } },
-  { slug: 'cert', value: { title: '証明書切れ', cause: '自動更新が止まっていた', fix: '更新の監視を足す' } },
-  { slug: 'runaway', value: { title: '暴走プロセス', cause: '終了条件の書き漏れ', fix: '上限時間を設ける' } },
+const RECORD_ROWS: [string, string, string, string][] = [
+  ['disk', 'ディスク逼迫', 'ログが rotate されていなかった', 'logrotate を日次で回す'],
+  ['oom', 'メモリ不足', 'バッチが一度に全件読んでいた', '分割して読む'],
+  ['perm', '権限不足', 'デプロイで所有者が変わった', 'デプロイ後に chown を入れる'],
+  ['dns', '名前が引けない', '解決先の設定が古かった', '設定を配布し直す'],
+  ['cert', '証明書切れ', '自動更新が止まっていた', '更新の監視を足す'],
+  ['runaway', '暴走プロセス', '終了条件の書き漏れ', '上限時間を設ける'],
+  ['deadlock', 'デッドロック', '取得順が揃っていなかった', 'ロックの順序を決める'],
+  ['throttle', '外部 API の制限', '再試行が集中していた', '待ち時間を散らす'],
+  ['clock', '時刻ずれ', '時刻同期が止まっていた', '同期の監視を足す'],
+  ['quota', '容量上限', '古い世代を消していなかった', '保持期間を決める'],
+  ['config', '設定の食い違い', '手で直した設定が戻された', '設定を1か所にまとめる'],
+  ['network', '経路の欠落', '戻りの経路が無かった', '往復で確かめる手順にする'],
+  ['cache', '古い値が返る', '無効化の漏れ', '書き込み時に必ず消す'],
+  ['leak', '接続の枯渇', '閉じ忘れ', '使い終わりで必ず閉じる'],
+  ['retry', '二重実行', '再試行に冪等性が無かった', '同じ鍵で1回だけにする'],
+  ['rollout', '切り戻せない', 'タグを固定していなかった', '版を固定して配る'],
 ];
+
+const RECORDS: { slug: string; value: { title: string; cause: string; fix: string } }[] =
+  RECORD_ROWS.map(([slug = '', title = '', cause = '', fix = '']) => ({
+    slug,
+    value: { title, cause, fix },
+  }));
 
 const recordDrills = family<{ title: string; cause: string; fix: string }>({
   track: 'kernel',

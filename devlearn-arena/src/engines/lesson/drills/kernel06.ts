@@ -1,11 +1,14 @@
 import { fileEquals, ranMatching } from '../authoring/assert';
 import type { AssertContext } from '../types';
 import type { MissionSource } from '../authoring/mission';
-import { formatOctal } from '@/engines/kernel/perm';
+import {
+  applyModeSpec, BASE_DIR_MODE, BASE_FILE_MODE, formatMode, formatOctal,
+} from '@/engines/kernel/perm';
 import { metaOf } from '@/engines/kernel/vfs';
 import { resolve } from '@/engines/kernel/path';
 import type { MissionSpec } from '../authoring/mission';
 import { HOME, family, man } from './shared';
+import { FILE_STEMS, MODES, slugify } from './values';
 
 const CH = 'kernel/06';
 
@@ -24,18 +27,11 @@ function ownerIs(path: string, owner: string) {
  * 1. rwx の並びを読む
  * ------------------------------------------------------------------ */
 
-const READINGS: { slug: string; value: { octal: string; answer: string } }[] = [
-  { slug: '644', value: { octal: '644', answer: 'rw-r--r--' } },
-  { slug: '755', value: { octal: '755', answer: 'rwxr-xr-x' } },
-  { slug: '600', value: { octal: '600', answer: 'rw-------' } },
-  { slug: '640', value: { octal: '640', answer: 'rw-r-----' } },
-  { slug: '700', value: { octal: '700', answer: 'rwx------' } },
-  { slug: '444', value: { octal: '444', answer: 'r--r--r--' } },
-  { slug: '775', value: { octal: '775', answer: 'rwxrwxr-x' } },
-  { slug: '666', value: { octal: '666', answer: 'rw-rw-rw-' } },
-  { slug: '711', value: { octal: '711', answer: 'rwx--x--x' } },
-  { slug: '750', value: { octal: '750', answer: 'rwxr-x---' } },
-];
+/** 意味のある権限の組み合わせを、8 進数から記号へ直す練習 */
+const READINGS: { slug: string; value: { octal: string; answer: string } }[] = MODES.map((octal) => ({
+  slug: octal,
+  value: { octal, answer: formatMode(Number.parseInt(octal, 8), false).slice(1) },
+}));
 
 const readingDrills = family<{ octal: string; answer: string }>({
   track: 'kernel',
@@ -82,18 +78,20 @@ const readingDrills = family<{ octal: string; answer: string }>({
  * 2. 記号で足し引きする
  * ------------------------------------------------------------------ */
 
-const SYMBOLIC: { slug: string; value: { from: string; spec: string; to: string } }[] = [
-  { slug: 'u-plus-x', value: { from: '644', spec: 'u+x', to: '744' } },
-  { slug: 'go-minus-r', value: { from: '644', spec: 'go-r', to: '600' } },
-  { slug: 'a-equals-r', value: { from: '755', spec: 'a=r', to: '444' } },
-  { slug: 'plus-x', value: { from: '644', spec: '+x', to: '755' } },
-  { slug: 'g-plus-w', value: { from: '644', spec: 'g+w', to: '664' } },
-  { slug: 'o-minus-all', value: { from: '777', spec: 'o-rwx', to: '770' } },
-  { slug: 'u-equals-rw', value: { from: '755', spec: 'u=rw', to: '655' } },
-  { slug: 'g-equals-none', value: { from: '640', spec: 'g=', to: '600' } },
-  { slug: 'ug-plus-x', value: { from: '600', spec: 'ug+x', to: '710' } },
-  { slug: 'a-minus-w', value: { from: '666', spec: 'a-w', to: '444' } },
-];
+const SPECS = ['u+x', 'go-r', 'a=r', '+x', 'g+w', 'o-rwx', 'u=rw', 'g=', 'ug+x', 'a-w', 'o+r', 'u-w'];
+
+/** 出発点と指定の組み合わせを全て作り、結果は実装から求める */
+const SYMBOLIC: { slug: string; value: { from: string; spec: string; to: string } }[] = MODES
+  .slice(0, 10)
+  .flatMap((from) =>
+    SPECS.map((spec) => {
+      const applied = applyModeSpec(Number.parseInt(from, 8), spec, false);
+      return {
+        slug: `${from}-${slugify(spec)}`,
+        value: { from, spec, to: formatOctal(applied ?? Number.parseInt(from, 8)) },
+      };
+    }),
+  );
 
 const symbolicDrills = family<{ from: string; spec: string; to: string }>({
   track: 'kernel',
@@ -137,16 +135,13 @@ const symbolicDrills = family<{ from: string; spec: string; to: string }>({
  * 3. 読めない・入れないを直す
  * ------------------------------------------------------------------ */
 
-const BROKEN: { slug: string; value: { kind: 'file' | 'dir'; name: string } }[] = [
-  { slug: 'secret-file', value: { kind: 'file', name: 'secret.txt' } },
-  { slug: 'config-file', value: { kind: 'file', name: 'app.conf' } },
-  { slug: 'key-file', value: { kind: 'file', name: 'id_key' } },
-  { slug: 'data-file', value: { kind: 'file', name: 'data.csv' } },
-  { slug: 'vault-dir', value: { kind: 'dir', name: 'vault' } },
-  { slug: 'logs-dir', value: { kind: 'dir', name: 'logs' } },
-  { slug: 'certs-dir', value: { kind: 'dir', name: 'certs' } },
-  { slug: 'backup-dir', value: { kind: 'dir', name: 'backup' } },
-];
+type BrokenSpec = { kind: 'file' | 'dir'; name: string };
+
+const BROKEN: { slug: string; value: BrokenSpec }[] = FILE_STEMS.map((stem, i) =>
+  i % 2 === 0
+    ? { slug: `${stem}-file`, value: { kind: 'file', name: `${stem}.txt` } satisfies BrokenSpec }
+    : { slug: `${stem}-dir`, value: { kind: 'dir', name: stem } satisfies BrokenSpec },
+);
 
 const fixDrills = family<{ kind: 'file' | 'dir'; name: string }>({
   track: 'kernel',
@@ -236,15 +231,9 @@ const fixDrills = family<{ kind: 'file' | 'dir'; name: string }>({
  * ------------------------------------------------------------------ */
 
 const OWNERS: { slug: string; value: string }[] = [
-  { slug: 'app-conf', value: 'app.conf' },
-  { slug: 'service-unit', value: 'app.service' },
-  { slug: 'nginx-conf', value: 'nginx.conf' },
-  { slug: 'cron', value: 'crontab' },
-  { slug: 'sudoers', value: 'sudoers' },
-  { slug: 'hosts', value: 'hosts' },
-  { slug: 'resolv', value: 'resolv.conf' },
-  { slug: 'motd', value: 'motd' },
-];
+  'app.conf', 'app.service', 'nginx.conf', 'crontab', 'sudoers', 'hosts', 'resolv.conf',
+  'motd', 'fstab', 'sshd_config', 'limits.conf', 'logrotate.conf', 'timezone', 'shells',
+].map((value) => ({ slug: slugify(value), value }));
 
 const ownerDrills = family<string>({
   track: 'kernel',
@@ -291,16 +280,21 @@ const ownerDrills = family<string>({
  * 5. umask
  * ------------------------------------------------------------------ */
 
+const MASKS = ['022', '077', '002', '027', '007', '066', '044', '037', '000', '017', '070', '007'];
+
 const UMASKS: { slug: string; value: { mask: string; file: string; dir: string } }[] = [
-  { slug: '022', value: { mask: '022', file: '644', dir: '755' } },
-  { slug: '077', value: { mask: '077', file: '600', dir: '700' } },
-  { slug: '002', value: { mask: '002', file: '664', dir: '775' } },
-  { slug: '027', value: { mask: '027', file: '640', dir: '750' } },
-  { slug: '007', value: { mask: '007', file: '660', dir: '770' } },
-  { slug: '066', value: { mask: '066', file: '600', dir: '711' } },
-  { slug: '044', value: { mask: '044', file: '622', dir: '733' } },
-  { slug: '037', value: { mask: '037', file: '640', dir: '740' } },
-];
+  ...new Set(MASKS),
+].map((mask) => {
+  const bits = Number.parseInt(mask, 8);
+  return {
+    slug: mask,
+    value: {
+      mask,
+      file: formatOctal(BASE_FILE_MODE & ~bits),
+      dir: formatOctal(BASE_DIR_MODE & ~bits),
+    },
+  };
+});
 
 const umaskDrills = family<{ mask: string; file: string; dir: string }>({
   track: 'kernel',

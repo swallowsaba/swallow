@@ -1,6 +1,7 @@
 import { fileEquals, fileAbsent } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, bash, family, man } from './shared';
+import { FILE_STEMS, slugify } from './values';
 
 const CH = 'kernel/04';
 
@@ -8,18 +9,30 @@ const CH = 'kernel/04';
  * 1. > と >> の違い
  * ------------------------------------------------------------------ */
 
-const APPENDS: { slug: string; value: { file: string; first: string; second: string } }[] = [
-  { slug: 'log', value: { file: 'run.log', first: 'started', second: 'finished' } },
-  { slug: 'todo', value: { file: 'todo.txt', first: 'ログを見る', second: '記録を残す' } },
-  { slug: 'hosts', value: { file: 'hosts.txt', first: 'web1', second: 'web2' } },
-  { slug: 'notes', value: { file: 'notes.md', first: '# 一日目', second: '# 二日目' } },
-  { slug: 'ids', value: { file: 'ids.txt', first: '1001', second: '1002' } },
-  { slug: 'steps', value: { file: 'steps.txt', first: 'build', second: 'deploy' } },
-  { slug: 'errors', value: { file: 'errors.txt', first: 'E01', second: 'E02' } },
-  { slug: 'members', value: { file: 'members.txt', first: 'alice', second: 'bob' } },
-  { slug: 'urls', value: { file: 'urls.txt', first: 'https://a.example', second: 'https://b.example' } },
-  { slug: 'tags', value: { file: 'tags.txt', first: 'v1.0.0', second: 'v1.1.0' } },
+const APPEND_ROWS: [string, string, string][] = [
+  ['run.log', 'started', 'finished'],
+  ['todo.txt', 'first', 'second'],
+  ['hosts.txt', 'web1', 'web2'],
+  ['notes.md', 'day one', 'day two'],
+  ['ids.txt', '1001', '1002'],
+  ['steps.txt', 'build', 'deploy'],
+  ['errors.txt', 'E01', 'E02'],
+  ['members.txt', 'alice', 'bob'],
+  ['urls.txt', 'https://a.example', 'https://b.example'],
+  ['tags.txt', 'v1.0.0', 'v1.1.0'],
+  ['zones.txt', 'zone-a', 'zone-b'],
+  ['queue.txt', 'job-1', 'job-2'],
+  ['nodes.txt', 'node-1', 'node-2'],
+  ['stages.txt', 'canary', 'stable'],
+  ['owners.txt', 'platform', 'payments'],
+  ['flags.txt', 'off', 'on'],
 ];
+
+const APPENDS: { slug: string; value: { file: string; first: string; second: string } }[] =
+  APPEND_ROWS.map(([file = '', first = '', second = '']) => ({
+    slug: slugify(file),
+    value: { file, first, second },
+  }));
 
 const appendDrills = family<{ file: string; first: string; second: string }>({
   track: 'kernel',
@@ -58,16 +71,10 @@ const appendDrills = family<{ file: string; first: string; second: string }>({
  * 2. 標準出力と標準エラーを分ける
  * ------------------------------------------------------------------ */
 
-const STREAMS: { slug: string; value: { missing: string } }[] = [
-  { slug: 'nope', value: { missing: 'nope.txt' } },
-  { slug: 'absent', value: { missing: 'absent.conf' } },
-  { slug: 'gone', value: { missing: 'gone.log' } },
-  { slug: 'missing', value: { missing: 'missing.yaml' } },
-  { slug: 'lost', value: { missing: 'lost.csv' } },
-  { slug: 'unknown', value: { missing: 'unknown.json' } },
-  { slug: 'typo', value: { missing: 'reamde.md' } },
-  { slug: 'stale', value: { missing: 'stale.sql' } },
-];
+const STREAMS: { slug: string; value: { missing: string } }[] = FILE_STEMS.map((stem) => ({
+  slug: stem,
+  value: { missing: `${stem}-missing.txt` },
+}));
 
 const streamDrills = family<{ missing: string }>({
   track: 'kernel',
@@ -125,18 +132,24 @@ interface PipeSpec {
   needle: string;
 }
 
-const PIPES: PipeSpec[] = [
-  { slug: 'error', rows: ['INFO a', 'ERROR b', 'INFO c', 'ERROR d'], needle: 'ERROR' },
-  { slug: 'warn', rows: ['WARN x', 'INFO y', 'WARN z'], needle: 'WARN' },
-  { slug: 'web1', rows: ['web1 up', 'web2 up', 'web1 down'], needle: 'web1' },
-  { slug: 'get', rows: ['GET /', 'POST /a', 'GET /b'], needle: 'GET' },
-  { slug: 'fail', rows: ['ok 1', 'fail 2', 'fail 3'], needle: 'fail' },
-  { slug: 'db', rows: ['db1 slow', 'web1 fast', 'db2 slow'], needle: 'db' },
-  { slug: 'timeout', rows: ['timeout a', 'ok b', 'timeout c'], needle: 'timeout' },
-  { slug: 'deny', rows: ['allow a', 'deny b', 'deny c'], needle: 'deny' },
-  { slug: 'v2', rows: ['v1 old', 'v2 new', 'v2 newer'], needle: 'v2' },
-  { slug: 'prod', rows: ['dev a', 'prod b', 'prod c'], needle: 'prod' },
+const PIPE_NEEDLES = [
+  'ERROR', 'WARN', 'web1', 'GET', 'fail', 'db', 'timeout', 'deny', 'v2', 'prod',
+  'retry', 'stale', 'locked', 'reset', 'slow', 'drop',
 ];
+
+const PIPES: PipeSpec[] = PIPE_NEEDLES.map((needle, i) => {
+  const hits = 1 + (i % 4);
+  const rows: string[] = [];
+  for (let k = 0; k < 6 + (i % 5); k += 1) {
+    rows.push(k % 2 === 0 && rows.filter((r) => r.includes(needle)).length < hits
+      ? `${needle} line ${String(k)}`
+      : `ok line ${String(k)}`);
+  }
+  while (rows.filter((r) => r.includes(needle)).length < hits) {
+    rows.push(`${needle} extra ${String(rows.length)}`);
+  }
+  return { slug: slugify(needle), rows, needle };
+});
 
 const pipeDrills = family<PipeSpec>({
   track: 'kernel',
@@ -184,16 +197,28 @@ const pipeDrills = family<PipeSpec>({
  * 4. ヒアドキュメント
  * ------------------------------------------------------------------ */
 
-const HEREDOCS: { slug: string; value: { file: string; lines: string[] } }[] = [
-  { slug: 'conf', value: { file: 'app.conf', lines: ['host = 127.0.0.1', 'port = 8080'] } },
-  { slug: 'hosts', value: { file: 'hosts', lines: ['10.0.0.1 web1', '10.0.0.2 web2'] } },
-  { slug: 'readme', value: { file: 'README.md', lines: ['# app', '使い方はあとで書く'] } },
-  { slug: 'env', value: { file: '.env', lines: ['ENV=dev', 'DEBUG=1'] } },
-  { slug: 'yaml', value: { file: 'values.yaml', lines: ['replicas: 2', 'image: nginx'] } },
-  { slug: 'sql', value: { file: 'seed.sql', lines: ['insert into t values (1);', 'insert into t values (2);'] } },
-  { slug: 'runbook', value: { file: 'RUNBOOK.md', lines: ['1. 状態を見る', '2. 記録を残す'] } },
-  { slug: 'ignore', value: { file: '.gitignore', lines: ['node_modules/', 'dist/'] } },
+const HEREDOC_ROWS: [string, string[]][] = [
+  ['app.conf', ['host = 127.0.0.1', 'port = 8080']],
+  ['hosts', ['10.0.0.1 web1', '10.0.0.2 web2']],
+  ['README.md', ['# app', 'usage comes later']],
+  ['.env', ['ENV=dev', 'DEBUG=1']],
+  ['values.yaml', ['replicas: 2', 'image: nginx']],
+  ['seed.sql', ['insert into t values (1);', 'insert into t values (2);']],
+  ['RUNBOOK.md', ['1. look at the state', '2. write it down']],
+  ['.gitignore', ['node_modules/', 'dist/']],
+  ['nginx.conf', ['server {', '  listen 80;', '}']],
+  ['Makefile', ['all:', '	go build ./...']],
+  ['docker-compose.yml', ['services:', '  web:', '    image: nginx']],
+  ['crontab', ['0 3 * * * /usr/local/bin/backup.sh']],
+  ['sshd_config', ['PermitRootLogin no', 'PasswordAuthentication no']],
+  ['resolv.conf', ['nameserver 10.0.0.53', 'search internal']],
+  ['fstab', ['/dev/vda1 / ext4 defaults 0 1']],
+  ['motd', ['welcome', 'be careful']],
 ];
+
+const HEREDOCS: { slug: string; value: { file: string; lines: string[] } }[] = HEREDOC_ROWS.map(
+  ([file = '', lines = []]) => ({ slug: slugify(file), value: { file, lines: [...lines] } }),
+);
 
 const heredocDrills = family<{ file: string; lines: string[] }>({
   track: 'kernel',
@@ -227,16 +252,12 @@ const heredocDrills = family<{ file: string; lines: string[] }>({
  * 5. xargs で引数に変える
  * ------------------------------------------------------------------ */
 
-const XARGS: { slug: string; value: { names: string[] } }[] = [
-  { slug: 'three', value: { names: ['a.txt', 'b.txt', 'c.txt'] } },
-  { slug: 'logs', value: { names: ['app.log', 'db.log'] } },
-  { slug: 'confs', value: { names: ['a.conf', 'b.conf', 'c.conf'] } },
-  { slug: 'tmp', value: { names: ['1.tmp', '2.tmp', '3.tmp'] } },
-  { slug: 'bak', value: { names: ['x.bak', 'y.bak'] } },
-  { slug: 'old', value: { names: ['old1.txt', 'old2.txt', 'old3.txt'] } },
-  { slug: 'cache', value: { names: ['c1.cache', 'c2.cache'] } },
-  { slug: 'dump', value: { names: ['a.dump', 'b.dump'] } },
-];
+const XARGS: { slug: string; value: { names: string[] } }[] = FILE_STEMS.map((stem, i) => ({
+  slug: stem,
+  value: {
+    names: Array.from({ length: 2 + (i % 3) }, (_, k) => `${stem}${String(k + 1)}.tmp`),
+  },
+}));
 
 const xargsDrills = family<{ names: string[] }>({
   track: 'kernel',

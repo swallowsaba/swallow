@@ -7,6 +7,7 @@ import {
 import type { MissionSource } from '../authoring/mission';
 import type { Node } from '@/engines/k8s/types';
 import { HOME, family, k8sDoc } from './shared';
+import { APP_NAMES } from './values';
 
 const CH = 'k8s/01';
 
@@ -28,16 +29,18 @@ interface Lab {
   cni: 'flannel' | 'calico';
 }
 
-const LABS: Lab[] = [
-  { slug: 'two-node', cp: 'cp-1', workers: ['node-1'], cidr: '10.244.0.0/16', cni: 'flannel' },
-  { slug: 'three-node', cp: 'cp-1', workers: ['node-1', 'node-2'], cidr: '10.244.0.0/16', cni: 'flannel' },
-  { slug: 'calico', cp: 'cp-1', workers: ['node-1'], cidr: '192.168.0.0/16', cni: 'calico' },
-  { slug: 'calico-three', cp: 'cp-1', workers: ['node-1', 'node-2'], cidr: '192.168.0.0/16', cni: 'calico' },
-  { slug: 'wide', cp: 'master', workers: ['worker-a', 'worker-b', 'worker-c'], cidr: '10.32.0.0/12', cni: 'flannel' },
-  { slug: 'edge', cp: 'edge-cp', workers: ['edge-1'], cidr: '10.10.0.0/16', cni: 'calico' },
-  { slug: 'lab', cp: 'lab-cp', workers: ['lab-1', 'lab-2'], cidr: '172.16.0.0/16', cni: 'flannel' },
-  { slug: 'staging', cp: 'stg-cp', workers: ['stg-1'], cidr: '10.200.0.0/16', cni: 'calico' },
-];
+const CP_NAMES = ['cp-1', 'master', 'edge-cp', 'lab-cp', 'stg-cp', 'prod-cp', 'dev-cp', 'qa-cp'];
+const POD_CIDRS = ['10.244.0.0/16', '192.168.0.0/16', '10.32.0.0/12', '172.16.0.0/16', '10.10.0.0/16'];
+
+const LABS: Lab[] = CP_NAMES.flatMap((cp, i) =>
+  [1, 2, 3].map((workerCount) => ({
+    slug: `${cp}-${String(workerCount)}`,
+    cp,
+    workers: Array.from({ length: workerCount }, (_, k) => `${cp}-node-${String(k + 1)}`),
+    cidr: POD_CIDRS[(i + workerCount) % POD_CIDRS.length] ?? '10.244.0.0/16',
+    cni: (i + workerCount) % 2 === 0 ? ('flannel' as const) : ('calico' as const),
+  })),
+);
 
 function manifestFor(lab: Lab): { name: string; text: string; daemonSet: string } {
   return lab.cni === 'flannel'
@@ -313,14 +316,11 @@ const taintDrills = family<Lab>({
  * 5. 立てたクラスタに最初のアプリを載せる
  * ------------------------------------------------------------------ */
 
-const APPS: { slug: string; value: { name: string; image: string; replicas: number } }[] = [
-  { slug: 'web', value: { name: 'web', image: 'nginx:1.27', replicas: 2 } },
-  { slug: 'api', value: { name: 'api', image: 'api:1.4', replicas: 3 } },
-  { slug: 'cache', value: { name: 'cache', image: 'redis:7', replicas: 1 } },
-  { slug: 'worker', value: { name: 'worker', image: 'worker:2.0', replicas: 2 } },
-  { slug: 'front', value: { name: 'front', image: 'front:3.1', replicas: 3 } },
-  { slug: 'gateway', value: { name: 'gateway', image: 'envoy:1.30', replicas: 2 } },
-];
+const APPS: { slug: string; value: { name: string; image: string; replicas: number } }[] =
+  APP_NAMES.map((name, i) => ({
+    slug: name,
+    value: { name, image: `${name}:1.${String(i)}.0`, replicas: 1 + (i % 3) },
+  }));
 
 const firstAppDrills = family<{ name: string; image: string; replicas: number }>({
   track: 'k8s',

@@ -5,6 +5,7 @@ import {
 } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, family, man, rfc } from './shared';
+import { PORTS, privateCidrs, slugify } from './values';
 
 const IP_DOC = man('ip', 8);
 const RFC1918 = rfc(1918, 'RFC 1918 Address Allocation for Private Internets');
@@ -20,16 +21,13 @@ interface PairSpec {
   b: string;
 }
 
-const PAIRS: PairSpec[] = [
-  { slug: '10-0-0', cidr: '24', a: '10.0.0.1', b: '10.0.0.2' },
-  { slug: '192-168-1', cidr: '24', a: '192.168.1.10', b: '192.168.1.20' },
-  { slug: '172-16-0', cidr: '24', a: '172.16.0.5', b: '172.16.0.6' },
-  { slug: '10-1-2', cidr: '24', a: '10.1.2.3', b: '10.1.2.4' },
-  { slug: '192-168-50', cidr: '25', a: '192.168.50.1', b: '192.168.50.2' },
-  { slug: '10-10-10', cidr: '28', a: '10.10.10.1', b: '10.10.10.2' },
-  { slug: '172-20-5', cidr: '24', a: '172.20.5.11', b: '172.20.5.12' },
-  { slug: '10-200-0', cidr: '30', a: '10.200.0.1', b: '10.200.0.2' },
-];
+/** 私用アドレス空間から、2台ぶんの組を作る */
+const PAIRS: PairSpec[] = privateCidrs(40)
+  .filter((cidr) => Number(cidr.split('/')[1] ?? '24') <= 30)
+  .map((cidr) => {
+    const c = parseCidr(cidr);
+    return { slug: slugify(cidr), cidr: String(c.prefix), a: c.firstHost, b: c.lastHost };
+  });
 
 const pairDrills = family<PairSpec>({
   track: 'net',
@@ -113,20 +111,11 @@ const pairDrills = family<PairSpec>({
  * net/03 CIDR の計算
  * ------------------------------------------------------------------ */
 
-const CIDRS: { slug: string; value: string }[] = [
-  { slug: '192-168-1-0-24', value: '192.168.1.0/24' },
-  { slug: '10-0-0-0-8', value: '10.0.0.0/8' },
-  { slug: '172-16-0-0-12', value: '172.16.0.0/12' },
-  { slug: '192-168-1-128-25', value: '192.168.1.128/25' },
-  { slug: '10-1-1-0-26', value: '10.1.1.0/26' },
-  { slug: '10-1-1-64-26', value: '10.1.1.64/26' },
-  { slug: '192-168-0-0-22', value: '192.168.0.0/22' },
-  { slug: '10-20-30-0-27', value: '10.20.30.0/27' },
-  { slug: '172-31-255-0-24', value: '172.31.255.0/24' },
-  { slug: '10-0-0-0-30', value: '10.0.0.0/30' },
-  { slug: '10-0-0-0-31', value: '10.0.0.0/31' },
-  { slug: '192-168-100-0-23', value: '192.168.100.0/23' },
-];
+/** 私用アドレス空間から並べる。プレフィックス長も散らす */
+const CIDRS: { slug: string; value: string }[] = privateCidrs(60).map((value) => ({
+  slug: slugify(value),
+  value,
+}));
 
 const cidrDrills = family<string>({
   track: 'net',
@@ -188,14 +177,24 @@ interface RouteSpec {
   pc2: string;
 }
 
-const ROUTES: RouteSpec[] = [
-  { slug: 'a', left: '10.0.0.0/24', right: '10.0.1.0/24', gwLeft: '10.0.0.254', gwRight: '10.0.1.254', pc1: '10.0.0.1', pc2: '10.0.1.1' },
-  { slug: 'b', left: '192.168.1.0/24', right: '192.168.2.0/24', gwLeft: '192.168.1.254', gwRight: '192.168.2.254', pc1: '192.168.1.10', pc2: '192.168.2.10' },
-  { slug: 'c', left: '172.16.0.0/24', right: '172.16.1.0/24', gwLeft: '172.16.0.254', gwRight: '172.16.1.254', pc1: '172.16.0.5', pc2: '172.16.1.5' },
-  { slug: 'd', left: '10.10.0.0/24', right: '10.20.0.0/24', gwLeft: '10.10.0.1', gwRight: '10.20.0.1', pc1: '10.10.0.100', pc2: '10.20.0.100' },
-  { slug: 'e', left: '10.5.5.0/24', right: '10.5.6.0/24', gwLeft: '10.5.5.254', gwRight: '10.5.6.254', pc1: '10.5.5.2', pc2: '10.5.6.2' },
-  { slug: 'f', left: '192.168.10.0/24', right: '192.168.20.0/24', gwLeft: '192.168.10.1', gwRight: '192.168.20.1', pc1: '192.168.10.50', pc2: '192.168.20.50' },
-];
+/** 隣り合う2つの網を作り、ルータで繋ぐ形に整える */
+const ROUTES: RouteSpec[] = privateCidrs(30)
+  .filter((cidr) => cidr.endsWith('/24'))
+  .map((cidr) => {
+    const parts = cidr.split('/')[0]?.split('.').map(Number) ?? [10, 0, 0, 0];
+    const [a = 10, b = 0, c = 0] = parts;
+    const left = `${String(a)}.${String(b)}.${String(c)}.0/24`;
+    const right = `${String(a)}.${String(b)}.${String((c + 1) % 256)}.0/24`;
+    return {
+      slug: slugify(left),
+      left,
+      right,
+      gwLeft: `${String(a)}.${String(b)}.${String(c)}.254`,
+      gwRight: `${String(a)}.${String(b)}.${String((c + 1) % 256)}.254`,
+      pc1: `${String(a)}.${String(b)}.${String(c)}.1`,
+      pc2: `${String(a)}.${String(b)}.${String((c + 1) % 256)}.1`,
+    };
+  });
 
 const routeDrills = family<RouteSpec>({
   track: 'net',
@@ -293,23 +292,16 @@ const routeDrills = family<RouteSpec>({
  * net/12 ポートを閉じる・開ける
  * ------------------------------------------------------------------ */
 
-const PORTS: { slug: string; value: { port: number; what: string } }[] = [
-  { slug: 'http', value: { port: 80, what: 'HTTP' } },
-  { slug: 'https', value: { port: 443, what: 'HTTPS' } },
-  { slug: 'ssh', value: { port: 22, what: 'SSH' } },
-  { slug: 'postgres', value: { port: 5432, what: 'PostgreSQL' } },
-  { slug: 'redis', value: { port: 6379, what: 'Redis' } },
-  { slug: 'mysql', value: { port: 3306, what: 'MySQL' } },
-  { slug: 'app', value: { port: 8080, what: 'アプリ' } },
-  { slug: 'metrics', value: { port: 9090, what: 'メトリクス' } },
-];
+const PORT_VARIANTS: { slug: string; value: { port: number; what: string } }[] = PORTS.map(
+  (value) => ({ slug: String(value.port), value: { ...value } }),
+);
 
 const firewallDrills = family<{ port: number; what: string }>({
   track: 'net',
   chapterId: 'net/12',
   family: 'firewall',
   docs: [man('iptables', 8)],
-  variants: PORTS,
+  variants: PORT_VARIANTS,
   make: (v) => ({
     title: `${v.what}（${String(v.port)} 番）だけを通す`,
     objectives: ['待ち受けと遮断の違いが分かる', '塞いだ結果を確かめられる'],

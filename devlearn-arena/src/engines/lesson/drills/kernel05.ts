@@ -1,6 +1,7 @@
 import { dirExists, dirHas, fileAbsent, fileEquals, fileExists, varIs } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, bash, family } from './shared';
+import { FILE_STEMS, slugify } from './values';
 
 const CH = 'kernel/05';
 
@@ -8,18 +9,18 @@ const CH = 'kernel/05';
  * 1. 変数と export
  * ------------------------------------------------------------------ */
 
-const VARS: { slug: string; value: { name: string; text: string } }[] = [
-  { slug: 'env', value: { name: 'APP_ENV', text: 'production' } },
-  { slug: 'region', value: { name: 'REGION', text: 'ap-northeast-1' } },
-  { slug: 'port', value: { name: 'PORT', text: '8443' } },
-  { slug: 'level', value: { name: 'LOG_LEVEL', text: 'warn' } },
-  { slug: 'user', value: { name: 'DEPLOY_USER', text: 'runner' } },
-  { slug: 'bucket', value: { name: 'BUCKET', text: 'artifacts-prod' } },
-  { slug: 'tag', value: { name: 'IMAGE_TAG', text: 'v2.7.1' } },
-  { slug: 'timeout', value: { name: 'TIMEOUT', text: '30' } },
-  { slug: 'namespace', value: { name: 'NAMESPACE', text: 'payments' } },
-  { slug: 'endpoint', value: { name: 'ENDPOINT', text: 'https://api.example.com' } },
+const VAR_ROWS: [string, string][] = [
+  ['APP_ENV', 'production'], ['REGION', 'ap-northeast-1'], ['PORT', '8443'],
+  ['LOG_LEVEL', 'warn'], ['DEPLOY_USER', 'runner'], ['BUCKET', 'artifacts-prod'],
+  ['IMAGE_TAG', 'v2.7.1'], ['TIMEOUT', '30'], ['NAMESPACE', 'payments'],
+  ['ENDPOINT', 'https://api.example.com'], ['CLUSTER', 'prod-a'], ['SHARD', '3'],
+  ['RETRIES', '5'], ['CHANNEL', 'stable'], ['TIER', 'gold'], ['LOCALE', 'ja_JP'],
+  ['TZ', 'Asia/Tokyo'], ['WORKERS', '8'], ['MODE', 'readonly'], ['OWNER', 'platform'],
 ];
+
+const VARS: { slug: string; value: { name: string; text: string } }[] = VAR_ROWS.map(
+  ([name = '', text = '']) => ({ slug: slugify(name), value: { name, text } }),
+);
 
 const varDrills = family<{ name: string; text: string }>({
   track: 'kernel',
@@ -57,16 +58,9 @@ const varDrills = family<{ name: string; text: string }>({
  * 2. クォートの違い
  * ------------------------------------------------------------------ */
 
-const QUOTES: { slug: string; value: { name: string; text: string } }[] = [
-  { slug: 'home', value: { name: 'PLACE', text: '/srv/app' } },
-  { slug: 'name', value: { name: 'WHO', text: 'alice' } },
-  { slug: 'ver', value: { name: 'VER', text: '1.2.3' } },
-  { slug: 'host', value: { name: 'HOST', text: 'web1' } },
-  { slug: 'team', value: { name: 'TEAM', text: 'payments' } },
-  { slug: 'stage', value: { name: 'STAGE', text: 'canary' } },
-  { slug: 'zone', value: { name: 'ZONE', text: 'ap-northeast-1a' } },
-  { slug: 'branch', value: { name: 'BRANCH', text: 'main' } },
-];
+const QUOTES: { slug: string; value: { name: string; text: string } }[] = VAR_ROWS.map(
+  ([name = '', text = '']) => ({ slug: slugify(name), value: { name, text } }),
+);
 
 const quoteDrills = family<{ name: string; text: string }>({
   track: 'kernel',
@@ -176,16 +170,28 @@ const globDrills = family<GlobSpec>({
  * 4. ブレース展開
  * ------------------------------------------------------------------ */
 
-const BRACES: { slug: string; value: { prefix: string; items: string[] } }[] = [
-  { slug: 'env', value: { prefix: 'config', items: ['dev', 'stg', 'prod'] } },
-  { slug: 'quarter', value: { prefix: '2026', items: ['q1', 'q2', 'q3', 'q4'] } },
-  { slug: 'stage', value: { prefix: 'ci', items: ['build', 'test', 'deploy'] } },
-  { slug: 'zone', value: { prefix: 'zone', items: ['a', 'b', 'c'] } },
-  { slug: 'svc', value: { prefix: 'svc', items: ['web', 'api', 'worker'] } },
-  { slug: 'month', value: { prefix: 'log', items: ['jan', 'feb', 'mar'] } },
-  { slug: 'shard', value: { prefix: 'shard', items: ['0', '1', '2', '3'] } },
-  { slug: 'tier', value: { prefix: 'tier', items: ['front', 'back'] } },
+const BRACE_ROWS: [string, string[]][] = [
+  ['config', ['dev', 'stg', 'prod']],
+  ['2026', ['q1', 'q2', 'q3', 'q4']],
+  ['ci', ['build', 'test', 'deploy']],
+  ['zone', ['a', 'b', 'c']],
+  ['svc', ['web', 'api', 'worker']],
+  ['log', ['jan', 'feb', 'mar']],
+  ['shard', ['0', '1', '2', '3']],
+  ['tier', ['front', 'back']],
+  ['region', ['tokyo', 'osaka', 'nagoya']],
+  ['stage', ['canary', 'stable']],
+  ['team', ['pay', 'ops', 'data']],
+  ['week', ['mon', 'tue', 'wed', 'thu', 'fri']],
+  ['env', ['local', 'ci', 'prod']],
+  ['role', ['reader', 'writer', 'admin']],
+  ['batch', ['b1', 'b2', 'b3']],
+  ['plan', ['free', 'pro', 'enterprise']],
 ];
+
+const BRACES: { slug: string; value: { prefix: string; items: string[] } }[] = BRACE_ROWS.map(
+  ([prefix = '', items = []]) => ({ slug: slugify(prefix), value: { prefix, items: [...items] } }),
+);
 
 const braceDrills = family<{ prefix: string; items: string[] }>({
   track: 'kernel',
@@ -222,16 +228,10 @@ const braceDrills = family<{ prefix: string; items: string[] }>({
  * 5. コマンド置換
  * ------------------------------------------------------------------ */
 
-const SUBS: { slug: string; value: { rows: string[] } }[] = [
-  { slug: 'three', value: { rows: ['a', 'b', 'c'] } },
-  { slug: 'five', value: { rows: ['1', '2', '3', '4', '5'] } },
-  { slug: 'hosts', value: { rows: ['web1', 'web2'] } },
-  { slug: 'errors', value: { rows: ['E1', 'E2', 'E3', 'E4'] } },
-  { slug: 'users', value: { rows: ['alice', 'bob', 'carol'] } },
-  { slug: 'files', value: { rows: ['x.txt', 'y.txt'] } },
-  { slug: 'zones', value: { rows: ['a', 'b', 'c', 'd', 'e', 'f'] } },
-  { slug: 'jobs', value: { rows: ['build', 'test'] } },
-];
+const SUBS: { slug: string; value: { rows: string[] } }[] = FILE_STEMS.map((stem, i) => ({
+  slug: stem,
+  value: { rows: Array.from({ length: 2 + (i % 7) }, (_, k) => `${stem}-${String(k + 1)}`) },
+}));
 
 const subDrills = family<{ rows: string[] }>({
   track: 'kernel',
