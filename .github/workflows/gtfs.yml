@@ -1,0 +1,106 @@
+# ------------------------------------------------------------------
+# GTFS の取り込み
+# ------------------------------------------------------------------
+# ODPT が API 形式の提供を終了した事業者(京王バス・小田急バス・西東京バス)の
+# GTFS を取り込み、検索用の索引を transit/data/gtfs/ に置く。
+#
+# ・既存の deploy.yml には手を触れない。
+#   このワークフローが main に push すると、既存の deploy が普通に走って公開される。
+# ・元データが前回と同じときは何もコミットしないので、無駄なデプロイは起きない。
+# ・失敗しても既存の索引は残る(消してから作らない)。
+#
+# 【事前に必要な設定】
+#   Settings → Secrets and variables → Actions → New repository secret
+#     名前: ODPT_TOKEN
+#     値  : ODPT のアクセストークン(前後に空白を入れないこと)
+# ------------------------------------------------------------------
+name: GTFS 取り込み
+
+on:
+  schedule:
+    # 毎月 1 日 03:10 JST(= 前日 18:10 UTC)。バスのダイヤ改正は年に数回なので月次で十分。
+    - cron: '10 18 28-31 * *'
+  workflow_dispatch:
+    inputs:
+      operators:
+        description: '取り込む事業者(空欄ですべて。例: KeioBus OdakyuBus)'
+        required: false
+        default: ''
+
+# 同時に走らせない。走っている間に手動実行しても順番待ちにする。
+concurrency:
+  group: gtfs-import
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    # cron は月末 28〜31 日に毎日起動してしまうので、月の最終日だけに絞る
+    steps:
+      - name: 月末かどうか確認(schedule のときだけ)
+        id: guard
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "go=yes" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # 翌日が 1 日なら今日が月末
+          if [ "$(date -u -d 'tomorrow' +%d)" = "01" ]; then
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=no" >> "$GITHUB_OUTPUT"
+            echo "月末ではないため何もしません。"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.guard.outputs.go == 'yes'
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.go == 'yes'
+        with:
+          node-version: '22'
+
+      - name: トークンの有無を確認
+        if: steps.guard.outputs.go == 'yes'
+        run: |
+          if [ -z "${{ secrets.ODPT_TOKEN }}" ]; then
+            echo "::error::ODPT_TOKEN が未設定です。Settings → Secrets and variables → Actions に登録してください。"
+            exit 1
+          fi
+
+      - name: GTFS を取り込む
+        if: steps.guard.outputs.go == 'yes'
+        id: build
+        env:
+          ODPT_TOKEN: ${{ secrets.ODPT_TOKEN }}
+        run: |
+          set +e
+          node tools/build-gtfs-index.mjs ${{ github.event.inputs.operators }}
+          code=$?
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          # 0 = 全部成功 / 2 = 一部の事業者だけ失敗(残りは取り込めているのでコミットする)
+          if [ "$code" != "0" ] && [ "$code" != "2" ]; then
+            echo "::error::GTFS の取り込みに失敗しました。"
+            exit 1
+          fi
+          if [ "$code" = "2" ]; then
+            echo "::warning::一部の事業者で取り込みに失敗しました。ログを確認してください。"
+          fi
+
+      - name: 変わっていればコミットする
+        if: steps.guard.outputs.go == 'yes'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add transit/data/gtfs
+          if git diff --cached --quiet; then
+            echo "変更はありません。コミットしません。"
+            exit 0
+          fi
+          git commit -m "chore(gtfs): バスの索引を更新"
+          # 走っている間に他の push があっても壊さない
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
