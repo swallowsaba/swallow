@@ -13,11 +13,21 @@ export function matches(labels: Record<string, string>, selector: Record<string,
   return entries.every(([k, v]) => labels[k] === v);
 }
 
-/** テンプレートの内容から、その世代を表す短い識別子を作る（乱数を使わない） */
+/**
+ * テンプレートの内容から、その世代を表す短い識別子を作る（乱数を使わない）。
+ *
+ * テンプレートのどこか1つでも変われば別の世代になる、というのが本物の約束。
+ * 拾い漏らすと「設定を変えたのに古い Pod のまま」という嘘の挙動になるので、
+ * 効き目のある欄は並び順を固定して全て混ぜる。
+ */
 export function templateHash(template: Deployment['spec']['template']): string {
   const text = JSON.stringify([
     template.labels,
-    template.containers.map((c) => [c.image, c.requests, c.env, c.ports]),
+    template.containers.map((c) => [
+      c.name, c.image, c.requests, c.limits, c.env, c.envFrom, c.ports,
+      c.readyAfter, c.failing, c.crashing,
+      c.livenessProbe, c.readinessProbe, c.startupProbe, c.volumeMounts,
+    ]),
     template.nodeSelector,
   ]);
   let hash = 5381;

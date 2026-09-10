@@ -1,10 +1,11 @@
 import type { ClusterState, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
-import { parseArgs } from './args';
+import { fromLines, parseArgs } from './args';
 import { describePod, describeResource, renderTable } from './kubectlGet';
 import { create } from './kubectlCreate';
 import { nodeCtl, taint } from './kubectlNodes';
+import { setProbe, setResources } from './kubectlSet';
 import { opsSubcommands } from './kubectlOps';
 import { parseOutput, renderResources } from './kubectlOutput';
 import {
@@ -154,7 +155,8 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     return notFound('deployments.apps', name);
   },
 
-  set: ({ cluster, namespace, operands }) => {
+  set: (ctx) => {
+    const { cluster, namespace, operands } = ctx;
     if (operands[0] === 'selector') {
       const kind = KINDS[operands[1] ?? ''] ?? '';
       const name = operands[2];
@@ -179,9 +181,12 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     }
 
     if (operands[0] === 'image') {
-      const kind = KINDS[operands[1] ?? ''] ?? operands[1]?.split('/')[0] ?? '';
-      const name = operands[2] ?? operands[1]?.split('/')[1] ?? '';
-      const pair = operands[3] ?? '';
+      // `deploy/web` の形と `deployment web` の形の両方を受ける
+      const head = operands[1] ?? '';
+      const slash = head.includes('/');
+      const kind = KINDS[slash ? (head.split('/')[0] ?? '') : head] ?? '';
+      const name = slash ? (head.split('/')[1] ?? '') : (operands[2] ?? '');
+      const pair = (slash ? operands[2] : operands[3]) ?? '';
       const [containerName, image] = pair.split('=');
       if (kind !== 'deployments' || containerName === undefined || image === undefined) {
         return { stderr: 'usage: kubectl set image deployment <name> <container>=<image>\n', code: 1 };
@@ -207,26 +212,77 @@ const coreSubcommands: Record<string, KubectlHandler> = {
       };
     }
 
-    return { stderr: 'usage: kubectl set <selector|image> ...\n', code: 1 };
+    if (operands[0] === 'resources') return setResources(ctx);
+    if (operands[0] === 'probe') return setProbe(ctx);
+
+    return { stderr: 'usage: kubectl set <selector|image|resources|probe> ...\n', code: 1 };
   },
 
-  label: ({ cluster, namespace, operands }) => {
-    const kind = KINDS[operands[0] ?? ''] ?? '';
-    const name = operands[1];
-    const pairs = operands.slice(2).filter((o) => o.includes('='));
-    if (kind !== 'pods' || name === undefined || pairs.length === 0) {
-      return { stderr: 'usage: kubectl label pod <name> <key>=<value>\n', code: 1 };
+  label: ({ cluster, namespace, operands, values, flags }) => {
+    const raw = operands[0] ?? '';
+    const kind = KINDS[raw] ?? '';
+    const selector = values.get('l');
+    // `key-` は取り外し、`key=value` は付け直し
+    const changes = operands.slice(1).filter((o) => o.includes('=') || o.endsWith('-'));
+    const name = selector === undefined ? operands[1] : undefined;
+    if (kind === '' || changes.length === 0 || (selector === undefined && name === undefined)) {
+      return { stderr: 'usage: kubectl label <type> (<name>|-l <selector>) <key>=<value>\n', code: 1 };
     }
-    const pod = cluster.pods.get(key(namespace, name));
-    if (pod === undefined) return notFound('pods', name);
-    const labels = { ...pod.metadata.labels };
-    for (const pair of pairs) {
-      const [k, v] = pair.split('=');
-      if (k !== undefined && v !== undefined) labels[k] = v;
+    const field = FIELD_OF[kind];
+    const collection = field === undefined ? undefined : cluster[field];
+    if (!(collection instanceof Map)) {
+      return { stderr: `error: ${kind} にはラベルを付けられません\n`, code: 1 };
     }
-    const pods = new Map(cluster.pods);
-    pods.set(key(namespace, name), { ...pod, metadata: { ...pod.metadata, labels } });
-    return { stdout: `pod/${name} labeled\n`, patch: { cluster: { ...cluster, pods } } };
+
+    // 対象を決める。名前を指すか、セレクタで集合を指すか
+    const targets: [string, Resource][] = [];
+    if (selector === undefined) {
+      const id = idFor(kind, namespace, name ?? '');
+      const found = collection.get(id) as Resource | undefined;
+      if (found === undefined) return notFound(kind, name ?? '');
+      targets.push([id, found]);
+    } else {
+      const wanted = Object.fromEntries(
+        selector.split(',').map((pair) => pair.split('=')).filter((p) => p.length === 2) as [string, string][],
+      );
+      for (const [id, resource] of collection as Map<string, Resource>) {
+        if (!CLUSTER_SCOPED.has(kind) && resource.metadata.namespace !== namespace) continue;
+        if (Object.entries(wanted).every(([k, v]) => resource.metadata.labels[k] === v)) {
+          targets.push([id, resource]);
+        }
+      }
+      if (targets.length === 0) {
+        return { stdout: `No resources found in ${namespace} namespace.\n` };
+      }
+    }
+
+    const next = new Map(collection as Map<string, Resource>);
+    const lines: string[] = [];
+    for (const [id, resource] of targets) {
+      const labels = { ...resource.metadata.labels };
+      for (const change of changes) {
+        if (change.endsWith('-') && !change.includes('=')) {
+          delete labels[change.slice(0, -1)];
+          continue;
+        }
+        const [k, v] = change.split('=');
+        if (k === undefined || v === undefined) continue;
+        // 本物と同じく、既にある値を変えるには --overwrite が要る
+        if (labels[k] !== undefined && labels[k] !== v && !flags.has('overwrite')) {
+          return {
+            stderr: `error: '${k}' already has a value (${labels[k]}), and --overwrite is false\n`,
+            code: 1,
+          };
+        }
+        labels[k] = v;
+      }
+      next.set(id, { ...resource, metadata: { ...resource.metadata, labels } });
+      lines.push(`${raw}/${resource.metadata.name} labeled`);
+    }
+    return {
+      stdout: fromLines(lines),
+      patch: { cluster: { ...cluster, [field as string]: next } },
+    };
   },
 
   cordon: ({ cluster, sub, operands }) => {
@@ -256,7 +312,7 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
   if (cluster === null) return { stderr: NO_CLUSTER, code: 1 };
   const rest = argv.slice(2);
   const { flags, values, operands } = parseArgs([sub, ...rest], {
-    withValue: ['o', 'n', 'l', 'f', 'as', 'image', 'replicas', 'tcp'],
+    withValue: ['o', 'n', 'l', 'f', 'as', 'image', 'replicas', 'tcp', 'requests', 'limits', 'succeeds-after'],
   });
 
   const handler = subcommands[ALIASES[sub] ?? sub];
