@@ -70,7 +70,9 @@ export interface MissionSource {
 }
 
 function toStep(spec: StepSpec, fallbackAnswer: string | undefined): LessonStep {
-  const answer = spec.answer ?? fallbackAnswer;
+  // 最後のヒントは、どの演習でも「そのまま打てば通る一行」にしてある
+  const lastHint = spec.hints?.[spec.hints.length - 1];
+  const answer = spec.answer ?? fallbackAnswer ?? lastHint;
   const built = spec.conditions === undefined ? null : requireAll(...spec.conditions);
   const parts = spec.parts ?? built?.parts;
   return {

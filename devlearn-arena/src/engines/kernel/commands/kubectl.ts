@@ -3,6 +3,7 @@ import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { parseArgs } from './args';
 import { describePod, describeResource, renderTable } from './kubectlGet';
+import { create } from './kubectlCreate';
 import { nodeCtl, taint } from './kubectlNodes';
 import { opsSubcommands } from './kubectlOps';
 import { parseOutput, renderResources } from './kubectlOutput';
@@ -238,6 +239,7 @@ const coreSubcommands: Record<string, KubectlHandler> = {
   },
 };
 coreSubcommands['uncordon'] = coreSubcommands['cordon'] as KubectlHandler;
+coreSubcommands['create'] = create;
 coreSubcommands['taint'] = taint;
 coreSubcommands['node-down'] = nodeCtl;
 coreSubcommands['node-up'] = nodeCtl;
@@ -254,7 +256,7 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
   if (cluster === null) return { stderr: NO_CLUSTER, code: 1 };
   const rest = argv.slice(2);
   const { flags, values, operands } = parseArgs([sub, ...rest], {
-    withValue: ['o', 'n', 'l', 'f', 'as'],
+    withValue: ['o', 'n', 'l', 'f', 'as', 'image', 'replicas', 'tcp'],
   });
 
   const handler = subcommands[ALIASES[sub] ?? sub];
