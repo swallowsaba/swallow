@@ -296,7 +296,7 @@ export function renderRoutes(routes, ctx) {
   });
 }
 
-function renderRoute(route, rank, { net, analysis, onExcludeRailway }) {
+function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap }) {
   const warnings = route.warnings || [];
   const worst = warnings.reduce(
     (acc, w) => (w.severity === SEVERITY.SUSPENDED ? 'danger' : acc === 'danger' ? 'danger' : w.severity === SEVERITY.DELAY ? 'warn' : acc),
@@ -314,6 +314,12 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway }) {
   meta.append(el('div', null, `乗換 ${route.transfers} 回`));
   if (route.waitMinutes > 0) meta.append(el('div', 'muted', `待ち ${formatDuration(route.waitMinutes)}`));
   head.append(meta);
+  if (onShowOnMap) {
+    const m = el('button', 'btn btn--ghost btn--sm route__map', '地図で見る');
+    m.type = 'button';
+    m.addEventListener('click', () => onShowOnMap(route));
+    head.append(m);
+  }
   if (route.kind === 'bus' || route.kind === 'mixed') {
     const b = el('span', 'badge badge--bus', route.kind === 'bus' ? 'バス' : 'バス+鉄道');
     b.title =

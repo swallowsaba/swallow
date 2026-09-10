@@ -12,6 +12,7 @@ import { analyzeStatus, warningsForRoute, SEVERITY } from './status.js';
 import { findBusRoutes, findIntermodalRoutes } from './bus.js';
 import { currentPosition, GeoError, formatDistance } from './geo.js';
 import { toServiceMoment, calendarFor, dateKey } from './time.js';
+import { TransitMap, routeToPoints } from './map.js';
 import * as ui from './ui.js';
 
 const { $ } = ui;
@@ -36,6 +37,9 @@ const state = {
   stamps: { networkAt: null, timetableAt: null, statusAt: null },
   stores: { timetables: new Map(), trains: new Map() },
   busStore: {}, // カレンダーなど、セッション中使い回すもの
+  map: null,
+  mapOpen: false,
+  knownBusStops: new Map(), // 地図に出せるバス停(名前検索や経路で見つかったもの)
   includeBus: true,
   includeIntermodal: true,
   searching: false,
@@ -171,6 +175,17 @@ function bindStaticHandlers() {
   });
 
   $('#locate-btn').addEventListener('click', useCurrentLocation);
+
+  $('#map-toggle').addEventListener('click', toggleMap);
+  $('#map-locate').addEventListener('click', async () => {
+    try {
+      const pos = await currentPosition();
+      if (!state.mapOpen) toggleMap();
+      state.map?.focus(pos.lat, pos.lon, 15);
+    } catch (e) {
+      ui.addAlert('warn', { title: '現在地を取得できませんでした', body: e instanceof GeoError ? e.message : '' });
+    }
+  });
 
   setupAutocomplete('#from-input', '#from-list', '#from-hint', 'from');
   setupAutocomplete('#to-input', '#to-list', '#to-hint', 'to');
@@ -389,6 +404,122 @@ async function useCurrentLocation() {
 }
 
 /* ------------------------------------------------------------------ *
+ *  地図
+ * ------------------------------------------------------------------ */
+
+function toggleMap() {
+  const el = $('#map');
+  const note = $('#map-note');
+  const btn = $('#map-toggle');
+
+  if (state.mapOpen) {
+    el.hidden = true;
+    note.hidden = true;
+    btn.textContent = '地図を開く';
+    btn.setAttribute('aria-expanded', 'false');
+    state.mapOpen = false;
+    return;
+  }
+
+  el.hidden = false;
+  note.hidden = false;
+  btn.textContent = '地図を閉じる';
+  btn.setAttribute('aria-expanded', 'true');
+  state.mapOpen = true;
+
+  if (!state.map) {
+    state.map = new TransitMap(el, {
+      onPickStation: (groupId, title, which) => {
+        state[which] = { groupId, label: title, busOnly: false };
+        $(`#${which}-input`).value = title;
+        $(`#${which}-hint`).textContent = '地図から選択';
+        $(`#${which}-hint`).classList.remove('is-error');
+      },
+      onPickBusStop: (stop, which) => {
+        state[which] = { groupId: null, label: stop.title, busOnly: true };
+        $(`#${which}-input`).value = stop.title;
+        $(`#${which}-hint`).textContent = `バス停「${stop.title}」(鉄道の経路は対象外になります)`;
+        $(`#${which}-hint`).classList.remove('is-error');
+      },
+      onNearby: (lat, lon) => {
+        if (!state.net) return;
+        const near = state.net.nearestGroups(lat, lon, 3);
+        if (!near.length) return;
+        ui.addAlert('info', {
+          title: 'この地点の近くの駅',
+          body: near.map((n) => `${n.group.title}(${formatDistance(n.km)})`).join(' / '),
+          actions: near.flatMap((n) => [
+            {
+              label: `${n.group.title}を出発に`,
+              onClick: () => pickFromMap('from', n.group.id, n.group.title),
+            },
+            {
+              label: `${n.group.title}を到着に`,
+              onClick: () => pickFromMap('to', n.group.id, n.group.title),
+            },
+          ]),
+        });
+      },
+      onStationBusStops: (group) => loadBusStopsForStation(group),
+    });
+  }
+
+  if (!state.map.init()) {
+    el.hidden = true;
+    note.hidden = true;
+    state.mapOpen = false;
+    btn.textContent = '地図を開く';
+    ui.addAlert('warn', {
+      title: '地図を読み込めませんでした',
+      body: '地図ライブラリ(Leaflet)を CDN から取得できませんでした。ネットワークを確認してください。地図以外の機能はそのまま使えます。',
+    });
+    return;
+  }
+
+  if (state.net) state.map.renderStations(state.net);
+  state.map.addBusStops([...state.knownBusStops.values()]);
+  state.map.refresh();
+}
+
+function pickFromMap(which, groupId, title) {
+  state[which] = { groupId, label: title, busOnly: false };
+  $(`#${which}-input`).value = title;
+  $(`#${which}-hint`).textContent = '地図から選択';
+  ui.clearAlerts();
+}
+
+/** 駅名からその駅のバス停を引いて地図に足す */
+async function loadBusStopsForStation(group) {
+  try {
+    const { busStopNameCandidates } = await import('./bus.js');
+    const res = await state.api.busStops(busStopNameCandidates(group.title));
+    const stops = res.data.stops || [];
+    rememberBusStops(stops);
+    const added = state.map?.addBusStops(stops) ?? 0;
+    ui.addAlert(added ? 'info' : 'warn', {
+      title: added ? `${group.title} 周辺のバス停を ${added} 件表示しました` : `${group.title} の名前ではバス停が見つかりませんでした`,
+      body: added ? 'バス停をタップすると出発地・到着地に設定できます。' : 'バス停の正式名で検索してみてください。',
+    });
+  } catch (e) {
+    ui.addAlert('warn', { title: 'バス停を取得できませんでした', body: e?.message || '' });
+  }
+}
+
+/** 見つかったバス停を覚えておく(地図に出せるのはここにあるものだけ) */
+function rememberBusStops(stops) {
+  for (const s of stops || []) {
+    if (s && s.id && s.lat != null && s.lon != null) state.knownBusStops.set(s.id, s);
+  }
+}
+
+/** 選ばれた経路を地図に描く */
+function showRouteOnMap(route) {
+  if (!state.map || !state.mapOpen || !state.net) return;
+  const points = routeToPoints(route, state.net, state.knownBusStops);
+  state.map.renderRoute(points);
+}
+
+/* ------------------------------------------------------------------ *
  *  日時
  * ------------------------------------------------------------------ */
 function setDepartToNow() {
@@ -587,6 +718,7 @@ async function runSearch() {
             serviceDate,
             store: state.busStore,
           });
+          rememberBusStops([...(direct.context?.originStops || []), ...(direct.context?.destStops || [])]);
           if (!state.includeIntermodal) return direct;
           // バス停の検索結果は使い回して、無駄なリクエストを増やさない
           const mixed = await findIntermodalRoutes(
@@ -602,6 +734,7 @@ async function runSearch() {
               context: direct.context,
             }
           );
+          rememberBusStops([...(direct.context?.originStops || []), ...(direct.context?.destStops || [])]);
           return {
             routes: [...direct.routes, ...mixed.routes],
             warnings: [...direct.warnings, ...mixed.warnings],
@@ -712,6 +845,11 @@ function renderSorted() {
     net: state.net,
     analysis: state.analysis,
     onExcludeRailway: (rw) => addExclude({ type: 'railway', railway: rw }),
+    onShowOnMap: (route) => {
+      if (!state.mapOpen) toggleMap();
+      showRouteOnMap(route);
+      $('#map-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
   });
 }
 

@@ -6,6 +6,8 @@
 <meta name="description" content="首都圏(都営・東京メトロ ほか)の公共交通オープンデータを使ったルート検索。所要時間と乗換回数で比較できます。">
 <meta name="color-scheme" content="light dark">
 <title>首都圏ルート検索</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
+      crossorigin="anonymous" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
@@ -99,6 +101,25 @@
     <p class="calendar-note" id="calendar-note"></p>
   </form>
 
+  <!-- ================= 地図 ================= -->
+  <section class="card map-card" id="map-card">
+    <div class="map-card__head">
+      <h2 class="card__h">地図から選ぶ</h2>
+      <div class="map-card__actions">
+        <button type="button" class="btn btn--ghost btn--sm" id="map-locate">現在地へ</button>
+        <button type="button" class="btn btn--ghost btn--sm" id="map-toggle" aria-expanded="false" aria-controls="map">
+          地図を開く
+        </button>
+      </div>
+    </div>
+    <div id="map" class="map" hidden></div>
+    <p class="map-note" id="map-note" hidden>
+      駅をタップすると出発地・到着地に設定できます。
+      <strong>バス停は、検索で見つかったものと経路上のものだけ</strong>表示されます
+      (ODPT が全停留所の一括取得に対応していないためです)。
+    </p>
+  </section>
+
   <!-- ================= 通知・エラー ================= -->
   <div id="alerts" class="alerts" aria-live="polite"></div>
 
@@ -175,6 +196,8 @@
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="module" src="./js/main.js"></script>
 </body>
 </html>
