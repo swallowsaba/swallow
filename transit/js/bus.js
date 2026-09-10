@@ -48,11 +48,16 @@ export function busStopNameCandidates(name) {
   const base = String(name || '').trim().replace(/\s+/g, '');
   if (!base) return [];
   const out = new Set([base]);
-  if (!base.endsWith('駅前')) out.add(`${base}駅前`);
-  if (base.endsWith('駅')) out.add(`${base}前`);
-  if (base.endsWith('駅前')) out.add(base.replace(/駅前$/, ''));
-  if (base.endsWith('駅')) out.add(base.replace(/駅$/, ''));
-  return [...out].slice(0, 4);
+  if (base.endsWith('駅前')) {
+    out.add(base.slice(0, -2)); // 渋谷駅前 → 渋谷
+  } else if (base.endsWith('駅')) {
+    out.add(`${base}前`); // 渋谷駅 → 渋谷駅前
+    out.add(base.slice(0, -1)); // 渋谷駅 → 渋谷
+  } else {
+    out.add(`${base}駅前`); // 渋谷 → 渋谷駅前
+  }
+  // 候補数 × 事業者数がそのままサブリクエスト数になるので絞る
+  return [...out].slice(0, 3);
 }
 
 /**
@@ -306,15 +311,14 @@ export async function findBusRoutes(api, fromLabel, toLabel, { departAt, service
     return { routes: [], warnings, fetchedAt, searched: true, context: ctx };
   }
 
+  // バス停時刻表を出していない事業者もあるので、ここが空でも打ち切らない
+  // (loadRuns が便別時刻表から発車時刻を復元する)
   const departures = buildDepartureIndex(timetables, activeCalendars);
-  if (!departures.size) {
-    if (!activeCalendars.size) {
-      warnings.push({ code: 'BUS_CALENDAR', message: 'この日に適用されるバスのダイヤを特定できませんでした。' });
-    }
-    return { routes: [], warnings, fetchedAt, searched: true, context: ctx };
+  if (!departures.size && !activeCalendars.size) {
+    warnings.push({ code: 'BUS_CALENDAR', message: 'この日に適用されるバスのダイヤを特定できませんでした。' });
   }
 
-  const runsByPattern = await loadRuns(api, departures, segments, departAt, warnings, (at) => {
+  const runsByPattern = await loadRuns(api, departures, segments, departAt, activeCalendars, warnings, (at) => {
     fetchedAt = at || fetchedAt;
   });
 
@@ -400,10 +404,9 @@ export async function findIntermodalRoutes(
     return { routes: [], warnings, fetchedAt, context: ctx };
   }
   const departures = buildDepartureIndex(timetables, activeCalendars);
-  if (!departures.size) return { routes: [], warnings, fetchedAt, context: ctx };
 
   const allSegments = [...outbound, ...inbound];
-  const runsByPattern = await loadRuns(api, departures, allSegments, departAt, warnings, (at) => {
+  const runsByPattern = await loadRuns(api, departures, allSegments, departAt, activeCalendars, warnings, (at) => {
     fetchedAt = at || fetchedAt;
   });
 
@@ -516,11 +519,31 @@ function pickBest(segments, departures, runsByPattern, departAt) {
  *  共通
  * ================================================================== */
 
-async function loadRuns(api, departures, segments, departAt, warnings, onFetchedAt) {
+/**
+ * 便別時刻表を取得し、必要なら発車時刻もそこから組み立てる。
+ *
+ * バス停時刻表(odpt:BusstopPoleTimetable)を出しているのは都営バスと東急バスだけで、
+ * 西武バス・相鉄バス・横浜市営バス・神奈中などは便別時刻表しか無い。
+ * そこで、バス停時刻表から発車時刻が拾えなかった区間については
+ * カレンダーを指定せずに便別時刻表を引き、その停車時刻から発車時刻を復元する。
+ */
+async function loadRuns(api, departures, segments, departAt, activeCalendars, warnings, onFetchedAt) {
   const requests = [];
   const seen = new Set();
+  /** 発車時刻が判らず、便別時刻表から復元する必要がある区間 */
+  const needsDerive = [];
+
   for (const seg of segments) {
     const cands = (departures.get(`${seg.fromPole}|${seg.pattern.id}`) || []).filter((c) => c.minutes >= departAt);
+    if (!cands.length) {
+      const k = `derive|${seg.pattern.id}`;
+      needsDerive.push(seg);
+      if (!seen.has(k)) {
+        seen.add(k);
+        requests.push({ pattern: seg.pattern.id }); // カレンダー指定なし = 全ダイヤ
+      }
+      continue;
+    }
     for (const c of cands.slice(0, RUNS_PER_PATTERN)) {
       const k = `${seg.pattern.id}|${c.calendar}`;
       if (seen.has(k)) continue;
@@ -528,6 +551,7 @@ async function loadRuns(api, departures, segments, departAt, warnings, onFetched
       requests.push({ pattern: seg.pattern.id, calendar: c.calendar });
     }
   }
+
   const byPattern = new Map();
   if (!requests.length) return byPattern;
   try {
@@ -539,7 +563,28 @@ async function loadRuns(api, departures, segments, departAt, warnings, onFetched
     }
   } catch {
     warnings.push({ code: 'BUS_ESTIMATED', message: 'バスの便別時刻を取得できず、所要時間を推定しています。' });
+    return byPattern;
   }
+
+  // 便別時刻表から発車時刻を復元する
+  for (const seg of needsDerive) {
+    const key = `${seg.fromPole}|${seg.pattern.id}`;
+    if (departures.has(key) && departures.get(key).length) continue;
+    const list = [];
+    for (const run of byPattern.get(seg.pattern.id) || []) {
+      if (activeCalendars.size && run.calendar && !activeCalendars.has(run.calendar)) continue;
+      const stop = run.stops.find((x) => x.pole === seg.fromPole);
+      if (!stop) continue;
+      const m = toMinutes(stop.dep) ?? toMinutes(stop.arr);
+      if (m == null) continue;
+      list.push({ minutes: m, calendar: run.calendar, destSign: null });
+    }
+    if (list.length) {
+      list.sort((a, b) => a.minutes - b.minutes);
+      departures.set(key, list);
+    }
+  }
+
   return byPattern;
 }
 
