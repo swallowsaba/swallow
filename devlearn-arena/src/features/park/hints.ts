@@ -26,3 +26,34 @@ export function revealedCount(state: HintReveal, key: string): number {
 export function reveal(state: HintReveal, key: string): HintReveal {
   return { key, count: revealedCount(state, key) + 1 };
 }
+
+/** 何回つまずいたら次のヒントを自分から開くか */
+const FIRST_AUTO_HINT = 3;
+const EVERY = 2;
+
+/**
+ * 同じ手順で何度も通らないときに、こちらから開くヒントの数。
+ *
+ * 手が止まったまま放置されるほうが学びを損なうので、
+ * 3 回目からは黙って1つ開き、以後は 2 回ごとに増やす。
+ */
+export function autoHintCount(attempts: number): number {
+  if (attempts < FIRST_AUTO_HINT) return 0;
+  return Math.floor((attempts - FIRST_AUTO_HINT) / EVERY) + 1;
+}
+
+/** 次に自分からヒントが開くまで、あと何回か */
+export function attemptsUntilNextHint(attempts: number): number {
+  if (attempts < FIRST_AUTO_HINT) return FIRST_AUTO_HINT - attempts;
+  return EVERY - ((attempts - FIRST_AUTO_HINT) % EVERY);
+}
+
+/** 実際に見せるヒントの数。自分で開いた数と、自動で開いた数の多いほう */
+export function shownHints(state: HintReveal, key: string, attempts: number, total: number): number {
+  return Math.min(total, Math.max(revealedCount(state, key), autoHintCount(attempts)));
+}
+
+/** 答えそのものを見せてよいか。ヒントを出し切ってもなお通らないとき */
+export function shouldShowAnswer(attempts: number, hintCount: number): boolean {
+  return autoHintCount(attempts) > hintCount;
+}

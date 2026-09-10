@@ -1,5 +1,6 @@
 import { formatUnified } from '../diff';
 import { resolve } from '../path';
+import { compilePattern } from '../regex';
 import type { CommandSpec, ShellState } from '../registry';
 import { appendFile, readFile, writeFile } from '../vfs';
 import { fromLines, parseArgs, toLines } from './args';
@@ -7,6 +8,21 @@ import { fromLines, parseArgs, toLines } from './args';
 function readInput(shell: ShellState, stdin: string, files: readonly string[]): string {
   if (files.length === 0) return stdin;
   return files.map((f) => readFile(shell.vfs, resolve(shell.cwd, f))).join('');
+}
+
+/**
+ * sed のパターンは基本正規表現。
+ * 読めなければ本物と同じように、その場で止める。
+ */
+function compileOrThrow(pattern: string, jsFlags: string): RegExp {
+  const compiled = compilePattern(pattern, {
+    global: jsFlags.includes('g'),
+    ignoreCase: jsFlags.includes('i'),
+  });
+  if (compiled.regex === null) {
+    throw new Error(compiled.error ?? `invalid regex: ${pattern}`);
+  }
+  return compiled.regex;
 }
 
 function unescape(text: string): string {
@@ -62,7 +78,7 @@ export function parseSedScript(script: string): SedCommand[] {
         address = { kind: 'last' };
         rest = rest.slice(1).trim();
       } else if (regexMatch?.[1] !== undefined) {
-        address = { kind: 'regex', value: new RegExp(regexMatch[1]) };
+        address = { kind: 'regex', value: compileOrThrow(regexMatch[1], '') };
         rest = rest.slice(regexMatch[0].length).trim();
       }
 
@@ -91,7 +107,11 @@ export function parseSedScript(script: string): SedCommand[] {
         }
         const jsFlags = `${flags.includes('g') ? 'g' : ''}${flags.includes('i') ? 'i' : ''}`;
         const command: SedCommand = {
-          action: { kind: 's', pattern: new RegExp(pattern, jsFlags), replacement: replacement.replace(/\\(\d)/g, '$$$1') },
+          action: {
+            kind: 's',
+            pattern: compileOrThrow(pattern, jsFlags),
+            replacement: replacement.replace(/\\(\d)/g, '$$$1'),
+          },
         };
         return address === undefined ? command : { ...command, address };
       }

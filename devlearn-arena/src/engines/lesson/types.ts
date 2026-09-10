@@ -10,6 +10,16 @@ export interface AssertContext {
   timeline: readonly ShellState[];
 }
 
+/**
+ * 通過条件のうちのひとつ。
+ * 画面はこれを一覧にして、どこまで満たせているかを見せる。
+ */
+export interface StepPart {
+  label: string;
+  test: (ctx: AssertContext) => boolean;
+  howTo?: string;
+}
+
 export interface LessonStep {
   prompt: string;
   /** 何を満たせば通るのかを人が読める形で示す。隠さない */
@@ -23,6 +33,10 @@ export interface LessonStep {
    */
   diagnose?: (ctx: AssertContext) => string | null;
   explain: string;
+  /** 通過条件の内訳。空なら check の一文だけを見せる */
+  parts?: readonly StepPart[];
+  /** 詰まったときに最後に見せる答え */
+  answer?: string;
 }
 
 export type MissionKind = 'training' | 'boss';

@@ -20,7 +20,12 @@ import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { MissionPanel } from './MissionPanel';
-import { NO_HINTS, reveal, revealedCount, stepKey, type HintReveal } from './hints';
+import {
+  attemptsUntilNextHint, NO_HINTS, reveal, revealedCount, shouldShowAnswer, shownHints, stepKey,
+  type HintReveal,
+} from './hints';
+import type { PartState } from './StepChecklist';
+import { evaluateParts } from '@/engines/lesson/authoring/conditions';
 import { VisualPanel, type VisualTab } from './VisualPanel';
 
 const STEP_XP = 10;
@@ -95,6 +100,9 @@ function Park({
   const terminalRef = useRef<TerminalHandle>(null);
   const [progress, setProgress] = useState<LessonProgressState>(initialProgress);
   const [hintReveal, setHintReveal] = useState<HintReveal>(NO_HINTS);
+  // いまの手順で何回つまずいたか。ヒントを自分から開く判断に使う
+  const [attempts, setAttempts] = useState(0);
+  const [lastError, setLastError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
@@ -114,6 +122,39 @@ function Park({
   const previous = entries[cursor - 1]?.state;
   const step = currentStep(mission, progress);
   const hintKey = stepKey(mission.id, progress.stepIndex);
+
+  // 判定に使う文脈。条件の内訳を出すのにも使い回す
+  const context = useMemo(() => {
+    try {
+      return buildContext(session.getTimeline());
+    } catch {
+      return null;
+    }
+    // session は毎描画で作り直されるので、状態そのものを見る
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.state]);
+
+  /** いまどこまで満たせているか。通らない理由を自分で確かめられるようにする */
+  const parts = useMemo<PartState[]>(() => {
+    if (!step?.parts || context === null) return [];
+    return evaluateParts(step.parts, context).map(({ condition, passing }) => ({
+      label: condition.label,
+      passing,
+      howTo: condition.howTo,
+    }));
+  }, [step, context]);
+
+  // 手順が変われば、つまずいた回数も直前の失敗も数え直す
+  useEffect(() => {
+    setAttempts(0);
+    setLastError(null);
+  }, [mission.id, progress.stepIndex]);
+
+  const hintCount = step?.hints.length ?? 0;
+  const revealed = shownHints(hintReveal, hintKey, attempts, hintCount);
+  const autoOpened = revealed > revealedCount(hintReveal, hintKey);
+  const answer =
+    step?.answer !== undefined && shouldShowAnswer(attempts, hintCount) ? step.answer : null;
 
   // いま条件を満たしているか。毎回描画時に評価する
   const passingNow = useMemo(() => {
@@ -162,12 +203,14 @@ function Park({
 
   /** コマンド実行では回数と失敗数だけを数える。合否の判定は下の効果で行う */
   const handleExecuted = useCallback(
-    (_line: string, exitCode: number) => {
+    (_line: string, exitCode: number, stderr: string) => {
       setProgress((p) => ({
         ...p,
         commandsUsed: p.commandsUsed + 1,
         mistakes: p.mistakes + (exitCode === 0 ? 0 : 1),
       }));
+      setAttempts((n) => n + 1);
+      setLastError(exitCode === 0 ? null : stderr.trim() === '' ? null : stderr);
     },
     [],
   );
@@ -335,7 +378,17 @@ function Park({
             step={step}
             passingNow={passingNow}
             diagnosis={diagnosis}
-            revealedHints={revealedCount(hintReveal, hintKey)}
+            revealedHints={revealed}
+            parts={parts}
+            lastError={lastError}
+            attempts={attempts}
+            untilNextHint={attemptsUntilNextHint(attempts)}
+            answer={answer}
+            autoOpened={autoOpened}
+            onInsert={(text) => {
+              terminalRef.current?.insertText(text);
+              terminalRef.current?.focus();
+            }}
             nextMission={nextMission}
             onRevealHint={() => {
               setProgress(useHint);

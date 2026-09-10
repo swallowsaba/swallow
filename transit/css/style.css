@@ -3,49 +3,59 @@
    モバイル優先。ライト/ダークはトークンで切り替える。
    ================================================================== */
 
+/* 背景と面は無彩色(白 / 黒)。色は意味のあるところにだけ使う。
+   緑 = 鉄道 / アクセント、青 = バス、橙 = 遅延、赤 = 運休。 */
 :root {
-  --bg: #f4f6f5;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #eef2f0;
-  --ink: #14201c;
-  --ink-2: #4d5b56;
-  --ink-3: #7d8b85;
-  --rule: #dce3e0;
-  --rule-strong: #c2cdc8;
+  --surface-2: #f4f4f5;
+  --ink: #17181a;
+  --ink-2: #55585e;
+  --ink-3: #83878e;
+  --rule: #e3e4e7;
+  --rule-strong: #c8cace;
   --accent: #00713c;
   --accent-ink: #005a30;
-  --accent-soft: #e3efe8;
-  --warn: #9c5e00;
-  --warn-soft: #f9efdd;
+  --accent-soft: #e9f1ec;
+  --warn: #96590a;
+  --warn-soft: #fbf1e2;
   --danger: #a8241c;
-  --danger-soft: #fae7e5;
+  --danger-soft: #fbe9e7;
   --info: #1c4f8a;
-  --info-soft: #e4edf7;
+  --info-soft: #e8eff7;
+  --bus: #1c5fb0;
+  --bus-soft: #e8eff8;
+  --rail: #00713c;
+  --rail-soft: #e9f1ec;
   --radius: 10px;
-  --shadow: 0 1px 2px rgba(20, 31, 27, .06), 0 6px 18px rgba(20, 31, 27, .05);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .05), 0 6px 18px rgba(0, 0, 0, .04);
   --mono: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0e1512;
-    --surface: #161f1c;
-    --surface-2: #1d2825;
-    --ink: #e7edea;
-    --ink-2: #a5b3ad;
-    --ink-3: #7d8b85;
-    --rule: #27342f;
-    --rule-strong: #3a4a44;
+    --bg: #000000;
+    --surface: #111113;
+    --surface-2: #1a1a1d;
+    --ink: #ededef;
+    --ink-2: #a8abb1;
+    --ink-3: #80838a;
+    --rule: #2a2a2e;
+    --rule-strong: #3d3e44;
     --accent: #54c68c;
     --accent-ink: #8fe0b4;
-    --accent-soft: #142d21;
+    --accent-soft: #16241d;
     --warn: #e2a94f;
-    --warn-soft: #2f2410;
+    --warn-soft: #2a2113;
     --danger: #ff9187;
-    --danger-soft: #381916;
+    --danger-soft: #2e1917;
     --info: #7db3ea;
-    --info-soft: #14243a;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .3);
+    --info-soft: #15202e;
+    --bus: #7db3ea;
+    --bus-soft: #15202e;
+    --rail: #54c68c;
+    --rail-soft: #16241d;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .6), 0 6px 18px rgba(0, 0, 0, .45);
   }
 }
 
@@ -165,7 +175,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .btn:hover:not(:disabled) { border-color: var(--accent); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-@media (prefers-color-scheme: dark) { .btn--primary { color: #0e1512; } }
+@media (prefers-color-scheme: dark) { .btn--primary { color: #06120c; } }
 .btn--ghost { background: transparent; }
 .btn--sm { font-size: 12.5px; padding: 6px 10px; }
 .btn--icon { font-size: 12.5px; padding: 10px 10px; flex: none; }
@@ -217,8 +227,52 @@ ul { margin: 0; padding: 0; list-style: none; }
 .alert--info { border-left-color: var(--info); background: var(--info-soft); }
 .alert__actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* ---------------- 経由地 ---------------- */
+.vias { border-top: 1px solid var(--rule); padding-top: 12px; display: grid; gap: 10px; }
+.vias__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.vias__note { font-size: 11.5px; color: var(--ink-3); margin: 0; }
+.via-list { display: grid; gap: 10px; }
+.via-list:empty { display: none; }
+.via {
+  display: grid; gap: 8px;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  padding: 10px; border: 1px solid var(--rule); border-radius: 8px;
+  background: var(--surface-2);
+}
+@media (min-width: 700px) { .via { grid-template-columns: auto 1fr auto auto; align-items: start; } }
+.via__no {
+  font-size: 11px; font-weight: 700; font-family: var(--mono);
+  color: var(--ink-2); background: var(--surface);
+  border: 1px solid var(--rule-strong); border-radius: 4px; padding: 4px 6px;
+  margin-top: 8px; white-space: nowrap;
+}
+.via__field { position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.via__stay { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); margin-top: 6px; white-space: nowrap; }
+.via__stay .input { width: 80px; padding: 8px 10px; background: var(--surface); }
+.via__del { margin-top: 4px; align-self: start; }
+@media (max-width: 699px) {
+  .via__no { grid-column: 1; }
+  .via__field { grid-column: 2; }
+  .via__stay, .via__del { grid-column: 2; }
+}
+
 /* ---------------- status ---------------- */
-.status__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.status { padding: 0; }
+.status__head {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 14px 16px;
+  font: inherit; text-align: left; cursor: pointer;
+  background: none; border: none; color: inherit;
+  border-radius: var(--radius);
+}
+.status__head:hover { background: var(--surface-2); }
+.status__summary { font-size: 12.5px; color: var(--ink-2); margin-right: auto; }
+.status__summary--delay { color: var(--warn); font-weight: 700; }
+.status__summary--suspended { color: var(--danger); font-weight: 700; }
+.status__chev { color: var(--ink-3); font-size: 12px; transition: transform .15s; }
+.status__head[aria-expanded="true"] .status__chev { transform: rotate(180deg); }
+#status-body { padding: 0 16px 14px; }
 .stamp { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
 .stamp--stale { color: var(--danger); font-weight: 700; }
 
@@ -241,7 +295,9 @@ ul { margin: 0; padding: 0; list-style: none; }
 .badge--delay { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
 .badge--suspended { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
 .badge--est { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule-strong); }
-.badge--bus { background: var(--info-soft); color: var(--info); border-color: var(--info); }
+.badge--bus { background: var(--bus-soft); color: var(--bus); border-color: var(--bus); }
+.badge--rail { background: var(--rail-soft); color: var(--rail); border-color: var(--rail); }
+.badge--via { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule-strong); }
 
 /* ---------------- excludes ---------------- */
 .excludes__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -277,7 +333,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .sorter__btn:last-child { border-right: none; }
 .sorter__btn.is-active { background: var(--accent); color: #fff; }
-@media (prefers-color-scheme: dark) { .sorter__btn.is-active { color: #0e1512; } }
+@media (prefers-color-scheme: dark) { .sorter__btn.is-active { color: #06120c; } }
 
 .route {
   background: var(--surface); border: 1px solid var(--rule);
@@ -312,20 +368,59 @@ ul { margin: 0; padding: 0; list-style: none; }
 .leg__rail { position: relative; }
 .leg__rail::before {
   content: ""; position: absolute; left: 50%; top: 0; bottom: 0;
-  width: 3px; transform: translateX(-50%); background: var(--rule-strong); border-radius: 2px;
+  width: 4px; transform: translateX(-50%);
+  background: var(--leg-color, var(--rule-strong)); border-radius: 2px;
 }
-.leg--walk .leg__rail::before { background: repeating-linear-gradient(to bottom, var(--rule-strong) 0 4px, transparent 4px 8px); }
+/* 電車は実線、バスは破線。色でも形でも見分けられるようにする。 */
+.leg--bus .leg__rail::before {
+  background: repeating-linear-gradient(to bottom, var(--bus) 0 7px, transparent 7px 12px);
+}
+.leg--walk .leg__rail::before {
+  background: repeating-linear-gradient(to bottom, var(--rule-strong) 0 4px, transparent 4px 8px);
+}
+.leg--via .leg__rail::before { background: var(--rule-strong); }
 .leg__dot {
   position: absolute; left: 50%; top: 2px; width: 11px; height: 11px;
   transform: translateX(-50%); border-radius: 50%;
   background: var(--surface); border: 3px solid var(--ink-2);
 }
+/* バスの停留所は四角、駅は丸 */
+.leg--bus > .leg__rail > .leg__dot { border-radius: 2px; border-color: var(--bus); }
+.leg--rail > .leg__rail > .leg__dot { border-color: var(--leg-color, var(--rail)); }
+.leg--via > .leg__rail > .leg__dot { border-color: var(--ink-2); background: var(--ink-2); }
+
 .leg__body { padding: 0 0 14px; min-width: 0; }
 .leg__station { font-weight: 700; font-size: 14.5px; }
-.leg__line { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+.leg__line { font-size: 13px; color: var(--ink-2); margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .leg__line b { color: var(--ink); }
 .leg__detail { font-size: 12px; color: var(--ink-3); }
 .leg__detail .badge { margin-left: 6px; }
+
+/* 行程内のモード表示(バス / 電車) */
+.leg__mode {
+  font-size: 11px; font-weight: 700; line-height: 1.6;
+  padding: 1px 7px; border-radius: 4px; white-space: nowrap;
+  border: 1px solid transparent;
+}
+.leg__mode--bus { background: var(--bus); color: var(--surface); border-color: var(--bus); }
+.leg__mode--rail { background: var(--rail-soft); color: var(--rail); border-color: var(--rail); }
+.leg__mode--walk { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule-strong); }
+.leg__mode--via { background: var(--ink-2); color: var(--surface); border-color: var(--ink-2); }
+
+.leg--bus .leg__station { color: var(--bus); }
+.leg--via .leg__body { padding-bottom: 14px; }
+.leg--via .leg__station { color: var(--ink); }
+
+/* 経路カードの内訳(電車○本・バス○本) */
+.route__modes { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; margin-top: 2px; }
+.route__mode {
+  font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid transparent;
+}
+.route__mode--rail { background: var(--rail-soft); color: var(--rail); border-color: var(--rail); }
+.route__mode--bus { background: var(--bus-soft); color: var(--bus); border-color: var(--bus); }
+.route__mode--walk { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule-strong); }
+.route__mode--via { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule-strong); }
 
 .empty {
   padding: 28px 16px; text-align: center; color: var(--ink-2); font-size: 14px;

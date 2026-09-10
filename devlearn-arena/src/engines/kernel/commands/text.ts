@@ -1,4 +1,5 @@
 import { resolve } from '../path';
+import { compilePattern } from '../regex';
 import type { CommandSpec, ShellState } from '../registry';
 import { readFile } from '../vfs';
 import { fromLines, parseArgs, toLines } from './args';
@@ -25,10 +26,20 @@ export const textCommands: CommandSpec[] = [
     handler: ({ argv, shell, stdin }) => {
       const { flags, operands } = parseArgs(argv);
       const pattern = operands[0];
-      if (pattern === undefined) return { stderr: 'usage: grep [-invc] PATTERN [FILE...]\n', code: 2 };
+      if (pattern === undefined) return { stderr: 'usage: grep [-invcEFxn] PATTERN [FILE...]\n', code: 2 };
       const files = operands.slice(1);
       const text = readInput(shell, stdin, files);
-      const regex = new RegExp(pattern, flags.has('i') ? 'i' : '');
+      // 既定は基本正規表現（BRE）。-E で拡張、-F で文字どおり
+      const compiled = compilePattern(pattern, {
+        extended: flags.has('E'),
+        fixed: flags.has('F'),
+        ignoreCase: flags.has('i'),
+        wholeLine: flags.has('x'),
+      });
+      if (compiled.regex === null) {
+        return { stderr: `grep: ${compiled.error ?? ''}\n`, code: 2 };
+      }
+      const regex = compiled.regex;
       const invert = flags.has('v');
 
       const hits = toLines(text)

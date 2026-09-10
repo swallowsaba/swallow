@@ -21,7 +21,7 @@ export interface TerminalHandle {
 interface Props {
   session: ShellSession;
   /** コマンド実行後に呼ばれる（任務の判定に使う） */
-  onExecuted?: (line: string, exitCode: number) => void;
+  onExecuted?: (line: string, exitCode: number, stderr: string) => void;
   /** vi などがエディタを要求したときに呼ばれる */
   onEditor?: (request: { path: string; content: string; tool: string }) => void;
 }
@@ -86,12 +86,15 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
       if (didExpand) term.write(`\r\u001b[K${prompt()}${expanded}`);
       term.write('\r\n');
       const { chunks, exitCode, editor } = sessionRef.current.run(expanded);
+      let errorText = '';
       for (const chunk of chunks) {
         const text = chunk.text.replace(/\n/g, '\r\n');
+        if (chunk.stream === 'stderr') errorText += chunk.text;
         term.write(chunk.stream === 'stderr' ? `\u001b[31m${text}\u001b[0m` : text);
       }
       if (editor !== null) editorRef.current?.(editor);
-      executedRef.current?.(expanded, exitCode);
+      // 失敗の中身も渡す。画面側で「なぜ通らないか」を出すのに使う
+      executedRef.current?.(expanded, exitCode, errorText);
       lineRef.current = createLineState();
       term.write(prompt());
     };

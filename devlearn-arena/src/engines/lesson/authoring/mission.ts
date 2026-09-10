@@ -1,20 +1,35 @@
 import type { SessionOptions } from '@/engines/kernel/session';
 import type { DocRef } from '@/content/types';
-import type { LessonDefinition, LessonKindMeta, LessonStep, MissionKind, MissionTrack } from '../types';
+import type {
+  LessonDefinition, LessonKindMeta, LessonStep, MissionKind, MissionTrack, StepPart,
+} from '../types';
 import type { Check } from './assert';
+import { requireAll, type Condition } from './conditions';
 
-export interface StepSpec {
+interface StepBase {
   /** 何をするか */
   prompt: string;
   /** 何を満たせば通るか。隠さない */
-  check: string;
-  assert: Check;
+  check?: string;
   hints?: readonly string[];
   /** なぜそうなるか */
   explain: string;
   /** 惜しいときの指摘 */
   diagnose?: (ctx: Parameters<Check>[0]) => string | null;
+  /** 通過条件の内訳。どこまで満たせているかを画面に出すために使う */
+  parts?: readonly StepPart[];
+  /** 詰まったときに最後に見せる答え */
+  answer?: string;
 }
+
+/**
+ * 手順の合否は、ひとつの関数で書いても、
+ * 名前の付いた条件の集まりで書いてもよい。
+ * 集まりで書くと、画面に「どこまで満たせているか」を出せる。
+ */
+export type StepSpec =
+  | (StepBase & { assert: Check; conditions?: undefined; check: string })
+  | (StepBase & { conditions: readonly Condition[]; assert?: undefined });
 
 export interface MissionSpec {
   id: string;
@@ -54,14 +69,19 @@ export interface MissionSource {
   solution: readonly string[];
 }
 
-function toStep(spec: StepSpec): LessonStep {
+function toStep(spec: StepSpec, fallbackAnswer: string | undefined): LessonStep {
+  const answer = spec.answer ?? fallbackAnswer;
+  const built = spec.conditions === undefined ? null : requireAll(...spec.conditions);
+  const parts = spec.parts ?? built?.parts;
   return {
     prompt: spec.prompt,
-    check: spec.check,
+    check: spec.check ?? built?.summary ?? '',
     hints: spec.hints ?? [],
-    assert: spec.assert,
+    assert: spec.assert ?? built?.assert ?? (() => false),
     explain: spec.explain,
     ...(spec.diagnose ? { diagnose: spec.diagnose } : {}),
+    ...(parts ? { parts } : {}),
+    ...(answer !== undefined ? { answer } : {}),
   };
 }
 
@@ -86,7 +106,10 @@ export function defineMission(spec: MissionSpec): MissionSource {
       objectives: spec.objectives,
       initial: typeof spec.initial === 'function' ? spec.initial() : spec.initial,
       parCommands: spec.parCommands ?? Math.max(3, spec.solution.length),
-      steps: spec.steps.map(toStep),
+      // 手順と模範解答が1対1なら、その行を「答え」として使える
+      steps: spec.steps.map((step, i) =>
+        toStep(step, spec.steps.length === spec.solution.length ? spec.solution[i] : undefined),
+      ),
     }),
   };
 }

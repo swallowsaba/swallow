@@ -167,11 +167,57 @@ export function nearestSuggestItems(nearest) {
  *  運行情報
  * ------------------------------------------------------------------ */
 
+/** 運行情報の開閉状態(既定は閉じる) */
+let statusOpen = false;
+
+export function setStatusOpen(open) {
+  statusOpen = Boolean(open);
+  const body = $('#status-body');
+  const btn = $('#status-toggle');
+  if (!body || !btn) return;
+  body.hidden = !statusOpen;
+  btn.setAttribute('aria-expanded', String(statusOpen));
+}
+
+export function toggleStatus() {
+  setStatusOpen(!statusOpen);
+}
+
+/** 見出しに出す一行要約。閉じていても異常の有無が判るようにする。 */
+export function statusSummary(analysis, { failed, errors }) {
+  if (failed) return { text: '取得できませんでした', level: 'suspended' };
+  const notable = (analysis?.list || []).filter((e) => e.severity !== SEVERITY.NORMAL);
+  const suspended = notable.filter((e) => e.severity === SEVERITY.SUSPENDED).length;
+  const delay = notable.filter((e) => e.severity === SEVERITY.DELAY).length;
+  const info = notable.filter((e) => e.severity === SEVERITY.INFO).length;
+  const failedOps = (errors || []).length;
+
+  const parts = [];
+  if (suspended) parts.push(`運転見合わせ ${suspended} 件`);
+  if (delay) parts.push(`遅延 ${delay} 件`);
+  if (info) parts.push(`お知らせ ${info} 件`);
+  if (failedOps) parts.push(`取得失敗 ${failedOps} 件`);
+
+  if (!parts.length) return { text: '平常運転(掲出なし)', level: 'normal' };
+  return {
+    text: parts.join('・'),
+    level: suspended || failedOps ? 'suspended' : delay ? 'delay' : 'normal',
+  };
+}
+
 export function renderStatus(analysis, { failed, errors, onExcludeRailway }) {
   const card = $('#status-card');
   const body = $('#status-body');
   body.replaceChildren();
   card.hidden = false;
+
+  const sum = statusSummary(analysis, { failed, errors });
+  const summaryEl = $('#status-summary');
+  if (summaryEl) {
+    summaryEl.textContent = sum.text;
+    summaryEl.className = `status__summary${sum.level === 'normal' ? '' : ` status__summary--${sum.level}`}`;
+  }
+  setStatusOpen(statusOpen);
 
   if (failed) {
     const p = el('p', null, '運行情報を取得できませんでした。遅延・運休は反映されていません。各事業者の公式情報をご確認ください。');
@@ -312,6 +358,8 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap
   head.append(el('span', 'route__span', `${toClockTime(route.departure)} → ${toClockTime(route.arrival)}`));
   const meta = el('div', 'route__meta');
   meta.append(el('div', null, `乗換 ${route.transfers} 回`));
+  if (route.viaCount) meta.append(el('div', null, `経由 ${route.viaCount} 箇所`));
+  if (route.stayMinutes > 0) meta.append(el('div', 'muted', `うち滞在 ${formatDuration(route.stayMinutes)}`));
   if (route.waitMinutes > 0) meta.append(el('div', 'muted', `待ち ${formatDuration(route.waitMinutes)}`));
   head.append(meta);
   if (onShowOnMap) {
@@ -333,6 +381,16 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap
     b.title = '列車時刻表を取得できなかった区間があり、駅数から所要時間を推定しています。';
     head.append(b);
   }
+
+  /* --- 内訳(電車とバスが何本ずつか) --- */
+  const counts = countModes(route);
+  const modes = el('div', 'route__modes');
+  if (counts.rail) modes.append(el('span', 'route__mode route__mode--rail', `電車 ${counts.rail} 本`));
+  if (counts.bus) modes.append(el('span', 'route__mode route__mode--bus', `バス ${counts.bus} 本`));
+  if (counts.walk) modes.append(el('span', 'route__mode route__mode--walk', `徒歩 ${counts.walk} 回`));
+  if (counts.via) modes.append(el('span', 'route__mode route__mode--via', `経由 ${counts.via} 箇所`));
+  if (modes.children.length) head.append(modes);
+
   card.append(head);
 
   /* --- 警告 --- */
@@ -358,16 +416,27 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap
 
   /* --- 行程 --- */
   const legs = el('div', 'legs');
-  const ride = route.legs.filter((l) => !l.transfer);
-  route.legs.forEach((leg, idx) => {
+  const ride = route.legs.filter((l) => !l.transfer && !l.via);
+  route.legs.forEach((leg) => {
+    if (leg.via) {
+      legs.append(
+        legRow({
+          mode: 'via',
+          time: toClockTime(leg.arrival),
+          station: leg.label,
+          line: stayLabel(leg),
+        })
+      );
+      return;
+    }
     if (leg.transfer) {
       legs.append(
         legRow({
+          mode: 'walk',
           time: '',
           station:
             legTitle(net, leg, 'from') === legTitle(net, leg, 'to') ? '' : `→ ${legTitle(net, leg, 'to')}`,
           line: leg.kind === 'walk' ? `徒歩で乗り換え(約${Math.round(leg.minutes)}分)` : `乗り換え(約${Math.round(leg.minutes)}分)`,
-          walk: true,
         })
       );
       return;
@@ -386,10 +455,11 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap
     }
 
     const row = legRow({
+      mode: leg.bus ? 'bus' : 'rail',
       time: toClockTime(leg.departure),
       station: legTitle(net, leg, 'from'),
       line: leg.lineTitle || (rw ? rw.title : leg.railway),
-      lineColor: rw?.color || null,
+      lineColor: leg.bus ? null : rw?.color || null,
       detail: detailParts.join(' / '),
       estimated: leg.estimated,
     });
@@ -400,6 +470,7 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap
     if (isLastRide) {
       legs.append(
         legRow({
+          mode: leg.bus ? 'bus' : 'rail',
           time: toClockTime(leg.arrival),
           station: legTitle(net, leg, 'to'),
           line: '到着',
@@ -413,11 +484,39 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap
   return card;
 }
 
-function legRow({ time, station, line, lineColor, detail, walk, last, estimated }) {
-  const row = el('div', `leg${walk ? ' leg--walk' : ''}`);
+/** 経由地での滞在。指定した時間と、実際にあく時間の両方を出す。 */
+function stayLabel(leg) {
+  const planned = Math.round(leg.plannedStay || 0);
+  const actual = Math.round(leg.actualStay || 0);
+  if (!planned) return `経由(${actual}分の待ち合わせ)`;
+  if (actual > planned) return `ここに ${planned}分 とどまる(次の便まで実際は ${actual}分)`;
+  return `ここに ${planned}分 とどまる`;
+}
+
+const MODE_LABEL = { bus: 'バス', rail: '電車', walk: '徒歩', via: '経由' };
+
+/** 経路に含まれる電車・バス・徒歩・経由の本数 */
+export function countModes(route) {
+  let rail = 0;
+  let bus = 0;
+  let walk = 0;
+  let via = 0;
+  for (const leg of route.legs || []) {
+    if (leg.via) via += 1;
+    else if (leg.transfer) {
+      if (leg.kind === 'walk') walk += 1;
+    } else if (leg.bus) bus += 1;
+    else rail += 1;
+  }
+  return { rail, bus, walk, via };
+}
+
+function legRow({ mode, time, station, line, lineColor, detail, last, estimated }) {
+  const row = el('div', `leg leg--${mode}`);
   row.append(el('div', 'leg__time', time || ''));
 
   const rail = el('div', 'leg__rail');
+  if (lineColor) rail.style.setProperty('--leg-color', lineColor);
   const dot = el('span', 'leg__dot');
   if (lineColor) dot.style.borderColor = lineColor;
   if (last) dot.style.borderColor = 'var(--accent)';
@@ -428,6 +527,10 @@ function legRow({ time, station, line, lineColor, detail, walk, last, estimated 
   if (station) bodyEl.append(el('div', 'leg__station', station));
   if (line) {
     const l = el('div', 'leg__line');
+    // 「バス」「電車」を必ず添える。色だけに頼らない。
+    if (!last && (mode === 'bus' || mode === 'rail' || mode === 'via')) {
+      l.append(el('span', `leg__mode leg__mode--${mode}`, MODE_LABEL[mode]));
+    }
     const b = el('b', null, line);
     if (lineColor) b.style.color = lineColor;
     l.append(b);

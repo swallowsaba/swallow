@@ -76,6 +76,19 @@
       </div>
     </div>
 
+    <!-- 経由地 -->
+    <div class="vias" id="vias">
+      <div class="vias__head">
+        <span class="field__label">経由地(任意)</span>
+        <button type="button" class="btn btn--ghost btn--sm" id="via-add">経由地を追加</button>
+      </div>
+      <div class="via-list" id="via-list"></div>
+      <p class="vias__note">
+        指定した順に必ず通る経路を計算します。各経由地では<strong>そこに何分とどまるか</strong>を指定できます。
+        区間ごとに検索するため通信量が増えます(最大 3 か所)。
+      </p>
+    </div>
+
     <div class="search__row search__row--bottom">
       <div class="field field--time">
         <label class="field__label" for="depart-input">出発時刻</label>
@@ -125,11 +138,13 @@
 
   <!-- ================= 運行情報 ================= -->
   <section class="card status" id="status-card" hidden>
-    <div class="status__head">
-      <h2 class="card__h">運行情報</h2>
+    <button type="button" class="status__head" id="status-toggle" aria-expanded="false" aria-controls="status-body">
+      <span class="card__h">運行情報</span>
+      <span class="status__summary" id="status-summary">—</span>
       <span class="stamp" id="status-stamp"></span>
-    </div>
-    <div id="status-body"></div>
+      <span class="status__chev" aria-hidden="true">▾</span>
+    </button>
+    <div id="status-body" hidden></div>
   </section>
 
   <!-- ================= 除外設定 ================= -->

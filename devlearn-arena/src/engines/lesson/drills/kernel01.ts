@@ -1,5 +1,5 @@
 import {
-  cwdIs, dirExists, dirHas, fileAbsent, fileEquals, fileExists, all,
+  cwdIs, dirExists, dirHas, fileAbsent, fileEquals, fileExists,
 } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, family, fromNames, man } from './shared';
@@ -106,8 +106,11 @@ const makeTreeDrills = family<{ root: string; leaves: string[] }>({
     steps: [
       {
         prompt: `${spec.root}/ の下に ${spec.leaves.join(' と ')} を作れ。途中の階層も要る。`,
-        check: `${spec.leaves.map((l) => `${spec.root}/${l}`).join(' / ')} が全てディレクトリとして存在すること`,
-        assert: all(...spec.leaves.map((l) => dirExists(`${spec.root}/${l}`))),
+        conditions: spec.leaves.map((l) => ({
+          label: `${spec.root}/${l} がディレクトリとして存在すること`,
+          test: dirExists(`${spec.root}/${l}`),
+          howTo: 'ls -R で、いまどこまで掘れているか見えます',
+        })),
         hints: [
           'mkdir だけだと途中の階層が無いと失敗する',
           '-p を付けると足りない階層をまとめて作る',
@@ -162,18 +165,35 @@ const copyMoveDrills = family<{ file: string; from: string; to: string }>({
     steps: [
       {
         prompt: `${spec.from}/${spec.file} を ${spec.to}/ にコピーせよ。元は残すこと。`,
-        check: `${spec.to}/${spec.file} と ${spec.from}/${spec.file} の両方があること`,
-        assert: all(fileExists(`${spec.to}/${spec.file}`), fileExists(`${spec.from}/${spec.file}`)),
+        conditions: [
+          {
+            label: `${spec.to}/${spec.file} があること`,
+            test: fileExists(`${spec.to}/${spec.file}`),
+            howTo: `ls ${spec.to} で確かめられます`,
+          },
+          {
+            label: `${spec.from}/${spec.file} が元のまま残っていること`,
+            test: fileExists(`${spec.from}/${spec.file}`),
+            howTo: 'mv を使うと元が消えます。写すのは cp です',
+          },
+        ],
         hints: ['cp <元> <先>', `cp ${spec.from}/${spec.file} ${spec.to}/`],
         explain: 'cp は写す。元はそのまま残る。',
       },
       {
         prompt: `続けて、元の ${spec.from}/${spec.file} を ${spec.to}/${spec.file}.orig という名前で移動せよ。`,
-        check: `${spec.to}/${spec.file}.orig があり、${spec.from}/${spec.file} は無いこと`,
-        assert: all(
-          fileExists(`${spec.to}/${spec.file}.orig`),
-          fileAbsent(`${spec.from}/${spec.file}`),
-        ),
+        conditions: [
+          {
+            label: `${spec.to}/${spec.file}.orig があること`,
+            test: fileExists(`${spec.to}/${spec.file}.orig`),
+            howTo: '移動先には新しい名前まで含めて書きます',
+          },
+          {
+            label: `${spec.from}/${spec.file} が無くなっていること`,
+            test: fileAbsent(`${spec.from}/${spec.file}`),
+            howTo: 'cp では元が残ります。動かすのは mv です',
+          },
+        ],
         hints: ['mv は移動と改名を兼ねる', `mv ${spec.from}/${spec.file} ${spec.to}/${spec.file}.orig`],
         explain:
           'mv は元を残さない。同じディレクトリの中で使えば「名前を変える」操作になる。',
@@ -215,8 +235,14 @@ const removeDrills = family<string>({
     steps: [
       {
         prompt: `${dir}/ を中身ごと消せ。keep.txt は残すこと。`,
-        check: `${dir} が無く、keep.txt が残っていること`,
-        assert: all(fileAbsent(dir), fileExists('keep.txt')),
+        conditions: [
+          { label: `${dir} が無くなっていること`, test: fileAbsent(dir), howTo: 'ls で残っていないか見てください' },
+          {
+            label: 'keep.txt が残っていること',
+            test: fileExists('keep.txt'),
+            howTo: '消す対象を取り違えていないか、rm に渡した引数を見直してください',
+          },
+        ],
         hints: [
           '中身の入ったディレクトリは rm だけでは消えない',
           '-r で中まで辿って消す',
@@ -268,11 +294,18 @@ const sortingDrills = family<{ ext: string; dir: string; names: string[] }>({
         },
         {
           prompt: `.${spec.ext} のファイルを全て ${spec.dir}/ へ移せ。`,
-          check: `${spec.dir}/ に ${spec.names.map((n) => `${n}.${spec.ext}`).join(', ')} が揃っていること`,
-          assert: all(
-            dirHas(spec.dir, ...spec.names.map((n) => `${n}.${spec.ext}`)),
-            ...spec.names.map((n) => fileAbsent(`${n}.${spec.ext}`)),
-          ),
+          conditions: [
+            {
+              label: `${spec.dir}/ に ${spec.names.map((n) => `${n}.${spec.ext}`).join(', ')} が揃っていること`,
+              test: dirHas(spec.dir, ...spec.names.map((n) => `${n}.${spec.ext}`)),
+              howTo: `ls ${spec.dir} で中身を見てください`,
+            },
+            ...spec.names.map((n) => ({
+              label: `元の場所に ${n}.${spec.ext} が残っていないこと`,
+              test: fileAbsent(`${n}.${spec.ext}`),
+              howTo: 'cp ではなく mv を使うと元が残りません',
+            })),
+          ],
           hints: [
             '1つずつ動かしてもよい',
             '* を使うとまとめて指定できる',
