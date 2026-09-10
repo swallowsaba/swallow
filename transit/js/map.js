@@ -27,7 +27,10 @@ const DEFAULT_ZOOM = 12;
 export class TransitMap {
   /**
    * @param {HTMLElement} container
-   * @param {object} handlers { onPickStation(groupId, title), onPickBusStop(stop), onNearby(lat, lon) }
+   * @param {object} handlers
+   *   onPickStation(groupId, title, which) / onPickBusStop(stop, which)
+   *   onPickPoint({lat,lon}, which) / describePoint(lat, lon) / onStationBusStops(group)
+   *   which は 'from' | 'to' | 'via'
    */
   constructor(container, handlers = {}) {
     this.container = container;
@@ -36,8 +39,10 @@ export class TransitMap {
     this.stationLayer = null;
     this.busLayer = null;
     this.routeLayer = null;
+    this.pointLayer = null;
     this.markerByGroup = new Map();
     this.busMarkers = new Map();
+    this.pointMarkers = new Map(); // which('from'|'to'|via id) → marker
     this.ready = false;
   }
 
@@ -62,9 +67,11 @@ export class TransitMap {
     this.busLayer = L.layerGroup().addTo(this.map);
     this.routeLayer = L.layerGroup().addTo(this.map);
 
-    // 地図の任意の場所をタップ → 近くの駅を提案する
+    this.pointLayer = L.layerGroup().addTo(this.map);
+
+    // 地図の任意の場所をタップ → その地点そのものを出発地・到着地・経由地にできる
     this.map.on('click', (e) => {
-      if (this.handlers.onNearby) this.handlers.onNearby(e.latlng.lat, e.latlng.lng);
+      this.#openPointPicker(e.latlng.lat, e.latlng.lng);
     });
 
     this.ready = true;
@@ -96,12 +103,13 @@ export class TransitMap {
       });
       marker.bindTooltip(g.title, { direction: 'top' });
       marker.on('click', (e) => {
-        window.L.DomEvent.stopPropagation(e); // 地図クリック(近くの駅)を発火させない
-        this.#openPicker(marker, g.title, () => {
-          if (this.handlers.onPickStation) this.handlers.onPickStation(g.id, g.title, 'from');
-        }, () => {
-          if (this.handlers.onPickStation) this.handlers.onPickStation(g.id, g.title, 'to');
-        }, this.handlers.onStationBusStops ? () => this.handlers.onStationBusStops(g) : null);
+        window.L.DomEvent.stopPropagation(e); // 地図クリック(任意地点)を発火させない
+        this.#openPicker(marker, g.title, {
+          onPick: (which) => {
+            if (this.handlers.onPickStation) this.handlers.onPickStation(g.id, g.title, which);
+          },
+          onBus: this.handlers.onStationBusStops ? () => this.handlers.onStationBusStops(g) : null,
+        });
       });
       marker.addTo(this.stationLayer);
       this.markerByGroup.set(g.id, marker);
@@ -131,10 +139,10 @@ export class TransitMap {
       marker.bindTooltip(`${s.title}(バス停)`, { direction: 'top' });
       marker.on('click', (e) => {
         window.L.DomEvent.stopPropagation(e);
-        this.#openPicker(marker, `${s.title}(バス停)`, () => {
-          if (this.handlers.onPickBusStop) this.handlers.onPickBusStop(s, 'from');
-        }, () => {
-          if (this.handlers.onPickBusStop) this.handlers.onPickBusStop(s, 'to');
+        this.#openPicker(marker, `${s.title}(バス停)`, {
+          onPick: (which) => {
+            if (this.handlers.onPickBusStop) this.handlers.onPickBusStop(s, which);
+          },
         });
       });
       marker.addTo(this.busLayer);
@@ -170,8 +178,8 @@ export class TransitMap {
       L.circleMarker([p.lat, p.lon], {
         radius: isEnd ? 7 : 5,
         weight: 3,
-        color: p.bus ? '#1c4f8a' : '#00713c',
-        fillColor: '#ffffff',
+        color: p.walk ? '#8a4b1c' : p.bus ? '#1c4f8a' : '#00713c',
+        fillColor: p.walk ? '#f6e5d6' : '#ffffff',
         fillOpacity: 1,
       })
         .bindTooltip(p.title, { direction: 'top' })
@@ -198,10 +206,63 @@ export class TransitMap {
     else this.map.fitBounds(window.L.latLngBounds(pts).pad(0.3));
   }
 
+  /* ---------------- 任意地点 ---------------- */
+
+  /**
+   * 地図をタップした場所そのものを地点として使えるようにする。
+   * 最寄駅までの徒歩は呼び出し側(main.js)が距離から見積もる。
+   */
+  #openPointPicker(lat, lon) {
+    if (!this.handlers.onPickPoint) return;
+    const L = window.L;
+    const marker = L.circleMarker([lat, lon], {
+      radius: 7,
+      weight: 3,
+      color: '#8a4b1c',
+      fillColor: '#ffffff',
+      fillOpacity: 1,
+    });
+    marker.addTo(this.pointLayer);
+
+    const nearby = this.handlers.describePoint ? this.handlers.describePoint(lat, lon) : '';
+    this.#openPicker(marker, 'この地点', {
+      note: nearby,
+      onPick: (which) => {
+        this.handlers.onPickPoint({ lat, lon }, which);
+      },
+      onCancel: () => marker.remove(),
+    });
+  }
+
+  /** 選ばれた地点に印を残す(出発 / 到着 / 経由) */
+  markPoint(key, lat, lon, label) {
+    if (!this.ready) return;
+    const L = window.L;
+    this.pointMarkers.get(key)?.remove();
+    const m = L.circleMarker([lat, lon], {
+      radius: 8,
+      weight: 3,
+      color: '#8a4b1c',
+      fillColor: '#f6e5d6',
+      fillOpacity: 1,
+    });
+    m.bindTooltip(label, { direction: 'top' });
+    m.addTo(this.pointLayer);
+    this.pointMarkers.set(key, m);
+  }
+
+  clearPoint(key) {
+    this.pointMarkers.get(key)?.remove();
+    this.pointMarkers.delete(key);
+  }
+
   /* ---------------- 内部 ---------------- */
 
-  /** マーカーのポップアップに「出発/到着に設定」を出す */
-  #openPicker(marker, title, onFrom, onTo, onBus) {
+  /**
+   * マーカーのポップアップに「出発/到着/経由に設定」を出す。
+   * @param {{onPick:Function, onBus?:Function, note?:string, onCancel?:Function}} opts
+   */
+  #openPicker(marker, title, opts) {
     const box = document.createElement('div');
     box.className = 'map-pick';
 
@@ -210,35 +271,44 @@ export class TransitMap {
     h.textContent = title;
     box.append(h);
 
+    if (opts.note) {
+      const n = document.createElement('div');
+      n.className = 'map-pick__note';
+      n.textContent = opts.note;
+      box.append(n);
+    }
+
     const row = document.createElement('div');
     row.className = 'map-pick__actions';
-    const mk = (label, fn) => {
+    const mk = (label, which, cls) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'btn btn--sm';
+      b.className = `btn btn--sm ${cls || ''}`.trim();
       b.textContent = label;
+      b.dataset.which = which;
       b.addEventListener('click', () => {
-        fn();
+        opts.onPick(which);
         marker.closePopup();
       });
       return b;
     };
-    row.append(mk('出発に設定', onFrom), mk('到着に設定', onTo));
+    row.append(mk('出発に設定', 'from'), mk('到着に設定', 'to'), mk('経由に追加', 'via', 'btn--ghost'));
     box.append(row);
 
-    if (onBus) {
+    if (opts.onBus) {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'btn btn--ghost btn--sm map-pick__bus';
       b.textContent = 'この駅のバス停を表示';
       b.addEventListener('click', () => {
-        onBus();
+        opts.onBus();
         marker.closePopup();
       });
       box.append(b);
     }
 
     marker.bindPopup(box).openPopup();
+    if (opts.onCancel) marker.on('popupclose', () => opts.onCancel());
   }
 }
 
@@ -260,15 +330,22 @@ export function distanceKm(lat1, lon1, lat2, lon2) {
 /** 経路から地図に描く点の並びを作る */
 export function routeToPoints(route, net, busStopIndex) {
   const points = [];
-  const push = (lat, lon, title, bus) => {
+  const push = (lat, lon, title, bus, walk = false) => {
     if (lat == null || lon == null) return;
     const last = points[points.length - 1];
     if (last && last.lat === lat && last.lon === lon) return;
-    points.push({ lat, lon, title, bus });
+    points.push({ lat, lon, title, bus, walk });
   };
 
   for (const leg of route.legs || []) {
-    if (leg.transfer) continue;
+    // 任意地点からの徒歩。地点そのものを線の端として描く。
+    if (leg.walkAccess) {
+      if (leg.lat != null && leg.lon != null) {
+        push(leg.lat, leg.lon, leg.side === 'from' ? leg.fromTitle : leg.toTitle, false, true);
+      }
+      continue;
+    }
+    if (leg.transfer || leg.via) continue;
     if (leg.bus) {
       const a = busStopIndex.get(leg.from);
       const b = busStopIndex.get(leg.to);

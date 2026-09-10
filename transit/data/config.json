@@ -9,6 +9,12 @@
   "_busStationWalkMinutes": "バス停と駅の間の徒歩(分)。ODPT にこのデータは無いため一律の既定値です。",
   "busStationWalkMinutes": 5,
 
+  "_walkAccess": "地図上の任意地点から駅までの徒歩の見積り。歩道データは持っていないため、直線距離 × 迂回係数 ÷ 分速 で概算する。必ず「推定」と表示すること。",
+  "walkSpeedMetersPerMinute": 80,
+  "walkDetourFactor": 1.3,
+  "walkMaxKm": 2.0,
+  "walkMaxCandidates": 2,
+
   "_hopMinutes": "駅間の平均所要時間。列車時刻表が引けなかった区間の推定にのみ使う。",
   "hopMinutes": {
     "odpt.Railway:TokyoMetro.Ginza": 1.9,

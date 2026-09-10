@@ -27,6 +27,8 @@
   --bus-soft: #e8eff8;
   --rail: #00713c;
   --rail-soft: #e9f1ec;
+  --walk: #8a4b1c;
+  --walk-soft: #f6efe8;
   --radius: 10px;
   --shadow: 0 1px 2px rgba(0, 0, 0, .05), 0 6px 18px rgba(0, 0, 0, .04);
   --mono: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
@@ -55,6 +57,8 @@
     --bus-soft: #15202e;
     --rail: #54c68c;
     --rail-soft: #16241d;
+    --walk: #d9a271;
+    --walk-soft: #2a2016;
     --shadow: 0 1px 2px rgba(0, 0, 0, .6), 0 6px 18px rgba(0, 0, 0, .45);
   }
 }
@@ -343,6 +347,20 @@ ul { margin: 0; padding: 0; list-style: none; }
 .route--warn { border-color: var(--warn); }
 .route--danger { border-color: var(--danger); }
 
+/* 経路カードの種別。左の太い帯で一目で分かるようにする。 */
+.route--kind-rail { border-left: 6px solid var(--rail); }
+.route--kind-bus { border-left: 6px solid var(--bus); }
+.route--kind-mixed {
+  border-left: 6px solid var(--bus);
+  border-image: linear-gradient(to bottom, var(--bus) 0 50%, var(--rail) 50% 100%) 1;
+  border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px;
+}
+.route--kind-rail .route__head { background: var(--rail-soft); }
+.route--kind-bus .route__head { background: var(--bus-soft); }
+.route--kind-mixed .route__head {
+  background: linear-gradient(100deg, var(--bus-soft) 0 55%, var(--rail-soft) 55% 100%);
+}
+
 .route__head {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   padding: 14px 16px; border-bottom: 1px solid var(--rule);
@@ -356,6 +374,11 @@ ul { margin: 0; padding: 0; list-style: none; }
 .route__time { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .route__span { font-family: var(--mono); font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .route__meta { font-size: 12.5px; color: var(--ink-2); margin-left: auto; text-align: right; }
+.route__delay {
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  color: var(--warn); background: var(--warn-soft);
+  border: 1px solid var(--warn); border-radius: 4px; padding: 2px 7px;
+}
 
 .route__warnings { padding: 10px 16px; border-bottom: 1px solid var(--rule); background: var(--warn-soft); font-size: 13px; }
 .route__warnings--danger { background: var(--danger-soft); }
@@ -397,29 +420,52 @@ ul { margin: 0; padding: 0; list-style: none; }
 .leg__detail .badge { margin-left: 6px; }
 
 /* 行程内のモード表示(バス / 電車) */
+.icon { flex: none; vertical-align: -2px; }
+
 .leg__mode {
+  display: inline-flex; align-items: center; gap: 4px;
   font-size: 11px; font-weight: 700; line-height: 1.6;
-  padding: 1px 7px; border-radius: 4px; white-space: nowrap;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
   border: 1px solid transparent;
 }
-.leg__mode--bus { background: var(--bus); color: var(--surface); border-color: var(--bus); }
-.leg__mode--rail { background: var(--rail-soft); color: var(--rail); border-color: var(--rail); }
-.leg__mode--walk { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule-strong); }
+.leg__mode--bus { background: var(--bus); color: #fff; border-color: var(--bus); }
+.leg__mode--rail { background: var(--rail); color: #fff; border-color: var(--rail); }
+.leg__mode--walk { background: var(--walk-soft); color: var(--walk); border-color: var(--walk); }
 .leg__mode--via { background: var(--ink-2); color: var(--surface); border-color: var(--ink-2); }
+@media (prefers-color-scheme: dark) {
+  .leg__mode--bus, .leg__mode--rail { color: #06120c; }
+}
+
+/* 乗り物ごとに行の背景を変える。色だけに頼らず、アイコンと文字も添える。 */
+.leg--bus .leg__body,
+.leg--rail .leg__body,
+.leg--walk .leg__body,
+.leg--via .leg__body {
+  border-radius: 8px;
+  padding: 6px 10px 10px;
+  margin-bottom: 8px;
+}
+.leg--rail .leg__body { background: var(--rail-soft); }
+.leg--bus .leg__body { background: var(--bus-soft); }
+.leg--walk .leg__body { background: var(--walk-soft); }
+.leg--via .leg__body { background: var(--surface-2); border: 1px dashed var(--rule-strong); }
 
 .leg--bus .leg__station { color: var(--bus); }
-.leg--via .leg__body { padding-bottom: 14px; }
+.leg--walk .leg__station { color: var(--walk); }
 .leg--via .leg__station { color: var(--ink); }
+.leg--walk .leg__rail::before { background: repeating-linear-gradient(to bottom, var(--walk) 0 3px, transparent 3px 7px); }
+.leg--walk > .leg__rail > .leg__dot { border-color: var(--walk); }
 
 /* 経路カードの内訳(電車○本・バス○本) */
 .route__modes { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; margin-top: 2px; }
 .route__mode {
-  font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
   border: 1px solid transparent;
 }
 .route__mode--rail { background: var(--rail-soft); color: var(--rail); border-color: var(--rail); }
 .route__mode--bus { background: var(--bus-soft); color: var(--bus); border-color: var(--bus); }
-.route__mode--walk { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule-strong); }
+.route__mode--walk { background: var(--walk-soft); color: var(--walk); border-color: var(--walk); }
 .route__mode--via { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule-strong); }
 
 .empty {
@@ -485,7 +531,10 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .leaflet-control-attribution a { color: var(--accent-ink); }
 
-.map-pick__title { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
-.map-pick__actions { display: flex; gap: 6px; }
+.status-item--stale { opacity: .75; }
+
+.map-pick__title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.map-pick__note { font-size: 11.5px; color: var(--ink-3); margin-bottom: 8px; }
+.map-pick__actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .map-pick__bus { margin-top: 6px; width: 100%; }
 .route__map { margin-left: 8px; }

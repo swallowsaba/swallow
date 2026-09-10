@@ -8,7 +8,7 @@
  */
 
 import { formatDuration, toClockTime, formatFetchedAt, secondsSince } from './time.js';
-import { SEVERITY, SEVERITY_LABEL } from './status.js';
+import { SEVERITY, SEVERITY_LABEL, delayEstimate } from './status.js';
 import { formatDistance } from './geo.js';
 
 export const $ = (sel) => document.querySelector(sel);
@@ -18,6 +18,42 @@ export function el(tag, className, text) {
   if (className) node.className = className;
   if (text != null) node.textContent = text;
   return node;
+}
+
+/* ------------------------------------------------------------------ *
+ *  乗り物のアイコン
+ * ------------------------------------------------------------------ *
+ * 色が見えない・見分けにくい人にも判るよう、色とは別に形でも示す。
+ * 外部ライブラリは使わずインライン SVG で描く。
+ */
+const ICON_PATHS = {
+  // 電車(前面と窓と車輪)
+  rail:
+    'M6 2h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3Zm0 3v4h5V5H6Zm7 0v4h5V5h-5Zm-1.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM7 18l-2.5 3.5h3L10 18H7Zm10 0h-3l2.5 3.5h3L17 18Z',
+  // バス(横長の車体と前後の車輪)
+  bus:
+    'M5 2h14a2 2 0 0 1 2 2v11a2 2 0 0 1-1 1.73V19a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2.27A2 2 0 0 1 3 15V4a2 2 0 0 1 2-2Zm0 3v6h14V5H5Zm2 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm10 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z',
+  // 徒歩(歩いている人)
+  walk:
+    'M13.5 2.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM9.8 6h2.6l3.1 3.6 2.4 1.2-.9 1.8-3-1.5-1.3-1.5-.9 3.6 2.6 2.6.9 5.7-2 .3-.8-4.9-3.4-3.2-1.3 5-.5 2.4-2-.4L6 15.2 8 6.6 9.8 6Z',
+  // 経由地(旗)
+  via: 'M6 2h2v20H6V2Zm3 1h11l-2.5 4L20 11H9V3Z',
+};
+
+/** 乗り物のアイコンを 1 つ作る */
+export function icon(kind, size = 14) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', String(size));
+  svg.setAttribute('height', String(size));
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  svg.classList.add('icon', `icon--${kind}`);
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', ICON_PATHS[kind] || ICON_PATHS.rail);
+  path.setAttribute('fill', 'currentColor');
+  svg.append(path);
+  return svg;
 }
 
 /* ------------------------------------------------------------------ *
@@ -235,6 +271,9 @@ export function renderStatus(analysis, { failed, errors, onExcludeRailway }) {
     row.append(el('span', `badge badge--${item.severity}`, SEVERITY_LABEL[item.severity]));
     row.append(el('div', 'status-item__line', item.railwayTitle));
     if (item.text) row.append(el('div', 'status-item__text', item.text));
+    if (item.delayMinutes) {
+      row.append(el('div', 'status-item__text muted', `本文から読み取った遅れ: 約${item.delayMinutes}分`));
+    }
     if (item.stationHints?.length) {
       row.append(
         el('div', 'status-item__text muted', `本文中の駅名: ${item.stationHints.map((s) => s.title).join('・')}(区間の確定情報ではありません)`)
@@ -248,6 +287,21 @@ export function renderStatus(analysis, { failed, errors, onExcludeRailway }) {
       actions.append(b);
       row.append(actions);
     }
+    body.append(row);
+  }
+
+  // 古すぎて現在の状況として扱えなかったもの。捨てずに、古いと明示して出す。
+  for (const item of analysis.stale || []) {
+    const row = el('div', 'status-item status-item--stale');
+    row.append(el('span', 'badge badge--est', '古い情報'));
+    row.append(el('div', 'status-item__line', item.railwayTitle));
+    row.append(
+      el(
+        'div',
+        'status-item__text',
+        `${item.text}(${Math.round(item.ageMinutes / 60)}時間以上前の情報のため、現在の状況としては扱っていません)`
+      )
+    );
     body.append(row);
   }
 
@@ -349,17 +403,25 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap
     null
   );
 
-  const card = el('article', `route${worst ? ` route--${worst}` : ''}`);
+  const kindClass = route.kind === 'bus' ? ' route--kind-bus' : route.kind === 'mixed' ? ' route--kind-mixed' : ' route--kind-rail';
+  const card = el('article', `route${kindClass}${worst ? ` route--${worst}` : ''}`);
 
   /* --- ヘッダ --- */
   const head = el('div', 'route__head');
   head.append(el('span', 'route__rank', `第${rank}案`));
   head.append(el('span', 'route__time', formatDuration(route.rideMinutes)));
   head.append(el('span', 'route__span', `${toClockTime(route.departure)} → ${toClockTime(route.arrival)}`));
+  const est = delayEstimate(route);
+  if (est) {
+    const d = el('span', 'route__delay', `遅延見込 ${toClockTime(est.arrival)} 着`);
+    d.title = `運行情報に書かれた遅れ(${est.lines.join(' / ')})を足しただけの目安です。列車ごとの実際の遅れは無料データに含まれません。`;
+    head.append(d);
+  }
   const meta = el('div', 'route__meta');
   meta.append(el('div', null, `乗換 ${route.transfers} 回`));
   if (route.viaCount) meta.append(el('div', null, `経由 ${route.viaCount} 箇所`));
   if (route.stayMinutes > 0) meta.append(el('div', 'muted', `うち滞在 ${formatDuration(route.stayMinutes)}`));
+  if (route.walkMinutes > 0) meta.append(el('div', 'muted', `徒歩 ${formatDuration(route.walkMinutes)}(推定)`));
   if (route.waitMinutes > 0) meta.append(el('div', 'muted', `待ち ${formatDuration(route.waitMinutes)}`));
   head.append(meta);
   if (onShowOnMap) {
@@ -385,10 +447,15 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap
   /* --- 内訳(電車とバスが何本ずつか) --- */
   const counts = countModes(route);
   const modes = el('div', 'route__modes');
-  if (counts.rail) modes.append(el('span', 'route__mode route__mode--rail', `電車 ${counts.rail} 本`));
-  if (counts.bus) modes.append(el('span', 'route__mode route__mode--bus', `バス ${counts.bus} 本`));
-  if (counts.walk) modes.append(el('span', 'route__mode route__mode--walk', `徒歩 ${counts.walk} 回`));
-  if (counts.via) modes.append(el('span', 'route__mode route__mode--via', `経由 ${counts.via} 箇所`));
+  const modeChip = (kind, label) => {
+    const c = el('span', `route__mode route__mode--${kind}`);
+    c.append(icon(kind, 13), el('span', null, label));
+    return c;
+  };
+  if (counts.rail) modes.append(modeChip('rail', `電車 ${counts.rail} 本`));
+  if (counts.bus) modes.append(modeChip('bus', `バス ${counts.bus} 本`));
+  if (counts.walk) modes.append(modeChip('walk', `徒歩 ${counts.walk} 回`));
+  if (counts.via) modes.append(modeChip('via', `経由 ${counts.via} 箇所`));
   if (modes.children.length) head.append(modes);
 
   card.append(head);
@@ -416,8 +483,21 @@ function renderRoute(route, rank, { net, analysis, onExcludeRailway, onShowOnMap
 
   /* --- 行程 --- */
   const legs = el('div', 'legs');
-  const ride = route.legs.filter((l) => !l.transfer && !l.via);
+  const ride = route.legs.filter((l) => !l.transfer && !l.via && !l.walkAccess);
   route.legs.forEach((leg) => {
+    if (leg.walkAccess) {
+      legs.append(
+        legRow({
+          mode: 'walk',
+          time: leg.side === 'from' ? toClockTime(route.departure) : '',
+          station: leg.side === 'from' ? leg.fromTitle : leg.toTitle,
+          line: `徒歩 約${Math.round(leg.minutes)}分(${leg.side === 'from' ? leg.toTitle + 'まで' : leg.fromTitle + 'から'})`,
+          detail: `直線 ${formatDistance(leg.km)} から算出`,
+          estimated: true,
+        })
+      );
+      return;
+    }
     if (leg.via) {
       legs.append(
         legRow({
@@ -528,8 +608,10 @@ function legRow({ mode, time, station, line, lineColor, detail, last, estimated 
   if (line) {
     const l = el('div', 'leg__line');
     // 「バス」「電車」を必ず添える。色だけに頼らない。
-    if (!last && (mode === 'bus' || mode === 'rail' || mode === 'via')) {
-      l.append(el('span', `leg__mode leg__mode--${mode}`, MODE_LABEL[mode]));
+    if (!last && MODE_LABEL[mode]) {
+      const tag = el('span', `leg__mode leg__mode--${mode}`);
+      tag.append(icon(mode, 12), el('span', null, MODE_LABEL[mode]));
+      l.append(tag);
     }
     const b = el('b', null, line);
     if (lineColor) b.style.color = lineColor;

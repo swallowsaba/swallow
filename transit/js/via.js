@@ -170,7 +170,9 @@ export function validatePoints(points) {
     if (!a || !b) return '出発地・経由地・到着地をすべて選んでください。';
     const sameStation = a.groupId && b.groupId && a.groupId === b.groupId;
     const sameStop = a.busOnly && b.busOnly && a.label === b.label;
-    if (sameStation || sameStop) return `「${a.label}」が連続しています。同じ地点は続けて指定できません。`;
+    const samePoint =
+      a.kind === 'point' && b.kind === 'point' && a.lat === b.lat && a.lon === b.lon;
+    if (sameStation || sameStop || samePoint) return `「${a.label}」が連続しています。同じ地点は続けて指定できません。`;
   }
   return null;
 }

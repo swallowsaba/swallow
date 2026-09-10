@@ -14,6 +14,7 @@ import { currentPosition, GeoError, formatDistance } from './geo.js';
 import { toServiceMoment, calendarFor, dateKey } from './time.js';
 import { TransitMap, routeToPoints } from './map.js';
 import { combineSegments, buildPoints, validatePoints } from './via.js';
+import { walkSettings, accessCombos, attachWalk, isPoint } from './walk.js';
 import * as ui from './ui.js';
 
 const { $ } = ui;
@@ -437,6 +438,8 @@ async function useCurrentLocation() {
  *  経由地
  * ------------------------------------------------------------------ */
 const MAX_VIAS = 3;
+/** 地点を含むときに試す「最寄駅の組み合わせ」の上限。増やすと通信量が増える。 */
+const MAX_WALK_COMBOS = 3;
 let viaSeq = 0;
 
 function addVia() {
@@ -556,35 +559,39 @@ function toggleMap() {
   if (!state.map) {
     state.map = new TransitMap(el, {
       onPickStation: (groupId, title, which) => {
-        state[which] = { groupId, label: title, busOnly: false };
-        $(`#${which}-input`).value = title;
-        $(`#${which}-hint`).textContent = '地図から選択';
-        $(`#${which}-hint`).classList.remove('is-error');
+        applyPick(which, { groupId, label: title, busOnly: false }, '地図から選択');
       },
       onPickBusStop: (stop, which) => {
-        state[which] = { groupId: null, label: stop.title, busOnly: true };
-        $(`#${which}-input`).value = stop.title;
-        $(`#${which}-hint`).textContent = `バス停「${stop.title}」(鉄道の経路は対象外になります)`;
-        $(`#${which}-hint`).classList.remove('is-error');
+        applyPick(
+          which,
+          { groupId: null, label: stop.title, busOnly: true },
+          `バス停「${stop.title}」(鉄道の経路は対象外になります)`
+        );
       },
-      onNearby: (lat, lon) => {
-        if (!state.net) return;
-        const near = state.net.nearestGroups(lat, lon, 3);
-        if (!near.length) return;
-        ui.addAlert('info', {
-          title: 'この地点の近くの駅',
-          body: near.map((n) => `${n.group.title}(${formatDistance(n.km)})`).join(' / '),
-          actions: near.flatMap((n) => [
-            {
-              label: `${n.group.title}を出発に`,
-              onClick: () => pickFromMap('from', n.group.id, n.group.title),
-            },
-            {
-              label: `${n.group.title}を到着に`,
-              onClick: () => pickFromMap('to', n.group.id, n.group.title),
-            },
-          ]),
-        });
+      /** 地図をタップした座標そのものを地点として使う */
+      onPickPoint: (pos, which) => {
+        const spec = {
+          kind: 'point',
+          lat: pos.lat,
+          lon: pos.lon,
+          label: pointLabel(pos.lat, pos.lon),
+          busOnly: false,
+          groupId: null,
+        };
+        const near = state.net?.nearestGroups(pos.lat, pos.lon, 1) || [];
+        const hint = near.length
+          ? `地図上の地点(最寄: ${near[0].group.title} ${formatDistance(near[0].km)})`
+          : '地図上の地点';
+        const key = applyPick(which, spec, hint);
+        if (key) state.map?.markPoint(key, pos.lat, pos.lon, spec.label);
+      },
+      /** ポップアップに出す説明 */
+      describePoint: (lat, lon) => {
+        const near = state.net?.nearestGroups(lat, lon, 1) || [];
+        if (!near.length) return '近くに対応範囲の駅がありません';
+        const settings = walkSettings(state.config || {});
+        if (near[0].km > settings.maxKm) return `最寄の ${near[0].group.title} まで ${formatDistance(near[0].km)}(遠すぎます)`;
+        return `最寄: ${near[0].group.title} ${formatDistance(near[0].km)}`;
       },
       onStationBusStops: (group) => loadBusStopsForStation(group),
     });
@@ -607,11 +614,42 @@ function toggleMap() {
   state.map.refresh();
 }
 
-function pickFromMap(which, groupId, title) {
-  state[which] = { groupId, label: title, busOnly: false };
-  $(`#${which}-input`).value = title;
-  $(`#${which}-hint`).textContent = '地図から選択';
-  ui.clearAlerts();
+/** 地点の表示名。座標を出しておかないと、あとで何処だったか判らなくなる。 */
+function pointLabel(lat, lon) {
+  return `地点 ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+}
+
+/**
+ * 地図で選んだものを 出発 / 到着 / 経由 に入れる。
+ * @returns {?string} 地点の印を残すためのキー
+ */
+function applyPick(which, spec, hint) {
+  if (which === 'via') {
+    if (state.vias.length >= MAX_VIAS) {
+      ui.addAlert('warn', {
+        title: `経由地は ${MAX_VIAS} か所までです`,
+        body: '不要な経由地を削除してから追加してください。',
+      });
+      return null;
+    }
+    viaSeq += 1;
+    const id = `v${viaSeq}`;
+    state.vias.push({ id, spec, stay: 0 });
+    renderVias();
+    const hintEl = $(`#via-hint-${id}`);
+    if (hintEl) hintEl.textContent = hint;
+    ui.addAlert('info', {
+      title: `経由地に「${spec.label}」を追加しました`,
+      body: '滞在時間を指定して検索してください。',
+    });
+    return `via:${id}`;
+  }
+
+  state[which] = spec;
+  $(`#${which}-input`).value = spec.label;
+  $(`#${which}-hint`).textContent = hint;
+  $(`#${which}-hint`).classList.remove('is-error');
+  return which;
 }
 
 /** 駅名からその駅のバス停を引いて地図に足す */
@@ -755,6 +793,65 @@ function buildExclusionSets() {
  * 1 区間(出発地 → 到着地)を検索する。
  * 経由地があるときは、これを順に呼んで結果をつなぐ。
  */
+/**
+ * 地点(地図でタップした座標)を含む区間の検索。
+ * 最寄駅の候補ごとに徒歩時間を見積もり、駅から先は通常の検索にかける。
+ */
+async function searchSegmentWithWalk(fromSpec, toSpec, departAt, ctx) {
+  if (!isPoint(fromSpec) && !isPoint(toSpec)) return searchSegment(fromSpec, toSpec, departAt, ctx);
+
+  const settings = walkSettings(state.config || {});
+  const combos = accessCombos(fromSpec, toSpec, state.net, settings, MAX_WALK_COMBOS);
+  if (!combos.length) {
+    return {
+      routes: [],
+      railRoutes: [],
+      warnings: [],
+      fetchedAt: null,
+      candidateCount: 0,
+      directCount: 0,
+      mixedCount: 0,
+      busCount: 0,
+      noStationNearby: true,
+    };
+  }
+
+  const results = [];
+  for (const combo of combos) {
+    // 地点を「その時刻に出る」ので、駅で乗るのは徒歩時間のぶん後になる
+    const at = departAt + (combo.fromLeg?.minutes || 0);
+    const seg = await searchSegment(combo.from, combo.to, at, ctx);
+    results.push({ seg, combo });
+  }
+
+  const routes = [];
+  const railRoutes = [];
+  for (const { seg, combo } of results) {
+    for (const r of seg.routes) routes.push(attachWalk(r, combo.fromLeg, combo.toLeg));
+    for (const r of seg.railRoutes) railRoutes.push(r);
+  }
+  // 同じ駅・同じ便の重複を落とす
+  const seen = new Set();
+  const unique = routes.filter((r) => {
+    const key = `${r.departure}-${r.arrival}-${r.legs.map((l) => l.railway || l.pattern || l.kind || '').join('|')}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return {
+    routes: unique,
+    railRoutes,
+    warnings: results.flatMap((x) => x.seg.warnings),
+    fetchedAt: results.map((x) => x.seg.fetchedAt).filter(Boolean).pop() || null,
+    candidateCount: results.reduce((n, x) => n + x.seg.candidateCount, 0),
+    directCount: results.reduce((n, x) => n + x.seg.directCount, 0),
+    mixedCount: results.reduce((n, x) => n + x.seg.mixedCount, 0),
+    busCount: results.reduce((n, x) => n + x.seg.busCount, 0),
+    walkCombos: combos.length,
+  };
+}
+
 async function searchSegment(fromSpec, toSpec, departAt, ctx) {
   const { excludedRailways, excludedEdges, cal, serviceDate } = ctx;
 
@@ -915,7 +1012,7 @@ async function runSearch() {
           ? '時刻表を取得しています…'
           : `時刻表を取得しています…(区間 ${i + 1}/${segCount}: ${points[i].label} → ${points[i + 1].label})`
       );
-      const seg = await searchSegment(points[i], points[i + 1], departAt, ctx);
+      const seg = await searchSegmentWithWalk(points[i], points[i + 1], departAt, ctx);
       segments.push(seg);
       if (!seg.routes.length) {
         failedAt = i;
@@ -937,7 +1034,12 @@ async function runSearch() {
     if (failedAt >= 0) {
       const seg = segments[failedAt];
       const where = segCount === 1 ? '' : `区間 ${failedAt + 1}(${points[failedAt].label} → ${points[failedAt + 1].label})で `;
-      if (!seg.candidateCount && !seg.busCount) {
+      if (seg.noStationNearby) {
+        ui.renderEmpty(
+          `${where}指定した地点の近くに駅がありませんでした`,
+          `徒歩 ${walkSettings(state.config || {}).maxKm}km 以内に対応範囲の駅が見つかりません。もう少し駅に近い場所を指定してください。`
+        );
+      } else if (!seg.candidateCount && !seg.busCount) {
         ui.renderEmpty(
           `${where}経路が見つかりませんでした`,
           state.excludes.length
@@ -1022,7 +1124,7 @@ async function refreshStatus() {
     state.stamps.statusAt = null;
     if (e instanceof ApiError && e.code === 'RATE_LIMITED') throw e;
   }
-  ui.renderStatus(state.analysis || { list: [], byRailway: new Map(), disrupted: [] }, {
+  ui.renderStatus(state.analysis || { list: [], byRailway: new Map(), disrupted: [], stale: [] }, {
     failed: state.statusFailed,
     errors: state.statusErrors,
     onExcludeRailway: (rw) => addExclude({ type: 'railway', railway: rw }),
