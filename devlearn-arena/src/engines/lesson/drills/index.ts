@@ -1,4 +1,7 @@
 import type { MissionSource } from '../authoring/mission';
+import { git01 } from './git01';
+import { github01 } from './github01';
+import { net01 } from './net01';
 import { kernel00 } from './kernel00';
 import { kernel01 } from './kernel01';
 import { kernel02 } from './kernel02';
@@ -21,6 +24,6 @@ let cache: MissionSource[] | null = null;
  * ここは一覧を作るだけで、初期状態は開いたときに組み立てる。
  */
 export function drillSources(): readonly MissionSource[] {
-  cache ??= [...kernel00(), ...kernel01(), ...kernel02(), ...kernel03(), ...kernel04(), ...kernel05(), ...kernel06(), ...kernel07(), ...kernel08(), ...kernel09(), ...kernel10(), ...k8s01(), ...k8s02(), ...k8s03()];
+  cache ??= [...kernel00(), ...kernel01(), ...kernel02(), ...kernel03(), ...kernel04(), ...kernel05(), ...kernel06(), ...kernel07(), ...kernel08(), ...kernel09(), ...kernel10(), ...k8s01(), ...k8s02(), ...k8s03(), ...net01(), ...git01(), ...github01()];
   return cache;
 }

@@ -8,7 +8,7 @@ import {
 import { resolveRef } from '@/engines/git/refs';
 import { checkoutWorktree } from '@/engines/git/worktree';
 import { resolve } from '../path';
-import { writeFile } from '../vfs';
+import { exists, remove, writeFile } from '../vfs';
 import { fromLines, parseArgs } from './args';
 import { short, type GitHandler } from './gitShared';
 
@@ -133,11 +133,20 @@ export const historySubcommands: Record<string, GitHandler> = {
         patch: { git: action === 'pop' ? result.git : git, vfs },
       };
     }
-    // push: 退避して HEAD の状態に戻す
+    // push: 退避して HEAD の状態に戻す（本物も内部で hard reset している）
     const head = headCommit(git);
     if (head === null) return { stderr: 'You do not have the initial commit yet\n', code: 1 };
-    const next = pushStash(git, shell.vfs, `WIP on ${currentBranch(git) ?? 'HEAD'}`);
-    const vfs = checkoutWorktree(shell.vfs, git, head, head);
-    return { stdout: 'Saved working directory\n', patch: { git: next, vfs } };
+    const saved = pushStash(git, shell.vfs, `WIP on ${currentBranch(git) ?? 'HEAD'}`);
+    const cleared = reset(saved, head, 'hard');
+    if (cleared.error !== undefined) return { stderr: `${cleared.error}\n`, code: 128 };
+
+    let vfs = checkoutWorktree(shell.vfs, cleared.git, head, head);
+    // 索引に載っていたが、まだコミットされていなかったものは作業ツリーからも消える
+    for (const path of git.index.keys()) {
+      if (cleared.git.index.has(path)) continue;
+      const full = resolve(git.root, path);
+      if (exists(vfs, full)) vfs = remove(vfs, full);
+    }
+    return { stdout: 'Saved working directory\n', patch: { git: cleared.git, vfs } };
   },
 };
