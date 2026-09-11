@@ -56,7 +56,8 @@ export function MissionPanel({
 }: Props) {
   const t = useT();
   return (
-    <div className="scroll m-3 min-h-0 overflow-y-auto px-6 py-5">
+    // 行の高さは仕切りで決まる。ヒントや解答で中身が増えても、この中で送るだけで端末は縮めない
+    <div className="scroll m-3 min-h-0 overflow-y-auto overscroll-contain px-6 py-5">
       {progress.cleared ? null : (
         <div className="mb-3">
           <PrerequisiteNote prerequisites={prerequisites} onSwitch={onSwitch} />
