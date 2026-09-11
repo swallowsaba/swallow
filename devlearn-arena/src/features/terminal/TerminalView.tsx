@@ -15,6 +15,8 @@ export interface TerminalHandle {
   /** 外部（モバイル入力欄など）から1行実行する */
   submit: (line: string) => void;
   insertText: (text: string) => void;
+  /** 端末に注記を1行出す（コマンドとしては実行しない） */
+  note: (text: string) => void;
   requestComplete: () => void;
   focus: () => void;
 }
@@ -44,6 +46,7 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
   const pendingRef = useRef<PendingInput | null>(null);
   // 外から1行流し込むときに、キー入力と同じ道筋で実行するため
   const runRef = useRef<((line: string) => void) | null>(null);
+  const promptRef = useRef<(() => void) | null>(null);
   const sessionRef = useRef(session);
   const executedRef = useRef(onExecuted);
   const editorRef = useRef(onEditor);
@@ -122,6 +125,9 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
     };
 
     runRef.current = runLine;
+    promptRef.current = () => {
+      term.write(prompt());
+    };
 
     const doComplete = (): void => {
       const { line, cursor } = lineRef.current;
@@ -235,6 +241,7 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
       term.dispose();
       termRef.current = null;
       runRef.current = null;
+      promptRef.current = null;
     };
     // session は ref 経由で参照するため、依存に入れて端末を作り直さない
   }, []);
@@ -251,6 +258,15 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
     },
     insertText: (text: string) => {
       termRef.current?.input(text);
+    },
+    note: (text: string) => {
+      const term = termRef.current;
+      if (!term) return;
+      // 打ちかけの行は消し、注記を黄色で出してからプロンプトを出し直す
+      lineRef.current = createLineState();
+      pendingRef.current = null;
+      term.write(`\r\u001b[K\u001b[33m# ${text}\u001b[0m\r\n`);
+      promptRef.current?.();
     },
     requestComplete: () => {
       termRef.current?.input('\t');

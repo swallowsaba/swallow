@@ -5,7 +5,7 @@ import type { ShellState } from '@/engines/kernel/registry';
 import { createShellState } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { shellWarmup } from './missions';
-import { advance, createProgress, currentStep, useHint } from './runner';
+import { advance, createProgress, currentStep, markSkipped, solutionThrough, useHint } from './runner';
 
 const registry = createDefaultRegistry();
 const clock = createClock();
@@ -79,5 +79,19 @@ describe('レッスンランナー', () => {
 
   it('ヒント使用を数える', () => {
     expect(useHint(createProgress(shellWarmup)).hintsUsed).toBe(1);
+  });
+});
+
+describe('手順を飛ばす', () => {
+  it('飛ばした手順を1回だけ記録する', () => {
+    const p = markSkipped(markSkipped(createProgress(shellWarmup), 1), 1);
+    expect(p.skipped).toEqual([1]);
+  });
+
+  it('その手順までの解答をつなげて返す', () => {
+    expect(solutionThrough(shellWarmup, 1)).toEqual([
+      ...(shellWarmup.steps[0]?.solution ?? []),
+      ...(shellWarmup.steps[1]?.solution ?? []),
+    ]);
   });
 });

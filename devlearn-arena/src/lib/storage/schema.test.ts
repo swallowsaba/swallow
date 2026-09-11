@@ -70,3 +70,16 @@ describe('save schema', () => {
     expect(parseSave(JSON.stringify(save)).ok).toBe(false);
   });
 });
+
+describe('飛ばした手順の記録', () => {
+  it('古い保存データに skipped が無くても空として読める', () => {
+    const save = {
+      ...createEmptySave(0),
+      missionProgress: {
+        'kernel/00/shell-warmup': { stepIndex: 1, cleared: false, hintsUsed: 0, commandsUsed: 2, mistakes: 0 },
+      },
+    };
+    const parsed = saveDataSchema.parse(save);
+    expect(parsed.missionProgress['kernel/00/shell-warmup']?.skipped).toEqual([]);
+  });
+});

@@ -30,6 +30,8 @@ interface Props {
   /** 次に開くとよい任務。一覧の情報だけで足りるので組み立てない */
   nextMission: { id: string; title: string } | null;
   onRevealHint: () => void;
+  /** いまの手順を、解答を実行して飛ばす */
+  onSkip: () => void;
   onSwitch: (id: string) => void;
   onInsert: (text: string) => void;
 }
@@ -39,6 +41,7 @@ interface Props {
  * 通過条件（check）は隠さない。何を満たせば通るのかが分かるほうが速く学べる。
  */
 export function MissionPanel({
+  mission,
   clearedIds,
   total,
   progress,
@@ -54,12 +57,14 @@ export function MissionPanel({
   autoOpened,
   nextMission,
   onRevealHint,
+  onSkip,
   onSwitch,
   onInsert,
 }: Props) {
   const t = useT();
   return (
     <div className="scroll m-3 min-h-0 overflow-y-auto px-6 py-5">
+      <SkippedNotes mission={mission} skipped={progress.skipped} />
       <p className="text-sm font-bold text-ink-soft">
         {progress.cleared ? t('park.done') : t('park.todo', { n: progress.stepIndex + 1 })}
       </p>
@@ -122,10 +127,20 @@ export function MissionPanel({
             >
               {t('park.hint')}
             </button>
+            <button
+              type="button"
+              onClick={onSkip}
+              disabled={step === undefined}
+              title={t('park.skipLead')}
+              className="knob px-4 py-1.5 text-sm disabled:opacity-50"
+            >
+              {t('park.skip')}
+            </button>
             {autoOpened ? (
               <span className="text-xs text-ink-soft">{t('park.autoHint')}</span>
             ) : null}
           </div>
+          <p className="mt-1 text-xs text-ink-soft">{t('park.skipLead')}</p>
           <ul className="mt-2 flex flex-col gap-1">
             {step?.hints.slice(0, revealedHints).map((hint) => (
               <li key={hint} className="flex items-start gap-2">
@@ -143,6 +158,29 @@ export function MissionPanel({
           />
         </>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * 解答を見て飛ばした手順を残しておく。
+ * 飛ばしたことを隠さず、あとで自分の手でやり直すきっかけにするため。
+ */
+function SkippedNotes({ mission, skipped }: { mission: LessonDefinition; skipped: readonly number[] }) {
+  const t = useT();
+  if (skipped.length === 0) return null;
+  return (
+    <div className="mb-3 border-l-4 border-[var(--warn)] bg-[var(--gold)]/20 px-3 py-2">
+      <ul className="flex flex-col gap-0.5">
+        {skipped.map((index) => (
+          <li key={index} className="text-sm">
+            <span aria-hidden>📖 </span>
+            <span className="font-bold">{t('park.skipped', { n: index + 1 })}</span>
+            <span className="text-ink-soft"> — {mission.steps[index]?.prompt ?? ''}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-xs text-ink-soft">{t('park.skippedLead')}</p>
     </div>
   );
 }

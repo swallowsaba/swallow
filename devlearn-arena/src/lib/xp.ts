@@ -54,16 +54,24 @@ export function xpProgress(xp: number): XpProgress {
   };
 }
 
-/** ヒントと超過手数で減点したスコア（0-100） */
+/** 解答を見て飛ばした手順 1 つあたりの減点 */
+export const SKIP_PENALTY = 25;
+
+/**
+ * ヒント・超過手数・飛ばした手順で減点したスコア（0-100）。
+ * 飛ばした手順の解答は端末で実行されるので、その分の手数は数えない。
+ */
 export function scoreAttempt(input: {
   hintsUsed: number;
   commandsUsed: number;
   parCommands: number;
+  skipped?: number;
 }): number {
   const hintPenalty = input.hintsUsed * 12;
   const over = Math.max(0, input.commandsUsed - input.parCommands);
   const overPenalty = Math.min(30, over * 3);
-  return Math.max(0, Math.min(100, 100 - hintPenalty - overPenalty));
+  const skipPenalty = (input.skipped ?? 0) * SKIP_PENALTY;
+  return Math.max(0, Math.min(100, 100 - hintPenalty - overPenalty - skipPenalty));
 }
 
 export function xpForScore(score: number, kind: 'concept' | 'drill' | 'challenge' | 'boss'): number {

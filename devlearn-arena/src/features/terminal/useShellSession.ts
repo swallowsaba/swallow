@@ -27,6 +27,8 @@ export interface ShellSession {
   getTimeline: () => ShellState[];
   seekTo: (index: number) => void;
   reset: () => void;
+  /** 別の初期状態から始め直す。手順を飛ばすときに、模範解答の道筋へ戻すために使う */
+  load: (next: SessionOptions) => void;
 }
 
 /**
@@ -84,6 +86,15 @@ export function useShellSession(options: SessionOptions = {}): ShellSession {
     bump();
   }, [options, clock, journalRef]);
 
+  const load = useCallback(
+    (next: SessionOptions) => {
+      journalRef.current = createJournal(createShellState(next), 'initial');
+      clock.reset();
+      bump();
+    },
+    [clock, journalRef],
+  );
+
   const journal = journalRef.current;
   return {
     state: current(journal),
@@ -97,5 +108,6 @@ export function useShellSession(options: SessionOptions = {}): ShellSession {
     getTimeline,
     seekTo,
     reset,
+    load,
   };
 }

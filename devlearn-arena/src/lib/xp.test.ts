@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { levelFromXp, rankFromLevel, scoreAttempt, xpForLevel, xpForScore, xpProgress } from './xp';
+import { levelFromXp, rankFromLevel, scoreAttempt, SKIP_PENALTY, xpForLevel, xpForScore, xpProgress } from './xp';
 
 describe('xp curve', () => {
   it('レベル1は0XPから始まる', () => {
@@ -56,5 +56,13 @@ describe('scoring', () => {
   it('BOSSのXPが最も大きい', () => {
     expect(xpForScore(100, 'boss')).toBeGreaterThan(xpForScore(100, 'challenge'));
     expect(xpForScore(100, 'drill')).toBeGreaterThan(xpForScore(100, 'concept'));
+  });
+});
+
+describe('飛ばした手順', () => {
+  it('1 つにつき減点する', () => {
+    const base = { hintsUsed: 0, commandsUsed: 5, parCommands: 5 };
+    expect(scoreAttempt({ ...base, skipped: 1 })).toBe(100 - SKIP_PENALTY);
+    expect(scoreAttempt({ ...base, skipped: 9 })).toBe(0);
   });
 });

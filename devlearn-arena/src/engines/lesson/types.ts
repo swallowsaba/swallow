@@ -79,4 +79,6 @@ export interface LessonProgressState {
   commandsUsed: number;
   /** 失敗した回数。罰ではなく、振り返りの材料として数える */
   mistakes: number;
+  /** 解答を見て飛ばした手順（0 始まり）。スコアの減点と復習に使う */
+  skipped: readonly number[];
 }

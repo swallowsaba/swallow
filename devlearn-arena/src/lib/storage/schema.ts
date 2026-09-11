@@ -73,6 +73,8 @@ export const missionProgressSchema = z.object({
   hintsUsed: z.number().int().min(0),
   commandsUsed: z.number().int().min(0),
   mistakes: z.number().int().min(0),
+  /** 解答を見て飛ばした手順。古い保存データには無いので空で補う */
+  skipped: z.array(z.number().int().min(0)).default([]),
 });
 export type MissionProgress = z.infer<typeof missionProgressSchema>;
 

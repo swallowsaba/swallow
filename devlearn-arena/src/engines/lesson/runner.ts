@@ -3,7 +3,22 @@ import type { AssertContext, LessonDefinition, LessonProgressState, LessonStep }
 
 export function createProgress(lesson: LessonDefinition): LessonProgressState {
   void lesson;
-  return { stepIndex: 0, cleared: false, hintsUsed: 0, commandsUsed: 0, mistakes: 0 };
+  return { stepIndex: 0, cleared: false, hintsUsed: 0, commandsUsed: 0, mistakes: 0, skipped: [] };
+}
+
+/** 手順を解答を見て飛ばしたと記録する。同じ手順は2回数えない */
+export function markSkipped(progress: LessonProgressState, index: number): LessonProgressState {
+  if (progress.skipped.includes(index)) return progress;
+  return { ...progress, skipped: [...progress.skipped, index].sort((a, b) => a - b) };
+}
+
+/**
+ * 最初の手順から index 番目の手順までの模範解答を、順につなげたもの。
+ * 途中で別の道に進んでしまい、その手順の解答だけでは通らないときに、
+ * 初期状態からこれを打ち直せば必ずその手順を越えられる。
+ */
+export function solutionThrough(lesson: LessonDefinition, index: number): string[] {
+  return lesson.steps.slice(0, index + 1).flatMap((step) => [...step.solution]);
 }
 
 export function buildContext(timeline: readonly ShellState[]): AssertContext {

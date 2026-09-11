@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { restoreShell, snapshotShell } from '@/engines/kernel/session';
 import { allMissions, missionById } from '@/engines/lesson/registry';
 import {
-  buildContext, createProgress, currentStep, evaluate, passes, useHint,
+  buildContext, createProgress, currentStep, evaluate, markSkipped, passes, solutionThrough, useHint,
 } from '@/engines/lesson/runner';
 import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
@@ -95,7 +95,7 @@ function Park({
   const [options] = useState(() =>
     savedState ? { ...mission.initial, restore: restoreShell(savedState) } : mission.initial,
   );
-  const [initialProgress] = useState(() =>
+  const [initialProgress] = useState<LessonProgressState>(() =>
     savedProgress ? { ...createProgress(mission), ...savedProgress } : createProgress(mission),
   );
 
@@ -197,6 +197,7 @@ function Park({
         hintsUsed: progress.hintsUsed,
         commandsUsed: progress.commandsUsed,
         mistakes: progress.mistakes,
+        skipped: [...progress.skipped],
       },
       snapshotShell(shellState),
     );
@@ -210,9 +211,13 @@ function Park({
     }, 2000);
   }, []);
 
+  // 手順を飛ばすために解答を流している間は、手数にも失敗にも数えない
+  const skippingRef = useRef(false);
+
   /** コマンド実行では回数と失敗数だけを数える。合否の判定は下の効果で行う */
   const handleExecuted = useCallback(
     (_line: string, exitCode: number, stderr: string) => {
+      if (skippingRef.current) return;
       setProgress((p) => ({
         ...p,
         commandsUsed: p.commandsUsed + 1,
@@ -223,6 +228,36 @@ function Park({
     },
     [],
   );
+
+  /**
+   * いまの手順を飛ばす。解答を端末で実際に打つので、何をすれば通ったのかが端末に残る。
+   * 途中で別の道に進んでいて解答が合わないときは、初期状態からその手順までの解答を打ち直す。
+   * どちらの場合も手順は必ず通る。「前が終わらないと進めない」で詰まらないようにするため。
+   */
+  const skipStep = useCallback(() => {
+    if (!step || progress.cleared) return;
+    const index = progress.stepIndex;
+    const terminal = terminalRef.current;
+    if (!terminal) return;
+    skippingRef.current = true;
+    try {
+      terminal.note(t('park.skipNote', { n: index + 1 }));
+      if (step.solution.length > 0) terminal.submit(step.solution.join('\n'));
+      const after = evaluate(mission, progress, session.getTimeline());
+      if (!after.cleared && after.stepIndex <= index) {
+        terminal.note(t('park.skipReplay', { n: index + 1 }));
+        session.load(mission.initial);
+        terminal.submit(solutionThrough(mission, index).join('\n'));
+      }
+    } finally {
+      skippingRef.current = false;
+    }
+    setProgress((p) => markSkipped(p, index));
+    // 飛ばしたところは、クリアしたかどうかにかかわらず見直しに回す
+    scheduleReview(mission.id, dayKey(Date.now()));
+    setAttempts(0);
+    setLastError(null);
+  }, [step, progress, mission, session, t, scheduleReview]);
 
   // 状態が変われば必ず judge する。コマンド実行の瞬間だけに頼らない
   useEffect(() => {
@@ -237,16 +272,25 @@ function Park({
   useEffect(() => {
     const now = Date.now();
     if (progress.cleared && !prevCleared.current) {
-      const score = scoreAttempt({
+      const attempt = {
         hintsUsed: progress.hintsUsed,
         commandsUsed: progress.commandsUsed,
         parCommands: mission.parCommands,
-      });
-      const reward = xpForScore(score, mission.kind === 'boss' ? 'boss' : 'drill');
+      };
+      // 飛ばした手順はスコアから引く。XP は飛ばさなかったときと同じだけ渡す
+      const score = scoreAttempt({ ...attempt, skipped: progress.skipped.length });
+      const reward = xpForScore(scoreAttempt(attempt), mission.kind === 'boss' ? 'boss' : 'drill');
       const after = levelFromXp(xp + reward);
       clearLesson({ lessonId: mission.id, score, xp: reward, now });
       // 躓いた任務は、日を置いて見直しの対象にする
-      if (shouldReview({ hintsUsed: progress.hintsUsed, mistakes: progress.mistakes, score })) {
+      if (
+        shouldReview({
+          hintsUsed: progress.hintsUsed,
+          mistakes: progress.mistakes,
+          score,
+          skipped: progress.skipped.length,
+        })
+      ) {
         scheduleReview(mission.id, dayKey(now));
       }
       setCelebration({
@@ -386,6 +430,7 @@ function Park({
               setProgress(useHint);
               setHintReveal((h) => reveal(h, hintKey));
             }}
+            onSkip={skipStep}
             onSwitch={onSwitch}
           />
 

@@ -92,6 +92,9 @@ describe('積むかどうか', () => {
   it('点が低ければ積む', () => {
     expect(shouldReview({ hintsUsed: 0, mistakes: 0, score: 60 })).toBe(true);
   });
+  it('解答を見て飛ばした手順があれば、点にかかわらず必ず積む', () => {
+    expect(shouldReview({ hintsUsed: 0, mistakes: 0, score: 100, skipped: 1 })).toBe(true);
+  });
   it('問題なく解けたら積まない', () => {
     expect(shouldReview({ hintsUsed: 0, mistakes: 0, score: 100 })).toBe(false);
   });

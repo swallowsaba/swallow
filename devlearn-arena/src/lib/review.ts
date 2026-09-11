@@ -44,8 +44,17 @@ export function dueItems(queue: readonly ReviewItem[], today: string): ReviewIte
     .sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
 }
 
-/** 成績から積むかどうかを決める。ヒントを使ったか、失敗したかで判断する */
-export function shouldReview(input: { hintsUsed: number; mistakes: number; score: number }): boolean {
+/**
+ * 成績から積むかどうかを決める。ヒントを使ったか、失敗したかで判断する。
+ * 解答を見て飛ばした手順があれば、成績にかかわらず必ず積む。
+ */
+export function shouldReview(input: {
+  hintsUsed: number;
+  mistakes: number;
+  score: number;
+  skipped?: number;
+}): boolean {
+  if ((input.skipped ?? 0) > 0) return true;
   return input.hintsUsed > 0 || input.mistakes > 0 || input.score < 80;
 }
 
