@@ -184,4 +184,9 @@ describe('なぜそのコマンドなのかを一行で出す', () => {
     expect(explainCommand('ip -n r1 link set eth1 down')).toContain('-n');
     expect(explainCommand('rm -rf /')).toBeNull();
   });
+
+  it('ヒントのボタンから打つ hint にも、端末で打てば同じだと添える', () => {
+    expect(explainCommand('hint')).toContain('自分で打っても同じ');
+    expect(explainCommand('hinted')).toBeNull();
+  });
 });

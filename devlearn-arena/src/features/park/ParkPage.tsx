@@ -476,7 +476,10 @@ function Park({
             lastError={lastError}
             nextMission={nextMission}
             prerequisites={prerequisites}
-            onRevealHint={revealHint}
+            onRevealHint={() => {
+              // ボタンでも、端末に hint と打ち込んで実行する。打つコマンドを覚えられるように
+              runFromDiagram('hint');
+            }}
             onSkip={skipStep}
             onSwitch={onSwitch}
           />
