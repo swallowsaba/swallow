@@ -69,7 +69,7 @@ export function MissionPicker({ currentId, cleared, onPick }: Props) {
       className="fixed inset-0 z-50 grid place-items-start justify-center bg-[rgb(0_0_0/45%)] p-4 pt-16"
       role="dialog"
       aria-modal="true"
-      aria-label={t('park.missionList')}
+      aria-label={t('park.allMissions')}
       onKeyDown={(e) => {
         if (e.key === 'Escape') setOpen(false);
       }}

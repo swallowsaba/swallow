@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
 async function type(page: Page, line: string): Promise<void> {
-  await page.locator('.xterm-screen').click();
+  // 端末は親の大きさに合わせて伸び縮みするので、クリックせず入力欄に直接フォーカスする
+  await page.locator('.xterm-helper-textarea').focus();
   await page.keyboard.type(line);
   await page.keyboard.press('Enter');
 }
@@ -135,7 +136,7 @@ test('任務を開くとまず説明が出て、読んだ任務では次から�
 });
 
 test('目次では本編と反復演習が分かれている', async ({ page }) => {
-  await open(page, './#/track/kernel');
+  await open(page, './track/kernel');
   await expect(page.getByRole('heading', { name: 'Linux とシェル' })).toBeVisible();
   await expect(page.getByRole('button', { name: '演習を開く' }).first()).toBeVisible();
 });
