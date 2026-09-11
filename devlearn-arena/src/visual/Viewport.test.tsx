@@ -50,7 +50,7 @@ function frameOf(view: HTMLElement): HTMLElement {
 
 const scale = (view: HTMLElement) => Number(frameOf(view).dataset.scale);
 
-function fire(target: Element, event: Event): void {
+function fire(target: EventTarget, event: Event): void {
   act(() => {
     target.dispatchEvent(event);
   });
