@@ -75,6 +75,23 @@ export default function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
+        <h2 className="font-mono text-base text-ink-soft">{t('settings.intro')}</h2>
+        <button
+          type="button"
+          aria-pressed={settings.introAlways}
+          onClick={() => {
+            updateSettings({ introAlways: !settings.introAlways });
+          }}
+          className={`w-fit border-2 px-5 py-2.5 text-base ${
+            settings.introAlways ? 'border-wood-dark text-[var(--gold-dark)]' : 'border-wood-dark text-ink-soft'
+          }`}
+        >
+          {settings.introAlways ? t('settings.introAlways') : t('settings.introOnce')}
+        </button>
+        <p className="text-sm text-ink-soft">{t('settings.introLead')}</p>
+      </section>
+
+      <section className="flex flex-col gap-3">
         <h2 className="font-mono text-base text-ink-soft">{t('settings.sound')}</h2>
         <button
           type="button"

@@ -83,3 +83,13 @@ describe('飛ばした手順の記録', () => {
     expect(parsed.missionProgress['kernel/00/shell-warmup']?.skipped).toEqual([]);
   });
 });
+
+describe('「学ぶ」画面の既読', () => {
+  it('古い保存データでも、既読は空・毎回表示はオフとして読める', () => {
+    const { introsRead: _read, ...old } = createEmptySave(0);
+    void _read;
+    const parsed = saveDataSchema.parse({ ...old, settings: { ...old.settings, introAlways: undefined } });
+    expect(parsed.introsRead).toEqual([]);
+    expect(parsed.settings.introAlways).toBe(false);
+  });
+});

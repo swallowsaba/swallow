@@ -27,6 +27,7 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
   missionProgress: {},
   missionState: {},
   lastMissionId: null,
+  introsRead: [],
 
   hydrate: (data) =>
     set({
@@ -39,7 +40,11 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       missionProgress: data.missionProgress,
       missionState: data.missionState,
       lastMissionId: data.lastMissionId,
+      introsRead: data.introsRead,
     }),
+
+  markIntroRead: (id) =>
+    set((s) => (s.introsRead.includes(id) ? {} : { introsRead: [...s.introsRead, id] })),
 
   saveMission: (id, progress, state) =>
     set((s) => ({
@@ -118,6 +123,7 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       reviewQueue: empty.reviewQueue,
       missionProgress: {},
       missionState: {},
+      introsRead: [],
       lastMissionId: null,
     });
   },

@@ -39,6 +39,8 @@ export const settingsSchema = z.object({
   paneMain: z.number().min(25).max(80).default(55),
   /** 右側のうち地図が占める高さの割合(%) */
   paneMap: z.number().min(25).max(85).default(62),
+  /** 一度読んだ任務でも、開くたびに「学ぶ」画面を出す */
+  introAlways: z.boolean().default(false),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
@@ -92,6 +94,8 @@ export const saveDataSchema = z.object({
   missionState: z.record(z.string(), shellSnapshotSchema).default({}),
   /** 最後に開いていた任務 */
   lastMissionId: z.string().nullable().default(null),
+  /** 「学ぶ」画面を読み終えた任務。次からは自動で開かない */
+  introsRead: z.array(z.string()).default([]),
 });
 export type SaveData = z.infer<typeof saveDataSchema>;
 
@@ -102,6 +106,7 @@ export const defaultSettings: Settings = {
   soundEnabled: false,
   paneMain: 55,
   paneMap: 62,
+  introAlways: false,
 };
 
 export function createEmptySave(now: number): SaveData {
@@ -116,6 +121,7 @@ export function createEmptySave(now: number): SaveData {
     missionProgress: {},
     missionState: {},
     lastMissionId: null,
+    introsRead: [],
   };
 }
 

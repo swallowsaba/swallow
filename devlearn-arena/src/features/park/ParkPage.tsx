@@ -14,10 +14,12 @@ import { shouldReview } from '@/lib/review';
 import { sfx } from '@/lib/sfx';
 import { levelFromXp, rankFromLevel, scoreAttempt, xpForScore } from '@/lib/xp';
 import { useStore } from '@/store';
+import { flushSave } from '@/store/persistence';
 import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
+import { IntroScreen } from './IntroScreen';
 import { MissionPanel } from './MissionPanel';
 import { MissionPicker } from './MissionPicker';
 import {
@@ -119,6 +121,19 @@ function Park({
   const scheduleReview = useStore((s) => s.scheduleReview);
   const paneMain = useStore((s) => s.settings.paneMain);
   const updateSettings = useStore((s) => s.updateSettings);
+  const markIntroRead = useStore((s) => s.markIntroRead);
+  // 開いた瞬間に「学ぶ」画面を出すか。読んだ任務は、設定で頼まれない限り省く
+  const [showIntro, setShowIntro] = useState(() => {
+    const { introsRead, settings } = useStore.getState();
+    return settings.introAlways || !introsRead.includes(mission.id);
+  });
+  const startMission = useCallback(() => {
+    markIntroRead(mission.id);
+    // 読んだ直後にリロードされても、また出てこないようにその場で書き込む
+    flushSave();
+    setShowIntro(false);
+    terminalRef.current?.focus();
+  }, [markIntroRead, mission.id]);
 
   const entries = session.journal.entries;
   const cursor = session.journal.cursor;
@@ -336,6 +351,7 @@ function Park({
   return (
     <div className="flex h-full min-w-0 flex-col overflow-x-hidden bg-cream">
       <XpToast toasts={toasts} />
+      {showIntro ? <IntroScreen mission={mission} onStart={startMission} /> : null}
       <Celebration
         data={celebration}
         nextLabel={nextMission?.title}
@@ -387,6 +403,15 @@ function Park({
               b: mission.steps.length,
             })}
           </span>
+          <button
+            type="button"
+            onClick={() => {
+              setShowIntro(true);
+            }}
+            className="knob px-3 py-2 text-sm"
+          >
+            {t('intro.reopen')}
+          </button>
           <button type="button" onClick={retry} className="knob px-3 py-2 text-sm">
             {t('park.retry')}
           </button>

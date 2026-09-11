@@ -15,6 +15,9 @@ export interface ProgressSlice {
   missionProgress: Record<string, MissionProgress>;
   missionState: Record<string, ShellSnapshot>;
   lastMissionId: string | null;
+  /** 「学ぶ」画面を読み終えた任務 */
+  introsRead: string[];
+  markIntroRead: (id: string) => void;
   saveMission: (id: string, progress: MissionProgress, state: ShellSnapshot) => void;
   setLastMission: (id: string) => void;
   resetMission: (id: string) => void;
@@ -44,5 +47,6 @@ export function toSaveData(state: AppState, now: number): SaveData {
     missionProgress: state.missionProgress,
     missionState: state.missionState,
     lastMissionId: state.lastMissionId,
+    introsRead: state.introsRead,
   };
 }

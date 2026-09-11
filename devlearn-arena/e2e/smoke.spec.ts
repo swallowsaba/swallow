@@ -10,20 +10,31 @@ async function type(page: Page, line: string): Promise<void> {
 async function dismissOnboarding(page: Page): Promise<void> {
   const dialog = page.getByRole('dialog', { name: 'ようこそ' });
   if (await dialog.isVisible()) {
-    await page.getByRole('button', { name: 'はじめる' }).click();
+    await dialog.getByRole('button', { name: 'はじめる' }).click();
     await expect(dialog).toBeHidden();
+  }
+}
+
+/** 任務を開いたときに出る「学ぶ」画面を閉じる */
+async function dismissIntro(page: Page): Promise<void> {
+  const intro = page.getByRole('dialog').filter({ hasText: 'この任務で学ぶこと' });
+  if (await intro.isVisible()) {
+    await intro.getByRole('button', { name: 'はじめる' }).click();
+    await expect(intro).toBeHidden();
   }
 }
 
 async function open(page: Page, path = './'): Promise<void> {
   await page.goto(path);
   await dismissOnboarding(page);
+  await dismissIntro(page);
 }
 
 test('初回だけ案内が出て、閉じたら二度と出ない', async ({ page }) => {
   await page.goto('./');
-  await expect(page.getByRole('dialog', { name: 'ようこそ' })).toBeVisible();
-  await page.getByRole('button', { name: 'はじめる' }).click();
+  const welcome = page.getByRole('dialog', { name: 'ようこそ' });
+  await expect(welcome).toBeVisible();
+  await welcome.getByRole('button', { name: 'はじめる' }).click();
 
   await page.reload();
   await expect(page.getByRole('dialog', { name: 'ようこそ' })).toBeHidden();
@@ -91,6 +102,7 @@ test('目次から遊べるレッスンへ入れる', async ({ page }) => {
   const playable = page.getByRole('link', { name: /遊べる/ }).first();
   await expect(playable).toBeVisible();
   await playable.click();
+  await dismissIntro(page);
   await expect(page.locator('.xterm-screen')).toBeVisible();
 });
 
@@ -106,6 +118,20 @@ test('任務は絞り込んで選べる', async ({ page }) => {
   await expect(first).toBeVisible();
   await first.click();
   await expect(picker).toBeHidden();
+});
+
+test('任務を開くとまず説明が出て、読んだ任務では次から出ない', async ({ page }) => {
+  await page.goto('./');
+  await dismissOnboarding(page);
+  const intro = page.getByRole('dialog').filter({ hasText: 'この任務で学ぶこと' });
+  await expect(intro).toBeVisible();
+  await intro.getByRole('button', { name: 'はじめる' }).click();
+  await expect(intro).toBeHidden();
+
+  await page.reload();
+  await expect(intro).toBeHidden();
+  await page.getByRole('button', { name: '説明を読む' }).click();
+  await expect(intro).toBeVisible();
 });
 
 test('目次では本編と反復演習が分かれている', async ({ page }) => {
