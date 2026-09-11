@@ -86,7 +86,7 @@ jobs:
 
             # 隠しフォルダ・出力フォルダ・node_modules は対象外にする
             case "$name" in
-              .*|_site|node_modules|worker) continue ;;
+              .*|_site|node_modules|worker|tests|tools) continue ;;
             esac
 
             if [ -f "$name/package.json" ]; then
