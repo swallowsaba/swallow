@@ -71,7 +71,7 @@ export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, releva
               <FileWorld vfs={state.vfs} previous={previous?.vfs} cwd={state.cwd} />
             ) : rightTab === 'git' ? (
               <div className="h-full bg-cream">
-                <CommitGraph git={state.git} onCommand={onCommand} />
+                <CommitGraph git={state.git} vfs={state.vfs} onCommand={onCommand} />
               </div>
             ) : rightTab === 'k8s' ? (
               <div className="h-full bg-cream">

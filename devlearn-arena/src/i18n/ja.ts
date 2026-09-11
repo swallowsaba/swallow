@@ -245,6 +245,7 @@ export const ja = {
   'viz.unplacedLine': '{name}: 置けない理由 → {reason}',
   'viz.ownership': '持ち主と受付のつながり',
   'viz.ownershipLead': '茶色の線は「誰が作ったか」（Deployment → ReplicaSet → Pod）。緑の点線は Service が繋いでいる Pod。載っていない Pod には伸びない。',
+  'viz.threeTrees': '3面（作業ツリー / インデックス / HEAD）',
 
   'dash.title': '記録',
   'dash.level': 'レベル {n}',

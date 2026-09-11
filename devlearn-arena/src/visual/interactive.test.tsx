@@ -6,7 +6,10 @@ import { container, deployment, emptyCluster, node } from '@/engines/k8s/factory
 import { tickPods } from '@/engines/k8s/kubelet';
 import type { ClusterState } from '@/engines/k8s/types';
 import { host, iface, link, resetMac, router, topology } from '@/engines/net/factory';
+import { createSession } from '@/engines/kernel/session';
+import { execute } from '@/engines/kernel/shell';
 import { ClusterCanvas } from './ClusterCanvas';
+import { CommitGraph } from './CommitGraph';
 import { PacketFlow } from './PacketFlow';
 
 // React の act() を jsdom の上で使う
@@ -128,5 +131,38 @@ describe('クラスタの図の作り', () => {
   it('Pod の状態を文字でも出す', () => {
     const view = mount(<ClusterCanvas cluster={cluster()} />);
     expect(view.textContent).toContain('Running');
+  });
+});
+
+describe('履歴の図の作り', () => {
+  function repo(lines: readonly string[]) {
+    let session = createSession({ files: { '/home/learner': null, '/home/learner/a.txt': 'A\n', '/home/learner/b.txt': 'B\n' } });
+    for (const line of lines) {
+      session = { ...session, state: execute(session.state, line, session.registry, session.clock).state };
+    }
+    return session.state;
+  }
+
+  it('add したファイルは真ん中の面、まだのファイルは左の面に立つ', () => {
+    const state = repo(['git init', 'git add a.txt']);
+    const view = mount(<CommitGraph git={state.git} vfs={state.vfs} />);
+    expect(view.querySelector('[data-lane="index"]')?.textContent).toContain('a.txt');
+    expect(view.querySelector('[data-lane="worktree"]')?.textContent).toContain('b.txt');
+    expect(view.querySelector('[data-lane="head"]')?.textContent).not.toContain('a.txt');
+  });
+
+  it('分岐したコミットは別の列に描かれ、HEAD の札は今のブランチの先頭に付く', () => {
+    const state = repo([
+      'git init', 'git add .', 'git commit -m base',
+      'git switch -c feature', 'echo f > b.txt', 'git add .', 'git commit -m f',
+      'git switch main', 'echo m > a.txt', 'git add .', 'git commit -m m',
+    ]);
+    const onCommand = vi.fn();
+    const view = mount(<CommitGraph git={state.git} vfs={state.vfs} onCommand={onCommand} />);
+    const cols = new Set([...view.querySelectorAll('circle')].map((c) => c.getAttribute('data-col')));
+    expect(cols).toEqual(new Set(['0', '1']));
+    expect(view.querySelector('[data-head="true"]')?.textContent).toContain('main');
+    click(view, 'button[title="git switch feature"]');
+    expect(onCommand).toHaveBeenLastCalledWith('git switch feature');
   });
 });
