@@ -6,7 +6,7 @@ import { CommitGraph } from '@/visual/CommitGraph';
 import { FileWorld } from '@/visual/FileWorld';
 import { PacketFlow } from '@/visual/PacketFlow';
 import { PrTimeline } from '@/visual/PrTimeline';
-import type { VfsState } from '@/engines/kernel/vfs';
+import type { ShellState } from '@/engines/kernel/registry';
 import type { RunCommand } from '@/visual/commands';
 import { VISUAL_TABS, type VisualTab } from './visualTabs';
 
@@ -23,17 +23,16 @@ interface Props {
   /** 図の操作をコマンドとして端末で打つ */
   onCommand: RunCommand;
   /** 1つ前の状態。差分を動きとして見せるために使う */
-  previousVfs: VfsState | undefined;
+  previous: ShellState | undefined;
 }
 
 /**
  * 学習画面の右側。いまの状態を図で映す。
  * 図は状態から毎回組み立てる。表示のための値をどこにも溜めない。
  */
-export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, relevant, onCommand, previousVfs }: Props) {
+export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, relevant, onCommand, previous }: Props) {
   const t = useT();
   const state = session.state;
-  const previous = { vfs: previousVfs };
   return (
     <div className="flex min-h-0 min-w-0 flex-col">
       <div role="tablist" aria-label={t('park.viewLabel')} className="plate flex items-center gap-2 px-3 py-1 text-sm font-extrabold">
@@ -76,7 +75,7 @@ export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, releva
               </div>
             ) : rightTab === 'k8s' ? (
               <div className="h-full bg-cream">
-                <ClusterCanvas cluster={state.cluster} onCommand={onCommand} />
+                <ClusterCanvas cluster={state.cluster} previous={previous?.cluster} onCommand={onCommand} />
               </div>
             ) : rightTab === 'net' ? (
               <div className="h-full bg-cream">

@@ -103,3 +103,30 @@ describe('ネットワークの図を押すと、コマンドが端末に流れ�
     expect(onCommand).toHaveBeenLastCalledWith('ip link set eth0 down');
   });
 });
+
+describe('クラスタの図の作り', () => {
+  it('時間を進めたあとは、配置係と見張り係が光る', () => {
+    const before: ClusterState = {
+      ...emptyCluster([node('node-1', 4000, 8192)]),
+      deployments: new Map([['default/web', deployment('web', 2, [container('web', 'nginx')])]]),
+    };
+    let after = before;
+    for (let i = 0; i < 3; i += 1) after = advanceCluster(after, tickPods);
+    const view = mount(<ClusterCanvas cluster={after} previous={before} />);
+    expect(view.querySelector('[data-part="scheduler"]')?.getAttribute('data-active')).toBe('true');
+    expect(view.querySelector('[data-part="controller"]')?.getAttribute('data-active')).toBe('true');
+  });
+
+  it('持ち主の線と、Service から Endpoints の Pod への線を引く', () => {
+    const state = cluster();
+    const view = mount(<ClusterCanvas cluster={state} />);
+    // Deployment → ReplicaSet が1本、ReplicaSet → Pod が2本
+    expect(view.querySelectorAll('path[data-edge="own"]').length).toBe(3);
+    expect(view.querySelectorAll('path[data-edge="serve"]').length).toBe(0);
+  });
+
+  it('Pod の状態を文字でも出す', () => {
+    const view = mount(<ClusterCanvas cluster={cluster()} />);
+    expect(view.textContent).toContain('Running');
+  });
+});

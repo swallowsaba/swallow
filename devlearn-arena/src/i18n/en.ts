@@ -245,6 +245,10 @@ export const en: Record<TKey, string> = {
   'viz.viewPull': 'View',
   'viz.approve': 'Approve',
   'viz.requestChanges': 'Request changes',
+  'viz.controlPlane': 'Control plane (the parts that just worked light up)',
+  'viz.unplacedLine': '{name}: cannot be placed → {reason}',
+  'viz.ownership': 'Owners and services',
+  'viz.ownershipLead': 'Brown lines show who created what (Deployment → ReplicaSet → Pod). Green dotted lines show the Pods a Service sends traffic to; Pods not in its Endpoints get no line.',
 
   'dash.title': 'Progress',
   'dash.level': 'Level {n}',

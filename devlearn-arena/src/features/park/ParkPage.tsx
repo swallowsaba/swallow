@@ -502,7 +502,7 @@ function Park({
           onTab={setRightTab}
           relevant={relevant}
           onCommand={runFromDiagram}
-          previousVfs={previous?.vfs}
+          previous={previous}
         />
       </div>
     </div>

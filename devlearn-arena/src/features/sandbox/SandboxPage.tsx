@@ -148,7 +148,7 @@ export default function SandboxPage() {
               <FileWorld vfs={state.vfs} previous={previous?.vfs} cwd={state.cwd} />
             ) : null}
             {tab === 'git' ? <CommitGraph git={state.git} onCommand={runFromDiagram} /> : null}
-            {tab === 'k8s' ? <ClusterCanvas cluster={state.cluster} onCommand={runFromDiagram} /> : null}
+            {tab === 'k8s' ? <ClusterCanvas cluster={state.cluster} previous={previous?.cluster} onCommand={runFromDiagram} /> : null}
             {tab === 'net' ? <PacketFlow net={state.net} self={state.vars.get('NET_SELF') ?? 'pc1'} onCommand={runFromDiagram} /> : null}
             {tab === 'gh' ? <PrTimeline repo={state.repo} onCommand={runFromDiagram} /> : null}
           </div>

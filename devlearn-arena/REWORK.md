@@ -119,7 +119,7 @@
     パケットが実際に線の上を流れるアニメーションを、`deliver` の hops から作る。
   - **PR**: チェックをクリック → `gh pr checks <番号>`。レビュー欄 → `gh pr review`。
 
-- [ ] 5-3. **Kubernetes の可視化を作り直す。**
+- [x] 5-3. **Kubernetes の可視化を作り直す。**
   現在はノードの箱に Pod が並ぶだけ。次を足す。
   - コントロールプレーン（apiserver / scheduler / controller / etcd）を図として出し、
     コマンドを打ったときに**どの部品が動いたかを光らせる**

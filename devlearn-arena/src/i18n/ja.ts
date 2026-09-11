@@ -241,6 +241,10 @@ export const ja = {
   'viz.viewPull': 'くわしく見る',
   'viz.approve': '承認する',
   'viz.requestChanges': '直してほしいと返す',
+  'viz.controlPlane': 'コントロールプレーン（動いた部品が光る）',
+  'viz.unplacedLine': '{name}: 置けない理由 → {reason}',
+  'viz.ownership': '持ち主と受付のつながり',
+  'viz.ownershipLead': '茶色の線は「誰が作ったか」（Deployment → ReplicaSet → Pod）。緑の点線は Service が繋いでいる Pod。載っていない Pod には伸びない。',
 
   'dash.title': '記録',
   'dash.level': 'レベル {n}',
