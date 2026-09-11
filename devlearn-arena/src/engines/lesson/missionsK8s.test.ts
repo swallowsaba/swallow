@@ -5,6 +5,7 @@ import { createShellState } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import type { ShellState } from '@/engines/kernel/registry';
 import { findMission } from './missions';
+import { allMissions } from './registry';
 import { createProgress, evaluate } from './runner';
 
 const registry = createDefaultRegistry();
@@ -65,6 +66,15 @@ function expectCleared(id: string, lines: readonly string[]): void {
 }
 
 describe('空のクラスタに Pod を作る', () => {
+  it('推奨順で最初の Kubernetes の任務が、空のクラスタから始まる', () => {
+    const k8s = allMissions().filter((m) => m.id.startsWith('k8s/'));
+    const first = [...k8s].sort((a, b) => a.order - b.order)[0];
+    expect(first?.id).toBe('k8s/01/first-kubectl');
+    const cluster = first ? createShellState(first.build().initial).cluster : undefined;
+    expect(cluster?.pods.size).toBe(0);
+    expect(cluster?.deployments.size).toBe(0);
+  });
+
   it('ノードだけがあり、Pod は 0 個から始まる', () => {
     const play = player('k8s/01/first-kubectl');
     const cluster = play.state()?.cluster;
