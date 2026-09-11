@@ -1,3 +1,4 @@
+import { Glossed } from '@/ui/Term';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { isCoreLesson } from '@/content/catalog';
@@ -80,7 +81,9 @@ export function ChapterSection({ chapter, cleared }: Props) {
         </span>
         <div>
           <h2 className="title text-2xl">{chapter.title}</h2>
-          <p className="mt-1 text-base text-ink-soft">{chapter.summary}</p>
+          <p className="mt-1 text-base text-ink-soft">
+            <Glossed text={chapter.summary} />
+          </p>
         </div>
       </div>
 

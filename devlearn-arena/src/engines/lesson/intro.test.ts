@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { concepts, glossary, jargonIn, lookup } from './glossary';
+import { concepts, glossary, jargonIn, lookup, segment } from './glossary';
 import { allMissions } from './registry';
 
 describe('用語集', () => {
@@ -64,5 +64,19 @@ describe('すべての任務に「学ぶ」段階がある', () => {
       }
     }
     expect([...new Set(missing)]).toEqual([]);
+  });
+});
+
+describe('文章を用語で区切る', () => {
+  it('用語の部分だけに説明が付き、つなげると元の文章に戻る', () => {
+    const text = 'Pod が消えても Deployment が Pod を作り直す';
+    const parts = segment(text);
+    expect(parts.map((p) => p.text).join('')).toBe(text);
+    expect(parts.filter((p) => p.concept).map((p) => p.text)).toEqual(['Pod', 'Deployment']);
+  });
+
+  it('長い語を優先する', () => {
+    const parts = segment('環境変数を読む');
+    expect(parts[0]?.concept?.term).toBe('環境変数');
   });
 });

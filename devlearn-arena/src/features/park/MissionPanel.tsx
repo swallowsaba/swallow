@@ -1,5 +1,6 @@
 import { useT } from '@/i18n/useT';
 import type { LessonDefinition, LessonProgressState, LessonStep } from '@/engines/lesson/types';
+import { Glossed } from '@/ui/Term';
 import { Assist } from './Assist';
 import { StepChecklist, type PartState } from './StepChecklist';
 
@@ -69,8 +70,10 @@ export function MissionPanel({
         {progress.cleared ? t('park.done') : t('park.todo', { n: progress.stepIndex + 1 })}
       </p>
       <p className="mt-1 text-xl font-bold leading-snug">
-        {progress.cleared ? t('park.missionDone') : (step?.prompt ?? '')}
+        {progress.cleared ? t('park.missionDone') : <Glossed text={step?.prompt ?? ''} />}
       </p>
+
+      <LastExplain mission={mission} progress={progress} />
 
       {progress.cleared ? (
         <div className="mt-4 flex flex-col gap-3">
@@ -109,7 +112,7 @@ export function MissionPanel({
         {diagnosis !== null && !progress.cleared ? (
           <p className="mt-3 border-l-4 border-[var(--warn)] bg-[var(--gold)]/25 px-3 py-2 text-sm">
             <span className="font-bold">{t('park.close')}: </span>
-            {diagnosis}
+            <Glossed text={diagnosis} />
           </p>
         ) : null}
       </div>
@@ -176,11 +179,33 @@ function SkippedNotes({ mission, skipped }: { mission: LessonDefinition; skipped
           <li key={index} className="text-sm">
             <span aria-hidden>📖 </span>
             <span className="font-bold">{t('park.skipped', { n: index + 1 })}</span>
-            <span className="text-ink-soft"> — {mission.steps[index]?.prompt ?? ''}</span>
+            <span className="text-ink-soft">
+              {' — '}
+              <Glossed text={mission.steps[index]?.prompt ?? ''} />
+            </span>
           </li>
         ))}
       </ul>
       <p className="mt-1 text-xs text-ink-soft">{t('park.skippedLead')}</p>
+    </div>
+  );
+}
+
+/**
+ * 直前に通った手順で「何が起きたのか」を出す。
+ * 通った瞬間に理由を読めば、打ったコマンドと起きたことが結び付く。
+ */
+function LastExplain({ mission, progress }: { mission: LessonDefinition; progress: LessonProgressState }) {
+  const t = useT();
+  const index = progress.cleared ? mission.steps.length - 1 : progress.stepIndex - 1;
+  const step = index >= 0 ? mission.steps[index] : undefined;
+  if (step === undefined) return null;
+  return (
+    <div className="mt-3 border-l-4 border-[var(--ok)] bg-[var(--ok)]/10 px-3 py-2">
+      <p className="text-xs font-bold text-ink-soft">{t('park.explainTitle', { n: index + 1 })}</p>
+      <p className="mt-0.5 text-sm leading-relaxed">
+        <Glossed text={step.explain} />
+      </p>
     </div>
   );
 }

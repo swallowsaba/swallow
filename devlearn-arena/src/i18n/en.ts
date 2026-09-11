@@ -69,6 +69,7 @@ export const en: Record<TKey, string> = {
   'park.lastFailedLead': 'Read this line first. It is usually a typo, the wrong directory, or a permission.',
   'park.answerTitle': 'Answer',
   'park.answerInsert': 'Put it in the terminal',
+  'park.explainTitle': 'What happened in step {n}',
   'park.skip': 'Skip this step',
   'park.skipLead': 'Runs the answer in the terminal and moves on. Your score drops, but XP stays.',
   'park.skipNote': 'Running the answer for step {n}',

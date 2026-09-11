@@ -1,3 +1,4 @@
+import { Glossed } from '@/ui/Term';
 import { Link, useParams } from 'react-router-dom';
 import { getTrack } from '@/content/catalog';
 import { useT } from '@/i18n/useT';
@@ -23,7 +24,7 @@ export default function TrackPage() {
         <h1 className="title mt-3 text-5xl text-[var(--gold-dark)]">{track.title}</h1>
         <p className="mt-4 max-w-3xl text-lg text-ink-soft">
           <span className="font-mono text-base text-[var(--gold-dark)]">{t('track.goal')}: </span>
-          {track.goal}
+          <Glossed text={track.goal} />
         </p>
       </header>
 

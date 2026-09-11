@@ -285,3 +285,46 @@ export function jargonIn(text: string): Concept[] {
   }
   return [...found];
 }
+
+/** 文章を、用語集に載っている語とそれ以外に切り分けたもの */
+export interface Segment {
+  text: string;
+  concept?: Concept;
+}
+
+/**
+ * 文章を、用語集の語で区切る。画面でその語だけに説明を付けるために使う。
+ * 同じ語は最初の1回だけ区切る（何度も下線が付くと読みにくいため）。
+ */
+export function segment(text: string): Segment[] {
+  const words = ENTRIES.flatMap((entry) =>
+    [entry.term, ...(entry.aliases ?? [])].map((word) => ({ entry, word })),
+  ).sort((a, b) => b.word.length - a.word.length);
+  const hits: { start: number; end: number; entry: Concept }[] = [];
+  const taken = new Array<boolean>(text.length).fill(false);
+  const seen = new Set<Concept>();
+  for (const { entry, word } of words) {
+    if (seen.has(entry)) continue;
+    let at = text.indexOf(word);
+    while (at !== -1) {
+      const free = !taken.slice(at, at + word.length).some(Boolean);
+      if (free && standsAlone(text, at, word)) {
+        hits.push({ start: at, end: at + word.length, entry });
+        for (let i = at; i < at + word.length; i += 1) taken[i] = true;
+        seen.add(entry);
+        break;
+      }
+      at = text.indexOf(word, at + 1);
+    }
+  }
+  hits.sort((a, b) => a.start - b.start);
+  const out: Segment[] = [];
+  let cursor = 0;
+  for (const hit of hits) {
+    if (hit.start > cursor) out.push({ text: text.slice(cursor, hit.start) });
+    out.push({ text: text.slice(hit.start, hit.end), concept: hit.entry });
+    cursor = hit.end;
+  }
+  if (cursor < text.length) out.push({ text: text.slice(cursor) });
+  return out;
+}

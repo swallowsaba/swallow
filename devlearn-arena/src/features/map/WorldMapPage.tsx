@@ -1,3 +1,4 @@
+import { Glossed } from '@/ui/Term';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { countAll, getChapter, TRACKS } from '@/content/catalog';
@@ -189,7 +190,9 @@ export default function WorldMapPage() {
                       {t('map.details')}
                     </Link>
                   </div>
-                  <p className="mt-2 text-base text-ink-soft">{stage.summary}</p>
+                  <p className="mt-2 text-base text-ink-soft">
+                    <Glossed text={stage.summary} />
+                  </p>
                   <ul className="mt-3 flex flex-wrap gap-2">
                     {stage.lessons.map((l) => (
                       <li

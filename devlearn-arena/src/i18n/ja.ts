@@ -67,6 +67,7 @@ export const ja = {
   'park.lastFailedLead': 'まずこの行を読んでください。打ち間違い・場所違い・権限のどれかであることが多いです。',
   'park.answerTitle': '答え',
   'park.answerInsert': '端末に入れる',
+  'park.explainTitle': '手順 {n} で起きたこと',
   'park.skip': 'この手順を飛ばす',
   'park.skipLead': '解答を端末で実行して次へ進みます。スコアは下がりますが、XP は減りません。',
   'park.skipNote': '手順 {n} の解答を実行します',

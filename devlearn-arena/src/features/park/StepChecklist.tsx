@@ -1,4 +1,5 @@
 import { useT } from '@/i18n/useT';
+import { Glossed } from '@/ui/Term';
 
 export interface PartState {
   label: string;
@@ -31,7 +32,7 @@ export function StepChecklist({ parts, fallback, passingNow }: Props) {
         }`}
       >
         <span className="font-bold">{passingNow ? t('park.passing') : t('park.notPassing')} </span>
-        {fallback}
+        <Glossed text={fallback} />
       </p>
     );
   }
@@ -57,7 +58,7 @@ export function StepChecklist({ parts, fallback, passingNow }: Props) {
               <span className="sr-only">
                 {part.passing ? t('park.partDone') : t('park.partPending')}:{' '}
               </span>
-              {part.label}
+              <Glossed text={part.label} />
               {!part.passing && part.howTo !== undefined ? (
                 <span className="block text-xs text-ink-soft">{part.howTo}</span>
               ) : null}

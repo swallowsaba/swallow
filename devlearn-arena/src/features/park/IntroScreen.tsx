@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { LessonDefinition } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
+import { Glossed } from '@/ui/Term';
 
 interface Props {
   mission: LessonDefinition;
@@ -42,12 +43,16 @@ export function IntroScreen({ mission, onStart }: Props) {
           <h2 id="intro-title" className="title text-3xl leading-tight">
             {mission.title}
           </h2>
-          <p className="text-xl font-bold leading-snug">{intro.summary}</p>
+          <p className="text-xl font-bold leading-snug">
+            <Glossed text={intro.summary} />
+          </p>
         </header>
 
         <section className="flex flex-col gap-1">
           <h3 className="text-sm font-extrabold text-ink-soft">{t('intro.why')}</h3>
-          <p className="text-base leading-relaxed">{intro.why}</p>
+          <p className="text-base leading-relaxed">
+            <Glossed text={intro.why} />
+          </p>
         </section>
 
         <section className="flex flex-col gap-2">
@@ -72,7 +77,9 @@ export function IntroScreen({ mission, onStart }: Props) {
                 <code className="w-fit whitespace-pre-wrap bg-[var(--wood-dark)] px-2 py-1 font-mono text-sm text-cream">
                   {c.command}
                 </code>
-                <span className="text-sm">{c.means}</span>
+                <span className="text-sm">
+                  <Glossed text={c.means} />
+                </span>
               </li>
             ))}
           </ul>
