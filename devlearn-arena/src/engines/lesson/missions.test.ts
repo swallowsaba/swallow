@@ -3,7 +3,7 @@ import { createDefaultRegistry } from '@/engines/kernel/commands';
 import { createClock } from '@/engines/kernel/clock';
 import { splitCommands } from '@/engines/kernel/continuation';
 import { createShellState } from '@/engines/kernel/session';
-import { execute } from '@/engines/kernel/shell';
+import { EXIT_NOT_FOUND, execute } from '@/engines/kernel/shell';
 import type { ShellState } from '@/engines/kernel/registry';
 import { findMission, missions } from './missions';
 import { allMissions } from './registry';
@@ -170,6 +170,7 @@ function lastHintLines(step: LessonDefinition['steps'][number]): string[] {
 function playByHints(
   lesson: LessonDefinition,
   linesOf: (step: LessonDefinition['steps'][number]) => readonly string[] = lastHintLines,
+  onRun?: (line: string, exitCode: number) => void,
 ): { cleared: boolean; stuck: number | null } {
   const clock = createClock();
   const timeline: ShellState[] = [createShellState(lesson.initial)];
@@ -182,7 +183,9 @@ function playByHints(
     for (const line of linesOf(step)) {
       const last = timeline[timeline.length - 1];
       if (!last) break;
-      timeline.push(execute(last, line, registry, clock).state);
+      const outcome = execute(last, line, registry, clock);
+      timeline.push(outcome.state);
+      onRun?.(line, outcome.exitCode);
       progress = evaluate(lesson, progress, timeline);
     }
     if (!progress.cleared && progress.stepIndex <= i) return { cleared: false, stuck: i };
@@ -212,6 +215,32 @@ describe('最後のヒントは完全なコマンド', () => {
         expect(step.hints[step.hints.length - 1], `${entry.id}: ${step.check}`).toBe(step.solution.join('\n'));
       }
     }
+  });
+
+  it('書き換える所（<名前> や … のような穴埋め）が無く、そのまま打てる', () => {
+    const holes: string[] = [];
+    for (const entry of allMissions()) {
+      for (const step of entry.build().steps) {
+        const last = step.hints[step.hints.length - 1] ?? '';
+        if (/<[^<>\n]*[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}][^<>\n]*>|…/u.test(last)) {
+          holes.push(`${entry.id}: ${last}`);
+        }
+      }
+    }
+    expect(holes).toEqual([]);
+  });
+
+  it('打っても「コマンドが見つからない」にならない', () => {
+    // 無いコマンドを打ったときの終了コードやエラーを見るのが目的の任務は除く
+    const intended = new Set(['kernel/08/exit-code-unknown-command', 'kernel/10/reproduce-no-command']);
+    const missing: string[] = [];
+    for (const entry of allMissions()) {
+      if (intended.has(entry.id)) continue;
+      playByHints(entry.build(), lastHintLines, (line, exitCode) => {
+        if (exitCode === EXIT_NOT_FOUND) missing.push(`${entry.id}: ${line}`);
+      });
+    }
+    expect(missing).toEqual([]);
   });
 });
 
