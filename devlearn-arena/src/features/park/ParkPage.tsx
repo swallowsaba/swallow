@@ -347,6 +347,11 @@ function Park({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shellState, passingNow, progress.cleared, progress.commandsUsed]);
 
+  // 図を押したときは、そのコマンドを端末で実際に打つ。打ったものは端末に残る
+  const runFromDiagram = useCallback((line: string) => {
+    terminalRef.current?.submit(line);
+  }, []);
+
   const retry = useCallback(() => {
     onRetry();
   }, [onRetry]);
@@ -496,6 +501,7 @@ function Park({
           tab={rightTab}
           onTab={setRightTab}
           relevant={relevant}
+          onCommand={runFromDiagram}
           previousVfs={previous?.vfs}
         />
       </div>

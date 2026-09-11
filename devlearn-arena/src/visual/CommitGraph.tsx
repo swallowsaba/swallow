@@ -4,16 +4,19 @@ import { log } from '@/engines/git/repository';
 import type { GitState } from '@/engines/git/types';
 import { useMotionEnabled } from '@/ui/motion';
 import { useT } from '@/i18n/useT';
+import { gitCommands, type RunCommand } from './commands';
 
 interface Props {
   git: GitState | null;
+  /** 図の操作をコマンドとして端末に流す。無ければ見るだけの図になる */
+  onCommand?: RunCommand;
 }
 
 const ROW = 62;
 const LEFT = 44;
 
 /** コミットの並びを、下から上へ積み上がる柱として描く */
-export function CommitGraph({ git }: Props) {
+export function CommitGraph({ git, onCommand }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
   const entries = useMemo(() => (git === null ? [] : log(git, 40)), [git]);
@@ -45,8 +48,25 @@ export function CommitGraph({ git }: Props) {
   const headHash = entries[0]?.hash ?? null;
   const height = Math.max(entries.length * ROW + 40, 120);
 
+  const branchNames = [...branchAt.values()].flat();
+
   return (
     <div className="h-full overflow-auto p-4">
+      {onCommand && entries.length > 0 ? (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <p className="text-xs text-ink-soft">{t('viz.clickHint')}</p>
+          <button
+            type="button"
+            className="knob ml-auto px-3 py-1 text-sm"
+            title={gitCommands.branchOut(branchNames)}
+            onClick={() => {
+              onCommand(gitCommands.branchOut(branchNames));
+            }}
+          >
+            ⑂ {t('viz.branchOut')}
+          </button>
+        </div>
+      ) : null}
       {entries.length === 0 ? (
         <p className="text-sm text-ink-soft">
           {t('viz.noCommits')}
@@ -90,16 +110,32 @@ export function CommitGraph({ git }: Props) {
 
                 <div className="min-w-0 flex-1 border-2 border-wood-dark bg-cream px-3 py-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-sm text-ink-soft">
+                    <button
+                      type="button"
+                      disabled={!onCommand}
+                      aria-label={t('viz.showCommit')}
+                      title={gitCommands.show(entry.hash)}
+                      className="font-mono text-sm text-ink-soft underline decoration-dotted disabled:no-underline"
+                      onClick={() => {
+                        onCommand?.(gitCommands.show(entry.hash));
+                      }}
+                    >
                       {entry.hash.slice(0, 7)}
-                    </span>
+                    </button>
                     {labels.map((name) => (
-                      <span
+                      <button
                         key={name}
+                        type="button"
+                        disabled={!onCommand}
+                        aria-label={t('viz.switchTo', { name })}
+                        title={gitCommands.switchTo(name)}
                         className="border-2 border-wood-dark bg-gold px-1.5 font-mono text-xs font-bold"
+                        onClick={() => {
+                          onCommand?.(gitCommands.switchTo(name));
+                        }}
                       >
                         {name}
-                      </span>
+                      </button>
                     ))}
                     {isHead ? (
                       <span className="border-2 border-[var(--bad)] px-1.5 font-mono text-xs font-bold text-[var(--bad)]">

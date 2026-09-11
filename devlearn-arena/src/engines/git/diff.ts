@@ -62,3 +62,30 @@ export function unstage(git: GitState, paths: readonly string[]): GitState {
   }
   return { ...git, index };
 }
+
+/**
+ * 2つのコミットのツリーの差分。git show がコミットの中身を見せるのに使う。
+ * before が null なら最初のコミットとして、全部のファイルを「足された」として出す。
+ */
+export function diffCommits(git: GitState, before: string | null, after: string): string {
+  const read = (hash: string | undefined): string =>
+    hash === undefined ? '' : decode(git.objects.read(hash)?.body ?? new Uint8Array());
+  const from = treeFiles(git, before);
+  const to = treeFiles(git, after);
+  const paths = [...new Set([...from.keys(), ...to.keys()])].sort();
+  const out: string[] = [];
+  for (const path of paths) {
+    const a = from.get(path);
+    const b = to.get(path);
+    if (a === b) continue;
+    const body = formatUnified(read(a).split('\n'), read(b).split('\n'), {
+      from: a === undefined ? '/dev/null' : `a/${path}`,
+      to: b === undefined ? '/dev/null' : `b/${path}`,
+    });
+    out.push(`diff --git a/${path} b/${path}\n`);
+    if (a === undefined) out.push('new file mode 100644\n');
+    if (b === undefined) out.push('deleted file mode 100644\n');
+    out.push(body);
+  }
+  return out.join('');
+}

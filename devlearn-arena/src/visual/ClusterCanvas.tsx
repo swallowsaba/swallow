@@ -4,9 +4,12 @@ import { isReady } from '@/engines/k8s/kubelet';
 import type { ClusterState, Pod } from '@/engines/k8s/types';
 import { useMotionEnabled } from '@/ui/motion';
 import { useT } from '@/i18n/useT';
+import { k8sCommands, type RunCommand } from './commands';
 
 interface Props {
   cluster: ClusterState | null;
+  /** 図の操作をコマンドとして端末に流す。無ければ見るだけの図になる */
+  onCommand?: RunCommand;
 }
 
 function podTone(pod: Pod): { bg: string; label: string } {
@@ -22,7 +25,7 @@ function podTone(pod: Pod): { bg: string; label: string } {
  * 配置されると Pod がノードへ飛んで着地し、Ready になると色が変わる。
  * Service からは、Endpoints に載っている Pod にだけ線が伸びる。
  */
-export function ClusterCanvas({ cluster }: Props) {
+export function ClusterCanvas({ cluster, onCommand }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
 
@@ -58,13 +61,77 @@ export function ClusterCanvas({ cluster }: Props) {
 
   return (
     <div className="h-full overflow-auto p-4">
-      <p className="font-mono text-sm text-ink-soft">
-        {t('viz.clusterSummary', {
-          tick: cluster.tick,
-          nodes: nodes.length,
-          pods: pods.length,
-        })}
-      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="font-mono text-sm text-ink-soft">
+          {t('viz.clusterSummary', {
+            tick: cluster.tick,
+            nodes: nodes.length,
+            pods: pods.length,
+          })}
+        </p>
+        {onCommand ? (
+          <button
+            type="button"
+            className="knob ml-auto px-3 py-1 text-sm"
+            onClick={() => {
+              onCommand(k8sCommands.advance());
+            }}
+          >
+            {t('viz.advance')}
+          </button>
+        ) : null}
+      </div>
+      {onCommand ? <p className="mt-1 text-xs text-ink-soft">{t('viz.clickHint')}</p> : null}
+
+      {/* Deployment。± であるべき数を変える */}
+      {cluster.deployments.size > 0 ? (
+        <div className="mt-3 border-4 border-wood-dark bg-cream p-3">
+          <p className="text-sm font-bold text-ink-soft">{t('viz.deployments')}</p>
+          <ul className="mt-1 flex flex-col gap-1">
+            {[...cluster.deployments.values()].map((d) => {
+              const ready = pods.filter(
+                (p) => isReady(p) && Object.entries(d.spec.selector).every(([k, v]) => p.metadata.labels[k] === v),
+              ).length;
+              return (
+                <li key={d.metadata.name} className="flex items-center gap-2 font-mono text-sm">
+                  <span className="sign px-2 py-0.5 text-xs font-extrabold">Deployment</span>
+                  <span className="font-bold">{d.metadata.name}</span>
+                  <span className="text-ink-soft">
+                    {d.spec.replicas} / {ready}
+                  </span>
+                  {onCommand ? (
+                    <span className="ml-auto flex gap-1">
+                      <button
+                        type="button"
+                        aria-label={t('viz.scaleDown', { name: d.metadata.name })}
+                        title={k8sCommands.scale(d.metadata.name, d.spec.replicas - 1)}
+                        disabled={d.spec.replicas <= 0}
+                        className="knob px-2 py-0.5 text-sm disabled:opacity-40"
+                        onClick={() => {
+                          onCommand(k8sCommands.scale(d.metadata.name, d.spec.replicas - 1));
+                        }}
+                      >
+                        −
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={t('viz.scaleUp', { name: d.metadata.name })}
+                        title={k8sCommands.scale(d.metadata.name, d.spec.replicas + 1)}
+                        className="knob px-2 py-0.5 text-sm"
+                        onClick={() => {
+                          onCommand(k8sCommands.scale(d.metadata.name, d.spec.replicas + 1));
+                        }}
+                      >
+                        +
+                      </button>
+                    </span>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
 
       {/* Service と Endpoints */}
       {[...cluster.services.values()].map((svc) => (
@@ -110,6 +177,19 @@ export function ClusterCanvas({ cluster }: Props) {
                 <span className="ml-auto font-mono text-xs">
                   {node.spec.unschedulable ? 'SchedulingDisabled' : 'Ready'}
                 </span>
+                {onCommand ? (
+                  <button
+                    type="button"
+                    aria-label={t(node.spec.unschedulable ? 'viz.uncordon' : 'viz.cordon')}
+                    title={k8sCommands.toggleCordon(node.metadata.name, node.spec.unschedulable)}
+                    className="knob px-2 py-0.5 text-xs"
+                    onClick={() => {
+                      onCommand(k8sCommands.toggleCordon(node.metadata.name, node.spec.unschedulable));
+                    }}
+                  >
+                    {node.spec.unschedulable ? '▶' : '⏸'}
+                  </button>
+                ) : null}
               </div>
 
               <div className="px-3 pt-2">
@@ -133,14 +213,37 @@ export function ClusterCanvas({ cluster }: Props) {
                         animate={{ scale: 1, y: 0, opacity: 1 }}
                         exit={animate ? { scale: 0.4, opacity: 0 } : undefined}
                         transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-                        className="border-2 border-wood-dark px-2 py-1"
+                        className="relative border-2 border-wood-dark"
                         style={{ backgroundColor: tone.bg }}
                         title={`${pod.metadata.name} / ${tone.label}`}
                       >
-                        <p className="max-w-[130px] truncate font-mono text-xs font-bold text-ink">
-                          {pod.metadata.name.split('-').slice(-1)[0]}
-                        </p>
-                        <p className="font-mono text-[11px] text-ink">{tone.label}</p>
+                        <button
+                          type="button"
+                          disabled={!onCommand}
+                          aria-label={t('viz.describePod', { name: pod.metadata.name })}
+                          className="block px-2 py-1 pr-6 text-left disabled:cursor-default"
+                          onClick={() => {
+                            onCommand?.(k8sCommands.describePod(pod.metadata.name));
+                          }}
+                        >
+                          <span className="block max-w-[130px] truncate font-mono text-xs font-bold text-ink">
+                            {pod.metadata.name.split('-').slice(-1)[0]}
+                          </span>
+                          <span className="block font-mono text-[11px] text-ink">{tone.label}</span>
+                        </button>
+                        {onCommand ? (
+                          <button
+                            type="button"
+                            aria-label={t('viz.deletePod', { name: pod.metadata.name })}
+                            title={k8sCommands.deletePod(pod.metadata.name)}
+                            className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center border-2 border-wood-dark bg-cream text-xs font-extrabold leading-none"
+                            onClick={() => {
+                              onCommand(k8sCommands.deletePod(pod.metadata.name));
+                            }}
+                          >
+                            ×
+                          </button>
+                        ) : null}
                       </motion.div>
                     );
                   })}

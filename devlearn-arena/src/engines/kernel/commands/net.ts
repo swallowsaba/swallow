@@ -1,7 +1,7 @@
 import { packet } from '@/engines/net/factory';
 import { deliver } from '@/engines/net/stack';
 import { parseCidr } from '@/engines/net/subnet';
-import type { Device, Topology } from '@/engines/net/types';
+import type { DeliveryResult, Device, Topology } from '@/engines/net/types';
 import type { CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
 import { ipAddr, ipLink, ipRoute } from './netBuild';
@@ -30,6 +30,21 @@ function withLearned(net: Topology, learned: ReadonlyMap<string, Device>): Topol
   return { ...net, devices: new Map([...net.devices, ...learned]) };
 }
 
+/**
+ * 配送のあとの構成。学んだことを書き戻し、通った機器の順番を残す。
+ * 図はこの順番を使って、パケットが線の上を流れる様子を描く。
+ */
+function afterDelivery(net: Topology, result: DeliveryResult): Topology {
+  return {
+    ...withLearned(net, result.learned),
+    trace: {
+      id: (net.trace?.id ?? 0) + 1,
+      path: result.hops.map((hop) => hop.device),
+      delivered: result.delivered,
+    },
+  };
+}
+
 export const netCommands: CommandSpec[] = [
   {
     name: 'ping',
@@ -45,7 +60,7 @@ export const netCommands: CommandSpec[] = [
 
       const me = selfName(shell);
       const result = deliver(net, me, packet(selfIp(net, me), resolved.ip, { protocol: 'icmp' }));
-      const patch = { net: withLearned(net, result.learned) };
+      const patch = { net: afterDelivery(net, result) };
       if (!result.delivered) {
         return {
           stdout: `PING ${target} (${resolved.ip})\n`,
@@ -90,7 +105,7 @@ export const netCommands: CommandSpec[] = [
       return {
         stdout: fromLines(lines),
         code: result.delivered ? 0 : 1,
-        patch: { net: withLearned(net, result.learned) },
+        patch: { net: afterDelivery(net, result) },
       };
     },
   },
@@ -122,7 +137,7 @@ export const netCommands: CommandSpec[] = [
         for (const hop of result.hops) verbose.push(`* via ${hop.device} (ttl ${String(hop.packet.ip.ttl)})`);
       }
 
-      const patch = { net: withLearned(net, result.learned) };
+      const patch = { net: afterDelivery(net, result) };
       if (!result.delivered) {
         const reason = result.error ?? '';
         const code = reason.includes('Connection refused') ? 7 : 28;

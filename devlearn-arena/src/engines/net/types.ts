@@ -105,11 +105,22 @@ export interface Link {
   mtu: number;
 }
 
+/** 直前に送ったパケットが通った道筋。図でパケットを流すのに使う */
+export interface PacketTrace {
+  /** 送るたびに増える。同じ道筋でも、送り直したことが図に伝わるように */
+  id: number;
+  /** 通った機器の名前。送り出した機器から順に並ぶ */
+  path: string[];
+  delivered: boolean;
+}
+
 export interface Topology {
   devices: Map<string, Device>;
   links: Link[];
   /** 名前解決の表 */
   dns: Map<string, string>;
+  /** 直前の配送の道筋。まだ何も送っていなければ無い */
+  trace?: PacketTrace;
 }
 
 export interface HopRecord {

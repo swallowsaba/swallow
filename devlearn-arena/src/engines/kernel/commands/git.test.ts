@@ -281,3 +281,39 @@ describe('merge', () => {
     expect(run('git merge topic').out).toContain('Already up to date.');
   });
 });
+
+describe('git show', () => {
+  beforeEach(() => {
+    run('git init');
+    run('git add .');
+    run('git commit -m "first"');
+  });
+
+  it('最初のコミットは、全部のファイルを足した差分として出る', () => {
+    const r = run('git show');
+    expect(r.code).toBe(0);
+    expect(r.out).toMatch(/^commit [0-9a-f]{40}\n/);
+    expect(r.out).toContain('    first');
+    expect(r.out).toContain('diff --git a/a.txt b/a.txt');
+    expect(r.out).toContain('--- /dev/null');
+    expect(r.out).toContain('+A');
+  });
+
+  it('ハッシュを指すと、そのコミットの1つ前からの差分だけが出る', () => {
+    const first = run('git rev-parse HEAD').out.trim();
+    run('echo B > a.txt');
+    run('git add a.txt');
+    run('git commit -m "second"');
+    const second = run('git show HEAD').out;
+    expect(second).toContain('-A');
+    expect(second).toContain('+B');
+    expect(second).not.toContain('src/main.ts');
+    expect(run(`git show ${first.slice(0, 7)}`).out).toContain('    first');
+  });
+
+  it('無いものを指すと本物と同じく断る', () => {
+    const r = run('git show nope');
+    expect(r.code).toBe(128);
+    expect(r.err).toContain("ambiguous argument 'nope'");
+  });
+});

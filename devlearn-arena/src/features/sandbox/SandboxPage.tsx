@@ -73,6 +73,10 @@ export default function SandboxPage() {
   const options = useMemo(() => sandboxOptions(), []);
   const session = useShellSession(options);
   const terminalRef = useRef<TerminalHandle>(null);
+  // 図を押したときは、そのコマンドを端末で実際に打つ
+  const runFromDiagram = useCallback((line: string) => {
+    terminalRef.current?.submit(line);
+  }, []);
   const [tab, setTab] = useState<Tab>('world');
   const [editing, setEditing] = useState<EditorTarget | null>(null);
 
@@ -143,10 +147,10 @@ export default function SandboxPage() {
             {tab === 'world' ? (
               <FileWorld vfs={state.vfs} previous={previous?.vfs} cwd={state.cwd} />
             ) : null}
-            {tab === 'git' ? <CommitGraph git={state.git} /> : null}
-            {tab === 'k8s' ? <ClusterCanvas cluster={state.cluster} /> : null}
-            {tab === 'net' ? <PacketFlow net={state.net} self={state.vars.get('NET_SELF') ?? 'pc1'} /> : null}
-            {tab === 'gh' ? <PrTimeline repo={state.repo} /> : null}
+            {tab === 'git' ? <CommitGraph git={state.git} onCommand={runFromDiagram} /> : null}
+            {tab === 'k8s' ? <ClusterCanvas cluster={state.cluster} onCommand={runFromDiagram} /> : null}
+            {tab === 'net' ? <PacketFlow net={state.net} self={state.vars.get('NET_SELF') ?? 'pc1'} onCommand={runFromDiagram} /> : null}
+            {tab === 'gh' ? <PrTimeline repo={state.repo} onCommand={runFromDiagram} /> : null}
           </div>
         </div>
       </div>

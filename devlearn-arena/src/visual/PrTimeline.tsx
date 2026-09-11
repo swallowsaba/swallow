@@ -2,9 +2,12 @@ import { motion } from 'framer-motion';
 import type { CheckRun, PullRequest, Repo } from '@/engines/github/types';
 import { useMotionEnabled } from '@/ui/motion';
 import { useT } from '@/i18n/useT';
+import { prCommands, type RunCommand } from './commands';
 
 interface Props {
   repo: Repo | null;
+  /** 図の操作をコマンドとして端末に流す。無ければ見るだけの図になる */
+  onCommand?: RunCommand;
 }
 
 const MARK: Record<CheckRun['status'], string> = {
@@ -43,7 +46,7 @@ function levels(checks: readonly CheckRun[]): CheckRun[][] {
   return Array.from({ length: max + 1 }, (_, i) => checks.filter((c) => depth.get(c.name) === i));
 }
 
-function PullCard({ pull }: { pull: PullRequest }) {
+function PullCard({ pull, onCommand }: { pull: PullRequest; onCommand?: RunCommand }) {
   const t = useT();
   const animate = useMotionEnabled();
   const columns = levels(pull.checks);
@@ -69,7 +72,43 @@ function PullCard({ pull }: { pull: PullRequest }) {
       </div>
 
       <div className="p-3">
-        <p className="text-sm font-bold text-ink-soft">{t('viz.reviews')}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-bold text-ink-soft">{t('viz.reviews')}</p>
+          {onCommand && pull.state === 'open' ? (
+            <span className="ml-auto flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="knob px-2 py-0.5 text-xs"
+                title={prCommands.view(pull.number)}
+                onClick={() => {
+                  onCommand(prCommands.view(pull.number));
+                }}
+              >
+                {t('viz.viewPull')}
+              </button>
+              <button
+                type="button"
+                className="knob px-2 py-0.5 text-xs"
+                title={prCommands.approve(pull.number)}
+                onClick={() => {
+                  onCommand(prCommands.approve(pull.number));
+                }}
+              >
+                ✓ {t('viz.approve')}
+              </button>
+              <button
+                type="button"
+                className="knob px-2 py-0.5 text-xs"
+                title={prCommands.requestChanges(pull.number)}
+                onClick={() => {
+                  onCommand(prCommands.requestChanges(pull.number));
+                }}
+              >
+                ✎ {t('viz.requestChanges')}
+              </button>
+            </span>
+          ) : null}
+        </div>
         {pull.reviews.length === 0 ? (
           <p className="text-sm text-ink-soft">{t('viz.none')}</p>
         ) : (
@@ -98,7 +137,21 @@ function PullCard({ pull }: { pull: PullRequest }) {
           </ul>
         )}
 
-        <p className="mt-3 text-sm font-bold text-ink-soft">{t('viz.checks')}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <p className="text-sm font-bold text-ink-soft">{t('viz.checks')}</p>
+          {onCommand && pull.state === 'open' ? (
+            <button
+              type="button"
+              className="knob ml-auto px-2 py-0.5 text-xs"
+              title={prCommands.checks(pull.number)}
+              onClick={() => {
+                onCommand(prCommands.checks(pull.number));
+              }}
+            >
+              ▶ {t('viz.runChecks')}
+            </button>
+          ) : null}
+        </div>
         {pull.checks.length === 0 ? (
           <p className="text-sm text-ink-soft">{t('viz.notRunYet')}</p>
         ) : (
@@ -106,20 +159,25 @@ function PullCard({ pull }: { pull: PullRequest }) {
             {columns.map((column, i) => (
               <div key={`col-${String(i)}`} className="flex flex-col gap-2">
                 {column.map((check) => (
-                  <motion.div
+                  <motion.button
                     key={check.name}
+                    type="button"
+                    disabled={!onCommand}
                     initial={animate ? { opacity: 0, scale: 0.85 } : false}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ type: 'spring', stiffness: 280, damping: 20 }}
-                    className="min-w-[132px] border-2 border-wood-dark px-2 py-1"
+                    className="min-w-[132px] border-2 border-wood-dark px-2 py-1 text-left disabled:cursor-default"
                     style={{ backgroundColor: TONE[check.status] }}
-                    title={check.logs.join('\n')}
+                    title={[prCommands.checks(pull.number), ...check.logs].join('\n')}
+                    onClick={() => {
+                      onCommand?.(prCommands.checks(pull.number));
+                    }}
                   >
-                    <p className="font-mono text-sm font-bold text-ink">
+                    <span className="block font-mono text-sm font-bold text-ink">
                       {MARK[check.status]} {check.name}
-                    </p>
-                    <p className="font-mono text-xs text-ink">{check.status}</p>
-                  </motion.div>
+                    </span>
+                    <span className="block font-mono text-xs text-ink">{check.status}</span>
+                  </motion.button>
                 ))}
                 {i < columns.length - 1 ? null : null}
               </div>
@@ -132,7 +190,7 @@ function PullCard({ pull }: { pull: PullRequest }) {
 }
 
 /** Pull Request の状態と、Actions のジョブ DAG を並べて見せる */
-export function PrTimeline({ repo }: Props) {
+export function PrTimeline({ repo, onCommand }: Props) {
   const t = useT();
   if (repo === null) {
     return (
@@ -178,7 +236,7 @@ export function PrTimeline({ repo }: Props) {
             {t('viz.noPulls')}
           </p>
         ) : (
-          repo.pulls.map((pull) => <PullCard key={pull.number} pull={pull} />)
+          repo.pulls.map((pull) => <PullCard key={pull.number} pull={pull} onCommand={onCommand} />)
         )}
       </div>
     </div>

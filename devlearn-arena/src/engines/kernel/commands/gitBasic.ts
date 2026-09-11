@@ -1,8 +1,8 @@
 import {
   addPaths, branches, commit, createBranch, currentBranch, headCommit, log, switchBranch,
 } from '@/engines/git/repository';
-import { diffStaged, diffWorktree, unstage } from '@/engines/git/diff';
-import { decode } from '@/engines/git/objects';
+import { diffCommits, diffStaged, diffWorktree, unstage } from '@/engines/git/diff';
+import { decode, parseCommit } from '@/engines/git/objects';
 import { resolveObject } from '@/engines/git/refs';
 import { checkoutWorktree } from '@/engines/git/worktree';
 import { resolve } from '../path';
@@ -107,6 +107,32 @@ export const basicSubcommands: Record<string, GitHandler> = {
       lines.push('');
     }
     return { stdout: `${lines.join('\n')}\n` };
+  },
+  /** git show <rev>。コミットの説明と、1つ前からの差分を出す */
+  show: ({ git, rest }) => {
+    const { operands } = parseArgs(['show', ...rest]);
+    const ref = operands[0] ?? 'HEAD';
+    const hash = resolveObject(git, ref);
+    const object = hash === undefined ? undefined : git.objects.read(hash);
+    if (hash === undefined || object === undefined) {
+      if (ref === 'HEAD') return { stderr: 'fatal: your current branch does not have any commits yet\n', code: 128 };
+      return {
+        stderr: `fatal: ambiguous argument '${ref}': unknown revision or path not in the working tree.\n`,
+        code: 128,
+      };
+    }
+    if (object.type !== 'commit') return { stdout: git.objects.pretty(hash) ?? '' };
+    const parsed = parseCommit(object.body);
+    const lines = [`commit ${hash}`];
+    if (parsed.parents.length > 1) lines.push(`Merge: ${parsed.parents.map(short).join(' ')}`);
+    lines.push(`Author: ${parsed.author.name} <${parsed.author.email}>`);
+    lines.push(`Date:   ${String(parsed.author.timestamp)}`);
+    lines.push('');
+    for (const line of parsed.message.trim().split('\n')) lines.push(`    ${line}`);
+    lines.push('');
+    // マージコミットは親が2つあるので、どちらかとの差分にはしない（本物も既定では出さない）
+    const diff = parsed.parents.length > 1 ? '' : diffCommits(git, parsed.parents[0] ?? null, hash);
+    return { stdout: `${lines.join('\n')}\n${diff}` };
   },
   branch: ({ git, rest }) => {
     const { operands } = parseArgs(['branch', ...rest]);

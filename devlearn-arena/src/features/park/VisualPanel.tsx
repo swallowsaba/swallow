@@ -7,6 +7,7 @@ import { FileWorld } from '@/visual/FileWorld';
 import { PacketFlow } from '@/visual/PacketFlow';
 import { PrTimeline } from '@/visual/PrTimeline';
 import type { VfsState } from '@/engines/kernel/vfs';
+import type { RunCommand } from '@/visual/commands';
 import { VISUAL_TABS, type VisualTab } from './visualTabs';
 
 export type { VisualTab };
@@ -19,6 +20,8 @@ interface Props {
   onTab: (tab: VisualTab) => void;
   /** その任務で見る意味のある図。ほかは薄く出す */
   relevant: ReadonlySet<VisualTab>;
+  /** 図の操作をコマンドとして端末で打つ */
+  onCommand: RunCommand;
   /** 1つ前の状態。差分を動きとして見せるために使う */
   previousVfs: VfsState | undefined;
 }
@@ -27,7 +30,7 @@ interface Props {
  * 学習画面の右側。いまの状態を図で映す。
  * 図は状態から毎回組み立てる。表示のための値をどこにも溜めない。
  */
-export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, relevant, previousVfs }: Props) {
+export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, relevant, onCommand, previousVfs }: Props) {
   const t = useT();
   const state = session.state;
   const previous = { vfs: previousVfs };
@@ -69,22 +72,23 @@ export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, releva
               <FileWorld vfs={state.vfs} previous={previous?.vfs} cwd={state.cwd} />
             ) : rightTab === 'git' ? (
               <div className="h-full bg-cream">
-                <CommitGraph git={state.git} />
+                <CommitGraph git={state.git} onCommand={onCommand} />
               </div>
             ) : rightTab === 'k8s' ? (
               <div className="h-full bg-cream">
-                <ClusterCanvas cluster={state.cluster} />
+                <ClusterCanvas cluster={state.cluster} onCommand={onCommand} />
               </div>
             ) : rightTab === 'net' ? (
               <div className="h-full bg-cream">
                 <PacketFlow
                   net={state.net}
                   self={state.vars.get('NET_SELF') ?? 'pc1'}
+                  onCommand={onCommand}
                 />
               </div>
             ) : (
               <div className="h-full bg-cream">
-                <PrTimeline repo={state.repo} />
+                <PrTimeline repo={state.repo} onCommand={onCommand} />
               </div>
             )}
           </div>
