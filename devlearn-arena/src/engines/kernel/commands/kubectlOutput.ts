@@ -1,4 +1,5 @@
 import { dump } from 'js-yaml';
+import { toManifest } from '@/engines/k8s/toManifest';
 import type { Resource } from '@/engines/k8s/types';
 
 /**
@@ -24,21 +25,9 @@ export function parseOutput(raw: string): OutputFormat {
   return { kind: 'table', wide: false };
 }
 
-/** kind から apiVersion を決める（本物の表記に合わせる） */
-export function apiVersionOf(kind: string): string {
-  if (['Deployment', 'ReplicaSet', 'StatefulSet', 'DaemonSet'].includes(kind)) return 'apps/v1';
-  if (['Job', 'CronJob'].includes(kind)) return 'batch/v1';
-  if (kind === 'Ingress' || kind === 'NetworkPolicy') return 'networking.k8s.io/v1';
-  if (['Role', 'RoleBinding', 'ClusterRole', 'ClusterRoleBinding'].includes(kind)) {
-    return 'rbac.authorization.k8s.io/v1';
-  }
-  if (kind === 'StorageClass') return 'storage.k8s.io/v1';
-  if (kind === 'HorizontalPodAutoscaler') return 'autoscaling/v2';
-  return 'v1';
-}
-
+/** 本物の `-o yaml` と同じ入れ子にする。保存してそのまま apply -f に渡せる */
 function withApiVersion(resource: Resource): Record<string, unknown> {
-  return { apiVersion: apiVersionOf(resource.kind), ...resource };
+  return toManifest(resource);
 }
 
 /** `.items[0].metadata.name` のような素朴なパスを辿る */

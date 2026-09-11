@@ -11,6 +11,7 @@ import {
   ghActionsPractice, ghForkFlow, ghMatrix, ghRelease, ghReusable,
 } from './github3';
 import { k8sFirstPod, k8sServiceBoss } from './k8s';
+import { k8sFirstYaml } from './k8sFirst';
 import {
   k8sApply, k8sConfig, k8sJobs, k8sPvcPending, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
 } from './k8s2';
@@ -43,6 +44,7 @@ export const missions: readonly LessonDefinition[] = [
   gitFindRegression,
   gitRepoSize,
   k8sFirstPod,
+  k8sFirstYaml,
   k8sStuckPending,
   k8sApply,
   k8sJobs,
@@ -94,6 +96,7 @@ export { ghPullRequest } from './github';
 export { ghClone, ghCodeowners, ghIssuePlanning, ghNeedsDag, ghPrCreate } from './github2';
 export { ghActionsPractice, ghForkFlow, ghMatrix, ghRelease, ghReusable } from './github3';
 export { k8sFirstPod, k8sServiceBoss } from './k8s';
+export { k8sFirstYaml } from './k8sFirst';
 export {
   k8sApply, k8sConfig, k8sJobs, k8sPvcPending, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
 } from './k8s2';

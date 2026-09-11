@@ -155,7 +155,7 @@ describe('rollout', () => {
     run('kubectl wait 20');
     expect(run('kubectl rollout undo deployment/web').out).toContain('rolled back');
     run('kubectl wait 20');
-    expect(run('kubectl get deploy web -o jsonpath={.spec.template.containers[0].image}').out.trim())
+    expect(run('kubectl get deploy web -o jsonpath={.spec.template.spec.containers[0].image}').out.trim())
       .toBe('nginx:1.24');
   });
 

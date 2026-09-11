@@ -26,6 +26,8 @@ export const k8sTrack: Track = {
           [doc('Taints and Tolerations', K('concepts/scheduling-eviction/taint-and-toleration/'))]],
         ['first-kubectl', '空のクラスタに Pod と Deployment を作る', 'drill', 10,
           [doc('kubectl overview', K('reference/kubectl/'))]],
+        ['first-yaml', '作ったものを YAML で見て、apply -f で作り直す', 'drill', 12,
+          [doc('Declarative Management', K('tasks/manage-kubernetes-objects/declarative-config/'))]],
       ]),
     chapter('k8s', 2, 'Pod の解剖', '最小単位の中身。共有される名前空間と、複数コンテナの設計。',
       [doc('Pods', K('concepts/workloads/pods/'))], [

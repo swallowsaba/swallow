@@ -430,7 +430,7 @@ export const k8sNoLimits: LessonDefinition = {
       check: '-o yaml か -o jsonpath で limits を見たこと',
       hints: [
         'kubectl get deploy noisy -o yaml',
-        'kubectl get deploy noisy -o jsonpath={.spec.template.containers[0].limits}',
+        'kubectl get deploy noisy -o jsonpath={.spec.template.spec.containers[0].resources.limits}',
       ],
       solution: ['kubectl get deploy noisy -o yaml'],
       assert: ({ history }) =>

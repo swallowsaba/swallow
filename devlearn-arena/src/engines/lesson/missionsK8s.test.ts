@@ -116,6 +116,45 @@ describe('空のクラスタに Pod を作る', () => {
   });
 });
 
+describe('作ったものを YAML で見て、ファイルから作り直す', () => {
+  const upToSave = [
+    'kubectl create deployment web --image=nginx --replicas=2',
+    'kubectl wait 10',
+    'kubectl get deploy web -o yaml',
+    'kubectl get deploy web -o yaml > web.yaml',
+  ];
+
+  it('空のクラスタから始まる', () => {
+    expect(player('k8s/01/first-yaml').state()?.cluster?.deployments.size).toBe(0);
+  });
+
+  it('kubectl scale で数を変えても、ファイルを書き換えていなければ通らない', () => {
+    const result = solve('k8s/01/first-yaml', [...upToSave, 'kubectl scale deploy web --replicas=3', 'kubectl wait 10']);
+    expect(result).toEqual({ cleared: false, stoppedAt: 3 });
+  });
+
+  it('保存した YAML には本物と同じく spec.replicas と matchLabels がある', () => {
+    const play = player('k8s/01/first-yaml');
+    for (const line of upToSave) play.run(line);
+    const saved = play.run('cat web.yaml');
+    expect(saved).toContain('replicas: 2');
+    expect(saved).toContain('matchLabels:');
+    expect(saved).toContain('image: nginx');
+  });
+
+  it('消してから apply すると作り直せる', () => {
+    expectCleared('k8s/01/first-yaml', [
+      ...upToSave,
+      "sed -i 's/replicas: 2/replicas: 3/' web.yaml",
+      'kubectl apply -f web.yaml',
+      'kubectl wait 10',
+      'kubectl delete deploy web',
+      'kubectl apply -f web.yaml',
+      'kubectl wait 10',
+    ]);
+  });
+});
+
 describe('Kubernetes の任務が実際に解ける', () => {
   it('Pending から動かない', () => {
     const play = player('k8s/02/boss-stuck-pending');

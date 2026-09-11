@@ -86,7 +86,7 @@
 - [x] 4-2. `kubectl run` `kubectl create deployment` `kubectl expose` を実装する。
   マニフェストを書かずに資源を作れるようにする（初心者は YAML から入れない）。
 
-- [ ] 4-3. YAML はその次の任務にする。`kubectl get deploy web -o yaml` で
+- [x] 4-3. YAML はその次の任務にする。`kubectl get deploy web -o yaml` で
   さっき作ったものが YAML でどう表現されるかを見せてから、`kubectl apply -f` を教える。
 
 - [ ] 4-4. 他のトラックも同じ観点で見直す。**既に出来上がった状態から始まる任務は、
