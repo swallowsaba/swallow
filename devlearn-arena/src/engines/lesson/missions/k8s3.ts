@@ -407,7 +407,7 @@ export const k8sNoLimits: LessonDefinition = {
     summary: '上限（limits）の無い Pod に、上限を書き足す。',
     why:
       '上限の無い Pod が暴れると、同じノードの他の Pod まで巻き込まれる。「最低これだけ」と「最大これだけ」の両方を書いておく。',
-    concepts: concepts('limits', 'requests', 'Deployment', 'マニフェスト', 'Pod', 'ノード'),
+    concepts: concepts('limits', 'requests', 'Deployment', 'マニフェスト', 'Pod', 'ノード', 'YAML'),
     commands: [
       { command: 'kubectl get deploy <名前> -o yaml', means: '今の設定を YAML で見る' },
       { command: 'kubectl apply -f fix.yaml', means: '上限を書いたマニフェストを渡す' },

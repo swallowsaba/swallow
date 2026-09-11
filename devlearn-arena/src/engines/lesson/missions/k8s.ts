@@ -25,7 +25,7 @@ export const k8sFirstPod: LessonDefinition = {
     summary: 'クラスタを覗き、Pod を消しても戻ってくること、数を変えられることを確かめる。',
     why:
       'Kubernetes は「決めた数だけ動かし続ける」ことを人の代わりにやってくれる。消しても戻る、を自分の目で見ると、その仕組みが腑に落ちる。',
-    concepts: concepts('Kubernetes', 'クラスタ', 'Pod', 'Deployment', 'レプリカ', 'kubectl'),
+    concepts: concepts('Kubernetes', 'クラスタ', 'Pod', 'Deployment', 'レプリカ', 'kubectl', 'ラベル'),
     commands: [
       { command: 'kubectl get pods', means: 'Pod の一覧と状態を見る' },
       { command: 'kubectl wait <秒>', means: '時間を進める' },

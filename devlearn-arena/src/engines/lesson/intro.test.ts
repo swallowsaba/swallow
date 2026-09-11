@@ -22,6 +22,7 @@ describe('用語集', () => {
     expect(found('レポートを書く')).not.toContain('ポート');
     expect(found('GitHub を開く')).not.toContain('Git');
     expect(found('80 番のポートで待つ')).toContain('ポート');
+    expect(found('環境変数を渡す')).not.toContain('変数');
   });
 });
 
@@ -50,13 +51,15 @@ describe('すべての任務に「学ぶ」段階がある', () => {
 
   /**
    * 専門用語は、初めて出てくる場所で必ず言い換えを添える。
-   * 要約と学ぶ理由に出てくる語は、その任務の用語の欄に載っていなければならない。
+   * 要約・学ぶ理由・コマンドの意味に出てくる語は、その任務の用語の欄に載っていなければならない。
    */
-  it('要約と理由に出てくる専門用語は、用語の欄で説明している', () => {
+  it('要約・理由・コマンドの説明に出てくる専門用語は、用語の欄で説明している', () => {
     const missing: string[] = [];
     for (const entry of entries) {
       const listed = new Set(entry.intro.concepts.map((c) => c.term));
-      for (const concept of jargonIn(`${entry.intro.summary}\n${entry.intro.why}`)) {
+      const { summary, why, commands } = entry.intro;
+      const text = [summary, why, ...commands.map((c) => c.means)].join('\n');
+      for (const concept of jargonIn(text)) {
         if (!listed.has(concept.term)) missing.push(`${entry.id}: ${concept.term}`);
       }
     }

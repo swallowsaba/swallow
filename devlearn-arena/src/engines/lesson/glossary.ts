@@ -263,21 +263,24 @@ function standsAlone(text: string, i: number, word: string): boolean {
   return !edge(before, first) && !edge(last, after);
 }
 
-/** 文章の中に出てくる、説明の要る語（common でないもの） */
+/**
+ * 文章の中に出てくる、説明の要る語（common でないもの）。
+ * 長い語から先に探し、見つかった所は塗りつぶす。「環境変数」の中の「変数」を別に数えないため。
+ */
 export function jargonIn(text: string): Concept[] {
+  const words = ENTRIES.flatMap((entry) =>
+    [entry.term, ...(entry.aliases ?? [])].map((word) => ({ entry, word })),
+  ).sort((a, b) => b.word.length - a.word.length);
+  let rest = text;
   const found = new Set<Concept>();
-  for (const entry of ENTRIES) {
-    if (entry.common === true) continue;
-    for (const word of [entry.term, ...(entry.aliases ?? [])]) {
-      let at = text.indexOf(word);
-      while (at !== -1) {
-        if (standsAlone(text, at, word)) {
-          found.add(entry);
-          break;
-        }
-        at = text.indexOf(word, at + 1);
+  for (const { entry, word } of words) {
+    let at = rest.indexOf(word);
+    while (at !== -1) {
+      if (standsAlone(rest, at, word)) {
+        if (entry.common !== true) found.add(entry);
+        rest = rest.slice(0, at) + '\u0000'.repeat(word.length) + rest.slice(at + word.length);
       }
-      if (found.has(entry)) break;
+      at = rest.indexOf(word, at + 1);
     }
   }
   return [...found];

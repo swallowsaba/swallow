@@ -58,7 +58,7 @@ export const netLayers: LessonDefinition = {
     summary: '通信が段ごとに包まれていることを、ip addr・ping・traceroute・curl で確かめる。',
     why:
       '通信は「線」「住所」「窓口」「アプリ」の段が積み重なってできている。どの段の道具かを知っていれば、何を確かめているのかが分かる。',
-    concepts: concepts('層', 'カプセル化', 'IP アドレス', 'MAC アドレス', 'ポート', 'ping', 'traceroute', 'curl'),
+    concepts: concepts('層', 'カプセル化', 'IP アドレス', 'MAC アドレス', 'ポート', 'ping', 'traceroute', 'curl', 'ルータ'),
     commands: [
       { command: 'ip addr', means: '自分の住所を見る' },
       { command: 'ping <相手>', means: '住所の段まで届くか見る' },
@@ -308,7 +308,7 @@ export const netNat: LessonDefinition = {
     summary: '中の住所を外向きの住所1つにまとめて出す NAT の、変換表を読む。',
     why:
       '家のパソコンもスマホも、外からは同じ住所に見える。ポート番号で見分けて返しているからで、その対応表を見ると仕組みが分かる。',
-    concepts: concepts('NAT', 'PAT', 'ポート', 'IP アドレス'),
+    concepts: concepts('NAT', 'PAT', 'ポート', 'IP アドレス', 'ルータ'),
     commands: [
       { command: 'nat gw', means: 'ルータの変換表を見る' },
       { command: 'curl http://<外の相手>/', means: '外へ出る通信を起こす' },

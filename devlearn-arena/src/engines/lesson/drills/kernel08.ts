@@ -40,7 +40,7 @@ const scriptDrills = family<{ name: string; body: string }>({
       summary: 'コマンドを並べたファイルに実行権限を付けて、スクリプトとして動かす。',
       why:
         '毎回同じ手順を手で打つと、いつか1行飛ばす。ファイルに書いておけば、誰がやっても同じ順で同じことが起きる。',
-      concepts: concepts('スクリプト', '実行権限', '権限'),
+      concepts: concepts('スクリプト', '実行権限', '権限', 'いまいる場所'),
       commands: [
         { command: 'chmod +x <ファイル>', means: '実行してよい、という許可を付ける' },
         { command: './<ファイル>', means: 'いまいる場所のそのファイルを実行する' },
