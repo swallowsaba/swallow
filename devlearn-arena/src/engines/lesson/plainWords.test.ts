@@ -28,6 +28,8 @@ describe('硬い言葉には、その場で言い換えを添える', () => {
           lesson.title,
           intro.summary,
           intro.why,
+          // 言い換えそのものが硬い言葉だと、言い換えにならない
+          ...intro.concepts.map((c) => c.plain),
           ...intro.commands.map((c) => c.means),
           ...lesson.objectives,
           ...takeawaysOf(lesson),
