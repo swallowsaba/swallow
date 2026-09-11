@@ -2,7 +2,10 @@ import { motion } from 'framer-motion';
 import type { CheckRun, PullRequest, Repo } from '@/engines/github/types';
 import { useMotionEnabled } from '@/ui/motion';
 import { useT } from '@/i18n/useT';
+import type { TKey } from '@/i18n';
 import { prCommands, type RunCommand } from './commands';
+import { DAG, jobDag, prTimeline, type Stage, type StageId, type StageState } from './prModel';
+import { FILL } from './sceneKit';
 
 interface Props {
   repo: Repo | null;
@@ -14,45 +17,183 @@ const MARK: Record<CheckRun['status'], string> = {
   success: '✓',
   failure: '✗',
   skipped: '−',
-  running: '…',
+  running: '⟳',
   queued: '…',
 };
 
 const TONE: Record<CheckRun['status'], string> = {
-  success: 'var(--ok)',
-  failure: 'var(--bad)',
-  skipped: 'var(--cream-dark)',
-  running: 'var(--warn)',
-  queued: 'var(--cream-dark)',
+  success: FILL.ok,
+  failure: FILL.bad,
+  skipped: '#d4d4d4',
+  running: FILL.warn,
+  queued: FILL.idle,
 };
 
-/** ジョブの依存を段（列）に分けて、DAG として並べる */
-function levels(checks: readonly CheckRun[]): CheckRun[][] {
-  const byName = new Map(checks.map((c) => [c.name, c]));
-  const depth = new Map<string, number>();
-  const resolveDepth = (check: CheckRun, guard = 0): number => {
-    if (guard > 10) return 0;
-    const cached = depth.get(check.name);
-    if (cached !== undefined) return cached;
-    const parents = check.needs
-      .map((n) => checks.find((c) => c.name.toLowerCase() === n.toLowerCase()) ?? byName.get(n))
-      .filter((c): c is CheckRun => c !== undefined);
-    const value = parents.length === 0 ? 0 : Math.max(...parents.map((p) => resolveDepth(p, guard + 1))) + 1;
-    depth.set(check.name, value);
-    return value;
-  };
-  for (const check of checks) resolveDepth(check);
-  const max = Math.max(0, ...[...depth.values()]);
-  return Array.from({ length: max + 1 }, (_, i) => checks.filter((c) => depth.get(c.name) === i));
+const STAGE_TONE: Record<StageState, string> = {
+  done: FILL.ok,
+  active: FILL.warn,
+  waiting: FILL.idle,
+  bad: FILL.bad,
+};
+
+const STAGE_LABEL: Record<StageId, TKey> = {
+  created: 'viz.stage.created',
+  review: 'viz.stage.review',
+  checks: 'viz.stage.checks',
+  merge: 'viz.stage.merge',
+};
+
+/** 段を押したときに打つコマンド。押しても意味の無い段は null */
+function stageCommand(stage: Stage, pull: PullRequest): string | null {
+  if (pull.state !== 'open') return null;
+  if (stage.id === 'review') return prCommands.approve(pull.number);
+  if (stage.id === 'checks') return prCommands.checks(pull.number);
+  if (stage.id === 'merge' && stage.state === 'active') return prCommands.merge(pull.number);
+  if (stage.id === 'created') return prCommands.view(pull.number);
+  return null;
 }
 
-function PullCard({ pull, onCommand }: { pull: PullRequest; onCommand?: RunCommand }) {
+/** 作成 → レビュー → チェック → マージ を横に並べる。押すとその段のコマンドを打つ */
+function Timeline({ repo, pull, onCommand }: { repo: Repo; pull: PullRequest; onCommand?: RunCommand }) {
+  const t = useT();
+  const stages = prTimeline(repo, pull);
+  return (
+    <ol aria-label={t('viz.timeline')} className="flex flex-wrap items-stretch gap-1">
+      {stages.map((stage, i) => {
+        const command = onCommand ? stageCommand(stage, pull) : null;
+        return (
+          <li key={stage.id} className="flex min-w-[112px] flex-1 items-stretch gap-1">
+            {i > 0 ? (
+              <span aria-hidden className="self-center font-extrabold text-ink-soft">
+                →
+              </span>
+            ) : null}
+            <button
+              type="button"
+              data-stage={stage.id}
+              data-state={stage.state}
+              disabled={command === null}
+              title={command ?? undefined}
+              className="flex-1 border-4 border-wood-dark px-2 py-1 text-left disabled:cursor-default"
+              style={{ backgroundColor: STAGE_TONE[stage.state] }}
+              onClick={() => {
+                if (command !== null) onCommand?.(command);
+              }}
+            >
+              <span className="block text-sm font-extrabold text-ink">{t(STAGE_LABEL[stage.id])}</span>
+              <span className="block truncate font-mono text-[11px] text-ink">{stage.detail}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/**
+ * Actions のジョブを DAG として描く。依存は矢印で結ぶ。
+ * 実行中は回り、成功は緑、失敗は赤、skipped は灰色。失敗の下流には × を付けて、止まった理由が上流にあると分かるようにする。
+ */
+function JobDag({ pull, onCommand }: { pull: PullRequest; onCommand?: RunCommand }) {
   const t = useT();
   const animate = useMotionEnabled();
-  const columns = levels(pull.checks);
+  const dag = jobDag(pull.checks);
+  const byName = new Map(dag.jobs.map((j) => [j.check.name, j]));
+  const command = prCommands.checks(pull.number);
+  return (
+    <div className="mt-2 overflow-auto">
+      <svg width={dag.width} height={dag.height} role="img" aria-label={t('viz.checks')}>
+        <defs>
+          <marker id="dag-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--wood-dark)" />
+          </marker>
+        </defs>
+        {dag.edges.map((edge) => {
+          const a = byName.get(edge.from);
+          const b = byName.get(edge.to);
+          if (!a || !b) return null;
+          const x1 = a.x + DAG.jobW;
+          const y1 = a.y + DAG.jobH / 2;
+          const x2 = b.x - 2;
+          const y2 = b.y + DAG.jobH / 2;
+          const mid = (x1 + x2) / 2;
+          const broken = a.check.status === 'failure' || a.blocked;
+          return (
+            <path
+              key={`${edge.from}->${edge.to}`}
+              data-dag-edge={`${edge.from}>${edge.to}`}
+              d={`M ${String(x1)} ${String(y1)} C ${String(mid)} ${String(y1)}, ${String(mid)} ${String(y2)}, ${String(x2)} ${String(y2)}`}
+              fill="none"
+              stroke={broken ? 'var(--bad)' : 'var(--wood-dark)'}
+              strokeWidth={2.5}
+              strokeDasharray={broken ? '6 4' : undefined}
+              markerEnd="url(#dag-arrow)"
+            />
+          );
+        })}
+        {dag.jobs.map((job) => (
+          <g
+            key={job.check.name}
+            data-job={job.check.name}
+            data-status={job.check.status}
+            data-blocked={job.blocked ? 'true' : 'false'}
+            transform={`translate(${String(job.x)} ${String(job.y)})`}
+            role={onCommand ? 'button' : undefined}
+            aria-label={onCommand ? `${job.check.name}: ${command}` : undefined}
+            style={{ cursor: onCommand ? 'pointer' : 'default' }}
+            onClick={() => {
+              onCommand?.(command);
+            }}
+          >
+            <title>{[onCommand ? command : '', ...job.check.logs].filter((l) => l !== '').join('\n')}</title>
+            <rect width={DAG.jobW} height={DAG.jobH} fill={TONE[job.check.status]} stroke="var(--wood-dark)" strokeWidth={2.5} />
+            {job.check.status === 'running' && animate ? (
+              <motion.text
+                x={16}
+                y={20}
+                fontSize={15}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="var(--ink)"
+                style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+              >
+                {MARK.running}
+              </motion.text>
+            ) : (
+              <text x={16} y={20} fontSize={15} textAnchor="middle" dominantBaseline="middle" fill="var(--ink)">
+                {MARK[job.check.status]}
+              </text>
+            )}
+            <text x={30} y={19} fontSize={12} fontWeight={700} fontFamily="monospace" fill="var(--ink)">
+              {job.check.name.slice(0, 15)}
+            </text>
+            <text x={30} y={36} fontSize={11} fontFamily="monospace" fill="var(--ink)">
+              {job.check.status}
+            </text>
+            {job.blocked ? (
+              // 失敗の影響で止まった
+              <g data-cross="true">
+                <line x1={DAG.jobW - 22} y1={6} x2={DAG.jobW - 6} y2={22} stroke="var(--bad)" strokeWidth={4} />
+                <line x1={DAG.jobW - 6} y1={6} x2={DAG.jobW - 22} y2={22} stroke="var(--bad)" strokeWidth={4} />
+              </g>
+            ) : null}
+          </g>
+        ))}
+      </svg>
+      {dag.jobs.some((j) => j.blocked) ? (
+        <p className="mt-1 text-xs font-bold text-[var(--bad)]">{t('viz.blockedByFailure')}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function PullCard({ repo, pull, onCommand }: { repo: Repo; pull: PullRequest; onCommand?: RunCommand }) {
+  const t = useT();
 
   return (
-    <div className="border-4 border-wood-dark bg-cream">
+    <div className="border-4 border-wood-dark bg-cream" data-pull={pull.number}>
       <div className="plate flex flex-wrap items-center gap-2 px-3 py-1.5 text-sm font-extrabold">
         <span>#{pull.number}</span>
         <span className="truncate">{pull.title}</span>
@@ -72,7 +213,9 @@ function PullCard({ pull, onCommand }: { pull: PullRequest; onCommand?: RunComma
       </div>
 
       <div className="p-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <Timeline repo={repo} pull={pull} onCommand={onCommand} />
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <p className="text-sm font-bold text-ink-soft">{t('viz.reviews')}</p>
           {onCommand && pull.state === 'open' ? (
             <span className="ml-auto flex flex-wrap gap-2">
@@ -155,41 +298,14 @@ function PullCard({ pull, onCommand }: { pull: PullRequest; onCommand?: RunComma
         {pull.checks.length === 0 ? (
           <p className="text-sm text-ink-soft">{t('viz.notRunYet')}</p>
         ) : (
-          <div className="mt-2 flex items-start gap-3 overflow-auto">
-            {columns.map((column, i) => (
-              <div key={`col-${String(i)}`} className="flex flex-col gap-2">
-                {column.map((check) => (
-                  <motion.button
-                    key={check.name}
-                    type="button"
-                    disabled={!onCommand}
-                    initial={animate ? { opacity: 0, scale: 0.85 } : false}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 280, damping: 20 }}
-                    className="min-w-[132px] border-2 border-wood-dark px-2 py-1 text-left disabled:cursor-default"
-                    style={{ backgroundColor: TONE[check.status] }}
-                    title={[prCommands.checks(pull.number), ...check.logs].join('\n')}
-                    onClick={() => {
-                      onCommand?.(prCommands.checks(pull.number));
-                    }}
-                  >
-                    <span className="block font-mono text-sm font-bold text-ink">
-                      {MARK[check.status]} {check.name}
-                    </span>
-                    <span className="block font-mono text-xs text-ink">{check.status}</span>
-                  </motion.button>
-                ))}
-                {i < columns.length - 1 ? null : null}
-              </div>
-            ))}
-          </div>
+          <JobDag pull={pull} onCommand={onCommand} />
         )}
       </div>
     </div>
   );
 }
 
-/** Pull Request の状態と、Actions のジョブ DAG を並べて見せる */
+/** Pull Request の流れ（作成 → レビュー → チェック → マージ）と、Actions のジョブ DAG を並べて見せる */
 export function PrTimeline({ repo, onCommand }: Props) {
   const t = useT();
   if (repo === null) {
@@ -236,7 +352,7 @@ export function PrTimeline({ repo, onCommand }: Props) {
             {t('viz.noPulls')}
           </p>
         ) : (
-          repo.pulls.map((pull) => <PullCard key={pull.number} pull={pull} onCommand={onCommand} />)
+          repo.pulls.map((pull) => <PullCard key={pull.number} repo={repo} pull={pull} onCommand={onCommand} />)
         )}
       </div>
     </div>

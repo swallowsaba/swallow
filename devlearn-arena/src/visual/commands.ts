@@ -95,4 +95,5 @@ export const prCommands = {
   checks: (n: number): string => `gh pr checks ${String(n)}`,
   approve: (n: number): string => `gh pr review ${String(n)} --approve`,
   requestChanges: (n: number): string => `gh pr review ${String(n)} --request-changes`,
+  merge: (n: number): string => `gh pr merge ${String(n)} --merge`,
 };
