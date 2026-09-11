@@ -255,6 +255,75 @@ export async function suggestGtfsStops(query) {
   return out;
 }
 
+/* ------------------------------------------------------------------ *
+ *  地図に出すバス停
+ * ------------------------------------------------------------------ *
+ * ODPT の API では停留所を範囲で検索できないが、GTFS の索引は
+ * **全停留所の座標を手元に持っている**。だから地図に映っている範囲の
+ * 停留所をそのまま出せる。ここが API 版との大きな違い。
+ *
+ * ただし 1 事業者で数千件あるので、
+ *   ・ある程度拡大しないと出さない(広域で数千個の点を描いても読めない)
+ *   ・1 回に描く数に上限を設ける
+ * という歯止めをかける。
+ */
+
+/** これより広い(数字が小さい)表示では停留所を出さない */
+export const STOP_MIN_ZOOM = 13;
+/** 1 回に返す停留所の上限 */
+export const STOP_LIMIT = 400;
+
+/** 読み込める索引をすべて読む(読めないものは黙って飛ばす) */
+export async function loadAllIndexes() {
+  const catalog = await loadCatalog();
+  const out = [];
+  for (const op of catalog.operators || []) {
+    try {
+      out.push({ op, index: await loadIndex(op.id) });
+    } catch {
+      /* その事業者は出せないだけ。全体は止めない。 */
+    }
+  }
+  return out;
+}
+
+/**
+ * 表示範囲にある停留所を返す。
+ * @param {{north:number, south:number, east:number, west:number}} bounds
+ * @param {{zoom:number, limit?:number}} opts
+ * @returns {Promise<{stops:Array, truncated:boolean, tooWide:boolean, empty:boolean}>}
+ */
+export async function stopsInBounds(bounds, { zoom, limit = STOP_LIMIT } = {}) {
+  const loaded = await loadAllIndexes();
+  if (!loaded.length) return { stops: [], truncated: false, tooWide: false, empty: true };
+  if (zoom != null && zoom < STOP_MIN_ZOOM) {
+    return { stops: [], truncated: false, tooWide: true, empty: false };
+  }
+
+  const stops = [];
+  let truncated = false;
+  for (const { op, index } of loaded) {
+    for (const s of index.stops) {
+      if (s.y > bounds.north || s.y < bounds.south) continue;
+      if (s.x > bounds.east || s.x < bounds.west) continue;
+      if (stops.length >= limit) {
+        truncated = true;
+        break;
+      }
+      stops.push({
+        id: `gtfs:${op.id}:${s.i}`,
+        title: s.n,
+        lat: s.y,
+        lon: s.x,
+        operator: op.id,
+        operatorTitle: op.title,
+      });
+    }
+    if (truncated) break;
+  }
+  return { stops, truncated, tooWide: false, empty: false };
+}
+
 /** テスト用に読み込み済みのものを捨てる */
 export function resetGtfsCache() {
   cache.catalog = null;

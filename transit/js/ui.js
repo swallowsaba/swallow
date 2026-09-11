@@ -146,6 +146,7 @@ export function renderCoverage(health, gtfsCatalog) {
   }
   // GTFS から取り込んだ事業者は「対応している」側に出す。取り込み日を必ず添える。
   const imported = new Map((gtfsCatalog?.operators || []).map((o) => [o.id, o]));
+  renderAttributions(gtfsCatalog);
   for (const o of imported.values()) {
     const li = el('li', null, `${o.title}(バス)`);
     li.append(
@@ -170,6 +171,23 @@ export function renderCoverage(health, gtfsCatalog) {
     uns.append(li);
   }
   if (!uns.children.length) uns.append(el('li', 'muted', '—'));
+}
+
+/**
+ * 取り込んだデータの出典をフッタに出す。
+ * ライセンスが出典表示を求めている場合があるので、必ず表示する。
+ */
+export function renderAttributions(gtfsCatalog) {
+  const box = $('#foot-attribution');
+  if (!box) return;
+  const ops = (gtfsCatalog?.operators || []).filter((o) => o.attribution);
+  if (!ops.length) {
+    box.hidden = true;
+    return;
+  }
+  const names = [...new Set(ops.map((o) => o.attribution))];
+  box.textContent = `バスの時刻表データ出典: ${names.join(' / ')}`;
+  box.hidden = false;
 }
 
 /* ------------------------------------------------------------------ *

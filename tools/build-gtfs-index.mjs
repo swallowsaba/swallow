@@ -21,6 +21,7 @@ import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildIndex, splitForWeb } from './gtfs-lib.mjs';
 
 const run = promisify(execFile);
@@ -28,30 +29,54 @@ const run = promisify(execFile);
 /* ------------------------------------------------------------------ *
  *  取り込む事業者
  * ------------------------------------------------------------------ *
- * dataset は ODPT のデータカタログ(CKAN)のデータセット ID。
- * ダウンロード URL はカタログから取る。事業者ごとにファイル名が違い
- * (AllLines.zip / AIILines.zip など)、決め打ちすると壊れるため。
+ * 事業者はこのファイルに書かず、tools/gtfs-sources.json で指定する。
+ * 追加のたびにスクリプトを触らずに済むようにするため。
+ *
+ *   kind: 'odpt' … ODPT のデータカタログ(CKAN)から URL を引き直す。トークンが要る。
+ *   kind: 'url'  … GTFS(ZIP)の URL を直接指定する。どこのデータでもよい。
  */
-const OPERATORS = [
-  {
-    id: 'KeioBus',
-    title: '京王バス',
-    dataset: 'keio_bus_all_lines',
-    license: '公共交通オープンデータ基本ライセンス',
-  },
-  {
-    id: 'OdakyuBus',
-    title: '小田急バス',
-    dataset: 'odakyu_bus_aii_lines',
-    license: '公共交通オープンデータ基本ライセンス',
-  },
-  {
-    id: 'NishiTokyoBus',
-    title: '西東京バス',
-    dataset: 'nishi_tokyo_bus_nt_bus',
-    license: '公共交通オープンデータ基本ライセンス',
-  },
-];
+const SOURCES_FILE = path.resolve('tools/gtfs-sources.json');
+
+async function loadSources() {
+  if (!existsSync(SOURCES_FILE)) {
+    throw new Error(`取り込み元の設定が見つかりません: ${SOURCES_FILE}`);
+  }
+  let body;
+  try {
+    body = JSON.parse(await readFile(SOURCES_FILE, 'utf8'));
+  } catch (e) {
+    throw new Error(`${SOURCES_FILE} を読めません(JSON が壊れています): ${e.message}`);
+  }
+  const list = Array.isArray(body.sources) ? body.sources : [];
+  if (!list.length) throw new Error(`${SOURCES_FILE} に sources がありません`);
+
+  // 設定の誤りは取り込み前に全部指摘する。1 つずつ直させない。
+  const problems = [];
+  const seen = new Set();
+  for (const [i, src] of list.entries()) {
+    const where = `sources[${i}]${src.id ? ` (${src.id})` : ''}`;
+    if (!src.id) problems.push(`${where}: id がありません`);
+    else if (!/^[A-Za-z0-9_-]+$/.test(src.id)) problems.push(`${where}: id に使えるのは英数字と _ - だけです`);
+    else if (seen.has(src.id)) problems.push(`${where}: id が重複しています`);
+    seen.add(src.id);
+
+    if (!src.title) problems.push(`${where}: title(表示名)がありません`);
+    if (!src.license) problems.push(`${where}: license がありません。再配布できるライセンスか確認してください`);
+
+    if (src.kind === 'odpt') {
+      if (!src.dataset) problems.push(`${where}: kind が odpt なら dataset(データセット ID)が要ります`);
+    } else if (src.kind === 'url') {
+      if (!src.url) problems.push(`${where}: kind が url なら url が要ります`);
+      else if (!/^https?:\/\//.test(src.url)) problems.push(`${where}: url は http(s) で始めてください`);
+    } else {
+      problems.push(`${where}: kind は 'odpt' か 'url' です(今は ${JSON.stringify(src.kind)})`);
+    }
+  }
+  if (problems.length) {
+    throw new Error(`取り込み元の設定に誤りがあります:\n  - ${problems.join('\n  - ')}`);
+  }
+  return list;
+}
 
 const CKAN = 'https://ckan.odpt.org/api/3/action/package_show?id=';
 const OUT_ROOT = path.resolve('transit/data/gtfs');
@@ -62,16 +87,28 @@ const TOKEN = String(process.env.ODPT_TOKEN || '').trim();
 /* ------------------------------------------------------------------ */
 
 async function main() {
-  if (!TOKEN) {
+  const args = process.argv.slice(2);
+  const listOnly = args.includes('--list');
+  const only = args.filter((a) => !a.startsWith('-'));
+
+  const sources = await loadSources();
+
+  if (listOnly) {
+    await printList(sources);
+    return;
+  }
+
+  if (!TOKEN && sources.some((s) => s.kind === 'odpt')) {
     console.error('ODPT_TOKEN が設定されていません。');
     console.error('GitHub の Settings → Secrets and variables → Actions に ODPT_TOKEN を登録してください。');
+    console.error('(ODPT 以外の取り込み元だけにする場合は、tools/gtfs-sources.json から kind:"odpt" を外してください)');
     process.exit(1);
   }
 
-  const only = process.argv.slice(2).filter((a) => !a.startsWith('-'));
-  const targets = only.length ? OPERATORS.filter((o) => only.includes(o.id)) : OPERATORS;
+  const targets = only.length ? sources.filter((o) => only.includes(o.id)) : sources;
   if (!targets.length) {
     console.error(`対象の事業者が見つかりません: ${only.join(', ')}`);
+    console.error(`設定されているのは: ${sources.map((s) => s.id).join(', ')}`);
     process.exit(1);
   }
 
@@ -89,7 +126,7 @@ async function main() {
   }
 
   await rm(TMP, { recursive: true, force: true });
-  await writeCatalog(report);
+  await writeCatalog(report, sources);
 
   console.log('\n────────── まとめ ──────────');
   for (const r of report) {
@@ -108,6 +145,26 @@ async function main() {
   }
 }
 
+/** 設定されている取り込み元と、今の状態を並べて出す */
+async function printList(sources) {
+  console.log(`取り込み元の設定: ${SOURCES_FILE}\n`);
+  for (const src of sources) {
+    const prev = await readPrevious(path.join(OUT_ROOT, src.id));
+    const state = prev
+      ? `取り込み済み(${(prev.generatedAt || '').slice(0, 10)} / 停留所 ${prev.stopCount} / 系統 ${prev.patternCount})`
+      : '未取り込み';
+    console.log(`  ${src.id}`);
+    console.log(`    名前      : ${src.title}`);
+    console.log(`    取得方法  : ${src.kind === 'odpt' ? `ODPT カタログ(${src.dataset})` : src.url}`);
+    console.log(`    ライセンス: ${src.license}`);
+    console.log(`    状態      : ${state}`);
+    console.log('');
+  }
+  console.log(`合計 ${sources.length} 事業者`);
+  console.log('\n事業者を足すには tools/gtfs-sources.json を編集してください。');
+  console.log('※ 追加する前に、そのデータのライセンスが再配布を許しているか必ず確認すること。');
+}
+
 /* ------------------------------------------------------------------ *
  *  1 事業者ぶん
  * ------------------------------------------------------------------ */
@@ -119,14 +176,22 @@ async function buildOne(op) {
 
   const outDir = path.join(OUT_ROOT, op.id);
   const prev = await readPrevious(outDir);
-  if (prev && prev.source?.resourceId === resource.id) {
+
+  // ODPT はリソース ID が変わればダイヤ改正。落とす前に判定できる。
+  if (resource.compareBy !== 'content' && prev && prev.source?.resourceId === resource.id) {
     console.log('  前回と同じデータのため、書き換えません。');
     return { id: op.id, title: op.title, status: 'unchanged', generatedAt: prev.generatedAt };
   }
 
   const zipPath = path.join(TMP, `${op.id}.zip`);
-  const bytes = await download(resource.url, zipPath);
+  const { bytes, sha256 } = await download(resource.url, zipPath);
   console.log(`  ダウンロード: ${(bytes / 1024 / 1024).toFixed(1)} MB`);
+
+  // URL 直指定は中身のハッシュで比べる(URL が変わらないまま改正されるため)
+  if (resource.compareBy === 'content' && prev && prev.source?.sha256 === sha256) {
+    console.log('  前回と中身が同じため、書き換えません。');
+    return { id: op.id, title: op.title, status: 'unchanged', generatedAt: prev.generatedAt };
+  }
 
   const extractDir = path.join(TMP, op.id);
   await mkdir(extractDir, { recursive: true });
@@ -141,7 +206,16 @@ async function buildOne(op) {
     title: op.title,
     license: op.license,
     generatedAt,
-    source: { dataset: op.dataset, resourceId: resource.id, name: resource.name, validFrom: resource.validFrom },
+    source: {
+      kind: op.kind,
+      dataset: op.dataset || null,
+      url: op.kind === 'url' ? op.url : null,
+      resourceId: resource.id,
+      name: resource.name,
+      validFrom: resource.validFrom,
+      sha256,
+    },
+    attribution: op.attribution || null,
   });
   for (const w of warnings) console.warn(`  ! ${w}`);
 
@@ -174,6 +248,17 @@ async function buildOne(op) {
  *  カタログからダウンロード URL を決める
  * ------------------------------------------------------------------ */
 async function pickResource(op) {
+  // 直接 URL が指定されているときは、カタログを引かずにそれを使う
+  if (op.kind === 'url') {
+    return {
+      id: `url:${op.url}`,
+      name: op.title,
+      url: op.url,
+      validFrom: null,
+      // URL 指定は「同じ URL でも中身が変わる」ので、毎回取り直して中身で比べる
+      compareBy: 'content',
+    };
+  }
   const res = await fetch(CKAN + encodeURIComponent(op.dataset), {
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(30000),
@@ -209,9 +294,12 @@ async function pickResource(op) {
 async function download(url, dest) {
   // カタログの URL にはトークンの差し込み位置が [アクセストークン] のように
   // 書かれていることがある。ここで実物に置き換える。
-  const withToken = url.includes('acl:consumerKey=')
-    ? url.replace(/acl:consumerKey=[^&]*/, `acl:consumerKey=${encodeURIComponent(TOKEN)}`)
-    : `${url}${url.includes('?') ? '&' : '?'}acl:consumerKey=${encodeURIComponent(TOKEN)}`;
+  // ODPT 以外の配布元にトークンを送ってはいけない。
+  // 元の URL にトークンの差し込み位置がある場合だけ差し替える。
+  const withToken =
+    url.includes('acl:consumerKey=') && TOKEN
+      ? url.replace(/acl:consumerKey=[^&]*/, `acl:consumerKey=${encodeURIComponent(TOKEN)}`)
+      : url;
 
   const res = await fetch(withToken, { signal: AbortSignal.timeout(300000) });
   if (res.status === 401 || res.status === 403) {
@@ -226,7 +314,7 @@ async function download(url, dest) {
     throw new Error(`ZIP ではないものが返りました: ${head.replace(/\s+/g, ' ').slice(0, 150)}`);
   }
   await writeFile(dest, buf);
-  return buf.length;
+  return { bytes: buf.length, sha256: createHash('sha256').update(buf).digest('hex') };
 }
 
 async function unzip(zipPath, destDir) {
@@ -271,7 +359,7 @@ async function readPrevious(outDir) {
 }
 
 /** 画面側が「どの事業者の索引があるか」を知るための目録 */
-async function writeCatalog(report) {
+async function writeCatalog(report, sources = []) {
   await mkdir(OUT_ROOT, { recursive: true });
   const catalogPath = path.join(OUT_ROOT, 'catalog.json');
 
@@ -296,7 +384,8 @@ async function writeCatalog(report) {
       stopCount: r.stopCount ?? before.stopCount ?? null,
       patternCount: r.patternCount ?? before.patternCount ?? null,
       validFrom: r.validFrom ?? before.validFrom ?? null,
-      license: (OPERATORS.find((o) => o.id === r.id) || {}).license || null,
+      license: (sources.find((o) => o.id === r.id) || {}).license || before.license || null,
+      attribution: (sources.find((o) => o.id === r.id) || {}).attribution || before.attribution || null,
     });
   }
 
@@ -322,9 +411,13 @@ function ymd(d) {
 }
 
 /* ------------------------------------------------------------------ */
-main().catch((e) => {
-  console.error(`\n異常終了: ${e.message}`);
-  process.exit(1);
-});
+// 直接実行されたときだけ動かす。テストから import しても走り出さないように。
+const isEntryPoint = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isEntryPoint) {
+  main().catch((e) => {
+    console.error(`\n異常終了: ${e.message}`);
+    process.exit(1);
+  });
+}
 
-export { pickResource, OPERATORS };
+export { pickResource, loadSources };

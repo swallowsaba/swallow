@@ -81,13 +81,47 @@ export class TransitMap {
       this.#openPointPicker(e.latlng.lat, e.latlng.lng);
     });
 
+    // 表示範囲が変わったら知らせる(範囲内のバス停を出すため)
+    const notify = () => this.#notifyView();
+    this.map.on('moveend', notify);
+    this.map.on('zoomend', notify);
+
     this.ready = true;
     return true;
   }
 
   /** コンテナのサイズが変わったあとに呼ぶ(隠れている間に作ると 0px になるため) */
   refresh() {
-    if (this.ready) setTimeout(() => this.map.invalidateSize(), 0);
+    if (this.ready) {
+      setTimeout(() => {
+        this.map.invalidateSize();
+        this.#notifyView();
+      }, 0);
+    }
+  }
+
+  /** 今の表示範囲とズーム。読めなければ null。 */
+  viewport() {
+    if (!this.ready) return null;
+    const b = this.map.getBounds?.();
+    if (!b) return null;
+    return {
+      north: b.getNorth(),
+      south: b.getSouth(),
+      east: b.getEast(),
+      west: b.getWest(),
+      zoom: this.map.getZoom?.() ?? null,
+    };
+  }
+
+  /** 表示範囲が変わったことを呼び出し側に伝える(連続する移動はまとめる) */
+  #notifyView() {
+    if (!this.handlers.onViewChange) return;
+    clearTimeout(this.viewTimer);
+    this.viewTimer = setTimeout(() => {
+      const v = this.viewport();
+      if (v) this.handlers.onViewChange(v);
+    }, 250);
   }
 
   /* ---------------- 駅 ---------------- */

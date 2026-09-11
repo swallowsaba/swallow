@@ -41,10 +41,20 @@ const LEAFLET_STUB = () => {
     map: () => {
       const m = {
         handlers: {},
+        zoom: 15,
         setView() { return this; },
         fitBounds() { return this; },
         on(ev, fn) { this.handlers[ev] = fn; return this; },
         invalidateSize() {},
+        getZoom() { return this.zoom; },
+        getBounds() {
+          return {
+            getNorth: () => 35.75,
+            getSouth: () => 35.60,
+            getEast: () => 139.75,
+            getWest: () => 139.50,
+          };
+        },
       };
       window.__map.instance = m;
       return m;
@@ -398,6 +408,21 @@ async function search(page, from, to) {
   const after = await page.evaluate(() => window.__map.markers.filter((m) => /^\d+\. /.test(m.tooltip || '')).length);
   assert(after > before, '「地図で見る」で印が作り直されていない');
   console.log(`  ok  「地図で見る」で乗降地点を表示(${after - before} 箇所)`);
+
+  // GTFS のバス停が表示範囲に出る(ODPT では出せなかったもの)
+  {
+    await page.waitForFunction(
+      () => window.__map.markers.some((m) => /バス停/.test(m.tooltip || '')),
+      null,
+      { timeout: 8000 }
+    );
+    const busStops = await page.evaluate(() =>
+      window.__map.markers.filter((m) => /バス停/.test(m.tooltip || '')).map((m) => m.tooltip)
+    );
+    assert(busStops.some((t) => t.includes('渋谷駅前')), `GTFS のバス停が出ていない: ${busStops.join(', ')}`);
+    assert(await page.isVisible('#map-hint'), '件数の案内が出ていない');
+    console.log(`  ok  表示範囲の GTFS バス停を地図に表示(${busStops.length} 件)`);
+  }
 
   // 駅のポップアップから経由地に追加できる
   await page.evaluate(() => {

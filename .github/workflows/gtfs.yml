@@ -26,6 +26,11 @@ on:
         description: '取り込む事業者(空欄ですべて。例: KeioBus OdakyuBus)'
         required: false
         default: ''
+      list_only:
+        description: '一覧を見るだけ(取り込まない)'
+        type: boolean
+        required: false
+        default: false
 
 # 同時に走らせない。走っている間に手動実行しても順番待ちにする。
 concurrency:
@@ -62,8 +67,12 @@ jobs:
         with:
           node-version: '22'
 
-      - name: トークンの有無を確認
+      - name: 取り込み元の一覧を表示
         if: steps.guard.outputs.go == 'yes'
+        run: node tools/build-gtfs-index.mjs --list
+
+      - name: トークンの有無を確認
+        if: steps.guard.outputs.go == 'yes' && github.event.inputs.list_only != 'true'
         run: |
           if [ -z "${{ secrets.ODPT_TOKEN }}" ]; then
             echo "::error::ODPT_TOKEN が未設定です。Settings → Secrets and variables → Actions に登録してください。"
@@ -71,7 +80,7 @@ jobs:
           fi
 
       - name: GTFS を取り込む
-        if: steps.guard.outputs.go == 'yes'
+        if: steps.guard.outputs.go == 'yes' && github.event.inputs.list_only != 'true'
         id: build
         env:
           ODPT_TOKEN: ${{ secrets.ODPT_TOKEN }}
@@ -91,7 +100,7 @@ jobs:
           fi
 
       - name: 変わっていればコミットする
-        if: steps.guard.outputs.go == 'yes'
+        if: steps.guard.outputs.go == 'yes' && github.event.inputs.list_only != 'true'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

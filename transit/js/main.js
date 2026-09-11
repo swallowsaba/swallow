@@ -10,7 +10,7 @@ import { loadNetwork, clearNetworkCache } from './network.js';
 import { findCandidateRoutes, bindSchedule, edgeKey } from './router.js';
 import { analyzeStatus, warningsForRoute, SEVERITY } from './status.js';
 import { findBusRoutes, findIntermodalRoutes } from './bus.js';
-import { findAllGtfsRoutes, loadCatalog } from './gtfs.js';
+import { findAllGtfsRoutes, loadCatalog, stopsInBounds, STOP_MIN_ZOOM } from './gtfs.js';
 import { currentPosition, GeoError, formatDistance } from './geo.js';
 import { toServiceMoment, calendarFor, dateKey } from './time.js';
 import { TransitMap, routeToSegments } from './map.js';
@@ -614,6 +614,8 @@ function toggleMap() {
         return `最寄: ${near[0].group.title} ${formatDistance(near[0].km)}(徒歩 約${min}分・推定)`;
       },
       onStationBusStops: (group) => loadBusStopsForStation(group),
+      // 表示範囲が変わったら、その範囲の GTFS バス停を出す
+      onViewChange: (view) => showGtfsStopsInView(view),
     });
   }
 
@@ -690,6 +692,59 @@ async function loadBusStopsForStation(group) {
   } catch (e) {
     ui.addAlert('warn', { title: 'バス停を取得できませんでした', body: e?.message || '' });
   }
+}
+
+/**
+ * 表示範囲にある GTFS のバス停を地図に出す。
+ *
+ * ODPT の API では停留所を範囲で検索できないが、GTFS の索引は
+ * 全停留所の座標を手元に持っているので、映っている範囲のものを出せる。
+ */
+let gtfsStopNoticeShown = false;
+async function showGtfsStopsInView(view) {
+  if (!state.map?.ready) return;
+  try {
+    const { stops, truncated, tooWide, empty } = await stopsInBounds(view, { zoom: view.zoom });
+
+    if (empty) {
+      // まだ取り込んでいない。黙って何も出さないと不具合に見えるので 1 度だけ伝える。
+      if (!gtfsStopNoticeShown) {
+        gtfsStopNoticeShown = true;
+        ui.addAlert('info', {
+          title: '京王バス・小田急バス・西東京バスはまだ取り込んでいません',
+          body:
+            'これらの事業者は ODPT が API 形式の提供を終了したため、GTFS を取り込む必要があります。' +
+            'GitHub の Actions で「GTFS 取り込み」を 1 回実行すると、バス停が地図に出るようになります(手順は GTFS.md)。',
+        });
+      }
+      return;
+    }
+
+    if (tooWide) {
+      setMapHint(`バス停はもう少し拡大すると表示されます(ズーム ${STOP_MIN_ZOOM} 以上)。`);
+      return;
+    }
+
+    rememberBusStops(stops);
+    const added = state.map.addBusStops(stops);
+    setMapHint(
+      truncated
+        ? `この範囲のバス停が多いため一部だけ表示しています。拡大すると残りも出ます。`
+        : added
+          ? `この範囲のバス停を ${state.knownBusStops.size} 件表示しています。`
+          : ''
+    );
+  } catch (e) {
+    setMapHint(`バス停を表示できませんでした(${e.message})`);
+  }
+}
+
+/** 地図の下の補足行 */
+function setMapHint(text) {
+  const el = $('#map-hint');
+  if (!el) return;
+  el.textContent = text || '';
+  el.hidden = !text;
 }
 
 /** 見つかったバス停を覚えておく(地図に出せるのはここにあるものだけ) */

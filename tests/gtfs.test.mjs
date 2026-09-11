@@ -7,7 +7,15 @@
 
 import assert from 'node:assert/strict';
 import { parseCsv, readTable, gtfsTimeToMinutes, gtfsDate, buildIndex, splitForWeb, normalizeStopName } from '../tools/gtfs-lib.mjs';
-import { runsOn, findStops, findGtfsBusRoutes, findAllGtfsRoutes, resetGtfsCache } from '../transit/js/gtfs.js';
+import {
+  runsOn,
+  findStops,
+  findGtfsBusRoutes,
+  findAllGtfsRoutes,
+  stopsInBounds,
+  resetGtfsCache,
+  STOP_MIN_ZOOM,
+} from '../transit/js/gtfs.js';
 
 let passed = 0;
 function test(name, fn) {
@@ -441,6 +449,88 @@ await asyncTest('全事業者を横断して探し、バス停の座標も返す
   assert.equal(r.routes.length, 1);
   assert.equal(r.operators[0].title, '京王バス');
   assert(r.stops.some((s) => s.title === '調布駅北口' && s.lat));
+});
+
+/* ================================================================== *
+ *  地図に出すバス停(範囲検索)
+ * ================================================================== */
+console.log('\n表示範囲のバス停');
+
+// 3 停留所すべてを含む範囲 / 調布だけを含む範囲
+const ALL = { north: 35.75, south: 35.60, east: 139.60, west: 139.50 };
+const NARROW = { north: 35.66, south: 35.64, east: 139.55, west: 139.53 };
+
+await asyncTest('表示範囲にある停留所を返す', async () => {
+  installFetch(FILES);
+  const r = await stopsInBounds(ALL, { zoom: 15 });
+  const names = r.stops.map((s) => s.title).sort();
+  assert.deepEqual(names, ['三鷹台駅', '吉祥寺駅', '調布駅北口']);
+  assert.equal(r.empty, false);
+  assert.equal(r.tooWide, false);
+});
+
+await asyncTest('範囲の外の停留所は返さない', async () => {
+  installFetch(FILES);
+  const r = await stopsInBounds(NARROW, { zoom: 15 });
+  assert.deepEqual(r.stops.map((s) => s.title), ['調布駅北口']);
+});
+
+await asyncTest('広すぎる表示では出さない(点で埋まるのを防ぐ)', async () => {
+  installFetch(FILES);
+  const r = await stopsInBounds(ALL, { zoom: STOP_MIN_ZOOM - 1 });
+  assert.deepEqual(r.stops, []);
+  assert.equal(r.tooWide, true, '理由を伝えていない');
+});
+
+await asyncTest('件数の上限で打ち切り、打ち切ったことを伝える', async () => {
+  installFetch(FILES);
+  const r = await stopsInBounds(ALL, { zoom: 15, limit: 2 });
+  assert.equal(r.stops.length, 2);
+  assert.equal(r.truncated, true);
+});
+
+await asyncTest('まだ取り込んでいなければ empty を返す', async () => {
+  globalThis.fetch = async () => ({ ok: false, status: 404 });
+  const r = await stopsInBounds(ALL, { zoom: 15 });
+  assert.deepEqual(r.stops, []);
+  assert.equal(r.empty, true, '未取り込みだと判る形になっていない');
+});
+
+await asyncTest('返す停留所は地図にそのまま渡せる形', async () => {
+  installFetch(FILES);
+  const r = await stopsInBounds(ALL, { zoom: 15 });
+  for (const s of r.stops) {
+    assert(s.id && s.title, 'id と名前が要る');
+    assert(Number.isFinite(s.lat) && Number.isFinite(s.lon), '座標が要る');
+    assert.equal(s.operatorTitle, '京王バス');
+  }
+});
+
+/* ================================================================== *
+ *  取り込み元の設定
+ * ================================================================== */
+console.log('\n取り込み元の設定');
+
+const { loadSources } = await import('../tools/build-gtfs-index.mjs').catch(() => ({}));
+const { readFile } = await import('node:fs/promises');
+
+await asyncTest('同梱の gtfs-sources.json は妥当', async () => {
+  const body = JSON.parse(await readFile('tools/gtfs-sources.json', 'utf8'));
+  assert(Array.isArray(body.sources) && body.sources.length, 'sources が無い');
+  for (const src of body.sources) {
+    assert(src.id && /^[A-Za-z0-9_-]+$/.test(src.id), `id が不正: ${src.id}`);
+    assert(src.title, `${src.id}: title が無い`);
+    assert(src.license, `${src.id}: license が無い(再配布の可否が判らない)`);
+    assert(['odpt', 'url'].includes(src.kind), `${src.id}: kind が不正`);
+    if (src.kind === 'odpt') assert(src.dataset, `${src.id}: dataset が無い`);
+    if (src.kind === 'url') assert(/^https?:\/\//.test(src.url), `${src.id}: url が不正`);
+  }
+});
+
+await asyncTest('id が重複していない', async () => {
+  const body = JSON.parse(await readFile('tools/gtfs-sources.json', 'utf8'));
+  const ids = body.sources.map((s) => s.id);
+  assert.equal(new Set(ids).size, ids.length, 'id が重複している');
 });
 
 console.log(`\n${passed} 件のテストが成功${process.exitCode ? '(失敗あり)' : ''}\n`);

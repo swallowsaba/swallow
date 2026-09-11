@@ -11,6 +11,17 @@
   "main": "src/index.js",
   "compatibility_date": "2026-08-01",
 
+  // ------------------------------------------------------------------
+  //  公開 URL(*.workers.dev)
+  // ------------------------------------------------------------------
+  //  これを書いておかないと、デプロイのたびに設定が揺れて
+  //  「Error 1031 Invalid Workers Preview configuration」になることがある。
+  //  workers_dev  : https://<worker名>.<サブドメイン>.workers.dev を有効にする
+  //  preview_urls : <版>-<worker名>... のプレビュー URL。使わないので無効。
+  //                 (wrangler v4.34 以降は既定で false)
+  "workers_dev": true,
+  "preview_urls": false,
+
   // Workers Cache。Worker が返す Cache-Control ヘッダに従ってキャッシュし、
   // 同時リクエストを 1 本に束ねる。workers.dev サブドメインでも動作する。
   "cache": {
