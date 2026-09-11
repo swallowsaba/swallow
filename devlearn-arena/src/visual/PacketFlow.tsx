@@ -1,9 +1,13 @@
 import { motion } from 'framer-motion';
-import { useMemo } from 'react';
-import type { Link, Topology } from '@/engines/net/types';
+import { useEffect, useMemo, useState } from 'react';
+import type { Topology } from '@/engines/net/types';
 import { useMotionEnabled } from '@/ui/motion';
 import { useT } from '@/i18n/useT';
-import { linkIsUp, netCommands, type RunCommand } from './commands';
+import { netCommands, type RunCommand } from './commands';
+import {
+  changedFields, deviceCenter, HEADER_FIELDS, headerValue, layoutNet, NODE_H, NODE_W, stoppedAt,
+} from './netModel';
+import { FILL } from './sceneKit';
 
 interface Props {
   net: Topology | null;
@@ -13,94 +17,54 @@ interface Props {
   onCommand?: RunCommand;
 }
 
-const NODE_W = 150;
-const NODE_H = 92;
-const GAP_X = 90;
-const ROW_H = 150;
+/** 1ホップ進むのにかける時間（ミリ秒） */
+const HOP_MS = 800;
 
-interface Placed {
-  name: string;
-  kind: string;
-  x: number;
-  y: number;
-  ips: string[];
-  up: boolean;
-}
-
-interface Edge {
-  from: Placed;
-  to: Placed;
-  up: boolean;
-  link: Link;
-}
-
-/** ホップ順に並ぶよう、リンクを辿って左から配置する */
-function layout(net: Topology): { nodes: Placed[]; edges: Edge[] } {
-  const names = [...net.devices.keys()];
-  const order: string[] = [];
-  const seen = new Set<string>();
-
-  const neighborsOf = (name: string): string[] => {
-    const out: string[] = [];
-    for (const link of net.links) {
-      const a = link.a.split(':')[0] ?? '';
-      const b = link.b.split(':')[0] ?? '';
-      if (a === name) out.push(b);
-      if (b === name) out.push(a);
+/**
+ * 直前のパケットを1ホップずつ進める。
+ * 送り直すたび（trace.id が変わるたび）に最初のホップから再生する。動きを止める設定なら最後のホップを出す。
+ */
+function useHopPlayer(traceId: number | undefined, hopCount: number, animate: boolean): [number, (n: number) => void] {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    if (hopCount === 0) return;
+    if (!animate) {
+      setStep(hopCount - 1);
+      return;
     }
-    return out;
-  };
-
-  const start = names.find((n) => net.devices.get(n)?.kind === 'host') ?? names[0] ?? '';
-  const queue = [start];
-  while (queue.length > 0) {
-    const name = queue.shift();
-    if (name === undefined || seen.has(name)) continue;
-    seen.add(name);
-    order.push(name);
-    queue.push(...neighborsOf(name).filter((n) => !seen.has(n)));
-  }
-  for (const name of names) if (!seen.has(name)) order.push(name);
-
-  const perRow = 4;
-  const nodes: Placed[] = order.map((name, i) => {
-    const device = net.devices.get(name);
-    const row = Math.floor(i / perRow);
-    const col = row % 2 === 0 ? i % perRow : perRow - 1 - (i % perRow);
-    return {
-      name,
-      kind: device?.kind ?? 'host',
-      x: col * (NODE_W + GAP_X) + 20,
-      y: row * ROW_H + 20,
-      ips: device?.interfaces.map((iface) => `${iface.ip}/${String(iface.prefix)}`) ?? [],
-      up: device?.interfaces.some((iface) => iface.up) ?? true,
+    setStep(0);
+    let i = 0;
+    const timer = setInterval(() => {
+      i += 1;
+      if (i >= hopCount) {
+        clearInterval(timer);
+        return;
+      }
+      setStep(i);
+    }, HOP_MS);
+    return () => {
+      clearInterval(timer);
     };
-  });
-
-  const byName = new Map(nodes.map((n) => [n.name, n]));
-  const edges = net.links
-    .map((link) => {
-      const from = byName.get(link.a.split(':')[0] ?? '');
-      const to = byName.get(link.b.split(':')[0] ?? '');
-      return from && to ? { from, to, up: linkIsUp(net, link), link } : null;
-    })
-    .filter((e): e is Edge => e !== null);
-
-  return { nodes, edges };
+  }, [traceId, hopCount, animate]);
+  return [Math.min(step, Math.max(0, hopCount - 1)), setStep];
 }
-
-const center = (node: Placed): { x: number; y: number } => ({ x: node.x + NODE_W / 2, y: node.y + NODE_H / 2 });
 
 /**
  * ネットワークの構成図。
  * 機器を箱として並べ、リンクを線で結ぶ。切れているリンクは赤い破線になる。
- * 直前に送ったパケットは、実際に通った機器の順（deliver の hops）に線の上を流れる。
- * 届かなかったときは、止まった機器の上に × が出る。
+ * 直前に送ったパケットは、deliver が返したホップの順に、線の上を1ホップずつ流れる。
+ * パケットやホップを押すと、その時点のヘッダの全項目が出て、1つ前のホップから書き換わった項目に色が付く。
+ * 届かなかったときは、止まった機器が赤く光り、理由が出る。
  */
 export function PacketFlow({ net, self, onCommand }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
-  const placed = useMemo(() => (net === null ? null : layout(net)), [net]);
+  const placed = useMemo(() => (net === null ? null : layoutNet(net)), [net]);
+  const trace = net?.trace;
+  const hops = trace?.hops ?? [];
+  const [step, setStep] = useHopPlayer(trace?.id, hops.length, animate);
+  // ヘッダの表を開いているか。パケットかホップを押すと開く
+  const [inspecting, setInspecting] = useState(false);
 
   if (net === null || placed === null) {
     return (
@@ -115,35 +79,30 @@ export function PacketFlow({ net, self, onCommand }: Props) {
     );
   }
 
-  // 直前のパケットが通った道筋
   const byName = new Map(placed.nodes.map((n) => [n.name, n]));
-  const path = (net.trace?.path ?? []).map((name) => byName.get(name)).filter((n): n is Placed => n !== undefined);
-  const tracePairs = new Set(path.slice(1).map((n, i) => `${path[i]?.name ?? ''}>${n.name}`));
-  const packet =
-    path.length === 0
-      ? null
-      : {
-          xs: path.map((n) => center(n).x),
-          ys: path.map((n) => center(n).y),
-          delivered: net.trace?.delivered ?? false,
-        };
-
-  const width = Math.max(...placed.nodes.map((n) => n.x + NODE_W), 400) + 20;
-  const height = Math.max(...placed.nodes.map((n) => n.y + NODE_H), 200) + 40;
+  const hop = hops[step];
+  const hopNode = hop === undefined ? undefined : byName.get(hop.device);
+  const at = hopNode === undefined ? null : deviceCenter(hopNode);
+  // いまのホップまでに通った線
+  const walked = new Set(
+    hops.slice(1, step + 1).map((h, i) => [hops[i]?.device ?? '', h.device].sort().join('>')),
+  );
+  const stopped = stoppedAt(trace);
+  const finished = step >= hops.length - 1;
+  const changed = hop === undefined ? new Set<string>() : changedFields(hops[step - 1], hop);
 
   return (
     <div className="h-full overflow-auto p-4">
       {onCommand ? <p className="mb-2 text-xs text-ink-soft">{t('viz.clickHint')}</p> : null}
-      <div className="relative" style={{ width, height }}>
-        <svg className="absolute left-0 top-0" width={width} height={height}>
-          {placed.edges.map((edge, i) => {
-            const from = center(edge.from);
-            const to = center(edge.to);
-            const onPath =
-              tracePairs.has(`${edge.from.name}>${edge.to.name}`) || tracePairs.has(`${edge.to.name}>${edge.from.name}`);
+      <div className="relative" style={{ width: placed.width, height: placed.height }}>
+        <svg className="absolute left-0 top-0" width={placed.width} height={placed.height}>
+          {placed.edges.map((edge) => {
+            const from = deviceCenter(edge.from);
+            const to = deviceCenter(edge.to);
+            const onPath = walked.has([edge.from.name, edge.to.name].sort().join('>'));
             const toggle = netCommands.toggleLink(net, edge.link, self);
             return (
-              <g key={`edge-${String(i)}`}>
+              <g key={`${edge.link.a}-${edge.link.b}`} data-link={`${edge.link.a}-${edge.link.b}`} data-up={edge.up ? 'true' : 'false'}>
                 <line
                   x1={from.x}
                   y1={from.y}
@@ -176,47 +135,25 @@ export function PacketFlow({ net, self, onCommand }: Props) {
               </g>
             );
           })}
-          {packet !== null && animate ? (
-            <motion.circle
-              key={`packet-${String(net.trace?.id ?? 0)}`}
-              r={9}
-              fill="var(--gold)"
-              stroke="var(--wood-dark)"
-              strokeWidth={3}
-              initial={{ cx: packet.xs[0], cy: packet.ys[0], opacity: 1 }}
-              animate={{ cx: packet.xs, cy: packet.ys, opacity: packet.delivered ? [1, 1, 0] : 1 }}
-              transition={{ duration: Math.max(0.6, 0.7 * (packet.xs.length - 1)), ease: 'linear' }}
-              style={{ pointerEvents: 'none' }}
-            />
-          ) : null}
-          {packet !== null && !packet.delivered ? (
-            <text
-              x={packet.xs[packet.xs.length - 1]}
-              y={(packet.ys[packet.ys.length - 1] ?? 0) - NODE_H / 2 - 6}
-              textAnchor="middle"
-              fontSize={22}
-              fontWeight={800}
-              fill="var(--bad)"
-              style={{ pointerEvents: 'none' }}
-            >
-              ×
-            </text>
-          ) : null}
         </svg>
 
         {placed.nodes.map((node) => {
           const isSelf = node.name === self;
           const ping = netCommands.pingTo(net, node.name);
+          const isStop = finished && stopped === node.name;
           return (
             <div
               key={node.name}
-              className={`absolute border-4 ${isSelf ? 'border-[var(--bad)]' : 'border-wood-dark'}`}
+              data-device={node.name}
+              data-stopped={isStop ? 'true' : 'false'}
+              className={`absolute border-4 ${isStop || isSelf ? 'border-[var(--bad)]' : 'border-wood-dark'}`}
               style={{
                 left: node.x,
                 top: node.y,
                 width: NODE_W,
-                backgroundColor: node.up ? 'var(--cream)' : 'var(--cream-dark)',
-                boxShadow: '0 5px 0 rgba(0,0,0,0.2)',
+                minHeight: NODE_H,
+                backgroundColor: isStop ? FILL.bad : node.up ? 'var(--cream)' : 'var(--cream-dark)',
+                boxShadow: isStop ? '0 0 0 4px var(--bad), 0 0 18px var(--bad)' : '0 5px 0 rgba(0,0,0,0.2)',
               }}
             >
               <div
@@ -262,10 +199,96 @@ export function PacketFlow({ net, self, onCommand }: Props) {
                   </button>
                 ) : null}
               </div>
+              {isStop && trace?.error ? (
+                <p data-testid="stop-reason" className="border-t-2 border-[var(--bad)] bg-cream px-2 py-1 text-xs font-bold text-[var(--bad)]">
+                  ✗ {trace.error}
+                </p>
+              ) : null}
             </div>
           );
         })}
+
+        {/* パケット。いまのホップの機器の上にいて、次のホップへ線の上を進む。押すとヘッダが見える */}
+        {at !== null ? (
+          <motion.button
+            type="button"
+            key={`packet-${String(trace?.id ?? 0)}`}
+            data-testid="packet"
+            aria-label={t('viz.inspectPacket')}
+            title={t('viz.inspectPacket')}
+            className="absolute z-10 grid h-8 w-8 place-items-center rounded-full border-4 border-wood-dark text-sm"
+            style={{ backgroundColor: 'var(--gold)', marginLeft: -16, marginTop: -16 }}
+            initial={{ left: at.x, top: at.y }}
+            animate={{ left: at.x, top: at.y }}
+            transition={{ duration: animate ? (HOP_MS * 0.8) / 1000 : 0, ease: 'easeInOut' }}
+            onClick={() => {
+              setInspecting(true);
+            }}
+          >
+            ✉
+          </motion.button>
+        ) : null}
       </div>
+
+      {/* ホップの一覧とヘッダ。押したホップの時点のヘッダを出す */}
+      {hops.length > 0 ? (
+        <section aria-label={t('viz.hops')} className="mt-4 border-4 border-wood-dark bg-cream p-3">
+          <p className="text-sm font-bold">{t('viz.hops')}</p>
+          <ol className="mt-1 flex flex-wrap gap-1">
+            {hops.map((h, i) => (
+              <li key={`${h.device}-${String(i)}`}>
+                <button
+                  type="button"
+                  data-hop={i}
+                  aria-current={i === step ? 'step' : undefined}
+                  className={`border-2 px-2 py-0.5 font-mono text-xs ${
+                    i === step ? 'border-[var(--bad)] bg-gold' : 'border-wood-dark bg-cream'
+                  }`}
+                  title={h.note}
+                  onClick={() => {
+                    setStep(i);
+                    setInspecting(true);
+                  }}
+                >
+                  {i + 1}. {h.device}
+                </button>
+              </li>
+            ))}
+          </ol>
+          {hop !== undefined ? <p className="mt-1 font-mono text-xs text-ink-soft">{hop.note}</p> : null}
+          {inspecting && hop !== undefined ? (
+            <table data-testid="headers" className="mt-2 w-full border-collapse font-mono text-xs">
+              <caption className="text-left text-xs font-bold">
+                {t('viz.headersAt', { n: step + 1, device: hop.device })}
+              </caption>
+              <tbody>
+                {HEADER_FIELDS.map(({ field, label, layer }) => {
+                  const isChanged = changed.has(field);
+                  return (
+                    <tr
+                      key={field}
+                      data-field={field}
+                      data-changed={isChanged ? 'true' : 'false'}
+                      style={{ backgroundColor: isChanged ? FILL.warn : undefined }}
+                    >
+                      <td className="border border-wood-dark px-1 text-ink-soft">{layer}</td>
+                      <th scope="row" className="border border-wood-dark px-1 text-left font-bold">
+                        {label}
+                      </th>
+                      <td className="border border-wood-dark px-1">{headerValue(hop, field)}</td>
+                      <td className="border border-wood-dark px-1 font-sans font-bold">
+                        {isChanged ? `${t('viz.rewritten')} ← ${headerValue(hops[step - 1] ?? hop, field)}` : ''}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <p className="mt-1 text-xs text-ink-soft">{t('viz.inspectLead')}</p>
+          )}
+        </section>
+      ) : null}
 
       {/* キーボードでも抜き挿しできるよう、ケーブルの一覧も置く */}
       {onCommand && placed.edges.length > 0 ? (

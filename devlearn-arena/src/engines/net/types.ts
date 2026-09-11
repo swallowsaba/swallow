@@ -112,6 +112,25 @@ export interface PacketTrace {
   /** 通った機器の名前。送り出した機器から順に並ぶ */
   path: string[];
   delivered: boolean;
+  /** ホップごとの、その機器に入ってきた時点のヘッダ。deliver の hops をそのまま写したもの */
+  hops: TraceHop[];
+  /** 届かなかった理由。届いたら null */
+  error: string | null;
+}
+
+/** 図で見せるための、あるホップでのヘッダの全項目 */
+export interface TraceHop {
+  device: string;
+  note: string;
+  srcIp: string;
+  dstIp: string;
+  ttl: number;
+  protocol: IpHeader['protocol'];
+  srcMac: string;
+  dstMac: string;
+  vlan: number | null;
+  srcPort: number | null;
+  dstPort: number | null;
 }
 
 export interface Topology {

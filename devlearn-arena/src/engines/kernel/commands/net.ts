@@ -41,6 +41,20 @@ function afterDelivery(net: Topology, result: DeliveryResult): Topology {
       id: (net.trace?.id ?? 0) + 1,
       path: result.hops.map((hop) => hop.device),
       delivered: result.delivered,
+      hops: result.hops.map(({ device, note, packet: p }) => ({
+        device,
+        note,
+        srcIp: p.ip.srcIp,
+        dstIp: p.ip.dstIp,
+        ttl: p.ip.ttl,
+        protocol: p.ip.protocol,
+        srcMac: p.ethernet.srcMac,
+        dstMac: p.ethernet.dstMac,
+        vlan: p.ethernet.vlan,
+        srcPort: p.transport?.srcPort ?? null,
+        dstPort: p.transport?.dstPort ?? null,
+      })),
+      error: result.error,
     },
   };
 }
