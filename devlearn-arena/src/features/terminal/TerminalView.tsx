@@ -9,11 +9,20 @@ import {
 } from '@/engines/kernel/lineEditor';
 import { feedLine, splitCommands, type PendingInput } from '@/engines/kernel/continuation';
 import { displayPath } from '@/engines/kernel/path';
+import { createTypist, type Typist } from './typist';
 import type { ShellSession } from './useShellSession';
+
+/** 図から来たコマンドを1文字打つ間隔（ミリ秒） */
+const TYPE_MS = 28;
 
 export interface TerminalHandle {
   /** 外部（モバイル入力欄など）から1行実行する */
   submit: (line: string) => void;
+  /**
+   * 1文字ずつ打ち込んでから実行する。図の操作から来たコマンドに使い、打たれていく様子を見せる。
+   * before は打ち始める直前に呼ばれる（なぜそのコマンドかの注記を出すのに使う）。
+   */
+  type: (line: string, before?: () => void) => void;
   insertText: (text: string) => void;
   /** 端末に注記を1行出す（コマンドとしては実行しない） */
   note: (text: string) => void;
@@ -47,6 +56,7 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
   // 外から1行流し込むときに、キー入力と同じ道筋で実行するため
   const runRef = useRef<((line: string) => void) | null>(null);
   const promptRef = useRef<(() => void) | null>(null);
+  const typistRef = useRef<Typist | null>(null);
   const sessionRef = useRef(session);
   const executedRef = useRef(onExecuted);
   const editorRef = useRef(onEditor);
@@ -125,6 +135,16 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
     };
 
     runRef.current = runLine;
+    typistRef.current = createTypist({
+      typeChar: (ch) => {
+        lineRef.current = insert(lineRef.current, ch);
+        redraw();
+      },
+      run: () => {
+        runLine(lineRef.current.line);
+      },
+      charMs: TYPE_MS,
+    });
     promptRef.current = () => {
       term.write(prompt());
     };
@@ -237,6 +257,8 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
 
     return () => {
       observer.disconnect();
+      typistRef.current?.cancel();
+      typistRef.current = null;
       disposable.dispose();
       term.dispose();
       termRef.current = null;
@@ -255,6 +277,19 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
         term.write(line.replace(/\n/g, '\r\n'));
         runRef.current?.(line);
       }
+    },
+    type: (line: string, before?: () => void) => {
+      const typist = typistRef.current;
+      if (!typist) return;
+      typist.enqueue(line, () => {
+        // 打ちかけの行があれば消してから打つ
+        if (lineRef.current.line !== '') {
+          lineRef.current = createLineState();
+          termRef.current?.write('\r[K');
+          promptRef.current?.();
+        }
+        before?.();
+      });
     },
     insertText: (text: string) => {
       termRef.current?.input(text);

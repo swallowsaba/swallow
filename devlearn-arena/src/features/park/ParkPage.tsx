@@ -8,6 +8,7 @@ import {
 import { takeawaysOf } from '@/engines/lesson/takeaways';
 import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
+import { useDiagramRunner } from '@/features/terminal/useDiagramRunner';
 import { useShellSession } from '@/features/terminal/useShellSession';
 import { useT } from '@/i18n/useT';
 import { dayKey } from '@/lib/date';
@@ -351,10 +352,8 @@ function Park({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shellState, passingNow, progress.cleared, progress.commandsUsed]);
 
-  // 図を押したときは、そのコマンドを端末で実際に打つ。打ったものは端末に残る
-  const runFromDiagram = useCallback((line: string) => {
-    terminalRef.current?.submit(line);
-  }, []);
+  // 図を押したときは、そのコマンドを端末で1文字ずつ打って実行する。打ったものは端末に残る
+  const runFromDiagram = useDiagramRunner(terminalRef);
 
   const retry = useCallback(() => {
     onRetry();

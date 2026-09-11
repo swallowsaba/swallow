@@ -8,6 +8,7 @@ import type { SessionOptions } from '@/engines/kernel/session';
 import { EditorPanel, type EditorTarget } from '@/features/park/EditorPanel';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
 import { TimeScrubber } from '@/features/terminal/TimeScrubber';
+import { useDiagramRunner } from '@/features/terminal/useDiagramRunner';
 import { useShellSession } from '@/features/terminal/useShellSession';
 import { useT } from '@/i18n/useT';
 import type { TKey } from '@/i18n';
@@ -74,9 +75,8 @@ export default function SandboxPage() {
   const session = useShellSession(options);
   const terminalRef = useRef<TerminalHandle>(null);
   // 図を押したときは、そのコマンドを端末で実際に打つ
-  const runFromDiagram = useCallback((line: string) => {
-    terminalRef.current?.submit(line);
-  }, []);
+  // 図を押したときは、そのコマンドを端末で1文字ずつ打って実行する。打ったものは端末に残る
+  const runFromDiagram = useDiagramRunner(terminalRef);
   const [tab, setTab] = useState<Tab>('fs');
   const [editing, setEditing] = useState<EditorTarget | null>(null);
 
