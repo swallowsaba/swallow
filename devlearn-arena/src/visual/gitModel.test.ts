@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSession, type Session } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
-import { fileSpots, placeCommits } from './gitModel';
+import { fileSpots, gitChanges, NO_CHANGES, placeCommits } from './gitModel';
 
 function start() {
   let session: Session = createSession({
@@ -96,5 +96,51 @@ describe('分岐は横にずれ、マージで合流する', () => {
     sh.run('git switch main');
     expect(placeCommits(sh.git).commits.map((c) => c.message)).toContain('side-only');
     expect(sh.hash('side')).toMatch(/^[0-9a-f]{40}$/);
+  });
+});
+
+describe('直前から何が変わったか', () => {
+  it('新しいコミットと、指す先が変わったブランチを返す', () => {
+    const sh = start().run('git init').run('git add .').run('git commit -m one');
+    const before = sh.git;
+    sh.run('echo 2 > a.txt').run('git add .').run('git commit -m two');
+    const changes = gitChanges(before, sh.git);
+    expect([...changes.newCommits]).toEqual([sh.hash('HEAD')]);
+    expect([...changes.movedBranches]).toEqual(['main']);
+    expect(changes.copies).toEqual([]);
+  });
+
+  it('何も変わらなければ空', () => {
+    const sh = start().run('git init').run('git add .').run('git commit -m one');
+    expect(gitChanges(sh.git, sh.git)).toBe(NO_CHANGES);
+    expect(gitChanges(undefined, sh.git)).toBe(NO_CHANGES);
+  });
+
+  it('rebase は元のコミットを複製して新しい親にぶら下げる。元は薄く残す', () => {
+    const sh = start().run('git init').run('git add .').run('git commit -m base');
+    sh.run('git switch -c feature');
+    sh.run('echo f1 > b.txt').run('git add .').run('git commit -m f1');
+    sh.run('echo f2 > c.txt').run('git add .').run('git commit -m f2');
+    sh.run('git switch main').run('echo m > a.txt').run('git add .').run('git commit -m m1');
+    sh.run('git switch feature');
+    const oldF1 = sh.hash('HEAD~1');
+    const oldF2 = sh.hash('HEAD');
+    const before = sh.git;
+    sh.run('git rebase main');
+    const changes = gitChanges(before, sh.git);
+    // 付け直した順（f1 → f2）に、元 → 複製 の組が並ぶ
+    expect(changes.copies).toEqual([
+      { from: oldF1, to: sh.hash('HEAD~1') },
+      { from: oldF2, to: sh.hash('HEAD') },
+    ]);
+    expect(changes.ghostTips).toEqual([oldF2]);
+
+    // 図には元のコミットが「元」として残り、複製は main の上にぶら下がる
+    const placed = placeCommits(sh.git, changes.ghostTips);
+    const byHash = new Map(placed.commits.map((c) => [c.hash, c]));
+    expect(byHash.get(oldF1)?.ghost).toBe(true);
+    expect(byHash.get(oldF2)?.ghost).toBe(true);
+    expect(byHash.get(sh.hash('HEAD'))?.ghost).toBe(false);
+    expect(byHash.get(sh.hash('HEAD~1'))?.parents).toEqual([sh.hash('main')]);
   });
 });

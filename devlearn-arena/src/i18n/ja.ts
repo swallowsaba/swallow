@@ -263,6 +263,8 @@ export const ja = {
   'viz.ownership': '持ち主と受付のつながり',
   'viz.ownershipLead': '茶色の線は「誰が作ったか」（Deployment → ReplicaSet → Pod）。緑の点線は Service が繋いでいる Pod。載っていない Pod には伸びない。',
   'viz.threeTrees': '3面（作業ツリー / インデックス / HEAD）',
+  'viz.ghostCommit': '（元のコミット）',
+  'viz.rebaseCopied': 'rebase はコミットを動かしません。{n} 個のコミットを複製して新しい親にぶら下げ、ブランチの札を付け替えました。点線が元のコミットです。',
 
   'dash.title': '記録',
   'dash.level': 'レベル {n}',

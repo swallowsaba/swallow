@@ -166,3 +166,38 @@ describe('履歴の図の作り', () => {
     expect(onCommand).toHaveBeenLastCalledWith('git switch feature');
   });
 });
+
+describe('履歴の図が変化を見せる', () => {
+  function run(lines: readonly string[]) {
+    let session = createSession({ files: { '/home/learner': null, '/home/learner/a.txt': 'A\n', '/home/learner/b.txt': 'B\n' } });
+    const states = [session.state];
+    for (const line of lines) {
+      session = { ...session, state: execute(session.state, line, session.registry, session.clock).state };
+      states.push(session.state);
+    }
+    return states;
+  }
+
+  it('rebase のあとは、元のコミットを点線で残し、複製への線と説明を出す', () => {
+    const states = run([
+      'git init', 'git add .', 'git commit -m base',
+      'git switch -c feature', 'echo f > b.txt', 'git add .', 'git commit -m f1',
+      'git switch main', 'echo m > a.txt', 'git add .', 'git commit -m m1',
+      'git switch feature', 'git rebase main',
+    ]);
+    const before = states[states.length - 2];
+    const after = states[states.length - 1];
+    const view = mount(<CommitGraph git={after?.git ?? null} previous={before?.git} vfs={after?.vfs} />);
+    expect(view.querySelectorAll('circle[data-ghost="true"]').length).toBe(1);
+    expect(view.querySelectorAll('path[data-copy]').length).toBe(1);
+    expect(view.querySelector('[data-testid="rebase-note"]')).not.toBeNull();
+    expect(view.querySelector('button[data-moved="true"]')?.textContent).toBe('feature');
+  });
+
+  it('コミットしたら新しいコミットが光る', () => {
+    const states = run(['git init', 'git add .', 'git commit -m base', 'echo x > a.txt', 'git add .', 'git commit -m next']);
+    const view = mount(<CommitGraph git={states[6]?.git ?? null} previous={states[5]?.git} />);
+    expect(view.querySelectorAll('circle[data-glow="true"]').length).toBe(1);
+    expect(view.querySelector('[data-testid="rebase-note"]')).toBeNull();
+  });
+});
