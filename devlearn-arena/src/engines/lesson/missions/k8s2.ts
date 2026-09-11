@@ -3,6 +3,8 @@ import { isReady } from '@/engines/k8s/kubelet';
 import { key, type ClusterState } from '@/engines/k8s/types';
 import { HOME } from '@/engines/kernel/path';
 import type { LessonDefinition } from '../types';
+import { heredoc } from '../authoring/solution';
+import { countRan, NODE, POD, PVC, ran, SECRET } from '../authoring/ran';
 
 const MANIFEST_HINT = 'vi app.yaml でマニフェストを書き、kubectl apply -f app.yaml で適用する';
 
@@ -22,6 +24,156 @@ function crowded(): ClusterState {
 
 const FILES = { [HOME]: null };
 
+/* 模範解答で書くマニフェスト。1行ずつの配列で持ち、ヒアドキュメントで書き出す */
+
+const WEB_YAML = [
+  'kind: Deployment',
+  'metadata:',
+  '  name: web',
+  'spec:',
+  '  replicas: 2',
+  '  template:',
+  '    metadata:',
+  '      labels:',
+  '        app: web',
+  '    spec:',
+  '      containers:',
+  '        - name: web',
+  '          image: nginx:1.25',
+];
+
+const JOB_YAML = [
+  'kind: Job',
+  'metadata:',
+  '  name: migrate',
+  'spec:',
+  '  completions: 2',
+  '  template:',
+  '    metadata:',
+  '      labels:',
+  '        job: migrate',
+  '    spec:',
+  '      containers:',
+  '        - name: main',
+  '          image: migrator',
+];
+
+const CRON_YAML = [
+  'kind: CronJob',
+  'metadata:',
+  '  name: nightly',
+  'spec:',
+  '  everyTicks: 3',
+  '  jobTemplate:',
+  '    spec:',
+  '      template:',
+  '        metadata:',
+  '          labels:',
+  '            job: nightly',
+  '        spec:',
+  '          containers:',
+  '            - name: main',
+  '              image: batch',
+];
+
+const STS_YAML = [
+  'kind: StatefulSet',
+  'metadata:',
+  '  name: db',
+  'spec:',
+  '  replicas: 3',
+  '  serviceName: db',
+  '  template:',
+  '    metadata:',
+  '      labels:',
+  '        app: db',
+  '    spec:',
+  '      containers:',
+  '        - name: main',
+  '          image: postgres',
+];
+
+const CONFIG_YAML = [
+  'kind: ConfigMap',
+  'metadata:',
+  '  name: app-config',
+  'data:',
+  '  GREETING: hello',
+  '---',
+  'kind: Secret',
+  'metadata:',
+  '  name: app-secret',
+  'stringData:',
+  '  TOKEN: s3cret',
+];
+
+const READER_YAML = [
+  'kind: Pod',
+  'metadata:',
+  '  name: reader',
+  'spec:',
+  '  containers:',
+  '    - name: main',
+  '      image: busybox',
+  '      envFrom:',
+  '        - configMapRef:',
+  '            name: app-config',
+  '        - secretRef:',
+  '            name: app-secret',
+];
+
+const PVC_YAML = [
+  'kind: StorageClass',
+  'metadata:',
+  '  name: manual',
+  'provisioner: none',
+  'dynamic: false',
+  '---',
+  'kind: PersistentVolumeClaim',
+  'metadata:',
+  '  name: data',
+  'spec:',
+  '  storageClassName: manual',
+  '  accessModes: [ReadWriteOnce]',
+  '  resources:',
+  '    requests:',
+  '      storage: 5',
+];
+
+const PV_YAML = [
+  'kind: PersistentVolume',
+  'metadata:',
+  '  name: vol1',
+  'spec:',
+  '  capacity:',
+  '    storage: 10',
+  '  accessModes: [ReadWriteOnce]',
+  '  storageClassName: manual',
+];
+
+const PLAIN_POD_YAML = [
+  'kind: Pod',
+  'metadata:',
+  '  name: plain',
+  'spec:',
+  '  containers:',
+  '    - name: main',
+  '      image: nginx',
+];
+
+const TOLERATING_POD_YAML = [
+  'kind: Pod',
+  'metadata:',
+  '  name: gpu-job',
+  'spec:',
+  '  tolerations:',
+  '    - key: gpu',
+  '      effect: NoSchedule',
+  '  containers:',
+  '    - name: main',
+  '      image: nginx',
+];
+
 export const k8sStuckPending: LessonDefinition = {
   id: 'k8s/02/boss-stuck-pending',
   track: 'k8s',
@@ -35,8 +187,9 @@ export const k8sStuckPending: LessonDefinition = {
       prompt: 'Pod が動いていない。まず状態と理由を確かめよ。',
       check: 'kubectl get pods と kubectl describe pod を実行したこと',
       hints: ['kubectl wait 5 で時間を進める', 'kubectl get pods', 'kubectl describe pod <名前>'],
+      solution: ['kubectl wait 5', 'kubectl get pods', 'kubectl describe pods'],
       assert: ({ history }) =>
-        history.some((l) => l.includes('get pod')) && history.some((l) => l.includes('describe pod')),
+        ran(history, 'kubectl', 'get', POD) && ran(history, 'kubectl', 'describe', POD),
       explain:
         'Pending は「まだ置き場所が決まっていない」状態。理由は必ず describe のイベントに出る。',
     },
@@ -44,7 +197,8 @@ export const k8sStuckPending: LessonDefinition = {
       prompt: 'ノードの空き容量を確かめよ。',
       check: 'kubectl get nodes を実行したこと',
       hints: ['kubectl get nodes'],
-      assert: ({ history }) => history.some((l) => l.includes('get node')),
+      solution: ['kubectl get nodes'],
+      assert: ({ history }) => ran(history, 'kubectl', ['get', 'describe', 'top'], NODE),
       explain:
         'スケジューラは requests と allocatable を比べている。実際に使っている量ではなく、宣言した要求量で決まる。',
     },
@@ -56,6 +210,7 @@ export const k8sStuckPending: LessonDefinition = {
         'requests を下げたマニフェストを apply しても直る',
         '直したら kubectl wait 10 で進める',
       ],
+      solution: ['kubectl scale deployment api --replicas=1', 'kubectl wait 20'],
       assert: ({ shell }) => {
         const state = shell.cluster;
         if (state === null) return false;
@@ -92,6 +247,7 @@ export const k8sApply: LessonDefinition = {
         'kind: Deployment / metadata.name: web / spec.replicas: 2',
         'spec.template.spec.containers に name と image を書く',
       ],
+      solution: [heredoc('app.yaml', WEB_YAML), 'kubectl apply -f app.yaml'],
       assert: ({ shell }) => {
         const target = shell.cluster?.deployments.get(key('default', 'web'));
         return target !== undefined && target.spec.replicas === 2;
@@ -103,7 +259,8 @@ export const k8sApply: LessonDefinition = {
       prompt: '同じファイルをもう一度適用し、created ではなく configured になることを確かめよ。',
       check: '同じマニフェストを2回 apply したこと',
       hints: ['kubectl apply -f app.yaml をもう一度実行する'],
-      assert: ({ history }) => history.filter((l) => l.includes('apply -f')).length >= 2,
+      solution: ['kubectl apply -f app.yaml'],
+      assert: ({ history }) => countRan(history, 'kubectl', 'apply', '-f') >= 2,
       explain:
         '同じものを何度適用しても結果は変わらない。これがあるから、CI から機械的に流せる。',
     },
@@ -111,6 +268,7 @@ export const k8sApply: LessonDefinition = {
       prompt: 'Pod が2つとも Ready になるまで進めよ。',
       check: 'web の Pod が2つ Ready であること',
       hints: ['kubectl wait 12'],
+      solution: ['kubectl wait 20'],
       assert: ({ shell }) => {
         const state = shell.cluster;
         if (state === null) return false;
@@ -135,6 +293,7 @@ export const k8sJobs: LessonDefinition = {
       prompt: 'completions: 2 の Job を作り、Complete になるまで進めよ。',
       check: 'Job があり、succeeded が 2 に届いていること',
       hints: [MANIFEST_HINT, 'kind: Job / spec.completions: 2', 'kubectl wait 20'],
+      solution: [heredoc('job.yaml', JOB_YAML), 'kubectl apply -f job.yaml', 'kubectl wait 20'],
       assert: ({ shell }) => {
         const jobs = [...(shell.cluster?.jobs.values() ?? [])];
         return jobs.some((j) => j.status.succeeded >= 2);
@@ -146,6 +305,7 @@ export const k8sJobs: LessonDefinition = {
       prompt: 'everyTicks を指定した CronJob を作り、Job が自動で作られることを確かめよ。',
       check: 'CronJob から作られた Job が1つ以上あること',
       hints: ['kind: CronJob / spec.everyTicks: 3 / spec.jobTemplate.spec.template ...', 'kubectl wait 10'],
+      solution: [heredoc('cron.yaml', CRON_YAML), 'kubectl apply -f cron.yaml', 'kubectl wait 10'],
       assert: ({ shell }) => {
         const jobs = [...(shell.cluster?.jobs.values() ?? [])];
         return jobs.some((j) => j.metadata.ownerReferences.some((o) => o.kind === 'CronJob'));
@@ -169,6 +329,7 @@ export const k8sStatefulSet: LessonDefinition = {
       prompt: 'replicas: 3 の StatefulSet を作り、少しだけ時間を進めて Pod の名前を見よ。',
       check: 'db-0 が存在すること（まだ全部は揃っていなくてよい）',
       hints: [MANIFEST_HINT, 'kind: StatefulSet / metadata.name: db / spec.replicas: 3', 'kubectl wait 3'],
+      solution: [heredoc('sts.yaml', STS_YAML), 'kubectl apply -f sts.yaml', 'kubectl wait 3'],
       assert: ({ shell }) => shell.cluster?.pods.has(key('default', 'db-0')) === true,
       explain:
         'Deployment の Pod 名は乱数まじりだが、StatefulSet は 0 から始まる連番。名前が安定しているから、相手を名指しできる。',
@@ -177,6 +338,7 @@ export const k8sStatefulSet: LessonDefinition = {
       prompt: '3つ全部が Ready になるまで進めよ。',
       check: 'db-0 db-1 db-2 が全て Ready であること',
       hints: ['kubectl wait 20'],
+      solution: ['kubectl wait 30'],
       assert: ({ shell }) => {
         const state = shell.cluster;
         if (state === null) return false;
@@ -204,6 +366,7 @@ export const k8sConfig: LessonDefinition = {
       prompt: 'ConfigMap（キー GREETING）と Secret（キー TOKEN）を作れ。',
       check: 'ConfigMap と Secret が1つずつあること',
       hints: [MANIFEST_HINT, 'kind: ConfigMap の data: に GREETING を書く', 'kind: Secret の stringData: に TOKEN を書く'],
+      solution: [heredoc('cfg.yaml', CONFIG_YAML), 'kubectl apply -f cfg.yaml'],
       assert: ({ shell }) => {
         const state = shell.cluster;
         if (state === null) return false;
@@ -220,6 +383,7 @@ export const k8sConfig: LessonDefinition = {
         'spec.containers[].envFrom に configMapRef と secretRef を書く',
         'kubectl wait 10',
       ],
+      solution: [heredoc('pod.yaml', READER_YAML), 'kubectl apply -f pod.yaml', 'kubectl wait 10'],
       assert: ({ shell }) => {
         const state = shell.cluster;
         if (state === null) return false;
@@ -233,9 +397,10 @@ export const k8sConfig: LessonDefinition = {
       prompt: 'Secret の値が、保管時は base64 で、環境変数では元の文字列になっていることを確かめよ。',
       check: 'kubectl get secret -o yaml（か json）と kubectl exec ... -- env を実行したこと',
       hints: ['kubectl get secret <名前> -o yaml', 'kubectl exec <Pod名> -- env'],
+      solution: ['kubectl get secret app-secret -o yaml', 'kubectl exec reader -- env'],
       assert: ({ history }) =>
-        history.some((l) => l.includes('get secret') && (l.includes('-o yaml') || l.includes('-o json'))) &&
-        history.some((l) => l.includes('exec') && l.includes('env')),
+        ran(history, 'kubectl', 'get', SECRET, '-o', ['yaml', 'json']) &&
+        ran(history, 'kubectl', 'exec', 'env'),
       explain:
         'Secret は暗号化ではなく符号化。誰でも復号できる。守るのは RBAC と保管先の暗号化であって、base64 ではない。',
     },
@@ -260,6 +425,7 @@ export const k8sPvcPending: LessonDefinition = {
         'kind: PersistentVolumeClaim の spec.resources.requests.storage: 5',
         'kubectl wait 3',
       ],
+      solution: [heredoc('pvc.yaml', PVC_YAML), 'kubectl apply -f pvc.yaml', 'kubectl wait 3'],
       assert: ({ shell }) => {
         const claims = [...(shell.cluster?.persistentVolumeClaims.values() ?? [])];
         return claims.length > 0 && claims.every((c) => c.status.phase === 'Pending');
@@ -270,7 +436,8 @@ export const k8sPvcPending: LessonDefinition = {
       prompt: 'なぜ束ねられないのか、理由を確かめよ。',
       check: 'kubectl get pvc か describe で PVC を調べたこと',
       hints: ['kubectl get pvc', 'kubectl get pvc <名前> -o yaml で message が読める'],
-      assert: ({ history }) => history.some((l) => l.includes('pvc')),
+      solution: ['kubectl get pvc'],
+      assert: ({ history }) => ran(history, 'kubectl', ['get', 'describe'], PVC),
       explain: '理由は必ず状態に書いてある。「なんとなく動かない」で終わらせない。',
     },
     {
@@ -281,6 +448,7 @@ export const k8sPvcPending: LessonDefinition = {
         'kind: PersistentVolume の spec.capacity.storage: 10',
         'kubectl wait 3',
       ],
+      solution: [heredoc('pv.yaml', PV_YAML), 'kubectl apply -f pv.yaml', 'kubectl wait 3'],
       assert: ({ shell }) => {
         const claims = [...(shell.cluster?.persistentVolumeClaims.values() ?? [])];
         return claims.length > 0 && claims.some((c) => c.status.phase === 'Bound');
@@ -319,6 +487,7 @@ export const k8sUnschedulable: LessonDefinition = {
       prompt: '普通の Pod を1つ作り、置けないことを確かめよ。',
       check: 'Pod があり、まだ配置されていないこと',
       hints: [MANIFEST_HINT, 'kind: Pod で nginx を1つ', 'kubectl wait 3'],
+      solution: [heredoc('pod.yaml', PLAIN_POD_YAML), 'kubectl apply -f pod.yaml', 'kubectl wait 3'],
       assert: ({ shell }) => {
         const pods = [...(shell.cluster?.pods.values() ?? [])];
         return pods.length > 0 && pods.some((p) => p.status.nodeName === null);
@@ -329,7 +498,8 @@ export const k8sUnschedulable: LessonDefinition = {
       prompt: '拒否された理由を確かめよ。',
       check: 'kubectl describe pod を実行したこと',
       hints: ['kubectl describe pod <名前>'],
-      assert: ({ history }) => history.some((l) => l.includes('describe pod')),
+      solution: ['kubectl describe pod plain'],
+      assert: ({ history }) => ran(history, 'kubectl', 'describe', POD),
       explain: 'untolerated taint という理由がイベントに出る。容量不足とは別の理由であることが読み取れる。',
     },
     {
@@ -339,6 +509,7 @@ export const k8sUnschedulable: LessonDefinition = {
         'spec.tolerations に key: gpu / effect: NoSchedule を書く',
         'kubectl wait 10',
       ],
+      solution: [heredoc('tol.yaml', TOLERATING_POD_YAML), 'kubectl apply -f tol.yaml', 'kubectl wait 12'],
       assert: ({ shell }) => [...(shell.cluster?.pods.values() ?? [])].some(isReady),
       explain:
         'taint は「弾く」、toleration は「弾かれない」。置きたい場所に置くための条件であって、そこに引き寄せる仕組みではない。',

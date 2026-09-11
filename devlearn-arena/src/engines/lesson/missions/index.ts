@@ -1,4 +1,5 @@
 import type { LessonDefinition } from '../types';
+import { finalizeLesson } from '../authoring/solution';
 import { gitBranching, gitConflictDrill, gitFirstCommit } from './git';
 import { gitAmend, gitInteractiveRebase, gitRecovery, gitThreeTrees } from './git2';
 import {
@@ -24,6 +25,7 @@ import { netDropVsReject, netHealthCheck, netTls, netVpcDesign } from './net3';
 /**
  * 遊べる任務の一覧。
  * 目次（src/content）の status は、ここに載っている id から刻まれる。
+ * 最後のヒントは、どの手順でも模範解答（そのまま打てば通るコマンド）にそろえる。
  */
 export const missions: readonly LessonDefinition[] = [
   shellWarmup,
@@ -81,7 +83,7 @@ export const missions: readonly LessonDefinition[] = [
   ghRelease,
   ghForkFlow,
   diskFullBoss,
-];
+].map(finalizeLesson);
 
 export { gitBranching, gitConflictDrill, gitFirstCommit } from './git';
 export { gitAmend, gitInteractiveRebase, gitRecovery, gitThreeTrees } from './git2';

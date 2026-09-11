@@ -1,3 +1,4 @@
+import { POD, ran } from '../authoring/ran';
 import { advanceCluster } from '@/engines/k8s/controllers';
 import { container, deployment, emptyCluster, node, pod } from '@/engines/k8s/factory';
 import { tickPods } from '@/engines/k8s/kubelet';
@@ -141,7 +142,7 @@ const reconcileDrills = family<ReconcileSpec>({
         conditions: [
           {
             label: 'Pod を消した記録があること',
-            test: (ctx) => ctx.history.some((l) => /delete\s+pod/.test(l)),
+            test: (ctx) => ran(ctx.history, 'kubectl', 'delete', POD),
             howTo: 'kubectl get pods で名前を確かめてから消します',
           },
           {

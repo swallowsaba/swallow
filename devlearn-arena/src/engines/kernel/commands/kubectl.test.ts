@@ -173,3 +173,29 @@ describe('セレクタとラベルの修正', () => {
     expect(run(`kubectl describe pod ${name}`).out).toContain('tier=front');
   });
 });
+
+describe('名前を知らなくても指せる', () => {
+  it('describe は名前を省くと全部を出す', () => {
+    const out = run('kubectl describe pods').out;
+    expect(out.match(/^Name:/gm)?.length).toBe(2);
+  });
+
+  it('pod/名前 の形でも指せる', () => {
+    const name = run('kubectl get pods -o name').out.trim().split('\n')[0] ?? '';
+    expect(name.startsWith('pod/')).toBe(true);
+    expect(run(`kubectl describe ${name}`).code).toBe(0);
+    expect(run(`kubectl delete ${name}`).out).toContain('deleted');
+  });
+
+  it('-l で選んだ Pod をまとめて消せる', () => {
+    const r = run('kubectl delete pods -l app=web');
+    expect(r.out.match(/deleted/g)?.length).toBe(2);
+    expect(run('kubectl get pods').out).toContain('No resources found');
+  });
+
+  it('logs は deploy/名前 で持ち主から Pod を選ぶ', () => {
+    const r = run('kubectl logs deploy/web');
+    expect(r.code).toBe(0);
+    expect(r.out).toContain('starting');
+  });
+});

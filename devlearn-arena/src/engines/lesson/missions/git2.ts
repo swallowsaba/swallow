@@ -3,6 +3,7 @@ import { branches, headCommit, log, status } from '@/engines/git/repository';
 import { HOME } from '@/engines/kernel/path';
 import { exists } from '@/engines/kernel/vfs';
 import type { LessonDefinition } from '../types';
+import { ran } from '../authoring/ran';
 
 const NOTES = `# 手順書
 
@@ -31,6 +32,7 @@ export const gitThreeTrees: LessonDefinition = {
       prompt: 'リポジトリを作り、app.ts と notes.md だけを最初のコミットに入れよ。tmp.log は入れるな。',
       check: 'コミットがあり、app.ts と notes.md が記録され、tmp.log が記録されていないこと',
       hints: ['git init', 'git add app.ts notes.md', 'git commit -m "base"'],
+      solution: ['git init', 'git add app.ts notes.md', 'git commit -m "base"'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null || headCommit(git) === null) return false;
@@ -46,6 +48,7 @@ export const gitThreeTrees: LessonDefinition = {
       prompt: 'app.ts を書き換えよ。まだ add はするな。',
       check: 'app.ts に未ステージの変更があること',
       hints: ['echo "export const version = 2;" > app.ts'],
+      solution: ['echo "export const version = 2;" > app.ts'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -58,6 +61,7 @@ export const gitThreeTrees: LessonDefinition = {
       prompt: 'その変更をインデックスに載せよ。',
       check: 'app.ts がステージ済みで、未ステージの変更が無いこと',
       hints: ['git add app.ts'],
+      solution: ['git add app.ts'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -70,6 +74,7 @@ export const gitThreeTrees: LessonDefinition = {
       prompt: 'やっぱり載せるのをやめ、インデックスだけを HEAD に戻せ。作業ツリーの変更は消すな。',
       check: 'app.ts が未ステージの変更として残っていること',
       hints: ['git restore --staged app.ts', 'git restore（--staged 無し）は作業ツリーを消してしまうので注意'],
+      solution: ['git restore --staged app.ts'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -110,6 +115,7 @@ export const gitAmend: LessonDefinition = {
       prompt: 'index.html だけをコミットせよ（style.css を入れ忘れた、という状況を作る）。',
       check: 'コミットが1つあり、style.css が記録されていないこと',
       hints: ['git init', 'git add index.html', 'git commit -m "ページを追加"'],
+      solution: ['git init', 'git add index.html', 'git commit -m "ページを追加"'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null || headCommit(git) === null) return false;
@@ -124,6 +130,7 @@ export const gitAmend: LessonDefinition = {
         'git add style.css',
         'git commit --amend -m "ページを追加"（reset --soft HEAD~1 から作り直しても正解）',
       ],
+      solution: ['git add style.css', 'git commit --amend -m "ページを追加"'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -166,6 +173,7 @@ export const gitInteractiveRebase: LessonDefinition = {
         'git switch -c topic',
         'echo a > a.txt && git add . && git commit -m "wip a" を3回',
       ],
+      solution: ['git init', 'git add .', 'git commit -m "base"', 'git switch -c topic', 'echo a > a.txt', 'git add .', 'git commit -m "wip a"', 'echo b > b.txt', 'git add .', 'git commit -m "wip b"', 'echo c > c.txt', 'git add .', 'git commit -m "wip c"'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -177,6 +185,7 @@ export const gitInteractiveRebase: LessonDefinition = {
       prompt: 'main の上に載せ直す台本を作れ（まだ実行しなくてよい）。',
       check: '.git/rebase-merge/git-rebase-todo が作られていること',
       hints: ['git rebase -i main', '台本は .git/rebase-merge/git-rebase-todo に出る'],
+      solution: ['git rebase -i main'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -193,6 +202,7 @@ export const gitInteractiveRebase: LessonDefinition = {
         '2行目以降の pick を squash に変える',
         '直したら git rebase --continue',
       ],
+      solution: ['printf "pick HEAD~2 wip a\\nsquash HEAD~1 wip b\\nsquash HEAD wip c\\n" > .git/rebase-merge/git-rebase-todo', 'git rebase --continue'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -233,6 +243,7 @@ export const gitRecovery: LessonDefinition = {
       prompt: 'コミットを2つ積め。2つ目には大事な内容を入れよ。',
       check: 'コミットが2つ以上あること',
       hints: ['git init / git add . / git commit -m "first"', 'echo 大事 >> report.md して2つ目'],
+      solution: ['git init', 'git add .', 'git commit -m "first"', 'echo 大事 >> report.md', 'git add .', 'git commit -m "second"'],
       assert: ({ shell }) => shell.git !== null && log(shell.git).length >= 2,
       explain: '事故を再現するには、まず失うものが要る。',
     },
@@ -240,6 +251,7 @@ export const gitRecovery: LessonDefinition = {
       prompt: '事故を起こせ。git reset --hard HEAD~1 で2つ目を消せ。',
       check: 'コミットが1つに減っていること',
       hints: ['git reset --hard HEAD~1'],
+      solution: ['git reset --hard HEAD~1'],
       assert: ({ shell }) => shell.git !== null && log(shell.git).length === 1,
       explain: '--hard は作業ツリーごと巻き戻す。この時点で2つ目のコミットは「どこからも辿れない」状態になった。',
     },
@@ -247,8 +259,8 @@ export const gitRecovery: LessonDefinition = {
       prompt: '消えたコミットが、まだオブジェクトDBに残っていることを確かめよ。',
       check: 'git fsck か git count-objects -v を実行し、到達不能なオブジェクトがあると分かること',
       hints: ['git fsck', 'git count-objects -v'],
-      assert: ({ history }) =>
-        history.some((l) => l.includes('git fsck') || l.includes('count-objects')),
+      solution: ['git fsck'],
+      assert: ({ history }) => ran(history, 'git', 'fsck') || ran(history, 'git', 'count-objects'),
       explain:
         'reset は参照を動かしただけ。オブジェクトそのものは消えていない。到達不能（dangling）になっただけ。',
     },
@@ -256,9 +268,10 @@ export const gitRecovery: LessonDefinition = {
       prompt: 'reflog から消したコミットを見つけ、その位置まで戻せ。',
       check: 'コミットが再び2つになっていること',
       hints: ['git reflog で HEAD が通った場所が並ぶ', 'git reset --hard <消したコミットのハッシュ>'],
+      solution: ['git reflog', 'git reset --hard HEAD@{1}'],
       assert: ({ shell }) => shell.git !== null && log(shell.git).length >= 2,
       diagnose: ({ history }) =>
-        history.some((l) => l.includes('reflog'))
+        ran(history, 'git', 'reflog')
           ? null
           : 'まず git reflog を見てください。HEAD が通った場所が新しい順に並びます。',
       explain:

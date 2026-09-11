@@ -5,6 +5,7 @@ import type {
 } from '../types';
 import type { Check } from './assert';
 import { requireAll, type Condition } from './conditions';
+import { solutionText, splitSolution, withSolutionHint } from './solution';
 
 interface StepBase {
   /** 何をするか */
@@ -20,6 +21,8 @@ interface StepBase {
   parts?: readonly StepPart[];
   /** 詰まったときに最後に見せる答え */
   answer?: string;
+  /** この手順の模範解答。省くと任務全体の solution を実際に打って切り分ける */
+  solution?: readonly string[];
 }
 
 /**
@@ -69,26 +72,59 @@ export interface MissionSource {
   solution: readonly string[];
 }
 
-function toStep(spec: StepSpec, fallbackAnswer: string | undefined): LessonStep {
-  // 最後のヒントは、どの演習でも「そのまま打てば通る一行」にしてある
-  const lastHint = spec.hints?.[spec.hints.length - 1];
-  const answer = spec.answer ?? fallbackAnswer ?? lastHint;
+function toStep(spec: StepSpec): LessonStep {
   const built = spec.conditions === undefined ? null : requireAll(...spec.conditions);
   const parts = spec.parts ?? built?.parts;
   return {
     prompt: spec.prompt,
     check: spec.check ?? built?.summary ?? '',
     hints: spec.hints ?? [],
+    solution: spec.solution ?? [],
     assert: spec.assert ?? built?.assert ?? (() => false),
     explain: spec.explain,
     ...(spec.diagnose ? { diagnose: spec.diagnose } : {}),
     ...(parts ? { parts } : {}),
-    ...(answer !== undefined ? { answer } : {}),
+    ...(spec.answer !== undefined ? { answer: spec.answer } : {}),
   };
+}
+
+/**
+ * 手順ごとの模範解答を埋め、最後のヒントを「そのまま打てば通るコマンド」にそろえる。
+ * 手順に解答が書かれていなければ、任務全体の解答を実際に打って切り分ける。
+ */
+function withSolutions(steps: readonly LessonStep[], split: () => string[][]): LessonStep[] {
+  const needsSplit = steps.some((s) => s.solution.length === 0);
+  const pieces = needsSplit ? split() : [];
+  return steps.map((step, i) => {
+    const solution = step.solution.length > 0 ? step.solution : (pieces[i] ?? []);
+    // 前の手順と一緒に満たされる手順は解答が空になるので、そのときは最後のヒントを答えにする
+    const answer =
+      step.answer ?? (solution.length > 0 ? solutionText(solution) : step.hints[step.hints.length - 1]);
+    return withSolutionHint({ ...step, solution, ...(answer !== undefined ? { answer } : {}) });
+  });
 }
 
 export function defineMission(spec: MissionSpec): MissionSource {
   const kind = spec.kind ?? 'training';
+  // 切り分けは1回打ってみる必要があるので、任務ごとに1度だけ行う
+  let pieces: string[][] | null = null;
+  const build = (): LessonDefinition => {
+    const base: LessonDefinition = {
+      id: spec.id,
+      track: spec.track,
+      kind,
+      title: spec.title,
+      objectives: spec.objectives,
+      initial: typeof spec.initial === 'function' ? spec.initial() : spec.initial,
+      parCommands: spec.parCommands ?? Math.max(3, spec.solution.length),
+      steps: spec.steps.map(toStep),
+    };
+    const steps = withSolutions(base.steps, () => {
+      pieces ??= splitSolution(base, spec.solution);
+      return pieces;
+    });
+    return { ...base, steps };
+  };
   return {
     id: spec.id,
     track: spec.track,
@@ -100,19 +136,7 @@ export function defineMission(spec: MissionSpec): MissionSource {
     docs: spec.docs ?? [],
     stepCount: spec.steps.length,
     solution: spec.solution,
-    build: () => ({
-      id: spec.id,
-      track: spec.track,
-      kind,
-      title: spec.title,
-      objectives: spec.objectives,
-      initial: typeof spec.initial === 'function' ? spec.initial() : spec.initial,
-      parCommands: spec.parCommands ?? Math.max(3, spec.solution.length),
-      // 手順と模範解答が1対1なら、その行を「答え」として使える
-      steps: spec.steps.map((step, i) =>
-        toStep(step, spec.steps.length === spec.solution.length ? spec.solution[i] : undefined),
-      ),
-    }),
+    build,
   };
 }
 

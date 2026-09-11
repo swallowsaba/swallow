@@ -11,7 +11,7 @@ import { resolve } from '../path';
 import { stat } from '../vfs';
 import { fromLines } from './args';
 import {
-  FIELD_OF, KINDS, idFor, listOf, notFound, table, type KubectlHandler,
+  FIELD_OF, KINDS, idFor, listOf, notFound, podFor, table, type KubectlHandler,
 } from './kubectlShared';
 
 /** 資源を、その種別のコレクションに書き込んだ新しいクラスタを返す */
@@ -203,9 +203,9 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
   },
 
   logs: ({ cluster, namespace, operands }) => {
-    const name = operands[0];
-    const pod = name === undefined ? undefined : cluster.pods.get(key(namespace, name));
-    if (pod === undefined || name === undefined) return notFound('pods', name ?? '');
+    const target = operands[0];
+    const pod = target === undefined ? undefined : podFor(cluster, namespace, target);
+    if (pod === undefined || target === undefined) return notFound('pods', target ?? '');
 
     const lines: string[] = [];
     for (const spec of pod.spec.containers) {
@@ -233,9 +233,10 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
   },
 
   exec: ({ cluster, namespace, operands, rest }) => {
-    const name = operands[0];
-    const pod = name === undefined ? undefined : cluster.pods.get(key(namespace, name));
-    if (pod === undefined || name === undefined) return notFound('pods', name ?? '');
+    const target = operands[0];
+    const pod = target === undefined ? undefined : podFor(cluster, namespace, target);
+    if (pod === undefined || target === undefined) return notFound('pods', target ?? '');
+    const name = pod.metadata.name;
     if (!isReady(pod)) {
       return { stderr: `error: pod ${name} is not running\n`, code: 1 };
     }

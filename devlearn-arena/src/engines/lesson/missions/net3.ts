@@ -2,6 +2,7 @@ import { host, iface, link, nat, port, resetMac, router, switchDevice, topology 
 import { HOME } from '@/engines/kernel/path';
 import type { Topology } from '@/engines/net/types';
 import type { LessonDefinition } from '../types';
+import { hostIs, ran } from '../authoring/ran';
 
 const FILES = { [HOME]: null };
 
@@ -121,7 +122,8 @@ export const netTls: LessonDefinition = {
       prompt: 'shop.example.com のハンドシェイクが成立することを確かめよ。',
       check: 'tlscheck shop.example.com が成功すること',
       hints: ['tlscheck shop.example.com'],
-      assert: ({ history }) => history.some((l) => l.includes('tlscheck shop.example.com')),
+      solution: ['tlscheck shop.example.com'],
+      assert: ({ history }) => ran(history, 'tlscheck', 'shop.example.com'),
       explain:
         'ClientHello → ServerHello → Certificate → Finished。鍵そのものは送らず、双方が同じ鍵を導ける材料だけを交換する。',
     },
@@ -129,14 +131,16 @@ export const netTls: LessonDefinition = {
       prompt: '期限切れの old.example.com を試し、理由を確かめよ。',
       check: 'old.example.com を試したこと',
       hints: ['tlscheck old.example.com'],
-      assert: ({ history }) => history.some((l) => l.includes('old.example.com')),
+      solution: ['tlscheck old.example.com'],
+      assert: ({ history }) => ran(history, 'tlscheck', 'old.example.com'),
       explain: 'certificate has expired。期限は「その証明書がまだ信用に足るか」の期限。',
     },
     {
       prompt: '自己署名の self.example.com を試し、理由が違うことを確かめよ。',
       check: 'self.example.com を試したこと',
       hints: ['tlscheck self.example.com'],
-      assert: ({ history }) => history.some((l) => l.includes('self.example.com')),
+      solution: ['tlscheck self.example.com'],
+      assert: ({ history }) => ran(history, 'tlscheck', 'self.example.com'),
       explain:
         'unable to get local issuer certificate。証明書自体は正しくても、発行者を信用していなければ通らない。',
     },
@@ -144,6 +148,7 @@ export const netTls: LessonDefinition = {
       prompt: '3つの結果の違いを /home/learner/tls.txt にまとめよ（expired と issuer の両方を書くこと）。',
       check: 'tls.txt に expired と issuer が含まれること',
       hints: ['echo "expired: 期限切れ / issuer: 発行者が信用されていない" > tls.txt'],
+      solution: ['echo "expired: 期限切れ / issuer: 発行者が信用されていない" > tls.txt'],
       assert: ({ shell }) => {
         const node = shell.vfs.nodes.get(`${HOME}/tls.txt`);
         return node?.kind === 'file' && node.content.includes('expired') && node.content.includes('issuer');
@@ -167,10 +172,9 @@ export const netHealthCheck: LessonDefinition = {
       prompt: '3台のバックエンド（10.0.0.21 / .22 / .23）に順に繋ぎ、応答を確かめよ。',
       check: '3台とも curl で試したこと',
       hints: ['curl http://10.0.0.21/', '.22 と .23 も同じように'],
+      solution: ['curl http://10.0.0.21/', 'curl http://10.0.0.22/', 'curl http://10.0.0.23/'],
       assert: ({ history }) =>
-        ['10.0.0.21', '10.0.0.22', '10.0.0.23'].every((ip) =>
-          history.some((l) => l.includes('curl') && l.includes(ip)),
-        ),
+        ['10.0.0.21', '10.0.0.22', '10.0.0.23'].every((ip) => ran(history, 'curl', hostIs(ip))),
       explain:
         'ロードバランサがやっているのは、これを一定間隔で繰り返しているだけ。特別なことはしていない。',
     },
@@ -178,6 +182,7 @@ export const netHealthCheck: LessonDefinition = {
       prompt: '落ちている1台を /home/learner/down.txt に書き出せ。',
       check: 'down.txt に 10.0.0.22 が含まれること',
       hints: ['echo 10.0.0.22 > down.txt'],
+      solution: ['echo 10.0.0.22 > down.txt'],
       assert: ({ shell }) => {
         const node = shell.vfs.nodes.get(`${HOME}/down.txt`);
         return node?.kind === 'file' && node.content.includes('10.0.0.22');
@@ -201,14 +206,16 @@ export const netDropVsReject: LessonDefinition = {
       prompt: '80 番に繋がることを確かめよ。',
       check: 'curl で 80 番に繋いだこと',
       hints: ['curl http://10.0.0.20/'],
-      assert: ({ history }) => history.some((l) => l.includes('curl') && l.includes('10.0.0.20')),
+      solution: ['curl http://10.0.0.20/'],
+      assert: ({ history }) => ran(history, 'curl', hostIs('10.0.0.20')),
       explain: 'まず「通る経路がある」ことを確かめる。ここが駄目なら、ポートの話に進む意味がない。',
     },
     {
       prompt: '待ち受けていない 9001 番に繋いでみよ。',
       check: '9001 番を試したこと',
       hints: ['curl http://10.0.0.20:9001/'],
-      assert: ({ history }) => history.some((l) => l.includes('9001')),
+      solution: ['curl http://10.0.0.20:9001/'],
+      assert: ({ history }) => ran(history, 'curl', /:9001(\/|$)/),
       explain:
         'Connection refused。相手まで届いていて、相手が「そのポートは開いていない」と即座に返している。',
     },
@@ -216,7 +223,8 @@ export const netDropVsReject: LessonDefinition = {
       prompt: 'ファイアウォールで塞がれた 9000 番に繋いでみよ。',
       check: '9000 番を試したこと',
       hints: ['curl http://10.0.0.20:9000/'],
-      assert: ({ history }) => history.some((l) => l.includes('9000')),
+      solution: ['curl http://10.0.0.20:9000/'],
+      assert: ({ history }) => ran(history, 'curl', /:9000(\/|$)/),
       explain:
         'refused と reject/drop は症状が違う。即座に断られるのか、黙って捨てられるのかで、疑うべき場所が変わる。',
     },
@@ -224,6 +232,7 @@ export const netDropVsReject: LessonDefinition = {
       prompt: '違いを /home/learner/diag.txt にまとめよ（refused と firewall の両方を書くこと）。',
       check: 'diag.txt に refused と firewall が含まれること',
       hints: ['echo "refused=待ち受けなし / firewall=塞がれている" > diag.txt'],
+      solution: ['echo "refused=待ち受けなし / firewall=塞がれている" > diag.txt'],
       assert: ({ shell }) => {
         const node = shell.vfs.nodes.get(`${HOME}/diag.txt`);
         return node?.kind === 'file' && node.content.includes('refused') && node.content.includes('firewall');
@@ -246,6 +255,7 @@ export const netVpcDesign: LessonDefinition = {
       prompt: '10.0.0.0/16 を /20 に分けたとき、2つ目の区画の先頭アドレスを調べ、/home/learner/plan.txt に書き出せ。',
       check: 'plan.txt に 10.0.16.0 が含まれること',
       hints: ['ipcalc 10.0.16.0/20 で確かめられる', '/20 は 4096 個ずつの区切り'],
+      solution: ['ipcalc 10.0.16.0/20 > plan.txt'],
       assert: ({ shell }) => {
         const node = shell.vfs.nodes.get(`${HOME}/plan.txt`);
         return node?.kind === 'file' && node.content.includes('10.0.16.0');
@@ -257,6 +267,7 @@ export const netVpcDesign: LessonDefinition = {
       prompt: '別の拠点に 10.0.0.0/16 と重ならない範囲を選び、/home/learner/plan.txt に追記せよ（172.16 で始まる範囲にすること）。',
       check: 'plan.txt に 172.16 が含まれること',
       hints: ['echo 172.16.0.0/16 >> plan.txt'],
+      solution: ['echo 172.16.0.0/16 >> plan.txt'],
       assert: ({ shell }) => {
         const node = shell.vfs.nodes.get(`${HOME}/plan.txt`);
         return node?.kind === 'file' && node.content.includes('172.16');

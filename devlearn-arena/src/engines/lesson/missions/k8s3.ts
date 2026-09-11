@@ -3,6 +3,8 @@ import { isReady } from '@/engines/k8s/kubelet';
 import { key, type ClusterState } from '@/engines/k8s/types';
 import { HOME } from '@/engines/kernel/path';
 import type { LessonDefinition } from '../types';
+import { heredoc } from '../authoring/solution';
+import { countRan, DEPLOY, POD, ran } from '../authoring/ran';
 
 const MANIFEST_HINT = 'vi app.yaml でマニフェストを書き、kubectl apply -f app.yaml で適用する';
 
@@ -11,6 +13,73 @@ function cluster(nodes = [node('node-1', 2000, 4096), node('node-2', 2000, 4096)
 }
 
 const FILES = { [HOME]: null };
+
+/* 模範解答で書くマニフェスト。1行ずつの配列で持ち、ヒアドキュメントで書き出す */
+
+const SA_YAML = [
+  'kind: ServiceAccount',
+  'metadata:',
+  '  name: deploy-bot',
+];
+
+const RBAC_YAML = [
+  'kind: Role',
+  'metadata:',
+  '  name: pod-reader',
+  'rules:',
+  '  - apiGroups: [""]',
+  '    resources: ["pods"]',
+  '    verbs: ["get", "list"]',
+  '---',
+  'kind: RoleBinding',
+  'metadata:',
+  '  name: read-pods',
+  'roleRef:',
+  '  kind: Role',
+  '  name: pod-reader',
+  'subjects:',
+  '  - kind: ServiceAccount',
+  '    name: deploy-bot',
+  '    namespace: default',
+];
+
+const HPA_YAML = [
+  'kind: HorizontalPodAutoscaler',
+  'metadata:',
+  '  name: web',
+  'spec:',
+  '  scaleTargetRef:',
+  '    name: web',
+  '  minReplicas: 2',
+  '  maxReplicas: 6',
+  '  metrics:',
+  '    - resource:',
+  '        target:',
+  '          averageUtilization: 50',
+];
+
+const NOISY_YAML = [
+  'kind: Deployment',
+  'metadata:',
+  '  name: noisy',
+  'spec:',
+  '  replicas: 1',
+  '  template:',
+  '    metadata:',
+  '      labels:',
+  '        app: noisy',
+  '    spec:',
+  '      containers:',
+  '        - name: noisy',
+  '          image: batch:1.0',
+  '          resources:',
+  '            requests:',
+  '              cpu: 100',
+  '              memory: 128',
+  '            limits:',
+  '              cpu: 200',
+  '              memory: 256',
+];
 
 import { canI } from '@/engines/k8s/policy';
 
@@ -37,6 +106,7 @@ export const k8sCrashLoop: LessonDefinition = {
       prompt: '時間を進め、worker がどうなっているか確かめよ。',
       check: 'CrashLoopBackOff になっている Pod があること',
       hints: ['kubectl wait 10', 'kubectl get pods'],
+      solution: ['kubectl wait 10', 'kubectl get pods'],
       assert: ({ shell }) =>
         [...(shell.cluster?.pods.values() ?? [])].some((p) =>
           p.status.containerStatuses.some((c) => c.waitingReason === 'CrashLoopBackOff'),
@@ -48,7 +118,8 @@ export const k8sCrashLoop: LessonDefinition = {
       prompt: 'ログを見て、何が起きているか確かめよ。',
       check: 'kubectl logs を実行したこと',
       hints: ['kubectl logs <Pod名>'],
-      assert: ({ history }) => history.some((l) => l.includes('kubectl logs')),
+      solution: ['kubectl logs deploy/worker'],
+      assert: ({ history }) => ran(history, 'kubectl', 'logs'),
       explain: '再起動している Pod のログは、落ちる直前までの出力。ここに原因が出ていることが多い。',
     },
     {
@@ -58,8 +129,13 @@ export const k8sCrashLoop: LessonDefinition = {
         'kubectl get pods <名前> -o jsonpath={.status.containerStatuses[0].restartCount}',
         'kubectl wait 10 を挟んでもう一度見る',
       ],
-      assert: ({ history }) =>
-        history.filter((l) => l.includes('restartCount')).length >= 2,
+      solution: ['kubectl wait 10', 'kubectl get pods', 'kubectl wait 10', 'kubectl get pods'],
+      // 見比べるには、再起動が2回以上起きた状態で、2回以上 Pod を見ている必要がある
+      assert: ({ shell, history }) =>
+        countRan(history, 'kubectl', ['get', 'describe'], POD) >= 2 &&
+        [...(shell.cluster?.pods.values() ?? [])].some((p) =>
+          p.status.containerStatuses.some((c) => c.restartCount >= 2),
+        ),
       explain:
         '同じ間隔で叩き続けると、直っていないのに負荷だけ掛かる。だから待ち時間を倍々に伸ばす（指数バックオフ）。',
     },
@@ -67,6 +143,7 @@ export const k8sCrashLoop: LessonDefinition = {
       prompt: '落ちないイメージに差し替えて、Ready にせよ。',
       check: 'worker の Pod が Ready であること',
       hints: ['kubectl set image deployment worker worker=nginx:1.25', 'kubectl wait 20'],
+      solution: ['kubectl set image deployment worker worker=nginx:1.25', 'kubectl wait 30'],
       assert: ({ shell }) => {
         const pods = [...(shell.cluster?.pods.values() ?? [])].filter(
           (p) => p.metadata.labels['app'] === 'worker',
@@ -96,11 +173,12 @@ export const k8sRbacDenied: LessonDefinition = {
         'kind: ServiceAccount / metadata.name: deploy-bot',
         'kubectl auth can-i list pods --as=system:serviceaccount:default:deploy-bot',
       ],
+      solution: [heredoc('sa.yaml', SA_YAML), 'kubectl apply -f sa.yaml', 'kubectl auth can-i list pods --as=system:serviceaccount:default:deploy-bot'],
       assert: ({ shell, history }) => {
         const state = shell.cluster;
         if (state === null) return false;
         if (!state.serviceAccounts.has(key('default', 'deploy-bot'))) return false;
-        if (!history.some((l) => l.includes('can-i'))) return false;
+        if (!ran(history, 'kubectl', 'auth', 'can-i')) return false;
         const decision = canI(state, {
           verb: 'list',
           resource: 'pods',
@@ -119,6 +197,7 @@ export const k8sRbacDenied: LessonDefinition = {
         'kind: Role の rules に resources: ["pods"] と verbs: ["get","list"]',
         'kind: RoleBinding の roleRef と subjects を書く',
       ],
+      solution: [heredoc('rbac.yaml', RBAC_YAML), 'kubectl apply -f rbac.yaml'],
       assert: ({ shell }) => {
         const state = shell.cluster;
         if (state === null) return false;
@@ -143,10 +222,11 @@ export const k8sRbacDenied: LessonDefinition = {
       prompt: 'delete までは許していないことを確かめよ。',
       check: 'can-i delete pods が no であること',
       hints: ['kubectl auth can-i delete pods --as=system:serviceaccount:default:deploy-bot'],
+      solution: ['kubectl auth can-i delete pods --as=system:serviceaccount:default:deploy-bot'],
       assert: ({ shell, history }) => {
         const state = shell.cluster;
         if (state === null) return false;
-        if (!history.some((l) => l.includes('can-i delete'))) return false;
+        if (!ran(history, 'kubectl', 'auth', 'can-i', 'delete')) return false;
         return !canI(state, {
           verb: 'delete',
           resource: 'pods',
@@ -185,6 +265,7 @@ export const k8sHpa: LessonDefinition = {
         'spec.minReplicas: 2 / spec.maxReplicas: 6',
         'spec.metrics[0].resource.target.averageUtilization: 50',
       ],
+      solution: [heredoc('hpa.yaml', HPA_YAML), 'kubectl apply -f hpa.yaml'],
       assert: ({ shell }) => {
         const hpa = [...(shell.cluster?.autoscalers.values() ?? [])][0];
         return hpa !== undefined && hpa.spec.minReplicas === 2 && hpa.spec.maxReplicas === 6;
@@ -195,17 +276,21 @@ export const k8sHpa: LessonDefinition = {
       prompt: '負荷を 100% にして、台数が増えることを確かめよ。',
       check: 'web の replicas が 2 より増えていること',
       hints: ['kubectl load web 100', 'kubectl wait 20'],
+      solution: ['kubectl load web 100', 'kubectl wait 20'],
       assert: ({ shell }) => (shell.cluster?.deployments.get(key('default', 'web'))?.spec.replicas ?? 0) > 2,
       explain:
         '「いまの台数 × 現在値 ÷ 目標値」が必要な台数。倍の負荷なら倍の台数、という素直な比で決まる。',
     },
     {
       prompt: '上限を超えないことを確かめよ。負荷を極端に上げてみること。',
-      check: 'replicas が 6 を超えていないこと',
+      check: '負荷を 100% より強くしても、replicas が 6 を超えていないこと',
       hints: ['kubectl load web 1000', 'kubectl wait 30'],
-      assert: ({ shell, history }) => {
+      solution: ['kubectl load web 1000', 'kubectl wait 30'],
+      assert: ({ shell }) => {
         const replicas = shell.cluster?.deployments.get(key('default', 'web'))?.spec.replicas ?? 0;
-        return history.some((l) => l.includes('load web')) && replicas <= 6 && replicas > 2;
+        // 手順2より強い負荷をかけても、上限の6で止まっていること
+        const load = shell.cluster?.load.get(key('default', 'web')) ?? 0;
+        return load > 100 && replicas <= 6 && replicas > 2;
       },
       explain:
         '上限が無いと、障害時に増え続けてクラスタを食い潰す。maxReplicas は性能の設定ではなく、事故を止める柵。',
@@ -232,6 +317,7 @@ export const k8sDrain: LessonDefinition = {
       prompt: 'Pod が2台のノードに分かれて動いている状態にせよ。',
       check: 'Ready な Pod が4つあること',
       hints: ['kubectl wait 20', 'kubectl get pods -o wide で置き場所が見える'],
+      solution: ['kubectl wait 25'],
       assert: ({ shell }) => {
         const pods = [...(shell.cluster?.pods.values() ?? [])];
         return pods.filter(isReady).length >= 4;
@@ -242,6 +328,7 @@ export const k8sDrain: LessonDefinition = {
       prompt: 'node-1 を drain して空けよ。',
       check: 'node-1 が unschedulable になり、そこに Pod が居ないこと',
       hints: ['kubectl drain node-1'],
+      solution: ['kubectl drain node-1'],
       assert: ({ shell }) => {
         const state = shell.cluster;
         if (state === null) return false;
@@ -256,6 +343,7 @@ export const k8sDrain: LessonDefinition = {
       prompt: '追い出された Pod が別のノードで作り直され、4つに戻ることを確かめよ。',
       check: 'Ready な Pod が再び4つあり、全て node-2 に居ること',
       hints: ['kubectl wait 20', 'kubectl get pods -o wide'],
+      solution: ['kubectl wait 30'],
       assert: ({ shell }) => {
         const pods = [...(shell.cluster?.pods.values() ?? [])].filter(isReady);
         return pods.length >= 4 && pods.every((p) => p.status.nodeName === 'node-2');
@@ -290,8 +378,9 @@ export const k8sNoLimits: LessonDefinition = {
         'kubectl get deploy noisy -o yaml',
         'kubectl get deploy noisy -o jsonpath={.spec.template.containers[0].limits}',
       ],
+      solution: ['kubectl get deploy noisy -o yaml'],
       assert: ({ history }) =>
-        history.some((l) => l.includes('get deploy') && (l.includes('-o yaml') || l.includes('jsonpath'))),
+        ran(history, 'kubectl', 'get', DEPLOY, '-o', /^(yaml|json|jsonpath.*)$/),
       explain:
         'requests は「置き場所を決めるための申告」、limits は「これ以上は使わせない上限」。片方だけだと、申告より多く使えてしまう。',
     },
@@ -302,6 +391,7 @@ export const k8sNoLimits: LessonDefinition = {
         MANIFEST_HINT,
         'spec.template.spec.containers[].resources.limits に cpu と memory を書く',
       ],
+      solution: [heredoc('fix.yaml', NOISY_YAML), 'kubectl apply -f fix.yaml'],
       assert: ({ shell }) => {
         const target = shell.cluster?.deployments.get(key('default', 'noisy'));
         if (target === undefined) return false;

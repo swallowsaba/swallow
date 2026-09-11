@@ -1,3 +1,4 @@
+import { commandsOf } from '../authoring/ran';
 import { fileEquals } from '../authoring/assert';
 import type { AssertContext } from '../types';
 import type { MissionSource } from '../authoring/mission';
@@ -133,7 +134,14 @@ const killDrills = family<{ command: string; stubborn: boolean }>({
             {
               prompt: `${needle} に穏やかに終わるよう伝えよ（SIGTERM）。`,
               check: 'SIGTERM を送った記録があること',
-              assert: (ctx) => ctx.history.some((l) => /p?kill(?!\s+-9)/.test(l)),
+              assert: (ctx) =>
+                ctx.history.some((l) =>
+                  commandsOf(l).some(
+                    (argv) =>
+                      ['kill', 'pkill'].includes(argv[0] ?? '') &&
+                      !argv.some((a) => ['-9', '-kill', '-sigkill', '-s9'].includes(a)),
+                  ),
+                ),
               hints: ['pkill <名前> は既定で SIGTERM', `pkill ${needle}`],
               explain:
                 'SIGTERM は「片付けて終わって」という依頼。受け取った側が無視することもできる。',

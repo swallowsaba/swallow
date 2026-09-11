@@ -1,6 +1,7 @@
 import { createRepo } from '@/engines/github/pr';
 import { HOME } from '@/engines/kernel/path';
 import type { LessonDefinition } from '../types';
+import { ran } from '../authoring/ran';
 
 const WORKFLOWS = `${HOME}/.github/workflows`;
 const FILES = { [HOME]: null };
@@ -87,6 +88,7 @@ export const ghActionsPractice: LessonDefinition = {
       prompt: 'Pull Request を作り、CI を走らせよ。シークレットが無いので落ちるはず。',
       check: 'deploy が failure になっていること',
       hints: ['gh pr create -t "デプロイ" -b deploy', 'gh pr checks 1'],
+      solution: ['gh pr create -t "デプロイ" -b deploy', 'gh pr checks 1'],
       assert: ({ shell }) => {
         const checks = shell.repo?.pulls[0]?.checks ?? [];
         return checks.find((c) => c.name === 'deploy')?.status === 'failure';
@@ -98,6 +100,7 @@ export const ghActionsPractice: LessonDefinition = {
       prompt: 'DEPLOY_TOKEN を登録し、もう一度 CI を走らせて通せ。',
       check: 'build と deploy が両方 success であること',
       hints: ['gh secret set DEPLOY_TOKEN -b s3cret', 'gh pr checks 1'],
+      solution: ['gh secret set DEPLOY_TOKEN -b s3cret', 'gh pr checks 1'],
       assert: ({ shell }) => {
         const checks = shell.repo?.pulls[0]?.checks ?? [];
         return checks.length >= 2 && checks.every((c) => c.status === 'success');
@@ -113,7 +116,8 @@ export const ghActionsPractice: LessonDefinition = {
       prompt: '登録済みのシークレットを一覧し、値が表示されないことを確かめよ。',
       check: 'gh secret list を実行したこと',
       hints: ['gh secret list'],
-      assert: ({ history }) => history.some((l) => l.includes('gh secret list')),
+      solution: ['gh secret list'],
+      assert: ({ history }) => ran(history, 'gh', 'secret', 'list'),
       explain:
         '一度入れた値は読み出せない。取り出せないからこそ、置き場所として信用できる。',
     },
@@ -136,13 +140,15 @@ export const ghMatrix: LessonDefinition = {
       prompt: 'ワークフローを確かめ、matrix に何が並んでいるか見よ。',
       check: 'gh workflow を実行したこと',
       hints: ['gh workflow'],
-      assert: ({ history }) => history.some((l) => l.includes('gh workflow')),
+      solution: ['gh workflow'],
+      assert: ({ history }) => ran(history, 'gh', 'workflow'),
       explain: 'matrix は「同じ手順を、値を変えて何回か回す」だけ。書くのは1回で済む。',
     },
     {
       prompt: 'Pull Request を作って CI を走らせ、ジョブが2つに増えることを確かめよ。',
       check: 'チェックが2件あり、両方 success であること',
       hints: ['gh pr create -t "多版検証" -b matrix', 'gh pr checks 1'],
+      solution: ['gh pr create -t "多版検証" -b matrix', 'gh pr checks 1'],
       assert: ({ shell }) => {
         const checks = shell.repo?.pulls[0]?.checks ?? [];
         return checks.length === 2 && checks.every((c) => c.status === 'success');
@@ -153,6 +159,7 @@ export const ghMatrix: LessonDefinition = {
       prompt: 'node 20 の側だけを落として、片方だけが失敗することを確かめよ。',
       check: '1件が failure、もう1件が success であること',
       hints: ['gh pr checks 1 --fail=test:20'],
+      solution: ['gh pr checks 1 --fail=test:20'],
       assert: ({ shell }) => {
         const checks = shell.repo?.pulls[0]?.checks ?? [];
         const failed = checks.filter((c) => c.status === 'failure');
@@ -184,7 +191,8 @@ export const ghReusable: LessonDefinition = {
       prompt: 'ci.yml が何を呼んでいるかを確かめよ。',
       check: 'gh workflow を実行したこと',
       hints: ['gh workflow -w ci.yml'],
-      assert: ({ history }) => history.some((l) => l.includes('gh workflow')),
+      solution: ['gh workflow -w ci.yml'],
+      assert: ({ history }) => ran(history, 'gh', 'workflow'),
       explain:
         'jobs の中に steps ではなく uses が書いてあれば、それは別のワークフローの呼び出し。',
     },
@@ -192,6 +200,7 @@ export const ghReusable: LessonDefinition = {
       prompt: 'Pull Request を作って CI を走らせ、呼び出し先のジョブが動くことを確かめよ。',
       check: 'チェックが success であること',
       hints: ['gh pr create -t "共通化" -b shared', 'gh pr checks 1 -w ci.yml'],
+      solution: ['gh pr create -t "共通化" -b shared', 'gh pr checks 1 -w ci.yml'],
       assert: ({ shell }) => {
         const checks = shell.repo?.pulls[0]?.checks ?? [];
         return checks.length >= 1 && checks.every((c) => c.status === 'success');
@@ -215,6 +224,7 @@ export const ghForkFlow: LessonDefinition = {
       prompt: 'このリポジトリを自分の側に fork せよ。',
       check: 'fork になっていて、元を指していること',
       hints: ['gh fork learner'],
+      solution: ['gh fork learner'],
       assert: ({ shell }) => shell.repo?.upstream?.owner === 'upstream',
       explain:
         'fork は「自分が書ける複製」。元には書けないので、まず書ける場所を作る。',
@@ -223,6 +233,7 @@ export const ghForkFlow: LessonDefinition = {
       prompt: 'fork 側に Pull Request を作り、元へ変更を提案せよ。',
       check: 'Pull Request が1件あること',
       hints: ['gh pr create -t "誤字を直す" -b typo-fix'],
+      solution: ['gh pr create -t "誤字を直す" -b typo-fix'],
       assert: ({ shell }) => (shell.repo?.pulls.length ?? 0) >= 1,
       explain:
         'fork から出した PR は、元のリポジトリに「取り込みませんか」と提案する形になる。相手が受けるまで、元は何も変わらない。',
@@ -231,7 +242,8 @@ export const ghForkFlow: LessonDefinition = {
       prompt: '出した Pull Request の中身を確かめよ。',
       check: 'gh pr view を実行したこと',
       hints: ['gh pr view 1'],
-      assert: ({ history }) => history.some((l) => l.includes('gh pr view')),
+      solution: ['gh pr view 1'],
+      assert: ({ history }) => ran(history, 'gh', 'pr', 'view'),
       explain:
         '「誰の、どの枝から、どこへ」が全部見えるようになっている。これが無いと、受ける側は判断できない。',
     },
@@ -254,7 +266,8 @@ export const ghRelease: LessonDefinition = {
       prompt: 'まだタグが無い状態で、v1.0.0 のリリースを作ろうとしてみよ。',
       check: 'gh release create を試したこと',
       hints: ['gh release create v1.0.0 -t "初回リリース"'],
-      assert: ({ history }) => history.some((l) => l.includes('gh release create')),
+      solution: ['gh release create v1.0.0 -t "初回リリース"'],
+      assert: ({ history }) => ran(history, 'gh', 'release', 'create'),
       explain:
         'リリースは「このコミットを配った」という記録。指す先が無ければ作れない。',
     },
@@ -265,6 +278,7 @@ export const ghRelease: LessonDefinition = {
         'git init / git add . / git commit -m "first"',
         'git tag -a v1.0.0 -m "初回リリース"',
       ],
+      solution: ['git init', 'git add .', 'git commit -m "first"', 'git tag -a v1.0.0 -m "初回リリース"'],
       assert: ({ shell }) => shell.git?.refs.has('refs/tags/v1.0.0') === true,
       explain:
         'タグは動かない参照。ブランチと違って、後から中身が変わらないことが値打ち。',
@@ -273,6 +287,7 @@ export const ghRelease: LessonDefinition = {
       prompt: 'そのタグからリリースを作れ。',
       check: 'v1.0.0 のリリースがあること',
       hints: ['gh release create v1.0.0 -t "初回リリース"'],
+      solution: ['gh release create v1.0.0 -t "初回リリース"'],
       assert: ({ shell }) => (shell.repo?.releases ?? []).some((r) => r.tag === 'v1.0.0'),
       diagnose: ({ shell }) =>
         shell.git?.refs.has('refs/tags/v1.0.0') === true

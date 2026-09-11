@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
 import { createClock } from '@/engines/kernel/clock';
+import { splitCommands } from '@/engines/kernel/continuation';
 import { createShellState } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import type { ShellState } from '@/engines/kernel/registry';
 import { findMission, missions } from './missions';
+import { allMissions } from './registry';
 import { createProgress, evaluate } from './runner';
 import type { LessonDefinition } from './types';
 
@@ -151,5 +153,61 @@ describe('別解でもクリアできる', () => {
         'git merge feature',
       ]),
     ).toBe(true);
+  });
+});
+
+/** 手順の最後のヒントを、改行で分けた1行ずつのコマンドにする（ヒアドキュメントの本文はまとめる） */
+function lastHintLines(step: LessonDefinition['steps'][number]): string[] {
+  const last = step.hints[step.hints.length - 1] ?? '';
+  return splitCommands(last);
+}
+
+/**
+ * 各手順の最後のヒントを順に打つ。
+ * 手順ごとに、打ち終えた時点でその手順を越えていることを確かめる。
+ * 越えられなかった手順があれば、その番号を返す。
+ */
+function playByHints(lesson: LessonDefinition): { cleared: boolean; stuck: number | null } {
+  const clock = createClock();
+  const timeline: ShellState[] = [createShellState(lesson.initial)];
+  let progress = createProgress(lesson);
+  for (let i = 0; i < lesson.steps.length; i += 1) {
+    const step = lesson.steps[i];
+    if (!step || progress.cleared) break;
+    // 前の手順の解答で一緒に満たされた手順は、打たずに先へ進む
+    if (progress.stepIndex > i) continue;
+    for (const line of lastHintLines(step)) {
+      const last = timeline[timeline.length - 1];
+      if (!last) break;
+      timeline.push(execute(last, line, registry, clock).state);
+      progress = evaluate(lesson, progress, timeline);
+    }
+    if (!progress.cleared && progress.stepIndex <= i) return { cleared: false, stuck: i };
+  }
+  return { cleared: progress.cleared, stuck: progress.cleared ? null : progress.stepIndex };
+}
+
+describe('最後のヒントどおりに打てば必ず通る', () => {
+  const lessons = allMissions().map((entry) => entry.build());
+  it.each(lessons.map((l) => [l.id, l] as const))('%s', (_id, lesson) => {
+    const result = playByHints(lesson);
+    const step = result.stuck === null ? undefined : lesson.steps[result.stuck];
+    expect(
+      result.cleared,
+      step === undefined
+        ? ''
+        : `手順 ${String((result.stuck ?? 0) + 1)}: ${step.check}\nヒント: ${step.hints[step.hints.length - 1] ?? ''}`,
+    ).toBe(true);
+  });
+});
+
+describe('最後のヒントは完全なコマンド', () => {
+  it('解答のある手順では、最後のヒントが解答そのもの', () => {
+    for (const entry of allMissions()) {
+      for (const step of entry.build().steps) {
+        if (step.solution.length === 0) continue;
+        expect(step.hints[step.hints.length - 1], `${entry.id}: ${step.check}`).toBe(step.solution.join('\n'));
+      }
+    }
   });
 });

@@ -1,5 +1,6 @@
 import { host, iface, link, resetMac, router, topology } from '@/engines/net/factory';
 import type { LessonDefinition } from '../types';
+import { ran } from '../authoring/ran';
 
 /** web が待ち受けていないため、ping は通るのに curl が失敗する構成 */
 function brokenServiceNet(listening: number[]) {
@@ -36,8 +37,9 @@ export const netFirstHop: LessonDefinition = {
       prompt: '自分のアドレスと経路表を確認せよ。',
       check: 'ip addr と ip route を実行したこと',
       hints: ['ip addr', 'ip route'],
+      solution: ['ip addr', 'ip route'],
       assert: ({ history }) =>
-        history.some((l) => l.includes('ip addr')) && history.some((l) => l.includes('ip route')),
+        ran(history, 'ip', ['addr', 'a', 'address']) && ran(history, 'ip', ['route', 'r']),
       explain:
         '自分の IP とマスク、そしてデフォルトゲートウェイ。切り分けはここから始める。',
     },
@@ -45,8 +47,8 @@ export const netFirstHop: LessonDefinition = {
       prompt: 'web.internal まで届くことを確かめ、経路を1ホップずつ表示せよ。',
       check: 'ping と traceroute を実行したこと',
       hints: ['ping web.internal', 'traceroute web.internal'],
-      assert: ({ history }) =>
-        history.some((l) => l.startsWith('ping')) && history.some((l) => l.startsWith('traceroute')),
+      solution: ['ping web.internal', 'traceroute web.internal'],
+      assert: ({ history }) => ran(history, 'ping') && ran(history, 'traceroute'),
       explain:
         'ホップごとに TTL が 1 ずつ減り、MAC は次の相手のものに書き換わる。IP だけが最後まで変わらない。',
     },
@@ -54,6 +56,7 @@ export const netFirstHop: LessonDefinition = {
       prompt: '/home/learner/subnet.txt に、192.168.1.10/26 のネットワークアドレスを書き出せ。',
       check: 'subnet.txt に 192.168.1.0 が含まれること',
       hints: ['ipcalc 192.168.1.10/26 で計算できる', 'ipcalc の結果をそのまま書き出してもよい'],
+      solution: ['ipcalc 192.168.1.10/26 > subnet.txt'],
       assert: ({ shell }) => {
         const node = shell.vfs.nodes.get('/home/learner/subnet.txt');
         return node?.kind === 'file' && node.content.includes('192.168.1.0');
@@ -81,8 +84,8 @@ export const netUnreachableBoss: LessonDefinition = {
       prompt: '症状を確かめよ。ping と curl の両方を試すこと。',
       check: 'ping と curl を実行したこと',
       hints: ['ping web.internal', 'curl -v http://web.internal/'],
-      assert: ({ history }) =>
-        history.some((l) => l.startsWith('ping')) && history.some((l) => l.startsWith('curl')),
+      solution: ['ping web.internal', 'curl -v http://web.internal/'],
+      assert: ({ history }) => ran(history, 'ping') && ran(history, 'curl'),
       explain:
         'ping が通るなら、IP までは届いている。つまり経路とケーブルは生きている。問題はその上の層。',
     },
@@ -93,6 +96,7 @@ export const netUnreachableBoss: LessonDefinition = {
         'curl -v の最後の行に理由が出ている',
         'echo "IP までは到達。TCP 80 が Connection refused" > diagnosis.txt',
       ],
+      solution: ['echo "IP までは到達。TCP 80 が Connection refused" > diagnosis.txt'],
       assert: ({ shell }) => {
         const node = shell.vfs.nodes.get('/home/learner/diagnosis.txt');
         return node?.kind === 'file' && node.content.includes('refused');

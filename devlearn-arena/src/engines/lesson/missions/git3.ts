@@ -4,6 +4,8 @@ import { tagNames } from '@/engines/git/refs';
 import { HOME } from '@/engines/kernel/path';
 import { exists } from '@/engines/kernel/vfs';
 import type { LessonDefinition } from '../types';
+import { ran } from '../authoring/ran';
+import { badCommit, goodCommits, isBisecting } from '@/engines/git/bisect';
 
 /** 並行作業・リモート・調査・大規模運用（08〜11 章） */
 
@@ -27,6 +29,7 @@ export const gitParallelWork: LessonDefinition = {
       prompt: '全部をコミットし、hotfix ブランチを作れ（切り替えなくてよい）。',
       check: 'コミットがあり、hotfix ブランチが存在すること',
       hints: ['git init / git add . / git commit -m "base"', 'git branch hotfix'],
+      solution: ['git init', 'git add .', 'git commit -m "base"', 'git branch hotfix'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null || headCommit(git) === null) return false;
@@ -38,6 +41,7 @@ export const gitParallelWork: LessonDefinition = {
       prompt: '/tmp/hotfix に hotfix ブランチをもう1つ展開せよ。今の作業ツリーは触るな。',
       check: '/tmp/hotfix にファイルが展開され、git worktree list に2つ出ること',
       hints: ['git worktree add /tmp/hotfix hotfix'],
+      solution: ['git worktree add /tmp/hotfix hotfix'],
       assert: ({ shell }) => exists(shell.vfs, '/tmp/hotfix/src/app.ts'),
       explain:
         '同じ .git を共有したまま、別のディレクトリに別のブランチを展開できる。切り替えの待ち時間も、退避の手間も要らない。',
@@ -46,6 +50,7 @@ export const gitParallelWork: LessonDefinition = {
       prompt: '元の作業ツリーを src だけに絞れ。docs を作業ツリーから外すこと。',
       check: 'sparse-checkout が設定され、docs/ が作業ツリーから消えていること',
       hints: ['git sparse-checkout set src'],
+      solution: ['git sparse-checkout set src'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -59,6 +64,7 @@ export const gitParallelWork: LessonDefinition = {
       prompt: 'docs が履歴からは消えていないことを確かめよ。',
       check: 'git ls-files に docs/guide.md が残っていること',
       hints: ['git ls-files'],
+      solution: ['git ls-files'],
       assert: ({ shell }) => shell.git?.index.has('docs/guide.md') === true,
       explain: '作業ツリーに無い＝リポジトリに無い、ではない。チェックアウトの範囲と履歴の範囲は別物。',
     },
@@ -87,6 +93,7 @@ export const gitDivergedBoss: LessonDefinition = {
         'git remote add origin https://example.invalid/service.git',
         'git push origin main',
       ],
+      solution: ['git init', 'git add .', 'git commit -m "first"', 'git remote add origin https://example.invalid/service.git', 'git push origin main'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -99,6 +106,7 @@ export const gitDivergedBoss: LessonDefinition = {
       prompt: '他人がリモートを進めた状況を作れ。origin をクローンした別の場所から、もう1つコミットを push させる代わりに、ここでは手元を1つ進めてから origin をリセットする——のではなく、手元にコミットを1つ積め。',
       check: '手元の main が origin/main より進んでいること',
       hints: ['echo "def helper(): pass" >> service.py', 'git add . && git commit -m "helper"'],
+      solution: ['echo "def helper(): pass" >> service.py', 'git add .', 'git commit -m "helper"'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -112,6 +120,7 @@ export const gitDivergedBoss: LessonDefinition = {
       prompt: '履歴を作り直せ。直前のコミットを amend して、内容を変えよ。',
       check: 'amend 後も手元が origin/main より進んでおり、コミット数が変わっていないこと',
       hints: ['echo "def helper(): return 2" > service.py', 'git add . && git commit --amend -m "helper v2"'],
+      solution: ['echo "def helper(): return 2" > service.py', 'git add .', 'git commit --amend -m "helper v2"'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -126,6 +135,7 @@ export const gitDivergedBoss: LessonDefinition = {
         'まず git push origin main を試すと何が起きるか見る',
         'git push origin main --force-with-lease',
       ],
+      solution: ['git push origin main --force-with-lease'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -133,7 +143,7 @@ export const gitDivergedBoss: LessonDefinition = {
         return local !== undefined && git.refs.get('refs/remotes/origin/main') === local;
       },
       diagnose: ({ history }) =>
-        history.some((l) => l.includes('--force') && !l.includes('--force-with-lease'))
+        ran(history, 'git', 'push', ['--force', '-f'])
           ? '--force は相手の新しいコミットも消します。--force-with-lease なら、自分が見た位置と違っていたら止まります。'
           : null,
       explain:
@@ -163,6 +173,7 @@ export const gitFindRegression: LessonDefinition = {
         'git init のあと、echo ok > health.txt と git commit を繰り返す',
         '4回目だけ echo NG > health.txt にする',
       ],
+      solution: ['git init', 'echo ok > health.txt', 'echo mark1 > f1.txt', 'git add .', 'git commit -m "c1"', 'echo mark2 > f2.txt', 'git add .', 'git commit -m "c2"', 'echo mark3 > f3.txt', 'git add .', 'git commit -m "c3"', 'echo NG > health.txt', 'git add .', 'git commit -m "c4 壊れた"', 'echo mark5 > f5.txt', 'git add .', 'git commit -m "c5"', 'echo mark6 > f6.txt', 'git add .', 'git commit -m "c6"'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -176,10 +187,11 @@ export const gitFindRegression: LessonDefinition = {
       prompt: 'bisect を始め、いまが悪いこと、一番古いコミットが良いことを伝えよ。',
       check: 'bisect が動いていて、次に調べるコミットが決まっていること',
       hints: ['git bisect start', 'git bisect bad HEAD', 'git bisect good <一番古いハッシュ>'],
-      assert: ({ shell, history }) =>
-        shell.git !== null &&
-        history.some((l) => l.includes('bisect bad')) &&
-        history.some((l) => l.includes('bisect good')),
+      solution: ['git bisect start', 'git bisect bad HEAD', 'git bisect good HEAD~5'],
+      // 良い側と悪い側の両方が記録されていれば、次に調べる場所が決まる
+      assert: ({ shell }) =>
+        shell.git !== null && isBisecting(shell.git) &&
+        badCommit(shell.git) !== null && goodCommits(shell.git).length > 0,
       explain:
         '良い版と悪い版が1つずつ分かれば、あとは間を半分に割るだけ。6コミットなら3回で決まる。',
     },
@@ -187,6 +199,7 @@ export const gitFindRegression: LessonDefinition = {
       prompt: 'health.txt を見ながら good / bad を答え続け、犯人を特定せよ。',
       check: '残り候補が 0 件になっていること',
       hints: ['cat health.txt で判定する', 'NG なら git bisect bad、ok なら git bisect good'],
+      solution: ['grep -q NG health.txt && git bisect bad || git bisect good', 'grep -q NG health.txt && git bisect bad || git bisect good', 'grep -q NG health.txt && git bisect bad || git bisect good'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -211,6 +224,7 @@ export const gitFindRegression: LessonDefinition = {
         'echo "grep -q NG health.txt && exit 1" > .git/hooks/pre-commit',
         'grep -v NG health.txt でも書ける',
       ],
+      solution: ['git bisect reset', 'echo "grep -q NG health.txt && exit 1" > .git/hooks/pre-commit'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -240,16 +254,18 @@ export const gitRepoSize: LessonDefinition = {
       prompt: 'コミットを1つ作り、オブジェクトがいくつあるか数えよ。',
       check: 'コミットがあり、git count-objects を実行したこと',
       hints: ['git init / git add . / git commit -m "first"', 'git count-objects -v'],
+      solution: ['git init', 'git add .', 'git commit -m "first"', 'git count-objects -v'],
       assert: ({ shell, history }) =>
         shell.git !== null &&
         headCommit(shell.git) !== null &&
-        history.some((l) => l.includes('count-objects')),
+        ran(history, 'git', 'count-objects'),
       explain: 'コミット1つで、blob（中身）・tree（ディレクトリ）・commit の3つが増える。',
     },
     {
       prompt: '同じ内容のファイルをもう1つ作ってコミットせよ（例: copy.txt に同じ x を書く）。',
       check: 'コミットが2つあり、copy.txt が記録されていること',
       hints: ['cp data.txt copy.txt', 'git add . && git commit -m "copy"'],
+      solution: ['cp data.txt copy.txt', 'git add .', 'git commit -m "copy"'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -262,7 +278,8 @@ export const gitRepoSize: LessonDefinition = {
       prompt: '到達不能なオブジェクトがあるか調べよ。',
       check: 'git fsck を実行したこと',
       hints: ['git fsck'],
-      assert: ({ history }) => history.some((l) => l.includes('git fsck')),
+      solution: ['git fsck'],
+      assert: ({ history }) => ran(history, 'git', 'fsck'),
       explain:
         'reset や rebase で参照から外れたオブジェクトは、消えずに残る。これがあるから reflog から戻せる。逆に、放っておくと太る。',
     },
@@ -288,6 +305,7 @@ export const gitRelease: LessonDefinition = {
       prompt: 'コミットを1つ作れ。',
       check: 'コミットが1つ以上あること',
       hints: ['git init / git add . / git commit -m "first"'],
+      solution: ['git init', 'git add .', 'git commit -m "first"'],
       assert: ({ shell }) => shell.git !== null && headCommit(shell.git) !== null,
       explain: 'この時点で refs/heads/main が、いま作ったコミットを指している。',
     },
@@ -295,6 +313,7 @@ export const gitRelease: LessonDefinition = {
       prompt: '軽量タグ v0.1.0 を打て。',
       check: 'タグ v0.1.0 があること',
       hints: ['git tag v0.1.0'],
+      solution: ['git tag v0.1.0'],
       assert: ({ shell }) => shell.git !== null && tagNames(shell.git).includes('v0.1.0'),
       explain: '軽量タグは refs/tags/<名前> にコミットのハッシュを書くだけ。ブランチとの違いは「動かないこと」だけ。',
     },
@@ -302,6 +321,7 @@ export const gitRelease: LessonDefinition = {
       prompt: '注釈付きタグ v1.0.0 を、メッセージ付きで打て。',
       check: 'タグ v1.0.0 があり、それが tag オブジェクトであること',
       hints: ['git tag -a v1.0.0 -m "最初のリリース"'],
+      solution: ['git tag -a v1.0.0 -m "最初のリリース"'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -325,8 +345,8 @@ export const gitRelease: LessonDefinition = {
       prompt: '2つのタグが同じコミットを指していることを確かめよ。',
       check: 'git rev-parse か git cat-file を実行したこと',
       hints: ['git rev-parse v0.1.0 v1.0.0', 'git cat-file -t v1.0.0 で型が見える'],
-      assert: ({ history }) =>
-        history.some((l) => l.includes('rev-parse') || l.includes('cat-file')),
+      solution: ['git rev-parse v0.1.0 v1.0.0'],
+      assert: ({ history }) => ran(history, 'git', 'rev-parse') || ran(history, 'git', 'cat-file'),
       explain:
         '注釈付きタグは tag オブジェクトを経由してコミットを指す。rev-parse はそれを剥がして最後のコミットまで辿る。',
     },
@@ -356,6 +376,7 @@ export const gitSubmodule: LessonDefinition = {
         'git remote add lib https://example.invalid/lib.git',
         'git push lib main',
       ],
+      solution: ['git init', 'git add .', 'git commit -m "first"', 'git remote add lib https://example.invalid/lib.git', 'git push lib main'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -368,6 +389,7 @@ export const gitSubmodule: LessonDefinition = {
       prompt: 'その lib を vendor/lib として submodule に取り込め。',
       check: 'インデックスに gitlink（mode 160000）の vendor/lib があること',
       hints: ['git submodule add https://example.invalid/lib.git vendor/lib'],
+      solution: ['git submodule add https://example.invalid/lib.git vendor/lib'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -380,6 +402,7 @@ export const gitSubmodule: LessonDefinition = {
       prompt: '.gitmodules に url と path が書かれていることを確かめよ。',
       check: '.gitmodules があり、url が書かれていること',
       hints: ['cat .gitmodules'],
+      solution: ['cat .gitmodules'],
       assert: ({ shell }) => {
         const node = shell.vfs.nodes.get(`${HOME}/.gitmodules`);
         return node?.kind === 'file' && node.content.includes('url = ');

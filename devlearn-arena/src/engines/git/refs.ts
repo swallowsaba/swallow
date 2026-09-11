@@ -45,6 +45,12 @@ export function resolveObject(git: GitState, ref: string): string | undefined {
 
 function resolveBase(git: GitState, ref: string): string | undefined {
   if (ref === '' || ref === 'HEAD') return headCommit(git) ?? undefined;
+  // HEAD@{n}: HEAD が n 回前にいた場所。reflog の表示と同じく新しい順に数える
+  const back = /^(?:HEAD)?@\{(\d+)\}$/.exec(ref);
+  if (back) {
+    const entry = [...git.reflog].reverse()[Number(back[1])];
+    return entry === undefined ? undefined : peel(git, entry.hash);
+  }
   const candidates = [
     ref,
     `refs/heads/${ref}`,

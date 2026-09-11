@@ -149,3 +149,40 @@ export function listOf(cluster: ClusterState, kind: string, namespace: string): 
     .filter((r) => CLUSTER_SCOPED.has(kind) || r.metadata.namespace === namespace)
     .sort((a, b) => (a.metadata.name < b.metadata.name ? -1 : 1));
 }
+
+/**
+ * 対象の指定を読む。本物と同じく `pod web` と `pod/web` のどちらの形も受ける。
+ * 名前が無ければ name は undefined。
+ */
+export function parseTarget(operands: readonly string[]): { kind: string; name: string | undefined; raw: string } {
+  const first = operands[0] ?? '';
+  const slash = first.indexOf('/');
+  const raw = slash === -1 ? first : first.slice(0, slash);
+  const name = slash === -1 ? operands[1] : first.slice(slash + 1);
+  return { kind: KINDS[raw] ?? '', name: name === '' ? undefined : name, raw };
+}
+
+/** `-l app=web,tier=front` の形のセレクタに、ラベルが一致するか */
+export function matchesSelector(labels: Readonly<Record<string, string>>, selector: string): boolean {
+  return selector
+    .split(',')
+    .map((pair) => pair.split('='))
+    .filter((p): p is [string, string] => p.length === 2)
+    .every(([k, v]) => labels[k] === v);
+}
+
+/**
+ * ログや exec の相手になる Pod を引く。
+ * `web-abc12` のような Pod 名のほか、`deploy/web` のように持ち主で指せば、その Pod の1つ目を選ぶ。
+ */
+export function podFor(cluster: ClusterState, namespace: string, target: string): Pod | undefined {
+  const slash = target.indexOf('/');
+  if (slash === -1) return cluster.pods.get(key(namespace, target));
+  const kind = KINDS[target.slice(0, slash)] ?? '';
+  const name = target.slice(slash + 1);
+  if (kind === 'pods') return cluster.pods.get(key(namespace, name));
+  const owned = [...cluster.pods.values()]
+    .filter((p) => p.metadata.namespace === namespace && p.metadata.name.startsWith(`${name}-`))
+    .sort((a, b) => (a.metadata.name < b.metadata.name ? -1 : 1));
+  return owned[0];
+}

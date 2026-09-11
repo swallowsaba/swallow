@@ -23,6 +23,7 @@ export const shellWarmup: LessonDefinition = {
       prompt: 'ホームに reports ディレクトリを作れ。',
       check: '~/reports がディレクトリとして存在すること',
       hints: ['mkdir でディレクトリを作れる', 'mkdir reports'],
+      solution: ['mkdir reports'],
       assert: ({ shell }) => isDir(shell.vfs, `${HOME}/reports`),
       diagnose: ({ shell }) => {
         const wrongPlace = [...shell.vfs.nodes.keys()].find(
@@ -39,6 +40,7 @@ export const shellWarmup: LessonDefinition = {
       prompt: 'reports/hosts.txt に /etc/hosts の中身を書き出せ。',
       check: '~/reports/hosts.txt が存在し、中身に localhost が含まれること',
       hints: ['> はコマンドの標準出力をファイルに向ける', 'cat /etc/hosts > reports/hosts.txt'],
+      solution: ['cat /etc/hosts > reports/hosts.txt'],
       assert: ({ shell }) => {
         const path = `${HOME}/reports/hosts.txt`;
         return exists(shell.vfs, path) && readFile(shell.vfs, path).includes('localhost');
@@ -66,6 +68,7 @@ export const shellWarmup: LessonDefinition = {
       prompt: 'そのファイルから localhost を含む行だけを reports/local.txt に残せ。',
       check: '~/reports/local.txt の全ての行に localhost が含まれること（空でないこと）',
       hints: ['grep とリダイレクトを組み合わせる', 'grep localhost reports/hosts.txt > reports/local.txt'],
+      solution: ['grep localhost reports/hosts.txt > reports/local.txt'],
       assert: ({ shell }) => {
         const path = `${HOME}/reports/local.txt`;
         if (!exists(shell.vfs, path)) return false;
@@ -115,6 +118,7 @@ export const diskFullBoss: LessonDefinition = {
         'ls -l で大きさが見える。wc -l でも行数を比べられる',
         '> /var/log/app.log と打つと、ファイルを残したまま中身だけ空にできる',
       ],
+      solution: ['> /var/log/app.log'],
       assert: ({ shell }) =>
         exists(shell.vfs, '/var/log/app.log') && readFile(shell.vfs, '/var/log/app.log') === '',
       diagnose: ({ shell }) => {
@@ -130,6 +134,7 @@ export const diskFullBoss: LessonDefinition = {
       prompt: '/var/log/old に残っている古い世代のログを片付けろ。',
       check: '/var/log/old に .log ファイルが1つも無いこと（ディレクトリごと消してもよい）',
       hints: ['ディレクトリごと消すなら rm -r', 'rm -r /var/log/old'],
+      solution: ['rm -r /var/log/old'],
       assert: ({ shell }) => {
         if (!exists(shell.vfs, '/var/log/old')) return true;
         return list(shell.vfs, '/var/log/old').filter((n) => n.endsWith('.log')).length === 0;
@@ -143,6 +148,7 @@ export const diskFullBoss: LessonDefinition = {
         'echo とリダイレクトで書ける',
         'echo "logrotate を導入して日次で rotate する" > /srv/app/RECOVERY.md',
       ],
+      solution: ['echo "logrotate を導入して日次で rotate する" > /srv/app/RECOVERY.md'],
       assert: ({ shell }) => {
         const path = '/srv/app/RECOVERY.md';
         return exists(shell.vfs, path) && readFile(shell.vfs, path).includes('rotate');

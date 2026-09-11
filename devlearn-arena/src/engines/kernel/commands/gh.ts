@@ -19,9 +19,21 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
   const repo = shell.repo;
   if (repo === null) return { stderr: NO_REPO, code: 1 };
   const rest = argv.slice(2);
-  const { values, operands, flags } = parseArgs([sub, ...rest], {
-    withValue: ['t', 'b', 'B', 'm', 'r', 'l', 'a', 'w'],
+  const parsed = parseArgs([sub, ...rest], {
+    // 本物の gh と同じく、長い名前は --body x と --body=x のどちらでも受ける
+    withValue: [
+      't', 'b', 'B', 'm', 'r', 'l', 'a', 'w',
+      'title', 'body', 'label', 'assignee', 'approvals', 'checks', 'cache', 'columns', 'commits',
+      'milestone', 'paths', 'workflow',
+    ],
   });
+  const { operands, flags } = parsed;
+  const values = new Map(parsed.values);
+  // 長い名前で書かれたものを、短い名前でも引けるようにしておく
+  for (const [long, short] of [['title', 't'], ['label', 'l'], ['assignee', 'a'], ['workflow', 'w']] as const) {
+    const value = values.get(long);
+    if (value !== undefined && !values.has(short)) values.set(short, value);
+  }
 
   const handler = subcommands[sub];
   if (handler === undefined) return { stderr: `unknown command: gh ${sub}\n`, code: 1 };

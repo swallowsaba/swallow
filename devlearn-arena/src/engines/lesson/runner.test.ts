@@ -68,7 +68,7 @@ describe('レッスンランナー', () => {
     const broken = {
       ...shellWarmup,
       steps: [
-        { prompt: 'x', check: 'x', hints: [], explain: '', assert: () => { throw new Error('boom'); } },
+        { prompt: 'x', check: 'x', hints: [], solution: [], explain: '', assert: () => { throw new Error('boom'); } },
       ],
     };
     let p = createProgress(shellWarmup);

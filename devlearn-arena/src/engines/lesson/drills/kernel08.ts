@@ -1,3 +1,4 @@
+import { ran } from '../authoring/ran';
 import { fileContains, fileEquals, fileExists, pathExists } from '../authoring/assert';
 import type { AssertContext } from '../types';
 import type { MissionSource } from '../authoring/mission';
@@ -116,7 +117,7 @@ const exitDrills = family<{ command: string; code: string }>({
       {
         prompt: `${v.command} を実行せよ。`,
         check: `${v.command} を実行した記録があること`,
-        assert: (ctx) => ctx.history.some((l) => l.trim() === v.command),
+        assert: (ctx) => ran(ctx.history, ...v.command.split(' ')),
         hints: [v.command],
         explain: '結果そのものより、終わり方（成功か失敗か）を見るのがここでの狙い。',
       },

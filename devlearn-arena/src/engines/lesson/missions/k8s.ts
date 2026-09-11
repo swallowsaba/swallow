@@ -1,6 +1,7 @@
 import { container, deployment, emptyCluster, node, service } from '@/engines/k8s/factory';
 import { isReady } from '@/engines/k8s/kubelet';
 import type { LessonDefinition } from '../types';
+import { POD, ran } from '../authoring/ran';
 
 /** ラベルが食い違っていて、Service から繋がらないクラスタ */
 function brokenServiceCluster() {
@@ -34,6 +35,7 @@ export const k8sFirstPod: LessonDefinition = {
       prompt: '時間を進めて、Pod を 2 つとも Running にせよ。',
       check: 'Ready な Pod が 2 つあること',
       hints: ['kubectl get pods で今の状態が見える', 'kubectl wait 10 で時間を進められる'],
+      solution: ['kubectl wait 10'],
       assert: ({ shell }) =>
         shell.cluster !== null &&
         [...shell.cluster.pods.values()].filter(isReady).length === 2,
@@ -44,9 +46,10 @@ export const k8sFirstPod: LessonDefinition = {
       prompt: 'Pod を 1 つ消し、時間を進めて、また 2 つに戻ることを確かめよ。',
       check: 'Pod を削除した記録があり、Ready な Pod が再び 2 つあること',
       hints: ['kubectl get pods で名前を確かめる', 'kubectl delete pod <名前>', 'kubectl wait 10'],
+      solution: ['kubectl delete pods -l app=web', 'kubectl wait 10'],
       assert: ({ shell }) => {
         if (shell.cluster === null) return false;
-        const deleted = shell.history.some((line) => line.includes('delete pod'));
+        const deleted = ran(shell.history, 'kubectl', 'delete', POD);
         return deleted && [...shell.cluster.pods.values()].filter(isReady).length === 2;
       },
       explain:
@@ -56,6 +59,7 @@ export const k8sFirstPod: LessonDefinition = {
       prompt: 'replicas を 4 に増やし、全て Running にせよ。',
       check: 'Ready な Pod が 4 つあること',
       hints: ['kubectl scale deploy web --replicas=4', 'そのあと kubectl wait 12'],
+      solution: ['kubectl scale deploy web --replicas=4', 'kubectl wait 12'],
       assert: ({ shell }) =>
         shell.cluster !== null &&
         [...shell.cluster.pods.values()].filter(isReady).length === 4,
@@ -77,6 +81,7 @@ export const k8sServiceBoss: LessonDefinition = {
       prompt: 'まず Pod を Running にし、Service の Endpoints が空であることを確かめよ。',
       check: 'Ready な Pod が 2 つあり、Service の Endpoints が空のままであること',
       hints: ['kubectl wait 12', 'kubectl get svc で Endpoints の欄を見る'],
+      solution: ['kubectl wait 12', 'kubectl get svc'],
       assert: ({ shell }) => {
         if (shell.cluster === null) return false;
         const running = [...shell.cluster.pods.values()].filter(isReady).length === 2;
@@ -94,6 +99,7 @@ export const k8sServiceBoss: LessonDefinition = {
         'Pod のラベルは app=web、Service のセレクタは app=frontend',
         'kubectl set selector svc web app=web で直せる',
       ],
+      solution: ['kubectl set selector svc web app=web', 'kubectl wait 2'],
       assert: ({ shell }) => {
         const svc = shell.cluster?.services.get('default/web');
         return svc !== undefined && svc.status.endpoints.length === 2;

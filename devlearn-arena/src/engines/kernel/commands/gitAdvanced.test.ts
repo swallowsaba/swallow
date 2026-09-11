@@ -84,6 +84,14 @@ describe('rev-parse', () => {
     expect(run('git rev-parse HEAD~1').out.trim().startsWith(parent)).toBe(true);
   });
 
+  it('HEAD@{n} は reflog をたどる。reset で消したコミットにも戻れる', () => {
+    const lost = run('git rev-parse HEAD').out.trim();
+    run('git reset --hard HEAD~1');
+    expect(run('git rev-parse HEAD@{1}').out.trim()).toBe(lost);
+    run('git reset --hard HEAD@{1}');
+    expect(run('git rev-parse HEAD').out.trim()).toBe(lost);
+  });
+
   it('存在しない参照は 128', () => {
     expect(run('git rev-parse nope').code).toBe(128);
   });

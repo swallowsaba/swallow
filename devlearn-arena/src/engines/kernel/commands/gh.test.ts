@@ -63,6 +63,12 @@ describe('Pull Request', () => {
     expect(run('gh pr list').out).toContain('#1');
   });
 
+  it('長い名前のオプションは = でも空白でも受ける', () => {
+    run('gh pr create --title "直す" -b fix --body "Closes #1"');
+    expect(run('gh pr view 1').out).toContain('#1 直す');
+    expect(session.state.repo?.pulls[0]?.body).toBe('Closes #1');
+  });
+
   it('無い番号は断る', () => {
     expect(run('gh pr view 99').code).toBe(1);
   });

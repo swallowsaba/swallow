@@ -2,6 +2,7 @@ import { createRepo } from '@/engines/github/pr';
 import { linkedIssues, ownersFor } from '@/engines/github/issues';
 import { HOME } from '@/engines/kernel/path';
 import type { LessonDefinition } from '../types';
+import { ran } from '../authoring/ran';
 
 const WORKFLOWS = `${HOME}/.github/workflows`;
 
@@ -34,6 +35,7 @@ export const ghClone: LessonDefinition = {
         'git remote add origin https://github.com/acme/app.git',
         'git push origin main',
       ],
+      solution: ['git init', 'git add .', 'git commit -m "first"', 'git remote add origin https://github.com/acme/app.git', 'git push origin main'],
       assert: ({ shell }) => {
         const git = shell.git;
         if (git === null) return false;
@@ -47,7 +49,8 @@ export const ghClone: LessonDefinition = {
       prompt: 'この GitHub リポジトリに、いま Pull Request がいくつあるかを確かめよ。',
       check: 'gh pr list を実行したこと',
       hints: ['gh pr list'],
-      assert: ({ history }) => history.some((l) => l.includes('gh pr list')),
+      solution: ['gh pr list'],
+      assert: ({ history }) => ran(history, 'gh', 'pr', 'list'),
       explain:
         '手元の git と、GitHub 側の Pull Request は別の層。git は履歴、GitHub は合意の場を持つ。',
     },
@@ -67,6 +70,7 @@ export const ghPrCreate: LessonDefinition = {
       prompt: 'Issue を1つ立てよ。',
       check: 'Issue が1つ以上あること',
       hints: ['gh issue create -t "ログインできない"'],
+      solution: ['gh issue create -t "ログインできない"'],
       assert: ({ shell }) => (shell.repo?.issues.length ?? 0) >= 1,
       explain: '先に「何を直すのか」を1件として置く。PR はその答えになる。',
     },
@@ -74,6 +78,7 @@ export const ghPrCreate: LessonDefinition = {
       prompt: 'その Issue を閉じる Pull Request を作れ。本文に Closes #1 と書くこと。',
       check: 'PR の本文に Closes #1 が含まれていること',
       hints: ['gh pr create -t "ログインを直す" -b fix --body "Closes #1"'],
+      solution: ['gh pr create -t "ログインを直す" -b fix --body "Closes #1"'],
       assert: ({ shell }) => {
         const pull = shell.repo?.pulls[0];
         return pull !== undefined && linkedIssues(pull.body).includes(1);
@@ -85,6 +90,7 @@ export const ghPrCreate: LessonDefinition = {
       prompt: 'マージして、Issue が閉じることを確かめよ。',
       check: 'Issue #1 が closed になっていること',
       hints: ['gh pr merge 1'],
+      solution: ['gh pr merge 1'],
       assert: ({ shell }) => shell.repo?.issues[0]?.state === 'closed',
       explain:
         '「直した」と「閉じた」を人手で合わせると必ずずれる。仕組みで繋いでおくと、記録が勝手に揃う。',
@@ -108,6 +114,7 @@ export const ghCodeowners: LessonDefinition = {
       prompt: 'CODEOWNERS を読み込め。',
       check: '3件の規則が読み込まれていること',
       hints: ['gh codeowners load'],
+      solution: ['gh codeowners load'],
       assert: ({ shell }) => (shell.repo?.codeowners.length ?? 0) === 3,
       explain: '所有者は「詳しい人」を示す印。変更した場所によって、レビューを頼む相手が決まる。',
     },
@@ -115,8 +122,9 @@ export const ghCodeowners: LessonDefinition = {
       prompt: 'docs/guide.md を変えたとき、誰の承認が要るかを調べよ。',
       check: 'gh codeowners who を実行したこと',
       hints: ['gh codeowners who docs/guide.md'],
+      solution: ['gh codeowners who docs/guide.md'],
       assert: ({ shell, history }) => {
-        if (!history.some((l) => l.includes('codeowners who'))) return false;
+        if (!ran(history, 'gh', 'codeowners', 'who')) return false;
         const rules = shell.repo?.codeowners ?? [];
         return ownersFor(rules, ['docs/guide.md']).includes('@writers');
       },
@@ -127,7 +135,8 @@ export const ghCodeowners: LessonDefinition = {
       prompt: 'db/schema.sql の所有者も調べ、違うことを確かめよ。',
       check: '.sql のパスについても調べたこと',
       hints: ['gh codeowners who db/schema.sql'],
-      assert: ({ history }) => history.some((l) => l.includes('.sql')),
+      solution: ['gh codeowners who db/schema.sql'],
+      assert: ({ history }) => ran(history, 'gh', 'codeowners', 'who', /^\/?db\/schema\.sql$/),
       explain:
         '同じ PR でも、触った場所が増えれば必要な承認も増える。だから変更は小さく分けたほうが早く通る。',
     },
@@ -147,6 +156,7 @@ export const ghIssuePlanning: LessonDefinition = {
       prompt: 'Issue を2つ立て、片方に bug ラベルを付けよ。',
       check: 'Issue が2つあり、bug ラベルが付いたものがあること',
       hints: ['gh issue create -t "落ちる" -l bug', 'gh issue create -t "遅い"'],
+      solution: ['gh issue create -t "落ちる" -l bug', 'gh issue create -t "遅い"'],
       assert: ({ shell }) => {
         const issues = shell.repo?.issues ?? [];
         return issues.length >= 2 && issues.some((i) => i.labels.includes('bug'));
@@ -157,6 +167,7 @@ export const ghIssuePlanning: LessonDefinition = {
       prompt: 'Todo / Doing / Done の盤面を作れ。',
       check: '3列の盤面があること',
       hints: ['gh project create Board --columns=Todo,Doing,Done'],
+      solution: ['gh project create Board --columns=Todo,Doing,Done'],
       assert: ({ shell }) => (shell.repo?.projects[0]?.columns.length ?? 0) === 3,
       explain: '列は状態そのもの。「誰が何をしているか」を、置き場所で表す。',
     },
@@ -164,6 +175,7 @@ export const ghIssuePlanning: LessonDefinition = {
       prompt: '1件目を Doing へ、2件目を Todo に置け。',
       check: '#1 が Doing、#2 が Todo にあること',
       hints: ['gh project move Board 1 Doing', 'gh project move Board 2 Todo'],
+      solution: ['gh project move Board 1 Doing', 'gh project move Board 2 Todo'],
       assert: ({ shell }) => {
         const columns = shell.repo?.projects[0]?.columns ?? [];
         const doing = columns.find((c) => c.name === 'Doing')?.items ?? [];
@@ -212,7 +224,8 @@ jobs:
       prompt: 'ワークフローの構造を確かめよ。どのジョブが何に依存しているか。',
       check: 'gh workflow を実行したこと',
       hints: ['gh workflow'],
-      assert: ({ history }) => history.some((l) => l.includes('gh workflow')),
+      solution: ['gh workflow'],
+      assert: ({ history }) => ran(history, 'gh', 'workflow'),
       explain:
         'needs があるところにだけ順序がある。書いていないジョブ同士は同時に走る。',
     },
@@ -220,6 +233,7 @@ jobs:
       prompt: 'Pull Request を作り、CI を通せ。',
       check: 'PR にチェックが3つ付き、全て success であること',
       hints: ['gh pr create -t "変更" -b feature', 'gh pr checks 1'],
+      solution: ['gh pr create -t "変更" -b feature', 'gh pr checks 1'],
       assert: ({ shell }) => {
         const checks = shell.repo?.pulls[0]?.checks ?? [];
         return checks.length === 3 && checks.every((c) => c.status === 'success');
@@ -230,6 +244,7 @@ jobs:
       prompt: 'lint をわざと失敗させて、下流がどうなるか確かめよ。',
       check: 'build が skipped になっていること',
       hints: ['gh pr checks 1 --fail=lint'],
+      solution: ['gh pr checks 1 --fail=lint'],
       assert: ({ shell }) => {
         const checks = shell.repo?.pulls[0]?.checks ?? [];
         return checks.find((c) => c.name === 'build')?.status === 'skipped';

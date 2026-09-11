@@ -1,4 +1,4 @@
-import type { ClusterState, Resource } from '@/engines/k8s/types';
+import type { ClusterState, Pod, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
@@ -9,7 +9,7 @@ import { setProbe, setResources } from './kubectlSet';
 import { opsSubcommands } from './kubectlOps';
 import { parseOutput, renderResources } from './kubectlOutput';
 import {
-  CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, idFor, listOf, notFound,
+  CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, idFor, listOf, matchesSelector, notFound, parseTarget,
   type KubectlContext, type KubectlHandler,
 } from './kubectlShared';
 
@@ -24,10 +24,50 @@ function findOne(
   return items.find((r) => r.metadata.name === name) ?? null;
 }
 
+/** 名前で1つ消す。持ち主のいる下位の資源もまとめて片付ける */
+function deleteOne(cluster: ClusterState, kind: string, namespace: string, name: string): CommandResult {
+  const field = FIELD_OF[kind];
+  if (field === undefined) return { stderr: 'error: 未対応の種別です\n', code: 1 };
+  const collection = cluster[field];
+  if (!(collection instanceof Map)) return { stderr: 'error: 未対応の種別です\n', code: 1 };
+
+  const id = idFor(kind, namespace, name);
+  if (!collection.has(id)) return notFound(kind, name);
+  const next = new Map(collection as Map<string, Resource>);
+  next.delete(id);
+  let cluster2: ClusterState = { ...cluster, [field]: next };
+
+  // 所有関係のある資源は、下位もまとめて片付ける
+  if (kind === 'deployments') {
+    cluster2 = {
+      ...cluster2,
+      replicaSets: new Map(
+        [...cluster.replicaSets].filter(
+          ([, rs]) => !rs.metadata.ownerReferences.some((o) => o.name === name),
+        ),
+      ),
+      pods: new Map([...cluster.pods].filter(([, p]) => !p.metadata.name.startsWith(`${name}-`))),
+    };
+  }
+  if (kind === 'statefulsets' || kind === 'daemonsets' || kind === 'jobs') {
+    const ownerKind = kind === 'statefulsets' ? 'StatefulSet' : kind === 'daemonsets' ? 'DaemonSet' : 'Job';
+    cluster2 = {
+      ...cluster2,
+      pods: new Map(
+        [...cluster.pods].filter(
+          ([, p]) => !p.metadata.ownerReferences.some((o) => o.kind === ownerKind && o.name === name),
+        ),
+      ),
+    };
+  }
+
+  const label = CLUSTER_SCOPED.has(kind) ? kind.replace(/s$/, '') : kind.replace(/s$/, '');
+  return { stdout: `${label} "${name}" deleted\n`, patch: { cluster: cluster2 } };
+}
+
 const coreSubcommands: Record<string, KubectlHandler> = {
   get: ({ cluster, namespace, operands, output, values }) => {
-    const raw = operands[0] ?? '';
-    const kind = KINDS[raw] ?? '';
+    const { kind, name, raw } = parseTarget(operands);
     if (kind === '') {
       return { stderr: `error: the server doesn't have a resource type "${raw}"\n`, code: 1 };
     }
@@ -36,7 +76,6 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     // events と machines は Resource の形をしていないので、表の側で組み立てる
     const synthetic = kind === 'events' || kind === 'machines';
     let items = synthetic ? [] : listOf(cluster, kind, namespace);
-    const name = operands[1];
     if (name !== undefined) {
       const one = findOne(cluster, kind, namespace, name);
       if (one === null) return notFound(kind, name);
@@ -45,10 +84,7 @@ const coreSubcommands: Record<string, KubectlHandler> = {
 
     const selector = values.get('l');
     if (selector !== undefined) {
-      const wanted = Object.fromEntries(
-        selector.split(',').map((pair) => pair.split('=')).filter((p) => p.length === 2) as [string, string][],
-      );
-      items = items.filter((r) => Object.entries(wanted).every(([k, v]) => r.metadata.labels[k] === v));
+      items = items.filter((r) => matchesSelector(r.metadata.labels, selector));
     }
 
     if (format.kind !== 'table') return { stdout: renderResources(items, format) };
@@ -58,65 +94,50 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     return { stdout: renderTable(cluster, kind, items, format.wide) };
   },
 
-  describe: ({ cluster, namespace, operands }) => {
-    const kind = KINDS[operands[0] ?? ''] ?? '';
-    const name = operands[1];
-    if (kind === '' || name === undefined) {
-      return { stderr: 'usage: kubectl describe <type> <name>\n', code: 1 };
+  describe: ({ cluster, namespace, operands, values }) => {
+    const { kind, name } = parseTarget(operands);
+    if (kind === '') {
+      return { stderr: 'usage: kubectl describe <type> [<name>]\n', code: 1 };
     }
-    if (kind === 'pods') {
-      const pod = cluster.pods.get(key(namespace, name));
-      if (pod === undefined) return notFound('pods', name);
-      return { stdout: describePod(cluster, pod) };
+    const one = (resource: Resource): string =>
+      kind === 'pods' ? describePod(cluster, resource as Pod) : describeResource(cluster, kind, resource);
+    if (name !== undefined) {
+      const found = findOne(cluster, kind, namespace, name);
+      if (found === null) return notFound(kind, name);
+      return { stdout: one(found) };
     }
-    const one = findOne(cluster, kind, namespace, name);
-    if (one === null) return notFound(kind, name);
-    return { stdout: describeResource(cluster, kind, one) };
+    // 名前を省くと、本物と同じくその種別を全部（-l があれば一致したものを）順に出す
+    const selector = values.get('l');
+    const items = listOf(cluster, kind, namespace).filter(
+      (r) => selector === undefined || matchesSelector(r.metadata.labels, selector),
+    );
+    if (items.length === 0) return { stdout: `No resources found in ${namespace} namespace.\n` };
+    return { stdout: items.map(one).join('\n\n') };
   },
 
-  delete: ({ cluster, namespace, operands }) => {
-    const kind = KINDS[operands[0] ?? ''] ?? '';
-    const name = operands[1];
+  delete: (ctx) => {
+    const { cluster, namespace, operands, values } = ctx;
+    const { kind, name } = parseTarget(operands);
+    const selector = values.get('l');
+    // -l で選んだものを1つずつ消す。消し方は名前で指したときと同じ
+    if (kind !== '' && name === undefined && selector !== undefined) {
+      const targets = listOf(cluster, kind, namespace).filter((r) =>
+        matchesSelector(r.metadata.labels, selector),
+      );
+      if (targets.length === 0) return { stdout: 'No resources found\n' };
+      let current = cluster;
+      const out: string[] = [];
+      for (const target of targets) {
+        const result = deleteOne(current, kind, namespace, target.metadata.name);
+        if (result.patch?.cluster) current = result.patch.cluster;
+        out.push(result.stdout ?? '');
+      }
+      return { stdout: out.join(''), patch: { cluster: current } };
+    }
     if (kind === '' || name === undefined) {
       return { stderr: 'error: 種別と名前を指定してください\n', code: 1 };
     }
-    const field = FIELD_OF[kind];
-    if (field === undefined) return { stderr: 'error: 未対応の種別です\n', code: 1 };
-    const collection = cluster[field];
-    if (!(collection instanceof Map)) return { stderr: 'error: 未対応の種別です\n', code: 1 };
-
-    const id = idFor(kind, namespace, name);
-    if (!collection.has(id)) return notFound(kind, name);
-    const next = new Map(collection as Map<string, Resource>);
-    next.delete(id);
-    let cluster2: ClusterState = { ...cluster, [field]: next };
-
-    // 所有関係のある資源は、下位もまとめて片付ける
-    if (kind === 'deployments') {
-      cluster2 = {
-        ...cluster2,
-        replicaSets: new Map(
-          [...cluster.replicaSets].filter(
-            ([, rs]) => !rs.metadata.ownerReferences.some((o) => o.name === name),
-          ),
-        ),
-        pods: new Map([...cluster.pods].filter(([, p]) => !p.metadata.name.startsWith(`${name}-`))),
-      };
-    }
-    if (kind === 'statefulsets' || kind === 'daemonsets' || kind === 'jobs') {
-      const ownerKind = kind === 'statefulsets' ? 'StatefulSet' : kind === 'daemonsets' ? 'DaemonSet' : 'Job';
-      cluster2 = {
-        ...cluster2,
-        pods: new Map(
-          [...cluster.pods].filter(
-            ([, p]) => !p.metadata.ownerReferences.some((o) => o.kind === ownerKind && o.name === name),
-          ),
-        ),
-      };
-    }
-
-    const label = CLUSTER_SCOPED.has(kind) ? kind.replace(/s$/, '') : kind.replace(/s$/, '');
-    return { stdout: `${label} "${name}" deleted\n`, patch: { cluster: cluster2 } };
+    return deleteOne(cluster, kind, namespace, name);
   },
 
   scale: ({ cluster, namespace, operands, values, rest }) => {

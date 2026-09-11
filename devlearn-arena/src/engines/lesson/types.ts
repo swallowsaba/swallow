@@ -24,7 +24,17 @@ export interface LessonStep {
   prompt: string;
   /** 何を満たせば通るのかを人が読める形で示す。隠さない */
   check: string;
+  /**
+   * 助言。最後の1件は、そのまま打てば手順を通過する完全なコマンドにする。
+   * 複数行のときは1行ずつ順に打つ。
+   */
   hints: readonly string[];
+  /**
+   * 模範解答のコマンド列。直前の手順までを模範解答どおりに進めた状態から、
+   * これを順に打てば必ずこの手順を通過する。
+   * 前の手順で一緒に満たされる手順は空になる。
+   */
+  solution: readonly string[];
   /** 最終状態を検証する。別解を許容するため、コマンド文字列は見ない */
   assert: (ctx: AssertContext) => boolean;
   /**

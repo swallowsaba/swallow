@@ -44,6 +44,7 @@ export const ghPullRequest: LessonDefinition = {
       prompt: 'main ブランチを保護せよ。承認を 1 件、必須チェックを Build にすること。',
       check: 'main の保護ルールがあり、承認 1 件と Build が必須になっていること',
       hints: ['gh protect main --approvals=1 --checks=Build'],
+      solution: ['gh protect main --approvals=1 --checks=Build'],
       assert: ({ shell }) => {
         const rule = shell.repo?.protections.find((p) => p.branch === 'main');
         return rule !== undefined && rule.requiredApprovals >= 1 && rule.requiredChecks.includes('Build');
@@ -55,6 +56,7 @@ export const ghPullRequest: LessonDefinition = {
       prompt: 'feature ブランチから Pull Request を作れ。',
       check: 'open な Pull Request が1つ以上あること',
       hints: ['gh pr create -t "機能追加" -b feature'],
+      solution: ['gh pr create -t "機能追加" -b feature'],
       assert: ({ shell }) => (shell.repo?.pulls.filter((p) => p.state === 'open').length ?? 0) >= 1,
       explain: 'PR は差分を出す場所ではなく、意図を伝えて合意を取る場所。',
     },
@@ -62,6 +64,7 @@ export const ghPullRequest: LessonDefinition = {
       prompt: 'CI を走らせ、どのジョブが何に依存しているかを確かめよ。',
       check: 'Pull Request にチェックの結果が記録されていること',
       hints: ['gh workflow で構造が見える', 'gh pr checks 1 で実行できる'],
+      solution: ['gh pr checks 1'],
       assert: ({ shell }) => (shell.repo?.pulls[0]?.checks.length ?? 0) > 0,
       explain:
         'Build は lint と test の両方に依存している。どちらかが失敗すれば Build は実行されず skipped になる。',
@@ -75,6 +78,7 @@ export const ghPullRequest: LessonDefinition = {
         'gh pr checks 1 で Build を成功させる',
         'gh pr merge 1 --squash',
       ],
+      solution: ['gh pr review 1 --approve -r mentor', 'gh pr merge 1 --squash'],
       assert: ({ shell }) => shell.repo?.pulls.some((p) => p.state === 'merged') === true,
       diagnose: ({ shell }) => {
         const repo = shell.repo;

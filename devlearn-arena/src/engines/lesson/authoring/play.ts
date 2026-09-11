@@ -16,6 +16,8 @@ export interface PlayResult {
   stuckAt: string | null;
   /** 各行の終了コード */
   exitCodes: number[];
+  /** 各行を打った直後に、何番目の手順に取り組んでいたか（クリア後は手順数） */
+  reached: number[];
 }
 
 /**
@@ -26,6 +28,7 @@ export function play(mission: LessonDefinition, lines: readonly string[]): PlayR
   const clock = createClock();
   const timeline: ShellState[] = [createShellState(mission.initial)];
   const exitCodes: number[] = [];
+  const reached: number[] = [];
   let progress = createProgress(mission);
 
   for (const line of lines) {
@@ -35,6 +38,7 @@ export function play(mission: LessonDefinition, lines: readonly string[]): PlayR
     timeline.push(outcome.state);
     exitCodes.push(outcome.exitCode);
     progress = evaluate(mission, progress, timeline);
+    reached.push(progress.cleared ? mission.steps.length : progress.stepIndex);
     if (progress.cleared) break;
   }
 
@@ -43,6 +47,7 @@ export function play(mission: LessonDefinition, lines: readonly string[]): PlayR
     progress,
     timeline,
     exitCodes,
+    reached,
     stuckAt: progress.cleared ? null : (mission.steps[progress.stepIndex]?.check ?? null),
   };
 }

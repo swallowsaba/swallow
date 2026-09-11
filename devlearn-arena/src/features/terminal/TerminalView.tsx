@@ -7,6 +7,7 @@ import {
   backspace, createLineState, deleteForward, expandBang, historyMove, insert, killToStart,
   killWord, moveCursor, toLineEnd, toLineStart, type LineState,
 } from '@/engines/kernel/lineEditor';
+import { feedLine, splitCommands, type PendingInput } from '@/engines/kernel/continuation';
 import { displayPath } from '@/engines/kernel/path';
 import type { ShellSession } from './useShellSession';
 
@@ -39,6 +40,10 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
   const hostRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const lineRef = useRef<LineState>(createLineState());
+  // ヒアドキュメントの本文を待っている間の入力
+  const pendingRef = useRef<PendingInput | null>(null);
+  // 外から1行流し込むときに、キー入力と同じ道筋で実行するため
+  const runRef = useRef<((line: string) => void) | null>(null);
   const sessionRef = useRef(session);
   const executedRef = useRef(onExecuted);
   const editorRef = useRef(onEditor);
@@ -67,7 +72,10 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
     fit.fit();
     termRef.current = term;
 
-    const prompt = (): string => `learner@arena:${displayPath(sessionRef.current.getState().cwd)}$ `;
+    const prompt = (): string =>
+      pendingRef.current !== null
+        ? '> '
+        : `learner@arena:${displayPath(sessionRef.current.getState().cwd)}$ `;
 
     const redraw = (): void => {
       const { line, cursor } = lineRef.current;
@@ -78,13 +86,27 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
 
     const newPrompt = (): void => {
       lineRef.current = createLineState();
+      pendingRef.current = null;
       term.write(`\r\n${prompt()}`);
     };
 
     const runLine = (raw: string): void => {
-      const { line: expanded, expanded: didExpand } = expandBang(raw, sessionRef.current.getState().history);
+      // ヒアドキュメントの本文は、終端記号の行が来るまで貯めてから1つのコマンドとして実行する
+      const inBody = pendingRef.current !== null;
+      const { line: typed, expanded: didExpand } = inBody
+        ? { line: raw, expanded: false }
+        : expandBang(raw, sessionRef.current.getState().history);
+      const fed = feedLine(pendingRef.current, typed);
+      const expanded = fed.kind === 'run' ? fed.text : typed;
       if (didExpand) term.write(`\r\u001b[K${prompt()}${expanded}`);
       term.write('\r\n');
+      if (fed.kind === 'more') {
+        pendingRef.current = fed.pending;
+        lineRef.current = createLineState();
+        term.write(prompt());
+        return;
+      }
+      pendingRef.current = null;
       const { chunks, exitCode, editor } = sessionRef.current.run(expanded);
       let errorText = '';
       for (const chunk of chunks) {
@@ -98,6 +120,8 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
       lineRef.current = createLineState();
       term.write(prompt());
     };
+
+    runRef.current = runLine;
 
     const doComplete = (): void => {
       const { line, cursor } = lineRef.current;
@@ -210,17 +234,20 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
       disposable.dispose();
       term.dispose();
       termRef.current = null;
+      runRef.current = null;
     };
     // session は ref 経由で参照するため、依存に入れて端末を作り直さない
   }, []);
 
   useImperativeHandle(ref, () => ({
-    submit: (line: string) => {
+    submit: (text: string) => {
       const term = termRef.current;
       if (!term) return;
-      term.write(line);
-      lineRef.current = { ...createLineState(), line, cursor: line.length };
-      term.input('\r');
+      // 複数行は1コマンドずつ順に打つ。ヒアドキュメントの本文はまとめて1つにする
+      for (const line of splitCommands(text)) {
+        term.write(line.replace(/\n/g, '\r\n'));
+        runRef.current?.(line);
+      }
     },
     insertText: (text: string) => {
       termRef.current?.input(text);
