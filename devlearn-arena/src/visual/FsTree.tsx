@@ -6,6 +6,7 @@ import { useMotionEnabled } from '@/ui/motion';
 import { fsCommands, type RunCommand } from './commands';
 import { clip, FILL, flow } from './sceneKit';
 import { CHIP_H, COL_W, diffVfs, layoutTree, NODE_H, type DirNode } from './treeLayout';
+import { Viewport } from './Viewport';
 
 interface Props {
   vfs: VfsState;
@@ -59,9 +60,11 @@ export function FsTree({ vfs, previous, cwd, onCommand }: Props) {
   };
 
   return (
-    <div className="p-3" data-testid="fs-tree">
-      {onCommand ? <p className="mb-2 text-xs text-ink-soft">{t('viz.clickHint')}</p> : null}
-      <svg width={layout.width} height={layout.height} role="img" aria-label={t('viz.fileTree')}>
+    <div className="flex h-full min-h-0 flex-col" data-testid="fs-tree">
+      {onCommand ? <p className="shrink-0 px-3 pt-2 text-xs text-ink-soft">{t('viz.clickHint')}</p> : null}
+      <div className="min-h-0 flex-1">
+      <Viewport label={t('viz.fileTree')}>
+      <svg className="m-3 block" width={layout.width} height={layout.height} role="img" aria-label={t('viz.fileTree')}>
         {layout.nodes.map(edge)}
         {layout.nodes.map((dir) => {
           const here = dir.path === cwd;
@@ -131,6 +134,8 @@ export function FsTree({ vfs, previous, cwd, onCommand }: Props) {
           );
         })}
       </svg>
+      </Viewport>
+      </div>
     </div>
   );
 }

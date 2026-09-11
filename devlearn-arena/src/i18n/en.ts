@@ -150,6 +150,10 @@ export const en: Record<TKey, string> = {
   'map.zoomOut': 'Zoom out',
   'map.zoomReset': 'Fit',
   'map.panHint': 'Drag to pan / wheel to zoom / arrow keys and + − 0',
+  'viewport.zoomIn': 'Zoom in',
+  'viewport.zoomOut': 'Zoom out',
+  'viewport.fit': 'Fit',
+  'viewport.fitHint': 'Show everything (double-click the diagram also works). Wheel to zoom, drag to pan',
 
   'settings.panes': 'Pane split',
   'settings.panesLead': 'Drag the divider between the terminal and the diagram (the arrow keys work too).',

@@ -10,6 +10,7 @@ import { Term } from '@/ui/Term';
 import { gitCommands, type RunCommand } from './commands';
 import { fileSpots, gitChanges, placeCommits, type FileSpot, type Lane } from './gitModel';
 import { FILL } from './sceneKit';
+import { Viewport } from './Viewport';
 
 interface Props {
   git: GitState | null;
@@ -127,7 +128,9 @@ export function CommitGraph({ git, previous, vfs, cwd, onCommand }: Props) {
   const delayOf = (hash: string) => (animate ? (copyIndex.get(hash) ?? 0) * COPY_STEP : 0);
 
   return (
-    <div className="h-full overflow-auto p-4">
+    <div className="flex h-full min-h-0 flex-col">
+    <LayoutGroup>
+      <div className="shrink-0 px-4 pt-3">
       {onCommand ? (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <p className="text-xs text-ink-soft">{t('viz.clickHint')}</p>
@@ -145,18 +148,16 @@ export function CommitGraph({ git, previous, vfs, cwd, onCommand }: Props) {
           ) : null}
         </div>
       ) : null}
-
-      <LayoutGroup>
         {/* 3面。いちばん新しい中身がいる面にファイルの札が立つ */}
         {vfs !== undefined ? (
-          <section aria-label={t('viz.threeTrees')} className="grid grid-cols-3 gap-2">
+          <section aria-label={t('viz.threeTrees')} className="grid grid-cols-3 gap-2 pb-2">
             {LANES.map(({ lane, term, lead }, i) => (
               <div key={lane} data-lane={lane} className="flex min-w-0 flex-col border-4 border-wood-dark bg-cream">
                 <div className="plate flex items-center gap-1 px-2 py-1 text-xs font-extrabold">
                   <Term term={term} />
                   <span className="ml-auto font-normal opacity-80">{lead}</span>
                 </div>
-                <ul className="flex min-h-[64px] flex-col gap-1 p-2">
+                <ul className="flex max-h-40 min-h-[64px] flex-col gap-1 overflow-y-auto p-2">
                   {spots
                     .filter((s) => s.lane === lane)
                     .map((spot) => (
@@ -177,8 +178,13 @@ export function CommitGraph({ git, previous, vfs, cwd, onCommand }: Props) {
           </section>
         ) : null}
 
+      </div>
+
+      <div className="min-h-0 flex-1 border-t-4 border-wood-dark">
+      <Viewport label={t('park.tab.git')}>
+      <div className="p-4">
         {changes.copies.length > 0 ? (
-          <p data-testid="rebase-note" className="mt-3 border-l-4 border-[var(--gold-dark)] bg-cream px-2 py-1 text-xs font-bold">
+          <p data-testid="rebase-note" className="border-l-4 border-[var(--gold-dark)] bg-cream px-2 py-1 text-xs font-bold">
             {t('viz.rebaseCopied', { n: changes.copies.length })}
           </p>
         ) : null}
@@ -363,7 +369,10 @@ export function CommitGraph({ git, previous, vfs, cwd, onCommand }: Props) {
             })}
           </div>
         )}
-      </LayoutGroup>
+      </div>
+      </Viewport>
+      </div>
+    </LayoutGroup>
     </div>
   );
 }

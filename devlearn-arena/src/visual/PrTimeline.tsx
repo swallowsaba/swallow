@@ -6,6 +6,7 @@ import type { TKey } from '@/i18n';
 import { prCommands, type RunCommand } from './commands';
 import { DAG, jobDag, prTimeline, type Stage, type StageId, type StageState } from './prModel';
 import { FILL } from './sceneKit';
+import { Viewport } from './Viewport';
 
 interface Props {
   repo: Repo | null;
@@ -101,7 +102,7 @@ function JobDag({ pull, onCommand }: { pull: PullRequest; onCommand?: RunCommand
   const byName = new Map(dag.jobs.map((j) => [j.check.name, j]));
   const command = prCommands.checks(pull.number);
   return (
-    <div className="mt-2 overflow-auto">
+    <div className="mt-2">
       <svg width={dag.width} height={dag.height} role="img" aria-label={t('viz.checks')}>
         <defs>
           <marker id="dag-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
@@ -322,7 +323,9 @@ export function PrTimeline({ repo, onCommand }: Props) {
   }
 
   return (
-    <div className="h-full overflow-auto p-4">
+    <div className="h-full min-h-0">
+      <Viewport label={t('viz.timeline')}>
+      <div className="p-4 pr-44">
       <p className="font-mono text-sm text-ink-soft">
         {t('viz.repoLine', {
           owner: repo.owner,
@@ -355,6 +358,8 @@ export function PrTimeline({ repo, onCommand }: Props) {
           repo.pulls.map((pull) => <PullCard key={pull.number} repo={repo} pull={pull} onCommand={onCommand} />)
         )}
       </div>
+      </div>
+      </Viewport>
     </div>
   );
 }

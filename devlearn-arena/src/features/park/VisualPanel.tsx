@@ -70,7 +70,7 @@ export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, releva
         <div className="flex h-full flex-col">
           <div className="min-h-0 flex-1">
             {rightTab === 'fs' ? (
-              <div className="h-full overflow-auto bg-cream">
+              <div className="h-full bg-cream">
                 <FsTree vfs={state.vfs} previous={previous?.vfs} cwd={state.cwd} onCommand={onCommand} />
               </div>
             ) : rightTab === 'git' ? (

@@ -8,6 +8,7 @@ import {
   changedFields, deviceCenter, HEADER_FIELDS, headerValue, layoutNet, NODE_H, NODE_W, stoppedAt,
 } from './netModel';
 import { FILL } from './sceneKit';
+import { Viewport } from './Viewport';
 
 interface Props {
   net: Topology | null;
@@ -92,9 +93,11 @@ export function PacketFlow({ net, self, onCommand }: Props) {
   const changed = hop === undefined ? new Set<string>() : changedFields(hops[step - 1], hop);
 
   return (
-    <div className="h-full overflow-auto p-4">
-      {onCommand ? <p className="mb-2 text-xs text-ink-soft">{t('viz.clickHint')}</p> : null}
-      <div className="relative" style={{ width: placed.width, height: placed.height }}>
+    <div className="flex h-full min-h-0 flex-col">
+      {onCommand ? <p className="shrink-0 px-4 pt-2 text-xs text-ink-soft">{t('viz.clickHint')}</p> : null}
+      <div className="min-h-0 flex-1">
+      <Viewport label={t('park.tab.net')}>
+      <div className="relative m-4" style={{ width: placed.width, height: placed.height }}>
         <svg className="absolute left-0 top-0" width={placed.width} height={placed.height}>
           {placed.edges.map((edge) => {
             const from = deviceCenter(edge.from);
@@ -230,6 +233,11 @@ export function PacketFlow({ net, self, onCommand }: Props) {
         ) : null}
       </div>
 
+      </Viewport>
+      </div>
+
+      {/* 図の下の欄。拡大縮小に巻き込まず、いつも同じ大きさで読めるようにする */}
+      <div className="max-h-[45%] shrink-0 overflow-auto border-t-4 border-wood-dark px-4 pb-4">
       {/* ホップの一覧とヘッダ。押したホップの時点のヘッダを出す */}
       {hops.length > 0 ? (
         <section aria-label={t('viz.hops')} className="mt-4 border-4 border-wood-dark bg-cream p-3">
@@ -330,6 +338,7 @@ export function PacketFlow({ net, self, onCommand }: Props) {
           </ul>
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

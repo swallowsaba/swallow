@@ -143,7 +143,7 @@ export default function SandboxPage() {
               </button>
             ))}
           </div>
-          <div className="min-h-0 flex-1 overflow-auto border border-wood-dark bg-cream p-3">
+          <div className="min-h-0 flex-1 overflow-hidden border border-wood-dark bg-cream">
             {tab === 'fs' ? (
               <FsTree vfs={state.vfs} previous={previous?.vfs} cwd={state.cwd} onCommand={runFromDiagram} />
             ) : null}

@@ -10,6 +10,7 @@ import {
   podGeneration, podLabel, podLook, rollingDeployments, type Component, type Generation,
 } from './clusterModel';
 import { k8sCommands, type RunCommand } from './commands';
+import { Viewport } from './Viewport';
 
 interface Props {
   cluster: ClusterState | null;
@@ -164,7 +165,8 @@ export function ClusterCanvas({ cluster, previous, onCommand }: Props) {
   );
 
   return (
-    <div className="h-full overflow-auto p-4">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="shrink-0 px-4 pt-3">
       <div className="flex flex-wrap items-center gap-2">
         <p className="font-mono text-sm text-ink-soft">
           {t('viz.clusterSummary', { tick: cluster.tick, nodes: nodes.length, pods: pods.length })}
@@ -183,7 +185,11 @@ export function ClusterCanvas({ cluster, previous, onCommand }: Props) {
         ) : null}
       </div>
       {onCommand ? <p className="mt-1 text-xs text-ink-soft">{t('viz.clickHint')}</p> : null}
+      </div>
 
+      <div className="min-h-0 flex-1">
+      <Viewport label={t('viz.controlPlane')}>
+      <div className="p-4">
       <LayoutGroup>
         {/* コントロールプレーン。命令が伝わる順に左から並べ、動いた部品をその順に1つずつ光らせる */}
         <section aria-label={t('viz.controlPlane')} className="mt-3 border-4 border-wood-dark bg-[var(--cream-dark)] p-2">
@@ -354,7 +360,7 @@ export function ClusterCanvas({ cluster, previous, onCommand }: Props) {
         <section aria-label={t('viz.ownership')} className="mt-4 border-4 border-wood-dark bg-cream p-3">
           <p className="text-sm font-bold text-ink-soft">{t('viz.ownership')}</p>
           <p className="text-xs text-ink-soft">{t('viz.ownershipLead')}</p>
-          <div className="mt-2 overflow-auto">
+          <div className="mt-2">
             <svg width={graph.width} height={graph.height} role="img" aria-label={t('viz.ownership')}>
               {graph.edges.map((edge) => {
                 const from = byId.get(edge.from);
@@ -411,6 +417,9 @@ export function ClusterCanvas({ cluster, previous, onCommand }: Props) {
           </div>
         </section>
       ) : null}
+      </div>
+      </Viewport>
+      </div>
     </div>
   );
 }

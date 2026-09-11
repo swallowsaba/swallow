@@ -147,6 +147,10 @@ export const ja = {
   'map.zoomOut': '縮小',
   'map.zoomReset': '全体',
   'map.panHint': 'ドラッグで移動 / ホイールで拡大縮小 / 矢印キーと + − 0',
+  'viewport.zoomIn': '拡大',
+  'viewport.zoomOut': '縮小',
+  'viewport.fit': '全体',
+  'viewport.fitHint': '全体を表示（図の上でダブルクリックでも戻ります）。ホイールで拡大縮小、ドラッグで移動',
 
   'settings.panes': '画面の分割',
   'settings.panesLead': 'ターミナルと地図の境目はドラッグで動かせます（矢印キーでも調整できます）。',
