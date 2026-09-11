@@ -23,13 +23,6 @@ interface Props {
   parts: readonly PartState[];
   /** 直前のコマンドが失敗していれば、その出力 */
   lastError: string | null;
-  /** いまの手順で通らなかった回数 */
-  attempts: number;
-  untilNextHint: number;
-  /** 詰まりきったときに見せる答え */
-  answer: string | null;
-  /** ヒントが自動で開いたか */
-  autoOpened: boolean;
   /** 次に開くとよい任務。一覧の情報だけで足りるので組み立てない */
   nextMission: { id: string; title: string } | null;
   /** まだ終えていない前提の任務。止めずに知らせるだけ */
@@ -38,7 +31,6 @@ interface Props {
   /** いまの手順を、解答を実行して飛ばす */
   onSkip: () => void;
   onSwitch: (id: string) => void;
-  onInsert: (text: string) => void;
 }
 
 /**
@@ -56,16 +48,11 @@ export function MissionPanel({
   revealedHints,
   parts,
   lastError,
-  attempts,
-  untilNextHint,
-  answer,
-  autoOpened,
   nextMission,
   prerequisites,
   onRevealHint,
   onSkip,
   onSwitch,
-  onInsert,
 }: Props) {
   const t = useT();
   return (
@@ -159,10 +146,8 @@ export function MissionPanel({
             >
               {t('park.skip')}
             </button>
-            {autoOpened ? (
-              <span className="text-xs text-ink-soft">{t('park.autoHint')}</span>
-            ) : null}
           </div>
+          <p className="mt-1 text-xs text-ink-soft">{t('park.hintLead')}</p>
           <p className="mt-1 text-xs text-ink-soft">{t('park.skipLead')}</p>
           <ul className="mt-2 flex flex-col gap-1">
             {step?.hints.slice(0, revealedHints).map((hint) => (
@@ -172,13 +157,7 @@ export function MissionPanel({
               </li>
             ))}
           </ul>
-          <Assist
-            lastError={lastError}
-            attempts={attempts}
-            untilNextHint={untilNextHint}
-            answer={answer}
-            onInsert={onInsert}
-          />
+          <Assist lastError={lastError} />
         </>
       ) : null}
     </div>

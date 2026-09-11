@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { createDefaultRegistry } from '@/engines/kernel/commands';
 import { restoreShell, snapshotShell } from '@/engines/kernel/session';
+import { isHelpCommand, lessonHelpCommands } from '@/engines/lesson/helpCommands';
 import { allMissions, missingPrerequisites, missionById, recommendedNext } from '@/engines/lesson/registry';
 import {
   buildContext, createProgress, currentStep, evaluate, markSkipped, passes, solutionThrough, useHint,
 } from '@/engines/lesson/runner';
 import { takeawaysOf } from '@/engines/lesson/takeaways';
-import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
+import type { LessonDefinition, LessonProgressState, LessonStep } from '@/engines/lesson/types';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
 import { useDiagramRunner } from '@/features/terminal/useDiagramRunner';
 import { useShellSession } from '@/features/terminal/useShellSession';
@@ -24,10 +26,7 @@ import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { IntroScreen } from './IntroScreen';
 import { MissionPanel } from './MissionPanel';
 import { MissionPicker } from './MissionPicker';
-import {
-  attemptsUntilNextHint, NO_HINTS, reveal, revealedCount, shouldShowAnswer, shownHints, stepKey,
-  type HintReveal,
-} from './hints';
+import { NO_HINTS, reveal, revealedCount, stepKey, type HintReveal } from './hints';
 import type { PartState } from './StepChecklist';
 import { evaluateParts } from '@/engines/lesson/authoring/conditions';
 import { VisualPanel } from './VisualPanel';
@@ -96,20 +95,42 @@ function Park({
   const savedProgress = useStore((s) => s.missionProgress[mission.id]);
   const savedState = useStore((s) => s.missionState[mission.id]);
 
-  // 復元は開いた瞬間の1回だけ。以後の保存で作り直さない
-  const [options] = useState(() =>
-    savedState ? { ...mission.initial, restore: restoreShell(savedState) } : mission.initial,
-  );
   const [initialProgress] = useState<LessonProgressState>(() =>
     savedProgress ? { ...createProgress(mission), ...savedProgress } : createProgress(mission),
   );
+  const [progress, setProgress] = useState<LessonProgressState>(initialProgress);
+  const [hintReveal, setHintReveal] = useState<HintReveal>(NO_HINTS);
+  // 端末の hint が読む、いまの手順と見たヒントの数。
+  // コマンドは描画を待たずに続けて打たれることがあるので、ref に持って同期で読み書きする
+  const helpRef = useRef<{ step: LessonStep | undefined; stepIndex: number; key: string }>({
+    step: undefined,
+    stepIndex: 0,
+    key: '',
+  });
+  const revealRef = useRef<HintReveal>(NO_HINTS);
+  const revealHint = useCallback(() => {
+    revealRef.current = reveal(revealRef.current, helpRef.current.key);
+    setHintReveal(revealRef.current);
+    setProgress(useHint);
+  }, []);
+
+  // 復元は開いた瞬間の1回だけ。以後の保存で作り直さない。
+  // ヒントは画面に勝手に出さず、端末で hint と打ったときだけ出す
+  const [options] = useState(() => {
+    const base = savedState ? { ...mission.initial, restore: restoreShell(savedState) } : mission.initial;
+    const registry = (base.registry ?? createDefaultRegistry()).registerAll(
+      lessonHelpCommands({
+        step: () => helpRef.current.step,
+        stepIndex: () => helpRef.current.stepIndex,
+        revealed: () => revealedCount(revealRef.current, helpRef.current.key),
+        onHint: revealHint,
+      }),
+    );
+    return { ...base, registry };
+  });
 
   const session = useShellSession(options);
   const terminalRef = useRef<TerminalHandle>(null);
-  const [progress, setProgress] = useState<LessonProgressState>(initialProgress);
-  const [hintReveal, setHintReveal] = useState<HintReveal>(NO_HINTS);
-  // いまの手順で何回つまずいたか。ヒントを自分から開く判断に使う
-  const [attempts, setAttempts] = useState(0);
   const [lastError, setLastError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
@@ -145,6 +166,7 @@ function Park({
   const previous = entries[cursor - 1]?.state;
   const step = currentStep(mission, progress);
   const hintKey = stepKey(mission.id, progress.stepIndex);
+  helpRef.current = { step: progress.cleared ? undefined : step, stepIndex: progress.stepIndex, key: hintKey };
 
   // 判定に使う文脈。条件の内訳を出すのにも使い回す
   const context = useMemo(() => {
@@ -167,17 +189,12 @@ function Park({
     }));
   }, [step, context]);
 
-  // 手順が変われば、つまずいた回数も直前の失敗も数え直す
+  // 手順が変われば、直前の失敗は消す
   useEffect(() => {
-    setAttempts(0);
     setLastError(null);
   }, [mission.id, progress.stepIndex]);
 
-  const hintCount = step?.hints.length ?? 0;
-  const revealed = shownHints(hintReveal, hintKey, attempts, hintCount);
-  const autoOpened = revealed > revealedCount(hintReveal, hintKey);
-  const answer =
-    step?.answer !== undefined && shouldShowAnswer(attempts, hintCount) ? step.answer : null;
+  const revealed = Math.min(step?.hints.length ?? 0, revealedCount(hintReveal, hintKey));
 
   // いま条件を満たしているか。毎回描画時に評価する
   const passingNow = useMemo(() => {
@@ -238,14 +255,14 @@ function Park({
 
   /** コマンド実行では回数と失敗数だけを数える。合否の判定は下の効果で行う */
   const handleExecuted = useCallback(
-    (_line: string, exitCode: number, stderr: string) => {
-      if (skippingRef.current) return;
+    (line: string, exitCode: number, stderr: string) => {
+      // 助けを求めたことは、手数にも失敗にも数えない
+      if (skippingRef.current || isHelpCommand(line)) return;
       setProgress((p) => ({
         ...p,
         commandsUsed: p.commandsUsed + 1,
         mistakes: p.mistakes + (exitCode === 0 ? 0 : 1),
       }));
-      setAttempts((n) => n + 1);
       setLastError(exitCode === 0 ? null : stderr.trim() === '' ? null : stderr);
     },
     [],
@@ -277,7 +294,6 @@ function Park({
     setProgress((p) => markSkipped(p, index));
     // 飛ばしたところは、クリアしたかどうかにかかわらず見直しに回す
     scheduleReview(mission.id, dayKey(Date.now()));
-    setAttempts(0);
     setLastError(null);
   }, [step, progress, mission, session, t, scheduleReview]);
 
@@ -458,20 +474,9 @@ function Park({
             revealedHints={revealed}
             parts={parts}
             lastError={lastError}
-            attempts={attempts}
-            untilNextHint={attemptsUntilNextHint(attempts)}
-            answer={answer}
-            autoOpened={autoOpened}
-            onInsert={(text) => {
-              terminalRef.current?.insertText(text);
-              terminalRef.current?.focus();
-            }}
             nextMission={nextMission}
             prerequisites={prerequisites}
-            onRevealHint={() => {
-              setProgress(useHint);
-              setHintReveal((h) => reveal(h, hintKey));
-            }}
+            onRevealHint={revealHint}
             onSkip={skipStep}
             onSwitch={onSwitch}
           />
