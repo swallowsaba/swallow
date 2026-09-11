@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { findMissionById } from '@/engines/lesson/catalog';
+import { missionById } from '@/engines/lesson/registry';
 import { useT } from '@/i18n/useT';
 import { dayKey } from '@/lib/date';
 import { dueItems } from '@/lib/review';
@@ -26,7 +26,8 @@ export function ReviewQueue() {
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {due.map((item) => {
-            const mission = findMissionById(item.lessonId);
+            // 演習も見直しに積まれるので、目次に書いた任務だけでなく全部から引く
+            const mission = missionById(item.lessonId);
             return (
               <li key={item.lessonId}>
                 <Link

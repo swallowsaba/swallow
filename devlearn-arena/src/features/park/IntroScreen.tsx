@@ -3,10 +3,14 @@ import { diagramOf } from '@/engines/lesson/diagram';
 import type { LessonDefinition } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { Glossed } from '@/ui/Term';
+import { PrerequisiteNote } from './PrerequisiteNote';
 
 interface Props {
   mission: LessonDefinition;
+  /** まだ終えていない前提の任務 */
+  prerequisites?: readonly { id: string; title: string }[];
   onStart: () => void;
+  onSwitch?: (id: string) => void;
 }
 
 /**
@@ -15,7 +19,7 @@ interface Props {
  * いきなり課題から始めると、知識ゼロの人は何をしているのか分からないまま手を動かすことになる。
  * 一行の要約・学ぶ理由・先に知っておく語・使うコマンドを読んでから、自分で「はじめる」を押す。
  */
-export function IntroScreen({ mission, onStart }: Props) {
+export function IntroScreen({ mission, prerequisites = [], onStart, onSwitch }: Props) {
   const t = useT();
   const startRef = useRef<HTMLButtonElement>(null);
   const { intro } = mission;
@@ -49,6 +53,8 @@ export function IntroScreen({ mission, onStart }: Props) {
             <Glossed text={intro.summary} />
           </p>
         </header>
+
+        {onSwitch ? <PrerequisiteNote prerequisites={prerequisites} onSwitch={onSwitch} /> : null}
 
         <section className="flex flex-col gap-1">
           <h3 className="text-sm font-extrabold text-ink-soft">{t('intro.why')}</h3>

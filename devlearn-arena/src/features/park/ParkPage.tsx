@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { restoreShell, snapshotShell } from '@/engines/kernel/session';
-import { allMissions, missionById } from '@/engines/lesson/registry';
+import { allMissions, missingPrerequisites, missionById, recommendedNext } from '@/engines/lesson/registry';
 import {
   buildContext, createProgress, currentStep, evaluate, markSkipped, passes, solutionThrough, useHint,
 } from '@/engines/lesson/runner';
@@ -193,15 +193,17 @@ function Park({
     () => new Set(catalogue.filter((m) => lessons[m.id]?.cleared === true).map((m) => m.id)),
     [catalogue, lessons],
   );
-  // 同じ章の続きを優先し、無ければ全体から次の1本を選ぶ
+  // 推奨順で、いまの任務より後ろにあってまだ終えていないもの。無ければ最初から探す
   const nextMission = useMemo(() => {
-    const chapter = mission.id.split('/').slice(0, 2).join('/');
-    const inChapter = catalogue.find(
-      (m) => m.id !== mission.id && m.chapterId === chapter && !clearedIds.has(m.id),
-    );
-    const found = inChapter ?? catalogue.find((m) => m.id !== mission.id && !clearedIds.has(m.id));
-    return found ?? null;
+    const here = missionById(mission.id)?.order ?? 0;
+    const after = catalogue.find((m) => m.order > here && !clearedIds.has(m.id));
+    return after ?? recommendedNext(clearedIds, mission.id);
   }, [catalogue, clearedIds, mission.id]);
+  // 先にやっておくとよい任務のうち、まだのもの。遊べなくはしない
+  const prerequisites = useMemo(
+    () => missingPrerequisites(mission.id, clearedIds).map((m) => ({ id: m.id, title: m.title })),
+    [mission.id, clearedIds],
+  );
 
   const shellState = session.state;
 
@@ -359,7 +361,9 @@ function Park({
   return (
     <div className="flex h-full min-w-0 flex-col overflow-x-hidden bg-cream">
       <XpToast toasts={toasts} />
-      {showIntro ? <IntroScreen mission={mission} onStart={startMission} /> : null}
+      {showIntro ? (
+        <IntroScreen mission={mission} prerequisites={prerequisites} onStart={startMission} onSwitch={onSwitch} />
+      ) : null}
       <Celebration
         data={celebration}
         nextLabel={nextMission?.title}
@@ -459,6 +463,7 @@ function Park({
               terminalRef.current?.focus();
             }}
             nextMission={nextMission}
+            prerequisites={prerequisites}
             onRevealHint={() => {
               setProgress(useHint);
               setHintReveal((h) => reveal(h, hintKey));

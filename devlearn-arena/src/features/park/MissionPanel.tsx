@@ -2,6 +2,7 @@ import { useT } from '@/i18n/useT';
 import type { LessonDefinition, LessonProgressState, LessonStep } from '@/engines/lesson/types';
 import { Glossed } from '@/ui/Term';
 import { Assist } from './Assist';
+import { PrerequisiteNote } from './PrerequisiteNote';
 import { StepChecklist, type PartState } from './StepChecklist';
 
 interface Props {
@@ -30,6 +31,8 @@ interface Props {
   autoOpened: boolean;
   /** 次に開くとよい任務。一覧の情報だけで足りるので組み立てない */
   nextMission: { id: string; title: string } | null;
+  /** まだ終えていない前提の任務。止めずに知らせるだけ */
+  prerequisites: readonly { id: string; title: string }[];
   onRevealHint: () => void;
   /** いまの手順を、解答を実行して飛ばす */
   onSkip: () => void;
@@ -57,6 +60,7 @@ export function MissionPanel({
   answer,
   autoOpened,
   nextMission,
+  prerequisites,
   onRevealHint,
   onSkip,
   onSwitch,
@@ -65,6 +69,11 @@ export function MissionPanel({
   const t = useT();
   return (
     <div className="scroll m-3 min-h-0 overflow-y-auto px-6 py-5">
+      {progress.cleared ? null : (
+        <div className="mb-3">
+          <PrerequisiteNote prerequisites={prerequisites} onSwitch={onSwitch} />
+        </div>
+      )}
       <SkippedNotes mission={mission} skipped={progress.skipped} />
       <p className="text-sm font-bold text-ink-soft">
         {progress.cleared ? t('park.done') : t('park.todo', { n: progress.stepIndex + 1 })}

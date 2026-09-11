@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { countAll, getChapter, TRACKS } from '@/content/catalog';
 import { missionsOf, progressOf } from '@/engines/lesson/catalog';
+import { missingPrerequisites, recommendedNext } from '@/engines/lesson/registry';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { xpProgress } from '@/lib/xp';
@@ -40,6 +41,7 @@ export default function WorldMapPage() {
     [lessons],
   );
 
+  const recommended = useMemo(() => recommendedNext(cleared), [cleared]);
   const rank = xpProgress(xp);
   const prologue = progressOf(cleared, 'kernel');
 
@@ -94,6 +96,16 @@ export default function WorldMapPage() {
 
       {island === null ? (
         <>
+          {/* 最初に開いた人が迷わないよう、推奨順で次の1本を大きく出す */}
+          {recommended ? (
+            <Link
+              to={`/?mission=${encodeURIComponent(recommended.id)}`}
+              className="sign flex w-fit flex-wrap items-center gap-3 px-5 py-3 text-lg font-extrabold"
+            >
+              <span aria-hidden>▶</span>
+              {t(cleared.size === 0 ? 'map.startHere' : 'map.continueHere', { title: recommended.title })}
+            </Link>
+          ) : null}
           <p className="text-base text-ink-soft">{t('map.pickIsland')}</p>
           <div className="bevel overflow-hidden p-2">
             <PanZoom>
@@ -134,6 +146,8 @@ export default function WorldMapPage() {
                 <ul className="mt-3 grid gap-3 sm:grid-cols-2">
                   {playable.map((m) => {
                     const done = cleared.has(m.id);
+                    // 遊べなくはしない。先にやるとよいものを添えるだけ
+                    const before = done ? undefined : missingPrerequisites(m.id, cleared)[0];
                     return (
                       <li key={m.id}>
                         <Link
@@ -154,6 +168,11 @@ export default function WorldMapPage() {
                               {done ? t('map.missionDone') : t('map.missionOpen')} ·{' '}
                               {t('map.missionSteps', { n: m.steps.length })}
                             </span>
+                            {before ? (
+                              <span className="block text-xs text-ink-soft">
+                                {t('prereq.first', { title: before.title })}
+                              </span>
+                            ) : null}
                           </span>
                         </Link>
                       </li>
