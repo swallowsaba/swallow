@@ -46,6 +46,9 @@ export function Shell({ children }: { children: ReactNode }) {
             <NavLink to="/dashboard" className={navClass}>
               {t('nav.dashboard')}
             </NavLink>
+            <NavLink to="/glossary" className={navClass}>
+              {t('nav.glossary')}
+            </NavLink>
             <NavLink to="/settings" className={navClass}>
               {t('nav.settings')}
             </NavLink>

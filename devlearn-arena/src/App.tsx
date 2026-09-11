@@ -13,6 +13,7 @@ const ParkPage = lazy(() => import('./features/park/ParkPage'));
 const SandboxPage = lazy(() => import('./features/sandbox/SandboxPage'));
 const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage'));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
+const GlossaryPage = lazy(() => import('./features/glossary/GlossaryPage'));
 const NotFoundPage = lazy(() => import('./features/NotFoundPage'));
 
 export function App() {
@@ -38,6 +39,7 @@ export function App() {
                     <Route path="/sandbox" element={<SandboxPage />} />
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/glossary" element={<GlossaryPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Shell>

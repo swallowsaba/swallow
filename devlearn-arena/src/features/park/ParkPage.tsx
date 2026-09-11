@@ -432,6 +432,9 @@ function Park({
           <Link to="/map" className="knob px-3 py-2 text-sm">
             {t('park.map')}
           </Link>
+          <Link to="/glossary" className="knob px-3 py-2 text-sm">
+            {t('nav.glossary')}
+          </Link>
           <Link to="/settings" className="knob px-3 py-2 text-sm">
             {t('park.settings')}
           </Link>
