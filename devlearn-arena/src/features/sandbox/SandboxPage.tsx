@@ -15,11 +15,11 @@ import { useStore } from '@/store';
 import { Splitter } from '@/ui/Splitter';
 import { ClusterCanvas } from '@/visual/ClusterCanvas';
 import { CommitGraph } from '@/visual/CommitGraph';
-import { FileWorld } from '@/visual/FileWorld';
+import { FsTree } from '@/visual/FsTree';
 import { PacketFlow } from '@/visual/PacketFlow';
 import { PrTimeline } from '@/visual/PrTimeline';
 
-type Tab = 'world' | 'git' | 'k8s' | 'net' | 'gh';
+type Tab = 'fs' | 'git' | 'k8s' | 'net' | 'gh';
 
 /** 全部のエンジンを最初から使える状態にする。任務の縛りは無い */
 function sandboxOptions(): SessionOptions {
@@ -55,7 +55,7 @@ function sandboxOptions(): SessionOptions {
 }
 
 const TABS: { id: Tab; key: TKey }[] = [
-  { id: 'world', key: 'sandbox.tab.world' },
+  { id: 'fs', key: 'sandbox.tab.fs' },
   { id: 'git', key: 'sandbox.tab.git' },
   { id: 'k8s', key: 'sandbox.tab.k8s' },
   { id: 'net', key: 'sandbox.tab.net' },
@@ -77,7 +77,7 @@ export default function SandboxPage() {
   const runFromDiagram = useCallback((line: string) => {
     terminalRef.current?.submit(line);
   }, []);
-  const [tab, setTab] = useState<Tab>('world');
+  const [tab, setTab] = useState<Tab>('fs');
   const [editing, setEditing] = useState<EditorTarget | null>(null);
 
   const onEditor = useCallback((request: EditorTarget) => {
@@ -144,8 +144,8 @@ export default function SandboxPage() {
             ))}
           </div>
           <div className="min-h-0 flex-1 overflow-auto border border-wood-dark bg-cream p-3">
-            {tab === 'world' ? (
-              <FileWorld vfs={state.vfs} previous={previous?.vfs} cwd={state.cwd} />
+            {tab === 'fs' ? (
+              <FsTree vfs={state.vfs} previous={previous?.vfs} cwd={state.cwd} onCommand={runFromDiagram} />
             ) : null}
             {tab === 'git' ? <CommitGraph git={state.git} vfs={state.vfs} onCommand={runFromDiagram} /> : null}
             {tab === 'k8s' ? <ClusterCanvas cluster={state.cluster} previous={previous?.cluster} onCommand={runFromDiagram} /> : null}

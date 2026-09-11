@@ -8,6 +8,18 @@ import type { Link, Topology } from '@/engines/net/types';
  */
 export type RunCommand = (line: string) => void;
 
+/** 空白や記号を含む名前は、端末でそのまま打てるよう引用符で囲む */
+export function quoteArg(value: string): string {
+  return /^[\w@%+=:,./-]+$/.test(value) ? value : `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+/* ---------------- ファイルシステム ---------------- */
+
+export const fsCommands = {
+  cd: (path: string): string => `cd ${quoteArg(path)}`,
+  cat: (path: string): string => `cat ${quoteArg(path)}`,
+};
+
 /* ---------------- Kubernetes ---------------- */
 
 export const k8sCommands = {
