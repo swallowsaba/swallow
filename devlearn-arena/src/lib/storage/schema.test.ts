@@ -44,17 +44,28 @@ describe('save schema', () => {
     const settings = raw['settings'] as Record<string, unknown>;
     delete settings['paneMain'];
     delete settings['paneMap'];
+    delete settings['paneTask'];
     const r = parseSave(JSON.stringify(raw));
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.data.settings.paneMain).toBe(55);
       expect(r.data.settings.paneMap).toBe(62);
+      expect(r.data.settings.paneTask).toBe(35);
     }
   });
 
   it('範囲外の比率を弾く', () => {
     const save = createEmptySave(1);
     save.settings.paneMain = 99;
+    expect(parseSave(JSON.stringify(save)).ok).toBe(false);
+  });
+
+  it('問題エリアの高さも保存でき、範囲外は弾く', () => {
+    const save = createEmptySave(1);
+    save.settings.paneTask = 50;
+    const r = parseSave(JSON.stringify(save));
+    expect(r.ok && r.data.settings.paneTask).toBe(50);
+    save.settings.paneTask = 90;
     expect(parseSave(JSON.stringify(save)).ok).toBe(false);
   });
 

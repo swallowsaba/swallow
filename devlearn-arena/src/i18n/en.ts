@@ -53,6 +53,7 @@ export const en: Record<TKey, string> = {
   'park.settings': 'Settings',
   'park.terminal': 'Terminal',
   'park.splitLabel': 'Terminal and diagram width',
+  'park.taskSplitLabel': 'Task and terminal height',
   'park.todo': 'To do {n}',
   'park.done': 'Done',
   'park.missionDone': 'This mission is complete.',
@@ -153,8 +154,8 @@ export const en: Record<TKey, string> = {
   'viewport.fitHint': 'Show everything (double-click the diagram also works). Wheel to zoom, drag to pan',
 
   'settings.panes': 'Pane split',
-  'settings.panesLead': 'Drag the divider between the terminal and the diagram (the arrow keys work too).',
-  'settings.panesNow': 'Currently left {a}% / diagram height {b}%.',
+  'settings.panesLead': 'Drag the dividers between the terminal and the diagram, and between the task and the terminal (the arrow keys work too).',
+  'settings.panesNow': 'Currently left {a}% / diagram height {b}% / task height {c}%.',
   'settings.panesReset': 'Restore the default layout',
   'settings.intro': 'Mission briefing',
   'settings.introAlways': 'Always show the briefing first',

@@ -61,12 +61,12 @@ export default function SettingsPage() {
         <h2 className="font-mono text-base text-ink-soft">{t('settings.panes')}</h2>
         <p className="text-sm text-ink-soft">
           {t('settings.panesLead')}
-          {t('settings.panesNow', { a: settings.paneMain, b: settings.paneMap })}
+          {t('settings.panesNow', { a: settings.paneMain, b: settings.paneMap, c: settings.paneTask })}
         </p>
         <button
           type="button"
           onClick={() => {
-            updateSettings({ paneMain: 55, paneMap: 62 });
+            updateSettings({ paneMain: 55, paneMap: 62, paneTask: 35 });
           }}
           className="knob w-fit px-5 py-2.5 text-base"
         >

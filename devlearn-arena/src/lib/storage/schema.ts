@@ -39,6 +39,8 @@ export const settingsSchema = z.object({
   paneMain: z.number().min(25).max(80).default(55),
   /** 右側のうち地図が占める高さの割合(%) */
   paneMap: z.number().min(25).max(85).default(62),
+  /** 左側のうち「問題・ヒント」が占める高さの割合(%)。残りが端末 */
+  paneTask: z.number().min(15).max(70).default(35),
   /** 一度読んだ任務でも、開くたびに「学ぶ」画面を出す */
   introAlways: z.boolean().default(false),
 });
@@ -106,6 +108,7 @@ export const defaultSettings: Settings = {
   soundEnabled: false,
   paneMain: 55,
   paneMap: 62,
+  paneTask: 35,
   introAlways: false,
 };
 

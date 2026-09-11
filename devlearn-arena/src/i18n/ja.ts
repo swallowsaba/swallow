@@ -51,6 +51,7 @@ export const ja = {
   'park.settings': '設定',
   'park.terminal': '端末',
   'park.splitLabel': 'ターミナルと地図の幅',
+  'park.taskSplitLabel': '問題と端末の高さ',
   'park.todo': 'やること {n}',
   'park.done': '完了',
   'park.missionDone': 'この任務は完了しました。',
@@ -150,8 +151,8 @@ export const ja = {
   'viewport.fitHint': '全体を表示（図の上でダブルクリックでも戻ります）。ホイールで拡大縮小、ドラッグで移動',
 
   'settings.panes': '画面の分割',
-  'settings.panesLead': 'ターミナルと地図の境目はドラッグで動かせます（矢印キーでも調整できます）。',
-  'settings.panesNow': '現在の比率は 左 {a}% / 地図の高さ {b}% です。',
+  'settings.panesLead': 'ターミナルと地図の境目、問題と端末の境目はドラッグで動かせます（矢印キーでも調整できます）。',
+  'settings.panesNow': '現在の比率は 左 {a}% / 地図の高さ {b}% / 問題の高さ {c}% です。',
   'settings.panesReset': '既定の配置に戻す',
   'settings.intro': '任務の説明',
   'settings.introAlways': '毎回、最初に説明を出す',

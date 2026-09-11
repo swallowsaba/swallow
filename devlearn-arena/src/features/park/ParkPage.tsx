@@ -22,6 +22,7 @@ import { flushSave } from '@/store/persistence';
 import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
+import { splitTemplate } from '@/ui/panes';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { IntroScreen } from './IntroScreen';
 import { MissionPanel } from './MissionPanel';
@@ -150,6 +151,7 @@ function Park({
   const clearLesson = useStore((s) => s.clearLesson);
   const scheduleReview = useStore((s) => s.scheduleReview);
   const paneMain = useStore((s) => s.settings.paneMain);
+  const paneTask = useStore((s) => s.settings.paneTask);
   const updateSettings = useStore((s) => s.updateSettings);
   const markIntroRead = useStore((s) => s.markIntroRead);
   // 開いた瞬間に「学ぶ」画面を出すか。読んだ任務は、設定で頼まれない限り省く
@@ -462,11 +464,11 @@ function Park({
 
       <div
         className="grid min-h-0 flex-1"
-        style={{ gridTemplateColumns: `minmax(0, ${String(paneMain)}fr) auto minmax(0, ${String(100 - paneMain)}fr)` }}
+        style={{ gridTemplateColumns: splitTemplate(paneMain) }}
       >
         {/* 左：手を動かす場所 */}
-        {/* 上＝やること（溢れたらこの中で送る）、下＝端末。端末が画面外へ出ないよう行を固定する */}
-        <div className="grid min-h-0 min-w-0 grid-rows-[minmax(0,auto)_minmax(0,1fr)]">
+        {/* 上＝やること（溢れたらこの中で送る）、下＝端末。間の仕切りで高さを変えられる */}
+        <div className="grid min-h-0 min-w-0" style={{ gridTemplateRows: splitTemplate(paneTask) }}>
           <MissionPanel
             mission={mission}
             clearedIds={clearedIds}
@@ -486,6 +488,17 @@ function Park({
             }}
             onSkip={skipStep}
             onSwitch={onSwitch}
+          />
+
+          <Splitter
+            orientation="horizontal"
+            value={paneTask}
+            min={15}
+            max={70}
+            label={t('park.taskSplitLabel')}
+            onChange={(next) => {
+              updateSettings({ paneTask: next });
+            }}
           />
 
           <div className="mx-3 mb-3 flex min-h-0 min-w-0 flex-1 flex-col border-4 border-wood-dark">
