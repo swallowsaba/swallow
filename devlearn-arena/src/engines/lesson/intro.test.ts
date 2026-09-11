@@ -36,6 +36,12 @@ describe('すべての任務に「学ぶ」段階がある', () => {
       expect(intro.why.length, entry.id).toBeGreaterThan(0);
       expect(intro.concepts.length, entry.id).toBeGreaterThan(0);
       expect(intro.commands.length, entry.id).toBeGreaterThan(0);
+      // 用語は、同じ語を繰り返さず平易な言葉で言い換える
+      for (const c of intro.concepts) {
+        expect(c.term.length, entry.id).toBeGreaterThan(0);
+        expect(c.plain.length, `${entry.id}: ${c.term}`).toBeGreaterThan(0);
+        expect(c.plain, `${entry.id}: ${c.term}`).not.toBe(c.term);
+      }
       for (const c of intro.commands) {
         expect(c.command.length, entry.id).toBeGreaterThan(0);
         expect(c.means.length, entry.id).toBeGreaterThan(0);
