@@ -201,3 +201,34 @@ describe('履歴の図が変化を見せる', () => {
     expect(view.querySelector('[data-testid="rebase-note"]')).toBeNull();
   });
 });
+
+describe('クラスタの図が動きを見せる', () => {
+  function play(lines: readonly string[]) {
+    let session = createSession({ cluster: emptyCluster([node('node-1', 4000, 8192)]), files: { '/home/learner': null } });
+    const states: (ClusterState | null)[] = [session.state.cluster];
+    for (const line of lines) {
+      session = { ...session, state: execute(session.state, line, session.registry, session.clock).state };
+      states.push(session.state.cluster);
+    }
+    return states;
+  }
+
+  it('動いた部品に、命令が伝わる順の番号が付く', () => {
+    const states = play(['kubectl create deployment web --image=nginx --replicas=2', 'kubectl wait 5']);
+    const view = mount(<ClusterCanvas cluster={states[2] ?? null} previous={states[1]} />);
+    const order = (part: string) => view.querySelector(`[data-part="${part}"]`)?.getAttribute('data-order');
+    expect(order('apiserver')).toBe('0');
+    expect(Number(order('controller'))).toBeLessThan(Number(order('scheduler')));
+  });
+
+  it('入れ替えの最中は、Pod に新旧の印が付く', () => {
+    const states = play([
+      'kubectl create deployment web --image=nginx:1.25 --replicas=3', 'kubectl wait 15',
+      'kubectl set image deployment/web web=nginx:1.26', 'kubectl wait 1',
+    ]);
+    const view = mount(<ClusterCanvas cluster={states[4] ?? null} previous={states[3]} />);
+    const gens = new Set([...view.querySelectorAll('[data-pod]')].map((el) => el.getAttribute('data-generation')));
+    expect(gens).toEqual(new Set(['old', 'new']));
+    expect(view.querySelector('[data-rolling="web"]')).not.toBeNull();
+  });
+});

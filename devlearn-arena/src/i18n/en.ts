@@ -268,6 +268,9 @@ export const en: Record<TKey, string> = {
   'viz.ownershipLead': 'Brown lines show who created what (Deployment → ReplicaSet → Pod). Green dotted lines show the Pods a Service sends traffic to; Pods not in its Endpoints get no line.',
   'viz.threeTrees': 'The three trees (working tree / index / HEAD)',
   'viz.ghostCommit': '(original)',
+  'viz.genNew': 'new',
+  'viz.genOld': 'old',
+  'viz.rolling': 'rolling',
   'viz.rebaseCopied': 'Rebase does not move commits. It copied {n} commit(s) onto the new parent and moved the branch label. The dashed ones are the originals.',
 
   'dash.title': 'Progress',

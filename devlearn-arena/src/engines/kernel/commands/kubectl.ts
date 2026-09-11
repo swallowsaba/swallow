@@ -228,6 +228,10 @@ const coreSubcommands: Record<string, KubectlHandler> = {
       }
       const deployment = cluster.deployments.get(key(namespace, name));
       if (deployment === undefined) return notFound('deployments.apps', name);
+      // 本物と同じく、無いコンテナ名を指定したら何も変えずに失敗する
+      if (!deployment.spec.template.containers.some((c) => c.name === containerName)) {
+        return { stderr: `error: unable to find container named "${containerName}"\n`, code: 1 };
+      }
       const containers = deployment.spec.template.containers.map((c) =>
         c.name === containerName ? { ...c, image, failing: image.includes('does-not-exist'), crashing: image.includes('crash') } : c,
       );

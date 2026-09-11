@@ -159,6 +159,14 @@ describe('rollout', () => {
       .toBe('nginx:1.24');
   });
 
+  it('無いコンテナ名で set image すると、本物と同じく失敗して何も変えない', () => {
+    const result = run('kubectl set image deployment web nope=nginx:1.25');
+    expect(result.code).toBe(1);
+    expect(result.err).toContain('unable to find container named "nope"');
+    expect(run('kubectl get deploy web -o jsonpath={.spec.template.spec.containers[0].image}').out.trim())
+      .toBe('nginx:1.24');
+  });
+
   it('無い世代を指すと理由が出る', () => {
     expect(run('kubectl rollout undo deployment/web --to-revision=99').code).toBe(1);
   });

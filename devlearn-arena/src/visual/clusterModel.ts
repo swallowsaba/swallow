@@ -1,5 +1,7 @@
 import { isReady } from '@/engines/k8s/kubelet';
+import { templateHash } from '@/engines/k8s/controllers';
 import type { ClusterState, Pod } from '@/engines/k8s/types';
+import { FILL } from './sceneKit';
 
 /**
  * クラスタの図に出すものを、状態から組み立てる。
@@ -21,6 +23,50 @@ export function podLook(pod: Pod): { look: PodLook; detail: string } {
   return { look: 'Creating', detail: waiting ?? 'ContainerCreating' };
 }
 
+/** 札に出す文字。待たされている Pod は、本物と同じ理由（CrashLoopBackOff など）をそのまま出す */
+export function podLabel(pod: Pod): string {
+  const { look, detail } = podLook(pod);
+  return look === 'BackOff' ? detail : look;
+}
+
+/* ---------------- ローリングアップデートの新旧 ---------------- */
+
+export type Generation = 'new' | 'old';
+
+/**
+ * Pod（や ReplicaSet）が、持ち主の Deployment のいまの型から作られたものか、前の型のものか。
+ * Deployment の持ち物でなければ null。
+ */
+export function generationOf(cluster: ClusterState, labels: Record<string, string>, owners: readonly { kind: string; name: string }[], namespace: string): Generation | null {
+  const hash = labels['pod-template-hash'];
+  if (hash === undefined) return null;
+  const rsOwner = owners.find((o) => o.kind === 'ReplicaSet');
+  const rs = rsOwner ? cluster.replicaSets.get(`${namespace}/${rsOwner.name}`) : undefined;
+  const deployOwner = (rs?.metadata.ownerReferences ?? owners).find((o) => o.kind === 'Deployment');
+  const deployment = deployOwner ? cluster.deployments.get(`${namespace}/${deployOwner.name}`) : undefined;
+  if (!deployment) return null;
+  return templateHash(deployment.spec.template) === hash ? 'new' : 'old';
+}
+
+export function podGeneration(cluster: ClusterState, pod: Pod): Generation | null {
+  return generationOf(cluster, pod.metadata.labels, pod.metadata.ownerReferences, pod.metadata.namespace);
+}
+
+/** 新旧の Pod が同時にいる（入れ替えの最中）Deployment の名前 */
+export function rollingDeployments(cluster: ClusterState): Set<string> {
+  const seen = new Map<string, Set<Generation>>();
+  for (const pod of cluster.pods.values()) {
+    const gen = podGeneration(cluster, pod);
+    const rs = pod.metadata.ownerReferences.find((o) => o.kind === 'ReplicaSet');
+    const owner = rs ? cluster.replicaSets.get(`${pod.metadata.namespace}/${rs.name}`)?.metadata.ownerReferences[0]?.name : undefined;
+    if (gen === null || owner === undefined) continue;
+    seen.set(owner, new Set([...(seen.get(owner) ?? []), gen]));
+  }
+  return new Set([...seen].filter(([, gens]) => gens.size > 1).map(([name]) => name));
+}
+
+export const GENERATION_COLOR: Record<Generation, string> = { new: FILL.sky, old: FILL.old };
+
 export const LOOK_COLOR: Record<PodLook, string> = {
   Pending: 'var(--cream-dark)',
   Creating: 'var(--warn)',
@@ -34,7 +80,13 @@ export const LOOK_COLOR: Record<PodLook, string> = {
 
 export type Component = 'apiserver' | 'scheduler' | 'controller' | 'etcd';
 
-export const COMPONENTS: readonly Component[] = ['apiserver', 'scheduler', 'controller', 'etcd'];
+/** 命令が伝わる順。kubectl apply → 受付 → 記録帳 → 見張り係 → 配置係 */
+export const COMPONENTS: readonly Component[] = ['apiserver', 'etcd', 'controller', 'scheduler'];
+
+/** 光った部品を、命令が伝わる順に並べる。この順に1つずつ光らせる */
+export function activationOrder(active: ReadonlySet<Component>): Component[] {
+  return COMPONENTS.filter((c) => active.has(c));
+}
 
 /** 資源の「あるべき姿」の部分だけを並べた指紋。status の変化（現場の報告）とは分けて見る */
 function desired(cluster: ClusterState): string {
@@ -98,6 +150,8 @@ export interface GraphNode {
   y: number;
   /** Pod のときだけ。色と文字で状態を出す */
   look?: PodLook;
+  /** ReplicaSet と Pod のとき、Deployment のいまの型か前の型か */
+  generation?: Generation;
 }
 
 export interface GraphEdge {
@@ -111,7 +165,15 @@ export const GRAPH = { colW: 170, rowH: 34, nodeW: 150, nodeH: 26, pad: 8 } as c
 
 const WORKLOADS = ['Deployment', 'StatefulSet', 'DaemonSet', 'CronJob', 'Job', 'ReplicaSet'] as const;
 
-function workloadsOf(cluster: ClusterState): { kind: string; name: string; owners: { kind: string; name: string }[] }[] {
+interface Workload {
+  kind: string;
+  name: string;
+  namespace: string;
+  labels: Record<string, string>;
+  owners: { kind: string; name: string }[];
+}
+
+function workloadsOf(cluster: ClusterState): Workload[] {
   const all = [
     ...[...cluster.deployments.values()],
     ...[...cluster.statefulSets.values()],
@@ -120,7 +182,13 @@ function workloadsOf(cluster: ClusterState): { kind: string; name: string; owner
     ...[...cluster.jobs.values()],
     ...[...cluster.replicaSets.values()],
   ];
-  return all.map((r) => ({ kind: r.kind, name: r.metadata.name, owners: r.metadata.ownerReferences }));
+  return all.map((r) => ({
+    kind: r.kind,
+    name: r.metadata.name,
+    namespace: r.metadata.namespace,
+    labels: r.metadata.labels,
+    owners: r.metadata.ownerReferences,
+  }));
 }
 
 const idOf = (kind: string, name: string) => `${kind}/${name}`;
@@ -152,6 +220,16 @@ export function ownershipGraph(cluster: ClusterState): { nodes: GraphNode[]; edg
   ];
 
   const podById = new Map(pods.map((p) => [idOf('Pod', p.metadata.name), p]));
+  const workloadById = new Map(workloads.map((w) => [idOf(w.kind, w.name), w]));
+  const generationField = (id: string, pod: Pod | undefined): { generation?: Generation } => {
+    const w = workloadById.get(id);
+    const gen = pod
+      ? podGeneration(cluster, pod)
+      : w?.kind === 'ReplicaSet'
+        ? generationOf(cluster, w.labels, w.owners, w.namespace)
+        : null;
+    return gen === null ? {} : { generation: gen };
+  };
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
   let row = 0;
@@ -167,6 +245,7 @@ export function ownershipGraph(cluster: ClusterState): { nodes: GraphNode[]; edg
       x: depth,
       y: row,
       ...(pod ? { look: podLook(pod).look } : {}),
+      ...generationField(id, pod),
     });
     maxDepth = Math.max(maxDepth, depth);
     const kids = children.get(id) ?? [];

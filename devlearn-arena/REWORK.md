@@ -29,7 +29,7 @@
   - `git rebase` ではコミットが複製されて新しい親にぶら下がる様子を段階的に見せる
   - 変更のあったコミット・ブランチは光らせる
 
-- [ ] 1-3. **Kubernetes の可視化を作り直す。**
+- [x] 1-3. **Kubernetes の可視化を作り直す。**
   - 上段にコントロールプレーン（apiserver / scheduler / controller-manager / etcd）を箱で描く。
     コマンドを打ったとき、**実際に動いた部品を光らせる**（apply→apiserver→etcd→controller→scheduler の順）
   - 下段にノードを並べ、Pod を粒として置く。

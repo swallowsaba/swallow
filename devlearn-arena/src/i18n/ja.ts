@@ -264,6 +264,9 @@ export const ja = {
   'viz.ownershipLead': '茶色の線は「誰が作ったか」（Deployment → ReplicaSet → Pod）。緑の点線は Service が繋いでいる Pod。載っていない Pod には伸びない。',
   'viz.threeTrees': '3面（作業ツリー / インデックス / HEAD）',
   'viz.ghostCommit': '（元のコミット）',
+  'viz.genNew': '新',
+  'viz.genOld': '旧',
+  'viz.rolling': '入れ替え中',
   'viz.rebaseCopied': 'rebase はコミットを動かしません。{n} 個のコミットを複製して新しい親にぶら下げ、ブランチの札を付け替えました。点線が元のコミットです。',
 
   'dash.title': '記録',

@@ -3,7 +3,9 @@ import { createSession, type Session } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { emptyCluster, node } from '@/engines/k8s/factory';
 import type { ClusterState } from '@/engines/k8s/types';
-import { activeComponents, ownershipGraph, podLook } from './clusterModel';
+import {
+  activationOrder, activeComponents, ownershipGraph, podGeneration, podLabel, podLook, rollingDeployments,
+} from './clusterModel';
 
 function start() {
   let session: Session = createSession({
@@ -114,5 +116,53 @@ describe('持ち主の系図と Service の線', () => {
     const graph = ownershipGraph(sh.cluster);
     expect(graph.nodes.map((n) => n.id)).toEqual(['Pod/lone']);
     expect(graph.edges).toEqual([]);
+  });
+});
+
+describe('命令が伝わる順に光らせる', () => {
+  it('受付 → 記録帳 → 見張り係 → 配置係 の順に並べる', () => {
+    expect(activationOrder(new Set(['scheduler', 'apiserver', 'controller', 'etcd']))).toEqual([
+      'apiserver', 'etcd', 'controller', 'scheduler',
+    ]);
+    expect(activationOrder(new Set(['scheduler', 'apiserver']))).toEqual(['apiserver', 'scheduler']);
+  });
+});
+
+describe('落ち続ける Pod は本物と同じ理由を文字で出す', () => {
+  it('CrashLoopBackOff', () => {
+    const sh = start();
+    sh.run('kubectl run bad --image=crash-app');
+    sh.run('kubectl wait 30');
+    const pod = sh.cluster.pods.get('default/bad');
+    if (!pod) throw new Error('Pod がありません');
+    expect(podLabel(pod)).toBe('CrashLoopBackOff');
+  });
+});
+
+describe('ローリングアップデートの新旧', () => {
+  it('イメージを変えた直後は、新しい型と前の型の Pod が並び、色分けの対象になる', () => {
+    const sh = start();
+    sh.run('kubectl create deployment web --image=nginx:1.25 --replicas=3');
+    sh.run('kubectl wait 15');
+    expect(rollingDeployments(sh.cluster).size).toBe(0);
+    sh.run('kubectl set image deployment/web web=nginx:1.26');
+    sh.run('kubectl wait 1');
+    const gens = [...sh.cluster.pods.values()].map((p) => podGeneration(sh.cluster, p));
+    expect(gens).toContain('old');
+    expect(gens).toContain('new');
+    expect(rollingDeployments(sh.cluster)).toEqual(new Set(['web']));
+    // 系図でも ReplicaSet が新旧に分かれる
+    const rsGens = ownershipGraph(sh.cluster).nodes.filter((n) => n.kind === 'ReplicaSet').map((n) => n.generation);
+    expect(new Set(rsGens)).toEqual(new Set(['new', 'old']));
+    sh.run('kubectl wait 60');
+    expect(rollingDeployments(sh.cluster).size).toBe(0);
+  });
+
+  it('Deployment の持ち物でない Pod には新旧が無い', () => {
+    const sh = start();
+    sh.run('kubectl run lone --image=nginx');
+    const pod = sh.cluster.pods.get('default/lone');
+    if (!pod) throw new Error('Pod がありません');
+    expect(podGeneration(sh.cluster, pod)).toBeNull();
   });
 });
