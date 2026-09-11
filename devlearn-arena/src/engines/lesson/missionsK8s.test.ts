@@ -64,6 +64,58 @@ function expectCleared(id: string, lines: readonly string[]): void {
   expect(result.cleared, `${id} が手順 ${String(result.stoppedAt + 1)} で止まりました`).toBe(true);
 }
 
+describe('空のクラスタに Pod を作る', () => {
+  it('ノードだけがあり、Pod は 0 個から始まる', () => {
+    const play = player('k8s/01/first-kubectl');
+    const cluster = play.state()?.cluster;
+    expect(cluster?.nodes.size).toBe(2);
+    expect(cluster?.pods.size).toBe(0);
+    expect(cluster?.deployments.size).toBe(0);
+  });
+
+  it('Pod の名前を画面で確かめながら解ける', () => {
+    const play = player('k8s/01/first-kubectl');
+    play.run('kubectl get nodes');
+    play.run('kubectl run web --image=nginx');
+    play.run('kubectl wait 10');
+    play.run('kubectl delete pod web');
+    play.run('kubectl wait 10');
+    expect(play.run('kubectl get pods')).toContain('No resources found');
+    play.run('kubectl create deployment web --image=nginx --replicas=2');
+    play.run('kubectl wait 10');
+    const name = /^(web-\S+)/m.exec(play.run('kubectl get pods'))?.[1] ?? '';
+    expect(name).not.toBe('');
+    play.run(`kubectl delete pod ${name}`);
+    expect(play.cleared).toBe(false);
+    play.run('kubectl wait 10');
+    expect(play.run('kubectl get pods')).not.toContain(name);
+    expect(play.cleared, `手順 ${String(play.stepIndex + 1)} で止まりました`).toBe(true);
+  });
+
+  it('単独の Pod を消した直後は、時間を進めるまで通らない', () => {
+    const result = solve('k8s/01/first-kubectl', [
+      'kubectl get nodes',
+      'kubectl run web --image=nginx',
+      'kubectl wait 10',
+      'kubectl delete pod web',
+    ]);
+    expect(result.stoppedAt).toBe(3);
+  });
+
+  it('Deployment の Pod を消さずに待つだけでは通らない', () => {
+    const result = solve('k8s/01/first-kubectl', [
+      'kubectl get nodes',
+      'kubectl run web --image=nginx',
+      'kubectl wait 10',
+      'kubectl delete pod web',
+      'kubectl wait 10',
+      'kubectl create deployment web --image=nginx --replicas=2',
+      'kubectl wait 30',
+    ]);
+    expect(result).toEqual({ cleared: false, stoppedAt: 5 });
+  });
+});
+
 describe('Kubernetes の任務が実際に解ける', () => {
   it('Pending から動かない', () => {
     const play = player('k8s/02/boss-stuck-pending');

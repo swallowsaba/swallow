@@ -24,7 +24,7 @@ export const k8sTrack: Track = {
           [doc('kubeadm join', K('reference/setup-tools/kubeadm/kubeadm-join/'))]],
         ['control-plane-taint', 'コントロールプレーンの taint を外すかどうか', 'drill', 10,
           [doc('Taints and Tolerations', K('concepts/scheduling-eviction/taint-and-toleration/'))]],
-        ['first-kubectl', 'kubectl get / describe でクラスタを歩く', 'drill', 10,
+        ['first-kubectl', '空のクラスタに Pod と Deployment を作る', 'drill', 10,
           [doc('kubectl overview', K('reference/kubectl/'))]],
       ]),
     chapter('k8s', 2, 'Pod の解剖', '最小単位の中身。共有される名前空間と、複数コンテナの設計。',

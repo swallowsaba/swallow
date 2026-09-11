@@ -3,7 +3,7 @@ import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
 import { describePod, describeResource, renderTable } from './kubectlGet';
-import { create } from './kubectlCreate';
+import { create, expose, run } from './kubectlCreate';
 import { nodeCtl, taint } from './kubectlNodes';
 import { setProbe, setResources } from './kubectlSet';
 import { opsSubcommands } from './kubectlOps';
@@ -22,6 +22,19 @@ function findOne(
 ): Resource | null {
   const items = listOf(cluster, kind, namespace);
   return items.find((r) => r.metadata.name === name) ?? null;
+}
+
+/** 表の右端に LABELS の列を足す（--show-labels） */
+function withLabels(rendered: string, items: readonly Resource[]): string {
+  const lines = rendered.replace(/\n$/, '').split('\n');
+  if (lines.length !== items.length + 1) return rendered;
+  const width = Math.max(...lines.map((l) => l.length));
+  const labels = items.map((r) => {
+    const text = Object.entries(r.metadata.labels).map(([k, v]) => `${k}=${v}`).join(',');
+    return text === '' ? '<none>' : text;
+  });
+  const out = lines.map((l, i) => `${l.padEnd(width)}   ${i === 0 ? 'LABELS' : (labels[i - 1] ?? '')}`);
+  return `${out.join('\n')}\n`;
 }
 
 /** 名前で1つ消す。持ち主のいる下位の資源もまとめて片付ける */
@@ -66,7 +79,7 @@ function deleteOne(cluster: ClusterState, kind: string, namespace: string, name:
 }
 
 const coreSubcommands: Record<string, KubectlHandler> = {
-  get: ({ cluster, namespace, operands, output, values }) => {
+  get: ({ cluster, namespace, operands, output, values, flags }) => {
     const { kind, name, raw } = parseTarget(operands);
     if (kind === '') {
       return { stderr: `error: the server doesn't have a resource type "${raw}"\n`, code: 1 };
@@ -91,7 +104,8 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     if (items.length === 0 && !synthetic) {
       return { stdout: `No resources found in ${namespace} namespace.\n` };
     }
-    return { stdout: renderTable(cluster, kind, items, format.wide) };
+    const rendered = renderTable(cluster, kind, items, format.wide);
+    return { stdout: flags.has('show-labels') ? withLabels(rendered, items) : rendered };
   },
 
   describe: ({ cluster, namespace, operands, values }) => {
@@ -317,6 +331,8 @@ const coreSubcommands: Record<string, KubectlHandler> = {
 };
 coreSubcommands['uncordon'] = coreSubcommands['cordon'] as KubectlHandler;
 coreSubcommands['create'] = create;
+coreSubcommands['run'] = run;
+coreSubcommands['expose'] = expose;
 coreSubcommands['taint'] = taint;
 coreSubcommands['node-down'] = nodeCtl;
 coreSubcommands['node-up'] = nodeCtl;
@@ -333,7 +349,10 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
   if (cluster === null) return { stderr: NO_CLUSTER, code: 1 };
   const rest = argv.slice(2);
   const { flags, values, operands } = parseArgs([sub, ...rest], {
-    withValue: ['o', 'n', 'l', 'f', 'as', 'image', 'replicas', 'tcp', 'requests', 'limits', 'succeeds-after'],
+    withValue: [
+      'o', 'n', 'l', 'f', 'as', 'image', 'replicas', 'tcp', 'requests', 'limits', 'succeeds-after',
+      'port', 'target-port', 'type', 'name', 'labels',
+    ],
   });
 
   const handler = subcommands[ALIASES[sub] ?? sub];

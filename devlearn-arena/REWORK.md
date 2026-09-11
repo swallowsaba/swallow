@@ -73,7 +73,7 @@
 
 現在の k8s 任務は Deployment が既にある状態から始まり、確認するだけになっている。
 
-- [ ] 4-1. `k8s/01/first-look` を作り直す。**ノードだけがある空のクラスタから始める。**
+- [x] 4-1. `k8s/01/first-look` を作り直す。**ノードだけがある空のクラスタから始める。**
   手順は次の順にする。
   1. `kubectl get nodes` でクラスタに何があるか見る（Pod は0個であることを確認）
   2. `kubectl run web --image=nginx` で Pod を1つ作る（`kubectl run` を実装する）
@@ -83,7 +83,7 @@
   6. Pod を1つ消す。**今度は作り直されることを確認する**
   7. なぜ違うのかを `intro` と `explain` で説明する
 
-- [ ] 4-2. `kubectl run` `kubectl create deployment` `kubectl expose` を実装する。
+- [x] 4-2. `kubectl run` `kubectl create deployment` `kubectl expose` を実装する。
   マニフェストを書かずに資源を作れるようにする（初心者は YAML から入れない）。
 
 - [ ] 4-3. YAML はその次の任務にする。`kubectl get deploy web -o yaml` で

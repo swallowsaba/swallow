@@ -1,4 +1,4 @@
-import { container, deployment, service } from '@/engines/k8s/factory';
+import { container, deployment, pod, service } from '@/engines/k8s/factory';
 import type { ClusterState, ConfigMap, Secret, ServiceAccount } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult } from '../registry';
@@ -43,7 +43,7 @@ function createDeployment(ctx: Parameters<KubectlHandler>[0]): CommandResult {
   const name = operands[1];
   const image = values.get('image');
   if (name === undefined || image === undefined) {
-    return { stderr: 'error: --image が要ります\n', code: 1 };
+    return { stderr: 'error: required flag(s) "image" not set\n', code: 1 };
   }
   const id = key(namespace, name);
   if (exists(cluster, 'deployments', id)) return alreadyThere('deployments.apps', name);
@@ -163,4 +163,88 @@ export const create: KubectlHandler = (ctx) => {
     return { stderr: `error: unknown resource type "${what}" for "kubectl create"\n`, code: 1 };
   }
   return maker(ctx);
+};
+
+/** `--labels=a=b,c=d` を読む */
+function labelsOf(text: string | undefined): Record<string, string> | null {
+  if (text === undefined || text === '') return null;
+  const out: Record<string, string> = {};
+  for (const pair of text.split(',')) {
+    const [k, v] = pair.split('=');
+    if (k === undefined || k === '' || v === undefined) return null;
+    out[k] = v;
+  }
+  return out;
+}
+
+/**
+ * `kubectl run <名前> --image=<イメージ>`。Pod を1つだけ、持ち主なしで作る。
+ * 持ち主（Deployment）がいないので、消せばそれっきりで作り直されない。
+ */
+export const run: KubectlHandler = (ctx) => {
+  const { cluster, namespace, operands, values } = ctx;
+  const name = operands[0];
+  const image = values.get('image');
+  if (name === undefined || image === undefined) {
+    return { stderr: 'error: required flag(s) "image" not set\nusage: kubectl run <名前> --image=<イメージ>\n', code: 1 };
+  }
+  const id = key(namespace, name);
+  if (cluster.pods.has(id)) return alreadyThere('pods', name);
+  // 本物の kubectl run と同じく、run=<名前> のラベルを付ける
+  const labels = labelsOf(values.get('labels')) ?? { run: name };
+  const port = Number(values.get('port') ?? NaN);
+  const made = pod(name, [container(name, image, Number.isFinite(port) ? { ports: [port] } : {})], {
+    namespace,
+    labels,
+    createdAt: cluster.tick,
+  });
+  return {
+    stdout: `pod/${name} created\n`,
+    patch: { cluster: { ...cluster, pods: new Map([...cluster.pods, [id, made]]) } },
+  };
+};
+
+/**
+ * `kubectl expose deployment <名前> --port=80`。
+ * 相手の Pod を選ぶセレクタを写して Service を作る。マニフェストを書かずに受付を立てられる。
+ */
+export const expose: KubectlHandler = (ctx) => {
+  const { cluster, namespace, operands, values } = ctx;
+  const first = operands[0] ?? '';
+  const slash = first.indexOf('/');
+  const kind = slash === -1 ? first : first.slice(0, slash);
+  const target = slash === -1 ? operands[1] : first.slice(slash + 1);
+  if (target === undefined || target === '') {
+    return { stderr: 'usage: kubectl expose (deployment|pod) <名前> --port=<番号>\n', code: 1 };
+  }
+  let selector: Record<string, string> | null = null;
+  if (['deployment', 'deployments', 'deploy'].includes(kind)) {
+    const found = cluster.deployments.get(key(namespace, target));
+    if (found === undefined) return { stderr: `Error from server (NotFound): deployments.apps "${target}" not found\n`, code: 1 };
+    selector = { ...found.spec.selector };
+  } else if (['pod', 'pods', 'po'].includes(kind)) {
+    const found = cluster.pods.get(key(namespace, target));
+    if (found === undefined) return { stderr: `Error from server (NotFound): pods "${target}" not found\n`, code: 1 };
+    selector = { ...found.metadata.labels };
+  } else {
+    return { stderr: `error: cannot expose a ${kind}\n`, code: 1 };
+  }
+  if (Object.keys(selector).length === 0) {
+    return { stderr: `error: couldn't retrieve selectors via --selector flag or introspection: ${kind} "${target}" has no labels\n`, code: 1 };
+  }
+  const port = Number(values.get('port') ?? NaN);
+  if (!Number.isInteger(port) || port <= 0) {
+    return { stderr: 'error: couldn\'t find port via --port flag or introspection\n', code: 1 };
+  }
+  const targetPort = Number(values.get('target-port') ?? port);
+  const name = values.get('name') ?? target;
+  const id = key(namespace, name);
+  if (exists(cluster, 'services', id)) return alreadyThere('services', name);
+  const typeFlag = (values.get('type') ?? 'ClusterIP').toLowerCase();
+  const type = typeFlag === 'nodeport' ? 'NodePort' : typeFlag === 'loadbalancer' ? 'LoadBalancer' : 'ClusterIP';
+  const made = service(name, selector, { namespace, port, targetPort, type });
+  return {
+    stdout: `service/${name} exposed\n`,
+    patch: { cluster: { ...cluster, services: new Map([...cluster.services, [id, made]]) } },
+  };
 };

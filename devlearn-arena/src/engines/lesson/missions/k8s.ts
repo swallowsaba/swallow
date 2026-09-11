@@ -2,7 +2,8 @@ import { concepts } from '../glossary';
 import { container, deployment, emptyCluster, node, service } from '@/engines/k8s/factory';
 import { isReady } from '@/engines/k8s/kubelet';
 import type { LessonDefinition } from '../types';
-import { POD, ran } from '../authoring/ran';
+
+export { k8sFirstPod } from './k8sFirst';
 
 /** ラベルが食い違っていて、Service から繋がらないクラスタ */
 function brokenServiceCluster() {
@@ -15,71 +16,6 @@ function brokenServiceCluster() {
     services: new Map([['default/web', service('web', { app: 'frontend' })]]),
   };
 }
-
-export const k8sFirstPod: LessonDefinition = {
-  id: 'k8s/01/first-kubectl',
-  track: 'k8s',
-  kind: 'training',
-  title: 'クラスタを覗く',
-  intro: {
-    summary: 'クラスタを覗き、Pod を消しても戻ってくること、数を変えられることを確かめる。',
-    why:
-      'Kubernetes は「決めた数だけ動かし続ける」ことを人の代わりにやってくれる。消しても戻る、を自分の目で見ると、その仕組みが腑に落ちる。',
-    concepts: concepts('Kubernetes', 'クラスタ', 'Pod', 'Deployment', 'レプリカ', 'kubectl', 'ラベル'),
-    commands: [
-      { command: 'kubectl get pods', means: 'Pod の一覧と状態を見る' },
-      { command: 'kubectl wait <秒>', means: '時間を進める' },
-      { command: 'kubectl delete pods -l app=web', means: 'app=web のラベルが付いた Pod を消す' },
-      { command: 'kubectl scale deploy web --replicas=4', means: 'あるべき数を 4 にする' },
-    ],
-  },
-  objectives: ['資源の一覧を読める', 'Pod が消えても戻る理由が分かる', '数を変えられる'],
-  parCommands: 8,
-  initial: {
-    cluster: {
-      ...emptyCluster([node('node-1', 2000, 4096), node('node-2', 2000, 4096)]),
-      deployments: new Map([
-        ['default/web', deployment('web', 2, [container('nginx', 'nginx:1.25')], { labels: { app: 'web' } })],
-      ]),
-    },
-  },
-  steps: [
-    {
-      prompt: '時間を進めて、Pod を 2 つとも Running にせよ。',
-      check: 'Ready な Pod が 2 つあること',
-      hints: ['kubectl get pods で今の状態が見える', 'kubectl wait 10 で時間を進められる'],
-      solution: ['kubectl wait 10'],
-      assert: ({ shell }) =>
-        shell.cluster !== null &&
-        [...shell.cluster.pods.values()].filter(isReady).length === 2,
-      explain:
-        'apply は「こうあってほしい」を置くだけ。実際に Pod を作るのはコントローラで、tick ごとに差を埋めていく。',
-    },
-    {
-      prompt: 'Pod を 1 つ消し、時間を進めて、また 2 つに戻ることを確かめよ。',
-      check: 'Pod を削除した記録があり、Ready な Pod が再び 2 つあること',
-      hints: ['kubectl get pods で名前を確かめる', 'kubectl delete pod <名前>', 'kubectl wait 10'],
-      solution: ['kubectl delete pods -l app=web', 'kubectl wait 10'],
-      assert: ({ shell }) => {
-        if (shell.cluster === null) return false;
-        const deleted = ran(shell.history, 'kubectl', 'delete', POD);
-        return deleted && [...shell.cluster.pods.values()].filter(isReady).length === 2;
-      },
-      explain:
-        '消えたことに反応したのではない。「2 つあるべき」と「1 つしかない」の差を、次の tick で埋めただけ。これが宣言的ということ。',
-    },
-    {
-      prompt: 'replicas を 4 に増やし、全て Running にせよ。',
-      check: 'Ready な Pod が 4 つあること',
-      hints: ['kubectl scale deploy web --replicas=4', 'そのあと kubectl wait 12'],
-      solution: ['kubectl scale deploy web --replicas=4', 'kubectl wait 12'],
-      assert: ({ shell }) =>
-        shell.cluster !== null &&
-        [...shell.cluster.pods.values()].filter(isReady).length === 4,
-      explain: 'スケジューラは requests と各ノードの空き容量を比べて配置先を決めている。',
-    },
-  ],
-};
 
 export const k8sServiceBoss: LessonDefinition = {
   id: 'k8s/07/boss-service-no-endpoint',
