@@ -1,11 +1,10 @@
 import { concepts } from '../glossary';
 import { POD, ran } from '../authoring/ran';
-import { advanceCluster } from '@/engines/k8s/controllers';
-import { container, deployment, emptyCluster, node, pod } from '@/engines/k8s/factory';
-import { tickPods } from '@/engines/k8s/kubelet';
+import { container, emptyCluster, node, pod } from '@/engines/k8s/factory';
 import type { ClusterState, Deployment, Pod } from '@/engines/k8s/types';
 import { readyPods, resourceAbsent, resourceWhere, withCluster } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
+import { createDeploymentFirst, startingEmpty } from './k8sBuild';
 import { family, k8sDoc } from './shared';
 import { APP_NAMES } from './values';
 
@@ -13,13 +12,6 @@ const POD_DOC = k8sDoc('concepts/workloads/pods/', 'Pods');
 const LIFECYCLE = k8sDoc('concepts/workloads/pods/pod-lifecycle/', 'Pod Lifecycle');
 const CONTROLLER = k8sDoc('concepts/architecture/controller/', 'Controllers');
 const DEPLOY_DOC = k8sDoc('concepts/workloads/controllers/deployment/', 'Deployment');
-
-/** 決まった回数だけ時間を進めた、落ち着いたクラスタ */
-function settled(state: ClusterState, times: number): ClusterState {
-  let current = state;
-  for (let i = 0; i < times; i += 1) current = advanceCluster(current, tickPods);
-  return current;
-}
 
 function twoNodes(): ClusterState {
   return emptyCluster([node('node-1', 4000, 8192), node('node-2', 4000, 8192)]);
@@ -122,25 +114,13 @@ const RECONCILES: ReconcileSpec[] = APP_NAMES.flatMap((name, i) =>
   })),
 );
 
-function deployed(name: string, replicas: number): ClusterState {
-  return settled(
-    {
-      ...twoNodes(),
-      deployments: new Map([
-        [`default/${name}`, deployment(name, replicas, [container(name, 'nginx:1.27')], { labels: { app: name } })],
-      ]),
-    },
-    replicas * 4 + 8,
-  );
-}
-
 const reconcileDrills = family<ReconcileSpec>({
   track: 'k8s',
   chapterId: 'k8s/03',
   family: 'reconcile',
   docs: [CONTROLLER],
   variants: RECONCILES.map((value) => ({ slug: value.slug, value })),
-  make: (v) => ({
+  make: (v) => startingEmpty(createDeploymentFirst(v.name, v.replicas), twoNodes(), {
     title: `${v.name} の Pod を消しても戻ってくる`,
     intro: {
       summary: 'Deployment の Pod を消しても、すぐに作り直されることを確かめる。',
@@ -154,7 +134,6 @@ const reconcileDrills = family<ReconcileSpec>({
       ],
     },
     objectives: ['宣言と現実の差が埋められると分かる', '消えたことに反応しているのではないと分かる'],
-    initial: { cluster: deployed(v.name, v.replicas) },
     solution: [
       `kubectl delete pod $(kubectl get pods -o name | head -n 1 | cut -d '/' -f 2)`,
       'kubectl wait 20',
@@ -210,20 +189,19 @@ const labelDrills = family<{ name: string; key: string; val: string }>({
   family: 'labels',
   docs: [k8sDoc('concepts/overview/working-with-objects/labels/', 'Labels and Selectors')],
   variants: LABELS,
-  make: (v) => ({
+  make: (v) => startingEmpty(createDeploymentFirst(v.name, 2), twoNodes(), {
     title: `${v.name} に ${v.key}=${v.val} の印を付ける`,
     intro: {
       summary: 'ラベルを付けて、そのラベルで資源を選ぶ。',
       why:
         'Kubernetes の中では、「どれとどれがつながるか」をほとんどラベルで決めている。ラベルとセレクタが読めれば、つながりの図が頭に描ける。',
-      concepts: concepts('ラベル', 'セレクタ', 'Pod', 'Kubernetes'),
+      concepts: concepts('ラベル', 'セレクタ', 'Deployment', 'Pod', 'Kubernetes'),
       commands: [
         { command: 'kubectl label deploy <名前> <キー>=<値>', means: 'ラベルを付ける' },
         { command: 'kubectl get deploy -l <キー>=<値>', means: 'そのラベルが付いたものだけを見る' },
       ],
     },
     objectives: ['ラベルを付けられる', 'ラベルで絞れる'],
-    initial: { cluster: deployed(v.name, 2) },
     solution: [`kubectl label deploy ${v.name} ${v.key}=${v.val}`],
     steps: [
       {
@@ -272,7 +250,7 @@ const scaleDrills = family<{ name: string; from: number; to: number }>({
   family: 'scale',
   docs: [DEPLOY_DOC],
   variants: SCALES,
-  make: (v) => ({
+  make: (v) => startingEmpty(createDeploymentFirst(v.name, v.from), twoNodes(), {
     title: `${v.name} を ${String(v.from)} から ${String(v.to)} にする`,
     intro: {
       summary: 'kubectl scale で、Pod の数を変える。',
@@ -286,7 +264,6 @@ const scaleDrills = family<{ name: string; from: number; to: number }>({
       ],
     },
     objectives: ['数を変えられる', '増やすときと減らすときの動きを見られる'],
-    initial: { cluster: deployed(v.name, v.from) },
     solution: [
       `kubectl scale deploy ${v.name} --replicas=${String(v.to)}`,
       'kubectl wait 30',
@@ -333,7 +310,7 @@ const deleteDrills = family<string>({
   family: 'delete',
   docs: [DEPLOY_DOC],
   variants: DELETES,
-  make: (name) => ({
+  make: (name) => startingEmpty(createDeploymentFirst(name, 2), twoNodes(), {
     title: `${name} をまるごと片付ける`,
     intro: {
       summary: 'Deployment ごと消して、アプリを本当に片付ける。',
@@ -346,7 +323,6 @@ const deleteDrills = family<string>({
       ],
     },
     objectives: ['Deployment を消すと Pod も消えると分かる', '所有関係が分かる'],
-    initial: { cluster: deployed(name, 2) },
     solution: [`kubectl delete deploy ${name}`, 'kubectl wait 10'],
     steps: [
       {

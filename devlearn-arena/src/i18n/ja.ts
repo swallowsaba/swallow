@@ -148,6 +148,8 @@ export const ja = {
   'intro.label': 'この任務で学ぶこと',
   'intro.why': 'なぜ学ぶのか',
   'intro.concepts': '先に知っておくこと',
+  'intro.diagram': '右の構成図の読み方',
+  'intro.diagramThis': 'この任務の構成',
   'intro.commands': 'この任務で使うコマンド',
   'intro.start': 'はじめる',
   'intro.reopen': '説明を読む',

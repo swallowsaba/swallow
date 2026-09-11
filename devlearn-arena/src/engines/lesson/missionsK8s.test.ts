@@ -415,6 +415,9 @@ describe('Kubernetes の任務が実際に解ける', () => {
 
   it('負荷に合わせて台数を変える', () => {
     expectCleared('k8s/11/hpa', [
+      'kubectl create deployment web --image=nginx:1.25 --replicas=2',
+      'kubectl expose deployment web --port=80',
+      'kubectl wait 10',
       ...writeYaml('hpa.yaml', [
         'kind: HorizontalPodAutoscaler',
         'metadata:',
@@ -439,6 +442,7 @@ describe('Kubernetes の任務が実際に解ける', () => {
 
   it('ノードを安全に空ける', () => {
     expectCleared('k8s/12/drain-cordon', [
+      'kubectl create deployment web --image=nginx:1.25 --replicas=4',
       'kubectl wait 25',
       'kubectl drain node-1',
       'kubectl wait 30',
@@ -447,6 +451,7 @@ describe('Kubernetes の任務が実際に解ける', () => {
 
   it('limits を書かないと何が起きるか', () => {
     expectCleared('k8s/13/no-limits', [
+      'kubectl create deployment noisy --image=batch:1.0',
       'kubectl get deploy noisy -o yaml',
       ...writeYaml('fix.yaml', [
         'kind: Deployment',

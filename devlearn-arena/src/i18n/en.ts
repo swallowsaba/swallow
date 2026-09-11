@@ -151,6 +151,8 @@ export const en: Record<TKey, string> = {
   'intro.label': 'What this mission teaches',
   'intro.why': 'Why it matters',
   'intro.concepts': 'Words to know first',
+  'intro.diagram': 'How to read the diagram',
+  'intro.diagramThis': 'This mission’s network',
   'intro.commands': 'Commands used here',
   'intro.start': 'Start',
   'intro.reopen': 'Read the briefing',

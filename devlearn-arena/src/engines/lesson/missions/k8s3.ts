@@ -1,5 +1,5 @@
 import { concepts } from '../glossary';
-import { container, deployment, emptyCluster, node, service } from '@/engines/k8s/factory';
+import { container, deployment, emptyCluster, node } from '@/engines/k8s/factory';
 import { isReady } from '@/engines/k8s/kubelet';
 import { key, type ClusterState } from '@/engines/k8s/types';
 import { HOME } from '@/engines/kernel/path';
@@ -271,8 +271,10 @@ export const k8sHpa: LessonDefinition = {
     summary: '負荷に合わせて Pod の数が自動で増えるようにし、上限で止まることを確かめる。',
     why:
       'お客さんの数は時間で変わる。いつも最大の数で動かすと無駄、少なすぎると落ちる。負荷を見て自動で合わせる係に任せる。',
-    concepts: concepts('HPA', 'Deployment', 'レプリカ', 'Pod'),
+    concepts: concepts('HPA', 'Deployment', 'Service', 'レプリカ', 'Pod'),
     commands: [
+      { command: 'kubectl create deployment web --image=nginx:1.25 --replicas=2', means: '負荷を受ける Deployment を作る' },
+      { command: 'kubectl expose deployment web --port=80', means: 'web の前に Service（受付）を立てる' },
       { command: 'kubectl apply -f hpa.yaml', means: '自動で数を変える係を作る' },
       { command: 'kubectl load web <割合>', means: '負荷をかける（学習用）' },
       { command: 'kubectl wait <秒>', means: '時間を進める' },
@@ -280,15 +282,31 @@ export const k8sHpa: LessonDefinition = {
   },
   objectives: ['HPA が何を見ているか分かる', '上限と下限の意味が分かる', '増減が自動で起きると分かる'],
   parCommands: 12,
-  initial: {
-    cluster: {
-      ...cluster([node('node-1', 8000, 16384)]),
-      deployments: new Map([['default/web', deployment('web', 2, [container('web', 'nginx:1.25')])]]),
-      services: new Map([['default/web', service('web', { app: 'web' })]]),
-    },
-    files: { ...FILES },
-  },
+  initial: { cluster: cluster([node('node-1', 8000, 16384)]), files: { ...FILES } },
   steps: [
+    {
+      prompt: 'まず材料を自分で作る。nginx:1.25 の Pod を 2 つ動かす Deployment web を作り、Service で受付を立て、時間を進めて 2 つとも Ready にせよ。',
+      check: 'Deployment web と Service web があり、Ready な Pod が 2 つあること',
+      hints: [
+        'kubectl create deployment で作り、kubectl expose で Service を付け、kubectl wait で時間を進める',
+        'kubectl create deployment web --image=nginx:1.25 --replicas=2\nkubectl expose deployment web --port=80\nkubectl wait 10',
+      ],
+      solution: [
+        'kubectl create deployment web --image=nginx:1.25 --replicas=2',
+        'kubectl expose deployment web --port=80',
+        'kubectl wait 10',
+      ],
+      assert: ({ shell }) => {
+        const state = shell.cluster;
+        if (state === null) return false;
+        return (
+          state.deployments.has(key('default', 'web')) &&
+          state.services.has(key('default', 'web')) &&
+          [...state.pods.values()].filter(isReady).length === 2
+        );
+      },
+      explain: 'ここまでが下ごしらえ。expose は Deployment と同じラベル（app=web）の Pod を選ぶ Service を作る。',
+    },
     {
       prompt: 'web を対象に、min 2 / max 6 / 目標 CPU 50% の HPA を作れ。',
       check: 'HPA があり、min と max が設定されていること',
@@ -342,6 +360,7 @@ export const k8sDrain: LessonDefinition = {
       'ノードの修理や入れ替えは必ずある。いきなり止めずに、中の Pod を先に逃がせば、アプリを止めずに作業できる。',
     concepts: concepts('drain', 'cordon', 'ノード', 'Pod', 'Deployment'),
     commands: [
+      { command: 'kubectl create deployment web --image=nginx:1.25 --replicas=4', means: 'Pod を 4 つ動かす Deployment を作る' },
       { command: 'kubectl get pods -o wide', means: 'どの Pod がどのノードにいるか見る' },
       { command: 'kubectl drain <ノード>', means: 'ノードを空ける' },
       { command: 'kubectl wait <秒>', means: '時間を進める' },
@@ -349,22 +368,20 @@ export const k8sDrain: LessonDefinition = {
   },
   objectives: ['cordon と drain の違いが分かる', '所有者のある Pod が作り直されると分かる', '無停止で入れ替えられる'],
   parCommands: 10,
-  initial: {
-    cluster: {
-      ...cluster(),
-      deployments: new Map([['default/web', deployment('web', 4, [container('web', 'nginx:1.25')])]]),
-    },
-    files: { ...FILES },
-  },
+  initial: { cluster: cluster(), files: { ...FILES } },
   steps: [
     {
-      prompt: 'Pod が2台のノードに分かれて動いている状態にせよ。',
-      check: 'Ready な Pod が4つあること',
-      hints: ['kubectl wait 20', 'kubectl get pods -o wide で置き場所が見える'],
-      solution: ['kubectl wait 25'],
+      prompt: 'nginx:1.25 の Pod を 4 つ動かす Deployment web を作り、時間を進めて 2 台のノードに分かれて動いている状態にせよ。',
+      check: 'Deployment web があり、Ready な Pod が4つあること',
+      hints: [
+        'kubectl create deployment <名前> --image=<イメージ> --replicas=<数> で作り、kubectl wait で時間を進める',
+        'kubectl get pods -o wide で置き場所が見える',
+        'kubectl create deployment web --image=nginx:1.25 --replicas=4\nkubectl wait 25',
+      ],
+      solution: ['kubectl create deployment web --image=nginx:1.25 --replicas=4', 'kubectl wait 25'],
       assert: ({ shell }) => {
         const pods = [...(shell.cluster?.pods.values() ?? [])];
-        return pods.filter(isReady).length >= 4;
+        return shell.cluster?.deployments.has(key('default', 'web')) === true && pods.filter(isReady).length >= 4;
       },
       explain: 'スケジューラは空きの多いノードを選ぶので、自然と散る。',
     },
@@ -409,22 +426,27 @@ export const k8sNoLimits: LessonDefinition = {
       '上限の無い Pod が暴れると、同じノードの他の Pod まで巻き込まれる。「最低これだけ」と「最大これだけ」の両方を書いておく。',
     concepts: concepts('limits', 'requests', 'Deployment', 'マニフェスト', 'Pod', 'ノード', 'YAML'),
     commands: [
+      { command: 'kubectl create deployment noisy --image=batch:1.0', means: '上限を書かずに Deployment を作る' },
       { command: 'kubectl get deploy <名前> -o yaml', means: '今の設定を YAML で見る' },
       { command: 'kubectl apply -f fix.yaml', means: '上限を書いたマニフェストを渡す' },
     ],
   },
   objectives: ['requests と limits の役割の違いが分かる', '設定してあるかを機械的に確かめられる'],
   parCommands: 10,
-  initial: {
-    cluster: {
-      ...cluster([node('node-1', 1000, 1024)]),
-      deployments: new Map([
-        ['default/noisy', deployment('noisy', 1, [container('noisy', 'batch:1.0', { requests: { cpu: 100, memory: 128 } })])],
-      ]),
-    },
-    files: { ...FILES },
-  },
+  initial: { cluster: cluster([node('node-1', 1000, 1024)]), files: { ...FILES } },
   steps: [
+    {
+      prompt: 'まず、上限を書かずに作るとどうなるかを見る。batch:1.0 のイメージで Deployment noisy を作れ。',
+      check: 'Deployment noisy があること',
+      hints: [
+        'kubectl create deployment <名前> --image=<イメージ>',
+        'kubectl create deployment noisy --image=batch:1.0',
+      ],
+      solution: ['kubectl create deployment noisy --image=batch:1.0'],
+      assert: ({ shell }) => shell.cluster?.deployments.has(key('default', 'noisy')) === true,
+      explain:
+        'kubectl create deployment は、requests（最低これだけ使う）には決まった値を入れてくれるが、limits（これ以上は使わない）は書かない。',
+    },
     {
       prompt: 'noisy の limits が設定されていないことを確かめよ。',
       check: '-o yaml か -o jsonpath で limits を見たこと',

@@ -5,6 +5,7 @@ import { tickPods } from '@/engines/k8s/kubelet';
 import type { ClusterState, Deployment, Pod, Service } from '@/engines/k8s/types';
 import { readyPods, resourceWhere, withCluster } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
+import { createDeploymentFirst, startingEmpty } from './k8sBuild';
 import { family, k8sDoc } from './shared';
 import { APP_NAMES } from './values';
 
@@ -126,33 +127,19 @@ const typeDrills = family<{ name: string; type: 'NodePort' | 'LoadBalancer' }>({
   family: 'service-type',
   docs: [SVC_DOC],
   variants: TYPES,
-  make: (v) => ({
+  make: (v) => startingEmpty(createDeploymentFirst(v.name, 1), emptyCluster([node('node-1', 4000, 8192)]), {
     title: `${v.name} を ${v.type} で外に出す`,
     intro: {
       summary: 'Service の種類を変えて、クラスタの外から繋げるようにする。',
       why:
         'Service はふつうクラスタの中からしか見えない。外のお客さんに見せるには、外向きの口を開ける種類に変える必要がある。',
-      concepts: concepts('Service', 'ポート', 'ノード', 'クラスタ'),
+      concepts: concepts('Service', 'Deployment', 'ポート', 'ノード', 'クラスタ'),
       commands: [
         { command: 'kubectl create service <種類> <名前>', means: 'その種類の Service を作る（nodeport なら全部のノードに外向きの口が開く）' },
         { command: 'kubectl get svc', means: '外向きのポートが付いたか見る' },
       ],
     },
     objectives: ['種類の違いが言える', '作って確かめられる'],
-    initial: {
-      cluster: settled(
-        {
-          ...emptyCluster([node('node-1', 4000, 8192)]),
-          deployments: new Map([
-            [
-              `default/${v.name}`,
-              deployment(v.name, 1, [container(v.name, 'nginx:1.27')], { labels: { app: v.name } }),
-            ],
-          ]),
-        },
-        12,
-      ),
-    },
     solution: [`kubectl create service ${v.type.toLowerCase()} ${v.name}`],
     steps: [
       {

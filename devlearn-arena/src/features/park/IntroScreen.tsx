@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { diagramOf } from '@/engines/lesson/diagram';
 import type { LessonDefinition } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { Glossed } from '@/ui/Term';
@@ -18,6 +19,7 @@ export function IntroScreen({ mission, onStart }: Props) {
   const t = useT();
   const startRef = useRef<HTMLButtonElement>(null);
   const { intro } = mission;
+  const diagram = useMemo(() => diagramOf(mission), [mission]);
 
   useEffect(() => {
     startRef.current?.focus();
@@ -84,6 +86,25 @@ export function IntroScreen({ mission, onStart }: Props) {
             ))}
           </ul>
         </section>
+
+        {diagram === null ? null : (
+          <section className="flex flex-col gap-2">
+            <h3 className="text-sm font-extrabold text-ink-soft">{t('intro.diagram')}</h3>
+            <ul className="flex list-disc flex-col gap-1 pl-5 text-sm leading-relaxed">
+              {diagram.legend.map((line) => (
+                <li key={line}>
+                  <Glossed text={line} />
+                </li>
+              ))}
+            </ul>
+            <h4 className="text-xs font-extrabold text-ink-soft">{t('intro.diagramThis')}</h4>
+            <ul className="flex flex-col gap-0.5 border-l-4 border-[var(--cream-dark)] px-3 py-1 font-mono text-xs leading-relaxed">
+              {diagram.lines.map((line, i) => (
+                <li key={`${String(i)}-${line}`}>{line}</li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <footer className="flex flex-wrap items-center gap-4 border-t-2 border-[var(--cream-dark)] pt-4">
           <button
