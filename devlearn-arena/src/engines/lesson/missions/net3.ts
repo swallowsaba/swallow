@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { host, iface, link, nat, port, resetMac, router, switchDevice, topology } from '@/engines/net/factory';
 import { HOME } from '@/engines/kernel/path';
 import type { Topology } from '@/engines/net/types';
@@ -105,6 +106,15 @@ export const netTls: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: '証明書が通らない理由を見分ける',
+  intro: {
+    summary: '証明書が通らない理由を、期限切れ・発行者不明で見分ける。',
+    why:
+      '「安全な接続ではありません」の中身は1つではない。理由によって直し方が全く違うので、まず見分けられるようにする。',
+    concepts: concepts('TLS', '証明書', '認証局'),
+    commands: [
+      { command: 'tlscheck <名前>', means: 'その名前のサーバの証明書を確かめる' },
+    ],
+  },
   objectives: ['期限切れ・名前違い・発行者不明を区別できる', 'ハンドシェイクの順序が分かる'],
   parCommands: 10,
   initial: {
@@ -164,6 +174,16 @@ export const netHealthCheck: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: '振り分け先が生きているかを確かめる',
+  intro: {
+    summary: '振り分け先のサーバが生きているかを確かめ、落ちているものを見つける。',
+    why:
+      'ロードバランサは、落ちたサーバに振り分けないようにヘルスチェックをしている。同じことを手でやると、仕組みが分かる。',
+    concepts: concepts('ロードバランサ', 'ヘルスチェック', 'curl'),
+    commands: [
+      { command: 'curl http://<アドレス>/', means: 'そのサーバが答えるか確かめる' },
+      { command: 'echo <アドレス> > down.txt', means: '落ちていたものを書き残す' },
+    ],
+  },
   objectives: ['死活確認を機械的にできる', '落ちている1台を特定できる'],
   parCommands: 10,
   initial: { net: backends(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },
@@ -198,6 +218,15 @@ export const netDropVsReject: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: '落とし方の違いを見分ける',
+  intro: {
+    summary: '「断られる」と「黙って捨てられる」の違いを、curl の結果で見分ける。',
+    why:
+      '窓口が閉まっているのか、門で止められているのかで、直しに行く場所が違う。症状の違いを知っていれば、最初の一手が決まる。',
+    concepts: concepts('ファイアウォール', 'ポート', 'Connection refused', 'curl'),
+    commands: [
+      { command: 'curl http://<アドレス>:<ポート>/', means: 'そのポートに繋いでみる' },
+    ],
+  },
   objectives: ['拒否と無応答の違いが分かる', '症状から原因を絞れる'],
   parCommands: 10,
   initial: { net: firewalled(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },
@@ -247,6 +276,16 @@ export const netVpcDesign: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: '重ならないアドレス設計をする',
+  intro: {
+    summary: '重ならない住所の割り当てを、計算で決める。',
+    why:
+      '後から別のネットワークとつなぐとき、住所が重なっていると大きな手戻りになる。最初の設計で重ならないようにしておく。',
+    concepts: concepts('VPC', 'CIDR', 'サブネット', 'プレフィックス長'),
+    commands: [
+      { command: 'ipcalc <まとまり>', means: '範囲を計算する' },
+      { command: 'echo <まとまり> >> plan.txt', means: '設計に書き足す' },
+    ],
+  },
   objectives: ['分割の計算ができる', '重なりが後で何を壊すか分かる'],
   parCommands: 10,
   initial: { net: lan(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },

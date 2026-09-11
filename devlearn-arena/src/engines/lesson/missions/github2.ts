@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { createRepo } from '@/engines/github/pr';
 import { linkedIssues, ownersFor } from '@/engines/github/issues';
 import { HOME } from '@/engines/kernel/path';
@@ -20,6 +21,17 @@ export const ghClone: LessonDefinition = {
   track: 'github',
   kind: 'training',
   title: 'リモートと手元をつなぐ',
+  intro: {
+    summary: '手元のリポジトリを GitHub につなぎ、push する。',
+    why:
+      '手元だけにある歴史は、パソコンが壊れたら消える。GitHub に送っておけば、みんなと共有でき、失くさない。',
+    concepts: concepts('GitHub', 'リモート', 'push', 'Pull Request', 'リポジトリ'),
+    commands: [
+      { command: 'git remote add origin <URL>', means: 'GitHub のリポジトリを origin として登録する' },
+      { command: 'git push origin main', means: 'main を送る' },
+      { command: 'gh pr list', means: 'Pull Request の一覧を見る' },
+    ],
+  },
   objectives: ['origin が何を指しているか分かる', 'push で追跡参照が進むと分かる'],
   parCommands: 8,
   initial: {
@@ -62,6 +74,17 @@ export const ghPrCreate: LessonDefinition = {
   track: 'github',
   kind: 'training',
   title: '意図が伝わる Pull Request を出す',
+  intro: {
+    summary: 'Issue を立て、それを閉じる Pull Request を出して取り込む。',
+    why:
+      '「直した」と「閉じた」を人の手で合わせると、必ずずれる。本文に Closes #番号 と書いておけば、取り込んだ瞬間に Issue も閉じる。',
+    concepts: concepts('Issue', 'Pull Request', 'マージ'),
+    commands: [
+      { command: 'gh issue create -t "題名"', means: 'Issue を立てる' },
+      { command: 'gh pr create -t "題名" -b <ブランチ> --body "Closes #1"', means: 'Issue 1 を閉じる Pull Request を作る' },
+      { command: 'gh pr merge 1', means: '取り込む' },
+    ],
+  },
   objectives: ['PR を作れる', '本文から Issue を閉じられると分かる'],
   parCommands: 8,
   initial: { repo: createRepo('acme', 'app'), files: { ...FILES } },
@@ -103,6 +126,16 @@ export const ghCodeowners: LessonDefinition = {
   track: 'github',
   kind: 'training',
   title: '変更した場所で、要る承認が変わる',
+  intro: {
+    summary: 'CODEOWNERS を読み込み、変えた場所ごとに誰の承認が要るかを調べる。',
+    why:
+      'どの変更を誰が見るべきかを毎回考えていると抜けが出る。場所ごとに担当を決めておけば、自動で正しい人に頼める。',
+    concepts: concepts('CODEOWNERS', '承認', 'レビュー'),
+    commands: [
+      { command: 'gh codeowners load', means: 'CODEOWNERS を読み込む' },
+      { command: 'gh codeowners who <パス>', means: 'そのファイルを変えたら誰の承認が要るかを見る' },
+    ],
+  },
   objectives: ['CODEOWNERS の書き方が読める', '後の行が勝つと分かる', '所有者の承認を揃えられる'],
   parCommands: 10,
   initial: {
@@ -148,6 +181,17 @@ export const ghIssuePlanning: LessonDefinition = {
   track: 'github',
   kind: 'training',
   title: '課題を盤面で動かす',
+  intro: {
+    summary: 'Issue を盤面の列に並べて、作業の進み具合を見える形にする。',
+    why:
+      '「誰が何をやっていて、何が残っているか」を口で確かめるのは大変。盤面にしておけば、一目で分かる。',
+    concepts: concepts('Issue', 'ラベル'),
+    commands: [
+      { command: 'gh issue create -t "題名" -l bug', means: 'bug ラベル付きで Issue を立てる' },
+      { command: 'gh project create Board --columns=Todo,Doing,Done', means: '3列の盤面を作る' },
+      { command: 'gh project move Board <番号> <列>', means: 'カードを列へ動かす' },
+    ],
+  },
   objectives: ['Issue とラベルで整理できる', '盤面の列で進み具合を表せる'],
   parCommands: 12,
   initial: { repo: createRepo('acme', 'app'), files: { ...FILES } },
@@ -193,6 +237,17 @@ export const ghNeedsDag: LessonDefinition = {
   track: 'github',
   kind: 'training',
   title: 'ジョブの依存を読む',
+  intro: {
+    summary: 'ワークフローのジョブの順番（needs）を読み、1つ落ちると下流がどうなるかを見る。',
+    why:
+      'CI が赤いとき、「どれが本当に落ちたのか」「どれは走らなかっただけか」を区別できると、原因にすぐたどり着ける。',
+    concepts: concepts('ワークフロー', 'ジョブ', 'needs', 'CI', 'チェック'),
+    commands: [
+      { command: 'gh workflow', means: 'ジョブと順番の形を見る' },
+      { command: 'gh pr checks 1', means: 'CI を走らせる' },
+      { command: 'gh pr checks 1 --fail=lint', means: 'lint をわざと落として走らせる' },
+    ],
+  },
   objectives: ['needs で順序が決まると分かる', '失敗の下流が skipped になると分かる'],
   parCommands: 8,
   initial: {

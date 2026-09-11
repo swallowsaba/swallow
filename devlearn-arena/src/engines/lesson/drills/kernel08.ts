@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { ran } from '../authoring/ran';
 import { fileContains, fileEquals, fileExists, pathExists } from '../authoring/assert';
 import type { AssertContext } from '../types';
@@ -35,6 +36,16 @@ const scriptDrills = family<{ name: string; body: string }>({
   variants: SCRIPTS,
   make: (v) => ({
     title: `${v.name} を実行できる形にする`,
+    intro: {
+      summary: 'コマンドを並べたファイルに実行権限を付けて、スクリプトとして動かす。',
+      why:
+        '毎回同じ手順を手で打つと、いつか1行飛ばす。ファイルに書いておけば、誰がやっても同じ順で同じことが起きる。',
+      concepts: concepts('スクリプト', '実行権限', '権限'),
+      commands: [
+        { command: 'chmod +x <ファイル>', means: '実行してよい、という許可を付ける' },
+        { command: './<ファイル>', means: 'いまいる場所のそのファイルを実行する' },
+      ],
+    },
     objectives: ['shebang を書ける', '実行権を付けられる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [
@@ -107,6 +118,15 @@ const exitDrills = family<{ command: string; code: string }>({
   variants: EXITS,
   make: (v) => ({
     title: `${v.command} の終了コードは何か`,
+    intro: {
+      summary: 'コマンドが成功したか失敗したかを、終了コードで確かめる。',
+      why:
+        '画面の文字を読まなくても、成功か失敗かは数字1つで分かる。スクリプトで「失敗したら止める」を書くときの土台になる。',
+      concepts: concepts('終了コード', '変数', 'スクリプト'),
+      commands: [
+        { command: 'echo $?', means: '直前のコマンドの終了コードを表示する（0 が成功）' },
+      ],
+    },
     objectives: ['$? で直前の結果を読める', '0 が成功だと分かる'],
     initial: {
       files: { [HOME]: null, [`${HOME}/there.txt`]: 'a\n' },
@@ -156,6 +176,16 @@ const chainDrills = family<{ ok: boolean; marker: string }>({
   variants: CHAINS,
   make: (v) => ({
     title: v.ok ? '成功したときだけ次へ進む' : '失敗したときだけ後始末する',
+    intro: {
+      summary: '&& と || で、「成功したら次へ」「失敗したらこちら」をつなぐ。',
+      why:
+        '前の手順が失敗したのに次へ進むと、壊れた状態の上に作業を重ねてしまう。成功したときだけ進むように書けば安全。',
+      concepts: concepts('終了コード'),
+      commands: [
+        { command: 'A && B', means: 'A が成功したときだけ B を実行する' },
+        { command: 'A || B', means: 'A が失敗したときだけ B を実行する' },
+      ],
+    },
     objectives: ['&& と || の分かれ方が分かる', '結果で確かめられる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: v.ok
@@ -216,6 +246,17 @@ const argDrills = family<{ name: string; arg: string }>({
   variants: ARGS,
   make: (v) => ({
     title: `${v.name} に引数を渡して動かす`,
+    intro: {
+      summary: 'スクリプトに引数を渡し、中で $1 として受け取る。',
+      why:
+        '同じスクリプトを、対象だけ変えて何度も使いたい。引数で受け取れば、中身を書き換えずに使い回せる。',
+      concepts: concepts('スクリプト', '引数', '変数'),
+      commands: [
+        { command: './<スクリプト> a b', means: 'a と b を渡して実行する' },
+        { command: '$1', means: 'スクリプトの中で、1つ目の引数を指す' },
+        { command: '$#', means: '渡された引数の数' },
+      ],
+    },
     objectives: ['$1 で引数を受け取れる', '実行して結果を確かめられる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [
@@ -287,6 +328,17 @@ const runbookDrills = family<{ name: string; steps: string[] }>({
     const dir = target.replace(/\/$/, '');
     return {
       title: `手順を ${v.name} にまとめる`,
+      intro: {
+        summary: '手で打っていた障害対応の手順を、1つのスクリプトにまとめる。',
+        why:
+          '夜中の障害対応で、疲れた頭で手順を1つずつ思い出すのは危ない。手順をスクリプトにしておけば、誰でも同じ対応ができる。',
+        concepts: concepts('スクリプト', '実行権限', '終了コード'),
+        commands: [
+          { command: 'cat > <ファイル> <<EOF', means: 'スクリプトの中身を書く' },
+          { command: 'chmod +x <ファイル>', means: '実行できるようにする' },
+          { command: './<ファイル>', means: '実行する' },
+        ],
+      },
       objectives: ['手順を1本にまとめられる', '何度流しても同じ結果になる'],
       initial: {
         files: { [HOME]: null, [`${HOME}/app.log`]: 'log\n' },

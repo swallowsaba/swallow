@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { fileEquals } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, family, man } from './shared';
@@ -53,6 +54,15 @@ const cutDrills = family<CutSpec>({
     const delimiterShown = spec.delimiter === ' ' ? "' '" : `'${spec.delimiter}'`;
     return {
       title: `${column} の列だけを取り出す`,
+      intro: {
+        summary: 'cut で、区切り文字で分かれた表から、欲しい列だけを取り出す。',
+        why:
+          'CSV や設定の一覧は「,」や「:」で区切った表になっている。必要な列だけ抜ければ、あとは数えるのも並べるのも簡単。',
+        concepts: concepts('オプション', 'パイプ'),
+        commands: [
+          { command: 'cut -d "," -f 2 <ファイル>', means: '「,」で区切って2番目の列だけ出す' },
+        ],
+      },
       objectives: ['区切り文字を指定できる', '列を選べる'],
       initial: { files: { [HOME]: null, [`${HOME}/table.txt`]: body }, cwd: HOME },
       solution: [`cut -d ${delimiterShown} -f ${String(spec.field)} table.txt > column.txt`],
@@ -127,6 +137,17 @@ const tallyDrills = family<TallySpec>({
       .join('\n');
     return {
       title: `${spec.slug} の種類と件数を数える`,
+      intro: {
+        summary: 'sort と uniq -c をつなげて、種類ごとの件数を数える。',
+        why:
+          '「どのエラーが一番多い？」「どこからのアクセスが多い？」に一行で答えられる。調査の最初の一手としてよく使う形。',
+        concepts: concepts('パイプ', 'オプション'),
+        commands: [
+          { command: 'sort', means: '行を並べ替える（同じものが隣り合う）' },
+          { command: 'uniq -c', means: '隣り合った同じ行をまとめて、件数を付ける' },
+          { command: 'sort -rn', means: '数の大きい順に並べ替える' },
+        ],
+      },
       objectives: ['重複を潰せる', '件数を付けられる', 'uniq の前に sort が要る理由が分かる'],
       initial: { files: { [HOME]: null, [`${HOME}/values.txt`]: body }, cwd: HOME },
       solution: [
@@ -209,6 +230,16 @@ const replaceDrills = family<ReplaceSpec>({
     const after = spec.before.split(spec.from).join(spec.to);
     return {
       title: `${spec.from} を ${spec.to} に書き換える`,
+      intro: {
+        summary: 'sed で、ファイルの中の文字をまとめて書き換える。',
+        why:
+          'ホスト名やポート番号を変えるたびにエディタで1か所ずつ直すと、直し漏れが出る。sed なら全部を一度に、同じように直せる。',
+        concepts: concepts('正規表現', 'オプション', 'クォート', 'ポート'),
+        commands: [
+          { command: 'sed "s/古い/新しい/g" <ファイル>', means: '古い文字を新しい文字にした結果を出す（g は行の中の全部）' },
+          { command: 'sed -i "s/古い/新しい/g" <ファイル>', means: 'ファイルそのものを書き換える' },
+        ],
+      },
       objectives: ['置き換えができる', '元を壊さずに結果を残せる'],
       initial: { files: { [HOME]: null, [`${HOME}/app.conf`]: spec.before }, cwd: HOME },
       solution: [`sed 's/${spec.from.replace(/\//g, '\\/')}/${spec.to.replace(/\//g, '\\/')}/g' app.conf > app.conf.new`],
@@ -266,6 +297,15 @@ const teeDrills = family<{ words: string[] }>({
     const sorted = [...spec.words].sort().join('\n');
     return {
       title: '途中の結果を残しながら流す',
+      intro: {
+        summary: 'tee で、流れている結果をファイルにも残しつつ、次のコマンドへ渡す。',
+        why:
+          'パイプの途中の結果は、ふつう消えてしまう。tee を挟めば「途中でどうなっていたか」を後から確かめられる。',
+        concepts: concepts('パイプ', '標準出力'),
+        commands: [
+          { command: '<コマンド> | tee <ファイル> | <次のコマンド>', means: '結果をファイルに書きながら、同じものを次へ流す' },
+        ],
+      },
       objectives: ['tee で分岐できる', '最終結果も残せる'],
       initial: { files: { [HOME]: null, [`${HOME}/in.txt`]: body }, cwd: HOME },
       solution: ['sort in.txt | tee sorted.txt > final.txt'],

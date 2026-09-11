@@ -42,7 +42,7 @@
 
 現在はいきなり課題から始まり、説明が無い。
 
-- [ ] 3-1. `LessonDefinition` に `intro` を追加する。
+- [x] 3-1. `LessonDefinition` に `intro` を追加する。
 
   ```ts
   intro: {

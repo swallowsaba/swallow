@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { fileContains, fileEquals } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, family, man } from './shared';
@@ -52,6 +53,16 @@ const reproduceDrills = family<SymptomSpec>({
   variants: SYMPTOMS.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: `「${v.symptom}」を再現して切り分ける`,
+    intro: {
+      summary: '聞いた症状を自分の手で再現して、どこで起きているかを切り分ける。',
+      why:
+        '「動かないらしい」だけでは直せない。自分で同じことを起こせれば、直ったかどうかも同じ手順で確かめられる。',
+      concepts: concepts('終了コード', '標準エラー', 'リダイレクト'),
+      commands: [
+        { command: '<症状が出るコマンド> 2> symptom.txt', means: '同じことを起こし、エラーの知らせを残す' },
+        { command: 'echo $? > code.txt', means: '成功か失敗かの数字を残す' },
+      ],
+    },
     objectives: ['症状を手元で再現できる', '終了コードで種類を見分けられる', '原因を言葉にできる'],
     initial: {
       files: { [HOME]: null, [`${HOME}/note.txt`]: 'hello\n' },
@@ -117,6 +128,16 @@ const bisectDrills = family<{ total: number; broken: number }>({
     );
     return {
       title: `${String(v.total)} 行のどこが壊れているか`,
+      intro: {
+        summary: '壊れている場所を、半分ずつに絞り込んで見つける。',
+        why:
+          '何百行もある設定を1行ずつ見ていくと日が暮れる。半分に分けて、どちら側で起きるかを見ると、数回で1行まで絞れる。',
+        concepts: concepts('パイプ'),
+        commands: [
+          { command: 'grep -n <文字> <ファイル>', means: '当たった行を、行の番号付きで出す' },
+          { command: 'cut -d \':\' -f 1', means: '「:」の前（行の番号）だけを取り出す' },
+        ],
+      },
       objectives: ['一気に読まずに絞れる', '行番号で位置を言える'],
       initial: {
         files: { [HOME]: null, [`${HOME}/pipeline.log`]: `${lines.join('\n')}\n` },
@@ -206,6 +227,16 @@ const readErrorDrills = family<StackSpec>({
   variants: STACKS.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: '本当の原因が書いてある行を取り出す',
+    intro: {
+      summary: '長いエラーの中から、本当の原因が書いてある行を取り出す。',
+      why:
+        'エラーの画面はたいてい長く、最初に目に入る行は原因ではないことが多い。「どの行を読めばよいか」を知っていると、調べる時間が大きく減る。',
+      concepts: concepts('ログ', '標準エラー'),
+      commands: [
+        { command: 'cat <ファイル>', means: 'まず全体を読む' },
+        { command: 'tail -n 1 <ファイル>', means: '最後の1行を取り出す（原因は最後に出ることが多い）' },
+      ],
+    },
     objectives: ['最後の行にこそ答えがあると分かる', '取り出して次に渡せる'],
     initial: {
       files: { [HOME]: null, [`${HOME}/error.log`]: `${v.lines.join('\n')}\n` },
@@ -266,6 +297,16 @@ const recordDrills = family<{ title: string; cause: string; fix: string }>({
   variants: RECORDS,
   make: (v) => ({
     title: `${v.title} の対応記録を書く`,
+    intro: {
+      summary: '起きたこと・やったこと・次に防ぐ方法を、記録として書き残す。',
+      why:
+        '記録の無い対応は、同じ障害でまた一から調べ直すことになる。書くところまでが復旧作業。',
+      concepts: concepts('ログ', 'リダイレクト'),
+      commands: [
+        { command: 'printf \'# 題\\n## 原因\\n...\\n\' > POSTMORTEM.md', means: '何行かの記録をまとめて書く（\\n が改行）' },
+        { command: 'cat POSTMORTEM.md', means: '書いた内容を読み返す' },
+      ],
+    },
     objectives: ['何が起きたかを書ける', '原因と再発防止を分けて書ける'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [

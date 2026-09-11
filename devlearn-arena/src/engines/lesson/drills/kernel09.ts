@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { fileEquals, fileExists, pathExists } from '../authoring/assert';
 import type { AssertContext } from '../types';
 import type { MissionSource } from '../authoring/mission';
@@ -50,6 +51,16 @@ const biggestDrills = family<{ dirs: { path: string; kb: number }[] }>({
     const biggest = [...v.dirs].sort((a, b) => b.kb - a.kb)[0]?.path ?? '';
     return {
       title: 'いちばん容量を食っている場所を突き止める',
+      intro: {
+        summary: 'du で、どのディレクトリが容量を一番使っているかを突き止める。',
+        why:
+          '「ディスクがいっぱい」と言われても、全部を見て回ることはできない。大きい順に並べれば、どこから片付ければよいかがすぐ分かる。',
+        concepts: concepts('ディスク', 'ディレクトリ', 'リダイレクト'),
+        commands: [
+          { command: 'du -sh <場所>', means: 'その場所の大きさを出す' },
+          { command: 'echo "<場所>" > biggest.txt', means: '大きかったほうを書き残す' },
+        ],
+      },
       objectives: ['大きさを測れる', '大きい順に並べられる'],
       initial: { files, cwd: HOME },
       solution: [`echo "${biggest}" > biggest.txt`],
@@ -88,6 +99,16 @@ const truncateDrills = family<string>({
   variants: TRUNCATES,
   make: (path) => ({
     title: `${path} を残したまま空にする`,
+    intro: {
+      summary: 'ファイルそのものは残したまま、中身だけを空にする。',
+      why:
+        '書き込み中のログを rm すると、書いているプログラムが困ったり、容量が戻らなかったりする。中身だけ空にするのが安全な片付け方。',
+      concepts: concepts('ログ', 'リダイレクト', 'ファイルを掴む'),
+      commands: [
+        { command: '> <ファイル>', means: 'ファイルを残して中身を空にする' },
+        { command: 'ls -l <ファイル>', means: '大きさが 0 になったか確かめる' },
+      ],
+    },
     objectives: ['ファイルを消さずに空にできる', '消してはいけない理由が言える'],
     initial: {
       files: { [HOME]: null, '/var/log': null, [path]: 'x'.repeat(50_000) },
@@ -140,6 +161,17 @@ const pressureDrills = family<{ log: string; holder: string }>({
   variants: PRESSURES,
   make: (v) => ({
     title: `${v.log} を消したのに空きが戻らない`,
+    intro: {
+      summary: 'ログを消したのに空きが戻らない理由を探し、本当に容量を取り戻す。',
+      why:
+        'よくある事故の再現。見た目は消えているのに、プロセスがまだ掴んでいて容量が戻らない。原因が分かれば、止めるか空にするかで解決できる。',
+      concepts: concepts('ディスク', 'ファイルを掴む', 'プロセス'),
+      commands: [
+        { command: 'df', means: 'ディスクの空きを見る' },
+        { command: 'lsof <ファイル>', means: '消したファイルを掴んでいるプロセスを探す' },
+        { command: 'pkill <名前>', means: 'そのプロセスを止めて、掴んでいたファイルを放させる' },
+      ],
+    },
     objectives: ['症状を再現できる', '掴んでいる相手を見つけられる', '正しい直し方が言える'],
     initial: {
       files: { [HOME]: null, '/var/log': null, [v.log]: 'x'.repeat(120_000) },
@@ -210,6 +242,16 @@ const reportDrills = family<{ path: string; kb: number }>({
   variants: REPORTS,
   make: (v) => ({
     title: `${v.path} の大きさを記録する`,
+    intro: {
+      summary: 'df と du で、容量を測って記録に残す。',
+      why:
+        '「さっきより増えた？」に答えるには、前の数字が要る。測った結果を残しておくと、変化に気付ける。',
+      concepts: concepts('ディスク', 'リダイレクト'),
+      commands: [
+        { command: 'df -h', means: 'ディスク全体の空きを、読みやすい単位で見る' },
+        { command: 'du -sh <場所>', means: 'その場所が使っている量を、読みやすい単位で見る' },
+      ],
+    },
     objectives: ['du の合計を取れる', '結果を残せる'],
     initial: {
       files: { [HOME]: null, [v.path]: null, [`${v.path}/blob.dat`]: 'x'.repeat(v.kb * 1024) },

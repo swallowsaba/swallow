@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { HOME } from '@/engines/kernel/path';
 import { createRepo } from '@/engines/github/pr';
 import type { LessonDefinition } from '../types';
@@ -30,6 +31,19 @@ export const ghPullRequest: LessonDefinition = {
   track: 'github',
   kind: 'boss',
   title: 'マージできない理由を全部潰す',
+  intro: {
+    summary: 'ブランチ保護で止められた Pull Request を、条件を1つずつ満たして取り込む。',
+    why:
+      '「なぜマージできないの？」はチーム開発で毎日のように出る。足りないものを画面から読み取って、1つずつ満たせるようにする。',
+    concepts: concepts('ブランチ保護', 'Pull Request', '承認', 'チェック', 'CI', 'squash マージ', 'ブランチ', 'マージ'),
+    commands: [
+      { command: 'gh protect main --approvals=1 --checks=Build', means: 'main に保護を掛ける' },
+      { command: 'gh pr create -t "題名" -b <ブランチ>', means: 'Pull Request を作る' },
+      { command: 'gh pr checks 1', means: 'CI を走らせる' },
+      { command: 'gh pr review 1 --approve -r <人>', means: '承認する' },
+      { command: 'gh pr merge 1 --squash', means: '1つにまとめて取り込む' },
+    ],
+  },
   objectives: ['保護ルールの意味が分かる', 'CI の依存関係を読める', 'レビューとチェックを揃えられる'],
   parCommands: 12,
   initial: {

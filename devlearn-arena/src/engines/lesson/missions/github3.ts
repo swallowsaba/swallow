@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { createRepo } from '@/engines/github/pr';
 import { HOME } from '@/engines/kernel/path';
 import type { LessonDefinition } from '../types';
@@ -77,6 +78,17 @@ export const ghActionsPractice: LessonDefinition = {
   track: 'github',
   kind: 'training',
   title: 'キャッシュ・成果物・シークレット',
+  intro: {
+    summary: 'シークレットが無くて落ちる CI を、登録して通す。',
+    why:
+      '鍵が要るジョブは、鍵が無ければ動けない。鍵はリポジトリに書かず、シークレットとして渡す。登録した値は二度と表示されない。',
+    concepts: concepts('シークレット', 'artifact', 'キャッシュ', 'ジョブ', 'CI', 'リポジトリ'),
+    commands: [
+      { command: 'gh pr checks 1', means: 'CI を走らせる' },
+      { command: 'gh secret set <名前> -b <値>', means: 'シークレットを登録する' },
+      { command: 'gh secret list', means: '登録された名前の一覧（値は出ない）' },
+    ],
+  },
   objectives: ['キャッシュの当たり外れが分かる', '成果物がジョブ間で渡ると分かる', '未設定のシークレットで落ちると分かる'],
   parCommands: 12,
   initial: {
@@ -129,6 +141,17 @@ export const ghMatrix: LessonDefinition = {
   track: 'github',
   kind: 'training',
   title: '同じ手順を組み合わせで回す',
+  intro: {
+    summary: 'matrix で同じジョブを何通りも走らせ、どの組み合わせで落ちたかを読む。',
+    why:
+      '「Node 18 では動くのに 20 では落ちる」のような違いは、両方で試さないと気付けない。1つの書き方で何通りも試せる。',
+    concepts: concepts('matrix', 'ジョブ', 'ワークフロー', 'CI'),
+    commands: [
+      { command: 'gh workflow', means: 'matrix に何が並んでいるか見る' },
+      { command: 'gh pr checks 1', means: 'CI を走らせる' },
+      { command: 'gh pr checks 1 --fail=test:20', means: '20 の側だけを落として走らせる' },
+    ],
+  },
   objectives: ['matrix が組み合わせに展開されると分かる', '1つだけ落ちる状況を作れる'],
   parCommands: 10,
   initial: {
@@ -176,6 +199,16 @@ export const ghReusable: LessonDefinition = {
   track: 'github',
   kind: 'training',
   title: '同じ手順を別のワークフローから呼ぶ',
+  intro: {
+    summary: '別のワークフローを呼び出して、同じ手順を1か所にまとめる。',
+    why:
+      '同じビルド手順をあちこちに写すと、直すときに全部を直すことになる。1か所に置いて呼べば、直すのも1か所で済む。',
+    concepts: concepts('ワークフロー', 'ジョブ', 'CI'),
+    commands: [
+      { command: 'gh workflow -w ci.yml', means: 'ci.yml が何を呼んでいるか見る' },
+      { command: 'gh pr checks 1 -w ci.yml', means: 'ci.yml で CI を走らせる' },
+    ],
+  },
   objectives: ['再利用可能ワークフローの呼び出し方が分かる', '呼び出し先が無いと失敗すると分かる'],
   parCommands: 10,
   initial: {
@@ -216,6 +249,17 @@ export const ghForkFlow: LessonDefinition = {
   track: 'github',
   kind: 'training',
   title: '書き込み権限が無いところへ貢献する',
+  intro: {
+    summary: '書き込めないリポジトリへ、fork して Pull Request で貢献する。',
+    why:
+      'よそのプロジェクトには、ふつう直接書き込めない。自分の写しで直してから「取り込みませんか」と提案するのが、公開の場での作法。',
+    concepts: concepts('fork', 'Pull Request', 'リポジトリ'),
+    commands: [
+      { command: 'gh fork <自分の名前>', means: '自分の側に写す' },
+      { command: 'gh pr create -t "題名" -b <ブランチ>', means: '元へ提案する' },
+      { command: 'gh pr view 1', means: '誰の、どの枝から、どこへかを見る' },
+    ],
+  },
   objectives: ['fork が何を作るか分かる', 'fork から PR を出せる'],
   parCommands: 10,
   initial: { repo: createRepo('upstream', 'oss'), files: { ...FILES } },
@@ -255,6 +299,16 @@ export const ghRelease: LessonDefinition = {
   track: 'github',
   kind: 'training',
   title: 'どの版を配ったのかを残す',
+  intro: {
+    summary: 'タグを打ち、そのタグからリリースを作る。',
+    why:
+      '「どの版を配ったのか」が残っていないと、不具合の報告が来ても同じ版を再現できない。タグとリリースで、配った版をはっきりさせる。',
+    concepts: concepts('リリース', 'タグ', '注釈付きタグ', 'コミット'),
+    commands: [
+      { command: 'git tag -a v1.0.0 -m "説明"', means: 'コミットにタグを打つ' },
+      { command: 'gh release create v1.0.0 -t "題名"', means: 'そのタグからリリースを作る' },
+    ],
+  },
   objectives: ['タグとリリースの関係が分かる', '実在しないタグでは配れないと分かる'],
   parCommands: 10,
   initial: {

@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { calicoManifest, flannelManifest } from '@/engines/k8s/addons';
 import { emptyCluster, machine } from '@/engines/k8s/factory';
 import { mintToken } from '@/engines/k8s/bootstrap';
@@ -82,6 +83,16 @@ const initDrills = family<Lab>({
   variants: LABS.map((value) => ({ slug: value.slug, value })),
   make: (lab) => ({
     title: `${lab.cp} でコントロールプレーンを立てる`,
+    intro: {
+      summary: 'kubeadm init で、クラスタの司令塔（コントロールプレーン）を立てる。',
+      why:
+        'Kubernetes は魔法の箱ではなく、普通のコンピュータの上に部品を置いて組み立てたもの。自分で組むと、どの部品が何をしているかが分かる。',
+      concepts: concepts('Kubernetes', 'クラスタ', 'ノード', 'コントロールプレーン', 'kubeadm'),
+      commands: [
+        { command: 'kubeadm init --node-name <名前> --pod-network-cidr <範囲>', means: 'そのコンピュータを司令塔にする' },
+        { command: 'kubectl get nodes', means: 'クラスタに入っているコンピュータを見る' },
+      ],
+    },
     objectives: ['素の計算機から始められる', 'Pod 網の範囲を決められる', '立てた直後の状態を説明できる'],
     initial: { cluster: labCluster(lab), files: labFiles(lab), cwd: HOME },
     solution: [`kubeadm init --node-name ${lab.cp} --pod-network-cidr ${lab.cidr}`],
@@ -136,6 +147,17 @@ const cniDrills = family<Lab>({
     const manifest = manifestFor(lab);
     return {
       title: `${lab.cni} を入れてノードを Ready にする`,
+      intro: {
+        summary: 'CNI を入れて、ノードを Ready にする。',
+        why:
+          '司令塔を立てただけでは、Pod 同士をつなぐ網がまだ無い。網が無いとノードは「準備ができていない」ままになる。',
+        concepts: concepts('CNI', 'ノード', 'Ready', 'Pod'),
+        commands: [
+          { command: 'kubectl apply -f <網の部品のファイル>', means: '網の部品を入れる' },
+          { command: 'kubectl wait <秒>', means: '時間を進める' },
+          { command: 'kubectl get nodes', means: 'Ready になったか見る' },
+        ],
+      },
       objectives: ['NotReady の理由を読める', 'マニフェストを適用できる', 'Ready になったことを確かめられる'],
       initial: { cluster: labCluster(lab), files: labFiles(lab), cwd: HOME },
       solution: [
@@ -197,6 +219,17 @@ const joinDrills = family<Lab>({
     const token = tokenOf(lab);
     return {
       title: `${lab.workers.join(' と ')} をクラスタに入れる`,
+      intro: {
+        summary: '他のコンピュータを kubeadm join でクラスタに入れる。',
+        why:
+          '仕事を任せるコンピュータを増やせば、それだけたくさんのアプリを動かせる。入れる手順を知っておくと、台数を増やすのが怖くなくなる。',
+        concepts: concepts('ノード', 'クラスタ', 'kubeadm'),
+        commands: [
+          { command: 'kubeadm token list', means: '参加するための合言葉（トークン）を見る' },
+          { command: 'kubeadm join <司令塔>:6443 --token <合言葉> --node-name <名前>', means: 'そのコンピュータをクラスタに入れる' },
+          { command: 'kubectl get nodes', means: '増えたか見る' },
+        ],
+      },
       objectives: ['トークンの役割が分かる', 'ノードを足せる', '要件を満たさない機械が弾かれると分かる'],
       initial: { cluster: labCluster(lab), files: labFiles(lab), cwd: HOME },
       solution: [
@@ -265,6 +298,16 @@ const taintDrills = family<Lab>({
     const manifest = manifestFor(lab);
     return {
       title: `1台構成でも Pod を動かせるようにする（${lab.cp}）`,
+      intro: {
+        summary: '1台だけのクラスタで、司令塔の上にもアプリを置けるようにする。',
+        why:
+          '司令塔にはふつう「ここにアプリは置かないで」という札が付いている。1台構成で練習するときは、その札を外さないと何も動かない。',
+        concepts: concepts('taint', 'コントロールプレーン', 'ノード', 'Pod', 'クラスタ'),
+        commands: [
+          { command: 'kubectl taint nodes <名前> <札>-', means: 'ノードから札を外す（最後の - が「外す」）' },
+          { command: 'kubectl get pods', means: 'Pod が置かれたか見る' },
+        ],
+      },
       objectives: ['taint が何を止めているか分かる', '外す判断ができる'],
       initial: { cluster: labCluster(lab), files: labFiles(lab), cwd: HOME },
       solution: [
@@ -334,6 +377,17 @@ const firstAppDrills = family<{ name: string; image: string; replicas: number }>
     const token = tokenOf(lab);
     return {
       title: `組み上げたクラスタに ${app.name} を載せる`,
+      intro: {
+        summary: '組み立てたクラスタに、最初のアプリを載せる。',
+        why:
+          '自分で組んだクラスタの上でアプリが動けば、部品が全部そろってつながっていることの確かめになる。',
+        concepts: concepts('Deployment', 'Pod', 'レプリカ', 'kubectl', 'クラスタ'),
+        commands: [
+          { command: 'kubectl create deploy <名前> --image=<イメージ> --replicas=<数>', means: 'アプリの指示書を作る' },
+          { command: 'kubectl wait <秒>', means: '時間を進める' },
+          { command: 'kubectl get pods', means: '動いているか見る' },
+        ],
+      },
       objectives: ['構築から配置までを通しでできる', '数が揃うまで待てる'],
       initial: { cluster: labCluster(lab), files: labFiles(lab), cwd: HOME },
       solution: [

@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { container, deployment, emptyCluster, node, service } from '@/engines/k8s/factory';
 import { isReady } from '@/engines/k8s/kubelet';
 import type { LessonDefinition } from '../types';
@@ -20,6 +21,18 @@ export const k8sFirstPod: LessonDefinition = {
   track: 'k8s',
   kind: 'training',
   title: 'クラスタを覗く',
+  intro: {
+    summary: 'クラスタを覗き、Pod を消しても戻ってくること、数を変えられることを確かめる。',
+    why:
+      'Kubernetes は「決めた数だけ動かし続ける」ことを人の代わりにやってくれる。消しても戻る、を自分の目で見ると、その仕組みが腑に落ちる。',
+    concepts: concepts('Kubernetes', 'クラスタ', 'Pod', 'Deployment', 'レプリカ', 'kubectl'),
+    commands: [
+      { command: 'kubectl get pods', means: 'Pod の一覧と状態を見る' },
+      { command: 'kubectl wait <秒>', means: '時間を進める' },
+      { command: 'kubectl delete pods -l app=web', means: 'app=web のラベルが付いた Pod を消す' },
+      { command: 'kubectl scale deploy web --replicas=4', means: 'あるべき数を 4 にする' },
+    ],
+  },
   objectives: ['資源の一覧を読める', 'Pod が消えても戻る理由が分かる', '数を変えられる'],
   parCommands: 8,
   initial: {
@@ -73,6 +86,17 @@ export const k8sServiceBoss: LessonDefinition = {
   track: 'k8s',
   kind: 'boss',
   title: 'Pod は動いているのに繋がらない',
+  intro: {
+    summary: 'Pod は動いているのに Service から繋がらない。原因を突き止めて直す。',
+    why:
+      '現場でとても多い障害。Pod だけ見ると元気なので気付きにくい。Service が「どのラベルの Pod を選んでいるか」を突き合わせる癖をつける。',
+    concepts: concepts('Service', 'Endpoints', 'セレクタ', 'ラベル', 'Pod', 'Ready'),
+    commands: [
+      { command: 'kubectl get svc', means: 'Service の一覧を見る' },
+      { command: 'kubectl endpoints <名前>', means: 'Service が繋ぐ Pod の一覧を見る' },
+      { command: 'kubectl set selector svc <名前> <キー>=<値>', means: 'Service の選び方を直す' },
+    ],
+  },
   objectives: ['Endpoints に載る条件を知る', 'ラベルとセレクタの一致を確かめられる'],
   parCommands: 10,
   initial: { cluster: brokenServiceCluster() },

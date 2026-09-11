@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { REBASE_TODO, gitPath, readGitFile } from '@/engines/git/gitdir';
 import { branches, headCommit, log, status } from '@/engines/git/repository';
 import { HOME } from '@/engines/kernel/path';
@@ -24,6 +25,17 @@ export const gitThreeTrees: LessonDefinition = {
   track: 'git',
   kind: 'training',
   title: '3面を動かして status を読む',
+  intro: {
+    summary: '作業ツリー・インデックス・HEAD の3つの場所を、add と restore で行き来する。',
+    why:
+      'Git の操作で迷うのは、たいてい「いまどの場所の話か」が分からないとき。3つの場所の間を自分で動かしてみると、status の表示が読めるようになる。',
+    concepts: concepts('3面', '作業ツリー', 'インデックス', 'HEAD', 'コミット', 'Git'),
+    commands: [
+      { command: 'git add <ファイル>', means: '作業ツリーの変更をインデックスへ載せる' },
+      { command: 'git restore --staged <ファイル>', means: 'インデックスだけを HEAD に戻す（作業ツリーはそのまま）' },
+      { command: 'git status', means: 'どの場所に差があるかを見る' },
+    ],
+  },
   objectives: ['作業ツリー・インデックス・HEAD の違いが分かる', 'status の3つの区画を読める', 'add と restore で行き来できる'],
   parCommands: 10,
   initial: { files: { ...THREE_TREES_FILES } },
@@ -101,6 +113,17 @@ export const gitAmend: LessonDefinition = {
   track: 'git',
   kind: 'training',
   title: '直前のコミットを作り直す',
+  intro: {
+    summary: '入れ忘れたファイルを、直前のコミットに足して作り直す。',
+    why:
+      '「1つ入れ忘れた」のたびにコミットを増やすと、歴史が読みにくくなる。まだ誰にも渡していない直前のコミットなら、作り直してよい。',
+    concepts: concepts('amend', 'コミット', 'インデックス', 'ハッシュ'),
+    commands: [
+      { command: 'git add <ファイル>', means: '入れ忘れたものを載せる' },
+      { command: 'git commit --amend -m "説明"', means: '直前のコミットを作り直す' },
+      { command: 'git log', means: 'コミットの数が増えていないか確かめる' },
+    ],
+  },
   objectives: ['amend が新しいコミットを作っていると分かる', '入れ忘れを取り込める', 'SHA が変わることの意味を知る'],
   parCommands: 8,
   initial: {
@@ -156,6 +179,17 @@ export const gitInteractiveRebase: LessonDefinition = {
   track: 'git',
   kind: 'training',
   title: '台本を書き換えて履歴を整える',
+  intro: {
+    summary: '細かく積んだコミットを、rebase -i で1つにまとめる。',
+    why:
+      '作業中の「とりあえず保存」を全部残すと、後から読む人が意図を追えない。見せる前に、意味のある単位にまとめ直せる。',
+    concepts: concepts('rebase', 'コミット', 'ブランチ', 'main'),
+    commands: [
+      { command: 'git rebase -i main', means: 'main の先に載せ直す台本を作る' },
+      { command: 'vi .git/rebase-merge/git-rebase-todo', means: '台本を開き、2行目以降の pick を squash に変える' },
+      { command: 'git rebase --continue', means: '台本どおりに実行する' },
+    ],
+  },
   objectives: ['rebase -i の todo が台本だと分かる', 'squash で細かいコミットを畳める', '公開前に読みやすい履歴にできる'],
   parCommands: 12,
   initial: {
@@ -230,6 +264,18 @@ export const gitRecovery: LessonDefinition = {
   track: 'git',
   kind: 'training',
   title: '消したはずのコミットを取り戻す',
+  intro: {
+    summary: 'reset --hard で消してしまったコミットを、reflog から取り戻す。',
+    why:
+      '「消してしまった！」の多くは、実は消えていない。札が外れて見えなくなっただけ。足あとをたどれば戻せると知っていると、事故の後に落ち着いて動ける。',
+    concepts: concepts('reset', 'reflog', 'HEAD', 'コミット', 'オブジェクト'),
+    commands: [
+      { command: 'git reset --hard HEAD~1', means: '1つ前のコミットへ戻す（今のコミットは見えなくなる）' },
+      { command: 'git fsck', means: 'どこからも指されていないオブジェクトを探す' },
+      { command: 'git reflog', means: 'HEAD の足あとを見る' },
+      { command: 'git reset --hard HEAD@{1}', means: '1つ前にいた場所へ戻る' },
+    ],
+  },
   objectives: ['reflog が HEAD の移動記録だと分かる', '到達不能なコミットを見つけられる', '事故から確実に戻せる'],
   parCommands: 12,
   initial: {

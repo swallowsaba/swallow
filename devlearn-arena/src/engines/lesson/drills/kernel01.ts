@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import {
   cwdIs, dirExists, dirHas, fileAbsent, fileEquals, fileExists,
 } from '../authoring/assert';
@@ -41,6 +42,18 @@ const walkDrills = family<WalkSpec>({
   variants: WALKS,
   make: (spec) => ({
     title: `${spec.target} まで歩く`,
+    intro: {
+      summary: '相対パスと絶対パスを使い分けて、目的の場所まで歩く。',
+      why:
+        '住所の書き方が2通りあると知っていれば、「どこから見た住所か」で迷わなくなる。スクリプトでは絶対パス、手で打つときは相対パスが便利。',
+      concepts: concepts('パス', '絶対パス', '相対パス', 'いまいる場所', 'スクリプト'),
+      commands: [
+        { command: 'cd <行き先>', means: '行き先へ移る' },
+        { command: 'cd ..', means: '1つ上のディレクトリへ戻る' },
+        { command: 'cd ~', means: 'ホームディレクトリへ戻る' },
+        { command: 'pwd', means: 'いまいる場所を表示する' },
+      ],
+    },
     objectives: ['絶対パスで移動できる', '相対パスで戻れる', 'いまどこに居るか言える'],
     initial: { files: treeFiles(spec.tree), cwd: HOME },
     solution: [`cd ${spec.target}`, 'cd ..', `cd ${spec.target}`],
@@ -101,6 +114,16 @@ const makeTreeDrills = family<{ root: string; leaves: string[] }>({
   variants: TREES,
   make: (spec) => ({
     title: `${spec.root}/ の骨組みを掘る`,
+    intro: {
+      summary: 'mkdir -p で、深いディレクトリを途中の階層ごと一度に作る。',
+      why:
+        'アプリを置く場所やログの置き場は、何段にもなった入れ物で整理する。-p を知っていれば一行で作れ、何度実行しても失敗しない。',
+      concepts: concepts('ディレクトリ', 'オプション', '冪等'),
+      commands: [
+        { command: 'mkdir -p a/b/c', means: 'a と a/b が無ければ一緒に作り、最後に a/b/c を作る' },
+        { command: 'ls -R', means: '中身を下の階層まで全部表示する' },
+      ],
+    },
     objectives: ['-p で途中の階層ごと作れる', '作った結果を確かめられる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [
@@ -154,6 +177,17 @@ const copyMoveDrills = family<{ file: string; from: string; to: string }>({
   variants: MOVES,
   make: (spec) => ({
     title: `${spec.file} を写して、動かす`,
+    intro: {
+      summary: 'cp で写し、mv で動かす。違いは「元が残るかどうか」。',
+      why:
+        '設定ファイルを直す前に写しを取っておく、古いものを片付け場所へ動かす。どちらも毎日のようにやる。取り違えると元のファイルが消えるので、違いを結果で確かめておく。',
+      concepts: concepts('パス', 'ディレクトリ'),
+      commands: [
+        { command: 'cp <元> <先>', means: '元を残したまま、先に写しを作る' },
+        { command: 'mv <元> <先>', means: '元を先へ動かす（名前を変えるのにも使う）' },
+        { command: 'ls <ディレクトリ>', means: '中に何があるか見る' },
+      ],
+    },
     objectives: ['cp は元が残る', 'mv は元が残らない', '違いを結果で確かめられる'],
     initial: {
       files: {
@@ -225,6 +259,17 @@ const removeDrills = family<string>({
   variants: CLEANUPS,
   make: (dir) => ({
     title: `${dir}/ だけを片付ける`,
+    intro: {
+      summary: 'rm で、指定したものだけを消す。',
+      why:
+        '端末の rm にはゴミ箱が無い。消したら戻らない。だから「消してよいものだけを正確に指す」練習をしておく。',
+      concepts: concepts('ディレクトリ', 'オプション'),
+      commands: [
+        { command: 'rm <ファイル>', means: 'ファイルを消す' },
+        { command: 'rm -r <ディレクトリ>', means: 'ディレクトリを中身ごと消す' },
+        { command: 'ls', means: '消す前と後で、何が残っているか確かめる' },
+      ],
+    },
     objectives: ['中身のあるディレクトリは -r が要る', '消す対象を取り違えない'],
     initial: {
       files: {
@@ -287,6 +332,16 @@ const sortingDrills = family<{ ext: string; dir: string; names: string[] }>({
     for (const name of spec.names) files[`${HOME}/${name}.${spec.ext}`] = `${name}\n`;
     return {
       title: `散らばった .${spec.ext} を ${spec.dir}/ にまとめる`,
+      intro: {
+        summary: '散らばったファイルを、ワイルドカードでまとめて1か所に集める。',
+        why:
+          '同じ種類のファイルを1つずつ動かすのは時間の無駄で、打ち間違いも増える。*.log のようにまとめて指せれば、何十個でも一行で片付く。',
+        concepts: concepts('ワイルドカード', 'ディレクトリ'),
+        commands: [
+          { command: 'mkdir <置き場>', means: '集める先を作る' },
+          { command: 'mv *.<拡張子> <置き場>/', means: '名前がその拡張子で終わるものを全部動かす' },
+        ],
+      },
       objectives: ['まとめ先を作る', 'まとめて動かす', '元の場所に残っていないことを確かめる'],
       initial: { files, cwd: HOME },
       solution: [`mkdir -p ${spec.dir}`, `mv *.${spec.ext} ${spec.dir}/`],
@@ -350,6 +405,17 @@ const writeDrills = family<{ path: string; text: string }>({
   variants: NOTES,
   make: (spec) => ({
     title: `${spec.path} を作って中身を書く`,
+    intro: {
+      summary: 'echo とリダイレクトで、ファイルを作って中身を書く。',
+      why:
+        '設定の一行を足す、メモを残す。エディタを開かなくても、一行ならコマンドだけで書ける。',
+      concepts: concepts('リダイレクト', '標準出力'),
+      commands: [
+        { command: 'echo "文字" > <ファイル>', means: 'ファイルを作り直して文字を書く' },
+        { command: 'echo "文字" >> <ファイル>', means: '今の中身の後ろに書き足す' },
+        { command: 'cat <ファイル>', means: '中身を確かめる' },
+      ],
+    },
     objectives: ['空のファイルを作れる', 'リダイレクトで中身を書ける'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [`touch ${spec.path}`, `echo "${spec.text}" > ${spec.path}`],

@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { advanceCluster } from '@/engines/k8s/controllers';
 import { container, deployment, emptyCluster, node, probe, quantity, service } from '@/engines/k8s/factory';
 import { tickPods } from '@/engines/k8s/kubelet';
@@ -61,6 +62,18 @@ const selectorDrills = family<SelectorSpec>({
   variants: SELECTORS.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: `${v.app}: Pod は動いているのに Service で繋がらない`,
+    intro: {
+      summary: 'Pod は動いているのに Service から繋がらない原因を、ラベルとセレクタの食い違いから探す。',
+      why:
+        '現場でとてもよく起きる障害。Pod だけ見ると元気なので気付きにくい。Service 側の「誰を選んでいるか」を突き合わせる癖をつける。',
+      concepts: concepts('Service', 'Endpoints', 'セレクタ', 'ラベル', 'Pod'),
+      commands: [
+        { command: 'kubectl get svc', means: 'Service の一覧を見る' },
+        { command: 'kubectl endpoints <名前>', means: 'Service が繋ぐ Pod の一覧を見る' },
+        { command: 'kubectl label pods -l <キー>=<値> <キー>=<新しい値> --overwrite', means: 'Pod のラベルを付け直す' },
+        { command: 'kubectl set selector svc <名前> <キー>=<値>', means: 'Service の選び方のほうを直す' },
+      ],
+    },
     objectives: ['endpoint に載る条件が言える', 'セレクタとラベルの食い違いを見つけられる'],
     initial: { cluster: brokenService(v) },
     solution: [`kubectl label pods -l app=${v.app} app=${v.wrong} --overwrite`],
@@ -115,6 +128,16 @@ const typeDrills = family<{ name: string; type: 'NodePort' | 'LoadBalancer' }>({
   variants: TYPES,
   make: (v) => ({
     title: `${v.name} を ${v.type} で外に出す`,
+    intro: {
+      summary: 'Service の種類を変えて、クラスタの外から繋げるようにする。',
+      why:
+        'Service はふつうクラスタの中からしか見えない。外のお客さんに見せるには、外向きの口を開ける種類に変える必要がある。',
+      concepts: concepts('Service', 'ポート', 'ノード', 'クラスタ'),
+      commands: [
+        { command: 'kubectl create service <種類> <名前>', means: 'その種類の Service を作る（nodeport なら全部のノードに外向きの口が開く）' },
+        { command: 'kubectl get svc', means: '外向きのポートが付いたか見る' },
+      ],
+    },
     objectives: ['種類の違いが言える', '作って確かめられる'],
     initial: {
       cluster: settled(
@@ -175,6 +198,17 @@ const crashDrills = family<{ name: string; bad: string; good: string }>({
   variants: CRASHES,
   make: (v) => ({
     title: `${v.name} が CrashLoopBackOff から抜けない`,
+    intro: {
+      summary: 'CrashLoopBackOff の原因をログから探し、直して動かす。',
+      why:
+        '起動してはすぐ落ちる、を繰り返している状態。Kubernetes は何度も起こし直してくれるが、原因を直さない限り終わらない。原因はたいていログに書いてある。',
+      concepts: concepts('CrashLoopBackOff', 'Pod', 'コンテナ', 'イメージ', 'ログ', 'Kubernetes'),
+      commands: [
+        { command: 'kubectl get pods', means: '再起動の回数（RESTARTS）を見る' },
+        { command: 'kubectl logs deploy/<名前>', means: '落ちる直前に何と言っていたかを見る' },
+        { command: 'kubectl set image deploy/<名前> <コンテナ>=<イメージ>', means: '動くイメージに差し替える' },
+      ],
+    },
     objectives: ['状態から原因を読める', 'イメージを差し替えられる', '直ったことを確かめられる'],
     initial: {
       cluster: settled(
@@ -251,6 +285,16 @@ const probeDrills = family<{ name: string }>({
   variants: PROBES,
   make: (v) => ({
     title: `${v.name}: Running なのに Ready にならない`,
+    intro: {
+      summary: 'Running なのに Ready にならない Pod を、probe の設定から直す。',
+      why:
+        '動いていても「まだ注文を受けられない」と答えている Pod には、Service は繋がない。確かめる検査の中身が間違っていると、ずっと繋がらない。',
+      concepts: concepts('probe', 'Running', 'Ready', 'Service', 'Pod'),
+      commands: [
+        { command: 'kubectl describe pods', means: '検査がなぜ落ちているかを見る' },
+        { command: 'kubectl set probe deploy/<名前> --readiness --succeeds-after=1', means: '検査の中身を直す（起動後すぐ受け付けられると答える）' },
+      ],
+    },
     objectives: ['Running と Ready の違いが分かる', 'readinessProbe の設定ミスを見つけられる'],
     initial: {
       cluster: settled(
@@ -329,6 +373,17 @@ const fitDrills = family<{ name: string; cpu: number; nodeCpu: number }>({
   variants: FITS,
   make: (v) => ({
     title: `${v.name} が Pending から動かない（要求が大きすぎる）`,
+    intro: {
+      summary: '要求が大きすぎて置き場所が無い Pod を、要求を見直して動かす。',
+      why:
+        '「最低これだけ使う」と申告した量が、どのノードの空きより大きいと、Pod は永遠に置かれない。数字の見直しで直る。',
+      concepts: concepts('requests', 'Pending', 'scheduler', 'ノード', 'Pod'),
+      commands: [
+        { command: 'kubectl describe pods', means: '置けない理由を見る' },
+        { command: 'kubectl get nodes', means: 'ノードの空きを見る' },
+        { command: 'kubectl set resources deploy/<名前> --requests=cpu=<量>m', means: '申告する量を下げる（m は 1000 分の 1 個ぶん）' },
+      ],
+    },
     objectives: ['Pending の理由を読める', 'requests を実態に合わせられる'],
     initial: {
       cluster: settled(

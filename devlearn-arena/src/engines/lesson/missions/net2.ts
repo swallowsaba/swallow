@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import {
   host, iface, link, nat, port, resetMac, router, switchDevice, topology,
 } from '@/engines/net/factory';
@@ -53,6 +54,18 @@ export const netLayers: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: '層ごとに包まれていることを見る',
+  intro: {
+    summary: '通信が段ごとに包まれていることを、ip addr・ping・traceroute・curl で確かめる。',
+    why:
+      '通信は「線」「住所」「窓口」「アプリ」の段が積み重なってできている。どの段の道具かを知っていれば、何を確かめているのかが分かる。',
+    concepts: concepts('層', 'カプセル化', 'IP アドレス', 'MAC アドレス', 'ポート', 'ping', 'traceroute', 'curl'),
+    commands: [
+      { command: 'ip addr', means: '自分の住所を見る' },
+      { command: 'ping <相手>', means: '住所の段まで届くか見る' },
+      { command: 'traceroute <相手>', means: '途中のルータを見る' },
+      { command: 'curl -v http://<相手>:<ポート>/', means: '窓口の段まで確かめる' },
+    ],
+  },
   objectives: ['フレーム・パケット・セグメントの入れ子が分かる', 'どの層で止まったかを読める'],
   parCommands: 8,
   initial: { net: lan(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },
@@ -92,6 +105,16 @@ export const netArp: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: 'IP から MAC を引く',
+  intro: {
+    summary: 'IP アドレスから MAC アドレスを引く ARP を、自分の手で動かす。',
+    why:
+      '同じ線の上で送るには、相手の差し込み口の番号（MAC）が要る。住所しか知らないときに、どうやって番号を知るのかを見る。',
+    concepts: concepts('ARP', 'IP アドレス', 'MAC アドレス'),
+    commands: [
+      { command: 'arp', means: '覚えている住所と番号の対応を見る' },
+      { command: 'arp <アドレス>', means: 'その住所の番号を問い合わせる' },
+    ],
+  },
   objectives: ['ARP が何をしているか分かる', '表に覚えることが分かる', '解決できないときの症状が分かる'],
   parCommands: 8,
   initial: { net: lan(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },
@@ -131,6 +154,16 @@ export const netSwitching: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: 'スイッチは通ったフレームを覚える',
+  intro: {
+    summary: 'スイッチが、通ったデータから「誰がどの口にいるか」を覚える様子を見る。',
+    why:
+      'スイッチは最初は誰がどこにいるか知らない。通ったデータの差出人を覚えていくことで、必要な口にだけ流せるようになる。',
+    concepts: concepts('スイッチ', 'MAC アドレス', 'ARP'),
+    commands: [
+      { command: 'bridge fdb sw1', means: 'スイッチが覚えている一覧を見る' },
+      { command: 'ping <アドレス>', means: 'データを流す' },
+    ],
+  },
   objectives: ['未学習ならフラッディングすると分かる', '学習後は絞り込まれると分かる', 'VLAN で分けられると分かる'],
   parCommands: 10,
   initial: { net: lan(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },
@@ -170,6 +203,16 @@ export const netSubnetting: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: 'アドレス設計を計算で決める',
+  intro: {
+    summary: 'CIDR から、使える台数と、住所がどのまとまりに入るかを計算する。',
+    why:
+      'ネットワークを設計するときも、つながらない原因を探すときも、「この住所はどのまとまりか」を計算で出せることが土台になる。',
+    concepts: concepts('CIDR', 'プレフィックス長', 'サブネット', 'ネットワークアドレス', 'ブロードキャストアドレス'),
+    commands: [
+      { command: 'ipcalc <アドレス>/<長さ>', means: 'まとまりの範囲と台数を計算する' },
+      { command: 'ipcalc … > <ファイル>', means: '結果をファイルに残す' },
+    ],
+  },
   objectives: ['プレフィックス長からホスト数を出せる', '分割の結果を確かめられる'],
   parCommands: 8,
   initial: { net: lan(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },
@@ -206,6 +249,16 @@ export const netIpv6: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: 'IPv6 の書き方に慣れる',
+  intro: {
+    summary: 'IPv6 の住所の書き方（省略の決まり）と、自動で住所を作る仕組みを確かめる。',
+    why:
+      'IPv6 の住所は長く、省略の決まりを知らないと同じ住所だと気付けない。仕組みを一度計算で確かめておくと、読み書きで迷わない。',
+    concepts: concepts('IPv6', 'SLAAC', 'MAC アドレス', 'プレフィックス長'),
+    commands: [
+      { command: 'ip6calc <アドレス>', means: '省略しない形と省略した形を出す' },
+      { command: 'ip6calc <まとまり> <MAC>', means: 'MAC から自動で作られる住所を計算する' },
+    ],
+  },
   objectives: ['省略記法を展開できる', 'アドレスの種類を見分けられる', 'SLAAC の作られ方が分かる'],
   parCommands: 8,
   initial: { net: lan(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },
@@ -251,6 +304,16 @@ export const netNat: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: '1つの外側アドレスを分け合う',
+  intro: {
+    summary: '中の住所を外向きの住所1つにまとめて出す NAT の、変換表を読む。',
+    why:
+      '家のパソコンもスマホも、外からは同じ住所に見える。ポート番号で見分けて返しているからで、その対応表を見ると仕組みが分かる。',
+    concepts: concepts('NAT', 'PAT', 'ポート', 'IP アドレス'),
+    commands: [
+      { command: 'nat gw', means: 'ルータの変換表を見る' },
+      { command: 'curl http://<外の相手>/', means: '外へ出る通信を起こす' },
+    ],
+  },
   objectives: ['NAT が何を書き換えるか分かる', 'ポートで多重化していると分かる', '変換表を読める'],
   parCommands: 10,
   initial: { net: nattedNet(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },
@@ -289,6 +352,19 @@ export const netTcp: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: '接続を張って、閉じる',
+  intro: {
+    summary: 'TCP の接続を張って、データを送り、閉じるまでの状態の移り変わりを見る。',
+    why:
+      '「繋がらない」「接続が溢れる」のような障害は、TCP の状態を知っていると読める。あいさつから片付けまでを一度通しで見る。',
+    concepts: concepts('TCP', '3ウェイハンドシェイク', 'TIME_WAIT'),
+    commands: [
+      { command: 'tcp connect', means: '接続を張る（3回のあいさつ）' },
+      { command: 'tcp send <大きさ>', means: 'データを送る' },
+      { command: 'tcp close', means: '接続を閉じる' },
+      { command: 'tcp tick <回数>', means: '時間を進める' },
+      { command: 'tcp state', means: '今の状態を見る' },
+    ],
+  },
   objectives: ['3ウェイの意味が分かる', '状態が順に遷移すると分かる', 'TIME_WAIT の理由が分かる'],
   parCommands: 10,
   initial: { net: lan(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },
@@ -345,6 +421,15 @@ export const netDns: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: 'ルートから順に聞いていく',
+  intro: {
+    summary: '名前から住所を引く DNS を、上から順に問い合わせる様子で見る。',
+    why:
+      'Web が開かない原因が名前の引き違いだった、はよくある話。誰がどう答えているかが見えれば、どこで間違っているか探せる。',
+    concepts: concepts('DNS', '名前解決', 'キャッシュ', 'CNAME'),
+    commands: [
+      { command: 'dnstrace <名前>', means: '上から順に問い合わせる様子を見る' },
+    ],
+  },
   objectives: ['委任を辿る流れが分かる', 'キャッシュと TTL の効き方が分かる', '古い答えが残る理由が分かる'],
   parCommands: 10,
   initial: {
@@ -387,6 +472,15 @@ export const netDhcp: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: 'アドレスを借りる',
+  intro: {
+    summary: 'DHCP で住所を借りる4回のやりとりを見る。',
+    why:
+      'パソコンをつなぐだけで住所が決まるのは、DHCP が貸してくれるから。住所が付かないときに、どのやりとりで止まっているかを探せるようにする。',
+    concepts: concepts('DHCP', 'IP アドレス'),
+    commands: [
+      { command: 'dhclient', means: '住所を借りる' },
+    ],
+  },
   objectives: ['DORA の4段の意味が分かる', 'リースに期限があると分かる'],
   parCommands: 8,
   initial: { net: lan(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },

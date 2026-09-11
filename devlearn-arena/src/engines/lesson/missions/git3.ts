@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { gitPath, sparsePatterns } from '@/engines/git/gitdir';
 import { GITLINK_MODE, branches, headCommit, log } from '@/engines/git/repository';
 import { tagNames } from '@/engines/git/refs';
@@ -14,6 +15,18 @@ export const gitParallelWork: LessonDefinition = {
   track: 'git',
   kind: 'training',
   title: '切り替えずに並行して作業する',
+  intro: {
+    summary: 'worktree で別の枝を別の場所に広げ、sparse-checkout で必要な部分だけを広げる。',
+    why:
+      '急ぎの修正のたびに今の作業をしまって枝を切り替えるのは面倒。別の場所にもう1つ広げれば、切り替えずに並行して作業できる。',
+    concepts: concepts('worktree', 'sparse-checkout', 'ブランチ', '作業ツリー'),
+    commands: [
+      { command: 'git branch <名前>', means: 'ブランチを作る（移らない）' },
+      { command: 'git worktree add <場所> <ブランチ>', means: 'そのブランチを別の場所に広げる' },
+      { command: 'git sparse-checkout set <ディレクトリ>', means: 'そのディレクトリだけを作業ツリーに残す' },
+      { command: 'git ls-files', means: '記録されているファイルの一覧を見る' },
+    ],
+  },
   objectives: ['worktree で同じリポジトリを2か所に開ける', 'sparse-checkout で作業ツリーを絞れる', '履歴とチェックアウトは別物だと分かる'],
   parCommands: 12,
   initial: {
@@ -76,6 +89,17 @@ export const gitDivergedBoss: LessonDefinition = {
   track: 'git',
   kind: 'boss',
   title: 'リモートと食い違った',
+  intro: {
+    summary: '手元の歴史を作り直してしまい、リモートと食い違った。安全に push し直す。',
+    why:
+      'push したあとに歴史を作り直すと、そのままでは送れなくなる。無理やり上書きすると他人の仕事を消すことがある。相手の位置を確かめてから上書きする方法を覚える。',
+    concepts: concepts('リモート', 'push', 'amend', 'コミット', 'ブランチ'),
+    commands: [
+      { command: 'git remote add origin <URL>', means: 'リモートを登録する' },
+      { command: 'git push origin main', means: 'main を送る' },
+      { command: 'git push origin main --force-with-lease', means: '自分が最後に見た位置のままなら上書きする' },
+    ],
+  },
   objectives: ['非 fast-forward の push が拒まれる理由が分かる', '取り込んでから出し直せる', 'force-with-lease の意味を知る'],
   parCommands: 14,
   initial: {
@@ -157,6 +181,19 @@ export const gitFindRegression: LessonDefinition = {
   track: 'git',
   kind: 'boss',
   title: 'いつ壊れたのかを突き止める',
+  intro: {
+    summary: 'いつ壊れたのかを bisect で突き止め、同じ事故を hook で入口から止める。',
+    why:
+      '「前は動いていた」のに、どこで壊れたか分からない。1つずつ見れば時間がかかるが、半分ずつ調べれば何百コミットでも数回で見つかる。',
+    concepts: concepts('bisect', 'hook', 'コミット', 'HEAD', 'スクリプト'),
+    commands: [
+      { command: 'git bisect start', means: '調べ始める' },
+      { command: 'git bisect bad HEAD', means: '今は壊れている、と伝える' },
+      { command: 'git bisect good HEAD~5', means: '5つ前は良かった、と伝える' },
+      { command: 'git bisect good / bad', means: '見せられた版が良いか悪いかを答え続ける' },
+      { command: 'git bisect reset', means: '調べ終わって元の場所に戻る' },
+    ],
+  },
   objectives: ['bisect で二分探索できる', '手数が log で効くと分かる', 'hook で再発を止められる'],
   parCommands: 16,
   initial: {
@@ -241,6 +278,16 @@ export const gitRepoSize: LessonDefinition = {
   track: 'git',
   kind: 'training',
   title: 'リポジトリが太る理由を数える',
+  intro: {
+    summary: 'オブジェクトの数を数えて、リポジトリが何で太るのかを確かめる。',
+    why:
+      '同じ中身なら何回コミットしても1つ分しか場所を取らない。仕組みが分かると、「なぜ重いのか」「何を入れてはいけないか」が読める。',
+    concepts: concepts('オブジェクト', 'ハッシュ', 'コミット', 'リポジトリ'),
+    commands: [
+      { command: 'git count-objects -v', means: 'オブジェクトの数と大きさを見る' },
+      { command: 'git fsck', means: 'どこからも指されていないオブジェクトを探す' },
+    ],
+  },
   objectives: ['オブジェクト数を数えられる', '同じ内容が1つしか増えないと分かる', '到達不能なオブジェクトを見分けられる'],
   parCommands: 10,
   initial: {
@@ -292,6 +339,18 @@ export const gitRelease: LessonDefinition = {
   track: 'git',
   kind: 'training',
   title: '参照を付け替えて位置を示す',
+  intro: {
+    summary: 'コミットにタグを付け、名札が同じコミットを指していることを確かめる。',
+    why:
+      'ブランチもタグも HEAD も、中身は「どのコミットか」を指す札にすぎない。札の種類の違いが分かると、Git の操作がぐっと読みやすくなる。',
+    concepts: concepts('タグ', '注釈付きタグ', 'HEAD', 'ブランチ', 'ハッシュ', 'オブジェクト', 'Git', 'コミット'),
+    commands: [
+      { command: 'git tag <名前>', means: '軽い名札を付ける' },
+      { command: 'git tag -a <名前> -m "説明"', means: '説明付きの名札を付ける' },
+      { command: 'git rev-parse <名札>', means: 'その名札が指すコミットのハッシュを出す' },
+      { command: 'git cat-file -t <名札>', means: '名札の先にあるものの種類を見る' },
+    ],
+  },
   objectives: ['ブランチもタグもただの参照だと分かる', '軽量タグと注釈付きタグの違いが分かる', 'HEAD が何を指しているか読める'],
   parCommands: 10,
   initial: {
@@ -359,6 +418,18 @@ export const gitSubmodule: LessonDefinition = {
   track: 'git',
   kind: 'training',
   title: '別のリポジトリを1点で参照する',
+  intro: {
+    summary: '別のリポジトリを submodule として取り込む。',
+    why:
+      '共通の部品を写して持つと、直すたびに全部の写しを直すことになる。「どの版を使うか」の1点だけを記録すれば、親は太らず、版もはっきりする。',
+    concepts: concepts('submodule', 'リモート', 'push', 'リポジトリ'),
+    commands: [
+      { command: 'git remote add lib <URL>', means: '部品のリモートを登録する' },
+      { command: 'git push lib main', means: '部品を送る' },
+      { command: 'git submodule add <URL> <場所>', means: '部品を取り込む' },
+      { command: 'cat .gitmodules', means: 'どこから取ってくるかの記録を見る' },
+    ],
+  },
   objectives: ['gitlink が中身ではなくコミットを指すと分かる', '.gitmodules の役割が分かる'],
   parCommands: 10,
   initial: {

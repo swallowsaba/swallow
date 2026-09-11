@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { cwdIs, dirExists, fileEquals, ranMatching } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, family, man } from './shared';
@@ -31,6 +32,17 @@ const whereDrills = family<string>({
   variants: PLACES,
   make: (place) => ({
     title: `${place} に立って、そこだと言い切る`,
+    intro: {
+      summary: 'cd で場所を移り、pwd で「いまどこか」を確かめる。',
+      why:
+        '端末では、画面に地図が出ない。いまどこにいるか分からないまま作業すると、違う場所のファイルを消したり上書きしたりする。迷ったら pwd、が身を守る一番の癖になる。',
+      concepts: concepts('ディレクトリ', 'いまいる場所', 'ホームディレクトリ', 'パス', 'リダイレクト'),
+      commands: [
+        { command: 'cd <行き先>', means: '行き先のディレクトリへ移る' },
+        { command: 'pwd', means: 'いまいる場所を表示する' },
+        { command: 'pwd > here.txt', means: '表示するはずだった結果を here.txt に書き込む' },
+      ],
+    },
     objectives: ['移動できる', 'いまの場所を確かめられる', '確かめた結果を残せる'],
     initial: { files: { [HOME]: null, [place]: null }, cwd: HOME },
     solution: [`cd ${place}`, `pwd > ${HOME}/here.txt`],
@@ -79,6 +91,16 @@ const readDrills = family<{ path: string; body: string; answer: string }>({
   variants: READS,
   make: (spec) => ({
     title: `${spec.path} を読んで、答えを書き写す`,
+    intro: {
+      summary: 'cat でファイルの中身を画面に出し、読んだ値を別のファイルに書き写す。',
+      why:
+        'サーバの設定や記録は、ほとんどが文字だけのファイルに書いてある。まず「中身を出して読む」ができれば、調べものの半分はできる。',
+      concepts: concepts('コマンド', '引数', 'リダイレクト'),
+      commands: [
+        { command: 'cat <ファイル>', means: 'ファイルの中身をそのまま画面に出す' },
+        { command: 'echo "文字" > answer.txt', means: '文字を answer.txt に書き込む（前の中身は消える）' },
+      ],
+    },
     objectives: ['ファイルの中身を出せる', '読んだ内容を使える'],
     initial: {
       files: { [HOME]: null, [spec.path]: spec.body },
@@ -131,6 +153,17 @@ const helpDrills = family<string>({
   variants: LOOKUPS,
   make: (command) => ({
     title: `${command} が何をするコマンドか調べる`,
+    intro: {
+      summary: '知らないコマンドの使い方を、自分で調べる。',
+      why:
+        '全部のコマンドを覚えている人はいない。現場の人も、分からなければ説明書を引いている。調べ方を知っていれば、初めてのコマンドでも怖くない。',
+      concepts: concepts('コマンド', 'オプション', 'man ページ'),
+      commands: [
+        { command: 'man <コマンド>', means: 'そのコマンドの説明書を開く' },
+        { command: '<コマンド> --help', means: '短い使い方を表示する' },
+        { command: 'help', means: 'ここで使えるコマンドの一覧を出す' },
+      ],
+    },
     objectives: ['使えるコマンドを一覧できる', '説明を読んで書き留められる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [`help | grep ${command} > found.txt`, `which ${command} > path.txt`],
@@ -188,6 +221,17 @@ const firstDrills = family<{ dir: string; file: string; text: string }>({
   variants: FIRSTS,
   make: (spec) => ({
     title: `${spec.dir}/${spec.file} を作って読み返す`,
+    intro: {
+      summary: 'ディレクトリを作り、ファイルを書き、読み返す。ここまでで一周。',
+      why:
+        '「作る → 書く → 確かめる」は、どんな作業でも同じ流れになる。最後に読み返して確かめる癖があると、打ち間違いにその場で気付ける。',
+      concepts: concepts('ディレクトリ', 'リダイレクト', 'パス'),
+      commands: [
+        { command: 'mkdir <名前>', means: 'ディレクトリを作る' },
+        { command: 'echo "文字" > <ファイル>', means: 'ファイルに文字を書き込む' },
+        { command: 'cat <ファイル>', means: '書いた中身を読み返す' },
+      ],
+    },
     objectives: ['作る', '書く', '読み返して確かめる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [

@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { container, deployment, emptyCluster, node } from '@/engines/k8s/factory';
 import { isReady } from '@/engines/k8s/kubelet';
 import { key, type ClusterState } from '@/engines/k8s/types';
@@ -179,6 +180,17 @@ export const k8sStuckPending: LessonDefinition = {
   track: 'k8s',
   kind: 'boss',
   title: 'Pending から動かない',
+  intro: {
+    summary: 'Pending のまま動かない Pod の理由を読み、置けるように直す。',
+    why:
+      'Pod が置かれないとき、理由は必ず記録に出ている。「最低これだけ使う」の申告とノードの空きを比べれば、何を直せばよいか分かる。',
+    concepts: concepts('Pending', 'requests', 'scheduler', 'ノード', 'Pod'),
+    commands: [
+      { command: 'kubectl describe pods', means: 'なぜ置けないのかの記録を見る' },
+      { command: 'kubectl get nodes', means: 'ノードの一覧と空きを見る' },
+      { command: 'kubectl scale deployment <名前> --replicas=<数>', means: '数を減らして収める' },
+    ],
+  },
   objectives: ['配置されない理由を読める', 'requests と allocatable を比べられる', '直して実際に動かせる'],
   parCommands: 12,
   initial: { cluster: crowded(), files: { ...FILES } },
@@ -235,6 +247,17 @@ export const k8sApply: LessonDefinition = {
   track: 'k8s',
   kind: 'training',
   title: 'マニフェストから宣言的に作る',
+  intro: {
+    summary: 'マニフェストを書いて apply し、同じものを2回渡しても壊れないことを確かめる。',
+    why:
+      'さっきまでは kubectl のコマンドで1つずつ作っていた。完成図をファイルに書いて渡すやり方にすると、同じものを何度でも、誰でも作れる。',
+    concepts: concepts('マニフェスト', 'YAML', 'apply', '宣言的', '冪等', 'Deployment', 'kubectl'),
+    commands: [
+      { command: 'cat > app.yaml <<EOF', means: 'マニフェストを書く' },
+      { command: 'kubectl apply -f app.yaml', means: '書いた完成図を渡す' },
+      { command: 'kubectl wait <秒>', means: '時間を進める' },
+    ],
+  },
   objectives: ['YAML から資源を作れる', '同じものを2回 apply しても壊れないと分かる', '状態を宣言で管理できる'],
   parCommands: 10,
   initial: { cluster: cluster(), files: { ...FILES } },
@@ -285,6 +308,17 @@ export const k8sJobs: LessonDefinition = {
   track: 'k8s',
   kind: 'training',
   title: '終わる仕事と、繰り返す仕事',
+  intro: {
+    summary: '終わる仕事（Job）と、決まった間隔で繰り返す仕事（CronJob）を動かす。',
+    why:
+      'アプリのように「ずっと動かす」ものばかりではない。データの移し替えや夜間の集計のように「終われば用済み」の仕事もある。',
+    concepts: concepts('Job', 'CronJob', 'Pod', 'マニフェスト'),
+    commands: [
+      { command: 'cat > job.yaml <<EOF', means: 'Job のマニフェストを書く' },
+      { command: 'kubectl apply -f job.yaml', means: '渡す' },
+      { command: 'kubectl get jobs', means: '終わった数を見る' },
+    ],
+  },
   objectives: ['Job が completions まで走ると分かる', 'CronJob が Job を作ると分かる', '常駐との違いが分かる'],
   parCommands: 10,
   initial: { cluster: cluster(), files: { ...FILES } },
@@ -321,6 +355,17 @@ export const k8sStatefulSet: LessonDefinition = {
   track: 'k8s',
   kind: 'training',
   title: '順番と名前が要るワークロード',
+  intro: {
+    summary: '名前と順番が決まった Pod を、StatefulSet で動かす。',
+    why:
+      'データベースのように「どれが1番目か」に意味があるものは、名前が毎回変わると困る。番号付きの名前で、順に起動する仕組みを使う。',
+    concepts: concepts('StatefulSet', 'Pod', 'Ready', 'マニフェスト'),
+    commands: [
+      { command: 'kubectl apply -f sts.yaml', means: 'StatefulSet を渡す' },
+      { command: 'kubectl get pods', means: 'db-0, db-1 … と順に増えるのを見る' },
+      { command: 'kubectl wait <秒>', means: '時間を進める' },
+    ],
+  },
   objectives: ['StatefulSet の Pod 名が連番だと分かる', '前が Ready になってから次が作られると分かる'],
   parCommands: 8,
   initial: { cluster: cluster(), files: { ...FILES } },
@@ -358,6 +403,17 @@ export const k8sConfig: LessonDefinition = {
   track: 'k8s',
   kind: 'training',
   title: '設定と機密をコンテナに渡す',
+  intro: {
+    summary: '設定を ConfigMap、秘密を Secret に入れて、コンテナに渡す。',
+    why:
+      '設定をイメージの中に書き込むと、変えるたびに作り直しになる。外に置いて渡せば、同じイメージを開発でも本番でも使える。',
+    concepts: concepts('ConfigMap', 'Secret', 'base64', '環境変数', 'コンテナ', 'イメージ'),
+    commands: [
+      { command: 'kubectl apply -f cfg.yaml', means: 'ConfigMap と Secret を作る' },
+      { command: 'kubectl get secret <名前> -o yaml', means: '保管されている形（base64）を見る' },
+      { command: 'kubectl exec <Pod> -- env', means: 'コンテナの中の環境変数を見る' },
+    ],
+  },
   objectives: ['ConfigMap を env として渡せる', 'Secret が base64 なだけだと分かる', '無い参照は配置を止めると分かる'],
   parCommands: 12,
   initial: { cluster: cluster(), files: { ...FILES } },
@@ -412,6 +468,17 @@ export const k8sPvcPending: LessonDefinition = {
   track: 'k8s',
   kind: 'boss',
   title: 'PVC が Bound にならない',
+  intro: {
+    summary: '保存場所の申込（PVC）が結び付かない理由を読み、条件に合う保存場所（PV）を用意する。',
+    why:
+      'データを残すアプリは、保存場所が無いと起動できない。「欲しい」と「ある」の条件が1つでも合わないと結び付かないことを知っておく。',
+    concepts: concepts('PersistentVolumeClaim', 'PersistentVolume', 'StorageClass', 'Pending'),
+    commands: [
+      { command: 'kubectl get pvc', means: '申込の状態を見る' },
+      { command: 'kubectl apply -f pv.yaml', means: '保存場所を用意する' },
+      { command: 'kubectl wait <秒>', means: '時間を進める' },
+    ],
+  },
   objectives: ['PVC と PV の結び付きが分かる', '束ねられない理由を読める', '容量とアクセスモードの条件が分かる'],
   parCommands: 12,
   initial: { cluster: cluster(), files: { ...FILES } },
@@ -479,6 +546,17 @@ export const k8sUnschedulable: LessonDefinition = {
   track: 'k8s',
   kind: 'boss',
   title: '置ける場所が無い',
+  intro: {
+    summary: '「ここには来ないで」の札（taint）が付いたノードに、許可証（toleration）付きの Pod を置く。',
+    why:
+      '特別な機械（GPU など）には、普通のアプリが入り込まないよう札を付ける。札と許可証の関係が分かれば、置けない理由が読める。',
+    concepts: concepts('taint', 'toleration', 'ノード', 'Pod', 'Pending'),
+    commands: [
+      { command: 'kubectl apply -f pod.yaml', means: 'Pod を作る' },
+      { command: 'kubectl describe pod <名前>', means: '置けない理由を見る' },
+      { command: 'kubectl apply -f tol.yaml', means: '許可証付きの Pod を作る' },
+    ],
+  },
   objectives: ['taint と toleration の関係が分かる', '拒否の理由を読める', '意図した場所にだけ置ける'],
   parCommands: 12,
   initial: { cluster: tainted(), files: { ...FILES } },

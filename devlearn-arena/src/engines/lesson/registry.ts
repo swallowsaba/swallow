@@ -3,7 +3,7 @@ import { chapterOf } from './ids';
 import { missions as curated } from './missions';
 import { drillSources } from './drills';
 import type { MissionSource } from './authoring/mission';
-import type { LessonDefinition, LessonKindMeta, MissionKind, MissionTrack } from './types';
+import type { LessonDefinition, LessonIntro, LessonKindMeta, MissionKind, MissionTrack } from './types';
 
 /**
  * 一覧に出すための情報。
@@ -13,6 +13,8 @@ import type { LessonDefinition, LessonKindMeta, MissionKind, MissionTrack } from
 export interface MissionEntry {
   id: string;
   title: string;
+  /** 課題の前に読む説明。一覧を作るだけでも引けるよう、組み立てずに持つ */
+  intro: LessonIntro;
   track: MissionTrack;
   chapterId: string;
   kind: MissionKind;
@@ -27,6 +29,7 @@ function fromSource(source: MissionSource): MissionEntry {
   return {
     id: source.id,
     title: source.title,
+    intro: source.intro,
     track: source.track,
     chapterId: source.chapterId,
     kind: source.kind,
@@ -43,6 +46,7 @@ function fromDefinition(definition: LessonDefinition): MissionEntry {
   return {
     id: definition.id,
     title: definition.title,
+    intro: definition.intro,
     track: definition.track,
     chapterId: chapterOf(definition.id),
     kind: definition.kind,

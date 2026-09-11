@@ -56,6 +56,21 @@ export type LessonKindMeta = 'concept' | 'drill' | 'challenge' | 'boss';
 
 export type MissionTrack = 'kernel' | 'git' | 'k8s' | 'net' | 'github';
 
+/**
+ * 課題に入る前に読む「学ぶ」段階。
+ * 知識ゼロの人が、これだけ読めば課題に手を付けられることを目指す。
+ */
+export interface LessonIntro {
+  /** 一行で言うと何か */
+  summary: string;
+  /** なぜこれを学ぶのか。現場で何に効くのか */
+  why: string;
+  /** 前提知識。知らなくても読めば分かる程度に噛み砕く */
+  concepts: readonly { term: string; plain: string }[];
+  /** この任務で使うコマンドと、その意味 */
+  commands: readonly { command: string; means: string }[];
+}
+
 export interface LessonDefinition {
   /** training=練習, boss=障害対応 */
   kind: MissionKind;
@@ -64,6 +79,8 @@ export interface LessonDefinition {
   /** カタログの LessonMeta.id と一致させる */
   id: string;
   title: string;
+  /** 課題の前に読む説明 */
+  intro: LessonIntro;
   objectives: readonly string[];
   initial: SessionOptions;
   steps: readonly LessonStep[];

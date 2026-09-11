@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { fileEquals, fileAbsent } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, bash, family, man } from './shared';
@@ -42,6 +43,16 @@ const appendDrills = family<{ file: string; first: string; second: string }>({
   variants: APPENDS,
   make: (spec) => ({
     title: `${spec.file} に足していく`,
+    intro: {
+      summary: '>> で、ファイルの後ろに書き足していく。',
+      why:
+        '> は毎回ファイルを空にしてから書く。記録を積み上げたいのに > を使うと、前の記録が消える。2つの違いは事故の元なので、手で確かめておく。',
+      concepts: concepts('リダイレクト'),
+      commands: [
+        { command: 'echo "文字" >> <ファイル>', means: '今の中身の後ろに1行足す' },
+        { command: 'cat <ファイル>', means: '足されたか確かめる' },
+      ],
+    },
     objectives: ['> は書き直す', '>> は足す', '違いを結果で確かめられる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [
@@ -84,6 +95,16 @@ const streamDrills = family<{ missing: string }>({
   variants: STREAMS,
   make: (spec) => ({
     title: '誤りだけを別のファイルに分ける',
+    intro: {
+      summary: '2> で、エラーの知らせだけを別のファイルに分ける。',
+      why:
+        'コマンドの結果とエラーは、別々の口から出ている。分けて保存しておけば、大量の結果の中からエラーだけを探す手間がなくなる。',
+      concepts: concepts('標準出力', '標準エラー', 'リダイレクト'),
+      commands: [
+        { command: '<コマンド> > out.txt 2> err.txt', means: '結果は out.txt へ、エラーは err.txt へ' },
+        { command: '<コマンド> &> all.txt', means: '両方まとめて all.txt へ' },
+      ],
+    },
     objectives: ['1 と 2 の区別が付く', '誤りだけを取り置ける'],
     initial: {
       files: { [HOME]: null, [`${HOME}/there.txt`]: 'ここにある\n' },
@@ -162,6 +183,15 @@ const pipeDrills = family<PipeSpec>({
     const hits = spec.rows.filter((r) => r.includes(spec.needle));
     return {
       title: `${spec.needle} の件数を一本のパイプで数える`,
+      intro: {
+        summary: '| で小さなコマンドをつなげ、1本の流れで答えを出す。',
+        why:
+          '「探す」「数える」「並べる」を別々のファイルに書き出しながらやると、途中のファイルが散らかる。パイプでつなげば、一行で答えまでたどり着ける。',
+        concepts: concepts('パイプ', '標準入力', '標準出力'),
+        commands: [
+          { command: 'grep <文字> <ファイル> | wc -l', means: '当たった行を、そのまま数える' },
+        ],
+      },
       objectives: ['パイプで繋げる', '中間ファイルを作らずに済ませられる'],
       initial: { files: { [HOME]: null, [`${HOME}/in.txt`]: body }, cwd: HOME },
       solution: [`cat in.txt | grep ${spec.needle} | wc -l > n.txt`],
@@ -228,6 +258,16 @@ const heredocDrills = family<{ file: string; lines: string[] }>({
   variants: HEREDOCS,
   make: (spec) => ({
     title: `${spec.file} を複数行まとめて書く`,
+    intro: {
+      summary: 'ヒアドキュメントで、複数行のファイルを一度に書く。',
+      why:
+        '設定ファイルは何行にもなる。echo を何回も打つより、書きたい形そのままを流し込むほうが速くて間違いにくい。',
+      concepts: concepts('ヒアドキュメント', 'リダイレクト'),
+      commands: [
+        { command: 'cat > <ファイル> <<EOF', means: 'ここから EOF の行までを、ファイルに書き込む' },
+        { command: 'EOF', means: '書き込みの終わり。行の頭に単独で置く' },
+      ],
+    },
     objectives: ['ヒアドキュメントで複数行を渡せる', '終端の書き方が分かる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [`cat > ${spec.file} <<EOF\n${spec.lines.join('\n')}\nEOF`],
@@ -270,6 +310,15 @@ const xargsDrills = family<{ names: string[] }>({
     for (const name of spec.names) files[`${HOME}/${name}`] = 'x\n';
     return {
       title: '一覧を受け取って、まとめて消す',
+      intro: {
+        summary: 'xargs で、流れてきた一覧をまとめて別のコマンドに渡す。',
+        why:
+          'find で見つけた何十個ものファイルを、1つずつ rm するのは現実的でない。一覧をそのまま渡せれば一度で片付く。',
+        concepts: concepts('パイプ', '引数'),
+        commands: [
+          { command: 'find . -name "*.tmp" | xargs rm', means: '見つかったファイルを全部 rm に渡して消す' },
+        ],
+      },
       objectives: ['標準入力を引数に変えられる', '消す対象を取り違えない'],
       initial: { files, cwd: HOME },
       solution: [

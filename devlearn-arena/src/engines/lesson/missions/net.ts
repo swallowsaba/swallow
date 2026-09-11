@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { host, iface, link, resetMac, router, topology } from '@/engines/net/factory';
 import type { LessonDefinition } from '../types';
 import { ran } from '../authoring/ran';
@@ -25,6 +26,19 @@ export const netFirstHop: LessonDefinition = {
   track: 'net',
   kind: 'training',
   title: '経路をたどる',
+  intro: {
+    summary: '自分の住所と経路を読み、相手までに通るルータを1つずつたどる。',
+    why:
+      'データは何台ものルータを中継して届く。どこを通っているかが見えれば、どこで止まっているかも探せる。',
+    concepts: concepts('IP アドレス', '経路表', 'ルータ', 'ホップ', 'TTL', 'traceroute'),
+    commands: [
+      { command: 'ip addr', means: '自分の住所を見る' },
+      { command: 'ip route', means: '経路表を見る' },
+      { command: 'ping <名前>', means: '届くか確かめる' },
+      { command: 'traceroute <名前>', means: '通るルータを順に見る' },
+      { command: 'ipcalc <アドレス>/<長さ>', means: '住所のまとまりを計算する' },
+    ],
+  },
   objectives: ['自分のアドレスと経路を読める', 'ホップごとに何が変わるか分かる', 'CIDR を計算できる'],
   parCommands: 8,
   initial: {
@@ -72,6 +86,17 @@ export const netUnreachableBoss: LessonDefinition = {
   track: 'net',
   kind: 'boss',
   title: 'ping は通るのに curl が失敗する',
+  intro: {
+    summary: 'ping は通るのに curl が失敗する。どの段まで届いているかを切り分ける。',
+    why:
+      '「つながらない」の中身は1つではない。相手まで届いていないのか、届いたが窓口が閉まっているのか。段ごとに確かめれば、直す場所が決まる。',
+    concepts: concepts('層', 'ping', 'curl', 'ポート', 'Connection refused'),
+    commands: [
+      { command: 'ping <名前>', means: '相手まで届くか確かめる' },
+      { command: 'curl -v http://<名前>/', means: 'Web の窓口に頼んでみて、途中経過も見る' },
+      { command: 'echo "…" > diagnosis.txt', means: '分かったことを書き残す' },
+    ],
+  },
   objectives: ['層ごとに切り分けられる', '到達性と待ち受けの違いが分かる'],
   parCommands: 10,
   initial: {

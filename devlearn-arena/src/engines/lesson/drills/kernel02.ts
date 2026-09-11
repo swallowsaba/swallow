@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { all, fileEquals, fileExists } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, family, man } from './shared';
@@ -49,6 +50,16 @@ const edgeDrills = family<EdgeSpec>({
     const last = rows.slice(-spec.take).join('\n');
     return {
       title: `${spec.file} の先頭と末尾だけを取り出す`,
+      intro: {
+        summary: 'head で先頭だけ、tail で末尾だけを取り出す。',
+        why:
+          'ログは何万行にもなる。全部を画面に出すと読めない。新しい記録は末尾に足されるので、まず tail で最後を見るのが定石。',
+        concepts: concepts('ログ', 'オプション', 'リダイレクト'),
+        commands: [
+          { command: 'head -n 3 <ファイル>', means: '先頭の3行だけ出す' },
+          { command: 'tail -n 3 <ファイル>', means: '末尾の3行だけ出す' },
+        ],
+      },
       objectives: ['先頭 n 行を取れる', '末尾 n 行を取れる', '結果をファイルに残せる'],
       initial: { files: { [HOME]: null, [`${HOME}/${spec.file}`]: body }, cwd: HOME },
       solution: [
@@ -92,6 +103,16 @@ const countDrills = family<EdgeSpec>({
     const body = numbered(spec.lines, spec.label);
     return {
       title: `${spec.file} が何行あるか数える`,
+      intro: {
+        summary: 'wc -l で、ファイルが何行あるかを数える。',
+        why:
+          '「エラーは何件？」「前より増えた？」に数字で答えられると、状況が一気に伝わりやすくなる。',
+        concepts: concepts('オプション', 'リダイレクト'),
+        commands: [
+          { command: 'wc -l <ファイル>', means: '行の数を数える' },
+          { command: 'wc -l < <ファイル>', means: '数だけを出す（ファイル名を付けない）' },
+        ],
+      },
       objectives: ['行数を数えられる', '数だけを取り出せる'],
       initial: { files: { [HOME]: null, [`${HOME}/${spec.file}`]: body }, cwd: HOME },
       solution: [`wc -l < ${spec.file} > count.txt`],
@@ -168,6 +189,17 @@ const grepDrills = family<GrepSpec>({
     const hitLines = body.trimEnd().split('\n').filter((l) => l.includes(spec.needle));
     return {
       title: `${spec.needle} の行だけを抜き出す`,
+      intro: {
+        summary: 'grep で、ある文字を含む行だけを抜き出す。',
+        why:
+          '大量のログから ERROR の行だけを見る、設定から1項目だけを探す。grep は障害対応でいちばん打つコマンドの1つ。',
+        concepts: concepts('ログ', 'リダイレクト', 'パイプ'),
+        commands: [
+          { command: 'grep <文字> <ファイル>', means: 'その文字を含む行だけを出す' },
+          { command: 'grep -i <文字> <ファイル>', means: '大文字小文字を区別せずに探す' },
+          { command: 'grep -c <文字> <ファイル>', means: '当たった行の数だけ出す' },
+        ],
+      },
       objectives: ['文字列で行を絞れる', '件数を数えられる'],
       initial: { files: { [HOME]: null, [`${HOME}/app.log`]: body }, cwd: HOME },
       solution: [
@@ -292,6 +324,16 @@ const regexDrills = family<RegexSpec>({
     const wanted = spec.wanted.map((i) => spec.lines[i] ?? '').join('\n');
     return {
       title: `${spec.pattern} に当たる行を選ぶ`,
+      intro: {
+        summary: '正規表現で「行の頭が〜」「数字が続く」のような条件を書いて行を選ぶ。',
+        why:
+          '「ERROR という文字を含む」だけでは、説明文の中の ERROR まで拾ってしまう。「行の頭に ERROR がある」のように形で絞れると、欲しい行だけが残る。',
+        concepts: concepts('正規表現', 'オプション'),
+        commands: [
+          { command: 'grep "^ERROR" <ファイル>', means: 'ERROR で始まる行だけ' },
+          { command: 'grep -E "[0-9]+" <ファイル>', means: '数字が1つ以上続く行（-E で書きやすい形を使う）' },
+        ],
+      },
       objectives: ['正規表現で絞れる', '当たる行と当たらない行を説明できる'],
       initial: {
         files: { [HOME]: null, [`${HOME}/lines.txt`]: `${spec.lines.join('\n')}\n` },
@@ -357,6 +399,16 @@ const findDrills = family<FindSpec>({
     const found = spec.places.map((p) => `/${p}/a.${spec.ext}`).sort().join('\n');
     return {
       title: `.${spec.ext} のファイルを全部見つける`,
+      intro: {
+        summary: 'find で、名前の条件に合うファイルを下の階層まで全部探す。',
+        why:
+          'どこに置いたか分からないファイルを、入れ物を1つずつ開けて探すのは大変。find なら条件を1回書くだけで全部見つかる。',
+        concepts: concepts('ディレクトリ', 'ワイルドカード', 'クォート'),
+        commands: [
+          { command: 'find <場所> -name "*.log"', means: 'その場所の下から、名前が .log で終わるものを探す' },
+          { command: 'find <場所> -type f', means: 'ファイルだけ（ディレクトリを除く）を探す' },
+        ],
+      },
       objectives: ['再帰的に探せる', '名前で絞れる', '結果を並べ替えて残せる'],
       initial: { files, cwd: HOME },
       solution: [
@@ -403,6 +455,16 @@ const locateDrills = family<{ name: string; where: string }>({
   variants: HIDDEN,
   make: (spec) => ({
     title: `${spec.name} の在り処を突き止める`,
+    intro: {
+      summary: '名前しか分からないファイルの在り処を突き止めて、住所を書き残す。',
+      why:
+        '「設定ファイルはどこ？」は、現場で一番よく聞かれる質問の1つ。探して、見つけた住所を書き残せば、次の人は探さずに済む。',
+      concepts: concepts('パス', '絶対パス', 'リダイレクト'),
+      commands: [
+        { command: 'find / -name <名前>', means: '一番上から、その名前のものを探す' },
+        { command: 'find / -name <名前> > where.txt', means: '見つかった住所をファイルに残す' },
+      ],
+    },
     objectives: ['名前だけを頼りに探せる', '見つけた場所の中身を確かめられる'],
     initial: {
       files: {

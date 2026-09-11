@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { fileContains, fileEquals } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import {
@@ -54,6 +55,18 @@ const firstCommitDrills = family<FirstSpec>({
   variants: FIRSTS.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: `${v.file} を最初のコミットにする`,
+    intro: {
+      summary: 'リポジトリを作り、ファイルをインデックスに載せて、最初のコミットを作る。',
+      why:
+        'Git の操作は全部「作業ツリー → インデックス → コミット」の流れでできている。最初の1回で、この流れを体に入れる。',
+      concepts: concepts('Git', 'リポジトリ', 'インデックス', 'コミット', '作業ツリー'),
+      commands: [
+        { command: 'git init', means: 'ここを Git のリポジトリにする' },
+        { command: 'git add <ファイル>', means: '次のコミットに入れるものとして載せる' },
+        { command: 'git commit -m "説明"', means: '載せたものを1つのコミットとして記録する' },
+        { command: 'git log', means: '記録を新しい順に見る' },
+      ],
+    },
     objectives: ['リポジトリを作れる', '3面（作業ツリー・索引・履歴）の移動が分かる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [
@@ -153,6 +166,17 @@ const branchDrills = family<BranchSpec>({
   variants: BRANCHES.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: `${v.branch} で作業して main に合流させる`,
+    intro: {
+      summary: '別のブランチで作業して、main に取り込む。',
+      why:
+        '本体を壊さずに新しいことを試すために、枝を分けて作業する。終わったら本体に取り込む。チームでの開発はほとんどこの繰り返し。',
+      concepts: concepts('ブランチ', 'main', 'マージ', 'HEAD', 'コミット'),
+      commands: [
+        { command: 'git switch -c <名前>', means: '新しいブランチを作って、そこへ移る' },
+        { command: 'git switch main', means: 'main に戻る' },
+        { command: 'git merge <名前>', means: 'そのブランチの変更を今の枝に取り込む' },
+      ],
+    },
     objectives: ['ブランチを切れる', '切り替えられる', '早送りの合流が分かる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [
@@ -258,6 +282,17 @@ const conflictDrills = family<ConflictSpec>({
   variants: CONFLICTS.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: `${v.file} の衝突を解く`,
+    intro: {
+      summary: '2つの枝が同じ行を変えたときの衝突を、自分で選んで直す。',
+      why:
+        '衝突は失敗ではなく、「どちらにしますか」という Git からの質問。慌てずにマーカを読んで、正しい形に直せばよい。',
+      concepts: concepts('衝突', '衝突マーカ', 'マージ', 'ブランチ', 'インデックス', 'Git'),
+      commands: [
+        { command: 'git merge <名前>', means: '取り込む（衝突するとここで止まる）' },
+        { command: 'git status', means: 'どのファイルが衝突しているか見る' },
+        { command: 'git add <ファイル> と git commit', means: '直したことを記録して、取り込みを終える' },
+      ],
+    },
     objectives: ['衝突がどう見えるか分かる', '自分で選んで解ける', '解いたら記録できる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [
@@ -345,6 +380,17 @@ const stashDrills = family<{ file: string; body: string }>({
   variants: STASHES,
   make: (v) => ({
     title: '手を止めずに割り込みへ移る',
+    intro: {
+      summary: '書きかけの変更を stash にしまって別の作業へ移り、あとで戻す。',
+      why:
+        '作業の途中で急ぎの依頼が来るのはよくあること。中途半端なまま記録せずに、一時的に棚へしまえる。',
+      concepts: concepts('stash', '作業ツリー', 'コミット'),
+      commands: [
+        { command: 'git stash', means: '書きかけの変更をしまう' },
+        { command: 'git stash list', means: 'しまってあるものの一覧' },
+        { command: 'git stash pop', means: 'しまったものを取り出して戻す' },
+      ],
+    },
     objectives: ['退避できる', '戻せる', '退避中は作業ツリーが綺麗になると分かる'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [
@@ -412,6 +458,17 @@ const tagDrills = family<string>({
   variants: TAGS,
   make: (name) => ({
     title: `${name} の印を付ける`,
+    intro: {
+      summary: 'コミットにタグを付けて、「この版」と名指しできるようにする。',
+      why:
+        '「先月配った版に戻したい」とき、長いハッシュを探すのは大変。v1.0.0 のような名札があれば一発で指せる。',
+      concepts: concepts('タグ', '注釈付きタグ', 'コミット', 'ハッシュ'),
+      commands: [
+        { command: 'git tag <名前>', means: '今のコミットに名札を付ける' },
+        { command: 'git tag -a <名前> -m "説明"', means: '説明付きの名札を付ける' },
+        { command: 'git tag', means: '付いている名札の一覧' },
+      ],
+    },
     objectives: ['タグを打てる', 'ブランチとの違いが言える'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [

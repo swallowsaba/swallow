@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { HOME } from '@/engines/kernel/path';
 import { branches, currentBranch, headCommit, log, status } from '@/engines/git/repository';
 import { isAncestor } from '@/engines/git/history';
@@ -8,6 +9,18 @@ export const gitFirstCommit: LessonDefinition = {
   track: 'git',
   kind: 'training',
   title: '最初のコミットを刻む',
+  intro: {
+    summary: 'リポジトリを作り、選んだファイルだけを載せて、最初のコミットを作る。',
+    why:
+      'Git は「いつ・何を変えたか」を残す道具。最初の1回で「作業ツリー → インデックス → コミット」という流れを手で覚える。',
+    concepts: concepts('Git', 'リポジトリ', '作業ツリー', 'インデックス', 'コミット', '3面'),
+    commands: [
+      { command: 'git init', means: 'ここをリポジトリにする' },
+      { command: 'git add <ファイル>', means: '次のコミットに入れるものとして載せる' },
+      { command: 'git commit -m "説明"', means: '載せたものを記録する' },
+      { command: 'git status', means: '3つの場所のどこに差があるかを見る' },
+    ],
+  },
   objectives: ['リポジトリを作る', '3面（作業ツリー・インデックス・HEAD）を動かす', '履歴を残す'],
   parCommands: 6,
   initial: {
@@ -87,6 +100,17 @@ export const gitBranching: LessonDefinition = {
   track: 'git',
   kind: 'training',
   title: 'ブランチを分けて統合する',
+  intro: {
+    summary: 'ブランチを分けて作業し、main に取り込む。',
+    why:
+      '本体を壊さずに新しいことを試すために、枝を分ける。取り込むとき、main が動いていなければ札を進めるだけで済む（早送り）。',
+    concepts: concepts('ブランチ', 'main', 'HEAD', 'マージ', '早送り', 'コミット'),
+    commands: [
+      { command: 'git switch -c <名前>', means: '新しいブランチを作って移る' },
+      { command: 'git switch main', means: 'main に戻る' },
+      { command: 'git merge <名前>', means: 'そのブランチの変更を取り込む' },
+    ],
+  },
   objectives: ['ブランチはポインタだと分かる', '分けた作業を統合できる', '早送りと統合の違いが分かる'],
   parCommands: 10,
   initial: { files: { ...GIT_FILES } },
@@ -156,6 +180,18 @@ export const gitConflictDrill: LessonDefinition = {
   track: 'git',
   kind: 'training',
   title: '衝突を解く',
+  intro: {
+    summary: 'わざと衝突を起こし、マーカを読んで直し、取り込みを終える。',
+    why:
+      '2人が同じ行を変えれば、必ず衝突する。Git はどちらが正しいか決めない。マーカの読み方と直し方を知っていれば怖くない。',
+    concepts: concepts('衝突', '衝突マーカ', 'ブランチ', 'マージ', 'インデックス', 'Git'),
+    commands: [
+      { command: 'git merge <名前>', means: '取り込む（衝突するとここで止まる）' },
+      { command: 'vi <ファイル>', means: 'ファイルを開いてマーカの行を消し、正しい内容にする' },
+      { command: 'git add <ファイル>', means: '直したことを載せる' },
+      { command: 'git commit -m "説明"', means: '取り込みを終える' },
+    ],
+  },
   objectives: ['衝突マーカを読める', '意味を壊さず統合できる', '解決してコミットできる'],
   parCommands: 12,
   initial: { files: { ...GIT_FILES } },

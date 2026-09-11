@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { dirExists, dirHas, fileAbsent, fileEquals, fileExists, varIs } from '../authoring/assert';
 import type { MissionSource } from '../authoring/mission';
 import { HOME, bash, family } from './shared';
@@ -30,6 +31,16 @@ const varDrills = family<{ name: string; text: string }>({
   variants: VARS,
   make: (spec) => ({
     title: `${spec.name} を置いて使う`,
+    intro: {
+      summary: '変数に値を入れて、名前で使い回す。',
+      why:
+        '同じ値を何度も打つと、どこかで打ち間違える。変数に1回入れておけば、直すときも1か所で済む。',
+      concepts: concepts('変数', '環境変数'),
+      commands: [
+        { command: 'NAME=値', means: '変数 NAME に値を入れる（= の前後に空白を入れない）' },
+        { command: 'echo $NAME', means: '変数の中身を取り出して表示する' },
+      ],
+    },
     objectives: ['変数に入れられる', '展開して使える'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [`export ${spec.name}=${spec.text}`, `echo "$${spec.name}" > value.txt`],
@@ -70,6 +81,16 @@ const quoteDrills = family<{ name: string; text: string }>({
   variants: QUOTES,
   make: (spec) => ({
     title: 'シングルとダブルの違いを結果で確かめる',
+    intro: {
+      summary: 'シングルクォートとダブルクォートで、$ が効くかどうかが変わるのを確かめる。',
+      why:
+        '空白の入った名前や、$ を含む文字は、囲み方を間違えると別物になる。スクリプトの不具合でいちばん多い原因の1つ。',
+      concepts: concepts('クォート', '変数', 'スクリプト'),
+      commands: [
+        { command: 'echo "$NAME"', means: 'ダブルの中では $NAME が中身に置き換わる' },
+        { command: 'echo \'$NAME\'', means: 'シングルの中では $NAME という文字のまま' },
+      ],
+    },
     objectives: ['" は展開する', "' は展開しない", '使い分けられる'],
     initial: { files: { [HOME]: null }, cwd: HOME, vars: { [spec.name]: spec.text } },
     solution: [
@@ -130,6 +151,16 @@ const globDrills = family<GlobSpec>({
     const others = spec.files.filter((f) => !spec.matches.includes(f));
     return {
       title: `${spec.pattern} に当たるものだけを移す`,
+      intro: {
+        summary: 'ワイルドカードの条件に当たるファイルだけを動かす。',
+        why:
+          '「2026年5月のログだけ」「.bak で終わるものだけ」を正確に選べれば、手作業で選ぶより速くて漏れがない。',
+        concepts: concepts('ワイルドカード'),
+        commands: [
+          { command: 'ls <条件>', means: 'その条件で何が選ばれるか、動かす前に確かめる' },
+          { command: 'mv <条件> <先>/', means: '条件に当たったものを全部動かす' },
+        ],
+      },
       objectives: ['グロブが何に当たるか言える', '当たらないものを巻き込まない'],
       initial: { files, cwd: HOME },
       solution: [`mv ${spec.pattern} picked/`],
@@ -201,6 +232,16 @@ const braceDrills = family<{ prefix: string; items: string[] }>({
   variants: BRACES,
   make: (spec) => ({
     title: `${spec.prefix}/{${spec.items.join(',')}} をまとめて作る`,
+    intro: {
+      summary: 'ブレース展開で、似た名前のディレクトリをまとめて作る。',
+      why:
+        '開発用・本番用のように、名前の一部だけ違うものを何度も打つのは面倒で、打ち間違いも出る。',
+      concepts: concepts('ブレース展開', 'ディレクトリ'),
+      commands: [
+        { command: 'mkdir -p a/{x,y,z}', means: 'a/x と a/y と a/z をまとめて作る' },
+        { command: 'echo a/{x,y}', means: 'どう広がるかを実行前に確かめる' },
+      ],
+    },
     objectives: ['ブレース展開で繰り返しを畳める'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [`mkdir -p ${spec.prefix}/{${spec.items.join(',')}}`],
@@ -243,6 +284,15 @@ const subDrills = family<{ rows: string[] }>({
     const body = `${spec.rows.join('\n')}\n`;
     return {
       title: 'コマンドの結果を文の中に埋め込む',
+      intro: {
+        summary: '$(…) で、コマンドの結果を文の中に埋め込む。',
+        why:
+          '日付入りのファイル名を作る、数えた結果を記録に書く。結果を手で写さずに済むので、写し間違いが起きない。',
+        concepts: concepts('コマンド置換', 'クォート'),
+        commands: [
+          { command: 'echo "件数: $(wc -l < a.txt)"', means: 'wc の結果を文の中に入れて表示する' },
+        ],
+      },
       objectives: ['$(...) が使える', '結果を文章に混ぜられる'],
       initial: { files: { [HOME]: null, [`${HOME}/list.txt`]: body }, cwd: HOME },
       solution: [`echo "count=$(wc -l < list.txt)" > report.txt`],

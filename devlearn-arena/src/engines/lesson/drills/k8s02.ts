@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { POD, ran } from '../authoring/ran';
 import { advanceCluster } from '@/engines/k8s/controllers';
 import { container, deployment, emptyCluster, node, pod } from '@/engines/k8s/factory';
@@ -50,6 +51,17 @@ const lifecycleDrills = family<PodSpec>({
   variants: PODS.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: `${v.name} が Pending から Running になるまで`,
+    intro: {
+      summary: 'Pod が Pending から Running になるまでを、時間を進めながら見る。',
+      why:
+        'Pod は作った瞬間には動いていない。置き場所が決まり、イメージが取ってこられ、起動して初めて動く。途中の状態の意味が分かれば、止まっている理由も読める。',
+      concepts: concepts('Pod', 'Pending', 'Running', 'scheduler', 'kubelet', 'イメージ'),
+      commands: [
+        { command: 'kubectl get pods', means: 'Pod と今の状態を見る' },
+        { command: 'kubectl wait <秒>', means: '時間を進める' },
+        { command: 'kubectl describe pod <名前>', means: '何が起きたかの記録を見る' },
+      ],
+    },
     objectives: ['Pending の意味が分かる', '時間を進めて遷移を見られる', 'Ready の条件が言える'],
     initial: {
       cluster: {
@@ -130,6 +142,17 @@ const reconcileDrills = family<ReconcileSpec>({
   variants: RECONCILES.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: `${v.name} の Pod を消しても戻ってくる`,
+    intro: {
+      summary: 'Deployment の Pod を消しても、すぐに作り直されることを確かめる。',
+      why:
+        'Kubernetes は「消えたら直す」を人の代わりにずっとやってくれる。これが分かると、「なぜ消しても戻ってくるのか」「どうすれば本当に消えるのか」が読める。',
+      concepts: concepts('Deployment', 'Pod', '調整', 'controller', 'レプリカ', 'Kubernetes'),
+      commands: [
+        { command: 'kubectl get pods', means: 'Pod の名前を見る' },
+        { command: 'kubectl delete pod <名前>', means: 'Pod を1つ消す' },
+        { command: 'kubectl wait <秒>', means: '時間を進めて、作り直されるのを待つ' },
+      ],
+    },
     objectives: ['宣言と現実の差が埋められると分かる', '消えたことに反応しているのではないと分かる'],
     initial: { cluster: deployed(v.name, v.replicas) },
     solution: [
@@ -189,6 +212,16 @@ const labelDrills = family<{ name: string; key: string; val: string }>({
   variants: LABELS,
   make: (v) => ({
     title: `${v.name} に ${v.key}=${v.val} の印を付ける`,
+    intro: {
+      summary: 'ラベルを付けて、そのラベルで資源を選ぶ。',
+      why:
+        'Kubernetes の中では、「どれとどれがつながるか」をほとんどラベルで決めている。ラベルとセレクタが読めれば、つながりの図が頭に描ける。',
+      concepts: concepts('ラベル', 'セレクタ', 'Pod', 'Kubernetes'),
+      commands: [
+        { command: 'kubectl label deploy <名前> <キー>=<値>', means: 'ラベルを付ける' },
+        { command: 'kubectl get deploy -l <キー>=<値>', means: 'そのラベルが付いたものだけを見る' },
+      ],
+    },
     objectives: ['ラベルを付けられる', 'ラベルで絞れる'],
     initial: { cluster: deployed(v.name, 2) },
     solution: [`kubectl label deploy ${v.name} ${v.key}=${v.val}`],
@@ -241,6 +274,17 @@ const scaleDrills = family<{ name: string; from: number; to: number }>({
   variants: SCALES,
   make: (v) => ({
     title: `${v.name} を ${String(v.from)} から ${String(v.to)} にする`,
+    intro: {
+      summary: 'kubectl scale で、Pod の数を変える。',
+      why:
+        'お客さんが増えたら数を増やし、減ったら減らす。数を書き換えるだけで、足りない分は作られ、多い分は消される。',
+      concepts: concepts('Deployment', 'レプリカ', 'Pod', 'controller', 'kubectl'),
+      commands: [
+        { command: 'kubectl scale deploy <名前> --replicas=<数>', means: 'あるべき数を変える' },
+        { command: 'kubectl wait <秒>', means: '時間を進める' },
+        { command: 'kubectl get pods', means: '数が合ったか見る' },
+      ],
+    },
     objectives: ['数を変えられる', '増やすときと減らすときの動きを見られる'],
     initial: { cluster: deployed(v.name, v.from) },
     solution: [
@@ -291,6 +335,16 @@ const deleteDrills = family<string>({
   variants: DELETES,
   make: (name) => ({
     title: `${name} をまるごと片付ける`,
+    intro: {
+      summary: 'Deployment ごと消して、アプリを本当に片付ける。',
+      why:
+        'Pod だけ消しても作り直される。止めたいなら、「何個動かして」という指示書のほうを消す必要がある。',
+      concepts: concepts('Deployment', 'Pod', 'ReplicaSet'),
+      commands: [
+        { command: 'kubectl delete deploy <名前>', means: '指示書ごと消す（下の Pod も片付く）' },
+        { command: 'kubectl get pods', means: '何も残っていないか見る' },
+      ],
+    },
     objectives: ['Deployment を消すと Pod も消えると分かる', '所有関係が分かる'],
     initial: { cluster: deployed(name, 2) },
     solution: [`kubectl delete deploy ${name}`, 'kubectl wait 10'],

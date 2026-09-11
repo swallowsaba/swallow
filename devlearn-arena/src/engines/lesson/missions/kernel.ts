@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { HOME } from '@/engines/kernel/path';
 import { exists, isDir, list, readFile } from '@/engines/kernel/vfs';
 import type { LessonDefinition } from '../types';
@@ -15,6 +16,17 @@ export const shellWarmup: LessonDefinition = {
   track: 'kernel',
   kind: 'training',
   title: 'シェルに慣れる',
+  intro: {
+    summary: 'ディレクトリを作り、ファイルに書き出し、必要な行だけを取り出す。シェルの基本の一周。',
+    why:
+      'サーバの仕事の多くは「ファイルを読む・書く・絞り込む」でできている。この3つが手に馴染めば、あとは道具が増えていくだけ。',
+    concepts: concepts('シェル', 'ターミナル', 'コマンド', 'ディレクトリ', 'リダイレクト', 'パイプ'),
+    commands: [
+      { command: 'mkdir <名前>', means: 'ディレクトリを作る' },
+      { command: 'cat <ファイル> > <先>', means: 'ファイルの中身を別のファイルに書き出す' },
+      { command: 'grep <文字> <ファイル>', means: 'その文字を含む行だけを出す' },
+    ],
+  },
   objectives: ['ディレクトリを作って移動できる', 'リダイレクトで書き出せる', 'パイプで繋げる'],
   parCommands: 5,
   initial: {},
@@ -96,6 +108,18 @@ export const diskFullBoss: LessonDefinition = {
   track: 'kernel',
   kind: 'boss',
   title: 'ディスク逼迫',
+  intro: {
+    summary: 'ディスクがいっぱいになった。ログを空にし、古いものを片付け、対応の記録を残す。',
+    why:
+      'ディスクが埋まると、アプリは新しいデータを書けずに止まる。夜中でも起きる本物の障害。慌てずに「止める・片付ける・記録する」の順で動けるようにする。',
+    concepts: concepts('ディスク', 'ログ', 'ファイルを掴む', 'リダイレクト'),
+    commands: [
+      { command: 'ls -l', means: 'ファイルの大きさを見る' },
+      { command: '> <ファイル>', means: 'ファイルを残して中身を空にする' },
+      { command: 'rm -r <ディレクトリ>', means: 'ディレクトリを中身ごと消す' },
+      { command: 'echo "…" > <記録>', means: '対応の記録を書く' },
+    ],
+  },
   objectives: ['溢れたログを止める', '不要な世代を消す', '対応記録を残す'],
   parCommands: 8,
   initial: {

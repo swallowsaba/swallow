@@ -1,7 +1,7 @@
 import type { SessionOptions } from '@/engines/kernel/session';
 import type { DocRef } from '@/content/types';
 import type {
-  LessonDefinition, LessonKindMeta, LessonStep, MissionKind, MissionTrack, StepPart,
+  LessonDefinition, LessonIntro, LessonKindMeta, LessonStep, MissionKind, MissionTrack, StepPart,
 } from '../types';
 import type { Check } from './assert';
 import { requireAll, type Condition } from './conditions';
@@ -40,6 +40,8 @@ export interface MissionSpec {
   /** 目次の章 id（例 'k8s/01'）。目次に載せる位置になる */
   chapterId: string;
   title: string;
+  /** 課題の前に読む説明 */
+  intro: LessonIntro;
   kind?: MissionKind;
   /** 目次での見え方 */
   lessonKind?: LessonKindMeta;
@@ -63,6 +65,7 @@ export interface MissionSource {
   track: MissionTrack;
   chapterId: string;
   title: string;
+  intro: LessonIntro;
   kind: MissionKind;
   lessonKind: LessonKindMeta;
   minutes: number;
@@ -114,6 +117,7 @@ export function defineMission(spec: MissionSpec): MissionSource {
       track: spec.track,
       kind,
       title: spec.title,
+      intro: spec.intro,
       objectives: spec.objectives,
       initial: typeof spec.initial === 'function' ? spec.initial() : spec.initial,
       parCommands: spec.parCommands ?? Math.max(3, spec.solution.length),
@@ -130,6 +134,7 @@ export function defineMission(spec: MissionSpec): MissionSource {
     track: spec.track,
     chapterId: spec.chapterId,
     title: spec.title,
+    intro: spec.intro,
     kind,
     lessonKind: spec.lessonKind ?? (kind === 'boss' ? 'boss' : 'drill'),
     minutes: spec.minutes ?? Math.max(4, spec.steps.length * 3),

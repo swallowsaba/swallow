@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { commandsOf } from '../authoring/ran';
 import { fileEquals } from '../authoring/assert';
 import type { AssertContext } from '../types';
@@ -56,6 +57,17 @@ const findDrills = family<Culprit>({
   variants: CULPRITS.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: `CPU を食っているのは誰か（${v.slug}）`,
+    intro: {
+      summary: 'ps や top で、CPU を一番使っているプロセスを見つける。',
+      why:
+        '「サーバが重い」と言われたら、まず誰が力を使っているかを見る。当て推量で再起動する前に、犯人を名指しできるようにする。',
+      concepts: concepts('プロセス', 'PID'),
+      commands: [
+        { command: 'top', means: '動いているプロセスを、使っている量の順に見る' },
+        { command: 'ps aux', means: 'すべてのプロセスを一覧で見る' },
+        { command: 'pgrep <名前>', means: 'その名前のプロセスの PID を出す' },
+      ],
+    },
     objectives: ['一覧を出せる', '多い順に並べられる', 'pid を取り出せる'],
     initial: {
       files: { [HOME]: null },
@@ -116,6 +128,17 @@ const killDrills = family<{ command: string; stubborn: boolean }>({
     const needle = v.command.split(' ')[0] ?? '';
     return {
       title: `${needle} を止める`,
+      intro: {
+        summary: 'シグナルを送ってプロセスを止める。まず穏やかに、だめなら強く。',
+        why:
+          'いきなり強制終了すると、書きかけのデータが壊れることがある。先に「片付けて終わって」と頼むのが作法。',
+        concepts: concepts('プロセス', 'シグナル', 'SIGTERM', 'SIGKILL', 'PID'),
+        commands: [
+          { command: 'pkill <名前>', means: 'その名前のプロセスに SIGTERM を送る' },
+          { command: 'pkill -9 <名前>', means: 'SIGKILL で今すぐ止める（最後の手段）' },
+          { command: 'ps aux', means: '止まったか確かめる' },
+        ],
+      },
       objectives: ['合図を送れる', 'TERM と KILL の違いが分かる', '止まったことを確かめられる'],
       initial: {
         files: { [HOME]: null },
@@ -214,6 +237,16 @@ const heldDrills = family<{ log: string; holder: string }>({
     const needle = v.holder.split(' ')[0] ?? '';
     return {
       title: `${v.log} を消しても容量が戻らない`,
+      intro: {
+        summary: '消したはずのファイルを、まだ誰が掴んでいるかを lsof で調べる。',
+        why:
+          'ログを rm したのにディスクが空かない、という事故はよく起きる。書き込んでいるプロセスがファイルを掴んだままだと、容量は戻らない。',
+        concepts: concepts('ファイルを掴む', 'プロセス', 'ディスク'),
+        commands: [
+          { command: 'lsof <ファイル>', means: 'そのファイルを開いているプロセスを出す' },
+          { command: 'df', means: 'ディスクの空きを見る' },
+        ],
+      },
       objectives: ['掴んでいる相手を特定できる', '掴んだままだと戻らないと分かる', '正しい直し方が言える'],
       initial: {
         files: { [HOME]: null, '/var/log': null, [v.log]: 'x'.repeat(80_000) },
@@ -266,6 +299,15 @@ const signalDrills = family<{ name: string; number: string; what: string }>({
   variants: SIGNALS,
   make: (v) => ({
     title: `${v.name} は何番か`,
+    intro: {
+      summary: 'シグナルの名前と番号の対応を調べる。',
+      why:
+        'kill -9 や kill -15 のように、シグナルは番号で指すことが多い。番号の意味を知らずに打つと、思わぬ止め方をしてしまう。',
+      concepts: concepts('シグナル', 'SIGTERM', 'SIGKILL'),
+      commands: [
+        { command: 'kill -l', means: 'シグナルの名前と番号の一覧を出す' },
+      ],
+    },
     objectives: ['名前と番号が対応付けられる', 'それぞれの意味が言える'],
     initial: { files: { [HOME]: null }, cwd: HOME },
     solution: [`echo "${v.number}" > number.txt`, `echo "${v.what}" > meaning.txt`],

@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { emptyTopology } from '@/engines/net/build';
 import { parseCidr } from '@/engines/net/subnet';
 import {
@@ -37,6 +38,19 @@ const pairDrills = family<PairSpec>({
   variants: PAIRS.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: `pc1 と pc2 を ${v.a}/${v.cidr} の網で繋ぐ`,
+    intro: {
+      summary: '2台のパソコンに IP アドレスを付けて、ケーブルでつなぎ、ping で届くか確かめる。',
+      why:
+        'ネットワークは「線でつなぐ」「住所を決める」の2つが揃って初めて通じる。何も無いところから組み立てると、どちらが欠けても届かないことが分かる。',
+      concepts: concepts('ネットワーク', 'IP アドレス', 'サブネット', 'CIDR', 'ping'),
+      commands: [
+        { command: 'netlab add host <名前>', means: 'パソコンを1台置く' },
+        { command: 'netlab link pc1:eth0 pc2:eth0', means: '2台の差し込み口をケーブルでつなぐ' },
+        { command: 'ip addr add <アドレス>/<長さ> dev eth0', means: '差し込み口に住所を付ける' },
+        { command: 'export NET_SELF=<名前>', means: 'どのパソコンの上で打つかを切り替える' },
+        { command: 'ping <アドレス>', means: '届くか確かめる' },
+      ],
+    },
     objectives: ['機器を用意できる', 'ケーブルを繋げる', 'アドレスを付けられる', '届くことを確かめられる'],
     initial: { net: emptyTopology(), vars: { NET_SELF: 'pc1' }, files: { [HOME]: null } },
     solution: [
@@ -127,6 +141,15 @@ const cidrDrills = family<string>({
     const c = parseCidr(cidr);
     return {
       title: `${cidr} の範囲を求める`,
+      intro: {
+        summary: 'CIDR の書き方から、住所のまとまりの最初と最後、使える台数を計算する。',
+        why:
+          'ネットワークを分けるときも、つながらない原因を探すときも、「この住所はどのまとまりか」を計算できないと始まらない。',
+        concepts: concepts('CIDR', 'プレフィックス長', 'ネットワークアドレス', 'ブロードキャストアドレス', 'サブネット'),
+        commands: [
+          { command: 'ipcalc <アドレス>/<長さ>', means: 'まとまりの範囲と台数を計算して出す' },
+        ],
+      },
       objectives: ['ネットワークアドレスが出せる', 'ブロードキャストが出せる', '使える数が出せる'],
       initial: { net: emptyTopology(), files: { [HOME]: null }, cwd: HOME },
       solution: [
@@ -206,6 +229,18 @@ const routeDrills = family<RouteSpec>({
     const prefix = v.left.split('/')[1] ?? '24';
     return {
       title: `${v.left} と ${v.right} をルータで繋ぐ`,
+      intro: {
+        summary: '別々のサブネットを、ルータでつなぐ。',
+        why:
+          '同じまとまりの中なら直接届くが、別のまとまりへはルータが中継しないと届かない。「どこを通って届けるか」を決めるのが経路。',
+        concepts: concepts('ルータ', 'サブネット', 'デフォルトゲートウェイ', '経路表'),
+        commands: [
+          { command: 'netlab add router <名前>', means: 'ルータを1台置く' },
+          { command: 'ip route add default via <ルータの住所>', means: '知らない宛先はルータへ渡す、と決める' },
+          { command: 'ip route', means: '経路表を見る' },
+          { command: 'traceroute <宛先>', means: '途中で通るルータを順に見る' },
+        ],
+      },
       objectives: ['網をまたぐには経路が要ると分かる', '既定経路を置ける', '経路を消すと届かなくなると分かる'],
       initial: { net: emptyTopology(), vars: { NET_SELF: 'pc1' }, files: { [HOME]: null } },
       solution: [
@@ -304,6 +339,17 @@ const firewallDrills = family<{ port: number; what: string }>({
   variants: PORT_VARIANTS,
   make: (v) => ({
     title: `${v.what}（${String(v.port)} 番）だけを通す`,
+    intro: {
+      summary: '窓口を開けることと、門で止めることの違いを、ファイアウォールで確かめる。',
+      why:
+        '全部を開けておくと、使っていない窓口から入られる。必要なものだけ開けるのが守りの基本。',
+      concepts: concepts('ファイアウォール', 'ポート', 'TCP'),
+      commands: [
+        { command: 'service listen <ポート>', means: 'そのポートで待ち受ける（窓口を開ける）' },
+        { command: 'service block <ポート>', means: 'そのポートへの通信を門で止める' },
+        { command: 'curl http://<宛先>:<ポート>/', means: '通るかどうか確かめる' },
+      ],
+    },
     objectives: ['待ち受けと遮断の違いが分かる', '塞いだ結果を確かめられる'],
     initial: { net: emptyTopology(), vars: { NET_SELF: 'pc1' }, files: { [HOME]: null } },
     solution: [
@@ -376,6 +422,19 @@ const triageDrills = family<{ kind: 'cable' | 'address' | 'route' }>({
   variants: BREAKS,
   make: (v) => ({
     title: `届かない原因を突き止める（${v.kind}）`,
+    intro: {
+      summary: '届かない原因を、線・住所・経路・窓口の順に切り分ける。',
+      why:
+        '「つながらない」の原因は1つではない。下の段から順に確かめていけば、闇雲にいじらずに原因にたどり着ける。',
+      concepts: concepts('層', 'IP アドレス', '経路表', 'ポート', 'ping'),
+      commands: [
+        { command: 'ip link', means: '線がつながっているか見る' },
+        { command: 'ip link set eth0 up', means: '切れている差し込み口をつなぎ直す' },
+        { command: 'ip addr', means: '住所が付いているか見る' },
+        { command: 'ip route', means: '経路があるか見る' },
+        { command: 'ping <宛先>', means: '届くか確かめる' },
+      ],
+    },
     objectives: ['自分で壊せる', '症状から原因を絞れる', '直したことを確かめられる'],
     initial: { net: emptyTopology(), vars: { NET_SELF: 'pc1' }, files: { [HOME]: null } },
     solution: [

@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { container, deployment, emptyCluster, node, service } from '@/engines/k8s/factory';
 import { isReady } from '@/engines/k8s/kubelet';
 import { key, type ClusterState } from '@/engines/k8s/types';
@@ -90,6 +91,17 @@ export const k8sCrashLoop: LessonDefinition = {
   track: 'k8s',
   kind: 'boss',
   title: '再起動を繰り返して止まらない',
+  intro: {
+    summary: '起動してはすぐ落ちる Pod の原因をログで確かめ、動くイメージに差し替える。',
+    why:
+      'CrashLoopBackOff は「何度起こしても落ちる」という知らせ。Kubernetes は起こし続けてくれるが、原因を直すのは人の仕事。原因はたいていログにある。',
+    concepts: concepts('CrashLoopBackOff', 'Pod', 'コンテナ', 'イメージ', 'ログ', 'Kubernetes'),
+    commands: [
+      { command: 'kubectl get pods', means: '再起動の回数（RESTARTS）を見る' },
+      { command: 'kubectl logs deploy/<名前>', means: '落ちる直前のログを見る' },
+      { command: 'kubectl set image deployment <名前> <コンテナ>=<イメージ>', means: '動くイメージに差し替える' },
+    ],
+  },
   objectives: ['CrashLoopBackOff の意味が分かる', 'ログとイベントから原因を追える', 'probe の効き方が分かる'],
   parCommands: 14,
   initial: {
@@ -161,6 +173,16 @@ export const k8sRbacDenied: LessonDefinition = {
   track: 'k8s',
   kind: 'boss',
   title: '権限が足りなくて叩けない',
+  intro: {
+    summary: '権限が足りずに叩けないプログラム用アカウントに、必要な分だけ許可を足す。',
+    why:
+      '何でもできる権限を渡すと、そのプログラムが乗っ取られたときに全部やられる。必要な操作だけを許すのが基本。',
+    concepts: concepts('RBAC', 'ServiceAccount', 'Role', 'RoleBinding', '権限'),
+    commands: [
+      { command: 'kubectl auth can-i <操作> <種類> --as=<誰>', means: 'その人がその操作をしてよいか確かめる' },
+      { command: 'kubectl apply -f rbac.yaml', means: 'Role と RoleBinding を作る' },
+    ],
+  },
   objectives: ['Role と RoleBinding の関係が分かる', 'can-i で確かめられる', '最小権限で足せる'],
   parCommands: 12,
   initial: { cluster: cluster(), files: { ...FILES } },
@@ -245,6 +267,17 @@ export const k8sHpa: LessonDefinition = {
   track: 'k8s',
   kind: 'training',
   title: '負荷に合わせて台数を変える',
+  intro: {
+    summary: '負荷に合わせて Pod の数が自動で増えるようにし、上限で止まることを確かめる。',
+    why:
+      'お客さんの数は時間で変わる。いつも最大の数で動かすと無駄、少なすぎると落ちる。負荷を見て自動で合わせる係に任せる。',
+    concepts: concepts('HPA', 'Deployment', 'レプリカ', 'Pod'),
+    commands: [
+      { command: 'kubectl apply -f hpa.yaml', means: '自動で数を変える係を作る' },
+      { command: 'kubectl load web <割合>', means: '負荷をかける（学習用）' },
+      { command: 'kubectl wait <秒>', means: '時間を進める' },
+    ],
+  },
   objectives: ['HPA が何を見ているか分かる', '上限と下限の意味が分かる', '増減が自動で起きると分かる'],
   parCommands: 12,
   initial: {
@@ -303,6 +336,17 @@ export const k8sDrain: LessonDefinition = {
   track: 'k8s',
   kind: 'training',
   title: 'ノードを安全に空ける',
+  intro: {
+    summary: 'ノードを drain して空け、Pod が別のノードで作り直されるのを確かめる。',
+    why:
+      'ノードの修理や入れ替えは必ずある。いきなり止めずに、中の Pod を先に逃がせば、アプリを止めずに作業できる。',
+    concepts: concepts('drain', 'cordon', 'ノード', 'Pod', 'Deployment'),
+    commands: [
+      { command: 'kubectl get pods -o wide', means: 'どの Pod がどのノードにいるか見る' },
+      { command: 'kubectl drain <ノード>', means: 'ノードを空ける' },
+      { command: 'kubectl wait <秒>', means: '時間を進める' },
+    ],
+  },
   objectives: ['cordon と drain の違いが分かる', '所有者のある Pod が作り直されると分かる', '無停止で入れ替えられる'],
   parCommands: 10,
   initial: {
@@ -359,6 +403,16 @@ export const k8sNoLimits: LessonDefinition = {
   track: 'k8s',
   kind: 'training',
   title: 'limits を書かないと何が起きるか',
+  intro: {
+    summary: '上限（limits）の無い Pod に、上限を書き足す。',
+    why:
+      '上限の無い Pod が暴れると、同じノードの他の Pod まで巻き込まれる。「最低これだけ」と「最大これだけ」の両方を書いておく。',
+    concepts: concepts('limits', 'requests', 'Deployment', 'マニフェスト', 'Pod', 'ノード'),
+    commands: [
+      { command: 'kubectl get deploy <名前> -o yaml', means: '今の設定を YAML で見る' },
+      { command: 'kubectl apply -f fix.yaml', means: '上限を書いたマニフェストを渡す' },
+    ],
+  },
   objectives: ['requests と limits の役割の違いが分かる', '設定してあるかを機械的に確かめられる'],
   parCommands: 10,
   initial: {

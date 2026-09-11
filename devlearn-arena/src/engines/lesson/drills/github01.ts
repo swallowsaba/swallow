@@ -1,3 +1,4 @@
+import { concepts } from '../glossary';
 import { createRepo } from '@/engines/github/pr';
 import type { Repo } from '@/engines/github/types';
 import type { AssertContext } from '../types';
@@ -65,6 +66,16 @@ const issueDrills = family<IssueSpec>({
   variants: ISSUES.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: `「${v.title}」を Issue として立てる`,
+    intro: {
+      summary: 'やること・困っていることを Issue として立て、ラベルで分類する。',
+      why:
+        '口頭や個人のメモで管理すると、誰が何をしているか分からなくなる。Issue に書けば、みんなが同じ一覧を見られる。',
+      concepts: concepts('GitHub', 'Issue', 'ラベル'),
+      commands: [
+        { command: 'gh issue create -t "題名" -l <ラベル>', means: 'ラベル付きで Issue を立てる' },
+        { command: 'gh issue list', means: '一覧を見る' },
+      ],
+    },
     objectives: ['課題を起票できる', 'ラベルで分類できる', '片付いたら閉じられる'],
     initial: { repo: createRepo('acme', 'app'), files: { [HOME]: null }, cwd: HOME },
     solution: [
@@ -150,6 +161,17 @@ const prDrills = family<PrSpec>({
   variants: PRS.map((value) => ({ slug: value.slug, value })),
   make: (v) => ({
     title: `${v.branch} から Pull Request を出す`,
+    intro: {
+      summary: 'ブランチの変更を、Pull Request として提案する。',
+      why:
+        '勝手に main を書き換えると、誰も確かめていない変更が本体に入る。Pull Request で見せて、確かめてもらってから取り込む。',
+      concepts: concepts('Pull Request', 'ブランチ', 'レビュー', 'マージ'),
+      commands: [
+        { command: 'gh pr create -t "題名" -b <ブランチ>', means: 'そのブランチから Pull Request を作る' },
+        { command: 'gh pr view <番号>', means: '状態と、取り込むのに足りないものを見る' },
+        { command: 'gh pr merge <番号>', means: '取り込む' },
+      ],
+    },
     objectives: ['PR を作れる', 'レビューを受けられる', 'マージできる'],
     initial: { repo: createRepo('acme', 'app'), files: { [HOME]: null }, cwd: HOME },
     solution: [
@@ -230,6 +252,15 @@ const protectDrills = family<{ branch: string; approvals: number; check: string 
   variants: PROTECTS,
   make: (v) => ({
     title: `${v.branch} を守る（承認 ${String(v.approvals)} 件・${v.check} 必須）`,
+    intro: {
+      summary: 'main にブランチ保護を掛け、承認とチェックが揃うまで取り込めないようにする。',
+      why:
+        '「気を付けて取り込む」は、忙しいと必ず破られる。条件を仕組みにしておけば、うっかりでは壊せなくなる。',
+      concepts: concepts('ブランチ保護', '承認', 'チェック', 'CI', 'ブランチ'),
+      commands: [
+        { command: 'gh protect <ブランチ> --approvals=1 --checks=<名前>', means: '承認1件と、その検査の成功を必須にする' },
+      ],
+    },
     objectives: ['保護ルールを置ける', '条件を満たさないとマージできないと分かる'],
     initial: { repo: createRepo('acme', 'app'), files: { [HOME]: null }, cwd: HOME },
     solution: [
@@ -312,6 +343,17 @@ const flowDrills = family<FlowSpec>({
     const yaml = workflowYaml(v.job, v.step);
     return {
       title: `${v.job} を走らせるワークフローを書く`,
+      intro: {
+        summary: 'CI のワークフローを YAML で書き、ジョブを走らせる。',
+        why:
+          'テストを手で走らせるのは忘れる。変更を送るたびに自動で走るようにしておけば、壊れた変更にすぐ気付ける。',
+        concepts: concepts('CI', 'ワークフロー', 'ジョブ', 'YAML', 'ヒアドキュメント', 'Pull Request'),
+        commands: [
+          { command: 'cat > .github/workflows/ci.yml <<EOF', means: 'ワークフローを書く' },
+          { command: 'gh pr create -t "題名" -b <ブランチ>', means: 'Pull Request を作る' },
+          { command: 'gh pr checks 1', means: 'CI を走らせて結果を見る' },
+        ],
+      },
       objectives: ['ワークフローを自分で書ける', '走らせて結果を読める'],
       initial: {
         repo: createRepo('acme', 'app'),
@@ -401,6 +443,16 @@ const secretDrills = family<{ name: string; value: string }>({
   variants: SECRETS,
   make: (v) => ({
     title: `${v.name} を秘密として登録する`,
+    intro: {
+      summary: 'パスワードや鍵をシークレットとして登録し、ワークフローから使う。',
+      why:
+        '鍵をファイルに書いてリポジトリに入れると、見られる人全員に漏れる。シークレットに入れれば、使えるが見えない。',
+      concepts: concepts('シークレット', 'ワークフロー', 'リポジトリ'),
+      commands: [
+        { command: 'gh secret set <名前> --body=<値>', means: 'シークレットを登録する' },
+        { command: 'gh secret list', means: '登録された名前の一覧（値は出ない）' },
+      ],
+    },
     objectives: ['秘密を置ける', 'ログに出ないことを確かめられる'],
     initial: { repo: createRepo('acme', 'app'), files: { [HOME]: null }, cwd: HOME },
     solution: [`gh secret set ${v.name} --body=${v.value}`],

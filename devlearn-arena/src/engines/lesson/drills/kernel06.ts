@@ -1,3 +1,5 @@
+import type { LessonIntro } from '../types';
+import { concepts } from '../glossary';
 import { fileEquals, ranMatching } from '../authoring/assert';
 import type { AssertContext } from '../types';
 import type { MissionSource } from '../authoring/mission';
@@ -41,6 +43,16 @@ const readingDrills = family<{ octal: string; answer: string }>({
   variants: READINGS,
   make: (spec) => ({
     title: `${spec.octal} は rwx でどう書くか`,
+    intro: {
+      summary: '755 のような数字の権限を、rwx の並びに読み替える。',
+      why:
+        'ls -l には rwxr-xr-x のような並びが出る。数字と並びを行き来できれば、「誰が何をできるか」が一目で分かる。',
+      concepts: concepts('権限', '所有者'),
+      commands: [
+        { command: 'ls -l', means: '権限・持ち主・大きさを一覧で見る' },
+        { command: 'stat <ファイル>', means: '権限を数字でも見る' },
+      ],
+    },
     objectives: ['8 進数と記号を行き来できる', '実際の表示で確かめられる'],
     initial: {
       files: { [HOME]: null, [`${HOME}/target.txt`]: 'x\n' },
@@ -101,6 +113,16 @@ const symbolicDrills = family<{ from: string; spec: string; to: string }>({
   variants: SYMBOLIC,
   make: (v) => ({
     title: `${v.from} に ${v.spec} を当てると何になるか`,
+    intro: {
+      summary: 'chmod u+x のような書き方で、権限の一部だけを足したり外したりする。',
+      why:
+        '権限を全部数字で書き直すと、関係ないところまで変えてしまうことがある。「持ち主に実行を足す」のように差分だけ書けば安全。',
+      concepts: concepts('権限', '所有者'),
+      commands: [
+        { command: 'chmod u+x <ファイル>', means: '持ち主（u）に実行（x）を足す' },
+        { command: 'chmod go-w <ファイル>', means: 'グループ（g）とその他（o）から書き込み（w）を外す' },
+      ],
+    },
     objectives: ['記号での指定が読める', '結果を予想して確かめられる'],
     initial: {
       files: { [HOME]: null, [`${HOME}/target.txt`]: 'x\n' },
@@ -143,6 +165,18 @@ const BROKEN: { slug: string; value: BrokenSpec }[] = FILE_STEMS.map((stem, i) =
     : { slug: `${stem}-dir`, value: { kind: 'dir', name: stem } satisfies BrokenSpec },
 );
 
+const DENIED_INTRO: LessonIntro = {
+  summary: '「Permission denied（許可がありません）」の理由を読み、必要な権限だけを足す。',
+  why:
+    '権限の失敗は毎日のように出会う。何でも 777 にして通すと、誰でも書き換えられる穴になる。足りない1つだけを足すのが正しい直し方。',
+  concepts: concepts('権限', '所有者', 'ディレクトリ'),
+  commands: [
+    { command: 'ls -l', means: '今の権限を確かめる' },
+    { command: 'chmod u+r <ファイル>', means: '持ち主に読む権限を足す' },
+    { command: 'chmod u+x <ディレクトリ>', means: 'ディレクトリに入る権限を足す' },
+  ],
+};
+
 const fixDrills = family<{ kind: 'file' | 'dir'; name: string }>({
   track: 'kernel',
   chapterId: CH,
@@ -153,6 +187,7 @@ const fixDrills = family<{ kind: 'file' | 'dir'; name: string }>({
     if (v.kind === 'file') {
       return {
         title: `${v.name} が読めない`,
+        intro: DENIED_INTRO,
         objectives: ['断られた理由を権限から説明できる', '最小限だけ開ける'],
         initial: {
           files: { [HOME]: null, [`${HOME}/${v.name}`]: 'the answer is 42\n' },
@@ -188,6 +223,7 @@ const fixDrills = family<{ kind: 'file' | 'dir'; name: string }>({
     }
     return {
       title: `${v.name}/ に入れない`,
+      intro: DENIED_INTRO,
       objectives: ['ディレクトリの x が何を許すか分かる', '読みと実行の違いが説明できる'],
       initial: {
         files: {
@@ -243,6 +279,16 @@ const ownerDrills = family<string>({
   variants: OWNERS,
   make: (name) => ({
     title: `${name} を root のものにする`,
+    intro: {
+      summary: 'sudo と chown で、ファイルの持ち主を root に変える。',
+      why:
+        'システムの設定ファイルは、管理者だけが書き換えられるようにしておく。持ち主を変えるのは管理者にしかできないので、sudo が要る。',
+      concepts: concepts('所有者', 'root', 'sudo'),
+      commands: [
+        { command: 'sudo chown root:root <ファイル>', means: '持ち主とグループを root にする' },
+        { command: 'stat <ファイル>', means: '持ち主が変わったか確かめる' },
+      ],
+    },
     objectives: ['所有者を変えられるのは root だけ', 'sudo が何をしているか分かる'],
     initial: {
       files: { [HOME]: null, [`${HOME}/${name}`]: 'setting\n' },
@@ -304,6 +350,18 @@ const umaskDrills = family<{ mask: string; file: string; dir: string }>({
   variants: UMASKS,
   make: (v) => ({
     title: `umask ${v.mask} の下で作るとどうなるか`,
+    intro: {
+      summary: 'umask の値から、新しく作るファイルの権限を予想して確かめる。',
+      why:
+        '作ったファイルが他の人から読めてしまう、逆に仲間が読めない。どちらも umask の決まりで起きる。仕組みが分かれば予想できる。',
+      concepts: concepts('umask', '権限'),
+      commands: [
+        { command: 'umask', means: '今の決まりを表示する' },
+        { command: 'umask 027', means: '決まりを変える' },
+        { command: 'touch <ファイル>', means: '空のファイルを作る' },
+        { command: 'ls -l', means: 'できたファイルの権限を見る' },
+      ],
+    },
     objectives: ['umask が新しいものに効くと分かる', '既にあるものには効かないと分かる'],
     initial: {
       files: { [HOME]: null, [`${HOME}/before.txt`]: 'old\n' },
