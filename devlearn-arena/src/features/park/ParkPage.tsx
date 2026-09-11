@@ -124,6 +124,10 @@ function Park({
         stepIndex: () => helpRef.current.stepIndex,
         revealed: () => revealedCount(revealRef.current, helpRef.current.key),
         onHint: revealHint,
+        // 模範解答を見たのも、ヒントを1件使ったのと同じに数える
+        onAnswer: () => {
+          setProgress(useHint);
+        },
       }),
     );
     return { ...base, registry };
