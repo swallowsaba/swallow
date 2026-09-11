@@ -232,3 +232,19 @@ describe('クラスタの図が動きを見せる', () => {
     expect(view.querySelector('[data-rolling="web"]')).not.toBeNull();
   });
 });
+
+describe('3面のファイル札を押すと、add / restore --staged が端末に流れる', () => {
+  it('作業ツリーの札は git add、インデックスの札は git restore --staged', () => {
+    let session = createSession({ files: { '/home/learner': null, '/home/learner/a.txt': 'A\n', '/home/learner/src': null, '/home/learner/src/b.txt': 'B\n' } });
+    for (const line of ['git init', 'git add a.txt']) {
+      session = { ...session, state: execute(session.state, line, session.registry, session.clock).state };
+    }
+    const onCommand = vi.fn();
+    const state = session.state;
+    const view = mount(<CommitGraph git={state.git} vfs={state.vfs} cwd="/home/learner/src" onCommand={onCommand} />);
+    click(view, 'button[title="git restore --staged ../a.txt"]');
+    expect(onCommand).toHaveBeenLastCalledWith('git restore --staged ../a.txt');
+    click(view, 'button[title="git add b.txt"]');
+    expect(onCommand).toHaveBeenLastCalledWith('git add b.txt');
+  });
+});

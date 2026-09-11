@@ -2,6 +2,7 @@ import { LayoutGroup, motion } from 'framer-motion';
 import { useMemo } from 'react';
 import { currentBranch, headCommit } from '@/engines/git/repository';
 import type { GitState } from '@/engines/git/types';
+import { relative } from '@/engines/kernel/path';
 import type { VfsState } from '@/engines/kernel/vfs';
 import { useMotionEnabled } from '@/ui/motion';
 import { useT } from '@/i18n/useT';
@@ -16,6 +17,8 @@ interface Props {
   previous?: GitState | null;
   /** 作業ツリーを読むために使う。無ければ3面の欄は出さない */
   vfs?: VfsState;
+  /** いまいるディレクトリ。札から打つコマンドのパスを、ここからの相対にする */
+  cwd?: string;
   /** 図の操作をコマンドとして端末に流す。無ければ見るだけの図になる */
   onCommand?: RunCommand;
 }
@@ -35,23 +38,38 @@ const LANES: readonly { lane: Lane; term: string; lead: string }[] = [
 
 const NOTE: Record<FileSpot['note'], string> = { new: '新', modified: '変', deleted: '消', clean: '✓' };
 
-/** ファイルの札。同じ layoutId の札が別の面に出ると、そこへ滑っていく */
-function FileChip({ spot, animate }: { spot: FileSpot; animate: boolean }) {
+/**
+ * ファイルの札。同じ layoutId の札が別の面に出ると、そこへ滑っていく。
+ * 押すと、作業ツリーの札は git add、インデックスの札は git restore --staged を打つ。
+ */
+function FileChip({ spot, animate, command, onCommand }: { spot: FileSpot; animate: boolean; command: string | null; onCommand?: RunCommand }) {
+  const detail = `${spot.path} (${spot.note}${spot.alsoChanged ? ', 作業ツリーでさらに変更あり' : ''})`;
   return (
     <motion.li
       layoutId={animate ? `file-${spot.path}` : undefined}
       layout={animate}
       transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-      className={`flex items-center gap-1 border-2 px-1.5 py-0.5 font-mono text-xs ${
+      data-file={spot.path}
+      className={`border-2 font-mono text-xs ${
         spot.lane === 'head' ? 'border-wood-dark bg-cream' : 'border-wood-dark bg-gold'
       }`}
-      title={`${spot.path} (${spot.note}${spot.alsoChanged ? ', 作業ツリーでさらに変更あり' : ''})`}
     >
-      <span aria-hidden className="font-extrabold">
-        {NOTE[spot.note]}
-      </span>
-      <span className="max-w-[9rem] truncate">{spot.path}</span>
-      {spot.alsoChanged ? <span aria-hidden>✎</span> : null}
+      <button
+        type="button"
+        disabled={!onCommand || command === null}
+        title={command ?? detail}
+        aria-label={command ?? detail}
+        className="flex w-full items-center gap-1 px-1.5 py-0.5 text-left disabled:cursor-default"
+        onClick={() => {
+          if (command !== null) onCommand?.(command);
+        }}
+      >
+        <span aria-hidden className="font-extrabold">
+          {NOTE[spot.note]}
+        </span>
+        <span className="max-w-[9rem] truncate">{spot.path}</span>
+        {spot.alsoChanged ? <span aria-hidden>✎</span> : null}
+      </button>
     </motion.li>
   );
 }
@@ -63,7 +81,7 @@ function FileChip({ spot, animate }: { spot: FileSpot; animate: boolean }) {
  * HEAD とブランチ名は札として付き、切り替えたりコミットしたりすると札が移動する。
  * rebase のあとは、元のコミットを薄く残し、新しい親にぶら下がった複製が1つずつ現れる。
  */
-export function CommitGraph({ git, previous, vfs, onCommand }: Props) {
+export function CommitGraph({ git, previous, vfs, cwd, onCommand }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
   const changes = useMemo(() => gitChanges(previous, git), [previous, git]);
@@ -91,6 +109,13 @@ export function CommitGraph({ git, previous, vfs, onCommand }: Props) {
     branchesAt.set(hash, [...(branchesAt.get(hash) ?? []), ref.slice('refs/heads/'.length)]);
   }
   const branchNames = [...branchesAt.values()].flat();
+  const argFor = (path: string) => (cwd === undefined ? path : relative(cwd, `${git.root}/${path}`));
+  const chipCommand = (spot: FileSpot): string | null =>
+    spot.lane === 'worktree'
+      ? gitCommands.stage(argFor(spot.path))
+      : spot.lane === 'index'
+        ? gitCommands.unstage(argFor(spot.path))
+        : null;
   const byHash = new Map(placed.commits.map((c) => [c.hash, c]));
   const x = (col: number) => COL / 2 + col * COL;
   const y = (row: number) => TOP + row * ROW;
@@ -135,7 +160,13 @@ export function CommitGraph({ git, previous, vfs, onCommand }: Props) {
                   {spots
                     .filter((s) => s.lane === lane)
                     .map((spot) => (
-                      <FileChip key={spot.path} spot={spot} animate={animate} />
+                      <FileChip
+                        key={spot.path}
+                        spot={spot}
+                        animate={animate}
+                        command={chipCommand(spot)}
+                        onCommand={onCommand}
+                      />
                     ))}
                 </ul>
                 <p className="border-t-2 border-[var(--cream-dark)] px-2 py-0.5 text-center font-mono text-[11px] text-ink-soft">

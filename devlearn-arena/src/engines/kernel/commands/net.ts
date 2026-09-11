@@ -206,11 +206,21 @@ export const netCommands: CommandSpec[] = [
       (argv.length <= 2 ? ['addr', 'link', 'route'] : ['add', 'del', 'set', 'show']).filter((s) =>
         s.startsWith(prefix),
       ),
-    handler: ({ argv, shell }) => {
+    handler: ({ argv: raw, shell }) => {
       const net = shell.net;
       if (net === null) return { stderr: NO_NET, code: 1 };
-      const me = net.devices.get(selfName(shell));
-      if (!me) return { stderr: '自分の機器が見つかりません\n', code: 1 };
+      // `ip -n <機器> ...` は、その機器の中で打ったのと同じにする（機器ごとを本物の netns に見立てる）
+      const netns = raw[1] === '-n' || raw[1] === '-netns' ? raw[2] : undefined;
+      if ((raw[1] === '-n' || raw[1] === '-netns') && netns === undefined) {
+        return { stderr: 'Usage: ip -n <netns> OBJECT COMMAND\n', code: 255 };
+      }
+      const argv = netns === undefined ? raw : [raw[0] ?? 'ip', ...raw.slice(3)];
+      const me = net.devices.get(netns ?? selfName(shell));
+      if (!me) {
+        return netns === undefined
+          ? { stderr: '自分の機器が見つかりません\n', code: 1 }
+          : { stderr: `Cannot open network namespace "${netns}": No such file or directory\n`, code: 1 };
+      }
       const what = argv[1] ?? 'addr';
       const verb = argv[2] ?? '';
 

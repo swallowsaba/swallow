@@ -111,15 +111,32 @@ describe('ネットワークの図から打つコマンド', () => {
     expect(sh.run('ping 10.0.0.20').code).toBe(0);
   });
 
-  it('ほかの機器のケーブルは netlab cable で抜き挿しする', () => {
+  it('ほかの機器のリンクは ip -n <機器> link set で切り、同じ操作で繋ぎ直す', () => {
     const sh = make();
     const far = sh.state.net?.links[1];
     if (!far || !sh.state.net) throw new Error('構成がありません');
     const cut = netCommands.toggleLink(sh.state.net, far, 'pc1');
-    expect(cut).toBe('netlab cable down r1:eth1 web:eth0');
+    expect(cut).toBe('ip -n r1 link set eth1 down');
     expect(sh.run(cut).code).toBe(0);
     expect(sh.run('ping 10.0.0.20').code).toBe(1);
     expect(sh.state.net?.trace?.delivered).toBe(false);
+    const net = sh.state.net;
+    if (!net) throw new Error('構成がありません');
+    const mend = netCommands.toggleLink(net, far, 'pc1');
+    expect(mend).toBe('ip -n r1 link set eth1 up');
+    sh.run(mend);
+    expect(sh.run('ping 10.0.0.20').code).toBe(0);
+  });
+
+  it('ケーブルそのものが抜かれていれば、挿し直す', () => {
+    const sh = make();
+    const far = sh.state.net?.links[1];
+    if (!far) throw new Error('構成がありません');
+    sh.run(`netlab cable down ${far.a} ${far.b}`);
+    const net = sh.state.net;
+    const cut = net?.links[1];
+    if (!net || !cut) throw new Error('構成がありません');
+    expect(netCommands.toggleLink(net, cut, 'pc1')).toBe('netlab cable up r1:eth1 web:eth0');
   });
 });
 

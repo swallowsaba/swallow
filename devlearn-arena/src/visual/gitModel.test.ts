@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSession, type Session } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
+import { gitCommands } from './commands';
 import { fileSpots, gitChanges, NO_CHANGES, placeCommits } from './gitModel';
 
 function start() {
@@ -142,5 +143,15 @@ describe('直前から何が変わったか', () => {
     expect(byHash.get(oldF2)?.ghost).toBe(true);
     expect(byHash.get(sh.hash('HEAD'))?.ghost).toBe(false);
     expect(byHash.get(sh.hash('HEAD~1'))?.parents).toEqual([sh.hash('main')]);
+  });
+});
+
+describe('札から打つコマンドは、そのまま打てば札が動く', () => {
+  it('git add で真ん中へ、git restore --staged で左へ戻る', () => {
+    const sh = start().run('git init');
+    sh.run(gitCommands.stage('a.txt'));
+    expect(sh.spot('a.txt')?.lane).toBe('index');
+    sh.run(gitCommands.unstage('a.txt'));
+    expect(sh.spot('a.txt')?.lane).toBe('worktree');
   });
 });

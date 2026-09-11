@@ -57,3 +57,14 @@ export function displayPath(p: string): string {
   if (p.startsWith(`${HOME}/`)) return `~${p.slice(HOME.length)}`;
   return p;
 }
+
+/** from（ディレクトリ）から見た to の相対パス。どちらも絶対パスで渡す */
+export function relative(from: string, to: string): string {
+  const a = normalize(from).split('/').filter((s) => s !== '');
+  const b = normalize(to).split('/').filter((s) => s !== '');
+  let common = 0;
+  while (common < a.length && common < b.length && a[common] === b[common]) common += 1;
+  const up = a.slice(common).map(() => '..');
+  const rest = [...up, ...b.slice(common)];
+  return rest.length === 0 ? '.' : rest.join('/');
+}

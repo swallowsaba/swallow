@@ -46,6 +46,10 @@ export const gitCommands = {
   show: (hash: string): string => `git show ${hash.slice(0, 7)}`,
   switchTo: (branch: string): string => `git switch ${branch}`,
   branchOut: (existing: readonly string[]): string => `git switch -c ${nextTryBranch(existing)}`,
+  /** 作業ツリーの札 → 次の記録に入れる */
+  stage: (path: string): string => `git add ${quoteArg(path)}`,
+  /** インデックスの札 → 次の記録から外す（作業ツリーの中身はそのまま） */
+  unstage: (path: string): string => `git restore --staged ${quoteArg(path)}`,
 };
 
 /* ---------------- ネットワーク ---------------- */
@@ -74,17 +78,23 @@ export const netCommands = {
   },
   operateOn: (device: string): string => `export NET_SELF=${device}`,
   /**
-   * ケーブルを抜く／挿す。
-   * 自分がいる機器のケーブルなら、本物と同じ `ip link set <if> down|up` で落とす。
-   * ほかの機器のケーブルは、練習場の `netlab cable` で抜き挿しする。
+   * リンクを切る／繋ぐ。本物と同じ `ip link set <口> down|up` を打つ。
+   * 自分がいる機器の口ならそのまま、ほかの機器の口なら `ip -n <機器>` でその機器の中で打つ。
+   * 落ちている口があれば、それを戻す。ケーブルそのものが抜かれていれば、練習場の `netlab cable up` で挿し直す。
    */
   toggleLink: (net: Topology, link: Link, self: string): string => {
-    const mine = ends(link).find((e) => e.device === self);
-    if (mine !== undefined) {
-      const iface = net.devices.get(self)?.interfaces.find((i) => i.name === mine.ifname);
-      return `ip link set ${mine.ifname} ${iface?.up === false ? 'up' : 'down'}`;
-    }
-    return `netlab cable ${link.up ? 'down' : 'up'} ${link.a} ${link.b}`;
+    if (!link.up) return `netlab cable up ${link.a} ${link.b}`;
+    const both = ends(link);
+    const ifaceOf = (e: { device: string; ifname: string }) =>
+      net.devices.get(e.device)?.interfaces.find((i) => i.name === e.ifname);
+    const down = both.find((e) => ifaceOf(e)?.up === false);
+    const target =
+      down ??
+      both.find((e) => e.device === self) ??
+      both.find((e) => net.devices.get(e.device)?.kind !== 'switch') ??
+      both[0] ?? { device: self, ifname: '' };
+    const ip = target.device === self ? 'ip' : `ip -n ${target.device}`;
+    return `${ip} link set ${target.ifname} ${down ? 'up' : 'down'}`;
   },
 };
 

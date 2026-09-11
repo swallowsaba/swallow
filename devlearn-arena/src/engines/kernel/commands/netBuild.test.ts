@@ -67,6 +67,25 @@ describe('何も無いところから同じ網を作る', () => {
     expect(run('ping 10.0.0.2').code).not.toBe(0);
   });
 
+  it('ip -n <機器> で、その機器の口を外から落とし、戻せる', () => {
+    runAll(build);
+    expect(run('ip -n pc2 link set eth0 down').code).toBe(0);
+    expect(run('ping 10.0.0.2').code).not.toBe(0);
+    expect(run('ip -n pc2 link').out).toContain('DOWN');
+    // 自分の機器の口はそのまま
+    expect(run('ip link').out).toContain('UP');
+    expect(run('ip -n pc2 link set eth0 up').code).toBe(0);
+    expect(run('ping 10.0.0.2').code).toBe(0);
+  });
+
+  it('ip -n で無い機器を指すと、本物と同じ言い方で失敗する', () => {
+    runAll(build);
+    const result = run('ip -n nope link set eth0 down');
+    expect(result.code).toBe(1);
+    expect(result.err).toContain('Cannot open network namespace "nope"');
+    expect(run('ip -n').code).toBe(255);
+  });
+
   it('list で構成が読める', () => {
     runAll(build);
     const list = run('netlab list').out;

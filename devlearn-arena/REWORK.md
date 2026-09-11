@@ -61,7 +61,7 @@
   受け取った側は `TerminalHandle.submit(line)` を呼ぶ。**端末に入力された様子が見えること。**
   即時実行ではなく、1文字ずつ打たれるように見せてもよい。
 
-- [ ] 2-2. 最低限これらを操作できるようにする。
+- [x] 2-2. 最低限これらを操作できるようにする。
   - **クラスタ**: Pod をクリック → `kubectl describe pod <名前>` /
     Pod の×→ `kubectl delete pod <名前>` / ノードの⏸→ `kubectl cordon <名前>` /
     Deployment の ± → `kubectl scale deploy <名前> --replicas=N` /

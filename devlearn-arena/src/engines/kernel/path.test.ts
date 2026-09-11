@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { basename, dirname, displayPath, HOME, join, normalize, resolve } from './path';
+import { basename, dirname, displayPath, HOME, join, normalize, relative, resolve } from './path';
 
 describe('normalize', () => {
   it('重複スラッシュと . を畳む', () => {
@@ -53,5 +53,14 @@ describe('displayPath', () => {
     expect(displayPath(HOME)).toBe('~');
     expect(displayPath(`${HOME}/work`)).toBe('~/work');
     expect(displayPath('/etc')).toBe('/etc');
+  });
+});
+
+describe('relative', () => {
+  it('ディレクトリから見た相対パスを返す', () => {
+    expect(relative('/home/learner', '/home/learner/a.txt')).toBe('a.txt');
+    expect(relative('/home/learner/src', '/home/learner/a.txt')).toBe('../a.txt');
+    expect(relative('/home/learner', '/home/learner')).toBe('.');
+    expect(relative('/', '/etc/hosts')).toBe('etc/hosts');
   });
 });
