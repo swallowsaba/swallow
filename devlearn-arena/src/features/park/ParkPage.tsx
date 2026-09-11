@@ -28,7 +28,8 @@ import {
 } from './hints';
 import type { PartState } from './StepChecklist';
 import { evaluateParts } from '@/engines/lesson/authoring/conditions';
-import { VisualPanel, type VisualTab } from './VisualPanel';
+import { VisualPanel } from './VisualPanel';
+import { relevantTabs, tabForTrack, type VisualTab } from './visualTabs';
 
 const STEP_XP = 10;
 
@@ -111,7 +112,9 @@ function Park({
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
-  const [rightTab, setRightTab] = useState<VisualTab>('world');
+  // 開いた瞬間から、その任務の世界が見える図を選んでおく
+  const [rightTab, setRightTab] = useState<VisualTab>(() => tabForTrack(mission.track));
+  const relevant = useMemo(() => relevantTabs(mission.track), [mission.track]);
   const [editing, setEditing] = useState<EditorTarget | null>(null);
 
   const xp = useStore((s) => s.profile.xp);
@@ -492,6 +495,7 @@ function Park({
           session={session}
           tab={rightTab}
           onTab={setRightTab}
+          relevant={relevant}
           previousVfs={previous?.vfs}
         />
       </div>

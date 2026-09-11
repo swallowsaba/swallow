@@ -7,13 +7,18 @@ import { FileWorld } from '@/visual/FileWorld';
 import { PacketFlow } from '@/visual/PacketFlow';
 import { PrTimeline } from '@/visual/PrTimeline';
 import type { VfsState } from '@/engines/kernel/vfs';
+import { VISUAL_TABS, type VisualTab } from './visualTabs';
 
-export type VisualTab = 'world' | 'git' | 'k8s' | 'net' | 'gh';
+export type { VisualTab };
+
+const ICONS: Record<VisualTab, string> = { world: '🗺', git: '⑂', k8s: '☸', net: '🔀', gh: '⑃' };
 
 interface Props {
   session: ShellSession;
   tab: VisualTab;
   onTab: (tab: VisualTab) => void;
+  /** その任務で見る意味のある図。ほかは薄く出す */
+  relevant: ReadonlySet<VisualTab>;
   /** 1つ前の状態。差分を動きとして見せるために使う */
   previousVfs: VfsState | undefined;
 }
@@ -22,68 +27,32 @@ interface Props {
  * 学習画面の右側。いまの状態を図で映す。
  * 図は状態から毎回組み立てる。表示のための値をどこにも溜めない。
  */
-export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, previousVfs }: Props) {
+export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, relevant, previousVfs }: Props) {
   const t = useT();
   const state = session.state;
   const previous = { vfs: previousVfs };
   return (
     <div className="flex min-h-0 min-w-0 flex-col">
       <div role="tablist" aria-label={t('park.viewLabel')} className="plate flex items-center gap-2 px-3 py-1 text-sm font-extrabold">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={rightTab === 'world'}
-          onClick={() => {
-            setRightTab('world');
-          }}
-          className={`px-3 py-1 ${rightTab === 'world' ? 'bg-gold text-ink' : 'text-cream'}`}
-        >
-          <span aria-hidden>🗺</span> {t('park.tab.world')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={rightTab === 'git'}
-          onClick={() => {
-            setRightTab('git');
-          }}
-          className={`px-3 py-1 ${rightTab === 'git' ? 'bg-gold text-ink' : 'text-cream'}`}
-        >
-          <span aria-hidden>⑂</span> {t('park.tab.git')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={rightTab === 'k8s'}
-          onClick={() => {
-            setRightTab('k8s');
-          }}
-          className={`px-3 py-1 ${rightTab === 'k8s' ? 'bg-gold text-ink' : 'text-cream'}`}
-        >
-          <span aria-hidden>☸</span> {t('park.tab.k8s')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={rightTab === 'net'}
-          onClick={() => {
-            setRightTab('net');
-          }}
-          className={`px-3 py-1 ${rightTab === 'net' ? 'bg-gold text-ink' : 'text-cream'}`}
-        >
-          <span aria-hidden>🔀</span> {t('park.tab.net')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={rightTab === 'gh'}
-          onClick={() => {
-            setRightTab('gh');
-          }}
-          className={`px-3 py-1 ${rightTab === 'gh' ? 'bg-gold text-ink' : 'text-cream'}`}
-        >
-          <span aria-hidden>⑃</span> {t('park.tab.gh')}
-        </button>
+        {VISUAL_TABS.map((tab) => {
+          const selected = rightTab === tab;
+          // 関係ない図は薄く出す。押せば見られるが、目は向かない
+          const dim = !selected && !relevant.has(tab);
+          return (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => {
+                setRightTab(tab);
+              }}
+              className={`px-3 py-1 ${selected ? 'bg-gold text-ink' : 'text-cream'} ${dim ? 'opacity-40' : ''}`}
+            >
+              <span aria-hidden>{ICONS[tab]}</span> {t(`park.tab.${tab}`)}
+            </button>
+          );
+        })}
       </div>
       <div
         className="min-h-0 flex-1 overflow-hidden"
