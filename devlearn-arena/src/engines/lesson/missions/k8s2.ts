@@ -246,7 +246,7 @@ export const k8sApply: LessonDefinition = {
   id: 'k8s/03/apply-vs-create',
   track: 'k8s',
   kind: 'training',
-  title: 'マニフェストから宣言的に作る',
+  title: '完成図（マニフェスト）を書いて渡して作る',
   intro: {
     summary: 'マニフェストを書いて apply し、同じものを2回渡しても壊れないことを確かめる。',
     why:
@@ -484,7 +484,7 @@ export const k8sPvcPending: LessonDefinition = {
   initial: { cluster: cluster(), files: { ...FILES } },
   steps: [
     {
-      prompt: '動的provisioning に対応しない StorageClass（dynamic: false）と、5Gi を要求する PVC を作れ。',
+      prompt: '自動で保存場所を用意しない（動的プロビジョニングに対応しない）StorageClass（dynamic: false）と、5Gi を要求する PVC を作れ。',
       check: 'PVC があり、Pending のままであること',
       hints: [
         MANIFEST_HINT,
@@ -578,7 +578,7 @@ export const k8sUnschedulable: LessonDefinition = {
       hints: ['kubectl describe pod <名前>'],
       solution: ['kubectl describe pod plain'],
       assert: ({ history }) => ran(history, 'kubectl', 'describe', POD),
-      explain: 'untolerated taint という理由がイベントに出る。容量不足とは別の理由であることが読み取れる。',
+      explain: 'untolerated taint（「来ないで」の札に対する許可証を持っていない）という理由がイベントに出る。容量不足とは別の理由であることが読み取れる。',
     },
     {
       prompt: 'toleration を付けた Pod を作り、Ready にせよ。',

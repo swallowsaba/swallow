@@ -161,7 +161,7 @@ const typeDrills = family<{ name: string; type: 'NodePort' | 'LoadBalancer' }>({
           `kubectl create service ${v.type.toLowerCase()} ${v.name}`,
         ],
         explain:
-          'ClusterIP はクラスタの中だけ、NodePort は各ノードの決まった口、LoadBalancer はその外側に払い出しを頼む。どれも土台は ClusterIP。',
+          'ClusterIP はクラスタの中だけ、NodePort は各ノードの決まった口、LoadBalancer はさらにその外に、専用の入り口を用意してもらう。どれも土台は ClusterIP。',
       },
     ],
   }),

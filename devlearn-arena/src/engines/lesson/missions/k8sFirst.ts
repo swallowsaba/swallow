@@ -304,7 +304,7 @@ export const k8sFirstYaml: LessonDefinition = {
         return '渡せました。kubectl wait で時間を進めると Pod が増えます。';
       },
       explain:
-        'kubectl scale と同じ結果になったが、やり方が違う。今回は「3 つあってほしい」という完成図を渡しただけ。どう増やすかは Kubernetes が決めた。こうして完成図を渡すやり方を「宣言的」と呼ぶ。',
+        'kubectl scale と同じ結果になったが、やり方が違う。今回は「3 つあってほしい」という完成図を渡しただけ。どう増やすかは Kubernetes が決めた。こうして完成図を渡すやり方を、宣言的（どうやるかではなく、どうなっていてほしいかを書くやり方）と呼ぶ。',
     },
     {
       prompt: 'Deployment web を消してから web.yaml を apply し、同じものが作り直されることを確かめよ。',

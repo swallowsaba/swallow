@@ -438,7 +438,7 @@ const firstAppDrills = family<{ name: string; image: string; replicas: number }>
             '作った直後は Pending。kubectl wait で時間を進める',
           ],
           explain:
-            'コントローラは「あるべき数」と「いまの数」の差を毎 tick 埋めにいく。作った瞬間に立ち上がるのではなく、収束していく。',
+            'コントローラは「あるべき数」と「いまの数」の差を、時間が進むたびに埋めにいく。作った瞬間に全部立ち上がるのではなく、少しずつ「あるべき数」に近づいていく。',
         },
       ],
     };

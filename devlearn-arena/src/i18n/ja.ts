@@ -210,7 +210,7 @@ export const ja = {
 
   'viz.noCluster': 'クラスタがありません',
   'viz.noClusterLead': 'Kubernetes の任務を選ぶと、ここにノードと Pod が並びます。',
-  'viz.clusterSummary': 'tick {tick} / ノード {nodes} / Pod {pods}',
+  'viz.clusterSummary': '経過 {tick} 秒 / ノード {nodes} / Pod {pods}',
   'viz.noEndpoints': '条件に合う Ready な Pod がありません。ラベルと Ready の状態を確かめてください。',
   'viz.noPods': 'Pod なし',
   'viz.unplaced': '配置できていない Pod ({n})',

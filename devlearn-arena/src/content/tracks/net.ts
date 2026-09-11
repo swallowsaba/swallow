@@ -14,14 +14,14 @@ export const netTrack: Track = {
     chapter('net', 1, 'レイヤの地図', '層に分けると、故障の切り分けが二分探索になる。',
       [mdn('HTTP overview', 'Web/HTTP/Guides/Overview')], [
         ['osi-tcpip', 'OSI 7層と TCP/IP 4層の対応', 'concept', 12],
-        ['encapsulation', 'カプセル化：1つのデータが4枚の封筒に包まれる', 'concept', 12, [rfc(1122, 'Host Requirements')]],
+        ['encapsulation', 'カプセル化（荷札を重ねて包むこと）：1つのデータが4枚の封筒に包まれる', 'concept', 12, [rfc(1122, 'Host Requirements')]],
         ['layer-bisection', '層ごとの二分探索で原因を半分に減らす', 'concept', 10],
       ]),
     chapter('net', 2, 'Ethernet と ARP', '同じセグメントの中で、誰が誰に渡すのか。',
       [rfc(826, 'ARP')], [
         ['mac-frame', 'MAC アドレスとフレーム構造', 'concept', 10],
         ['arp-resolve', 'ARP 要求はブロードキャスト、応答はユニキャスト', 'drill', 12],
-        ['switch-learning', 'スイッチの MAC アドレステーブル学習とフラッディング', 'drill', 15],
+        ['switch-learning', 'スイッチの MAC アドレステーブル学習とフラッディング（全部の口に流すこと）', 'drill', 15],
         ['vlan', 'VLAN でブロードキャストドメインを割る', 'concept', 12],
         ['boss-arp-conflict', 'BOSS: IP 重複で通信が断続的に切れる', 'boss', 20],
       ]),
@@ -56,7 +56,7 @@ export const netTrack: Track = {
       [rfc(9293, 'TCP')], [
         ['handshake', '3ウェイハンドシェイクのシーケンス番号を実値で追う', 'drill', 18],
         ['state-machine', 'LISTEN から TIME_WAIT までの状態遷移', 'concept', 18],
-        ['retransmit', '再送、RTO、フロー制御と輻輳制御', 'concept', 18],
+        ['retransmit', '再送、RTO、フロー制御と輻輳（道の混雑）制御', 'concept', 18],
         ['close-sequence', '4ウェイクローズと TIME_WAIT が必要な理由', 'concept', 15],
         ['udp', 'UDP を選ぶ判断基準', 'concept', 10, [rfc(768, 'UDP')]],
         ['boss-half-open', 'BOSS: コネクションが残り続けてポートが枯れる', 'boss', 25],
@@ -77,7 +77,7 @@ export const netTrack: Track = {
     chapter('net', 10, 'HTTP と TLS', 'アプリから見える顔と、その下で起きていること。',
       [rfc(9110, 'HTTP Semantics')], [
         ['http1', 'リクエストライン〜レスポンス、Keep-Alive と HOL blocking', 'concept', 15],
-        ['http2', 'HTTP/2 の多重化を HTTP/1.1 と並べて見る', 'concept', 15, [rfc(9113, 'HTTP/2')]],
+        ['http2', 'HTTP/2 の多重化（1本の線で同時にやりとりすること）を HTTP/1.1 と並べて見る', 'concept', 15, [rfc(9113, 'HTTP/2')]],
         ['http3', 'QUIC が解こうとした問題', 'concept', 12, [rfc(9114, 'HTTP/3')]],
         ['tls-handshake', 'TLS 1.3 ハンドシェイクと証明書検証', 'concept', 18, [rfc(8446, 'TLS 1.3')]],
         ['curl-verbose', 'curl -v の各行が何を示すか', 'drill', 15],

@@ -37,7 +37,7 @@ export const gitTrack: Track = {
       [cmd('merge')], [
         ['branch-switch', 'branch / switch / detached HEAD', 'drill', 12, [cmd('switch')]],
         ['fast-forward', 'fast-forward と no-ff の履歴の形', 'concept', 12],
-        ['three-way-merge', '共通祖先を求める 3-way マージ', 'concept', 15],
+        ['three-way-merge', '共通の祖先と見比べてまとめる 3-way（3つを見比べる）マージ', 'concept', 15],
         ['rebase-basics', 'rebase はコミットを複製して付け替える', 'concept', 15, [cmd('rebase')]],
         ['merge-vs-rebase', '公開履歴と手元履歴で判断を変える', 'concept', 15,
           [book('Rebasing', 'Git-Branching-Rebasing')]],

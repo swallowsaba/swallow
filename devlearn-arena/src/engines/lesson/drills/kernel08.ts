@@ -377,7 +377,7 @@ const runbookDrills = family<{ name: string; steps: string[] }>({
           assert: pathExists(dir),
           hints: [`./${v.name}`],
           explain:
-            'mkdir -p を使っているので、二度流しても壊れない。何度流しても同じ結果になることを冪等という。',
+            'mkdir -p を使っているので、二度流しても壊れない。このように何度流しても同じ結果になることを、冪等（何回やっても結果が変わらないこと）という。',
         },
       ],
     };

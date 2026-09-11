@@ -164,7 +164,7 @@ export const netSwitching: LessonDefinition = {
       { command: 'ping <アドレス>', means: 'データを流す' },
     ],
   },
-  objectives: ['未学習ならフラッディングすると分かる', '学習後は絞り込まれると分かる', 'VLAN で分けられると分かる'],
+  objectives: ['まだ覚えていない宛先には、全部の口に流す（フラッディング）と分かる', '学習後は絞り込まれると分かる', 'VLAN で分けられると分かる'],
   parCommands: 10,
   initial: { net: lan(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },
   steps: [
@@ -314,7 +314,7 @@ export const netNat: LessonDefinition = {
       { command: 'curl http://<外の相手>/', means: '外へ出る通信を起こす' },
     ],
   },
-  objectives: ['NAT が何を書き換えるか分かる', 'ポートで多重化していると分かる', '変換表を読める'],
+  objectives: ['NAT が何を書き換えるか分かる', 'ポート番号を付け替えて、1つの住所を何人もで使い回している（多重化）と分かる', '変換表を読める'],
   parCommands: 10,
   initial: { net: nattedNet(), vars: { NET_SELF: 'pc1' }, files: { ...FILES } },
   steps: [
