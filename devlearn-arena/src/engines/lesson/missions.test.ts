@@ -167,7 +167,10 @@ function lastHintLines(step: LessonDefinition['steps'][number]): string[] {
  * 手順ごとに、打ち終えた時点でその手順を越えていることを確かめる。
  * 越えられなかった手順があれば、その番号を返す。
  */
-function playByHints(lesson: LessonDefinition): { cleared: boolean; stuck: number | null } {
+function playByHints(
+  lesson: LessonDefinition,
+  linesOf: (step: LessonDefinition['steps'][number]) => readonly string[] = lastHintLines,
+): { cleared: boolean; stuck: number | null } {
   const clock = createClock();
   const timeline: ShellState[] = [createShellState(lesson.initial)];
   let progress = createProgress(lesson);
@@ -176,7 +179,7 @@ function playByHints(lesson: LessonDefinition): { cleared: boolean; stuck: numbe
     if (!step || progress.cleared) break;
     // 前の手順の解答で一緒に満たされた手順は、打たずに先へ進む
     if (progress.stepIndex > i) continue;
-    for (const line of lastHintLines(step)) {
+    for (const line of linesOf(step)) {
       const last = timeline[timeline.length - 1];
       if (!last) break;
       timeline.push(execute(last, line, registry, clock).state);
@@ -208,6 +211,16 @@ describe('最後のヒントは完全なコマンド', () => {
         if (step.solution.length === 0) continue;
         expect(step.hints[step.hints.length - 1], `${entry.id}: ${step.check}`).toBe(step.solution.join('\n'));
       }
+    }
+  });
+});
+
+describe('手順ごとの模範解答', () => {
+  it('解答を手順ごとに打てばクリアでき、解答が空の手順は前の手順で一緒に満たされている', () => {
+    for (const entry of allMissions()) {
+      const lesson = entry.build();
+      const result = playByHints(lesson, (step) => step.solution);
+      expect(result.cleared, `${entry.id} 手順 ${String((result.stuck ?? 0) + 1)}`).toBe(true);
     }
   });
 });
