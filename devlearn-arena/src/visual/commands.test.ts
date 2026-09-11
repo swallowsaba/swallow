@@ -4,7 +4,9 @@ import { emptyCluster, node } from '@/engines/k8s/factory';
 import { host, iface, link, resetMac, router, topology } from '@/engines/net/factory';
 import { createSession, type Session, type SessionOptions } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
-import { gitCommands, k8sCommands, linkIsUp, netCommands, nextTryBranch, prCommands } from './commands';
+import {
+  explainCommand, fsCommands, gitCommands, k8sCommands, linkIsUp, netCommands, nextTryBranch, prCommands,
+} from './commands';
 
 /** 図が作ったコマンドを、端末と同じ道筋で実際に打つ */
 function shell(options: SessionOptions) {
@@ -149,5 +151,37 @@ describe('Pull Request の図から打つコマンド', () => {
     expect(sh.state.repo?.pulls[0]?.reviews[0]?.state).toBe('approved');
     expect(prCommands.requestChanges(1)).toBe('gh pr review 1 --request-changes');
     expect(prCommands.checks(1)).toBe('gh pr checks 1');
+  });
+});
+
+describe('なぜそのコマンドなのかを一行で出す', () => {
+  it('図から打つコマンドには、どれも説明が付く', () => {
+    resetMac();
+    const net = topology(
+      [host('pc1', [iface('eth0', '192.168.1.10', 24)]), router('r1', [iface('eth0', '192.168.1.1', 24)])],
+      [link('pc1:eth0', 'r1:eth0')],
+    );
+    const first = net.links[0];
+    if (!first) throw new Error('リンクがありません');
+    const lines = [
+      k8sCommands.advance(), k8sCommands.describePod('web-1'), k8sCommands.deletePod('web-1'),
+      k8sCommands.toggleCordon('node-1', false), k8sCommands.toggleCordon('node-1', true), k8sCommands.scale('web', 3),
+      gitCommands.show('abcdef1234'), gitCommands.switchTo('main'), gitCommands.branchOut([]),
+      gitCommands.stage('a.txt'), gitCommands.unstage('a.txt'),
+      netCommands.pingTo(net, 'r1') ?? '', netCommands.operateOn('r1'),
+      netCommands.toggleLink(net, first, 'pc1'), netCommands.toggleLink(net, first, 'r1'),
+      netCommands.toggleLink(net, { ...first, up: false }, 'pc1'),
+      prCommands.view(1), prCommands.checks(1), prCommands.approve(1), prCommands.requestChanges(1), prCommands.merge(1),
+      fsCommands.cd('/etc'), fsCommands.cat('/etc/hosts'),
+    ];
+    for (const line of lines) expect(explainCommand(line), line).not.toBeNull();
+  });
+
+  it('コマンドに合った説明を出す', () => {
+    expect(explainCommand('kubectl describe pod web')).toContain('describe');
+    expect(explainCommand('git switch -c try-1')).toContain('新しいブランチ');
+    expect(explainCommand('git switch main')).toContain('切り替える');
+    expect(explainCommand('ip -n r1 link set eth1 down')).toContain('-n');
+    expect(explainCommand('rm -rf /')).toBeNull();
   });
 });

@@ -107,3 +107,39 @@ export const prCommands = {
   requestChanges: (n: number): string => `gh pr review ${String(n)} --request-changes`,
   merge: (n: number): string => `gh pr merge ${String(n)} --merge`,
 };
+
+/* ---------------- なぜそのコマンドなのか ---------------- */
+
+/** コマンドの形 → 一行の説明。上から順に最初に合ったものを使う */
+const WHY: readonly [RegExp, string][] = [
+  [/^kubectl describe pod /, 'Pod の中身（状態やイベント）を見るには describe を使います。'],
+  [/^kubectl delete pod /, 'Pod を消すには delete を使います。Deployment の持ち物なら、見張り係がすぐ作り直します。'],
+  [/^kubectl cordon /, 'ノードに新しい Pod を置かせないようにするには cordon を使います（いま居る Pod はそのまま）。'],
+  [/^kubectl uncordon /, 'cordon の印を外して、また Pod を置けるようにするには uncordon を使います。'],
+  [/^kubectl scale /, 'あるべき数を変えるには scale を使います。実際に数を合わせるのは見張り係の仕事です。'],
+  [/^kubectl wait /, '練習場では kubectl wait で時間を進めます。その間に各部品が順に仕事をします。'],
+  [/^git show /, 'コミットの中身（誰が・何を変えたか）を見るには git show を使います。'],
+  [/^git switch -c /, 'いまの場所から新しいブランチを作って移るには git switch -c を使います。'],
+  [/^git switch /, 'ブランチを切り替えるには git switch を使います。HEAD の札がそのブランチへ移ります。'],
+  [/^git add /, '次の記録（コミット）に入れるには、git add でインデックスに載せます。'],
+  [/^git restore --staged /, 'インデックスから外すには git restore --staged を使います。手元の中身は消えません。'],
+  [/^ping /, '相手まで届くかを確かめるには ping を使います。'],
+  [/^ip -n \S+ link set \S+ down$/, 'ほかの機器の口を止めるには、その機器の中で ip link set <口> down を打ちます（-n で機器を指定）。'],
+  [/^ip -n \S+ link set \S+ up$/, 'ほかの機器の止まった口を戻すには、その機器の中で ip link set <口> up を打ちます（-n で機器を指定）。'],
+  [/^ip link set \S+ down$/, 'ネットワークの口を止めるには ip link set <口> down を使います。'],
+  [/^ip link set \S+ up$/, '止まった口を戻すには ip link set <口> up を使います。'],
+  [/^netlab cable up /, '抜かれたケーブルを挿し直します（練習場だけのコマンドです）。'],
+  [/^export NET_SELF=/, '操作する機器を切り替えます。練習場では NET_SELF が「いまいる機器」です。'],
+  [/^gh pr checks /, 'Pull Request のチェック（Actions）の結果を見るには gh pr checks を使います。'],
+  [/^gh pr review \d+ --approve/, 'Pull Request を承認するには gh pr review --approve を使います。'],
+  [/^gh pr review \d+ --request-changes/, '直してほしいと返すには gh pr review --request-changes を使います。'],
+  [/^gh pr view /, 'Pull Request の中身を見るには gh pr view を使います。'],
+  [/^gh pr merge /, 'Pull Request を取り込むには gh pr merge を使います。'],
+  [/^cd /, 'いる場所（ディレクトリ）を移るには cd を使います。'],
+  [/^cat /, 'ファイルの中身を見るには cat を使います。'],
+];
+
+/** 図の操作から打つコマンドが、なぜその形なのかを一行で返す。知らない形なら null */
+export function explainCommand(line: string): string | null {
+  return WHY.find(([pattern]) => pattern.test(line))?.[1] ?? null;
+}
