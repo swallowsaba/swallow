@@ -1,6 +1,7 @@
 import { useT } from '@/i18n/useT';
 import type { LessonDefinition, LessonProgressState, LessonStep } from '@/engines/lesson/types';
 import { Glossed } from '@/ui/Term';
+import { takeawaysOf } from '@/engines/lesson/takeaways';
 import { Assist } from './Assist';
 import { PrerequisiteNote } from './PrerequisiteNote';
 import { StepChecklist, type PartState } from './StepChecklist';
@@ -86,6 +87,16 @@ export function MissionPanel({
 
       {progress.cleared ? (
         <div className="mt-4 flex flex-col gap-3">
+          <section aria-label={t('takeaways.title')} className="border-l-4 border-[var(--ok)] bg-[var(--cream-dark)] px-3 py-2">
+            <p className="text-sm font-extrabold text-ink-soft">{t('takeaways.title')}</p>
+            <ol className="mt-1 flex list-decimal flex-col gap-1 pl-5 text-sm leading-snug">
+              {takeawaysOf(mission).map((line) => (
+                <li key={line}>
+                  <Glossed text={line} />
+                </li>
+              ))}
+            </ol>
+          </section>
           {nextMission ? (
             <button
               type="button"

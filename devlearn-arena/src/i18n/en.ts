@@ -154,6 +154,7 @@ export const en: Record<TKey, string> = {
   'prereq.first': 'Try “{title}” first.',
   'prereq.go': 'Open it',
   'prereq.canContinue': 'You can also keep going here',
+  'takeaways.title': 'What you learned',
   'map.startHere': 'New here? Start with: {title}',
   'map.continueHere': 'Recommended next: {title}',
   'intro.diagram': 'How to read the diagram',

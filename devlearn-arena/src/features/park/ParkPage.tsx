@@ -5,6 +5,7 @@ import { allMissions, missingPrerequisites, missionById, recommendedNext } from 
 import {
   buildContext, createProgress, currentStep, evaluate, markSkipped, passes, solutionThrough, useHint,
 } from '@/engines/lesson/runner';
+import { takeawaysOf } from '@/engines/lesson/takeaways';
 import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
 import { useShellSession } from '@/features/terminal/useShellSession';
@@ -319,6 +320,7 @@ function Park({
         subtitle: t('park.score', { title: mission.title, score }),
         xp: reward,
         levelUp: after > levelFromXp(xp) ? { level: after, rank: rankFromLevel(after) } : undefined,
+        takeaways: takeawaysOf(mission),
       });
       setDiagnosis(null);
       if (soundEnabled) sfx.clear();

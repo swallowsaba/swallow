@@ -82,6 +82,11 @@ export interface LessonDefinition {
   /** 課題の前に読む説明 */
   intro: LessonIntro;
   objectives: readonly string[];
+  /**
+   * 終えたときに出す「ここまでで分かったこと」（3行）。
+   * 書かなければ、目標と手順の説明から組み立てる（takeaways.ts）。
+   */
+  takeaways?: readonly string[];
   initial: SessionOptions;
   steps: readonly LessonStep[];
   /** 想定手数。スコア計算に使う */

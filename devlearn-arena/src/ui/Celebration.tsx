@@ -9,6 +9,8 @@ export interface CelebrationData {
   subtitle: string;
   xp: number;
   levelUp?: { level: number; rank: string } | undefined;
+  /** ここまでで分かったこと（3行） */
+  takeaways?: readonly string[] | undefined;
 }
 
 interface Props {
@@ -66,6 +68,17 @@ export function Celebration({ data, onDismiss, nextLabel, onNext }: Props) {
               >
                 LEVEL {data.levelUp.level} — {data.levelUp.rank}
               </motion.p>
+            ) : null}
+
+            {data.takeaways && data.takeaways.length > 0 ? (
+              <div className="mx-auto mt-6 max-w-xl text-left">
+                <p className="text-sm font-extrabold text-ink-soft">{t('takeaways.title')}</p>
+                <ol className="mt-1 flex list-decimal flex-col gap-1 pl-6 text-base leading-snug text-ink">
+                  {data.takeaways.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ol>
+              </div>
             ) : null}
 
             {nextLabel !== undefined && onNext ? (

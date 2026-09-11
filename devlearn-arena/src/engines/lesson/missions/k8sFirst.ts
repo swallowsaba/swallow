@@ -80,6 +80,11 @@ export const k8sFirstPod: LessonDefinition = {
     'ファイルを書かずに Pod と Deployment を作れる',
     '直接作った Pod は戻らず、Deployment の Pod は戻る理由が分かる',
   ],
+  takeaways: [
+    'kubectl get nodes / get pods で、クラスタに何があるかを見られる。',
+    'kubectl run で作った Pod は持ち主がいないので、消したらそれっきり戻らない。',
+    'Deployment は「何個あるべきか」を覚えていて、減ったら新しい Pod を作って数を戻す。',
+  ],
   parCommands: 10,
   initial: {
     cluster: emptyCluster([node('node-1', 2000, 4096), node('node-2', 2000, 4096)]),
@@ -230,6 +235,11 @@ export const k8sFirstYaml: LessonDefinition = {
     'コマンドで作ったものが YAML でどう書かれるかを読める',
     'YAML のファイルを書き換えて apply できる',
     'ファイルさえあれば、消えても同じものを作り直せると分かる',
+  ],
+  takeaways: [
+    'kubectl get <種類> <名前> -o yaml で、作ったものの中身を YAML で見られる。',
+    'YAML のファイルを書き換えて kubectl apply -f で渡すと、クラスタがその通りに変わる。',
+    '完成図のファイルが残っていれば、消えても1行で同じものを作り直せる。',
   ],
   parCommands: 10,
   initial: {

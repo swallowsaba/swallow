@@ -151,6 +151,7 @@ export const ja = {
   'prereq.first': '先に「{title}」をやりましょう。',
   'prereq.go': 'そちらを開く',
   'prereq.canContinue': 'このまま進めることもできます',
+  'takeaways.title': 'ここまでで分かったこと',
   'map.startHere': 'はじめての人はここから: {title}',
   'map.continueHere': 'おすすめの続き: {title}',
   'intro.diagram': '右の構成図の読み方',

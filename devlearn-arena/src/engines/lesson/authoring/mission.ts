@@ -48,6 +48,8 @@ export interface MissionSpec {
   minutes?: number;
   docs?: readonly DocRef[];
   objectives: readonly string[];
+  /** 終えたときに出す「ここまでで分かったこと」（3行）。省けば目標と説明から組み立てる */
+  takeaways?: readonly string[];
   initial: SessionOptions | (() => SessionOptions);
   parCommands?: number;
   steps: readonly StepSpec[];
@@ -119,6 +121,7 @@ export function defineMission(spec: MissionSpec): MissionSource {
       title: spec.title,
       intro: spec.intro,
       objectives: spec.objectives,
+      ...(spec.takeaways ? { takeaways: spec.takeaways } : {}),
       initial: typeof spec.initial === 'function' ? spec.initial() : spec.initial,
       parCommands: spec.parCommands ?? Math.max(3, spec.solution.length),
       steps: spec.steps.map(toStep),
