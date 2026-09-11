@@ -1,4 +1,5 @@
 ﻿devlearn-arena/REWORK.md を読み、未完了の項目を上から順に実装しろ。
+項目1と項目2が最優先で、まだ実装されていない。ここから始めろ。
 終わった項目は REWORK.md のチェックボックスを [x] に変えてコミットしろ。
 各項目ごとに devlearn-arena で npm run typecheck と npm run lint と npm run test を通し、落ちたら自分で直してからコミットしろ。
 playwright は実行するな。
