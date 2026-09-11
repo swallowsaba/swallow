@@ -87,8 +87,8 @@ test('訓練場では任務の縛り無しに全部のエンジンを触れる',
   await expect(page.getByRole('tab', { name: 'クラスタ' })).toHaveAttribute('aria-selected', 'true');
 
   await type(page, 'git init');
-  await page.getByRole('tab', { name: 'Git' }).click();
-  await expect(page.getByRole('tab', { name: 'Git' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Git', exact: true }).click();
+  await expect(page.getByRole('tab', { name: 'Git', exact: true })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('記録に実績と連続日数が出る', async ({ page }) => {
