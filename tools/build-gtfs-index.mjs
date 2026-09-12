@@ -273,9 +273,32 @@ async function pickResource(op) {
       compareBy: 'content',
     };
   }
-  const res = await fetch(CKAN + encodeURIComponent(op.dataset), {
+  // カタログの引き方は 2 通り用意する。
+  //   1) CKAN の API(JSON)       … 本来の正しい経路
+  //   2) データセットのページ(HTML)… API が HTML を返すときの逃げ道
+  // ODPT の CKAN は API が HTML を返すことがあり、1 だけだと止まってしまう。
+  const failures = [];
+
+  try {
+    return chooseNewest(await viaCkanApi(op), op);
+  } catch (e) {
+    failures.push(`API: ${e.message}`);
+  }
+
+  try {
+    return chooseNewest(await viaCkanHtml(op), op);
+  } catch (e) {
+    failures.push(`ページ: ${e.message}`);
+  }
+
+  throw new Error(`ダウンロード URL を特定できませんでした。${failures.join(' / ')}`);
+}
+
+/** 共通の取得。ブラウザと同じ名乗りで取る。 */
+async function fetchText(url, accept) {
+  const res = await fetch(url, {
     headers: {
-      Accept: 'application/json, text/plain, */*',
+      Accept: accept,
       'User-Agent': UA,
       'Accept-Language': 'ja,en;q=0.8',
     },
@@ -283,41 +306,104 @@ async function pickResource(op) {
     signal: AbortSignal.timeout(30000),
   });
   const text = await res.text();
-  if (!res.ok) {
-    throw new Error(`データカタログを読めませんでした: ${describeBody(res, text)}`);
-  }
+  return { res, text };
+}
+
+/** 1) CKAN の API から取る */
+async function viaCkanApi(op) {
+  const { res, text } = await fetchText(
+    CKAN + encodeURIComponent(op.dataset),
+    'application/json, text/plain, */*',
+  );
+  if (!res.ok) throw new Error(describeBody(res, text));
+
   let body;
   try {
     body = JSON.parse(text);
   } catch {
-    // HTML が返ったということは、API ではなく案内ページ・ログイン画面・
-    // Bot 対策のページに行き着いている。中身を出さないと切り分けられない。
-    throw new Error(`データカタログが JSON を返しませんでした: ${describeBody(res, text)}`);
+    throw new Error(`JSON ではありません (${describeBody(res, text)})`);
   }
   if (!body.success) {
     const why = body.error?.message || body.error?.__type || JSON.stringify(body.error || {});
-    throw new Error(`データカタログが success:false を返しました (${why})`);
+    throw new Error(`success:false (${why})`);
   }
 
-  const today = ymd(new Date());
-  const items = (body.result.resources || [])
+  return (body.result?.resources || [])
     .filter((r) => /zip/i.test(r.format || '') || /\.zip(\?|$)/i.test(r.url || ''))
     .map((r) => ({
       id: r.id,
       name: r.name || r.id,
       url: r.url,
-      // URL の date= か、名前の末尾の 8 桁を「いつからのダイヤか」とみなす
-      validFrom: (/date=(\d{8})/.exec(r.url || '') || /(\d{8})\s*$/.exec(r.name || '') || [])[1] || null,
+      validFrom: dateOf(r.url, r.name),
     }))
     .filter((r) => r.url);
+}
 
-  if (!items.length) throw new Error('GTFS(ZIP)のリソースが見つかりません');
+/** 2) データセットのページ(HTML)から ZIP の URL を拾う */
+async function viaCkanHtml(op) {
+  const page = `https://ckan.odpt.org/dataset/${encodeURIComponent(op.dataset)}`;
+  const { res, text } = await fetchText(page, 'text/html,*/*');
+  if (!res.ok) throw new Error(describeBody(res, text));
 
-  // 今日から見て「すでに始まっているダイヤ」のうち、いちばん新しいもの
+  // データセットのページに ZIP の直リンクが載っていればそれで済む
+  let urls = zipUrlsIn(text);
+
+  // 無ければ、各リソースのページまで辿る(ページ構成によってはこちら)
+  if (!urls.length) {
+    const links = [...new Set(
+      [...text.matchAll(/\/dataset\/[^"'\s<>]+\/resource\/[0-9a-f-]{36}/gi)].map((m) => m[0]),
+    )].slice(0, 12);
+    if (!links.length) throw new Error('リソースへのリンクが見つかりません');
+    for (const href of links) {
+      try {
+        const r = await fetchText(`https://ckan.odpt.org${href}`, 'text/html,*/*');
+        urls.push(...zipUrlsIn(r.text));
+      } catch {
+        /* 1 つ読めなくても他で足りることがあるので続ける */
+      }
+    }
+    urls = [...new Set(urls)];
+  }
+
+  if (!urls.length) throw new Error('ZIP の URL が見つかりません');
+
+  return urls.map((url) => ({
+    id: url,
+    name: /([^/?]+\.zip)/i.exec(url)?.[1] || op.title,
+    url,
+    validFrom: dateOf(url, null),
+  }));
+}
+
+/** HTML から ZIP の URL を抜き出す */
+function zipUrlsIn(html) {
+  const plain = String(html)
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+  const found = [...plain.matchAll(/https?:\/\/[^\s"'<>]+?\.zip(?:\?[^\s"'<>]*)?/gi)].map((m) => m[0]);
+  return [...new Set(found)];
+}
+
+/** URL の date= か、名前の末尾の 8 桁を「いつからのダイヤか」とみなす */
+function dateOf(url, name) {
+  return (
+    (/[?&]date=(\d{8})/.exec(url || '') || /(\d{8})/.exec(String(name || '')) || [])[1] || null
+  );
+}
+
+/** 今日から見て「すでに始まっているダイヤ」のうち、いちばん新しいものを選ぶ */
+function chooseNewest(items, op) {
+  if (!items || !items.length) throw new Error('GTFS(ZIP)のリソースが見つかりません');
+  const today = ymd(new Date());
   const started = items.filter((r) => r.validFrom && r.validFrom <= today);
   const pool = started.length ? started : items;
   pool.sort((a, b) => String(b.validFrom || '').localeCompare(String(a.validFrom || '')));
-  return pool[0];
+  const picked = pool[0];
+  if (!started.length) {
+    console.log(`    ※ ${op.title}: 開始済みのダイヤが判別できないため ${picked.name} を使います`);
+  }
+  return picked;
 }
 
 /* ------------------------------------------------------------------ *
