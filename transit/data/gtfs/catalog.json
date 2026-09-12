@@ -1,0 +1,41 @@
+{
+  "v": 1,
+  "updatedAt": "2026-09-12T00:15:54.346Z",
+  "note": "ODPT が API 形式の提供を終了した事業者を GTFS から取り込んだもの。ダイヤ改正時のスナップショット。",
+  "operators": [
+    {
+      "id": "KeioBus",
+      "title": "京王バス",
+      "dir": "KeioBus",
+      "generatedAt": "2026-09-12T00:15:38.266Z",
+      "stopCount": 2924,
+      "patternCount": 1473,
+      "validFrom": "20260903",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "attribution": "公共交通オープンデータセンター"
+    },
+    {
+      "id": "OdakyuBus",
+      "title": "小田急バス",
+      "dir": "OdakyuBus",
+      "generatedAt": "2026-09-12T00:15:46.022Z",
+      "stopCount": 2008,
+      "patternCount": 1788,
+      "validFrom": "20260716",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "attribution": "公共交通オープンデータセンター"
+    },
+    {
+      "id": "NishiTokyoBus",
+      "title": "西東京バス",
+      "dir": "NishiTokyoBus",
+      "generatedAt": "2026-09-12T00:15:53.874Z",
+      "stopCount": 1952,
+      "patternCount": 819,
+      "validFrom": "20260912",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "attribution": "公共交通オープンデータセンター"
+    }
+  ],
+  "failed": []
+}
