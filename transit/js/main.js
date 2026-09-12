@@ -269,6 +269,19 @@ function setupAutocomplete(inputSel, listSel, hintSel, place) {
       await busStopInto(place, item.query, input, hint);
       return;
     }
+    // GTFS から取り込んだ停留所。索引が手元にあるので問い合わせは要らない。
+    if (item.kind === 'gtfsstop') {
+      rememberBusStops([
+        { id: `gtfs:${item.operator}:${item.label}`, title: item.label, lat: item.lat, lon: item.lon },
+      ]);
+      place.set({ groupId: null, label: item.label, busOnly: true });
+      input.value = item.label;
+      hint.textContent = `${item.operatorTitle}「${item.label}」(取り込み済みダイヤ・鉄道の経路は対象外)`;
+      hint.classList.remove('is-error');
+      ui.hideSuggest(list);
+      input.setAttribute('aria-expanded', 'false');
+      return;
+    }
     place.set({ groupId: item.value, label: item.label, busOnly: false });
     input.value = item.label;
     hint.textContent = item.sub || '';
@@ -280,7 +293,7 @@ function setupAutocomplete(inputSel, listSel, hintSel, place) {
   input.addEventListener('input', () => {
     place.set(null);
     clearTimeout(timer);
-    timer = setTimeout(() => {
+    timer = setTimeout(async () => {
       const q = input.value.trim();
       if (!q || !state.net) {
         ui.hideSuggest(list);
@@ -294,6 +307,18 @@ function setupAutocomplete(inputSel, listSel, hintSel, place) {
         sub: railwaysOfGroup(g).join(' / '),
         value: g.id,
       }));
+
+      // GTFS から取り込んだ停留所も候補に並べる。
+      // 索引はブラウザ内にあるので、ここでの検索に通信は発生しない
+      // (索引そのものの取得は 1 回だけ・以後はキャッシュ)。
+      const gtfsItems = await gtfsSuggestItems(q);
+      // 待っている間に入力が変わっていたら、古い結果は捨てる
+      if (input.value.trim() !== q) return;
+      if (gtfsItems.length) {
+        items.push({ type: 'section', label: 'バス停(取り込み済みダイヤ)' });
+        items.push(...gtfsItems);
+      }
+
       if (q.length >= 2) {
         items.push({ type: 'section', label: '駅名で見つからないとき' });
         items.push({
@@ -326,6 +351,41 @@ function setupAutocomplete(inputSel, listSel, hintSel, place) {
       }
     }, 150);
   });
+}
+
+/**
+ * GTFS から取り込んだ停留所を、候補として並べられる形にする。
+ * 索引が無い(まだ取り込んでいない)ときは黙って空を返す。
+ * 同じ名前の停留所は事業者ごとに 1 つにまとめる(のりばの数だけ並べない)。
+ */
+async function gtfsSuggestItems(query) {
+  if (!query) return [];
+  try {
+    const { suggestGtfsStops } = await import('./gtfs.js');
+    const found = await suggestGtfsStops(query);
+    const seen = new Set();
+    const items = [];
+    for (const s of found) {
+      const key = `${s.operator}:${s.title}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push({
+        type: 'station',
+        kind: 'gtfsstop',
+        label: s.title,
+        sub: `${s.operatorTitle}(バス停)`,
+        operator: s.operator,
+        operatorTitle: s.operatorTitle,
+        lat: s.lat,
+        lon: s.lon,
+      });
+      if (items.length >= 8) break;
+    }
+    return items;
+  } catch {
+    // 取り込み前・索引が読めない、は「候補が無い」と同じ扱いにする
+    return [];
+  }
 }
 
 /** state.from / state.to への読み書き */

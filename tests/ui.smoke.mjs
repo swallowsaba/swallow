@@ -274,6 +274,38 @@ async function search(page, from, to) {
     const alerts = await page.textContent('#alerts');
     assert(/京王バス.*取り込み/.test(alerts), `取り込み日の断りが出ていない: ${alerts.slice(0, 200)}`);
     console.log('  ok  GTFS から取り込んだ京王バスの経路が出る(取り込み日を明示)');
+  }
+
+  // 取り込んだ停留所が、駅と同じように候補に並ぶ
+  // (「バス停として検索」を選ばなくても、名前を打てば出てくること)
+  {
+    await page.fill('#to-input', '');
+    await page.fill('#to-input', '調布');
+    await page.waitForSelector('#to-list li[role="option"]');
+    await page.waitForTimeout(400);
+
+    const labels = await page.$$eval('#to-list li', (els) => els.map((e) => e.textContent));
+    const hit = labels.find((t) => t.includes('調布駅北口') && t.includes('京王バス'));
+    assert(hit, `取り込んだ停留所が候補に出ていない: ${JSON.stringify(labels)}`);
+    assert(
+      labels.some((t) => t.includes('バス停(取り込み済みダイヤ)')),
+      '候補の見出しが出ていない',
+    );
+
+    // 選んだら、追加の問い合わせなしでそのまま確定すること
+    const opts = await page.$$('#to-list li[role="option"]');
+    for (const li of opts) {
+      const t = await li.textContent();
+      if (t.includes('調布駅北口')) { await li.click(); break; }
+    }
+    await page.waitForFunction(
+      () => /京王バス/.test(document.querySelector('#to-hint').textContent),
+      null,
+      { timeout: 10000 },
+    );
+    const value = await page.inputValue('#to-input');
+    assert(value === '調布駅北口', `入力欄が正式名になっていない: ${value}`);
+    console.log('  ok  取り込んだ停留所が駅と同じように候補に並び、選べる');
     await page.screenshot({ path: 'tests/screenshot-gtfs.png', fullPage: true });
   }
 
