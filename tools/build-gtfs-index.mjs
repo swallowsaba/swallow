@@ -84,6 +84,20 @@ const TMP = path.resolve('.gtfs-tmp');
 
 const TOKEN = String(process.env.ODPT_TOKEN || '').trim();
 
+// Node の既定の User-Agent だと、配布側の Bot 対策に HTML の案内ページを
+// 返されることがある(HTTP は 200 のまま)。ブラウザと同じ名乗りにしておく。
+const UA =
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) ' +
+  'Chrome/127.0.0.0 Safari/537.36';
+
+// 返ってきたものが JSON でなかったとき、「何が返ったか」を残す。
+// 黙って「JSON ではありません」とだけ言われても原因が分からないため。
+function describeBody(res, text) {
+  const type = res.headers.get('content-type') || '(不明)';
+  const head = text.replace(/\s+/g, ' ').trim().slice(0, 200);
+  return `HTTP ${res.status} / Content-Type: ${type} / 本文の先頭: ${head}`;
+}
+
 /* ------------------------------------------------------------------ */
 
 async function main() {
@@ -260,12 +274,30 @@ async function pickResource(op) {
     };
   }
   const res = await fetch(CKAN + encodeURIComponent(op.dataset), {
-    headers: { Accept: 'application/json' },
+    headers: {
+      Accept: 'application/json, text/plain, */*',
+      'User-Agent': UA,
+      'Accept-Language': 'ja,en;q=0.8',
+    },
+    redirect: 'follow',
     signal: AbortSignal.timeout(30000),
   });
-  if (!res.ok) throw new Error(`データカタログを読めませんでした (HTTP ${res.status})`);
-  const body = await res.json();
-  if (!body.success) throw new Error('データカタログが success:false を返しました');
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`データカタログを読めませんでした: ${describeBody(res, text)}`);
+  }
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    // HTML が返ったということは、API ではなく案内ページ・ログイン画面・
+    // Bot 対策のページに行き着いている。中身を出さないと切り分けられない。
+    throw new Error(`データカタログが JSON を返しませんでした: ${describeBody(res, text)}`);
+  }
+  if (!body.success) {
+    const why = body.error?.message || body.error?.__type || JSON.stringify(body.error || {});
+    throw new Error(`データカタログが success:false を返しました (${why})`);
+  }
 
   const today = ymd(new Date());
   const items = (body.result.resources || [])
@@ -301,7 +333,11 @@ async function download(url, dest) {
       ? url.replace(/acl:consumerKey=[^&]*/, `acl:consumerKey=${encodeURIComponent(TOKEN)}`)
       : url;
 
-  const res = await fetch(withToken, { signal: AbortSignal.timeout(300000) });
+  const res = await fetch(withToken, {
+    headers: { 'User-Agent': UA, 'Accept-Language': 'ja,en;q=0.8' },
+    redirect: 'follow',
+    signal: AbortSignal.timeout(300000),
+  });
   if (res.status === 401 || res.status === 403) {
     throw new Error('ODPT_TOKEN が拒否されました。トークンを確認してください。');
   }
