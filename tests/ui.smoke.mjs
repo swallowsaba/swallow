@@ -467,6 +467,14 @@ async function search(page, from, to) {
     assert(busStops.some((t) => t.includes('渋谷駅前')), `GTFS のバス停が出ていない: ${busStops.join(', ')}`);
     assert(await page.isVisible('#map-hint'), '件数の案内が出ていない');
     console.log(`  ok  表示範囲の GTFS バス停を地図に表示(${busStops.length} 件)`);
+
+    // 読み終わったあとは「読み込み中」のままにしない
+    const hint = await page.textContent('#map-hint');
+    const busy = await page.getAttribute('#map-hint', 'aria-busy');
+    assert(!/読み込んでいます/.test(hint), `読み込みが終わっても読み込み中のまま: ${hint}`);
+    assert(busy === null, 'aria-busy が残っている');
+    assert(/表示しています/.test(hint), `読み終わったことが分からない: ${hint}`);
+    console.log('  ok  読み終わったら「読み込み中」を消し、件数に切り替える');
   }
 
   // 駅のポップアップから経由地に追加できる
@@ -537,6 +545,56 @@ async function search(page, from, to) {
   await search(page, '渋谷', '上野');
   await page.screenshot({ path: 'tests/screenshot-dark.png', fullPage: true });
   console.log('  ok  ダークモードで描画');
+  await ctx.close();
+}
+
+/* ---------------- 読み込み中の表示 ---------------- *
+ * 索引は事業者ごとに数 MB ある。初回は待たされるので、
+ * 「読み込み中」と分かることを確かめる。
+ * ローカルでは一瞬で返ってしまうので、わざと遅らせて確認する。
+ */
+{
+  const ctx = await browser.newContext({ viewport: { width: 1200, height: 900 }, locale: 'ja-JP' });
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => errors.push(`pageerror(loading): ${e.message}`));
+  await page.addInitScript(LEAFLET_STUB);
+  // 索引の応答を 1.5 秒遅らせる(ローカルだと一瞬で返ってしまうため)
+  await page.route('**/data/gtfs/**/index.json', async (route) => {
+    await new Promise((r) => setTimeout(r, 1500));
+    await route.continue();
+  });
+  await page.goto(URL, { waitUntil: 'networkidle' });
+  await page.click('#map-toggle');
+
+  // 待っている間、読み込み中と分かること
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#map-hint');
+      return el && !el.hidden && /読み込んでいます/.test(el.textContent);
+    },
+    null,
+    { timeout: 8000 }
+  );
+  const busyWhile = await page.getAttribute('#map-hint', 'aria-busy');
+  assert(busyWhile === 'true', '読み込み中に aria-busy が付いていない');
+  const spinning = await page.evaluate(
+    () => document.querySelector('#map-hint').classList.contains('is-loading')
+  );
+  assert(spinning, '読み込み中の目印(is-loading)が付いていない');
+  console.log('  ok  索引の読み込み中は「読み込んでいます」と表示する');
+
+  // 読み終わったら消えること
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#map-hint');
+      return el && !/読み込んでいます/.test(el.textContent);
+    },
+    null,
+    { timeout: 15000 }
+  );
+  const busyAfter = await page.getAttribute('#map-hint', 'aria-busy');
+  assert(busyAfter === null, '読み終わっても aria-busy が残っている');
+  console.log('  ok  読み終わると「読み込み中」の表示が消える');
   await ctx.close();
 }
 

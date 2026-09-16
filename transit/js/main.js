@@ -10,7 +10,7 @@ import { loadNetwork, clearNetworkCache } from './network.js';
 import { findCandidateRoutes, bindSchedule, edgeKey } from './router.js';
 import { analyzeStatus, warningsForRoute, SEVERITY } from './status.js';
 import { findBusRoutes, findIntermodalRoutes } from './bus.js';
-import { findAllGtfsRoutes, loadCatalog, stopsInBounds, STOP_MIN_ZOOM } from './gtfs.js';
+import { findAllGtfsRoutes, loadCatalog, stopsInBounds, indexStatus, STOP_MIN_ZOOM } from './gtfs.js';
 import { currentPosition, GeoError, formatDistance } from './geo.js';
 import { toServiceMoment, calendarFor, dateKey } from './time.js';
 import { TransitMap, routeToSegments } from './map.js';
@@ -316,6 +316,16 @@ function setupAutocomplete(inputSel, listSel, hintSel, place) {
       // GTFS から取り込んだ停留所も候補に並べる。
       // 索引はブラウザ内にあるので、ここでの検索に通信は発生しない
       // (索引そのものの取得は 1 回だけ・以後はキャッシュ)。
+      // 索引の初回読み込みは数秒かかることがある。その間に駅だけ出して黙っていると
+      // 「バス停が無い」と誤解されるので、先に駅を出したうえで読み込み中と伝える。
+      const status = await indexStatus().catch(() => ({ none: true, ready: true }));
+      if (input.value.trim() !== q) return;
+      if (!status.none && !status.ready) {
+        const withNotice = [...items, { type: 'section', label: 'バス停を読み込んでいます…' }];
+        ui.renderSuggest(list, withNotice, pick);
+        input.setAttribute('aria-expanded', String(!list.hidden));
+      }
+
       const gtfsItems = await gtfsSuggestItems(q);
       // 待っている間に入力が変わっていたら、古い結果は捨てる
       if (input.value.trim() !== q) return;
@@ -700,6 +710,10 @@ function toggleMap() {
   if (state.net) state.map.renderStations(state.net);
   state.map.addBusStops([...state.knownBusStops.values()]);
   state.map.refresh();
+  // 開いた時点で、その範囲のバス停を出しにいく。
+  // 動かすまで出ないと「バス停が無い」ように見えてしまう。
+  const view = state.map.viewport?.();
+  if (view) showGtfsStopsInView(view);
   // 検索済みなら、開いた時点で経路を描いておく
   autoShowRouteOnMap();
 }
@@ -766,10 +780,36 @@ async function loadBusStopsForStation(group) {
  * 全停留所の座標を手元に持っているので、映っている範囲のものを出せる。
  */
 let gtfsStopNoticeShown = false;
+// 地図は動かすたびに呼ばれる。古い呼び出しの結果で新しい表示を上書きしないよう、
+// 最後の呼び出しだけが画面に書けるようにする。
+let gtfsStopRequest = 0;
 async function showGtfsStopsInView(view) {
   if (!state.map?.ready) return;
+  const token = ++gtfsStopRequest;
+  const isCurrent = () => token === gtfsStopRequest;
+
   try {
-    const { stops, truncated, tooWide, empty, total } = await stopsInBounds(view, { zoom: view.zoom });
+    // 索引は事業者ごとに数 MB ある。初回は待たされるので、
+    // 黙って待たせず「読み込み中」と、どこまで進んだかを出す。
+    const before = await indexStatus();
+    if (!isCurrent()) return;
+    if (!before.none && !before.ready) {
+      setMapHint(
+        `バス停のデータを読み込んでいます…(${before.loaded}/${before.total} 事業者)`,
+        { busy: true }
+      );
+    }
+
+    const { stops, truncated, tooWide, empty, total } = await stopsInBounds(view, {
+      zoom: view.zoom,
+      onProgress: ({ done, total: n, title }) => {
+        if (!isCurrent() || before.ready) return;
+        setMapHint(`バス停のデータを読み込んでいます… ${title}(${done}/${n} 事業者)`, {
+          busy: true,
+        });
+      },
+    });
+    if (!isCurrent()) return;
 
     if (empty) {
       // まだ取り込んでいない。黙って何も出さないと不具合に見えるので 1 度だけ伝える。
@@ -791,27 +831,38 @@ async function showGtfsStopsInView(view) {
     }
 
     rememberBusStops(stops);
-    const added = state.map.addBusStops(stops);
+    state.map.addBusStops(stops);
     // 何件中何件を出しているのかを必ず書く。
     // 「全部出ている」のか「間引かれている」のかが分からないのが一番困るため。
-    setMapHint(
-      truncated
-        ? `この範囲のバス停 ${total} 件のうち ${stops.length} 件だけ表示しています(各社から均等に選んでいます)。拡大すると残りも出ます。`
-        : added
-          ? `この範囲のバス停をすべて表示しています(${stops.length} 件)。`
-          : ''
-    );
+    // 新しく追加した数ではなく「いま出ている数」を書く。
+    // 追加が 0 件でも表示はされているので、黙ると「消えた」ように見える。
+    if (!stops.length) {
+      setMapHint('この範囲にバス停はありません。');
+    } else if (truncated) {
+      setMapHint(
+        `この範囲のバス停 ${total} 件のうち ${stops.length} 件だけ表示しています` +
+          `(各社から均等に選んでいます)。拡大すると残りも出ます。`
+      );
+    } else {
+      setMapHint(`この範囲のバス停をすべて表示しています(${stops.length} 件)。`);
+    }
   } catch (e) {
     setMapHint(`バス停を表示できませんでした(${e.message})`);
   }
 }
 
-/** 地図の下の補足行 */
-function setMapHint(text) {
+/**
+ * 地図の下の補足行。
+ * 読み込み中は aria-busy と目印を付けて、待っているのか終わったのかを分かるようにする。
+ */
+function setMapHint(text, { busy = false } = {}) {
   const el = $('#map-hint');
   if (!el) return;
   el.textContent = text || '';
   el.hidden = !text;
+  el.classList.toggle('is-loading', Boolean(text) && busy);
+  if (busy && text) el.setAttribute('aria-busy', 'true');
+  else el.removeAttribute('aria-busy');
 }
 
 /** 見つかったバス停を覚えておく(地図に出せるのはここにあるものだけ) */

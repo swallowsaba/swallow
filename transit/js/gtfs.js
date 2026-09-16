@@ -276,16 +276,43 @@ export const STOP_MIN_ZOOM = 13;
 /** 1 回に返す停留所の上限 */
 export const STOP_LIMIT = 400;
 
-/** 読み込める索引をすべて読む(読めないものは黙って飛ばす) */
-export async function loadAllIndexes() {
+/**
+ * 索引の読み込み状況。画面に「読み込み中」を出すために使う。
+ * 索引は事業者ごとに数 MB あり、最初の 1 回は待たされる。
+ * 黙って待たせると「壊れている」と見えるので、必ず状態を出せるようにしておく。
+ */
+export async function indexStatus() {
   const catalog = await loadCatalog();
+  const ops = catalog.operators || [];
+  const loaded = ops.filter((o) => cache.index.has(o.id));
+  const pending = ops.filter((o) => !cache.index.has(o.id));
+  return {
+    total: ops.length,
+    loaded: loaded.length,
+    pending: pending.map((o) => o.title),
+    ready: ops.length > 0 && pending.length === 0,
+    none: ops.length === 0,
+  };
+}
+
+/**
+ * 読み込める索引をすべて読む(読めないものは黙って飛ばす)。
+ * @param {(p:{done:number,total:number,title:string}) => void} [onProgress]
+ *        1 事業者読むたびに呼ぶ。進捗を画面に出すため。
+ */
+export async function loadAllIndexes(onProgress) {
+  const catalog = await loadCatalog();
+  const ops = catalog.operators || [];
   const out = [];
-  for (const op of catalog.operators || []) {
+  let done = 0;
+  for (const op of ops) {
     try {
       out.push({ op, index: await loadIndex(op.id) });
     } catch {
       /* その事業者は出せないだけ。全体は止めない。 */
     }
+    done += 1;
+    if (onProgress) onProgress({ done, total: ops.length, title: op.title });
   }
   return out;
 }
@@ -296,8 +323,8 @@ export async function loadAllIndexes() {
  * @param {{zoom:number, limit?:number}} opts
  * @returns {Promise<{stops:Array, truncated:boolean, tooWide:boolean, empty:boolean}>}
  */
-export async function stopsInBounds(bounds, { zoom, limit = STOP_LIMIT } = {}) {
-  const loaded = await loadAllIndexes();
+export async function stopsInBounds(bounds, { zoom, limit = STOP_LIMIT, onProgress } = {}) {
+  const loaded = await loadAllIndexes(onProgress);
   if (!loaded.length) return { stops: [], truncated: false, tooWide: false, empty: true };
   if (zoom != null && zoom < STOP_MIN_ZOOM) {
     return { stops: [], truncated: false, tooWide: true, empty: false };

@@ -13,6 +13,7 @@ import {
   findGtfsBusRoutes,
   findAllGtfsRoutes,
   stopsInBounds,
+  indexStatus,
   resetGtfsCache,
   STOP_MIN_ZOOM,
 } from '../transit/js/gtfs.js';
@@ -569,6 +570,51 @@ await asyncTest('searchable の指定が無ければ従来どおり検索に使�
     serviceDate: D('2026-09-10'),
   });
   assert.equal(r.routes.length, 1, '既定の挙動が変わっている');
+});
+
+// 索引は事業者ごとに数 MB ある。黙って待たせると壊れて見えるので、
+// 「読み込み中か・読み終わったか」を画面から必ず判断できるようにしておく。
+await asyncTest('読み込む前は ready:false、読み終わると ready:true', async () => {
+  installFetch(FILES);
+  const before = await indexStatus();
+  assert.equal(before.ready, false, '読み込む前なのに ready になっている');
+  assert.equal(before.loaded, 0);
+  assert.equal(before.total, 1);
+  assert.deepEqual(before.pending, ['京王バス'], 'どの事業者を待っているか分からない');
+
+  await stopsInBounds(ALL, { zoom: 15 });
+
+  const after = await indexStatus();
+  assert.equal(after.ready, true, '読み終わっても ready にならない');
+  assert.equal(after.loaded, 1);
+  assert.deepEqual(after.pending, []);
+});
+
+await asyncTest('取り込み前は none で、読み込み中とは区別する', async () => {
+  globalThis.fetch = async () => ({ ok: false, status: 404 });
+  const s = await indexStatus();
+  assert.equal(s.none, true, '未取り込みと読み込み中が区別できない');
+  assert.equal(s.total, 0);
+});
+
+await asyncTest('読み込みの進み具合を 1 事業者ごとに知らせる', async () => {
+  const f = { ...FILES };
+  for (const [k, v] of Object.entries(WEB)) f[`KantoBus/${k}`] = v;
+  f['catalog.json'] = JSON.stringify({
+    v: 1,
+    operators: [
+      { id: 'KeioBus', title: '京王バス', dir: 'KeioBus', generatedAt: META.generatedAt },
+      { id: 'KantoBus', title: '関東バス', dir: 'KantoBus', generatedAt: META.generatedAt },
+    ],
+  });
+  installFetch(f);
+
+  const seen = [];
+  await stopsInBounds(ALL, { zoom: 15, onProgress: (p) => seen.push(p) });
+  assert.equal(seen.length, 2, `進捗が事業者ぶん来ていない: ${JSON.stringify(seen)}`);
+  assert.deepEqual(seen.map((p) => p.title), ['京王バス', '関東バス']);
+  assert.deepEqual(seen.map((p) => p.done), [1, 2]);
+  assert(seen.every((p) => p.total === 2), '全体数が伝わっていない');
 });
 
 await asyncTest('まだ取り込んでいなければ empty を返す', async () => {
