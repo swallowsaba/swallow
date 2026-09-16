@@ -31,7 +31,7 @@ function shell(lines: readonly string[], options: Parameters<typeof createSessio
   return states;
 }
 
-describe('ファイルの町', () => {
+describe('ファイルの街', () => {
   const vfs = createVfs({
     '/home/learner': null,
     '/home/learner/notes.txt': 'a\n',

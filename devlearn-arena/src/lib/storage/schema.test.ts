@@ -80,6 +80,17 @@ describe('save schema', () => {
     expect(s.ok && s.data.settings.visualMode).toBe('diagram');
   });
 
+  it('建てた街の施設は、古い保存データでは空で補い、建てたものは残る', () => {
+    const save = createEmptySave(1);
+    const raw = JSON.parse(JSON.stringify(save)) as Record<string, unknown>;
+    delete raw['facilitiesBuilt'];
+    const r = parseSave(JSON.stringify(raw));
+    expect(r.ok && r.data.facilitiesBuilt).toEqual([]);
+    save.facilitiesBuilt = ['git/01', 'k8s/01'];
+    const s = parseSave(JSON.stringify(save));
+    expect(s.ok && s.data.facilitiesBuilt).toEqual(['git/01', 'k8s/01']);
+  });
+
   it('未知バージョンを弾く', () => {
     const save = { ...createEmptySave(1), version: 99 };
     const r = parseSave(JSON.stringify(save));

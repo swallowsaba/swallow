@@ -12,7 +12,7 @@ export interface CelebrationData {
   levelUp?: { level: number; rank: string } | undefined;
   /** ここまでで分かったこと（3行） */
   takeaways?: readonly string[] | undefined;
-  /** 町がどう育ったか。行と、町の画面への行き先 */
+  /** 街がどう育ったか。行と、街の画面への行き先 */
   town?: { lines: readonly string[]; href: string } | undefined;
 }
 

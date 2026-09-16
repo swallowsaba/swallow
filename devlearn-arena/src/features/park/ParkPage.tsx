@@ -23,8 +23,7 @@ import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
 import { splitTemplate } from '@/ui/panes';
-import { buildingName, townName, townOf } from '@/features/town/townName';
-import { growthOf } from '@/engines/lesson/town';
+import { facilityById } from '@/content/city';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { Briefing } from './Briefing';
 import { MissionPanel } from './MissionPanel';
@@ -250,20 +249,24 @@ function Park({
     );
   }, [mission.id, progress, shellState, saveMission]);
 
-  /** 祝いの画面に出す、町の育ち方の行 */
-  const townLines = (growth: NonNullable<ReturnType<typeof growthOf>>, town: ReturnType<typeof townOf>): { lines: string[]; href: string } => {
-    const district = town.districts.find((d) => d.buildings.some((b) => b.id === growth.buildingId));
-    const building = district?.buildings.find((b) => b.id === growth.buildingId);
-    const name = district && building ? buildingName(t, mission.track, district, building.index, building.landmark) : '';
-    const place = townName(t, mission.track, town.stats.rank);
+  /** 祝いの画面に出す、街の施設の稼働の行 */
+  const cityLines = (): { lines: string[]; href: string } | undefined => {
+    const chapterId = missionById(mission.id)?.chapterId;
+    const facility = chapterId === undefined ? undefined : facilityById(chapterId);
+    if (!facility || chapterId === undefined) return undefined;
+    const { lessons: done, facilitiesBuilt } = useStore.getState();
+    const mine = allMissions().filter((m) => m.chapterId === chapterId);
+    const cleared = mine.filter((m) => m.id === mission.id || done[m.id]?.cleared === true).length;
+    const href = `/city/${mission.track}?facility=${encodeURIComponent(facility.id)}`;
+    if (!facilitiesBuilt.includes(facility.id)) {
+      return { href, lines: [t('celebration.facilityUnbuilt', { name: facility.name })] };
+    }
     return {
-      href: `/town/${mission.track}`,
+      href,
       lines: [
-        growth.completed
-          ? t('celebration.complete', { building: name })
-          : t('celebration.floor', { building: name, a: growth.built, b: growth.floors }),
-        t('celebration.population', { n: growth.populationGain, town: place }),
-        ...(growth.rankUp === null ? [] : [t('celebration.rankUp', { town: place })]),
+        cleared >= mine.length
+          ? t('celebration.facilityComplete', { name: facility.name })
+          : t('celebration.facility', { name: facility.name, a: cleared, b: mine.length }),
       ],
     };
   };
@@ -345,11 +348,7 @@ function Park({
       const score = scoreAttempt({ ...attempt, skipped: progress.skipped.length });
       const reward = xpForScore(scoreAttempt(attempt), mission.kind === 'boss' ? 'boss' : 'drill');
       const after = levelFromXp(xp + reward);
-      // 町がどう育ったかは、クリアを記録する前と後の町を比べて出す
-      const { lessons: lessonsBefore, missionProgress: progressBefore } = useStore.getState();
-      const townBefore = townOf(mission.track, lessonsBefore, progressBefore);
-      const townAfter = townOf(mission.track, lessonsBefore, progressBefore, [mission.id]);
-      const growth = growthOf(townBefore, townAfter, mission.id);
+      const city = cityLines();
       clearLesson({ lessonId: mission.id, score, xp: reward, now });
       // 躓いた任務は、日を置いて見直しの対象にする
       if (
@@ -369,7 +368,7 @@ function Park({
         xp: reward,
         levelUp: after > levelFromXp(xp) ? { level: after, rank: rankFromLevel(after) } : undefined,
         takeaways: takeawaysOf(mission),
-        town: growth === null ? undefined : townLines(growth, townAfter),
+        town: city,
       });
       setDiagnosis(null);
       if (soundEnabled) sfx.clear();
@@ -476,8 +475,8 @@ function Park({
           <button type="button" onClick={retry} className="knob px-3 py-2 text-sm">
             {t('park.retry')}
           </button>
-          <Link to={`/town/${mission.track}`} className="knob px-3 py-2 text-sm">
-            {t('park.town')}
+          <Link to={`/city/${mission.track}`} className="knob px-3 py-2 text-sm">
+            {t('park.city')}
           </Link>
           <Link to="/map" className="knob px-3 py-2 text-sm">
             {t('park.map')}

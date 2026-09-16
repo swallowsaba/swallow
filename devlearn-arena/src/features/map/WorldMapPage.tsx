@@ -134,10 +134,10 @@ export default function WorldMapPage() {
             </button>
             <span className="text-xl font-extrabold">{selected?.title}</span>
             <Link
-              to={`/town/${island === PROLOGUE ? 'kernel' : island}`}
+              to={`/city/${island === PROLOGUE ? 'kernel' : island}`}
               className="sign px-4 py-2 text-base font-extrabold"
             >
-              {t('map.goTown')}
+              {t('map.goCity')}
             </Link>
             <span className="text-base text-ink-soft">{selected?.subtitle}</span>
           </div>

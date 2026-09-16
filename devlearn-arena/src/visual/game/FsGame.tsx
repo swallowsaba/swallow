@@ -26,7 +26,7 @@ const HERO_SCALE = 3;
 const HERO_W = 12 * HERO_SCALE;
 const HERO_H = 16 * HERO_SCALE;
 
-/** 屋根の色を家ごとに少し変え、町に見えるようにする */
+/** 屋根の色を家ごとに少し変え、街に見えるようにする */
 const ROOFS = ['#8f4b3f', '#3f6f8f', '#6f8f3f', '#8f6f3f', '#6f3f8f'];
 
 function roofFor(path: string): string {
@@ -36,7 +36,7 @@ function roofFor(path: string): string {
 }
 
 /**
- * ファイルシステムの町。
+ * ファイルシステムの街。
  * ディレクトリは家、ファイルは家の前の木箱。主人公はいまいる家（cwd）の前に立ち、cd すると道を歩いて移る。
  * 家を押すと cd、木箱を押すと cat が端末で打たれる。増えた木箱は空から降ってきて、書き換わった木箱は光る。
  */

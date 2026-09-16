@@ -6,7 +6,7 @@ import type { LessonIntro, LessonStep, MissionTrack } from './types';
 /**
  * 任務を始める前の「依頼」を、任務の説明（intro）から組み立てる。
  *
- * 説明を文章の一覧で読ませるのではなく、町の人が 1 つずつ話し、理解度を確かめ、道具（コマンド）を試してから建設に入る。
+ * 説明を文章の一覧で読ませるのではなく、依頼主が 1 つずつ話し、理解度を確かめ、道具（コマンド）を試してから作業に入る。
  * 台本・問題・試し打ちの結果はどれも任務のデータから決まる（乱数を使わない）ので、何度開いても同じになる。
  */
 
@@ -19,7 +19,7 @@ export type BriefingLine =
   | { kind: 'tool'; command: string; text: string }
   | { kind: 'plan'; steps: string[] };
 
-/** 町の人が話す順。依頼 → なぜ要るか → 知っておく言葉 → 使う道具 → 建設の工程 */
+/** 街の人が話す順。依頼 → なぜ要るか → 知っておく言葉 → 使う道具 → 建設の工程 */
 export function briefingScript(title: string, intro: LessonIntro, steps: readonly Pick<LessonStep, 'prompt'>[]): BriefingLine[] {
   return [
     { kind: 'request', text: `「${title}」をお願いしたい。${intro.summary}` },
@@ -123,7 +123,7 @@ export interface Tryout {
 const MAX_OUTPUT_LINES = 8;
 
 /**
- * 使う道具のうち、そのまま打てるもの（<ファイル> のような穴埋めが無いもの）を、任務と同じ初期状態の「練習用の町」で実際に打つ。
+ * 使う道具のうち、そのまま打てるもの（<ファイル> のような穴埋めが無いもの）を、任務と同じ初期状態の「練習用の環境」で実際に打つ。
  * 任務の本番の状態には触れない。上から順に打つので、git init のあとに git status のような流れも再現される。
  */
 export function tryouts(intro: LessonIntro, initial: Parameters<typeof createSession>[0]): Tryout[] {
@@ -149,7 +149,7 @@ export function tryouts(intro: LessonIntro, initial: Parameters<typeof createSes
   });
 }
 
-/* ---------------- 町の人 ---------------- */
+/* ---------------- 依頼主 ---------------- */
 
 /** 世界ごとの依頼主 */
 export const QUEST_GIVER: Record<MissionTrack, { name: string; role: string }> = {

@@ -54,7 +54,7 @@ describe('景色の飾り', () => {
   });
 });
 
-describe('ファイルの町', () => {
+describe('ファイルの街', () => {
   const vfs = createVfs({
     '/home/learner': null,
     '/home/learner/notes.txt': 'a\n',

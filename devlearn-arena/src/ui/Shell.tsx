@@ -17,7 +17,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const t = useT();
   const xp = useStore((s) => s.profile.xp);
   const progress = xpProgress(xp);
-  // 町は、最後に取り組んだ任務の世界の町を開く
+  // 街は、最後に取り組んだ任務の世界の街を開く
   const lastMissionId = useStore((s) => s.lastMissionId);
   const townTrack = (lastMissionId === null ? undefined : missionById(lastMissionId)?.track) ?? 'kernel';
 
@@ -37,12 +37,12 @@ export function Shell({ children }: { children: ReactNode }) {
             <span> PARK</span>
           </NavLink>
 
-          <nav className="flex items-center gap-1" aria-label={t('app.name')}>
+          <nav className="flex flex-wrap items-center gap-1" aria-label={t('app.name')}>
             <NavLink to="/" end className={navClass}>
               {t('nav.home')}
             </NavLink>
-            <NavLink to={`/town/${townTrack}`} className={navClass}>
-              {t('nav.town')}
+            <NavLink to={`/city/${townTrack}`} className={navClass}>
+              {t('nav.city')}
             </NavLink>
             <NavLink to="/map" className={navClass}>
               {t('nav.map')}

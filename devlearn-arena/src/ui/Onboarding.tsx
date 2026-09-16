@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useT } from '@/i18n/useT';
 import { useStore } from '@/store';
 import { flushSave } from '@/store/persistence';
@@ -14,6 +15,7 @@ export function Onboarding() {
   const onboarded = useStore((s) => s.profile.onboarded);
   const hydrated = useStore((s) => s.hydrated);
   const completeOnboarding = useStore((s) => s.completeOnboarding);
+  const navigate = useNavigate();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -79,14 +81,25 @@ export function Onboarding() {
           </ol>
           <p className="text-ink-soft">{t('onboarding.note')}</p>
         </div>
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <button
+            type="button"
+            onClick={complete}
+            className="border-2 border-wood-dark bg-cream px-4 py-2 font-mono text-sm font-bold text-ink hover:bg-white"
+          >
+            {t('onboarding.start')}
+          </button>
+          {/* まずは街で「何なのか・なぜ必要か」を学ぶところから始める */}
           <button
             ref={closeRef}
             type="button"
-            onClick={complete}
+            onClick={() => {
+              complete();
+              navigate('/city/kernel');
+            }}
             className="border-2 border-wood-dark bg-[var(--gold)] px-5 py-2 font-mono text-base font-bold text-ink hover:bg-[var(--gold-dark)]"
           >
-            {t('onboarding.start')}
+            {t('onboarding.city')}
           </button>
         </div>
       </div>

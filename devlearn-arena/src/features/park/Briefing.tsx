@@ -7,8 +7,11 @@ import type { LessonDefinition } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from '@/ui/motion';
 import { Glossed } from '@/ui/Term';
-import { FloorBuilding, QuestGiverPortrait } from '@/visual/game/townArt';
-import { FLOOR_H } from '@/visual/game/townStyle';
+import { Link } from 'react-router-dom';
+import { facilityById } from '@/content/city';
+import { missionById } from '@/engines/lesson/registry';
+import { useStore } from '@/store';
+import { CityPortrait } from '@/visual/game/cityArt';
 import { PrerequisiteNote } from './PrerequisiteNote';
 
 interface Props {
@@ -24,9 +27,9 @@ const PHASES: readonly Phase[] = ['talk', 'quiz', 'try', 'plan'];
 /**
  * 任務を始める前の「依頼」。
  *
- * 説明を文章の一覧で読ませる代わりに、町の依頼主が 1 つずつ話す（なぜ要るか・言葉・道具・工程）。
+ * 説明を文章の一覧で読ませる代わりに、街の依頼主が 1 つずつ話す（なぜ要るか・言葉・道具・工程）。
  * 次に理解度チェックで言葉とコマンドの意味を確かめ、正解したコマンドは道具として手に入る。
- * 穴埋めの無い道具は練習用の町で実際に打って結果を見てから、建設計画を確かめて建設（端末での作業）に入る。
+ * 穴埋めの無い道具は練習用の街で実際に打って結果を見てから、建設計画を確かめて建設（端末での作業）に入る。
  * どの段階も飛ばせる（Esc か「説明をとばす」）。間違えても罰は無い。
  */
 export function Briefing({ mission, prerequisites = [], onStart, onSwitch }: Props) {
@@ -96,6 +99,8 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch }: Pro
           ))}
         </nav>
 
+        <FacilityNote missionId={mission.id} track={mission.track} />
+
         {onSwitch && prerequisites.length > 0 ? (
           <div className="px-4 pt-3">
             <PrerequisiteNote prerequisites={prerequisites} onSwitch={onSwitch} />
@@ -104,7 +109,7 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch }: Pro
 
         <div className="grid gap-4 p-4 sm:grid-cols-[auto_1fr] sm:p-6">
           <div className="flex flex-row items-end gap-3 sm:flex-col sm:items-center">
-            <QuestGiverPortrait track={mission.track} talking={phase === 'talk'} animate={animate} />
+            <CityPortrait track={mission.track} talking={phase === 'talk'} animate={animate} />
             <span className="plate px-3 py-1 text-sm font-extrabold">{t('brief.giver', giver)}</span>
           </div>
 
@@ -141,7 +146,7 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch }: Pro
                 }}
               />
             ) : (
-              <Plan mission={mission} animate={animate} onStart={onStart} />
+              <Plan mission={mission} onStart={onStart} />
             )}
           </div>
         </div>
@@ -216,7 +221,7 @@ function Talk({ script, line, onLine, onDone, animate }: {
               <ol className="flex flex-col gap-1.5">
                 {current.steps.map((step, i) => (
                   <li key={`${String(i)}-${step}`} className="flex items-start gap-2 text-base leading-snug">
-                    <span className="sign shrink-0 px-2 text-xs font-extrabold">{t('brief.floor', { n: i + 1 })}</span>
+                    <span className="sign shrink-0 px-2 text-xs font-extrabold">{i + 1}</span>
                     <span className="min-w-0">
                       <Glossed text={step} />
                     </span>
@@ -473,13 +478,11 @@ function TryTools({ tries, fieldTools, onDone }: {
   );
 }
 
-/* ---------------- 4. 建設計画 ---------------- */
+/* ---------------- 4. 作業の段取り ---------------- */
 
-function Plan({ mission, animate, onStart }: { mission: LessonDefinition; animate: boolean; onStart: () => void }) {
+function Plan({ mission, onStart }: { mission: LessonDefinition; onStart: () => void }) {
   const t = useT();
   const startRef = useRef<HTMLButtonElement>(null);
-  const floors = mission.steps.length;
-  const height = floors * FLOOR_H + 60;
 
   useEffect(() => {
     startRef.current?.focus();
@@ -488,26 +491,48 @@ function Plan({ mission, animate, onStart }: { mission: LessonDefinition; animat
   return (
     <div className="flex flex-col gap-3" data-testid="plan">
       <p className="text-base">{t('brief.planLead')}</p>
-      <div className="flex flex-wrap items-end gap-4">
-        <svg width={120} height={height} viewBox={`0 0 120 ${String(height)}`} aria-hidden className="shrink-0">
-          <rect width={120} height={height} fill="#bfe3f5" />
-          <rect x={0} y={height - 14} width={120} height={14} fill="#77b356" />
-          <FloorBuilding track={mission.track} x={30} y={height - 20} w={60} floors={floors} built={0} animate={animate} landmark={mission.kind === 'boss'} />
-        </svg>
-        <ol className="flex min-w-0 flex-1 flex-col-reverse gap-1.5">
-          {mission.steps.map((step, i) => (
-            <li key={`${String(i)}-${step.prompt}`} className="flex items-start gap-2 border-2 border-dashed border-[var(--cream-dark)] bg-white px-2 py-1.5 text-sm leading-snug">
-              <span className="sign shrink-0 px-2 text-xs font-extrabold">{t('brief.floor', { n: i + 1 })}</span>
-              <span className="min-w-0">
-                <Glossed text={step.prompt} />
-              </span>
-            </li>
-          ))}
-        </ol>
-      </div>
+      <ol className="flex flex-col gap-1.5">
+        {mission.steps.map((step, i) => (
+          <li key={`${String(i)}-${step.prompt}`} className="flex items-start gap-2 border-2 border-[var(--cream-dark)] bg-white px-2 py-1.5 text-sm leading-snug">
+            <span className="sign shrink-0 px-2 text-xs font-extrabold">{i + 1}</span>
+            <span className="min-w-0">
+              <Glossed text={step.prompt} />
+            </span>
+          </li>
+        ))}
+      </ol>
       <button ref={startRef} type="button" onClick={onStart} className="sign w-fit px-8 py-3 text-lg font-extrabold">
         {t('brief.start')}
       </button>
+    </div>
+  );
+}
+
+/**
+ * この依頼がどの施設の仕事かを示す。施設をまだ建てていなければ、
+ * コマンドを打つ前に街でその仕組みを学んで建てるよう案内する（進むことは止めない）。
+ */
+function FacilityNote({ missionId, track }: { missionId: string; track: LessonDefinition['track'] }) {
+  const t = useT();
+  const built = useStore((s) => s.facilitiesBuilt);
+  const chapterId = missionById(missionId)?.chapterId;
+  const facility = chapterId === undefined ? undefined : facilityById(chapterId);
+  if (!facility) return null;
+  const isBuilt = built.includes(facility.id);
+  return (
+    <div
+      data-testid="facility-note"
+      data-built={isBuilt ? 'true' : 'false'}
+      className={`mx-4 mt-3 flex flex-wrap items-center gap-2 border-l-4 px-3 py-2 text-sm ${isBuilt ? 'border-[var(--ok)] bg-[#dff0cf]' : 'border-[var(--warn)] bg-[var(--gold)]/25'}`}
+    >
+      <span className="font-bold">
+        🏙 {isBuilt ? t('brief.facilityBuilt', { name: facility.name }) : t('brief.facilityUnbuilt', { name: facility.name, concept: facility.concept })}
+      </span>
+      {isBuilt ? null : (
+        <Link to={`/city/${track}?facility=${encodeURIComponent(facility.id)}`} className="knob px-3 py-1 text-xs font-bold">
+          {t('brief.learnInCity')}
+        </Link>
+      )}
     </div>
   );
 }

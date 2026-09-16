@@ -16,11 +16,11 @@ async function dismissOnboarding(page: Page): Promise<void> {
   }
 }
 
-/** 任務を開いたときに出る「学ぶ」画面を閉じる */
+/** 任務を開いたときに出る「依頼」画面を閉じる */
 async function dismissIntro(page: Page): Promise<void> {
-  const intro = page.getByRole('dialog').filter({ hasText: 'この任務で学ぶこと' });
+  const intro = page.getByTestId('briefing');
   if (await intro.isVisible()) {
-    await intro.getByRole('button', { name: 'はじめる' }).click();
+    await intro.getByRole('button', { name: '説明をとばして作業をはじめる' }).click();
     await expect(intro).toBeHidden();
   }
 }
@@ -50,8 +50,8 @@ test('1枚の画面が開き、コマンドで景色が変わる', async ({ page
   await open(page);
   await expect(page.getByText('DEVLEARN', { exact: true })).toBeVisible();
 
-  // 既定はゲームの世界（ファイルの町）
-  const world = page.getByRole('img', { name: 'ファイルの町' });
+  // 既定はゲームの世界（ファイルの街）
+  const world = page.getByRole('img', { name: 'ファイルの街' });
   await expect(world).toBeVisible();
   await expect(world).not.toContainText('reports');
 
@@ -128,18 +128,56 @@ test('任務は絞り込んで選べる', async ({ page }) => {
   await expect(picker).toBeHidden();
 });
 
-test('任務を開くとまず説明が出て、読んだ任務では次から出ない', async ({ page }) => {
+test('任務を開くとまず依頼の話が出て、聞いた任務では次から出ない', async ({ page }) => {
   await page.goto('./');
   await dismissOnboarding(page);
-  const intro = page.getByRole('dialog').filter({ hasText: 'この任務で学ぶこと' });
+  const intro = page.getByTestId('briefing');
   await expect(intro).toBeVisible();
-  await intro.getByRole('button', { name: 'はじめる' }).click();
+  // コマンドの前に、施設（概念）をまだ学んでいなければ街へ案内される
+  await expect(intro.getByTestId('facility-note')).toHaveAttribute('data-built', 'false');
+  await intro.getByRole('button', { name: '説明をとばして作業をはじめる' }).click();
   await expect(intro).toBeHidden();
 
   await page.reload();
   await expect(intro).toBeHidden();
-  await page.getByRole('button', { name: '説明を読む' }).click();
+  await page.getByRole('button', { name: '依頼を聞き直す' }).click();
   await expect(intro).toBeVisible();
+});
+
+test('初回の案内から街へ行き、仕組みを学んで判断問題に合格すると施設が建つ', async ({ page }) => {
+  await page.goto('./');
+  const welcome = page.getByRole('dialog', { name: 'ようこそ' });
+  await welcome.getByRole('button', { name: 'シェルの街から始める' }).click();
+  await expect(page.getByTestId('city-page')).toHaveAttribute('data-track', 'kernel');
+
+  const first = page.locator('[data-facility="kernel/00"]');
+  await expect(first).toHaveAttribute('data-state', 'available');
+  await page.getByTestId('learn-facility').click();
+
+  const lesson = page.getByTestId('facility-lesson');
+  await expect(lesson).toBeVisible();
+  // 困りごと → 何なのか → なぜ → 仕組み → 落とし穴 を読み進めて、審査へ
+  // 「次へ」は審査の段で消える。消えるまで押し進める
+  const next = lesson.getByTestId('lesson-next');
+  while (await next.isVisible()) {
+    await next.click();
+  }
+  await expect(lesson.getByTestId('exam')).toBeVisible();
+  for (;;) {
+    await lesson.locator('[data-correct="true"]').click();
+    const examNext = lesson.getByTestId('exam-next');
+    const isLast = (await examNext.textContent())?.includes('施設を建てる') ?? false;
+    await examNext.click();
+    if (isLast) break;
+  }
+  await expect(lesson.getByTestId('facility-built')).toBeVisible();
+  await lesson.getByRole('button', { name: '街に戻る' }).click();
+  await expect(first).toHaveAttribute('data-state', 'built');
+  await expect(page.locator('[data-facility="kernel/01"]')).toHaveAttribute('data-state', 'available');
+
+  // 建てた施設は保存され、読み込み直しても残る
+  await page.reload();
+  await expect(page.locator('[data-facility="kernel/00"]')).toHaveAttribute('data-state', 'built');
 });
 
 test('目次では本編と反復演習が分かれている', async ({ page }) => {

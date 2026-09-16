@@ -100,6 +100,8 @@ export const saveDataSchema = z.object({
   lastMissionId: z.string().nullable().default(null),
   /** 「学ぶ」画面を読み終えた任務。次からは自動で開かない */
   introsRead: z.array(z.string()).default([]),
+  /** 学んで建てた街の施設（章の id）。古い保存データには無いので空で補う */
+  facilitiesBuilt: z.array(z.string()).default([]),
 });
 export type SaveData = z.infer<typeof saveDataSchema>;
 
@@ -128,6 +130,7 @@ export function createEmptySave(now: number): SaveData {
     missionState: {},
     lastMissionId: null,
     introsRead: [],
+    facilitiesBuilt: [],
   };
 }
 
