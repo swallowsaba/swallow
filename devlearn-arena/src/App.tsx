@@ -8,6 +8,7 @@ import { Loading } from './ui/components/Loading';
 // ルート単位のコード分割。コンテンツ本体は各画面から動的 import する。
 const WorldMapPage = lazy(() => import('./features/map/WorldMapPage'));
 const TrackPage = lazy(() => import('./features/track/TrackPage'));
+const TownPage = lazy(() => import('./features/town/TownPage'));
 const LessonPage = lazy(() => import('./features/lesson/LessonPage'));
 const ParkPage = lazy(() => import('./features/park/ParkPage'));
 const SandboxPage = lazy(() => import('./features/sandbox/SandboxPage'));
@@ -32,6 +33,7 @@ export function App() {
                   <Routes>
                     <Route path="/map" element={<WorldMapPage />} />
                     <Route path="/track/:trackId" element={<TrackPage />} />
+                    <Route path="/town/:trackId" element={<TownPage />} />
                     <Route
                       path="/lesson/:trackId/:chapterNo/:lessonSlug"
                       element={<LessonPage />}

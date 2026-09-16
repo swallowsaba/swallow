@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from './motion';
 
@@ -11,6 +12,8 @@ export interface CelebrationData {
   levelUp?: { level: number; rank: string } | undefined;
   /** ここまでで分かったこと（3行） */
   takeaways?: readonly string[] | undefined;
+  /** 町がどう育ったか。行と、町の画面への行き先 */
+  town?: { lines: readonly string[]; href: string } | undefined;
 }
 
 interface Props {
@@ -68,6 +71,32 @@ export function Celebration({ data, onDismiss, nextLabel, onNext }: Props) {
               >
                 LEVEL {data.levelUp.level} — {data.levelUp.rank}
               </motion.p>
+            ) : null}
+
+            {data.town ? (
+              <motion.div
+                data-testid="town-growth"
+                initial={animate ? { opacity: 0, y: 12 } : false}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="mx-auto mt-6 max-w-xl border-4 border-wood-dark bg-[#dff0cf] px-4 py-3 text-left"
+              >
+                {data.town.lines.map((line, i) => (
+                  <p key={line} className={i === 0 ? 'text-lg font-extrabold' : 'text-base font-bold'}>
+                    {i === 0 ? '🏗 ' : '👪 '}
+                    {line}
+                  </p>
+                ))}
+                <Link
+                  to={data.town.href}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className="knob mt-2 inline-block px-4 py-1.5 text-sm font-bold"
+                >
+                  {t('celebration.town')}
+                </Link>
+              </motion.div>
             ) : null}
 
             {data.takeaways && data.takeaways.length > 0 ? (

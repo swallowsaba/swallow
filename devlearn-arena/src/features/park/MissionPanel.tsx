@@ -3,6 +3,7 @@ import type { LessonDefinition, LessonProgressState, LessonStep } from '@/engine
 import { Glossed } from '@/ui/Term';
 import { takeawaysOf } from '@/engines/lesson/takeaways';
 import { Assist } from './Assist';
+import { ConstructionSite } from './ConstructionSite';
 import { PrerequisiteNote } from './PrerequisiteNote';
 import { StepChecklist, type PartState } from './StepChecklist';
 
@@ -64,12 +65,18 @@ export function MissionPanel({
         </div>
       )}
       <SkippedNotes mission={mission} skipped={progress.skipped} />
-      <p className="text-sm font-bold text-ink-soft">
-        {progress.cleared ? t('park.done') : t('park.todo', { n: progress.stepIndex + 1 })}
-      </p>
-      <p className="mt-1 text-xl font-bold leading-snug">
-        {progress.cleared ? t('park.missionDone') : <Glossed text={step?.prompt ?? ''} />}
-      </p>
+      {/* 左に今の工程、右に建設現場。工程を通すたびに建物が 1 階ずつ建つ */}
+      <div className="flex items-start gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-ink-soft">
+            {progress.cleared ? t('park.done') : `🏗 ${t('park.todo', { n: progress.stepIndex + 1 })}`}
+          </p>
+          <p className="mt-1 text-xl font-bold leading-snug">
+            {progress.cleared ? t('park.missionDone') : <Glossed text={step?.prompt ?? ''} />}
+          </p>
+        </div>
+        <ConstructionSite mission={mission} progress={progress} />
+      </div>
 
       <LastExplain mission={mission} progress={progress} />
 

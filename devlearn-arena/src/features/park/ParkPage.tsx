@@ -23,8 +23,10 @@ import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
 import { splitTemplate } from '@/ui/panes';
+import { buildingName, townName, townOf } from '@/features/town/townName';
+import { growthOf } from '@/engines/lesson/town';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
-import { IntroScreen } from './IntroScreen';
+import { Briefing } from './Briefing';
 import { MissionPanel } from './MissionPanel';
 import { MissionPicker } from './MissionPicker';
 import { NO_HINTS, reveal, revealedCount, stepKey, type HintReveal } from './hints';
@@ -248,6 +250,24 @@ function Park({
     );
   }, [mission.id, progress, shellState, saveMission]);
 
+  /** 祝いの画面に出す、町の育ち方の行 */
+  const townLines = (growth: NonNullable<ReturnType<typeof growthOf>>, town: ReturnType<typeof townOf>): { lines: string[]; href: string } => {
+    const district = town.districts.find((d) => d.buildings.some((b) => b.id === growth.buildingId));
+    const building = district?.buildings.find((b) => b.id === growth.buildingId);
+    const name = district && building ? buildingName(t, mission.track, district, building.index, building.landmark) : '';
+    const place = townName(t, mission.track, town.stats.rank);
+    return {
+      href: `/town/${mission.track}`,
+      lines: [
+        growth.completed
+          ? t('celebration.complete', { building: name })
+          : t('celebration.floor', { building: name, a: growth.built, b: growth.floors }),
+        t('celebration.population', { n: growth.populationGain, town: place }),
+        ...(growth.rankUp === null ? [] : [t('celebration.rankUp', { town: place })]),
+      ],
+    };
+  };
+
   const pushToast = useCallback((text: string) => {
     const key = Date.now() + Math.random();
     setToasts((list) => [...list, { key, text }]);
@@ -325,6 +345,11 @@ function Park({
       const score = scoreAttempt({ ...attempt, skipped: progress.skipped.length });
       const reward = xpForScore(scoreAttempt(attempt), mission.kind === 'boss' ? 'boss' : 'drill');
       const after = levelFromXp(xp + reward);
+      // 町がどう育ったかは、クリアを記録する前と後の町を比べて出す
+      const { lessons: lessonsBefore, missionProgress: progressBefore } = useStore.getState();
+      const townBefore = townOf(mission.track, lessonsBefore, progressBefore);
+      const townAfter = townOf(mission.track, lessonsBefore, progressBefore, [mission.id]);
+      const growth = growthOf(townBefore, townAfter, mission.id);
       clearLesson({ lessonId: mission.id, score, xp: reward, now });
       // 躓いた任務は、日を置いて見直しの対象にする
       if (
@@ -344,6 +369,7 @@ function Park({
         xp: reward,
         levelUp: after > levelFromXp(xp) ? { level: after, rank: rankFromLevel(after) } : undefined,
         takeaways: takeawaysOf(mission),
+        town: growth === null ? undefined : townLines(growth, townAfter),
       });
       setDiagnosis(null);
       if (soundEnabled) sfx.clear();
@@ -385,7 +411,7 @@ function Park({
     <div className="flex h-full min-w-0 flex-col overflow-x-hidden bg-cream">
       <XpToast toasts={toasts} />
       {showIntro ? (
-        <IntroScreen mission={mission} prerequisites={prerequisites} onStart={startMission} onSwitch={onSwitch} />
+        <Briefing mission={mission} prerequisites={prerequisites} onStart={startMission} onSwitch={onSwitch} />
       ) : null}
       <Celebration
         data={celebration}
@@ -450,6 +476,9 @@ function Park({
           <button type="button" onClick={retry} className="knob px-3 py-2 text-sm">
             {t('park.retry')}
           </button>
+          <Link to={`/town/${mission.track}`} className="knob px-3 py-2 text-sm">
+            {t('park.town')}
+          </Link>
           <Link to="/map" className="knob px-3 py-2 text-sm">
             {t('park.map')}
           </Link>
