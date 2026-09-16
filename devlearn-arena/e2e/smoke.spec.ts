@@ -50,12 +50,19 @@ test('1枚の画面が開き、コマンドで景色が変わる', async ({ page
   await open(page);
   await expect(page.getByText('DEVLEARN', { exact: true })).toBeVisible();
 
-  const world = page.getByRole('img', { name: 'ファイルシステムの階層図' });
+  // 既定はゲームの世界（ファイルの町）
+  const world = page.getByRole('img', { name: 'ファイルの町' });
   await expect(world).toBeVisible();
   await expect(world).not.toContainText('reports');
 
   await type(page, 'mkdir reports');
   await expect(world).toContainText('reports');
+
+  // 図に切り替えても、同じ状態が見える
+  await page.getByRole('button', { name: '図', exact: true }).click();
+  const diagram = page.getByRole('img', { name: 'ファイルシステムの階層図' });
+  await expect(diagram).toBeVisible();
+  await expect(diagram).toContainText('reports');
 
   expect(failed, `失敗したリクエスト: ${failed.join(', ')}`).toEqual([]);
 });
