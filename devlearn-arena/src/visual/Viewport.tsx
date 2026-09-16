@@ -88,6 +88,8 @@ export function Viewport({ children, label }: Props) {
     const observer = new ResizeObserver(refresh);
     observer.observe(frame);
     observer.observe(content);
+    // 包む要素は枠の幅に固定しているので、中の絵が広がっても大きさが変わらない。中の絵そのものも見張る
+    for (const child of Array.from(content.children)) observer.observe(child);
     return () => {
       observer.disconnect();
     };

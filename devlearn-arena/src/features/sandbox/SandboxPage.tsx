@@ -6,6 +6,7 @@ import { createRepo } from '@/engines/github/pr';
 import { HOME } from '@/engines/kernel/path';
 import type { SessionOptions } from '@/engines/kernel/session';
 import { EditorPanel, type EditorTarget } from '@/features/park/EditorPanel';
+import { ViewModeSwitch, WorldView } from '@/features/park/WorldView';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
 import { TimeScrubber } from '@/features/terminal/TimeScrubber';
 import { useDiagramRunner } from '@/features/terminal/useDiagramRunner';
@@ -14,11 +15,6 @@ import { useT } from '@/i18n/useT';
 import type { TKey } from '@/i18n';
 import { useStore } from '@/store';
 import { Splitter } from '@/ui/Splitter';
-import { ClusterCanvas } from '@/visual/ClusterCanvas';
-import { CommitGraph } from '@/visual/CommitGraph';
-import { FsTree } from '@/visual/FsTree';
-import { PacketFlow } from '@/visual/PacketFlow';
-import { PrTimeline } from '@/visual/PrTimeline';
 
 type Tab = 'fs' | 'git' | 'k8s' | 'net' | 'gh';
 
@@ -123,6 +119,7 @@ export default function SandboxPage() {
         />
 
         <div className="flex min-h-0 min-w-0 flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-1">
           <div role="tablist" aria-label={t('sandbox.viewLabel')} className="flex flex-wrap gap-1">
             {TABS.map((item) => (
               <button
@@ -143,14 +140,10 @@ export default function SandboxPage() {
               </button>
             ))}
           </div>
+            <ViewModeSwitch light />
+          </div>
           <div className="min-h-0 flex-1 overflow-hidden border border-wood-dark bg-cream">
-            {tab === 'fs' ? (
-              <FsTree vfs={state.vfs} previous={previous?.vfs} cwd={state.cwd} onCommand={runFromDiagram} />
-            ) : null}
-            {tab === 'git' ? <CommitGraph git={state.git} previous={previous?.git} vfs={state.vfs} cwd={state.cwd} onCommand={runFromDiagram} /> : null}
-            {tab === 'k8s' ? <ClusterCanvas cluster={state.cluster} previous={previous?.cluster} onCommand={runFromDiagram} /> : null}
-            {tab === 'net' ? <PacketFlow net={state.net} self={state.vars.get('NET_SELF') ?? 'pc1'} onCommand={runFromDiagram} /> : null}
-            {tab === 'gh' ? <PrTimeline repo={state.repo} onCommand={runFromDiagram} /> : null}
+            <WorldView tab={tab} state={state} previous={previous} onCommand={runFromDiagram} />
           </div>
         </div>
       </div>

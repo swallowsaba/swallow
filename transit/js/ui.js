@@ -185,8 +185,19 @@ export function renderAttributions(gtfsCatalog) {
     box.hidden = true;
     return;
   }
-  const names = [...new Set(ops.map((o) => o.attribution))];
-  box.textContent = `バスの時刻表データ出典: ${names.join(' / ')}`;
+  // 出典元ごとに、どの事業者のデータかまで書く。
+  // 「出典を書けばよい」ではなく「何の出典か分かること」が求められるため。
+  const bySource = new Map();
+  for (const o of ops) {
+    if (!bySource.has(o.attribution)) bySource.set(o.attribution, []);
+    bySource.get(o.attribution).push(o.title);
+  }
+  const licenses = [...new Set(ops.map((o) => o.license).filter(Boolean))];
+
+  const parts = [...bySource.entries()].map(([src, titles]) => `${src}(${titles.join('・')})`);
+  box.textContent =
+    `バスの時刻表データ出典: ${parts.join(' / ')}` +
+    (licenses.length ? ` — ${licenses.join(' / ')}` : '');
   box.hidden = false;
 }
 

@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Topology } from '@/engines/net/types';
 import { useMotionEnabled } from '@/ui/motion';
 import { useT } from '@/i18n/useT';
 import { netCommands, type RunCommand } from './commands';
-import {
-  changedFields, deviceCenter, HEADER_FIELDS, headerValue, layoutNet, NODE_H, NODE_W, stoppedAt,
-} from './netModel';
+import { HopInspector } from './HopInspector';
+import { HOP_MS, useHopPlayer } from './useHopPlayer';
+import { deviceCenter, layoutNet, NODE_H, NODE_W, stoppedAt } from './netModel';
 import { FILL } from './sceneKit';
 import { Viewport } from './Viewport';
 
@@ -16,38 +16,6 @@ interface Props {
   self: string;
   /** 図の操作をコマンドとして端末に流す。無ければ見るだけの図になる */
   onCommand?: RunCommand;
-}
-
-/** 1ホップ進むのにかける時間（ミリ秒） */
-const HOP_MS = 800;
-
-/**
- * 直前のパケットを1ホップずつ進める。
- * 送り直すたび（trace.id が変わるたび）に最初のホップから再生する。動きを止める設定なら最後のホップを出す。
- */
-function useHopPlayer(traceId: number | undefined, hopCount: number, animate: boolean): [number, (n: number) => void] {
-  const [step, setStep] = useState(0);
-  useEffect(() => {
-    if (hopCount === 0) return;
-    if (!animate) {
-      setStep(hopCount - 1);
-      return;
-    }
-    setStep(0);
-    let i = 0;
-    const timer = setInterval(() => {
-      i += 1;
-      if (i >= hopCount) {
-        clearInterval(timer);
-        return;
-      }
-      setStep(i);
-    }, HOP_MS);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [traceId, hopCount, animate]);
-  return [Math.min(step, Math.max(0, hopCount - 1)), setStep];
 }
 
 /**
@@ -90,7 +58,6 @@ export function PacketFlow({ net, self, onCommand }: Props) {
   );
   const stopped = stoppedAt(trace);
   const finished = step >= hops.length - 1;
-  const changed = hop === undefined ? new Set<string>() : changedFields(hops[step - 1], hop);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -239,64 +206,15 @@ export function PacketFlow({ net, self, onCommand }: Props) {
       {/* 図の下の欄。拡大縮小に巻き込まず、いつも同じ大きさで読めるようにする */}
       <div className="max-h-[45%] shrink-0 overflow-auto border-t-4 border-wood-dark px-4 pb-4">
       {/* ホップの一覧とヘッダ。押したホップの時点のヘッダを出す */}
-      {hops.length > 0 ? (
-        <section aria-label={t('viz.hops')} className="mt-4 border-4 border-wood-dark bg-cream p-3">
-          <p className="text-sm font-bold">{t('viz.hops')}</p>
-          <ol className="mt-1 flex flex-wrap gap-1">
-            {hops.map((h, i) => (
-              <li key={`${h.device}-${String(i)}`}>
-                <button
-                  type="button"
-                  data-hop={i}
-                  aria-current={i === step ? 'step' : undefined}
-                  className={`border-2 px-2 py-0.5 font-mono text-xs ${
-                    i === step ? 'border-[var(--bad)] bg-gold' : 'border-wood-dark bg-cream'
-                  }`}
-                  title={h.note}
-                  onClick={() => {
-                    setStep(i);
-                    setInspecting(true);
-                  }}
-                >
-                  {i + 1}. {h.device}
-                </button>
-              </li>
-            ))}
-          </ol>
-          {hop !== undefined ? <p className="mt-1 font-mono text-xs text-ink-soft">{hop.note}</p> : null}
-          {inspecting && hop !== undefined ? (
-            <table data-testid="headers" className="mt-2 w-full border-collapse font-mono text-xs">
-              <caption className="text-left text-xs font-bold">
-                {t('viz.headersAt', { n: step + 1, device: hop.device })}
-              </caption>
-              <tbody>
-                {HEADER_FIELDS.map(({ field, label, layer }) => {
-                  const isChanged = changed.has(field);
-                  return (
-                    <tr
-                      key={field}
-                      data-field={field}
-                      data-changed={isChanged ? 'true' : 'false'}
-                      style={{ backgroundColor: isChanged ? FILL.warn : undefined }}
-                    >
-                      <td className="border border-wood-dark px-1 text-ink-soft">{layer}</td>
-                      <th scope="row" className="border border-wood-dark px-1 text-left font-bold">
-                        {label}
-                      </th>
-                      <td className="border border-wood-dark px-1">{headerValue(hop, field)}</td>
-                      <td className="border border-wood-dark px-1 font-sans font-bold">
-                        {isChanged ? `${t('viz.rewritten')} ← ${headerValue(hops[step - 1] ?? hop, field)}` : ''}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <p className="mt-1 text-xs text-ink-soft">{t('viz.inspectLead')}</p>
-          )}
-        </section>
-      ) : null}
+      <HopInspector
+        hops={hops}
+        step={step}
+        onStep={setStep}
+        inspecting={inspecting}
+        onInspect={() => {
+          setInspecting(true);
+        }}
+      />
 
       {/* キーボードでも抜き挿しできるよう、ケーブルの一覧も置く */}
       {onCommand && placed.edges.length > 0 ? (

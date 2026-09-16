@@ -300,17 +300,16 @@ export async function stopsInBounds(bounds, { zoom, limit = STOP_LIMIT } = {}) {
     return { stops: [], truncated: false, tooWide: true, empty: false };
   }
 
-  const stops = [];
-  let truncated = false;
+  // まず事業者ごとに範囲内のものを集める。
+  // ここで打ち切ってしまうと、先頭の事業者だけで上限に達したときに
+  // 後ろの事業者が 1 件も出なくなる(京王バスばかり出て関東バスが消える)。
+  const perOperator = [];
   for (const { op, index } of loaded) {
+    const hits = [];
     for (const s of index.stops) {
       if (s.y > bounds.north || s.y < bounds.south) continue;
       if (s.x > bounds.east || s.x < bounds.west) continue;
-      if (stops.length >= limit) {
-        truncated = true;
-        break;
-      }
-      stops.push({
+      hits.push({
         id: `gtfs:${op.id}:${s.i}`,
         title: s.n,
         lat: s.y,
@@ -319,9 +318,27 @@ export async function stopsInBounds(bounds, { zoom, limit = STOP_LIMIT } = {}) {
         operatorTitle: op.title,
       });
     }
-    if (truncated) break;
+    if (hits.length) perOperator.push(hits);
   }
-  return { stops, truncated, tooWide: false, empty: false };
+
+  const total = perOperator.reduce((n, a) => n + a.length, 0);
+  if (total <= limit) {
+    return { stops: perOperator.flat(), truncated: false, tooWide: false, empty: false, total };
+  }
+
+  // 上限を超えるときは、事業者を順番に 1 件ずつ取る(どの事業者も必ず出る)。
+  const stops = [];
+  for (let i = 0; stops.length < limit; i += 1) {
+    let progressed = false;
+    for (const hits of perOperator) {
+      if (i >= hits.length) continue;
+      progressed = true;
+      stops.push(hits[i]);
+      if (stops.length >= limit) break;
+    }
+    if (!progressed) break;
+  }
+  return { stops, truncated: true, tooWide: false, empty: false, total };
 }
 
 /** テスト用に読み込み済みのものを捨てる */

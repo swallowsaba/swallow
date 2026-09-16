@@ -86,13 +86,18 @@ async function init() {
   state.holidays = holidays.dates || [];
   updateCalendarNote();
 
+  // 取り込んだデータの出典は、ライセンスで表示が義務づけられている。
+  // Worker の状態に関係なく、必ず先に出す
+  // (Worker が落ちていても、索引を配信している以上は出典が要るため)。
+  const catalog = await loadCatalog().catch(() => ({ operators: [] }));
+  state.gtfsCatalog = catalog;
+  ui.renderAttributions(catalog);
+
   // Worker の疎通と対応範囲
   try {
     const res = await state.api.health();
     state.health = res.data;
     // GTFS から取り込んだ事業者があれば、それも「対応している」側に出す
-    const catalog = await loadCatalog().catch(() => ({ operators: [] }));
-    state.gtfsCatalog = catalog;
     ui.renderCoverage(res.data, catalog);
     if (!res.data.tokenConfigured) {
       ui.addAlert('warn', {
@@ -764,7 +769,7 @@ let gtfsStopNoticeShown = false;
 async function showGtfsStopsInView(view) {
   if (!state.map?.ready) return;
   try {
-    const { stops, truncated, tooWide, empty } = await stopsInBounds(view, { zoom: view.zoom });
+    const { stops, truncated, tooWide, empty, total } = await stopsInBounds(view, { zoom: view.zoom });
 
     if (empty) {
       // まだ取り込んでいない。黙って何も出さないと不具合に見えるので 1 度だけ伝える。
@@ -787,11 +792,13 @@ async function showGtfsStopsInView(view) {
 
     rememberBusStops(stops);
     const added = state.map.addBusStops(stops);
+    // 何件中何件を出しているのかを必ず書く。
+    // 「全部出ている」のか「間引かれている」のかが分からないのが一番困るため。
     setMapHint(
       truncated
-        ? `この範囲のバス停が多いため一部だけ表示しています。拡大すると残りも出ます。`
+        ? `この範囲のバス停 ${total} 件のうち ${stops.length} 件だけ表示しています(各社から均等に選んでいます)。拡大すると残りも出ます。`
         : added
-          ? `この範囲のバス停を ${state.knownBusStops.size} 件表示しています。`
+          ? `この範囲のバス停をすべて表示しています(${stops.length} 件)。`
           : ''
     );
   } catch (e) {

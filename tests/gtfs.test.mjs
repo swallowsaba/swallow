@@ -487,6 +487,48 @@ await asyncTest('件数の上限で打ち切り、打ち切ったことを伝え
   const r = await stopsInBounds(ALL, { zoom: 15, limit: 2 });
   assert.equal(r.stops.length, 2);
   assert.equal(r.truncated, true);
+  assert.equal(r.total, 3, '全体で何件あるのかを伝えていない');
+});
+
+// 上限に達したとき、先頭の事業者だけで埋め尽くさないこと。
+// 事業者ごとに索引を順に見る作りなので、素直に書くと京王バスだけが出て
+// 関東バスが 1 件も出ない、という偏りが起きる。
+await asyncTest('上限に達しても、どの事業者の停留所も必ず出る', async () => {
+  const two = { ...FILES };
+  // 同じ索引を別の事業者として 2 社ぶん見せる
+  for (const [k, v] of Object.entries(WEB)) two[`KantoBus/${k}`] = v;
+  two['catalog.json'] = JSON.stringify({
+    v: 1,
+    operators: [
+      { id: 'KeioBus', title: '京王バス', dir: 'KeioBus', generatedAt: META.generatedAt },
+      { id: 'KantoBus', title: '関東バス', dir: 'KantoBus', generatedAt: META.generatedAt },
+    ],
+  });
+  installFetch(two);
+
+  const r = await stopsInBounds(ALL, { zoom: 15, limit: 3 });
+  assert.equal(r.truncated, true);
+  assert.equal(r.total, 6, '2 社ぶんの合計になっていない');
+  const ops = new Set(r.stops.map((s) => s.operatorTitle));
+  assert(ops.has('京王バス'), '京王バスが出ていない');
+  assert(ops.has('関東バス'), `後ろの事業者が消えている: ${[...ops].join(',')}`);
+});
+
+await asyncTest('上限に達しなければ全事業者ぶんすべて出る', async () => {
+  const two = { ...FILES };
+  for (const [k, v] of Object.entries(WEB)) two[`KantoBus/${k}`] = v;
+  two['catalog.json'] = JSON.stringify({
+    v: 1,
+    operators: [
+      { id: 'KeioBus', title: '京王バス', dir: 'KeioBus', generatedAt: META.generatedAt },
+      { id: 'KantoBus', title: '関東バス', dir: 'KantoBus', generatedAt: META.generatedAt },
+    ],
+  });
+  installFetch(two);
+
+  const r = await stopsInBounds(ALL, { zoom: 15 });
+  assert.equal(r.truncated, false);
+  assert.equal(r.stops.length, 6, '全件出ていない');
 });
 
 await asyncTest('まだ取り込んでいなければ empty を返す', async () => {

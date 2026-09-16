@@ -43,6 +43,8 @@ export const settingsSchema = z.object({
   paneTask: z.number().min(15).max(70).default(35),
   /** 一度読んだ任務でも、開くたびに「学ぶ」画面を出す */
   introAlways: z.boolean().default(false),
+  /** 右側を、ゲームの世界として見せるか（game）、図として見せるか（diagram） */
+  visualMode: z.enum(['game', 'diagram']).default('game'),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
@@ -110,6 +112,7 @@ export const defaultSettings: Settings = {
   paneMap: 62,
   paneTask: 35,
   introAlways: false,
+  visualMode: 'game',
 };
 
 export function createEmptySave(now: number): SaveData {

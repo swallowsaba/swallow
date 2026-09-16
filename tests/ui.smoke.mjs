@@ -125,6 +125,19 @@ async function search(page, from, to) {
   console.log('  ok  GTFS を取り込んだ事業者は対応側に取り込み日つきで表示');
   await page.click('#coverage-toggle');
 
+  // 出典表示はライセンスの義務。隠れていないこと・事業者名まで出ていることを見る
+  {
+    const box = await page.$('#foot-attribution');
+    assert(box, '出典の表示欄が無い');
+    const hidden = await box.getAttribute('hidden');
+    assert(hidden === null, '出典が hidden のまま(表示されていない)');
+    const text = await box.textContent();
+    assert(/公共交通オープンデータセンター/.test(text), `出典元が出ていない: ${text}`);
+    assert(/京王バス/.test(text), `どの事業者の出典か分からない: ${text}`);
+    assert(/ライセンス/.test(text), `ライセンス名が出ていない: ${text}`);
+    console.log('  ok  取り込んだデータの出典を事業者名つきでフッタに常時表示');
+  }
+
   await search(page, '渋谷', '大手町');
 
   const routes = await page.$$('.route');

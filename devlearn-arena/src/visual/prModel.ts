@@ -1,5 +1,6 @@
 import { canMerge } from '@/engines/github/pr';
 import type { CheckRun, PullRequest, Repo } from '@/engines/github/types';
+import { prCommands } from './commands';
 
 /**
  * Pull Request の図に出すものを、リポジトリの状態から組み立てる。
@@ -50,6 +51,16 @@ export function prTimeline(repo: Repo, pull: PullRequest): Stage[] {
           : { id: 'merge', state: 'waiting', detail: check.reasons[0] ?? 'まだ' };
 
   return [{ id: 'created', state: 'done', detail: `${pull.head} → ${pull.base}` }, review, checks, merge];
+}
+
+/** 段を押したときに打つコマンド。押しても意味の無い段は null */
+export function stageCommand(stage: Stage, pull: PullRequest): string | null {
+  if (pull.state !== 'open') return null;
+  if (stage.id === 'review') return prCommands.approve(pull.number);
+  if (stage.id === 'checks') return prCommands.checks(pull.number);
+  if (stage.id === 'merge' && stage.state === 'active') return prCommands.merge(pull.number);
+  if (stage.id === 'created') return prCommands.view(pull.number);
+  return null;
 }
 
 /* ---------------- Actions のジョブの DAG ---------------- */

@@ -319,6 +319,7 @@ function gtfsFile(rel) {
             dir: 'KeioBus',
             generatedAt: '2026-09-01T00:00:00Z',
             license: '公共交通オープンデータ基本ライセンス',
+            attribution: '公共交通オープンデータセンター',
           },
         ],
         failed: [],

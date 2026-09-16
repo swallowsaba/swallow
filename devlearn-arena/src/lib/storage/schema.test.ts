@@ -69,6 +69,17 @@ describe('save schema', () => {
     expect(parseSave(JSON.stringify(save)).ok).toBe(false);
   });
 
+  it('右側の見せ方は、古い保存データでもゲームになり、図を選べば残る', () => {
+    const save = createEmptySave(1);
+    const raw = JSON.parse(JSON.stringify(save)) as Record<string, unknown>;
+    delete (raw['settings'] as Record<string, unknown>)['visualMode'];
+    const r = parseSave(JSON.stringify(raw));
+    expect(r.ok && r.data.settings.visualMode).toBe('game');
+    save.settings.visualMode = 'diagram';
+    const s = parseSave(JSON.stringify(save));
+    expect(s.ok && s.data.settings.visualMode).toBe('diagram');
+  });
+
   it('未知バージョンを弾く', () => {
     const save = { ...createEmptySave(1), version: 99 };
     const r = parseSave(JSON.stringify(save));
