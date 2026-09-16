@@ -531,6 +531,46 @@ await asyncTest('上限に達しなければ全事業者ぶんすべて出る', 
   assert.equal(r.stops.length, 6, '全件出ていない');
 });
 
+// 都営バスのように「ODPT の API で都度検索している」事業者は、
+// GTFS でも検索すると同じ便が二重に出る。地図と候補にだけ使う。
+await asyncTest('searchable:false の事業者は経路検索に使わない', async () => {
+  const f = { ...FILES };
+  f['catalog.json'] = JSON.stringify({
+    v: 1,
+    operators: [
+      { id: 'KeioBus', title: '京王バス', dir: 'KeioBus', generatedAt: META.generatedAt, searchable: false },
+    ],
+  });
+  installFetch(f);
+  const r = await findAllGtfsRoutes('調布駅北口', '吉祥寺駅', {
+    departAt: 8 * 60,
+    serviceDate: D('2026-09-10'),
+  });
+  assert.equal(r.routes.length, 0, '検索から外れていない(二重に出る)');
+});
+
+await asyncTest('searchable:false でも地図の停留所には出す', async () => {
+  const f = { ...FILES };
+  f['catalog.json'] = JSON.stringify({
+    v: 1,
+    operators: [
+      { id: 'KeioBus', title: '京王バス', dir: 'KeioBus', generatedAt: META.generatedAt, searchable: false },
+    ],
+  });
+  installFetch(f);
+  const r = await stopsInBounds(ALL, { zoom: 15 });
+  assert.equal(r.stops.length, 3, '地図から消えてしまっている');
+});
+
+await asyncTest('searchable の指定が無ければ従来どおり検索に使う', async () => {
+  installFetch(FILES);
+  const r = await findAllGtfsRoutes('調布駅北口', '吉祥寺駅', {
+    departAt: 8 * 60,
+    serviceDate: D('2026-09-10'),
+  });
+  assert.equal(r.routes.length, 1, '既定の挙動が変わっている');
+});
+
 await asyncTest('まだ取り込んでいなければ empty を返す', async () => {
   globalThis.fetch = async () => ({ ok: false, status: 404 });
   const r = await stopsInBounds(ALL, { zoom: 15 });

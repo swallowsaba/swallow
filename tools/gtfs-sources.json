@@ -20,6 +20,21 @@
 
   "sources": [
     {
+      "id": "Toei",
+      "title": "都営バス",
+      "kind": "odpt",
+      "dataset": "b_bus_gtfs_jp-toei",
+      "license": "CC BY 4.0",
+      "attribution": "東京都交通局 / 公共交通オープンデータ協議会",
+      "searchable": false,
+      "_なぜ searchable:false か": [
+        "都営バスの経路検索は ODPT の API で都度行っている(こちらの方が新しい)。",
+        "GTFS も検索に使うと同じ便が二重に出るので、こちらは",
+        "「地図に停留所を出す」「入力の候補に出す」ためだけに使う。",
+        "ODPT の API は範囲でバス停を検索できないため、地図には GTFS が要る。"
+      ]
+    },
+    {
       "id": "KeioBus",
       "title": "京王バス",
       "kind": "odpt",

@@ -71,6 +71,11 @@ async function loadSources() {
     } else {
       problems.push(`${where}: kind は 'odpt' か 'url' です(今は ${JSON.stringify(src.kind)})`);
     }
+
+    // 既定は検索にも使う。false のときだけ「地図と候補にしか使わない」。
+    if (src.searchable != null && typeof src.searchable !== 'boolean') {
+      problems.push(`${where}: searchable は true/false です(今は ${JSON.stringify(src.searchable)})`);
+    }
   }
   if (problems.length) {
     throw new Error(`取り込み元の設定に誤りがあります:\n  - ${problems.join('\n  - ')}`);
@@ -171,6 +176,9 @@ async function printList(sources) {
     console.log(`    名前      : ${src.title}`);
     console.log(`    取得方法  : ${src.kind === 'odpt' ? `ODPT カタログ(${src.dataset})` : src.url}`);
     console.log(`    ライセンス: ${src.license}`);
+    console.log(
+      `    用途      : ${src.searchable === false ? '地図と入力候補のみ(経路検索は ODPT の API)' : '経路検索と地図'}`,
+    );
     console.log(`    状態      : ${state}`);
     console.log('');
   }
@@ -508,6 +516,10 @@ async function writeCatalog(report, sources = []) {
       validFrom: r.validFrom ?? before.validFrom ?? null,
       license: (sources.find((o) => o.id === r.id) || {}).license || before.license || null,
       attribution: (sources.find((o) => o.id === r.id) || {}).attribution || before.attribution || null,
+      // 経路検索にも使ってよいか。既定は true。
+      // false の事業者は、地図の停留所と入力の候補にしか使わない
+      // (ODPT の API で都度検索している事業者を二重に出さないため)。
+      searchable: (sources.find((o) => o.id === r.id) || {}).searchable !== false,
     });
   }
 

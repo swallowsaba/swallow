@@ -212,7 +212,10 @@ function buildRoute(index, pattern, { fi, ti, dep, arr, operatorId }) {
  */
 export async function findAllGtfsRoutes(fromName, toName, opts) {
   const catalog = await loadCatalog();
-  const ops = catalog.operators || [];
+  // searchable:false の事業者は経路検索に使わない。
+  // 都営バスのように「ODPT の API で都度検索している」事業者は、
+  // GTFS でも探すと同じ便が二重に出てしまう。地図と候補にだけ使う。
+  const ops = (catalog.operators || []).filter((o) => o.searchable !== false);
   if (!ops.length) return { routes: [], warnings: [], stops: [], operators: [] };
 
   const routes = [];

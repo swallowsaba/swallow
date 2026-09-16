@@ -134,9 +134,20 @@ export function renderCoverage(health, gtfsCatalog) {
   }
   if (!sup.children.length) sup.append(el('li', 'muted', '対応事業者を取得できませんでした'));
 
+  // GTFS も取り込んでいる事業者は、そのことを 1 行にまとめて書く
+  // (API で検索・地図は GTFS、という組み合わせがあるため)。
+  const gtfsById = new Map((gtfsCatalog?.operators || []).map((o) => [o.id, o]));
   for (const o of health?.bus?.operators || []) {
+    const g = gtfsById.get(o.id);
     const li = el('li', null, `${o.title}(バス)`);
-    li.append(el('span', null, `直通便のみ検索(${o.license})`));
+    li.append(
+      el(
+        'span',
+        null,
+        `直通便のみ検索(${o.license})` +
+          (g && g.searchable === false ? ' / 地図の停留所は取り込み済みの GTFS から表示' : '')
+      )
+    );
     sup.append(li);
   }
   for (const o of health?.unavailable || []) {
@@ -147,7 +158,10 @@ export function renderCoverage(health, gtfsCatalog) {
   // GTFS から取り込んだ事業者は「対応している」側に出す。取り込み日を必ず添える。
   const imported = new Map((gtfsCatalog?.operators || []).map((o) => [o.id, o]));
   renderAttributions(gtfsCatalog);
+  const apiBusIds = new Set((health?.bus?.operators || []).map((o) => o.id));
   for (const o of imported.values()) {
+    // API 側の一覧に既に出している事業者は、上の行に書き足してあるので重ねない
+    if (apiBusIds.has(o.id)) continue;
     const li = el('li', null, `${o.title}(バス)`);
     li.append(
       el(
