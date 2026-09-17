@@ -10,7 +10,6 @@ import {
 import { takeawaysOf } from '@/engines/lesson/takeaways';
 import type { LessonDefinition, LessonProgressState, LessonStep } from '@/engines/lesson/types';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
-import { useDiagramRunner } from '@/features/terminal/useDiagramRunner';
 import { useShellSession } from '@/features/terminal/useShellSession';
 import { useT } from '@/i18n/useT';
 import { dayKey } from '@/lib/date';
@@ -26,7 +25,9 @@ import { splitTemplate } from '@/ui/panes';
 import { CITIES, CITY_TRACKS, cityOf, facilityById } from '@/content/city';
 import { FacilityLesson } from '@/features/city/FacilityLesson';
 import type { MissionTrack } from '@/engines/lesson/types';
-import { CityScene } from '@/visual/game/CityScene';
+import { REWARD } from '@/engines/city/sim';
+import { CityPane } from '@/features/city3d/CityPane';
+import { rewardCity } from '@/features/city3d/cityStore';
 import { CityPortrait } from '@/visual/game/cityArt';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { Briefing } from './Briefing';
@@ -35,8 +36,6 @@ import { MissionPicker } from './MissionPicker';
 import { NO_HINTS, reveal, revealedCount, stepKey, type HintReveal } from './hints';
 import type { PartState } from './StepChecklist';
 import { evaluateParts } from '@/engines/lesson/authoring/conditions';
-import { VisualPanel } from './VisualPanel';
-import { relevantTabs, tabForTrack, type VisualTab } from './visualTabs';
 
 const STEP_XP = 10;
 
@@ -202,9 +201,6 @@ function Park({
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
-  // 開いた瞬間から、その任務の世界が見える図を選んでおく
-  const [rightTab, setRightTab] = useState<VisualTab>(() => tabForTrack(mission.track));
-  const relevant = useMemo(() => relevantTabs(mission.track), [mission.track]);
   const [editing, setEditing] = useState<EditorTarget | null>(null);
 
   const xp = useStore((s) => s.profile.xp);
@@ -240,12 +236,11 @@ function Park({
   const [welcomed, setWelcomed] = useState(() => plan.facilities.some((f) => useStore.getState().facilitiesBuilt.includes(f.id)));
   // 建てた直後は「建った！」を見せてから依頼へ進む
   const [justBuilt, setJustBuilt] = useState(false);
+  // 建設を決めた施設は、右の地図で配置してもらう
+  const [placeRequest, setPlaceRequest] = useState<string | null>(null);
   const stage: 'welcome' | 'facility' | 'briefing' | 'work' =
     review ?? (!welcomed ? 'welcome' : !facilityBuilt || justBuilt ? 'facility' : showIntro ? 'briefing' : 'work');
 
-  const entries = session.journal.entries;
-  const cursor = session.journal.cursor;
-  const previous = entries[cursor - 1]?.state;
   const step = currentStep(mission, progress);
   const hintKey = stepKey(mission.id, progress.stepIndex);
   helpRef.current = { step: progress.cleared ? undefined : step, stepIndex: progress.stepIndex, key: hintKey };
@@ -408,6 +403,21 @@ function Park({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shellState, mission]);
 
+  /** 通過した手順ぶんの予算。解答を見て飛ばした手順には出さない */
+  const rewardSteps = (from: number, to: number): void => {
+    let total = 0;
+    for (let i = from; i < to; i += 1) {
+      if (progress.skipped.includes(i)) continue;
+      if (rewardCity(mission.track, `step:${mission.id}:${String(i)}`, REWARD.step)) total += REWARD.step;
+    }
+    if (total > 0) pushToast(t('city.reward.step', { n: total }));
+  };
+  /** 理解度の問題に正解したぶんの予算 */
+  const rewardAnswer = (key: string, firstTry: boolean, full: number, retry: number): void => {
+    const amount = firstTry ? full : retry;
+    if (rewardCity(mission.track, key, amount)) pushToast(t('city.reward.quiz', { n: amount }));
+  };
+
   // 進んだ / 通らなかった に応じて見返りと助言を出す
   const prevStep = useRef(progress.stepIndex);
   const prevCleared = useRef(progress.cleared);
@@ -446,13 +456,14 @@ function Park({
         town: city,
       });
       setDiagnosis(null);
-      // 任務を終えたら街を映す。祝いを閉じると、地区にビルが建っていくのが見える
-      setView('city');
+      // コマンドで要望を解決したら、街の予算が入る
+      rewardSteps(prevStep.current, mission.steps.length);
+      if (rewardCity(mission.track, `clear:${mission.id}`, REWARD.clear)) pushToast(t('city.reward.clear', { n: REWARD.clear }));
       if (soundEnabled) sfx.clear();
     } else if (progress.stepIndex > prevStep.current) {
       grantXp(STEP_XP, now);
       pushToast(`+${String(STEP_XP)} XP`);
-      if (facility) pushToast(t('world.grow', { name: facility.name }));
+      rewardSteps(prevStep.current, progress.stepIndex);
       setDiagnosis(null);
       if (soundEnabled) sfx.step();
     }
@@ -477,9 +488,6 @@ function Park({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shellState, passingNow, progress.cleared, progress.commandsUsed]);
 
-  // 図を押したときは、そのコマンドを端末で1文字ずつ打って実行する。打ったものは端末に残る
-  const runFromDiagram = useDiagramRunner(terminalRef);
-
   const retry = useCallback(() => {
     onRetry();
   }, [onRetry]);
@@ -489,11 +497,14 @@ function Park({
     () => cityOf(plan, new Set(facilitiesBuilt), trackMissions, clearedIds),
     [plan, facilitiesBuilt, trackMissions, clearedIds],
   );
-  // 説明の間は街、作業に入ったらいまの状態を見せる
-  const [view, setView] = useState<'city' | 'state'>(stage === 'work' ? 'state' : 'city');
-  useEffect(() => {
-    setView(stage === 'work' ? 'state' : 'city');
-  }, [stage]);
+  /** 地図や住民の声から施設を選んだとき：いまの施設なら説明を開き、別の施設ならその任務へ */
+  const studyFacility = (id: string): void => {
+    if (facility?.id === id) {
+      if (facilityBuilt) setReview('facility');
+      return;
+    }
+    onPickFacility(id);
+  };
   // 作業に入ったら、すぐ打てるようにターミナルへ
   useEffect(() => {
     if (stage !== 'work') return;
@@ -549,7 +560,7 @@ function Park({
           {t(`world.rank.${city.rank}`)}
         </span>
         <span className="font-mono text-sm text-cream" data-testid="world-stats">
-          {t('world.stats', { residents: city.residents, comfort: city.comfort, a: city.built, b: city.facilities.length })}
+          {t('world.stats', { a: city.built, b: city.facilities.length })}
         </span>
         <label htmlFor="mission-picker" className="font-mono text-sm font-bold text-cream">
           {t('park.mission')}
@@ -648,10 +659,15 @@ function Park({
                     guide={plan.guide}
                     built={facilitiesBuilt.includes(facility.id) && !justBuilt}
                     firstMissionId={null}
+                    onAnswer={(q, firstTry) => {
+                      rewardAnswer(`quiz:${facility.id}:${String(q)}`, firstTry, REWARD.quiz, REWARD.quizRetry);
+                    }}
                     onBuild={() => {
                       if (!facilitiesBuilt.includes(facility.id)) {
                         setJustBuilt(true);
                         buildFacility(facility.id);
+                        if (rewardCity(mission.track, `learn:${facility.id}`, REWARD.learn)) pushToast(t('city.reward.learn', { n: REWARD.learn }));
+                        setPlaceRequest(facility.id);
                         flushSave();
                       }
                     }}
@@ -671,6 +687,9 @@ function Park({
                     onStart={startMission}
                     onSwitch={onSwitch}
                     canSkip={introsRead.includes(mission.id)}
+                    onAnswer={(q, firstTry) => {
+                      rewardAnswer(`check:${mission.id}:${String(q)}`, firstTry, REWARD.check, REWARD.checkRetry);
+                    }}
                   />
                 )}
               </div>
@@ -733,43 +752,7 @@ function Park({
         />
 
         <div className="flex min-h-0 min-w-0 flex-col">
-          <div role="tablist" aria-label={t('world.views')} className="flex shrink-0 gap-1 border-b-4 border-wood-dark bg-[var(--wood-dark)] px-3 pt-2">
-            {(['city', 'state'] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                role="tab"
-                aria-selected={view === v}
-                data-view={v}
-                onClick={() => {
-                  setView(v);
-                }}
-                className={`px-4 py-1.5 text-sm font-extrabold ${view === v ? 'bg-gold text-ink' : 'text-cream opacity-80 hover:opacity-100'}`}
-              >
-                {v === 'city' ? t('world.view.city', { name: plan.name }) : t('world.view.state')}
-              </button>
-            ))}
-          </div>
-          <div className="min-h-0 flex-1">
-            {view === 'city' ? (
-              <CityScene
-                track={mission.track}
-                facilities={city.facilities}
-                selectedId={facility?.id ?? null}
-                onSelect={onPickFacility}
-                label={t('world.cityLabel', { name: plan.name })}
-              />
-            ) : (
-              <VisualPanel
-                session={session}
-                tab={rightTab}
-                onTab={setRightTab}
-                relevant={relevant}
-                onCommand={runFromDiagram}
-                previous={previous}
-              />
-            )}
-          </div>
+          <CityPane track={mission.track} city={city} placeRequest={placeRequest} onStudy={studyFacility} />
         </div>
       </div>
     </div>

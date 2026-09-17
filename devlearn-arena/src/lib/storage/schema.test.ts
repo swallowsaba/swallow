@@ -69,15 +69,15 @@ describe('save schema', () => {
     expect(parseSave(JSON.stringify(save)).ok).toBe(false);
   });
 
-  it('右側の見せ方は、古い保存データでもゲームになり、図を選べば残る', () => {
+  it('市長の街は、古い保存データでは空で補い、作った街は残る', () => {
     const save = createEmptySave(1);
     const raw = JSON.parse(JSON.stringify(save)) as Record<string, unknown>;
-    delete (raw['settings'] as Record<string, unknown>)['visualMode'];
+    delete raw['cities'];
     const r = parseSave(JSON.stringify(raw));
-    expect(r.ok && r.data.settings.visualMode).toBe('game');
-    save.settings.visualMode = 'diagram';
+    expect(r.ok && r.data.cities).toEqual({});
+    save.cities = { git: { tiles: 'r.', levels: '10', facilities: [{ id: 'git/01', x: 1, y: 2 }], money: 10, day: 3, earned: ['k'] } };
     const s = parseSave(JSON.stringify(save));
-    expect(s.ok && s.data.settings.visualMode).toBe('diagram');
+    expect(s.ok && s.data.cities).toEqual(save.cities);
   });
 
   it('建てた街の施設は、古い保存データでは空で補い、建てたものは残る', () => {

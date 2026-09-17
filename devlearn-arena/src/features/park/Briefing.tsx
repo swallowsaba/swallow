@@ -17,6 +17,8 @@ interface Props {
   onSwitch?: (id: string) => void;
   /** 一度聞いた依頼なら、話を飛ばして作業に戻れる */
   canSkip?: boolean;
+  /** 理解度チェックに正解した（firstTry = 一度も間違えずに）。街の予算になる */
+  onAnswer?: (question: number, firstTry: boolean) => void;
 }
 
 type Phase = 'talk' | 'quiz' | 'try' | 'plan';
@@ -30,7 +32,7 @@ const PHASES: readonly Phase[] = ['talk', 'quiz', 'try', 'plan'];
  * 穴埋めの無い道具は練習用の街で実際に打って結果を見てから、建設計画を確かめて建設（端末での作業）に入る。
  * どの段階も飛ばせる（Esc か「説明をとばす」）。間違えても罰は無い。
  */
-export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSkip = false }: Props) {
+export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSkip = false, onAnswer }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
   const giver = QUEST_GIVER[mission.track];
@@ -111,6 +113,7 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
                 questions={quiz}
                 bag={bag}
                 animate={animate}
+                onAnswer={onAnswer}
                 onReward={(tool) => {
                   setBag((list) => (list.includes(tool) ? list : [...list, tool]));
                 }}
@@ -254,7 +257,8 @@ function Talk({ script, line, onLine, onDone, animate }: {
 
 /* ---------------- 2. 理解度チェック ---------------- */
 
-function Quiz({ questions, bag, onReward, onReview, onDone, animate }: {
+function Quiz({ questions, bag, onReward, onReview, onDone, animate, onAnswer }: {
+  onAnswer?: (question: number, firstTry: boolean) => void;
   questions: readonly QuizQuestion[];
   bag: readonly string[];
   onReward: (tool: string) => void;
@@ -284,6 +288,7 @@ function Quiz({ questions, bag, onReward, onReview, onDone, animate }: {
     if (solved) return;
     if (i === question.answer) {
       setSolved(true);
+      onAnswer?.(index, wrong.size === 0);
       if (question.reward !== null) onReward(question.reward);
     } else {
       setWrong((set) => new Set([...set, i]));

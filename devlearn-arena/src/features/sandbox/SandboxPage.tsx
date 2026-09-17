@@ -6,7 +6,7 @@ import { createRepo } from '@/engines/github/pr';
 import { HOME } from '@/engines/kernel/path';
 import type { SessionOptions } from '@/engines/kernel/session';
 import { EditorPanel, type EditorTarget } from '@/features/park/EditorPanel';
-import { ViewModeSwitch, WorldView } from '@/features/park/WorldView';
+import { WorldView } from '@/features/park/WorldView';
 import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalView';
 import { TimeScrubber } from '@/features/terminal/TimeScrubber';
 import { useDiagramRunner } from '@/features/terminal/useDiagramRunner';
@@ -140,7 +140,6 @@ export default function SandboxPage() {
               </button>
             ))}
           </div>
-            <ViewModeSwitch light />
           </div>
           <div className="min-h-0 flex-1 overflow-hidden border border-wood-dark bg-cream">
             <WorldView tab={tab} state={state} previous={previous} onCommand={runFromDiagram} />

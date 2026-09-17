@@ -43,8 +43,6 @@ export const settingsSchema = z.object({
   paneTask: z.number().min(15).max(70).default(35),
   /** 一度読んだ任務でも、開くたびに「学ぶ」画面を出す */
   introAlways: z.boolean().default(false),
-  /** 右側を、ゲームの世界として見せるか（game）、図として見せるか（diagram） */
-  visualMode: z.enum(['game', 'diagram']).default('game'),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
@@ -84,6 +82,17 @@ export const missionProgressSchema = z.object({
 });
 export type MissionProgress = z.infer<typeof missionProgressSchema>;
 
+/** 市長が作った街（カテゴリごと）。地形は種から作るので保存しない */
+export const citySaveSchema = z.object({
+  tiles: z.string(),
+  levels: z.string(),
+  facilities: z.array(z.object({ id: z.string(), x: z.number().int(), y: z.number().int() })),
+  money: z.number().int().min(0),
+  day: z.number().int().min(0),
+  earned: z.array(z.string()),
+});
+export type CitySaveData = z.infer<typeof citySaveSchema>;
+
 export const saveDataSchema = z.object({
   version: z.literal(SAVE_VERSION),
   createdAt: z.number().int(),
@@ -102,6 +111,8 @@ export const saveDataSchema = z.object({
   introsRead: z.array(z.string()).default([]),
   /** 学んで建てた街の施設（章の id）。古い保存データには無いので空で補う */
   facilitiesBuilt: z.array(z.string()).default([]),
+  /** カテゴリごとの街。古い保存データには無いので空で補う */
+  cities: z.record(z.string(), citySaveSchema).default({}),
 });
 export type SaveData = z.infer<typeof saveDataSchema>;
 
@@ -114,7 +125,6 @@ export const defaultSettings: Settings = {
   paneMap: 62,
   paneTask: 35,
   introAlways: false,
-  visualMode: 'game',
 };
 
 export function createEmptySave(now: number): SaveData {
@@ -131,6 +141,7 @@ export function createEmptySave(now: number): SaveData {
     lastMissionId: null,
     introsRead: [],
     facilitiesBuilt: [],
+    cities: {},
   };
 }
 

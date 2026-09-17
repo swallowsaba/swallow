@@ -24,6 +24,8 @@ interface Props {
   inline?: boolean;
   /** 建てたあとに次へ進む（埋め込みのとき） */
   onContinue?: () => void;
+  /** 判断問題に正解した（firstTry = 一度も間違えずに）。街の予算になる */
+  onAnswer?: (question: number, firstTry: boolean) => void;
 }
 
 type Step = 'trouble' | 'what' | 'why' | 'how' | 'field' | 'exam';
@@ -34,7 +36,7 @@ const STEPS: readonly Step[] = ['trouble', 'what', 'why', 'how', 'field', 'exam'
  * 住民の困りごと → 何なのか（街で例えると）→ なぜ現場で必要か → 仕組みを順に → 現場の落とし穴とプロの心得 → 建設審査（場面の判断問題）。
  * 審査の場面にすべて正しく判断できたら施設が建つ。間違えても理由を読んで何度でも考え直せる。
  */
-export function FacilityLesson({ facility, track, guide, built, onBuild, onClose, firstMissionId, inline = false, onContinue }: Props) {
+export function FacilityLesson({ facility, track, guide, built, onBuild, onClose, firstMissionId, inline = false, onContinue, onAnswer }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
   const [step, setStep] = useState<Step>('trouble');
@@ -167,6 +169,7 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
                         facility={facility}
                         built={built}
                         animate={animate}
+                        onAnswer={onAnswer}
                         onPassed={() => {
                           onBuild();
                           setDone(true);
@@ -251,7 +254,7 @@ function How({ facility, track, index, animate }: { facility: Facility; track: M
 }
 
 /** 建設審査。場面ごとに判断し、すべて正しく判断できたら建てられる */
-function Exam({ facility, built, animate, onPassed }: { facility: Facility; built: boolean; animate: boolean; onPassed: () => void }) {
+function Exam({ facility, built, animate, onPassed, onAnswer }: { facility: Facility; built: boolean; animate: boolean; onPassed: () => void; onAnswer?: (question: number, firstTry: boolean) => void }) {
   const t = useT();
   const [index, setIndex] = useState(0);
   const [wrong, setWrong] = useState<ReadonlySet<number>>(new Set());
@@ -279,8 +282,12 @@ function Exam({ facility, built, animate, onPassed }: { facility: Facility; buil
                 data-correct={i === quiz.answer ? 'true' : 'false'}
                 disabled={isWrong || solved}
                 onClick={() => {
-                  if (i === quiz.answer) setSolved(true);
-                  else setWrong((set) => new Set([...set, i]));
+                  if (i === quiz.answer) {
+                    setSolved(true);
+                    onAnswer?.(index, wrong.size === 0);
+                  } else {
+                    setWrong((set) => new Set([...set, i]));
+                  }
                 }}
                 animate={animate && isWrong ? { x: [0, -6, 6, -4, 0] } : { x: 0 }}
                 transition={{ duration: 0.3 }}

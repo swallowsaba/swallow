@@ -75,10 +75,11 @@ test('全体図で世界を選ぶと、説明・コマンド・街の画面に�
   await expect(page.getByTestId('learning-panel')).toHaveAttribute('data-stage', 'welcome');
   await expect(page.getByTestId('terminal-lock')).toBeVisible();
   await expect(page.locator('.xterm-screen')).toHaveCount(0);
-  await expect(page.getByTestId('iso-city')).toBeVisible();
+  await expect(page.getByTestId('city-pane')).toBeVisible();
+  await expect(page.getByTestId('city-canvas')).toHaveAttribute('data-webgl', 'on');
 });
 
-test('施設を学んで建て、依頼を聞いてからコマンドを打つと景色が変わり、街に施設が建つ', async ({ page }) => {
+test('理解度とコマンドで予算が入り、その予算で道路を引け、街は読み込み直しても残る', async ({ page }) => {
   const failed: string[] = [];
   page.on('response', (res) => {
     if (res.status() >= 400) failed.push(`${String(res.status())} ${res.url()}`);
@@ -87,25 +88,35 @@ test('施設を学んで建て、依頼を聞いてからコマンドを打つ�
   await open(page, './world/kernel');
   await learnAndStart(page);
 
-  // 既定は「いまの状態」のゲームの世界（住宅地区）
-  const world = page.getByRole('img', { name: '住宅地区' });
-  await expect(world).toBeVisible();
-  await expect(world).not.toContainText('reports');
+  const money = page.getByTestId('city-money');
+  const value = async (): Promise<number> => Number(await money.getAttribute('data-value'));
+  // 建設の決定と、判断問題・理解度チェックの正解で予算が入っている
+  const afterLearning = await value();
+  expect(afterLearning).toBeGreaterThan(3000 + 600);
+  // 時間を止めて、税収で数字が動かないようにする
+  await page.locator('[data-speed="0"]').click();
+
+  // コマンドで対応すると予算が入る
   await type(page, 'mkdir reports');
-  await expect(world).toContainText('reports');
+  await expect.poll(value).toBeGreaterThan(afterLearning);
+  const beforeRoad = await value();
 
-  // 図に切り替えても、同じ状態が見える
-  await page.getByRole('button', { name: '図', exact: true }).click();
-  const diagram = page.getByRole('img', { name: 'ファイルシステムの階層図' });
-  await expect(diagram).toBeVisible();
-  await expect(diagram).toContainText('reports');
+  // 道路を引くと予算を使う
+  await page.locator('button[data-tool="road"]').click();
+  const canvas = page.getByTestId('city-canvas').locator('canvas');
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error('地図がありません');
+  const y = box.y + box.height * 0.5;
+  await page.mouse.move(box.x + box.width * 0.35, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.5, y, { steps: 5 });
+  await page.mouse.up();
+  await expect.poll(value).toBeLessThan(beforeRoad);
+  const afterRoad = await value();
 
-  // 街には、学んで建てた施設が建っている。読み込み直しても残る
-  await page.locator('[data-view="city"]').click();
-  await expect(page.locator('[data-district="kernel/00"]')).toHaveAttribute('data-state', /built|operating|complete/);
   await page.reload();
-  await page.locator('[data-view="city"]').click();
-  await expect(page.locator('[data-district="kernel/00"]')).toHaveAttribute('data-state', /built|operating|complete/);
+  await expect(page.getByTestId('city-money')).toBeVisible();
+  expect(Number(await page.getByTestId('city-money').getAttribute('data-value'))).toBeGreaterThanOrEqual(afterRoad);
 
   expect(failed, `失敗したリクエスト: ${failed.join(', ')}`).toEqual([]);
 });

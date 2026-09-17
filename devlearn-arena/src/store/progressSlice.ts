@@ -29,6 +29,7 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
   lastMissionId: null,
   introsRead: [],
   facilitiesBuilt: [],
+  cities: {},
 
   hydrate: (data) =>
     set({
@@ -43,7 +44,10 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       lastMissionId: data.lastMissionId,
       introsRead: data.introsRead,
       facilitiesBuilt: data.facilitiesBuilt,
+      cities: data.cities,
     }),
+
+  setCity: (track, city) => set((s) => ({ cities: { ...s.cities, [track]: city } })),
 
   buildFacility: (id) =>
     set((s) => (s.facilitiesBuilt.includes(id) ? {} : { facilitiesBuilt: [...s.facilitiesBuilt, id] })),
@@ -130,6 +134,7 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       missionState: {},
       introsRead: [],
       facilitiesBuilt: [],
+      cities: {},
       lastMissionId: null,
     });
   },

@@ -14,6 +14,8 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    // 3D の街（three.js）は作業画面を開いてから別に読む。1 つにまとめた方が速い
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks: {
