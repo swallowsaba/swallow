@@ -6,6 +6,9 @@ import type { MissionTrack } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from '@/ui/motion';
 import { Glossed } from '@/ui/Term';
+import { FooterBar } from '@/ui/FooterBar';
+import { FOOTER_SLOT_CLASS, useFooterSlot } from '@/ui/footerSlot';
+import { AnalogyVisual, DemoPlayer, HowRoute, PitfallRoad, TroubleScene, WhyVisual } from './LessonVisuals';
 import { CITY_COLOR } from '@/visual/game/cityColor';
 import { CityPortrait, FacilityPlot, PLOT_H, PLOT_W } from '@/visual/game/cityArt';
 
@@ -28,8 +31,8 @@ interface Props {
   onAnswer?: (question: number, firstTry: boolean) => void;
 }
 
-type Step = 'trouble' | 'what' | 'why' | 'how' | 'field' | 'exam';
-const STEPS: readonly Step[] = ['trouble', 'what', 'why', 'how', 'field', 'exam'];
+type Step = 'trouble' | 'what' | 'why' | 'how' | 'demo' | 'field' | 'exam';
+const STEPS: readonly Step[] = ['trouble', 'what', 'why', 'how', 'demo', 'field', 'exam'];
 
 /**
  * 施設を建てるための学習。コマンドは打たない。
@@ -42,6 +45,7 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
   const [step, setStep] = useState<Step>('trouble');
   const [howIndex, setHowIndex] = useState(0);
   const [done, setDone] = useState(false);
+  const footer = useFooterSlot();
   const index = STEPS.indexOf(step);
   const goto = (next: Step) => {
     setStep(next);
@@ -60,13 +64,13 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
   }, [onClose, inline]);
 
   return (
-    <div className={inline ? '' : 'fixed inset-0 z-40 overflow-y-auto bg-[rgba(44,29,16,0.72)] p-3 sm:p-6'}>
+    <div className={inline ? 'flex min-h-full flex-col' : 'fixed inset-0 z-40 overflow-y-auto bg-[rgba(44,29,16,0.72)] p-3 sm:p-6'}>
       <div
         role={inline ? undefined : 'dialog'}
         aria-modal={inline ? undefined : true}
         aria-labelledby="facility-title"
         data-testid="facility-lesson"
-        className={inline ? 'flex flex-col' : 'mx-auto flex max-w-4xl flex-col border-4 border-wood-dark bg-cream shadow-lg'}
+        className={inline ? 'flex flex-1 flex-col' : 'mx-auto flex min-h-full max-w-4xl flex-col border-4 border-wood-dark bg-cream shadow-lg'}
       >
         <header className="flex flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-4 py-3">
           <span className="sign px-3 py-1 text-sm font-extrabold">🏗 {t('facility.label')}</span>
@@ -122,11 +126,15 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
                     transition={{ duration: 0.18 }}
                   >
                     {step === 'trouble' ? (
-                      <Card label={t('facility.step.trouble')}>
-                        <p className="text-lg leading-relaxed">「{facility.trouble.text}」</p>
-                      </Card>
+                      <div className="flex flex-col gap-3">
+                        <TroubleScene facility={facility} track={track} animate={animate} />
+                        <Card label={t('facility.step.trouble')}>
+                          <p className="text-lg leading-relaxed">「{facility.trouble.text}」</p>
+                        </Card>
+                      </div>
                     ) : step === 'what' ? (
                       <div className="flex flex-col gap-3">
+                        <AnalogyVisual facility={facility} track={track} />
                         <Card label={t('facility.step.what')}>
                           <p className="text-lg leading-relaxed">
                             <Glossed text={facility.what} />
@@ -137,15 +145,24 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
                         </Card>
                       </div>
                     ) : step === 'why' ? (
-                      <Card label={t('facility.step.why')}>
-                        <p className="text-lg leading-relaxed">
-                          <Glossed text={facility.why} />
-                        </p>
-                      </Card>
+                      <div className="flex flex-col gap-3">
+                        <WhyVisual facility={facility} track={track} />
+                        <Card label={t('facility.step.why')}>
+                          <p className="text-lg leading-relaxed">
+                            <Glossed text={facility.why} />
+                          </p>
+                        </Card>
+                      </div>
                     ) : step === 'how' ? (
-                      <How facility={facility} track={track} index={howIndex} animate={animate} />
+                      <div className="flex flex-col gap-3">
+                        <HowRoute count={facility.how.length} index={howIndex} track={track} animate={animate} />
+                        <How facility={facility} track={track} index={howIndex} animate={animate} />
+                      </div>
+                    ) : step === 'demo' ? (
+                      <DemoPlayer facility={facility} track={track} animate={animate} />
                     ) : step === 'field' ? (
                       <div className="flex flex-col gap-3">
+                        <PitfallRoad count={facility.pitfalls.length} />
                         <Card label={`⚠ ${t('facility.pitfalls')}`} tone="#fbeae5">
                           <ul className="flex flex-col gap-2">
                             {facility.pitfalls.map((p) => (
@@ -169,6 +186,10 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
                         facility={facility}
                         built={built}
                         animate={animate}
+                        slot={footer.slot}
+                        onBack={() => {
+                          goto('field');
+                        }}
                         onAnswer={onAnswer}
                         onPassed={() => {
                           onBuild();
@@ -180,34 +201,45 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
                 </AnimatePresence>
 
                 {step !== 'exam' ? (
-                  <div className="mt-4 flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={index === 0 && howIndex === 0}
-                      onClick={() => {
-                        if (step === 'how' && howIndex > 0) setHowIndex(howIndex - 1);
-                        else goto(STEPS[Math.max(0, index - 1)] ?? 'trouble');
-                      }}
-                      className="knob px-3 py-1.5 text-sm disabled:opacity-40"
-                    >
-                      {t('facility.back')}
-                    </button>
-                    <span className="flex-1" />
-                    <button
-                      type="button"
-                      data-testid="lesson-next"
-                      onClick={() => {
-                        if (step === 'how' && howIndex < facility.how.length - 1) setHowIndex(howIndex + 1);
-                        else goto(STEPS[index + 1] ?? 'exam');
-                      }}
-                      className="sign px-5 py-2 text-base font-extrabold"
-                    >
-                      {step === 'field' ? t('facility.toExam') : t('facility.next')}
-                    </button>
-                  </div>
+                  <FooterBar
+                    slot={footer.slot}
+                    left={
+                      <button
+                        type="button"
+                        data-testid="lesson-back"
+                        disabled={index === 0 && howIndex === 0}
+                        onClick={() => {
+                          if (step === 'how' && howIndex > 0) setHowIndex(howIndex - 1);
+                          else goto(STEPS[Math.max(0, index - 1)] ?? 'trouble');
+                        }}
+                        className="knob w-28 px-3 py-2 text-sm disabled:opacity-40"
+                      >
+                        {t('facility.back')}
+                      </button>
+                    }
+                    center={
+                      <span className="font-mono text-xs text-ink-soft">
+                        {index + 1} / {STEPS.length}
+                      </span>
+                    }
+                    right={
+                      <button
+                        type="button"
+                        data-testid="lesson-next"
+                        onClick={() => {
+                          if (step === 'how' && howIndex < facility.how.length - 1) setHowIndex(howIndex + 1);
+                          else goto(STEPS[index + 1] ?? 'exam');
+                        }}
+                        className="sign w-44 px-5 py-2 text-base font-extrabold"
+                      >
+                        {step === 'field' ? t('facility.toExam') : t('facility.next')}
+                      </button>
+                    }
+                  />
                 ) : null}
               </div>
             </div>
+            <div ref={footer.ref} className={FOOTER_SLOT_CLASS} />
           </>
         )}
       </div>
@@ -254,7 +286,7 @@ function How({ facility, track, index, animate }: { facility: Facility; track: M
 }
 
 /** 建設審査。場面ごとに判断し、すべて正しく判断できたら建てられる */
-function Exam({ facility, built, animate, onPassed, onAnswer }: { facility: Facility; built: boolean; animate: boolean; onPassed: () => void; onAnswer?: (question: number, firstTry: boolean) => void }) {
+function Exam({ facility, built, animate, slot, onBack, onPassed, onAnswer }: { facility: Facility; built: boolean; animate: boolean; slot: HTMLElement | null; onBack: () => void; onPassed: () => void; onAnswer?: ((question: number, firstTry: boolean) => void) | undefined }) {
   const t = useT();
   const [index, setIndex] = useState(0);
   const [wrong, setWrong] = useState<ReadonlySet<number>>(new Set());
@@ -314,24 +346,39 @@ function Exam({ facility, built, animate, onPassed, onAnswer }: { facility: Faci
           </div>
         ) : null}
       </div>
-      {solved ? (
-        <button
-          type="button"
-          data-testid="exam-next"
-          onClick={() => {
-            if (last) {
-              onPassed();
-              return;
-            }
-            setIndex(index + 1);
-            setWrong(new Set());
-            setSolved(false);
-          }}
-          className="sign w-fit px-6 py-2.5 text-base font-extrabold"
-        >
-          {last ? (built ? t('facility.relearnDone') : t('facility.build')) : t('facility.nextQuestion')}
-        </button>
-      ) : null}
+      <FooterBar
+        slot={slot}
+        left={
+          <button type="button" data-testid="lesson-back" onClick={onBack} className="knob w-28 px-3 py-2 text-sm">
+            {t('facility.back')}
+          </button>
+        }
+        center={
+          <span className="font-mono text-xs text-ink-soft">{t('facility.question', { a: index + 1, b: facility.quiz.length })}</span>
+        }
+        right={
+          solved ? (
+            <button
+              type="button"
+              data-testid="exam-next"
+              onClick={() => {
+                if (last) {
+                  onPassed();
+                  return;
+                }
+                setIndex(index + 1);
+                setWrong(new Set());
+                setSolved(false);
+              }}
+              className="sign w-44 px-4 py-2 text-base font-extrabold"
+            >
+              {last ? (built ? t('facility.relearnDone') : t('facility.build')) : t('facility.nextQuestion')}
+            </button>
+          ) : (
+            <span className="w-44 text-center text-xs text-ink-soft">{t('facility.pick')}</span>
+          )
+        }
+      />
     </div>
   );
 }

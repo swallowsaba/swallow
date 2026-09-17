@@ -31,6 +31,11 @@ async function learnAndStart(page: Page): Promise<void> {
   if ((await panel.getAttribute('data-stage')) === 'welcome') {
     await page.getByTestId('welcome-start').click();
   }
+  // まず街づくり。時間を速めて、住民の苦情が届いたら対応する
+  if ((await panel.getAttribute('data-stage')) === 'city') {
+    await page.locator('[data-speed="3"]').click();
+    await page.locator('[data-handle]').first().click();
+  }
   if ((await panel.getAttribute('data-stage')) === 'facility') {
     const next = page.getByTestId('lesson-next');
     while (await next.isVisible()) await next.click();
@@ -76,7 +81,7 @@ test('全体図で世界を選ぶと、説明・コマンド・街の画面に�
   await expect(page.getByTestId('terminal-lock')).toBeVisible();
   await expect(page.locator('.xterm-screen')).toHaveCount(0);
   await expect(page.getByTestId('city-pane')).toBeVisible();
-  await expect(page.getByTestId('city-canvas')).toHaveAttribute('data-webgl', 'on');
+  await expect(page.getByTestId('city-canvas')).toHaveAttribute('data-canvas', 'on');
 });
 
 test('理解度とコマンドで予算が入り、その予算で道路を引け、街は読み込み直しても残る', async ({ page }) => {
@@ -99,6 +104,8 @@ test('理解度とコマンドで予算が入り、その予算で道路を引�
   // コマンドで対応すると予算が入る
   await type(page, 'mkdir reports');
   await expect.poll(value).toBeGreaterThan(afterLearning);
+  // 右の街にも、対応したことが出来事として出る
+  await expect(page.locator('[data-city-event]').first()).toContainText('対応');
   const beforeRoad = await value();
 
   // 道路を引くと予算を使う
@@ -106,11 +113,15 @@ test('理解度とコマンドで予算が入り、その予算で道路を引�
   const canvas = page.getByTestId('city-canvas').locator('canvas');
   const box = await canvas.boundingBox();
   if (!box) throw new Error('地図がありません');
-  const y = box.y + box.height * 0.5;
-  await page.mouse.move(box.x + box.width * 0.35, y);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.5, y, { steps: 5 });
-  await page.mouse.up();
+  // 地図の上の空き地を探して引く（パネルや施設に当たったら、別の高さで引き直す）
+  for (const row of [0.62, 0.72, 0.52, 0.8]) {
+    const y = box.y + box.height * row;
+    await page.mouse.move(box.x + box.width * 0.5, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.75, y, { steps: 5 });
+    await page.mouse.up();
+    if ((await value()) < beforeRoad) break;
+  }
   await expect.poll(value).toBeLessThan(beforeRoad);
   const afterRoad = await value();
 

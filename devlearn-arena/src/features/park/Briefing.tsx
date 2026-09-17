@@ -8,6 +8,9 @@ import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from '@/ui/motion';
 import { Glossed } from '@/ui/Term';
 import { CityPortrait } from '@/visual/game/cityArt';
+import { StateDiagram } from '@/features/city/LessonVisuals';
+import { FooterBar } from '@/ui/FooterBar';
+import { FOOTER_SLOT_CLASS, useFooterSlot } from '@/ui/footerSlot';
 import { PrerequisiteNote } from './PrerequisiteNote';
 
 interface Props {
@@ -43,6 +46,7 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
   const [phase, setPhase] = useState<Phase>('talk');
   const [line, setLine] = useState(0);
   const [bag, setBag] = useState<string[]>([]);
+  const footer = useFooterSlot();
 
   const reviewLine = useCallback(
     (subject: string) => {
@@ -54,8 +58,8 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
   );
 
   return (
-    <section aria-labelledby="briefing-title" data-testid="briefing" className="flex flex-col">
-      <div className="flex flex-col">
+    <section aria-labelledby="briefing-title" data-testid="briefing" className="flex min-h-full flex-col">
+      <div className="flex flex-1 flex-col">
         <header className="flex flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-4 py-2">
           <span className="sign px-3 py-1 text-sm font-extrabold">📜 {t('brief.label')}</span>
           <h2 id="briefing-title" className="min-w-0 flex-1 truncate text-lg font-extrabold text-cream">
@@ -100,6 +104,7 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
           <div className="min-w-0">
             {phase === 'talk' ? (
               <Talk
+                slot={footer.slot}
                 script={script}
                 line={line}
                 onLine={setLine}
@@ -110,6 +115,10 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
               />
             ) : phase === 'quiz' ? (
               <Quiz
+                slot={footer.slot}
+                onBack={() => {
+                  setPhase('talk');
+                }}
                 questions={quiz}
                 bag={bag}
                 animate={animate}
@@ -124,6 +133,11 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
               />
             ) : phase === 'try' ? (
               <TryTools
+                slot={footer.slot}
+                track={mission.track}
+                onBack={() => {
+                  setPhase(quiz.length > 0 ? 'quiz' : 'talk');
+                }}
                 tries={tries}
                 fieldTools={mission.intro.commands.filter((c) => !tries.some((tr) => tr.command === c.command))}
                 onDone={() => {
@@ -131,10 +145,18 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
                 }}
               />
             ) : (
-              <Plan mission={mission} onStart={onStart} />
+              <Plan
+                slot={footer.slot}
+                mission={mission}
+                onStart={onStart}
+                onBack={() => {
+                  setPhase('try');
+                }}
+              />
             )}
           </div>
         </div>
+        <div ref={footer.ref} className={FOOTER_SLOT_CLASS} />
       </div>
     </section>
   );
@@ -150,7 +172,8 @@ const LINE_LABEL: Record<BriefingLine['kind'], 'brief.request' | 'brief.why' | '
   plan: 'brief.plan',
 };
 
-function Talk({ script, line, onLine, onDone, animate }: {
+function Talk({ slot, script, line, onLine, onDone, animate }: {
+  slot: HTMLElement | null;
   script: readonly BriefingLine[];
   line: number;
   onLine: (n: number) => void;
@@ -222,42 +245,52 @@ function Talk({ script, line, onLine, onDone, animate }: {
         </AnimatePresence>
       </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            onLine(Math.max(0, line - 1));
-          }}
-          disabled={line === 0}
-          className="knob px-3 py-1.5 text-sm disabled:opacity-40"
-        >
-          {t('brief.back')}
-        </button>
-        <div className="flex flex-1 justify-center gap-1" aria-hidden>
-          {script.map((_, i) => (
-            <span key={i} className={`h-2 w-2 ${i <= line ? 'bg-[var(--gold-dark)]' : 'bg-[var(--cream-dark)]'}`} />
-          ))}
-        </div>
-        <button
-          ref={nextRef}
-          type="button"
-          data-testid="talk-next"
-          onClick={() => {
-            if (last) onDone();
-            else onLine(line + 1);
-          }}
-          className="sign px-5 py-2 text-base font-extrabold"
-        >
-          {last ? t('brief.toQuiz') : t('brief.next')}
-        </button>
-      </div>
+      <FooterBar
+        slot={slot}
+        left={
+          <button
+            type="button"
+            data-testid="talk-back"
+            onClick={() => {
+              onLine(Math.max(0, line - 1));
+            }}
+            disabled={line === 0}
+            className="knob w-28 px-3 py-2 text-sm disabled:opacity-40"
+          >
+            {t('brief.back')}
+          </button>
+        }
+        center={
+          <div className="flex flex-wrap justify-center gap-1" aria-hidden>
+            {script.map((_, i) => (
+              <span key={i} className={`h-2 w-2 ${i <= line ? 'bg-[var(--gold-dark)]' : 'bg-[var(--cream-dark)]'}`} />
+            ))}
+          </div>
+        }
+        right={
+          <button
+            ref={nextRef}
+            type="button"
+            data-testid="talk-next"
+            onClick={() => {
+              if (last) onDone();
+              else onLine(line + 1);
+            }}
+            className="sign w-44 px-4 py-2 text-base font-extrabold"
+          >
+            {last ? t('brief.toQuiz') : t('brief.next')}
+          </button>
+        }
+      />
     </div>
   );
 }
 
 /* ---------------- 2. 理解度チェック ---------------- */
 
-function Quiz({ questions, bag, onReward, onReview, onDone, animate, onAnswer }: {
+function Quiz({ slot, onBack, questions, bag, onReward, onReview, onDone, animate, onAnswer }: {
+  slot: HTMLElement | null;
+  onBack: () => void;
   onAnswer?: (question: number, firstTry: boolean) => void;
   questions: readonly QuizQuestion[];
   bag: readonly string[];
@@ -377,32 +410,48 @@ function Quiz({ questions, bag, onReward, onReview, onDone, animate, onAnswer }:
             ))
           )}
         </div>
-        {solved ? (
-          <button
-            type="button"
-            data-testid="quiz-next"
-            onClick={() => {
-              if (last) {
-                onDone();
-                return;
-              }
-              setIndex(index + 1);
-              setWrong(new Set());
-              setSolved(false);
-            }}
-            className="sign px-5 py-2 font-extrabold"
-          >
-            {last ? t('brief.toTry') : t('brief.nextQuestion')}
-          </button>
-        ) : null}
       </div>
+      <FooterBar
+        slot={slot}
+        left={
+          <button type="button" data-testid="quiz-back" onClick={onBack} className="knob w-28 px-3 py-2 text-sm">
+            {t('brief.back')}
+          </button>
+        }
+        center={<span className="font-mono text-xs text-ink-soft">{t('brief.quizTitle', { a: index + 1, b: questions.length })}</span>}
+        right={
+          solved ? (
+            <button
+              type="button"
+              data-testid="quiz-next"
+              onClick={() => {
+                if (last) {
+                  onDone();
+                  return;
+                }
+                setIndex(index + 1);
+                setWrong(new Set());
+                setSolved(false);
+              }}
+              className="sign w-44 px-4 py-2 font-extrabold"
+            >
+              {last ? t('brief.toTry') : t('brief.nextQuestion')}
+            </button>
+          ) : (
+            <span className="w-44 text-center text-xs text-ink-soft">{t('facility.pick')}</span>
+          )
+        }
+      />
     </div>
   );
 }
 
 /* ---------------- 3. 道具を試す ---------------- */
 
-function TryTools({ tries, fieldTools, onDone }: {
+function TryTools({ slot, track, onBack, tries, fieldTools, onDone }: {
+  slot: HTMLElement | null;
+  track: LessonDefinition['track'];
+  onBack: () => void;
   tries: readonly Tryout[];
   fieldTools: readonly { command: string; means: string }[];
   onDone: () => void;
@@ -440,6 +489,12 @@ function TryTools({ tries, fieldTools, onDone }: {
                 {tr.ok ? '' : `\n# ${t('brief.tryFailed')}`}
               </pre>
             ) : null}
+            {shown.has(i) && tr.ok ? (
+              <div className="border-t-2 border-wood-dark p-2" data-testid="try-diagram">
+                <p className="mb-1 text-xs font-bold">🔍 {t('visual.tryDiagram')}</p>
+                <StateDiagram track={track} state={tr.after} previous={tr.before} height="h-56" />
+              </div>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -458,16 +513,26 @@ function TryTools({ tries, fieldTools, onDone }: {
           </ul>
         </div>
       ) : null}
-      <button type="button" data-testid="try-next" onClick={onDone} className="sign w-fit px-5 py-2 font-extrabold">
-        {t('brief.toPlan')}
-      </button>
+      <FooterBar
+        slot={slot}
+        left={
+          <button type="button" onClick={onBack} className="knob w-28 px-3 py-2 text-sm">
+            {t('brief.back')}
+          </button>
+        }
+        right={
+          <button type="button" data-testid="try-next" onClick={onDone} className="sign w-44 px-4 py-2 font-extrabold">
+            {t('brief.toPlan')}
+          </button>
+        }
+      />
     </div>
   );
 }
 
 /* ---------------- 4. 作業の段取り ---------------- */
 
-function Plan({ mission, onStart }: { mission: LessonDefinition; onStart: () => void }) {
+function Plan({ slot, mission, onStart, onBack }: { slot: HTMLElement | null; mission: LessonDefinition; onStart: () => void; onBack: () => void }) {
   const t = useT();
   const startRef = useRef<HTMLButtonElement>(null);
 
@@ -488,9 +553,19 @@ function Plan({ mission, onStart }: { mission: LessonDefinition; onStart: () => 
           </li>
         ))}
       </ol>
-      <button ref={startRef} type="button" onClick={onStart} className="sign w-fit px-8 py-3 text-lg font-extrabold">
-        {t('brief.start')}
-      </button>
+      <FooterBar
+        slot={slot}
+        left={
+          <button type="button" onClick={onBack} className="knob w-28 px-3 py-2 text-sm">
+            {t('brief.back')}
+          </button>
+        }
+        right={
+          <button ref={startRef} type="button" onClick={onStart} className="sign w-44 px-4 py-2 text-base font-extrabold">
+            {t('brief.start')}
+          </button>
+        }
+      />
     </div>
   );
 }

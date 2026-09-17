@@ -1,3 +1,4 @@
+import type { ShellState } from '@/engines/kernel/registry';
 import { createSession } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { allMissions } from './registry';
@@ -118,6 +119,9 @@ export interface Tryout {
   /** 実際に打ったときの出力（長ければ先頭だけ） */
   output: string[];
   ok: boolean;
+  /** 打つ前と打った後の状態。図で見比べる */
+  before: ShellState;
+  after: ShellState;
 }
 
 const MAX_OUTPUT_LINES = 8;
@@ -132,6 +136,7 @@ export function tryouts(intro: LessonIntro, initial: Parameters<typeof createSes
   const session = createSession(initial);
   let state = session.state;
   return runnable.map(({ command, means }) => {
+    const before = state;
     try {
       const outcome = execute(state, command, session.registry, session.clock);
       state = outcome.state;
@@ -142,9 +147,11 @@ export function tryouts(intro: LessonIntro, initial: Parameters<typeof createSes
         means,
         output: lines.length > MAX_OUTPUT_LINES ? [...lines.slice(0, MAX_OUTPUT_LINES), '…'] : lines,
         ok: outcome.exitCode === 0,
+        before,
+        after: state,
       };
     } catch {
-      return { command, means, output: [], ok: false };
+      return { command, means, output: [], ok: false, before, after: before };
     }
   });
 }

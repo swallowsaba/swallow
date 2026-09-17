@@ -39,6 +39,9 @@ export const REWARD = {
 
 export const START_MONEY = 3000;
 
+/** 放置した苦情 1 件あたりに下がる、満足度と住宅の需要 */
+export const UNREST = { happiness: 8, demand: 12 } as const;
+
 /** 段階ごとの住民数と働き口 */
 const HOUSING = [0, 8, 20, 45, 90] as const;
 const COM_JOBS = [0, 4, 10, 20, 40] as const;
@@ -399,7 +402,10 @@ export function facilityRadius(ratio: number): number {
 
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
-export function analyze(save: CitySave, terrain: string, facilities: readonly FacilityInfo[]): CityAnalysis {
+/**
+ * 街を調べる。unrest は放置している苦情の数。多いほど満足度と住宅の需要が下がる
+ */
+export function analyze(save: CitySave, terrain: string, facilities: readonly FacilityInfo[], unrest = 0): CityAnalysis {
   const n = SIZE * SIZE;
   const { tiles } = save;
 
@@ -515,15 +521,15 @@ export function analyze(save: CitySave, terrain: string, facilities: readonly Fa
   const jobs = comJobs + indJobs;
   const workers = population * 0.5;
   const demand: Demand = {
-    r: Math.round(clamp(60 + (jobs - workers) / 2, 0, 100)),
+    r: Math.round(clamp(60 + (jobs - workers) / 2 - unrest * UNREST.demand, 0, 100)),
     c: Math.round(clamp(10 + (population * 0.3 - comJobs) * 1.5, 0, 100)),
     i: Math.round(clamp(20 + (workers - jobs), 0, 100)),
   };
   const coverageShare = resTiles === 0 ? 0 : (resTiles - unserved) / resTiles;
   const happiness =
     resTiles === 0
-      ? 50
-      : Math.round(clamp(35 + 40 * coverageShare + 15 * Math.min(1, valueSum / resTiles / 3) + (demand.r > 20 ? 10 : 0), 0, 100));
+      ? Math.round(clamp(50 - unrest * UNREST.happiness, 0, 100))
+      : Math.round(clamp(35 + 40 * coverageShare + 15 * Math.min(1, valueSum / resTiles / 3) + (demand.r > 20 ? 10 : 0) - unrest * UNREST.happiness, 0, 100));
   const income = Math.round(population * 0.15 + jobs * 0.1);
   // 最初からある幹線道路の維持費はかからない
   const upkeep = save.facilities.length * 4 + Math.round(Math.max(0, roads - HIGHWAY_LENGTH) * 0.1) + parks;
@@ -537,8 +543,8 @@ export function analyze(save: CitySave, terrain: string, facilities: readonly Fa
 const DEMAND_MIN = 15;
 
 /** 1 日進める。つながった区画が需要に応じて育ち、税収と維持費が動く */
-export function tick(save: CitySave, terrain: string, facilities: readonly FacilityInfo[]): CitySave {
-  const a = analyze(save, terrain, facilities);
+export function tick(save: CitySave, terrain: string, facilities: readonly FacilityInfo[], unrest = 0): CitySave {
+  const a = analyze(save, terrain, facilities, unrest);
   const levels = save.levels.split('');
   const demand = { R: a.demand.r, C: a.demand.c, I: a.demand.i };
   const candidates: number[] = [];
@@ -562,7 +568,7 @@ export function tick(save: CitySave, terrain: string, facilities: readonly Facil
     budget -= 1;
   }
   const next = { ...save, levels: levels.join('') };
-  const after = analyze(next, terrain, facilities);
+  const after = analyze(next, terrain, facilities, unrest);
   return { ...next, money: Math.max(0, save.money + after.income - after.upkeep), day: save.day + 1 };
 }
 

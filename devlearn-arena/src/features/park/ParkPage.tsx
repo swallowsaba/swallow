@@ -26,8 +26,10 @@ import { CITIES, CITY_TRACKS, cityOf, facilityById } from '@/content/city';
 import { FacilityLesson } from '@/features/city/FacilityLesson';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { REWARD } from '@/engines/city/sim';
-import { CityPane } from '@/features/city3d/CityPane';
-import { rewardCity } from '@/features/city3d/cityStore';
+import { CityPane } from '@/features/citymap/CityPane';
+import { boostCity, placeFacility, rewardCity } from '@/features/citymap/cityStore';
+import { CityBoard } from '@/features/citymap/CityBoard';
+import type { CityEvent } from '@/features/citymap/CityMapView';
 import { CityPortrait } from '@/visual/game/cityArt';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { Briefing } from './Briefing';
@@ -83,10 +85,20 @@ export default function ParkPage() {
     return next ?? mine[0]?.id ?? FALLBACK?.id ?? '';
   };
   const [missionId, setMissionId] = useState(initialMission);
+  // 苦情や要望に対応している最中か。違えば「街づくり」段（まず街を作る）。
+  // 任務や施設を指定して来たとき、途中まで対応した任務があるときは対応から始める
+  const [handling, setHandling] = useState(() => {
+    if (requested !== null || requestedFacility !== null) return true;
+    const { introsRead, lessons, facilitiesBuilt } = useStore.getState();
+    const id = initialMission();
+    const chapter = missionById(id)?.chapterId ?? '';
+    return introsRead.includes(id) && facilitiesBuilt.includes(chapter) && lessons[id]?.cleared !== true;
+  });
 
   // 全体図や用語集から任務・施設を指定して来たときは、そちらを開く
   useEffect(() => {
     if (requested !== null && requested !== missionId) setMissionId(requested);
+    if (requested !== null) setHandling(true);
     // 指定が変わったときだけ反応する
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requested]);
@@ -96,6 +108,7 @@ export default function ParkPage() {
     const cleared = new Set(Object.entries(lessons).filter(([, p]) => p.cleared).map(([id]) => id));
     const picked = missionForFacility(requestedFacility, cleared);
     if (picked !== undefined) setMissionId(picked);
+    setHandling(true);
   }, [requestedFacility]);
   useEffect(() => {
     if (!isTrack(trackId) || requested !== null || requestedFacility !== null) return;
@@ -120,12 +133,20 @@ export default function ParkPage() {
     <Park
       key={`${mission.id}:${String(attempt)}`}
       mission={mission}
-      onSwitch={setMissionId}
+      handling={handling}
+      onBackToCity={() => {
+        setHandling(false);
+      }}
+      onSwitch={(id) => {
+        setMissionId(id);
+        setHandling(true);
+      }}
       onPickFacility={(facilityId) => {
         const { lessons } = useStore.getState();
         const cleared = new Set(Object.entries(lessons).filter(([, p]) => p.cleared).map(([id]) => id));
         const picked = missionForFacility(facilityId, cleared);
         if (picked !== undefined) setMissionId(picked);
+        setHandling(true);
       }}
       onRetry={() => {
         resetMission(mission.id);
@@ -142,11 +163,16 @@ export default function ParkPage() {
  */
 function Park({
   mission,
+  handling,
+  onBackToCity,
   onSwitch,
   onPickFacility,
   onRetry,
 }: {
   mission: LessonDefinition;
+  /** 苦情・要望に対応している最中か（違えば街づくり） */
+  handling: boolean;
+  onBackToCity: () => void;
   onSwitch: (id: string) => void;
   /** 街の地区を押したとき、その施設の任務へ移る */
   onPickFacility: (facilityId: string) => void;
@@ -233,13 +259,22 @@ function Park({
   const introsRead = useStore((s) => s.introsRead);
   const facility = facilityById(missionById(mission.id)?.chapterId ?? '');
   const facilityBuilt = facility === undefined || facilitiesBuilt.includes(facility.id);
-  const [welcomed, setWelcomed] = useState(() => plan.facilities.some((f) => useStore.getState().facilitiesBuilt.includes(f.id)));
+  const [welcomed, setWelcomed] = useState(() => {
+    const state = useStore.getState();
+    return state.cities[mission.track] !== undefined || plan.facilities.some((f) => state.facilitiesBuilt.includes(f.id));
+  });
   // 建てた直後は「建った！」を見せてから依頼へ進む
   const [justBuilt, setJustBuilt] = useState(false);
   // 建設を決めた施設は、右の地図で配置してもらう
   const [placeRequest, setPlaceRequest] = useState<string | null>(null);
-  const stage: 'welcome' | 'facility' | 'briefing' | 'work' =
-    review ?? (!welcomed ? 'welcome' : !facilityBuilt || justBuilt ? 'facility' : showIntro ? 'briefing' : 'work');
+  const stage: Stage =
+    review ?? (!welcomed ? 'welcome' : !handling ? 'city' : !facilityBuilt || justBuilt ? 'facility' : showIntro ? 'briefing' : 'work');
+
+  // 地図に出す出来事（正解・対応・完了）
+  const [cityEvents, setCityEvents] = useState<CityEvent[]>([]);
+  const cityEvent = useCallback((text: string, color: string) => {
+    setCityEvents((list) => [...list.slice(-9), { id: (list[list.length - 1]?.id ?? 0) + 1, facilityId: facility?.id ?? null, text, color }]);
+  }, [facility?.id]);
 
   const step = currentStep(mission, progress);
   const hintKey = stepKey(mission.id, progress.stepIndex);
@@ -410,12 +445,19 @@ function Park({
       if (progress.skipped.includes(i)) continue;
       if (rewardCity(mission.track, `step:${mission.id}:${String(i)}`, REWARD.step)) total += REWARD.step;
     }
-    if (total > 0) pushToast(t('city.reward.step', { n: total }));
+    // コマンドで対応すると、施設の工事が進み、街の時間が進んで住民が動く
+    if (total > 0) {
+      pushToast(t('city.reward.step', { n: total }));
+      boostCity(mission.track, city, CITY_BOOST.step);
+    }
+    cityEvent(total > 0 ? t('city.event.stepPaid', { n: total }) : t('city.event.step'), EVENT_COLOR.step);
   };
   /** 理解度の問題に正解したぶんの予算 */
   const rewardAnswer = (key: string, firstTry: boolean, full: number, retry: number): void => {
     const amount = firstTry ? full : retry;
-    if (rewardCity(mission.track, key, amount)) pushToast(t('city.reward.quiz', { n: amount }));
+    const paid = rewardCity(mission.track, key, amount);
+    if (paid) pushToast(t('city.reward.quiz', { n: amount }));
+    cityEvent(paid ? t('city.event.quizPaid', { n: amount }) : t('city.event.quiz'), EVENT_COLOR.quiz);
   };
 
   // 進んだ / 通らなかった に応じて見返りと助言を出す
@@ -433,7 +475,7 @@ function Park({
       const score = scoreAttempt({ ...attempt, skipped: progress.skipped.length });
       const reward = xpForScore(scoreAttempt(attempt), mission.kind === 'boss' ? 'boss' : 'drill');
       const after = levelFromXp(xp + reward);
-      const city = cityLines();
+      const townLines = cityLines();
       clearLesson({ lessonId: mission.id, score, xp: reward, now });
       // 躓いた任務は、日を置いて見直しの対象にする
       if (
@@ -453,12 +495,16 @@ function Park({
         xp: reward,
         levelUp: after > levelFromXp(xp) ? { level: after, rank: rankFromLevel(after) } : undefined,
         takeaways: takeawaysOf(mission),
-        town: city,
+        town: townLines,
       });
       setDiagnosis(null);
       // コマンドで要望を解決したら、街の予算が入る
       rewardSteps(prevStep.current, mission.steps.length);
-      if (rewardCity(mission.track, `clear:${mission.id}`, REWARD.clear)) pushToast(t('city.reward.clear', { n: REWARD.clear }));
+      if (rewardCity(mission.track, `clear:${mission.id}`, REWARD.clear)) {
+        pushToast(t('city.reward.clear', { n: REWARD.clear }));
+        boostCity(mission.track, city, CITY_BOOST.clear);
+      }
+      cityEvent(t('city.event.clear', { n: REWARD.clear }), EVENT_COLOR.clear);
       if (soundEnabled) sfx.clear();
     } else if (progress.stepIndex > prevStep.current) {
       grantXp(STEP_XP, now);
@@ -497,14 +543,18 @@ function Park({
     () => cityOf(plan, new Set(facilitiesBuilt), trackMissions, clearedIds),
     [plan, facilitiesBuilt, trackMissions, clearedIds],
   );
-  /** 地図や住民の声から施設を選んだとき：いまの施設なら説明を開き、別の施設ならその任務へ */
+  /** 苦情・地図・住民の声から施設を選んだとき：その施設の対応へ（いまの施設なら対応を始める） */
   const studyFacility = (id: string): void => {
-    if (facility?.id === id) {
-      if (facilityBuilt) setReview('facility');
-      return;
-    }
     onPickFacility(id);
   };
+  // いま取り組んでいる任務の手順の進み。終えた任務は街の状態にもう入っている
+  const partial = useMemo(
+    () =>
+      facility === undefined || clearedIds.has(mission.id) || !facilityBuilt
+        ? null
+        : { facilityId: facility.id, fraction: progress.cleared ? 1 : progress.stepIndex / Math.max(1, mission.steps.length) },
+    [facility, clearedIds, mission.id, mission.steps.length, facilityBuilt, progress.cleared, progress.stepIndex],
+  );
   // 作業に入ったら、すぐ打てるようにターミナルへ
   useEffect(() => {
     if (stage !== 'work') return;
@@ -618,7 +668,7 @@ function Park({
         {/* 上＝やること（溢れたらこの中で送る）、下＝端末。間の仕切りで高さを変えられる */}
         <div className="grid min-h-0 min-w-0" style={{ gridTemplateRows: splitTemplate(stage === 'work' ? paneTask : 74) }}>
           <div className="flex min-h-0 min-w-0 flex-col" data-testid="learning-panel" data-stage={stage}>
-            <StageBar stage={stage} />
+            <StageBar stage={stage} onBackToCity={stage === 'city' || stage === 'welcome' ? undefined : onBackToCity} />
             {stage === 'work' ? (
               <MissionPanel
                 mission={mission}
@@ -650,6 +700,8 @@ function Park({
                       setWelcomed(true);
                     }}
                   />
+                ) : stage === 'city' ? (
+                  <CityBoard track={mission.track} city={city} onHandle={studyFacility} />
                 ) : stage === 'facility' && facility ? (
                   <FacilityLesson
                     key={facility.id}
@@ -667,7 +719,10 @@ function Park({
                         setJustBuilt(true);
                         buildFacility(facility.id);
                         if (rewardCity(mission.track, `learn:${facility.id}`, REWARD.learn)) pushToast(t('city.reward.learn', { n: REWARD.learn }));
+                        // 建設を決めたら、すぐ地図に工事現場ができる（あとで移設できる）
+                        placeFacility(mission.track, city, facility.id);
                         setPlaceRequest(facility.id);
+                        cityEvent(t('city.event.build', { name: facility.name }), EVENT_COLOR.build);
                         flushSave();
                       }
                     }}
@@ -728,6 +783,8 @@ function Park({
                   <p className="text-base font-extrabold text-cream">
                     {stage === 'welcome'
                       ? t('world.lock.welcome')
+                      : stage === 'city'
+                        ? t('world.lock.city')
                       : stage === 'facility'
                         ? t('world.lock.facility', { name: facility?.name ?? '' })
                         : t('world.lock.briefing')}
@@ -752,21 +809,33 @@ function Park({
         />
 
         <div className="flex min-h-0 min-w-0 flex-col">
-          <CityPane track={mission.track} city={city} placeRequest={placeRequest} onStudy={studyFacility} />
+          <CityPane
+            track={mission.track}
+            city={city}
+            placeRequest={placeRequest}
+            partial={partial}
+            events={cityEvents}
+            onStudy={studyFacility}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-const STAGES = ['facility', 'briefing', 'work'] as const;
+type Stage = 'welcome' | 'city' | 'facility' | 'briefing' | 'work';
+const STAGES = ['city', 'facility', 'briefing', 'work'] as const;
 
-/** いまどの段階にいるか。施設の建設を決める → 住民の要望を聞く → コマンドで対応する */
-function StageBar({ stage }: { stage: 'welcome' | 'facility' | 'briefing' | 'work' }) {
+/** 出来事で進める街の日数 */
+const CITY_BOOST = { step: 3, clear: 10 } as const;
+const EVENT_COLOR = { quiz: '#2f6fb0', step: '#d9822b', clear: '#b8860b', build: '#7a63d6' } as const;
+
+/** いまどの段階にいるか。街を作る → 施設の建設を決める → 住民の要望を聞く → コマンドで対応する */
+function StageBar({ stage, onBackToCity }: { stage: Stage; onBackToCity?: (() => void) | undefined }) {
   const t = useT();
   const index = stage === 'welcome' ? -1 : STAGES.indexOf(stage);
   return (
-    <ol aria-label={t('world.stages')} className="mx-3 mt-3 flex shrink-0 flex-wrap gap-1 text-xs font-extrabold">
+    <ol aria-label={t('world.stages')} className="mx-3 mt-3 flex shrink-0 flex-wrap items-center gap-1 text-xs font-extrabold">
       {STAGES.map((s, i) => (
         <li
           key={s}
@@ -778,6 +847,13 @@ function StageBar({ stage }: { stage: 'welcome' | 'facility' | 'briefing' | 'wor
           {t(`world.stage.${s}`)}
         </li>
       ))}
+      {onBackToCity ? (
+        <li className="ml-auto">
+          <button type="button" data-testid="back-to-city" onClick={onBackToCity} className="knob px-2 py-1 text-xs">
+            {t('world.backToCity')}
+          </button>
+        </li>
+      ) : null}
     </ol>
   );
 }

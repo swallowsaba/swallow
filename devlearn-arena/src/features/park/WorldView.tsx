@@ -11,7 +11,7 @@ interface Props {
   tab: VisualTab;
   state: ShellState;
   previous: ShellState | undefined;
-  onCommand: RunCommand;
+  onCommand?: RunCommand | undefined;
 }
 
 /**

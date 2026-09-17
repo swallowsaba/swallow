@@ -4,7 +4,8 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CITIES, cityOf } from '@/content/city';
 import { createCity, REWARD, START_MONEY } from '@/engines/city/sim';
 import { allMissions } from '@/engines/lesson/registry';
-import { CityPane } from '@/features/city3d/CityPane';
+import { CityPane } from '@/features/citymap/CityPane';
+import { complaintDay } from '@/engines/city/civic';
 import { missionById } from '@/engines/lesson/registry';
 import { useStore } from '@/store';
 import { focusView } from '@/visual/viewportMath';
@@ -62,9 +63,25 @@ describe('カテゴリの作業画面', () => {
     expect(view.querySelector('[data-testid="city-pane"]')).not.toBeNull();
   });
 
-  it('紹介 → 施設を学んで建てる → 依頼を聞く の順に進み、施設は保存される', () => {
+  it('就任のあとは、まず街づくり。苦情が届くまで要望の話は始まらない', () => {
     const view = openWorld('/world/git');
     click(view, '[data-testid="welcome-start"]');
+    expect(stage(view)).toBe('city');
+    expect(view.querySelector('[data-testid="city-board"]')).not.toBeNull();
+    expect(view.querySelector('[data-voice="complaint"]')).toBeNull();
+    expect(view.querySelector('[data-testid="next-voice"]')).not.toBeNull();
+    expect(view.querySelector('[data-testid="briefing"]')).toBeNull();
+    expect(view.querySelector('[data-testid="terminal-lock"]')).not.toBeNull();
+  });
+
+  it('苦情に対応 → 施設を学んで建てる（地図に工事現場ができる）→ 依頼を聞く の順に進む', () => {
+    act(() => {
+      useStore.setState({ cities: { git: { ...createCity(), day: complaintDay(0) } } });
+    });
+    const view = openWorld('/world/git');
+    expect(stage(view)).toBe('city');
+    expect(view.querySelector('[data-voice="complaint"]')?.getAttribute('data-facility')).toBe('git/01');
+    click(view, '[data-handle="git/01"]');
     expect(stage(view)).toBe('facility');
     expect(view.querySelector('[data-testid="terminal-lock"]')?.textContent).toContain(CITIES.git.facilities[0]?.name ?? '');
     passFacilityLesson(view);
@@ -75,11 +92,15 @@ describe('カテゴリの作業画面', () => {
     expect(stage(view)).toBe('briefing');
     expect(view.querySelector('[data-testid="briefing"]')).not.toBeNull();
     expect(view.querySelector('[data-testid="terminal-lock"]')).not.toBeNull();
-    // 建設を決めると予算が入り、右の地図ではその施設を置く道具が選ばれている
-    const money = useStore.getState().cities['git']?.money ?? 0;
-    expect(money).toBeGreaterThanOrEqual(START_MONEY + REWARD.learn + REWARD.quizRetry);
-    expect(view.querySelector('[data-testid="city-pane"]')?.getAttribute('data-tool')).toBe('facility');
-    expect(view.querySelector('[data-advice="place"]')).not.toBeNull();
+    // 建設を決めると予算が入り、地図に仮置きされ、出来事が出る
+    const saved = useStore.getState().cities['git'];
+    expect(saved?.money ?? 0).toBeGreaterThanOrEqual(START_MONEY + REWARD.learn + REWARD.quizRetry - 400);
+    expect(saved?.facilities.map((f) => f.id)).toContain('git/01');
+    expect(view.querySelector('[data-city-event]')).not.toBeNull();
+    // 街づくりに戻れる
+    click(view, '[data-testid="back-to-city"]');
+    expect(stage(view)).toBe('city');
+    expect(view.querySelector('[data-voice="waiting"]')).not.toBeNull();
   });
 
   it('はじめて聞く依頼は飛ばせない（背景を聞かずにコマンドへ行かない）', () => {
@@ -136,17 +157,17 @@ describe('市長が作る街', () => {
   const gitCity = (built: string[]) =>
     cityOf(CITIES.git, new Set(built), allMissions().filter((m) => m.track === 'git'), new Set());
 
-  it('予算・人口・日付・需要と道具が並び、3D が使えない環境では案内を出す', async () => {
-    const view = mount(<CityPane track="git" city={gitCity([])} placeRequest={null} onStudy={() => undefined} initialSpeed={0} />);
-    await act(async () => {
-      await import('@/features/city3d/CityCanvas');
+  it('予算・人口・日付・需要と道具が並び、地図を描けない環境では案内を出す', () => {
+    act(() => {
+      useStore.setState({ cities: { git: { ...createCity(), day: complaintDay(0) } } });
     });
+    const view = mount(<CityPane track="git" city={gitCity([])} placeRequest={null} onStudy={() => undefined} initialSpeed={0} />);
     expect(view.querySelector('[data-testid="city-money"]')?.getAttribute('data-value')).toBe(String(START_MONEY));
     expect(view.querySelector('[data-testid="city-population"]')?.getAttribute('data-value')).toBe('0');
     expect(view.querySelector('[data-testid="city-demand"]')).not.toBeNull();
     expect(view.querySelectorAll('[role="toolbar"] button')).toHaveLength(8);
-    expect(view.querySelector('[data-testid="city-canvas"]')?.getAttribute('data-webgl')).toBe('off');
-    // はじめは道路を求め、最初の施設の困りごとを伝える
+    expect(view.querySelector('[data-testid="city-canvas"]')?.getAttribute('data-canvas')).toBe('off');
+    // はじめは道路を求め、苦情が届いた施設の困りごとを伝える
     expect(view.querySelector('[data-advice="noRoad"]')).not.toBeNull();
     expect(view.querySelector('[data-advice="trouble"]')?.textContent).toContain(CITIES.git.facilities[0]?.trouble.text.slice(0, 10) ?? '');
   });
@@ -168,10 +189,22 @@ describe('市長が作る街', () => {
     expect(onStudy).toHaveBeenCalledWith(next);
   });
 
-  it('建設を決めたばかりの施設があると、配置の道具を選んだ状態になる', () => {
+  it('建設を決めたばかりの施設（仮置き済み）を詳しく見せ、移設もできる', () => {
+    act(() => {
+      useStore.setState({ cities: { git: { ...createCity(), facilities: [{ id: 'git/01', x: 2, y: 16 }] } } });
+    });
     const view = mount(<CityPane track="git" city={gitCity(['git/01'])} placeRequest="git/01" onStudy={() => undefined} initialSpeed={0} />);
-    expect(view.querySelector('[data-testid="city-pane"]')?.getAttribute('data-tool')).toBe('facility');
+    expect(view.querySelector('[data-testid="city-inspector"]')?.textContent).toContain(CITIES.git.facilities[0]?.name ?? '');
+    click(view, 'button[data-tool="facility"]');
+    click(view, '[data-move="git/01"]');
     expect(view.querySelector('[data-testid="city-tool-hint"]')?.textContent).toContain(CITIES.git.facilities[0]?.name ?? '');
+  });
+
+  it('出来事は住民の声の欄にも出る', () => {
+    const view = mount(
+      <CityPane track="git" city={gitCity([])} placeRequest={null} onStudy={() => undefined} initialSpeed={0} events={[{ id: 1, facilityId: null, text: '⌨ 対応が進んだ', color: '#000' }]} />,
+    );
+    expect(view.querySelector('[data-city-event]')?.textContent).toContain('対応が進んだ');
   });
 
   it('時間を進めると日付が進む', () => {

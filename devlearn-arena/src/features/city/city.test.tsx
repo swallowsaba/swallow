@@ -37,15 +37,28 @@ describe('施設の学習', () => {
       </MemoryRouter>,
     );
     expect(view.textContent).toContain(record.trouble.text);
+    // どの段にも絵があり、「次へ」はいつも同じ操作帯にある
+    expect(view.querySelector('[data-testid="visual-trouble"]')).not.toBeNull();
+    expect(view.querySelector('[data-testid="footer-bar"] [data-testid="lesson-next"]')).not.toBeNull();
     click(view, '[data-testid="lesson-next"]');
     expect(view.textContent).toContain(record.analogy);
+    expect(view.querySelector('[data-testid="visual-analogy"]')).not.toBeNull();
     click(view, '[data-testid="lesson-next"]');
     expect(view.querySelector('[aria-current="step"]')?.getAttribute('data-step')).toBe('why');
+    expect(view.querySelector('[data-testid="visual-why"]')).not.toBeNull();
     click(view, '[data-testid="lesson-next"]');
+    expect(view.querySelector('[data-station-state="now"]')?.getAttribute('data-station')).toBe('0');
     // 仕組みは 1 手順ずつ積み上がる
     expect(view.querySelectorAll('ol > li')).toHaveLength(1);
     for (let i = 1; i < record.how.length; i += 1) click(view, '[data-testid="lesson-next"]');
     expect(view.querySelectorAll('ol > li')).toHaveLength(record.how.length);
+    click(view, '[data-testid="lesson-next"]');
+    // 動きを見る：模範解答を 1 コマンドずつ、実際の状態図で見られる
+    expect(view.querySelector('[aria-current="step"]')?.getAttribute('data-step')).toBe('demo');
+    expect(view.querySelector('[data-testid="visual-demo"]')).not.toBeNull();
+    const before = view.querySelector('[data-testid="demo-command"]')?.textContent;
+    click(view, '[data-testid="demo-next"]');
+    expect(view.querySelector('[data-testid="demo-command"]')?.textContent).not.toBe(before);
     click(view, '[data-testid="lesson-next"]');
     expect(view.querySelector('[aria-current="step"]')?.getAttribute('data-step')).toBe('field');
     click(view, '[data-testid="lesson-next"]');

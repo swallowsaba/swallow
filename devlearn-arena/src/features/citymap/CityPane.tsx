@@ -1,16 +1,16 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CityState } from '@/content/city';
 import {
   advise, analyze, applyTool, COST, createCity, facilityRadius, idx, isValidCity, terrainOf, tick,
   type Advice, type Point, type Tool, type ToolResult,
 } from '@/engines/city/sim';
+import { moveFacility, unrestOf, voicesOf } from '@/engines/city/civic';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { useStore } from '@/store';
-import { citySaveOf, facilityInfos } from './cityStore';
-import type { WorldInput } from './world3d';
-
-const CityCanvas = lazy(() => import('./CityCanvas'));
+import { CityMapView, type CityEvent } from './CityMapView';
+import { citySaveOf, civicFacilities, facilityInfos, withPartial } from './cityStore';
+import type { MapInput } from './isoWorld';
 
 const TOOLS: readonly Tool[] = ['inspect', 'road', 'res', 'com', 'ind', 'park', 'facility', 'bulldoze'];
 /** 1 日の長さ（ミリ秒）。0 は一時停止 */
@@ -19,8 +19,12 @@ const SPEED_MS = [0, 2000, 900, 350] as const;
 interface Props {
   track: MissionTrack;
   city: CityState;
-  /** 建設を決めたばかりで、配置を待っている施設。あれば配置の道具を選んだ状態で開く */
+  /** 建設を決めたばかりの施設。地図をそこへ寄せる */
   placeRequest: string | null;
+  /** いま取り組んでいる任務の手順の進み。その施設の工事が進んで見える */
+  partial?: { facilityId: string; fraction: number } | null;
+  /** 地図に出す出来事 */
+  events?: readonly CityEvent[];
   /** 施設の説明と要望へ移る（左側） */
   onStudy: (facilityId: string) => void;
   /** 始めの速さ。テストでは 0（止めておく） */
@@ -32,17 +36,25 @@ interface Props {
  * 3D の地図の上で道路を引き、区画を塗り、学んで建設を決めた施設を置く。日がたつと、つながった区画が需要と地価に応じて育つ。
  * 予算は税収と、左側での理解度（正解）・コマンドでの対応で入る。
  */
-export function CityPane({ track, city, placeRequest, onStudy, initialSpeed = 1 }: Props) {
+export function CityPane({ track, city: learned, placeRequest, partial = null, events = [], onStudy, initialSpeed = 1 }: Props) {
   const t = useT();
   const stored = useStore((s) => s.cities[track]);
   const setCity = useStore((s) => s.setCity);
   // 保存が無い・壊れていれば新しい街
   const save = useMemo(() => (stored !== undefined && isValidCity(stored) ? stored : createCity()), [stored]);
   const terrain = useMemo(() => terrainOf(track), [track]);
+  const city = useMemo(() => withPartial(learned, partial), [learned, partial]);
   const infos = useMemo(() => facilityInfos(city), [city]);
-  const analysis = useMemo(() => analyze(save, terrain, infos), [save, terrain, infos]);
+  const population = useMemo(() => analyze(save, terrain, infos).population, [save, terrain, infos]);
+  const voices = useMemo(() => voicesOf(civicFacilities(city), population, save.day), [city, population, save.day]);
+  const unrest = unrestOf(voices);
+  const analysis = useMemo(() => analyze(save, terrain, infos, unrest), [save, terrain, infos, unrest]);
   const order = useMemo(() => city.facilities.map((f) => f.facility.id), [city]);
-  const advice = useMemo(() => advise(save, analysis, infos, order), [save, analysis, infos, order]);
+  // 施設の困りごとは、苦情が届いてから伝える
+  const advice = useMemo(
+    () => advise(save, analysis, infos, order).filter((a) => a.kind !== 'trouble' || voices.some((v) => v.kind === 'complaint' && v.facilityId === a.facilityId)),
+    [save, analysis, infos, order, voices],
+  );
 
   const [tool, setTool] = useState<Tool>('inspect');
   const [placing, setPlacing] = useState<string | null>(null);
@@ -52,12 +64,14 @@ export function CityPane({ track, city, placeRequest, onStudy, initialSpeed = 1 
   const [focusId, setFocusId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // 建設を決めたばかりの施設は、そのまま配置できるようにする
+  // 建設を決めたばかりの施設（仮置き済み）へ地図を寄せ、詳しく見せる
   useEffect(() => {
-    if (placeRequest === null || save.facilities.some((f) => f.id === placeRequest)) return;
-    setTool('facility');
-    setPlacing(placeRequest);
-    setPanel(true);
+    if (placeRequest === null) return;
+    const placed = citySaveOf(track).facilities.find((f) => f.id === placeRequest);
+    if (placed) {
+      setFocusId(placeRequest);
+      setInspected({ x: placed.x, y: placed.y });
+    }
     // 決めた瞬間だけ
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [placeRequest]);
@@ -68,12 +82,12 @@ export function CityPane({ track, city, placeRequest, onStudy, initialSpeed = 1 
     if (ms === 0) return;
     const timer = setInterval(() => {
       const current = citySaveOf(track);
-      setCity(track, tick(current, terrain, infos));
+      setCity(track, tick(current, terrain, infos, unrest));
     }, ms);
     return () => {
       clearInterval(timer);
     };
-  }, [speed, track, terrain, infos, setCity]);
+  }, [speed, track, terrain, infos, unrest, setCity]);
 
   const describe = useCallback(
     (result: ToolResult, used: Tool): string => {
@@ -88,6 +102,20 @@ export function CityPane({ track, city, placeRequest, onStudy, initialSpeed = 1 
   const use = useCallback(
     (from: Point, to: Point) => {
       const current = citySaveOf(track);
+      // もう置いてある施設なら移設（費用なし）
+      if (tool === 'facility' && placing !== null && current.facilities.some((f) => f.id === placing)) {
+        const moved = moveFacility(current, terrain, infos, placing, to);
+        if (moved.error !== undefined) {
+          setNotice(t(`city.err.${moved.error as 'blocked'}`));
+          return;
+        }
+        setNotice(null);
+        setCity(track, moved.save);
+        setPlacing(null);
+        setTool('inspect');
+        setInspected(to);
+        return;
+      }
       const result = applyTool(current, terrain, tool, from, to, infos, placing ?? undefined);
       if (result.error !== undefined) {
         if (result.error !== 'nothing') setNotice(t(`city.err.${result.error}`));
@@ -118,14 +146,21 @@ export function CityPane({ track, city, placeRequest, onStudy, initialSpeed = 1 
 
   const nameOf = (id: string): string => city.facilities.find((f) => f.facility.id === id)?.facility.name ?? id;
 
-  const input = useMemo<WorldInput>(
+  const input = useMemo<MapInput>(
     () => ({
       track,
       terrain,
       save,
       analysis,
       infos,
-      facilities: city.facilities.map((f) => ({ id: f.facility.id, name: f.facility.name, kind: f.facility.building, ratio: infos.find((i) => i.id === f.facility.id)?.ratio ?? 0 })),
+      facilities: city.facilities.map((f) => ({
+        id: f.facility.id,
+        name: f.facility.name,
+        kind: f.facility.building,
+        ratio: infos.find((i) => i.id === f.facility.id)?.ratio ?? 0,
+        // 最初の任務を終えると建物ができあがる。手順を進めるたびに背が伸びる
+        build: Math.min(1, f.missionsCleared),
+      })),
     }),
     [track, terrain, save, analysis, infos, city],
   );
@@ -137,20 +172,20 @@ export function CityPane({ track, city, placeRequest, onStudy, initialSpeed = 1 
   return (
     <section data-testid="city-pane" data-tool={tool} className="relative h-full min-h-0 w-full overflow-hidden bg-[#7c9a5a]">
       <div className="absolute inset-0">
-        <Suspense fallback={<div className="grid h-full place-items-center text-sm font-bold text-white">{t('city.loading')}</div>}>
-          <CityCanvas
-            input={input}
-            tool={tool}
-            placing={placing}
-            selected={selectedFacility?.id ?? null}
-            focusId={focusId}
-            onApply={use}
-            onInspect={setInspected}
-            describe={describe}
-            label={t('city.label', { name: city.plan.name })}
-            fallback={t('city.no3d')}
-          />
-        </Suspense>
+        <CityMapView
+          input={input}
+          tool={tool}
+          placing={placing}
+          selected={selectedFacility?.id ?? null}
+          focusId={focusId}
+          events={events}
+          onApply={use}
+          onInspect={setInspected}
+          describe={describe}
+          label={t('city.label', { name: city.plan.name })}
+          fallback={t('city.noCanvas')}
+          zoomLabels={{ in: t('city.zoomIn'), out: t('city.zoomOut'), fit: t('city.zoomFit') }}
+        />
       </div>
 
       {/* 上：街の数字。その下の左に住民の声、右に施設の一覧か調べたマス。重ならないように縦に積む */}
@@ -203,7 +238,7 @@ export function CityPane({ track, city, placeRequest, onStudy, initialSpeed = 1 
 
       <div className="flex min-h-0 flex-1 items-start gap-2">
       {/* 左：住民の声 */}
-      <Voices advice={advice} nameOf={nameOf} city={city} onPlace={(id) => { pickTool('facility'); setPlacing(id); }} onStudy={onStudy} />
+      <Voices advice={advice} events={events} nameOf={nameOf} city={city} onPlace={(id) => { pickTool('facility'); setPlacing(id); }} onStudy={onStudy} />
 
       {/* 右：施設の一覧 / 調べたマス */}
       {panel ? (
@@ -215,6 +250,11 @@ export function CityPane({ track, city, placeRequest, onStudy, initialSpeed = 1 
           onPlace={(id) => {
             setTool('facility');
             setPlacing(id);
+          }}
+          onMove={(id) => {
+            setTool('facility');
+            setPlacing(id);
+            setNotice(t('city.fac.moving', { name: nameOf(id) }));
           }}
           onLook={(id) => {
             setFocusId(null);
@@ -277,9 +317,10 @@ export function CityPane({ track, city, placeRequest, onStudy, initialSpeed = 1 
 }
 
 function Voices({
-  advice, nameOf, city, onPlace, onStudy,
+  advice, events, nameOf, city, onPlace, onStudy,
 }: {
   advice: readonly Advice[];
+  events: readonly CityEvent[];
   nameOf: (id: string) => string;
   city: CityState;
   onPlace: (id: string) => void;
@@ -301,6 +342,11 @@ function Voices({
       </button>
       {open ? (
         <ul className="flex min-h-0 flex-col gap-1 overflow-y-auto px-2 pb-2">
+          {events.slice(-3).reverse().map((e) => (
+            <li key={`event:${String(e.id)}`} data-city-event className="rounded px-2 py-1 text-xs font-bold text-white" style={{ background: e.color }}>
+              {e.text}
+            </li>
+          ))}
           {advice.slice(0, 4).map((a) => (
             <li key={`${a.kind}:${'facilityId' in a ? a.facilityId : ''}`} data-advice={a.kind} className="rounded bg-[#eef3f6] px-2 py-1 text-xs leading-snug">
               {a.kind === 'trouble' ? (
@@ -312,7 +358,7 @@ function Voices({
                     })}
                   </span>{' '}
                   <button type="button" onClick={() => { onStudy(a.facilityId); }} className="font-extrabold text-[#2f6fb0] underline">
-                    {t('city.fac.study')}
+                    {t('board.handle')}
                   </button>
                 </>
               ) : a.kind === 'place' ? (
@@ -343,8 +389,9 @@ function Voices({
 }
 
 function FacilityList({
-  city, placedIds, placing, money, onPlace, onLook, onStudy, onClose,
+  city, placedIds, placing, money, onPlace, onMove, onLook, onStudy, onClose,
 }: {
+  onMove: (id: string) => void;
   city: CityState;
   placedIds: readonly string[];
   placing: string | null;
@@ -395,6 +442,9 @@ function FacilityList({
                     <span className="font-mono">{f.ratio === 0 ? t('city.fac.idle') : t('city.fac.ratio', { n: Math.round(f.ratio * 100) })}</span>
                     <button type="button" onClick={() => { onLook(id); }} className="rounded bg-white px-2 py-0.5 font-bold">
                       {t('city.fac.look')}
+                    </button>
+                    <button type="button" data-move={id} onClick={() => { onMove(id); }} className="rounded bg-white px-2 py-0.5 font-bold">
+                      {t('city.fac.move')}
                     </button>
                     {f.ratio < 1 ? (
                       <button type="button" onClick={() => { onStudy(id); }} className="rounded bg-[#2f6fb0] px-2 py-0.5 font-bold text-white">
