@@ -512,30 +512,44 @@ async function geocodeInto(place, query, input, list, hint) {
     const items = [];
 
     // 1) 見つかった場所そのもの(最大 5 件)。これが本命。
-    items.push({ type: 'section', label: '見つかった場所(ここを出発・到着にできます)' });
-    for (const h of hits.slice(0, 5)) {
-      const near = state.net?.nearestGroups(h.lat, h.lon, 1) || [];
-      const sub = near.length
-        ? `最寄: ${near[0].group.title} まで徒歩 約${walkMinutes(near[0].km, settings)}分(推定)`
-        : '対応範囲に駅がありません';
-      items.push({ type: 'station', kind: 'spot', label: h.title, sub, lat: h.lat, lon: h.lon });
-    }
+    // 名前が合っているものだけを「見つかった場所」として出す。
+    // 合っていないもの(地名の一部に反応しただけの住所)は分けて、印を付ける。
+    const strong = hits.filter((h) => !h.weak);
+    const weak = hits.filter((h) => h.weak);
+
+    const pushHits = (list, heading, mark) => {
+      if (!list.length) return;
+      items.push({ type: 'section', label: heading });
+      for (const h of list.slice(0, 5)) {
+        const near = state.net?.nearestGroups(h.lat, h.lon, 1) || [];
+        const sub = near.length
+          ? `${mark}最寄: ${near[0].group.title} まで徒歩 約${walkMinutes(near[0].km, settings)}分(推定)`
+          : `${mark}対応範囲に駅がありません`;
+        items.push({ type: 'station', kind: 'spot', label: h.title, sub, lat: h.lat, lon: h.lon });
+      }
+    };
+
+    pushHits(strong, '見つかった場所(ここを出発・到着にできます)', '');
+    pushHits(weak, '名前が一致しなかった候補', '入力とは別の場所かもしれません / ');
 
     // 2) 先頭の場所の最寄駅。駅を使いたいときはこちら。
-    const near = state.net?.nearestGroups(hits[0].lat, hits[0].lon, 4) || [];
+    const top = strong[0] || hits[0];
+    const near = state.net?.nearestGroups(top.lat, top.lon, 4) || [];
     if (near.length) {
-      items.push({ type: 'section', label: `${hits[0].title} の最寄駅` });
+      items.push({ type: 'section', label: `${top.title} の最寄駅` });
       for (const n of near) {
         items.push({
           type: 'station',
           label: n.group.title,
-          sub: `${hits[0].title} から ${formatDistance(n.km)}`,
+          sub: `${top.title} から ${formatDistance(n.km)}`,
           value: n.group.id,
         });
       }
     }
 
-    hint.textContent = `${hits.length} 件見つかりました`;
+    hint.textContent = strong.length
+      ? `${strong.length} 件見つかりました`
+      : '名前が一致する場所は見つかりませんでした(候補は下に出ています)';
     ui.renderSuggest(list, items, (item) => {
       if (item.kind === 'spot') {
         // 地点として確定する。駅に置き換えない。

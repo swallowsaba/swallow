@@ -429,6 +429,27 @@ async function search(page, from, to) {
     assert(/地点/.test(hint), `地点として扱われていない: ${hint}`);
     console.log('  ok  施設名(スポット)で探し、その場所を出発地にできる');
     void spot;
+
+    // 正式名称(東京スカイツリー)でも見つかること。
+    // 国土地理院の検索は、この語だと「茨城県つくば市東」などの
+    // 無関係な住所を返してくる。言い直して拾えていることを確かめる。
+    await page.fill('#to-input', '東京スカイツリー');
+    await page.waitForSelector('#to-list li[role="option"]');
+    for (const li of await page.$$('#to-list li[role="option"]')) {
+      const txt = await li.textContent();
+      if (txt.includes('スポット')) { await li.click(); break; }
+    }
+    await page.waitForTimeout(600);
+    const hits2 = await page.$$eval('#to-list li', (els) => els.map((e) => e.textContent));
+    assert(
+      hits2.some((h) => h.includes('東京スカイツリー')),
+      `正式名称で見つからない: ${JSON.stringify(hits2)}`
+    );
+    assert(
+      !hits2.some((h) => h.includes('茨城県')),
+      `無関係な住所が上位に出ている: ${JSON.stringify(hits2)}`
+    );
+    console.log('  ok  正式名称(東京スカイツリー)でも見つかる');
   }
 
   // バスも除外できる

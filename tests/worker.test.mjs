@@ -12,6 +12,7 @@
 
 import assert from 'node:assert/strict';
 import worker from '../worker/src/index.js';
+import { matchScore, fallbackQuery } from '../worker/src/geocode.js';
 
 let passed = 0;
 async function test(name, fn) {
@@ -542,6 +543,36 @@ await test('事業者が多いときは名前を削ってサブリクエスト�
     body.errors?.some((e) => /検索していません/.test(e.message)),
     '削った名前があることを伝えていない'
   );
+});
+
+
+/* ================================================================== *
+ *  住所・施設名の検索(並べ替えと言い直し)
+ * ================================================================== */
+console.log('\n住所・施設名の検索');
+
+await test('名前が完全に一致するものが最上位', () => {
+  assert.equal(matchScore('東京スカイツリー', '東京スカイツリー'), 100);
+  assert(matchScore('スカイツリー', '東京スカイツリー') > matchScore('スカイツリー', '東京都墨田区'));
+});
+
+await test('関係の無い住所は 0 点(「東」だけの一致を拾わない)', () => {
+  // 実際に国土地理院が「東京スカイツリー」で返してくる誤りの例
+  assert.equal(matchScore('東京スカイツリー', '茨城県つくば市東'), 0);
+  assert.equal(matchScore('東京スカイツリー', '埼玉県羽生市東'), 0);
+});
+
+await test('2 文字以上の一致は点が付く', () => {
+  assert(matchScore('新宿御苑', '新宿区') > 0, '「新宿」の一致を拾えていない');
+  assert.equal(matchScore('あいうえお', 'かきくけこ'), 0);
+});
+
+await test('見つからないときは頭の地域名を外した語で言い直す', () => {
+  assert.equal(fallbackQuery('東京スカイツリー'), 'スカイツリー');
+  assert.equal(fallbackQuery('東京都庁'), '都庁', '「東京都」まで外すと「庁」になってしまう');
+  assert.equal(fallbackQuery('スカイツリー'), null, '外すものが無ければ言い直さない');
+  assert.equal(fallbackQuery('東京'), null, '短すぎる語は言い直さない');
+  assert.equal(fallbackQuery('東京駅'), null, '外した残りが 1 文字なら言い直さない');
 });
 
 console.log(`\n${passed} 件のテストが成功${process.exitCode ? '(失敗あり)' : ''}\n`);

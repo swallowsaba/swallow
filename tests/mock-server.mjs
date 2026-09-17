@@ -10,6 +10,7 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { buildIndex, splitForWeb } from '../tools/gtfs-lib.mjs';
+import { matchScore, fallbackQuery } from '../worker/src/geocode.js';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'transit');
@@ -362,13 +363,53 @@ const server = http.createServer(async (req, res) => {
       // 住所だけでなく施設名(スポット)も返す。実際の国土地理院の検索も
       // 「東京タワー」のような施設名を返す。
       const q = url.searchParams.get('q') || '';
-      const results = /タワー|東京タワー/.test(q)
-        ? [
+      // Worker と同じ後処理(点数付け・重複除去・言い直し)を通す。
+      // 生の国土地理院は「東京スカイツリー」で無関係な住所を返すので、それも再現する。
+      const raw = (s) => {
+        if (/^東京スカイツリー/.test(s)) {
+          // 実際に返ってくる誤り
+          return [
+            { title: '茨城県つくば市東', lat: 36.061123, lon: 140.13031 },
+            { title: '埼玉県羽生市東', lat: 36.172943, lon: 139.544525 },
+          ];
+        }
+        if (/スカイツリー/.test(s)) {
+          return [
+            { title: '東京スカイツリー', lat: 35.70952, lon: 139.81071 },
+            { title: 'とうきょうスカイツリー駅', lat: 35.71673, lon: 139.80925 },
+            { title: '東京スカイツリー', lat: 35.70952, lon: 139.81071 }, // 重複も返る
+          ];
+        }
+        if (/タワー/.test(s)) {
+          return [
             { title: '東京タワー', lat: 35.6586, lon: 139.7454 },
             { title: '東京都港区芝公園四丁目', lat: 35.6575, lon: 139.7462 },
-          ]
-        : [{ title: '東京都千代田区丸の内一丁目', lat: 35.6812, lon: 139.7671 }];
-      return send({ fetchedAt: new Date().toISOString(), query: q, results });
+          ];
+        }
+        return [{ title: '東京都千代田区丸の内一丁目', lat: 35.6812, lon: 139.7671 }];
+      };
+
+      let hits = raw(q);
+      if (!hits.some((r) => matchScore(q, r.title) > 0)) {
+        const alt = fallbackQuery(q);
+        if (alt) {
+          const more = raw(alt);
+          if (more.some((r) => matchScore(alt, r.title) > 0)) {
+            hits = more.map((r) => ({ ...r, score: matchScore(alt, r.title) }));
+          }
+        }
+      }
+      const seen = new Set();
+      const results = [];
+      for (const r of hits) {
+        const key = `${r.title}|${r.lat}|${r.lon}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const score = r.score != null ? r.score : matchScore(q, r.title);
+        results.push({ title: r.title, lat: r.lat, lon: r.lon, score, weak: score === 0 });
+      }
+      results.sort((a, b) => b.score - a.score);
+      return send({ fetchedAt: new Date().toISOString(), query: q, results: results.slice(0, 5) });
     }
     const body = await readBody(req);
     if (url.pathname === '/v1/timetables') {
