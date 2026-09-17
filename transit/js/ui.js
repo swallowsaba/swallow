@@ -391,11 +391,19 @@ export function renderExcludes(excludes, net, onRemove, onClear) {
     body.append(el('span', 'muted', '除外は設定されていません。'));
   }
   for (const ex of excludes) {
-    const label =
-      ex.type === 'railway'
-        ? `${net.railwayTitle(ex.railway)} 全線`
-        : `${net.railwayTitle(ex.railway)} ${net.stationTitle(ex.from)}〜${net.stationTitle(ex.to)}`;
+    let label;
+    if (ex.type === 'railway') {
+      label = `${net.railwayTitle(ex.railway)} 全線`;
+    } else if (ex.type === 'busOperator') {
+      label = `${ex.operatorTitle} 全系統`;
+    } else if (ex.type === 'busLine') {
+      label = `${ex.operatorTitle} ${ex.lineTitle}`;
+    } else {
+      label = `${net.railwayTitle(ex.railway)} ${net.stationTitle(ex.from)}〜${net.stationTitle(ex.to)}`;
+    }
     const chip = el('span', 'chip-x', label);
+    // バスの除外は見た目で区別できるようにする
+    if (ex.type === 'busOperator' || ex.type === 'busLine') chip.classList.add('chip-x--bus');
     const btn = el('button', null, '×');
     btn.type = 'button';
     btn.setAttribute('aria-label', `${label} の除外を解除`);

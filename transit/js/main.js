@@ -9,7 +9,7 @@ import { TransitApi, ApiError, messageFor } from './api.js';
 import { loadNetwork, clearNetworkCache } from './network.js';
 import { findCandidateRoutes, bindSchedule, edgeKey } from './router.js';
 import { analyzeStatus, warningsForRoute, SEVERITY } from './status.js';
-import { findBusRoutes, findIntermodalRoutes } from './bus.js';
+import { findBusRoutes, findIntermodalRoutes, setBusOperatorTitles } from './bus.js';
 import { findAllGtfsRoutes, loadCatalog, stopsInBounds, indexStatus, STOP_MIN_ZOOM } from './gtfs.js';
 import { currentPosition, GeoError, formatDistance } from './geo.js';
 import { toServiceMoment, calendarFor, dateKey } from './time.js';
@@ -97,6 +97,8 @@ async function init() {
   try {
     const res = await state.api.health();
     state.health = res.data;
+    // バスの事業者名を覚える(レグの表示と、除外の判定に使う)
+    setBusOperatorTitles(res.data?.bus?.operators || []);
     // GTFS から取り込んだ事業者があれば、それも「対応している」側に出す
     ui.renderCoverage(res.data, catalog);
     if (!res.data.tokenConfigured) {
@@ -242,6 +244,31 @@ function bindStaticHandlers() {
     }
     addExclude({ type: 'range', railway: rw, from, to });
   });
+
+  // バスの除外を開いたときにだけ、GTFS の系統一覧を読みに行く。
+  // 起動時に読むと、使わない人にも数 MB の通信が発生してしまう。
+  $('#ex-bus-details')?.addEventListener('toggle', (e) => {
+    if (!e.currentTarget.open || state.busLinesLoaded) return;
+    state.busLinesLoaded = true;
+    const note = $('#ex-bus-note');
+    if (note) note.textContent = '系統の一覧を読み込んでいます…';
+    populateBusExcludeSelectors({ withGtfs: true });
+  });
+  $('#ex-bus-operator').addEventListener('change', populateBusLineSelector);
+  $('#ex-add-bus-operator').addEventListener('click', () => {
+    const op = $('#ex-bus-operator').value;
+    if (!op) return;
+    addExclude({ type: 'busOperator', operatorTitle: op });
+  });
+  $('#ex-add-bus-line').addEventListener('click', () => {
+    const op = $('#ex-bus-operator').value;
+    const line = $('#ex-bus-line').value;
+    if (!op || !line) {
+      ui.addAlert('warn', { title: '系統を選んでください', body: '事業者と系統の両方を選ぶ必要があります。' });
+      return;
+    }
+    addExclude({ type: 'busLine', operatorTitle: op, lineTitle: line });
+  });
 }
 
 /* ------------------------------------------------------------------ *
@@ -346,8 +373,8 @@ function setupAutocomplete(inputSel, listSel, hintSel, place) {
         items.push({
           type: 'station',
           kind: 'geocode',
-          label: `「${q}」を住所・地名として検索`,
-          sub: '住所から最寄駅を探します',
+          label: `「${q}」を地名・施設名(スポット)で検索`,
+          sub: '住所のほか、東京タワー・上野動物園などの施設名でも探せます',
           query: q,
         });
       }
@@ -460,41 +487,82 @@ async function busStopInto(place, query, input, hint) {
   }
 }
 
+/**
+ * 住所・地名・施設名(スポット)で探す。
+ *
+ * 以前は見つけた場所を**最寄駅に置き換えて**しまっていたが、それでは
+ * 「東京タワーから」と指定できない。スポットそのものを地点として選べるようにし、
+ * 最寄駅は別の選択肢として並べる。
+ * 地点を選んだ場合は、そこから駅までの徒歩を推定して経路に含める
+ * (地図で任意の地点を選んだときと同じ扱い)。
+ */
 async function geocodeInto(place, query, input, list, hint) {
-  hint.textContent = '住所を検索しています…';
+  hint.textContent = '地名・施設名を検索しています…';
   hint.classList.remove('is-error');
   try {
     const res = await state.api.geocode(query);
     const hits = res.data.results || [];
     if (!hits.length) {
-      hint.textContent = '該当する住所が見つかりませんでした';
+      hint.textContent = '該当する場所が見つかりませんでした(正式名称で試してください)';
       hint.classList.add('is-error');
       return;
     }
-    const near = state.net.nearestGroups(hits[0].lat, hits[0].lon, 4);
-    if (!near.length) {
-      hint.textContent = '対応範囲内に駅が見つかりませんでした';
-      hint.classList.add('is-error');
-      return;
+
+    const settings = walkSettings(state.config || {});
+    const items = [];
+
+    // 1) 見つかった場所そのもの(最大 5 件)。これが本命。
+    items.push({ type: 'section', label: '見つかった場所(ここを出発・到着にできます)' });
+    for (const h of hits.slice(0, 5)) {
+      const near = state.net?.nearestGroups(h.lat, h.lon, 1) || [];
+      const sub = near.length
+        ? `最寄: ${near[0].group.title} まで徒歩 約${walkMinutes(near[0].km, settings)}分(推定)`
+        : '対応範囲に駅がありません';
+      items.push({ type: 'station', kind: 'spot', label: h.title, sub, lat: h.lat, lon: h.lon });
     }
-    hint.textContent = `${hits[0].title} の最寄駅`;
-    ui.renderSuggest(
-      list,
-      near.map((n) => ({
-        type: 'station',
-        label: n.group.title,
-        sub: `${hits[0].title} から ${formatDistance(n.km)}`,
-        value: n.group.id,
-      })),
-      (item) => {
-        place.set({ groupId: item.value, label: item.label, busOnly: false });
-        input.value = item.label;
-        hint.textContent = item.sub;
-        ui.hideSuggest(list);
+
+    // 2) 先頭の場所の最寄駅。駅を使いたいときはこちら。
+    const near = state.net?.nearestGroups(hits[0].lat, hits[0].lon, 4) || [];
+    if (near.length) {
+      items.push({ type: 'section', label: `${hits[0].title} の最寄駅` });
+      for (const n of near) {
+        items.push({
+          type: 'station',
+          label: n.group.title,
+          sub: `${hits[0].title} から ${formatDistance(n.km)}`,
+          value: n.group.id,
+        });
       }
-    );
+    }
+
+    hint.textContent = `${hits.length} 件見つかりました`;
+    ui.renderSuggest(list, items, (item) => {
+      if (item.kind === 'spot') {
+        // 地点として確定する。駅に置き換えない。
+        place.set({
+          kind: 'point',
+          lat: item.lat,
+          lon: item.lon,
+          label: item.label,
+          busOnly: false,
+          groupId: null,
+        });
+        input.value = item.label;
+        hint.textContent = `${item.label}(地点) — ${item.sub}`;
+        hint.classList.remove('is-error');
+        ui.hideSuggest(list);
+        // 地図を開いているなら、その場所に印を出す
+        state.map?.markPoint?.(`spot:${item.label}`, item.lat, item.lon, item.label);
+        return;
+      }
+      place.set({ groupId: item.value, label: item.label, busOnly: false });
+      input.value = item.label;
+      hint.textContent = item.sub;
+      hint.classList.remove('is-error');
+      ui.hideSuggest(list);
+    });
   } catch (e) {
-    hint.textContent = e instanceof ApiError ? messageFor(e.code, e.message) : '住所検索に失敗しました';
+    hint.textContent = e instanceof ApiError ? messageFor(e.code, e.message) : '地名・施設名の検索に失敗しました';
     hint.classList.add('is-error');
   }
 }
@@ -631,20 +699,22 @@ function renderVias() {
 
 function toggleMap() {
   const el = $('#map');
+  const wrap = $('#map-wrap');
   const note = $('#map-note');
   const btn = $('#map-toggle');
 
   if (state.mapOpen) {
-    el.hidden = true;
+    wrap.hidden = true;
     note.hidden = true;
     $('#map-legend').hidden = true;
+    setMapStatus('');
     btn.textContent = '地図を開く';
     btn.setAttribute('aria-expanded', 'false');
     state.mapOpen = false;
     return;
   }
 
-  el.hidden = false;
+  wrap.hidden = false;
   note.hidden = false;
   $('#map-legend').hidden = false;
   btn.textContent = '地図を閉じる';
@@ -695,7 +765,7 @@ function toggleMap() {
   }
 
   if (!state.map.init()) {
-    el.hidden = true;
+    wrap.hidden = true;
     note.hidden = true;
     $('#map-legend').hidden = true;
     state.mapOpen = false;
@@ -794,22 +864,24 @@ async function showGtfsStopsInView(view) {
     const before = await indexStatus();
     if (!isCurrent()) return;
     if (!before.none && !before.ready) {
-      setMapHint(
-        `バス停のデータを読み込んでいます…(${before.loaded}/${before.total} 事業者)`,
-        { busy: true }
-      );
+      const msg = `バス停のデータを読み込んでいます…(${before.loaded}/${before.total} 事業者)`;
+      setMapStatus(msg, { busy: true });
+      setMapHint(msg, { busy: true });
     }
 
     const { stops, truncated, tooWide, empty, total } = await stopsInBounds(view, {
       zoom: view.zoom,
       onProgress: ({ done, total: n, title }) => {
         if (!isCurrent() || before.ready) return;
-        setMapHint(`バス停のデータを読み込んでいます… ${title}(${done}/${n} 事業者)`, {
-          busy: true,
-        });
+        const msg = `バス停のデータを読み込んでいます… ${title}(${done}/${n} 事業者)`;
+        setMapStatus(msg, { busy: true });
+        setMapHint(msg, { busy: true });
       },
     });
     if (!isCurrent()) return;
+
+    // 読み込みは終わったので、重ねている表示は消す(地図が見えなくなるため)
+    setMapStatus('');
 
     if (empty) {
       // まだ取り込んでいない。黙って何も出さないと不具合に見えるので 1 度だけ伝える。
@@ -826,6 +898,7 @@ async function showGtfsStopsInView(view) {
     }
 
     if (tooWide) {
+      setMapStatus('');
       setMapHint(`バス停はもう少し拡大すると表示されます(ズーム ${STOP_MIN_ZOOM} 以上)。`);
       return;
     }
@@ -836,17 +909,26 @@ async function showGtfsStopsInView(view) {
     // 「全部出ている」のか「間引かれている」のかが分からないのが一番困るため。
     // 新しく追加した数ではなく「いま出ている数」を書く。
     // 追加が 0 件でも表示はされているので、黙ると「消えた」ように見える。
+    // どの事業者のぶんが出ているかも書く。
+    // 「都営バスが出ない」といった取りこぼしに、画面を見ただけで気づけるようにする。
+    const byOperator = new Map();
+    for (const s of stops) {
+      byOperator.set(s.operatorTitle, (byOperator.get(s.operatorTitle) || 0) + 1);
+    }
+    const breakdown = [...byOperator.entries()].map(([name, n]) => `${name} ${n}`).join(' / ');
+
     if (!stops.length) {
       setMapHint('この範囲にバス停はありません。');
     } else if (truncated) {
       setMapHint(
         `この範囲のバス停 ${total} 件のうち ${stops.length} 件だけ表示しています` +
-          `(各社から均等に選んでいます)。拡大すると残りも出ます。`
+          `(各社から均等に選んでいます)。拡大すると残りも出ます。 — ${breakdown}`
       );
     } else {
-      setMapHint(`この範囲のバス停をすべて表示しています(${stops.length} 件)。`);
+      setMapHint(`この範囲のバス停をすべて表示しています(${stops.length} 件) — ${breakdown}`);
     }
   } catch (e) {
+    setMapStatus('');
     setMapHint(`バス停を表示できませんでした(${e.message})`);
   }
 }
@@ -857,6 +939,21 @@ async function showGtfsStopsInView(view) {
  */
 function setMapHint(text, { busy = false } = {}) {
   const el = $('#map-hint');
+  if (!el) return;
+  el.textContent = text || '';
+  el.hidden = !text;
+  el.classList.toggle('is-loading', Boolean(text) && busy);
+  if (busy && text) el.setAttribute('aria-busy', 'true');
+  else el.removeAttribute('aria-busy');
+}
+
+/**
+ * 地図に重ねて出す状態表示。
+ * 下の補足行は小さくて見落とされるので、読み込み中は地図の上に出す。
+ * 読み終わったら消す(ずっと出していると地図が見えない)。
+ */
+function setMapStatus(text, { busy = false } = {}) {
+  const el = $('#map-status');
   if (!el) return;
   el.textContent = text || '';
   el.hidden = !text;
@@ -931,9 +1028,115 @@ function populateExcludeSelectors() {
   const sel = $('#ex-railway');
   sel.replaceChildren();
   sel.append(new Option('路線を選択', ''));
-  const railways = [...state.net.railways.values()].sort((a, b) => a.title.localeCompare(b.title, 'ja'));
-  for (const rw of railways) sel.append(new Option(rw.title, rw.id));
+
+  // 路線名だけを並べると、どの会社の路線か判らない(「新宿線」など重複もある)。
+  // 事業者ごとにまとめて出す。
+  const byOperator = new Map();
+  for (const rw of state.net.railways.values()) {
+    const opTitle = state.net.operatorTitle(rw.id);
+    if (!byOperator.has(opTitle)) byOperator.set(opTitle, []);
+    byOperator.get(opTitle).push(rw);
+  }
+  const operatorNames = [...byOperator.keys()].sort((a, b) => a.localeCompare(b, 'ja'));
+  for (const name of operatorNames) {
+    const group = document.createElement('optgroup');
+    group.label = name;
+    const list = byOperator.get(name).sort((a, b) => a.title.localeCompare(b.title, 'ja'));
+    for (const rw of list) group.append(new Option(rw.title, rw.id));
+    sel.append(group);
+  }
   populateStationSelectors();
+  populateBusExcludeSelectors();
+}
+
+/**
+ * バスの除外の選択肢を作る。
+ *
+ * 系統の一覧をどこから取るかは事業者によって違う。
+ *  ・GTFS を取り込んだ事業者 … 索引に全系統名が入っているので全部出せる
+ *  ・ODPT の API の事業者     … 全系統を列挙する手段が無いので、
+ *                               「いま出ている検索結果に現れた系統」だけ出す
+ * ここを曖昧にすると「系統が出てこない」と見えるので、画面にも理由を書く。
+ */
+async function populateBusExcludeSelectors({ withGtfs = false } = {}) {
+  const sel = $('#ex-bus-operator');
+  if (!sel) return;
+
+  const byOperator = new Map();
+
+  // 1) GTFS から取り込んだ事業者(全系統)
+  //    索引は事業者ごとに数 MB あるので、**バスの除外を開いたときだけ**読む。
+  //    起動時に読むと、除外を使わない人にも毎回そのぶんの通信が発生する。
+  if (withGtfs) {
+    try {
+      const { gtfsBusLines } = await import('./gtfs.js');
+      for (const o of await gtfsBusLines()) {
+        byOperator.set(o.operatorTitle, { full: true, routes: new Set(o.routes) });
+      }
+    } catch {
+      /* 未取り込みなら候補が減るだけ */
+    }
+  } else {
+    // すでに読み込んである事業者があれば、通信せずにそのぶんだけ使う
+    for (const [title, entry] of state.busLinesByOperator || []) {
+      if (entry.full) byOperator.set(title, entry);
+    }
+  }
+
+  // 2) ODPT の API の事業者(対応範囲に出ているもの。系統は結果から拾う)
+  for (const o of state.health?.bus?.operators || []) {
+    if (!byOperator.has(o.title)) byOperator.set(o.title, { full: false, routes: new Set() });
+  }
+
+  // 3) いま出ている検索結果に現れた系統を足す
+  for (const r of state.routes || []) {
+    for (const leg of r.legs || []) {
+      if (!leg.bus || !leg.operatorTitle) continue;
+      if (!byOperator.has(leg.operatorTitle)) {
+        byOperator.set(leg.operatorTitle, { full: false, routes: new Set() });
+      }
+      if (leg.lineTitle) byOperator.get(leg.operatorTitle).routes.add(leg.lineTitle);
+    }
+  }
+
+  const prev = sel.value;
+  sel.replaceChildren();
+  sel.append(new Option('事業者を選択', ''));
+  const names = [...byOperator.keys()].sort((a, b) => a.localeCompare(b, 'ja'));
+  for (const name of names) sel.append(new Option(name, name));
+  if (prev && names.includes(prev)) sel.value = prev;
+
+  state.busLinesByOperator = byOperator;
+  populateBusLineSelector();
+}
+
+function populateBusLineSelector() {
+  const sel = $('#ex-bus-line');
+  const note = $('#ex-bus-note');
+  if (!sel) return;
+  sel.replaceChildren();
+
+  const opTitle = $('#ex-bus-operator').value;
+  const entry = state.busLinesByOperator?.get(opTitle);
+  if (!opTitle || !entry) {
+    sel.append(new Option('先に事業者を選択', ''));
+    if (note) note.textContent = '';
+    return;
+  }
+
+  const routes = [...entry.routes].sort((a, b) => String(a).localeCompare(String(b), 'ja'));
+  if (!routes.length) {
+    sel.append(new Option('系統が判りません', ''));
+  } else {
+    sel.append(new Option('系統を選択', ''));
+    for (const r of routes) sel.append(new Option(r, r));
+  }
+
+  if (note) {
+    note.textContent = entry.full
+      ? `${opTitle} は取り込み済みのため全系統(${routes.length} 件)から選べます。`
+      : `${opTitle} は全系統の一覧を取得できないため、検索結果に出た系統(${routes.length} 件)だけ選べます。事業者ごと除外はいつでもできます。`;
+  }
 }
 
 function populateStationSelectors() {
@@ -956,7 +1159,14 @@ function populateStationSelectors() {
 }
 
 function addExclude(ex) {
-  const id = ex.type === 'railway' ? `rw:${ex.railway}` : `rg:${ex.railway}:${ex.from}:${ex.to}`;
+  const id =
+    ex.type === 'railway'
+      ? `rw:${ex.railway}`
+      : ex.type === 'busOperator'
+        ? `bo:${ex.operatorTitle}`
+        : ex.type === 'busLine'
+          ? `bl:${ex.operatorTitle}:${ex.lineTitle}`
+          : `rg:${ex.railway}:${ex.from}:${ex.to}`;
   if (state.excludes.some((e) => e.id === id)) return;
   state.excludes.push({ ...ex, id });
   ui.renderExcludes(state.excludes, state.net, removeExclude, clearExcludes);
@@ -973,6 +1183,27 @@ function clearExcludes() {
   state.excludes = [];
   ui.renderExcludes(state.excludes, state.net, removeExclude, clearExcludes);
   if (state.lastQuery) runSearch();
+}
+
+/**
+ * その経路が、除外したバスを使っているか。
+ * 事業者ごと除外と、系統ごと除外の両方を見る。
+ */
+function usesExcludedBus(route) {
+  const ops = new Set();
+  const lines = new Set();
+  for (const ex of state.excludes) {
+    if (ex.type === 'busOperator') ops.add(ex.operatorTitle);
+    if (ex.type === 'busLine') lines.add(`${ex.operatorTitle} ${ex.lineTitle}`);
+  }
+  if (!ops.size && !lines.size) return false;
+
+  for (const leg of route.legs || []) {
+    if (!leg.bus) continue;
+    if (ops.has(leg.operatorTitle)) return true;
+    if (lines.has(`${leg.operatorTitle} ${leg.lineTitle}`)) return true;
+  }
+  return false;
 }
 
 /** 除外設定を探索用の集合に変換 */
@@ -1168,16 +1399,23 @@ async function searchSegment(fromSpec, toSpec, departAt, ctx) {
     r.warnings = state.analysis ? warningsForRoute(r, state.analysis) : [];
   }
 
+  // 除外したバスを使う経路は、ここで落とす。
+  // 鉄道の除外は探索の段階で効かせているが、バスは探索が別経路なので
+  // 結果側で落とす。ブラウザ内の処理なので追加の通信は発生しない。
+  const keptBus = bus.routes.filter((r) => !usesExcludedBus(r));
+  const keptGtfs = gtfs.routes.filter((r) => !usesExcludedBus(r));
+
   return {
-    routes: [...bound.routes, ...bus.routes, ...gtfs.routes],
+    routes: [...bound.routes, ...keptBus, ...keptGtfs],
     railRoutes: bound.routes,
     warnings: [...bound.warnings, ...bus.warnings, ...gtfs.warnings],
     fetchedAt: bound.fetchedAt || bus.fetchedAt || null,
     candidateCount: candidates.length,
-    directCount: (bus.directCount || 0) + gtfs.routes.length,
+    directCount: (bus.directCount || 0) + keptGtfs.length,
     mixedCount: bus.mixedCount || 0,
-    busCount: bus.routes.length + gtfs.routes.length,
-    gtfsCount: gtfs.routes.length,
+    busCount: keptBus.length + keptGtfs.length,
+    gtfsCount: keptGtfs.length,
+    busExcluded: bus.routes.length - keptBus.length + (gtfs.routes.length - keptGtfs.length),
     gtfsOperators: gtfs.operators || [],
   };
 }
@@ -1309,6 +1547,18 @@ async function runSearch() {
 
     state.routes = all;
     renderSorted();
+    // 結果に出た系統を、除外の選択肢に反映する
+    // (ODPT の事業者は全系統を列挙できないため、出たものから拾うしかない)
+    // ここでは索引を読みに行かない(読み込み済みのぶんだけ使う)
+    populateBusExcludeSelectors();
+
+    const excludedBus = segments.reduce((n, s) => n + (s.busExcluded || 0), 0);
+    if (excludedBus > 0) {
+      ui.addAlert('info', {
+        title: `除外したバスを使う経路を ${excludedBus} 件はずしました`,
+        body: '「除外する路線・区間」から解除すると戻ります。',
+      });
+    }
 
     /* --- 5) 補足 --- */
     const directCount = segments.reduce((n, s) => n + s.directCount, 0);

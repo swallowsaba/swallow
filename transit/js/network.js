@@ -202,6 +202,22 @@ export class TransitNetwork {
     return this.railways.get(id)?.title || id;
   }
 
+  /** 路線 ID から事業者 ID(例: TokyoMetro)。判らなければ null。 */
+  operatorIdOf(railwayId) {
+    return this.railways.get(railwayId)?.operator || operatorOf(railwayId);
+  }
+
+  /**
+   * 路線 ID から事業者の表示名。
+   * 路線を会社ごとにまとめて出すために使う(路線名だけだと何社ぶんか判らない)。
+   */
+  operatorTitle(railwayId) {
+    const opId = this.operatorIdOf(railwayId);
+    if (!opId) return 'その他';
+    const hit = this.operators.find((o) => o.id === opId);
+    return hit?.title || opId;
+  }
+
   stationTitle(id) {
     return this.stations.get(id)?.title || guessTitle(id);
   }

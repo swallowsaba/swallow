@@ -46,11 +46,23 @@ export async function loadCatalog() {
   return cache.catalog;
 }
 
+// 読み込み中のものを覚えておく。地図の表示と候補の表示が同時に走ると
+// 同じ索引(数 MB)を二重に取りに行ってしまうため。
+const inflight = new Map();
+
 async function loadIndex(operatorId) {
   if (cache.index.has(operatorId)) return cache.index.get(operatorId);
-  const idx = await getJson(`${BASE}/${operatorId}/index.json`);
-  cache.index.set(operatorId, idx);
-  return idx;
+  if (inflight.has(operatorId)) return inflight.get(operatorId);
+
+  const task = getJson(`${BASE}/${operatorId}/index.json`)
+    .then((idx) => {
+      cache.index.set(operatorId, idx);
+      return idx;
+    })
+    .finally(() => inflight.delete(operatorId));
+
+  inflight.set(operatorId, task);
+  return task;
 }
 
 async function loadPattern(operatorId, index, patternId) {
@@ -376,4 +388,21 @@ export function resetGtfsCache() {
   cache.catalog = null;
   cache.index.clear();
   cache.shards.clear();
+  inflight.clear();
+}
+
+/**
+ * 取り込み済み事業者の「系統名の一覧」。除外の選択肢に使う。
+ * 索引に入っているので、系統ファイルは取りに行かない。
+ * @returns {Promise<Array<{operator:string, operatorTitle:string, routes:string[]}>>}
+ */
+export async function gtfsBusLines() {
+  const loaded = await loadAllIndexes();
+  return loaded
+    .map(({ op, index }) => ({
+      operator: op.id,
+      operatorTitle: op.title,
+      routes: Array.isArray(index.routes) ? index.routes : [],
+    }))
+    .filter((o) => o.routes.length);
 }

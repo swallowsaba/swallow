@@ -330,8 +330,18 @@ export function splitForWeb(index, patterns, { perShard = 40 } = {}) {
     files[`patterns/${shard}.json`] = JSON.stringify({ v: 1, patterns: slice });
   }
 
-  // 索引側に「どの系統がどのファイルか」を持たせる
-  const meta = { ...index, perShard, shardCount: Math.ceil(patterns.length / perShard) };
+  // 索引側に「どの系統がどのファイルか」を持たせる。
+  // 併せて系統名の一覧も入れる。除外の選択肢を出すために必要で、
+  // これが無いと系統名を知るためだけに全シャードを取りに行くことになる。
+  const routeNames = [...new Set(patterns.map((p) => p.n).filter(Boolean))].sort((a, b) =>
+    String(a).localeCompare(String(b), 'ja'),
+  );
+  const meta = {
+    ...index,
+    perShard,
+    shardCount: Math.ceil(patterns.length / perShard),
+    routes: routeNames,
+  };
   files['index.json'] = JSON.stringify(meta);
   return files;
 }

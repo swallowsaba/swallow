@@ -313,6 +313,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   background: var(--danger-soft); color: var(--danger);
   border: 1px solid var(--danger); border-radius: 999px;
 }
+/* バスの除外は鉄道と見分けが付くようにする(先頭に印を足す) */
+.chip-x--bus::before { content: '🚌'; font-size: 11px; }
 .chip-x button {
   border: none; background: none; color: inherit; cursor: pointer;
   font-size: 14px; line-height: 1; padding: 0 2px;
@@ -502,6 +504,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
 }
 .map-card__actions { display: flex; gap: 8px; }
+.map-wrap { position: relative; }
 .map {
   height: 420px; margin-top: 12px;
   border: 1px solid var(--rule); border-radius: 8px;
@@ -511,20 +514,46 @@ ul { margin: 0; padding: 0; list-style: none; }
 .map-note { font-size: 12px; color: var(--ink-3); margin: 10px 0 0; }
 .map-hint { font-size: 12px; color: var(--ink-2); margin: 10px 0 0; font-weight: 700; }
 
-/* 読み込み中は回るしるしを付ける。文字だけだと止まって見えるため。 */
-.map-hint.is-loading { display: flex; align-items: center; gap: 8px; }
-.map-hint.is-loading::before {
+/* ------------------------------------------------------------------ *
+ *  読み込み中の表示
+ * ------------------------------------------------------------------ *
+ * 地図の下に小さく出すと見落とされる。地図の上に重ねて、
+ * 読み込み中だけ色を付ける。地図の操作は邪魔しない(pointer-events:none)。
+ */
+.map-status {
+  position: absolute;
+  top: 24px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;               /* Leaflet のペイン(400番台)より上 */
+  max-width: calc(100% - 32px);
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 13px; font-weight: 700; line-height: 1.4;
+  background: var(--surface);
+  color: var(--ink-1);
+  border: 2px solid var(--rule);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+  pointer-events: none;
+}
+/* 読み込み中だけ目立たせる。ふだんの説明文と同じ見た目にはしない。 */
+.map-status.is-loading {
+  border-color: var(--accent, #1c5fb0);
+  color: var(--accent, #1c5fb0);
+  background: var(--surface);
+}
+.map-status.is-loading::before {
   content: '';
-  width: 12px; height: 12px; flex: none;
-  border: 2px solid var(--line);
-  border-top-color: var(--ink-2);
+  width: 14px; height: 14px; flex: none;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-/* 動きを減らす設定の人には回さない(点滅だけにする) */
+/* 動きを減らす設定の人には回さない(薄い点滅だけにする) */
 @media (prefers-reduced-motion: reduce) {
-  .map-hint.is-loading::before { animation: none; opacity: 0.6; }
+  .map-status.is-loading::before { animation: none; border-top-color: currentColor; opacity: 0.5; }
 }
 
 /* 地図の凡例 */
@@ -540,6 +569,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 .map-legend__item--rail i { border-color: var(--rail); }
 .map-legend__item--bus i { border-color: var(--bus); }
 .map-legend__item--walk i { border-color: var(--walk); background: var(--walk-soft); }
+/* 経由地。鉄道(緑)・バス(青)・徒歩(茶)のどれとも違う色にする */
+.map-legend__item--via i { border-color: #b3005e; background: #b3005e; }
 .map-legend__note { font-size: 11.5px; color: var(--ink-3); font-weight: 400; flex: 1 1 240px; }
 
 /* 地図に表示中の経路 */

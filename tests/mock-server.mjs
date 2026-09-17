@@ -359,7 +359,16 @@ const server = http.createServer(async (req, res) => {
       });
     }
     if (url.pathname === '/v1/geocode') {
-      return send({ fetchedAt: new Date().toISOString(), query: url.searchParams.get('q'), results: [{ title: '東京都千代田区丸の内一丁目', lat: 35.6812, lon: 139.7671 }] });
+      // 住所だけでなく施設名(スポット)も返す。実際の国土地理院の検索も
+      // 「東京タワー」のような施設名を返す。
+      const q = url.searchParams.get('q') || '';
+      const results = /タワー|東京タワー/.test(q)
+        ? [
+            { title: '東京タワー', lat: 35.6586, lon: 139.7454 },
+            { title: '東京都港区芝公園四丁目', lat: 35.6575, lon: 139.7462 },
+          ]
+        : [{ title: '東京都千代田区丸の内一丁目', lat: 35.6812, lon: 139.7671 }];
+      return send({ fetchedAt: new Date().toISOString(), query: q, results });
     }
     const body = await readBody(req);
     if (url.pathname === '/v1/timetables') {

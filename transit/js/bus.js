@@ -194,16 +194,37 @@ function pickBusRide(departures, runsByPattern, seg, notBefore) {
   return pool.reduce((a, b) => (a && a.arrival <= b.arrival ? a : b), null);
 }
 
+/**
+ * 事業者 ID → 表示名。
+ * 以前は「都営バス」と決め打ちしていたが、東急バス等も扱うようになったため
+ * 実際の事業者名を出す。除外の判定にも使うので、正しい名前でないと困る。
+ */
+const operatorTitles = new Map();
+
+/** 対応範囲の情報から事業者名を覚える(main.js が起動時に呼ぶ) */
+export function setBusOperatorTitles(list) {
+  operatorTitles.clear();
+  for (const o of list || []) {
+    if (o && o.id) operatorTitles.set(o.id, o.title || o.id);
+  }
+}
+
+function operatorTitleOf(id) {
+  if (!id) return 'バス';
+  return operatorTitles.get(id) || id;
+}
+
 /** バスのレグ(表示用の名前を埋め込んでおく。ID から名前を復元できないため) */
 function busLeg(seg, ride) {
   return {
     bus: true,
+    operator: seg.pattern.operator || null,
     from: seg.fromPole,
     to: seg.toPole,
     fromTitle: seg.fromTitle,
     toTitle: seg.toTitle,
     lineTitle: seg.pattern.title || seg.pattern.busroute || 'バス',
-    operatorTitle: '都営バス',
+    operatorTitle: operatorTitleOf(seg.pattern.operator),
     stops: seg.stops,
     departure: ride.departure,
     arrival: ride.arrival,

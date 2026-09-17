@@ -55,7 +55,7 @@
       <div class="field">
         <label class="field__label" for="from-input">出発</label>
         <div class="field__control">
-          <input class="input" type="text" id="from-input" placeholder="駅名・住所" aria-describedby="from-hint"
+          <input class="input" type="text" id="from-input" placeholder="駅名・住所・施設名" aria-describedby="from-hint"
                  role="combobox" aria-expanded="false" aria-controls="from-list" aria-autocomplete="list">
           <button type="button" class="btn btn--icon" id="locate-btn" title="現在地から最寄駅を探す" aria-label="現在地から最寄駅を探す">現在地</button>
         </div>
@@ -68,7 +68,7 @@
       <div class="field">
         <label class="field__label" for="to-input">到着</label>
         <div class="field__control">
-          <input class="input" type="text" id="to-input" placeholder="駅名・住所" aria-describedby="to-hint"
+          <input class="input" type="text" id="to-input" placeholder="駅名・住所・施設名" aria-describedby="to-hint"
                  role="combobox" aria-expanded="false" aria-controls="to-list" aria-autocomplete="list">
         </div>
         <ul class="suggest" id="to-list" role="listbox" hidden></ul>
@@ -125,11 +125,16 @@
         </button>
       </div>
     </div>
-    <div id="map" class="map" hidden></div>
+    <div class="map-wrap" id="map-wrap" hidden>
+      <div id="map" class="map"></div>
+      <!-- 読み込み中の表示。地図に重ねて出す(下の行だと見落とされるため) -->
+      <div class="map-status" id="map-status" role="status" hidden></div>
+    </div>
     <div class="map-legend" id="map-legend" hidden>
       <span class="map-legend__item map-legend__item--rail"><i></i>乗降する駅</span>
       <span class="map-legend__item map-legend__item--bus"><i></i>乗降するバス停</span>
       <span class="map-legend__item map-legend__item--walk"><i></i>指定した地点</span>
+      <span class="map-legend__item map-legend__item--via"><i></i>経由地</span>
       <span class="map-legend__note">
         検索すると、いちばん上の経路の<strong>乗り降りする地点</strong>に番号付きの印を出します。
         他の案は経路カードの「地図で見る」で切り替えられます。
@@ -163,18 +168,18 @@
   <!-- ================= 除外設定 ================= -->
   <section class="card excludes" id="excludes-card" hidden>
     <div class="excludes__head">
-      <h2 class="card__h">除外する路線・区間</h2>
+      <h2 class="card__h">除外する路線・区間・バス</h2>
       <button type="button" class="btn btn--ghost btn--sm" id="excludes-clear">すべて解除</button>
     </div>
     <p class="excludes__note">
-      運転見合わせの区間は運行情報の本文からは機械的に特定できません。避けたい路線・区間をここで指定すると、
-      その区間を通らない経路を計算します。<strong>再計算はブラウザ内で行うため即座に反映されます。</strong>
+      運転見合わせの区間は運行情報の本文からは機械的に特定できません。避けたい路線・区間・バスをここで指定すると、
+      それらを使わない経路を計算します。<strong>再計算はブラウザ内で行うため即座に反映されます。</strong>
     </p>
     <div class="excludes__body" id="excludes-body"></div>
     <details class="excludes__add">
-      <summary>区間を指定して除外する</summary>
+      <summary>鉄道の路線・区間を除外する</summary>
       <div class="excludes__form">
-        <label class="field__label" for="ex-railway">路線</label>
+        <label class="field__label" for="ex-railway">路線(会社ごとにまとまっています)</label>
         <select class="input" id="ex-railway"></select>
         <div class="excludes__range">
           <label class="field__label" for="ex-from">区間(始点)</label>
@@ -186,6 +191,21 @@
           <button type="button" class="btn btn--ghost btn--sm" id="ex-add-line">路線ごと除外</button>
           <button type="button" class="btn btn--ghost btn--sm" id="ex-add-range">この区間を除外</button>
         </div>
+      </div>
+    </details>
+
+    <details class="excludes__add" id="ex-bus-details">
+      <summary>バスを除外する</summary>
+      <div class="excludes__form">
+        <label class="field__label" for="ex-bus-operator">バス事業者</label>
+        <select class="input" id="ex-bus-operator"></select>
+        <label class="field__label" for="ex-bus-line">系統</label>
+        <select class="input" id="ex-bus-line"></select>
+        <div class="excludes__actions">
+          <button type="button" class="btn btn--ghost btn--sm" id="ex-add-bus-operator">この事業者を除外</button>
+          <button type="button" class="btn btn--ghost btn--sm" id="ex-add-bus-line">この系統を除外</button>
+        </div>
+        <p class="excludes__note" id="ex-bus-note"></p>
       </div>
     </details>
   </section>

@@ -27,6 +27,13 @@ export const SEGMENT_STYLE = {
   walk: { color: '#8a4b1c', weight: 4, opacity: 0.9, dashArray: '2 7' },
 };
 
+/**
+ * 経由地の色。
+ * 出発・到着・途中の乗換と同じ色だと、指定した経由地がどれか判らない。
+ * 鉄道(緑)・バス(青)・徒歩(茶)のどれとも違う色にする。
+ */
+export const VIA_COLOR = '#b3005e';
+
 /** 初期表示(東京駅あたり) */
 const DEFAULT_CENTER = [35.6812, 139.7671];
 const DEFAULT_ZOOM = 12;
@@ -234,14 +241,18 @@ export class TransitMap {
     marks.forEach((p, i) => {
       const isEnd = i === 0 || i === marks.length - 1;
       const style = SEGMENT_STYLE[p.mode] || SEGMENT_STYLE.rail;
+      // 経由地は指定した本人にとっていちばん大事な点なので、
+      // 専用の色と大きめの丸で、ひと目で分かるようにする。
+      const color = p.via ? VIA_COLOR : p.color || style.color;
       const marker = L.circleMarker([p.lat, p.lon], {
-        radius: isEnd ? 9 : 7,
-        weight: 4,
-        color: p.color || style.color,
-        fillColor: isEnd ? style.color : '#ffffff',
+        radius: p.via ? 11 : isEnd ? 9 : 7,
+        weight: p.via ? 5 : 4,
+        color,
+        fillColor: p.via ? VIA_COLOR : isEnd ? style.color : '#ffffff',
         fillOpacity: 1,
       });
-      marker.bindTooltip(`${i + 1}. ${p.title}`, { direction: 'top', permanent: false });
+      const label = p.via ? `${i + 1}. ${p.title}(経由地)` : `${i + 1}. ${p.title}`;
+      marker.bindTooltip(label, { direction: 'top', permanent: false });
       marker.addTo(this.routeLayer);
     });
 
@@ -402,6 +413,12 @@ export function routeToSegments(route, net, busStopIndex) {
   /** 乗車区間の点(徒歩の線をつなぐときに使う) */
   const rideEndpoints = [];
 
+  // 経由地の名前を集めておく。経由地の印は色を変えて出すため、
+  // どの地点が経由地なのかを後で照合できるようにする。
+  const viaLabels = new Set(
+    (route.legs || []).filter((l) => l.via && l.label).map((l) => String(l.label)),
+  );
+
   for (const leg of route.legs || []) {
     if (leg.transfer || leg.via) continue;
 
@@ -465,6 +482,15 @@ export function routeToSegments(route, net, busStopIndex) {
     }
     delete seg.pending;
   });
+
+  // 経由地に当たる点に印を付ける(名前が一致するもの)
+  if (viaLabels.size) {
+    for (const seg of segments) {
+      for (const pt of seg.points) {
+        if (pt.major && viaLabels.has(String(pt.title))) pt.via = true;
+      }
+    }
+  }
 
   return segments.filter((seg) => seg.points.length);
 }

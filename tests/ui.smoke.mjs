@@ -372,6 +372,20 @@ async function search(page, from, to) {
   const before = await page.$$eval('.route .route__span', (els) => els.map((e) => e.textContent));
   await page.click('.excludes__add summary');
   await page.waitForSelector('#ex-railway', { state: 'visible' });
+
+  // 路線は会社ごとにまとまっていること(路線名だけだと何社ぶんか判らないため)
+  {
+    const groups = await page.$$eval('#ex-railway optgroup', (els) =>
+      els.map((e) => ({ label: e.label, count: e.children.length }))
+    );
+    assert(groups.length >= 1, '路線が会社ごとにまとまっていない(optgroup が無い)');
+    assert(groups.every((g) => g.label && g.count > 0), `会社名の無いまとまりがある: ${JSON.stringify(groups)}`);
+    const bare = await page.$$eval('#ex-railway > option', (els) => els.map((e) => e.textContent));
+    // 直下に残ってよいのは先頭の「路線を選択」だけ
+    assert(bare.length === 1, `会社の外に置かれた路線がある: ${JSON.stringify(bare)}`);
+    console.log(`  ok  除外の路線は会社ごとにまとまっている(${groups.map((g) => g.label).join(' / ')})`);
+  }
+
   await page.selectOption('#ex-railway', { label: '銀座線' });
   await page.click('#ex-add-line');
   await page.waitForTimeout(1500);
@@ -380,6 +394,90 @@ async function search(page, from, to) {
   const after = await page.$$eval('.route .route__span, .empty strong', (els) => els.map((e) => e.textContent));
   assert.notDeepEqual(after, before, '除外しても結果が変わっていない');
   console.log(`  ok  除外を反映して再計算(${chips[0].trim()})`);
+
+  // 施設名(スポット)で探して、その場所そのものを出発地にできる
+  {
+    await page.fill('#from-input', '東京タワー');
+    await page.waitForSelector('#from-list li[role="option"]');
+    const items = await page.$$('#from-list li[role="option"]');
+    let clicked = false;
+    for (const li of items) {
+      const txt = await li.textContent();
+      if (txt.includes('スポット')) { await li.click(); clicked = true; break; }
+    }
+    assert(clicked, '地名・施設名で探す選択肢が出ていない');
+
+    await page.waitForSelector('#from-list li', { state: 'visible', timeout: 10000 });
+    await page.waitForTimeout(400);
+    const hits = await page.$$eval('#from-list li', (els) => els.map((e) => e.textContent));
+    assert(hits.some((h) => h.includes('東京タワー')), `施設名が候補に出ていない: ${JSON.stringify(hits)}`);
+    assert(
+      hits.some((h) => h.includes('最寄')),
+      `最寄駅までの徒歩が出ていない: ${JSON.stringify(hits)}`
+    );
+
+    // 施設そのものを選ぶ(最寄駅に置き換えられないこと)
+    const spot = (await page.$$('#from-list li[role="option"]')).find(async () => true);
+    for (const li of await page.$$('#from-list li[role="option"]')) {
+      const txt = await li.textContent();
+      if (txt.includes('東京タワー')) { await li.click(); break; }
+    }
+    await page.waitForTimeout(300);
+    const value = await page.inputValue('#from-input');
+    assert(value === '東京タワー', `施設名が駅に置き換えられている: ${value}`);
+    const hint = await page.textContent('#from-hint');
+    assert(/地点/.test(hint), `地点として扱われていない: ${hint}`);
+    console.log('  ok  施設名(スポット)で探し、その場所を出発地にできる');
+    void spot;
+  }
+
+  // バスも除外できる
+  {
+    await page.click('#excludes-clear');
+    await page.waitForTimeout(800);
+
+    // バスが出る検索に戻す
+    await page.fill('#from-input', '渋谷');
+    await page.waitForSelector('#from-list li[role="option"]');
+    await page.click('#from-list li[role="option"]');
+    await page.fill('#to-input', '新橋');
+    await page.waitForSelector('#to-list li[role="option"]');
+    await page.click('#to-list li[role="option"]');
+    await page.click('#search-btn');
+    await page.waitForSelector('.route, .empty strong', { timeout: 15000 });
+    await page.waitForTimeout(600);
+    const busBefore = (await page.$$('.badge--bus')).length;
+    assert(busBefore >= 1, '前提となるバスの経路が出ていない');
+
+    const details = await page.$('#ex-bus-details');
+    assert(details, 'バスの除外欄が無い');
+    await page.click('#ex-bus-details summary');
+    await page.waitForSelector('#ex-bus-operator', { state: 'visible' });
+    await page.waitForTimeout(600);
+
+    const ops = await page.$$eval('#ex-bus-operator option', (els) =>
+      els.map((e) => e.value).filter(Boolean)
+    );
+    assert(ops.length >= 1, `バス事業者の候補が無い: ${JSON.stringify(ops)}`);
+
+    // いま出ているバスの経路の事業者を選ぶ(関係ない事業者を選んでも減らない)
+    const cardText = await page.textContent('.route:has(.badge--bus)');
+    const target = ops.find((o) => cardText.includes(o));
+    assert(target, `結果に出ている事業者が候補に無い: ${JSON.stringify(ops)}`);
+
+    await page.selectOption('#ex-bus-operator', target);
+    await page.click('#ex-add-bus-operator');
+    await page.waitForTimeout(1500);
+
+    const busChips = await page.$$eval('.chip-x', (els) => els.map((e) => e.textContent));
+    assert(busChips.some((c) => c.includes(target)), `バスの除外チップが出ていない: ${JSON.stringify(busChips)}`);
+    const busAfter = (await page.$$('.badge--bus')).length;
+    assert(busAfter < busBefore, `バスを除外しても経路が減っていない(${busBefore} → ${busAfter})`);
+    console.log(`  ok  バスを事業者ごと除外できる(${target}: ${busBefore} → ${busAfter} 件)`);
+
+    await page.click('#excludes-clear');
+    await page.waitForTimeout(1200);
+  }
 
   await page.screenshot({ path: 'tests/screenshot-excluded.png', fullPage: true });
   await ctx.close();
@@ -474,7 +572,10 @@ async function search(page, from, to) {
     assert(!/読み込んでいます/.test(hint), `読み込みが終わっても読み込み中のまま: ${hint}`);
     assert(busy === null, 'aria-busy が残っている');
     assert(/表示しています/.test(hint), `読み終わったことが分からない: ${hint}`);
-    console.log('  ok  読み終わったら「読み込み中」を消し、件数に切り替える');
+    // どの事業者のぶんが出ているか書いてあること。
+    // 「都営バスが出ない」といった取りこぼしに、画面だけで気づけるようにするため。
+    assert(/京王バス \d+/.test(hint), `事業者ごとの内訳が出ていない: ${hint}`);
+    console.log('  ok  読み終わったら件数と事業者ごとの内訳に切り替える');
   }
 
   // 駅のポップアップから経由地に追加できる
@@ -566,35 +667,52 @@ async function search(page, from, to) {
   await page.goto(URL, { waitUntil: 'networkidle' });
   await page.click('#map-toggle');
 
-  // 待っている間、読み込み中と分かること
+  // 待っている間、地図に重ねて読み込み中と分かること
   await page.waitForFunction(
     () => {
-      const el = document.querySelector('#map-hint');
+      const el = document.querySelector('#map-status');
       return el && !el.hidden && /読み込んでいます/.test(el.textContent);
     },
     null,
     { timeout: 8000 }
   );
-  const busyWhile = await page.getAttribute('#map-hint', 'aria-busy');
+  const busyWhile = await page.getAttribute('#map-status', 'aria-busy');
   assert(busyWhile === 'true', '読み込み中に aria-busy が付いていない');
   const spinning = await page.evaluate(
-    () => document.querySelector('#map-hint').classList.contains('is-loading')
+    () => document.querySelector('#map-status').classList.contains('is-loading')
   );
   assert(spinning, '読み込み中の目印(is-loading)が付いていない');
-  console.log('  ok  索引の読み込み中は「読み込んでいます」と表示する');
 
-  // 読み終わったら消えること
+  // 地図の上に重なっていること(下に小さく出すだけでは見落とされるため)
+  const overlay = await page.evaluate(() => {
+    const el = document.querySelector('#map-status');
+    const map = document.querySelector('#map');
+    const a = el.getBoundingClientRect();
+    const b = map.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    return {
+      inside: a.top >= b.top && a.bottom <= b.bottom && a.left >= b.left && a.right <= b.right,
+      position: style.position,
+      pointerEvents: style.pointerEvents,
+    };
+  });
+  assert(overlay.inside, '地図の上に重なっていない');
+  assert(overlay.position === 'absolute', '重ね表示になっていない');
+  assert(overlay.pointerEvents === 'none', '地図の操作を邪魔する');
+  console.log('  ok  読み込み中は地図に重ねて目立つ表示を出す');
+
+  // 読み終わったら消えること(出しっぱなしだと地図が見えない)
   await page.waitForFunction(
     () => {
-      const el = document.querySelector('#map-hint');
-      return el && !/読み込んでいます/.test(el.textContent);
+      const el = document.querySelector('#map-status');
+      return el && el.hidden;
     },
     null,
     { timeout: 15000 }
   );
-  const busyAfter = await page.getAttribute('#map-hint', 'aria-busy');
-  assert(busyAfter === null, '読み終わっても aria-busy が残っている');
-  console.log('  ok  読み終わると「読み込み中」の表示が消える');
+  const hint = await page.textContent('#map-hint');
+  assert(!/読み込んでいます/.test(hint), `下の行が読み込み中のまま: ${hint}`);
+  console.log('  ok  読み終わると重ね表示が消える');
   await ctx.close();
 }
 

@@ -5,7 +5,7 @@
 
 import assert from 'node:assert/strict';
 import { TransitNetwork } from '../transit/js/network.js';
-import { distanceKm, routeToPoints, routeToSegments, SEGMENT_STYLE } from '../transit/js/map.js';
+import { distanceKm, routeToPoints, routeToSegments, SEGMENT_STYLE, VIA_COLOR } from '../transit/js/map.js';
 
 let passed = 0;
 function test(name, fn) {
@@ -190,6 +190,40 @@ test('乗降する地点だけを major にする(通過駅は印にしない)',
   const majors = seg.points.filter((p) => p.major).map((p) => p.title);
   assert.deepEqual(majors, ['渋谷', '赤坂見附'], '乗る駅と降りる駅だけが印になるべき');
   assert.equal(seg.points.length, 4, '通過駅の情報自体は保持する');
+});
+
+
+/* ================================================================== *
+ *  経由地の色分け
+ * ================================================================== */
+console.log('\n経由地の表示');
+
+test('経由地の点に印が付く(色を変えて出すため)', () => {
+  const route = {
+    legs: [
+      { railway: RW, from: ST('Shibuya'), to: ST('Aoyama'), departure: 540, arrival: 550, stops: 2 },
+      { via: true, label: '青山一丁目', arrival: 550, departure: 580 },
+      { railway: RW, from: ST('Aoyama'), to: ST('Akasaka'), departure: 580, arrival: 585, stops: 1 },
+    ],
+  };
+  const segs = routeToSegments(route, NET, new Map());
+  const all = segs.flatMap((s) => s.points);
+  const via = all.filter((p) => p.via);
+  assert(via.length >= 1, `経由地に印が付いていない: ${JSON.stringify(all.map((p) => p.title))}`);
+  assert(via.every((p) => p.title === '青山一丁目'), '経由地でない点にまで印が付いている');
+});
+
+test('経由地が無ければ印は付かない', () => {
+  const route = {
+    legs: [{ railway: RW, from: ST('Shibuya'), to: ST('Akasaka'), departure: 540, arrival: 555, stops: 3 }],
+  };
+  const segs = routeToSegments(route, NET, new Map());
+  assert(segs.flatMap((s) => s.points).every((p) => !p.via), '経由地でないのに印が付いている');
+});
+
+test('経由地の色は鉄道・バス・徒歩のどれとも違う', () => {
+  const used = new Set(Object.values(SEGMENT_STYLE).map((s) => s.color.toLowerCase()));
+  assert(!used.has(VIA_COLOR.toLowerCase()), `経由地の色が他と同じ: ${VIA_COLOR}`);
 });
 
 console.log(`\n${passed} 件のテストが成功${process.exitCode ? '(失敗あり)' : ''}\n`);
