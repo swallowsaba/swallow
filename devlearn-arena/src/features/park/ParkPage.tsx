@@ -3,7 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
 import { restoreShell, snapshotShell } from '@/engines/kernel/session';
 import { isHelpCommand, lessonHelpCommands } from '@/engines/lesson/helpCommands';
-import { allMissions, missingPrerequisites, missionById, recommendedNext } from '@/engines/lesson/registry';
+import { allMissions, mainMissions, missingPrerequisites, missionById, recommendedNext } from '@/engines/lesson/registry';
 import {
   buildContext, createProgress, currentStep, evaluate, markSkipped, passes, solutionThrough, useHint,
 } from '@/engines/lesson/runner';
@@ -25,10 +25,9 @@ import { splitTemplate } from '@/ui/panes';
 import { CITIES, CITY_TRACKS, cityOf, facilityById } from '@/content/city';
 import { FacilityLesson } from '@/features/city/FacilityLesson';
 import type { MissionTrack } from '@/engines/lesson/types';
-import { REWARD } from '@/engines/city/sim';
 import { CityPane } from '@/features/citymap/CityPane';
-import { boostCity, placeFacility, rewardCity } from '@/features/citymap/cityStore';
 import { CityBoard } from '@/features/citymap/CityBoard';
+import { growCity } from '@/features/citymap/cityStore';
 import type { CityEvent } from '@/features/citymap/CityMapView';
 import { CityPortrait } from '@/visual/game/cityArt';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
@@ -42,15 +41,15 @@ import { evaluateParts } from '@/engines/lesson/authoring/conditions';
 const STEP_XP = 10;
 
 /** 何も指定が無いときに開く任務 */
-const FALLBACK = allMissions()[0];
+const FALLBACK = mainMissions()[0];
 
 function isTrack(value: string | undefined): value is MissionTrack {
   return CITY_TRACKS.includes(value as MissionTrack);
 }
 
-/** その施設（章）で、次に取り組む任務。全部終えていれば最初の任務 */
+/** その施設（章）で、次に取り組む任務。本編だけを見る（値だけ違う反復演習は挟まない） */
 function missionForFacility(facilityId: string, cleared: ReadonlySet<string>): string | undefined {
-  const mine = allMissions().filter((m) => m.chapterId === facilityId);
+  const mine = mainMissions().filter((m) => m.chapterId === facilityId);
   return (mine.find((m) => !cleared.has(m.id)) ?? mine[0])?.id;
 }
 
@@ -79,7 +78,7 @@ export default function ParkPage() {
       if (picked) return picked;
     }
     if (lastMissionId !== null && missionById(lastMissionId)?.track === track) return lastMissionId;
-    const mine = allMissions().filter((m) => m.track === track);
+    const mine = mainMissions().filter((m) => m.track === track);
     const city = cityOf(CITIES[track], new Set(facilitiesBuilt), mine, cleared);
     const next = city.nextFacilityId === null ? undefined : missionForFacility(city.nextFacilityId, cleared);
     return next ?? mine[0]?.id ?? FALLBACK?.id ?? '';
@@ -118,6 +117,7 @@ export default function ParkPage() {
   }, [trackId]);
 
   const [attempt, setAttempt] = useState(0);
+  const [greeted, setGreeted] = useState<ReadonlySet<string>>(new Set());
   // 初期状態の組み立ては開いたときだけ。一覧を作るために全部を組み立てたりはしない
   const mission = useMemo(
     () => missionById(missionId)?.build() ?? FALLBACK?.build() ?? null,
@@ -152,6 +152,21 @@ export default function ParkPage() {
         resetMission(mission.id);
         setAttempt((n) => n + 1);
       }}
+      greeted={greeted.has(track)}
+      onGreet={() => {
+        setGreeted((set) => new Set([...set, track]));
+      }}
+      onResetCity={() => {
+        setGreeted((set) => new Set([...set].filter((id) => id !== track)));
+        // このカテゴリの街を最初から：施設・任務の進み・シェルの状態・要望を聞いた記録を消す
+        const missions = allMissions().filter((m) => m.track === mission.track);
+        useStore.getState().resetCity(missions.map((m) => m.id), CITIES[mission.track].facilities.map((f) => f.id));
+        flushSave();
+        setHandling(false);
+        const first = missions[0]?.id;
+        if (first !== undefined) setMissionId(first);
+        setAttempt((n) => n + 1);
+      }}
     />
   );
 }
@@ -168,7 +183,15 @@ function Park({
   onSwitch,
   onPickFacility,
   onRetry,
+  onResetCity,
+  greeted,
+  onGreet,
 }: {
+  /** このカテゴリで就任のあいさつを聞いたか（任務を切り替えても出し直さない） */
+  greeted: boolean;
+  onGreet: () => void;
+  /** このカテゴリの街を最初からやり直す */
+  onResetCity: () => void;
   mission: LessonDefinition;
   /** 苦情・要望に対応している最中か（違えば街づくり） */
   handling: boolean;
@@ -259,14 +282,14 @@ function Park({
   const introsRead = useStore((s) => s.introsRead);
   const facility = facilityById(missionById(mission.id)?.chapterId ?? '');
   const facilityBuilt = facility === undefined || facilitiesBuilt.includes(facility.id);
-  const [welcomed, setWelcomed] = useState(() => {
-    const state = useStore.getState();
-    return state.cities[mission.track] !== undefined || plan.facilities.some((f) => state.facilitiesBuilt.includes(f.id));
-  });
+  const welcomed = greeted || plan.facilities.some((f) => facilitiesBuilt.includes(f.id));
+  const setWelcomed = (value: boolean): void => {
+    if (value) onGreet();
+  };
   // 建てた直後は「建った！」を見せてから依頼へ進む
   const [justBuilt, setJustBuilt] = useState(false);
-  // 建設を決めた施設は、右の地図で配置してもらう
-  const [placeRequest, setPlaceRequest] = useState<string | null>(null);
+  // やり直しの選択（この要望だけ / 街ごと）
+  const [retryOpen, setRetryOpen] = useState(false);
   const stage: Stage =
     review ?? (!welcomed ? 'welcome' : !handling ? 'city' : !facilityBuilt || justBuilt ? 'facility' : showIntro ? 'briefing' : 'work');
 
@@ -319,7 +342,8 @@ function Park({
   }, [step, session]);
 
   const lessons = useStore((s) => s.lessons);
-  const catalogue = allMissions();
+  // 学習の流れ・街の育ち・進み具合は本編だけで数える（同じ課題の繰り返しは反復演習として別に置く）
+  const catalogue = mainMissions();
   const clearedIds = useMemo(
     () => new Set(catalogue.filter((m) => lessons[m.id]?.cleared === true).map((m) => m.id)),
     [catalogue, lessons],
@@ -360,7 +384,7 @@ function Park({
     const facility = chapterId === undefined ? undefined : facilityById(chapterId);
     if (!facility || chapterId === undefined) return undefined;
     const { lessons: done, facilitiesBuilt } = useStore.getState();
-    const mine = allMissions().filter((m) => m.chapterId === chapterId);
+    const mine = mainMissions().filter((m) => m.chapterId === chapterId);
     const cleared = mine.filter((m) => m.id === mission.id || done[m.id]?.cleared === true).length;
     const href = `/world/${mission.track}?facility=${encodeURIComponent(facility.id)}`;
     if (!facilitiesBuilt.includes(facility.id)) {
@@ -438,26 +462,15 @@ function Park({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shellState, mission]);
 
-  /** 通過した手順ぶんの予算。解答を見て飛ばした手順には出さない */
-  const rewardSteps = (from: number, to: number): void => {
-    let total = 0;
-    for (let i = from; i < to; i += 1) {
-      if (progress.skipped.includes(i)) continue;
-      if (rewardCity(mission.track, `step:${mission.id}:${String(i)}`, REWARD.step)) total += REWARD.step;
-    }
-    // コマンドで対応すると、施設の工事が進み、街の時間が進んで住民が動く
-    if (total > 0) {
-      pushToast(t('city.reward.step', { n: total }));
-      boostCity(mission.track, city, CITY_BOOST.step);
-    }
-    cityEvent(total > 0 ? t('city.event.stepPaid', { n: total }) : t('city.event.step'), EVENT_COLOR.step);
+  /** 手順を通すと、街の家が 1 段高くなる（コマンドで街が育つ） */
+  const rewardSteps = (n = 1): void => {
+    growCity(mission.track, 'floors', n);
+    cityEvent(t('city.event.step'), EVENT_COLOR.step);
   };
-  /** 理解度の問題に正解したぶんの予算 */
-  const rewardAnswer = (key: string, firstTry: boolean, full: number, retry: number): void => {
-    const amount = firstTry ? full : retry;
-    const paid = rewardCity(mission.track, key, amount);
-    if (paid) pushToast(t('city.reward.quiz', { n: amount }));
-    cityEvent(paid ? t('city.event.quizPaid', { n: amount }) : t('city.event.quiz'), EVENT_COLOR.quiz);
+  /** 理解度の問題に正解すると、家が 1 軒増える（住民が引っ越してくる） */
+  const rewardAnswer = (): void => {
+    growCity(mission.track, 'houses');
+    cityEvent(t('city.event.quiz'), EVENT_COLOR.quiz);
   };
 
   // 進んだ / 通らなかった に応じて見返りと助言を出す
@@ -498,18 +511,15 @@ function Park({
         town: townLines,
       });
       setDiagnosis(null);
-      // コマンドで要望を解決したら、街の予算が入る
-      rewardSteps(prevStep.current, mission.steps.length);
-      if (rewardCity(mission.track, `clear:${mission.id}`, REWARD.clear)) {
-        pushToast(t('city.reward.clear', { n: REWARD.clear }));
-        boostCity(mission.track, city, CITY_BOOST.clear);
-      }
-      cityEvent(t('city.event.clear', { n: REWARD.clear }), EVENT_COLOR.clear);
+      // コマンドで要望を解決した。施設が動き、次の住民の声が届く
+      // 最後の手順ぶんも積み上げてから、解決を知らせる
+      growCity(mission.track, 'floors');
+      cityEvent(t('city.event.clear'), EVENT_COLOR.clear);
       if (soundEnabled) sfx.clear();
     } else if (progress.stepIndex > prevStep.current) {
       grantXp(STEP_XP, now);
       pushToast(`+${String(STEP_XP)} XP`);
-      rewardSteps(prevStep.current, progress.stepIndex);
+      rewardSteps(Math.max(1, progress.stepIndex - prevStep.current));
       setDiagnosis(null);
       if (soundEnabled) sfx.step();
     }
@@ -533,10 +543,6 @@ function Park({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shellState, passingNow, progress.cleared, progress.commandsUsed]);
-
-  const retry = useCallback(() => {
-    onRetry();
-  }, [onRetry]);
 
   const trackMissions = useMemo(() => catalogue.filter((m) => m.track === mission.track), [catalogue, mission.track]);
   const city = useMemo(
@@ -583,7 +589,31 @@ function Park({
         onDismiss={() => {
           setCelebration(null);
         }}
+        onRetry={() => {
+          setCelebration(null);
+          onRetry();
+        }}
+        onCity={() => {
+          setCelebration(null);
+          onBackToCity();
+        }}
       />
+      {retryOpen ? (
+        <RetryMenu
+          cityName={plan.name}
+          onMission={() => {
+            setRetryOpen(false);
+            onRetry();
+          }}
+          onCity={() => {
+            setRetryOpen(false);
+            onResetCity();
+          }}
+          onClose={() => {
+            setRetryOpen(false);
+          }}
+        />
+      ) : null}
 
       {/* 上部：任務の切り替えと現在地 */}
       {editing ? (
@@ -648,7 +678,14 @@ function Park({
           >
             {t('intro.reopen')}
           </button>
-          <button type="button" onClick={retry} className="knob px-3 py-2 text-sm">
+          <button
+            type="button"
+            data-testid="retry-open"
+            onClick={() => {
+              setRetryOpen(true);
+            }}
+            className="knob px-3 py-2 text-sm"
+          >
             {t('park.retry')}
           </button>
           <Link to="/glossary" className="knob px-3 py-2 text-sm">
@@ -701,7 +738,7 @@ function Park({
                     }}
                   />
                 ) : stage === 'city' ? (
-                  <CityBoard track={mission.track} city={city} onHandle={studyFacility} />
+                  <CityBoard city={city} onHandle={studyFacility} />
                 ) : stage === 'facility' && facility ? (
                   <FacilityLesson
                     key={facility.id}
@@ -711,17 +748,14 @@ function Park({
                     guide={plan.guide}
                     built={facilitiesBuilt.includes(facility.id) && !justBuilt}
                     firstMissionId={null}
-                    onAnswer={(q, firstTry) => {
-                      rewardAnswer(`quiz:${facility.id}:${String(q)}`, firstTry, REWARD.quiz, REWARD.quizRetry);
+                    onAnswer={() => {
+                      rewardAnswer();
                     }}
                     onBuild={() => {
                       if (!facilitiesBuilt.includes(facility.id)) {
                         setJustBuilt(true);
                         buildFacility(facility.id);
-                        if (rewardCity(mission.track, `learn:${facility.id}`, REWARD.learn)) pushToast(t('city.reward.learn', { n: REWARD.learn }));
-                        // 建設を決めたら、すぐ地図に工事現場ができる（あとで移設できる）
-                        placeFacility(mission.track, city, facility.id);
-                        setPlaceRequest(facility.id);
+                        // 建設を決めたら、上の通りに工事現場ができる
                         cityEvent(t('city.event.build', { name: facility.name }), EVENT_COLOR.build);
                         flushSave();
                       }
@@ -742,8 +776,8 @@ function Park({
                     onStart={startMission}
                     onSwitch={onSwitch}
                     canSkip={introsRead.includes(mission.id)}
-                    onAnswer={(q, firstTry) => {
-                      rewardAnswer(`check:${mission.id}:${String(q)}`, firstTry, REWARD.check, REWARD.checkRetry);
+                    onAnswer={() => {
+                      rewardAnswer();
                     }}
                   />
                 )}
@@ -812,7 +846,9 @@ function Park({
           <CityPane
             track={mission.track}
             city={city}
-            placeRequest={placeRequest}
+            state={session.state}
+            previous={session.journal.entries[session.journal.cursor - 1]?.state}
+            currentFacilityId={handling ? (facility?.id ?? null) : null}
             partial={partial}
             events={cityEvents}
             onStudy={studyFacility}
@@ -823,11 +859,54 @@ function Park({
   );
 }
 
+/** やり直しの選択。この要望（任務）だけか、このカテゴリの街を最初からか。街ごとは確認してから */
+function RetryMenu({ cityName, onMission, onCity, onClose }: { cityName: string; onMission: () => void; onCity: () => void; onClose: () => void }) {
+  const t = useT();
+  const [confirm, setConfirm] = useState(false);
+  return (
+    <div role="dialog" aria-modal="true" aria-label={t('retry.title')} data-testid="retry-menu" className="fixed inset-0 z-50 grid place-items-center bg-[rgba(44,29,16,0.6)] p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-md border-4 border-wood-dark bg-cream p-4 shadow-xl"
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
+        <p className="text-lg font-extrabold">↺ {t('retry.title')}</p>
+        {confirm ? (
+          <>
+            <p className="mt-2 border-l-4 border-[var(--bad)] bg-[#fbe3de] px-3 py-2 text-sm leading-relaxed">{t('retry.cityConfirm', { name: cityName })}</p>
+            <div className="mt-3 flex flex-wrap justify-end gap-2">
+              <button type="button" onClick={() => { setConfirm(false); }} className="knob px-3 py-2 text-sm">
+                {t('retry.back')}
+              </button>
+              <button type="button" data-testid="retry-city-confirm" onClick={onCity} className="sign px-4 py-2 text-sm font-extrabold">
+                {t('retry.cityYes')}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="mt-3 flex flex-col gap-2">
+            <button type="button" data-testid="retry-mission" onClick={onMission} className="sign px-4 py-2 text-left text-sm font-extrabold">
+              {t('retry.mission')}
+              <span className="block text-xs font-normal">{t('retry.missionLead')}</span>
+            </button>
+            <button type="button" data-testid="retry-city" onClick={() => { setConfirm(true); }} className="knob px-4 py-2 text-left text-sm font-extrabold">
+              {t('retry.city', { name: cityName })}
+              <span className="block text-xs font-normal">{t('retry.cityLead')}</span>
+            </button>
+            <button type="button" onClick={onClose} className="self-end px-3 py-1 text-sm underline">
+              {t('retry.cancel')}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 type Stage = 'welcome' | 'city' | 'facility' | 'briefing' | 'work';
 const STAGES = ['city', 'facility', 'briefing', 'work'] as const;
 
-/** 出来事で進める街の日数 */
-const CITY_BOOST = { step: 3, clear: 10 } as const;
 const EVENT_COLOR = { quiz: '#2f6fb0', step: '#d9822b', clear: '#b8860b', build: '#7a63d6' } as const;
 
 /** いまどの段階にいるか。街を作る → 施設の建設を決める → 住民の要望を聞く → コマンドで対応する */

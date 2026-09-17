@@ -82,16 +82,13 @@ export const missionProgressSchema = z.object({
 });
 export type MissionProgress = z.infer<typeof missionProgressSchema>;
 
-/** 市長が作った街（カテゴリごと）。地形は種から作るので保存しない */
-export const citySaveSchema = z.object({
-  tiles: z.string(),
-  levels: z.string(),
-  facilities: z.array(z.object({ id: z.string(), x: z.number().int(), y: z.number().int() })),
-  money: z.number().int().min(0),
-  day: z.number().int().min(0),
-  earned: z.array(z.string()),
+
+/** 街の育ち。理解度の正解で家が増え、コマンドの手順で家が高くなる */
+export const townGrowthSchema = z.object({
+  houses: z.number().int().min(0),
+  floors: z.number().int().min(0),
 });
-export type CitySaveData = z.infer<typeof citySaveSchema>;
+export type TownGrowthData = z.infer<typeof townGrowthSchema>;
 
 export const saveDataSchema = z.object({
   version: z.literal(SAVE_VERSION),
@@ -111,8 +108,8 @@ export const saveDataSchema = z.object({
   introsRead: z.array(z.string()).default([]),
   /** 学んで建てた街の施設（章の id）。古い保存データには無いので空で補う */
   facilitiesBuilt: z.array(z.string()).default([]),
-  /** カテゴリごとの街。古い保存データには無いので空で補う */
-  cities: z.record(z.string(), citySaveSchema).default({}),
+  /** カテゴリごとの街の育ち。古い保存データには無いので空で補う */
+  growth: z.record(z.string(), townGrowthSchema).default({}),
 });
 export type SaveData = z.infer<typeof saveDataSchema>;
 
@@ -141,7 +138,7 @@ export function createEmptySave(now: number): SaveData {
     lastMissionId: null,
     introsRead: [],
     facilitiesBuilt: [],
-    cities: {},
+    growth: {},
   };
 }
 

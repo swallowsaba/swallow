@@ -55,9 +55,13 @@ export interface FamilyOptions<T> {
   make: (value: T, id: string) => Omit<MissionSpec, 'id' | 'track' | 'chapterId' | 'docs'>;
 }
 
-/** ひとつの型の課題から、変種をまとめて作る */
+/**
+ * ひとつの型の課題から、変種をまとめて作る。
+ * 本編に並ぶのは最初の 1 本だけ。値だけ違う残りは「反復演習」として置き、同じことを何度もやらされないようにする。
+ */
 export function family<T>(options: FamilyOptions<T>): MissionSource[] {
-  return options.variants.map((variant) => {
+  const first = `${options.chapterId}/${options.family}-${options.variants[0]?.slug ?? ''}`;
+  return options.variants.map((variant, index) => {
     const id = `${options.chapterId}/${options.family}-${variant.slug}`;
     return defineMission({
       ...options.make(variant.value, id),
@@ -65,6 +69,7 @@ export function family<T>(options: FamilyOptions<T>): MissionSource[] {
       track: options.track,
       chapterId: options.chapterId,
       docs: options.docs ?? [],
+      ...(index === 0 ? {} : { repeatOf: first }),
     });
   });
 }

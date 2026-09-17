@@ -22,10 +22,14 @@ interface Props {
   /** 次の任務へ進む導線。無ければ表示しない */
   nextLabel?: string | undefined;
   onNext?: (() => void) | undefined;
+  /** 同じ任務をもう一度 */
+  onRetry?: (() => void) | undefined;
+  /** 街づくりに戻る */
+  onCity?: (() => void) | undefined;
 }
 
 /** ミッション達成の全画面演出。クリックか3秒で閉じる。 */
-export function Celebration({ data, onDismiss, nextLabel, onNext }: Props) {
+export function Celebration({ data, onDismiss, nextLabel, onNext, onRetry, onCity }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
 
@@ -110,18 +114,47 @@ export function Celebration({ data, onDismiss, nextLabel, onNext }: Props) {
               </div>
             ) : null}
 
-            {nextLabel !== undefined && onNext ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNext();
-                }}
-                className="sign mt-8 px-8 py-4 text-xl font-extrabold"
-              >
-                {t('celebration.next', { title: nextLabel })}
-              </button>
-            ) : null}
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              {nextLabel !== undefined && onNext ? (
+                <button
+                  type="button"
+                  data-testid="celebration-next"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNext();
+                  }}
+                  className="sign px-8 py-4 text-xl font-extrabold"
+                >
+                  {t('celebration.next', { title: nextLabel })}
+                </button>
+              ) : null}
+              {onCity ? (
+                <button
+                  type="button"
+                  data-testid="celebration-city"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCity();
+                  }}
+                  className="knob px-5 py-3 text-base font-bold"
+                >
+                  {t('celebration.city')}
+                </button>
+              ) : null}
+              {onRetry ? (
+                <button
+                  type="button"
+                  data-testid="celebration-retry"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRetry();
+                  }}
+                  className="knob px-5 py-3 text-base font-bold"
+                >
+                  {t('celebration.retry')}
+                </button>
+              ) : null}
+            </div>
 
             <p className="mt-6 font-mono text-sm text-ink-soft">{t('celebration.dismiss')}</p>
           </motion.div>

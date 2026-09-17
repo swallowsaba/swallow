@@ -1,5 +1,5 @@
 import type {
-  CitySaveData, LessonProgress, MissionProgress, Profile, ReviewItem, SaveData, Settings, ShellSnapshot,
+  LessonProgress, TownGrowthData, MissionProgress, Profile, ReviewItem, SaveData, Settings, ShellSnapshot,
 } from '@/lib/storage/schema';
 
 export interface ProgressSlice {
@@ -21,12 +21,15 @@ export interface ProgressSlice {
   /** 学んで建てた街の施設 */
   facilitiesBuilt: string[];
   buildFacility: (id: string) => void;
-  /** カテゴリごとの、市長が作った街 */
-  cities: Record<string, CitySaveData>;
-  setCity: (track: string, city: CitySaveData) => void;
+  /** カテゴリごとの街の育ち */
+  growth: Record<string, TownGrowthData>;
+  /** 理解度の正解で家が 1 軒増え、コマンドの手順で階が 1 つ積み上がる */
+  grow: (track: string, kind: 'houses' | 'floors', n?: number) => void;
   saveMission: (id: string, progress: MissionProgress, state: ShellSnapshot) => void;
   setLastMission: (id: string) => void;
   resetMission: (id: string) => void;
+  /** カテゴリの街を最初から：施設・任務の進み・シェルの状態・要望を聞いた記録を消す（XP は残す） */
+  resetCity: (missionIds: readonly string[], facilityIds: readonly string[]) => void;
   scheduleReview: (lessonId: string, today: string) => void;
   gradeReview: (lessonId: string, grade: 'again' | 'hard' | 'good' | 'easy', today: string) => void;
   useHint: (lessonId: string) => void;
@@ -55,6 +58,6 @@ export function toSaveData(state: AppState, now: number): SaveData {
     lastMissionId: state.lastMissionId,
     introsRead: state.introsRead,
     facilitiesBuilt: state.facilitiesBuilt,
-    cities: state.cities,
+    growth: state.growth,
   };
 }

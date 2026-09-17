@@ -29,7 +29,7 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
   lastMissionId: null,
   introsRead: [],
   facilitiesBuilt: [],
-  cities: {},
+  growth: {},
 
   hydrate: (data) =>
     set({
@@ -44,10 +44,14 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       lastMissionId: data.lastMissionId,
       introsRead: data.introsRead,
       facilitiesBuilt: data.facilitiesBuilt,
-      cities: data.cities,
+      growth: data.growth,
     }),
 
-  setCity: (track, city) => set((s) => ({ cities: { ...s.cities, [track]: city } })),
+  grow: (track, kind, n = 1) =>
+    set((s) => {
+      const current = s.growth[track] ?? { houses: 0, floors: 0 };
+      return { growth: { ...s.growth, [track]: { ...current, [kind]: current[kind] + n } } };
+    }),
 
   buildFacility: (id) =>
     set((s) => (s.facilitiesBuilt.includes(id) ? {} : { facilitiesBuilt: [...s.facilitiesBuilt, id] })),
@@ -80,6 +84,23 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       delete progress[id];
       delete state[id];
       return { missionProgress: progress, missionState: state };
+    }),
+
+  resetCity: (missionIds, facilityIds) =>
+    set((s) => {
+      const missions = new Set(missionIds);
+      const keep = <T,>(record: Record<string, T>): Record<string, T> =>
+        Object.fromEntries(Object.entries(record).filter(([id]) => !missions.has(id)));
+      return {
+        lessons: keep(s.lessons),
+        missionProgress: keep(s.missionProgress),
+        missionState: keep(s.missionState),
+        introsRead: s.introsRead.filter((id) => !missions.has(id)),
+        growth: Object.fromEntries(Object.entries(s.growth).filter(([id]) => !facilityIds.some((f) => f.startsWith(`${id}/`)))),
+        reviewQueue: s.reviewQueue.filter((item) => !missions.has(item.lessonId)),
+        facilitiesBuilt: s.facilitiesBuilt.filter((id) => !facilityIds.includes(id)),
+        lastMissionId: s.lastMissionId !== null && missions.has(s.lastMissionId) ? null : s.lastMissionId,
+      };
     }),
 
   attemptLesson: (lessonId) =>
@@ -134,7 +155,7 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       missionState: {},
       introsRead: [],
       facilitiesBuilt: [],
-      cities: {},
+      growth: {},
       lastMissionId: null,
     });
   },

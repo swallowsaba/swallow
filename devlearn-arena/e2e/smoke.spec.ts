@@ -31,9 +31,8 @@ async function learnAndStart(page: Page): Promise<void> {
   if ((await panel.getAttribute('data-stage')) === 'welcome') {
     await page.getByTestId('welcome-start').click();
   }
-  // まず街づくり。時間を速めて、住民の苦情が届いたら対応する
+  // 市政ボードに届いた住民の苦情に対応する
   if ((await panel.getAttribute('data-stage')) === 'city') {
-    await page.locator('[data-speed="3"]').click();
     await page.locator('[data-handle]').first().click();
   }
   if ((await panel.getAttribute('data-stage')) === 'facility') {
@@ -84,7 +83,7 @@ test('全体図で世界を選ぶと、説明・コマンド・街の画面に�
   await expect(page.getByTestId('city-canvas')).toHaveAttribute('data-canvas', 'on');
 });
 
-test('理解度とコマンドで予算が入り、その予算で道路を引け、街は読み込み直しても残る', async ({ page }) => {
+test('コマンドを打つと右の街（現場）が変わり、出来事が出る。読み込み直しても進みが残る', async ({ page }) => {
   const failed: string[] = [];
   page.on('response', (res) => {
     if (res.status() >= 400) failed.push(`${String(res.status())} ${res.url()}`);
@@ -92,44 +91,36 @@ test('理解度とコマンドで予算が入り、その予算で道路を引�
 
   await open(page, './world/kernel');
   await learnAndStart(page);
-
-  const money = page.getByTestId('city-money');
-  const value = async (): Promise<number> => Number(await money.getAttribute('data-value'));
-  // 建設の決定と、判断問題・理解度チェックの正解で予算が入っている
-  const afterLearning = await value();
-  expect(afterLearning).toBeGreaterThan(3000 + 600);
-  // 時間を止めて、税収で数字が動かないようにする
-  await page.locator('[data-speed="0"]').click();
-
-  // コマンドで対応すると予算が入る
+  await expect(page.getByTestId('city-legend')).toContainText('ディレクトリ');
+  // 理解度チェックに正解したぶん、家が建っている
+  const houses = page.getByTestId('city-houses');
+  const floors = page.getByTestId('city-floors');
+  expect(Number(await houses.getAttribute('data-value'))).toBeGreaterThan(0);
+  const beforeFloors = Number(await floors.getAttribute('data-value'));
+  const blocks = page.locator('[data-stat="街区"] b');
+  const before = Number(await blocks.textContent());
   await type(page, 'mkdir reports');
-  await expect.poll(value).toBeGreaterThan(afterLearning);
-  // 右の街にも、対応したことが出来事として出る
-  await expect(page.locator('[data-city-event]').first()).toContainText('対応');
-  const beforeRoad = await value();
-
-  // 道路を引くと予算を使う
-  await page.locator('button[data-tool="road"]').click();
-  const canvas = page.getByTestId('city-canvas').locator('canvas');
-  const box = await canvas.boundingBox();
-  if (!box) throw new Error('地図がありません');
-  // 地図の上の空き地を探して引く（パネルや施設に当たったら、別の高さで引き直す）
-  for (const row of [0.62, 0.72, 0.52, 0.8]) {
-    const y = box.y + box.height * row;
-    await page.mouse.move(box.x + box.width * 0.5, y);
-    await page.mouse.down();
-    await page.mouse.move(box.x + box.width * 0.75, y, { steps: 5 });
-    await page.mouse.up();
-    if ((await value()) < beforeRoad) break;
-  }
-  await expect.poll(value).toBeLessThan(beforeRoad);
-  const afterRoad = await value();
+  // コマンドで手順を通すと、家が 1 段高くなる
+  await expect.poll(async () => Number(await floors.getAttribute('data-value'))).toBeGreaterThan(beforeFloors);
+  await expect.poll(async () => Number(await blocks.textContent())).toBeGreaterThan(before);
+  await expect(page.locator('[data-city-event]').first()).toContainText('現場');
+  await expect(page.getByText('やること 2')).toBeVisible();
 
   await page.reload();
-  await expect(page.getByTestId('city-money')).toBeVisible();
-  expect(Number(await page.getByTestId('city-money').getAttribute('data-value'))).toBeGreaterThanOrEqual(afterRoad);
+  await expect(page.getByTestId('learning-panel')).toHaveAttribute('data-stage', 'work');
+  await expect(page.getByText('やること 2')).toBeVisible();
 
   expect(failed, `失敗したリクエスト: ${failed.join(', ')}`).toEqual([]);
+});
+
+test('やり直すで、この要望だけを最初に戻せる', async ({ page }) => {
+  await open(page, './world/kernel');
+  await learnAndStart(page);
+  await type(page, 'mkdir reports');
+  await expect(page.getByText('やること 2')).toBeVisible();
+  await page.getByTestId('retry-open').click();
+  await page.getByTestId('retry-mission').click();
+  await expect(page.getByText(/進捗 0 \//)).toBeVisible();
 });
 
 test('条件を満たすと手順が進み、ヒントはターミナルに打たれず左上に出る', async ({ page }) => {

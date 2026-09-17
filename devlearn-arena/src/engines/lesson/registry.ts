@@ -29,6 +29,8 @@ export interface MissionEntry {
   requires: readonly string[];
   /** 目次に元から書いてある、読んで手を動かす任務か（演習ではないもの） */
   curated: boolean;
+  /** 値だけ違う繰り返し（反復演習）。本編の流れには出さない */
+  repeatOf: string | null;
   build: () => LessonDefinition;
 }
 
@@ -47,6 +49,7 @@ function fromSource(source: MissionSource): Unordered {
     stepCount: source.stepCount,
     docs: source.docs,
     curated: false,
+    repeatOf: source.repeatOf,
     build: source.build,
   };
 }
@@ -65,6 +68,7 @@ function fromDefinition(definition: LessonDefinition): Unordered {
     stepCount: definition.steps.length,
     docs: [],
     curated: true,
+    repeatOf: null,
     build: () => definition,
   };
 }
@@ -97,6 +101,18 @@ export function missionsOfChapter(chapterId: string): readonly MissionEntry[] {
   return allMissions().filter((m) => m.chapterId === chapterId);
 }
 
+/**
+ * 本編の任務。値だけ違う繰り返し（反復演習）を除いたもの。
+ * 学習の流れ・街の育ち・進み具合は、これだけで数える。
+ */
+export function mainMissions(): readonly MissionEntry[] {
+  return allMissions().filter((m) => m.repeatOf === null);
+}
+
+export function isRepeat(id: string): boolean {
+  return missionById(id)?.repeatOf !== null;
+}
+
 export function missionsOfTrack(track: MissionTrack): readonly MissionEntry[] {
   return allMissions().filter((m) => m.track === track);
 }
@@ -116,7 +132,7 @@ export function missingPrerequisites(id: string, cleared: ReadonlySet<string>): 
 
 /** まだ終えていない任務のうち、推奨順で最初のもの */
 export function recommendedNext(cleared: ReadonlySet<string>, exceptId?: string): MissionEntry | null {
-  return allMissions().find((m) => m.id !== exceptId && !cleared.has(m.id)) ?? null;
+  return mainMissions().find((m) => m.id !== exceptId && !cleared.has(m.id)) ?? null;
 }
 
 /** 目次が `ready` を判定するのに使う */

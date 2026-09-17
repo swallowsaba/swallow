@@ -45,6 +45,8 @@ export interface MissionSpec {
   kind?: MissionKind;
   /** 目次での見え方 */
   lessonKind?: LessonKindMeta;
+  /** 同じ形の課題の、値だけ違う繰り返し。本編には出さず、反復演習として置く（元になった任務の id） */
+  repeatOf?: string;
   minutes?: number;
   docs?: readonly DocRef[];
   objectives: readonly string[];
@@ -70,6 +72,8 @@ export interface MissionSource {
   intro: LessonIntro;
   kind: MissionKind;
   lessonKind: LessonKindMeta;
+  /** 値だけ違う繰り返しなら、元になった任務の id */
+  repeatOf: string | null;
   minutes: number;
   docs: readonly DocRef[];
   stepCount: number;
@@ -140,6 +144,7 @@ export function defineMission(spec: MissionSpec): MissionSource {
     intro: spec.intro,
     kind,
     lessonKind: spec.lessonKind ?? (kind === 'boss' ? 'boss' : 'drill'),
+    repeatOf: spec.repeatOf ?? null,
     minutes: spec.minutes ?? Math.max(4, spec.steps.length * 3),
     docs: spec.docs ?? [],
     stepCount: spec.steps.length,

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Point, Tool, ToolResult } from '@/engines/city/sim';
-import { createCityMap, type CityMap, type MapInput } from './isoWorld';
+import { createSceneMap, type SceneMap, type SceneMapInput } from './isoScene';
 
 /** 地図に出す出来事（正解・対応・完了など）。id が増えるたびに 1 回だけ出す */
 export interface CityEvent {
@@ -11,16 +10,10 @@ export interface CityEvent {
 }
 
 interface Props {
-  input: MapInput;
-  tool: Tool;
-  placing: string | null;
+  input: SceneMapInput;
   selected: string | null;
-  /** この施設へ地図を寄せる（変わったときだけ） */
-  focusId: string | null;
   events: readonly CityEvent[];
-  onApply: (from: Point, to: Point) => void;
-  onInspect: (point: Point) => void;
-  describe: (result: ToolResult, tool: Tool) => string;
+  onSelect: (id: string | null) => void;
   label: string;
   fallback: string;
   zoomLabels: { in: string; out: string; fit: string };
@@ -35,13 +28,13 @@ function canvasAvailable(): boolean {
   }
 }
 
-/** 斜め見下ろしの 2D の街。canvas の地図を 1 つ持ち、入力が変わるたびに描き直す */
-export function CityMapView({ input, tool, placing, selected, focusId, events, onApply, onInspect, describe, label, fallback, zoomLabels }: Props) {
+/** 斜め見下ろしの街。canvas の地図を 1 つ持ち、状態が変わるたびに描き直す */
+export function CityMapView({ input, selected, events, onSelect, label, fallback, zoomLabels }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<CityMap | null>(null);
+  const mapRef = useRef<SceneMap | null>(null);
   const [failed, setFailed] = useState(false);
-  const handlers = useRef({ onApply, onInspect, describe });
-  handlers.current = { onApply, onInspect, describe };
+  const selectRef = useRef(onSelect);
+  selectRef.current = onSelect;
   const shown = useRef(0);
 
   useEffect(() => {
@@ -52,14 +45,10 @@ export function CityMapView({ input, tool, placing, selected, focusId, events, o
       return;
     }
     try {
-      mapRef.current = createCityMap(host, {
-        onApply: (from, to) => {
-          handlers.current.onApply(from, to);
+      mapRef.current = createSceneMap(host, {
+        onSelect: (id) => {
+          selectRef.current(id);
         },
-        onInspect: (p) => {
-          handlers.current.onInspect(p);
-        },
-        describe: (result, t) => handlers.current.describe(result, t),
       });
     } catch {
       setFailed(true);
@@ -74,14 +63,8 @@ export function CityMapView({ input, tool, placing, selected, focusId, events, o
     mapRef.current?.update(input);
   }, [input]);
   useEffect(() => {
-    mapRef.current?.setTool(tool, placing);
-  }, [tool, placing]);
-  useEffect(() => {
     mapRef.current?.setSelected(selected);
   }, [selected]);
-  useEffect(() => {
-    if (focusId !== null) mapRef.current?.lookAt(focusId);
-  }, [focusId]);
   useEffect(() => {
     for (const event of events) {
       if (event.id <= shown.current) continue;
@@ -91,18 +74,11 @@ export function CityMapView({ input, tool, placing, selected, focusId, events, o
   }, [events]);
 
   return (
-    <div
-      ref={hostRef}
-      role="img"
-      aria-label={label}
-      data-testid="city-canvas"
-      data-canvas={failed ? 'off' : 'on'}
-      className="relative h-full w-full overflow-hidden"
-    >
+    <div ref={hostRef} role="img" aria-label={label} data-testid="city-canvas" data-canvas={failed ? 'off' : 'on'} className="relative h-full w-full overflow-hidden">
       {failed ? (
         <div className="grid h-full place-items-center bg-[#6fab49] p-6 text-center text-sm font-bold text-[#1d2a1a]">{fallback}</div>
       ) : (
-        <div className="absolute bottom-28 left-2 flex flex-col gap-1">
+        <div className="absolute bottom-24 left-2 flex flex-col gap-1">
           {(
             [
               ['+', zoomLabels.in, () => mapRef.current?.zoomBy(1.25)],

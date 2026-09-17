@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getChapter, getTrack } from '@/content/catalog';
-import { allMissions, type MissionEntry } from '@/engines/lesson/registry';
+import { allMissions, mainMissions, type MissionEntry } from '@/engines/lesson/registry';
 import { useT } from '@/i18n/useT';
 
 interface Props {
@@ -40,8 +40,10 @@ export function MissionPicker({ currentId, cleared, onPick }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const entries = allMissions();
-  const current = entries.find((m) => m.id === currentId);
+  // 既定は本編だけ。値だけ違う繰り返し（反復演習）は、頼まれたときだけ出す
+  const [withRepeats, setWithRepeats] = useState(false);
+  const entries = useMemo(() => (withRepeats ? allMissions() : mainMissions()), [withRepeats]);
+  const current = allMissions().find((m) => m.id === currentId);
 
   const hits = useMemo(() => entries.filter((m) => matches(m, query)), [entries, query]);
 
@@ -98,9 +100,19 @@ export function MissionPicker({ currentId, cleared, onPick }: Props) {
           </button>
         </div>
 
-        <p className="px-4 py-2 text-sm text-ink-soft">
-          {t('park.searchHits', { a: Math.min(hits.length, LIMIT), b: hits.length })}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-sm text-ink-soft">
+          <p>{t('park.searchHits', { a: Math.min(hits.length, LIMIT), b: hits.length })}</p>
+          <label className="flex items-center gap-1 font-bold">
+            <input
+              type="checkbox"
+              checked={withRepeats}
+              onChange={(e) => {
+                setWithRepeats(e.target.checked);
+              }}
+            />
+            {t('park.withRepeats')}
+          </label>
+        </div>
 
         <ul className="scroll min-h-0 flex-1 overflow-y-auto px-3 pb-3">
           {hits.slice(0, LIMIT).map((m) => (

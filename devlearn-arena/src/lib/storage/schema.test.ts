@@ -69,15 +69,9 @@ describe('save schema', () => {
     expect(parseSave(JSON.stringify(save)).ok).toBe(false);
   });
 
-  it('市長の街は、古い保存データでは空で補い、作った街は残る', () => {
-    const save = createEmptySave(1);
-    const raw = JSON.parse(JSON.stringify(save)) as Record<string, unknown>;
-    delete raw['cities'];
-    const r = parseSave(JSON.stringify(raw));
-    expect(r.ok && r.data.cities).toEqual({});
-    save.cities = { git: { tiles: 'r.', levels: '10', facilities: [{ id: 'git/01', x: 1, y: 2 }], money: 10, day: 3, earned: ['k'] } };
-    const s = parseSave(JSON.stringify(save));
-    expect(s.ok && s.data.cities).toEqual(save.cities);
+  it('前の版の街（自由建設の地図）が保存に残っていても、読み込める', () => {
+    const raw = { ...(JSON.parse(JSON.stringify(createEmptySave(1))) as Record<string, unknown>), cities: { git: { tiles: 'r.', money: 10 } } };
+    expect(parseSave(JSON.stringify(raw)).ok).toBe(true);
   });
 
   it('建てた街の施設は、古い保存データでは空で補い、建てたものは残る', () => {

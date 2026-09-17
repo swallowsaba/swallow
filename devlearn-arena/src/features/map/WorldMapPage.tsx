@@ -1,244 +1,154 @@
-import { Glossed } from '@/ui/Term';
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { countAll, getChapter, TRACKS } from '@/content/catalog';
-import { missionsOf, progressOf } from '@/engines/lesson/catalog';
-import { missingPrerequisites, recommendedNext } from '@/engines/lesson/registry';
+import { Link } from 'react-router-dom';
+import { countAll, TRACKS } from '@/content/catalog';
+import { CITIES, CITY_TRACKS, cityOf } from '@/content/city';
+import { nextComplaint, voicesOf } from '@/engines/city/civic';
+import { allMissions, mainMissions, recommendedNext } from '@/engines/lesson/registry';
 import type { MissionTrack } from '@/engines/lesson/types';
+import { civicFacilities } from '@/features/citymap/cityStore';
+import { TRACK_ACCENT } from '@/features/citymap/isoDraw';
 import { useT } from '@/i18n/useT';
 import { xpProgress } from '@/lib/xp';
 import { useStore } from '@/store';
-import { IslandBoard } from './IslandBoard';
-import { PanZoom } from './PanZoom';
-import { toStages } from './stages';
-import { Overworld, type IslandInfo } from './Overworld';
+import { RegionMap } from './RegionMap';
+import type { RegionCity } from './regionDraw';
 
-const PROLOGUE = 'prologue';
-
-const ACCENT: Record<string, string> = {
-  prologue: '#c0442f',
-  k8s: '#4d9bff',
-  net: '#22c3b3',
-  git: '#ff8a3d',
-  github: '#b98bff',
-};
-
+/**
+ * 全体図。5 つの街を、実際に建てた施設の建ち具合で地方の地図に描く。
+ * 街を押すと右の案内板にその街の様子（施設・苦情・評価・進み具合）が出て、「この街へ」で作業画面に入る。
+ */
 export default function WorldMapPage() {
   const t = useT();
-  const navigate = useNavigate();
   const lessons = useStore((s) => s.lessons);
+  const facilitiesBuilt = useStore((s) => s.facilitiesBuilt);
   const xp = useStore((s) => s.profile.xp);
   const lastMissionId = useStore((s) => s.lastMissionId);
-  const [island, setIsland] = useState<string | null>(null);
-  const [stageId, setStageId] = useState<string | null>(null);
 
-  const cleared = useMemo(
-    () =>
-      new Set(
-        Object.entries(lessons)
-          .filter(([, p]) => p.cleared)
-          .map(([id]) => id),
-      ),
-    [lessons],
-  );
-
+  const cleared = useMemo(() => new Set(Object.entries(lessons).filter(([, p]) => p.cleared).map(([id]) => id)), [lessons]);
+  const built = useMemo(() => new Set(facilitiesBuilt), [facilitiesBuilt]);
   const recommended = useMemo(() => recommendedNext(cleared), [cleared]);
   const rank = xpProgress(xp);
-  const prologue = progressOf(cleared, 'kernel');
 
-  const islands: IslandInfo[] = [
-    {
-      id: PROLOGUE,
-      title: t('map.prologue'),
-      subtitle: t('map.prologueLead'),
-      done: prologue.done,
-      total: prologue.total,
-      ratio: prologue.total === 0 ? 0 : prologue.done / prologue.total,
-      playable: true,
-      current: lastMissionId !== null,
-      color: ACCENT[PROLOGUE] ?? '#c0442f',
-    },
-    ...TRACKS.map((track) => {
-      const playable = progressOf(cleared, track.id);
-      const all = track.chapters.flatMap((c) => c.lessons);
-      const done = all.filter((l) => cleared.has(l.id)).length + playable.done;
-      const total = all.length;
-      return {
-        id: track.id,
-        title: track.title,
-        subtitle: track.goal,
-        done,
-        total,
-        ratio: total === 0 ? 0 : done / total,
-        playable: playable.total > 0,
-        current: false,
-        color: ACCENT[track.id] ?? '#4d9bff',
-      };
-    }),
-  ];
+  const summaries = useMemo(
+    () =>
+      CITY_TRACKS.map((track) => {
+        const missions = mainMissions().filter((m) => m.track === track);
+        const city = cityOf(CITIES[track], built, missions, cleared);
+        const voices = voicesOf(civicFacilities(city));
+        const done = missions.filter((m) => cleared.has(m.id)).length;
+        return {
+          track,
+          title: TRACKS.find((tr) => tr.id === track)?.title ?? CITIES[track].name,
+          goal: TRACKS.find((tr) => tr.id === track)?.goal ?? '',
+          city,
+          voices,
+          next: nextComplaint(civicFacilities(city)),
+          done,
+          total: missions.length,
+        };
+      }),
+    [built, cleared],
+  );
+  const regionCities = useMemo<RegionCity[]>(
+    () =>
+      summaries.map((s) => ({
+        track: s.track,
+        name: s.city.plan.name,
+        complaints: s.voices.filter((v) => v.kind === 'complaint').length,
+        progress: s.total === 0 ? 0 : s.done / s.total,
+        facilities: s.city.facilities.map((f) => {
+          const learned = f.state !== 'locked' && f.state !== 'available';
+          return { kind: f.facility.building, built: learned, ratio: f.ratio, build: learned ? Math.min(1, f.missionsCleared) : 0 };
+        }),
+      })),
+    [summaries],
+  );
 
-  const selected = islands.find((i) => i.id === island);
-  const track = TRACKS.find((tr) => tr.id === island);
-  const stage = stageId === null ? undefined : getChapter(stageId);
+  const lastTrack = lastMissionId === null ? undefined : allMissions().find((m) => m.id === lastMissionId)?.track;
+  const [selected, setSelected] = useState<MissionTrack>(lastTrack ?? 'kernel');
+  const current = summaries.find((s) => s.track === selected) ?? summaries[0];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="sign inline-block px-6 py-2 text-3xl font-extrabold">{t('map.title')}</h1>
         <p className="font-mono text-base text-ink-soft">
-          {t('map.rankLine', {
-            rank: rank.rank,
-            level: rank.level,
-            a: cleared.size,
-            b: countAll().lessons,
-          })}
+          {t('map.rankLine', { rank: rank.rank, level: rank.level, a: cleared.size, b: countAll().lessons })}
         </p>
       </div>
+      {recommended ? (
+        <Link to={`/?mission=${encodeURIComponent(recommended.id)}`} className="sign flex w-fit flex-wrap items-center gap-3 px-5 py-2 text-base font-extrabold">
+          <span aria-hidden>▶</span>
+          {t(cleared.size === 0 ? 'map.startHere' : 'map.continueHere', { title: recommended.title })}
+        </Link>
+      ) : null}
 
-      {island === null ? (
-        <>
-          {/* 最初に開いた人が迷わないよう、推奨順で次の1本を大きく出す */}
-          {recommended ? (
-            <Link
-              to={`/?mission=${encodeURIComponent(recommended.id)}`}
-              className="sign flex w-fit flex-wrap items-center gap-3 px-5 py-3 text-lg font-extrabold"
-            >
-              <span aria-hidden>▶</span>
-              {t(cleared.size === 0 ? 'map.startHere' : 'map.continueHere', { title: recommended.title })}
+      <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
+        <div className="bevel h-[34rem] overflow-hidden p-1">
+          <RegionMap
+            cities={regionCities}
+            selected={selected}
+            onSelect={setSelected}
+            label={t('map.regionLabel')}
+          />
+        </div>
+
+        {current ? (
+          <aside data-testid="city-guide" data-track={current.track} className="flex flex-col gap-3 border-4 border-wood-dark bg-cream p-4">
+            <p className="w-fit rounded px-2 py-0.5 text-xs font-extrabold text-white" style={{ background: TRACK_ACCENT[current.track] }}>
+              {t('map.guideLabel')}
+            </p>
+            <h2 className="text-2xl font-extrabold">🏙 {current.city.plan.name}</h2>
+            <p className="border-l-4 border-[var(--gold-dark)] bg-white px-3 py-2 text-sm">{current.goal}</p>
+            <div className="h-2 bg-[var(--cream-dark)]">
+              <div className="h-full" style={{ width: `${String(current.total === 0 ? 0 : (current.done / current.total) * 100)}%`, background: TRACK_ACCENT[current.track] }} />
+            </div>
+            <ul className="grid grid-cols-2 gap-2 text-sm">
+              <li className="bg-white px-2 py-1">🏛 {t('map.guideFacilities', { a: current.city.built, b: current.city.facilities.length })}</li>
+              <li className="bg-white px-2 py-1">📜 {t('map.guideMissions', { a: current.done, b: current.total })}</li>
+              <li className="bg-white px-2 py-1">😠 {t('map.guideComplaints', { n: current.voices.filter((v) => v.kind === 'complaint').length })}</li>
+              <li className="bg-white px-2 py-1">😊 {t('map.guidePraise', { n: current.voices.filter((v) => v.kind === 'praise').length })}</li>
+            </ul>
+            {current.voices.filter((v) => v.kind === 'complaint').slice(0, 2).map((v) => {
+              const f = current.city.facilities.find((x) => x.facility.id === v.facilityId);
+              return f ? (
+                <p key={v.facilityId} className="rounded border-2 border-[var(--bad)] bg-[#fbe3de] px-2 py-1 text-xs leading-relaxed">
+                  <b>{f.facility.trouble.who}</b>「{f.facility.trouble.text}」
+                </p>
+              ) : null;
+            })}
+            {current.next ? <p className="text-xs text-ink-soft">{t('board.nextSolve', { n: current.next.remaining })}</p> : null}
+            <Link to={`/world/${current.track}`} data-testid="guide-enter" className="sign px-4 py-2 text-center text-base font-extrabold">
+              {t('map.enterCity', { name: current.city.plan.name })}
             </Link>
-          ) : null}
-          <p className="text-base text-ink-soft">{t('map.pickIsland')}</p>
-          <div className="bevel overflow-hidden p-2">
-            <PanZoom>
-              <Overworld
-                islands={islands}
-                onSelect={(id) => {
-                  // 世界を選んだら、そのカテゴリの作業画面（説明・コマンド・街）へ
-                  navigate(`/world/${id === PROLOGUE ? 'kernel' : id}`);
-                }}
-              />
-            </PanZoom>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="flex flex-wrap items-center gap-4">
-            <button
-              type="button"
-              onClick={() => {
-                setIsland(null);
-                setStageId(null);
-              }}
-              className="knob px-4 py-2 text-base font-bold"
-            >
-              {t('map.backToSea')}
-            </button>
-            <span className="text-xl font-extrabold">{selected?.title}</span>
-            <Link
-              to={`/world/${island === PROLOGUE ? 'kernel' : island}`}
-              className="sign px-4 py-2 text-base font-extrabold"
-            >
-              {t('map.goCity')}
-            </Link>
-            <span className="text-base text-ink-soft">{selected?.subtitle}</span>
-          </div>
 
-          {(() => {
-            const trackId = (island === PROLOGUE ? 'kernel' : island) as MissionTrack;
-            const playable = missionsOf(trackId);
-            if (playable.length === 0) return null;
-            return (
-              <div className="bevel p-5">
-                <p className="text-lg font-extrabold">{t('map.playableNow')}</p>
-                <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {playable.map((m) => {
-                    const done = cleared.has(m.id);
-                    // 遊べなくはしない。先にやるとよいものを添えるだけ
-                    const before = done ? undefined : missingPrerequisites(m.id, cleared)[0];
-                    return (
-                      <li key={m.id}>
-                        <Link
-                          to={`/?mission=${encodeURIComponent(m.id)}`}
-                          className="flex items-center gap-4 border-4 border-wood-dark bg-[var(--cream-dark)] px-4 py-4 hover:bg-white"
-                        >
-                          <span
-                            aria-hidden
-                            className={`grid h-12 w-12 shrink-0 place-items-center border-4 border-wood-dark text-2xl ${
-                              done ? 'bg-[var(--ok)]' : 'bg-gold'
-                            }`}
-                          >
-                            {m.kind === 'boss' ? '★' : '▶'}
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block truncate text-lg font-extrabold">{m.title}</span>
-                            <span className="block text-sm text-ink-soft">
-                              {done ? t('map.missionDone') : t('map.missionOpen')} ·{' '}
-                              {t('map.missionSteps', { n: m.steps.length })}
-                            </span>
-                            {before ? (
-                              <span className="block text-xs text-ink-soft">
-                                {t('prereq.first', { title: before.title })}
-                              </span>
-                            ) : null}
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })()}
-
-          {track ? (
-            <>
-              <div className="bevel overflow-hidden p-2">
-                <PanZoom>
-                  <IslandBoard
-                    title={track.title}
-                    stages={toStages(track.chapters, cleared)}
-                    selectedId={stageId}
-                    onPick={setStageId}
-                  />
-                </PanZoom>
-              </div>
-
-              {stage ? (
-                <div className="bevel p-5">
-                  <div className="flex flex-wrap items-baseline justify-between gap-3">
-                    <h2 className="text-xl font-extrabold">
-                      {String(stage.no).padStart(2, '0')} {stage.title}
-                    </h2>
-                    <Link
-                      to={`/track/${track.id}#${stage.id.replace('/', '-')}`}
-                      className="knob px-4 py-2 text-sm font-bold"
-                    >
-                      {t('map.details')}
-                    </Link>
-                  </div>
-                  <p className="mt-2 text-base text-ink-soft">
-                    <Glossed text={stage.summary} />
-                  </p>
-                  <ul className="mt-3 flex flex-wrap gap-2">
-                    {stage.lessons.map((l) => (
-                      <li
-                        key={l.id}
-                        className="border-2 border-[var(--cream-dark)] bg-white/70 px-3 py-1 text-sm"
-                      >
-                        {l.kind === 'boss' ? '★ ' : ''}
-                        {l.title}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-3 text-sm text-ink-soft">
-                    {t('map.chapterPlanned', { phase: track.phase })}
-                  </p>
-                </div>
-              ) : null}
-            </>
-          ) : null}
-        </>
-      )}
+            <p className="mt-2 text-xs font-extrabold text-ink-soft">{t('map.allCities')}</p>
+            <ul className="flex flex-col gap-1">
+              {summaries.map((s) => (
+                <li key={s.track} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-pressed={s.track === selected}
+                    onClick={() => {
+                      setSelected(s.track);
+                    }}
+                    className={`h-7 w-7 shrink-0 rounded-full border-2 text-xs font-extrabold ${s.track === selected ? 'border-[var(--gold-dark)] bg-gold' : 'border-wood-dark bg-white'}`}
+                    aria-label={s.city.plan.name}
+                  >
+                    {s.voices.some((v) => v.kind === 'complaint') ? '!' : '・'}
+                  </button>
+                  <Link to={`/world/${s.track}`} className="flex min-w-0 flex-1 items-center justify-between gap-2 border-2 border-wood-dark bg-white px-2 py-1 text-sm hover:bg-[var(--gold)]/30">
+                    <span className="truncate font-bold">
+                      {s.title} {s.done}/{s.total}
+                    </span>
+                    <span className="shrink-0 text-xs text-ink-soft">{s.city.plan.name}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        ) : null}
+      </div>
     </div>
   );
 }

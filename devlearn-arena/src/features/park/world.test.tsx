@@ -1,11 +1,11 @@
 import { act } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { CITIES, cityOf } from '@/content/city';
-import { createCity, REWARD, START_MONEY } from '@/engines/city/sim';
+import { createSession } from '@/engines/kernel/session';
 import { allMissions } from '@/engines/lesson/registry';
 import { CityPane } from '@/features/citymap/CityPane';
-import { complaintDay } from '@/engines/city/civic';
+import { houseLevels } from '@/features/citymap/isoScene';
 import { missionById } from '@/engines/lesson/registry';
 import { useStore } from '@/store';
 import { focusView } from '@/visual/viewportMath';
@@ -22,7 +22,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   act(() => {
-    useStore.setState({ facilitiesBuilt: [], introsRead: [], lessons: {}, missionProgress: {}, missionState: {}, lastMissionId: null, cities: {} });
+    useStore.setState({ facilitiesBuilt: [], introsRead: [], lessons: {}, missionProgress: {}, missionState: {}, lastMissionId: null, growth: {} });
   });
 });
 
@@ -59,48 +59,33 @@ describe('カテゴリの作業画面', () => {
     expect(view.querySelector('[data-testid="terminal-lock"]')).not.toBeNull();
     expect(view.querySelector('.xterm')).toBeNull();
     expect(view.querySelector('[data-testid="world-title"]')?.textContent).toContain(CITIES.git.name);
-    // 右は市長が作る街
     expect(view.querySelector('[data-testid="city-pane"]')).not.toBeNull();
   });
 
-  it('就任のあとは、まず街づくり。苦情が届くまで要望の話は始まらない', () => {
+  it('就任のあとは市政ボード。最初の施設の苦情だけが届き、次の声はまだ届かない', () => {
     const view = openWorld('/world/git');
     click(view, '[data-testid="welcome-start"]');
     expect(stage(view)).toBe('city');
-    expect(view.querySelector('[data-testid="city-board"]')).not.toBeNull();
-    expect(view.querySelector('[data-voice="complaint"]')).toBeNull();
-    expect(view.querySelector('[data-testid="next-voice"]')).not.toBeNull();
+    expect([...view.querySelectorAll('[data-voice="complaint"]')].map((v) => v.getAttribute('data-facility'))).toEqual(['git/01']);
     expect(view.querySelector('[data-testid="briefing"]')).toBeNull();
-    expect(view.querySelector('[data-testid="terminal-lock"]')).not.toBeNull();
   });
 
-  it('苦情に対応 → 施設を学んで建てる（地図に工事現場ができる）→ 依頼を聞く の順に進む', () => {
-    act(() => {
-      useStore.setState({ cities: { git: { ...createCity(), day: complaintDay(0) } } });
-    });
+  it('苦情に対応 → 施設を学んで建てる → 依頼を聞く の順に進み、街づくりに戻ると対応待ちになる', () => {
     const view = openWorld('/world/git');
-    expect(stage(view)).toBe('city');
-    expect(view.querySelector('[data-voice="complaint"]')?.getAttribute('data-facility')).toBe('git/01');
+    click(view, '[data-testid="welcome-start"]');
     click(view, '[data-handle="git/01"]');
     expect(stage(view)).toBe('facility');
-    expect(view.querySelector('[data-testid="terminal-lock"]')?.textContent).toContain(CITIES.git.facilities[0]?.name ?? '');
     passFacilityLesson(view);
     expect(useStore.getState().facilitiesBuilt).toContain('git/01');
-    // 建った！を見せてから依頼へ
-    expect(stage(view)).toBe('facility');
+    expect(view.querySelector('[data-city-event]')).not.toBeNull();
     click(view, '[data-testid="facility-continue"]');
     expect(stage(view)).toBe('briefing');
-    expect(view.querySelector('[data-testid="briefing"]')).not.toBeNull();
-    expect(view.querySelector('[data-testid="terminal-lock"]')).not.toBeNull();
-    // 建設を決めると予算が入り、地図に仮置きされ、出来事が出る
-    const saved = useStore.getState().cities['git'];
-    expect(saved?.money ?? 0).toBeGreaterThanOrEqual(START_MONEY + REWARD.learn + REWARD.quizRetry - 400);
-    expect(saved?.facilities.map((f) => f.id)).toContain('git/01');
-    expect(view.querySelector('[data-city-event]')).not.toBeNull();
-    // 街づくりに戻れる
     click(view, '[data-testid="back-to-city"]');
     expect(stage(view)).toBe('city');
-    expect(view.querySelector('[data-voice="waiting"]')).not.toBeNull();
+    expect(view.querySelector('[data-voice="waiting"]')?.getAttribute('data-facility')).toBe('git/01');
+    // 任務を切り替えても、就任のあいさつは出し直さない
+    click(view, '[data-handle="git/01"]');
+    expect(stage(view)).not.toBe('welcome');
   });
 
   it('はじめて聞く依頼は飛ばせない（背景を聞かずにコマンドへ行かない）', () => {
@@ -122,14 +107,23 @@ describe('カテゴリの作業画面', () => {
     expect(view.querySelector('[data-testid="facility-lesson"]')?.textContent).toContain(CITIES.git.facilities[3]?.name ?? '');
   });
 
-  it('街の施設の一覧から「要望に対応」を押すと、その施設の任務に移る', () => {
+  it('やり直すは選べる。街ごとやり直すと、施設と任務の進みが消えて就任からになる', () => {
     act(() => {
-      useStore.setState({ facilitiesBuilt: ['git/01', 'git/02'], cities: { git: { ...createCity(), facilities: [{ id: 'git/02', x: 2, y: 16 }] } } });
+      useStore.setState({
+        facilitiesBuilt: ['git/01', 'k8s/01'],
+        lessons: { 'git/01/objects': { cleared: true, attempts: 1, hintsUsed: 0, bestScore: 100, clearedAt: 1 } },
+      });
     });
     const view = openWorld('/world/git?mission=git%2F01%2Fobjects');
-    click(view, 'button[data-tool="facility"]');
-    click(view, '[data-city-facility="git/02"] button:last-child');
-    expect(missionById(useStore.getState().lastMissionId ?? '')?.chapterId).toBe('git/02');
+    click(view, '[data-testid="retry-open"]');
+    expect(view.querySelector('[data-testid="retry-mission"]')).not.toBeNull();
+    click(view, '[data-testid="retry-city"]');
+    click(view, '[data-testid="retry-city-confirm"]');
+    const state = useStore.getState();
+    expect(state.facilitiesBuilt).toEqual(['k8s/01']);
+    expect(state.lessons['git/01/objects']).toBeUndefined();
+    expect(state.introsRead).toEqual([]);
+    expect(stage(view)).toBe('welcome');
   });
 });
 
@@ -153,72 +147,47 @@ describe('入口', () => {
   });
 });
 
-describe('市長が作る街', () => {
-  const gitCity = (built: string[]) =>
-    cityOf(CITIES.git, new Set(built), allMissions().filter((m) => m.track === 'git'), new Set());
+describe('カテゴリごとの街', () => {
+  const gitCity = (built: string[]) => cityOf(CITIES.git, new Set(built), allMissions().filter((m) => m.track === 'git'), new Set());
 
-  it('予算・人口・日付・需要と道具が並び、地図を描けない環境では案内を出す', () => {
-    act(() => {
-      useStore.setState({ cities: { git: { ...createCity(), day: complaintDay(0) } } });
-    });
-    const view = mount(<CityPane track="git" city={gitCity([])} placeRequest={null} onStudy={() => undefined} initialSpeed={0} />);
-    expect(view.querySelector('[data-testid="city-money"]')?.getAttribute('data-value')).toBe(String(START_MONEY));
-    expect(view.querySelector('[data-testid="city-population"]')?.getAttribute('data-value')).toBe('0');
-    expect(view.querySelector('[data-testid="city-demand"]')).not.toBeNull();
-    expect(view.querySelectorAll('[role="toolbar"] button')).toHaveLength(8);
+  it('学びの数字と現場の見立ての数字、この街のしくみ（凡例）が並び、地図を描けない環境では案内を出す', () => {
+    const state = createSession({ files: { '/home/learner': null } }).state;
+    const view = mount(<CityPane track="git" city={gitCity([])} state={state} currentFacilityId={null} onStudy={() => undefined} />);
+    expect(view.querySelector('[data-testid="city-stats"]')?.textContent).toContain('🏠');
     expect(view.querySelector('[data-testid="city-canvas"]')?.getAttribute('data-canvas')).toBe('off');
-    // はじめは道路を求め、苦情が届いた施設の困りごとを伝える
-    expect(view.querySelector('[data-advice="noRoad"]')).not.toBeNull();
-    expect(view.querySelector('[data-advice="trouble"]')?.textContent).toContain(CITIES.git.facilities[0]?.trouble.text.slice(0, 10) ?? '');
+    expect(view.querySelector('[data-testid="city-legend"]')?.textContent).toContain('git add');
+    // リポジトリが無ければ、git init を案内する
+    expect(view.querySelector('[data-testid="city-empty"]')?.textContent).toContain('git init');
   });
 
-  it('道具を選ぶと、その使い方が出る', () => {
-    const view = mount(<CityPane track="git" city={gitCity([])} placeRequest={null} onStudy={() => undefined} initialSpeed={0} />);
-    click(view, 'button[data-tool="road"]');
-    expect(view.querySelector('[data-testid="city-pane"]')?.getAttribute('data-tool')).toBe('road');
-    expect(view.querySelector('[data-testid="city-tool-hint"]')?.textContent).toContain('¥10');
+  it('Kubernetes の街の凡例は、ビル＝ノード・部屋＝Pod・監査局', () => {
+    const state = createSession({ files: { '/home/learner': null } }).state;
+    const view = mount(<CityPane track="k8s" city={cityOf(CITIES.k8s, new Set(), [], new Set())} state={state} currentFacilityId={null} onStudy={() => undefined} />);
+    const legend = view.querySelector('[data-testid="city-legend"]')?.textContent ?? '';
+    expect(legend).toContain('ノード');
+    expect(legend).toContain('Pod');
+    expect(legend).toContain('監査');
   });
 
-  it('施設の一覧は、未学習なら学ぶへ、建設を決めたら配置へ案内する', () => {
-    const onStudy = vi.fn();
-    const view = mount(<CityPane track="git" city={gitCity(['git/01'])} placeRequest={null} onStudy={onStudy} initialSpeed={0} />);
-    click(view, 'button[data-tool="facility"]');
-    expect(view.querySelector('[data-city-facility="git/01"] [data-place]')).not.toBeNull();
-    const next = CITIES.git.facilities.find((f) => f.id !== 'git/01' && f.needs.every((n) => n === 'git/01'))?.id ?? '';
-    click(view, `[data-city-facility="${next}"] button`);
-    expect(onStudy).toHaveBeenCalledWith(next);
-  });
-
-  it('建設を決めたばかりの施設（仮置き済み）を詳しく見せ、移設もできる', () => {
+  it('理解度に正解すると家が増え、コマンドの手順を通すと家が高くなる', () => {
     act(() => {
-      useStore.setState({ cities: { git: { ...createCity(), facilities: [{ id: 'git/01', x: 2, y: 16 }] } } });
+      useStore.setState({ growth: { git: { houses: 3, floors: 5 } } });
     });
-    const view = mount(<CityPane track="git" city={gitCity(['git/01'])} placeRequest="git/01" onStudy={() => undefined} initialSpeed={0} />);
-    expect(view.querySelector('[data-testid="city-inspector"]')?.textContent).toContain(CITIES.git.facilities[0]?.name ?? '');
-    click(view, 'button[data-tool="facility"]');
-    click(view, '[data-move="git/01"]');
-    expect(view.querySelector('[data-testid="city-tool-hint"]')?.textContent).toContain(CITIES.git.facilities[0]?.name ?? '');
+    const state = createSession({ files: { '/home/learner': null } }).state;
+    const view = mount(<CityPane track="git" city={gitCity([])} state={state} currentFacilityId={null} onStudy={() => undefined} />);
+    expect(view.querySelector('[data-testid="city-houses"]')?.getAttribute('data-value')).toBe('3');
+    expect(view.querySelector('[data-testid="city-floors"]')?.getAttribute('data-value')).toBe('5');
+    // 家 3 軒に 5 階ぶんを配ると、2 階建てが 2 軒と 1 階建てが 1 軒になる
+    expect(houseLevels({ houses: 3, floors: 5 })).toEqual([3, 3, 2]);
+    expect(houseLevels({ houses: 0, floors: 4 })).toEqual([]);
   });
 
-  it('出来事は住民の声の欄にも出る', () => {
+  it('出来事は地図の上の欄にも出る', () => {
+    const state = createSession({ files: { '/home/learner': null } }).state;
     const view = mount(
-      <CityPane track="git" city={gitCity([])} placeRequest={null} onStudy={() => undefined} initialSpeed={0} events={[{ id: 1, facilityId: null, text: '⌨ 対応が進んだ', color: '#000' }]} />,
+      <CityPane track="git" city={gitCity([])} state={state} currentFacilityId={null} onStudy={() => undefined} events={[{ id: 1, facilityId: null, text: '⌨ コマンドで現場が変わった', color: '#000' }]} />,
     );
-    expect(view.querySelector('[data-city-event]')?.textContent).toContain('対応が進んだ');
-  });
-
-  it('時間を進めると日付が進む', () => {
-    vi.useFakeTimers();
-    try {
-      const view = mount(<CityPane track="git" city={gitCity([])} placeRequest={null} onStudy={() => undefined} initialSpeed={0} />);
-      click(view, '[data-speed="3"]');
-      act(() => {
-        vi.advanceTimersByTime(1000);
-      });
-      expect(Number(useStore.getState().cities['git']?.day)).toBeGreaterThan(0);
-    } finally {
-      vi.useRealTimers();
-    }
+    expect(view.querySelector('[data-city-event]')?.textContent).toContain('現場が変わった');
   });
 
   it('寄せる表示は、指定した点を枠の真ん中に置き、枠いっぱいに映す', () => {
