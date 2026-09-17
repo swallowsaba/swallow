@@ -3,15 +3,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   briefingQuiz, briefingScript, QUEST_GIVER, quizPool, tryouts, type BriefingLine, type QuizQuestion, type Tryout,
 } from '@/engines/lesson/briefing';
-import type { LessonDefinition } from '@/engines/lesson/types';
+import { createSession } from '@/engines/kernel/session';
+import type { ShellState } from '@/engines/kernel/registry';
+import type { LessonDefinition, MissionTrack } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from '@/ui/motion';
 import { Glossed } from '@/ui/Term';
 import { CityPortrait } from '@/visual/game/cityArt';
-import { StateDiagram } from '@/features/city/LessonVisuals';
 import { FooterBar } from '@/ui/FooterBar';
 import { FOOTER_SLOT_CLASS, useFooterSlot } from '@/ui/footerSlot';
+import { AnswerStamp, Streak } from '@/ui/AnswerStamp';
+import { FitBox } from '@/ui/FitBox';
+import { useSfx } from '@/lib/useSfx';
 import { PrerequisiteNote } from './PrerequisiteNote';
+import { TalkStage, ToolRun } from './TalkStage';
 
 interface Props {
   mission: LessonDefinition;
@@ -42,10 +47,13 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
   const script = useMemo(() => briefingScript(mission.title, mission.intro, mission.steps), [mission]);
   const quiz = useMemo(() => briefingQuiz(mission.id, mission.intro, quizPool(mission.track)), [mission]);
   const tries = useMemo(() => tryouts(mission.intro, mission.initial), [mission]);
+  // 「コマンドを打つ前の現場」。要望や理由を聞いている間、動く絵として出す
+  const initialState = useMemo(() => createSession(mission.initial).state, [mission]);
 
   const [phase, setPhase] = useState<Phase>('talk');
   const [line, setLine] = useState(0);
   const [bag, setBag] = useState<string[]>([]);
+  const [learned, setLearned] = useState(0);
   const footer = useFooterSlot();
 
   const reviewLine = useCallback(
@@ -58,9 +66,9 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
   );
 
   return (
-    <section aria-labelledby="briefing-title" data-testid="briefing" className="flex min-h-full flex-col">
-      <div className="flex flex-1 flex-col">
-        <header className="flex flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-4 py-2">
+    <section aria-labelledby="briefing-title" data-testid="briefing" className="flex h-full min-h-0 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <header className="flex shrink-0 flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-4 py-2">
           <span className="sign px-3 py-1 text-sm font-extrabold">📜 {t('brief.label')}</span>
           <h2 id="briefing-title" className="min-w-0 flex-1 truncate text-lg font-extrabold text-cream">
             {mission.title}
@@ -72,7 +80,7 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
           ) : null}
         </header>
 
-        <nav aria-label={t('brief.phases')} className="flex flex-wrap gap-1 border-b-2 border-[var(--cream-dark)] bg-[var(--cream-dark)] px-3 py-2">
+        <nav aria-label={t('brief.phases')} className="flex shrink-0 flex-wrap gap-1 border-b-2 border-[var(--cream-dark)] bg-[var(--cream-dark)] px-3 py-2">
           {PHASES.map((p, i) => (
             <button
               key={p}
@@ -95,6 +103,9 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
           </div>
         ) : null}
 
+        <Gauge phase={phase} line={line} lines={script.length} learned={learned} tools={bag.length} />
+
+        <FitBox className="flex-1" testId="brief-fit">
         <div className="grid gap-3 p-3 sm:grid-cols-[auto_1fr]">
           <div className="flex flex-row items-end gap-3 sm:flex-col sm:items-center">
             <CityPortrait track={mission.track} talking={phase === 'talk'} animate={animate} size={4} />
@@ -109,6 +120,9 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
                 line={line}
                 onLine={setLine}
                 animate={animate}
+                track={mission.track}
+                initial={initialState}
+                tries={tries}
                 onDone={() => {
                   setPhase(quiz.length > 0 ? 'quiz' : 'try');
                 }}
@@ -122,7 +136,10 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
                 questions={quiz}
                 bag={bag}
                 animate={animate}
-                onAnswer={onAnswer}
+                onAnswer={(q, first) => {
+                  setLearned((n) => n + 1);
+                  onAnswer?.(q, first);
+                }}
                 onReward={(tool) => {
                   setBag((list) => (list.includes(tool) ? list : [...list, tool]));
                 }}
@@ -156,9 +173,40 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
             )}
           </div>
         </div>
-        <div ref={footer.ref} className={FOOTER_SLOT_CLASS} />
+        </FitBox>
+        <div ref={footer.ref} className={`shrink-0 ${FOOTER_SLOT_CLASS}`} />
       </div>
     </section>
+  );
+}
+
+/* ---------------- 進み具合の帯 ---------------- */
+
+/**
+ * いまどこまで聞いたか・覚えたか。
+ * 「あと少しで終わる」が見えると、説明を最後まで聞ける。
+ */
+function Gauge({ phase, line, lines, learned, tools }: { phase: Phase; line: number; lines: number; learned: number; tools: number }) {
+  const t = useT();
+  const done = phase === 'talk' ? line : lines;
+  return (
+    <div data-testid="brief-gauge" className="flex shrink-0 items-center gap-2 border-b-2 border-[var(--cream-dark)] bg-[var(--cream)] px-3 py-1.5">
+      <span className="shrink-0 text-[11px] font-extrabold text-ink-soft">{t('brief.gauge')}</span>
+      <div className="flex min-w-0 flex-1 gap-0.5" aria-hidden>
+        {Array.from({ length: lines }, (_, i) => (
+          <motion.span
+            key={i}
+            className="h-2.5 flex-1 border border-[var(--wood-dark)]"
+            initial={false}
+            animate={{ backgroundColor: i < done ? 'var(--gold-dark)' : i === done ? 'var(--gold)' : 'transparent' }}
+            transition={{ duration: 0.25 }}
+          />
+        ))}
+      </div>
+      <span data-testid="brief-learned" className="shrink-0 font-mono text-[11px] font-extrabold text-ink-soft">
+        {t('brief.tally', { a: learned, b: tools })}
+      </span>
+    </div>
   );
 }
 
@@ -172,16 +220,20 @@ const LINE_LABEL: Record<BriefingLine['kind'], 'brief.request' | 'brief.why' | '
   plan: 'brief.plan',
 };
 
-function Talk({ slot, script, line, onLine, onDone, animate }: {
+function Talk({ slot, script, line, onLine, onDone, animate, track, initial, tries }: {
   slot: HTMLElement | null;
   script: readonly BriefingLine[];
   line: number;
   onLine: (n: number) => void;
   onDone: () => void;
   animate: boolean;
+  track: MissionTrack;
+  initial: ShellState;
+  tries: readonly Tryout[];
 }) {
   const t = useT();
   const nextRef = useRef<HTMLButtonElement>(null);
+  const [replay, setReplay] = useState(0);
   const current = script[line];
   const last = line >= script.length - 1;
 
@@ -245,6 +297,18 @@ function Talk({ slot, script, line, onLine, onDone, animate }: {
         </AnimatePresence>
       </div>
 
+      <TalkStage
+        line={current}
+        track={track}
+        initial={initial}
+        tries={tries}
+        animate={animate}
+        replay={replay}
+        onReplay={() => {
+          setReplay((n) => n + 1);
+        }}
+      />
+
       <FooterBar
         slot={slot}
         left={
@@ -300,9 +364,11 @@ function Quiz({ slot, onBack, questions, bag, onReward, onReview, onDone, animat
   animate: boolean;
 }) {
   const t = useT();
+  const sound = useSfx();
   const [index, setIndex] = useState(0);
   const [wrong, setWrong] = useState<ReadonlySet<number>>(new Set());
   const [solved, setSolved] = useState(false);
+  const [streak, setStreak] = useState(0);
   const question = questions[index];
 
   if (question === undefined) {
@@ -321,16 +387,23 @@ function Quiz({ slot, onBack, questions, bag, onReward, onReview, onDone, animat
     if (solved) return;
     if (i === question.answer) {
       setSolved(true);
+      if (wrong.size === 0) setStreak((n) => n + 1);
+      sound.step();
       onAnswer?.(index, wrong.size === 0);
       if (question.reward !== null) onReward(question.reward);
     } else {
+      setStreak(0);
+      sound.error();
       setWrong((set) => new Set([...set, i]));
     }
   };
 
   return (
-    <div className="flex flex-col gap-3" data-testid="quiz">
-      <p className="font-mono text-xs text-ink-soft">{t('brief.quizTitle', { a: index + 1, b: questions.length })}</p>
+    <div className="relative flex flex-col gap-3" data-testid="quiz">
+      <div className="flex items-center gap-2">
+        <p className="font-mono text-xs text-ink-soft">{t('brief.quizTitle', { a: index + 1, b: questions.length })}</p>
+        <Streak count={streak} animate={animate} />
+      </div>
       <p className="text-xl font-extrabold leading-snug">
         {question.kind === 'concept'
           ? t('brief.quizConcept', { term: question.subject })
@@ -373,8 +446,9 @@ function Quiz({ slot, onBack, questions, bag, onReward, onReview, onDone, animat
           <motion.p
             initial={animate ? { scale: 0.8, opacity: 0 } : false}
             animate={{ scale: 1, opacity: 1 }}
-            className="border-l-4 border-[var(--ok)] bg-[#cfe8c0] px-3 py-2 font-extrabold"
+            className="flex flex-wrap items-center gap-2 border-l-4 border-[var(--ok)] bg-[#cfe8c0] px-3 py-2 font-extrabold"
           >
+            <AnswerStamp animate={animate} />
             {t('brief.correct')}{' '}
             {question.reward !== null
               ? `🎒 ${t('brief.gotTool', { command: question.reward })}`
@@ -457,55 +531,68 @@ function TryTools({ slot, track, onBack, tries, fieldTools, onDone }: {
   onDone: () => void;
 }) {
   const t = useT();
-  const [shown, setShown] = useState<ReadonlySet<number>>(new Set());
+  const animate = useMotionEnabled();
+  // 一度に 1 つだけ動かす。全部を並べると読むのに画面を送ることになる
+  const [pick, setPick] = useState(0);
+  const [replay, setReplay] = useState(0);
+  const [tried, setTried] = useState<ReadonlySet<number>>(new Set([0]));
+  const current = tries[pick];
+
   return (
     <div className="flex flex-col gap-3" data-testid="try">
-      <p className="text-base">{tries.length > 0 ? t('brief.tryLead') : t('brief.tryNone')}</p>
-      <ul className="flex flex-col gap-2">
-        {tries.map((tr, i) => (
-          <li key={tr.command} className="border-4 border-wood-dark bg-white">
-            <div className="flex flex-wrap items-center gap-2 px-3 py-2">
-              <code className="bg-[var(--wood-dark)] px-2 py-1 font-mono text-sm text-cream">{tr.command}</code>
-              <span className="min-w-0 flex-1 text-sm">
-                <Glossed text={tr.means} />
-              </span>
+      <p className="text-sm">{tries.length > 0 ? t('brief.tryLead') : t('brief.tryNone')}</p>
+
+      {tries.length > 0 ? (
+        <ul className="flex flex-wrap items-center gap-2" aria-label={t('brief.bag')}>
+          {tries.map((tr, i) => (
+            <li key={tr.command}>
               <button
                 type="button"
                 data-try={i}
+                aria-pressed={i === pick}
                 onClick={() => {
-                  setShown((set) => new Set([...set, i]));
+                  setPick(i);
+                  setReplay((n) => n + 1);
+                  setTried((set) => new Set([...set, i]));
                 }}
-                className="knob px-3 py-1 text-sm"
+                className={`border-4 px-3 py-1.5 font-mono text-sm ${
+                  i === pick ? 'border-[var(--gold-dark)] bg-gold text-ink' : 'border-wood-dark bg-white hover:bg-[var(--gold)]/30'
+                }`}
               >
-                {shown.has(i) ? t('brief.tryAgain') : t('brief.tryRun')}
-              </button>
-            </div>
-            {shown.has(i) ? (
-              <pre data-testid="try-output" className="max-h-48 overflow-auto bg-[#0a0d12] px-3 py-2 font-mono text-xs leading-relaxed text-[#e6edf3]">
-                <span className="text-[#9fd67a]">learner@practice:~$ </span>
+                {tried.has(i) ? '✓ ' : ''}
                 {tr.command}
-                {'\n'}
-                {tr.output.length > 0 ? tr.output.join('\n') : tr.ok ? t('brief.tryNoOutput') : ''}
-                {tr.ok ? '' : `\n# ${t('brief.tryFailed')}`}
-              </pre>
-            ) : null}
-            {shown.has(i) && tr.ok ? (
-              <div className="border-t-2 border-wood-dark p-2" data-testid="try-diagram">
-                <p className="mb-1 text-xs font-bold">🔍 {t('visual.tryDiagram')}</p>
-                <StateDiagram track={track} state={tr.after} previous={tr.before} height="h-56" />
-              </div>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {current ? (
+        <>
+          <p className="text-sm">
+            <Glossed text={current.means} />
+          </p>
+          <ToolRun
+            key={`${current.command}:${String(replay)}`}
+            tryout={current}
+            track={track}
+            animate={animate}
+            label={t('brief.tryStage', { command: current.command })}
+            onReplay={() => {
+              setReplay((n) => n + 1);
+            }}
+          />
+        </>
+      ) : null}
+
       {fieldTools.length > 0 ? (
         <div>
           <p className="text-xs font-extrabold text-ink-soft">{t('brief.fieldTools')}</p>
-          <ul className="mt-1 flex flex-col gap-1">
+          <ul className="mt-1 flex flex-wrap gap-2">
             {fieldTools.map((c) => (
-              <li key={c.command} className="flex flex-wrap items-baseline gap-2 text-sm">
-                <code className="bg-[var(--cream-dark)] px-1.5 py-0.5 font-mono">{c.command}</code>
-                <span>
+              <li key={c.command} className="flex items-baseline gap-1 border-2 border-[var(--cream-dark)] bg-white px-2 py-0.5 text-xs">
+                <code className="font-mono font-bold">{c.command}</code>
+                <span className="text-ink-soft">
                   <Glossed text={c.means} />
                 </span>
               </li>
@@ -513,12 +600,18 @@ function TryTools({ slot, track, onBack, tries, fieldTools, onDone }: {
           </ul>
         </div>
       ) : null}
+
       <FooterBar
         slot={slot}
         left={
           <button type="button" onClick={onBack} className="knob w-28 px-3 py-2 text-sm">
             {t('brief.back')}
           </button>
+        }
+        center={
+          tries.length > 0 ? (
+            <span className="font-mono text-xs text-ink-soft">{t('brief.tryCount', { a: tried.size, b: tries.length })}</span>
+          ) : null
         }
         right={
           <button type="button" data-testid="try-next" onClick={onDone} className="sign w-44 px-4 py-2 font-extrabold">

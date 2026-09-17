@@ -1,5 +1,6 @@
 import { useT } from '@/i18n/useT';
 import type { LessonDefinition, LessonProgressState, LessonStep } from '@/engines/lesson/types';
+import { FitBox } from '@/ui/FitBox';
 import { Glossed } from '@/ui/Term';
 import { takeawaysOf } from '@/engines/lesson/takeaways';
 import { Assist } from './Assist';
@@ -56,8 +57,9 @@ export function MissionPanel({
 }: Props) {
   const t = useT();
   return (
-    // 行の高さは仕切りで決まる。ヒントや解答で中身が増えても、この中で送るだけで端末は縮めない
-    <div className="scroll m-3 min-h-0 overflow-y-auto overscroll-contain px-6 py-5">
+    // 行の高さは仕切りで決まる。ヒントや解答で中身が増えたら、送らずに字ごと縮めて収める
+    <FitBox className="m-3 min-h-0 flex-1" testId="mission-fit">
+      <div className="px-6 py-5">
       {progress.cleared ? null : (
         <div className="mb-3">
           <PrerequisiteNote prerequisites={prerequisites} onSwitch={onSwitch} />
@@ -148,9 +150,12 @@ export function MissionPanel({
               {t('park.skip')}
             </button>
           </div>
-          <p className="mt-1 text-xs text-ink-soft">{t('park.hintLead')}</p>
-          <p className="mt-1 text-xs text-ink-soft">{t('park.skipLead')}</p>
-          <ul className="mt-2 flex flex-col gap-1">
+          {revealedHints === 0 ? (
+            <p className="mt-1 text-xs text-ink-soft">
+              {t('park.hintLead')} {t('park.skipLead')}
+            </p>
+          ) : null}
+          <ul className="mt-2 flex flex-col gap-0.5">
             {step?.hints.slice(0, revealedHints).map((hint) => (
               <li key={hint} className="flex items-start gap-2">
                 <span aria-hidden className="text-ink-soft">›</span>
@@ -161,7 +166,8 @@ export function MissionPanel({
           <Assist lastError={lastError} />
         </>
       ) : null}
-    </div>
+      </div>
+    </FitBox>
   );
 }
 

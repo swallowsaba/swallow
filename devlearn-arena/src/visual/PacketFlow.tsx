@@ -16,6 +16,8 @@ interface Props {
   self: string;
   /** 図の操作をコマンドとして端末に流す。無ければ見るだけの図になる */
   onCommand?: RunCommand;
+  /** 説明の中に添える小さな図。下の欄を送らせない（説明の途中で画面を送らせないため） */
+  compact?: boolean;
 }
 
 /**
@@ -25,7 +27,7 @@ interface Props {
  * パケットやホップを押すと、その時点のヘッダの全項目が出て、1つ前のホップから書き換わった項目に色が付く。
  * 届かなかったときは、止まった機器が赤く光り、理由が出る。
  */
-export function PacketFlow({ net, self, onCommand }: Props) {
+export function PacketFlow({ net, self, onCommand, compact = false }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
   const placed = useMemo(() => (net === null ? null : layoutNet(net)), [net]);
@@ -204,7 +206,7 @@ export function PacketFlow({ net, self, onCommand }: Props) {
       </div>
 
       {/* 図の下の欄。拡大縮小に巻き込まず、いつも同じ大きさで読めるようにする */}
-      <div className="max-h-[45%] shrink-0 overflow-auto border-t-4 border-wood-dark px-4 pb-4">
+      <div className={`max-h-[45%] shrink-0 border-t-4 border-wood-dark px-4 pb-4 ${compact ? 'overflow-hidden' : 'overflow-auto'}`}>
       {/* ホップの一覧とヘッダ。押したホップの時点のヘッダを出す */}
       <HopInspector
         hops={hops}

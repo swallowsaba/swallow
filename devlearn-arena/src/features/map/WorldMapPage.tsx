@@ -12,6 +12,7 @@ import { xpProgress } from '@/lib/xp';
 import { useStore } from '@/store';
 import { RegionMap } from './RegionMap';
 import type { RegionCity } from './regionDraw';
+import { MoodFace } from '@/visual/game/MoodFace';
 
 /**
  * 全体図。5 つの街を、実際に建てた施設の建ち具合で地方の地図に描く。
@@ -106,8 +107,14 @@ export default function WorldMapPage() {
             <ul className="grid grid-cols-2 gap-2 text-sm">
               <li className="bg-white px-2 py-1">🏛 {t('map.guideFacilities', { a: current.city.built, b: current.city.facilities.length })}</li>
               <li className="bg-white px-2 py-1">📜 {t('map.guideMissions', { a: current.done, b: current.total })}</li>
-              <li className="bg-white px-2 py-1">😠 {t('map.guideComplaints', { n: current.voices.filter((v) => v.kind === 'complaint').length })}</li>
-              <li className="bg-white px-2 py-1">😊 {t('map.guidePraise', { n: current.voices.filter((v) => v.kind === 'praise').length })}</li>
+              <li className="flex items-center gap-1 bg-white px-2 py-1">
+                <MoodFace mood="angry" size={20} />
+                {t('map.guideComplaints', { n: current.voices.filter((v) => v.kind === 'complaint').length })}
+              </li>
+              <li className="flex items-center gap-1 bg-white px-2 py-1">
+                <MoodFace mood="happy" size={20} />
+                {t('map.guidePraise', { n: current.voices.filter((v) => v.kind === 'praise').length })}
+              </li>
             </ul>
             {current.voices.filter((v) => v.kind === 'complaint').slice(0, 2).map((v) => {
               const f = current.city.facilities.find((x) => x.facility.id === v.facilityId);

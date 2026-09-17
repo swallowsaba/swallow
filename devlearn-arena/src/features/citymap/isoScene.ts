@@ -1,6 +1,8 @@
 import type { BuildingKind } from '@/content/city';
 import { TONE_COLOR, type Scene, type SceneBuilding, type SceneItem, type Tone } from '@/engines/cityscape';
 import type { MissionTrack } from '@/engines/lesson/types';
+import { drawMoodFace } from '@/visual/game/faceCanvas';
+import { MOOD_OF_VOICE } from '@/visual/game/faces';
 import {
   box, cylinder, diamond, facilityBuilding, gable, HU, lamp, poly, project, shade, TH, TRACK_ACCENT, tree, TW, unproject, windows,
   type Ctx,
@@ -399,7 +401,7 @@ interface Pop {
   born: number;
 }
 
-const VOICE_ICON: Record<Exclude<Voice, null>, string> = { complaint: '😠', waiting: '🙄', praise: '😊' };
+
 
 export function createSceneMap(host: HTMLElement, callbacks: SceneMapCallbacks): SceneMap {
   const canvas = document.createElement('canvas');
@@ -687,17 +689,7 @@ export function createSceneMap(host: HTMLElement, callbacks: SceneMapCallbacks):
         const bob = Math.sin(now / 400 + i) * 3;
         const voice = f.voice;
         inScreen(p.sx, p.sy, (sx, sy) => {
-          ctx.font = '22px system-ui';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(sx, sy - 34 + bob, 16, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = voice === 'complaint' ? '#e0483a' : voice === 'waiting' ? '#f2b233' : '#4caf50';
-          ctx.lineWidth = 3;
-          ctx.stroke();
-          ctx.fillText(VOICE_ICON[voice], sx, sy - 33 + bob);
+          drawMoodFace(ctx, sx, sy - 34 + bob, 38, MOOD_OF_VOICE[voice]);
         });
       }
       if (selected === `civic:${f.id}` || hover === `civic:${f.id}`) {

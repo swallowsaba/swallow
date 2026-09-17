@@ -22,6 +22,8 @@ interface Props {
   cwd?: string;
   /** 図の操作をコマンドとして端末に流す。無ければ見るだけの図になる */
   onCommand?: RunCommand;
+  /** 説明に添える小さな図。中で送らせない */
+  compact?: boolean;
 }
 
 const ROW = 56;
@@ -82,7 +84,7 @@ function FileChip({ spot, animate, command, onCommand }: { spot: FileSpot; anima
  * HEAD とブランチ名は札として付き、切り替えたりコミットしたりすると札が移動する。
  * rebase のあとは、元のコミットを薄く残し、新しい親にぶら下がった複製が1つずつ現れる。
  */
-export function CommitGraph({ git, previous, vfs, cwd, onCommand }: Props) {
+export function CommitGraph({ git, previous, vfs, cwd, onCommand , compact = false }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
   const changes = useMemo(() => gitChanges(previous, git), [previous, git]);
@@ -157,7 +159,7 @@ export function CommitGraph({ git, previous, vfs, cwd, onCommand }: Props) {
                   <Term term={term} />
                   <span className="ml-auto font-normal opacity-80">{lead}</span>
                 </div>
-                <ul className="flex max-h-40 min-h-[64px] flex-col gap-1 overflow-y-auto p-2">
+                <ul className={`flex max-h-40 min-h-[64px] flex-col gap-1 p-2 ${compact ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                   {spots
                     .filter((s) => s.lane === lane)
                     .map((spot) => (

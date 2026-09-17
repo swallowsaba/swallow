@@ -21,6 +21,7 @@ import { flushSave } from '@/store/persistence';
 import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
+import { FitBox } from '@/ui/FitBox';
 import { splitTemplate } from '@/ui/panes';
 import { CITIES, CITY_TRACKS, cityOf, facilityById } from '@/content/city';
 import { FacilityLesson } from '@/features/city/FacilityLesson';
@@ -703,7 +704,8 @@ function Park({
       >
         {/* 左：手を動かす場所 */}
         {/* 上＝やること（溢れたらこの中で送る）、下＝端末。間の仕切りで高さを変えられる */}
-        <div className="grid min-h-0 min-w-0" style={{ gridTemplateRows: splitTemplate(stage === 'work' ? paneTask : 74) }}>
+        {/* 説明の間は端末が使えないので、説明にほとんどの高さを渡す（縮めずに読めるようにする） */}
+        <div className="grid min-h-0 min-w-0" style={{ gridTemplateRows: splitTemplate(stage === 'work' ? paneTask : 86) }}>
           <div className="flex min-h-0 min-w-0 flex-col" data-testid="learning-panel" data-stage={stage}>
             <StageBar stage={stage} onBackToCity={stage === 'city' || stage === 'welcome' ? undefined : onBackToCity} />
             {stage === 'work' ? (
@@ -726,19 +728,23 @@ function Park({
                 onSwitch={onSwitch}
               />
             ) : (
-              <div className="scroll mx-3 mb-3 mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              <div className="mx-3 mb-3 mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
                 {stage === 'welcome' ? (
-                  <Welcome
-                    track={mission.track}
-                    name={plan.name}
-                    welcome={plan.welcome}
-                    guide={plan.guide}
-                    onStart={() => {
-                      setWelcomed(true);
-                    }}
-                  />
+                  <FitBox className="flex-1">
+                    <Welcome
+                      track={mission.track}
+                      name={plan.name}
+                      welcome={plan.welcome}
+                      guide={plan.guide}
+                      onStart={() => {
+                        setWelcomed(true);
+                      }}
+                    />
+                  </FitBox>
                 ) : stage === 'city' ? (
-                  <CityBoard city={city} onHandle={studyFacility} />
+                  <FitBox className="flex-1">
+                    <CityBoard city={city} track={mission.track} onHandle={studyFacility} />
+                  </FitBox>
                 ) : stage === 'facility' && facility ? (
                   <FacilityLesson
                     key={facility.id}

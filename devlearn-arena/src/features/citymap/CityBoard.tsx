@@ -2,10 +2,16 @@ import { useMemo } from 'react';
 import type { CityState } from '@/content/city';
 import { nextComplaint, voicesOf } from '@/engines/city/civic';
 import { useT } from '@/i18n/useT';
+import { MoodFace } from '@/visual/game/MoodFace';
+import { MOOD_OF_VOICE } from '@/visual/game/faces';
+import type { MissionTrack } from '@/engines/lesson/types';
+import { CityProgress } from './CityProgress';
 import { civicFacilities } from './cityStore';
 
 interface Props {
   city: CityState;
+  /** どのカテゴリの街か。育ちの絵を描くのに使う */
+  track: MissionTrack;
   /** 苦情や対応待ちに応える（その施設の学習・要望へ） */
   onHandle: (facilityId: string) => void;
 }
@@ -14,7 +20,7 @@ interface Props {
  * 市政ボード。住民から届いた苦情・対応待ち・評価をここで受け取る。
  * 街はコマンドでしか育たない。苦情に対応して要望を解決するたびに街が育ち、次の声が届く。
  */
-export function CityBoard({ city, onHandle }: Props) {
+export function CityBoard({ city, track, onHandle }: Props) {
   const t = useT();
   const civic = useMemo(() => civicFacilities(city), [city]);
   const voices = useMemo(() => voicesOf(civic), [civic]);
@@ -27,6 +33,8 @@ export function CityBoard({ city, onHandle }: Props) {
         <p className="text-lg font-extrabold">🏛 {t('board.title', { name: city.plan.name })}</p>
         <p className="mt-1 text-sm leading-relaxed">{t('board.lead')}</p>
       </div>
+
+      <CityProgress city={city} track={track} currentId={voices.find((v) => v.kind !== 'praise')?.facilityId ?? null} />
 
       {voices.length === 0 ? <p className="border-l-4 border-[var(--gold-dark)] bg-[var(--gold)]/20 px-3 py-2 text-sm">{t('board.quiet')}</p> : null}
 
@@ -44,9 +52,7 @@ export function CityBoard({ city, onHandle }: Props) {
                 {f.facility.name}
               </p>
               <div className="flex items-start gap-2">
-                <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-wood-dark bg-white text-xl">
-                  {v.kind === 'complaint' ? '😠' : v.kind === 'waiting' ? '🙄' : '😊'}
-                </span>
+                <MoodFace mood={MOOD_OF_VOICE[v.kind]} size={40} animate />
                 <p className="rounded-lg border-2 border-wood-dark bg-white px-3 py-2 text-sm leading-relaxed">
                   <span className="block text-xs font-bold text-ink-soft">{f.facility.trouble.who}</span>
                   {v.kind === 'complaint'

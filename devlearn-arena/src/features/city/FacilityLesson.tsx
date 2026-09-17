@@ -8,6 +8,9 @@ import { useMotionEnabled } from '@/ui/motion';
 import { Glossed } from '@/ui/Term';
 import { FooterBar } from '@/ui/FooterBar';
 import { FOOTER_SLOT_CLASS, useFooterSlot } from '@/ui/footerSlot';
+import { FitBox } from '@/ui/FitBox';
+import { AnswerStamp, Streak } from '@/ui/AnswerStamp';
+import { useSfx } from '@/lib/useSfx';
 import { AnalogyVisual, DemoPlayer, HowRoute, PitfallRoad, TroubleScene, WhyVisual } from './LessonVisuals';
 import { CITY_COLOR } from '@/visual/game/cityColor';
 import { CityPortrait, FacilityPlot, PLOT_H, PLOT_W } from '@/visual/game/cityArt';
@@ -64,15 +67,15 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
   }, [onClose, inline]);
 
   return (
-    <div className={inline ? 'flex min-h-full flex-col' : 'fixed inset-0 z-40 overflow-y-auto bg-[rgba(44,29,16,0.72)] p-3 sm:p-6'}>
+    <div className={inline ? 'flex h-full min-h-0 flex-col' : 'fixed inset-0 z-40 overflow-y-auto bg-[rgba(44,29,16,0.72)] p-3 sm:p-6'}>
       <div
         role={inline ? undefined : 'dialog'}
         aria-modal={inline ? undefined : true}
         aria-labelledby="facility-title"
         data-testid="facility-lesson"
-        className={inline ? 'flex flex-1 flex-col' : 'mx-auto flex min-h-full max-w-4xl flex-col border-4 border-wood-dark bg-cream shadow-lg'}
+        className={inline ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto flex min-h-full max-w-4xl flex-col border-4 border-wood-dark bg-cream shadow-lg'}
       >
-        <header className="flex flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-4 py-3">
+        <header className="flex shrink-0 flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-4 py-3">
           <span className="sign px-3 py-1 text-sm font-extrabold">🏗 {t('facility.label')}</span>
           <div className="min-w-0 flex-1">
             <h2 id="facility-title" className="truncate text-xl font-extrabold text-cream">
@@ -91,7 +94,7 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
           <Built facility={facility} track={track} animate={animate} firstMissionId={firstMissionId} onClose={onClose} onContinue={onContinue} />
         ) : (
           <>
-            <nav aria-label={t('facility.steps')} className="flex flex-wrap gap-1 border-b-2 border-[var(--cream-dark)] bg-[var(--cream-dark)] px-3 py-2">
+            <nav aria-label={t('facility.steps')} className="flex shrink-0 flex-wrap gap-1 border-b-2 border-[var(--cream-dark)] bg-[var(--cream-dark)] px-3 py-2">
               {STEPS.map((s, i) => (
                 <button
                   key={s}
@@ -108,6 +111,7 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
               ))}
             </nav>
 
+            <FitBox className={inline ? 'flex-1' : ''} testId="facility-fit">
             <div className={`grid gap-3 sm:grid-cols-[auto_1fr] ${inline ? 'p-3' : 'p-4 sm:p-6'}`}>
               <div className="flex flex-row items-end gap-3 sm:flex-col sm:items-center">
                 <CityPortrait track={track} resident={step === 'trouble'} talking animate={animate} size={inline ? 4 : 6} />
@@ -239,7 +243,8 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
                 ) : null}
               </div>
             </div>
-            <div ref={footer.ref} className={FOOTER_SLOT_CLASS} />
+            </FitBox>
+            <div ref={footer.ref} className={`shrink-0 ${FOOTER_SLOT_CLASS}`} />
           </>
         )}
       </div>
@@ -288,9 +293,11 @@ function How({ facility, track, index, animate }: { facility: Facility; track: M
 /** 建設審査。場面ごとに判断し、すべて正しく判断できたら建てられる */
 function Exam({ facility, built, animate, slot, onBack, onPassed, onAnswer }: { facility: Facility; built: boolean; animate: boolean; slot: HTMLElement | null; onBack: () => void; onPassed: () => void; onAnswer?: ((question: number, firstTry: boolean) => void) | undefined }) {
   const t = useT();
+  const sound = useSfx();
   const [index, setIndex] = useState(0);
   const [wrong, setWrong] = useState<ReadonlySet<number>>(new Set());
   const [solved, setSolved] = useState(false);
+  const [streak, setStreak] = useState(0);
   const quiz = facility.quiz[index];
   const last = index >= facility.quiz.length - 1;
   if (quiz === undefined) return null;
@@ -298,7 +305,10 @@ function Exam({ facility, built, animate, slot, onBack, onPassed, onAnswer }: { 
   return (
     <div className="flex flex-col gap-3" data-testid="exam">
       <p className="text-sm">{t('facility.examLead')}</p>
-      <p className="font-mono text-xs text-ink-soft">{t('facility.question', { a: index + 1, b: facility.quiz.length })}</p>
+      <div className="flex items-center gap-2">
+        <p className="font-mono text-xs text-ink-soft">{t('facility.question', { a: index + 1, b: facility.quiz.length })}</p>
+        <Streak count={streak} animate={animate} />
+      </div>
       <Card label={`📝 ${t('facility.step.exam')}`}>
         <p className="text-lg font-bold leading-relaxed">{quiz.situation}</p>
       </Card>
@@ -316,8 +326,12 @@ function Exam({ facility, built, animate, slot, onBack, onPassed, onAnswer }: { 
                 onClick={() => {
                   if (i === quiz.answer) {
                     setSolved(true);
+                    if (wrong.size === 0) setStreak((n) => n + 1);
+                    sound.step();
                     onAnswer?.(index, wrong.size === 0);
                   } else {
+                    setStreak(0);
+                    sound.error();
                     setWrong((set) => new Set([...set, i]));
                   }
                 }}
@@ -337,7 +351,10 @@ function Exam({ facility, built, animate, slot, onBack, onPassed, onAnswer }: { 
       <div role="status" aria-live="polite">
         {solved || wrong.size > 0 ? (
           <div className={`border-l-4 px-3 py-2 ${solved ? 'border-[var(--ok)] bg-[#dff0cf]' : 'border-[var(--warn)] bg-[var(--gold)]/25'}`}>
-            <p className="font-extrabold">{solved ? t('facility.correct') : t('facility.wrong')}</p>
+            <p className="flex flex-wrap items-center gap-2 font-extrabold">
+              {solved ? <AnswerStamp animate={animate} /> : null}
+              {solved ? t('facility.correct') : t('facility.wrong')}
+            </p>
             {solved ? (
               <p className="mt-1 text-sm leading-relaxed" data-testid="explain">
                 <Glossed text={quiz.explain} />

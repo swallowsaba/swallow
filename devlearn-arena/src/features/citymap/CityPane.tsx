@@ -5,6 +5,7 @@ import type { ShellState } from '@/engines/kernel/registry';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { useStore } from '@/store';
+import { MoodFace } from '@/visual/game/MoodFace';
 import { CityMapView, type CityEvent } from './CityMapView';
 import { civicViews, growthOf, withPartial } from './cityStore';
 import { itemById, type CivicView, type SceneMapInput } from './isoScene';
@@ -63,7 +64,10 @@ export function CityPane({ track, city: learned, state, previous, currentFacilit
         <div data-testid="city-stats" className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1 self-start rounded-md bg-[rgba(22,30,38,0.86)] px-3 py-1.5 text-sm text-white shadow-lg">
           <span data-testid="city-houses" data-value={growth.houses} title={t('city.houses')}>🏠 {growth.houses}</span>
           <span data-testid="city-floors" data-value={growth.floors} title={t('city.floors')}>🏢 {growth.floors}</span>
-          <span title={t('city.comfort')}>😊 {city.comfort}%</span>
+          <span title={t('city.comfort')} className="inline-flex items-center gap-1">
+            <MoodFace mood={city.comfort >= 70 ? 'happy' : city.comfort >= 40 ? 'waiting' : 'angry'} size={18} />
+            {city.comfort}%
+          </span>
           <span title={t('city.facilities')}>🏛 {city.built}/{city.facilities.length}</span>
           <span className="h-4 w-px bg-white/30" aria-hidden />
           {scene.stats.map((s) => (
@@ -210,7 +214,12 @@ function CivicInfo({ facility, city, onStudy, onClose }: { facility: CivicView; 
               ? t('city.civicBuilding', { a: Math.floor(status.missionsCleared), b: status.missionsTotal })
               : t('city.civicRatio', { n: Math.round(facility.ratio * 100) })}
       </p>
-      {facility.voice === 'complaint' ? <p className="mt-1 text-xs">😠 「{status.facility.trouble.text}」</p> : null}
+      {facility.voice === 'complaint' ? (
+        <p className="mt-1 flex items-start gap-1 text-xs">
+          <MoodFace mood="angry" size={20} />
+          <span>「{status.facility.trouble.text}」</span>
+        </p>
+      ) : null}
       {!locked && facility.ratio < 1 ? (
         <button
           type="button"

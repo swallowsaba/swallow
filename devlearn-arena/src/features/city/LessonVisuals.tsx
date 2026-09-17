@@ -9,6 +9,8 @@ import { tabForTrack } from '@/features/park/visualTabs';
 import { useT } from '@/i18n/useT';
 import { CITY_COLOR } from '@/visual/game/cityColor';
 import { FacilityPlot, PLOT_H, PLOT_W } from '@/visual/game/cityArt';
+import { MoodMark } from '@/visual/game/MoodFace';
+import type { Mood } from '@/visual/game/faces';
 
 /**
  * 施設の学習と依頼に添える図解。文章だけで終わらせず、街の絵と実際の状態図で「何が起きるのか」を見せる。
@@ -37,12 +39,9 @@ function House({ x, y, color, roof }: { x: number; y: number; color: string; roo
   );
 }
 
-function Face({ x, y, mood }: { x: number; y: number; mood: 'angry' | 'happy' }) {
-  return (
-    <text x={x} y={y} fontSize={22} textAnchor="middle">
-      {mood === 'angry' ? '😠' : '😊'}
-    </text>
-  );
+/** 住民の顔。中心を (x, y) に合わせて置く */
+function Face({ x, y, mood, size = 34, animate = false }: { x: number; y: number; mood: Mood; size?: number; animate?: boolean }) {
+  return <MoodMark mood={mood} x={x - size / 2} y={y - size / 2} size={size} animate={animate} />;
 }
 
 /** 1. 困りごと：施設が無い街で、住民が困っている場面 */
@@ -72,8 +71,8 @@ export function TroubleScene({ facility, track, animate }: { facility: Facility;
           animate={animate ? { y: [0, -3, 0] } : { y: 0 }}
           transition={animate ? { repeat: Infinity, duration: 1.2 } : { duration: 0 }}
         >
-          <Face x={140} y={108} mood="angry" />
-          <Face x={245} y={108} mood="angry" />
+          <Face x={140} y={104} mood="angry" animate={animate} />
+          <Face x={248} y={104} mood="angry" animate={animate} />
           <rect x={112} y={4} width={176} height={26} rx={12} fill="#fff" stroke={INK} strokeWidth={2} />
           <text x={200} y={22} fontSize={12} fontWeight={800} textAnchor="middle" fill={INK}>
             {t('visual.troubleBubble')}
@@ -115,11 +114,11 @@ export function WhyVisual({ facility, track }: { facility: Facility; track: Miss
   const side = (ok: boolean) => (
     <div className={`flex flex-col items-center gap-1 border-4 p-2 ${ok ? 'border-[var(--ok)] bg-[#dff0cf]' : 'border-[var(--bad)] bg-[#fbe3de]'}`}>
       <span className="text-sm font-extrabold">{ok ? t('visual.with', { name: facility.name }) : t('visual.without', { name: facility.name })}</span>
-      <svg viewBox={`0 0 ${String(PLOT_W)} ${String(PLOT_H + 24)}`} className="h-28 w-auto" aria-hidden>
+      <svg viewBox={`0 0 ${String(PLOT_W)} ${String(PLOT_H + 40)}`} className="h-28 w-auto" aria-hidden>
         <FacilityPlot kind={facility.building} track={track} state={ok ? 'complete' : 'locked'} x={0} y={0} animate={false} />
-        <Face x={30} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} />
-        <Face x={75} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} />
-        <Face x={120} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} />
+        <Face x={32} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} size={32} />
+        <Face x={75} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} size={32} />
+        <Face x={118} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} size={32} />
       </svg>
       <span className="text-xs font-bold">{ok ? t('visual.withLead') : t('visual.withoutLead')}</span>
     </div>
@@ -206,7 +205,7 @@ export function PitfallRoad({ count }: { count: number }) {
 export function StateDiagram({ track, state, previous, height = 'h-64' }: { track: MissionTrack; state: ShellState; previous?: ShellState | undefined; height?: string }) {
   return (
     <div className={`${height} overflow-hidden border-2 border-wood-dark bg-cream`}>
-      <WorldView tab={tabForTrack(track)} state={state} previous={previous} />
+      <WorldView tab={tabForTrack(track)} state={state} previous={previous} compact />
     </div>
   );
 }
@@ -240,7 +239,7 @@ export function DemoPlayer({ facility, track, animate }: { facility: Facility; t
   return (
     <Frame label={t('visual.demo', { a: index, b: last })} testId="visual-demo">
       <div className="flex flex-col gap-2">
-        <pre className="min-h-[4.5rem] overflow-auto bg-[#0a0d12] px-3 py-2 font-mono text-xs leading-relaxed text-[#e6edf3]" data-testid="demo-command">
+        <pre className="min-h-[4.5rem] overflow-hidden bg-[#0a0d12] px-3 py-2 font-mono text-xs leading-relaxed text-[#e6edf3]" data-testid="demo-command">
           {frame.command === null ? (
             <span className="text-[#9fb0c0]">{t('visual.demoStart')}</span>
           ) : (
@@ -251,7 +250,7 @@ export function DemoPlayer({ facility, track, animate }: { facility: Facility; t
             </>
           )}
         </pre>
-        <StateDiagram track={track} state={frame.state} previous={frames[index - 1]?.state} />
+        <StateDiagram track={track} state={frame.state} previous={frames[index - 1]?.state} height="h-52" />
         <p className="text-xs text-ink-soft">{t('visual.demoLead')}</p>
         <div className="flex items-center gap-2">
           <button
