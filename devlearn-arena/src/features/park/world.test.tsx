@@ -50,7 +50,7 @@ function passFacilityLesson(view: HTMLElement) {
 }
 
 describe('カテゴリの作業画面', () => {
-  it('はじめは街の案内が出て、説明を聞くまでターミナルは使えない', () => {
+  it('はじめは市長就任のあいさつが出て、説明を聞くまでターミナルは使えない', () => {
     const view = openWorld('/world/git');
     expect(stage(view)).toBe('welcome');
     expect(view.querySelector('[data-testid="terminal-lock"]')).not.toBeNull();

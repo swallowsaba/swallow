@@ -411,15 +411,9 @@ function Landmark({ b, toScreen, roof, accent, lit }: { b: IsoBuilding; toScreen
         </>
       ) : kind === 'castle' ? (
         <>
-          <Box {...common} w={2} d={2} h={h} wall="#cfc6b6" roof="#b9b2a4" inset={0.05} windows={{ color: windowColor, floors: Math.max(2, b.floors - 2) }} />
-          {[
-            [0.05, 0.05],
-            [1.55, 0.05],
-            [1.55, 1.55],
-            [0.05, 1.55],
-          ].map(([x, y]) => (
-            <Box key={`${String(x)}-${String(y)}`} toScreen={toScreen} gx={b.gx + (x ?? 0)} gy={b.gy + (y ?? 0)} w={0.4} d={0.4} h={h + 16} wall="#d8d1c3" roof={roof} />
-          ))}
+          <Box {...common} w={2} d={2} h={FLOOR * 3} wall="#cfd6dc" roof="#b9c2c9" inset={0.02} windows={{ color: windowColor, floors: 3 }} />
+          <Box {...common} w={2} d={2} h={h + FLOOR * 3} wall="#9fc3de" roof="#e8eef3" inset={0.35} windows={{ color: windowColor, floors: b.floors + 3 }} />
+          <line x1={center.x} x2={center.x} y1={center.y - h - FLOOR * 3} y2={center.y - h - FLOOR * 3 - 18} stroke="#2c1d10" strokeWidth={2} />
         </>
       ) : kind === 'factory' ? (
         <>

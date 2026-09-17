@@ -31,7 +31,7 @@ function shell(lines: readonly string[], options: Parameters<typeof createSessio
   return states;
 }
 
-describe('ファイルの街', () => {
+describe('住宅地区', () => {
   const vfs = createVfs({
     '/home/learner': null,
     '/home/learner/notes.txt': 'a\n',
@@ -76,7 +76,7 @@ describe('ファイルの街', () => {
   });
 });
 
-describe('記録の鉄道', () => {
+describe('鉄道網', () => {
   it('リポジトリが無ければ、git init を案内する', () => {
     const view = mount(<GitGame git={null} />);
     expect(view.textContent).toContain('git init');
@@ -131,7 +131,7 @@ describe('記録の鉄道', () => {
   });
 });
 
-describe('クラスタ牧場', () => {
+describe('コンテナ港', () => {
   function cluster(): ClusterState {
     let state: ClusterState = {
       ...emptyCluster([node('node-1', 4000, 8192)]),
@@ -142,7 +142,7 @@ describe('クラスタ牧場', () => {
     return state;
   }
 
-  it('スライムを押すと describe、× で delete、門で cordon、± で scale', () => {
+  it('コンテナを押すと describe、× で delete、遮断機で cordon、± で scale', () => {
     const onCommand = vi.fn();
     const state = cluster();
     const name = [...state.pods.values()][0]?.metadata.name ?? '';
@@ -164,7 +164,7 @@ describe('クラスタ牧場', () => {
     expect(onCommand).toHaveBeenLastCalledWith('kubectl wait 5');
   });
 
-  it('スライムの状態を文字でも出し、窓口から Endpoints のスライムにだけ綱を張る', () => {
+  it('コンテナの状態を文字でも出し、窓口から Endpoints のコンテナにだけ綱を張る', () => {
     const state = cluster();
     const view = mount(<K8sGame cluster={state} />);
     expect(view.textContent).toContain('Running');
@@ -186,7 +186,7 @@ describe('クラスタ牧場', () => {
     expect(view.querySelector('[data-part="scheduler"]')?.textContent).toContain('！');
   });
 
-  it('cordon した土地は門が閉じる', () => {
+  it('cordon した埠頭は遮断機が下りる', () => {
     const state = cluster();
     const nodeState = state.nodes.get('node-1');
     if (!nodeState) throw new Error('node-1 がありません');
@@ -202,7 +202,7 @@ describe('クラスタ牧場', () => {
   });
 });
 
-describe('手紙の街道', () => {
+describe('道路と郵便網', () => {
   function lab() {
     resetMac();
     return topology(
@@ -252,7 +252,7 @@ describe('手紙の街道', () => {
   });
 });
 
-describe('チーム本部', () => {
+describe('市役所の建築確認', () => {
   function repo() {
     const opened = openPull(createRepo('acme', 'app'), { title: 'feat', head: 'feature' }).repo;
     return setChecks(opened, 1, [
@@ -261,7 +261,7 @@ describe('チーム本部', () => {
     ]);
   }
 
-  it('関所を押すとその段のコマンド、部屋を押すと checks', () => {
+  it('窓口を押すとその段のコマンド、部屋を押すと checks', () => {
     const onCommand = vi.fn();
     const view = mount(<GhGame repo={repo()} onCommand={onCommand} />);
     click(view, button('gh pr review 1 --approve'));
@@ -272,7 +272,7 @@ describe('チーム本部', () => {
     expect(onCommand).toHaveBeenLastCalledWith('gh pr checks 1');
   });
 
-  it('失敗した部屋の先の部屋には × が付き、チェックの関所は止まっている', () => {
+  it('失敗した部屋の先の部屋には × が付き、チェックの窓口は止まっている', () => {
     const view = mount(<GhGame repo={repo()} />);
     expect(view.querySelector('[data-job="test"]')?.getAttribute('data-blocked')).toBe('true');
     expect(view.querySelector('[data-job="test"] [data-cross="true"]')).not.toBeNull();

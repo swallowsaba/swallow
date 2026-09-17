@@ -22,7 +22,7 @@ export type BriefingLine =
 /** 街の人が話す順。依頼 → なぜ要るか → 知っておく言葉 → 使う道具 → 建設の工程 */
 export function briefingScript(title: string, intro: LessonIntro, steps: readonly Pick<LessonStep, 'prompt'>[]): BriefingLine[] {
   return [
-    { kind: 'request', text: `「${title}」をお願いしたい。${intro.summary}` },
+    { kind: 'request', text: `市長、「${title}」をお願いします。${intro.summary}` },
     { kind: 'why', text: intro.why },
     ...intro.concepts.map((c) => ({ kind: 'concept' as const, term: c.term, text: c.plain })),
     ...intro.commands.map((c) => ({ kind: 'tool' as const, command: c.command, text: c.means })),
@@ -151,13 +151,13 @@ export function tryouts(intro: LessonIntro, initial: Parameters<typeof createSes
 
 /* ---------------- 依頼主 ---------------- */
 
-/** 世界ごとの依頼主 */
+/** 市長に住民の要望を伝える、街ごとの職員 */
 export const QUEST_GIVER: Record<MissionTrack, { name: string; role: string }> = {
-  kernel: { name: 'ハル', role: '村長' },
+  kernel: { name: 'ハル', role: '副市長' },
   git: { name: 'ミオ', role: '駅長' },
-  k8s: { name: 'ゴロー', role: '牧場主' },
+  k8s: { name: 'ゴロー', role: '港湾局長' },
   net: { name: 'ポスト', role: '郵便局長' },
-  github: { name: 'レイ', role: 'チームリーダー' },
+  github: { name: 'レイ', role: '建築課長' },
 };
 
 const pools = new Map<MissionTrack, QuizPool>();

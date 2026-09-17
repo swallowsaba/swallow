@@ -3,9 +3,9 @@ import type { CityPlan } from './types';
 export const k8sCity: CityPlan = {
   track: 'k8s',
   name: 'Kubernetes の街',
-  guide: { name: 'ゴロー', role: '港の管理人' },
+  guide: { name: 'ゴロー', role: '港湾局長' },
   welcome:
-    'たくさんのアプリ（コンテナ）を、たくさんの計算機の上で、止めずに動かし続ける港の街へようこそ。人が一台ずつ手で世話をするのではなく、「こうあってほしい」という完成図を渡して、街の係たちに保ってもらう。その係たちと仕組みを、施設として一つずつ建てていこう。',
+    '市長、Kubernetes の港の街へようこそ。ここでは、たくさんのアプリ（コンテナ）を、たくさんの計算機の上で止めずに動かし続けます。一台ずつ手で世話をするのではなく、「こうあってほしい」という完成図を渡して港の係たちに保ってもらう——その仕組みを施設として建て、港を大きくしていきましょう。',
   facilities: [
     {
       id: 'k8s/01',
@@ -129,7 +129,7 @@ export const k8sCity: CityPlan = {
     },
     {
       id: 'k8s/04',
-      name: '作業班の詰所',
+      name: '作業班の事務所',
       concept: 'Workloads（Deployment / StatefulSet / DaemonSet / Job / CronJob）',
       building: 'workshop',
       needs: ['k8s/03'],
@@ -139,7 +139,7 @@ export const k8sCity: CityPlan = {
       },
       what: 'Pod の管理のしかたは、仕事の性質ごとにコントローラが用意されている。入れ替え可能な Web は Deployment、名前と保存先が固定のデータベースは StatefulSet、全ノードに 1 つずつ置く監視は DaemonSet、終わる仕事は Job、定期実行は CronJob。',
       analogy:
-        '詰所には作業班の種類がある。誰が来てもよい交代制の班（Deployment）、名札と専用の机が決まった班（StatefulSet）、各埠頭に必ず 1 人ずつ置く見張り（DaemonSet）、終わったら解散する臨時班（Job）、毎晩決まった時刻に集まる夜勤班（CronJob）。',
+        '事務所には作業班の種類がある。誰が来てもよい交代制の班（Deployment）、名札と専用の机が決まった班（StatefulSet）、各埠頭に必ず 1 人ずつ置く見張り（DaemonSet）、終わったら解散する臨時班（Job）、毎晩決まった時刻に集まる夜勤班（CronJob）。',
       why: '仕事の性質に合わないコントローラを選ぶと、データの消失、重複実行、ノードへの配置漏れなどの事故になる。選択の根拠を説明できることが設計力。',
       how: [
         'Deployment は ReplicaSet を通して、同じ Pod を指定数そろえ、入れ替え（ローリングアップデート）も行う。',
@@ -379,7 +379,7 @@ export const k8sCity: CityPlan = {
       },
       what: 'Kubernetes のセキュリティは「誰が（人や Pod の身分）」「何に」「何をしてよいか」を最小限に絞ること。RBAC で API の操作権限を、NetworkPolicy で Pod 間の通信を、securityContext でコンテナ内の権限を制限する。',
       analogy:
-        '警備本部は、職員ごとに入れる建物と使える鍵を決め（RBAC）、区画の間に検問所を置いて許可した通行だけを通し（NetworkPolicy）、作業員には必要以上の道具を持たせない（root で動かさない）。',
+        '警備本部は、職員ごとに入れる建物と使える鍵を決め（RBAC）、区画の間に検査ゲートを置いて許可した通行だけを通し（NetworkPolicy）、作業員には必要以上の道具を持たせない（root で動かさない）。',
       why: '侵入は「いつか起きる」前提で考える。権限を最小にしておけば、一つの Pod やアカウントが乗っ取られても被害をその範囲に閉じ込められる。監査やコンプライアンスでも必ず問われる。',
       how: [
         'Role / ClusterRole で「どのリソースにどの操作（get / list / create …）を許すか」を定義し、RoleBinding で人や ServiceAccount に結びつける。',
@@ -409,7 +409,7 @@ export const k8sCity: CityPlan = {
     },
     {
       id: 'k8s/11',
-      name: '増設と交代の司令所',
+      name: '増設と交代の管制センター',
       concept: 'スケールと無停止（ローリングアップデート・HPA・PDB）',
       building: 'tower',
       needs: ['k8s/09'],
@@ -419,7 +419,7 @@ export const k8sCity: CityPlan = {
       },
       what: 'ローリングアップデートは、新しい Pod を少しずつ起こし、準備ができたら古い Pod を減らしていく入れ替え方。HPA は負荷に応じて Pod の数を自動で増減する。PodDisruptionBudget は、保守作業などで同時に止めてよい数の上限を決める。',
       analogy:
-        '司令所は、交代要員が持ち場に着いて準備完了（Ready）してから、前の担当を帰す。客が増えれば臨時の応援を呼び（HPA）、点検のときも「同時に休んでよいのは 1 人まで」（PDB）と決めて、窓口を空にしない。',
+        '管制センターは、交代要員が持ち場に着いて準備完了（Ready）してから、前の担当を帰す。客が増えれば臨時の応援を呼び（HPA）、点検のときも「同時に休んでよいのは 1 人まで」（PDB）と決めて、窓口を空にしない。',
       why: '止めずに出す、止めずに増やす、止めずに保守する——これが本番運用の基本要件。readiness の設計や上限の設定を誤ると、入れ替えや自動増減そのものが障害の原因になる。',
       how: [
         'Deployment の strategy で maxSurge（一時的に増やしてよい数）と maxUnavailable（同時に欠けてよい数）を決める。',

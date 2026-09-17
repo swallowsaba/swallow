@@ -3,10 +3,10 @@ import type { Box, Point } from '../sceneKit';
 import { COMPONENTS, type Component } from '../clusterModel';
 
 /**
- * クラスタを「牧場」として並べる。
- * 上に城（コントロールプレーン）と4人の係、その右に置き場所の決まっていないスライム（Pod）の待ち場。
- * 下にノードごとの柵で囲った土地を並べ、スライムは自分の置かれたノードの土地に住む。
- * 右端には Service の窓口を立て、Endpoints に載っているスライムにだけ綱を張る。
+ * クラスタを「コンテナ港」として並べる。
+ * 上に港湾管理棟（コントロールプレーン）と4人の係、その右に置き場所の決まっていないコンテナ（Pod）の待機ヤード。
+ * 下にノードごとの埠頭を並べ、コンテナは自分の置かれたノードの埠頭に置かれる。
+ * 右端には Service の窓口を立て、Endpoints に載っているコンテナにだけ配線する。
  */
 
 export const BOOTH_W = 140;
@@ -50,7 +50,7 @@ export interface Ranch {
   banners: RanchBanner[];
   fields: RanchField[];
   services: RanchService[];
-  /** Pod の名前 → スライムを置く枠の左上 */
+  /** Pod の名前 → コンテナを置く枠の左上 */
   pods: Map<string, Point>;
   width: number;
   height: number;

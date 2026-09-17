@@ -110,6 +110,21 @@ describe('街の状態', () => {
     expect(city.built).toBe(0);
   });
 
+  it('満足度は、施設を建てて動かすほど上がり、放置した困りごとがあると伸びない', () => {
+    const start = cityOf(plan, new Set(), missions, new Set());
+    expect(start.comfort).toBe(30);
+    const built = cityOf(plan, new Set(['git/01']), missions, new Set());
+    const running = cityOf(plan, new Set(['git/01']), missions, new Set(['git/01/a', 'git/01/b']));
+    expect(built.comfort).toBeGreaterThan(start.comfort);
+    expect(running.comfort).toBeGreaterThan(built.comfort);
+    // 次の施設（git/02）を建てられるのに放置しているので、100% にはならない
+    expect(running.comfort).toBeLessThan(100);
+    // 同じ施設を建てた街どうしなら、動かしている方が満足度が高い
+    const idle = cityOf(plan, new Set(['git/01', 'git/02']), missions, new Set(['git/01/a', 'git/01/b']));
+    const both = cityOf(plan, new Set(['git/01', 'git/02']), missions, new Set(['git/01/a', 'git/01/b', 'git/02/a']));
+    expect(both.comfort).toBeGreaterThan(idle.comfort);
+  });
+
   it('街の格は、建てた施設の割合で上がる', () => {
     expect(rankOf(0, 0, 10)).toBe('wilderness');
     expect(rankOf(1, 0, 10)).toBe('settlement');

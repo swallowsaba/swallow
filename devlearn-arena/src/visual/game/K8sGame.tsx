@@ -13,7 +13,7 @@ import { clip, type Box } from '../sceneKit';
 import { EmptyWorld, GameStage } from './GameStage';
 import { CELL_W, FIELD_HEAD, layoutRanch, waitingPods } from './k8sRanch';
 import { Sprite } from './pixel';
-import { HERO, heroPalette, INK, SLIME, slimePalette, WORKER, workerPalette } from './sprites';
+import { CONTAINER, containerPalette, HERO, heroPalette, INK, WORKER, workerPalette } from './sprites';
 import { BAD, Bubble, Castle, Clickable, Field, GOLD, Kiosk, OK, Sign } from './scenery';
 
 interface Props {
@@ -22,7 +22,7 @@ interface Props {
   onCommand?: RunCommand;
 }
 
-/** 係の人。見た目と役目 */
+/** 港湾管理棟で働く係。見た目と役目 */
 const STAFF: Record<Component, { role: string; shirt: string; hat: string }> = {
   apiserver: { role: '受付', shirt: '#c0604a', hat: '#8f4b3f' },
   etcd: { role: '記録帳', shirt: '#3f6f8f', hat: '#2c4a6b' },
@@ -33,7 +33,7 @@ const STAFF: Record<Component, { role: string; shirt: string; hat: string }> = {
 /** 命令が係から係へ伝わる間隔（秒） */
 const RELAY_STEP = 0.35;
 
-const SLIME_TONE: Record<PodLook, [string, string]> = {
+const CONTAINER_TONE: Record<PodLook, [string, string]> = {
   Pending: ['#ddc79f', '#b8a27a'],
   Creating: ['#f6d27a', '#c9a24a'],
   Running: ['#79c46a', '#4f9a44'],
@@ -62,13 +62,13 @@ interface SlimeProps {
 }
 
 /**
- * スライム（Pod）。体の色と下の文字で状態を出す。
- * 置き場所が決まると待ち場から土地へ跳んでいき、作られたものは空から降り、消されたものは煙になって消える。
+ * コンテナ（Pod）。塗りの色と下の文字で状態を出す。
+ * 置き場所が決まると待ち場からクレーンで埠頭へ運ばれ、作られたものは上から降ろされ、消されたものは引き上げられて消える。
  */
 function Slime({ pod, x, y, animate, fresh, generation, onCommand }: SlimeProps) {
   const t = useT();
   const { look, detail } = podLook(pod);
-  const [body, shade] = SLIME_TONE[look];
+  const [body, shade] = CONTAINER_TONE[look];
   const name = pod.metadata.name;
   const label = look === 'BackOff' ? detail : look;
   return (
@@ -86,10 +86,10 @@ function Slime({ pod, x, y, animate, fresh, generation, onCommand }: SlimeProps)
         <rect x={0} y={0} width={CELL_W - 4} height={70} fill="transparent" />
         <ellipse cx={30} cy={41} rx={18} ry={4} fill="rgba(0,0,0,0.22)" />
         <motion.g
-          animate={animate && look === 'Running' ? { y: [0, -4, 0] } : { y: 0 }}
+          animate={animate && look === 'Running' ? { y: [0, -1, 0] } : { y: 0 }}
           transition={animate && look === 'Running' ? { repeat: Infinity, duration: 1.4, ease: 'easeInOut' } : { duration: 0 }}
         >
-          <Sprite map={SLIME} palette={slimePalette(body, shade)} x={9} y={6} scale={3} />
+          <Sprite map={CONTAINER} palette={containerPalette(body, shade)} x={9} y={4} scale={3} />
           {look === 'BackOff' || look === 'Failed' ? (
             <text x={30} y={4} fontSize={14} fontWeight={900} textAnchor="middle" fill={BAD}>
               ✗
@@ -128,10 +128,10 @@ function Slime({ pod, x, y, animate, fresh, generation, onCommand }: SlimeProps)
 }
 
 /**
- * Kubernetes の牧場。
- * 城の中の4人の係（受付・記録帳・見張り係・配置係）は、コマンドのあと仕事をした順に跳ねて「！」を出す。
- * スライムは Pod。置き場所待ちの間は城の横の待ち場にいて、配置係が決めるとノードの土地へ跳んでいく。
- * 土地の門を押すと cordon / uncordon、群れの看板の ± で scale、スライムで describe、× で delete を打つ。
+ * Kubernetes のコンテナ港。
+ * 港湾管理棟の4人の係（受付・記録帳・見張り係・配置係）は、コマンドのあと仕事をした順に「！」を出す。
+ * コンテナは Pod。置き場所待ちの間は管理棟の横の待機ヤードにいて、配置係が決めるとノード（埠頭）へ運ばれる。
+ * 埠頭の遮断機を押すと cordon / uncordon、配送計画の看板の ± で scale、コンテナで describe、× で delete を打つ。
  */
 export function K8sGame({ cluster, previous, onCommand }: Props) {
   const t = useT();
@@ -217,7 +217,7 @@ export function K8sGame({ cluster, previous, onCommand }: Props) {
         ) : null}
       </g>
 
-      {/* 城と4人の係 */}
+      {/* 港湾管理棟と4人の係 */}
       <Castle {...ranch.castle} />
       <Sign cx={ranch.castle.x + ranch.castle.w / 2} y={ranch.castle.y + 14} text={t('game.k8s.castle')} strong />
       {ranch.booths.map(({ component, box }) => {
@@ -348,7 +348,7 @@ export function K8sGame({ cluster, previous, onCommand }: Props) {
         );
       })}
 
-      {/* Service の窓口と、Endpoints に載っているスライムへの綱 */}
+      {/* Service の窓口と、Endpoints に載っているコンテナへの配線 */}
       {[...cluster.services.values()].map((svc) => {
         const spot = ranch.services.find((s) => s.name === svc.metadata.name);
         if (!spot) return null;
@@ -378,7 +378,7 @@ export function K8sGame({ cluster, previous, onCommand }: Props) {
         );
       })}
 
-      {/* スライム。待ち場か、置かれたノードの土地にいる */}
+      {/* コンテナ。待機ヤードか、置かれたノードの埠頭にある */}
       <AnimatePresence initial={false}>
         {pods
           .sort((a, b) => (a.metadata.name < b.metadata.name ? -1 : 1))

@@ -54,7 +54,7 @@ describe('景色の飾り', () => {
   });
 });
 
-describe('ファイルの街', () => {
+describe('住宅地区', () => {
   const vfs = createVfs({
     '/home/learner': null,
     '/home/learner/notes.txt': 'a\n',
@@ -97,7 +97,7 @@ describe('ファイルの街', () => {
   });
 });
 
-describe('記録の鉄道', () => {
+describe('鉄道網', () => {
   const spot = (path: string, lane: FileSpot['lane']): FileSpot => ({ path, lane, note: 'new', alsoChanged: false });
   const commit = (hash: string, row: number, col: number): PlacedCommit => ({ hash, message: hash, parents: [], row, col, ghost: false });
 
@@ -128,7 +128,7 @@ describe('記録の鉄道', () => {
   });
 });
 
-describe('クラスタ牧場', () => {
+describe('コンテナ港', () => {
   function ranchState(): ClusterState {
     let state: ClusterState = {
       ...emptyCluster([node('node-1', 4000, 8192), node('node-2', 4000, 8192)]),
@@ -140,7 +140,7 @@ describe('クラスタ牧場', () => {
     return { ...state, pods: new Map([...state.pods, ['default/huge', huge]]) };
   }
 
-  it('置き場所の決まったスライムは、自分のノードの土地の中にいる', () => {
+  it('置き場所の決まったコンテナは、自分のノードの埠頭の中にある', () => {
     const state = ranchState();
     const ranch = layoutRanch(state);
     const placed = [...state.pods.values()].filter((p) => p.status.nodeName !== null);
@@ -152,7 +152,7 @@ describe('クラスタ牧場', () => {
     }
   });
 
-  it('置き場所の決まっていないスライムは、城の横の待ち場にいる', () => {
+  it('置き場所の決まっていないコンテナは、管理棟の横の待機ヤードにある', () => {
     const state = ranchState();
     const ranch = layoutRanch(state);
     expect(waitingPods(state).map((p) => p.metadata.name)).toEqual(['huge']);
@@ -160,7 +160,7 @@ describe('クラスタ牧場', () => {
     expect(at && inside(at, ranch.pen)).toBe(true);
   });
 
-  it('係は命令が伝わる順に城の中に並び、窓口は土地の右に立つ', () => {
+  it('係は命令が伝わる順に管理棟の中に並び、窓口は埠頭の右に立つ', () => {
     const ranch = layoutRanch(ranchState());
     expect(ranch.booths.map((b) => b.component)).toEqual(['apiserver', 'etcd', 'controller', 'scheduler']);
     for (const booth of ranch.booths) expect(inside(booth.box, ranch.castle)).toBe(true);
@@ -169,8 +169,8 @@ describe('クラスタ牧場', () => {
   });
 });
 
-describe('チーム本部', () => {
-  it('提案の窓口は 作成 → レビュー → チェック → マージ の順に左から並ぶ', () => {
+describe('市役所の建築確認', () => {
+  it('申請の窓口は 作成 → レビュー → チェック → マージ の順に左から並ぶ', () => {
     const repo = openPull(createRepo('acme', 'app'), { title: 'feat', head: 'feature' }).repo;
     const quest = layoutGuild(repo).quests[0];
     expect(quest?.stages.map((s) => s.stage.id)).toEqual(['created', 'review', 'checks', 'merge']);
@@ -179,7 +179,7 @@ describe('チーム本部', () => {
     expect(quest?.dungeonY).toBeNull();
   });
 
-  it('チェックがあれば、関所の下に検査ラインができる', () => {
+  it('チェックがあれば、窓口の下に検査ラインができる', () => {
     const opened = openPull(createRepo('acme', 'app'), { title: 'feat', head: 'feature' }).repo;
     const repo = setChecks(opened, 1, [
       { name: 'build', status: 'failure', needs: [], logs: [] },

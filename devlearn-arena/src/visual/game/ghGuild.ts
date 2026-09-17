@@ -3,8 +3,8 @@ import { jobDag, prTimeline, type DagJob, type Stage } from '../prModel';
 import type { Box } from '../sceneKit';
 
 /**
- * GitHub を「チーム本部」として並べる。
- * 左上に本部の建物。その下に Pull Request を1件ずつ変更の提案として並べ、
+ * GitHub を「市役所の建築確認」として並べる。
+ * 左上に市役所の建物。その下に Pull Request を1件ずつ建築申請として並べ、
  * 作成 → レビュー → チェック → マージ の4つの窓口を道でつなぐ。チェックの中身（Actions のジョブ）は検査ラインとして下に描く。
  */
 

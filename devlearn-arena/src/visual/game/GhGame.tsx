@@ -10,7 +10,7 @@ import { EmptyWorld, GameStage } from './GameStage';
 import { layoutGuild, STAGE_H, STAGE_W } from './ghGuild';
 import { Sprite } from './pixel';
 import { INK, WORKER, workerPalette } from './sprites';
-import { BAD, Clickable, GOLD, House, OK, Road, Sign, Sparkle, STONE, STONE_DARK } from './scenery';
+import { BAD, Castle, Clickable, GOLD, OK, Road, Sign, Sparkle, STONE, STONE_DARK } from './scenery';
 
 interface Props {
   repo: Repo | null;
@@ -76,8 +76,8 @@ function Room({ check, box, blocked, animate }: { check: CheckRun; box: Box; blo
 }
 
 /**
- * GitHub のチーム本部。
- * Pull Request は変更の提案。作成 → レビュー → チェック → マージ の窓口を順に通ると取り込まれる。
+ * GitHub の市役所（建築確認の窓口）。
+ * Pull Request は建築申請。作成（申請）→ レビュー（審査）→ チェック（建築検査）→ マージ（着工許可）の窓口を順に通ると取り込まれる。
  * チェックの窓口の下には Actions のジョブが検査ラインとして並び、不合格の検査から先には × が付く。
  * 窓口を押すとその段のコマンド（gh pr view / review --approve / checks / merge）、検査を押すと gh pr checks を打つ。
  */
@@ -110,9 +110,9 @@ export function GhGame({ repo, onCommand }: Props) {
         </span>
       }
     >
-      {/* チーム本部の建物と、掲示された保護ルール */}
-      <House {...guild.hall} wall="#e8d3a8" roof="#3f6f8f" />
-      <Sign cx={guild.hall.x + guild.hall.w / 2} y={guild.hall.y - 34} text={`🏰 ${repo.owner}/${repo.name}`} strong maxWidth={260} />
+      {/* 市役所の建物と、掲示された保護ルール（建築基準） */}
+      <Castle {...guild.hall} />
+      <Sign cx={guild.hall.x + guild.hall.w / 2} y={guild.hall.y - 34} text={`🏛 ${repo.owner}/${repo.name}`} strong maxWidth={260} />
       <g aria-hidden>
         <rect x={guild.hall.x + guild.hall.w + 40} y={guild.hall.y} width={380} height={guild.hall.h - 10} fill="#f6e8cd" stroke={INK} strokeWidth={3} />
         <rect x={guild.hall.x + guild.hall.w + 40} y={guild.hall.y} width={380} height={24} fill="#b07f4a" stroke={INK} strokeWidth={3} />
@@ -151,7 +151,7 @@ export function GhGame({ repo, onCommand }: Props) {
         const roomByName = new Map(quest.rooms.map((r) => [r.check.name, r]));
         return (
           <g key={pull.number} data-pull={pull.number} data-state={pull.state}>
-            {/* 変更の提案書 */}
+            {/* 建築申請書 */}
             <Clickable command={prCommands.view(pull.number)} onCommand={onCommand} label={`#${String(pull.number)}`}>
               <rect x={quest.board.x} y={quest.board.y} width={quest.board.w} height={quest.board.h} fill="#fff4d6" stroke={INK} strokeWidth={3} />
               <rect x={quest.board.x + quest.board.w / 2 - 5} y={quest.board.y - 6} width={10} height={10} fill={BAD} stroke={INK} strokeWidth={1.5} />

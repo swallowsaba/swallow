@@ -38,7 +38,7 @@ async function learnAndStart(page: Page): Promise<void> {
     for (;;) {
       await page.locator('[data-testid="exam"] [data-correct="true"]').click();
       const examNext = page.getByTestId('exam-next');
-      const isLast = (await examNext.textContent())?.includes('施設を建てる') ?? false;
+      const isLast = (await examNext.textContent())?.includes('建設を決定する') ?? false;
       await examNext.click();
       if (isLast) break;
     }
@@ -52,7 +52,7 @@ async function learnAndStart(page: Page): Promise<void> {
     await page.getByTestId('quiz-next').click();
   }
   await page.getByTestId('try-next').click();
-  await page.getByRole('button', { name: '▶ 作業をはじめる' }).click();
+  await page.getByRole('button', { name: '▶ 対応をはじめる' }).click();
   await expect(panel).toHaveAttribute('data-stage', 'work');
   await expect(page.locator('.xterm-screen')).toBeVisible();
 }
@@ -87,8 +87,8 @@ test('施設を学んで建て、依頼を聞いてからコマンドを打つ�
   await open(page, './world/kernel');
   await learnAndStart(page);
 
-  // 既定は「いまの状態」のゲームの世界（ファイルの街）
-  const world = page.getByRole('img', { name: 'ファイルの街' });
+  // 既定は「いまの状態」のゲームの世界（住宅地区）
+  const world = page.getByRole('img', { name: '住宅地区' });
   await expect(world).toBeVisible();
   await expect(world).not.toContainText('reports');
   await type(page, 'mkdir reports');
@@ -124,15 +124,15 @@ test('条件を満たすと手順が進み、ヒントはターミナルに打�
   await expect(page.getByText('やること 2')).toBeVisible();
 });
 
-test('一度聞いた依頼は次から出ず、聞き直せる', async ({ page }) => {
+test('一度聞いた要望は次から出ず、聞き直せる', async ({ page }) => {
   await open(page, './world/kernel');
   await learnAndStart(page);
   await page.reload();
   const panel = page.getByTestId('learning-panel');
   await expect(panel).toHaveAttribute('data-stage', 'work');
-  await page.getByRole('button', { name: '依頼を聞き直す' }).click();
+  await page.getByRole('button', { name: '要望を聞き直す' }).click();
   await expect(panel).toHaveAttribute('data-stage', 'briefing');
-  await page.getByRole('button', { name: '説明をとばして作業をはじめる' }).click();
+  await page.getByRole('button', { name: '説明をとばして対応をはじめる' }).click();
   await expect(panel).toHaveAttribute('data-stage', 'work');
 });
 

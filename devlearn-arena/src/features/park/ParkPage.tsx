@@ -138,8 +138,8 @@ export default function ParkPage() {
 
 /**
  * カテゴリの作業画面の中身。
- * 左上＝学習パネル（街の紹介 → 施設を学んで建てる → 依頼を聞く → 作業）、左下＝ターミナル、右＝街といまの状態。
- * 施設を建てて依頼を聞くまで、ターミナルは使えない（説明と背景を理解してからコマンドを打つ）。
+ * 左上＝学習パネル（市長就任 → 施設の建設を決める → 住民の要望を聞く → コマンドで対応）、左下＝ターミナル、右＝街といまの状態。
+ * 施設を建てて要望を聞くまで、ターミナルは使えない（説明と背景を理解してからコマンドを打つ）。
  */
 function Park({
   mission,
@@ -549,7 +549,7 @@ function Park({
           {t(`world.rank.${city.rank}`)}
         </span>
         <span className="font-mono text-sm text-cream" data-testid="world-stats">
-          {t('world.stats', { residents: city.residents, a: city.built, b: city.facilities.length })}
+          {t('world.stats', { residents: city.residents, comfort: city.comfort, a: city.built, b: city.facilities.length })}
         </span>
         <label htmlFor="mission-picker" className="font-mono text-sm font-bold text-cream">
           {t('park.mission')}
@@ -778,7 +778,7 @@ function Park({
 
 const STAGES = ['facility', 'briefing', 'work'] as const;
 
-/** いまどの段階にいるか。施設を学ぶ → 依頼を聞く → コマンドで作業 */
+/** いまどの段階にいるか。施設の建設を決める → 住民の要望を聞く → コマンドで対応する */
 function StageBar({ stage }: { stage: 'welcome' | 'facility' | 'briefing' | 'work' }) {
   const t = useT();
   const index = stage === 'welcome' ? -1 : STAGES.indexOf(stage);

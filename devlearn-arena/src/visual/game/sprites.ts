@@ -92,24 +92,24 @@ export function workerPalette(shirt: string, hat: string): Palette {
   return { ...heroPalette(shirt, '#4a2f1a'), t: hat };
 }
 
-/** スライム（Pod）。g が体、d が影 */
-export const SLIME: PixelMap = [
-  '.....kkkk.....',
-  '...kkggggkk...',
-  '..kggwwggggk..',
-  '.kggwwggggggk.',
-  '.kgwggggggggk.',
-  'kggggkggkggggk',
-  'kggggkggkggggk',
-  'kggggggggggggk',
-  'kggggggggggggk',
-  'kddggggggggddk',
-  '.kddddddddddk.',
-  '..kkkkkkkkkk..',
+/** 輸送コンテナ（Pod）。g が塗り、d が影と波板 */
+export const CONTAINER: PixelMap = [
+  '..............',
+  'kkkkkkkkkkkkkk',
+  'kgdgdgdgdgdgdk',
+  'kgdgdgdgdgdgdk',
+  'kgdgdgdgdgdgdk',
+  'kgdgdgdgdgwwgk',
+  'kgdgdgdgdgwwgk',
+  'kgdgdgdgdgdgdk',
+  'kgdgdgdgdgdgdk',
+  'kkkkkkkkkkkkkk',
+  '.kk........kk.',
+  '..............',
 ];
 
-export function slimePalette(body: string, shade: string): Palette {
-  return { k: INK, g: body, d: shade, w: '#ffffff' };
+export function containerPalette(body: string, shade: string): Palette {
+  return { k: INK, g: body, d: shade, w: '#f6f6f0' };
 }
 
 /** 木箱（ファイル） */

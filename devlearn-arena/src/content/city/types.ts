@@ -14,16 +14,16 @@ export type BuildingKind =
   | 'office' // 事務所
   | 'house'
   | 'warehouse' // 倉庫
-  | 'workshop' // 工房
+  | 'workshop' // 作業場
   | 'station' // 駅
   | 'bridge'
-  | 'tower' // 見張り台
-  | 'castle' // 城・本部
+  | 'tower' // 電波塔・中継局
+  | 'castle' // 本部ビル
   | 'factory' // 工場
   | 'post' // 郵便局
   | 'library' // 図書館・記録
-  | 'gate' // 関所
-  | 'farm' // 牧場
+  | 'gate' // 検査ゲート
+  | 'farm' // 農地
   | 'lab'; // 研究所
 
 export interface FacilityQuiz {

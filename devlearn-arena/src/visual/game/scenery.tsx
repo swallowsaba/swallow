@@ -230,30 +230,30 @@ export function House({ x, y, w, h, lit, alarm, dim, wall = WALL, roof = ROOF }:
   );
 }
 
-/** 城壁と塔。コントロールプレーンや目的地に使う */
+/** オフィスビル。ガラスの窓が並び、屋上に設備がある（管理棟や本部に使う） */
 export function Castle({ x, y, w, h, lit, alarm, dim }: BuildingProps) {
-  const teeth = Math.max(3, Math.floor(w / 26));
-  const toothW = w / (teeth * 2 - 1);
+  const cols = Math.max(3, Math.floor((w - 12) / 18));
+  const rows = Math.max(2, Math.floor((h - 26) / 16));
   return (
     <g opacity={dim ? 0.55 : 1}>
       <Halo x={x} y={y} w={w} h={h} lit={lit} alarm={alarm} />
       <rect x={x + 6} y={y + 18} width={w} height={h - 12} fill="rgba(0,0,0,0.22)" />
-      <rect x={x} y={y + 12} width={w} height={h - 12} fill={STONE} stroke={INK} strokeWidth={3} />
-      {Array.from({ length: teeth }, (_, i) => (
-        <rect key={i} x={x + i * 2 * toothW} y={y} width={toothW} height={14} fill={STONE} stroke={INK} strokeWidth={3} />
-      ))}
-      {/* 石積み */}
-      {Array.from({ length: Math.floor((h - 20) / 14) }, (_, row) =>
-        Array.from({ length: Math.floor(w / 28) }, (_, col) => (
+      {/* 屋上の設備 */}
+      <rect x={x + 10} y={y + 2} width={Math.min(40, w / 4)} height={12} fill="#b9b2a4" stroke={INK} strokeWidth={2} />
+      <rect x={x + w - 34} y={y + 4} width={22} height={10} fill="#9fb0bd" stroke={INK} strokeWidth={2} />
+      <rect x={x} y={y + 12} width={w} height={h - 12} fill="#dfe6ec" stroke={INK} strokeWidth={3} />
+      <rect x={x} y={y + 12} width={w} height={6} fill="#9fb0bd" />
+      {Array.from({ length: rows }, (_, r) =>
+        Array.from({ length: cols }, (_, c) => (
           <rect
-            key={`${String(row)}-${String(col)}`}
-            x={x + 4 + col * 28 + (row % 2) * 14}
-            y={y + 18 + row * 14}
-            width={24}
+            key={`${String(r)}-${String(c)}`}
+            x={x + 8 + c * 18}
+            y={y + 24 + r * 16}
+            width={12}
             height={10}
-            fill="none"
-            stroke={STONE_DARK}
-            strokeWidth={1.5}
+            fill={lit ? '#ffe69a' : '#8fb8d8'}
+            stroke="#5f7f99"
+            strokeWidth={1}
           />
         )),
       )}
@@ -261,25 +261,29 @@ export function Castle({ x, y, w, h, lit, alarm, dim }: BuildingProps) {
   );
 }
 
-/** 見張りの塔（ルーター） */
+/** 中継局（ルーター）。鉄塔とアンテナのある局舎 */
 export function Tower({ x, y, w, h, lit, alarm, dim }: BuildingProps) {
+  const mx = x + w / 2;
   return (
     <g opacity={dim ? 0.55 : 1}>
       <Halo x={x} y={y} w={w} h={h} lit={lit} alarm={alarm} />
-      <rect x={x + 5} y={y + 17} width={w} height={h - 12} fill="rgba(0,0,0,0.22)" />
-      <rect x={x} y={y + 12} width={w} height={h - 12} fill={STONE} stroke={INK} strokeWidth={3} />
-      {Array.from({ length: 3 }, (_, i) => (
-        <rect key={i} x={x + (i * (w - 14)) / 2} y={y} width={14} height={14} fill={STONE} stroke={INK} strokeWidth={3} />
+      {/* 鉄塔 */}
+      <line x1={mx - 10} x2={mx} y1={y + h * 0.45} y2={y - 26} stroke="#6e7a84" strokeWidth={3} />
+      <line x1={mx + 10} x2={mx} y1={y + h * 0.45} y2={y - 26} stroke="#6e7a84" strokeWidth={3} />
+      {[0.1, 0.25, 0.4].map((k) => (
+        <line key={k} x1={mx - 10 + k * 18} x2={mx + 10 - k * 18} y1={y - 26 + (h * 0.45 + 26) * (1 - k)} y2={y - 26 + (h * 0.45 + 26) * (1 - k)} stroke="#6e7a84" strokeWidth={2} />
       ))}
-      <rect x={x + w / 2 - 7} y={y + 26} width={14} height={20} fill="#3b4a6b" stroke={INK} strokeWidth={2} />
-      <rect x={x + w / 2 - 10} y={y + h - 26} width={20} height={26} fill="#7a5230" stroke={INK} strokeWidth={2} />
-      <line x1={x + w - 8} x2={x + w - 8} y1={y - 26} y2={y} stroke={INK} strokeWidth={3} />
-      <polygon points={`${String(x + w - 8)},${String(y - 26)} ${String(x + w + 14)},${String(y - 19)} ${String(x + w - 8)},${String(y - 12)}`} fill={BAD} stroke={INK} strokeWidth={2} />
+      <circle cx={mx} cy={y - 28} r={4} fill={lit || alarm ? BAD : '#c9c9c9'} stroke={INK} strokeWidth={1.5} />
+      {/* 局舎 */}
+      <rect x={x + 5} y={y + h * 0.45 + 5} width={w} height={h * 0.55} fill="rgba(0,0,0,0.22)" />
+      <rect x={x} y={y + h * 0.45} width={w} height={h * 0.55} fill="#e9eef5" stroke={INK} strokeWidth={3} />
+      <rect x={x + w / 2 - 10} y={y + h - 22} width={20} height={22} fill="#5f7f99" stroke={INK} strokeWidth={2} />
+      <rect x={x + 6} y={y + h * 0.45 + 8} width={w - 12} height={8} fill="#8fb8d8" stroke="#5f7f99" strokeWidth={1} />
     </g>
   );
 }
 
-/** 分かれ道の小屋（スイッチ） */
+/** 配電・交換所の小屋（スイッチ） */
 export function Kiosk({ x, y, w, h, lit, alarm, dim }: BuildingProps) {
   return (
     <g opacity={dim ? 0.55 : 1}>
@@ -314,31 +318,32 @@ export function Cart({ x, y, w, h, lit }: BuildingProps) {
   );
 }
 
-/** 柵で囲った土地（ノード）。gateOpen が false なら門が閉じる */
+/** コンクリートの埠頭（ノード）。gateOpen が false なら入口の遮断機が下りる */
 export function Field({ x, y, w, h, lit, dim, gateOpen }: BuildingProps & { gateOpen: boolean }) {
-  const posts = Math.floor(w / 24);
+  const bays = Math.max(2, Math.floor(w / 64));
   return (
     <g opacity={dim ? 0.7 : 1}>
       <Halo x={x} y={y} w={w} h={h} lit={lit} />
-      <rect x={x} y={y} width={w} height={h} fill="#8fc46a" />
-      {Array.from({ length: Math.floor(h / 22) }, (_, i) => (
-        <line key={i} x1={x + 6} x2={x + w - 6} y1={y + 16 + i * 22} y2={y + 16 + i * 22} stroke="rgba(60,100,40,0.25)" strokeWidth={3} />
+      <rect x={x + 5} y={y + 5} width={w} height={h} fill="rgba(0,0,0,0.2)" />
+      <rect x={x} y={y} width={w} height={h} fill="#c9c6bf" stroke={INK} strokeWidth={3} />
+      {/* 置き場の白線 */}
+      {Array.from({ length: bays - 1 }, (_, i) => (
+        <line key={i} x1={x + ((i + 1) * w) / bays} x2={x + ((i + 1) * w) / bays} y1={y + 54} y2={y + h - 6} stroke="#f6f6f0" strokeWidth={2} strokeDasharray="8 6" />
       ))}
-      <rect x={x} y={y} width={w} height={h} fill="none" stroke="#7a5230" strokeWidth={5} />
-      <rect x={x + 3} y={y + 3} width={w - 6} height={h - 6} fill="none" stroke="#b07f4a" strokeWidth={2} />
-      {Array.from({ length: posts + 1 }, (_, i) => (
-        <g key={i}>
-          <rect x={x + i * (w / posts) - 3} y={y - 5} width={7} height={10} fill="#7a5230" stroke={INK} strokeWidth={1.5} />
-          <rect x={x + i * (w / posts) - 3} y={y + h - 5} width={7} height={10} fill="#7a5230" stroke={INK} strokeWidth={1.5} />
+      {/* 岸壁の係船柱 */}
+      {Array.from({ length: bays + 1 }, (_, i) => (
+        <rect key={`b-${String(i)}`} x={x + (i * w) / bays - 3} y={y + h - 6} width={6} height={8} fill="#f2c14e" stroke={INK} strokeWidth={1.5} />
+      ))}
+      {/* 入口の遮断機 */}
+      <rect x={x - 8} y={y + h / 2 - 20} width={8} height={40} fill="#8f877a" stroke={INK} strokeWidth={2} />
+      {gateOpen ? (
+        <line x1={x - 4} x2={x - 4} y1={y + h / 2 - 20} y2={y + h / 2 - 52} stroke="#f6f6f0" strokeWidth={5} />
+      ) : (
+        <g>
+          <line x1={x - 4} x2={x + 40} y1={y + h / 2 - 18} y2={y + h / 2 - 18} stroke="#f6f6f0" strokeWidth={6} />
+          <line x1={x + 6} x2={x + 16} y1={y + h / 2 - 18} y2={y + h / 2 - 18} stroke={BAD} strokeWidth={6} />
+          <line x1={x + 26} x2={x + 36} y1={y + h / 2 - 18} y2={y + h / 2 - 18} stroke={BAD} strokeWidth={6} />
         </g>
-      ))}
-      {/* 門。閉じていると横木が渡る */}
-      <rect x={x - 6} y={y + h / 2 - 22} width={12} height={44} fill={gateOpen ? '#8fc46a' : '#7a5230'} stroke={INK} strokeWidth={2} />
-      {gateOpen ? null : (
-        <>
-          <line x1={x - 14} x2={x + 14} y1={y + h / 2 - 14} y2={y + h / 2 + 14} stroke={BAD} strokeWidth={5} />
-          <line x1={x + 14} x2={x - 14} y1={y + h / 2 - 14} y2={y + h / 2 + 14} stroke={BAD} strokeWidth={5} />
-        </>
       )}
     </g>
   );

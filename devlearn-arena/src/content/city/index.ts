@@ -56,10 +56,18 @@ export interface CityState {
   built: number;
   complete: number;
   residents: number;
+  /**
+   * 住民の満足度（0〜100）。市長としての成績。
+   * 建てた施設が稼働するほど上がり、建てられるのに建てていない施設（放置した困りごと）があると下がる。
+   */
+  comfort: number;
   rank: CityRank;
   /** 次に取り組むとよい施設。建てられる施設が先、無ければ稼働しきっていない施設 */
   nextFacilityId: string | null;
 }
+
+/** 満足度の計算。何も無い街の満足度と、建てたばかりの施設の貢献 */
+export const COMFORT = { base: 30, built: 0.4 } as const;
 
 /** 住民の増え方。建てると住み始め、稼働するほど増える */
 export const RESIDENTS = { perBuilt: 20, perOperation: 30, perComplete: 10 } as const;
@@ -105,6 +113,10 @@ export function cityOf(
     if (f.state === 'locked' || f.state === 'available') return sum;
     return sum + RESIDENTS.perBuilt + Math.round(f.ratio * RESIDENTS.perOperation) + (f.state === 'complete' ? RESIDENTS.perComplete : 0);
   }, 0);
+  // 満足度：建てた施設は稼働率に応じて 0.4〜1.0、建てられるのに放置している施設は 0 として平均し、30〜100% に写す
+  const counted = facilities.filter((f) => f.state !== 'locked');
+  const score = counted.reduce((sum, f) => sum + (f.state === 'available' ? 0 : COMFORT.built + (1 - COMFORT.built) * f.ratio), 0);
+  const comfort = counted.length === 0 ? COMFORT.base : Math.round(COMFORT.base + (100 - COMFORT.base) * (score / counted.length));
   const next =
     facilities.find((f) => f.state === 'available') ??
     facilities.find((f) => f.state === 'built' || f.state === 'operating') ??
@@ -115,6 +127,7 @@ export function cityOf(
     built: builtCount,
     complete,
     residents,
+    comfort,
     rank: rankOf(builtCount, complete, facilities.length),
     nextFacilityId: next?.facility.id ?? null,
   };
