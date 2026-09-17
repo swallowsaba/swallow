@@ -1,18 +1,19 @@
 {
   "v": 1,
-  "updatedAt": "2026-09-12T00:15:54.346Z",
+  "updatedAt": "2026-09-17T00:24:07.894Z",
   "note": "ODPT が API 形式の提供を終了した事業者を GTFS から取り込んだもの。ダイヤ改正時のスナップショット。",
   "operators": [
     {
       "id": "KeioBus",
       "title": "京王バス",
       "dir": "KeioBus",
-      "generatedAt": "2026-09-12T00:15:38.266Z",
-      "stopCount": 2924,
-      "patternCount": 1473,
-      "validFrom": "20260903",
+      "generatedAt": "2026-09-17T00:23:57.378Z",
+      "stopCount": 2927,
+      "patternCount": 1489,
+      "validFrom": "20260916",
       "license": "公共交通オープンデータ基本ライセンス",
-      "attribution": "公共交通オープンデータセンター"
+      "attribution": "公共交通オープンデータセンター",
+      "searchable": true
     },
     {
       "id": "OdakyuBus",
@@ -23,7 +24,8 @@
       "patternCount": 1788,
       "validFrom": "20260716",
       "license": "公共交通オープンデータ基本ライセンス",
-      "attribution": "公共交通オープンデータセンター"
+      "attribution": "公共交通オープンデータセンター",
+      "searchable": true
     },
     {
       "id": "NishiTokyoBus",
@@ -34,7 +36,32 @@
       "patternCount": 819,
       "validFrom": "20260912",
       "license": "公共交通オープンデータ基本ライセンス",
-      "attribution": "公共交通オープンデータセンター"
+      "attribution": "公共交通オープンデータセンター",
+      "searchable": true
+    },
+    {
+      "id": "Toei",
+      "title": "都営バス",
+      "dir": "Toei",
+      "generatedAt": "2026-09-17T00:23:46.715Z",
+      "stopCount": 3690,
+      "patternCount": 2292,
+      "validFrom": null,
+      "license": "CC BY 4.0",
+      "attribution": "東京都交通局 / 公共交通オープンデータ協議会",
+      "searchable": false
+    },
+    {
+      "id": "KantoBus",
+      "title": "関東バス",
+      "dir": "KantoBus",
+      "generatedAt": "2026-09-17T00:24:07.029Z",
+      "stopCount": 1329,
+      "patternCount": 900,
+      "validFrom": "20260824",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "attribution": "公共交通オープンデータセンター",
+      "searchable": true
     }
   ],
   "failed": []
