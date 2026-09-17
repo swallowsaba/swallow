@@ -3,7 +3,7 @@ import type { CityPlan } from './types';
 export const githubCity: CityPlan = {
   track: 'github',
   name: 'GitHub の街',
-  guide: { name: 'レイ', role: 'ギルドマスター' },
+  guide: { name: 'レイ', role: 'チームリーダー' },
   welcome:
     '一人の記録が、チームの記録になる街へようこそ。ここでは「誰が何を、なぜ変えたいのか」を見える場所に置き、確認し、事故を仕組みで止め、自動で検査して世に出す。施設を建てるほど、チームで速く安全に仕事ができる街になっていく。',
   facilities: [

@@ -3,7 +3,7 @@ import { allMissions, missionById } from './registry';
 import type { LessonDefinition, MissionTrack } from './types';
 
 export const TRACK_LABEL: Record<MissionTrack, string> = {
-  kernel: '序章の島',
+  kernel: 'シェル',
   git: 'Git',
   k8s: 'Kubernetes',
   net: 'Network',

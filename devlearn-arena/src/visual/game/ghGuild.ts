@@ -3,9 +3,9 @@ import { jobDag, prTimeline, type DagJob, type Stage } from '../prModel';
 import type { Box } from '../sceneKit';
 
 /**
- * GitHub を「冒険者ギルド」として並べる。
- * 左上にギルドの建物。その下に Pull Request を1件ずつクエストとして並べ、
- * 作成 → レビュー → チェック → マージ の4つの関所を道でつなぐ。チェックの中身（Actions のジョブ）はダンジョンの部屋として下に描く。
+ * GitHub を「チーム本部」として並べる。
+ * 左上に本部の建物。その下に Pull Request を1件ずつ変更の提案として並べ、
+ * 作成 → レビュー → チェック → マージ の4つの窓口を道でつなぐ。チェックの中身（Actions のジョブ）は検査ラインとして下に描く。
  */
 
 const MARGIN = 40;
@@ -23,7 +23,7 @@ export interface GuildQuest {
   stages: { stage: Stage; box: Box }[];
   /** 承認・差し戻しの看板を置く位置 */
   actionsY: number;
-  /** ダンジョンの見出しの位置。チェックが無ければ null */
+  /** 検査ラインの見出しの位置。チェックが無ければ null */
   dungeonY: number | null;
   rooms: (DagJob & { box: Box })[];
   edges: { from: string; to: string }[];

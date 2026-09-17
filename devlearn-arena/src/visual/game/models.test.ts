@@ -169,8 +169,8 @@ describe('クラスタ牧場', () => {
   });
 });
 
-describe('冒険者ギルド', () => {
-  it('クエストの関所は 作成 → レビュー → チェック → マージ の順に左から並ぶ', () => {
+describe('チーム本部', () => {
+  it('提案の窓口は 作成 → レビュー → チェック → マージ の順に左から並ぶ', () => {
     const repo = openPull(createRepo('acme', 'app'), { title: 'feat', head: 'feature' }).repo;
     const quest = layoutGuild(repo).quests[0];
     expect(quest?.stages.map((s) => s.stage.id)).toEqual(['created', 'review', 'checks', 'merge']);
@@ -179,7 +179,7 @@ describe('冒険者ギルド', () => {
     expect(quest?.dungeonY).toBeNull();
   });
 
-  it('チェックがあれば、関所の下にダンジョンの部屋ができる', () => {
+  it('チェックがあれば、関所の下に検査ラインができる', () => {
     const opened = openPull(createRepo('acme', 'app'), { title: 'feat', head: 'feature' }).repo;
     const repo = setChecks(opened, 1, [
       { name: 'build', status: 'failure', needs: [], logs: [] },

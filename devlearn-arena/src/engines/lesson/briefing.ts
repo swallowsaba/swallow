@@ -157,7 +157,7 @@ export const QUEST_GIVER: Record<MissionTrack, { name: string; role: string }> =
   git: { name: 'ミオ', role: '駅長' },
   k8s: { name: 'ゴロー', role: '牧場主' },
   net: { name: 'ポスト', role: '郵便局長' },
-  github: { name: 'レイ', role: 'ギルドマスター' },
+  github: { name: 'レイ', role: 'チームリーダー' },
 };
 
 const pools = new Map<MissionTrack, QuizPool>();

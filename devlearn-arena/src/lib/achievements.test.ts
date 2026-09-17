@@ -83,7 +83,7 @@ describe('実績', () => {
     expect(badges.find((b) => b.id === 'streak-30')?.earned).toBe(false);
   });
 
-  it('トラック踏破の実績が各トラックにある', () => {
+  it('分野をすべて終えた実績が各分野にある', () => {
     const badges = achievements({ profile: profile(), lessons: {}, missionProgress: {} });
     for (const track of ['git', 'k8s', 'net', 'github']) {
       expect(badges.some((b) => b.id === `track-${track}`)).toBe(true);

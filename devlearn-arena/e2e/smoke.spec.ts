@@ -139,7 +139,7 @@ test('一度聞いた依頼は次から出ず、聞き直せる', async ({ page 
 test('作業画面から全体図と設定へ行ける', async ({ page }) => {
   await open(page, './world/kernel');
   await page.getByRole('link', { name: '全体図' }).click();
-  await expect(page.getByRole('heading', { name: '冒険の地図', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '全体図', level: 1 })).toBeVisible();
 
   await open(page, './settings');
   const download = page.waitForEvent('download');
@@ -167,9 +167,9 @@ test('記録に実績と連続日数が出る', async ({ page }) => {
   await expect(page.getByText('実績 0 /', { exact: false })).toBeVisible();
 });
 
-test('目次から遊べるレッスンへ入ると、そのカテゴリの作業画面で説明から始まる', async ({ page }) => {
+test('目次から取り組めるレッスンへ入ると、そのカテゴリの作業画面で説明から始まる', async ({ page }) => {
   await open(page, './track/git');
-  const playable = page.getByRole('link', { name: /遊べる/ }).first();
+  const playable = page.getByRole('link', { name: /取り組める/ }).first();
   await expect(playable).toBeVisible();
   await playable.click();
   await expect(page).toHaveURL(/\/world\/git\?mission=/);

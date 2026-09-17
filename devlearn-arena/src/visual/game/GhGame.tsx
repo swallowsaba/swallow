@@ -9,7 +9,7 @@ import { clip, type Box } from '../sceneKit';
 import { EmptyWorld, GameStage } from './GameStage';
 import { layoutGuild, STAGE_H, STAGE_W } from './ghGuild';
 import { Sprite } from './pixel';
-import { CHEST, CHEST_PALETTE, INK, SKULL, SKULL_PALETTE, TORCH, TORCH_PALETTE, WORKER, workerPalette } from './sprites';
+import { INK, WORKER, workerPalette } from './sprites';
 import { BAD, Clickable, GOLD, House, OK, Road, Sign, Sparkle, STONE, STONE_DARK } from './scenery';
 
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
   onCommand?: RunCommand;
 }
 
-const STAGE_ICON: Record<StageId, string> = { created: '📜', review: '🛡', checks: '⚔', merge: '👑' };
+const STAGE_ICON: Record<StageId, string> = { created: '📝', review: '👀', checks: '🔍', merge: '🚀' };
 const STAGE_LABEL: Record<StageId, TKey> = {
   created: 'viz.stage.created',
   review: 'viz.stage.review',
@@ -27,36 +27,38 @@ const STAGE_LABEL: Record<StageId, TKey> = {
 const STAGE_FILL: Record<StageState, string> = { done: '#a9d892', active: '#f6d27a', waiting: '#e7dcc4', bad: '#f0a293' };
 const STAGE_MARK: Record<StageState, string> = { done: '✓', active: '！', waiting: '…', bad: '✗' };
 
-/** ジョブの部屋。中にいるもので結果を見せる（宝箱＝成功、どくろ＝失敗、たいまつ＝実行中） */
+/** 検査の持ち場。結果を印で見せる（合格 ✓・不合格 ✗・検査中・見送り・順番待ち） */
 function Room({ check, box, blocked, animate }: { check: CheckRun; box: Box; blocked: boolean; animate: boolean }) {
   const tone = check.status === 'success' ? '#cfe8c0' : check.status === 'failure' ? '#f3c4bb' : check.status === 'skipped' ? '#d4d4d4' : STONE;
+  const badge = { cx: box.x + 22, cy: box.y + 26 };
   return (
     <g>
       <rect x={box.x + 4} y={box.y + 4} width={box.w} height={box.h} fill="rgba(0,0,0,0.25)" />
       <rect x={box.x} y={box.y} width={box.w} height={box.h} fill={tone} stroke={INK} strokeWidth={3} />
       <rect x={box.x} y={box.y} width={box.w} height={6} fill={STONE_DARK} />
-      <g transform={`translate(${String(box.x + 8)} ${String(box.y + 12)})`}>
-        {check.status === 'success' ? (
-          <Sprite map={CHEST} palette={CHEST_PALETTE} scale={2.5} />
-        ) : check.status === 'failure' ? (
-          <Sprite map={SKULL} palette={SKULL_PALETTE} scale={2.5} x={3} y={-2} />
-        ) : check.status === 'running' ? (
-          <motion.g
-            animate={animate ? { opacity: [1, 0.55, 1] } : { opacity: 1 }}
-            transition={animate ? { repeat: Infinity, duration: 0.7 } : { duration: 0 }}
-          >
-            <Sprite map={TORCH} palette={TORCH_PALETTE} scale={3} x={6} y={-4} />
-          </motion.g>
-        ) : check.status === 'skipped' ? (
-          <g fill={STONE_DARK} stroke={INK} strokeWidth={1.5}>
-            <rect x={2} y={16} width={12} height={8} />
-            <rect x={12} y={10} width={14} height={14} />
-            <rect x={22} y={18} width={8} height={6} />
-          </g>
-        ) : (
-          <rect x={4} y={0} width={22} height={26} fill="#7a5230" stroke={INK} strokeWidth={2} />
-        )}
-      </g>
+      {check.status === 'running' ? (
+        <motion.g
+          animate={animate ? { rotate: 360 } : { rotate: 0 }}
+          transition={animate ? { repeat: Infinity, duration: 1.6, ease: 'linear' } : { duration: 0 }}
+          style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+        >
+          <circle cx={badge.cx} cy={badge.cy} r={11} fill="none" stroke="#b8862b" strokeWidth={4} strokeDasharray="8 5" />
+        </motion.g>
+      ) : (
+        <g>
+          <circle
+            cx={badge.cx}
+            cy={badge.cy}
+            r={12}
+            fill={check.status === 'success' ? OK : check.status === 'failure' ? BAD : check.status === 'skipped' ? '#a9a9a9' : '#f6e8cd'}
+            stroke={INK}
+            strokeWidth={2}
+          />
+          <text x={badge.cx} y={badge.cy + 1} fontSize={14} fontWeight={900} textAnchor="middle" dominantBaseline="middle" fill={check.status === 'queued' ? INK : '#fff'}>
+            {check.status === 'success' ? '✓' : check.status === 'failure' ? '✗' : check.status === 'skipped' ? '−' : '…'}
+          </text>
+        </g>
+      )}
       <text x={box.x + 44} y={box.y + 22} fontSize={12} fontWeight={800} fontFamily="var(--f-mono)" fill={INK}>
         {clip(check.name, box.w - 50, 12)}
       </text>
@@ -74,10 +76,10 @@ function Room({ check, box, blocked, animate }: { check: CheckRun; box: Box; blo
 }
 
 /**
- * GitHub の冒険者ギルド。
- * Pull Request はクエスト。作成 → レビュー → チェック → マージ の関所を順に越えると達成になる。
- * チェックの関所の下には Actions のジョブがダンジョンの部屋として並び、失敗の部屋から先の部屋には × が付く。
- * 関所を押すとその段のコマンド（gh pr view / review --approve / checks / merge）、部屋を押すと gh pr checks を打つ。
+ * GitHub のチーム本部。
+ * Pull Request は変更の提案。作成 → レビュー → チェック → マージ の窓口を順に通ると取り込まれる。
+ * チェックの窓口の下には Actions のジョブが検査ラインとして並び、不合格の検査から先には × が付く。
+ * 窓口を押すとその段のコマンド（gh pr view / review --approve / checks / merge）、検査を押すと gh pr checks を打つ。
  */
 export function GhGame({ repo, onCommand }: Props) {
   const t = useT();
@@ -108,7 +110,7 @@ export function GhGame({ repo, onCommand }: Props) {
         </span>
       }
     >
-      {/* ギルドの建物と、掲示された保護ルール */}
+      {/* チーム本部の建物と、掲示された保護ルール */}
       <House {...guild.hall} wall="#e8d3a8" roof="#3f6f8f" />
       <Sign cx={guild.hall.x + guild.hall.w / 2} y={guild.hall.y - 34} text={`🏰 ${repo.owner}/${repo.name}`} strong maxWidth={260} />
       <g aria-hidden>
@@ -149,7 +151,7 @@ export function GhGame({ repo, onCommand }: Props) {
         const roomByName = new Map(quest.rooms.map((r) => [r.check.name, r]));
         return (
           <g key={pull.number} data-pull={pull.number} data-state={pull.state}>
-            {/* クエストの貼り紙 */}
+            {/* 変更の提案書 */}
             <Clickable command={prCommands.view(pull.number)} onCommand={onCommand} label={`#${String(pull.number)}`}>
               <rect x={quest.board.x} y={quest.board.y} width={quest.board.w} height={quest.board.h} fill="#fff4d6" stroke={INK} strokeWidth={3} />
               <rect x={quest.board.x + quest.board.w / 2 - 5} y={quest.board.y - 6} width={10} height={10} fill={BAD} stroke={INK} strokeWidth={1.5} />
@@ -165,12 +167,12 @@ export function GhGame({ repo, onCommand }: Props) {
               </text>
             </Clickable>
 
-            {/* 関所をつなぐ道 */}
+            {/* 窓口をつなぐ道 */}
             {first && last ? (
               <Road d={`M ${String(first.x + 20)} ${String(first.y + STAGE_H - 8)} L ${String(last.x + last.w - 20)} ${String(last.y + STAGE_H - 8)}`} lit={pull.state === 'merged'} />
             ) : null}
 
-            {/* 4つの関所 */}
+            {/* 4つの窓口 */}
             {quest.stages.map(({ stage, box }) => {
               const command = stageCommand(stage, pull);
               return (
@@ -233,7 +235,7 @@ export function GhGame({ repo, onCommand }: Props) {
               </g>
             ) : null}
 
-            {/* チェックのダンジョン */}
+            {/* チェックの検査ライン */}
             {quest.dungeonY !== null ? (
               <g>
                 <text x={quest.stages[0]?.box.x ?? 0} y={quest.dungeonY + 12} fontSize={12} fontWeight={900} fill={INK} stroke="#f6e8cd" strokeWidth={3} paintOrder="stroke">

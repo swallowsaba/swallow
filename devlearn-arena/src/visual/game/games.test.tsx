@@ -252,7 +252,7 @@ describe('手紙の街道', () => {
   });
 });
 
-describe('冒険者ギルド', () => {
+describe('チーム本部', () => {
   function repo() {
     const opened = openPull(createRepo('acme', 'app'), { title: 'feat', head: 'feature' }).repo;
     return setChecks(opened, 1, [
