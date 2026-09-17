@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useT } from '@/i18n/useT';
 import { xpProgress } from '@/lib/xp';
-import { missionById } from '@/engines/lesson/registry';
 import { useStore } from '@/store';
 import { ProgressBar } from './components/ProgressBar';
 
@@ -17,9 +16,6 @@ export function Shell({ children }: { children: ReactNode }) {
   const t = useT();
   const xp = useStore((s) => s.profile.xp);
   const progress = xpProgress(xp);
-  // 街は、最後に取り組んだ任務の世界の街を開く
-  const lastMissionId = useStore((s) => s.lastMissionId);
-  const townTrack = (lastMissionId === null ? undefined : missionById(lastMissionId)?.track) ?? 'kernel';
 
   return (
     <div className="flex min-h-full flex-col">
@@ -40,9 +36,6 @@ export function Shell({ children }: { children: ReactNode }) {
           <nav className="flex flex-wrap items-center gap-1" aria-label={t('app.name')}>
             <NavLink to="/" end className={navClass}>
               {t('nav.home')}
-            </NavLink>
-            <NavLink to={`/city/${townTrack}`} className={navClass}>
-              {t('nav.city')}
             </NavLink>
             <NavLink to="/map" className={navClass}>
               {t('nav.map')}

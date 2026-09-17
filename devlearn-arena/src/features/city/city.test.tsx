@@ -1,11 +1,9 @@
 import { act } from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { CITIES } from '@/content/city';
 import { useStore } from '@/store';
 import { click, mount } from '@/visual/mountForTest';
-import CityPage from './CityPage';
-import { layoutCity } from './cityLayout';
 import { FacilityLesson } from './FacilityLesson';
 
 // jsdom では退場のアニメーションが終わらないので、動きを止めて段の切り替えをすぐ反映させる
@@ -81,70 +79,5 @@ describe('施設の学習', () => {
     click(view, '[data-step="exam"]');
     click(view, '[data-correct="true"]');
     expect(view.querySelector('[data-testid="explain"]')?.textContent?.length).toBeGreaterThan(10);
-  });
-});
-
-describe('街の画面', () => {
-  beforeEach(() => {
-    act(() => {
-      useStore.setState({ facilitiesBuilt: [], lessons: {} });
-    });
-  });
-
-  const open = (path = '/city/git') =>
-    mount(
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/city/:trackId" element={<CityPage />} />
-        </Routes>
-      </MemoryRouter>,
-    );
-
-  it('はじめは案内が出て、最初の施設だけが建設可能、次の目標がそれを指す', () => {
-    const view = open();
-    expect(view.querySelector('[data-testid="city-welcome"]')).not.toBeNull();
-    expect(view.querySelector('[data-facility="git/01"]')?.getAttribute('data-state')).toBe('available');
-    expect(view.querySelector('[data-facility="git/02"]')?.getAttribute('data-state')).toBe('locked');
-    expect(view.querySelector('[data-facility="git/01"]')?.getAttribute('data-next')).toBe('true');
-  });
-
-  it('学んで審査に合格すると、施設が建って保存され、次の施設が建設可能になる', () => {
-    const view = open();
-    click(view, '[data-testid="learn-facility"]');
-    click(view, '[data-step="exam"]');
-    answerAll(view);
-    expect(useStore.getState().facilitiesBuilt).toContain('git/01');
-    expect(view.querySelector('[data-facility="git/01"]')?.getAttribute('data-state')).toBe('built');
-    expect(view.querySelector('[data-facility="git/02"]')?.getAttribute('data-state')).toBe('available');
-    expect(view.querySelector('[data-testid="city-welcome"]')).toBeNull();
-  });
-
-  it('建てた施設からは、その施設の任務へ進める', () => {
-    act(() => {
-      useStore.setState({ facilitiesBuilt: ['git/01'] });
-    });
-    const view = open('/city/git');
-    click(view, '[data-facility="git/01"]');
-    expect(view.querySelector('[data-testid="run-facility"]')?.getAttribute('href')).toMatch(/^\/\?mission=git%2F01%2F/);
-  });
-
-  it('任務の依頼画面の「街で学ぶ」から来たら、その施設の学習がすぐ開く', () => {
-    const view = open('/city/git?facility=git%2F01');
-    expect(view.querySelector('[data-testid="facility-lesson"]')).not.toBeNull();
-  });
-});
-
-describe('街の地図の置き場所', () => {
-  it('施設は学ぶ順に通りに沿って並び、区画は重ならない', () => {
-    const layout = layoutCity(CITIES.k8s);
-    expect(layout.plots.map((p) => p.id)).toEqual(CITIES.k8s.facilities.map((f) => f.id));
-    for (const a of layout.plots) {
-      for (const b of layout.plots) {
-        if (a === b) continue;
-        const overlap = a.box.x < b.box.x + b.box.w && a.box.x + a.box.w > b.box.x && a.box.y < b.box.y + b.box.h && a.box.y + a.box.h > b.box.y;
-        expect(overlap, `${a.id} と ${b.id}`).toBe(false);
-      }
-    }
-    expect(layout.streets.length).toBeGreaterThan(0);
   });
 });

@@ -1,6 +1,6 @@
 import { Glossed } from '@/ui/Term';
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { countAll, getChapter, TRACKS } from '@/content/catalog';
 import { missionsOf, progressOf } from '@/engines/lesson/catalog';
 import { missingPrerequisites, recommendedNext } from '@/engines/lesson/registry';
@@ -25,6 +25,7 @@ const ACCENT: Record<string, string> = {
 
 export default function WorldMapPage() {
   const t = useT();
+  const navigate = useNavigate();
   const lessons = useStore((s) => s.lessons);
   const xp = useStore((s) => s.profile.xp);
   const lastMissionId = useStore((s) => s.lastMissionId);
@@ -112,8 +113,8 @@ export default function WorldMapPage() {
               <Overworld
                 islands={islands}
                 onSelect={(id) => {
-                  setIsland(id);
-                  setStageId(null);
+                  // 世界を選んだら、そのカテゴリの作業画面（説明・コマンド・街）へ
+                  navigate(`/world/${id === PROLOGUE ? 'kernel' : id}`);
                 }}
               />
             </PanZoom>
@@ -134,7 +135,7 @@ export default function WorldMapPage() {
             </button>
             <span className="text-xl font-extrabold">{selected?.title}</span>
             <Link
-              to={`/city/${island === PROLOGUE ? 'kernel' : island}`}
+              to={`/world/${island === PROLOGUE ? 'kernel' : island}`}
               className="sign px-4 py-2 text-base font-extrabold"
             >
               {t('map.goCity')}

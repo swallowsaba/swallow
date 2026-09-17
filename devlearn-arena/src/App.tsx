@@ -8,9 +8,9 @@ import { Loading } from './ui/components/Loading';
 // ルート単位のコード分割。コンテンツ本体は各画面から動的 import する。
 const WorldMapPage = lazy(() => import('./features/map/WorldMapPage'));
 const TrackPage = lazy(() => import('./features/track/TrackPage'));
-const CityPage = lazy(() => import('./features/city/CityPage'));
 const LessonPage = lazy(() => import('./features/lesson/LessonPage'));
 const ParkPage = lazy(() => import('./features/park/ParkPage'));
+const HomeRedirect = lazy(() => import('./features/park/HomeRedirect'));
 const SandboxPage = lazy(() => import('./features/sandbox/SandboxPage'));
 const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage'));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
@@ -24,8 +24,9 @@ export function App() {
         <Onboarding />
         <Suspense fallback={<Loading />}>
           <Routes>
-            {/* 園内は1枚で完結するので外枠を付けない */}
-            <Route path="/" element={<ParkPage />} />
+            {/* 入口は全体図へ。カテゴリの作業画面は1枚で完結するので外枠を付けない */}
+            <Route path="/" element={<HomeRedirect />} />
+            <Route path="/world/:trackId" element={<ParkPage />} />
             <Route
               path="*"
               element={
@@ -33,7 +34,6 @@ export function App() {
                   <Routes>
                     <Route path="/map" element={<WorldMapPage />} />
                     <Route path="/track/:trackId" element={<TrackPage />} />
-                    <Route path="/city/:trackId" element={<CityPage />} />
                     <Route
                       path="/lesson/:trackId/:chapterNo/:lessonSlug"
                       element={<LessonPage />}

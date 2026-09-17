@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
 import { restoreShell, snapshotShell } from '@/engines/kernel/session';
 import { isHelpCommand, lessonHelpCommands } from '@/engines/lesson/helpCommands';
@@ -23,7 +23,11 @@ import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
 import { splitTemplate } from '@/ui/panes';
-import { facilityById } from '@/content/city';
+import { CITIES, CITY_TRACKS, cityOf, facilityById } from '@/content/city';
+import { FacilityLesson } from '@/features/city/FacilityLesson';
+import type { MissionTrack } from '@/engines/lesson/types';
+import { CityScene } from '@/visual/game/CityScene';
+import { CityPortrait } from '@/visual/game/cityArt';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { Briefing } from './Briefing';
 import { MissionPanel } from './MissionPanel';
@@ -39,20 +43,68 @@ const STEP_XP = 10;
 /** 何も指定が無いときに開く任務 */
 const FALLBACK = allMissions()[0];
 
+function isTrack(value: string | undefined): value is MissionTrack {
+  return CITY_TRACKS.includes(value as MissionTrack);
+}
+
+/** その施設（章）で、次に取り組む任務。全部終えていれば最初の任務 */
+function missionForFacility(facilityId: string, cleared: ReadonlySet<string>): string | undefined {
+  const mine = allMissions().filter((m) => m.chapterId === facilityId);
+  return (mine.find((m) => !cleared.has(m.id)) ?? mine[0])?.id;
+}
+
+/**
+ * カテゴリ（シェル / Git / GitHub / Kubernetes / ネットワーク）ごとの作業画面。
+ * 1 枚の中で、街づくり・施設の説明・依頼・コマンドをすべて行う。
+ * 開く任務は、指定があればそれ、無ければ街の「次に取り組む施設」の任務。
+ */
 export default function ParkPage() {
+  const { trackId } = useParams();
   const lastMissionId = useStore((s) => s.lastMissionId);
   const setLastMission = useStore((s) => s.setLastMission);
   const resetMission = useStore((s) => s.resetMission);
   const [params] = useSearchParams();
   const requested = params.get('mission');
-  const [missionId, setMissionId] = useState(requested ?? lastMissionId ?? FALLBACK?.id ?? '');
+  const requestedFacility = params.get('facility');
+  const requestedTrack = requested === null ? undefined : missionById(requested)?.track;
+  const track: MissionTrack = requestedTrack ?? (isTrack(trackId) ? trackId : 'kernel');
 
-  // 地図から任務を指定して来たときは、そちらを開く
+  const initialMission = (): string => {
+    const { lessons, facilitiesBuilt } = useStore.getState();
+    const cleared = new Set(Object.entries(lessons).filter(([, p]) => p.cleared).map(([id]) => id));
+    if (requested !== null && missionById(requested)) return requested;
+    if (requestedFacility !== null) {
+      const picked = missionForFacility(requestedFacility, cleared);
+      if (picked) return picked;
+    }
+    if (lastMissionId !== null && missionById(lastMissionId)?.track === track) return lastMissionId;
+    const mine = allMissions().filter((m) => m.track === track);
+    const city = cityOf(CITIES[track], new Set(facilitiesBuilt), mine, cleared);
+    const next = city.nextFacilityId === null ? undefined : missionForFacility(city.nextFacilityId, cleared);
+    return next ?? mine[0]?.id ?? FALLBACK?.id ?? '';
+  };
+  const [missionId, setMissionId] = useState(initialMission);
+
+  // 全体図や用語集から任務・施設を指定して来たときは、そちらを開く
   useEffect(() => {
     if (requested !== null && requested !== missionId) setMissionId(requested);
     // 指定が変わったときだけ反応する
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requested]);
+  useEffect(() => {
+    if (requestedFacility === null) return;
+    const { lessons } = useStore.getState();
+    const cleared = new Set(Object.entries(lessons).filter(([, p]) => p.cleared).map(([id]) => id));
+    const picked = missionForFacility(requestedFacility, cleared);
+    if (picked !== undefined) setMissionId(picked);
+  }, [requestedFacility]);
+  useEffect(() => {
+    if (!isTrack(trackId) || requested !== null || requestedFacility !== null) return;
+    if (missionById(missionId)?.track !== trackId) setMissionId(initialMission());
+    // カテゴリが変わったときだけ反応する
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackId]);
+
   const [attempt, setAttempt] = useState(0);
   // 初期状態の組み立ては開いたときだけ。一覧を作るために全部を組み立てたりはしない
   const mission = useMemo(
@@ -70,6 +122,12 @@ export default function ParkPage() {
       key={`${mission.id}:${String(attempt)}`}
       mission={mission}
       onSwitch={setMissionId}
+      onPickFacility={(facilityId) => {
+        const { lessons } = useStore.getState();
+        const cleared = new Set(Object.entries(lessons).filter(([, p]) => p.cleared).map(([id]) => id));
+        const picked = missionForFacility(facilityId, cleared);
+        if (picked !== undefined) setMissionId(picked);
+      }}
       onRetry={() => {
         resetMission(mission.id);
         setAttempt((n) => n + 1);
@@ -79,17 +137,20 @@ export default function ParkPage() {
 }
 
 /**
- * 学習画面。
- * 左＝手を動かす場所（やること・ターミナル・入力）、右＝結果を見る場所（図・説明・履歴）。
- * 重なる浮きパネルはやめ、左右で役割を分ける。
+ * カテゴリの作業画面の中身。
+ * 左上＝学習パネル（街の紹介 → 施設を学んで建てる → 依頼を聞く → 作業）、左下＝ターミナル、右＝街といまの状態。
+ * 施設を建てて依頼を聞くまで、ターミナルは使えない（説明と背景を理解してからコマンドを打つ）。
  */
 function Park({
   mission,
   onSwitch,
+  onPickFacility,
   onRetry,
 }: {
   mission: LessonDefinition;
   onSwitch: (id: string) => void;
+  /** 街の地区を押したとき、その施設の任務へ移る */
+  onPickFacility: (facilityId: string) => void;
   onRetry: () => void;
 }) {
   const t = useT();
@@ -160,13 +221,27 @@ function Park({
     const { introsRead, settings } = useStore.getState();
     return settings.introAlways || !introsRead.includes(mission.id);
   });
+  const [review, setReview] = useState<'facility' | 'briefing' | null>(null);
   const startMission = useCallback(() => {
     markIntroRead(mission.id);
     // 読んだ直後にリロードされても、また出てこないようにその場で書き込む
     flushSave();
     setShowIntro(false);
-    terminalRef.current?.focus();
+    setReview(null);
   }, [markIntroRead, mission.id]);
+
+  // 街と施設
+  const plan = CITIES[mission.track];
+  const facilitiesBuilt = useStore((s) => s.facilitiesBuilt);
+  const buildFacility = useStore((s) => s.buildFacility);
+  const introsRead = useStore((s) => s.introsRead);
+  const facility = facilityById(missionById(mission.id)?.chapterId ?? '');
+  const facilityBuilt = facility === undefined || facilitiesBuilt.includes(facility.id);
+  const [welcomed, setWelcomed] = useState(() => plan.facilities.some((f) => useStore.getState().facilitiesBuilt.includes(f.id)));
+  // 建てた直後は「建った！」を見せてから依頼へ進む
+  const [justBuilt, setJustBuilt] = useState(false);
+  const stage: 'welcome' | 'facility' | 'briefing' | 'work' =
+    review ?? (!welcomed ? 'welcome' : !facilityBuilt || justBuilt ? 'facility' : showIntro ? 'briefing' : 'work');
 
   const entries = session.journal.entries;
   const cursor = session.journal.cursor;
@@ -257,7 +332,7 @@ function Park({
     const { lessons: done, facilitiesBuilt } = useStore.getState();
     const mine = allMissions().filter((m) => m.chapterId === chapterId);
     const cleared = mine.filter((m) => m.id === mission.id || done[m.id]?.cleared === true).length;
-    const href = `/city/${mission.track}?facility=${encodeURIComponent(facility.id)}`;
+    const href = `/world/${mission.track}?facility=${encodeURIComponent(facility.id)}`;
     if (!facilitiesBuilt.includes(facility.id)) {
       return { href, lines: [t('celebration.facilityUnbuilt', { name: facility.name })] };
     }
@@ -371,10 +446,13 @@ function Park({
         town: city,
       });
       setDiagnosis(null);
+      // 任務を終えたら街を映す。祝いを閉じると、地区にビルが建っていくのが見える
+      setView('city');
       if (soundEnabled) sfx.clear();
     } else if (progress.stepIndex > prevStep.current) {
       grantXp(STEP_XP, now);
       pushToast(`+${String(STEP_XP)} XP`);
+      if (facility) pushToast(t('world.grow', { name: facility.name }));
       setDiagnosis(null);
       if (soundEnabled) sfx.step();
     }
@@ -406,12 +484,30 @@ function Park({
     onRetry();
   }, [onRetry]);
 
+  const trackMissions = useMemo(() => catalogue.filter((m) => m.track === mission.track), [catalogue, mission.track]);
+  const city = useMemo(
+    () => cityOf(plan, new Set(facilitiesBuilt), trackMissions, clearedIds),
+    [plan, facilitiesBuilt, trackMissions, clearedIds],
+  );
+  // 説明の間は街、作業に入ったらいまの状態を見せる
+  const [view, setView] = useState<'city' | 'state'>(stage === 'work' ? 'state' : 'city');
+  useEffect(() => {
+    setView(stage === 'work' ? 'state' : 'city');
+  }, [stage]);
+  // 作業に入ったら、すぐ打てるようにターミナルへ
+  useEffect(() => {
+    if (stage !== 'work') return;
+    const timer = setTimeout(() => {
+      terminalRef.current?.focus();
+    }, 50);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [stage]);
+
   return (
     <div className="flex h-full min-w-0 flex-col overflow-x-hidden bg-cream">
       <XpToast toasts={toasts} />
-      {showIntro ? (
-        <Briefing mission={mission} prerequisites={prerequisites} onStart={startMission} onSwitch={onSwitch} />
-      ) : null}
       <Celebration
         data={celebration}
         nextLabel={nextMission?.title}
@@ -443,7 +539,18 @@ function Park({
       ) : null}
 
       <header className="flex flex-wrap items-center gap-3 border-b-8 border-wood-dark bg-[var(--wood)] px-5 py-3 shadow-[inset_0_-6px_0_rgba(0,0,0,0.2)]">
-        <span className="sign px-4 py-1.5 text-lg font-extrabold">DEVLEARN</span>
+        <Link to="/map" className="sign px-3 py-1.5 text-base font-extrabold">
+          {t('park.map')}
+        </Link>
+        <span className="text-xl font-extrabold text-cream" data-testid="world-title">
+          🏙 {plan.name}
+        </span>
+        <span className="plate px-2 py-0.5 text-xs font-extrabold" data-testid="world-rank">
+          {t(`world.rank.${city.rank}`)}
+        </span>
+        <span className="font-mono text-sm text-cream" data-testid="world-stats">
+          {t('world.stats', { residents: city.residents, a: city.built, b: city.facilities.length })}
+        </span>
         <label htmlFor="mission-picker" className="font-mono text-sm font-bold text-cream">
           {t('park.mission')}
         </label>
@@ -453,20 +560,28 @@ function Park({
           cleared={(id: string) => clearedIds.has(id)}
           onPick={onSwitch}
         />
-        <span className="font-mono text-sm text-cream">
-          {t('park.clearedCount', { a: clearedIds.size, b: catalogue.length })}
-        </span>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           <span className="font-mono text-sm text-cream">
             {t('park.progress', {
               a: Math.min(progress.stepIndex + (progress.cleared ? 1 : 0), mission.steps.length),
               b: mission.steps.length,
             })}
           </span>
+          {facility && facilityBuilt ? (
+            <button
+              type="button"
+              onClick={() => {
+                setReview('facility');
+              }}
+              className="knob px-3 py-2 text-sm"
+            >
+              {t('world.reviewFacility')}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => {
-              setShowIntro(true);
+              setReview('briefing');
             }}
             className="knob px-3 py-2 text-sm"
           >
@@ -475,12 +590,6 @@ function Park({
           <button type="button" onClick={retry} className="knob px-3 py-2 text-sm">
             {t('park.retry')}
           </button>
-          <Link to={`/city/${mission.track}`} className="knob px-3 py-2 text-sm">
-            {t('park.city')}
-          </Link>
-          <Link to="/map" className="knob px-3 py-2 text-sm">
-            {t('park.map')}
-          </Link>
           <Link to="/glossary" className="knob px-3 py-2 text-sm">
             {t('nav.glossary')}
           </Link>
@@ -496,27 +605,77 @@ function Park({
       >
         {/* 左：手を動かす場所 */}
         {/* 上＝やること（溢れたらこの中で送る）、下＝端末。間の仕切りで高さを変えられる */}
-        <div className="grid min-h-0 min-w-0" style={{ gridTemplateRows: splitTemplate(paneTask) }}>
-          <MissionPanel
-            mission={mission}
-            clearedIds={clearedIds}
-            total={catalogue.length}
-            progress={progress}
-            step={step}
-            passingNow={passingNow}
-            diagnosis={diagnosis}
-            revealedHints={revealed}
-            parts={parts}
-            lastError={lastError}
-            nextMission={nextMission}
-            prerequisites={prerequisites}
-            onRevealHint={() => {
-              // ボタンでも、端末に hint と打ち込んで実行する。打つコマンドを覚えられるように
-              runFromDiagram('hint');
-            }}
-            onSkip={skipStep}
-            onSwitch={onSwitch}
-          />
+        <div className="grid min-h-0 min-w-0" style={{ gridTemplateRows: splitTemplate(stage === 'work' ? paneTask : 74) }}>
+          <div className="flex min-h-0 min-w-0 flex-col" data-testid="learning-panel" data-stage={stage}>
+            <StageBar stage={stage} />
+            {stage === 'work' ? (
+              <MissionPanel
+                mission={mission}
+                clearedIds={clearedIds}
+                total={catalogue.length}
+                progress={progress}
+                step={step}
+                passingNow={passingNow}
+                diagnosis={diagnosis}
+                revealedHints={revealed}
+                parts={parts}
+                lastError={lastError}
+                nextMission={nextMission}
+                prerequisites={prerequisites}
+                // ヒントは左上のこのパネルに出す。端末には打ち込まない（端末で hint と打てば端末にも出る）
+                onRevealHint={revealHint}
+                onSkip={skipStep}
+                onSwitch={onSwitch}
+              />
+            ) : (
+              <div className="scroll mx-3 mb-3 mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                {stage === 'welcome' ? (
+                  <Welcome
+                    track={mission.track}
+                    name={plan.name}
+                    welcome={plan.welcome}
+                    guide={plan.guide}
+                    onStart={() => {
+                      setWelcomed(true);
+                    }}
+                  />
+                ) : stage === 'facility' && facility ? (
+                  <FacilityLesson
+                    key={facility.id}
+                    inline
+                    facility={facility}
+                    track={mission.track}
+                    guide={plan.guide}
+                    built={facilitiesBuilt.includes(facility.id) && !justBuilt}
+                    firstMissionId={null}
+                    onBuild={() => {
+                      if (!facilitiesBuilt.includes(facility.id)) {
+                        setJustBuilt(true);
+                        buildFacility(facility.id);
+                        flushSave();
+                      }
+                    }}
+                    onContinue={() => {
+                      setJustBuilt(false);
+                      setReview(null);
+                    }}
+                    onClose={() => {
+                      setReview(null);
+                    }}
+                  />
+                ) : (
+                  <Briefing
+                    key={mission.id}
+                    mission={mission}
+                    prerequisites={prerequisites}
+                    onStart={startMission}
+                    onSwitch={onSwitch}
+                    canSkip={introsRead.includes(mission.id)}
+                  />
+                )}
+              </div>
+            )}
+          </div>
 
           <Splitter
             orientation="horizontal"
@@ -537,12 +696,27 @@ function Park({
               </span>
             </div>
             <div className="min-h-0 min-w-0 flex-1 overflow-hidden bg-[var(--wood-dark)]">
-            <TerminalView
-              ref={terminalRef}
-              session={session}
-              onExecuted={handleExecuted}
-              onEditor={setEditing}
-            />
+            {stage === 'work' ? (
+              <TerminalView
+                ref={terminalRef}
+                session={session}
+                onExecuted={handleExecuted}
+                onEditor={setEditing}
+              />
+            ) : (
+              <div data-testid="terminal-lock" className="grid h-full place-items-center p-4 text-center">
+                <div className="flex max-w-md flex-col items-center gap-1">
+                  <p className="text-base font-extrabold text-cream">
+                    {stage === 'welcome'
+                      ? t('world.lock.welcome')
+                      : stage === 'facility'
+                        ? t('world.lock.facility', { name: facility?.name ?? '' })
+                        : t('world.lock.briefing')}
+                  </p>
+                  <p className="text-xs text-cream opacity-80">{t('world.lockLead')}</p>
+                </div>
+              </div>
+            )}
             </div>
           </div>
         </div>
@@ -558,15 +732,92 @@ function Park({
           }}
         />
 
-        <VisualPanel
-          session={session}
-          tab={rightTab}
-          onTab={setRightTab}
-          relevant={relevant}
-          onCommand={runFromDiagram}
-          previous={previous}
-        />
+        <div className="flex min-h-0 min-w-0 flex-col">
+          <div role="tablist" aria-label={t('world.views')} className="flex shrink-0 gap-1 border-b-4 border-wood-dark bg-[var(--wood-dark)] px-3 pt-2">
+            {(['city', 'state'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                role="tab"
+                aria-selected={view === v}
+                data-view={v}
+                onClick={() => {
+                  setView(v);
+                }}
+                className={`px-4 py-1.5 text-sm font-extrabold ${view === v ? 'bg-gold text-ink' : 'text-cream opacity-80 hover:opacity-100'}`}
+              >
+                {v === 'city' ? t('world.view.city', { name: plan.name }) : t('world.view.state')}
+              </button>
+            ))}
+          </div>
+          <div className="min-h-0 flex-1">
+            {view === 'city' ? (
+              <CityScene
+                track={mission.track}
+                facilities={city.facilities}
+                selectedId={facility?.id ?? null}
+                onSelect={onPickFacility}
+                label={t('world.cityLabel', { name: plan.name })}
+              />
+            ) : (
+              <VisualPanel
+                session={session}
+                tab={rightTab}
+                onTab={setRightTab}
+                relevant={relevant}
+                onCommand={runFromDiagram}
+                previous={previous}
+              />
+            )}
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+const STAGES = ['facility', 'briefing', 'work'] as const;
+
+/** いまどの段階にいるか。施設を学ぶ → 依頼を聞く → コマンドで作業 */
+function StageBar({ stage }: { stage: 'welcome' | 'facility' | 'briefing' | 'work' }) {
+  const t = useT();
+  const index = stage === 'welcome' ? -1 : STAGES.indexOf(stage);
+  return (
+    <ol aria-label={t('world.stages')} className="mx-3 mt-3 flex shrink-0 flex-wrap gap-1 text-xs font-extrabold">
+      {STAGES.map((s, i) => (
+        <li
+          key={s}
+          data-stage-step={s}
+          aria-current={i === index ? 'step' : undefined}
+          className={`border-2 px-2 py-1 ${i === index ? 'border-[var(--gold-dark)] bg-gold text-ink' : i < index ? 'border-[var(--ok)] bg-[#dff0cf] text-ink' : 'border-[var(--cream-dark)] bg-cream text-ink-soft'}`}
+        >
+          {i < index ? '✓ ' : `${String(i + 1)}. `}
+          {t(`world.stage.${s}`)}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** はじめてそのカテゴリに来たときの、街の案内人の話 */
+function Welcome({ track, name, welcome, guide, onStart }: { track: MissionTrack; name: string; welcome: string; guide: { name: string; role: string }; onStart: () => void }) {
+  const t = useT();
+  return (
+    <section data-testid="welcome" className="flex flex-col gap-3 border-4 border-wood-dark bg-white p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex shrink-0 flex-col items-center">
+          <CityPortrait track={track} size={4} talking animate />
+          <span className="plate mt-1 px-2 py-0.5 text-xs font-extrabold">{t('brief.giver', guide)}</span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-lg font-extrabold">{t('world.welcomeTitle', { name })}</p>
+          <p className="mt-1 text-base leading-relaxed">{welcome}</p>
+        </div>
+      </div>
+      <p className="border-l-4 border-[var(--gold-dark)] bg-[var(--gold)]/20 px-3 py-2 text-sm leading-relaxed">{t('world.welcomeFlow')}</p>
+      <button type="button" data-testid="welcome-start" onClick={onStart} className="sign w-fit px-6 py-2.5 text-base font-extrabold">
+        {t('world.start')}
+      </button>
+    </section>
   );
 }

@@ -20,6 +20,10 @@ interface Props {
   onClose: () => void;
   /** 建てたあとに動かす任務。無ければ出さない */
   firstMissionId: string | null;
+  /** 画面の中に埋め込む（重ねて出さない） */
+  inline?: boolean;
+  /** 建てたあとに次へ進む（埋め込みのとき） */
+  onContinue?: () => void;
 }
 
 type Step = 'trouble' | 'what' | 'why' | 'how' | 'field' | 'exam';
@@ -30,7 +34,7 @@ const STEPS: readonly Step[] = ['trouble', 'what', 'why', 'how', 'field', 'exam'
  * 住民の困りごと → 何なのか（街で例えると）→ なぜ現場で必要か → 仕組みを順に → 現場の落とし穴とプロの心得 → 建設審査（場面の判断問題）。
  * 審査の場面にすべて正しく判断できたら施設が建つ。間違えても理由を読んで何度でも考え直せる。
  */
-export function FacilityLesson({ facility, track, guide, built, onBuild, onClose, firstMissionId }: Props) {
+export function FacilityLesson({ facility, track, guide, built, onBuild, onClose, firstMissionId, inline = false, onContinue }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
   const [step, setStep] = useState<Step>('trouble');
@@ -43,6 +47,7 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
   };
 
   useEffect(() => {
+    if (inline) return;
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') onClose();
     };
@@ -50,16 +55,16 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
     return () => {
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [onClose]);
+  }, [onClose, inline]);
 
   return (
-    <div className="fixed inset-0 z-40 overflow-y-auto bg-[rgba(44,29,16,0.72)] p-3 sm:p-6">
+    <div className={inline ? '' : 'fixed inset-0 z-40 overflow-y-auto bg-[rgba(44,29,16,0.72)] p-3 sm:p-6'}>
       <div
-        role="dialog"
-        aria-modal="true"
+        role={inline ? undefined : 'dialog'}
+        aria-modal={inline ? undefined : true}
         aria-labelledby="facility-title"
         data-testid="facility-lesson"
-        className="mx-auto flex max-w-4xl flex-col border-4 border-wood-dark bg-cream shadow-lg"
+        className={inline ? 'flex flex-col' : 'mx-auto flex max-w-4xl flex-col border-4 border-wood-dark bg-cream shadow-lg'}
       >
         <header className="flex flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-4 py-3">
           <span className="sign px-3 py-1 text-sm font-extrabold">🏗 {t('facility.label')}</span>
@@ -69,13 +74,15 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
             </h2>
             <p className="truncate text-xs font-bold text-cream opacity-90">{t('facility.concept', { concept: facility.concept })}</p>
           </div>
-          <button type="button" onClick={onClose} className="knob px-3 py-1.5 text-xs">
-            {t('facility.close')}
-          </button>
+          {inline ? null : (
+            <button type="button" onClick={onClose} className="knob px-3 py-1.5 text-xs">
+              {t('facility.close')}
+            </button>
+          )}
         </header>
 
         {done ? (
-          <Built facility={facility} track={track} animate={animate} firstMissionId={firstMissionId} onClose={onClose} />
+          <Built facility={facility} track={track} animate={animate} firstMissionId={firstMissionId} onClose={onClose} onContinue={onContinue} />
         ) : (
           <>
             <nav aria-label={t('facility.steps')} className="flex flex-wrap gap-1 border-b-2 border-[var(--cream-dark)] bg-[var(--cream-dark)] px-3 py-2">
@@ -95,9 +102,9 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
               ))}
             </nav>
 
-            <div className="grid gap-4 p-4 sm:grid-cols-[auto_1fr] sm:p-6">
+            <div className={`grid gap-3 sm:grid-cols-[auto_1fr] ${inline ? 'p-3' : 'p-4 sm:p-6'}`}>
               <div className="flex flex-row items-end gap-3 sm:flex-col sm:items-center">
-                <CityPortrait track={track} resident={step === 'trouble'} talking animate={animate} size={6} />
+                <CityPortrait track={track} resident={step === 'trouble'} talking animate={animate} size={inline ? 4 : 6} />
                 <span className="plate px-3 py-1 text-center text-xs font-extrabold">
                   {step === 'trouble' ? facility.trouble.who : t('brief.giver', guide)}
                 </span>
@@ -323,11 +330,12 @@ function Exam({ facility, built, animate, onPassed }: { facility: Facility; buil
 }
 
 /** 建った瞬間の演出と、次にやること（任務で動かす） */
-function Built({ facility, track, animate, firstMissionId, onClose }: { facility: Facility; track: MissionTrack; animate: boolean; firstMissionId: string | null; onClose: () => void }) {
+function Built({ facility, track, animate, firstMissionId, onClose, onContinue }: { facility: Facility; track: MissionTrack; animate: boolean; firstMissionId: string | null; onClose: () => void; onContinue?: (() => void) | undefined }) {
   const t = useT();
   const closeRef = useRef<HTMLAnchorElement>(null);
+  const continueRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    closeRef.current?.focus();
+    (continueRef.current ?? closeRef.current)?.focus();
   }, []);
   return (
     <div className="flex flex-col items-center gap-4 p-6 text-center" data-testid="facility-built">
@@ -338,14 +346,20 @@ function Built({ facility, track, animate, firstMissionId, onClose }: { facility
       <p className="title text-4xl text-[var(--ok)]">{t('facility.builtTitle', { name: facility.name })}</p>
       <p className="max-w-xl text-base">{t('facility.builtLead')}</p>
       <div className="flex flex-wrap justify-center gap-3">
-        {firstMissionId !== null ? (
+        {onContinue ? (
+          <button ref={continueRef} type="button" data-testid="facility-continue" onClick={onContinue} className="sign px-6 py-3 text-lg font-extrabold">
+            {t('facility.toMission')}
+          </button>
+        ) : firstMissionId !== null ? (
           <Link ref={closeRef} to={`/?mission=${encodeURIComponent(firstMissionId)}`} className="sign px-6 py-3 text-lg font-extrabold">
             {t('facility.toMission')}
           </Link>
         ) : null}
-        <button type="button" onClick={onClose} className="knob px-5 py-3 text-base font-bold">
-          {t('facility.stay')}
-        </button>
+        {onContinue ? null : (
+          <button type="button" onClick={onClose} className="knob px-5 py-3 text-base font-bold">
+            {t('facility.stay')}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -95,7 +95,7 @@ export function Onboarding() {
             type="button"
             onClick={() => {
               complete();
-              navigate('/city/kernel');
+              navigate('/map');
             }}
             className="border-2 border-wood-dark bg-[var(--gold)] px-5 py-2 font-mono text-base font-bold text-ink hover:bg-[var(--gold-dark)]"
           >

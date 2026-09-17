@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useT } from '@/i18n/useT';
 import {
-  clampView, fitView, IDENTITY, MAX_K, MIN_K, wheelFactor, zoomAround, type Size, type View,
+  clampView, fitView, focusView, IDENTITY, MAX_K, MIN_K, wheelFactor, zoomAround, type Size, type View,
 } from './viewportMath';
 
 interface Props {
   children: ReactNode;
   /** 読み上げ用の名前 */
   label: string;
+  /**
+   * 全体表示のかわりに、図の中のこの点（図の座標）を真ん中にして枠いっぱいに映す。
+   * 点が変わったら（まだ自分で動かしていなければ）そこへ寄せ直す。
+   */
+  focus?: { x: number; y: number; zoom?: number } | undefined;
 }
 
 /** ドラッグとみなす移動量（px）。これより小さければクリックとして通す */
@@ -24,7 +29,7 @@ function onControl(target: EventTarget | null): boolean {
  * - ホイールで拡大縮小（ポインタの下の一点を固定）、ドラッグで平行移動、ダブルクリックで全体表示に戻す
  * 図の中身はふつうに描き、包む要素の transform だけを変える。部品のクリックはそのまま届く。
  */
-export function Viewport({ children, label }: Props) {
+export function Viewport({ children, label, focus }: Props) {
   const t = useT();
   const frameRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -47,10 +52,17 @@ export function Viewport({ children, label }: Props) {
     };
   }, []);
 
+  const focusX = focus?.x;
+  const focusY = focus?.y;
+  const focusZoom = focus?.zoom;
   const fit = useCallback(() => {
     const { frame, content } = sizes();
-    setView(fitView(frame, content));
-  }, [sizes]);
+    setView(
+      focusX === undefined || focusY === undefined
+        ? fitView(frame, content)
+        : focusView(frame, content, { x: focusX, y: focusY }, focusZoom),
+    );
+  }, [sizes, focusX, focusY, focusZoom]);
 
   const apply = useCallback(
     (next: (prev: View) => View) => {

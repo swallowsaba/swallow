@@ -65,3 +65,18 @@ export function clampView(view: View, frame: Size, content: Size, margin = 48): 
 export function wheelFactor(deltaY: number): number {
   return Math.exp(-deltaY * 0.0016);
 }
+
+/**
+ * 図の中の一点（content 座標）を枠の真ん中に置き、枠いっぱいに映す置き方。
+ * 街のように横長の絵を縦長の枠で見るとき、全体を縮めて小さくするより、いま見るべき場所に寄せる。
+ */
+export function focusView(frame: Size, content: Size, focus: { x: number; y: number }, zoom = 1): View {
+  if (frame.w <= 0 || frame.h <= 0 || content.w <= 0 || content.h <= 0) return IDENTITY;
+  const cover = Math.max(frame.w / content.w, frame.h / content.h);
+  const k = clampK(Math.min(MAX_K, cover * zoom));
+  const x = frame.w / 2 - focus.x * k;
+  const y = frame.h / 2 - focus.y * k;
+  // 絵の外の余白が見えないよう、端で止める（絵が枠より小さい向きは真ん中に寄せる）
+  const clampAxis = (pos: number, size: number, room: number) => (size <= room ? (room - size) / 2 : Math.min(0, Math.max(room - size, pos)));
+  return { k, x: clampAxis(x, content.w * k, frame.w), y: clampAxis(y, content.h * k, frame.h) };
+}

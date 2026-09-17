@@ -30,7 +30,7 @@ export function VisualPanel({ session, tab: rightTab, onTab: setRightTab, releva
   const t = useT();
   const state = session.state;
   return (
-    <div className="flex min-h-0 min-w-0 flex-col">
+    <div className="flex h-full min-h-0 min-w-0 flex-col">
       <div className="plate flex flex-wrap items-center gap-2 px-3 py-1 text-sm font-extrabold">
       <div role="tablist" aria-label={t('park.viewLabel')} className="flex flex-wrap items-center gap-1">
         {VISUAL_TABS.map((tab) => {

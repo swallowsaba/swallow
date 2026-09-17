@@ -7,10 +7,6 @@ import type { LessonDefinition } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from '@/ui/motion';
 import { Glossed } from '@/ui/Term';
-import { Link } from 'react-router-dom';
-import { facilityById } from '@/content/city';
-import { missionById } from '@/engines/lesson/registry';
-import { useStore } from '@/store';
 import { CityPortrait } from '@/visual/game/cityArt';
 import { PrerequisiteNote } from './PrerequisiteNote';
 
@@ -19,6 +15,8 @@ interface Props {
   prerequisites?: readonly { id: string; title: string }[];
   onStart: () => void;
   onSwitch?: (id: string) => void;
+  /** 一度聞いた依頼なら、話を飛ばして作業に戻れる */
+  canSkip?: boolean;
 }
 
 type Phase = 'talk' | 'quiz' | 'try' | 'plan';
@@ -32,7 +30,7 @@ const PHASES: readonly Phase[] = ['talk', 'quiz', 'try', 'plan'];
  * 穴埋めの無い道具は練習用の街で実際に打って結果を見てから、建設計画を確かめて建設（端末での作業）に入る。
  * どの段階も飛ばせる（Esc か「説明をとばす」）。間違えても罰は無い。
  */
-export function Briefing({ mission, prerequisites = [], onStart, onSwitch }: Props) {
+export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSkip = false }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
   const giver = QUEST_GIVER[mission.track];
@@ -44,16 +42,6 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch }: Pro
   const [line, setLine] = useState(0);
   const [bag, setBag] = useState<string[]>([]);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') onStart();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [onStart]);
-
   const reviewLine = useCallback(
     (subject: string) => {
       const index = script.findIndex((l) => (l.kind === 'concept' && l.term === subject) || (l.kind === 'tool' && l.command === subject));
@@ -64,22 +52,18 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch }: Pro
   );
 
   return (
-    <div className="fixed inset-0 z-40 overflow-y-auto bg-[rgba(44,29,16,0.7)] p-3 sm:p-6">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="briefing-title"
-        data-testid="briefing"
-        className="mx-auto flex max-w-4xl flex-col border-4 border-wood-dark bg-cream shadow-lg"
-      >
-        <header className="flex flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-4 py-3">
+    <section aria-labelledby="briefing-title" data-testid="briefing" className="flex flex-col">
+      <div className="flex flex-col">
+        <header className="flex flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-4 py-2">
           <span className="sign px-3 py-1 text-sm font-extrabold">📜 {t('brief.label')}</span>
-          <h2 id="briefing-title" className="min-w-0 flex-1 truncate text-xl font-extrabold text-cream">
+          <h2 id="briefing-title" className="min-w-0 flex-1 truncate text-lg font-extrabold text-cream">
             {mission.title}
           </h2>
-          <button type="button" onClick={onStart} className="knob px-3 py-1.5 text-xs">
-            {t('brief.skip')}
-          </button>
+          {canSkip ? (
+            <button type="button" onClick={onStart} className="knob px-3 py-1.5 text-xs">
+              {t('brief.skip')}
+            </button>
+          ) : null}
         </header>
 
         <nav aria-label={t('brief.phases')} className="flex flex-wrap gap-1 border-b-2 border-[var(--cream-dark)] bg-[var(--cream-dark)] px-3 py-2">
@@ -99,17 +83,15 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch }: Pro
           ))}
         </nav>
 
-        <FacilityNote missionId={mission.id} track={mission.track} />
-
         {onSwitch && prerequisites.length > 0 ? (
           <div className="px-4 pt-3">
             <PrerequisiteNote prerequisites={prerequisites} onSwitch={onSwitch} />
           </div>
         ) : null}
 
-        <div className="grid gap-4 p-4 sm:grid-cols-[auto_1fr] sm:p-6">
+        <div className="grid gap-3 p-3 sm:grid-cols-[auto_1fr]">
           <div className="flex flex-row items-end gap-3 sm:flex-col sm:items-center">
-            <CityPortrait track={mission.track} talking={phase === 'talk'} animate={animate} />
+            <CityPortrait track={mission.track} talking={phase === 'talk'} animate={animate} size={4} />
             <span className="plate px-3 py-1 text-sm font-extrabold">{t('brief.giver', giver)}</span>
           </div>
 
@@ -151,7 +133,7 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch }: Pro
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -504,35 +486,6 @@ function Plan({ mission, onStart }: { mission: LessonDefinition; onStart: () => 
       <button ref={startRef} type="button" onClick={onStart} className="sign w-fit px-8 py-3 text-lg font-extrabold">
         {t('brief.start')}
       </button>
-    </div>
-  );
-}
-
-/**
- * この依頼がどの施設の仕事かを示す。施設をまだ建てていなければ、
- * コマンドを打つ前に街でその仕組みを学んで建てるよう案内する（進むことは止めない）。
- */
-function FacilityNote({ missionId, track }: { missionId: string; track: LessonDefinition['track'] }) {
-  const t = useT();
-  const built = useStore((s) => s.facilitiesBuilt);
-  const chapterId = missionById(missionId)?.chapterId;
-  const facility = chapterId === undefined ? undefined : facilityById(chapterId);
-  if (!facility) return null;
-  const isBuilt = built.includes(facility.id);
-  return (
-    <div
-      data-testid="facility-note"
-      data-built={isBuilt ? 'true' : 'false'}
-      className={`mx-4 mt-3 flex flex-wrap items-center gap-2 border-l-4 px-3 py-2 text-sm ${isBuilt ? 'border-[var(--ok)] bg-[#dff0cf]' : 'border-[var(--warn)] bg-[var(--gold)]/25'}`}
-    >
-      <span className="font-bold">
-        🏙 {isBuilt ? t('brief.facilityBuilt', { name: facility.name }) : t('brief.facilityUnbuilt', { name: facility.name, concept: facility.concept })}
-      </span>
-      {isBuilt ? null : (
-        <Link to={`/city/${track}?facility=${encodeURIComponent(facility.id)}`} className="knob px-3 py-1 text-xs font-bold">
-          {t('brief.learnInCity')}
-        </Link>
-      )}
     </div>
   );
 }
