@@ -15,7 +15,7 @@ import { currentPosition, GeoError, formatDistance } from './geo.js';
 import { toServiceMoment, calendarFor, dateKey } from './time.js';
 import { TransitMap, routeToSegments } from './map.js';
 import { combineSegments, buildPoints, validatePoints } from './via.js';
-import { walkSettings, accessCombos, attachWalk, isPoint, walkMinutes, farWalk, accessCandidates } from './walk.js';
+import { walkSettings, accessCombos, attachWalk, isPoint, walkMinutes, farWalk, accessCandidates, walkOnlyRoute } from './walk.js';
 import * as ui from './ui.js';
 
 const { $ } = ui;
@@ -614,6 +614,8 @@ async function useCurrentLocation() {
  * ------------------------------------------------------------------ */
 const MAX_VIAS = 3;
 /** 地点を含むときに試す「最寄駅の組み合わせ」の上限。増やすと通信量が増える。 */
+/** これより長い「徒歩だけ」の案は出さない(現実的でないため) */
+const WALK_ONLY_MAX_MINUTES = 45;
 const MAX_WALK_COMBOS = 3;
 let viaSeq = 0;
 
@@ -1272,9 +1274,15 @@ async function searchSegmentWithWalk(fromSpec, toSpec, departAt, ctx) {
       });
     }
   }
+  // 歩いて行ける距離なら、徒歩だけの案も作る。
+  // 近い 2 地点では最寄駅が同じになって鉄道の案が 1 本も出ないことがあり、
+  // そのとき「経路が見つかりません」とだけ返すのは事実に反する(歩けば着く)。
+  const onlyWalk = walkOnlyRoute(fromSpec, toSpec, departAt, settings);
+  const walkCandidates = onlyWalk && onlyWalk.walkMinutes <= WALK_ONLY_MAX_MINUTES ? [onlyWalk] : [];
+
   if (!combos.length) {
     return {
-      routes: [],
+      routes: walkCandidates,
       railRoutes: [],
       warnings: [],
       fetchedAt: null,
@@ -1282,7 +1290,8 @@ async function searchSegmentWithWalk(fromSpec, toSpec, departAt, ctx) {
       directCount: 0,
       mixedCount: 0,
       busCount: 0,
-      noStationNearby: true,
+      // 徒歩の案すら作れないときだけ「駅が無い」と言う
+      noStationNearby: !walkCandidates.length,
     };
   }
 
@@ -1309,8 +1318,12 @@ async function searchSegmentWithWalk(fromSpec, toSpec, departAt, ctx) {
     return true;
   });
 
+  // 乗り物の案より歩いた方が早いことがある(近い 2 地点)。
+  // 並べ替えは所要時間順なので、足しておけば自然に上に来る。
+  const withWalk = walkCandidates.length ? [...unique, ...walkCandidates] : unique;
+
   return {
-    routes: unique,
+    routes: withWalk,
     railRoutes,
     warnings: results.flatMap((x) => x.seg.warnings),
     fetchedAt: results.map((x) => x.seg.fetchedAt).filter(Boolean).pop() || null,

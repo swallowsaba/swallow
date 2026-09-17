@@ -83,9 +83,15 @@ export async function geocode(env, query, budget) {
     if (alt && budget.take(1)) {
       try {
         const more = await lookup(alt);
-        if (more.some((r) => matchScore(alt, r.title) > 0)) {
-          results = more.map((r) => ({ ...r, score: matchScore(alt, r.title) }));
-        }
+        // 点数は**元の検索語**で付ける。
+        // 「東京タワー」→「タワー」で引き直すと
+        // 「愛宕警察署東京タワー前交番」が返ってくる。これは元の語を含むので
+        // 高い点が付き、ただの「◯◯パークタワー」より上に来る。
+        const scored = more.map((r) => ({
+          ...r,
+          score: matchScore(query, r.title) || matchScore(alt, r.title),
+        }));
+        if (scored.some((r) => r.score > 0)) results = scored;
       } catch {
         /* 追加の検索が失敗しても、最初の結果はそのまま返す */
       }

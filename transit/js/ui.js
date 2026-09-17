@@ -511,6 +511,12 @@ function renderRoute(route, rank, { net, analysis, shownRoute, onExcludeRailway,
     m.addEventListener('click', () => onShowOnMap(route));
     head.append(m);
   }
+  if (route.walkOnly) {
+    const b = el('span', 'badge badge--walk', '徒歩のみ');
+    b.title =
+      '乗り物を使わずに歩く案です。直線距離からの推定なので、実際の道のりはこれより長くなります。';
+    head.append(b);
+  }
   if (route.kind === 'bus' || route.kind === 'mixed') {
     const b = el('span', 'badge badge--bus', route.kind === 'bus' ? 'バス' : 'バス+鉄道');
     b.title =

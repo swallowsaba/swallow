@@ -300,6 +300,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .badge--suspended { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
 .badge--est { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule-strong); }
 .badge--bus { background: var(--bus-soft); color: var(--bus); border-color: var(--bus); }
+.badge--walk { background: var(--walk-soft); color: var(--walk); border-color: var(--walk); }
 .badge--rail { background: var(--rail-soft); color: var(--rail); border-color: var(--rail); }
 .badge--via { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule-strong); }
 

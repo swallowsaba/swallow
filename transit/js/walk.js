@@ -195,3 +195,72 @@ export function accessCombos(fromSpec, toSpec, net, settings = WALK_DEFAULTS, ma
   );
   return combos.slice(0, maxCombos);
 }
+
+/**
+ * 出発地から到着地まで、乗り物を使わずに歩く経路。
+ *
+ * 近い 2 地点(例: 東京タワー → 特許庁)では、最寄駅が同じになったり
+ * 遠回りになったりして、鉄道の経路が 1 本も出ないことがある。
+ * そのとき「経路が見つかりません」とだけ返すのは嘘に近い。歩けば着くからだ。
+ * 座標が判っている場合に限り、徒歩だけの案を作って一緒に並べる。
+ *
+ * @param {{lat:number, lon:number, label:string}} fromSpec
+ * @param {{lat:number, lon:number, label:string}} toSpec
+ * @param {number} departAt 出発時刻(その日の 0 時からの分)
+ * @param {object} settings
+ * @returns {?object} 経路。座標が無ければ null。
+ */
+export function walkOnlyRoute(fromSpec, toSpec, departAt, settings = WALK_DEFAULTS) {
+  const a = coordsOf(fromSpec);
+  const b = coordsOf(toSpec);
+  if (!a || !b) return null;
+
+  const km = straightKm(a.lat, a.lon, b.lat, b.lon);
+  const minutes = walkMinutes(km, settings);
+  return {
+    kind: 'walk',
+    source: 'walk',
+    walkOnly: true,
+    departure: departAt,
+    arrival: departAt + minutes,
+    transfers: 0,
+    waitMinutes: 0,
+    walkMinutes: minutes,
+    estimatedOnly: true,
+    warnings: [],
+    legs: [
+      {
+        walkAccess: true,
+        kind: 'walk',
+        side: 'from',
+        fromTitle: fromSpec.label,
+        toTitle: toSpec.label,
+        lat: a.lat,
+        lon: a.lon,
+        toLat: b.lat,
+        toLon: b.lon,
+        minutes,
+        km,
+        estimated: true,
+      },
+    ],
+  };
+}
+
+/** 地点・駅のどちらからでも座標を取り出す */
+function coordsOf(spec) {
+  if (!spec) return null;
+  if (spec.lat != null && spec.lon != null) return { lat: spec.lat, lon: spec.lon };
+  return null;
+}
+
+/** 2 点間の直線距離(km)。map.js と同じ式。 */
+function straightKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+}

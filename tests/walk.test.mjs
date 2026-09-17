@@ -16,6 +16,7 @@ import {
   isPoint,
   farWalk,
   WALK_DEFAULTS,
+  walkOnlyRoute,
 } from '../transit/js/walk.js';
 
 let passed = 0;
@@ -212,6 +213,48 @@ test('徒歩レグは必ず推定と判るようにする', () => {
   const leg = accessLegFrom(NEAR_SHIBUYA, { groupId: ST('Shibuya'), title: '渋谷', km: 0.3, minutes: 5 });
   assert.equal(leg.estimated, true);
   assert.equal(leg.km, 0.3);
+});
+
+
+/* ================================================================== *
+ *  徒歩だけの案
+ * ================================================================== */
+console.log('\n徒歩だけの案');
+
+const TOWER = { kind: 'point', lat: 35.6586, lon: 139.7454, label: '東京タワー' };
+const JPO = { kind: 'point', lat: 35.6709, lon: 139.7457, label: '特許庁' };
+
+test('近い 2 地点なら徒歩だけの案を作る', () => {
+  const r = walkOnlyRoute(TOWER, JPO, 9 * 60);
+  assert(r, '案が作られていない');
+  assert.equal(r.walkOnly, true);
+  assert.equal(r.transfers, 0);
+  assert.equal(r.departure, 9 * 60);
+  assert.equal(r.arrival, 9 * 60 + r.walkMinutes);
+  assert(r.walkMinutes > 10 && r.walkMinutes < 40, `所要時間が不自然: ${r.walkMinutes}`);
+});
+
+test('推定であることを必ず持つ(実際の道のりではないため)', () => {
+  const r = walkOnlyRoute(TOWER, JPO, 540);
+  assert.equal(r.estimatedOnly, true);
+  assert.equal(r.legs[0].estimated, true);
+});
+
+test('両端の名前をそのまま使う(駅名に置き換えない)', () => {
+  const r = walkOnlyRoute(TOWER, JPO, 540);
+  assert.equal(r.legs[0].fromTitle, '東京タワー');
+  assert.equal(r.legs[0].toTitle, '特許庁');
+});
+
+test('座標が無ければ作らない(駅どうしの検索を邪魔しない)', () => {
+  assert.equal(walkOnlyRoute({ label: '渋谷' }, JPO, 540), null);
+  assert.equal(walkOnlyRoute(TOWER, { label: '上野' }, 540), null);
+  assert.equal(walkOnlyRoute(null, JPO, 540), null);
+});
+
+test('遠い 2 地点でも計算はする(出すかどうかは呼び出し側が決める)', () => {
+  const far = walkOnlyRoute(TOWER, { kind: 'point', lat: 35.9, lon: 139.9, label: '遠い場所' }, 540);
+  assert(far.walkMinutes > 45, `遠いのに短い: ${far.walkMinutes}`);
 });
 
 console.log(`\n${passed} 件のテストが成功${process.exitCode ? '(失敗あり)' : ''}\n`);
