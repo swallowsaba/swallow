@@ -73,14 +73,14 @@ export function Splitter({ orientation, value, onChange, min = 25, max = 80, lab
           onChange(clamp(value + STEP));
         }
       }}
-      className={`group flex shrink-0 items-center justify-center bg-[var(--wood)] ${
+      className={`group flex shrink-0 items-center justify-center bg-[#e8e5e0] ${
         vertical ? 'w-2.5 cursor-col-resize' : 'h-2.5 cursor-row-resize'
       }`}
       title={t('splitter.hint', { label })}
     >
       <span
         aria-hidden
-        className={`bg-[var(--cream-dark)] transition-colors group-hover:bg-gold ${
+        className={`bg-[#b8b3ab] transition-colors group-hover:bg-[#8a857d] ${
           vertical ? 'h-10 w-0.5' : 'h-0.5 w-10'
         }`}
       />

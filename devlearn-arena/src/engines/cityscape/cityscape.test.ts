@@ -127,7 +127,7 @@ describe('シェルの街：街区と家', () => {
     expect((byId(scene, 'file:/home/learner/memo.txt') as SceneBuilding).badges?.some((b) => b.icon === '🔒')).toBe(true);
   });
 
-  it('街区は通りで囲まれ、どの街区も道に面する', () => {
+  it('開いた街区は通りで囲まれ、どの街区も道に面する', () => {
     const sh = shell({ files: { '/home/learner': null } });
     sh.run('mkdir a', 'mkdir b', 'mkdir c', 'touch a/1.txt', 'touch b/2.txt', 'touch c/3.txt');
     const scene = sceneOf('kernel', sh.state, sh.previous, t);
@@ -135,7 +135,7 @@ describe('シェルの街：街区と家', () => {
     // 縦の通りと横の大通りの両方が通っている＝碁盤の目
     expect(scene.plan.roads.some((r) => r.axis === 'x')).toBe(true);
     expect(scene.plan.roads.some((r) => r.axis === 'y')).toBe(true);
-    for (const block of scene.plan.blocks) {
+    for (const block of scene.plan.blocks.filter((b) => b.developed)) {
       const touching = scene.plan.roads.some(
         (r) =>
           (r.axis === 'y' && (r.x + r.w === block.x || r.x === block.x + block.w)) ||

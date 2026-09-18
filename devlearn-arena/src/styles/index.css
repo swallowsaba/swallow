@@ -42,6 +42,9 @@
   --bronze: #8a5a2b;
   --silver: #6b6b6b;
 
+  /* 学習面の差し色。カテゴリの画面では、その街の色で上書きする */
+  --accent: #3f6f8f;
+
   --f-mono: 'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
   --f-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
 }
@@ -142,4 +145,225 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* ============================================================
+   学習面（画面左）の外装。
+   街の地図は絵として木枠のままにし、読む・答える所だけは
+   いまの道具らしい、余白と階層で見せる作りにする。
+   ============================================================ */
+.ui {
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, #ffffff);
+  --accent-line: color-mix(in srgb, var(--accent) 30%, #ffffff);
+  --u-bg: #f7f6f4;
+  --u-card: #ffffff;
+  --u-sunk: #f2f1ee;
+  --u-line: #e8e5e0;
+  --u-line-strong: #d9d5cf;
+  --u-text: #17161a;
+  --u-text-2: #66625c;
+  --u-text-3: #9a958d;
+  --u-ok: #1f7a4d;
+  --u-ok-soft: #eaf6ef;
+  --u-warn: #9a6612;
+  --u-warn-soft: #fdf4e3;
+  --u-bad: #b3342a;
+  --u-bad-soft: #fdeeec;
+  --u-r: 12px;
+  --u-shadow: 0 1px 2px rgb(23 22 26 / 5%), 0 4px 16px -8px rgb(23 22 26 / 14%);
+
+  background: var(--u-bg);
+  color: var(--u-text);
+  font-feature-settings: 'palt' 1;
+  letter-spacing: 0.005em;
+}
+
+.ui :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 面。読むものの土台 */
+.ui-card {
+  background: var(--u-card);
+  border: 1px solid var(--u-line);
+  border-radius: var(--u-r);
+  box-shadow: var(--u-shadow);
+}
+.ui-flat {
+  background: var(--u-sunk);
+  border: 1px solid var(--u-line);
+  border-radius: var(--u-r);
+}
+
+/* ボタン */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45em;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+.ui-btn:active:not(:disabled) { transform: scale(0.975); }
+.ui-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.ui-btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 2px rgb(23 22 26 / 12%);
+}
+.ui-btn-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 88%, #000); }
+
+.ui-btn-quiet {
+  background: var(--u-card);
+  border-color: var(--u-line-strong);
+  color: var(--u-text);
+}
+.ui-btn-quiet:hover:not(:disabled) { background: var(--u-sunk); }
+
+.ui-btn-plain {
+  background: transparent;
+  color: var(--u-text-2);
+}
+.ui-btn-plain:hover:not(:disabled) { background: rgb(23 22 26 / 5%); color: var(--u-text); }
+
+/* 小さな札 */
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.5;
+  background: var(--u-sunk);
+  color: var(--u-text-2);
+  border: 1px solid var(--u-line);
+}
+.ui-chip-accent {
+  background: var(--accent-soft);
+  color: color-mix(in srgb, var(--accent) 75%, #000);
+  border-color: var(--accent-line);
+}
+
+/* 段の切り替え（セグメント） */
+.ui-seg {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--u-sunk);
+  border: 1px solid var(--u-line);
+}
+.ui-seg > button {
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--u-text-2);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+.ui-seg > button:hover { color: var(--u-text); }
+.ui-seg > button[aria-current='step'] {
+  background: var(--u-card);
+  color: var(--u-text);
+  box-shadow: 0 1px 2px rgb(23 22 26 / 10%);
+}
+.ui-seg > button[data-done='true']:not([aria-current='step']) { color: color-mix(in srgb, var(--accent) 70%, #000); }
+
+/* 選択肢 */
+.ui-option {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  text-align: left;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: var(--u-card);
+  border: 1px solid var(--u-line-strong);
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+  cursor: pointer;
+}
+.ui-option:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.ui-option:active:not(:disabled) { transform: scale(0.99); }
+.ui-option[data-state='right'] { border-color: var(--u-ok); background: var(--u-ok-soft); cursor: default; }
+.ui-option[data-state='wrong'] { border-color: var(--u-bad); background: var(--u-bad-soft); opacity: 0.75; }
+.ui-option:disabled { cursor: default; }
+
+/* 選択肢の頭に付く番号／印 */
+.ui-key {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 7px;
+  background: var(--u-sunk);
+  border: 1px solid var(--u-line-strong);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--u-text-2);
+  font-variant-numeric: tabular-nums;
+}
+.ui-option[data-state='right'] .ui-key { background: var(--u-ok); border-color: var(--u-ok); color: #fff; }
+.ui-option[data-state='wrong'] .ui-key { background: var(--u-bad); border-color: var(--u-bad); color: #fff; }
+
+/* 注意・補足の帯 */
+.ui-note { border-radius: 10px; padding: 0.55rem 0.75rem; font-size: 0.85rem; line-height: 1.6; }
+.ui-note-ok { background: var(--u-ok-soft); color: color-mix(in srgb, var(--u-ok) 80%, #000); }
+.ui-note-warn { background: var(--u-warn-soft); color: color-mix(in srgb, var(--u-warn) 85%, #000); }
+.ui-note-bad { background: var(--u-bad-soft); color: color-mix(in srgb, var(--u-bad) 85%, #000); }
+.ui-note-info { background: var(--accent-soft); color: color-mix(in srgb, var(--accent) 80%, #000); }
+
+/* 見出し */
+.ui-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--u-text-3);
+}
+
+/* 進み具合の細い帯 */
+.ui-track { height: 4px; border-radius: 999px; background: var(--u-line); overflow: hidden; }
+.ui-track > span { display: block; height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* 端末の枠 */
+.ui-term {
+  background: #12131a;
+  border: 1px solid #262837;
+  border-radius: var(--u-r);
+  overflow: hidden;
+}
+
+/* 段が多いときの並び。折り返しても形が崩れないよう、囲みは付けない */
+.ui-steps { display: flex; flex-wrap: wrap; gap: 4px; }
+.ui-steps > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  border-radius: 999px;
+  padding: 0.22rem 0.62rem;
+  font-size: 0.76rem;
+  font-weight: 650;
+  color: var(--u-text-3);
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+.ui-steps > button:hover { color: var(--u-text); background: var(--u-sunk); }
+.ui-steps > button[data-done='true'] { color: var(--u-ok); }
+.ui-steps > button[aria-current='step'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }

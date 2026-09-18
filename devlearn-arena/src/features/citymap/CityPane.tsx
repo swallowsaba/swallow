@@ -38,7 +38,8 @@ export function CityPane({ track, city: learned, state, previous, currentFacilit
   const civic = useMemo(() => civicViews(city, learned, currentFacilityId), [city, learned, currentFacilityId]);
   const stored = useStore((s) => s.growth);
   const growth = useMemo(() => growthOf(stored, track), [stored, track]);
-  const input = useMemo<SceneMapInput>(() => ({ track, scene, civic, growth }), [track, scene, civic, growth]);
+  const nextTownLabel = t('city.nextTown');
+  const input = useMemo<SceneMapInput>(() => ({ track, scene, civic, growth, nextTownLabel }), [track, scene, civic, growth, nextTownLabel]);
   const [selected, setSelected] = useState<string | null>(null);
   const [legendOpen, setLegendOpen] = useState(true);
 

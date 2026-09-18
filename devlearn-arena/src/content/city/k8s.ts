@@ -14,7 +14,7 @@ export const k8sCity: CityPlan = {
       building: 'castle',
       needs: [],
       trouble: {
-        who: 'インフラ担当のサクラ',
+        who: '区画整理係のサクラ',
         text: '50 台のサーバに、どのアプリを何個ずつ置いたかを表計算で管理している。1 台壊れるたびに、深夜に手で別のサーバへ移し替えている。',
       },
       what: 'Kubernetes のクラスタは、指示を受けて決める「コントロールプレーン」と、実際にコンテナを動かす「ノード」の集まり。コントロールプレーンには、受付（kube-apiserver）、台帳（etcd）、見張り係（controller-manager）、配置係（kube-scheduler）がいて、各ノードでは現場監督（kubelet）が働く。',
@@ -54,7 +54,7 @@ export const k8sCity: CityPlan = {
       building: 'house',
       needs: ['k8s/01'],
       trouble: {
-        who: '開発者のハヤト',
+        who: '入居企業のハヤト',
         text: 'アプリのコンテナと、ログを転送する小さなコンテナを一緒に動かしたい。別々に置くと、同じファイルも見られないし、localhost で話もできない。',
       },
       what: 'Pod は Kubernetes が動かす最小単位で、1 つ以上のコンテナの「住まい」。同じ Pod のコンテナは、ネットワーク（同じ IP・localhost）と、指定したボリュームを共有し、一緒に同じノードに置かれ、一緒に消える。',
@@ -94,7 +94,7 @@ export const k8sCity: CityPlan = {
       building: 'office',
       needs: ['k8s/02'],
       trouble: {
-        who: '運用担当のアキラ',
+        who: 'ビル管理人のアキラ',
         text: '「Pod を 3 つ起動する」手順を実行したあと、1 つが落ちても誰も気づかない。手順書で「作る」ことはできても、「3 つのまま保つ」ことはできない。',
       },
       what: 'Kubernetes では「何をするか（手順）」ではなく「どうあってほしいか（完成図）」を YAML のマニフェストで渡す。コントローラが現実と完成図の差を見つけ続け、差を埋めるように動く（調整ループ）。',
@@ -134,7 +134,7 @@ export const k8sCity: CityPlan = {
       building: 'workshop',
       needs: ['k8s/03'],
       trouble: {
-        who: '設計担当のナナ',
+        who: '設計士のナナ',
         text: 'Web アプリも、データベースも、毎晩のバッチも、全部同じやり方で Pod を並べていたら、データベースの Pod が再作成されるたびにデータの行き先がばらばらになった。',
       },
       what: 'Pod の管理のしかたは、仕事の性質ごとにコントローラが用意されている。入れ替え可能な Web は Deployment、名前と保存先が固定のデータベースは StatefulSet、全ノードに 1 つずつ置く監視は DaemonSet、終わる仕事は Job、定期実行は CronJob。',
@@ -174,7 +174,7 @@ export const k8sCity: CityPlan = {
       building: 'library',
       needs: ['k8s/04'],
       trouble: {
-        who: '開発者のハヤト',
+        who: '入居企業のハヤト',
         text: '接続先のサーバ名を変えるだけなのに、アプリのイメージを作り直して配り直している。しかもパスワードがイメージの中に書かれている。',
       },
       what: 'ConfigMap は設定値を、Secret は機密情報をクラスタに保存し、Pod に環境変数やファイルとして渡す仕組み。イメージを作り直さずに、環境ごとに設定を差し替えられる。',
@@ -214,7 +214,7 @@ export const k8sCity: CityPlan = {
       building: 'warehouse',
       needs: ['k8s/04'],
       trouble: {
-        who: 'データ担当のミサキ',
+        who: '記録庫番のミサキ',
         text: 'データベースの Pod が再起動したら、昨日までのデータが全部消えていた。コンテナの中に保存していたらしい。',
       },
       what: 'コンテナの中のファイルは、Pod が消えると一緒に消える。消えてはいけないデータは、PersistentVolume（実際の保存場所）に置き、アプリは PersistentVolumeClaim（使いたい容量と種類の申請）を通して取り付ける。',
@@ -254,7 +254,7 @@ export const k8sCity: CityPlan = {
       building: 'station',
       needs: ['k8s/04'],
       trouble: {
-        who: 'フロント担当のユキ',
+        who: '受付のユキ',
         text: '別のアプリの Pod の IP アドレスを直接書いて通信していたら、Pod が作り直されて IP が変わり、つながらなくなった。',
       },
       what: 'Service は、ラベルで選んだ Pod の集まりに、変わらない名前と IP を与える案内所。条件に合って準備のできた（Ready な）Pod だけが Endpoints に載り、そこへ振り分けられる。クラスタ内の DNS で名前から引け、外からは Ingress などで入ってくる。',
@@ -294,7 +294,7 @@ export const k8sCity: CityPlan = {
       building: 'office',
       needs: ['k8s/04'],
       trouble: {
-        who: 'インフラ担当のサクラ',
+        who: '区画整理係のサクラ',
         text: 'GPU の付いた高価なノードに、関係ない Web アプリの Pod が勝手に置かれて、機械学習の Pod が置けずに Pending になっている。',
       },
       what: 'スケジューラは、Pod の「必要な資源（requests）」と「置き場所の条件（nodeSelector・affinity）」、ノードの「立入制限（taint）」と Pod の「許可証（toleration）」を突き合わせて、置けるノードの中から置き場所を決める。',
@@ -374,7 +374,7 @@ export const k8sCity: CityPlan = {
       building: 'gate',
       needs: ['k8s/09'],
       trouble: {
-        who: '監査担当のショウ',
+        who: '監査局のショウ',
         text: '監査で「全員が cluster-admin 権限を持っている」「どの Pod からも全 Pod に通信できる」と指摘された。一つ侵入されたら街全体が終わる。',
       },
       what: 'Kubernetes のセキュリティは「誰が（人や Pod の身分）」「何に」「何をしてよいか」を最小限に絞ること。RBAC で API の操作権限を、NetworkPolicy で Pod 間の通信を、securityContext でコンテナ内の権限を制限する。',
@@ -414,7 +414,7 @@ export const k8sCity: CityPlan = {
       building: 'tower',
       needs: ['k8s/09'],
       trouble: {
-        who: 'サービス責任者のマイ',
+        who: '商店会長のマイ',
         text: '新しい版を出すたびに数分サービスが止まる。セールの日にはアクセスが急増して、Pod が足りずに落ちた。',
       },
       what: 'ローリングアップデートは、新しい Pod を少しずつ起こし、準備ができたら古い Pod を減らしていく入れ替え方。HPA は負荷に応じて Pod の数を自動で増減する。PodDisruptionBudget は、保守作業などで同時に止めてよい数の上限を決める。',
@@ -454,7 +454,7 @@ export const k8sCity: CityPlan = {
       building: 'hall',
       needs: ['k8s/11', 'k8s/10'],
       trouble: {
-        who: '運用リーダーのケイ',
+        who: '保守班長のケイ',
         text: 'Kubernetes のバージョンが古すぎてサポートが切れた。怖くて誰もアップグレードに手を付けられない。ノードの OS 更新も 1 年止まっている。',
       },
       what: 'クラスタは作って終わりではなく、動かし続けるもの。バージョンの定期的な更新、ノードを安全に空けて保守する手順（cordon / drain）、etcd のバックアップと復元、監視とアラートが運用の柱になる。',

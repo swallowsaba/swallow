@@ -1,4 +1,4 @@
-import { planTown, stretchTown, type PlannedLot, type PlanDistrict, type TownPlan } from '@/engines/cityscape';
+import { planTown, type PlannedLot, type PlanDistrict, type TownPlan } from '@/engines/cityscape';
 import type { CivicView, SceneMapInput, TownGrowth } from './isoScene';
 
 /**
@@ -49,6 +49,8 @@ function uptownDistricts(civic: readonly CivicView[], levels: readonly number[])
       cols: CIVIC_COLS,
       members: civic.map((f) => `civic:${f.id}`),
       min: Math.max(civic.length, CIVIC_COLS),
+      // 施設を 1 つでも建てたら市民地区が開く
+      developed: civic.some((f) => f.learned),
     },
   ];
   const blocks = Math.max(MIN_HOME_BLOCKS, Math.ceil(levels.length / HOMES_PER_BLOCK));
@@ -61,6 +63,7 @@ function uptownDistricts(civic: readonly CivicView[], levels: readonly number[])
       cols: 3,
       members: slice.map((_, k) => `home:${String(i * HOMES_PER_BLOCK + k)}`),
       min: HOMES_PER_BLOCK,
+      developed: slice.length > 0,
     });
   }
   return districts;
@@ -68,11 +71,10 @@ function uptownDistricts(civic: readonly CivicView[], levels: readonly number[])
 
 export function townLayout(input: SceneMapInput): TownLayout {
   const levels = houseLevels(input.growth);
-  const planned = planTown(uptownDistricts(input.civic, levels));
-  // 上町と下町で大通りの長さをそろえ、街の道を端から端までつなげる
-  const width = Math.max(planned.width, input.scene.plan.width);
-  const uptown = stretchTown(planned, width);
-  const site = stretchTown(input.scene.plan, width);
+  const uptown = planTown(uptownDistricts(input.civic, levels));
+  const site = input.scene.plan;
+  // 上町と下町は、左端の街道（となりの街からの道）でつながる
+  const width = Math.max(uptown.width, site.width);
 
   const civicLot = new Map<string, PlannedLot>();
   for (const f of input.civic) {

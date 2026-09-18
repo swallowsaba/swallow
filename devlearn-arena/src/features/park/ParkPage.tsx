@@ -18,6 +18,7 @@ import { sfx } from '@/lib/sfx';
 import { levelFromXp, rankFromLevel, scoreAttempt, xpForScore } from '@/lib/xp';
 import { useStore } from '@/store';
 import { flushSave } from '@/store/persistence';
+import { useMotionEnabled } from '@/ui/motion';
 import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Splitter } from '@/ui/Splitter';
@@ -31,6 +32,8 @@ import { CityBoard } from '@/features/citymap/CityBoard';
 import { growCity } from '@/features/citymap/cityStore';
 import type { CityEvent } from '@/features/citymap/CityMapView';
 import { CityPortrait } from '@/visual/game/cityArt';
+import { TRACK_ACCENT } from '@/features/citymap/isoDraw';
+import { Icon } from '@/ui/Icon';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { Briefing } from './Briefing';
 import { MissionPanel } from './MissionPanel';
@@ -630,20 +633,25 @@ function Park({
         />
       ) : null}
 
-      <header className="flex flex-wrap items-center gap-3 border-b-8 border-wood-dark bg-[var(--wood)] px-5 py-3 shadow-[inset_0_-6px_0_rgba(0,0,0,0.2)]">
-        <Link to="/map" className="sign px-3 py-1.5 text-base font-extrabold">
+      <header
+        className="ui flex flex-wrap items-center gap-2.5 border-b border-[var(--u-line)] bg-[var(--u-card)] px-4 py-2.5"
+        style={{ ['--accent' as string]: TRACK_ACCENT[mission.track] }}
+      >
+        <Link to="/map" className="ui-btn ui-btn-quiet h-8 px-2.5 text-[13px]">
+          <Icon name="map" size={15} />
           {t('park.map')}
         </Link>
-        <span className="text-xl font-extrabold text-cream" data-testid="world-title">
-          🏙 {plan.name}
+        <span className="flex items-center gap-1.5 text-[15px] font-bold tracking-tight" data-testid="world-title">
+          <Icon name="city" size={17} />
+          {plan.name}
         </span>
-        <span className="plate px-2 py-0.5 text-xs font-extrabold" data-testid="world-rank">
+        <span className="ui-chip ui-chip-accent" data-testid="world-rank">
           {t(`world.rank.${city.rank}`)}
         </span>
-        <span className="font-mono text-sm text-cream" data-testid="world-stats">
+        <span className="font-mono text-[12px] text-[var(--u-text-2)]" data-testid="world-stats">
           {t('world.stats', { a: city.built, b: city.facilities.length })}
         </span>
-        <label htmlFor="mission-picker" className="font-mono text-sm font-bold text-cream">
+        <label htmlFor="mission-picker" className="ui-eyebrow">
           {t('park.mission')}
         </label>
         {/* 任務は 700 本を超える。並べるのではなく、絞り込んで選ぶ */}
@@ -652,8 +660,8 @@ function Park({
           cleared={(id: string) => clearedIds.has(id)}
           onPick={onSwitch}
         />
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <span className="font-mono text-sm text-cream">
+        <div className="ml-auto flex flex-wrap items-center gap-1.5">
+          <span className="font-mono text-[12px] text-[var(--u-text-2)]">
             {t('park.progress', {
               a: Math.min(progress.stepIndex + (progress.cleared ? 1 : 0), mission.steps.length),
               b: mission.steps.length,
@@ -665,8 +673,9 @@ function Park({
               onClick={() => {
                 setReview('facility');
               }}
-              className="knob px-3 py-2 text-sm"
+              className="ui-btn ui-btn-plain h-8 px-2.5 text-[13px]"
             >
+              <Icon name="build" size={15} />
               {t('world.reviewFacility')}
             </button>
           ) : null}
@@ -675,8 +684,9 @@ function Park({
             onClick={() => {
               setReview('briefing');
             }}
-            className="knob px-3 py-2 text-sm"
+            className="ui-btn ui-btn-plain h-8 px-2.5 text-[13px]"
           >
+            <Icon name="request" size={15} />
             {t('intro.reopen')}
           </button>
           <button
@@ -685,14 +695,17 @@ function Park({
             onClick={() => {
               setRetryOpen(true);
             }}
-            className="knob px-3 py-2 text-sm"
+            className="ui-btn ui-btn-plain h-8 px-2.5 text-[13px]"
           >
+            <Icon name="replay" size={15} />
             {t('park.retry')}
           </button>
-          <Link to="/glossary" className="knob px-3 py-2 text-sm">
+          <Link to="/glossary" className="ui-btn ui-btn-plain h-8 px-2.5 text-[13px]">
+            <Icon name="book" size={15} />
             {t('nav.glossary')}
           </Link>
-          <Link to="/settings" className="knob px-3 py-2 text-sm">
+          <Link to="/settings" className="ui-btn ui-btn-plain h-8 px-2.5 text-[13px]">
+            <Icon name="settings" size={15} />
             {t('park.settings')}
           </Link>
         </div>
@@ -705,7 +718,7 @@ function Park({
         {/* 左：手を動かす場所 */}
         {/* 上＝やること（溢れたらこの中で送る）、下＝端末。間の仕切りで高さを変えられる */}
         {/* 説明の間は端末が使えないので、説明にほとんどの高さを渡す（縮めずに読めるようにする） */}
-        <div className="grid min-h-0 min-w-0" style={{ gridTemplateRows: splitTemplate(stage === 'work' ? paneTask : 86) }}>
+        <div className="ui grid min-h-0 min-w-0" style={{ gridTemplateRows: splitTemplate(stage === 'work' ? paneTask : 86), ['--accent' as string]: TRACK_ACCENT[mission.track] }}>
           <div className="flex min-h-0 min-w-0 flex-col" data-testid="learning-panel" data-stage={stage}>
             <StageBar stage={stage} onBackToCity={stage === 'city' || stage === 'welcome' ? undefined : onBackToCity} />
             {stage === 'work' ? (
@@ -728,7 +741,7 @@ function Park({
                 onSwitch={onSwitch}
               />
             ) : (
-              <div className="mx-3 mb-3 mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 {stage === 'welcome' ? (
                   <FitBox className="flex-1">
                     <Welcome
@@ -802,14 +815,13 @@ function Park({
             }}
           />
 
-          <div className="mx-3 mb-3 flex min-h-0 min-w-0 flex-1 flex-col border-4 border-wood-dark">
-            <div className="plate flex items-center gap-2 px-4 py-1.5 text-sm font-extrabold">
-              <span aria-hidden>🖥</span> {t('park.terminal')}
-              <span className="ml-auto font-mono text-xs opacity-80">
-                {session.state.cwd}
-              </span>
+          <div className="ui-term mx-3 mb-3 flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="flex items-center gap-2 border-b border-[#262837] px-3 py-1.5 text-[12px] font-semibold text-[#c9cede]">
+              <Icon name="terminal" size={14} />
+              {t('park.terminal')}
+              <span className="ml-auto font-mono text-[11px] text-[#7d849c]">{session.state.cwd}</span>
             </div>
-            <div className="min-h-0 min-w-0 flex-1 overflow-hidden bg-[var(--wood-dark)]">
+            <div className="min-h-0 min-w-0 flex-1 overflow-hidden bg-[#12131a]">
             {stage === 'work' ? (
               <TerminalView
                 ref={terminalRef}
@@ -819,8 +831,8 @@ function Park({
               />
             ) : (
               <div data-testid="terminal-lock" className="grid h-full place-items-center p-4 text-center">
-                <div className="flex max-w-md flex-col items-center gap-1">
-                  <p className="text-base font-extrabold text-cream">
+                <div className="flex max-w-md flex-col items-center gap-1.5">
+                  <p className="text-[14px] font-semibold text-[#c9cede]">
                     {stage === 'welcome'
                       ? t('world.lock.welcome')
                       : stage === 'city'
@@ -829,7 +841,7 @@ function Park({
                         ? t('world.lock.facility', { name: facility?.name ?? '' })
                         : t('world.lock.briefing')}
                   </p>
-                  <p className="text-xs text-cream opacity-80">{t('world.lockLead')}</p>
+                  <p className="text-[12px] text-[#7d849c]">{t('world.lockLead')}</p>
                 </div>
               </div>
             )}
@@ -870,37 +882,40 @@ function RetryMenu({ cityName, onMission, onCity, onClose }: { cityName: string;
   const t = useT();
   const [confirm, setConfirm] = useState(false);
   return (
-    <div role="dialog" aria-modal="true" aria-label={t('retry.title')} data-testid="retry-menu" className="fixed inset-0 z-50 grid place-items-center bg-[rgba(44,29,16,0.6)] p-4" onClick={onClose}>
+    <div role="dialog" aria-modal="true" aria-label={t('retry.title')} data-testid="retry-menu" className="ui fixed inset-0 z-50 grid place-items-center bg-[rgba(23,22,26,0.55)] p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-md border-4 border-wood-dark bg-cream p-4 shadow-xl"
+        className="ui-card w-full max-w-md p-5"
         onClick={(e) => {
           e.stopPropagation();
         }}
       >
-        <p className="text-lg font-extrabold">↺ {t('retry.title')}</p>
+        <p className="flex items-center gap-2 text-[17px] font-bold tracking-tight">
+          <Icon name="replay" size={18} />
+          {t('retry.title')}
+        </p>
         {confirm ? (
           <>
-            <p className="mt-2 border-l-4 border-[var(--bad)] bg-[#fbe3de] px-3 py-2 text-sm leading-relaxed">{t('retry.cityConfirm', { name: cityName })}</p>
+            <p className="ui-note ui-note-bad mt-3 leading-relaxed">{t('retry.cityConfirm', { name: cityName })}</p>
             <div className="mt-3 flex flex-wrap justify-end gap-2">
-              <button type="button" onClick={() => { setConfirm(false); }} className="knob px-3 py-2 text-sm">
+              <button type="button" onClick={() => { setConfirm(false); }} className="ui-btn ui-btn-plain h-9 px-3 text-[13px]">
                 {t('retry.back')}
               </button>
-              <button type="button" data-testid="retry-city-confirm" onClick={onCity} className="sign px-4 py-2 text-sm font-extrabold">
+              <button type="button" data-testid="retry-city-confirm" onClick={onCity} className="ui-btn ui-btn-primary h-9 px-4 text-[13px]" style={{ background: 'var(--u-bad)' }}>
                 {t('retry.cityYes')}
               </button>
             </div>
           </>
         ) : (
-          <div className="mt-3 flex flex-col gap-2">
-            <button type="button" data-testid="retry-mission" onClick={onMission} className="sign px-4 py-2 text-left text-sm font-extrabold">
-              {t('retry.mission')}
-              <span className="block text-xs font-normal">{t('retry.missionLead')}</span>
+          <div className="mt-4 flex flex-col gap-2">
+            <button type="button" data-testid="retry-mission" onClick={onMission} className="ui-option flex-col items-start gap-0.5">
+              <span className="text-[14px] font-semibold">{t('retry.mission')}</span>
+              <span className="text-[12px] text-[var(--u-text-2)]">{t('retry.missionLead')}</span>
             </button>
-            <button type="button" data-testid="retry-city" onClick={() => { setConfirm(true); }} className="knob px-4 py-2 text-left text-sm font-extrabold">
-              {t('retry.city', { name: cityName })}
-              <span className="block text-xs font-normal">{t('retry.cityLead')}</span>
+            <button type="button" data-testid="retry-city" onClick={() => { setConfirm(true); }} className="ui-option flex-col items-start gap-0.5">
+              <span className="text-[14px] font-semibold">{t('retry.city', { name: cityName })}</span>
+              <span className="text-[12px] text-[var(--u-text-2)]">{t('retry.cityLead')}</span>
             </button>
-            <button type="button" onClick={onClose} className="self-end px-3 py-1 text-sm underline">
+            <button type="button" onClick={onClose} className="ui-btn ui-btn-plain h-8 self-end px-3 text-[13px]">
               {t('retry.cancel')}
             </button>
           </div>
@@ -920,46 +935,57 @@ function StageBar({ stage, onBackToCity }: { stage: Stage; onBackToCity?: (() =>
   const t = useT();
   const index = stage === 'welcome' ? -1 : STAGES.indexOf(stage);
   return (
-    <ol aria-label={t('world.stages')} className="mx-3 mt-3 flex shrink-0 flex-wrap items-center gap-1 text-xs font-extrabold">
-      {STAGES.map((s, i) => (
-        <li
-          key={s}
-          data-stage-step={s}
-          aria-current={i === index ? 'step' : undefined}
-          className={`border-2 px-2 py-1 ${i === index ? 'border-[var(--gold-dark)] bg-gold text-ink' : i < index ? 'border-[var(--ok)] bg-[#dff0cf] text-ink' : 'border-[var(--cream-dark)] bg-cream text-ink-soft'}`}
-        >
-          {i < index ? '✓ ' : `${String(i + 1)}. `}
-          {t(`world.stage.${s}`)}
-        </li>
-      ))}
+    <div className="flex shrink-0 items-center gap-2 border-b border-[var(--u-line)] bg-[var(--u-card)] px-4 py-2">
+      <ol aria-label={t('world.stages')} className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+        {STAGES.map((s, i) => (
+          <li key={s} className="flex items-center gap-1">
+            <span
+              data-stage-step={s}
+              aria-current={i === index ? 'step' : undefined}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                i === index
+                  ? 'bg-[var(--accent)] text-white'
+                  : i < index
+                    ? 'bg-[var(--u-ok-soft)] text-[var(--u-ok)]'
+                    : 'text-[var(--u-text-3)]'
+              }`}
+            >
+              {i < index ? <Icon name="check" size={11} strokeWidth={3} /> : null}
+              {t(`world.stage.${s}`)}
+            </span>
+            {i < STAGES.length - 1 ? <span aria-hidden className="h-px w-2 bg-[var(--u-line-strong)]" /> : null}
+          </li>
+        ))}
+      </ol>
       {onBackToCity ? (
-        <li className="ml-auto">
-          <button type="button" data-testid="back-to-city" onClick={onBackToCity} className="knob px-2 py-1 text-xs">
-            {t('world.backToCity')}
-          </button>
-        </li>
+        <button type="button" data-testid="back-to-city" onClick={onBackToCity} className="ui-btn ui-btn-plain h-7 shrink-0 px-2.5 text-[12px]">
+          <Icon name="back" size={13} />
+          {t('world.backToCity')}
+        </button>
       ) : null}
-    </ol>
+    </div>
   );
 }
 
 /** はじめてそのカテゴリに来たときの、街の案内人の話 */
 function Welcome({ track, name, welcome, guide, onStart }: { track: MissionTrack; name: string; welcome: string; guide: { name: string; role: string }; onStart: () => void }) {
   const t = useT();
+  const animate = useMotionEnabled();
   return (
-    <section data-testid="welcome" className="flex flex-col gap-3 border-4 border-wood-dark bg-white p-4">
-      <div className="flex items-start gap-3">
-        <div className="flex shrink-0 flex-col items-center">
-          <CityPortrait track={track} size={4} talking animate />
-          <span className="plate mt-1 px-2 py-0.5 text-xs font-extrabold">{t('brief.giver', guide)}</span>
+    <section data-testid="welcome" className="ui-card m-4 flex flex-col gap-3 p-5">
+      <div className="flex items-start gap-4">
+        <div className="flex shrink-0 flex-col items-center gap-1.5">
+          <CityPortrait track={track} size={4} talking animate={animate} />
+          <span className="ui-chip whitespace-nowrap">{t('brief.giver', guide)}</span>
         </div>
         <div className="min-w-0">
-          <p className="text-lg font-extrabold">{t('world.welcomeTitle', { name })}</p>
-          <p className="mt-1 text-base leading-relaxed">{welcome}</p>
+          <p className="text-[19px] font-bold tracking-tight">{t('world.welcomeTitle', { name })}</p>
+          <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--u-text-2)]">{welcome}</p>
         </div>
       </div>
-      <p className="border-l-4 border-[var(--gold-dark)] bg-[var(--gold)]/20 px-3 py-2 text-sm leading-relaxed">{t('world.welcomeFlow')}</p>
-      <button type="button" data-testid="welcome-start" onClick={onStart} className="sign w-fit px-6 py-2.5 text-base font-extrabold">
+      <p className="ui-note ui-note-info leading-relaxed">{t('world.welcomeFlow')}</p>
+      <button type="button" data-testid="welcome-start" onClick={onStart} className="ui-btn ui-btn-primary h-11 w-fit px-6 text-[15px]">
+        <Icon name="city" size={17} />
         {t('world.start')}
       </button>
     </section>

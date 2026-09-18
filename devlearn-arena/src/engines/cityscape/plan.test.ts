@@ -107,6 +107,36 @@ describe('街の割り付け', () => {
     expect(cols.size).toBeGreaterThan(1);
   });
 
+  it('何も開いていなければ、となりの街からの街道しか通っていない', () => {
+    const plan = planTown([{ id: 'wild', members: [], min: 9 }]);
+    expect(plan.roads.map((r) => r.kind)).toEqual(['trunk']);
+    expect(plan.blocks[0]?.developed).toBe(false);
+    expect(plan.crossings).toEqual([]);
+  });
+
+  it('街道は街の端から端まで通り、街はそこから広がる', () => {
+    const plan = planTown([district('a', 4)]);
+    const trunk = plan.roads.find((r) => r.kind === 'trunk');
+    expect(trunk).toBeDefined();
+    expect(trunk?.x).toBe(0);
+    expect(trunk?.d).toBe(plan.height);
+  });
+
+  it('開いた街区のまわりにだけ道が伸びる', () => {
+    const plan = planTown([district('open', 4), { id: 'wild', members: [], min: 9 }]);
+    const open = plan.blocks.find((b) => b.id === 'open');
+    const wild = plan.blocks.find((b) => b.id === 'wild');
+    expect(open?.developed).toBe(true);
+    expect(wild?.developed).toBe(false);
+    if (!open || !wild) return;
+    // 開いた街区の右には通りがあり、原野の右には無い
+    expect(plan.roads.some((r) => r.axis === 'y' && r.kind === 'street' && r.x === open.x + open.w)).toBe(true);
+    expect(plan.roads.some((r) => r.axis === 'y' && r.kind === 'street' && r.x === wild.x + wild.w)).toBe(false);
+    // 大通りは、開いた街区のある所までしか伸びない
+    const avenue = plan.roads.find((r) => r.kind === 'avenue');
+    expect(avenue?.w).toBeLessThanOrEqual(open.x + open.w + STREET);
+  });
+
   it('中身が少ない街区でも、更地の区画を確保して形を保つ', () => {
     const plan = planTown([{ id: 'empty', members: [], min: 6 }]);
     const block = plan.blocks[0];

@@ -56,7 +56,7 @@ async function learnAndStart(page: Page): Promise<void> {
     await page.getByTestId('quiz-next').click();
   }
   await page.getByTestId('try-next').click();
-  await page.getByRole('button', { name: '▶ 対応をはじめる' }).click();
+  await page.getByRole('button', { name: '対応をはじめる', exact: true }).click();
   await expect(panel).toHaveAttribute('data-stage', 'work');
   await expect(page.locator('.xterm-screen')).toBeVisible();
 }

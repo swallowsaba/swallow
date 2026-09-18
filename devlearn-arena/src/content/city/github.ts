@@ -14,7 +14,7 @@ export const githubCity: CityPlan = {
       building: 'castle',
       needs: [],
       trouble: {
-        who: '開発者のアオイ',
+        who: '大工のアオイ',
         text: '自分のパソコンの Git には完璧な記録がある。でも、そのパソコンが壊れたら全部消えるし、チームの誰も私の作業を見られない。',
       },
       what: 'GitHub は、Git のリポジトリをインターネット上の共通の置き場所（リモート）として預かり、チームで取り出し・送り合えるようにするサービス。手元の Git と中央の Git は、同じ履歴を持つ別々の倉庫。',
@@ -54,7 +54,7 @@ export const githubCity: CityPlan = {
       building: 'office',
       needs: ['github/01'],
       trouble: {
-        who: 'レビュアーのシン',
+        who: '検査員のシン',
         text: '誰かが main に直接 push した変更で本番が壊れた。何のための変更だったのか、誰も確認していなかった。',
       },
       what: 'Pull Request（PR）は「このブランチの変更を、この目的で main に入れたい」という提案書。差分に、目的・背景・確認方法を添え、議論と確認と自動テストを経てから取り込む。',
@@ -94,7 +94,7 @@ export const githubCity: CityPlan = {
       building: 'hall',
       needs: ['github/02'],
       trouble: {
-        who: '新人のミナ',
+        who: '見習い大工のミナ',
         text: 'PR に「これはダメ」とだけコメントが付いて、何を直せばいいのか分からない。怖くて次の PR が出せない。',
       },
       what: 'コードレビューは、変更の品質を上げ、知識をチームに広げるための対話。良い指摘は「何が問題か・なぜか・どうすればよいか」と、必須か提案かの重みが分かる。',
@@ -174,7 +174,7 @@ export const githubCity: CityPlan = {
       building: 'library',
       needs: ['github/02'],
       trouble: {
-        who: 'リーダーのサキ',
+        who: '棟梁のサキ',
         text: '誰が何をやっているのか、口頭と個人のメモでしか分からない。同じバグを二人が別々に直していた。',
       },
       what: 'Issue は「やること・問題・要望」を 1 件ずつ見える場所に書く仕組み。ラベル・担当者・マイルストーン・Projects のボードで、チームの作業の状態を共有する。',
@@ -214,7 +214,7 @@ export const githubCity: CityPlan = {
       building: 'factory',
       needs: ['github/02'],
       trouble: {
-        who: '品質係のリョウ',
+        who: '検査係のリョウ',
         text: '「テストは手元で通しました」と言われた PR で本番が壊れた。実は一部のテストを流し忘れていた。',
       },
       what: 'GitHub Actions は、push や PR などの出来事をきっかけに、YAML に書いた手順（ワークフロー）を自動で実行する仕組み。ジョブの依存関係は DAG（有向非巡回グラフ）になり、前のジョブが失敗すると後ろのジョブは走らない。',
@@ -294,7 +294,7 @@ export const githubCity: CityPlan = {
       building: 'bridge',
       needs: ['github/06'],
       trouble: {
-        who: '営業のマコト',
+        who: '受付のマコト',
         text: 'お客さんに「今どのバージョンを使っていますか？」と聞かれても答えられない。いつ何が変わったのかも説明できない。',
       },
       what: 'リリースは「この記録を、この版として世に出した」という印（タグ）と、変更点の説明（リリースノート）のセット。GitHub Pages や Actions と組み合わせれば、タグを付けるだけで公開まで自動化できる。',

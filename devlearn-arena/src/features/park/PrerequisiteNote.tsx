@@ -1,4 +1,5 @@
 import { useT } from '@/i18n/useT';
+import { Icon } from '@/ui/Icon';
 
 interface Props {
   /** まだ終えていない前提の任務 */
@@ -15,18 +16,19 @@ export function PrerequisiteNote({ prerequisites, onSwitch }: Props) {
   const first = prerequisites[0];
   if (first === undefined) return null;
   return (
-    <div role="note" className="flex flex-wrap items-center gap-2 border-l-4 border-[var(--warn)] bg-[var(--cream-dark)] px-3 py-2 text-sm">
-      <span>{t('prereq.first', { title: first.title })}</span>
+    <div role="note" className="ui-note ui-note-warn flex flex-wrap items-center gap-2">
+      <Icon name="idea" size={15} />
+      <span className="min-w-0 flex-1">{t('prereq.first', { title: first.title })}</span>
       <button
         type="button"
-        className="knob px-2 py-0.5 text-xs"
+        className="ui-btn ui-btn-quiet h-7 px-2.5 text-xs"
         onClick={() => {
           onSwitch(first.id);
         }}
       >
         {t('prereq.go')}
       </button>
-      <span className="text-xs text-ink-soft">{t('prereq.canContinue')}</span>
+      <span className="text-[11px] opacity-75">{t('prereq.canContinue')}</span>
     </div>
   );
 }

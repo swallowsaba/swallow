@@ -8,6 +8,7 @@ import { WorldView } from '@/features/park/WorldView';
 import { tabForTrack } from '@/features/park/visualTabs';
 import { useT } from '@/i18n/useT';
 import { CITY_COLOR } from '@/visual/game/cityColor';
+import { Icon } from '@/ui/Icon';
 import { FacilityPlot, PLOT_H, PLOT_W } from '@/visual/game/cityArt';
 import { MoodMark } from '@/visual/game/MoodFace';
 import type { Mood } from '@/visual/game/faces';
@@ -21,8 +22,8 @@ const INK = '#2b2118';
 /** 絵の枠 */
 function Frame({ label, children, testId }: { label: string; children: React.ReactNode; testId: string }) {
   return (
-    <figure data-testid={testId} className="border-4 border-wood-dark bg-[#eaf4df] shadow-[4px_4px_0_rgba(0,0,0,0.15)]">
-      <figcaption className="bg-[var(--wood)] px-3 py-1 text-xs font-extrabold text-cream">🖼 {label}</figcaption>
+    <figure data-testid={testId} className="ui-card overflow-hidden">
+      <figcaption className="ui-eyebrow border-b border-[var(--u-line)] px-3 py-1.5">{label}</figcaption>
       <div className="p-2">{children}</div>
     </figure>
   );
@@ -89,19 +90,19 @@ export function AnalogyVisual({ facility, track }: { facility: Facility; track: 
   return (
     <Frame label={t('visual.analogy')} testId="visual-analogy">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div className="flex h-full flex-col items-center justify-center gap-2 border-2 border-dashed border-wood-dark bg-[#1d252c] p-3 text-center">
-          <span className="text-xs font-bold text-[#9fd67a]">💻 {t('visual.itWorld')}</span>
-          <code className="font-mono text-base font-extrabold text-white">{facility.concept}</code>
+        <div className="flex h-full flex-col items-center justify-center gap-2 rounded-lg bg-[#12131a] p-3 text-center">
+          <span className="text-[11px] font-semibold text-[#9fd67a]">{t('visual.itWorld')}</span>
+          <code className="font-mono text-[15px] font-bold text-white">{facility.concept}</code>
         </div>
-        <span className="text-3xl font-black text-wood-dark" aria-hidden>
+        <span className="text-2xl text-[var(--u-text-3)]" aria-hidden>
           ⇄
         </span>
-        <div className="flex flex-col items-center gap-1 border-2 border-wood-dark bg-white p-2 text-center">
-          <span className="text-xs font-bold text-ink-soft">🏙 {t('visual.cityWorld')}</span>
+        <div className="ui-flat flex flex-col items-center gap-1 p-2 text-center">
+          <span className="ui-eyebrow">{t('visual.cityWorld')}</span>
           <svg viewBox={`0 0 ${String(PLOT_W)} ${String(PLOT_H)}`} className="h-24 w-auto" aria-hidden>
             <FacilityPlot kind={facility.building} track={track} state="complete" x={0} y={0} animate={false} />
           </svg>
-          <span className="plate px-2 text-xs font-extrabold">{facility.name}</span>
+          <span className="ui-chip">{facility.name}</span>
         </div>
       </div>
     </Frame>
@@ -112,15 +113,15 @@ export function AnalogyVisual({ facility, track }: { facility: Facility; track: 
 export function WhyVisual({ facility, track }: { facility: Facility; track: MissionTrack }) {
   const t = useT();
   const side = (ok: boolean) => (
-    <div className={`flex flex-col items-center gap-1 border-4 p-2 ${ok ? 'border-[var(--ok)] bg-[#dff0cf]' : 'border-[var(--bad)] bg-[#fbe3de]'}`}>
-      <span className="text-sm font-extrabold">{ok ? t('visual.with', { name: facility.name }) : t('visual.without', { name: facility.name })}</span>
+    <div className={`flex flex-col items-center gap-1 rounded-lg border p-2 ${ok ? 'border-[var(--u-ok)] bg-[var(--u-ok-soft)]' : 'border-[var(--u-bad)] bg-[var(--u-bad-soft)]'}`}>
+      <span className="text-[12px] font-semibold">{ok ? t('visual.with', { name: facility.name }) : t('visual.without', { name: facility.name })}</span>
       <svg viewBox={`0 0 ${String(PLOT_W)} ${String(PLOT_H + 40)}`} className="h-28 w-auto" aria-hidden>
         <FacilityPlot kind={facility.building} track={track} state={ok ? 'complete' : 'locked'} x={0} y={0} animate={false} />
         <Face x={32} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} size={32} />
         <Face x={75} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} size={32} />
         <Face x={118} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} size={32} />
       </svg>
-      <span className="text-xs font-bold">{ok ? t('visual.withLead') : t('visual.withoutLead')}</span>
+      <span className="text-[11px]">{ok ? t('visual.withLead') : t('visual.withoutLead')}</span>
     </div>
   );
   return (
@@ -204,7 +205,7 @@ export function PitfallRoad({ count }: { count: number }) {
 /** 状態図。任務の世界（ファイル・履歴・クラスタ・ネットワーク・PR）を、前の状態との違いを光らせて見せる */
 export function StateDiagram({ track, state, previous, height = 'h-64' }: { track: MissionTrack; state: ShellState; previous?: ShellState | undefined; height?: string }) {
   return (
-    <div className={`${height} overflow-hidden border-2 border-wood-dark bg-cream`}>
+    <div className={`${height} overflow-hidden rounded-lg border border-[var(--u-line)] bg-[var(--u-sunk)]`}>
       <WorldView tab={tabForTrack(track)} state={state} previous={previous} compact />
     </div>
   );
@@ -239,7 +240,7 @@ export function DemoPlayer({ facility, track, animate }: { facility: Facility; t
   return (
     <Frame label={t('visual.demo', { a: index, b: last })} testId="visual-demo">
       <div className="flex flex-col gap-2">
-        <pre className="min-h-[4.5rem] overflow-hidden bg-[#0a0d12] px-3 py-2 font-mono text-xs leading-relaxed text-[#e6edf3]" data-testid="demo-command">
+        <pre className="min-h-[4.5rem] overflow-hidden rounded-lg bg-[#12131a] px-3 py-2 font-mono text-[12px] leading-relaxed text-[#e6edf3]" data-testid="demo-command">
           {frame.command === null ? (
             <span className="text-[#9fb0c0]">{t('visual.demoStart')}</span>
           ) : (
@@ -251,7 +252,7 @@ export function DemoPlayer({ facility, track, animate }: { facility: Facility; t
           )}
         </pre>
         <StateDiagram track={track} state={frame.state} previous={frames[index - 1]?.state} height="h-52" />
-        <p className="text-xs text-ink-soft">{t('visual.demoLead')}</p>
+        <p className="text-[11px] text-[var(--u-text-3)]">{t('visual.demoLead')}</p>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -261,8 +262,9 @@ export function DemoPlayer({ facility, track, animate }: { facility: Facility; t
               setPlaying(false);
               setIndex((i) => Math.max(0, i - 1));
             }}
-            className="knob w-24 px-2 py-1 text-sm disabled:opacity-40"
+            className="ui-btn ui-btn-quiet h-8 w-20 text-[12px]"
           >
+            <Icon name="back" size={14} />
             {t('visual.demoPrev')}
           </button>
           <button
@@ -272,8 +274,9 @@ export function DemoPlayer({ facility, track, animate }: { facility: Facility; t
               if (index >= last) setIndex(0);
               setPlaying((p) => !p);
             }}
-            className="knob w-24 px-2 py-1 text-sm"
+            className="ui-btn ui-btn-primary h-8 w-20 text-[12px]"
           >
+            <Icon name={playing ? 'pause' : 'play'} size={14} />
             {playing ? t('visual.demoPause') : t('visual.demoPlay')}
           </button>
           <button
@@ -284,13 +287,14 @@ export function DemoPlayer({ facility, track, animate }: { facility: Facility; t
               setPlaying(false);
               setIndex((i) => Math.min(last, i + 1));
             }}
-            className="knob w-24 px-2 py-1 text-sm disabled:opacity-40"
+            className="ui-btn ui-btn-quiet h-8 w-20 text-[12px]"
           >
             {t('visual.demoNext')}
+            <Icon name="next" size={14} />
           </button>
           <div className="flex flex-1 gap-0.5" aria-hidden>
             {frames.map((_, i) => (
-              <span key={i} className={`h-2 flex-1 ${i <= index ? 'bg-[var(--gold-dark)]' : 'bg-[var(--cream-dark)]'}`} />
+              <span key={i} className="h-1 flex-1 rounded-full" style={{ background: i <= index ? 'var(--accent)' : 'var(--u-line)' }} />
             ))}
           </div>
         </div>

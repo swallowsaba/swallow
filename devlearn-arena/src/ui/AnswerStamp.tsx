@@ -32,7 +32,7 @@ export function Streak({ count, animate }: { count: number; animate: boolean }) 
       data-count={count}
       initial={animate ? { scale: 0.6, opacity: 0 } : false}
       animate={{ scale: 1, opacity: 1 }}
-      className="sign px-2 py-0.5 text-xs font-extrabold"
+      className="ui-chip ui-chip-accent"
     >
       {t('quiz.streak', { n: count })}
     </motion.span>

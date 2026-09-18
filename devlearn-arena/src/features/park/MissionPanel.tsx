@@ -2,6 +2,7 @@ import { useT } from '@/i18n/useT';
 import type { LessonDefinition, LessonProgressState, LessonStep } from '@/engines/lesson/types';
 import { FitBox } from '@/ui/FitBox';
 import { Glossed } from '@/ui/Term';
+import { Icon } from '@/ui/Icon';
 import { takeawaysOf } from '@/engines/lesson/takeaways';
 import { Assist } from './Assist';
 import { PrerequisiteNote } from './PrerequisiteNote';
@@ -58,18 +59,19 @@ export function MissionPanel({
   const t = useT();
   return (
     // 行の高さは仕切りで決まる。ヒントや解答で中身が増えたら、送らずに字ごと縮めて収める
-    <FitBox className="m-3 min-h-0 flex-1" testId="mission-fit">
-      <div className="px-6 py-5">
+    <FitBox className="ui min-h-0 flex-1" testId="mission-fit">
+      <div className="px-5 py-4">
       {progress.cleared ? null : (
         <div className="mb-3">
           <PrerequisiteNote prerequisites={prerequisites} onSwitch={onSwitch} />
         </div>
       )}
       <SkippedNotes mission={mission} skipped={progress.skipped} />
-      <p className="text-sm font-bold text-ink-soft">
+      <p className="ui-eyebrow flex items-center gap-1.5">
+        <Icon name={progress.cleared ? 'check' : 'target'} size={13} />
         {progress.cleared ? t('park.done') : t('park.todo', { n: progress.stepIndex + 1 })}
       </p>
-      <p className="mt-1 text-xl font-bold leading-snug">
+      <p className="mt-1 text-[20px] font-bold leading-snug tracking-tight">
         {progress.cleared ? t('park.missionDone') : <Glossed text={step?.prompt ?? ''} />}
       </p>
 
@@ -77,9 +79,12 @@ export function MissionPanel({
 
       {progress.cleared ? (
         <div className="mt-4 flex flex-col gap-3">
-          <section aria-label={t('takeaways.title')} className="border-l-4 border-[var(--ok)] bg-[var(--cream-dark)] px-3 py-2">
-            <p className="text-sm font-extrabold text-ink-soft">{t('takeaways.title')}</p>
-            <ol className="mt-1 flex list-decimal flex-col gap-1 pl-5 text-sm leading-snug">
+          <section aria-label={t('takeaways.title')} className="ui-note ui-note-ok">
+            <p className="ui-eyebrow flex items-center gap-1.5">
+              <Icon name="book" size={13} />
+              {t('takeaways.title')}
+            </p>
+            <ol className="mt-1 flex list-decimal flex-col gap-1 pl-5 leading-snug">
               {takeawaysOf(mission).map((line) => (
                 <li key={line}>
                   <Glossed text={line} />
@@ -93,22 +98,19 @@ export function MissionPanel({
               onClick={() => {
                 onSwitch(nextMission.id);
               }}
-              className="sign w-fit px-6 py-3 text-lg font-extrabold"
+              className="ui-btn ui-btn-primary h-11 w-fit px-5 text-[15px]"
             >
               {t('park.nextMission', { title: nextMission.title })}
+              <Icon name="next" size={17} />
             </button>
           ) : (
-            <p className="text-base font-bold text-[var(--ok)]">
-              {t('park.allDone')}
-            </p>
+            <p className="text-[14px] font-semibold text-[var(--u-ok)]">{t('park.allDone')}</p>
           )}
 
-          <div>
-            <p className="text-sm font-bold text-ink-soft">{t('park.missionList')}</p>
-            <p className="mt-1 text-sm text-ink-soft">{t('park.pickFromHeader')}</p>
-            <p className="mt-1 font-mono text-xs text-ink-soft">
-              {t('park.clearedCount', { a: clearedIds.size, b: total })}
-            </p>
+          <div className="ui-flat px-3 py-2">
+            <p className="ui-eyebrow">{t('park.missionList')}</p>
+            <p className="mt-1 text-[13px] text-[var(--u-text-2)]">{t('park.pickFromHeader')}</p>
+            <p className="mt-1 font-mono text-[11px] text-[var(--u-text-3)]">{t('park.clearedCount', { a: clearedIds.size, b: total })}</p>
           </div>
         </div>
       ) : null}
@@ -120,7 +122,7 @@ export function MissionPanel({
       {/* 読み上げにも届くよう、指摘は live region に置く */}
       <div role="status" aria-live="polite" className="empty:hidden">
         {diagnosis !== null && !progress.cleared ? (
-          <p className="mt-3 border-l-4 border-[var(--warn)] bg-[var(--gold)]/25 px-3 py-2 text-sm">
+          <p className="ui-note ui-note-warn mt-3">
             <span className="font-bold">{t('park.close')}: </span>
             <Glossed text={diagnosis} />
           </p>
@@ -136,8 +138,9 @@ export function MissionPanel({
                 onRevealHint();
               }}
               disabled={step === undefined || revealedHints >= step.hints.length}
-              className="knob px-4 py-1.5 text-sm disabled:opacity-50"
+              className="ui-btn ui-btn-quiet h-8 px-3 text-[13px]"
             >
+              <Icon name="idea" size={15} />
               {t('park.hint')}
             </button>
             <button
@@ -145,21 +148,22 @@ export function MissionPanel({
               onClick={onSkip}
               disabled={step === undefined}
               title={t('park.skipLead')}
-              className="knob px-4 py-1.5 text-sm disabled:opacity-50"
+              className="ui-btn ui-btn-plain h-8 px-3 text-[13px]"
             >
+              <Icon name="skip" size={15} />
               {t('park.skip')}
             </button>
           </div>
           {revealedHints === 0 ? (
-            <p className="mt-1 text-xs text-ink-soft">
+            <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--u-text-3)]">
               {t('park.hintLead')} {t('park.skipLead')}
             </p>
           ) : null}
-          <ul className="mt-2 flex flex-col gap-0.5">
+          <ul className="mt-2 flex flex-col gap-1">
             {step?.hints.slice(0, revealedHints).map((hint) => (
-              <li key={hint} className="flex items-start gap-2">
-                <span aria-hidden className="text-ink-soft">›</span>
-                <span className="font-mono text-sm text-ink">{hint}</span>
+              <li key={hint} className="ui-note ui-note-info flex items-start gap-2 py-1.5">
+                <Icon name="idea" size={14} className="mt-0.5" />
+                <span className="font-mono text-[12px]">{hint}</span>
               </li>
             ))}
           </ul>
@@ -179,20 +183,19 @@ function SkippedNotes({ mission, skipped }: { mission: LessonDefinition; skipped
   const t = useT();
   if (skipped.length === 0) return null;
   return (
-    <div className="mb-3 border-l-4 border-[var(--warn)] bg-[var(--gold)]/20 px-3 py-2">
+    <div className="ui-note ui-note-warn mb-3">
       <ul className="flex flex-col gap-0.5">
         {skipped.map((index) => (
-          <li key={index} className="text-sm">
-            <span aria-hidden>📖 </span>
+          <li key={index}>
             <span className="font-bold">{t('park.skipped', { n: index + 1 })}</span>
-            <span className="text-ink-soft">
+            <span className="opacity-80">
               {' — '}
               <Glossed text={mission.steps[index]?.prompt ?? ''} />
             </span>
           </li>
         ))}
       </ul>
-      <p className="mt-1 text-xs text-ink-soft">{t('park.skippedLead')}</p>
+      <p className="mt-1 text-[11px] opacity-75">{t('park.skippedLead')}</p>
     </div>
   );
 }
@@ -207,9 +210,12 @@ function LastExplain({ mission, progress }: { mission: LessonDefinition; progres
   const step = index >= 0 ? mission.steps[index] : undefined;
   if (step === undefined) return null;
   return (
-    <div className="mt-3 border-l-4 border-[var(--ok)] bg-[var(--ok)]/10 px-3 py-2">
-      <p className="text-xs font-bold text-ink-soft">{t('park.explainTitle', { n: index + 1 })}</p>
-      <p className="mt-0.5 text-sm leading-relaxed">
+    <div className="ui-note ui-note-ok mt-3">
+      <p className="ui-eyebrow flex items-center gap-1.5">
+        <Icon name="check" size={13} strokeWidth={2.4} />
+        {t('park.explainTitle', { n: index + 1 })}
+      </p>
+      <p className="mt-0.5 leading-relaxed">
         <Glossed text={step.explain} />
       </p>
     </div>

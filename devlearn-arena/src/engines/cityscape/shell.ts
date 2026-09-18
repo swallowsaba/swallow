@@ -78,6 +78,8 @@ export function shellScene(state: ShellState, previous: ShellState | undefined, 
     tone: state.cwd === w.dir ? 'accent' : 'info',
     members: w.files.map((path) => `file:${path}`),
     min: 4,
+    // 空でも、いま立っている街区と街の入口の街区は開いている
+    developed: w.files.length > 0 || w.dir === state.cwd || w.dir === root,
   }));
   const procs = [...state.procs.processes.values()].slice(0, 8);
   if (procs.length > 0) {

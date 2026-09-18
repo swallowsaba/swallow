@@ -21,10 +21,10 @@ export function CityProgress({ city, track, currentId }: { city: CityState; trac
   const width = Math.max(SLOT, n * SLOT);
   const height = PLOT_H * SCALE + 18;
   return (
-    <figure data-testid="city-progress" className="border-4 border-wood-dark bg-[#eaf4df]">
-      <figcaption className="flex items-center gap-2 bg-[var(--wood)] px-3 py-1 text-xs font-extrabold text-cream">
-        <span className="min-w-0 flex-1 truncate">{t('board.growth', { name: city.plan.name })}</span>
-        <span className="font-mono">{t('board.growthCount', { a: city.built, b: n })}</span>
+    <figure data-testid="city-progress" className="ui-card overflow-hidden">
+      <figcaption className="flex items-center gap-2 border-b border-[var(--u-line)] px-3 py-1.5">
+        <span className="ui-eyebrow min-w-0 flex-1 truncate">{t('board.growth', { name: city.plan.name })}</span>
+        <span className="font-mono text-[11px] text-[var(--u-text-3)]">{t('board.growthCount', { a: city.built, b: n })}</span>
       </figcaption>
       <div className="p-2">
         <svg viewBox={`0 0 ${String(width)} ${String(height)}`} className="h-auto w-full" role="img" aria-label={t('board.growthCount', { a: city.built, b: n })}>

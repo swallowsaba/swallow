@@ -1,5 +1,6 @@
 import { useT } from '@/i18n/useT';
 import { Glossed } from '@/ui/Term';
+import { Icon } from '@/ui/Icon';
 
 export interface PartState {
   label: string;
@@ -26,11 +27,7 @@ export function StepChecklist({ parts, fallback, passingNow }: Props) {
 
   if (parts.length === 0) {
     return (
-      <p
-        className={`mt-2 border-l-4 px-3 py-1.5 text-sm ${
-          passingNow ? 'border-[var(--ok)] bg-[var(--ok)]/15' : 'border-[var(--cream-dark)] text-ink-soft'
-        }`}
-      >
+      <p className={`ui-note mt-2 ${passingNow ? 'ui-note-ok' : 'bg-[var(--u-sunk)] text-[var(--u-text-2)]'}`}>
         <span className="font-bold">{passingNow ? t('park.passing') : t('park.notPassing')} </span>
         <Glossed text={fallback} />
       </p>
@@ -39,28 +36,31 @@ export function StepChecklist({ parts, fallback, passingNow }: Props) {
 
   const done = parts.filter((p) => p.passing).length;
   return (
-    <div className="mt-2 border-l-4 border-[var(--cream-dark)] px-3 py-1.5">
-      <p className="text-sm font-bold text-ink-soft">
-        {t('park.conditions', { a: done, b: parts.length })}
-      </p>
-      <ul className="mt-1 flex flex-col gap-1">
+    <div className="ui-flat mt-2 px-3 py-2">
+      <div className="flex items-center gap-2">
+        <p className="ui-eyebrow">{t('park.conditions', { a: done, b: parts.length })}</p>
+        <div className="ui-track min-w-0 flex-1">
+          <span style={{ width: `${((done / Math.max(1, parts.length)) * 100).toFixed(0)}%` }} />
+        </div>
+      </div>
+      <ul className="mt-1.5 flex flex-col gap-1">
         {parts.map((part) => (
           <li key={part.label} className="flex items-start gap-2 text-sm">
             <span
               aria-hidden
-              className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center border-2 border-wood-dark text-xs font-extrabold ${
-                part.passing ? 'bg-[var(--ok)] text-ink' : 'bg-white text-ink-soft'
+              className={`mt-0.5 grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border ${
+                part.passing ? 'border-[var(--u-ok)] bg-[var(--u-ok)] text-white' : 'border-[var(--u-line-strong)] bg-[var(--u-card)]'
               }`}
             >
-              {part.passing ? '✓' : ''}
+              {part.passing ? <Icon name="check" size={11} strokeWidth={3} /> : null}
             </span>
-            <span className={part.passing ? 'text-ink' : 'text-ink-soft'}>
+            <span className={part.passing ? '' : 'text-[var(--u-text-2)]'}>
               <span className="sr-only">
                 {part.passing ? t('park.partDone') : t('park.partPending')}:{' '}
               </span>
               <Glossed text={part.label} />
               {!part.passing && part.howTo !== undefined ? (
-                <span className="block text-xs text-ink-soft">{part.howTo}</span>
+                <span className="block text-[11px] text-[var(--u-text-3)]">{part.howTo}</span>
               ) : null}
             </span>
           </li>

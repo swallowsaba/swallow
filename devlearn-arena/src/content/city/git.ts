@@ -254,7 +254,7 @@ export const gitCity: CityPlan = {
       building: 'tower',
       needs: ['git/06'],
       trouble: {
-        who: '新人のカイ',
+        who: '見習いのカイ',
         text: 'git reset --hard を打ったら、今日一日分の記録が消えた！もうおしまいだ……。',
       },
       what: 'Git は名札（ブランチや HEAD）がどこを指していたかを、手元で一定期間「移動履歴（reflog）」として覚えている。記録（コミット）そのものはすぐには消えないので、たいていは戻せる。',

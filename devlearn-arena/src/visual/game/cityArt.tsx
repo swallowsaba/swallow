@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
 import type { BuildingKind, FacilityState } from '@/content/city';
 import type { MissionTrack } from '@/engines/lesson/types';
+import { Character } from './Character';
+import { ROLE_OF_TRACK } from './roles';
 import { Sprite } from './pixel';
 import { Cart, Castle, Field, House, Kiosk, Sparkle, Tower } from './scenery';
 import { CITY_COLOR } from './cityColor';
-import { HERO, heroPalette, INK, WORKER, workerPalette } from './sprites';
+import { INK, WORKER, workerPalette } from './sprites';
 
 export const PLOT_W = 150;
 export const PLOT_H = 120;
@@ -191,22 +193,13 @@ export function FacilityPlot({ kind, track, state, x, y, animate }: Props) {
 
 /** 街の案内人・住民の似顔絵 */
 export function CityPortrait({ track, size = 7, talking = false, animate, resident = false }: { track: MissionTrack; size?: number; talking?: boolean; animate: boolean; resident?: boolean }) {
-  const color = CITY_COLOR[track];
-  const w = 12 * size;
-  const h = 16 * size;
+  // size はドット絵のときの 1 ドットの大きさだった。胸像の高さに読み替える
   return (
-    <svg width={w + 16} height={h + 16} viewBox={`-8 -8 ${String(w + 16)} ${String(h + 16)}`} aria-hidden style={{ imageRendering: 'pixelated' }}>
-      <ellipse cx={w / 2} cy={h - 2} rx={w / 2.4} ry={size * 1.2} fill="rgba(0,0,0,0.2)" />
-      <motion.g
-        animate={animate && talking ? { y: [0, -size * 0.6, 0] } : { y: 0 }}
-        transition={animate && talking ? { repeat: Infinity, duration: 0.9 } : { duration: 0 }}
-      >
-        {resident ? (
-          <Sprite map={HERO} palette={heroPalette('#6f8f3f', '#3b2a1a')} scale={size} />
-        ) : (
-          <Sprite map={WORKER} palette={workerPalette(color.shirt, color.hat)} scale={size} />
-        )}
-      </motion.g>
-    </svg>
+    <Character
+      role={resident ? 'resident' : ROLE_OF_TRACK[track]}
+      size={size * 15}
+      talking={talking}
+      animate={animate}
+    />
   );
 }

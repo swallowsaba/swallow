@@ -9,11 +9,12 @@ import { Glossed } from '@/ui/Term';
 import { FooterBar } from '@/ui/FooterBar';
 import { FOOTER_SLOT_CLASS, useFooterSlot } from '@/ui/footerSlot';
 import { FitBox } from '@/ui/FitBox';
-import { AnswerStamp, Streak } from '@/ui/AnswerStamp';
+import { Streak } from '@/ui/AnswerStamp';
 import { useSfx } from '@/lib/useSfx';
 import { AnalogyVisual, DemoPlayer, HowRoute, PitfallRoad, TroubleScene, WhyVisual } from './LessonVisuals';
 import { CITY_COLOR } from '@/visual/game/cityColor';
 import { CityPortrait, FacilityPlot, PLOT_H, PLOT_W } from '@/visual/game/cityArt';
+import { Icon, type IconName } from '@/ui/Icon';
 
 interface Props {
   facility: Facility;
@@ -36,6 +37,15 @@ interface Props {
 
 type Step = 'trouble' | 'what' | 'why' | 'how' | 'demo' | 'field' | 'exam';
 const STEPS: readonly Step[] = ['trouble', 'what', 'why', 'how', 'demo', 'field', 'exam'];
+const STEP_ICON: Record<Step, IconName> = {
+  trouble: 'request',
+  what: 'search',
+  why: 'target',
+  how: 'settings',
+  demo: 'play',
+  field: 'alert',
+  exam: 'board',
+};
 
 /**
  * 施設を建てるための学習。コマンドは打たない。
@@ -67,24 +77,31 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
   }, [onClose, inline]);
 
   return (
-    <div className={inline ? 'flex h-full min-h-0 flex-col' : 'fixed inset-0 z-40 overflow-y-auto bg-[rgba(44,29,16,0.72)] p-3 sm:p-6'}>
+    <div className={inline ? 'ui flex h-full min-h-0 flex-col' : 'ui fixed inset-0 z-40 overflow-y-auto bg-[rgba(23,22,26,0.55)] p-3 backdrop-blur-sm sm:p-6'}>
       <div
         role={inline ? undefined : 'dialog'}
         aria-modal={inline ? undefined : true}
         aria-labelledby="facility-title"
         data-testid="facility-lesson"
-        className={inline ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto flex min-h-full max-w-4xl flex-col border-4 border-wood-dark bg-cream shadow-lg'}
+        className={inline ? 'flex min-h-0 flex-1 flex-col' : 'ui-card mx-auto flex min-h-full max-w-4xl flex-col overflow-hidden'}
       >
-        <header className="flex shrink-0 flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-4 py-3">
-          <span className="sign px-3 py-1 text-sm font-extrabold">🏗 {t('facility.label')}</span>
+        <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-[var(--u-line)] bg-[var(--u-card)] px-4 py-3">
+          <span className="ui-chip ui-chip-accent">
+            <Icon name="build" size={14} />
+            {t('facility.label')}
+          </span>
           <div className="min-w-0 flex-1">
-            <h2 id="facility-title" className="truncate text-xl font-extrabold text-cream">
+            <h2 id="facility-title" className="truncate text-[15px] font-bold tracking-tight">
               {facility.name}
             </h2>
-            <p className="truncate text-xs font-bold text-cream opacity-90">{t('facility.concept', { concept: facility.concept })}</p>
+            <p className="truncate text-[11px] text-[var(--u-text-3)]">{t('facility.concept', { concept: facility.concept })}</p>
+          </div>
+          <div className="ui-track w-20 shrink-0">
+            <span style={{ width: `${(((index + 1) / STEPS.length) * 100).toFixed(0)}%` }} />
           </div>
           {inline ? null : (
-            <button type="button" onClick={onClose} className="knob px-3 py-1.5 text-xs">
+            <button type="button" onClick={onClose} className="ui-btn ui-btn-plain h-8 px-2.5 text-xs">
+              <Icon name="close" size={14} />
               {t('facility.close')}
             </button>
           )}
@@ -94,28 +111,32 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
           <Built facility={facility} track={track} animate={animate} firstMissionId={firstMissionId} onClose={onClose} onContinue={onContinue} />
         ) : (
           <>
-            <nav aria-label={t('facility.steps')} className="flex shrink-0 flex-wrap gap-1 border-b-2 border-[var(--cream-dark)] bg-[var(--cream-dark)] px-3 py-2">
-              {STEPS.map((s, i) => (
-                <button
-                  key={s}
-                  type="button"
-                  data-step={s}
-                  aria-current={step === s ? 'step' : undefined}
-                  onClick={() => {
-                    goto(s);
-                  }}
-                  className={`px-2.5 py-1 text-sm font-extrabold ${step === s ? 'bg-gold text-ink' : i < index ? 'text-ink' : 'text-ink-soft hover:text-ink'}`}
-                >
-                  {i + 1}. {t(`facility.step.${s}`)}
-                </button>
-              ))}
-            </nav>
+            <div className="shrink-0 border-b border-[var(--u-line)] bg-[var(--u-card)] px-4 pb-3">
+              <nav aria-label={t('facility.steps')} className="ui-steps">
+                {STEPS.map((s, i) => (
+                  <button
+                    key={s}
+                    type="button"
+                    data-step={s}
+                    aria-current={step === s ? 'step' : undefined}
+                    data-done={i < index ? 'true' : 'false'}
+                    onClick={() => {
+                      goto(s);
+                    }}
+                    className="flex items-center gap-1.5"
+                  >
+                    <Icon name={i < index ? 'check' : STEP_ICON[s]} size={13} />
+                    {t(`facility.step.${s}`)}
+                  </button>
+                ))}
+              </nav>
+            </div>
 
             <FitBox className={inline ? 'flex-1' : ''} testId="facility-fit">
-            <div className={`grid gap-3 sm:grid-cols-[auto_1fr] ${inline ? 'p-3' : 'p-4 sm:p-6'}`}>
-              <div className="flex flex-row items-end gap-3 sm:flex-col sm:items-center">
+            <div className={`grid gap-4 sm:grid-cols-[auto_1fr] ${inline ? 'p-4' : 'p-4 sm:p-6'}`}>
+              <div className="flex flex-row items-center gap-2 sm:flex-col">
                 <CityPortrait track={track} resident={step === 'trouble'} talking animate={animate} size={inline ? 4 : 6} />
-                <span className="plate px-3 py-1 text-center text-xs font-extrabold">
+                <span className="ui-chip max-w-[8rem] justify-center text-center leading-tight">
                   {step === 'trouble' ? facility.trouble.who : t('brief.giver', guide)}
                 </span>
               </div>
@@ -132,27 +153,27 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
                     {step === 'trouble' ? (
                       <div className="flex flex-col gap-3">
                         <TroubleScene facility={facility} track={track} animate={animate} />
-                        <Card label={t('facility.step.trouble')}>
-                          <p className="text-lg leading-relaxed">「{facility.trouble.text}」</p>
+                        <Card label={t('facility.step.trouble')} icon="request">
+                          <p className="text-[15px] leading-relaxed">「{facility.trouble.text}」</p>
                         </Card>
                       </div>
                     ) : step === 'what' ? (
                       <div className="flex flex-col gap-3">
                         <AnalogyVisual facility={facility} track={track} />
-                        <Card label={t('facility.step.what')}>
-                          <p className="text-lg leading-relaxed">
+                        <Card label={t('facility.step.what')} icon="search">
+                          <p className="text-[15px] leading-relaxed">
                             <Glossed text={facility.what} />
                           </p>
                         </Card>
-                        <Card label={`🏙 ${t('facility.analogy')}`} tone="#eef6e6">
-                          <p className="text-base leading-relaxed">{facility.analogy}</p>
+                        <Card label={t('facility.analogy')} icon="city" tone="ok">
+                          <p className="text-[14px] leading-relaxed">{facility.analogy}</p>
                         </Card>
                       </div>
                     ) : step === 'why' ? (
                       <div className="flex flex-col gap-3">
                         <WhyVisual facility={facility} track={track} />
-                        <Card label={t('facility.step.why')}>
-                          <p className="text-lg leading-relaxed">
+                        <Card label={t('facility.step.why')} icon="target">
+                          <p className="text-[15px] leading-relaxed">
                             <Glossed text={facility.why} />
                           </p>
                         </Card>
@@ -167,11 +188,11 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
                     ) : step === 'field' ? (
                       <div className="flex flex-col gap-3">
                         <PitfallRoad count={facility.pitfalls.length} />
-                        <Card label={`⚠ ${t('facility.pitfalls')}`} tone="#fbeae5">
+                        <Card label={t('facility.pitfalls')} icon="alert" tone="bad">
                           <ul className="flex flex-col gap-2">
                             {facility.pitfalls.map((p) => (
-                              <li key={p} className="flex gap-2 text-base leading-relaxed">
-                                <span aria-hidden>✗</span>
+                              <li key={p} className="flex gap-2 text-[14px] leading-relaxed">
+                                <Icon name="close" size={15} strokeWidth={2.2} className="mt-1 text-[var(--u-bad)]" />
                                 <span>
                                   <Glossed text={p} />
                                 </span>
@@ -179,8 +200,8 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
                             ))}
                           </ul>
                         </Card>
-                        <Card label={`★ ${t('facility.pro')}`} tone="#fff4d6">
-                          <p className="text-base font-bold leading-relaxed">
+                        <Card label={t('facility.pro')} icon="sparkle" tone="warn">
+                          <p className="text-[14px] font-semibold leading-relaxed">
                             <Glossed text={facility.pro} />
                           </p>
                         </Card>
@@ -252,10 +273,13 @@ export function FacilityLesson({ facility, track, guide, built, onBuild, onClose
   );
 }
 
-function Card({ label, tone = '#ffffff', children }: { label: string; tone?: string; children: React.ReactNode }) {
+function Card({ label, icon, tone, children }: { label: string; icon?: IconName; tone?: 'ok' | 'warn' | 'bad'; children: React.ReactNode }) {
   return (
-    <section className="border-4 border-wood-dark px-5 py-4 shadow-[4px_4px_0_rgba(0,0,0,0.2)]" style={{ backgroundColor: tone }}>
-      <p className="mb-2 text-xs font-extrabold text-ink-soft">{label}</p>
+    <section className={`ui-card px-4 py-3.5 ${tone === 'warn' ? 'bg-[var(--u-warn-soft)]' : tone === 'bad' ? 'bg-[var(--u-bad-soft)]' : tone === 'ok' ? 'bg-[var(--u-ok-soft)]' : ''}`}>
+      <p className="ui-eyebrow mb-1.5 flex items-center gap-1.5">
+        {icon ? <Icon name={icon} size={13} /> : null}
+        {label}
+      </p>
       {children}
     </section>
   );
@@ -265,16 +289,16 @@ function Card({ label, tone = '#ffffff', children }: { label: string; tone?: str
 function How({ facility, track, index, animate }: { facility: Facility; track: MissionTrack; index: number; animate: boolean }) {
   const t = useT();
   return (
-    <Card label={`${t('facility.step.how')} — ${t('facility.howStep', { a: index + 1, b: facility.how.length })}`}>
+    <Card label={`${t('facility.step.how')} — ${t('facility.howStep', { a: index + 1, b: facility.how.length })}`} icon="settings">
       <ol className="flex flex-col gap-2">
         {facility.how.slice(0, index + 1).map((line, i) => (
           <motion.li
             key={line}
             initial={animate && i === index ? { opacity: 0, x: -10 } : false}
             animate={{ opacity: 1, x: 0 }}
-            className={`flex gap-3 border-l-4 px-3 py-2 text-base leading-relaxed ${i === index ? 'border-[var(--gold-dark)] bg-[var(--gold)]/25 font-bold' : 'border-[var(--cream-dark)] text-ink-soft'}`}
+            className={`flex gap-2.5 rounded-lg px-3 py-2 text-[14px] leading-relaxed ${i === index ? 'bg-[var(--accent-soft)] font-semibold' : 'text-[var(--u-text-2)]'}`}
           >
-            <span className="sign h-fit shrink-0 px-2 text-xs font-extrabold">{i + 1}</span>
+            <span className="ui-key mt-0.5">{i + 1}</span>
             <span>
               <Glossed text={line} />
             </span>
@@ -283,7 +307,7 @@ function How({ facility, track, index, animate }: { facility: Facility; track: M
       </ol>
       <div className="mt-3 flex items-center gap-1" aria-hidden>
         {facility.how.map((_, i) => (
-          <span key={i} className={`h-2 flex-1 ${i <= index ? '' : 'opacity-30'}`} style={{ backgroundColor: CITY_COLOR[track].roof }} />
+          <span key={i} className="h-1 flex-1 rounded-full" style={{ backgroundColor: i <= index ? CITY_COLOR[track].roof : 'var(--u-line)' }} />
         ))}
       </div>
     </Card>
@@ -304,13 +328,10 @@ function Exam({ facility, built, animate, slot, onBack, onPassed, onAnswer }: { 
 
   return (
     <div className="flex flex-col gap-3" data-testid="exam">
-      <p className="text-sm">{t('facility.examLead')}</p>
-      <div className="flex items-center gap-2">
-        <p className="font-mono text-xs text-ink-soft">{t('facility.question', { a: index + 1, b: facility.quiz.length })}</p>
-        <Streak count={streak} animate={animate} />
-      </div>
-      <Card label={`📝 ${t('facility.step.exam')}`}>
-        <p className="text-lg font-bold leading-relaxed">{quiz.situation}</p>
+      <p className="text-[14px] text-[var(--u-text-2)]">{t('facility.examLead')}</p>
+      {streak >= 2 ? <Streak count={streak} animate={animate} /> : null}
+      <Card label={t('facility.step.exam')} icon="board">
+        <p className="text-[17px] font-bold leading-snug tracking-tight">{quiz.situation}</p>
       </Card>
       <ul className="flex flex-col gap-2">
         {quiz.choices.map((choice, i) => {
@@ -322,6 +343,7 @@ function Exam({ facility, built, animate, slot, onBack, onPassed, onAnswer }: { 
                 type="button"
                 data-choice={i}
                 data-correct={i === quiz.answer ? 'true' : 'false'}
+                data-state={isRight ? 'right' : isWrong ? 'wrong' : 'open'}
                 disabled={isWrong || solved}
                 onClick={() => {
                   if (i === quiz.answer) {
@@ -335,14 +357,14 @@ function Exam({ facility, built, animate, slot, onBack, onPassed, onAnswer }: { 
                     setWrong((set) => new Set([...set, i]));
                   }
                 }}
-                animate={animate && isWrong ? { x: [0, -6, 6, -4, 0] } : { x: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`w-full border-4 px-4 py-3 text-left text-base leading-snug ${
-                  isRight ? 'border-[var(--ok)] bg-[#cfe8c0]' : isWrong ? 'border-[var(--bad)] bg-[#f3c4bb] opacity-75' : 'border-wood-dark bg-white hover:bg-[var(--gold)]/30'
-                }`}
+                animate={animate && isWrong ? { x: [0, -5, 5, -3, 0] } : { x: 0 }}
+                transition={{ duration: 0.28 }}
+                className="ui-option"
               >
-                {isRight ? '✓ ' : isWrong ? '✗ ' : ''}
-                {choice}
+                <span className="ui-key" aria-hidden>
+                  {isRight ? <Icon name="check" size={13} strokeWidth={2.6} /> : isWrong ? <Icon name="close" size={13} strokeWidth={2.6} /> : i + 1}
+                </span>
+                <span className="min-w-0 text-[14px] leading-snug">{choice}</span>
               </motion.button>
             </li>
           );
@@ -350,13 +372,13 @@ function Exam({ facility, built, animate, slot, onBack, onPassed, onAnswer }: { 
       </ul>
       <div role="status" aria-live="polite">
         {solved || wrong.size > 0 ? (
-          <div className={`border-l-4 px-3 py-2 ${solved ? 'border-[var(--ok)] bg-[#dff0cf]' : 'border-[var(--warn)] bg-[var(--gold)]/25'}`}>
-            <p className="flex flex-wrap items-center gap-2 font-extrabold">
-              {solved ? <AnswerStamp animate={animate} /> : null}
+          <div className={`ui-note ${solved ? 'ui-note-ok' : 'ui-note-warn'}`}>
+            <p className="flex flex-wrap items-center gap-1.5 font-bold">
+              <Icon name={solved ? 'check' : 'alert'} size={15} strokeWidth={2.2} />
               {solved ? t('facility.correct') : t('facility.wrong')}
             </p>
             {solved ? (
-              <p className="mt-1 text-sm leading-relaxed" data-testid="explain">
+              <p className="mt-1 leading-relaxed" data-testid="explain">
                 <Glossed text={quiz.explain} />
               </p>
             ) : null}
@@ -366,13 +388,12 @@ function Exam({ facility, built, animate, slot, onBack, onPassed, onAnswer }: { 
       <FooterBar
         slot={slot}
         left={
-          <button type="button" data-testid="lesson-back" onClick={onBack} className="knob w-28 px-3 py-2 text-sm">
+          <button type="button" data-testid="lesson-back" onClick={onBack} className="ui-btn ui-btn-plain h-9 w-24 text-[13px]">
+            <Icon name="back" size={15} />
             {t('facility.back')}
           </button>
         }
-        center={
-          <span className="font-mono text-xs text-ink-soft">{t('facility.question', { a: index + 1, b: facility.quiz.length })}</span>
-        }
+        center={<span className="font-mono text-[11px] text-[var(--u-text-3)]">{t('facility.question', { a: index + 1, b: facility.quiz.length })}</span>}
         right={
           solved ? (
             <button
@@ -387,12 +408,14 @@ function Exam({ facility, built, animate, slot, onBack, onPassed, onAnswer }: { 
                 setWrong(new Set());
                 setSolved(false);
               }}
-              className="sign w-44 px-4 py-2 text-base font-extrabold"
+              className="ui-btn ui-btn-primary h-10 w-44 text-[14px]"
             >
+              {last ? <Icon name="build" size={16} /> : null}
               {last ? (built ? t('facility.relearnDone') : t('facility.build')) : t('facility.nextQuestion')}
+              {last ? null : <Icon name="next" size={16} />}
             </button>
           ) : (
-            <span className="w-44 text-center text-xs text-ink-soft">{t('facility.pick')}</span>
+            <span className="w-44 text-center text-[11px] text-[var(--u-text-3)]">{t('facility.pick')}</span>
           )
         }
       />
@@ -409,25 +432,40 @@ function Built({ facility, track, animate, firstMissionId, onClose, onContinue }
     (continueRef.current ?? closeRef.current)?.focus();
   }, []);
   return (
-    <div className="flex flex-col items-center gap-4 p-6 text-center" data-testid="facility-built">
-      <svg width={PLOT_W + 40} height={PLOT_H + 20} viewBox={`-20 -10 ${String(PLOT_W + 40)} ${String(PLOT_H + 20)}`} aria-hidden>
+    <div className="flex flex-col items-center gap-3 p-6 text-center" data-testid="facility-built">
+      <motion.svg
+        width={PLOT_W + 40}
+        height={PLOT_H + 20}
+        viewBox={`-20 -10 ${String(PLOT_W + 40)} ${String(PLOT_H + 20)}`}
+        aria-hidden
+        className="overflow-hidden rounded-xl"
+        initial={animate ? { scale: 0.92, opacity: 0 } : false}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 180, damping: 18 }}
+      >
         <rect x={-20} y={-10} width={PLOT_W + 40} height={PLOT_H + 20} fill={CITY_COLOR[track].ground} />
         <FacilityPlot kind={facility.building} track={track} state="built" x={0} y={0} animate={animate} />
-      </svg>
-      <p className="title text-4xl text-[var(--ok)]">{t('facility.builtTitle', { name: facility.name })}</p>
-      <p className="max-w-xl text-base">{t('facility.builtLead')}</p>
-      <div className="flex flex-wrap justify-center gap-3">
+      </motion.svg>
+      <span className="ui-chip ui-chip-accent">
+        <Icon name="check" size={14} strokeWidth={2.4} />
+        {facility.concept}
+      </span>
+      <p className="text-[26px] font-bold leading-tight tracking-tight">{t('facility.builtTitle', { name: facility.name })}</p>
+      <p className="max-w-xl text-[14px] text-[var(--u-text-2)]">{t('facility.builtLead')}</p>
+      <div className="mt-1 flex flex-wrap justify-center gap-2">
         {onContinue ? (
-          <button ref={continueRef} type="button" data-testid="facility-continue" onClick={onContinue} className="sign px-6 py-3 text-lg font-extrabold">
+          <button ref={continueRef} type="button" data-testid="facility-continue" onClick={onContinue} className="ui-btn ui-btn-primary h-11 px-6 text-[15px]">
             {t('facility.toMission')}
+            <Icon name="next" size={17} />
           </button>
         ) : firstMissionId !== null ? (
-          <Link ref={closeRef} to={`/?mission=${encodeURIComponent(firstMissionId)}`} className="sign px-6 py-3 text-lg font-extrabold">
+          <Link ref={closeRef} to={`/?mission=${encodeURIComponent(firstMissionId)}`} className="ui-btn ui-btn-primary h-11 px-6 text-[15px]">
             {t('facility.toMission')}
+            <Icon name="next" size={17} />
           </Link>
         ) : null}
         {onContinue ? null : (
-          <button type="button" onClick={onClose} className="knob px-5 py-3 text-base font-bold">
+          <button type="button" onClick={onClose} className="ui-btn ui-btn-quiet h-11 px-5 text-[14px]">
             {t('facility.stay')}
           </button>
         )}

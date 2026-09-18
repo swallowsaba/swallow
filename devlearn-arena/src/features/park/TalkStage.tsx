@@ -6,6 +6,7 @@ import type { MissionTrack } from '@/engines/lesson/types';
 import { StateDiagram } from '@/features/city/LessonVisuals';
 import { useT } from '@/i18n/useT';
 import { CITY_COLOR } from '@/visual/game/cityColor';
+import { Icon } from '@/ui/Icon';
 
 /**
  * 依頼の話に添える「動く絵」。
@@ -40,9 +41,9 @@ function useTyped(text: string, on: boolean, ms = 34): string {
 
 function Stage({ label, children, testId, right }: { label: string; children: React.ReactNode; testId: string; right?: React.ReactNode }) {
   return (
-    <figure data-testid={testId} className="border-4 border-wood-dark bg-[#eaf4df] shadow-[4px_4px_0_rgba(0,0,0,0.15)]">
-      <figcaption className="flex items-center gap-2 bg-[var(--wood)] px-3 py-1 text-xs font-extrabold text-cream">
-        <span className="min-w-0 flex-1 truncate">{label}</span>
+    <figure data-testid={testId} className="ui-card overflow-hidden">
+      <figcaption className="flex items-center gap-2 border-b border-[var(--u-line)] px-3 py-1.5">
+        <span className="ui-eyebrow min-w-0 flex-1 truncate">{label}</span>
         {right}
       </figcaption>
       <div className="p-2">{children}</div>
@@ -128,13 +129,14 @@ export function ToolRun({ tryout, track, animate, onReplay, label }: { tryout: T
       label={label ?? t('brief.stageTool')}
       testId="talk-stage-tool"
       right={
-        <button type="button" data-testid="talk-replay" onClick={onReplay} className="knob px-2 py-0.5 text-[10px] text-ink">
+        <button type="button" data-testid="talk-replay" onClick={onReplay} className="ui-btn ui-btn-quiet h-6 px-2 text-[11px]">
+          <Icon name="replay" size={12} />
           {t('brief.replay')}
         </button>
       }
     >
       <div className="flex flex-col gap-2">
-        <pre className="overflow-hidden bg-[#0a0d12] px-3 py-2 font-mono text-xs leading-relaxed text-[#e6edf3]" data-testid="talk-term">
+        <pre className="overflow-hidden rounded-lg bg-[#12131a] px-3 py-2 font-mono text-[12px] leading-relaxed text-[#e6edf3]" data-testid="talk-term">
           <span className="text-[#9fd67a]">learner@practice:~$ </span>
           {typed}
           {done ? null : <span className="animate-pulse">▋</span>}
@@ -143,7 +145,7 @@ export function ToolRun({ tryout, track, animate, onReplay, label }: { tryout: T
         <div className="relative">
           <span
             data-testid="talk-when"
-            className={`absolute left-1 top-1 z-10 px-2 py-0.5 text-[10px] font-extrabold ${after ? 'bg-[var(--ok)] text-ink' : 'bg-[var(--cream-dark)] text-ink-soft'}`}
+            className={`absolute left-1.5 top-1.5 z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold ${after ? 'bg-[var(--u-ok)] text-white' : 'bg-[var(--u-sunk)] text-[var(--u-text-2)]'}`}
           >
             {after ? t('brief.after') : t('brief.before')}
           </span>
@@ -160,7 +162,7 @@ export function ToolBlank({ command, animate }: { command: string; animate: bool
   const parts = command.split(/(<[^>]+>|…)/g).filter((p) => p !== '');
   return (
     <Stage label={t('brief.stageToolField')} testId="talk-stage-blank">
-      <div className="flex flex-wrap items-center gap-1 bg-[#0a0d12] px-3 py-4 font-mono text-base text-[#e6edf3]">
+      <div className="flex flex-wrap items-center gap-1 rounded-lg bg-[#12131a] px-3 py-4 font-mono text-[15px] text-[#e6edf3]">
         <span className="text-[#9fd67a]">$</span>
         {parts.map((part, i) =>
           /^<|…/.test(part) ? (
@@ -179,7 +181,7 @@ export function ToolBlank({ command, animate }: { command: string; animate: bool
           ),
         )}
       </div>
-      <p className="mt-2 text-xs text-ink-soft">{t('brief.blankLead')}</p>
+      <p className="mt-2 text-[11px] text-[var(--u-text-3)]">{t('brief.blankLead')}</p>
     </Stage>
   );
 }
@@ -225,7 +227,7 @@ function PlanRoute({ steps, track, animate }: { steps: readonly string[]; track:
           <circle cx={28} cy={64} r={5} fill={INK} />
         </motion.g>
       </svg>
-      <p className="mt-1 truncate text-xs font-bold">
+      <p className="mt-1 truncate text-[12px] font-semibold text-[var(--u-text-2)]">
         {at + 1}. {steps[at] ?? ''}
       </p>
     </Stage>

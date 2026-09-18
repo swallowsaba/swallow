@@ -1,4 +1,5 @@
 import { useT } from '@/i18n/useT';
+import { Icon } from '@/ui/Icon';
 
 interface Props {
   /** 直前のコマンドが失敗していれば、その出力 */
@@ -17,12 +18,15 @@ export function Assist({ lastError }: Props) {
   if (lastError === null) return null;
 
   return (
-    <div className="mt-3 border-l-4 border-[var(--bad)] bg-[var(--bad)]/10 px-3 py-2">
-      <p className="text-sm font-bold">{t('park.lastFailed')}</p>
-      <pre className="mt-1 overflow-x-auto whitespace-pre-wrap font-mono text-xs text-ink">
+    <div className="ui-note ui-note-bad mt-3">
+      <p className="flex items-center gap-1.5 font-bold">
+        <Icon name="alert" size={15} strokeWidth={2.2} />
+        {t('park.lastFailed')}
+      </p>
+      <pre className="mt-1.5 overflow-hidden whitespace-pre-wrap rounded-md bg-[#12131a] px-2.5 py-1.5 font-mono text-[11px] leading-relaxed text-[#ffd7d2]">
         {lastError.trimEnd()}
       </pre>
-      <p className="mt-1 text-xs text-ink-soft">{t('park.lastFailedLead')}</p>
+      <p className="mt-1.5 text-[12px] opacity-80">{t('park.lastFailedLead')}</p>
     </div>
   );
 }

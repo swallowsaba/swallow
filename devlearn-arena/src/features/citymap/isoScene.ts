@@ -1,5 +1,5 @@
 import type { BuildingKind } from '@/content/city';
-import { TONE_COLOR, type PlannedBlock, type PlannedRoad, type Scene, type SceneBuilding, type SceneItem, type Tone, type TownPlan } from '@/engines/cityscape';
+import { STREET, TONE_COLOR, type PlannedBlock, type PlannedRoad, type Scene, type SceneBuilding, type SceneItem, type Tone, type TownPlan } from '@/engines/cityscape';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { drawMoodFace } from '@/visual/game/faceCanvas';
 import { MOOD_OF_VOICE } from '@/visual/game/faces';
@@ -34,6 +34,8 @@ export interface SceneMapInput {
   civic: readonly CivicView[];
   /** 街の育ち。理解度の正解で家が増え、コマンドの手順で家が高くなる */
   growth: TownGrowth;
+  /** 街道の入口に立てる案内標識の文言（「となりの街へ」） */
+  nextTownLabel: string;
 }
 
 export interface TownGrowth {
@@ -58,6 +60,8 @@ export interface SceneMap {
 }
 
 const MARGIN = 6;
+/** となりの街から伸びてくる街道の長さ（マス） */
+export const APPROACH = 7;
 
 export { houseLevels } from './townLayout';
 
@@ -273,10 +277,10 @@ function dashedLine(ctx: Ctx, from: { sx: number; sy: number }, to: { sx: number
   ctx.restore();
 }
 
-/** 通り。舗装と縁石、大通りには中央線 */
+/** 通り。舗装と縁石、大通りと街道には中央線 */
 function drawRoad(ctx: Ctx, road: PlannedRoad, dy: number): void {
   const y = road.y + dy;
-  const main = road.kind === 'avenue';
+  const main = road.kind !== 'street';
   slab(ctx, road.x, y, road.w, road.d, main ? ASPHALT_MAIN : ASPHALT);
   if (road.axis === 'x') {
     slab(ctx, road.x, y, road.w, 0.22, KERB);
@@ -343,9 +347,37 @@ function drawVacantLot(ctx: Ctx, x: number, y: number, w: number, d: number): vo
   }
 }
 
+/** 縄張り。まだ道も通っていない、これから開く土地 */
+function drawSurvey(ctx: Ctx, x: number, y: number, w: number, d: number): void {
+  ctx.save();
+  ctx.setLineDash([6, 5]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 1.4;
+  const corners = [project(x, y), project(x + w, y), project(x + w, y + d), project(x, y + d)];
+  ctx.beginPath();
+  corners.forEach((p, i) => (i === 0 ? ctx.moveTo(p.sx, p.sy) : ctx.lineTo(p.sx, p.sy)));
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+  for (const [cx, cy] of [[x, y], [x + w, y], [x + w, y + d], [x, y + d]] as const) {
+    const a = project(cx, cy);
+    const b = project(cx, cy, 0.3);
+    ctx.strokeStyle = '#9b8f78';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(a.sx, a.sy);
+    ctx.lineTo(b.sx, b.sy);
+    ctx.stroke();
+  }
+}
+
 /** 街区。歩道のふちと地面、空いた内側は中庭、空いた区画は更地 */
 function drawBlock(ctx: Ctx, block: PlannedBlock, dy: number): void {
   const y = block.y + dy;
+  if (!block.developed) {
+    drawSurvey(ctx, block.x, y, block.w, block.d);
+    return;
+  }
   slab(ctx, block.x, y, block.w, block.d, KERB, 'rgba(60,55,45,0.35)', 1);
   slab(ctx, block.x + 0.7, y + 0.7, block.w - 1.4, block.d - 1.4, PAVING);
   if (block.tone) slab(ctx, block.x + 0.7, y + 0.7, block.w - 1.4, block.d - 1.4, `${TONE_COLOR[block.tone]}22`);
@@ -363,7 +395,7 @@ interface Draw {
 
 /** 街区の内側の庭に木を植える */
 function yardTrees(block: PlannedBlock, dy: number): Draw[] {
-  if (!block.yard) return [];
+  if (!block.yard || !block.developed) return [];
   const yd = block.yard;
   const out: Draw[] = [];
   for (let i = 0; i < Math.max(1, Math.floor(yd.w / 2)); i += 1) {
@@ -381,7 +413,8 @@ function yardTrees(block: PlannedBlock, dy: number): Draw[] {
 function roadLamps(roads: readonly PlannedRoad[], dy: number): Draw[] {
   const out: Draw[] = [];
   for (const road of roads) {
-    if (road.kind !== 'avenue') continue;
+    if (road.kind === 'street') continue;
+    if (road.axis !== 'x') continue;
     const y = road.y + dy + road.d - 0.35;
     for (let x = road.x + 2; x < road.x + road.w; x += 6) {
       const px = x;
@@ -410,14 +443,17 @@ export function drawStatic(ctx: Ctx, input: SceneMapInput, layout: TownLayout): 
   const { scene, civic, track } = input;
   const SITE_Y = layout.siteY;
   const { w, h } = mapSize(layout);
-  for (let y = -MARGIN; y < h + MARGIN; y += 1) {
+  for (let y = -MARGIN - APPROACH; y < h + MARGIN; y += 1) {
     for (let x = -MARGIN; x < w + MARGIN; x += 1) {
-      const inside = x >= -1 && y >= -1 && x < w + 1 && y < h + 1;
+      const inside = x >= -1 && y >= -1 - APPROACH && x < w + 1 && y < h + 1;
       const checker = (x + y) % 2 === 0;
       const palette = inside ? GRASS : GRASS_OUT;
       diamond(ctx, x, y, palette[checker ? 0 : 1] ?? GRASS[0] ?? '#76b24f');
     }
   }
+
+  // となりの街からの取り付け道路。街はこの一本の街道から広がる
+  drawRoad(ctx, { id: 'approach', x: 0, y: -APPROACH, w: STREET, d: APPROACH, kind: 'trunk', axis: 'y' }, 0);
 
   // 上町（市民施設と住宅街）と下町（現場）。大通りで背中合わせにつながる
   drawPlan(ctx, layout.uptown, 0);
@@ -488,7 +524,8 @@ export function drawStatic(ctx: Ctx, input: SceneMapInput, layout: TownLayout): 
     const { x, y } = lot;
     if (f.learned) {
       draws.push({ key: x + y + 2, draw: (c: Ctx) => { facilityBuilding(c, f.kind, accent, x, y, f.ratio, f.build); } });
-    } else {
+    } else if (f.current || f.voice !== null) {
+      // これから建てる施設だけ、先に縄張りを打っておく
       draws.push({ key: x + y, draw: (c: Ctx) => { drawVacantLot(c, x, y, lot.w, lot.d); } });
     }
   }
@@ -554,8 +591,8 @@ export function createSceneMap(host: HTMLElement, callbacks: SceneMapCallbacks):
     if (!layout) return;
     const { w, h } = mapSize(layout);
     const left = project(-MARGIN, h + MARGIN).sx;
-    const right = project(w + MARGIN, -MARGIN).sx;
-    const top = project(-MARGIN, -MARGIN).sy - 260;
+    const right = project(w + MARGIN, -MARGIN - APPROACH).sx;
+    const top = project(-MARGIN, -MARGIN - APPROACH).sy - 260;
     const bottom = project(w + MARGIN, h + MARGIN).sy;
     bounds = { left, top, width: right - left, height: bottom - top };
   }
@@ -564,12 +601,12 @@ export function createSceneMap(host: HTMLElement, callbacks: SceneMapCallbacks):
     if (!input || !layout) return;
     // 街全体（上町の大通りから下町の現場まで）が端まで画面に入るように寄せる
     const sw = Math.max(12, layout.width);
-    const sh = Math.max(8, layout.height);
+    const sh = Math.max(8, layout.height + APPROACH);
     const spanW = (sw + sh) * (TW / 2);
     const spanH = (sw + sh) * (TH / 2) + 120;
     const zoom = Math.max(0.22, Math.min((width - 40) / spanW, (height - 190) / spanH, 1.8));
     view.zoom = zoom;
-    const focus = project(sw / 2, sh / 2, 1);
+    const focus = project(sw / 2, sh / 2 - APPROACH / 2, 1);
     view.x = width / 2 - focus.sx * zoom;
     view.y = 70 + (height - 190) / 2 - focus.sy * zoom;
   }
@@ -800,6 +837,19 @@ export function createSceneMap(host: HTMLElement, callbacks: SceneMapCallbacks):
         });
       }
     }
+    // となりの街への案内標識。街道の入口に立てる
+    {
+      const at = project(STREET / 2, -APPROACH + 0.6);
+      const pole = project(STREET / 2, -APPROACH + 0.6, 1.3);
+      ctx.strokeStyle = '#3d4450';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(at.sx, at.sy);
+      ctx.lineTo(pole.sx, pole.sy);
+      ctx.stroke();
+      chip(input.nextTownLabel, pole.sx, pole.sy - 2 / view.zoom, 'rgba(44,29,16,0.86)');
+    }
+
     // 街区の名札（この街区が何か）。地図の見出しなので、引いていても必ず出す
     {
       for (const [blockPlan, dy] of [[plan.uptown, 0] as const, [plan.site, SITE_Y] as const]) {

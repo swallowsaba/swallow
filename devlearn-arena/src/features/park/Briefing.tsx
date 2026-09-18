@@ -12,8 +12,9 @@ import { Glossed } from '@/ui/Term';
 import { CityPortrait } from '@/visual/game/cityArt';
 import { FooterBar } from '@/ui/FooterBar';
 import { FOOTER_SLOT_CLASS, useFooterSlot } from '@/ui/footerSlot';
-import { AnswerStamp, Streak } from '@/ui/AnswerStamp';
+import { Streak } from '@/ui/AnswerStamp';
 import { FitBox } from '@/ui/FitBox';
+import { Icon, type IconName } from '@/ui/Icon';
 import { useSfx } from '@/lib/useSfx';
 import { PrerequisiteNote } from './PrerequisiteNote';
 import { TalkStage, ToolRun } from './TalkStage';
@@ -31,6 +32,7 @@ interface Props {
 
 type Phase = 'talk' | 'quiz' | 'try' | 'plan';
 const PHASES: readonly Phase[] = ['talk', 'quiz', 'try', 'plan'];
+const PHASE_ICON: Record<Phase, IconName> = { talk: 'request', quiz: 'quiz', try: 'tool', plan: 'plan' };
 
 /**
  * 任務を始める前の「依頼」。
@@ -38,7 +40,7 @@ const PHASES: readonly Phase[] = ['talk', 'quiz', 'try', 'plan'];
  * 説明を文章の一覧で読ませる代わりに、街の依頼主が 1 つずつ話す（なぜ要るか・言葉・道具・工程）。
  * 次に理解度チェックで言葉とコマンドの意味を確かめ、正解したコマンドは道具として手に入る。
  * 穴埋めの無い道具は練習用の街で実際に打って結果を見てから、建設計画を確かめて建設（端末での作業）に入る。
- * どの段階も飛ばせる（Esc か「説明をとばす」）。間違えても罰は無い。
+ * どの段階も飛ばせる。間違えても罰は無い。
  */
 export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSkip = false, onAnswer }: Props) {
   const t = useT();
@@ -65,51 +67,67 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
     [script],
   );
 
+  const reached = PHASES.indexOf(phase);
+  const within = phase === 'talk' ? line / Math.max(1, script.length - 1) : 1;
+
   return (
-    <section aria-labelledby="briefing-title" data-testid="briefing" className="flex h-full min-h-0 flex-col">
-      <div className="flex min-h-0 flex-1 flex-col">
-        <header className="flex shrink-0 flex-wrap items-center gap-3 border-b-4 border-wood-dark bg-[var(--wood)] px-4 py-2">
-          <span className="sign px-3 py-1 text-sm font-extrabold">📜 {t('brief.label')}</span>
-          <h2 id="briefing-title" className="min-w-0 flex-1 truncate text-lg font-extrabold text-cream">
+    <section aria-labelledby="briefing-title" data-testid="briefing" className="ui flex h-full min-h-0 flex-col">
+      <header className="flex shrink-0 flex-col gap-2.5 border-b border-[var(--u-line)] bg-[var(--u-card)] px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <span className="ui-chip ui-chip-accent">
+            <Icon name="request" size={14} />
+            {t('brief.label')}
+          </span>
+          <h2 id="briefing-title" className="min-w-0 flex-1 truncate text-[15px] font-bold tracking-tight">
             {mission.title}
           </h2>
+          <span data-testid="brief-learned" className="shrink-0 font-mono text-[11px] text-[var(--u-text-3)]">
+            {t('brief.tally', { a: learned, b: bag.length })}
+          </span>
           {canSkip ? (
-            <button type="button" onClick={onStart} className="knob px-3 py-1.5 text-xs">
+            <button type="button" onClick={onStart} className="ui-btn ui-btn-plain px-2.5 py-1 text-xs">
               {t('brief.skip')}
+              <Icon name="next" size={14} />
             </button>
           ) : null}
-        </header>
+        </div>
 
-        <nav aria-label={t('brief.phases')} className="flex shrink-0 flex-wrap gap-1 border-b-2 border-[var(--cream-dark)] bg-[var(--cream-dark)] px-3 py-2">
-          {PHASES.map((p, i) => (
-            <button
-              key={p}
-              type="button"
-              aria-current={phase === p ? 'step' : undefined}
-              data-phase={p}
-              onClick={() => {
-                setPhase(p);
-              }}
-              className={`px-3 py-1 text-sm font-extrabold ${phase === p ? 'bg-gold text-ink' : 'text-ink-soft hover:text-ink'}`}
-            >
-              {i + 1}. {t(`brief.phase.${p}`)}
-            </button>
-          ))}
-        </nav>
-
-        {onSwitch && prerequisites.length > 0 ? (
-          <div className="px-4 pt-3">
-            <PrerequisiteNote prerequisites={prerequisites} onSwitch={onSwitch} />
+        <div className="flex items-center gap-3">
+          <nav aria-label={t('brief.phases')} className="ui-seg">
+            {PHASES.map((p, i) => (
+              <button
+                key={p}
+                type="button"
+                aria-current={phase === p ? 'step' : undefined}
+                data-phase={p}
+                data-done={i < reached ? 'true' : 'false'}
+                onClick={() => {
+                  setPhase(p);
+                }}
+                className="flex items-center gap-1.5"
+              >
+                <Icon name={i < reached ? 'check' : PHASE_ICON[p]} size={13} />
+                {t(`brief.phase.${p}`)}
+              </button>
+            ))}
+          </nav>
+          <div data-testid="brief-gauge" className="ui-track min-w-0 flex-1">
+            <span style={{ width: `${((reached + within) * 25).toFixed(1)}%` }} />
           </div>
-        ) : null}
+        </div>
+      </header>
 
-        <Gauge phase={phase} line={line} lines={script.length} learned={learned} tools={bag.length} />
+      {onSwitch && prerequisites.length > 0 ? (
+        <div className="shrink-0 px-4 pt-3">
+          <PrerequisiteNote prerequisites={prerequisites} onSwitch={onSwitch} />
+        </div>
+      ) : null}
 
-        <FitBox className="flex-1" testId="brief-fit">
-        <div className="grid gap-3 p-3 sm:grid-cols-[auto_1fr]">
-          <div className="flex flex-row items-end gap-3 sm:flex-col sm:items-center">
+      <FitBox className="flex-1" testId="brief-fit">
+        <div className="grid gap-4 p-4 sm:grid-cols-[auto_1fr]">
+          <div className="flex flex-row items-center gap-2 sm:flex-col">
             <CityPortrait track={mission.track} talking={phase === 'talk'} animate={animate} size={4} />
-            <span className="plate px-3 py-1 text-sm font-extrabold">{t('brief.giver', giver)}</span>
+            <span className="ui-chip whitespace-nowrap">{t('brief.giver', giver)}</span>
           </div>
 
           <div className="min-w-0">
@@ -173,40 +191,9 @@ export function Briefing({ mission, prerequisites = [], onStart, onSwitch, canSk
             )}
           </div>
         </div>
-        </FitBox>
-        <div ref={footer.ref} className={`shrink-0 ${FOOTER_SLOT_CLASS}`} />
-      </div>
+      </FitBox>
+      <div ref={footer.ref} className={`shrink-0 ${FOOTER_SLOT_CLASS}`} />
     </section>
-  );
-}
-
-/* ---------------- 進み具合の帯 ---------------- */
-
-/**
- * いまどこまで聞いたか・覚えたか。
- * 「あと少しで終わる」が見えると、説明を最後まで聞ける。
- */
-function Gauge({ phase, line, lines, learned, tools }: { phase: Phase; line: number; lines: number; learned: number; tools: number }) {
-  const t = useT();
-  const done = phase === 'talk' ? line : lines;
-  return (
-    <div data-testid="brief-gauge" className="flex shrink-0 items-center gap-2 border-b-2 border-[var(--cream-dark)] bg-[var(--cream)] px-3 py-1.5">
-      <span className="shrink-0 text-[11px] font-extrabold text-ink-soft">{t('brief.gauge')}</span>
-      <div className="flex min-w-0 flex-1 gap-0.5" aria-hidden>
-        {Array.from({ length: lines }, (_, i) => (
-          <motion.span
-            key={i}
-            className="h-2.5 flex-1 border border-[var(--wood-dark)]"
-            initial={false}
-            animate={{ backgroundColor: i < done ? 'var(--gold-dark)' : i === done ? 'var(--gold)' : 'transparent' }}
-            transition={{ duration: 0.25 }}
-          />
-        ))}
-      </div>
-      <span data-testid="brief-learned" className="shrink-0 font-mono text-[11px] font-extrabold text-ink-soft">
-        {t('brief.tally', { a: learned, b: tools })}
-      </span>
-    </div>
   );
 }
 
@@ -241,55 +228,67 @@ function Talk({ slot, script, line, onLine, onDone, animate, track, initial, tri
     nextRef.current?.focus();
   }, [line]);
 
+  // ← → でも行き来できる
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('input, textarea, [contenteditable]')) return;
+      if (event.key === 'ArrowLeft' && line > 0) onLine(line - 1);
+      if (event.key === 'ArrowRight' && !last) onLine(line + 1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [line, last, onLine]);
+
   if (current === undefined) return null;
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative border-4 border-wood-dark bg-white px-5 py-4 shadow-[4px_4px_0_rgba(0,0,0,0.2)]" data-testid="speech">
-        {/* 吹き出しの尻尾 */}
-        <span aria-hidden className="absolute -left-3 top-8 hidden h-5 w-5 rotate-45 border-b-4 border-l-4 border-wood-dark bg-white sm:block" />
+      <div className="ui-card px-4 py-3.5" data-testid="speech">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-extrabold text-ink-soft">{t(LINE_LABEL[current.kind])}</p>
-          <p className="font-mono text-xs text-ink-soft">{t('brief.lineCount', { a: line + 1, b: script.length })}</p>
+          <p className="ui-eyebrow">{t(LINE_LABEL[current.kind])}</p>
+          <p className="font-mono text-[11px] text-[var(--u-text-3)]">{t('brief.lineCount', { a: line + 1, b: script.length })}</p>
         </div>
         <AnimatePresence mode="wait">
           <motion.div
             key={line}
-            initial={animate ? { opacity: 0, y: 6 } : false}
+            initial={animate ? { opacity: 0, y: 4 } : false}
             animate={{ opacity: 1, y: 0 }}
             exit={animate ? { opacity: 0 } : undefined}
-            transition={{ duration: 0.18 }}
-            className="mt-2"
+            transition={{ duration: 0.16 }}
+            className="mt-1.5"
             aria-live="polite"
           >
             {current.kind === 'concept' ? (
               <>
-                <p className="plate inline-block px-3 py-1 text-lg font-extrabold">{current.term}</p>
-                <p className="mt-2 text-lg leading-relaxed">
+                <p className="ui-chip ui-chip-accent text-[13px]">{current.term}</p>
+                <p className="mt-2 text-[15px] leading-relaxed">
                   <Glossed text={current.text} />
                 </p>
               </>
             ) : current.kind === 'tool' ? (
               <>
-                <code className="inline-block whitespace-pre-wrap bg-[var(--wood-dark)] px-3 py-1.5 font-mono text-base text-cream">
+                <code className="inline-block whitespace-pre-wrap rounded-md bg-[#12131a] px-2.5 py-1 font-mono text-[13px] text-[#e6edf3]">
                   {current.command}
                 </code>
-                <p className="mt-2 text-lg leading-relaxed">
+                <p className="mt-2 text-[15px] leading-relaxed">
                   <Glossed text={current.text} />
                 </p>
               </>
             ) : current.kind === 'plan' ? (
               <ol className="flex flex-col gap-1.5">
                 {current.steps.map((step, i) => (
-                  <li key={`${String(i)}-${step}`} className="flex items-start gap-2 text-base leading-snug">
-                    <span className="sign shrink-0 px-2 text-xs font-extrabold">{i + 1}</span>
-                    <span className="min-w-0">
+                  <li key={`${String(i)}-${step}`} className="flex items-start gap-2.5 text-[14px] leading-snug">
+                    <span className="ui-key mt-0.5">{i + 1}</span>
+                    <span className="min-w-0 pt-0.5">
                       <Glossed text={step} />
                     </span>
                   </li>
                 ))}
               </ol>
             ) : (
-              <p className="text-lg leading-relaxed">
+              <p className="text-[15px] leading-relaxed">
                 <Glossed text={current.text} />
               </p>
             )}
@@ -319,15 +318,20 @@ function Talk({ slot, script, line, onLine, onDone, animate, track, initial, tri
               onLine(Math.max(0, line - 1));
             }}
             disabled={line === 0}
-            className="knob w-28 px-3 py-2 text-sm disabled:opacity-40"
+            className="ui-btn ui-btn-plain h-9 w-24 text-[13px]"
           >
+            <Icon name="back" size={15} />
             {t('brief.back')}
           </button>
         }
         center={
           <div className="flex flex-wrap justify-center gap-1" aria-hidden>
             {script.map((_, i) => (
-              <span key={i} className={`h-2 w-2 ${i <= line ? 'bg-[var(--gold-dark)]' : 'bg-[var(--cream-dark)]'}`} />
+              <span
+                key={i}
+                className="h-1.5 rounded-full transition-all duration-300"
+                style={{ width: i === line ? 14 : 6, background: i <= line ? 'var(--accent)' : 'var(--u-line-strong)' }}
+              />
             ))}
           </div>
         }
@@ -340,9 +344,10 @@ function Talk({ slot, script, line, onLine, onDone, animate, track, initial, tri
               if (last) onDone();
               else onLine(line + 1);
             }}
-            className="sign w-44 px-4 py-2 text-base font-extrabold"
+            className="ui-btn ui-btn-primary h-10 w-44 text-[14px]"
           >
             {last ? t('brief.toQuiz') : t('brief.next')}
+            <Icon name="next" size={16} />
           </button>
         }
       />
@@ -371,40 +376,59 @@ function Quiz({ slot, onBack, questions, bag, onReward, onReview, onDone, animat
   const [streak, setStreak] = useState(0);
   const question = questions[index];
 
+  const choose = useCallback(
+    (i: number) => {
+      if (!question || solved || wrong.has(i)) return;
+      if (i === question.answer) {
+        setSolved(true);
+        if (wrong.size === 0) setStreak((n) => n + 1);
+        sound.step();
+        onAnswer?.(index, wrong.size === 0);
+        if (question.reward !== null) onReward(question.reward);
+      } else {
+        setStreak(0);
+        sound.error();
+        setWrong((set) => new Set([...set, i]));
+      }
+    },
+    [question, solved, wrong, sound, onAnswer, index, onReward],
+  );
+
+  // 1〜9 の数字キーでも選べる
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('input, textarea, [contenteditable]')) return;
+      const n = Number(event.key);
+      if (Number.isInteger(n) && n >= 1 && n <= (question?.choices.length ?? 0)) choose(n - 1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [choose, question]);
+
   if (question === undefined) {
     return (
       <div className="flex flex-col gap-3">
-        <p className="text-base">{t('brief.noQuiz')}</p>
-        <button type="button" onClick={onDone} className="sign w-fit px-5 py-2 font-extrabold">
+        <p className="text-[15px]">{t('brief.noQuiz')}</p>
+        <button type="button" onClick={onDone} className="ui-btn ui-btn-primary h-10 w-fit px-5">
           {t('brief.toTry')}
+          <Icon name="next" size={16} />
         </button>
       </div>
     );
   }
 
   const last = index >= questions.length - 1;
-  const choose = (i: number) => {
-    if (solved) return;
-    if (i === question.answer) {
-      setSolved(true);
-      if (wrong.size === 0) setStreak((n) => n + 1);
-      sound.step();
-      onAnswer?.(index, wrong.size === 0);
-      if (question.reward !== null) onReward(question.reward);
-    } else {
-      setStreak(0);
-      sound.error();
-      setWrong((set) => new Set([...set, i]));
-    }
-  };
 
   return (
-    <div className="relative flex flex-col gap-3" data-testid="quiz">
+    <div className="flex flex-col gap-3" data-testid="quiz">
       <div className="flex items-center gap-2">
-        <p className="font-mono text-xs text-ink-soft">{t('brief.quizTitle', { a: index + 1, b: questions.length })}</p>
+        <span className="ui-eyebrow">{t('brief.quizTitle', { a: index + 1, b: questions.length })}</span>
         <Streak count={streak} animate={animate} />
       </div>
-      <p className="text-xl font-extrabold leading-snug">
+      <p className="text-[19px] font-bold leading-snug tracking-tight">
         {question.kind === 'concept'
           ? t('brief.quizConcept', { term: question.subject })
           : t('brief.quizCommand', { command: question.subject })}
@@ -419,22 +443,19 @@ function Quiz({ slot, onBack, questions, bag, onReward, onReview, onDone, animat
                 type="button"
                 data-choice={i}
                 data-correct={i === question.answer ? 'true' : 'false'}
+                data-state={isRight ? 'right' : isWrong ? 'wrong' : 'open'}
                 disabled={isWrong || solved}
                 onClick={() => {
                   choose(i);
                 }}
-                animate={animate && isWrong ? { x: [0, -6, 6, -4, 0] } : { x: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`w-full border-4 px-4 py-3 text-left text-base leading-snug ${
-                  isRight
-                    ? 'border-[var(--ok)] bg-[#cfe8c0]'
-                    : isWrong
-                      ? 'border-[var(--bad)] bg-[#f3c4bb] opacity-70'
-                      : 'border-wood-dark bg-white hover:bg-[var(--gold)]/30'
-                }`}
+                animate={animate && isWrong ? { x: [0, -5, 5, -3, 0] } : { x: 0 }}
+                transition={{ duration: 0.28 }}
+                className="ui-option"
               >
-                {isRight ? '✓ ' : isWrong ? '✗ ' : ''}
-                {choice}
+                <span className="ui-key" aria-hidden>
+                  {isRight ? <Icon name="check" size={13} strokeWidth={2.6} /> : isWrong ? <Icon name="close" size={13} strokeWidth={2.6} /> : i + 1}
+                </span>
+                <span className="min-w-0 text-[14px] leading-snug">{choice}</span>
               </motion.button>
             </li>
           );
@@ -443,56 +464,63 @@ function Quiz({ slot, onBack, questions, bag, onReward, onReview, onDone, animat
 
       <div role="status" aria-live="polite">
         {solved ? (
-          <motion.p
-            initial={animate ? { scale: 0.8, opacity: 0 } : false}
-            animate={{ scale: 1, opacity: 1 }}
-            className="flex flex-wrap items-center gap-2 border-l-4 border-[var(--ok)] bg-[#cfe8c0] px-3 py-2 font-extrabold"
+          <motion.div
+            initial={animate ? { opacity: 0, y: -3 } : false}
+            animate={{ opacity: 1, y: 0 }}
+            className="ui-note ui-note-ok flex flex-wrap items-center gap-x-2.5 gap-y-1"
           >
-            <AnswerStamp animate={animate} />
-            {t('brief.correct')}{' '}
-            {question.reward !== null
-              ? `🎒 ${t('brief.gotTool', { command: question.reward })}`
-              : `📘 ${t('brief.gotWord', { term: question.subject })}`}
-          </motion.p>
+            <span className="inline-flex items-center gap-1.5 font-bold">
+              <Icon name="check" size={15} strokeWidth={2.4} />
+              {t('brief.correct')}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Icon name={question.reward !== null ? 'tool' : 'book'} size={14} />
+              {question.reward !== null ? t('brief.gotTool', { command: question.reward }) : t('brief.gotWord', { term: question.subject })}
+            </span>
+          </motion.div>
         ) : wrong.size > 0 ? (
-          <div className="flex flex-wrap items-center gap-2 border-l-4 border-[var(--warn)] bg-[var(--gold)]/25 px-3 py-2">
+          <div className="ui-note ui-note-warn flex flex-wrap items-center gap-2">
             <span className="font-bold">{t('brief.wrong')}</span>
-            <span className="text-sm">{t('brief.wrongHint', { subject: question.subject })}</span>
+            <span>{t('brief.wrongHint', { subject: question.subject })}</span>
             <button
               type="button"
-              className="knob px-2 py-0.5 text-xs"
+              className="ui-btn ui-btn-quiet h-7 px-2.5 text-xs"
               onClick={() => {
                 onReview(question.subject);
               }}
             >
+              <Icon name="back" size={13} />
               {t('brief.review')}
             </button>
           </div>
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 text-xs">
-          <span className="font-extrabold">🎒 {t('brief.bag')}:</span>
-          {bag.length === 0 ? (
-            <span className="text-ink-soft">{t('brief.bagEmpty')}</span>
-          ) : (
-            bag.map((tool) => (
-              <code key={tool} className="bg-[var(--wood-dark)] px-1.5 py-0.5 font-mono text-cream">
-                {tool}
-              </code>
-            ))
-          )}
-        </div>
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs">
+        <span className="ui-eyebrow inline-flex items-center gap-1">
+          <Icon name="tool" size={13} />
+          {t('brief.bag')}
+        </span>
+        {bag.length === 0 ? (
+          <span className="text-[var(--u-text-3)]">{t('brief.bagEmpty')}</span>
+        ) : (
+          bag.map((tool) => (
+            <code key={tool} className="rounded-md bg-[#12131a] px-1.5 py-0.5 font-mono text-[11px] text-[#e6edf3]">
+              {tool}
+            </code>
+          ))
+        )}
       </div>
+
       <FooterBar
         slot={slot}
         left={
-          <button type="button" data-testid="quiz-back" onClick={onBack} className="knob w-28 px-3 py-2 text-sm">
+          <button type="button" data-testid="quiz-back" onClick={onBack} className="ui-btn ui-btn-plain h-9 w-24 text-[13px]">
+            <Icon name="back" size={15} />
             {t('brief.back')}
           </button>
         }
-        center={<span className="font-mono text-xs text-ink-soft">{t('brief.quizTitle', { a: index + 1, b: questions.length })}</span>}
+        center={<span className="font-mono text-[11px] text-[var(--u-text-3)]">{t('brief.quizTitle', { a: index + 1, b: questions.length })}</span>}
         right={
           solved ? (
             <button
@@ -507,12 +535,13 @@ function Quiz({ slot, onBack, questions, bag, onReward, onReview, onDone, animat
                 setWrong(new Set());
                 setSolved(false);
               }}
-              className="sign w-44 px-4 py-2 font-extrabold"
+              className="ui-btn ui-btn-primary h-10 w-44 text-[14px]"
             >
               {last ? t('brief.toTry') : t('brief.nextQuestion')}
+              <Icon name="next" size={16} />
             </button>
           ) : (
-            <span className="w-44 text-center text-xs text-ink-soft">{t('facility.pick')}</span>
+            <span className="w-44 text-center text-[11px] text-[var(--u-text-3)]">{t('facility.pick')}</span>
           )
         }
       />
@@ -540,7 +569,7 @@ function TryTools({ slot, track, onBack, tries, fieldTools, onDone }: {
 
   return (
     <div className="flex flex-col gap-3" data-testid="try">
-      <p className="text-sm">{tries.length > 0 ? t('brief.tryLead') : t('brief.tryNone')}</p>
+      <p className="text-[14px] text-[var(--u-text-2)]">{tries.length > 0 ? t('brief.tryLead') : t('brief.tryNone')}</p>
 
       {tries.length > 0 ? (
         <ul className="flex flex-wrap items-center gap-2" aria-label={t('brief.bag')}>
@@ -555,11 +584,9 @@ function TryTools({ slot, track, onBack, tries, fieldTools, onDone }: {
                   setReplay((n) => n + 1);
                   setTried((set) => new Set([...set, i]));
                 }}
-                className={`border-4 px-3 py-1.5 font-mono text-sm ${
-                  i === pick ? 'border-[var(--gold-dark)] bg-gold text-ink' : 'border-wood-dark bg-white hover:bg-[var(--gold)]/30'
-                }`}
+                className={`ui-btn h-8 px-3 font-mono text-[12px] ${i === pick ? 'ui-btn-primary' : 'ui-btn-quiet'}`}
               >
-                {tried.has(i) ? '✓ ' : ''}
+                {tried.has(i) ? <Icon name="check" size={13} strokeWidth={2.4} /> : null}
                 {tr.command}
               </button>
             </li>
@@ -569,7 +596,7 @@ function TryTools({ slot, track, onBack, tries, fieldTools, onDone }: {
 
       {current ? (
         <>
-          <p className="text-sm">
+          <p className="text-[14px]">
             <Glossed text={current.means} />
           </p>
           <ToolRun
@@ -587,12 +614,12 @@ function TryTools({ slot, track, onBack, tries, fieldTools, onDone }: {
 
       {fieldTools.length > 0 ? (
         <div>
-          <p className="text-xs font-extrabold text-ink-soft">{t('brief.fieldTools')}</p>
-          <ul className="mt-1 flex flex-wrap gap-2">
+          <p className="ui-eyebrow">{t('brief.fieldTools')}</p>
+          <ul className="mt-1.5 flex flex-wrap gap-1.5">
             {fieldTools.map((c) => (
-              <li key={c.command} className="flex items-baseline gap-1 border-2 border-[var(--cream-dark)] bg-white px-2 py-0.5 text-xs">
+              <li key={c.command} className="ui-flat flex items-baseline gap-1.5 px-2 py-1 text-[11px]">
                 <code className="font-mono font-bold">{c.command}</code>
-                <span className="text-ink-soft">
+                <span className="text-[var(--u-text-2)]">
                   <Glossed text={c.means} />
                 </span>
               </li>
@@ -604,18 +631,20 @@ function TryTools({ slot, track, onBack, tries, fieldTools, onDone }: {
       <FooterBar
         slot={slot}
         left={
-          <button type="button" onClick={onBack} className="knob w-28 px-3 py-2 text-sm">
+          <button type="button" onClick={onBack} className="ui-btn ui-btn-plain h-9 w-24 text-[13px]">
+            <Icon name="back" size={15} />
             {t('brief.back')}
           </button>
         }
         center={
           tries.length > 0 ? (
-            <span className="font-mono text-xs text-ink-soft">{t('brief.tryCount', { a: tried.size, b: tries.length })}</span>
+            <span className="font-mono text-[11px] text-[var(--u-text-3)]">{t('brief.tryCount', { a: tried.size, b: tries.length })}</span>
           ) : null
         }
         right={
-          <button type="button" data-testid="try-next" onClick={onDone} className="sign w-44 px-4 py-2 font-extrabold">
+          <button type="button" data-testid="try-next" onClick={onDone} className="ui-btn ui-btn-primary h-10 w-44 text-[14px]">
             {t('brief.toPlan')}
+            <Icon name="next" size={16} />
           </button>
         }
       />
@@ -635,12 +664,12 @@ function Plan({ slot, mission, onStart, onBack }: { slot: HTMLElement | null; mi
 
   return (
     <div className="flex flex-col gap-3" data-testid="plan">
-      <p className="text-base">{t('brief.planLead')}</p>
+      <p className="text-[14px] text-[var(--u-text-2)]">{t('brief.planLead')}</p>
       <ol className="flex flex-col gap-1.5">
         {mission.steps.map((step, i) => (
-          <li key={`${String(i)}-${step.prompt}`} className="flex items-start gap-2 border-2 border-[var(--cream-dark)] bg-white px-2 py-1.5 text-sm leading-snug">
-            <span className="sign shrink-0 px-2 text-xs font-extrabold">{i + 1}</span>
-            <span className="min-w-0">
+          <li key={`${String(i)}-${step.prompt}`} className="ui-card flex items-start gap-2.5 px-3 py-2 text-[14px] leading-snug">
+            <span className="ui-key mt-0.5">{i + 1}</span>
+            <span className="min-w-0 pt-0.5">
               <Glossed text={step.prompt} />
             </span>
           </li>
@@ -649,12 +678,14 @@ function Plan({ slot, mission, onStart, onBack }: { slot: HTMLElement | null; mi
       <FooterBar
         slot={slot}
         left={
-          <button type="button" onClick={onBack} className="knob w-28 px-3 py-2 text-sm">
+          <button type="button" onClick={onBack} className="ui-btn ui-btn-plain h-9 w-24 text-[13px]">
+            <Icon name="back" size={15} />
             {t('brief.back')}
           </button>
         }
         right={
-          <button ref={startRef} type="button" onClick={onStart} className="sign w-44 px-4 py-2 text-base font-extrabold">
+          <button ref={startRef} type="button" onClick={onStart} className="ui-btn ui-btn-primary h-10 w-44 text-[14px]">
+            <Icon name="terminal" size={16} />
             {t('brief.start')}
           </button>
         }

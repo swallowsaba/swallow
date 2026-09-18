@@ -6,6 +6,7 @@ import { MoodFace } from '@/visual/game/MoodFace';
 import { MOOD_OF_VOICE } from '@/visual/game/faces';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { CityProgress } from './CityProgress';
+import { Icon } from '@/ui/Icon';
 import { civicFacilities } from './cityStore';
 
 interface Props {
@@ -28,33 +29,36 @@ export function CityBoard({ city, track, onHandle }: Props) {
   const byId = (id: string) => city.facilities.find((f) => f.facility.id === id);
 
   return (
-    <section data-testid="city-board" className="flex flex-col gap-3">
-      <div className="border-4 border-wood-dark bg-white p-3">
-        <p className="text-lg font-extrabold">🏛 {t('board.title', { name: city.plan.name })}</p>
-        <p className="mt-1 text-sm leading-relaxed">{t('board.lead')}</p>
+    <section data-testid="city-board" className="flex flex-col gap-3 p-4">
+      <div className="ui-card p-4">
+        <p className="flex items-center gap-2 text-[17px] font-bold tracking-tight">
+          <Icon name="city" size={18} />
+          {t('board.title', { name: city.plan.name })}
+        </p>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--u-text-2)]">{t('board.lead')}</p>
       </div>
 
       <CityProgress city={city} track={track} currentId={voices.find((v) => v.kind !== 'praise')?.facilityId ?? null} />
 
-      {voices.length === 0 ? <p className="border-l-4 border-[var(--gold-dark)] bg-[var(--gold)]/20 px-3 py-2 text-sm">{t('board.quiet')}</p> : null}
+      {voices.length === 0 ? <p className="ui-note ui-note-info">{t('board.quiet')}</p> : null}
 
       <ul className="flex flex-col gap-2">
         {voices.map((v) => {
           const f = byId(v.facilityId);
           if (!f) return null;
           const tone =
-            v.kind === 'complaint' ? 'border-[var(--bad)] bg-[#fbe3de]' : v.kind === 'waiting' ? 'border-[var(--gold-dark)] bg-[#fff4d6]' : 'border-[var(--ok)] bg-[#dff0cf]';
+            v.kind === 'complaint' ? 'bg-[var(--u-bad-soft)]' : v.kind === 'waiting' ? 'bg-[var(--u-warn-soft)]' : 'bg-[var(--u-ok-soft)]';
           return (
-            <li key={`${v.kind}:${v.facilityId}`} data-voice={v.kind} data-facility={v.facilityId} className={`flex flex-col gap-2 border-4 p-3 ${tone}`}>
-              <p className="text-xs font-extrabold">
+            <li key={`${v.kind}:${v.facilityId}`} data-voice={v.kind} data-facility={v.facilityId} className={`ui-card flex flex-col gap-2 p-3 ${tone}`}>
+              <p className="ui-eyebrow">
                 {v.kind === 'complaint' ? t('board.complaint') : v.kind === 'waiting' ? t('board.waiting') : t('board.praise')}
                 {' — '}
                 {f.facility.name}
               </p>
               <div className="flex items-start gap-2">
                 <MoodFace mood={MOOD_OF_VOICE[v.kind]} size={40} animate />
-                <p className="rounded-lg border-2 border-wood-dark bg-white px-3 py-2 text-sm leading-relaxed">
-                  <span className="block text-xs font-bold text-ink-soft">{f.facility.trouble.who}</span>
+                <p className="ui-card min-w-0 flex-1 px-3 py-2 text-[13px] leading-relaxed">
+                  <span className="ui-eyebrow block">{f.facility.trouble.who}</span>
                   {v.kind === 'complaint'
                     ? `「${f.facility.trouble.text}」`
                     : v.kind === 'waiting'
@@ -69,9 +73,10 @@ export function CityBoard({ city, track, onHandle }: Props) {
                   onClick={() => {
                     onHandle(v.facilityId);
                   }}
-                  className="sign w-fit px-4 py-1.5 text-sm font-extrabold"
+                  className="ui-btn ui-btn-primary h-9 w-fit px-4 text-[13px]"
                 >
                   {v.kind === 'complaint' ? t('board.handle') : t('board.continue')}
+                  <Icon name="next" size={15} />
                 </button>
               ) : null}
             </li>
@@ -80,7 +85,7 @@ export function CityBoard({ city, track, onHandle }: Props) {
       </ul>
 
       {upcoming ? (
-        <p data-testid="next-voice" className="border-2 border-dashed border-wood-dark bg-cream px-3 py-2 text-sm">
+        <p data-testid="next-voice" className="ui-flat px-3 py-2 text-[12px] text-[var(--u-text-2)]">
           {t('board.nextSolve', { n: upcoming.remaining })}
         </p>
       ) : null}

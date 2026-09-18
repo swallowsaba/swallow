@@ -43,6 +43,11 @@ export interface PlanDistrict {
   cols?: number | undefined;
   /** 中身が少なくても確保する区画数。更地を見せたいときに使う */
   min?: number | undefined;
+  /**
+   * もう開いた地区か（道を通し、地面を舗装する）。
+   * false なら縄張りだけの原野で、道も通らない。既定は「中身があれば開いている」。
+   */
+  developed?: boolean | undefined;
 }
 
 export interface PlannedLot {
@@ -70,6 +75,8 @@ export interface PlannedBlock {
   yard: { x: number; y: number; w: number; d: number } | null;
   /** まだ何も建っていない区画（更地）。街の伸びしろとして見せる */
   free: { x: number; y: number; w: number; d: number }[];
+  /** 道を通して舗装した街区か。false なら縄張りだけの原野 */
+  developed: boolean;
 }
 
 export interface PlannedRoad {
@@ -78,7 +85,7 @@ export interface PlannedRoad {
   y: number;
   w: number;
   d: number;
-  kind: 'avenue' | 'street';
+  kind: 'avenue' | 'street' | 'trunk';
   /** 大通りに沿って走る向き。横断歩道や中央線の向きを決める */
   axis: 'x' | 'y';
 }
@@ -238,15 +245,18 @@ export function planTown(districts: readonly PlanDistrict[], options: PlanOption
   const lots = new Map<string, PlannedLot>();
   const roads: PlannedRoad[] = [];
   const crossings: { x: number; y: number; w: number; d: number }[] = [];
-  /** 縦の通りの位置（段ごと）。交差点を出すのに使う */
-  const verticals: { x: number; w: number }[] = [];
 
   let width = STREET;
   let y = originY + AVENUE;
+  /** 開いた街区のある段だけ、道を通す */
+  const openShelves: { y: number; depth: number; right: number; verticals: number[] }[] = [];
+
   for (const row of shelves) {
     const depth = row.reduce((max, s) => Math.max(max, s.d), 0);
     let x = STREET;
+    const open = { y, depth, right: 0, verticals: [] as number[] };
     for (const s of row) {
+      const developed = s.district.developed ?? s.district.members.length > 0;
       const block: PlannedBlock = {
         id: s.district.id,
         label: s.district.label,
@@ -257,6 +267,7 @@ export function planTown(districts: readonly PlanDistrict[], options: PlanOption
         d: s.d,
         yard: null,
         free: [],
+        developed,
       };
       const order = (s.district.order ?? 'ring') === 'rows' ? rowsOrder(s.cols, s.rows) : ringOrder(s.cols, s.rows);
       const count = Math.max(s.district.min ?? 0, s.district.members.length);
@@ -290,41 +301,40 @@ export function planTown(districts: readonly PlanDistrict[], options: PlanOption
         };
       }
       blocks.push(block);
-      // 街区の右に通りを 1 本
-      const roadX = x + s.w;
-      verticals.push({ x: roadX, w: STREET });
-      roads.push({ id: `street:v:${String(roadX)}:${String(y)}`, x: roadX, y, w: STREET, d: depth, kind: 'street', axis: 'y' });
-      x = roadX + STREET;
+      if (developed) {
+        // 開いた街区の左右にだけ通りを通す
+        if (x > STREET) open.verticals.push(x - STREET);
+        open.verticals.push(x + s.w);
+        open.right = Math.max(open.right, x + s.w + STREET);
+      }
+      x = x + s.w + STREET;
     }
-    // 段の左端の通り
-    roads.push({ id: `street:v:0:${String(y)}`, x: 0, y, w: STREET, d: depth, kind: 'street', axis: 'y' });
-    verticals.push({ x: 0, w: STREET });
     width = Math.max(width, x);
-    // 段の下の大通り
-    const avenueY = y + depth;
-    roads.push({ id: `avenue:${String(avenueY)}`, x: 0, y: avenueY, w: 0, d: AVENUE, kind: 'avenue', axis: 'x' });
-    y = avenueY + AVENUE;
+    if (open.verticals.length > 0) openShelves.push(open);
+    y = y + depth + AVENUE;
   }
 
-  // 段の上の大通り（先頭）
-  roads.push({ id: `avenue:${String(originY)}`, x: 0, y: originY, w: 0, d: AVENUE, kind: 'avenue', axis: 'x' });
+  const height = y - originY;
 
-  // 横に走る道は街の幅いっぱいに伸ばす
-  for (const road of roads) {
-    if (road.axis === 'x') road.w = width;
-  }
+  // となりの街から入ってくる街道。街はここから広がる
+  roads.push({ id: 'trunk', x: 0, y: originY, w: STREET, d: height, kind: 'trunk', axis: 'y' });
 
-  // 交差点（縦の通り × 大通り）
-  const avenueYs = roads.filter((r) => r.axis === 'x').map((r) => r.y);
-  const seen = new Set<string>();
-  for (const v of verticals) {
-    for (const ay of avenueYs) {
-      const key = `${String(v.x)}:${String(ay)}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      crossings.push({ x: v.x, y: ay, w: v.w, d: AVENUE });
+  const avenueYs = new Set<number>();
+  for (const shelf of openShelves) {
+    const reach = Math.max(shelf.right, STREET * 2);
+    // 段の上と下の大通り。開いた街区のある所までしか伸ばさない
+    for (const ay of [shelf.y - AVENUE, shelf.y + shelf.depth]) {
+      if (avenueYs.has(ay)) continue;
+      avenueYs.add(ay);
+      roads.push({ id: `avenue:${String(ay)}`, x: 0, y: ay, w: reach, d: AVENUE, kind: 'avenue', axis: 'x' });
     }
+    for (const vx of [...new Set(shelf.verticals)]) {
+      roads.push({ id: `street:${String(vx)}:${String(shelf.y)}`, x: vx, y: shelf.y, w: STREET, d: shelf.depth, kind: 'street', axis: 'y' });
+      for (const ay of [shelf.y - AVENUE, shelf.y + shelf.depth]) crossings.push({ x: vx, y: ay, w: STREET, d: AVENUE });
+    }
+    // 街道との交差点
+    for (const ay of [shelf.y - AVENUE, shelf.y + shelf.depth]) crossings.push({ x: 0, y: ay, w: STREET, d: AVENUE });
   }
 
-  return { width, height: y - originY, blocks, lots, roads, crossings };
+  return { width, height, blocks, lots, roads, crossings };
 }

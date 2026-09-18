@@ -10,5 +10,5 @@ export function useFooterSlot(): { slot: HTMLElement | null; ref: (el: HTMLEleme
 }
 
 export const FOOTER_SLOT_CLASS =
-  'sticky bottom-0 z-10 mt-auto border-t-4 border-wood-dark bg-[var(--cream)] px-3 py-2 shadow-[0_-4px_8px_rgba(0,0,0,0.08)]';
+  'sticky bottom-0 z-10 mt-auto border-t border-[var(--u-line,#e8e5e0)] bg-[var(--u-card,#fff)] px-4 py-2.5';
 
