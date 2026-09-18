@@ -9,6 +9,8 @@ import type { Scene, Translate } from './types';
 
 export type { Scene, SceneItem, SceneBuilding, SceneInfo, LegendEntry, Translate, Tone, BuildStyle } from './types';
 export { TONE_COLOR } from './types';
+export type { TownPlan, PlannedBlock, PlannedLot, PlannedRoad, PlanDistrict, Facing } from './plan';
+export { AVENUE, LOT, planTown, SIDEWALK, STREET, stretchTown } from './plan';
 
 /** カテゴリごとの見立てで、いまの状態を街の場面にする */
 export function sceneOf(track: MissionTrack, state: ShellState, previous: ShellState | undefined, t: Translate): Scene {

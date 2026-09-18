@@ -112,15 +112,37 @@ describe('Kubernetes の街：ビル・部屋・待機広場・監査局', () =>
 });
 
 describe('シェルの街：街区と家', () => {
-  it('ディレクトリは通り、ファイルは家、いまいる場所に旗、書き込めないファイルに鍵', () => {
+  it('ディレクトリは街区、ファイルは通りに面した家、いまいる場所に旗、書き込めないファイルに鍵', () => {
     const sh = shell({ files: { '/home/learner': null, '/home/learner/memo.txt': 'hi' } });
     sh.run('mkdir reports', 'touch reports/a.log', 'chmod 444 memo.txt', 'cd reports');
     const scene = sceneOf('kernel', sh.state, sh.previous, t);
-    expect(byId(scene, 'street:/home/learner/reports')?.type).toBe('road');
+    // ディレクトリごとに街区ができ、その中の区画に家が建つ
+    const block = scene.plan.blocks.find((b) => b.id === 'street:/home/learner/reports');
+    expect(block).toBeDefined();
+    const lot = scene.plan.lots.get('file:/home/learner/reports/a.log');
+    expect(lot?.district).toBe('street:/home/learner/reports');
     expect(byId(scene, 'file:/home/learner/reports/a.log')?.type).toBe('building');
     const sign = byId(scene, 'sign:/home/learner/reports');
     expect(sign?.type === 'marker' && sign.icon).toBe('🚩');
     expect((byId(scene, 'file:/home/learner/memo.txt') as SceneBuilding).badges?.some((b) => b.icon === '🔒')).toBe(true);
+  });
+
+  it('街区は通りで囲まれ、どの街区も道に面する', () => {
+    const sh = shell({ files: { '/home/learner': null } });
+    sh.run('mkdir a', 'mkdir b', 'mkdir c', 'touch a/1.txt', 'touch b/2.txt', 'touch c/3.txt');
+    const scene = sceneOf('kernel', sh.state, sh.previous, t);
+    expect(scene.plan.blocks.length).toBeGreaterThanOrEqual(4);
+    // 縦の通りと横の大通りの両方が通っている＝碁盤の目
+    expect(scene.plan.roads.some((r) => r.axis === 'x')).toBe(true);
+    expect(scene.plan.roads.some((r) => r.axis === 'y')).toBe(true);
+    for (const block of scene.plan.blocks) {
+      const touching = scene.plan.roads.some(
+        (r) =>
+          (r.axis === 'y' && (r.x + r.w === block.x || r.x === block.x + block.w)) ||
+          (r.axis === 'x' && (r.y + r.d === block.y || r.y === block.y + block.d)),
+      );
+      expect(touching, `${block.id} が道に面していない`).toBe(true);
+    }
   });
 });
 

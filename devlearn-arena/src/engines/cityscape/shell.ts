@@ -2,17 +2,22 @@ import type { ShellState } from '@/engines/kernel/registry';
 import { HOME } from '@/engines/kernel/path';
 import { metaOf, type VfsState } from '@/engines/kernel/vfs';
 import { diffVfs } from '@/visual/treeLayout';
+import { planTown, type PlanDistrict } from './plan';
 import type { Scene, SceneItem, Translate } from './types';
 
 /**
  * シェルの街（ファイルシステムの住宅地）。
- * ディレクトリ = 街区（通り）、ファイル = 家、実行できるファイル = 工房、隠しファイル = 霧の中の家、
- * 書き込めない = 鍵、いまいる場所（cwd）= 市長の旗、プロセス = 工場で働く車。
+ *
+ * ディレクトリ = 街区、ファイル = 通りに面して建つ家、実行できるファイル = 工房、
+ * 隠しファイル = 塀の中の家、書き込めない = 鍵、いまいる場所（cwd）= 市長の旗、プロセス = working区の車庫。
+ *
+ * 街区は碁盤の目に並び、家は街区の外周（通りに面した側）から埋まる。
+ * 親子のディレクトリは、街区の看板と連絡線でつなぐ。
  */
 
-const MAX_FILES = 8;
+const MAX_FILES = 12;
 const MAX_DEPTH = 4;
-const MAX_DIRS = 24;
+const MAX_DIRS = 16;
 
 function childrenOf(vfs: VfsState, dir: string): { dirs: string[]; files: string[] } {
   const prefix = dir === '/' ? '/' : `${dir}/`;
@@ -36,52 +41,83 @@ export function sceneRoot(state: ShellState): string {
   return parent;
 }
 
+interface Ward {
+  dir: string;
+  depth: number;
+  files: string[];
+  dirs: string[];
+}
+
+/** 街区にするディレクトリを、根から幅優先で集める */
+function wards(vfs: VfsState, root: string): Ward[] {
+  const out: Ward[] = [];
+  const queue: { dir: string; depth: number }[] = [{ dir: root, depth: 0 }];
+  while (queue.length > 0 && out.length < MAX_DIRS) {
+    const item = queue.shift();
+    if (!item) break;
+    const { dirs, files } = childrenOf(vfs, item.dir);
+    out.push({ dir: item.dir, depth: item.depth, files: files.slice(0, MAX_FILES), dirs });
+    if (item.depth >= MAX_DEPTH) continue;
+    for (const child of dirs) queue.push({ dir: child, depth: item.depth + 1 });
+  }
+  return out;
+}
+
 export function shellScene(state: ShellState, previous: ShellState | undefined, t: Translate): Scene {
   const { vfs } = state;
   const items: SceneItem[] = [];
   const diff = diffVfs(previous?.vfs, vfs);
   const touched = new Set([...diff.added, ...diff.changed]);
   const root = sceneRoot(state);
-  let dirCount = 0;
+  const blocks = vfs.nodes.has(root) ? wards(vfs, root) : [];
+
+  // 地区（街区）を組み立てて、碁盤の目に割り付ける
+  const districts: PlanDistrict[] = blocks.map((w) => ({
+    id: `street:${w.dir}`,
+    label: nameOf(w.dir),
+    tone: state.cwd === w.dir ? 'accent' : 'info',
+    members: w.files.map((path) => `file:${path}`),
+    min: 4,
+  }));
+  const procs = [...state.procs.processes.values()].slice(0, 8);
+  if (procs.length > 0) {
+    districts.push({
+      id: 'yard:procs',
+      label: t('scape.shell.factory'),
+      tone: 'accent',
+      members: procs.map((p) => `proc:${String(p.pid)}`),
+      min: 2,
+    });
+  }
+  const plan = planTown(districts);
+
   let fileCount = 0;
   let locked = 0;
   let workshops = 0;
-  let width = 8;
-  let cwdAt: { x: number; y: number } | null = null;
 
-  const place = (dir: string, depth: number, top: number): number => {
-    dirCount += 1;
-    const { dirs, files } = childrenOf(vfs, dir);
-    const x0 = depth * 3;
-    const shown = files.slice(0, MAX_FILES);
-    const streetLen = Math.max(5, shown.length * 3 + 3);
-    width = Math.max(width, x0 + streetLen + 2);
-    const roadY = top + 2;
-    const here = state.cwd === dir;
-    if (here) cwdAt = { x: x0, y: roadY };
-    items.push({
-      type: 'road',
-      id: `street:${dir}`,
-      cells: Array.from({ length: streetLen }, (_, i) => ({ x: x0 + i, y: roadY })),
-      kind: depth === 0 ? 'main' : 'street',
-      label: nameOf(dir),
-    });
+  for (const w of blocks) {
+    const block = plan.blocks.find((b) => b.id === `street:${w.dir}`);
+    if (!block) continue;
+    const here = state.cwd === w.dir;
+    // 街区の角に看板（ここがどのディレクトリか）
     items.push({
       type: 'marker',
-      id: `sign:${dir}`,
-      x: x0 + 0.2,
-      y: roadY + 0.5,
+      id: `sign:${w.dir}`,
+      x: block.x + 0.6,
+      y: block.y + block.d - 0.4,
       icon: here ? '🚩' : '🪧',
-      label: nameOf(dir),
       tone: here ? 'accent' : 'info',
       info: {
-        title: dir,
+        title: w.dir,
         kind: t('scape.shell.dirKind'),
-        lines: [t('scape.shell.dirLine', { files: files.length, dirs: dirs.length }), ...(here ? [t('scape.shell.here')] : [])],
-        next: here ? t('scape.shell.hereNext') : t('scape.shell.cdNext', { path: dir }),
+        lines: [t('scape.shell.dirLine', { files: w.files.length, dirs: w.dirs.length }), ...(here ? [t('scape.shell.here')] : [])],
+        next: here ? t('scape.shell.hereNext') : t('scape.shell.cdNext', { path: w.dir }),
       },
     });
-    shown.forEach((path, i) => {
+
+    for (const path of w.files) {
+      const lot = plan.lots.get(`file:${path}`);
+      if (!lot) continue;
       fileCount += 1;
       const node = vfs.nodes.get(path);
       const content = node?.kind === 'file' ? node.content : '';
@@ -98,10 +134,11 @@ export function shellScene(state: ShellState, previous: ShellState | undefined, 
       items.push({
         type: 'building',
         id: `file:${path}`,
-        x: x0 + 1 + i * 3,
-        y: top,
-        w: 2,
-        d: 2,
+        x: lot.x + 0.15,
+        y: lot.y + 0.15,
+        w: lot.w - 0.3,
+        d: lot.d - 0.3,
+        facing: lot.facing,
         floors: Math.max(1, Math.min(5, 1 + Math.floor(content.length / 160))),
         style: hidden ? 'ghost' : 'solid',
         color: exec ? '#c9b18a' : /\.(log)$/.test(path) ? '#b9bec4' : /\.(conf|cfg|ya?ml|json|ini)$/.test(path) ? '#f0c27b' : '#f2e4cf',
@@ -120,60 +157,62 @@ export function shellScene(state: ShellState, previous: ShellState | undefined, 
           next: readOnly ? t('scape.shell.chmodNext', { path }) : t('scape.shell.catNext', { path }),
         },
       });
-    });
-    if (files.length > MAX_FILES) {
-      items.push({ type: 'marker', id: `more:${dir}`, x: x0 + 1 + MAX_FILES * 3, y: top + 1, icon: '🏘', label: t('scape.shell.more', { n: files.length - MAX_FILES }), tone: 'muted' });
     }
-    let y = top + 4;
-    if (depth >= MAX_DEPTH) {
-      if (dirs.length > 0) items.push({ type: 'marker', id: `deep:${dir}`, x: x0 + 3, y, icon: '⋯', label: t('scape.shell.more', { n: dirs.length }), tone: 'muted' });
-      return y + (dirs.length > 0 ? 2 : 0);
-    }
-    for (const child of dirs) {
-      if (dirCount >= MAX_DIRS) break;
-      const childRoad = y + 2;
-      // 親の通りから子の通りへ下りる道
-      items.push({
-        type: 'road',
-        id: `link:${child}`,
-        cells: Array.from({ length: childRoad - roadY - 1 }, (_, i) => ({ x: x0 + 2, y: roadY + 1 + i })),
-        kind: 'street',
-      });
-      y = place(child, depth + 1, y);
-    }
-    return y;
-  };
 
-  const height = vfs.nodes.has(root) ? place(root, 0, 0) : 6;
-
-  // 工場（プロセス）
-  const procs = [...state.procs.processes.values()].slice(0, 8);
-  const factoryX = width + 1;
-  if (procs.length > 0) {
-    items.push({ type: 'plot', id: 'factory', x: factoryX, y: 0, w: 5, d: Math.max(4, procs.length * 1.5 + 1), tone: 'accent', label: t('scape.shell.factory') });
-    procs.forEach((p, i) => {
+    const { files } = childrenOf(vfs, w.dir);
+    if (files.length > w.files.length) {
       items.push({
         type: 'marker',
-        id: `proc:${String(p.pid)}`,
-        x: factoryX + 1,
-        y: 1 + i * 1.5,
-        icon: p.state === 'Z' ? '💀' : p.state === 'T' ? '⏸' : '🚚',
-        label: `${String(p.pid)} ${p.command.split(' ')[0] ?? ''}`,
-        tone: p.state === 'Z' ? 'bad' : p.state === 'T' ? 'warn' : 'ok',
-        info: {
-          title: `PID ${String(p.pid)}`,
-          kind: t('scape.shell.procKind'),
-          lines: [p.command, t('scape.shell.procUsage', { cpu: p.cpu, mem: p.memory, state: p.state })],
-          next: t('scape.shell.killNext', { pid: p.pid }),
-        },
+        id: `more:${w.dir}`,
+        x: block.x + block.w - 1.2,
+        y: block.y + block.d - 0.6,
+        icon: '🏘',
+        label: t('scape.shell.more', { n: files.length - w.files.length }),
+        tone: 'muted',
       });
-    });
+    }
+
+    // 親の街区とつなぐ連絡線（どの街区がどの街区の中にあるか）
+    const parentBlock = plan.blocks.find((b) => b.id === `street:${w.dir.slice(0, w.dir.lastIndexOf('/')) || '/'}`);
+    if (parentBlock && parentBlock.id !== block.id) {
+      items.push({
+        type: 'link',
+        id: `belongs:${w.dir}`,
+        from: { x: parentBlock.x + parentBlock.w / 2, y: parentBlock.y + parentBlock.d / 2 },
+        to: { x: block.x + block.w / 2, y: block.y + block.d / 2 },
+        style: 'dashed',
+        tone: 'muted',
+      });
+    }
   }
 
-  const at = cwdAt as { x: number; y: number } | null;
+  // 車庫（プロセス）
+  procs.forEach((p) => {
+    const lot = plan.lots.get(`proc:${String(p.pid)}`);
+    if (!lot) return;
+    items.push({
+      type: 'marker',
+      id: `proc:${String(p.pid)}`,
+      x: lot.x + 0.4,
+      y: lot.y + 0.5,
+      icon: p.state === 'Z' ? '💀' : p.state === 'T' ? '⏸' : '🚚',
+      label: `${String(p.pid)} ${p.command.split(' ')[0] ?? ''}`,
+      tone: p.state === 'Z' ? 'bad' : p.state === 'T' ? 'warn' : 'ok',
+      info: {
+        title: `PID ${String(p.pid)}`,
+        kind: t('scape.shell.procKind'),
+        lines: [p.command, t('scape.shell.procUsage', { cpu: p.cpu, mem: p.memory, state: p.state })],
+        next: t('scape.shell.killNext', { pid: p.pid }),
+      },
+    });
+  });
+
+  const hereBlock = plan.blocks.find((b) => b.id === `street:${state.cwd}`) ?? plan.blocks[0];
+
   return {
-    width: procs.length > 0 ? factoryX + 6 : width,
-    height: Math.max(height, 6),
+    width: plan.width,
+    height: plan.height,
+    plan,
     items,
     legend: [
       { sample: 'road', name: t('scape.shell.legend.street'), meaning: t('scape.shell.legend.streetMeaning'), command: 'mkdir <名前>' },
@@ -185,13 +224,13 @@ export function shellScene(state: ShellState, previous: ShellState | undefined, 
       { sample: 'marker', icon: '🚚', name: t('scape.shell.legend.proc'), meaning: t('scape.shell.legend.procMeaning'), command: 'ps / kill <PID>' },
     ],
     stats: [
-      { icon: '🛣', label: t('scape.shell.stat.blocks'), value: dirCount },
+      { icon: '🛣', label: t('scape.shell.stat.blocks'), value: blocks.length },
       { icon: '🏠', label: t('scape.shell.stat.houses'), value: fileCount },
       { icon: '⚙', label: t('scape.shell.stat.workshops'), value: workshops },
       { icon: '🔒', label: t('scape.shell.stat.locked'), value: locked },
       { icon: '🚚', label: t('scape.shell.stat.procs'), value: state.procs.processes.size },
       { icon: '🚩', label: t('scape.shell.stat.here'), value: state.cwd },
     ],
-    focus: at ?? { x: 4, y: 2 },
+    focus: hereBlock ? { x: hereBlock.x + hereBlock.w / 2, y: hereBlock.y + hereBlock.d / 2 } : { x: 4, y: 4 },
   };
 }

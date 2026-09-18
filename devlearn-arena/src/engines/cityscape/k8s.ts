@@ -1,12 +1,16 @@
 import { nodeCondition } from '@/engines/k8s/bootstrap';
 import type { ClusterState, Pod } from '@/engines/k8s/types';
 import { podLook, type PodLook } from '@/visual/clusterModel';
+import { planTown, type PlanDistrict } from './plan';
 import { colorOf, type Scene, type SceneItem, type Tone, type Translate } from './types';
 
 /**
  * Kubernetes の街（オフィス街と役所）。
+ *
  * control-plane = 市役所、worker ノード = オフィスビル、Pod = ビルの部屋、Deployment = 入居企業、
  * 置き場の無い Pending の Pod = 待機広場のテント、Service = バス停、Ingress = 街の門、監査局 = イメージの監査。
+ *
+ * 役所街区・オフィス街区・待機広場・停留所の 4 つの街区が碁盤の目に並び、通りでつながる。
  */
 
 const ROOM_TONE: Record<PodLook, Tone | undefined> = {
@@ -43,14 +47,16 @@ export function k8sScene(cluster: ClusterState | null, t: Translate): Scene {
     { sample: 'marker' as const, icon: '🔍', name: t('scape.k8s.legend.audit'), meaning: t('scape.k8s.legend.auditMeaning'), command: 'kubectl set image deployment/<名前> <コンテナ>=<イメージ>:<版>' },
   ];
   if (cluster === null) {
+    const plan = planTown([{ id: 'vacant', label: t('scape.k8s.vacant'), tone: 'muted', members: [], min: 6 }]);
     return {
-      width: 16,
-      height: 10,
-      items: [{ type: 'plot', id: 'vacant', x: 2, y: 2, w: 10, d: 6, tone: 'muted', label: t('scape.k8s.vacant') }],
+      width: plan.width,
+      height: plan.height,
+      plan,
+      items: [],
       stats: [],
       legend,
       empty: { title: t('scape.k8s.noClusterTitle'), text: t('scape.k8s.noCluster') },
-      focus: { x: 7, y: 5 },
+      focus: { x: plan.width / 2, y: plan.height / 2 },
     };
   }
 
@@ -65,28 +71,73 @@ export function k8sScene(cluster: ClusterState | null, t: Translate): Scene {
   const findings = [...planFindings, ...podFindings.filter((f) => !planFindings.some((g) => g.tenant === f.tenant && g.image === f.image))].filter((f) => f.issue !== null);
   const flagged = new Set(pods.filter((p) => p.spec.containers.some((c) => auditImage(c.image) !== null)).map((p) => p.metadata.name));
 
-  // 市役所（API サーバー）。ノードとしての control-plane が無いクラスタでも、街の中心として建てる
   const hasPlaneNode = nodes.some((n) => n.spec.role === 'control-plane');
-  let x = 0;
+  const waiting = pods.filter((p) => p.status.nodeName === null && p.status.phase === 'Pending');
+  const deployments = [...cluster.deployments.values()];
+  const services = [...cluster.services.values()];
+  const ingresses = [...cluster.ingresses.values()];
+
+  const districts: PlanDistrict[] = [
+    {
+      id: 'ward:civic',
+      label: t('scape.k8s.wardCivic'),
+      tone: 'accent',
+      members: [...(hasPlaneNode ? [] : ['hall']), 'audit', ...ingresses.map((i) => `ing:${i.metadata.name}`)],
+      min: 3,
+    },
+    {
+      id: 'ward:office',
+      label: t('scape.k8s.wardOffice'),
+      tone: 'info',
+      members: nodes.map((n) => `node:${n.metadata.name}`),
+      min: 4,
+    },
+    {
+      id: 'ward:yard',
+      label: t('scape.k8s.yard'),
+      tone: 'warn',
+      members: waiting.map((p) => `pending:${p.metadata.name}`),
+      min: 4,
+    },
+    {
+      id: 'ward:transit',
+      label: t('scape.k8s.wardTransit'),
+      tone: 'ok',
+      members: [...services.map((s) => `svc:${s.metadata.name}`), ...deployments.map((d) => `deploy:${d.metadata.name}`)],
+      min: 4,
+    },
+  ];
+  const plan = planTown(districts);
+  const lotOf = (id: string) => plan.lots.get(id);
+  const center = (id: string) => {
+    const lot = lotOf(id);
+    return lot ? { x: lot.x + lot.w / 2, y: lot.y + lot.d / 2 } : null;
+  };
+
   if (!hasPlaneNode) {
-    items.push({
-      type: 'building',
-      id: 'hall',
-      x,
-      y: 0,
-      w: 3,
-      d: 3,
-      floors: 2,
-      style: 'solid',
-      color: '#efe6d2',
-      roof: 'hall',
-      label: t('scape.k8s.hall'),
-      info: { title: t('scape.k8s.hall'), kind: t('scape.k8s.hallKind'), lines: [t('scape.k8s.hallLine')], next: t('scape.k8s.hallNext') },
-    });
-    x += 5;
+    const lot = lotOf('hall');
+    if (lot) {
+      items.push({
+        type: 'building',
+        id: 'hall',
+        x: lot.x + 0.1,
+        y: lot.y + 0.1,
+        w: lot.w - 0.2,
+        d: lot.d - 0.2,
+        facing: lot.facing,
+        floors: 2,
+        style: 'solid',
+        color: '#efe6d2',
+        roof: 'hall',
+        label: t('scape.k8s.hall'),
+        info: { title: t('scape.k8s.hall'), kind: t('scape.k8s.hallKind'), lines: [t('scape.k8s.hallLine')], next: t('scape.k8s.hallNext') },
+      });
+    }
   }
-  const nodePos = new Map<string, number>();
+
   for (const node of nodes) {
+    const lot = lotOf(`node:${node.metadata.name}`);
+    if (!lot) continue;
     const mine = pods.filter((p) => p.status.nodeName === node.metadata.name);
     const condition = nodeCondition(cluster, node);
     const plane = node.spec.role === 'control-plane';
@@ -94,15 +145,15 @@ export function k8sScene(cluster: ClusterState | null, t: Translate): Scene {
     if (node.spec.unschedulable) badges.push({ icon: '🚧', tone: 'warn' });
     if (!condition.ready) badges.push({ icon: '⚡', tone: 'bad' });
     if (mine.some((p) => flagged.has(p.metadata.name))) badges.push({ icon: '🔍', tone: 'warn' });
-    nodePos.set(node.metadata.name, x);
     items.push({
       type: 'building',
       id: `node:${node.metadata.name}`,
-      x,
-      y: 0,
-      w: 3,
-      d: 3,
-      floors: Math.max(2, Math.min(7, Math.ceil(mine.length / 2) + 1)),
+      x: lot.x + 0.15,
+      y: lot.y + 0.15,
+      w: lot.w - 0.3,
+      d: lot.d - 0.3,
+      facing: lot.facing,
+      floors: Math.max(2, Math.min(8, Math.ceil(mine.length / 2) + 2)),
       style: condition.ready ? 'solid' : 'dark',
       color: plane ? '#efe6d2' : '#9cc3dc',
       roof: plane ? 'hall' : 'flat',
@@ -124,48 +175,49 @@ export function k8sScene(cluster: ClusterState | null, t: Translate): Scene {
         next: node.spec.unschedulable ? t('scape.k8s.uncordonNext', { name: node.metadata.name }) : t('scape.k8s.nodeNext', { name: node.metadata.name }),
       },
     });
-    x += 5;
   }
-  const streetEnd = Math.max(x, 10);
-  items.push({ type: 'road', id: 'avenue', cells: Array.from({ length: streetEnd + 4 }, (_, i) => ({ x: i - 1, y: 4 })), kind: 'main' });
 
   // 監査局
-  items.push({
-    type: 'building',
-    id: 'audit',
-    x: streetEnd + 1,
-    y: 0,
-    w: 3,
-    d: 3,
-    floors: 2,
-    style: 'solid',
-    color: '#d7c3a5',
-    roof: 'hall',
-    label: t('scape.k8s.audit'),
-    badges: findings.length > 0 ? [{ icon: `⚠${String(findings.length)}`, tone: 'warn' }] : [{ icon: '✓', tone: 'ok' }],
-    info: {
-      title: t('scape.k8s.audit'),
-      kind: t('scape.k8s.auditKind'),
-      lines:
-        findings.length === 0
-          ? [t('scape.k8s.auditClean')]
-          : findings.slice(0, 6).map((f) => t(f.issue === 'latest' ? 'scape.k8s.auditLatest' : 'scape.k8s.auditUntagged', { pod: f.owner, image: f.image })),
-      next: findings.length === 0 ? undefined : t('scape.k8s.auditNext'),
-    },
-  });
+  const auditLot = lotOf('audit');
+  if (auditLot) {
+    items.push({
+      type: 'building',
+      id: 'audit',
+      x: auditLot.x + 0.1,
+      y: auditLot.y + 0.1,
+      w: auditLot.w - 0.2,
+      d: auditLot.d - 0.2,
+      facing: auditLot.facing,
+      floors: 2,
+      style: 'solid',
+      color: '#d7c3a5',
+      roof: 'hall',
+      label: t('scape.k8s.audit'),
+      badges: findings.length > 0 ? [{ icon: `⚠${String(findings.length)}`, tone: 'warn' }] : [{ icon: '✓', tone: 'ok' }],
+      info: {
+        title: t('scape.k8s.audit'),
+        kind: t('scape.k8s.auditKind'),
+        lines:
+          findings.length === 0
+            ? [t('scape.k8s.auditClean')]
+            : findings.slice(0, 6).map((f) => t(f.issue === 'latest' ? 'scape.k8s.auditLatest' : 'scape.k8s.auditUntagged', { pod: f.owner, image: f.image })),
+        next: findings.length === 0 ? undefined : t('scape.k8s.auditNext'),
+      },
+    });
+  }
 
   // 待機広場（置き場の無い Pod）
-  const waiting = pods.filter((p) => p.status.nodeName === null && p.status.phase === 'Pending');
-  const yardW = Math.max(6, waiting.length * 2 + 2);
-  items.push({ type: 'plot', id: 'yard', x: 0, y: 6, w: yardW, d: 3, tone: 'warn', label: t('scape.k8s.yard') });
-  waiting.forEach((p, i) => {
+  waiting.forEach((p) => {
+    const lot = lotOf(`pending:${p.metadata.name}`);
+    if (!lot) return;
     items.push({
       type: 'building',
       id: `pending:${p.metadata.name}`,
-      x: 1 + i * 2,
-      y: 6.5,
-      w: 1.4,
-      d: 1.4,
+      x: lot.x + 0.3,
+      y: lot.y + 0.3,
+      w: lot.w - 0.6,
+      d: lot.d - 0.6,
+      facing: lot.facing,
       floors: 1,
       style: 'tent',
       color: colorOf(tenantOf(p)),
@@ -181,14 +233,15 @@ export function k8sScene(cluster: ClusterState | null, t: Translate): Scene {
   });
 
   // 入居企業（Deployment）の看板
-  let sx = yardW + 2;
-  for (const d of cluster.deployments.values()) {
+  for (const d of deployments) {
+    const lot = lotOf(`deploy:${d.metadata.name}`);
+    if (!lot) continue;
     const ok = d.status.readyReplicas >= d.spec.replicas;
     items.push({
       type: 'marker',
       id: `deploy:${d.metadata.name}`,
-      x: sx,
-      y: 7,
+      x: lot.x + lot.w / 2,
+      y: lot.y + lot.d / 2,
       icon: '🏢',
       label: `${d.metadata.name} ${String(d.status.readyReplicas)}/${String(d.spec.replicas)}`,
       tone: ok ? 'ok' : 'warn',
@@ -199,18 +252,18 @@ export function k8sScene(cluster: ClusterState | null, t: Translate): Scene {
         next: t('scape.k8s.tenantNext', { name: d.metadata.name }),
       },
     });
-    sx += 4;
   }
 
   // バス停（Service）と、つながる部屋のあるビルへの線
-  let bx = 0.5;
-  for (const svc of cluster.services.values()) {
+  for (const svc of services) {
+    const at = center(`svc:${svc.metadata.name}`);
+    if (!at) continue;
     const backing = pods.filter((p) => Object.entries(svc.spec.selector).length > 0 && Object.entries(svc.spec.selector).every(([k, v]) => p.metadata.labels[k] === v));
     items.push({
       type: 'marker',
       id: `svc:${svc.metadata.name}`,
-      x: bx,
-      y: 5,
+      x: at.x,
+      y: at.y,
       icon: '🚏',
       label: svc.metadata.name,
       tone: svc.status.endpoints.length > 0 ? 'info' : 'bad',
@@ -223,20 +276,23 @@ export function k8sScene(cluster: ClusterState | null, t: Translate): Scene {
     });
     const hosts = new Set(backing.map((p) => p.status.nodeName).filter((n): n is string => n !== null));
     for (const host of hosts) {
-      const nx = nodePos.get(host);
-      if (nx === undefined) continue;
-      items.push({ type: 'link', id: `svc:${svc.metadata.name}:${host}`, from: { x: bx, y: 5 }, to: { x: nx + 1.5, y: 3 }, style: 'dashed', tone: 'info', flow: true });
+      const to = center(`node:${host}`);
+      if (!to) continue;
+      items.push({ type: 'link', id: `svc:${svc.metadata.name}:${host}`, from: at, to, style: 'dashed', tone: 'info', flow: true });
     }
-    bx += 4;
   }
-  for (const ing of cluster.ingresses.values()) {
-    items.push({ type: 'marker', id: `ing:${ing.metadata.name}`, x: -1.5, y: 4, icon: '⛩', label: ing.metadata.name, tone: 'accent', info: { title: ing.metadata.name, kind: t('scape.k8s.gateKind'), lines: [], next: undefined } });
+  for (const ing of ingresses) {
+    const at = center(`ing:${ing.metadata.name}`);
+    if (!at) continue;
+    items.push({ type: 'marker', id: `ing:${ing.metadata.name}`, x: at.x, y: at.y, icon: '⛩', label: ing.metadata.name, tone: 'accent', info: { title: ing.metadata.name, kind: t('scape.k8s.gateKind'), lines: [], next: undefined } });
   }
 
   const looks = pods.map((p) => podLook(p).look);
+  const office = plan.blocks.find((b) => b.id === 'ward:office');
   return {
-    width: Math.max(streetEnd + 5, sx + 2),
-    height: 10,
+    width: plan.width,
+    height: plan.height,
+    plan,
     items,
     legend,
     stats: [
@@ -247,6 +303,6 @@ export function k8sScene(cluster: ClusterState | null, t: Translate): Scene {
       { icon: '🔥', label: t('scape.k8s.stat.broken'), value: looks.filter((l) => l === 'BackOff' || l === 'Failed').length },
       { icon: '🔍', label: t('scape.k8s.stat.audit'), value: findings.length },
     ],
-    focus: { x: Math.min(streetEnd, 8), y: 4 },
+    focus: office ? { x: office.x + office.w / 2, y: office.y + office.d / 2 } : { x: plan.width / 2, y: plan.height / 2 },
   };
 }

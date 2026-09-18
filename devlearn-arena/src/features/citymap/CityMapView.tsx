@@ -78,7 +78,7 @@ export function CityMapView({ input, selected, events, onSelect, label, fallback
       {failed ? (
         <div className="grid h-full place-items-center bg-[#6fab49] p-6 text-center text-sm font-bold text-[#1d2a1a]">{fallback}</div>
       ) : (
-        <div className="absolute bottom-24 left-2 flex flex-col gap-1">
+        <div className="absolute left-2 top-1/2 flex -translate-y-1/2 flex-col gap-1">
           {(
             [
               ['+', zoomLabels.in, () => mapRef.current?.zoomBy(1.25)],

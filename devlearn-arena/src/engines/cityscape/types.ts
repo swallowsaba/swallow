@@ -1,4 +1,5 @@
 import type { TKey } from '@/i18n';
+import type { Facing, TownPlan } from './plan';
 
 /**
  * 街の場面モデル。任務のシェルの状態（ファイル・Git・クラスタ・ネットワーク・GitHub）を、
@@ -42,6 +43,8 @@ export interface SceneBuilding {
   style: BuildStyle;
   color: string;
   roof: 'flat' | 'gable' | 'dome' | 'hall';
+  /** 正面（入口や看板）を向ける側。通りに面させるのに使う */
+  facing?: Facing | undefined;
   label?: string | undefined;
   badges?: Badge[] | undefined;
   /** 部屋（手前の面に並ぶ窓）。色と、赤や黄の印 */
@@ -119,6 +122,8 @@ export interface Scene {
   /** 使っているマスの大きさ */
   width: number;
   height: number;
+  /** 街区と道の割り付け。地区（ディレクトリ・ブランチ・ノード…）を碁盤の目に並べたもの */
+  plan: TownPlan;
   items: SceneItem[];
   stats: SceneStat[];
   legend: LegendEntry[];

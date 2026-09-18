@@ -1,10 +1,14 @@
 import type { PullRequest, Repo } from '@/engines/github/types';
+import { planTown, type PlanDistrict } from './plan';
 import type { Badge, BuildStyle, Scene, SceneItem, Translate } from './types';
 
 /**
  * GitHub の街（建築確認）。
+ *
  * リポジトリ = 市役所、Pull Request = 建築申請の建物、レビュー = 検査員の印、チェック = 検査の結果、
  * マージ = 本通りに完成、閉じた申請 = 取り壊し、Issue = 住民の陳情の掲示板、ワークフロー = 検査場。
+ *
+ * 市役所・本通り・申請通り・掲示板の 4 つの街区が碁盤の目に並び、通りでつながる。
  */
 
 export function pullLook(pull: PullRequest): { style: BuildStyle; badges: Badge[]; phase: 'draft' | 'checking' | 'failed' | 'review' | 'ready' | 'merged' | 'closed' } {
@@ -28,38 +32,80 @@ export function pullLook(pull: PullRequest): { style: BuildStyle; badges: Badge[
 export function githubScene(repo: Repo | null, t: Translate): Scene | null {
   if (repo === null) return null;
   const items: SceneItem[] = [];
-  items.push({
-    type: 'building',
-    id: 'hall',
-    x: 0,
-    y: 0,
-    w: 3,
-    d: 3,
-    floors: 2,
-    style: 'solid',
-    color: '#efe6d2',
-    roof: 'hall',
-    label: `${repo.owner}/${repo.name}`,
-    badges: repo.protections.length > 0 ? [{ icon: '🛡', tone: 'info' }] : undefined,
-    info: {
-      title: `${repo.owner}/${repo.name}`,
-      kind: t('scape.gh.hallKind'),
-      lines: [t('scape.gh.hallBranch', { name: repo.defaultBranch }), t('scape.gh.hallProtect', { n: repo.protections.length })],
-      next: t('scape.gh.hallNext'),
-    },
-  });
   const merged = repo.pulls.filter((p) => p.state === 'merged');
   const others = repo.pulls.filter((p) => p.state !== 'merged');
-  const mainLen = Math.max(8, 5 + merged.length * 3);
-  items.push({ type: 'road', id: 'main', cells: Array.from({ length: mainLen }, (_, x) => ({ x, y: 4 })), kind: 'main', label: repo.defaultBranch });
-  merged.forEach((pull, i) => {
+  const issues = repo.issues.slice(0, 10);
+
+  const districts: PlanDistrict[] = [
+    {
+      id: 'ward:hall',
+      label: `${repo.owner}/${repo.name}`,
+      tone: 'accent',
+      members: ['hall', ...(repo.workflows.size > 0 ? ['workflows'] : [])],
+      min: 2,
+    },
+    {
+      id: 'ward:main',
+      label: repo.defaultBranch,
+      tone: 'ok',
+      shape: 'row',
+      members: merged.map((p) => `pr:${String(p.number)}`),
+      min: 2,
+    },
+    {
+      id: 'ward:permit',
+      label: t('scape.gh.permitStreet'),
+      tone: 'warn',
+      members: others.map((p) => `pr:${String(p.number)}`),
+      min: 2,
+    },
+    {
+      id: 'ward:board',
+      label: t('scape.gh.boardWard'),
+      tone: 'info',
+      members: issues.map((i) => `issue:${String(i.number)}`),
+      min: 2,
+    },
+  ];
+  const plan = planTown(districts);
+  const lotOf = (id: string) => plan.lots.get(id);
+
+  const hallLot = lotOf('hall');
+  if (hallLot) {
+    items.push({
+      type: 'building',
+      id: 'hall',
+      x: hallLot.x + 0.1,
+      y: hallLot.y + 0.1,
+      w: hallLot.w - 0.2,
+      d: hallLot.d - 0.2,
+      facing: hallLot.facing,
+      floors: 2,
+      style: 'solid',
+      color: '#efe6d2',
+      roof: 'hall',
+      label: `${repo.owner}/${repo.name}`,
+      badges: repo.protections.length > 0 ? [{ icon: '🛡', tone: 'info' }] : undefined,
+      info: {
+        title: `${repo.owner}/${repo.name}`,
+        kind: t('scape.gh.hallKind'),
+        lines: [t('scape.gh.hallBranch', { name: repo.defaultBranch }), t('scape.gh.hallProtect', { n: repo.protections.length })],
+        next: t('scape.gh.hallNext'),
+      },
+    });
+  }
+
+  merged.forEach((pull) => {
+    const lot = lotOf(`pr:${String(pull.number)}`);
+    if (!lot) return;
     items.push({
       type: 'building',
       id: `pr:${String(pull.number)}`,
-      x: 4 + i * 3,
-      y: 1,
-      w: 2,
-      d: 2,
+      x: lot.x + 0.15,
+      y: lot.y + 0.15,
+      w: lot.w - 0.3,
+      d: lot.d - 0.3,
+      facing: lot.facing,
       floors: 3,
       style: 'solid',
       color: '#9cc3dc',
@@ -70,19 +116,19 @@ export function githubScene(repo: Repo | null, t: Translate): Scene | null {
     });
   });
 
-  // 申請通り
-  const appW = Math.max(8, others.length * 4 + 2);
-  items.push({ type: 'road', id: 'permits', cells: Array.from({ length: appW }, (_, x) => ({ x, y: 9 })), kind: 'plan', label: t('scape.gh.permitStreet') });
-  others.forEach((pull, i) => {
+  others.forEach((pull) => {
+    const lot = lotOf(`pr:${String(pull.number)}`);
+    if (!lot) return;
     const look = pullLook(pull);
     const failed = pull.checks.filter((c) => c.status === 'failure').map((c) => c.name);
     items.push({
       type: 'building',
       id: `pr:${String(pull.number)}`,
-      x: 1 + i * 4,
-      y: 6,
-      w: 2.5,
-      d: 2.5,
+      x: lot.x + 0.15,
+      y: lot.y + 0.15,
+      w: lot.w - 0.3,
+      d: lot.d - 0.3,
+      facing: lot.facing,
       floors: 3,
       style: look.style,
       color: '#9cc3dc',
@@ -102,16 +148,29 @@ export function githubScene(repo: Repo | null, t: Translate): Scene | null {
       },
     });
   });
-  const reach = others.length > 0 ? others.length * 4 + 1 : 0;
-  if (others.length > 0) items.push({ type: 'link', id: 'permits:hall', from: { x: 1.5, y: 6 }, to: { x: 1.5, y: 3 }, style: 'dashed', tone: 'info', flow: true });
+
+  const permitBlock = plan.blocks.find((b) => b.id === 'ward:permit');
+  const mainBlock = plan.blocks.find((b) => b.id === 'ward:main');
+  if (others.length > 0 && permitBlock && mainBlock) {
+    items.push({
+      type: 'link',
+      id: 'permits:hall',
+      from: { x: permitBlock.x + permitBlock.w / 2, y: permitBlock.y + permitBlock.d / 2 },
+      to: { x: mainBlock.x + mainBlock.w / 2, y: mainBlock.y + mainBlock.d / 2 },
+      style: 'dashed',
+      tone: 'info',
+      flow: true,
+    });
+  }
 
   // 検査場（ワークフロー）
-  if (repo.workflows.size > 0) {
+  const wfLot = lotOf('workflows');
+  if (repo.workflows.size > 0 && wfLot) {
     items.push({
       type: 'marker',
       id: 'workflows',
-      x: Math.max(appW, reach) + 1,
-      y: 7,
+      x: wfLot.x + wfLot.w / 2,
+      y: wfLot.y + wfLot.d / 2,
       icon: '🔬',
       label: t('scape.gh.inspection', { n: repo.workflows.size }),
       tone: 'info',
@@ -120,12 +179,14 @@ export function githubScene(repo: Repo | null, t: Translate): Scene | null {
   }
 
   // 陳情の掲示板（Issue）
-  repo.issues.slice(0, 10).forEach((issue, i) => {
+  issues.forEach((issue) => {
+    const lot = lotOf(`issue:${String(issue.number)}`);
+    if (!lot) return;
     items.push({
       type: 'marker',
       id: `issue:${String(issue.number)}`,
-      x: 0.5 + i * 2.5,
-      y: 11.5,
+      x: lot.x + lot.w / 2,
+      y: lot.y + lot.d / 2,
       icon: issue.state === 'open' ? '📋' : '✅',
       label: `#${String(issue.number)}`,
       tone: issue.state === 'open' ? 'warn' : 'ok',
@@ -139,8 +200,9 @@ export function githubScene(repo: Repo | null, t: Translate): Scene | null {
   });
 
   return {
-    width: Math.max(mainLen, appW, 26) + 4,
-    height: 14,
+    width: plan.width,
+    height: plan.height,
+    plan,
     items,
     legend: [
       { sample: 'marker', icon: '🏛', name: t('scape.gh.legend.hall'), meaning: t('scape.gh.legend.hallMeaning'), command: 'gh repo view' },
@@ -157,6 +219,6 @@ export function githubScene(repo: Repo | null, t: Translate): Scene | null {
       { icon: '🏢', label: t('scape.gh.stat.merged'), value: merged.length },
       { icon: '📋', label: t('scape.gh.stat.issues'), value: repo.issues.filter((i) => i.state === 'open').length },
     ],
-    focus: { x: 6, y: 6 },
+    focus: mainBlock ? { x: mainBlock.x + mainBlock.w / 2, y: mainBlock.y + mainBlock.d / 2 } : { x: plan.width / 2, y: plan.height / 2 },
   };
 }
