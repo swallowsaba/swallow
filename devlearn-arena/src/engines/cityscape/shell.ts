@@ -1,7 +1,6 @@
 import type { ShellState } from '@/engines/kernel/registry';
 import { HOME } from '@/engines/kernel/path';
 import { metaOf, type VfsState } from '@/engines/kernel/vfs';
-import { diffVfs } from '@/visual/treeLayout';
 import { planTown, type PlanDistrict } from './plan';
 import type { Scene, SceneItem, Translate } from './types';
 
@@ -14,6 +13,23 @@ import type { Scene, SceneItem, Translate } from './types';
  * 街区は碁盤の目に並び、家は街区の外周（通りに面した側）から埋まる。
  * 親子のディレクトリは、街区の看板と連絡線でつなぐ。
  */
+
+/** 直前の状態から増えた・消えた・書き換わったパス */
+function diffVfs(previous: VfsState | undefined, current: VfsState): { added: string[]; removed: string[]; changed: string[] } {
+  if (!previous) return { added: [], removed: [], changed: [] };
+  const added: string[] = [];
+  const changed: string[] = [];
+  const removed: string[] = [];
+  for (const [path, node] of current.nodes) {
+    const before = previous.nodes.get(path);
+    if (!before) added.push(path);
+    else if (before.kind === 'file' && node.kind === 'file' && before.content !== node.content) changed.push(path);
+  }
+  for (const path of previous.nodes.keys()) {
+    if (!current.nodes.has(path)) removed.push(path);
+  }
+  return { added, removed, changed };
+}
 
 const MAX_FILES = 12;
 const MAX_DEPTH = 4;

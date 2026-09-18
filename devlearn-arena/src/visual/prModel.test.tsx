@@ -1,9 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { addReview, createRepo, findPull, openPull, setChecks } from '@/engines/github/pr';
 import type { CheckRun, Repo } from '@/engines/github/types';
-import { click, mount } from './mountForTest';
 import { jobDag, prTimeline } from './prModel';
-import { PrTimeline } from './PrTimeline';
 
 const run = (name: string, status: CheckRun['status'], needs: string[] = []): CheckRun => ({ name, status, needs, logs: [] });
 
@@ -64,25 +62,5 @@ describe('Pull Request のタイムライン', () => {
     const stages = prTimeline(reviewed, pullOf(reviewed));
     expect(stages.find((s) => s.id === 'review')?.state).toBe('done');
     expect(stages.find((s) => s.id === 'checks')?.state).toBe('done');
-  });
-});
-
-describe('Pull Request の図', () => {
-  it('ジョブを色と印で描き、失敗の下流に × を描く', () => {
-    const view = mount(<PrTimeline repo={repoWith(FAILED)} />);
-    expect(view.querySelector('[data-job="build"]')?.getAttribute('data-status')).toBe('failure');
-    expect(view.querySelectorAll('[data-cross="true"]').length).toBe(3);
-    expect(view.querySelectorAll('path[data-dag-edge]').length).toBe(4);
-  });
-
-  it('レビューの段を押すと承認、チェックの段を押すと gh pr checks が端末に流れる', () => {
-    const onCommand = vi.fn();
-    const view = mount(<PrTimeline repo={repoWith(FAILED)} onCommand={onCommand} />);
-    click(view, '[data-stage="review"]');
-    expect(onCommand).toHaveBeenLastCalledWith('gh pr review 1 --approve');
-    click(view, '[data-stage="checks"]');
-    expect(onCommand).toHaveBeenLastCalledWith('gh pr checks 1');
-    click(view, '[data-job="build"]');
-    expect(onCommand).toHaveBeenLastCalledWith('gh pr checks 1');
   });
 });

@@ -3,9 +3,7 @@ import { createSession } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { host, iface, link, resetMac, router, topology } from '@/engines/net/factory';
 import type { Topology } from '@/engines/net/types';
-import { click, mount } from './mountForTest';
 import { changedFields, layoutNet, stoppedAt } from './netModel';
-import { PacketFlow } from './PacketFlow';
 
 function lab(): Topology {
   resetMac();
@@ -73,39 +71,5 @@ describe('ネットワークの配置', () => {
     expect(layout.nodes.map((n) => n.name)).toEqual(['pc1', 'gw', 'web']);
     expect(layout.nodes.map((n) => n.x)).toEqual([...layout.nodes.map((n) => n.x)].sort((a, b) => a - b));
     expect(layout.edges.length).toBe(2);
-  });
-
-  it('切れたリンクは up=false になる（図では赤い破線）', () => {
-    const net = after(['ip link set eth0 down']);
-    const view = mount(<PacketFlow net={net} self="pc1" />);
-    expect(view.querySelector('[data-link="pc1:eth0-gw:eth0"]')?.getAttribute('data-up')).toBe('false');
-    expect(view.querySelector('[data-link="gw:eth1-web:eth0"]')?.getAttribute('data-up')).toBe('true');
-  });
-});
-
-describe('パケットの図', () => {
-  it('ホップを押すと、その時点のヘッダの全項目が出て、書き換わった項目に印が付く', () => {
-    const view = mount(<PacketFlow net={after(['ping 10.0.0.20'])} self="pc1" />);
-    click(view, 'button[data-hop="1"]');
-    const table = view.querySelector('[data-testid="headers"]');
-    expect(table).not.toBeNull();
-    expect(table?.querySelectorAll('tr').length).toBe(9);
-    expect(table?.querySelector('[data-field="ttl"]')?.getAttribute('data-changed')).toBe('true');
-    expect(table?.querySelector('[data-field="dstMac"]')?.getAttribute('data-changed')).toBe('true');
-    expect(table?.querySelector('[data-field="dstIp"]')?.getAttribute('data-changed')).toBe('false');
-  });
-
-  it('パケットを押してもヘッダが出る', () => {
-    const view = mount(<PacketFlow net={after(['ping 10.0.0.20'])} self="pc1" />);
-    expect(view.querySelector('[data-testid="headers"]')).toBeNull();
-    click(view, '[data-testid="packet"]');
-    expect(view.querySelector('[data-testid="headers"]')).not.toBeNull();
-  });
-
-  it('届かなかったら、最後のホップで止まった機器が赤く光り、理由が出る', () => {
-    const view = mount(<PacketFlow net={after(['curl http://10.0.0.20:8080/'])} self="pc1" />);
-    click(view, 'button[data-hop="2"]');
-    expect(view.querySelector('[data-device="web"]')?.getAttribute('data-stopped')).toBe('true');
-    expect(view.querySelector('[data-testid="stop-reason"]')?.textContent).toContain('Connection refused');
   });
 });

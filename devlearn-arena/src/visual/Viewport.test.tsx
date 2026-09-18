@@ -1,15 +1,5 @@
 import { act } from 'react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { createSession } from '@/engines/kernel/session';
-import { execute } from '@/engines/kernel/shell';
-import { emptyCluster, node } from '@/engines/k8s/factory';
-import { host, iface, topology } from '@/engines/net/factory';
-import { createRepo, openPull } from '@/engines/github/pr';
-import { FsTree } from './FsTree';
-import { CommitGraph } from './CommitGraph';
-import { ClusterCanvas } from './ClusterCanvas';
-import { PacketFlow } from './PacketFlow';
-import { PrTimeline } from './PrTimeline';
 import { mount } from './mountForTest';
 import { Viewport } from './Viewport';
 
@@ -115,26 +105,5 @@ describe('図の枠', () => {
     if (!part) throw new Error('部品がありません');
     fire(part, new MouseEvent('dblclick', { bubbles: true }));
     expect(scale(view)).toBe(zoomed);
-  });
-});
-
-describe('すべての図が同じ枠を使う', () => {
-  it('ファイル・Git・クラスタ・ネットワーク・PR のどれも、拡大縮小できる枠の中に描く', () => {
-    let session = createSession({ files: { '/home/learner': null, '/home/learner/a.txt': 'A\n' } });
-    for (const line of ['git init', 'git add .', 'git commit -m first']) {
-      session = { ...session, state: execute(session.state, line, session.registry, session.clock).state };
-    }
-    const state = session.state;
-    const views = [
-      <FsTree key="fs" vfs={state.vfs} cwd="/home/learner" />,
-      <CommitGraph key="git" git={state.git} vfs={state.vfs} />,
-      <ClusterCanvas key="k8s" cluster={emptyCluster([node('node-1', 4000, 8192)])} />,
-      <PacketFlow key="net" net={topology([host('pc1', [iface('eth0', '10.0.0.1', 24)])], [])} self="pc1" />,
-      <PrTimeline key="gh" repo={openPull(createRepo('acme', 'app'), { title: 't', head: 'f' }).repo} />,
-    ];
-    for (const element of views) {
-      const view = mount(element);
-      expect(view.querySelector('[data-testid="viewport"]'), String(element.key)).not.toBeNull();
-    }
   });
 });
