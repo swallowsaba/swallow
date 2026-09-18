@@ -1,77 +1,118 @@
 import { motion } from 'framer-motion';
-import { EYES, FACE, HAIR, INK, MOOD_COLOR, SKIN, type Mood } from './faces';
+import { useId } from 'react';
+import {
+  BADGE, BADGE_GLYPH, BLUSH, BROW, BUST, BUST_INNER, COAT, COAT_INNER, EAR, EYE, EYE_ALMOND, EYE_CLOSED,
+  EYE_SHAPE, FACE_BOX, HAIR, HAIR_LIGHT, HAIR_PATH, HAIR_SHINE, HEAD_PATH, INK, JAW_SHADE, LINE, MOOD_COLOR,
+  MOUTH, NECK, NECK_SHADE, NOSE, SKIN, SKIN_SHADE, type Mood,
+} from './faces';
 
 /**
- * 住民の顔。苦情・対応待ち・評価の 3 つの気持ちを、街の絵と同じ線で描く。
- * 絵文字を使わないので、どの環境でも同じ絵になり、街の絵の中で浮かない。
+ * 住民の顔。苦情・対応待ち・評価を、目・眉・口の形で描き分ける。
+ *
+ * 首から上を丸く切り抜いた人の像にして、地面に顔だけが浮かないようにする。
+ * 同じ形を canvas 版（faceCanvas.ts）でも使うので、地図の中と説明の中で同じ人に見える。
  */
 
-/** 顔の中身だけ。40×40 の枠に描く。ほかの絵の中に置くときはこれを使う */
-export function FaceShapes({ mood }: { mood: Mood }) {
+/** 顔の中身。48×48 の枠に描く */
+function FaceArt({ mood, id }: { mood: Mood; id: string }) {
   const color = MOOD_COLOR[mood];
+  const eye = EYE_SHAPE[mood];
+  const mouth = MOUTH[mood];
+  const badge = BADGE_GLYPH[mood];
   return (
     <>
-      <circle cx={FACE.head.cx} cy={FACE.head.cy} r={FACE.head.r + 4.5} fill="#fffaf0" stroke={color.ring} strokeWidth={2.5} />
-      <circle cx={FACE.ear.left} cy={FACE.ear.y} r={FACE.ear.r} fill={SKIN} stroke={INK} strokeWidth={1.6} />
-      <circle cx={FACE.ear.right} cy={FACE.ear.y} r={FACE.ear.r} fill={SKIN} stroke={INK} strokeWidth={1.6} />
-      <circle cx={FACE.head.cx} cy={FACE.head.cy} r={FACE.head.r} fill={SKIN} stroke={INK} strokeWidth={2} />
-      <path d={FACE.hair} fill={HAIR} stroke={INK} strokeWidth={1.6} strokeLinejoin="round" />
+      <defs>
+        <clipPath id={`${id}-round`}>
+          <circle cx={24} cy={24} r={22.2} />
+        </clipPath>
+        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor={color.tint} />
+        </linearGradient>
+        <linearGradient id={`${id}-skin`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0.15" stopColor={SKIN} />
+          <stop offset="1" stopColor={SKIN_SHADE} />
+        </linearGradient>
+      </defs>
 
-      {mood === 'happy' ? (
-        <>
-          <ellipse cx={11.5} cy={26} rx={2.6} ry={1.7} fill={color.accent} opacity={0.75} />
-          <ellipse cx={28.5} cy={26} rx={2.6} ry={1.7} fill={color.accent} opacity={0.75} />
-        </>
-      ) : null}
+      <g clipPath={`url(#${id}-round)`}>
+        <rect x={0} y={0} width={FACE_BOX} height={FACE_BOX} fill={`url(#${id}-bg)`} />
 
-      {mood === 'happy' ? (
-        <>
-          <path d={`M${String(EYES.left - 2.6)} ${String(EYES.y + 0.6)} Q${String(EYES.left)} ${String(EYES.y - 2.8)} ${String(EYES.left + 2.6)} ${String(EYES.y + 0.6)}`} fill="none" stroke={INK} strokeWidth={2} strokeLinecap="round" />
-          <path d={`M${String(EYES.right - 2.6)} ${String(EYES.y + 0.6)} Q${String(EYES.right)} ${String(EYES.y - 2.8)} ${String(EYES.right + 2.6)} ${String(EYES.y + 0.6)}`} fill="none" stroke={INK} strokeWidth={2} strokeLinecap="round" />
-        </>
-      ) : mood === 'waiting' ? (
-        <>
-          <path d={`M${String(EYES.left - 2.4)} ${String(EYES.y - 0.6)} L${String(EYES.left + 2.4)} ${String(EYES.y - 0.6)}`} stroke={INK} strokeWidth={2} strokeLinecap="round" />
-          <path d={`M${String(EYES.right - 2.4)} ${String(EYES.y - 0.6)} L${String(EYES.right + 2.4)} ${String(EYES.y - 0.6)}`} stroke={INK} strokeWidth={2} strokeLinecap="round" />
-          <circle cx={EYES.left} cy={EYES.y + 1} r={1.4} fill={INK} />
-          <circle cx={EYES.right} cy={EYES.y + 1} r={1.4} fill={INK} />
-        </>
-      ) : (
-        <>
-          <circle cx={EYES.left} cy={EYES.y} r={EYES.r} fill={INK} />
-          <circle cx={EYES.right} cy={EYES.y} r={EYES.r} fill={INK} />
-        </>
-      )}
+        {/* 肩と首 */}
+        <path d={BUST} fill={COAT} />
+        <path d={BUST_INNER} fill={COAT_INNER} />
+        <path d={NECK} fill={`url(#${id}-skin)`} />
+        <path d={NECK_SHADE} fill="rgba(0,0,0,0.14)" />
 
-      {FACE.brow[mood].map((d) => (
-        <path key={d} d={d} stroke={INK} strokeWidth={2.2} strokeLinecap="round" fill="none" />
-      ))}
+        {/* 耳 */}
+        <ellipse cx={EAR.left} cy={EAR.y} rx={EAR.rx} ry={EAR.ry} fill={SKIN_SHADE} />
+        <ellipse cx={EAR.right} cy={EAR.y} rx={EAR.rx} ry={EAR.ry} fill={SKIN_SHADE} />
 
-      <path d={FACE.mouth[mood]} fill="none" stroke={INK} strokeWidth={2.2} strokeLinecap="round" />
+        {/* 輪郭 */}
+        <path d={HEAD_PATH} fill={`url(#${id}-skin)`} />
+        <path d={JAW_SHADE} fill="rgba(0,0,0,0.07)" />
 
-      {/* 気持ちの印：苦情は怒りの筋、対応待ちは汗 */}
-      {mood === 'angry' ? (
-        <g stroke={color.accent} strokeWidth={2} strokeLinecap="round">
-          <path d="M30 8 L34.5 8" />
-          <path d="M31 11 L35.5 11" />
-          <path d="M33 5.5 L33 9.5" />
+        {/* 髪 */}
+        <path d={HAIR_PATH} fill={HAIR} />
+        <path d={HAIR_SHINE} fill="none" stroke={HAIR_LIGHT} strokeWidth={1.8} strokeLinecap="round" opacity={0.9} />
+
+        {/* ほほ */}
+        <ellipse cx={BLUSH.left} cy={BLUSH.y} rx={BLUSH.rx} ry={BLUSH.ry} fill={color.blush} opacity={0.45} />
+        <ellipse cx={BLUSH.right} cy={BLUSH.y} rx={BLUSH.rx} ry={BLUSH.ry} fill={color.blush} opacity={0.45} />
+
+        {/* 目 */}
+        {eye === 'closed' ? (
+          <g fill="none" stroke={INK} strokeWidth={1.9} strokeLinecap="round">
+            <path d={EYE_CLOSED} transform={`translate(${String(EYE.left)} ${String(EYE.y)})`} />
+            <path d={EYE_CLOSED} transform={`translate(${String(EYE.right)} ${String(EYE.y)})`} />
+          </g>
+        ) : (
+          ([['left', 1], ['right', -1]] as const).map(([side, dir]) => (
+            <g key={side} transform={`translate(${String(EYE[side])} ${String(EYE.y)}) rotate(${String(eye.rotate * dir)}) scale(1 ${String(eye.scaleY)})`}>
+              <path d={EYE_ALMOND} fill={INK} />
+              <circle cx={-1} cy={-1.1} r={0.95} fill="#ffffff" opacity={0.95} />
+            </g>
+          ))
+        )}
+
+        {/* 眉 */}
+        <g fill="none" stroke={LINE} strokeWidth={2} strokeLinecap="round">
+          {BROW[mood].map((d) => (
+            <path key={d} d={d} />
+          ))}
         </g>
-      ) : mood === 'waiting' ? (
-        <path d="M33 8 Q36 12.5 33 14 Q30 12.5 33 8 Z" fill={color.accent} stroke={INK} strokeWidth={1.4} />
-      ) : null}
+
+        {/* 鼻と口 */}
+        <path d={NOSE} fill="none" stroke="rgba(42,33,24,0.45)" strokeWidth={1.4} strokeLinecap="round" />
+        {mouth.stroke ? <path d={mouth.stroke} fill="none" stroke={INK} strokeWidth={2.1} strokeLinecap="round" /> : null}
+        {mouth.fill ? <path d={mouth.fill} fill={INK} /> : null}
+        {mouth.tongue ? <path d={mouth.tongue} fill="#e07b7b" /> : null}
+      </g>
+
+      <circle cx={24} cy={24} r={22.2} fill="none" stroke={color.ring} strokeWidth={1.8} />
+
+      {/* 右上の記章 */}
+      <circle cx={BADGE.cx} cy={BADGE.cy} r={BADGE.r} fill={color.accent} stroke="#ffffff" strokeWidth={2} />
+      {badge.stroke?.map((d) => (
+        <path key={d} d={d} fill="none" stroke="#ffffff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      ))}
+      {badge.dots?.map((cx) => (
+        <circle key={cx} cx={cx} cy={BADGE.cy} r={1.1} fill="#ffffff" />
+      ))}
     </>
   );
 }
 
 const WOBBLE: Record<Mood, Record<string, number[]>> = {
-  angry: { rotate: [0, -4, 4, -3, 0] },
-  waiting: { rotate: [0, 2, 0, -2, 0] },
-  happy: { y: [0, -2.5, 0] },
+  angry: { rotate: [0, -3.5, 3.5, -2.5, 0] },
+  waiting: { rotate: [0, 1.8, 0, -1.8, 0] },
+  happy: { y: [0, -2.2, 0] },
 };
 
 /** ほかの絵（SVG）の中に顔を置く。(x, y) は左上、size は 1 辺 */
 export function MoodMark({ mood, x, y, size, animate = false }: { mood: Mood; x: number; y: number; size: number; animate?: boolean }) {
-  const k = size / FACE.size;
+  const id = useId().replace(/[^\w-]/g, '');
+  const k = size / FACE_BOX;
   return (
     <motion.g
       transform={`translate(${String(x)} ${String(y)}) scale(${String(k)})`}
@@ -80,7 +121,7 @@ export function MoodMark({ mood, x, y, size, animate = false }: { mood: Mood; x:
       style={{ transformOrigin: `${String(x + size / 2)}px ${String(y + size / 2)}px` }}
       data-mood={mood}
     >
-      <FaceShapes mood={mood} />
+      <FaceArt mood={mood} id={id} />
     </motion.g>
   );
 }
@@ -88,7 +129,7 @@ export function MoodMark({ mood, x, y, size, animate = false }: { mood: Mood; x:
 /** 顔だけを 1 枚の絵として置く */
 export function MoodFace({
   mood,
-  size = 36,
+  size = 40,
   animate = false,
   label,
   className,
@@ -102,11 +143,12 @@ export function MoodFace({
   label?: string;
   className?: string;
 }) {
+  const id = useId().replace(/[^\w-]/g, '');
   return (
     <motion.svg
       width={size}
       height={size}
-      viewBox={`0 0 ${String(FACE.size)} ${String(FACE.size)}`}
+      viewBox={`0 0 ${String(FACE_BOX)} ${String(FACE_BOX)}`}
       className={className}
       role={label === undefined ? undefined : 'img'}
       aria-label={label}
@@ -114,9 +156,9 @@ export function MoodFace({
       data-mood={mood}
       animate={animate ? WOBBLE[mood] : undefined}
       transition={animate ? { repeat: Infinity, duration: mood === 'angry' ? 0.9 : 1.6, repeatDelay: 0.6 } : undefined}
-      style={{ flexShrink: 0 }}
+      style={{ flexShrink: 0, overflow: 'visible' }}
     >
-      <FaceShapes mood={mood} />
+      <FaceArt mood={mood} id={id} />
     </motion.svg>
   );
 }

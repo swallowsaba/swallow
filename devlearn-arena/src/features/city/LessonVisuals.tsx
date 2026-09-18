@@ -10,8 +10,8 @@ import { useT } from '@/i18n/useT';
 import { CITY_COLOR } from '@/visual/game/cityColor';
 import { Icon } from '@/ui/Icon';
 import { FacilityPlot, PLOT_H, PLOT_W } from '@/visual/game/cityArt';
-import { MoodMark } from '@/visual/game/MoodFace';
-import type { Mood } from '@/visual/game/faces';
+import { IsoCivic, IsoHouse, IsoLamp, IsoRoad, IsoTree, IsoVacantLot, SpeechBubble, Villager } from '@/visual/game/scene';
+import { iso } from '@/visual/game/isoMath';
 
 /**
  * 施設の学習と依頼に添える図解。文章だけで終わらせず、街の絵と実際の状態図で「何が起きるのか」を見せる。
@@ -29,56 +29,52 @@ function Frame({ label, children, testId }: { label: string; children: React.Rea
   );
 }
 
-/** 小さな家（斜め見下ろし風） */
-function House({ x, y, color, roof }: { x: number; y: number; color: string; roof: string }) {
-  return (
-    <g>
-      <polygon points={`${String(x)},${String(y + 14)} ${String(x + 22)},${String(y + 24)} ${String(x + 22)},${String(y + 50)} ${String(x)},${String(y + 40)}`} fill={color} stroke={INK} strokeWidth={1.5} />
-      <polygon points={`${String(x + 22)},${String(y + 24)} ${String(x + 44)},${String(y + 14)} ${String(x + 44)},${String(y + 40)} ${String(x + 22)},${String(y + 50)}`} fill={color} stroke={INK} strokeWidth={1.5} style={{ filter: 'brightness(0.85)' }} />
-      <polygon points={`${String(x - 3)},${String(y + 15)} ${String(x + 22)},${String(y - 4)} ${String(x + 47)},${String(y + 15)} ${String(x + 22)},${String(y + 26)}`} fill={roof} stroke={INK} strokeWidth={1.5} />
-    </g>
-  );
-}
-
-/** 住民の顔。中心を (x, y) に合わせて置く */
-function Face({ x, y, mood, size = 34, animate = false }: { x: number; y: number; mood: Mood; size?: number; animate?: boolean }) {
-  return <MoodMark mood={mood} x={x - size / 2} y={y - size / 2} size={size} animate={animate} />;
-}
-
-/** 1. 困りごと：施設が無い街で、住民が困っている場面 */
+/** 1. 困りごと：施設が無い街の一角。住民が空き地の前で困っている */
 export function TroubleScene({ facility, track, animate }: { facility: Facility; track: MissionTrack; animate: boolean }) {
   const t = useT();
   const color = CITY_COLOR[track];
   return (
     <Frame label={t('visual.trouble', { name: facility.name })} testId="visual-trouble">
-      <svg viewBox="0 0 360 150" className="h-auto w-full" role="img" aria-label={t('visual.trouble', { name: facility.name })}>
-        <rect x={0} y={96} width={360} height={54} fill="#8cc063" />
-        <rect x={0} y={112} width={360} height={16} fill="#8a8f96" />
-        <line x1={0} x2={360} y1={120} y2={120} stroke="#fff" strokeDasharray="10 8" strokeWidth={2} />
-        <House x={20} y={52} color="#f2e4cf" roof={color.roof} />
-        <House x={80} y={58} color="#e8c9a2" roof="#7a4f3f" />
-        {/* 施設の予定地 */}
-        <g transform="translate(160 30) scale(0.55)">
-          <FacilityPlot kind={facility.building} track={track} state="locked" x={0} y={0} animate={false} />
-        </g>
-        <g>
-          <polygon points="290,70 305,44 320,70" fill="#f2c14e" stroke={INK} strokeWidth={2} />
-          <text x={305} y={66} fontSize={16} fontWeight={900} textAnchor="middle" fill={INK}>
-            !
-          </text>
-          <rect x={303} y={70} width={4} height={30} fill="#6b4a2f" />
-        </g>
-        <motion.g
-          animate={animate ? { y: [0, -3, 0] } : { y: 0 }}
-          transition={animate ? { repeat: Infinity, duration: 1.2 } : { duration: 0 }}
-        >
-          <Face x={140} y={104} mood="angry" animate={animate} />
-          <Face x={248} y={104} mood="angry" animate={animate} />
-          <rect x={112} y={4} width={176} height={26} rx={12} fill="#fff" stroke={INK} strokeWidth={2} />
-          <text x={200} y={22} fontSize={12} fontWeight={800} textAnchor="middle" fill={INK}>
-            {t('visual.troubleBubble')}
-          </text>
-        </motion.g>
+      <svg viewBox="-120 -34 236 128" className="h-auto w-full" role="img" aria-label={t('visual.trouble', { name: facility.name })}>
+        <defs>
+          <linearGradient id="trouble-sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#e2f1ff" />
+            <stop offset="1" stopColor="#f5f9f0" />
+          </linearGradient>
+          <linearGradient id="trouble-grass" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#8fc161" />
+            <stop offset="1" stopColor="#74a64e" />
+          </linearGradient>
+        </defs>
+        <rect x={-120} y={-34} width={236} height={128} fill="url(#trouble-sky)" />
+
+        {/* 地面 */}
+        <polygon
+          points={[iso(-0.3, -0.35), iso(5, -0.35), iso(5, 3.8), iso(-0.3, 3.8)]
+            .map((q) => `${String(q.x)},${String(q.y)}`)
+            .join(' ')}
+          fill="url(#trouble-grass)"
+        />
+
+        {/* 奥の木 */}
+        <IsoTree x={-0.15} y={0.15} scale={0.55} seed={3} />
+        <IsoTree x={4.85} y={0.35} scale={0.5} seed={11} />
+
+        {/* 通り */}
+        <IsoRoad x={-0.3} y={1.35} w={5.3} d={0.9} along="x" />
+
+        {/* 両どなりは建っているのに、真ん中だけが空いている */}
+        <IsoHouse x={0.25} y={-0.1} w={1.25} d={1.05} h={0.88} wall="#f2e6d2" roof={color.roof} lit />
+        <IsoVacantLot x={1.95} y={-0.15} w={1.5} d={1.25} label="?" />
+        <IsoHouse x={3.5} y={-0.1} w={1.25} d={1.05} h={0.8} wall="#e9d3b4" roof="#7a4f3f" />
+
+        <IsoLamp x={4.6} y={2.55} />
+
+        {/* 困っている住民 */}
+        <Villager x={1.4} y={3.4} mood="angry" animate={animate} raiseArm coat="#6b7c8c" />
+        <Villager x={2.15} y={3.55} mood="angry" animate={animate} coat="#8a6a5a" scale={0.9} />
+
+        <SpeechBubble x={-40} y={2} text={t('visual.troubleBubble')} width={152} />
       </svg>
     </Frame>
   );
@@ -109,19 +105,34 @@ export function AnalogyVisual({ facility, track }: { facility: Facility; track: 
   );
 }
 
-/** 3. なぜ必要か：無い街とある街を比べる */
+/** 3. なぜ必要か：同じ一角を、施設が無いときとあるときで見比べる */
 export function WhyVisual({ facility, track }: { facility: Facility; track: MissionTrack }) {
   const t = useT();
+  const color = CITY_COLOR[track];
   const side = (ok: boolean) => (
-    <div className={`flex flex-col items-center gap-1 rounded-lg border p-2 ${ok ? 'border-[var(--u-ok)] bg-[var(--u-ok-soft)]' : 'border-[var(--u-bad)] bg-[var(--u-bad-soft)]'}`}>
-      <span className="text-[12px] font-semibold">{ok ? t('visual.with', { name: facility.name }) : t('visual.without', { name: facility.name })}</span>
-      <svg viewBox={`0 0 ${String(PLOT_W)} ${String(PLOT_H + 40)}`} className="h-28 w-auto" aria-hidden>
-        <FacilityPlot kind={facility.building} track={track} state={ok ? 'complete' : 'locked'} x={0} y={0} animate={false} />
-        <Face x={32} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} size={32} />
-        <Face x={75} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} size={32} />
-        <Face x={118} y={PLOT_H + 20} mood={ok ? 'happy' : 'angry'} size={32} />
+    <div className={`overflow-hidden rounded-lg border ${ok ? 'border-[var(--u-ok)]' : 'border-[var(--u-bad)]'}`}>
+      <div className={`px-2 py-1 text-[11px] font-semibold ${ok ? 'bg-[var(--u-ok-soft)] text-[var(--u-ok)]' : 'bg-[var(--u-bad-soft)] text-[var(--u-bad)]'}`}>
+        {ok ? t('visual.with', { name: facility.name }) : t('visual.without', { name: facility.name })}
+      </div>
+      <svg viewBox="-72 -50 148 118" className="h-auto w-full" aria-hidden>
+        <rect x={-72} y={-50} width={148} height={118} fill={ok ? '#eef8f1' : '#fdf1ef'} />
+        <polygon
+          points={[iso(-0.3, -0.3), iso(3.3, -0.3), iso(3.3, 2.9), iso(-0.3, 2.9)]
+            .map((q) => `${String(q.x)},${String(q.y)}`)
+            .join(' ')}
+          fill={ok ? '#8fc161' : '#9db77f'}
+        />
+        <IsoRoad x={-0.3} y={1.35} w={3.6} d={0.8} along="x" />
+        {ok ? (
+          <IsoCivic x={0.5} y={-0.2} w={1.6} d={1.3} h={1} roof={color.roof} />
+        ) : (
+          <IsoVacantLot x={0.5} y={-0.2} w={1.6} d={1.3} label="?" />
+        )}
+        <IsoHouse x={2.35} y={-0.15} w={0.95} d={0.95} h={0.72} wall="#f2e6d2" roof={color.roof} lit={ok} />
+        <Villager x={0.75} y={2.55} mood={ok ? 'happy' : 'angry'} scale={0.8} coat="#6b7c8c" />
+        <Villager x={1.45} y={2.7} mood={ok ? 'happy' : 'angry'} scale={0.74} coat="#8a6a5a" />
       </svg>
-      <span className="text-[11px]">{ok ? t('visual.withLead') : t('visual.withoutLead')}</span>
+      <p className="px-2 pb-1.5 text-[11px] text-[var(--u-text-2)]">{ok ? t('visual.withLead') : t('visual.withoutLead')}</p>
     </div>
   );
   return (

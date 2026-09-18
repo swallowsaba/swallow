@@ -1,4 +1,8 @@
-import { EYES, FACE, HAIR, INK, MOOD_COLOR, SKIN, type Mood } from './faces';
+import {
+  BADGE, BADGE_GLYPH, BLUSH, BROW, BUST, BUST_INNER, COAT, COAT_INNER, EAR, EYE, EYE_ALMOND, EYE_CLOSED,
+  EYE_SHAPE, FACE_BOX, HAIR, HAIR_LIGHT, HAIR_PATH, HAIR_SHINE, HEAD_PATH, INK, JAW_SHADE, LINE, MOOD_COLOR,
+  MOUTH, NECK, NECK_SHADE, NOSE, SKIN, SKIN_SHADE, type Mood,
+} from './faces';
 
 /**
  * 住民の顔を canvas に描く。形は faces.ts の指定をそのまま使うので、
@@ -7,7 +11,15 @@ import { EYES, FACE, HAIR, INK, MOOD_COLOR, SKIN, type Mood } from './faces';
 
 type Ctx = CanvasRenderingContext2D;
 
-function stroke(ctx: Ctx, d: string, width: number, color = INK): void {
+function fill(ctx: Ctx, d: string, color: string, alpha = 1): void {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.fill(new Path2D(d));
+  ctx.restore();
+}
+
+function stroke(ctx: Ctx, d: string, color: string, width: number): void {
   ctx.strokeStyle = color;
   ctx.lineWidth = width;
   ctx.lineCap = 'round';
@@ -15,11 +27,14 @@ function stroke(ctx: Ctx, d: string, width: number, color = INK): void {
   ctx.stroke(new Path2D(d));
 }
 
-function dot(ctx: Ctx, x: number, y: number, r: number, fill: string): void {
-  ctx.fillStyle = fill;
+function ellipse(ctx: Ctx, cx: number, cy: number, rx: number, ry: number, color: string, alpha = 1): void {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
 }
 
 /**
@@ -28,79 +43,96 @@ function dot(ctx: Ctx, x: number, y: number, r: number, fill: string): void {
  */
 export function drawMoodFace(ctx: Ctx, cx: number, cy: number, size: number, mood: Mood): void {
   const color = MOOD_COLOR[mood];
-  const k = size / FACE.size;
+  const k = size / FACE_BOX;
   ctx.save();
   ctx.translate(cx - size / 2, cy - size / 2);
   ctx.scale(k, k);
 
-  // 外枠（気持ちの色）
+  // 丸く切り抜く
+  ctx.save();
   ctx.beginPath();
-  ctx.arc(FACE.head.cx, FACE.head.cy, FACE.head.r + 4.5, 0, Math.PI * 2);
-  ctx.fillStyle = '#fffaf0';
-  ctx.fill();
-  ctx.strokeStyle = color.ring;
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
+  ctx.arc(24, 24, 22.2, 0, Math.PI * 2);
+  ctx.clip();
 
-  for (const x of [FACE.ear.left, FACE.ear.right]) {
-    dot(ctx, x, FACE.ear.y, FACE.ear.r, SKIN);
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.arc(x, FACE.ear.y, FACE.ear.r, 0, Math.PI * 2);
-    ctx.stroke();
-  }
+  const bg = ctx.createLinearGradient(0, 0, 0, FACE_BOX);
+  bg.addColorStop(0, '#ffffff');
+  bg.addColorStop(1, color.tint);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, FACE_BOX, FACE_BOX);
 
-  dot(ctx, FACE.head.cx, FACE.head.cy, FACE.head.r, SKIN);
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(FACE.head.cx, FACE.head.cy, FACE.head.r, 0, Math.PI * 2);
-  ctx.stroke();
+  fill(ctx, BUST, COAT);
+  fill(ctx, BUST_INNER, COAT_INNER);
 
-  const hair = new Path2D(FACE.hair);
-  ctx.fillStyle = HAIR;
-  ctx.fill(hair);
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 1.6;
-  ctx.stroke(hair);
+  const skin = ctx.createLinearGradient(0, 4, 0, 42);
+  skin.addColorStop(0, SKIN);
+  skin.addColorStop(1, SKIN_SHADE);
+  ctx.fillStyle = skin;
+  ctx.fill(new Path2D(NECK));
+  fill(ctx, NECK_SHADE, 'rgba(0,0,0,0.13)');
 
-  if (mood === 'happy') {
-    ctx.globalAlpha = 0.75;
-    ctx.fillStyle = color.accent;
-    for (const x of [11.5, 28.5]) {
-      ctx.beginPath();
-      ctx.ellipse(x, 26, 2.6, 1.7, 0, 0, Math.PI * 2);
-      ctx.fill();
+  ellipse(ctx, EAR.left, EAR.y, EAR.rx, EAR.ry, SKIN_SHADE);
+  ellipse(ctx, EAR.right, EAR.y, EAR.rx, EAR.ry, SKIN_SHADE);
+
+  ctx.fillStyle = skin;
+  ctx.fill(new Path2D(HEAD_PATH));
+  fill(ctx, JAW_SHADE, 'rgba(0,0,0,0.07)');
+
+  fill(ctx, HAIR_PATH, HAIR);
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  stroke(ctx, HAIR_SHINE, HAIR_LIGHT, 1.8);
+  ctx.restore();
+
+  ellipse(ctx, BLUSH.left, BLUSH.y, BLUSH.rx, BLUSH.ry, color.blush, 0.45);
+  ellipse(ctx, BLUSH.right, BLUSH.y, BLUSH.rx, BLUSH.ry, color.blush, 0.45);
+
+  const eye = EYE_SHAPE[mood];
+  if (eye === 'closed') {
+    for (const x of [EYE.left, EYE.right]) {
+      ctx.save();
+      ctx.translate(x, EYE.y);
+      stroke(ctx, EYE_CLOSED, INK, 1.9);
+      ctx.restore();
     }
-    ctx.globalAlpha = 1;
-    stroke(ctx, `M${String(EYES.left - 2.6)} ${String(EYES.y + 0.6)} Q${String(EYES.left)} ${String(EYES.y - 2.8)} ${String(EYES.left + 2.6)} ${String(EYES.y + 0.6)}`, 2);
-    stroke(ctx, `M${String(EYES.right - 2.6)} ${String(EYES.y + 0.6)} Q${String(EYES.right)} ${String(EYES.y - 2.8)} ${String(EYES.right + 2.6)} ${String(EYES.y + 0.6)}`, 2);
-  } else if (mood === 'waiting') {
-    stroke(ctx, `M${String(EYES.left - 2.4)} ${String(EYES.y - 0.6)} L${String(EYES.left + 2.4)} ${String(EYES.y - 0.6)}`, 2);
-    stroke(ctx, `M${String(EYES.right - 2.4)} ${String(EYES.y - 0.6)} L${String(EYES.right + 2.4)} ${String(EYES.y - 0.6)}`, 2);
-    dot(ctx, EYES.left, EYES.y + 1, 1.4, INK);
-    dot(ctx, EYES.right, EYES.y + 1, 1.4, INK);
   } else {
-    dot(ctx, EYES.left, EYES.y, EYES.r, INK);
-    dot(ctx, EYES.right, EYES.y, EYES.r, INK);
+    for (const [x, dir] of [[EYE.left, 1], [EYE.right, -1]] as const) {
+      ctx.save();
+      ctx.translate(x, EYE.y);
+      ctx.rotate(((eye.rotate * dir) * Math.PI) / 180);
+      ctx.scale(1, eye.scaleY);
+      fill(ctx, EYE_ALMOND, INK);
+      ellipse(ctx, -1, -1.1, 0.95, 0.95, '#ffffff', 0.95);
+      ctx.restore();
+    }
   }
 
-  for (const d of FACE.brow[mood]) stroke(ctx, d, 2.2);
-  stroke(ctx, FACE.mouth[mood], 2.2);
+  for (const d of BROW[mood]) stroke(ctx, d, LINE, 2);
+  stroke(ctx, NOSE, 'rgba(42,33,24,0.45)', 1.4);
 
-  if (mood === 'angry') {
-    stroke(ctx, 'M30 8 L34.5 8', 2, color.accent);
-    stroke(ctx, 'M31 11 L35.5 11', 2, color.accent);
-    stroke(ctx, 'M33 5.5 L33 9.5', 2, color.accent);
-  } else if (mood === 'waiting') {
-    const drop = new Path2D('M33 8 Q36 12.5 33 14 Q30 12.5 33 8 Z');
-    ctx.fillStyle = color.accent;
-    ctx.fill(drop);
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = 1.4;
-    ctx.stroke(drop);
-  }
+  const mouth = MOUTH[mood];
+  if (mouth.stroke !== undefined) stroke(ctx, mouth.stroke, INK, 2.1);
+  if (mouth.fill !== undefined) fill(ctx, mouth.fill, INK);
+  if (mouth.tongue !== undefined) fill(ctx, mouth.tongue, '#e07b7b');
+
+  ctx.restore();
+
+  ctx.strokeStyle = color.ring;
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.arc(24, 24, 22.2, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 右上の記章
+  ctx.beginPath();
+  ctx.arc(BADGE.cx, BADGE.cy, BADGE.r, 0, Math.PI * 2);
+  ctx.fillStyle = color.accent;
+  ctx.fill();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  const badge = BADGE_GLYPH[mood];
+  for (const d of badge.stroke ?? []) stroke(ctx, d, '#ffffff', 2);
+  for (const cx2 of badge.dots ?? []) ellipse(ctx, cx2, BADGE.cy, 1.1, 1.1, '#ffffff');
 
   ctx.restore();
 }
