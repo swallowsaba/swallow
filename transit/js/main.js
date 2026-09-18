@@ -16,6 +16,7 @@ import { toServiceMoment, calendarFor, dateKey } from './time.js';
 import { TransitMap, routeToSegments } from './map.js';
 import { combineSegments, buildPoints, validatePoints } from './via.js';
 import { walkSettings, accessCombos, attachWalk, isPoint, walkMinutes, farWalk, accessCandidates, walkOnlyRoute } from './walk.js';
+import { railCategory, busCategory, RAIL_CATEGORIES, BUS_CATEGORIES, categoryOrder } from './category.js';
 import * as ui from './ui.js';
 
 const { $ } = ui;
@@ -1045,20 +1046,29 @@ function populateExcludeSelectors() {
   sel.replaceChildren();
   sel.append(new Option('路線を選択', ''));
 
-  // 路線名だけを並べると、どの会社の路線か判らない(「新宿線」など重複もある)。
-  // 事業者ごとにまとめて出す。
-  const byOperator = new Map();
+  // 「JR」「地下鉄」「私鉄」のような、普通に使われている言い方で区切る。
+  // 事業者 ID やデータ提供元(ODPT)の都合は、使う人には関係がない。
+  // 路線名だけだと何社ぶんか判らないので、選択肢には事業者名も添える。
+  const byCategory = new Map();
   for (const rw of state.net.railways.values()) {
-    const opTitle = state.net.operatorTitle(rw.id);
-    if (!byOperator.has(opTitle)) byOperator.set(opTitle, []);
-    byOperator.get(opTitle).push(rw);
+    const cat = railCategory(rw.id, state.net.operatorIdOf(rw.id));
+    if (!byCategory.has(cat)) byCategory.set(cat, []);
+    byCategory.get(cat).push(rw);
   }
-  const operatorNames = [...byOperator.keys()].sort((a, b) => a.localeCompare(b, 'ja'));
-  for (const name of operatorNames) {
+  const cats = [...byCategory.keys()].sort(
+    (a, b) => categoryOrder(RAIL_CATEGORIES, a) - categoryOrder(RAIL_CATEGORIES, b)
+  );
+  for (const cat of cats) {
     const group = document.createElement('optgroup');
-    group.label = name;
-    const list = byOperator.get(name).sort((a, b) => a.title.localeCompare(b.title, 'ja'));
-    for (const rw of list) group.append(new Option(rw.title, rw.id));
+    group.label = cat;
+    const list = byCategory.get(cat).sort((a, b) => {
+      const oa = state.net.operatorTitle(a.id);
+      const ob = state.net.operatorTitle(b.id);
+      return oa.localeCompare(ob, 'ja') || a.title.localeCompare(b.title, 'ja');
+    });
+    for (const rw of list) {
+      group.append(new Option(`${state.net.operatorTitle(rw.id)} ${rw.title}`, rw.id));
+    }
     sel.append(group);
   }
   populateStationSelectors();
@@ -1087,7 +1097,7 @@ async function populateBusExcludeSelectors({ withGtfs = false } = {}) {
     try {
       const { gtfsBusLines } = await import('./gtfs.js');
       for (const o of await gtfsBusLines()) {
-        byOperator.set(o.operatorTitle, { full: true, routes: new Set(o.routes) });
+        byOperator.set(o.operatorTitle, { full: true, operatorId: o.operator, routes: new Set(o.routes) });
       }
     } catch {
       /* 未取り込みなら候補が減るだけ */
@@ -1101,7 +1111,9 @@ async function populateBusExcludeSelectors({ withGtfs = false } = {}) {
 
   // 2) ODPT の API の事業者(対応範囲に出ているもの。系統は結果から拾う)
   for (const o of state.health?.bus?.operators || []) {
-    if (!byOperator.has(o.title)) byOperator.set(o.title, { full: false, routes: new Set() });
+    if (!byOperator.has(o.title)) {
+      byOperator.set(o.title, { full: false, operatorId: o.id, routes: new Set() });
+    }
   }
 
   // 3) いま出ている検索結果に現れた系統を足す
@@ -1109,7 +1121,7 @@ async function populateBusExcludeSelectors({ withGtfs = false } = {}) {
     for (const leg of r.legs || []) {
       if (!leg.bus || !leg.operatorTitle) continue;
       if (!byOperator.has(leg.operatorTitle)) {
-        byOperator.set(leg.operatorTitle, { full: false, routes: new Set() });
+        byOperator.set(leg.operatorTitle, { full: false, operatorId: leg.operator || null, routes: new Set() });
       }
       if (leg.lineTitle) byOperator.get(leg.operatorTitle).routes.add(leg.lineTitle);
     }
@@ -1118,8 +1130,27 @@ async function populateBusExcludeSelectors({ withGtfs = false } = {}) {
   const prev = sel.value;
   sel.replaceChildren();
   sel.append(new Option('事業者を選択', ''));
-  const names = [...byOperator.keys()].sort((a, b) => a.localeCompare(b, 'ja'));
-  for (const name of names) sel.append(new Option(name, name));
+
+  // バスも「公営バス / 民営バス」で区切る。事業者 ID では通じない。
+  const byCategory = new Map();
+  for (const [title, entry] of byOperator) {
+    const cat = busCategory(entry.operatorId, title);
+    if (!byCategory.has(cat)) byCategory.set(cat, []);
+    byCategory.get(cat).push(title);
+  }
+  const cats = [...byCategory.keys()].sort(
+    (a, b) => categoryOrder(BUS_CATEGORIES, a) - categoryOrder(BUS_CATEGORIES, b)
+  );
+  const names = [];
+  for (const cat of cats) {
+    const group = document.createElement('optgroup');
+    group.label = cat;
+    for (const title of byCategory.get(cat).sort((a, b) => a.localeCompare(b, 'ja'))) {
+      group.append(new Option(title, title));
+      names.push(title);
+    }
+    sel.append(group);
+  }
   if (prev && names.includes(prev)) sel.value = prev;
 
   state.busLinesByOperator = byOperator;

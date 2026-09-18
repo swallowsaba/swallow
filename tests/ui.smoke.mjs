@@ -373,20 +373,35 @@ async function search(page, from, to) {
   await page.click('.excludes__add summary');
   await page.waitForSelector('#ex-railway', { state: 'visible' });
 
-  // 路線は会社ごとにまとまっていること(路線名だけだと何社ぶんか判らないため)
+  // 路線は「JR」「地下鉄」「私鉄」のような、使う人に通じる区分でまとまっていること。
+  // 事業者 ID やデータ提供元(ODPT)の名前を見せない。
   {
     const groups = await page.$$eval('#ex-railway optgroup', (els) =>
       els.map((e) => ({ label: e.label, count: e.children.length }))
     );
-    assert(groups.length >= 1, '路線が会社ごとにまとまっていない(optgroup が無い)');
-    assert(groups.every((g) => g.label && g.count > 0), `会社名の無いまとまりがある: ${JSON.stringify(groups)}`);
+    assert(groups.length >= 1, '路線が区分でまとまっていない(optgroup が無い)');
+    assert(groups.every((g) => g.label && g.count > 0), `名前の無いまとまりがある: ${JSON.stringify(groups)}`);
+
+    const known = ['JR', '地下鉄', '私鉄', 'モノレール・新交通・路面電車', 'その他'];
+    for (const g of groups) {
+      assert(known.includes(g.label), `見慣れない区分が出ている: ${g.label}`);
+      assert(!/odpt|ODPT|Metro|Toei|Railway/i.test(g.label), `内部の名前が出ている: ${g.label}`);
+    }
+
     const bare = await page.$$eval('#ex-railway > option', (els) => els.map((e) => e.textContent));
     // 直下に残ってよいのは先頭の「路線を選択」だけ
-    assert(bare.length === 1, `会社の外に置かれた路線がある: ${JSON.stringify(bare)}`);
-    console.log(`  ok  除外の路線は会社ごとにまとまっている(${groups.map((g) => g.label).join(' / ')})`);
+    assert(bare.length === 1, `区分の外に置かれた路線がある: ${JSON.stringify(bare)}`);
+
+    // 選択肢には事業者名も添える(「新宿線」だけでは何社ぶんか判らない)
+    const options = await page.$$eval('#ex-railway optgroup option', (els) => els.map((e) => e.textContent));
+    assert(
+      options.some((o) => o.includes('東京メトロ 銀座線')),
+      `事業者名が添えられていない: ${JSON.stringify(options)}`
+    );
+    console.log(`  ok  除外の路線は区分でまとまっている(${groups.map((g) => g.label).join(' / ')})`);
   }
 
-  await page.selectOption('#ex-railway', { label: '銀座線' });
+  await page.selectOption('#ex-railway', { label: '東京メトロ 銀座線' });
   await page.click('#ex-add-line');
   await page.waitForTimeout(1500);
   const chips = await page.$$eval('.chip-x', (els) => els.map((e) => e.textContent));
@@ -480,6 +495,14 @@ async function search(page, from, to) {
       els.map((e) => e.value).filter(Boolean)
     );
     assert(ops.length >= 1, `バス事業者の候補が無い: ${JSON.stringify(ops)}`);
+
+    // バスも「公営バス / 民営バス」で区切る
+    const busGroups = await page.$$eval('#ex-bus-operator optgroup', (els) => els.map((e) => e.label));
+    assert(busGroups.length >= 1, 'バス事業者が区分でまとまっていない');
+    for (const g of busGroups) {
+      assert(['公営バス', '民営バス', 'その他'].includes(g), `見慣れない区分が出ている: ${g}`);
+    }
+    console.log(`  ok  除外のバス事業者も区分でまとまっている(${busGroups.join(' / ')})`);
 
     // いま出ているバスの経路の事業者を選ぶ(関係ない事業者を選んでも減らない)
     const cardText = await page.textContent('.route:has(.badge--bus)');

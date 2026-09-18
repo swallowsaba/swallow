@@ -391,15 +391,21 @@ export function renderExcludes(excludes, net, onRemove, onClear) {
     body.append(el('span', 'muted', '除外は設定されていません。'));
   }
   for (const ex of excludes) {
+    // 路線名だけだと何社ぶんか判らないので、事業者名も添える
+    const line = (id) => {
+      const op = net.operatorTitle ? net.operatorTitle(id) : '';
+      const title = net.railwayTitle(id);
+      return op && !title.startsWith(op) ? `${op} ${title}` : title;
+    };
     let label;
     if (ex.type === 'railway') {
-      label = `${net.railwayTitle(ex.railway)} 全線`;
+      label = `${line(ex.railway)} 全線`;
     } else if (ex.type === 'busOperator') {
       label = `${ex.operatorTitle} 全系統`;
     } else if (ex.type === 'busLine') {
       label = `${ex.operatorTitle} ${ex.lineTitle}`;
     } else {
-      label = `${net.railwayTitle(ex.railway)} ${net.stationTitle(ex.from)}〜${net.stationTitle(ex.to)}`;
+      label = `${line(ex.railway)} ${net.stationTitle(ex.from)}〜${net.stationTitle(ex.to)}`;
     }
     const chip = el('span', 'chip-x', label);
     // バスの除外は見た目で区別できるようにする
