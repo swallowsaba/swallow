@@ -205,20 +205,32 @@ const operatorTitles = new Map();
 export function setBusOperatorTitles(list) {
   operatorTitles.clear();
   for (const o of list || []) {
-    if (o && o.id) operatorTitles.set(o.id, o.title || o.id);
+    const id = shortOperatorId(o && o.id);
+    if (id) operatorTitles.set(id, o.title || id);
   }
 }
 
 function operatorTitleOf(id) {
-  if (!id) return 'バス';
-  return operatorTitles.get(id) || id;
+  const short = shortOperatorId(id);
+  if (!short) return 'バス';
+  // 名前が判らないときに ID をそのまま返すと、画面に
+  // 「odpt.Operator:Toei」のような内部の文字列が出てしまう。
+  return operatorTitles.get(short) || 'バス';
+}
+
+/** `odpt.Operator:Toei` → `Toei`。既に短ければそのまま。 */
+function shortOperatorId(value) {
+  const s = String(value || '').trim();
+  if (!s) return null;
+  const i = s.lastIndexOf(':');
+  return i >= 0 ? s.slice(i + 1) || null : s;
 }
 
 /** バスのレグ(表示用の名前を埋め込んでおく。ID から名前を復元できないため) */
 function busLeg(seg, ride) {
   return {
     bus: true,
-    operator: seg.pattern.operator || null,
+    operator: shortOperatorId(seg.pattern.operator),
     from: seg.fromPole,
     to: seg.toPole,
     fromTitle: seg.fromTitle,

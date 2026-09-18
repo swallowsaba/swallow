@@ -15,6 +15,34 @@
 export const RAIL_CATEGORIES = ['JR', '地下鉄', '私鉄', 'モノレール・新交通・路面電車', 'その他'];
 export const BUS_CATEGORIES = ['公営バス', '民営バス', 'その他'];
 
+/**
+ * 事業者 ID → 日本語名。
+ * 対応範囲の応答に名前が入っていないときの保険。
+ * ここに無いものは、内部の ID を画面に出すくらいなら何も出さない。
+ */
+export const OPERATOR_TITLES = {
+  'JR-East': 'JR東日本',
+  'JR-Central': 'JR東海',
+  'JR-West': 'JR西日本',
+  Toei: '東京都交通局',
+  TokyoMetro: '東京メトロ',
+  TWR: '東京臨海高速鉄道',
+  MIR: '首都圏新都市鉄道',
+  Yurikamome: 'ゆりかもめ',
+  TamaMonorail: '多摩都市モノレール',
+  TokyoMonorail: '東京モノレール',
+  ShonanMonorail: '湘南モノレール',
+  YokohamaMunicipal: '横浜市交通局',
+  Tobu: '東武鉄道',
+  Seibu: '西武鉄道',
+  Keio: '京王電鉄',
+  Odakyu: '小田急電鉄',
+  Keikyu: '京急電鉄',
+  Tokyu: '東急電鉄',
+  Sotetsu: '相模鉄道',
+  Keisei: '京成電鉄',
+};
+
 /** 事業者 ID → 区分(鉄道) */
 const RAIL_BY_OPERATOR = {
   'JR-East': 'JR',
@@ -61,9 +89,18 @@ export function railCategory(railwayId, operatorId) {
   for (const rule of LINE_OVERRIDES) {
     if (rule.match.test(id)) return rule.category;
   }
-  const op = operatorId || operatorFromRailwayId(id);
+  // `odpt.Operator:TokyoMetro` の形で渡ってくることがあるので、後ろだけ使う
+  const op = shortId(operatorId) || operatorFromRailwayId(id);
   const hit = RAIL_BY_OPERATOR[op];
   return hit || 'その他';
+}
+
+/** `odpt.Operator:X` → `X`。既に短ければそのまま。 */
+function shortId(value) {
+  const s = String(value || '').trim();
+  if (!s) return null;
+  const i = s.lastIndexOf(':');
+  return i >= 0 ? s.slice(i + 1) || null : s;
 }
 
 /** 事業者 ID → 区分(バス) */
@@ -94,7 +131,7 @@ const PUBLIC_BUS_NAME = /(都営|市交通局|市営|区営|町営|村営|県営
  * @param {?string} operatorTitle 例: 東京都交通局
  */
 export function busCategory(operatorId, operatorTitle) {
-  const byId = BUS_BY_OPERATOR[operatorId];
+  const byId = BUS_BY_OPERATOR[shortId(operatorId)];
   if (byId) return byId;
   const title = String(operatorTitle || '');
   if (PUBLIC_BUS_NAME.test(title)) return '公営バス';

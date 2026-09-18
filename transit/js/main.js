@@ -501,8 +501,23 @@ async function geocodeInto(place, query, input, list, hint) {
   hint.textContent = '地名・施設名を検索しています…';
   hint.classList.remove('is-error');
   try {
-    const res = await state.api.geocode(query);
-    const hits = res.data.results || [];
+    // 点数付けと言い直しは Worker 側でもやっているが、
+    // Worker が古いままでも動くよう、ブラウザ側でも必ず通す。
+    // (実際 Worker を更新し忘れて「見つからない」状態が続いた)
+    let hits = scoreHits(query, (await state.api.geocode(query)).data.results || []);
+
+    if (!hits.some((h) => !h.weak)) {
+      const alt = fallbackQuery(query);
+      if (alt) {
+        try {
+          const more = scoreHits(query, (await state.api.geocode(alt)).data.results || [], alt);
+          if (more.some((h) => !h.weak)) hits = more;
+        } catch {
+          /* 言い直しが失敗しても、最初の結果はそのまま使う */
+        }
+      }
+    }
+
     if (!hits.length) {
       hint.textContent = '該当する場所が見つかりませんでした(正式名称で試してください)';
       hint.classList.add('is-error');
@@ -1067,7 +1082,10 @@ function populateExcludeSelectors() {
       return oa.localeCompare(ob, 'ja') || a.title.localeCompare(b.title, 'ja');
     });
     for (const rw of list) {
-      group.append(new Option(`${state.net.operatorTitle(rw.id)} ${rw.title}`, rw.id));
+      // 事業者名が判らないときは路線名だけ。内部の ID は絶対に出さない。
+      const op = state.net.operatorTitle(rw.id);
+      const label = op && !rw.title.startsWith(op) ? `${op} ${rw.title}` : rw.title;
+      group.append(new Option(label, rw.id));
     }
     sel.append(group);
   }
@@ -1802,4 +1820,58 @@ async function fetchJson(url, fallback) {
     });
     return fallback;
   }
+}
+
+/**
+ * 住所検索の結果に点数を付けて並べ替える。
+ *
+ * 国土地理院の検索は、施設名を渡すと関係のない住所を返すことがある
+ * (「東京タワー」で「茨城県つくば市東」など)。Worker 側でも同じ処理を
+ * しているが、Worker の更新を忘れても画面が壊れないよう、ここでも必ず通す。
+ * 既に点数が付いているものはそのまま使う。
+ */
+function scoreHits(query, results, altQuery) {
+  const seen = new Set();
+  const out = [];
+  for (const r of results || []) {
+    if (r.lat == null || r.lon == null) continue;
+    const key = `${r.title}|${r.lat.toFixed(5)}|${r.lon.toFixed(5)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const score =
+      r.score != null ? r.score : titleScore(query, r.title) || (altQuery ? titleScore(altQuery, r.title) : 0);
+    out.push({ ...r, score, weak: score === 0 });
+  }
+  out.sort((a, b) => b.score - a.score);
+  return out;
+}
+
+/** 検索語と名前の一致の強さ。worker/src/geocode.js と同じ考え方。 */
+function titleScore(query, title) {
+  const q = String(query || '').trim();
+  const s = String(title || '').trim();
+  if (!q || !s) return 0;
+  if (s === q) return 100;
+  if (s.includes(q)) return 80;
+  if (q.includes(s)) return 60;
+  let best = 0;
+  for (let i = 0; i < q.length; i += 1) {
+    for (let j = i + 2; j <= q.length; j += 1) {
+      const part = q.slice(i, j);
+      if (part.length <= best) continue;
+      if (s.includes(part)) best = part.length;
+    }
+  }
+  return best >= 2 ? 20 + best : 0;
+}
+
+/** 見つからないときに試す、頭の地域名を外した検索語 */
+function fallbackQuery(query) {
+  const q = String(query || '').trim();
+  for (const prefix of ['東京', '神奈川県', '埼玉県', '千葉県', '横浜市', '川崎市', '千葉市', 'さいたま市']) {
+    if (!q.startsWith(prefix)) continue;
+    const rest = q.slice(prefix.length);
+    if (rest.length >= 2) return rest;
+  }
+  return null;
 }

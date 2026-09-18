@@ -5,6 +5,8 @@
  * 静的データなので localStorage に 24 時間保持し、Worker への往復を減らす。
  */
 
+import { OPERATOR_TITLES } from './category.js';
+
 const STORAGE_KEY = 'kanto-transit:network:v1';
 const STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -202,9 +204,16 @@ export class TransitNetwork {
     return this.railways.get(id)?.title || id;
   }
 
-  /** 路線 ID から事業者 ID(例: TokyoMetro)。判らなければ null。 */
+  /**
+   * 路線 ID から事業者 ID(例: TokyoMetro)。判らなければ null。
+   *
+   * ODPT のデータでは事業者が `odpt.Operator:TokyoMetro` の形で入っている。
+   * そのまま画面に出すと「odpt.Operator:…」と表示されてしまうので、
+   * 必ず後ろの部分だけにして返す。
+   */
   operatorIdOf(railwayId) {
-    return this.railways.get(railwayId)?.operator || operatorOf(railwayId);
+    const raw = this.railways.get(railwayId)?.operator;
+    return shortOperatorId(raw) || operatorOf(railwayId);
   }
 
   /**
@@ -213,9 +222,12 @@ export class TransitNetwork {
    */
   operatorTitle(railwayId) {
     const opId = this.operatorIdOf(railwayId);
-    if (!opId) return 'その他';
+    if (!opId) return '';
     const hit = this.operators.find((o) => o.id === opId);
-    return hit?.title || opId;
+    if (hit?.title) return hit.title;
+    // 日本語名が判らないときは**何も出さない**。
+    // 内部の ID(TokyoMetro / odpt.Operator:… )を画面に出さないため。
+    return OPERATOR_TITLES[opId] || '';
   }
 
   stationTitle(id) {
@@ -300,6 +312,20 @@ export function normalizeTitle(t) {
 function guessTitle(urn) {
   const parts = String(urn || '').split('.');
   return parts[parts.length - 1] || urn;
+}
+
+/**
+ * `odpt.Operator:TokyoMetro` → `TokyoMetro`。
+ * 既に短い形ならそのまま返す。空なら null。
+ */
+export function shortOperatorId(value) {
+  const s = String(value || '').trim();
+  if (!s) return null;
+  const m = /^odpt\.Operator:([A-Za-z0-9-]+)$/.exec(s);
+  if (m) return m[1];
+  // urn でない・別の形のものは、コロンの後ろを使う(無ければそのまま)
+  const i = s.lastIndexOf(':');
+  return i >= 0 ? s.slice(i + 1) || null : s;
 }
 
 /** 事業者 ID にはハイフンを含むもの(JR-East など)があるので許可する */

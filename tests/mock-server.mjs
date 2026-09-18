@@ -10,7 +10,6 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { buildIndex, splitForWeb } from '../tools/gtfs-lib.mjs';
-import { matchScore, fallbackQuery } from '../worker/src/geocode.js';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'transit');
@@ -46,7 +45,9 @@ const mkStations = (rw, names) =>
     const [lat, lon] = LATLON[n];
     return {
       id: sid(rw, n), title: TITLE[n], railway: rw,
-      operator: rw.split(':')[1].split('.')[0], lat, lon, connecting: [],
+      // 本物の Worker は odpt.Operator:X の形で返す。ここを短い形にすると
+      // 画面に内部 ID が出てしまう不具合を、テストで見つけられなくなる。
+      operator: `odpt.Operator:${rw.split(':')[1].split('.')[0]}`, lat, lon, connecting: [],
     };
   });
 
@@ -59,9 +60,9 @@ const NETWORK = {
   unsupported: [{ title: 'JR東日本', reason: 'チャレンジ2026限定ライセンス' }],
   bus: { operators: [{ id: 'Toei', title: '東京都交通局', short: '都営バス', license: 'CC BY 4.0' }] },
   railways: [
-    { id: RW_G, title: '銀座線', operator: 'TokyoMetro', color: '#FF9500', ascending: 'odpt.RailDirection:TokyoMetro.Asakusa', descending: 'odpt.RailDirection:TokyoMetro.Shibuya', stations: G.map((n) => sid(RW_G, n)) },
-    { id: RW_M, title: '丸ノ内線', operator: 'TokyoMetro', color: '#F62E36', ascending: 'odpt.RailDirection:TokyoMetro.Ikebukuro', descending: 'odpt.RailDirection:TokyoMetro.Ogikubo', stations: M.map((n) => sid(RW_M, n)) },
-    { id: RW_A, title: '浅草線', operator: 'Toei', color: '#E85298', ascending: 'odpt.RailDirection:Toei.Oshiage', descending: 'odpt.RailDirection:Toei.Nishimagome', stations: A.map((n) => sid(RW_A, n)) },
+    { id: RW_G, title: '銀座線', operator: 'odpt.Operator:TokyoMetro', color: '#FF9500', ascending: 'odpt.RailDirection:TokyoMetro.Asakusa', descending: 'odpt.RailDirection:TokyoMetro.Shibuya', stations: G.map((n) => sid(RW_G, n)) },
+    { id: RW_M, title: '丸ノ内線', operator: 'odpt.Operator:TokyoMetro', color: '#F62E36', ascending: 'odpt.RailDirection:TokyoMetro.Ikebukuro', descending: 'odpt.RailDirection:TokyoMetro.Ogikubo', stations: M.map((n) => sid(RW_M, n)) },
+    { id: RW_A, title: '浅草線', operator: 'odpt.Operator:Toei', color: '#E85298', ascending: 'odpt.RailDirection:Toei.Oshiage', descending: 'odpt.RailDirection:Toei.Nishimagome', stations: A.map((n) => sid(RW_A, n)) },
   ],
   stations: [...mkStations(RW_G, G), ...mkStations(RW_M, M), ...mkStations(RW_A, A)],
   errors: [],
@@ -169,9 +170,9 @@ const POLE_SAKURA = 'odpt.BusstopPole:Toei.Sakuradai.100.1';
 const POLE_UENO = 'odpt.BusstopPole:Toei.UenoStation.300.1';
 
 const BUS_STOPS = {
-  渋谷駅前: [{ id: POLE_A, title: '渋谷駅前', operator: 'Toei', lat: 35.6585, lon: 139.7002, patterns: [BUS_P] }],
-  新橋駅前: [{ id: POLE_B, title: '新橋駅前', operator: 'Toei', lat: 35.6665, lon: 139.7583, patterns: [BUS_P] }],
-  桜台三丁目: [{ id: POLE_SAKURA, title: '桜台三丁目', operator: 'Toei', lat: 35.74, lon: 139.66, patterns: [BUS_P2] }],
+  渋谷駅前: [{ id: POLE_A, title: '渋谷駅前', operator: 'odpt.Operator:Toei', lat: 35.6585, lon: 139.7002, patterns: [BUS_P] }],
+  新橋駅前: [{ id: POLE_B, title: '新橋駅前', operator: 'odpt.Operator:Toei', lat: 35.6665, lon: 139.7583, patterns: [BUS_P] }],
+  桜台三丁目: [{ id: POLE_SAKURA, title: '桜台三丁目', operator: 'odpt.Operator:Toei', lat: 35.74, lon: 139.66, patterns: [BUS_P2] }],
 };
 
 const BUS_PATTERN2 = {
@@ -179,7 +180,7 @@ const BUS_PATTERN2 = {
   title: '桜０１ 上野駅前行',
   busroute: 'odpt.Busroute:Toei.Sakura01',
   direction: '1',
-  operator: 'Toei',
+  operator: 'odpt.Operator:Toei',
   order: [
     { i: 1, pole: POLE_SAKURA, note: '桜台三丁目' },
     { i: 2, pole: 'odpt.BusstopPole:Toei.Mid2.250.1', note: '桜台一丁目' },
@@ -192,7 +193,7 @@ const BUS_PATTERN = {
   title: '渋８８ 新橋駅前行',
   busroute: 'odpt.Busroute:Toei.Shibu88',
   direction: '1',
-  operator: 'Toei',
+  operator: 'odpt.Operator:Toei',
   order: [
     { i: 1, pole: POLE_A, note: '渋谷駅前' },
     { i: 2, pole: POLE_M, note: '六本木通り' },
@@ -225,7 +226,7 @@ function busTimetableFor(pole) {
         isMidnight: false,
       });
     }
-    return [{ id: `tt:${pole}`, pole, calendar: BUS_CAL, operator: 'Toei', rows }];
+    return [{ id: `tt:${pole}`, pole, calendar: BUS_CAL, operator: 'odpt.Operator:Toei', rows }];
   }
   if (pole !== POLE_A) return [];
   const rows = [];
@@ -239,7 +240,7 @@ function busTimetableFor(pole) {
       isMidnight: false,
     });
   }
-  return [{ id: `tt:${pole}`, pole, calendar: BUS_CAL, operator: 'Toei', rows }];
+  return [{ id: `tt:${pole}`, pole, calendar: BUS_CAL, operator: 'odpt.Operator:Toei', rows }];
 }
 
 function busRuns() {
@@ -250,7 +251,7 @@ function busRuns() {
       id: `run2:${t}`,
       pattern: BUS_P2,
       calendar: BUS_CAL,
-      operator: 'Toei',
+      operator: 'odpt.Operator:Toei',
       stops: [
         { i: 1, pole: POLE_SAKURA, arr: at(t), dep: at(t) },
         { i: 2, pole: 'odpt.BusstopPole:Toei.Mid2.250.1', arr: at(t + 6), dep: at(t + 6) },
@@ -264,7 +265,7 @@ function busRuns() {
       id: `run:${t}`,
       pattern: BUS_P,
       calendar: BUS_CAL,
-      operator: 'Toei',
+      operator: 'odpt.Operator:Toei',
       stops: [
         { i: 1, pole: POLE_A, arr: at(t), dep: at(t) },
         { i: 2, pole: POLE_M, arr: at(t + 12), dep: at(t + 12) },
@@ -355,7 +356,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/v1/bus/calendars') {
       return send({
         fetchedAt: new Date().toISOString(),
-        calendars: [{ id: BUS_CAL, title: '平日', operator: 'Toei', days: busCalendarDays() }],
+        calendars: [{ id: BUS_CAL, title: '平日', operator: 'odpt.Operator:Toei', days: busCalendarDays() }],
         errors: [],
       });
     }
@@ -380,36 +381,27 @@ const server = http.createServer(async (req, res) => {
             { title: '東京スカイツリー', lat: 35.70952, lon: 139.81071 }, // 重複も返る
           ];
         }
+        if (/^東京タワー/.test(s)) {
+          // 実際に国土地理院が返してくる誤り(「東」の 1 文字に反応する)
+          return [
+            { title: '茨城県つくば市東', lat: 36.061123, lon: 140.13031 },
+            { title: '茨城県古河市東', lat: 36.196213, lon: 139.7117 },
+          ];
+        }
         if (/タワー/.test(s)) {
           return [
-            { title: '東京タワー', lat: 35.6586, lon: 139.7454 },
-            { title: '東京都港区芝公園四丁目', lat: 35.6575, lon: 139.7462 },
+            { title: '愛宕警察署東京タワー前交番', lat: 35.65864, lon: 139.74682 },
+            { title: '山王パークタワー内郵便局', lat: 35.67325, lon: 139.74039 },
+            { title: '横浜ランドマークタワー郵便局', lat: 35.45551, lon: 139.63134 },
           ];
         }
         return [{ title: '東京都千代田区丸の内一丁目', lat: 35.6812, lon: 139.7671 }];
       };
 
-      let hits = raw(q);
-      if (!hits.some((r) => matchScore(q, r.title) > 0)) {
-        const alt = fallbackQuery(q);
-        if (alt) {
-          const more = raw(alt);
-          if (more.some((r) => matchScore(alt, r.title) > 0)) {
-            hits = more.map((r) => ({ ...r, score: matchScore(alt, r.title) }));
-          }
-        }
-      }
-      const seen = new Set();
-      const results = [];
-      for (const r of hits) {
-        const key = `${r.title}|${r.lat}|${r.lon}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        const score = r.score != null ? r.score : matchScore(q, r.title);
-        results.push({ title: r.title, lat: r.lat, lon: r.lon, score, weak: score === 0 });
-      }
-      results.sort((a, b) => b.score - a.score);
-      return send({ fetchedAt: new Date().toISOString(), query: q, results: results.slice(0, 5) });
+      // ★ ここでは後処理をしない。
+      //   Worker が古いまま(点数なし)でも画面側で直っていることを確かめるため、
+      //   わざと「素の国土地理院」と同じものを返す。
+      return send({ fetchedAt: new Date().toISOString(), query: q, results: raw(q).slice(0, 5) });
     }
     const body = await readBody(req);
     if (url.pathname === '/v1/timetables') {

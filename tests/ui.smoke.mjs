@@ -183,6 +183,14 @@ async function search(page, from, to) {
   assert.deepEqual(all, [...all].sort((a, b) => a - b), '乗換回数でソートされていない');
   console.log(`  ok  乗換回数で並べ替え(先頭 ${t0} 回)`);
 
+  // 画面のどこにも内部の文字列が出ていないこと
+  {
+    const body = await page.textContent('body');
+    const m = body.match(/odpt\.[A-Za-z]+:[A-Za-z0-9._-]+/g);
+    assert(!m, `内部の ID が画面に出ている: ${JSON.stringify([...new Set(m || [])].slice(0, 5))}`);
+    console.log('  ok  画面のどこにも内部の ID が出ていない');
+  }
+
   await page.screenshot({ path: 'tests/screenshot-desktop.png', fullPage: true });
 
   // 直通バスが鉄道と並んで出ているか
@@ -399,6 +407,13 @@ async function search(page, from, to) {
       `事業者名が添えられていない: ${JSON.stringify(options)}`
     );
     console.log(`  ok  除外の路線は区分でまとまっている(${groups.map((g) => g.label).join(' / ')})`);
+
+    // 内部の文字列(odpt.Operator:… / odpt.Railway:… )が画面に出ていないこと。
+    // 実際に出てしまった不具合があるので、機械的に見張る。
+    const shown = await page.$$eval('#ex-railway option', (els) => els.map((e) => e.textContent));
+    const leaked = shown.filter((s) => /odpt|owl:|urn:/i.test(s));
+    assert(!leaked.length, `内部の文字列が選択肢に出ている: ${JSON.stringify(leaked)}`);
+    console.log('  ok  路線の選択肢に内部の文字列が出ていない');
   }
 
   await page.selectOption('#ex-railway', { label: '東京メトロ 銀座線' });
@@ -439,7 +454,9 @@ async function search(page, from, to) {
     }
     await page.waitForTimeout(300);
     const value = await page.inputValue('#from-input');
-    assert(value === '東京タワー', `施設名が駅に置き換えられている: ${value}`);
+    // 施設名そのもの(見つかった名前)が入ること。駅名に置き換えられないこと。
+    assert(value.includes('東京タワー'), `施設名が駅に置き換えられている: ${value}`);
+    assert(!/駅$/.test(value), `駅に置き換えられている: ${value}`);
     const hint = await page.textContent('#from-hint');
     assert(/地点/.test(hint), `地点として扱われていない: ${hint}`);
     console.log('  ok  施設名(スポット)で探し、その場所を出発地にできる');
@@ -465,6 +482,24 @@ async function search(page, from, to) {
       `無関係な住所が上位に出ている: ${JSON.stringify(hits2)}`
     );
     console.log('  ok  正式名称(東京スカイツリー)でも見つかる');
+
+    // 「東京タワー」も同じ壊れ方をする。Worker が古くても画面側で拾えること。
+    await page.fill('#to-input', '東京タワー');
+    await page.waitForSelector('#to-list li[role="option"]');
+    for (const li of await page.$$('#to-list li[role="option"]')) {
+      const txt = await li.textContent();
+      if (txt.includes('スポット')) { await li.click(); break; }
+    }
+    await page.waitForTimeout(700);
+    const hits3 = await page.$$eval('#to-list li', (els) => els.map((e) => e.textContent));
+    assert(
+      hits3.some((h) => h.includes('東京タワー')),
+      `東京タワーが見つからない: ${JSON.stringify(hits3)}`
+    );
+    // 無関係な住所が「見つかった場所」の側に入っていないこと
+    const head = hits3.slice(0, 3).join(' ');
+    assert(!/茨城県/.test(head), `無関係な住所が上位に出ている: ${JSON.stringify(hits3.slice(0, 3))}`);
+    console.log('  ok  Worker が古くても、画面側で施設名を拾い直す');
   }
 
   // バスも除外できる
@@ -503,6 +538,11 @@ async function search(page, from, to) {
       assert(['公営バス', '民営バス', 'その他'].includes(g), `見慣れない区分が出ている: ${g}`);
     }
     console.log(`  ok  除外のバス事業者も区分でまとまっている(${busGroups.join(' / ')})`);
+
+    const busShown = await page.$$eval('#ex-bus-operator option', (els) => els.map((e) => e.textContent));
+    const busLeaked = busShown.filter((s) => /odpt|owl:|urn:/i.test(s));
+    assert(!busLeaked.length, `内部の文字列がバス事業者に出ている: ${JSON.stringify(busLeaked)}`);
+    console.log('  ok  バス事業者の選択肢に内部の文字列が出ていない');
 
     // いま出ているバスの経路の事業者を選ぶ(関係ない事業者を選んでも減らない)
     const cardText = await page.textContent('.route:has(.badge--bus)');
