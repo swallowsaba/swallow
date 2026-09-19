@@ -99,14 +99,14 @@ export default function WorldMapPage() {
             <p className="w-fit rounded px-2 py-0.5 text-xs font-extrabold text-white" style={{ background: TRACK_ACCENT[current.track] }}>
               {t('map.guideLabel')}
             </p>
-            <h2 className="text-2xl font-extrabold">🏙 {current.city.plan.name}</h2>
+            <h2 className="text-2xl font-extrabold">{current.city.plan.name}</h2>
             <p className="border-l-4 border-[var(--gold-dark)] bg-white px-3 py-2 text-sm">{current.goal}</p>
             <div className="h-2 bg-[var(--cream-dark)]">
               <div className="h-full" style={{ width: `${String(current.total === 0 ? 0 : (current.done / current.total) * 100)}%`, background: TRACK_ACCENT[current.track] }} />
             </div>
             <ul className="grid grid-cols-2 gap-2 text-sm">
-              <li className="bg-white px-2 py-1">🏛 {t('map.guideFacilities', { a: current.city.built, b: current.city.facilities.length })}</li>
-              <li className="bg-white px-2 py-1">📜 {t('map.guideMissions', { a: current.done, b: current.total })}</li>
+              <li className="bg-white px-2 py-1">{t('map.guideFacilities', { a: current.city.built, b: current.city.facilities.length })}</li>
+              <li className="bg-white px-2 py-1">{t('map.guideMissions', { a: current.done, b: current.total })}</li>
               <li className="flex items-center gap-1 bg-white px-2 py-1">
                 <MoodFace mood="angry" size={20} />
                 {t('map.guideComplaints', { n: current.voices.filter((v) => v.kind === 'complaint').length })}

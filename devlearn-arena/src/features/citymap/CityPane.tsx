@@ -5,6 +5,7 @@ import type { ShellState } from '@/engines/kernel/registry';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { useStore } from '@/store';
+import { Icon } from '@/ui/Icon';
 import { MoodFace } from '@/visual/game/MoodFace';
 import { CityMapView, type CityEvent } from './CityMapView';
 import { civicViews, growthOf, withPartial } from './cityStore';
@@ -63,13 +64,13 @@ export function CityPane({ track, city: learned, state, previous, currentFacilit
       {/* 上：街の数字（学びの進みと、現場の見立て） */}
       <div className="pointer-events-none absolute inset-x-2 top-2 flex flex-col gap-2">
         <div data-testid="city-stats" className="pointer-events-auto flex flex-wrap items-center gap-x-3 gap-y-1 self-start rounded-md bg-[rgba(22,30,38,0.86)] px-3 py-1.5 text-sm text-white shadow-lg">
-          <span data-testid="city-houses" data-value={growth.houses} title={t('city.houses')}>🏠 {growth.houses}</span>
-          <span data-testid="city-floors" data-value={growth.floors} title={t('city.floors')}>🏢 {growth.floors}</span>
+          <span data-testid="city-houses" data-value={growth.houses} title={t('city.houses')} className="inline-flex items-center gap-1"><Icon name="city" size={14} />{growth.houses}</span>
+          <span data-testid="city-floors" data-value={growth.floors} title={t('city.floors')} className="inline-flex items-center gap-1"><Icon name="build" size={14} />{growth.floors}</span>
           <span title={t('city.comfort')} className="inline-flex items-center gap-1">
             <MoodFace mood={city.comfort >= 70 ? 'happy' : city.comfort >= 40 ? 'waiting' : 'angry'} size={18} />
             {city.comfort}%
           </span>
-          <span title={t('city.facilities')}>🏛 {city.built}/{city.facilities.length}</span>
+          <span title={t('city.facilities')} className="inline-flex items-center gap-1"><Icon name="board" size={14} />{city.built}/{city.facilities.length}</span>
           <span className="h-4 w-px bg-white/30" aria-hidden />
           {scene.stats.map((s) => (
             <span key={s.label} data-stat={s.label} className="whitespace-nowrap">
@@ -114,7 +115,7 @@ export function CityPane({ track, city: learned, state, previous, currentFacilit
             }}
             className="flex w-full items-center justify-between px-3 py-1.5 text-xs font-extrabold"
           >
-            🗺 {t('city.legend', { name: city.plan.name })}
+            <span className="inline-flex items-center gap-1"><Icon name="map" size={13} />{t('city.legend', { name: city.plan.name })}</span>
             <span aria-hidden>{legendOpen ? '▾' : '▴'}</span>
           </button>
           {legendOpen ? (
@@ -181,7 +182,7 @@ function ItemInfo({ item, onClose }: { item: SceneItem; onClose: () => void }) {
   if (!info) return null;
   return (
     <Panel testId="city-inspector" title={info.title} onClose={onClose}>
-      <p className="mt-1 rounded bg-[#2b2118] px-2 py-1 text-xs font-bold text-[#f2c14e]">🔎 {info.kind}</p>
+      <p className="mt-1 rounded bg-[#2b2118] px-2 py-1 text-xs font-bold text-[#f2c14e]">{info.kind}</p>
       <ul className="mt-2 flex flex-col gap-1">
         {info.lines.filter((l) => l !== '').map((line) => (
           <li key={line} className="text-xs leading-relaxed">
@@ -204,7 +205,7 @@ function CivicInfo({ facility, city, onStudy, onClose }: { facility: CivicView; 
   if (!status) return null;
   const locked = status.state === 'locked';
   return (
-    <Panel testId="city-civic" title={`🏛 ${facility.name}`} onClose={onClose}>
+    <Panel testId="city-civic" title={facility.name} onClose={onClose}>
       <p className="mt-1 text-xs">{t('city.civicConcept', { concept: status.facility.concept })}</p>
       <p className="mt-1 text-xs font-bold">
         {locked

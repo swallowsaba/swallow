@@ -87,7 +87,6 @@ export function Celebration({ data, onDismiss, nextLabel, onNext, onRetry, onCit
               >
                 {data.town.lines.map((line, i) => (
                   <p key={line} className={i === 0 ? 'text-lg font-extrabold' : 'text-base font-bold'}>
-                    {i === 0 ? '🏗 ' : '👪 '}
                     {line}
                   </p>
                 ))}

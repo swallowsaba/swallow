@@ -1,5 +1,8 @@
-devlearn-arena/REDESIGN4.md を読み、未完了（[ ]）の項目を上から順に実装しろ。
-終わった項目は REDESIGN4.md のチェックボックスを [x] に変えろ。
-各項目ごとに devlearn-arena で npm run verify を通し、落ちたら自分で直せ。
+﻿devlearn-arena/REWORK.md を読み、未完了の項目を上から順に実装しろ。
+これは第3版で、過去2回の指示が守られていない。今回は既存の可視化を作り直す。
+項目0（古いファイルの削除と絵文字の禁止）から始め、順に進めろ。飛ばすな。
+終わった項目は REWORK.md のチェックボックスを [x] に変えてコミットしろ。
+各項目ごとに devlearn-arena で npm run typecheck と npm run lint と npm run test を通し、落ちたら自分で直してからコミットしろ。
+playwright は実行するな。
 確認を求めず、報告のために止まるな。全項目が [x] になるまで進めろ。
 全部終わっていたら ALLDONE とだけ出力して終われ。

@@ -153,7 +153,7 @@ describe('カテゴリごとの街', () => {
   it('学びの数字と現場の見立ての数字、この街のしくみ（凡例）が並び、地図を描けない環境では案内を出す', () => {
     const state = createSession({ files: { '/home/learner': null } }).state;
     const view = mount(<CityPane track="git" city={gitCity([])} state={state} currentFacilityId={null} onStudy={() => undefined} />);
-    expect(view.querySelector('[data-testid="city-stats"]')?.textContent).toContain('🏠');
+    expect(view.querySelector('[data-testid="city-stats"]')?.querySelector('svg')).not.toBeNull();
     expect(view.querySelector('[data-testid="city-canvas"]')?.getAttribute('data-canvas')).toBe('off');
     expect(view.querySelector('[data-testid="city-legend"]')?.textContent).toContain('git add');
     // リポジトリが無ければ、git init を案内する

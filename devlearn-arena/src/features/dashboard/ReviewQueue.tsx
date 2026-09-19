@@ -4,6 +4,7 @@ import { useT } from '@/i18n/useT';
 import { dayKey } from '@/lib/date';
 import { dueItems } from '@/lib/review';
 import { useStore } from '@/store';
+import { Icon } from '@/ui/Icon';
 
 /** 今日の見直し。躓いた任務が日を置いて戻ってくる */
 export function ReviewQueue() {
@@ -34,8 +35,8 @@ export function ReviewQueue() {
                   to={`/?mission=${encodeURIComponent(item.lessonId)}`}
                   className="flex items-center gap-3 border-2 border-wood-dark bg-[var(--cream-dark)] px-4 py-3 hover:bg-white"
                 >
-                  <span aria-hidden className="text-xl">
-                    🔁
+                  <span aria-hidden>
+                    <Icon name="replay" size={20} />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-bold">
