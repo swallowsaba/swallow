@@ -1114,8 +1114,17 @@ async function populateBusExcludeSelectors({ withGtfs = false } = {}) {
   if (withGtfs) {
     try {
       const { gtfsBusLines } = await import('./gtfs.js');
-      for (const o of await gtfsBusLines()) {
-        byOperator.set(o.operatorTitle, { full: true, operatorId: o.operator, routes: new Set(o.routes) });
+      const note = $('#ex-bus-note');
+      const lines = await gtfsBusLines((p) => {
+        if (note) note.textContent = `${p.title} の系統を読み込んでいます…(${p.done}/${p.total})`;
+      });
+      for (const o of lines) {
+        byOperator.set(o.operatorTitle, {
+          full: !o.partial,
+          partial: o.partial,
+          operatorId: o.operator,
+          routes: new Set(o.routes),
+        });
       }
     } catch {
       /* 未取り込みなら候補が減るだけ */
@@ -1197,10 +1206,18 @@ function populateBusLineSelector() {
     for (const r of routes) sel.append(new Option(r, r));
   }
 
+  // 系統が出ないときに黙っていると「壊れている」と見えるので、
+  // なぜ出ないのか・どうすれば出るのかまで書く。
   if (note) {
-    note.textContent = entry.full
-      ? `${opTitle} は取り込み済みのため全系統(${routes.length} 件)から選べます。`
-      : `${opTitle} は全系統の一覧を取得できないため、検索結果に出た系統(${routes.length} 件)だけ選べます。事業者ごと除外はいつでもできます。`;
+    if (routes.length && entry.full) {
+      note.textContent = `${opTitle} は取り込み済みのため全系統(${routes.length} 件)から選べます。`;
+    } else if (routes.length && entry.partial) {
+      note.textContent = `${opTitle} の系統は多いため、先頭の ${routes.length} 件だけ読み込んでいます。目的の系統が無いときは、一度検索してから経路カードの「この系統を除外」をお使いください。`;
+    } else if (routes.length) {
+      note.textContent = `${opTitle} は全系統の一覧を取得できないため、検索結果に出た系統(${routes.length} 件)だけ選べます。事業者ごと除外はいつでもできます。`;
+    } else {
+      note.textContent = `${opTitle} の系統はまだ判りません。一度検索すると、出てきた系統を選べるようになります(経路カードの「この系統を除外」からも指定できます)。事業者ごと除外は今すぐできます。`;
+    }
   }
 }
 
@@ -1709,6 +1726,8 @@ async function refreshStatus() {
     failed: state.statusFailed,
     errors: state.statusErrors,
     onExcludeRailway: (rw) => addExclude({ type: 'railway', railway: rw }),
+    onExcludeBusLine: ({ operatorTitle, lineTitle }) =>
+      addExclude({ type: 'busLine', operatorTitle, lineTitle }),
   });
   ui.renderStamps({ ...state.stamps, statusFailed: state.statusFailed });
 }
@@ -1728,6 +1747,8 @@ function renderSorted() {
     analysis: state.analysis,
     shownRoute: state.shownRoute,
     onExcludeRailway: (rw) => addExclude({ type: 'railway', railway: rw }),
+    onExcludeBusLine: ({ operatorTitle, lineTitle }) =>
+      addExclude({ type: 'busLine', operatorTitle, lineTitle }),
     onShowOnMap: (route) => {
       showRouteOnMap(route, { open: true });
       $('#map-card').scrollIntoView({ behavior: 'smooth', block: 'start' });

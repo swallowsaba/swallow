@@ -559,6 +559,25 @@ async function search(page, from, to) {
     assert(busAfter < busBefore, `バスを除外しても経路が減っていない(${busBefore} → ${busAfter})`);
     console.log(`  ok  バスを事業者ごと除外できる(${target}: ${busBefore} → ${busAfter} 件)`);
 
+    // 系統ごとの除外は、経路カードのボタンからも行える。
+    // 事業者によっては全系統の一覧を取れないので、ここが確実な入口になる。
+    await page.click('#excludes-clear');
+    await page.waitForTimeout(1200);
+    await page.click('#search-btn');
+    await page.waitForSelector('.route', { timeout: 15000 });
+    await page.waitForTimeout(600);
+
+    const lineBtn = await page.$('.route:has(.badge--bus) .leg__exclude');
+    assert(lineBtn, '経路カードに「この系統を除外」が無い');
+    const beforeLine = (await page.$$('.badge--bus')).length;
+    await lineBtn.click();
+    await page.waitForTimeout(1500);
+    const lineChips = await page.$$eval('.chip-x', (els) => els.map((e) => e.textContent));
+    assert(lineChips.length >= 1, `系統の除外チップが出ていない: ${JSON.stringify(lineChips)}`);
+    const afterLine = (await page.$$('.badge--bus')).length;
+    assert(afterLine < beforeLine, `系統を除外しても減っていない(${beforeLine} → ${afterLine})`);
+    console.log(`  ok  経路カードから系統を除外できる(${beforeLine} → ${afterLine} 件)`);
+
     await page.click('#excludes-clear');
     await page.waitForTimeout(1200);
   }

@@ -482,7 +482,7 @@ export function markShownRoute(route) {
   }
 }
 
-function renderRoute(route, rank, { net, analysis, shownRoute, onExcludeRailway, onShowOnMap }) {
+function renderRoute(route, rank, { net, analysis, shownRoute, onExcludeRailway, onExcludeBusLine, onShowOnMap }) {
   const warnings = route.warnings || [];
   const worst = warnings.reduce(
     (acc, w) => (w.severity === SEVERITY.SUSPENDED ? 'danger' : acc === 'danger' ? 'danger' : w.severity === SEVERITY.DELAY ? 'warn' : acc),
@@ -636,6 +636,19 @@ function renderRoute(route, rank, { net, analysis, shownRoute, onExcludeRailway,
       detail: detailParts.join(' / '),
       estimated: leg.estimated,
     });
+
+    // バスの系統は、一覧から探すより「出ているものを外す」方が早い。
+    // 事業者によっては全系統の一覧を取れないので、ここが確実な入口になる。
+    if (leg.bus && onExcludeBusLine && leg.operatorTitle && leg.lineTitle) {
+      const b = el('button', 'btn btn--ghost btn--sm leg__exclude', 'この系統を除外');
+      b.type = 'button';
+      b.title = `${leg.operatorTitle} ${leg.lineTitle} を使わない経路を計算します`;
+      b.addEventListener('click', () =>
+        onExcludeBusLine({ operatorTitle: leg.operatorTitle, lineTitle: leg.lineTitle })
+      );
+      row.querySelector('.leg__body')?.append(b);
+    }
+
     legs.append(row);
 
     // 最後の乗車レグの後に到着駅を出す

@@ -396,13 +396,50 @@ export function resetGtfsCache() {
  * 索引に入っているので、系統ファイルは取りに行かない。
  * @returns {Promise<Array<{operator:string, operatorTitle:string, routes:string[]}>>}
  */
-export async function gtfsBusLines() {
+export async function gtfsBusLines(onProgress) {
   const loaded = await loadAllIndexes();
-  return loaded
-    .map(({ op, index }) => ({
-      operator: op.id,
-      operatorTitle: op.title,
-      routes: Array.isArray(index.routes) ? index.routes : [],
-    }))
-    .filter((o) => o.routes.length);
+  const out = [];
+  for (const { op, index } of loaded) {
+    if (Array.isArray(index.routes) && index.routes.length) {
+      out.push({ operator: op.id, operatorTitle: op.title, routes: index.routes, partial: false });
+      continue;
+    }
+    // 古い索引には系統名の一覧が入っていない(あとから足した項目)。
+    // 取り込み直すまで何も選べないのは困るので、系統ファイルから拾う。
+    const routes = await routeNamesFromShards(op, index, onProgress);
+    if (routes.names.length) {
+      out.push({
+        operator: op.id,
+        operatorTitle: op.title,
+        routes: routes.names,
+        partial: routes.partial,
+      });
+    }
+  }
+  return out;
+}
+
+/** 1 事業者あたり、系統名を集めるために読むファイルの上限 */
+const ROUTE_NAME_SHARD_LIMIT = 40;
+
+/**
+ * 系統ファイルを順に読んで系統名を集める。
+ * 索引に一覧が無い(古い)ときだけ使う。読みすぎないよう上限を設ける。
+ */
+async function routeNamesFromShards(op, index, onProgress) {
+  const total = Math.min(index.shardCount || 0, ROUTE_NAME_SHARD_LIMIT);
+  const names = new Set();
+  for (let shard = 0; shard < total; shard += 1) {
+    try {
+      const body = await getJson(`${BASE}/${op.id}/patterns/${shard}.json`);
+      for (const p of body.patterns || []) if (p.n) names.add(p.n);
+    } catch {
+      /* 1 ファイル読めなくても、集まったぶんは使う */
+    }
+    if (onProgress) onProgress({ title: op.title, done: shard + 1, total });
+  }
+  return {
+    names: [...names].sort((a, b) => String(a).localeCompare(String(b), 'ja')),
+    partial: (index.shardCount || 0) > total,
+  };
 }

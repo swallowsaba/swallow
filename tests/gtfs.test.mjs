@@ -14,6 +14,7 @@ import {
   findAllGtfsRoutes,
   stopsInBounds,
   indexStatus,
+  gtfsBusLines,
   resetGtfsCache,
   STOP_MIN_ZOOM,
 } from '../transit/js/gtfs.js';
@@ -659,6 +660,56 @@ await asyncTest('id が重複していない', async () => {
   const body = JSON.parse(await readFile('tools/gtfs-sources.json', 'utf8'));
   const ids = body.sources.map((s) => s.id);
   assert.equal(new Set(ids).size, ids.length, 'id が重複している');
+});
+
+
+/* ================================================================== *
+ *  除外の選択肢に出す系統名
+ * ================================================================== */
+console.log('\n系統名の一覧');
+
+await asyncTest('索引に系統名があればそれを使う(通信を増やさない)', async () => {
+  installFetch(FILES);
+  let shardReads = 0;
+  const base = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).includes('/patterns/')) shardReads += 1;
+    return base(url);
+  };
+  const lines = await gtfsBusLines();
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].operatorTitle, '京王バス');
+  assert(lines[0].routes.includes('K01'), `系統名が入っていない: ${JSON.stringify(lines[0].routes)}`);
+  assert.equal(lines[0].partial, false);
+  assert.equal(shardReads, 0, '索引に一覧があるのに系統ファイルを読んでいる');
+});
+
+await asyncTest('古い索引(系統名が無い)でも系統ファイルから拾う', async () => {
+  // 索引から routes を抜いた、取り込み直す前の状態を再現する
+  const old = { ...FILES };
+  const idx = JSON.parse(FILES['KeioBus/index.json']);
+  delete idx.routes;
+  old['KeioBus/index.json'] = JSON.stringify(idx);
+  installFetch(old);
+
+  const lines = await gtfsBusLines();
+  assert.equal(lines.length, 1, '古い索引だと何も選べない');
+  assert(lines[0].routes.length >= 1, `系統名を拾えていない: ${JSON.stringify(lines[0].routes)}`);
+  assert(lines[0].routes.includes('K01'), `系統名が違う: ${JSON.stringify(lines[0].routes)}`);
+});
+
+await asyncTest('読み込みの進み具合を知らせる', async () => {
+  const old = { ...FILES };
+  const idx = JSON.parse(FILES['KeioBus/index.json']);
+  delete idx.routes;
+  old['KeioBus/index.json'] = JSON.stringify(idx);
+  installFetch(old);
+
+  const seen = [];
+  await gtfsBusLines((p) => seen.push(p));
+  assert(seen.length >= 1, '進捗が来ていない');
+  assert.equal(seen[0].title, '京王バス');
+  assert(seen[0].total >= 1, '全体数が伝わっていない');
 });
 
 console.log(`\n${passed} 件のテストが成功${process.exitCode ? '(失敗あり)' : ''}\n`);
