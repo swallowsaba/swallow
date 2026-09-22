@@ -34,12 +34,27 @@ export type BuildingKind =
   | 'hut' | 'house' | 'relay' | 'gate'
   | 'window' | 'line';
 
+/**
+ * 建物や住人に付く、押せる印。
+ * stop=停止（通行止め） close=× plus=＋ minus=− send=運ぶ
+ */
+export interface CityAction {
+  mark: 'stop' | 'close' | 'plus' | 'minus' | 'send';
+  command: string;
+  why: string;
+}
+
 export interface Occupant {
   id: string;
   label: string;
   state: 'moving' | 'settled' | 'sick' | 'gone';
   /** 引っ越し中なら移動元の建物 */
   from?: string;
+  /** 押したときに端末へ送るコマンド */
+  command?: string;
+  why?: string;
+  /** 住人に付く印（× で消すなど） */
+  actions?: CityAction[];
 }
 
 export interface Building {
@@ -66,6 +81,8 @@ export interface Building {
   command?: string;
   /** なぜそのコマンドなのか。押したときに一行で出す */
   why?: string;
+  /** 建物に付く印（停止・増やす・減らすなど） */
+  actions?: CityAction[];
 }
 
 /** 区画。ディレクトリ 1 つが 1 区画になる */
@@ -245,7 +262,7 @@ function markPlots(tiles: CityTile[], plots: readonly CityPlot[]): void {
  * 学習者が作った資源だけが街になる。
  * 最初から在る OS のディレクトリ（`/etc` など）は描かない。開始時は更地である。
  */
-function filesOf(vfs: VfsState, home: string, out: Built): void {
+function filesOf(vfs: VfsState, home: string, repoRoot: string | null, out: Built): void {
   if (stat(vfs, home) === undefined) return;
   const lots = new Lots('kernel', 3, 3);
   const walk = (dir: string, depth: number): void => {
@@ -285,6 +302,18 @@ function filesOf(vfs: VfsState, home: string, out: Built): void {
           district: at.district,
           command: `cat ${path}`,
           why: 'ファイルは小屋。中身が増えると大きくなる',
+          // 倉庫（index）へ運ぶ。リポジトリの中の小屋にだけ付く
+          ...(repoRoot !== null && path.startsWith(`${repoRoot}/`)
+            ? {
+                actions: [
+                  {
+                    mark: 'send' as const,
+                    command: `git add ${path.slice(repoRoot.length + 1)}`,
+                    why: '小屋の中身を倉庫（index）へ運ぶ。commit で碑になる',
+                  },
+                ],
+              }
+            : {}),
         });
       }
     }
@@ -459,6 +488,19 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
       district: at.district,
       command: `kubectl describe node ${node.metadata.name}`,
       why: '高層ビルはノード。どれだけ入居できて、いま何が起きているかを見る',
+      actions: [
+        node.spec.unschedulable
+          ? {
+              mark: 'stop' as const,
+              command: `kubectl uncordon ${node.metadata.name}`,
+              why: '通行止めを解いて、新しい住人を受け入れられるようにする',
+            }
+          : {
+              mark: 'stop' as const,
+              command: `kubectl cordon ${node.metadata.name}`,
+              why: 'このビルを通行止めにして、新しい住人が入らないようにする',
+            },
+      ],
     };
     towers.set(node.metadata.name, building);
     out.buildings.push(building);
@@ -476,6 +518,15 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
       id,
       label: pod.metadata.name,
       state: occupantState(pod),
+      command: `kubectl describe pod ${pod.metadata.name}`,
+      why: '住人は Pod。いまどんな様子かを見る',
+      actions: [
+        {
+          mark: 'close',
+          command: `kubectl delete pod ${pod.metadata.name}`,
+          why: 'この住人に出ていってもらう。Deployment の住人なら代わりが来る',
+        },
+      ],
     };
     if (was !== undefined && was !== tower.id) occupant.from = was;
     tower.occupants.push(occupant);
@@ -499,8 +550,20 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
       state: deploy.status.readyReplicas < deploy.spec.replicas ? 'busy' : 'normal',
       phase: 'done',
       district: at.district,
-      command: `kubectl scale deploy ${deploy.metadata.name} --replicas=${String(deploy.spec.replicas)}`,
-      why: '事務所は Deployment。募集する人数（replicas）を決める',
+      command: `kubectl describe deploy ${deploy.metadata.name}`,
+      why: '事務所は Deployment。いま何人を募集していて、何人揃ったかを見る',
+      actions: [
+        {
+          mark: 'plus',
+          command: `kubectl scale deploy ${deploy.metadata.name} --replicas=${String(deploy.spec.replicas + 1)}`,
+          why: '募集する人数（replicas）を 1 人増やす',
+        },
+        {
+          mark: 'minus',
+          command: `kubectl scale deploy ${deploy.metadata.name} --replicas=${String(Math.max(0, deploy.spec.replicas - 1))}`,
+          why: '募集する人数（replicas）を 1 人減らす',
+        },
+      ],
     });
   }
 
@@ -668,7 +731,7 @@ export function buildCity(input: CityInput): City {
   const out: Built = { buildings: [], roads: [], plots: [], carts: [] };
   const home = input.home ?? DEFAULT_HOME;
 
-  if (input.vfs && unlocked.has('kernel')) filesOf(input.vfs, home, out);
+  if (input.vfs && unlocked.has('kernel')) filesOf(input.vfs, home, input.git?.root ?? null, out);
   if (input.git && unlocked.has('git')) gitOf(input.git, out);
   if (input.cluster && unlocked.has('k8s')) k8sOf(input.cluster, input.before, out);
   if (input.net && unlocked.has('net')) netOf(input.net, out);

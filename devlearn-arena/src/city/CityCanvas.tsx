@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import type { Building, City, CityPlot, Occupant } from './model';
+import type { Building, City, CityAction, CityPlot, Occupant } from './model';
 import {
   BUILDING, CART, GROUND, INK, LABEL, LOCKED, OCCUPANT, OUTLINE_WIDTH, ROAD, SHADOW, SHADOW_STEP, STATE, TILE,
 } from './palette';
@@ -215,10 +215,11 @@ function BuildingShape({
         strokeDasharray={solid ? undefined : '3 2'}
       />
       {solid ? <Marks building={b} /> : null}
-      <Residents building={b} at={at} animate={animate} />
+      <Residents building={b} at={at} animate={animate} onPick={onPick} />
       <text x={x} y={y - 2} fill={LABEL.fill} fontSize={LABEL.size}>
         {b.label.length > 14 ? `${b.label.slice(0, 13)}…` : b.label}
       </text>
+      <Handles actions={b.actions} x={x + w} y={y} onPick={onPick} />
     </g>
   );
 }
@@ -297,15 +298,79 @@ function Marks({ building: b }: { building: Building }) {
   }
 }
 
+/**
+ * 押せる印。建物や住人の脇に小さく並べる。
+ * 停止は四角、× は斜め十字、＋ と − は線、運ぶは矢。どれも図形だけで描く。
+ */
+function Handles({
+  actions,
+  x,
+  y,
+  onPick,
+}: {
+  actions: CityAction[] | undefined;
+  x: number;
+  y: number;
+  onPick: (line: string | undefined, why: string | undefined) => void;
+}) {
+  if (actions === undefined || actions.length === 0) return null;
+  const size = 7;
+  return (
+    <g data-layer="handles" shapeRendering="geometricPrecision">
+      {actions.map((action, i) => {
+        const hx = x + 1;
+        const hy = y + i * (size + 2);
+        const mid = hy + size / 2;
+        return (
+          <g
+            key={action.mark}
+            data-handle={action.mark}
+            role="button"
+            aria-label={action.command}
+            style={{ cursor: 'pointer' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPick(action.command, action.why);
+            }}
+          >
+            <rect x={hx} y={hy} width={size} height={size} fill="#f3f1ea" stroke={INK} strokeWidth={OUTLINE_WIDTH} />
+            {action.mark === 'stop' ? <rect x={hx + 2} y={hy + 2} width={size - 4} height={size - 4} fill={STATE.broken} /> : null}
+            {action.mark === 'close' ? (
+              <g stroke={INK} strokeWidth={OUTLINE_WIDTH}>
+                <line x1={hx + 2} y1={hy + 2} x2={hx + size - 2} y2={hy + size - 2} />
+                <line x1={hx + size - 2} y1={hy + 2} x2={hx + 2} y2={hy + size - 2} />
+              </g>
+            ) : null}
+            {action.mark === 'plus' || action.mark === 'minus' ? (
+              <g stroke={INK} strokeWidth={OUTLINE_WIDTH}>
+                <line x1={hx + 2} y1={mid} x2={hx + size - 2} y2={mid} />
+                {action.mark === 'plus' ? <line x1={hx + size / 2} y1={hy + 2} x2={hx + size / 2} y2={hy + size - 2} /> : null}
+              </g>
+            ) : null}
+            {action.mark === 'send' ? (
+              <g stroke={INK} strokeWidth={OUTLINE_WIDTH} fill="none">
+                <line x1={hx + 2} y1={mid} x2={hx + size - 2} y2={mid} />
+                <polyline points={`${String(hx + size - 4)},${String(mid - 2)} ${String(hx + size - 2)},${String(mid)} ${String(hx + size - 4)},${String(mid + 2)}`} />
+              </g>
+            ) : null}
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
 /** 住人。小さな丸で、色が状態を示す。引っ越してきた住人は元の建物から歩いて入る */
 function Residents({
   building: b,
   at,
   animate,
+  onPick,
 }: {
   building: Building;
   at: ReadonlyMap<string, { x: number; y: number }>;
   animate: boolean;
+  onPick: (line: string | undefined, why: string | undefined) => void;
 }) {
   const perRow = Math.max(1, b.w);
   return (
@@ -315,7 +380,16 @@ function Residents({
           x: px(b.x) + 4 + (i % perRow) * (TILE - 2),
           y: px(b.y) + 5 + Math.floor(i / perRow) * (TILE - 2),
         };
-        return <Resident key={o.id} occupant={o} spot={spot} from={o.from === undefined ? undefined : at.get(o.from)} animate={animate} />;
+        return (
+          <Resident
+            key={o.id}
+            occupant={o}
+            spot={spot}
+            from={o.from === undefined ? undefined : at.get(o.from)}
+            animate={animate}
+            onPick={onPick}
+          />
+        );
       })}
     </g>
   );
@@ -326,28 +400,42 @@ function Resident({
   spot,
   from,
   animate,
+  onPick,
 }: {
   occupant: Occupant;
   spot: { x: number; y: number };
   from: { x: number; y: number } | undefined;
   animate: boolean;
+  onPick: (line: string | undefined, why: string | undefined) => void;
 }) {
   const walk = animate && from !== undefined;
   return (
-    <motion.circle
-      data-resident={occupant.id}
-      data-resident-state={occupant.state}
-      r={3}
-      fill={OCCUPANT[occupant.state]}
-      stroke={INK}
-      strokeWidth={OUTLINE_WIDTH}
-      shapeRendering="geometricPrecision"
-      initial={walk ? { cx: from.x, cy: from.y } : false}
-      animate={{ cx: spot.x, cy: spot.y }}
-      transition={walk ? { duration: 0.9, ease: 'easeInOut' } : { duration: 0 }}
-    >
-      <title>{occupant.label}</title>
-    </motion.circle>
+    <g data-layer="resident">
+      <motion.circle
+        data-resident={occupant.id}
+        data-resident-state={occupant.state}
+        r={3}
+        fill={OCCUPANT[occupant.state]}
+        stroke={INK}
+        strokeWidth={OUTLINE_WIDTH}
+        shapeRendering="geometricPrecision"
+        role={occupant.command === undefined ? undefined : 'button'}
+        aria-label={occupant.command === undefined ? undefined : `${occupant.label}: ${occupant.command}`}
+        style={occupant.command === undefined ? undefined : { cursor: 'pointer' }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onPick(occupant.command, occupant.why);
+        }}
+        initial={walk ? { cx: from.x, cy: from.y } : false}
+        animate={{ cx: spot.x, cy: spot.y }}
+        transition={walk ? { duration: 0.9, ease: 'easeInOut' } : { duration: 0 }}
+      >
+        <title>{occupant.label}</title>
+      </motion.circle>
+      <g data-resident-actions={occupant.id}>
+        <Handles actions={occupant.actions} x={spot.x + 2} y={spot.y - 3} onPick={onPick} />
+      </g>
+    </g>
   );
 }
 

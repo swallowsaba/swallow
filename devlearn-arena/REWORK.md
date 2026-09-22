@@ -134,11 +134,11 @@
 
 ## 3. 街から操作する
 
-- [ ] 3-1. `CityCanvas` に `onCommand: (line: string) => void` を渡す。
+- [x] 3-1. `CityCanvas` に `onCommand: (line: string) => void` を渡す。
   クリックされたら対応するコマンドを**端末に入力して実行する**（`TerminalHandle.submit`）。
   端末に文字が出るのが見えること。
 
-- [ ] 3-2. 対応表。
+- [x] 3-2. 対応表。
   - 高層ビル（ノード）をクリック → `kubectl describe node <名前>`
   - ビルの「停止」印 → `kubectl cordon <名前>`
   - 住人（Pod）をクリック → `kubectl describe pod <名前>`
@@ -151,7 +151,7 @@
   - 施設 → `ping <相手>`
   - 審査窓口 → `gh pr view <番号>`
 
-- [ ] 3-3. 操作したとき、**なぜそのコマンドかを一行で出す。**
+- [x] 3-3. 操作したとき、**なぜそのコマンドかを一行で出す。**
 
 ## 4. 画面の作り
 

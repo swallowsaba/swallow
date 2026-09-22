@@ -556,6 +556,17 @@ function Park({
   const studyFacility = (id: string): void => {
     onPickFacility(id);
   };
+  /**
+   * 街を押したときに、対応するコマンドを端末へ打ち込んで実行する。
+   * 1 文字ずつ打つので、何が打たれたのかが端末に残る。
+   */
+  const runFromCity = useCallback((line: string) => {
+    const terminal = terminalRef.current;
+    if (!terminal) return;
+    terminal.type(line);
+    terminal.focus();
+  }, []);
+
   // 作業に入ったら、すぐ打てるようにターミナルへ
   useEffect(() => {
     if (stage !== 'work') return;
@@ -852,7 +863,14 @@ function Park({
         />
 
         <div className="flex min-h-0 min-w-0 flex-col">
-          <CityPane track={mission.track} city={city} state={session.state} cleared={clearedIds} events={cityEvents} />
+          <CityPane
+            track={mission.track}
+            city={city}
+            state={session.state}
+            cleared={clearedIds}
+            events={cityEvents}
+            onCommand={stage === 'work' ? runFromCity : undefined}
+          />
         </div>
       </div>
     </div>
