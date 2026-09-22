@@ -6,6 +6,8 @@
  */
 
 export type IconName =
+  | 'star'
+  | 'starOutline'
   | 'request'
   | 'quiz'
   | 'tool'
@@ -165,6 +167,8 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M9 4.5v13M15 6.5v13" />
     </>
   ),
+  star: <path d="M12 3.8l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 10l5.9-.9z" fill="currentColor" />,
+  starOutline: <path d="M12 3.8l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 10l5.9-.9z" />,
 };
 
 export function Icon({ name, size = 18, className, strokeWidth = 1.75 }: { name: IconName; size?: number; className?: string; strokeWidth?: number }) {

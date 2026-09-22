@@ -20,7 +20,7 @@
   - `src/visual/PacketFlow.tsx`
   - `src/visual/PrTimeline.tsx`
 
-- [ ] 0-2. **絵文字を絵として使うことを禁止する。**
+- [x] 0-2. **絵文字を絵として使うことを禁止する。**
   人・建物・道具を絵文字（🧑‍🌾 🏠 📦 🌳 など）で描いている箇所を全て廃し、SVG で描く。
   検査用のテスト `src/city/noEmoji.test.ts` を作り、
   `src/city/**` と `src/visual/**` の全 `.tsx` に絵文字の符号位置

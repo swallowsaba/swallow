@@ -27,10 +27,9 @@ import { splitTemplate } from '@/ui/panes';
 import { CITIES, CITY_TRACKS, cityOf, facilityById } from '@/content/city';
 import { FacilityLesson } from '@/features/city/FacilityLesson';
 import type { MissionTrack } from '@/engines/lesson/types';
-import { CityPane } from '@/features/citymap/CityPane';
 import { CityBoard } from '@/features/citymap/CityBoard';
 import { growCity } from '@/features/citymap/cityStore';
-import type { CityEvent } from '@/features/citymap/CityMapView';
+import { CityPane, type CityEvent } from '@/features/citymap/CityPane';
 import { CityPortrait } from '@/visual/game/cityArt';
 import { TRACK_ACCENT } from '@/features/citymap/isoDraw';
 import { Icon } from '@/ui/Icon';
@@ -557,14 +556,6 @@ function Park({
   const studyFacility = (id: string): void => {
     onPickFacility(id);
   };
-  // いま取り組んでいる任務の手順の進み。終えた任務は街の状態にもう入っている
-  const partial = useMemo(
-    () =>
-      facility === undefined || clearedIds.has(mission.id) || !facilityBuilt
-        ? null
-        : { facilityId: facility.id, fraction: progress.cleared ? 1 : progress.stepIndex / Math.max(1, mission.steps.length) },
-    [facility, clearedIds, mission.id, mission.steps.length, facilityBuilt, progress.cleared, progress.stepIndex],
-  );
   // 作業に入ったら、すぐ打てるようにターミナルへ
   useEffect(() => {
     if (stage !== 'work') return;
@@ -861,16 +852,7 @@ function Park({
         />
 
         <div className="flex min-h-0 min-w-0 flex-col">
-          <CityPane
-            track={mission.track}
-            city={city}
-            state={session.state}
-            previous={session.journal.entries[session.journal.cursor - 1]?.state}
-            currentFacilityId={handling ? (facility?.id ?? null) : null}
-            partial={partial}
-            events={cityEvents}
-            onStudy={studyFacility}
-          />
+          <CityPane track={mission.track} city={city} state={session.state} events={cityEvents} />
         </div>
       </div>
     </div>

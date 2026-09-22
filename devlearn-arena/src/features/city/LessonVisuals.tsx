@@ -165,9 +165,20 @@ export function HowRoute({ count, index, track, animate }: { count: number; inde
             <g key={i} data-station={i} data-station-state={done ? 'done' : now ? 'now' : 'next'}>
               <rect x={xOf(i) - 2} y={26} width={4} height={28} fill="#5a4630" />
               <circle cx={xOf(i)} cy={22} r={now ? 14 : 11} fill={done ? '#6cbf5a' : now ? '#f2c14e' : '#e7e1d2'} stroke={INK} strokeWidth={2} />
-              <text x={xOf(i)} y={27} fontSize={now ? 14 : 12} fontWeight={900} textAnchor="middle" fill={INK}>
-                {done ? '✓' : i + 1}
-              </text>
+              {done ? (
+                <path
+                  d={`M${String(xOf(i) - 5)} 22l3.5 3.5L${String(xOf(i) + 5)} 18`}
+                  fill="none"
+                  stroke={INK}
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ) : (
+                <text x={xOf(i)} y={27} fontSize={now ? 14 : 12} fontWeight={900} textAnchor="middle" fill={INK}>
+                  {i + 1}
+                </text>
+              )}
             </g>
           );
         })}

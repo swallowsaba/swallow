@@ -15,7 +15,8 @@ export interface DiagramReading {
   lines: readonly string[];
 }
 
-const KIND_ICON: Record<DeviceKind, string> = { host: '💻', router: '🔀', switch: '🔗' };
+/** 機器の呼び分け。絵文字は使わず、言葉で書く */
+const KIND_NAME: Record<DeviceKind, string> = { host: '端末', router: 'ルータ', switch: 'スイッチ' };
 const KIND_WORD: Record<DeviceKind, string> = {
   host: 'パソコンやサーバ',
   router: 'ルータ。別々のネットワークの間で荷物を受け渡す機械',
@@ -23,7 +24,7 @@ const KIND_WORD: Record<DeviceKind, string> = {
 };
 
 export const DIAGRAM_LEGEND: readonly string[] = [
-  `箱が機器。${KIND_ICON.host} は${KIND_WORD.host}、${KIND_ICON.router} は${KIND_WORD.router}、${KIND_ICON.switch} は${KIND_WORD.switch}。`,
+  `箱が機器。「${KIND_NAME.host}」は${KIND_WORD.host}、「${KIND_NAME.router}」は${KIND_WORD.router}、「${KIND_NAME.switch}」は${KIND_WORD.switch}。`,
   '箱の中の 10.0.0.10/24 のような数字は IP アドレス（ネットワーク上の住所）。/24 は「前から 24 ビットぶんが同じ相手は、同じネットワークにいる」という意味。',
   '茶色の線はつながっているケーブル。赤い破線は切れているケーブル。',
   '赤い枠の箱が、いまあなたが操作している機器。コマンドはこの機器の上で動く。',
@@ -42,7 +43,7 @@ export function readTopology(net: Topology, self: string): DiagramReading {
       .map((i) => `${i.name} = ${i.ip}/${String(i.prefix)}`);
     const you = device.name === self ? '（あなたはここ）' : '';
     const where = addresses.length === 0 ? 'IP アドレスは持たない' : addresses.join('、');
-    lines.push(`${KIND_ICON[device.kind]} ${device.name}${you}: ${where}`);
+    lines.push(`［${KIND_NAME[device.kind]}］${device.name}${you}: ${where}`);
     const gateway = device.routes.find((r) => r.destination === '0.0.0.0/0' && r.via !== null);
     if (gateway?.via != null) {
       lines.push(`  ↳ ${device.name} は、行き先を知らない荷物をすべて ${gateway.via} に任せる（デフォルトゲートウェイ）。`);

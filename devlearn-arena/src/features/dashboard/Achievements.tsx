@@ -2,6 +2,7 @@ import { useT } from '@/i18n/useT';
 import { achievements, streakStrip, type Badge } from '@/lib/achievements';
 import { dayKey } from '@/lib/date';
 import { useStore } from '@/store';
+import { Icon } from '@/ui/Icon';
 
 const TIER_CLASS: Record<Badge['tier'], string> = {
   bronze: 'border-[var(--bronze)] text-[var(--bronze)]',
@@ -54,8 +55,8 @@ export function Achievements({ today }: { today?: string }) {
                 b.earned ? TIER_CLASS[b.tier] : 'border-wood-dark text-ink-soft'
               }`}
             >
-              <p className="text-base">
-                {b.earned ? '★ ' : '☆ '}
+              <p className="flex items-center gap-1.5 text-base">
+                <Icon name={b.earned ? 'star' : 'starOutline'} size={16} />
                 {b.requirement}
               </p>
               <p className="mt-1 font-mono text-sm">

@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
  * 絵文字の符号位置（記号・絵文字の面、その他の記号、異体字セレクタ、ゼロ幅接合子）が
  * 1 文字でも入っていれば落とす。
  */
-const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/u;
+const EMOJI = /[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|\u{FE0F}|\u{200D}/u;
 
 const SRC = join(__dirname, '..');
 const ROOTS = ['city', 'visual'];

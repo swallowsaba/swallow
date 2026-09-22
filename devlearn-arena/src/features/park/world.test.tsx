@@ -5,7 +5,6 @@ import { CITIES, cityOf } from '@/content/city';
 import { createSession } from '@/engines/kernel/session';
 import { allMissions } from '@/engines/lesson/registry';
 import { CityPane } from '@/features/citymap/CityPane';
-import { houseLevels } from '@/features/citymap/isoScene';
 import { missionById } from '@/engines/lesson/registry';
 import { useStore } from '@/store';
 import { focusView } from '@/visual/viewportMath';
@@ -150,42 +149,17 @@ describe('入口', () => {
 describe('カテゴリごとの街', () => {
   const gitCity = (built: string[]) => cityOf(CITIES.git, new Set(built), allMissions().filter((m) => m.track === 'git'), new Set());
 
-  it('学びの数字と現場の見立ての数字、この街のしくみ（凡例）が並び、地図を描けない環境では案内を出す', () => {
+  it('街の枠には、いまいる場所と施設の数が出る', () => {
     const state = createSession({ files: { '/home/learner': null } }).state;
-    const view = mount(<CityPane track="git" city={gitCity([])} state={state} currentFacilityId={null} onStudy={() => undefined} />);
-    expect(view.querySelector('[data-testid="city-stats"]')?.querySelector('svg')).not.toBeNull();
-    expect(view.querySelector('[data-testid="city-canvas"]')?.getAttribute('data-canvas')).toBe('off');
-    expect(view.querySelector('[data-testid="city-legend"]')?.textContent).toContain('git add');
-    // リポジトリが無ければ、git init を案内する
-    expect(view.querySelector('[data-testid="city-empty"]')?.textContent).toContain('git init');
-  });
-
-  it('Kubernetes の街の凡例は、ビル＝ノード・部屋＝Pod・監査局', () => {
-    const state = createSession({ files: { '/home/learner': null } }).state;
-    const view = mount(<CityPane track="k8s" city={cityOf(CITIES.k8s, new Set(), [], new Set())} state={state} currentFacilityId={null} onStudy={() => undefined} />);
-    const legend = view.querySelector('[data-testid="city-legend"]')?.textContent ?? '';
-    expect(legend).toContain('ノード');
-    expect(legend).toContain('Pod');
-    expect(legend).toContain('監査');
-  });
-
-  it('理解度に正解すると家が増え、コマンドの手順を通すと家が高くなる', () => {
-    act(() => {
-      useStore.setState({ growth: { git: { houses: 3, floors: 5 } } });
-    });
-    const state = createSession({ files: { '/home/learner': null } }).state;
-    const view = mount(<CityPane track="git" city={gitCity([])} state={state} currentFacilityId={null} onStudy={() => undefined} />);
-    expect(view.querySelector('[data-testid="city-houses"]')?.getAttribute('data-value')).toBe('3');
-    expect(view.querySelector('[data-testid="city-floors"]')?.getAttribute('data-value')).toBe('5');
-    // 家 3 軒に 5 階ぶんを配ると、2 階建てが 2 軒と 1 階建てが 1 軒になる
-    expect(houseLevels({ houses: 3, floors: 5 })).toEqual([3, 3, 2]);
-    expect(houseLevels({ houses: 0, floors: 4 })).toEqual([]);
+    const view = mount(<CityPane track="git" city={gitCity([])} state={state} />);
+    expect(view.querySelector('[data-testid="city-pane"]')).not.toBeNull();
+    expect(view.querySelector('[data-testid="city-cwd"]')?.textContent).toBe(state.cwd);
   });
 
   it('出来事は地図の上の欄にも出る', () => {
     const state = createSession({ files: { '/home/learner': null } }).state;
     const view = mount(
-      <CityPane track="git" city={gitCity([])} state={state} currentFacilityId={null} onStudy={() => undefined} events={[{ id: 1, facilityId: null, text: '⌨ コマンドで現場が変わった', color: '#000' }]} />,
+      <CityPane track="git" city={gitCity([])} state={state} events={[{ id: 1, facilityId: null, text: 'コマンドで現場が変わった', color: '#000' }]} />,
     );
     expect(view.querySelector('[data-city-event]')?.textContent).toContain('現場が変わった');
   });

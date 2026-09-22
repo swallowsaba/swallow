@@ -182,6 +182,25 @@ export function lamp(ctx: Ctx, x: number, y: number): void {
   ctx.fill();
 }
 
+/** 稼働しきった印。文字ではなく五芒星の図形として描く */
+export function star(ctx: Ctx, at: { sx: number; sy: number }, r: number): void {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i += 1) {
+    const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+    const radius = i % 2 === 0 ? r : r * 0.42;
+    const sx = at.sx + Math.cos(angle) * radius;
+    const sy = at.sy + Math.sin(angle) * radius;
+    if (i === 0) ctx.moveTo(sx, sy);
+    else ctx.lineTo(sx, sy);
+  }
+  ctx.closePath();
+  ctx.fillStyle = '#ffd24a';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
 /* ---------------- 施設 ---------------- */
 
 export function facilityBuilding(ctx: Ctx, kind: BuildingKind, accent: string, fx: number, fy: number, ratio: number, build: number): void {
@@ -313,13 +332,6 @@ export function facilityBuilding(ctx: Ctx, kind: BuildingKind, accent: string, f
     ctx.lineTo(load.sx, load.sy);
     ctx.stroke();
   } else if (ratio >= 1) {
-    const p = project(fx + 1, fy + 1, 4.2);
-    ctx.font = '700 16px system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffd24a';
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.lineWidth = 3;
-    ctx.strokeText('★', p.sx, p.sy);
-    ctx.fillText('★', p.sx, p.sy);
+    star(ctx, project(fx + 1, fy + 1, 4.2), 8);
   }
 }

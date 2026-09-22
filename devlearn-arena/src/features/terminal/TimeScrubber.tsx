@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ShellSession } from './useShellSession';
 import { useT } from '@/i18n/useT';
+import { Icon } from '@/ui/Icon';
 
 interface Props {
   session: ShellSession;
@@ -47,7 +48,8 @@ export function TimeScrubber({ session }: Props) {
         aria-label={playing ? t('time.pause') : t('time.play')}
         className="border-2 border-wood-dark px-4 py-1.5 font-mono text-base text-[var(--gold-dark)] hover:bg-gold hover:text-ink disabled:opacity-40"
       >
-        {playing ? '❙❙' : '▶'}
+        <Icon name={playing ? 'pause' : 'play'} size={16} />
+
       </button>
 
       <button
