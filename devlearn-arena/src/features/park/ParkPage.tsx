@@ -737,8 +737,6 @@ function Park({
                 lastError={lastError}
                 nextMission={nextMission}
                 prerequisites={prerequisites}
-                // ヒントは左上のこのパネルに出す。端末には打ち込まない（端末で hint と打てば端末にも出る）
-                onRevealHint={revealHint}
                 onSkip={skipStep}
                 onSwitch={onSwitch}
               />

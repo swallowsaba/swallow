@@ -71,7 +71,7 @@ export const ja = {
   'park.notPassing': '未達成',
   'park.close': '惜しい',
   'park.hint': 'ヒント',
-  'park.hintLead': 'ヒントを押すと、いまの手順のヒントがこの欄に1件ずつ出ます。',
+  'park.hintLead': '端末で hint と打つと、いまの手順のヒントがこの欄に1件ずつ出ます。answer と打つと模範解答が端末に出ます。',
   'park.conditions': '通過条件 {a} / {b}',
   'park.partDone': '満たしている',
   'park.partPending': 'まだ',

@@ -29,7 +29,6 @@ interface Props {
   nextMission: { id: string; title: string } | null;
   /** まだ終えていない前提の任務。止めずに知らせるだけ */
   prerequisites: readonly { id: string; title: string }[];
-  onRevealHint: () => void;
   /** いまの手順を、解答を実行して飛ばす */
   onSkip: () => void;
   onSwitch: (id: string) => void;
@@ -52,7 +51,6 @@ export function MissionPanel({
   lastError,
   nextMission,
   prerequisites,
-  onRevealHint,
   onSkip,
   onSwitch,
 }: Props) {
@@ -134,17 +132,6 @@ export function MissionPanel({
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => {
-                onRevealHint();
-              }}
-              disabled={step === undefined || revealedHints >= step.hints.length}
-              className="ui-btn ui-btn-quiet h-8 px-3 text-[13px]"
-            >
-              <Icon name="idea" size={15} />
-              {t('park.hint')}
-            </button>
-            <button
-              type="button"
               onClick={onSkip}
               disabled={step === undefined}
               title={t('park.skipLead')}
@@ -154,8 +141,9 @@ export function MissionPanel({
               {t('park.skip')}
             </button>
           </div>
+          {/* ヒントは端末で hint と打ったときだけ出す。画面のボタンでは出さない */}
           {revealedHints === 0 ? (
-            <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--u-text-3)]">
+            <p data-testid="hint-lead" className="mt-1.5 text-[11px] leading-relaxed text-[var(--u-text-3)]">
               {t('park.hintLead')} {t('park.skipLead')}
             </p>
           ) : null}

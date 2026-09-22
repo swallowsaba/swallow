@@ -73,7 +73,7 @@ export const en: Record<TKey, string> = {
   'park.notPassing': 'Not yet',
   'park.close': 'So close',
   'park.hint': 'Hint',
-  'park.hintLead': 'Press Hint to show the hints for this step here, one at a time.',
+  'park.hintLead': 'Type hint in the terminal to reveal this step’s hints here, one at a time. Type answer for the model solution.',
   'park.conditions': 'Conditions {a} / {b}',
   'park.partDone': 'done',
   'park.partPending': 'not yet',
