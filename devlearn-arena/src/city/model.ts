@@ -58,6 +58,8 @@ export interface Building {
   /** 中にいる住人（Pod / ファイル / コミットなど） */
   occupants: Occupant[];
   state: 'building' | 'normal' | 'busy' | 'broken';
+  /** 建ち上がりの段。基礎 → 骨組み → 完成 の 3 段階で建つ */
+  phase: 'base' | 'frame' | 'done';
   /** どの区域に建っているか */
   district: DistrictId;
   /** 押したときに端末へ送るコマンド。無ければ押せない */
@@ -180,6 +182,15 @@ class Lots {
   }
 }
 
+/**
+ * 建ち上がりの段。
+ * 建て始めは基礎だけ、次に骨組みが立ち、BUILD_TICKS を過ぎると完成する。
+ */
+export function buildPhase(age: number): 'base' | 'frame' | 'done' {
+  if (age >= BUILD_TICKS) return 'done';
+  return age >= BUILD_TICKS / 2 ? 'frame' : 'base';
+}
+
 /** 使った量から 1..5 の育ちを出す */
 function levelOf(amount: number): number {
   if (amount <= 0) return 1;
@@ -270,6 +281,7 @@ function filesOf(vfs: VfsState, home: string, out: Built): void {
           label: name,
           occupants: [],
           state: 'normal',
+          phase: 'done',
           district: at.district,
           command: `cat ${path}`,
           why: 'ファイルは小屋。中身が増えると大きくなる',
@@ -344,6 +356,7 @@ function gitOf(git: GitState, out: Built): void {
       label: commit.message === '' ? commit.hash.slice(0, 7) : commit.message,
       occupants: [],
       state: 'normal',
+      phase: 'done',
       district: 'git',
       command: `git show ${commit.hash.slice(0, 7)}`,
       why: '記念碑はコミット。何を残したのかを見る',
@@ -376,6 +389,7 @@ function gitOf(git: GitState, out: Built): void {
       label: name,
       occupants: [],
       state: name === head ? 'busy' : 'normal',
+      phase: 'done',
       district: 'git',
       command: `git switch ${name}`,
       why: '旗はブランチ。いまどの通りで作業するかを移す',
@@ -401,6 +415,7 @@ function gitOf(git: GitState, out: Built): void {
       from: `file:${git.root}/${entry.path}`,
     })),
     state: staged.length > 0 ? 'busy' : 'normal',
+    phase: 'done',
     district: 'git',
     command: 'git status',
     why: '倉庫は index。commit で碑になるものが置いてある',
@@ -440,6 +455,7 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
       occupants: [],
       // ノードが増えると建設が始まり、数 tick かけて建つ
       state: age < BUILD_TICKS ? 'building' : !ready ? 'broken' : node.spec.unschedulable ? 'busy' : 'normal',
+      phase: buildPhase(age),
       district: at.district,
       command: `kubectl describe node ${node.metadata.name}`,
       why: '高層ビルはノード。どれだけ入居できて、いま何が起きているかを見る',
@@ -481,6 +497,7 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
       label: deploy.metadata.name,
       occupants: [],
       state: deploy.status.readyReplicas < deploy.spec.replicas ? 'busy' : 'normal',
+      phase: 'done',
       district: at.district,
       command: `kubectl scale deploy ${deploy.metadata.name} --replicas=${String(deploy.spec.replicas)}`,
       why: '事務所は Deployment。募集する人数（replicas）を決める',
@@ -503,6 +520,7 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
       label: service.metadata.name,
       occupants: [],
       state: service.status.endpoints.length === 0 ? 'broken' : 'normal',
+      phase: 'done',
       district: at.district,
       command: `kubectl describe service ${service.metadata.name}`,
       why: 'バス停は Service。どのビルへ路線が伸びているかを見る',
@@ -538,6 +556,7 @@ function netOf(net: Topology, out: Built): void {
       label: device.name,
       occupants: [],
       state: device.interfaces.some((i) => i.up) ? 'normal' : 'broken',
+      phase: 'done',
       district: at.district,
       command: `ping ${device.name}`,
       why: '施設は機器。そこまで荷物が届くかを試す',
@@ -596,6 +615,7 @@ function githubOf(repo: Repo, out: Built): void {
       })),
       // 承認が揃うと門が開く
       state: pull.state === 'merged' ? 'normal' : blocked ? 'broken' : approvals >= required ? 'normal' : 'busy',
+      phase: 'done',
       district: at.district,
       command: `gh pr view ${String(pull.number)}`,
       why: '審査窓口は Pull Request。承認と検査が揃っているかを見る',
@@ -617,6 +637,7 @@ function githubOf(repo: Repo, out: Built): void {
         label: check.name,
         occupants: [],
         state: check.status === 'failure' ? 'broken' : check.status === 'success' ? 'normal' : 'busy',
+        phase: 'done',
         district: at2.district,
         command: `gh pr checks ${String(pull.number)}`,
         why: '検査ラインは CI の job。どこで止まったのかを見る',

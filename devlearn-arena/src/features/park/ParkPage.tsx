@@ -852,7 +852,7 @@ function Park({
         />
 
         <div className="flex min-h-0 min-w-0 flex-col">
-          <CityPane track={mission.track} city={city} state={session.state} events={cityEvents} />
+          <CityPane track={mission.track} city={city} state={session.state} cleared={clearedIds} events={cityEvents} />
         </div>
       </div>
     </div>
