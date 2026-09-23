@@ -4,6 +4,7 @@ import { TILE_METERS } from './palette';
 import { between, hashString, intBetween, unit } from './seed';
 import { buildTerrain, distanceToRiver, inside, isBuildable, type Terrain } from './terrain';
 import { buildRoads, type RoadNetwork } from './roads';
+import { buildProps, type PropPlacement } from './props';
 
 /**
  * 街の状態 → 3D の街の配置。純粋関数。
@@ -83,6 +84,8 @@ export interface CityLayout {
   size: { w: number; d: number };
   terrain: Terrain;
   roads: RoadNetwork;
+  /** 街に置くもの（木・街灯・車・人・生垣・ベンチ・柵・看板） */
+  props: PropPlacement[];
   buildings: LayoutBuilding[];
   districts: LayoutDistrict[];
 }
@@ -275,11 +278,14 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
     return [{ id: `${road.from}->${road.to}`, from, to, active: road.active }];
   });
 
+  const roads = buildRoads({ size, districts, terrain, seed, links });
+
   return {
     seed,
     size,
     terrain,
-    roads: buildRoads({ size, districts, terrain, seed, links }),
+    roads,
+    props: buildProps({ seed, terrain, roads, buildings }),
     buildings,
     districts,
   };
