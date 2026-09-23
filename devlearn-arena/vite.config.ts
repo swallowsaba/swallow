@@ -14,8 +14,10 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
-    // 3D の街（three.js）は作業画面を開いてから別に読む。1 つにまとめた方が速い
-    chunkSizeWarningLimit: 600,
+    // 3D の街（three.js）は CityScene の塊に入る。作業画面を開いて
+    // WebGL が使えるときだけ読むので、初回の読み込みには載らない。
+    // three だけを手で別の塊にすると、入口の塊が静的に参照してしまい先読みされる
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
