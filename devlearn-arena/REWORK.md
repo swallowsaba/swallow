@@ -191,7 +191,7 @@
 - [x] 6-1. `three` / `@react-three/fiber` / `@react-three/drei` を依存に加える。
   CDN からは読まない（バンドルに含める）。外部から 3D モデル（glTF）を取らない。
   `src/city3d/palette.ts` に DESIGN.md §7 の色と材質を定義し、全てそこから引く。
-- [ ] 6-2. `src/city3d/seed.ts` と `src/city3d/model.ts`。
+- [x] 6-2. `src/city3d/seed.ts` と `src/city3d/model.ts`。
   街の状態 → 3D の街の配置（`CityLayout`）を導く**純粋関数**。
   乱数を使わず seed から決める。テスト（決定論・更地は建物0・区域）。
 - [ ] 6-3. `src/city3d/buildings.ts`。`BuildingParams` → `THREE.Group` の純粋関数。
