@@ -2,6 +2,7 @@ import type { Building, BuildingKind, City, Occupant } from '@/city/model';
 import type { DistrictId } from '@/city/growth';
 import { TILE_METERS } from './palette';
 import { between, hashString, intBetween, unit } from './seed';
+import { buildTerrain, distanceToRiver, inside, isBuildable, type Terrain } from './terrain';
 
 /**
  * 街の状態 → 3D の街の配置。純粋関数。
@@ -79,6 +80,7 @@ export interface CityLayout {
   seed: number;
   /** 街の広さ（メートル） */
   size: { w: number; d: number };
+  terrain: Terrain;
   buildings: LayoutBuilding[];
   districts: LayoutDistrict[];
 }
@@ -197,15 +199,44 @@ function occupantsOf(building: Building, city: City, places: ReadonlyMap<string,
 }
 
 /**
+ * 建物が川や海に掛かっていたら、岸へ押し戻す。
+ * 川の中心線から直角に、足元が濡れない所まで下がらせるだけなので、結果は決定論のまま。
+ */
+function ashore(at: Vec2, params: BuildingParams, terrain: Terrain): Vec2 {
+  const half = Math.max(params.footprint.w, params.footprint.d) / 2 + 2;
+  if (isBuildable(terrain, at) && distanceToRiver(terrain, at) > terrain.riverWidth / 2 + terrain.sandWidth + half) {
+    return at;
+  }
+  const want = terrain.riverWidth / 2 + terrain.sandWidth + half;
+  // 川の中心線から見てどちら岸にいるかを保ったまま、必要なだけ離す
+  let moved = at;
+  for (let step = 0; step < 24; step += 1) {
+    const here = distanceToRiver(terrain, moved);
+    if (here >= want) break;
+    const east = { x: moved.x + 1, z: moved.z };
+    const outward = distanceToRiver(terrain, east) > here ? 1 : -1;
+    moved = { x: moved.x + outward * (want - here + 1), z: moved.z };
+  }
+  // 海へはみ出していたら、島の真ん中へ引き戻す
+  for (let step = 0; step < 24 && !inside(terrain.shore, moved); step += 1) {
+    moved = { x: moved.x * 0.94, z: moved.z * 0.94 };
+  }
+  return moved;
+}
+
+/**
  * 街を 3D の配置に直す。
  * 建てる場所は学習者が作った資源が決める。ここが勝手に建物を足すことはない。
  */
 export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
   const seed = input.seed ?? DEFAULT_SEED;
+  const size = { w: city.width * TILE_METERS, d: city.height * TILE_METERS };
+  const terrain = buildTerrain(size, seed);
   const places = new Map(city.buildings.map((b) => [b.id, b]));
 
   const buildings: LayoutBuilding[] = city.buildings.map((building, i) => {
-    const at = centerOf(building, city);
+    const params = paramsFor(building);
+    const at = ashore(centerOf(building, city), params, terrain);
     const face = hashString(building.id);
     return {
       id: building.id,
@@ -214,7 +245,7 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
       // 通りに正対させつつ、少しだけ振る。定規で引いたように揃えない
       at,
       rotation: (Math.PI / 2) * intBetween(face, 6, 0, 3) + between(seed + face, i, -0.09, 0.09),
-      params: paramsFor(building),
+      params,
       occupants: occupantsOf(building, city, places),
       state: building.state,
       phase: building.phase,
@@ -227,7 +258,8 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
 
   return {
     seed,
-    size: { w: city.width * TILE_METERS, d: city.height * TILE_METERS },
+    size,
+    terrain,
     buildings,
     districts: city.districts.map((district) => ({
       id: district.track,
