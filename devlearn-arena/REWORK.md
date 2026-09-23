@@ -178,3 +178,42 @@
 - 失敗を罰にしない
 - 斜め45度にしない。絵文字を絵として使わない
 - テストを必ず書く
+
+---
+
+## 6. 3D の街に作り直す（DESIGN.md 3D 版）
+
+`DESIGN.md` が 3D 版に差し替わった。「SVG で描け」「3D ライブラリを入れるな」
+「斜め45度にしない」は撤回された。Cities: Skylines II のような 3D の街として作り直す。
+2D の `src/city/`（`model.ts` / `CityCanvas.tsx`）は、街の元データと
+**WebGL が無い環境での落とし先**として残す。捨てない。
+
+- [x] 6-1. `three` / `@react-three/fiber` / `@react-three/drei` を依存に加える。
+  CDN からは読まない（バンドルに含める）。外部から 3D モデル（glTF）を取らない。
+  `src/city3d/palette.ts` に DESIGN.md §7 の色と材質を定義し、全てそこから引く。
+- [ ] 6-2. `src/city3d/seed.ts` と `src/city3d/model.ts`。
+  街の状態 → 3D の街の配置（`CityLayout`）を導く**純粋関数**。
+  乱数を使わず seed から決める。テスト（決定論・更地は建物0・区域）。
+- [ ] 6-3. `src/city3d/buildings.ts`。`BuildingParams` → `THREE.Group` の純粋関数。
+  基壇・セットバック・屋上設備 2 つ以上・入口（扉と庇）・高さで変わる材質・
+  **窓 40 枚以上**（`InstancedMesh`）・円柱の高層ビル・切妻屋根。テスト。
+- [ ] 6-4. `src/city3d/terrain.ts`。8m のタイル、**曲線の海岸線**、**蛇行する川**（スプライン）、
+  岸の砂の帯、草地の起伏、川を渡る**橋**。四角い地盤にしない。テスト。
+- [ ] 6-5. `src/city3d/roads.ts`。**縁石・車線の白線・横断歩道**を持つ押し出しの道路。
+  格子とは別に**弧を描く大通り**を 1 本、主要な交差点に**ロータリー**。
+  交差点で道が繋がり、行き止まりを作らない。テスト。
+- [ ] 6-6. `src/city3d/props.ts`。街路樹（幹＋丸い葉の塊 3 つ以上）・街灯・車・人・
+  生垣・ベンチ・柵・看板を seed から置く。**地面がむき出しのまま残らない**こと。テスト。
+- [ ] 6-7. `src/city3d/scene.ts`。`CityLayout` → 街ひとつ分の `THREE.Group`。
+  同じ形は `InstancedMesh` にまとめ、**描画呼び出しを 200 以下**に保つ。テストで数える。
+  遠くの建物は窓を省く（LOD）。
+- [ ] 6-8. `src/city3d/CityScene.tsx`。太陽（`DirectionalLight` + 影、PCFSoft）、
+  空の間接光、`fog`、時間帯と**夜に灯る窓**（`emissive`）。
+  カメラは水平から 35 度の固定角・**水平回転のみ**。寄るときは 0.6 秒で補間。
+  `prefers-reduced-motion` のときは動きを即時にする。
+- [ ] 6-9. `src/city3d/CityView.tsx`。`React.lazy` で遅延読み込みし、`CityPane` から使う。
+  WebGL が使えない環境では 2D（`CityCanvas`）に落とす。真っ白にしない。
+  街を押すと端末にコマンドが入るのは 3D でも同じ。
+- [ ] 6-10. 街は**学習者が設計する**。勝手に配置しない。
+  **コマンドの成功でもクイズの正解でも必ず育つ**（`TownGrowth` を街の姿に反映する）。テスト。
+- [ ] 6-11. `npm run build` が通り、**GitHub Pages で動く**（相対パス・CDN 参照なし）。
