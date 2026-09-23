@@ -154,7 +154,8 @@ export function paramsFor(building: Building): BuildingParams {
   const margin = kind === 'tower' ? 3 : 2;
   const w = Math.max(4, building.w * TILE_METERS - margin * 2);
   const d = Math.max(4, building.h * TILE_METERS - margin * 2);
-  const floors = floorsOf(kind, building.level, seed);
+  // 学習で積み上がった階を足す。コマンドの手順を通したぶんだけ高くなる
+  const floors = floorsOf(kind, building.level, seed) + (building.bonusFloors ?? 0);
   // 円柱の高層ビルを混ぜる。四角い箱だけの街にしない
   const shape: BuildingParams['shape'] = kind === 'tower' && unit(seed, 4) < 0.35 ? 'cylinder' : 'box';
   const side = shape === 'cylinder' ? Math.min(w, d) : 0;
@@ -189,7 +190,7 @@ function centerOf(building: Building, city: City): Vec2 {
 
 /** 住人をどの階に住ませるか。上の階から埋めず、散らして灯りを混ぜる */
 function occupantsOf(building: Building, city: City, places: ReadonlyMap<string, Building>): LayoutOccupant[] {
-  const floors = Math.max(1, floorsOf(PARAM_KIND[building.kind], building.level, hashString(building.id)));
+  const floors = Math.max(1, paramsFor(building).floors);
   return building.occupants.map((occupant, i) => {
     const seed = hashString(occupant.id);
     const from = occupant.from === undefined ? undefined : places.get(occupant.from);

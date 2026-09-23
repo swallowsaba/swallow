@@ -5,6 +5,8 @@ import type { MissionTrack } from '@/engines/lesson/types';
 import { unlockedDistricts } from '@/city/growth';
 import { buildCity, whereabouts, type Whereabouts } from '@/city/model';
 import { CityView } from '@/city3d/CityView';
+import { growthOf } from '@/features/citymap/cityStore';
+import { useStore } from '@/store';
 import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from '@/ui/motion';
 import { Icon } from '@/ui/Icon';
@@ -33,9 +35,11 @@ interface Props {
  * 街の元データは `src/city`、3D の絵は `src/city3d` が持つ。
  * ここは枠と見出しだけを用意する。
  */
-export function CityPane({ city, state, cleared, events, onCommand }: Props) {
+export function CityPane({ track, city, state, cleared, events, onCommand }: Props) {
   const t = useT();
   const animate = useMotionEnabled();
+  // コマンドの手順で階が伸び、理解度の問題に正解すると家が増える
+  const growth = useStore((s) => s.growth);
   // 直前の街での住人の居場所。引っ越しを歩かせるのに使う
   const before = useRef<Whereabouts | undefined>(undefined);
 
@@ -49,10 +53,11 @@ export function CityPane({ city, state, cleared, events, onCommand }: Props) {
       repo: state.repo,
       unlocked: unlockedDistricts(cleared ?? []),
       before: before.current,
+      growth: growthOf(growth, track),
     });
     before.current = whereabouts(next);
     return next;
-  }, [state, cleared]);
+  }, [state, cleared, growth, track]);
 
   return (
     <section data-testid="city-pane" className="flex h-full min-h-0 flex-col bg-cream">

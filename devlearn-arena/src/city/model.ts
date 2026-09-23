@@ -83,6 +83,11 @@ export interface Building {
   why?: string;
   /** 建物に付く印（停止・増やす・減らすなど） */
   actions?: CityAction[];
+  /**
+   * 学習で積み上がった階。
+   * コマンドの手順を通すたびに、どこかの建物が 1 階ぶん高くなる。
+   */
+  bonusFloors?: number;
 }
 
 /** 区画。ディレクトリ 1 つが 1 区画になる */
@@ -144,6 +149,15 @@ export interface City {
 /** 住人がどの建物にいたか。引っ越しを見せるために、直前の街から取っておく */
 export type Whereabouts = ReadonlyMap<string, string>;
 
+/**
+ * 学習で積み上がった街の育ち。
+ * コマンドの手順を通すと階（floors）が、理解度の問題に正解すると家（houses）が増える。
+ */
+export interface CityGrowth {
+  houses: number;
+  floors: number;
+}
+
 export interface CityInput {
   /** 学習者の作業場所。ここより下にあるものだけが街になる */
   home?: string;
@@ -156,6 +170,8 @@ export interface CityInput {
   unlocked?: readonly DistrictId[];
   /** 直前の街での住人の居場所 */
   before?: Whereabouts;
+  /** 学習で積み上がった育ち。コマンドの成功とクイズの正解で増える */
+  growth?: CityGrowth;
 }
 
 /** 高層ビルが建ち上がるまでの tick 数。ノードが増えるとまず工事が始まる */
@@ -723,6 +739,45 @@ interface Built {
 }
 
 /**
+ * コマンドの手順で積み上がった階を、建てた順に 1 階ずつ配る。
+ * 1 本通すたびにどこかの建物が必ず高くなるので、育ちが目に見える。
+ */
+function raiseFloors(buildings: Building[], floors: number): void {
+  if (floors <= 0 || buildings.length === 0) return;
+  for (let i = 0; i < floors; i += 1) {
+    const target = buildings[i % buildings.length];
+    if (target === undefined) continue;
+    target.bonusFloors = (target.bonusFloors ?? 0) + 1;
+  }
+}
+
+/**
+ * 理解度の問題に正解するたび、住民が 1 軒ぶん引っ越してくる。
+ * 中央の広場のまわりに、決まった順で並ぶ（置き場所は毎回同じ）。
+ */
+function rewardHouses(houses: number, out: Built): void {
+  if (houses <= 0) return;
+  const lots = new Lots('center', 2, 2);
+  for (let i = 0; i < houses; i += 1) {
+    const at = lots.next();
+    out.buildings.push({
+      id: `home:${String(i + 1)}`,
+      kind: 'house',
+      x: at.x,
+      y: at.y,
+      w: 2,
+      h: 2,
+      level: 1,
+      label: `住民の家 ${String(i + 1)}`,
+      occupants: [],
+      state: 'normal',
+      phase: 'done',
+      district: at.district,
+    });
+  }
+}
+
+/**
  * 学習の状態から街を導く。純粋関数。
  * 開いていない区域には何も建たない。学習者が作った資源だけが建物になる。
  */
@@ -736,6 +791,11 @@ export function buildCity(input: CityInput): City {
   if (input.cluster && unlocked.has('k8s')) k8sOf(input.cluster, input.before, out);
   if (input.net && unlocked.has('net')) netOf(input.net, out);
   if (input.repo && unlocked.has('github')) githubOf(input.repo, out);
+
+  // 学習の積み上がりを街に映す。コマンドで階が伸び、正解で家が増える
+  const growth = input.growth ?? { houses: 0, floors: 0 };
+  raiseFloors(out.buildings, growth.floors);
+  rewardHouses(growth.houses, out);
 
   const tiles = groundTiles(unlocked);
   markPlots(tiles, out.plots);
