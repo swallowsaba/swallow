@@ -194,7 +194,7 @@
 - [x] 6-2. `src/city3d/seed.ts` と `src/city3d/model.ts`。
   街の状態 → 3D の街の配置（`CityLayout`）を導く**純粋関数**。
   乱数を使わず seed から決める。テスト（決定論・更地は建物0・区域）。
-- [ ] 6-3. `src/city3d/buildings.ts`。`BuildingParams` → `THREE.Group` の純粋関数。
+- [x] 6-3. `src/city3d/buildings.ts`。`BuildingParams` → `THREE.Group` の純粋関数。
   基壇・セットバック・屋上設備 2 つ以上・入口（扉と庇）・高さで変わる材質・
   **窓 40 枚以上**（`InstancedMesh`）・円柱の高層ビル・切妻屋根。テスト。
 - [ ] 6-4. `src/city3d/terrain.ts`。8m のタイル、**曲線の海岸線**、**蛇行する川**（スプライン）、
