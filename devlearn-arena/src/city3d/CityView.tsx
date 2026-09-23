@@ -1,0 +1,49 @@
+import { Suspense, lazy, useMemo } from 'react';
+import { CityCanvas } from '@/city/CityCanvas';
+import { Viewport } from '@/city/Viewport';
+import { TILE } from '@/city/palette';
+import type { City } from '@/city/model';
+import { Loading } from '@/ui/components/Loading';
+import { layoutCity } from './model';
+import { hasWebGL } from './webgl';
+
+/**
+ * 街の絵。3D で描き、WebGL が使えないときは 2D に落とす。
+ *
+ * 3D は重いので `React.lazy` で後から読む。初回の読み込みに three を載せない。
+ * 2D（`src/city`）は捨てずに落とし先として残してある。真っ白な画面を出さないため。
+ */
+
+const CityScene = lazy(() => import('./CityScene'));
+
+interface Props {
+  city: City;
+  /** 動かしてよいか。prefers-reduced-motion のときは false */
+  animate?: boolean;
+  /** 街を押したときに端末へ送る */
+  onCommand?: ((line: string) => void) | undefined;
+  label?: string;
+}
+
+export function CityView({ city, animate = true, onCommand, label }: Props) {
+  const able = hasWebGL();
+  const layout = useMemo(() => (able ? layoutCity(city) : null), [city, able]);
+
+  if (layout === null) {
+    return (
+      <div data-testid="city-2d" className="h-full w-full">
+        <Viewport content={{ w: city.width * TILE, h: city.height * TILE }} label={label}>
+          <CityCanvas city={city} animate={animate} {...(onCommand ? { onCommand } : {})} />
+        </Viewport>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full w-full" aria-label={label}>
+      <Suspense fallback={<Loading />}>
+        <CityScene layout={layout} animate={animate} onCommand={onCommand} />
+      </Suspense>
+    </div>
+  );
+}

@@ -2,11 +2,9 @@ import { useMemo, useRef } from 'react';
 import type { CityState } from '@/content/city';
 import type { ShellState } from '@/engines/kernel/registry';
 import type { MissionTrack } from '@/engines/lesson/types';
-import { CityCanvas } from '@/city/CityCanvas';
-import { Viewport } from '@/city/Viewport';
 import { unlockedDistricts } from '@/city/growth';
 import { buildCity, whereabouts, type Whereabouts } from '@/city/model';
-import { TILE } from '@/city/palette';
+import { CityView } from '@/city3d/CityView';
 import { useT } from '@/i18n/useT';
 import { useMotionEnabled } from '@/ui/motion';
 import { Icon } from '@/ui/Icon';
@@ -31,8 +29,9 @@ interface Props {
 }
 
 /**
- * 右側の枠。学習の状態から導いた街を、真上から見た 2D で映す。
- * 街づくりの絵は `src/city` が持つ。ここは枠と見出しだけを用意する。
+ * 右側の枠。学習の状態から導いた街を 3D で映す。
+ * 街の元データは `src/city`、3D の絵は `src/city3d` が持つ。
+ * ここは枠と見出しだけを用意する。
  */
 export function CityPane({ city, state, cleared, events, onCommand }: Props) {
   const t = useT();
@@ -65,9 +64,12 @@ export function CityPane({ city, state, cleared, events, onCommand }: Props) {
         </span>
       </div>
       <div className="min-h-0 flex-1">
-        <Viewport content={{ w: drawn.width * TILE, h: drawn.height * TILE }} label={t('world.stats', { a: city.built, b: city.facilities.length })}>
-          <CityCanvas city={drawn} animate={animate} {...(onCommand ? { onCommand } : {})} />
-        </Viewport>
+        <CityView
+          city={drawn}
+          animate={animate}
+          label={t('world.stats', { a: city.built, b: city.facilities.length })}
+          {...(onCommand ? { onCommand } : {})}
+        />
       </div>
       {events && events.length > 0 ? (
         <ul className="shrink-0 border-t border-[var(--u-line)] px-3 py-2">

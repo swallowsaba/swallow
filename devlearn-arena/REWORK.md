@@ -211,7 +211,7 @@
   空の間接光、`fog`、時間帯と**夜に灯る窓**（`emissive`）。
   カメラは水平から 35 度の固定角・**水平回転のみ**。寄るときは 0.6 秒で補間。
   `prefers-reduced-motion` のときは動きを即時にする。
-- [ ] 6-9. `src/city3d/CityView.tsx`。`React.lazy` で遅延読み込みし、`CityPane` から使う。
+- [x] 6-9. `src/city3d/CityView.tsx`。`React.lazy` で遅延読み込みし、`CityPane` から使う。
   WebGL が使えない環境では 2D（`CityCanvas`）に落とす。真っ白にしない。
   街を押すと端末にコマンドが入るのは 3D でも同じ。
 - [ ] 6-10. 街は**学習者が設計する**。勝手に配置しない。
