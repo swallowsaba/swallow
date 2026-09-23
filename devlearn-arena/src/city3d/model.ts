@@ -2,7 +2,7 @@ import type { Building, BuildingKind, City, Occupant } from '@/city/model';
 import type { DistrictId } from '@/city/growth';
 import { TILE_METERS } from './palette';
 import { between, hashString, intBetween, unit } from './seed';
-import { buildTerrain, distanceToRiver, inside, isBuildable, type Terrain } from './terrain';
+import { buildTerrain, distanceToRiver, flatten, inside, isBuildable, type Terrain } from './terrain';
 import { buildRoads, type RoadNetwork } from './roads';
 import { buildProps, type PropPlacement } from './props';
 
@@ -280,12 +280,22 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
 
   const roads = buildRoads({ size, districts, terrain, seed, links });
 
+  // 道と建物が載る所はならす。丘に道が埋まったり、建物が浮いたりしないように
+  const level = flatten(terrain, [
+    ...roads.roads.flatMap((road) => road.points.map((at) => ({ at, radius: road.width / 2 + TILE_METERS }))),
+    ...roads.roundabouts.map((circle) => ({ at: circle.at, radius: circle.radius + TILE_METERS })),
+    ...buildings.map((b) => ({
+      at: b.at,
+      radius: Math.max(b.params.footprint.w, b.params.footprint.d) / 2 + TILE_METERS,
+    })),
+  ]);
+
   return {
     seed,
     size,
-    terrain,
+    terrain: level,
     roads,
-    props: buildProps({ seed, terrain, roads, buildings }),
+    props: buildProps({ seed, terrain: level, roads, buildings }),
     buildings,
     districts,
   };

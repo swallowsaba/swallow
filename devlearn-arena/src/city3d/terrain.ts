@@ -81,7 +81,8 @@ export function groundHeight(x: number, z: number, seed: number): number {
   const a = between(seed, 101, 0, Math.PI * 2);
   const b = between(seed, 102, 0, Math.PI * 2);
   const wave = Math.sin(x * 0.021 + a) * 0.7 + Math.cos(z * 0.027 + b) * 0.5 + Math.sin((x + z) * 0.011 + a) * 0.3;
-  return Math.max(0.05, 0.9 + wave);
+  // 水面より必ず高くする（草地が水没して見えないように）
+  return Math.max(0.35, 0.9 + wave);
 }
 
 /**
@@ -255,6 +256,44 @@ function tilesOf(terrain: Omit<Terrain, 'tiles'>): TerrainTile[] {
     }
   }
   return tiles;
+}
+
+/** その場所の地面の高さを引く。タイルの外（海の上）は 0 */
+export function heightAt(terrain: Terrain): (point: Vec2) => number {
+  const cell = TILE_METERS;
+  const map = new Map<string, number>();
+  for (const tile of terrain.tiles) {
+    map.set(`${String(Math.round(tile.x / cell))},${String(Math.round(tile.z / cell))}`, tile.height);
+  }
+  return (point) => map.get(`${String(Math.round(point.x / cell))},${String(Math.round(point.z / cell))}`) ?? 0;
+}
+
+/** 街が載る所の高さ。道と建物の下はここまでならす */
+export const CITY_LEVEL = 0.3;
+
+/**
+ * 街が載る所を平らにならす。
+ * 道と建物の下が起伏していると、道が丘に埋まったり建物が浮いたりする。
+ */
+export function flatten(terrain: Terrain, spots: readonly { at: Vec2; radius: number }[]): Terrain {
+  const cell = TILE_METERS;
+  const level = new Set<string>();
+  for (const spot of spots) {
+    const span = Math.ceil(spot.radius / cell);
+    const cx = Math.round(spot.at.x / cell);
+    const cz = Math.round(spot.at.z / cell);
+    for (let dx = -span; dx <= span; dx += 1) {
+      for (let dz = -span; dz <= span; dz += 1) level.add(`${String(cx + dx)},${String(cz + dz)}`);
+    }
+  }
+  return {
+    ...terrain,
+    tiles: terrain.tiles.map((tile) => {
+      if (tile.kind === 'water') return tile;
+      const key = `${String(Math.round(tile.x / cell))},${String(Math.round(tile.z / cell))}`;
+      return level.has(key) ? { ...tile, height: CITY_LEVEL } : tile;
+    }),
+  };
 }
 
 /**

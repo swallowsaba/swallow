@@ -204,7 +204,7 @@
   交差点で道が繋がり、行き止まりを作らない。テスト。
 - [x] 6-6. `src/city3d/props.ts`。街路樹（幹＋丸い葉の塊 3 つ以上）・街灯・車・人・
   生垣・ベンチ・柵・看板を seed から置く。**地面がむき出しのまま残らない**こと。テスト。
-- [ ] 6-7. `src/city3d/scene.ts`。`CityLayout` → 街ひとつ分の `THREE.Group`。
+- [x] 6-7. `src/city3d/scene.ts`。`CityLayout` → 街ひとつ分の `THREE.Group`。
   同じ形は `InstancedMesh` にまとめ、**描画呼び出しを 200 以下**に保つ。テストで数える。
   遠くの建物は窓を省く（LOD）。
 - [ ] 6-8. `src/city3d/CityScene.tsx`。太陽（`DirectionalLight` + 影、PCFSoft）、
