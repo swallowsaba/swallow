@@ -207,7 +207,7 @@
 - [x] 6-7. `src/city3d/scene.ts`。`CityLayout` → 街ひとつ分の `THREE.Group`。
   同じ形は `InstancedMesh` にまとめ、**描画呼び出しを 200 以下**に保つ。テストで数える。
   遠くの建物は窓を省く（LOD）。
-- [ ] 6-8. `src/city3d/CityScene.tsx`。太陽（`DirectionalLight` + 影、PCFSoft）、
+- [x] 6-8. `src/city3d/CityScene.tsx`。太陽（`DirectionalLight` + 影、PCFSoft）、
   空の間接光、`fog`、時間帯と**夜に灯る窓**（`emissive`）。
   カメラは水平から 35 度の固定角・**水平回転のみ**。寄るときは 0.6 秒で補間。
   `prefers-reduced-motion` のときは動きを即時にする。

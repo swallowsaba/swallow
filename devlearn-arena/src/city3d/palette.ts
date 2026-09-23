@@ -108,6 +108,12 @@ export const SKY = {
   fogFar: 520,
 } as const;
 
+/** 押したときに出す一行の見た目 */
+export const NOTE = {
+  fill: 'rgba(47,52,64,0.86)',
+  text: '#eef1f6',
+} as const;
+
 /** 太陽と空の回り込み。時間帯は 0（真夜中）..1 で表す */
 export const LIGHT = {
   sun: '#fff3dc',

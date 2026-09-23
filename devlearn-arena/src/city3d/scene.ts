@@ -58,7 +58,7 @@ export interface SceneOptions {
  */
 export interface MoverSet {
   meshes: InstancedMesh[];
-  items: PropPath[];
+  items: { path: PropPath; scale: number }[];
   /** 地面からの持ち上げ */
   lift: number;
 }
@@ -457,7 +457,7 @@ export function buildCityScene(layout: CityLayout, options: SceneOptions = {}): 
       if (moving) meshes.push(mesh);
     }
     if (moving) {
-      const paths = items.flatMap((item) => (item.path === undefined ? [] : [item.path]));
+      const paths = items.flatMap((item) => (item.path === undefined ? [] : [{ path: item.path, scale: item.scale }]));
       movers.push({ meshes, items: paths, lift: ROAD_LEVEL });
     }
   }
