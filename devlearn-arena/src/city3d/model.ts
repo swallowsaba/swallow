@@ -3,6 +3,7 @@ import type { DistrictId } from '@/city/growth';
 import { TILE_METERS } from './palette';
 import { between, hashString, intBetween, unit } from './seed';
 import { buildTerrain, distanceToRiver, inside, isBuildable, type Terrain } from './terrain';
+import { buildRoads, type RoadNetwork } from './roads';
 
 /**
  * 街の状態 → 3D の街の配置。純粋関数。
@@ -81,6 +82,7 @@ export interface CityLayout {
   /** 街の広さ（メートル） */
   size: { w: number; d: number };
   terrain: Terrain;
+  roads: RoadNetwork;
   buildings: LayoutBuilding[];
   districts: LayoutDistrict[];
 }
@@ -256,17 +258,29 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
     };
   });
 
+  const districts: LayoutDistrict[] = city.districts.map((district) => ({
+    id: district.track,
+    unlocked: district.unlocked,
+    at: toMeters(district.x + district.w / 2, district.y + district.h / 2, city),
+    w: district.w * TILE_METERS,
+    d: district.h * TILE_METERS,
+  }));
+
+  // 建物どうしを結ぶ道。ネットワークのリンクやバス路線がここに入る
+  const where = new Map(buildings.map((b) => [b.id, b.at]));
+  const links = city.roads.flatMap((road) => {
+    const from = where.get(road.from);
+    const to = where.get(road.to);
+    if (from === undefined || to === undefined) return [];
+    return [{ id: `${road.from}->${road.to}`, from, to, active: road.active }];
+  });
+
   return {
     seed,
     size,
     terrain,
+    roads: buildRoads({ size, districts, terrain, seed, links }),
     buildings,
-    districts: city.districts.map((district) => ({
-      id: district.track,
-      unlocked: district.unlocked,
-      at: toMeters(district.x + district.w / 2, district.y + district.h / 2, city),
-      w: district.w * TILE_METERS,
-      d: district.h * TILE_METERS,
-    })),
+    districts,
   };
 }

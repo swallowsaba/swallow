@@ -140,7 +140,7 @@ export function inside(outline: readonly Vec2[], point: Vec2): boolean {
 }
 
 /** 線分と点の距離 */
-function distanceToSegment(point: Vec2, a: Vec2, b: Vec2): number {
+export function distanceToSegment(point: Vec2, a: Vec2, b: Vec2): number {
   const vx = b.x - a.x;
   const vz = b.z - a.z;
   const len = vx * vx + vz * vz;
