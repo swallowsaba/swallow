@@ -30,6 +30,7 @@ import { CityStage } from '@/features/citymap/CityStage';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { MissionPicker } from './MissionPicker';
 import { NO_HINTS, reveal, revealedCount, stepKey, type HintReveal } from './hints';
+import { gainFor, growsFromCommand, type GrowthTrigger } from './growth';
 import { TerminalDock } from './hud/TerminalDock';
 import { TaskCard } from './hud/TaskCard';
 import { ExplainDrawer } from './hud/ExplainDrawer';
@@ -293,6 +294,16 @@ function Arena({
     );
   }, [mission.id, progress, shellState, saveMission]);
 
+  /** きっかけに応じて街を育てる。増え方は `growth.ts` の表だけが決める */
+  const grow = useCallback(
+    (trigger: GrowthTrigger, times = 1) => {
+      const gain = gainFor(trigger);
+      if (gain.houses > 0) growCity(mission.track, 'houses', gain.houses * times);
+      if (gain.floors > 0) growCity(mission.track, 'floors', gain.floors * times);
+    },
+    [mission.track],
+  );
+
   const pushToast = useCallback((text: string) => {
     const key = Date.now() + Math.random();
     setToasts((list) => [...list, { key, text }]);
@@ -305,15 +316,20 @@ function Arena({
   const skippingRef = useRef(false);
 
   /** コマンド実行では回数と失敗数だけを数える。合否の判定は下の効果で行う */
-  const handleExecuted = useCallback((line: string, exitCode: number) => {
-    // 助けを求めたことは、手数にも失敗にも数えない
-    if (skippingRef.current || isHelpCommand(line)) return;
-    setProgress((p) => ({
-      ...p,
-      commandsUsed: p.commandsUsed + 1,
-      mistakes: p.mistakes + (exitCode === 0 ? 0 : 1),
-    }));
-  }, []);
+  const handleExecuted = useCallback(
+    (line: string, exitCode: number) => {
+      // 助けを求めたことは、手数にも失敗にも数えない
+      if (skippingRef.current || isHelpCommand(line)) return;
+      setProgress((p) => ({
+        ...p,
+        commandsUsed: p.commandsUsed + 1,
+        mistakes: p.mistakes + (exitCode === 0 ? 0 : 1),
+      }));
+      // コマンドが 1 本通れば、それだけで街が育つ
+      if (growsFromCommand(line, exitCode)) grow('command');
+    },
+    [grow],
+  );
 
   /**
    * いまの手順を飛ばす。解答を端末で実際に打つので、何をすれば通ったのかが端末に残る。
@@ -410,12 +426,12 @@ function Arena({
       });
       setDiagnosis(null);
       // 任務を終えた。街がもう一段育つ
-      growCity(mission.track, 'floors');
+      grow('clear');
       if (soundEnabled) sfx.clear();
     } else if (progress.stepIndex > prevStep.current) {
       grantXp(STEP_XP, now);
       pushToast(`+${String(STEP_XP)} XP`);
-      growCity(mission.track, 'floors', Math.max(1, progress.stepIndex - prevStep.current));
+      grow('step', Math.max(1, progress.stepIndex - prevStep.current));
       setDiagnosis(null);
       if (soundEnabled) sfx.step();
     }
@@ -553,7 +569,7 @@ function Arena({
             setExplaining(false);
           }}
           onAnswer={() => {
-            growCity(mission.track, 'houses');
+            grow('quiz');
           }}
         />
       ) : null}

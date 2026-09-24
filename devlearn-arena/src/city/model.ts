@@ -918,10 +918,11 @@ export function buildCity(input: CityInput): City {
   if (input.net && unlocked.has('net')) netOf(input.net, out);
   if (input.repo && unlocked.has('github')) githubOf(input.repo, out);
 
-  // 学習の積み上がりを街に映す。コマンドで階が伸び、正解で家が増える
+  // 学習の積み上がりを街に映す。コマンドで階が伸び、正解で家が増える。
+  // 家を先に建てる。学習の状態から導いた建物がまだ無い街でも、階が行き場を失わないため
   const growth = input.growth ?? { houses: 0, floors: 0 };
-  raiseFloors(out.buildings, growth.floors);
   rewardHouses(growth.houses, out);
+  raiseFloors(out.buildings, growth.floors);
 
   // 学習者が設計した街。空いている区画に、選んだものが建つ
   const sites = designedOf(input.designed ?? [], openSites(unlocked, out), out);
