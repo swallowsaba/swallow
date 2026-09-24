@@ -10,6 +10,7 @@ import {
   FOCUS_SECONDS,
   POLAR_ANGLE,
   cameraPosition,
+  cityRadius,
   easeFocus,
   fitDistance,
   fogRange,
@@ -101,10 +102,20 @@ describe('カメラ', () => {
     expect(lerpPoint({ x: 0, z: 0 }, { x: 10, z: -10 }, 0.5)).toEqual({ x: 5, z: -5 });
   });
 
-  it('fog は遠景を沈ませる', () => {
-    const [near, far] = fogRange({ w: 600, d: 400 });
-    expect(near).toBeLessThan(far);
-    expect(near).toBeGreaterThan(0);
+  it('fog は地平線の近くだけに掛かる。近景と中景ははっきり見える', () => {
+    for (const size of [{ w: 600, d: 400 }, { w: 384, d: 272 }, { w: 120, d: 90 }]) {
+      const [near, far] = fogRange(size);
+      const radius = cityRadius(size);
+      // near は街の半径の 2 倍以上。街の中に立っている限り霧に沈まない
+      expect(near).toBeGreaterThanOrEqual(radius * 2);
+      expect(near).toBeLessThan(far);
+    }
+  });
+
+  it('街全体を映す距離より、fog が沈みきる距離のほうが遠い', () => {
+    const size = { w: 384, d: 272 };
+    const [, far] = fogRange(size);
+    expect(far).toBeGreaterThan(fitDistance(size));
   });
 });
 

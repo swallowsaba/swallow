@@ -103,9 +103,13 @@ export type SurfaceName = keyof typeof SURFACES;
 /** 空と fog。遠景を薄く沈ませる */
 export const SKY = {
   color: PARTS.sky,
-  /** fog が効き始める距離と、完全に沈む距離（メートル） */
-  fogNear: 140,
-  fogFar: 520,
+  /**
+   * fog の掛かり方。街の半径に対する倍率で持つ。
+   * 近景と中景ははっきり見せ、霧は地平線の近くにだけ掛ける。
+   * near は街の半径の 2 倍以上（REWORK 2-1）。
+   */
+  fogNearRadii: 2.2,
+  fogFarRadii: 5,
 } as const;
 
 /**

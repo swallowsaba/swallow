@@ -73,10 +73,19 @@ export function glowStrength(time: number): number {
   return sunAt(time, 1).night * 1.8;
 }
 
-/** fog の掛かり方。遠景を薄く沈ませる */
+/**
+ * fog の掛かり方。街の半径から決める。
+ *
+ * 近景と中景ははっきり見えること。霧は地平線の近くだけに掛ける。
+ * そのため near は街の半径の 2 倍以上を取る。街の中に立っている限り霧に沈まない。
+ */
+export function cityRadius(size: { w: number; d: number }): number {
+  return Math.max(size.w, size.d) / 2;
+}
+
 export function fogRange(size: { w: number; d: number }): [number, number] {
-  const span = Math.max(size.w, size.d);
-  return [Math.max(SKY.fogNear, span * 0.35), Math.max(SKY.fogFar, span * 1.35)];
+  const radius = cityRadius(size);
+  return [radius * SKY.fogNearRadii, radius * SKY.fogFarRadii];
 }
 
 /** 街全体が入るカメラの距離 */
