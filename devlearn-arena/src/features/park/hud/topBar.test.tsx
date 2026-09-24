@@ -84,7 +84,7 @@ describe('上の帯', () => {
       useStore.setState((s) => ({
         profile: { ...s.profile, xp: 1240 },
         growth: { git: { houses: 1, floors: 4 } },
-        designs: { git: [{ site: 'site:center:0:0', kind: 'house' }] },
+        designs: { git: [{ site: 'site:center:0:0', kind: 'house', level: 1 }] },
       }));
     });
     const view = openWork();

@@ -94,6 +94,8 @@ export type TownGrowthData = z.infer<typeof townGrowthSchema>;
 export const placementSchema = z.object({
   site: z.string().min(1),
   kind: z.enum(['road', 'zone', 'house', 'office', 'monument', 'depot', 'hall', 'relay']),
+  /** 規模。古い保存データには無いので 1 で補う */
+  level: z.number().int().min(1).max(5).default(1),
 });
 export type PlacementData = z.infer<typeof placementSchema>;
 

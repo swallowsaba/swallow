@@ -153,6 +153,8 @@ export interface Placement {
   /** 置いた区画（CitySite.id） */
   site: string;
   kind: DesignKind;
+  /** 規模。1 が小さく、3 が大きい。建設メニューの引き出しで選ぶ */
+  level?: number;
 }
 
 export interface City {
@@ -890,7 +892,7 @@ function designedOf(designed: readonly Placement[], sites: readonly CitySite[], 
       y: site.y,
       w: site.w,
       h: site.h,
-      level: 1,
+      level: Math.max(1, Math.min(5, placed.level ?? 1)),
       label: shape.label,
       occupants: [],
       state: 'normal',

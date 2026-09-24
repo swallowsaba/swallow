@@ -9,6 +9,7 @@ import {
 } from '@/engines/lesson/runner';
 import { takeawaysOf } from '@/engines/lesson/takeaways';
 import type { LessonDefinition, LessonProgressState, LessonStep, MissionTrack } from '@/engines/lesson/types';
+import type { DesignKind } from '@/city/model';
 import type { TerminalHandle } from '@/features/terminal/TerminalView';
 import { useShellSession } from '@/features/terminal/useShellSession';
 import { useT } from '@/i18n/useT';
@@ -34,6 +35,8 @@ import { ExplainDrawer } from './hud/ExplainDrawer';
 import { TopBar } from './hud/TopBar';
 import { BuildingPanel } from './hud/BuildingPanel';
 import { buildingInfo } from './hud/buildingInfo';
+import { BuildMenu } from './hud/BuildMenu';
+import { variantsOf, type BuildVariant } from './hud/buildTools';
 import { cityMetrics, clockOf, milestoneOf, type Speed } from './hud/metrics';
 import { HUD } from './hud/theme';
 
@@ -208,6 +211,9 @@ function Arena({
   const [explaining, setExplaining] = useState(false);
   const [retryOpen, setRetryOpen] = useState(false);
   const [speed, setSpeed] = useState<Speed>('normal');
+  // 建設メニューで選んでいる道具と種類。選んだままでも端末は生きている
+  const [tool, setTool] = useState<DesignKind | null>(null);
+  const [variant, setVariant] = useState<BuildVariant | null>(null);
 
   const xp = useStore((s) => s.profile.xp);
   const soundEnabled = useStore((s) => s.settings.soundEnabled);
@@ -497,6 +503,18 @@ function Arena({
         onWhy={() => {
           setExplaining((open) => !open);
         }}
+      />
+
+      <BuildMenu
+        milestone={milestone.n}
+        rights={metrics.rights}
+        tool={tool}
+        variant={variant}
+        onTool={(kind) => {
+          setTool(kind);
+          setVariant(kind === null ? null : (variantsOf(kind)[0] ?? null));
+        }}
+        onVariant={setVariant}
       />
 
       {chosen === null ? null : (
