@@ -228,6 +228,7 @@ function Arena({
   const clearLesson = useStore((s) => s.clearLesson);
   const scheduleReview = useStore((s) => s.scheduleReview);
   const buildFacility = useStore((s) => s.buildFacility);
+  const placeBuilding = useStore((s) => s.place);
 
   const step = currentStep(mission, progress);
   const hintKey = stepKey(mission.id, progress.stepIndex);
@@ -259,14 +260,15 @@ function Arena({
   }, [catalogue, clearedIds, mission.id]);
 
   const shellState = session.state;
-  const city = useDerivedCity(mission.track, shellState, clearedIds);
+  const designs = useStore((s) => s.designs);
+  const designed = useMemo(() => designs[mission.track] ?? [], [designs, mission.track]);
+  const city = useDerivedCity(mission.track, shellState, clearedIds, designed);
   const plan = CITIES[mission.track];
 
   // 上の帯に出す数。どれも状態から導く
   const activeDays = useStore((s) => s.profile.activeDays.length);
   const growth = useStore((s) => s.growth);
-  const designs = useStore((s) => s.designs);
-  const placed = designs[mission.track]?.length ?? 0;
+  const placed = designed.length;
   const clock = clockOf(activeDays, shellState.history.length);
   const metrics = cityMetrics({ city, xp, growth: growthOf(growth, mission.track), placed });
   const milestone = useMemo(
@@ -467,6 +469,18 @@ function Arena({
     terminal.focus();
   }, []);
 
+  /**
+   * 空いている区画を押したとき。建設メニューで選んだものを、そこに建てる。
+   * 建築権が無いときは何も起きない（建築権は学習で得た分から置いた分を引いた残り）。
+   */
+  const placeOnSite = useCallback(
+    (site: string) => {
+      if (variant === null || metrics.rights <= 0) return;
+      placeBuilding(mission.track, { site, kind: variant.kind, level: variant.level });
+    },
+    [variant, metrics.rights, placeBuilding, mission.track],
+  );
+
   // 開いたらすぐ打てるようにする。端末に条件は付けない
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -490,6 +504,8 @@ function Arena({
         speed={speed}
         view={infoView}
         district={mission.track}
+        showSites={tool !== null}
+        onSite={placeOnSite}
         onSelect={setSelected}
         onCommand={runFromCity}
       />

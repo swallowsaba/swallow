@@ -27,6 +27,10 @@ interface Props {
   view?: InfoView | null;
   /** 開いたときに寄せる区域 */
   district?: string | null;
+  /** 空いている区画を光らせるか */
+  showSites?: boolean;
+  /** 空いている区画を押したとき */
+  onSite?: ((id: string) => void) | undefined;
   /** 街を押したときに端末へ送る */
   onCommand?: ((line: string) => void) | undefined;
   /** 建物を選んだとき。右の情報パネルを開くのに使う */
@@ -36,7 +40,10 @@ interface Props {
   label?: string;
 }
 
-export function CityView({ city, animate = true, rate = 1, view = null, district = null, onCommand, onSelect, selected = null, label }: Props) {
+export function CityView({
+  city, animate = true, rate = 1, view = null, district = null, showSites = true, onSite,
+  onCommand, onSelect, selected = null, label,
+}: Props) {
   const able = hasWebGL();
   const layout = useMemo(() => (able ? layoutCity(city) : null), [city, able]);
 
@@ -65,6 +72,8 @@ export function CityView({ city, animate = true, rate = 1, view = null, district
           rate={rate}
           view={view}
           district={district}
+          showSites={showSites}
+          onSite={onSite}
           onCommand={onCommand}
           onSelect={onSelect}
           selected={selected}

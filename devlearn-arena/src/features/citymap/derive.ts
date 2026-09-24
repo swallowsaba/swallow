@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react';
 import type { ShellState } from '@/engines/kernel/registry';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { unlockedDistricts } from '@/city/growth';
-import { buildCity, whereabouts, type City, type Whereabouts } from '@/city/model';
+import { buildCity, whereabouts, type City, type Placement, type Whereabouts } from '@/city/model';
 import { growthOf } from '@/features/citymap/cityStore';
 import { useStore } from '@/store';
 
@@ -12,7 +12,13 @@ import { useStore } from '@/store';
  * 街は状態の写像なので、ここは `buildCity` を呼ぶだけ。
  * 直前の街での住人の居場所だけを覚えておき、引っ越しを歩かせるのに使う。
  */
-export function useDerivedCity(track: MissionTrack, state: ShellState, cleared: ReadonlySet<string>): City {
+export function useDerivedCity(
+  track: MissionTrack,
+  state: ShellState,
+  cleared: ReadonlySet<string>,
+  /** 学習者が建設メニューから置いたもの */
+  designed: readonly Placement[] = [],
+): City {
   const growth = useStore((s) => s.growth);
   const before = useRef<Whereabouts | undefined>(undefined);
 
@@ -27,8 +33,9 @@ export function useDerivedCity(track: MissionTrack, state: ShellState, cleared: 
       unlocked: unlockedDistricts(cleared),
       before: before.current,
       growth: growthOf(growth, track),
+      designed,
     });
     before.current = whereabouts(next);
     return next;
-  }, [state, cleared, growth, track]);
+  }, [state, cleared, growth, track, designed]);
 }
