@@ -132,6 +132,29 @@ export interface CityDistrict {
   h: number;
 }
 
+/**
+ * 学習者が建設メニューから選べる建物。
+ * 街の姿は学習者が決める。ここが増えても、学習の状態から導いた建物は動かない。
+ */
+export type DesignKind = 'road' | 'zone' | 'house' | 'office' | 'monument' | 'depot' | 'hall' | 'relay';
+
+/** 建てられる区画。更地でもここが光るので、何も無い島を見せずに済む */
+export interface CitySite {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  district: DistrictId;
+}
+
+/** 学習者が置いた建物。どの区画に何を建てたか */
+export interface Placement {
+  /** 置いた区画（CitySite.id） */
+  site: string;
+  kind: DesignKind;
+}
+
 export interface City {
   width: number;
   height: number;
@@ -144,6 +167,8 @@ export interface City {
   plots: CityPlot[];
   /** 走っている荷車（パケット） */
   carts: Cart[];
+  /** まだ空いている区画。ここを押すと建設メニューで選んだものが建つ */
+  sites: CitySite[];
 }
 
 /** 住人がどの建物にいたか。引っ越しを見せるために、直前の街から取っておく */
@@ -172,6 +197,8 @@ export interface CityInput {
   before?: Whereabouts;
   /** 学習で積み上がった育ち。コマンドの成功とクイズの正解で増える */
   growth?: CityGrowth;
+  /** 学習者が建設メニューから置いたもの */
+  designed?: readonly Placement[];
 }
 
 /** 高層ビルが建ち上がるまでの tick 数。ノードが増えるとまず工事が始まる */
@@ -777,6 +804,103 @@ function rewardHouses(houses: number, out: Built): void {
   }
 }
 
+/** 建てられる区画 1 つの大きさ（タイル） */
+const SITE = { w: 3, h: 3 } as const;
+
+/** 一度に光らせる区画の数。多すぎると街が点滅して見える */
+const MAX_SITES = 36;
+
+/** 建設メニューの種類ごとの、建つもの */
+const DESIGN_BUILDING: Record<Exclude<DesignKind, 'road' | 'zone'>, { kind: BuildingKind; label: string }> = {
+  house: { kind: 'house', label: '住宅' },
+  office: { kind: 'office', label: 'オフィス' },
+  monument: { kind: 'monument', label: '記念碑' },
+  depot: { kind: 'depot', label: '倉庫' },
+  hall: { kind: 'window', label: '市役所' },
+  relay: { kind: 'relay', label: '中継塔' },
+};
+
+/** そのタイルが何かに使われているか */
+function coverage(out: Built): Set<string> {
+  const used = new Set<string>();
+  const mark = (x: number, y: number, w: number, h: number): void => {
+    for (let dy = 0; dy < h; dy += 1) {
+      for (let dx = 0; dx < w; dx += 1) used.add(`${String(x + dx)},${String(y + dy)}`);
+    }
+  };
+  for (const b of out.buildings) mark(b.x, b.y, b.w, b.h);
+  for (const p of out.plots) mark(p.x, p.y, p.w, p.h);
+  return used;
+}
+
+/**
+ * 建てられる区画を並べる。開いた区域の空き地を、左上から順に 3x3 で切り出す。
+ * 更地でもここが光るので、何も無い島を見せずに済む。
+ */
+function openSites(unlocked: ReadonlySet<DistrictId>, out: Built): CitySite[] {
+  const used = coverage(out);
+  const sites: CitySite[] = [];
+  for (const area of DISTRICTS) {
+    if (!unlocked.has(area.id)) continue;
+    const cols = Math.floor((area.w - 1) / (SITE.w + 1));
+    const rows = Math.floor((area.h - 1) / (SITE.h + 1));
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        const x = area.x + 1 + col * (SITE.w + 1);
+        const y = area.y + 1 + row * (SITE.h + 1);
+        let free = true;
+        for (let dy = 0; dy < SITE.h && free; dy += 1) {
+          for (let dx = 0; dx < SITE.w && free; dx += 1) {
+            if (used.has(`${String(x + dx)},${String(y + dy)}`)) free = false;
+          }
+        }
+        if (!free) continue;
+        sites.push({ id: `site:${area.id}:${String(col)}:${String(row)}`, x, y, w: SITE.w, h: SITE.h, district: area.id });
+      }
+    }
+  }
+  return sites.slice(0, MAX_SITES);
+}
+
+/**
+ * 学習者が置いたものを街に足す。
+ * 置き場所は区画の id なので、同じ設計からは必ず同じ街になる。
+ */
+function designedOf(designed: readonly Placement[], sites: readonly CitySite[], out: Built): CitySite[] {
+  const where = new Map(sites.map((site) => [site.id, site]));
+  const taken = new Set<string>();
+  for (const placed of designed) {
+    const site = where.get(placed.site);
+    if (site === undefined || taken.has(site.id)) continue;
+    taken.add(site.id);
+    if (placed.kind === 'zone') {
+      out.plots.push({ id: `design:${site.id}`, label: '区画', x: site.x, y: site.y, w: site.w, h: site.h, district: site.district });
+      continue;
+    }
+    if (placed.kind === 'road') {
+      // 道は建物ではなく地面。区画の真ん中を通す
+      out.plots.push({ id: `road:${site.id}`, label: '道路', x: site.x, y: site.y + 1, w: site.w, h: 1, district: site.district });
+      continue;
+    }
+    const shape = DESIGN_BUILDING[placed.kind];
+    out.buildings.push({
+      id: `design:${site.id}`,
+      kind: shape.kind,
+      x: site.x,
+      y: site.y,
+      w: site.w,
+      h: site.h,
+      level: 1,
+      label: shape.label,
+      occupants: [],
+      state: 'normal',
+      phase: 'done',
+      district: site.district,
+    });
+  }
+  return sites.filter((site) => !taken.has(site.id));
+}
+
 /**
  * 学習の状態から街を導く。純粋関数。
  * 開いていない区域には何も建たない。学習者が作った資源だけが建物になる。
@@ -797,6 +921,9 @@ export function buildCity(input: CityInput): City {
   raiseFloors(out.buildings, growth.floors);
   rewardHouses(growth.houses, out);
 
+  // 学習者が設計した街。空いている区画に、選んだものが建つ
+  const sites = designedOf(input.designed ?? [], openSites(unlocked, out), out);
+
   const tiles = groundTiles(unlocked);
   markPlots(tiles, out.plots);
 
@@ -808,6 +935,7 @@ export function buildCity(input: CityInput): City {
     roads: out.roads,
     plots: out.plots,
     carts: out.carts,
+    sites,
     districts: DISTRICTS.map((area) => ({
       track: area.id,
       unlocked: unlocked.has(area.id),
