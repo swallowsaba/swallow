@@ -32,6 +32,8 @@ import { TerminalDock } from './hud/TerminalDock';
 import { TaskCard } from './hud/TaskCard';
 import { ExplainDrawer } from './hud/ExplainDrawer';
 import { TopBar } from './hud/TopBar';
+import { BuildingPanel } from './hud/BuildingPanel';
+import { buildingInfo } from './hud/buildingInfo';
 import { cityMetrics, clockOf, milestoneOf, type Speed } from './hud/metrics';
 import { HUD } from './hud/theme';
 
@@ -258,6 +260,8 @@ function Arena({
     () => milestoneOf(plan, catalogue.filter((m) => m.track === mission.track), clearedIds),
     [plan, catalogue, mission.track, clearedIds],
   );
+  // 選んだ建物の中身。街の状態から導くので、選び直すたびに数え直す必要が無い
+  const chosen = selected === null ? null : buildingInfo(city, shellState.cluster, selected);
 
   // 状態が変わるたびに保存する（書き込み自体はストア側で間引かれる）
   useEffect(() => {
@@ -494,6 +498,16 @@ function Arena({
           setExplaining((open) => !open);
         }}
       />
+
+      {chosen === null ? null : (
+        <BuildingPanel
+          info={chosen}
+          onCommand={runFromCity}
+          onClose={() => {
+            setSelected(null);
+          }}
+        />
+      )}
 
       {explaining ? (
         <ExplainDrawer
