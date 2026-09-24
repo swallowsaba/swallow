@@ -78,6 +78,19 @@ export interface LayoutDistrict {
   d: number;
 }
 
+/** 建物どうしの結び付き。バス路線・ネットワークのリンク・系譜がここに入る */
+export interface LayoutLink {
+  id: string;
+  /** 結ばれている建物の id */
+  from: string;
+  to: string;
+  /** 建物の位置 */
+  a: Vec2;
+  b: Vec2;
+  /** いま通っているか */
+  active: boolean;
+}
+
 export interface CityLayout {
   seed: number;
   /** 街の広さ（メートル） */
@@ -88,6 +101,8 @@ export interface CityLayout {
   props: PropPlacement[];
   buildings: LayoutBuilding[];
   districts: LayoutDistrict[];
+  /** 建物どうしの結び付き。情報表示で色を重ねるのに使う */
+  links: LayoutLink[];
 }
 
 export interface LayoutInput {
@@ -272,14 +287,17 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
 
   // 建物どうしを結ぶ道。ネットワークのリンクやバス路線がここに入る
   const where = new Map(buildings.map((b) => [b.id, b.at]));
-  const links = city.roads.flatMap((road) => {
-    const from = where.get(road.from);
-    const to = where.get(road.to);
-    if (from === undefined || to === undefined) return [];
-    return [{ id: `${road.from}->${road.to}`, from, to, active: road.active }];
+  const links: LayoutLink[] = city.roads.flatMap((road) => {
+    const a = where.get(road.from);
+    const b = where.get(road.to);
+    if (a === undefined || b === undefined) return [];
+    return [{ id: `${road.from}->${road.to}`, from: road.from, to: road.to, a, b, active: road.active }];
   });
 
-  const roads = buildRoads({ size, districts, terrain, seed, links });
+  const roads = buildRoads({
+    size, districts, terrain, seed,
+    links: links.map((link) => ({ id: link.id, from: link.a, to: link.b, active: link.active })),
+  });
 
   // 道と建物が載る所はならす。丘に道が埋まったり、建物が浮いたりしないように
   const level = flatten(terrain, [
@@ -299,5 +317,6 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
     props: buildProps({ seed, terrain: level, roads, buildings }),
     buildings,
     districts,
+    links,
   };
 }

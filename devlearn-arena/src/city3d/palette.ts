@@ -120,6 +120,25 @@ export const MARK = {
   plateSub: '#8fa0b2',
 } as const;
 
+/**
+ * 情報表示（CS2 の情報ビュー）の色。街の上に薄く重ねる。
+ * 彩度は抑える。原色と蛍光色を使わない。
+ */
+export const OVERLAY = {
+  /** 落ち着いて住んでいる */
+  good: '#5aa06e',
+  /** 引っ越し中・通っている */
+  moving: '#5c93c1',
+  /** 不調・止まっている */
+  bad: '#c1735f',
+  /** 誰もいない */
+  empty: '#6f7681',
+  /** バス路線 */
+  bus: '#c9a24f',
+  /** 系譜（Git） */
+  lineage: '#9b7fb5',
+} as const;
+
 /** 押したときに出す一行の見た目 */
 export const NOTE = {
   fill: 'rgba(47,52,64,0.86)',

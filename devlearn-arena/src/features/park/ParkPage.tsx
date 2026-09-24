@@ -10,6 +10,7 @@ import {
 import { takeawaysOf } from '@/engines/lesson/takeaways';
 import type { LessonDefinition, LessonProgressState, LessonStep, MissionTrack } from '@/engines/lesson/types';
 import type { DesignKind } from '@/city/model';
+import type { InfoView } from '@/city3d/overlay';
 import type { TerminalHandle } from '@/features/terminal/TerminalView';
 import { useShellSession } from '@/features/terminal/useShellSession';
 import { useT } from '@/i18n/useT';
@@ -36,6 +37,7 @@ import { TopBar } from './hud/TopBar';
 import { BuildingPanel } from './hud/BuildingPanel';
 import { buildingInfo } from './hud/buildingInfo';
 import { BuildMenu } from './hud/BuildMenu';
+import { InfoViews } from './hud/InfoViews';
 import { variantsOf, type BuildVariant } from './hud/buildTools';
 import { cityMetrics, clockOf, milestoneOf, type Speed } from './hud/metrics';
 import { HUD } from './hud/theme';
@@ -214,6 +216,8 @@ function Arena({
   // 建設メニューで選んでいる道具と種類。選んだままでも端末は生きている
   const [tool, setTool] = useState<DesignKind | null>(null);
   const [variant, setVariant] = useState<BuildVariant | null>(null);
+  // 街の上に重ねる情報表示。何も選ばなければ街はそのまま見える
+  const [infoView, setInfoView] = useState<InfoView | null>(null);
 
   const xp = useStore((s) => s.profile.xp);
   const soundEnabled = useStore((s) => s.settings.soundEnabled);
@@ -464,6 +468,7 @@ function Arena({
         label={plan.name}
         selected={selected}
         speed={speed}
+        view={infoView}
         onSelect={setSelected}
         onCommand={runFromCity}
       />
@@ -504,6 +509,8 @@ function Arena({
           setExplaining((open) => !open);
         }}
       />
+
+      <InfoViews view={infoView} onView={setInfoView} />
 
       <BuildMenu
         milestone={milestone.n}

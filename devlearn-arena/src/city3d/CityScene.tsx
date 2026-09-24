@@ -29,6 +29,7 @@ import {
   type PickTarget,
 } from './sky';
 import type { CityLayout, Vec2 } from './model';
+import { overlayFor, type InfoView } from './overlay';
 
 /**
  * 街を WebGL で描く。データを受け取って描くだけ。
@@ -50,6 +51,8 @@ interface Props {
   animate?: boolean;
   /** 進む速さの倍率。早送りのときは 1 より大きい */
   rate?: number;
+  /** 街の上に色で重ねる情報表示。null なら重ねない */
+  view?: InfoView | null;
   /** 時間帯を外から決める（0 と 1 が真夜中、0.5 が正午） */
   time?: number;
 }
@@ -298,7 +301,42 @@ function Marker({ target, animate }: { target: PickTarget; animate: boolean }) {
   );
 }
 
-export default function CityScene({ layout, onCommand, onSelect, selected = null, animate = true, rate = 1, time }: Props) {
+/**
+ * 情報表示の重ね。選んだ見方に応じて、建物の足元に色の円を敷き、
+ * 結び付きを線で結ぶ。街の絵そのものは書き換えない（上に薄く置くだけ）。
+ */
+function Overlay({ layout, view }: { layout: CityLayout; view: InfoView | null }) {
+  const { discs, links } = useMemo(() => overlayFor(view, layout), [view, layout]);
+  if (discs.length === 0 && links.length === 0) return null;
+  return (
+    <group data-testid="city-3d-overlay">
+      {discs.map((disc) => (
+        <mesh key={disc.id} rotation={[-Math.PI / 2, 0, 0]} position={[disc.at.x, 0.5, disc.at.z]}>
+          <circleGeometry args={[disc.radius, 24]} />
+          <meshBasicMaterial color={disc.color} transparent opacity={0.45} depthWrite={false} />
+        </mesh>
+      ))}
+      {links.map((link) => {
+        const dx = link.b.x - link.a.x;
+        const dz = link.b.z - link.a.z;
+        const length = Math.hypot(dx, dz);
+        if (length < 0.001) return null;
+        return (
+          <mesh
+            key={link.id}
+            rotation={[-Math.PI / 2, 0, -Math.atan2(dz, dx)]}
+            position={[(link.a.x + link.b.x) / 2, 0.6, (link.a.z + link.b.z) / 2]}
+          >
+            <planeGeometry args={[length, 2.4]} />
+            <meshBasicMaterial color={link.color} transparent opacity={0.5} depthWrite={false} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+export default function CityScene({ layout, onCommand, onSelect, selected = null, animate = true, rate = 1, view = null, time }: Props) {
   const [why, setWhy] = useState<string | null>(null);
   const [focus, setFocus] = useState<Vec2>({ x: 0, z: 0 });
   const distance = fitDistance(layout.terrain.size);
@@ -327,6 +365,7 @@ export default function CityScene({ layout, onCommand, onSelect, selected = null
         }}
       >
         <City layout={layout} animate={animate} rate={rate} time={time} onPick={pick} />
+        <Overlay layout={layout} view={view} />
         {marked === null ? null : <Marker target={marked} animate={animate} />}
         <Look target={focus} animate={animate} distance={distance} />
       </Canvas>

@@ -5,6 +5,7 @@ import { TILE } from '@/city/palette';
 import type { City } from '@/city/model';
 import { Loading } from '@/ui/components/Loading';
 import { layoutCity } from './model';
+import type { InfoView } from './overlay';
 import { hasWebGL } from './webgl';
 
 /**
@@ -22,6 +23,8 @@ interface Props {
   animate?: boolean;
   /** 街が進む速さの倍率。1 がそのまま、3 が早送り */
   rate?: number;
+  /** 街の上に色で重ねる情報表示 */
+  view?: InfoView | null;
   /** 街を押したときに端末へ送る */
   onCommand?: ((line: string) => void) | undefined;
   /** 建物を選んだとき。右の情報パネルを開くのに使う */
@@ -31,7 +34,7 @@ interface Props {
   label?: string;
 }
 
-export function CityView({ city, animate = true, rate = 1, onCommand, onSelect, selected = null, label }: Props) {
+export function CityView({ city, animate = true, rate = 1, view = null, onCommand, onSelect, selected = null, label }: Props) {
   const able = hasWebGL();
   const layout = useMemo(() => (able ? layoutCity(city) : null), [city, able]);
 
@@ -54,7 +57,7 @@ export function CityView({ city, animate = true, rate = 1, onCommand, onSelect, 
   return (
     <div className="h-full w-full" aria-label={label}>
       <Suspense fallback={<Loading />}>
-        <CityScene layout={layout} animate={animate} rate={rate} onCommand={onCommand} onSelect={onSelect} selected={selected} />
+        <CityScene layout={layout} animate={animate} rate={rate} view={view} onCommand={onCommand} onSelect={onSelect} selected={selected} />
       </Suspense>
     </div>
   );
