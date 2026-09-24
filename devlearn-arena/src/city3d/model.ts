@@ -79,6 +79,21 @@ export interface LayoutDistrict {
   d: number;
 }
 
+/**
+ * まだ空いている区画。ここが光るので、更地でも何をすればよいか分かる。
+ * 学習者が建設メニューで選んだものは、ここに建つ。
+ */
+export interface LayoutSite {
+  id: string;
+  /** 区画の中心（メートル） */
+  at: Vec2;
+  w: number;
+  d: number;
+  district: DistrictId;
+  /** そこに建てられるか。水の上や川べりには建てられない */
+  buildable: boolean;
+}
+
 /** 建物どうしの結び付き。バス路線・ネットワークのリンク・系譜がここに入る */
 export interface LayoutLink {
   id: string;
@@ -106,6 +121,8 @@ export interface CityLayout {
   links: LayoutLink[];
   /** 公園。曲がった小道と池を持つ */
   parks: Park[];
+  /** まだ空いている区画。更地でもここが光る */
+  sites: LayoutSite[];
 }
 
 export interface LayoutInput {
@@ -314,6 +331,21 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
 
   const parks = buildParks({ terrain: level, roads, buildings, seed });
 
+  // まだ空いている区画。更地でもここが光るので、何も無い島を見せずに済む
+  const sites: LayoutSite[] = city.sites.map((site) => {
+    const at = toMeters(site.x + site.w / 2, site.y + site.h / 2, city);
+    return {
+      id: site.id,
+      at,
+      w: site.w * TILE_METERS,
+      d: site.h * TILE_METERS,
+      district: site.district,
+      buildable:
+        isBuildable(level, at) &&
+        distanceToRiver(level, at) > level.riverWidth / 2 + level.sandWidth + Math.max(site.w, site.h) * TILE_METERS / 2,
+    };
+  });
+
   return {
     seed,
     size,
@@ -324,5 +356,6 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
     districts,
     links,
     parks,
+    sites,
   };
 }

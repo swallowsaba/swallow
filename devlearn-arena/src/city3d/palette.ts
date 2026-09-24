@@ -124,6 +124,13 @@ export const MARK = {
   plateSub: '#8fa0b2',
 } as const;
 
+/** 建てられる区画の光。更地でも何をすればよいか分かるようにする */
+export const SITE = {
+  glow: '#5cc1ff',
+  /** 建築権が無い・建てられない区画 */
+  idle: '#7d8794',
+} as const;
+
 /**
  * 情報表示（CS2 の情報ビュー）の色。街の上に薄く重ねる。
  * 彩度は抑える。原色と蛍光色を使わない。

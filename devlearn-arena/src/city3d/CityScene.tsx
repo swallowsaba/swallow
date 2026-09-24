@@ -8,11 +8,13 @@ import {
   Quaternion,
   Vector3,
   type DirectionalLight,
+  type Group,
   type HemisphereLight,
   type Mesh,
+  type MeshBasicMaterial,
   type MeshStandardMaterial,
 } from 'three';
-import { MARK, NOTE, PARTS, SKY } from './palette';
+import { MARK, NOTE, PARTS, SITE, SKY } from './palette';
 import { buildCityScene, type BuiltScene } from './scene';
 import {
   CAMERA_FOV,
@@ -56,6 +58,10 @@ interface Props {
   view?: InfoView | null;
   /** 開いたときに寄せる区域。いま学んでいる所を見せる */
   district?: string | null;
+  /** 空いている区画を光らせるか。建設メニューで道具を選んでいる間は光らせる */
+  showSites?: boolean;
+  /** 空いている区画を押したとき */
+  onSite?: ((id: string) => void) | undefined;
   /** 時間帯を外から決める（0 と 1 が真夜中、0.5 が正午） */
   time?: number;
 }
@@ -305,6 +311,59 @@ function Marker({ target, animate }: { target: PickTarget; animate: boolean }) {
 }
 
 /**
+ * 建てられる区画の光。更地でも、何をすればよいかが街の上で分かるようにする。
+ *
+ * 縁だけを光らせて、街の絵を隠さない。息をするようにゆっくり明滅させる。
+ */
+function Sites({
+  layout,
+  animate,
+  onPick,
+}: {
+  layout: CityLayout;
+  animate: boolean;
+  onPick: ((id: string) => void) | undefined;
+}) {
+  const glow = useRef<Group>(null);
+  useFrame((state) => {
+    const group = glow.current;
+    if (group === null) return;
+    const pulse = animate ? 0.4 + 0.24 * (1 + Math.sin(state.clock.elapsedTime * 1.6)) : 0.6;
+    for (const child of group.children) {
+      const mesh = child as Mesh;
+      const material = mesh.material as MeshBasicMaterial | undefined;
+      if (material !== undefined) material.opacity = pulse * (mesh.userData.dim === true ? 0.5 : 1);
+    }
+  });
+
+  return (
+    <group ref={glow} data-testid="city-3d-sites">
+      {layout.sites.map((site) => (
+        <mesh
+          key={site.id}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[site.at.x, 0.7, site.at.z]}
+          userData={{ dim: !site.buildable }}
+          onClick={(event) => {
+            if (!site.buildable) return;
+            event.stopPropagation();
+            onPick?.(site.id);
+          }}
+        >
+          <planeGeometry args={[site.w * 0.9, site.d * 0.9]} />
+          <meshBasicMaterial
+            color={site.buildable ? SITE.glow : SITE.idle}
+            transparent
+            opacity={0.6}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/**
  * 情報表示の重ね。選んだ見方に応じて、建物の足元に色の円を敷き、
  * 結び付きを線で結ぶ。街の絵そのものは書き換えない（上に薄く置くだけ）。
  */
@@ -340,7 +399,8 @@ function Overlay({ layout, view }: { layout: CityLayout; view: InfoView | null }
 }
 
 export default function CityScene({
-  layout, onCommand, onSelect, selected = null, animate = true, rate = 1, view = null, district = null, time,
+  layout, onCommand, onSelect, onSite, selected = null, animate = true, rate = 1, view = null, district = null,
+  showSites = true, time,
 }: Props) {
   const [why, setWhy] = useState<string | null>(null);
   // 開いた瞬間は、いま学んでいる区域に寄る。島全体を遠くから見下ろさない
@@ -373,6 +433,7 @@ export default function CityScene({
       >
         <City layout={layout} animate={animate} rate={rate} time={time} onPick={pick} />
         <Overlay layout={layout} view={view} />
+        {showSites ? <Sites layout={layout} animate={animate} onPick={onSite} /> : null}
         {marked === null ? null : <Marker target={marked} animate={animate} />}
         <Look target={focus} animate={animate} distance={distance} />
       </Canvas>
