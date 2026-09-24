@@ -5,6 +5,7 @@ import { between, hashString, intBetween, unit } from './seed';
 import { buildTerrain, distanceToRiver, flatten, inside, isBuildable, type Terrain } from './terrain';
 import { buildRoads, type RoadNetwork } from './roads';
 import { buildProps, type PropPlacement } from './props';
+import { buildParks, type Park } from './parks';
 
 /**
  * 街の状態 → 3D の街の配置。純粋関数。
@@ -103,6 +104,8 @@ export interface CityLayout {
   districts: LayoutDistrict[];
   /** 建物どうしの結び付き。情報表示で色を重ねるのに使う */
   links: LayoutLink[];
+  /** 公園。曲がった小道と池を持つ */
+  parks: Park[];
 }
 
 export interface LayoutInput {
@@ -309,6 +312,8 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
     })),
   ]);
 
+  const parks = buildParks({ terrain: level, roads, buildings, seed });
+
   return {
     seed,
     size,
@@ -318,5 +323,6 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
     buildings,
     districts,
     links,
+    parks,
   };
 }

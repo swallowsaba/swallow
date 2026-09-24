@@ -23,6 +23,7 @@ import { LIGHT, SURFACES, TILE_METERS, type SurfaceName } from './palette';
 import { unit } from './seed';
 import { heightAt, riverBanks, type Terrain } from './terrain';
 import type { CityLayout, LayoutBuilding, Vec2 } from './model';
+import { PATH_WIDTH } from './parks';
 import type { PropPath, PropPlacement } from './props';
 import type { RoadPath } from './roads';
 
@@ -256,6 +257,36 @@ function roads(layout: CityLayout, parts: Parts): void {
   }
 }
 
+/* ------------ 公園 ------------ */
+
+/**
+ * 公園。曲がった小道と池（DESIGN.md §11）。
+ * 池は輪郭を押し出した窪みにして、岸に砂の縁を付ける。
+ */
+function parks(layout: CityLayout, parts: Parts): void {
+  for (const park of layout.parks) {
+    // 芝の広場。まわりより一段だけ濃くして、公園と分かるようにする
+    const lawn = new CylinderGeometry(park.radius, park.radius, 0.36, 48);
+    lawn.translate(park.at.x, 0.18, park.at.z);
+    parts.add('grassDark', lawn);
+
+    // 曲がった小道
+    for (const path of park.paths) {
+      parts.add('dirt', ribbon(path, PATH_WIDTH, 0.38));
+    }
+
+    // 池。岸に砂の縁を付け、水面をその内側に張る
+    for (const pond of park.ponds) {
+      parts.add('sand', slab(pond.outline, 0.1, 0.4));
+      const shrunk = pond.outline.map((point) => ({
+        x: pond.at.x + (point.x - pond.at.x) * 0.86,
+        z: pond.at.z + (point.z - pond.at.z) * 0.86,
+      }));
+      parts.add('water', slab(shrunk, 0.1, 0.34));
+    }
+  }
+}
+
 /* ------------ 建物 ------------ */
 
 interface WindowInstance {
@@ -406,6 +437,7 @@ export function buildCityScene(layout: CityLayout, options: SceneOptions = {}): 
 
   ground(layout.terrain, parts);
   roads(layout, parts);
+  parks(layout, parts);
   const windows = buildings(layout, parts, options);
 
   // 開いていない区域は暗く沈める
