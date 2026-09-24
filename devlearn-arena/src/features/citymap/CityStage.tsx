@@ -17,6 +17,8 @@ interface Props {
   speed?: Speed;
   /** 街の上に色で重ねる情報表示 */
   view?: InfoView | null;
+  /** 開いたときに寄せる区域。いま学んでいるカテゴリ */
+  district?: string | null;
 }
 
 /**
@@ -24,7 +26,7 @@ interface Props {
  *
  * 枠も見出しも付けない。街の上に置くものは全て HUD 側が重ねる。
  */
-export function CityStage({ city, label, selected, onSelect, onCommand, speed = 'normal', view = null }: Props) {
+export function CityStage({ city, label, selected, onSelect, onCommand, speed = 'normal', view = null, district = null }: Props) {
   const motion = useMotionEnabled();
   const rate = SPEED_RATE[speed];
   return (
@@ -34,6 +36,7 @@ export function CityStage({ city, label, selected, onSelect, onCommand, speed = 
         animate={motion && rate > 0}
         rate={rate}
         view={view}
+        district={district}
         label={label}
         selected={selected ?? null}
         {...(onSelect ? { onSelect } : {})}

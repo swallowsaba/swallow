@@ -1,5 +1,5 @@
 import { LIGHT, SKY } from './palette';
-import type { Vec2 } from './model';
+import type { LayoutDistrict, Vec2 } from './model';
 import { pointAt, type PropPath } from './props';
 
 /**
@@ -88,10 +88,26 @@ export function fogRange(size: { w: number; d: number }): [number, number] {
   return [radius * SKY.fogNearRadii, radius * SKY.fogFarRadii];
 }
 
-/** 街全体が入るカメラの距離 */
+/** その広さが画面に収まるカメラの距離 */
 export function fitDistance(size: { w: number; d: number }): number {
   const span = Math.max(size.w, size.d * 1.4);
   return span / (2 * Math.tan((CAMERA_FOV * Math.PI) / 360));
+}
+
+/**
+ * 開いたときに見る所。いま学んでいる区域に寄せる。
+ *
+ * 島全体を遠くから見下ろさない。建物の顔が見える近さで始める。
+ * その区域がまだ開いていなければ、開いている区域のうち最初のものを見る。
+ */
+export function openingView(
+  layout: { terrain: { size: { w: number; d: number } }; districts: readonly LayoutDistrict[] },
+  district: string | null,
+): { at: Vec2; distance: number } {
+  const open = layout.districts.filter((d) => d.unlocked);
+  const area = open.find((d) => d.id === district) ?? open[0];
+  if (area === undefined) return { at: { x: 0, z: 0 }, distance: fitDistance(layout.terrain.size) };
+  return { at: area.at, distance: fitDistance({ w: area.w, d: area.d }) };
 }
 
 /** 伏せ角を保ったカメラの位置。水平の向き（azimuth）だけを変えられる */

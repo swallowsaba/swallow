@@ -17,6 +17,7 @@ import {
   glowStrength,
   lerpPoint,
   moveAlong,
+  openingView,
   pickTargets,
   sunAt,
 } from './sky';
@@ -81,6 +82,37 @@ describe('カメラ', () => {
   it('注目点のまわりを回る', () => {
     const [x, , z] = cameraPosition({ x: 50, z: -20 }, 300, 0);
     expect(Math.hypot(x - 50, z + 20)).toBeCloseTo(Math.cos(CAMERA_PITCH) * 300);
+  });
+
+  it('開いたときは、いま学んでいる区域に寄る。島全体を見下ろさない', () => {
+    const layout = {
+      terrain: { size: { w: 384, d: 272 } },
+      districts: [
+        { id: 'center' as const, unlocked: true, at: { x: 0, z: 0 }, w: 80, d: 64 },
+        { id: 'git' as const, unlocked: true, at: { x: -40, z: -90 }, w: 320, d: 72 },
+        { id: 'k8s' as const, unlocked: false, at: { x: 120, z: 0 }, w: 120, d: 64 },
+      ],
+    };
+    const open = openingView(layout, 'git');
+    expect(open.at).toEqual({ x: -40, z: -90 });
+    // 島全体を映すより近い
+    expect(open.distance).toBeLessThan(fitDistance(layout.terrain.size));
+  });
+
+  it('まだ開いていない区域を指したら、開いている区域を見る', () => {
+    const layout = {
+      terrain: { size: { w: 384, d: 272 } },
+      districts: [
+        { id: 'center' as const, unlocked: true, at: { x: 5, z: 6 }, w: 80, d: 64 },
+        { id: 'k8s' as const, unlocked: false, at: { x: 120, z: 0 }, w: 120, d: 64 },
+      ],
+    };
+    expect(openingView(layout, 'k8s').at).toEqual({ x: 5, z: 6 });
+  });
+
+  it('区域が 1 つも開いていなければ、街全体を映す', () => {
+    const layout = { terrain: { size: { w: 384, d: 272 } }, districts: [] };
+    expect(openingView(layout, 'git')).toEqual({ at: { x: 0, z: 0 }, distance: fitDistance(layout.terrain.size) });
   });
 
   it('街全体が入る距離を出せる', () => {

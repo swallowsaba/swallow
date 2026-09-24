@@ -25,6 +25,8 @@ interface Props {
   rate?: number;
   /** 街の上に色で重ねる情報表示 */
   view?: InfoView | null;
+  /** 開いたときに寄せる区域 */
+  district?: string | null;
   /** 街を押したときに端末へ送る */
   onCommand?: ((line: string) => void) | undefined;
   /** 建物を選んだとき。右の情報パネルを開くのに使う */
@@ -34,7 +36,7 @@ interface Props {
   label?: string;
 }
 
-export function CityView({ city, animate = true, rate = 1, view = null, onCommand, onSelect, selected = null, label }: Props) {
+export function CityView({ city, animate = true, rate = 1, view = null, district = null, onCommand, onSelect, selected = null, label }: Props) {
   const able = hasWebGL();
   const layout = useMemo(() => (able ? layoutCity(city) : null), [city, able]);
 
@@ -57,7 +59,16 @@ export function CityView({ city, animate = true, rate = 1, view = null, onComman
   return (
     <div className="h-full w-full" aria-label={label}>
       <Suspense fallback={<Loading />}>
-        <CityScene layout={layout} animate={animate} rate={rate} view={view} onCommand={onCommand} onSelect={onSelect} selected={selected} />
+        <CityScene
+          layout={layout}
+          animate={animate}
+          rate={rate}
+          view={view}
+          district={district}
+          onCommand={onCommand}
+          onSelect={onSelect}
+          selected={selected}
+        />
       </Suspense>
     </div>
   );

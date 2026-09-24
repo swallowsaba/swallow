@@ -22,6 +22,7 @@ import {
   fitDistance,
   fogRange,
   glowStrength,
+  openingView,
   lerpPoint,
   moveAlong,
   pickTargets,
@@ -53,6 +54,8 @@ interface Props {
   rate?: number;
   /** 街の上に色で重ねる情報表示。null なら重ねない */
   view?: InfoView | null;
+  /** 開いたときに寄せる区域。いま学んでいる所を見せる */
+  district?: string | null;
   /** 時間帯を外から決める（0 と 1 が真夜中、0.5 が正午） */
   time?: number;
 }
@@ -336,9 +339,13 @@ function Overlay({ layout, view }: { layout: CityLayout; view: InfoView | null }
   );
 }
 
-export default function CityScene({ layout, onCommand, onSelect, selected = null, animate = true, rate = 1, view = null, time }: Props) {
+export default function CityScene({
+  layout, onCommand, onSelect, selected = null, animate = true, rate = 1, view = null, district = null, time,
+}: Props) {
   const [why, setWhy] = useState<string | null>(null);
-  const [focus, setFocus] = useState<Vec2>({ x: 0, z: 0 });
+  // 開いた瞬間は、いま学んでいる区域に寄る。島全体を遠くから見下ろさない
+  const opening = useMemo(() => openingView(layout, district), [layout, district]);
+  const [focus, setFocus] = useState<Vec2>(opening.at);
   const distance = fitDistance(layout.terrain.size);
   const targets = useMemo(() => pickTargets(layout.buildings), [layout]);
 
@@ -359,7 +366,7 @@ export default function CityScene({ layout, onCommand, onSelect, selected = null
       <Canvas
         shadows="soft"
         dpr={[1, 2]}
-        camera={{ fov: CAMERA_FOV, near: 1, far: distance * 4, position: cameraPosition({ x: 0, z: 0 }, distance, 0.6) }}
+        camera={{ fov: CAMERA_FOV, near: 1, far: distance * 4, position: cameraPosition(opening.at, opening.distance, 0.6) }}
         onDoubleClick={() => {
           setFocus({ x: 0, z: 0 });
         }}

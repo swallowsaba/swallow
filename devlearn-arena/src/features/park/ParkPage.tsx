@@ -473,6 +473,7 @@ function Arena({
         selected={selected}
         speed={speed}
         view={infoView}
+        district={mission.track}
         onSelect={setSelected}
         onCommand={runFromCity}
       />
