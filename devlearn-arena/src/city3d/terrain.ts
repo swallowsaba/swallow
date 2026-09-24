@@ -46,6 +46,8 @@ export interface Terrain {
   tiles: TerrainTile[];
   /** 陸地の輪郭。閉じた曲線の点列 */
   shore: Vec2[];
+  /** 草地が始まる線。海岸線を砂浜の幅だけ内側へ寄せたもの */
+  land: Vec2[];
   /** 川の中心線 */
   river: Vec2[];
   riverWidth: number;
@@ -63,6 +65,12 @@ const RIVER_POINTS = 48;
 
 const RIVER_WIDTH = 22;
 const SAND_WIDTH = 5;
+
+/**
+ * 海岸の砂浜の幅（メートル）。
+ * 草地のタイルはここより内側にしか置かない。タイルの角が海に出ると階段状に見えるため。
+ */
+export const BEACH_WIDTH = TILE_METERS * 1.6;
 
 /**
  * 島は街より広い。街の外側にも陸があり、その先が海になる。
@@ -123,6 +131,21 @@ export function riverCenter(size: Bounds, seed: number): Vec2[] {
     points.push({ x: base + meander + lean * z, z });
   }
   return points;
+}
+
+/**
+ * 輪郭を内側へ寄せる。島の中心へ向かって distance だけ縮める。
+ *
+ * 輪郭は極座標で作った閉じた曲線なので、中心へ向けて縮めれば形と滑らかさが保たれる。
+ * 草地のタイルを海岸線より内側に収めるのに使う。
+ */
+export function insetOutline(outline: readonly Vec2[], distance: number): Vec2[] {
+  return outline.map((point) => {
+    const r = Math.hypot(point.x, point.z);
+    if (r <= distance) return { x: 0, z: 0 };
+    const k = (r - distance) / r;
+    return { x: point.x * k, z: point.z * k };
+  });
 }
 
 /** 点が閉じた輪郭の内側にあるか（交差数の偶奇で決める） */
@@ -244,7 +267,8 @@ function tilesOf(terrain: Omit<Terrain, 'tiles'>): TerrainTile[] {
       const point = { x, z };
       const toRiver = distanceToRiver(full, point);
       let kind: TileKind = 'grass';
-      if (!inside(terrain.shore, point) || toRiver <= terrain.riverWidth / 2) kind = 'water';
+      // 草地は砂浜より内側だけに置く。タイルの角が海に出ると階段状に見える
+      if (!inside(terrain.land, point) || toRiver <= terrain.riverWidth / 2) kind = 'water';
       else if (toRiver <= terrain.riverWidth / 2 + terrain.sandWidth) kind = 'dirt';
       else if (Math.hypot(x, z) <= terrain.plazaRadius) kind = 'pavement';
       tiles.push({
@@ -302,11 +326,13 @@ export function flatten(terrain: Terrain, spots: readonly { at: Vec2; radius: nu
  */
 export function buildTerrain(city: Bounds, seed: number): Terrain {
   const size: Bounds = { w: city.w * ISLAND_MARGIN, d: city.d * ISLAND_MARGIN };
+  const shore = shoreOutline(size, seed);
   const base: Omit<Terrain, 'tiles'> = {
     seed,
     size,
     city,
-    shore: shoreOutline(size, seed),
+    shore,
+    land: insetOutline(shore, BEACH_WIDTH),
     river: riverCenter(size, seed),
     riverWidth: RIVER_WIDTH + unit(seed, 31) * 6,
     sandWidth: SAND_WIDTH,

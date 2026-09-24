@@ -2,6 +2,7 @@ import {
   BoxGeometry,
   Color,
   CylinderGeometry,
+  ExtrudeGeometry,
   Group,
   InstancedMesh,
   Matrix4,
@@ -9,12 +10,13 @@ import {
   MeshStandardMaterial,
   PlaneGeometry,
   Quaternion,
+  Shape,
   SphereGeometry,
   Vector3,
   type BufferGeometry,
   type Material,
 } from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { buildingPieces } from './buildings';
 import { offsetPath, raisedRibbon, ribbon } from './geometry';
 import { LIGHT, SURFACES, TILE_METERS, type SurfaceName } from './palette';
@@ -110,7 +112,32 @@ function box(w: number, h: number, d: number, x: number, y: number, z: number, r
 
 /* ------------ 地面 ------------ */
 
+/**
+ * 閉じた曲線を押し出して板にする。海岸線の曲線をそのまま island の縁にする。
+ *
+ * `Shape` は XY 平面なので、押し出してから寝かせる。
+ * 形の y に -z を入れておくと、寝かせたあとに元の z へ戻る。
+ */
+function slab(outline: readonly Vec2[], bottom: number, top: number): BufferGeometry {
+  const shape = new Shape();
+  outline.forEach((point, i) => {
+    if (i === 0) shape.moveTo(point.x, -point.z);
+    else shape.lineTo(point.x, -point.z);
+  });
+  shape.closePath();
+  const geometry = new ExtrudeGeometry(shape, { depth: top - bottom, bevelEnabled: false, curveSegments: 24 });
+  geometry.rotateX(-Math.PI / 2);
+  geometry.translate(0, bottom, 0);
+  // 押し出した形は索引を持たない。ほかの形とまとめられるよう、頂点を寄せて索引を付ける
+  return mergeVertices(geometry);
+}
+
 function ground(terrain: Terrain, parts: Parts): void {
+  // 島の土台。海岸線をそのまま押し出すので、輪郭は曲線になる。
+  // タイルはこの内側にしか置かないので、角が海に出て階段状に見えることがない
+  parts.add('sand', slab(terrain.shore, WATER_LEVEL - 1.4, WATER_LEVEL + 0.22));
+  parts.add('grass', slab(terrain.land, WATER_LEVEL + 0.2, WATER_LEVEL + 0.3));
+
   for (const tile of terrain.tiles) {
     if (tile.kind === 'water') continue;
     const surface: SurfaceName =
