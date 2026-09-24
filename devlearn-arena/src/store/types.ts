@@ -1,5 +1,5 @@
 import type {
-  LessonProgress, TownGrowthData, MissionProgress, Profile, ReviewItem, SaveData, Settings, ShellSnapshot,
+  LessonProgress, PlacementData, TownGrowthData, MissionProgress, Profile, ReviewItem, SaveData, Settings, ShellSnapshot,
 } from '@/lib/storage/schema';
 
 export interface ProgressSlice {
@@ -25,6 +25,10 @@ export interface ProgressSlice {
   growth: Record<string, TownGrowthData>;
   /** 理解度の正解で家が 1 軒増え、コマンドの手順で階が 1 つ積み上がる */
   grow: (track: string, kind: 'houses' | 'floors', n?: number) => void;
+  /** カテゴリごとに、学習者が建設メニューから置いた建物 */
+  designs: Record<string, PlacementData[]>;
+  /** 区画に建物を置く。建築権を 1 つ使う */
+  place: (track: string, placement: PlacementData) => void;
   saveMission: (id: string, progress: MissionProgress, state: ShellSnapshot) => void;
   setLastMission: (id: string) => void;
   resetMission: (id: string) => void;
@@ -59,5 +63,6 @@ export function toSaveData(state: AppState, now: number): SaveData {
     introsRead: state.introsRead,
     facilitiesBuilt: state.facilitiesBuilt,
     growth: state.growth,
+    designs: state.designs,
   };
 }

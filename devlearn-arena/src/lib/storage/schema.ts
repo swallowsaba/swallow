@@ -90,6 +90,13 @@ export const townGrowthSchema = z.object({
 });
 export type TownGrowthData = z.infer<typeof townGrowthSchema>;
 
+/** 学習者が建設メニューから置いたもの。どの区画に何を建てたか */
+export const placementSchema = z.object({
+  site: z.string().min(1),
+  kind: z.enum(['road', 'zone', 'house', 'office', 'monument', 'depot', 'hall', 'relay']),
+});
+export type PlacementData = z.infer<typeof placementSchema>;
+
 export const saveDataSchema = z.object({
   version: z.literal(SAVE_VERSION),
   createdAt: z.number().int(),
@@ -110,6 +117,8 @@ export const saveDataSchema = z.object({
   facilitiesBuilt: z.array(z.string()).default([]),
   /** カテゴリごとの街の育ち。古い保存データには無いので空で補う */
   growth: z.record(z.string(), townGrowthSchema).default({}),
+  /** カテゴリごとに、学習者が自分で置いた建物。古い保存データには無いので空で補う */
+  designs: z.record(z.string(), z.array(placementSchema)).default({}),
 });
 export type SaveData = z.infer<typeof saveDataSchema>;
 
@@ -139,6 +148,7 @@ export function createEmptySave(now: number): SaveData {
     introsRead: [],
     facilitiesBuilt: [],
     growth: {},
+    designs: {},
   };
 }
 

@@ -18,8 +18,10 @@ const CityScene = lazy(() => import('./CityScene'));
 
 interface Props {
   city: City;
-  /** 動かしてよいか。prefers-reduced-motion のときは false */
+  /** 動かしてよいか。prefers-reduced-motion のときと、止めているときは false */
   animate?: boolean;
+  /** 街が進む速さの倍率。1 がそのまま、3 が早送り */
+  rate?: number;
   /** 街を押したときに端末へ送る */
   onCommand?: ((line: string) => void) | undefined;
   /** 建物を選んだとき。右の情報パネルを開くのに使う */
@@ -29,7 +31,7 @@ interface Props {
   label?: string;
 }
 
-export function CityView({ city, animate = true, onCommand, onSelect, selected = null, label }: Props) {
+export function CityView({ city, animate = true, rate = 1, onCommand, onSelect, selected = null, label }: Props) {
   const able = hasWebGL();
   const layout = useMemo(() => (able ? layoutCity(city) : null), [city, able]);
 
@@ -52,7 +54,7 @@ export function CityView({ city, animate = true, onCommand, onSelect, selected =
   return (
     <div className="h-full w-full" aria-label={label}>
       <Suspense fallback={<Loading />}>
-        <CityScene layout={layout} animate={animate} onCommand={onCommand} onSelect={onSelect} selected={selected} />
+        <CityScene layout={layout} animate={animate} rate={rate} onCommand={onCommand} onSelect={onSelect} selected={selected} />
       </Suspense>
     </div>
   );

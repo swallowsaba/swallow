@@ -22,7 +22,7 @@ import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Icon } from '@/ui/Icon';
 import { CITIES, CITY_TRACKS, cityOf, facilityById } from '@/content/city';
-import { growCity } from '@/features/citymap/cityStore';
+import { growCity, growthOf } from '@/features/citymap/cityStore';
 import { useDerivedCity } from '@/features/citymap/derive';
 import { CityStage } from '@/features/citymap/CityStage';
 import { EditorPanel, type EditorTarget } from './EditorPanel';
@@ -31,7 +31,9 @@ import { NO_HINTS, reveal, revealedCount, stepKey, type HintReveal } from './hin
 import { TerminalDock } from './hud/TerminalDock';
 import { TaskCard } from './hud/TaskCard';
 import { ExplainDrawer } from './hud/ExplainDrawer';
-import { HUD, SIZE } from './hud/theme';
+import { TopBar } from './hud/TopBar';
+import { cityMetrics, clockOf, milestoneOf, type Speed } from './hud/metrics';
+import { HUD } from './hud/theme';
 
 const STEP_XP = 10;
 
@@ -203,6 +205,7 @@ function Arena({
   const [selected, setSelected] = useState<string | null>(null);
   const [explaining, setExplaining] = useState(false);
   const [retryOpen, setRetryOpen] = useState(false);
+  const [speed, setSpeed] = useState<Speed>('normal');
 
   const xp = useStore((s) => s.profile.xp);
   const soundEnabled = useStore((s) => s.settings.soundEnabled);
@@ -243,6 +246,18 @@ function Arena({
   const shellState = session.state;
   const city = useDerivedCity(mission.track, shellState, clearedIds);
   const plan = CITIES[mission.track];
+
+  // 上の帯に出す数。どれも状態から導く
+  const activeDays = useStore((s) => s.profile.activeDays.length);
+  const growth = useStore((s) => s.growth);
+  const designs = useStore((s) => s.designs);
+  const placed = designs[mission.track]?.length ?? 0;
+  const clock = clockOf(activeDays, shellState.history.length);
+  const metrics = cityMetrics({ city, xp, growth: growthOf(growth, mission.track), placed });
+  const milestone = useMemo(
+    () => milestoneOf(plan, catalogue.filter((m) => m.track === mission.track), clearedIds),
+    [plan, catalogue, mission.track, clearedIds],
+  );
 
   // 状態が変わるたびに保存する（書き込み自体はストア側で間引かれる）
   useEffect(() => {
@@ -438,19 +453,32 @@ function Arena({
         city={city}
         label={plan.name}
         selected={selected}
+        speed={speed}
         onSelect={setSelected}
         onCommand={runFromCity}
       />
 
-      <ArenaBar
+      <TopBar
         name={plan.name}
-        missionId={mission.id}
-        cleared={clearedIds}
-        onSwitch={onSwitch}
-        onRetry={() => {
-          setRetryOpen(true);
-        }}
-      />
+        clock={clock}
+        metrics={metrics}
+        milestone={milestone}
+        speed={speed}
+        onSpeed={setSpeed}
+      >
+        <MissionPicker currentId={mission.id} cleared={(id) => clearedIds.has(id)} onPick={onSwitch} />
+        <button
+          type="button"
+          data-testid="retry-open"
+          onClick={() => {
+            setRetryOpen(true);
+          }}
+          className="h-8 rounded px-2.5 text-[13px]"
+          style={{ border: `1px solid ${HUD.lineStrong}`, color: HUD.soft }}
+        >
+          {t('park.retry')}
+        </button>
+      </TopBar>
 
       <TerminalDock session={session} innerRef={terminalRef} onExecuted={handleExecuted} onEditor={setEditing} />
 
@@ -532,47 +560,6 @@ function Arena({
         />
       ) : null}
     </div>
-  );
-}
-
-/** 上の帯。いまは街の名前と任務の選択だけ（指標はこの後の版で足す） */
-function ArenaBar({
-  name,
-  missionId,
-  cleared,
-  onSwitch,
-  onRetry,
-}: {
-  name: string;
-  missionId: string;
-  cleared: ReadonlySet<string>;
-  onSwitch: (id: string) => void;
-  onRetry: () => void;
-}) {
-  const t = useT();
-  return (
-    <header
-      data-testid="arena-bar"
-      className="absolute inset-x-0 top-0 z-30 flex items-center gap-4 px-4"
-      style={{ height: SIZE.topBar, background: HUD.bar, borderBottom: `1px solid ${HUD.line}`, backdropFilter: 'blur(8px)' }}
-    >
-      <span className="flex items-center gap-2 text-[16px] font-extrabold tracking-tight" data-testid="world-title">
-        <Icon name="city" size={18} />
-        {name}
-      </span>
-      <div className="ml-auto flex items-center gap-2">
-        <MissionPicker currentId={missionId} cleared={(id) => cleared.has(id)} onPick={onSwitch} />
-        <button
-          type="button"
-          data-testid="retry-open"
-          onClick={onRetry}
-          className="h-8 rounded px-2.5 text-[13px]"
-          style={{ border: `1px solid ${HUD.lineStrong}`, color: HUD.soft }}
-        >
-          {t('park.retry')}
-        </button>
-      </div>
-    </header>
   );
 }
 

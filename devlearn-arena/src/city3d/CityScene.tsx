@@ -48,6 +48,8 @@ interface Props {
   selected?: string | null;
   /** 動かしてよいか。false なら車も時間帯も止める */
   animate?: boolean;
+  /** 進む速さの倍率。早送りのときは 1 より大きい */
+  rate?: number;
   /** 時間帯を外から決める（0 と 1 が真夜中、0.5 が正午） */
   time?: number;
 }
@@ -70,11 +72,13 @@ function timeAt(elapsed: number, animate: boolean, time: number | undefined): nu
 function Daylight({
   layout,
   animate,
+  rate,
   time,
   glow,
 }: {
   layout: CityLayout;
   animate: boolean;
+  rate: number;
   time: number | undefined;
   glow: MeshStandardMaterial;
 }) {
@@ -92,7 +96,8 @@ function Daylight({
   }, [scene, fogNear, fogFar]);
 
   useFrame((state) => {
-    const now = sunAt(timeAt(state.clock.elapsedTime, animate, time), span * 0.8);
+    const at = timeAt(state.clock.elapsedTime * rate, animate, time);
+    const now = sunAt(at, span * 0.8);
     const light = sun.current;
     if (light !== null) {
       light.position.set(...now.position);
@@ -101,7 +106,7 @@ function Daylight({
     }
     if (sky.current !== null) sky.current.intensity = now.ambient;
     // 夜は窓が灯る
-    glow.emissiveIntensity = glowStrength(timeAt(state.clock.elapsedTime, animate, time));
+    glow.emissiveIntensity = glowStrength(at);
     // 空と fog は夜に沈む
     tint.current.set(SKY.color).lerp(night.current, 1 - now.daylight);
     if (scene.background instanceof Color) scene.background.copy(tint.current);
@@ -133,11 +138,13 @@ function Daylight({
 function City({
   layout,
   animate,
+  rate,
   time,
   onPick,
 }: {
   layout: CityLayout;
   animate: boolean;
+  rate: number;
   time: number | undefined;
   onPick: (id: string) => void;
 }) {
@@ -160,7 +167,7 @@ function City({
     // 車と人を進める。部品の位置は形に焼き込んであるので、どれも同じ行列で動く
     for (const mover of built.movers) {
       mover.items.forEach((item, i) => {
-        const spot = moveAlong(item.path, state.clock.elapsedTime);
+        const spot = moveAlong(item.path, state.clock.elapsedTime * rate);
         matrix.current.compose(
           at.current.set(spot.at.x, mover.lift, spot.at.z),
           spin.current.setFromAxisAngle(up.current, spot.angle),
@@ -176,7 +183,7 @@ function City({
 
   return (
     <group>
-      <Daylight layout={layout} animate={animate} time={time} glow={built.glow} />
+      <Daylight layout={layout} animate={animate} rate={rate} time={time} glow={built.glow} />
       <primitive object={built.group} />
       {/* 押せる的。材質を描かないので、絵の重さは変わらない */}
       {targets.map((target) => (
@@ -291,7 +298,7 @@ function Marker({ target, animate }: { target: PickTarget; animate: boolean }) {
   );
 }
 
-export default function CityScene({ layout, onCommand, onSelect, selected = null, animate = true, time }: Props) {
+export default function CityScene({ layout, onCommand, onSelect, selected = null, animate = true, rate = 1, time }: Props) {
   const [why, setWhy] = useState<string | null>(null);
   const [focus, setFocus] = useState<Vec2>({ x: 0, z: 0 });
   const distance = fitDistance(layout.terrain.size);
@@ -319,7 +326,7 @@ export default function CityScene({ layout, onCommand, onSelect, selected = null
           setFocus({ x: 0, z: 0 });
         }}
       >
-        <City layout={layout} animate={animate} time={time} onPick={pick} />
+        <City layout={layout} animate={animate} rate={rate} time={time} onPick={pick} />
         {marked === null ? null : <Marker target={marked} animate={animate} />}
         <Look target={focus} animate={animate} distance={distance} />
       </Canvas>

@@ -30,6 +30,7 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
   introsRead: [],
   facilitiesBuilt: [],
   growth: {},
+  designs: {},
 
   hydrate: (data) =>
     set({
@@ -45,12 +46,21 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       introsRead: data.introsRead,
       facilitiesBuilt: data.facilitiesBuilt,
       growth: data.growth,
+      designs: data.designs,
     }),
 
   grow: (track, kind, n = 1) =>
     set((s) => {
       const current = s.growth[track] ?? { houses: 0, floors: 0 };
       return { growth: { ...s.growth, [track]: { ...current, [kind]: current[kind] + n } } };
+    }),
+
+  place: (track, placement) =>
+    set((s) => {
+      const current = s.designs[track] ?? [];
+      // 同じ区画には 1 つだけ。二重に置いて建築権を空費させない
+      if (current.some((p) => p.site === placement.site)) return {};
+      return { designs: { ...s.designs, [track]: [...current, placement] } };
     }),
 
   buildFacility: (id) =>
@@ -97,6 +107,7 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
         missionState: keep(s.missionState),
         introsRead: s.introsRead.filter((id) => !missions.has(id)),
         growth: Object.fromEntries(Object.entries(s.growth).filter(([id]) => !facilityIds.some((f) => f.startsWith(`${id}/`)))),
+        designs: Object.fromEntries(Object.entries(s.designs).filter(([id]) => !facilityIds.some((f) => f.startsWith(`${id}/`)))),
         reviewQueue: s.reviewQueue.filter((item) => !missions.has(item.lessonId)),
         facilitiesBuilt: s.facilitiesBuilt.filter((id) => !facilityIds.includes(id)),
         lastMissionId: s.lastMissionId !== null && missions.has(s.lastMissionId) ? null : s.lastMissionId,
@@ -156,6 +167,7 @@ export const createProgressSlice: StateCreator<AppState, [], [], ProgressSlice> 
       introsRead: [],
       facilitiesBuilt: [],
       growth: {},
+      designs: {},
       lastMissionId: null,
     });
   },

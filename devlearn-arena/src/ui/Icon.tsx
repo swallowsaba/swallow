@@ -33,7 +33,14 @@ export type IconName =
   | 'route'
   | 'board'
   | 'settings'
-  | 'map';
+  | 'map'
+  | 'people'
+  | 'coin'
+  | 'heart'
+  | 'bars'
+  | 'fast'
+  | 'chat'
+  | 'layers';
 
 const PATHS: Record<IconName, React.ReactNode> = {
   // 住民の要望（吹き出し）
@@ -84,6 +91,36 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   play: <path d="M7.5 5.5l10 6.5-10 6.5z" />,
+  // 住人。頭と肩だけの影。目も口も描かない
+  people: (
+    <>
+      <circle cx="12" cy="7.5" r="4" />
+      <path d="M3.5 20.5c1.2-4.5 4.5-6.8 8.5-6.8s7.3 2.3 8.5 6.8" />
+    </>
+  ),
+  // 経験値
+  coin: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 6.5v11M9 9.3h4.8a2 2 0 0 1 0 4H10.2a2 2 0 0 0 0 4H15" />
+    </>
+  ),
+  heart: <path d="M12 20.5S3.5 15.4 3.5 9.4A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8.5 2.4c0 6-8.5 11.1-8.5 11.1z" />,
+  bars: (
+    <>
+      <rect x="3.5" y="9" width="4.5" height="11.5" />
+      <rect x="9.75" y="4" width="4.5" height="16.5" />
+      <rect x="16" y="12" width="4.5" height="8.5" />
+    </>
+  ),
+  fast: <path d="M3 5.5l8 6.5-8 6.5zM12.5 5.5l8 6.5-8 6.5z" />,
+  chat: <path d="M3.5 6.5h17v10.5h-9l-4.5 3.5v-3.5h-3.5z" />,
+  layers: (
+    <>
+      <path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z" />
+      <path d="M3.5 12.5L12 17l8.5-4.5M3.5 16.5L12 21l8.5-4.5" />
+    </>
+  ),
   pause: <path d="M9 5.5v13M15 5.5v13" />,
   replay: (
     <>
