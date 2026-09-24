@@ -1,12 +1,8 @@
-﻿devlearn-arena/DESIGN.md と devlearn-arena/REWORK.md を読み、未完了の項目を上から順に実装しろ。
-DESIGN.md は 3D 版に差し替えられている。過去の「SVG で描け」「3D ライブラリを入れるな」「斜め45度にしない」はすべて撤回された。
-three.js（と @react-three/fiber, @react-three/drei）を入れて、Cities: Skylines II のような 3D の街として作り直せ。
-外部から 3D モデルは取らず、形はコードで組み立てろ。GitHub Pages で動くこと。
-太陽光と影、夜に灯る窓、街路樹と街灯と車と人、縁石と車線のある道路を入れろ。
-建物はパラメータから組み立て、1棟に窓を40枚以上、屋上設備を2つ以上、基壇とセットバックを持たせろ。
-同じ形は InstancedMesh でまとめ、描画呼び出しを200以下に保て。
-状態から街を導く部分は純粋関数にして、乱数ではなく seed から決め、テストしろ。
-街は学習者が設計し（勝手に配置しない）、コマンドの成功でもクイズの正解でも必ず育つこと。
+﻿devlearn-arena/REWORK.md と devlearn-arena/DESIGN.md を読み、未完了の項目を上から順に実装しろ。
+第6版。前回の実装は不合格で、指示に反していた点が REWORK.md の冒頭に書いてある。
+作る前に docs/design/hud-mockup.html と docs/design/city-reference.png を必ず開いて見ろ。これが正解の画面だ。
+左の学習パネルと紙芝居は廃止し、画面全体を 3D の街にして HUD を重ねろ。端末は左に常駐させ、常に使えるようにしろ。
+項目0のテスト（禁止文言・顔の描画・端末の閉鎖・紙芝居）を最初に作り、それが通るまで先に進むな。
 終わった項目は REWORK.md のチェックボックスを [x] に変えてコミットしろ。
 各項目ごとに devlearn-arena で npm run typecheck と npm run lint と npm run test を通し、落ちたら自分で直してからコミットしろ。
 playwright は実行するな。
