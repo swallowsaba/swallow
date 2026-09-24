@@ -70,10 +70,8 @@ export function BuildingPanel({ info, onCommand, onClose }: Props) {
     <section
       data-testid="building-panel"
       aria-label={info.label}
-      className="absolute z-20 flex flex-col overflow-hidden rounded-lg"
+      className="flex shrink-0 flex-col overflow-hidden rounded-lg"
       style={{
-        right: 16,
-        top: SIZE.panelTop,
         width: SIZE.info,
         background: HUD.panel,
         border: `1px solid ${HUD.lineStrong}`,

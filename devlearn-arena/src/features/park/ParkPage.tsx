@@ -38,9 +38,11 @@ import { BuildingPanel } from './hud/BuildingPanel';
 import { buildingInfo } from './hud/buildingInfo';
 import { BuildMenu } from './hud/BuildMenu';
 import { InfoViews } from './hud/InfoViews';
+import { Voices } from './hud/Voices';
+import { voicesOf } from './hud/voiceFeed';
 import { variantsOf, type BuildVariant } from './hud/buildTools';
 import { cityMetrics, clockOf, milestoneOf, type Speed } from './hud/metrics';
-import { HUD } from './hud/theme';
+import { HUD, SIZE } from './hud/theme';
 
 const STEP_XP = 10;
 
@@ -272,6 +274,8 @@ function Arena({
   );
   // 選んだ建物の中身。街の状態から導くので、選び直すたびに数え直す必要が無い
   const chosen = selected === null ? null : buildingInfo(city, shellState.cluster, selected);
+  // 住人の声。街の状態から毎回読み直す。貯めた台帳ではない
+  const voices = useMemo(() => voicesOf(city, shellState.cluster), [city, shellState.cluster]);
 
   // 状態が変わるたびに保存する（書き込み自体はストア側で間引かれる）
   useEffect(() => {
@@ -524,15 +528,22 @@ function Arena({
         onVariant={setVariant}
       />
 
-      {chosen === null ? null : (
-        <BuildingPanel
-          info={chosen}
-          onCommand={runFromCity}
-          onClose={() => {
-            setSelected(null);
-          }}
-        />
-      )}
+      <div
+        data-testid="right-column"
+        className="absolute z-20 flex flex-col gap-2.5 overflow-hidden"
+        style={{ right: 16, top: SIZE.panelTop, width: SIZE.info, bottom: 210 }}
+      >
+        {chosen === null ? null : (
+          <BuildingPanel
+            info={chosen}
+            onCommand={runFromCity}
+            onClose={() => {
+              setSelected(null);
+            }}
+          />
+        )}
+        <Voices voices={voices} />
+      </div>
 
       {explaining ? (
         <ExplainDrawer

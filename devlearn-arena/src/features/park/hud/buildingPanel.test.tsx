@@ -143,10 +143,9 @@ describe('パネルの見た目と操作', () => {
     return { view, sent };
   }
 
-  it('右に幅 340px で開く', () => {
+  it('幅は 340px', () => {
     const style = open().view.querySelector('[data-testid="building-panel"]')?.getAttribute('style') ?? '';
     expect(style).toContain(`width: ${String(SIZE.info)}px`);
-    expect(style).toContain('right: 16px');
   });
 
   it('名前と種別とレベルが出る', () => {
