@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { project, TRACK_ACCENT } from '@/features/citymap/isoDraw';
 import { cityAt, CITY_D, CITY_W, drawRegion, REGION_BOUNDS, REGION_SPOTS, type RegionCity } from './regionDraw';
-import { drawMoodFace } from '@/visual/game/faceCanvas';
 
 interface Props {
   cities: readonly RegionCity[];
@@ -184,10 +183,9 @@ export function RegionMap({ cities, selected, onSelect, label }: Props) {
           ctx.strokeStyle = '#e0483a';
           ctx.lineWidth = 3;
           ctx.stroke();
-          drawMoodFace(ctx, top.sx - 13, top.sy - 69 + bob, 30, 'angry');
           ctx.font = '900 20px system-ui';
           ctx.fillStyle = '#2b2118';
-          ctx.fillText(String(city.complaints), top.sx + 13, top.sy - 69 + bob);
+          ctx.fillText(String(city.complaints), top.sx, top.sy - 69 + bob);
         }
         ctx.restore();
       }

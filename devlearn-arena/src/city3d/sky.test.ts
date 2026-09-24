@@ -152,10 +152,9 @@ describe('押せる的', () => {
     buildCity({ cluster: { ...emptyCluster([node('n1', 4000, 8192)]), tick: 9 }, unlocked: DISTRICT_IDS }),
   );
 
-  it('押せるコマンドを持つ建物だけが的になる', () => {
+  it('どの建物も選べる。コマンドを持つものは押すと端末へ送られる', () => {
     const targets = pickTargets(layout.buildings);
-    expect(targets.length).toBeGreaterThan(0);
-    expect(targets.every((t) => t.command !== '')).toBe(true);
+    expect(targets.length).toBe(layout.buildings.length);
     const tower = targets.find((t) => t.id === 'node:n1');
     expect(tower?.command).toBe('kubectl describe node n1');
     expect(tower?.why).not.toBe('');
@@ -168,7 +167,7 @@ describe('押せる的', () => {
     expect(tower?.size.h).toBeGreaterThan(6);
   });
 
-  it('押せない建物は的にならない', () => {
+  it('建物が無ければ的も無い', () => {
     expect(pickTargets([])).toEqual([]);
   });
 });

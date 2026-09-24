@@ -22,10 +22,14 @@ interface Props {
   animate?: boolean;
   /** 街を押したときに端末へ送る */
   onCommand?: ((line: string) => void) | undefined;
+  /** 建物を選んだとき。右の情報パネルを開くのに使う */
+  onSelect?: ((id: string) => void) | undefined;
+  /** いま選んでいる建物。光る輪と名札が立つ */
+  selected?: string | null;
   label?: string;
 }
 
-export function CityView({ city, animate = true, onCommand, label }: Props) {
+export function CityView({ city, animate = true, onCommand, onSelect, selected = null, label }: Props) {
   const able = hasWebGL();
   const layout = useMemo(() => (able ? layoutCity(city) : null), [city, able]);
 
@@ -33,7 +37,13 @@ export function CityView({ city, animate = true, onCommand, label }: Props) {
     return (
       <div data-testid="city-2d" className="h-full w-full">
         <Viewport content={{ w: city.width * TILE, h: city.height * TILE }} label={label}>
-          <CityCanvas city={city} animate={animate} {...(onCommand ? { onCommand } : {})} />
+          <CityCanvas
+            city={city}
+            animate={animate}
+            selected={selected}
+            {...(onSelect ? { onSelect } : {})}
+            {...(onCommand ? { onCommand } : {})}
+          />
         </Viewport>
       </div>
     );
@@ -42,7 +52,7 @@ export function CityView({ city, animate = true, onCommand, label }: Props) {
   return (
     <div className="h-full w-full" aria-label={label}>
       <Suspense fallback={<Loading />}>
-        <CityScene layout={layout} animate={animate} onCommand={onCommand} />
+        <CityScene layout={layout} animate={animate} onCommand={onCommand} onSelect={onSelect} selected={selected} />
       </Suspense>
     </div>
   );

@@ -8,11 +8,11 @@ import type { MissionTrack } from '@/engines/lesson/types';
 import { civicFacilities } from '@/features/citymap/cityStore';
 import { TRACK_ACCENT } from '@/features/citymap/isoDraw';
 import { useT } from '@/i18n/useT';
+import { Icon } from '@/ui/Icon';
 import { xpProgress } from '@/lib/xp';
 import { useStore } from '@/store';
 import { RegionMap } from './RegionMap';
 import type { RegionCity } from './regionDraw';
-import { MoodFace } from '@/visual/game/MoodFace';
 
 /**
  * 全体図。5 つの街を、実際に建てた施設の建ち具合で地方の地図に描く。
@@ -108,11 +108,11 @@ export default function WorldMapPage() {
               <li className="bg-white px-2 py-1">{t('map.guideFacilities', { a: current.city.built, b: current.city.facilities.length })}</li>
               <li className="bg-white px-2 py-1">{t('map.guideMissions', { a: current.done, b: current.total })}</li>
               <li className="flex items-center gap-1 bg-white px-2 py-1">
-                <MoodFace mood="angry" size={20} />
+                <Icon name="alert" size={16} />
                 {t('map.guideComplaints', { n: current.voices.filter((v) => v.kind === 'complaint').length })}
               </li>
               <li className="flex items-center gap-1 bg-white px-2 py-1">
-                <MoodFace mood="happy" size={20} />
+                <Icon name="star" size={16} />
                 {t('map.guidePraise', { n: current.voices.filter((v) => v.kind === 'praise').length })}
               </li>
             </ul>

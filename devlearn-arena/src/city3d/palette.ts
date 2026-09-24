@@ -108,6 +108,18 @@ export const SKY = {
   fogFar: 520,
 } as const;
 
+/**
+ * 選んだ建物に立てる印。光る輪と名札。
+ * HUD と同じ青（`src/features/park/hud/theme.ts`）を使い、街の上でも浮いて見えるようにする。
+ */
+export const MARK = {
+  ring: '#5cc1ff',
+  plate: 'rgba(16,20,27,0.92)',
+  plateEdge: '#2f8fd8',
+  plateText: '#eef2f6',
+  plateSub: '#8fa0b2',
+} as const;
+
 /** 押したときに出す一行の見た目 */
 export const NOTE = {
   fill: 'rgba(47,52,64,0.86)',

@@ -209,7 +209,7 @@ const fixDrills = family<{ kind: 'file' | 'dir'; name: string }>({
             assert: modeIs(v.name, '600'),
             hints: ['600 は所有者の rw だけ', `chmod 600 ${v.name}`],
             explain:
-              '困ったからと 777 にしない。必要な人に必要なぶんだけ、が事故を減らす唯一の方法。',
+              '通らないからと 777 にしない。必要な人に必要なぶんだけ、が事故を減らす唯一の方法。',
           },
           {
             prompt: `読めるようになったことを確かめ、中身を read.txt に写せ。`,

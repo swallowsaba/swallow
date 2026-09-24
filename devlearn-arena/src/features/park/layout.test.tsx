@@ -3,8 +3,13 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { useStore } from '@/store';
 import { mount } from '@/visual/mountForTest';
-import { splitTemplate } from '@/ui/panes';
+import { SIZE } from './hud/theme';
 import ParkPage from './ParkPage';
+
+/**
+ * 画面の作り。`docs/design/hud-mockup.html` の構成と寸法をそのまま確かめる。
+ * 画面いっぱいが街で、その上に HUD が重なる。左の学習パネルは無い。
+ */
 
 beforeAll(() => {
   // 端末（xterm）は画面の問い合わせを使う。jsdom には無いので、最低限を用意する
@@ -39,9 +44,6 @@ beforeEach(() => {
 });
 
 function openWork() {
-  act(() => {
-    useStore.setState({ facilitiesBuilt: ['git/01'], introsRead: ['git/01/objects'] });
-  });
   return mount(
     <MemoryRouter initialEntries={['/world/git?mission=git%2F01%2Fobjects']}>
       <Routes>
@@ -51,30 +53,60 @@ function openWork() {
   );
 }
 
+const style = (view: HTMLElement, testId: string): string =>
+  view.querySelector(`[data-testid="${testId}"]`)?.getAttribute('style') ?? '';
+
 describe('画面の作り', () => {
-  it('左（問題・端末）と右（街）の仕切りに加えて、左の中にも横の仕切りがある', () => {
+  it('画面いっぱいが街で、その上に HUD を重ねる', () => {
     const view = openWork();
-    const splitters = [...view.querySelectorAll('[role="separator"]')];
-    const orientations = splitters.map((s) => s.getAttribute('aria-orientation'));
-    expect(orientations).toContain('vertical');
-    expect(orientations).toContain('horizontal');
+    const stage = view.querySelector('[data-testid="city-stage"]');
+    expect(stage).not.toBeNull();
+    expect(stage?.className).toContain('absolute');
+    expect(stage?.className).toContain('inset-0');
   });
 
-  it('左の格子は割合で決まる。中身が増えても端末の高さは変わらない', () => {
+  it('端末は左に常駐する。幅 440px、上の帯の下から画面の下端まで', () => {
     const view = openWork();
-    const left = view.querySelector('[data-testid="learning-panel"]')?.parentElement;
-    const rows = left?.getAttribute('style') ?? '';
-    const { paneTask } = useStore.getState().settings;
-    expect(rows).toContain(splitTemplate(paneTask));
-    // どちらの行も minmax(0, Nfr)。中身の量では伸び縮みしない
-    expect(rows).not.toContain('auto auto');
+    const dock = style(view, 'terminal-dock');
+    expect(dock).toContain(`width: ${String(SIZE.dock)}px`);
+    expect(dock).toContain(`top: ${String(SIZE.topBar)}px`);
+    expect(view.querySelector('[data-testid="terminal-dock"]')?.className).toContain('bottom-0');
   });
 
-  it('ヒントを出すボタンは画面に無い。ヒントは端末で hint と打つ', () => {
+  it('上の帯は高さ 56px', () => {
     const view = openWork();
-    const labels = [...view.querySelectorAll('button')].map((b) => b.textContent ?? '');
-    expect(labels.some((label) => label.trim() === 'ヒント')).toBe(false);
-    expect(view.querySelector('[data-testid="hint-lead"]')?.textContent).toContain('hint');
-    expect(view.querySelector('[data-testid="hint-lead"]')?.textContent).toContain('answer');
+    expect(style(view, 'arena-bar')).toContain(`height: ${String(SIZE.topBar)}px`);
+  });
+
+  it('課題の札は端末の右、上の帯の下に幅 330px で重なる', () => {
+    const view = openWork();
+    const card = style(view, 'task-card');
+    expect(card).toContain(`width: ${String(SIZE.task)}px`);
+    expect(card).toContain(`left: ${String(SIZE.dock + 16)}px`);
+    expect(card).toContain(`top: ${String(SIZE.panelTop)}px`);
+  });
+
+  it('課題の説明は 2 行まで。長い解説は札に置かない', () => {
+    const view = openWork();
+    expect(view.querySelector('[data-testid="task-lead"]')?.className).toContain('line-clamp-2');
+  });
+
+  it('左の学習パネルと紙芝居は無い', () => {
+    const view = openWork();
+    expect(view.querySelector('[data-testid="learning-panel"]')).toBeNull();
+    expect(view.querySelector('[data-testid="briefing"]')).toBeNull();
+    expect(view.querySelector('[data-testid="talk-next"]')).toBeNull();
+  });
+
+  it('解説は「なぜ」から開く。閉じている間も端末は生きている', () => {
+    const view = openWork();
+    expect(view.querySelector('[data-testid="explain-drawer"]')).toBeNull();
+    const why = view.querySelector('[data-testid="task-why"]');
+    expect(why).not.toBeNull();
+    act(() => {
+      why?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(view.querySelector('[data-testid="explain-drawer"]')).not.toBeNull();
+    expect(view.querySelector('[data-testid="terminal"]')).not.toBeNull();
   });
 });

@@ -139,31 +139,30 @@ export interface PickTarget {
   /** 当たり判定の箱（メートル） */
   size: { w: number; h: number; d: number };
   rotation: number;
+  /** 押したときに端末へ送るコマンド。持たない建物もある */
   command: string;
   why: string;
+  /** 中にいる住人の数。名札に添える */
+  residents: number;
 }
 
 /**
- * 押せる建物を集める。
+ * 押せる建物を集める。どの建物も選べる（選ぶと右に情報が開く）。
  * 形は融合してしまうので、当たり判定だけは 1 棟ずつ別に置く（描かないので絵は重くならない）。
  */
-export function pickTargets(buildings: readonly { id: string; label: string; at: Vec2; rotation: number; params: { footprint: { w: number; d: number }; floors: number }; command?: string; why?: string }[]): PickTarget[] {
-  return buildings.flatMap((building) => {
-    if (building.command === undefined) return [];
-    return [
-      {
-        id: building.id,
-        label: building.label,
-        at: building.at,
-        rotation: building.rotation,
-        size: {
-          w: building.params.footprint.w + 2,
-          h: Math.max(6, building.params.floors * 3.4),
-          d: building.params.footprint.d + 2,
-        },
-        command: building.command,
-        why: building.why ?? '',
-      },
-    ];
-  });
+export function pickTargets(buildings: readonly { id: string; label: string; at: Vec2; rotation: number; params: { footprint: { w: number; d: number }; floors: number }; occupants?: readonly { state: string }[]; command?: string; why?: string }[]): PickTarget[] {
+  return buildings.map((building) => ({
+    id: building.id,
+    label: building.label,
+    at: building.at,
+    rotation: building.rotation,
+    size: {
+      w: building.params.footprint.w + 2,
+      h: Math.max(6, building.params.floors * 3.4),
+      d: building.params.footprint.d + 2,
+    },
+    command: building.command ?? '',
+    why: building.why ?? '',
+    residents: (building.occupants ?? []).filter((o) => o.state !== 'gone').length,
+  }));
 }

@@ -267,7 +267,7 @@ export const gitRecovery: LessonDefinition = {
   intro: {
     summary: 'reset --hard で消してしまったコミットを、reflog から取り戻す。',
     why:
-      '「消してしまった！」の多くは、実は消えていない。札が外れて見えなくなっただけ。足あとをたどれば戻せると知っていると、事故の後に落ち着いて動ける。',
+      '「消してしまった」の多くは、実は消えていない。札が外れて見えなくなっただけ。足あとをたどれば戻せると知っていると、事故の後に落ち着いて動ける。',
     concepts: concepts('reset', 'reflog', 'HEAD', 'コミット', 'オブジェクト'),
     commands: [
       { command: 'git reset --hard HEAD~1', means: '1つ前のコミットへ戻す（今のコミットは見えなくなる）' },

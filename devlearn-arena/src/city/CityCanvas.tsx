@@ -19,6 +19,10 @@ interface Props {
   city: City;
   /** 押されたら、対応するコマンドを端末に入力して実行する */
   onCommand?: (line: string) => void;
+  /** 建物を選んだとき。右の情報パネルを開くのに使う */
+  onSelect?: (id: string) => void;
+  /** いま選んでいる建物 */
+  selected?: string | null;
   /** 歩かせるか。設定で動きを止めているときは false */
   animate?: boolean;
 }
@@ -30,7 +34,7 @@ function centerOf(b: { x: number; y: number; w: number; h: number }): { x: numbe
   return { x: px(b.x + b.w / 2), y: px(b.y + b.h / 2) };
 }
 
-export function CityCanvas({ city, onCommand, animate = true }: Props) {
+export function CityCanvas({ city, onCommand, onSelect, selected = null, animate = true }: Props) {
   // なぜそのコマンドなのかを、押した直後に一行だけ出す
   const [why, setWhy] = useState<string | null>(null);
   const at = new Map(city.buildings.map((b) => [b.id, centerOf(b)]));
@@ -101,7 +105,7 @@ export function CityCanvas({ city, onCommand, animate = true }: Props) {
 
       <g data-layer="building">
         {city.buildings.map((b) => (
-          <BuildingShape key={b.id} building={b} at={at} animate={animate} onPick={run} />
+          <BuildingShape key={b.id} building={b} at={at} animate={animate} onPick={run} onSelect={onSelect} selected={b.id === selected} />
         ))}
       </g>
 
@@ -175,11 +179,15 @@ function BuildingShape({
   at,
   animate,
   onPick,
+  onSelect,
+  selected,
 }: {
   building: Building;
   at: ReadonlyMap<string, { x: number; y: number }>;
   animate: boolean;
   onPick: (line: string | undefined, why: string | undefined) => void;
+  onSelect?: ((id: string) => void) | undefined;
+  selected: boolean;
 }) {
   const b = building;
   const x = px(b.x);
@@ -196,10 +204,14 @@ function BuildingShape({
       data-state={b.state}
       data-phase={b.phase}
       data-level={b.level}
-      role={b.command === undefined ? undefined : 'button'}
-      aria-label={b.command === undefined ? undefined : `${b.label}: ${b.command}`}
-      onClick={() => { onPick(b.command, b.why); }}
-      style={b.command === undefined ? undefined : { cursor: 'pointer' }}
+      data-selected={selected ? 'true' : undefined}
+      role="button"
+      aria-label={b.command === undefined ? b.label : `${b.label}: ${b.command}`}
+      onClick={() => {
+        onSelect?.(b.id);
+        onPick(b.command, b.why);
+      }}
+      style={{ cursor: 'pointer' }}
     >
       {/* 影は右下に 1 段だけ */}
       {solid ? <rect x={x + SHADOW_STEP} y={y + SHADOW_STEP} width={w} height={h} fill={SHADOW} /> : null}

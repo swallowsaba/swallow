@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { Html, OrbitControls } from '@react-three/drei';
 import {
   Color,
   Fog,
@@ -9,9 +9,10 @@ import {
   Vector3,
   type DirectionalLight,
   type HemisphereLight,
+  type Mesh,
   type MeshStandardMaterial,
 } from 'three';
-import { NOTE, PARTS, SKY } from './palette';
+import { MARK, NOTE, PARTS, SKY } from './palette';
 import { buildCityScene, type BuiltScene } from './scene';
 import {
   CAMERA_FOV,
@@ -25,6 +26,7 @@ import {
   moveAlong,
   pickTargets,
   sunAt,
+  type PickTarget,
 } from './sky';
 import type { CityLayout, Vec2 } from './model';
 
@@ -40,6 +42,10 @@ interface Props {
   layout: CityLayout;
   /** 押したときに端末へ送る */
   onCommand?: ((line: string) => void) | undefined;
+  /** 建物を選んだとき。右の情報パネルを開くのに使う */
+  onSelect?: ((id: string) => void) | undefined;
+  /** いま選んでいる建物 */
+  selected?: string | null;
   /** 動かしてよいか。false なら車も時間帯も止める */
   animate?: boolean;
   /** 時間帯を外から決める（0 と 1 が真夜中、0.5 が正午） */
@@ -241,20 +247,67 @@ function Look({ target, animate, distance }: { target: Vec2; animate: boolean; d
   );
 }
 
-export default function CityScene({ layout, onCommand, animate = true, time }: Props) {
+/**
+ * 選んだ建物の上に立てる印。光る輪と名札（DESIGN の 1-6）。
+ * 街のどこを見ているのかが、視線を外さずに分かるようにする。
+ */
+function Marker({ target, animate }: { target: PickTarget; animate: boolean }) {
+  const ring = useRef<Mesh>(null);
+  const radius = Math.max(target.size.w, target.size.d) * 0.72;
+  useFrame((state) => {
+    const mesh = ring.current;
+    if (mesh === null) return;
+    const pulse = animate ? 1 + 0.16 * Math.sin(state.clock.elapsedTime * 2.4) : 1;
+    mesh.scale.set(pulse, pulse, 1);
+  });
+  return (
+    <group position={[target.at.x, 0, target.at.z]}>
+      <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.6, 0]}>
+        <ringGeometry args={[radius, radius + 1.4, 48]} />
+        <meshBasicMaterial color={MARK.ring} transparent opacity={0.85} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, target.size.h / 2, 0]}>
+        <cylinderGeometry args={[0.14, 0.14, target.size.h, 8]} />
+        <meshBasicMaterial color={MARK.ring} transparent opacity={0.6} />
+      </mesh>
+      <Html position={[0, target.size.h + 3, 0]} center distanceFactor={120} zIndexRange={[30, 0]}>
+        <div
+          data-testid="city-3d-nameplate"
+          style={{
+            whiteSpace: 'nowrap',
+            padding: '5px 10px',
+            borderRadius: 5,
+            background: MARK.plate,
+            border: `1px solid ${MARK.plateEdge}`,
+            color: MARK.plateText,
+            fontSize: 13,
+          }}
+        >
+          <span style={{ fontWeight: 700 }}>{target.label}</span>
+          <span style={{ color: MARK.plateSub }}>{` 住人 ${String(target.residents)}`}</span>
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+export default function CityScene({ layout, onCommand, onSelect, selected = null, animate = true, time }: Props) {
   const [why, setWhy] = useState<string | null>(null);
   const [focus, setFocus] = useState<Vec2>({ x: 0, z: 0 });
   const distance = fitDistance(layout.terrain.size);
   const targets = useMemo(() => pickTargets(layout.buildings), [layout]);
 
-  /** 押されたら、寄って、なぜそのコマンドかを一行出して、端末へ送る */
+  /** 押されたら、寄って、右に情報を開く。コマンドを持つ建物は端末へも送る */
   const pick = (id: string): void => {
     const target = targets.find((t) => t.id === id);
     if (target === undefined) return;
     setWhy(target.why === '' ? null : target.why);
     setFocus(target.at);
-    onCommand?.(target.command);
+    onSelect?.(id);
+    if (target.command !== '') onCommand?.(target.command);
   };
+
+  const marked = targets.find((t) => t.id === selected) ?? null;
 
   return (
     <div className="relative h-full w-full" data-testid="city-3d">
@@ -267,6 +320,7 @@ export default function CityScene({ layout, onCommand, animate = true, time }: P
         }}
       >
         <City layout={layout} animate={animate} time={time} onPick={pick} />
+        {marked === null ? null : <Marker target={marked} animate={animate} />}
         <Look target={focus} animate={animate} distance={distance} />
       </Canvas>
       {why === null ? null : (
