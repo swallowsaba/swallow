@@ -14,7 +14,7 @@ import {
   type MeshBasicMaterial,
   type MeshStandardMaterial,
 } from 'three';
-import { MARK, NOTE, PARTS, SITE, SKY } from './palette';
+import { CARGO, MARK, NOTE, PARTS, SITE, SKY } from './palette';
 import { buildCityScene, type BuiltScene } from './scene';
 import {
   CAMERA_FOV,
@@ -33,6 +33,8 @@ import {
 } from './sky';
 import type { CityLayout, Vec2 } from './model';
 import { overlayFor, type InfoView } from './overlay';
+import { CART_LIFT, cartAt, routeOf, routeSeconds, type CartRoute } from './journey';
+import type { CargoShape, Journey } from '@/city/journey';
 
 /**
  * 街を WebGL で描く。データを受け取って描くだけ。
@@ -64,6 +66,8 @@ interface Props {
   onSite?: ((id: string) => void) | undefined;
   /** 時間帯を外から決める（0 と 1 が真夜中、0.5 が正午） */
   time?: number;
+  /** いま街を旅しているコマンド。荷車が停留所を巡る */
+  journey?: Journey | null;
 }
 
 /** 時間帯が一周する秒数 */
@@ -398,9 +402,133 @@ function Overlay({ layout, view }: { layout: CityLayout; view: InfoView | null }
   );
 }
 
+/** 積荷の姿。停留所を過ぎるたびに、これが次の姿へ入れ替わる */
+function Cargo({ shape }: { shape: CargoShape }) {
+  switch (shape) {
+    case 'sheet':
+      return (
+        <mesh castShadow position={[0, 1.1, 0]} rotation={[0, 0, 0.06]}>
+          <boxGeometry args={[1.7, 0.16, 2.3]} />
+          <meshStandardMaterial color={CARGO.sheet} roughness={0.8} />
+        </mesh>
+      );
+    case 'crate':
+      return (
+        <mesh castShadow position={[0, 1.6, 0]}>
+          <boxGeometry args={[1.7, 1.5, 1.7]} />
+          <meshStandardMaterial color={CARGO.crate} roughness={0.85} />
+        </mesh>
+      );
+    case 'stone':
+      return (
+        <mesh castShadow position={[0, 1.7, 0]}>
+          <cylinderGeometry args={[0.85, 1.05, 1.7, 6]} />
+          <meshStandardMaterial color={CARGO.stone} roughness={0.75} />
+        </mesh>
+      );
+    case 'seal':
+      return (
+        <mesh castShadow position={[0, 1.6, 0]} rotation={[0, Math.PI / 4, 0]}>
+          <octahedronGeometry args={[1.05]} />
+          <meshStandardMaterial color={CARGO.seal} roughness={0.5} emissive={CARGO.seal} emissiveIntensity={0.3} />
+        </mesh>
+      );
+    case 'bundle':
+      return (
+        <mesh castShadow position={[0, 1.55, 0]}>
+          <sphereGeometry args={[0.95, 14, 10]} />
+          <meshStandardMaterial color={CARGO.bundle} roughness={0.7} />
+        </mesh>
+      );
+  }
+}
+
+/**
+ * コマンドの旅。荷車が停留所を順に巡り、着くたびに積荷が姿を変える。
+ *
+ * 打った 1 行が街のどこに効いたのかを、道の上で見えるようにするためのもの。
+ * 位置は経った秒数だけで決まる（`journey.ts` の純粋関数）。ここは描くだけ。
+ */
+function Convoy({ route, animate }: { route: CartRoute; animate: boolean }) {
+  const cart = useRef<Group>(null);
+  const begun = useRef<number | null>(null);
+  const first = route.stops[0];
+  const [load, setLoad] = useState(() => ({
+    cargo: first?.cargo ?? 'sheet',
+    cargoLabel: first?.cargoLabel ?? '',
+    stop: first?.label ?? '',
+  }));
+  const shown = useRef(load);
+
+  useEffect(() => {
+    begun.current = null;
+  }, [route.id]);
+
+  useFrame((state) => {
+    const group = cart.current;
+    if (group === null) return;
+    if (begun.current === null) begun.current = state.clock.elapsedTime;
+    // 動かさない設定のときは、着いた所に置いたままにする
+    const seconds = animate ? state.clock.elapsedTime - begun.current : routeSeconds(route);
+    const spot = cartAt(route, seconds);
+    group.position.set(spot.at.x, CART_LIFT, spot.at.z);
+    group.rotation.y = spot.angle;
+    const here = route.stops[spot.loading ? spot.leg + 1 : spot.leg];
+    const next = { cargo: spot.cargo, cargoLabel: spot.cargoLabel, stop: here?.label ?? '' };
+    if (
+      shown.current.cargo !== next.cargo ||
+      shown.current.cargoLabel !== next.cargoLabel ||
+      shown.current.stop !== next.stop
+    ) {
+      shown.current = next;
+      setLoad(next);
+    }
+  });
+
+  return (
+    <group ref={cart} data-testid="city-3d-convoy">
+      {/* 荷台 */}
+      <mesh castShadow position={[0, 0.55, 0]}>
+        <boxGeometry args={[2, 0.5, 3.2]} />
+        <meshStandardMaterial color={CARGO.cart} roughness={0.9} />
+      </mesh>
+      {/* 引き棒 */}
+      <mesh position={[0, 0.5, 2.1]}>
+        <boxGeometry args={[0.18, 0.18, 1.4]} />
+        <meshStandardMaterial color={CARGO.cart} roughness={0.9} />
+      </mesh>
+      {/* 車輪 */}
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * 1.05, 0.5, -0.7]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.5, 0.5, 0.2, 16]} />
+          <meshStandardMaterial color={CARGO.wheel} roughness={0.5} metalness={0.5} />
+        </mesh>
+      ))}
+      <Cargo shape={load.cargo} />
+      <Html position={[0, 3.4, 0]} center distanceFactor={140} zIndexRange={[28, 0]}>
+        <div
+          data-testid="city-3d-cargo"
+          style={{
+            whiteSpace: 'nowrap',
+            padding: '4px 9px',
+            borderRadius: 5,
+            background: MARK.plate,
+            border: `1px solid ${MARK.plateEdge}`,
+            color: MARK.plateText,
+            fontSize: 12,
+          }}
+        >
+          <span style={{ fontWeight: 700 }}>{load.cargoLabel}</span>
+          <span style={{ color: MARK.plateSub }}>{` ${load.stop}`}</span>
+        </div>
+      </Html>
+    </group>
+  );
+}
+
 export default function CityScene({
   layout, onCommand, onSelect, onSite, selected = null, animate = true, rate = 1, view = null, district = null,
-  showSites = true, time,
+  showSites = true, time, journey = null,
 }: Props) {
   const [why, setWhy] = useState<string | null>(null);
   // 開いた瞬間は、いま学んでいる区域に寄る。島全体を遠くから見下ろさない
@@ -420,6 +548,8 @@ export default function CityScene({
   };
 
   const marked = targets.find((t) => t.id === selected) ?? null;
+  // 打ったコマンドの旅。停留所が街に揃っていなければ道のりにならない
+  const route = useMemo(() => (journey === null ? null : routeOf(journey, layout.buildings)), [journey, layout]);
 
   return (
     <div className="relative h-full w-full" data-testid="city-3d">
@@ -435,6 +565,7 @@ export default function CityScene({
         <Overlay layout={layout} view={view} />
         {showSites ? <Sites layout={layout} animate={animate} onPick={onSite} /> : null}
         {marked === null ? null : <Marker target={marked} animate={animate} />}
+        {route === null ? null : <Convoy key={route.id} route={route} animate={animate} />}
         <Look target={focus} animate={animate} distance={distance} />
       </Canvas>
       {why === null ? null : (

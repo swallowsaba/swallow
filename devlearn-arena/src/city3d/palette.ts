@@ -150,6 +150,27 @@ export const OVERLAY = {
   lineage: '#9b7fb5',
 } as const;
 
+/**
+ * コマンドが街を旅するときの荷車と積荷。
+ * 停留所を過ぎるたびに姿が変わるので、姿ごとに色を分けてある。
+ */
+export const CARGO = {
+  /** 荷車の車体 */
+  cart: PARTS.wood,
+  /** 車輪と車軸 */
+  wheel: PARTS.metal,
+  /** 紙もの（ファイル・設計図・控え） */
+  sheet: PARTS.paint,
+  /** 木箱（荷札の付いた塊） */
+  crate: PARTS.sand,
+  /** 刻まれた石 */
+  stone: COLORS.stone,
+  /** 封をした便り */
+  seal: COLORS.light,
+  /** まとめた引っ越しの荷 */
+  bundle: PARTS.carBody,
+} as const;
+
 /** 押したときに出す一行の見た目 */
 export const NOTE = {
   fill: 'rgba(47,52,64,0.86)',

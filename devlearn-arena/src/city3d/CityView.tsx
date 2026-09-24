@@ -3,6 +3,7 @@ import { CityCanvas } from '@/city/CityCanvas';
 import { Viewport } from '@/city/Viewport';
 import { TILE } from '@/city/palette';
 import type { City } from '@/city/model';
+import type { Journey } from '@/city/journey';
 import { Loading } from '@/ui/components/Loading';
 import { layoutCity } from './model';
 import type { InfoView } from './overlay';
@@ -38,11 +39,13 @@ interface Props {
   /** いま選んでいる建物。光る輪と名札が立つ */
   selected?: string | null;
   label?: string;
+  /** いま街を旅しているコマンド。荷車が停留所を巡る */
+  journey?: Journey | null;
 }
 
 export function CityView({
   city, animate = true, rate = 1, view = null, district = null, showSites = true, onSite,
-  onCommand, onSelect, selected = null, label,
+  onCommand, onSelect, selected = null, label, journey = null,
 }: Props) {
   const able = hasWebGL();
   const layout = useMemo(() => (able ? layoutCity(city) : null), [city, able]);
@@ -77,6 +80,7 @@ export function CityView({
           onCommand={onCommand}
           onSelect={onSelect}
           selected={selected}
+          journey={journey}
         />
       </Suspense>
     </div>

@@ -10,6 +10,8 @@ import {
 import { takeawaysOf } from '@/engines/lesson/takeaways';
 import type { LessonDefinition, LessonProgressState, LessonStep, MissionTrack } from '@/engines/lesson/types';
 import type { DesignKind } from '@/city/model';
+import { journeyOf } from '@/city/journey';
+import { LEG_SECONDS } from '@/city3d/journey';
 import type { InfoView } from '@/city3d/overlay';
 import type { TerminalHandle } from '@/features/terminal/TerminalView';
 import { useShellSession } from '@/features/terminal/useShellSession';
@@ -31,6 +33,7 @@ import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { MissionPicker } from './MissionPicker';
 import { NO_HINTS, reveal, revealedCount, stepKey, type HintReveal } from './hints';
 import { gainFor, growsFromCommand, type GrowthTrigger } from './growth';
+import { nextTrip, type Trip } from './trip';
 import { TerminalDock } from './hud/TerminalDock';
 import { TaskCard } from './hud/TaskCard';
 import { ExplainDrawer } from './hud/ExplainDrawer';
@@ -221,6 +224,8 @@ function Arena({
   const [variant, setVariant] = useState<BuildVariant | null>(null);
   // 街の上に重ねる情報表示。何も選ばなければ街はそのまま見える
   const [infoView, setInfoView] = useState<InfoView | null>(null);
+  // いま街を旅しているコマンド。打った 1 行ごとに 1 度だけ走る
+  const [trip, setTrip] = useState<Trip | null>(null);
 
   const xp = useStore((s) => s.profile.xp);
   const soundEnabled = useStore((s) => s.settings.soundEnabled);
@@ -275,6 +280,25 @@ function Arena({
     () => milestoneOf(plan, catalogue.filter((m) => m.track === mission.track), clearedIds),
     [plan, catalogue, mission.track, clearedIds],
   );
+  /**
+   * 打ったコマンドが街を旅する道のり。
+   * 街が変わってから導くので、`git commit` で建ったばかりの記念碑にも寄れる。
+   */
+  const journey = useMemo(() => (trip === null ? null : journeyOf(trip.line, city, trip.serial)), [trip, city]);
+  // 旅が終わったら荷車を片付ける。次のコマンドまで街に置きっぱなしにしない
+  useEffect(() => {
+    if (journey === null) return undefined;
+    const timer = setTimeout(
+      () => {
+        setTrip(null);
+      },
+      (journey.stops.length - 1) * LEG_SECONDS * 1000 + 600,
+    );
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [journey]);
+
   // 選んだ建物の中身。街の状態から導くので、選び直すたびに数え直す必要が無い
   const chosen = selected === null ? null : buildingInfo(city, shellState.cluster, selected);
   // 住人の声。街の状態から毎回読み直す。貯めた台帳ではない
@@ -329,6 +353,8 @@ function Arena({
       }));
       // コマンドが 1 本通れば、それだけで街が育つ
       if (growsFromCommand(line, exitCode)) grow('command');
+      // 通った 1 行は、荷車になって街を旅する
+      setTrip((before) => nextTrip(before, line, exitCode));
     },
     [grow],
   );
@@ -508,6 +534,7 @@ function Arena({
         onSite={placeOnSite}
         onSelect={setSelected}
         onCommand={runFromCity}
+        journey={journey}
       />
 
       <TopBar

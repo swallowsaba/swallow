@@ -1,4 +1,5 @@
 import type { City } from '@/city/model';
+import type { Journey } from '@/city/journey';
 import type { InfoView } from '@/city3d/overlay';
 import { CityView } from '@/city3d/CityView';
 import type { Speed } from '@/features/park/hud/metrics';
@@ -23,6 +24,8 @@ interface Props {
   showSites?: boolean;
   /** 空いている区画を押したとき。建設メニューで選んだものを建てる */
   onSite?: ((id: string) => void) | undefined;
+  /** いま街を旅しているコマンド。荷車が停留所を巡り、積荷が姿を変える */
+  journey?: Journey | null;
 }
 
 /**
@@ -32,12 +35,20 @@ interface Props {
  */
 export function CityStage({
   city, label, selected, onSelect, onCommand, speed = 'normal', view = null, district = null,
-  showSites = true, onSite,
+  showSites = true, onSite, journey = null,
 }: Props) {
   const motion = useMotionEnabled();
   const rate = SPEED_RATE[speed];
   return (
-    <div data-testid="city-stage" className="absolute inset-0" data-speed={speed} data-view={view ?? undefined} data-sites={showSites ? 'on' : 'off'}>
+    <div
+      data-testid="city-stage"
+      className="absolute inset-0"
+      data-speed={speed}
+      data-view={view ?? undefined}
+      data-sites={showSites ? 'on' : 'off'}
+      data-journey={journey?.command ?? undefined}
+      data-journey-stops={journey === null ? undefined : String(journey.stops.length)}
+    >
       <CityView
         city={city}
         animate={motion && rate > 0}
@@ -50,6 +61,7 @@ export function CityStage({
         selected={selected ?? null}
         {...(onSelect ? { onSelect } : {})}
         {...(onCommand ? { onCommand } : {})}
+        journey={journey}
       />
     </div>
   );
