@@ -13,6 +13,8 @@ interface Props {
   onLeave: () => void;
   /** 勧めを断ったとき。以後は自分から始めるまで出さない */
   onDecline: () => void;
+  /** 下に旅路の帯が出ているか。出ている間は、案内の誘いを引っ込めて場所を譲る */
+  busy?: boolean;
 }
 
 /**
@@ -34,9 +36,10 @@ const BOX = {
  * いつでも抜けられる。抜けても端末はそのまま使える（この板は街の上に浮くだけで、
  * 端末も課題の札も塞がない）。
  */
-export function TourPanel({ stops, at, invited, onAt, onLeave, onDecline }: Props) {
+export function TourPanel({ stops, at, invited, onAt, onLeave, onDecline, busy = false }: Props) {
   const t = useT();
   if (stops.length === 0) return null;
+  if (at === null && busy) return null;
 
   if (at === null) {
     return (

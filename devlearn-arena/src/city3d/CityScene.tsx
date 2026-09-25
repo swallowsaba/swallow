@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, OrbitControls } from '@react-three/drei';
 import {
@@ -14,7 +14,7 @@ import {
   type MeshBasicMaterial,
   type MeshStandardMaterial,
 } from 'three';
-import { CARGO, MARK, NOTE, PARTS, SITE, SKY } from './palette';
+import { MARK, NOTE, PARTS, SITE, SKY, SPARK } from './palette';
 import { buildCityScene, type BuiltScene } from './scene';
 import {
   CAMERA_FOV,
@@ -39,8 +39,10 @@ import {
 } from './sky';
 import type { CityLayout, Vec2 } from './model';
 import { overlayFor, type InfoView } from './overlay';
-import { CART_LIFT, cartAt, routeOf, routeSeconds, type CartRoute } from './journey';
-import type { CargoShape, Journey } from '@/city/journey';
+import {
+  CART_LIFT, cartAt, reachedStop, routeOf, routeSeconds, stepTo, type CartRoute, type JourneyPlay,
+} from './journey';
+import type { Journey } from '@/city/journey';
 
 /**
  * 街を WebGL で描く。データを受け取って描くだけ。
@@ -76,6 +78,10 @@ interface Props {
   journey?: Journey | null;
   /** 案内ツアーでいま停まっている施設の id。カメラが寄り、その施設が光る */
   tour?: string | null;
+  /** 旅の進み方。止める・速さ・1 段ずつ */
+  journeyPlay?: JourneyPlay;
+  /** 粒が次の停留所に着いたとき。帯の印を動かすのに使う */
+  onJourneyStop?: ((index: number) => void) | undefined;
 }
 
 /** 時間帯が一周する秒数 */
@@ -242,12 +248,15 @@ function Look({
   distance,
   seconds,
   closeUp = null,
+  chase = null,
 }: {
   target: Vec2;
   animate: boolean;
   distance: number;
   seconds?: number;
   closeUp?: number | null;
+  /** 光の粒がここに書かれている間は、カメラがそれを追う */
+  chase?: MutableRefObject<Vec2 | null> | null;
 }) {
   const controls = useRef<{ target: Vector3; update: () => void } | null>(null);
   const trip = useRef<{ from: Vec2; to: Vec2; fromDistance: number; toDistance: number; azimuth: number; at: number } | null>(null);
@@ -289,9 +298,26 @@ function Look({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target, animate, closeUp]);
 
-  useFrame((state) => {
-    const trek = trip.current;
+  useFrame((state, delta) => {
     const view = controls.current;
+    const mote = chase?.current ?? null;
+    if (mote !== null && view !== null) {
+      // 旅の間はカメラが粒を追う。少し遅れて付いていくので、動きが目で追える
+      trip.current = null;
+      const here = { x: camera.position.x, z: camera.position.z };
+      const azimuth = azimuthOf(here, aimed.current);
+      const span = distanceOf(here, aimed.current);
+      const pull = Math.min(1, delta * 2.2);
+      const near = span + (CHASE_DISTANCE - span) * Math.min(1, delta * 1.1);
+      const where = lerpPoint(aimed.current, aside(mote, azimuth, near * TOUR_SIDE), pull);
+      place(where, near, azimuth);
+      view.target.set(where.x, 0, where.z);
+      view.update();
+      aimed.current = where;
+      asked.current = where;
+      return;
+    }
+    const trek = trip.current;
     if (trek === null || view === null) return;
     if (trek.at < 0) trek.at = state.clock.elapsedTime;
     const t = easeFocus(state.clock.elapsedTime - trek.at, seconds);
@@ -320,6 +346,15 @@ function Look({
 
 /** 屋根の上に立てる光の柱の高さ（メートル） */
 const BEACON = 46;
+
+/**
+ * 光の粒を道から浮かせる高さ（メートル）。
+ * 地面すれすれだと建物や木の裏に隠れて見えない。屋根より少し低い所を漂わせる。
+ */
+const MOTE_LIFT = 13;
+
+/** 旅を見せている間の、粒とカメラの隔たり（メートル） */
+const CHASE_DISTANCE = 190;
 
 /**
  * 選んだ建物の上に立てる印。光る輪と名札（DESIGN の 1-6）。
@@ -403,7 +438,7 @@ function Sites({
   });
 
   return (
-    <group ref={glow} data-testid="city-3d-sites">
+    <group ref={glow} userData={{ name: 'sites' }}>
       {layout.sites.map((site) => (
         <mesh
           key={site.id}
@@ -437,7 +472,7 @@ function Overlay({ layout, view }: { layout: CityLayout; view: InfoView | null }
   const { discs, links } = useMemo(() => overlayFor(view, layout), [view, layout]);
   if (discs.length === 0 && links.length === 0) return null;
   return (
-    <group data-testid="city-3d-overlay">
+    <group userData={{ name: 'overlay' }}>
       {discs.map((disc) => (
         <mesh key={disc.id} rotation={[-Math.PI / 2, 0, 0]} position={[disc.at.x, 0.5, disc.at.z]}>
           <circleGeometry args={[disc.radius, 24]} />
@@ -464,110 +499,134 @@ function Overlay({ layout, view }: { layout: CityLayout; view: InfoView | null }
   );
 }
 
-/** 積荷の姿。停留所を過ぎるたびに、これが次の姿へ入れ替わる */
-function Cargo({ shape }: { shape: CargoShape }) {
-  switch (shape) {
-    case 'sheet':
-      return (
-        <mesh castShadow position={[0, 1.1, 0]} rotation={[0, 0, 0.06]}>
-          <boxGeometry args={[1.7, 0.16, 2.3]} />
-          <meshStandardMaterial color={CARGO.sheet} roughness={0.8} />
-        </mesh>
-      );
-    case 'crate':
-      return (
-        <mesh castShadow position={[0, 1.6, 0]}>
-          <boxGeometry args={[1.7, 1.5, 1.7]} />
-          <meshStandardMaterial color={CARGO.crate} roughness={0.85} />
-        </mesh>
-      );
-    case 'stone':
-      return (
-        <mesh castShadow position={[0, 1.7, 0]}>
-          <cylinderGeometry args={[0.85, 1.05, 1.7, 6]} />
-          <meshStandardMaterial color={CARGO.stone} roughness={0.75} />
-        </mesh>
-      );
-    case 'seal':
-      return (
-        <mesh castShadow position={[0, 1.6, 0]} rotation={[0, Math.PI / 4, 0]}>
-          <octahedronGeometry args={[1.05]} />
-          <meshStandardMaterial color={CARGO.seal} roughness={0.5} emissive={CARGO.seal} emissiveIntensity={0.3} />
-        </mesh>
-      );
-    case 'bundle':
-      return (
-        <mesh castShadow position={[0, 1.55, 0]}>
-          <sphereGeometry args={[0.95, 14, 10]} />
-          <meshStandardMaterial color={CARGO.bundle} roughness={0.7} />
-        </mesh>
-      );
-  }
-}
-
 /**
- * コマンドの旅。荷車が停留所を順に巡り、着くたびに積荷が姿を変える。
+ * コマンドの旅を走る光の粒。
  *
- * 打った 1 行が街のどこに効いたのかを、道の上で見えるようにするためのもの。
+ * 打った 1 行が街のどこに効いたのかを、道の上を走る光で見せる。
+ * 停留所に着くたびに粒の色が変わり、札に「ここで何が起きたか」を 1 行で出す。
  * 位置は経った秒数だけで決まる（`journey.ts` の純粋関数）。ここは描くだけ。
+ *
+ * 進み方は外から渡される（止める・速さ・1 段ずつ）。
+ * 着いた停留所が変わるたびに `onStop` で知らせる。帯の印はそれで動く。
  */
-function Convoy({ route, animate }: { route: CartRoute; animate: boolean }) {
-  const cart = useRef<Group>(null);
-  const begun = useRef<number | null>(null);
+function Spark({
+  route,
+  play,
+  animate,
+  chase,
+  onStop,
+}: {
+  route: CartRoute;
+  play: JourneyPlay;
+  animate: boolean;
+  /** カメラが追う点。毎フレームここに粒の場所を書く */
+  chase: MutableRefObject<Vec2 | null>;
+  onStop: (index: number) => void;
+}) {
+  const mote = useRef<Group>(null);
+  const tail = useRef<Group>(null);
+  /** 旅が始まってから経った秒数 */
+  const at = useRef(0);
+  const stepped = useRef(play.step);
+  const shown = useRef(-1);
+  const total = routeSeconds(route);
   const first = route.stops[0];
   const [load, setLoad] = useState(() => ({
     cargo: first?.cargo ?? 'sheet',
     cargoLabel: first?.cargoLabel ?? '',
     stop: first?.label ?? '',
   }));
-  const shown = useRef(load);
+  const held = useRef(load);
 
   useEffect(() => {
-    begun.current = null;
+    at.current = 0;
+    shown.current = -1;
+    held.current = { cargo: first?.cargo ?? 'sheet', cargoLabel: first?.cargoLabel ?? '', stop: first?.label ?? '' };
+    setLoad(held.current);
+    // 旅が変われば最初から走り直す
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.id]);
 
-  useFrame((state) => {
-    const group = cart.current;
+  // 旅が終わったらカメラを放す。粒が消えたあとも街が固まらないようにする
+  useEffect(
+    () => () => {
+      chase.current = null;
+    },
+    [chase],
+  );
+
+  useFrame((_state, delta) => {
+    const group = mote.current;
     if (group === null) return;
-    if (begun.current === null) begun.current = state.clock.elapsedTime;
-    // 動かさない設定のときは、着いた所に置いたままにする
-    const seconds = animate ? state.clock.elapsedTime - begun.current : routeSeconds(route);
-    const spot = cartAt(route, seconds);
-    group.position.set(spot.at.x, CART_LIFT, spot.at.z);
-    group.rotation.y = spot.angle;
-    const here = route.stops[spot.loading ? spot.leg + 1 : spot.leg];
+    if (play.step !== stepped.current) {
+      // 1 段ずつ進める。次の停留所に着いた所で止める
+      stepped.current = play.step;
+      at.current = stepTo(at.current, route.stops.length);
+    } else if (play.playing && animate) {
+      at.current = Math.min(total, at.current + delta * play.rate);
+    } else if (!animate) {
+      at.current = total;
+    }
+    const spot = cartAt(route, at.current);
+    group.position.set(spot.at.x, CART_LIFT + MOTE_LIFT, spot.at.z);
+    // 旅の間だけカメラを連れて行く。着いてしまえば放し、街を自由に見られるようにする
+    chase.current = spot.done ? null : spot.at;
+    // 尾。少し前の位置をなぞる
+    const trail = tail.current;
+    if (trail !== null) {
+      trail.children.forEach((child, i) => {
+        const back = cartAt(route, Math.max(0, at.current - (i + 1) * 0.09));
+        child.position.set(back.at.x - spot.at.x, 0, back.at.z - spot.at.z);
+      });
+    }
+    const here = spot.done
+      ? route.stops[route.stops.length - 1]
+      : route.stops[spot.loading ? spot.leg + 1 : spot.leg];
     const next = { cargo: spot.cargo, cargoLabel: spot.cargoLabel, stop: here?.label ?? '' };
-    if (
-      shown.current.cargo !== next.cargo ||
-      shown.current.cargoLabel !== next.cargoLabel ||
-      shown.current.stop !== next.stop
-    ) {
-      shown.current = next;
+    if (held.current.cargo !== next.cargo || held.current.stop !== next.stop) {
+      held.current = next;
       setLoad(next);
+    }
+    const reached = reachedStop(at.current, route.stops.length);
+    if (reached !== shown.current) {
+      shown.current = reached;
+      onStop(reached);
     }
   });
 
+  const color = SPARK[load.cargo];
   return (
-    <group ref={cart} data-testid="city-3d-convoy">
-      {/* 荷台 */}
-      <mesh castShadow position={[0, 0.55, 0]}>
-        <boxGeometry args={[2, 0.5, 3.2]} />
-        <meshStandardMaterial color={CARGO.cart} roughness={0.9} />
+    <group ref={mote} userData={{ name: 'spark' }}>
+      {/*
+        芯。いちばん明るい所。
+        建物の陰に入っても見えるようにする。いまどこを通っているのかを見失うと、
+        旅路そのものが伝わらないため。
+      */}
+      <mesh renderOrder={10}>
+        <sphereGeometry args={[2.6, 16, 12]} />
+        <meshBasicMaterial color={color} depthTest={false} depthWrite={false} />
       </mesh>
-      {/* 引き棒 */}
-      <mesh position={[0, 0.5, 2.1]}>
-        <boxGeometry args={[0.18, 0.18, 1.4]} />
-        <meshStandardMaterial color={CARGO.cart} roughness={0.9} />
+      {/* 光の被り。周りへにじむ */}
+      <mesh renderOrder={9}>
+        <sphereGeometry args={[6.5, 16, 12]} />
+        <meshBasicMaterial color={color} transparent opacity={0.3} depthTest={false} depthWrite={false} />
       </mesh>
-      {/* 車輪 */}
-      {[-1, 1].map((side) => (
-        <mesh key={side} position={[side * 1.05, 0.5, -0.7]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.5, 0.5, 0.2, 16]} />
-          <meshStandardMaterial color={CARGO.wheel} roughness={0.5} metalness={0.5} />
-        </mesh>
-      ))}
-      <Cargo shape={load.cargo} />
-      <Html position={[0, 3.4, 0]} center distanceFactor={140} zIndexRange={[28, 0]}>
+      <pointLight color={color} intensity={90} distance={60} />
+      <group ref={tail}>
+        {[0, 1, 2, 3].map((i) => (
+          <mesh key={i} renderOrder={8}>
+            <sphereGeometry args={[2 - i * 0.35, 10, 8]} />
+            <meshBasicMaterial
+              color={SPARK.trail}
+              transparent
+              opacity={0.5 - i * 0.1}
+              depthTest={false}
+              depthWrite={false}
+            />
+          </mesh>
+        ))}
+      </group>
+      <Html position={[0, 5.2, 0]} center distanceFactor={140} zIndexRange={[28, 0]}>
         <div
           data-testid="city-3d-cargo"
           style={{
@@ -580,7 +639,7 @@ function Convoy({ route, animate }: { route: CartRoute; animate: boolean }) {
             fontSize: 12,
           }}
         >
-          <span style={{ fontWeight: 700 }}>{load.cargoLabel}</span>
+          <span style={{ fontWeight: 700, color }}>{load.cargoLabel}</span>
           <span style={{ color: MARK.plateSub }}>{` ${load.stop}`}</span>
         </div>
       </Html>
@@ -591,7 +650,10 @@ function Convoy({ route, animate }: { route: CartRoute; animate: boolean }) {
 export default function CityScene({
   layout, onCommand, onSelect, onSite, selected = null, animate = true, rate = 1, view = null, district = null,
   showSites = true, time, journey = null, tour = null,
+  journeyPlay = { playing: true, rate: 1, step: 0 }, onJourneyStop,
 }: Props) {
+  // 光の粒のいる場所。毎フレーム書き換わるので、React の状態にはしない
+  const chase = useRef<Vec2 | null>(null);
   const [why, setWhy] = useState<string | null>(null);
   // 開いた瞬間は、いま学んでいる区域に寄る。島全体を遠くから見下ろさない
   const opening = useMemo(() => openingView(layout, district), [layout, district]);
@@ -634,11 +696,23 @@ export default function CityScene({
         <Overlay layout={layout} view={view} />
         {showSites ? <Sites layout={layout} animate={animate} onPick={onSite} /> : null}
         {marked === null ? null : <Marker target={marked} animate={animate} />}
-        {route === null ? null : <Convoy key={route.id} route={route} animate={animate} />}
+        {route === null ? null : (
+          <Spark
+            key={route.id}
+            route={route}
+            play={journeyPlay}
+            animate={animate}
+            chase={chase}
+            onStop={(index) => {
+              onJourneyStop?.(index);
+            }}
+          />
+        )}
         <Look
           target={focus}
           animate={animate}
           distance={distance}
+          chase={chase}
           {...(tour === null ? {} : { closeUp: TOUR_DISTANCE, seconds: TOUR_SECONDS })}
         />
       </Canvas>

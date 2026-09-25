@@ -4,6 +4,7 @@ import { Viewport } from '@/city/Viewport';
 import { TILE } from '@/city/palette';
 import type { City } from '@/city/model';
 import type { Journey } from '@/city/journey';
+import type { JourneyPlay } from './journey';
 import { Loading } from '@/ui/components/Loading';
 import { layoutCity } from './model';
 import type { InfoView } from './overlay';
@@ -43,11 +44,15 @@ interface Props {
   journey?: Journey | null;
   /** 案内ツアーでいま停まっている施設の id */
   tour?: string | null;
+  /** 旅の進み方。止める・速さ・1 段ずつ */
+  journeyPlay?: JourneyPlay;
+  /** 光の粒が次の停留所に着いたとき */
+  onJourneyStop?: ((index: number) => void) | undefined;
 }
 
 export function CityView({
   city, animate = true, rate = 1, view = null, district = null, showSites = true, onSite,
-  onCommand, onSelect, selected = null, label, journey = null, tour = null,
+  onCommand, onSelect, selected = null, label, journey = null, tour = null, journeyPlay, onJourneyStop,
 }: Props) {
   const able = hasWebGL();
   const layout = useMemo(() => (able ? layoutCity(city) : null), [city, able]);
@@ -84,6 +89,8 @@ export function CityView({
           selected={selected}
           journey={journey}
           tour={tour}
+          {...(journeyPlay ? { journeyPlay } : {})}
+          onJourneyStop={onJourneyStop}
         />
       </Suspense>
     </div>

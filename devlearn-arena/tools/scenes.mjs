@@ -7,6 +7,13 @@
 /** Kubernetes の街の最初の任務 */
 const K8S_FIRST = '/world/k8s';
 
+/** 端末に 1 行打って走らせる */
+async function type(page, line) {
+  await page.locator('.xterm-helper-textarea').focus();
+  await page.keyboard.type(line);
+  await page.keyboard.press('Enter');
+}
+
 /** その印が出るまで待つ。出なければ理由を投げる（黙って違う画面を撮らない） */
 async function need(page, testId, timeout = 15000) {
   await page.getByTestId(testId).first().waitFor({ state: 'visible', timeout });
@@ -47,6 +54,22 @@ export const SCENES = {
       await sleep(2500);
       await page.getByTestId('tour-next').click();
       await sleep(3000);
+    },
+  },
+
+  /** コマンドの旅路の途中。光の粒が道を走り、カメラがそれを追い、下に帯が出ている */
+  '03-trace': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await type(page, 'kubectl run web --image=nginx');
+      await need(page, 'journey-strip');
+      // ゆっくり走らせて、粒が道の途中にいる所を撮る
+      await page.locator('[data-rate="0.5"]').click();
+      await sleep(1600);
     },
   },
 };

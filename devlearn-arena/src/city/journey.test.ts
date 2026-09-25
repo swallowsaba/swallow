@@ -1,171 +1,203 @@
 import { describe, expect, it } from 'vitest';
-import { CARGO_SHAPES, journeyOf, wordsOf, type Journey } from './journey';
-import type { Building, BuildingKind, City } from './model';
+import { createSession, type Session } from '@/engines/kernel/session';
+import { execute } from '@/engines/kernel/shell';
+import { emptyCluster, node } from '@/engines/k8s/factory';
+import type { ShellState } from '@/engines/kernel/registry';
+import { buildCity } from './model';
+import { DISTRICT_IDS } from './growth';
+import { CARGO_SHAPES, journeyOf, wordsOf, type Journey, type WorldState } from './journey';
 
 /**
- * コマンドが街を旅する道のり。
- *
- * 見たいのは 3 つ。
- * 1. 荷車が停留所を 2 つ以上巡ること（同じ場所でぐるぐる回らない）
- * 2. 停留所を過ぎるたびに積荷の姿が変わること
- * 3. 同じコマンドと同じ街からは、必ず同じ道のりになること（乱数を使わない）
+ * 旅路は台本ではない。打つ前と打った後の模型を見比べて導く（REWORK 2-5）。
+ * ここでは本物のシェルを動かし、停留所の列が状態の変わり方と一致するかを見る。
  */
 
-function building(id: string, kind: BuildingKind, label = id): Building {
+const ALL = DISTRICT_IDS;
+
+/** Kubernetes の街。ビルが 2 棟建っている所から始める */
+function arena() {
+  let session: Session = createSession({
+    cluster: emptyCluster([node('n1', 4000, 8192), node('n2', 4000, 8192)]),
+    files: { '/home/learner': null },
+  });
   return {
-    id,
-    kind,
-    x: 0,
-    y: 0,
-    w: 2,
-    h: 2,
-    level: 1,
-    label,
-    occupants: [],
-    state: 'normal',
-    phase: 'done',
-    district: 'kernel',
+    get state(): ShellState {
+      return session.state;
+    },
+    /** 1 行打ち、打つ前と後の状態を返す */
+    run(line: string) {
+      const before = session.state;
+      session = { ...session, state: execute(session.state, line, session.registry, session.clock).state };
+      return { before, after: session.state };
+    },
   };
 }
 
-function city(buildings: readonly Building[]): Pick<City, 'buildings'> {
-  return { buildings: [...buildings] };
+function world(state: ShellState): WorldState {
+  return { vfs: state.vfs, git: state.git, cluster: state.cluster, net: state.net, repo: state.repo };
 }
 
-/** 一通りの建物がそろった街 */
-const FULL = city([
-  building('file:/home/learner/README.md', 'hut', 'README.md'),
-  building('file:/home/learner/notes.txt', 'hut', 'notes.txt'),
-  building('index', 'depot', '倉庫'),
-  building('commit:abc1234', 'monument', '最初の記録'),
-  building('branch:main', 'flag', 'main'),
-  building('deploy:default/web', 'office', 'web'),
-  building('node:node-1', 'tower', 'node-1'),
-  building('node:node-2', 'tower', 'node-2'),
-  building('dev:r1', 'relay', 'r1'),
-  building('dev:r2', 'relay', 'r2'),
-  building('pr:1', 'window', 'PR #1'),
-  building('job:build', 'line', 'build'),
-]);
+/** その 1 行を打ったときの旅。街は打った後の姿から組む */
+function travel(shell: ReturnType<typeof arena>, line: string, serial = 1): Journey | null {
+  const { before, after } = shell.run(line);
+  const city = buildCity({ vfs: after.vfs, git: after.git, cluster: after.cluster, unlocked: ALL });
+  return journeyOf({ command: line, before: world(before), after: world(after), city, serial });
+}
 
-const stopsOf = (journey: Journey | null): string[] => (journey?.stops ?? []).map((stop) => stop.building);
-const cargoOf = (journey: Journey | null): string[] => (journey?.stops ?? []).map((stop) => stop.cargo);
+const stopsOf = (journey: Journey | null): string[] => (journey?.stops ?? []).map((s) => s.building);
 
 describe('コマンドを語に割る', () => {
   it('1 行目だけを見る', () => {
     expect(wordsOf('git add README.md\n次の行')).toEqual(['git', 'add', 'README.md']);
   });
 
-  it('空の行からは何も出ない', () => {
+  it('空白だけの行は語にならない', () => {
     expect(wordsOf('   ')).toEqual([]);
   });
 });
 
-describe('荷車が街を旅する', () => {
-  it('空の行では旅に出ない', () => {
-    expect(journeyOf('', FULL)).toBeNull();
+describe('Kubernetes の旅路は、状態の変わり方から導く', () => {
+  it('Pod を頼むと、窓口 → 台帳 → 配置係の待合 まで進む', () => {
+    const shell = arena();
+    const journey = travel(shell, 'kubectl run web --image=nginx');
+    // この時点ではまだ行き先が決まっていない。決まっていないのに決まったとは見せない
+    expect(stopsOf(journey)).toEqual(['cp:api', 'cp:store', 'cp:scheduler']);
+    expect(journey?.stops[2]?.label).toContain('Pending');
   });
 
-  it('建物の無い街では旅に出ない', () => {
-    expect(journeyOf('git add README.md', city([]))).toBeNull();
+  it('時間が進んで行き先が決まると、配置係からビルへ旅が続く', () => {
+    const shell = arena();
+    travel(shell, 'kubectl run web --image=nginx');
+    const journey = travel(shell, 'kubectl wait 5', 2);
+    const stops = stopsOf(journey);
+    expect(stops).toContain('cp:scheduler');
+    expect(stops).toContain('node:n1');
+    expect(journey?.stops.find((s) => s.building === 'cp:scheduler')?.label).toContain('web');
+    expect(journey?.stops.find((s) => s.building === 'node:n1')?.label).toContain('入居');
   });
 
-  it('停留所が 1 つしか無いときは旅に出ない', () => {
-    expect(journeyOf('git add README.md', city([building('index', 'depot')]))).toBeNull();
+  it('何も変えない問い合わせは、窓口と台帳を読んで帰る', () => {
+    const shell = arena();
+    const journey = travel(shell, 'kubectl get nodes');
+    expect(stopsOf(journey)).toEqual(['cp:api', 'cp:store']);
+    expect(journey?.stops[1]?.label).toContain('読み上げた');
   });
 
-  it('git add は家から倉庫へ運ぶ', () => {
-    const journey = journeyOf('git add notes.txt', FULL);
-    expect(stopsOf(journey)).toEqual(['file:/home/learner/notes.txt', 'index']);
+  it('作ったあと消すと、行きと帰りで停留所が変わる', () => {
+    const shell = arena();
+    travel(shell, 'kubectl run web --image=nginx');
+    travel(shell, 'kubectl wait 5', 2);
+    const gone = travel(shell, 'kubectl delete pod web', 3);
+    expect(stopsOf(gone)).toEqual(['cp:api', 'cp:store', 'node:n1']);
+    expect(gone?.stops[2]?.label).toContain('出ていった');
   });
 
-  it('git commit は倉庫から記念碑へ、そして旗まで進む', () => {
-    expect(stopsOf(journeyOf('git commit -m "first"', FULL))).toEqual(['index', 'commit:abc1234', 'branch:main']);
+  it('Deployment に頼むと、事務所に注文が残る。監督が動くのはその後', () => {
+    const shell = arena();
+    const order = travel(shell, 'kubectl create deployment web --image=nginx');
+    expect(stopsOf(order)).toEqual(['cp:api', 'cp:store', 'deploy:default/web']);
+    const worked = travel(shell, 'kubectl wait 5', 2);
+    expect(stopsOf(worked)).toContain('cp:controller');
+    expect(worked?.stops.find((s) => s.building === 'cp:controller')?.label).toContain('見比べ');
   });
 
-  it('kubectl apply は事務所からビルへ運ぶ', () => {
-    const journey = journeyOf('kubectl apply -f web.yaml', FULL);
-    expect(stopsOf(journey)).toEqual(['deploy:default/web', 'node:node-1']);
+  it('住人が動き出すと、そのビルに寄って窓が灯る', () => {
+    const shell = arena();
+    travel(shell, 'kubectl run web --image=nginx');
+    const journey = travel(shell, 'kubectl wait 5', 2);
+    expect(stopsOf(journey)).toContain('node:n1');
+    expect(journey?.stops.some((s) => s.label.includes('Running'))).toBe(true);
   });
 
-  it('kubectl drain は住人を別のビルへ移す（同じビルで折り返さない）', () => {
-    const stops = stopsOf(journeyOf('kubectl drain node-2', FULL));
-    expect(stops).toEqual(['node:node-2', 'node:node-1']);
-    expect(new Set(stops).size).toBe(stops.length);
+  it('Kubernetes に宛てていない行は、窓口まで歩かない', () => {
+    const shell = arena();
+    expect(travel(shell, 'echo hello')).toBeNull();
   });
 
-  it('引数で名指しされた建物が停留所になる', () => {
-    expect(stopsOf(journeyOf('git add README.md', FULL))[0]).toBe('file:/home/learner/README.md');
-    expect(stopsOf(journeyOf('git add notes.txt', FULL))[0]).toBe('file:/home/learner/notes.txt');
-  });
-
-  it('パスで書かれていても、末尾の名前で家に当たる', () => {
-    expect(stopsOf(journeyOf('git add ./docs/notes.txt', FULL))[0]).toBe('file:/home/learner/notes.txt');
-  });
-
-  it('表に無いコマンドでも、街のどこかへ荷が走る', () => {
-    const journey = journeyOf('uname -a', FULL);
-    expect(stopsOf(journey).length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('建ち上がっていない建物は停留所にしない', () => {
-    const half = city([
-      { ...building('file:/home/learner/a.txt', 'hut', 'a.txt'), phase: 'frame' },
-      building('index', 'depot'),
-    ]);
-    expect(journeyOf('git add a.txt', half)).toBeNull();
-  });
-
-  it('停留所を飛ばしても、残りで旅が続く', () => {
-    const noFlag = city([building('index', 'depot'), building('commit:abc1234', 'monument')]);
-    expect(stopsOf(journeyOf('git commit -m x', noFlag))).toEqual(['index', 'commit:abc1234']);
+  it('帯には通りうる施設が並び、通らなかった所には印が付かない', () => {
+    const shell = arena();
+    const journey = travel(shell, 'kubectl run web --image=nginx');
+    const lanes = journey?.lanes ?? [];
+    expect(lanes.map((l) => l.title)).toEqual(['窓口', '台帳', '事務所', '監督', '配置係', 'ビル', 'バス停']);
+    const passed = (title: string) => lanes.find((l) => l.title === title)?.stop;
+    expect(passed('窓口')).toBe(0);
+    expect(passed('台帳')).toBe(1);
+    expect(passed('配置係')).toBe(2);
+    // 事務所も監督もビルもバス停も、この旅では動いていない
+    expect(passed('事務所')).toBeNull();
+    expect(passed('監督')).toBeNull();
+    expect(passed('ビル')).toBeNull();
+    expect(passed('バス停')).toBeNull();
   });
 });
 
-describe('積荷が姿を変える', () => {
-  it('停留所ごとに積荷の姿が変わる', () => {
-    const shapes = cargoOf(journeyOf('git commit -m "first"', FULL));
-    expect(shapes).toEqual(['crate', 'stone', 'seal']);
-    expect(new Set(shapes).size).toBe(shapes.length);
+describe('Git の旅路', () => {
+  function repo() {
+    let session: Session = createSession({ files: { '/home/learner': null } });
+    return {
+      run(line: string) {
+        const before = session.state;
+        session = { ...session, state: execute(session.state, line, session.registry, session.clock).state };
+        return { before, after: session.state };
+      },
+    };
+  }
+
+  it('git add は倉庫に寄り、git commit は記念碑と旗に寄る', () => {
+    const shell = repo();
+    shell.run('git init');
+    shell.run('echo hello > /home/learner/a.txt');
+    const added = shell.run('git add a.txt');
+    const addCity = buildCity({ vfs: added.after.vfs, git: added.after.git, unlocked: ALL });
+    const addTrip = journeyOf({
+      command: 'git add a.txt', before: world(added.before), after: world(added.after), city: addCity,
+    });
+    expect((addTrip?.stops ?? []).some((s) => s.label.includes('倉庫'))).toBe(true);
+
+    const done = shell.run('git commit -m first');
+    const city = buildCity({ vfs: done.after.vfs, git: done.after.git, unlocked: ALL });
+    const trip = journeyOf({
+      command: 'git commit -m first', before: world(done.before), after: world(done.after), city,
+    });
+    const labels = (trip?.stops ?? []).map((s) => s.label).join(' ');
+    expect(labels).toContain('石に刻み');
+    expect(labels).toContain('旗');
+  });
+});
+
+describe('旅の決まりごと', () => {
+  it('空の行は旅に出ない', () => {
+    const shell = arena();
+    const city = buildCity({ cluster: shell.state.cluster, unlocked: ALL });
+    const same = world(shell.state);
+    expect(journeyOf({ command: '', before: same, after: same, city })).toBeNull();
   });
 
-  it('どの停留所でも、隣り合う積荷は同じ姿にならない', () => {
-    const lines = [
-      'git add README.md', 'git commit -m x', 'git push origin main', 'git merge feature',
-      'git switch main', 'kubectl apply -f web.yaml', 'kubectl delete pod web', 'kubectl cordon node-1',
-      'kubectl expose deployment web', 'gh pr create', 'ping r2', 'curl http://r2', 'cp a b', 'mv a b',
-      'uname -a',
-    ];
-    for (const line of lines) {
-      const journey = journeyOf(line, FULL);
-      expect(journey, line).not.toBeNull();
-      const shapes = cargoOf(journey);
-      for (let i = 1; i < shapes.length; i += 1) expect(shapes[i], `${line} #${String(i)}`).not.toBe(shapes[i - 1]);
-    }
+  it('停留所になる建物が街に無ければ旅に出ない', () => {
+    const shell = arena();
+    const { before, after } = shell.run('kubectl run web --image=nginx');
+    // 建物が 1 つも無い街
+    const empty = { buildings: [] };
+    expect(journeyOf({ command: 'kubectl run web', before: world(before), after: world(after), city: empty })).toBeNull();
   });
 
-  it('積荷の姿は決めた 5 種類のどれか。呼び名も必ず付く', () => {
-    for (const stop of journeyOf('gh pr create', FULL)?.stops ?? []) {
+  it('粒の姿は決まった 5 つの中から選ばれる', () => {
+    const shell = arena();
+    for (const stop of travel(shell, 'kubectl run web --image=nginx')?.stops ?? []) {
       expect(CARGO_SHAPES).toContain(stop.cargo);
-      expect(stop.cargoLabel.length).toBeGreaterThan(0);
-      expect(stop.label.length).toBeGreaterThan(0);
     }
   });
-});
 
-describe('同じ操作からは同じ道のり', () => {
-  it('何度導いても結果が変わらない', () => {
-    const once = journeyOf('kubectl apply -f web.yaml', FULL, 3);
-    const twice = journeyOf('kubectl apply -f web.yaml', FULL, 3);
-    expect(once).toEqual(twice);
+  it('同じ状態の組からは必ず同じ道のりになる', () => {
+    const a = arena();
+    const b = arena();
+    expect(travel(a, 'kubectl run web --image=nginx')).toEqual(travel(b, 'kubectl run web --image=nginx'));
   });
 
-  it('建物の並び順が変わっても道のりは同じ', () => {
-    const flipped = city([...FULL.buildings].reverse());
-    expect(stopsOf(journeyOf('git commit -m x', flipped))).toEqual(stopsOf(journeyOf('git commit -m x', FULL)));
-  });
-
-  it('旅の番号が変われば別の旅として数える', () => {
-    expect(journeyOf('ls', FULL, 1)?.id).not.toBe(journeyOf('ls', FULL, 2)?.id);
+  it('同じコマンドを続けて打っても、別の旅として数える', () => {
+    const shell = arena();
+    const once = travel(shell, 'kubectl get nodes', 1);
+    const twice = travel(shell, 'kubectl get nodes', 2);
+    expect(once?.id).not.toBe(twice?.id);
   });
 });

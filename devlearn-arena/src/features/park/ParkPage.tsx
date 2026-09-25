@@ -10,9 +10,9 @@ import {
 import { takeawaysOf } from '@/engines/lesson/takeaways';
 import type { LessonDefinition, LessonProgressState, LessonStep, MissionTrack } from '@/engines/lesson/types';
 import type { DesignKind } from '@/city/model';
-import { journeyOf } from '@/city/journey';
+import { journeyOf, type WorldState } from '@/city/journey';
 import { tourOf } from '@/city/tour';
-import { LEG_SECONDS } from '@/city3d/journey';
+import type { JourneyPlay } from '@/city3d/journey';
 import type { InfoView } from '@/city3d/overlay';
 import type { TerminalHandle } from '@/features/terminal/TerminalView';
 import { useShellSession } from '@/features/terminal/useShellSession';
@@ -38,6 +38,7 @@ import { nextTrip, type Trip } from './trip';
 import { TerminalDock } from './hud/TerminalDock';
 import { TaskCard } from './hud/TaskCard';
 import { TourPanel } from './hud/TourPanel';
+import { JourneyStrip } from './hud/JourneyStrip';
 import { ExplainDrawer } from './hud/ExplainDrawer';
 import { TopBar } from './hud/TopBar';
 import { BuildingPanel } from './hud/BuildingPanel';
@@ -228,6 +229,10 @@ function Arena({
   const [infoView, setInfoView] = useState<InfoView | null>(null);
   // いま街を旅しているコマンド。打った 1 行ごとに 1 度だけ走る
   const [trip, setTrip] = useState<Trip | null>(null);
+  // 旅の進み方。学習者が止めたり、速さを変えたり、1 段ずつ進めたりできる
+  const [play, setPlay] = useState<JourneyPlay>({ playing: true, rate: 1, step: 0 });
+  // 光の粒がいま着いている停留所。帯の印はこれで動く
+  const [playAt, setPlayAt] = useState(0);
   // 案内ツアー。いま何番目の施設を案内しているか。null なら案内していない
   const [tourAt, setTourAt] = useState<number | null>(null);
   // ツアーの勧めを断ったか。断ったら、自分から始めるまで二度と勧めない
@@ -288,22 +293,24 @@ function Arena({
   );
   /**
    * 打ったコマンドが街を旅する道のり。
-   * 街が変わってから導くので、`git commit` で建ったばかりの記念碑にも寄れる。
+   *
+   * 打つ前と打った後の模型を見比べて導く。台本ではないので、
+   * 「そのコマンドで実際に何が動いたか」だけが停留所になる。
    */
-  const journey = useMemo(() => (trip === null ? null : journeyOf(trip.line, city, trip.serial)), [trip, city]);
-  // 旅が終わったら荷車を片付ける。次のコマンドまで街に置きっぱなしにしない
+  const journey = useMemo(
+    () =>
+      trip === null
+        ? null
+        : journeyOf({ command: trip.line, before: trip.before, after: trip.after, city, serial: trip.serial }),
+    [trip, city],
+  );
+  // 旅が始まったら、帯の印と進み方を最初に戻す
+  const journeyId = journey?.id ?? null;
   useEffect(() => {
-    if (journey === null) return undefined;
-    const timer = setTimeout(
-      () => {
-        setTrip(null);
-      },
-      (journey.stops.length - 1) * LEG_SECONDS * 1000 + 600,
-    );
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [journey]);
+    if (journeyId === null) return;
+    setPlayAt(0);
+    setPlay((p) => ({ ...p, playing: true, step: 0 }));
+  }, [journeyId]);
 
   // 案内ツアーの道のり。街に建っている施設だけを巡る
   const tour = useMemo(() => tourOf(city, mission.track), [city, mission.track]);
@@ -363,10 +370,25 @@ function Arena({
       }));
       // コマンドが 1 本通れば、それだけで街が育つ
       if (growsFromCommand(line, exitCode)) grow('command');
-      // 通った 1 行は、荷車になって街を旅する
-      setTrip((before) => nextTrip(before, line, exitCode));
+      // 通った 1 行は、光の粒になって街を旅する。
+      // 道のりは、打つ前と打った後を見比べて導くので、その 2 つをここで掴む
+      const timeline = session.getTimeline();
+      const world = (state: (typeof timeline)[number] | undefined): WorldState => ({
+        vfs: state?.vfs ?? null,
+        git: state?.git ?? null,
+        cluster: state?.cluster ?? null,
+        net: state?.net ?? null,
+        repo: state?.repo ?? null,
+      });
+      const shots = {
+        before: world(timeline[timeline.length - 2]),
+        after: world(timeline[timeline.length - 1]),
+      };
+      setTrip((before) => nextTrip(before, line, exitCode, shots));
+      // 旅が始まったら案内は終わる。カメラを取り合わせない
+      setTourAt(null);
     },
-    [grow],
+    [grow, session],
   );
 
   /**
@@ -545,6 +567,8 @@ function Arena({
         onSelect={setSelected}
         onCommand={runFromCity}
         journey={journey}
+        journeyPlay={play}
+        onJourneyStop={setPlayAt}
         tour={tourStop}
       />
 
@@ -585,6 +609,26 @@ function Arena({
         }}
       />
 
+      {journey === null ? null : (
+        <JourneyStrip
+          journey={journey}
+          at={playAt}
+          play={play}
+          onPlaying={(playing) => {
+            setPlay((p) => ({ ...p, playing }));
+          }}
+          onRate={(rate) => {
+            setPlay((p) => ({ ...p, rate }));
+          }}
+          onStep={() => {
+            setPlay((p) => ({ ...p, playing: false, step: p.step + 1 }));
+          }}
+          onClose={() => {
+            setTrip(null);
+          }}
+        />
+      )}
+
       <TourPanel
         stops={tour}
         at={tourAt}
@@ -599,6 +643,7 @@ function Arena({
         onDecline={() => {
           setTourDeclined(true);
         }}
+        busy={journey !== null}
       />
 
       <InfoViews view={infoView} onView={setInfoView} />

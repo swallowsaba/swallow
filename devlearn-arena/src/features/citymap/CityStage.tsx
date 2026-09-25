@@ -1,6 +1,7 @@
 import type { City } from '@/city/model';
 import type { Journey } from '@/city/journey';
 import type { InfoView } from '@/city3d/overlay';
+import type { JourneyPlay } from '@/city3d/journey';
 import { CityView } from '@/city3d/CityView';
 import type { Speed } from '@/features/park/hud/metrics';
 import { SPEED_RATE } from '@/features/park/hud/metrics';
@@ -28,6 +29,10 @@ interface Props {
   journey?: Journey | null;
   /** 案内ツアーでいま停まっている施設の id。カメラが寄り、その施設が光る */
   tour?: string | null;
+  /** 旅の進み方。止める・速さ・1 段ずつ */
+  journeyPlay?: JourneyPlay;
+  /** 光の粒が次の停留所に着いたとき */
+  onJourneyStop?: ((index: number) => void) | undefined;
 }
 
 /**
@@ -37,7 +42,7 @@ interface Props {
  */
 export function CityStage({
   city, label, selected, onSelect, onCommand, speed = 'normal', view = null, district = null,
-  showSites = true, onSite, journey = null, tour = null,
+  showSites = true, onSite, journey = null, tour = null, journeyPlay, onJourneyStop,
 }: Props) {
   const motion = useMotionEnabled();
   const rate = SPEED_RATE[speed];
@@ -66,6 +71,8 @@ export function CityStage({
         {...(onCommand ? { onCommand } : {})}
         journey={journey}
         tour={tour}
+        {...(journeyPlay ? { journeyPlay } : {})}
+        {...(onJourneyStop ? { onJourneyStop } : {})}
       />
     </div>
   );

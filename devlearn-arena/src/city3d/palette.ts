@@ -151,24 +151,24 @@ export const OVERLAY = {
 } as const;
 
 /**
- * コマンドが街を旅するときの荷車と積荷。
- * 停留所を過ぎるたびに姿が変わるので、姿ごとに色を分けてある。
+ * コマンドが街を旅するときに走る光の粒。
+ *
+ * 粒は停留所を過ぎるたびに姿を変える。何を運んでいるかが色で分かるように、
+ * 運ぶものごとに色を分けてある。光っている所では必ず何かが起きている。
  */
-export const CARGO = {
-  /** 荷車の車体 */
-  cart: PARTS.wood,
-  /** 車輪と車軸 */
-  wheel: PARTS.metal,
-  /** 紙もの（ファイル・設計図・控え） */
-  sheet: PARTS.paint,
-  /** 木箱（荷札の付いた塊） */
-  crate: PARTS.sand,
-  /** 刻まれた石 */
-  stone: COLORS.stone,
-  /** 封をした便り */
-  seal: COLORS.light,
-  /** まとめた引っ越しの荷 */
-  bundle: PARTS.carBody,
+export const SPARK = {
+  /** 申し込み・設計図・注文書といった紙もの */
+  sheet: '#8fd4ff',
+  /** 行き先の決まった荷 */
+  crate: '#ffce8a',
+  /** 刻まれた石（コミット） */
+  stone: '#d6dbe4',
+  /** 台帳の記録・印・時刻表 */
+  seal: '#8fe6bd',
+  /** 住人の荷物 */
+  bundle: '#ffb3a3',
+  /** 尾を引く粒 */
+  trail: '#cfe8ff',
 } as const;
 
 /** 押したときに出す一行の見た目 */

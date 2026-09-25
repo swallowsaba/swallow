@@ -36,6 +36,39 @@ export interface CartRoute {
   stops: readonly RouteStop[];
 }
 
+/**
+ * 旅の進み方。外から止めたり、速さを変えたり、1 段ずつ進めたりする。
+ * カメラは一度に一か所しか映せないので、学習者が自分の速さで見られるようにする。
+ */
+export interface JourneyPlay {
+  playing: boolean;
+  /** 進む速さの倍率。0.5 / 1 / 2 */
+  rate: number;
+  /** 増えるたびに 1 停留所ぶん進む */
+  step: number;
+}
+
+/**
+ * いま着いている停留所（0 始まり）。
+ * 走っている間は、直前に出た停留所を指す。帯の印はこれで動く。
+ */
+export function reachedStop(seconds: number, stops: number): number {
+  for (let k = stops - 1; k > 0; k -= 1) {
+    if (seconds >= (k - 1) * LEG_SECONDS + TRAVEL_SECONDS) return k;
+  }
+  return 0;
+}
+
+/** 1 段ずつ進める。次の停留所に着く時刻を返す */
+export function stepTo(seconds: number, stops: number): number {
+  const total = Math.max(0, stops - 1) * LEG_SECONDS;
+  for (let k = 1; k <= stops - 1; k += 1) {
+    const arrive = (k - 1) * LEG_SECONDS + TRAVEL_SECONDS;
+    if (arrive > seconds + 0.001) return Math.min(total, arrive);
+  }
+  return total;
+}
+
 /** 荷車のいまの様子 */
 export interface CartSpot {
   at: Vec2;

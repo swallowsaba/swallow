@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Journey } from '@/city/journey';
 import {
-  DWELL_SECONDS, LEG_SECONDS, TRAVEL_SECONDS, cartAt, routeOf, routeSeconds, type CartRoute,
+  DWELL_SECONDS, LEG_SECONDS, TRAVEL_SECONDS, cartAt, reachedStop, routeOf, routeSeconds, stepTo,
+  type CartRoute,
 } from './journey';
 
 /**
@@ -20,6 +21,11 @@ const JOURNEY: Journey = {
     { building: 'index', label: '倉庫から積み出す', cargo: 'crate', cargoLabel: '荷札の付いた塊' },
     { building: 'commit:a', label: '記念碑に刻む', cargo: 'stone', cargoLabel: '刻まれた石' },
     { building: 'branch:main', label: '旗が進む', cargo: 'seal', cargoLabel: '通りの印' },
+  ],
+  lanes: [
+    { index: 0, title: '倉庫', stop: 0 },
+    { index: 1, title: '記念碑', stop: 1 },
+    { index: 2, title: '旗', stop: 2 },
   ],
 };
 
@@ -144,5 +150,33 @@ describe('積荷が停留所で姿を変える', () => {
 describe('時刻だけで決まる', () => {
   it('同じ秒数からは同じ場所になる', () => {
     expect(cartAt(route(), 1.1)).toEqual(cartAt(route(), 1.1));
+  });
+});
+
+describe('旅を自分の速さで見る', () => {
+  const STOPS = 3;
+
+  it('走っている間は、直前に出た停留所を指す', () => {
+    expect(reachedStop(0, STOPS)).toBe(0);
+    expect(reachedStop(TRAVEL_SECONDS / 2, STOPS)).toBe(0);
+  });
+
+  it('停留所に着いた所で、指す停留所が 1 つ進む', () => {
+    expect(reachedStop(TRAVEL_SECONDS, STOPS)).toBe(1);
+    expect(reachedStop(LEG_SECONDS + TRAVEL_SECONDS, STOPS)).toBe(2);
+  });
+
+  it('最後の停留所を越えても、それ以上は進まない', () => {
+    expect(reachedStop(999, STOPS)).toBe(STOPS - 1);
+  });
+
+  it('1 つ進めると、次の停留所に着いた時刻になる', () => {
+    expect(stepTo(0, STOPS)).toBeCloseTo(TRAVEL_SECONDS);
+    expect(stepTo(TRAVEL_SECONDS, STOPS)).toBeCloseTo(LEG_SECONDS + TRAVEL_SECONDS);
+  });
+
+  it('最後まで来たら、1 つ進めても終わりのまま', () => {
+    const total = routeSeconds(route());
+    expect(stepTo(total, STOPS)).toBeCloseTo(total);
   });
 });
