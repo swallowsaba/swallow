@@ -23,6 +23,10 @@ export function useDerivedCity(
   const before = useRef<Whereabouts | undefined>(undefined);
 
   return useMemo(() => {
+    // いま立っている街の区域は、最初から開いている。
+    // そこで学ぶための画面なのに、更地しか見えないという事が起きないようにする
+    const open = new Set(unlockedDistricts(cleared));
+    open.add(track);
     const next = buildCity({
       home: state.cwd.startsWith('/home/') ? '/home/learner' : state.cwd,
       vfs: state.vfs,
@@ -30,7 +34,7 @@ export function useDerivedCity(
       cluster: state.cluster,
       net: state.net,
       repo: state.repo,
-      unlocked: unlockedDistricts(cleared),
+      unlocked: [...open],
       before: before.current,
       growth: growthOf(growth, track),
       designed,

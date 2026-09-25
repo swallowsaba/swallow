@@ -256,15 +256,21 @@ function aroundBuildings(ground: Ground, buildings: readonly LayoutBuilding[], r
     const yard = { x: building.at.x + half.w + 2, z: building.at.z + half.d + 2 };
     if (ground.put('tree', yard, rng.between(0, 6.28), rng.between(0.9, 1.3))) placed += 1;
 
-    // 道に囲まれていて何も置けなかったときは、庭の角に 1 本だけ無理にでも植える
+    // 隣と肩を寄せ合う街区では、囲いを回す所がどこも塞がっていることがある。
+    // そのときは足元の周りを一周ずつ広げながら探して、空いた所に 1 つだけ置く。
+    // 足元がむき出しのまま残る建物を作らないため
     if (placed > 0) return;
-    for (const corner of [
-      { x: building.at.x + half.w, z: building.at.z + half.d },
-      { x: building.at.x - half.w, z: building.at.z - half.d },
-      { x: building.at.x + half.w, z: building.at.z - half.d },
-      { x: building.at.x - half.w, z: building.at.z + half.d },
-    ]) {
-      if (ground.put(fence ? 'fence' : 'hedge', corner, rng.between(0, 6.28), 1, { onRoad: true })) break;
+    const reach = Math.max(building.params.footprint.w, building.params.footprint.d) / 2;
+    for (let ring = 1; ring <= 3; ring += 1) {
+      const radius = reach + 1.5 + ring * 2.4;
+      for (let i = 0; i < 12; i += 1) {
+        const angle = (i / 12) * Math.PI * 2;
+        const at = {
+          x: building.at.x + Math.cos(angle) * radius,
+          z: building.at.z + Math.sin(angle) * radius,
+        };
+        if (ground.put(fence ? 'fence' : 'hedge', at, angle, 1, { onRoad: true })) return;
+      }
     }
   });
 }

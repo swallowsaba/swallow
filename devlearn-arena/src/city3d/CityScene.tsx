@@ -73,12 +73,12 @@ interface Props {
 /** 時間帯が一周する秒数 */
 const DAY_SECONDS = 200;
 
-/** 動かさないときの時間帯。影が出て、街の色が分かる明るさ */
+/** 街を開いたときの時間帯。影が出て、街の色が分かる明るさ。真夜中から始めない */
 const STILL_TIME = 0.42;
 
 function timeAt(elapsed: number, animate: boolean, time: number | undefined): number {
   if (time !== undefined) return time;
-  return animate ? (elapsed / DAY_SECONDS) % 1 : STILL_TIME;
+  return animate ? (STILL_TIME + elapsed / DAY_SECONDS) % 1 : STILL_TIME;
 }
 
 /**

@@ -34,6 +34,10 @@ const KIND_KEY: Readonly<Record<BuildingKind, TKey>> = {
   gate: 'hud.kind.gate',
   window: 'hud.kind.window',
   line: 'hud.kind.line',
+  desk: 'hud.kind.desk',
+  ledger: 'hud.kind.ledger',
+  watch: 'hud.kind.watch',
+  dispatch: 'hud.kind.dispatch',
 };
 
 const USAGE_KEY: Readonly<Record<InfoUsage['key'], TKey>> = {

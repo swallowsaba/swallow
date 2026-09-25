@@ -37,9 +37,20 @@ describe('街は学習者が設計する', () => {
     expect(city.buildings).toEqual([]);
   });
 
-  it('学習者が資源を作った所にだけ建つ', () => {
+  it('学習者が資源を作った所にだけ建つ。ほかに建つのは、クラスタの管制だけ', () => {
     const city = learnerCity({ houses: 0, floors: 0 });
-    expect(city.buildings.map((b) => b.id).sort()).toEqual(['file:/home/learner/work/a.txt', 'node:n1']);
+    expect(city.buildings.map((b) => b.id).sort()).toEqual([
+      // 管制の 4 施設。ノードがある＝Kubernetes が動いているので、これは飾りではない
+      'cp:api', 'cp:controller', 'cp:scheduler', 'cp:store',
+      'file:/home/learner/work/a.txt',
+      'node:n1',
+    ]);
+  });
+
+  it('クラスタが無ければ管制も建たない', () => {
+    const session = createSession({ files: { '/home/learner': null } });
+    const city = buildCity({ vfs: session.state.vfs, unlocked: ALL });
+    expect(city.buildings.filter((b) => b.id.startsWith('cp:'))).toEqual([]);
   });
 });
 

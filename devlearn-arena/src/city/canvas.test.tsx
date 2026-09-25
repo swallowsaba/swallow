@@ -13,6 +13,12 @@ import { BUILDING, GROUND, OCCUPANT, TILE } from './palette';
 
 const ALL = DISTRICT_IDS;
 
+/** あとから加わったノード（kubeadm join）。最初からあるノードは建ち上がり済みとして扱う */
+function joined(name: string, at: number) {
+  const n = node(name, 4000, 8192);
+  return { ...n, metadata: { ...n.metadata, createdAt: at } };
+}
+
 function shell(files: Record<string, string | null> = { '/home/learner': null }) {
   let session: Session = createSession({ files });
   return {
@@ -68,14 +74,14 @@ describe('街を描く', () => {
 
   it('建設中の建物は塗らない。基礎 → 骨組み → 完成 の順に建つ', () => {
     const phaseAt = (tick: number) => {
-      const city = buildCity({ cluster: { ...emptyCluster([node('n1', 4000, 8192)]), tick }, unlocked: ALL });
+      const city = buildCity({ cluster: { ...emptyCluster([joined('n1', 1)]), tick }, unlocked: ALL });
       const view = mount(<CityCanvas city={city} />);
       const tower = view.querySelector('[data-building="node:n1"]');
       return { phase: tower?.getAttribute('data-phase'), fill: tower?.querySelector('[data-body]')?.getAttribute('fill') };
     };
-    expect(phaseAt(0)).toMatchObject({ phase: 'base', fill: 'none' });
-    expect(phaseAt(2).phase).toBe('frame');
-    expect(phaseAt(9)).toMatchObject({ phase: 'done', fill: BUILDING.tower });
+    expect(phaseAt(1)).toMatchObject({ phase: 'base', fill: 'none' });
+    expect(phaseAt(3).phase).toBe('frame');
+    expect(phaseAt(10)).toMatchObject({ phase: 'done', fill: BUILDING.tower });
   });
 
   it('切れている道は途切れさせ、使われている道は太く明るく引く', () => {

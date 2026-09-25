@@ -5,7 +5,7 @@ import type { GitState } from '@/engines/git/types';
 import type { Repo } from '@/engines/github/types';
 import type { Topology } from '@/engines/net/types';
 import { list, stat, type VfsState } from '@/engines/kernel/vfs';
-import { CITY_HEIGHT, CITY_WIDTH, DISTRICTS, districtArea, type DistrictId } from './growth';
+import { CITY_HEIGHT, CITY_WIDTH, DISTRICTS, districtArea, type DistrictArea, type DistrictId } from './growth';
 
 /**
  * 街のモデル。React には依存しない純粋なデータ。
@@ -27,12 +27,14 @@ export interface CityTile {
  * monument=記念碑（コミット） flag=旗（ブランチ） depot=倉庫（index） hut=小屋（ファイル）
  * house=家（機器） relay=中継塔（ルータ） gate=関所（スイッチ）
  * window=審査窓口（PR） line=検査ライン（CI の job）
+ * desk=窓口（API サーバ） ledger=台帳（etcd） watch=監督（コントローラ） dispatch=配置係（スケジューラ）
  */
 export type BuildingKind =
   | 'tower' | 'office' | 'stop'
   | 'monument' | 'flag' | 'depot'
   | 'hut' | 'house' | 'relay' | 'gate'
-  | 'window' | 'line';
+  | 'window' | 'line'
+  | 'desk' | 'ledger' | 'watch' | 'dispatch';
 
 /**
  * 建物や住人に付く、押せる印。
@@ -241,6 +243,44 @@ class Lots {
       y: area.y + 1 + row * (this.lotH + 1),
       district: this.id,
     };
+  }
+}
+
+/**
+ * 区域の中を、北から南へ帯に分けて配る割り付け。
+ *
+ * 種類ごとに帯を分けるので、ビルと事務所とバス停が同じ所に重ならない。
+ * `bottom` が次の帯の始まりになる。同じ入力からは必ず同じ並びになる。
+ */
+class Lane {
+  private index = 0;
+
+  constructor(
+    private readonly area: DistrictArea,
+    /** この帯の上端（タイル） */
+    readonly top: number,
+    private readonly w: number,
+    private readonly h: number,
+  ) {}
+
+  private get cols(): number {
+    return Math.max(1, Math.floor(this.area.w / this.w));
+  }
+
+  next(): { x: number; y: number; district: DistrictId } {
+    const i = this.index;
+    this.index += 1;
+    return {
+      x: this.area.x + (i % this.cols) * this.w,
+      y: this.top + Math.floor(i / this.cols) * this.h,
+      district: this.area.id,
+    };
+  }
+
+  /** この帯を使い切った次の行。何も配らなかった帯は場所を取らない */
+  get bottom(): number {
+    if (this.index === 0) return this.top;
+    return this.top + Math.ceil(this.index / this.cols) * this.h;
   }
 }
 
@@ -498,6 +538,9 @@ function gitOf(git: GitState, out: Built): void {
 
 /* ---------------- Kubernetes ---------------- */
 
+/** 管制の施設 1 つの大きさ（タイル） */
+const CP_SIZE = { w: 3, h: 2 } as const;
+
 /** Pod の様子を住人の様子に移す */
 function occupantState(pod: Pod): Occupant['state'] {
   const phase = pod.status.phase;
@@ -509,14 +552,121 @@ function occupantState(pod: Pod): Occupant['state'] {
   return 'moving';
 }
 
+/**
+ * 管制の 4 施設。窓口・台帳・監督・配置係。
+ *
+ * ノードが 1 台でもあれば Kubernetes はもう動いているので、この 4 つは最初から建っている。
+ * 出す数はすべてクラスタから読む。飾りの建物ではない。
+ */
+function controlPlaneOf(cluster: ClusterState, lane: Lane, out: Built): void {
+  const pods = [...cluster.pods.values()];
+  // 配置係の待ち行列。まだ行き先の決まっていない Pod
+  const waiting = pods.filter((p) => p.status.nodeName === null).length;
+  // 台帳に載っている記録の数
+  const records =
+    cluster.nodes.size + cluster.pods.size + cluster.deployments.size + cluster.replicaSets.size +
+    cluster.services.size + cluster.configMaps.size + cluster.secrets.size;
+  // 監督が埋めようとしている開き。あるべき数と、いま揃っている数の差
+  const gap =
+    [...cluster.deployments.values()].reduce(
+      (sum, d) => sum + Math.abs(d.spec.replicas - d.status.readyReplicas),
+      0,
+    ) +
+    [...cluster.replicaSets.values()].reduce(
+      (sum, r) => sum + Math.abs(r.spec.replicas - r.status.readyReplicas),
+      0,
+    );
+  const ready = cluster.controlPlane.initialized;
+
+  const desks: readonly {
+    id: string;
+    kind: BuildingKind;
+    label: string;
+    level: number;
+    busy: boolean;
+    command: string;
+    why: string;
+  }[] = [
+    {
+      id: 'cp:api',
+      kind: 'desk',
+      label: '窓口',
+      level: levelOf(cluster.events.length),
+      busy: false,
+      command: 'kubectl get nodes',
+      why: '窓口は API サーバ。街への願いは全部ここを通り、ここだけが台帳に書き込む',
+    },
+    {
+      id: 'cp:store',
+      kind: 'ledger',
+      label: '台帳',
+      level: levelOf(records),
+      busy: false,
+      command: 'kubectl get events',
+      why: '台帳は etcd。街の決まりごとと出来事が、すべてここに残る',
+    },
+    {
+      id: 'cp:controller',
+      kind: 'watch',
+      label: '監督',
+      level: levelOf(gap + 1),
+      busy: gap > 0,
+      command: 'kubectl get deploy',
+      why: '監督はコントローラ。あるべき数といまの数を見比べ、足りなければ足す',
+    },
+    {
+      id: 'cp:scheduler',
+      kind: 'dispatch',
+      label: '配置係',
+      level: levelOf(waiting + 1),
+      busy: waiting > 0,
+      command: 'kubectl get pods -o wide',
+      why: '配置係はスケジューラ。空きのあるビルを選んで、新しい住人の行き先を決める',
+    },
+  ];
+
+  for (const desk of desks) {
+    const at = lane.next();
+    out.buildings.push({
+      id: desk.id,
+      kind: desk.kind,
+      x: at.x,
+      y: at.y,
+      w: CP_SIZE.w,
+      h: CP_SIZE.h,
+      level: desk.level,
+      label: desk.label,
+      occupants: [],
+      state: !ready ? 'building' : desk.busy ? 'busy' : 'normal',
+      phase: ready ? 'done' : 'frame',
+      district: at.district,
+      command: desk.command,
+      why: desk.why,
+    });
+  }
+
+  // 管制どうしは道でつながる。願いは窓口から台帳へ流れ、監督と配置係はそれを見ている
+  out.roads.push({ from: 'cp:api', to: 'cp:store', active: ready });
+  out.roads.push({ from: 'cp:store', to: 'cp:controller', active: gap > 0 });
+  out.roads.push({ from: 'cp:store', to: 'cp:scheduler', active: waiting > 0 });
+}
+
 function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Built): void {
-  const lots = new Lots('k8s', 4, 4);
+  const area = districtArea('k8s');
   const towers = new Map<string, Building>();
 
+  // 北から順に帯を積む。管制 → ビル → 事務所 → バス停
+  const desks = new Lane(area, area.y, CP_SIZE.w, CP_SIZE.h);
+  controlPlaneOf(cluster, desks, out);
+
+  const lots = new Lane(area, desks.bottom, 4, 4);
   for (const node of [...cluster.nodes.values()].sort((a, b) => (a.metadata.name < b.metadata.name ? -1 : 1))) {
     const at = lots.next();
     const age = cluster.tick - node.metadata.createdAt;
     const ready = nodeCondition(cluster, node).ready;
+    // 学習者が来る前からあるノードは、もう建ち上がっている。
+    // あとから加わったノード（kubeadm join）だけが、数 tick かけて建つ
+    const settled = node.metadata.createdAt === 0 || age >= BUILD_TICKS;
     const building: Building = {
       id: `node:${node.metadata.name}`,
       kind: 'tower',
@@ -528,8 +678,8 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
       label: node.metadata.name,
       occupants: [],
       // ノードが増えると建設が始まり、数 tick かけて建つ
-      state: age < BUILD_TICKS ? 'building' : !ready ? 'broken' : node.spec.unschedulable ? 'busy' : 'normal',
-      phase: buildPhase(age),
+      state: !settled ? 'building' : !ready ? 'broken' : node.spec.unschedulable ? 'busy' : 'normal',
+      phase: settled ? 'done' : buildPhase(age),
       district: at.district,
       command: `kubectl describe node ${node.metadata.name}`,
       why: '高層ビルはノード。どれだけ入居できて、いま何が起きているかを見る',
@@ -549,6 +699,8 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
     };
     towers.set(node.metadata.name, building);
     out.buildings.push(building);
+    // 配置係が行き先を決めたビルへ、道が伸びる
+    out.roads.push({ from: 'cp:scheduler', to: building.id, active: ready });
   }
 
   // 住人は Pod。配置されたビルへ入る。別ノードへ移ると引っ越す
@@ -579,11 +731,12 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
   for (const tower of towers.values()) tower.level = levelOf(tower.occupants.length);
 
   // 建設会社の事務所は Deployment。replicas を増やすと住人の募集が始まる
-  const offices = new Lots('k8s', 3, 2);
+  const offices = new Lane(area, lots.bottom, 3, 2);
   for (const deploy of [...cluster.deployments.values()].sort((a, b) => (a.metadata.name < b.metadata.name ? -1 : 1))) {
     const at = offices.next();
+    const id = `deploy:${deploy.metadata.namespace}/${deploy.metadata.name}`;
     out.buildings.push({
-      id: `deploy:${deploy.metadata.namespace}/${deploy.metadata.name}`,
+      id,
       kind: 'office',
       x: at.x,
       y: at.y,
@@ -610,10 +763,16 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
         },
       ],
     });
+    // 事務所の願いは監督が見ている
+    out.roads.push({
+      from: 'cp:controller',
+      to: id,
+      active: deploy.status.readyReplicas < deploy.spec.replicas,
+    });
   }
 
   // バス停は Service。Endpoints に載った Pod のいるビルにだけ路線が伸びる
-  const stops = new Lots('k8s', 2, 2);
+  const stops = new Lane(area, offices.bottom, 2, 2);
   for (const service of [...cluster.services.values()].sort((a, b) => (a.metadata.name < b.metadata.name ? -1 : 1))) {
     const at = stops.next();
     const id = `svc:${service.metadata.namespace}/${service.metadata.name}`;

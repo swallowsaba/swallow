@@ -25,6 +25,12 @@ function shell(files: Record<string, string | null> = { '/home/learner': null })
   };
 }
 
+/** あとから加わったノード（kubeadm join）。最初からあるノードは建ち上がり済みとして扱う */
+function joined(name: string, at: number) {
+  const n = node(name, 4000, 8192);
+  return { ...n, metadata: { ...n.metadata, createdAt: at } };
+}
+
 function place(state: ClusterState, pods: Pod[], nodeName: string): ClusterState {
   const map = new Map(state.pods);
   for (const p of pods) {
@@ -85,12 +91,19 @@ describe('Kubernetes', () => {
     expect(towers.map((b) => b.label)).toEqual(['n1', 'n2']);
   });
 
-  it('建ったばかりのビルは工事中で、数 tick かけて建ち上がる', () => {
-    const cluster = emptyCluster([node('n1', 4000, 8192)]);
+  it('あとから加わったビルは工事中で、数 tick かけて建ち上がる', () => {
+    const cluster = { ...emptyCluster([joined('n1', 1)]), tick: 1 };
     const towerAt = (state: ClusterState) =>
       buildCity({ cluster: state, unlocked: ALL }).buildings.find((b) => b.kind === 'tower');
     expect(towerAt(cluster)?.state).toBe('building');
-    expect(towerAt({ ...cluster, tick: 5 })?.state).toBe('normal');
+    expect(towerAt({ ...cluster, tick: 6 })?.state).toBe('normal');
+  });
+
+  it('学習者が来る前からあるビルは、最初から建ち上がっている', () => {
+    const cluster = emptyCluster([node('n1', 4000, 8192)]);
+    const tower = buildCity({ cluster, unlocked: ALL }).buildings.find((b) => b.kind === 'tower');
+    expect(tower?.state).toBe('normal');
+    expect(tower?.phase).toBe('done');
   });
 
   it('Pod を配置すると、そのノードのビルの住人になる', () => {

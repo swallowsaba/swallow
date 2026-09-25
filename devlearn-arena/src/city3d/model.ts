@@ -147,6 +147,11 @@ const PARAM_KIND: Record<BuildingKind, BuildingParams['kind']> = {
   gate: 'depot',
   window: 'midrise',
   line: 'depot',
+  // 管制は中層の建物。高層ビル（ノード）より低く、倉庫より大きい
+  desk: 'midrise',
+  ledger: 'midrise',
+  watch: 'midrise',
+  dispatch: 'midrise',
 };
 
 /** 建物の階数。規模（level）が上がるほど高くなる */

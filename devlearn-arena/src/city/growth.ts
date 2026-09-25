@@ -33,7 +33,8 @@ export const DISTRICTS: readonly DistrictArea[] = [
   { id: 'center', x: 19, y: 13, w: 10, h: 8 },
   { id: 'git', x: 4, y: 2, w: 40, h: 9 },
   { id: 'kernel', x: 2, y: 13, w: 15, h: 8 },
-  { id: 'k8s', x: 31, y: 13, w: 15, h: 8 },
+  // 港（k8s）は縦に長い。北から順に、管制の 4 施設・ビル・事務所・バス停が帯で並ぶため
+  { id: 'k8s', x: 29, y: 13, w: 12, h: 10 },
   { id: 'net', x: 2, y: 23, w: 21, h: 9 },
   { id: 'github', x: 25, y: 23, w: 21, h: 9 },
 ];

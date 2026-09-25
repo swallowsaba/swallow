@@ -45,6 +45,11 @@ export const BUILDING: Record<BuildingKind, string> = {
   gate: '#90a08d',
   window: '#b3a1c7',
   line: '#a0b0bd',
+  // 管制の 4 施設。同じ役目のまとまりなので、近い色にして一目で一組と分かるようにする
+  desk: '#7fa8d4',
+  ledger: '#8f9fc4',
+  watch: '#86b0c0',
+  dispatch: '#9ab4d0',
 };
 
 /** 状態は輪郭と印で示す。地色は変えない（同じ種類の建物は同じ色に見える） */

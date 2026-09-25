@@ -11,6 +11,12 @@ import { between, hashString, intBetween, pick, stream, unit } from './seed';
 
 const ALL = DISTRICT_IDS;
 
+/** あとから加わったノード（kubeadm join）。最初からあるノードは建ち上がり済みとして扱う */
+function joined(name: string, at: number) {
+  const n = node(name, 4000, 8192);
+  return { ...n, metadata: { ...n.metadata, createdAt: at } };
+}
+
 function shell(files: Record<string, string | null> = { '/home/learner': null }) {
   let session: Session = createSession({ files });
   return {
@@ -136,10 +142,12 @@ describe('3D の街の配置', () => {
   });
 
   it('建設中の建物は建ち上がりが 1 に満たない', () => {
-    const young = buildCity({ cluster: { ...emptyCluster([node('n1', 4000, 8192)]), tick: 0 }, unlocked: ALL });
-    const done = buildCity({ cluster: { ...emptyCluster([node('n1', 4000, 8192)]), tick: 9 }, unlocked: ALL });
-    expect(layoutCity(young).buildings[0]?.progress).toBeLessThan(1);
-    expect(layoutCity(done).buildings[0]?.progress).toBe(1);
+    const young = buildCity({ cluster: { ...emptyCluster([joined('n1', 1)]), tick: 1 }, unlocked: ALL });
+    const done = buildCity({ cluster: { ...emptyCluster([joined('n1', 1)]), tick: 9 }, unlocked: ALL });
+    const tower = (city: ReturnType<typeof buildCity>) =>
+      layoutCity(city).buildings.find((b) => b.id === 'node:n1');
+    expect(tower(young)?.progress).toBeLessThan(1);
+    expect(tower(done)?.progress).toBe(1);
   });
 
   it('高い建物ほど上で細くなる（セットバック）。小屋には付かない', () => {
