@@ -67,6 +67,7 @@ export function Onboarding() {
         aria-modal="true"
         aria-labelledby="onboarding-title"
         aria-describedby="onboarding-body"
+        data-testid="onboarding"
         className="max-w-2xl border-4 border-wood-dark bg-cream p-6 shadow-lg"
       >
         <h2 id="onboarding-title" className="title text-3xl">

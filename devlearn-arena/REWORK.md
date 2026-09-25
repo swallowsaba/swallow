@@ -17,7 +17,7 @@
 
 ## 0. 撮影の仕組み
 
-- [ ] 0-1. `tools/shoot.mjs` が動くようにする（playwright と chromium を入れる。`npm run preview` を裏で立てて撮る）
+- [x] 0-1. `tools/shoot.mjs` が動くようにする（playwright と chromium を入れる。`npm run preview` を裏で立てて撮る）
 - [ ] 0-2. `npm run shoot` で次を順に撮る。**同時に1つずつ。**
   `01-start`（最初の任務を開いた直後）/ `02-tour`（ツアー中）/ `03-trace`（コマンドの旅路の途中）/
   `04-inspect`（施設をクリックした状態）/ `05-break`（障害を起こした状態）/ `06-fixed`（直した後）

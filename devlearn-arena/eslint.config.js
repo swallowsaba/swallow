@@ -60,4 +60,10 @@ export default tseslint.config(
     files: ['**/*.js', '**/*.mjs'],
     languageOptions: { globals: globals.node, sourceType: 'module' },
   },
+
+  // 撮影道具。node で動くが、ブラウザへ注入する関数も書くので両方の globals を許す
+  {
+    files: ['tools/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser }, sourceType: 'module' },
+  },
 );
