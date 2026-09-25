@@ -23,6 +23,10 @@ interface Props {
   city: City;
   /** 動かしてよいか。prefers-reduced-motion のときと、止めているときは false */
   animate?: boolean;
+  /** カメラが滑って寄るか。false なら瞬間で移る（OS の「動きを減らす」） */
+  glide?: boolean;
+  /** 時間帯を止める（0 と 1 が真夜中、0.5 が正午） */
+  time?: number;
   /** 街が進む速さの倍率。1 がそのまま、3 が早送り */
   rate?: number;
   /** 模型の時間の目盛り。増えた直後だけ車と人が速く動く */
@@ -55,7 +59,7 @@ interface Props {
 }
 
 export function CityView({
-  city, animate = true, rate = 1, rush = 0, view = null, district = null, showSites = true, onSite,
+  city, animate = true, glide = animate, time, rate = 1, rush = 0, view = null, district = null, showSites = true, onSite,
   onCommand, onSelect, selected = null, label, journey = null, tour = null, trouble = null,
   journeyPlay, onJourneyStop,
 }: Props) {
@@ -84,6 +88,8 @@ export function CityView({
         <CityScene
           layout={layout}
           animate={animate}
+          glide={glide}
+          {...(time === undefined ? {} : { time })}
           rate={rate}
           rush={rush}
           view={view}

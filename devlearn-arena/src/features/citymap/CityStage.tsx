@@ -5,7 +5,7 @@ import type { JourneyPlay } from '@/city3d/journey';
 import { CityView } from '@/city3d/CityView';
 import type { Speed } from '@/features/park/hud/metrics';
 import { SPEED_RATE } from '@/features/park/hud/metrics';
-import { useMotionEnabled } from '@/ui/motion';
+import { useCityMotion } from '@/ui/motion';
 
 interface Props {
   city: City;
@@ -37,6 +37,8 @@ interface Props {
   journeyPlay?: JourneyPlay;
   /** 光の粒が次の停留所に着いたとき */
   onJourneyStop?: ((index: number) => void) | undefined;
+  /** 時間帯を止める（0 と 1 が真夜中、0.5 が正午）。撮影で影の動きを除くのに使う */
+  time?: number | undefined;
 }
 
 /**
@@ -46,15 +48,18 @@ interface Props {
  */
 export function CityStage({
   city, label, selected, onSelect, onCommand, speed = 'normal', rush = 0, view = null, district = null,
-  showSites = true, onSite, journey = null, tour = null, trouble = null, journeyPlay, onJourneyStop,
+  showSites = true, onSite, journey = null, tour = null, trouble = null, journeyPlay, onJourneyStop, time,
 }: Props) {
-  const motion = useMotionEnabled();
+  const motion = useCityMotion();
   const rate = SPEED_RATE[speed];
+  // 車と人が動いているか。OS の「動きを減らす」では止めない（`motionPlan`）
+  const moving = motion.traffic && rate > 0;
   return (
     <div
       data-testid="city-stage"
       className="absolute inset-0"
       data-speed={speed}
+      data-traffic={moving ? 'moving' : 'stopped'}
       data-view={view ?? undefined}
       data-sites={showSites ? 'on' : 'off'}
       data-journey={journey?.command ?? undefined}
@@ -64,7 +69,9 @@ export function CityStage({
     >
       <CityView
         city={city}
-        animate={motion && rate > 0}
+        animate={moving}
+        glide={motion.glide}
+        {...(time === undefined ? {} : { time })}
         rate={rate}
         rush={rush}
         view={view}

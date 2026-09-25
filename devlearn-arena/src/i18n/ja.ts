@@ -358,8 +358,8 @@ export const ja = {
 
   'settings.title': '設定',
   'settings.motion': 'アニメーション',
-  'settings.motion.system': 'OS の設定に従う',
-  'settings.motion.reduced': '常に控えめにする',
+  'settings.motion.system': '街は動かし、カメラの移動は OS の設定に従う',
+  'settings.motion.reduced': '街の車と人も止める',
   'settings.tick': '仮想時計の速さ',
   'settings.data': '学習データ',
   'settings.export': '進捗を書き出す',

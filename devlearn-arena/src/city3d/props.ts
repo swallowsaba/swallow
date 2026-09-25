@@ -344,7 +344,8 @@ function traffic(ground: Ground, roads: RoadNetwork, rng: Rng): void {
       ground.move('person', spot.at, spot.angle, rng.between(0.9, 1.1), {
         points,
         offset: (road.width / 2 + 2.2) * (i % 2 === 0 ? 1 : -1),
-        speed: road.blocked ? 0 : rng.between(1.1, 1.7) * (i % 2 === 0 ? 1 : -1),
+        // 実際の歩く速さ（1.4 m/s ほど）だと、街を見下ろす距離では止まって見える。見えるよう倍ほどに縮めてある
+        speed: road.blocked ? 0 : rng.between(2.8, 3.8) * (i % 2 === 0 ? 1 : -1),
         start,
         bounce: !road.closed,
       });

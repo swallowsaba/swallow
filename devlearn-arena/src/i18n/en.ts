@@ -361,8 +361,8 @@ export const en: Record<TKey, string> = {
 
   'settings.title': 'Settings',
   'settings.motion': 'Animation',
-  'settings.motion.system': 'Follow the OS setting',
-  'settings.motion.reduced': 'Always keep it subtle',
+  'settings.motion.system': 'Keep the city moving; camera follows the OS setting',
+  'settings.motion.reduced': 'Stop cars and people too',
   'settings.tick': 'Virtual clock speed',
   'settings.data': 'Learning data',
   'settings.export': 'Export progress',

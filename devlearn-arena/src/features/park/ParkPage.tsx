@@ -174,6 +174,9 @@ function Arena({
 }) {
   const t = useT();
   const saveMission = useStore((s) => s.saveMission);
+  // 時間帯を止める指定（?time=0.42）。撮影で、影の動きを車と人の動きと取り違えないために使う
+  const [search] = useSearchParams();
+  const stillTime = search.get('time') === null ? undefined : Number(search.get('time'));
   const savedProgress = useStore((s) => s.missionProgress[mission.id]);
   const savedState = useStore((s) => s.missionState[mission.id]);
 
@@ -602,6 +605,7 @@ function Arena({
         onJourneyStop={setPlayAt}
         tour={tourStop}
         trouble={troubles[0]?.where ?? null}
+        time={stillTime !== undefined && Number.isFinite(stillTime) ? stillTime : undefined}
       />
 
       <TopBar

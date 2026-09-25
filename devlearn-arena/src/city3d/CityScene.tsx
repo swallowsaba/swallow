@@ -45,13 +45,15 @@ import {
 } from './journey';
 import type { Answer, Journey } from '@/city/journey';
 import { paceAfter } from './traffic';
+import { advanceOf } from '@/ui/motion';
 
 /**
  * 街を WebGL で描く。データを受け取って描くだけ。
  *
  * カメラは水平から 35 度の固定角で、回転は水平方向のみ。
  * 太陽は 1 つで影を落とし、空の色が回り込む。時間帯が回り、夜は窓が灯る。
- * `prefers-reduced-motion` のときは、車も時間帯も止める。
+ * アプリの設定で動きを減らしたときと一時停止のときは、車も時間帯も止める。
+ * OS の `prefers-reduced-motion` では車を止めず、カメラの移動だけを瞬間にする（`src/ui/motion.ts`）。
  */
 
 interface Props {
@@ -64,6 +66,8 @@ interface Props {
   selected?: string | null;
   /** 動かしてよいか。false なら車も時間帯も止める */
   animate?: boolean;
+  /** カメラが滑って寄るか。false なら瞬間で移る。OS の「動きを減らす」はこちらだけを止める */
+  glide?: boolean;
   /** 進む速さの倍率。早送りのときは 1 より大きい */
   rate?: number;
   /**
@@ -213,7 +217,7 @@ function City({
     lastRush.current = rush;
     if (!animate) return;
     const since = rushedAt.current === null ? null : state.clock.elapsedTime - rushedAt.current;
-    travelled.current += Math.min(delta, 0.1) * rate * paceAfter(since);
+    travelled.current += advanceOf(delta) * rate * paceAfter(since);
     // 車と人を進める。部品の位置は形に焼き込んであるので、どれも同じ行列で動く
     for (const mover of built.movers) {
       mover.items.forEach((item, i) => {
@@ -835,7 +839,7 @@ function Spark({
 }
 
 export default function CityScene({
-  layout, onCommand, onSelect, onSite, selected = null, animate = true, rate = 1, rush = 0, view = null, district = null,
+  layout, onCommand, onSelect, onSite, selected = null, animate = true, glide = animate, rate = 1, rush = 0, view = null, district = null,
   showSites = true, time, journey = null, tour = null, trouble = null,
   journeyPlay = { playing: true, rate: 1, step: 0 }, onJourneyStop,
 }: Props) {
@@ -934,7 +938,7 @@ export default function CityScene({
         )}
         <Look
           target={focus}
-          animate={animate}
+          animate={glide}
           distance={distance}
           chase={chase}
           {...(tour === null && trouble === null ? {} : { closeUp: TOUR_DISTANCE, seconds: TOUR_SECONDS })}
