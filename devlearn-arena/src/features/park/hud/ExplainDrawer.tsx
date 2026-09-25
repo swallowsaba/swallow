@@ -2,12 +2,18 @@ import { useMemo, useState } from 'react';
 import { briefingQuiz, quizPool } from '@/engines/lesson/briefing';
 import type { LessonDefinition } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
+import { diagramOfStep } from '@/lesson/diagrams/pick';
+import { PlaygroundFrame } from '@/lesson/diagrams/PlaygroundFrame';
 import { Icon } from '@/ui/Icon';
 import { HUD, SIZE } from './theme';
 
 interface Props {
   mission: LessonDefinition;
+  /** いまの手順。どの図解で遊ぶかは手順ごとに決まる */
+  stepIndex: number;
   onClose: () => void;
+  /** 図解の「端末で打つ」。学習者の端末にコマンドを入れる */
+  onType?: (command: string) => void;
   /** 理解度の問題に正解したとき。街に家が増える */
   onAnswer: () => void;
 }
@@ -15,10 +21,12 @@ interface Props {
 /**
  * 解説の引き出し。課題の札の「なぜ」から開く。
  *
+ * 主役は遊べる図解（REWORK 6-1）。図の中で手を動かすと仕組みが反応し、
+ * 同じことをするコマンドが下に出る。文章は図の下の 3 行と、畳んだ「くわしく読む」だけ。
  * 開くかどうかは学習者が決める。読まないと進めない作りにはしない。
- * 端末も街も生きたままなので、読みながら打てる。
+ * 端末も街も生きたままなので、遊びながら打てる。
  */
-export function ExplainDrawer({ mission, onClose, onAnswer }: Props) {
+export function ExplainDrawer({ mission, stepIndex, onClose, onAnswer, onType }: Props) {
   const t = useT();
   const questions = useMemo(
     () => briefingQuiz(mission.id, mission.intro, quizPool(mission.track)),
@@ -27,7 +35,9 @@ export function ExplainDrawer({ mission, onClose, onAnswer }: Props) {
   const [index, setIndex] = useState(0);
   const [wrong, setWrong] = useState<ReadonlySet<number>>(new Set());
   const [solved, setSolved] = useState(false);
+  const [reading, setReading] = useState(false);
   const question = questions[index];
+  const diagram = diagramOfStep(mission, Math.min(stepIndex, mission.steps.length - 1));
 
   const choose = (i: number): void => {
     if (!question || solved || wrong.has(i)) return;
@@ -80,36 +90,7 @@ export function ExplainDrawer({ mission, onClose, onAnswer }: Props) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3.5 py-3 text-[13px] leading-relaxed">
-        <p className="text-[12px]" style={{ color: HUD.muted }}>{t('intro.why')}</p>
-        <p className="mt-1" style={{ color: HUD.soft }}>{mission.intro.why}</p>
-
-        {mission.intro.concepts.length === 0 ? null : (
-          <>
-            <p className="mt-4 text-[12px]" style={{ color: HUD.muted }}>{t('intro.concepts')}</p>
-            <dl className="mt-1 flex flex-col gap-1.5">
-              {mission.intro.concepts.map((c) => (
-                <div key={c.term}>
-                  <dt className="font-bold">{c.term}</dt>
-                  <dd style={{ color: HUD.soft }}>{c.plain}</dd>
-                </div>
-              ))}
-            </dl>
-          </>
-        )}
-
-        {mission.intro.commands.length === 0 ? null : (
-          <>
-            <p className="mt-4 text-[12px]" style={{ color: HUD.muted }}>{t('intro.commands')}</p>
-            <dl className="mt-1 flex flex-col gap-1.5">
-              {mission.intro.commands.map((c) => (
-                <div key={c.command}>
-                  <dt className="font-mono text-[12px]" style={{ color: HUD.accentText }}>{c.command}</dt>
-                  <dd style={{ color: HUD.soft }}>{c.means}</dd>
-                </div>
-              ))}
-            </dl>
-          </>
-        )}
+        <PlaygroundFrame id={diagram} onType={onType} />
 
         {question === undefined ? null : (
           <div data-testid="explain-quiz" className="mt-4 rounded-md p-3" style={{ background: HUD.fillSoft, border: `1px solid ${HUD.line}` }}>
@@ -161,6 +142,53 @@ export function ExplainDrawer({ mission, onClose, onAnswer }: Props) {
             ) : null}
           </div>
         )}
+
+        <button
+          type="button"
+          data-testid="explain-read"
+          onClick={() => {
+            setReading((was) => !was);
+          }}
+          className="mt-4 flex items-center gap-1 text-[12px]"
+          style={{ color: HUD.accentText }}
+        >
+          <Icon name={reading ? 'back' : 'next'} size={12} />
+          {reading ? t('explain.readLess') : t('explain.readMore')}
+        </button>
+        {reading ? (
+          <div data-testid="explain-reading" className="mt-2">
+            <p className="text-[12px]" style={{ color: HUD.muted }}>{t('intro.why')}</p>
+            <p className="mt-1" style={{ color: HUD.soft }}>{mission.intro.why}</p>
+
+            {mission.intro.concepts.length === 0 ? null : (
+              <>
+                <p className="mt-4 text-[12px]" style={{ color: HUD.muted }}>{t('intro.concepts')}</p>
+                <dl className="mt-1 flex flex-col gap-1.5">
+                  {mission.intro.concepts.map((c) => (
+                    <div key={c.term}>
+                      <dt className="font-bold">{c.term}</dt>
+                      <dd style={{ color: HUD.soft }}>{c.plain}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </>
+            )}
+
+            {mission.intro.commands.length === 0 ? null : (
+              <>
+                <p className="mt-4 text-[12px]" style={{ color: HUD.muted }}>{t('intro.commands')}</p>
+                <dl className="mt-1 flex flex-col gap-1.5">
+                  {mission.intro.commands.map((c) => (
+                    <div key={c.command}>
+                      <dt className="font-mono text-[12px]" style={{ color: HUD.accentText }}>{c.command}</dt>
+                      <dd style={{ color: HUD.soft }}>{c.means}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </>
+            )}
+          </div>
+        ) : null}
       </div>
     </section>
   );

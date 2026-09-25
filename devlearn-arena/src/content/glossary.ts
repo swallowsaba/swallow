@@ -1,3 +1,4 @@
+import type { DiagramId } from '@/engines/lesson/diagramIds';
 import { lookup, segment, type Concept } from '@/engines/lesson/glossary';
 
 /**
@@ -15,14 +16,7 @@ import { lookup, segment, type Concept } from '@/engines/lesson/glossary';
  * 「街での例え」と「どの図解で遊べるか」を足す所。
  */
 
-/** 遊べる図解の識別子。REWORK 6-3 の表と同じ */
-export type DiagramId =
-  | 'pod-in-node'
-  | 'desired-vs-actual'
-  | 'pod-lifecycle'
-  | 'service-endpoints'
-  | 'git-three-areas'
-  | 'packet-hops';
+export type { DiagramId };
 
 export interface Term {
   /** 画面に出る語 */

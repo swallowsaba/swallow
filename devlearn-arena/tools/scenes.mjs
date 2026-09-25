@@ -31,6 +31,18 @@ export async function dismissOnboarding(page) {
 /** ネットワークの街。道（ケーブル）を塞ぐ場面で使う */
 const NET_HOP = '/world/net?mission=net/05/ttl-hop';
 
+/** 「なぜ」の引き出し。左の端末の右に開く。字が読めるよう、ここだけを切り取って撮る */
+const DRAWER = { x: 450, y: 64, width: 540, height: 760 };
+
+/** 課題の札の「なぜ」を押して、遊べる図解を開く */
+async function openWhy(page) {
+  await page.getByTestId('task-why').click();
+  await need(page, 'playground');
+}
+
+/** 撮る前か後か。`SHOOT_BEFORE=1` なら操作する前を撮る */
+const before = () => process.env.SHOOT_BEFORE !== undefined;
+
 export const SCENES = {
   '01-start': {
     path: K8S_FIRST,
@@ -254,6 +266,157 @@ export const SCENES = {
       await sleep(1500);
       await page.getByTestId('journey-close').click();
       await sleep(1500);
+    },
+  },
+  /** 遊べる図解: ビルと住人。住人を別のビルへ運び、満員のビルには断られる */
+  '12-play-pod': {
+    path: K8S_FIRST,
+    wait: 5000,
+    clip: DRAWER,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await openWhy(page);
+      await sleep(1000);
+      if (before()) return;
+      // 本物のドラッグで運ぶ
+      await page.locator('[data-pod="web-1"]').dragTo(page.locator('[data-node="node-2"]'));
+      await sleep(3500);
+      await page.locator('[data-pod="web-2"]').dragTo(page.locator('[data-node="node-2"]'));
+      await sleep(250);
+    },
+  },
+
+  /** 遊べる図解: 注文と実際。住人を消すと、歯車が回って作り直される途中 */
+  '13-play-desired': {
+    path: K8S_FIRST,
+    wait: 5000,
+    clip: DRAWER,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await type(page, 'kubectl get nodes');
+      await sleep(600);
+      await type(page, 'kubectl run web --image=nginx');
+      await sleep(600);
+      await type(page, 'kubectl wait 10');
+      await sleep(1200);
+      await page.getByTestId('journey-close').click().catch(() => undefined);
+      await openWhy(page);
+      await sleep(1000);
+      if (before()) return;
+      await page.locator('[data-pod]').first().click();
+      await sleep(900);
+    },
+  },
+
+  /** 遊べる図解: 作業ツリー → インデックス → コミット。札を運んで写真を撮った後 */
+  '14-play-git': {
+    path: '/world/git?mission=git%2F01%2Fobjects',
+    wait: 5000,
+    clip: DRAWER,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await openWhy(page);
+      await sleep(1000);
+      if (before()) return;
+      await page.locator('[data-card="app.txt"]').dragTo(page.locator('[data-area="index"]'));
+      await sleep(900);
+      if (process.env.SHOOT_STAGE === '1') return;
+      await page.locator('[data-card="notes.txt"]').dragTo(page.locator('[data-area="index"]'));
+      await sleep(600);
+      await page.getByTestId('take-photo').click();
+      await sleep(1200);
+    },
+  },
+
+  /** 遊べる図解: 荷物が機器を渡る。切れた線でいったん止まり、つなぎ直すと届く */
+  '15-play-net': {
+    path: NET_HOP,
+    wait: 5000,
+    clip: DRAWER,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await openWhy(page);
+      await sleep(1000);
+      if (before()) return;
+      await page.getByTestId('send-pc2').click();
+      await sleep(2500);
+      if (process.env.SHOOT_STAGE === '1') return;
+      await page.locator('[data-link="r1:eth1"]').click();
+      await sleep(500);
+      await page.getByTestId('send-pc2').click();
+      await sleep(1500);
+    },
+  },
+
+  /** 遊べる図解: 住人の段。壊れた荷物で、再試行の間隔が伸びていく */
+  '16-play-life': {
+    path: K8S_FIRST,
+    wait: 5000,
+    clip: DRAWER,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await type(page, 'kubectl get nodes');
+      await sleep(1200);
+      await page.getByTestId('journey-close').click().catch(() => undefined);
+      await openWhy(page);
+      await sleep(1000);
+      if (before()) return;
+      await page.getByTestId('run-broken').click();
+      for (let i = 0; i < 14; i += 1) {
+        await page.getByTestId('tick').click();
+        await sleep(150);
+      }
+      await sleep(800);
+    },
+  },
+  /** 遊べる図解: バス停と名札。c の名札を付け替えると、バス停から線が伸びる */
+  '17-play-svc': {
+    path: '/world/k8s?mission=k8s%2F07%2Fno-endpoint-web',
+    wait: 5000,
+    clip: DRAWER,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await openWhy(page);
+      await sleep(1000);
+      if (before()) return;
+      await page.locator('[data-pod="c"]').click();
+      await sleep(2500);
+    },
+  },
+
+  /** 遊べる図解: ファイルと箱。箱が無いまま入れようとして断られ、箱を作って片付けた後 */
+  '18-play-files': {
+    path: '/world/kernel?mission=kernel%2F00%2Fshell-warmup',
+    wait: 5000,
+    clip: DRAWER,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await openWhy(page);
+      await sleep(1000);
+      if (before()) return;
+      await page.locator('[data-file="app.log"]').dragTo(page.locator('[data-dir="logs"]'));
+      await sleep(600);
+      if (process.env.SHOOT_STAGE === '1') return;
+      await page.getByTestId('mkdir').click();
+      await sleep(400);
+      await page.locator('[data-file="app.log"]').dragTo(page.locator('[data-dir="logs"]'));
+      await sleep(400);
+      await page.locator('[data-file="db.log"]').dragTo(page.locator('[data-dir="logs"]'));
+      await sleep(1200);
     },
   },
 };

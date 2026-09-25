@@ -1,5 +1,6 @@
 import type { ShellState } from '@/engines/kernel/registry';
 import type { SessionOptions } from '@/engines/kernel/session';
+import type { DiagramId } from './diagramIds';
 
 /** 判定に使える文脈。文字列一致ではなく「状態」を見る。 */
 export interface AssertContext {
@@ -47,6 +48,11 @@ export interface LessonStep {
   parts?: readonly StepPart[];
   /** 詰まったときに最後に見せる答え */
   answer?: string;
+  /**
+   * 「なぜ」で開く、遊べる図解。書かなければ手順の言葉とコマンドから選ぶ
+   * （`src/lesson/diagrams/pick.ts`）
+   */
+  diagram?: DiagramId;
 }
 
 export type MissionKind = 'training' | 'boss';

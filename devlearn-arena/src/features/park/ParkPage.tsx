@@ -722,6 +722,8 @@ function Arena({
       {explaining ? (
         <ExplainDrawer
           mission={mission}
+          stepIndex={progress.stepIndex}
+          onType={runFromCity}
           onClose={() => {
             setExplaining(false);
           }}

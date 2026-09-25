@@ -465,6 +465,8 @@ export const ja = {
   'hud.rewardRights': '建築権 ×{n}',
   'hud.why': 'なぜ',
   'hud.hint': 'ヒント',
+  'explain.readMore': 'くわしく読む（なぜ学ぶのか・言葉・コマンド）',
+  'explain.readLess': '畳む',
   'hud.explain': '解説',
   'hud.close': '閉じる',
   'hud.residents': '住人（稼働 Pod）',

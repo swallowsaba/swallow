@@ -468,6 +468,8 @@ export const en: Record<TKey, string> = {
   'hud.rewardRights': 'Build rights x{n}',
   'hud.why': 'Why',
   'hud.hint': 'Hint',
+  'explain.readMore': 'Read more (why, words, commands)',
+  'explain.readLess': 'Fold',
   'hud.explain': 'Explanation',
   'hud.close': 'Close',
   'hud.residents': 'Residents (running pods)',

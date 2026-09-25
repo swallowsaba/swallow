@@ -102,6 +102,7 @@ export const k8sFirstPod: LessonDefinition = {
         'kubectl get nodes',
       ],
       solution: ['kubectl get nodes'],
+      diagram: 'pod-in-node',
       assert: ({ history }) => ran(history, 'kubectl', 'get', NODE),
       explain:
         'ノードが 2 台あり、どちらも Ready（受け入れられる状態）と出ている。街ではこれが高層ビル 2 棟にあたる。いま街を見ると、その 2 棟の窓は暗い。建物はあるが、まだ誰も住んでいない。',
@@ -114,6 +115,7 @@ export const k8sFirstPod: LessonDefinition = {
         'kubectl run web --image=nginx',
       ],
       solution: ['kubectl run web --image=nginx'],
+      diagram: 'pod-lifecycle',
       assert: ({ shell }) => standaloneWeb(shell) !== null,
       explain:
         '作った直後の Pod は Pending（置き場所を決めている最中）。kubectl get pods で見ると STATUS の欄にそう出る。',
@@ -123,6 +125,7 @@ export const k8sFirstPod: LessonDefinition = {
       check: 'Pod web が Running で、Ready になっていること',
       hints: ['この練習場では、時間は kubectl wait <秒> で進める', 'kubectl wait 10'],
       solution: ['kubectl wait 10'],
+      diagram: 'pod-lifecycle',
       assert: ({ shell }) => {
         const found = standaloneWeb(shell);
         return found !== null && isReady(found);
@@ -138,6 +141,7 @@ export const k8sFirstPod: LessonDefinition = {
         'kubectl delete pod web\nkubectl wait 10',
       ],
       solution: ['kubectl delete pod web', 'kubectl wait 10'],
+      diagram: 'desired-vs-actual',
       assert: ({ timeline }) => (ticksSinceStandaloneGone(timeline) ?? -1) >= 5,
       diagnose: ({ timeline }) => {
         const ticks = ticksSinceStandaloneGone(timeline);
@@ -156,6 +160,7 @@ export const k8sFirstPod: LessonDefinition = {
         'kubectl create deployment web --image=nginx --replicas=2\nkubectl wait 10',
       ],
       solution: ['kubectl create deployment web --image=nginx --replicas=2', 'kubectl wait 10'],
+      diagram: 'desired-vs-actual',
       assert: ({ shell }) =>
         shell.cluster?.deployments.has('default/web') === true && readyOwned(shell) === 2,
       explain:
@@ -169,6 +174,7 @@ export const k8sFirstPod: LessonDefinition = {
         'kubectl delete pod web-b0xusf-00001\nkubectl wait 10',
       ],
       solution: ['kubectl delete pod web-b0xusf-00001', 'kubectl wait 10'],
+      diagram: 'desired-vs-actual',
       assert: ({ shell, timeline }) => ownedPodWasRemoved(timeline) && readyOwned(shell) === 2,
       diagnose: ({ shell, timeline }) => {
         if (!ownedPodWasRemoved(timeline)) {
