@@ -111,6 +111,32 @@ describe('街を three の形にする', () => {
     empty.dispose();
   });
 
+  it('住人のいない建物の窓は 1 枚も灯らない（光は意味を運ぶ。飾りで灯さない）', () => {
+    const quiet = buildCityScene(
+      layoutCity(buildCity({ cluster: { ...emptyCluster([node('n1', 4000, 8192), node('n2', 4000, 8192)]), tick: 9 }, unlocked: DISTRICT_IDS })),
+    );
+    expect(quiet.windows.total).toBeGreaterThan(0);
+    expect(quiet.windows.lit).toBe(0);
+    quiet.dispose();
+  });
+
+  it('まだ入居の途中（Running でない）の住人の階は灯らない。Running になると灯る（REWORK 7-3）', () => {
+    const base = emptyCluster([node('n1', 4000, 8192)]);
+    const at = (phase: Pod['status']['phase']): ClusterState => {
+      const made = pod('web', [container('c', 'nginx')]);
+      const placed: Pod = { ...made, status: { ...made.status, nodeName: 'n1', phase } };
+      return { ...base, tick: 9, pods: new Map([[key('default', 'web'), placed]]) };
+    };
+    const lit = (phase: Pod['status']['phase']) => {
+      const built = buildCityScene(layoutCity(buildCity({ cluster: at(phase), unlocked: DISTRICT_IDS })));
+      const count = built.windows.lit;
+      built.dispose();
+      return count;
+    };
+    expect(lit('ContainerCreating')).toBe(0);
+    expect(lit('Running')).toBeGreaterThan(0);
+  });
+
   it('夜に灯る材質は 1 つで、初めは消えている', () => {
     expect(scene.glow.emissiveIntensity).toBe(0);
     expect(scene.glow.emissive.getHexString()).toBe('ffcf7a');

@@ -1,6 +1,6 @@
 import { LIGHT, SKY } from './palette';
 import type { LayoutDistrict, Vec2 } from './model';
-import { pointAt, type PropPath } from './props';
+import type { PropPath } from './props';
 
 /**
  * 光とカメラ。時間帯から太陽の向きと明るさを出す。
@@ -71,6 +71,17 @@ export function sunAt(time: number, radius: number): SunState {
 /** 夜に灯るものの強さ */
 export function glowStrength(time: number): number {
   return sunAt(time, 1).night * 1.8;
+}
+
+/** 昼でも灯りと分かる強さ。これより弱いと、昼の光の中で暗い窓と見分けられない */
+const DAY_GLOW = 0.55;
+
+/**
+ * 住人が暮らしている窓の灯り（REWORK 7-3）。
+ * 灯った窓は「中で住人（Pod）が動いている」の印なので、昼も消さない。夜はもっと明るくなる
+ */
+export function windowGlow(time: number): number {
+  return Math.max(DAY_GLOW, glowStrength(time));
 }
 
 /**
@@ -173,9 +184,13 @@ export function aside(at: Vec2, azimuth: number, side: number): Vec2 {
 export function moveAlong(path: PropPath, seconds: number): { at: Vec2; angle: number } {
   const total = pathLength(path.points);
   const travelled = path.start + (path.speed * seconds) / Math.max(1, total);
-  const t = ((travelled % 1) + 1) % 1;
-  const spot = pointAt(path.points, t);
-  const back = path.speed < 0 ? Math.PI : 0;
+  const cycle = ((travelled % 1) + 1) % 1;
+  // 折り返す道では、行きは 0→1、帰りは 1→0 と進む。帰りは向きも反対にする
+  const returning = path.bounce === true && Math.floor(((travelled % 2) + 2) % 2) === 1;
+  const t = returning ? 1 - cycle : cycle;
+  // 点の番号ではなく、道のりで測った位置に置く。区間の長さが違っても同じ速さで進むように
+  const spot = atDistance(path.points, t * total);
+  const back = (path.speed < 0) !== returning ? Math.PI : 0;
   return {
     at: {
       x: spot.at.x + Math.cos(spot.angle) * path.offset,
@@ -183,6 +198,26 @@ export function moveAlong(path: PropPath, seconds: number): { at: Vec2; angle: n
     },
     angle: spot.angle + back,
   };
+}
+
+/** 点列の始点から道のり `meters` の所の点と向き */
+function atDistance(points: readonly Vec2[], meters: number): { at: Vec2; angle: number } {
+  let left = meters;
+  let angle = 0;
+  for (let i = 1; i < points.length; i += 1) {
+    const a = points[i - 1];
+    const b = points[i];
+    if (a === undefined || b === undefined) continue;
+    const len = Math.hypot(b.x - a.x, b.z - a.z);
+    if (len < 1e-9) continue;
+    angle = Math.atan2(b.x - a.x, b.z - a.z);
+    if (left <= len) {
+      const f = left / len;
+      return { at: { x: a.x + (b.x - a.x) * f, z: a.z + (b.z - a.z) * f }, angle };
+    }
+    left -= len;
+  }
+  return { at: points[points.length - 1] ?? { x: 0, z: 0 }, angle };
 }
 
 function pathLength(points: readonly Vec2[]): number {

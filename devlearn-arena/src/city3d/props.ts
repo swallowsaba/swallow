@@ -3,6 +3,7 @@ import { hashString, stream, type Rng } from './seed';
 import { isLand, type Terrain } from './terrain';
 import type { RoadNetwork, RoadPath } from './roads';
 import type { LayoutBuilding, Vec2 } from './model';
+import { routeFrom, trafficGraph } from './traffic';
 
 /**
  * 街に置くもの。街路樹・街灯・車・人・生垣・ベンチ・柵・看板。
@@ -30,6 +31,8 @@ export interface PropPath {
   speed: number;
   /** 出発点（経路上の 0..1） */
   start: number;
+  /** 端で引き返すか。輪になっていない歩道を歩く人は、端で消えずに折り返す */
+  bounce?: boolean;
 }
 
 export interface PropPlacement {
@@ -41,6 +44,8 @@ export interface PropPlacement {
   scale: number;
   /** 動くものだけが持つ */
   path?: PropPath;
+  /** 色の番号。車だけが持ち、車体をこの色で塗る */
+  tint?: number;
 }
 
 export interface PropInput {
@@ -165,9 +170,9 @@ class Ground {
   }
 
   /** 動くもの。道の上を走るので、空きの決まりに縛られない */
-  move(kind: PropKind, at: Vec2, rotation: number, scale: number, path: PropPath): void {
+  move(kind: PropKind, at: Vec2, rotation: number, scale: number, path: PropPath, tint?: number): void {
     if (this.items.length >= MAX_PROPS) return;
-    this.items.push({ kind, at, rotation, scale, path });
+    this.items.push({ kind, at, rotation, scale, path, ...(tint === undefined ? {} : { tint }) });
   }
 }
 
@@ -278,29 +283,59 @@ function aroundBuildings(ground: Ground, buildings: readonly LayoutBuilding[], r
   });
 }
 
+/** 道の種類ごとの車の台数 */
+function carsOn(road: RoadPath): number {
+  return road.kind === 'boulevard' ? 6 : road.kind === 'street' ? 3 : 1;
+}
+
+/** 車線。中心線から道幅の 1/4 だけずらした所を走る */
+const LANE_SHIFT = 0.25;
+
 /**
- * 道に車を流す。人は歩道を歩く。
+ * 道に車を流す。人は歩道を歩く（REWORK 7-2）。
+ *
+ * 車は道の網（`trafficGraph`）を走り、交差点に着くたびに次の道を選んで曲がる。
+ * 道すじは輪になっているので、端で消えて反対側から湧き出ることはない。
  *
  * 塞がれた道（`blocked`）にも車は置くが、速さを 0 にして止める。
  * 道が塞がると車が消えるのではなく、その場で止まって渋滞する所が見えるようにするため。
  */
 function traffic(ground: Ground, roads: RoadNetwork, rng: Rng): void {
+  const graph = trafficGraph(roads);
+  const open = roads.roads.filter((r) => r.active && !r.blocked && r.points.length >= 2);
+  const cars = open.reduce((sum, road) => sum + carsOn(road), 0);
+  const width = open.length === 0 ? 0 : open.reduce((sum, road) => sum + road.width, 0) / open.length;
+  for (let i = 0; i < cars && graph.edges.length > 0; i += 1) {
+    // 出発する区間を網全体に散らす。同じ区間に何台も固まらないように
+    const edge = Math.floor((i * graph.edges.length) / cars) % graph.edges.length;
+    const points = routeFrom(graph, edge, rng.int(1, 1_000_000_000));
+    if (points.length < 2) continue;
+    const start = rng.unit();
+    const spot = pointAt(points, start);
+    ground.move('car', spot.at, spot.angle, rng.between(0.9, 1.1), {
+      points,
+      offset: width * LANE_SHIFT,
+      speed: rng.between(6, 11),
+      start,
+    }, rng.int(0, 5));
+  }
+
   for (const road of roads.roads) {
     const points = road.closed ? [...road.points, road.points[0] ?? { x: 0, z: 0 }] : road.points;
     if (points.length < 2) continue;
     if (!road.active && !road.blocked) continue;
-    const halted = road.blocked;
-    const cars = road.kind === 'boulevard' ? 6 : road.kind === 'street' ? 3 : 1;
-    for (let i = 0; i < cars; i += 1) {
-      const start = (i + 0.5) / cars;
-      const offset = (road.width / 4) * (i % 2 === 0 ? 1 : -1);
-      const spot = pointAt(points, start);
-      ground.move('car', spot.at, spot.angle, rng.between(0.9, 1.1), {
-        points,
-        offset,
-        speed: halted ? 0 : rng.between(6, 11) * (i % 2 === 0 ? 1 : -1),
-        start,
-      });
+    if (road.blocked) {
+      // 塞がれた道の車は、その場で止まっている
+      for (let i = 0; i < carsOn(road); i += 1) {
+        const start = (i + 0.5) / carsOn(road);
+        const spot = pointAt(points, start);
+        ground.move('car', spot.at, spot.angle, rng.between(0.9, 1.1), {
+          points,
+          offset: road.width * LANE_SHIFT * (i % 2 === 0 ? 1 : -1),
+          speed: 0,
+          start,
+        }, rng.int(0, 5));
+      }
     }
     if (road.kind === 'lane') continue;
     for (let i = 0; i < 3; i += 1) {
@@ -309,8 +344,9 @@ function traffic(ground: Ground, roads: RoadNetwork, rng: Rng): void {
       ground.move('person', spot.at, spot.angle, rng.between(0.9, 1.1), {
         points,
         offset: (road.width / 2 + 2.2) * (i % 2 === 0 ? 1 : -1),
-        speed: halted ? 0 : rng.between(1.1, 1.7) * (i % 2 === 0 ? 1 : -1),
+        speed: road.blocked ? 0 : rng.between(1.1, 1.7) * (i % 2 === 0 ? 1 : -1),
         start,
+        bounce: !road.closed,
       });
     }
   }

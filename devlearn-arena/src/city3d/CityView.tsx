@@ -25,6 +25,8 @@ interface Props {
   animate?: boolean;
   /** 街が進む速さの倍率。1 がそのまま、3 が早送り */
   rate?: number;
+  /** 模型の時間の目盛り。増えた直後だけ車と人が速く動く */
+  rush?: number;
   /** 街の上に色で重ねる情報表示 */
   view?: InfoView | null;
   /** 開いたときに寄せる区域 */
@@ -53,7 +55,7 @@ interface Props {
 }
 
 export function CityView({
-  city, animate = true, rate = 1, view = null, district = null, showSites = true, onSite,
+  city, animate = true, rate = 1, rush = 0, view = null, district = null, showSites = true, onSite,
   onCommand, onSelect, selected = null, label, journey = null, tour = null, trouble = null,
   journeyPlay, onJourneyStop,
 }: Props) {
@@ -83,6 +85,7 @@ export function CityView({
           layout={layout}
           animate={animate}
           rate={rate}
+          rush={rush}
           view={view}
           district={district}
           showSites={showSites}

@@ -590,6 +590,7 @@ function Arena({
         label={plan.name}
         selected={selected}
         speed={speed}
+        rush={shellState.cluster?.tick ?? 0}
         view={infoView}
         district={mission.track}
         showSites={tool !== null}

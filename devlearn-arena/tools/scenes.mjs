@@ -419,4 +419,68 @@ export const SCENES = {
       await sleep(1200);
     },
   },
+  /**
+   * 車（REWORK 7-1 / 7-2）。道を近くから大きく撮る。
+   * `SHOOT_LATER=1` なら 2 秒遅れて撮る。2 枚を比べて、車が道に沿って進んだことを確かめる
+   */
+  '19-cars': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await sleep(1500);
+      // 寄る。車は 4 メートルしかないので、遠くからでは形が分からない
+      await page.mouse.move(1000, 450);
+      for (let i = 0; i < 6; i += 1) {
+        await page.mouse.wheel(0, -400);
+        await sleep(300);
+      }
+      await sleep(1500);
+      // 同じ画面で 2 秒おいて 2 枚撮る。車が道に沿って進んだかを比べる
+      await page.screenshot({ path: 'shots/19-cars-early.png' });
+      await sleep(2000);
+    },
+  },
+
+  /**
+   * 時間を進める前と後（REWORK 7-4）。住人が道からビルへ歩いている所と、
+   * `kubectl wait 5` の後にその階の窓が灯った所。`SHOOT_BEFORE=1` で前を撮る
+   */
+  '20-wait': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await type(page, 'kubectl get nodes');
+      await sleep(800);
+      await type(page, 'kubectl run web --image=nginx');
+      await sleep(800);
+      // 1 tick 進めると行き先のビルが決まり、住人が道からビルへ歩き出す
+      await type(page, 'kubectl wait 1');
+      await sleep(1500);
+      await page.getByTestId('journey-close').click().catch(() => undefined);
+      // 案内ツアーの「住人」の所まで進める。住人のいるビルにカメラが寄る
+      await page.getByTestId('tour-start').first().click();
+      await need(page, 'tour-card');
+      for (let i = 0; i < 8; i += 1) {
+        const title = await page.getByTestId('tour-stop-title').textContent();
+        if (title?.includes('住人') === true) break;
+        await page.getByTestId('tour-next').first().click();
+        await sleep(600);
+      }
+      await sleep(3500);
+      // 街の時間を止める。昼の光のまま撮れる（止めている間は時間帯も動かない）
+      await page.locator('[data-testid="speed"] [data-speed="pause"]').click();
+      await sleep(800);
+      if (before()) return;
+      await type(page, 'kubectl wait 5');
+      await sleep(1500);
+      await page.getByTestId('journey-close').click().catch(() => undefined);
+      await sleep(2000);
+    },
+  },
 };

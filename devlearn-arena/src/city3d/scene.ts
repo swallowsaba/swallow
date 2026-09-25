@@ -26,6 +26,7 @@ import type { CityLayout, LayoutBuilding, Vec2 } from './model';
 import { PATH_WIDTH } from './parks';
 import type { PropPath, PropPlacement } from './props';
 import type { RoadPath } from './roads';
+import { CAR_PARTS, carColor, carPartGeometry } from './vehicles';
 
 /**
  * 街の配置を three の形にする。
@@ -428,9 +429,9 @@ function buildings(layout: CityLayout, parts: Parts, options: SceneOptions): Win
       );
       windows.push({
         matrix: new Matrix4().multiplyMatrices(place, local),
-        // 住人のいる階は必ず灯る。ほかは seed で決めた一部だけ。
+        // 灯るのは住人が暮らしている階だけ。飾りで灯さない（灯りは「中で動いている」の印）。
         // 止まっている建物は 1 枚も灯らない（停電したビルは真っ暗になる）
-        lit: building.state !== 'broken' && (lively.has(slot.floor) || unit(building.params.seed, i) < 0.18),
+        lit: building.state !== 'broken' && lively.has(slot.floor),
       });
     });
   }
@@ -438,14 +439,15 @@ function buildings(layout: CityLayout, parts: Parts, options: SceneOptions): Win
 }
 
 /**
- * 住人がいて、暮らしている階。ここの窓が灯る。
- * 出ていった人と、倒れている人（不調）の部屋は暗いままにする。
+ * 住人が暮らしている階。ここの窓が灯る。
+ * 灯るのは中で動いている（Running の）住人の部屋だけ。入居の途中の人、出ていった人、
+ * 倒れている人（不調）の部屋は暗いままにする。窓の灯りは「動いている」の印なので
  */
 function litFloors(building: LayoutBuilding): Set<number> {
   const out = new Set<number>();
   if (building.state === 'broken') return out;
   for (const occupant of building.occupants) {
-    if (occupant.state === 'gone' || occupant.state === 'sick') continue;
+    if (occupant.state !== 'settled') continue;
     out.add(occupant.floor);
   }
   return out;
@@ -454,7 +456,7 @@ function litFloors(building: LayoutBuilding): Set<number> {
 /* ------------ 置くもの ------------ */
 
 /** 置くものの形。部品ごとに材質が違う */
-function propShapes(): Record<string, { surface: SurfaceName; geometry: BufferGeometry }[]> {
+function propShapes(): Record<string, { surface: SurfaceName; geometry: BufferGeometry; painted?: boolean }[]> {
   const tree = [
     { surface: 'wood' as const, geometry: box(0.45, 3.2, 0.45, 0, 1.6, 0) },
     // 葉は丸い塊を 3 つ重ねる
@@ -467,10 +469,8 @@ function propShapes(): Record<string, { surface: SurfaceName; geometry: BufferGe
     { surface: 'metal' as const, geometry: box(0.16, 0.16, 1.4, 0, 4.9, 0.7) },
     { surface: 'window' as const, geometry: box(0.5, 0.3, 0.9, 0, 4.7, 1.2) },
   ];
-  const car = [
-    { surface: 'car' as const, geometry: box(1.9, 0.8, 4.3, 0, 0.7, 0) },
-    { surface: 'carGlass' as const, geometry: box(1.7, 0.7, 2.1, 0, 1.4, -0.2) },
-  ];
+  // 車は部品を組んで作る（vehicles.ts）。車体と屋根は 1 台ずつ色を塗る
+  const car = CAR_PARTS.map((part) => ({ surface: part.surface, geometry: carPartGeometry(part), painted: part.painted }));
   const person = [
     { surface: 'person' as const, geometry: box(0.45, 1.1, 0.3, 0, 0.55, 0) },
     { surface: 'person' as const, geometry: blob(0.22, 0, 1.28, 0) },
@@ -591,6 +591,7 @@ export function buildCityScene(layout: CityLayout, options: SceneOptions = {}): 
   const up = new Vector3(0, 1, 0);
   const at = new Vector3();
   const size = new Vector3();
+  const paint = new Color();
 
   const byKind = new Map<string, PropPlacement[]>();
   for (const item of layout.props) {
@@ -617,8 +618,10 @@ export function buildCityScene(layout: CityLayout, options: SceneOptions = {}): 
           size.set(item.scale, item.scale, item.scale),
         );
         mesh.setMatrixAt(i, local);
+        if (piece.painted === true) mesh.setColorAt(i, paint.set(carColor(item.tint ?? i)));
       });
       mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true;
       group.add(mesh);
       if (moving) meshes.push(mesh);
     }

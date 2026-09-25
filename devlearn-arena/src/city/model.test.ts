@@ -148,6 +148,21 @@ describe('Kubernetes', () => {
     expect(gone.buildings.find((b) => b.id === 'node:n1')?.occupants).toEqual([]);
   });
 
+  it('消された住人は、次の街で 1 度だけビルから出ていく姿になり、その次には消えている（REWORK 7-3）', () => {
+    const base = emptyCluster([node('n1', 4000, 8192)]);
+    const withPod = buildCity({
+      cluster: { ...place(base, [pod('web', [container('c', 'nginx')])], 'n1'), tick: 9 },
+      unlocked: ALL,
+    });
+    const leaving = buildCity({ cluster: { ...base, tick: 9 }, unlocked: ALL, before: whereabouts(withPod) });
+    const out = leaving.buildings.find((b) => b.id === 'node:n1')?.occupants;
+    expect(out?.map((o) => [o.label, o.state])).toEqual([['web', 'gone']]);
+    // 出ていった住人は、居場所の記録に残さない。次の街ではもういない
+    expect(whereabouts(leaving).has('pod:default/web')).toBe(false);
+    const later = buildCity({ cluster: { ...base, tick: 10 }, unlocked: ALL, before: whereabouts(leaving) });
+    expect(later.buildings.find((b) => b.id === 'node:n1')?.occupants).toEqual([]);
+  });
+
   it('倒れ続ける住人は、倒れた姿になる', () => {
     let cluster = place(
       emptyCluster([node('n1', 4000, 8192)]),

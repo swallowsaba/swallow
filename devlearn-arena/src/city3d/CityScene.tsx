@@ -27,7 +27,7 @@ import {
   easeFocus,
   fitDistance,
   fogRange,
-  glowStrength,
+  windowGlow,
   openingView,
   lerpPoint,
   moveAlong,
@@ -44,6 +44,7 @@ import {
   CART_LIFT, cartAt, reachedStop, routeOf, routeSeconds, stepTo, type CartRoute, type JourneyPlay,
 } from './journey';
 import type { Answer, Journey } from '@/city/journey';
+import { paceAfter } from './traffic';
 
 /**
  * 街を WebGL で描く。データを受け取って描くだけ。
@@ -65,6 +66,11 @@ interface Props {
   animate?: boolean;
   /** 進む速さの倍率。早送りのときは 1 より大きい */
   rate?: number;
+  /**
+   * 模型の時間の目盛り（Kubernetes なら tick）。増えた直後だけ車と人が速く動く。
+   * 時間を進めたことを、街の動きで見せるため
+   */
+  rush?: number;
   /** 街の上に色で重ねる情報表示。null なら重ねない */
   view?: InfoView | null;
   /** 開いたときに寄せる区域。いま学んでいる所を見せる */
@@ -138,8 +144,8 @@ function Daylight({
       light.intensity = now.intensity;
     }
     if (sky.current !== null) sky.current.intensity = now.ambient;
-    // 夜は窓が灯る
-    glow.emissiveIntensity = glowStrength(at);
+    // 住人が暮らしている窓は灯る。夜はいっそう明るい
+    glow.emissiveIntensity = windowGlow(at);
     // 空と fog は夜に沈む
     tint.current.set(SKY.color).lerp(night.current, 1 - now.daylight);
     if (scene.background instanceof Color) scene.background.copy(tint.current);
@@ -172,12 +178,14 @@ function City({
   layout,
   animate,
   rate,
+  rush,
   time,
   onPick,
 }: {
   layout: CityLayout;
   animate: boolean;
   rate: number;
+  rush: number;
   time: number | undefined;
   onPick: (id: string) => void;
 }) {
@@ -195,12 +203,21 @@ function City({
   const at = useRef(new Vector3());
   const size = useRef(new Vector3());
 
-  useFrame((state) => {
+  // 車と人の時計。止めている間は進めない。止めた所から、また動き出す
+  const travelled = useRef(0);
+  // 模型の時間が進んだ時刻。その直後だけ速く動かす
+  const rushedAt = useRef<number | null>(null);
+  const lastRush = useRef(rush);
+  useFrame((state, delta) => {
+    if (rush > lastRush.current) rushedAt.current = state.clock.elapsedTime;
+    lastRush.current = rush;
     if (!animate) return;
+    const since = rushedAt.current === null ? null : state.clock.elapsedTime - rushedAt.current;
+    travelled.current += Math.min(delta, 0.1) * rate * paceAfter(since);
     // 車と人を進める。部品の位置は形に焼き込んであるので、どれも同じ行列で動く
     for (const mover of built.movers) {
       mover.items.forEach((item, i) => {
-        const spot = moveAlong(item.path, state.clock.elapsedTime * rate);
+        const spot = moveAlong(item.path, travelled.current);
         matrix.current.compose(
           at.current.set(spot.at.x, mover.lift, spot.at.z),
           spin.current.setFromAxisAngle(up.current, spot.angle),
@@ -818,7 +835,7 @@ function Spark({
 }
 
 export default function CityScene({
-  layout, onCommand, onSelect, onSite, selected = null, animate = true, rate = 1, view = null, district = null,
+  layout, onCommand, onSelect, onSite, selected = null, animate = true, rate = 1, rush = 0, view = null, district = null,
   showSites = true, time, journey = null, tour = null, trouble = null,
   journeyPlay = { playing: true, rate: 1, step: 0 }, onJourneyStop,
 }: Props) {
@@ -893,7 +910,7 @@ export default function CityScene({
           setFocus({ x: 0, z: 0 });
         }}
       >
-        <City layout={layout} animate={animate} rate={rate} time={time} onPick={pick} />
+        <City layout={layout} animate={animate} rate={rate} rush={rush} time={time} onPick={pick} />
         <Overlay layout={layout} view={view} />
         {showSites ? <Sites layout={layout} animate={animate} onPick={onSite} /> : null}
         {answered.length === 0 ? null : <Answered targets={answered} answer={journey?.answer ?? null} animate={animate} />}

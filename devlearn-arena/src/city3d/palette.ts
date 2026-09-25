@@ -55,6 +55,12 @@ export const PARTS = {
   carBody: '#b8bcc2',
   /** 車の窓 */
   carGlass: COLORS.glass,
+  /** 車のタイヤ */
+  tire: '#2b2d31',
+  /** 前照灯。光らせない（光は意味を運ぶので、飾りでは灯さない） */
+  headlight: '#e8e0c8',
+  /** 尾灯 */
+  taillight: '#8a3b34',
   /** 人 */
   person: '#d8cfc0',
   /** 暗い窓（灯っていない） */
@@ -66,6 +72,9 @@ export const PARTS = {
 } as const;
 
 export type PartName = keyof typeof PARTS;
+
+/** 車体の色。彩度を抑えた数色。街の意味の色（緑・黄・赤の光）とは混ざらない落ち着いた色にする */
+export const CAR_COLORS = ['#b8bcc2', '#7d8fa3', '#8c5a4e', '#5f7461', '#d9d4c7', '#3f4852'] as const;
 
 /** 材質の指定。`MeshStandardMaterial` にそのまま渡せる形にしてある */
 export interface Surface {
@@ -93,6 +102,11 @@ export const SURFACES = {
   metal: { color: PARTS.metal, roughness: 0.4, metalness: 0.6 },
   car: { color: PARTS.carBody, roughness: 0.35, metalness: 0.3 },
   carGlass: { color: PARTS.carGlass, roughness: 0.2, metalness: 0.2 },
+  /** 車体の塗装。色は 1 台ずつ CAR_COLORS から掛けるので、下地は白 */
+  carPaint: { color: '#ffffff', roughness: 0.35, metalness: 0.3 },
+  tire: { color: PARTS.tire, roughness: 0.9, metalness: 0 },
+  headlight: { color: PARTS.headlight, roughness: 0.3, metalness: 0.1 },
+  taillight: { color: PARTS.taillight, roughness: 0.4, metalness: 0.1 },
   person: { color: PARTS.person, roughness: 0.85, metalness: 0 },
   window: { color: PARTS.windowDark, roughness: 0.25, metalness: 0.15 },
   locked: { color: PARTS.locked, roughness: 1, metalness: 0 },

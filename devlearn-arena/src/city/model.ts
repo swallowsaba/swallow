@@ -1,5 +1,5 @@
 import { nodeCondition } from '@/engines/k8s/bootstrap';
-import type { ClusterState, Pod } from '@/engines/k8s/types';
+import { key, type ClusterState, type Pod } from '@/engines/k8s/types';
 import { parseCommit } from '@/engines/git/objects';
 import type { GitState } from '@/engines/git/types';
 import type { Repo } from '@/engines/github/types';
@@ -220,7 +220,8 @@ const DEFAULT_HOME = '/home/learner';
 export function whereabouts(city: City): Whereabouts {
   const map = new Map<string, string>();
   for (const b of city.buildings) {
-    for (const o of b.occupants) map.set(o.id, b.id);
+    // 出ていった住人は覚えない。出ていく姿は 1 度見せれば足りる
+    for (const o of b.occupants) if (o.state !== 'gone') map.set(o.id, b.id);
   }
   return map;
 }
@@ -738,6 +739,17 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
     };
     if (was !== undefined && was !== tower.id) occupant.from = was;
     tower.occupants.push(occupant);
+  }
+  // 消された住人。直前の街にいて、いまの台帳に無い住人は、元のビルから出ていく姿を 1 度だけ見せる。
+  // 消した瞬間に姿が消えると、何が起きたのかが街の上で分からないため
+  const byId = new Map([...towers.values()].map((t) => [t.id, t]));
+  for (const [id, where] of before ?? []) {
+    if (!id.startsWith('pod:')) continue;
+    const [namespace = '', name = ''] = id.slice('pod:'.length).split('/');
+    if (cluster.pods.has(key(namespace, name))) continue;
+    const tower = byId.get(where);
+    if (tower === undefined) continue;
+    tower.occupants.push({ id, label: name, state: 'gone', why: '出ていった住人。もう台帳には載っていない' });
   }
   for (const tower of towers.values()) tower.level = levelOf(tower.occupants.length);
 

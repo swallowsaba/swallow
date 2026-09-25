@@ -17,6 +17,8 @@ interface Props {
   onCommand?: ((line: string) => void) | undefined;
   /** 街の進み方。止める・そのまま・早送り */
   speed?: Speed;
+  /** 模型の時間の目盛り（Kubernetes の tick）。進めた直後だけ車と人が速く動く */
+  rush?: number;
   /** 街の上に色で重ねる情報表示 */
   view?: InfoView | null;
   /** 開いたときに寄せる区域。いま学んでいるカテゴリ */
@@ -43,7 +45,7 @@ interface Props {
  * 枠も見出しも付けない。街の上に置くものは全て HUD 側が重ねる。
  */
 export function CityStage({
-  city, label, selected, onSelect, onCommand, speed = 'normal', view = null, district = null,
+  city, label, selected, onSelect, onCommand, speed = 'normal', rush = 0, view = null, district = null,
   showSites = true, onSite, journey = null, tour = null, trouble = null, journeyPlay, onJourneyStop,
 }: Props) {
   const motion = useMotionEnabled();
@@ -64,6 +66,7 @@ export function CityStage({
         city={city}
         animate={motion && rate > 0}
         rate={rate}
+        rush={rush}
         view={view}
         district={district}
         showSites={showSites}

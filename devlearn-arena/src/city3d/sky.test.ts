@@ -15,6 +15,7 @@ import {
   fitDistance,
   fogRange,
   glowStrength,
+  windowGlow,
   lerpPoint,
   moveAlong,
   openingView,
@@ -52,6 +53,11 @@ describe('太陽と時間帯', () => {
   it('夜は窓が灯る。昼は灯らない', () => {
     expect(glowStrength(0)).toBeGreaterThan(1);
     expect(glowStrength(0.5)).toBe(0);
+  });
+
+  it('住人が暮らしている窓は、昼でも灯って見える（窓の灯りは「中で動いている」の印）', () => {
+    expect(windowGlow(0.5)).toBeGreaterThan(0.3);
+    expect(windowGlow(0)).toBe(glowStrength(0));
   });
 
   it('時間帯は 1 を超えても回り続ける', () => {
