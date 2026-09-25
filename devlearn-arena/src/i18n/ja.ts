@@ -456,6 +456,7 @@ export const ja = {
   'task.terms': 'この任務で出てくる言葉',
   'task.termsMore': 'ほかに {n} 語',
   'task.termsLess': '折り畳む',
+  'task.later': 'この先の手順（進むと見える）',
   'term.analogy': '街で言えば … {text}',
   'hud.task': '課題',
   'hud.stepCount': '{a} / {b}',

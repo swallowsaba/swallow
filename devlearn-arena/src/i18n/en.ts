@@ -459,6 +459,7 @@ export const en: Record<TKey, string> = {
   'task.terms': 'Words that appear in this mission',
   'task.termsMore': '{n} more',
   'task.termsLess': 'Fold',
+  'task.later': 'A later step (shown when you get there)',
   'term.analogy': 'In the town … {text}',
   'hud.task': 'Task',
   'hud.stepCount': '{a} / {b}',

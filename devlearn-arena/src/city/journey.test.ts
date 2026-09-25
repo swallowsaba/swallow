@@ -201,3 +201,28 @@ describe('旅の決まりごと', () => {
     expect(once?.id).not.toBe(twice?.id);
   });
 });
+
+describe('問い合わせの答えを、街の建物で指す（REWORK 5-5）', () => {
+  it('kubectl get nodes は、ビルを光らせて「これがノード。アプリを動かす建物」と添える', () => {
+    const journey = travel(arena(), 'kubectl get nodes');
+    expect(journey?.highlight).toEqual(['node:n1', 'node:n2']);
+    expect(journey?.answer).toEqual({ title: 'これがノード', plain: 'アプリを動かす建物' });
+  });
+
+  it('住人のいないビルを「Pod がいる」とは指さない', () => {
+    const shell = arena();
+    expect(travel(shell, 'kubectl get pods')?.highlight).toEqual([]);
+    expect(travel(shell, 'kubectl get pods')?.answer).toBeNull();
+    shell.run('kubectl run web --image=nginx');
+    shell.run('kubectl wait 10');
+    const journey = travel(shell, 'kubectl get pods');
+    expect(journey?.highlight).toHaveLength(1);
+    expect(journey?.answer?.title).toContain('Pod');
+  });
+
+  it('問い合わせでないコマンドは、何も指さない', () => {
+    const journey = travel(arena(), 'kubectl run web --image=nginx');
+    expect(journey?.highlight).toEqual([]);
+    expect(journey?.answer).toBeNull();
+  });
+});

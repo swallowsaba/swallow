@@ -223,7 +223,7 @@ const joinDrills = family<Lab>({
         summary: '他のコンピュータを kubeadm join でクラスタに入れる。',
         why:
           '仕事を任せるコンピュータを増やせば、それだけたくさんのアプリを動かせる。入れる手順を知っておくと、台数を増やすのが怖くなくなる。',
-        concepts: concepts('ノード', 'クラスタ', 'kubeadm'),
+        concepts: concepts('ノード', 'クラスタ', 'kubeadm', 'トークン'),
         commands: [
           { command: 'kubeadm token list', means: '参加するための合言葉（トークン）を見る' },
           { command: 'kubeadm join <司令塔>:6443 --token <合言葉> --node-name <名前>', means: 'そのコンピュータをクラスタに入れる' },

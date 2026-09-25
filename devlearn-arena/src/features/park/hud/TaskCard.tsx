@@ -1,8 +1,14 @@
+import { useMemo, useState } from 'react';
+import { missionTerms } from '@/content/glossary';
 import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { Icon } from '@/ui/Icon';
 import { commandLabel } from './stepLabel';
+import { TermText } from './TermText';
 import { HUD, SIZE } from './theme';
+
+/** 札の中に一度に並べる語の数。これを超えたぶんは折り畳む */
+const SHOWN_TERMS = 3;
 
 interface Props {
   mission: LessonDefinition;
@@ -30,11 +36,17 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
   const at = Math.min(progress.stepIndex + (progress.cleared ? 1 : 0), total);
   const step = progress.cleared ? undefined : mission.steps[progress.stepIndex];
   const hints = (step?.hints ?? []).slice(0, revealedHints);
+  // この任務で出てくる言葉。題・説明と、いまの手順までに出てきた語だけを拾う。
+  // 先の手順の語を先回りして並べると、まだ触っていない物の名前を覚えさせることになる
+  const reached = progress.cleared ? total - 1 : progress.stepIndex;
+  const words = useMemo(() => missionTerms(mission, reached), [mission, reached]);
+  const [allWords, setAllWords] = useState(false);
+  const shown = allWords ? words : words.slice(0, SHOWN_TERMS);
 
   return (
     <section
       data-testid="task-card"
-      className="absolute z-20 overflow-hidden rounded-lg"
+      className="absolute z-20 rounded-lg"
       style={{
         left: SIZE.dock + 16,
         top: SIZE.panelTop,
@@ -46,7 +58,7 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
       }}
     >
       <div
-        className="flex items-center gap-2 px-3 py-2.5"
+        className="flex items-center gap-2 overflow-hidden rounded-t-lg px-3 py-2.5"
         style={{
           background: 'linear-gradient(90deg, rgba(47,143,216,.25), rgba(47,143,216,0))',
           borderBottom: `1px solid ${HUD.line}`,
@@ -74,7 +86,7 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
             const here = !progress.cleared && i === progress.stepIndex;
             const command = commandLabel(s.solution);
             return (
-              <li key={`${String(i)}-${s.prompt}`} data-step={i} data-done={done ? 'true' : undefined} className="flex items-center gap-2 text-[13px]">
+              <li key={`${String(i)}-${s.prompt}`} data-step={i} data-done={done ? 'true' : undefined} className={`flex gap-2 text-[13px] ${here ? 'items-start' : 'items-center'}`}>
                 <span
                   aria-hidden
                   className="grid h-4 w-4 shrink-0 place-items-center rounded"
@@ -86,11 +98,15 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
                 >
                   {done ? <Icon name="check" size={11} strokeWidth={3} /> : null}
                 </span>
+                {/*
+                  先の手順は中身を伏せる。まだ出てきていない言葉を先に見せないため。
+                  いまの手順は折り返して全部見せ、用語にはその場で説明が浮かぶ
+                */}
                 <span
-                  className="min-w-0 flex-1 truncate"
+                  className={here ? 'min-w-0 flex-1' : 'min-w-0 flex-1 truncate'}
                   style={done ? { color: HUD.okDone, textDecoration: 'line-through' } : here ? undefined : { color: HUD.muted }}
                 >
-                  {s.prompt}
+                  {done || here ? <TermText text={s.prompt} tip={here} /> : t('task.later')}
                 </span>
                 {command === '' ? null : (
                   <span className="shrink-0 font-mono text-[12px]" style={{ color: HUD.dim }}>
@@ -101,6 +117,39 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
             );
           })}
         </ul>
+
+        {shown.length === 0 ? null : (
+          <div data-testid="task-terms" className="rounded-md p-2" style={{ background: HUD.fillSoft, border: `1px solid ${HUD.line}` }}>
+            <p className="text-[11px]" style={{ color: HUD.muted }}>
+              {t('task.terms')}
+            </p>
+            <dl className="mt-1 flex flex-col gap-1">
+              {shown.map((word) => (
+                <div key={word.term} data-word={word.term} className="text-[12px] leading-snug">
+                  <dt className="inline font-bold" style={{ color: HUD.text }}>
+                    <TermText text={word.term} />
+                  </dt>
+                  <dd className="inline" style={{ color: HUD.soft }}>
+                    {` … ${word.plain}`}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            {words.length <= SHOWN_TERMS ? null : (
+              <button
+                type="button"
+                data-testid="task-terms-more"
+                onClick={() => {
+                  setAllWords((was) => !was);
+                }}
+                className="mt-1 text-[11px]"
+                style={{ color: HUD.accentText }}
+              >
+                {allWords ? t('task.termsLess') : t('task.termsMore', { n: words.length - SHOWN_TERMS })}
+              </button>
+            )}
+          </div>
+        )}
 
         {diagnosis === null ? null : (
           <p data-testid="task-diagnosis" className="text-[12px] leading-relaxed" style={{ color: HUD.warn }}>
@@ -120,7 +169,7 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
       </div>
 
       <div
-        className="flex items-center gap-2 px-3 py-2"
+        className="flex items-center gap-2 rounded-b-lg px-3 py-2"
         style={{ borderTop: `1px solid ${HUD.line}`, background: HUD.fillSoft }}
       >
         <span className="text-[12px]" style={{ color: HUD.muted }}>

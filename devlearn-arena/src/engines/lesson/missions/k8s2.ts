@@ -359,7 +359,7 @@ export const k8sStatefulSet: LessonDefinition = {
     summary: '名前と順番が決まった Pod を、StatefulSet で動かす。',
     why:
       'データベースのように「どれが1番目か」に意味があるものは、名前が毎回変わると困る。番号付きの名前で、順に起動する仕組みを使う。',
-    concepts: concepts('StatefulSet', 'Pod', 'Ready', 'マニフェスト'),
+    concepts: concepts('StatefulSet', 'Pod', 'Ready', 'マニフェスト', 'データベース'),
     commands: [
       { command: 'kubectl apply -f sts.yaml', means: 'StatefulSet を渡す' },
       { command: 'kubectl get pods', means: 'db-0, db-1 … と順に増えるのを見る' },

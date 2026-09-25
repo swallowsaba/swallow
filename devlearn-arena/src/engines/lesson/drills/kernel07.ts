@@ -61,7 +61,7 @@ const findDrills = family<Culprit>({
       summary: 'ps や top で、CPU を一番使っているプロセスを見つける。',
       why:
         '「サーバが重い」と言われたら、まず誰が力を使っているかを見る。当て推量で再起動する前に、犯人を名指しできるようにする。',
-      concepts: concepts('プロセス', 'PID'),
+      concepts: concepts('プロセス', 'PID', 'CPU'),
       commands: [
         { command: 'top', means: '動いているプロセスを、使っている量の順に見る' },
         { command: 'ps aux', means: 'すべてのプロセスを一覧で見る' },

@@ -58,7 +58,7 @@ const cutDrills = family<CutSpec>({
         summary: 'cut で、区切り文字で分かれた表から、欲しい列だけを取り出す。',
         why:
           'CSV や設定の一覧は「,」や「:」で区切った表になっている。必要な列だけ抜ければ、あとは数えるのも並べるのも簡単。',
-        concepts: concepts('オプション', 'パイプ'),
+        concepts: concepts('オプション', 'パイプ', 'CSV'),
         commands: [
           { command: 'cut -d "," -f 2 <ファイル>', means: '「,」で区切って2番目の列だけ出す' },
         ],
@@ -234,7 +234,7 @@ const replaceDrills = family<ReplaceSpec>({
         summary: 'sed で、ファイルの中の文字をまとめて書き換える。',
         why:
           'ホスト名やポート番号を変えるたびにエディタで1か所ずつ直すと、直し漏れが出る。sed なら全部を一度に、同じように直せる。',
-        concepts: concepts('正規表現', 'オプション', 'クォート', 'ポート'),
+        concepts: concepts('正規表現', 'オプション', 'クォート', 'ポート', 'ホスト'),
         commands: [
           { command: 'sed "s/古い/新しい/g" <ファイル>', means: '古い文字を新しい文字にした結果を出す（g は行の中の全部）' },
           { command: 'sed -i "s/古い/新しい/g" <ファイル>', means: 'ファイルそのものを書き換える' },

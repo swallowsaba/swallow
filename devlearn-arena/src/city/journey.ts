@@ -60,6 +60,8 @@ export interface Journey {
    * あたる建物をその場で光らせる。「いま読み上げたのはこれのこと」を示すため。
    */
   highlight: readonly string[];
+  /** 光らせた建物に添える札（「これがノード。アプリを動かす建物」）。無ければ null */
+  answer: Answer | null;
 }
 
 /** 旅を導く元になる、街の裏側の状態。コマンドの前と後で見比べる */
@@ -438,24 +440,60 @@ function placeOf(
   return undefined;
 }
 
+/** 問い合わせの答えにあたる建物に添える札。「これが何か」を平易な言葉で言う */
+export interface Answer {
+  /** 「これがノード」のような一言 */
+  title: string;
+  /** それが何のためにあるか */
+  plain: string;
+}
+
 /**
  * 問い合わせが「何について」答えたのか。`kubectl get nodes` ならビル。
- * 街に建っている物のうち、答えの中身にあたる種類を返す。
+ * 街に建っている物のうち、答えの中身にあたる種類と、そこに添える札を返す。
  */
-const ASKED_ABOUT: Readonly<Record<string, BuildingKind>> = {
-  node: 'tower', nodes: 'tower', no: 'tower',
-  pod: 'tower', pods: 'tower', po: 'tower',
-  deploy: 'office', deployment: 'office', deployments: 'office',
-  svc: 'stop', service: 'stop', services: 'stop',
-};
+const ASKED_ABOUT: Readonly<Record<string, { kind: BuildingKind; answer: Answer; lived?: boolean }>> = (() => {
+  const node = { kind: 'tower' as const, answer: { title: 'これがノード', plain: 'アプリを動かす建物' } };
+  const pod = {
+    kind: 'tower' as const,
+    answer: { title: 'Pod はこの中にいる', plain: 'アプリを入れた住人が暮らす建物' },
+    lived: true,
+  };
+  const deploy = { kind: 'office' as const, answer: { title: 'これが Deployment', plain: '「何人そろえるか」の注文を預かる事務所' } };
+  const svc = { kind: 'stop' as const, answer: { title: 'これが Service', plain: '住人が入れ替わっても名前の変わらないバス停' } };
+  return {
+    node, nodes: node, no: node,
+    pod, pods: pod, po: pod,
+    deploy, deployment: deploy, deployments: deploy,
+    svc, service: svc, services: svc,
+  };
+})();
 
-/** 読み上げた答えにあたる建物。問い合わせでなければ空 */
+/** 問い合わせなら、その答えの種類。問い合わせでなければ undefined */
+function askedAbout(words: readonly string[]) {
+  if (words[0] !== 'kubectl') return undefined;
+  if (words[1] !== 'get' && words[1] !== 'describe') return undefined;
+  return ASKED_ABOUT[(words[2] ?? '').toLowerCase()];
+}
+
+/**
+ * 読み上げた答えにあたる建物。問い合わせでなければ空。
+ * Pod を尋ねたときは、住人のいるビルだけ（空のビルを「ここにいる」と指さない）。
+ */
 export function highlightOf(words: readonly string[], buildings: readonly Building[]): string[] {
-  if (words[0] !== 'kubectl') return [];
-  if (words[1] !== 'get' && words[1] !== 'describe') return [];
-  const kind = ASKED_ABOUT[(words[2] ?? '').toLowerCase()];
-  if (kind === undefined) return [];
-  return buildings.filter((b) => b.kind === kind && b.phase === 'done').map((b) => b.id);
+  const asked = askedAbout(words);
+  if (asked === undefined) return [];
+  return buildings
+    .filter((b) => b.kind === asked.kind && b.phase === 'done')
+    .filter((b) => asked.lived !== true || b.occupants.length > 0)
+    .map((b) => b.id);
+}
+
+/** 読み上げた答えに添える札。光らせる建物が無ければ null */
+export function answerOf(words: readonly string[], buildings: readonly Building[]): Answer | null {
+  const asked = askedAbout(words);
+  if (asked === undefined || highlightOf(words, buildings).length === 0) return null;
+  return asked.answer;
 }
 
 /** その旅が、どの仕組みの帯に並ぶか。停留所になった建物の種類から決める */
@@ -543,5 +581,6 @@ export function journeyOf(input: {
     stops,
     lanes,
     highlight: highlightOf(words, input.city.buildings),
+    answer: answerOf(words, input.city.buildings),
   };
 }

@@ -53,10 +53,12 @@ export const k8sFirstPod: LessonDefinition = {
   id: 'k8s/01/first-kubectl',
   track: 'k8s',
   kind: 'training',
-  title: '空のクラスタに Pod を作る',
+  // 題と説明は、札を開いた瞬間に読まれる。ここではまだ Pod という語を出さない（REWORK 5-5）。
+  // 最初に伝えるのは「Kubernetes とは何か」と「この街はその模型だ」ということ
+  title: 'Kubernetes の街を知る',
   intro: {
     summary:
-      '何も動いていないクラスタに、Pod を1つ手で作って消す。次に Deployment に頼んで作って消す。消したあとに戻ってくるかどうかの違いを見る。',
+      'Kubernetes は、何台ものコンピュータをまとめて、頼まれたアプリを動かし続ける仕組み。この街はその模型で、ビル 1 棟がコンピュータ 1 台にあたる。',
     why:
       'Kubernetes を使う理由は「決めた数だけ動かし続けてくれる」ことにある。Pod を直接作ると、消えたらそれっきり。Deployment に頼むと、消えても作り直してくれる。この違いを自分の手で確かめると、なぜ現場では Pod を直接作らずに Deployment を使うのかが分かる。',
     concepts: concepts(
@@ -91,17 +93,18 @@ export const k8sFirstPod: LessonDefinition = {
   },
   steps: [
     {
-      prompt: 'クラスタに何があるか見よう。ノード（コンピュータ）の一覧を出し、Pod がまだ 1 つも無いことを確かめよ。',
-      check: 'kubectl get nodes を打ったこと（Pod はまだ 0 個のまま）',
+      // 最初の手順は見るだけにする（REWORK 5-5）。まだ何も作らせない。
+      // ここで出す語はノードひとつ。住人の話は、実際に住人を入れる次の手順から始める
+      prompt: 'まずこの街に何があるか見よう。アプリを動かすコンピュータ（ノード）の一覧を出せ。',
+      check: 'kubectl get nodes を打ったこと',
       hints: [
-        'ノードの一覧は kubectl get nodes、Pod の一覧は kubectl get pods で見られる',
+        '一覧を出すコマンドは kubectl get で始まる。その後ろに「何の一覧か」を書く',
         'kubectl get nodes',
       ],
       solution: ['kubectl get nodes'],
-      assert: ({ shell, history }) =>
-        shell.cluster !== null && shell.cluster.pods.size === 0 && ran(history, 'kubectl', 'get', NODE),
+      assert: ({ history }) => ran(history, 'kubectl', 'get', NODE),
       explain:
-        'ノードが 2 台あり、どちらも Ready（Pod を受け入れられる）になっている。けれど Pod はまだ 1 つも無い。コンピュータはあるが、何も動いていない状態。',
+        'ノードが 2 台あり、どちらも Ready（受け入れられる状態）と出ている。街ではこれが高層ビル 2 棟にあたる。いま街を見ると、その 2 棟の窓は暗い。建物はあるが、まだ誰も住んでいない。',
     },
     {
       prompt: 'nginx（Web サーバ）のイメージから、web という名前の Pod を 1 つ作れ。',

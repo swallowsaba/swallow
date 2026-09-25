@@ -28,6 +28,7 @@ const JOURNEY: Journey = {
     { index: 2, title: '旗', stop: 2 },
   ],
   highlight: [],
+  answer: null,
 };
 
 const BUILDINGS = [

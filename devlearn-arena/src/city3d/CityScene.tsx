@@ -43,7 +43,7 @@ import { overlayFor, type InfoView } from './overlay';
 import {
   CART_LIFT, cartAt, reachedStop, routeOf, routeSeconds, stepTo, type CartRoute, type JourneyPlay,
 } from './journey';
-import type { Journey } from '@/city/journey';
+import type { Answer, Journey } from '@/city/journey';
 
 /**
  * 街を WebGL で描く。データを受け取って描くだけ。
@@ -421,7 +421,15 @@ function Marker({ target, animate }: { target: PickTarget; animate: boolean }) {
  * それでも「いま読み上げたのはこれのこと」が分かるよう、答えの中身にあたる建物を
  * 青い輪で囲む。粒をそこまで走らせると、行っていない道を通ったことになるのでしない。
  */
-function Answered({ targets, animate }: { targets: readonly PickTarget[]; animate: boolean }) {
+function Answered({
+  targets,
+  answer,
+  animate,
+}: {
+  targets: readonly PickTarget[];
+  answer: Answer | null;
+  animate: boolean;
+}) {
   const group = useRef<Group>(null);
   useFrame((state) => {
     const here = group.current;
@@ -440,15 +448,32 @@ function Answered({ targets, animate }: { targets: readonly PickTarget[]; animat
       {targets.map((target) => {
         const radius = Math.max(target.size.w, target.size.d) * 0.72;
         return (
-          <mesh
-            key={target.id}
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[target.at.x, 0.62, target.at.z]}
-            userData={{ base: 0.7 }}
-          >
-            <ringGeometry args={[radius, radius + 1.8, 40]} />
-            <meshBasicMaterial color={MARK.ring} transparent depthWrite={false} />
-          </mesh>
+          <group key={target.id} position={[target.at.x, 0, target.at.z]}>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.62, 0]} userData={{ base: 0.7 }}>
+              <ringGeometry args={[radius, radius + 1.8, 40]} />
+              <meshBasicMaterial color={MARK.ring} transparent depthWrite={false} />
+            </mesh>
+            {/* 「これが何か」の札。答えの中身が、街のどの建物のことかを言葉でも示す */}
+            {answer === null ? null : (
+              <Html position={[0, target.size.h + 3, 0]} center distanceFactor={120} zIndexRange={[30, 0]}>
+                <div
+                  data-testid="city-3d-answer"
+                  style={{
+                    whiteSpace: 'nowrap',
+                    padding: '5px 10px',
+                    borderRadius: 5,
+                    background: MARK.plate,
+                    border: `1px solid ${MARK.plateEdge}`,
+                    color: MARK.plateText,
+                    fontSize: 13,
+                  }}
+                >
+                  <span style={{ fontWeight: 700 }}>{`${answer.title}（${target.label}）`}</span>
+                  <span style={{ display: 'block', color: MARK.plateSub }}>{answer.plain}</span>
+                </div>
+              </Html>
+            )}
+          </group>
         );
       })}
     </group>
@@ -871,7 +896,7 @@ export default function CityScene({
         <City layout={layout} animate={animate} rate={rate} time={time} onPick={pick} />
         <Overlay layout={layout} view={view} />
         {showSites ? <Sites layout={layout} animate={animate} onPick={onSite} /> : null}
-        {answered.length === 0 ? null : <Answered targets={answered} animate={animate} />}
+        {answered.length === 0 ? null : <Answered targets={answered} answer={journey?.answer ?? null} animate={animate} />}
         {hurt.length === 0 ? null : <Trouble targets={hurt} animate={animate} />}
         {cuts.length === 0 ? null : <Barricades cuts={cuts} animate={animate} />}
         {marked === null ? null : <Marker target={marked} animate={animate} />}
