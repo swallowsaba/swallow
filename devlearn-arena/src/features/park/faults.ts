@@ -1,5 +1,7 @@
 import type { ClusterState } from '@/engines/k8s/types';
+import { linkUsable } from '@/engines/net/build';
 import type { Topology } from '@/engines/net/types';
+import { missionById } from '@/engines/lesson/registry';
 
 /**
  * 壊して直す（REWORK 4）。
@@ -29,6 +31,22 @@ export interface Fault {
   where: string | null;
   /** いま起こせないときの理由。起こせるなら null */
   blocked: string | null;
+  /** 同じ障害を扱う任務（ボス）。腰を据えて挑みたくなったらここへ移れる */
+  mission: { id: string; title: string } | null;
+}
+
+/** 障害と、それを扱う任務の対応。街で起こせるものは、任務としても遊べる */
+const MISSION_OF: Record<FaultId, string> = {
+  'node-down': 'k8s/12/boss-node-down',
+  'bad-image': 'k8s/09/boss-crashloop',
+  'wrong-selector': 'k8s/07/boss-service-no-endpoint',
+  'link-down': 'net/14/boss-final',
+};
+
+/** その障害を扱う任務。実装されていなければ null */
+function missionFor(id: FaultId): { id: string; title: string } | null {
+  const found = missionById(MISSION_OF[id]);
+  return found === undefined ? null : { id: found.id, title: found.title };
 }
 
 /** 壊れた荷物を配るときに使う住人の名。存在しないイメージを指す */
@@ -51,6 +69,7 @@ function nodeDown(cluster: ClusterState | null): Fault {
   const name = node?.[0] ?? '';
   return {
     id: 'node-down',
+    mission: missionFor('node-down'),
     title: 'ビルを停電させる',
     lead: 'ビルの管理人（kubelet）が止まる。窓の灯りが消え、そこの住人は動かなくなる',
     command: `kubectl node-down ${name}`,
@@ -66,6 +85,7 @@ function badImage(cluster: ClusterState | null): Fault {
   const here = cluster?.pods.get(`default/${BROKEN_POD}`);
   return {
     id: 'bad-image',
+    mission: missionFor('bad-image'),
     title: '壊れた荷物を配る',
     lead: '中身の無い荷物（取れないイメージ）を持った住人が来る。何度やり直しても入居できない',
     command: `kubectl run ${BROKEN_POD} --image=does-not-exist`,
@@ -89,6 +109,7 @@ function wrongSelector(cluster: ClusterState | null): Fault {
   const [tag, value] = label ?? ['app', name];
   return {
     id: 'wrong-selector',
+    mission: missionFor('wrong-selector'),
     title: 'バス停の行き先を間違える',
     lead: 'バス停が、どの住人にも当たらない札を探し始める。路線が伸びる先が無くなる',
     command: `kubectl set selector svc ${name} ${tag}=nowhere`,
@@ -102,11 +123,13 @@ function wrongSelector(cluster: ClusterState | null): Fault {
 /** 道路を塞ぐ。機器の口を 1 つ落とす */
 function linkDown(net: Topology | null): Fault {
   const links = net?.links ?? [];
-  const down = links.find((link) => !link.up);
+  // 口が落ちていれば、ケーブルが繋がっていても通れない。通れるかどうかで見る
+  const down = net === null ? undefined : links.find((link) => !linkUsable(net, link));
   const target = down ?? links[0];
   const { device, port } = target === undefined ? { device: '', port: '' } : ends(target);
   return {
     id: 'link-down',
+    mission: missionFor('link-down'),
     title: '道路を塞ぐ',
     lead: 'ケーブルを 1 本抜く。その道は通れなくなり、向こう側へ荷物が届かなくなる',
     command: `ip link set ${port} down`,

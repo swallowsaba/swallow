@@ -87,6 +87,21 @@ function endpointsOf(link: Link): Endpoint[] {
   return [parseEndpoint(link.a), parseEndpoint(link.b)].filter((e): e is Endpoint => e !== null);
 }
 
+/**
+ * そのケーブルを荷物が通れるか。
+ *
+ * ケーブル自体が繋がっていても、どちらかの差し込み口が落ちていれば通れない
+ * （`ip link set eth0 down` はケーブルではなく口を落とす）。
+ * 荷物を運ぶ側（`stack.ts`）と同じ見方をここに 1 つだけ置く。
+ */
+export function linkUsable(topology: Topology, link: Link): boolean {
+  if (!link.up) return false;
+  return endpointsOf(link).every((end) => {
+    const device = topology.devices.get(end.device);
+    return device?.interfaces.find((i) => i.name === end.ifname)?.up === true;
+  });
+}
+
 /** ケーブルを繋ぐ。まだ無い口は作る */
 export function addLink(topology: Topology, rawA: string, rawB: string, mtu = DEFAULT_MTU): BuildResult {
   const a = parseEndpoint(rawA);

@@ -52,6 +52,14 @@ export interface Journey {
   command: string;
   stops: readonly JourneyStop[];
   lanes: readonly JourneyLane[];
+  /**
+   * 台帳が「これについて答えた」建物の id。
+   *
+   * 問い合わせ（`kubectl get nodes`）は窓口と台帳までしか行かない。実際そこから先へは
+   * 誰も出向かないので、粒をビルまで走らせるのは嘘になる。代わりに、答えの中身に
+   * あたる建物をその場で光らせる。「いま読み上げたのはこれのこと」を示すため。
+   */
+  highlight: readonly string[];
 }
 
 /** 旅を導く元になる、街の裏側の状態。コマンドの前と後で見比べる */
@@ -430,6 +438,26 @@ function placeOf(
   return undefined;
 }
 
+/**
+ * 問い合わせが「何について」答えたのか。`kubectl get nodes` ならビル。
+ * 街に建っている物のうち、答えの中身にあたる種類を返す。
+ */
+const ASKED_ABOUT: Readonly<Record<string, BuildingKind>> = {
+  node: 'tower', nodes: 'tower', no: 'tower',
+  pod: 'tower', pods: 'tower', po: 'tower',
+  deploy: 'office', deployment: 'office', deployments: 'office',
+  svc: 'stop', service: 'stop', services: 'stop',
+};
+
+/** 読み上げた答えにあたる建物。問い合わせでなければ空 */
+export function highlightOf(words: readonly string[], buildings: readonly Building[]): string[] {
+  if (words[0] !== 'kubectl') return [];
+  if (words[1] !== 'get' && words[1] !== 'describe') return [];
+  const kind = ASKED_ABOUT[(words[2] ?? '').toLowerCase()];
+  if (kind === undefined) return [];
+  return buildings.filter((b) => b.kind === kind && b.phase === 'done').map((b) => b.id);
+}
+
 /** その旅が、どの仕組みの帯に並ぶか。停留所になった建物の種類から決める */
 function lanesFor(kinds: ReadonlySet<BuildingKind>): readonly LaneSpec[] {
   const has = (list: readonly LaneSpec[]): boolean => list.some((lane) => kinds.has(lane.kind));
@@ -509,5 +537,11 @@ export function journeyOf(input: {
   }));
 
   const command = words.join(' ');
-  return { id: `${String(input.serial ?? 0)}:${command}`, command, stops, lanes };
+  return {
+    id: `${String(input.serial ?? 0)}:${command}`,
+    command,
+    stops,
+    lanes,
+    highlight: highlightOf(words, input.city.buildings),
+  };
 }

@@ -28,6 +28,9 @@ export async function dismissOnboarding(page) {
   await dialog.waitFor({ state: 'detached', timeout: 5000 });
 }
 
+/** ネットワークの街。道（ケーブル）を塞ぐ場面で使う */
+const NET_HOP = '/world/net?mission=net/05/ttl-hop';
+
 export const SCENES = {
   '01-start': {
     path: K8S_FIRST,
@@ -116,6 +119,112 @@ export const SCENES = {
       await page.getByTestId('journey-close').click();
       await page.getByTestId('fault-tell').click();
       await sleep(1500);
+    },
+  },
+
+  /**
+   * 倒れた住人。取れない荷物（イメージ）を持った住人が入居できず、
+   * ビルの前に伏せ、担架が運び出していく所を近くから撮る
+   */
+  '08-fallen': {
+    path: K8S_FIRST,
+    wait: 5000,
+    // 住人は 1 メートルほどしかない。ビルの足元だけを切り取って、大きく見る
+    clip: { x: 620, y: 330, width: 600, height: 380 },
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await type(page, 'kubectl run broken --image=does-not-exist');
+      await sleep(800);
+      await type(page, 'kubectl wait 40');
+      await sleep(1500);
+      await page.getByTestId('journey-close').click().catch(() => undefined);
+      // 壊れた荷物は障害として見つかり、カメラがそのビルへ寄る。寄り終わるのを待つ
+      await sleep(4000);
+    },
+  },
+
+  /** 用語にマウスを乗せた所。言い換え・街での例え・小さな図解が浮かぶ */
+  '10-term': {
+    path: K8S_FIRST,
+    wait: 5000,
+    // 札の中だけを切り取る。浮かぶ説明の字が読める大きさで見る
+    clip: { x: 452, y: 60, width: 620, height: 640 },
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await page.getByTestId('task-terms').locator('[data-term]').first().hover();
+      await sleep(1200);
+    },
+  },
+
+  /**
+   * 問い合わせの答え。`kubectl get nodes` は窓口と台帳までしか行かないが、
+   * 読み上げた答えにあたるビルがその場で光る
+   */
+  '09-answer': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await type(page, 'kubectl get nodes');
+      await sleep(3000);
+    },
+  },
+
+  /** 道路を塞いだ状態。ケーブルを抜いた道が断たれ、その先へ車が進めない */
+  '07-blocked': {
+    path: NET_HOP,
+    wait: 5000,
+    // 断たれた道は 7 メートルしかない。原因の周りだけを切り取って、大きく見る
+    clip: { x: 760, y: 200, width: 620, height: 400 },
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await page.getByTestId('fault-open').click();
+      await page.locator('[data-fault="link-down"]').click();
+      await sleep(3000);
+      await page.getByTestId('journey-close').click().catch(() => undefined);
+      await sleep(3000);
+    },
+  },
+
+  /**
+   * バス停の行き先を間違えた所。バス停（Service）から住人のビルへ伸びていた路線が消え、
+   * バス停に赤い光が立つ。`SHOOT_BEFORE=1` で、間違える前（路線がある姿）を撮る
+   */
+  '11-selector': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await type(page, 'kubectl create deployment web --image=nginx');
+      await sleep(600);
+      await type(page, 'kubectl expose deployment web --port=80');
+      await sleep(600);
+      await type(page, 'kubectl wait 10');
+      await sleep(800);
+      await page.getByTestId('journey-close').click().catch(() => undefined);
+      // バス路線だけを浮かせて見る。バス停からどのビルへ路線が伸びているかが分かる
+      await page.locator('[data-view="bus"]').click();
+      if (process.env.SHOOT_BEFORE !== undefined) {
+        await sleep(3000);
+        return;
+      }
+      await page.getByTestId('fault-open').click();
+      await page.locator('[data-fault="wrong-selector"]').click();
+      await sleep(800);
+      await type(page, 'kubectl wait 4');
+      await sleep(800);
+      await page.getByTestId('journey-close').click().catch(() => undefined);
+      await sleep(4000);
     },
   },
 

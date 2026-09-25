@@ -26,8 +26,10 @@ export interface RoadPath {
   width: number;
   /** 輪になっているか（海沿いの環状路や区域を囲む道） */
   closed: boolean;
-  /** 通れるか。ネットワークのリンクが落ちると通れなくなる */
+  /** いまこの道を何かが通っているか */
   active: boolean;
+  /** 塞がっているか。ケーブルが抜けた道のように、通ろうとしても通れない所 */
+  blocked: boolean;
 }
 
 export interface Roundabout {
@@ -66,7 +68,7 @@ export interface RoadInput {
   terrain: Terrain;
   seed: number;
   /** 建物どうしを結ぶ道（ネットワークのリンクやバス路線） */
-  links?: readonly { id: string; from: Vec2; to: Vec2; active: boolean }[];
+  links?: readonly { id: string; from: Vec2; to: Vec2; active: boolean; blocked: boolean }[];
 }
 
 export const ROAD_WIDTH: Record<RoadClass, number> = {
@@ -347,7 +349,7 @@ export function buildRoads(input: RoadInput): RoadNetwork {
   const roads: RoadPath[] = [];
 
   // 海沿いの環状路。島をぐるりと回る。輪なので端が無い
-  roads.push({ id: 'road:coast', kind: 'boulevard', points: loop, width: ROAD_WIDTH.boulevard, closed: true, active: true });
+  roads.push({ id: 'road:coast', kind: 'boulevard', points: loop, width: ROAD_WIDTH.boulevard, closed: true, active: true, blocked: false });
 
   // 南北と東西の大通り。端は海沿いの環状路に着く
   const half = { w: size.w / 2, d: size.d / 2 };
@@ -360,14 +362,14 @@ export function buildRoads(input: RoadInput): RoadNetwork {
   for (const [id, from, to] of avenues) {
     const points = spanLine(from, to, loop);
     if (points.length >= 2) {
-      roads.push({ id, kind: 'boulevard', points, width: ROAD_WIDTH.boulevard, closed: false, active: true });
+      roads.push({ id, kind: 'boulevard', points, width: ROAD_WIDTH.boulevard, closed: false, active: true, blocked: false });
     }
   }
 
   // 弧を描く大通り。格子だけの街にしない
   const arc = arcBoulevard(size, loop, seed);
   if (arc.length >= 2) {
-    roads.push({ id: 'road:arc', kind: 'boulevard', points: arc, width: ROAD_WIDTH.boulevard, closed: false, active: true });
+    roads.push({ id: 'road:arc', kind: 'boulevard', points: arc, width: ROAD_WIDTH.boulevard, closed: false, active: true, blocked: false });
   }
 
   // 解放された区域を囲む道
@@ -380,6 +382,7 @@ export function buildRoads(input: RoadInput): RoadNetwork {
       width: ROAD_WIDTH.street,
       closed: true,
       active: true,
+      blocked: false,
     });
   }
 
@@ -392,6 +395,7 @@ export function buildRoads(input: RoadInput): RoadNetwork {
       width: ROAD_WIDTH.lane,
       closed: false,
       active: link.active,
+      blocked: link.blocked,
     });
   }
 

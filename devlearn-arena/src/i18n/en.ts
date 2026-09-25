@@ -55,6 +55,7 @@ export const en: Record<TKey, string> = {
   'fault.tell': 'Show me how to fix it',
   'fault.already': 'Happening now',
   'fault.healed': 'Fixed. The town is back to normal',
+  'fault.asMission': 'Take this failure on as a mission: {title}',
   'journey.pause': 'Pause',
   'journey.play': 'Resume',
   'journey.step': 'Step one stop',
@@ -455,6 +456,10 @@ export const en: Record<TKey, string> = {
   'park.withRepeats': 'Include practice repeats (same task, different values)',
 
   'hud.terminal': 'Terminal',
+  'task.terms': 'Words that appear in this mission',
+  'task.termsMore': '{n} more',
+  'task.termsLess': 'Fold',
+  'term.analogy': 'In the town … {text}',
   'hud.task': 'Task',
   'hud.stepCount': '{a} / {b}',
   'hud.reward': 'Reward',

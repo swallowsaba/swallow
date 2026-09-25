@@ -15,7 +15,7 @@ import { k8sFirstYaml } from './k8sFirst';
 import {
   k8sApply, k8sConfig, k8sJobs, k8sPvcPending, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
 } from './k8s2';
-import { k8sCrashLoop, k8sDrain, k8sHpa, k8sNoLimits, k8sRbacDenied } from './k8s3';
+import { k8sCrashLoop, k8sDrain, k8sHpa, k8sNodeDownBoss, k8sNoLimits, k8sRbacDenied } from './k8s3';
 import { diskFullBoss, shellWarmup } from './kernel';
 import { netFirstHop, netUnreachableBoss } from './net';
 import {
@@ -57,6 +57,7 @@ export const missions: readonly LessonDefinition[] = [
   k8sRbacDenied,
   k8sHpa,
   k8sDrain,
+  k8sNodeDownBoss,
   k8sNoLimits,
   netLayers,
   netArp,
@@ -100,7 +101,7 @@ export { k8sFirstYaml } from './k8sFirst';
 export {
   k8sApply, k8sConfig, k8sJobs, k8sPvcPending, k8sStatefulSet, k8sStuckPending, k8sUnschedulable,
 } from './k8s2';
-export { k8sCrashLoop, k8sDrain, k8sHpa, k8sNoLimits, k8sRbacDenied } from './k8s3';
+export { k8sCrashLoop, k8sDrain, k8sHpa, k8sNodeDownBoss, k8sNoLimits, k8sRbacDenied } from './k8s3';
 export { diskFullBoss, shellWarmup } from './kernel';
 export { netFirstHop, netUnreachableBoss } from './net';
 export {

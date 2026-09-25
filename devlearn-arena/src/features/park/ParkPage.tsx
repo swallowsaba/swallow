@@ -600,6 +600,7 @@ function Arena({
         journeyPlay={play}
         onJourneyStop={setPlayAt}
         tour={tourStop}
+        trouble={troubles[0]?.where ?? null}
       />
 
       <TopBar
@@ -684,6 +685,7 @@ function Arena({
           terminalRef.current?.submit(line);
           terminalRef.current?.focus();
         }}
+        onMission={onSwitch}
       />
 
       <InfoViews view={infoView} onView={setInfoView} />

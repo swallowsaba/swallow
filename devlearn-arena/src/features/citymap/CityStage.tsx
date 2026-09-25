@@ -29,6 +29,8 @@ interface Props {
   journey?: Journey | null;
   /** 案内ツアーでいま停まっている施設の id。カメラが寄り、その施設が光る */
   tour?: string | null;
+  /** いま止まっている所の id。赤い光が立ち、カメラもそこへ寄る */
+  trouble?: string | null;
   /** 旅の進み方。止める・速さ・1 段ずつ */
   journeyPlay?: JourneyPlay;
   /** 光の粒が次の停留所に着いたとき */
@@ -42,7 +44,7 @@ interface Props {
  */
 export function CityStage({
   city, label, selected, onSelect, onCommand, speed = 'normal', view = null, district = null,
-  showSites = true, onSite, journey = null, tour = null, journeyPlay, onJourneyStop,
+  showSites = true, onSite, journey = null, tour = null, trouble = null, journeyPlay, onJourneyStop,
 }: Props) {
   const motion = useMotionEnabled();
   const rate = SPEED_RATE[speed];
@@ -56,6 +58,7 @@ export function CityStage({
       data-journey={journey?.command ?? undefined}
       data-journey-stops={journey === null ? undefined : String(journey.stops.length)}
       data-tour={tour ?? undefined}
+      data-trouble={trouble ?? undefined}
     >
       <CityView
         city={city}
@@ -71,6 +74,7 @@ export function CityStage({
         {...(onCommand ? { onCommand } : {})}
         journey={journey}
         tour={tour}
+        trouble={trouble}
         {...(journeyPlay ? { journeyPlay } : {})}
         {...(onJourneyStop ? { onJourneyStop } : {})}
       />

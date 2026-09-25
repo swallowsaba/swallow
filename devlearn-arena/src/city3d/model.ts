@@ -5,6 +5,7 @@ import { between, hashString, intBetween, unit } from './seed';
 import { buildTerrain, distanceToRiver, flatten, inside, isBuildable, type Terrain } from './terrain';
 import { buildRoads, type RoadNetwork } from './roads';
 import { buildProps, type PropPlacement } from './props';
+import { buildResidents } from './residents';
 import { buildParks, type Park } from './parks';
 
 /**
@@ -105,6 +106,8 @@ export interface LayoutLink {
   b: Vec2;
   /** いま通っているか */
   active: boolean;
+  /** 塞がっているか。通ろうとしても通れない所 */
+  blocked: boolean;
 }
 
 export interface CityLayout {
@@ -316,12 +319,22 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
     const a = where.get(road.from);
     const b = where.get(road.to);
     if (a === undefined || b === undefined) return [];
-    return [{ id: `${road.from}->${road.to}`, from: road.from, to: road.to, a, b, active: road.active }];
+    return [{
+      id: `${road.from}->${road.to}`,
+      from: road.from,
+      to: road.to,
+      a,
+      b,
+      active: road.active,
+      blocked: road.blocked === true,
+    }];
   });
 
   const roads = buildRoads({
     size, districts, terrain, seed,
-    links: links.map((link) => ({ id: link.id, from: link.a, to: link.b, active: link.active })),
+    links: links.map((link) => ({
+      id: link.id, from: link.a, to: link.b, active: link.active, blocked: link.blocked,
+    })),
   });
 
   // 道と建物が載る所はならす。丘に道が埋まったり、建物が浮いたりしないように
@@ -356,7 +369,11 @@ export function layoutCity(city: City, input: LayoutInput = {}): CityLayout {
     size,
     terrain: level,
     roads,
-    props: buildProps({ seed, terrain: level, roads, buildings }),
+    // 街に置くものと、その上を歩く住人。住人は模型（住人の様子）だけが決める
+    props: [
+      ...buildProps({ seed, terrain: level, roads, buildings }),
+      ...buildResidents({ roads, buildings }),
+    ],
     buildings,
     districts,
     links,

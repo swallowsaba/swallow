@@ -4,6 +4,7 @@ import { DISTRICT_IDS } from '@/city/growth';
 import { layoutCity } from '@/city3d/model';
 import { buildCityScene } from '@/city3d/scene';
 import { container, deployment, emptyCluster, node, service } from '@/engines/k8s/factory';
+import { host, iface, link, resetMac, router, topology } from '@/engines/net/factory';
 import { createSession, type Session } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import type { ShellState } from '@/engines/kernel/registry';
@@ -64,6 +65,58 @@ function town() {
     },
   };
 }
+
+/** 端末 2 台をルータでつないだ、ネットワークの街 */
+function wired() {
+  resetMac();
+  const pc1 = host('pc1', [iface('eth0', '192.168.1.10', 24)], {
+    routes: [{ destination: '0.0.0.0/0', via: '192.168.1.1', dev: 'eth0' }],
+  });
+  const gw = router('gw', [iface('eth0', '192.168.1.1', 24), iface('eth1', '10.0.0.1', 24)]);
+  const web = host('web', [iface('eth0', '10.0.0.20', 24)]);
+  let session: Session = createSession({
+    net: topology([pc1, gw, web], [link('pc1:eth0', 'gw:eth0'), link('gw:eth1', 'web:eth0')]),
+    vars: { NET_SELF: 'pc1' },
+    files: { '/home/learner': null },
+  });
+  return {
+    run(line: string) {
+      session = { ...session, state: execute(session.state, line, session.registry, session.clock).state };
+    },
+    fault(id: FaultId): Fault {
+      const all = faultsOf({ cluster: session.state.cluster, net: session.state.net });
+      const found = all.find((f) => f.id === id);
+      if (found === undefined) throw new Error(`${id} が無い`);
+      return found;
+    },
+    roads() {
+      return buildCity({ net: session.state.net, unlocked: DISTRICT_IDS }).roads;
+    },
+  };
+}
+
+describe('道路を塞ぐ', () => {
+  it('口を落とす前は、どの道も通れる', () => {
+    const here = wired();
+    expect(here.fault('link-down').broken).toBe(false);
+    expect(here.roads().every((road) => road.blocked !== true)).toBe(true);
+  });
+
+  it('口を 1 つ落とすと、障害として見つかり、その道が塞がる', () => {
+    const here = wired();
+    here.run(here.fault('link-down').command);
+    expect(here.fault('link-down').broken).toBe(true);
+    expect(here.roads().filter((road) => road.blocked === true)).toHaveLength(1);
+  });
+
+  it('直すコマンドを打つと、道が通れるようになる', () => {
+    const here = wired();
+    here.run(here.fault('link-down').command);
+    here.run(here.fault('link-down').fix);
+    expect(here.fault('link-down').broken).toBe(false);
+    expect(here.roads().every((road) => road.blocked !== true)).toBe(true);
+  });
+});
 
 const BREAKABLE: readonly FaultId[] = ['node-down', 'bad-image', 'wrong-selector'];
 
@@ -152,6 +205,18 @@ describe('街が目に見えて反応する', () => {
     for (const one of tower?.occupants ?? []) expect(one.state).toBe('sick');
   });
 
+  it('バス停の行き先を間違えると、バス停からビルへの路線が途切れ、直すと戻る', () => {
+    const here = town();
+    const routes = () => here.city().roads.filter((road) => road.from === 'svc:default/web');
+    expect(routes().map((road) => road.to)).toEqual(['node:node-1']);
+    here.run(here.fault('wrong-selector').command);
+    here.run('kubectl wait 4');
+    expect(routes()).toEqual([]);
+    here.run(here.fault('wrong-selector').fix);
+    here.run('kubectl wait 4');
+    expect(routes().map((road) => road.to)).toEqual(['node:node-1']);
+  });
+
   it('バス停の行き先を間違えると、そのバス停が broken になる', () => {
     const here = town();
     here.run(here.fault('wrong-selector').command);
@@ -163,10 +228,17 @@ describe('街が目に見えて反応する', () => {
 describe('障害の札', () => {
   function panel(faults: readonly Fault[], healed = false) {
     const sent: string[] = [];
+    const missions: string[] = [];
     const view = mount(
-      <FaultMenu faults={faults} troubles={troubles(faults)} healed={healed} onCommand={(line) => sent.push(line)} />,
+      <FaultMenu
+        faults={faults}
+        troubles={troubles(faults)}
+        healed={healed}
+        onCommand={(line) => sent.push(line)}
+        onMission={(id) => missions.push(id)}
+      />,
     );
-    return { view, sent };
+    return { view, sent, missions };
   }
 
   it('「障害を起こす」を押すと、起こせるものが並ぶ', () => {
@@ -212,6 +284,15 @@ describe('障害の札', () => {
     expect(sent).toEqual(['kubectl node-up node-1']);
   });
 
+  it('起きている障害は、腰を据えて挑む任務としても出す', () => {
+    const here = town();
+    here.run('kubectl node-down node-1');
+    here.run('kubectl wait 6');
+    const { view, missions } = panel(here.faults());
+    click(view, '[data-testid="fault-mission-node-down"]');
+    expect(missions).toEqual(['k8s/12/boss-node-down']);
+  });
+
   it('直ると「直った」と出る', () => {
     const { view } = panel(town().faults(), true);
     expect(view.querySelector('[data-testid="fault-healed"]')).not.toBeNull();
@@ -241,6 +322,7 @@ describe('街の押しても壊れない所', () => {
         troubles={troubles(here.faults())}
         healed={false}
         onCommand={(line) => sent.push(line)}
+        onMission={() => undefined}
       />,
     );
     click(view, '[data-testid="fault-open"]');

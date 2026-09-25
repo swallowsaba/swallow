@@ -16,6 +16,7 @@ import {
 } from 'three';
 import { MARK, NOTE, PARTS, SITE, SKY, SPARK } from './palette';
 import { buildCityScene, type BuiltScene } from './scene';
+import { cutsOf, type Cut } from './cuts';
 import {
   CAMERA_FOV,
   POLAR_ANGLE,
@@ -78,6 +79,8 @@ interface Props {
   journey?: Journey | null;
   /** 案内ツアーでいま停まっている施設の id。カメラが寄り、その施設が光る */
   tour?: string | null;
+  /** いま止まっている所の id。赤い光が立つだけでなく、カメラもそこへ寄る */
+  trouble?: string | null;
   /** 旅の進み方。止める・速さ・1 段ずつ */
   journeyPlay?: JourneyPlay;
   /** 粒が次の停留所に着いたとき。帯の印を動かすのに使う */
@@ -412,6 +415,94 @@ function Marker({ target, animate }: { target: PickTarget; animate: boolean }) {
 }
 
 /**
+ * 台帳が読み上げた答えにあたる建物を、その場で光らせる。
+ *
+ * `kubectl get nodes` のような問い合わせは、窓口と台帳までしか行かない。
+ * それでも「いま読み上げたのはこれのこと」が分かるよう、答えの中身にあたる建物を
+ * 青い輪で囲む。粒をそこまで走らせると、行っていない道を通ったことになるのでしない。
+ */
+function Answered({ targets, animate }: { targets: readonly PickTarget[]; animate: boolean }) {
+  const group = useRef<Group>(null);
+  useFrame((state) => {
+    const here = group.current;
+    if (here === null) return;
+    const pulse = animate ? 0.5 + 0.3 * (1 + Math.sin(state.clock.elapsedTime * 1.6)) / 2 : 0.7;
+    here.traverse((item) => {
+      const mesh = item as Mesh;
+      const material = mesh.material as MeshBasicMaterial | undefined;
+      if (material !== undefined && (mesh.userData as { base?: number }).base !== undefined) {
+        material.opacity = pulse;
+      }
+    });
+  });
+  return (
+    <group ref={group}>
+      {targets.map((target) => {
+        const radius = Math.max(target.size.w, target.size.d) * 0.72;
+        return (
+          <mesh
+            key={target.id}
+            rotation={[-Math.PI / 2, 0, 0]}
+            position={[target.at.x, 0.62, target.at.z]}
+            userData={{ base: 0.7 }}
+          >
+            <ringGeometry args={[radius, radius + 1.8, 40]} />
+            <meshBasicMaterial color={MARK.ring} transparent depthWrite={false} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+/**
+ * 塞がれた道に立てる柵。赤は障害だけに使う色なので、ここが通れない原因だと分かる。
+ *
+ * 道（ケーブル）の大半は建物の足元に隠れるので、柵は 2 つの建物の外壁の間に立てる。
+ * 柵の左右に赤い帯を地面に敷き、どちらへも渡れないことを示す。
+ */
+function Barricades({ cuts, animate }: { cuts: readonly Cut[]; animate: boolean }) {
+  const group = useRef<Group>(null);
+  useFrame((state) => {
+    const here = group.current;
+    if (here === null) return;
+    const pulse = animate ? 0.6 + 0.3 * (1 + Math.sin(state.clock.elapsedTime * 2.2)) / 2 : 0.8;
+    here.traverse((item) => {
+      const mesh = item as Mesh;
+      const material = mesh.material as MeshBasicMaterial | undefined;
+      const base = (mesh.userData as { base?: number }).base;
+      if (material !== undefined && base !== undefined) material.opacity = base * pulse;
+    });
+  });
+  return (
+    <group ref={group}>
+      {cuts.map((cut) => (
+        <group key={cut.id} position={[cut.at.x, 0, cut.at.z]} rotation={[0, cut.angle, 0]}>
+          {/* 横木 2 本と支柱 2 本。道を横切って立つ */}
+          {[2, 4.2].map((y) => (
+            <mesh key={y} position={[0, y, 0]} userData={{ base: 1 }}>
+              <boxGeometry args={[cut.width, 0.9, 0.7]} />
+              <meshBasicMaterial color={MARK.alarm} transparent depthWrite={false} />
+            </mesh>
+          ))}
+          {[-1, 1].map((side) => (
+            <mesh key={side} position={[(side * cut.width) / 2, 2.6, 0]} userData={{ base: 1 }}>
+              <boxGeometry args={[0.8, 5.2, 0.8]} />
+              <meshBasicMaterial color={MARK.alarm} transparent depthWrite={false} />
+            </mesh>
+          ))}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.72, 0]} userData={{ base: 0.55 }}>
+            <planeGeometry args={[cut.width, 8]} />
+            <meshBasicMaterial color={MARK.alarm} transparent depthWrite={false} />
+          </mesh>
+          <pointLight color={MARK.alarm} intensity={40} distance={30} position={[0, 4, 0]} />
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/**
  * 壊れている所に立てる赤い光。
  *
  * 街のどこが止まっているのかを、探さずに見つけられるようにする。
@@ -559,6 +650,7 @@ function Spark({
   animate,
   chase,
   onStop,
+  onDone,
 }: {
   route: CartRoute;
   play: JourneyPlay;
@@ -566,6 +658,8 @@ function Spark({
   /** カメラが追う点。毎フレームここに粒の場所を書く */
   chase: MutableRefObject<Vec2 | null>;
   onStop: (index: number) => void;
+  /** 粒が終点に着いたとき */
+  onDone?: () => void;
 }) {
   const mote = useRef<Group>(null);
   const tail = useRef<Group>(null);
@@ -573,6 +667,8 @@ function Spark({
   const at = useRef(0);
   const stepped = useRef(play.step);
   const shown = useRef(-1);
+  /** 終点に着いたことを、もう知らせたか */
+  const finished = useRef(false);
   const total = routeSeconds(route);
   const first = route.stops[0];
   const [load, setLoad] = useState(() => ({
@@ -585,6 +681,7 @@ function Spark({
   useEffect(() => {
     at.current = 0;
     shown.current = -1;
+    finished.current = false;
     held.current = { cargo: first?.cargo ?? 'sheet', cargoLabel: first?.cargoLabel ?? '', stop: first?.label ?? '' };
     setLoad(held.current);
     // 旅が変われば最初から走り直す
@@ -615,6 +712,10 @@ function Spark({
     group.position.set(spot.at.x, CART_LIFT + MOTE_LIFT, spot.at.z);
     // 旅の間だけカメラを連れて行く。着いてしまえば放し、街を自由に見られるようにする
     chase.current = spot.done ? null : spot.at;
+    if (spot.done && !finished.current) {
+      finished.current = true;
+      onDone?.();
+    }
     // 尾。少し前の位置をなぞる
     const trail = tail.current;
     if (trail !== null) {
@@ -693,12 +794,14 @@ function Spark({
 
 export default function CityScene({
   layout, onCommand, onSelect, onSite, selected = null, animate = true, rate = 1, view = null, district = null,
-  showSites = true, time, journey = null, tour = null,
+  showSites = true, time, journey = null, tour = null, trouble = null,
   journeyPlay = { playing: true, rate: 1, step: 0 }, onJourneyStop,
 }: Props) {
   // 光の粒のいる場所。毎フレーム書き換わるので、React の状態にはしない
   const chase = useRef<Vec2 | null>(null);
   const [why, setWhy] = useState<string | null>(null);
+  // 粒が終点まで着いた旅。着いたらカメラを粒から放し、障害の所へ戻せる
+  const [landed, setLanded] = useState<string | null>(null);
   // 開いた瞬間は、いま学んでいる区域に寄る。島全体を遠くから見下ろさない
   const opening = useMemo(() => openingView(layout, district), [layout, district]);
   const [focus, setFocus] = useState<Vec2>(opening.at);
@@ -722,14 +825,38 @@ export default function CityScene({
     if (at !== undefined) setFocus(at);
   }, [tour, targets]);
 
+
   const marked = targets.find((t) => t.id === (tour ?? selected)) ?? null;
   // 止まっている建物。模型が壊れていると言った所だけが赤く光る
+  // 障害として見つかった所（壊れた荷物を抱えたビルなど）も、原因の場所として赤く光らせる
   const hurt = useMemo(() => {
     const ill = new Set(layout.buildings.filter((b) => b.state === 'broken').map((b) => b.id));
+    if (trouble !== null) ill.add(trouble);
     return targets.filter((t) => ill.has(t.id));
-  }, [targets, layout]);
+  }, [targets, layout, trouble]);
+  // 塞がれた道。建物の間に柵を立てる
+  const cuts = useMemo(() => cutsOf(layout), [layout]);
   // 打ったコマンドの旅。停留所が街に揃っていなければ道のりにならない
   const route = useMemo(() => (journey === null ? null : routeOf(journey, layout.buildings)), [journey, layout]);
+  // 障害が起きたら、そこへ寄る。赤い光がどこに立ったかを、街の中から探させない。
+  // コマンドの旅でカメラが粒を追っていった後も、旅が終われば原因の所へ戻る。
+  // 時間が進むたびに寄り直すと、学習者が自分で見に行った所から引き戻してしまうので、
+  // 寄るのは「障害が変わったとき」と「旅が終わったとき」だけにする
+  const targetsNow = useRef(targets);
+  targetsNow.current = targets;
+  const traveling = route !== null && landed !== route.id;
+  useEffect(() => {
+    if (trouble === null || traveling) return;
+    const at = targetsNow.current.find((t) => t.id === trouble)?.at;
+    // 同じ場所でも寄り直せるよう、新しい点として渡す
+    if (at !== undefined) setFocus({ x: at.x, z: at.z });
+  }, [trouble, traveling]);
+
+  // 台帳が読み上げた答えにあたる建物。旅を見せている間だけ光らせる
+  const answered = useMemo(() => {
+    const asked = new Set(journey?.highlight ?? []);
+    return asked.size === 0 ? [] : targets.filter((t) => asked.has(t.id));
+  }, [journey, targets]);
 
   return (
     <div className="relative h-full w-full" data-testid="city-3d">
@@ -744,7 +871,9 @@ export default function CityScene({
         <City layout={layout} animate={animate} rate={rate} time={time} onPick={pick} />
         <Overlay layout={layout} view={view} />
         {showSites ? <Sites layout={layout} animate={animate} onPick={onSite} /> : null}
+        {answered.length === 0 ? null : <Answered targets={answered} animate={animate} />}
         {hurt.length === 0 ? null : <Trouble targets={hurt} animate={animate} />}
+        {cuts.length === 0 ? null : <Barricades cuts={cuts} animate={animate} />}
         {marked === null ? null : <Marker target={marked} animate={animate} />}
         {route === null ? null : (
           <Spark
@@ -756,6 +885,9 @@ export default function CityScene({
             onStop={(index) => {
               onJourneyStop?.(index);
             }}
+            onDone={() => {
+              setLanded(route.id);
+            }}
           />
         )}
         <Look
@@ -763,7 +895,7 @@ export default function CityScene({
           animate={animate}
           distance={distance}
           chase={chase}
-          {...(tour === null ? {} : { closeUp: TOUR_DISTANCE, seconds: TOUR_SECONDS })}
+          {...(tour === null && trouble === null ? {} : { closeUp: TOUR_DISTANCE, seconds: TOUR_SECONDS })}
         />
       </Canvas>
       {why === null ? null : (

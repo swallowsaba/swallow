@@ -172,10 +172,92 @@ function pointsOf(road: RoadPath): Vec2[] {
   return road.closed && first !== undefined ? [...road.points, first] : road.points;
 }
 
+/** 点列の長さ */
+function pathMeters(points: readonly Vec2[]): number {
+  let sum = 0;
+  for (let i = 1; i < points.length; i += 1) {
+    const a = points[i - 1];
+    const b = points[i];
+    if (a !== undefined && b !== undefined) sum += Math.hypot(b.x - a.x, b.z - a.z);
+  }
+  return sum;
+}
+
+/** 点列の、長さで測った位置（メートル）にある点と向き */
+function alongMeters(points: readonly Vec2[], meters: number): { at: Vec2; angle: number } {
+  let left = Math.max(0, meters);
+  for (let i = 1; i < points.length; i += 1) {
+    const a = points[i - 1];
+    const b = points[i];
+    if (a === undefined || b === undefined) continue;
+    const len = Math.hypot(b.x - a.x, b.z - a.z);
+    if (len < 1e-6) continue;
+    if (left <= len) {
+      const f = left / len;
+      return {
+        at: { x: a.x + (b.x - a.x) * f, z: a.z + (b.z - a.z) * f },
+        angle: Math.atan2(b.x - a.x, b.z - a.z),
+      };
+    }
+    left -= len;
+  }
+  const last = points[points.length - 1] ?? { x: 0, z: 0 };
+  return { at: last, angle: 0 };
+}
+
+/**
+ * 塞がれた道。真ん中を空けて 2 本に断ち、両側の切り口を返す。
+ * 道が「通れなくなった」ことを、色ではなく形で示すため。
+ */
+export function severed(points: readonly Vec2[], gapRatio = 0.34): {
+  runs: Vec2[][];
+  ends: { at: Vec2; angle: number }[];
+} {
+  const total = pathMeters(points);
+  const gap = Math.min(total * gapRatio, Math.max(6, total * 0.5));
+  const near = alongMeters(points, (total - gap) / 2);
+  const far = alongMeters(points, (total + gap) / 2);
+  const before: Vec2[] = [];
+  const after: Vec2[] = [];
+  let walked = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    const point = points[i];
+    if (point === undefined) continue;
+    if (i > 0) {
+      const prev = points[i - 1];
+      if (prev !== undefined) walked += Math.hypot(point.x - prev.x, point.z - prev.z);
+    }
+    if (walked <= (total - gap) / 2) before.push(point);
+    else if (walked >= (total + gap) / 2) after.push(point);
+  }
+  before.push(near.at);
+  after.unshift(far.at);
+  return {
+    runs: [before, after].filter((run) => run.length >= 2),
+    ends: [near, far],
+  };
+}
+
 function roads(layout: CityLayout, parts: Parts): void {
   for (const road of layout.roads.roads) {
     const points = pointsOf(road);
     if (points.length < 2) continue;
+
+    // 塞がれた道は、真ん中を断って柵を立てる。通れないことを形で示す
+    if (road.blocked) {
+      const cut = severed(points);
+      for (const run of cut.runs) {
+        parts.add('pavement', ribbon(run, road.width, ROAD_LEVEL));
+        for (const side of [1, -1]) {
+          parts.add('curb', raisedRibbon(offsetPath(run, (road.width / 2 + 0.4) * side), 0.9, ROAD_LEVEL - 0.1, ROAD_LEVEL + 0.22));
+        }
+      }
+      for (const end of cut.ends) {
+        parts.add('paint', box(road.width * 0.95, 1.1, 0.4, end.at.x, ROAD_LEVEL + 0.55, end.at.z, end.angle));
+      }
+      continue;
+    }
+
     parts.add('pavement', ribbon(points, road.width, ROAD_LEVEL));
 
     // 縁石。道の両側に一段上げて回す
@@ -393,6 +475,26 @@ function propShapes(): Record<string, { surface: SurfaceName; geometry: BufferGe
     { surface: 'person' as const, geometry: box(0.45, 1.1, 0.3, 0, 0.55, 0) },
     { surface: 'person' as const, geometry: blob(0.22, 0, 1.28, 0) },
   ];
+  // 住人。ビルへ向かう人。手荷物を持たせて、道を歩くだけの人と見分けられるようにする
+  const resident = [
+    { surface: 'person' as const, geometry: box(0.5, 1.15, 0.34, 0, 0.58, 0) },
+    { surface: 'person' as const, geometry: blob(0.24, 0, 1.35, 0) },
+    { surface: 'wood' as const, geometry: box(0.3, 0.32, 0.22, 0.36, 0.72, 0) },
+  ];
+  // 倒れている住人。立っている人と違い、地面に伏せている
+  const fallen = [
+    { surface: 'person' as const, geometry: box(0.42, 0.3, 1.2, 0, 0.16, 0) },
+    { surface: 'person' as const, geometry: blob(0.22, 0, 0.2, 0.75) },
+  ];
+  // 担架。倒れた住人を運び出す
+  const carrier = [
+    { surface: 'wood' as const, geometry: box(0.1, 0.1, 2.1, -0.4, 0.62, 0) },
+    { surface: 'wood' as const, geometry: box(0.1, 0.1, 2.1, 0.4, 0.62, 0) },
+    { surface: 'paint' as const, geometry: box(0.86, 0.1, 1.7, 0, 0.66, 0) },
+    { surface: 'person' as const, geometry: box(0.4, 0.26, 1.3, 0, 0.83, 0) },
+    { surface: 'person' as const, geometry: box(0.4, 1.1, 0.26, 0, 0.55, -1.25) },
+    { surface: 'person' as const, geometry: box(0.4, 1.1, 0.26, 0, 0.55, 1.25) },
+  ];
   const hedge = [{ surface: 'hedge' as const, geometry: box(2.4, 1.1, 1.1, 0, 0.55, 0) }];
   const bench = [
     { surface: 'wood' as const, geometry: box(1.9, 0.14, 0.6, 0, 0.5, 0) },
@@ -410,7 +512,7 @@ function propShapes(): Record<string, { surface: SurfaceName; geometry: BufferGe
     { surface: 'metal' as const, geometry: box(0.14, 2.6, 0.14, 0, 1.3, 0) },
     { surface: 'paint' as const, geometry: box(1.3, 0.8, 0.08, 0, 2.4, 0) },
   ];
-  return { tree, lamp, car, person, hedge, bench, fence, sign };
+  return { tree, lamp, car, person, hedge, bench, fence, sign, resident, fallen, carrier };
 }
 
 function blob(radius: number, x: number, y: number, z: number): BufferGeometry {

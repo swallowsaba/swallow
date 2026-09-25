@@ -68,7 +68,11 @@ try {
   mkdirSync('shots', { recursive: true });
   server = await serve();
   const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl'] });
-  const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+  // 細かい所を見たい場面は、倍率を上げて一部だけを切り取る（`scale` と `clip`）
+  const page = await browser.newPage({
+    viewport: { width: 1600, height: 900 },
+    deviceScaleFactor: Number(process.env.SHOOT_SCALE ?? scene?.scale ?? 1),
+  });
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => {
@@ -86,11 +90,20 @@ try {
   await sleep(waitMs);
   if (scene?.act) await scene.act(page, { sleep });
   const file = `shots/${name}.png`;
-  await page.screenshot({ path: file });
+  // SHOOT_FULL=1 で切り取らずに全体を、SHOOT_CLIP=x,y,w,h で好きな所を撮る（確かめたい所だけ見るため）
+  const asked = process.env.SHOOT_CLIP?.split(',').map(Number);
+  const clip = asked?.length === 4
+    ? { x: asked[0], y: asked[1], width: asked[2], height: asked[3] }
+    : process.env.SHOOT_FULL === undefined ? scene?.clip : undefined;
+  await page.screenshot({ path: file, ...(clip === undefined ? {} : { clip }) });
   await browser.close();
   const bytes = readFileSync(file).length;
   console.log(`${file} (${String(Math.round(bytes / 1024))} KiB)`);
-  if (errors.length > 0) console.log('ページのエラー:\n' + errors.join('\n'));
+  // 画面が壊れていても絵は撮れてしまう。エラーが 1 つでもあれば失敗として扱う
+  if (errors.length > 0) {
+    console.log('ページのエラー:\n' + errors.join('\n'));
+    process.exitCode = 1;
+  }
 } finally {
   if (server) server.kill();
   if (existsSync(LOCK)) unlinkSync(LOCK);

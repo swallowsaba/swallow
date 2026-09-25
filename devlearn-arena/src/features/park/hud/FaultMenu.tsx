@@ -12,6 +12,8 @@ interface Props {
   healed: boolean;
   /** コマンドを端末へ送る */
   onCommand: (line: string) => void;
+  /** 同じ障害を扱う任務へ移る */
+  onMission: (id: string) => void;
 }
 
 /** 情報表示の柱の上に置く。右下の隅は情報表示が使っている */
@@ -24,7 +26,7 @@ const BOX = { position: 'absolute', right: 16, bottom: 196, width: 232, zIndex: 
  * 起きている間は赤い札を出し、街のどこが止まっているかを言葉でも伝える。
  * 直し方はすぐには見せない。自分で考える余地を残し、求められたときだけ出す。
  */
-export function FaultMenu({ faults, troubles, healed, onCommand }: Props) {
+export function FaultMenu({ faults, troubles, healed, onCommand, onMission }: Props) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [told, setTold] = useState(false);
@@ -71,6 +73,20 @@ export function FaultMenu({ faults, troubles, healed, onCommand }: Props) {
               {fault.fix}
             </button>
           ) : null}
+          {fault.mission === null ? null : (
+            <button
+              type="button"
+              data-testid={`fault-mission-${fault.id}`}
+              onClick={() => {
+                const target = fault.mission;
+                if (target !== null) onMission(target.id);
+              }}
+              className="mt-1.5 w-full rounded px-2 py-1.5 text-left text-[12px] leading-snug"
+              style={{ border: `1px solid ${HUD.lineStrong}`, color: HUD.soft }}
+            >
+              {t('fault.asMission', { title: fault.mission.title })}
+            </button>
+          )}
         </div>
       ))}
 

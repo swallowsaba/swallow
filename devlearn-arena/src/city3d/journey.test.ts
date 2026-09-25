@@ -27,6 +27,7 @@ const JOURNEY: Journey = {
     { index: 1, title: '記念碑', stop: 1 },
     { index: 2, title: '旗', stop: 2 },
   ],
+  highlight: [],
 };
 
 const BUILDINGS = [

@@ -53,6 +53,7 @@ export const ja = {
   'fault.tell': '直し方を見る',
   'fault.already': 'いま起きている',
   'fault.healed': '直った。街が元に戻った',
+  'fault.asMission': 'この障害を任務として挑む: {title}',
   'journey.pause': '一時停止',
   'journey.play': '続ける',
   'journey.step': '1 つ進める',
@@ -452,6 +453,10 @@ export const ja = {
   'park.withRepeats': '反復演習も出す（同じ形で値だけ違う課題）',
 
   'hud.terminal': '端末',
+  'task.terms': 'この任務で出てくる言葉',
+  'task.termsMore': 'ほかに {n} 語',
+  'task.termsLess': '折り畳む',
+  'term.analogy': '街で言えば … {text}',
   'hud.task': '課題',
   'hud.stepCount': '{a} / {b}',
   'hud.reward': '報酬',

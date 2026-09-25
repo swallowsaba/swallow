@@ -1,11 +1,12 @@
 import { concepts } from '../glossary';
-import { container, deployment, emptyCluster, node } from '@/engines/k8s/factory';
+import { container, deployment, emptyCluster, node, quantity } from '@/engines/k8s/factory';
 import { isReady } from '@/engines/k8s/kubelet';
+import { nodeCondition } from '@/engines/k8s/bootstrap';
 import { key, type ClusterState } from '@/engines/k8s/types';
 import { HOME } from '@/engines/kernel/path';
 import type { LessonDefinition } from '../types';
 import { heredoc } from '../authoring/solution';
-import { countRan, DEPLOY, POD, ran } from '../authoring/ran';
+import { countRan, DEPLOY, NODE, POD, ran } from '../authoring/ran';
 
 const MANIFEST_HINT = 'vi app.yaml でマニフェストを書き、kubectl apply -f app.yaml で適用する';
 
@@ -483,6 +484,129 @@ export const k8sNoLimits: LessonDefinition = {
       },
       explain:
         'limits が無いと、1つの Pod がノードを食い尽くして隣を巻き込む。上限は自分のためではなく、同居している相手のために書く。',
+    },
+  ],
+};
+
+/** ビルが 1 棟停電したままの街。大きいビルが止まり、小さいビルだけが動いている */
+function nodeDownCluster(): ClusterState {
+  const big = node('node-1', 4000, 8192);
+  return {
+    ...emptyCluster([{ ...big, status: { ...big.status, kubeletHealthy: false } }, node('node-2', 1000, 2048)]),
+    deployments: new Map([
+      [
+        key('default', 'web'),
+        deployment('web', 3, [container('web', 'nginx:1.25', { requests: quantity(400, 512) })], {
+          labels: { app: 'web' },
+        }),
+      ],
+    ]),
+  };
+}
+
+/** そのノードが Ready か。無ければ false */
+function nodeReady(cluster: ClusterState | null, name: string): boolean {
+  const found = cluster?.nodes.get(name);
+  if (cluster === null || found === undefined) return false;
+  return nodeCondition(cluster, found).ready;
+}
+
+/** 置き場所が決まっていない Pod（入居先が見つからず待っている住人） */
+function waiting(shell: { cluster: ClusterState | null }): number {
+  return [...(shell.cluster?.pods.values() ?? [])].filter((pod) => pod.status.nodeName === null).length;
+}
+
+/**
+ * 障害対応の任務（REWORK 4-4）。街で「障害を起こす」から起こせるのと同じことが、
+ * 最初から起きている状態で始まる。何が動いていて何が止まったのかを、自分で確かめて直す。
+ */
+export const k8sNodeDownBoss: LessonDefinition = {
+  id: 'k8s/12/boss-node-down',
+  track: 'k8s',
+  kind: 'boss',
+  title: 'ビルが 1 棟止まった。何が動き、何が止まったか',
+  intro: {
+    summary:
+      'ノードが 1 台 NotReady になっている。動き続けているものと、止まってしまったものを見分けて、元に戻す。',
+    why:
+      'コンピュータは壊れる。大事なのは「全部が止まった」と慌てないこと。どこまでが無事で、何が止まったのかを先に確かめられれば、直す順番を間違えない。',
+    concepts: concepts('ノード', 'kubelet', 'Ready', 'Pod', 'Pending', 'Deployment', 'scheduler', 'requests', 'allocatable'),
+    commands: [
+      { command: 'kubectl get nodes', means: 'ノードの一覧と、それぞれが Ready かどうかを見る' },
+      { command: 'kubectl describe node <名前>', means: 'そのノードが Ready でない理由を読む' },
+      { command: 'kubectl get pods', means: 'Pod の一覧と、それぞれの状態を見る' },
+      { command: 'kubectl node-up <名前>', means: '止まった kubelet を動かし直す（この練習場だけのコマンド）' },
+      { command: 'kubectl wait <秒>', means: '時間を進める' },
+    ],
+  },
+  objectives: [
+    'どのノードが止まっているかを一覧で見つけられる',
+    '止まったノードには新しい Pod が置かれないと分かる',
+    '直したあと、待っていた Pod が入れることを確かめられる',
+  ],
+  takeaways: [
+    'kubectl get nodes の STATUS が NotReady なら、そのノードの kubelet が状態を報告できていない。',
+    'NotReady のノードは置き場所の候補から外れる。空きが足りなければ Pod は Pending のまま待つ。',
+    'Pending の Pod の message には、どのノードがなぜ駄目だったかが 1 行で書いてある。',
+  ],
+  parCommands: 8,
+  initial: { cluster: nodeDownCluster(), files: { [HOME]: null } },
+  steps: [
+    {
+      prompt: 'どのノードが止まっているか、一覧で確かめよ。',
+      check: 'kubectl get nodes を打ち、node-1 が Ready でないこと',
+      hints: ['ノードの一覧は kubectl get nodes で見られる', 'kubectl get nodes'],
+      solution: ['kubectl get nodes'],
+      assert: ({ shell, history }) =>
+        ran(history, 'kubectl', 'get', NODE) && !nodeReady(shell.cluster, 'node-1'),
+      explain:
+        'STATUS の欄が NotReady になっている。街で言えば、そのビルの管理人が居なくなり、中の様子を誰も報告できなくなった状態。',
+    },
+    {
+      prompt: 'node-1 が Ready でない理由を読め。',
+      check: 'kubectl describe node node-1 を打ったこと',
+      hints: ['1 台ぶんの細かい様子は kubectl describe node <名前> で読める', 'kubectl describe node node-1'],
+      solution: ['kubectl describe node node-1'],
+      assert: ({ history }) => ran(history, 'kubectl', 'describe', NODE, 'node-1'),
+      explain:
+        'Conditions の Ready が False で、理由は NodeStatusUnknown。「kubelet が状態を報告しなくなった」と書いてある。中で動いていたものが消えたとは書いていない点が大事。',
+    },
+    {
+      prompt: '時間を進めて、Pod がいまどうなっているか確かめよ。入居先が決まらない Pod が残るはずだ。',
+      check: '置き場所の決まっていない Pod が 1 つ以上あること',
+      hints: [
+        'kubectl wait で時間を進めてから kubectl get pods を見る',
+        'kubectl wait 20\nkubectl get pods',
+      ],
+      solution: ['kubectl wait 20', 'kubectl get pods'],
+      assert: ({ shell, history }) => waiting(shell) > 0 && ran(history, 'kubectl', 'get', POD),
+      diagnose: ({ shell }) =>
+        waiting(shell) === 0 ? 'まだ時間が進んでいません。kubectl wait 20 で進めてください。' : null,
+      explain:
+        '3 つのうち 2 つは node-2 で動いている。残り 1 つは Pending のまま。message に「1 node(s) were not ready, 1 Insufficient cpu」と出ている。止まったノードは置き場所の候補から外れ、残った node-2 には空きが足りなかった。',
+    },
+    {
+      prompt: 'node-1 を動かし直し、時間を進めて 3 つとも Ready にせよ。',
+      check: 'node-1 が Ready に戻り、Pod が 3 つとも Ready になっていること',
+      hints: [
+        'この練習場では kubectl node-up <名前> で止まった kubelet を動かし直せる',
+        'kubectl node-up node-1\nkubectl wait 30',
+      ],
+      solution: ['kubectl node-up node-1', 'kubectl wait 30'],
+      assert: ({ shell }) => {
+        const cluster = shell.cluster;
+        if (cluster === null) return false;
+        return nodeReady(cluster, 'node-1') && [...cluster.pods.values()].filter(isReady).length === 3;
+      },
+      diagnose: ({ shell }) => {
+        if (shell.cluster === null) return null;
+        if (!nodeReady(shell.cluster, 'node-1')) {
+          return 'まだ node-1 が Ready に戻っていません。kubectl node-up node-1 を試してください。';
+        }
+        return '戻りました。kubectl wait で時間を進めると、待っていた Pod が入居します。';
+      },
+      explain:
+        'ノードが戻ると、待っていた Pod はすぐそこへ置かれた。作り直しも設定のやり直しも要らない。「あるべき数」を覚えている係が、置ける場所ができた時点で置いただけ。',
     },
   ],
 };

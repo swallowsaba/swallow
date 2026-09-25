@@ -3,6 +3,7 @@ import type { ClusterState, Pod } from '@/engines/k8s/types';
 import { parseCommit } from '@/engines/git/objects';
 import type { GitState } from '@/engines/git/types';
 import type { Repo } from '@/engines/github/types';
+import { linkUsable } from '@/engines/net/build';
 import type { Topology } from '@/engines/net/types';
 import { list, stat, type VfsState } from '@/engines/kernel/vfs';
 import { CITY_HEIGHT, CITY_WIDTH, DISTRICTS, districtArea, type DistrictArea, type DistrictId } from './growth';
@@ -110,6 +111,11 @@ export interface CityRoad {
   from: string;
   to: string;
   active: boolean;
+  /**
+   * 塞がっているか。ケーブルが抜けた道のように、いま通れなくなっている所。
+   * `active: false` は「今この道を何も通っていない」だけだが、こちらは「通れない」。
+   */
+  blocked?: boolean;
   /** 押したときに端末へ送るコマンド */
   command?: string;
   why?: string;
@@ -841,12 +847,15 @@ function netOf(net: Topology, out: Built): void {
     const b = link.b.split(':')[0] ?? '';
     if (!known.has(a) || !known.has(b)) continue;
     const dev = link.a.split(':')[1] ?? '';
+    // ケーブルが繋がっていても、どちらかの差し込み口が落ちていれば通れない
+    const usable = linkUsable(net, link);
     out.roads.push({
       from: `dev:${a}`,
       to: `dev:${b}`,
-      active: link.up,
-      command: `ip link set ${dev} ${link.up ? 'down' : 'up'}`,
-      why: link.up ? '道路はケーブル。落とすと通れなくなる' : '落ちている道路を通せるようにする',
+      active: usable,
+      blocked: !usable,
+      command: `ip link set ${dev} ${usable ? 'down' : 'up'}`,
+      why: usable ? '道路はケーブル。落とすと通れなくなる' : '落ちている道路を通せるようにする',
     });
   }
 

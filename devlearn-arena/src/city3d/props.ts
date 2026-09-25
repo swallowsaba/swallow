@@ -16,7 +16,10 @@ import type { LayoutBuilding, Vec2 } from './model';
  * 置き場所は乱数ではなく seed から決める。ここは three に触れない。
  */
 
-export type PropKind = 'tree' | 'lamp' | 'car' | 'person' | 'hedge' | 'bench' | 'fence' | 'sign';
+export type PropKind =
+  | 'tree' | 'lamp' | 'car' | 'person' | 'hedge' | 'bench' | 'fence' | 'sign'
+  /** 住人（`residents.ts` が決める）。歩いてビルへ入る人・倒れている人・担架 */
+  | 'resident' | 'fallen' | 'carrier';
 
 /** 道に沿って動くものの経路 */
 export interface PropPath {
@@ -275,11 +278,18 @@ function aroundBuildings(ground: Ground, buildings: readonly LayoutBuilding[], r
   });
 }
 
-/** 道に車を流す。人は歩道を歩く */
+/**
+ * 道に車を流す。人は歩道を歩く。
+ *
+ * 塞がれた道（`blocked`）にも車は置くが、速さを 0 にして止める。
+ * 道が塞がると車が消えるのではなく、その場で止まって渋滞する所が見えるようにするため。
+ */
 function traffic(ground: Ground, roads: RoadNetwork, rng: Rng): void {
   for (const road of roads.roads) {
     const points = road.closed ? [...road.points, road.points[0] ?? { x: 0, z: 0 }] : road.points;
-    if (points.length < 2 || !road.active) continue;
+    if (points.length < 2) continue;
+    if (!road.active && !road.blocked) continue;
+    const halted = road.blocked;
     const cars = road.kind === 'boulevard' ? 6 : road.kind === 'street' ? 3 : 1;
     for (let i = 0; i < cars; i += 1) {
       const start = (i + 0.5) / cars;
@@ -288,7 +298,7 @@ function traffic(ground: Ground, roads: RoadNetwork, rng: Rng): void {
       ground.move('car', spot.at, spot.angle, rng.between(0.9, 1.1), {
         points,
         offset,
-        speed: rng.between(6, 11) * (i % 2 === 0 ? 1 : -1),
+        speed: halted ? 0 : rng.between(6, 11) * (i % 2 === 0 ? 1 : -1),
         start,
       });
     }
@@ -299,7 +309,7 @@ function traffic(ground: Ground, roads: RoadNetwork, rng: Rng): void {
       ground.move('person', spot.at, spot.angle, rng.between(0.9, 1.1), {
         points,
         offset: (road.width / 2 + 2.2) * (i % 2 === 0 ? 1 : -1),
-        speed: rng.between(1.1, 1.7) * (i % 2 === 0 ? 1 : -1),
+        speed: halted ? 0 : rng.between(1.1, 1.7) * (i % 2 === 0 ? 1 : -1),
         start,
       });
     }
@@ -384,7 +394,10 @@ export function buildProps(input: PropInput): PropPlacement[] {
 
 /** 種類ごとの数を数える。テストと診断に使う */
 export function countProps(items: readonly PropPlacement[]): Record<PropKind, number> {
-  const out: Record<PropKind, number> = { tree: 0, lamp: 0, car: 0, person: 0, hedge: 0, bench: 0, fence: 0, sign: 0 };
+  const out: Record<PropKind, number> = {
+    tree: 0, lamp: 0, car: 0, person: 0, hedge: 0, bench: 0, fence: 0, sign: 0,
+    resident: 0, fallen: 0, carrier: 0,
+  };
   for (const item of items) out[item.kind] += 1;
   return out;
 }
