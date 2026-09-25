@@ -72,4 +72,26 @@ export const SCENES = {
       await sleep(1600);
     },
   },
+
+  /** 施設を押した状態。右に「それが何か・いまの状態・関係するコマンド」が開く */
+  '04-inspect': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      // 住人を 1 人入れてから、そのビルを押す
+      await type(page, 'kubectl run web --image=nginx');
+      await sleep(1200);
+      await type(page, 'kubectl wait 5');
+      await sleep(1200);
+      await page.getByTestId('journey-close').click();
+      // 街の真ん中あたりの建物を押す。押せた所で情報パネルが開く
+      await page.getByTestId('city-3d').click({ position: { x: 560, y: 430 } });
+      await need(page, 'building-panel');
+      // 押した建物のコマンドは端末へ 1 文字ずつ打たれる。打ち終わるまで待つ
+      await sleep(3000);
+    },
+  },
 };

@@ -135,7 +135,7 @@ describe('パネルの見た目と操作', () => {
     const sent: string[] = [];
     const view = mount(
       <BuildingPanel
-        info={info ?? { id: '', label: '', kind: 'tower', level: 1, usage: [], residents: [], log: [], actions: [] }}
+        info={info ?? { id: '', label: '', kind: 'tower', level: 1, what: '', usage: [], facts: [], residents: [], log: [], actions: [] }}
         onCommand={(line) => sent.push(line)}
         onClose={() => undefined}
       />,
@@ -186,7 +186,7 @@ describe('パネルの見た目と操作', () => {
     const onClose = vi.fn();
     const view = mount(
       <BuildingPanel
-        info={info ?? { id: '', label: '', kind: 'tower', level: 1, usage: [], residents: [], log: [], actions: [] }}
+        info={info ?? { id: '', label: '', kind: 'tower', level: 1, what: '', usage: [], facts: [], residents: [], log: [], actions: [] }}
         onCommand={() => undefined}
         onClose={onClose}
       />,

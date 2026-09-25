@@ -137,6 +137,22 @@ export function BuildingPanel({ info, onCommand, onClose }: Props) {
 
       {tab === 'overview' ? (
         <div className="flex flex-col gap-2.5 p-3" data-testid="building-overview">
+          {/* これは何か。用語を 1 つも知らない人でも、ここだけ読めば分かるようにする */}
+          <p data-testid="building-what" className="text-[12px] leading-relaxed" style={{ color: HUD.soft }}>
+            {info.what}
+          </p>
+          {info.facts.length === 0 ? null : (
+            <dl className="flex flex-col gap-1" data-testid="building-facts">
+              {info.facts.map((fact) => (
+                <div key={fact.key} data-fact={fact.key} className="flex justify-between gap-2 text-[12px]">
+                  <dt style={{ color: HUD.muted }}>{fact.label}</dt>
+                  <dd className="tabular-nums" style={{ color: HUD.text }}>
+                    {fact.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
           {info.usage.map((use) => (
             <div key={use.key} data-usage={use.key}>
               <div className="flex justify-between text-[12px]" style={{ color: HUD.muted }}>
@@ -190,11 +206,13 @@ export function BuildingPanel({ info, onCommand, onClose }: Props) {
             <p style={{ color: HUD.muted }}>{t('hud.noLog')}</p>
           ) : (
             info.log.map((line) => (
-              <div key={line.id} className="flex gap-2">
+              <div key={line.id} className="flex gap-2" data-warn={line.warn === true ? 'yes' : undefined}>
                 <span className="shrink-0 font-mono" style={{ color: HUD.dim }}>
                   {line.at}
                 </span>
-                <span className="min-w-0 flex-1">{t(LOG_KEY[line.event], { name: line.label })}</span>
+                <span className="min-w-0 flex-1" style={line.warn === true ? { color: HUD.bad } : undefined}>
+                  {line.text ?? t(LOG_KEY[line.event], { name: line.label })}
+                </span>
               </div>
             ))
           )}
