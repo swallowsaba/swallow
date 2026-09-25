@@ -654,6 +654,8 @@ function controlPlaneOf(cluster: ClusterState, lane: Lane, out: Built): void {
 function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Built): void {
   const area = districtArea('k8s');
   const towers = new Map<string, Building>();
+  /** 管理人（kubelet）が止まっているビル。中の住人の様子は当てにできない */
+  const dark = new Set<string>();
 
   // 北から順に帯を積む。管制 → ビル → 事務所 → バス停
   const desks = new Lane(area, area.y, CP_SIZE.w, CP_SIZE.h);
@@ -667,6 +669,7 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
     // 学習者が来る前からあるノードは、もう建ち上がっている。
     // あとから加わったノード（kubeadm join）だけが、数 tick かけて建つ
     const settled = node.metadata.createdAt === 0 || age >= BUILD_TICKS;
+    if (settled && !ready) dark.add(node.metadata.name);
     const building: Building = {
       id: `node:${node.metadata.name}`,
       kind: 'tower',
@@ -714,7 +717,9 @@ function k8sOf(cluster: ClusterState, before: Whereabouts | undefined, out: Buil
     const occupant: Occupant = {
       id,
       label: pod.metadata.name,
-      state: occupantState(pod),
+      // 管理人が止まったビルの住人は、動いているとは言えない。
+      // 台帳の phase は Running のままでも、それは古い記録なので鵜呑みにしない
+      state: dark.has(nodeName) ? 'sick' : occupantState(pod),
       command: `kubectl describe pod ${pod.metadata.name}`,
       why: '住人は Pod。いまどんな様子かを見る',
       actions: [

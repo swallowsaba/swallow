@@ -35,10 +35,12 @@ import { MissionPicker } from './MissionPicker';
 import { NO_HINTS, reveal, revealedCount, stepKey, type HintReveal } from './hints';
 import { gainFor, growsFromCommand, type GrowthTrigger } from './growth';
 import { nextTrip, type Trip } from './trip';
+import { faultsOf, troubles as troublesOf } from './faults';
 import { TerminalDock } from './hud/TerminalDock';
 import { TaskCard } from './hud/TaskCard';
 import { TourPanel } from './hud/TourPanel';
 import { JourneyStrip } from './hud/JourneyStrip';
+import { FaultMenu } from './hud/FaultMenu';
 import { ExplainDrawer } from './hud/ExplainDrawer';
 import { TopBar } from './hud/TopBar';
 import { BuildingPanel } from './hud/BuildingPanel';
@@ -311,6 +313,34 @@ function Arena({
     setPlayAt(0);
     setPlay((p) => ({ ...p, playing: true, step: 0 }));
   }, [journeyId]);
+
+  /**
+   * 起こせる障害と、いま起きている障害。どちらも模型から読む。
+   * 障害は端末で打つのと同じコマンドで起こすので、裏で状態を書き換えたりしない。
+   */
+  const faults = useMemo(
+    () => faultsOf({ cluster: shellState.cluster, net: shellState.net }),
+    [shellState.cluster, shellState.net],
+  );
+  const troubles = useMemo(() => troublesOf(faults), [faults]);
+  // 直った直後かどうか。少しの間だけ「直った」と出す
+  const [healed, setHealed] = useState(false);
+  const hadTrouble = useRef(false);
+  useEffect(() => {
+    const now = troubles.length > 0;
+    if (hadTrouble.current && !now) {
+      setHealed(true);
+      const timer = setTimeout(() => {
+        setHealed(false);
+      }, 6000);
+      hadTrouble.current = now;
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+    hadTrouble.current = now;
+    return undefined;
+  }, [troubles.length]);
 
   // 案内ツアーの道のり。街に建っている施設だけを巡る
   const tour = useMemo(() => tourOf(city, mission.track), [city, mission.track]);
@@ -644,6 +674,16 @@ function Arena({
           setTourDeclined(true);
         }}
         busy={journey !== null}
+      />
+
+      <FaultMenu
+        faults={faults}
+        troubles={troubles}
+        healed={healed}
+        onCommand={(line) => {
+          terminalRef.current?.submit(line);
+          terminalRef.current?.focus();
+        }}
       />
 
       <InfoViews view={infoView} onView={setInfoView} />

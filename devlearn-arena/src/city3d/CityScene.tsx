@@ -412,6 +412,50 @@ function Marker({ target, animate }: { target: PickTarget; animate: boolean }) {
 }
 
 /**
+ * 壊れている所に立てる赤い光。
+ *
+ * 街のどこが止まっているのかを、探さずに見つけられるようにする。
+ * この赤は障害だけに使う。光っている所では必ず何かが起きている。
+ * どの建物が壊れているかは模型が決める。ここでは描くだけ。
+ */
+function Trouble({ targets, animate }: { targets: readonly PickTarget[]; animate: boolean }) {
+  const group = useRef<Group>(null);
+  useFrame((state) => {
+    const here = group.current;
+    if (here === null) return;
+    // ゆっくり明滅させる。騒がしくはしないが、静止した街の中で必ず目に留まる
+    const pulse = animate ? 0.55 + 0.35 * (1 + Math.sin(state.clock.elapsedTime * 2.2)) / 2 : 0.75;
+    here.traverse((item) => {
+      const mesh = item as Mesh;
+      const material = mesh.material as MeshBasicMaterial | undefined;
+      const base = (mesh.userData as { base?: number }).base;
+      if (material !== undefined && base !== undefined) material.opacity = base * pulse;
+    });
+  });
+
+  return (
+    <group ref={group}>
+      {targets.map((target) => {
+        const radius = Math.max(target.size.w, target.size.d) * 0.78;
+        return (
+          <group key={target.id} position={[target.at.x, 0, target.at.z]}>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.7, 0]} userData={{ base: 0.85 }}>
+              <ringGeometry args={[radius, radius + 2.2, 40]} />
+              <meshBasicMaterial color={MARK.alarm} transparent depthWrite={false} />
+            </mesh>
+            <mesh position={[0, target.size.h + BEACON / 2, 0]} renderOrder={7} userData={{ base: 0.7 }}>
+              <cylinderGeometry args={[2.8, 4.6, BEACON, 16, 1, true]} />
+              <meshBasicMaterial color={MARK.alarm} transparent depthTest={false} depthWrite={false} />
+            </mesh>
+            <pointLight color={MARK.alarm} intensity={70} distance={70} position={[0, target.size.h * 0.6, 0]} />
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+/**
  * 建てられる区画の光。更地でも、何をすればよいかが街の上で分かるようにする。
  *
  * 縁だけを光らせて、街の絵を隠さない。息をするようにゆっくり明滅させる。
@@ -679,6 +723,11 @@ export default function CityScene({
   }, [tour, targets]);
 
   const marked = targets.find((t) => t.id === (tour ?? selected)) ?? null;
+  // 止まっている建物。模型が壊れていると言った所だけが赤く光る
+  const hurt = useMemo(() => {
+    const ill = new Set(layout.buildings.filter((b) => b.state === 'broken').map((b) => b.id));
+    return targets.filter((t) => ill.has(t.id));
+  }, [targets, layout]);
   // 打ったコマンドの旅。停留所が街に揃っていなければ道のりにならない
   const route = useMemo(() => (journey === null ? null : routeOf(journey, layout.buildings)), [journey, layout]);
 
@@ -695,6 +744,7 @@ export default function CityScene({
         <City layout={layout} animate={animate} rate={rate} time={time} onPick={pick} />
         <Overlay layout={layout} view={view} />
         {showSites ? <Sites layout={layout} animate={animate} onPick={onSite} /> : null}
+        {hurt.length === 0 ? null : <Trouble targets={hurt} animate={animate} />}
         {marked === null ? null : <Marker target={marked} animate={animate} />}
         {route === null ? null : (
           <Spark

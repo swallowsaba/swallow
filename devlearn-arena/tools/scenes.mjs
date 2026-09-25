@@ -94,4 +94,57 @@ export const SCENES = {
       await sleep(3000);
     },
   },
+
+  /** 障害を起こした状態。ビルの灯りが消え、赤い光が原因の場所を示す */
+  '05-break': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await type(page, 'kubectl run web --image=nginx');
+      await sleep(800);
+      await type(page, 'kubectl wait 6');
+      await sleep(1200);
+      await page.getByTestId('journey-close').click();
+      await page.getByTestId('fault-open').click();
+      await page.locator('[data-fault="node-down"]').click();
+      await sleep(1000);
+      await type(page, 'kubectl wait 6');
+      await sleep(1500);
+      await page.getByTestId('journey-close').click();
+      await page.getByTestId('fault-tell').click();
+      await sleep(1500);
+    },
+  },
+
+  /** 直した後。灯りが戻り、赤い光が消えている */
+  '06-fixed': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-card');
+      await type(page, 'kubectl run web --image=nginx');
+      await sleep(800);
+      await type(page, 'kubectl wait 6');
+      await sleep(1200);
+      await page.getByTestId('journey-close').click();
+      await page.getByTestId('fault-open').click();
+      await page.locator('[data-fault="node-down"]').click();
+      await sleep(1000);
+      await type(page, 'kubectl wait 6');
+      await sleep(1200);
+      await page.getByTestId('journey-close').click();
+      // 学習者が自分で直す
+      await type(page, 'kubectl node-up node-1');
+      await sleep(800);
+      await type(page, 'kubectl wait 6');
+      await sleep(1500);
+      await page.getByTestId('journey-close').click();
+      await sleep(1500);
+    },
+  },
 };

@@ -118,6 +118,11 @@ export const SKY = {
  */
 export const MARK = {
   ring: '#5cc1ff',
+  /**
+   * 壊れている所に立てる光。原因の場所を一目で示す。
+   * この赤は障害だけに使う。ここが赤いときは、必ず何かが止まっている。
+   */
+  alarm: '#e2705c',
   plate: 'rgba(16,20,27,0.92)',
   plateEdge: '#2f8fd8',
   plateText: '#eef2f6',

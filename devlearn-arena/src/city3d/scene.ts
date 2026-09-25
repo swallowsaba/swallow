@@ -346,19 +346,24 @@ function buildings(layout: CityLayout, parts: Parts, options: SceneOptions): Win
       );
       windows.push({
         matrix: new Matrix4().multiplyMatrices(place, local),
-        // 住人のいる階は必ず灯る。ほかは seed で決めた一部だけ
-        lit: lively.has(slot.floor) || unit(building.params.seed, i) < 0.18,
+        // 住人のいる階は必ず灯る。ほかは seed で決めた一部だけ。
+        // 止まっている建物は 1 枚も灯らない（停電したビルは真っ暗になる）
+        lit: building.state !== 'broken' && (lively.has(slot.floor) || unit(building.params.seed, i) < 0.18),
       });
     });
   }
   return windows;
 }
 
-/** 住人がいて、暮らしている階。ここの窓が灯る */
+/**
+ * 住人がいて、暮らしている階。ここの窓が灯る。
+ * 出ていった人と、倒れている人（不調）の部屋は暗いままにする。
+ */
 function litFloors(building: LayoutBuilding): Set<number> {
   const out = new Set<number>();
+  if (building.state === 'broken') return out;
   for (const occupant of building.occupants) {
-    if (occupant.state === 'gone') continue;
+    if (occupant.state === 'gone' || occupant.state === 'sick') continue;
     out.add(occupant.floor);
   }
   return out;
