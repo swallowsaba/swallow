@@ -41,11 +41,13 @@ interface Props {
   label?: string;
   /** いま街を旅しているコマンド。荷車が停留所を巡る */
   journey?: Journey | null;
+  /** 案内ツアーでいま停まっている施設の id */
+  tour?: string | null;
 }
 
 export function CityView({
   city, animate = true, rate = 1, view = null, district = null, showSites = true, onSite,
-  onCommand, onSelect, selected = null, label, journey = null,
+  onCommand, onSelect, selected = null, label, journey = null, tour = null,
 }: Props) {
   const able = hasWebGL();
   const layout = useMemo(() => (able ? layoutCity(city) : null), [city, able]);
@@ -81,6 +83,7 @@ export function CityView({
           onSelect={onSelect}
           selected={selected}
           journey={journey}
+          tour={tour}
         />
       </Suspense>
     </div>

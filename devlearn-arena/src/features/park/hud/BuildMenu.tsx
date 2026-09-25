@@ -31,13 +31,14 @@ export function BuildMenu({ milestone, rights, tool, variant, onTool, onVariant 
     <div
       data-testid="build-menu"
       aria-label={t('hud.buildMenu')}
-      className="absolute bottom-3.5 z-20 flex flex-col items-center gap-2"
+      // 横に広い入れ物だが、板の無い所は街に触れる。下辺一帯が押せなくならないようにする
+      className="pointer-events-none absolute bottom-3.5 z-20 flex flex-col items-center gap-2"
       style={{ left: SIZE.dock + 16, right: 232 }}
     >
       {drawer.length === 0 ? null : (
         <div
           data-testid="build-drawer"
-          className="flex gap-2 rounded-lg p-2.5"
+          className="pointer-events-auto flex gap-2 rounded-lg p-2.5"
           style={{ background: HUD.panel, border: `1px solid ${HUD.lineStrong}`, backdropFilter: 'blur(8px)' }}
         >
           {drawer.map((item) => {
@@ -80,12 +81,12 @@ export function BuildMenu({ milestone, rights, tool, variant, onTool, onVariant 
         </div>
       )}
 
-      <p data-testid="build-lead" className="text-[12px]" style={{ color: HUD.muted }}>
+      <p data-testid="build-lead" className="pointer-events-auto text-[12px]" style={{ color: HUD.muted }}>
         {rights === 0 ? t('hud.noRights') : t('hud.place', { n: rights })}
       </p>
 
       <div
-        className="flex gap-1 rounded-[10px] p-1.5"
+        className="pointer-events-auto flex gap-1 rounded-[10px] p-1.5"
         style={{ background: HUD.dock, border: `1px solid ${HUD.lineStrong}`, boxShadow: HUD.shadowStrong, backdropFilter: 'blur(8px)' }}
       >
         {BUILD_TOOLS.map((item) => {

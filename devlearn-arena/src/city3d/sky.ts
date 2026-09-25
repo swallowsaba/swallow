@@ -127,6 +127,46 @@ export function lerpPoint(from: Vec2, to: Vec2, t: number): Vec2 {
 }
 
 /**
+ * いまのカメラ位置から、水平の向き（azimuth）を読む。
+ * `cameraPosition` の逆。寄る先を変えても、向きだけは保てるようにするためのもの。
+ */
+export function azimuthOf(camera: Vec2, target: Vec2): number {
+  return Math.atan2(camera.x - target.x, camera.z - target.z);
+}
+
+/** カメラと注目点の水平の隔たり（メートル）から、伏せ角を保った距離を戻す */
+export function distanceOf(camera: Vec2, target: Vec2): number {
+  const flat = Math.hypot(camera.x - target.x, camera.z - target.z);
+  return flat / Math.cos(CAMERA_PITCH);
+}
+
+/**
+ * ツアーで 1 つの施設に寄るときの距離（メートル）。
+ * 建物の全体と、その足元で起きていることが同時に見える近さ。
+ * これより近づけると、高い建物ではカメラが壁にめり込む。
+ */
+export const TOUR_DISTANCE = 240;
+
+/** ツアーで次の施設へ移る秒数。歩いて回るくらいの速さで、目で追える */
+export const TOUR_SECONDS = 1.6;
+
+/**
+ * 案内のときに、見る所を画面の右へ寄せる量。カメラからの距離に対する割合。
+ *
+ * 画面の左は端末の柱と課題の札で埋まっている。真ん中に寄せると、
+ * 案内したい施設がその板の裏に隠れる。そのぶんだけ右へ置く。
+ */
+export const TOUR_SIDE = 0.2;
+
+/**
+ * 施設が画面の右寄りに映るように、カメラが向く先をずらす。
+ * `azimuth` はカメラの水平の向き。`side` はずらす距離（メートル）。
+ */
+export function aside(at: Vec2, azimuth: number, side: number): Vec2 {
+  return { x: at.x - Math.cos(azimuth) * side, z: at.z + Math.sin(azimuth) * side };
+}
+
+/**
  * 車と人を進める。経路の端まで行ったら先頭へ戻る。
  * 時刻だけで決まるので、止めて再開しても飛ばない。
  */

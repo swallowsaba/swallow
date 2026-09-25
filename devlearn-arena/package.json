@@ -18,7 +18,8 @@
     "test:cov": "vitest run --coverage",
     "e2e": "playwright test",
     "links": "vite-node scripts/check-docs-links.mts",
-    "verify": "npm run typecheck && npm run lint && npm run test"
+    "verify": "npm run typecheck && npm run lint && npm run test",
+    "shoot": "node tools/shoot-all.mjs"
   },
   "dependencies": {
     "@noble/hashes": "^1.5.0",

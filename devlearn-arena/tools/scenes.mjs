@@ -32,4 +32,21 @@ export const SCENES = {
       await sleep(2000);
     },
   },
+
+  /** 案内ツアーの途中。カメラが施設に寄り、札が「これは何か」を出している */
+  '02-tour': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'tour-invite');
+      await page.getByTestId('tour-start').click();
+      await need(page, 'tour-card');
+      // 2 か所目まで進める。カメラが移った先を撮る
+      await sleep(2500);
+      await page.getByTestId('tour-next').click();
+      await sleep(3000);
+    },
+  },
 };

@@ -26,6 +26,8 @@ interface Props {
   onSite?: ((id: string) => void) | undefined;
   /** いま街を旅しているコマンド。荷車が停留所を巡り、積荷が姿を変える */
   journey?: Journey | null;
+  /** 案内ツアーでいま停まっている施設の id。カメラが寄り、その施設が光る */
+  tour?: string | null;
 }
 
 /**
@@ -35,7 +37,7 @@ interface Props {
  */
 export function CityStage({
   city, label, selected, onSelect, onCommand, speed = 'normal', view = null, district = null,
-  showSites = true, onSite, journey = null,
+  showSites = true, onSite, journey = null, tour = null,
 }: Props) {
   const motion = useMotionEnabled();
   const rate = SPEED_RATE[speed];
@@ -48,6 +50,7 @@ export function CityStage({
       data-sites={showSites ? 'on' : 'off'}
       data-journey={journey?.command ?? undefined}
       data-journey-stops={journey === null ? undefined : String(journey.stops.length)}
+      data-tour={tour ?? undefined}
     >
       <CityView
         city={city}
@@ -62,6 +65,7 @@ export function CityStage({
         {...(onSelect ? { onSelect } : {})}
         {...(onCommand ? { onCommand } : {})}
         journey={journey}
+        tour={tour}
       />
     </div>
   );

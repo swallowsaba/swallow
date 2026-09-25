@@ -19,7 +19,10 @@ import { buildCityScene, type BuiltScene } from './scene';
 import {
   CAMERA_FOV,
   POLAR_ANGLE,
+  aside,
+  azimuthOf,
   cameraPosition,
+  distanceOf,
   easeFocus,
   fitDistance,
   fogRange,
@@ -29,6 +32,9 @@ import {
   moveAlong,
   pickTargets,
   sunAt,
+  TOUR_DISTANCE,
+  TOUR_SECONDS,
+  TOUR_SIDE,
   type PickTarget,
 } from './sky';
 import type { CityLayout, Vec2 } from './model';
@@ -68,6 +74,8 @@ interface Props {
   time?: number;
   /** いま街を旅しているコマンド。荷車が停留所を巡る */
   journey?: Journey | null;
+  /** 案内ツアーでいま停まっている施設の id。カメラが寄り、その施設が光る */
+  tour?: string | null;
 }
 
 /** 時間帯が一周する秒数 */
@@ -220,38 +228,78 @@ function City({
   );
 }
 
-/** 見る向き。注目点へ 0.6 秒で寄る。回転は水平方向のみ */
-function Look({ target, animate, distance }: { target: Vec2; animate: boolean; distance: number }) {
+/**
+ * 見る向き。注目点へ寄る。回転は水平方向のみ。
+ *
+ * 注目点だけを動かしてもカメラは動かない（`OrbitControls` は注目点との隔たりを保つ）。
+ * そこでカメラの位置も自分で運ぶ。街の上を滑っていく様子が見えるようにするため。
+ *
+ * `closeUp` に距離を渡すと、寄りながらその距離まで近づく。ツアーで使う。
+ */
+function Look({
+  target,
+  animate,
+  distance,
+  seconds,
+  closeUp = null,
+}: {
+  target: Vec2;
+  animate: boolean;
+  distance: number;
+  seconds?: number;
+  closeUp?: number | null;
+}) {
   const controls = useRef<{ target: Vector3; update: () => void } | null>(null);
-  const trip = useRef<{ from: Vec2; to: Vec2; at: number } | null>(null);
-  const shown = useRef<Vec2>(target);
+  const trip = useRef<{ from: Vec2; to: Vec2; fromDistance: number; toDistance: number; azimuth: number; at: number } | null>(null);
+  /** 頼まれた寄り先。板に隠れないようずらす前の、施設そのものの場所 */
+  const asked = useRef<Vec2>(target);
+  /** いまカメラが向いている所。ずらしたあとの点 */
+  const aimed = useRef<Vec2>(target);
+  const { camera } = useThree();
+
+  /** カメラを、向く先から見て同じ向き・その距離の所に置く */
+  const place = (at: Vec2, span: number, azimuth: number): void => {
+    const [x, y, z] = cameraPosition(at, span, azimuth);
+    camera.position.set(x, y, z);
+  };
 
   useEffect(() => {
-    if (shown.current.x === target.x && shown.current.z === target.z) return;
+    if (asked.current.x === target.x && asked.current.z === target.z) return;
+    asked.current = target;
     const view = controls.current;
+    const here = { x: camera.position.x, z: camera.position.z };
+    const azimuth = azimuthOf(here, aimed.current);
+    const span = distanceOf(here, aimed.current);
+    const toDistance = closeUp ?? span;
+    // 寄るときは、施設が左の板に隠れないよう、向く先を少しずらす
+    const to = closeUp === null ? target : aside(target, azimuth, toDistance * TOUR_SIDE);
     // 動かさない設定のときは、瞬間で移す
     if (!animate) {
-      shown.current = target;
+      aimed.current = to;
       trip.current = null;
+      place(to, toDistance, azimuth);
       if (view !== null) {
-        view.target.set(target.x, 0, target.z);
+        view.target.set(to.x, 0, to.z);
         view.update();
       }
       return;
     }
-    trip.current = { from: shown.current, to: target, at: -1 };
-  }, [target, animate]);
+    trip.current = { from: aimed.current, to, fromDistance: span, toDistance, azimuth, at: -1 };
+    // 依存に place を入れると毎描画で作り直される。寄る先が変わったときだけ動く
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, animate, closeUp]);
 
   useFrame((state) => {
     const trek = trip.current;
     const view = controls.current;
     if (trek === null || view === null) return;
     if (trek.at < 0) trek.at = state.clock.elapsedTime;
-    const t = easeFocus(state.clock.elapsedTime - trek.at);
+    const t = easeFocus(state.clock.elapsedTime - trek.at, seconds);
     const where = lerpPoint(trek.from, trek.to, t);
+    place(where, trek.fromDistance + (trek.toDistance - trek.fromDistance) * t, trek.azimuth);
     view.target.set(where.x, 0, where.z);
     view.update();
-    shown.current = where;
+    aimed.current = where;
     if (t >= 1) trip.current = null;
   });
 
@@ -269,6 +317,9 @@ function Look({ target, animate, distance }: { target: Vec2; animate: boolean; d
     />
   );
 }
+
+/** 屋根の上に立てる光の柱の高さ（メートル） */
+const BEACON = 46;
 
 /**
  * 選んだ建物の上に立てる印。光る輪と名札（DESIGN の 1-6）。
@@ -289,9 +340,17 @@ function Marker({ target, animate }: { target: PickTarget; animate: boolean }) {
         <ringGeometry args={[radius, radius + 1.4, 48]} />
         <meshBasicMaterial color={MARK.ring} transparent opacity={0.85} depthWrite={false} />
       </mesh>
-      <mesh position={[0, target.size.h / 2, 0]}>
-        <cylinderGeometry args={[0.14, 0.14, target.size.h, 8]} />
-        <meshBasicMaterial color={MARK.ring} transparent opacity={0.6} />
+      {/*
+        屋根の上に立てる光の柱。足元の輪は他の建物や木に隠れることがあるので、
+        どこから見ても「いまここを見ている」と分かる印を空に出す。
+      */}
+      <mesh position={[0, target.size.h + BEACON / 2, 0]}>
+        <cylinderGeometry args={[2.8, 4.6, BEACON, 16, 1, true]} />
+        <meshBasicMaterial color={MARK.ring} transparent opacity={0.72} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, target.size.h + BEACON / 2, 0]}>
+        <cylinderGeometry args={[5.4, 8.2, BEACON, 16, 1, true]} />
+        <meshBasicMaterial color={MARK.ring} transparent opacity={0.18} depthWrite={false} />
       </mesh>
       <Html position={[0, target.size.h + 3, 0]} center distanceFactor={120} zIndexRange={[30, 0]}>
         <div
@@ -307,7 +366,10 @@ function Marker({ target, animate }: { target: PickTarget; animate: boolean }) {
           }}
         >
           <span style={{ fontWeight: 700 }}>{target.label}</span>
-          <span style={{ color: MARK.plateSub }}>{` 住人 ${String(target.residents)}`}</span>
+          {/* 住人のいない施設に「住人 0」と出さない。数はいる所にだけ添える */}
+          {target.residents === 0 ? null : (
+            <span style={{ color: MARK.plateSub }}>{` 住人 ${String(target.residents)}`}</span>
+          )}
         </div>
       </Html>
     </group>
@@ -528,7 +590,7 @@ function Convoy({ route, animate }: { route: CartRoute; animate: boolean }) {
 
 export default function CityScene({
   layout, onCommand, onSelect, onSite, selected = null, animate = true, rate = 1, view = null, district = null,
-  showSites = true, time, journey = null,
+  showSites = true, time, journey = null, tour = null,
 }: Props) {
   const [why, setWhy] = useState<string | null>(null);
   // 開いた瞬間は、いま学んでいる区域に寄る。島全体を遠くから見下ろさない
@@ -547,7 +609,14 @@ export default function CityScene({
     if (target.command !== '') onCommand?.(target.command);
   };
 
-  const marked = targets.find((t) => t.id === selected) ?? null;
+  // ツアー中は、いま案内している施設に寄って光らせる。選んでいる建物より案内を優先する
+  useEffect(() => {
+    if (tour === null) return;
+    const at = targets.find((t) => t.id === tour)?.at;
+    if (at !== undefined) setFocus(at);
+  }, [tour, targets]);
+
+  const marked = targets.find((t) => t.id === (tour ?? selected)) ?? null;
   // 打ったコマンドの旅。停留所が街に揃っていなければ道のりにならない
   const route = useMemo(() => (journey === null ? null : routeOf(journey, layout.buildings)), [journey, layout]);
 
@@ -566,7 +635,12 @@ export default function CityScene({
         {showSites ? <Sites layout={layout} animate={animate} onPick={onSite} /> : null}
         {marked === null ? null : <Marker target={marked} animate={animate} />}
         {route === null ? null : <Convoy key={route.id} route={route} animate={animate} />}
-        <Look target={focus} animate={animate} distance={distance} />
+        <Look
+          target={focus}
+          animate={animate}
+          distance={distance}
+          {...(tour === null ? {} : { closeUp: TOUR_DISTANCE, seconds: TOUR_SECONDS })}
+        />
       </Canvas>
       {why === null ? null : (
         <p

@@ -11,6 +11,7 @@ import { takeawaysOf } from '@/engines/lesson/takeaways';
 import type { LessonDefinition, LessonProgressState, LessonStep, MissionTrack } from '@/engines/lesson/types';
 import type { DesignKind } from '@/city/model';
 import { journeyOf } from '@/city/journey';
+import { tourOf } from '@/city/tour';
 import { LEG_SECONDS } from '@/city3d/journey';
 import type { InfoView } from '@/city3d/overlay';
 import type { TerminalHandle } from '@/features/terminal/TerminalView';
@@ -36,6 +37,7 @@ import { gainFor, growsFromCommand, type GrowthTrigger } from './growth';
 import { nextTrip, type Trip } from './trip';
 import { TerminalDock } from './hud/TerminalDock';
 import { TaskCard } from './hud/TaskCard';
+import { TourPanel } from './hud/TourPanel';
 import { ExplainDrawer } from './hud/ExplainDrawer';
 import { TopBar } from './hud/TopBar';
 import { BuildingPanel } from './hud/BuildingPanel';
@@ -226,6 +228,10 @@ function Arena({
   const [infoView, setInfoView] = useState<InfoView | null>(null);
   // いま街を旅しているコマンド。打った 1 行ごとに 1 度だけ走る
   const [trip, setTrip] = useState<Trip | null>(null);
+  // 案内ツアー。いま何番目の施設を案内しているか。null なら案内していない
+  const [tourAt, setTourAt] = useState<number | null>(null);
+  // ツアーの勧めを断ったか。断ったら、自分から始めるまで二度と勧めない
+  const [tourDeclined, setTourDeclined] = useState(false);
 
   const xp = useStore((s) => s.profile.xp);
   const soundEnabled = useStore((s) => s.settings.soundEnabled);
@@ -298,6 +304,10 @@ function Arena({
       clearTimeout(timer);
     };
   }, [journey]);
+
+  // 案内ツアーの道のり。街に建っている施設だけを巡る
+  const tour = useMemo(() => tourOf(city, mission.track), [city, mission.track]);
+  const tourStop = tourAt === null ? null : (tour[Math.min(tourAt, tour.length - 1)]?.building ?? null);
 
   // 選んだ建物の中身。街の状態から導くので、選び直すたびに数え直す必要が無い
   const chosen = selected === null ? null : buildingInfo(city, shellState.cluster, selected);
@@ -535,6 +545,7 @@ function Arena({
         onSelect={setSelected}
         onCommand={runFromCity}
         journey={journey}
+        tour={tourStop}
       />
 
       <TopBar
@@ -571,6 +582,22 @@ function Arena({
         onHint={revealHint}
         onWhy={() => {
           setExplaining((open) => !open);
+        }}
+      />
+
+      <TourPanel
+        stops={tour}
+        at={tourAt}
+        // 街を開いたばかりで、まだ 1 行も打っていないときだけ勧める。強制はしない
+        invited={!tourDeclined && shellState.history.length === 0 && !progress.cleared}
+        onAt={setTourAt}
+        onLeave={() => {
+          setTourAt(null);
+          setTourDeclined(true);
+          terminalRef.current?.focus();
+        }}
+        onDecline={() => {
+          setTourDeclined(true);
         }}
       />
 
