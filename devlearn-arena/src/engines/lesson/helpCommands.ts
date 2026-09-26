@@ -1,5 +1,5 @@
 import type { CommandSpec } from '@/engines/kernel/registry';
-import type { LessonStep } from './types';
+import type { LessonCoreStep } from './types';
 
 /**
  * 任務の助けを端末から引く `hint` と `answer`。
@@ -13,7 +13,7 @@ import type { LessonStep } from './types';
  */
 export interface LessonHelpSource {
   /** いまの手順。任務を終えていれば undefined */
-  step: () => LessonStep | undefined;
+  step: () => LessonCoreStep | undefined;
   /** いまの手順が何番目か（0 始まり） */
   stepIndex: () => number;
   /** いまの手順で、すでに見たヒントの数 */

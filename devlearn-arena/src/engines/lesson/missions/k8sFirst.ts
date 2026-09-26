@@ -4,7 +4,7 @@ import { isReady } from '@/engines/k8s/kubelet';
 import { isParseError, parseManifest } from '@/engines/k8s/manifest';
 import type { Deployment, Pod } from '@/engines/k8s/types';
 import type { ShellState } from '@/engines/kernel/registry';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 import { DEPLOY, NODE, ran } from '../authoring/ran';
 
 /** 持ち主（Deployment など）のいない、単独の Pod web */
@@ -49,7 +49,7 @@ const readyOwned = (shell: ShellState) => ownedPods(shell).filter(isReady).lengt
  * Kubernetes の最初の任務。ノードだけがある空のクラスタから始める。
  * Pod を直接作ると消えたら戻らず、Deployment に頼むと戻る。その違いを手で確かめる。
  */
-export const k8sFirstPod: LessonDefinition = {
+export const k8sFirstPod: LessonCore = {
   id: 'k8s/01/first-kubectl',
   track: 'k8s',
   kind: 'training',
@@ -218,7 +218,7 @@ function webDeploymentWasDeleted(timeline: readonly ShellState[]): boolean {
  * YAML の最初の任務。さっきコマンドで作ったものが YAML でどう書かれるかを見て、
  * そのファイルを書き換えて渡す（apply）ところまでを体験する。
  */
-export const k8sFirstYaml: LessonDefinition = {
+export const k8sFirstYaml: LessonCore = {
   id: 'k8s/01/first-yaml',
   track: 'k8s',
   kind: 'training',

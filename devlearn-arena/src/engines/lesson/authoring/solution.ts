@@ -1,4 +1,4 @@
-import type { LessonDefinition, LessonStep } from '../types';
+import type { LessonCore, LessonCoreStep } from '../types';
 import { play } from './play';
 
 /** 模範解答を、ヒントの1件として見せる形にする（1行ずつ改行で区切る） */
@@ -10,7 +10,7 @@ export function solutionText(lines: readonly string[]): string {
  * 最後のヒントを「そのまま打てば通るコマンド」にそろえる。
  * 助言で終わっているときは、模範解答を最後に足す。
  */
-export function withSolutionHint<T extends Pick<LessonStep, 'hints' | 'solution'>>(step: T): T {
+export function withSolutionHint<T extends Pick<LessonCoreStep, 'hints' | 'solution'>>(step: T): T {
   if (step.solution.length === 0) return step;
   const text = solutionText(step.solution);
   if (step.hints[step.hints.length - 1] === text) return step;
@@ -18,7 +18,7 @@ export function withSolutionHint<T extends Pick<LessonStep, 'hints' | 'solution'
 }
 
 /** 任務の全手順の最後のヒントをそろえる */
-export function finalizeLesson(lesson: LessonDefinition): LessonDefinition {
+export function finalizeLesson(lesson: LessonCore): LessonCore {
   return { ...lesson, steps: lesson.steps.map(withSolutionHint) };
 }
 
@@ -27,7 +27,7 @@ export function finalizeLesson(lesson: LessonDefinition): LessonDefinition {
  * 実際に打って、どの行でどの手順を越えたかを見て決める。
  * 1行で2手順ぶん進んだときは、後ろの手順は空になる。
  */
-export function splitSolution(lesson: LessonDefinition, lines: readonly string[]): string[][] {
+export function splitSolution(lesson: LessonCore, lines: readonly string[]): string[][] {
   const parts: string[][] = lesson.steps.map(() => []);
   const { reached } = play(lesson, lines);
   let at = 0;

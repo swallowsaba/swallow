@@ -4,13 +4,13 @@ import { GITLINK_MODE, branches, headCommit, log } from '@/engines/git/repositor
 import { tagNames } from '@/engines/git/refs';
 import { HOME } from '@/engines/kernel/path';
 import { exists } from '@/engines/kernel/vfs';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 import { ran } from '../authoring/ran';
 import { badCommit, goodCommits, isBisecting } from '@/engines/git/bisect';
 
 /** 並行作業・リモート・調査・大規模運用（08〜11 章） */
 
-export const gitParallelWork: LessonDefinition = {
+export const gitParallelWork: LessonCore = {
   id: 'git/08/worktree',
   track: 'git',
   kind: 'training',
@@ -84,7 +84,7 @@ export const gitParallelWork: LessonDefinition = {
   ],
 };
 
-export const gitDivergedBoss: LessonDefinition = {
+export const gitDivergedBoss: LessonCore = {
   id: 'git/09/boss-diverged',
   track: 'git',
   kind: 'boss',
@@ -176,7 +176,7 @@ export const gitDivergedBoss: LessonDefinition = {
   ],
 };
 
-export const gitFindRegression: LessonDefinition = {
+export const gitFindRegression: LessonCore = {
   id: 'git/10/boss-find-regression',
   track: 'git',
   kind: 'boss',
@@ -273,7 +273,7 @@ export const gitFindRegression: LessonDefinition = {
   ],
 };
 
-export const gitRepoSize: LessonDefinition = {
+export const gitRepoSize: LessonCore = {
   id: 'git/11/gc-packfile',
   track: 'git',
   kind: 'training',
@@ -334,7 +334,7 @@ export const gitRepoSize: LessonDefinition = {
 };
 
 /** 大きなファイルを扱う任務で使う（タグの一覧を検証に使う） */
-export const gitRelease: LessonDefinition = {
+export const gitRelease: LessonCore = {
   id: 'git/01/refs-head',
   track: 'git',
   kind: 'training',
@@ -413,7 +413,7 @@ export const gitRelease: LessonDefinition = {
 };
 
 /** submodule を扱う任務。gitlink がコミット1つを指すことを見る */
-export const gitSubmodule: LessonDefinition = {
+export const gitSubmodule: LessonCore = {
   id: 'git/08/submodule',
   track: 'git',
   kind: 'training',

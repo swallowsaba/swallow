@@ -1,4 +1,4 @@
-import type { LessonDefinition } from './types';
+import type { LessonCore } from './types';
 
 /** 「ここまでで分かったこと」は必ずこの行数にそろえる */
 export const TAKEAWAY_LINES = 3;
@@ -15,7 +15,7 @@ function firstSentence(text: string): string {
  * 2. 無ければ目標（〜できる）を「できるようになったこと」として並べる
  * 3. 足りなければ、後ろの手順の説明の最初の1文で埋める（最後にやったことほど記憶に近い）
  */
-export function takeawaysOf(lesson: LessonDefinition): string[] {
+export function takeawaysOf(lesson: LessonCore): string[] {
   const out: string[] = [];
   const push = (line: string) => {
     const trimmed = line.trim();

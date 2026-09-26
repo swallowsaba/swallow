@@ -4,7 +4,7 @@ import type { ShellState } from '@/engines/kernel/registry';
 import { createShellState } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { createProgress, evaluate } from '../runner';
-import type { LessonDefinition, LessonProgressState } from '../types';
+import type { LessonCore, LessonProgressState } from '../types';
 
 const registry = createDefaultRegistry();
 
@@ -24,7 +24,7 @@ export interface PlayResult {
  * 模範解答を順に打って、その任務が本当に解けるかを確かめる。
  * 任務が増えても「解けること」を機械的に担保できるようにする。
  */
-export function play(mission: LessonDefinition, lines: readonly string[]): PlayResult {
+export function play(mission: LessonCore, lines: readonly string[]): PlayResult {
   const clock = createClock();
   const timeline: ShellState[] = [createShellState(mission.initial)];
   const exitCodes: number[] = [];
@@ -53,7 +53,7 @@ export function play(mission: LessonDefinition, lines: readonly string[]): PlayR
 }
 
 /** 落ちたときに読める形にする */
-export function explainFailure(mission: LessonDefinition, result: PlayResult): string {
+export function explainFailure(mission: LessonCore, result: PlayResult): string {
   return [
     `${mission.id} を模範解答で解けませんでした。`,
     `止まった手順 ${String(result.progress.stepIndex + 1)}/${String(mission.steps.length)}: ${result.stuckAt ?? ''}`,

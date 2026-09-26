@@ -4,7 +4,8 @@ import { missions as curated } from './missions';
 import { drillSources } from './drills';
 import type { MissionSource } from './authoring/mission';
 import { assignOrder, assignRequires } from './order';
-import type { LessonDefinition, LessonIntro, LessonKindMeta, MissionKind, MissionTrack } from './types';
+import { withFlow } from './flow';
+import type { LessonCore, LessonDefinition, LessonIntro, LessonKindMeta, MissionKind, MissionTrack } from './types';
 
 /**
  * 一覧に出すための情報。
@@ -50,18 +51,21 @@ function fromSource(source: MissionSource): Unordered {
     docs: source.docs,
     curated: false,
     repeatOf: source.repeatOf,
-    build: source.build,
+    // 学びの流れの 5 段をそろえる。反復演習は元になった任務の流れを使う
+    build: () => withFlow(source.build(), { chapterId: source.chapterId, mainId: source.repeatOf ?? source.id }),
   };
 }
 
-/** 先に書いた任務は LessonDefinition のまま持っているので、包んで揃える */
-function fromDefinition(definition: LessonDefinition): Unordered {
+/** 先に書いた任務は LessonCore のまま持っているので、包んで揃える */
+function fromDefinition(definition: LessonCore): Unordered {
+  const chapterId = chapterOf(definition.id);
+  let built: LessonDefinition | null = null;
   return {
     id: definition.id,
     title: definition.title,
     intro: definition.intro,
     track: definition.track,
-    chapterId: chapterOf(definition.id),
+    chapterId,
     kind: definition.kind,
     lessonKind: definition.kind === 'boss' ? 'boss' : 'drill',
     minutes: Math.max(4, definition.steps.length * 3),
@@ -69,7 +73,7 @@ function fromDefinition(definition: LessonDefinition): Unordered {
     docs: [],
     curated: true,
     repeatOf: null,
-    build: () => definition,
+    build: () => (built ??= withFlow(definition, { chapterId, mainId: definition.id })),
   };
 }
 

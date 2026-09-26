@@ -1,7 +1,7 @@
 import { concepts } from '../glossary';
 import { HOME } from '@/engines/kernel/path';
 import { createRepo } from '@/engines/github/pr';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 
 const CI_YAML = `name: CI
 on:
@@ -26,7 +26,7 @@ jobs:
         run: npm run build
 `;
 
-export const ghPullRequest: LessonDefinition = {
+export const ghPullRequest: LessonCore = {
   id: 'github/04/boss-blocked-merge',
   track: 'github',
   kind: 'boss',

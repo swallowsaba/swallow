@@ -2,9 +2,9 @@ import { concepts } from '../glossary';
 import { HOME } from '@/engines/kernel/path';
 import { branches, currentBranch, headCommit, log, status } from '@/engines/git/repository';
 import { isAncestor } from '@/engines/git/history';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 
-export const gitFirstCommit: LessonDefinition = {
+export const gitFirstCommit: LessonCore = {
   id: 'git/01/objects',
   track: 'git',
   kind: 'training',
@@ -95,7 +95,7 @@ const GIT_FILES = {
   '/etc/hosts': '127.0.0.1\tlocalhost\n',
 } as const;
 
-export const gitBranching: LessonDefinition = {
+export const gitBranching: LessonCore = {
   id: 'git/04/three-way-merge',
   track: 'git',
   kind: 'training',
@@ -175,7 +175,7 @@ export const gitBranching: LessonDefinition = {
   ],
 };
 
-export const gitConflictDrill: LessonDefinition = {
+export const gitConflictDrill: LessonCore = {
   id: 'git/05/resolve-drill',
   track: 'git',
   kind: 'training',

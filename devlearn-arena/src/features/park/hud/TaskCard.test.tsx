@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { describe, expect, it } from 'vitest';
-import { k8sFirstPod } from '@/engines/lesson/missions';
+import { missionById } from '@/engines/lesson/registry';
 import type { LessonProgressState } from '@/engines/lesson/types';
 import { mount } from '@/visual/mountForTest';
 import { TaskCard } from './TaskCard';
@@ -11,6 +11,12 @@ import { TaskCard } from './TaskCard';
  * 先の手順の語を先回りして出さないこと。
  */
 
+const FIRST = (() => {
+  const built = missionById('k8s/01/first-kubectl')?.build();
+  if (built === undefined) throw new Error('最初の任務が無い');
+  return built;
+})();
+
 function progressAt(stepIndex: number): LessonProgressState {
   return { stepIndex, cleared: false, hintsUsed: 0, commandsUsed: 0, mistakes: 0, skipped: [] };
 }
@@ -18,7 +24,7 @@ function progressAt(stepIndex: number): LessonProgressState {
 function card(stepIndex: number) {
   return mount(
     <TaskCard
-      mission={k8sFirstPod}
+      mission={FIRST}
       progress={progressAt(stepIndex)}
       passingNow={false}
       diagnosis={null}
@@ -50,14 +56,14 @@ describe('最初の任務の札', () => {
 
   it('Pod を作る手順に来ると、Pod が「この任務で出てくる言葉」の折り畳まれない所に並ぶ', () => {
     const view = card(1);
-    expect(k8sFirstPod.steps[1]?.prompt).toContain('Pod');
+    expect(FIRST.steps[1]?.prompt).toContain('Pod');
     expect(wordsOn(view)).toContain('Pod');
   });
 
   it('先の手順は中身を伏せる', () => {
     const view = card(0);
     const later = view.querySelector('[data-step="3"]');
-    expect(later?.textContent).not.toContain(k8sFirstPod.steps[3]?.prompt ?? '---');
+    expect(later?.textContent).not.toContain(FIRST.steps[3]?.prompt ?? '---');
   });
 
   it('いまの手順の用語には下線が付き、マウスを乗せると言い換えと例えが浮かぶ', () => {

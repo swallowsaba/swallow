@@ -1,7 +1,7 @@
 import type { ShellState } from '@/engines/kernel/registry';
-import type { AssertContext, LessonDefinition, LessonProgressState, LessonStep } from './types';
+import type { AssertContext, LessonCore, LessonProgressState, LessonCoreStep } from './types';
 
-export function createProgress(lesson: LessonDefinition): LessonProgressState {
+export function createProgress(lesson: LessonCore): LessonProgressState {
   void lesson;
   return { stepIndex: 0, cleared: false, hintsUsed: 0, commandsUsed: 0, mistakes: 0, skipped: [] };
 }
@@ -17,7 +17,7 @@ export function markSkipped(progress: LessonProgressState, index: number): Lesso
  * 途中で別の道に進んでしまい、その手順の解答だけでは通らないときに、
  * 初期状態からこれを打ち直せば必ずその手順を越えられる。
  */
-export function solutionThrough(lesson: LessonDefinition, index: number): string[] {
+export function solutionThrough(lesson: LessonCore, index: number): string[] {
   return lesson.steps.slice(0, index + 1).flatMap((step) => [...step.solution]);
 }
 
@@ -33,7 +33,7 @@ export function buildContext(timeline: readonly ShellState[]): AssertContext {
  * 満たされた手順は連続して先に進める（1コマンドで2手順ぶん進む解答を許容する）。
  */
 export function advance(
-  lesson: LessonDefinition,
+  lesson: LessonCore,
   progress: LessonProgressState,
   timeline: readonly ShellState[],
   exitCode = 0,
@@ -48,7 +48,7 @@ export function advance(
 
 /** 手順の合否だけを判定する。回数は数えない。状態が変わるたびに呼べる。 */
 export function evaluate(
-  lesson: LessonDefinition,
+  lesson: LessonCore,
   progress: LessonProgressState,
   timeline: readonly ShellState[],
 ): LessonProgressState {
@@ -70,7 +70,7 @@ export function evaluate(
 }
 
 /** assert が例外を投げても落とさない */
-export function passes(step: LessonStep, ctx: AssertContext): boolean {
+export function passes(step: LessonCoreStep, ctx: AssertContext): boolean {
   try {
     return step.assert(ctx);
   } catch {
@@ -82,6 +82,6 @@ export function useHint(progress: LessonProgressState): LessonProgressState {
   return { ...progress, hintsUsed: progress.hintsUsed + 1 };
 }
 
-export function currentStep(lesson: LessonDefinition, progress: LessonProgressState) {
+export function currentStep<L extends LessonCore>(lesson: L, progress: LessonProgressState): L['steps'][number] | undefined {
   return lesson.steps[Math.min(progress.stepIndex, lesson.steps.length - 1)];
 }

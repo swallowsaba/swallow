@@ -1,6 +1,6 @@
 import { concepts } from '../glossary';
 import { host, iface, link, resetMac, router, topology } from '@/engines/net/factory';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 import { ran } from '../authoring/ran';
 
 /** web が待ち受けていないため、ping は通るのに curl が失敗する構成 */
@@ -21,7 +21,7 @@ function brokenServiceNet(listening: number[]) {
   );
 }
 
-export const netFirstHop: LessonDefinition = {
+export const netFirstHop: LessonCore = {
   id: 'net/05/ttl-hop',
   track: 'net',
   kind: 'training',
@@ -81,7 +81,7 @@ export const netFirstHop: LessonDefinition = {
   ],
 };
 
-export const netUnreachableBoss: LessonDefinition = {
+export const netUnreachableBoss: LessonCore = {
   id: 'net/14/boss-final',
   track: 'net',
   kind: 'boss',

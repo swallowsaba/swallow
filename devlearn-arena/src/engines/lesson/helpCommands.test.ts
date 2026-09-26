@@ -3,9 +3,9 @@ import { createDefaultRegistry } from '@/engines/kernel/commands';
 import { createSession, type Session } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { isHelpCommand, lessonHelpCommands } from './helpCommands';
-import type { LessonStep } from './types';
+import type { LessonCoreStep } from './types';
 
-const STEP: LessonStep = {
+const STEP: LessonCoreStep = {
   prompt: 'README を作る',
   check: 'README.md がある',
   hints: ['ファイルを作るコマンドは touch です', 'touch README.md'],
@@ -15,7 +15,7 @@ const STEP: LessonStep = {
 };
 
 /** null は任務を終えた後 */
-function setup(step: LessonStep | null = STEP) {
+function setup(step: LessonCoreStep | null = STEP) {
   let seen = 0;
   let answered = 0;
   const registry = createDefaultRegistry().registerAll(

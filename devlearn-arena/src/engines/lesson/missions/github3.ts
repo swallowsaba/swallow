@@ -1,7 +1,7 @@
 import { concepts } from '../glossary';
 import { createRepo } from '@/engines/github/pr';
 import { HOME } from '@/engines/kernel/path';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 import { ran } from '../authoring/ran';
 
 const WORKFLOWS = `${HOME}/.github/workflows`;
@@ -73,7 +73,7 @@ jobs:
 
 /** Actions の実務とリリース、OSS への貢献（07〜09 章） */
 
-export const ghActionsPractice: LessonDefinition = {
+export const ghActionsPractice: LessonCore = {
   id: 'github/07/cache-artifact',
   track: 'github',
   kind: 'training',
@@ -136,7 +136,7 @@ export const ghActionsPractice: LessonDefinition = {
   ],
 };
 
-export const ghMatrix: LessonDefinition = {
+export const ghMatrix: LessonCore = {
   id: 'github/07/matrix',
   track: 'github',
   kind: 'training',
@@ -194,7 +194,7 @@ export const ghMatrix: LessonDefinition = {
   ],
 };
 
-export const ghReusable: LessonDefinition = {
+export const ghReusable: LessonCore = {
   id: 'github/07/reusable-workflows',
   track: 'github',
   kind: 'training',
@@ -244,7 +244,7 @@ export const ghReusable: LessonDefinition = {
   ],
 };
 
-export const ghForkFlow: LessonDefinition = {
+export const ghForkFlow: LessonCore = {
   id: 'github/09/fork-flow',
   track: 'github',
   kind: 'training',
@@ -294,7 +294,7 @@ export const ghForkFlow: LessonDefinition = {
   ],
 };
 
-export const ghRelease: LessonDefinition = {
+export const ghRelease: LessonCore = {
   id: 'github/08/tags-releases',
   track: 'github',
   kind: 'training',

@@ -1,4 +1,4 @@
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 import { finalizeLesson } from '../authoring/solution';
 import { gitBranching, gitConflictDrill, gitFirstCommit } from './git';
 import { gitAmend, gitInteractiveRebase, gitRecovery, gitThreeTrees } from './git2';
@@ -28,7 +28,7 @@ import { netDropVsReject, netHealthCheck, netTls, netVpcDesign } from './net3';
  * 目次（src/content）の status は、ここに載っている id から刻まれる。
  * 最後のヒントは、どの手順でも模範解答（そのまま打てば通るコマンド）にそろえる。
  */
-export const missions: readonly LessonDefinition[] = [
+export const missions: readonly LessonCore[] = [
   shellWarmup,
   gitFirstCommit,
   gitRelease,
@@ -109,6 +109,6 @@ export {
 } from './net2';
 export { netDropVsReject, netHealthCheck, netTls, netVpcDesign } from './net3';
 
-export function findMission(id: string): LessonDefinition | undefined {
+export function findMission(id: string): LessonCore | undefined {
   return missions.find((m) => m.id === id || m.id.endsWith(`/${id}`));
 }

@@ -1,5 +1,5 @@
 import type { DeviceKind, Topology } from '@/engines/net/types';
-import type { LessonDefinition } from './types';
+import type { LessonCore } from './types';
 
 /**
  * ネットワークの構成図の読み方。
@@ -59,7 +59,7 @@ export function readTopology(net: Topology, self: string): DiagramReading {
 }
 
 /** 任務の最初の状態に構成図があれば、その読み方を返す */
-export function diagramOf(lesson: LessonDefinition): DiagramReading | null {
+export function diagramOf(lesson: LessonCore): DiagramReading | null {
   const net = lesson.initial.net;
   if (net === undefined) return null;
   const self = lesson.initial.vars?.['NET_SELF'] ?? 'pc1';

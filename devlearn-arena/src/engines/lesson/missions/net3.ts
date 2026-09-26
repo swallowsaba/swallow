@@ -2,7 +2,7 @@ import { concepts } from '../glossary';
 import { host, iface, link, nat, port, resetMac, router, switchDevice, topology } from '@/engines/net/factory';
 import { HOME } from '@/engines/kernel/path';
 import type { Topology } from '@/engines/net/types';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 import { hostIs, ran } from '../authoring/ran';
 
 const FILES = { [HOME]: null };
@@ -101,7 +101,7 @@ const CERTS = JSON.stringify({
 
 /** 上位層と切り分け（10〜13 章） */
 
-export const netTls: LessonDefinition = {
+export const netTls: LessonCore = {
   id: 'net/10/tls-handshake',
   track: 'net',
   kind: 'training',
@@ -169,7 +169,7 @@ export const netTls: LessonDefinition = {
   ],
 };
 
-export const netHealthCheck: LessonDefinition = {
+export const netHealthCheck: LessonCore = {
   id: 'net/11/health-check',
   track: 'net',
   kind: 'training',
@@ -213,7 +213,7 @@ export const netHealthCheck: LessonDefinition = {
   ],
 };
 
-export const netDropVsReject: LessonDefinition = {
+export const netDropVsReject: LessonCore = {
   id: 'net/12/drop-vs-reject',
   track: 'net',
   kind: 'training',
@@ -271,7 +271,7 @@ export const netDropVsReject: LessonDefinition = {
   ],
 };
 
-export const netVpcDesign: LessonDefinition = {
+export const netVpcDesign: LessonCore = {
   id: 'net/13/vpc-design',
   track: 'net',
   kind: 'training',

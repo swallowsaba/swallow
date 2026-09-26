@@ -4,7 +4,7 @@ import { isReady } from '@/engines/k8s/kubelet';
 import { nodeCondition } from '@/engines/k8s/bootstrap';
 import { key, type ClusterState } from '@/engines/k8s/types';
 import { HOME } from '@/engines/kernel/path';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 import { heredoc } from '../authoring/solution';
 import { countRan, DEPLOY, NODE, POD, ran } from '../authoring/ran';
 
@@ -87,7 +87,7 @@ import { canI } from '@/engines/k8s/policy';
 
 /** 可観測性・権限・スケール・運用（09〜13 章） */
 
-export const k8sCrashLoop: LessonDefinition = {
+export const k8sCrashLoop: LessonCore = {
   id: 'k8s/09/boss-crashloop',
   track: 'k8s',
   kind: 'boss',
@@ -169,7 +169,7 @@ export const k8sCrashLoop: LessonDefinition = {
   ],
 };
 
-export const k8sRbacDenied: LessonDefinition = {
+export const k8sRbacDenied: LessonCore = {
   id: 'k8s/10/boss-rbac-denied',
   track: 'k8s',
   kind: 'boss',
@@ -263,7 +263,7 @@ export const k8sRbacDenied: LessonDefinition = {
   ],
 };
 
-export const k8sHpa: LessonDefinition = {
+export const k8sHpa: LessonCore = {
   id: 'k8s/11/hpa',
   track: 'k8s',
   kind: 'training',
@@ -350,7 +350,7 @@ export const k8sHpa: LessonDefinition = {
   ],
 };
 
-export const k8sDrain: LessonDefinition = {
+export const k8sDrain: LessonCore = {
   id: 'k8s/12/drain-cordon',
   track: 'k8s',
   kind: 'training',
@@ -416,7 +416,7 @@ export const k8sDrain: LessonDefinition = {
   ],
 };
 
-export const k8sNoLimits: LessonDefinition = {
+export const k8sNoLimits: LessonCore = {
   id: 'k8s/13/no-limits',
   track: 'k8s',
   kind: 'training',
@@ -520,7 +520,7 @@ function waiting(shell: { cluster: ClusterState | null }): number {
  * 障害対応の任務（REWORK 4-4）。街で「障害を起こす」から起こせるのと同じことが、
  * 最初から起きている状態で始まる。何が動いていて何が止まったのかを、自分で確かめて直す。
  */
-export const k8sNodeDownBoss: LessonDefinition = {
+export const k8sNodeDownBoss: LessonCore = {
   id: 'k8s/12/boss-node-down',
   track: 'k8s',
   kind: 'boss',

@@ -1,6 +1,6 @@
 import { termsIn } from '@/content/glossary';
 import type { DiagramId } from '@/engines/lesson/diagramIds';
-import type { LessonDefinition, MissionTrack } from '@/engines/lesson/types';
+import type { LessonCore, MissionTrack } from '@/engines/lesson/types';
 
 /**
  * 手順ごとに、どの遊べる図解を開くか（REWORK 6-5）。
@@ -53,7 +53,7 @@ function byCommand(line: string): DiagramId | undefined {
   return undefined;
 }
 
-export function diagramOfStep(lesson: LessonDefinition, index: number): DiagramId {
+export function diagramOfStep(lesson: LessonCore, index: number): DiagramId {
   const step = lesson.steps[index];
   const allowed = ALLOWED[lesson.track];
   const ok = (id: DiagramId | undefined): id is DiagramId => id !== undefined && allowed.includes(id);

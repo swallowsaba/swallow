@@ -1,7 +1,7 @@
 import type { SessionOptions } from '@/engines/kernel/session';
 import type { DocRef } from '@/content/types';
 import type {
-  LessonDefinition, LessonIntro, LessonKindMeta, LessonStep, MissionKind, MissionTrack, StepPart,
+  LessonCore, LessonIntro, LessonKindMeta, LessonCoreStep, MissionKind, MissionTrack, StepPart,
 } from '../types';
 import type { Check } from './assert';
 import { requireAll, type Condition } from './conditions';
@@ -10,6 +10,10 @@ import { solutionText, splitSolution, withSolutionHint } from './solution';
 interface StepBase {
   /** 何をするか */
   prompt: string;
+  /** この操作で何を確かめるのか。ふつうは `flow/` の表に書く（手順の数が変種で違うときだけここに書く） */
+  purpose?: string;
+  /** 打った後に街で何が起きたか。`purpose` と同じ */
+  afterward?: string;
   /** 何を満たせば通るか。隠さない */
   check?: string;
   hints?: readonly string[];
@@ -77,11 +81,11 @@ export interface MissionSource {
   minutes: number;
   docs: readonly DocRef[];
   stepCount: number;
-  build: () => LessonDefinition;
+  build: () => LessonCore;
   solution: readonly string[];
 }
 
-function toStep(spec: StepSpec): LessonStep {
+function toStep(spec: StepSpec): LessonCoreStep {
   const built = spec.conditions === undefined ? null : requireAll(...spec.conditions);
   const parts = spec.parts ?? built?.parts;
   return {
@@ -94,6 +98,8 @@ function toStep(spec: StepSpec): LessonStep {
     ...(spec.diagnose ? { diagnose: spec.diagnose } : {}),
     ...(parts ? { parts } : {}),
     ...(spec.answer !== undefined ? { answer: spec.answer } : {}),
+    ...(spec.purpose !== undefined ? { purpose: spec.purpose } : {}),
+    ...(spec.afterward !== undefined ? { afterward: spec.afterward } : {}),
   };
 }
 
@@ -101,7 +107,7 @@ function toStep(spec: StepSpec): LessonStep {
  * 手順ごとの模範解答を埋め、最後のヒントを「そのまま打てば通るコマンド」にそろえる。
  * 手順に解答が書かれていなければ、任務全体の解答を実際に打って切り分ける。
  */
-function withSolutions(steps: readonly LessonStep[], split: () => string[][]): LessonStep[] {
+function withSolutions(steps: readonly LessonCoreStep[], split: () => string[][]): LessonCoreStep[] {
   const needsSplit = steps.some((s) => s.solution.length === 0);
   const pieces = needsSplit ? split() : [];
   return steps.map((step, i) => {
@@ -117,8 +123,8 @@ export function defineMission(spec: MissionSpec): MissionSource {
   const kind = spec.kind ?? 'training';
   // 切り分けは1回打ってみる必要があるので、任務ごとに1度だけ行う
   let pieces: string[][] | null = null;
-  const build = (): LessonDefinition => {
-    const base: LessonDefinition = {
+  const build = (): LessonCore => {
+    const base: LessonCore = {
       id: spec.id,
       track: spec.track,
       kind,

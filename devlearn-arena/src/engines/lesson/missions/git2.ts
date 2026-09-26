@@ -3,7 +3,7 @@ import { REBASE_TODO, gitPath, readGitFile } from '@/engines/git/gitdir';
 import { branches, headCommit, log, status } from '@/engines/git/repository';
 import { HOME } from '@/engines/kernel/path';
 import { exists } from '@/engines/kernel/vfs';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 import { ran } from '../authoring/ran';
 
 const NOTES = `# 手順書
@@ -20,7 +20,7 @@ const THREE_TREES_FILES = {
   [`${HOME}/tmp.log`]: 'ゴミ\n',
 };
 
-export const gitThreeTrees: LessonDefinition = {
+export const gitThreeTrees: LessonCore = {
   id: 'git/02/three-trees',
   track: 'git',
   kind: 'training',
@@ -108,7 +108,7 @@ export const gitThreeTrees: LessonDefinition = {
   ],
 };
 
-export const gitAmend: LessonDefinition = {
+export const gitAmend: LessonCore = {
   id: 'git/03/amend',
   track: 'git',
   kind: 'training',
@@ -174,7 +174,7 @@ export const gitAmend: LessonDefinition = {
   ],
 };
 
-export const gitInteractiveRebase: LessonDefinition = {
+export const gitInteractiveRebase: LessonCore = {
   id: 'git/06/interactive-rebase',
   track: 'git',
   kind: 'training',
@@ -259,7 +259,7 @@ export const gitInteractiveRebase: LessonDefinition = {
   ],
 };
 
-export const gitRecovery: LessonDefinition = {
+export const gitRecovery: LessonCore = {
   id: 'git/07/recover-hard-reset',
   track: 'git',
   kind: 'training',

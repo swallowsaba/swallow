@@ -3,7 +3,7 @@ import { container, deployment, emptyCluster, node } from '@/engines/k8s/factory
 import { isReady } from '@/engines/k8s/kubelet';
 import { key, type ClusterState } from '@/engines/k8s/types';
 import { HOME } from '@/engines/kernel/path';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 import { heredoc } from '../authoring/solution';
 import { countRan, NODE, POD, PVC, ran, SECRET } from '../authoring/ran';
 
@@ -175,7 +175,7 @@ const TOLERATING_POD_YAML = [
   '      image: nginx',
 ];
 
-export const k8sStuckPending: LessonDefinition = {
+export const k8sStuckPending: LessonCore = {
   id: 'k8s/02/boss-stuck-pending',
   track: 'k8s',
   kind: 'boss',
@@ -242,7 +242,7 @@ export const k8sStuckPending: LessonDefinition = {
   ],
 };
 
-export const k8sApply: LessonDefinition = {
+export const k8sApply: LessonCore = {
   id: 'k8s/03/apply-vs-create',
   track: 'k8s',
   kind: 'training',
@@ -303,7 +303,7 @@ export const k8sApply: LessonDefinition = {
   ],
 };
 
-export const k8sJobs: LessonDefinition = {
+export const k8sJobs: LessonCore = {
   id: 'k8s/04/job-cronjob',
   track: 'k8s',
   kind: 'training',
@@ -350,7 +350,7 @@ export const k8sJobs: LessonDefinition = {
   ],
 };
 
-export const k8sStatefulSet: LessonDefinition = {
+export const k8sStatefulSet: LessonCore = {
   id: 'k8s/04/statefulset',
   track: 'k8s',
   kind: 'training',
@@ -398,7 +398,7 @@ export const k8sStatefulSet: LessonDefinition = {
   ],
 };
 
-export const k8sConfig: LessonDefinition = {
+export const k8sConfig: LessonCore = {
   id: 'k8s/05/configmap',
   track: 'k8s',
   kind: 'training',
@@ -463,7 +463,7 @@ export const k8sConfig: LessonDefinition = {
   ],
 };
 
-export const k8sPvcPending: LessonDefinition = {
+export const k8sPvcPending: LessonCore = {
   id: 'k8s/06/boss-pvc-pending',
   track: 'k8s',
   kind: 'boss',
@@ -541,7 +541,7 @@ function tainted(): ClusterState {
   };
 }
 
-export const k8sUnschedulable: LessonDefinition = {
+export const k8sUnschedulable: LessonCore = {
   id: 'k8s/08/boss-unschedulable',
   track: 'k8s',
   kind: 'boss',

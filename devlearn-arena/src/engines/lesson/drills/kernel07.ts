@@ -156,6 +156,9 @@ const killDrills = family<{ command: string; stubborn: boolean }>({
         ? [
             {
               prompt: `${needle} に穏やかに終わるよう伝えよ（SIGTERM）。`,
+              // この変種だけ手順が 2 つになるので、目的と結果をここに直に書く
+              purpose: 'まず穏やかに「片付けて終わって」と頼む',
+              afterward: '合図は届いたが、働き手は名簿に残ったまま',
               check: 'SIGTERM を送った記録があること',
               assert: (ctx) =>
                 ctx.history.some((l) =>
@@ -171,6 +174,8 @@ const killDrills = family<{ command: string; stubborn: boolean }>({
             },
             {
               prompt: '終わらないので、強制的に止めよ。',
+              purpose: '頼んでも終わらない働き手を、今すぐ止める',
+              afterward: '働き手が名簿から消えた。ほかの働き手は働き続けている',
               conditions: [
                 {
                   label: `${needle} が居なくなっていること`,

@@ -2,7 +2,7 @@ import { concepts } from '../glossary';
 import { createRepo } from '@/engines/github/pr';
 import { linkedIssues, ownersFor } from '@/engines/github/issues';
 import { HOME } from '@/engines/kernel/path';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 import { ran } from '../authoring/ran';
 
 const WORKFLOWS = `${HOME}/.github/workflows`;
@@ -16,7 +16,7 @@ const CODEOWNERS = `# 既定の所有者
 
 const FILES = { [HOME]: null };
 
-export const ghClone: LessonDefinition = {
+export const ghClone: LessonCore = {
   id: 'github/01/clone-remote',
   track: 'github',
   kind: 'training',
@@ -69,7 +69,7 @@ export const ghClone: LessonDefinition = {
   ],
 };
 
-export const ghPrCreate: LessonDefinition = {
+export const ghPrCreate: LessonCore = {
   id: 'github/02/pr-create',
   track: 'github',
   kind: 'training',
@@ -121,7 +121,7 @@ export const ghPrCreate: LessonDefinition = {
   ],
 };
 
-export const ghCodeowners: LessonDefinition = {
+export const ghCodeowners: LessonCore = {
   id: 'github/03/codeowners',
   track: 'github',
   kind: 'training',
@@ -176,7 +176,7 @@ export const ghCodeowners: LessonDefinition = {
   ],
 };
 
-export const ghIssuePlanning: LessonDefinition = {
+export const ghIssuePlanning: LessonCore = {
   id: 'github/05/projects',
   track: 'github',
   kind: 'training',
@@ -232,7 +232,7 @@ export const ghIssuePlanning: LessonDefinition = {
   ],
 };
 
-export const ghNeedsDag: LessonDefinition = {
+export const ghNeedsDag: LessonCore = {
   id: 'github/06/needs-dag',
   track: 'github',
   kind: 'training',

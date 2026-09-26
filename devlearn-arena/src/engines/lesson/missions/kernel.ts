@@ -1,7 +1,7 @@
 import { concepts } from '../glossary';
 import { HOME } from '@/engines/kernel/path';
 import { exists, isDir, list, readFile } from '@/engines/kernel/vfs';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 
 /** ボス戦の初期状態を作る。ログが溢れてディスクが逼迫している想定。 */
 function floodedLog(lines: number): string {
@@ -11,7 +11,7 @@ function floodedLog(lines: number): string {
   ).join('\n');
 }
 
-export const shellWarmup: LessonDefinition = {
+export const shellWarmup: LessonCore = {
   id: 'kernel/00/shell-warmup',
   track: 'kernel',
   kind: 'training',
@@ -103,7 +103,7 @@ export const shellWarmup: LessonDefinition = {
   ],
 };
 
-export const diskFullBoss: LessonDefinition = {
+export const diskFullBoss: LessonCore = {
   id: 'kernel/00/disk-full',
   track: 'kernel',
   kind: 'boss',

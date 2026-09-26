@@ -1,7 +1,7 @@
 import { concepts } from '../glossary';
 import { container, deployment, emptyCluster, node, service } from '@/engines/k8s/factory';
 import { isReady } from '@/engines/k8s/kubelet';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 
 export { k8sFirstPod } from './k8sFirst';
 
@@ -17,7 +17,7 @@ function brokenServiceCluster() {
   };
 }
 
-export const k8sServiceBoss: LessonDefinition = {
+export const k8sServiceBoss: LessonCore = {
   id: 'k8s/07/boss-service-no-endpoint',
   track: 'k8s',
   kind: 'boss',

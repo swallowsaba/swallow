@@ -8,19 +8,19 @@ import type { ShellState } from '@/engines/kernel/registry';
 import { findMission, missions } from './missions';
 import { allMissions } from './registry';
 import { createProgress, evaluate } from './runner';
-import type { LessonDefinition } from './types';
+import type { LessonCore } from './types';
 
 const registry = createDefaultRegistry();
 
 /** id で任務を引く。配列の並び順に依存させない */
-function mission(id: string): LessonDefinition {
+function mission(id: string): LessonCore {
   const found = findMission(id);
   if (!found) throw new Error(`任務が見つかりません: ${id}`);
   return found;
 }
 
 /** 任務を解いてみて、実際にクリアできるかを確かめる */
-function play(mission: LessonDefinition, lines: readonly string[]): boolean {
+function play(mission: LessonCore, lines: readonly string[]): boolean {
   const clock = createClock();
   const timeline: ShellState[] = [createShellState(mission.initial)];
   let progress = createProgress(mission);
@@ -157,7 +157,7 @@ describe('別解でもクリアできる', () => {
 });
 
 /** 手順の最後のヒントを、改行で分けた1行ずつのコマンドにする（ヒアドキュメントの本文はまとめる） */
-function lastHintLines(step: LessonDefinition['steps'][number]): string[] {
+function lastHintLines(step: LessonCore['steps'][number]): string[] {
   const last = step.hints[step.hints.length - 1] ?? '';
   return splitCommands(last);
 }
@@ -168,8 +168,8 @@ function lastHintLines(step: LessonDefinition['steps'][number]): string[] {
  * 越えられなかった手順があれば、その番号を返す。
  */
 function playByHints(
-  lesson: LessonDefinition,
-  linesOf: (step: LessonDefinition['steps'][number]) => readonly string[] = lastHintLines,
+  lesson: LessonCore,
+  linesOf: (step: LessonCore['steps'][number]) => readonly string[] = lastHintLines,
   onRun?: (line: string, exitCode: number) => void,
 ): { cleared: boolean; stuck: number | null } {
   const clock = createClock();

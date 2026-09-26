@@ -1,6 +1,6 @@
 import { missions } from './missions';
 import { allMissions, missionById } from './registry';
-import type { LessonDefinition, MissionTrack } from './types';
+import type { LessonCore, MissionTrack } from './types';
 
 export const TRACK_LABEL: Record<MissionTrack, string> = {
   kernel: 'シェル',
@@ -13,7 +13,7 @@ export const TRACK_LABEL: Record<MissionTrack, string> = {
 const orderOf = (id: string): number => missionById(id)?.order ?? Number.MAX_SAFE_INTEGER;
 
 /** その世界の「読んで手を動かす任務」。推奨順に並べる */
-export function missionsOf(track: MissionTrack): LessonDefinition[] {
+export function missionsOf(track: MissionTrack): LessonCore[] {
   return missions.filter((m) => m.track === track).sort((a, b) => orderOf(a.id) - orderOf(b.id));
 }
 
@@ -21,7 +21,7 @@ export function playableTracks(): MissionTrack[] {
   return [...new Set(allMissions().map((m) => m.track))];
 }
 
-export function findMissionById(id: string): LessonDefinition | undefined {
+export function findMissionById(id: string): LessonCore | undefined {
   return missions.find((m) => m.id === id);
 }
 
@@ -29,7 +29,7 @@ export function findMissionById(id: string): LessonDefinition | undefined {
 export function nextMission(
   cleared: ReadonlySet<string>,
   currentId?: string,
-): LessonDefinition | null {
+): LessonCore | null {
   return (
     [...missions]
       .sort((a, b) => orderOf(a.id) - orderOf(b.id))

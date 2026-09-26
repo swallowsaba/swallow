@@ -4,7 +4,7 @@ import {
 } from '@/engines/net/factory';
 import { HOME } from '@/engines/kernel/path';
 import type { Topology } from '@/engines/net/types';
-import type { LessonDefinition } from '../types';
+import type { LessonCore } from '../types';
 import { countRan, ran } from '../authoring/ran';
 
 const FILES = { [HOME]: null };
@@ -49,7 +49,7 @@ function nattedNet(): Topology {
 
 import { DNS_WORLD } from './netFixtures';
 
-export const netLayers: LessonDefinition = {
+export const netLayers: LessonCore = {
   id: 'net/01/encapsulation',
   track: 'net',
   kind: 'training',
@@ -100,7 +100,7 @@ export const netLayers: LessonDefinition = {
   ],
 };
 
-export const netArp: LessonDefinition = {
+export const netArp: LessonCore = {
   id: 'net/02/arp-resolve',
   track: 'net',
   kind: 'training',
@@ -149,7 +149,7 @@ export const netArp: LessonDefinition = {
   ],
 };
 
-export const netSwitching: LessonDefinition = {
+export const netSwitching: LessonCore = {
   id: 'net/02/switch-learning',
   track: 'net',
   kind: 'training',
@@ -198,7 +198,7 @@ export const netSwitching: LessonDefinition = {
   ],
 };
 
-export const netSubnetting: LessonDefinition = {
+export const netSubnetting: LessonCore = {
   id: 'net/03/subnet-drill',
   track: 'net',
   kind: 'training',
@@ -244,7 +244,7 @@ export const netSubnetting: LessonDefinition = {
   ],
 };
 
-export const netIpv6: LessonDefinition = {
+export const netIpv6: LessonCore = {
   id: 'net/04/ipv6-format',
   track: 'net',
   kind: 'training',
@@ -299,7 +299,7 @@ export const netIpv6: LessonDefinition = {
   ],
 };
 
-export const netNat: LessonDefinition = {
+export const netNat: LessonCore = {
   id: 'net/06/pat-ports',
   track: 'net',
   kind: 'training',
@@ -347,7 +347,7 @@ export const netNat: LessonDefinition = {
   ],
 };
 
-export const netTcp: LessonDefinition = {
+export const netTcp: LessonCore = {
   id: 'net/07/handshake',
   track: 'net',
   kind: 'training',
@@ -416,7 +416,7 @@ export const netTcp: LessonDefinition = {
   ],
 };
 
-export const netDns: LessonDefinition = {
+export const netDns: LessonCore = {
   id: 'net/08/dns-recursion',
   track: 'net',
   kind: 'training',
@@ -467,7 +467,7 @@ export const netDns: LessonDefinition = {
   ],
 };
 
-export const netDhcp: LessonDefinition = {
+export const netDhcp: LessonCore = {
   id: 'net/09/dora',
   track: 'net',
   kind: 'training',

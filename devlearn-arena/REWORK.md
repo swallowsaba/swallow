@@ -11,7 +11,7 @@
 いまは「Kubernetes は、何台ものコンピュータを…」と文章で説明し、すぐコマンドを打たせている。
 何のために打つのか分からず、学習感が無い。**全任務を `CLAUDE.md` の5段の流れに作り直す。**
 
-- [ ] 1-1. `LessonDefinition` に5段を持たせる型を入れる。
+- [x] 1-1. `LessonDefinition` に5段を持たせる型を入れる。
   ```ts
   experience: ExperienceScene;   // 1. 体験（コマンド無しで遊ぶ）
   reveal: RevealScene;           // 2. 登場（仕組みが施設として現れる。用語はここで出す）
