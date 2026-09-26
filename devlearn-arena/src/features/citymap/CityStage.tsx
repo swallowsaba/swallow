@@ -1,3 +1,4 @@
+import type { MutableRefObject } from 'react';
 import type { City } from '@/city/model';
 import type { Journey } from '@/city/journey';
 import type { InfoView } from '@/city3d/overlay';
@@ -39,6 +40,8 @@ interface Props {
   onJourneyStop?: ((index: number) => void) | undefined;
   /** 時間帯を止める（0 と 1 が真夜中、0.5 が正午）。撮影で影の動きを除くのに使う */
   time?: number | undefined;
+  /** 街の写真を撮る関数を受け取る所（振り返りの段で前後を並べる） */
+  capture?: MutableRefObject<(() => string | null) | null> | undefined;
 }
 
 /**
@@ -48,7 +51,7 @@ interface Props {
  */
 export function CityStage({
   city, label, selected, onSelect, onCommand, speed = 'normal', rush = 0, view = null, district = null,
-  showSites = true, onSite, journey = null, tour = null, trouble = null, journeyPlay, onJourneyStop, time,
+  showSites = true, onSite, journey = null, tour = null, trouble = null, journeyPlay, onJourneyStop, time, capture,
 }: Props) {
   const motion = useCityMotion();
   const rate = SPEED_RATE[speed];
@@ -87,6 +90,7 @@ export function CityStage({
         trouble={trouble}
         {...(journeyPlay ? { journeyPlay } : {})}
         {...(onJourneyStop ? { onJourneyStop } : {})}
+        capture={capture}
       />
     </div>
   );

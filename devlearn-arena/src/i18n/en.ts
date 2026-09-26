@@ -104,8 +104,6 @@ export const en: Record<TKey, string> = {
   'park.skipReplay': 'The answer does not fit the current state, so the answers up to step {n} are replayed from the start',
   'park.skipped': 'You looked at the answer for step {n}',
   'park.skippedLead': 'Added to your review list. Try it again by hand later.',
-  'park.clear': 'Cleared',
-  'park.score': '{title} — score {score}',
   'park.tab.fs': 'File system',
   'park.tabUnrelated': 'Not used in this mission',
   'park.tab.git': 'History',
@@ -127,8 +125,6 @@ export const en: Record<TKey, string> = {
   'editor.save': 'Save and close',
   'editor.cancel': 'Cancel',
 
-  'celebration.next': 'Next mission: {title} →',
-  'celebration.dismiss': 'Click the background to close',
 
   'error.body': 'Something broke. Sending us what is below helps us fix it. Your progress is saved and will not be lost.',
   'error.retry': 'Render again',
@@ -312,10 +308,8 @@ export const en: Record<TKey, string> = {
   'brief.facilityBuilt': 'This request runs the "{name}" facility you built.',
   'brief.facilityUnbuilt': 'This request needs the "{name}" facility, which is not built yet. Learn "{concept}" in the city before typing commands.',
   'brief.learnInCity': 'Learn and build in the city',
-  'celebration.town': 'See your city',
   'celebration.facility': '"{name}" running {a} / {b}',
   'celebration.facilityComplete': '"{name}" is fully running! More residents moved in',
-  'celebration.facilityUnbuilt': '"{name}" is not built yet. Learn how it works in the city and build it',
   'facility.label': 'Construction plan',
   'facility.close': 'Close',
   'facility.step.trouble': 'The problem',
@@ -417,8 +411,6 @@ export const en: Record<TKey, string> = {
   'facility.pick': 'Choose an answer',
   'facility.step.demo': 'See it work',
 
-  'celebration.city': 'Back to the city',
-  'celebration.retry': '↺ Try again',
 
   'board.nextSolve': 'Solve {n} more requests and the city grows, bringing the next residents\' voice.',
   'city.residents': 'Residents',

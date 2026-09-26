@@ -102,8 +102,6 @@ export const ja = {
   'park.skipReplay': 'いまの状態からでは解答が通らないので、最初から手順 {n} までの解答を打ち直します',
   'park.skipped': '手順 {n} は解答を見ました',
   'park.skippedLead': '復習の一覧に入れました。あとで自分の手でもう一度やってみましょう。',
-  'park.clear': 'クリア',
-  'park.score': '{title} — スコア {score}',
   'park.tab.fs': 'ファイルシステム',
   'park.tabUnrelated': 'この任務では使いません',
   'park.tab.git': '履歴',
@@ -125,8 +123,6 @@ export const ja = {
   'editor.save': '保存して閉じる',
   'editor.cancel': '取り消す',
 
-  'celebration.next': '次の任務へ: {title} →',
-  'celebration.dismiss': '背景をクリックで閉じる',
 
   'error.body': '不具合です。下の内容を添えて報告してもらえると直せます。進捗は保存されているので失われません。',
   'error.retry': 'もう一度描画する',
@@ -309,10 +305,8 @@ export const ja = {
   'brief.facilityBuilt': 'この依頼は「{name}」の仕事です。建てた施設を実際に動かそう。',
   'brief.facilityUnbuilt': 'この依頼は「{name}」の仕事ですが、まだ施設が建っていません。コマンドの前に、街で「{concept}」を学んで建てよう。',
   'brief.learnInCity': '街で学んで建てる',
-  'celebration.town': '街を見る',
   'celebration.facility': '「{name}」の稼働 {a} / {b}',
   'celebration.facilityComplete': '「{name}」がフル稼働。街の住民が増えた',
-  'celebration.facilityUnbuilt': '「{name}」はまだ建っていません。街で仕組みを学んで建てよう',
   'facility.label': '建設計画',
   'facility.close': '閉じる',
   'facility.step.trouble': '住民の困りごと',
@@ -414,8 +408,6 @@ export const ja = {
   'facility.pick': '選択肢を選んでください',
   'facility.step.demo': '動きを見る',
 
-  'celebration.city': '街に戻る',
-  'celebration.retry': '↺ もう一度やる',
 
   'board.nextSolve': 'あと {n} 件の要望を解決すると、街が育って次の住民の声が届きます。',
   'city.residents': '住民',

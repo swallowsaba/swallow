@@ -7,7 +7,6 @@ import { allMissions, mainMissions, missionById, recommendedNext } from '@/engin
 import {
   buildContext, createProgress, currentStep, evaluate, markSkipped, passes, solutionThrough, useHint,
 } from '@/engines/lesson/runner';
-import { takeawaysOf } from '@/engines/lesson/takeaways';
 import type { LessonDefinition, LessonProgressState, LessonStep, MissionTrack } from '@/engines/lesson/types';
 import type { DesignKind } from '@/city/model';
 import { journeyOf, type WorldState } from '@/city/journey';
@@ -23,7 +22,6 @@ import { sfx } from '@/lib/sfx';
 import { levelFromXp, rankFromLevel, scoreAttempt, xpForScore } from '@/lib/xp';
 import { useStore } from '@/store';
 import { flushSave } from '@/store/persistence';
-import { Celebration, type CelebrationData } from '@/ui/Celebration';
 import { XpToast, type ToastData } from '@/ui/XpToast';
 import { Icon } from '@/ui/Icon';
 import { CITIES, CITY_TRACKS, cityOf, facilityById } from '@/content/city';
@@ -53,9 +51,16 @@ import { variantsOf, type BuildVariant } from './hud/buildTools';
 import { cityMetrics, clockOf, milestoneOf, type Speed } from './hud/metrics';
 import { HUD, SIZE } from './hud/theme';
 import { FlowStage } from '@/lesson/flow/FlowStage';
+import { RecapScreen, type RecapData } from '@/lesson/flow/RecapScreen';
 import { isFlowStep, STEP_LABEL, type FlowStep } from '@/lesson/flow/steps';
 
 const STEP_XP = 10;
+
+/** 任務を終えると手に入る建築権 */
+const CLEAR_RIGHTS = 2;
+
+/** 任務を終えてから「終えた後」の街を撮るまでのミリ秒。街が描き変わるのを待つ */
+const AFTER_SHOT_MS = 900;
 
 /** 「いま街で起きたこと」を出しておくミリ秒 */
 const AFTERWARD_MS = 8000;
@@ -239,7 +244,11 @@ function Arena({
   const session = useShellSession(options);
   const terminalRef = useRef<TerminalHandle>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
-  const [celebration, setCelebration] = useState<CelebrationData | null>(null);
+  // 振り返りの段に出す、任務を終えたときの結果
+  const [recap, setRecap] = useState<RecapData | null>(null);
+  // 街の写真を撮る関数（3D の街が入れてくれる）と、任務を始めたときの写真
+  const captureRef = useRef<(() => string | null) | null>(null);
+  const beforeShot = useRef<string | null>(null);
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
   const [editing, setEditing] = useState<EditorTarget | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -373,6 +382,25 @@ function Arena({
     const kinds = mission.reveal.focus ?? [];
     return city.buildings.find((b) => kinds.includes(b.kind))?.id ?? null;
   }, [stage, mission.reveal.focus, city.buildings]);
+
+  /**
+   * 振り返りで並べる「始める前」の街を撮る。操作の段に入って、まだ 1 行も打っていないうちに撮る。
+   * 3D の街が組み上がるまでは撮れないので、撮れるまで少し待って何度か試す
+   */
+  const untouched = shellState.history.length === 0;
+  useEffect(() => {
+    if (stage !== 'operate' || !untouched || beforeShot.current !== null) return undefined;
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      const shot = captureRef.current?.() ?? null;
+      if (shot !== null) beforeShot.current = shot;
+      if (shot !== null || tries >= 20) clearInterval(timer);
+    }, 700);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [stage, untouched]);
 
   /** 段を進める。確かめまで終えたら、次からは操作の段から始める */
   const toStage = useCallback(
@@ -570,15 +598,24 @@ function Arena({
       ) {
         scheduleReview(mission.id, dayKey(now));
       }
-      setCelebration({
+      // 5 段目「振り返り」。始める前と終えた後の街を並べる。終えた後の写真は、街が描き変わるのを待ってから撮る
+      setRecap({
         key: now,
-        title: t('park.clear'),
-        subtitle: t('park.score', { title: mission.title, score }),
+        title: mission.title,
+        score,
         xp: reward,
+        rights: CLEAR_RIGHTS,
         levelUp: after > levelFromXp(xp) ? { level: after, rank: rankFromLevel(after) } : undefined,
-        takeaways: takeawaysOf(mission),
-        town: townLines,
+        facility: townLines?.lines[0],
+        recap: mission.recap,
+        before: beforeShot.current,
+        after: null,
       });
+      setStage('recap');
+      setTimeout(() => {
+        const shot = captureRef.current?.() ?? null;
+        setRecap((r) => (r === null || r.key !== now ? r : { ...r, after: shot }));
+      }, AFTER_SHOT_MS);
       setDiagnosis(null);
       // 任務を終えた。街がもう一段育つ
       grow('clear');
@@ -668,6 +705,7 @@ function Arena({
         tour={tourStop ?? revealStop ?? afterward?.building ?? null}
         trouble={troubles[0]?.where ?? null}
         time={stillTime !== undefined && Number.isFinite(stillTime) ? stillTime : undefined}
+        capture={captureRef}
       />
 
       <TopBar
@@ -852,25 +890,27 @@ function Arena({
       ) : null}
 
       <XpToast toasts={toasts} />
-      <Celebration
-        data={celebration}
-        nextLabel={nextMission?.title}
-        onNext={
-          nextMission
-            ? () => {
-                setCelebration(null);
-                onSwitch(nextMission.id);
-              }
-            : undefined
-        }
-        onDismiss={() => {
-          setCelebration(null);
-        }}
-        onRetry={() => {
-          setCelebration(null);
-          onRetry();
-        }}
-      />
+      {stage === 'recap' && recap !== null ? (
+        <RecapScreen
+          data={recap}
+          nextLabel={nextMission?.title}
+          onNext={
+            nextMission
+              ? () => {
+                  setRecap(null);
+                  onSwitch(nextMission.id);
+                }
+              : undefined
+          }
+          onClose={() => {
+            setStage('operate');
+          }}
+          onRetry={() => {
+            setRecap(null);
+            onRetry();
+          }}
+        />
+      ) : null}
       {editing ? (
         <EditorPanel
           target={editing}

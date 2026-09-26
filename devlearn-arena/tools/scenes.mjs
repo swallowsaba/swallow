@@ -580,6 +580,41 @@ export const SCENES = {
       await sleep(2500);
     },
   },
+  /** 学びの流れ 5: 振り返り。最初の任務を模範解答どおりに打って終え、始める前と終えた後の街を並べる */
+  'flow-5-recap': {
+    path: K8S_FIRST,
+    wait: 6000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-purpose');
+      // 始める前の街が撮れるのを待つ（3D の街が組み上がってから撮る）
+      await sleep(3000);
+      const lines = [
+        'kubectl get nodes',
+        'kubectl run web --image=nginx',
+        'kubectl wait 10',
+        'kubectl delete pod web',
+        'kubectl wait 10',
+        'kubectl create deployment web --image=nginx --replicas=2',
+        'kubectl wait 10',
+      ];
+      for (const line of lines) {
+        await type(page, line);
+        await sleep(900);
+      }
+      // 消す住人の名前は街ごとに違う。一覧から web- で始まる最初の名前を拾う
+      const name = await page.evaluate(() => {
+        const text = document.querySelector('[data-testid="terminal"]')?.textContent ?? '';
+        return /web-[a-z0-9]+-\d+/.exec(text)?.[0] ?? 'web-b0xusf-00001';
+      });
+      await type(page, `kubectl delete pod ${name}`);
+      await sleep(900);
+      await type(page, 'kubectl wait 10');
+      await need(page, 'recap', 20000);
+      await sleep(2500);
+    },
+  },
   /** どの分野でも使える体験の場面。URL で分野を渡す（node tools/shoot.mjs flow-1-any /world/git） */
   'flow-1-any': {
     path: '/world/kernel',

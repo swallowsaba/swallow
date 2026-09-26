@@ -95,6 +95,52 @@ interface Props {
   journeyPlay?: JourneyPlay;
   /** 粒が次の停留所に着いたとき。帯の印を動かすのに使う */
   onJourneyStop?: ((index: number) => void) | undefined;
+  /**
+   * 街の写真を撮る関数を、ここに入れて渡す。振り返りの段で「始める前」と「終えた後」を並べるのに使う。
+   * どちらも開いたときと同じ向き・距離から撮るので、見比べられる
+   */
+  capture?: MutableRefObject<(() => string | null) | null> | undefined;
+}
+
+/** 写真の大きさ（横幅）。振り返りの段に 2 枚並べるだけなので小さくてよい */
+const SNAPSHOT_WIDTH = 720;
+
+/**
+ * 街の写真を撮る。開いたときと同じ向きと距離にカメラを一瞬だけ置き、描いて、元に戻す。
+ * 描いた直後なら、描画の中身を画像として読み出せる
+ */
+function Capture({
+  target,
+  at,
+  distance,
+}: {
+  target: MutableRefObject<(() => string | null) | null>;
+  at: Vec2;
+  distance: number;
+}) {
+  const { gl, scene, camera } = useThree();
+  useEffect(() => {
+    target.current = () => {
+      const position = camera.position.clone();
+      const turn = camera.quaternion.clone();
+      const [x, y, z] = cameraPosition(at, distance, 0.6);
+      camera.position.set(x, y, z);
+      camera.lookAt(at.x, 0, at.z);
+      gl.render(scene, camera);
+      const full = gl.domElement;
+      const shot = document.createElement('canvas');
+      shot.width = SNAPSHOT_WIDTH;
+      shot.height = Math.round((SNAPSHOT_WIDTH * full.height) / Math.max(1, full.width));
+      shot.getContext('2d')?.drawImage(full, 0, 0, shot.width, shot.height);
+      camera.position.copy(position);
+      camera.quaternion.copy(turn);
+      return shot.toDataURL('image/jpeg', 0.85);
+    };
+    return () => {
+      target.current = null;
+    };
+  }, [gl, scene, camera, target, at, distance]);
+  return null;
 }
 
 /** 時間帯が一周する秒数 */
@@ -841,7 +887,7 @@ function Spark({
 export default function CityScene({
   layout, onCommand, onSelect, onSite, selected = null, animate = true, glide = animate, rate = 1, rush = 0, view = null, district = null,
   showSites = true, time, journey = null, tour = null, trouble = null,
-  journeyPlay = { playing: true, rate: 1, step: 0 }, onJourneyStop,
+  journeyPlay = { playing: true, rate: 1, step: 0 }, onJourneyStop, capture,
 }: Props) {
   // 光の粒のいる場所。毎フレーム書き換わるので、React の状態にはしない
   const chase = useRef<Vec2 | null>(null);
@@ -936,6 +982,7 @@ export default function CityScene({
             }}
           />
         )}
+        {capture === undefined ? null : <Capture target={capture} at={opening.at} distance={opening.distance} />}
         <Look
           target={focus}
           animate={glide}

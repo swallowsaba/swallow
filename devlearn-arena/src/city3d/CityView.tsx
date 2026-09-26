@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo } from 'react';
+import { Suspense, lazy, useMemo, type MutableRefObject } from 'react';
 import { CityCanvas } from '@/city/CityCanvas';
 import { Viewport } from '@/city/Viewport';
 import { TILE } from '@/city/palette';
@@ -56,12 +56,14 @@ interface Props {
   journeyPlay?: JourneyPlay;
   /** 光の粒が次の停留所に着いたとき */
   onJourneyStop?: ((index: number) => void) | undefined;
+  /** 街の写真を撮る関数を受け取る所。3D で描けるときだけ入る */
+  capture?: MutableRefObject<(() => string | null) | null> | undefined;
 }
 
 export function CityView({
   city, animate = true, glide = animate, time, rate = 1, rush = 0, view = null, district = null, showSites = true, onSite,
   onCommand, onSelect, selected = null, label, journey = null, tour = null, trouble = null,
-  journeyPlay, onJourneyStop,
+  journeyPlay, onJourneyStop, capture,
 }: Props) {
   const able = hasWebGL();
   const layout = useMemo(() => (able ? layoutCity(city) : null), [city, able]);
@@ -104,6 +106,7 @@ export function CityView({
           trouble={trouble}
           {...(journeyPlay ? { journeyPlay } : {})}
           onJourneyStop={onJourneyStop}
+          capture={capture}
         />
       </Suspense>
     </div>
