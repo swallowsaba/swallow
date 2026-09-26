@@ -1,3 +1,4 @@
+import { allMissions } from '@/engines/lesson/registry';
 import { act } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -11,6 +12,9 @@ import { focusView } from '@/visual/viewportMath';
 import { click, mount } from '@/visual/mountForTest';
 import HomeRedirect from './HomeRedirect';
 import ParkPage from './ParkPage';
+
+// 学びの流れの体験から確かめまでを済ませた状態で開く。ここで見たいのは操作の段の画面
+const PAST_FLOW = allMissions().map((m) => m.id);
 
 beforeAll(() => {
   if (typeof window.matchMedia !== 'function') {
@@ -39,7 +43,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   act(() => {
-    useStore.setState({ facilitiesBuilt: [], introsRead: [], lessons: {}, missionProgress: {}, missionState: {}, lastMissionId: null, growth: {} });
+    useStore.setState({ facilitiesBuilt: [], introsRead: PAST_FLOW, lessons: {}, missionProgress: {}, missionState: {}, lastMissionId: null, growth: {} });
   });
 });
 

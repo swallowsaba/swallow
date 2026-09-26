@@ -264,9 +264,9 @@ export const SCENARIOS: Readonly<Record<ExperienceTwist, Scenario>> = {
   },
 
   /* GitHub */
-  overwrite: overwriteCarry([], 9, ''),
-  review: overwriteCarry(['reviewer'], 14, '見る人に見せてから'),
-  checks: overwriteCarry(['bench'], 14, '試し台で試してから'),
+  overwrite: overwriteCarry([], 14, ''),
+  review: overwriteCarry(['reviewer'], 20, '見る人に見せてから'),
+  checks: overwriteCarry(['bench'], 20, '試し台で試してから'),
   notes: {
     kind: 'overwrite',
     ...BASE,
@@ -277,7 +277,7 @@ export const SCENARIOS: Readonly<Record<ExperienceTwist, Scenario>> = {
         text: `頼まれごと「${nth(TASKS, n, 5, 1)}」の紙を、${NAMES[desk] ?? ''}さんの机へ届けよ`,
         mode: 'carry',
         targets: ['tray', desk],
-        expires: 11,
+        expires: 16,
       };
     },
     miss: () => '',

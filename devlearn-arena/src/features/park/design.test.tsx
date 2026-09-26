@@ -1,3 +1,4 @@
+import { allMissions } from '@/engines/lesson/registry';
 import { act } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -8,6 +9,9 @@ import { useStore } from '@/store';
 import { click, mount } from '@/visual/mountForTest';
 import { variantById } from './hud/buildTools';
 import ParkPage from './ParkPage';
+
+// 学びの流れの体験から確かめまでを済ませた状態で開く。ここで見たいのは操作の段の画面
+const PAST_FLOW = allMissions().map((m) => m.id);
 
 /**
  * 街は学習者が設計する（REWORK 3-2）。
@@ -42,7 +46,7 @@ beforeAll(() => {
 beforeEach(() => {
   act(() => {
     useStore.setState({
-      facilitiesBuilt: [], introsRead: [], lessons: {},
+      facilitiesBuilt: [], introsRead: PAST_FLOW, lessons: {},
       missionProgress: {}, missionState: {}, lastMissionId: null, growth: {}, designs: {},
     });
   });

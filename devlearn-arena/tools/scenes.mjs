@@ -5,7 +5,10 @@
 // 見た目を直したときに撮影が黙って別の物を撮る。
 
 /** Kubernetes の街の最初の任務 */
-const K8S_FIRST = '/world/k8s';
+const K8S_FIRST = '/world/k8s?stage=operate';
+
+/** 学びの流れの最初から。体験の段で開く */
+const K8S_FLOW = '/world/k8s';
 
 /** 端末に 1 行打って走らせる */
 async function type(page, line) {
@@ -29,7 +32,7 @@ export async function dismissOnboarding(page) {
 }
 
 /** ネットワークの街。道（ケーブル）を塞ぐ場面で使う */
-const NET_HOP = '/world/net?mission=net/05/ttl-hop';
+const NET_HOP = '/world/net?mission=net/05/ttl-hop&stage=operate';
 
 /** 「なぜ」の引き出し。左の端末の右に開く。字が読めるよう、ここだけを切り取って撮る */
 const DRAWER = { x: 450, y: 64, width: 540, height: 760 };
@@ -314,7 +317,7 @@ export const SCENES = {
 
   /** 遊べる図解: 作業ツリー → インデックス → コミット。札を運んで写真を撮った後 */
   '14-play-git': {
-    path: '/world/git?mission=git%2F01%2Fobjects',
+    path: '/world/git?mission=git%2F01%2Fobjects&stage=operate',
     wait: 5000,
     clip: DRAWER,
     async act(page, { sleep }) {
@@ -381,7 +384,7 @@ export const SCENES = {
   },
   /** 遊べる図解: バス停と名札。c の名札を付け替えると、バス停から線が伸びる */
   '17-play-svc': {
-    path: '/world/k8s?mission=k8s%2F07%2Fno-endpoint-web',
+    path: '/world/k8s?mission=k8s%2F07%2Fno-endpoint-web&stage=operate',
     wait: 5000,
     clip: DRAWER,
     async act(page, { sleep }) {
@@ -398,7 +401,7 @@ export const SCENES = {
 
   /** 遊べる図解: ファイルと箱。箱が無いまま入れようとして断られ、箱を作って片付けた後 */
   '18-play-files': {
-    path: '/world/kernel?mission=kernel%2F00%2Fshell-warmup',
+    path: '/world/kernel?mission=kernel%2F00%2Fshell-warmup&stage=operate',
     wait: 5000,
     clip: DRAWER,
     async act(page, { sleep }) {
@@ -481,6 +484,117 @@ export const SCENES = {
       await sleep(1500);
       await page.getByTestId('journey-close').click().catch(() => undefined);
       await sleep(2000);
+    },
+  },
+  /** 学びの流れ 1: 体験。住人を手でビルへ案内し、だんだん追いつかなくなる */
+  'flow-1-experience': {
+    path: K8S_FLOW,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'experience');
+      await page.getByTestId('experience-start').click();
+      // 何人か案内してから、手が止まって溜まっていく様子を撮る
+      for (const id of ['t3', 't3', 't1', 't4']) {
+        await sleep(2600);
+        await page.locator(`[data-thing="${id}"]`).first().click();
+      }
+      await sleep(Number(process.env.SHOOT_PLAY ?? 9000));
+    },
+  },
+
+  /** 体験の終わり。手でやった結果と、困りごとの 1 行 */
+  'flow-1-result': {
+    path: K8S_FLOW,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await page.getByTestId('experience-start').click();
+      // 何もしないでいると待ちが溜まり、30 秒を過ぎたところで終わる
+      await need(page, 'experience-result', 70000);
+      await sleep(800);
+    },
+  },
+
+  /** 学びの流れ 2: 登場。施設が建ち、用語が町の物に矢印で結ばれる */
+  'flow-2-reveal': {
+    path: K8S_FLOW + '?stage=reveal',
+    wait: 4000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'reveal');
+      await sleep(Number(process.env.SHOOT_REVEAL ?? 5000));
+    },
+  },
+
+  /** 学びの流れ 3: 確かめ。外れを押して、正解の所と理由が町に出たところ */
+  'flow-3-quiz': {
+    path: K8S_FLOW + '?stage=quiz',
+    wait: 4000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'quiz');
+      await page.locator('[data-thing="t3"]').first().click();
+      await page.locator('[data-thing="t1"]').first().click();
+      await page.getByTestId('quiz-answer').click();
+      await need(page, 'quiz-verdict');
+      await sleep(800);
+    },
+  },
+
+  /** 確かめの並べるクイズ。わざと外して、正しい順の図が出たところ */
+  'flow-3-order': {
+    path: K8S_FLOW + '?stage=quiz',
+    wait: 4000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'quiz');
+      // 1 問目は正しく答えて、2 問目（並べる）へ
+      for (const id of ['t1', 't2', 't4']) await page.locator(`[data-thing="${id}"]`).first().click();
+      await page.getByTestId('quiz-answer').click();
+      await page.getByTestId('quiz-next').click();
+      await need(page, 'quiz-card');
+      const cards = page.getByTestId('quiz-card');
+      const n = await cards.count();
+      for (let i = 0; i < n; i += 1) await cards.nth(i).click();
+      await need(page, 'quiz-verdict');
+      await sleep(600);
+    },
+  },
+
+  /** 学びの流れ 4: 操作。目的が先に出ていて、打った後に街で起きたことが返る */
+  'flow-4-operate': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-purpose');
+      await type(page, 'kubectl get nodes');
+      await need(page, 'afterward');
+      await sleep(2500);
+    },
+  },
+  /** どの分野でも使える体験の場面。URL で分野を渡す（node tools/shoot.mjs flow-1-any /world/git） */
+  'flow-1-any': {
+    path: '/world/kernel',
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'experience');
+      await page.getByTestId('experience-start').click();
+      const things = page.locator('[data-thing]');
+      for (let i = 0; i < 5; i += 1) {
+        await sleep(2400);
+        await things.nth((i * 3) % (await things.count())).click();
+      }
+      await sleep(4000);
     },
   },
 };

@@ -52,8 +52,13 @@ import { voicesOf } from './hud/voiceFeed';
 import { variantsOf, type BuildVariant } from './hud/buildTools';
 import { cityMetrics, clockOf, milestoneOf, type Speed } from './hud/metrics';
 import { HUD, SIZE } from './hud/theme';
+import { FlowStage } from '@/lesson/flow/FlowStage';
+import { isFlowStep, STEP_LABEL, type FlowStep } from '@/lesson/flow/steps';
 
 const STEP_XP = 10;
+
+/** 「いま街で起きたこと」を出しておくミリ秒 */
+const AFTERWARD_MS = 8000;
 
 /** 何も指定が無いときに開く任務 */
 const FALLBACK = mainMissions()[0];
@@ -184,6 +189,20 @@ function Arena({
     savedProgress ? { ...createProgress(mission), ...savedProgress } : createProgress(mission),
   );
   const [progress, setProgress] = useState<LessonProgressState>(initialProgress);
+  /**
+   * 学びの流れの段（CLAUDE.md）。体験 → 登場 → 確かめ → 操作 → 振り返り。
+   * 体験から確かめまでを一度終えた任務は、次に開いたとき操作の段から始める。
+   * ?stage= で段を指定できる（撮影と見直しのため）。
+   */
+  const markIntroRead = useStore((s) => s.markIntroRead);
+  const [stage, setStage] = useState<FlowStep>(() => {
+    const asked = search.get('stage');
+    if (isFlowStep(asked)) return asked;
+    const { introsRead, settings } = useStore.getState();
+    if (initialProgress.cleared) return 'operate';
+    return introsRead.includes(mission.id) && !settings.introAlways ? 'operate' : 'experience';
+  });
+  const flowing = stage === 'experience' || stage === 'reveal' || stage === 'quiz';
   const [hintReveal, setHintReveal] = useState<HintReveal>(NO_HINTS);
   // 端末の hint が読む、いまの手順と見たヒントの数。
   // コマンドは描画を待たずに続けて打たれることがあるので、ref に持って同期で読み書きする
@@ -348,6 +367,26 @@ function Arena({
   // 案内ツアーの道のり。街に建っている施設だけを巡る
   const tour = useMemo(() => tourOf(city, mission.track), [city, mission.track]);
   const tourStop = tourAt === null ? null : (tour[Math.min(tourAt, tour.length - 1)]?.building ?? null);
+  // 登場の段では、本物の街でもカメラが施設へ寄る。街にその種類の建物が無ければ寄らない
+  const revealStop = useMemo(() => {
+    if (stage !== 'reveal') return null;
+    const kinds = mission.reveal.focus ?? [];
+    return city.buildings.find((b) => kinds.includes(b.kind))?.id ?? null;
+  }, [stage, mission.reveal.focus, city.buildings]);
+
+  /** 段を進める。確かめまで終えたら、次からは操作の段から始める */
+  const toStage = useCallback(
+    (next: FlowStep) => {
+      setStage(next);
+      if (next === 'operate') {
+        markIntroRead(mission.id);
+        setTimeout(() => {
+          terminalRef.current?.focus();
+        }, 50);
+      }
+    },
+    [markIntroRead, mission.id],
+  );
 
   // 選んだ建物の中身。街の状態から導くので、選び直すたびに数え直す必要が無い
   const chosen = selected === null ? null : buildingInfo(city, shellState.cluster, selected);
@@ -477,11 +516,34 @@ function Arena({
     };
   };
 
+  /**
+   * 手順を通った直後の「いま街で起きたこと」（学びの流れ 4 の afterward）。
+   * 1 行で返し、打ったコマンドが触れた建物にカメラを寄せる。少ししたら消える
+   */
+  const [afterward, setAfterward] = useState<{ text: string; building: string | null; key: number } | null>(null);
+  useEffect(() => {
+    if (afterward === null) return undefined;
+    const timer = setTimeout(() => {
+      setAfterward(null);
+    }, AFTERWARD_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [afterward]);
+  /** いまの旅が触れた建物。答えを光らせた建物か、旅の終点 */
+  const touched = journey === null ? null : (journey.highlight[0] ?? journey.stops[journey.stops.length - 1]?.building ?? null);
+
   // 進んだ / 通らなかった に応じて見返りを出す
   const prevStep = useRef(progress.stepIndex);
   const prevCleared = useRef(progress.cleared);
   useEffect(() => {
     const now = Date.now();
+    // 通った手順の afterward を 1 行で返す。いくつか一度に通ったときは最後のものを出す
+    const passedUpTo = progress.cleared ? mission.steps.length : progress.stepIndex;
+    if (passedUpTo > prevStep.current || (progress.cleared && !prevCleared.current)) {
+      const passed = mission.steps[passedUpTo - 1];
+      if (passed !== undefined) setAfterward({ text: passed.afterward, building: touched, key: now });
+    }
     if (progress.cleared && !prevCleared.current) {
       const attempt = {
         hintsUsed: progress.hintsUsed,
@@ -603,7 +665,7 @@ function Arena({
         journey={journey}
         journeyPlay={play}
         onJourneyStop={setPlayAt}
-        tour={tourStop}
+        tour={tourStop ?? revealStop ?? afterward?.building ?? null}
         trouble={troubles[0]?.where ?? null}
         time={stillTime !== undefined && Number.isFinite(stillTime) ? stillTime : undefined}
       />
@@ -630,8 +692,26 @@ function Arena({
         </button>
       </TopBar>
 
-      <TerminalDock session={session} innerRef={terminalRef} onExecuted={handleExecuted} onEditor={setEditing} />
+      <TerminalDock
+        session={session}
+        innerRef={terminalRef}
+        onExecuted={handleExecuted}
+        onEditor={setEditing}
+        note={flowing ? `いまは「${STEP_LABEL[stage]}」の段。コマンドは使わず、町を押して進める。打つのは 4 段目「操作」から` : null}
+      />
 
+      {flowing ? (
+        <FlowStage
+          lesson={mission}
+          stage={stage}
+          onStage={toStage}
+          onQuizCorrect={() => {
+            grow('quiz');
+          }}
+        />
+      ) : null}
+
+      {flowing ? null : (
       <TaskCard
         mission={mission}
         progress={progress}
@@ -643,9 +723,34 @@ function Arena({
         onWhy={() => {
           setExplaining((open) => !open);
         }}
+        onReplay={() => {
+          toStage('experience');
+        }}
       />
+      )}
 
-      {journey === null ? null : (
+      {afterward === null || flowing ? null : (
+        <div
+          key={afterward.key}
+          data-testid="afterward"
+          role="status"
+          className="town-pointer absolute z-20 max-w-[520px] rounded-lg px-3.5 py-2.5"
+          style={{
+            left: SIZE.dock + 16 + SIZE.task + 16,
+            top: SIZE.panelTop,
+            background: HUD.panel,
+            border: `1px solid ${HUD.ok}`,
+            boxShadow: HUD.shadow,
+          }}
+        >
+          <p className="text-[11.5px]" style={{ color: HUD.okText }}>
+            いま街で起きたこと
+          </p>
+          <p className="text-[14px] font-semibold leading-snug">{afterward.text}</p>
+        </div>
+      )}
+
+      {journey === null || flowing ? null : (
         <JourneyStrip
           journey={journey}
           at={playAt}
@@ -665,6 +770,7 @@ function Arena({
         />
       )}
 
+      {flowing ? null : (
       <TourPanel
         stops={tour}
         at={tourAt}
@@ -681,7 +787,9 @@ function Arena({
         }}
         busy={journey !== null}
       />
+      )}
 
+      {flowing ? null : (
       <FaultMenu
         faults={faults}
         troubles={troubles}
@@ -692,9 +800,11 @@ function Arena({
         }}
         onMission={onSwitch}
       />
+      )}
 
-      <InfoViews view={infoView} onView={setInfoView} />
+      {flowing ? null : <InfoViews view={infoView} onView={setInfoView} />}
 
+      {flowing ? null : (
       <BuildMenu
         milestone={milestone.n}
         rights={metrics.rights}
@@ -706,7 +816,9 @@ function Arena({
         }}
         onVariant={setVariant}
       />
+      )}
 
+      {flowing ? null : (
       <div
         data-testid="right-column"
         className="absolute z-20 flex flex-col gap-2.5 overflow-hidden"
@@ -723,6 +835,7 @@ function Arena({
         )}
         <Voices voices={voices} />
       </div>
+      )}
 
       {explaining ? (
         <ExplainDrawer

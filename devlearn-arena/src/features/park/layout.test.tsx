@@ -1,3 +1,4 @@
+import { allMissions } from '@/engines/lesson/registry';
 import { act } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -5,6 +6,9 @@ import { useStore } from '@/store';
 import { mount } from '@/visual/mountForTest';
 import { SIZE } from './hud/theme';
 import ParkPage from './ParkPage';
+
+// 学びの流れの体験から確かめまでを済ませた状態で開く。ここで見たいのは操作の段の画面
+const PAST_FLOW = allMissions().map((m) => m.id);
 
 /**
  * 画面の作り。`docs/design/hud-mockup.html` の構成と寸法をそのまま確かめる。
@@ -39,7 +43,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   act(() => {
-    useStore.setState({ facilitiesBuilt: [], introsRead: [], lessons: {}, missionProgress: {}, missionState: {}, lastMissionId: null, growth: {} });
+    useStore.setState({ facilitiesBuilt: [], introsRead: PAST_FLOW, lessons: {}, missionProgress: {}, missionState: {}, lastMissionId: null, growth: {} });
   });
 });
 
@@ -86,9 +90,12 @@ describe('画面の作り', () => {
     expect(card).toContain(`top: ${String(SIZE.panelTop)}px`);
   });
 
-  it('課題の説明は 2 行まで。長い解説は札に置かない', () => {
+  it('操作の段の札には説明の文章を置かず、いまの手順で何を確かめるかを先に 1 行で出す', () => {
     const view = openWork();
-    expect(view.querySelector('[data-testid="task-lead"]')?.className).toContain('line-clamp-2');
+    expect(view.querySelector('[data-testid="task-lead"]')).toBeNull();
+    const purpose = view.querySelector('[data-testid="task-purpose"]')?.textContent ?? '';
+    expect(purpose).toContain('確かめること');
+    expect(purpose.length).toBeGreaterThan('確かめること'.length);
   });
 
   it('左の学習パネルと紙芝居は無い', () => {

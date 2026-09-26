@@ -123,7 +123,7 @@ describe('押し方', () => {
 
   it('期限のある書き足しは、放っておくと上書きされて取りこぼしになる', () => {
     const scenario = SCENARIOS.overwrite;
-    const state = wait(startPlay(scenario), 12, scenario);
+    const state = wait(startPlay(scenario), 17, scenario);
     expect(state.missed).toBeGreaterThan(0);
   });
 

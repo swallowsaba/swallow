@@ -89,35 +89,36 @@ const DELIVERY: Town = {
 /** Git: 何度も書き直した設計図の写しを、手で棚にしまう */
 const BLUEPRINTS: Town = {
   things: [
-    { id: 'desk', shape: 'desk', label: '製図台', gx: 1, gy: 2 },
-    { id: 'desk2', shape: 'desk', label: 'もう 1 つの製図台', gx: 1, gy: 5 },
     { id: 'tray', shape: 'tray', label: '届いた書き足し', gx: 0, gy: 0 },
-    { id: 'stage', shape: 'tray', label: '写す前の置き台', gx: 3, gy: 2 },
-    { id: 's1', shape: 'shelf', label: '写し 1', gx: 4, gy: 1, room: 1, holds: 1 },
-    { id: 's2', shape: 'shelf', label: '写し 2', gx: 5, gy: 1, room: 1, holds: 1 },
-    { id: 's3', shape: 'shelf', label: '写し 3', gx: 6, gy: 1, room: 1, holds: 1 },
-    { id: 's4', shape: 'shelf', label: '写し 4', gx: 4, gy: 3, room: 1, holds: 0 },
-    { id: 's5', shape: 'shelf', label: '写し 5', gx: 5, gy: 3, room: 1, holds: 0 },
-    { id: 's6', shape: 'shelf', label: '写し 6', gx: 6, gy: 3, room: 1, holds: 0 },
-    { id: 'bin', shape: 'bin', label: 'くず箱', gx: 6, gy: 6 },
-    FACILITY(3, 5, '記録庫'),
+    { id: 'desk', shape: 'desk', label: '製図台', gx: 1, gy: 3 },
+    { id: 'stage', shape: 'tray', label: '写す前の置き台', gx: 3, gy: 3 },
+    { id: 'desk2', shape: 'desk', label: 'もう 1 つの製図台', gx: 0, gy: 6 },
+    { id: 's1', shape: 'shelf', label: '写し 1', gx: 6, gy: 0, room: 1, holds: 1 },
+    { id: 's2', shape: 'shelf', label: '写し 2', gx: 6, gy: 2, room: 1, holds: 1 },
+    { id: 's3', shape: 'shelf', label: '写し 3', gx: 6, gy: 4, room: 1, holds: 1 },
+    { id: 's4', shape: 'shelf', label: '写し 4', gx: 8, gy: 0, room: 1, holds: 0 },
+    { id: 's5', shape: 'shelf', label: '写し 5', gx: 8, gy: 2, room: 1, holds: 0 },
+    { id: 's6', shape: 'shelf', label: '写し 6', gx: 8, gy: 4, room: 1, holds: 0 },
+    { id: 'bin', shape: 'bin', label: 'くず箱', gx: 7, gy: 7 },
+    FACILITY(3, 7, '記録庫'),
   ],
   roads: [
-    ['tray', 'desk'], ['desk', 's1'], ['desk', 's4'], ['desk', 'desk2'], ['desk2', 'facility'], ['facility', 'bin'],
+    ['tray', 'desk'], ['desk', 'stage'], ['stage', 's1'], ['stage', 's3'], ['s1', 's4'], ['s3', 's6'],
+    ['desk', 'desk2'], ['desk2', 'facility'], ['facility', 'bin'],
   ],
 };
 
 /** Kubernetes: やって来る住人を、手で空いたビルへ案内する */
 const DISPATCH: Town = {
   things: [
-    { id: 'gate', shape: 'gate', label: '待合所', gx: 0, gy: 3 },
-    { id: 't1', shape: 'tower', label: 'ビル 1', gx: 3, gy: 0, room: 3, holds: 1 },
-    { id: 't2', shape: 'tower', label: 'ビル 2', gx: 6, gy: 0, room: 3, holds: 2 },
+    { id: 'gate', shape: 'gate', label: '待合所', gx: -1, gy: 2 },
+    { id: 't1', shape: 'tower', label: 'ビル 1', gx: 3, gy: -1, room: 3, holds: 1 },
+    { id: 't2', shape: 'tower', label: 'ビル 2', gx: 6, gy: -1, room: 3, holds: 2 },
     { id: 't3', shape: 'tower', label: 'ビル 3', gx: 3, gy: 5, room: 3, holds: 0 },
     { id: 't4', shape: 'tower', label: 'ビル 4', gx: 6, gy: 5, room: 3, holds: 1 },
-    { id: 'office', shape: 'office', label: '事務所', gx: 0, gy: 0 },
-    { id: 'stop', shape: 'stop', label: 'バス停', gx: 8, gy: 3 },
-    FACILITY(0, 6, '管理棟'),
+    { id: 'office', shape: 'office', label: '事務所', gx: -1, gy: -1 },
+    { id: 'stop', shape: 'stop', label: 'バス停', gx: 8, gy: 2 },
+    FACILITY(-1, 5, '管理棟'),
   ],
   roads: [
     ['gate', 't1'], ['gate', 't3'], ['t1', 't2'], ['t3', 't4'], ['t2', 'stop'], ['t4', 'stop'],
@@ -136,9 +137,9 @@ const CARTS: Town = {
     { id: 'n2', shape: 'town', label: '27 番の町', gx: 6, gy: 2 },
     { id: 'n3', shape: 'town', label: '31 番の町', gx: 6, gy: 4 },
     { id: 'n4', shape: 'town', label: '45 番の町', gx: 6, gy: 6 },
-    { id: 'p1', shape: 'plate', label: '番号札 50', gx: 0, gy: 6, room: 1, holds: 0 },
-    { id: 'p2', shape: 'plate', label: '番号札 51', gx: 1, gy: 6, room: 1, holds: 1 },
-    { id: 'p3', shape: 'plate', label: '番号札 52', gx: 1, gy: 7, room: 1, holds: 0 },
+    { id: 'p1', shape: 'plate', label: '番号札 50', gx: -2, gy: 2, room: 1, holds: 0 },
+    { id: 'p2', shape: 'plate', label: '番号札 51', gx: -2, gy: 4, room: 1, holds: 1 },
+    { id: 'p3', shape: 'plate', label: '番号札 52', gx: -2, gy: 6, room: 1, holds: 0 },
     FACILITY(0, 0, '案内塔'),
   ],
   roads: [

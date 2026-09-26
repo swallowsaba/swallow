@@ -1,3 +1,4 @@
+import { allMissions } from '@/engines/lesson/registry';
 import { act } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -6,6 +7,9 @@ import { useStore } from '@/store';
 import { click, mount } from '@/visual/mountForTest';
 import ParkPage from '../ParkPage';
 import { SIZE } from './theme';
+
+// 学びの流れの体験から確かめまでを済ませた状態で開く。ここで見たいのは操作の段の画面
+const PAST_FLOW = allMissions().map((m) => m.id);
 
 /**
  * 上の帯。`docs/design/hud-mockup.html` の並びに合わせる。
@@ -40,7 +44,7 @@ beforeAll(() => {
 beforeEach(() => {
   act(() => {
     useStore.setState({
-      facilitiesBuilt: [], introsRead: [], lessons: {},
+      facilitiesBuilt: [], introsRead: PAST_FLOW, lessons: {},
       missionProgress: {}, missionState: {}, lastMissionId: null, growth: {}, designs: {},
       profile: { xp: 0, streakDays: 0, lastActiveDay: null, activeDays: [], onboarded: true },
     });

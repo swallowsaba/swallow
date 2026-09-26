@@ -11,6 +11,8 @@ interface Props {
   innerRef: RefObject<TerminalHandle>;
   onExecuted: (line: string, exitCode: number, stderr: string) => void;
   onEditor: (target: EditorTarget) => void;
+  /** 端末の上に添える一言。体験の段では「いまはコマンドを使わない」と伝える（打つこと自体は止めない） */
+  note?: string | null;
 }
 
 /**
@@ -19,7 +21,7 @@ interface Props {
  * 閉じない。待たせない。条件を付けない。
  * 説明を読んでいる間も、街を眺めている間も、ここはいつでも打てる。
  */
-export function TerminalDock({ session, innerRef, onExecuted, onEditor }: Props) {
+export function TerminalDock({ session, innerRef, onExecuted, onEditor, note = null }: Props) {
   const t = useT();
   return (
     <aside
@@ -37,6 +39,15 @@ export function TerminalDock({ session, innerRef, onExecuted, onEditor }: Props)
           {session.state.cwd}
         </span>
       </div>
+      {note === null ? null : (
+        <p
+          data-testid="terminal-note"
+          className="shrink-0 px-3.5 py-2 text-[12.5px] leading-snug"
+          style={{ background: HUD.accentFill, color: HUD.accentText, borderBottom: `1px solid ${HUD.line}` }}
+        >
+          {note}
+        </p>
+      )}
       <div data-testid="terminal" className="min-h-0 min-w-0 flex-1 overflow-hidden">
         <TerminalView ref={innerRef} session={session} onExecuted={onExecuted} onEditor={onEditor} />
       </div>

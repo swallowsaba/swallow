@@ -89,7 +89,7 @@ export interface PlayState {
   /** 直前に押した結果の一言 */
   note: { text: string; tone: Tone } | null;
   /** 直前に押した物と、その当たり外れ。絵で一瞬光らせる */
-  flash: { id: string; tone: Tone; serial: number } | null;
+  flash: { id: string; tone: Tone; serial: number; at: number } | null;
   /** 終わったか。time=時間切れ swamped=溜まりすぎ */
   over: null | 'time' | 'swamped';
   /** 学習者が押した回数。遊んだかどうかの目安 */
@@ -191,7 +191,7 @@ function complete(state: PlayState, chore: Chore, scenario: Scenario, id: string
     queue: state.queue.slice(1),
     done: state.done + 1,
     note: { text, tone: 'ok' },
-    flash: { id, tone: 'ok', serial: state.presses },
+    flash: { id, tone: 'ok', serial: state.presses, at: state.t },
   };
   if (chore.lost === true) {
     next = arrive(
@@ -205,7 +205,7 @@ function complete(state: PlayState, chore: Chore, scenario: Scenario, id: string
 }
 
 function wrong(state: PlayState, id: string, text: string): PlayState {
-  return { ...state, wasted: state.wasted + 1, note: { text, tone: 'miss' }, flash: { id, tone: 'miss', serial: state.presses } };
+  return { ...state, wasted: state.wasted + 1, note: { text, tone: 'miss' }, flash: { id, tone: 'miss', serial: state.presses, at: state.t } };
 }
 
 /** 町の物を押した */
@@ -232,7 +232,7 @@ export function press(state: PlayState, id: string, scenario: Scenario): PlaySta
       ...pressed,
       queue: [moved, ...pressed.queue.slice(1)],
       note: { text: `受け取った。次は${nextLabel}へ`, tone: 'ok' },
-      flash: { id, tone: 'ok', serial: pressed.presses },
+      flash: { id, tone: 'ok', serial: pressed.presses, at: pressed.t },
     };
   }
 

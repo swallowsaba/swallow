@@ -6,6 +6,7 @@ import { Icon } from '@/ui/Icon';
 import { commandLabel } from './stepLabel';
 import { TermText } from './TermText';
 import { HUD, SIZE } from './theme';
+import { FlowSteps } from '@/lesson/flow/FlowStage';
 
 /** 札の中に一度に並べる語の数。これを超えたぶんは折り畳む */
 const SHOWN_TERMS = 3;
@@ -22,6 +23,8 @@ interface Props {
   reward: { xp: number; rights: number };
   onHint: () => void;
   onWhy: () => void;
+  /** 体験の段からやり直す */
+  onReplay?: () => void;
 }
 
 /**
@@ -30,7 +33,7 @@ interface Props {
  * 見出し・2 行以内の説明・チェック項目・報酬・ヒント、それだけ。
  * 長い解説はここに書かず、「なぜ」から開く引き出しへ回す。
  */
-export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHints, reward, onHint, onWhy }: Props) {
+export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHints, reward, onHint, onWhy, onReplay }: Props) {
   const t = useT();
   const total = mission.steps.length;
   const at = Math.min(progress.stepIndex + (progress.cleared ? 1 : 0), total);
@@ -75,10 +78,32 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
       </div>
 
       <div className="flex flex-col gap-2 px-3 py-2.5">
-        {/* 説明は 2 行まで。溢れる分は「なぜ」の引き出しで読む */}
-        <p data-testid="task-lead" className="line-clamp-2 text-[13px] leading-relaxed" style={{ color: HUD.soft }}>
-          {mission.intro.summary}
-        </p>
+        {/*
+          操作の段（学びの流れ 4）。説明の文章は置かない。体験と登場で見たことを、コマンドで確かめる段。
+          いまの手順には「この操作で何を確かめるのか」を先に 1 行で出す
+        */}
+        <div className="flex items-center gap-2">
+          <FlowSteps at={progress.cleared ? 'recap' : 'operate'} compact />
+          {onReplay === undefined ? null : (
+            <button
+              type="button"
+              data-testid="task-replay"
+              onClick={onReplay}
+              className="ml-auto text-[11px]"
+              style={{ color: HUD.accentText }}
+            >
+              体験からやり直す
+            </button>
+          )}
+        </div>
+        {step === undefined ? null : (
+          <p data-testid="task-purpose" className="rounded px-2 py-1.5 text-[13px] leading-snug" style={{ background: HUD.accentFill, color: HUD.text }}>
+            <span className="mr-1 text-[11.5px]" style={{ color: HUD.accentText }}>
+              確かめること
+            </span>
+            {step.purpose}
+          </p>
+        )}
 
         <ul className="flex flex-col gap-1.5">
           {mission.steps.map((s, i) => {
@@ -103,10 +128,23 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
                   いまの手順は折り返して全部見せ、用語にはその場で説明が浮かぶ
                 */}
                 <span
-                  className={here ? 'min-w-0 flex-1' : 'min-w-0 flex-1 truncate'}
-                  style={done ? { color: HUD.okDone, textDecoration: 'line-through' } : here ? undefined : { color: HUD.muted }}
+                  className={here || done ? 'min-w-0 flex-1' : 'min-w-0 flex-1 truncate'}
+                  style={done ? { color: HUD.okDone } : here ? undefined : { color: HUD.muted }}
                 >
-                  {done || here ? <TermText text={s.prompt} tip={here} /> : t('task.later')}
+                  {done ? (
+                    <span style={{ textDecoration: 'line-through' }}>
+                      <TermText text={s.prompt} />
+                    </span>
+                  ) : here ? (
+                    <TermText text={s.prompt} tip />
+                  ) : (
+                    t('task.later')
+                  )}
+                  {done ? (
+                    <span data-testid="task-afterward" className="block text-[11.5px] leading-snug" style={{ color: HUD.muted }}>
+                      {`街で: ${s.afterward}`}
+                    </span>
+                  ) : null}
                 </span>
                 {command === '' ? null : (
                   <span className="shrink-0 font-mono text-[12px]" style={{ color: HUD.dim }}>

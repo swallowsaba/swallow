@@ -1,9 +1,13 @@
+import { allMissions } from '@/engines/lesson/registry';
 import { act } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { useStore } from '@/store';
 import { mount } from '@/visual/mountForTest';
 import ParkPage from '@/features/park/ParkPage';
+
+// 学びの流れの体験から確かめまでを済ませた状態で開く。ここで見たいのは操作の段の画面
+const PAST_FLOW = allMissions().map((m) => m.id);
 
 /**
  * 端末はいつでも使える。閉じない・待たせない・条件を付けない。
@@ -39,7 +43,7 @@ beforeAll(() => {
 beforeEach(() => {
   act(() => {
     useStore.setState({
-      facilitiesBuilt: [], introsRead: [], lessons: {},
+      facilitiesBuilt: [], introsRead: PAST_FLOW, lessons: {},
       missionProgress: {}, missionState: {}, lastMissionId: null, growth: {},
     });
   });
