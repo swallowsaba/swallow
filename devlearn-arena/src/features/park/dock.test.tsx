@@ -64,8 +64,8 @@ function openWork() {
   );
 }
 
+const dockOf = (view: Element): string =>
   view.querySelector<HTMLElement>('[data-testid="arena"]')?.style.getPropertyValue('--dock') ?? '';
-  (view.querySelector('[data-testid="arena"]'))?.style.getPropertyValue('--dock') ?? '';
 
 function drag(view: Element, toX: number): void {
   const divider = view.querySelector('[data-testid="dock-divider"]');
