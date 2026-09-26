@@ -580,6 +580,34 @@ export const SCENES = {
       await sleep(2500);
     },
   },
+  /**
+   * 端末で長い行を打つ（REWORK 3-2）。Tab で補完してから打ち続け、右端で折り返しても
+   * 同じ行が何度も出ないことを確かめる。端末の所だけを切り取る
+   */
+  'terminal-wrap': {
+    path: '/world/kernel?mission=kernel/00/shell-warmup&stage=operate',
+    wait: 4000,
+    clip: { x: 0, y: 60, width: 440, height: 420 },
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await type(page, 'mkdir reports');
+      await sleep(600);
+      await type(page, 'cat /etc/hosts > reports/hosts.txt');
+      await sleep(600);
+      await page.locator('.xterm-helper-textarea').focus();
+      await page.keyboard.type('grep localhost rep');
+      await page.keyboard.press('Tab');
+      await sleep(300);
+      await page.keyboard.type('hosts.txt > reports/local.txt', { delay: 60 });
+      await page.keyboard.press('Enter');
+      // この行で任務が終わり、振り返りが開く。閉じて端末を見る
+      await need(page, 'recap');
+      await page.getByTestId('recap-close').click();
+      await type(page, 'cat reports/local.txt');
+      await sleep(1500);
+    },
+  },
   /** 街が育った所（REWORK 2-1・2-2）。カメラが寄り、光の輪と「＋1 階」の札。右上に成長の記録 */
   'growth-burst': {
     path: K8S_FIRST,

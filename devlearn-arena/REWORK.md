@@ -65,7 +65,7 @@
   - 更新関数が実際に呼ばれているか（`grep` で呼び出し元を確かめる。CLAUDE.md の「繋がっているか」）
   - **自動検査を作る**: `tools/shoot.mjs` を拡張し、同じ画面を 2 秒あけて 2 枚撮り、
     画素の差が一定以上あることを確かめる `tools/motion-check.mjs` を作る。差が無ければ失敗とする
-- [ ] 3-2. **Tab 補完の後、キーを打つたびに補完が走る。** 端末で `grep localhost rep` の途中で Tab を押すと、
+- [x] 3-2. **Tab 補完の後、キーを打つたびに補完が走る。** 端末で `grep localhost rep` の途中で Tab を押すと、
   その後の打鍵ごとに同じ行が何度も出力され、`>` の継続行に落ちる。
   先に再現する失敗するテストを書いてから直す（`src/features/terminal/` と `src/engines/kernel/lineEditor.ts`）。
   Tab は1回だけ補完し、以後の打鍵は普通に文字を足すこと。

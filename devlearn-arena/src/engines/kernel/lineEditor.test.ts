@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  backspace, createLineState, expandBang, historyMove, insert, killToStart, killWord,
-  moveCursor, toLineEnd, toLineStart,
+  backspace, createLineState, displayWidth, expandBang, historyMove, insert, killToStart, killWord,
+  moveCursor, redrawLine, toLineEnd, toLineStart,
 } from './lineEditor';
 
 describe('行編集', () => {
@@ -75,5 +75,38 @@ describe('履歴', () => {
     expect(expandBang('!!', history)).toEqual({ line: 'pwd', expanded: true });
     expect(expandBang('sudo !!', history).line).toBe('sudo pwd');
     expect(expandBang('echo hi', history).expanded).toBe(false);
+  });
+});
+
+describe('折り返した行の描き直し（REWORK 3-2）', () => {
+  it('全角の字は 2 桁を取る', () => {
+    expect(displayWidth('abc')).toBe(3);
+    expect(displayWidth('あいう')).toBe(6);
+    expect(displayWidth('echo こんにちは')).toBe(15);
+  });
+
+  it('1 行に収まるときは、行頭に戻って消してから書く', () => {
+    const { text, row } = redrawLine(0, '$ ', 'ls', 2, 40);
+    expect(text).toBe('\r\u001b[J$ ls\r\u001b[4C');
+    expect(row).toBe(0);
+  });
+
+  it('折り返しているときは、プロンプトの始まりの行まで上がってから消す', () => {
+    // 前回はカーソルが 2 行目（row 1）にいた
+    const { text } = redrawLine(1, '$ ', 'x'.repeat(45), 45, 40);
+    expect(text.startsWith('\u001b[1A\r\u001b[J$ ')).toBe(true);
+  });
+
+  it('カーソルが行の途中なら、その行と桁へ戻る', () => {
+    // 47 字のうち 10 字目。カーソルは 1 行目にいて、書き終えた 2 行目から 1 行上がる
+    const { text, row } = redrawLine(0, '$ ', 'x'.repeat(45), 8, 40);
+    expect(text.endsWith('\u001b[1A\r\u001b[10C')).toBe(true);
+    expect(row).toBe(0);
+  });
+
+  it('右端ちょうどで終わったら、カーソルを次の行の頭へ送る', () => {
+    const { text, row } = redrawLine(0, '$ ', 'x'.repeat(38), 38, 40);
+    expect(text.endsWith('\r\n\r')).toBe(true);
+    expect(row).toBe(1);
   });
 });
