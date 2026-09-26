@@ -1,15 +1,32 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { missionTerms } from '@/content/glossary';
 import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { Icon } from '@/ui/Icon';
 import { commandLabel } from './stepLabel';
 import { TermText } from './TermText';
+import { clampCard, loadLayout, saveLayout, type CardBox } from './layoutPrefs';
 import { HUD, SIZE, besideDock } from './theme';
 import { FlowSteps } from '@/lesson/flow/FlowStage';
 
 /** 札の中に一度に並べる語の数。これを超えたぶんは折り畳む */
 const SHOWN_TERMS = 3;
+
+/** 動かしていない札の高さの上限。下の建設メニューと旅の帯に掛からないように */
+const DEFAULT_MAX_HEIGHT = `calc(100% - ${String(SIZE.panelTop + 200)}px)`;
+
+/** いまの画面の大きさ。札を画面の中に収めるのに使う */
+function viewport(): { width: number; height: number } {
+  return { width: window.innerWidth, height: window.innerHeight };
+}
+
+/** 札をつかんで動かしている間の、つかみ始めの位置と札の箱 */
+interface Gesture {
+  kind: 'move' | 'size';
+  x: number;
+  y: number;
+  start: CardBox;
+}
 
 interface Props {
   mission: LessonDefinition;
@@ -46,14 +63,69 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
   const [allWords, setAllWords] = useState(false);
   const shown = allWords ? words : words.slice(0, SHOWN_TERMS);
 
+  /*
+    札の置き場所と大きさ（REWORK 4-1・4-2）。見出しをつかんで動かし、右下の角をつまんで大きさを変える。
+    動かしたことが無ければ端末の右の決まった所に出る。放したら保存し、次に開いても同じ所に出す
+  */
+  const [box, setBox] = useState<CardBox | null>(() => {
+    const saved = loadLayout().card;
+    return saved === null ? null : clampCard(saved, viewport());
+  });
+  const [folded, setFolded] = useState(() => loadLayout().cardFolded);
+  const card = useRef<HTMLElement>(null);
+  const gesture = useRef<Gesture | null>(null);
+
+  /** いまの箱。動かしたことが無ければ、画面に出ている所を測る */
+  const measure = (): CardBox => {
+    if (box !== null) return box;
+    const el = card.current;
+    return {
+      left: el?.offsetLeft ?? 0,
+      top: el?.offsetTop ?? SIZE.panelTop,
+      width: el?.offsetWidth ?? SIZE.task,
+      height: el?.offsetHeight ?? 0,
+    };
+  };
+
+  const grab = (kind: Gesture['kind']) => (event: ReactPointerEvent<HTMLElement>) => {
+    // 見出しの中のボタン（畳む）は押せるままにする
+    if (kind === 'move' && (event.target as Element).closest('button') !== null) return;
+    gesture.current = { kind, x: event.clientX, y: event.clientY, start: measure() };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  };
+  const drag = (event: ReactPointerEvent<HTMLElement>): void => {
+    const g = gesture.current;
+    if (g === null) return;
+    const dx = event.clientX - g.x;
+    const dy = event.clientY - g.y;
+    const next =
+      g.kind === 'move'
+        ? { ...g.start, left: g.start.left + dx, top: g.start.top + dy }
+        : { ...g.start, width: g.start.width + dx, height: g.start.height + dy };
+    setBox(clampCard(next, viewport()));
+  };
+  const drop = (event: ReactPointerEvent<HTMLElement>): void => {
+    if (gesture.current === null) return;
+    gesture.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    setBox((now) => {
+      if (now !== null) saveLayout({ card: now });
+      return now;
+    });
+  };
+
   return (
     <section
+      ref={card}
       data-testid="task-card"
-      className="absolute z-20 rounded-lg"
+      data-folded={folded ? 'true' : undefined}
+      className="absolute z-20 flex flex-col rounded-lg"
       style={{
-        left: besideDock(16),
-        top: SIZE.panelTop,
-        width: SIZE.task,
+        left: box === null ? besideDock(16) : box.left,
+        top: box === null ? SIZE.panelTop : box.top,
+        width: box === null ? SIZE.task : box.width,
+        ...(folded ? {} : box === null ? { maxHeight: DEFAULT_MAX_HEIGHT } : { height: box.height }),
         background: HUD.panel,
         border: `1px solid ${HUD.lineStrong}`,
         boxShadow: HUD.shadow,
@@ -61,23 +133,53 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
       }}
     >
       <div
-        className="flex items-center gap-2 overflow-hidden rounded-t-lg px-3 py-2.5"
+        data-testid="task-handle"
+        title="つかんで動かす"
+        onPointerDown={grab('move')}
+        onPointerMove={drag}
+        onPointerUp={drop}
+        className={`flex shrink-0 cursor-move touch-none select-none items-start gap-2 px-3 py-2.5 ${folded ? 'rounded-lg' : 'rounded-t-lg'}`}
         style={{
           background: 'linear-gradient(90deg, rgba(47,143,216,.25), rgba(47,143,216,0))',
-          borderBottom: `1px solid ${HUD.line}`,
+          ...(folded ? {} : { borderBottom: `1px solid ${HUD.line}` }),
         }}
       >
-        <Icon name="flag" size={16} />
-        <span className="text-[12px]" style={{ color: HUD.accentText }}>
+        <span className="mt-0.5 shrink-0">
+          <Icon name="flag" size={16} />
+        </span>
+        <span className="mt-0.5 shrink-0 text-[12px]" style={{ color: HUD.accentText }}>
           {t('hud.task')}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[14px] font-bold">{mission.title}</span>
-        <span className="shrink-0 text-[12px]" style={{ color: HUD.muted }} data-testid="task-progress">
+        {/* 題は切らずに折り返す（REWORK 4-3） */}
+        <span data-testid="task-title" className="min-w-0 flex-1 break-words text-[14px] font-bold leading-snug">
+          {mission.title}
+        </span>
+        <span className="mt-0.5 shrink-0 text-[12px]" style={{ color: HUD.muted }} data-testid="task-progress">
           {t('hud.stepCount', { a: at, b: total })}
         </span>
+        <button
+          type="button"
+          data-testid="task-fold"
+          aria-expanded={!folded}
+          aria-label={folded ? '札を開く' : '札を畳む（見出しだけにする）'}
+          title={folded ? '札を開く' : '見出しだけにする'}
+          onClick={() => {
+            saveLayout({ cardFolded: !folded });
+            setFolded(!folded);
+          }}
+          className="-my-0.5 grid h-6 w-6 shrink-0 place-items-center rounded"
+          style={{ border: `1px solid ${HUD.lineStrong}`, color: HUD.soft }}
+        >
+          <span style={{ display: 'inline-flex', transform: folded ? 'rotate(90deg)' : 'rotate(-90deg)' }}>
+            <Icon name="next" size={13} />
+          </span>
+        </button>
       </div>
 
-      <div className="flex flex-col gap-2 px-3 py-2.5">
+      {folded ? null : (
+      <>
+      {/* 中身がはみ出したら、札の中で縦に送る。切って「…」にはしない（REWORK 4-3） */}
+      <div data-testid="task-body" className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 py-2.5">
         {/*
           操作の段（学びの流れ 4）。説明の文章は置かない。体験と登場で見たことを、コマンドで確かめる段。
           いまの手順には「この操作で何を確かめるのか」を先に 1 行で出す
@@ -128,7 +230,7 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
                   いまの手順は折り返して全部見せ、用語にはその場で説明が浮かぶ
                 */}
                 <span
-                  className={here || done ? 'min-w-0 flex-1' : 'min-w-0 flex-1 truncate'}
+                  className="min-w-0 flex-1 break-words"
                   style={done ? { color: HUD.okDone } : here ? undefined : { color: HUD.muted }}
                 >
                   {done ? (
@@ -168,7 +270,7 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
                     <TermText text={word.term} />
                   </dt>
                   <dd className="inline" style={{ color: HUD.soft }}>
-                    {` … ${word.plain}`}
+                    {`：${word.plain}`}
                   </dd>
                 </div>
               ))}
@@ -207,7 +309,7 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
       </div>
 
       <div
-        className="flex items-center gap-2 rounded-b-lg px-3 py-2"
+        className="flex shrink-0 items-center gap-2 rounded-b-lg px-3 py-2"
         style={{ borderTop: `1px solid ${HUD.line}`, background: HUD.fillSoft }}
       >
         <span className="text-[12px]" style={{ color: HUD.muted }}>
@@ -238,6 +340,21 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
           {t('hud.hint')}
         </button>
       </div>
+      {/* 右下の角。つまんで札の大きさを変える */}
+      <div
+        data-testid="task-resize"
+        title="つまんで大きさを変える"
+        onPointerDown={grab('size')}
+        onPointerMove={drag}
+        onPointerUp={drop}
+        className="absolute bottom-0 right-0 h-4 w-4 cursor-nwse-resize touch-none"
+      >
+        <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true">
+          <path d="M14 6v8H6M14 10v4h-4" fill="none" stroke={HUD.muted} strokeWidth={1.4} />
+        </svg>
+      </div>
+      </>
+      )}
     </section>
   );
 }

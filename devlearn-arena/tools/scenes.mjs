@@ -608,6 +608,35 @@ export const SCENES = {
       await sleep(1500);
     },
   },
+  /**
+   * 課題の札を動かす（REWORK 4-1〜4-3）。見出しをつかんで右へ運び、右下の角を引いて大きくする。
+   * `SHOOT_FOLD=1` なら、そのあと畳む
+   */
+  'task-card-move': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-handle');
+      const handle = await page.getByTestId('task-handle').boundingBox();
+      if (handle === null) throw new Error('札の見出しが見えない');
+      await page.mouse.move(handle.x + 60, handle.y + 14);
+      await page.mouse.down();
+      await page.mouse.move(handle.x + 260, handle.y + 60, { steps: 8 });
+      await page.mouse.up();
+      await sleep(300);
+      const grip = await page.getByTestId('task-resize').boundingBox();
+      if (grip === null) throw new Error('札の角が見えない');
+      await page.mouse.move(grip.x + 8, grip.y + 8);
+      await page.mouse.down();
+      await page.mouse.move(grip.x + 180, grip.y - 140, { steps: 8 });
+      await page.mouse.up();
+      await sleep(300);
+      if (process.env.SHOOT_FOLD !== undefined) await page.getByTestId('task-fold').click();
+      await sleep(1200);
+    },
+  },
   /** 端末と街の間の仕切り（REWORK 3-3）。ドラッグで端末を広げる */
   'dock-resize': {
     path: K8S_FIRST,
