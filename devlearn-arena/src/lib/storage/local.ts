@@ -59,3 +59,20 @@ export function writeSave(data: SaveData): void {
 export function clearSave(): void {
   getStore().removeItem(SAVE_KEY);
 }
+
+/** 保存データとは別に持つ、小さな値（画面の配置など）。読めなければ null */
+export function readValue(key: string): string | null {
+  try {
+    return getStore().getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function writeValue(key: string, value: string): void {
+  try {
+    getStore().setItem(key, value);
+  } catch {
+    // 保存できない環境では、その回かぎりの配置になるだけ
+  }
+}

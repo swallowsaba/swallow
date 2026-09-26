@@ -608,6 +608,26 @@ export const SCENES = {
       await sleep(1500);
     },
   },
+  /** 端末と街の間の仕切り（REWORK 3-3）。ドラッグで端末を広げる */
+  'dock-resize': {
+    path: K8S_FIRST,
+    wait: 5000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await type(page, 'kubectl get nodes');
+      await sleep(600);
+      const box = await page.getByTestId('dock-divider').boundingBox();
+      if (box === null) throw new Error('仕切りが見えない');
+      const y = box.y + box.height / 2;
+      await page.mouse.move(box.x + box.width / 2, y);
+      await page.mouse.down();
+      await page.mouse.move(560, y, { steps: 6 });
+      await page.mouse.move(Number(process.env.DOCK_TO ?? 700), y, { steps: 6 });
+      await page.mouse.up();
+      await sleep(1500);
+    },
+  },
   /** 街が育った所（REWORK 2-1・2-2）。カメラが寄り、光の輪と「＋1 階」の札。右上に成長の記録 */
   'growth-burst': {
     path: K8S_FIRST,

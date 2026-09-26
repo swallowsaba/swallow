@@ -2,7 +2,7 @@ import type { DesignKind } from '@/city/model';
 import { useT } from '@/i18n/useT';
 import { Icon } from '@/ui/Icon';
 import { BUILD_TOOLS, isLocked, variantsOf, type BuildVariant } from './buildTools';
-import { HUD, SIZE } from './theme';
+import { HUD, besideDock } from './theme';
 
 interface Props {
   /** いま取り組んでいる段。ここに届かない道具は暗いまま */
@@ -33,7 +33,7 @@ export function BuildMenu({ milestone, rights, tool, variant, onTool, onVariant 
       aria-label={t('hud.buildMenu')}
       // 横に広い入れ物だが、板の無い所は街に触れる。下辺一帯が押せなくならないようにする
       className="pointer-events-none absolute bottom-3.5 z-20 flex flex-col items-center gap-2"
-      style={{ left: SIZE.dock + 16, right: 232 }}
+      style={{ left: besideDock(16), right: 232 }}
     >
       {drawer.length === 0 ? null : (
         <div

@@ -5,7 +5,7 @@ import { useT } from '@/i18n/useT';
 import { Icon } from '@/ui/Icon';
 import { commandLabel } from './stepLabel';
 import { TermText } from './TermText';
-import { HUD, SIZE } from './theme';
+import { HUD, SIZE, besideDock } from './theme';
 import { FlowSteps } from '@/lesson/flow/FlowStage';
 
 /** 札の中に一度に並べる語の数。これを超えたぶんは折り畳む */
@@ -51,7 +51,7 @@ export function TaskCard({ mission, progress, passingNow, diagnosis, revealedHin
       data-testid="task-card"
       className="absolute z-20 rounded-lg"
       style={{
-        left: SIZE.dock + 16,
+        left: besideDock(16),
         top: SIZE.panelTop,
         width: SIZE.task,
         background: HUD.panel,

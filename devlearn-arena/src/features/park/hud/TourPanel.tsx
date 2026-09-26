@@ -1,7 +1,7 @@
 import type { TourStop } from '@/city/tour';
 import { useT } from '@/i18n/useT';
 import { Icon } from '@/ui/Icon';
-import { HUD, SIZE } from './theme';
+import { HUD, besideDock } from './theme';
 
 interface Props {
   stops: readonly TourStop[];
@@ -23,7 +23,7 @@ interface Props {
  */
 const BOX = {
   position: 'absolute',
-  left: SIZE.dock + 16,
+  left: besideDock(16),
   bottom: 124,
   width: 420,
   zIndex: 21,

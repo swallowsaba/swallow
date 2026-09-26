@@ -2,7 +2,7 @@ import type { Journey } from '@/city/journey';
 import type { JourneyPlay } from '@/city3d/journey';
 import { useT } from '@/i18n/useT';
 import { Icon } from '@/ui/Icon';
-import { HUD, SIZE } from './theme';
+import { HUD, besideDock } from './theme';
 import { RATES } from './journeyRates';
 
 interface Props {
@@ -35,7 +35,7 @@ export function JourneyStrip({ journey, at, play, onPlaying, onRate, onStep, onC
       data-at={String(at)}
       className="absolute z-[21] rounded-lg p-2.5"
       style={{
-        left: SIZE.dock + 16,
+        left: besideDock(16),
         right: 232,
         bottom: 124,
         background: HUD.panel,

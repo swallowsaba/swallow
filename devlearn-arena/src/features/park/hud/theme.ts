@@ -47,3 +47,14 @@ export const SIZE = {
   /** 板の上端。上の帯の下に 16px の余白を取る */
   panelTop: 72,
 } as const;
+
+/**
+ * 端末の幅。学習者が仕切りを動かして変える（REWORK 3-3）ので、学習画面の根に CSS 変数 --dock で置く。
+ * 端末の右に並ぶ板は、これを使って端末の右端から位置を決める。
+ */
+export const DOCK_WIDTH = `var(--dock, ${String(SIZE.dock)}px)`;
+
+/** 端末の右端から `gap` px 右の位置 */
+export function besideDock(gap: number): string {
+  return `calc(${DOCK_WIDTH} + ${String(gap)}px)`;
+}

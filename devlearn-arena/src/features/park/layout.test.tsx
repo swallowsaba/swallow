@@ -69,10 +69,12 @@ describe('画面の作り', () => {
     expect(stage?.className).toContain('inset-0');
   });
 
-  it('端末は左に常駐する。幅 440px、上の帯の下から画面の下端まで', () => {
+  it('端末は左に常駐する。はじめの幅 440px、上の帯の下から画面の下端まで', () => {
     const view = openWork();
     const dock = style(view, 'terminal-dock');
-    expect(dock).toContain(`width: ${String(SIZE.dock)}px`);
+    // 幅は学習画面の根に置いた --dock で決まる（仕切りで変えられる。REWORK 3-3）
+    expect(dock).toContain('width: var(--dock');
+    expect(style(view, 'arena')).toContain(`--dock: ${String(SIZE.dock)}px`);
     expect(dock).toContain(`top: ${String(SIZE.topBar)}px`);
     expect(view.querySelector('[data-testid="terminal-dock"]')?.className).toContain('bottom-0');
   });
@@ -86,7 +88,8 @@ describe('画面の作り', () => {
     const view = openWork();
     const card = style(view, 'task-card');
     expect(card).toContain(`width: ${String(SIZE.task)}px`);
-    expect(card).toContain(`left: ${String(SIZE.dock + 16)}px`);
+    expect(card).toContain('left: calc(var(--dock');
+    expect(card).toContain('+ 16px)');
     expect(card).toContain(`top: ${String(SIZE.panelTop)}px`);
   });
 

@@ -34,6 +34,7 @@ import { NO_HINTS, reveal, revealedCount, stepKey, type HintReveal } from './hin
 import { gainFor, growsFromCommand, type GrowthTrigger } from './growth';
 import { causeOf, growthSpot, logGrowth, type GrowthMark } from './growthLog';
 import { GrowthRecord } from './hud/GrowthRecord';
+import { clampDock, loadLayout, saveLayout } from './hud/layoutPrefs';
 import { nextTrip, type Trip } from './trip';
 import { faultsOf, troubles as troublesOf } from './faults';
 import { TerminalDock } from './hud/TerminalDock';
@@ -51,7 +52,7 @@ import { Voices } from './hud/Voices';
 import { voicesOf } from './hud/voiceFeed';
 import { variantsOf, type BuildVariant } from './hud/buildTools';
 import { cityMetrics, clockOf, milestoneOf, type Speed } from './hud/metrics';
-import { HUD, SIZE } from './hud/theme';
+import { HUD, SIZE, besideDock } from './hud/theme';
 import { FlowStage } from '@/lesson/flow/FlowStage';
 import { RecapScreen, type RecapData } from '@/lesson/flow/RecapScreen';
 import { isFlowStep, STEP_LABEL, type FlowStep } from '@/lesson/flow/steps';
@@ -258,6 +259,19 @@ function Arena({
   const captureRef = useRef<(() => string | null) | null>(null);
   const beforeShot = useRef<string | null>(null);
   const [diagnosis, setDiagnosis] = useState<string | null>(null);
+  // 端末の幅（REWORK 3-3）。仕切りで変え、放したら保存する。画面の幅が変わっても上限に収める
+  const [dock, setDock] = useState(() => clampDock(loadLayout().dock, window.innerWidth));
+  const dockRef = useRef(dock);
+  dockRef.current = dock;
+  useEffect(() => {
+    const fit = (): void => {
+      setDock((width) => clampDock(width, window.innerWidth));
+    };
+    window.addEventListener('resize', fit);
+    return () => {
+      window.removeEventListener('resize', fit);
+    };
+  }, []);
   const [editing, setEditing] = useState<EditorTarget | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [explaining, setExplaining] = useState(false);
@@ -733,7 +747,7 @@ function Arena({
   return (
     <div
       className="relative h-full w-full overflow-hidden"
-      style={{ background: HUD.bg, color: HUD.text }}
+      style={{ background: HUD.bg, color: HUD.text, ['--dock' as string]: `${String(dock)}px` }}
       data-testid="arena"
     >
       <CityStage
@@ -786,6 +800,13 @@ function Arena({
         onExecuted={handleExecuted}
         onEditor={setEditing}
         note={flowing ? `いまは「${STEP_LABEL[stage]}」の段。コマンドは使わず、町を押して進める。打つのは 4 段目「操作」から` : null}
+        width={dock}
+        onResize={(width) => {
+          setDock(clampDock(width, window.innerWidth));
+        }}
+        onResized={() => {
+          saveLayout({ dock: dockRef.current });
+        }}
       />
 
       {flowing ? (
@@ -824,7 +845,7 @@ function Arena({
           role="status"
           className="town-pointer absolute z-20 max-w-[520px] rounded-lg px-3.5 py-2.5"
           style={{
-            left: SIZE.dock + 16 + SIZE.task + 16,
+            left: besideDock(16 + SIZE.task + 16),
             top: SIZE.panelTop,
             background: HUD.panel,
             border: `1px solid ${HUD.ok}`,

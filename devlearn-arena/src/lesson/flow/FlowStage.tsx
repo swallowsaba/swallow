@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { LessonDefinition } from '@/engines/lesson/types';
-import { HUD, SIZE } from '@/features/park/hud/theme';
+import { HUD, SIZE, besideDock } from '@/features/park/hud/theme';
 import { ExperienceStage } from '../experience/ExperienceStage';
 import type { PlaySummary } from '../experience/sim';
 import { QuizStage } from './QuizStage';
@@ -62,7 +62,7 @@ export function FlowStage({ lesson, stage, onStage, onQuizCorrect }: Props) {
       data-stage={stage}
       className="absolute z-30 flex flex-col rounded-lg"
       style={{
-        left: SIZE.dock + 16,
+        left: besideDock(16),
         top: SIZE.panelTop,
         // 登場の段だけは右に本物の街を残し、カメラが施設へ寄るところを見せる
         right: stage === 'reveal' ? 380 : 16,

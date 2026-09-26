@@ -5,7 +5,7 @@ import { useT } from '@/i18n/useT';
 import { diagramOfStep } from '@/lesson/diagrams/pick';
 import { PlaygroundFrame } from '@/lesson/diagrams/PlaygroundFrame';
 import { Icon } from '@/ui/Icon';
-import { HUD, SIZE } from './theme';
+import { HUD, SIZE, besideDock } from './theme';
 
 interface Props {
   mission: LessonDefinition;
@@ -61,7 +61,7 @@ export function ExplainDrawer({ mission, stepIndex, onClose, onAnswer, onType }:
       aria-label={t('hud.explain')}
       className="absolute z-30 flex flex-col overflow-hidden rounded-lg"
       style={{
-        left: SIZE.dock + 16,
+        left: besideDock(16),
         top: SIZE.panelTop,
         bottom: 96,
         width: 520,
