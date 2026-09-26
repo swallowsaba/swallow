@@ -153,4 +153,25 @@ describe('学習画面でも育つ', () => {
     }
     expect(growthOf(useStore.getState().growth, 'git').houses).toBe(1);
   });
+
+  it('育つと右上の「成長の記録」に、何をしたら・何が増えたかが 1 件残る', () => {
+    const view = openWork();
+    const record = view.querySelector('[data-testid="growth-record"]');
+    expect(record).not.toBeNull();
+    expect(record?.querySelectorAll('[data-testid="growth-entry"]')).toHaveLength(0);
+    click(view, '[data-testid="task-why"]');
+    const drawer = view.querySelector('[data-testid="explain-drawer"]');
+    for (const choice of [...(drawer?.querySelectorAll('[data-choice]') ?? [])]) {
+      act(() => {
+        choice.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
+      if (growthOf(useStore.getState().growth, 'git').houses > 0) break;
+    }
+    const entries = [...view.querySelectorAll('[data-testid="growth-entry"]')];
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.textContent).toContain('確かめの問いに正解した');
+    expect(entries[0]?.textContent).toContain('＋家 1');
+    // 押すと、増えた建物へ飛ぶ。どの建物かは記録が持っている
+    expect(entries[0]?.getAttribute('data-building')).toBe('home:1');
+  });
 });

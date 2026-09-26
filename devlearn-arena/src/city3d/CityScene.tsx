@@ -38,6 +38,7 @@ import {
   TOUR_SIDE,
   type PickTarget,
 } from './sky';
+import type { GrowthBurst } from './burst';
 import type { CityLayout, Vec2 } from './model';
 import { overlayFor, type InfoView } from './overlay';
 import {
@@ -95,11 +96,76 @@ interface Props {
   journeyPlay?: JourneyPlay;
   /** 粒が次の停留所に着いたとき。帯の印を動かすのに使う */
   onJourneyStop?: ((index: number) => void) | undefined;
+  /** いま育った所。カメラが寄り、光の輪と「＋家 1」のような札が浮かぶ */
+  growth?: GrowthBurst | null | undefined;
   /**
    * 街の写真を撮る関数を、ここに入れて渡す。振り返りの段で「始める前」と「終えた後」を並べるのに使う。
    * どちらも開いたときと同じ向き・距離から撮るので、見比べられる
    */
   capture?: MutableRefObject<(() => string | null) | null> | undefined;
+}
+
+/** 育った所の輪が 1 回広がる秒数 */
+const BURST_SECONDS = 1.6;
+
+/**
+ * 育った所に出す光の輪と浮かぶ札。
+ *
+ * 輪は建物の足元から外へ広がって消えるのを繰り返す。札は屋根の上からゆっくり浮き上がる。
+ * 金色は「育った」ことだけに使う。
+ */
+function Burst({ target, gain, animate }: { target: PickTarget; gain: string; animate: boolean }) {
+  const rings = useRef<Group>(null);
+  const plate = useRef<Group>(null);
+  const born = useRef<number | null>(null);
+  // 屋根を囲む大きさから広がり始める。足元に置くと建物自身に隠れるので、屋根の高さに置く
+  const radius = Math.max(target.size.w, target.size.d) * 0.62;
+  const roof = target.size.h + 0.6;
+  useFrame((state) => {
+    if (born.current === null) born.current = state.clock.elapsedTime;
+    const age = animate ? state.clock.elapsedTime - born.current : BURST_SECONDS / 2;
+    rings.current?.children.forEach((child, i) => {
+      const mesh = child as Mesh;
+      // 2 本の輪を半周ずらして広げる。途切れずに「ここが育った」と見える
+      const t = ((age / BURST_SECONDS + i / 2) % 1 + 1) % 1;
+      mesh.scale.set(1 + t * 2.2, 1 + t * 2.2, 1);
+      (mesh.material as MeshBasicMaterial).opacity = 0.95 * (1 - t * t);
+    });
+    if (plate.current !== null) plate.current.position.y = roof + 10 + Math.min(age, 2.5) * 3;
+  });
+  return (
+    <group position={[target.at.x, 0, target.at.z]}>
+      <group ref={rings}>
+        {[0, 1].map((i) => (
+          <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[0, roof, 0]} renderOrder={8}>
+            <ringGeometry args={[radius, radius + 2.4, 56]} />
+            <meshBasicMaterial color={MARK.grow} transparent depthTest={false} depthWrite={false} />
+          </mesh>
+        ))}
+      </group>
+      <pointLight color={MARK.grow} intensity={60} distance={50} position={[0, target.size.h + 2, 0]} />
+      <group ref={plate} position={[0, roof + 10, 0]}>
+        <Html center distanceFactor={150} zIndexRange={[40, 0]}>
+          <div
+            data-testid="city-3d-growth"
+            style={{
+              whiteSpace: 'nowrap',
+              padding: '5px 14px',
+              borderRadius: 999,
+              background: MARK.plate,
+              border: `2px solid ${MARK.grow}`,
+              color: MARK.grow,
+              fontSize: 20,
+              fontWeight: 700,
+              boxShadow: `0 0 14px ${MARK.growGlow}`,
+            }}
+          >
+            {gain}
+          </div>
+        </Html>
+      </group>
+    </group>
+  );
 }
 
 /** 写真の大きさ（横幅）。振り返りの段に 2 枚並べるだけなので小さくてよい */
@@ -887,7 +953,7 @@ function Spark({
 export default function CityScene({
   layout, onCommand, onSelect, onSite, selected = null, animate = true, glide = animate, rate = 1, rush = 0, view = null, district = null,
   showSites = true, time, journey = null, tour = null, trouble = null,
-  journeyPlay = { playing: true, rate: 1, step: 0 }, onJourneyStop, capture,
+  journeyPlay = { playing: true, rate: 1, step: 0 }, onJourneyStop, capture, growth = null,
 }: Props) {
   // 光の粒のいる場所。毎フレーム書き換わるので、React の状態にはしない
   const chase = useRef<Vec2 | null>(null);
@@ -944,6 +1010,17 @@ export default function CityScene({
     if (at !== undefined) setFocus({ x: at.x, z: at.z });
   }, [trouble, traveling]);
 
+  // 街が育ったら、そこへ寄る。コマンドの旅の間は粒を追い、着いてから寄る
+  const grown = growth === null ? null : (targets.find((t) => t.id === growth.building) ?? null);
+  const growthKey = growth?.key ?? null;
+  const growthAt = useRef<string | null>(null);
+  growthAt.current = growth?.building ?? null;
+  useEffect(() => {
+    if (growthKey === null || traveling) return;
+    const at = targetsNow.current.find((t) => t.id === growthAt.current)?.at;
+    if (at !== undefined) setFocus({ x: at.x, z: at.z });
+  }, [growthKey, traveling]);
+
   // 台帳が読み上げた答えにあたる建物。旅を見せている間だけ光らせる
   const answered = useMemo(() => {
     const asked = new Set(journey?.highlight ?? []);
@@ -967,6 +1044,7 @@ export default function CityScene({
         {hurt.length === 0 ? null : <Trouble targets={hurt} animate={animate} />}
         {cuts.length === 0 ? null : <Barricades cuts={cuts} animate={animate} />}
         {marked === null ? null : <Marker target={marked} animate={animate} />}
+        {grown === null || growth === null ? null : <Burst key={growth.key} target={grown} gain={growth.gain} animate={animate} />}
         {route === null ? null : (
           <Spark
             key={route.id}

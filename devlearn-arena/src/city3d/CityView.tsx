@@ -8,6 +8,7 @@ import type { JourneyPlay } from './journey';
 import { Loading } from '@/ui/components/Loading';
 import { layoutCity } from './model';
 import type { InfoView } from './overlay';
+import type { GrowthBurst } from './burst';
 import { hasWebGL } from './webgl';
 
 /**
@@ -58,12 +59,14 @@ interface Props {
   onJourneyStop?: ((index: number) => void) | undefined;
   /** 街の写真を撮る関数を受け取る所。3D で描けるときだけ入る */
   capture?: MutableRefObject<(() => string | null) | null> | undefined;
+  /** いま育った所。カメラが寄り、光の輪と札が浮かぶ */
+  growth?: GrowthBurst | null | undefined;
 }
 
 export function CityView({
   city, animate = true, glide = animate, time, rate = 1, rush = 0, view = null, district = null, showSites = true, onSite,
   onCommand, onSelect, selected = null, label, journey = null, tour = null, trouble = null,
-  journeyPlay, onJourneyStop, capture,
+  journeyPlay, onJourneyStop, capture, growth,
 }: Props) {
   const able = hasWebGL();
   const layout = useMemo(() => (able ? layoutCity(city) : null), [city, able]);
@@ -107,6 +110,7 @@ export function CityView({
           {...(journeyPlay ? { journeyPlay } : {})}
           onJourneyStop={onJourneyStop}
           capture={capture}
+          growth={growth}
         />
       </Suspense>
     </div>

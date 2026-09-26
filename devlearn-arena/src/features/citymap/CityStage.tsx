@@ -4,6 +4,7 @@ import type { Journey } from '@/city/journey';
 import type { InfoView } from '@/city3d/overlay';
 import type { JourneyPlay } from '@/city3d/journey';
 import { CityView } from '@/city3d/CityView';
+import type { GrowthBurst } from '@/city3d/burst';
 import type { Speed } from '@/features/park/hud/metrics';
 import { SPEED_RATE } from '@/features/park/hud/metrics';
 import { useCityMotion } from '@/ui/motion';
@@ -42,6 +43,8 @@ interface Props {
   time?: number | undefined;
   /** 街の写真を撮る関数を受け取る所（振り返りの段で前後を並べる） */
   capture?: MutableRefObject<(() => string | null) | null> | undefined;
+  /** いま育った所。カメラが寄り、光の輪と札が浮かぶ */
+  growth?: GrowthBurst | null | undefined;
 }
 
 /**
@@ -51,7 +54,7 @@ interface Props {
  */
 export function CityStage({
   city, label, selected, onSelect, onCommand, speed = 'normal', rush = 0, view = null, district = null,
-  showSites = true, onSite, journey = null, tour = null, trouble = null, journeyPlay, onJourneyStop, time, capture,
+  showSites = true, onSite, journey = null, tour = null, trouble = null, journeyPlay, onJourneyStop, time, capture, growth,
 }: Props) {
   const motion = useCityMotion();
   const rate = SPEED_RATE[speed];
@@ -91,6 +94,7 @@ export function CityStage({
         {...(journeyPlay ? { journeyPlay } : {})}
         {...(onJourneyStop ? { onJourneyStop } : {})}
         capture={capture}
+        growth={growth}
       />
     </div>
   );

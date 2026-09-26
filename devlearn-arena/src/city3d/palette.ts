@@ -141,6 +141,9 @@ export const MARK = {
   plateEdge: '#2f8fd8',
   plateText: '#eef2f6',
   plateSub: '#8fa0b2',
+  /** 街が育った所の輪と札。金色は「育った」ことだけに使う */
+  grow: '#ffd27a',
+  growGlow: 'rgba(255,210,122,0.45)',
 } as const;
 
 /** 建てられる区画の光。更地でも何をすればよいか分かるようにする */

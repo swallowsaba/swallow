@@ -32,6 +32,8 @@ import { EditorPanel, type EditorTarget } from './EditorPanel';
 import { MissionPicker } from './MissionPicker';
 import { NO_HINTS, reveal, revealedCount, stepKey, type HintReveal } from './hints';
 import { gainFor, growsFromCommand, type GrowthTrigger } from './growth';
+import { causeOf, growthSpot, logGrowth, type GrowthMark } from './growthLog';
+import { GrowthRecord } from './hud/GrowthRecord';
 import { nextTrip, type Trip } from './trip';
 import { faultsOf, troubles as troublesOf } from './faults';
 import { TerminalDock } from './hud/TerminalDock';
@@ -61,6 +63,12 @@ const CLEAR_RIGHTS = 2;
 
 /** 任務を終えてから「終えた後」の街を撮るまでのミリ秒。街が描き変わるのを待つ */
 const AFTER_SHOT_MS = 900;
+
+/** 育った所の輪と札を出しておくミリ秒 */
+const BURST_MS = 5000;
+
+/** 成長の記録に残す「何をしたら」の重み。重なったら大きい方の名前を残す */
+const CAUSE_RANK: Readonly<Record<GrowthTrigger, number>> = { quiz: 1, step: 2, command: 3, clear: 4 };
 
 /** 「いま街で起きたこと」を出しておくミリ秒 */
 const AFTERWARD_MS = 8000;
@@ -320,6 +328,37 @@ function Arena({
   const placed = designed.length;
   const clock = clockOf(activeDays, shellState.history.length);
   const metrics = cityMetrics({ city, xp, growth: growthOf(growth, mission.track), placed });
+
+  /**
+   * 街が育った記録（REWORK 2-1・2-2）。育つたびに、どこに何が増えたかを街から求めて 1 件残す。
+   * 最新の 1 件は街の上に輪と札で出し、カメラがそこへ寄る
+   */
+  const [growthLog, setGrowthLog] = useState<GrowthMark[]>([]);
+  const [burst, setBurst] = useState<GrowthMark | null>(null);
+  const town = growthOf(growth, mission.track);
+  const seenGrowth = useRef(town);
+  useEffect(() => {
+    const before = seenGrowth.current;
+    if (town.houses === before.houses && town.floors === before.floors) return;
+    seenGrowth.current = town;
+    const cause = growCause.current?.text ?? '街が育った';
+    growCause.current = null;
+    const spot = growthSpot(city, before, town);
+    if (spot === null) return;
+    const mark: GrowthMark = { key: Date.now() + Math.random(), cause, ...spot };
+    setGrowthLog((log) => logGrowth(log, mark));
+    setBurst(mark);
+  }, [city, town]);
+  // 輪と札はしばらくしたら消す。記録は右上に残る
+  useEffect(() => {
+    if (burst === null) return undefined;
+    const timer = setTimeout(() => {
+      setBurst(null);
+    }, BURST_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [burst]);
   const milestone = useMemo(
     () => milestoneOf(plan, catalogue.filter((m) => m.track === mission.track), clearedIds),
     [plan, catalogue, mission.track, clearedIds],
@@ -437,9 +476,19 @@ function Arena({
     );
   }, [mission.id, progress, shellState, saveMission]);
 
+  /**
+   * 育ったきっかけ。次に街の数が変わったとき、成長の記録に「何をしたら」として残す。
+   * 1 回の操作で手順の通過やクリアが重なったら、いちばん大きな出来事の名前を残す
+   */
+  const growCause = useRef<{ trigger: GrowthTrigger; text: string } | null>(null);
+
   /** きっかけに応じて街を育てる。増え方は `growth.ts` の表だけが決める */
   const grow = useCallback(
-    (trigger: GrowthTrigger, times = 1) => {
+    (trigger: GrowthTrigger, times = 1, line?: string) => {
+      const held = growCause.current;
+      if (held === null || CAUSE_RANK[trigger] > CAUSE_RANK[held.trigger]) {
+        growCause.current = { trigger, text: causeOf(trigger, line) };
+      }
       const gain = gainFor(trigger);
       if (gain.houses > 0) growCity(mission.track, 'houses', gain.houses * times);
       if (gain.floors > 0) growCity(mission.track, 'floors', gain.floors * times);
@@ -469,7 +518,7 @@ function Arena({
         mistakes: p.mistakes + (exitCode === 0 ? 0 : 1),
       }));
       // コマンドが 1 本通れば、それだけで街が育つ
-      if (growsFromCommand(line, exitCode)) grow('command');
+      if (growsFromCommand(line, exitCode)) grow('command', 1, line);
       // 通った 1 行は、光の粒になって街を旅する。
       // 道のりは、打つ前と打った後を見比べて導くので、その 2 つをここで掴む
       const timeline = session.getTimeline();
@@ -706,6 +755,7 @@ function Arena({
         trouble={troubles[0]?.where ?? null}
         time={stillTime !== undefined && Number.isFinite(stillTime) ? stillTime : undefined}
         capture={captureRef}
+        growth={burst}
       />
 
       <TopBar
@@ -862,6 +912,13 @@ function Arena({
         className="absolute z-20 flex flex-col gap-2.5 overflow-hidden"
         style={{ right: 16, top: SIZE.panelTop, width: SIZE.info, bottom: 210 }}
       >
+        <GrowthRecord
+          log={growthLog}
+          onPick={(mark) => {
+            // 押し直すたびにカメラが飛び、輪と札が出直すよう、新しい印として渡す
+            setBurst({ ...mark, key: Date.now() + Math.random() });
+          }}
+        />
         {chosen === null ? null : (
           <BuildingPanel
             info={chosen}

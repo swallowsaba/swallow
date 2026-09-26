@@ -580,6 +580,21 @@ export const SCENES = {
       await sleep(2500);
     },
   },
+  /** 街が育った所（REWORK 2-1・2-2）。カメラが寄り、光の輪と「＋1 階」の札。右上に成長の記録 */
+  'growth-burst': {
+    path: K8S_FIRST,
+    wait: 6000,
+    async act(page, { sleep }) {
+      await need(page, 'arena');
+      await dismissOnboarding(page);
+      await need(page, 'task-purpose');
+      await type(page, 'kubectl get nodes');
+      await need(page, 'growth-entry');
+      await need(page, 'city-3d-growth');
+      // 粒の旅が終わってカメラが育った所へ寄るのを待つ
+      await sleep(Number(process.env.SHOOT_WAIT ?? 2600));
+    },
+  },
   /** 学びの流れ 5: 振り返り。最初の任務を模範解答どおりに打って終え、始める前と終えた後の街を並べる */
   'flow-5-recap': {
     path: K8S_FIRST,

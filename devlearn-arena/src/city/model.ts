@@ -179,6 +179,8 @@ export interface City {
   carts: Cart[];
   /** まだ空いている区画。ここを押すと建設メニューで選んだものが建つ */
   sites: CitySite[];
+  /** 学習で積み上がった階のうち、最後の 1 階が載った建物。街が育った場所へカメラを寄せるのに使う */
+  lastRaised?: string;
 }
 
 /** 住人がどの建物にいたか。引っ越しを見せるために、直前の街から取っておく */
@@ -956,13 +958,16 @@ interface Built {
  * コマンドの手順で積み上がった階を、建てた順に 1 階ずつ配る。
  * 1 本通すたびにどこかの建物が必ず高くなるので、育ちが目に見える。
  */
-function raiseFloors(buildings: Building[], floors: number): void {
-  if (floors <= 0 || buildings.length === 0) return;
+function raiseFloors(buildings: Building[], floors: number): string | undefined {
+  if (floors <= 0 || buildings.length === 0) return undefined;
+  let last: string | undefined;
   for (let i = 0; i < floors; i += 1) {
     const target = buildings[i % buildings.length];
     if (target === undefined) continue;
     target.bonusFloors = (target.bonusFloors ?? 0) + 1;
+    last = target.id;
   }
+  return last;
 }
 
 /**
@@ -1107,7 +1112,7 @@ export function buildCity(input: CityInput): City {
   // 家を先に建てる。学習の状態から導いた建物がまだ無い街でも、階が行き場を失わないため
   const growth = input.growth ?? { houses: 0, floors: 0 };
   rewardHouses(growth.houses, out);
-  raiseFloors(out.buildings, growth.floors);
+  const lastRaised = raiseFloors(out.buildings, growth.floors);
 
   // 学習者が設計した街。空いている区画に、選んだものが建つ
   const sites = designedOf(input.designed ?? [], openSites(unlocked, out), out);
@@ -1124,6 +1129,7 @@ export function buildCity(input: CityInput): City {
     plots: out.plots,
     carts: out.carts,
     sites,
+    ...(lastRaised === undefined ? {} : { lastRaised }),
     districts: DISTRICTS.map((area) => ({
       track: area.id,
       unlocked: unlocked.has(area.id),
