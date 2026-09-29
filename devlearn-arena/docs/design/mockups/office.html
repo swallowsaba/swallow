@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>事務所</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&amp;family=Noto+Sans+JP:wght@400;500;700;900&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e9edf2;font-family:"Noto Sans JP",sans-serif;color:#13223a}
+a{color:#1a6fd6}a:hover{color:#0f55ab}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:3px solid #f2b632;outline-offset:2px}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(242,182,50,.6)}50%{box-shadow:0 0 0 8px rgba(242,182,50,0)}}
+.tick{animation:tick 26s linear infinite}
+.pulse{animation:pulse 1.8s ease-out infinite}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</helmet>
+
+<div style="position: relative; width: 1440px; height: 900px; overflow: hidden; background: linear-gradient(180deg, #eef2f6 0%, #e3e8ee 100%);">
+
+  <div style="position: absolute; left: 0; top: 0; right: 0; height: 84px; display: flex; align-items: center; gap: 20px; padding: 0 24px; background: linear-gradient(100deg, #0e1b2e 0%, #13284a 60%, #1f7a4d 100%); color: #fff; box-shadow: 0 4px 0 #f2b632;">
+    <svg viewBox="0 0 56 64" width="48" height="56" aria-label="DevLearn FC のエンブレム" role="img">
+      <path d="M28 2 L52 10 V32 C52 48 40 58 28 62 C16 58 4 48 4 32 V10 Z" fill="#f2b632"></path>
+      <path d="M28 7 L47 13.5 V32 C47 45 37.5 53.5 28 57 C18.5 53.5 9 45 9 32 V13.5 Z" fill="#0e1b2e"></path>
+      <path d="M16 24 l7 6 -7 6" fill="none" stroke="#3ae08a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path d="M27 38 h13" stroke="#3ae08a" stroke-width="3.2" stroke-linecap="round"></path>
+      <text x="28" y="52" text-anchor="middle" font-family="Barlow Condensed" font-weight="800" font-size="9" fill="#f2b632">DLFC</text>
+    </svg>
+    <div>
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: .02em; line-height: 1;">DevLearn FC</div>
+      <div style="font-size: 13px; opacity: .8; margin-top: 3px;">1 年目 ・ 4 月 第 2 週</div>
+    </div>
+    <div style="display: flex; gap: 10px; margin-left: 24px;">
+      <div style="padding: 8px 14px; border-radius: 8px; background: rgba(255,255,255,.1);">
+        <div style="font-size: 12px; opacity: .75;">リーグ</div>
+        <div style="font-weight: 700; font-size: 15px;">地域リーグ <span style="font-family: 'Barlow Condensed', sans-serif; font-size: 20px; color: #f2b632;">3</span> 位</div>
+      </div>
+      <div style="padding: 8px 14px; border-radius: 8px; background: rgba(255,255,255,.1);">
+        <div style="font-size: 12px; opacity: .75;">信頼（利用者）</div>
+        <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px;">1,240</div>
+      </div>
+      <div style="padding: 8px 14px; border-radius: 8px; background: rgba(255,255,255,.1);">
+        <div style="font-size: 12px; opacity: .75;">経験値</div>
+        <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px; color: #3ae08a;">12,480</div>
+      </div>
+      <div style="padding: 8px 14px; border-radius: 8px; background: rgba(255,255,255,.1);">
+        <div style="font-size: 12px; opacity: .75;">所属選手</div>
+        <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px;">14</div>
+      </div>
+    </div>
+    <div style="margin-left: auto; text-align: right;">
+      <div style="font-size: 12px; opacity: .75;">昇格まで</div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 180px; height: 10px; border-radius: 5px; background: rgba(255,255,255,.18); overflow: hidden;"><div style="width: 64%; height: 100%; background: linear-gradient(90deg, #f2b632, #ffd66b);"></div></div>
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px;">勝ち点 16 / 25</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; top: 88px; bottom: 44px; width: 96px; display: flex; flex-direction: column; gap: 6px; padding: 14px 10px; background: #0e1b2e;">
+    <sc-for list="{{ menu }}" as="m" hint-placeholder-count="6">
+      <button type="button" onClick="{{ m.pick }}" style="{{ m.style }}">
+        <span style="font-size: 22px; line-height: 1;">{{ m.glyph }}</span>
+        <span style="font-size: 12px; font-weight: 700;">{{ m.label }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+  <div style="position: absolute; left: 116px; top: 108px; width: 760px; display: flex; flex-direction: column; gap: 16px;">
+
+    <div style="display: flex; gap: 8px;">
+      <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+        <div style="{{ d.style }}">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; opacity: .8;"><span>{{ d.day }}</span><span>{{ d.date }}</span></div>
+          <div style="margin-top: 8px; font-size: 22px; line-height: 1;">{{ d.glyph }}</div>
+          <div style="margin-top: 6px; font-size: 13px; font-weight: 700;">{{ d.label }}</div>
+          <div style="font-size: 12px; opacity: .75;">{{ d.sub }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="position: relative; overflow: hidden; border-radius: 16px; background: linear-gradient(120deg, #13284a 0%, #0e1b2e 55%, #7a1d24 100%); color: #fff; box-shadow: 0 10px 30px rgba(14,27,46,.25);">
+      <svg viewBox="0 0 760 240" width="760" height="240" style="position: absolute; inset: 0; opacity: .14;" aria-hidden="true">
+        <g stroke="#fff" stroke-width="2" fill="none"><rect x="20" y="20" width="720" height="200"></rect><line x1="380" y1="20" x2="380" y2="220"></line><circle cx="380" cy="120" r="44"></circle><rect x="20" y="70" width="70" height="100"></rect><rect x="670" y="70" width="70" height="100"></rect></g>
+      </svg>
+      <div style="position: relative; padding: 22px 26px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; letter-spacing: .12em; font-size: 14px; padding: 3px 10px; background: #f2b632; color: #0e1b2e; border-radius: 4px;">NEXT MATCH</span>
+          <span style="font-size: 14px; opacity: .85;">土曜 ・ 地域リーグ 第 6 節</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 28px;">
+          <div style="text-align: center;">
+            <div style="width: 84px; height: 84px; border-radius: 50%; background: #0e1b2e; border: 4px solid #f2b632; display: grid; place-items: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 24px; color: #f2b632;">DLFC</div>
+            <div style="margin-top: 6px; font-weight: 700;">DevLearn FC</div>
+          </div>
+          <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 44px; opacity: .9;">VS</div>
+          <div style="text-align: center;">
+            <div style="width: 84px; height: 84px; border-radius: 50%; background: #3b1115; border: 4px solid #e04a3a; display: grid; place-items: center;">
+              <svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true"><rect x="6" y="8" width="28" height="24" rx="3" fill="none" stroke="#ff8a7a" stroke-width="2.4"></rect><rect x="10" y="14" width="20" height="4" fill="#ff8a7a"></rect><rect x="10" y="21" width="20" height="4" fill="#ff8a7a"></rect><rect x="10" y="28" width="12" height="2" fill="#ff8a7a"></rect></svg>
+            </div>
+            <div style="margin-top: 6px; font-weight: 700;">ディスク満杯</div>
+          </div>
+          <div style="margin-left: 12px; flex-grow: 1; display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-size: 14px; line-height: 1.7; opacity: .9;">ログが溜まり続け、ディスクの空きが 3% まで減った。サービスが止まる前に原因を突き止め、空きを戻す。</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <span style="font-size: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.12);">推奨: du ・ find ・ truncate</span>
+              <span style="font-size: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.12);">難しさ ★★☆</span>
+              <span style="font-size: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(58,224,138,.2); color: #8ff0bb;">勝てば勝ち点 3 ・ 信頼 +80</span>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="pulse" style="height: 48px; padding: 0 28px; border-radius: 10px; border: none; cursor: pointer; background: linear-gradient(180deg, #ffd66b, #f2b632); color: #0e1b2e; font-weight: 900; font-size: 16px; box-shadow: 0 4px 0 #b9851a;">試合の準備へ</button>
+          <button type="button" style="height: 48px; padding: 0 22px; border-radius: 10px; cursor: pointer; background: transparent; border: 2px solid rgba(255,255,255,.4); color: #fff; font-weight: 700; font-size: 15px;">相手を分析する</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px;">
+      <sc-for list="{{ facilities }}" as="f" hint-placeholder-count="5">
+        <div style="{{ f.style }}">
+          <div style="{{ f.tileStyle }}">{{ f.glyph }}</div>
+          <div style="margin-top: 8px; font-weight: 700; font-size: 13px;">{{ f.name }}</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+            <span style="{{ f.lvStyle }}">{{ f.level }}</span>
+            <span style="font-size: 12px; color: #6b7a90;">{{ f.note }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+  <div style="position: absolute; left: 896px; top: 108px; right: 24px; display: flex; flex-direction: column; gap: 16px;">
+    <div style="border-radius: 16px; background: #fff; box-shadow: 0 6px 20px rgba(14,27,46,.08); overflow: hidden;">
+      <div style="display: flex; align-items: center; padding: 14px 18px; border-bottom: 1px solid #e6ebf1;">
+        <span style="font-weight: 900; font-size: 16px;">主力選手</span>
+        <span style="margin-left: auto; font-size: 12px; color: #6b7a90;">調子の悪い選手は練習で戻る</span>
+      </div>
+      <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <sc-for list="{{ squad }}" as="p" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; background: #f5f7fa;">
+            <span style="{{ p.posStyle }}">{{ p.pos }}</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 16px; min-width: 116px;">{{ p.name }}</span>
+            <div style="flex-grow: 1;">
+              <div style="height: 7px; border-radius: 4px; background: #e2e8ef; overflow: hidden;"><div style="{{ p.barStyle }}"></div></div>
+            </div>
+            <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; min-width: 30px; text-align: right;">{{ p.ovr }}</span>
+            <span style="{{ p.condStyle }}">{{ p.cond }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="border-radius: 16px; background: #fff; box-shadow: 0 6px 20px rgba(14,27,46,.08); padding: 14px 18px;">
+      <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: 900; font-size: 16px;">スカウトの報告</span>
+        <span style="margin-left: auto; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #fff4d6; color: #9a6a00; font-weight: 700;">新人候補 1</span>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: center;">
+        <div style="width: 72px; height: 92px; border-radius: 8px; background: linear-gradient(160deg, #13284a, #0e1b2e); border: 2px solid #f2b632; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;">
+          <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 24px; color: #f2b632;">?</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">sed</span>
+        </div>
+        <div style="font-size: 13px; line-height: 1.7; color: #33455f;">文字列を置き換える技を持つ選手。<br>シェル道場を Lv3 にすると練習生として迎えられる。</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isTown }}" hint-placeholder-val="{{ true }}">
+    <div style="position: absolute; left: 116px; top: 100px; right: 24px; bottom: 56px; display: flex; gap: 16px;">
+      <div style="position: relative; flex-shrink: 0; width: 979px; height: 700px; border-radius: 16px; overflow: hidden; background: #0e1b2e; box-shadow: 0 10px 30px rgba(14,27,46,.25);">
+        <img src="{{ townImage }}" alt="{{ townAlt }}" style="position: absolute; left: 0; top: 0; width: 979px; height: 700px;">
+        <sc-for list="{{ townPins }}" as="p" hint-placeholder-count="5">
+          <div style="{{ p.style }}">
+            <div style="{{ p.card }}">
+              <div style="font-size: 13px; font-weight: 900; white-space: nowrap;">{{ p.name }}</div>
+              <div style="font-size: 12px; opacity: .85; white-space: nowrap;">{{ p.note }}</div>
+            </div>
+            <div style="{{ p.stem }}"></div>
+          </div>
+        </sc-for>
+        <div style="position: absolute; left: 16px; top: 16px; display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 12px; background: rgba(14,27,46,.88); box-shadow: 0 6px 18px rgba(0,0,0,.35);">
+          <span style="padding: 0 8px; color: #fff; font-weight: 900; font-size: 14px;">ホームタウン</span>
+          <sc-for list="{{ yearTabs }}" as="t" hint-placeholder-count="3">
+            <button type="button" onClick="{{ t.pick }}" style="{{ t.style }}">
+              <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px;">{{ t.year }}</span>
+              <span style="font-size: 12px;">{{ t.league }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="position: absolute; left: 16px; bottom: 16px; display: flex; gap: 10px;">
+          <sc-for list="{{ townKpis }}" as="k" hint-placeholder-count="4">
+            <div style="padding: 8px 14px; border-radius: 10px; background: rgba(14,27,46,.88); color: #fff; min-width: 96px;">
+              <div style="font-size: 12px; opacity: .75;">{{ k.label }}</div>
+              <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px;">{{ k.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+        <div style="border-radius: 14px; background: #fff; overflow: hidden; box-shadow: 0 6px 20px rgba(14,27,46,.08);">
+          <div style="padding: 12px 14px; background: #13284a; color: #fff; font-weight: 900; font-size: 14px;">この 1 年で増えたもの</div>
+          <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+            <sc-for list="{{ townGrown }}" as="g" hint-placeholder-count="4">
+              <div style="display: flex; gap: 8px; align-items: flex-start;">
+                <span style="{{ g.dot }}"></span>
+                <div>
+                  <div style="font-size: 13px; font-weight: 700;">{{ g.what }}</div>
+                  <div style="font-size: 12px; color: #5b6b82; line-height: 1.5;">{{ g.why }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="border-radius: 14px; background: linear-gradient(160deg, #2a2210, #13284a); color: #fff; padding: 12px 14px;">
+          <div style="font-weight: 900; font-size: 14px; margin-bottom: 8px;">次の発展</div>
+          <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">{{ townNext.title }}</div>
+          <sc-for list="{{ townNext.conds }}" as="c" hint-placeholder-count="3">
+            <div style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;"><span>{{ c.label }}</span><span>{{ c.value }}</span></div>
+              <div style="height: 7px; border-radius: 4px; background: rgba(255,255,255,.15); overflow: hidden;"><div style="{{ c.bar }}"></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 44px; display: flex; align-items: center; background: #0e1b2e; color: #fff; overflow: hidden;">
+    <span style="flex-shrink: 0; height: 100%; display: grid; place-items: center; padding: 0 16px; background: #f2b632; color: #0e1b2e; font-weight: 900; font-size: 13px;">クラブの話題</span>
+    <div style="overflow: hidden; flex-grow: 1;">
+      <div class="tick" style="display: flex; gap: 48px; white-space: nowrap; width: max-content; padding-left: 24px; font-size: 13px;">
+        <span>grep が新しい技 -i を覚えた（大文字小文字を区別しない）</span>
+        <span>cd の習熟度が 70 を超え、主力に定着</span>
+        <span>ls は 5 日使われておらず、調子が下がっている</span>
+        <span>Git 資料室の建設が始まった。完成は第 8 週</span>
+        <span>grep が新しい技 -i を覚えた（大文字小文字を区別しない）</span>
+        <span>cd の習熟度が 70 を超え、主力に定着</span>
+        <span>ls は 5 日使われておらず、調子が下がっている</span>
+        <span>Git 資料室の建設が始まった。完成は第 8 週</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { menu: 'town', year: 1 }; }
+  renderVals() {
+    const s = this.state;
+    const menu = [
+      { id: 'home', label: '事務所', glyph: '⌂' },
+      { id: 'town', label: '街', glyph: '▦' },
+      { id: 'train', label: '練習', glyph: '◎' },
+      { id: 'squad', label: '選手', glyph: '▤' },
+      { id: 'facility', label: '施設', glyph: '▥' },
+      { id: 'scout', label: 'スカウト', glyph: '⌕' },
+      { id: 'league', label: 'リーグ', glyph: '☰' }
+    ].map((m) => ({
+      ...m,
+      pick: () => this.setState({ menu: m.id }),
+      style: 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:68px;border-radius:10px;cursor:pointer;border:none;color:' + (s.menu === m.id ? '#0e1b2e' : '#c9d4e3') + ';background:' + (s.menu === m.id ? '#f2b632' : 'transparent') + ';'
+    }));
+    const wk = [
+      { day: '月', date: '4/8', glyph: '◎', label: '練習', sub: 'grep の技', kind: 'train' },
+      { day: '火', date: '4/9', glyph: '◎', label: '練習', sub: 'find を鍛える', kind: 'train' },
+      { day: '水', date: '4/10', glyph: '⌕', label: 'スカウト', sub: '新人の視察', kind: 'scout' },
+      { day: '木', date: '4/11', glyph: '◎', label: '練習', sub: '組み合わせ', kind: 'train', today: true },
+      { day: '金', date: '4/12', glyph: '☾', label: '休養', sub: '調子が戻る', kind: 'rest' },
+      { day: '土', date: '4/13', glyph: '⚑', label: '試合', sub: 'ディスク満杯', kind: 'match' },
+      { day: '日', date: '4/14', glyph: '☀', label: '休み', sub: '', kind: 'rest' }
+    ];
+    const bgs = { train: '#ffffff', scout: '#fff8e6', rest: '#f1f4f8', match: 'linear-gradient(160deg,#7a1d24,#3b1115)' };
+    const week = wk.map((d) => ({
+      ...d,
+      style: 'flex:1;min-height:104px;padding:10px;border-radius:12px;box-sizing:border-box;background:' + bgs[d.kind] + ';color:' + (d.kind === 'match' ? '#fff' : '#13223a') + ';border:' + (d.today ? '3px solid #f2b632' : '1px solid #dde4ec') + ';box-shadow:' + (d.today ? '0 6px 16px rgba(242,182,50,.35)' : '0 2px 6px rgba(14,27,46,.05)') + ';'
+    }));
+    const fac = [
+      { name: 'シェル道場', level: 'Lv 2', note: '練習中', glyph: '›_', bg: 'linear-gradient(160deg,#1f7a4d,#155a38)', open: true },
+      { name: 'Git 資料室', level: '建設中', note: '第 8 週', glyph: '⑂', bg: 'linear-gradient(160deg,#c46a1c,#8a4812)', open: true },
+      { name: 'k8s 訓練場', level: '未解放', note: '2 部で開放', glyph: '☸', bg: '#b8c2cf', open: false },
+      { name: '通信室', level: '未解放', note: '2 部で開放', glyph: '⇄', bg: '#b8c2cf', open: false },
+      { name: 'GitHub 会議室', level: '未解放', note: '1 部で開放', glyph: '◈', bg: '#b8c2cf', open: false }
+    ];
+    const facilities = fac.map((f) => ({
+      ...f,
+      tileStyle: 'height:64px;border-radius:8px;display:grid;place-items:center;font-size:26px;color:#fff;background:' + f.bg + ';',
+      lvStyle: 'font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;color:' + (f.open ? '#1f7a4d' : '#8a97a8') + ';',
+      style: 'padding:10px;border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(14,27,46,.07);opacity:' + (f.open ? '1' : '.72') + ';'
+    }));
+    const posColor = { 探索: '#1a6fd6', 加工: '#1f7a4d', 移動: '#c46a1c', 記録: '#7a3fd0' };
+    const sq = [
+      { pos: '探索', name: 'ls', ovr: 64, cond: '↓ 不調', condColor: '#e04a3a' },
+      { pos: '移動', name: 'cd', ovr: 72, cond: '↑ 好調', condColor: '#1f7a4d' },
+      { pos: '加工', name: 'grep', ovr: 68, cond: '→ 普通', condColor: '#6b7a90' },
+      { pos: '探索', name: 'find', ovr: 51, cond: '↑ 好調', condColor: '#1f7a4d' },
+      { pos: '加工', name: 'cat', ovr: 60, cond: '→ 普通', condColor: '#6b7a90' }
+    ];
+    const squad = sq.map((p) => ({
+      ...p,
+      barStyle: 'height:100%;width:' + p.ovr + '%;background:linear-gradient(90deg,#1f7a4d,#3ae08a);',
+      posStyle: 'flex-shrink:0;width:40px;text-align:center;font-size:12px;font-weight:900;padding:3px 0;border-radius:6px;color:#fff;background:' + posColor[p.pos] + ';',
+      condStyle: 'flex-shrink:0;width:60px;text-align:right;font-size:12px;font-weight:700;color:' + p.condColor + ';'
+    }));
+
+    const y = s.year;
+    const sc = 979 / 1080;
+    const townImages = { 1: '/_blob/04bdbe4f3cc337c64849af3bba8a6dbe', 2: '/_blob/10cedee26ba60f69993521e65808be82', 3: '/_blob/868783ff26b32f8c893de2a9301c4c15' };
+    const townAlts = {
+      1: '1年目のホームタウン。小さなスタジアムの周りに住宅が数区画、シェル道場が完成し、Git 資料室が建設中。',
+      2: '2年目。照明塔の付いたスタジアムを中層の建物が囲み、大通りが開通。Git 資料室と k8s 訓練場が完成。',
+      3: '3年目。屋根付きの大きなスタジアムを高層ビル群が囲む都市。5つの施設が全て揃う。'
+    };
+    const yearTabs = [[1, '地域リーグ'], [2, '2 部'], [3, '1 部']].map(([n, league]) => ({
+      year: n + ' 年目', league,
+      pick: () => this.setState({ year: n }),
+      style: 'display:flex;flex-direction:column;align-items:center;justify-content:center;width:88px;height:48px;border-radius:9px;cursor:pointer;border:none;background:' + (y === n ? '#f2b632' : 'rgba(255,255,255,.08)') + ';color:' + (y === n ? '#0e1b2e' : '#c9d4e3') + ';'
+    }));
+    const TK = { 1: [['利用者', '1,240'], ['建物', '38'], ['スタジアム', '5,000 席'], ['施設', '1 / 5']], 2: [['利用者', '8,600'], ['建物', '240'], ['スタジアム', '18,000 席'], ['施設', '3 / 5']], 3: [['利用者', '52,000'], ['建物', '610'], ['スタジアム', '40,000 席'], ['施設', '5 / 5']] };
+    const townKpis = TK[y].map(([label, value]) => ({ label, value }));
+    const TL = { 1: { stadium: [615, 277], shell: [570, 204], git: [795, 284], k8s: [645, 374] }, 2: { stadium: [615, 273], shell: [570, 204], git: [795, 299], k8s: [645, 381], net: [405, 254], gh: [480, 351] }, 3: { stadium: [615, 266], shell: [570, 204], git: [795, 299], k8s: [645, 381], net: [405, 266], gh: [480, 367] } }[y];
+    const TM = {
+      stadium: { name: 'ホームスタジアム', note: { 1: '5,000 席', 2: '18,000 席 ・ 照明塔', 3: '40,000 席 ・ 屋根付き' }[y], color: '#f2b632', ink: '#0e1b2e' },
+      shell: { name: 'シェル道場', note: { 1: 'Lv 2', 2: 'Lv 4', 3: 'Lv 5' }[y], color: '#1f7a4d', ink: '#fff' },
+      git: { name: 'Git 資料室', note: { 1: '建設中', 2: 'Lv 2', 3: 'Lv 4' }[y], color: y === 1 ? '#e0a32a' : '#c46a1c', ink: '#fff' },
+      k8s: { name: 'k8s 訓練場', note: { 1: '予定地', 2: 'Lv 1', 3: 'Lv 3' }[y], color: y === 1 ? '#8a97a8' : '#1a6fd6', ink: '#fff' },
+      net: { name: '通信室', note: { 2: '建設中', 3: 'Lv 2' }[y], color: y === 2 ? '#e0a32a' : '#7a3fd0', ink: '#fff' },
+      gh: { name: 'GitHub 会議室', note: { 2: '建設中', 3: 'Lv 1' }[y], color: y === 2 ? '#e0a32a' : '#2b3a4f', ink: '#fff' }
+    };
+    const townPins = Object.entries(TL).map(([key, [px, py]]) => {
+      const m = TM[key];
+      return {
+        name: m.name, note: m.note || '',
+        style: 'position:absolute;left:' + Math.round(px * sc) + 'px;top:' + Math.round(py * sc - 6) + 'px;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);',
+        card: 'padding:4px 9px;border-radius:8px;text-align:center;background:' + m.color + ';color:' + m.ink + ';box-shadow:0 4px 12px rgba(0,0,0,.35);',
+        stem: 'width:2px;height:14px;background:' + m.color + ';'
+      };
+    });
+    const TG = {
+      1: [['スタジアムが開場', '地域リーグに参加した', '#f2b632'], ['シェル道場が完成', 'cd と ls の練習を始めた', '#1f7a4d'], ['住宅地が 3 区画', '試合に勝って利用者が増えた', '#8a97a8'], ['Git 資料室の建設が始まった', 'シェル道場が Lv 2 になった', '#e0a32a']],
+      2: [['2 部へ昇格、スタジアムを増築', '地域リーグで優勝した', '#f2b632'], ['大通りが開通', '利用者が 5,000 を超えた', '#8a97a8'], ['Git 資料室と k8s 訓練場が完成', 'git の選手が主力に育った', '#1a6fd6'], ['中層の建物が並ぶ', '障害対応で 6 連勝した', '#8a97a8']],
+      3: [['1 部へ昇格、屋根付きスタジアムへ', '2 部で優勝した', '#f2b632'], ['高層ビル街ができた', '利用者が 50,000 を超えた', '#8a97a8'], ['通信室と GitHub 会議室が完成', 'kubectl の選手が技を 5 つ覚えた', '#7a3fd0'], ['赤い屋根の住宅地が広がる', '復習を続け、調子を保った', '#b4574a']]
+    }[y];
+    const townGrown = TG.map(([what, why, color]) => ({ what, why, dot: 'flex-shrink:0;width:12px;height:12px;border-radius:3px;margin-top:4px;background:' + color + ';' }));
+    const TN = {
+      1: { title: '2 年目：大通りと中層の街', conds: [['地域リーグ優勝（勝ち点）', '16 / 25', 64], ['シェル道場', 'Lv 2 / 3', 66], ['利用者', '1,240 / 5,000', 25]] },
+      2: { title: '3 年目：高層ビル街と屋根付きスタジアム', conds: [['2 部優勝（勝ち点）', '31 / 40', 78], ['k8s 訓練場', 'Lv 1 / 2', 50], ['利用者', '8,600 / 50,000', 17]] },
+      3: { title: '国際大会：港と空港の開発', conds: [['1 部優勝（勝ち点）', '12 / 60', 20], ['全施設', 'Lv 3 以上 3 / 5', 60], ['利用者', '52,000 / 200,000', 26]] }
+    }[y];
+    const townNext = { title: TN.title, conds: TN.conds.map(([label, value, pct]) => ({ label, value, bar: 'height:100%;width:' + pct + '%;background:linear-gradient(90deg,#f2b632,#ffd66b);' })) };
+    return { menu, week, facilities, squad, isHome: s.menu === 'home', isTown: s.menu === 'town', townImage: townImages[y], townAlt: townAlts[y], yearTabs, townKpis, townPins, townGrown, townNext };
+  }
+}
+</script>
+</body>
+</html>

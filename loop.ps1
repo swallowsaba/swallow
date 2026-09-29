@@ -1,4 +1,4 @@
-# Keep Claude Code running. Auto-resume after usage limit.
+# Keep Claude Code running. Auto-resume after usage limit. Stop for human review.
 # Usage:
 #   cd X:\git\swallow
 #   Set-ExecutionPolicy -Scope Process Bypass
@@ -9,7 +9,7 @@ $WaitMin    = 20
 $MaxRuns    = 200
 $PromptFile = "devlearn-arena\PROMPT.txt"
 
-# Model: Opus 5.5 pinned by full ID. Needs Claude Code v2.1.280 or later.
+# Opus 5.5 pinned. Needs Claude Code v2.1.280 or later.
 # Do NOT use fable here: in -p mode, Fable can bill usage credits without asking.
 $Model  = "claude-opus-5-5"
 $Effort = "high"
@@ -31,6 +31,15 @@ for ($i = 1; $i -le $MaxRuns; $i++) {
 
     if ($out -match "ALLDONE") {
         Write-Host "finished." -ForegroundColor Green
+        break
+    }
+    if ($out -match "REVIEWNEEDED") {
+        Write-Host ""
+        Write-Host "REVIEW NEEDED." -ForegroundColor Magenta
+        Write-Host "1. Open devlearn-arena\review\index.html in your browser." -ForegroundColor Magenta
+        Write-Host "2. Write the chapter number under the approve section of devlearn-arena\REVIEW.md (or write fixes)." -ForegroundColor Magenta
+        Write-Host "3. Run .\loop.ps1 again." -ForegroundColor Magenta
+        Start-Process (Join-Path $Repo "devlearn-arena\review\index.html") -ErrorAction SilentlyContinue
         break
     }
     if ($out -match "not a recognized model|issue with the selected model|does not support this model") {

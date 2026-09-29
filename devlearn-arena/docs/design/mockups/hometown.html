@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>ホームタウン</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&amp;family=Noto+Sans+JP:wght@400;500;700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0e1b2e;font-family:"Noto Sans JP",sans-serif;color:#13223a}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:3px solid #f2b632;outline-offset:2px}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes bob{0%,100%{transform:translate(-50%,-100%)}50%{transform:translate(-50%,calc(-100% - 4px))}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.tick{animation:tick 30s linear infinite}
+.pin{animation:bob 2.4s ease-in-out infinite}
+.fade{animation:fadein .6s ease-out both}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</helmet>
+
+<div style="position: relative; width: 1440px; height: 900px; overflow: hidden; background: #0e1b2e;">
+
+  <div style="position: absolute; left: 0; top: 0; right: 0; height: 80px; display: flex; align-items: center; gap: 18px; padding: 0 24px; background: linear-gradient(100deg, #0e1b2e 0%, #13284a 60%, #1f7a4d 100%); color: #fff; box-shadow: 0 4px 0 #f2b632; z-index: 2;">
+    <svg viewBox="0 0 56 64" width="42" height="48" aria-label="DevLearn FC のエンブレム" role="img">
+      <path d="M28 2 L52 10 V32 C52 48 40 58 28 62 C16 58 4 48 4 32 V10 Z" fill="#f2b632"></path>
+      <path d="M28 7 L47 13.5 V32 C47 45 37.5 53.5 28 57 C18.5 53.5 9 45 9 32 V13.5 Z" fill="#0e1b2e"></path>
+      <path d="M16 24 l7 6 -7 6" fill="none" stroke="#3ae08a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path d="M27 38 h13" stroke="#3ae08a" stroke-width="3.2" stroke-linecap="round"></path>
+    </svg>
+    <div>
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; line-height: 1;">HOMETOWN</div>
+      <div style="font-size: 13px; opacity: .8; margin-top: 3px;">DevLearn 市 ・ クラブと共に育つ街</div>
+    </div>
+    <div style="display: flex; gap: 6px; margin-left: 28px; padding: 5px; border-radius: 12px; background: rgba(0,0,0,.25);">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+        <button type="button" onClick="{{ t.pick }}" style="{{ t.style }}">
+          <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px;">{{ t.year }}</span>
+          <span style="font-size: 12px;">{{ t.league }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="margin-left: auto; display: flex; gap: 10px;">
+      <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+        <div style="padding: 7px 14px; border-radius: 8px; background: rgba(255,255,255,.1); min-width: 92px;">
+          <div style="font-size: 12px; opacity: .75;">{{ k.label }}</div>
+          <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px;">{{ k.value }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; top: 84px; width: 1080px; height: 772px; overflow: hidden;">
+    <img src="{{ image }}" alt="{{ imageAlt }}" class="fade" style="position: absolute; left: 0; top: 0; width: 1080px; height: 772px;">
+    <sc-for list="{{ pins }}" as="p" hint-placeholder-count="5">
+      <div class="pin" style="{{ p.style }}">
+        <div style="{{ p.card }}">
+          <div style="font-size: 13px; font-weight: 900; white-space: nowrap;">{{ p.name }}</div>
+          <div style="font-size: 12px; opacity: .85; white-space: nowrap;">{{ p.note }}</div>
+        </div>
+        <div style="{{ p.stem }}"></div>
+      </div>
+    </sc-for>
+    <div style="position: absolute; left: 20px; bottom: 20px; display: flex; gap: 14px; padding: 10px 14px; border-radius: 10px; background: rgba(14,27,46,.82); color: #fff; font-size: 12px;">
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #f2b632;"></span>ホームスタジアム</span>
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #1f7a4d;"></span>練習施設（学ぶ分野）</span>
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #e0a32a;"></span>建設中</span>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 1096px; top: 100px; right: 20px; bottom: 60px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="border-radius: 14px; background: #fff; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.25);">
+      <div style="padding: 12px 16px; background: #13284a; color: #fff; display: flex; align-items: center;">
+        <span style="font-weight: 900; font-size: 15px;">この 1 年で増えたもの</span>
+        <span style="margin-left: auto; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; color: #f2b632;">{{ yearLabel }}</span>
+      </div>
+      <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <sc-for list="{{ grown }}" as="g" hint-placeholder-count="4">
+          <div style="display: flex; gap: 10px; align-items: flex-start;">
+            <span style="{{ g.dot }}"></span>
+            <div>
+              <div style="font-size: 13px; font-weight: 700;">{{ g.what }}</div>
+              <div style="font-size: 12px; color: #5b6b82; line-height: 1.5;">{{ g.why }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="border-radius: 14px; background: linear-gradient(160deg, #2a2210, #13284a); color: #fff; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.25);">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; letter-spacing: .1em; font-size: 13px; padding: 2px 8px; border-radius: 4px; background: #f2b632; color: #0e1b2e;">NEXT</span>
+        <span style="font-weight: 900; font-size: 15px;">次の発展</span>
+      </div>
+      <div style="font-size: 14px; font-weight: 700; margin-bottom: 10px;">{{ next.title }}</div>
+      <sc-for list="{{ next.conds }}" as="c" hint-placeholder-count="3">
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;"><span>{{ c.label }}</span><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px;">{{ c.value }}</span></div>
+          <div style="height: 7px; border-radius: 4px; background: rgba(255,255,255,.15); overflow: hidden;"><div style="{{ c.bar }}"></div></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="flex-grow: 1; border-radius: 14px; background: #13284a; color: #c9d4e3; padding: 14px 16px; font-size: 12px; line-height: 1.7;">
+      <div style="font-weight: 900; font-size: 14px; color: #fff; margin-bottom: 6px;">街が育つ仕組み</div>
+      練習で選手（コマンド）が育つと、その分野の施設が大きくなる。試合（障害対応）に勝つと利用者が増え、住宅と商店が建つ。昇格するとスタジアムが増築され、新しい分野の施設が建てられる。
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 44px; display: flex; align-items: center; background: #0a1424; color: #fff; overflow: hidden; border-top: 1px solid rgba(255,255,255,.08);">
+    <span style="flex-shrink: 0; height: 100%; display: grid; place-items: center; padding: 0 16px; background: #f2b632; color: #0e1b2e; font-weight: 900; font-size: 13px;">街の話題</span>
+    <div style="overflow: hidden; flex-grow: 1;">
+      <div class="tick" style="display: flex; gap: 48px; white-space: nowrap; width: max-content; padding-left: 24px; font-size: 13px;">
+        <sc-for list="{{ news2 }}" as="n" hint-placeholder-count="8"><span>{{ n }}</span></sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { year: 3 }; }
+  renderVals() {
+    const y = this.state.year;
+    const images = {
+      1: '/_blob/04bdbe4f3cc337c64849af3bba8a6dbe',
+      2: '/_blob/10cedee26ba60f69993521e65808be82',
+      3: '/_blob/868783ff26b32f8c893de2a9301c4c15'
+    };
+    const alts = {
+      1: '1年目のホームタウン。小さなスタジアムの周りに住宅が数区画、シェル道場が完成し、Git 資料室が建設中。',
+      2: '2年目。照明塔の付いたスタジアムを中層の建物が囲み、大通りが開通。Git 資料室と k8s 訓練場が完成。',
+      3: '3年目。屋根付きの大きなスタジアムを高層ビル群が囲む都市。5つの施設が全て揃う。'
+    };
+    const tabs = [
+      { year: 1, league: '地域リーグ' },
+      { year: 2, league: '2 部' },
+      { year: 3, league: '1 部' }
+    ].map((t) => ({
+      year: t.year + ' 年目',
+      league: t.league,
+      pick: () => this.setState({ year: t.year }),
+      style: 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;width:92px;height:52px;border-radius:9px;cursor:pointer;border:none;background:' + (y === t.year ? '#f2b632' : 'transparent') + ';color:' + (y === t.year ? '#0e1b2e' : '#c9d4e3') + ';'
+    }));
+    const K = {
+      1: [['利用者', '1,240'], ['建物', '38'], ['スタジアム', '5,000 席'], ['施設', '1 / 5']],
+      2: [['利用者', '8,600'], ['建物', '240'], ['スタジアム', '18,000 席'], ['施設', '3 / 5']],
+      3: [['利用者', '52,000'], ['建物', '610'], ['スタジアム', '40,000 席'], ['施設', '5 / 5']]
+    };
+    const kpis = K[y].map(([label, value]) => ({ label, value }));
+    const L = {
+      1: { stadium: [615, 277], shell: [570, 204], git: [795, 284], k8s: [645, 374] },
+      2: { stadium: [615, 273], shell: [570, 204], git: [795, 299], k8s: [645, 381], net: [405, 254], gh: [480, 351] },
+      3: { stadium: [615, 266], shell: [570, 204], git: [795, 299], k8s: [645, 381], net: [405, 266], gh: [480, 367] }
+    }[y];
+    const meta = {
+      stadium: { name: 'ホームスタジアム', note: { 1: '5,000 席', 2: '18,000 席 ・ 照明塔', 3: '40,000 席 ・ 屋根付き' }[y], color: '#f2b632', ink: '#0e1b2e' },
+      shell: { name: 'シェル道場', note: { 1: 'Lv 2', 2: 'Lv 4', 3: 'Lv 5' }[y], color: '#1f7a4d', ink: '#fff' },
+      git: { name: 'Git 資料室', note: { 1: '建設中', 2: 'Lv 2', 3: 'Lv 4' }[y], color: y === 1 ? '#e0a32a' : '#c46a1c', ink: '#fff' },
+      k8s: { name: 'k8s 訓練場', note: { 1: '予定地', 2: 'Lv 1', 3: 'Lv 3' }[y], color: y === 1 ? '#8a97a8' : '#1a6fd6', ink: '#fff' },
+      net: { name: '通信室', note: { 2: '建設中', 3: 'Lv 2' }[y], color: y === 2 ? '#e0a32a' : '#7a3fd0', ink: '#fff' },
+      gh: { name: 'GitHub 会議室', note: { 2: '建設中', 3: 'Lv 1' }[y], color: y === 2 ? '#e0a32a' : '#2b3a4f', ink: '#fff' }
+    };
+    const pins = Object.entries(L).map(([key, [px, py]]) => {
+      const m = meta[key];
+      return {
+        name: m.name,
+        note: m.note || '',
+        style: 'position:absolute;left:' + px + 'px;top:' + (py - 6) + 'px;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);',
+        card: 'padding:5px 10px;border-radius:8px;text-align:center;background:' + m.color + ';color:' + m.ink + ';box-shadow:0 4px 12px rgba(0,0,0,.35);',
+        stem: 'width:2px;height:16px;background:' + m.color + ';'
+      };
+    });
+    const G = {
+      1: [
+        ['スタジアムが開場', '地域リーグに参加した', '#f2b632'],
+        ['シェル道場が完成', 'cd と ls の練習を始めた', '#1f7a4d'],
+        ['住宅地が 3 区画', '試合に勝って利用者が増えた', '#8a97a8'],
+        ['Git 資料室の建設が始まった', 'シェル道場が Lv 2 になった', '#e0a32a']
+      ],
+      2: [
+        ['2 部へ昇格、スタジアムを増築', '地域リーグで優勝した', '#f2b632'],
+        ['大通りが開通', '利用者が 5,000 を超えた', '#8a97a8'],
+        ['Git 資料室と k8s 訓練場が完成', 'git の選手が主力に育った', '#1a6fd6'],
+        ['中層の建物が並ぶ', '障害対応で 6 連勝した', '#8a97a8']
+      ],
+      3: [
+        ['1 部へ昇格、屋根付きスタジアムへ', '2 部で優勝した', '#f2b632'],
+        ['高層ビル街ができた', '利用者が 50,000 を超えた', '#8a97a8'],
+        ['通信室と GitHub 会議室が完成', 'kubectl の選手が技を 5 つ覚えた', '#7a3fd0'],
+        ['赤い屋根の住宅地が広がる', '復習を続け、調子を保った', '#b4574a']
+      ]
+    }[y];
+    const grown = G.map(([what, why, color]) => ({ what, why, dot: 'flex-shrink:0;width:12px;height:12px;border-radius:3px;margin-top:4px;background:' + color + ';' }));
+    const N = {
+      1: { title: '2 年目：大通りと中層の街', conds: [['地域リーグ優勝（勝ち点）', '16 / 25', 64], ['シェル道場', 'Lv 2 / 3', 66], ['利用者', '1,240 / 5,000', 25]] },
+      2: { title: '3 年目：高層ビル街と屋根付きスタジアム', conds: [['2 部優勝（勝ち点）', '31 / 40', 78], ['k8s 訓練場', 'Lv 1 / 2', 50], ['利用者', '8,600 / 50,000', 17]] },
+      3: { title: '国際大会：港と空港の開発', conds: [['1 部優勝（勝ち点）', '12 / 60', 20], ['全施設', 'Lv 3 以上 3 / 5', 60], ['利用者', '52,000 / 200,000', 26]] }
+    }[y];
+    const next = {
+      title: N.title,
+      conds: N.conds.map(([label, value, pct]) => ({ label, value, bar: 'height:100%;width:' + pct + '%;background:linear-gradient(90deg,#f2b632,#ffd66b);' }))
+    };
+    const news = {
+      1: ['シェル道場で cd の練習が始まった', '初めての障害対応に勝ち、利用者が 200 人増えた', '川沿いに住宅が 3 区画建った', 'Git 資料室の基礎工事が始まった'],
+      2: ['スタジアムに照明塔が立った', '大通りが開通し、車の流れが増えた', 'k8s 訓練場で kubectl が初練習', '中層の建物に入居が相次いでいる'],
+      3: ['屋根付きスタジアムが完成した', '高層ビルの窓の灯りが増えた', 'GitHub 会議室で最初のレビューが開かれた', '港の開発計画が発表された']
+    }[y];
+    return {
+      tabs, kpis, pins, grown, next,
+      image: images[y], imageAlt: alts[y],
+      yearLabel: y + ' 年目',
+      news2: news.concat(news)
+    };
+  }
+}
+</script>
+</body>
+</html>

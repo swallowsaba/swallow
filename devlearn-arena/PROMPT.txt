@@ -1,11 +1,12 @@
-﻿devlearn-arena/CLAUDE.md を最初に読め。特に「学びの流れ」の節が最重要だ。
-次に devlearn-arena/REWORK.md を読み、未完了の項目を上から順に実装しろ。
-全任務を「体験 → 登場 → 確かめ → 操作 → 振り返り」の5段に作り直せ。文章で説明してからコマンドを打たせる作りは禁止だ。
-車と人が動いていない不具合は3回目の指摘だ。tools/motion-check.mjs で2枚撮って画素の差を確かめ、動くまで直せ。
-不具合は先に再現する失敗するテストを書いてから直せ。
-見た目に関わる項目は node tools/shoot.mjs で撮影し、PNG を自分で開いて見てから完了にしろ。ブラウザは同時に1つまで。
-古い見た目の画面を1つも残すな。
-終わった項目は REWORK.md のチェックボックスを [x] に変えてコミットしろ。
-各項目ごとに devlearn-arena で npm run typecheck と npm run lint と npm run test を通し、落ちたら自分で直してからコミットしろ。
-確認を求めず、報告のために止まるな。全項目が [x] になるまで進めろ。
-全部終わっていたら ALLDONE とだけ出力して終われ。
+﻿devlearn-arena/CLAUDE.md を最初に全部読め。規則が全てに優先する。
+次に devlearn-arena/REVIEW.md を読め。「指摘」に [済] の付いていない行があれば、最優先で直せ。
+次に devlearn-arena/PLAN.md を読み、未完了の項目を上から順に実装しろ。
+画面は必ず devlearn-arena/docs/design/mockups/ の見本と同じデザインで、同じ品質以上に作れ。見本より劣る画面は不合格だ。
+デザインの値は docs/design/DESIGN.md、ゲームの仕組みは docs/game/GAME.md、選手と試合は docs/game/CONTENT.md にある。
+見た目に関わる項目は node tools/shoot.mjs で撮影し、PNG を自分で開いて見本と見比べてから完了にしろ。ブラウザは同時に1つまで。
+各章の最後では node tools/review.mjs を実行し、REVIEWNEEDED とだけ出力して止まれ。
+REVIEW.md の「承認する章」に次の章へ進むための番号が無ければ、何もせず REVIEWNEEDED とだけ出力して終われ。
+終わった項目は PLAN.md のチェックボックスを [x] に変えてコミットしろ。
+各項目ごとに devlearn-arena で npm run typecheck と npm run lint と npm run test を通してからコミットしろ。
+確認を求めず、止まるのは章の終わりだけにしろ。
+全ての章が承認済みで全項目が [x] なら ALLDONE とだけ出力して終われ。
