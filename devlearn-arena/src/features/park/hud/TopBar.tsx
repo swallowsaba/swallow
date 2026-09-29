@@ -17,7 +17,7 @@ interface Props {
 }
 
 /**
- * 上の帯。高さ 56px。`docs/design/hud-mockup.html` の並びに合わせる。
+ * 上の帯。高さ 56px。`docs/archive/hud-mockup.html` の並びに合わせる。
  *
  * 左に市の名前と日付、中央に指標を 4 つ、右にマイルストーンの進みと速度の操作。
  * どれも状態から導いた数で、書き込んだ値は無い。

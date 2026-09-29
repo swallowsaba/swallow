@@ -12,7 +12,7 @@ import { SIZE } from './theme';
 const PAST_FLOW = allMissions().map((m) => m.id);
 
 /**
- * 上の帯。`docs/design/hud-mockup.html` の並びに合わせる。
+ * 上の帯。`docs/archive/hud-mockup.html` の並びに合わせる。
  * 左に市の名前と日付、中央に指標を 4 つ、右に段の進みと速度の操作。
  */
 

@@ -10,7 +10,7 @@
 
 ## 第 0 章 片付け
 
-- [ ] 0-1. 以前の指示書（`REWORK.md` `DESIGN.md` `PROMPT.txt` の旧版、`HANDOFF.md`）を `docs/archive/` へ移す。
+- [x] 0-1. 以前の指示書（`REWORK.md` `DESIGN.md` `PROMPT.txt` の旧版、`HANDOFF.md`）を `docs/archive/` へ移す。
   これらは古い方針で、今は従わない
 - [ ] 0-2. 以前の画面（街づくりの 3D、`ParkPage`、全体図の島、クリーム色の画面、旧 HUD）を洗い出し、
   `docs/archive/old-screens.md` に一覧を書く。**消すのは第 9 章**。それまでは残してよい

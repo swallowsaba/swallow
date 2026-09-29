@@ -17,7 +17,7 @@ export interface BuildTool {
   needs: number;
 }
 
-/** 下の帯に並ぶ道具。`docs/design/hud-mockup.html` と同じ順 */
+/** 下の帯に並ぶ道具。`docs/archive/hud-mockup.html` と同じ順 */
 export const BUILD_TOOLS: readonly BuildTool[] = [
   { kind: 'road', label: 'hud.build.road', icon: 'route', needs: 1 },
   { kind: 'zone', label: 'hud.build.zone', icon: 'board', needs: 1 },

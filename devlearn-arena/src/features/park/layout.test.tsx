@@ -11,7 +11,7 @@ import ParkPage from './ParkPage';
 const PAST_FLOW = allMissions().map((m) => m.id);
 
 /**
- * 画面の作り。`docs/design/hud-mockup.html` の構成と寸法をそのまま確かめる。
+ * 画面の作り。`docs/archive/hud-mockup.html` の構成と寸法をそのまま確かめる。
  * 画面いっぱいが街で、その上に HUD が重なる。左の学習パネルは無い。
  */
 

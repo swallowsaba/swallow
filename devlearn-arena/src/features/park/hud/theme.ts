@@ -1,5 +1,5 @@
 /**
- * HUD の色と寸法。`docs/design/hud-mockup.html` の値をそのまま持つ。
+ * HUD の色と寸法。`docs/archive/hud-mockup.html` の値をそのまま持つ。
  *
  * 画面いっぱいが街で、その上に半透明の板を重ねる。板の色をここに集めて、
  * 部品ごとに濃さがずれないようにする。

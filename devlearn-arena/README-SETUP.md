@@ -14,7 +14,7 @@ X:\git\swallow\devlearn-arena\docs\...        （新規・上書き）
 X:\git\swallow\devlearn-arena\tools\...       （上書き）
 ```
 
-古い `REWORK.md` と `DESIGN.md` は、第 0 章で Claude Code が `docs/archive/` へ移す。
+古い `REWORK.md` と `DESIGN.md` は、第 0 章で `docs/archive/` へ移した。
 
 ## 回し方
 
