@@ -33,17 +33,17 @@ export default tseslint.config(
     },
   },
 
-  // 決定論の担保: エンジン層は実時間・乱数に触れない
+  // 決定論の担保: エンジン層とゲームの模型は実時間・乱数に触れない
   {
-    files: ['src/engines/**/*.ts'],
+    files: ['src/engines/**/*.ts', 'src/game/**/*.ts'],
     rules: {
       'no-restricted-globals': [
         'error',
-        { name: 'Date', message: 'エンジン層では Date を使わない。SimClock を注入すること。' },
+        { name: 'Date', message: '模型の層では Date を使わない。SimClock を注入すること。' },
       ],
       'no-restricted-properties': [
         'error',
-        { object: 'Math', property: 'random', message: 'エンジン層では seeded RNG を使うこと。' },
+        { object: 'Math', property: 'random', message: '模型の層では seeded RNG を使うこと。' },
       ],
     },
   },

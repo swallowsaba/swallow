@@ -53,3 +53,6 @@ DevLearn FC に方針を変える前の画面と、その画面だけが使う�
 | `src/lesson/flow/steps.ts` `quiz.ts`、`src/lesson/experience/sim.ts` `scenarios.ts` | 5 段の型と体験の模型。画面ではない |
 | `src/lib/` | 間隔反復（`review.ts`）・経験値・保存 |
 | `src/store/` | 保存の仕組み。第 2 章で足す |
+
+`src/engines/` は 0-3（2026-09-30）で確かめた。テスト 69 ファイル・4497 件が全て通り、
+React・DOM・Canvas に触れていない。この境界は `src/__tests__/layers.test.ts` が見張る。
