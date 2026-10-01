@@ -1,4 +1,6 @@
-# Keep Claude Code running. Auto-resume after usage limit. Stop for human review.
+# Run Claude Code until all phases are done.
+# Stops only when: all phases done (ALLDONE), a spec decision is needed (DECISIONNEEDED), or the model is unavailable.
+# Waits and resumes automatically when the usage limit is reached.
 # Usage:
 #   cd X:\git\swallow
 #   Set-ExecutionPolicy -Scope Process Bypass
@@ -6,7 +8,7 @@
 
 $Repo       = "X:\git\swallow"
 $WaitMin    = 20
-$MaxRuns    = 200
+$MaxRuns    = 500
 $PromptFile = "devlearn-arena\PROMPT.txt"
 
 # Opus 5.5 pinned. Needs Claude Code v2.1.280 or later.
@@ -30,16 +32,15 @@ for ($i = 1; $i -le $MaxRuns; $i++) {
     Write-Host $out
 
     if ($out -match "ALLDONE") {
-        Write-Host "finished." -ForegroundColor Green
+        Write-Host "All phases are done." -ForegroundColor Green
         break
     }
-    if ($out -match "REVIEWNEEDED") {
+    if ($out -match "DECISIONNEEDED") {
         Write-Host ""
-        Write-Host "REVIEW NEEDED." -ForegroundColor Magenta
-        Write-Host "1. Open devlearn-arena\review\index.html in your browser." -ForegroundColor Magenta
-        Write-Host "2. Write the chapter number under the approve section of devlearn-arena\REVIEW.md (or write fixes)." -ForegroundColor Magenta
+        Write-Host "A spec decision is needed." -ForegroundColor Magenta
+        Write-Host "1. Read the open items in devlearn-arena\docs\decisions.md." -ForegroundColor Magenta
+        Write-Host "2. Write your decision in the same item (which option, and why if needed)." -ForegroundColor Magenta
         Write-Host "3. Run .\loop.ps1 again." -ForegroundColor Magenta
-        Start-Process (Join-Path $Repo "devlearn-arena\review\index.html") -ErrorAction SilentlyContinue
         break
     }
     if ($out -match "not a recognized model|issue with the selected model|does not support this model") {
@@ -47,7 +48,7 @@ for ($i = 1; $i -le $MaxRuns; $i++) {
         exit 1
     }
     if ($out -match "session limit|usage limit|rate limit|Usage limit") {
-        Write-Host ("usage limit. waiting {0} min." -f $WaitMin) -ForegroundColor Yellow
+        Write-Host ("Usage limit. Waiting {0} min, then resuming." -f $WaitMin) -ForegroundColor Yellow
         Start-Sleep -Seconds ($WaitMin * 60)
         continue
     }

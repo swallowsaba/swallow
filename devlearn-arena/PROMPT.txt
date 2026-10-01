@@ -1,12 +1,10 @@
 ﻿devlearn-arena/CLAUDE.md を最初に全部読め。規則が全てに優先する。
-次に devlearn-arena/REVIEW.md を読め。「指摘」に [済] の付いていない行があれば、最優先で直せ。
-次に devlearn-arena/PLAN.md を読み、未完了の項目を上から順に実装しろ。
-画面は必ず devlearn-arena/docs/design/mockups/ の見本と同じデザインで、同じ品質以上に作れ。見本より劣る画面は不合格だ。
-デザインの値は docs/design/DESIGN.md、ゲームの仕組みは docs/game/GAME.md、選手と試合は docs/game/CONTENT.md にある。
-見た目に関わる項目は node tools/shoot.mjs で撮影し、PNG を自分で開いて見本と見比べてから完了にしろ。ブラウザは同時に1つまで。
-各章の最後では node tools/review.mjs を実行し、REVIEWNEEDED とだけ出力して止まれ。
-REVIEW.md の「承認する章」に次の章へ進むための番号が無ければ、何もせず REVIEWNEEDED とだけ出力して終われ。
-終わった項目は PLAN.md のチェックボックスを [x] に変えてコミットしろ。
-各項目ごとに devlearn-arena で npm run typecheck と npm run lint と npm run test を通してからコミットしろ。
-確認を求めず、止まるのは章の終わりだけにしろ。
-全ての章が承認済みで全項目が [x] なら ALLDONE とだけ出力して終われ。
+次に devlearn-arena/docs/README.md の「Claude Code が読む順番」に従い、今の Phase に関係する仕様書を読め。
+今の Phase は、devlearn-arena/docs/progress/ にある記録のうち「次への条件を満たした」と書かれた最大の番号の次だ。記録が無ければ Phase 0 だ。途中まで進んだ Phase があれば、その続きから進めろ。
+docs/decisions.md の「未決」に、利用者の判断が書き込まれた項目があれば、その判断に従って仕様書と実装を直してから進め。
+docs/development-plan.md の Phase を順に進めろ。一度に全部を作らず、仕様確認 → 小さく実装 → 起動 → テスト → 画面確認 → 修正、を繰り返せ。
+意味のある単位でコミットしろ。各コミットの前に devlearn-arena で npm run typecheck と npm run lint と npm run test を通せ。
+Phase の完成条件・テスト・視覚確認を満たしたら、docs/progress/phase-<番号>.md に結果を記録し、コミットして、次の Phase に進め。
+仕様書と実装が食い違う、または仕様どおりに作れない場合は、docs/decisions.md の「未決」に「問題 → 影響 → 変更案」を書いてコミットし、DECISIONNEEDED とだけ出力して終われ。
+確認を求めるな。止まるのは、仕様の判断が必要な時と、全 Phase が終わった時だけだ。
+Phase 15 まで全て「次への条件を満たした」と記録されていれば、ALLDONE とだけ出力して終われ。
