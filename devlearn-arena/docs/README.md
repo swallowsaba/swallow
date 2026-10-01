@@ -12,7 +12,7 @@
 | `docs/game-design.md` | ゲームとしての仕組み。ゲームループ・XP・スキル・ミッション・報酬・難易度・都市成長の規則 |
 | `docs/learning-design.md` | 教え方。教育方針・レッスンの流れ・初心者対応・用語・クイズ・実戦・エラー学習の原則 |
 | `docs/curriculum.md` | 何を教えるか。全分野・テーマ・レッスン一覧・難易度・推奨順・前提・関連・知識グラフ |
-| `docs/lesson-samples.md` | 各分野 1 本ずつの完成形レッスン（解説〜まとめまで）。コンテンツ作成の手本 |
+| `docs/lessons/` | 全レッスンの設計（解説 → 理解確認 → クイズ → 実戦 → 結果 → まとめ）。分野ごとに 1 ファイル。`curriculum.md` の一部として、指示書 20 節の「レッスンの中身の設計」を担う |
 | `docs/content-spec.md` | コンテンツのデータ形式。レッスン・問題・実戦・エラー・ヒント・フィードバック・まとめの構造と置き場所 |
 | `docs/city-design.md` | 都市の作り。都市構造・道路・建物・施設・発展段階・IT 分野と施設の対応・疑似 3D の描き方の規則 |
 | `docs/ui-design.md` | 画面と操作。画面構成・操作・ナビゲーション・パネル・情報表示・PC 向けレイアウト |
@@ -32,7 +32,7 @@
 ```text
 product-spec ─┬─ game-design ─┬─ city-design ── visual-design
               │               └─ data-model
-              ├─ learning-design ── curriculum ── lesson-samples
+              ├─ learning-design ── curriculum ── lessons/
               │                     └─ content-spec ── data-model
               ├─ ui-design ── visual-design
               └─ architecture ── data-model / deployment / free-services
@@ -42,22 +42,33 @@ decisions は全文書に優先して「どちらを採るか」を記録する�
 
 ## Claude Code が読む順番
 
-1. `CLAUDE.md`
-2. `docs/decisions.md`（食い違いの決着）
-3. `docs/product-spec.md`
-4. `docs/game-design.md`
-5. `docs/learning-design.md`
-6. `docs/curriculum.md`
-7. `docs/content-spec.md`（必要なら `docs/lesson-samples.md`）
-8. `docs/city-design.md`
-9. `docs/ui-design.md`
-10. `docs/visual-design.md`
-11. `docs/architecture.md`
-12. `docs/data-model.md`
-13. `docs/development-plan.md`
-14. `docs/acceptance-criteria.md`
-15. `docs/testing-strategy.md`
-16. `docs/deployment.md`（公開の Phase で）
-17. `docs/free-services.md` `docs/asset-policy.md`（サービスや素材を使うとき）
+指示書 57 節の順番のとおり。
+
+```text
+CLAUDE.md
+↓ product-spec.md
+↓ game-design.md
+↓ learning-design.md
+↓ curriculum.md
+↓ content-spec.md
+↓ city-design.md
+↓ ui-design.md
+↓ visual-design.md
+↓ architecture.md
+↓ data-model.md
+↓ development-plan.md
+↓ acceptance-criteria.md
+↓ testing-strategy.md
+↓ deployment.md
+```
+
+次の文書は、57 節の「等を必要に応じて参照」に当たる。
+
+| 文書 | 読む時 |
+|---|---|
+| `docs/decisions.md` | 読んでいる文書が `D-` や `Q-` の番号を参照した時。仕様の食い違いに気づいた時 |
+| `docs/lessons/` | レッスンのコンテンツを作る時（Phase 5・10）。該当する分野のファイルだけ読む |
+| `docs/free-services.md` | 外部のサービスを使う時・公開の時 |
+| `docs/asset-policy.md` | 素材やフォントを足す時 |
 
 毎回すべてを読み直す必要はない。**今の Phase に関係する文書は必ず読む。**

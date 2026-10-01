@@ -1,6 +1,7 @@
 ﻿# データモデル
 
-コンテンツ（レッスン・用語・ミッション）の型は `docs/content-spec.md`。この文書は**プレイヤーと都市と保存の型**を決める。
+この文書は**プレイヤー・XP・スキル・学習履歴・都市・ミッション・セーブの型**と、**レッスン・クイズ・実戦をプレイヤーの記録としてどう持つか**を決める。
+レッスン・クイズ・実戦の**中身（作る側のデータ形式）**は `docs/content-spec.md` が決める（`docs/decisions.md` D-06）。
 実装は `src/**/types.ts`。ここを変える時は、セーブの版を上げて移行関数を書く。
 
 ## 1. プレイヤー
@@ -44,7 +45,27 @@ interface SkillState {
 }
 ```
 
-## 4. 学習履歴
+## 4. レッスン・クイズ・実戦（プレイヤー側の持ち方）
+
+レッスンの中身は `content/` の読み取り専用のデータ（`docs/content-spec.md` の `Lesson`・`QuizItem`・`Practice`）。
+プレイヤー側は、それを ID で参照し、**進み具合と結果だけ**を持つ。中身を保存データに写さない。
+
+| 概念 | 中身（読み取り専用） | プレイヤー側の記録 |
+|---|---|---|
+| レッスン | `Lesson`（content-spec 2 章） | `LessonProgress`（下） |
+| クイズ | `QuizItem`（content-spec 2.3） | `QuizAttempt`（下） |
+| 実戦 | `Practice`（content-spec 2.4） | `PracticeAttempt`（下）と、模擬環境の状態の保存（途中再開のため） |
+
+```ts
+interface PracticeSession {      // 実戦の途中再開のための状態
+  lessonId: string;
+  stepIndex: number;
+  engineState: unknown;          // 模擬環境（src/engines）が出力する直列化済みの状態
+  savedAt: string;
+}
+```
+
+## 4.1 学習履歴
 
 ```ts
 interface LessonProgress {
@@ -127,6 +148,7 @@ interface SaveData {
   player: Player;
   city: City;
   lessons: Record<string, LessonProgress>;
+  practiceSessions: Record<string, PracticeSession>;  // 実戦の途中再開
   reviews: ReviewCard[];
   missions: Record<string, MissionProgress>;
   xpLog: XpEvent[];              // 直近 1,000 件

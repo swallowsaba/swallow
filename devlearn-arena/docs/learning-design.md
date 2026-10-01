@@ -1,6 +1,6 @@
 ﻿# 学習デザイン
 
-何を教えるかは `docs/curriculum.md`、データの形は `docs/content-spec.md`、完成形の手本は `docs/lesson-samples.md`。
+何を教えるかは `docs/curriculum.md`、データの形は `docs/content-spec.md`、各レッスンの中身の設計は `docs/lessons/`。
 この文書は**どう教えるか**を決める。
 
 ## 1. 教育方針

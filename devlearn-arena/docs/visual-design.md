@@ -105,6 +105,27 @@
 - 図の中の文字は 13px 以上
 - 状況説明の図で街や建物を描く場合は、都市と同じ 2.5D の描き方
 
+## 6.1 アセット
+
+素材の権利は `docs/asset-policy.md`。ここでは**どんな素材を、どこに、どの形で持つか**を決める。
+
+| 種類 | 形式 | 置き場所 | 数と決まり |
+|---|---|---|---|
+| 施設 | 自作 SVG | `src/city/assets/facilities/<施設>/lv<1-5>.svg` | 15 施設 × 5 レベル。`docs/city-design.md` 4 章 |
+| 区画の建物 | 手続き的な生成（同じ描き方の規則） | `src/city/generate/` | 住宅・商業・オフィス × 段階 |
+| 道路・橋・ロータリー | 手続き的な描画 | `src/city/render/` | `docs/city-design.md` 2 章 |
+| 木・街灯・ベンチ・噴水・記念碑 | 自作 SVG | `src/city/assets/props/` | 各 3 種以上の変化 |
+| 車・人 | 自作 SVG | `src/city/assets/agents/` | 車 5 色・人 4 種。人は小さな影絵で顔を描かない |
+| 施設の中の景色（レッスン画面の背景） | 自作 SVG | `src/screens/lesson/backdrops/<施設>.svg` | 15 枚 |
+| アイコン | 自作 SVG | `src/ui/icons/` | 線 1.6〜2px。絵文字を使わない |
+| レッスンの図 | 自作 SVG | `content/figures/<ID>.svg` | 6 章の決まり |
+| フォント | woff2（@fontsource） | 依存として取得 | 2 章 |
+| 効果音 | 自作または CC0 | `public/sfx/` | `docs/decisions.md` Q-03 |
+
+- ファイル名は小文字の英数字とハイフン
+- 各 SVG は 30KB 以内。`viewBox` を必ず持ち、色は tokens の値だけを使う
+- 新しい素材を足したら `CREDITS.md` を同じコミットで更新する
+
 ## 7. 禁止事項
 
 - ブラウザ標準フォントのまま / 指定以外のフォント
