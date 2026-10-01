@@ -19,9 +19,14 @@
     "e2e": "playwright test",
     "links": "vite-node scripts/check-docs-links.mts",
     "verify": "npm run typecheck && npm run lint && npm run test",
-    "shoot": "node tools/shoot-all.mjs"
+    "shoot": "node tools/shoot.mjs",
+    "svgs": "vite-node tools/build-facility-svgs.mts"
   },
   "dependencies": {
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/m-plus-1": "^5.3.0",
+    "@fontsource/noto-sans-jp": "^5.3.0",
     "@noble/hashes": "^1.5.0",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",

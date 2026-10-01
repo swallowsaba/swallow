@@ -4,7 +4,7 @@ import { useT } from '@/i18n/useT';
 import { readJournal, type JournalEntry } from '@/lib/storage/idb';
 import { xpProgress } from '@/lib/xp';
 import { useStore } from '@/store';
-import { ProgressBar } from '@/ui/components/ProgressBar';
+import { ProgressBar } from '@/legacy/ui/components/ProgressBar';
 import { Achievements } from './Achievements';
 import { ReviewQueue } from './ReviewQueue';
 

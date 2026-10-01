@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { glossaryIndex, matchesGlossary } from '@/engines/lesson/glossaryIndex';
 import { useT } from '@/i18n/useT';
-import { Glossed } from '@/ui/Term';
+import { Glossed } from '@/legacy/ui/Term';
 
 /** 1つの語に添える任務の数。それ以上は「ほか n 本」とだけ出す */
 const SHOWN = 3;

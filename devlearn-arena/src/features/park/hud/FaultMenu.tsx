@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Fault } from '@/features/park/faults';
 import { useT } from '@/i18n/useT';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import { HUD } from './theme';
 
 interface Props {

@@ -1,6 +1,6 @@
 import type { TourStop } from '@/legacy/city/tour';
 import { useT } from '@/i18n/useT';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import { HUD, besideDock } from './theme';
 
 interface Props {

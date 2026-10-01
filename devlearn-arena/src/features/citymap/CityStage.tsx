@@ -7,7 +7,7 @@ import { CityView } from '@/city3d/CityView';
 import type { GrowthBurst } from '@/city3d/burst';
 import type { Speed } from '@/features/park/hud/metrics';
 import { SPEED_RATE } from '@/features/park/hud/metrics';
-import { useCityMotion } from '@/ui/motion';
+import { useCityMotion } from '@/legacy/ui/motion';
 
 interface Props {
   city: City;

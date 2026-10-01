@@ -1,10 +1,10 @@
-import { Glossed } from '@/ui/Term';
+import { Glossed } from '@/legacy/ui/Term';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { isCoreLesson } from '@/content/catalog';
 import type { Chapter, LessonMeta } from '@/content/types';
 import { useT } from '@/i18n/useT';
-import { Badge } from '@/ui/components/Badge';
+import { Badge } from '@/legacy/ui/components/Badge';
 
 interface Props {
   chapter: Chapter;

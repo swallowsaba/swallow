@@ -1,6 +1,6 @@
 import type { DesignKind } from '@/legacy/city/model';
 import { useT } from '@/i18n/useT';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import { BUILD_TOOLS, isLocked, variantsOf, type BuildVariant } from './buildTools';
 import { HUD, besideDock } from './theme';
 

@@ -1,5 +1,5 @@
 import { useCallback, type RefObject } from 'react';
-import { useMotionEnabled } from '@/ui/motion';
+import { useMotionEnabled } from '@/legacy/ui/motion';
 import { explainCommand } from '@/visual/commands';
 import type { TerminalHandle } from './TerminalView';
 

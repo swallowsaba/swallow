@@ -4,7 +4,7 @@ import type { LessonDefinition } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { diagramOfStep } from '@/lesson/diagrams/pick';
 import { PlaygroundFrame } from '@/lesson/diagrams/PlaygroundFrame';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import { HUD, SIZE, besideDock } from './theme';
 
 interface Props {

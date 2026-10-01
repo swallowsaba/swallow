@@ -8,7 +8,7 @@ import type { MissionTrack } from '@/engines/lesson/types';
 import { civicFacilities } from '@/features/citymap/cityStore';
 import { TRACK_ACCENT } from '@/features/citymap/isoDraw';
 import { useT } from '@/i18n/useT';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import { xpProgress } from '@/lib/xp';
 import { useStore } from '@/store';
 import { RegionMap } from './RegionMap';

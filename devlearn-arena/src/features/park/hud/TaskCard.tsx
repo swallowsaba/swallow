@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } fro
 import { missionTerms } from '@/content/glossary';
 import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import { commandLabel } from './stepLabel';
 import { TermText } from './TermText';
 import { clampCard, loadLayout, saveLayout, type CardBox } from './layoutPrefs';

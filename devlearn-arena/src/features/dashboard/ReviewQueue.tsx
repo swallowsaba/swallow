@@ -4,7 +4,7 @@ import { useT } from '@/i18n/useT';
 import { dayKey } from '@/lib/date';
 import { dueItems } from '@/lib/review';
 import { useStore } from '@/store';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 
 /** 今日の見直し。躓いた任務が日を置いて戻ってくる */
 export function ReviewQueue() {

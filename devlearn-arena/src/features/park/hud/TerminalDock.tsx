@@ -3,7 +3,7 @@ import { TerminalView, type TerminalHandle } from '@/features/terminal/TerminalV
 import type { ShellSession } from '@/features/terminal/useShellSession';
 import type { EditorTarget } from '@/features/park/EditorPanel';
 import { useT } from '@/i18n/useT';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import { DOCK_WIDTH, HUD, SIZE } from './theme';
 
 interface Props {

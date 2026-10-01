@@ -1,6 +1,6 @@
 import type { TKey } from '@/i18n';
 import { useT } from '@/i18n/useT';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import { HUD } from './theme';
 import type { Voice, VoiceEvent } from './voiceFeed';
 

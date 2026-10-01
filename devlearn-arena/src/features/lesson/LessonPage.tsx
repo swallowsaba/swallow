@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { getLesson, getTrack } from '@/content/catalog';
 import { useT } from '@/i18n/useT';
 import { appendJournal } from '@/lib/storage/idb';
-import { Badge } from '@/ui/components/Badge';
+import { Badge } from '@/legacy/ui/components/Badge';
 import NotFoundPage from '../NotFoundPage';
 
 export default function LessonPage() {

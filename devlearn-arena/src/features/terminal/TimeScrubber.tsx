@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ShellSession } from './useShellSession';
 import { useT } from '@/i18n/useT';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 
 interface Props {
   session: ShellSession;

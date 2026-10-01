@@ -14,7 +14,7 @@ import { useShellSession } from '@/features/terminal/useShellSession';
 import { useT } from '@/i18n/useT';
 import type { TKey } from '@/i18n';
 import { useStore } from '@/store';
-import { Splitter } from '@/ui/Splitter';
+import { Splitter } from '@/legacy/ui/Splitter';
 
 type Tab = 'fs' | 'git' | 'k8s' | 'net' | 'gh';
 

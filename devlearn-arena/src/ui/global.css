@@ -1,0 +1,67 @@
+/* 全体の地（docs/visual-design.md）。色と文字の大きさは tokens から作った CSS の変数だけを使う */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--navy);
+  color: var(--hud-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: var(--font-body);
+  font-size: var(--fs-14);
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.num {
+  font-family: var(--font-number);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 1280×720 未満の案内（docs/ui-design.md 1 章） */
+.too-small {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--hud-bg-strong);
+  z-index: 100;
+  text-align: center;
+  padding: 24px;
+}
+.too-small h1 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-22);
+  margin: 0;
+}
+.too-small p {
+  margin: 0;
+  color: var(--hud-text-sub);
+}
+@media (max-width: 1279px), (max-height: 719px) {
+  .too-small {
+    display: flex;
+  }
+}

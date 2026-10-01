@@ -5,7 +5,7 @@ import { TILE } from '@/legacy/city/palette';
 import type { City } from '@/legacy/city/model';
 import type { Journey } from '@/legacy/city/journey';
 import type { JourneyPlay } from './journey';
-import { Loading } from '@/ui/components/Loading';
+import { Loading } from '@/legacy/ui/components/Loading';
 import { layoutCity } from './model';
 import type { InfoView } from './overlay';
 import type { GrowthBurst } from './burst';

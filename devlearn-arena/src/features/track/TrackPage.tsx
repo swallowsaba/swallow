@@ -1,4 +1,4 @@
-import { Glossed } from '@/ui/Term';
+import { Glossed } from '@/legacy/ui/Term';
 import { Link, useParams } from 'react-router-dom';
 import { getTrack } from '@/content/catalog';
 import { useT } from '@/i18n/useT';

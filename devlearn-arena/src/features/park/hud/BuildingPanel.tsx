@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { BuildingKind } from '@/legacy/city/model';
 import type { TKey } from '@/i18n';
 import { useT } from '@/i18n/useT';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import type { BuildingInfo, InfoLog, InfoUsage } from './buildingInfo';
 import { HUD, SIZE } from './theme';
 

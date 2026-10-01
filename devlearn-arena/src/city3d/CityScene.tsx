@@ -46,7 +46,7 @@ import {
 } from './journey';
 import type { Answer, Journey } from '@/legacy/city/journey';
 import { paceAfter } from './traffic';
-import { advanceOf } from '@/ui/motion';
+import { advanceOf } from '@/legacy/ui/motion';
 
 /**
  * 街を WebGL で描く。データを受け取って描くだけ。

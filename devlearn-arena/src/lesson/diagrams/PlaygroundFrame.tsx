@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import type { DiagramId } from '@/engines/lesson/diagramIds';
 import { HUD } from '@/features/park/hud/theme';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import { PLAYGROUNDS } from './playgrounds';
 import type { Playground, Sim } from './sim';
 import { DesiredVsActualView } from './views/DesiredVsActualView';

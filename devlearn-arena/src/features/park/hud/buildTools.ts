@@ -1,6 +1,6 @@
 import type { DesignKind } from '@/legacy/city/model';
 import type { TKey } from '@/i18n';
-import type { IconName } from '@/ui/Icon';
+import type { IconName } from '@/legacy/ui/Icon';
 
 /**
  * 建設メニューの中身。React に触れない純粋なデータと関数。

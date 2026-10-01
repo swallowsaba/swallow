@@ -8,8 +8,8 @@ import { CityView } from '@/city3d/CityView';
 import { growthOf } from '@/features/citymap/cityStore';
 import { useStore } from '@/store';
 import { useT } from '@/i18n/useT';
-import { useMotionEnabled } from '@/ui/motion';
-import { Icon } from '@/ui/Icon';
+import { useMotionEnabled } from '@/legacy/ui/motion';
+import { Icon } from '@/legacy/ui/Icon';
 
 /** 地図の上に流す出来事（正解・手順・完了・建設） */
 export interface CityEvent {

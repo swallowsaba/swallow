@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getChapter, getTrack } from '@/content/catalog';
 import { allMissions, mainMissions, type MissionEntry } from '@/engines/lesson/registry';
 import { useT } from '@/i18n/useT';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 
 interface Props {
   currentId: string;

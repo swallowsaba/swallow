@@ -1,7 +1,7 @@
 import type { Journey } from '@/legacy/city/journey';
 import type { JourneyPlay } from '@/city3d/journey';
 import { useT } from '@/i18n/useT';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import { HUD, besideDock } from './theme';
 import { RATES } from './journeyRates';
 

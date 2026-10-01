@@ -1,5 +1,5 @@
 import { useT } from '@/i18n/useT';
-import { Icon, type IconName } from '@/ui/Icon';
+import { Icon, type IconName } from '@/legacy/ui/Icon';
 import type { CityMetrics, Milestone, Speed } from './metrics';
 import { HUD, SIZE } from './theme';
 

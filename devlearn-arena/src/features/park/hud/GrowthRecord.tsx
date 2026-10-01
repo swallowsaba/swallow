@@ -1,4 +1,4 @@
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 import type { GrowthMark } from '../growthLog';
 import { HUD } from './theme';
 

@@ -1,35 +1,68 @@
 #!/usr/bin/env node
-// 撮影用。ブラウザを同時に1つしか立ち上げない（WebGL のソフトウェア描画はメモリを大量に使うため）
-// 使い方: node tools/shoot.mjs <名前> [URLのパス] [待つミリ秒]
+// 画面の撮影（docs/testing-strategy.md 6 章）。
+//
+//   npm run shoot -- <名前> [パス] [待つミリ秒]
+//
+// 1920×1080 で撮り、shots/<名前>.png に保存する。開発用のサーバを自分で立てて、自分で片付ける。
+// 環境変数:
+//   SHOOT_SIZE=1280x720   画面の大きさを変える
+//   SHOOT_FPS=1           都市を毎フレーム描き直させ、3 秒間の fps を測って表示する
+//   SHOOT_EVAL='...'      撮る前にページで実行する式（カメラを動かすなど）
+//   SHOOT_TWICE=2000      その間隔で 2 枚撮る（動きの確認。<名前>-2.png）
 import { chromium } from 'playwright';
-import { mkdirSync, openSync, closeSync, unlinkSync, existsSync } from 'node:fs';
+import { createServer } from 'vite';
+import { mkdirSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-const LOCK = '.shoot.lock';
-const [name = 'shot', path = '/', waitMs = '4000'] = process.argv.slice(2);
-const BASE = process.env.SHOOT_BASE ?? 'http://localhost:4173/devlearn-arena';
+const [name = 'shot', path = '#/city', waitMs = '1500'] = process.argv.slice(2);
+const [width, height] = (process.env.SHOOT_SIZE ?? '1920x1080').split('x').map(Number);
 
-async function acquire() {
-  for (let i = 0; i < 600; i += 1) {
-    try { closeSync(openSync(LOCK, 'wx')); return; } catch { await sleep(500); }
-  }
-  throw new Error('撮影の順番待ちが 5 分を超えた');
-}
+const server = await createServer({ server: { port: 0, strictPort: false }, logLevel: 'error' });
+await server.listen();
+const address = server.httpServer?.address();
+const port = typeof address === 'object' && address ? address.port : 5173;
+const url = `http://localhost:${String(port)}/${path.startsWith('#') ? path : path.replace(/^\//, '')}`;
 
-await acquire();
+const browser = await chromium.launch();
 try {
   mkdirSync('shots', { recursive: true });
-  const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl'] });
-  const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+  const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto(BASE + path, { waitUntil: 'networkidle' });
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text());
+  });
+  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => document.body.dataset.cityReady === '1' || !document.querySelector('[data-testid="city-screen"]'), null, { timeout: 30000 });
+  await page.evaluate(() => document.fonts.ready);
+  if (process.env.SHOOT_EVAL) await page.evaluate(process.env.SHOOT_EVAL);
   await sleep(Number(waitMs));
+  if (process.env.SHOOT_FPS) {
+    const fps = await page.evaluate(async () => {
+      const city = window.__city;
+      city.setContinuous(true);
+      const start = city.stats.frames;
+      const t0 = performance.now();
+      await new Promise((r) => setTimeout(r, 3000));
+      const frames = city.stats.frames - start;
+      city.setContinuous(false);
+      return { fps: (frames * 1000) / (performance.now() - t0), objects: city.stats.drawnObjects };
+    });
+    console.log(`fps: ${fps.fps.toFixed(1)}（描いた物 ${String(fps.objects)}）`);
+  }
   const file = `shots/${name}.png`;
   await page.screenshot({ path: file });
-  await browser.close();
   console.log(file);
-  if (errors.length > 0) console.log('ページのエラー:\n' + errors.join('\n'));
+  if (process.env.SHOOT_TWICE) {
+    await sleep(Number(process.env.SHOOT_TWICE));
+    await page.screenshot({ path: `shots/${name}-2.png` });
+    console.log(`shots/${name}-2.png`);
+  }
+  if (errors.length > 0) {
+    console.error('ページの誤り:\n' + errors.join('\n'));
+    process.exitCode = 1;
+  }
 } finally {
-  if (existsSync(LOCK)) unlinkSync(LOCK);
+  await browser.close();
+  await server.close();
 }

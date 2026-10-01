@@ -2,7 +2,7 @@ import { useT } from '@/i18n/useT';
 import { achievements, streakStrip, type Badge } from '@/lib/achievements';
 import { dayKey } from '@/lib/date';
 import { useStore } from '@/store';
-import { Icon } from '@/ui/Icon';
+import { Icon } from '@/legacy/ui/Icon';
 
 const TIER_CLASS: Record<Badge['tier'], string> = {
   bronze: 'border-[var(--bronze)] text-[var(--bronze)]',

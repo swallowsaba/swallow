@@ -1,0 +1,12 @@
+.city-screen {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+.city-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  cursor: default;
+  touch-action: none;
+}
