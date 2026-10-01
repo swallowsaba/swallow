@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { InstancedMesh, Mesh } from 'three';
-import { buildCity } from '@/city/model';
-import { DISTRICT_IDS } from '@/city/growth';
+import { buildCity } from '@/legacy/city/model';
+import { DISTRICT_IDS } from '@/legacy/city/growth';
 import { createSession, type Session } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { container, deployment, emptyCluster, node, pod, service } from '@/engines/k8s/factory';

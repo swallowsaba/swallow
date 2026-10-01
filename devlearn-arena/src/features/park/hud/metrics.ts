@@ -1,4 +1,4 @@
-import type { City } from '@/city/model';
+import type { City } from '@/legacy/city/model';
 import type { CityPlan } from '@/content/city';
 import type { TownGrowth } from '@/features/citymap/cityStore';
 

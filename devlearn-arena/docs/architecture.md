@@ -23,6 +23,8 @@
 | Playwright | 画面の撮影・E2E | 実際のブラウザで撮影して見た目を確かめられる | — |
 | @fontsource | フォントの同梱 | 外部配信に依存しない | Google Fonts の外部読み込み |
 | IndexedDB（idb-keyval 程度の薄い包み） | 保存 | 容量が大きく、ブラウザ標準 | 外部 DB |
+| @noble/hashes（MIT） | Git の模擬（`src/engines/git`） | オブジェクトの名前（SHA-1）を本物と同じ計算で出せる。小さく依存が無い。既存の模擬が使っている（`docs/archive/inventory.md`） | Web Crypto（非同期で、模擬の同期的な処理に合わない） |
+| js-yaml（MIT） | Kubernetes の模擬（`src/engines/k8s`）・設定の編集 | YAML のマニフェストと CI の設定を読む。既存の模擬が使っている（`docs/archive/inventory.md`） | 自作の YAML 解析（誤りやすい） |
 
 **依存を足す時は、この表に 1 行足してから足す。** 足した理由が書けない依存は入れない。
 

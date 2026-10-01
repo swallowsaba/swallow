@@ -1,4 +1,4 @@
-import type { DesignKind } from '@/city/model';
+import type { DesignKind } from '@/legacy/city/model';
 import { useT } from '@/i18n/useT';
 import { Icon } from '@/ui/Icon';
 import { BUILD_TOOLS, isLocked, variantsOf, type BuildVariant } from './buildTools';

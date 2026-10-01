@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Journey } from '@/city/journey';
+import type { Journey } from '@/legacy/city/journey';
 import {
   DWELL_SECONDS, LEG_SECONDS, TRAVEL_SECONDS, cartAt, reachedStop, routeOf, routeSeconds, stepTo,
   type CartRoute,

@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { buildCity } from '@/city/model';
+import { buildCity } from '@/legacy/city/model';
 import { emptyCluster, node } from '@/engines/k8s/factory';
 import { CityStage } from '@/features/citymap/CityStage';
 import { useStore } from '@/store';

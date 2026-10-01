@@ -1,4 +1,4 @@
-import type { City } from '@/city/model';
+import type { City } from '@/legacy/city/model';
 import type { ClusterState } from '@/engines/k8s/types';
 
 /**

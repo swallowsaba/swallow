@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCity } from '@/city/model';
+import { buildCity } from '@/legacy/city/model';
 import { createSession } from '@/engines/kernel/session';
 import { emptyCluster, node } from '@/engines/k8s/factory';
 import { layoutCity } from './model';

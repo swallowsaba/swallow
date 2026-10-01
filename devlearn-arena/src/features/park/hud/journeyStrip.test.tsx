@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildCity } from '@/city/model';
-import { journeyOf, type Journey, type WorldState } from '@/city/journey';
+import { buildCity } from '@/legacy/city/model';
+import { journeyOf, type Journey, type WorldState } from '@/legacy/city/journey';
 import type { JourneyPlay } from '@/city3d/journey';
 import { emptyCluster, node } from '@/engines/k8s/factory';
 import { createSession } from '@/engines/kernel/session';

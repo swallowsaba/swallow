@@ -1,4 +1,4 @@
-import type { TourStop } from '@/city/tour';
+import type { TourStop } from '@/legacy/city/tour';
 import { useT } from '@/i18n/useT';
 import { Icon } from '@/ui/Icon';
 import { HUD, besideDock } from './theme';

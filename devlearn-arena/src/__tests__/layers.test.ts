@@ -3,16 +3,20 @@ import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * 層の境界（CLAUDE.md「層の境界」）。
+ * 層の境界（docs/architecture.md 3 章）。
  *
- * `src/engines/` と `src/game/` は仕組みの模型で、React・DOM・Canvas に触れない。
- * 画面から切り離して、テストと保存だけで動かせることを守る。
+ * `src/city/`（描画の `render/` を除く）・`src/game/`・`src/learning/`・`src/engines/` は模型で、
+ * React・DOM・Canvas に触れない。画面から切り離して、テストと保存だけで動かせることを守る。
+ * ESLint でも同じ規則を掛けている。これは念のための二重の見張り。
  */
 
 const SRC = join(__dirname, '..');
 
 /** 模型の層。まだ無い層は飛ばす */
-const MODEL_LAYERS = ['engines', 'game'] as const;
+const MODEL_LAYERS = ['engines', 'game', 'learning', 'city'] as const;
+
+/** 模型の層の中でも、Canvas に描くので外す所 */
+const DRAWING = /[\\/]city[\\/]render[\\/]/;
 
 /** 模型から import してはいけない包み */
 const BANNED_MODULES = /from\s+['"](react|react-dom|react-router-dom|three|@react-three\/[^'"]+|@xterm\/[^'"]+|framer-motion|zustand)(\/[^'"]*)?['"]/;
@@ -24,6 +28,7 @@ function sourcesUnder(dir: string): string[] {
   const out: string[] = [];
   for (const name of readdirSync(dir)) {
     const path = join(dir, name);
+    if (DRAWING.test(path + sep)) continue;
     if (statSync(path).isDirectory()) out.push(...sourcesUnder(path));
     else if (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name)) out.push(path);
   }

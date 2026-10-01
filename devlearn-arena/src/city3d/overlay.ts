@@ -1,4 +1,4 @@
-import type { BuildingKind } from '@/city/model';
+import type { BuildingKind } from '@/legacy/city/model';
 import { OVERLAY } from './palette';
 import type { CityLayout, LayoutBuilding, Vec2 } from './model';
 

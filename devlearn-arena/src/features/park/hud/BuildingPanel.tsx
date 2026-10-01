@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { BuildingKind } from '@/city/model';
+import type { BuildingKind } from '@/legacy/city/model';
 import type { TKey } from '@/i18n';
 import { useT } from '@/i18n/useT';
 import { Icon } from '@/ui/Icon';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCity, type City } from '@/city/model';
+import { buildCity, type City } from '@/legacy/city/model';
 import { createSession } from '@/engines/kernel/session';
 import { layoutCity } from './model';
 import { OVERLAY } from './palette';

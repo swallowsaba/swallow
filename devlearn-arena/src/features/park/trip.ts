@@ -1,4 +1,4 @@
-import type { WorldState } from '@/city/journey';
+import type { WorldState } from '@/legacy/city/journey';
 import { growsFromCommand } from './growth';
 
 /**

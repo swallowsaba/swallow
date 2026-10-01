@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildCity } from '@/city/model';
-import { DISTRICT_IDS } from '@/city/growth';
+import { buildCity } from '@/legacy/city/model';
+import { DISTRICT_IDS } from '@/legacy/city/growth';
 import { emptyCluster, node } from '@/engines/k8s/factory';
 import { layoutCity, type Vec2 } from './model';
 import type { RoadNetwork, RoadPath } from './roads';

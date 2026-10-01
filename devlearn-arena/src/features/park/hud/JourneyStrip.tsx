@@ -1,4 +1,4 @@
-import type { Journey } from '@/city/journey';
+import type { Journey } from '@/legacy/city/journey';
 import type { JourneyPlay } from '@/city3d/journey';
 import { useT } from '@/i18n/useT';
 import { Icon } from '@/ui/Icon';

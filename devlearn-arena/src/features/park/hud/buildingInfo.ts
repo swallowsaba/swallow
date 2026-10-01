@@ -1,4 +1,4 @@
-import type { Building, BuildingKind, City, Occupant } from '@/city/model';
+import type { Building, BuildingKind, City, Occupant } from '@/legacy/city/model';
 import type { ClusterState } from '@/engines/k8s/types';
 
 /**

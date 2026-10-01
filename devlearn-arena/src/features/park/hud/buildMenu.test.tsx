@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { DesignKind } from '@/city/model';
+import type { DesignKind } from '@/legacy/city/model';
 import { click, mount } from '@/visual/mountForTest';
 import { BuildMenu } from './BuildMenu';
 import { BUILD_TOOLS, isLocked, variantById, variantsOf, type BuildVariant } from './buildTools';

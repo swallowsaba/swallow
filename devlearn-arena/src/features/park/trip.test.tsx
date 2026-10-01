@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { journeyOf, type WorldState } from '@/city/journey';
-import { buildCity } from '@/city/model';
+import { journeyOf, type WorldState } from '@/legacy/city/journey';
+import { buildCity } from '@/legacy/city/model';
 import { CityStage } from '@/features/citymap/CityStage';
 import { createSession } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';

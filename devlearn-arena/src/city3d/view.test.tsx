@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildCity } from '@/city/model';
-import { DISTRICT_IDS } from '@/city/growth';
+import { buildCity } from '@/legacy/city/model';
+import { DISTRICT_IDS } from '@/legacy/city/growth';
 import { createSession, type Session } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { emptyCluster, node } from '@/engines/k8s/factory';

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { Building, City, Occupant } from '@/city/model';
+import type { Building, City, Occupant } from '@/legacy/city/model';
 import { container, emptyCluster, node, pod } from '@/engines/k8s/factory';
 import type { ClusterState } from '@/engines/k8s/types';
 import { mount } from '@/visual/mountForTest';

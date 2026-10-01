@@ -4,8 +4,20 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
+/** 模型の層と描画が import してはいけない画面の包み */
+const UI_PACKAGES = [
+  'react', 'react/*', 'react-dom', 'react-dom/*', 'react-router-dom', 'three', 'three/*',
+  '@react-three/*', '@xterm/*', 'framer-motion', 'zustand', 'zustand/*',
+];
+
+/** 模型の層が触れてはいけない画面の物 */
+const DOM_GLOBALS = [
+  'window', 'document', 'HTMLCanvasElement', 'CanvasRenderingContext2D', 'OffscreenCanvas',
+  'requestAnimationFrame', 'Image', 'localStorage', 'indexedDB',
+];
+
 export default tseslint.config(
-  { ignores: ['.work/**', 'dist', 'coverage', 'playwright-report', 'test-results', 'node_modules'] },
+  { ignores: ['docs/archive/**', '.work/**', 'dist', 'coverage', 'playwright-report', 'test-results', 'node_modules'] },
 
   js.configs.recommended,
 
@@ -33,18 +45,29 @@ export default tseslint.config(
     },
   },
 
-  // 決定論の担保: エンジン層とゲームの模型は実時間・乱数に触れない
+  // 層の境界（docs/architecture.md 3 章）。
+  // 模型の層（都市・ゲーム・学習・模擬環境）は React・DOM・Canvas に触れず、実時間と乱数を使わない。
+  // 描画（src/city/render）は Canvas に描くので、この規則から外し、下で画面の包みだけを禁じる
   {
-    files: ['src/engines/**/*.ts', 'src/game/**/*.ts'],
+    files: ['src/engines/**/*.{ts,tsx}', 'src/game/**/*.{ts,tsx}', 'src/learning/**/*.{ts,tsx}', 'src/city/**/*.{ts,tsx}'],
+    ignores: ['src/city/render/**'],
     rules: {
+      'no-restricted-imports': ['error', { patterns: [{ group: UI_PACKAGES, message: '模型の層は画面の包みを import しない（docs/architecture.md 3 章）。' }] }],
       'no-restricted-globals': [
         'error',
-        { name: 'Date', message: '模型の層では Date を使わない。SimClock を注入すること。' },
+        { name: 'Date', message: '模型の層では Date を使わない。時刻は引数で渡すこと。' },
+        ...DOM_GLOBALS.map((name) => ({ name, message: '模型の層は DOM・Canvas に触れない（docs/architecture.md 3 章）。' })),
       ],
       'no-restricted-properties': [
         'error',
-        { object: 'Math', property: 'random', message: '模型の層では seeded RNG を使うこと。' },
+        { object: 'Math', property: 'random', message: '模型の層では seed から作る乱数を使うこと。' },
       ],
+    },
+  },
+  {
+    files: ['src/city/render/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [{ group: UI_PACKAGES, message: '描画は模型を読んで Canvas に描くだけ。画面の包みを import しない。' }] }],
     },
   },
 

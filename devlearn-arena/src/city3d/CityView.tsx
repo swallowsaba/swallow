@@ -1,9 +1,9 @@
 import { Suspense, lazy, useMemo, type MutableRefObject } from 'react';
-import { CityCanvas } from '@/city/CityCanvas';
-import { Viewport } from '@/city/Viewport';
-import { TILE } from '@/city/palette';
-import type { City } from '@/city/model';
-import type { Journey } from '@/city/journey';
+import { CityCanvas } from '@/legacy/city/CityCanvas';
+import { Viewport } from '@/legacy/city/Viewport';
+import { TILE } from '@/legacy/city/palette';
+import type { City } from '@/legacy/city/model';
+import type { Journey } from '@/legacy/city/journey';
 import type { JourneyPlay } from './journey';
 import { Loading } from '@/ui/components/Loading';
 import { layoutCity } from './model';

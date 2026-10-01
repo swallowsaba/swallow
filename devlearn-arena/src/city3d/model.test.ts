@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildCity, whereabouts } from '@/city/model';
-import { DISTRICT_IDS } from '@/city/growth';
+import { buildCity, whereabouts } from '@/legacy/city/model';
+import { DISTRICT_IDS } from '@/legacy/city/growth';
 import { createSession, type Session } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { container, emptyCluster, node, pod } from '@/engines/k8s/factory';

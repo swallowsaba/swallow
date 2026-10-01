@@ -5,7 +5,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { CITIES } from '@/content/city';
 import { createSession } from '@/engines/kernel/session';
 import { missionById } from '@/engines/lesson/registry';
-import { buildCity } from '@/city/model';
+import { buildCity } from '@/legacy/city/model';
 import { CityStage } from '@/features/citymap/CityStage';
 import { useStore } from '@/store';
 import { focusView } from '@/visual/viewportMath';

@@ -1,4 +1,4 @@
-import type { CargoShape, Journey } from '@/city/journey';
+import type { CargoShape, Journey } from '@/legacy/city/journey';
 import type { Vec2 } from './model';
 
 /**

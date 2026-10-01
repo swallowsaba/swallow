@@ -9,8 +9,8 @@ import { describe, expect, it } from 'vitest';
  */
 const EMOJI = /[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|\u{FE0F}|\u{200D}/u;
 
-const SRC = join(__dirname, '..');
-const ROOTS = ['city', 'city3d', 'visual'];
+const SRC = join(__dirname, '..', '..');
+const ROOTS = ['legacy/city', 'city3d', 'visual'];
 
 function tsxUnder(dir: string): string[] {
   const out: string[] = [];

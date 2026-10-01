@@ -2,7 +2,7 @@ import { allMissions } from '@/engines/lesson/registry';
 import { act } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { buildCity } from '@/city/model';
+import { buildCity } from '@/legacy/city/model';
 import { growthOf } from '@/features/citymap/cityStore';
 import { useStore } from '@/store';
 import { click, mount } from '@/visual/mountForTest';

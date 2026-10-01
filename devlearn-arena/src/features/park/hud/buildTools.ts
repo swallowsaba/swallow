@@ -1,4 +1,4 @@
-import type { DesignKind } from '@/city/model';
+import type { DesignKind } from '@/legacy/city/model';
 import type { TKey } from '@/i18n';
 import type { IconName } from '@/ui/Icon';
 

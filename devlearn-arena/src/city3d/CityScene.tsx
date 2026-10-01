@@ -44,7 +44,7 @@ import { overlayFor, type InfoView } from './overlay';
 import {
   CART_LIFT, cartAt, reachedStop, routeOf, routeSeconds, stepTo, type CartRoute, type JourneyPlay,
 } from './journey';
-import type { Answer, Journey } from '@/city/journey';
+import type { Answer, Journey } from '@/legacy/city/journey';
 import { paceAfter } from './traffic';
 import { advanceOf } from '@/ui/motion';
 

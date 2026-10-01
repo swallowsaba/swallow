@@ -1,5 +1,5 @@
-import type { Building, BuildingKind, City, Occupant } from '@/city/model';
-import type { DistrictId } from '@/city/growth';
+import type { Building, BuildingKind, City, Occupant } from '@/legacy/city/model';
+import type { DistrictId } from '@/legacy/city/growth';
 import { TILE_METERS } from './palette';
 import { between, hashString, intBetween, unit } from './seed';
 import { buildTerrain, distanceToRiver, flatten, inside, isBuildable, type Terrain } from './terrain';

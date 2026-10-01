@@ -1,8 +1,8 @@
 import { useMemo, useRef } from 'react';
 import type { ShellState } from '@/engines/kernel/registry';
 import type { MissionTrack } from '@/engines/lesson/types';
-import { unlockedDistricts } from '@/city/growth';
-import { buildCity, whereabouts, type City, type Placement, type Whereabouts } from '@/city/model';
+import { unlockedDistricts } from '@/legacy/city/growth';
+import { buildCity, whereabouts, type City, type Placement, type Whereabouts } from '@/legacy/city/model';
 import { growthOf } from '@/features/citymap/cityStore';
 import { useStore } from '@/store';
 

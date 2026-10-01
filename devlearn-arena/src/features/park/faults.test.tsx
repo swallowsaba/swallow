@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { buildCity } from '@/city/model';
-import { DISTRICT_IDS } from '@/city/growth';
+import { buildCity } from '@/legacy/city/model';
+import { DISTRICT_IDS } from '@/legacy/city/growth';
 import { layoutCity } from '@/city3d/model';
 import { buildCityScene } from '@/city3d/scene';
 import { container, deployment, emptyCluster, node, service } from '@/engines/k8s/factory';

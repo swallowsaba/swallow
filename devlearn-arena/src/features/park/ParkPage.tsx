@@ -8,9 +8,9 @@ import {
   buildContext, createProgress, currentStep, evaluate, markSkipped, passes, solutionThrough, useHint,
 } from '@/engines/lesson/runner';
 import type { LessonDefinition, LessonProgressState, LessonStep, MissionTrack } from '@/engines/lesson/types';
-import type { DesignKind } from '@/city/model';
-import { journeyOf, type WorldState } from '@/city/journey';
-import { tourOf } from '@/city/tour';
+import type { DesignKind } from '@/legacy/city/model';
+import { journeyOf, type WorldState } from '@/legacy/city/journey';
+import { tourOf } from '@/legacy/city/tour';
 import type { JourneyPlay } from '@/city3d/journey';
 import type { InfoView } from '@/city3d/overlay';
 import type { TerminalHandle } from '@/features/terminal/TerminalView';

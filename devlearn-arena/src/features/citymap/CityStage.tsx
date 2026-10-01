@@ -1,6 +1,6 @@
 import type { MutableRefObject } from 'react';
-import type { City } from '@/city/model';
-import type { Journey } from '@/city/journey';
+import type { City } from '@/legacy/city/model';
+import type { Journey } from '@/legacy/city/journey';
 import type { InfoView } from '@/city3d/overlay';
 import type { JourneyPlay } from '@/city3d/journey';
 import { CityView } from '@/city3d/CityView';

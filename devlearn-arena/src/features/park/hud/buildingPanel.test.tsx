@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import type { Building, City, Occupant } from '@/city/model';
+import type { Building, City, Occupant } from '@/legacy/city/model';
 import { container, emptyCluster, node, pod } from '@/engines/k8s/factory';
 import type { ClusterState } from '@/engines/k8s/types';
 import { click, mount } from '@/visual/mountForTest';

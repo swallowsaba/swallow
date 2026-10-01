@@ -1,4 +1,4 @@
-import type { City, CityGrowth } from '@/city/model';
+import type { City, CityGrowth } from '@/legacy/city/model';
 import type { GrowthTrigger } from './growth';
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCity } from '@/city/model';
+import { buildCity } from '@/legacy/city/model';
 import { causeOf, GROWTH_LOG_SIZE, growthSpot, logGrowth, type GrowthMark } from './growthLog';
 
 /** 街が育った場所と、育ちの記録（REWORK 2-1・2-2） */
