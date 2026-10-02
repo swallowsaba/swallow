@@ -18,7 +18,7 @@
 | SVG（自作） | 建物の素材・図・アイコン | 拡大しても劣化しない。ライセンスの心配が無い | ビットマップの素材 |
 | Zustand | 画面の状態 | 小さく分かりやすい。 | Redux |
 | zod | コンテンツとセーブデータの検証 | 型と検証を 1 つで書ける | — |
-| sql.js（SQLite の WebAssembly 版、MIT） | DB の実戦 | ブラウザ内で本物の SQL を実行できる。サーバ不要 | 外部の DB サービス（有料・秘密情報が要る） |
+| sql.js（SQLite の WebAssembly 版、MIT。型は @types/sql.js、MIT） | DB の実戦 | ブラウザ内で本物の SQL を実行できる。サーバ不要。WebAssembly のファイルは同梱して配信する | 外部の DB サービス（有料・秘密情報が要る） |
 | Vitest / Testing Library | 単体・部品のテスト | Vite と同じ設定で動く | Jest |
 | Playwright | 画面の撮影・E2E | 実際のブラウザで撮影して見た目を確かめられる | — |
 | @fontsource | フォントの同梱 | 外部配信に依存しない | Google Fonts の外部読み込み |
