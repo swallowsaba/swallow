@@ -1,0 +1,24 @@
+{
+  "facilities": [
+    { "type": "academy", "name": "市立 IT 学院", "domain": "found", "group": "facility", "w": 3, "d": 3, "cost": 600, "minStage": 1 },
+    { "type": "server", "name": "サーバ施設", "domain": "linux", "group": "facility", "w": 2, "d": 2, "cost": 400, "minStage": 1 },
+    { "type": "network", "name": "ネットワークセンター", "domain": "net", "group": "facility", "w": 2, "d": 2, "cost": 400, "minStage": 1 },
+    { "type": "web", "name": "Web 施設", "domain": "web", "group": "facility", "w": 2, "d": 2, "cost": 400, "minStage": 1 },
+    { "type": "security", "name": "セキュリティセンター", "domain": "sec", "group": "facility", "w": 2, "d": 2, "cost": 450, "minStage": 1 },
+    { "type": "devoffice", "name": "開発オフィス", "domain": "git", "group": "facility", "w": 2, "d": 2, "cost": 450, "minStage": 1 },
+    { "type": "deploy", "name": "デプロイセンター", "domain": "cicd", "group": "facility", "w": 3, "d": 2, "cost": 550, "minStage": 1 },
+    { "type": "container", "name": "コンテナ施設", "domain": "ctr", "group": "facility", "w": 3, "d": 3, "cost": 700, "minStage": 1 },
+    { "type": "cluster", "name": "クラスタ施設", "domain": "k8s", "group": "facility", "w": 3, "d": 3, "cost": 800, "minStage": 1 },
+    { "type": "datacenter", "name": "データセンター", "domain": "db", "group": "facility", "w": 3, "d": 2, "cost": 650, "minStage": 1 },
+    { "type": "cloud", "name": "クラウドセンター", "domain": "cloud", "group": "facility", "w": 3, "d": 3, "cost": 800, "minStage": 1 },
+    { "type": "monitor", "name": "監視・運用センター", "domain": "mon", "group": "facility", "w": 2, "d": 2, "cost": 450, "minStage": 1 },
+    { "type": "devops", "name": "DevOps 推進本部", "domain": "devops", "group": "facility", "w": 2, "d": 2, "cost": 450, "minStage": 1 },
+    { "type": "incident", "name": "インシデント対応本部", "domain": "trouble", "group": "facility", "w": 2, "d": 2, "cost": 450, "minStage": 1 },
+    { "type": "research", "name": "研究施設", "domain": "lab", "group": "facility", "w": 3, "d": 3, "cost": 800, "minStage": 1 },
+    { "type": "park", "name": "公園", "group": "park", "w": 2, "d": 2, "cost": 120, "minStage": 1 },
+    { "type": "treerow", "name": "並木", "group": "park", "w": 1, "d": 1, "cost": 30, "minStage": 1 },
+    { "type": "plaza", "name": "広場", "group": "park", "w": 2, "d": 2, "cost": 150, "minStage": 2 },
+    { "type": "fountain", "name": "噴水", "group": "park", "w": 1, "d": 1, "cost": 80, "minStage": 2 },
+    { "type": "monument", "name": "記念碑", "group": "reward", "w": 1, "d": 1, "cost": 0, "minStage": 1 }
+  ]
+}

@@ -36,11 +36,11 @@ export interface Building {
   builtDay: number;
 }
 
-/** 施設の種類（docs/city-design.md 4 章の 15 施設と、公園・記念碑） */
+/** 施設の種類（docs/city-design.md 4 章の 15 施設と、公園・並木・広場・噴水・記念碑） */
 export type FacilityType =
   | 'academy' | 'server' | 'network' | 'web' | 'security' | 'devoffice' | 'deploy' | 'container'
   | 'cluster' | 'datacenter' | 'cloud' | 'monitor' | 'devops' | 'incident' | 'research'
-  | 'park' | 'monument';
+  | 'park' | 'treerow' | 'plaza' | 'fountain' | 'monument';
 
 export type DomainId =
   | 'found' | 'linux' | 'net' | 'web' | 'sec' | 'git' | 'cicd' | 'ctr' | 'docker' | 'k8s'

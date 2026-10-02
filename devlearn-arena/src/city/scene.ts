@@ -1,3 +1,4 @@
+import { cellKey, frontOf, roadCells } from './cells';
 import { footprintOf } from './facilities';
 import { zoneBuildingModel } from './generate/buildings';
 import type { Model } from './generate/mesh';
@@ -5,7 +6,7 @@ import { broadleafTree, conifer, streetLamp } from './generate/shapes';
 import type { Rotation } from './projection';
 import { seedOf } from './random';
 import { distanceToPolyline, type Terrain } from './terrain';
-import type { City, FacilityType, Point, Road } from './types';
+import type { City, FacilityType } from './types';
 
 /**
  * 都市の状態と地形から、描く物の一覧を作る（純粋な計算）。
@@ -28,32 +29,9 @@ export interface SceneObject {
   source: { kind: 'model'; key: string; model: () => Model } | { kind: 'facility'; type: FacilityType; level: number };
 }
 
-/** 道路が通るマス（中心から道路の線までが半マス未満） */
-export function roadCells(roads: readonly Road[]): Set<string> {
-  const out = new Set<string>();
-  for (const road of roads) {
-    const xs = road.path.map((p) => p.x);
-    const ys = road.path.map((p) => p.y);
-    const half = road.kind === 'avenue' ? 1 : 0.5;
-    for (let x = Math.floor(Math.min(...xs) - 1); x <= Math.ceil(Math.max(...xs) + 1); x += 1) {
-      for (let y = Math.floor(Math.min(...ys) - 1); y <= Math.ceil(Math.max(...ys) + 1); y += 1) {
-        if (distanceToPolyline({ x: x + 0.5, y: y + 0.5 }, road.path).dist < half + 0.02) out.add(`${String(x)},${String(y)}`);
-      }
-    }
-  }
-  return out;
-}
+export { frontOf, roadCells } from './cells';
 
-const key = (x: number, y: number): string => `${String(x)},${String(y)}`;
-
-/** 区画のマスが、どちらの道路に面しているか。面していなければ null */
-export function frontOf(cell: Point, roads: Set<string>): Rotation | null {
-  if (roads.has(key(cell.x, cell.y + 1))) return 0; // +y
-  if (roads.has(key(cell.x + 1, cell.y))) return 3; // +x
-  if (roads.has(key(cell.x, cell.y - 1))) return 2; // -y
-  if (roads.has(key(cell.x - 1, cell.y))) return 1; // -x
-  return null;
-}
+const key = cellKey;
 
 export function buildScene(cityState: City, terrain: Terrain): SceneObject[] {
   const out: SceneObject[] = [];
