@@ -85,6 +85,8 @@ export class CityRenderer {
   private labelInsets = { right: 8 };
   private labelBlocks: ScreenRect[] = [];
   private selection: Selection | null = null;
+  /** 変化のあった場所の光の輪（docs/city-design.md 5 章）。until は performance.now() の時刻 */
+  private highlight: { at: Point; size: Point; until: number } | null = null;
   private overlay: { kind: OverlayKind; data: Overlay } | null = null;
   private net: Network;
   private agents: Agent[];
@@ -188,6 +190,12 @@ export class CityRenderer {
 
   setSelection(selection: Selection | null): void {
     this.selection = selection;
+    this.dirty = true;
+  }
+
+  /** 変化のあった場所を、光の輪でしばらく示す（ms ミリ秒） */
+  setHighlight(at: Point, size: Point, ms = 6000): void {
+    this.highlight = { at, size, until: performance.now() + ms };
     this.dirty = true;
   }
 
@@ -434,6 +442,7 @@ export class CityRenderer {
     let drawn = 0;
     const order = this.sortedObjects();
     this.drawSelectionBase(o);
+    this.drawHighlight(o);
     const agents = this.placeAgents(order);
     this.drawAgents(ctx, o, agents.get(-1));
     for (let pos = 0; pos < order.list.length; pos += 1) {
@@ -535,6 +544,39 @@ export class CityRenderer {
     ctx.strokeStyle = accent.goldLight;
     ctx.lineWidth = Math.max(2, 2.5 * this.camera.zoom);
     ctx.stroke();
+  }
+
+  /** 変化のあった場所の足元に、広がっては消える金の輪を描く（意味のある所だけを光らせる） */
+  private drawHighlight(o: { x: number; y: number }): void {
+    const h = this.highlight;
+    if (!h) return;
+    const now = performance.now();
+    if (now > h.until) {
+      this.highlight = null;
+      return;
+    }
+    // 輪が動いている間は描き直し続ける
+    this.dirty = true;
+    const ctx = this.ctx;
+    const s = this.space();
+    const [cx, cy] = toLayer(s, h.at);
+    // 敷地の角（少し外側）までの横の幅を、輪の半径にする
+    const half = Math.max(h.size.x, h.size.y) / 2 + 0.8;
+    const radius = Math.max(...[[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([dx, dy]) => Math.abs(toLayer(s, { x: h.at.x + (dx ?? 0) * half, y: h.at.y + (dy ?? 0) * half })[0] - cx)));
+    const fade = Math.min(1, (h.until - now) / 1000);
+    for (let k = 0; k < 2; k += 1) {
+      const t = ((now / 1600 + k / 2) % 1);
+      const r = radius * (0.8 + t * 0.5);
+      ctx.beginPath();
+      ctx.ellipse(o.x + cx, o.y + cy, r, r / 2, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = rgbaOf(accent.goldLight, (1 - t) * 0.9 * fade);
+      ctx.lineWidth = Math.max(2, 3 * this.camera.zoom);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.ellipse(o.x + cx, o.y + cy, radius * 0.8, radius * 0.4, 0, 0, Math.PI * 2);
+    ctx.fillStyle = rgbaOf(accent.gold, 0.18 * fade);
+    ctx.fill();
   }
 
   /** 表示の切り替え（学習の進み・人口・交通・発展段階を色で重ねる） */

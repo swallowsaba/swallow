@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { STAGE_NAMES } from '@/game/stage';
+import { changesBetween, focusOf, type Change, type SkillValues, type Snapshot } from '@/city/changes';
 import { advance } from '@/city/growth';
 import { newCity } from '@/city/newCity';
 import type { OverlayKind } from '@/city/overlay';
@@ -51,6 +52,12 @@ export interface CityGameState {
   selected: Selection | null;
   /** 表示の切り替え */
   overlay: OverlayKind | null;
+  /** 出番を待つ知らせ（今の知らせが消えたら順に出す） */
+  queue: string[];
+  /** 学習に出た時の都市とスキル（戻った時に変化を比べる） */
+  away: Snapshot | null;
+  /** 変化のあった場所（カメラを寄せ、光の輪で示す）。seq が変わるたびに寄せる */
+  focus: { at: { x: number; y: number }; size: { x: number; y: number }; seq: number } | null;
 
   setCity: (city: City) => void;
   tick: (dtSeconds: number) => void;
@@ -60,10 +67,23 @@ export interface CityGameState {
   rotate: () => void;
   setHint: (hint: Hint | null) => void;
   askDemolish: (target: DemolishTarget | null) => void;
+  /** 知らせを出す。出ている知らせがあれば、その後に出す */
   notify: (text: string, now: number) => void;
+  /** 時刻 now に、出ている知らせが消える時なら、次の知らせを出す */
+  expireNotice: (now: number) => void;
+  /** 学習に出る（都市とスキルを覚えておく） */
+  leave: (skills: SkillValues) => void;
+  /**
+   * 学習から戻る。変化を比べ、いちばん大事な変化の場所へカメラを寄せ（施設ならそれを選び）、知らせを順に出す。
+   * after は変化の知らせの後に出す知らせ（得た資金・次のおすすめ）
+   */
+  welcomeBack: (skills: SkillValues, after: readonly string[], now: number) => Change[];
   select: (selection: Selection | null) => void;
   setOverlay: (overlay: OverlayKind | null) => void;
 }
+
+/** 1 つの知らせを出しておく時間（docs/ui-design.md 3 章: 3 秒で消える） */
+export const NOTICE_MS = 3000;
 
 export function createCityStore(seed?: number) {
   const city = newCity(seed);
@@ -80,6 +100,9 @@ export function createCityStore(seed?: number) {
     notice: null,
     selected: null,
     overlay: null,
+    queue: [],
+    away: null,
+    focus: null,
 
     setCity: (next) => set((s) => ({ city: next, selected: s.selected && stillThere(next, s.selected) ? s.selected : null })),
     tick: (dt) => {
@@ -96,7 +119,36 @@ export function createCityStore(seed?: number) {
     rotate: () => set((s) => ({ rotation: ((s.rotation + 90) % 360) as Facility['rotation'] })),
     setHint: (hint) => set({ hint }),
     askDemolish: (confirm) => set({ confirm }),
-    notify: (text, now) => set({ notice: { text, until: now + 3000 } }),
+    notify: (text, now) => {
+      const s = get();
+      if (s.notice && now < s.notice.until) set({ queue: [...s.queue, text] });
+      else set({ notice: { text, until: now + NOTICE_MS } });
+    },
+    expireNotice: (now) => {
+      const s = get();
+      if (!s.notice || now < s.notice.until) return;
+      const [next, ...rest] = s.queue;
+      set(next === undefined ? { notice: null } : { notice: { text: next, until: now + NOTICE_MS }, queue: rest });
+    },
+    leave: (skills) => {
+      if (get().away) return;
+      set({ away: { city: get().city, skills } });
+    },
+    welcomeBack: (skills, after, now) => {
+      const s = get();
+      if (!s.away) return [];
+      const changes = changesBetween(s.away, { city: s.city, skills });
+      const focus = focusOf(changes);
+      set({
+        away: null,
+        focus: focus ? { at: focus.at, size: focus.size, seq: (s.focus?.seq ?? 0) + 1 } : s.focus,
+        ...(focus?.facilityId ? { selected: { kind: 'facility' as const, id: focus.facilityId } } : {}),
+        notice: null,
+        queue: [],
+      });
+      for (const text of [...changes.slice(0, 2).map((c) => c.text), ...after]) get().notify(text, now);
+      return changes;
+    },
     select: (selected) => set({ selected }),
     setOverlay: (overlay) => set({ overlay }),
   }));

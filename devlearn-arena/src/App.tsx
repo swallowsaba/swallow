@@ -1,5 +1,8 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { LESSONS } from './game/lessons';
 import type { LearningRecord } from './game/records';
+import { instantOf } from './game/time';
+import { recommend } from './learning/recommend';
 import { go, mark, parseHash, useRoute, type Route } from './router';
 import { CityScreen } from './screens/city/CityScreen';
 import { GlossaryScreen } from './screens/glossary/GlossaryScreen';
@@ -7,6 +10,8 @@ import { GrowthScreen } from './screens/growth/GrowthScreen';
 import { LearnScreen } from './screens/learn/LearnScreen';
 import { LessonScreen } from './screens/lesson/LessonScreen';
 import { createSession, type Session } from './screens/session';
+import { nowIso } from './screens/clock';
+import { skillValues } from './screens/skills';
 import type { EntryId } from './ui/TopBar';
 
 /**
@@ -40,6 +45,27 @@ export function App({ session: given }: { session?: Session } = {}) {
       delete w.__game;
     };
   }, [session]);
+
+  // 学習に出る時に都市とスキルを覚え、都市へ戻ったら変化の場所へカメラを寄せて知らせる（docs/game-design.md 7 章）
+  const leftAt = useRef<string | null>(null);
+  useEffect(() => {
+    const city = session.city.getState();
+    const progress = session.progress.getState().progress;
+    if (route.name === 'lesson') {
+      if (!city.away) leftAt.current = nowIso();
+      city.leave(skillValues(progress));
+      return;
+    }
+    if (route.name !== 'city' || !city.away) return;
+    const since = leftAt.current ? instantOf(leftAt.current) : 0;
+    const earned = progress.xpLog.filter((e) => instantOf(e.at) >= since).reduce((n, e) => n + e.amount, 0);
+    const next = recommend(progress, LESSONS, 1)[0];
+    const after = [
+      ...(earned > 0 ? [`学習で開発資金が +${String(earned)} 増えた`] : []),
+      ...(next ? [`次は「${next.title}」がおすすめ（左上のおすすめから始められる）`] : []),
+    ];
+    city.welcomeBack(skillValues(progress), after, performance.now());
+  }, [route.name, session]);
 
   const toCity = useCallback((): void => go({ name: 'city' }), []);
   /** レッスンを始める（レッスン画面へ）。どのレッスンも、前提に関係なく始められる */

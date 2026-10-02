@@ -13,6 +13,7 @@ import { CityNotice, DemolishConfirm, PlacementHint } from './CityOverlays';
 import { InfoPanel } from './InfoPanel';
 import { panelModel } from './infoPanelModel';
 import { OverlayToggle, type OverlayLegend } from './OverlayToggle';
+import { RecommendPanel } from './RecommendPanel';
 import type { DomainId } from '@/city/types';
 import type { CityStore } from './cityStore';
 import type { Session } from '../session';
@@ -91,8 +92,15 @@ export function CityScreen({ session, active = true, current, onEntry, onLesson,
     const detachBuild = attachBuildControls(canvas, renderer, store, isActive);
     // 都市・選択・表示切替を描画に渡す。表示切替は、都市の形が変わった時だけ計算し直す
     let overlayKey = '';
+    let focusSeq = store.getState().focus?.seq ?? 0;
     const sync = (s: ReturnType<CityStore['getState']>): void => {
       renderer.setCity(s.city);
+      // 学習から戻った時の変化の場所へカメラを寄せ、光の輪で示す
+      if (s.focus && s.focus.seq !== focusSeq) {
+        focusSeq = s.focus.seq;
+        renderer.focusOn(s.focus.at.x, s.focus.at.y);
+        renderer.setHighlight(s.focus.at, s.focus.size);
+      }
       renderer.setSelection(s.selected);
       renderer.setLabelInsets({ right: s.selected ? 14 + 360 + 12 : 8 });
       const values = Object.fromEntries(Object.entries(skillsRef.current).map(([d, v]) => [d, v.value]));
@@ -111,8 +119,7 @@ export function CityScreen({ session, active = true, current, onEntry, onLesson,
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       store.getState().tick(dt);
-      const notice = store.getState().notice;
-      if (notice && now > notice.until) store.setState({ notice: null });
+      store.getState().expireNotice(now);
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
@@ -169,6 +176,7 @@ export function CityScreen({ session, active = true, current, onEntry, onLesson,
       {active ? (
         <>
           <CityNotice text={state.notice?.text ?? null} paused={state.paused} shifted={panel !== null} />
+          {onLesson ? <RecommendPanel progress={session.progress} onLesson={onLesson} /> : null}
           <InfoPanel model={panel} onClose={() => state.select(null)} {...(onLesson ? { onLesson } : {})} {...(onLibrary ? { onLibrary } : {})} />
           <OverlayToggle value={state.overlay} onChange={state.setOverlay} legend={state.menu === null && state.overlay ? legendOf(state.overlay, store) : null} />
           <BuildMenu state={state} />
