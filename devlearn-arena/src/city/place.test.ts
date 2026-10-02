@@ -32,6 +32,7 @@ describe('道路を引く', () => {
     const after = placeRoad(base, check);
     expect(after.roads).toHaveLength(2);
     expect(roadCells(after.roads).has(cellKey(40, 43))).toBe(true);
+    expect(after.funds).toBe(base.funds - 60);
   });
 
   it('直線は縦か横にそろう（斜めに引いても）', () => {
@@ -121,6 +122,8 @@ describe('区画を塗る', () => {
     const after = placeZone(base, 'residential', check);
     expect(after.zones).toHaveLength(1);
     expect(after.zones[0]?.cells).toHaveLength(3);
+    expect(check.cost).toBe(15);
+    expect(after.funds).toBe(base.funds - 15);
   });
 
   it('道路のマスは塗らず、枠も出さない', () => {
@@ -153,6 +156,19 @@ describe('施設と公園を置く', () => {
     expect(check.cost).toBe(FACILITY_DEFS.server.cost);
     const after = placeFacility(base, 'server', { x: 40, y: 45 }, 0, check);
     expect(after.facilities[0]).toMatchObject({ type: 'server', domain: 'linux', level: 1, state: 'constructing', builtDay: 0 });
+    expect(after.funds).toBe(base.funds - FACILITY_DEFS.server.cost);
+  });
+
+  it('初めの資金 1,500 は、細い道 2 本と区画 30 マス（約 550）の後に施設 2 つまで。3 つ目からは学習が要る（docs/game-design.md 2 章）', () => {
+    expect(base.funds).toBe(1500);
+    let city: City = { ...base, funds: base.funds - 400 - 150 };
+    for (const o of [{ x: 39, y: 45 }, { x: 43, y: 45 }]) {
+      const check = checkFacility(city, terrain, 'server', o, 0);
+      expect(check.ok).toBe(true);
+      city = placeFacility(city, 'server', o, 0, check);
+    }
+    expect(city.funds).toBe(150);
+    expect(codes(checkFacility(city, terrain, 'server', { x: 47, y: 45 }, 0))).toContain('funds');
   });
 
   it('入口が道路の反対を向いていれば、回すように案内する', () => {

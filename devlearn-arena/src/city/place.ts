@@ -210,16 +210,16 @@ export function nextId(prefix: string, ids: Iterable<string>): string {
 }
 
 /**
- * 判定に通った道路を置く。Phase 2 では資金は固定値で減らない（docs/development-plan.md）。
+ * 判定に通った道路を置く。費用は開発資金から引く（docs/game-design.md 2 章）。
  */
 export function placeRoad(city: City, check: RoadCheck): City {
   if (!check.ok) return city;
   const roads = [...city.roads];
   for (const r of check.roads) roads.push({ ...r, id: nextId('r', roads.map((x) => x.id)) });
-  return { ...city, roads };
+  return { ...city, roads, funds: city.funds - check.cost };
 }
 
-/** 判定に通った区画を塗る。別の種類の区画だったマスは塗り替え、その建物は取り壊す */
+/** 判定に通った区画を塗り、費用を開発資金から引く。別の種類の区画だったマスは塗り替え、その建物は取り壊す */
 export function placeZone(city: City, kind: ZoneKind, check: ZoneCheck): City {
   if (!check.ok) return city;
   const painted = new Set(check.paint.map((c) => cellKey(c.x, c.y)));
@@ -231,10 +231,10 @@ export function placeZone(city: City, kind: ZoneKind, check: ZoneCheck): City {
   const id = nextId('z', city.zones.map((z) => z.id));
   zones.push({ id, kind, cells: check.paint.map((c) => ({ ...c })) });
   const buildings = city.buildings.filter((b) => !painted.has(cellKey(b.cell.x, b.cell.y)));
-  return { ...city, zones, buildings };
+  return { ...city, zones, buildings, funds: city.funds - check.cost };
 }
 
-/** 判定に通った施設・公園を置く。建設から始まる（基礎 → 骨組み → 完成） */
+/** 判定に通った施設・公園を置き、費用を開発資金から引く。建設から始まる（基礎 → 骨組み → 完成） */
 export function placeFacility(city: City, type: FacilityType, origin: Point, rotation: Facility['rotation'], check: PlanCheck): City {
   if (!check.ok) return city;
   const def = FACILITY_DEFS[type];
@@ -248,7 +248,7 @@ export function placeFacility(city: City, type: FacilityType, origin: Point, rot
     state: 'constructing',
     builtDay: city.day,
   };
-  return { ...city, facilities: [...city.facilities, facility] };
+  return { ...city, facilities: [...city.facilities, facility], funds: city.funds - check.cost };
 }
 
 /* ---------- 取り壊し ---------- */

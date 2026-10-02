@@ -127,7 +127,8 @@ describe('発展段階と霧', () => {
   });
 
   it('村から町へ: 施設 5 つと人口 500 で町になり、霧が晴れる', () => {
-    let city = base;
+    // 学習で開発資金を得た後の都市（施設 6 つと区画を買える）
+    let city: City = { ...base, funds: 10000 };
     // 道路の北側に住宅、南側にオフィスと施設
     city = zone(city, 'residential', { x: 37, y: 46 }, { x: 58, y: 46 });
     const roadsSouth: City = { ...city, roads: [...city.roads, { id: 'r2', kind: 'street', path: [{ x: 37.5, y: 52.5 }, { x: 58.5, y: 52.5 }] }, { id: 'r3', kind: 'street', path: [{ x: 47.5, y: 37.5 }, { x: 47.5, y: 58.5 }] }] };
