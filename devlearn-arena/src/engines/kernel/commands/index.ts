@@ -1,3 +1,4 @@
+import { dockerCommands } from '@/engines/docker/cli';
 import { CommandRegistry } from '../registry';
 import { editorCommands } from './editor';
 import { fsCommands } from './fs';
@@ -10,6 +11,7 @@ import { netLabCommands } from './netBuild';
 import { netToolCommands } from './netTools';
 import { permCommands } from './perm';
 import { procCommands } from './proc';
+import { systemctlCommands } from './systemctl';
 import { miscCommands } from './misc';
 import { textCommands } from './text';
 import { textToolCommands } from './textTools';
@@ -34,11 +36,13 @@ export function createDefaultRegistry(): CommandRegistry {
     ...textToolCommands,
     ...permCommands,
     ...procCommands,
+    ...systemctlCommands,
+    ...dockerCommands,
     ...miscCommands,
   ]);
 }
 
 export {
   editorCommands, fsCommands, ghCommands, gitCommands, kubeadmCommands, kubectlCommands, netCommands,
-  netLabCommands, netToolCommands, permCommands, procCommands, textCommands, textToolCommands, miscCommands,
+  netLabCommands, netToolCommands, permCommands, procCommands, systemctlCommands, textCommands, textToolCommands, miscCommands,
 };

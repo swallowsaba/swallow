@@ -14,7 +14,7 @@
     },
     {
       "id": "unit-not-found",
-      "match": "Unit [^ ]+\\.service not found",
+      "match": "Unit [^ ]+\\.service (not found|could not be found)",
       "meaning": "「その名前の{{term:service}}は登録されていない」と言われた。{{term:systemd}} が知らない名前を指定した。",
       "causes": [
         "サービスの名前の綴りが違う。",

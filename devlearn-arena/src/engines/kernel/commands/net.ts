@@ -1,3 +1,4 @@
+import { localCurl } from './httpLocal';
 import { packet } from '@/engines/net/factory';
 import { deliver } from '@/engines/net/stack';
 import { parseCidr } from '@/engines/net/subnet';
@@ -128,7 +129,8 @@ export const netCommands: CommandSpec[] = [
     summary: 'HTTP で取りに行く',
     handler: ({ argv, shell }) => {
       const net = shell.net;
-      if (net === null) return { stderr: NO_NET, code: 1 };
+      // ネットワークの構成が無い実戦では、手元のサービス・コンテナと、名前で引けるサイトに取りに行く
+      if (net === null) return localCurl(argv, shell);
       const { flags, operands } = parseArgs(argv);
       const url = operands[0];
       if (url === undefined) return { stderr: 'usage: curl [-v] <url>\n', code: 2 };

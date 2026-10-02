@@ -1,0 +1,192 @@
+/**
+ * コンテナの模型（docs/curriculum.md の ctr: コンテナの概念を先に教え、Docker はその具体的な技術として扱う）。純粋な関数。
+ *
+ * - イメージ: アプリと動くのに要る物を固めた、読み取り専用の型。レジストリ（置き場）から取ってくる（pull）
+ * - コンテナ: イメージから作った、動いている（または止まった）1 つの実体。同じイメージから何個でも作れる
+ * - ポートの公開: 手元のポートを、コンテナの中のポートにつなぐ（-p 8080:80）。同じ手元のポートは 2 つに使えない
+ * - ボリューム: コンテナを消しても残す場所を、手元の場所につなぐ（-v）
+ *
+ * ID は通し番号から決める（同じ操作からは同じ ID）。CLI（docker）は src/engines/docker がこの上に作る。
+ */
+
+export interface Image {
+  /** 名前:タグ（nginx:1.27） */
+  ref: string;
+  id: string;
+  size: string;
+  /** 動かした時に待ち受けるポートと、応える中身（Web サーバのイメージ） */
+  serves?: { port: number; body: string };
+  /** 動かすのに要る環境変数（無いと止まる） */
+  requiresEnv?: { name: string; error: string };
+  /** 動き出した時のログ */
+  startLog: readonly string[];
+  /** すぐに終わるイメージ（hello-world など） */
+  oneShot?: boolean;
+}
+
+export interface PortMap {
+  host: number;
+  container: number;
+}
+
+export interface Container {
+  id: string;
+  name: string;
+  image: string;
+  state: 'created' | 'running' | 'exited';
+  exitCode: number;
+  ports: readonly PortMap[];
+  volumes: readonly { host: string; container: string }[];
+  env: Readonly<Record<string, string>>;
+  log: readonly string[];
+}
+
+export interface ContainerHost {
+  /** 手元にあるイメージ */
+  images: readonly Image[];
+  containers: readonly Container[];
+  /** ID と名前を決める通し番号 */
+  seq: number;
+}
+
+/** 模擬のレジストリに置いてあるイメージ（docs/learning-design.md 6 章: 本物は取りに行かない） */
+export const REGISTRY: readonly Image[] = [
+  { ref: 'nginx:1.27', id: '3b25b682ea82', size: '192MB', serves: { port: 80, body: '<!DOCTYPE html>\n<html><head><title>Welcome to nginx!</title></head><body><h1>Welcome to nginx!</h1></body></html>' }, startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'] },
+  { ref: 'httpd:2.4', id: '9cfd0d8c7a1e', size: '148MB', serves: { port: 80, body: '<html><body><h1>It works!</h1></body></html>' }, startLog: ['AH00558: httpd: Could not reliably determine the server\'s fully qualified domain name', 'Apache/2.4 configured -- resuming normal operations'] },
+  { ref: 'redis:7', id: '7e49ed81b42b', size: '117MB', startLog: ['Redis version=7.2.5, bits=64', 'Ready to accept connections tcp'] },
+  { ref: 'postgres:16', id: 'b9390dd1ea18', size: '432MB', requiresEnv: { name: 'POSTGRES_PASSWORD', error: 'Error: Database is uninitialized and superuser password is not specified.' }, startLog: ['database system is ready to accept connections'] },
+  { ref: 'alpine:3.20', id: '91ef0af61f39', size: '7.8MB', oneShot: true, startLog: [] },
+  { ref: 'hello-world:latest', id: 'd2c94e258dcb', size: '13.3kB', oneShot: true, startLog: ['Hello from Docker!', 'This message shows that your installation appears to be working correctly.'] },
+];
+
+/** nginx と nginx:latest は、最新のタグとして同じ物を指す */
+export function normalizeRef(raw: string): string {
+  if (raw.includes(':')) return raw;
+  const latest = REGISTRY.filter((i) => i.ref.startsWith(`${raw}:`));
+  return latest.length > 0 ? (latest[latest.length - 1] as Image).ref : `${raw}:latest`;
+}
+
+export function createContainerHost(images: readonly string[] = []): ContainerHost {
+  return { images: images.map((r) => REGISTRY.find((i) => i.ref === normalizeRef(r))).filter((i): i is Image => i !== undefined), containers: [], seq: 0 };
+}
+
+export type ContainerError =
+  | { kind: 'image-not-found'; ref: string }
+  | { kind: 'name-in-use'; name: string; id: string }
+  | { kind: 'port-in-use'; port: number }
+  | { kind: 'no-such-container'; ref: string }
+  | { kind: 'container-running'; name: string }
+  | { kind: 'image-in-use'; ref: string; container: string };
+
+export type Result<T> = { ok: true; host: ContainerHost; value: T } | { ok: false; host: ContainerHost; error: ContainerError };
+
+const NAMES = ['brave_turing', 'calm_lovelace', 'eager_hopper', 'jolly_ritchie', 'quiet_knuth', 'witty_babbage'];
+
+function idOf(seq: number): string {
+  let h = 2166136261 ^ seq;
+  let out = '';
+  for (let i = 0; i < 6; i += 1) {
+    h = Math.imul(h ^ (h >>> 13), 16777619) >>> 0;
+    out += (h & 0xff).toString(16).padStart(2, '0');
+  }
+  return out;
+}
+
+export function pull(host: ContainerHost, raw: string): Result<Image> {
+  const ref = normalizeRef(raw);
+  const have = host.images.find((i) => i.ref === ref);
+  if (have) return { ok: true, host, value: have };
+  const image = REGISTRY.find((i) => i.ref === ref);
+  if (!image) return { ok: false, host, error: { kind: 'image-not-found', ref } };
+  return { ok: true, host: { ...host, images: [...host.images, image] }, value: image };
+}
+
+/** 名前か ID（先頭の数文字でよい）でコンテナを探す */
+export function findContainer(host: ContainerHost, ref: string): Container | undefined {
+  return host.containers.find((c) => c.name === ref) ?? (ref.length >= 3 ? host.containers.find((c) => c.id.startsWith(ref)) : undefined);
+}
+
+function replace(host: ContainerHost, c: Container): ContainerHost {
+  return { ...host, containers: host.containers.map((x) => (x.id === c.id ? c : x)) };
+}
+
+/** 動かす（イメージの決まりに合わなければ、すぐに止まる） */
+function boot(c: Container, image: Image): Container {
+  if (image.requiresEnv && !(image.requiresEnv.name in c.env)) return { ...c, state: 'exited', exitCode: 1, log: [...c.log, image.requiresEnv.error] };
+  if (image.oneShot) return { ...c, state: 'exited', exitCode: 0, log: [...c.log, ...image.startLog] };
+  return { ...c, state: 'running', exitCode: 0, log: [...c.log, ...image.startLog] };
+}
+
+export interface RunOptions {
+  image: string;
+  name?: string;
+  ports?: readonly PortMap[];
+  volumes?: readonly { host: string; container: string }[];
+  env?: Readonly<Record<string, string>>;
+}
+
+/** 手元のポートを、動いているコンテナが既に使っているか */
+export function portOwner(host: ContainerHost, port: number): Container | undefined {
+  return host.containers.find((c) => c.state === 'running' && c.ports.some((p) => p.host === port));
+}
+
+export function run(host0: ContainerHost, o: RunOptions): Result<Container> {
+  const pulled = pull(host0, o.image);
+  if (!pulled.ok) return pulled;
+  let host = pulled.host;
+  const name = o.name ?? `${NAMES[host.seq % NAMES.length] ?? 'box'}${host.seq >= NAMES.length ? String(host.seq) : ''}`;
+  const same = host.containers.find((c) => c.name === name);
+  if (same) return { ok: false, host, error: { kind: 'name-in-use', name, id: same.id } };
+  for (const p of o.ports ?? []) if (portOwner(host, p.host)) return { ok: false, host, error: { kind: 'port-in-use', port: p.host } };
+  const c: Container = {
+    id: idOf(host.seq + 1), name, image: pulled.value.ref, state: 'created', exitCode: 0,
+    ports: o.ports ?? [], volumes: o.volumes ?? [], env: o.env ?? {}, log: [],
+  };
+  host = { ...host, seq: host.seq + 1, containers: [...host.containers, c] };
+  const booted = boot(c, pulled.value);
+  return { ok: true, host: replace(host, booted), value: booted };
+}
+
+export function stop(host: ContainerHost, ref: string): Result<Container> {
+  const c = findContainer(host, ref);
+  if (!c) return { ok: false, host, error: { kind: 'no-such-container', ref } };
+  const next = c.state === 'running' ? { ...c, state: 'exited' as const, exitCode: 0 } : c;
+  return { ok: true, host: replace(host, next), value: next };
+}
+
+export function start(host: ContainerHost, ref: string): Result<Container> {
+  const c = findContainer(host, ref);
+  if (!c) return { ok: false, host, error: { kind: 'no-such-container', ref } };
+  if (c.state === 'running') return { ok: true, host, value: c };
+  for (const p of c.ports) if (portOwner(host, p.host)) return { ok: false, host, error: { kind: 'port-in-use', port: p.host } };
+  const image = host.images.find((i) => i.ref === c.image);
+  const next = image ? boot(c, image) : c;
+  return { ok: true, host: replace(host, next), value: next };
+}
+
+export function remove(host: ContainerHost, ref: string, force = false): Result<Container> {
+  const c = findContainer(host, ref);
+  if (!c) return { ok: false, host, error: { kind: 'no-such-container', ref } };
+  if (c.state === 'running' && !force) return { ok: false, host, error: { kind: 'container-running', name: c.name } };
+  return { ok: true, host: { ...host, containers: host.containers.filter((x) => x.id !== c.id) }, value: c };
+}
+
+export function removeImage(host: ContainerHost, raw: string): Result<Image> {
+  const ref = normalizeRef(raw);
+  const image = host.images.find((i) => i.ref === ref || i.id.startsWith(raw));
+  if (!image) return { ok: false, host, error: { kind: 'image-not-found', ref } };
+  const user = host.containers.find((c) => c.image === image.ref);
+  if (user) return { ok: false, host, error: { kind: 'image-in-use', ref: image.ref, container: user.id.slice(0, 12) } };
+  return { ok: true, host: { ...host, images: host.images.filter((i) => i !== image) }, value: image };
+}
+
+/** 手元のポートで応えるコンテナ（src/engines/http が使う） */
+export function servedAt(host: ContainerHost | null, port: number): { container: Container; body: string } | null {
+  if (!host) return null;
+  const c = portOwner(host, port);
+  if (!c) return null;
+  const image = host.images.find((i) => i.ref === c.image);
+  const map = c.ports.find((p) => p.host === port);
+  if (!image?.serves || map?.container !== image.serves.port) return null;
+  return { container: c, body: image.serves.body };
+}

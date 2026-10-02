@@ -4,6 +4,10 @@ import type { Repo } from '@/engines/github/types';
 import type { Topology } from '@/engines/net/types';
 import type { MutableClock } from './clock';
 import type { ProcessTable } from './process';
+import type { ServiceTable } from './services';
+import type { ContainerHost } from '@/engines/container/container';
+import type { Site } from '@/engines/http/http';
+import type { Cert } from '@/engines/tls/tls';
 import type { VfsState } from './vfs';
 
 export interface ShellState {
@@ -18,10 +22,25 @@ export interface ShellState {
   net: Topology | null;
   /** GitHub のリポジトリ。用意されていなければ null */
   repo: Repo | null;
+  /** systemd が管理するサービス。用意されていなければ null（systemctl が使えない） */
+  services: ServiceTable | null;
+  /** コンテナの動く手元（docker が使う）。用意されていなければ null */
+  containers: ContainerHost | null;
+  /** 名前で引ける Web のサイトと、手元が信頼するルート証明書・今日の日付（curl が使う）。用意されていなければ null */
+  web: WebWorld | null;
   cwd: string;
   vars: ReadonlyMap<string, string>;
   lastExit: number;
   history: readonly string[];
+}
+
+export interface WebWorld {
+  sites: readonly Site[];
+  roots: readonly Cert[];
+  /** 証明書の期限を見る日（YYYY-MM-DD） */
+  today: string;
+  /** 自分（この機械）の名前。localhost と同じく手元を指す */
+  hostname: string;
 }
 
 export interface RunLineResult {

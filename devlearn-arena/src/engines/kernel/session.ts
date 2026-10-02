@@ -12,6 +12,9 @@ import type { Topology } from '@/engines/net/types';
 import type { FileMeta } from './perm';
 import { createProcessTable, type ProcSeed, type Process, type ProcessTable } from './process';
 import { createVfs, type VfsNode, type VfsState } from './vfs';
+import type { Service, ServiceTable } from './services';
+import type { ContainerHost } from '@/engines/container/container';
+import type { WebWorld } from './registry';
 
 export interface SessionOptions {
   /** 保存から復元する場合の初期状態 */
@@ -22,6 +25,12 @@ export interface SessionOptions {
   net?: Topology;
   /** GitHub の任務で使う初期リポジトリ */
   repo?: Repo;
+  /** systemd が管理するサービス（linux の実戦） */
+  services?: ServiceTable;
+  /** コンテナの動く手元（コンテナ・Docker の実戦） */
+  containers?: ContainerHost;
+  /** Web のサイトと信頼するルート（HTTP・TLS の実戦） */
+  web?: WebWorld;
   files?: Readonly<Record<string, string | null>>;
   cwd?: string;
   vars?: Readonly<Record<string, string>>;
@@ -74,6 +83,9 @@ export function createShellState(options: SessionOptions = {}): ShellState {
     cluster: options.cluster ?? null,
     net: options.net ?? null,
     repo: options.repo ?? null,
+    services: options.services ?? null,
+    containers: options.containers ?? null,
+    web: options.web ?? null,
     cwd,
     vars,
     lastExit: 0,
@@ -91,6 +103,10 @@ export interface ShellSnapshotData {
   cluster: ClusterSnapshot | null;
   net: TopologySnapshot | null;
   repo: RepoSnapshot | null;
+  /** 古い保存には無い */
+  services?: { services: Service[]; tick: number } | null;
+  containers?: ContainerHost | null;
+  web?: WebWorld | null;
 }
 
 /** 保存できる素のデータに落とす */
@@ -118,6 +134,9 @@ export function snapshotShell(state: ShellState): ShellSnapshotData {
     cluster: state.cluster === null ? null : snapshotCluster(state.cluster),
     net: state.net === null ? null : snapshotTopology(state.net),
     repo: state.repo === null ? null : snapshotRepo(state.repo),
+    services: state.services === null ? null : { services: [...state.services.services.values()], tick: state.services.tick },
+    containers: state.containers,
+    web: state.web,
   };
 }
 
@@ -146,6 +165,9 @@ export function restoreShell(snapshot: ShellSnapshotData): ShellState {
     cluster: snapshot.cluster === null ? null : restoreCluster(snapshot.cluster),
     net: snapshot.net === null ? null : restoreTopology(snapshot.net),
     repo: snapshot.repo === null ? null : restoreRepo(snapshot.repo),
+    services: snapshot.services ? { services: new Map(snapshot.services.services.map((s) => [s.name, s])), tick: snapshot.services.tick } : null,
+    containers: snapshot.containers ?? null,
+    web: snapshot.web ?? null,
     cwd: snapshot.cwd,
     vars: new Map(Object.entries(snapshot.vars)),
     lastExit: 0,
