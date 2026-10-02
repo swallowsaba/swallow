@@ -2,16 +2,17 @@ import { useCallback, useEffect, useMemo } from 'react';
 import type { LearningRecord } from './game/records';
 import { go, mark, parseHash, useRoute, type Route } from './router';
 import { CityScreen } from './screens/city/CityScreen';
-import { nowIso } from './screens/clock';
 import { GlossaryScreen } from './screens/glossary/GlossaryScreen';
 import { GrowthScreen } from './screens/growth/GrowthScreen';
 import { LearnScreen } from './screens/learn/LearnScreen';
+import { LessonScreen } from './screens/lesson/LessonScreen';
 import { createSession, type Session } from './screens/session';
 import type { EntryId } from './ui/TopBar';
 
 /**
  * 画面の切り替え（docs/ui-design.md 2 章）。起動直後は都市画面。
  * 都市画面は常に下にあり、学習ライブラリ・知識グラフ・用語集・成長画面は都市の上に重ねる窓として開く（閉じると都市に戻る）。
+ * レッスン画面は、都市の施設の中に入る別の画面として全面に開く（docs/decisions.md D-07）。
  */
 
 const ENTRY_ROUTES: Partial<Record<EntryId, Route>> = {
@@ -41,11 +42,8 @@ export function App({ session: given }: { session?: Session } = {}) {
   }, [session]);
 
   const toCity = useCallback((): void => go({ name: 'city' }), []);
-  /** レッスンを始める。どのレッスンも、前提に関係なく始められる（レッスンの画面は Phase 6） */
-  const startLesson = useCallback((id: string): void => {
-    session.progress.getState().start(id, nowIso());
-    go({ name: 'learn', view: 'list', lessonId: id });
-  }, [session]);
+  /** レッスンを始める（レッスン画面へ）。どのレッスンも、前提に関係なく始められる */
+  const startLesson = useCallback((id: string): void => go({ name: 'lesson', lessonId: id }), []);
 
   return (
     <>
@@ -75,6 +73,15 @@ export function App({ session: given }: { session?: Session } = {}) {
           }}
           onSelect={(id) => mark(id ? { ...route, lessonId: id } : { name: 'learn', view: route.view })}
           onStart={startLesson}
+        />
+      ) : null}
+      {route.name === 'lesson' ? (
+        <LessonScreen
+          session={session}
+          lessonId={route.lessonId}
+          onExit={toCity}
+          onLesson={(id) => go({ name: 'learn', view: 'list', lessonId: id })}
+          onGlossary={(id) => go({ name: 'glossary', termId: id })}
         />
       ) : null}
       {route.name === 'glossary' ? (

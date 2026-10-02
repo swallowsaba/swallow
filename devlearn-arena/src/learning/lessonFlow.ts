@@ -184,6 +184,14 @@ export interface QuizJudge {
   misplaced: string[];
 }
 
+/**
+ * 選択肢を出す順（seed から決める）。データでは正答を先に書くことが多いので、そのまま出すと位置で当たってしまう。
+ * 同じ問題はいつも同じ順で出る
+ */
+export function choiceOrder(choices: readonly Choice[], seed: string): Choice[] {
+  return shuffled(choices, seed);
+}
+
 /** 複数を選ぶ問題か（正答が 2 つ以上・または複数選択の形） */
 export const isMulti = (q: QuizItem): boolean => q.kind === 'multi' || (q.choices ?? []).filter((c) => c.correct).length > 1;
 

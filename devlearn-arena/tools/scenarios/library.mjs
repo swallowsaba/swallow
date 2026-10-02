@@ -3,7 +3,7 @@
 //   SHOOT_SCRIPT=tools/scenarios/library.mjs npm run shoot -- p5-end
 //   SHOOT_SIZE=1280x720 SHOOT_SCRIPT=tools/scenarios/library.mjs npm run shoot -- p5-end-1280
 //
-// L で学習ライブラリ → 検索 → 入口の札（推奨前提の案内）→ 先に前提を見る → このまま始める → G で知識グラフ →
+// L で学習ライブラリ → 検索 → 入口の札（推奨前提の案内）→ 先に前提を見る → このまま始める（レッスン画面）→ 戻る → G で知識グラフ →
 // 学んだ後の知識グラフ → 施設の情報パネルから学ぶ・学習ライブラリで全部見る → 用語集 → 直リンク。
 import { learn, mockRecords } from './learning.mjs';
 import { buildTown } from './town.mjs';
@@ -45,8 +45,13 @@ export default async function library(page, shot) {
   await page.click('.entry-links >> text=サービスと systemd');
   await page.waitForTimeout(200);
   await page.click('[data-testid="entry-start"]');
+  await page.waitForSelector('[data-testid="lesson-screen"]');
+  console.log('始めた後', await page.evaluate(() => window.location.hash));
+  // ブラウザの「戻る」で学習ライブラリへ（札は学習中）
+  await page.goBack();
+  await page.waitForSelector('[data-testid="entry-status"]');
   await page.waitForTimeout(300);
-  console.log('始めた後', await text(page, '[data-testid="entry-status"]'), await page.evaluate(() => window.location.hash));
+  console.log('戻った後', await text(page, '[data-testid="entry-status"]'), await page.evaluate(() => window.location.hash));
   await shot(`p5-started${tag}`);
 
   // G で知識グラフ（検索欄から焦点を外してから）
@@ -91,14 +96,14 @@ export default async function library(page, shot) {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(200);
   await page.click('[data-testid="info-lessons"] li:first-child button');
-  await page.waitForTimeout(300);
-  console.log('パネルから始めた', await page.evaluate(() => window.location.hash), await text(page, '[data-testid="entry-status"]'));
+  await page.waitForSelector('[data-testid="lesson-screen"]');
+  console.log('パネルから始めた', await page.evaluate(() => window.location.hash), await text(page, '.lesson-where'));
   await page.keyboard.press('Escape');
 
   // 用語集
   await page.click('.topbar-entry >> text=用語');
   await page.waitForSelector('[data-testid="glossary-screen"]');
-  await page.click('[data-term="path"]');
+  await page.click('.glossary-item[data-term="path"]');
   await page.waitForTimeout(200);
   console.log('用語', await text(page, '[data-testid="glossary-term"]'));
   await shot(`p5-glossary${tag}`);

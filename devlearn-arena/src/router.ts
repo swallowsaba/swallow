@@ -9,6 +9,7 @@ import { DOMAIN_IDS, type DomainId } from './content/schema';
  *   #/learn                   学習ライブラリ（#/learn?domain=k8s で分野を絞る）
  *   #/learn/<レッスン ID>      そのレッスン（入口の札を開く）
  *   #/graph                   知識グラフ（#/graph/<レッスン ID> で札を開く）
+ *   #/lesson/<レッスン ID>     レッスン画面（7 段の学習。施設の中に入る別の画面）
  *   #/glossary[/<用語 ID>]     用語集
  *   #/growth                  成長画面
  */
@@ -16,7 +17,8 @@ export type Route =
   | { name: 'city' }
   | { name: 'growth' }
   | { name: 'learn'; view: 'list' | 'graph'; lessonId?: string; domain?: DomainId }
-  | { name: 'glossary'; termId?: string };
+  | { name: 'glossary'; termId?: string }
+  | { name: 'lesson'; lessonId: string };
 
 const LESSON_ID = /^[a-z0-9]+\.[bia]\.\d+$/;
 
@@ -40,6 +42,11 @@ export function parseHash(hash: string): Route {
       const id = decodeURIComponent(arg);
       return /^[a-z0-9-]+$/.test(id) ? { name: 'glossary', termId: id } : { name: 'glossary' };
     }
+    case 'lesson': {
+      const id = decodeURIComponent(arg);
+      // ID の形でなければ学習ライブラリへ
+      return LESSON_ID.test(id) ? { name: 'lesson', lessonId: id } : { name: 'learn', view: 'list' };
+    }
     default:
       return { name: 'city' };
   }
@@ -54,6 +61,8 @@ export function hashOf(route: Route): string {
       return '#/growth';
     case 'glossary':
       return route.termId ? `#/glossary/${route.termId}` : '#/glossary';
+    case 'lesson':
+      return `#/lesson/${route.lessonId}`;
     case 'learn': {
       const base = route.view === 'graph' ? '#/graph' : '#/learn';
       const path = route.lessonId ? `${base}/${route.lessonId}` : base;

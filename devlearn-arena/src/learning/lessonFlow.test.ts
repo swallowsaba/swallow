@@ -4,7 +4,7 @@ import type { Lesson, QuizItem, UnderstandItem } from '@/content/schema';
 import { LESSONS } from '@/game/lessons';
 import { answerQuiz, emptyProgress, enterLesson, reachStage } from '@/game/progress';
 import {
-  explainPages, judgeQuiz, judgeUnderstand, openStages, resumeQuiz, resumeStage, shuffled, solvedQuiz, STAGE_NAMES, STAGES, triesOf,
+  choiceOrder, explainPages, judgeQuiz, judgeUnderstand, openStages, resumeQuiz, resumeStage, shuffled, solvedQuiz, STAGE_NAMES, STAGES, triesOf,
 } from './lessonFlow';
 
 const DAY1 = '2026-10-02T19:00:00+09:00';
@@ -134,6 +134,22 @@ describe('クイズの判定（docs/learning-design.md 5 章）', () => {
         for (const c of choices.filter((x) => !x.correct)) expect(judgeQuiz(q, { choiceIds: [c.id] }).correct, `${id} ${q.id} ${c.id}`).toBe(false);
       }
     }
+  });
+});
+
+describe('選択肢を出す順', () => {
+  it('見本の 2 本で、正答がいつも同じ位置に来ない。同じ問題はいつも同じ順', async () => {
+    const firsts: boolean[] = [];
+    for (const id of ['found.b.04', 'linux.i.01']) {
+      for (const q of (await lesson(id)).quiz) {
+        const shown = choiceOrder(q.choices ?? [], `${id}.${q.id}`);
+        expect(shown).toEqual(choiceOrder(q.choices ?? [], `${id}.${q.id}`));
+        expect([...shown].map((c) => c.id).sort()).toEqual((q.choices ?? []).map((c) => c.id).sort());
+        firsts.push(shown[0]?.correct === true);
+      }
+    }
+    expect(firsts.some((x) => x)).toBe(true);
+    expect(firsts.some((x) => !x)).toBe(true);
   });
 });
 

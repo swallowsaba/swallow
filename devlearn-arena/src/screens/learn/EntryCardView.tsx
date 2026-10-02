@@ -43,7 +43,7 @@ export function EntryCardView({ card, onStart, onPick }: {
       {card.status !== 'not-started' ? (
         <p className={`entry-status is-${card.status}`} data-testid="entry-status">
           <Icon name={card.status === 'completed' ? 'check' : 'start'} size={14} />
-          {card.status === 'completed' ? '修了した。もう一度学ぶこともできる' : '学習中。レッスンの画面（解説からの 7 段）は次の段階で開く'}
+          {card.status === 'completed' ? '修了した。もう一度学ぶこともできる' : '学習中。続きから学べる（進んだ段から始まる）'}
         </p>
       ) : null}
 
