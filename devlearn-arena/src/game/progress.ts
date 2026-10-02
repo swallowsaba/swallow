@@ -48,6 +48,12 @@ export function startLesson(progress: Progress, lessonId: string, at: string): P
   return withLesson(progress, { ...prev, status: 'in-progress', stage: 'explain', startedAt: at });
 }
 
+/** 画面からレッスンに入る。学習中なら進んだ段から続け、そうでなければ新しい回を始める（docs/learning-design.md 2 章） */
+export function enterLesson(progress: Progress, lessonId: string, at: string): Progress {
+  const cur = progress.lessons[lessonId];
+  return cur?.status === 'in-progress' && cur.startedAt ? progress : startLesson(progress, lessonId, at);
+}
+
 /** 今の回（始めていなければ、ここで始める） */
 function run(progress: Progress, lessonId: string, at: string): { progress: Progress; lesson: LessonProgress; startedAt: string } {
   const cur = progress.lessons[lessonId];

@@ -128,7 +128,7 @@ describe('成長画面（docs/ui-design.md 2 章: XP・スキル・学習履歴�
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     });
-    act(() => host.querySelector<HTMLButtonElement>('.growth-close')?.click());
+    act(() => host.querySelector<HTMLButtonElement>('.window-close')?.click());
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 });

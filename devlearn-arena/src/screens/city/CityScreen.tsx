@@ -13,6 +13,7 @@ import { CityNotice, DemolishConfirm, PlacementHint } from './CityOverlays';
 import { InfoPanel } from './InfoPanel';
 import { panelModel } from './infoPanelModel';
 import { OverlayToggle, type OverlayLegend } from './OverlayToggle';
+import type { DomainId } from '@/city/types';
 import type { CityStore } from './cityStore';
 import type { Session } from '../session';
 import { useSkills, type SkillMap } from '../skills';
@@ -23,11 +24,22 @@ import './CityScreen.css';
  * 都市画面（docs/ui-design.md 3 章）。全画面の都市ビューに、上の帯と建設メニューを小さく重ねる。
  * 学習者が道路を引き、区画を塗り、施設と公園を置く。区画の建物は自動で建ち、育つ（docs/decisions.md D-03）。
  */
-export function CityScreen({ session, active = true, onEntry }: { session: Session; active?: boolean; onEntry?: (id: EntryId) => void }) {
+export function CityScreen({ session, active = true, current, onEntry, onLesson, onLibrary }: {
+  session: Session;
+  active?: boolean;
+  /** 上の帯で、今開いている画面の入口を光らせる */
+  current?: EntryId | undefined;
+  onEntry?: (id: EntryId) => void;
+  /** 情報パネルの「ここで学ぶ」からレッスンを始める */
+  onLesson?: (id: string) => void;
+  /** 情報パネルから学習ライブラリを、施設の分野に絞って開く */
+  onLibrary?: (domain: DomainId | null) => void;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<CityRenderer | null>(null);
   const store: CityStore = session.city;
-  const xp = useStore(session.progress, (s) => s.progress.xp);
+  const progress = useStore(session.progress, (s) => s.progress);
+  const xp = progress.xp;
   const skills = useSkills(session.progress);
   const skillsRef = useRef<SkillMap>(skills);
   skillsRef.current = skills;
@@ -45,9 +57,23 @@ export function CityScreen({ session, active = true, onEntry }: { session: Sessi
   const panelKey = useStore(store, (s) => (s.selected ? panelKeyOf(s) : ''));
   const panel = useMemo(() => {
     const s = store.getState();
-    return s.selected ? panelModel(s.city, s.selected, skills) : null;
+    return s.selected ? panelModel(s.city, s.selected, skills, progress) : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panelKey, store, skills]);
+  }, [panelKey, store, skills, progress]);
+  // L で学習ライブラリ、G で知識グラフ（都市画面が前にある時だけ）
+  const onEntryRef = useRef(onEntry);
+  onEntryRef.current = onEntry;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (!activeRef.current || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+      const k = e.key.toLowerCase();
+      if (k === 'l') onEntryRef.current?.('learn');
+      else if (k === 'g') onEntryRef.current?.('graph');
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -135,14 +161,15 @@ export function CityScreen({ session, active = true, onEntry }: { session: Sessi
         rankName={RANK_NAMES[rankOf(xp)]}
         population={state.population}
         stageName={STAGE_NAMES[state.stage]}
-        disabled={['learn', 'mission', 'glossary', 'settings']}
+        disabled={['mission', 'settings']}
+        current={current}
         {...(onEntry ? { onEntry } : {})}
       />
       {/* 都市の上に別の画面が開いている間は、上の帯だけを残し、都市の操作の部品は隠す */}
       {active ? (
         <>
           <CityNotice text={state.notice?.text ?? null} paused={state.paused} shifted={panel !== null} />
-          <InfoPanel model={panel} onClose={() => state.select(null)} />
+          <InfoPanel model={panel} onClose={() => state.select(null)} {...(onLesson ? { onLesson } : {})} {...(onLibrary ? { onLibrary } : {})} />
           <OverlayToggle value={state.overlay} onChange={state.setOverlay} legend={state.menu === null && state.overlay ? legendOf(state.overlay, store) : null} />
           <BuildMenu state={state} />
           <PlacementHint hint={state.confirm ? null : state.hint} />

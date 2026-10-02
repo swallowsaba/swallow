@@ -168,20 +168,40 @@
   counter-reset: lesson;
 }
 .info-lessons li {
+  counter-increment: lesson;
+}
+/* レッスンの行。押すとそのレッスンを始める */
+.info-lesson {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 3px 0;
+  width: 100%;
+  padding: 3px 6px 3px 0;
+  border: none;
+  border-left: 2px solid var(--transparent);
+  background: var(--transparent);
+  color: var(--hud-text);
   font-size: var(--fs-14);
   line-height: 1.5;
-  counter-increment: lesson;
+  text-align: left;
+  cursor: pointer;
 }
-.info-lessons li::before {
+.info-lesson::before {
   content: counter(lesson);
   min-width: 14px;
+  padding-left: 4px;
   font-family: var(--font-number);
   font-weight: 700;
   color: var(--gold);
+}
+.info-lesson:hover,
+.info-lesson:focus-visible {
+  background: var(--hud-bg-strong);
+  border-left-color: var(--gold);
+  outline: none;
+}
+.info-lesson.is-completed .info-lesson-title {
+  color: var(--hud-text-sub);
 }
 .info-lesson-level {
   flex: none;
@@ -192,6 +212,26 @@
 }
 .info-lesson-title {
   flex: 1;
+}
+.info-lesson-done {
+  display: flex;
+  align-self: center;
+  color: var(--ok);
+}
+.info-lesson-doing {
+  flex: none;
+  font-size: var(--fs-12);
+  color: var(--info);
+}
+.info-lesson-go {
+  display: flex;
+  align-self: center;
+  color: var(--gold);
+  opacity: 0;
+}
+.info-lesson:hover .info-lesson-go,
+.info-lesson:focus-visible .info-lesson-go {
+  opacity: 1;
 }
 
 .info-action {
@@ -210,9 +250,11 @@
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
   cursor: pointer;
 }
-.info-action[aria-disabled='true'] {
-  opacity: 0.55;
-  cursor: default;
+.info-action:hover,
+.info-action:focus-visible {
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  outline: none;
 }
 
 .info-missions {

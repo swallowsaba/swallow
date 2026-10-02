@@ -72,6 +72,22 @@ describe('見た目の規則', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('同じ名前の部品の形（.名前 { … }）を、2 つの CSS で定義しない（別の画面の部品の見た目を壊さないため）', () => {
+    const owner = new Map<string, string>();
+    const offenders: string[] = [];
+    for (const f of CHECKED.filter((x) => x.endsWith('.css'))) {
+      const css = stripComments(readFileSync(f, 'utf8'));
+      // 1 つの名前だけの選択子（「.window {」や「.window, .x {」）。修飾（.a.is-b・.a:hover・.a b）は数えない
+      for (const m of css.matchAll(/(?:^|[},]\s*)\.([a-z][a-z0-9-]*)\s*(?=[{,])/gm)) {
+        const name = m[1] ?? '';
+        const prev = owner.get(name);
+        if (prev && prev !== f) offenders.push(`.${name}: ${show(prev)} と ${show(f)}`);
+        else owner.set(name, f);
+      }
+    }
+    expect([...new Set(offenders)]).toEqual([]);
+  });
+
   it('絵文字を使わない', () => {
     const EMOJI = /[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|\u{FE0F}|\u{200D}/u;
     const offenders = CHECKED.filter((f) => EMOJI.test(readFileSync(f, 'utf8'))).map(show);

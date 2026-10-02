@@ -1,0 +1,122 @@
+/* 都市の上に重ねる大きな計器の窓（docs/ui-design.md 2・6 章、docs/visual-design.md 1・4 章）。
+   後ろに都市が見え、閉じると都市に戻る */
+.window-backdrop {
+  position: absolute;
+  inset: 48px 0 0;
+  z-index: 20;
+  padding: 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: window-in 0.2s ease-out;
+}
+
+.window {
+  display: flex;
+  flex-direction: column;
+  width: max(80vw, min(1180px, calc(100vw - 64px)));
+  height: 100%;
+  min-height: 0;
+  background: var(--hud-bg-strong);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  box-shadow: var(--shadow-window);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+}
+
+@keyframes window-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .window-backdrop {
+    animation: none;
+  }
+}
+
+/* 見出しの帯 */
+.window-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 20px;
+  border-bottom: 1px solid var(--hud-line);
+}
+.window-head-icon {
+  display: flex;
+  color: var(--gold);
+}
+.window-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-28);
+  line-height: 1.2;
+}
+.window-sub {
+  flex: 1;
+  margin: 0;
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  color: var(--hud-text-sub);
+}
+.window-close {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 20px;
+  border: none;
+  font-weight: 700;
+  font-size: var(--fs-14);
+  line-height: 1.2;
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  cursor: pointer;
+}
+.window-close:active {
+  transform: translateY(2px);
+}
+
+/* 窓の中の、斜めに切った切り替え（一覧 ⇄ 知識グラフ など） */
+.window-switch {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--hud-line);
+  border-radius: 4px 12px 4px 12px;
+}
+.window-switch button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 14px;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  font-weight: 700;
+  font-size: var(--fs-13);
+  line-height: 1.2;
+  cursor: pointer;
+}
+.window-switch button:hover {
+  color: var(--hud-text);
+}
+.window-switch button[aria-pressed='true'] {
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+}
+.window-switch kbd {
+  font-family: var(--font-number);
+  font-size: var(--fs-12);
+  opacity: 0.8;
+}

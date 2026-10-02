@@ -1,4 +1,5 @@
 import { Icon } from '@/ui/icons/Icon';
+import type { DomainId } from '@/city/types';
 import type { PanelModel } from './infoPanelModel';
 import './InfoPanel.css';
 
@@ -8,9 +9,15 @@ import './InfoPanel.css';
  */
 
 const format = (n: number): string => n.toLocaleString('ja-JP');
-const LATER = '（この画面は後の段階で作る）';
 
-export function InfoPanel({ model, onClose }: { model: PanelModel | null; onClose: () => void }) {
+export function InfoPanel({ model, onClose, onLesson, onLibrary }: {
+  model: PanelModel | null;
+  onClose: () => void;
+  /** 「ここで学ぶ」のレッスンを始める（どのレッスンもここから始められる） */
+  onLesson?: (id: string) => void;
+  /** 学習ライブラリで、この施設の分野を全部見る */
+  onLibrary?: (domain: DomainId | null) => void;
+}) {
   if (!model) return null;
   // 分野が 2 つ以上で理由が同じ（どちらも記録が無い など）なら、理由は 1 度だけ書く
   const reasons = model.kind === 'facility' ? [...new Set(model.domains.map((d) => d.because))] : [];
@@ -78,12 +85,17 @@ export function InfoPanel({ model, onClose }: { model: PanelModel | null; onClos
             <ol className="info-lessons" data-testid="info-lessons">
               {model.lessons.map((l) => (
                 <li key={l.id}>
-                  <span className="info-lesson-level">{l.level}</span>
-                  <span className="info-lesson-title">{l.title}</span>
+                  <button type="button" className={`info-lesson is-${l.status}`} onClick={() => onLesson?.(l.id)} title={`「${l.title}」を始める`}>
+                    <span className="info-lesson-level">{l.level}</span>
+                    <span className="info-lesson-title">{l.title}</span>
+                    {l.status === 'completed' ? <span className="info-lesson-done" title="修了"><Icon name="check" size={14} /></span> : null}
+                    {l.status === 'in-progress' ? <span className="info-lesson-doing">学習中</span> : null}
+                    <span className="info-lesson-go"><Icon name="start" size={12} /></span>
+                  </button>
                 </li>
               ))}
             </ol>
-            <button type="button" className="info-action" aria-disabled="true" title={`学習ライブラリ${LATER}`}>
+            <button type="button" className="info-action" data-testid="info-library" onClick={() => onLibrary?.(model.libraryDomain)}>
               <Icon name="learn" size={16} />
               学習ライブラリで全部見る
             </button>

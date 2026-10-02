@@ -1,0 +1,22 @@
+/* 本文の用語（下線）とコマンド */
+.rich-term {
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--gold);
+  background: var(--transparent);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.rich-term:hover,
+.rich-term:focus-visible {
+  color: var(--gold-light);
+  outline: none;
+}
+.rich-code {
+  padding: 0 4px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-line);
+}

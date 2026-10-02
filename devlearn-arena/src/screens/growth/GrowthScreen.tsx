@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useStore } from 'zustand';
 import { DOMAINS } from '@/city/facilityInfo';
 import { stageProgress } from '@/city/overlay';
@@ -6,7 +6,7 @@ import type { DomainId } from '@/city/types';
 import { nextRankOf, RANK_NAMES, RANKS, rankOf } from '@/game/rank';
 import { SKILL_STAGE_NAMES, SKILL_WEIGHTS, type SkillDetail } from '@/game/skill';
 import { STAGE_NAMES, STAGE_UNLOCKS } from '@/game/stage';
-import { Icon } from '@/ui/icons/Icon';
+import { HudWindow } from '@/ui/Window';
 import type { Session } from '../session';
 import { skillBecause, skillTitle, useSkills } from '../skills';
 import { historyOf } from './historyModel';
@@ -29,20 +29,6 @@ export function GrowthScreen({ session, onClose }: { session: Session; onClose: 
   const history = useMemo(() => historyOf(progress), [progress]);
   // 既定で選ぶ分野: 値の一番高い分野（記録が無ければ推奨学習順の最初）
   const [picked, setPicked] = useState<DomainId>(() => [...DOMAINS].sort((a, b) => skills[b.id].value - skills[a.id].value)[0]?.id ?? 'found');
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
   const xp = progress.xp;
   const rank = rankOf(xp);
   const next = nextRankOf(xp);
@@ -51,20 +37,7 @@ export function GrowthScreen({ session, onClose }: { session: Session; onClose: 
   const domain = DOMAINS.find((d) => d.id === picked);
 
   return (
-    <div className="growth-backdrop" data-testid="growth-screen">
-      <section className="growth" role="dialog" aria-modal="true" aria-labelledby="growth-title">
-        <header className="growth-head">
-          <span className="growth-head-icon"><Icon name="xp" size={22} /></span>
-          <h1 id="growth-title" className="growth-title">成長</h1>
-          <p className="growth-sub">エンジニアとしての成長と、それが都市にどう表れているか</p>
-          <button ref={closeRef} type="button" className="growth-close" onClick={onClose} title="都市へ戻る（Esc）">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-              <path d="M6 6l12 12M18 6 6 18" />
-            </svg>
-            <span>都市へ戻る</span>
-          </button>
-        </header>
-
+    <HudWindow testId="growth-screen" icon="xp" title="成長" sub="エンジニアとしての成長と、それが都市にどう表れているか" onClose={onClose} className="growth">
         <div className="growth-body">
           {/* 左: エンジニア段階と都市の発展 */}
           <aside className="growth-col growth-rank" aria-label="エンジニア段階">
@@ -189,8 +162,7 @@ export function GrowthScreen({ session, onClose }: { session: Session; onClose: 
             )}
           </section>
         </div>
-      </section>
-    </div>
+    </HudWindow>
   );
 }
 

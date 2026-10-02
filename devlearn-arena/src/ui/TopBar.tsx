@@ -16,11 +16,13 @@ export interface TopBarProps {
   /** 入口のうち、まだ画面が無い物 */
   disabled?: readonly EntryId[];
   onEntry?: (id: EntryId) => void;
+  /** 今開いている画面（docs/ui-design.md 2.1: 今どの画面かを上の帯に常に表示する） */
+  current?: EntryId | undefined;
 }
 
-export type EntryId = 'learn' | 'mission' | 'glossary' | 'settings' | 'growth';
+export type EntryId = 'learn' | 'graph' | 'mission' | 'glossary' | 'settings' | 'growth';
 
-const ENTRIES: { id: Exclude<EntryId, 'growth'>; label: string; icon: IconName; key?: string }[] = [
+const ENTRIES: { id: Exclude<EntryId, 'growth' | 'graph'>; label: string; icon: IconName; key?: string }[] = [
   { id: 'learn', label: '学ぶ', icon: 'learn', key: 'L' },
   { id: 'mission', label: 'ミッション', icon: 'mission' },
   { id: 'glossary', label: '用語', icon: 'glossary' },
@@ -56,7 +58,7 @@ export function TopBar(props: TopBarProps) {
         <Stat icon="funds" label="開発資金" value={format(props.funds)} unit="資金" />
         <button
           type="button"
-          className="topbar-stat is-entry"
+          className={`topbar-stat is-entry${props.current === 'growth' ? ' is-current' : ''}`}
           data-testid="topbar-xp"
           title="成長画面を開く（XP・スキル・学習履歴）"
           onClick={() => props.onEntry?.('growth')}
@@ -78,7 +80,8 @@ export function TopBar(props: TopBarProps) {
           <button
             key={e.id}
             type="button"
-            className={`topbar-entry${e.id === 'learn' ? ' is-primary' : ''}`}
+            className={`topbar-entry${e.id === 'learn' ? ' is-primary' : ''}${props.current === e.id || (e.id === 'learn' && props.current === 'graph') ? ' is-current' : ''}`}
+            aria-current={props.current === e.id || (e.id === 'learn' && props.current === 'graph') ? 'page' : undefined}
             aria-disabled={disabled.has(e.id)}
             title={disabled.has(e.id) ? `${e.label}（この画面は後の段階で作る）` : e.key ? `${e.label}（${e.key}）` : e.label}
             onClick={() => {

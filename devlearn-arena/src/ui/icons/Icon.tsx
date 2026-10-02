@@ -4,7 +4,8 @@
  */
 export type IconName =
   | 'learn' | 'mission' | 'glossary' | 'settings' | 'funds' | 'xp' | 'people' | 'stage' | 'emblem'
-  | 'road' | 'zone' | 'facility' | 'park' | 'demolish' | 'rotate' | 'pause' | 'curve' | 'straight' | 'alert';
+  | 'road' | 'zone' | 'facility' | 'park' | 'demolish' | 'rotate' | 'pause' | 'curve' | 'straight' | 'alert'
+  | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -45,6 +46,18 @@ const PATHS: Record<IconName, string> = {
   straight: 'M6 20 18 4 M10 20 20 7',
   // 注意（三角と感嘆）
   alert: 'M12 3.5 21.5 20h-19Z M12 10v4.5 M12 17.2v.3',
+  // 点と辺（知識グラフ）
+  graph: 'M6 6.5a2.5 2.5 0 1 0 0 .01 M18 5a2 2 0 1 0 0 .01 M17 18a3 3 0 1 0 0 .01 M6.5 18.5a2 2 0 1 0 0 .01 M8.2 7.6l7.2 8.6 M8.4 6.2l7.6-1 M6.3 9v7.5 M8.5 18.3H14',
+  // 並んだ行（一覧）
+  list: 'M9 6h11 M9 12h11 M9 18h11 M4 6h.5 M4 12h.5 M4 18h.5',
+  // 虫眼鏡
+  search: 'M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13Z M15.5 15.5 20.5 20.5',
+  // 閉じる
+  close: 'M6 6l12 12 M18 6 6 18',
+  // 始める（右向きの三角）
+  start: 'M8 5.5v13l10.5-6.5Z',
+  // 修了の印
+  check: 'M4.5 12.5l4.5 4.5 10.5-10.5',
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

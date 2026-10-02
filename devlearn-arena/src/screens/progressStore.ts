@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { emptyProgress, type Outcome } from '@/game/progress';
+import { emptyProgress, enterLesson, type Outcome } from '@/game/progress';
 import { applyRecords, type LearningRecord } from '@/game/records';
 import { LESSONS } from '@/game/lessons';
 import type { Progress } from '@/game/types';
@@ -12,6 +12,8 @@ export interface ProgressState {
   progress: Progress;
   /** 学習の記録を与える。得た XP と同じ量の資金を onFunds に渡す */
   learn: (records: readonly LearningRecord[]) => Outcome;
+  /** レッスンを始める（学習中にする。学習中なら続きから）。どのレッスンも、前提に関係なく始められる */
+  start: (lessonId: string, at: string) => void;
 }
 
 export function createProgressStore(onFunds: (amount: number) => void, initial: Progress = emptyProgress()) {
@@ -23,6 +25,7 @@ export function createProgressStore(onFunds: (amount: number) => void, initial: 
       if (outcome.funds !== 0) onFunds(outcome.funds);
       return outcome;
     },
+    start: (lessonId, at) => set({ progress: enterLesson(get().progress, lessonId, at) }),
   }));
 }
 

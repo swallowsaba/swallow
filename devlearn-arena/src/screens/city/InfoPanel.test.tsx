@@ -163,3 +163,37 @@ describe('情報パネルの部品', () => {
     expect(host.querySelector('[data-testid="info-panel"]')).toBeNull();
   });
 });
+
+describe('情報パネルから学ぶ（docs/ui-design.md 5 章: どのレッスンもここから始められる）', () => {
+  it('「ここで学ぶ」のレッスンを押すとそのレッスンを始め、「学習ライブラリで全部見る」は施設の分野で絞って開く', () => {
+    const onLesson = vi.fn();
+    const onLibrary = vi.fn();
+    const model = facilityPanel('container');
+    const host = document.createElement('div');
+    document.body.append(host);
+    act(() => {
+      createRoot(host).render(<InfoPanel model={model} onClose={() => {}} onLesson={onLesson} onLibrary={onLibrary} />);
+    });
+    const buttons = [...host.querySelectorAll<HTMLButtonElement>('[data-testid="info-lessons"] button')];
+    expect(buttons).toHaveLength(model.lessons.length);
+    for (const [i, b] of buttons.entries()) {
+      act(() => b.click());
+      expect(onLesson).toHaveBeenLastCalledWith(model.lessons[i]?.id);
+    }
+    act(() => host.querySelector<HTMLButtonElement>('[data-testid="info-library"]')?.click());
+    expect(onLibrary).toHaveBeenCalledWith('ctr');
+  });
+
+  it('修了したレッスンは後ろへ回り、修了の印が付く（推奨順・未修了優先）', () => {
+    const f = city.facilities.find((x) => x.type === 'server');
+    const first = facilityPanel('server').lessons[0]?.id ?? '';
+    const { progress } = applyRecords(emptyProgress(), [{
+      kind: 'lesson', lessonId: first, at: '2026-10-02T19:00:00+09:00',
+      quiz: [1, 2, 3].map((n) => ({ quizId: `q${String(n)}`, correct: true })), practice: [{ success: true }], complete: true,
+    }], LESSONS);
+    const m = panelModel(city, { kind: 'facility', id: f?.id ?? '' }, undefined, progress);
+    if (m?.kind !== 'facility') throw new Error('施設の情報ではない');
+    expect(m.lessons.map((l) => l.id)).not.toContain(first);
+    expect(m.lessons.every((l) => l.status === 'not-started')).toBe(true);
+  });
+});

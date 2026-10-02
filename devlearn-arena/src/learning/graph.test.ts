@@ -3,7 +3,7 @@ import { DOMAIN_DEFS, ENTRIES } from '@/content/catalog';
 import { LESSONS } from '@/game/lessons';
 import { emptyProgress } from '@/game/progress';
 import { applyRecords } from '@/game/records';
-import { domainColumns, GRAPH_HEIGHT, GRAPH_WIDTH, knowledgeGraph, LESSON_GAP } from './graph';
+import { domainColumns, domainOuterRadius, GRAPH_HEIGHT, GRAPH_WIDTH, knowledgeGraph, labelBox, labelSides, LESSON_GAP, lessonRadius } from './graph';
 
 describe('知識グラフ（docs/ui-design.md 6 章）', () => {
   const g = knowledgeGraph(emptyProgress());
@@ -23,9 +23,10 @@ describe('知識グラフ（docs/ui-design.md 6 章）', () => {
     const col = domainColumns();
     expect(col.found).toBe(0);
     for (const d of DOMAIN_DEFS) for (const p of d.prerequisites) expect(col[p], `${p} → ${d.id}`).toBeLessThan(col[d.id]);
-    // 前提の無いトラブルシューティングと研究は、関連・次の分野の後ろ
-    expect(col.trouble).toBeGreaterThan(col.devops);
-    expect(col.lab).toBeGreaterThan(col.trouble);
+    // 前提の無いトラブルシューティングと研究（全分野を束ねる分野）は、右端の列にまとめる
+    const last = Math.max(...Object.values(col));
+    expect([col.trouble, col.lab]).toEqual([last, last]);
+    expect(Object.entries(col).filter(([, c]) => c === last).map(([d]) => d).sort()).toEqual(['lab', 'trouble']);
   });
 
   it('レッスンの点どうしは重ならない', () => {
@@ -35,6 +36,33 @@ describe('知識グラフ（docs/ui-design.md 6 章）', () => {
         const b = g.lessons[j];
         if (!a || !b) continue;
         expect(Math.hypot(a.x - b.x, a.y - b.y), `${a.id} と ${b.id}`).toBeGreaterThanOrEqual(LESSON_GAP - 0.01);
+      }
+    }
+  });
+
+  it('分野の名前は、ほかの名前ともレッスンの点とも重ならない（1920×1080 と 1280×720 の縮め方で）', () => {
+    // 窓の中のグラフの場所の大きさ: 1920×1080 で約 1150×900、1280×720 で約 850×570
+    for (const scale of [Math.min(1150 / GRAPH_WIDTH, 880 / GRAPH_HEIGHT), Math.min(850 / GRAPH_WIDTH, 570 / GRAPH_HEIGHT)]) {
+      const sides = labelSides(g, scale);
+      const boxes = g.domains.map((d) => ({ id: d.id, ...labelBox(d, scale, sides[d.id]) }));
+      const hit = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }): boolean =>
+        a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+      for (const [i, a] of boxes.entries()) {
+        for (const b of boxes.slice(i + 1)) expect(hit(a, b), `${a.id} と ${b.id}（${scale.toFixed(2)}）`).toBe(false);
+        for (const l of g.lessons) expect(hit(a, { x: l.x * scale - 4, y: l.y * scale - 4, w: 8, h: 8 }), `${a.id} と ${l.id}（${scale.toFixed(2)}）`).toBe(false);
+        expect(a.x, a.id).toBeGreaterThanOrEqual(0);
+        expect(a.x + a.w, a.id).toBeLessThanOrEqual(GRAPH_WIDTH * scale);
+      }
+    }
+  });
+
+  it('分野の点と修了の輪は、レッスンの点に重ならない（重なると、押したレッスンが分野に取られる）', () => {
+    for (const scale of [Math.min(1150 / GRAPH_WIDTH, 880 / GRAPH_HEIGHT), Math.min(850 / GRAPH_WIDTH, 570 / GRAPH_HEIGHT)]) {
+      const r = domainOuterRadius(scale) + lessonRadius(scale) + 1;
+      for (const d of g.domains) {
+        for (const l of g.lessons) {
+          expect(Math.hypot((l.x - d.x) * scale, (l.y - d.y) * scale), `${d.id} と ${l.id}（${scale.toFixed(2)}）`).toBeGreaterThanOrEqual(r);
+        }
       }
     }
   });

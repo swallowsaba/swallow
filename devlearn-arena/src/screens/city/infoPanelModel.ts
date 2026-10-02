@@ -6,14 +6,19 @@ import { buildingName } from '@/city/place';
 import type { Selection } from '@/city/render/CityRenderer';
 import { CAPACITY, constructionStage, PARK_RADIUS, ZONE_RULES } from '@/city/rules';
 import type { City, DomainId } from '@/city/types';
+import { LEVEL_NAMES } from '@/content/catalog';
+import { emptyProgress } from '@/game/progress';
 import { SKILL_STAGE_NAMES, skillStageOf, type SkillDetail } from '@/game/skill';
+import type { Progress } from '@/game/types';
+import { lessonsForDomains, type LessonStatus } from '@/learning/library';
 import { skillBecause } from '../skills';
 import { domain as domainColors } from '@/ui/tokens';
 import preview from '../../../content/preview.json';
 
 /**
  * 情報パネルに出す中身（docs/ui-design.md 5 章）。規則は src/city の関数が決め、ここは文に直すだけ。
- * 「ここで学ぶ」は、学習ライブラリができるまで content/preview.json の見本のレッスン名を出す。
+ * 「ここで学ぶ」は、施設の分野のレッスンを推奨学習順・未修了優先で 3 つ（src/learning/library.ts）。
+ * ミッションは、ミッションができるまで（Phase 9）content/preview.json の見本の名前を出す。
  */
 
 export type Tone = 'ok' | 'warn' | 'bad';
@@ -37,7 +42,9 @@ export interface FacilityPanelModel {
   levelNote: string;
   condition: { text: string; tone: Tone };
   domains: DomainRow[];
-  lessons: { id: string; title: string; level: string }[];
+  lessons: { id: string; title: string; level: string; status: LessonStatus }[];
+  /** 学習ライブラリで全部見る時に絞る分野 */
+  libraryDomain: DomainId | null;
   missions: string[];
   upgrade: { title: string; adds: string; cost: number; needs: string } | null;
   effect: string | null;
@@ -57,14 +64,12 @@ export interface BuildingPanelModel {
 
 export type PanelModel = FacilityPanelModel | BuildingPanelModel;
 
-const LEVEL_NAMES: Record<string, string> = { beginner: '初級', intermediate: '中級', advanced: '上級' };
-const lessons = preview.lessons as Record<DomainId, { id: string; title: string; level: string }[]>;
 const missions = preview.missions as { title: string; domains: DomainId[] }[];
 
 /** 分野ごとのスキル（src/game/skill.ts）。無い分野は 0 として扱う */
 export type Skills = Partial<Record<DomainId, SkillDetail>>;
 
-export function panelModel(city: City, sel: Selection, skills: Skills = {}): PanelModel | null {
+export function panelModel(city: City, sel: Selection, skills: Skills = {}, progress: Progress = emptyProgress()): PanelModel | null {
   if (sel.kind === 'facility') {
     const f = city.facilities.find((x) => x.id === sel.id);
     if (!f) return null;
@@ -78,7 +83,7 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}): Pan
     if (def.group !== 'facility') {
       return {
         kind: 'facility', id: f.id, name: def.name, typeLabel: '公園の類', level: f.level, levelNote: '', condition,
-        domains: [], lessons: [], missions: [], upgrade: null,
+        domains: [], lessons: [], libraryDomain: null, missions: [], upgrade: null,
         effect: `周り ${String(PARK_RADIUS)} マスの区画の育ちを良くする（今 ${String(parkReach(f, city))} 軒）`,
       };
     }
@@ -107,7 +112,8 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}): Pan
       levelNote: next ? `Lv${String(next.level)} へ: ${needs}` : '最高のレベル',
       condition,
       domains,
-      lessons: domains.flatMap((d) => lessons[d.id] ?? []).slice(0, 3).map((l) => ({ ...l, level: LEVEL_NAMES[l.level] ?? l.level })),
+      lessons: lessonsForDomains(domains.map((d) => d.id), progress).map((l) => ({ id: l.id, title: l.title, level: LEVEL_NAMES[l.level], status: l.status })),
+      libraryDomain: main?.id ?? null,
       missions: missions.filter((m) => m.domains.some((d) => own.has(d))).map((m) => m.title).slice(0, 3),
       upgrade: next ? { title: `Lv${String(next.level)}`, adds: next.level - 1 < looks.length ? `${adds}が加わる` : '建物が大きく・細かくなる', cost: next.cost, needs } : null,
       effect: null,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LESSONS } from './lessons';
-import { addDays, answerReview, completeLesson, emptyProgress, startLesson, XP_LOG_LIMIT } from './progress';
+import { addDays, answerReview, completeLesson, emptyProgress, enterLesson, startLesson, XP_LOG_LIMIT } from './progress';
 import { rankOf } from './rank';
 import { applyRecords, type LearningRecord } from './records';
 import { skillOf } from './skill';
@@ -189,5 +189,25 @@ describe('ミッション・資金・エンジニア段階', () => {
   it('同じ記録からは同じ結果になる', () => {
     const records = [perfectRun('linux.b.01', DAY1), perfectRun('net.b.01', DAY1_LATER), perfectRun('linux.b.01', DAY2)];
     expect(applyRecords(emptyProgress(), records, LESSONS)).toEqual(applyRecords(emptyProgress(), records, LESSONS));
+  });
+});
+
+describe('レッスンを始める（docs/learning-design.md 2 章: どの段でも中断でき、再開できる）', () => {
+  it('学習中のレッスンをもう一度始めると、進んだ段と始めた時刻を保ったまま続きから', () => {
+    const p = startLesson(emptyProgress(), 'linux.i.01', DAY1);
+    const mid = { ...p, lessons: { ...p.lessons, 'linux.i.01': { ...p.lessons['linux.i.01']!, stage: 'quiz' as const } } };
+    const again = enterLesson(mid, 'linux.i.01', DAY1_LATER);
+    expect(again.lessons['linux.i.01']?.stage).toBe('quiz');
+    expect(again.lessons['linux.i.01']?.startedAt).toBe(DAY1);
+  });
+
+  it('修了したレッスンは、解説から新しい回として始め直せる', () => {
+    const done = completeLesson(startLesson(emptyProgress(), 'linux.b.01', DAY1), 'linux.b.01', DAY1, catalog).progress;
+    const again = enterLesson(done, 'linux.b.01', DAY2);
+    expect(again.lessons['linux.b.01']).toMatchObject({ status: 'in-progress', stage: 'explain', startedAt: DAY2, completions: 1 });
+  });
+
+  it('始めていないレッスンは、解説から始まる', () => {
+    expect(enterLesson(emptyProgress(), 'net.b.01', DAY1).lessons['net.b.01']).toMatchObject({ status: 'in-progress', stage: 'explain', startedAt: DAY1 });
   });
 });
