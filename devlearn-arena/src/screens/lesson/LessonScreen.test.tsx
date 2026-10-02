@@ -350,3 +350,73 @@ describe('途中保存と再開（docs/learning-design.md 2 章）', () => {
     expect(quizXp(session)).toBe(5);
   });
 });
+
+describe('見本の 2 本を、解説からクイズまで通せる（docs/development-plan.md Phase 6 の完成条件）', () => {
+  /** 理解の 1 問を、データの答えで答える */
+  function answerUnderstand(host: HTMLElement, item: Lesson['understand'][number]): void {
+    const byText = (sel: string, text: string): HTMLElement => {
+      const el = [...host.querySelectorAll<HTMLElement>(sel)].find((b) => b.textContent?.includes(text));
+      if (!el) throw new Error(`${sel} に「${text}」が無い`);
+      return el;
+    };
+    const plain = (rich: string): string => rich.replace(/\{\{term:([a-z0-9-]+)\}\}/g, (_, id: string) => wordOf(id)).replace(/`/g, '');
+    switch (item.kind) {
+      case 'figure-pick':
+        for (const part of item.answer) {
+          act(() => {
+            $(host, `[data-testid="lesson-figure"] [data-part="${part}"]`).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+          });
+        }
+        break;
+      case 'yesno':
+        click(byText('.yesno-button', item.answer ? 'はい' : 'いいえ'));
+        break;
+      case 'relation':
+        click(byText('.choice-button', { contains: 'を含む', before: 'より先に起きる', cause: 'が原因で' }[item.answer]));
+        break;
+      case 'situation':
+        click($(host, `.choice-button[data-choice="${item.choices.find((c) => c.correct)?.id ?? ''}"]`));
+        break;
+      case 'order':
+        for (const x of item.items) click(byText('.order-item.is-pool', plain(x)));
+        click($(host, '.stage-check'));
+        break;
+      case 'match':
+        for (const [a, b] of item.pairs) {
+          click(byText('.match-col:first-child .match-item', plain(a)));
+          click(byText('.match-col:last-child .match-item', plain(b)));
+        }
+        click($(host, '.stage-check'));
+        break;
+    }
+  }
+
+  for (const id of ['found.b.04', 'linux.i.01']) {
+    it(`${id}: 解説 → 理解 → クイズ → 実戦の入口。クイズを全て初回で正解し、段ごとに記録が進む`, async () => {
+      const session = createSession(1);
+      const l = await lesson(id);
+      const { host } = await open(session, id);
+      throughExplain(host);
+      expect(stageOf(session, id)).toBe('understand');
+      for (const item of l.understand) {
+        answerUnderstand(host, item);
+        expect($(host, '[data-testid="feedback"]').textContent, `${id} ${item.kind}`).toContain('その通り');
+        next(host);
+      }
+      expect(stageOf(session, id)).toBe('quiz');
+      for (const q of l.quiz) {
+        if (q.kind === 'order') {
+          for (const x of q.order ?? []) click([...host.querySelectorAll<HTMLElement>('.order-item.is-pool')].find((b) => b.textContent === x) as HTMLElement);
+        } else {
+          for (const c of (q.choices ?? []).filter((x) => x.correct)) click($(host, `.choice-button[data-choice="${c.id}"]`));
+        }
+        click($(host, '[data-testid="quiz-submit"]'));
+        expect($(host, '[data-testid="feedback"]').textContent, `${id} ${q.id}`).toContain('正解 +5 XP');
+        next(host);
+      }
+      expect(stageOf(session, id)).toBe('practice');
+      expect(host.querySelector('[data-testid="stage-practice"]')).not.toBeNull();
+      expect(quizXp(session)).toBe(5 * l.quiz.length);
+    });
+  }
+});
