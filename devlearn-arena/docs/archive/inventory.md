@@ -27,15 +27,15 @@
 | `src/engines/net/` | **再利用** | 機器・経路・DNS・TCP の模擬。`net` の判定に使える | Phase 10 |
 | `src/engines/kernel/commands/`（`ls` `cd` `git` `kubectl` `gh` など） | **再利用** | 上の模擬を端末から操作するコマンド | Phase 7 |
 | `src/engines/lesson/`（任務・判定・手順・用語・図の ID） | **置き換え** | 判定を関数（`assert`）で書いており、**コンテンツをデータとして持つ**要件（`docs/content-spec.md` 1 章・`CheckSpec`）を満たさない。学びの流れが 5 段で、7 段（解説 → 理解 → クイズ → 実戦 → 結果 → まとめ → XP）と合わない。中身（手順・ヒント・誤りの診断）は書き起こしの参考にする | Phase 5〜7 で `content/` と `src/learning/` に置き換え、Phase 10 で削除 |
-| `src/engines/city/`（`civic.ts`） | **置き換え** | 以前の「状態を写した街」の模型。都市の作り（`docs/city-design.md`）と別物 | Phase 2 で削除 |
+| `src/engines/city/`（`civic.ts`） | **置き換え** | 以前の「状態を写した街」の模型。都市の作り（`docs/city-design.md`）と別物。Phase 2 の時点で、旧画面の `src/features/map/` だけが使っている | 旧画面（`src/features/map/`）と一緒に削除 |
 
 ## 2. 都市
 
 | 場所 | 判定 | 理由 | 扱う Phase |
 |---|---|---|---|
-| `src/legacy/city/`（旧 `src/city/`。SVG の 2D の街と、模擬環境の状態から街を作る模型） | **置き換え** | 街が「学習の状態の写像」で、道路・区画・施設を学習者が置く都市（`docs/decisions.md` D-03）ではない。React の部品が模型と同じ所にあり、層の境界を破る。新しい `src/city/` の場所を空けるため、Phase 0 で `src/legacy/city/` へ移した | Phase 2 で削除 |
-| `src/city3d/`（three.js の 3D の街） | **置き換え** | 3D エンジンを使う（`docs/decisions.md` D-01 で不採用） | Phase 2 で削除 |
-| `src/features/citymap/` `src/features/map/` | **置き換え** | 3D の街の枠と、全体図の島。都市画面（`docs/ui-design.md` 3 章）と別物 | Phase 1 で道すじから外し、Phase 2 で削除 |
+| `src/legacy/city/`（旧 `src/city/`。SVG の 2D の街と、模擬環境の状態から街を作る模型） | **置き換え** | 街が「学習の状態の写像」で、道路・区画・施設を学習者が置く都市（`docs/decisions.md` D-03）ではない。React の部品が模型と同じ所にあり、層の境界を破る。新しい `src/city/` の場所を空けるため、Phase 0 で `src/legacy/city/` へ移した | 新しい都市は Phase 2 で置き換えた。ただし旧作業画面 `src/features/park/`（Phase 6・7 で削除）が import しているため、それと一緒に削除する |
+| `src/city3d/`（three.js の 3D の街） | **置き換え** | 3D エンジンを使う（`docs/decisions.md` D-01 で不採用） | 同上（`src/features/park/` が import している）。道すじからは外れていて、画面には出ない |
+| `src/features/citymap/` `src/features/map/` | **置き換え** | 3D の街の枠と、全体図の島。都市画面（`docs/ui-design.md` 3 章）と別物 | Phase 1 で道すじから外した。`src/features/park/` が import しているため、それと一緒に削除 |
 
 ## 3. 画面と見た目の部品
 
@@ -79,7 +79,7 @@
 
 | 依存 | 判定 | 理由 | 削除の時期 |
 |---|---|---|---|
-| `three` `@react-three/fiber` `@react-three/drei` `@types/three` | **削除** | 3D エンジン（`docs/decisions.md` D-01 で不採用） | Phase 2（`src/city3d/` の削除と同時） |
+| `three` `@react-three/fiber` `@react-three/drei` `@types/three` | **削除** | 3D エンジン（`docs/decisions.md` D-01 で不採用） | `src/city3d/` の削除と同時（旧作業画面の削除の時。上の 2 章） |
 | `framer-motion` | **削除** | 表に無い。画面の切り替えの動き（0.3 秒以内）は CSS で足りる | 旧画面の削除と同時 |
 | `react-router-dom` | **削除** | 表に無い。ハッシュの道すじは自作の小さな仕組みで足りる | Phase 1 で使わなくし、旧画面の削除と同時に外す |
 | `tailwindcss` `postcss` `autoprefixer` | **削除** | 表に無い。見た目は tokens から引く | 旧画面の削除と同時 |

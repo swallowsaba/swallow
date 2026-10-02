@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { FACILITY_DEFS } from '../facilities';
+import { CAR_COLORS, carModel, PERSON_COLORS, personModel } from '../generate/agents';
 import { facilityModel, MODELED_FACILITIES } from '../generate/facilityModels';
 import { meshModel } from '../generate/mesh';
 import { drawingToSvg, svgView, viewForRotation } from '../generate/svg';
@@ -65,6 +66,35 @@ describe('施設の SVG', () => {
       const { view, mirrored } = viewForRotation(r);
       const side = front[view];
       expect(mirrored ? mirror[side] : side).toBe(expected[r]);
+    }
+  });
+});
+
+describe('車と人の SVG', () => {
+  const AGENTS = join(__dirname, 'agents');
+  const read = (name: string): string => readFileSync(join(AGENTS, name), 'utf8').replace(/\r\n/g, '\n');
+  const createdOf = (svg: string): string => /作成日 (\d{4}-\d{2}-\d{2})/.exec(svg)?.[1] ?? '';
+
+  it('車 5 色・人 4 種があり、模型から作り直した物と一致する（docs/visual-design.md 6.1）', () => {
+    const names = readdirSync(AGENTS).sort();
+    expect(names).toEqual(['car-1.svg', 'car-2.svg', 'car-3.svg', 'car-4.svg', 'car-5.svg', 'person-1.svg', 'person-2.svg', 'person-3.svg', 'person-4.svg']);
+    CAR_COLORS.forEach((_, i) => {
+      const svg = read(`car-${String(i + 1)}.svg`);
+      const model = carModel(i);
+      expect(svg).toBe(drawingToSvg(meshModel(model, 0), meshModel(model, 2), `車 ${String(i + 1)}`, createdOf(svg), 'src/city/generate/agents.ts'));
+    });
+    PERSON_COLORS.forEach((_, i) => {
+      const svg = read(`person-${String(i + 1)}.svg`);
+      const model = personModel(i);
+      expect(svg).toBe(drawingToSvg(meshModel(model, 0), meshModel(model, 2), `人 ${String(i + 1)}`, createdOf(svg), 'src/city/generate/agents.ts'));
+    });
+  });
+
+  it('外部の画像を埋め込まず、自作の注記を持つ', () => {
+    for (const name of readdirSync(AGENTS)) {
+      const svg = read(name);
+      expect(svg).not.toMatch(/<image|href=|base64/);
+      expect(svg).toMatch(/自作（本プロジェクト）。作成日 \d{4}-\d{2}-\d{2}/);
     }
   });
 });

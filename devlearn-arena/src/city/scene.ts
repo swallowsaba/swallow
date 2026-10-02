@@ -6,6 +6,7 @@ import type { Model } from './generate/mesh';
 import { broadleafTree, conifer, streetLamp } from './generate/shapes';
 import type { Rotation } from './projection';
 import { seedOf } from './random';
+import { resample } from './roadGeometry';
 import { constructionStage, type ConstructionStage } from './rules';
 import { distanceToPolyline, type Terrain } from './terrain';
 import type { City, FacilityType, ZoneKind } from './types';
@@ -93,6 +94,21 @@ export function buildScene(cityState: City, terrain: Terrain): SceneObject[] {
         });
       }
     }
+  }
+
+  // 大通りの中央分離帯の並木（docs/city-design.md 2 章）
+  for (const road of cityState.roads) {
+    if (road.kind !== 'avenue') continue;
+    const fine = resample(road.path, 1.2);
+    fine.forEach((p, i) => {
+      if (i === 0 || i === fine.length - 1) return;
+      if (cityState.roads.some((o) => o.id !== road.id && distanceToPolyline(p, o.path).dist < 1.6)) return;
+      const r = 0.16;
+      out.push({
+        id: `median-${road.id}-${String(i)}`, x: p.x - r, y: p.y - r, w: r * 2, d: r * 2, z: 0, height: 0.6, facing: 0,
+        source: { kind: 'model', key: `median:${String(i % 3)}`, model: () => ({ w: r * 2, d: r * 2, shadowHeight: 0.3, parts: [broadleafTree(r, r, 0.62, i % 3)] }) },
+      });
+    });
   }
 
   // 地形の木。道路・区画・施設のマスには生えない

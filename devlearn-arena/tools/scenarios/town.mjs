@@ -191,4 +191,14 @@ export async function motion(page, shot) {
   await page.evaluate(([x, y]) => window.__city.panBy(window.innerWidth / 2 - x, window.innerHeight / 2 - y), [p.sx, p.sy]);
   await page.waitForTimeout(400);
   await shot('p2-agents');
+
+  // 90 度回して、施設の入口と車の向きが道路に合うか
+  await page.evaluate(() => {
+    window.__city.zoomBy(-2);
+    window.__city.rotateBy(1);
+  });
+  const q = await at(page, 50, 48);
+  await page.evaluate(([x, y]) => window.__city.panBy(window.innerWidth / 2 - x, window.innerHeight / 2 - y), [q.sx, q.sy]);
+  await page.waitForTimeout(400);
+  await shot('p2-rot');
 }
