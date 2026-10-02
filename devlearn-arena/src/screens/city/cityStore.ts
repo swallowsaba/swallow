@@ -3,7 +3,7 @@ import { STAGE_NAMES } from '@/game/stage';
 import { advance } from '@/city/growth';
 import { newCity } from '@/city/newCity';
 import type { DemolishTarget, Reason } from '@/city/place';
-import type { BuildRoadKind } from '@/city/rules';
+import { SECONDS_PER_DAY, type BuildRoadKind } from '@/city/rules';
 import { generateTerrain, type Terrain } from '@/city/terrain';
 import type { City, Facility, FacilityType, ZoneKind } from '@/city/types';
 
@@ -12,8 +12,6 @@ import type { City, Facility, FacilityType, ZoneKind } from '@/city/types';
  * 規則は src/city の純粋な関数にあり、ここはそれを呼んで結果を持つだけ。
  */
 
-/** 都市の 1 日の長さ（秒）。Space で止められる */
-export const SECONDS_PER_DAY = 4;
 
 export type Tool =
   | { kind: 'none' }

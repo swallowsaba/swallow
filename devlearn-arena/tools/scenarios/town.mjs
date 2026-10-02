@@ -153,4 +153,42 @@ export default async function town(page, shot) {
   await page.waitForTimeout(200);
   await shot('p2-reason');
   await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await motion(page, shot);
+}
+
+// 動きの確認（docs/testing-strategy.md 6 章: 2 秒あけて 2 枚撮り、差があること）
+export async function motion(page, shot) {
+  await page.evaluate(() => {
+    const store = window.__cityStore.getState();
+    if (store.paused) store.togglePause();
+    window.__city.zoomBy(2);
+  });
+  const c = await at(page, 47, 47);
+  await page.evaluate(([x, y]) => window.__city.panBy(window.innerWidth / 2 - x, window.innerHeight / 2 - y), [c.sx, c.sy]);
+  await page.waitForTimeout(500);
+  await shot('p2-motion');
+  await page.waitForTimeout(2000);
+  await shot('p2-motion-2');
+
+  // fps（都市の時計が動いている間は毎フレーム描き直す）
+  for (const steps of [0, -2]) {
+    const fps = await page.evaluate(async (z) => {
+      const r = window.__city;
+      r.zoomBy(z);
+      await new Promise((res) => setTimeout(res, 500));
+      const start = r.stats.frames;
+      const t0 = performance.now();
+      await new Promise((res) => setTimeout(res, 3000));
+      return { fps: ((r.stats.frames - start) * 1000) / (performance.now() - t0), objects: r.stats.drawnObjects, agents: r.stats.agents };
+    }, steps);
+    console.log(`fps: ${fps.fps.toFixed(1)}（描いた物 ${String(fps.objects)}・車と人 ${String(fps.agents)}）`);
+  }
+
+  // 最大に寄って、車と人を見る
+  await page.evaluate(() => window.__city.zoomBy(10));
+  const p = await at(page, 47, 50);
+  await page.evaluate(([x, y]) => window.__city.panBy(window.innerWidth / 2 - x, window.innerHeight / 2 - y), [p.sx, p.sy]);
+  await page.waitForTimeout(400);
+  await shot('p2-agents');
 }

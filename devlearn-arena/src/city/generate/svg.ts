@@ -62,7 +62,7 @@ function body(ops: readonly DrawOp[], classOf: (fill: string) => string): string
     .join('');
 }
 
-export function drawingToSvg(front: Drawing, back: Drawing, title: string, created: string): string {
+export function drawingToSvg(front: Drawing, back: Drawing, title: string, created: string, source = 'src/city/generate/facilityModels.ts'): string {
   // 色を class にまとめる（よく使う色ほど短い名前）
   const counts = new Map<string, number>();
   for (const op of [...front.ops, ...back.ops]) counts.set(op.fill, (counts.get(op.fill) ?? 0) + 1);
@@ -74,7 +74,7 @@ export function drawingToSvg(front: Drawing, back: Drawing, title: string, creat
   const vf = viewBoxOf(front);
   const vb = viewBoxOf(back);
   return [
-    `<!-- ${title}。自作（本プロジェクト）。作成日 ${created}。tools/build-facility-svgs.mts が src/city/generate/facilityModels.ts から生成 -->`,
+    `<!-- ${title}。自作（本プロジェクト）。作成日 ${created}。tools/build-facility-svgs.mts が ${source} から生成 -->`,
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${String(vf.x)} ${String(vf.y)} ${String(vf.w)} ${String(vf.h)}" width="${String(vf.w)}" height="${String(vf.h)}">`,
     `<title>${title}</title>`,
     `<style>${style}</style>`,

@@ -32,6 +32,9 @@ export const ZONE_RULES: Record<ZoneKind, { name: string; costPerCell: number; m
  */
 export const INITIAL_FUNDS = 5000;
 
+/** 都市の 1 日の長さ（秒）。画面の時計と、車と人の動きが使う */
+export const SECONDS_PER_DAY = 4;
+
 /** 建設の 3 段階（基礎 → 骨組み → 完成）。1 段 = 1 日（docs/city-design.md 6 章） */
 export const BUILD_DAYS_PER_STAGE = 1;
 export type ConstructionStage = 'foundation' | 'frame' | 'done';

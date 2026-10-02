@@ -1,15 +1,16 @@
 import { city as cityColors, hud, mix, rgbaOf, state } from '@/ui/tokens';
 import { createCamera, pan, rotateCamera, screenToWorld, zoomAt, type Camera, type Viewport } from '../camera';
 import type { CellMark } from '../place';
-import { constructionStage } from '../rules';
-import { depthOrder, type DepthBox } from '../depth';
+import { constructionStage, SECONDS_PER_DAY } from '../rules';
+import { agentPose, agentsOf, roadNetwork, type Agent, type Network } from '../traffic';
+import { compareBoxes, depthOrder, type DepthBox } from '../depth';
 import { project, rotate, type Rotation } from '../projection';
 import { roadShapes, type RoadShape } from '../roadGeometry';
 import { buildScene, type SceneObject } from '../scene';
 import { MAP_SIZE, generateTerrain, type Terrain } from '../terrain';
 import type { City, Facility, FacilityType, Point, Road } from '../types';
 import { drawGround, prepareGround, toLayer, type GroundData, type LayerSpace } from './ground';
-import { allFacilitySvgs, facilitySvg, SpriteCache } from './sprites';
+import { agentSvg, allAgentSvgs, allFacilitySvgs, facilitySvg, SpriteCache } from './sprites';
 
 /**
  * 都市ビューの描画（Canvas 2D）。模型（src/city）を読んで描くだけで、書き換えない。
@@ -33,12 +34,13 @@ export interface RenderStats {
   fps: number;
   frames: number;
   drawnObjects: number;
+  agents: number;
 }
 
 export class CityRenderer {
   readonly size = MAP_SIZE;
   camera: Camera;
-  stats: RenderStats = { fps: 0, frames: 0, drawnObjects: 0 };
+  stats: RenderStats = { fps: 0, frames: 0, drawnObjects: 0, agents: 0 };
   /** 準備が終わり、最初の絵を描いたら true */
   ready = false;
 
@@ -53,7 +55,10 @@ export class CityRenderer {
   private preview: (Preview & { shapes: RoadShape[] }) | null = null;
   private sprites: SpriteCache;
   private chunks = new Map<string, HTMLCanvasElement>();
-  private order: { rotation: Rotation; list: number[] } | null = null;
+  private order: { rotation: Rotation; list: number[]; boxes: DepthBox[]; position: Int32Array; grid: Map<number, number[]> } | null = null;
+  private net: Network;
+  private agents: Agent[];
+  private agentsKey = '';
   private raf = 0;
   private dirty = true;
   private frameTimes: number[] = [];
@@ -70,10 +75,13 @@ export class CityRenderer {
     this.ground.zones = cityState.zones;
     this.objects = buildScene(cityState, this.terrain);
     this.signature = sceneSignature(cityState);
+    this.net = roadNetwork(cityState.roads);
+    this.agents = agentsOf(cityState, this.net);
+    this.agentsKey = agentsKeyOf(cityState);
     this.camera = createCamera({ x: 48.5, y: 48 }, 1.25, 0);
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
     this.sprites = new SpriteCache(this.dpr);
-    void this.sprites.preload(allFacilitySvgs()).then(() => {
+    void this.sprites.preload([...allFacilitySvgs(), ...allAgentSvgs()]).then(() => {
       this.ready = true;
       this.dirty = true;
     });
@@ -128,6 +136,12 @@ export class CityRenderer {
       groundChanged = true;
     }
     if (groundChanged) this.chunks.clear();
+    if (next.roads !== prev.roads) this.net = roadNetwork(next.roads);
+    const key = agentsKeyOf(next);
+    if (next.roads !== prev.roads || key !== this.agentsKey) {
+      this.agentsKey = key;
+      this.agents = agentsOf(next, this.net);
+    }
     const signature = sceneSignature(next);
     if (signature !== this.signature) {
       this.signature = signature;
@@ -210,9 +224,9 @@ export class CityRenderer {
     return c;
   }
 
-  private sortedObjects(): number[] {
+  private sortedObjects(): NonNullable<CityRenderer['order']> {
     const rotation = this.camera.rotation;
-    if (this.order?.rotation === rotation) return this.order.list;
+    if (this.order?.rotation === rotation) return this.order;
     const boxes: DepthBox[] = this.objects.map((o) => {
       const a = rotate({ x: o.x, y: o.y }, rotation, this.size);
       const b = rotate({ x: o.x + o.w, y: o.y + o.d }, rotation, this.size);
@@ -222,8 +236,74 @@ export class CityRenderer {
       };
     });
     const list = depthOrder(boxes);
-    this.order = { rotation, list };
-    return list;
+    // 描く順の位置と、見る向きのマスごとの物（車と人を、建物の間の正しい順に差し込むため）
+    const position = new Int32Array(boxes.length);
+    list.forEach((index, pos) => {
+      position[index] = pos;
+    });
+    const grid = new Map<number, number[]>();
+    boxes.forEach((b, index) => {
+      for (let x = Math.floor(b.min[0]); x < Math.ceil(b.max[0]); x += 1) {
+        for (let y = Math.floor(b.min[1]); y < Math.ceil(b.max[1]); y += 1) {
+          const k = y * 1024 + x;
+          const cell = grid.get(k);
+          if (cell) cell.push(index);
+          else grid.set(k, [index]);
+        }
+      }
+    });
+    this.order = { rotation, list, boxes, position, grid };
+    return this.order;
+  }
+
+  /**
+   * 車と人の、今の位置と描く順。建物より手前か奥かを近くの物と比べ、
+   * 奥にある物の後（一番遅いもの）に差し込む（docs/city-design.md 1 章の層: 建物と木 → 車と人）。
+   */
+  private placeAgents(order: NonNullable<CityRenderer['order']>): Map<number, { agent: Agent; x: number; y: number; facing: Rotation }[]> {
+    const out = new Map<number, { agent: Agent; x: number; y: number; facing: Rotation }[]>();
+    const seconds = this.cityState.day * SECONDS_PER_DAY;
+    const rotation = this.camera.rotation;
+    for (const agent of this.agents) {
+      const pose = agentPose(this.net, agent, seconds);
+      const r = agent.kind === 'car' ? 0.16 : 0.03;
+      const v = rotate({ x: pose.x, y: pose.y }, rotation, this.size);
+      const box: DepthBox = { min: [v.x - r, v.y - r, 0], max: [v.x + r, v.y + r, agent.kind === 'car' ? 0.12 : 0.15] };
+      let after = -1;
+      const cx = Math.floor(v.x);
+      const cy = Math.floor(v.y);
+      for (let dx = -4; dx <= 1; dx += 1) {
+        for (let dy = -4; dy <= 1; dy += 1) {
+          for (const index of order.grid.get((cy + dy) * 1024 + cx + dx) ?? []) {
+            const pos = order.position[index] as number;
+            if (pos <= after) continue;
+            if (compareBoxes(order.boxes[index] as DepthBox, box) < 0) after = pos;
+          }
+        }
+      }
+      // 地図の向きでの進む向き（0: +y、1: -x、2: -y、3: +x）
+      const facing: Rotation = Math.abs(pose.dx) > Math.abs(pose.dy) ? (pose.dx > 0 ? 3 : 1) : pose.dy > 0 ? 0 : 2;
+      const list = out.get(after);
+      const item = { agent, x: pose.x, y: pose.y, facing };
+      if (list) list.push(item);
+      else out.set(after, [item]);
+    }
+    return out;
+  }
+
+  private drawAgents(ctx: CanvasRenderingContext2D, o: { x: number; y: number }, items: { agent: Agent; x: number; y: number; facing: Rotation }[] | undefined): void {
+    if (!items) return;
+    const s = this.space();
+    for (const item of items) {
+      const name = `${item.agent.kind}-${String(item.agent.variant + 1)}`;
+      const svg = agentSvg(name);
+      if (!svg) continue;
+      const rot = ((item.facing + this.camera.rotation) % 4) as Rotation;
+      const sprite = this.sprites.facility(`agent:${name}`, svg, rot, this.camera.zoom);
+      if (!sprite) continue;
+      const [lx, ly] = toLayer(s, { x: item.x, y: item.y });
+      ctx.drawImage(sprite.canvas, Math.round(o.x + lx - sprite.ox), Math.round(o.y + ly - sprite.oy), sprite.w, sprite.h);
+    }
   }
 
   private draw(): void {
@@ -261,8 +341,13 @@ export class CityRenderer {
     }
     const s = this.space();
     let drawn = 0;
-    for (const index of this.sortedObjects()) {
+    const order = this.sortedObjects();
+    const agents = this.placeAgents(order);
+    this.drawAgents(ctx, o, agents.get(-1));
+    for (let pos = 0; pos < order.list.length; pos += 1) {
+      const index = order.list[pos] as number;
       const obj = this.objects[index] as SceneObject;
+      if (pos > 0) this.drawAgents(ctx, o, agents.get(pos - 1));
       const [lx, ly] = toLayer(s, { x: obj.x + obj.w / 2, y: obj.y + obj.d / 2 }, obj.z);
       const sx = o.x + lx;
       const sy = o.y + ly;
@@ -282,7 +367,9 @@ export class CityRenderer {
       ctx.drawImage(sprite.canvas, Math.round(sx - sprite.ox), Math.round(sy - sprite.oy), sprite.w, sprite.h);
       drawn += 1;
     }
+    this.drawAgents(ctx, o, agents.get(order.list.length - 1));
     this.stats.drawnObjects = drawn;
+    this.stats.agents = this.agents.length;
     this.drawFog(o);
     this.drawPreview(o);
     if (this.onReady) {
@@ -401,4 +488,9 @@ export function sceneSignature(c: City): string {
   for (const b of c.buildings) parts.push(`${b.id}:${String(b.level)}:${constructionStage(b.builtDay, c.day)}`);
   for (const f of c.facilities) parts.push(`${f.id}:${String(f.level)}:${f.state === 'active' ? 'done' : constructionStage(f.builtDay, c.day)}`);
   return parts.join('|');
+}
+
+/** 車と人の数が変わったかを見分ける印 */
+function agentsKeyOf(c: City): string {
+  return `${String(c.population)}:${String(c.facilities.filter((f) => f.state === 'active').length)}`;
 }

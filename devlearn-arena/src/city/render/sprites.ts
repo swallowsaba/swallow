@@ -45,6 +45,23 @@ export function facilitySvg(type: FacilityType, level: number): string | null {
   return null;
 }
 
+// 車と人の SVG（src/city/assets/agents/<car|person>-<N>.svg）
+const AGENT_FILES = import.meta.glob('../assets/agents/*.svg', { query: '?raw', import: 'default', eager: true });
+
+export function agentSvg(name: string): string | null {
+  const text = AGENT_FILES[`../assets/agents/${name}.svg`];
+  return typeof text === 'string' ? text : null;
+}
+
+export function allAgentSvgs(): { key: string; svg: string }[] {
+  const out: { key: string; svg: string }[] = [];
+  for (const [path, text] of Object.entries(AGENT_FILES)) {
+    const m = /agents\/([a-z]+-\d)\.svg$/.exec(path);
+    if (m && typeof text === 'string') out.push({ key: `agent:${m[1] as string}`, svg: text });
+  }
+  return out;
+}
+
 /** 全ての施設の SVG（読み込みの準備に使う） */
 export function allFacilitySvgs(): { key: string; svg: string }[] {
   const out: { key: string; svg: string }[] = [];
