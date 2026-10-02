@@ -1,10 +1,11 @@
+import { isEnvironmentId, resolveSetup } from '@/engines/environments';
+import { replayAnswers } from '@/learning/practice';
 import { parseRich, termsIn } from './rich';
 import type { CatalogEntry, Lesson, Term } from './schema';
 
 /**
  * コンテンツの検証（docs/content-spec.md 6 章）。純粋な関数で、見つけた問題を文で返す（無ければ空）。
  * 形（zod）を通った後の、中身の規則を確かめる。テスト（validate.test.ts）とビルド（scripts/validate-content.mts）が使う。
- * 「全実戦の最後のヒントを模擬環境で実行すると達成条件を満たす」は、実戦を模擬環境につなぐ Phase 7 で足す。
  */
 
 export interface ValidateContext {
@@ -120,6 +121,16 @@ export function validateLesson(l: Lesson, ctx: ValidateContext): string[] {
   // 実戦
   for (const s of l.practice.steps) for (const e of s.expectedErrors ?? []) if (!ctx.errors.has(e)) p.push(`実戦 ${s.id}: エラーの解説 ${e} が無い（content/errors）`);
   if (new Set(l.practice.steps.map((s) => s.id)).size !== l.practice.steps.length) p.push('実戦の手順の ID が重なる');
+  if (!isEnvironmentId(l.practice.environment)) p.push(`実戦: 模擬環境 ${l.practice.environment} が無い（src/engines/environments.ts）`);
+  else {
+    try {
+      resolveSetup(l.practice.environment, l.practice.setup);
+      // 全実戦の最後のヒントを模擬環境で実行すると、達成条件を満たす
+      p.push(...replayAnswers(l.practice));
+    } catch (e) {
+      p.push(`実戦: 初期状態（setup）の形が違う: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
 
   // 用語: 印は用語集にあり、レッスンの terms に載せる。用語集の語は初出で印を付ける。大文字の英字の語は用語集に載せる
   const rich = richInOrder(l);

@@ -101,6 +101,15 @@ describe('検証が誤りを見つける', () => {
     expect(problems((l) => (l.practice.steps[0] as { expectedErrors?: string[] }).expectedErrors = ['no-error']).join()).toContain('エラーの解説 no-error が無い');
   });
 
+  it('実戦: 無い模擬環境・形の違う初期状態・最後のヒントで通らない', () => {
+    expect(problems((l) => (l.practice.environment = 'no-env')).join()).toContain('模擬環境 no-env が無い');
+    expect(problems((l) => (l.practice.setup = { cwd: 'relative' })).join()).toContain('初期状態（setup）の形が違う');
+    expect(problems((l) => {
+      const s = l.practice.steps[0];
+      if (s) s.hints = [s.hints[0], s.hints[1], '`cd /srv` と打つ。'];
+    }).join()).toContain('最後のヒントを打っても達成条件を満たさない');
+  });
+
   it('図: tokens に無い色・小さな文字・要素が多すぎる', () => {
     const svg = '<svg viewBox="0 0 10 10"><title>t</title>' + '<g class="el"><text font-size="11" fill="#123456">x</text></g>'.repeat(8) + '</svg>';
     const p = validateFigure(svg, COLORS, FONT_SIZES).join();
