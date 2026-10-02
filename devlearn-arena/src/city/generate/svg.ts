@@ -85,6 +85,26 @@ export function drawingToSvg(front: Drawing, back: Drawing, title: string, creat
   ].join('\n');
 }
 
+/** 1 つの姿だけの SVG（施設の中の景色。tools/build-facility-svgs.mts が src/city/generate/interiors.ts から作る） */
+export function singleViewSvg(d: Drawing, title: string, created: string, source: string): string {
+  const counts = new Map<string, number>();
+  for (const op of d.ops) counts.set(op.fill, (counts.get(op.fill) ?? 0) + 1);
+  const names = new Map<string, string>();
+  [...counts.entries()].sort((a, b) => b[1] - a[1]).forEach(([c], i) => names.set(c, className(i)));
+  const classOf = (fill: string): string => names.get(fill) ?? 'a';
+  const style = [...names.entries()].map(([c, n]) => `.${n}{fill:${c}}`).join('');
+  const v = viewBoxOf(d);
+  return [
+    `<!-- ${title}。自作（本プロジェクト）。作成日 ${created}。tools/build-facility-svgs.mts が ${source} から生成 -->`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${String(v.x)} ${String(v.y)} ${String(v.w)} ${String(v.h)}" width="${String(v.w)}" height="${String(v.h)}">`,
+    `<title>${title}</title>`,
+    `<style>${style}</style>`,
+    `<g>${body(d.ops, classOf)}</g>`,
+    '</svg>',
+    '',
+  ].join('\n');
+}
+
 function className(i: number): string {
   const letters = 'abcdefghijklmnopqrstuvwxyz';
   return i < 26 ? (letters[i] as string) : `${letters[Math.floor(i / 26) - 1] as string}${letters[i % 26] as string}`;

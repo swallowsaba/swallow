@@ -1,14 +1,15 @@
 /**
- * 施設と、車・人の SVG を、模型（src/city/generate/facilityModels.ts・agents.ts）から作り直す。
+ * 施設と、車・人と、施設の中の景色の SVG を、模型（src/city/generate/facilityModels.ts・agents.ts・interiors.ts）から作り直す。
  *   npx vite-node tools/build-facility-svgs.mts
- * 作った SVG は src/city/assets/facilities/<施設>/lv<N>.svg に置く（docs/visual-design.md 6.1）。
+ * 作った SVG は src/city/assets/facilities/<施設>/lv<N>.svg と src/screens/lesson/backdrops/<施設>.svg に置く（docs/visual-design.md 6.1）。
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { FACILITY_DEFS } from '../src/city/facilities';
 import { CAR_COLORS, carModel, PERSON_COLORS, personModel } from '../src/city/generate/agents';
 import { facilityModel, MODELED_FACILITIES } from '../src/city/generate/facilityModels';
+import { INTERIOR_FACILITIES, interiorModel } from '../src/city/generate/interiors';
 import { meshModel } from '../src/city/generate/mesh';
-import { drawingToSvg } from '../src/city/generate/svg';
+import { drawingToSvg, singleViewSvg } from '../src/city/generate/svg';
 
 const created = process.env.SVG_CREATED ?? '2026-10-02';
 for (const type of MODELED_FACILITIES) {
@@ -38,3 +39,14 @@ PERSON_COLORS.forEach((_, i) => {
   const model = personModel(i);
   write(`person-${String(i + 1)}.svg`, drawingToSvg(meshModel(model, 0), meshModel(model, 2), `人 ${String(i + 1)}`, created, 'src/city/generate/agents.ts'));
 });
+
+// 施設の中の景色（レッスン画面の背景。15 枚。docs/visual-design.md 6.1）
+const backdrops = 'src/screens/lesson/backdrops';
+mkdirSync(backdrops, { recursive: true });
+for (const type of INTERIOR_FACILITIES) {
+  const model = interiorModel(type);
+  if (!model) continue;
+  const svg = singleViewSvg(meshModel(model, 0), `${FACILITY_DEFS[type].name}の中`, created, 'src/city/generate/interiors.ts');
+  writeFileSync(`${backdrops}/${type}.svg`, svg);
+  console.log(`${backdrops}/${type}.svg ${String(Math.round(svg.length / 102.4) / 10)}KB`);
+}
