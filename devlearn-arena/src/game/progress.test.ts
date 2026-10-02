@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LESSONS } from './lessons';
-import { addDays, answerReview, completeLesson, emptyProgress, enterLesson, reachStage, startLesson, XP_LOG_LIMIT } from './progress';
+import { addDays, answerReview, completeLesson, emptyProgress, enterLesson, finishPractice, reachStage, startLesson, XP_LOG_LIMIT } from './progress';
 import { rankOf } from './rank';
 import { applyRecords, type LearningRecord } from './records';
 import { skillOf } from './skill';
@@ -72,6 +72,19 @@ describe('学習の記録から XP を計算する（docs/game-design.md 3 章�
     }], catalog);
     expect(bySource(o, 'quiz')).toBe(2 + 0 + 5);
     expect(o.progress.lessons['linux.b.01']?.quiz.map((q) => q.tryNo)).toEqual([1, 2, 1, 2, 3, 4, 1, 2]);
+  });
+});
+
+describe('まとめまで到達した時のスキルの段階', () => {
+  it('修了と、その時にできる復習カード（定着度）で段階が上がると、上がった段の数だけ +50', () => {
+    const p0 = startLesson(emptyProgress(), 'linux.b.01', DAY1);
+    const practiced = finishPractice(p0, { lessonId: 'linux.b.01', attempt: { at: DAY1, stepsDone: ['s'], hintsUsed: 0, errors: [], recoveredFromError: false, dangerousUsed: [], success: true, commands: [] } }, DAY1, catalog);
+    const before = skillOf('linux', practiced.progress, catalog, '2026-10-02').stage;
+    const done = completeLesson(practiced.progress, 'linux.b.01', DAY1_LATER, catalog);
+    const after = skillOf('linux', done.progress, catalog, '2026-10-02').stage;
+    expect(after).toBeGreaterThan(before);
+    expect(done.skillUps).toEqual([{ domain: 'linux', from: before, to: after }]);
+    expect(sum(done.events.filter((e) => e.source === 'skill-up'))).toBe(50 * (after - before));
   });
 });
 

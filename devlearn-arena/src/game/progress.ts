@@ -133,7 +133,8 @@ export function completeLesson(progress: Progress, lessonId: string, at: string,
     const card: ReviewCard = { id: `review.${lessonId}`, lessonId, due: addDays(dayOf(at), REVIEW_INTERVALS[0]), intervalDays: REVIEW_INTERVALS[0], ease: 1 };
     p = { ...p, reviews: [...p.reviews, card] };
   }
-  return settle(p, lesson, [{ source: 'lesson-complete', amount }], r.startedAt, at, catalog);
+  // スキルの段階は、行動の前（復習カードを作る前）と比べる
+  return settle(p, lesson, [{ source: 'lesson-complete', amount }], r.startedAt, at, catalog, progress);
 }
 
 /**
@@ -169,7 +170,10 @@ function withLesson(progress: Progress, lesson: LessonProgress): Progress {
   return { ...progress, lessons: { ...progress.lessons, [lesson.lessonId]: lesson } };
 }
 
-/** レッスンの行動の XP に、1 日 1 回分の規則を掛けて記録する */
+/**
+ * レッスンの行動の XP に、1 日 1 回分の規則を掛けて記録する。
+ * origin は行動の前の記録（スキルの段階の上がりを比べる元）。省略すると before
+ */
 function settle(
   before: Progress,
   lesson: LessonProgress,
@@ -177,13 +181,14 @@ function settle(
   startedAt: string,
   at: string,
   catalog: readonly LessonMeta[],
+  origin: Progress = before,
 ): Outcome {
   const day = dayOf(at);
   const capped = cappedToday(before, lesson.lessonId, startedAt, day);
   const events: XpEvent[] = capped ? [] : gains.filter((g) => g.amount > 0).map((g) => ({ at, source: g.source, ref: lesson.lessonId, amount: g.amount }));
   const next = withLesson(before, events.length > 0 ? { ...lesson, lastXpDay: day } : lesson);
   const domain = lessonMeta(lesson.lessonId, catalog)?.domain;
-  return finish(before, next, events, domain ? [domain] : [], 0, at, catalog);
+  return finish(origin, next, events, domain ? [domain] : [], 0, at, catalog);
 }
 
 /** スキルの段階の上がりを見て +50 を足し、XP と記録をまとめる */
