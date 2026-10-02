@@ -1,0 +1,510 @@
+/* レッスン画面の後半の段（docs/ui-design.md 7 章・docs/visual-design.md 4 章）。
+   実戦（左に手順とヒント、右に仮想端末とエラーの小窓）・結果・まとめ・XP / スキル */
+
+/* ---------- 実戦: 手順とヒント ---------- */
+.practice-steps {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.practice-step {
+  display: flex;
+  gap: 14px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--transparent);
+  color: var(--hud-text-sub);
+}
+.practice-step.is-current {
+  border-left-color: var(--gold);
+  background: var(--hud-bg);
+  color: var(--hud-text);
+}
+.practice-step.is-done {
+  border-left-color: var(--ok);
+  color: var(--hud-text);
+}
+.practice-step-mark {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 4px;
+  border: 1px solid currentColor;
+  transform: rotate(45deg);
+  font-size: var(--fs-13);
+  font-weight: 700;
+}
+.practice-step-mark > * {
+  transform: rotate(-45deg);
+}
+.practice-step.is-current .practice-step-mark {
+  color: var(--gold);
+}
+.practice-step.is-done .practice-step-mark {
+  color: var(--ok);
+}
+.practice-step-body {
+  min-width: 0;
+}
+.practice-step-text {
+  margin: 0;
+  font-size: var(--fs-16);
+  line-height: 1.8;
+}
+.practice-afterward {
+  margin: 6px 0 0;
+  font-size: var(--fs-14);
+  line-height: 1.7;
+}
+.practice-afterward-label,
+.practice-hint-no {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 10px;
+  font-size: var(--fs-12);
+  font-weight: 700;
+  color: var(--navy);
+  background: var(--ok);
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+}
+.practice-hints {
+  margin: 4px 0 8px;
+}
+.practice-hint {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--gold);
+  background: var(--hud-bg);
+  font-size: var(--fs-14);
+  line-height: 1.7;
+}
+.practice-hint-no {
+  background: var(--gold);
+}
+.practice-hint-open {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 18px;
+  border: none;
+  background: var(--hud-bg);
+  color: var(--gold-light);
+  font-family: var(--font-body);
+  font-size: var(--fs-14);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--hud-line);
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  cursor: pointer;
+}
+.practice-hint-open:hover,
+.practice-hint-open:focus-visible {
+  outline: none;
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+}
+
+/* ---------- 実戦: 右の仮想端末 ---------- */
+.lesson-right.is-console {
+  align-self: stretch;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+  overflow: hidden;
+}
+.practice-console {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.practice-console-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px 8px 18px;
+  border-bottom: 1px solid var(--hud-line);
+  background: var(--hud-bg-strong);
+}
+.practice-console-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-13);
+  font-weight: 700;
+  color: var(--gold);
+}
+.practice-reset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 3px 10px;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  font-family: var(--font-body);
+  font-size: var(--fs-12);
+  box-shadow: inset 0 0 0 1px var(--hud-line);
+  cursor: pointer;
+}
+.practice-reset:hover,
+.practice-reset:focus-visible {
+  outline: none;
+  color: var(--gold-light);
+}
+.practice-term {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px 6px 6px 14px;
+  background: var(--navy);
+}
+.term-host {
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+}
+.practice-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 0;
+  padding: 8px 14px;
+  border-top: 1px solid var(--hud-line);
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.practice-candidate {
+  padding: 1px 8px;
+  border: 1px solid var(--hud-line);
+  color: var(--hud-text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+}
+
+/* エラーの小窓（端末の下）。失敗の演出にせず、調べる調子で */
+.practice-error {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  max-height: 64%;
+  overflow-y: auto;
+  padding: 12px 16px 14px;
+  border-top: 2px solid var(--info);
+  background: var(--hud-bg-strong);
+}
+.practice-error-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--info);
+}
+.practice-error-title {
+  margin: 0;
+  font-size: var(--fs-16);
+  font-weight: 700;
+}
+.practice-error-close {
+  display: flex;
+  margin-left: auto;
+  padding: 4px;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  cursor: pointer;
+}
+.practice-error-close:hover,
+.practice-error-close:focus-visible {
+  outline: none;
+  color: var(--gold-light);
+}
+.practice-error-said {
+  margin: 8px 0 10px;
+  padding: 6px 10px;
+  background: var(--navy);
+  border-left: 3px solid var(--bad);
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.practice-error-line {
+  color: var(--hud-text-sub);
+}
+.practice-error-flow {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+}
+.practice-error-flow p {
+  margin: 2px 0 0;
+}
+.practice-error-label {
+  font-size: var(--fs-12);
+  font-weight: 700;
+  color: var(--gold);
+}
+.practice-error-causes {
+  margin: 2px 0 0;
+  padding-left: 1.2em;
+}
+.practice-error-retry {
+  margin: 10px 0 0;
+  font-size: var(--fs-13);
+  font-weight: 700;
+  color: var(--info);
+}
+
+/* ---------- 結果 ---------- */
+.result-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 6px 22px;
+  font-family: var(--font-heading);
+  font-size: var(--fs-22);
+  font-weight: 800;
+  color: var(--navy);
+  clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+}
+.result-badge.is-success {
+  background: var(--ok);
+}
+.result-badge.is-partial {
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+}
+.result-badge.is-retry {
+  background: var(--info);
+}
+.result-list {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+  line-height: 1.7;
+}
+.result-list li {
+  display: flex;
+  gap: 8px;
+}
+.result-list svg {
+  flex: none;
+  margin-top: 5px;
+  color: var(--ok);
+}
+.result-list.is-todo svg {
+  color: var(--gold);
+}
+.result-commands {
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--navy);
+  border: 1px solid var(--hud-line);
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ---------- まとめ ---------- */
+.summary-points {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.summary-point {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--c);
+  background: var(--hud-bg);
+  font-size: var(--fs-16);
+  line-height: 1.7;
+}
+.summary-point-no {
+  flex: none;
+  font-size: var(--fs-22);
+  font-weight: 700;
+  color: var(--gold);
+}
+.summary-next {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.summary-next li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.summary-next .lesson-link {
+  font-size: var(--fs-16);
+  font-weight: 700;
+}
+.summary-next-goal {
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.summary-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+.summary-term {
+  padding: 3px 12px;
+  border: none;
+  border-bottom: 1px dashed var(--gold);
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-14);
+  cursor: pointer;
+}
+.summary-term:hover,
+.summary-term:focus-visible {
+  outline: none;
+  color: var(--gold-light);
+}
+
+/* ---------- XP / スキル ---------- */
+.done-goal {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 6px;
+  font-size: var(--fs-18);
+  font-weight: 700;
+  line-height: 1.6;
+}
+.done-goal svg {
+  flex: none;
+  margin-top: 5px;
+  color: var(--ok);
+}
+.done-skill {
+  padding: 12px 16px;
+  border-left: 3px solid var(--c);
+  background: var(--hud-bg);
+}
+.done-skill-stage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  font-size: var(--fs-18);
+  font-weight: 700;
+}
+.done-skill-from {
+  color: var(--hud-text-sub);
+}
+.done-skill-to {
+  color: var(--gold);
+}
+.done-skill-value {
+  margin-left: auto;
+  font-size: var(--fs-28);
+}
+.done-skill-unit {
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.done-skill-meter {
+  height: 6px;
+  background: var(--navy);
+}
+.done-skill-meter span {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+.done-skill-title {
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  font-weight: 700;
+}
+.done-skill-because {
+  margin: 4px 0 0;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.done-funds {
+  font-size: var(--fs-22);
+  font-weight: 700;
+  color: var(--gold);
+}
+.done-xp {
+  width: 100%;
+  max-width: 26em;
+}
+.done-xp-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: var(--gold);
+}
+.done-xp-total .num {
+  font-size: var(--fs-48);
+  font-weight: 700;
+  line-height: 1;
+}
+.done-xp-unit {
+  font-size: var(--fs-18);
+  color: var(--hud-text-sub);
+}
+.done-xp-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-14);
+}
+.done-xp-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--hud-line);
+}
+.done-xp-list .num {
+  font-size: var(--fs-18);
+  font-weight: 700;
+}
+
+/* 縦の低い画面（1280×720 など）では、エラーの小窓と手順を詰める */
+@media (max-height: 820px) {
+  .practice-error {
+    padding: 8px 14px 10px;
+  }
+  .practice-error-said {
+    margin: 6px 0;
+  }
+  .practice-error-flow {
+    gap: 4px;
+  }
+  .practice-error-retry {
+    margin-top: 6px;
+  }
+  .practice-step {
+    padding: 6px 10px;
+  }
+}

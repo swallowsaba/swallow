@@ -667,34 +667,7 @@
   color: var(--ok);
 }
 
-/* 実戦の入口 */
-.practice-steps {
-  margin: 0 0 12px;
-  padding-left: 1.4em;
-  font-size: var(--fs-16);
-  line-height: 1.8;
-}
-.practice-wait {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  max-width: 28em;
-  padding: 24px;
-  text-align: center;
-  color: var(--hud-text-sub);
-}
-.practice-wait-title {
-  margin: 0;
-  font-size: var(--fs-18);
-  font-weight: 700;
-  color: var(--hud-text);
-}
-.practice-wait-text {
-  margin: 0;
-  font-size: var(--fs-14);
-  line-height: 1.6;
-}
+/* 実戦・結果・まとめ・XP / スキルの段は LessonStages.css */
 
 /* ---------- 図 ---------- */
 .lesson-figure {

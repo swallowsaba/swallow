@@ -12,12 +12,17 @@ import { statusOf } from '@/learning/library';
 import { Icon } from '@/ui/icons/Icon';
 import { nowIso } from '../clock';
 import type { Session } from '../session';
+import { useSkills } from '../skills';
+import { DoneStage } from './DoneStage';
 import { ExplainStage } from './ExplainStage';
 import { PracticeStage } from './PracticeStage';
 import { QuizStage } from './QuizStage';
+import { ResultStage } from './ResultStage';
+import { SummaryStage } from './SummaryStage';
 import { TermPopover } from './TermPopover';
 import { UnderstandStage } from './UnderstandStage';
 import './LessonScreen.css';
+import './LessonStages.css';
 
 /**
  * レッスン画面（docs/ui-design.md 7 章・docs/decisions.md D-07）。都市の施設の中に入る別の画面。
@@ -48,6 +53,8 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const lp = useStore(session.progress, (s) => s.progress.lessons[lessonId]);
   const xpLog = useStore(session.progress, (s) => s.progress.xpLog);
+  const practiceSessions = useStore(session.progress, (s) => s.practiceSessions);
+  const skills = useSkills(session.progress);
   const [view, setView] = useState<LessonStage | null>(null);
   const [pop, setPop] = useState<{ id: string; x: number; y: number } | null>(null);
   const [split, setSplit] = useState(46);
@@ -105,10 +112,23 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
     setPop(null);
   };
 
-  // この回で得た XP（クイズなど）
-  const runXp = lp?.startedAt
-    ? xpLog.filter((e) => e.ref === lessonId && instantOf(e.at) >= instantOf(lp.startedAt as string)).reduce((s, e) => s + e.amount, 0)
-    : 0;
+  // 実戦では右（端末）を広くする。ほかの段では元の幅に戻す（どちらも境は動かせる）
+  useEffect(() => {
+    if (view === 'practice') setSplit(38);
+    else if (view !== null) setSplit(46);
+  }, [view]);
+
+  // この回で得た XP（クイズ・実戦・修了）と、この回の間に上がったこの分野のスキルの段階
+  const since = lp?.startedAt ? instantOf(lp.startedAt) : null;
+  const runEvents = since === null ? [] : xpLog.filter((e) => instantOf(e.at) >= since && (e.ref === lessonId || (e.source === 'skill-up' && e.ref === entry?.domain)));
+  const runXp = runEvents.filter((e) => e.ref === lessonId).reduce((s, e) => s + e.amount, 0);
+  const lastAttempt = since === null ? undefined : [...(lp?.practice ?? [])].reverse().find((a) => instantOf(a.at) >= since);
+
+  const finishLesson = (): void => {
+    if (lp?.status !== 'completed') session.progress.getState().complete(lessonId, nowIso());
+    setView('done');
+    setPop(null);
+  };
 
   const facilityType = (entry ? domainDef(entry.domain)?.facility : undefined) as FacilityType | undefined;
   const facility = facilityType ? FACILITY_DEFS[facilityType] : undefined;
@@ -179,8 +199,27 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
               onAnswer={(quizId, choiceIds, correct) => session.progress.getState().answer({ lessonId, quizId, choiceIds, correct }, nowIso())}
               onDone={() => go('practice')}
             />
+          ) : view === 'practice' ? (
+            <PracticeStage
+              key={`${lessonId}:${String(lastAttempt?.at ?? '')}`}
+              lesson={lesson}
+              saved={practiceSessions[lessonId]}
+              onSave={(ps) => session.progress.getState().savePractice(ps)}
+              onFinish={(attempt) => {
+                session.progress.getState().finishPractice(lessonId, attempt, nowIso());
+                go('result');
+              }}
+              onTerm={onTerm}
+              right={right}
+              action={action}
+              onBack={() => setView('quiz')}
+            />
+          ) : view === 'result' ? (
+            <ResultStage lesson={lesson} attempt={lastAttempt} onTerm={onTerm} right={right} action={action} onRetry={() => setView('practice')} onNext={() => go('summary')} />
+          ) : view === 'summary' ? (
+            <SummaryStage lesson={lesson} onTerm={onTerm} onLesson={onLesson} right={right} action={action} onBack={() => setView('result')} onNext={finishLesson} />
           ) : (
-            <PracticeStage lesson={lesson} onTerm={onTerm} right={right} action={action} onBack={() => setView('quiz')} onExit={onExit} />
+            <DoneStage lesson={lesson} events={runEvents} skill={skills[lesson.domain]} right={right} action={action} onExit={onExit} />
           )}
         </main>
         <div
@@ -209,7 +248,7 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
             window.addEventListener('pointerup', up);
           }}
         />
-        <aside className="lesson-right" ref={setRight} aria-label="図" />
+        <aside className={`lesson-right${view === 'practice' ? ' is-console' : ''}`} ref={setRight} aria-label={view === 'practice' ? '仮想端末' : '図'} />
       </div>
 
       <footer className="lesson-foot">

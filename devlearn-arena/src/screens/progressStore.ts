@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { answerQuiz, emptyProgress, enterLesson, reachStage, type Outcome } from '@/game/progress';
+import { answerQuiz, completeLesson, emptyProgress, enterLesson, finishPractice, reachStage, type Outcome } from '@/game/progress';
 import { applyRecords, type LearningRecord } from '@/game/records';
 import { LESSONS } from '@/game/lessons';
-import type { LessonStage, Progress } from '@/game/types';
+import type { LessonStage, PracticeAttempt, PracticeSession, Progress } from '@/game/types';
 
 /**
  * 学習の記録の状態（docs/data-model.md 7 章の、成長に関わる所）。
@@ -18,6 +18,13 @@ export interface ProgressState {
   answer: (a: { lessonId: string; quizId: string; choiceIds: string[]; correct: boolean }, at: string) => Outcome;
   /** 段を進めた（途中保存） */
   reach: (lessonId: string, stage: LessonStage) => void;
+  /** 実戦の途中の状態（docs/data-model.md 7 章の practiceSessions。中断して開き直すと続きから） */
+  practiceSessions: Record<string, PracticeSession>;
+  savePractice: (session: PracticeSession) => void;
+  /** 実戦を 1 回終える（成功でも未達でも）。途中の状態は消す。得た XP と同じ量の資金を onFunds に渡す */
+  finishPractice: (lessonId: string, attempt: Omit<PracticeAttempt, 'at'>, at: string) => Outcome;
+  /** まとめまで到達した（修了）。得た XP と同じ量の資金を onFunds に渡す */
+  complete: (lessonId: string, at: string) => Outcome;
 }
 
 export function createProgressStore(onFunds: (amount: number) => void, initial: Progress = emptyProgress()) {
@@ -37,6 +44,21 @@ export function createProgressStore(onFunds: (amount: number) => void, initial: 
       return outcome;
     },
     reach: (lessonId, stage) => set({ progress: reachStage(get().progress, lessonId, stage) }),
+    practiceSessions: {},
+    savePractice: (session) => set({ practiceSessions: { ...get().practiceSessions, [session.lessonId]: session } }),
+    finishPractice: (lessonId, attempt, at) => {
+      const outcome = finishPractice(get().progress, { lessonId, attempt: { ...attempt, at } }, at, LESSONS);
+      const rest = Object.fromEntries(Object.entries(get().practiceSessions).filter(([id]) => id !== lessonId));
+      set({ progress: outcome.progress, practiceSessions: rest });
+      if (outcome.funds !== 0) onFunds(outcome.funds);
+      return outcome;
+    },
+    complete: (lessonId, at) => {
+      const outcome = completeLesson(get().progress, lessonId, at, LESSONS);
+      set({ progress: outcome.progress });
+      if (outcome.funds !== 0) onFunds(outcome.funds);
+      return outcome;
+    },
   }));
 }
 

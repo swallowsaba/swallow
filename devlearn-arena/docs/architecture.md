@@ -19,6 +19,7 @@
 | Zustand | 画面の状態 | 小さく分かりやすい。 | Redux |
 | zod | コンテンツとセーブデータの検証 | 型と検証を 1 つで書ける | — |
 | sql.js（SQLite の WebAssembly 版、MIT。型は @types/sql.js、MIT） | DB の実戦 | ブラウザ内で本物の SQL を実行できる。サーバ不要。WebAssembly のファイルは同梱して配信する | 外部の DB サービス（有料・秘密情報が要る） |
+| @xterm/xterm・@xterm/addon-fit（MIT） | 仮想端末の表示（`src/screens/lesson/terminal`） | 本物の端末と同じ表示（カーソル・折り返し・色・選択）を小さな手間で出せる。中身は模擬のシェル（`src/engines/kernel`）で、端末は表示だけを受け持つ。既存の端末が使っている（`docs/archive/inventory.md`） | 自作の表示（折り返しと文字幅の扱いを誤りやすい） |
 | Vitest / Testing Library | 単体・部品のテスト | Vite と同じ設定で動く | Jest |
 | Playwright | 画面の撮影・E2E | 実際のブラウザで撮影して見た目を確かめられる | — |
 | @fontsource | フォントの同梱 | 外部配信に依存しない | Google Fonts の外部読み込み |

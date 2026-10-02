@@ -5,7 +5,7 @@
 export type IconName =
   | 'learn' | 'mission' | 'glossary' | 'settings' | 'funds' | 'xp' | 'people' | 'stage' | 'emblem'
   | 'road' | 'zone' | 'facility' | 'park' | 'demolish' | 'rotate' | 'pause' | 'curve' | 'straight' | 'alert'
-  | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check';
+  | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check' | 'hint' | 'terminal';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -58,6 +58,10 @@ const PATHS: Record<IconName, string> = {
   start: 'M8 5.5v13l10.5-6.5Z',
   // 修了の印
   check: 'M4.5 12.5l4.5 4.5 10.5-10.5',
+  // 灯った電球（ヒント）
+  hint: 'M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.4 1.1 2.2h5c0-.8.4-1.6 1.1-2.2A6 6 0 0 0 12 3Z',
+  // 端末の窓とプロンプト
+  terminal: 'M3.5 5h17v14h-17Z M7 10l3 2.5L7 15 M12 15.5h5',
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

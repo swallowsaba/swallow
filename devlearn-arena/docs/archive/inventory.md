@@ -44,7 +44,7 @@
 | `src/App.tsx`（`BrowserRouter` の道すじ） | **置き換え** | 画面の切り替えはハッシュ（`#/city`）と決まっている（`docs/architecture.md` 4 章）。起動直後が都市画面でない | Phase 1 |
 | `src/features/park/`（作業画面と旧 HUD） | **置き換え** | 起動直後の画面が学習の作業画面。都市が主役の画面構成（`docs/ui-design.md` 3 章）ではない | Phase 1 で道すじから外し、Phase 6・7 で削除 |
 | `src/features/track/` `lesson/` `sandbox/` `dashboard/` `settings/` `glossary/` `NotFoundPage.tsx` | **置き換え** | クリーム色の旧画面。学習サイト風で、指定のフォントと tokens を使っていない | 新しい画面ができた Phase（5・6・11）で削除 |
-| `src/features/terminal/`（xterm の端末） | **候補** | 仮想端末として動き、模擬環境とつながっている。ただし依存の `@xterm/*` が `docs/architecture.md` 2 章の表に無い。使うなら表に理由を足してから使う | Phase 7 |
+| `src/features/terminal/`（xterm の端末） | **再利用**（Phase 7 で判定） | 仮想端末として動き、模擬環境とつながっている。`@xterm/*` を `docs/architecture.md` 2 章の表に足し、`src/screens/lesson/terminal/` へ移した。色と字は tokens から引くように直した。図から打ち込む部品（`typist`）と時間をさかのぼる部品（`TimeScrubber`）は使わないので削除 | Phase 7 |
 | `src/lesson/`（学びの 5 段・遊べる図解） | **置き換え** | 5 段で 7 段と合わない。図はコンテンツ（`content/figures/` の SVG）として持つ決まり（`docs/visual-design.md` 6 章） | Phase 6 で削除 |
 | `src/visual/`（クラスタ・Git・ネットワーク・PR の図） | **置き換え** | 旧来の図。レッスンの図は `content/figures/` に置く | Phase 6 で削除 |
 | `src/ui/`（`Shell` `Onboarding` `XpToast` `Term` など） | **置き換え** | クリーム色の部品。`src/ui/tokens.ts` と指定のフォントを使っていない。`Splitter.tsx`（左右の境を動かす）は Phase 6 のレッスン画面で使えるか見る | Phase 1 から順に。全て Phase 12 までに削除 |
@@ -83,7 +83,7 @@
 | `framer-motion` | **削除** | 表に無い。画面の切り替えの動き（0.3 秒以内）は CSS で足りる | 旧画面の削除と同時 |
 | `react-router-dom` | **削除** | 表に無い。ハッシュの道すじは自作の小さな仕組みで足りる | Phase 1 で使わなくし、旧画面の削除と同時に外す |
 | `tailwindcss` `postcss` `autoprefixer` | **削除** | 表に無い。見た目は tokens から引く | 旧画面の削除と同時 |
-| `@xterm/xterm` `@xterm/addon-fit` | **候補** | 端末の表示。使うなら `docs/architecture.md` 2 章の表に理由を足す | Phase 7 で判定 |
+| `@xterm/xterm` `@xterm/addon-fit` | **再利用** | 端末の表示。Phase 7 で `docs/architecture.md` 2 章の表に理由を足した | — |
 | `@noble/hashes` | **再利用** | Git の模擬がオブジェクトの名前（SHA-1）を計算するのに使う。`docs/architecture.md` 2 章に追記した | — |
 | `js-yaml` | **再利用** | Kubernetes の模擬が YAML のマニフェストを読むのに使う。設定の編集（`docs/learning-design.md` 6 章）でも使う。`docs/architecture.md` 2 章に追記した | — |
 | `react` `react-dom` `zustand` `zod` `vite` `vitest` `@playwright/test` `typescript` `eslint` 一式 `jsdom` | **再利用** | 表にある（`jsdom` は Vitest で部品を試す環境） | — |
@@ -98,3 +98,4 @@
 | 6 | `src/features/lesson/` `src/features/glossary/` `src/features/track/` `src/features/dashboard/` | クリーム色の旧画面。レッスン画面・用語集・学習ライブラリ・成長画面に置き換えた |
 | 6 | `src/features/terminal/useDiagramRunner.ts`、`src/__tests__/terminal.test.tsx`、`src/legacy/ui/motion.test.tsx` | 削除した旧図・旧作業画面を動かす物と、そのテスト。端末の表示（`TerminalView`）は Phase 7 の判定まで残す |
 | 6 | `three` `@react-three/fiber` `@react-three/drei` `@types/three` | `src/city3d/` の削除と同時（6 章の表） |
+| 7 | `src/features/terminal/TimeScrubber.tsx` `typist.ts` | 旧作業画面で図から打ち込む・時間をさかのぼる部品。実戦の端末（`src/screens/lesson/terminal/`）では使わない |

@@ -4,48 +4,38 @@ import { Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import { complete } from '@/engines/kernel/completion';
 import {
-  backspace, clearTyped, createLineState, deleteForward, displayWidth, expandBang, historyMove, insert,
+  backspace, createLineState, deleteForward, displayWidth, expandBang, historyMove, insert,
   killToStart, killWord, moveCursor, redrawLine, toLineEnd, toLineStart, type LineState,
 } from '@/engines/kernel/lineEditor';
 import { feedLine, splitCommands, type PendingInput } from '@/engines/kernel/continuation';
-import { displayPath } from '@/engines/kernel/path';
-import { createTypist, type Typist } from './typist';
+import { accent, fontFamily, hud, rgbaOf, state } from '@/ui/tokens';
+import { promptOf } from './prompt';
 import type { ShellSession } from './useShellSession';
 
-/** 図から来たコマンドを1文字打つ間隔（ミリ秒） */
-const TYPE_MS = 28;
+/**
+ * 仮想端末（docs/learning-design.md 6 章）。表示は xterm、中身は模擬のシェル（src/engines/kernel）。
+ * 本物の機械には何もしない。行の編集・履歴・Tab の補完・ヒアドキュメントを扱う。
+ */
 
 export interface TerminalHandle {
-  /** 外部（モバイル入力欄など）から1行実行する */
+  /** 外から 1 行実行する（キーで打ったのと同じ道筋） */
   submit: (line: string) => void;
-  /**
-   * 1文字ずつ打ち込んでから実行する。図の操作から来たコマンドに使い、打たれていく様子を見せる。
-   * before は打ち始める直前に呼ばれる（なぜそのコマンドかの注記を出すのに使う）。
-   */
-  type: (line: string, before?: () => void) => void;
-  insertText: (text: string) => void;
-  /** 端末に注記を1行出す（コマンドとしては実行しない） */
-  note: (text: string) => void;
-  requestComplete: () => void;
   focus: () => void;
 }
 
 interface Props {
   session: ShellSession;
-  /** コマンド実行後に呼ばれる（任務の判定に使う） */
+  /** コマンド実行後に呼ばれる（実戦の判定に使う） */
   onExecuted?: (line: string, exitCode: number, stderr: string) => void;
   /** vi などがエディタを要求したときに呼ばれる */
   onEditor?: (request: { path: string; content: string; tool: string }) => void;
+  /** 最初に出す 1 行 */
+  banner?: string;
 }
 
-function cssVar(name: string, fallback: string): string {
-  if (typeof window === 'undefined') return fallback;
-  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return value === '' ? fallback : value;
-}
 
 export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalView(
-  { session, onExecuted, onEditor },
+  { session, onExecuted, onEditor, banner = 'help で使えるコマンドの一覧が出る' },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -55,9 +45,6 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
   const pendingRef = useRef<PendingInput | null>(null);
   // 外から1行流し込むときに、キー入力と同じ道筋で実行するため
   const runRef = useRef<((line: string) => void) | null>(null);
-  const promptRef = useRef<(() => void) | null>(null);
-  // 打ちかけの行を消す。折り返した行も上の行まで消す
-  const clearRef = useRef<(() => void) | null>(null);
   /**
    * いまカーソルがいる行。プロンプトの始まりの行を 0 と数える。
    * 行が右端で折り返したとき、描き直す前にどこまで上がるかを知るのに使う（REWORK 3-2）
@@ -65,13 +52,13 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
   const rowRef = useRef(0);
   // 行が右端ちょうどで終わり、カーソルがもう次の行の頭にいる。Enter で改行を重ねない
   const freshRef = useRef(false);
-  const typistRef = useRef<Typist | null>(null);
   const sessionRef = useRef(session);
   const executedRef = useRef(onExecuted);
   const editorRef = useRef(onEditor);
   sessionRef.current = session;
   executedRef.current = onExecuted;
   editorRef.current = onEditor;
+  const bannerRef = useRef(banner);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -80,12 +67,21 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
     const term = new Terminal({
       convertEol: true,
       cursorBlink: true,
-      fontSize: 15,
-      fontFamily: cssVar('--f-mono', 'monospace'),
+      fontSize: 14,
+      lineHeight: 1.25,
+      fontFamily: fontFamily.mono,
       theme: {
-        background: cssVar('--c-void', '#070a0f'),
-        foreground: cssVar('--c-text', '#dbe5f0'),
-        cursor: cssVar('--c-accent', '#3f8cff'),
+        background: rgbaOf(hud.bg, 1),
+        foreground: hud.text,
+        cursor: accent.gold,
+        cursorAccent: rgbaOf(hud.bg, 1),
+        selectionBackground: rgbaOf(accent.gold, 0.35),
+        red: state.bad,
+        brightRed: state.bad,
+        green: state.ok,
+        yellow: accent.goldLight,
+        blue: state.info,
+        brightBlack: hud.textSub,
       },
     });
     const fit = new FitAddon();
@@ -94,10 +90,7 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
     fit.fit();
     termRef.current = term;
 
-    const prompt = (): string =>
-      pendingRef.current !== null
-        ? '> '
-        : `learner@arena:${displayPath(sessionRef.current.getState().cwd)}$ `;
+    const prompt = (): string => (pendingRef.current !== null ? '> ' : promptOf(sessionRef.current.getState()));
 
     /** 新しいプロンプトを書く。カーソルはプロンプトの後ろ（折り返していればその行）にいる */
     const writePrompt = (): void => {
@@ -168,22 +161,6 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
     };
 
     runRef.current = runLine;
-    typistRef.current = createTypist({
-      typeChar: (ch) => {
-        lineRef.current = insert(lineRef.current, ch);
-        redraw();
-      },
-      run: () => {
-        toEnd();
-        runLine(lineRef.current.line);
-      },
-      charMs: TYPE_MS,
-    });
-    promptRef.current = writePrompt;
-    clearRef.current = () => {
-      term.write(clearTyped(rowRef.current));
-      rowRef.current = 0;
-    };
 
     const doComplete = (): void => {
       const { line, cursor } = lineRef.current;
@@ -285,7 +262,7 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
     };
 
     const disposable = term.onData(onKey);
-    term.write('DevLearn Arena shell — help でコマンド一覧\r\n');
+    term.write(`\u001b[90m# ${bannerRef.current}\u001b[0m\r\n`);
     writePrompt();
 
     // fit() が端末のサイズを変え、それがまた ResizeObserver を呼ぶ循環を避ける。
@@ -301,14 +278,12 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
 
     return () => {
       observer.disconnect();
-      typistRef.current?.cancel();
-      typistRef.current = null;
       disposable.dispose();
-      term.dispose();
+      // xterm は開いた直後に、表示の大きさを測る処理を次の番に回す。すぐ閉じる（StrictMode の付け外し）と、
+      // 閉じた後にその処理が走って落ちるので、閉じるのも次の番に回す
+      setTimeout(() => term.dispose(), 0);
       termRef.current = null;
       runRef.current = null;
-      promptRef.current = null;
-      clearRef.current = null;
     };
     // session は ref 経由で参照するため、依存に入れて端末を作り直さない
   }, []);
@@ -323,39 +298,10 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
         runRef.current?.(line);
       }
     },
-    type: (line: string, before?: () => void) => {
-      const typist = typistRef.current;
-      if (!typist) return;
-      typist.enqueue(line, () => {
-        // 打ちかけの行があれば消してから打つ
-        if (lineRef.current.line !== '') {
-          lineRef.current = createLineState();
-          clearRef.current?.();
-          promptRef.current?.();
-        }
-        before?.();
-      });
-    },
-    insertText: (text: string) => {
-      termRef.current?.input(text);
-    },
-    note: (text: string) => {
-      const term = termRef.current;
-      if (!term) return;
-      // 打ちかけの行は消し、注記を黄色で出してからプロンプトを出し直す
-      lineRef.current = createLineState();
-      pendingRef.current = null;
-      clearRef.current?.();
-      term.write(`\u001b[33m# ${text}\u001b[0m\r\n`);
-      promptRef.current?.();
-    },
-    requestComplete: () => {
-      termRef.current?.input('\t');
-    },
     focus: () => {
       termRef.current?.focus();
     },
   }));
 
-  return <div ref={hostRef} className="h-full min-h-[320px] w-full p-3" />;
+  return <div ref={hostRef} className="term-host" data-testid="terminal" />;
 });

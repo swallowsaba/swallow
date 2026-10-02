@@ -34,8 +34,8 @@ export function App({ session: given }: { session?: Session } = {}) {
 
   // 撮影と計測の道具（tools/shoot.mjs）から、模擬の学習記録を与える（docs/development-plan.md Phase 4）
   useEffect(() => {
-    const w = window as unknown as { __game?: { learn: (r: LearningRecord[]) => unknown; progress: () => unknown } };
-    w.__game = { learn: (r) => session.progress.getState().learn(r), progress: () => session.progress.getState().progress };
+    const w = window as unknown as { __game?: { learn: (r: LearningRecord[]) => unknown; progress: () => unknown; store: Session['progress'] } };
+    w.__game = { learn: (r) => session.progress.getState().learn(r), progress: () => session.progress.getState().progress, store: session.progress };
     return () => {
       delete w.__game;
     };

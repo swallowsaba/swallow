@@ -7,8 +7,63 @@ import { loadLesson } from '@/content/lessons';
 import type { Lesson } from '@/content/schema';
 import { createSession, type Session } from '../session';
 import { LessonScreen } from './LessonScreen';
+import { FakeScreen } from './terminal/fakeScreen';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+/*
+ * 本物の xterm は jsdom で描けないので、書き込まれた文字を画面の模型（FakeScreen）で受け、
+ * キーの入力は onData の受け口へ直接流す（src/screens/lesson/terminal/terminalView.test.tsx と同じ）
+ */
+const terms: { screen: FakeScreen; feed: ((d: string) => void) | null }[] = [];
+vi.mock('@xterm/xterm', () => ({
+  Terminal: class {
+    cols = 80;
+    rows = 24;
+    private t = { screen: new FakeScreen(80), feed: null as ((d: string) => void) | null };
+    constructor() {
+      terms.push(this.t);
+    }
+    loadAddon(): void {}
+    open(): void {}
+    write(data: string): void {
+      this.t.screen.write(data);
+    }
+    onData(cb: (d: string) => void) {
+      this.t.feed = cb;
+      return { dispose: () => undefined };
+    }
+    focus(): void {}
+    dispose(): void {}
+  },
+}));
+vi.mock('@xterm/addon-fit', () => ({
+  FitAddon: class {
+    fit(): void {}
+    proposeDimensions() {
+      return undefined;
+    }
+  },
+}));
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
+/** 今の端末で 1 行打って Enter */
+function typeLine(line: string): void {
+  const t = terms[terms.length - 1];
+  if (!t?.feed) throw new Error('端末が開いていない');
+  const feed = t.feed;
+  act(() => {
+    for (const ch of line) feed(ch);
+    feed('\r');
+  });
+}
+const screenText = (): string => terms[terms.length - 1]?.screen.lines().join('\n') ?? '';
 
 let roots: Root[] = [];
 afterEach(() => {
@@ -351,7 +406,7 @@ describe('途中保存と再開（docs/learning-design.md 2 章）', () => {
   });
 });
 
-describe('見本の 2 本を、解説からクイズまで通せる（docs/development-plan.md Phase 6 の完成条件）', () => {
+describe('見本の 2 本を最後まで通せる（docs/development-plan.md Phase 6・7 の完成条件）', () => {
   /** 理解の 1 問を、データの答えで答える */
   function answerUnderstand(host: HTMLElement, item: Lesson['understand'][number]): void {
     const byText = (sel: string, text: string): HTMLElement => {
@@ -391,32 +446,131 @@ describe('見本の 2 本を、解説からクイズまで通せる（docs/devel
     }
   }
 
-  for (const id of ['found.b.04', 'linux.i.01']) {
-    it(`${id}: 解説 → 理解 → クイズ → 実戦の入口。クイズを全て初回で正解し、段ごとに記録が進む`, async () => {
-      const session = createSession(1);
-      const l = await lesson(id);
-      const { host } = await open(session, id);
-      throughExplain(host);
-      expect(stageOf(session, id)).toBe('understand');
-      for (const item of l.understand) {
-        answerUnderstand(host, item);
-        expect($(host, '[data-testid="feedback"]').textContent, `${id} ${item.kind}`).toContain('その通り');
-        next(host);
+  /** 解説・理解・クイズを、データの答えで通して実戦の段へ（クイズは全て初回で正解） */
+  async function toPractice(session: Session, id: string, l: Lesson): Promise<Opened> {
+    const opened = await open(session, id);
+    const { host } = opened;
+    throughExplain(host);
+    expect(stageOf(session, id)).toBe('understand');
+    for (const item of l.understand) {
+      answerUnderstand(host, item);
+      expect($(host, '[data-testid="feedback"]').textContent, `${id} ${item.kind}`).toContain('その通り');
+      next(host);
+    }
+    expect(stageOf(session, id)).toBe('quiz');
+    for (const q of l.quiz) {
+      if (q.kind === 'order') {
+        for (const x of q.order ?? []) click([...host.querySelectorAll<HTMLElement>('.order-item.is-pool')].find((b) => b.textContent === x) as HTMLElement);
+      } else {
+        for (const c of (q.choices ?? []).filter((x) => x.correct)) click($(host, `.choice-button[data-choice="${c.id}"]`));
       }
-      expect(stageOf(session, id)).toBe('quiz');
-      for (const q of l.quiz) {
-        if (q.kind === 'order') {
-          for (const x of q.order ?? []) click([...host.querySelectorAll<HTMLElement>('.order-item.is-pool')].find((b) => b.textContent === x) as HTMLElement);
-        } else {
-          for (const c of (q.choices ?? []).filter((x) => x.correct)) click($(host, `.choice-button[data-choice="${c.id}"]`));
-        }
-        click($(host, '[data-testid="quiz-submit"]'));
-        expect($(host, '[data-testid="feedback"]').textContent, `${id} ${q.id}`).toContain('正解 +5 XP');
-        next(host);
-      }
-      expect(stageOf(session, id)).toBe('practice');
-      expect(host.querySelector('[data-testid="stage-practice"]')).not.toBeNull();
-      expect(quizXp(session)).toBe(5 * l.quiz.length);
-    });
+      click($(host, '[data-testid="quiz-submit"]'));
+      expect($(host, '[data-testid="feedback"]').textContent, `${id} ${q.id}`).toContain('正解 +5 XP');
+      next(host);
+    }
+    expect(stageOf(session, id)).toBe('practice');
+    expect(quizXp(session)).toBe(5 * l.quiz.length);
+    return opened;
   }
+
+  /** 結果 → まとめ → XP / スキル → 都市へ */
+  function throughEnd({ host, onExit }: Opened, session: Session, id: string, l: Lesson): void {
+    next(host);
+    expect(stageOf(session, id)).toBe('summary');
+    const summary = $(host, '[data-testid="stage-summary"]');
+    expect(summary.querySelectorAll('.summary-point')).toHaveLength(l.summary.points.length);
+    expect([...summary.querySelectorAll('.summary-next .lesson-link')].map((b) => b.textContent)).toEqual(l.summary.next.map((n) => entryOf(n)?.title));
+    next(host);
+    expect(session.progress.getState().progress.lessons[id]).toMatchObject({ status: 'completed', stage: 'done', completions: 1 });
+    const done = $(host, '[data-testid="stage-done"]');
+    expect(done.textContent).toContain(l.goal);
+    expect($(host, '[data-testid="done-xp"]').textContent).toContain('まとめまで到達');
+    click($(host, '[data-testid="lesson-to-city"]'));
+    expect(onExit).toHaveBeenCalled();
+  }
+
+  it('found.b.04: わざと誤ると原因候補とヒントが出て、打ち直して成功する。結果・まとめ・XP / スキルまで通る', async () => {
+    const session = createSession(1);
+    const id = 'found.b.04';
+    const l = await lesson(id);
+    const funds0 = session.city.getState().city.funds;
+    const opened = await toPractice(session, id, l);
+    const { host } = opened;
+    // 手順の目的と、今打てるコマンドの候補を、打つ前に示す
+    expect($(host, '[data-testid="stage-practice"]').textContent).toContain('/srv/app へ移す');
+    expect($(host, '[data-testid="practice-candidates"]').textContent).toContain('pwd');
+    expect(screenText()).toContain('learner@arena:~$');
+
+    typeLine('cd /srv/ap');
+    const err = $(host, '[data-testid="practice-error"]');
+    expect(err.dataset.guide).toBe('enoent');
+    expect(err.textContent).toContain('No such file or directory');
+    expect(err.textContent).toContain('何と言われたか');
+    expect(err.querySelectorAll('.practice-error-causes li').length).toBeGreaterThanOrEqual(2);
+    expect(err.textContent).toContain('次に確かめること');
+    expect(stageOf(session, id)).toBe('practice');
+
+    typeLine('cd /srv/app');
+    expect(host.querySelector('[data-testid="practice-error"]')).toBeNull();
+    expect($(host, '[data-testid="practice-afterward"]').textContent).toContain('現在地が /srv/app になった');
+    next(host);
+
+    // 結果: ヒント無し・エラーから自力で立て直した
+    expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('success');
+    expect($(host, '[data-testid="result-commands"]').textContent).toBe('$ cd /srv/ap\n$ cd /srv/app');
+    const log = session.progress.getState().progress.xpLog;
+    expect(log.filter((e) => e.source === 'practice').map((e) => e.amount)).toEqual([20]);
+    expect(log.filter((e) => e.source === 'troubleshoot').map((e) => e.amount)).toEqual([10]);
+
+    throughEnd(opened, session, id, l);
+    expect(session.progress.getState().progress.xpLog.filter((e) => e.source === 'lesson-complete').map((e) => e.amount)).toEqual([30]);
+    // 得た XP と同じ量が都市の資金に入る（スキルの段階の上がりを含む）
+    expect(session.city.getState().city.funds - funds0).toBe(session.progress.getState().progress.xp);
+  });
+
+  it('linux.i.01: ヒントを 3 段まで開き、最後のヒントをそのまま打てば通る（結果はヒントあり）', async () => {
+    const session = createSession(1);
+    const id = 'linux.i.01';
+    const l = await lesson(id);
+    const opened = await toPractice(session, id, l);
+    const { host } = opened;
+    expect(screenText()).toContain('root@server:/root#');
+    typeLine('systemctl start wbe');
+    expect($(host, '[data-testid="practice-error"]').dataset.guide).toBe('unit-not-found');
+    // start だけでは「次の起動でも動く」にならない
+    typeLine('systemctl start web');
+    expect(host.querySelector('[data-testid="practice-afterward"]')).toBeNull();
+    for (let i = 0; i < 3; i += 1) click($(host, '[data-testid="practice-hint"]'));
+    expect(host.querySelectorAll('.practice-hint')).toHaveLength(3);
+    expect(host.querySelector('[data-testid="practice-hint"]')).toBeNull();
+    typeLine('systemctl enable --now web');
+    expect(host.querySelector('[data-testid="practice-afterward"]')).not.toBeNull();
+    next(host);
+    expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('partial');
+    expect(session.progress.getState().progress.xpLog.filter((e) => e.source === 'practice').map((e) => e.amount)).toEqual([18]);
+    throughEnd(opened, session, id, l);
+  });
+
+  it('未達のまま終えても責めず、もう一度挑戦すると模擬環境は初めから。途中で中断して開き直すと、打った所から続く', async () => {
+    const session = createSession(1);
+    const id = 'found.b.04';
+    const l = await lesson(id);
+    const first = await toPractice(session, id, l);
+    typeLine('cd /srv');
+    act(() => first.root.unmount());
+    roots = roots.filter((r) => r !== first.root);
+
+    const { host } = await open(session, id);
+    expect(host.querySelector('[data-testid="stage-practice"]')).not.toBeNull();
+    expect(screenText()).toContain('中断した所から続ける');
+    expect(screenText()).toContain('learner@arena:/srv$');
+    click($(host, '[data-testid="practice-giveup"]'));
+    expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('retry');
+    expect(session.progress.getState().progress.lessons[id]?.practice.at(-1)).toMatchObject({ success: false, commands: ['cd /srv'] });
+    click($(host, '[data-testid="lesson-back"]'));
+    expect(screenText()).toContain('learner@arena:~$');
+    typeLine('cd /srv/app');
+    next(host);
+    expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('success');
+  });
 });

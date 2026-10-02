@@ -52,6 +52,15 @@ export interface PracticeAttempt {
   commands: string[];
 }
 
+/** 実戦の途中再開のための状態（docs/data-model.md 4 章） */
+export interface PracticeSession {
+  lessonId: string;
+  stepIndex: number;
+  /** 模擬環境（src/engines）が出力する直列化済みの状態 */
+  engineState: unknown;
+  savedAt: string;
+}
+
 export type LessonStage = 'explain' | 'understand' | 'quiz' | 'practice' | 'result' | 'summary' | 'done';
 
 export interface LessonProgress {
