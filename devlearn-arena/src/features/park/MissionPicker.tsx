@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getChapter, getTrack } from '@/content/catalog';
+import { getChapter, getTrack } from '@/legacy/content/catalog';
 import { allMissions, mainMissions, type MissionEntry } from '@/engines/lesson/registry';
 import { useT } from '@/i18n/useT';
 import { Icon } from '@/legacy/ui/Icon';

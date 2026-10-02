@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { countAll, TRACKS } from '@/content/catalog';
-import { CITIES, CITY_TRACKS, cityOf } from '@/content/city';
+import { countAll, TRACKS } from '@/legacy/content/catalog';
+import { CITIES, CITY_TRACKS, cityOf } from '@/legacy/content/city';
 import { nextComplaint, voicesOf } from '@/engines/city/civic';
 import { allMissions, mainMissions, recommendedNext } from '@/engines/lesson/registry';
 import type { MissionTrack } from '@/engines/lesson/types';

@@ -1,4 +1,4 @@
-import type { CityState } from '@/content/city';
+import type { CityState } from '@/legacy/content/city';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { useStore } from '@/store';
 

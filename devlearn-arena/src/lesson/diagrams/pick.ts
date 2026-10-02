@@ -1,4 +1,4 @@
-import { termsIn } from '@/content/glossary';
+import { termsIn } from '@/legacy/content/glossary';
 import type { DiagramId } from '@/engines/lesson/diagramIds';
 import type { LessonCore, MissionTrack } from '@/engines/lesson/types';
 

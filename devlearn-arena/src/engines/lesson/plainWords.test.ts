@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TRACKS } from '@/content/catalog';
+import { TRACKS } from '@/legacy/content/catalog';
 import { ja } from '@/i18n/ja';
 import { glossary } from './glossary';
 import { bareHardWords } from './plainWords';

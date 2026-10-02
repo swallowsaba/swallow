@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getLesson, getTrack } from '@/content/catalog';
+import { getLesson, getTrack } from '@/legacy/content/catalog';
 import { useT } from '@/i18n/useT';
 import { appendJournal } from '@/lib/storage/idb';
 import { Badge } from '@/legacy/ui/components/Badge';

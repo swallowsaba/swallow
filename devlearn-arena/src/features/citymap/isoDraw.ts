@@ -1,4 +1,4 @@
-import type { BuildingKind } from '@/content/city';
+import type { BuildingKind } from '@/legacy/content/city';
 import type { MissionTrack } from '@/engines/lesson/types';
 
 /**

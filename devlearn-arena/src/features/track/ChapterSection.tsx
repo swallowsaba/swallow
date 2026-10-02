@@ -1,8 +1,8 @@
 import { Glossed } from '@/legacy/ui/Term';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { isCoreLesson } from '@/content/catalog';
-import type { Chapter, LessonMeta } from '@/content/types';
+import { isCoreLesson } from '@/legacy/content/catalog';
+import type { Chapter, LessonMeta } from '@/legacy/content/types';
 import { useT } from '@/i18n/useT';
 import { Badge } from '@/legacy/ui/components/Badge';
 

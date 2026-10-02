@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { missionTerms } from '@/content/glossary';
+import { missionTerms } from '@/legacy/content/glossary';
 import type { LessonDefinition, LessonProgressState } from '@/engines/lesson/types';
 import { useT } from '@/i18n/useT';
 import { Icon } from '@/legacy/ui/Icon';

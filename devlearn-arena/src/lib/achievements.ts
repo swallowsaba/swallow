@@ -1,5 +1,5 @@
-import { TRACKS } from '@/content/catalog';
-import type { TrackId } from '@/content/types';
+import { TRACKS } from '@/legacy/content/catalog';
+import type { TrackId } from '@/legacy/content/types';
 import type { LessonProgress, MissionProgress, Profile } from './storage/schema';
 
 /**

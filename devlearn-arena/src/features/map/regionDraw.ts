@@ -1,4 +1,4 @@
-import type { BuildingKind } from '@/content/city';
+import type { BuildingKind } from '@/legacy/content/city';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { diamond, facilityBuilding, lamp, poly, project, TH, TRACK_ACCENT, tree, TW, type Ctx } from '@/features/citymap/isoDraw';
 

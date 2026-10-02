@@ -1,5 +1,5 @@
 import type { City } from '@/legacy/city/model';
-import type { CityPlan } from '@/content/city';
+import type { CityPlan } from '@/legacy/content/city';
 import type { TownGrowth } from '@/features/citymap/cityStore';
 
 /**

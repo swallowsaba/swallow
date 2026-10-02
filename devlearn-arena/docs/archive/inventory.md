@@ -61,7 +61,7 @@
 | `src/lib/spaFallback.ts` `scripts/postbuild.mjs` | **置き換え** | `BrowserRouter` の直リンクのための振り替え。ハッシュの道すじでは不要 | Phase 1 で道すじを替えた後、Phase 14 で削除 |
 | `src/lib/sfx.ts` `useSfx.ts`（Web Audio で合成する効果音） | **候補** | 音声ファイルを持たず、既定は無音。`docs/decisions.md` Q-03 の既定の案（自作の効果音・既定は消音）に合う | Phase 12 |
 | `src/lib/date.ts` | **置き換え** | 旧画面の日付の扱い | 旧画面と一緒に削除 |
-| `src/content/`（旧 `catalog`・`tracks`・用語辞書） | **置き換え** | コンテンツが TypeScript のコードで、`content/` の JSON ではない。分野が 5 つ（今の仕様は 16） | Phase 5 で置き換え、旧画面と一緒に削除 |
+| `src/legacy/content/`（旧 `src/content/`。旧 `catalog`・`tracks`・用語辞書） | **置き換え** | コンテンツが TypeScript のコードで、`content/` の JSON ではない。分野が 5 つ（今の仕様は 16） | Phase 5 で新しい `src/content/` の場所を空けるため `src/legacy/content/` へ移し、新しい読み込み（`content/` の JSON と zod）に置き換えた。旧画面と一緒に削除 |
 | `scripts/check-docs-links.mts` | **置き換え** | 旧カタログの出典を確かめる道具 | 旧カタログと一緒に削除 |
 
 ## 5. 道具・設定

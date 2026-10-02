@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import type { CityState } from '@/content/city';
+import type { CityState } from '@/legacy/content/city';
 import type { ShellState } from '@/engines/kernel/registry';
 import type { MissionTrack } from '@/engines/lesson/types';
 import { unlockedDistricts } from '@/legacy/city/growth';

@@ -5,7 +5,7 @@
  * 出典を足したり書き換えたりしたら `npm run links` を手で回す。
  * リダイレクトも失格にする（移動先が正典なら、そちらを書くべきなので）。
  */
-import { allLessons } from '../src/content/catalog';
+import { allLessons } from '../src/legacy/content/catalog';
 
 interface Row {
   url: string;

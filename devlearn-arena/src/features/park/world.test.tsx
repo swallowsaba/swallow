@@ -2,7 +2,7 @@ import { allMissions } from '@/engines/lesson/registry';
 import { act } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { CITIES } from '@/content/city';
+import { CITIES } from '@/legacy/content/city';
 import { createSession } from '@/engines/kernel/session';
 import { missionById } from '@/engines/lesson/registry';
 import { buildCity } from '@/legacy/city/model';

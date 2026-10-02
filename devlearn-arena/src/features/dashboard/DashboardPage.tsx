@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getLesson } from '@/content/catalog';
+import { getLesson } from '@/legacy/content/catalog';
 import { useT } from '@/i18n/useT';
 import { readJournal, type JournalEntry } from '@/lib/storage/idb';
 import { xpProgress } from '@/lib/xp';

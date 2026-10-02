@@ -1,4 +1,4 @@
-import type { DiagramId } from '@/content/glossary';
+import type { DiagramId } from '@/legacy/content/glossary';
 import { HUD } from './theme';
 
 /**

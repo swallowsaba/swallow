@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getChapter } from '@/content/catalog';
+import { getChapter } from '@/legacy/content/catalog';
 import { explainFailure, play } from '../authoring/play';
 import { drillSources } from './index';
 

@@ -1,6 +1,6 @@
 import { Glossed } from '@/legacy/ui/Term';
 import { Link, useParams } from 'react-router-dom';
-import { getTrack } from '@/content/catalog';
+import { getTrack } from '@/legacy/content/catalog';
 import { useT } from '@/i18n/useT';
 import { useStore } from '@/store';
 import NotFoundPage from '../NotFoundPage';

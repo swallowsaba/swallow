@@ -1,4 +1,4 @@
-import type { DocRef } from '@/content/types';
+import type { DocRef } from '@/legacy/content/types';
 import { chapterOf } from './ids';
 import { missions as curated } from './missions';
 import { drillSources } from './drills';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CITIES, CITY_TRACKS } from '@/content/city';
+import { CITIES, CITY_TRACKS } from '@/legacy/content/city';
 import { demoFrames } from './demo';
 
 describe('動きを見る', () => {

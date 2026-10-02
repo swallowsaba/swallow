@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Building, City, Occupant } from '@/legacy/city/model';
-import { CITIES } from '@/content/city';
+import { CITIES } from '@/legacy/content/city';
 import {
   buildRights, cityMetrics, clockOf, earnedRights, healthOf, milestoneOf, residentsOf, SPEED_RATE,
 } from './metrics';

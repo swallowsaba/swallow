@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DIAGRAM_IDS, isDiagramId } from '@/engines/lesson/diagramIds';
 import { allMissions } from '@/engines/lesson/registry';
-import { terms } from '@/content/glossary';
+import { terms } from '@/legacy/content/glossary';
 import { diagramOfStep } from './pick';
 import { PLAYGROUNDS, settleAll } from './playgrounds';
 import type { Playground, Sim } from './sim';

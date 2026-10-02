@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TRACKS } from '@/content/catalog';
+import { TRACKS } from '@/legacy/content/catalog';
 import { allMissions } from '@/engines/lesson/registry';
 import { CITIES, CITY_TRACKS, cityOf, facilityById, rankOf, RESIDENTS } from './index';
 

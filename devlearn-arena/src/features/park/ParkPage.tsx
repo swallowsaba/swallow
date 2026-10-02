@@ -24,7 +24,7 @@ import { useStore } from '@/store';
 import { flushSave } from '@/store/persistence';
 import { XpToast, type ToastData } from '@/legacy/ui/XpToast';
 import { Icon } from '@/legacy/ui/Icon';
-import { CITIES, CITY_TRACKS, cityOf, facilityById } from '@/content/city';
+import { CITIES, CITY_TRACKS, cityOf, facilityById } from '@/legacy/content/city';
 import { growCity, growthOf } from '@/features/citymap/cityStore';
 import { useDerivedCity } from '@/features/citymap/derive';
 import { CityStage } from '@/features/citymap/CityStage';

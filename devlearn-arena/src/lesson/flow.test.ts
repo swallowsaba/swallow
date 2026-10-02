@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { termsIn } from '@/content/glossary';
+import { termsIn } from '@/legacy/content/glossary';
 import { jargonIn } from '@/engines/lesson/glossary';
 import { allMissions, mainMissions } from '@/engines/lesson/registry';
 import type { LessonDefinition } from '@/engines/lesson/types';

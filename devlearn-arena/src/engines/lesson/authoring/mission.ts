@@ -1,5 +1,5 @@
 import type { SessionOptions } from '@/engines/kernel/session';
-import type { DocRef } from '@/content/types';
+import type { DocRef } from '@/legacy/content/types';
 import type {
   LessonCore, LessonIntro, LessonKindMeta, LessonCoreStep, MissionKind, MissionTrack, StepPart,
 } from '../types';

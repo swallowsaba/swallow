@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { segmentTerms, type Term } from '@/content/glossary';
+import { segmentTerms, type Term } from '@/legacy/content/glossary';
 import { useT } from '@/i18n/useT';
 import { MiniDiagram } from './MiniDiagram';
 import { HUD } from './theme';

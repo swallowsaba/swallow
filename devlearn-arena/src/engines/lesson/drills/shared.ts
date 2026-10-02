@@ -1,4 +1,4 @@
-import type { DocRef } from '@/content/types';
+import type { DocRef } from '@/legacy/content/types';
 import { defineMission, type MissionSource, type MissionSpec } from '../authoring/mission';
 import type { MissionTrack } from '../types';
 

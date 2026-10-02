@@ -2,7 +2,7 @@ import { allMissions } from '@/engines/lesson/registry';
 import { act } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { CITIES } from '@/content/city';
+import { CITIES } from '@/legacy/content/city';
 import { useStore } from '@/store';
 import { click, mount } from '@/visual/mountForTest';
 import ParkPage from '../ParkPage';
