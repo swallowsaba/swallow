@@ -88,3 +88,13 @@
 | `js-yaml` | **再利用** | Kubernetes の模擬が YAML のマニフェストを読むのに使う。設定の編集（`docs/learning-design.md` 6 章）でも使う。`docs/architecture.md` 2 章に追記した | — |
 | `react` `react-dom` `zustand` `zod` `vite` `vitest` `@playwright/test` `typescript` `eslint` 一式 `jsdom` | **再利用** | 表にある（`jsdom` は Vitest で部品を試す環境） | — |
 | 表にあって未導入: `@fontsource/*` `sql.js` | — | Phase 1（フォント）と Phase 7（DB）で入れる | — |
+
+## 7. 削除の記録
+
+| Phase | 削除した物 | 理由 |
+|---|---|---|
+| 6 | `src/lesson/` `src/visual/` | 5 段の学びと旧来の図。7 段のレッスン画面（`src/screens/lesson/`）と `content/figures/` に置き換えた |
+| 6 | `src/features/park/`（旧作業画面）と、それだけが使っていた `src/city3d/` `src/features/citymap/` `src/features/map/` `src/legacy/city/` `src/features/sandbox/` | 都市画面（Phase 1〜3）とレッスン画面（Phase 6）に置き換えた。起動から辿れない（`src/main.tsx` からの import に無い） |
+| 6 | `src/features/lesson/` `src/features/glossary/` `src/features/track/` `src/features/dashboard/` | クリーム色の旧画面。レッスン画面・用語集・学習ライブラリ・成長画面に置き換えた |
+| 6 | `src/features/terminal/useDiagramRunner.ts`、`src/__tests__/terminal.test.tsx`、`src/legacy/ui/motion.test.tsx` | 削除した旧図・旧作業画面を動かす物と、そのテスト。端末の表示（`TerminalView`）は Phase 7 の判定まで残す |
+| 6 | `three` `@react-three/fiber` `@react-three/drei` `@types/three` | `src/city3d/` の削除と同時（6 章の表） |

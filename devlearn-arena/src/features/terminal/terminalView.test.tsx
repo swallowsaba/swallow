@@ -1,6 +1,6 @@
 import { act, useRef } from 'react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { mount } from '@/visual/mountForTest';
+import { mount } from './mountForTest';
 import { FakeScreen } from './fakeScreen';
 import { TerminalView, type TerminalHandle } from './TerminalView';
 import { useShellSession } from './useShellSession';
