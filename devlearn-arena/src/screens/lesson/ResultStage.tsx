@@ -51,7 +51,7 @@ export function ResultStage({ lesson, attempt, onTerm, right, action, onRetry, o
       <h3 className="stage-subheading">できたこと</h3>
       {done.length > 0 ? (
         <ul className="result-list is-ok">
-          {done.map((s) => <li key={s.id}><Icon name="check" size={14} /><Rich text={s.afterward} onTerm={onTerm} /></li>)}
+          {done.map((s) => <li key={s.id}><Icon name="check" size={14} /><span><Rich text={s.afterward} onTerm={onTerm} /></span></li>)}
         </ul>
       ) : <p className="stage-text is-sub">まだ達成した手順は無い。</p>}
 
@@ -59,7 +59,7 @@ export function ResultStage({ lesson, attempt, onTerm, right, action, onRetry, o
         <>
           <h3 className="stage-subheading">まだの手順</h3>
           <ul className="result-list is-todo">
-            {missed.map((s) => <li key={s.id}><Icon name="start" size={14} /><Rich text={s.purpose} onTerm={onTerm} /></li>)}
+            {missed.map((s) => <li key={s.id}><Icon name="start" size={14} /><span><Rich text={s.purpose} onTerm={onTerm} /></span></li>)}
           </ul>
         </>
       ) : null}

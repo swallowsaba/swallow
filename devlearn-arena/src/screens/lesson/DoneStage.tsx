@@ -44,7 +44,7 @@ export function DoneStage({ lesson, events, skill, right, action, onExit }: {
   return (
     <section className="stage stage-done" aria-label="XP とスキル" data-testid="stage-done" style={{ '--c': `var(--domain-${lesson.domain})` } as CSSProperties}>
       <h2 className="stage-heading">できるようになったこと</h2>
-      <p className="done-goal"><Icon name="check" size={18} /><Rich text={lesson.goal} /></p>
+      <p className="done-goal"><Icon name="check" size={18} /><span><Rich text={lesson.goal} /></span></p>
 
       <h3 className="stage-subheading">{domainName} のスキル</h3>
       <div className="done-skill" data-testid="done-skill">
