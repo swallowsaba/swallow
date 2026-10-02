@@ -22,7 +22,7 @@ type Drag =
 
 const same = (a: Point, b: Point): boolean => a.x === b.x && a.y === b.y;
 
-export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRenderer, store: CityStore): () => void {
+export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRenderer, store: CityStore, isActive: () => boolean = () => true): () => void {
   let drag: Drag | null = null;
   let pointer: { sx: number; sy: number; cx: number; cy: number } | null = null;
   let rightDown: { x: number; y: number } | null = null;
@@ -202,6 +202,7 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
   };
 
   const onKeyDown = (e: KeyboardEvent): void => {
+    if (!isActive()) return;
     if (e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     const s = store.getState();
     if (s.confirm) return; // 確認の窓が開いている間は、窓の操作だけ

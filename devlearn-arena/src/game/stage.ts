@@ -20,3 +20,12 @@ export function stageOf(techPower: number, population: number): Stage {
   }
   return stage;
 }
+
+/** 段階で新しくできること（docs/game-design.md 6 章の表） */
+export const STAGE_UNLOCKS: Record<Stage, string> = {
+  1: '細い道路・低層住宅・小さな施設',
+  2: '商業区画・橋・公園の種類',
+  3: '中層の区画・大通り・ロータリー・大型施設の Lv3',
+  4: '高層の区画・鉄道（景観）・大型施設の Lv4',
+  5: '超高層・ランドマーク・大型施設の Lv5',
+};

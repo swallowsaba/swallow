@@ -1,5 +1,5 @@
 // 地方都市から作れる大通りとロータリーの見た目を確かめる台本。
-// 段階だけを地方都市にして（霧も晴らして）、建設メニューから引く。
+// 段階だけを地方都市にして（霧も晴らし、資金も足して）、建設メニューから引く。
 //
 //   SHOOT_SCRIPT=tools/scenarios/avenue.mjs npm run shoot -- p2-avenue
 
@@ -19,7 +19,7 @@ async function drag(page, from, to) {
 export default async function avenue(page, shot) {
   await page.evaluate(() => {
     const s = window.__cityStore.getState();
-    s.setCity({ ...s.city, stage: 3, revealed: [{ x: 20, y: 20, w: 56, h: 56 }] });
+    s.setCity({ ...s.city, stage: 3, funds: 20000, revealed: [{ x: 20, y: 20, w: 56, h: 56 }] });
   });
   await page.click('[data-testid="build-group-road"]');
   await page.click('[data-testid="build-road-avenue"]');

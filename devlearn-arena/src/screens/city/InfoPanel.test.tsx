@@ -7,6 +7,10 @@ import { newCity } from '@/city/newCity';
 import { checkFacility, checkRoad, checkZone, placeFacility, placeRoad, placeZone } from '@/city/place';
 import { generateTerrain } from '@/city/terrain';
 import type { City } from '@/city/types';
+import { LESSONS } from '@/game/lessons';
+import { emptyProgress } from '@/game/progress';
+import { applyRecords } from '@/game/records';
+import { skillsOf } from '@/game/skill';
 import { InfoPanel } from './InfoPanel';
 import { panelModel, type FacilityPanelModel, type PanelModel } from './infoPanelModel';
 
@@ -87,8 +91,16 @@ describe('情報パネルの中身（docs/ui-design.md 5 章）', () => {
   it('学習の記録が無ければスキルは 0 で「未修得」。記録があれば値と段階が出る', () => {
     expect(facilityPanel('server').domains[0]).toMatchObject({ value: 0, stageName: '未修得' });
     const f = city.facilities.find((x) => x.type === 'server');
-    const m = panelModel(city, { kind: 'facility', id: f?.id ?? '' }, { linux: 55 });
-    expect(m?.kind === 'facility' ? m.domains[0] : null).toMatchObject({ value: 55, stageName: '中級' });
+    // Linux の初級 1 本を、クイズ 4 問の初回正解・実戦ヒント無しで修了した記録
+    const { progress } = applyRecords(emptyProgress(), [{
+      kind: 'lesson', lessonId: 'linux.b.01', at: '2026-10-02T19:00:00+09:00',
+      quiz: [1, 2, 3, 4].map((n) => ({ quizId: `q${String(n)}`, correct: true })), practice: [{ success: true }], complete: true,
+    }], LESSONS);
+    const skills = skillsOf(['linux'], progress, LESSONS, '2026-10-02');
+    const m = panelModel(city, { kind: 'facility', id: f?.id ?? '' }, skills);
+    // 修了 1/37（重み）× 40 = 1.08 + クイズ 25 + 実戦 25 + 定着 10 = 61.08 → 61
+    expect(m?.kind === 'facility' ? m.domains[0] : null).toMatchObject({ value: 61, stageName: '中級' });
+    expect(m?.kind === 'facility' ? m.domains[0]?.because : '').toBe('修了 1 / 21 本・クイズ初回正解 4 / 4 問・実戦の成功 1 / 1 回・復習 1 / 1 枚が予定どおり');
   });
 
   it('公園の類は、学習の欄を持たず、周りの区画への効き目を出す', () => {

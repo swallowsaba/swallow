@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
  * 画面の道すじ（docs/architecture.md 4 章）。ハッシュで切り替える（#/city など）。
  * GitHub Pages の直リンクとリロードで 404 にならない。
  */
-export type Route = { name: 'city' };
+export type Route = { name: 'city' } | { name: 'growth' };
 
 export function parseHash(hash: string): Route {
   const path = hash.replace(/^#/, '');
   switch (path.split('/')[1] ?? '') {
+    case 'growth':
+      return { name: 'growth' };
     default:
       return { name: 'city' };
   }

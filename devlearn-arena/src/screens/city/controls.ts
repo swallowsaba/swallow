@@ -8,7 +8,7 @@ const PAN_SPEED = 720; // 画素 / 秒
 const EDGE = 8;
 const PAN_KEYS = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
 
-export function attachControls(canvas: HTMLCanvasElement, renderer: CityRenderer): () => void {
+export function attachControls(canvas: HTMLCanvasElement, renderer: CityRenderer, isActive: () => boolean = () => true): () => void {
   const held = new Set<string>();
   let drag: { x: number; y: number } | null = null;
   let pointer: { x: number; y: number } | null = null;
@@ -16,6 +16,7 @@ export function attachControls(canvas: HTMLCanvasElement, renderer: CityRenderer
   let raf = 0;
 
   const onKeyDown = (e: KeyboardEvent): void => {
+    if (!isActive()) return;
     if (e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     const k = e.key.toLowerCase();
     if (PAN_KEYS.includes(k)) {

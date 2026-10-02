@@ -4,15 +4,18 @@ import { useStore } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { demolish } from '@/city/place';
 import { CityRenderer } from '@/city/render/CityRenderer';
+import { RANK_NAMES, rankOf } from '@/game/rank';
 import { STAGE_NAMES } from '@/game/stage';
-import { TopBar } from '@/ui/TopBar';
+import { TopBar, type EntryId } from '@/ui/TopBar';
 import { BuildMenu } from './BuildMenu';
 import { attachBuildControls } from './buildControls';
 import { CityNotice, DemolishConfirm, PlacementHint } from './CityOverlays';
 import { InfoPanel } from './InfoPanel';
 import { panelModel } from './infoPanelModel';
 import { OverlayToggle, type OverlayLegend } from './OverlayToggle';
-import { createCityStore, type CityStore } from './cityStore';
+import type { CityStore } from './cityStore';
+import type { Session } from '../session';
+import { useSkills, type SkillMap } from '../skills';
 import { attachControls } from './controls';
 import './CityScreen.css';
 
@@ -20,10 +23,17 @@ import './CityScreen.css';
  * 都市画面（docs/ui-design.md 3 章）。全画面の都市ビューに、上の帯と建設メニューを小さく重ねる。
  * 学習者が道路を引き、区画を塗り、施設と公園を置く。区画の建物は自動で建ち、育つ（docs/decisions.md D-03）。
  */
-export function CityScreen() {
+export function CityScreen({ session, active = true, onEntry }: { session: Session; active?: boolean; onEntry?: (id: EntryId) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<CityRenderer | null>(null);
-  const store: CityStore = useMemo(() => createCityStore(), []);
+  const store: CityStore = session.city;
+  const xp = useStore(session.progress, (s) => s.progress.xp);
+  const skills = useSkills(session.progress);
+  const skillsRef = useRef<SkillMap>(skills);
+  skillsRef.current = skills;
+  // 都市の上に別の画面（成長画面など）が開いている間は、都市のキーボードの操作を止める
+  const activeRef = useRef(active);
+  activeRef.current = active;
   // 画面に出す物だけを選んで読む（都市の日付は毎フレーム進むが、画面の部品は必要な時だけ描き直す）
   const state = useStore(store, useShallow((s) => ({
     name: s.city.name, funds: s.city.funds, population: s.city.population, stage: s.city.stage,
@@ -35,9 +45,9 @@ export function CityScreen() {
   const panelKey = useStore(store, (s) => (s.selected ? panelKeyOf(s) : ''));
   const panel = useMemo(() => {
     const s = store.getState();
-    return s.selected ? panelModel(s.city, s.selected) : null;
+    return s.selected ? panelModel(s.city, s.selected, skills) : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panelKey, store]);
+  }, [panelKey, store, skills]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -50,18 +60,20 @@ export function CityScreen() {
     fit();
     window.addEventListener('resize', fit);
     renderer.start();
-    const detach = attachControls(canvas, renderer);
-    const detachBuild = attachBuildControls(canvas, renderer, store);
+    const isActive = (): boolean => activeRef.current;
+    const detach = attachControls(canvas, renderer, isActive);
+    const detachBuild = attachBuildControls(canvas, renderer, store, isActive);
     // 都市・選択・表示切替を描画に渡す。表示切替は、都市の形が変わった時だけ計算し直す
     let overlayKey = '';
     const sync = (s: ReturnType<CityStore['getState']>): void => {
       renderer.setCity(s.city);
       renderer.setSelection(s.selected);
       renderer.setLabelInsets({ right: s.selected ? 14 + 360 + 12 : 8 });
-      const key = s.overlay ? `${s.overlay}|${overlayKeyOf(s)}` : '';
+      const values = Object.fromEntries(Object.entries(skillsRef.current).map(([d, v]) => [d, v.value]));
+      const key = s.overlay ? `${s.overlay}|${overlayKeyOf(s)}|${JSON.stringify(values)}` : '';
       if (key !== overlayKey) {
         overlayKey = key;
-        renderer.setOverlay(s.overlay ? { kind: s.overlay, data: overlayOf(s.overlay, s.city, renderer.traffic()) } : null);
+        renderer.setOverlay(s.overlay ? { kind: s.overlay, data: overlayOf(s.overlay, s.city, { ...renderer.traffic(), skills: values }) } : null);
       }
     };
     sync(store.getState());
@@ -119,17 +131,24 @@ export function CityScreen() {
       <TopBar
         cityName={state.name}
         funds={state.funds}
-        xp={0}
+        xp={xp}
+        rankName={RANK_NAMES[rankOf(xp)]}
         population={state.population}
         stageName={STAGE_NAMES[state.stage]}
         disabled={['learn', 'mission', 'glossary', 'settings']}
+        {...(onEntry ? { onEntry } : {})}
       />
-      <CityNotice text={state.notice?.text ?? null} paused={state.paused} shifted={panel !== null} />
-      <InfoPanel model={panel} onClose={() => state.select(null)} />
-      <OverlayToggle value={state.overlay} onChange={state.setOverlay} legend={state.menu === null && state.overlay ? legendOf(state.overlay, store) : null} />
-      <BuildMenu state={state} />
-      <PlacementHint hint={state.confirm ? null : state.hint} />
-      <DemolishConfirm target={state.confirm} onYes={onYes} onNo={onNo} />
+      {/* 都市の上に別の画面が開いている間は、上の帯だけを残し、都市の操作の部品は隠す */}
+      {active ? (
+        <>
+          <CityNotice text={state.notice?.text ?? null} paused={state.paused} shifted={panel !== null} />
+          <InfoPanel model={panel} onClose={() => state.select(null)} />
+          <OverlayToggle value={state.overlay} onChange={state.setOverlay} legend={state.menu === null && state.overlay ? legendOf(state.overlay, store) : null} />
+          <BuildMenu state={state} />
+          <PlacementHint hint={state.confirm ? null : state.hint} />
+          <DemolishConfirm target={state.confirm} onYes={onYes} onNo={onNo} />
+        </>
+      ) : null}
     </div>
   );
 }

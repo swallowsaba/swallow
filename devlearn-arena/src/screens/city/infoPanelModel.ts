@@ -6,7 +6,8 @@ import { buildingName } from '@/city/place';
 import type { Selection } from '@/city/render/CityRenderer';
 import { CAPACITY, constructionStage, PARK_RADIUS, ZONE_RULES } from '@/city/rules';
 import type { City, DomainId } from '@/city/types';
-import { SKILL_STAGE_NAMES, skillStageOf } from '@/game/skill';
+import { SKILL_STAGE_NAMES, skillStageOf, type SkillDetail } from '@/game/skill';
+import { skillBecause } from '../skills';
 import { domain as domainColors } from '@/ui/tokens';
 import preview from '../../../content/preview.json';
 
@@ -60,8 +61,8 @@ const LEVEL_NAMES: Record<string, string> = { beginner: '初級', intermediate: 
 const lessons = preview.lessons as Record<DomainId, { id: string; title: string; level: string }[]>;
 const missions = preview.missions as { title: string; domains: DomainId[] }[];
 
-/** 分野ごとのスキルの値。学習の記録が無いうちは 0 */
-export type Skills = Partial<Record<DomainId, number>>;
+/** 分野ごとのスキル（src/game/skill.ts）。無い分野は 0 として扱う */
+export type Skills = Partial<Record<DomainId, SkillDetail>>;
 
 export function panelModel(city: City, sel: Selection, skills: Skills = {}): PanelModel | null {
   if (sel.kind === 'facility') {
@@ -82,10 +83,11 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}): Pan
       };
     }
     const domains = domainsOfFacility(f.type).map((d): DomainRow => {
-      const value = skills[d.id] ?? 0;
+      const skill = skills[d.id];
+      const value = skill?.value ?? 0;
       return {
         id: d.id, name: d.name, color: domainColors[d.id], value, stageName: SKILL_STAGE_NAMES[skillStageOf(value)],
-        because: value > 0 ? '' : 'まだ学習の記録が無い（修了したレッスン 0 本）',
+        because: skill ? skillBecause(skill) : 'まだ学習の記録が無い（修了したレッスン 0 本）',
       };
     });
     const main = domains[0];

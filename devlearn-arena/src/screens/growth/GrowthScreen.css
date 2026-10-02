@@ -1,0 +1,550 @@
+/* 成長画面。都市の上に重ねる大きな計器の窓（docs/ui-design.md 2・6 章、docs/visual-design.md 1・4 章）。
+   後ろに都市が見え、閉じると都市に戻る */
+.growth-backdrop {
+  position: absolute;
+  inset: 48px 0 0;
+  z-index: 20;
+  padding: 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: growth-in 0.2s ease-out;
+}
+
+.growth {
+  display: flex;
+  flex-direction: column;
+  width: max(80vw, min(1180px, calc(100vw - 64px)));
+  height: 100%;
+  min-height: 0;
+  background: var(--hud-bg-strong);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  box-shadow: var(--shadow-window);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+}
+
+@keyframes growth-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .growth-backdrop {
+    animation: none;
+  }
+}
+
+/* 見出しの帯 */
+.growth-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 20px;
+  border-bottom: 1px solid var(--hud-line);
+}
+.growth-head-icon {
+  display: flex;
+  color: var(--gold);
+}
+.growth-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-28);
+  line-height: 1.2;
+}
+.growth-sub {
+  flex: 1;
+  margin: 0;
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  color: var(--hud-text-sub);
+}
+.growth-close {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 20px;
+  border: none;
+  font-weight: 700;
+  font-size: var(--fs-14);
+  line-height: 1.2;
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  cursor: pointer;
+}
+.growth-close:active {
+  transform: translateY(2px);
+}
+
+/* 3 つの列 */
+.growth-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 22%) 1fr minmax(300px, 26%);
+}
+.growth-col {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 20px 18px;
+}
+.growth-col + .growth-col {
+  border-left: 1px solid var(--hud-line);
+}
+
+.growth-heading {
+  margin: 0 0 6px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--fs-18);
+  line-height: 1.4;
+  color: var(--gold-light);
+  letter-spacing: 0.04em;
+}
+.growth-heading.is-gap {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hud-line);
+}
+.growth-note {
+  margin: 6px 0 0;
+  font-size: var(--fs-13);
+  line-height: 1.5;
+}
+.growth-note.is-sub {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.growth-note.is-info {
+  margin-top: 10px;
+  padding-left: 10px;
+  border-left: 2px solid var(--info);
+}
+.growth-note b {
+  font-size: var(--fs-16);
+}
+
+/* エンジニア段階 */
+.growth-rank-name,
+.growth-stage-name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-22);
+  line-height: 1.3;
+}
+.growth-hero {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 2px 0 10px;
+}
+.growth-hero-value {
+  font-weight: 700;
+  font-size: var(--fs-48);
+  line-height: 1;
+  color: var(--hud-text);
+}
+.growth-hero-unit {
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+
+/* 5 段の梯子: 各段の帯に、その段の中の進みを金で塗る */
+.growth-ladder {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.growth-ladder-step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.growth-ladder-track {
+  display: block;
+  height: 8px;
+  background: var(--hud-bg);
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+}
+.growth-ladder-track span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+}
+.growth-ladder-name,
+.growth-ladder-xp {
+  text-align: center;
+  white-space: nowrap;
+}
+.growth-ladder-name {
+  font-size: var(--fs-12);
+  line-height: 1.5;
+  color: var(--hud-text-sub);
+}
+.growth-ladder-xp {
+  font-size: var(--fs-12);
+  line-height: 1;
+  color: var(--hud-text-sub);
+}
+.growth-ladder-step.is-current .growth-ladder-name {
+  color: var(--gold-light);
+  font-weight: 700;
+}
+
+/* 都市の発展段階の計器 */
+.growth-meter {
+  margin-top: 8px;
+}
+.growth-meter-label {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 3px;
+  font-size: var(--fs-13);
+  line-height: 1.4;
+}
+.growth-meter-label .num {
+  font-size: var(--fs-16);
+  font-weight: 700;
+}
+.growth-meter-track {
+  display: block;
+  height: 8px;
+  background: var(--hud-bg);
+  overflow: hidden;
+}
+.growth-meter-track span {
+  display: block;
+  height: 100%;
+  background: var(--info);
+  border-radius: 0 4px 4px 0;
+}
+.growth-meter-track span.is-done {
+  background: var(--ok);
+}
+
+/* スキルの計器（16 分野を 1 枚の計器盤に） */
+.growth-skills-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 14px;
+}
+.growth-skills-head .growth-heading {
+  white-space: nowrap;
+}
+.growth-skills-head .growth-note {
+  margin: 0;
+}
+.growth-scale,
+.growth-skill {
+  display: grid;
+  grid-template-columns: 170px 1fr 36px 52px;
+  align-items: center;
+  gap: 10px;
+}
+.growth-scale {
+  height: 20px;
+  padding: 0 10px;
+}
+.growth-scale-axis {
+  position: relative;
+  height: 100%;
+}
+.growth-scale-tick {
+  position: absolute;
+  bottom: 0;
+  padding-left: 4px;
+  border-left: 1px solid var(--hud-line);
+  font-size: var(--fs-12);
+  line-height: 1.5;
+  color: var(--hud-text-sub);
+  white-space: nowrap;
+}
+.growth-skill-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.growth-skill {
+  width: 100%;
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-left: 3px solid var(--transparent);
+  background: var(--transparent);
+  text-align: left;
+  cursor: pointer;
+}
+.growth-skill:hover {
+  background: var(--hud-bg);
+}
+.growth-skill.is-picked {
+  border-left-color: var(--gold);
+  background: var(--hud-bg);
+}
+.growth-skill-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.growth-skill.is-picked .growth-skill-name {
+  font-weight: 700;
+  color: var(--gold-light);
+}
+.growth-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  background: var(--c);
+  transform: rotate(45deg);
+}
+.growth-skill-track {
+  position: relative;
+  height: 12px;
+  background: var(--hud-bg);
+}
+.growth-skill-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--hud-line);
+  opacity: 0.4;
+}
+.growth-skill-fill {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: 0;
+  background: var(--c);
+  border-radius: 0 4px 4px 0;
+}
+.growth-skill-value {
+  text-align: right;
+  font-weight: 700;
+  font-size: var(--fs-18);
+  line-height: 1;
+}
+.growth-skill-stage {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+
+/* 選んだ分野の内訳 */
+.growth-breakdown {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  background: var(--hud-bg);
+}
+.growth-breakdown-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+.growth-breakdown-name {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--fs-18);
+  line-height: 1.4;
+}
+.growth-breakdown-title {
+  flex: 1;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.growth-breakdown-value {
+  font-weight: 700;
+  font-size: var(--fs-28);
+  line-height: 1;
+}
+.growth-parts {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+.growth-part {
+  display: grid;
+  grid-template-columns: 56px 1fr 64px;
+  grid-template-areas:
+    'label area points'
+    '. note note';
+  align-items: center;
+  column-gap: 10px;
+}
+.growth-part-label {
+  grid-area: label;
+  font-weight: 700;
+  font-size: var(--fs-13);
+}
+.growth-part-area {
+  grid-area: area;
+}
+.growth-part-track {
+  display: block;
+  height: 10px;
+  background: var(--hud-bg-strong);
+}
+.growth-part-track span {
+  display: block;
+  height: 100%;
+  background: var(--c);
+  border-radius: 0 4px 4px 0;
+}
+.growth-part-points {
+  grid-area: points;
+  text-align: right;
+  font-size: var(--fs-16);
+  font-weight: 700;
+}
+.growth-part-note {
+  grid-area: note;
+  font-size: var(--fs-12);
+  line-height: 1.5;
+  color: var(--hud-text-sub);
+}
+
+/* 学習履歴（日ごとの時間の流れ） */
+.growth-days,
+.growth-entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.growth-day + .growth-day {
+  margin-top: 12px;
+}
+.growth-day-head {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 4px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--hud-line);
+  font-weight: 700;
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  color: var(--gold-light);
+}
+.growth-day-head .num {
+  font-size: var(--fs-16);
+}
+.growth-entry {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 8px;
+  padding: 5px 0 5px 10px;
+  border-left: 2px solid var(--hud-line);
+}
+.growth-entry-time {
+  font-size: var(--fs-14);
+  color: var(--hud-text-sub);
+}
+.growth-entry-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.growth-entry-title {
+  font-size: var(--fs-13);
+  font-weight: 500;
+  line-height: 1.4;
+}
+.growth-entry-tag {
+  margin-right: 6px;
+  padding: 0 5px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+  border: 1px solid var(--hud-line);
+}
+.growth-entry-details {
+  font-size: var(--fs-12);
+  line-height: 1.5;
+  color: var(--hud-text-sub);
+}
+.growth-entry-xp {
+  font-size: var(--fs-16);
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+/* 1280×720 など横の狭い画面: 左右の列を細くし、スキルの計器の帯を広く取る */
+@media (max-width: 1599px) {
+  .growth-body {
+    grid-template-columns: 236px 1fr 280px;
+  }
+  .growth-col {
+    padding: 12px 14px 14px;
+  }
+  .growth-scale,
+  .growth-skill {
+    grid-template-columns: 162px 1fr 30px 44px;
+    gap: 8px;
+  }
+  .growth-skill {
+    height: 26px;
+  }
+  .growth-hero-value {
+    font-size: var(--fs-36);
+  }
+}
+
+/* 縦の低い画面（1280×720 など）: スキルの計器を 2 列に、内訳を 2×2 に詰め、内訳までスクロールせずに見せる */
+@media (max-height: 899px) {
+  .growth-scale {
+    display: none;
+  }
+  .growth-skill-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(8, auto);
+    grid-auto-flow: column;
+    column-gap: 14px;
+    margin-top: 6px;
+  }
+  .growth-skill {
+    grid-template-columns: 158px 1fr 22px 38px;
+    gap: 6px;
+    padding: 0 6px;
+  }
+  .growth-skill-name {
+    font-size: var(--fs-13);
+  }
+  .growth-breakdown {
+    margin-top: 10px;
+    padding: 10px 12px;
+  }
+  .growth-parts {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 18px;
+    row-gap: 8px;
+  }
+  .growth-part {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'label points'
+      'area area'
+      'note note';
+    row-gap: 2px;
+  }
+}

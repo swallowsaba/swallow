@@ -56,6 +56,27 @@
 .topbar-stat:first-child {
   border-left: none;
 }
+/* XP は成長画面への入口。押せることが分かるように、触れると金の下線 */
+.topbar-stat.is-entry {
+  border-top: none;
+  border-right: none;
+  border-bottom: 2px solid var(--transparent);
+  background: var(--transparent);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.topbar-stat.is-entry:hover,
+.topbar-stat.is-entry:focus-visible {
+  background: var(--hud-bg-strong);
+  border-bottom-color: var(--gold);
+  outline: none;
+}
+.topbar-stat.is-entry:active {
+  transform: translateY(2px);
+}
 .topbar-stat-icon {
   display: flex;
   color: var(--gold);

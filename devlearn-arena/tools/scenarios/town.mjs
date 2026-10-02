@@ -5,6 +5,8 @@
 // 建設メニューを押し、道路をドラッグで引き、区画を塗り、施設と公園を置く。
 // 時間だけは都市の時計を早回しする（1 日 = 4 秒を待たずに、同じ計算で日付を進める）。
 
+import { fundBy } from './learning.mjs';
+
 /** マスの中心の、画面の上の位置 */
 export async function at(page, x, y) {
   return page.evaluate(([cx, cy]) => window.__city.screenOf(cx + 0.5, cy + 0.5), [x, y]);
@@ -59,6 +61,8 @@ async function state(page) {
 
 /** 画面の操作だけで村から町を作る（撮影はしない）。shot を渡すと途中の画面も撮る */
 export async function buildTown(page, shot = async () => {}) {
+  // 初めの資金は 1,500（docs/game-design.md 2 章）。町を作る前に、模擬の学習記録で資金を得る
+  await fundBy(page, 12000);
   // 少し引いて、初めの範囲を全部見る
   await page.evaluate(() => window.__city.zoomBy(-1));
   await page.waitForTimeout(200);
