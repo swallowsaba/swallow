@@ -2,7 +2,7 @@ import type { DomainId } from '@/city/types';
 import { lessonMeta } from './lessons';
 import { skillOf } from './skill';
 import { addDays, dayOf, instantOf } from './time';
-import type { LessonMeta, LessonProgress, PracticeAttempt, Progress, ReviewCard, XpEvent, XpSource } from './types';
+import type { LessonMeta, LessonProgress, LessonStage, PracticeAttempt, Progress, ReviewCard, XpEvent, XpSource } from './types';
 import { completionXp, practiceXp, quizXp, reviewXp, skillUpXp, troubleshootXp, type RunContext } from './xp';
 
 /**
@@ -52,6 +52,19 @@ export function startLesson(progress: Progress, lessonId: string, at: string): P
 export function enterLesson(progress: Progress, lessonId: string, at: string): Progress {
   const cur = progress.lessons[lessonId];
   return cur?.status === 'in-progress' && cur.startedAt ? progress : startLesson(progress, lessonId, at);
+}
+
+const STAGE_ORDER: readonly LessonStage[] = ['explain', 'understand', 'quiz', 'practice', 'result', 'summary', 'done'];
+
+/**
+ * 段を進めた記録（途中保存。docs/learning-design.md 2 章: どの段でも中断でき、再開できる）。
+ * 進んだ段より前へは戻さない（終わった段を見返しても、続きの位置は変わらない）。学習中でなければ何もしない
+ */
+export function reachStage(progress: Progress, lessonId: string, stage: LessonStage): Progress {
+  const cur = progress.lessons[lessonId];
+  if (cur?.status !== 'in-progress') return progress;
+  if (STAGE_ORDER.indexOf(stage) <= STAGE_ORDER.indexOf(cur.stage)) return progress;
+  return withLesson(progress, { ...cur, stage });
 }
 
 /** 今の回（始めていなければ、ここで始める） */

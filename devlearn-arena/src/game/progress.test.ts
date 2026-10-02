@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LESSONS } from './lessons';
-import { addDays, answerReview, completeLesson, emptyProgress, enterLesson, startLesson, XP_LOG_LIMIT } from './progress';
+import { addDays, answerReview, completeLesson, emptyProgress, enterLesson, reachStage, startLesson, XP_LOG_LIMIT } from './progress';
 import { rankOf } from './rank';
 import { applyRecords, type LearningRecord } from './records';
 import { skillOf } from './skill';
@@ -209,5 +209,22 @@ describe('レッスンを始める（docs/learning-design.md 2 章: どの段で
 
   it('始めていないレッスンは、解説から始まる', () => {
     expect(enterLesson(emptyProgress(), 'net.b.01', DAY1).lessons['net.b.01']).toMatchObject({ status: 'in-progress', stage: 'explain', startedAt: DAY1 });
+  });
+});
+
+describe('段を進めた記録（途中保存）', () => {
+  it('進んだ段を残し、前の段を見返しても戻さない', () => {
+    let p = enterLesson(emptyProgress(), 'linux.i.01', DAY1);
+    p = reachStage(p, 'linux.i.01', 'understand');
+    expect(p.lessons['linux.i.01']?.stage).toBe('understand');
+    p = reachStage(p, 'linux.i.01', 'quiz');
+    expect(reachStage(p, 'linux.i.01', 'explain').lessons['linux.i.01']?.stage).toBe('quiz');
+    // 中断して開き直すと、進んだ段から
+    expect(enterLesson(p, 'linux.i.01', DAY1_LATER).lessons['linux.i.01']?.stage).toBe('quiz');
+  });
+
+  it('学習中でないレッスンは変えない', () => {
+    const p = emptyProgress();
+    expect(reachStage(p, 'linux.i.01', 'quiz')).toBe(p);
   });
 });
