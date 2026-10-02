@@ -1,0 +1,278 @@
+{
+  "domains": [
+    {
+      "id": "found",
+      "name": "IT 基礎",
+      "facility": "academy",
+      "description": "コンピュータ・OS・プロセス・メモリ・ファイル・権限を説明できる",
+      "prerequisites": [],
+      "related": [
+        "linux",
+        "net"
+      ],
+      "next": [
+        "linux"
+      ]
+    },
+    {
+      "id": "linux",
+      "name": "Linux / CLI",
+      "facility": "server",
+      "description": "端末でサーバを操作し、サービス・ログ・パッケージ・権限を扱える",
+      "prerequisites": [
+        "found"
+      ],
+      "related": [
+        "net",
+        "git",
+        "ctr"
+      ],
+      "next": [
+        "net"
+      ]
+    },
+    {
+      "id": "net",
+      "name": "ネットワーク",
+      "facility": "network",
+      "description": "IP・TCP/UDP・ポート・DNS・ルーティング・NAT・Firewall を扱い、切り分けられる",
+      "prerequisites": [
+        "found"
+      ],
+      "related": [
+        "linux",
+        "web",
+        "cloud"
+      ],
+      "next": [
+        "web"
+      ]
+    },
+    {
+      "id": "web",
+      "name": "Web / HTTP",
+      "facility": "web",
+      "description": "HTTP を読み、Web サーバを設定し、API を扱える",
+      "prerequisites": [
+        "net"
+      ],
+      "related": [
+        "sec",
+        "db",
+        "cicd"
+      ],
+      "next": [
+        "git",
+        "sec"
+      ]
+    },
+    {
+      "id": "sec",
+      "name": "TLS / セキュリティ",
+      "facility": "security",
+      "description": "認証と認可・秘密情報・TLS と証明書・脆弱性対応を扱える",
+      "prerequisites": [
+        "web",
+        "found"
+      ],
+      "related": [
+        "linux",
+        "cicd",
+        "mon"
+      ],
+      "next": [
+        "cicd",
+        "mon"
+      ]
+    },
+    {
+      "id": "git",
+      "name": "Git",
+      "facility": "devoffice",
+      "description": "変更を記録・分岐・統合し、リモートとチームで使える",
+      "prerequisites": [
+        "linux"
+      ],
+      "related": [
+        "cicd",
+        "devops"
+      ],
+      "next": [
+        "cicd"
+      ]
+    },
+    {
+      "id": "cicd",
+      "name": "CI/CD",
+      "facility": "deploy",
+      "description": "パイプラインを読み書きし、失敗を直し、安全に配布できる",
+      "prerequisites": [
+        "git",
+        "sec"
+      ],
+      "related": [
+        "devops",
+        "docker"
+      ],
+      "next": [
+        "ctr"
+      ]
+    },
+    {
+      "id": "ctr",
+      "name": "コンテナ",
+      "facility": "container",
+      "description": "コンテナの概念（VM との違い・イメージ・レイヤ・ランタイム）を説明できる",
+      "prerequisites": [
+        "linux",
+        "found"
+      ],
+      "related": [
+        "docker",
+        "k8s",
+        "cloud"
+      ],
+      "next": [
+        "docker"
+      ]
+    },
+    {
+      "id": "docker",
+      "name": "Docker",
+      "facility": "container",
+      "description": "Docker で作り・動かし・つなぎ・配れる",
+      "prerequisites": [
+        "ctr"
+      ],
+      "related": [
+        "k8s",
+        "cicd"
+      ],
+      "next": [
+        "k8s"
+      ]
+    },
+    {
+      "id": "k8s",
+      "name": "Kubernetes",
+      "facility": "cluster",
+      "description": "クラスタでアプリを動かし、公開し、更新し、障害を直せる",
+      "prerequisites": [
+        "ctr",
+        "docker",
+        "net"
+      ],
+      "related": [
+        "cloud",
+        "mon",
+        "devops"
+      ],
+      "next": [
+        "mon"
+      ]
+    },
+    {
+      "id": "db",
+      "name": "データベース",
+      "facility": "datacenter",
+      "description": "SQL を書き、設計・索引・トランザクション・バックアップを扱える",
+      "prerequisites": [
+        "web"
+      ],
+      "related": [
+        "cloud",
+        "trouble"
+      ],
+      "next": [
+        "cicd"
+      ]
+    },
+    {
+      "id": "cloud",
+      "name": "クラウド / インフラ",
+      "facility": "cloud",
+      "description": "仮想化とクラウドの形を理解し、可用性とスケールを設計できる",
+      "prerequisites": [
+        "net",
+        "ctr"
+      ],
+      "related": [
+        "k8s",
+        "devops"
+      ],
+      "next": [
+        "devops"
+      ]
+    },
+    {
+      "id": "mon",
+      "name": "監視",
+      "facility": "monitor",
+      "description": "ログ・メトリクス・トレース・アラートで状態を把握し調査できる",
+      "prerequisites": [
+        "linux",
+        "k8s"
+      ],
+      "related": [
+        "trouble",
+        "devops"
+      ],
+      "next": [
+        "sec"
+      ]
+    },
+    {
+      "id": "devops",
+      "name": "DevOps",
+      "facility": "devops",
+      "description": "自動化・IaC・改善のループで開発と運用をつなげられる",
+      "prerequisites": [
+        "cicd",
+        "mon"
+      ],
+      "related": [
+        "cloud",
+        "k8s"
+      ],
+      "next": [
+        "lab"
+      ]
+    },
+    {
+      "id": "trouble",
+      "name": "トラブルシューティング",
+      "facility": "incident",
+      "description": "症状から原因を絞り、直し、再発を防げる",
+      "prerequisites": [],
+      "related": [
+        "found",
+        "linux",
+        "net",
+        "web",
+        "sec",
+        "git",
+        "cicd",
+        "ctr",
+        "docker",
+        "k8s",
+        "db",
+        "cloud",
+        "mon",
+        "devops",
+        "lab"
+      ],
+      "next": [
+        "lab"
+      ]
+    },
+    {
+      "id": "lab",
+      "name": "研究（総合演習）",
+      "facility": "research",
+      "description": "複数の分野を組み合わせて、実務に近い課題をやり遂げられる",
+      "prerequisites": [],
+      "related": [],
+      "next": []
+    }
+  ]
+}

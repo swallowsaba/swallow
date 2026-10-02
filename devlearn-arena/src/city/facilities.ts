@@ -21,12 +21,14 @@ export interface FacilityDef {
   cost: number;
   /** 建てられるようになる発展段階（docs/game-design.md 6 章の「公園の種類」） */
   minStage: 1 | 2 | 3 | 4 | 5;
+  /** Lv が上がると加わる見た目（docs/city-design.md 4 章。[0] が Lv1 の姿） */
+  looks?: string[];
 }
 
 export type FacilityShelf = 'base' | 'dev' | 'ops';
 export const SHELF_NAMES: Record<FacilityShelf, string> = { base: '学びと基盤', dev: 'Web と開発', ops: 'クラウドと運用' };
 
-const FACILITY_TYPES = [
+export const FACILITY_TYPES = [
   'academy', 'server', 'network', 'web', 'security', 'devoffice', 'deploy', 'container',
   'cluster', 'datacenter', 'cloud', 'monitor', 'devops', 'incident', 'research',
   'park', 'treerow', 'plaza', 'fountain', 'monument',
@@ -47,6 +49,7 @@ const schema = z.object({
     d: z.number().int().min(1).max(3),
     cost: z.number().int().min(0),
     minStage: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
+    looks: z.array(z.string().min(1)).min(2).optional(),
   })),
 });
 
@@ -60,6 +63,7 @@ export function parseFacilities(raw: unknown): Record<FacilityType, FacilityDef>
   }
   for (const t of FACILITY_TYPES) if (!out[t]) throw new Error(`施設の定義が無い: ${t}`);
   for (const f of list) if ((f.group === 'facility') !== (f.shelf !== undefined)) throw new Error(`施設の棚は分野の施設だけに付ける: ${f.type}`);
+  for (const f of list) if ((f.group === 'facility') !== (f.looks !== undefined)) throw new Error(`Lv ごとの見た目は分野の施設だけに付ける: ${f.type}`);
   return out;
 }
 

@@ -102,3 +102,11 @@ export function revealedFor(stage: Stage): Rect[] {
 export function isRevealed(revealed: readonly Rect[], x: number, y: number): boolean {
   return revealed.some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
 }
+
+/**
+ * 施設のアップグレードの費用（docs/game-design.md 5 章: レベル N に上げるには、その分野のスキル段階が N 以上、かつ資金）。
+ * 建てた費用 × 上げた後のレベル ÷ 2。
+ */
+export function upgradeCost(baseCost: number, toLevel: number): number {
+  return Math.round((baseCost * toLevel) / 2);
+}

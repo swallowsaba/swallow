@@ -2,6 +2,7 @@ import { cellKey, frontOf, roadCells } from './cells';
 import { FACILITY_DEFS, footprintOf } from './facilities';
 import { zoneBuildingModel } from './generate/buildings';
 import { foundationModel, frameModel } from './generate/construction';
+import { facilityModel } from './generate/facilityModels';
 import type { Model } from './generate/mesh';
 import { broadleafTree, conifer, streetLamp } from './generate/shapes';
 import type { Rotation } from './projection';
@@ -30,6 +31,8 @@ export interface SceneObject {
   /** 建物自身の向き（0〜3。正面 +y を基準に 90 度ずつ） */
   facing: Rotation;
   source: { kind: 'model'; key: string; model: () => Model } | { kind: 'facility'; type: FacilityType; level: number };
+  /** 選べる物（施設と区画の建物）。木や街灯には無い */
+  select?: { kind: 'facility' | 'building'; id: string };
 }
 
 export { frontOf, roadCells } from './cells';
@@ -49,7 +52,7 @@ export function buildScene(cityState: City, terrain: Terrain): SceneObject[] {
     taken.add(key(b.cell.x, b.cell.y));
     const seed = seedOf(b.id, cityState.seed);
     const stage = constructionStage(b.builtDay, cityState.day);
-    const box = { id: b.id, x: b.cell.x, y: b.cell.y, w: 1, d: 1, z: 0, height: 1.2, facing };
+    const box = { id: b.id, x: b.cell.x, y: b.cell.y, w: 1, d: 1, z: 0, height: targetHeight(kind, b.level), facing, select: { kind: 'building' as const, id: b.id } };
     if (stage === 'done') {
       out.push({ ...box, source: { kind: 'model', key: `zone:${kind}:${String(b.level)}:${String(seed)}`, model: () => zoneBuildingModel(kind, b.level, seed) } });
     } else {
@@ -61,12 +64,12 @@ export function buildScene(cityState: City, terrain: Terrain): SceneObject[] {
     const size = footprintOf(f.type, f.rotation);
     for (let x = 0; x < size.w; x += 1) for (let y = 0; y < size.d; y += 1) taken.add(key(f.origin.x + x, f.origin.y + y));
     const stage = f.state === 'active' ? 'done' : constructionStage(f.builtDay, cityState.day);
-    const box = { id: f.id, x: f.origin.x, y: f.origin.y, w: size.w, d: size.d, z: 0, height: 2.5, facing: (f.rotation / 90) as Rotation };
+    const box = { id: f.id, x: f.origin.x, y: f.origin.y, w: size.w, d: size.d, z: 0, height: facilityHeight(f.type), facing: (f.rotation / 90) as Rotation, select: { kind: 'facility' as const, id: f.id } };
     if (stage === 'done') {
       out.push({ ...box, source: { kind: 'facility', type: f.type, level: f.level } });
     } else {
       const def = FACILITY_DEFS[f.type];
-      const h = def.group === 'facility' ? 0.75 : 0.15;
+      const h = def.group === 'facility' ? Math.min(1.2, facilityHeight(f.type) * 0.6) : 0.15;
       out.push({ ...box, source: constructionSource(stage, def.w, def.d, h, seedOf(f.id, cityState.seed)) });
     }
   }
@@ -132,6 +135,18 @@ export function buildScene(cityState: City, terrain: Terrain): SceneObject[] {
   });
 
   return out;
+}
+
+const heights = new Map<FacilityType, number>();
+
+/** 施設の模型の一番高い所（描く順と、選ぶ時の当たりに使う） */
+export function facilityHeight(type: FacilityType): number {
+  const hit = heights.get(type);
+  if (hit !== undefined) return hit;
+  const model = facilityModel(type, 1);
+  const h = model ? Math.max(0.2, ...model.parts.map((p) => p.max[2])) : 1;
+  heights.set(type, h);
+  return h;
 }
 
 /** 建ち上がった時の高さの目安（建設中の骨組みの高さ） */
