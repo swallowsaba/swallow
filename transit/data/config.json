@@ -1,14 +1,11 @@
 {
   "_note": "経路探索のパラメータ。ODPT には乗換所要時間のデータが無いため、ここは手動メンテナンスです。値は分。",
-
   "defaultHopMinutes": 2.2,
   "defaultTransferMinutes": 4,
   "defaultInterOperatorTransferMinutes": 7,
   "defaultWalkMinutes": 8,
-
   "_busStationWalkMinutes": "バス停と駅の間の徒歩(分)。ODPT にこのデータは無いため一律の既定値です。",
   "busStationWalkMinutes": 5,
-
   "_walkAccess": "地図上の任意地点から駅までの徒歩の見積り。歩道データは持っていないため、直線距離 × 迂回係数 ÷ 分速 で概算する。必ず「推定」と表示すること。",
   "walkSpeedMetersPerMinute": 80,
   "walkDetourFactor": 1.3,
@@ -16,7 +13,6 @@
   "walkMaxCandidates": 2,
   "_walkFarWarningMinutes": "これを超える徒歩には注意書きを添える(検索は止めない)。",
   "walkFarWarningMinutes": 30,
-
   "_hopMinutes": "駅間の平均所要時間。列車時刻表が引けなかった区間の推定にのみ使う。",
   "hopMinutes": {
     "odpt.Railway:TokyoMetro.Ginza": 1.9,
@@ -41,7 +37,6 @@
     "odpt.Railway:YokohamaMunicipal.Blue": 2.2,
     "odpt.Railway:YokohamaMunicipal.Green": 2.1
   },
-
   "_transfers": "キーは「駅名」または「駅名|路線A|路線B」。駅名だけならその駅の乗換すべてに適用。",
   "transfers": {
     "大手町": 7,
@@ -78,34 +73,135 @@
     "汐留": 4,
     "豊洲": 4,
     "大門": 5,
-    "浜松町": 5
+    "浜松町": 5,
+    "代々木上原|odpt.Railway:Odakyu.Odawara|odpt.Railway:TokyoMetro.Chiyoda": 0,
+    "綾瀬|odpt.Railway:TokyoMetro.Chiyoda|odpt.Railway:JR-East.JobanLocal": 0,
+    "渋谷|odpt.Railway:TokyoMetro.Fukutoshin|odpt.Railway:Tokyu.Toyoko": 0,
+    "和光市|odpt.Railway:TokyoMetro.Yurakucho|odpt.Railway:Tobu.TobuTojo": 0,
+    "和光市|odpt.Railway:TokyoMetro.Fukutoshin|odpt.Railway:Tobu.TobuTojo": 0,
+    "小竹向原|odpt.Railway:TokyoMetro.Yurakucho|odpt.Railway:Seibu.SeibuYurakucho": 0,
+    "小竹向原|odpt.Railway:TokyoMetro.Fukutoshin|odpt.Railway:Seibu.SeibuYurakucho": 0,
+    "押上|odpt.Railway:TokyoMetro.Hanzomon|odpt.Railway:Tobu.TobuSkytree": 0,
+    "北千住|odpt.Railway:TokyoMetro.Hibiya|odpt.Railway:Tobu.TobuSkytree": 0,
+    "中野|odpt.Railway:TokyoMetro.Tozai|odpt.Railway:JR-East.ChuoSobuLocal": 0,
+    "西船橋|odpt.Railway:TokyoMetro.Tozai|odpt.Railway:JR-East.ChuoSobuLocal": 0,
+    "目黒|odpt.Railway:TokyoMetro.Namboku|odpt.Railway:Tokyu.Meguro": 0,
+    "目黒|odpt.Railway:Toei.Mita|odpt.Railway:Tokyu.Meguro": 0,
+    "泉岳寺|odpt.Railway:Toei.Asakusa|odpt.Railway:Keikyu.Main": 0,
+    "下北沢": 4,
+    "中目黒": 3,
+    "武蔵小杉": 8,
+    "町田": 6,
+    "横浜": 7,
+    "大宮": 7,
+    "立川": 5,
+    "吉祥寺": 4,
+    "高田馬場": 4,
+    "中野": 4,
+    "西船橋": 5,
+    "北千住": 5,
+    "押上": 4,
+    "品川": 6,
+    "五反田": 4,
+    "自由が丘": 3,
+    "二子玉川": 3,
+    "溝の口": 4,
+    "登戸": 4,
+    "新百合ヶ丘": 3,
+    "相模大野": 3,
+    "代々木上原": 3,
+    "和光市": 3,
+    "小竹向原": 3,
+    "綾瀬": 3,
+    "泉岳寺": 3
   },
-
   "_walkLinks": "駅名が異なるが徒歩で乗り換えられる組。ここに書いた組だけが接続される。",
   "walkLinks": [
-    { "a": "大手町", "b": "東京" },
-    { "a": "有楽町", "b": "日比谷" },
-    { "a": "有楽町", "b": "銀座" },
-    { "a": "日比谷", "b": "銀座" },
-    { "a": "永田町", "b": "赤坂見附" },
-    { "a": "国会議事堂前", "b": "溜池山王" },
-    { "a": "淡路町", "b": "小川町" },
-    { "a": "淡路町", "b": "新御茶ノ水" },
-    { "a": "小川町", "b": "新御茶ノ水" },
-    { "a": "春日", "b": "後楽園" },
-    { "a": "上野広小路", "b": "上野御徒町" },
-    { "a": "上野広小路", "b": "仲御徒町" },
-    { "a": "上野御徒町", "b": "仲御徒町" },
-    { "a": "新宿", "b": "新宿西口" },
-    { "a": "築地", "b": "東銀座" },
-    { "a": "人形町", "b": "水天宮前" },
-    { "a": "汐留", "b": "新橋" },
-    { "a": "大門", "b": "浜松町" },
-    { "a": "馬喰横山", "b": "東日本橋" },
-    { "a": "岩本町", "b": "秋葉原" },
-    { "a": "本郷三丁目", "b": "春日" }
+    {
+      "a": "大手町",
+      "b": "東京"
+    },
+    {
+      "a": "有楽町",
+      "b": "日比谷"
+    },
+    {
+      "a": "有楽町",
+      "b": "銀座"
+    },
+    {
+      "a": "日比谷",
+      "b": "銀座"
+    },
+    {
+      "a": "永田町",
+      "b": "赤坂見附"
+    },
+    {
+      "a": "国会議事堂前",
+      "b": "溜池山王"
+    },
+    {
+      "a": "淡路町",
+      "b": "小川町"
+    },
+    {
+      "a": "淡路町",
+      "b": "新御茶ノ水"
+    },
+    {
+      "a": "小川町",
+      "b": "新御茶ノ水"
+    },
+    {
+      "a": "春日",
+      "b": "後楽園"
+    },
+    {
+      "a": "上野広小路",
+      "b": "上野御徒町"
+    },
+    {
+      "a": "上野広小路",
+      "b": "仲御徒町"
+    },
+    {
+      "a": "上野御徒町",
+      "b": "仲御徒町"
+    },
+    {
+      "a": "新宿",
+      "b": "新宿西口"
+    },
+    {
+      "a": "築地",
+      "b": "東銀座"
+    },
+    {
+      "a": "人形町",
+      "b": "水天宮前"
+    },
+    {
+      "a": "汐留",
+      "b": "新橋"
+    },
+    {
+      "a": "大門",
+      "b": "浜松町"
+    },
+    {
+      "a": "馬喰横山",
+      "b": "東日本橋"
+    },
+    {
+      "a": "岩本町",
+      "b": "秋葉原"
+    },
+    {
+      "a": "本郷三丁目",
+      "b": "春日"
+    }
   ],
-
   "_walkMinutes": "walkLinks の所要時間。キーは「駅名A|駅名B」。未指定は defaultWalkMinutes。",
   "walkMinutes": {
     "大手町|東京": 8,
@@ -129,5 +225,48 @@
     "馬喰横山|東日本橋": 4,
     "岩本町|秋葉原": 6,
     "本郷三丁目|春日": 7
+  },
+  "_speed": "駅間の所要を駅の座標から見積もるときの表定速度(km/h)。hopMinutes に路線が書いてあればそちらが優先。直線距離で計算するため、実際の表定速度より 1 割ほど低い値を入れてある。この値は経路の**候補を出すため**にだけ使う。画面に出る時刻は列車時刻表から取るので、ここが多少ずれても嘘の時刻にはならない(候補の並びが変わるだけ)。",
+  "defaultSpeedKmPerHour": 35,
+  "minHopMinutes": 1,
+  "speedByCategory": {
+    "JR": 38,
+    "私鉄": 45,
+    "地下鉄": 30,
+    "モノレール・新交通・路面電車": 25,
+    "その他": 35
+  },
+  "speedKmPerHour": {
+    "odpt.Railway:JR-East.Yamanote": 32,
+    "odpt.Railway:JR-East.KeihinTohokuNegishi": 34,
+    "odpt.Railway:JR-East.ChuoSobuLocal": 32,
+    "odpt.Railway:JR-East.JobanLocal": 34,
+    "odpt.Railway:JR-East.Nambu": 34,
+    "odpt.Railway:JR-East.Yokohama": 36,
+    "odpt.Railway:JR-East.Tsurumi": 26,
+    "odpt.Railway:JR-East.Ome": 34,
+    "odpt.Railway:JR-East.ChuoRapid": 50,
+    "odpt.Railway:JR-East.SobuRapid": 52,
+    "odpt.Railway:JR-East.Yokosuka": 50,
+    "odpt.Railway:JR-East.Tokaido": 58,
+    "odpt.Railway:JR-East.ShonanShinjuku": 52,
+    "odpt.Railway:JR-East.Utsunomiya": 52,
+    "odpt.Railway:JR-East.Takasaki": 52,
+    "odpt.Railway:JR-East.JobanRapid": 52,
+    "odpt.Railway:JR-East.Saikyo": 40,
+    "odpt.Railway:JR-East.Keiyo": 44,
+    "odpt.Railway:JR-East.Musashino": 40,
+    "odpt.Railway:Tokyu.Setagaya": 18,
+    "odpt.Railway:Tokyu.Ikegami": 24,
+    "odpt.Railway:Tokyu.TokyuTamagawa": 24,
+    "odpt.Railway:Tokyu.Oimachi": 28,
+    "odpt.Railway:Keio.Inokashira": 28,
+    "odpt.Railway:Odakyu.Tama": 34,
+    "odpt.Railway:Keikyu.Airport": 32,
+    "odpt.Railway:Seibu.Haijima": 34,
+    "odpt.Railway:Odakyu.Odawara": 48,
+    "odpt.Railway:Tobu.Nikko": 50,
+    "odpt.Railway:Tobu.TobuTojo": 44,
+    "odpt.Railway:Keikyu.Main": 44
   }
 }

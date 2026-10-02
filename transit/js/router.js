@@ -15,7 +15,14 @@
 import { toMinutes, calendarAliases } from './time.js';
 
 /** 候補経路の上限。増やすほど時刻表の取得件数が増える。 */
-const MAX_ROUTES = 5;
+const MAX_ROUTES = 7;
+/**
+ * 駅間の重みの持ち方。network.js が辺に両方を持たせている。
+ *   minutes         … 駅数 × 一律の分数(全駅停車を前提にしたモデル)
+ *   distanceMinutes … 距離 ÷ 表定速度(優等列車に近いモデル)
+ * 片方だけだと外れる向きが決まってしまうので、両方で候補を出す。
+ */
+const WEIGHTS = ['minutes', 'distanceMinutes'];
 /** 1 レグあたり検討する列車の本数 */
 const TRAINS_PER_LEG = 3;
 /** 1 バッチの上限(Worker 側と揃える) */
@@ -37,11 +44,12 @@ export function findCandidateRoutes(net, fromGroupId, toGroupId, opts = {}) {
 
   const found = new Map(); // signature → route
 
-  const collect = (penalty, bannedRailways) => {
+  const collect = (penalty, bannedRailways, weight) => {
     const path = dijkstra(net, fromGroupId, toGroupId, {
       transferPenalty: penalty,
       excludedRailways: new Set([...excludedRailways, ...bannedRailways]),
       excludedEdges,
+      weight,
     });
     if (!path) return null;
     const route = toRoute(net, path);
@@ -50,26 +58,51 @@ export function findCandidateRoutes(net, fromGroupId, toGroupId, opts = {}) {
     return route;
   };
 
-  // 乗換ペナルティを変えて「速い経路」と「乗換が少ない経路」の両方を拾う
+  // 乗換ペナルティと重みの両方を振って、性質の違う経路を集める。
+  // ・ペナルティ … 「速い経路」と「乗換が少ない経路」
+  // ・重み      … 「全駅停車前提の経路」と「優等で乗り通す経路」
   const seeds = [];
-  for (const penalty of [0, 5, 12]) {
-    const r = collect(penalty, new Set());
-    if (r) seeds.push(r);
+  for (const weight of WEIGHTS) {
+    for (const penalty of [0, 5, 12]) {
+      const r = collect(penalty, new Set(), weight);
+      if (r) seeds.push(r);
+    }
   }
   // 見つかった経路が使っている路線を 1 本ずつ禁止して、別ルートを探す
   const usedRailways = new Set();
   for (const r of seeds) for (const leg of r.legs) usedRailways.add(leg.railway);
   for (const rw of usedRailways) {
     if (found.size >= MAX_ROUTES + 3) break;
-    collect(5, new Set([rw]));
+    collect(5, new Set([rw]), 'minutes');
   }
 
   const routes = [...found.values()];
   routes.sort((a, b) => a.estimatedMinutes - b.estimatedMinutes || a.transfers - b.transfers);
-  return routes.slice(0, MAX_ROUTES);
+
+  /*
+   * 絞り込みで「片方のモデルが推した経路」を落とさないようにする。
+   *
+   * 2 つのモデルで候補を出しても、最後に 1 つの見積りで並べて切ると、
+   * 駅数ベースで安く見える迂回経路が上位を占め、乗り通す経路が
+   * 時刻表を引く前に消える。それでは 2 モデルにした意味が無い。
+   *
+   * そこで**各モデルの最良の 1 本を先に確保**し、残りを見積り順で埋める。
+   * 先頭に来るこの 2 本は、複合経路の中間区間を解くときにも使われる
+   * (main.js の railSearch は上位 2 件だけを使う)。
+   */
+  const best = (field) => routes.slice().sort((a, b) => a[field] - b[field])[0];
+  const kept = [];
+  for (const r of [best('estimatedByHop'), best('estimatedByDistance')]) {
+    if (r && !kept.includes(r)) kept.push(r);
+  }
+  for (const r of routes) {
+    if (kept.length >= MAX_ROUTES) break;
+    if (!kept.includes(r)) kept.push(r);
+  }
+  return kept.slice(0, MAX_ROUTES);
 }
 
-function dijkstra(net, fromGroupId, toGroupId, { transferPenalty, excludedRailways, excludedEdges }) {
+function dijkstra(net, fromGroupId, toGroupId, { transferPenalty, excludedRailways, excludedEdges, weight = 'minutes' }) {
   const fromGroup = net.groups.get(fromGroupId);
   const toGroup = net.groups.get(toGroupId);
   if (!fromGroup || !toGroup) return null;
@@ -106,7 +139,9 @@ function dijkstra(net, fromGroupId, toGroupId, { transferPenalty, excludedRailwa
       if (excludedEdges.has(edgeKey(e.railway, node, e.to)) || excludedEdges.has(edgeKey(e.railway, e.to, node))) {
         continue;
       }
-      relax(node, e.to, d + e.minutes, { type: 'ride', railway: e.railway });
+      // 重みは 2 通りある(駅数ベース / 距離ベース)。指定が無い辺は従来の値。
+      const cost = e[weight] ?? e.minutes;
+      relax(node, e.to, d + cost, { type: 'ride', railway: e.railway });
     }
 
     // --- 同一駅での乗換 ---
@@ -160,7 +195,11 @@ function dijkstra(net, fromGroupId, toGroupId, { transferPenalty, excludedRailwa
 function toRoute(net, path) {
   const legs = [];
   let current = null;
-  let estimated = 0;
+  // 2 つのモデルで別々に積む。候補を絞るときは**甘い方**を使う。
+  // 厳しい方で切ると、せっかく出した「乗り通す経路」が時刻表を引く前に
+  // 落ちてしまい、2 モデルにした意味が無くなる。
+  let estimatedByHop = 0;
+  let estimatedByDistance = 0;
   let transfers = 0;
 
   for (let i = 1; i < path.length; i += 1) {
@@ -177,15 +216,20 @@ function toRoute(net, path) {
         current.to = step.station;
         current.stops += 1;
       }
-      const hop = net.config.hopMinutes?.[via.railway] ?? net.config.defaultHopMinutes ?? 2.2;
-      estimated += hop;
+      const edge = (net.rideEdges.get(prevStation) || []).find(
+        (e) => e.to === step.station && e.railway === via.railway
+      );
+      const hop = edge?.minutes ?? net.config.hopMinutes?.[via.railway] ?? net.config.defaultHopMinutes ?? 2.2;
+      estimatedByHop += hop;
+      estimatedByDistance += edge?.distanceMinutes ?? hop;
     } else if (via.type === 'transfer' || via.type === 'walk') {
       const cost =
         via.type === 'transfer'
           ? net.transferMinutes(net.stations.get(prevStation)?.railway, net.stations.get(step.station)?.railway, via.at)
           : net.walkMinutes(via.from, via.to);
       legs.push({ transfer: true, kind: via.type, from: prevStation, to: step.station, minutes: cost });
-      estimated += cost;
+      estimatedByHop += cost;
+      estimatedByDistance += cost;
       transfers += 1;
       current = null;
     }
@@ -204,7 +248,9 @@ function toRoute(net, path) {
     legs,
     rideLegs,
     transfers,
-    estimatedMinutes: estimated,
+    estimatedMinutes: Math.min(estimatedByHop, estimatedByDistance),
+    estimatedByHop,
+    estimatedByDistance,
     origin: path[0].station,
     destination: path[path.length - 1].station,
   };

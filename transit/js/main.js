@@ -6,7 +6,7 @@
 
 import { resolveWorkerUrl, IS_PLACEHOLDER_URL } from './config.js';
 import { TransitApi, ApiError, messageFor } from './api.js';
-import { loadNetwork, clearNetworkCache } from './network.js';
+import { loadNetwork, clearNetworkCache, operatorSignature } from './network.js';
 import { findCandidateRoutes, bindSchedule, edgeKey } from './router.js';
 import { analyzeStatus, warningsForRoute, SEVERITY } from './status.js';
 import { findBusRoutes, findIntermodalRoutes, setBusOperatorTitles } from './bus.js';
@@ -115,7 +115,10 @@ async function init() {
 
   // 路線ネットワーク
   try {
-    const { network, cached, fetchedAt } = await loadNetwork(state.api, state.config);
+    // 対応事業者の構成を渡す。変わっていれば保存済みの路線グラフは捨てられる。
+    const { network, cached, fetchedAt } = await loadNetwork(state.api, state.config, {
+      signature: operatorSignature(state.health),
+    });
     state.net = network;
     state.stamps.networkAt = fetchedAt || network.fetchedAt;
     ui.renderStamps(state.stamps);
@@ -147,7 +150,7 @@ async function reloadNetwork() {
   clearNetworkCache();
   ui.clearAlerts();
   try {
-    const { network, fetchedAt } = await loadNetwork(state.api, state.config, { force: true });
+    const { network, fetchedAt } = await loadNetwork(state.api, state.config, { force: true, signature: operatorSignature(state.health) });
     state.net = network;
     state.stamps.networkAt = fetchedAt || network.fetchedAt;
     ui.renderStamps(state.stamps);

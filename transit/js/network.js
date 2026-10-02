@@ -5,10 +5,13 @@
  * 静的データなので localStorage に 24 時間保持し、Worker への往復を減らす。
  */
 
-import { OPERATOR_TITLES } from './category.js';
+import { OPERATOR_TITLES, railCategory } from './category.js';
 
-const STORAGE_KEY = 'kanto-transit:network:v1';
+const STORAGE_KEY = 'kanto-transit:network:v2';
 const STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** 座標から出した駅間所要の下限(分) */
+const MIN_HOP_MINUTES = 1;
 
 /** 同一駅とみなす最大距離(km)。同名でもこれより離れていれば別駅扱い。 */
 const SAME_STATION_KM = 0.9;
@@ -122,25 +125,67 @@ export class TransitNetwork {
   }
 
   /* ---------------- 隣接(乗車区間) ---------------- */
+  /**
+   * 駅間に 2 通りの重みを持たせる。
+   *
+   *   minutes         … 駅数 × 路線ごとの一律の分数(従来のモデル)
+   *   distanceMinutes … 駅の座標から出した距離 ÷ 路線の表定速度
+   *
+   * なぜ 2 つ持つのか:
+   * 従来のモデルは**全駅停車を前提**にしている。駅数が多い郊外の私鉄は
+   * 実際より大幅に遅く見積もられる(本厚木〜代々木上原は約 30 駅なので
+   * 30 × 2.2 = 66 分。実際の快速急行は約 45 分)。その結果、乗り通せば
+   * 済むところで「駅数の少ない別経路へ乗り換える」案が安く見えてしまう。
+   *
+   * かといって座標ベースだけにすると、優等列車が走らない路線(山手線など)を
+   * 速すぎると見積もる。どちらのモデルも外れ方の向きが違うので、
+   * **両方で候補を出し、どれが速いかは実際の時刻表に決めさせる**。
+   * 見積りの役目は「正しい経路を候補から落とさないこと」だけになる。
+   */
   #buildAdjacency() {
-    /** @type {Map<string, Array<{to:string, railway:string, minutes:number}>>} */
+    /** @type {Map<string, Array<{to:string, railway:string, minutes:number, distanceMinutes:number}>>} */
     this.rideEdges = new Map();
     const defaultHop = this.config.defaultHopMinutes ?? 2.2;
 
     for (const rw of this.railways.values()) {
       const hop = this.config.hopMinutes?.[rw.id] ?? defaultHop;
+      const speed = this.#speedFor(rw.id);
       for (let i = 0; i < rw.stations.length - 1; i += 1) {
         const a = rw.stations[i];
         const b = rw.stations[i + 1];
-        this.#addRide(a, b, rw.id, hop);
-        this.#addRide(b, a, rw.id, hop);
+        // 座標が無い駅は距離を出せない。その区間は従来の値をそのまま使う。
+        const byDistance = this.#hopFromDistance(a, b, speed) ?? hop;
+        this.#addRide(a, b, rw.id, hop, byDistance);
+        this.#addRide(b, a, rw.id, hop, byDistance);
       }
     }
   }
 
-  #addRide(from, to, railway, minutes) {
+  #addRide(from, to, railway, minutes, distanceMinutes) {
     if (!this.rideEdges.has(from)) this.rideEdges.set(from, []);
-    this.rideEdges.get(from).push({ to, railway, minutes });
+    this.rideEdges.get(from).push({ to, railway, minutes, distanceMinutes });
+  }
+
+  /** 路線の表定速度(km/h)。路線ごとの指定 → 区分ごとの既定 → 全体の既定。 */
+  #speedFor(railwayId) {
+    const table = this.config.speedKmPerHour || {};
+    if (table[railwayId] != null) return table[railwayId];
+    const cat = railCategory(railwayId, this.operatorIdOf(railwayId));
+    const byCategory = this.config.speedByCategory || {};
+    return byCategory[cat] ?? this.config.defaultSpeedKmPerHour ?? 38;
+  }
+
+  /** 2 駅の座標から所要(分)を出す。出せなければ null。 */
+  #hopFromDistance(fromId, toId, speedKmPerHour) {
+    if (!speedKmPerHour || speedKmPerHour <= 0) return null;
+    const a = this.stations.get(fromId);
+    const b = this.stations.get(toId);
+    if (!a || !b) return null;
+    if (a.lat == null || a.lon == null || b.lat == null || b.lon == null) return null;
+    const km = haversine(a.lat, a.lon, b.lat, b.lon);
+    if (!(km > 0)) return null;
+    const minutes = (km / speedKmPerHour) * 60;
+    return Math.max(this.config.minHopMinutes ?? MIN_HOP_MINUTES, minutes);
   }
 
   /* ---------------- 乗換コスト ---------------- */
@@ -257,32 +302,51 @@ export class TransitNetwork {
  *  取得とキャッシュ
  * ------------------------------------------------------------------ */
 
-export async function loadNetwork(api, config, { force = false } = {}) {
+/**
+ * 対応している事業者の並びを 1 本の文字列にする。キャッシュの照合に使う。
+ *
+ * これが無いと、対応事業者が増えても**古い路線グラフを使い続ける**。
+ * チャレンジ2026 を有効にして 7 社 → 15 社になったとき、画面に JR が
+ * 24 時間出てこない、という形で実際に起きた。
+ */
+export function operatorSignature(health) {
+  const ids = (health?.supported || [])
+    .map((o) => (typeof o === 'string' ? o : o?.id))
+    .filter(Boolean)
+    .map(String)
+    .sort();
+  return ids.join(',');
+}
+
+export async function loadNetwork(api, config, { force = false, signature = null } = {}) {
   if (!force) {
-    const cached = readCache();
+    const cached = readCache(signature);
     if (cached) return { network: new TransitNetwork(cached.raw, config), cached: true, fetchedAt: cached.raw.fetchedAt };
   }
   const { data, fetchedAt } = await api.network();
-  writeCache(data);
+  writeCache(data, signature);
   return { network: new TransitNetwork(data, config), cached: false, fetchedAt };
 }
 
-function readCache() {
+function readCache(signature) {
   try {
     const s = localStorage.getItem(STORAGE_KEY);
     if (!s) return null;
     const parsed = JSON.parse(s);
     if (!parsed || !parsed.savedAt || Date.now() - parsed.savedAt > STORAGE_TTL_MS) return null;
     if (!parsed.raw || !Array.isArray(parsed.raw.railways) || !parsed.raw.railways.length) return null;
+    // 事業者の構成が変わっていたら、保存したものは使わない。
+    // 照合する材料が無いとき(signature が null)は、従来どおり使う。
+    if (signature != null && (parsed.sig || '') !== signature) return null;
     return parsed;
   } catch {
     return null;
   }
 }
 
-function writeCache(raw) {
+function writeCache(raw, signature) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ savedAt: Date.now(), raw }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ savedAt: Date.now(), sig: signature || '', raw }));
   } catch {
     /* 容量超過などは無視。キャッシュは最適化であって必須ではない */
   }
