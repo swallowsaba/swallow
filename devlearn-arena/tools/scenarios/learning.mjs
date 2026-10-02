@@ -1,10 +1,10 @@
 // 模擬の学習記録（docs/development-plan.md Phase 4: レッスンの画面が無い間は、模擬の学習記録で動かす）。
 //
-// 推奨学習順（content/lesson-list.json の順）に、毎日いくつかのレッスンを学んだ記録を作り、
+// 推奨学習順（content/catalog.json の目録の順）に、毎日いくつかのレッスンを学んだ記録を作り、
 // ページの window.__game.learn に渡す。誤答・ヒント・エラーからの回復・復習も混ぜる（同じ引数からは同じ記録）。
 import { readFileSync } from 'node:fs';
 
-const LESSONS = JSON.parse(readFileSync(new URL('../../content/lesson-list.json', import.meta.url), 'utf8')).lessons;
+const LESSONS = JSON.parse(readFileSync(new URL('../../content/catalog.json', import.meta.url), 'utf8')).lessons;
 
 const pad = (n) => String(n).padStart(2, '0');
 

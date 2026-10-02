@@ -20,7 +20,8 @@
     "links": "vite-node scripts/check-docs-links.mts",
     "verify": "npm run typecheck && npm run lint && npm run test",
     "shoot": "node tools/shoot.mjs",
-    "svgs": "vite-node tools/build-facility-svgs.mts"
+    "svgs": "vite-node tools/build-facility-svgs.mts",
+    "catalog": "vite-node scripts/build-catalog.mts"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",

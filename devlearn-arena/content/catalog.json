@@ -1,0 +1,4789 @@
+{
+  "note": "全レッスンの目録（docs/curriculum.md 4 章の表から scripts/build-catalog.mts で書き起こす。手で直さない）。推奨学習順（2 章の分野の順 → 各表の行の順）に並べる",
+  "domainOrder": [
+    "found",
+    "linux",
+    "net",
+    "web",
+    "sec",
+    "git",
+    "trouble",
+    "db",
+    "cicd",
+    "ctr",
+    "docker",
+    "k8s",
+    "lab",
+    "mon",
+    "cloud",
+    "devops"
+  ],
+  "themes": {
+    "found": [
+      "コンピュータの仕組み",
+      "OS",
+      "プロセスとメモリ",
+      "ファイルと権限",
+      "データの表し方",
+      "仮想化の入口"
+    ],
+    "linux": [
+      "Linux 基礎",
+      "シェルと CLI",
+      "ファイル操作",
+      "テキスト処理",
+      "権限とユーザー",
+      "プロセス",
+      "サービスと systemd",
+      "ログ",
+      "パッケージ",
+      "ネットワーク設定",
+      "ディスク",
+      "自動化",
+      "トラブルシューティング"
+    ],
+    "net": [
+      "全体像",
+      "層（OSI と TCP/IP）",
+      "IP",
+      "TCP と UDP",
+      "ポート",
+      "DNS",
+      "DHCP",
+      "ルーティング",
+      "NAT",
+      "Firewall",
+      "切り分け"
+    ],
+    "web": [
+      "URL",
+      "HTTP",
+      "HTTPS",
+      "メソッド",
+      "ステータスコード",
+      "ヘッダ",
+      "Cookie とセッション",
+      "REST と API",
+      "Web サーバ",
+      "性能と障害"
+    ],
+    "sec": [
+      "セキュリティの基本",
+      "認証と認可",
+      "秘密情報",
+      "暗号（公開鍵と秘密鍵）/ TLS と証明書（中間・ルート）/ 脆弱性",
+      "最小権限",
+      "運用のセキュリティ"
+    ],
+    "git": [
+      "バージョン管理",
+      "commit",
+      "差分と履歴",
+      "branch",
+      "merge",
+      "conflict",
+      "remote",
+      "pull と push",
+      "GitHub・GitLab",
+      "取り消し",
+      "運用"
+    ],
+    "trouble": [
+      "型",
+      "読む",
+      "Linux",
+      "ネットワーク",
+      "Web",
+      "コンテナ",
+      "複合",
+      "予防"
+    ],
+    "db": [
+      "DB 基礎",
+      "SQL",
+      "テーブル",
+      "インデックス",
+      "トランザクション",
+      "RDB",
+      "NoSQL の基本",
+      "バックアップ",
+      "障害対応"
+    ],
+    "cicd": [
+      "CI と CD",
+      "pipeline",
+      "runner",
+      "artifact",
+      "build と test",
+      "deploy",
+      "設定ファイル（GitHub Actions・GitLab CI など）/ 秘密情報",
+      "デプロイ戦略"
+    ],
+    "ctr": [
+      "コンテナとは",
+      "VM との違い",
+      "イメージ",
+      "コンテナ",
+      "レイヤ",
+      "レジストリ",
+      "ランタイム",
+      "ネットワーク",
+      "ストレージ",
+      "複数コンテナ",
+      "運用"
+    ],
+    "docker": [
+      "Docker Engine",
+      "image",
+      "container",
+      "Dockerfile",
+      "build",
+      "run",
+      "volume",
+      "network",
+      "registry",
+      "Compose"
+    ],
+    "k8s": [
+      "Kubernetes とは",
+      "なぜ必要か",
+      "コンテナとの関係",
+      "クラスタ",
+      "Node",
+      "Pod",
+      "Deployment",
+      "Service",
+      "Namespace",
+      "ConfigMap",
+      "Secret",
+      "Volume",
+      "Ingress",
+      "ヘルスチェック",
+      "スケーリング",
+      "ローリングアップデート",
+      "上のアプリ",
+      "トラブルシューティング"
+    ],
+    "lab": [
+      "総合"
+    ],
+    "mon": [
+      "考え方",
+      "ログ",
+      "メトリクス",
+      "アラート",
+      "トレース",
+      "可視化",
+      "調査",
+      "目標",
+      "設計",
+      "分散"
+    ],
+    "cloud": [
+      "仮想化",
+      "形",
+      "資源",
+      "可用性",
+      "規模",
+      "責任",
+      "費用",
+      "設計",
+      "障害"
+    ],
+    "devops": [
+      "考え方",
+      "自動化",
+      "流れ",
+      "IaC",
+      "改善",
+      "振り返り",
+      "安全な変更",
+      "組織"
+    ]
+  },
+  "lessons": [
+    {
+      "id": "found.b.01",
+      "domain": "found",
+      "level": "beginner",
+      "theme": "仕組み",
+      "title": "コンピュータは何をしているか",
+      "goal": "入力・処理・出力・記憶の 4 つで説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [],
+      "related": [
+        "found.b.07",
+        "net.b.01"
+      ],
+      "next": [
+        "found.b.02",
+        "found.b.07",
+        "found.b.08"
+      ]
+    },
+    {
+      "id": "found.b.02",
+      "domain": "found",
+      "level": "beginner",
+      "theme": "仕組み",
+      "title": "CPU・メモリ・ストレージ",
+      "goal": "速さと容量の違いと役割分担を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.b.01"
+      ],
+      "related": [
+        "found.i.01",
+        "linux.a.02"
+      ],
+      "next": [
+        "found.b.03",
+        "found.i.01"
+      ]
+    },
+    {
+      "id": "found.b.03",
+      "domain": "found",
+      "level": "beginner",
+      "theme": "OS",
+      "title": "OS の役割",
+      "goal": "資源の割り振り・ファイル・利用者の管理を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.b.02"
+      ],
+      "related": [
+        "linux.b.00",
+        "cloud.b.01"
+      ],
+      "next": [
+        "found.b.04",
+        "found.b.05",
+        "found.i.03"
+      ]
+    },
+    {
+      "id": "found.b.04",
+      "domain": "found",
+      "level": "beginner",
+      "theme": "ファイル",
+      "title": "ファイルとディレクトリ",
+      "goal": "木の構造・パス・現在地を説明し、初めて pwd/ls/cd を打てる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "found.b.03"
+      ],
+      "related": [
+        "linux.b.02",
+        "git.b.01"
+      ],
+      "next": [
+        "found.b.06",
+        "linux.b.01",
+        "db.b.01"
+      ]
+    },
+    {
+      "id": "found.b.05",
+      "domain": "found",
+      "level": "beginner",
+      "theme": "プロセス",
+      "title": "プロセスとは",
+      "goal": "プログラムとプロセスの違い、PID を説明できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "found.b.03"
+      ],
+      "related": [
+        "linux.b.08",
+        "ctr.i.02"
+      ],
+      "next": [
+        "found.i.01",
+        "found.i.02",
+        "linux.b.08"
+      ]
+    },
+    {
+      "id": "found.b.06",
+      "domain": "found",
+      "level": "beginner",
+      "theme": "権限",
+      "title": "利用者と権限",
+      "goal": "読み・書き・実行と、所有者・グループ・その他を説明できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "found.b.04"
+      ],
+      "related": [
+        "linux.b.06",
+        "sec.i.04"
+      ],
+      "next": [
+        "linux.b.06",
+        "sec.b.01"
+      ]
+    },
+    {
+      "id": "found.b.07",
+      "domain": "found",
+      "level": "beginner",
+      "theme": "通信",
+      "title": "ネットワークとインターネットの全体像",
+      "goal": "端末・ネットワーク・サーバのつながりを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.b.01"
+      ],
+      "related": [
+        "net.b.01",
+        "web.b.01"
+      ],
+      "next": [
+        "net.b.01"
+      ]
+    },
+    {
+      "id": "found.b.08",
+      "domain": "found",
+      "level": "beginner",
+      "theme": "データ",
+      "title": "2 進数・文字コード・データ量",
+      "goal": "ビットとバイト、文字化けの理由を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.b.01"
+      ],
+      "related": [
+        "db.b.02",
+        "web.i.02"
+      ],
+      "next": [
+        "found.i.01"
+      ]
+    },
+    {
+      "id": "found.i.01",
+      "domain": "found",
+      "level": "intermediate",
+      "theme": "メモリ",
+      "title": "メモリ不足とスワップ",
+      "goal": "メモリが足りないと何が起きるかを予測できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.b.02",
+        "found.b.05"
+      ],
+      "related": [
+        "linux.a.02",
+        "k8s.i.07"
+      ],
+      "next": [
+        "found.i.02"
+      ]
+    },
+    {
+      "id": "found.i.02",
+      "domain": "found",
+      "level": "intermediate",
+      "theme": "プロセス",
+      "title": "プロセス・スレッド・並行",
+      "goal": "同時に動かす仕組みと取り合いを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.b.05"
+      ],
+      "related": [
+        "linux.b.08",
+        "db.i.04"
+      ],
+      "next": [
+        "found.a.01"
+      ]
+    },
+    {
+      "id": "found.i.03",
+      "domain": "found",
+      "level": "intermediate",
+      "theme": "仮想化",
+      "title": "仮想化の考え方",
+      "goal": "1 台を複数に見せる仕組みを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.b.03"
+      ],
+      "related": [
+        "cloud.b.01",
+        "ctr.b.02"
+      ],
+      "next": [
+        "ctr.b.02",
+        "cloud.b.01"
+      ]
+    },
+    {
+      "id": "found.a.01",
+      "domain": "found",
+      "level": "advanced",
+      "theme": "OS",
+      "title": "カーネルとシステムコール",
+      "goal": "アプリと OS の境界を説明できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "found.i.02"
+      ],
+      "related": [
+        "ctr.i.02",
+        "linux.a.02"
+      ],
+      "next": [
+        "ctr.i.02"
+      ]
+    },
+    {
+      "id": "linux.b.00",
+      "domain": "linux",
+      "level": "beginner",
+      "theme": "Linux 基礎",
+      "title": "Linux とは",
+      "goal": "OS としての Linux・カーネルとディストリビューション・サーバで使われる理由を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.b.03"
+      ],
+      "related": [
+        "found.b.03",
+        "ctr.b.02"
+      ],
+      "next": [
+        "linux.b.01"
+      ]
+    },
+    {
+      "id": "linux.b.01",
+      "domain": "linux",
+      "level": "beginner",
+      "theme": "CLI",
+      "title": "端末とシェル",
+      "goal": "CLI とは何かを説明し、プロンプト・コマンド・引数・オプションを読める",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.b.00",
+        "found.b.04"
+      ],
+      "related": [
+        "found.b.04",
+        "git.b.02"
+      ],
+      "next": [
+        "linux.b.02",
+        "linux.b.03"
+      ]
+    },
+    {
+      "id": "linux.b.02",
+      "domain": "linux",
+      "level": "beginner",
+      "theme": "ファイル操作",
+      "title": "作る・写す・移す・消す",
+      "goal": "mkdir/cp/mv/rm を安全に使える",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.b.01"
+      ],
+      "related": [
+        "found.b.04",
+        "git.b.02"
+      ],
+      "next": [
+        "web.b.07",
+        "git.b.01"
+      ]
+    },
+    {
+      "id": "linux.b.03",
+      "domain": "linux",
+      "level": "beginner",
+      "theme": "テキスト",
+      "title": "中身を見る",
+      "goal": "cat/less/head/tail を使い分けられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.b.01"
+      ],
+      "related": [
+        "trouble.b.03",
+        "mon.b.02"
+      ],
+      "next": [
+        "linux.b.04"
+      ]
+    },
+    {
+      "id": "linux.b.04",
+      "domain": "linux",
+      "level": "beginner",
+      "theme": "テキスト",
+      "title": "探す",
+      "goal": "grep と find で目的の行とファイルを見つけられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.b.03"
+      ],
+      "related": [
+        "trouble.b.03",
+        "mon.b.02"
+      ],
+      "next": [
+        "linux.b.05",
+        "trouble.b.01"
+      ]
+    },
+    {
+      "id": "linux.b.05",
+      "domain": "linux",
+      "level": "beginner",
+      "theme": "テキスト",
+      "title": "パイプとリダイレクト",
+      "goal": "コマンドをつなぎ、結果をファイルに残せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.b.04"
+      ],
+      "related": [
+        "cicd.b.02",
+        "web.i.02"
+      ],
+      "next": [
+        "linux.i.05",
+        "linux.i.06"
+      ]
+    },
+    {
+      "id": "linux.b.06",
+      "domain": "linux",
+      "level": "beginner",
+      "theme": "権限",
+      "title": "権限を読む・変える",
+      "goal": "ls -l を読み、chmod/chown で直せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "found.b.06"
+      ],
+      "related": [
+        "found.b.06",
+        "sec.i.04"
+      ],
+      "next": [
+        "linux.b.07"
+      ]
+    },
+    {
+      "id": "linux.b.07",
+      "domain": "linux",
+      "level": "beginner",
+      "theme": "ユーザー",
+      "title": "ユーザー・グループ・sudo",
+      "goal": "管理者権限の意味と危険を説明できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.b.06"
+      ],
+      "related": [
+        "sec.b.02",
+        "sec.i.04"
+      ],
+      "next": [
+        "linux.i.03",
+        "sec.i.04"
+      ]
+    },
+    {
+      "id": "linux.b.08",
+      "domain": "linux",
+      "level": "beginner",
+      "theme": "プロセス",
+      "title": "プロセスを見る・止める",
+      "goal": "ps/top/kill を使える",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "found.b.05"
+      ],
+      "related": [
+        "found.b.05",
+        "docker.b.05"
+      ],
+      "next": [
+        "linux.i.01",
+        "ctr.b.01"
+      ]
+    },
+    {
+      "id": "linux.i.01",
+      "domain": "linux",
+      "level": "intermediate",
+      "theme": "サービス",
+      "title": "サービスと systemd",
+      "goal": "systemctl で起動・停止・有効化・状態確認ができる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.b.08"
+      ],
+      "related": [
+        "docker.b.03",
+        "k8s.i.05"
+      ],
+      "next": [
+        "linux.i.02",
+        "linux.a.04",
+        "trouble.i.01"
+      ]
+    },
+    {
+      "id": "linux.i.02",
+      "domain": "linux",
+      "level": "intermediate",
+      "theme": "ログ",
+      "title": "ログを読む",
+      "goal": "journalctl と /var/log から手掛かりを探せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.i.01"
+      ],
+      "related": [
+        "mon.b.02",
+        "trouble.b.03"
+      ],
+      "next": [
+        "linux.a.01",
+        "mon.b.01"
+      ]
+    },
+    {
+      "id": "linux.i.03",
+      "domain": "linux",
+      "level": "intermediate",
+      "theme": "パッケージ",
+      "title": "パッケージ管理",
+      "goal": "apt で入れる・更新する・消すができる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.b.07"
+      ],
+      "related": [
+        "sec.a.01",
+        "docker.i.01"
+      ],
+      "next": [
+        "sec.a.01"
+      ]
+    },
+    {
+      "id": "linux.i.04",
+      "domain": "linux",
+      "level": "intermediate",
+      "theme": "ネットワーク設定",
+      "title": "IP とポートを確かめる",
+      "goal": "ip/ss で自分のアドレスと待ち受けを確かめられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "net.b.04"
+      ],
+      "related": [
+        "net.b.04",
+        "docker.b.04"
+      ],
+      "next": [
+        "linux.i.05"
+      ]
+    },
+    {
+      "id": "linux.i.05",
+      "domain": "linux",
+      "level": "intermediate",
+      "theme": "ディスク",
+      "title": "容量を調べる",
+      "goal": "df/du で使用量を調べ、原因の場所を特定できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.b.05"
+      ],
+      "related": [
+        "trouble.i.01",
+        "db.a.02"
+      ],
+      "next": [
+        "linux.a.02",
+        "linux.a.03",
+        "trouble.i.01"
+      ]
+    },
+    {
+      "id": "linux.i.06",
+      "domain": "linux",
+      "level": "intermediate",
+      "theme": "環境",
+      "title": "環境変数とシェル設定",
+      "goal": "PATH と環境変数を理解し設定できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.b.05"
+      ],
+      "related": [
+        "k8s.i.01",
+        "cicd.i.03"
+      ],
+      "next": [
+        "linux.i.07"
+      ]
+    },
+    {
+      "id": "linux.i.07",
+      "domain": "linux",
+      "level": "intermediate",
+      "theme": "自動化",
+      "title": "シェルスクリプト入門",
+      "goal": "変数・条件・繰り返しで小さな自動化を書ける",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.i.06"
+      ],
+      "related": [
+        "devops.b.02",
+        "cicd.i.02"
+      ],
+      "next": [
+        "linux.i.08",
+        "devops.b.02"
+      ]
+    },
+    {
+      "id": "linux.i.08",
+      "domain": "linux",
+      "level": "intermediate",
+      "theme": "自動化",
+      "title": "定期実行",
+      "goal": "cron と systemd タイマーで定期処理を設定できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.i.07"
+      ],
+      "related": [
+        "devops.b.02",
+        "mon.b.04"
+      ],
+      "next": [
+        "linux.a.01"
+      ]
+    },
+    {
+      "id": "linux.a.01",
+      "domain": "linux",
+      "level": "advanced",
+      "theme": "障害",
+      "title": "起動しないサービスを直す",
+      "goal": "状態・ログ・設定から原因を特定し直せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.i.02"
+      ],
+      "related": [
+        "trouble.i.01",
+        "docker.a.02"
+      ],
+      "next": [
+        "linux.a.02"
+      ]
+    },
+    {
+      "id": "linux.a.02",
+      "domain": "linux",
+      "level": "advanced",
+      "theme": "性能",
+      "title": "遅いサーバを調べる",
+      "goal": "CPU・メモリ・ディスク・待ちの偏りを見分けられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.i.05"
+      ],
+      "related": [
+        "mon.b.03",
+        "db.i.03"
+      ],
+      "next": [
+        "linux.a.03"
+      ]
+    },
+    {
+      "id": "linux.a.03",
+      "domain": "linux",
+      "level": "advanced",
+      "theme": "ファイルシステム",
+      "title": "マウントとファイルシステム",
+      "goal": "領域を追加し、マウントし、再起動後も保てる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.i.05"
+      ],
+      "related": [
+        "ctr.i.04",
+        "k8s.i.03"
+      ],
+      "next": [
+        "linux.a.04"
+      ]
+    },
+    {
+      "id": "linux.a.04",
+      "domain": "linux",
+      "level": "advanced",
+      "theme": "安全",
+      "title": "サーバを堅くする",
+      "goal": "SSH 鍵・最小権限・不要なサービスの停止ができる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "sec.b.04",
+        "linux.i.01"
+      ],
+      "related": [
+        "sec.i.04",
+        "sec.b.04"
+      ],
+      "next": []
+    },
+    {
+      "id": "net.b.01",
+      "domain": "net",
+      "level": "beginner",
+      "theme": "全体像",
+      "title": "ネットワークとは（LAN と WAN）",
+      "goal": "家庭・会社・インターネットのつながりを描ける",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.b.07"
+      ],
+      "related": [
+        "found.b.07",
+        "cloud.b.03"
+      ],
+      "next": [
+        "net.b.02"
+      ]
+    },
+    {
+      "id": "net.b.02",
+      "domain": "net",
+      "level": "beginner",
+      "theme": "層",
+      "title": "OSI と TCP/IP の層",
+      "goal": "各層の役割と、どの層の話かを判断できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.b.01"
+      ],
+      "related": [
+        "web.b.02",
+        "trouble.b.01"
+      ],
+      "next": [
+        "net.b.03"
+      ]
+    },
+    {
+      "id": "net.b.03",
+      "domain": "net",
+      "level": "beginner",
+      "theme": "IP",
+      "title": "IP アドレスとサブネット",
+      "goal": "アドレスとネットワーク部を読み、同じ網かを判断できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.b.02"
+      ],
+      "related": [
+        "cloud.b.03",
+        "linux.i.04"
+      ],
+      "next": [
+        "net.b.04",
+        "net.b.06",
+        "net.b.07"
+      ]
+    },
+    {
+      "id": "net.b.04",
+      "domain": "net",
+      "level": "beginner",
+      "theme": "ポート",
+      "title": "ポート",
+      "goal": "1 台の中で通信を届け分ける仕組みを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.b.03"
+      ],
+      "related": [
+        "linux.i.04",
+        "docker.b.04"
+      ],
+      "next": [
+        "net.b.05",
+        "net.i.03",
+        "web.b.02"
+      ]
+    },
+    {
+      "id": "net.b.05",
+      "domain": "net",
+      "level": "beginner",
+      "theme": "TCP/UDP",
+      "title": "TCP と UDP",
+      "goal": "確実さと速さの違い、使い分けを判断できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.b.04"
+      ],
+      "related": [
+        "web.i.06",
+        "mon.i.01"
+      ],
+      "next": [
+        "net.i.04",
+        "web.i.06"
+      ]
+    },
+    {
+      "id": "net.b.06",
+      "domain": "net",
+      "level": "beginner",
+      "theme": "DNS",
+      "title": "名前解決",
+      "goal": "名前から IP を引く流れを説明し、dig で確かめられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "net.b.03"
+      ],
+      "related": [
+        "web.b.01",
+        "trouble.i.02"
+      ],
+      "next": [
+        "net.i.05",
+        "web.b.01"
+      ]
+    },
+    {
+      "id": "net.b.07",
+      "domain": "net",
+      "level": "beginner",
+      "theme": "確認",
+      "title": "ping と traceroute",
+      "goal": "到達と経路を確かめられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "net.b.03"
+      ],
+      "related": [
+        "trouble.i.02",
+        "linux.i.04"
+      ],
+      "next": [
+        "net.i.01"
+      ]
+    },
+    {
+      "id": "net.b.08",
+      "domain": "net",
+      "level": "beginner",
+      "theme": "DHCP",
+      "title": "DHCP",
+      "goal": "アドレスが自動で配られる流れを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.b.03"
+      ],
+      "related": [
+        "net.b.03",
+        "cloud.b.03"
+      ],
+      "next": [
+        "net.i.01"
+      ]
+    },
+    {
+      "id": "net.i.01",
+      "domain": "net",
+      "level": "intermediate",
+      "theme": "ルーティング",
+      "title": "経路とデフォルトゲートウェイ",
+      "goal": "経路表を読み、足りない経路を足せる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.b.07"
+      ],
+      "related": [
+        "cloud.b.03",
+        "trouble.i.02"
+      ],
+      "next": [
+        "net.i.02",
+        "net.i.06"
+      ]
+    },
+    {
+      "id": "net.i.02",
+      "domain": "net",
+      "level": "intermediate",
+      "theme": "NAT",
+      "title": "NAT",
+      "goal": "内側と外側のアドレス変換を説明し、設定の誤りを見つけられる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.i.01"
+      ],
+      "related": [
+        "cloud.b.03",
+        "docker.b.04"
+      ],
+      "next": [
+        "net.i.03"
+      ]
+    },
+    {
+      "id": "net.i.03",
+      "domain": "net",
+      "level": "intermediate",
+      "theme": "Firewall",
+      "title": "ファイアウォール",
+      "goal": "許可と拒否の規則を読み書きできる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.b.04"
+      ],
+      "related": [
+        "sec.i.04",
+        "k8s.b.06"
+      ],
+      "next": [
+        "net.a.01",
+        "net.a.03",
+        "trouble.i.02"
+      ]
+    },
+    {
+      "id": "net.i.04",
+      "domain": "net",
+      "level": "intermediate",
+      "theme": "TCP",
+      "title": "接続の確立と状態",
+      "goal": "3 ウェイハンドシェイクと ss の状態を読める",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "net.b.05"
+      ],
+      "related": [
+        "trouble.i.02",
+        "web.b.02"
+      ],
+      "next": [
+        "net.a.02"
+      ]
+    },
+    {
+      "id": "net.i.05",
+      "domain": "net",
+      "level": "intermediate",
+      "theme": "DNS",
+      "title": "DNS レコード",
+      "goal": "A/AAAA/CNAME/MX/TXT を使い分けられる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.b.06"
+      ],
+      "related": [
+        "web.b.01",
+        "sec.b.07"
+      ],
+      "next": [
+        "net.i.06"
+      ]
+    },
+    {
+      "id": "net.i.06",
+      "domain": "net",
+      "level": "intermediate",
+      "theme": "設計",
+      "title": "ネットワークを分ける",
+      "goal": "セグメント分割と VLAN の考え方を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.i.01"
+      ],
+      "related": [
+        "cloud.i.01",
+        "k8s.b.07"
+      ],
+      "next": [
+        "net.a.01"
+      ]
+    },
+    {
+      "id": "net.a.01",
+      "domain": "net",
+      "level": "advanced",
+      "theme": "切り分け",
+      "title": "繋がらない原因を層ごとに探す",
+      "goal": "物理〜アプリの順に切り分けられる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.i.03",
+        "trouble.b.01"
+      ],
+      "related": [
+        "trouble.i.02",
+        "mon.i.03"
+      ],
+      "next": [
+        "net.a.02"
+      ]
+    },
+    {
+      "id": "net.a.02",
+      "domain": "net",
+      "level": "advanced",
+      "theme": "経路",
+      "title": "MTU と断片化",
+      "goal": "大きな通信だけ失敗する理由を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.i.04"
+      ],
+      "related": [
+        "trouble.a.02",
+        "web.a.01"
+      ],
+      "next": [
+        "net.a.03"
+      ]
+    },
+    {
+      "id": "net.a.03",
+      "domain": "net",
+      "level": "advanced",
+      "theme": "負荷分散",
+      "title": "ロードバランサ",
+      "goal": "振り分け方式と健全性確認を設計できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.i.03"
+      ],
+      "related": [
+        "k8s.b.06",
+        "cloud.i.02"
+      ],
+      "next": [
+        "net.a.04"
+      ]
+    },
+    {
+      "id": "net.a.04",
+      "domain": "net",
+      "level": "advanced",
+      "theme": "IPv6",
+      "title": "IPv6 の基本",
+      "goal": "アドレスの読み方と IPv4 との違いを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.b.03"
+      ],
+      "related": [
+        "net.b.03",
+        "cloud.b.03"
+      ],
+      "next": []
+    },
+    {
+      "id": "web.b.01",
+      "domain": "web",
+      "level": "beginner",
+      "theme": "URL",
+      "title": "URL の組み立て",
+      "goal": "スキーム・ホスト・ポート・パス・クエリを読める",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "net.b.06"
+      ],
+      "related": [
+        "net.b.06",
+        "web.i.01"
+      ],
+      "next": [
+        "web.b.02"
+      ]
+    },
+    {
+      "id": "web.b.02",
+      "domain": "web",
+      "level": "beginner",
+      "theme": "HTTP",
+      "title": "リクエストとレスポンス",
+      "goal": "HTTP のやり取りを読み、curl で確かめられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "web.b.01",
+        "net.b.04"
+      ],
+      "related": [
+        "net.b.04",
+        "linux.b.03"
+      ],
+      "next": [
+        "web.b.03",
+        "web.b.04",
+        "web.b.05"
+      ]
+    },
+    {
+      "id": "web.b.03",
+      "domain": "web",
+      "level": "beginner",
+      "theme": "メソッド",
+      "title": "HTTP メソッド",
+      "goal": "GET/POST/PUT/DELETE を使い分けられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "web.b.02"
+      ],
+      "related": [
+        "web.i.01",
+        "db.b.05"
+      ],
+      "next": [
+        "web.i.01"
+      ]
+    },
+    {
+      "id": "web.b.04",
+      "domain": "web",
+      "level": "beginner",
+      "theme": "ステータス",
+      "title": "ステータスコード",
+      "goal": "2xx〜5xx の意味から次の行動を判断できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "web.b.02"
+      ],
+      "related": [
+        "trouble.i.03",
+        "mon.b.03"
+      ],
+      "next": [
+        "web.b.05"
+      ]
+    },
+    {
+      "id": "web.b.05",
+      "domain": "web",
+      "level": "beginner",
+      "theme": "ヘッダ",
+      "title": "HTTP ヘッダ",
+      "goal": "Content-Type・Cache-Control・Location などを読める",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "web.b.02"
+      ],
+      "related": [
+        "web.i.04",
+        "sec.b.06"
+      ],
+      "next": [
+        "web.b.06",
+        "web.i.04"
+      ]
+    },
+    {
+      "id": "web.b.06",
+      "domain": "web",
+      "level": "beginner",
+      "theme": "状態",
+      "title": "Cookie とセッション",
+      "goal": "ログイン状態が保たれる仕組みを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "web.b.05"
+      ],
+      "related": [
+        "sec.b.02",
+        "sec.b.03"
+      ],
+      "next": [
+        "web.b.07"
+      ]
+    },
+    {
+      "id": "web.b.07",
+      "domain": "web",
+      "level": "beginner",
+      "theme": "Web サーバ",
+      "title": "Web サーバの役割",
+      "goal": "静的なファイルを配る流れを説明し、模擬サーバで公開できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "web.b.02",
+        "linux.b.02"
+      ],
+      "related": [
+        "linux.i.01",
+        "docker.b.04"
+      ],
+      "next": [
+        "web.i.03"
+      ]
+    },
+    {
+      "id": "web.b.08",
+      "domain": "web",
+      "level": "beginner",
+      "theme": "HTTPS",
+      "title": "HTTPS（HTTP を安全にする）",
+      "goal": "http と https の違い・443 番・http から https への転送・混在コンテンツを説明し確かめられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "web.b.02",
+        "sec.b.06"
+      ],
+      "related": [
+        "sec.b.07",
+        "net.b.04"
+      ],
+      "next": [
+        "web.i.01"
+      ]
+    },
+    {
+      "id": "web.i.01",
+      "domain": "web",
+      "level": "intermediate",
+      "theme": "API",
+      "title": "REST と API",
+      "goal": "資源と操作で API を設計・利用できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "web.b.03"
+      ],
+      "related": [
+        "db.b.03",
+        "cicd.b.01"
+      ],
+      "next": [
+        "web.i.02",
+        "web.i.05",
+        "web.a.03"
+      ]
+    },
+    {
+      "id": "web.i.02",
+      "domain": "web",
+      "level": "intermediate",
+      "theme": "データ",
+      "title": "JSON",
+      "goal": "JSON を読み書きし、API の応答から値を取り出せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "web.i.01"
+      ],
+      "related": [
+        "db.i.05",
+        "linux.b.05"
+      ],
+      "next": [
+        "web.i.03"
+      ]
+    },
+    {
+      "id": "web.i.03",
+      "domain": "web",
+      "level": "intermediate",
+      "theme": "Web サーバ",
+      "title": "仮想ホストとリバースプロキシ",
+      "goal": "1 台で複数サイト、後段への転送を設定できる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "web.b.07"
+      ],
+      "related": [
+        "k8s.i.04",
+        "net.a.03"
+      ],
+      "next": [
+        "web.a.02",
+        "sec.i.02",
+        "k8s.i.04"
+      ]
+    },
+    {
+      "id": "web.i.04",
+      "domain": "web",
+      "level": "intermediate",
+      "theme": "性能",
+      "title": "キャッシュ",
+      "goal": "どこで何が保存されるかを説明し、設定できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "web.b.05"
+      ],
+      "related": [
+        "net.a.03",
+        "db.i.03"
+      ],
+      "next": [
+        "web.a.01"
+      ]
+    },
+    {
+      "id": "web.i.05",
+      "domain": "web",
+      "level": "intermediate",
+      "theme": "安全",
+      "title": "CORS",
+      "goal": "ブラウザが他のサイトへの通信を止める理由と許可の仕方",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "web.i.01"
+      ],
+      "related": [
+        "sec.b.02",
+        "web.i.01"
+      ],
+      "next": [
+        "web.i.06"
+      ]
+    },
+    {
+      "id": "web.i.06",
+      "domain": "web",
+      "level": "intermediate",
+      "theme": "版",
+      "title": "HTTP/2 と HTTP/3",
+      "goal": "違いと利点を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "web.b.02",
+        "net.b.05"
+      ],
+      "related": [
+        "net.b.05",
+        "sec.b.06"
+      ],
+      "next": [
+        "web.a.01"
+      ]
+    },
+    {
+      "id": "web.a.01",
+      "domain": "web",
+      "level": "advanced",
+      "theme": "性能",
+      "title": "遅い Web を調べる",
+      "goal": "遅延の内訳（DNS・接続・TLS・処理・転送）を切り分けられる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "web.i.04",
+        "sec.b.06"
+      ],
+      "related": [
+        "mon.i.01",
+        "net.a.02"
+      ],
+      "next": [
+        "web.a.02"
+      ]
+    },
+    {
+      "id": "web.a.02",
+      "domain": "web",
+      "level": "advanced",
+      "theme": "障害",
+      "title": "4xx と 5xx を直す",
+      "goal": "症状から Web サーバ・アプリ・後段のどこかを特定できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "web.i.03",
+        "trouble.b.03"
+      ],
+      "related": [
+        "trouble.i.03",
+        "mon.i.03"
+      ],
+      "next": [
+        "web.a.03"
+      ]
+    },
+    {
+      "id": "web.a.03",
+      "domain": "web",
+      "level": "advanced",
+      "theme": "API",
+      "title": "認証付き API",
+      "goal": "トークンを使った API 呼び出しと失敗時の扱い",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "web.i.01",
+        "sec.b.02"
+      ],
+      "related": [
+        "sec.b.02",
+        "sec.i.05"
+      ],
+      "next": []
+    },
+    {
+      "id": "sec.b.01",
+      "domain": "sec",
+      "level": "beginner",
+      "theme": "基本",
+      "title": "何を守るのか（機密性・完全性・可用性）",
+      "goal": "守る対象と脅威を 3 つの観点で整理できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.b.06"
+      ],
+      "related": [
+        "cloud.i.03",
+        "mon.b.01"
+      ],
+      "next": [
+        "sec.b.02",
+        "sec.b.04",
+        "cloud.i.03"
+      ]
+    },
+    {
+      "id": "sec.b.02",
+      "domain": "sec",
+      "level": "beginner",
+      "theme": "認証と認可",
+      "title": "認証と認可",
+      "goal": "「誰か」と「何をしてよいか」を区別できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "sec.b.01"
+      ],
+      "related": [
+        "web.b.06",
+        "k8s.i.02"
+      ],
+      "next": [
+        "sec.b.03",
+        "web.a.03"
+      ]
+    },
+    {
+      "id": "sec.b.03",
+      "domain": "sec",
+      "level": "beginner",
+      "theme": "認証",
+      "title": "パスワードと多要素認証",
+      "goal": "強いパスワードと多要素の意味を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "sec.b.02"
+      ],
+      "related": [
+        "web.b.06",
+        "sec.b.05"
+      ],
+      "next": [
+        "sec.b.04"
+      ]
+    },
+    {
+      "id": "sec.b.04",
+      "domain": "sec",
+      "level": "beginner",
+      "theme": "暗号",
+      "title": "公開鍵と秘密鍵",
+      "goal": "鍵の対と、渡してよい鍵・いけない鍵を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "sec.b.01"
+      ],
+      "related": [
+        "linux.a.04",
+        "git.i.02"
+      ],
+      "next": [
+        "sec.b.05",
+        "sec.b.06",
+        "linux.a.04"
+      ]
+    },
+    {
+      "id": "sec.b.05",
+      "domain": "sec",
+      "level": "beginner",
+      "theme": "秘密情報",
+      "title": "秘密情報を漏らさない",
+      "goal": "鍵やトークンをコードに書かない・コミットしない理由と方法",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "sec.b.04",
+        "git.b.02"
+      ],
+      "related": [
+        "git.a.03",
+        "cicd.i.03"
+      ],
+      "next": [
+        "sec.i.05",
+        "cicd.i.03",
+        "k8s.i.02"
+      ]
+    },
+    {
+      "id": "sec.b.06",
+      "domain": "sec",
+      "level": "beginner",
+      "theme": "TLS",
+      "title": "HTTPS と TLS",
+      "goal": "暗号化と相手の確認の 2 つの役割を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "web.b.02",
+        "sec.b.04"
+      ],
+      "related": [
+        "web.b.02",
+        "net.b.05"
+      ],
+      "next": [
+        "sec.b.07",
+        "web.b.08",
+        "web.a.01"
+      ]
+    },
+    {
+      "id": "sec.b.07",
+      "domain": "sec",
+      "level": "beginner",
+      "theme": "証明書",
+      "title": "証明書と認証局",
+      "goal": "サーバ証明書・中間証明書・ルート証明書の関係を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "sec.b.06"
+      ],
+      "related": [
+        "net.i.05",
+        "web.b.08"
+      ],
+      "next": [
+        "sec.i.01"
+      ]
+    },
+    {
+      "id": "sec.i.01",
+      "domain": "sec",
+      "level": "intermediate",
+      "theme": "証明書",
+      "title": "証明書の検証と連鎖",
+      "goal": "期限・名前・連鎖の欠けによるエラーを直せる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "sec.b.07"
+      ],
+      "related": [
+        "trouble.i.03",
+        "web.a.02"
+      ],
+      "next": [
+        "sec.i.02",
+        "trouble.i.03"
+      ]
+    },
+    {
+      "id": "sec.i.02",
+      "domain": "sec",
+      "level": "intermediate",
+      "theme": "設定",
+      "title": "Web サーバに TLS を設定する",
+      "goal": "証明書と秘密鍵を正しく配置し、HTTPS を有効にできる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "sec.i.01",
+        "web.i.03"
+      ],
+      "related": [
+        "web.i.03",
+        "k8s.i.04"
+      ],
+      "next": [
+        "lab.i.01"
+      ]
+    },
+    {
+      "id": "sec.i.03",
+      "domain": "sec",
+      "level": "intermediate",
+      "theme": "脆弱性",
+      "title": "脆弱性とは（代表例）",
+      "goal": "SQL インジェクション・XSS などの仕組みと対策を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "web.i.01",
+        "db.b.03"
+      ],
+      "related": [
+        "db.b.03",
+        "web.i.01"
+      ],
+      "next": [
+        "sec.a.01"
+      ]
+    },
+    {
+      "id": "sec.i.04",
+      "domain": "sec",
+      "level": "intermediate",
+      "theme": "権限",
+      "title": "最小権限",
+      "goal": "必要最小限の権限を設計し、過剰な権限を見つけられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.b.07"
+      ],
+      "related": [
+        "linux.b.07",
+        "ctr.a.02"
+      ],
+      "next": [
+        "ctr.a.02"
+      ]
+    },
+    {
+      "id": "sec.i.05",
+      "domain": "sec",
+      "level": "intermediate",
+      "theme": "秘密情報",
+      "title": "秘密情報の保管と受け渡し",
+      "goal": "環境変数・Secrets・鍵の更新（ローテーション）ができる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "sec.b.05",
+        "cicd.i.03"
+      ],
+      "related": [
+        "k8s.i.02",
+        "linux.i.06"
+      ],
+      "next": [
+        "sec.a.01"
+      ]
+    },
+    {
+      "id": "sec.a.01",
+      "domain": "sec",
+      "level": "advanced",
+      "theme": "対応",
+      "title": "脆弱性の報告から更新まで",
+      "goal": "影響の判断と更新の優先順位を付けられる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "sec.i.03",
+        "linux.i.03"
+      ],
+      "related": [
+        "linux.i.03",
+        "docker.a.01"
+      ],
+      "next": [
+        "sec.a.02"
+      ]
+    },
+    {
+      "id": "sec.a.02",
+      "domain": "sec",
+      "level": "advanced",
+      "theme": "監査",
+      "title": "ログと監査",
+      "goal": "不審な操作をログから見つけられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "mon.b.02"
+      ],
+      "related": [
+        "linux.i.02",
+        "mon.i.03"
+      ],
+      "next": [
+        "sec.a.03"
+      ]
+    },
+    {
+      "id": "sec.a.03",
+      "domain": "sec",
+      "level": "advanced",
+      "theme": "事故",
+      "title": "インシデント対応の基本",
+      "goal": "封じ込め・調査・復旧・報告の流れを実行できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "sec.a.02",
+        "trouble.i.01"
+      ],
+      "related": [
+        "trouble.a.03",
+        "devops.i.03"
+      ],
+      "next": [
+        "sec.a.04"
+      ]
+    },
+    {
+      "id": "sec.a.04",
+      "domain": "sec",
+      "level": "advanced",
+      "theme": "依存",
+      "title": "依存関係の安全（サプライチェーン）",
+      "goal": "依存の脆弱性を調べ、更新と固定を判断できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cicd.i.02"
+      ],
+      "related": [
+        "ctr.a.02",
+        "cicd.a.03"
+      ],
+      "next": []
+    },
+    {
+      "id": "git.b.01",
+      "domain": "git",
+      "level": "beginner",
+      "theme": "考え方",
+      "title": "バージョン管理とは",
+      "goal": "履歴を残す理由と、無いと困る場面を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "linux.b.02"
+      ],
+      "related": [
+        "found.b.04",
+        "devops.b.01"
+      ],
+      "next": [
+        "git.b.02"
+      ]
+    },
+    {
+      "id": "git.b.02",
+      "domain": "git",
+      "level": "beginner",
+      "theme": "commit",
+      "title": "最初の記録",
+      "goal": "init/status/add/commit で変更を記録できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "git.b.01"
+      ],
+      "related": [
+        "linux.b.02",
+        "cicd.b.01"
+      ],
+      "next": [
+        "git.b.03",
+        "git.b.04",
+        "git.i.06"
+      ]
+    },
+    {
+      "id": "git.b.03",
+      "domain": "git",
+      "level": "beginner",
+      "theme": "履歴",
+      "title": "差分と履歴を見る",
+      "goal": "diff/log で何がいつ変わったかを読める",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "git.b.02"
+      ],
+      "related": [
+        "linux.b.03",
+        "trouble.b.03"
+      ],
+      "next": [
+        "git.i.01",
+        "git.i.04"
+      ]
+    },
+    {
+      "id": "git.b.04",
+      "domain": "git",
+      "level": "beginner",
+      "theme": "branch",
+      "title": "枝を分ける",
+      "goal": "branch/switch で作業を分けられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "git.b.02"
+      ],
+      "related": [
+        "cicd.i.05",
+        "git.a.02"
+      ],
+      "next": [
+        "git.b.05"
+      ]
+    },
+    {
+      "id": "git.b.05",
+      "domain": "git",
+      "level": "beginner",
+      "theme": "merge",
+      "title": "枝を合わせる",
+      "goal": "merge で統合できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "git.b.04"
+      ],
+      "related": [
+        "cicd.b.02",
+        "git.i.03"
+      ],
+      "next": [
+        "git.b.06",
+        "git.i.05"
+      ]
+    },
+    {
+      "id": "git.b.06",
+      "domain": "git",
+      "level": "beginner",
+      "theme": "conflict",
+      "title": "衝突を解く",
+      "goal": "衝突の印を読み、正しく解消できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "git.b.05"
+      ],
+      "related": [
+        "trouble.b.01",
+        "git.i.05"
+      ],
+      "next": [
+        "git.i.01"
+      ]
+    },
+    {
+      "id": "git.i.01",
+      "domain": "git",
+      "level": "intermediate",
+      "theme": "remote",
+      "title": "リモートと複製",
+      "goal": "clone/remote を理解できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "git.b.03"
+      ],
+      "related": [
+        "net.b.06",
+        "web.b.01"
+      ],
+      "next": [
+        "git.i.02"
+      ]
+    },
+    {
+      "id": "git.i.02",
+      "domain": "git",
+      "level": "intermediate",
+      "theme": "同期",
+      "title": "push と pull",
+      "goal": "手元と遠くの履歴を同期できる。fetch との違いを説明できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "git.i.01"
+      ],
+      "related": [
+        "sec.b.04",
+        "cicd.b.01"
+      ],
+      "next": [
+        "git.i.03"
+      ]
+    },
+    {
+      "id": "git.i.03",
+      "domain": "git",
+      "level": "intermediate",
+      "theme": "共同作業",
+      "title": "GitHub / GitLab とプルリクエスト",
+      "goal": "プルリクエストを作り、レビューを受けて統合できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "git.i.02"
+      ],
+      "related": [
+        "cicd.i.02",
+        "devops.b.03"
+      ],
+      "next": [
+        "git.a.02",
+        "lab.i.02"
+      ]
+    },
+    {
+      "id": "git.i.04",
+      "domain": "git",
+      "level": "intermediate",
+      "theme": "取り消し",
+      "title": "変更を取り消す",
+      "goal": "restore/revert/reset を場面で使い分けられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "git.b.03"
+      ],
+      "related": [
+        "db.i.04",
+        "trouble.b.01"
+      ],
+      "next": [
+        "git.a.01",
+        "git.a.03"
+      ]
+    },
+    {
+      "id": "git.i.05",
+      "domain": "git",
+      "level": "intermediate",
+      "theme": "履歴",
+      "title": "rebase の考え方",
+      "goal": "merge との違いと、使ってはいけない場面を説明できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "git.b.05"
+      ],
+      "related": [
+        "git.b.05",
+        "git.a.02"
+      ],
+      "next": [
+        "git.i.06"
+      ]
+    },
+    {
+      "id": "git.i.06",
+      "domain": "git",
+      "level": "intermediate",
+      "theme": "設定",
+      "title": ".gitignore とタグ",
+      "goal": "管理しない物を決め、版に名前を付けられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "git.b.02"
+      ],
+      "related": [
+        "cicd.b.04",
+        "sec.b.05"
+      ],
+      "next": [
+        "git.a.01"
+      ]
+    },
+    {
+      "id": "git.a.01",
+      "domain": "git",
+      "level": "advanced",
+      "theme": "調査",
+      "title": "壊れた変更を探す",
+      "goal": "bisect/blame で原因の変更を特定できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "git.i.04"
+      ],
+      "related": [
+        "trouble.a.02",
+        "cicd.i.04"
+      ],
+      "next": [
+        "git.a.02"
+      ]
+    },
+    {
+      "id": "git.a.02",
+      "domain": "git",
+      "level": "advanced",
+      "theme": "運用",
+      "title": "チームのブランチ戦略",
+      "goal": "保護・レビュー・リリースの流れを設計できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "git.i.03"
+      ],
+      "related": [
+        "cicd.a.03",
+        "devops.a.02"
+      ],
+      "next": [
+        "cicd.a.03"
+      ]
+    },
+    {
+      "id": "git.a.03",
+      "domain": "git",
+      "level": "advanced",
+      "theme": "事故",
+      "title": "秘密情報をコミットしてしまったら",
+      "goal": "無効化・履歴からの除去・再発防止の順に対処できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "sec.b.05",
+        "git.i.04"
+      ],
+      "related": [
+        "sec.a.03",
+        "cicd.i.03"
+      ],
+      "next": []
+    },
+    {
+      "id": "trouble.b.01",
+      "domain": "trouble",
+      "level": "beginner",
+      "theme": "型",
+      "title": "切り分けの型",
+      "goal": "症状 → 範囲 → 仮説 → 確認 → 対処 → 再確認、を回せる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "linux.b.04"
+      ],
+      "related": [
+        "net.a.01",
+        "mon.i.03"
+      ],
+      "next": [
+        "trouble.b.02",
+        "mon.i.03",
+        "net.a.01"
+      ]
+    },
+    {
+      "id": "trouble.b.02",
+      "domain": "trouble",
+      "level": "beginner",
+      "theme": "読む",
+      "title": "エラーメッセージを読む",
+      "goal": "どこが何と言っているかを読み取れる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "trouble.b.01"
+      ],
+      "related": [
+        "linux.b.01",
+        "cicd.i.04"
+      ],
+      "next": [
+        "trouble.b.03",
+        "cicd.i.04"
+      ]
+    },
+    {
+      "id": "trouble.b.03",
+      "domain": "trouble",
+      "level": "beginner",
+      "theme": "読む",
+      "title": "ログを読む",
+      "goal": "時刻と文脈で手掛かりを集められる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "trouble.b.02"
+      ],
+      "related": [
+        "linux.i.02",
+        "mon.b.02"
+      ],
+      "next": [
+        "web.a.02"
+      ]
+    },
+    {
+      "id": "trouble.i.01",
+      "domain": "trouble",
+      "level": "intermediate",
+      "theme": "Linux",
+      "title": "サーバの障害",
+      "goal": "ディスク満杯・権限・サービス停止を直せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "linux.i.05",
+        "linux.i.01"
+      ],
+      "related": [
+        "linux.a.01",
+        "db.a.02"
+      ],
+      "next": [
+        "devops.i.03",
+        "sec.a.03",
+        "docker.a.02"
+      ]
+    },
+    {
+      "id": "trouble.i.02",
+      "domain": "trouble",
+      "level": "intermediate",
+      "theme": "ネットワーク",
+      "title": "繋がらない",
+      "goal": "名前が引けない・経路が無い・ポートが閉じている、を見分けて直せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "net.i.03"
+      ],
+      "related": [
+        "net.a.01",
+        "k8s.a.03"
+      ],
+      "next": [
+        "trouble.i.03"
+      ]
+    },
+    {
+      "id": "trouble.i.03",
+      "domain": "trouble",
+      "level": "intermediate",
+      "theme": "Web",
+      "title": "Web の障害",
+      "goal": "4xx/5xx・証明書・リバースプロキシの誤りを直せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "web.i.03",
+        "sec.i.01"
+      ],
+      "related": [
+        "web.a.02",
+        "sec.i.01"
+      ],
+      "next": [
+        "trouble.a.01"
+      ]
+    },
+    {
+      "id": "trouble.a.01",
+      "domain": "trouble",
+      "level": "advanced",
+      "theme": "コンテナ",
+      "title": "コンテナと Kubernetes の障害",
+      "goal": "層をまたぐ障害を切り分けて直せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "k8s.a.02"
+      ],
+      "related": [
+        "docker.a.02",
+        "k8s.a.02"
+      ],
+      "next": [
+        "trouble.a.02",
+        "lab.a.02"
+      ]
+    },
+    {
+      "id": "trouble.a.02",
+      "domain": "trouble",
+      "level": "advanced",
+      "theme": "複合",
+      "title": "複合障害",
+      "goal": "複数の原因が重なった障害を順に解ける",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "trouble.a.01",
+        "mon.i.03"
+      ],
+      "related": [
+        "mon.a.02",
+        "git.a.01"
+      ],
+      "next": [
+        "trouble.a.03"
+      ]
+    },
+    {
+      "id": "trouble.a.03",
+      "domain": "trouble",
+      "level": "advanced",
+      "theme": "予防",
+      "title": "再発防止",
+      "goal": "原因に応じた恒久対策を選び、確かめられる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "trouble.a.02",
+        "devops.i.03"
+      ],
+      "related": [
+        "devops.i.03",
+        "sec.a.03"
+      ],
+      "next": []
+    },
+    {
+      "id": "db.b.01",
+      "domain": "db",
+      "level": "beginner",
+      "theme": "考え方",
+      "title": "データベースとは",
+      "goal": "ファイルではなく DB を使う理由を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.b.04"
+      ],
+      "related": [
+        "found.b.04",
+        "web.i.02"
+      ],
+      "next": [
+        "db.b.02"
+      ]
+    },
+    {
+      "id": "db.b.02",
+      "domain": "db",
+      "level": "beginner",
+      "theme": "テーブル",
+      "title": "テーブル・行・列",
+      "goal": "表の形でデータを整理できる",
+      "practice": [
+        "sql"
+      ],
+      "prerequisites": [
+        "db.b.01"
+      ],
+      "related": [
+        "found.b.08",
+        "web.i.02"
+      ],
+      "next": [
+        "db.b.03"
+      ]
+    },
+    {
+      "id": "db.b.03",
+      "domain": "db",
+      "level": "beginner",
+      "theme": "SQL",
+      "title": "SELECT",
+      "goal": "必要な列と行を取り出せる",
+      "practice": [
+        "sql"
+      ],
+      "prerequisites": [
+        "db.b.02"
+      ],
+      "related": [
+        "web.i.01",
+        "sec.i.03"
+      ],
+      "next": [
+        "db.b.04",
+        "db.b.05",
+        "sec.i.03"
+      ]
+    },
+    {
+      "id": "db.b.04",
+      "domain": "db",
+      "level": "beginner",
+      "theme": "SQL",
+      "title": "絞り込み・並べ替え・集計",
+      "goal": "WHERE/ORDER BY/GROUP BY を使える",
+      "practice": [
+        "sql"
+      ],
+      "prerequisites": [
+        "db.b.03"
+      ],
+      "related": [
+        "linux.b.04",
+        "mon.b.02"
+      ],
+      "next": [
+        "db.i.01",
+        "db.i.03"
+      ]
+    },
+    {
+      "id": "db.b.05",
+      "domain": "db",
+      "level": "beginner",
+      "theme": "SQL",
+      "title": "追加・更新・削除",
+      "goal": "INSERT/UPDATE/DELETE を安全に使える",
+      "practice": [
+        "sql"
+      ],
+      "prerequisites": [
+        "db.b.03"
+      ],
+      "related": [
+        "web.b.03",
+        "db.i.04"
+      ],
+      "next": [
+        "db.i.04"
+      ]
+    },
+    {
+      "id": "db.i.01",
+      "domain": "db",
+      "level": "intermediate",
+      "theme": "結合",
+      "title": "JOIN",
+      "goal": "複数の表を結び付けて取り出せる",
+      "practice": [
+        "sql"
+      ],
+      "prerequisites": [
+        "db.b.04"
+      ],
+      "related": [
+        "db.i.02",
+        "web.i.01"
+      ],
+      "next": [
+        "db.i.02"
+      ]
+    },
+    {
+      "id": "db.i.02",
+      "domain": "db",
+      "level": "intermediate",
+      "theme": "設計",
+      "title": "RDB の設計",
+      "goal": "重複を減らす分け方（正規化の考え方）ができる",
+      "practice": [
+        "sql"
+      ],
+      "prerequisites": [
+        "db.i.01"
+      ],
+      "related": [
+        "db.i.05",
+        "web.i.01"
+      ],
+      "next": [
+        "db.i.05"
+      ]
+    },
+    {
+      "id": "db.i.03",
+      "domain": "db",
+      "level": "intermediate",
+      "theme": "性能",
+      "title": "インデックス",
+      "goal": "遅い検索を索引で速くできる",
+      "practice": [
+        "sql"
+      ],
+      "prerequisites": [
+        "db.b.04"
+      ],
+      "related": [
+        "web.i.04",
+        "linux.a.02"
+      ],
+      "next": [
+        "db.a.02"
+      ]
+    },
+    {
+      "id": "db.i.04",
+      "domain": "db",
+      "level": "intermediate",
+      "theme": "整合",
+      "title": "トランザクション",
+      "goal": "途中で失敗しても壊れない更新ができる",
+      "practice": [
+        "sql"
+      ],
+      "prerequisites": [
+        "db.b.05"
+      ],
+      "related": [
+        "git.i.04",
+        "found.i.02"
+      ],
+      "next": [
+        "db.a.01"
+      ]
+    },
+    {
+      "id": "db.i.05",
+      "domain": "db",
+      "level": "intermediate",
+      "theme": "種類",
+      "title": "NoSQL の基本概念",
+      "goal": "文書型・キーバリュー型などの向き不向きを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "db.i.02"
+      ],
+      "related": [
+        "web.i.02",
+        "cloud.b.02"
+      ],
+      "next": [
+        "db.a.01"
+      ]
+    },
+    {
+      "id": "db.a.01",
+      "domain": "db",
+      "level": "advanced",
+      "theme": "保全",
+      "title": "バックアップと復元",
+      "goal": "取り方と戻し方、確かめ方を実行できる",
+      "practice": [
+        "sql"
+      ],
+      "prerequisites": [
+        "db.i.04"
+      ],
+      "related": [
+        "k8s.i.03",
+        "cloud.i.01"
+      ],
+      "next": [
+        "db.a.03"
+      ]
+    },
+    {
+      "id": "db.a.02",
+      "domain": "db",
+      "level": "advanced",
+      "theme": "障害",
+      "title": "DB の障害対応",
+      "goal": "ロック待ち・遅いクエリ・容量不足を切り分けられる",
+      "practice": [
+        "sql"
+      ],
+      "prerequisites": [
+        "db.i.03",
+        "trouble.i.01"
+      ],
+      "related": [
+        "trouble.i.01",
+        "mon.i.03"
+      ],
+      "next": [
+        "db.a.03"
+      ]
+    },
+    {
+      "id": "db.a.03",
+      "domain": "db",
+      "level": "advanced",
+      "theme": "冗長",
+      "title": "レプリケーションの考え方",
+      "goal": "複製の目的と遅れの影響を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "db.a.01"
+      ],
+      "related": [
+        "cloud.i.01",
+        "net.a.03"
+      ],
+      "next": []
+    },
+    {
+      "id": "cicd.b.01",
+      "domain": "cicd",
+      "level": "beginner",
+      "theme": "考え方",
+      "title": "CI と CD とは",
+      "goal": "手作業の配布の危うさと、自動化で何が良くなるかを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "git.b.02"
+      ],
+      "related": [
+        "devops.b.01",
+        "git.b.02"
+      ],
+      "next": [
+        "cicd.b.02",
+        "devops.b.01"
+      ]
+    },
+    {
+      "id": "cicd.b.02",
+      "domain": "cicd",
+      "level": "beginner",
+      "theme": "pipeline",
+      "title": "パイプラインの形",
+      "goal": "ステージとジョブの流れを読める",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cicd.b.01"
+      ],
+      "related": [
+        "linux.b.05",
+        "devops.b.03"
+      ],
+      "next": [
+        "cicd.b.03",
+        "cicd.i.01"
+      ]
+    },
+    {
+      "id": "cicd.b.03",
+      "domain": "cicd",
+      "level": "beginner",
+      "theme": "build/test",
+      "title": "ビルドとテスト",
+      "goal": "失敗したら止まる理由と、結果の読み方",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cicd.b.02"
+      ],
+      "related": [
+        "trouble.b.02",
+        "docker.i.02"
+      ],
+      "next": [
+        "cicd.b.04"
+      ]
+    },
+    {
+      "id": "cicd.b.04",
+      "domain": "cicd",
+      "level": "beginner",
+      "theme": "artifact",
+      "title": "成果物（artifact）",
+      "goal": "作った物を次の段に渡す仕組みを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cicd.b.03"
+      ],
+      "related": [
+        "docker.i.05",
+        "ctr.b.05"
+      ],
+      "next": [
+        "cicd.b.05"
+      ]
+    },
+    {
+      "id": "cicd.b.05",
+      "domain": "cicd",
+      "level": "beginner",
+      "theme": "deploy",
+      "title": "デプロイ",
+      "goal": "環境へ配る段と、確認の段を置ける",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cicd.b.04"
+      ],
+      "related": [
+        "k8s.i.08",
+        "devops.b.03"
+      ],
+      "next": [
+        "cicd.i.02",
+        "cicd.i.05",
+        "devops.b.03"
+      ]
+    },
+    {
+      "id": "cicd.i.01",
+      "domain": "cicd",
+      "level": "intermediate",
+      "theme": "runner",
+      "title": "runner",
+      "goal": "ジョブを実行する機械の役割と種類を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cicd.b.02"
+      ],
+      "related": [
+        "cloud.b.03",
+        "docker.b.01"
+      ],
+      "next": [
+        "cicd.i.02"
+      ]
+    },
+    {
+      "id": "cicd.i.02",
+      "domain": "cicd",
+      "level": "intermediate",
+      "theme": "設定",
+      "title": "設定ファイルを書く",
+      "goal": "GitHub Actions と GitLab CI の設定を読み書きできる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "cicd.b.05"
+      ],
+      "related": [
+        "git.i.03",
+        "devops.i.01"
+      ],
+      "next": [
+        "cicd.i.03",
+        "cicd.i.04",
+        "cicd.a.02"
+      ]
+    },
+    {
+      "id": "cicd.i.03",
+      "domain": "cicd",
+      "level": "intermediate",
+      "theme": "秘密情報",
+      "title": "秘密情報をパイプラインに渡す",
+      "goal": "Secrets を使い、ログに出さない設定ができる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "cicd.i.02",
+        "sec.b.05"
+      ],
+      "related": [
+        "sec.i.05",
+        "k8s.i.02"
+      ],
+      "next": [
+        "sec.i.05",
+        "lab.i.02"
+      ]
+    },
+    {
+      "id": "cicd.i.04",
+      "domain": "cicd",
+      "level": "intermediate",
+      "theme": "障害",
+      "title": "失敗したパイプラインを直す",
+      "goal": "ログから失敗の段と原因を特定し直せる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "cicd.i.02",
+        "trouble.b.02"
+      ],
+      "related": [
+        "trouble.b.02",
+        "git.a.01"
+      ],
+      "next": [
+        "cicd.i.05"
+      ]
+    },
+    {
+      "id": "cicd.i.05",
+      "domain": "cicd",
+      "level": "intermediate",
+      "theme": "環境",
+      "title": "開発・検証・本番",
+      "goal": "環境ごとの違いと昇格の流れを設計できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cicd.b.05"
+      ],
+      "related": [
+        "git.a.02",
+        "cloud.i.01"
+      ],
+      "next": [
+        "cicd.a.01"
+      ]
+    },
+    {
+      "id": "cicd.a.01",
+      "domain": "cicd",
+      "level": "advanced",
+      "theme": "戦略",
+      "title": "デプロイ戦略",
+      "goal": "ローリング・ブルーグリーン・カナリアを比べて選べる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cicd.i.05",
+        "k8s.i.08"
+      ],
+      "related": [
+        "devops.a.01",
+        "k8s.i.08"
+      ],
+      "next": [
+        "devops.a.01"
+      ]
+    },
+    {
+      "id": "cicd.a.02",
+      "domain": "cicd",
+      "level": "advanced",
+      "theme": "速さ",
+      "title": "パイプラインを速くする",
+      "goal": "キャッシュと並列で時間を縮められる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "cicd.i.02"
+      ],
+      "related": [
+        "docker.a.01",
+        "web.i.04"
+      ],
+      "next": [
+        "cicd.a.03"
+      ]
+    },
+    {
+      "id": "cicd.a.03",
+      "domain": "cicd",
+      "level": "advanced",
+      "theme": "品質",
+      "title": "品質の門",
+      "goal": "レビュー・保護・必須チェックを組める",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "git.a.02"
+      ],
+      "related": [
+        "git.a.02",
+        "sec.a.04"
+      ],
+      "next": []
+    },
+    {
+      "id": "ctr.b.01",
+      "domain": "ctr",
+      "level": "beginner",
+      "theme": "考え方",
+      "title": "コンテナとは（なぜ必要か）",
+      "goal": "「自分の PC では動いた」問題と、コンテナの解決を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "linux.b.08"
+      ],
+      "related": [
+        "devops.b.01",
+        "cloud.b.02"
+      ],
+      "next": [
+        "ctr.b.02",
+        "ctr.b.03"
+      ]
+    },
+    {
+      "id": "ctr.b.02",
+      "domain": "ctr",
+      "level": "beginner",
+      "theme": "比較",
+      "title": "VM との違い",
+      "goal": "カーネルの共有と重さの違いを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.i.03",
+        "ctr.b.01"
+      ],
+      "related": [
+        "found.i.03",
+        "cloud.b.01"
+      ],
+      "next": [
+        "ctr.b.03"
+      ]
+    },
+    {
+      "id": "ctr.b.03",
+      "domain": "ctr",
+      "level": "beginner",
+      "theme": "イメージ",
+      "title": "イメージとコンテナ",
+      "goal": "設計図と実体の関係を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "ctr.b.01"
+      ],
+      "related": [
+        "docker.b.02",
+        "k8s.b.04"
+      ],
+      "next": [
+        "ctr.b.04",
+        "ctr.b.05",
+        "ctr.i.03"
+      ]
+    },
+    {
+      "id": "ctr.b.04",
+      "domain": "ctr",
+      "level": "beginner",
+      "theme": "レイヤ",
+      "title": "レイヤ",
+      "goal": "重ねて作る仕組みと、共有による節約を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "ctr.b.03"
+      ],
+      "related": [
+        "docker.i.01",
+        "docker.a.01"
+      ],
+      "next": [
+        "ctr.i.01",
+        "ctr.i.04",
+        "docker.i.01"
+      ]
+    },
+    {
+      "id": "ctr.b.05",
+      "domain": "ctr",
+      "level": "beginner",
+      "theme": "レジストリ",
+      "title": "レジストリ",
+      "goal": "イメージを置いて配る場所と、名前とタグを読める",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "ctr.b.03"
+      ],
+      "related": [
+        "docker.i.05",
+        "cicd.b.04"
+      ],
+      "next": [
+        "docker.i.05"
+      ]
+    },
+    {
+      "id": "ctr.i.01",
+      "domain": "ctr",
+      "level": "intermediate",
+      "theme": "ランタイム",
+      "title": "コンテナランタイム",
+      "goal": "OCI の標準と、ランタイム（containerd など）と Docker の位置関係を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "ctr.b.04"
+      ],
+      "related": [
+        "docker.a.03",
+        "k8s.b.03"
+      ],
+      "next": [
+        "ctr.i.02",
+        "docker.a.03"
+      ]
+    },
+    {
+      "id": "ctr.i.02",
+      "domain": "ctr",
+      "level": "intermediate",
+      "theme": "隔離",
+      "title": "隔離の仕組み",
+      "goal": "名前空間と資源制限（cgroups）の役割を説明できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "ctr.i.01",
+        "found.a.01"
+      ],
+      "related": [
+        "found.a.01",
+        "k8s.i.07"
+      ],
+      "next": [
+        "ctr.i.03"
+      ]
+    },
+    {
+      "id": "ctr.i.03",
+      "domain": "ctr",
+      "level": "intermediate",
+      "theme": "ネットワーク",
+      "title": "コンテナのネットワーク",
+      "goal": "コンテナどうし・外との通信の仕組みを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "ctr.b.03",
+        "net.b.04"
+      ],
+      "related": [
+        "docker.i.04",
+        "net.b.04"
+      ],
+      "next": [
+        "ctr.i.05",
+        "docker.i.04"
+      ]
+    },
+    {
+      "id": "ctr.i.04",
+      "domain": "ctr",
+      "level": "intermediate",
+      "theme": "ストレージ",
+      "title": "コンテナとデータ",
+      "goal": "消える領域と残す領域（ボリューム）を使い分けられる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "ctr.b.04"
+      ],
+      "related": [
+        "docker.i.03",
+        "k8s.i.03"
+      ],
+      "next": [
+        "ctr.i.05",
+        "docker.i.03",
+        "k8s.i.03"
+      ]
+    },
+    {
+      "id": "ctr.i.05",
+      "domain": "ctr",
+      "level": "intermediate",
+      "theme": "複数",
+      "title": "複数コンテナで 1 つのサービス",
+      "goal": "役割を分けて組み合わせる設計ができる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "ctr.i.03",
+        "ctr.i.04"
+      ],
+      "related": [
+        "docker.i.06",
+        "k8s.a.01"
+      ],
+      "next": [
+        "ctr.a.01"
+      ]
+    },
+    {
+      "id": "ctr.a.01",
+      "domain": "ctr",
+      "level": "advanced",
+      "theme": "運用",
+      "title": "コンテナ運用",
+      "goal": "ログ・資源制限・更新・再起動方針を設計できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "ctr.i.05"
+      ],
+      "related": [
+        "k8s.i.07",
+        "mon.b.02"
+      ],
+      "next": [
+        "ctr.a.02"
+      ]
+    },
+    {
+      "id": "ctr.a.02",
+      "domain": "ctr",
+      "level": "advanced",
+      "theme": "安全",
+      "title": "コンテナの安全",
+      "goal": "最小イメージ・root で動かさない・脆弱性の走査を実践できる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "ctr.a.01",
+        "sec.i.04"
+      ],
+      "related": [
+        "sec.i.04",
+        "sec.a.04"
+      ],
+      "next": []
+    },
+    {
+      "id": "docker.b.01",
+      "domain": "docker",
+      "level": "beginner",
+      "theme": "Engine",
+      "title": "Docker とは",
+      "goal": "Docker Engine と CLI の関係、コンテナ技術の中での位置を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "ctr.b.03"
+      ],
+      "related": [
+        "ctr.i.01",
+        "docker.a.03"
+      ],
+      "next": [
+        "docker.b.02"
+      ]
+    },
+    {
+      "id": "docker.b.02",
+      "domain": "docker",
+      "level": "beginner",
+      "theme": "image",
+      "title": "イメージを取る・見る",
+      "goal": "pull/images でイメージを扱える",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "docker.b.01"
+      ],
+      "related": [
+        "ctr.b.05",
+        "ctr.b.03"
+      ],
+      "next": [
+        "docker.b.03"
+      ]
+    },
+    {
+      "id": "docker.b.03",
+      "domain": "docker",
+      "level": "beginner",
+      "theme": "run",
+      "title": "コンテナを動かす",
+      "goal": "run/ps/stop/rm で動かし止められる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "docker.b.02"
+      ],
+      "related": [
+        "linux.i.01",
+        "k8s.b.04"
+      ],
+      "next": [
+        "docker.b.04",
+        "docker.b.05",
+        "docker.i.01"
+      ]
+    },
+    {
+      "id": "docker.b.04",
+      "domain": "docker",
+      "level": "beginner",
+      "theme": "公開",
+      "title": "ポートを公開する",
+      "goal": "-p で外から繋がるようにできる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "docker.b.03",
+        "net.b.04"
+      ],
+      "related": [
+        "net.b.04",
+        "k8s.b.06"
+      ],
+      "next": [
+        "docker.b.05"
+      ]
+    },
+    {
+      "id": "docker.b.05",
+      "domain": "docker",
+      "level": "beginner",
+      "theme": "観察",
+      "title": "ログと中に入る",
+      "goal": "logs/exec で様子を見られる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "docker.b.03"
+      ],
+      "related": [
+        "linux.i.02",
+        "k8s.a.02"
+      ],
+      "next": [
+        "docker.a.02"
+      ]
+    },
+    {
+      "id": "docker.i.01",
+      "domain": "docker",
+      "level": "intermediate",
+      "theme": "Dockerfile",
+      "title": "Dockerfile を書く",
+      "goal": "FROM/COPY/RUN/CMD で自分のイメージを作れる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "docker.b.03",
+        "ctr.b.04"
+      ],
+      "related": [
+        "ctr.b.04",
+        "cicd.b.03"
+      ],
+      "next": [
+        "docker.i.02",
+        "docker.a.01"
+      ]
+    },
+    {
+      "id": "docker.i.02",
+      "domain": "docker",
+      "level": "intermediate",
+      "theme": "build",
+      "title": "ビルドとタグ",
+      "goal": "build/tag でイメージを作り名前を付けられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "docker.i.01"
+      ],
+      "related": [
+        "cicd.b.04",
+        "git.i.06"
+      ],
+      "next": [
+        "docker.i.05"
+      ]
+    },
+    {
+      "id": "docker.i.03",
+      "domain": "docker",
+      "level": "intermediate",
+      "theme": "volume",
+      "title": "ボリューム",
+      "goal": "データを残すコンテナを作れる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "ctr.i.04"
+      ],
+      "related": [
+        "ctr.i.04",
+        "k8s.i.03"
+      ],
+      "next": [
+        "docker.i.06"
+      ]
+    },
+    {
+      "id": "docker.i.04",
+      "domain": "docker",
+      "level": "intermediate",
+      "theme": "network",
+      "title": "ネットワーク",
+      "goal": "自作ネットワークでコンテナどうしを名前で繋げる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "ctr.i.03"
+      ],
+      "related": [
+        "ctr.i.03",
+        "net.b.06"
+      ],
+      "next": [
+        "docker.i.06"
+      ]
+    },
+    {
+      "id": "docker.i.05",
+      "domain": "docker",
+      "level": "intermediate",
+      "theme": "registry",
+      "title": "レジストリに置く",
+      "goal": "push/pull で配れる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "docker.i.02",
+        "ctr.b.05"
+      ],
+      "related": [
+        "ctr.b.05",
+        "cicd.b.04"
+      ],
+      "next": [
+        "docker.i.06"
+      ]
+    },
+    {
+      "id": "docker.i.06",
+      "domain": "docker",
+      "level": "intermediate",
+      "theme": "Compose",
+      "title": "Compose で複数コンテナ",
+      "goal": "compose.yaml で Web と DB を一緒に動かせる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "docker.i.04",
+        "docker.i.03"
+      ],
+      "related": [
+        "ctr.i.05",
+        "k8s.a.01"
+      ],
+      "next": [
+        "lab.a.01"
+      ]
+    },
+    {
+      "id": "docker.a.01",
+      "domain": "docker",
+      "level": "advanced",
+      "theme": "軽量化",
+      "title": "マルチステージビルド",
+      "goal": "小さく安全なイメージを作れる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "docker.i.01"
+      ],
+      "related": [
+        "ctr.a.02",
+        "cicd.a.02"
+      ],
+      "next": [
+        "docker.a.02"
+      ]
+    },
+    {
+      "id": "docker.a.02",
+      "domain": "docker",
+      "level": "advanced",
+      "theme": "障害",
+      "title": "起動しないコンテナを直す",
+      "goal": "終了コード・ログ・設定から原因を特定できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "docker.b.05",
+        "trouble.i.01"
+      ],
+      "related": [
+        "trouble.a.01",
+        "k8s.a.02"
+      ],
+      "next": [
+        "docker.a.03"
+      ]
+    },
+    {
+      "id": "docker.a.03",
+      "domain": "docker",
+      "level": "advanced",
+      "theme": "周辺",
+      "title": "Docker 以外の道具",
+      "goal": "Podman・BuildKit などとの関係を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "ctr.i.01"
+      ],
+      "related": [
+        "ctr.i.01",
+        "k8s.b.03"
+      ],
+      "next": []
+    },
+    {
+      "id": "k8s.b.01",
+      "domain": "k8s",
+      "level": "beginner",
+      "theme": "考え方",
+      "title": "Kubernetes とは・なぜ必要か",
+      "goal": "多数のコンテナを手で面倒を見る限界と、宣言して任せる考え方を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "ctr.b.03"
+      ],
+      "related": [
+        "ctr.b.01",
+        "devops.b.02"
+      ],
+      "next": [
+        "k8s.b.02"
+      ]
+    },
+    {
+      "id": "k8s.b.02",
+      "domain": "k8s",
+      "level": "beginner",
+      "theme": "関係",
+      "title": "コンテナとの関係",
+      "goal": "コンテナ・Pod・Node の包含関係を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "k8s.b.01"
+      ],
+      "related": [
+        "ctr.b.03",
+        "docker.b.03"
+      ],
+      "next": [
+        "k8s.b.03"
+      ]
+    },
+    {
+      "id": "k8s.b.03",
+      "domain": "k8s",
+      "level": "beginner",
+      "theme": "クラスタ",
+      "title": "クラスタと Node",
+      "goal": "制御する側と動かす側の役割を説明し、kubectl get nodes を読める",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "k8s.b.02"
+      ],
+      "related": [
+        "ctr.i.01",
+        "cloud.b.03"
+      ],
+      "next": [
+        "k8s.b.04",
+        "k8s.b.07"
+      ]
+    },
+    {
+      "id": "k8s.b.04",
+      "domain": "k8s",
+      "level": "beginner",
+      "theme": "Pod",
+      "title": "Pod",
+      "goal": "Pod を作り、状態（Pending・Running）を読める",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "k8s.b.03"
+      ],
+      "related": [
+        "docker.b.03",
+        "linux.b.08"
+      ],
+      "next": [
+        "k8s.b.05",
+        "k8s.i.03"
+      ]
+    },
+    {
+      "id": "k8s.b.05",
+      "domain": "k8s",
+      "level": "beginner",
+      "theme": "Deployment",
+      "title": "Deployment",
+      "goal": "あるべき数を保つ仕組みを確かめられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "k8s.b.04"
+      ],
+      "related": [
+        "cloud.i.01",
+        "ctr.i.05"
+      ],
+      "next": [
+        "k8s.b.06",
+        "k8s.i.01",
+        "k8s.i.05"
+      ]
+    },
+    {
+      "id": "k8s.b.06",
+      "domain": "k8s",
+      "level": "beginner",
+      "theme": "Service",
+      "title": "Service",
+      "goal": "入れ替わる Pod に一定の入口を与えられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "k8s.b.05",
+        "net.b.04"
+      ],
+      "related": [
+        "net.a.03",
+        "docker.b.04"
+      ],
+      "next": [
+        "k8s.i.04",
+        "mon.i.01",
+        "cloud.a.01"
+      ]
+    },
+    {
+      "id": "k8s.b.07",
+      "domain": "k8s",
+      "level": "beginner",
+      "theme": "Namespace",
+      "title": "Namespace",
+      "goal": "区画を分けて管理できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "k8s.b.03"
+      ],
+      "related": [
+        "net.i.06",
+        "sec.i.04"
+      ],
+      "next": [
+        "k8s.i.01"
+      ]
+    },
+    {
+      "id": "k8s.i.01",
+      "domain": "k8s",
+      "level": "intermediate",
+      "theme": "設定",
+      "title": "ConfigMap",
+      "goal": "設定をイメージから切り離せる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "k8s.b.05"
+      ],
+      "related": [
+        "linux.i.06",
+        "docker.i.01"
+      ],
+      "next": [
+        "k8s.i.02"
+      ]
+    },
+    {
+      "id": "k8s.i.02",
+      "domain": "k8s",
+      "level": "intermediate",
+      "theme": "秘密",
+      "title": "Secret",
+      "goal": "秘密情報を扱い、その限界を説明できる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "k8s.i.01",
+        "sec.b.05"
+      ],
+      "related": [
+        "sec.i.05",
+        "cicd.i.03"
+      ],
+      "next": [
+        "k8s.i.03"
+      ]
+    },
+    {
+      "id": "k8s.i.03",
+      "domain": "k8s",
+      "level": "intermediate",
+      "theme": "保存",
+      "title": "Volume（PV と PVC）",
+      "goal": "データを残す Pod を作れる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "k8s.b.04",
+        "ctr.i.04"
+      ],
+      "related": [
+        "docker.i.03",
+        "db.a.01"
+      ],
+      "next": [
+        "k8s.a.01"
+      ]
+    },
+    {
+      "id": "k8s.i.04",
+      "domain": "k8s",
+      "level": "intermediate",
+      "theme": "公開",
+      "title": "Ingress",
+      "goal": "名前やパスで振り分けて外に公開できる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "k8s.b.06",
+        "web.i.03"
+      ],
+      "related": [
+        "web.i.03",
+        "sec.i.02"
+      ],
+      "next": [
+        "k8s.a.01",
+        "k8s.a.03"
+      ]
+    },
+    {
+      "id": "k8s.i.05",
+      "domain": "k8s",
+      "level": "intermediate",
+      "theme": "健全性",
+      "title": "ヘルスチェック",
+      "goal": "liveness と readiness を設定し違いを説明できる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "k8s.b.05"
+      ],
+      "related": [
+        "mon.b.04",
+        "linux.i.01"
+      ],
+      "next": [
+        "k8s.a.02"
+      ]
+    },
+    {
+      "id": "k8s.i.06",
+      "domain": "k8s",
+      "level": "intermediate",
+      "theme": "規模",
+      "title": "スケーリング",
+      "goal": "手動と自動で数を変えられる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "k8s.b.05"
+      ],
+      "related": [
+        "cloud.i.02",
+        "mon.b.03"
+      ],
+      "next": [
+        "k8s.i.07"
+      ]
+    },
+    {
+      "id": "k8s.i.07",
+      "domain": "k8s",
+      "level": "intermediate",
+      "theme": "資源",
+      "title": "資源の要求と上限",
+      "goal": "requests と limits を設定し、配置への影響を説明できる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "k8s.i.06"
+      ],
+      "related": [
+        "ctr.i.02",
+        "found.i.01"
+      ],
+      "next": [
+        "k8s.i.08"
+      ]
+    },
+    {
+      "id": "k8s.i.08",
+      "domain": "k8s",
+      "level": "intermediate",
+      "theme": "更新",
+      "title": "ローリングアップデート",
+      "goal": "止めずに更新し、戻せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "k8s.b.05"
+      ],
+      "related": [
+        "cicd.a.01",
+        "devops.a.01"
+      ],
+      "next": [
+        "k8s.a.04",
+        "cicd.a.01"
+      ]
+    },
+    {
+      "id": "k8s.a.01",
+      "domain": "k8s",
+      "level": "advanced",
+      "theme": "アプリ",
+      "title": "Kubernetes 上のアプリ",
+      "goal": "Web・API・DB の 3 層を動かし公開できる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "k8s.i.04",
+        "k8s.i.03"
+      ],
+      "related": [
+        "lab.a.01",
+        "db.b.01"
+      ],
+      "next": [
+        "lab.a.01"
+      ]
+    },
+    {
+      "id": "k8s.a.02",
+      "domain": "k8s",
+      "level": "advanced",
+      "theme": "障害",
+      "title": "動かない Pod を直す",
+      "goal": "Pending・ImagePullBackOff・CrashLoopBackOff を切り分けて直せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "k8s.i.05",
+        "trouble.i.01"
+      ],
+      "related": [
+        "docker.a.02",
+        "trouble.a.01"
+      ],
+      "next": [
+        "trouble.a.01"
+      ]
+    },
+    {
+      "id": "k8s.a.03",
+      "domain": "k8s",
+      "level": "advanced",
+      "theme": "障害",
+      "title": "繋がらない Service を直す",
+      "goal": "Endpoints が空・ポートの不一致・Ingress の誤りを直せる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "k8s.i.04"
+      ],
+      "related": [
+        "net.a.01",
+        "web.a.02"
+      ],
+      "next": [
+        "mon.a.02"
+      ]
+    },
+    {
+      "id": "k8s.a.04",
+      "domain": "k8s",
+      "level": "advanced",
+      "theme": "保守",
+      "title": "Node の保守",
+      "goal": "cordon/drain で止めずに保守できる",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "k8s.i.08"
+      ],
+      "related": [
+        "cloud.i.01",
+        "linux.a.01"
+      ],
+      "next": []
+    },
+    {
+      "id": "lab.i.01",
+      "domain": "lab",
+      "level": "intermediate",
+      "theme": "総合",
+      "title": "Web サービスを公開する",
+      "goal": "サーバを用意し、Web サーバを動かし、HTTPS で公開できる",
+      "practice": [
+        "terminal",
+        "editor"
+      ],
+      "prerequisites": [
+        "linux.i.01",
+        "web.i.03",
+        "sec.i.02"
+      ],
+      "related": [
+        "web.i.03",
+        "sec.i.02"
+      ],
+      "next": [
+        "lab.i.02"
+      ],
+      "uses": [
+        "linux",
+        "net",
+        "web",
+        "sec"
+      ]
+    },
+    {
+      "id": "lab.i.02",
+      "domain": "lab",
+      "level": "intermediate",
+      "theme": "総合",
+      "title": "チーム開発から自動デプロイ",
+      "goal": "プルリクエストからテスト・配布まで自動で流せる",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "git.i.03",
+        "cicd.i.03"
+      ],
+      "related": [
+        "cicd.i.03",
+        "git.a.02"
+      ],
+      "next": [
+        "lab.a.01"
+      ],
+      "uses": [
+        "git",
+        "cicd",
+        "sec"
+      ]
+    },
+    {
+      "id": "lab.a.01",
+      "domain": "lab",
+      "level": "advanced",
+      "theme": "総合",
+      "title": "コンテナ化して Kubernetes へ",
+      "goal": "アプリをコンテナにし、クラスタで公開・更新できる",
+      "practice": [
+        "editor",
+        "terminal"
+      ],
+      "prerequisites": [
+        "docker.i.06",
+        "k8s.a.01"
+      ],
+      "related": [
+        "cicd.a.01",
+        "cloud.a.01"
+      ],
+      "next": [
+        "lab.a.02"
+      ],
+      "uses": [
+        "ctr",
+        "docker",
+        "k8s"
+      ]
+    },
+    {
+      "id": "lab.a.02",
+      "domain": "lab",
+      "level": "advanced",
+      "theme": "総合",
+      "title": "監視して障害を直す",
+      "goal": "監視で異常に気づき、原因を特定して直せる",
+      "practice": [
+        "simulation",
+        "terminal"
+      ],
+      "prerequisites": [
+        "mon.i.03",
+        "trouble.a.01"
+      ],
+      "related": [
+        "devops.i.02",
+        "sec.a.03"
+      ],
+      "next": [
+        "lab.a.03"
+      ],
+      "uses": [
+        "mon",
+        "trouble",
+        "k8s"
+      ]
+    },
+    {
+      "id": "lab.a.03",
+      "domain": "lab",
+      "level": "advanced",
+      "theme": "総合",
+      "title": "新しい技術を調べて試す",
+      "goal": "公式ドキュメントを読み、小さく試し、報告できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [],
+      "related": [
+        "devops.a.02",
+        "cloud.a.01"
+      ],
+      "next": [],
+      "prerequisiteNote": "任意の中級 2 分野",
+      "uses": [
+        "全般"
+      ]
+    },
+    {
+      "id": "mon.b.01",
+      "domain": "mon",
+      "level": "beginner",
+      "theme": "考え方",
+      "title": "監視とは",
+      "goal": "何を・なぜ見るのかを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "linux.i.02"
+      ],
+      "related": [
+        "sec.b.01",
+        "k8s.i.05"
+      ],
+      "next": [
+        "mon.b.02",
+        "mon.b.03"
+      ]
+    },
+    {
+      "id": "mon.b.02",
+      "domain": "mon",
+      "level": "beginner",
+      "theme": "ログ",
+      "title": "ログ",
+      "goal": "構造化ログを読み、絞り込める",
+      "practice": [
+        "terminal"
+      ],
+      "prerequisites": [
+        "mon.b.01"
+      ],
+      "related": [
+        "linux.i.02",
+        "trouble.b.03"
+      ],
+      "next": [
+        "mon.i.01",
+        "sec.a.02"
+      ]
+    },
+    {
+      "id": "mon.b.03",
+      "domain": "mon",
+      "level": "beginner",
+      "theme": "メトリクス",
+      "title": "メトリクス",
+      "goal": "数値の推移から異常を見つけられる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "mon.b.01"
+      ],
+      "related": [
+        "linux.a.02",
+        "web.a.01"
+      ],
+      "next": [
+        "mon.b.04",
+        "mon.i.02"
+      ]
+    },
+    {
+      "id": "mon.b.04",
+      "domain": "mon",
+      "level": "beginner",
+      "theme": "アラート",
+      "title": "アラート",
+      "goal": "しきい値と通知の設計ができる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "mon.b.03"
+      ],
+      "related": [
+        "k8s.i.05",
+        "linux.i.08"
+      ],
+      "next": [
+        "mon.i.04"
+      ]
+    },
+    {
+      "id": "mon.i.01",
+      "domain": "mon",
+      "level": "intermediate",
+      "theme": "トレース",
+      "title": "トレース",
+      "goal": "1 つの処理が複数のサービスを通る様子を追える",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "mon.b.02",
+        "k8s.b.06"
+      ],
+      "related": [
+        "web.a.01",
+        "k8s.b.06"
+      ],
+      "next": [
+        "mon.i.03"
+      ]
+    },
+    {
+      "id": "mon.i.02",
+      "domain": "mon",
+      "level": "intermediate",
+      "theme": "可視化",
+      "title": "ダッシュボードを読む",
+      "goal": "複数のグラフから状況を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "mon.b.03"
+      ],
+      "related": [
+        "linux.a.02",
+        "cloud.i.04"
+      ],
+      "next": [
+        "devops.i.02"
+      ]
+    },
+    {
+      "id": "mon.i.03",
+      "domain": "mon",
+      "level": "intermediate",
+      "theme": "調査",
+      "title": "障害調査の手順",
+      "goal": "ログ・メトリクス・トレースを突き合わせて原因に迫れる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "mon.i.01",
+        "trouble.b.01"
+      ],
+      "related": [
+        "trouble.a.02",
+        "sec.a.02"
+      ],
+      "next": [
+        "mon.a.02",
+        "cloud.a.02",
+        "trouble.a.02"
+      ]
+    },
+    {
+      "id": "mon.i.04",
+      "domain": "mon",
+      "level": "intermediate",
+      "theme": "目標",
+      "title": "SLO の考え方",
+      "goal": "目標と余裕（エラーバジェット）を決められる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "mon.b.04"
+      ],
+      "related": [
+        "devops.i.02",
+        "cloud.i.01"
+      ],
+      "next": [
+        "mon.a.01"
+      ]
+    },
+    {
+      "id": "mon.a.01",
+      "domain": "mon",
+      "level": "advanced",
+      "theme": "設計",
+      "title": "鳴りすぎないアラート",
+      "goal": "症状に基づく通知と、優先度の設計ができる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "mon.i.04"
+      ],
+      "related": [
+        "sec.a.03",
+        "devops.a.02"
+      ],
+      "next": [
+        "mon.a.02"
+      ]
+    },
+    {
+      "id": "mon.a.02",
+      "domain": "mon",
+      "level": "advanced",
+      "theme": "分散",
+      "title": "分散システムの調査",
+      "goal": "遅延の伝播と部分的な障害を見抜ける",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "mon.i.03",
+        "k8s.a.03"
+      ],
+      "related": [
+        "k8s.a.03",
+        "net.a.01"
+      ],
+      "next": []
+    },
+    {
+      "id": "cloud.b.01",
+      "domain": "cloud",
+      "level": "beginner",
+      "theme": "仮想化",
+      "title": "仮想化とクラウド",
+      "goal": "自前の機械とクラウドの違いを説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "found.i.03"
+      ],
+      "related": [
+        "found.i.03",
+        "ctr.b.02"
+      ],
+      "next": [
+        "cloud.b.02"
+      ]
+    },
+    {
+      "id": "cloud.b.02",
+      "domain": "cloud",
+      "level": "beginner",
+      "theme": "形",
+      "title": "IaaS・PaaS・SaaS",
+      "goal": "どこまでを自分で管理するかで区別できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cloud.b.01"
+      ],
+      "related": [
+        "ctr.b.01",
+        "db.i.05"
+      ],
+      "next": [
+        "cloud.b.03",
+        "cloud.i.03"
+      ]
+    },
+    {
+      "id": "cloud.b.03",
+      "domain": "cloud",
+      "level": "beginner",
+      "theme": "資源",
+      "title": "コンピュート・ストレージ・ネットワーク",
+      "goal": "3 つの資源を組み合わせて小さな構成を作れる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cloud.b.02",
+        "net.b.03"
+      ],
+      "related": [
+        "net.b.03",
+        "linux.a.03"
+      ],
+      "next": [
+        "cloud.i.01",
+        "devops.i.01"
+      ]
+    },
+    {
+      "id": "cloud.i.01",
+      "domain": "cloud",
+      "level": "intermediate",
+      "theme": "可用性",
+      "title": "可用性と冗長化",
+      "goal": "1 つ壊れても止まらない構成を作れる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cloud.b.03"
+      ],
+      "related": [
+        "k8s.b.05",
+        "db.a.03"
+      ],
+      "next": [
+        "cloud.i.02",
+        "cloud.a.02"
+      ]
+    },
+    {
+      "id": "cloud.i.02",
+      "domain": "cloud",
+      "level": "intermediate",
+      "theme": "規模",
+      "title": "スケーリング",
+      "goal": "縦と横、自動の拡縮を設計できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cloud.i.01"
+      ],
+      "related": [
+        "k8s.i.06",
+        "net.a.03"
+      ],
+      "next": [
+        "cloud.i.04",
+        "cloud.a.01"
+      ]
+    },
+    {
+      "id": "cloud.i.03",
+      "domain": "cloud",
+      "level": "intermediate",
+      "theme": "責任",
+      "title": "責任共有モデル",
+      "goal": "利用者と提供者の責任の境目を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cloud.b.02",
+        "sec.b.01"
+      ],
+      "related": [
+        "sec.b.01",
+        "sec.i.04"
+      ],
+      "next": [
+        "cloud.i.04"
+      ]
+    },
+    {
+      "id": "cloud.i.04",
+      "domain": "cloud",
+      "level": "intermediate",
+      "theme": "費用",
+      "title": "費用の考え方",
+      "goal": "構成から費用の大小を見積もれる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cloud.i.02"
+      ],
+      "related": [
+        "cloud.i.02",
+        "mon.b.03"
+      ],
+      "next": [
+        "cloud.a.01"
+      ]
+    },
+    {
+      "id": "cloud.a.01",
+      "domain": "cloud",
+      "level": "advanced",
+      "theme": "設計",
+      "title": "同じ要件を 3 つの形で作る",
+      "goal": "IaaS・PaaS・コンテナの構成を比べて選べる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cloud.i.02",
+        "k8s.b.06"
+      ],
+      "related": [
+        "k8s.a.01",
+        "devops.i.01"
+      ],
+      "next": [
+        "cloud.a.02"
+      ]
+    },
+    {
+      "id": "cloud.a.02",
+      "domain": "cloud",
+      "level": "advanced",
+      "theme": "障害",
+      "title": "障害に強い構成",
+      "goal": "地域・区画の障害を想定して設計できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cloud.i.01",
+        "mon.i.03"
+      ],
+      "related": [
+        "mon.i.03",
+        "devops.a.01"
+      ],
+      "next": []
+    },
+    {
+      "id": "devops.b.01",
+      "domain": "devops",
+      "level": "beginner",
+      "theme": "考え方",
+      "title": "開発と運用",
+      "goal": "分断で起きる問題と、つなぐ考え方を説明できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cicd.b.01"
+      ],
+      "related": [
+        "git.b.01",
+        "cicd.b.01"
+      ],
+      "next": [
+        "devops.b.02"
+      ]
+    },
+    {
+      "id": "devops.b.02",
+      "domain": "devops",
+      "level": "beginner",
+      "theme": "自動化",
+      "title": "自動化",
+      "goal": "手作業を見つけて自動化の候補を選べる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "devops.b.01",
+        "linux.i.07"
+      ],
+      "related": [
+        "linux.i.07",
+        "cicd.b.01"
+      ],
+      "next": [
+        "devops.i.01"
+      ]
+    },
+    {
+      "id": "devops.b.03",
+      "domain": "devops",
+      "level": "beginner",
+      "theme": "流れ",
+      "title": "CI/CD と DevOps",
+      "goal": "変更が本番に届くまでの流れを描ける",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cicd.b.05"
+      ],
+      "related": [
+        "cicd.b.02",
+        "git.i.03"
+      ],
+      "next": [
+        "devops.i.01"
+      ]
+    },
+    {
+      "id": "devops.i.01",
+      "domain": "devops",
+      "level": "intermediate",
+      "theme": "IaC",
+      "title": "Infrastructure as Code の基本概念",
+      "goal": "構成をコードで表す利点と、宣言型の読み方",
+      "practice": [
+        "editor"
+      ],
+      "prerequisites": [
+        "devops.b.02",
+        "cloud.b.03"
+      ],
+      "related": [
+        "cloud.b.03",
+        "k8s.i.01"
+      ],
+      "next": [
+        "devops.i.02"
+      ]
+    },
+    {
+      "id": "devops.i.02",
+      "domain": "devops",
+      "level": "intermediate",
+      "theme": "改善",
+      "title": "監視と改善のループ",
+      "goal": "測って・直して・確かめる循環を回せる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "mon.i.02"
+      ],
+      "related": [
+        "mon.i.04",
+        "cicd.a.02"
+      ],
+      "next": [
+        "devops.i.03"
+      ]
+    },
+    {
+      "id": "devops.i.03",
+      "domain": "devops",
+      "level": "intermediate",
+      "theme": "振り返り",
+      "title": "ポストモーテム",
+      "goal": "責めない振り返りと再発防止を書ける",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "trouble.i.01"
+      ],
+      "related": [
+        "sec.a.03",
+        "mon.a.01"
+      ],
+      "next": [
+        "devops.a.02",
+        "trouble.a.03"
+      ]
+    },
+    {
+      "id": "devops.a.01",
+      "domain": "devops",
+      "level": "advanced",
+      "theme": "安全な変更",
+      "title": "小さく頻繁に変える",
+      "goal": "変更の大きさと失敗率の関係を説明し、手順を設計できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "cicd.a.01"
+      ],
+      "related": [
+        "cicd.a.01",
+        "k8s.i.08"
+      ],
+      "next": [
+        "devops.a.02"
+      ]
+    },
+    {
+      "id": "devops.a.02",
+      "domain": "devops",
+      "level": "advanced",
+      "theme": "組織",
+      "title": "チームと文化",
+      "goal": "役割・責任・情報共有の仕組みを設計できる",
+      "practice": [
+        "simulation"
+      ],
+      "prerequisites": [
+        "devops.i.03"
+      ],
+      "related": [
+        "git.a.02",
+        "sec.a.03"
+      ],
+      "next": []
+    }
+  ]
+}

@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { learn, mockRecords } from './learning.mjs';
 
-const LESSONS = JSON.parse(readFileSync(new URL('../../content/lesson-list.json', import.meta.url), 'utf8')).lessons;
+const LESSONS = JSON.parse(readFileSync(new URL('../../content/catalog.json', import.meta.url), 'utf8')).lessons;
 
 async function topbar(page) {
   return page.evaluate(() => {

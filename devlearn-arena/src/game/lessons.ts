@@ -1,9 +1,9 @@
 import type { DomainId } from '@/city/types';
-import list from '../../content/lesson-list.json';
+import { ENTRIES } from '@/content/catalog';
 import type { Difficulty, LessonMeta } from './types';
 
 /**
- * 全レッスンの ID と題名（content/lesson-list.json。Phase 5 で目録に置き換える）。
+ * 全レッスンの ID と題名（content/catalog.json の目録。推奨学習順）。
  * 分野と難易度は ID（<分野>.<難易度>.<番号>、docs/curriculum.md）から読む。
  */
 
@@ -15,7 +15,7 @@ export function metaOf(id: string, title = id): LessonMeta | null {
   return { id, domain: m[1] as DomainId, difficulty: m[2] as Difficulty, title };
 }
 
-export const LESSONS: readonly LessonMeta[] = list.lessons.map((l) => {
+export const LESSONS: readonly LessonMeta[] = ENTRIES.map((l) => {
   const meta = metaOf(l.id, l.title);
   if (!meta) throw new Error(`レッスン ID の形が違う: ${l.id}`);
   return meta;
