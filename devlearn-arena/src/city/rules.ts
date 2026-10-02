@@ -27,10 +27,10 @@ export const ZONE_RULES: Record<ZoneKind, { name: string; costPerCell: number; m
 };
 
 /**
- * 開発資金の初めの値。Phase 2 では資金は固定値で、建てても減らない（docs/development-plan.md）。
- * 足りない時の判定（docs/city-design.md 8 章）は、この値と費用を比べて行う。
+ * 開発資金の初めの値（docs/game-design.md 2 章・docs/decisions.md D-09）。
+ * 足りない時の判定（docs/city-design.md 8 章）は、今の資金と費用を比べて行う。
  */
-export const INITIAL_FUNDS = 5000;
+export const INITIAL_FUNDS = 1500;
 
 /** 都市の 1 日の長さ（秒）。画面の時計と、車と人の動きが使う */
 export const SECONDS_PER_DAY = 4;
