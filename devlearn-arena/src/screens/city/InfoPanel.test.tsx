@@ -12,7 +12,8 @@ import { panelModel, type FacilityPanelModel, type PanelModel } from './infoPane
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const base = newCity();
+// 学習で開発資金を得た後の都市（全ての施設を買える）
+const base: City = { ...newCity(), funds: 100000 };
 const terrain = generateTerrain(base.seed);
 
 /** 道路を 1 本足して、全ての施設の類を道路に面して並べた都市 */
