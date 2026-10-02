@@ -1,0 +1,136 @@
+{
+  "id": "found.b.04",
+  "domain": "found",
+  "level": "beginner",
+  "theme": "ファイル",
+  "title": "ファイルとディレクトリ",
+  "goal": "木の構造・パス・現在地を説明し、初めて pwd/ls/cd を打てる",
+  "minutes": 15,
+  "prerequisites": ["found.b.03"],
+  "related": ["linux.b.02", "git.b.01"],
+  "next": ["found.b.06", "linux.b.01", "db.b.01"],
+  "terms": ["file", "directory", "root-directory", "path", "absolute-path", "relative-path", "current-directory", "terminal", "command", "pwd", "cd", "ls", "server", "log"],
+  "explain": {
+    "what": "コンピュータの中の資料は{{term:file}}として置かれる。ファイルを入れる入れ物が{{term:directory}}で、ディレクトリの中にさらにディレクトリを作れる。全体は、1 つの根もと（{{term:root-directory}}）から枝分かれする木の形になる。",
+    "why": "資料が何万もあると、名前だけでは探せない。同じ名前の資料がいくつもあれば、取り違えも起きる。木の中の位置で指せば、どの資料かが 1 つに決まる。",
+    "use": "資料の場所を、根もとから順にディレクトリの名前を / で区切って並べた住所で書く。この住所を{{term:path}}と呼ぶ。/srv/app/config.txt は「/ の中の srv の中の app の中の config.txt」という意味。",
+    "when": "{{term:server}}の設定のファイルを直す時や、記録（{{term:log}}）を探す時。どちらも、どのファイルかをパスで正確に指せないと始まらない。",
+    "figures": ["found-b04-tree"],
+    "situation": "/home/minato と /srv/app の両方に config.txt がある。「config.txt を直して」と頼まれ、違う方を直してしまった。パスで書いてあれば、取り違えは起きなかった。"
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "found-b04-tree",
+      "prompt": "木の図で、/home/minato に当たるディレクトリを押す。",
+      "answer": ["minato"],
+      "see": "use"
+    },
+    {
+      "kind": "match",
+      "prompt": "用語と説明を結ぶ。",
+      "pairs": [
+        ["{{term:path}}", "根もとから / で区切って並べた住所"],
+        ["{{term:directory}}", "ファイルやディレクトリを入れる入れ物"],
+        ["{{term:root-directory}}", "木のいちばん根もと（/）"]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "/srv/app/config.txt と /home/minato/config.txt は、同じファイルである。",
+      "answer": false,
+      "why": "名前は同じ config.txt でも、木の中の位置（パス）が違うので別のファイル。",
+      "see": "situation"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "パスの先頭に書く / は、何を表す？",
+      "choices": [
+        { "id": "a", "text": "木のいちばん根もと（ルート）", "correct": true },
+        { "id": "b", "text": "今いる場所", "correct": false, "whyNot": "今いる場所は{{term:current-directory}}と呼ぶ。先頭の / は、どこにいても同じ根もとを指す。" },
+        { "id": "c", "text": "ただの区切りの記号", "correct": false, "whyNot": "パスの途中の / は区切りだが、先頭の / は根もと（ルート）そのものを表す。" }
+      ],
+      "explanation": "先頭の / はルート。全ての場所は / からたどって行き着ける。途中の / はディレクトリの区切り。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "現在地が /home の時に、下の{{term:command}}を打った（{{term:cd}} は、指定した場所へ現在地を移すコマンド）。移った後の現在地は？",
+      "context": { "command": "cd minato" },
+      "choices": [
+        { "id": "a", "text": "/home/minato", "correct": true },
+        { "id": "b", "text": "/minato", "correct": false, "whyNot": "minato は / で始まらない{{term:relative-path}}。今いる /home から見た minato なので /home/minato になる。" },
+        { "id": "c", "text": "/home のまま", "correct": false, "whyNot": "cd は現在地を移すコマンド。打った後は minato の中にいる。" }
+      ],
+      "explanation": "/ で始まらないパスは、現在地から数える。/home の中の minato へ移るので、/home/minato。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "同じ名前の config.txt が 2 か所にある。直すべき方を確実に指すには、どう書く？",
+      "choices": [
+        { "id": "a", "text": "/ から書き始める{{term:absolute-path}}で書く", "correct": true },
+        { "id": "b", "text": "名前の config.txt だけで書く", "correct": false, "whyNot": "名前だけでは、2 つのどちらか決まらない。" },
+        { "id": "c", "text": "相対パスで書く", "correct": false, "whyNot": "相対パスは、今いる場所によって指す物が変わる。いる場所を間違えると、違う方を直してしまう。" }
+      ],
+      "explanation": "絶対パスはルートから書くので、どこにいても同じ 1 つのファイルを指す。手順書や設定には絶対パスで書くと間違えにくい。"
+    },
+    {
+      "id": "q4",
+      "kind": "choice",
+      "prompt": "パス /srv/app/config.txt で、config.txt を直接入れているディレクトリはどれ？",
+      "choices": [
+        { "id": "a", "text": "app", "correct": true },
+        { "id": "b", "text": "srv", "correct": false, "whyNot": "srv は app を入れているディレクトリ。config.txt は app の中にある。" },
+        { "id": "c", "text": "/", "correct": false, "whyNot": "/ は木の根もと。config.txt は / から srv、app とたどった先にある。" }
+      ],
+      "explanation": "パスは左から順に、入れ物の中へ入っていく。最後の名前のすぐ左が、それを直接入れているディレクトリ。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "初めて{{term:terminal}}を使い、/srv/app へ移る。",
+    "environment": "linux-basic",
+    "setup": {
+      "user": "learner",
+      "cwd": "/home/learner",
+      "dirs": ["/home/learner", "/home/minato", "/srv/app"],
+      "files": {
+        "/home/minato/config.txt": "theme=dark\n",
+        "/srv/app/config.txt": "port=8080\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "move",
+        "purpose": "現在地を /srv/app へ移す。{{term:pwd}} で今いる場所を、{{term:ls}} で中にある名前を見てから動いてもよい。",
+        "check": { "kind": "cwd", "equals": "/srv/app" },
+        "afterward": "現在地が /srv/app になった。ここで pwd を打つと /srv/app と出る。/ から書いた住所なら、どこにいても一度で着ける。",
+        "hints": [
+          "まず今どこにいるかを確かめよう。`pwd` を打つと、現在地が表示される。",
+          "`cd` の後に、行きたい場所のパスを書くと移れる。/ から書けば、今いる場所に関係なく着く。",
+          "`cd /srv/app` と打つ。"
+        ],
+        "expectedErrors": ["enoent"]
+      }
+    ]
+  },
+  "result": {
+    "success": "ルートからの住所で、/srv/app に着いた。動く前に現在地を確かめる方法も分かった。",
+    "partial": "ヒントを使って /srv/app に着いた。次は、/ から書くパスを自分で組み立ててみよう。",
+    "retry": "まだ /srv/app に着いていない。木の図で、/ から srv、app の順にたどってみよう。"
+  },
+  "summary": {
+    "points": [
+      "ファイルは、木の中の住所（パス）で指す",
+      "/ が根もと（ルート）。/ から書けば、どこにいても同じ場所を指す",
+      "pwd で現在地、cd で移動、ls で中身を見る"
+    ],
+    "next": ["linux.b.01", "found.b.06"],
+    "terms": ["path", "root-directory", "current-directory", "pwd", "cd", "ls"]
+  }
+}

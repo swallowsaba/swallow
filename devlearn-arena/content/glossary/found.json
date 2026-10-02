@@ -1,0 +1,113 @@
+{
+  "domain": "found",
+  "terms": [
+    {
+      "id": "file",
+      "word": "ファイル",
+      "plain": "文書・画像・設定などを、名前を付けて保存したひとまとまりのデータ。",
+      "why": "コンピュータの中の情報は、ほとんどがファイルとして置かれる。どこに何のファイルがあるかが分かると、設定を直したり記録を探したりできる。",
+      "related": ["directory", "path"],
+      "lessons": ["found.b.04"],
+      "analogy": "紙の資料 1 枚に当たる。ただし中身は文字だけでなく、画像やプログラムのこともある。"
+    },
+    {
+      "id": "directory",
+      "word": "ディレクトリ",
+      "reading": "でぃれくとり",
+      "plain": "ファイルや、ほかのディレクトリを入れておく入れ物。フォルダとも呼ぶ。",
+      "why": "入れ物の中に入れ物を作ることで、大量のファイルを用途ごとに分けて整理できる。",
+      "related": ["file", "root-directory", "path"],
+      "lessons": ["found.b.04"],
+      "analogy": "資料を入れる棚。棚の中にさらに小さな棚を置ける。"
+    },
+    {
+      "id": "root-directory",
+      "word": "ルート",
+      "reading": "るーと",
+      "plain": "ディレクトリの木のいちばん根もとにあるディレクトリ。/ という 1 文字で表す。",
+      "why": "全てのファイルとディレクトリは、ルートからたどって行き着ける。根もとを決めておくと、どの場所も 1 通りの住所で書ける。",
+      "related": ["directory", "absolute-path"],
+      "lessons": ["found.b.04"],
+      "analogy": "建物の玄関。どの部屋へ行くにも、玄関からの道順で言い表せる。"
+    },
+    {
+      "id": "path",
+      "word": "パス",
+      "plain": "ファイルやディレクトリの場所を、ディレクトリの名前を / で区切って並べて表した住所。",
+      "why": "同じ名前のファイルがいくつあっても、パスで書けば 1 つに決まる。取り違えを防げる。",
+      "related": ["absolute-path", "relative-path", "directory"],
+      "lessons": ["found.b.04"],
+      "analogy": "「県・市・町・番地」と順に書く住所と同じ考え方。"
+    },
+    {
+      "id": "absolute-path",
+      "word": "絶対パス",
+      "reading": "ぜったいぱす",
+      "plain": "ルート（/）から書き始めるパス。今いる場所に関係なく、同じ場所を指す。",
+      "why": "どこにいても意味が変わらないので、設定や手順書には絶対パスで書くと間違えにくい。",
+      "related": ["path", "relative-path", "root-directory"],
+      "lessons": ["found.b.04"]
+    },
+    {
+      "id": "relative-path",
+      "word": "相対パス",
+      "reading": "そうたいぱす",
+      "plain": "今いる場所から書き始めるパス。/ で始まらない。",
+      "why": "短く書けて便利だが、今いる場所が違うと別の場所を指してしまう。",
+      "related": ["path", "absolute-path", "current-directory"],
+      "lessons": ["found.b.04"]
+    },
+    {
+      "id": "current-directory",
+      "word": "現在地",
+      "reading": "げんざいち",
+      "plain": "端末で今いるディレクトリ。カレントディレクトリとも呼ぶ。",
+      "why": "相対パスやコマンドの多くは、現在地を基準に動く。今どこにいるかを確かめる習慣が、取り違えを防ぐ。",
+      "related": ["relative-path", "pwd", "cd"],
+      "lessons": ["found.b.04"]
+    },
+    {
+      "id": "terminal",
+      "word": "端末",
+      "reading": "たんまつ",
+      "plain": "文字を打ってコンピュータに指示を出し、結果を文字で受け取る画面。ターミナルとも呼ぶ。",
+      "why": "サーバの多くには画面やマウスが無く、端末から操作する。仕事で使う道具の多くも端末で動く。",
+      "related": ["command"],
+      "lessons": ["found.b.04", "linux.b.01"]
+    },
+    {
+      "id": "command",
+      "word": "コマンド",
+      "plain": "端末に打ち込む、コンピュータへの短い指示。1 行に 1 つの指示を書く。",
+      "why": "ボタンが無い場面でも、コマンドを打てば同じ操作ができる。手順を文字で残せるので、繰り返しや自動化もしやすい。",
+      "related": ["terminal"],
+      "lessons": ["found.b.04", "linux.b.01"]
+    },
+    {
+      "id": "server",
+      "word": "サーバ",
+      "reading": "さーば",
+      "plain": "ほかの機械からの頼みを受けて、データや機能を返すコンピュータ。",
+      "why": "Web ページ・メール・ゲームの対戦など、ネットの向こう側で動く物の多くはサーバの上にある。",
+      "related": ["service", "web-server"],
+      "lessons": ["found.b.07", "linux.i.01"]
+    },
+    {
+      "id": "process",
+      "word": "プロセス",
+      "plain": "動いているプログラム 1 つ 1 つのこと。それぞれに番号（PID）が付く。",
+      "why": "同じプログラムを複数動かしたり、1 つだけ止めたりするには、プロセスを区別する必要がある。",
+      "related": ["service"],
+      "lessons": ["found.b.05", "linux.b.08"],
+      "analogy": "プログラムが料理のレシピなら、プロセスは今まさに作っている 1 皿。"
+    },
+    {
+      "id": "log",
+      "word": "ログ",
+      "plain": "プログラムが「いつ・何が起きたか」を書き残した記録。",
+      "why": "障害が起きた後で原因を探す時、ログはほぼ唯一の証拠になる。",
+      "related": ["journalctl", "service"],
+      "lessons": ["linux.i.01", "linux.i.02"]
+    }
+  ]
+}

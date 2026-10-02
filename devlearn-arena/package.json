@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/postbuild.mjs",
+    "build": "vite-node scripts/validate-content.mts && vite build && node scripts/postbuild.mjs",
     "build:strict": "npm run verify && npm run build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -21,7 +21,8 @@
     "verify": "npm run typecheck && npm run lint && npm run test",
     "shoot": "node tools/shoot.mjs",
     "svgs": "vite-node tools/build-facility-svgs.mts",
-    "catalog": "vite-node scripts/build-catalog.mts"
+    "catalog": "vite-node scripts/build-catalog.mts",
+    "content:check": "vite-node scripts/validate-content.mts"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",

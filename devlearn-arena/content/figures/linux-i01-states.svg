@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>サービスの 3 つの状態（inactive・active・failed）と、start・stop・enable の移り変わり</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <!-- 状態 -->
+  <g class="el" data-part="inactive">
+    <rect x="40" y="150" width="150" height="64" rx="14" fill="#9fb0c6" />
+    <text x="115" y="180" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">inactive</text>
+    <text x="115" y="202" text-anchor="middle" font-size="13" fill="#0a1424">止まっている</text>
+  </g>
+  <g class="el" data-part="active">
+    <rect x="290" y="150" width="150" height="64" rx="14" fill="#3ae08a" />
+    <text x="365" y="180" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">active</text>
+    <text x="365" y="202" text-anchor="middle" font-size="13" fill="#0a1424">動いている</text>
+  </g>
+  <g class="el" data-part="failed">
+    <rect x="290" y="276" width="150" height="64" rx="14" fill="#e04a3a" />
+    <text x="365" y="306" text-anchor="middle" font-size="18" font-weight="700" fill="#eef2f6">failed</text>
+    <text x="365" y="328" text-anchor="middle" font-size="13" fill="#eef2f6">動かそうとして失敗</text>
+  </g>
+  <!-- 起動時 -->
+  <g class="el" data-part="boot">
+    <rect x="290" y="20" width="150" height="56" rx="14" fill="none" stroke="#f2b632" stroke-width="2" />
+    <text x="365" y="54" text-anchor="middle" font-size="16" font-weight="700" fill="#f2b632">サーバの起動</text>
+  </g>
+  <!-- 移り変わり -->
+  <g class="el" data-part="start-stop" fill="none" stroke="#9fb0c6" stroke-width="2">
+    <path d="M190 170 H284" marker-end="url(#arrow)" />
+    <path d="M290 196 H196" marker-end="url(#arrow)" />
+    <text x="237" y="160" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6" stroke="none">start</text>
+    <text x="237" y="222" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6" stroke="none">stop</text>
+  </g>
+  <g class="el" data-part="crash" fill="none" stroke="#e04a3a" stroke-width="2">
+    <path d="M365 214 V270" marker-end="url(#arrow)" />
+    <text x="378" y="248" font-size="13" fill="#eef2f6" stroke="none">設定の誤り・ポートの使用中</text>
+  </g>
+  <g class="el" data-part="enable" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="6 5">
+    <path d="M365 76 V144" marker-end="url(#arrow-gold)" />
+    <text x="378" y="104" font-size="14" font-weight="700" fill="#f2b632" stroke="none" stroke-dasharray="none">enable していれば</text>
+    <text x="378" y="124" font-size="13" fill="#eef2f6" stroke="none" stroke-dasharray="none">起動時に自動で active へ</text>
+  </g>
+</svg>

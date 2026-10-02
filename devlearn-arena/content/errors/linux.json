@@ -1,0 +1,38 @@
+{
+  "domain": "linux",
+  "errors": [
+    {
+      "id": "enoent",
+      "match": "No such file or directory",
+      "meaning": "「そのような{{term:file}}や{{term:directory}}は無い」と言われた。打った{{term:path}}の先に、何も見つからなかった。",
+      "causes": [
+        "名前の綴りが違う（1 文字の打ち間違い・大文字と小文字の違い）。",
+        "{{term:relative-path}}と{{term:absolute-path}}を取り違えた。/ で始めないと、{{term:current-directory}}から探される。"
+      ],
+      "hint": "{{term:pwd}} で今いる場所を、{{term:ls}} でそこにある名前を確かめる。ルートから行くなら / で書き始める。",
+      "terms": ["path", "relative-path", "absolute-path", "pwd", "ls"]
+    },
+    {
+      "id": "unit-not-found",
+      "match": "Unit [^ ]+\\.service not found",
+      "meaning": "「その名前の{{term:service}}は登録されていない」と言われた。{{term:systemd}} が知らない名前を指定した。",
+      "causes": [
+        "サービスの名前の綴りが違う。",
+        "サービスがまだ用意されていない（設定のファイルが置かれていない）。"
+      ],
+      "hint": "サービスの名前を確かめる。この実戦で動かすのは web という名前のサービス。",
+      "terms": ["service", "systemd"]
+    },
+    {
+      "id": "service-failed",
+      "match": "failed",
+      "meaning": "{{term:service}}を動かそうとしたが、すぐに止まってしまった（状態が failed）。",
+      "causes": [
+        "サービスの設定に誤りがあり、起動の途中で止まった。",
+        "使おうとした{{term:port}}を、ほかのサービスが既に使っている。"
+      ],
+      "hint": "{{term:journalctl}} でそのサービスの{{term:log}}を見て、止まる直前の行を探す。",
+      "terms": ["service", "port", "journalctl", "log"]
+    }
+  ]
+}

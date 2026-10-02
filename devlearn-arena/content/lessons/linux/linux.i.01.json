@@ -1,0 +1,120 @@
+{
+  "id": "linux.i.01",
+  "domain": "linux",
+  "level": "intermediate",
+  "theme": "サービス",
+  "title": "サービスと systemd",
+  "goal": "systemctl で起動・停止・有効化・状態確認ができる",
+  "minutes": 15,
+  "prerequisites": ["linux.b.08"],
+  "related": ["docker.b.03", "k8s.i.05"],
+  "next": ["linux.i.02", "linux.a.04", "trouble.i.01"],
+  "terms": ["server", "service", "web-server", "database", "systemd", "enable", "port", "log", "systemctl", "journalctl"],
+  "explain": {
+    "what": "{{term:server}}の裏で動き続け、頼みを待ち受けるプログラムを{{term:service}}と呼ぶ。{{term:web-server}}や{{term:database}}がその例。サービスを動かしたり止めたりする管理役が {{term:systemd}}。",
+    "why": "サーバは保守のために再起動することがある。そのたびに人が手でサービスを動かし直すのでは、忘れた時に止まったままになる。systemd に任せれば、起動時に自動で動かし、落ちた時に立て直せる。",
+    "use": "Web サーバやデータベースを、いつも動いている状態に保つ。サービスには「今動いているか」と「次の起動で自動で動くか（{{term:enable}}）」の 2 つの状態がある。",
+    "when": "サーバを再起動したら、サイトが表示されなくなった。調べると Web サーバが止まったままだった。今動かすだけでなく、次の起動でも動くように登録しておく必要があった。",
+    "figures": ["linux-i01-states"],
+    "situation": "夜の保守でサーバを再起動した。朝になって「サイトが開かない」と連絡が来た。前の日に手で動かしたサービスが、起動時に動く登録をしていなかった。"
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "linux-i01-states",
+      "prompt": "サービス `web` は今、頼みを受けて動いている。図のどの状態にいるかを押す。",
+      "answer": ["active"],
+      "see": "use"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "今サービスを動かせば、次にサーバを起動した時も自動で動く。",
+      "answer": false,
+      "why": "今動かすことと、起動時に自動で動かすこと（有効化）は別の操作。両方そろえて初めて、再起動の後も動き続ける。",
+      "see": "use"
+    },
+    {
+      "kind": "relation",
+      "prompt": "「サービスが起動時に動かなかった」と「有効化していなかった」の関係は？",
+      "a": "有効化していなかった",
+      "b": "サービスが起動時に動かなかった",
+      "answer": "cause",
+      "why": "有効化は、起動時に動かすための登録。登録が無いことが原因で、起動時に動かなかった。",
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "サービスを有効化すると、どうなる？",
+      "choices": [
+        { "id": "a", "text": "サーバの起動時に、自動で動き出す", "correct": true },
+        { "id": "b", "text": "今すぐ動き出す", "correct": false, "whyNot": "今すぐ動かすのは `start` の役目。有効化は、次にサーバを起動した時から効く。" },
+        { "id": "c", "text": "落ちても二度と止まらなくなる", "correct": false, "whyNot": "有効化は、起動時に動かすための登録。落ちた時に立て直すかどうかは、別の設定で決まる。" }
+      ],
+      "explanation": "有効化（`enable`）は起動時に動かす登録。今すぐ動かす（`start`）とは別の操作で、両方そろえるとサーバを再起動しても動き続ける。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "サーバを再起動したら `web` が止まっていた。再起動の前は動いていた。最も考えられる理由は？",
+      "choices": [
+        { "id": "a", "text": "`web` が有効化されていない", "correct": true },
+        { "id": "b", "text": "`web` のプログラムが壊れた", "correct": false, "whyNot": "再起動の前は動いていたので、壊れたとは考えにくい。まず、起動時に動く登録があるかを確かめる。" },
+        { "id": "c", "text": "再起動で{{term:port}}が足りなくなった", "correct": false, "whyNot": "再起動でポートが足りなくなることは無い。起動時に動く登録があるかを先に確かめる。" }
+      ],
+      "explanation": "動いていたサービスが再起動の後だけ止まるなら、今動かしただけで有効化していなかった、が最も多い理由。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "`web` の状態を見ると、下のように失敗していた。原因の手掛かりはどこにある？",
+      "context": { "log": "web.service - Web server\n   Loaded: loaded (enabled)\n   Active: failed (Result: exit-code)" },
+      "choices": [
+        { "id": "a", "text": "状態の表示と、そのサービスの{{term:log}}", "correct": true },
+        { "id": "b", "text": "サーバの電源の記録", "correct": false, "whyNot": "電源が切れたのならサーバごと止まる。サービスだけが失敗しているので、サービスの記録を見る。" },
+        { "id": "c", "text": "何度も動かし直して様子を見る", "correct": false, "whyNot": "動かし直しても、同じ理由でまた失敗しやすい。先に失敗の理由を確かめる。" }
+      ],
+      "explanation": "失敗した状態は、動かそうとして止まった印。理由は {{term:systemctl}} で見る状態の表示と、{{term:journalctl}} で読む{{term:log}}に出る。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "サービス `web` を今動かし、サーバを再起動した後も動くようにする。",
+    "environment": "linux-server",
+    "setup": {
+      "user": "root",
+      "cwd": "/root",
+      "services": { "web": { "description": "Web server", "active": false, "enabled": false } }
+    },
+    "steps": [
+      {
+        "id": "run-and-enable",
+        "purpose": "`web` の状態を確かめ、今動いていて、次の起動でも動くようにする。状態は `systemctl status web` で見られる。",
+        "check": { "kind": "service", "name": "web", "active": true, "enabled": true },
+        "afterward": "`web` が動き出し、起動時に動く登録もできた。サーバを再起動しても、systemd が起動時に `web` を動かす。",
+        "hints": [
+          "まず状態を見よう。`systemctl status web` で、今動いているか（`Active` の行）と、起動時に動く登録があるか（`Loaded` の行の `enabled` か `disabled`）が分かる。",
+          "今動かす（`start`）と、次の起動でも動かす（`enable`）は別の操作。足りない方を足す。`--now` を付けた `enable` は、両方を一度に行う。",
+          "`systemctl enable --now web` と打つ。"
+        ],
+        "expectedErrors": ["unit-not-found", "service-failed"]
+      }
+    ]
+  },
+  "result": {
+    "success": "`web` を今動かし、再起動の後も動くようにできた。「今」と「次の起動」を分けて考えられた。",
+    "partial": "ヒントを使って `web` を動かした。次は、状態を見て足りない方を自分で選んでみよう。",
+    "retry": "`web` はまだ「動いていて、起動時にも動く」状態になっていない。状態の表示で、今の状態と起動時の登録を見比べよう。"
+  },
+  "summary": {
+    "points": [
+      "`start` は今動かす、有効化（`enable`）は次の起動から動かす",
+      "`systemctl status` で、今の状態と起動時の登録を見る",
+      "失敗の理由はログにある。`journalctl` で読む"
+    ],
+    "next": ["linux.i.02", "linux.a.01"],
+    "terms": ["service", "systemd", "systemctl", "enable", "journalctl", "log"]
+  }
+}

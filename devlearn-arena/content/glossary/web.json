@@ -1,0 +1,14 @@
+{
+  "domain": "web",
+  "terms": [
+    {
+      "id": "web-server",
+      "word": "Web サーバ",
+      "reading": "うぇぶさーば",
+      "plain": "ブラウザからの頼みを受けて、Web ページや画像を返すサービス。",
+      "why": "Web サイトを公開するには、Web サーバが動き続けている必要がある。止まると誰もページを開けない。",
+      "related": ["server", "service", "port"],
+      "lessons": ["web.b.07", "linux.i.01"]
+    }
+  ]
+}
