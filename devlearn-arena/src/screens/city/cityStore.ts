@@ -2,7 +2,9 @@ import { create } from 'zustand';
 import { STAGE_NAMES } from '@/game/stage';
 import { advance } from '@/city/growth';
 import { newCity } from '@/city/newCity';
+import type { OverlayKind } from '@/city/overlay';
 import type { DemolishTarget, Reason } from '@/city/place';
+import type { Selection } from '@/city/render/CityRenderer';
 import { SECONDS_PER_DAY, type BuildRoadKind } from '@/city/rules';
 import { generateTerrain, type Terrain } from '@/city/terrain';
 import type { City, Facility, FacilityType, ZoneKind } from '@/city/types';
@@ -45,6 +47,10 @@ export interface CityGameState {
   confirm: DemolishTarget | null;
   /** 上の帯の下に出す 1 行の知らせ */
   notice: { text: string; until: number } | null;
+  /** 選んでいる建物（情報パネルを出す） */
+  selected: Selection | null;
+  /** 表示の切り替え */
+  overlay: OverlayKind | null;
 
   setCity: (city: City) => void;
   tick: (dtSeconds: number) => void;
@@ -55,6 +61,8 @@ export interface CityGameState {
   setHint: (hint: Hint | null) => void;
   askDemolish: (target: DemolishTarget | null) => void;
   notify: (text: string, now: number) => void;
+  select: (selection: Selection | null) => void;
+  setOverlay: (overlay: OverlayKind | null) => void;
 }
 
 export function createCityStore(seed?: number) {
@@ -70,8 +78,10 @@ export function createCityStore(seed?: number) {
     hint: null,
     confirm: null,
     notice: null,
+    selected: null,
+    overlay: null,
 
-    setCity: (next) => set({ city: next }),
+    setCity: (next) => set((s) => ({ city: next, selected: s.selected && stillThere(next, s.selected) ? s.selected : null })),
     tick: (dt) => {
       const s = get();
       if (s.paused || dt <= 0) return;
@@ -87,7 +97,13 @@ export function createCityStore(seed?: number) {
     setHint: (hint) => set({ hint }),
     askDemolish: (confirm) => set({ confirm }),
     notify: (text, now) => set({ notice: { text, until: now + 3000 } }),
+    select: (selected) => set({ selected }),
+    setOverlay: (overlay) => set({ overlay }),
   }));
+}
+
+function stillThere(city: City, sel: Selection): boolean {
+  return sel.kind === 'facility' ? city.facilities.some((f) => f.id === sel.id) : city.buildings.some((b) => b.id === sel.id);
 }
 
 export type CityStore = ReturnType<typeof createCityStore>;

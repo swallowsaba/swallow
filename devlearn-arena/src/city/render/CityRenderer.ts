@@ -1,4 +1,8 @@
-import { city as cityColors, hud, mix, rgbaOf, state } from '@/ui/tokens';
+import { accent, city as cityColors, domain as domainColors, fontFamily, hud, mix, rgbaOf, state } from '@/ui/tokens';
+import { FACILITY_DEFS } from '../facilities';
+import { layoutLabels, type LabelRequest, type Obstacle, type ScreenRect } from '../labels';
+import type { Overlay, OverlayKind } from '../overlay';
+import { boxOutline, pickAt } from '../pick';
 import { createCamera, pan, rotateCamera, screenToWorld, zoomAt, type Camera, type Viewport } from '../camera';
 import type { CellMark } from '../place';
 import { constructionStage, SECONDS_PER_DAY } from '../rules';
@@ -30,17 +34,28 @@ export interface Preview {
   ok: boolean;
 }
 
+/** 選んでいる物（施設か区画の建物） */
+export interface Selection {
+  kind: 'facility' | 'building';
+  id: string;
+}
+
 export interface RenderStats {
   fps: number;
   frames: number;
   drawnObjects: number;
   agents: number;
+  /** 置けた名札の数と、置きたかった数 */
+  labels: number;
+  labelsWanted: number;
 }
 
 export class CityRenderer {
   readonly size = MAP_SIZE;
   camera: Camera;
-  stats: RenderStats = { fps: 0, frames: 0, drawnObjects: 0, agents: 0 };
+  stats: RenderStats = { fps: 0, frames: 0, drawnObjects: 0, agents: 0, labels: 0, labelsWanted: 0 };
+  /** 最後に描いた名札（撮影と確かめの道具が読む） */
+  lastLabels: { id: string; x: number; y: number; width: number; height: number }[] = [];
   /** 準備が終わり、最初の絵を描いたら true */
   ready = false;
 
@@ -55,7 +70,22 @@ export class CityRenderer {
   private preview: (Preview & { shapes: RoadShape[] }) | null = null;
   private sprites: SpriteCache;
   private chunks = new Map<string, HTMLCanvasElement>();
-  private order: { rotation: Rotation; list: number[]; boxes: DepthBox[]; position: Int32Array; grid: Map<number, number[]> } | null = null;
+  private order: {
+    rotation: Rotation;
+    list: number[];
+    boxes: DepthBox[];
+    position: Int32Array;
+    grid: Map<number, number[]>;
+    /** 拡大率 1 の、立体の画面の上の範囲（x0, y0, x1, y1 の並び） */
+    rects: Float64Array;
+    /** 拡大率 1 の、立体の画面の上の輪郭 */
+    outlines: { sx: number; sy: number }[][];
+  } | null = null;
+  /** 名札を置かない画面の端（情報パネルを開いている時の右など） */
+  private labelInsets = { right: 8 };
+  private labelBlocks: ScreenRect[] = [];
+  private selection: Selection | null = null;
+  private overlay: { kind: OverlayKind; data: Overlay } | null = null;
   private net: Network;
   private agents: Agent[];
   private agentsKey = '';
@@ -156,6 +186,57 @@ export class CityRenderer {
     this.dirty = true;
   }
 
+  setSelection(selection: Selection | null): void {
+    this.selection = selection;
+    this.dirty = true;
+  }
+
+  setLabelInsets(insets: { right: number }): void {
+    this.labelInsets = insets;
+    this.dirty = true;
+  }
+
+  /** 名札を置かない画面の上の範囲（都市の上に重ねた知らせなど。画素） */
+  setLabelBlocks(blocks: ScreenRect[]): void {
+    const key = JSON.stringify(blocks);
+    if (key === JSON.stringify(this.labelBlocks)) return;
+    this.labelBlocks = blocks;
+    this.dirty = true;
+  }
+
+  setOverlay(overlay: { kind: OverlayKind; data: Overlay } | null): void {
+    this.overlay = overlay;
+    this.dirty = true;
+  }
+
+  /** 道路の網と車（表示切替の交通が使う） */
+  traffic(): { net: Network; agents: Agent[] } {
+    return { net: this.net, agents: this.agents };
+  }
+
+  /** 画面の点の下にある、選べる物（施設と区画の建物）。一番手前の物 */
+  objectAt(sx: number, sy: number): Selection | null {
+    const order = this.sortedObjects();
+    const o = this.layerOrigin();
+    const point = { sx: (sx - o.x) / this.camera.zoom, sy: (sy - o.y) / this.camera.zoom };
+    const candidates: { index: number; box: DepthBox; position: number }[] = [];
+    this.objects.forEach((obj, index) => {
+      if (!obj.select) return;
+      const r = order.rects;
+      if (point.sx < (r[index * 4] as number) || point.sx > (r[index * 4 + 2] as number) || point.sy < (r[index * 4 + 1] as number) || point.sy > (r[index * 4 + 3] as number)) return;
+      candidates.push({ index, box: order.boxes[index] as DepthBox, position: order.position[index] as number });
+    });
+    const hit = pickAt(candidates, point);
+    const obj = hit >= 0 ? this.objects[(candidates[hit] as { index: number }).index] : undefined;
+    return obj?.select ?? null;
+  }
+
+  /** 地図の点を画面の中央に持ってくる */
+  focusOn(x: number, y: number): void {
+    this.camera = { ...this.camera, focus: { x: Math.max(0, Math.min(this.size, x)), y: Math.max(0, Math.min(this.size, y)) } };
+    this.dirty = true;
+  }
+
   /** 画面の点の下にある地面のマス */
   cellAt(sx: number, sy: number): Point {
     const p = screenToWorld(this.camera, this.viewport, { sx, sy }, this.size);
@@ -241,6 +322,16 @@ export class CityRenderer {
     list.forEach((index, pos) => {
       position[index] = pos;
     });
+    const rects = new Float64Array(boxes.length * 4);
+    const outlines: { sx: number; sy: number }[][] = [];
+    boxes.forEach((b, i) => {
+      const outline = boxOutline(b);
+      outlines.push(outline);
+      rects[i * 4] = Math.min(...outline.map((p) => p.sx));
+      rects[i * 4 + 1] = Math.min(...outline.map((p) => p.sy));
+      rects[i * 4 + 2] = Math.max(...outline.map((p) => p.sx));
+      rects[i * 4 + 3] = Math.max(...outline.map((p) => p.sy));
+    });
     const grid = new Map<number, number[]>();
     boxes.forEach((b, index) => {
       for (let x = Math.floor(b.min[0]); x < Math.ceil(b.max[0]); x += 1) {
@@ -252,7 +343,7 @@ export class CityRenderer {
         }
       }
     });
-    this.order = { rotation, list, boxes, position, grid };
+    this.order = { rotation, list, boxes, position, grid, rects, outlines };
     return this.order;
   }
 
@@ -342,6 +433,7 @@ export class CityRenderer {
     const s = this.space();
     let drawn = 0;
     const order = this.sortedObjects();
+    this.drawSelectionBase(o);
     const agents = this.placeAgents(order);
     this.drawAgents(ctx, o, agents.get(-1));
     for (let pos = 0; pos < order.list.length; pos += 1) {
@@ -371,7 +463,9 @@ export class CityRenderer {
     this.stats.drawnObjects = drawn;
     this.stats.agents = this.agents.length;
     this.drawFog(o);
+    this.drawOverlay(o);
     this.drawPreview(o);
+    this.drawLabels(o, order);
     if (this.onReady) {
       const done = this.onReady;
       this.onReady = undefined;
@@ -416,6 +510,176 @@ export class CityRenderer {
         ctx.stroke();
       }
       ctx.restore();
+    }
+  }
+
+  /** 選んでいる物の足元（金の枠。docs/visual-design.md 1 章: 光は選択などの意味のある所だけ） */
+  private drawSelectionBase(o: { x: number; y: number }): void {
+    const sel = this.selection;
+    if (!sel) return;
+    const obj = this.objects.find((x) => x.select?.id === sel.id);
+    if (!obj) return;
+    const ctx = this.ctx;
+    const s = this.space();
+    const pad = 0.06;
+    const pts = [{ x: obj.x - pad, y: obj.y - pad }, { x: obj.x + obj.w + pad, y: obj.y - pad }, { x: obj.x + obj.w + pad, y: obj.y + obj.d + pad }, { x: obj.x - pad, y: obj.y + obj.d + pad }];
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const [x, y] = toLayer(s, p);
+      if (i === 0) ctx.moveTo(o.x + x, o.y + y);
+      else ctx.lineTo(o.x + x, o.y + y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = rgbaOf(accent.gold, 0.28);
+    ctx.fill();
+    ctx.strokeStyle = accent.goldLight;
+    ctx.lineWidth = Math.max(2, 2.5 * this.camera.zoom);
+    ctx.stroke();
+  }
+
+  /** 表示の切り替え（学習の進み・人口・交通・発展段階を色で重ねる） */
+  private drawOverlay(o: { x: number; y: number }): void {
+    const ov = this.overlay;
+    if (!ov) return;
+    const ctx = this.ctx;
+    const s = this.space();
+    const poly = (pts: readonly { x: number; y: number }[]): void => {
+      ctx.beginPath();
+      pts.forEach((p, i) => {
+        const [x, y] = toLayer(s, p);
+        if (i === 0) ctx.moveTo(o.x + x, o.y + y);
+        else ctx.lineTo(o.x + x, o.y + y);
+      });
+      ctx.closePath();
+    };
+    const rect = (r: { x: number; y: number; w: number; h: number }): { x: number; y: number }[] => [{ x: r.x, y: r.y }, { x: r.x + r.w, y: r.y }, { x: r.x + r.w, y: r.y + r.h }, { x: r.x, y: r.y + r.h }];
+    if (ov.data.kind === 'areas') {
+      if (ov.data.next) {
+        poly(rect(ov.data.next));
+        ctx.setLineDash([10, 8]);
+        ctx.strokeStyle = state.info;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      poly(rect(ov.data.current));
+      ctx.fillStyle = rgbaOf(accent.gold, 0.12);
+      ctx.fill();
+      ctx.strokeStyle = accent.gold;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      return;
+    }
+    if (ov.data.kind === 'paths') {
+      // 道路の線に沿って、道路の幅の 6 割ほどの太さで塗る（1 マスの道路の幅は拡大率 1 で約 28 画素）
+      // 区切りの所で半透明の線が重ならないように、端は切りっぱなしにする
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = Math.max(3, 17 * this.camera.zoom);
+      for (const p of ov.data.paths) {
+        ctx.beginPath();
+        p.pts.forEach((q, i) => {
+          const [x, y] = toLayer(s, q);
+          if (i === 0) ctx.moveTo(o.x + x, o.y + y);
+          else ctx.lineTo(o.x + x, o.y + y);
+        });
+        ctx.strokeStyle = rgbaOf(overlayColor(ov.kind, p.value), 0.75);
+        ctx.stroke();
+      }
+      return;
+    }
+    for (const c of ov.data.cells) {
+      poly([{ x: c.x + 0.05, y: c.y + 0.05 }, { x: c.x + 0.95, y: c.y + 0.05 }, { x: c.x + 0.95, y: c.y + 0.95 }, { x: c.x + 0.05, y: c.y + 0.95 }]);
+      ctx.fillStyle = rgbaOf(overlayColor(ov.kind, c.value), 0.62);
+      ctx.fill();
+    }
+  }
+
+  /**
+   * 施設の名札（docs/ui-design.md 8 章）。互いに重ならず、建物を隠さない。
+   * 重なりそうならずらして引き出し線で結び、置けなければ間引く（src/city/labels.ts）。
+   */
+  private drawLabels(o: { x: number; y: number }, order: NonNullable<CityRenderer['order']>): void {
+    const ctx = this.ctx;
+    const { width, height } = this.viewport;
+    const zoom = this.camera.zoom;
+    const nameFont = `700 13px ${fontFamily.body}`;
+    const numFont = `700 13px ${fontFamily.number}`;
+    const requests: LabelRequest[] = [];
+    const obstacles: Obstacle[] = [...this.labelBlocks];
+    const info = new Map<string, { name: string; level: string; color: string }>();
+    const r = order.rects;
+    this.objects.forEach((obj, index) => {
+      if (!obj.select) return;
+      const x0 = o.x + (r[index * 4] as number) * zoom;
+      const y0 = o.y + (r[index * 4 + 1] as number) * zoom;
+      const x1 = o.x + (r[index * 4 + 2] as number) * zoom;
+      const y1 = o.y + (r[index * 4 + 3] as number) * zoom;
+      if (x1 < 0 || x0 > width || y1 < 0 || y0 > height) return;
+      // 建物の立体の輪郭（敷地の地面は含めない）
+      obstacles.push((order.outlines[index] ?? []).map((p) => ({ x: o.x + p.sx * zoom, y: o.y + p.sy * zoom })));
+      if (obj.select.kind !== 'facility' || obj.source.kind !== 'facility') return;
+      const def = FACILITY_DEFS[obj.source.type];
+      if (def.group !== 'facility') return;
+      ctx.font = nameFont;
+      const nameW = ctx.measureText(def.name).width;
+      ctx.font = numFont;
+      const lv = `Lv${String(obj.source.level)}`;
+      const lvW = ctx.measureText(lv).width;
+      const box = order.boxes[index] as DepthBox;
+      const top = project({ x: (box.min[0] + box.max[0]) / 2, y: (box.min[1] + box.max[1]) / 2, z: box.max[2] });
+      requests.push({
+        id: obj.select.id,
+        ax: o.x + top.sx * zoom,
+        ay: o.y + top.sy * zoom,
+        width: Math.ceil(nameW + lvW + 30),
+        height: 24,
+        priority: (this.selection?.id === obj.select.id ? 100 : 0) + def.w * def.d,
+      });
+      info.set(obj.select.id, { name: def.name, level: lv, color: def.domain ? domainColors[def.domain] : accent.gold });
+    });
+    const placed = layoutLabels(requests, obstacles, { width, height, top: 56, bottom: 96, left: 8, right: this.labelInsets.right });
+    this.stats.labels = placed.length;
+    this.stats.labelsWanted = requests.length;
+    this.lastLabels = placed.map((p) => ({ id: p.id, x: p.x, y: p.y, width: p.width, height: p.height }));
+    for (const p of placed) {
+      const meta = info.get(p.id);
+      if (!meta) continue;
+      const selected = this.selection?.id === p.id;
+      // 引き出し線と、指す点
+      if (p.leader) {
+        ctx.strokeStyle = hud.line;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(p.x + p.width / 2, p.y + p.height);
+        ctx.lineTo(p.ax, p.ay);
+        ctx.stroke();
+        ctx.fillStyle = accent.gold;
+        ctx.beginPath();
+        ctx.arc(p.ax, p.ay, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // 札（角を斜めに切った暗い板と、分野の色の帯）
+      const cut = 6;
+      ctx.beginPath();
+      ctx.moveTo(p.x + cut, p.y);
+      ctx.lineTo(p.x + p.width, p.y);
+      ctx.lineTo(p.x + p.width - cut, p.y + p.height);
+      ctx.lineTo(p.x, p.y + p.height);
+      ctx.closePath();
+      ctx.fillStyle = selected ? accent.gold : hud.bgStrong;
+      ctx.fill();
+      ctx.strokeStyle = selected ? accent.goldLight : hud.line;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = meta.color;
+      ctx.fillRect(p.x + cut + 2, p.y + 6, 4, p.height - 12);
+      ctx.textBaseline = 'middle';
+      ctx.font = nameFont;
+      ctx.fillStyle = selected ? rgbaOf(hud.bg, 1) : hud.text;
+      ctx.fillText(meta.name, p.x + cut + 11, p.y + p.height / 2 + 1);
+      ctx.font = numFont;
+      ctx.fillStyle = selected ? rgbaOf(hud.bg, 1) : accent.goldLight;
+      ctx.fillText(meta.level, p.x + p.width - cut - 6 - ctx.measureText(meta.level).width, p.y + p.height / 2 + 1);
     }
   }
 
@@ -493,4 +757,18 @@ export function sceneSignature(c: City): string {
 /** 車と人の数が変わったかを見分ける印 */
 function agentsKeyOf(c: City): string {
   return `${String(c.population)}:${String(c.facilities.filter((f) => f.state === 'active').length)}`;
+}
+
+/** 表示の切り替えの色（弱い → 強い） */
+function overlayColor(kind: OverlayKind, v: number): string {
+  switch (kind) {
+    case 'learning':
+      return mix(hud.textSub, state.ok, v);
+    case 'population':
+      return mix(state.info, accent.gold, v);
+    case 'traffic':
+      return v < 0.5 ? mix(state.ok, state.warn, v * 2) : mix(state.warn, state.bad, (v - 0.5) * 2);
+    case 'stage':
+      return accent.gold;
+  }
 }

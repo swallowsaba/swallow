@@ -26,6 +26,7 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
   let drag: Drag | null = null;
   let pointer: { sx: number; sy: number; cx: number; cy: number } | null = null;
   let rightDown: { x: number; y: number } | null = null;
+  let leftDown: { x: number; y: number } | null = null;
 
   const local = (e: { clientX: number; clientY: number }): { sx: number; sy: number } => {
     const r = canvas.getBoundingClientRect();
@@ -104,7 +105,21 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
     const s = store.getState();
     if (s.confirm) s.askDemolish(null);
     else if (s.tool.kind !== 'none') s.setTool({ kind: 'none' });
+    else if (s.selected) s.select(null);
     else s.openMenu(null);
+  };
+
+  /** Tab で施設を順に選び、その施設を画面の中央に持ってくる（docs/ui-design.md 4 章） */
+  const cycle = (dir: 1 | -1): void => {
+    const s = store.getState();
+    const list = [...s.city.facilities].sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }));
+    if (list.length === 0) return;
+    const now = s.selected?.kind === 'facility' ? list.findIndex((f) => f.id === s.selected?.id) : -1;
+    const next = list[(now + dir + list.length) % list.length];
+    if (!next) return;
+    s.select({ kind: 'facility', id: next.id });
+    const size = footprintOf(next.type, next.rotation);
+    renderer.focusOn(next.origin.x + size.w / 2, next.origin.y + size.d / 2);
   };
 
   const onPointerDown = (e: PointerEvent): void => {
@@ -114,7 +129,10 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
     }
     if (e.button !== 0) return;
     const { tool } = store.getState();
-    if (tool.kind === 'none') return;
+    if (tool.kind === 'none') {
+      leftDown = { x: e.clientX, y: e.clientY };
+      return;
+    }
     const p = local(e);
     pointer = { ...p, cx: e.clientX, cy: e.clientY };
     const cell = renderer.cellAt(p.sx, p.sy);
@@ -145,8 +163,13 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
     }
     if (e.button !== 0) return;
     const { tool } = store.getState();
-    if (tool.kind === 'none') return;
     const p = local(e);
+    if (tool.kind === 'none') {
+      // 建物を選ぶ（押して動かさずに離した時）。何も無い所なら選択を外す
+      if (leftDown && Math.hypot(e.clientX - leftDown.x, e.clientY - leftDown.y) < 5) store.getState().select(renderer.objectAt(p.sx, p.sy));
+      leftDown = null;
+      return;
+    }
     pointer = { ...p, cx: e.clientX, cy: e.clientY };
     if (tool.kind === 'road' && tool.shape === 'curve' && drag?.kind === 'line') {
       // 曲線: 始点と終点が決まったら、曲がり具合を決める段に移る
@@ -192,6 +215,10 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
       s.togglePause();
     } else if (k === 'b') {
       s.openMenu(s.menu ? null : 'road');
+    } else if (k === 'tab' && !(e.target instanceof HTMLElement && /^(BUTTON|A)$/.test(e.target.tagName))) {
+      // ボタンにいる時の Tab は、画面の部品を順にたどる（キーボードの操作を奪わない）
+      e.preventDefault();
+      cycle(e.shiftKey ? -1 : 1);
     }
   };
 

@@ -6,17 +6,17 @@
 // 時間だけは都市の時計を早回しする（1 日 = 4 秒を待たずに、同じ計算で日付を進める）。
 
 /** マスの中心の、画面の上の位置 */
-async function at(page, x, y) {
+export async function at(page, x, y) {
   return page.evaluate(([cx, cy]) => window.__city.screenOf(cx + 0.5, cy + 0.5), [x, y]);
 }
 
-async function pick(page, group, item) {
+export async function pick(page, group, item) {
   const drawerOpen = await page.locator(`[data-testid="build-group-${group}"][aria-pressed="true"]`).count();
   if (!drawerOpen) await page.click(`[data-testid="build-group-${group}"]`);
   if (item) await page.click(`[data-testid="${item}"]`);
 }
 
-async function drag(page, from, to) {
+export async function drag(page, from, to) {
   const a = await at(page, from[0], from[1]);
   const b = await at(page, to[0], to[1]);
   await page.mouse.move(a.sx, a.sy);
@@ -35,7 +35,7 @@ async function click(page, cell) {
 /** 施設を置く。向きは R を押した回数（90 度ずつ） */
 const SHELF = { academy: 'base', research: 'base', server: 'base', network: 'base', datacenter: 'base', web: 'dev', security: 'dev', devoffice: 'dev', deploy: 'dev', devops: 'dev', container: 'ops', cluster: 'ops', cloud: 'ops', monitor: 'ops', incident: 'ops' };
 
-async function facility(page, type, cell, turns = 0) {
+export async function facility(page, type, cell, turns = 0) {
   const shelf = SHELF[type];
   await pick(page, shelf ? 'facility' : 'park');
   if (shelf) await page.click(`[data-testid="facility-shelf-${shelf}"]`);
@@ -45,7 +45,7 @@ async function facility(page, type, cell, turns = 0) {
   for (let i = 0; i < (4 - turns) % 4; i += 1) await page.keyboard.press('r');
 }
 
-async function days(page, n) {
+export async function days(page, n) {
   await page.evaluate((d) => window.__cityStore.getState().tick(d * 4), n);
   await page.waitForTimeout(200);
 }
@@ -57,7 +57,8 @@ async function state(page) {
   });
 }
 
-export default async function town(page, shot) {
+/** 画面の操作だけで村から町を作る（撮影はしない）。shot を渡すと途中の画面も撮る */
+export async function buildTown(page, shot = async () => {}) {
   // 少し引いて、初めの範囲を全部見る
   await page.evaluate(() => window.__city.zoomBy(-1));
   await page.waitForTimeout(200);
@@ -128,6 +129,10 @@ export default async function town(page, shot) {
   console.log('町の後', JSON.stringify(await state(page)));
   await page.evaluate(() => window.__cityStore.getState().togglePause());
   await page.waitForTimeout(300);
+}
+
+export default async function town(page, shot) {
+  await buildTown(page, shot);
   await shot('p2-town');
 
   // 建設中の 3 段階と橋を寄って撮る

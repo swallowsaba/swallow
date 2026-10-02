@@ -1,0 +1,265 @@
+/* 情報パネル（右、幅 360、最大 70%）。計器の窓（docs/visual-design.md 4 章）。
+   開いた時も都市が画面の 80% 以上見えるように（V1）、行の間を詰める */
+.info {
+  position: absolute;
+  top: 60px;
+  right: 14px;
+  z-index: 11;
+  width: 360px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 14px 16px 16px;
+  background: var(--hud-bg);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  box-shadow: var(--shadow-window);
+  backdrop-filter: blur(6px);
+}
+
+.info-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.info-titles {
+  flex: 1;
+  min-width: 0;
+}
+.info-type {
+  display: block;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+  line-height: 1.5;
+}
+.info-name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-22);
+  line-height: 1.3;
+}
+.info-level {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 2px 10px;
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+.info-level-label {
+  font-family: var(--font-number);
+  font-weight: 700;
+  font-size: var(--fs-14);
+}
+.info-level-value {
+  font-weight: 700;
+  font-size: var(--fs-28);
+  line-height: 1;
+}
+.info-close {
+  display: flex;
+  padding: 6px;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text-sub);
+  cursor: pointer;
+}
+.info-close:hover {
+  color: var(--gold-light);
+}
+.info-note {
+  margin: 6px 0 0;
+  font-size: var(--fs-12);
+  line-height: 1.5;
+  color: var(--hud-text-sub);
+}
+
+.info-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-weight: 700;
+  font-size: var(--fs-14);
+}
+.info-state-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.info-state.is-ok .info-state-dot {
+  background: var(--ok);
+}
+.info-state.is-warn .info-state-dot {
+  background: var(--warn);
+}
+.info-state.is-bad .info-state-dot {
+  background: var(--bad);
+}
+
+.info-section {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hud-line);
+}
+.info-heading {
+  margin: 0 0 4px;
+  font-size: var(--fs-13);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--gold-light);
+  letter-spacing: 0.06em;
+}
+.info-line {
+  margin: 2px 0;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+}
+.info-line.is-sub {
+  font-size: var(--fs-12);
+  line-height: 1.5;
+  color: var(--hud-text-sub);
+}
+
+.info-domain + .info-domain {
+  margin-top: 6px;
+}
+.info-domain-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.info-domain-swatch {
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+}
+.info-domain-name {
+  flex: 1;
+  font-weight: 700;
+  font-size: var(--fs-14);
+}
+.info-domain-stage {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.info-domain-value {
+  min-width: 28px;
+  text-align: right;
+  font-size: var(--fs-18);
+  font-weight: 700;
+}
+.info-meter {
+  height: 6px;
+  margin: 4px 0 2px;
+  background: var(--hud-bg-strong);
+  border: 1px solid var(--hud-line);
+}
+.info-meter span {
+  display: block;
+  height: 100%;
+}
+
+.info-lessons {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: lesson;
+}
+.info-lessons li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: var(--fs-14);
+  line-height: 1.5;
+  counter-increment: lesson;
+}
+.info-lessons li::before {
+  content: counter(lesson);
+  min-width: 14px;
+  font-family: var(--font-number);
+  font-weight: 700;
+  color: var(--gold);
+}
+.info-lesson-level {
+  flex: none;
+  padding: 0 6px;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+  border: 1px solid var(--hud-line);
+}
+.info-lesson-title {
+  flex: 1;
+}
+
+.info-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  height: 32px;
+  padding: 0 16px;
+  border: none;
+  background: var(--hud-bg-strong);
+  color: var(--hud-text);
+  font-weight: 700;
+  font-size: var(--fs-13);
+  line-height: 1.2;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  cursor: pointer;
+}
+.info-action[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.info-missions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.info-missions li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: var(--fs-14);
+  line-height: 1.5;
+}
+.info-missions li svg {
+  color: var(--gold);
+  flex: none;
+}
+
+.info-upgrade {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  align-items: baseline;
+}
+.info-upgrade-title {
+  font-family: var(--font-number);
+  font-weight: 700;
+  font-size: var(--fs-18);
+  color: var(--gold-light);
+}
+.info-upgrade-adds {
+  font-size: var(--fs-14);
+  line-height: 1.5;
+}
+.info-upgrade-cost {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--gold-light);
+  font-size: var(--fs-16);
+  font-weight: 700;
+}
+.info-unit {
+  font-size: var(--fs-12);
+  font-weight: 500;
+  color: var(--hud-text-sub);
+}

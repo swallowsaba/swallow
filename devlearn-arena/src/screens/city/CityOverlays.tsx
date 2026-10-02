@@ -75,17 +75,17 @@ export function DemolishConfirm({ target, onYes, onNo }: { target: DemolishTarge
 }
 
 /** 上の帯の下、右寄せの 1 行の知らせ（docs/ui-design.md 3 章）と、一時停止の印 */
-export function CityNotice({ text, paused }: { text: string | null; paused: boolean }) {
+export function CityNotice({ text, paused, shifted }: { text: string | null; paused: boolean; shifted: boolean }) {
   return (
-    <div className="city-notices">
+    <div className={`city-notices${shifted ? ' is-shifted' : ''}`}>
       {paused ? (
-        <div className="city-notice is-paused" data-testid="paused">
+        <div className="city-notice is-paused" data-testid="paused" data-label-block>
           <Icon name="pause" size={16} />
           一時停止中（Space で再開）
         </div>
       ) : null}
       {text ? (
-        <div className="city-notice" role="status">
+        <div className="city-notice" role="status" data-label-block>
           {text}
         </div>
       ) : null}

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { overlayOf, stageProgress, type OverlayKind } from '@/city/overlay';
 import { useStore } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { demolish } from '@/city/place';
@@ -8,6 +9,9 @@ import { TopBar } from '@/ui/TopBar';
 import { BuildMenu } from './BuildMenu';
 import { attachBuildControls } from './buildControls';
 import { CityNotice, DemolishConfirm, PlacementHint } from './CityOverlays';
+import { InfoPanel } from './InfoPanel';
+import { panelModel } from './infoPanelModel';
+import { OverlayToggle, type OverlayLegend } from './OverlayToggle';
 import { createCityStore, type CityStore } from './cityStore';
 import { attachControls } from './controls';
 import './CityScreen.css';
@@ -18,13 +22,22 @@ import './CityScreen.css';
  */
 export function CityScreen() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rendererRef = useRef<CityRenderer | null>(null);
   const store: CityStore = useMemo(() => createCityStore(), []);
   // 画面に出す物だけを選んで読む（都市の日付は毎フレーム進むが、画面の部品は必要な時だけ描き直す）
   const state = useStore(store, useShallow((s) => ({
     name: s.city.name, funds: s.city.funds, population: s.city.population, stage: s.city.stage,
     tool: s.tool, menu: s.menu, hint: s.hint, confirm: s.confirm, notice: s.notice, paused: s.paused,
-    openMenu: s.openMenu, setTool: s.setTool,
+    openMenu: s.openMenu, setTool: s.setTool, selected: s.selected, overlay: s.overlay, setOverlay: s.setOverlay, select: s.select,
+    techPower: s.city.techPower,
   })));
+  // 情報パネルは、選んだ物の状態が変わった時だけ作り直す
+  const panelKey = useStore(store, (s) => (s.selected ? panelKeyOf(s) : ''));
+  const panel = useMemo(() => {
+    const s = store.getState();
+    return s.selected ? panelModel(s.city, s.selected) : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelKey, store]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -32,13 +45,27 @@ export function CityScreen() {
     const renderer = new CityRenderer(canvas, store.getState().city, () => {
       document.body.dataset.cityReady = '1';
     });
+    rendererRef.current = renderer;
     const fit = (): void => renderer.resize(window.innerWidth, window.innerHeight);
     fit();
     window.addEventListener('resize', fit);
     renderer.start();
     const detach = attachControls(canvas, renderer);
     const detachBuild = attachBuildControls(canvas, renderer, store);
-    const unsubscribe = store.subscribe((s) => renderer.setCity(s.city));
+    // 都市・選択・表示切替を描画に渡す。表示切替は、都市の形が変わった時だけ計算し直す
+    let overlayKey = '';
+    const sync = (s: ReturnType<CityStore['getState']>): void => {
+      renderer.setCity(s.city);
+      renderer.setSelection(s.selected);
+      renderer.setLabelInsets({ right: s.selected ? 14 + 360 + 12 : 8 });
+      const key = s.overlay ? `${s.overlay}|${overlayKeyOf(s)}` : '';
+      if (key !== overlayKey) {
+        overlayKey = key;
+        renderer.setOverlay(s.overlay ? { kind: s.overlay, data: overlayOf(s.overlay, s.city, renderer.traffic()) } : null);
+      }
+    };
+    sync(store.getState());
+    const unsubscribe = store.subscribe(sync);
     // 都市の時計（Space で止まる）
     let last = performance.now();
     let raf = 0;
@@ -61,10 +88,23 @@ export function CityScreen() {
       detachBuild();
       detach();
       renderer.stop();
+      rendererRef.current = null;
       window.removeEventListener('resize', fit);
       delete document.body.dataset.cityReady;
     };
   }, [store]);
+
+  // 名札は、都市の上に重ねた知らせと表示切替の所を避ける（描き直しのたびに、出ている部品の位置を測って渡す）
+  useLayoutEffect(() => {
+    const renderer = rendererRef.current;
+    const root = canvasRef.current?.parentElement;
+    if (!renderer || !root) return;
+    const blocks = [...root.querySelectorAll('[data-label-block]')].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom };
+    });
+    renderer.setLabelBlocks(blocks);
+  });
 
   const onYes = useCallback(() => {
     const s = store.getState();
@@ -84,10 +124,48 @@ export function CityScreen() {
         stageName={STAGE_NAMES[state.stage]}
         disabled={['learn', 'mission', 'glossary', 'settings']}
       />
-      <CityNotice text={state.notice?.text ?? null} paused={state.paused} />
+      <CityNotice text={state.notice?.text ?? null} paused={state.paused} shifted={panel !== null} />
+      <InfoPanel model={panel} onClose={() => state.select(null)} />
+      <OverlayToggle value={state.overlay} onChange={state.setOverlay} legend={state.menu === null && state.overlay ? legendOf(state.overlay, store) : null} />
       <BuildMenu state={state} />
       <PlacementHint hint={state.confirm ? null : state.hint} />
       <DemolishConfirm target={state.confirm} onYes={onYes} onNo={onNo} />
     </div>
   );
+}
+
+function panelKeyOf(s: ReturnType<CityStore['getState']>): string {
+  const sel = s.selected;
+  if (!sel) return '';
+  const c = s.city;
+  const target = sel.kind === 'facility' ? c.facilities.find((f) => f.id === sel.id) : c.buildings.find((b) => b.id === sel.id);
+  // 状態（建設の段階・道路・周りの施設）が変わったら作り直す
+  return `${sel.id}|${JSON.stringify(target)}|${String(Math.floor(c.day))}|${String(c.roads.length)}|${String(c.facilities.length)}|${String(c.buildings.length)}`;
+}
+
+function overlayKeyOf(s: ReturnType<CityStore['getState']>): string {
+  const c = s.city;
+  return `${String(c.roads.length)}|${String(c.buildings.length)}|${String(c.population)}|${String(c.facilities.length)}|${String(c.stage)}|${c.roads.map((r) => r.id).join(',')}`;
+}
+
+function legendOf(kind: OverlayKind, store: CityStore): OverlayLegend {
+  const city = store.getState().city;
+  switch (kind) {
+    case 'learning':
+      return { low: '未修得', high: '熟練', note: '施設ごとに、対応する分野のスキルで塗る。学習の記録が無いうちは灰色' };
+    case 'population':
+      return { low: '少ない', high: '多い', note: `住宅の区画に住む人の多さ（都市規模 ${city.population.toLocaleString('ja-JP')} 人）` };
+    case 'traffic':
+      return { low: '空いている', high: '混んでいる', note: '道路ごとの、車の通る多さ' };
+    case 'stage': {
+      const p = stageProgress(city);
+      return {
+        low: '今使える範囲',
+        high: '次に晴れる範囲',
+        note: p.next
+          ? `「${STAGE_NAMES[p.next]}」まで: 技術力 ${String(p.techPower[0])} / ${String(p.techPower[1])}・都市規模 ${p.population[0].toLocaleString('ja-JP')} / ${p.population[1].toLocaleString('ja-JP')} 人`
+          : '最高の発展段階',
+      };
+    }
+  }
 }

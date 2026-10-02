@@ -1,0 +1,125 @@
+import { Icon } from '@/ui/icons/Icon';
+import type { PanelModel } from './infoPanelModel';
+import './InfoPanel.css';
+
+/**
+ * 情報パネル（docs/ui-design.md 5 章: 右、幅 360、高さは内容に応じて最大 70%。建物を選んだ時だけ）。
+ * 上から: 名前・種類・レベル / 状態 / 対応する分野とスキル / ここで学ぶ / ミッション / アップグレード。
+ */
+
+const format = (n: number): string => n.toLocaleString('ja-JP');
+const LATER = '（この画面は後の段階で作る）';
+
+export function InfoPanel({ model, onClose }: { model: PanelModel | null; onClose: () => void }) {
+  if (!model) return null;
+  // 分野が 2 つ以上で理由が同じ（どちらも記録が無い など）なら、理由は 1 度だけ書く
+  const reasons = model.kind === 'facility' ? [...new Set(model.domains.map((d) => d.because))] : [];
+  const sharedBecause = model.kind === 'facility' && model.domains.length > 1 && reasons.length === 1 ? reasons[0] ?? '' : '';
+  return (
+    <aside className="info" aria-label={`${model.name}の情報`} data-testid="info-panel">
+      <header className="info-head">
+        <div className="info-titles">
+          <span className="info-type">{model.typeLabel}</span>
+          <h2 className="info-name">{model.name}</h2>
+        </div>
+        <div className="info-level" title="レベル">
+          <span className="info-level-label">Lv</span>
+          <span className="num info-level-value">{model.level}</span>
+        </div>
+        <button type="button" className="info-close" onClick={onClose} title="閉じる（Esc）" aria-label="閉じる">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
+      </header>
+      {model.levelNote ? <p className="info-note">{model.levelNote}</p> : null}
+
+      <div className={`info-state is-${model.condition.tone}`} data-testid="info-state">
+        <span className="info-state-dot" />
+        {model.condition.text}
+      </div>
+
+      {model.kind === 'building' ? (
+        <section className="info-section">
+          <p className="info-line">{model.people}</p>
+          <p className="info-line is-sub">{model.growth}</p>
+        </section>
+      ) : null}
+
+      {model.kind === 'facility' && model.effect ? (
+        <section className="info-section">
+          <p className="info-line">{model.effect}</p>
+        </section>
+      ) : null}
+
+      {model.kind === 'facility' && model.domains.length > 0 ? (
+        <>
+          <section className="info-section" aria-label="対応する分野">
+            <h3 className="info-heading">対応する分野</h3>
+            {model.domains.map((d) => (
+              <div key={d.id} className="info-domain">
+                <div className="info-domain-row">
+                  <span className="info-domain-swatch" style={{ background: d.color }} />
+                  <span className="info-domain-name">{d.name}</span>
+                  <span className="info-domain-stage">{d.stageName}</span>
+                  <span className="num info-domain-value">{d.value}</span>
+                </div>
+                <div className="info-meter" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={d.value} aria-label={`${d.name}のスキル`}>
+                  <span style={{ width: `${String(d.value)}%`, background: d.color }} />
+                </div>
+                {d.because && !sharedBecause ? <p className="info-line is-sub">{d.because}</p> : null}
+              </div>
+            ))}
+            {sharedBecause ? <p className="info-line is-sub">{sharedBecause}</p> : null}
+          </section>
+
+          <section className="info-section" aria-label="ここで学ぶ">
+            <h3 className="info-heading">ここで学ぶ</h3>
+            <ol className="info-lessons" data-testid="info-lessons">
+              {model.lessons.map((l) => (
+                <li key={l.id}>
+                  <span className="info-lesson-level">{l.level}</span>
+                  <span className="info-lesson-title">{l.title}</span>
+                </li>
+              ))}
+            </ol>
+            <button type="button" className="info-action" aria-disabled="true" title={`学習ライブラリ${LATER}`}>
+              <Icon name="learn" size={16} />
+              学習ライブラリで全部見る
+            </button>
+          </section>
+
+          {model.missions.length > 0 ? (
+            <section className="info-section" aria-label="ミッション">
+              <h3 className="info-heading">ミッション</h3>
+              <ul className="info-missions">
+                {model.missions.map((m) => (
+                  <li key={m}>
+                    <Icon name="mission" size={14} />
+                    {m}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {model.upgrade ? (
+            <section className="info-section" aria-label="アップグレード">
+              <h3 className="info-heading">アップグレード</h3>
+              <div className="info-upgrade">
+                <span className="info-upgrade-title">{model.upgrade.title}</span>
+                <span className="info-upgrade-adds">{model.upgrade.adds}。周りの区画の育ちが良くなる</span>
+                <span className="info-upgrade-cost">
+                  <Icon name="funds" size={14} />
+                  <span className="num">{format(model.upgrade.cost)}</span>
+                  <span className="info-unit">資金</span>
+                </span>
+              </div>
+              <p className="info-line is-sub">条件: {model.upgrade.needs}</p>
+            </section>
+          ) : null}
+        </>
+      ) : null}
+    </aside>
+  );
+}
