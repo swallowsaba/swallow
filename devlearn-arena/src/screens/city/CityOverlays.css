@@ -1,0 +1,140 @@
+/* カーソルの横の小窓 */
+.place-hint {
+  position: fixed;
+  z-index: 20;
+  min-width: 180px;
+  max-width: 320px;
+  padding: 8px 12px;
+  background: var(--hud-bg-strong);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 14px 4px 14px;
+  box-shadow: var(--shadow-window);
+  pointer-events: none;
+  font-size: var(--fs-13);
+  line-height: 1.4;
+}
+.place-hint.is-ok {
+  border-color: var(--ok);
+}
+.place-hint.is-bad {
+  border-color: var(--bad);
+}
+.place-hint-title {
+  font-weight: 700;
+  font-size: var(--fs-14);
+}
+.place-hint-cost {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  color: var(--gold-light);
+}
+.place-hint-cost .num {
+  font-size: var(--fs-16);
+  font-weight: 700;
+}
+.place-hint-unit {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.place-hint-reasons {
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+  list-style: none;
+  border-top: 1px solid var(--hud-line);
+}
+.place-hint-reasons li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hud-text);
+}
+.place-hint-reasons li svg {
+  flex: none;
+  color: var(--bad);
+}
+
+/* 取り壊しの確認 */
+.confirm {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  width: 400px;
+  padding: 18px 22px 16px;
+  background: var(--hud-bg-strong);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  box-shadow: var(--shadow-window);
+}
+.confirm-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-18);
+  line-height: 1.4;
+}
+.confirm-title svg {
+  color: var(--gold);
+}
+.confirm-body {
+  margin: 8px 0 14px;
+  color: var(--hud-text-sub);
+}
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+.confirm-actions button {
+  height: 38px;
+  padding: 0 22px;
+  border: none;
+  font-weight: 700;
+  font-size: var(--fs-14);
+  line-height: 1.2;
+  cursor: pointer;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.confirm-actions button:active {
+  transform: translateY(2px);
+}
+.confirm-yes {
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  color: var(--navy);
+}
+.confirm-no {
+  background: var(--hud-bg);
+  color: var(--hud-text);
+}
+
+/* 知らせ（上の帯の下、右寄せ） */
+.city-notices {
+  position: absolute;
+  top: 58px;
+  right: 14px;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  pointer-events: none;
+}
+.city-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--hud-bg);
+  border-left: 3px solid var(--gold);
+  box-shadow: var(--shadow-window);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+}
+.city-notice.is-paused {
+  border-left-color: var(--info);
+}

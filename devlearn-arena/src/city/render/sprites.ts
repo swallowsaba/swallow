@@ -45,6 +45,16 @@ export function facilitySvg(type: FacilityType, level: number): string | null {
   return null;
 }
 
+/** 全ての施設の SVG（読み込みの準備に使う） */
+export function allFacilitySvgs(): { key: string; svg: string }[] {
+  const out: { key: string; svg: string }[] = [];
+  for (const [path, text] of Object.entries(SVG_FILES)) {
+    const m = /facilities\/([a-z]+)\/lv(\d)\.svg$/.exec(path);
+    if (m && typeof text === 'string') out.push({ key: `${m[1] as string}:${m[2] as string}`, svg: text });
+  }
+  return out;
+}
+
 export class SpriteCache {
   private readonly sprites = new Map<string, Sprite>();
   private readonly images = new Map<string, HTMLImageElement>();

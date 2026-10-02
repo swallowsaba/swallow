@@ -9,9 +9,12 @@
 //   SHOOT_FPS=1           都市を毎フレーム描き直させ、3 秒間の fps を測って表示する
 //   SHOOT_EVAL='...'      撮る前にページで実行する式（カメラを動かすなど）
 //   SHOOT_TWICE=2000      その間隔で 2 枚撮る（動きの確認。<名前>-2.png）
+//   SHOOT_SCRIPT=tools/scenarios/town.mjs
+//                         撮る前に、画面を操作する台本を動かす（台本は shot(名前) で途中の画面も撮れる）
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import { mkdirSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 const [name = 'shot', path = '#/city', waitMs = '1500'] = process.argv.slice(2);
@@ -36,6 +39,13 @@ try {
   await page.waitForFunction(() => document.body.dataset.cityReady === '1' || !document.querySelector('[data-testid="city-screen"]'), null, { timeout: 30000 });
   await page.evaluate(() => document.fonts.ready);
   if (process.env.SHOOT_EVAL) await page.evaluate(process.env.SHOOT_EVAL);
+  if (process.env.SHOOT_SCRIPT) {
+    const script = await import(pathToFileURL(process.env.SHOOT_SCRIPT).href);
+    await script.default(page, async (shotName) => {
+      await page.screenshot({ path: `shots/${shotName}.png` });
+      console.log(`shots/${shotName}.png`);
+    });
+  }
   await sleep(Number(waitMs));
   if (process.env.SHOOT_FPS) {
     const fps = await page.evaluate(async () => {

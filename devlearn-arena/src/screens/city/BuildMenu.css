@@ -1,0 +1,227 @@
+/* 建設メニュー（docs/ui-design.md 3 章: 下中央、高さ 72）。計器のような暗い半透明の操作盤 */
+.build {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+  user-select: none;
+  pointer-events: none;
+}
+.build > * {
+  pointer-events: auto;
+}
+
+.build-bar {
+  display: flex;
+  align-items: stretch;
+  height: 72px;
+  padding: 6px 10px;
+  gap: 4px;
+  background: var(--hud-bg);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  box-shadow: var(--shadow-window);
+  backdrop-filter: blur(6px);
+}
+
+.build-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 96px;
+  border: none;
+  background: var(--transparent);
+  color: var(--hud-text);
+  font-weight: 700;
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  cursor: pointer;
+  clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+  transition: transform 0.12s, background 0.12s;
+}
+.build-group:hover {
+  background: var(--hud-bg-strong);
+  color: var(--gold-light);
+}
+.build-group:active {
+  transform: translateY(2px);
+}
+.build-group.is-selected {
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  color: var(--navy);
+}
+.build-group.is-demolish:not(.is-selected) {
+  color: var(--hud-text-sub);
+}
+
+/* 引き出し */
+.build-drawer {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  max-width: min(1180px, calc(100vw - 420px));
+  padding: 8px 12px;
+  overflow-x: auto;
+  background: var(--hud-bg-strong);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  box-shadow: var(--shadow-window);
+}
+.build-drawer.is-demolish {
+  padding: 6px 16px;
+}
+
+.build-note {
+  align-self: center;
+  margin: 0 4px 0 8px;
+  max-width: 220px;
+  font-size: var(--fs-12);
+  line-height: 1.5;
+  color: var(--hud-text-sub);
+}
+.build-drawer.is-demolish .build-note {
+  max-width: none;
+}
+
+.build-item {
+  display: grid;
+  grid-template-rows: 58px auto auto;
+  justify-items: center;
+  width: 128px;
+  padding: 4px 4px 6px;
+  border: 1px solid var(--transparent);
+  border-radius: 3px 12px 3px 12px;
+  background: var(--transparent);
+  color: var(--hud-text);
+  cursor: pointer;
+  transition: transform 0.12s, background 0.12s, border-color 0.12s;
+}
+.build-item:hover {
+  background: var(--hud-bg);
+  border-color: var(--hud-line);
+}
+.build-item:active {
+  transform: translateY(2px);
+}
+.build-item.is-selected {
+  border-color: var(--gold);
+  background: var(--hud-bg);
+  box-shadow: inset 0 -3px 0 var(--gold);
+}
+.build-item[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.55;
+}
+.build-item[aria-disabled='true']:active {
+  transform: none;
+}
+
+.build-item-art {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 58px;
+}
+.build-item-art img {
+  max-width: 100%;
+  max-height: 58px;
+  object-fit: contain;
+}
+.build-item-name {
+  font-size: var(--fs-13);
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+.build-item-cost {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  color: var(--gold-light);
+}
+.build-item-locked {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* 道路と区画の見本（地面の菱形のタイル） */
+.build-swatch {
+  position: relative;
+  display: block;
+  width: 84px;
+  height: 42px;
+  margin-bottom: 6px;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: var(--grass);
+}
+.build-swatch::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.build-swatch.is-lane::after,
+.build-swatch.is-street::after,
+.build-swatch.is-avenue::after {
+  background: linear-gradient(153deg, var(--transparent) 34%, var(--road-curb) 34%, var(--road-curb) 37%, var(--road-lane) 37%, var(--road-lane) 63%, var(--road-curb) 63%, var(--road-curb) 66%, var(--transparent) 66%);
+}
+.build-swatch.is-street::after {
+  background: linear-gradient(153deg, var(--transparent) 34%, var(--road-curb) 34%, var(--road-curb) 37%, var(--road-paving) 37%, var(--road-paving) 49%, var(--road-line) 49%, var(--road-line) 51%, var(--road-paving) 51%, var(--road-paving) 63%, var(--road-curb) 63%, var(--road-curb) 66%, var(--transparent) 66%);
+}
+.build-swatch.is-avenue::after {
+  background: linear-gradient(153deg, var(--transparent) 20%, var(--road-curb) 20%, var(--road-curb) 23%, var(--road-paving) 23%, var(--road-paving) 46%, var(--grass) 46%, var(--grass) 54%, var(--road-paving) 54%, var(--road-paving) 77%, var(--road-curb) 77%, var(--road-curb) 80%, var(--transparent) 80%);
+}
+.build-swatch.is-roundabout::after {
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, var(--grass) 30%, var(--road-curb) 31%, var(--road-curb) 36%, var(--road-paving) 37%, var(--road-paving) 80%, var(--road-curb) 81%, var(--road-curb) 86%, var(--transparent) 87%);
+}
+.build-swatch.is-residential {
+  background: var(--zone-residential);
+}
+.build-swatch.is-commercial {
+  background: var(--zone-commercial);
+}
+.build-swatch.is-office {
+  background: var(--zone-office);
+}
+
+/* 直線と曲線の切り替え */
+.build-shape {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 132px;
+  padding-right: 8px;
+  margin-right: 4px;
+  border-right: 1px solid var(--hud-line);
+}
+.build-shape-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  font-weight: 700;
+  font-size: var(--fs-13);
+  line-height: 1.2;
+  cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+.build-shape-button.is-selected {
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  color: var(--navy);
+}

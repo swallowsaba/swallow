@@ -19,6 +19,10 @@ export interface RoadShape {
   crossings: P2[][];
   /** 転回場（行き止まりの丸い広場）の中心 */
   turnarounds: P2[];
+  /** 緑の島（ロータリーの中央・大通りの中央分離帯） */
+  islands: P2[][];
+  /** 橋の欄干（左右の線） */
+  rails: P2[][];
 }
 
 export const ROAD_HALF: Record<Road['kind'], number> = { lane: 0.5, street: 0.5, avenue: 1, bridge: 0.5, roundabout: 1.5 };
@@ -120,20 +124,59 @@ function nearestOn(p: P2, line: readonly P2[]): P2 {
   return best;
 }
 
+/** 点から道路の中心線までの距離（ロータリーは環道の中心の輪まで） */
+export function distanceToRoad(p: P2, road: Road): number {
+  if (road.kind === 'roundabout') {
+    const c = road.path[0];
+    return c ? Math.abs(Math.hypot(p.x - c.x, p.y - c.y) - 1) : Infinity;
+  }
+  return distanceToPolyline(p, road.path).dist;
+}
+
 /** 端が他のどの道路にもつながっていなければ、行き止まり */
 function isDeadEnd(end: P2, road: Road, roads: readonly Road[]): boolean {
-  return !roads.some((o) => o !== road && distanceToPolyline(end, o.path).dist < 1.05);
+  return !roads.some((o) => o !== road && distanceToRoad(end, o) < 1.05);
 }
 
 export function roadShapes(roads: readonly Road[]): RoadShape[] {
-  const joints = junctions(roads);
+  const joints = junctions(roads.filter((r) => r.kind !== 'roundabout' && r.kind !== 'bridge'));
   return roads.map((road) => {
     const half = ROAD_HALF[road.kind];
+    if (road.kind === 'roundabout') {
+      const c = road.path[0] ?? { x: 0, y: 0 };
+      const ring: [P2, P2][] = [];
+      const n = 28;
+      for (let i = 0; i < n; i += 2) {
+        const a0 = (i / n) * Math.PI * 2;
+        const a1 = ((i + 1) / n) * Math.PI * 2;
+        ring.push([{ x: c.x + Math.cos(a0), y: c.y + Math.sin(a0) }, { x: c.x + Math.cos(a1), y: c.y + Math.sin(a1) }]);
+      }
+      return { road, outer: circle(c, half, 40), surface: circle(c, half - CURB, 40), dashes: ring, crossings: [], turnarounds: [], islands: [circle(c, 0.55, 32)], rails: [] };
+    }
     const ext = extendEnds(road.path, 0.5);
     const fine = resample(ext, 0.25);
     const dashes: [P2, P2][] = [];
     const crossings: P2[][] = [];
-    if (road.kind === 'street' || road.kind === 'avenue') {
+    const islands: P2[][] = [];
+    const rails: P2[][] = [];
+    if (road.kind === 'avenue') {
+      // 中央分離帯（並木の植え込み）と、両側の車線の境の破線
+      islands.push(band(resample(road.path, 0.25), 0.1));
+      for (const side of [-0.5, 0.5]) {
+        const lane = resample(offsetPolyline(road.path, side), 0.2);
+        for (let i = 0; i + 1 < lane.length; i += 3) {
+          const a = lane[i] as P2;
+          const b = lane[i + 1] as P2;
+          if (joints.some((j) => Math.hypot(j.x - a.x, j.y - a.y) < 1.6)) continue;
+          dashes.push([a, b]);
+        }
+      }
+    }
+    if (road.kind === 'bridge') {
+      const fineCenter = resample(road.path, 0.25);
+      rails.push(offsetPolyline(fineCenter, half - 0.04), offsetPolyline(fineCenter, -(half - 0.04)));
+    }
+    if (road.kind === 'street') {
       const center = resample(road.path, 0.2);
       for (let i = 0; i + 1 < center.length; i += 2) {
         const a = center[i] as P2;
@@ -174,9 +217,11 @@ export function roadShapes(roads: readonly Road[]): RoadShape[] {
     const turnarounds: P2[] = [];
     const first = road.path[0];
     const last = road.path[road.path.length - 1];
-    if (first && isDeadEnd(first, road, roads)) turnarounds.push(first);
-    if (last && last !== first && isDeadEnd(last, road, roads)) turnarounds.push(last);
-    return { road, outer: band(fine, half), surface: band(fine, half - CURB), dashes, crossings, turnarounds };
+    if (road.kind !== 'bridge') {
+      if (first && isDeadEnd(first, road, roads)) turnarounds.push(first);
+      if (last && last !== first && isDeadEnd(last, road, roads)) turnarounds.push(last);
+    }
+    return { road, outer: band(fine, half), surface: band(fine, half - CURB), dashes, crossings, turnarounds, islands, rails };
   });
 }
 

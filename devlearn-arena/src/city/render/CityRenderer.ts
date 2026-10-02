@@ -1,13 +1,15 @@
 import { city as cityColors, hud, mix, rgbaOf, state } from '@/ui/tokens';
-import { createCamera, pan, rotateCamera, zoomAt, type Camera, type Viewport } from '../camera';
+import { createCamera, pan, rotateCamera, screenToWorld, zoomAt, type Camera, type Viewport } from '../camera';
+import type { CellMark } from '../place';
+import { constructionStage } from '../rules';
 import { depthOrder, type DepthBox } from '../depth';
 import { project, rotate, type Rotation } from '../projection';
-import { roadShapes } from '../roadGeometry';
+import { roadShapes, type RoadShape } from '../roadGeometry';
 import { buildScene, type SceneObject } from '../scene';
-import { MAP_SIZE, generateTerrain } from '../terrain';
-import type { City } from '../types';
+import { MAP_SIZE, generateTerrain, type Terrain } from '../terrain';
+import type { City, Facility, FacilityType, Point, Road } from '../types';
 import { drawGround, prepareGround, toLayer, type GroundData, type LayerSpace } from './ground';
-import { facilitySvg, SpriteCache } from './sprites';
+import { allFacilitySvgs, facilitySvg, SpriteCache } from './sprites';
 
 /**
  * 都市ビューの描画（Canvas 2D）。模型（src/city）を読んで描くだけで、書き換えない。
@@ -16,6 +18,16 @@ import { facilitySvg, SpriteCache } from './sprites';
 
 const CHUNK = 512;
 const MAX_CHUNKS = 64;
+
+/** 配置の予告（置ける所は緑の枠、置けない所は赤の枠。docs/city-design.md 8 章） */
+export interface Preview {
+  cells: readonly CellMark[];
+  /** 引こうとしている道路の形 */
+  roads?: readonly Road[];
+  /** 置こうとしている施設の姿 */
+  ghost?: { type: FacilityType; origin: Point; rotation: Facility['rotation'] };
+  ok: boolean;
+}
 
 export interface RenderStats {
   fps: number;
@@ -34,7 +46,11 @@ export class CityRenderer {
   private viewport: Viewport = { width: 1, height: 1 };
   private dpr = 1;
   private ground: GroundData;
+  private terrain: Terrain;
+  private cityState: City;
+  private signature = '';
   private objects: SceneObject[];
+  private preview: (Preview & { shapes: RoadShape[] }) | null = null;
   private sprites: SpriteCache;
   private chunks = new Map<string, HTMLCanvasElement>();
   private order: { rotation: Rotation; list: number[] } | null = null;
@@ -48,19 +64,16 @@ export class CityRenderer {
     if (!ctx) throw new Error('Canvas 2D が使えない');
     this.ctx = ctx;
     this.onReady = onReady;
-    const terrain = generateTerrain(cityState.seed);
-    this.ground = prepareGround(terrain, roadShapes(cityState.roads));
-    this.objects = buildScene(cityState, terrain);
+    this.terrain = generateTerrain(cityState.seed);
+    this.cityState = cityState;
+    this.ground = prepareGround(this.terrain, roadShapes(cityState.roads));
+    this.ground.zones = cityState.zones;
+    this.objects = buildScene(cityState, this.terrain);
+    this.signature = sceneSignature(cityState);
     this.camera = createCamera({ x: 48.5, y: 48 }, 1.25, 0);
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
     this.sprites = new SpriteCache(this.dpr);
-    const svgs: { key: string; svg: string }[] = [];
-    for (const o of this.objects) {
-      if (o.source.kind !== 'facility') continue;
-      const svg = facilitySvg(o.source.type, o.source.level);
-      if (svg) svgs.push({ key: `${o.source.type}:${String(o.source.level)}`, svg });
-    }
-    void this.sprites.preload(svgs).then(() => {
+    void this.sprites.preload(allFacilitySvgs()).then(() => {
       this.ready = true;
       this.dirty = true;
     });
@@ -96,6 +109,48 @@ export class CityRenderer {
 
   stop(): void {
     cancelAnimationFrame(this.raf);
+  }
+
+  /* ---------- 都市の変化 ---------- */
+
+  /** 新しい都市の状態を描く。変わった所だけを作り直す */
+  setCity(next: City): void {
+    const prev = this.cityState;
+    if (next === prev) return;
+    this.cityState = next;
+    let groundChanged = false;
+    if (next.roads !== prev.roads) {
+      this.ground.roads = roadShapes(next.roads);
+      groundChanged = true;
+    }
+    if (next.zones !== prev.zones) {
+      this.ground.zones = next.zones;
+      groundChanged = true;
+    }
+    if (groundChanged) this.chunks.clear();
+    const signature = sceneSignature(next);
+    if (signature !== this.signature) {
+      this.signature = signature;
+      this.objects = buildScene(next, this.terrain);
+      this.order = null;
+    }
+    this.dirty = true;
+  }
+
+  setPreview(preview: Preview | null): void {
+    this.preview = preview ? { ...preview, shapes: preview.roads ? roadShapes(preview.roads) : [] } : null;
+    this.dirty = true;
+  }
+
+  /** 画面の点の下にある地面のマス */
+  cellAt(sx: number, sy: number): Point {
+    const p = screenToWorld(this.camera, this.viewport, { sx, sy }, this.size);
+    return { x: Math.floor(p.x), y: Math.floor(p.y) };
+  }
+
+  /** 画面の点の下にある地図の点（曲線の制御点など、マスより細かい位置） */
+  pointAt(sx: number, sy: number): Point {
+    return screenToWorld(this.camera, this.viewport, { sx, sy }, this.size);
   }
 
   /* ---------- 操作 ---------- */
@@ -200,7 +255,10 @@ export class CityRenderer {
     }
 
     // 建物と木（奥から手前）
-    if (!this.ready) return;
+    if (!this.ready) {
+      this.drawFog(o);
+      return;
+    }
     const s = this.space();
     let drawn = 0;
     for (const index of this.sortedObjects()) {
@@ -225,10 +283,96 @@ export class CityRenderer {
       drawn += 1;
     }
     this.stats.drawnObjects = drawn;
+    this.drawFog(o);
+    this.drawPreview(o);
     if (this.onReady) {
       const done = this.onReady;
       this.onReady = undefined;
       done();
+    }
+  }
+
+  /**
+   * 霧（docs/city-design.md 1 章: 発展段階で外側の霧が晴れる）。
+   * 晴れた範囲の外を、白く霞んだ半透明の層で覆う。境はぼかす。
+   */
+  private drawFog(o: { x: number; y: number }): void {
+    const ctx = this.ctx;
+    const { width, height } = this.viewport;
+    const s = this.space();
+    const mist = mix(cityColors.lineWhite, hud.textSub, 0.35);
+    for (const r of this.cityState.revealed) {
+      if (r.w >= this.size && r.h >= this.size) continue;
+      const corners = [{ x: r.x, y: r.y }, { x: r.x + r.w, y: r.y }, { x: r.x + r.w, y: r.y + r.h }, { x: r.x, y: r.y + r.h }]
+        .map((p) => toLayer(s, p))
+        .map(([x, y]) => [o.x + x, o.y + y] as [number, number]);
+      const diamond = (): void => {
+        ctx.beginPath();
+        corners.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+        ctx.closePath();
+      };
+      // 外を覆う（全画面の矩形から、晴れた菱形を抜く）
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, width, height);
+      corners.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+      ctx.closePath();
+      ctx.fillStyle = rgbaOf(mist, 0.62);
+      ctx.fill('evenodd');
+      // 境のぼかし（太さを変えた線を、晴れた側にだけ重ねる）
+      diamond();
+      ctx.clip();
+      for (const [w, a] of [[56, 0.1], [32, 0.12], [14, 0.14]] as const) {
+        diamond();
+        ctx.strokeStyle = rgbaOf(mist, a);
+        ctx.lineWidth = w * this.camera.zoom;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  /** 配置の予告（マスの枠・道路の形・施設の姿） */
+  private drawPreview(o: { x: number; y: number }): void {
+    const p = this.preview;
+    if (!p) return;
+    const ctx = this.ctx;
+    const s = this.space();
+    const poly = (pts: readonly Point[]): void => {
+      ctx.beginPath();
+      pts.forEach((pt, i) => {
+        const [x, y] = toLayer(s, pt);
+        if (i === 0) ctx.moveTo(o.x + x, o.y + y);
+        else ctx.lineTo(o.x + x, o.y + y);
+      });
+      ctx.closePath();
+    };
+    for (const shape of p.shapes) {
+      poly(shape.outer);
+      ctx.fillStyle = rgbaOf(p.ok ? cityColors.paving : state.bad, p.ok ? 0.75 : 0.45);
+      ctx.fill();
+    }
+    if (p.ghost && p.ok) {
+      const svg = facilitySvg(p.ghost.type, 1);
+      const rot = ((p.ghost.rotation / 90 + this.camera.rotation) % 4) as Rotation;
+      const sprite = svg ? this.sprites.facility(`${p.ghost.type}:1`, svg, rot, this.camera.zoom) : null;
+      if (sprite) {
+        const cells = p.cells;
+        const cx = cells.reduce((a, c) => a + c.x + 0.5, 0) / Math.max(1, cells.length);
+        const cy = cells.reduce((a, c) => a + c.y + 0.5, 0) / Math.max(1, cells.length);
+        const [lx, ly] = toLayer(s, { x: cx, y: cy });
+        ctx.globalAlpha = 0.72;
+        ctx.drawImage(sprite.canvas, Math.round(o.x + lx - sprite.ox), Math.round(o.y + ly - sprite.oy), sprite.w, sprite.h);
+        ctx.globalAlpha = 1;
+      }
+    }
+    for (const c of p.cells) {
+      poly([{ x: c.x + 0.04, y: c.y + 0.04 }, { x: c.x + 0.96, y: c.y + 0.04 }, { x: c.x + 0.96, y: c.y + 0.96 }, { x: c.x + 0.04, y: c.y + 0.96 }]);
+      ctx.fillStyle = rgbaOf(c.ok ? state.ok : state.bad, 0.2);
+      ctx.fill();
+      ctx.strokeStyle = c.ok ? state.ok : state.bad;
+      ctx.lineWidth = Math.max(1.5, 2 * this.camera.zoom);
+      ctx.stroke();
     }
   }
 
@@ -249,4 +393,12 @@ export class CityRenderer {
     const [lx, ly] = toLayer(this.space(), { x, y }, z);
     return { sx: o.x + lx, sy: o.y + ly };
   }
+}
+
+/** 描く物が変わったかを見分ける印（道路・区画の建物の段階・施設の段階） */
+export function sceneSignature(c: City): string {
+  const parts: string[] = [c.roads.map((r) => r.id).join(',')];
+  for (const b of c.buildings) parts.push(`${b.id}:${String(b.level)}:${constructionStage(b.builtDay, c.day)}`);
+  for (const f of c.facilities) parts.push(`${f.id}:${String(f.level)}:${f.state === 'active' ? 'done' : constructionStage(f.builtDay, c.day)}`);
+  return parts.join('|');
 }

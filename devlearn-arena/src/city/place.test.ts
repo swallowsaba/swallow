@@ -217,6 +217,16 @@ describe('取り壊す', () => {
     expect(after.roads).toEqual(city.roads);
   });
 
+  it('道路を取り壊すと、その道路だけに面していた建物も取り壊される（区画は残る）', () => {
+    const built: City = { ...city, buildings: [{ id: 'b1', zoneId: city.zones[0]?.id ?? '', cell: { x: 45, y: 48 }, variant: 'x', level: 1, builtDay: 0 }] };
+    const target = demolishTargetAt(built, { x: 50, y: 47 });
+    if (!target) throw new Error('道路が無い');
+    const after = demolish(built, target);
+    expect(after.roads).toHaveLength(0);
+    expect(after.buildings).toHaveLength(0);
+    expect(after.zones).toEqual(built.zones);
+  });
+
   it('区画を取り壊すと、そのマスだけが区画から外れる', () => {
     const target = demolishTargetAt(city, { x: 45, y: 48 });
     if (!target) throw new Error('区画が無い');

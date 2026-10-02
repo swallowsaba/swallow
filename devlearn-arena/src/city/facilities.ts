@@ -12,6 +12,8 @@ export interface FacilityDef {
   domain?: DomainId;
   /** facility = 分野の施設 / park = 公園の類（建設メニューの「公園」）/ reward = ミッションの報酬（建設メニューに出さない） */
   group: 'facility' | 'park' | 'reward';
+  /** 建設メニューの棚（分野の施設だけ。1 つの棚に 5 つまで並べる） */
+  shelf?: FacilityShelf;
   /** 回す前の敷地の大きさ（マス） */
   w: number;
   d: number;
@@ -20,6 +22,9 @@ export interface FacilityDef {
   /** 建てられるようになる発展段階（docs/game-design.md 6 章の「公園の種類」） */
   minStage: 1 | 2 | 3 | 4 | 5;
 }
+
+export type FacilityShelf = 'base' | 'dev' | 'ops';
+export const SHELF_NAMES: Record<FacilityShelf, string> = { base: '学びと基盤', dev: 'Web と開発', ops: 'クラウドと運用' };
 
 const FACILITY_TYPES = [
   'academy', 'server', 'network', 'web', 'security', 'devoffice', 'deploy', 'container',
@@ -37,6 +42,7 @@ const schema = z.object({
     name: z.string().min(1),
     domain: z.enum(DOMAINS).optional(),
     group: z.enum(['facility', 'park', 'reward']),
+    shelf: z.enum(['base', 'dev', 'ops']).optional(),
     w: z.number().int().min(1).max(3),
     d: z.number().int().min(1).max(3),
     cost: z.number().int().min(0),
@@ -53,6 +59,7 @@ export function parseFacilities(raw: unknown): Record<FacilityType, FacilityDef>
     out[f.type] = f;
   }
   for (const t of FACILITY_TYPES) if (!out[t]) throw new Error(`施設の定義が無い: ${t}`);
+  for (const f of list) if ((f.group === 'facility') !== (f.shelf !== undefined)) throw new Error(`施設の棚は分野の施設だけに付ける: ${f.type}`);
   return out;
 }
 

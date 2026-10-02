@@ -2,7 +2,9 @@
  * 自作のアイコン（docs/visual-design.md 4 章・6.1）。線 1.8px、角は丸く。色は currentColor。
  * 絵文字は使わない。
  */
-export type IconName = 'learn' | 'mission' | 'glossary' | 'settings' | 'funds' | 'xp' | 'people' | 'stage' | 'emblem';
+export type IconName =
+  | 'learn' | 'mission' | 'glossary' | 'settings' | 'funds' | 'xp' | 'people' | 'stage' | 'emblem'
+  | 'road' | 'zone' | 'facility' | 'park' | 'demolish' | 'rotate' | 'pause' | 'curve' | 'straight' | 'alert';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -23,6 +25,26 @@ const PATHS: Record<IconName, string> = {
   stage: 'M3 21h18 M5 21V12h4v9 M10 21V6h4v15 M15 21v-6h4v6',
   // 都市の紋章（盾と塔）
   emblem: 'M12 2.5 20 6v6c0 4.6-3.4 8.2-8 9.5C7.4 20.2 4 16.6 4 12V6Z M9 16v-4.5l3-2.5 3 2.5V16 M12 16v-2.5',
+  // 遠くへ伸びる道路と中央線
+  road: 'M9 3 4 21 M15 3l5 18 M12 4v2.5 M12 9.5v3 M12 15.5v4',
+  // 菱形の区画と、中の小さな家
+  zone: 'M12 3 21 8.5 12 14 3 8.5Z M3 12.5 12 18l9-5.5 M9.5 9.5V7.6L12 6l2.5 1.6v1.9',
+  // 塔のある施設
+  facility: 'M3 21h18 M5 21v-8l5-3v11 M10 21V5h5v16 M15 21v-6h4v6 M12.5 5V2.5',
+  // 2 本の木
+  park: 'M8 21v-5 M8 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M16.5 21v-4 M16.5 17l-3.5-1 3.5-9 3.5 9Z',
+  // 壊す槌
+  demolish: 'M14.5 4.5l5 5-3 3-5-5Z M12.5 9.5 4 18l2 2 8.5-8.5 M17.5 3l3.5 3.5',
+  // 回す矢印
+  rotate: 'M20 12a8 8 0 1 1-2.4-5.7 M20 4v5h-5',
+  // 一時停止
+  pause: 'M8 5v14 M16 5v14',
+  // 曲線の道
+  curve: 'M4 20c0-9 7-16 16-16 M4 14c0-5 4-10 10-10',
+  // 直線の道
+  straight: 'M6 20 18 4 M10 20 20 7',
+  // 注意（三角と感嘆）
+  alert: 'M12 3.5 21.5 20h-19Z M12 10v4.5 M12 17.2v.3',
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

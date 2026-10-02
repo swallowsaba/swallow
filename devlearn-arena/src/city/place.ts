@@ -293,8 +293,12 @@ export function demolish(city: City, target: DemolishTarget): City {
   switch (target.kind) {
     case 'facility':
       return { ...city, facilities: city.facilities.filter((f) => f.id !== target.id) };
-    case 'road':
-      return { ...city, roads: city.roads.filter((r) => r.id !== target.id) };
+    case 'road': {
+      // 道路に面さなくなった区画の建物は取り壊す（道路に面していないと機能しない。docs/city-design.md 2 章）
+      const roads = city.roads.filter((r) => r.id !== target.id);
+      const cells = occupancyOf({ ...city, roads }).roads;
+      return { ...city, roads, buildings: city.buildings.filter((b) => frontOf(b.cell, cells) !== null) };
+    }
     case 'zone': {
       const k = cellKey(target.cell.x, target.cell.y);
       const zones: Zone[] = [];

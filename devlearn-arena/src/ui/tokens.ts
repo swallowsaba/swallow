@@ -177,3 +177,26 @@ export function rgbaOf(color: string, alpha: number): string {
   const c = parseColor(color);
   return formatColor({ ...c, a: alpha });
 }
+
+/* ---------- 都市の地面の色（tokens の色から作る） ---------- */
+
+/** 区画の地面の色（住宅は緑・商業は青・オフィスは金を、地面に薄く混ぜる） */
+export const zoneTint = {
+  residential: mix(city.grass, state.ok, 0.45),
+  commercial: mix(city.paving, state.info, 0.55),
+  office: mix(city.paving, accent.gold, 0.5),
+} as const;
+
+/** 都市の地面の色を CSS の変数にする（建設メニューの見本） */
+export function cityCssVariables(): Record<string, string> {
+  return {
+    '--zone-residential': zoneTint.residential,
+    '--zone-commercial': zoneTint.commercial,
+    '--zone-office': zoneTint.office,
+    '--road-paving': city.paving,
+    '--road-lane': mix(city.paving, city.sand, 0.22),
+    '--road-curb': mix(city.curb, city.lineWhite, 0.45),
+    '--road-line': city.lineWhite,
+    '--grass': city.grass,
+  };
+}

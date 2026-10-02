@@ -1,12 +1,14 @@
 import { cellKey, frontOf, roadCells } from './cells';
-import { footprintOf } from './facilities';
+import { FACILITY_DEFS, footprintOf } from './facilities';
 import { zoneBuildingModel } from './generate/buildings';
+import { foundationModel, frameModel } from './generate/construction';
 import type { Model } from './generate/mesh';
 import { broadleafTree, conifer, streetLamp } from './generate/shapes';
 import type { Rotation } from './projection';
 import { seedOf } from './random';
+import { constructionStage, type ConstructionStage } from './rules';
 import { distanceToPolyline, type Terrain } from './terrain';
-import type { City, FacilityType } from './types';
+import type { City, FacilityType, ZoneKind } from './types';
 
 /**
  * 都市の状態と地形から、描く物の一覧を作る（純粋な計算）。
@@ -45,20 +47,27 @@ export function buildScene(cityState: City, terrain: Terrain): SceneObject[] {
     if (!kind || facing === null) continue; // 道路に面していない区画には建たない
     taken.add(key(b.cell.x, b.cell.y));
     const seed = seedOf(b.id, cityState.seed);
-    out.push({
-      id: b.id, x: b.cell.x, y: b.cell.y, w: 1, d: 1, z: 0, height: 1.2, facing,
-      source: { kind: 'model', key: `zone:${kind}:${String(b.level)}:${String(seed)}`, model: () => zoneBuildingModel(kind, b.level, seed) },
-    });
+    const stage = constructionStage(b.builtDay, cityState.day);
+    const box = { id: b.id, x: b.cell.x, y: b.cell.y, w: 1, d: 1, z: 0, height: 1.2, facing };
+    if (stage === 'done') {
+      out.push({ ...box, source: { kind: 'model', key: `zone:${kind}:${String(b.level)}:${String(seed)}`, model: () => zoneBuildingModel(kind, b.level, seed) } });
+    } else {
+      out.push({ ...box, source: constructionSource(stage, 1, 1, targetHeight(kind, b.level), seed) });
+    }
   }
 
   for (const f of cityState.facilities) {
     const size = footprintOf(f.type, f.rotation);
     for (let x = 0; x < size.w; x += 1) for (let y = 0; y < size.d; y += 1) taken.add(key(f.origin.x + x, f.origin.y + y));
-    out.push({
-      id: f.id, x: f.origin.x, y: f.origin.y, w: size.w, d: size.d, z: 0, height: 2.5,
-      facing: (f.rotation / 90) as Rotation,
-      source: { kind: 'facility', type: f.type, level: f.level },
-    });
+    const stage = f.state === 'active' ? 'done' : constructionStage(f.builtDay, cityState.day);
+    const box = { id: f.id, x: f.origin.x, y: f.origin.y, w: size.w, d: size.d, z: 0, height: 2.5, facing: (f.rotation / 90) as Rotation };
+    if (stage === 'done') {
+      out.push({ ...box, source: { kind: 'facility', type: f.type, level: f.level } });
+    } else {
+      const def = FACILITY_DEFS[f.type];
+      const h = def.group === 'facility' ? 0.75 : 0.15;
+      out.push({ ...box, source: constructionSource(stage, def.w, def.d, h, seedOf(f.id, cityState.seed)) });
+    }
   }
 
   // 街灯: 一般道の両側の縁石の内に、3 マスごと。交差点には立てない
@@ -107,4 +116,22 @@ export function buildScene(cityState: City, terrain: Terrain): SceneObject[] {
   });
 
   return out;
+}
+
+/** 建ち上がった時の高さの目安（建設中の骨組みの高さ） */
+function targetHeight(kind: ZoneKind, level: number): number {
+  const table: Record<ZoneKind, number[]> = {
+    residential: [0.6, 0.8, 1.6, 3, 5],
+    commercial: [0.6, 0.65, 1.4, 2.5, 4],
+    office: [0.85, 1.1, 1.6, 3, 5],
+  };
+  return table[kind][level - 1] ?? 1;
+}
+
+function constructionSource(stage: Exclude<ConstructionStage, 'done'>, w: number, d: number, h: number, seed: number): SceneObject['source'] {
+  const variant = seed % 3;
+  const hk = Math.round(h * 10);
+  return stage === 'foundation'
+    ? { kind: 'model', key: `build:f:${String(w)}x${String(d)}:${String(variant)}`, model: () => foundationModel(w, d, variant) }
+    : { kind: 'model', key: `build:s:${String(w)}x${String(d)}:${String(hk)}:${String(variant)}`, model: () => frameModel(w, d, hk / 10, variant) };
 }

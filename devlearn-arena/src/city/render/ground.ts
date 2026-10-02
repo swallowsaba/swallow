@@ -1,8 +1,9 @@
-import { city, mix, rgbaOf, shade } from '@/ui/tokens';
+import { city, hud, mix, rgbaOf, shade, zoneTint } from '@/ui/tokens';
 import { project, rotate, type P2, type Rotation } from '../projection';
 import { hash01 } from '../random';
 import { circle, offsetPolyline, ROAD_CURB, type RoadShape } from '../roadGeometry';
 import { HILL_STEP, isLand, pointInPolygon, type Terrain } from '../terrain';
+import type { ZoneKind } from '../types';
 
 /**
  * 地面の層（地盤・海・陸・川・丘・畑・道路）を描く（docs/city-design.md 1 章の層の順）。
@@ -12,6 +13,8 @@ import { HILL_STEP, isLand, pointInPolygon, type Terrain } from '../terrain';
 export interface GroundData {
   terrain: Terrain;
   roads: RoadShape[];
+  /** 区画の地面（塗った区画のマス。建物が建つと敷地に覆われる） */
+  zones: { kind: ZoneKind; cells: readonly P2[] }[];
   /** 草の細かな濃淡（地図の座標） */
   tufts: { x: number; y: number; shade: number; size: number }[];
   /** 海の小さな波（地図の座標） */
@@ -43,6 +46,7 @@ export function prepareGround(terrain: Terrain, roads: RoadShape[]): GroundData 
   return {
     terrain,
     roads,
+    zones: [],
     tufts,
     ripples,
     shallow: offsetOutline(terrain.coast, 2.6),
@@ -275,10 +279,36 @@ export function drawGround(ctx: CanvasRenderingContext2D, s: LayerSpace, g: Grou
     });
   }
 
+  // 区画の地面（種類ごとの色を薄く敷き、縁を細く描く）
+  for (const zone of g.zones) {
+    const color = zoneTint[zone.kind];
+    for (const c of zone.cells) {
+      const cell = [{ x: c.x + 0.06, y: c.y + 0.06 }, { x: c.x + 0.94, y: c.y + 0.06 }, { x: c.x + 0.94, y: c.y + 0.94 }, { x: c.x + 0.06, y: c.y + 0.94 }];
+      if (!inRect({ x: c.x + 0.5, y: c.y + 0.5 }, 64 * z)) continue;
+      ctx.globalAlpha = 0.42;
+      fill(ctx, s, cell, color);
+      ctx.globalAlpha = 0.8;
+      pathOf(ctx, s, cell);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(1, 1.2 * z);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // 橋（水面に落ちる影と、橋桁の側面）
+  for (const r of g.roads) {
+    if (r.road.kind !== 'bridge') continue;
+    ctx.globalAlpha = 0.32;
+    fill(ctx, s, r.outer.map((p) => ({ x: p.x + 0.32, y: p.y + 0.12 })), rgbaOf(hud.bg, 1));
+    ctx.globalAlpha = 1;
+    extrude(ctx, s, r.outer, 0, -0.18, mix(city.wallStone, city.curb, 0.45));
+  }
+
   // 道路（縁石 → 路面 → 白線 → 横断歩道 → 転回場）
   const curbTop = mix(city.curb, city.lineWhite, 0.45);
   for (const r of g.roads) {
-    fill(ctx, s, r.outer, curbTop);
+    fill(ctx, s, r.outer, r.road.kind === 'bridge' ? mix(city.wallStone, city.lineWhite, 0.3) : curbTop);
     for (const c of r.turnarounds) fill(ctx, s, circle(c, 0.78), curbTop);
   }
   for (const r of g.roads) {
@@ -288,6 +318,10 @@ export function drawGround(ctx: CanvasRenderingContext2D, s: LayerSpace, g: Grou
       fill(ctx, s, circle(c, 0.78 - ROAD_CURB), asphalt);
       // 転回場の中央の植え込み
       fill(ctx, s, circle(c, 0.22), city.tree3);
+    }
+    for (const island of r.islands) {
+      fill(ctx, s, island, curbTop);
+      fill(ctx, s, offsetOutline(island, -0.05), mix(city.grass, city.tree3, 0.5));
     }
   }
   ctx.strokeStyle = city.lineWhite;
@@ -304,6 +338,28 @@ export function drawGround(ctx: CanvasRenderingContext2D, s: LayerSpace, g: Grou
   }
   ctx.stroke();
   for (const r of g.roads) for (const c of r.crossings) fill(ctx, s, c, city.lineWhite);
+  // 橋の欄干（手すりと支柱）
+  const rail = mix(city.lineWhite, city.wallStone, 0.3);
+  const railH = 0.11;
+  for (const r of g.roads) {
+    for (const line of r.rails) {
+      ctx.strokeStyle = shade(rail, 0.8);
+      ctx.lineWidth = Math.max(1, 1.3 * z);
+      ctx.beginPath();
+      line.forEach((p, i) => {
+        if (i % 2 !== 0 && i !== line.length - 1) return;
+        const [x0, y0] = toLayer(s, p, 0);
+        const [x1, y1] = toLayer(s, p, railH);
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+      });
+      ctx.stroke();
+      pathOf(ctx, s, line, railH, false);
+      ctx.strokeStyle = rail;
+      ctx.lineWidth = Math.max(1.5, 2.2 * z);
+      ctx.stroke();
+    }
+  }
   // 路面の細かな汚れ（単調にしない）
   ctx.globalAlpha = 0.08;
   for (const r of g.roads) {
@@ -314,6 +370,7 @@ export function drawGround(ctx: CanvasRenderingContext2D, s: LayerSpace, g: Grou
   }
   ctx.globalAlpha = 1;
 }
+
 
 function lerp(a: P2, b: P2, t: number): P2 {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };

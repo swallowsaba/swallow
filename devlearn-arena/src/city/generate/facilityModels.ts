@@ -1,6 +1,10 @@
 import { city, domain, hud, mix, rgbaOf, shade } from '@/ui/tokens';
 import type { FacilityType } from '../types';
 import { fencedLot } from './buildings';
+import { cloud, cluster, research } from './facilities/campus';
+import { container, datacenter, deploy } from './facilities/industry';
+import { devoffice, devops, incident, monitor, security, web } from './facilities/offices';
+import { fountain, park, plaza, treerow } from './facilities/parks';
 import type { Model, Part, Poly } from './mesh';
 import {
   box, broadleafTree, conifer, door, faceDisc, gableRoof, groundPoly, groundRing, hedge, pad, parapet, part, prism,
@@ -214,9 +218,12 @@ function network(): Model {
   return { w: 2, d: 2, ground, parts, shadowHeight: 0.8 };
 }
 
-const MODELS: Partial<Record<FacilityType, (level: number) => Model>> = { academy, server, network };
+const MODELS: Partial<Record<FacilityType, (level: number) => Model>> = {
+  academy, server, network, web, security, devoffice, deploy, container, cluster, datacenter, cloud, monitor, devops, incident, research,
+  park, treerow, plaza, fountain,
+};
 
-/** 模型のある施設（Phase 1 は 3 種の Lv1） */
+/** 模型のある施設（Phase 2 で 15 施設と公園の類の Lv1） */
 export const MODELED_FACILITIES = Object.keys(MODELS) as FacilityType[];
 
 export function facilityModel(type: FacilityType, level: number): Model | null {
