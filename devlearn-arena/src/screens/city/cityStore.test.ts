@@ -63,6 +63,15 @@ describe('施設を上げる（docs/game-design.md 2・5 章: スキルの段階
     expect(s.notice?.text).toBe('市立 IT 学院を Lv2 に上げた。図書館棟が加わった');
   });
 
+  it('戻った時の知らせが並んでいても、上げた知らせはすぐ出す（自分の操作の結果を待たせない）', () => {
+    const store = storeWithAcademy();
+    store.getState().leave({ found: 0 });
+    store.getState().welcomeBack({ found: 37 }, ['学習で開発資金が +110 増えた', '次は「端末とシェル」がおすすめ'], 1000);
+    store.getState().upgrade('f1', { found: 37 }, 1500);
+    expect(store.getState().notice).toEqual({ text: '市立 IT 学院を Lv2 に上げた。図書館棟が加わった', until: 1500 + NOTICE_MS });
+    expect(store.getState().queue).toEqual(['学習で開発資金が +110 増えた', '次は「端末とシェル」がおすすめ']);
+  });
+
   it('スキルの段階が足りなければ、上げず、資金も減らさない', () => {
     const store = storeWithAcademy();
     const before = store.getState().city;

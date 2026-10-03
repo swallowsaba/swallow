@@ -70,7 +70,7 @@
 |---|---|---|---|
 | `tools/shoot.mjs` `shoot-all.mjs` `scenes.mjs` `browser.mjs` `motion-check.mjs` | **候補** | Playwright で撮る仕組みは使える。ただし大きさが 1600×900（仕様は 1920×1080）で、場面が旧画面 | Phase 1 で `npm run shoot -- <名前> <パス>` に作り直す |
 | `tools/review.mjs`（確認ページ） | **置き換え** | 以前の進め方（人の承認を待つ）の道具。`docs/archive/old-tools/` へ移した | Phase 0 で移動済み |
-| `e2e/smoke.spec.ts` | **置き換え** | 旧画面の E2E | Phase 8・13 |
+| `e2e/smoke.spec.ts` | **置き換え** | 旧画面の E2E | Phase 8 でゲームループの E2E（`e2e/loop.spec.ts`）に置き換えて削除済み |
 | `deploy/`（CI と 404 の振り替え） | **候補** | `docs/deployment.md` と照らす | Phase 14 |
 | `eslint.config.js` | **再利用** | Phase 0 で層の境界の規則（`src/city`（`render/` を除く）・`src/game`・`src/learning`・`src/engines` は画面の包み・DOM・Canvas・`Date`・`Math.random` を使わない）を入れた | — |
 | `src/__tests__/layers.test.ts` | **再利用** | 層の境界の二重の見張り。対象を `city`・`learning` に広げた | — |

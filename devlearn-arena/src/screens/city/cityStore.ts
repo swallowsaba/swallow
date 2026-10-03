@@ -165,11 +165,12 @@ export function createCityStore(seed?: number) {
       if (!f) return false;
       const def = FACILITY_DEFS[f.type];
       const adds = def.looks?.[check.level - 1];
+      // 自分の操作の結果は、並んでいる知らせを待たせずにすぐ出す（並んでいた知らせは、その後に出す）
       set({
         city,
         focus: { at: { x: f.origin.x + def.w / 2, y: f.origin.y + def.d / 2 }, size: { x: def.w, y: def.d }, seq: (s.focus?.seq ?? 0) + 1 },
+        notice: { text: `${def.name}を Lv${String(check.level)} に上げた${adds ? `。${adds}が加わった` : ''}`, until: now + NOTICE_MS },
       });
-      get().notify(`${def.name}を Lv${String(check.level)} に上げた${adds ? `。${adds}が加わった` : ''}`, now);
       return true;
     },
     select: (selected) => set({ selected }),
