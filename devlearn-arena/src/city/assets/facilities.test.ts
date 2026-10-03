@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { FACILITY_DEFS } from '../facilities';
+import type { FacilityType } from '../types';
 import { CAR_COLORS, carModel, PERSON_COLORS, personModel } from '../generate/agents';
 import { facilityModel, MODELED_FACILITIES } from '../generate/facilityModels';
 import { meshModel } from '../generate/mesh';
@@ -20,6 +21,35 @@ describe('施設の SVG', () => {
     expect(types).toHaveLength(19);
     for (const type of types) {
       expect(files.some((f) => f.type === type && f.name === 'lv1.svg'), type).toBe(true);
+    }
+  });
+
+  it('分野の 15 施設は Lv1〜Lv5 の 5 枚を持つ（docs/visual-design.md 6.1）', () => {
+    const types = Object.values(FACILITY_DEFS).filter((d) => d.group === 'facility').map((d) => d.type);
+    expect(types).toHaveLength(15);
+    for (const type of types) {
+      expect(files.filter((f) => f.type === type).map((f) => f.name).sort(), type).toEqual(['lv1.svg', 'lv2.svg', 'lv3.svg', 'lv4.svg', 'lv5.svg']);
+    }
+  });
+
+  it('Lv ごとに絵が変わり、高さは下がらず、Lv5 は Lv1 より高く細部が多い（docs/city-design.md 4 章「Lv1 と Lv5 は一目で違う」）', () => {
+    const types = Object.values(FACILITY_DEFS).filter((d) => d.group === 'facility').map((d) => d.type);
+    for (const type of types) {
+      const models = [1, 2, 3, 4, 5].map((lv) => {
+        const model = facilityModel(type, lv);
+        if (!model) throw new Error(`${type} Lv${String(lv)}`);
+        return model;
+      });
+      const svgs = [1, 2, 3, 4, 5].map((lv) => readFileSync(join(DIR, type, `lv${String(lv)}.svg`), 'utf8').replace(/<title>.*?<\/title>|作成日 [\d-]+/g, ''));
+      const ops = models.map((m) => meshModel(m, 0).ops.length);
+      // 一番高い所（マス）
+      const height = models.map((m) => Math.max(...m.parts.map((p) => p.max[2])));
+      for (let i = 1; i < 5; i += 1) {
+        expect(svgs[i], `${type} Lv${String(i + 1)} は Lv${String(i)} と違う絵`).not.toBe(svgs[i - 1]);
+        expect(height[i], `${type} Lv${String(i + 1)} の高さ`).toBeGreaterThanOrEqual((height[i - 1] as number) - 1e-9);
+      }
+      expect(height[4], `${type} の Lv5 の高さ`).toBeGreaterThan(height[0] as number);
+      expect(ops[4], `${type} の Lv5 の描く物の数`).toBeGreaterThan((ops[0] as number) * 1.1);
     }
   });
 
@@ -43,14 +73,17 @@ describe('施設の SVG', () => {
     for (const f of files) expect(readFileSync(f.file, 'utf8')).not.toMatch(/<image|href=|base64/);
   });
 
-  it('模型から作り直した物と一致する（手で書き換えていない）', () => {
-    for (const type of MODELED_FACILITIES) {
-      const model = facilityModel(type, 1);
-      if (!model) continue;
-      const svg = readFileSync(join(DIR, type, 'lv1.svg'), 'utf8');
+  it('全ての Lv の SVG が、模型から作り直した物と一致する（手で書き換えていない）', () => {
+    for (const f of files) {
+      const type = f.type as FacilityType;
+      const level = Number(/^lv(\d)/.exec(f.name)?.[1]);
+      expect(MODELED_FACILITIES, f.file).toContain(type);
+      const model = facilityModel(type, level);
+      if (!model) throw new Error(f.file);
+      const svg = readFileSync(f.file, 'utf8');
       const created = /作成日 (\d{4}-\d{2}-\d{2})/.exec(svg)?.[1] ?? '';
-      const again = drawingToSvg(meshModel(model, 0), meshModel(model, 2), `${FACILITY_DEFS[type].name} Lv1`, created);
-      expect(svg.replace(/\r\n/g, '\n')).toBe(again);
+      const again = drawingToSvg(meshModel(model, 0), meshModel(model, 2), `${FACILITY_DEFS[type].name} Lv${String(level)}`, created);
+      expect(svg.replace(/\r\n/g, '\n'), f.file).toBe(again);
     }
   });
 

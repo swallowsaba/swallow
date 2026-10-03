@@ -1,4 +1,5 @@
 import type { Drawing, DrawOp } from './mesh';
+import { clockwise, dropHidden, groupOps } from './svgCompact';
 
 /**
  * 描く命令の列を SVG にする（施設の素材を作る道具が使う）。
@@ -6,7 +7,8 @@ import type { Drawing, DrawOp } from './mesh';
  * 1 つの施設の 1 つのレベル = 1 つの SVG（docs/visual-design.md 5 章）。
  * 正面から見た姿（回転 0）を本体に描き、裏から見た姿（回転 2）を <defs> の中の
  * <g id="back"> に持つ。左右を映せば、90 度ごとの 4 つの向きが全て正しく描ける。
- * 原点は接地の中心。30KB に収めるため、多角形は相対座標の path で書き、色は class にまとめる。
+ * 原点は接地の中心。30KB に収めるため、隠れて見えない面を省き、同じ色の多角形を 1 つの path にまとめ（src/city/generate/svgCompact.ts）、
+ * 多角形は相対座標で書き、色は class にまとめる。
  */
 
 const round = (v: number): number => Math.round(v * 10) / 10;
@@ -27,18 +29,47 @@ function joinNums(values: number[]): string {
   return out;
 }
 
-function pathData(pts: number[]): string {
+/**
+ * 多角形を path の文字列にする。from（前の多角形の始点）があれば、そこからの相対で始める（まとめた path の 2 つ目から）。
+ * 縦の辺は v、横の辺は h で短く書く
+ */
+function pathData(pts: number[], from?: [number, number]): string {
   let x = round(pts[0] as number);
   let y = round(pts[1] as number);
-  const rel: number[] = [];
+  let out = from ? `m${joinNums([x - from[0], y - from[1]])}` : `M${joinNums([x, y])}`;
+  let cmd = '';
+  let args: number[] = [];
+  const flush = (): void => {
+    if (cmd) out += cmd + joinNums(args);
+    args = [];
+  };
   for (let i = 2; i < pts.length; i += 2) {
     const nx = round(pts[i] as number);
     const ny = round(pts[i + 1] as number);
-    rel.push(nx - x, ny - y);
+    const dx = round(nx - x);
+    const dy = round(ny - y);
+    const [c, a] = dx === 0 ? ['v', [dy]] : dy === 0 ? ['h', [dx]] : ['l', [dx, dy]];
+    if (c !== cmd) {
+      flush();
+      cmd = c;
+    }
+    args.push(...a);
     x = nx;
     y = ny;
   }
-  return `M${joinNums([pts[0] as number, pts[1] as number])}l${joinNums(rel)}z`;
+  flush();
+  return `${out}z`;
+}
+
+/** まとめた多角形を 1 つの path の文字列にする */
+function multiPathData(polys: number[][]): string {
+  let d = '';
+  let from: [number, number] | undefined;
+  for (const pts of polys) {
+    d += pathData(pts, from);
+    from = [round(pts[0] as number), round(pts[1] as number)];
+  }
+  return d;
 }
 
 function viewBoxOf(d: Drawing): { x: number; y: number; w: number; h: number } {
@@ -62,6 +93,18 @@ function body(ops: readonly DrawOp[], classOf: (fill: string) => string): string
     .join('');
 }
 
+/** 隠れた面を省き、同じ色の多角形を 1 つの path にまとめて書く（施設・車・人の SVG） */
+function compactBody(ops: readonly DrawOp[], classOf: (fill: string) => string): string {
+  return groupOps(dropHidden(ops))
+    .map((g) => {
+      const first = g.ops[0] as DrawOp;
+      if (g.ops.length === 1 || first.kind === 'ellipse') return body(g.ops, classOf);
+      const d = multiPathData(g.ops.flatMap((op) => (op.kind === 'poly' ? [clockwise(op.pts)] : [])));
+      return `<path class="${classOf(g.fill)}" d="${d}"/>`;
+    })
+    .join('');
+}
+
 export function drawingToSvg(front: Drawing, back: Drawing, title: string, created: string, source = 'src/city/generate/facilityModels.ts'): string {
   // 色を class にまとめる（よく使う色ほど短い名前）
   const counts = new Map<string, number>();
@@ -78,8 +121,8 @@ export function drawingToSvg(front: Drawing, back: Drawing, title: string, creat
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${String(vf.x)} ${String(vf.y)} ${String(vf.w)} ${String(vf.h)}" width="${String(vf.w)}" height="${String(vf.h)}">`,
     `<title>${title}</title>`,
     `<style>${style}</style>`,
-    `<g id="front">${body(front.ops, classOf)}</g>`,
-    `<defs><g id="back" data-viewbox="${String(vb.x)} ${String(vb.y)} ${String(vb.w)} ${String(vb.h)}">${body(back.ops, classOf)}</g></defs>`,
+    `<g id="front">${compactBody(front.ops, classOf)}</g>`,
+    `<defs><g id="back" data-viewbox="${String(vb.x)} ${String(vb.y)} ${String(vb.w)} ${String(vb.h)}">${compactBody(back.ops, classOf)}</g></defs>`,
     '</svg>',
     '',
   ].join('\n');

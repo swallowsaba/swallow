@@ -112,3 +112,34 @@ export function shutter(b: { x0: number; y0: number; x1: number; y1: number }, u
   }
   return part(shapes, [b.x1 - u1, b.y1, 0], [b.x1 - u0, b.y1 + 0.01, h]);
 }
+
+/** 部品を高さ dz だけ持ち上げる（屋上の木・植え込み） */
+export function lift(p: Part, dz: number): Part {
+  const up = (v: V3): V3 => [v[0], v[1], v[2] + dz];
+  const shapes: Shape[] = p.shapes.map((s) => (s.kind === 'poly' ? { ...s, pts: s.pts.map(up) } : { ...s, center: up(s.center) }));
+  return part(shapes, up(p.min), up(p.max));
+}
+
+/** 太陽光の板（傾いた板と、細い桟）。x0..x1 × y0..y1 の屋上に、南（+y）へ傾けて並べる */
+export function solarPanels(x0: number, y0: number, x1: number, y1: number, z: number, rows: number): Part[] {
+  const out: Part[] = [];
+  const depth = (y1 - y0) / rows;
+  const panel = mix(city.wallGlass, NAVY, 0.55);
+  for (let r = 0; r < rows; r += 1) {
+    const ya = y0 + r * depth + depth * 0.15;
+    const yb = ya + depth * 0.7;
+    out.push(part([
+      { kind: 'poly', pts: [[x1, yb, z + 0.02], [x0, yb, z + 0.02], [x0, ya, z + 0.09], [x1, ya, z + 0.09]], color: panel, double: true },
+      { kind: 'poly', pts: [[x1, (ya + yb) / 2 + 0.004, z + 0.06], [x0, (ya + yb) / 2 + 0.004, z + 0.06], [x0, (ya + yb) / 2, z + 0.065], [x1, (ya + yb) / 2, z + 0.065]], color: mix(panel, city.lineWhite, 0.4), layer: 1, double: true },
+    ], [x0, ya, z], [x1, yb, z + 0.09]));
+  }
+  return out;
+}
+
+/** 屋上や塔の頂の、分野の色で光る標識灯 */
+export function beacon(x: number, y: number, z: number, color: string): Part {
+  return part([
+    { kind: 'blob', center: [x, y, z + 0.03], r: 0.035, squash: 0.8, color, lit: true },
+    { kind: 'blob', center: [x - 0.006, y - 0.006, z + 0.04], r: 0.015, squash: 0.8, color: mix(color, city.lineWhite, 0.6), lit: true, layer: 1 },
+  ], [x - 0.035, y - 0.035, z], [x + 0.035, y + 0.035, z + 0.07]);
+}

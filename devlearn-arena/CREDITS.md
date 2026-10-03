@@ -20,4 +20,5 @@
 | 名前 | 作者 | ライセンス | 出典 | 使っている場所 |
 |---|---|---|---|---|
 | 施設・建物・アイコン・図 | 本プロジェクト | 自作 | — | 全体 |
+| 施設の Lv1〜Lv5（15 施設 × 5 枚）と公園の類 | 本プロジェクト | 自作（`src/city/generate/facilityModels.ts` から生成） | — | 都市の施設（`src/city/assets/facilities/`） |
 | 施設の中の景色（15 枚） | 本プロジェクト | 自作（`src/city/generate/interiors.ts` から生成） | — | レッスン画面の背景（`src/screens/lesson/backdrops/`） |
