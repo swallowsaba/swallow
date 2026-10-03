@@ -1,7 +1,9 @@
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import {
-  restartService, serviceOf, setEnabled, startService, stopService, unitName, type ServiceResult, type ServiceTable,
+  restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceResult, type ServiceTable,
 } from '../services';
+import { exists, isDir, readFile } from '../vfs';
+import { readWebConfig } from '../webConfig';
 import { fromLines } from './args';
 
 /**
@@ -26,7 +28,10 @@ function status(table: ServiceTable, raw: string): CommandResult {
     `     Loaded: loaded (/etc/systemd/system/${s.name}.service; ${s.enabled ? 'enabled' : 'disabled'}; preset: disabled)`,
     `     Active: ${active}`,
   ];
-  if (s.active === 'active' && s.port !== undefined) lines.push(`     Listen: 0.0.0.0:${String(s.port)}`);
+  if (s.active === 'active') {
+    for (const l of s.listens ?? []) lines.push(`     Listen: 0.0.0.0:${String(l.port)}${l.ssl ? ' (ssl)' : ''}`);
+    if (!s.config && s.port !== undefined) lines.push(`     Listen: 0.0.0.0:${String(s.port)}`);
+  }
   const tail = s.log.slice(-3);
   if (tail.length > 0) lines.push('', ...tail);
   // 本物と同じく、動いていなければ終了の値は 3
@@ -55,6 +60,11 @@ function run(shell: ShellState, verb: string, units: readonly string[], op: (t: 
   return { patch: { services: table }, ...(out.length ? { stdout: fromLines(out) } : {}) };
 }
 
+/** サービスの設定ファイルを、仮想のファイルから読む */
+function loaderOf(shell: ShellState): ConfigLoader {
+  return (path) => readWebConfig(path, (p) => (exists(shell.vfs, p) && !isDir(shell.vfs, p) ? readFile(shell.vfs, p) : null));
+}
+
 export const systemctlCommands: CommandSpec[] = [
   {
     name: 'systemctl',
@@ -64,7 +74,7 @@ export const systemctlCommands: CommandSpec[] = [
       const args = argv.slice(1).filter((a) => a !== '--no-pager');
       const now = args.includes('--now');
       const [verb, ...units] = args.filter((a) => a !== '--now');
-      if (verb === undefined) return { stderr: 'usage: systemctl <status|start|stop|restart|enable|disable|is-active|is-enabled> <サービス>\n', code: 1 };
+      if (verb === undefined) return { stderr: 'usage: systemctl <status|start|stop|restart|reload|enable|disable|is-active|is-enabled> <サービス>\n', code: 1 };
       if (verb === 'daemon-reload') return {};
       if (verb === 'list-units') {
         const rows = [...shell.services.services.values()].map((s) => `${`${s.name}.service`.padEnd(20)} loaded ${s.active.padEnd(8)} ${s.description}`);
@@ -81,11 +91,18 @@ export const systemctlCommands: CommandSpec[] = [
           };
         }
         case 'start':
-          return run(shell, 'start', units, startService);
+          return run(shell, 'start', units, (t, u) => startService(t, u, loaderOf(shell)));
         case 'stop':
           return run(shell, 'stop', units, stopService);
         case 'restart':
-          return run(shell, 'restart', units, restartService);
+          return run(shell, 'restart', units, (t, u) => restartService(t, u, loaderOf(shell)));
+        case 'reload': {
+          // 設定を読み直す。動いていなければ読み直せない（本物と同じ）
+          const idle = units.find((u) => serviceOf(shell.services, u)?.active !== 'active');
+          if (idle !== undefined && serviceOf(shell.services, idle)) return { stderr: `${unitOf(idle)} is not active, cannot reload.
+`, code: 1 };
+          return run(shell, 'reload', units, (t, u) => restartService(t, u, loaderOf(shell)));
+        }
         case 'enable':
         case 'disable': {
           const on = verb === 'enable';
@@ -99,7 +116,7 @@ export const systemctlCommands: CommandSpec[] = [
           }, (u) => (serviceOf(shell.services, u)?.enabled === on ? '' : link(u)));
           if ((set.code ?? 0) !== 0 || !now) return { ...set, stdout: (set.stdout ?? '').replace(/^\n+/gm, '') };
           const after: ShellState = { ...shell, services: (set.patch?.services ?? shell.services) };
-          const next = run(after, on ? 'start' : 'stop', units, on ? startService : stopService);
+          const next = run(after, on ? 'start' : 'stop', units, on ? (t, u) => startService(t, u, loaderOf(shell)) : stopService);
           return { ...next, stdout: `${(set.stdout ?? '').replace(/^\n+/gm, '')}${next.stdout ?? ''}` };
         }
         case 'is-active': {

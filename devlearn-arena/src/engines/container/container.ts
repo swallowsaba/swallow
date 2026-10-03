@@ -4,7 +4,8 @@
  * - イメージ: アプリと動くのに要る物を固めた、読み取り専用の型。レジストリ（置き場）から取ってくる（pull）
  * - コンテナ: イメージから作った、動いている（または止まった）1 つの実体。同じイメージから何個でも作れる
  * - ポートの公開: 手元のポートを、コンテナの中のポートにつなぐ（-p 8080:80）。同じ手元のポートは 2 つに使えない
- * - ボリューム: コンテナを消しても残す場所を、手元の場所につなぐ（-v）
+ * - ボリューム: コンテナを消しても残す場所を、手元の場所につなぐ（-v）。
+ *   中身を読む場所（serves.root）を持つイメージは、そこにつないだ手元の場所の index.html を返す（つないでいなければ 403）
  *
  * ID は通し番号から決める（同じ操作からは同じ ID）。CLI（docker）は src/engines/docker がこの上に作る。
  */
@@ -14,8 +15,11 @@ export interface Image {
   ref: string;
   id: string;
   size: string;
-  /** 動かした時に待ち受けるポートと、応える中身（Web サーバのイメージ） */
-  serves?: { port: number; body: string };
+  /**
+   * 動かした時に待ち受けるポートと、応える中身（Web サーバのイメージ）。
+   * root があれば、コンテナの中のその場所から中身を読む（ボリュームでつないだ手元の場所の index.html。無ければ 403）
+   */
+  serves?: { port: number; body: string; root?: string };
   /** 動かすのに要る環境変数（無いと止まる） */
   requiresEnv?: { name: string; error: string };
   /** 動き出した時のログ */
@@ -53,6 +57,7 @@ export interface ContainerHost {
 export const REGISTRY: readonly Image[] = [
   { ref: 'nginx:1.27', id: '3b25b682ea82', size: '192MB', serves: { port: 80, body: '<!DOCTYPE html>\n<html><head><title>Welcome to nginx!</title></head><body><h1>Welcome to nginx!</h1></body></html>' }, startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'] },
   { ref: 'httpd:2.4', id: '9cfd0d8c7a1e', size: '148MB', serves: { port: 80, body: '<html><body><h1>It works!</h1></body></html>' }, startLog: ['AH00558: httpd: Could not reliably determine the server\'s fully qualified domain name', 'Apache/2.4 configured -- resuming normal operations'] },
+  { ref: 'city-board:1.0', id: '5c1e7b2a9d40', size: '41MB', serves: { port: 80, body: '', root: '/usr/share/nginx/html' }, startLog: ['city-board: serving /usr/share/nginx/html on port 80'] },
   { ref: 'redis:7', id: '7e49ed81b42b', size: '117MB', startLog: ['Redis version=7.2.5, bits=64', 'Ready to accept connections tcp'] },
   { ref: 'postgres:16', id: 'b9390dd1ea18', size: '432MB', requiresEnv: { name: 'POSTGRES_PASSWORD', error: 'Error: Database is uninitialized and superuser password is not specified.' }, startLog: ['database system is ready to accept connections'] },
   { ref: 'alpine:3.20', id: '91ef0af61f39', size: '7.8MB', oneShot: true, startLog: [] },
@@ -180,13 +185,23 @@ export function removeImage(host: ContainerHost, raw: string): Result<Image> {
   return { ok: true, host: { ...host, images: host.images.filter((i) => i !== image) }, value: image };
 }
 
-/** 手元のポートで応えるコンテナ（src/engines/http が使う） */
-export function servedAt(host: ContainerHost | null, port: number): { container: Container; body: string } | null {
+/** 中身を読む場所を持つイメージが、中身を見つけられない時の答え */
+const FORBIDDEN = '<html><head><title>403 Forbidden</title></head><body><h1>403 Forbidden</h1></body></html>';
+
+/**
+ * 手元のポートで応えるコンテナ（src/engines/http が使う）。
+ * read は手元のファイルを読む関数（ボリュームでつないだ場所の中身を返すため。無ければ null）
+ */
+export function servedAt(host: ContainerHost | null, port: number, read: (path: string) => string | null = () => null): { container: Container; body: string; status: number } | null {
   if (!host) return null;
   const c = portOwner(host, port);
   if (!c) return null;
   const image = host.images.find((i) => i.ref === c.image);
   const map = c.ports.find((p) => p.host === port);
   if (!image?.serves || map?.container !== image.serves.port) return null;
-  return { container: c, body: image.serves.body };
+  const root = image.serves.root;
+  if (root === undefined) return { container: c, body: image.serves.body, status: 200 };
+  const volume = c.volumes.find((v) => v.container.replace(/\/+$/, '') === root);
+  const page = volume ? read(`${volume.host.replace(/\/+$/, '')}/index.html`) : null;
+  return page === null ? { container: c, body: FORBIDDEN, status: 403 } : { container: c, body: page, status: 200 };
 }

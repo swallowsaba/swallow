@@ -1,10 +1,22 @@
 import { portOwner, servedAt } from '@/engines/container/container';
 import { curlError, request, type HttpEnv } from '@/engines/http/http';
 import type { CommandResult, ShellState } from '../registry';
+import { exists, isDir, readFile } from '../vfs';
+
+/** /etc/hosts で手元（127.0.0.1・::1）を指す名前 */
+function hostsLocalNames(shell: ShellState): string[] {
+  const path = '/etc/hosts';
+  if (!exists(shell.vfs, path) || isDir(shell.vfs, path)) return [];
+  return readFile(shell.vfs, path).split('\n').flatMap((line) => {
+    const [addr, ...names] = line.replace(/#.*$/, '').trim().split(/\s+/);
+    return addr === '127.0.0.1' || addr === '::1' ? names.map((n) => n.toLowerCase()) : [];
+  });
+}
 
 /**
  * 手元（この機械）から見た HTTP の世界（src/engines/http の HttpEnv）。
- * localhost と自分の名前には、動いているサービス（systemctl）と、公開したコンテナのポート（docker run -p）が応える。
+ * localhost と自分の名前（と /etc/hosts で手元を指す名前）には、動いているサービス（systemctl）と、公開したコンテナのポート（docker run -p）が応える。
+ * 設定ファイルを持つサービスは、設定から決まったポートで待ち受け、ssl のポートでは証明書を送る（src/engines/kernel/webConfig.ts）。
  */
 export function httpEnvOf(shell: ShellState): HttpEnv {
   const web = shell.web;
@@ -12,13 +24,17 @@ export function httpEnvOf(shell: ShellState): HttpEnv {
     sites: web?.sites ?? [],
     roots: web?.roots ?? [],
     today: web?.today ?? '2026-10-03',
-    localNames: ['localhost', '127.0.0.1', ...(web?.hostname ? [web.hostname] : [])],
+    localNames: ['localhost', '127.0.0.1', ...(web?.hostname ? [web.hostname] : []), ...hostsLocalNames(shell)],
     local: (port) => {
       for (const s of shell.services?.services.values() ?? []) {
-        if (s.active === 'active' && s.port === port) return { body: s.body ?? `<html><body>${s.name}</body></html>`, server: s.name };
+        if (s.active !== 'active') continue;
+        const body = s.body ?? `<html><body>${s.name}</body></html>`;
+        const listen = s.listens?.find((l) => l.port === port);
+        if (listen) return { body, server: s.name, ...(listen.ssl && listen.chain ? { chain: listen.chain } : {}) };
+        if (!s.config && s.port === port) return { body, server: s.name };
       }
-      const served = servedAt(shell.containers, port);
-      if (served) return { body: served.body, server: served.container.image.split(':')[0] ?? 'container' };
+      const served = servedAt(shell.containers, port, (p) => (exists(shell.vfs, p) && !isDir(shell.vfs, p) ? readFile(shell.vfs, p) : null));
+      if (served) return { body: served.body, status: served.status, server: served.container.image.split(':')[0] ?? 'container' };
       // ポートは公開したが、コンテナの中で待ち受けていない（-p 8080:8080 など）
       if (shell.containers && portOwner(shell.containers, port)) return { reset: true };
       return null;

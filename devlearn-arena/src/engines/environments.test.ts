@@ -3,7 +3,8 @@ import { createClock } from './kernel/clock';
 import { createDefaultRegistry } from './kernel/commands';
 import { createShellState } from './kernel/session';
 import { execute } from './kernel/shell';
-import { resolveSetup, shellOptions } from './environments';
+import { readFile } from './kernel/vfs';
+import { initialShell, resolveSetup, shellOptions } from './environments';
 
 const run = (env: string, setup: unknown, lines: string[]): string => {
   let shell = createShellState(shellOptions(env, setup));
@@ -43,5 +44,23 @@ describe('実戦の模擬環境の初期状態（docs/content-spec.md 2.4 の en
   it('同じ setup からは同じ初期状態', () => {
     const setup = { files: { '/home/learner/a.txt': 'a\n' } };
     expect(run('linux-basic', setup, ['ls -l'])).toBe(run('linux-basic', setup, ['ls -l']));
+  });
+});
+
+describe('setup の run（始める前に打っておくコマンド）', () => {
+  it('打った結果から始まり、履歴は残らず、始める場所に戻る', () => {
+    const shell = initialShell('linux-basic', { run: ['mkdir -p /home/learner/site', 'cd /home/learner/site', 'echo hi > index.html'] });
+    expect(shell.cwd).toBe('/home/learner');
+    expect(shell.history).toEqual([]);
+    expect(readFile(shell.vfs, '/home/learner/site/index.html')).toBe('hi\n');
+  });
+
+  it('run のコマンドが失敗すれば、内容の誤りとして投げる', () => {
+    expect(() => initialShell('linux-basic', { run: ['cat /nothing'] })).toThrow(/setup の run/);
+  });
+
+  it('cluster を書くと、その数の Node を持つクラスタで始まる', () => {
+    expect(initialShell('linux-basic', { cluster: { nodes: 2 } }).cluster?.nodes.size).toBe(2);
+    expect(initialShell('linux-basic', {}).cluster).toBeNull();
   });
 });

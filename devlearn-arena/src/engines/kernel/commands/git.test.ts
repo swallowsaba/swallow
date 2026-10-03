@@ -153,6 +153,14 @@ describe('ブランチ', () => {
     run('git switch -c topic');
     expect(run('git reflog').out).toContain('checkout: moving to topic');
   });
+
+  it('別の枝で記録してから戻ると、索引（index）も戻った枝の内容に揃い、変更は無い', () => {
+    run('git switch -c topic');
+    run('echo changed > a.txt');
+    run('git commit -am "topic"');
+    run('git switch main');
+    expect(run('git status').out).toContain('nothing to commit, working tree clean');
+  });
 });
 
 describe('未知のサブコマンド', () => {

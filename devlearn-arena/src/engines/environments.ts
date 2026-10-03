@@ -1,8 +1,12 @@
 import { z } from 'zod';
 import { createContainerHost } from './container/container';
-import type { WebWorld } from './kernel/registry';
+import { emptyCluster, node } from './k8s/factory';
+import { createClock } from './kernel/clock';
+import { createDefaultRegistry } from './kernel/commands';
+import type { ShellState, WebWorld } from './kernel/registry';
 import { createServiceTable } from './kernel/services';
-import type { SessionOptions } from './kernel/session';
+import { createShellState, type SessionOptions } from './kernel/session';
+import { execute } from './kernel/shell';
 import { DEMO_ROOT } from './tls/tls';
 
 /**
@@ -20,6 +24,8 @@ const serviceSetup = z.object({
   broken: z.string().optional(),
   port: z.number().int().optional(),
   body: z.string().optional(),
+  /** 設定ファイルの場所（nginx 風。動かす時に読み、待ち受けるポートと証明書が決まる。src/engines/kernel/webConfig.ts） */
+  config: z.string().startsWith('/').optional(),
 }).strict();
 
 const certSetup = z.object({
@@ -58,6 +64,10 @@ export const setupSchema = z.object({
   today: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   /** DB の初期状態（表を作り、行を入れる SQL） */
   sql: z.string().optional(),
+  /** Kubernetes のクラスタ（Node の数。どれも同じ大きさ） */
+  cluster: z.object({ nodes: z.number().int().min(1).max(5) }).strict().optional(),
+  /** 初期状態を作るために、始める前に打っておくコマンド（リポジトリと履歴を作る、など）。学習者には見せない */
+  run: z.array(z.string().min(1)).optional(),
 }).strict();
 
 export type PracticeSetup = z.infer<typeof setupSchema>;
@@ -126,12 +136,35 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       ...(v.broken !== undefined ? { broken: v.broken } : {}),
       ...(v.port !== undefined ? { port: v.port } : {}),
       ...(v.body !== undefined ? { body: v.body } : {}),
+      ...(v.config !== undefined ? { config: v.config } : {}),
     })));
   }
+  if (s.cluster) options.cluster = emptyCluster(Array.from({ length: s.cluster.nodes }, (_, i) => node(`node-${String(i + 1)}`, 4000, 8192)));
   if (s.images) options.containers = createContainerHost(s.images);
   if (s.sites || s.roots) {
     const web: WebWorld = { sites: s.sites ?? [], roots: s.roots ?? [DEMO_ROOT], today: s.today ?? '2026-10-03', hostname: s.hostname ?? 'arena' };
     options.web = web;
   }
   return options;
+}
+
+/**
+ * 端末の実戦の、シェルの初期状態。setup の run のコマンドを打ち終えた所から始める（同じ setup からは同じ状態）。
+ * run のコマンドがエラーになれば、内容の誤りとして投げる
+ */
+export function initialShell(environment: string, setup: unknown): ShellState {
+  const s = resolveSetup(environment, setup);
+  let shell = createShellState(shellOptions(environment, setup));
+  if (!s.run?.length) return shell;
+  const registry = createDefaultRegistry();
+  const clock = createClock();
+  const cwd = shell.cwd;
+  for (const line of s.run) {
+    const out = execute(shell, line, registry, clock);
+    const err = out.chunks.filter((c) => c.stream === 'stderr').map((c) => c.text).join('').trim();
+    if (out.exitCode !== 0) throw new Error(`setup の run「${line}」が失敗した: ${err}`);
+    shell = out.state;
+  }
+  // 打った跡（履歴）は残さず、始める場所に戻す
+  return { ...shell, history: [], cwd, lastExit: 0, vars: new Map([...shell.vars, ['PWD', cwd]]) };
 }

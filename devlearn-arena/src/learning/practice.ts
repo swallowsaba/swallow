@@ -2,14 +2,15 @@ import type { CheckSpec, ErrorGuide, Practice, PracticeStep } from '@/content/sc
 import { parseRich } from '@/content/rich';
 import { createClock } from '@/engines/kernel/clock';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
+import { gitHolds } from '@/engines/git/check';
+import { clusterHolds } from '@/engines/k8s/check';
 import { httpEnvOf } from '@/engines/kernel/commands/httpLocal';
 import { resolve } from '@/engines/kernel/path';
 import type { ShellState } from '@/engines/kernel/registry';
 import { serviceOf } from '@/engines/kernel/services';
-import { createShellState } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { exists, isDir, readFile } from '@/engines/kernel/vfs';
-import { shellOptions } from '@/engines/environments';
+import { initialShell } from '@/engines/environments';
 import { request } from '@/engines/http/http';
 import { verify } from '@/engines/tls/tls';
 import type { PracticeAttempt } from '@/game/types';
@@ -26,8 +27,8 @@ import type { PracticeAttempt } from '@/game/types';
 
 /* ---------- 状態による判定 ---------- */
 
-/** 端末の実戦で判定できる形。git・k8s・net は、その分野の実戦と一緒に作る（docs/development-plan.md Phase 10） */
-export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'answer']);
+/** 端末の実戦で判定できる形。net は、その分野の実戦と一緒に作る（docs/development-plan.md Phase 10） */
+export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'git', 'k8s', 'answer']);
 
 export interface CheckInput {
   shell: ShellState;
@@ -63,18 +64,27 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       return r.ok && r.response.status === check.status;
     }
     case 'tls': {
+      // 手元（/etc/hosts で手元を指す名前を含む）の Web サーバは、送ってくる証明書で確かめる
+      const env = httpEnvOf(shell);
+      if (env.localNames.includes(check.host.toLowerCase())) {
+        const l = env.local(443);
+        if (!l || 'reset' in l || !l.chain?.length) return false;
+        return verify(check.host, l.chain, env.roots, env.today).trusted === check.trusted;
+      }
       const web = shell.web;
       const site = web?.sites.find((x) => x.host === check.host && x.chain && x.chain.length > 0);
       if (!web || !site?.chain) return false;
       return verify(check.host, site.chain, web.roots, web.today).trusted === check.trusted;
     }
+    case 'git':
+      return gitHolds(shell.git, shell.vfs, check.expr);
+    case 'k8s':
+      return clusterHolds(shell.cluster, check.expr);
     case 'answer':
       return input.answer !== undefined && sameAnswer(input.answer, check.equals);
     case 'sql':
       // DB の実戦は DB の状態で判定する（src/engines/db の matchesExpected）。端末の状態では判定しない
       return false;
-    case 'git':
-    case 'k8s':
     case 'net':
       throw new Error(`判定の形 ${check.kind} は、まだ端末の実戦につないでいない`);
   }
@@ -240,7 +250,7 @@ export function replayAnswers(practice: Practice): string[] {
   const problems: string[] = [];
   const registry = REGISTRY;
   const clock = createClock();
-  let shell = createShellState(shellOptions(practice.environment, practice.setup));
+  let shell = initialShell(practice.environment, practice.setup);
   for (const step of practice.steps) {
     if (!SHELL_CHECKS.has(step.check.kind)) {
       problems.push(`実戦 ${step.id}: 判定の形 ${step.check.kind} は端末の実戦でまだ使えない`);

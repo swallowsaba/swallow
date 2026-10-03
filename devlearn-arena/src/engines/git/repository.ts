@@ -369,10 +369,14 @@ export function switchBranch(git: GitState, name: string): { git: GitState; erro
   if (!git.refs.has(`refs/heads/${name}`)) {
     return { git, error: `fatal: invalid reference: ${name}` };
   }
+  // 索引（index）も切り替え先のコミットに揃える（作業ツリーは checkoutWorktree が揃える）
+  const target = git.refs.get(`refs/heads/${name}`) ?? null;
+  const index = new Map(target === null ? [] : [...treeFiles(git, target)].map(([path, hash]) => [path, { path, mode: FILE_MODE, hash }]));
   return {
     git: {
       ...git,
       head: { type: 'branch', name },
+      index,
       origHead: headCommit(git),
       reflog: [...git.reflog, { hash: git.refs.get(`refs/heads/${name}`) ?? '', message: `checkout: moving to ${name}` }],
     },

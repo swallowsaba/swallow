@@ -63,3 +63,28 @@ describe('コンテナの模型', () => {
     expect([a.id, a.name]).toEqual([b.id, b.name]);
   });
 });
+
+describe('中身を読む場所を持つイメージ（ボリュームでつないだ手元の場所を返す）', () => {
+  const read = (files: Record<string, string>) => (p: string): string | null => files[p] ?? null;
+  const board = (volumes: { host: string; container: string }[]) => {
+    const r = run(createContainerHost(), { image: 'city-board:1.0', name: 'board', ports: [{ host: 8080, container: 80 }], volumes });
+    if (!r.ok) throw new Error('起動できない');
+    return r.host;
+  };
+
+  it('つないでいなければ 403（見せる中身が無い）', () => {
+    expect(servedAt(board([]), 8080, read({ '/home/learner/board/index.html': '<h1>掲示</h1>' }))?.status).toBe(403);
+  });
+
+  it('中身を読む場所に手元の場所をつなぐと、その index.html を 200 で返す', () => {
+    const host = board([{ host: '/home/learner/board', container: '/usr/share/nginx/html' }]);
+    expect(servedAt(host, 8080, read({ '/home/learner/board/index.html': '<h1>掲示</h1>' }))).toMatchObject({ status: 200, body: '<h1>掲示</h1>' });
+  });
+
+  it('違う場所につないだり、手元の場所に index.html が無ければ 403', () => {
+    const wrongPlace = board([{ host: '/home/learner/board', container: '/data' }]);
+    expect(servedAt(wrongPlace, 8080, read({ '/home/learner/board/index.html': 'x' }))?.status).toBe(403);
+    const empty = board([{ host: '/home/learner/empty', container: '/usr/share/nginx/html' }]);
+    expect(servedAt(empty, 8080, read({}))?.status).toBe(403);
+  });
+});

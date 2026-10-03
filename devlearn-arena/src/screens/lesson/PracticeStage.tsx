@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { PRACTICE_NAMES } from '@/content/catalog';
 import { ERROR_GUIDES } from '@/content/glossary';
 import type { ErrorGuide, Lesson } from '@/content/schema';
-import { ENVIRONMENTS, isEnvironmentId, shellOptions } from '@/engines/environments';
+import { ENVIRONMENTS, initialShell, isEnvironmentId } from '@/engines/environments';
 import { restoreShell, snapshotShell, type SessionOptions, type ShellSnapshotData } from '@/engines/kernel/session';
 import type { PracticeAttempt, PracticeSession } from '@/game/types';
 import {
@@ -42,7 +42,7 @@ export function PracticeStage({ lesson, saved, onSave, onFinish, onTerm, right, 
 }) {
   const p = lesson.practice;
   const restored = saved?.engineState as Saved | undefined;
-  const fresh = useMemo<SessionOptions>(() => shellOptions(p.environment, p.setup), [p]);
+  const fresh = useMemo<SessionOptions>(() => ({ restore: initialShell(p.environment, p.setup) }), [p]);
   const shell = useShellSession(restored ? { restore: restoreShell(restored.shell) } : fresh);
   const [run, setRun] = useState<PracticeRun>(() => restored?.run ?? startRun());
   const [error, setError] = useState<{ guide: ErrorGuide; said: string; line: string } | null>(null);

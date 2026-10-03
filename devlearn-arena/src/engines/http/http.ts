@@ -23,8 +23,8 @@ export interface Site {
   routes: Readonly<Record<string, Route>>;
 }
 
-/** 手元のポートで待ち受けている物 */
-export type LocalListener = { body: string; server: string } | { reset: true };
+/** 手元のポートで待ち受けている物（chain があれば https で待ち受ける） */
+export type LocalListener = { body: string; server: string; status?: number; chain?: readonly Cert[] } | { reset: true };
 
 export interface HttpEnv {
   sites: readonly Site[];
@@ -92,7 +92,17 @@ export function request(env: HttpEnv, raw: string, opts: { insecure?: boolean } 
     const l = env.local(url.port);
     if (!l) return { ok: false, url, error: { kind: 'refused', host: url.host, port: url.port } };
     if ('reset' in l) return { ok: false, url, error: { kind: 'empty-reply' } };
-    return { ok: true, url, response: respond(url.path === '/' || url.path === '/index.html' ? { status: 200, body: l.body } : undefined, l.server) };
+    let tls: TlsVerdict | undefined;
+    if (url.scheme === 'https') {
+      if (!l.chain || l.chain.length === 0) return { ok: false, url, error: { kind: 'empty-reply' } };
+      tls = verify(url.host, l.chain, env.roots, env.today);
+      if (!tls.trusted && !opts.insecure) return { ok: false, url, error: { kind: 'tls', verdict: tls } };
+    } else if (l.chain) {
+      // https で待ち受けるポートに、暗号化せずに頼んだ
+      return { ok: true, url, response: respond({ status: 400, body: '<html><body><h1>400 Bad Request</h1><p>The plain HTTP request was sent to HTTPS port</p></body></html>' }, l.server) };
+    }
+    const route = url.path === '/' || url.path === '/index.html' ? { status: l.status ?? 200, body: l.body } : undefined;
+    return { ok: true, url, response: respond(route, l.server), ...(tls ? { tls } : {}) };
   }
   const named = env.sites.filter((s) => s.host === url.host);
   if (named.length === 0) return { ok: false, url, error: { kind: 'resolve', host: url.host } };

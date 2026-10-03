@@ -285,7 +285,22 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
     return { stdout: `${name} の負荷を ${String(percent)}% にしました\n`, patch: { cluster: { ...cluster, load } } };
   },
 
-  wait: ({ cluster, values, operands }) => {
+  wait: ({ cluster, values, operands, namespace }) => {
+    // 本物の形: kubectl wait --for=condition=available deployment/web（揃うまで時間を進める。揃わなければ打ち切る）
+    const cond = /^condition=available$/i.exec(values.get('for') ?? '');
+    const target = operands[0]?.replace(/^(deployment|deployments|deploy)(\.apps)?\//, '');
+    if (cond && target !== undefined) {
+      const id = key(namespace, target);
+      if (!cluster.deployments.has(id)) return notFound('deployments.apps', target);
+      let next = cluster;
+      const ready = (c: typeof cluster): boolean => {
+        const d = c.deployments.get(id);
+        return d !== undefined && d.status.readyReplicas >= d.spec.replicas && d.spec.replicas > 0;
+      };
+      for (let i = 0; i < 30 && !ready(next); i += 1) next = advanceCluster(next, tickPods);
+      if (!ready(next)) return { stderr: `error: timed out waiting for the condition on deployments/${target}\n`, code: 1, patch: { cluster: next } };
+      return { stdout: `deployment.apps/${target} condition met\n`, patch: { cluster: next } };
+    }
     const count = Number(values.get('for') ?? operands[0] ?? 5);
     let next = cluster;
     for (let i = 0; i < (Number.isFinite(count) ? count : 5); i += 1) {
