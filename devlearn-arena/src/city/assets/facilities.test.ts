@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { FACILITY_DEFS } from '../facilities';
+import { FACILITY_DEFS, LANDMARKS } from '../facilities';
+import { MONUMENT_IDS, monumentModel } from '../generate/facilities/monuments';
 import type { FacilityType } from '../types';
 import { CAR_COLORS, carModel, PERSON_COLORS, personModel } from '../generate/agents';
 import { facilityModel, MODELED_FACILITIES } from '../generate/facilityModels';
@@ -128,6 +129,41 @@ describe('車と人の SVG', () => {
       const svg = read(name);
       expect(svg).not.toMatch(/<image|href=|base64/);
       expect(svg).toMatch(/自作（本プロジェクト）。作成日 \d{4}-\d{2}-\d{2}/);
+    }
+  });
+});
+
+describe('記念碑の SVG（ミッションの報酬。docs/visual-design.md 6.1 の props）', () => {
+  const PROPS = join(__dirname, 'props');
+  const names = readdirSync(PROPS).sort();
+
+  it('content/facilities.json の記念碑の全て（3 種以上）に絵があり、余計な絵は無い', () => {
+    expect(LANDMARKS.length).toBeGreaterThanOrEqual(3);
+    expect(names).toEqual(LANDMARKS.map((l) => `monument-${l.id}.svg`).sort());
+    expect(MONUMENT_IDS.slice().sort()).toEqual(LANDMARKS.map((l) => l.id).sort());
+  });
+
+  it('模型から作り直した物と一致し、30KB 以内で viewBox と作成日を持ち、外部の画像を埋め込まない', () => {
+    for (const l of LANDMARKS) {
+      const svg = readFileSync(join(PROPS, `monument-${l.id}.svg`), 'utf8').replace(/\r\n/g, '\n');
+      const model = monumentModel(l.id);
+      if (!model) throw new Error(l.id);
+      const created = /作成日 (\d{4}-\d{2}-\d{2})/.exec(svg)?.[1] ?? '';
+      expect(svg).toBe(drawingToSvg(meshModel(model, 0), meshModel(model, 2), l.name, created, 'src/city/generate/facilities/monuments.ts'));
+      expect(svg.length).toBeLessThanOrEqual(30 * 1024);
+      expect(svg).toMatch(/viewBox="-?\d+ -?\d+ \d+ \d+"/);
+      expect(svg).not.toMatch(/<image|href=|base64/);
+    }
+  });
+
+  it('台座・銘板・像・植え込み・街灯を持ち、影を落とす（四角と三角だけの形にしない）', () => {
+    for (const id of MONUMENT_IDS) {
+      const model = monumentModel(id);
+      if (!model) throw new Error(id);
+      expect(model.shadowHeight, id).toBeGreaterThan(0);
+      // 共通の敷地（台座 2 段・銘板・植え込み 3・街灯 3 部品・ベンチ 2 部品・花壇 3）に、像の部品が加わる
+      expect(model.parts.length, id).toBeGreaterThan(16);
+      expect(Math.max(...model.parts.map((p) => p.max[2])), `${id} の高さ`).toBeGreaterThan(0.5);
     }
   });
 });

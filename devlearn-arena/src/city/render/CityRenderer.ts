@@ -14,7 +14,7 @@ import { buildScene, type SceneObject } from '../scene';
 import { MAP_SIZE, generateTerrain, type Terrain } from '../terrain';
 import type { City, Facility, FacilityType, Point, Road } from '../types';
 import { drawGround, prepareGround, toLayer, type GroundData, type LayerSpace } from './ground';
-import { agentSvg, allAgentSvgs, allFacilitySvgs, facilityAsset, facilitySvg, SpriteCache } from './sprites';
+import { agentSvg, allAgentSvgs, allFacilitySvgs, facilityAsset, SpriteCache } from './sprites';
 
 /**
  * 都市ビューの描画（Canvas 2D）。模型（src/city）を読んで描くだけで、書き換えない。
@@ -30,7 +30,7 @@ export interface Preview {
   /** 引こうとしている道路の形 */
   roads?: readonly Road[];
   /** 置こうとしている施設の姿 */
-  ghost?: { type: FacilityType; origin: Point; rotation: Facility['rotation'] };
+  ghost?: { type: FacilityType; origin: Point; rotation: Facility['rotation']; landmark?: string };
   ok: boolean;
 }
 
@@ -458,7 +458,7 @@ export class CityRenderer {
       const rot = ((obj.facing + this.camera.rotation) % 4) as Rotation;
       let sprite;
       if (obj.source.kind === 'facility') {
-        const asset = facilityAsset(obj.source.type, obj.source.level);
+        const asset = facilityAsset(obj.source.type, obj.source.level, obj.source.landmark);
         sprite = asset ? this.sprites.facility(asset.key, asset.svg, rot, this.camera.zoom) : null;
       } else {
         sprite = this.sprites.model(obj.source.key, obj.source.model, rot, this.camera.zoom);
@@ -745,9 +745,9 @@ export class CityRenderer {
       ctx.fill();
     }
     if (p.ghost && p.ok) {
-      const svg = facilitySvg(p.ghost.type, 1);
+      const asset = facilityAsset(p.ghost.type, 1, p.ghost.landmark);
       const rot = ((p.ghost.rotation / 90 + this.camera.rotation) % 4) as Rotation;
-      const sprite = svg ? this.sprites.facility(`${p.ghost.type}:1`, svg, rot, this.camera.zoom) : null;
+      const sprite = asset ? this.sprites.facility(asset.key, asset.svg, rot, this.camera.zoom) : null;
       if (sprite) {
         const cells = p.cells;
         const cx = cells.reduce((a, c) => a + c.x + 0.5, 0) / Math.max(1, cells.length);

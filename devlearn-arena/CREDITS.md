@@ -21,4 +21,5 @@
 |---|---|---|---|---|
 | 施設・建物・アイコン・図 | 本プロジェクト | 自作 | — | 全体 |
 | 施設の Lv1〜Lv5（15 施設 × 5 枚）と公園の類 | 本プロジェクト | 自作（`src/city/generate/facilityModels.ts` から生成） | — | 都市の施設（`src/city/assets/facilities/`） |
+| 記念碑（6 種。ミッションの報酬） | 本プロジェクト | 自作（`src/city/generate/facilities/monuments.ts` から生成） | — | 都市の記念碑（`src/city/assets/props/`） |
 | 施設の中の景色（15 枚） | 本プロジェクト | 自作（`src/city/generate/interiors.ts` から生成） | — | レッスン画面の背景（`src/screens/lesson/backdrops/`） |

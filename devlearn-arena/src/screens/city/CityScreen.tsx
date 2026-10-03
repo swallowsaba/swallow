@@ -14,6 +14,7 @@ import { InfoPanel } from './InfoPanel';
 import { panelModel } from './infoPanelModel';
 import { OverlayToggle, type OverlayLegend } from './OverlayToggle';
 import { RecommendPanel } from './RecommendPanel';
+import { unplacedLandmarks } from '@/learning/missions';
 import type { DomainId } from '@/city/types';
 import type { CityStore } from './cityStore';
 import type { Session } from '../session';
@@ -54,6 +55,9 @@ export function CityScreen({ session, active = true, current, onEntry, onLesson,
     openMenu: s.openMenu, setTool: s.setTool, selected: s.selected, overlay: s.overlay, setOverlay: s.setOverlay, select: s.select,
     techPower: s.city.techPower,
   })));
+  // 受け取ったが、まだ置いていない記念碑（建設メニューの公園の引き出しに並ぶ）
+  const facilities = useStore(store, (s) => s.city.facilities);
+  const landmarks = useMemo(() => unplacedLandmarks(progress, facilities), [progress, facilities]);
   // 情報パネルは、選んだ物の状態が変わった時だけ作り直す
   const panelKey = useStore(store, (s) => (s.selected ? panelKeyOf(s) : ''));
   const panel = useMemo(() => {
@@ -186,7 +190,7 @@ export function CityScreen({ session, active = true, current, onEntry, onLesson,
             }}
             {...(onLesson ? { onLesson } : {})} {...(onLibrary ? { onLibrary } : {})} />
           <OverlayToggle value={state.overlay} onChange={state.setOverlay} legend={state.menu === null && state.overlay ? legendOf(state.overlay, store) : null} />
-          <BuildMenu state={state} />
+          <BuildMenu state={state} landmarks={landmarks} />
           <PlacementHint hint={state.confirm ? null : state.hint} />
           <DemolishConfirm target={state.confirm} onYes={onYes} onNo={onNo} />
         </>

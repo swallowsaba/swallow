@@ -1,10 +1,11 @@
 /**
- * 施設と、車・人と、施設の中の景色の SVG を、模型（src/city/generate/facilityModels.ts・agents.ts・interiors.ts）から作り直す。
+ * 施設と、記念碑と、車・人と、施設の中の景色の SVG を、模型（src/city/generate/facilityModels.ts・facilities/monuments.ts・agents.ts・interiors.ts）から作り直す。
  *   npx vite-node tools/build-facility-svgs.mts
- * 作った SVG は src/city/assets/facilities/<施設>/lv<N>.svg と src/screens/lesson/backdrops/<施設>.svg に置く（docs/visual-design.md 6.1）。
+ * 作った SVG は src/city/assets/facilities/<施設>/lv<N>.svg・src/city/assets/props/monument-<ID>.svg・src/screens/lesson/backdrops/<施設>.svg に置く（docs/visual-design.md 6.1）。
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { FACILITY_DEFS } from '../src/city/facilities';
+import { FACILITY_DEFS, landmarkOf } from '../src/city/facilities';
+import { MONUMENT_IDS, monumentModel } from '../src/city/generate/facilities/monuments';
 import { CAR_COLORS, carModel, PERSON_COLORS, personModel } from '../src/city/generate/agents';
 import { facilityModel, MODELED_FACILITIES } from '../src/city/generate/facilityModels';
 import { INTERIOR_FACILITIES, interiorModel } from '../src/city/generate/interiors';
@@ -36,6 +37,18 @@ for (const type of MODELED_FACILITIES) {
     writeFileSync(file, svg);
     console.log(`${file} ${String(Math.round(svg.length / 102.4) / 10)}KB`);
   }
+}
+
+// 記念碑（ミッションの報酬。docs/visual-design.md 6.1 の props）
+const props = 'src/city/assets/props';
+mkdirSync(props, { recursive: true });
+for (const id of MONUMENT_IDS) {
+  const model = monumentModel(id);
+  if (!model) continue;
+  const file = `${props}/monument-${id}.svg`;
+  const svg = createdFor(file, (created) => drawingToSvg(meshModel(model, 0), meshModel(model, 2), landmarkOf(id)?.name ?? id, created, 'src/city/generate/facilities/monuments.ts'));
+  writeFileSync(file, svg);
+  console.log(`${file} ${String(Math.round(svg.length / 102.4) / 10)}KB`);
 }
 
 // 車 5 色・人 4 種（docs/visual-design.md 6.1）

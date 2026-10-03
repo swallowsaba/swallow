@@ -1,4 +1,4 @@
-import { FACILITY_DEFS, footprintOf } from '@/city/facilities';
+import { FACILITY_DEFS, footprintOf, landmarkOf } from '@/city/facilities';
 import {
   checkFacility, checkRoad, checkZone, demolishTargetAt, placeFacility, placeRoad, placeZone, type PlanCheck,
 } from '@/city/place';
@@ -80,8 +80,10 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
       const size = footprintOf(tool.type, rotation);
       const origin = { x: cell.x - Math.floor((size.w - 1) / 2), y: cell.y - Math.floor((size.d - 1) / 2) };
       const check = checkFacility(city, terrain, tool.type, origin, rotation);
-      show(check, `${FACILITY_DEFS[tool.type].name}（R で回す）`, { cells: check.cells, ghost: { type: tool.type, origin, rotation }, ok: check.ok });
-      return { apply: check.ok ? () => placeFacility(store.getState().city, tool.type, origin, rotation, check) : null };
+      const name = tool.landmark ? (landmarkOf(tool.landmark)?.name ?? FACILITY_DEFS[tool.type].name) : FACILITY_DEFS[tool.type].name;
+      const ghost = { type: tool.type, origin, rotation, ...(tool.landmark ? { landmark: tool.landmark } : {}) };
+      show(check, `${name}（R で回す）`, { cells: check.cells, ghost, ok: check.ok });
+      return { apply: check.ok ? () => placeFacility(store.getState().city, tool.type, origin, rotation, check, tool.landmark) : null };
     }
 
     // 取り壊し
@@ -189,7 +191,14 @@ export function attachBuildControls(canvas: HTMLCanvasElement, renderer: CityRen
       return;
     }
     const { apply } = evaluate();
-    if (apply) store.getState().setCity(apply());
+    if (apply) {
+      store.getState().setCity(apply());
+      // 記念碑は 1 つずつ。置いたら道具を外す
+      if (tool.kind === 'facility' && tool.landmark) {
+        store.getState().notify(`${landmarkOf(tool.landmark)?.name ?? '記念碑'}を置いた。${landmarkOf(tool.landmark)?.about ?? ''}`, performance.now());
+        store.getState().setTool({ kind: 'none' });
+      }
+    }
     drag = null;
     evaluate();
   };

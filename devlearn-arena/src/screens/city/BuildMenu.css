@@ -60,6 +60,24 @@
 .build-group.is-demolish:not(.is-selected) {
   color: var(--hud-text-sub);
 }
+.build-group {
+  position: relative;
+}
+/* 置ける記念碑の数（ミッションの報酬） */
+.build-badge {
+  position: absolute;
+  top: 6px;
+  right: 22px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--gold);
+  color: var(--navy);
+  font-size: var(--fs-12);
+  line-height: 18px;
+  text-align: center;
+}
 
 /* 引き出し */
 .build-drawer {

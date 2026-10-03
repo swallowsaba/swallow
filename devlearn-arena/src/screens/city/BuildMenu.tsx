@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { STAGE_NAMES } from '@/game/stage';
-import { FACILITY_DEFS, FACILITY_ORDER, SHELF_NAMES, type FacilityShelf } from '@/city/facilities';
+import { FACILITY_DEFS, FACILITY_ORDER, landmarkOf, SHELF_NAMES, type FacilityShelf } from '@/city/facilities';
 import { svgView } from '@/city/generate/svg';
-import { facilitySvg } from '@/city/render/sprites';
+import { facilitySvg, monumentAsset } from '@/city/render/sprites';
 import { ROAD_RULES, ZONE_RULES, type BuildRoadKind } from '@/city/rules';
 import type { FacilityType, ZoneKind } from '@/city/types';
 import { Icon, type IconName } from '@/ui/icons/Icon';
@@ -12,6 +12,7 @@ import './BuildMenu.css';
 /**
  * 建設メニュー（docs/ui-design.md 3 章: 下中央、高さ 72。選ぶと上に種類の引き出し）。
  * 道路・区画・施設・公園・取り壊し。
+ * ミッションで受け取った記念碑は、公園の引き出しに「受け取った報酬」として並び、費用なしで置ける（docs/city-design.md 4 章）。
  */
 
 const GROUPS: { id: MenuGroup; label: string; icon: IconName }[] = [
@@ -29,7 +30,10 @@ const format = (n: number): string => n.toLocaleString('ja-JP');
 
 /** 施設の SVG の正面の姿を、画像の URL にする（引き出しの見本） */
 function thumbnail(type: FacilityType): string | null {
-  const svg = facilitySvg(type, 1);
+  return imageOf(facilitySvg(type, 1));
+}
+
+function imageOf(svg: string | null | undefined): string | null {
   return svg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgView(svg, 'front').svg)}` : null;
 }
 
@@ -72,7 +76,11 @@ function lockOf(stage: number, minStage: 1 | 2 | 3 | 4 | 5): string | null {
   return stage < minStage ? `「${STAGE_NAMES[minStage]}」になると作れる` : null;
 }
 
-export function BuildMenu({ state }: { state: Pick<CityGameState, 'menu' | 'tool' | 'openMenu' | 'setTool'> & { stage: number } }) {
+export function BuildMenu({ state, landmarks = [] }: {
+  state: Pick<CityGameState, 'menu' | 'tool' | 'openMenu' | 'setTool'> & { stage: number };
+  /** 受け取ったが、まだ置いていない記念碑（ミッションの報酬） */
+  landmarks?: readonly string[];
+}) {
   const { stage, menu, tool, openMenu, setTool } = state;
   const thumbs = useMemo(() => new Map(FACILITY_ORDER.map((t) => [t, thumbnail(t)])), []);
   const [shelf, setShelf] = useState<FacilityShelf>('base');
@@ -165,6 +173,19 @@ export function BuildMenu({ state }: { state: Pick<CityGameState, 'menu' | 'tool
             onPick={() => setTool({ kind: 'facility', type })}
           />
         ))}
+        {menu === 'park' ? landmarks.map((id) => (
+          <Item
+            key={id}
+            testId={`build-monument-${id}`}
+            label={landmarkOf(id)?.name ?? '記念碑'}
+            cost="報酬"
+            selected={isTool({ kind: 'facility', type: 'monument', landmark: id })}
+            locked={null}
+            image={imageOf(monumentAsset(id)?.svg)}
+            onPick={() => setTool({ kind: 'facility', type: 'monument', landmark: id })}
+          />
+        )) : null}
+        {menu === 'park' && landmarks.length > 0 ? <p className="build-note">ミッションの報酬の記念碑は、費用なしで置ける</p> : null}
       </>
     );
   }
@@ -189,6 +210,7 @@ export function BuildMenu({ state }: { state: Pick<CityGameState, 'menu' | 'tool
           >
             <Icon name={g.icon} size={24} />
             <span>{g.label}</span>
+            {g.id === 'park' && landmarks.length > 0 ? <span className="build-badge num" data-testid="build-badge-park" title="置ける記念碑がある">{landmarks.length}</span> : null}
           </button>
         ))}
       </nav>

@@ -30,7 +30,8 @@ export interface SceneObject {
   height: number;
   /** 建物自身の向き（0〜3。正面 +y を基準に 90 度ずつ） */
   facing: Rotation;
-  source: { kind: 'model'; key: string; model: () => Model } | { kind: 'facility'; type: FacilityType; level: number };
+  /** 施設の絵。記念碑は landmark（どの記念碑か）で絵が決まる */
+  source: { kind: 'model'; key: string; model: () => Model } | { kind: 'facility'; type: FacilityType; level: number; landmark?: string };
   /** 選べる物（施設と区画の建物）。木や街灯には無い */
   select?: { kind: 'facility' | 'building'; id: string };
 }
@@ -66,7 +67,7 @@ export function buildScene(cityState: City, terrain: Terrain): SceneObject[] {
     const stage = f.state === 'active' ? 'done' : constructionStage(f.builtDay, cityState.day);
     const box = { id: f.id, x: f.origin.x, y: f.origin.y, w: size.w, d: size.d, z: 0, height: facilityHeight(f.type), facing: (f.rotation / 90) as Rotation, select: { kind: 'facility' as const, id: f.id } };
     if (stage === 'done') {
-      out.push({ ...box, source: { kind: 'facility', type: f.type, level: f.level } });
+      out.push({ ...box, source: { kind: 'facility', type: f.type, level: f.level, ...(f.landmark ? { landmark: f.landmark } : {}) } });
     } else {
       const def = FACILITY_DEFS[f.type];
       const h = def.group === 'facility' ? Math.min(1.2, facilityHeight(f.type) * 0.6) : 0.15;

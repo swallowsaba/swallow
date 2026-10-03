@@ -22,7 +22,8 @@ export type Tool =
   | { kind: 'none' }
   | { kind: 'road'; road: BuildRoadKind; shape: 'straight' | 'curve' }
   | { kind: 'zone'; zone: ZoneKind }
-  | { kind: 'facility'; type: FacilityType }
+  /** 施設・公園を置く。記念碑は、受け取った記念碑のどれか（landmark）を置く */
+  | { kind: 'facility'; type: FacilityType; landmark?: string }
   | { kind: 'demolish' };
 
 export type MenuGroup = 'road' | 'zone' | 'facility' | 'park' | 'demolish';

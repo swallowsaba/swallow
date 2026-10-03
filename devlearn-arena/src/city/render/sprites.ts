@@ -37,11 +37,21 @@ export function drawOps(ctx: CanvasRenderingContext2D, ops: readonly DrawOp[]): 
 // 施設の SVG（src/city/assets/facilities/<施設>/lv<N>.svg）
 const SVG_FILES = import.meta.glob('../assets/facilities/*/lv*.svg', { query: '?raw', import: 'default', eager: true });
 
+// 記念碑の SVG（src/city/assets/props/monument-<ID>.svg。ミッションの報酬）
+const PROP_FILES = import.meta.glob('../assets/props/*.svg', { query: '?raw', import: 'default', eager: true });
+
+/** 記念碑の絵。key は読み込みの準備 allFacilitySvgs と同じ名前 */
+export function monumentAsset(landmark: string): { key: string; svg: string } | null {
+  const text = PROP_FILES[`../assets/props/monument-${landmark}.svg`];
+  return typeof text === 'string' ? { key: `monument:${landmark}`, svg: text } : null;
+}
+
 /**
- * 施設のそのレベルの絵。そのレベルの SVG が無ければ、下のレベルの絵を使う。
+ * 施設のそのレベルの絵。そのレベルの SVG が無ければ、下のレベルの絵を使う。記念碑は、どの記念碑かで絵が決まる。
  * key は実際に使う SVG のもの（読み込みの準備 allFacilitySvgs と同じ名前）
  */
-export function facilityAsset(type: FacilityType, level: number): { key: string; svg: string } | null {
+export function facilityAsset(type: FacilityType, level: number, landmark?: string): { key: string; svg: string } | null {
+  if (type === 'monument') return landmark ? monumentAsset(landmark) : null;
   for (let lv = level; lv >= 1; lv -= 1) {
     const text = SVG_FILES[`../assets/facilities/${type}/lv${String(lv)}.svg`];
     if (typeof text === 'string') return { key: `${type}:${String(lv)}`, svg: text };
@@ -70,12 +80,16 @@ export function allAgentSvgs(): { key: string; svg: string }[] {
   return out;
 }
 
-/** 全ての施設の SVG（読み込みの準備に使う） */
+/** 全ての施設と記念碑の SVG（読み込みの準備に使う） */
 export function allFacilitySvgs(): { key: string; svg: string }[] {
   const out: { key: string; svg: string }[] = [];
   for (const [path, text] of Object.entries(SVG_FILES)) {
     const m = /facilities\/([a-z]+)\/lv(\d)\.svg$/.exec(path);
     if (m && typeof text === 'string') out.push({ key: `${m[1] as string}:${m[2] as string}`, svg: text });
+  }
+  for (const [path, text] of Object.entries(PROP_FILES)) {
+    const m = /props\/monument-([a-z0-9-]+)\.svg$/.exec(path);
+    if (m && typeof text === 'string') out.push({ key: `monument:${m[1] as string}`, svg: text });
   }
   return out;
 }

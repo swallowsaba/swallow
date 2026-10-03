@@ -2,6 +2,7 @@
 // 施設の SVG の一覧を 1 枚に撮る（docs/testing-strategy.md 6 章の画面の確認。素材の見た目を並べて確かめる）。
 //
 //   node tools/facility-sheet.mjs [名前] [拡大率] [施設の名前の正規表現]
+//   SHEET_DIR=src/city/assets/props node tools/facility-sheet.mjs monuments 2.4   （記念碑など、1 つの場所に並んだ SVG）
 //
 // src/city/assets/facilities/*/lv*.svg の正面と裏の姿を並べ、shots/<名前>.png に保存する。
 import { chromium } from 'playwright';
@@ -9,7 +10,7 @@ import { mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const [name = 'facility-sheet', scale = '1.6', only = '.'] = process.argv.slice(2);
-const DIR = 'src/city/assets/facilities';
+const DIR = process.env.SHEET_DIR ?? 'src/city/assets/facilities';
 
 function view(svg, which) {
   const style = /<style>[\s\S]*?<\/style>/.exec(svg)?.[0] ?? '';
@@ -23,8 +24,11 @@ function view(svg, which) {
 }
 
 const cells = [];
-for (const type of readdirSync(DIR).sort().filter((t) => new RegExp(only).test(t))) {
-  for (const file of readdirSync(join(DIR, type)).sort()) {
+const flat = readdirSync(DIR).some((f) => f.endsWith('.svg'));
+const groups = flat ? [''] : readdirSync(DIR).sort().filter((t) => new RegExp(only).test(t));
+for (const type of groups) {
+  const files = readdirSync(join(DIR, type)).sort().filter((f) => f.endsWith('.svg') && (!flat || new RegExp(only).test(f)));
+  for (const file of files) {
     const svg = readFileSync(join(DIR, type, file), 'utf8');
     const title = /<title>(.*?)<\/title>/.exec(svg)?.[1] ?? type;
     const imgs = ['front', 'back'].map((w) => {
