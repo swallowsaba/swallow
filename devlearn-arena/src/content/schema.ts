@@ -188,7 +188,7 @@ export const missionSchema = z.object({
   domains: z.array(domainId).min(1),
   recommended: z.array(lessonId),
   practice: practiceSchema,
-  rewards: z.object({ xp: z.number().int(), funds: z.number().int(), unlocks: z.array(z.string()).optional(), landmark: z.string().optional() }).strict(),
+  rewards: z.object({ xp: z.number().int(), funds: z.number().int(), landmark: z.string().optional() }).strict(),
 }).strict();
 
 export type DomainId = z.infer<typeof domainId>;
