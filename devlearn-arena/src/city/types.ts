@@ -55,6 +55,8 @@ export interface Facility {
   level: 1 | 2 | 3 | 4 | 5;
   state: 'constructing' | 'active';
   builtDay: number;
+  /** 記念碑のとき、どの記念碑か（ミッションの報酬。content/facilities.json の landmarks の ID） */
+  landmark?: string;
 }
 
 export interface City {

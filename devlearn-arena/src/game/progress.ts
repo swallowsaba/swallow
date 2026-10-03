@@ -157,6 +157,36 @@ export function answerReview(progress: Progress, a: { cardId: string; correct: b
   return finish(progress, p, [{ at, source: 'review', ref: card.id, amount }], domain ? [domain] : [], 0, at, catalog);
 }
 
+/** ミッションを受ける（受けられる → 挑戦中）。受けるのに前提は要らない（docs/game-design.md 8 章）。達成済みなら何もしない */
+export function startMission(progress: Progress, missionId: string): Progress {
+  const cur = progress.missions[missionId];
+  if (cur?.status === 'completed' || cur?.status === 'in-progress') return progress;
+  return { ...progress, missions: { ...progress.missions, [missionId]: { ...cur, missionId, status: 'in-progress' } } };
+}
+
+/**
+ * ミッションの実戦を 1 回終える（成功でも未達でも記録する）。初めて成功したら達成し、報酬の XP と開発資金を得る。
+ * 達成した後にもう一度成功しても、報酬は無い（稼ぎ防止）
+ */
+export function finishMission(
+  progress: Progress,
+  a: { missionId: string; attempt: PracticeAttempt; xp: number; funds: number },
+  at: string,
+  catalog: readonly LessonMeta[],
+): Outcome {
+  const cur = progress.missions[a.missionId];
+  const attempt: PracticeAttempt = { ...a.attempt, at };
+  const recorded: Progress = {
+    ...progress,
+    missions: {
+      ...progress.missions,
+      [a.missionId]: { ...cur, missionId: a.missionId, status: cur?.status === 'completed' ? 'completed' : 'in-progress', practice: [...(cur?.practice ?? []), attempt] },
+    },
+  };
+  if (!attempt.success || cur?.status === 'completed') return { progress: recorded, events: [], funds: 0, skillUps: [] };
+  return completeMission(recorded, { missionId: a.missionId, xp: a.xp, funds: a.funds }, at, catalog);
+}
+
 /** ミッションを達成する（XP と、報酬の開発資金） */
 export function completeMission(progress: Progress, a: { missionId: string; xp: number; funds?: number }, at: string, catalog: readonly LessonMeta[]): Outcome {
   if (progress.missions[a.missionId]?.status === 'completed') return { progress, events: [], funds: 0, skillUps: [] };

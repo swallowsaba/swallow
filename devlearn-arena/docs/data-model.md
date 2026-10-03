@@ -121,6 +121,7 @@ interface Facility {
   level: 1 | 2 | 3 | 4 | 5;
   state: 'constructing' | 'active';
   builtDay: number;
+  landmark?: string;             // 記念碑のとき、どの記念碑か（ミッションの報酬 rewards.landmark。docs/content-spec.md 4 章）
 }
 type Point = { x: number; y: number };
 type Rect = { x: number; y: number; w: number; h: number };

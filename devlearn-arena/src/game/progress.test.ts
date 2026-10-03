@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LESSONS } from './lessons';
-import { addDays, answerReview, completeLesson, emptyProgress, enterLesson, finishPractice, reachStage, startLesson, XP_LOG_LIMIT } from './progress';
+import { addDays, answerReview, completeLesson, emptyProgress, enterLesson, finishMission, finishPractice, reachStage, startLesson, startMission, XP_LOG_LIMIT } from './progress';
 import { rankOf } from './rank';
 import { applyRecords, type LearningRecord } from './records';
 import { skillOf } from './skill';
@@ -239,5 +239,38 @@ describe('段を進めた記録（途中保存）', () => {
   it('学習中でないレッスンは変えない', () => {
     const p = emptyProgress();
     expect(reachStage(p, 'linux.i.01', 'quiz')).toBe(p);
+  });
+});
+
+describe('ミッションを受けて実戦を終える（docs/game-design.md 8 章）', () => {
+  const attempt = (success: boolean) => ({ at: '', stepsDone: [], hintsUsed: success ? 0 : 1, errors: [], recoveredFromError: false, dangerousUsed: [], success, commands: [] });
+
+  it('前提なしで受けられ、挑戦中になる。達成済みのミッションは受け直しても達成済みのまま', () => {
+    const p = startMission(emptyProgress(), 'web-server');
+    expect(p.missions['web-server']?.status).toBe('in-progress');
+    const done = finishMission(p, { missionId: 'web-server', attempt: attempt(true), xp: 150, funds: 400 }, DAY1, catalog).progress;
+    expect(startMission(done, 'web-server').missions['web-server']?.status).toBe('completed');
+  });
+
+  it('未達でも実戦の記録は残り、報酬は無い。初めて成功すると達成し、XP と、XP と同じ量 + 報酬の資金が入る', () => {
+    const p = startMission(emptyProgress(), 'web-server');
+    const miss = finishMission(p, { missionId: 'web-server', attempt: attempt(false), xp: 150, funds: 400 }, DAY1, catalog);
+    expect(miss.events).toEqual([]);
+    expect(miss.funds).toBe(0);
+    expect(miss.progress.missions['web-server']).toMatchObject({ status: 'in-progress', practice: [{ success: false, at: DAY1 }] });
+    const hit = finishMission(miss.progress, { missionId: 'web-server', attempt: attempt(true), xp: 150, funds: 400 }, DAY1_LATER, catalog);
+    expect(hit.events).toEqual([{ at: DAY1_LATER, source: 'mission', ref: 'web-server', amount: 150 }]);
+    expect(hit.funds).toBe(150 + 400);
+    expect(hit.progress.xp).toBe(150);
+    expect(hit.progress.missions['web-server']).toMatchObject({ status: 'completed', completedAt: DAY1_LATER });
+    expect(hit.progress.missions['web-server']?.practice).toHaveLength(2);
+  });
+
+  it('達成した後にもう一度成功しても、報酬は無い（稼ぎ防止）', () => {
+    const done = finishMission(emptyProgress(), { missionId: 'git-history', attempt: attempt(true), xp: 150, funds: 450 }, DAY1, catalog).progress;
+    const again = finishMission(done, { missionId: 'git-history', attempt: attempt(true), xp: 150, funds: 450 }, DAY2, catalog);
+    expect(again.events).toEqual([]);
+    expect(again.funds).toBe(0);
+    expect(again.progress.xp).toBe(150);
   });
 });

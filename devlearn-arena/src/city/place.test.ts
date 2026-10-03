@@ -159,6 +159,16 @@ describe('施設と公園を置く', () => {
     expect(after.funds).toBe(base.funds - FACILITY_DEFS.server.cost);
   });
 
+  it('記念碑（ミッションの報酬）は費用 0 で、どの記念碑かを持って置かれる', () => {
+    const check = checkFacility(base, terrain, 'monument', { x: 40, y: 46 }, 0);
+    expect(check).toMatchObject({ ok: true, cost: 0 });
+    const after = placeFacility(base, 'monument', { x: 40, y: 46 }, 0, check, 'beacon');
+    expect(after.facilities[0]).toMatchObject({ type: 'monument', landmark: 'beacon' });
+    expect(after.funds).toBe(base.funds);
+    // 記念碑でない物には付かない
+    expect(placeFacility(base, 'park', { x: 40, y: 45 }, 0, checkFacility(base, terrain, 'park', { x: 40, y: 45 }, 0), 'beacon').facilities[0]?.landmark).toBeUndefined();
+  });
+
   it('初めの資金 1,500 は、細い道 2 本と区画 30 マス（約 550）の後に施設 2 つまで。3 つ目からは学習が要る（docs/game-design.md 2 章）', () => {
     expect(base.funds).toBe(1500);
     let city: City = { ...base, funds: base.funds - 400 - 150 };

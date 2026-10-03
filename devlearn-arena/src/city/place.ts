@@ -234,14 +234,18 @@ export function placeZone(city: City, kind: ZoneKind, check: ZoneCheck): City {
   return { ...city, zones, buildings, funds: city.funds - check.cost };
 }
 
-/** 判定に通った施設・公園を置き、費用を開発資金から引く。建設から始まる（基礎 → 骨組み → 完成） */
-export function placeFacility(city: City, type: FacilityType, origin: Point, rotation: Facility['rotation'], check: PlanCheck): City {
+/**
+ * 判定に通った施設・公園を置き、費用を開発資金から引く。建設から始まる（基礎 → 骨組み → 完成）。
+ * 記念碑は、どの記念碑か（landmark）を持つ
+ */
+export function placeFacility(city: City, type: FacilityType, origin: Point, rotation: Facility['rotation'], check: PlanCheck, landmark?: string): City {
   if (!check.ok) return city;
   const def = FACILITY_DEFS[type];
   const facility: Facility = {
     id: nextId('f', city.facilities.map((f) => f.id)),
     type,
     ...(def.domain ? { domain: def.domain } : {}),
+    ...(type === 'monument' && landmark ? { landmark } : {}),
     origin: { ...origin },
     rotation,
     level: 1,
