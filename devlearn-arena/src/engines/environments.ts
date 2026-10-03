@@ -24,6 +24,8 @@ const serviceSetup = z.object({
   broken: z.string().optional(),
   port: z.number().int().optional(),
   body: z.string().optional(),
+  /** HTTP で応える状態の番号（無ければ 200） */
+  status: z.number().int().min(100).max(599).optional(),
   /** 設定ファイルの場所（nginx 風。動かす時に読み、待ち受けるポートと証明書が決まる。src/engines/kernel/webConfig.ts） */
   config: z.string().startsWith('/').optional(),
 }).strict();
@@ -90,6 +92,8 @@ export const ENVIRONMENTS = {
   'container-host': { name: 'コンテナの動く機械', shell: true, defaults: { user: 'learner', hostname: 'docker-host', cwd: '/home/learner', dirs: ['/home/learner'], images: [] } },
   /** Web のサイトに手元から取りに行く（curl・証明書） */
   'web-client': { name: 'Web を確かめる機械', shell: true, defaults: { user: 'learner', hostname: 'client', cwd: '/home/learner', dirs: ['/home/learner'], sites: [] } },
+  /** Kubernetes のクラスタ（Node 2 台）を kubectl で操作する機械 */
+  'k8s-cluster': { name: 'クラスタを操作する機械', shell: true, defaults: { user: 'learner', hostname: 'console', cwd: '/home/learner', dirs: ['/home/learner'], cluster: { nodes: 2 } } },
   /** ブラウザ内の SQLite（SQL の実戦） */
   'sql-sqlite': { name: 'ブラウザ内の DB', shell: false, defaults: { sql: '' } },
 } as const satisfies Record<string, EnvironmentDef>;
@@ -136,6 +140,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       ...(v.broken !== undefined ? { broken: v.broken } : {}),
       ...(v.port !== undefined ? { port: v.port } : {}),
       ...(v.body !== undefined ? { body: v.body } : {}),
+      ...(v.status !== undefined ? { status: v.status } : {}),
       ...(v.config !== undefined ? { config: v.config } : {}),
     })));
   }

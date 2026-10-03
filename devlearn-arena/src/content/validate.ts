@@ -1,7 +1,7 @@
 import { isEnvironmentId, resolveSetup } from '@/engines/environments';
 import { replayAnswers } from '@/learning/practice';
 import { parseRich, termsIn } from './rich';
-import type { CatalogEntry, Lesson, Term } from './schema';
+import type { CatalogEntry, ErrorGuide, Lesson, Mission, Practice, Term } from './schema';
 
 /**
  * コンテンツの検証（docs/content-spec.md 6 章）。純粋な関数で、見つけた問題を文で返す（無ければ空）。
@@ -12,6 +12,8 @@ export interface ValidateContext {
   catalog: ReadonlyMap<string, CatalogEntry>;
   terms: ReadonlyMap<string, Term>;
   errors: ReadonlySet<string>;
+  /** エラーの解説（答えの途中で出てよい想定エラーを見分ける） */
+  guides?: readonly ErrorGuide[];
   /** 図の ID → SVG の文字列 */
   figures: ReadonlyMap<string, string>;
   /** docs/lessons/ の設計の見出しにある ID */
@@ -119,24 +121,68 @@ export function validateLesson(l: Lesson, ctx: ValidateContext): string[] {
   }
 
   // 実戦
-  for (const s of l.practice.steps) for (const e of s.expectedErrors ?? []) if (!ctx.errors.has(e)) p.push(`実戦 ${s.id}: エラーの解説 ${e} が無い（content/errors）`);
-  if (new Set(l.practice.steps.map((s) => s.id)).size !== l.practice.steps.length) p.push('実戦の手順の ID が重なる');
-  if (!isEnvironmentId(l.practice.environment)) p.push(`実戦: 模擬環境 ${l.practice.environment} が無い（src/engines/environments.ts）`);
-  else {
-    try {
-      resolveSetup(l.practice.environment, l.practice.setup);
-      // 全実戦の最後のヒントを模擬環境で実行すると、達成条件を満たす
-      p.push(...replayAnswers(l.practice));
-    } catch (e) {
-      p.push(`実戦: 初期状態（setup）の形が違う: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  }
+  p.push(...practiceProblems(l.practice, ctx));
 
   // 用語: 印は用語集にあり、レッスンの terms に載せる。用語集の語は初出で印を付ける。大文字の英字の語は用語集に載せる
   const rich = richInOrder(l);
   const marked = new Set(rich.flatMap((r) => termsIn(r.text)));
   for (const id of [...marked, ...l.terms, ...l.summary.terms]) if (!ctx.terms.has(id)) p.push(`用語集に無い用語 ${id}`);
   for (const id of marked) if (!l.terms.includes(id)) p.push(`本文の用語 ${id} が terms に無い`);
+  p.push(...firstUseProblems(rich, ctx.terms));
+  return p;
+}
+
+/** 実戦の規則: 想定エラーの解説がある・手順の ID が重ならない・模擬環境と初期状態が正しい・最後のヒントで通る */
+function practiceProblems(practice: Practice, ctx: Pick<ValidateContext, 'errors' | 'guides'>): string[] {
+  const p: string[] = [];
+  for (const s of practice.steps) for (const e of s.expectedErrors ?? []) if (!ctx.errors.has(e)) p.push(`実戦 ${s.id}: エラーの解説 ${e} が無い（content/errors）`);
+  if (new Set(practice.steps.map((s) => s.id)).size !== practice.steps.length) p.push('実戦の手順の ID が重なる');
+  if (!isEnvironmentId(practice.environment)) p.push(`実戦: 模擬環境 ${practice.environment} が無い（src/engines/environments.ts）`);
+  else {
+    try {
+      resolveSetup(practice.environment, practice.setup);
+      // 全実戦の最後のヒントを模擬環境で実行すると、達成条件を満たす
+      p.push(...replayAnswers(practice, ctx.guides));
+    } catch (e) {
+      p.push(`実戦: 初期状態（setup）の形が違う: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  return p;
+}
+
+/** ミッションの本文を、画面に出る順に並べる */
+export function missionRichInOrder(m: Mission): { where: string; text: string }[] {
+  const out: { where: string; text: string }[] = [{ where: '都市の課題', text: m.story }];
+  m.knowledge.forEach((k, i) => out.push({ where: `必要な知識${String(i + 1)}`, text: k }));
+  out.push({ where: '実戦.目的', text: m.practice.purpose });
+  for (const s of m.practice.steps) {
+    const w = `実戦 ${s.id}`;
+    out.push({ where: w, text: s.purpose });
+    s.hints.forEach((h) => out.push({ where: w, text: h }));
+    out.push({ where: w, text: s.afterward });
+  }
+  return out;
+}
+
+export interface MissionContext extends Pick<ValidateContext, 'catalog' | 'terms' | 'errors' | 'guides'> {
+  /** 記念碑の ID（content/facilities.json の landmarks） */
+  landmarks: ReadonlySet<string>;
+}
+
+/**
+ * ミッションの規則（docs/content-spec.md 4・6 章、docs/game-design.md 8 章）:
+ * 複数の分野が重ならない・おすすめのレッスンが目録にある・用語の規則・実戦の規則・報酬の XP は 100〜400・記念碑がある
+ */
+export function validateMission(m: Mission, ctx: MissionContext): string[] {
+  const p: string[] = [];
+  if (new Set(m.domains).size !== m.domains.length) p.push('関係する分野が重なる');
+  for (const id of m.recommended) if (!ctx.catalog.has(id)) p.push(`おすすめのレッスン ${id} が目録に無い`);
+  if (m.rewards.xp < 100 || m.rewards.xp > 400) p.push(`報酬の XP ${String(m.rewards.xp)} が 100〜400 の外`);
+  if (m.rewards.funds <= 0) p.push('報酬の開発資金が無い');
+  if (m.rewards.landmark !== undefined && !ctx.landmarks.has(m.rewards.landmark)) p.push(`記念碑 ${m.rewards.landmark} が無い（content/facilities.json の landmarks）`);
+  p.push(...practiceProblems(m.practice, ctx));
+  const rich = missionRichInOrder(m);
+  for (const id of new Set(rich.flatMap((r) => termsIn(r.text)))) if (!ctx.terms.has(id)) p.push(`用語集に無い用語 ${id}`);
   p.push(...firstUseProblems(rich, ctx.terms));
   return p;
 }

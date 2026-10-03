@@ -24,6 +24,8 @@ export interface Service {
   port?: number;
   /** HTTP で応える中身 */
   body?: string;
+  /** HTTP で応える状態の番号（無ければ 200。準備中の 503 など） */
+  status?: number;
   /** 設定ファイルの場所（動かす時に読む） */
   config?: string;
   /** 設定から決まった待ち受け（動いている間だけ意味がある） */

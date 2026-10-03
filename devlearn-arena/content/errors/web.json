@@ -1,0 +1,20 @@
+{
+  "domain": "web",
+  "errors": [
+    {
+      "id": "tls-issuer",
+      "match": "unable to get local issuer certificate",
+      "meaning": "「{{term:certificate}}の発行者が見つからない」と言われた。手元が信頼するルートまで、{{term:certificate-chain}}をたどれなかった。",
+      "causes": [
+        "サーバが{{term:intermediate-certificate}}を送っていない（送り忘れ）。",
+        "知らない発行者が出した証明書を使っている。"
+      ],
+      "hint": "サーバが送っている証明書のファイルに、中間証明書も並んでいるかを確かめる。",
+      "terms": [
+        "certificate",
+        "certificate-chain",
+        "intermediate-certificate"
+      ]
+    }
+  ]
+}

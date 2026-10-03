@@ -1,0 +1,20 @@
+{
+  "domain": "git",
+  "errors": [
+    {
+      "id": "git-conflict",
+      "match": "Automatic merge failed",
+      "meaning": "{{term:merge}}の途中で{{term:conflict}}が起きた。同じ行を両方の{{term:branch}}が変えていて、Git が自動では決められなかった。",
+      "causes": [
+        "同じファイルの同じ行を、両方のブランチで書き換えた。",
+        "前の衝突を解かないまま、次の操作をした。"
+      ],
+      "hint": "`cat` で衝突したファイルを開き、印（<<<<<<< と >>>>>>>）の間の 2 つの版を読む。正しい文に直して `git add` と `git commit`。",
+      "terms": [
+        "merge",
+        "conflict",
+        "branch"
+      ]
+    }
+  ]
+}

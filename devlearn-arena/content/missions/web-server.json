@@ -1,0 +1,116 @@
+{
+  "id": "web-server",
+  "title": "Web サーバを構築せよ",
+  "story": "市の案内ページを公開したい。{{term:server}}には {{term:web-server}}（nginx）が入っているが、止まったままで、待ち受ける{{term:port}}も市の決まり（80 番）と違う。動かして、市民のブラウザから見えるようにしよう。",
+  "domains": [
+    "linux",
+    "web",
+    "net"
+  ],
+  "knowledge": [
+    "{{term:service}}は {{term:systemctl}} で動かす・止める・動かし直す。{{term:enable}} で起動時にも動くようになる。",
+    "{{term:web-server}}が待ち受ける{{term:port}}は{{term:config-file}}に書く。書き換えたら動かし直すまで反映しない。",
+    "ブラウザは何も書かなければ 80 番に来る。{{term:curl}} で同じ頼み方をして、答えを確かめられる。"
+  ],
+  "recommended": [
+    "linux.i.01",
+    "net.b.04",
+    "web.b.07",
+    "linux.i.04"
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "止まっている nginx を動かし、80 番で答えるように直し、サーバを起動し直しても動くようにする。",
+    "environment": "linux-server",
+    "setup": {
+      "hostname": "city-web",
+      "files": {
+        "/etc/nginx/conf.d/city.conf": "server {\n  listen 8080;\n  root /var/www/city;\n}\n",
+        "/var/www/city/index.html": "<html><body><h1>DevLearn City</h1><p>市の案内ページ</p></body></html>\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "config": "/etc/nginx/conf.d/city.conf",
+          "body": "<html><body><h1>DevLearn City</h1><p>市の案内ページ</p></body></html>"
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "start",
+        "purpose": "まず nginx を動かす。動いたら、どの{{term:port}}で待ち受けているかを状態の表示で確かめよう。",
+        "check": {
+          "kind": "service",
+          "name": "nginx",
+          "active": true
+        },
+        "afterward": "nginx が動き出した。`systemctl status nginx` の `Listen` の行を見ると、待ち受けは 8080 番。これでは 80 番に来るブラウザには届かない。",
+        "hints": [
+          "{{term:service}}を動かすのは {{term:systemctl}} の仕事。動かす操作の名前は英語の「始める」。",
+          "`systemctl start` の後に、サービスの名前（nginx）を書く。",
+          "`systemctl start nginx` と打つ。"
+        ],
+        "expectedErrors": [
+          "unit-not-found"
+        ]
+      },
+      {
+        "id": "port",
+        "purpose": "{{term:config-file}}（/etc/nginx/conf.d/city.conf）の listen を 80 番に書き換える。",
+        "check": {
+          "kind": "fs",
+          "path": "/etc/nginx/conf.d/city.conf",
+          "contains": "listen 80;"
+        },
+        "afterward": "設定の文は 80 番になった。ただし nginx は動き出す時にだけ設定を読むので、今もまだ 8080 番で待ち受けている。",
+        "hints": [
+          "まず `cat /etc/nginx/conf.d/city.conf` で中身を見る。listen の行が待ち受けるポート。",
+          "8080 を 80 に置き換えればよい。文字の置き換えは `sed -i` でできる。",
+          "`sed -i 's/8080/80/' /etc/nginx/conf.d/city.conf` と打つ。"
+        ],
+        "expectedErrors": [
+          "enoent"
+        ]
+      },
+      {
+        "id": "reload",
+        "purpose": "nginx を動かし直して新しい設定を読ませ、{{term:curl}} で 80 番から案内ページが返ることを確かめる。",
+        "check": {
+          "kind": "http",
+          "url": "http://localhost/",
+          "status": 200
+        },
+        "afterward": "80 番で案内ページが返った（{{term:status-code}} 200）。市民のブラウザからも、このページが見える。",
+        "hints": [
+          "設定を読み直させるには、動かし直す。",
+          "`systemctl restart nginx` の後、`curl http://localhost/` で答えを見る。",
+          "`systemctl restart nginx` と打つ。"
+        ],
+        "expectedErrors": [
+          "service-failed"
+        ]
+      },
+      {
+        "id": "enable",
+        "purpose": "サーバを起動し直した後も、nginx が自動で動くようにする。",
+        "check": {
+          "kind": "service",
+          "name": "nginx",
+          "enabled": true
+        },
+        "afterward": "起動時に動くよう登録した。停電の後でサーバが起き直しても、案内ページは自動で戻ってくる。",
+        "hints": [
+          "今動いていることと、起動時に動くことは別の設定。",
+          "起動時に動かすよう登録するのは {{term:enable}}。",
+          "`systemctl enable nginx` と打つ。"
+        ]
+      }
+    ]
+  },
+  "rewards": {
+    "xp": 150,
+    "funds": 400,
+    "landmark": "beacon"
+  }
+}

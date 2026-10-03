@@ -1,0 +1,82 @@
+{
+  "domain": "sec",
+  "terms": [
+    {
+      "id": "tls",
+      "word": "TLS",
+      "reading": "てぃーえるえす",
+      "plain": "通信を暗号化し、相手が本物かを証明書で確かめる決まり。HTTPS の中身。",
+      "why": "暗号化だけでなく「なりすましの相手ではない」ことも確かめられる。",
+      "related": [
+        "https",
+        "certificate"
+      ],
+      "lessons": [
+        "sec.b.06",
+        "sec.i.01"
+      ]
+    },
+    {
+      "id": "certificate",
+      "word": "証明書",
+      "reading": "しょうめいしょ",
+      "plain": "サーバが「この名前の本物です」と示すための電子の書類。信頼できる発行者の署名が付いている。",
+      "why": "ブラウザは証明書をたどって相手を信じてよいか決める。期限切れや名前違いがあると警告が出る。",
+      "related": [
+        "tls",
+        "intermediate-certificate",
+        "certificate-chain"
+      ],
+      "lessons": [
+        "sec.b.07",
+        "sec.i.01"
+      ],
+      "analogy": "身分証。発行した役所（発行者）を信じられるから、身分証も信じられる。"
+    },
+    {
+      "id": "intermediate-certificate",
+      "word": "中間証明書",
+      "reading": "ちゅうかんしょうめいしょ",
+      "plain": "サーバの証明書を発行した、途中の発行者の証明書。ルート証明書とサーバの証明書の間をつなぐ。",
+      "why": "サーバが自分の証明書と一緒に送らないと、ブラウザがルートまでたどれず警告になる。よくある設定の誤り。",
+      "related": [
+        "certificate",
+        "certificate-chain"
+      ],
+      "lessons": [
+        "sec.b.07",
+        "sec.i.01"
+      ]
+    },
+    {
+      "id": "certificate-chain",
+      "word": "証明書の連鎖",
+      "reading": "しょうめいしょのれんさ",
+      "plain": "サーバの証明書 → 中間証明書 → 手元が信頼するルート証明書、と発行者をたどる道筋。",
+      "why": "途中の輪が 1 つでも欠けると、相手を信じられず HTTPS がつながらない。",
+      "related": [
+        "certificate",
+        "intermediate-certificate",
+        "tls"
+      ],
+      "lessons": [
+        "sec.i.01",
+        "sec.i.02"
+      ]
+    },
+    {
+      "id": "root-certificate",
+      "word": "ルート証明書",
+      "reading": "るーとしょうめいしょ",
+      "plain": "発行者をたどった先の、いちばん元になる発行者の証明書。ブラウザや OS が、信頼する物を初めから持っている。",
+      "why": "サーバの証明書を信じてよいかは、最後にこのルート証明書に着くかで決まる。",
+      "related": [
+        "certificate",
+        "certificate-chain"
+      ],
+      "lessons": [
+        "sec.b.07"
+      ]
+    }
+  ]
+}

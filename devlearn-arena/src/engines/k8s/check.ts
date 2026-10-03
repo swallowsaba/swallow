@@ -1,3 +1,5 @@
+import { matches } from './controllers';
+import { isReady } from './kubelet';
 import { key, type ClusterState } from './types';
 
 /**
@@ -22,7 +24,8 @@ function fieldOf(cluster: ClusterState, kind: Kind, name: string, field: string)
   } else {
     const s = cluster.services.get(id);
     if (!s) return undefined;
-    if (field === 'endpoints') return s.status.endpoints.length;
+    // 宛先は、札（selector）の合う Ready の Pod（kubectl endpoints と同じ数え方。次の時間を待たずに数える）
+    if (field === 'endpoints') return [...cluster.pods.values()].filter((p) => p.metadata.namespace === 'default' && matches(p.metadata.labels, s.spec.selector) && isReady(p)).length;
     if (field === 'port') return s.spec.ports[0]?.port;
   }
   throw new Error(`k8s の条件の欄「${kind}.${field}」は知らない形`);

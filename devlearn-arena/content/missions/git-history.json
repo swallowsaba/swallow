@@ -1,0 +1,108 @@
+{
+  "id": "git-history",
+  "title": "Git で変更を管理せよ",
+  "story": "市役所の案内板の文面を、{{term:git}}で管理している。開館の時刻の変更・新しい掲示・同僚が休日用に直した文面が入り混じってきた。履歴を壊さずに 1 つにまとめよう。",
+  "domains": [
+    "git"
+  ],
+  "knowledge": [
+    "変更は {{term:commit}} で履歴に記録する。記録する前に `git add` で記録する物を選ぶ。",
+    "別の作業は{{term:branch}}に分けて進め、できたら{{term:merge}}で本流（main）に取り込む。",
+    "同じ行を両方で変えていると{{term:conflict}}が起きる。印の間を読んで正しい文に直し、記録し直せば解ける。"
+  ],
+  "recommended": [
+    "git.b.02",
+    "git.b.04",
+    "git.b.05",
+    "git.b.06"
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "今の変更を記録し、掲示の作業をブランチに分けて取り込み、同僚のブランチとの衝突を解いてまとめる。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "city-hall",
+      "cwd": "/home/learner/notice",
+      "dirs": [
+        "/home/learner/notice"
+      ],
+      "run": [
+        "git init",
+        "echo '開館は 9 時' > notice.txt",
+        "git add notice.txt",
+        "git commit -m \"案内板を作る\"",
+        "git switch -c holiday",
+        "echo '開館は 10 時（休日）' > notice.txt",
+        "git commit -am \"休日は 10 時に開館\"",
+        "git switch main",
+        "echo '開館は 8 時（平日）' > notice.txt"
+      ]
+    },
+    "steps": [
+      {
+        "id": "record",
+        "purpose": "まず `git status` で今の様子を見る。notice.txt の変更（開館を 8 時に）を{{term:commit}}して記録する。",
+        "check": {
+          "kind": "git",
+          "expr": "on:main clean commits:main>=2"
+        },
+        "afterward": "main に 2 件目の記録ができた。いつでもこの時点に戻れる。",
+        "hints": [
+          "記録は 2 段。まず記録する物を選び、次に説明を付けて記録する。",
+          "`git add notice.txt` の後に `git commit -m \"説明\"`。",
+          "`git add notice.txt` と `git commit -m \"平日は 8 時に開館\"` を順に打つ。"
+        ]
+      },
+      {
+        "id": "branch",
+        "purpose": "秋祭りの掲示を作る作業を、poster という{{term:branch}}に分けて進める。poster.txt を作って記録する。",
+        "check": {
+          "kind": "git",
+          "expr": "branch:poster commits:poster>=3"
+        },
+        "afterward": "poster ブランチに掲示の記録ができた。main はまだ掲示を知らない。",
+        "hints": [
+          "新しいブランチを作って移るのは `git switch -c`。",
+          "`git switch -c poster` の後、poster.txt を作って `git add` と `git commit`。",
+          "`git switch -c poster` `echo '秋祭りは 10 月 20 日' > poster.txt` `git add poster.txt` `git commit -m \"秋祭りの掲示\"` を順に打つ。"
+        ]
+      },
+      {
+        "id": "merge",
+        "purpose": "main に戻り、poster の掲示を{{term:merge}}で取り込む。",
+        "check": {
+          "kind": "git",
+          "expr": "on:main branch:poster merged-into:main"
+        },
+        "afterward": "main に掲示が入った。main から先に進んでいないので、早送りで取り込めた。",
+        "hints": [
+          "取り込む側（main）に移ってから取り込む。",
+          "`git switch main` の後に `git merge poster`。",
+          "`git switch main` と `git merge poster` を順に打つ。"
+        ]
+      },
+      {
+        "id": "conflict",
+        "purpose": "同僚の holiday ブランチも取り込む。{{term:conflict}}が起きたら、平日と休日の両方の時刻が残る文に直して記録する。",
+        "check": {
+          "kind": "git",
+          "expr": "branch:holiday merged-into:main clean resolved"
+        },
+        "afterward": "衝突を解いて、両方の意図を残した 1 つの文面にまとめた。holiday の変更も main の履歴に入った。",
+        "hints": [
+          "`git merge holiday` の後、`cat notice.txt` で印（<<<<<<< と >>>>>>>）の間を読む。",
+          "印を消し、両方の時刻が入った 1 行に直してから `git add` と `git commit`。",
+          "`git merge holiday` `echo '開館は 8 時（平日）・10 時（休日）' > notice.txt` `git add notice.txt` `git commit -m \"開館の時刻をまとめる\"` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "git-conflict"
+        ]
+      }
+    ]
+  },
+  "rewards": {
+    "xp": 150,
+    "funds": 450,
+    "landmark": "branch-tree"
+  }
+}

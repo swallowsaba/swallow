@@ -1,0 +1,78 @@
+{
+  "domain": "k8s",
+  "terms": [
+    {
+      "id": "kubernetes",
+      "word": "Kubernetes",
+      "reading": "くーばねてぃす",
+      "plain": "たくさんのコンテナを、何台もの機械の上で、宣言した通りの数と状態に保ち続ける仕組み。",
+      "why": "コンテナが落ちても自動で作り直し、数を増やすのも宣言を変えるだけで済む。",
+      "related": [
+        "pod",
+        "deployment",
+        "kubectl"
+      ],
+      "lessons": [
+        "k8s.b.01"
+      ]
+    },
+    {
+      "id": "kubectl",
+      "word": "kubectl",
+      "reading": "きゅーぶしーてぃーえる",
+      "plain": "Kubernetes に指示を出し、状態を見るためのコマンド。",
+      "why": "作る・見る・変える・消す、の全てをこのコマンドから行う。",
+      "related": [
+        "kubernetes",
+        "pod"
+      ],
+      "lessons": [
+        "k8s.b.03"
+      ]
+    },
+    {
+      "id": "pod",
+      "word": "Pod",
+      "reading": "ぽっど",
+      "plain": "Kubernetes が動かす最小の単位。1 つ以上のコンテナを包んだもの。",
+      "why": "Pod は消えたり作り直されたりする前提のもの。直接ではなく Deployment に任せて管理する。",
+      "related": [
+        "kubernetes",
+        "deployment",
+        "container"
+      ],
+      "lessons": [
+        "k8s.b.02",
+        "k8s.b.04"
+      ]
+    },
+    {
+      "id": "deployment",
+      "word": "Deployment",
+      "reading": "でぷろいめんと",
+      "plain": "「この Pod をいくつ動かす」と宣言する物。数が減れば作り直して保つ。",
+      "why": "宣言しておけば、Pod が落ちても Kubernetes が数を戻してくれる。",
+      "related": [
+        "pod",
+        "k8s-service"
+      ],
+      "lessons": [
+        "k8s.b.05"
+      ]
+    },
+    {
+      "id": "k8s-service",
+      "word": "Service",
+      "reading": "さーびす（くーばねてぃす）",
+      "plain": "入れ替わる Pod の前に置く、変わらない入口。届いた通信を Ready の Pod に振り分ける。",
+      "why": "Pod は作り直されるとアドレスが変わる。Service を通せば、利用者は入口だけ知っていればよい。",
+      "related": [
+        "pod",
+        "deployment"
+      ],
+      "lessons": [
+        "k8s.b.06"
+      ]
+    }
+  ]
+}

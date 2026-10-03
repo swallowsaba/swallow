@@ -1,0 +1,34 @@
+{
+  "domain": "k8s",
+  "errors": [
+    {
+      "id": "k8s-exists",
+      "match": "\\(AlreadyExists\\)",
+      "meaning": "「その名前の物は既にある」と言われた。同じ種類・同じ名前の物は 1 つしか作れない。",
+      "causes": [
+        "前に作った物が残っている。",
+        "同じ `kubectl create` を 2 回打った。"
+      ],
+      "hint": "`kubectl get deployments` で今ある物を見る。既にあるなら作り直さずにそのまま使える。",
+      "terms": [
+        "kubectl",
+        "deployment"
+      ]
+    },
+    {
+      "id": "k8s-notfound",
+      "match": "\\(NotFound\\)",
+      "meaning": "「その名前の物が見つからない」と言われた。指定した種類と名前の物が、クラスタに無い。",
+      "causes": [
+        "名前の綴りが違う。",
+        "まだ作っていない（前の手順を飛ばした）。"
+      ],
+      "hint": "`kubectl get deployments` や `kubectl get pods` で、今ある物の名前を確かめる。",
+      "terms": [
+        "kubectl",
+        "deployment",
+        "pod"
+      ]
+    }
+  ]
+}

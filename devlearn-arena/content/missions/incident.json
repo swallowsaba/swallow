@@ -1,0 +1,124 @@
+{
+  "id": "incident",
+  "title": "障害原因を特定せよ",
+  "story": "新しい {{term:web-server}}（nginx）に切り替えたはずなのに、市のサイトが朝から「準備中」のまま。{{term:troubleshooting}}の順に、原因を絞り込んで直し、直ったことを確かめよう。",
+  "domains": [
+    "trouble",
+    "linux",
+    "web"
+  ],
+  "knowledge": [
+    "{{term:troubleshooting}}は、症状 → 範囲 → 仮説 → 確認 → 対処 → 再確認、の順に進める。",
+    "{{term:service}}が動かない理由は {{term:journalctl}} の{{term:log}}に書いてある。",
+    "1 つの{{term:port}}は同時に 1 つのサービスしか待ち受けられない。"
+  ],
+  "recommended": [
+    "trouble.b.01",
+    "trouble.b.03",
+    "linux.i.02",
+    "trouble.i.01"
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "「準備中」の原因を突き止め、古いサービスを止めて nginx を動かし、市のページが返ることを確かめる。",
+    "environment": "linux-server",
+    "setup": {
+      "hostname": "city-web",
+      "files": {
+        "/etc/nginx/conf.d/city.conf": "server {\n  listen 80;\n  root /var/www/city;\n}\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "config": "/etc/nginx/conf.d/city.conf",
+          "body": "<html><body><h1>DevLearn City</h1><p>市の案内ページ</p></body></html>"
+        },
+        "apache2": {
+          "description": "The Apache HTTP Server（古いサイト）",
+          "enabled": true,
+          "port": 80,
+          "status": 503,
+          "body": "<html><body><h1>準備中</h1></body></html>"
+        }
+      },
+      "run": [
+        "systemctl start apache2"
+      ]
+    },
+    "steps": [
+      {
+        "id": "stop-old",
+        "purpose": "`curl http://localhost/` で症状を、`systemctl start nginx` と `journalctl -u nginx` で nginx が動かない理由を確かめる。80 番を使っている古いサービスを突き止めて止める。",
+        "check": {
+          "kind": "service",
+          "name": "apache2",
+          "active": false
+        },
+        "afterward": "古い apache2 が 80 番を使い続け、「準備中」を返していた。止めたので 80 番が空いた。",
+        "hints": [
+          "ログの「`Address already in use`」は、その{{term:port}}を別のサービスが使っているという意味。",
+          "動いているサービスの一覧は `systemctl list-units`。80 番を使っていそうな物を探す。",
+          "`systemctl stop apache2` と打つ。"
+        ],
+        "expectedErrors": [
+          "address-in-use",
+          "service-failed"
+        ]
+      },
+      {
+        "id": "disable-old",
+        "purpose": "{{term:server}}を起動し直した時に apache2 がまた動き出さないよう、起動時の登録を外す。",
+        "check": {
+          "kind": "service",
+          "name": "apache2",
+          "enabled": false
+        },
+        "afterward": "apache2 は起動時にも動かなくなった。再起動の後に同じ障害が戻ることは無い。",
+        "hints": [
+          "止めただけでは、次の起動でまた動き出す。",
+          "{{term:enable}} の反対の操作がある。",
+          "`systemctl disable apache2` と打つ。"
+        ]
+      },
+      {
+        "id": "start-new",
+        "purpose": "nginx を動かし、`curl http://localhost/` で市のページが返る（{{term:status-code}} 200）ことを確かめる。",
+        "check": {
+          "kind": "http",
+          "url": "http://localhost/",
+          "status": 200
+        },
+        "afterward": "市のページが返った。症状（準備中）が消えたことを、同じ確かめ方で確かめられた。",
+        "hints": [
+          "80 番が空いたので、今なら nginx は動ける。",
+          "`systemctl start nginx` の後に `curl http://localhost/`。",
+          "`systemctl start nginx` と打つ。"
+        ],
+        "expectedErrors": [
+          "address-in-use",
+          "service-failed"
+        ]
+      },
+      {
+        "id": "enable-new",
+        "purpose": "nginx が起動時にも動くよう登録する。",
+        "check": {
+          "kind": "service",
+          "name": "nginx",
+          "enabled": true
+        },
+        "afterward": "起動し直しても、nginx が 80 番で市のページを返す。直したことが元に戻らない。",
+        "hints": [
+          "今動いていることと、起動時に動くことは別の設定。",
+          "起動時に動かすよう登録するのは {{term:enable}}。",
+          "`systemctl enable nginx` と打つ。"
+        ]
+      }
+    ]
+  },
+  "rewards": {
+    "xp": 250,
+    "funds": 450,
+    "landmark": "bell"
+  }
+}

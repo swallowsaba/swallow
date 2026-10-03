@@ -243,9 +243,10 @@ export function resultKind(attempt: Pick<PracticeAttempt, 'success' | 'hintsUsed
 /* ---------- 最後のヒントで通るか（docs/content-spec.md 6 章） ---------- */
 
 /**
- * 初期状態から、各手順の最後のヒントの答えを順に打ち、全ての手順を満たすか。満たせなかった手順の問題を返す（無ければ空）
+ * 初期状態から、各手順の最後のヒントの答えを順に打ち、全ての手順を満たすか。満たせなかった手順の問題を返す（無ければ空）。
+ * 答えの途中で出るエラーは、その手順の想定エラー（expectedErrors）に当たる物だけ認める（マージの衝突のように、出会うこと自体が課題の時）
  */
-export function replayAnswers(practice: Practice): string[] {
+export function replayAnswers(practice: Practice, guides: readonly ErrorGuide[] = []): string[] {
   if (practice.mode !== 'terminal') return [];
   const problems: string[] = [];
   const registry = REGISTRY;
@@ -267,7 +268,8 @@ export function replayAnswers(practice: Practice): string[] {
       const out = execute(shell, line, registry, clock);
       shell = out.state;
       const err = out.chunks.filter((c) => c.stream === 'stderr').map((c) => c.text).join('');
-      if (err.trim()) problems.push(`実戦 ${step.id}: 答え「${line}」でエラー: ${err.trim()}`);
+      const expected = (step.expectedErrors ?? []).some((id) => guides.some((g) => g.id === id && guideMatches(g, err)));
+      if (err.trim() && !expected) problems.push(`実戦 ${step.id}: 答え「${line}」でエラー: ${err.trim()}`);
     }
     if (!checkState(step.check, { shell, answer })) problems.push(`実戦 ${step.id}: 最後のヒントを打っても達成条件を満たさない`);
   }

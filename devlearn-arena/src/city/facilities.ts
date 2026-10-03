@@ -86,3 +86,30 @@ export function isLargeFacility(type: FacilityType): boolean {
   const def = FACILITY_DEFS[type];
   return def.group === 'facility' && def.w === 3 && def.d === 3;
 }
+
+/**
+ * 記念碑（ミッションの報酬。docs/game-design.md 8 章・docs/city-design.md 4 章）。
+ * どの記念碑かの定義は content/facilities.json の landmarks、見た目は src/city/assets/props/monument-<ID>.svg
+ */
+export interface LandmarkDef {
+  id: string;
+  name: string;
+  /** 何の記念か（1 文） */
+  about: string;
+}
+
+const landmarkSchema = z.object({
+  landmarks: z.array(z.object({ id: z.string().regex(/^[a-z][a-z0-9-]*$/), name: z.string().min(1), about: z.string().min(1) }).strict()),
+});
+
+export function parseLandmarks(raw: unknown): LandmarkDef[] {
+  const list = landmarkSchema.parse(raw).landmarks;
+  if (new Set(list.map((l) => l.id)).size !== list.length) throw new Error('記念碑の ID が重なる');
+  return list;
+}
+
+export const LANDMARKS: readonly LandmarkDef[] = parseLandmarks(data);
+
+export function landmarkOf(id: string): LandmarkDef | undefined {
+  return LANDMARKS.find((l) => l.id === id);
+}

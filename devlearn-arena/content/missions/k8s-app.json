@@ -1,0 +1,83 @@
+{
+  "id": "k8s-app",
+  "title": "Kubernetes 上でアプリを動かせ",
+  "story": "市の予約サイトは利用者が多く、1 台では支えきれない。{{term:kubernetes}}のクラスタで 3 つ並べて動かし、1 つの入口から使えるようにしよう。",
+  "domains": [
+    "k8s",
+    "ctr"
+  ],
+  "knowledge": [
+    "{{term:kubernetes}}には {{term:kubectl}} で指示を出す。{{term:pod}}は直接ではなく{{term:deployment}}に「いくつ動かすか」を宣言して任せる。",
+    "Pod は動き出すまで少し時間がかかる。揃うまで待ってから確かめる。",
+    "入れ替わる Pod の前に{{term:k8s-service}}を置くと、変わらない入口ができる。"
+  ],
+  "recommended": [
+    "k8s.b.04",
+    "k8s.b.05",
+    "k8s.b.06",
+    "ctr.b.03"
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "web という Deployment で nginx を 3 つ動かし、全てが動き出したら Service で入口を付ける。",
+    "environment": "k8s-cluster",
+    "steps": [
+      {
+        "id": "deploy",
+        "purpose": "web という名前の{{term:deployment}}を、nginx:1.27 の{{term:image}}で 3 つ動かすよう宣言する。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web replicas>=3"
+        },
+        "afterward": "宣言が受け付けられた。Kubernetes が Pod を 3 つ作り始めた。`kubectl get pods` で様子が見られる。",
+        "hints": [
+          "作る操作は `kubectl create`。種類は deployment。",
+          "`--image` でイメージ、`--replicas` で数を指定する。",
+          "`kubectl create deployment web --image=nginx:1.27 --replicas=3` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-exists"
+        ]
+      },
+      {
+        "id": "ready",
+        "purpose": "3 つの {{term:pod}} が全て動き出す（`Ready` になる）まで待つ。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web readyReplicas>=3"
+        },
+        "afterward": "3 つとも `Ready` になった。どれか 1 つが落ちても、Deployment が数を 3 に戻す。",
+        "hints": [
+          "`kubectl get pods` を何度か打つと、状態が変わっていく。",
+          "揃うまで待つのは `kubectl wait`。条件は available。",
+          "`kubectl wait --for=condition=available deployment/web` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-notfound"
+        ]
+      },
+      {
+        "id": "service",
+        "purpose": "web に{{term:k8s-service}}を付け、80 番の入口を作る。",
+        "check": {
+          "kind": "k8s",
+          "expr": "service/web endpoints>=3"
+        },
+        "afterward": "入口ができ、3 つの Pod が宛先に並んだ。利用者は入口だけ知っていればよい。",
+        "hints": [
+          "Deployment に入口を付ける操作は `kubectl expose`。",
+          "`kubectl expose deployment web` に `--port=80` を付ける。",
+          "`kubectl expose deployment web --port=80` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-notfound"
+        ]
+      }
+    ]
+  },
+  "rewards": {
+    "xp": 300,
+    "funds": 800,
+    "landmark": "helm"
+  }
+}

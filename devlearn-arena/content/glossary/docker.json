@@ -1,0 +1,33 @@
+{
+  "domain": "docker",
+  "terms": [
+    {
+      "id": "docker",
+      "word": "Docker",
+      "reading": "どっかー",
+      "plain": "コンテナを作る・動かす・配るための代表的な道具。docker コマンドで操作する。",
+      "why": "コンテナの技術の 1 つ。仕組み（コンテナ）を知った上で、具体的な道具として使う。",
+      "related": [
+        "container",
+        "image"
+      ],
+      "lessons": [
+        "docker.b.01"
+      ]
+    },
+    {
+      "id": "port-publish",
+      "word": "ポートの公開",
+      "reading": "ぽーとのこうかい",
+      "plain": "手元の機械のポートを、コンテナの中のポートにつなぐこと（-p 手元:中）。",
+      "why": "つながないと、コンテナの中で動くサーバに外から届かない。",
+      "related": [
+        "port",
+        "container"
+      ],
+      "lessons": [
+        "docker.b.04"
+      ]
+    }
+  ]
+}

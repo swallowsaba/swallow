@@ -1,0 +1,20 @@
+{
+  "domain": "trouble",
+  "terms": [
+    {
+      "id": "troubleshooting",
+      "word": "トラブルシューティング",
+      "reading": "とらぶるしゅーてぃんぐ",
+      "plain": "障害の症状から原因を絞り込み、直して、直ったことを確かめる一連の動き。",
+      "why": "勘で触ると別の所を壊す。症状 → 範囲 → 仮説 → 確認 → 対処 → 再確認、の順で進めると確実。",
+      "related": [
+        "log",
+        "journalctl"
+      ],
+      "lessons": [
+        "trouble.b.01",
+        "trouble.i.01"
+      ]
+    }
+  ]
+}

@@ -7,8 +7,15 @@
       "reading": "ぴーだぶりゅーでぃー",
       "plain": "現在地（今いるディレクトリ）の絶対パスを表示するコマンド。print working directory の略。",
       "why": "操作の前に今どこにいるかを確かめると、違う場所のファイルを触る事故を防げる。",
-      "related": ["current-directory", "cd", "ls"],
-      "lessons": ["found.b.04", "linux.b.01"]
+      "related": [
+        "current-directory",
+        "cd",
+        "ls"
+      ],
+      "lessons": [
+        "found.b.04",
+        "linux.b.01"
+      ]
     },
     {
       "id": "cd",
@@ -16,8 +23,15 @@
       "reading": "しーでぃー",
       "plain": "現在地を、指定したディレクトリへ移すコマンド。change directory の略。",
       "why": "作業するファイルのある場所へ移ってから操作するのが、端末での基本の動き方。",
-      "related": ["current-directory", "pwd", "path"],
-      "lessons": ["found.b.04", "linux.b.01"]
+      "related": [
+        "current-directory",
+        "pwd",
+        "path"
+      ],
+      "lessons": [
+        "found.b.04",
+        "linux.b.01"
+      ]
     },
     {
       "id": "ls",
@@ -25,16 +39,29 @@
       "reading": "えるえす",
       "plain": "ディレクトリの中にあるファイルとディレクトリの名前を並べて表示するコマンド。list の略。",
       "why": "何が置いてあるかを見てから動くと、綴りの誤りや場所の取り違えにすぐ気づける。",
-      "related": ["directory", "pwd", "cd"],
-      "lessons": ["found.b.04", "linux.b.01"]
+      "related": [
+        "directory",
+        "pwd",
+        "cd"
+      ],
+      "lessons": [
+        "found.b.04",
+        "linux.b.01"
+      ]
     },
     {
       "id": "service",
       "word": "サービス",
       "plain": "サーバの裏で動き続け、頼みを待ち受けるプログラム。Web サーバやデータベースなど。",
       "why": "サービスが止まると、そのサーバに頼っている利用者全員が使えなくなる。動いているかを確かめ、立て直すのはサーバ管理の基本。",
-      "related": ["systemd", "process", "server"],
-      "lessons": ["linux.i.01"],
+      "related": [
+        "systemd",
+        "process",
+        "server"
+      ],
+      "lessons": [
+        "linux.i.01"
+      ],
       "analogy": "店の受付係。客（頼み）が来るのを待ち、来たら対応する。"
     },
     {
@@ -43,8 +70,14 @@
       "reading": "しすてむでぃー",
       "plain": "多くの Linux で、サービスの起動・停止・自動起動・立て直しを受け持つ管理役のプログラム。",
       "why": "サーバを再起動した時にどのサービスを動かすか、落ちた時にどうするかを、systemd に任せられる。",
-      "related": ["service", "systemctl", "enable"],
-      "lessons": ["linux.i.01"]
+      "related": [
+        "service",
+        "systemctl",
+        "enable"
+      ],
+      "lessons": [
+        "linux.i.01"
+      ]
     },
     {
       "id": "systemctl",
@@ -52,8 +85,14 @@
       "reading": "しすてむしーてぃーえる",
       "plain": "systemd に指示を出すコマンド。サービスを動かす・止める・状態を見る・自動起動を決める。",
       "why": "サービスの状態を確かめて直す作業は、ほとんど systemctl で行う。",
-      "related": ["systemd", "service", "enable"],
-      "lessons": ["linux.i.01"]
+      "related": [
+        "systemd",
+        "service",
+        "enable"
+      ],
+      "lessons": [
+        "linux.i.01"
+      ]
     },
     {
       "id": "enable",
@@ -61,8 +100,14 @@
       "reading": "ゆうこうか",
       "plain": "サーバが起動した時に、サービスが自動で動き出すように登録すること。英語の enable。",
       "why": "今動かすこと（start）と、次の起動でも動かすこと（enable）は別の操作。片方だけだと、再起動の後にサービスが止まったままになる。",
-      "related": ["systemd", "systemctl", "service"],
-      "lessons": ["linux.i.01"]
+      "related": [
+        "systemd",
+        "systemctl",
+        "service"
+      ],
+      "lessons": [
+        "linux.i.01"
+      ]
     },
     {
       "id": "journalctl",
@@ -70,8 +115,30 @@
       "reading": "じゃーなるしーてぃーえる",
       "plain": "systemd が集めたログを読むコマンド。サービスごと・時間ごとに絞り込める。",
       "why": "サービスが失敗した理由は、多くの場合そのサービスのログに書かれている。",
-      "related": ["log", "systemd", "service"],
-      "lessons": ["linux.i.01", "linux.i.02"]
+      "related": [
+        "log",
+        "systemd",
+        "service"
+      ],
+      "lessons": [
+        "linux.i.01",
+        "linux.i.02"
+      ]
+    },
+    {
+      "id": "config-file",
+      "word": "設定ファイル",
+      "reading": "せっていふぁいる",
+      "plain": "プログラムの動き方（待ち受けるポート・使うファイルの場所など）を書いておく文字のファイル。",
+      "why": "プログラムを作り直さずに動き方を変えられる。多くのサービスは動き出す時にだけ読むので、書き換えたら動かし直す。",
+      "related": [
+        "service",
+        "web-server"
+      ],
+      "lessons": [
+        "linux.i.01",
+        "web.i.03"
+      ]
     }
   ]
 }

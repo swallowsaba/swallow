@@ -7,8 +7,60 @@
       "reading": "うぇぶさーば",
       "plain": "ブラウザからの頼みを受けて、Web ページや画像を返すサービス。",
       "why": "Web サイトを公開するには、Web サーバが動き続けている必要がある。止まると誰もページを開けない。",
-      "related": ["server", "service", "port"],
-      "lessons": ["web.b.07", "linux.i.01"]
+      "related": [
+        "server",
+        "service",
+        "port"
+      ],
+      "lessons": [
+        "web.b.07",
+        "linux.i.01"
+      ]
+    },
+    {
+      "id": "curl",
+      "word": "curl",
+      "reading": "かーる",
+      "plain": "端末から URL を指定して Web のページを取りに行き、返ってきた中身を表示するコマンド。",
+      "why": "ブラウザを開かずに、サーバが答えるか・何と答えるかをすぐ確かめられる。",
+      "related": [
+        "web-server",
+        "status-code"
+      ],
+      "lessons": [
+        "web.b.02",
+        "web.b.07"
+      ]
+    },
+    {
+      "id": "status-code",
+      "word": "ステータスコード",
+      "reading": "すてーたすこーど",
+      "plain": "Web サーバが答えに付ける 3 桁の番号。200 は成功、403 は見せられない、404 は見つからない、などを表す。",
+      "why": "番号を見れば、うまくいったのか、どこで止まったのかの見当が付く。",
+      "related": [
+        "curl",
+        "web-server"
+      ],
+      "lessons": [
+        "web.b.04"
+      ]
+    },
+    {
+      "id": "https",
+      "word": "HTTPS",
+      "reading": "えいちてぃーてぃーぴーえす",
+      "plain": "Web のやり取りを、TLS で暗号化して送る形。URL が https:// で始まり、多くは 443 番のポートを使う。",
+      "why": "途中で中身を盗み見られたり、書き換えられたりするのを防ぐ。今の Web では当たり前に求められる。",
+      "related": [
+        "tls",
+        "certificate",
+        "port"
+      ],
+      "lessons": [
+        "web.b.08",
+        "sec.b.06"
+      ]
     }
   ]
 }

@@ -28,10 +28,10 @@ export function httpEnvOf(shell: ShellState): HttpEnv {
     local: (port) => {
       for (const s of shell.services?.services.values() ?? []) {
         if (s.active !== 'active') continue;
-        const body = s.body ?? `<html><body>${s.name}</body></html>`;
+        const answer = { body: s.body ?? `<html><body>${s.name}</body></html>`, server: s.name, ...(s.status !== undefined ? { status: s.status } : {}) };
         const listen = s.listens?.find((l) => l.port === port);
-        if (listen) return { body, server: s.name, ...(listen.ssl && listen.chain ? { chain: listen.chain } : {}) };
-        if (!s.config && s.port === port) return { body, server: s.name };
+        if (listen) return { ...answer, ...(listen.ssl && listen.chain ? { chain: listen.chain } : {}) };
+        if (!s.config && s.port === port) return answer;
       }
       const served = servedAt(shell.containers, port, (p) => (exists(shell.vfs, p) && !isDir(shell.vfs, p) ? readFile(shell.vfs, p) : null));
       if (served) return { body: served.body, status: served.status, server: served.container.image.split(':')[0] ?? 'container' };

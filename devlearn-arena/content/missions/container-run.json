@@ -1,0 +1,79 @@
+{
+  "id": "container-run",
+  "title": "コンテナを起動せよ",
+  "story": "港の掲示板アプリを、{{term:container}}で動かしたい。アプリの{{term:image}}（city-board）は掲示の中身を持たず、外から渡す決まりになっている。市民が 8080 番で掲示を見られるようにしよう。",
+  "domains": [
+    "ctr",
+    "docker"
+  ],
+  "knowledge": [
+    "{{term:container}}は{{term:image}}から作る。{{term:docker}} の `docker run` で作って動かす。",
+    "{{term:port-publish}}（-p 手元:中）をしないと、コンテナの中の{{term:server}}に外から届かない。",
+    "{{term:volume}}（-v 手元:中）で、手元の場所をコンテナの中の場所につなぐ。消しても残る物・外から渡す物はここに置く。"
+  ],
+  "recommended": [
+    "ctr.b.03",
+    "docker.b.03",
+    "docker.b.04",
+    "docker.i.03"
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "掲示板のコンテナを 8080 番で公開し、手元の掲示（/home/learner/board）をボリュームで渡して表示させる。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "harbor",
+      "files": {
+        "/home/learner/board/index.html": "<html><body><h1>港の掲示板</h1><p>秋祭りは 10 月 20 日</p></body></html>\n"
+      },
+      "images": [
+        "city-board:1.0"
+      ]
+    },
+    "steps": [
+      {
+        "id": "publish",
+        "purpose": "board という名前で、掲示板のコンテナを裏で動かし、手元の 8080 番を中の 80 番につなぐ。`curl http://localhost:8080/` で答えを見よう。",
+        "check": {
+          "kind": "http",
+          "url": "http://localhost:8080/",
+          "status": 403
+        },
+        "afterward": "8080 番に届いた。ただ答えは 403（見せる物が無い）。中身を渡していないので、アプリは空の場所を見ている。",
+        "hints": [
+          "`docker run` に、裏で動かす `-d`・名前の `--name`・{{term:port-publish}}の `-p 手元:中` を付ける。",
+          "`docker run -d --name board -p 8080:80 city-board:1.0` の形。",
+          "`docker run -d --name board -p 8080:80 city-board:1.0` と打つ。"
+        ],
+        "expectedErrors": [
+          "docker-conflict",
+          "port-allocated"
+        ]
+      },
+      {
+        "id": "volume",
+        "purpose": "いったん board を消し、手元の /home/learner/board を中の /usr/share/nginx/html に{{term:volume}}でつないで作り直す。",
+        "check": {
+          "kind": "http",
+          "url": "http://localhost:8080/",
+          "status": 200
+        },
+        "afterward": "掲示が表示された（{{term:status-code}} 200）。手元の{{term:file}}を書き換えれば、コンテナを作り直さなくても掲示が変わる。",
+        "hints": [
+          "同じ名前のコンテナは 2 つ作れない。動いているものを消すのは `docker rm -f`。",
+          "作り直す時に `-v /home/learner/board:/usr/share/nginx/html` を足す。",
+          "`docker rm -f board` と `docker run -d --name board -p 8080:80 -v /home/learner/board:/usr/share/nginx/html city-board:1.0` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "docker-conflict",
+          "port-allocated"
+        ]
+      }
+    ]
+  },
+  "rewards": {
+    "xp": 200,
+    "funds": 700,
+    "landmark": "crane"
+  }
+}

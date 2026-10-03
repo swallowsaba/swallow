@@ -1,0 +1,32 @@
+{
+  "domain": "docker",
+  "errors": [
+    {
+      "id": "docker-conflict",
+      "match": "Conflict. The container name",
+      "meaning": "「その名前の{{term:container}}は既にある」と言われた。名前は 1 つのコンテナにしか付けられない。",
+      "causes": [
+        "前に作ったコンテナが、止まったり動いたりしたまま残っている。",
+        "同じ `docker run` を 2 回打った。"
+      ],
+      "hint": "`docker ps -a` で残っているコンテナを見る。要らなければ `docker rm -f` で消してから作り直す。",
+      "terms": [
+        "container"
+      ]
+    },
+    {
+      "id": "port-allocated",
+      "match": "port is already allocated",
+      "meaning": "「手元のその{{term:port}}は使用中」と言われた。{{term:port-publish}}で、別のコンテナが同じ番号を使っている。",
+      "causes": [
+        "前に作ったコンテナが、同じ番号を公開したまま動いている。",
+        "-p の左（手元の番号）を取り違えた。"
+      ],
+      "hint": "`docker ps` で動いているコンテナと公開している番号を見る。古い物を止めるか、別の番号にする。",
+      "terms": [
+        "port",
+        "port-publish"
+      ]
+    }
+  ]
+}

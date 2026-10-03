@@ -15,10 +15,18 @@
     { "type": "cloud", "name": "クラウドセンター", "domain": "cloud", "group": "facility", "shelf": "ops", "w": 3, "d": 3, "cost": 800, "minStage": 1, "looks": ["雲を模した屋根の建物", "複数棟の分散", "別地区の分館"] },
     { "type": "monitor", "name": "監視・運用センター", "domain": "mon", "group": "facility", "shelf": "ops", "w": 2, "d": 2, "cost": 450, "minStage": 1, "looks": ["大きな窓の管制室とアンテナ", "大型画面", "塔"] },
     { "type": "incident", "name": "インシデント対応本部", "domain": "trouble", "group": "facility", "shelf": "ops", "w": 2, "d": 2, "cost": 450, "minStage": 1, "looks": ["消防署に似た建物と車庫", "出動車両", "指令塔"] },
-    { "type": "park", "name": "公園", "group": "park", "w": 2, "d": 2, "cost": 120, "minStage": 1},
-    { "type": "treerow", "name": "並木", "group": "park", "w": 1, "d": 1, "cost": 30, "minStage": 1},
-    { "type": "plaza", "name": "広場", "group": "park", "w": 2, "d": 2, "cost": 150, "minStage": 2},
-    { "type": "fountain", "name": "噴水", "group": "park", "w": 1, "d": 1, "cost": 80, "minStage": 2},
-    { "type": "monument", "name": "記念碑", "group": "reward", "w": 1, "d": 1, "cost": 0, "minStage": 1}
+    { "type": "park", "name": "公園", "group": "park", "w": 2, "d": 2, "cost": 120, "minStage": 1 },
+    { "type": "treerow", "name": "並木", "group": "park", "w": 1, "d": 1, "cost": 30, "minStage": 1 },
+    { "type": "plaza", "name": "広場", "group": "park", "w": 2, "d": 2, "cost": 150, "minStage": 2 },
+    { "type": "fountain", "name": "噴水", "group": "park", "w": 1, "d": 1, "cost": 80, "minStage": 2 },
+    { "type": "monument", "name": "記念碑", "group": "reward", "w": 1, "d": 1, "cost": 0, "minStage": 1 }
+  ],
+  "landmarks": [
+    { "id": "beacon", "name": "灯台の記念碑", "about": "市の案内ページを初めて公開した記念。夜も灯りを絶やさない" },
+    { "id": "keystone", "name": "鍵の門", "about": "市のサイトを HTTPS で守った記念。証明書の連鎖を表す 3 つの輪" },
+    { "id": "branch-tree", "name": "枝分かれの樹", "about": "変更の履歴を枝に分けて守った記念。枝は最後に 1 本に合わさる" },
+    { "id": "crane", "name": "積み荷の塔", "about": "初めてのコンテナを港に積んだ記念" },
+    { "id": "helm", "name": "舵輪の碑", "about": "クラスタの舵を取った記念。Kubernetes は「舵取り」の意味" },
+    { "id": "bell", "name": "火の見の鐘", "about": "障害の原因を突き止めて直した記念。異常を知らせる鐘" }
   ]
 }

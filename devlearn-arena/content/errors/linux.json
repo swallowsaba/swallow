@@ -10,7 +10,13 @@
         "{{term:relative-path}}と{{term:absolute-path}}を取り違えた。/ で始めないと、{{term:current-directory}}から探される。"
       ],
       "hint": "{{term:pwd}} で今いる場所を、{{term:ls}} でそこにある名前を確かめる。ルートから行くなら / で書き始める。",
-      "terms": ["path", "relative-path", "absolute-path", "pwd", "ls"]
+      "terms": [
+        "path",
+        "relative-path",
+        "absolute-path",
+        "pwd",
+        "ls"
+      ]
     },
     {
       "id": "unit-not-found",
@@ -21,7 +27,10 @@
         "サービスがまだ用意されていない（設定のファイルが置かれていない）。"
       ],
       "hint": "サービスの名前を確かめる。この実戦で動かすのは web という名前のサービス。",
-      "terms": ["service", "systemd"]
+      "terms": [
+        "service",
+        "systemd"
+      ]
     },
     {
       "id": "service-failed",
@@ -32,7 +41,42 @@
         "使おうとした{{term:port}}を、ほかのサービスが既に使っている。"
       ],
       "hint": "{{term:journalctl}} でそのサービスの{{term:log}}を見て、止まる直前の行を探す。",
-      "terms": ["service", "port", "journalctl", "log"]
+      "terms": [
+        "service",
+        "port",
+        "journalctl",
+        "log"
+      ]
+    },
+    {
+      "id": "nginx-emerg",
+      "match": "nginx: \\[emerg\\]",
+      "meaning": "{{term:web-server}}の nginx が、{{term:config-file}}を読んだ所で止まった。[emerg] の後に、どのファイルの何行目かが書いてある。",
+      "causes": [
+        "文の終わりの ; が抜けている。",
+        "書いたファイルの場所（証明書など）が違う・ファイルが無い。"
+      ],
+      "hint": "{{term:journalctl}} で nginx の{{term:log}}を読み、示された行を `cat` で見比べる。直したら動かし直す。",
+      "terms": [
+        "web-server",
+        "config-file",
+        "journalctl",
+        "log"
+      ]
+    },
+    {
+      "id": "address-in-use",
+      "match": "Address already in use",
+      "meaning": "「その{{term:port}}は使用中」と言われた。待ち受けようとした番号を、別のサービスが先に使っている。",
+      "causes": [
+        "古いサービスが動いたまま残っている。",
+        "同じサービスを 2 つ動かそうとした。"
+      ],
+      "hint": "動いている{{term:service}}の一覧を `systemctl list-units` で見て、同じ番号を使っていそうな物を探す。",
+      "terms": [
+        "port",
+        "service"
+      ]
     }
   ]
 }

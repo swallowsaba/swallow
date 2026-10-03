@@ -1,0 +1,106 @@
+{
+  "id": "https",
+  "title": "HTTPS を有効にせよ",
+  "story": "市のサイトを {{term:https}} で開くと、ブラウザが「この接続は安全ではありません」と警告を出す。市民が安心して開けるよう、{{term:server}}が送る{{term:certificate}}を直そう。",
+  "domains": [
+    "sec",
+    "web"
+  ],
+  "knowledge": [
+    "ブラウザはサーバの{{term:certificate}}から発行者をたどり、手元が信頼する{{term:root-certificate}}に着けば信じる（{{term:certificate-chain}}）。",
+    "サーバは自分の証明書と一緒に{{term:intermediate-certificate}}も送る。送り忘れると、たどれずに警告になる。",
+    "{{term:web-server}}が送る証明書は{{term:config-file}}の ssl_certificate の行で決まる。書き換えたら読み直させる。"
+  ],
+  "recommended": [
+    "sec.b.07",
+    "sec.i.01",
+    "sec.i.02",
+    "web.b.08"
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "サーバが送る証明書を、サーバの証明書と中間証明書を並べたものに替え、警告なしで開けるようにする。",
+    "environment": "linux-server",
+    "setup": {
+      "hostname": "city-web",
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost city.example\n",
+        "/etc/nginx/conf.d/city.conf": "server {\n  listen 443 ssl;\n  server_name city.example;\n  ssl_certificate /etc/nginx/certs/city.crt;\n}\n",
+        "/etc/nginx/certs/city.crt": "-----BEGIN CERTIFICATE-----\nsubject: city.example\nissuer: Minato Issuing CA\nnames: city.example\nvalid: 2026-01-01 2027-01-01\n-----END CERTIFICATE-----\n",
+        "/etc/nginx/certs/inter.crt": "-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/city.conf",
+          "body": "<html><body><h1>DevLearn City</h1><p>市の案内ページ</p></body></html>"
+        }
+      },
+      "sites": [],
+      "run": [
+        "systemctl start nginx"
+      ]
+    },
+    "steps": [
+      {
+        "id": "chain",
+        "purpose": "まず {{term:curl}} で `https://city.example/` を開き、警告の中身を確かめる。次に、サーバの証明書と{{term:intermediate-certificate}}を順に並べた{{term:file}}（fullchain.crt）を作る。",
+        "check": {
+          "kind": "fs",
+          "path": "/etc/nginx/certs/fullchain.crt",
+          "contains": "subject: Minato Issuing CA"
+        },
+        "afterward": "fullchain.crt に、サーバの証明書 → 中間証明書の順で 2 枚が並んだ。これで{{term:root-certificate}}までの輪がつながる材料ができた。",
+        "hints": [
+          "curl の答えの「unable to get local issuer certificate」は、発行者をたどれなかったという意味。/etc/nginx/certs に何があるか `ls` で見る。",
+          "2 つのファイルを順につなげて 1 つにするのは `cat`。`>` で新しいファイルに書き出す。",
+          "`cat /etc/nginx/certs/city.crt /etc/nginx/certs/inter.crt > /etc/nginx/certs/fullchain.crt` と打つ。"
+        ],
+        "expectedErrors": [
+          "tls-issuer",
+          "enoent"
+        ]
+      },
+      {
+        "id": "config",
+        "purpose": "{{term:config-file}}の ssl_certificate を、作った fullchain.crt に書き換える。",
+        "check": {
+          "kind": "fs",
+          "path": "/etc/nginx/conf.d/city.conf",
+          "contains": "ssl_certificate /etc/nginx/certs/fullchain.crt;"
+        },
+        "afterward": "設定は fullchain.crt を指すようになった。nginx が読み直すまでは、まだ古い証明書を送っている。",
+        "hints": [
+          "`cat /etc/nginx/conf.d/city.conf` で ssl_certificate の行を見る。",
+          "city.crt の所を fullchain.crt に置き換える。`sed -i` が使える。",
+          "`sed -i 's/city.crt/fullchain.crt/' /etc/nginx/conf.d/city.conf` と打つ。"
+        ]
+      },
+      {
+        "id": "reload",
+        "purpose": "nginx に設定を読み直させ、`curl https://city.example/` が警告なしでページを返すことを確かめる。",
+        "check": {
+          "kind": "tls",
+          "host": "city.example",
+          "trusted": true
+        },
+        "afterward": "警告が消え、市のサイトが {{term:https}} で開けるようになった。ブラウザはルート証明書まで{{term:certificate-chain}}をたどれた。",
+        "hints": [
+          "動いたまま設定を読み直させる操作がある。",
+          "`systemctl reload nginx` の後、`curl https://city.example/` で確かめる。",
+          "`systemctl reload nginx` と打つ。"
+        ],
+        "expectedErrors": [
+          "nginx-emerg",
+          "service-failed"
+        ]
+      }
+    ]
+  },
+  "rewards": {
+    "xp": 200,
+    "funds": 450,
+    "landmark": "keystone"
+  }
+}
