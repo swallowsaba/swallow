@@ -14,7 +14,7 @@ import { buildScene, type SceneObject } from '../scene';
 import { MAP_SIZE, generateTerrain, type Terrain } from '../terrain';
 import type { City, Facility, FacilityType, Point, Road } from '../types';
 import { drawGround, prepareGround, toLayer, type GroundData, type LayerSpace } from './ground';
-import { agentSvg, allAgentSvgs, allFacilitySvgs, facilitySvg, SpriteCache } from './sprites';
+import { agentSvg, allAgentSvgs, allFacilitySvgs, facilityAsset, facilitySvg, SpriteCache } from './sprites';
 
 /**
  * 都市ビューの描画（Canvas 2D）。模型（src/city）を読んで描くだけで、書き換えない。
@@ -458,9 +458,8 @@ export class CityRenderer {
       const rot = ((obj.facing + this.camera.rotation) % 4) as Rotation;
       let sprite;
       if (obj.source.kind === 'facility') {
-        const key = `${obj.source.type}:${String(obj.source.level)}`;
-        const svg = facilitySvg(obj.source.type, obj.source.level);
-        sprite = svg ? this.sprites.facility(key, svg, rot, this.camera.zoom) : null;
+        const asset = facilityAsset(obj.source.type, obj.source.level);
+        sprite = asset ? this.sprites.facility(asset.key, asset.svg, rot, this.camera.zoom) : null;
       } else {
         sprite = this.sprites.model(obj.source.key, obj.source.model, rot, this.camera.zoom);
       }

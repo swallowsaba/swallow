@@ -168,12 +168,18 @@ test('都市を作り、施設から学び、7 段を通して都市へ戻ると
   await expect.poll(centerOf).toBeLessThan(80);
 
   // 都市が発展: 学習で得た資金で、市立 IT 学院を Lv2 に上げる
+  const drawn = () => page.evaluate(() => (window as unknown as { __city: { stats: { drawnObjects: number } } }).__city.stats.drawnObjects);
+  await page.waitForTimeout(500);
+  const drawnBefore = await drawn();
   await page.getByTestId('info-upgrade').click();
   await expect(page.locator('.city-notice')).toContainText('市立 IT 学院を Lv2 に上げた');
   await expect(panel.locator('.info-level-value')).toHaveText('2');
   const after = await cityState(page);
   expect(after.facilities).toEqual(['academy:2']);
   expect(after.funds).toBe(fundsBefore - 600);
+  // 上げた施設の絵が消えない（描いた物の数が減らない）
+  await page.waitForTimeout(500);
+  expect(await drawn()).toBeGreaterThanOrEqual(drawnBefore);
 
   expect(errors).toEqual([]);
 });

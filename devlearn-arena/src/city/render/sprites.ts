@@ -37,12 +37,20 @@ export function drawOps(ctx: CanvasRenderingContext2D, ops: readonly DrawOp[]): 
 // 施設の SVG（src/city/assets/facilities/<施設>/lv<N>.svg）
 const SVG_FILES = import.meta.glob('../assets/facilities/*/lv*.svg', { query: '?raw', import: 'default', eager: true });
 
-export function facilitySvg(type: FacilityType, level: number): string | null {
+/**
+ * 施設のそのレベルの絵。そのレベルの SVG が無ければ、下のレベルの絵を使う。
+ * key は実際に使う SVG のもの（読み込みの準備 allFacilitySvgs と同じ名前）
+ */
+export function facilityAsset(type: FacilityType, level: number): { key: string; svg: string } | null {
   for (let lv = level; lv >= 1; lv -= 1) {
     const text = SVG_FILES[`../assets/facilities/${type}/lv${String(lv)}.svg`];
-    if (typeof text === 'string') return text;
+    if (typeof text === 'string') return { key: `${type}:${String(lv)}`, svg: text };
   }
   return null;
+}
+
+export function facilitySvg(type: FacilityType, level: number): string | null {
+  return facilityAsset(type, level)?.svg ?? null;
 }
 
 // 車と人の SVG（src/city/assets/agents/<car|person>-<N>.svg）

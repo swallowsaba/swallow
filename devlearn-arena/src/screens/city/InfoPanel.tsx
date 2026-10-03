@@ -129,7 +129,7 @@ export function InfoPanel({ model, onClose, onLesson, onLibrary, onUpgrade }: {
                   <span className="info-unit">資金</span>
                 </span>
               </div>
-              <p className="info-line is-sub">条件: {model.upgrade.needs}</p>
+              {/* 条件そのものは名前の下（Lv の次までの条件）に書いてある。ここは、まだ満たしていない物だけを並べる */}
               {model.upgrade.ok ? (
                 <button type="button" className="info-action is-primary" data-testid="info-upgrade" onClick={() => onUpgrade?.(model.id)}>
                   <Icon name="upgrade" size={16} />
