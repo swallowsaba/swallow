@@ -186,6 +186,7 @@ export const missionSchema = z.object({
   title: z.string().min(1),
   story: rich,
   domains: z.array(domainId).min(1),
+  knowledge: z.array(rich).min(1),
   recommended: z.array(lessonId),
   practice: practiceSchema,
   rewards: z.object({ xp: z.number().int(), funds: z.number().int(), landmark: z.string().optional() }).strict(),

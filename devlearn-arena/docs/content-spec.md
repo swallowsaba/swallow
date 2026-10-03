@@ -176,6 +176,7 @@ interface Mission {
   title: string;                 // 'Web サーバを構築せよ'
   story: Rich;                   // 都市の課題としての説明
   domains: DomainId[];           // 関係する分野（複数）
+  knowledge: Rich[];             // 必要な知識（1 行ずつ。1 つ以上。用語は {{term:ID}}。docs/decisions.md D-15）
   recommended: string[];         // おすすめのレッスン（前提ではない）
   practice: Practice;            // 実戦部分（レッスンと同じ形）
   rewards: { xp: number; funds: number; landmark?: string };   // 報酬の規則は docs/game-design.md 8 章
