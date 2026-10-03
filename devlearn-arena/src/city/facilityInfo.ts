@@ -1,7 +1,8 @@
 import type { SkillStage } from '@/game/skill';
+import type { Stage } from '@/game/stage';
 import domainsData from '../../content/domains.json';
 import { cellKey, facilityFacesRoad, occupancyOf } from './cells';
-import { FACILITY_DEFS } from './facilities';
+import { FACILITY_DEFS, isLargeFacility } from './facilities';
 import { constructionStage, PARK_RADIUS, upgradeCost, type ConstructionStage } from './rules';
 import type { City, DomainId, Facility, FacilityType } from './types';
 
@@ -29,14 +30,17 @@ export interface NextLevel {
   level: number;
   /** その分野のスキル段階がこれ以上 */
   skillStage: SkillStage;
+  /** 都市の発展段階がこれ以上（大型施設の Lv3〜Lv5 だけ。ほかは 1） */
+  cityStage: Stage;
   cost: number;
 }
 
-/** 次のレベルの条件（docs/game-design.md 5 章）。Lv5 なら null */
+/** 次のレベルの条件（docs/game-design.md 5・6 章）。Lv5 なら null */
 export function nextLevelOf(f: Facility): NextLevel | null {
   if (f.level >= 5) return null;
   const level = f.level + 1;
-  return { level, skillStage: level as SkillStage, cost: upgradeCost(FACILITY_DEFS[f.type].cost, level) };
+  const cityStage = (isLargeFacility(f.type) && level >= 3 ? level : 1) as Stage;
+  return { level, skillStage: level as SkillStage, cityStage, cost: upgradeCost(FACILITY_DEFS[f.type].cost, level) };
 }
 
 export interface DomainInfo {

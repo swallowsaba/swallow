@@ -10,7 +10,7 @@ import type { City } from '@/city/types';
 import { LESSONS } from '@/game/lessons';
 import { emptyProgress } from '@/game/progress';
 import { applyRecords } from '@/game/records';
-import { skillsOf } from '@/game/skill';
+import { skillsOf, type SkillDetail } from '@/game/skill';
 import { InfoPanel } from './InfoPanel';
 import { panelModel, type FacilityPanelModel, type PanelModel } from './infoPanelModel';
 
@@ -195,5 +195,45 @@ describe('情報パネルから学ぶ（docs/ui-design.md 5 章: どのレッス
     if (m?.kind !== 'facility') throw new Error('施設の情報ではない');
     expect(m.lessons.map((l) => l.id)).not.toContain(first);
     expect(m.lessons.every((l) => l.status === 'not-started')).toBe(true);
+  });
+});
+
+describe('情報パネルのアップグレード（docs/game-design.md 5 章・docs/decisions.md D-12）', () => {
+  const skill = (value: number): SkillDetail => ({
+    domain: 'found', value, stage: 0, breakdown: { completion: 0, quizFirstTry: 0, practiceSuccess: 0, retention: 0 },
+    counts: { completedLessons: 1, totalLessons: 20, quizFirstTries: 0, quizFirstCorrect: 0, practices: 0, practiceClean: 0, practiceHinted: 0, cards: 0, cardsOnTime: 0 },
+  });
+
+  it('スキルの段階が足りなければ、上げるボタンを出さず、何が足りないかを書く', () => {
+    const host = render(facilityPanel('server'));
+    expect(host.querySelector('[data-testid="info-upgrade"]')).toBeNull();
+    expect(host.querySelector('[data-testid="info-upgrade-blocked"]')?.textContent).toContain('Linux / CLIのスキルが「初級」以上になると上げられる（今は「未修得」）');
+  });
+
+  it('条件を満たせば「Lv2 に上げる」が出て、押すとその施設を上げる操作を呼ぶ', () => {
+    const f = city.facilities.find((x) => x.type === 'server');
+    const m = panelModel(city, { kind: 'facility', id: f?.id ?? '' }, { linux: skill(35) });
+    expect(m?.kind === 'facility' ? m.upgrade : null).toMatchObject({ ok: true, level: 2, cost: 400, blocked: [] });
+    const onUpgrade = vi.fn();
+    const host = document.createElement('div');
+    document.body.append(host);
+    act(() => {
+      createRoot(host).render(<InfoPanel model={m} onClose={() => {}} onUpgrade={onUpgrade} />);
+    });
+    const button = host.querySelector<HTMLButtonElement>('[data-testid="info-upgrade"]');
+    expect(button?.textContent).toContain('Lv2 に上げる');
+    act(() => button?.click());
+    expect(onUpgrade).toHaveBeenCalledWith(f?.id);
+  });
+
+  it('大型施設の Lv3 は、都市が地方都市になるまで上げられないと書く', () => {
+    const f = city.facilities.find((x) => x.type === 'academy');
+    if (!f) throw new Error('施設が無い');
+    const lv2 = { ...city, facilities: city.facilities.map((x) => (x.id === f.id ? { ...x, level: 2 as const } : x)) };
+    const m = panelModel(lv2, { kind: 'facility', id: f.id }, { found: skill(60) });
+    if (m?.kind !== 'facility') throw new Error('施設の情報ではない');
+    expect(m.upgrade?.ok).toBe(false);
+    expect(m.upgrade?.needs).toBe('IT 基礎のスキルが「中級」以上（今は「中級」）・都市が「地方都市」以上と、開発資金');
+    expect(m.upgrade?.blocked).toEqual(['大型施設の Lv3 は、都市が「地方都市」になると上げられる']);
   });
 });

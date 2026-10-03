@@ -5,10 +5,12 @@ import { amenityAt } from '@/city/growth';
 import { buildingName } from '@/city/place';
 import type { Selection } from '@/city/render/CityRenderer';
 import { CAPACITY, constructionStage, PARK_RADIUS, ZONE_RULES } from '@/city/rules';
+import { checkUpgrade } from '@/city/upgrade';
 import type { City, DomainId } from '@/city/types';
 import { LEVEL_NAMES } from '@/content/catalog';
 import { emptyProgress } from '@/game/progress';
 import { SKILL_STAGE_NAMES, skillStageOf, type SkillDetail } from '@/game/skill';
+import { STAGE_NAMES } from '@/game/stage';
 import type { Progress } from '@/game/types';
 import { lessonsForDomains, type LessonStatus } from '@/learning/library';
 import { skillBecause } from '../skills';
@@ -46,7 +48,8 @@ export interface FacilityPanelModel {
   /** 学習ライブラリで全部見る時に絞る分野 */
   libraryDomain: DomainId | null;
   missions: string[];
-  upgrade: { title: string; adds: string; cost: number; needs: string } | null;
+  /** 次のレベル（docs/game-design.md 5 章）。ok なら「上げる」を押せる。blocked は上げられない理由 */
+  upgrade: { level: number; title: string; adds: string; cost: number; needs: string; ok: boolean; blocked: string[] } | null;
   effect: string | null;
 }
 
@@ -97,10 +100,13 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}, prog
     });
     const main = domains[0];
     const next = nextLevelOf(f);
+    const check = checkUpgrade(city, f.id, Object.fromEntries(domains.map((d) => [d.id, d.value])));
     const looks = def.looks ?? [];
     const adds = next ? looks[Math.min(next.level - 1, looks.length - 1)] ?? '' : '';
-    const needs = next && main
-      ? `${main.name}のスキルが「${SKILL_STAGE_NAMES[next.skillStage]}」以上（今は「${main.stageName}」）と、開発資金`
+    const needs = next && check
+      ? `${domains.map((d) => d.name).join('か')}のスキルが「${SKILL_STAGE_NAMES[next.skillStage]}」以上（今は「${SKILL_STAGE_NAMES[check.currentSkillStage]}」）`
+        + (next.cityStage > 1 ? `・都市が「${STAGE_NAMES[next.cityStage]}」以上` : '')
+        + 'と、開発資金'
       : '';
     const own = new Set(domains.map((d) => d.id));
     return {
@@ -115,7 +121,15 @@ export function panelModel(city: City, sel: Selection, skills: Skills = {}, prog
       lessons: lessonsForDomains(domains.map((d) => d.id), progress).map((l) => ({ id: l.id, title: l.title, level: LEVEL_NAMES[l.level], status: l.status })),
       libraryDomain: main?.id ?? null,
       missions: missions.filter((m) => m.domains.some((d) => own.has(d))).map((m) => m.title).slice(0, 3),
-      upgrade: next ? { title: `Lv${String(next.level)}`, adds: next.level - 1 < looks.length ? `${adds}が加わる` : '建物が大きく・細かくなる', cost: next.cost, needs } : null,
+      upgrade: next ? {
+        level: next.level,
+        title: `Lv${String(next.level)}`,
+        adds: next.level - 1 < looks.length ? `${adds}が加わる` : '建物が大きく・細かくなる',
+        cost: next.cost,
+        needs,
+        ok: check?.ok ?? false,
+        blocked: check?.reasons.map((r) => r.text) ?? [],
+      } : null,
       effect: null,
     };
   }

@@ -77,3 +77,12 @@ export function footprintOf(type: FacilityType, rotation: 0 | 90 | 180 | 270): {
   const def = FACILITY_DEFS[type];
   return rotation % 180 === 0 ? { w: def.w, d: def.d } : { w: def.d, d: def.w };
 }
+
+/**
+ * 大型施設（docs/game-design.md 5 章・docs/decisions.md D-12）: 敷地が 3×3 の分野の施設。
+ * Lv3 以上に上げるには、発展段階の条件がある（地方都市で Lv3・中核都市で Lv4・技術都市で Lv5）
+ */
+export function isLargeFacility(type: FacilityType): boolean {
+  const def = FACILITY_DEFS[type];
+  return def.group === 'facility' && def.w === 3 && def.d === 3;
+}

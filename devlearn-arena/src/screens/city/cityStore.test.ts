@@ -49,3 +49,25 @@ describe('学習から都市へ戻る（docs/game-design.md 7 章・docs/ui-desi
     expect(store.getState().notice?.text).toContain('サーバ施設）を建てると');
   });
 });
+
+describe('施設を上げる（docs/game-design.md 2・5 章: スキルの段階と資金で買う）', () => {
+  it('条件を満たせば、Lv が上がって資金が減り、その場所を光の輪で示して知らせる', () => {
+    const store = storeWithAcademy();
+    const funds = store.getState().city.funds;
+    expect(store.getState().upgrade('f1', { found: 37 }, 500)).toBe(true);
+    const s = store.getState();
+    expect(s.city.facilities[0]?.level).toBe(2);
+    // 市立 IT 学院の建てた費用 600 × 2 ÷ 2
+    expect(s.city.funds).toBe(funds - 600);
+    expect(s.focus).toMatchObject({ at: { x: 46.5, y: 45.5 }, size: { x: 3, y: 3 }, seq: 1 });
+    expect(s.notice?.text).toBe('市立 IT 学院を Lv2 に上げた。図書館棟が加わった');
+  });
+
+  it('スキルの段階が足りなければ、上げず、資金も減らさない', () => {
+    const store = storeWithAcademy();
+    const before = store.getState().city;
+    expect(store.getState().upgrade('f1', { found: 20 }, 0)).toBe(false);
+    expect(store.getState().city).toBe(before);
+    expect(store.getState().notice).toBeNull();
+  });
+});

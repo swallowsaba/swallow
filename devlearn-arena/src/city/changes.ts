@@ -2,6 +2,7 @@ import { SKILL_STAGE_NAMES, skillStageOf } from '@/game/skill';
 import { FACILITY_DEFS } from './facilities';
 import { domainsOfFacility, DOMAINS, nextLevelOf } from './facilityInfo';
 import type { City, DomainId, Point } from './types';
+import { facilitySkillStage } from './upgrade';
 
 /**
  * 学習から都市へ戻った時の変化（docs/game-design.md 7 章・docs/city-design.md 5 章）。純粋な計算。
@@ -47,8 +48,9 @@ export function changesBetween(before: Snapshot, after: Snapshot): Change[] {
     const next = nextLevelOf(f);
     if (!next) continue;
     const domains = domainsOfFacility(f.type);
-    const best = (s: SkillValues): number => Math.max(0, ...domains.map((d) => stageOfValue(s[d.id])));
-    if (best(before.skills) >= next.skillStage || best(after.skills) < next.skillStage) continue;
+    if (facilitySkillStage(f.type, before.skills) >= next.skillStage || facilitySkillStage(f.type, after.skills) < next.skillStage) continue;
+    // 大型施設の Lv3〜Lv5 は発展段階も要る。届いていなければ「上げられる」とは言わない
+    if (after.city.stage < next.cityStage) continue;
     const top = [...domains].sort((a, b) => stageOfValue(after.skills[b.id]) - stageOfValue(after.skills[a.id]))[0];
     out.push({
       kind: 'upgradable',

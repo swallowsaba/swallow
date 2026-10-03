@@ -10,9 +10,11 @@ import './InfoPanel.css';
 
 const format = (n: number): string => n.toLocaleString('ja-JP');
 
-export function InfoPanel({ model, onClose, onLesson, onLibrary }: {
+export function InfoPanel({ model, onClose, onLesson, onLibrary, onUpgrade }: {
   model: PanelModel | null;
   onClose: () => void;
+  /** 施設を次のレベルに上げる（資金で買う） */
+  onUpgrade?: (facilityId: string) => void;
   /** 「ここで学ぶ」のレッスンを始める（どのレッスンもここから始められる） */
   onLesson?: (id: string) => void;
   /** 学習ライブラリで、この施設の分野を全部見る */
@@ -128,6 +130,16 @@ export function InfoPanel({ model, onClose, onLesson, onLibrary }: {
                 </span>
               </div>
               <p className="info-line is-sub">条件: {model.upgrade.needs}</p>
+              {model.upgrade.ok ? (
+                <button type="button" className="info-action is-primary" data-testid="info-upgrade" onClick={() => onUpgrade?.(model.id)}>
+                  <Icon name="upgrade" size={16} />
+                  {model.upgrade.title} に上げる
+                </button>
+              ) : (
+                <ul className="info-blocked" data-testid="info-upgrade-blocked">
+                  {model.upgrade.blocked.map((r) => <li key={r}>{r}</li>)}
+                </ul>
+              )}
             </section>
           ) : null}
         </>

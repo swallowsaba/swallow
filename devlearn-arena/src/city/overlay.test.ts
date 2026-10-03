@@ -33,7 +33,7 @@ describe('施設の情報', () => {
   it('次のレベルは、その分野のスキル段階がレベル以上と資金（docs/game-design.md 5 章）', () => {
     const f = grown.facilities[0];
     if (!f) throw new Error('施設が無い');
-    expect(nextLevelOf(f)).toEqual({ level: 2, skillStage: 2, cost: 400 });
+    expect(nextLevelOf(f)).toEqual({ level: 2, skillStage: 2, cityStage: 1, cost: 400 });
     expect(nextLevelOf({ ...f, level: 5 })).toBeNull();
   });
 

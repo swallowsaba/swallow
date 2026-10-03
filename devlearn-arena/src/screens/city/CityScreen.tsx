@@ -177,7 +177,14 @@ export function CityScreen({ session, active = true, current, onEntry, onLesson,
         <>
           <CityNotice text={state.notice?.text ?? null} paused={state.paused} shifted={panel !== null} />
           {onLesson ? <RecommendPanel progress={session.progress} onLesson={onLesson} /> : null}
-          <InfoPanel model={panel} onClose={() => state.select(null)} {...(onLesson ? { onLesson } : {})} {...(onLibrary ? { onLibrary } : {})} />
+          <InfoPanel
+            model={panel}
+            onClose={() => state.select(null)}
+            onUpgrade={(id) => {
+              const values = Object.fromEntries(Object.entries(skillsRef.current).map(([d, v]) => [d, v.value]));
+              store.getState().upgrade(id, values, performance.now());
+            }}
+            {...(onLesson ? { onLesson } : {})} {...(onLibrary ? { onLibrary } : {})} />
           <OverlayToggle value={state.overlay} onChange={state.setOverlay} legend={state.menu === null && state.overlay ? legendOf(state.overlay, store) : null} />
           <BuildMenu state={state} />
           <PlacementHint hint={state.confirm ? null : state.hint} />
@@ -193,8 +200,8 @@ function panelKeyOf(s: ReturnType<CityStore['getState']>): string {
   if (!sel) return '';
   const c = s.city;
   const target = sel.kind === 'facility' ? c.facilities.find((f) => f.id === sel.id) : c.buildings.find((b) => b.id === sel.id);
-  // 状態（建設の段階・道路・周りの施設）が変わったら作り直す
-  return `${sel.id}|${JSON.stringify(target)}|${String(Math.floor(c.day))}|${String(c.roads.length)}|${String(c.facilities.length)}|${String(c.buildings.length)}`;
+  // 状態（建設の段階・道路・周りの施設）と、アップグレードの条件（資金・発展段階）が変わったら作り直す
+  return `${sel.id}|${JSON.stringify(target)}|${String(Math.floor(c.day))}|${String(c.roads.length)}|${String(c.facilities.length)}|${String(c.buildings.length)}|${String(c.funds)}|${String(c.stage)}`;
 }
 
 function overlayKeyOf(s: ReturnType<CityStore['getState']>): string {

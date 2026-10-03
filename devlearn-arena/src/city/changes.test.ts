@@ -21,6 +21,13 @@ describe('学習から都市へ戻った時の変化（docs/game-design.md 7 章
     expect(changesBetween(snap(city(), { found: 31 }), snap(city(), { found: 55 }))).toEqual([]);
   });
 
+  it('大型施設の Lv3 は、都市が地方都市になるまで「上げられる」とは言わない（docs/decisions.md D-12）', () => {
+    const lv2 = { ...academy, level: 2 as const };
+    expect(changesBetween(snap(city({ facilities: [lv2] }), { found: 40 }), snap(city({ facilities: [lv2] }), { found: 55 }))).toEqual([]);
+    const town = city({ facilities: [lv2], stage: 3 });
+    expect(changesBetween(snap(town, { found: 40 }), snap(town, { found: 55 }))[0]).toMatchObject({ kind: 'upgradable', level: 3 });
+  });
+
   it('2 つの分野の施設（コンテナ施設）は、どちらの分野の段階でも上げられる', () => {
     const c = city({ facilities: [container] });
     expect(changesBetween(snap(c, { ctr: 0, docker: 0 }), snap(c, { ctr: 0, docker: 30 }))[0]).toMatchObject({ kind: 'upgradable', facilityId: 'f2', level: 2 });

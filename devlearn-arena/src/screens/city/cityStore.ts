@@ -9,6 +9,8 @@ import type { Selection } from '@/city/render/CityRenderer';
 import { SECONDS_PER_DAY, type BuildRoadKind } from '@/city/rules';
 import { generateTerrain, type Terrain } from '@/city/terrain';
 import type { City, Facility, FacilityType, ZoneKind } from '@/city/types';
+import { FACILITY_DEFS } from '@/city/facilities';
+import { checkUpgrade, upgradeFacility } from '@/city/upgrade';
 
 /**
  * 都市画面の状態（docs/ui-design.md 3・4 章）。
@@ -78,6 +80,11 @@ export interface CityGameState {
    * after は変化の知らせの後に出す知らせ（得た資金・次のおすすめ）
    */
   welcomeBack: (skills: SkillValues, after: readonly string[], now: number) => Change[];
+  /**
+   * 施設を次のレベルに上げる（資金で買う。docs/game-design.md 2・5 章）。
+   * 上げたら、その場所を光の輪で示し、何が加わったかを知らせる。上げられなければ何もしない
+   */
+  upgrade: (facilityId: string, skills: SkillValues, now: number) => boolean;
   select: (selection: Selection | null) => void;
   setOverlay: (overlay: OverlayKind | null) => void;
 }
@@ -148,6 +155,22 @@ export function createCityStore(seed?: number) {
       });
       for (const text of [...changes.slice(0, 2).map((c) => c.text), ...after]) get().notify(text, now);
       return changes;
+    },
+    upgrade: (facilityId, skills, now) => {
+      const s = get();
+      const check = checkUpgrade(s.city, facilityId, skills);
+      if (!check?.ok) return false;
+      const city = upgradeFacility(s.city, check);
+      const f = city.facilities.find((x) => x.id === facilityId);
+      if (!f) return false;
+      const def = FACILITY_DEFS[f.type];
+      const adds = def.looks?.[check.level - 1];
+      set({
+        city,
+        focus: { at: { x: f.origin.x + def.w / 2, y: f.origin.y + def.d / 2 }, size: { x: def.w, y: def.d }, seq: (s.focus?.seq ?? 0) + 1 },
+      });
+      get().notify(`${def.name}を Lv${String(check.level)} に上げた${adds ? `。${adds}が加わった` : ''}`, now);
+      return true;
     },
     select: (selected) => set({ selected }),
     setOverlay: (overlay) => set({ overlay }),
