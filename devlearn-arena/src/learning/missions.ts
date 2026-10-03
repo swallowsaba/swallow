@@ -1,5 +1,6 @@
 import { domainsOfFacility } from '@/city/facilityInfo';
 import type { Facility, FacilityType } from '@/city/types';
+import { domainDef } from '@/content/catalog';
 import { MISSIONS } from '@/content/missions';
 import type { Mission } from '@/content/schema';
 import type { MissionProgress, Progress } from '@/game/types';
@@ -14,6 +15,14 @@ import type { MissionProgress, Progress } from '@/game/types';
  */
 
 export type MissionStatus = MissionProgress['status'];
+
+export const MISSION_STATUS_NAMES: Record<MissionStatus, string> = { available: '受けられる', 'in-progress': '挑戦中', completed: '達成' };
+
+/** その依頼を出した施設（先頭の分野の施設） */
+export function missionFacility(m: Mission): FacilityType | undefined {
+  const main = m.domains[0];
+  return (main ? domainDef(main)?.facility : undefined) as FacilityType | undefined;
+}
 
 export function missionStatus(progress: Progress, id: string): MissionStatus {
   return progress.missions[id]?.status ?? 'available';

@@ -262,17 +262,47 @@
   padding: 0;
   list-style: none;
 }
-.info-missions li {
+.info-heading-note {
+  margin-left: 8px;
+  font-weight: 400;
+  font-size: var(--fs-12);
+  letter-spacing: 0;
+  color: var(--hud-text-sub);
+}
+.info-mission {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 3px 0;
+  width: 100%;
+  padding: 3px 4px;
+  border: none;
+  border-left: 2px solid var(--transparent);
+  background: var(--transparent);
+  color: var(--hud-text);
   font-size: var(--fs-14);
   line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
 }
-.info-missions li svg {
-  color: var(--gold);
+.info-mission:hover,
+.info-mission:focus-visible {
+  background: var(--hud-bg);
+  border-left-color: var(--gold);
+  outline: none;
+}
+.info-mission svg {
   flex: none;
+  color: var(--gold);
+}
+.info-mission.is-completed svg {
+  color: var(--ok);
+}
+.info-mission-title {
+  flex: 1;
+}
+.info-mission-status {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
 }
 
 .info-upgrade {

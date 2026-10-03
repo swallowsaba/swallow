@@ -1,0 +1,79 @@
+/* ミッションの実戦（枠はレッスン画面と同じ src/screens/lesson/LessonScreen.css） */
+.mission-brief {
+  margin: 0 0 4px;
+  padding: 2px 0 10px 12px;
+  border-left: 3px solid var(--gold);
+}
+.mission-brief .stage-text {
+  margin: 0;
+}
+
+/* 結果と報酬の右の欄（都市に現れる物を、絵と一緒に） */
+.mission-prize {
+  align-self: center;
+  width: min(420px, 100%);
+  margin: auto;
+  padding: 16px 22px 18px;
+  background: var(--hud-bg-strong);
+  border: 2px solid var(--hud-line);
+  border-radius: 4px 18px 4px 18px;
+  box-shadow: var(--shadow-window);
+}
+.mission-prize-head {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--fs-18);
+  line-height: 1.4;
+  color: var(--gold);
+}
+.mission-prize-art {
+  display: block;
+  width: 220px;
+  margin: 0 auto -6px;
+}
+.mission-prize-landmark {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 10px;
+  font-size: var(--fs-13);
+  line-height: 1.6;
+  color: var(--hud-text-sub);
+  text-align: center;
+}
+.mission-prize-landmark strong {
+  font-size: var(--fs-16);
+  color: var(--hud-text);
+}
+.mission-prize-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.mission-prize-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--hud-line);
+}
+.mission-prize-list dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-14);
+  color: var(--hud-text-sub);
+}
+.mission-prize-list dd {
+  margin: 0;
+  font-family: var(--font-number);
+  font-weight: 700;
+  font-size: var(--fs-22);
+  color: var(--gold-light);
+}
+.mission-prize-note {
+  margin: 10px 0 0;
+  font-size: var(--fs-13);
+  line-height: 1.6;
+}

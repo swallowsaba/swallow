@@ -26,7 +26,7 @@ import './CityScreen.css';
  * 都市画面（docs/ui-design.md 3 章）。全画面の都市ビューに、上の帯と建設メニューを小さく重ねる。
  * 学習者が道路を引き、区画を塗り、施設と公園を置く。区画の建物は自動で建ち、育つ（docs/decisions.md D-03）。
  */
-export function CityScreen({ session, active = true, current, onEntry, onLesson, onLibrary }: {
+export function CityScreen({ session, active = true, current, onEntry, onLesson, onLibrary, onMission }: {
   session: Session;
   active?: boolean;
   /** 上の帯で、今開いている画面の入口を光らせる */
@@ -36,6 +36,8 @@ export function CityScreen({ session, active = true, current, onEntry, onLesson,
   onLesson?: (id: string) => void;
   /** 情報パネルから学習ライブラリを、施設の分野に絞って開く */
   onLibrary?: (domain: DomainId | null) => void;
+  /** 情報パネルとおすすめの欄から、ミッションを開く */
+  onMission?: (id: string) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<CityRenderer | null>(null);
@@ -172,7 +174,7 @@ export function CityScreen({ session, active = true, current, onEntry, onLesson,
         rankName={RANK_NAMES[rankOf(xp)]}
         population={state.population}
         stageName={STAGE_NAMES[state.stage]}
-        disabled={['mission', 'settings']}
+        disabled={['settings']}
         current={current}
         {...(onEntry ? { onEntry } : {})}
       />
@@ -180,7 +182,7 @@ export function CityScreen({ session, active = true, current, onEntry, onLesson,
       {active ? (
         <>
           <CityNotice text={state.notice?.text ?? null} paused={state.paused} shifted={panel !== null} />
-          {onLesson ? <RecommendPanel progress={session.progress} onLesson={onLesson} /> : null}
+          {onLesson ? <RecommendPanel progress={session.progress} onLesson={onLesson} {...(onMission ? { onMission } : {})} /> : null}
           <InfoPanel
             model={panel}
             onClose={() => state.select(null)}
@@ -188,7 +190,7 @@ export function CityScreen({ session, active = true, current, onEntry, onLesson,
               const values = Object.fromEntries(Object.entries(skillsRef.current).map(([d, v]) => [d, v.value]));
               store.getState().upgrade(id, values, performance.now());
             }}
-            {...(onLesson ? { onLesson } : {})} {...(onLibrary ? { onLibrary } : {})} />
+            {...(onLesson ? { onLesson } : {})} {...(onLibrary ? { onLibrary } : {})} {...(onMission ? { onMission } : {})} />
           <OverlayToggle value={state.overlay} onChange={state.setOverlay} legend={state.menu === null && state.overlay ? legendOf(state.overlay, store) : null} />
           <BuildMenu state={state} landmarks={landmarks} />
           <PlacementHint hint={state.confirm ? null : state.hint} />

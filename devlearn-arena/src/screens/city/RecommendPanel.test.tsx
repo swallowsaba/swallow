@@ -50,3 +50,21 @@ describe('おすすめの欄（docs/ui-design.md 3 章）', () => {
     expect(host.querySelector('.recommend-head')?.getAttribute('aria-expanded')).toBe('false');
   });
 });
+
+describe('おすすめの欄の挑戦中のミッション', () => {
+  it('挑戦中のミッションが先頭に 1 つ出て、押すとミッション一覧で開く。全部で 3 行まで', () => {
+    const store = createProgressStore(() => undefined);
+    store.getState().startMission('incident');
+    const onMission = vi.fn();
+    const host = document.createElement('div');
+    document.body.append(host);
+    root = createRoot(host);
+    act(() => root?.render(<RecommendPanel progress={store} onLesson={vi.fn()} onMission={onMission} />));
+    const items = [...host.querySelectorAll<HTMLButtonElement>('.recommend-item')];
+    expect(items).toHaveLength(3);
+    expect(items[0]?.dataset.mission).toBe('incident');
+    expect(items[0]?.textContent).toContain('障害原因を特定せよ');
+    act(() => items[0]?.click());
+    expect(onMission).toHaveBeenCalledWith('incident');
+  });
+});

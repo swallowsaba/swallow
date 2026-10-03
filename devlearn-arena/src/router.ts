@@ -12,15 +12,20 @@ import { DOMAIN_IDS, type DomainId } from './content/schema';
  *   #/lesson/<レッスン ID>     レッスン画面（7 段の学習。施設の中に入る別の画面）
  *   #/glossary[/<用語 ID>]     用語集
  *   #/growth                  成長画面
+ *   #/missions[/<ミッション ID>] ミッション一覧（ID で選んだ状態で開く）
+ *   #/mission/<ミッション ID>   ミッションの実戦（施設の中に入る別の画面）
  */
 export type Route =
   | { name: 'city' }
   | { name: 'growth' }
   | { name: 'learn'; view: 'list' | 'graph'; lessonId?: string; domain?: DomainId }
   | { name: 'glossary'; termId?: string }
-  | { name: 'lesson'; lessonId: string };
+  | { name: 'lesson'; lessonId: string }
+  | { name: 'missions'; missionId?: string }
+  | { name: 'mission'; missionId: string };
 
 const LESSON_ID = /^[a-z0-9]+\.[bia]\.\d+$/;
+const MISSION_ID = /^[a-z0-9-]+$/;
 
 export function parseHash(hash: string): Route {
   const [path = '', query = ''] = hash.replace(/^#/, '').split('?');
@@ -47,6 +52,15 @@ export function parseHash(hash: string): Route {
       // ID の形でなければ学習ライブラリへ
       return LESSON_ID.test(id) ? { name: 'lesson', lessonId: id } : { name: 'learn', view: 'list' };
     }
+    case 'missions': {
+      const id = decodeURIComponent(arg);
+      return MISSION_ID.test(id) ? { name: 'missions', missionId: id } : { name: 'missions' };
+    }
+    case 'mission': {
+      const id = decodeURIComponent(arg);
+      // ID の形でなければミッション一覧へ
+      return MISSION_ID.test(id) ? { name: 'mission', missionId: id } : { name: 'missions' };
+    }
     default:
       return { name: 'city' };
   }
@@ -63,6 +77,10 @@ export function hashOf(route: Route): string {
       return route.termId ? `#/glossary/${route.termId}` : '#/glossary';
     case 'lesson':
       return `#/lesson/${route.lessonId}`;
+    case 'missions':
+      return route.missionId ? `#/missions/${route.missionId}` : '#/missions';
+    case 'mission':
+      return `#/mission/${route.missionId}`;
     case 'learn': {
       const base = route.view === 'graph' ? '#/graph' : '#/learn';
       const path = route.lessonId ? `${base}/${route.lessonId}` : base;

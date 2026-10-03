@@ -71,6 +71,9 @@
 .recommend-item.is-review {
   border-left-color: var(--info);
 }
+.recommend-item.is-mission {
+  border-left-color: var(--gold);
+}
 .recommend-mark {
   flex: none;
   width: 30px;

@@ -237,3 +237,40 @@ describe('情報パネルのアップグレード（docs/game-design.md 5 章・
     expect(m.upgrade?.blocked).toEqual(['大型施設の Lv3 は、都市が「地方都市」になると上げられる']);
   });
 });
+
+describe('情報パネルのミッション（docs/game-design.md 5 章・docs/decisions.md D-14）', () => {
+  const withLevel = (type: string, level: 1 | 2 | 3 | 4 | 5): City => ({
+    ...city,
+    facilities: city.facilities.map((f) => (f.type === type ? { ...f, level } : f)),
+  });
+  const missionsOf = (c: City, type: string, progress = emptyProgress()): FacilityPanelModel => {
+    const f = c.facilities.find((x) => x.type === type);
+    const m = f ? panelModel(c, { kind: 'facility', id: f.id }, {}, progress) : null;
+    if (m?.kind !== 'facility') throw new Error(type);
+    return m;
+  };
+
+  it('施設の分野を含むミッションが、施設の Lv の数まで並ぶ。Lv が上がると増える', () => {
+    expect(missionsOf(city, 'web').missions.map((m) => m.title)).toEqual(['Web サーバを構築せよ']);
+    expect(missionsOf(city, 'web').missionTotal).toBe(3);
+    expect(missionsOf(withLevel('web', 3), 'web').missions).toHaveLength(3);
+    expect(missionsOf(withLevel('web', 5), 'web').missions).toHaveLength(3);
+  });
+
+  it('関係するミッションの無い施設には欄を出さない。押すとミッション一覧でそのミッションを開く', () => {
+    const onMission = vi.fn();
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() => root.render(<InfoPanel model={missionsOf(withLevel('web', 2), 'web')} onClose={vi.fn()} onMission={onMission} />));
+    const items = [...host.querySelectorAll<HTMLButtonElement>('[data-testid="info-missions"] button')];
+    // Web 施設の分野（web）を先頭に持つミッションは無いので、ミッション一覧の並び（報酬の XP の小さい順）のまま
+    expect(items.map((b) => b.dataset.mission)).toEqual(['web-server', 'https']);
+    expect(host.textContent).toContain('Lv が上がると増える（2 / 3）');
+    act(() => items[0]?.click());
+    expect(onMission).toHaveBeenCalledWith(items[0]?.dataset.mission);
+    act(() => root.render(<InfoPanel model={missionsOf(city, 'datacenter')} onClose={vi.fn()} />));
+    expect(host.querySelector('[data-testid="info-missions"]')).toBeNull();
+    act(() => root.unmount());
+  });
+});

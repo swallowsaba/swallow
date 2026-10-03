@@ -9,6 +9,10 @@ import { GlossaryScreen } from './screens/glossary/GlossaryScreen';
 import { GrowthScreen } from './screens/growth/GrowthScreen';
 import { LearnScreen } from './screens/learn/LearnScreen';
 import { LessonScreen } from './screens/lesson/LessonScreen';
+import { MissionScreen } from './screens/missions/MissionScreen';
+import { MissionsScreen } from './screens/missions/MissionsScreen';
+import { landmarkOf } from './city/facilities';
+import { MISSIONS } from './content/missions';
 import { createSession, type Session } from './screens/session';
 import { nowIso } from './screens/clock';
 import { skillValues } from './screens/skills';
@@ -25,11 +29,13 @@ const ENTRY_ROUTES: Partial<Record<EntryId, Route>> = {
   graph: { name: 'learn', view: 'graph' },
   glossary: { name: 'glossary' },
   growth: { name: 'growth' },
+  mission: { name: 'missions' },
 };
 
 function currentEntry(route: Route): EntryId | undefined {
   if (route.name === 'learn') return route.view === 'graph' ? 'graph' : 'learn';
   if (route.name === 'glossary' || route.name === 'growth') return route.name;
+  if (route.name === 'missions') return 'mission';
   return undefined;
 }
 
@@ -51,17 +57,26 @@ export function App({ session: given }: { session?: Session } = {}) {
   useEffect(() => {
     const city = session.city.getState();
     const progress = session.progress.getState().progress;
-    if (route.name === 'lesson') {
+    if (route.name === 'lesson' || route.name === 'mission') {
       if (!city.away) leftAt.current = nowIso();
       city.leave(skillValues(progress));
       return;
     }
     if (route.name !== 'city' || !city.away) return;
     const since = leftAt.current ? instantOf(leftAt.current) : 0;
-    const earned = progress.xpLog.filter((e) => instantOf(e.at) >= since).reduce((n, e) => n + e.amount, 0);
+    // 学習に出ている間に都市の資金が変わるのは、学習とミッションの報酬だけ
+    const earned = city.city.funds - city.away.city.funds;
+    const achieved = MISSIONS.filter((m) => {
+      const at = progress.missions[m.id]?.completedAt;
+      return at !== undefined && instantOf(at) >= since;
+    });
     const next = recommend(progress, LESSONS, 1)[0];
     const after = [
-      ...(earned > 0 ? [`学習で開発資金が +${String(earned)} 増えた`] : []),
+      ...achieved.map((m) => {
+        const landmark = m.rewards.landmark ? landmarkOf(m.rewards.landmark) : undefined;
+        return `ミッション「${m.title}」を達成した${landmark ? `。${landmark.name}を受け取った（建設メニューの公園から置ける）` : ''}`;
+      }),
+      ...(earned > 0 ? [`${achieved.length > 0 ? '学習とミッション' : '学習'}で開発資金が +${String(earned)} 増えた`] : []),
       ...(next ? [`次は「${next.title}」がおすすめ（左上のおすすめから始められる）`] : []),
     ];
     city.welcomeBack(skillValues(progress), after, performance.now());
@@ -83,6 +98,7 @@ export function App({ session: given }: { session?: Session } = {}) {
         }}
         onLesson={startLesson}
         onLibrary={(domain) => go(domain ? { name: 'learn', view: 'list', domain } : { name: 'learn', view: 'list' })}
+        onMission={(id) => go({ name: 'missions', missionId: id })}
       />
       {route.name === 'growth' ? <GrowthScreen session={session} onClose={toCity} /> : null}
       {route.name === 'learn' ? (
@@ -106,6 +122,27 @@ export function App({ session: given }: { session?: Session } = {}) {
           session={session}
           lessonId={route.lessonId}
           onExit={toCity}
+          onLesson={(id) => go({ name: 'learn', view: 'list', lessonId: id })}
+          onGlossary={(id) => go({ name: 'glossary', termId: id })}
+        />
+      ) : null}
+      {route.name === 'missions' ? (
+        <MissionsScreen
+          session={session}
+          missionId={route.missionId}
+          onClose={toCity}
+          onSelect={(id) => mark({ name: 'missions', missionId: id })}
+          onStart={(id) => go({ name: 'mission', missionId: id })}
+          onLesson={(id) => go({ name: 'learn', view: 'list', lessonId: id })}
+          onGlossary={(id) => go({ name: 'glossary', termId: id })}
+        />
+      ) : null}
+      {route.name === 'mission' ? (
+        <MissionScreen
+          session={session}
+          missionId={route.missionId}
+          onExit={toCity}
+          onBoard={() => go({ name: 'missions', missionId: route.missionId })}
           onLesson={(id) => go({ name: 'learn', view: 'list', lessonId: id })}
           onGlossary={(id) => go({ name: 'glossary', termId: id })}
         />

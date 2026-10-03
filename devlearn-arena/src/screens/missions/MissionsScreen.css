@@ -1,0 +1,316 @@
+/* ミッション一覧（docs/ui-design.md 2 章）。窓は src/ui/Window.css */
+.missions-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 420px 1fr;
+}
+
+/* ---------- 依頼の一覧（札を並べず、掲示板の行で） ---------- */
+.mission-board {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 12px 14px 16px;
+  border-right: 1px solid var(--hud-line);
+}
+.mission-board-head {
+  margin: 0 0 8px 4px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--fs-16);
+  line-height: 1.4;
+  color: var(--gold);
+}
+.mission-board ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--hud-line);
+}
+.mission-row {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  grid-template-areas:
+    'mark title status'
+    '. from domains';
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+  width: 100%;
+  padding: 8px 8px 8px 6px;
+  border: none;
+  border-bottom: 1px solid var(--hud-line);
+  border-left: 3px solid var(--transparent);
+  background: var(--transparent);
+  color: var(--hud-text);
+  text-align: left;
+  cursor: pointer;
+}
+.mission-row:hover,
+.mission-row:focus-visible {
+  background: var(--hud-bg);
+  outline: none;
+}
+.mission-row.is-selected {
+  background: var(--hud-bg);
+  border-left-color: var(--gold);
+}
+.mission-row-mark {
+  grid-area: mark;
+  display: flex;
+  color: var(--hud-text-sub);
+}
+.mission-row.is-completed .mission-row-mark {
+  color: var(--ok);
+}
+.mission-row.is-in-progress .mission-row-mark {
+  color: var(--gold);
+}
+.mission-row-title {
+  grid-area: title;
+  font-weight: 700;
+  font-size: var(--fs-14);
+  line-height: 1.4;
+}
+.mission-row-from {
+  grid-area: from;
+  font-size: var(--fs-12);
+  line-height: 1.4;
+  color: var(--hud-text-sub);
+}
+.mission-row-domains {
+  grid-area: domains;
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.mission-row-status {
+  grid-area: status;
+  font-size: var(--fs-12);
+  line-height: 1.4;
+  color: var(--hud-text-sub);
+}
+.mission-row-status.is-in-progress {
+  color: var(--gold-light);
+}
+.mission-row-status.is-completed {
+  color: var(--ok);
+}
+.mission-swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  background: var(--c);
+  transform: rotate(45deg);
+}
+.mission-board-note {
+  margin: 12px 4px 0;
+  font-size: var(--fs-12);
+  line-height: 1.6;
+  color: var(--hud-text-sub);
+}
+
+/* ---------- 依頼の中身 ---------- */
+.mission-detail {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 28px 20px;
+  display: flex;
+  flex-direction: column;
+}
+.mission-from {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--fs-13);
+  line-height: 1.4;
+  color: var(--hud-text-sub);
+}
+.mission-domains {
+  display: flex;
+  gap: 10px;
+  margin-left: 8px;
+}
+.mission-domain {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--hud-text);
+}
+.mission-title {
+  margin: 6px 0 8px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-28);
+  line-height: 1.3;
+}
+.mission-story {
+  max-width: 760px;
+  margin: 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--gold);
+  font-size: var(--fs-16);
+  line-height: 1.75;
+}
+.mission-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 28px;
+  margin-top: 6px;
+}
+.mission-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 16px 0 6px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--fs-16);
+  line-height: 1.4;
+  color: var(--gold);
+}
+.mission-heading-note {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.mission-knowledge {
+  margin: 0;
+  padding: 0 0 0 18px;
+  font-size: var(--fs-14);
+  line-height: 1.75;
+}
+.mission-knowledge li + li {
+  margin-top: 4px;
+}
+.mission-lessons {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mission-lesson {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 6px;
+  border: none;
+  border-left: 2px solid var(--transparent);
+  background: var(--transparent);
+  color: var(--hud-text);
+  font-size: var(--fs-13);
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+}
+.mission-lesson:hover,
+.mission-lesson:focus-visible {
+  background: var(--hud-bg);
+  border-left-color: var(--gold);
+  outline: none;
+}
+.mission-lesson-title {
+  flex: 1;
+}
+.mission-lesson-level,
+.mission-lesson-status {
+  display: flex;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.mission-lesson.is-completed .mission-lesson-status {
+  color: var(--ok);
+}
+
+/* 報酬（数字だけを並べず、都市に現れる物と、できるようになることを添える。docs/game-design.md 10 章） */
+.mission-reward {
+  padding: 0 16px 12px;
+  background: var(--hud-bg);
+  border-radius: 4px 14px 4px 14px;
+}
+.mission-monument {
+  display: block;
+  width: 150px;
+  margin: 0 auto -8px;
+}
+.mission-reward-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.mission-reward-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--hud-line);
+}
+.mission-reward-list dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.mission-reward-list dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--fs-16);
+  color: var(--gold-light);
+}
+.mission-reward-list dd.num {
+  font-family: var(--font-number);
+  font-size: var(--fs-18);
+}
+.mission-reward-note,
+.mission-can {
+  margin: 8px 0 0;
+  font-size: var(--fs-13);
+  line-height: 1.6;
+}
+.mission-reward-note {
+  color: var(--hud-text-sub);
+}
+
+.mission-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: auto;
+  padding-top: 18px;
+}
+.mission-done {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--fs-13);
+  color: var(--ok);
+}
+.mission-done.is-progress {
+  color: var(--gold-light);
+}
+.mission-start {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 28px 0 24px;
+  border: none;
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+  font-weight: 700;
+  font-size: var(--fs-16);
+  line-height: 1.2;
+  clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+  cursor: pointer;
+}
+.mission-start:active {
+  transform: translateY(2px);
+}

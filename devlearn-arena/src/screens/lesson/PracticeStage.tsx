@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PRACTICE_NAMES } from '@/content/catalog';
 import { ERROR_GUIDES } from '@/content/glossary';
-import type { ErrorGuide, Lesson } from '@/content/schema';
+import type { ErrorGuide, Practice } from '@/content/schema';
 import { ENVIRONMENTS, initialShell, isEnvironmentId } from '@/engines/environments';
 import { restoreShell, snapshotShell, type SessionOptions, type ShellSnapshotData } from '@/engines/kernel/session';
 import type { PracticeAttempt, PracticeSession } from '@/game/types';
@@ -21,6 +21,7 @@ import { Feedback, Slot, StepButtons, type OnTerm } from './widgets';
  * 左に目的と手順（打つ前に何を確かめるか、打った後に何が起きたか）とヒント 3 段、右に仮想端末。
  * エラーが出たら、端末の下に「エラー → 内容 → 原因候補 → ヒント」の小窓を出す（調べる調子で。ゲームオーバーにしない）。
  * 判定は模擬環境の状態で行う（src/learning/practice.ts）。打つたびに途中の状態を保存し、中断して開き直すと続きから。
+ * レッスンの実戦とミッションの実戦（docs/game-design.md 8 章: 同じ模擬環境を使う）の両方で使う。
  */
 
 interface Saved {
@@ -28,8 +29,10 @@ interface Saved {
   run: PracticeRun;
 }
 
-export function PracticeStage({ lesson, saved, onSave, onFinish, onTerm, right, action, onBack }: {
-  lesson: Lesson;
+export function PracticeStage({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: {
+  practice: Practice;
+  /** 途中の状態を保存する名前（レッスン ID。ミッションは mission:<ID>） */
+  sessionId: string;
   /** 途中の状態（中断して開き直した時） */
   saved: PracticeSession | undefined;
   onSave: (session: PracticeSession) => void;
@@ -39,8 +42,8 @@ export function PracticeStage({ lesson, saved, onSave, onFinish, onTerm, right, 
   right: HTMLElement | null;
   action: HTMLElement | null;
   onBack: () => void;
+  backLabel?: string;
 }) {
-  const p = lesson.practice;
   const restored = saved?.engineState as Saved | undefined;
   const fresh = useMemo<SessionOptions>(() => ({ restore: initialShell(p.environment, p.setup) }), [p]);
   const shell = useShellSession(restored ? { restore: restoreShell(restored.shell) } : fresh);
@@ -61,7 +64,7 @@ export function PracticeStage({ lesson, saved, onSave, onFinish, onTerm, right, 
   const envName = isEnvironmentId(p.environment) ? ENVIRONMENTS[p.environment].name : p.environment;
 
   const save = (next: PracticeRun): void => {
-    onSave({ lessonId: lesson.id, stepIndex: next.stepIndex, engineState: { shell: snapshotShell(shell.getState()), run: next } satisfies Saved, savedAt: nowIso() });
+    onSave({ lessonId: sessionId, stepIndex: next.stepIndex, engineState: { shell: snapshotShell(shell.getState()), run: next } satisfies Saved, savedAt: nowIso() });
   };
 
   const onExecuted = (line: string, _code: number, stderr: string): void => {
@@ -175,7 +178,7 @@ export function PracticeStage({ lesson, saved, onSave, onFinish, onTerm, right, 
       <Slot to={action}>
         <StepButtons
           onBack={onBack}
-          backLabel="クイズへ戻る"
+          backLabel={backLabel}
           onNext={() => onFinish(attemptOf(p, runRef.current))}
           nextLabel={finished ? '結果へ' : 'ここで終えて結果を見る'}
           nextTestId={finished ? 'lesson-next' : 'practice-giveup'}

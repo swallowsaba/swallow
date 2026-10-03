@@ -13,6 +13,7 @@ import { Icon } from '@/ui/icons/Icon';
 import { nowIso } from '../clock';
 import type { Session } from '../session';
 import { useSkills } from '../skills';
+import { backdropOf } from './backdrops';
 import { DoneStage } from './DoneStage';
 import { ExplainStage } from './ExplainStage';
 import { PracticeStage } from './PracticeStage';
@@ -31,9 +32,6 @@ import './LessonStages.css';
  *
  * どの段でも中断でき、進んだ段は記録に残る（次に開くとその段から）。終わった段は上の帯から戻って見られる。
  */
-
-const backdropFiles = import.meta.glob<string>('./backdrops/*.svg', { query: '?url', import: 'default', eager: true });
-const BACKDROPS = new Map(Object.entries(backdropFiles).map(([p, url]) => [p.replace(/^.*\//, '').replace(/\.svg$/, ''), url]));
 
 /** 左の欄の幅（%）の範囲。実戦では右（端末）を広くできる */
 const SPLIT_MIN = 30;
@@ -132,7 +130,7 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
 
   const facilityType = (entry ? domainDef(entry.domain)?.facility : undefined) as FacilityType | undefined;
   const facility = facilityType ? FACILITY_DEFS[facilityType] : undefined;
-  const backdrop = facilityType ? BACKDROPS.get(facilityType) : undefined;
+  const backdrop = backdropOf(facilityType);
 
   if (!entry) return null;
   const open = openStages(reached);
@@ -202,7 +200,8 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
           ) : view === 'practice' ? (
             <PracticeStage
               key={`${lessonId}:${String(lastAttempt?.at ?? '')}`}
-              lesson={lesson}
+              practice={lesson.practice}
+              sessionId={lessonId}
               saved={practiceSessions[lessonId]}
               onSave={(ps) => session.progress.getState().savePractice(ps)}
               onFinish={(attempt) => {

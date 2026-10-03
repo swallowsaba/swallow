@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { answerQuiz, completeLesson, emptyProgress, enterLesson, finishPractice, reachStage, type Outcome } from '@/game/progress';
+import { missionOf } from '@/content/missions';
+import { answerQuiz, completeLesson, emptyProgress, enterLesson, finishMission, finishPractice, reachStage, startMission, type Outcome } from '@/game/progress';
 import { applyRecords, type LearningRecord } from '@/game/records';
 import { LESSONS } from '@/game/lessons';
 import type { LessonStage, PracticeAttempt, PracticeSession, Progress } from '@/game/types';
@@ -25,7 +26,17 @@ export interface ProgressState {
   finishPractice: (lessonId: string, attempt: Omit<PracticeAttempt, 'at'>, at: string) => Outcome;
   /** まとめまで到達した（修了）。得た XP と同じ量の資金を onFunds に渡す */
   complete: (lessonId: string, at: string) => Outcome;
+  /** ミッションを受ける（前提は要らない） */
+  startMission: (missionId: string) => void;
+  /**
+   * ミッションの実戦を 1 回終える。初めて成功したら達成し、報酬（XP・開発資金）を得る。
+   * 途中の状態（mission:<ID>）は消す。得た資金（XP と同じ量 + 報酬の資金）を onFunds に渡す
+   */
+  finishMission: (missionId: string, attempt: Omit<PracticeAttempt, 'at'>, at: string) => Outcome;
 }
+
+/** ミッションの実戦の途中の状態を保存する名前 */
+export const missionSession = (missionId: string): string => `mission:${missionId}`;
 
 export function createProgressStore(onFunds: (amount: number) => void, initial: Progress = emptyProgress()) {
   return create<ProgressState>((set, get) => ({
@@ -56,6 +67,16 @@ export function createProgressStore(onFunds: (amount: number) => void, initial: 
     complete: (lessonId, at) => {
       const outcome = completeLesson(get().progress, lessonId, at, LESSONS);
       set({ progress: outcome.progress });
+      if (outcome.funds !== 0) onFunds(outcome.funds);
+      return outcome;
+    },
+    startMission: (missionId) => set({ progress: startMission(get().progress, missionId) }),
+    finishMission: (missionId, attempt, at) => {
+      const m = missionOf(missionId);
+      const outcome = finishMission(get().progress, { missionId, attempt: { ...attempt, at }, xp: m?.rewards.xp ?? 0, funds: m?.rewards.funds ?? 0 }, at, LESSONS);
+      const key = missionSession(missionId);
+      const rest = Object.fromEntries(Object.entries(get().practiceSessions).filter(([id]) => id !== key));
+      set({ progress: outcome.progress, practiceSessions: rest });
       if (outcome.funds !== 0) onFunds(outcome.funds);
       return outcome;
     },

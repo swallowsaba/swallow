@@ -1,5 +1,6 @@
 import { Icon } from '@/ui/icons/Icon';
 import type { DomainId } from '@/city/types';
+import { MISSION_STATUS_NAMES } from '@/learning/missions';
 import type { PanelModel } from './infoPanelModel';
 import './InfoPanel.css';
 
@@ -10,7 +11,7 @@ import './InfoPanel.css';
 
 const format = (n: number): string => n.toLocaleString('ja-JP');
 
-export function InfoPanel({ model, onClose, onLesson, onLibrary, onUpgrade }: {
+export function InfoPanel({ model, onClose, onLesson, onLibrary, onUpgrade, onMission }: {
   model: PanelModel | null;
   onClose: () => void;
   /** 施設を次のレベルに上げる（資金で買う） */
@@ -19,6 +20,8 @@ export function InfoPanel({ model, onClose, onLesson, onLibrary, onUpgrade }: {
   onLesson?: (id: string) => void;
   /** 学習ライブラリで、この施設の分野を全部見る */
   onLibrary?: (domain: DomainId | null) => void;
+  /** ミッション一覧で、そのミッションを開く */
+  onMission?: (id: string) => void;
 }) {
   if (!model) return null;
   // 分野が 2 つ以上で理由が同じ（どちらも記録が無い など）なら、理由は 1 度だけ書く
@@ -105,12 +108,18 @@ export function InfoPanel({ model, onClose, onLesson, onLibrary, onUpgrade }: {
 
           {model.missions.length > 0 ? (
             <section className="info-section" aria-label="ミッション">
-              <h3 className="info-heading">ミッション</h3>
-              <ul className="info-missions">
+              <h3 className="info-heading">
+                ミッション
+                {model.missionTotal > model.missions.length ? <span className="info-heading-note">Lv が上がると増える（{model.missions.length} / {model.missionTotal}）</span> : null}
+              </h3>
+              <ul className="info-missions" data-testid="info-missions">
                 {model.missions.map((m) => (
-                  <li key={m}>
-                    <Icon name="mission" size={14} />
-                    {m}
+                  <li key={m.id}>
+                    <button type="button" className={`info-mission is-${m.status}`} data-mission={m.id} onClick={() => onMission?.(m.id)} title={`「${m.title}」をミッション一覧で開く`}>
+                      <Icon name={m.status === 'completed' ? 'check' : 'mission'} size={14} />
+                      <span className="info-mission-title">{m.title}</span>
+                      <span className="info-mission-status">{MISSION_STATUS_NAMES[m.status]}</span>
+                    </button>
                   </li>
                 ))}
               </ul>
