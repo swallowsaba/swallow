@@ -94,6 +94,10 @@ export interface Device {
   macTable: Record<string, string>;
   /** ルータなら NAT の設定を持てる */
   nat: NatConfig | null;
+  /** 経路を調べる問い（traceroute）に答えない（通る荷物は普通に通す） */
+  silent?: boolean;
+  /** Web のページ（curl で取りに来た時に返す中身） */
+  body?: string;
 }
 
 export interface Link {

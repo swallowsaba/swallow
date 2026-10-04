@@ -12,6 +12,7 @@ import { execute } from '@/engines/kernel/shell';
 import { exists, isDir, metaOf, readFile } from '@/engines/kernel/vfs';
 import { initialShell } from '@/engines/environments';
 import { request } from '@/engines/http/http';
+import { resolveName, roundTrip } from '@/engines/net/probe';
 import { applyStatement, createSim, holds } from '@/engines/sim/sim';
 import type { SimState } from '@/engines/sim/types';
 import { verify } from '@/engines/tls/tls';
@@ -29,8 +30,8 @@ import type { PracticeAttempt } from '@/game/types';
 
 /* ---------- 状態による判定 ---------- */
 
-/** 端末の実戦で判定できる形。net は、その分野の実戦と一緒に作る（docs/development-plan.md Phase 10） */
-export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'git', 'k8s', 'answer']);
+/** 端末の実戦で判定できる形 */
+export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'git', 'k8s', 'net', 'answer']);
 
 /** 模擬環境（模）の実戦で判定できる形（docs/content-spec.md 2.4.1） */
 export const SIM_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['sim']);
@@ -114,8 +115,37 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       // DB の実戦は DB の状態で判定する（src/engines/db の matchesExpected）。端末の状態では判定しない
       return false;
     case 'net':
-      throw new Error(`判定の形 ${check.kind} は、まだ端末の実戦につないでいない`);
+      return netHolds(shell, check.expr);
   }
+}
+
+/**
+ * 網の判定の式（端末の機械から見て）。` && ` でつなぎ、先頭の `!` で否定。
+ * `reach 名前[:ポート]`（行きも帰りも通る。ポートを書けば、そこで待ち受けている）/ `resolve 名前=アドレス`（名前の答え）。
+ * 網の無い機械や、式の誤りは投げる（内容の誤り）
+ */
+export function netHolds(shell: ShellState, expr: string): boolean {
+  const net = shell.net;
+  if (net === null) throw new Error('判定の net: この実戦の機械に網（setup の network）が無い');
+  const self = shell.vars.get('NET_SELF') ?? '';
+  return expr.split('&&').every((raw) => {
+    const c = raw.trim();
+    const negate = c.startsWith('!');
+    const [head = '', arg = '', ...rest] = (negate ? c.slice(1) : c).trim().split(/\s+/);
+    if (rest.length > 0 || arg === '') throw new Error(`判定の net の式「${c}」: reach 名前[:ポート] か resolve 名前=アドレス`);
+    let value: boolean;
+    if (head === 'reach') {
+      const [host = '', port] = arg.split(':');
+      const ip = resolveName(net, host);
+      value = ip !== null && roundTrip(net, self, ip, port === undefined ? undefined : Number(port)).kind === 'ok';
+    } else if (head === 'resolve') {
+      const [name = '', want = ''] = arg.split('=');
+      value = resolveName(net, name) === want;
+    } else {
+      throw new Error(`判定の net の式「${c}」: reach か resolve`);
+    }
+    return negate ? !value : value;
+  });
 }
 
 /* ---------- ヒント ---------- */

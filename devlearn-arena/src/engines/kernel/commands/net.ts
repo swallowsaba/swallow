@@ -1,12 +1,12 @@
 import { localCurl } from './httpLocal';
-import { packet } from '@/engines/net/factory';
-import { deliver } from '@/engines/net/stack';
+import { addressOf, deviceAt, resolveName, roundTrip, rttOf, traceHops } from '@/engines/net/probe';
 import { parseCidr } from '@/engines/net/subnet';
 import type { DeliveryResult, Device, Topology } from '@/engines/net/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
 import { ipAddr, ipLink, ipRoute } from './netBuild';
 
+const IPV4 = /^\d+\.\d+\.\d+\.\d+$/;
 const NO_NET = 'ネットワークが用意されていません。ネットワークの任務を選んでください。\n';
 
 /**
@@ -32,18 +32,6 @@ function ownAddresses(shell: ShellState, argv: readonly string[]): CommandResult
 
 function selfName(shell: ShellState): string {
   return shell.vars.get('NET_SELF') ?? 'pc1';
-}
-
-function selfIp(topology: Topology, name: string): string {
-  return topology.devices.get(name)?.interfaces.find((i) => i.up)?.ip ?? '0.0.0.0';
-}
-
-/** 名前なら DNS を引く。IP ならそのまま */
-function resolve(topology: Topology, target: string): { ip: string | null; note: string } {
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(target)) return { ip: target, note: '' };
-  const ip = topology.dns.get(target);
-  if (ip === undefined) return { ip: null, note: `${target}: Name or service not known` };
-  return { ip, note: `${target} has address ${ip}` };
 }
 
 /** 配送で学んだこと（ARP 表・MAC 表・NAT 表）を構成に書き戻す */
@@ -84,142 +72,105 @@ function afterDelivery(net: Topology, result: DeliveryResult): Topology {
 export const netCommands: CommandSpec[] = [
   {
     name: 'ping',
-    summary: '到達性を確かめる（ICMP）',
+    summary: '相手に届くか（返事が戻るか）を確かめる',
     handler: ({ argv, shell }) => {
       const net = shell.net;
       if (net === null) return { stderr: NO_NET, code: 1 };
-      const target = argv[1];
-      if (target === undefined) return { stderr: 'usage: ping <host>\n', code: 2 };
-
-      const resolved = resolve(net, target);
-      if (resolved.ip === null) return { stderr: `ping: ${resolved.note}\n`, code: 2 };
-
+      const { values, operands } = parseArgs(argv, { withValue: ['c'] });
+      const target = operands[0];
+      if (target === undefined) return { stderr: 'ping: usage error: Destination address required\n', code: 1 };
+      const count = Math.max(1, Math.min(10, Number(values.get('c') ?? 4) || 4));
+      const ip = resolveName(net, target);
+      if (ip === null) return { stderr: `ping: ${target}: Name or service not known\n`, code: 2 };
       const me = selfName(shell);
-      const result = deliver(net, me, packet(selfIp(net, me), resolved.ip, { protocol: 'icmp' }));
-      const patch = { net: afterDelivery(net, result) };
-      if (!result.delivered) {
-        return {
-          stdout: `PING ${target} (${resolved.ip})\n`,
-          stderr: `${result.error ?? '到達できません'}\n`,
-          code: 1,
-          patch,
-        };
-      }
-      const hops = result.hops.length - 1;
-      return {
-        stdout:
-          `PING ${target} (${resolved.ip})\n` +
-          `64 bytes from ${resolved.ip}: icmp_seq=1 ttl=${String(
-            result.hops[result.hops.length - 1]?.packet.ip.ttl ?? 64,
-          )} hops=${String(hops)}\n` +
-          '\n1 packets transmitted, 1 received, 0% packet loss\n',
-        patch,
-      };
+      const r = roundTrip(net, me, ip);
+      if (r.kind === 'no-route') return { stderr: 'ping: connect: Network is unreachable\n', code: 2 };
+      const head = `PING ${target} (${ip}) 56(84) bytes of data.`;
+      const stats = (got: number) => [`--- ${target} ping statistics ---`, `${String(count)} packets transmitted, ${String(got)} received, ${got === count ? '0' : '100'}% packet loss`];
+      const patch = { net: afterDelivery(net, r.result) };
+      if (r.kind !== 'ok') return { stdout: fromLines([head, '', ...stats(0)]), code: 1, patch };
+      const replies = Array.from({ length: count }, (_, i) => `64 bytes from ${ip}: icmp_seq=${String(i + 1)} ttl=${String(64 - r.routers)} time=${rttOf(r.routers, i + 1)} ms`);
+      return { stdout: fromLines([head, ...replies, '', ...stats(count)]), patch };
     },
   },
   {
     name: 'traceroute',
-    summary: '経路を1ホップずつ表示する',
+    summary: '相手までの道すじ（通る機器）を 1 段ずつ表示する',
     handler: ({ argv, shell }) => {
       const net = shell.net;
       if (net === null) return { stderr: NO_NET, code: 1 };
-      const target = argv[1];
-      if (target === undefined) return { stderr: 'usage: traceroute <host>\n', code: 2 };
-      const resolved = resolve(net, target);
-      if (resolved.ip === null) return { stderr: `traceroute: ${resolved.note}\n`, code: 2 };
-
-      const me = selfName(shell);
-      const result = deliver(net, me, packet(selfIp(net, me), resolved.ip, { protocol: 'icmp' }));
-      const lines = [`traceroute to ${target} (${resolved.ip}), 16 hops max`];
-      result.hops.forEach((hop, i) => {
-        const ip = hop.packet.ip;
-        lines.push(
-          `${String(i + 1).padStart(2)}  ${hop.device}  ttl=${String(ip.ttl)}  ${hop.note}`,
-        );
-      });
-      if (!result.delivered) lines.push(`  * * *  ${result.error ?? ''}`);
-      return {
-        stdout: fromLines(lines),
-        code: result.delivered ? 0 : 1,
-        patch: { net: afterDelivery(net, result) },
-      };
+      const target = argv.slice(1).find((a) => !a.startsWith('-'));
+      if (target === undefined) return { stderr: 'Usage: traceroute host\n', code: 2 };
+      const ip = resolveName(net, target);
+      if (ip === null) return { stderr: `${target}: Name or service not known\nCannot handle "host" cmdline arg \`${target}' on position 1 (argc 1)\n`, code: 2 };
+      const max = 8;
+      const t = traceHops(net, selfName(shell), ip, max);
+      const lines = [`traceroute to ${target} (${ip}), ${String(max)} hops max, 60 byte packets`];
+      t.hops.forEach((h, i) => lines.push(`${String(i + 1).padStart(2)}  ${h === null ? '* * *' : `${h}  ${rttOf(i, 1)} ms`}`));
+      return { stdout: fromLines(lines), code: t.reached ? 0 : 1 };
     },
   },
   {
     name: 'curl',
-    summary: 'HTTP で取りに行く',
+    summary: 'HTTP でページを取りに行く',
     handler: ({ argv, shell }) => {
       const net = shell.net;
       // ネットワークの構成が無い実戦では、手元のサービス・コンテナと、名前で引けるサイトに取りに行く
       if (net === null) return localCurl(argv, shell);
       const { flags, operands } = parseArgs(argv);
       const url = operands[0];
-      if (url === undefined) return { stderr: 'usage: curl [-v] <url>\n', code: 2 };
+      if (url === undefined) return { stderr: 'curl: try \'curl --help\' for more information\n', code: 2 };
 
       const match = /^(?:https?:\/\/)?([^/:]+)(?::(\d+))?(\/.*)?$/.exec(url);
       const hostName = match?.[1] ?? url;
       const port = Number(match?.[2] ?? (url.startsWith('https') ? 443 : 80));
       const path = match?.[3] ?? '/';
 
-      const resolved = resolve(net, hostName);
-      if (resolved.ip === null) {
-        return { stderr: `curl: (6) Could not resolve host: ${hostName}\n`, code: 6 };
-      }
+      const ip = resolveName(net, hostName);
+      if (ip === null) return { stderr: `curl: (6) Could not resolve host: ${hostName}\n`, code: 6 };
 
-      const me = selfName(shell);
-      const result = deliver(net, me, packet(selfIp(net, me), resolved.ip, { dstPort: port }));
-      const verbose: string[] = [];
-      if (flags.has('v')) {
-        verbose.push(`* Trying ${resolved.ip}:${String(port)}...`);
-        for (const hop of result.hops) verbose.push(`* via ${hop.device} (ttl ${String(hop.packet.ip.ttl)})`);
-      }
-
-      const patch = { net: afterDelivery(net, result) };
-      if (!result.delivered) {
-        const reason = result.error ?? '';
-        const code = reason.includes('Connection refused') ? 7 : 28;
+      const r = roundTrip(net, selfName(shell), ip, port);
+      const verbose: string[] = flags.has('v') ? [`*   Trying ${ip}:${String(port)}...`] : [];
+      const patch = { net: afterDelivery(net, r.result) };
+      if (r.kind !== 'ok') {
+        const refused = r.kind === 'refused';
         return {
           stdout: fromLines(verbose),
-          stderr: `curl: (${String(code)}) ${reason}\n`,
-          code,
+          stderr: `curl: (${refused ? '7' : '28'}) Failed to connect to ${hostName} port ${String(port)}: ${refused ? 'Connection refused' : 'Connection timed out'}\n`,
+          code: refused ? 7 : 28,
           patch,
         };
       }
       if (flags.has('v')) {
-        verbose.push(`* Connected to ${hostName} (${resolved.ip}) port ${String(port)}`);
-        verbose.push(`> GET ${path} HTTP/1.1`);
-        verbose.push(`> Host: ${hostName}`);
-        verbose.push('>');
-        verbose.push('< HTTP/1.1 200 OK');
-        verbose.push('< Content-Type: text/html');
-        verbose.push('<');
+        verbose.push(`* Connected to ${hostName} (${ip}) port ${String(port)}`, `> GET ${path} HTTP/1.1`, `> Host: ${hostName}`, '>', '< HTTP/1.1 200 OK', '< Content-Type: text/html', '<');
       }
-      return {
-        stdout: `${fromLines(verbose)}<html><body>It works: ${hostName}</body></html>\n`,
-        patch,
-      };
+      const body = deviceAt(net, ip)?.body ?? `<html><body>It works: ${hostName}</body></html>`;
+      return { stdout: `${fromLines(verbose)}${body}\n`, patch };
     },
   },
   {
     name: 'dig',
-    summary: '名前を引く',
+    summary: '名前を引く（名前に結び付いたアドレスを DNS に問い合わせる）',
     handler: ({ argv, shell }) => {
       const net = shell.net;
       if (net === null) return { stderr: NO_NET, code: 1 };
-      const target = argv[1];
-      if (target === undefined) return { stderr: 'usage: dig <name>\n', code: 2 };
-      const ip = net.dns.get(target);
-      if (ip === undefined) {
-        return { stdout: `;; ->>HEADER<<- status: NXDOMAIN\n;; QUESTION SECTION:\n;${target}.\tIN\tA\n\n` , code: 1 };
-      }
-      return {
-        stdout:
-          ';; ->>HEADER<<- status: NOERROR\n' +
-          ';; QUESTION SECTION:\n' +
-          `;${target}.\tIN\tA\n\n` +
-          ';; ANSWER SECTION:\n' +
-          `${target}.\t30\tIN\tA\t${ip}\n`,
-      };
+      const short = argv.includes('+short');
+      const target = argv.slice(1).find((a) => !a.startsWith('+') && !a.startsWith('@') && a.toUpperCase() !== 'A');
+      if (target === undefined) return { stderr: 'usage: dig <名前>\n', code: 1 };
+      const name = target.replace(/\.$/, '');
+      const ip = IPV4.test(name) ? null : resolveName(net, name);
+      if (short) return { stdout: ip === null ? '' : `${ip}\n` };
+      const lines = [
+        `; <<>> DiG 9.18.28 <<>> ${target}`,
+        `;; ->>HEADER<<- opcode: QUERY, status: ${ip === null ? 'NXDOMAIN' : 'NOERROR'}, id: 4242`,
+        '',
+        ';; QUESTION SECTION:',
+        `;${name}.\t\t\tIN\tA`,
+        ...(ip === null ? [] : ['', ';; ANSWER SECTION:', `${name}.\t\t300\tIN\tA\t${ip}`]),
+        '',
+        `;; SERVER: ${addressOf(net, selfName(shell))}#53`,
+      ];
+      return { stdout: fromLines(lines) };
     },
   },
   {

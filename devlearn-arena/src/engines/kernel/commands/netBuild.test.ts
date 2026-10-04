@@ -125,7 +125,7 @@ describe('網を分けてルータで繋ぐ', () => {
       'export NET_SELF=pc1',
     ]);
     expect(run('ping 10.0.1.1').code).toBe(0);
-    expect(run('traceroute 10.0.1.1').out).toContain('r1');
+    expect(run('traceroute 10.0.1.1').out).toContain(' 1  10.0.0.254 ');
   });
 
   it('経路表に直結の網と足した経路が並ぶ', () => {

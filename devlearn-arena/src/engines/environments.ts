@@ -9,6 +9,8 @@ import { createShellState, type SessionOptions } from './kernel/session';
 import { execute } from './kernel/shell';
 import { GROUP_FILE, groupFileOf } from './kernel/users';
 import { exists, remove, setSize } from './kernel/vfs';
+import { withZones } from './kernel/dnsZones';
+import { buildNetwork, networkSetupSchema } from './net/spec';
 import { DEMO_ROOT } from './tls/tls';
 
 /**
@@ -36,6 +38,8 @@ const serviceSetup = z.object({
   status: z.number().int().min(100).max(599).optional(),
   /** 設定ファイルの場所（nginx 風。動かす時に読み、待ち受けるポートと証明書が決まる。src/engines/kernel/webConfig.ts） */
   config: z.string().startsWith('/').optional(),
+  /** DNS のゾーンファイルの場所（動かす・読み直す時に読み、網の名前の答えになる） */
+  zone: z.string().startsWith('/').optional(),
 }).strict();
 
 const certSetup = z.object({
@@ -102,6 +106,14 @@ export const setupSchema = z.object({
   }).strict()).optional(),
   /** 利用者のグループ（グループ → 入っている利用者）。/etc/group に書く（src/engines/kernel/users.ts） */
   groups: z.record(z.string().regex(/^[a-z][a-z0-9-]*$/), z.array(z.string())).optional(),
+  /** 待ち受け以外の接続（ss で見える。状態・自分の側・相手の側） */
+  sockets: z.array(z.object({
+    state: z.enum(['ESTAB', 'SYN-SENT', 'SYN-RECV', 'TIME-WAIT', 'CLOSE-WAIT', 'FIN-WAIT-1', 'FIN-WAIT-2']),
+    local: z.string().regex(/^\d+\.\d+\.\d+\.\d+:\d+$/),
+    peer: z.string().regex(/^\d+\.\d+\.\d+\.\d+:\d+$/),
+  }).strict()).optional(),
+  /** 網（ping・traceroute・dig・curl が使う。機器・線・名前の答え。src/engines/net/spec.ts） */
+  network: networkSetupSchema.optional(),
   /** 初期状態を作るために、始める前に打っておくコマンド（リポジトリと履歴を作る、など）。学習者には見せない */
   run: z.array(z.string().min(1)).optional(),
 }).strict();
@@ -126,6 +138,8 @@ export const ENVIRONMENTS = {
   'container-host': { name: 'コンテナの動く機械', shell: true, defaults: { user: 'learner', hostname: 'docker-host', cwd: '/home/learner', dirs: ['/home/learner'], images: [] } },
   /** Web のサイトに手元から取りに行く（curl・証明書） */
   'web-client': { name: 'Web を確かめる機械', shell: true, defaults: { user: 'learner', hostname: 'client', cwd: '/home/learner', dirs: ['/home/learner'], sites: [] } },
+  /** 網の中の機械。ping・traceroute・dig・curl で、届くか・どこで止まるか・名前の答えを確かめる */
+  'net-client': { name: 'ネットワークを確かめる機械', shell: true, defaults: { user: 'learner', cwd: '/home/learner', dirs: ['/home/learner'] } },
   /** Kubernetes のクラスタ（Node 2 台）を kubectl で操作する機械 */
   'k8s-cluster': { name: 'クラスタを操作する機械', shell: true, defaults: { user: 'learner', hostname: 'console', cwd: '/home/learner', dirs: ['/home/learner'], cluster: { nodes: 2 } } },
   /** ブラウザ内の SQLite（SQL の実戦） */
@@ -166,7 +180,9 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
     cwd: s.cwd ?? home,
     // 打った行を ~/.bash_history に残す（「打ったことが記録される」を状態で確かめるため。src/engines/kernel/shell.ts）
     vars: {
-      USER: user, HOME: home, HOSTNAME: s.hostname ?? 'arena', HISTFILE: `${home}/.bash_history`,
+      USER: user, HOME: home, HOSTNAME: s.hostname ?? s.network?.self ?? 'arena', HISTFILE: `${home}/.bash_history`,
+      ...(s.network ? { NET_SELF: s.network.self } : {}),
+      ...(s.sockets ? { __SOCKETS: JSON.stringify(s.sockets) } : {}),
       ...(s.address !== undefined ? { __HOST_ADDR: s.address } : {}),
       ...(s.disk !== undefined ? { __DISK_SIZE: String(parseSize(s.disk)) } : {}),
     },
@@ -183,11 +199,13 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       ...(v.body !== undefined ? { body: v.body } : {}),
       ...(v.status !== undefined ? { status: v.status } : {}),
       ...(v.config !== undefined ? { config: v.config } : {}),
+      ...(v.zone !== undefined ? { zone: v.zone } : {}),
       ...(v.log !== undefined ? { log: v.log } : {}),
     })));
   }
   if (s.processes) options.processes = s.processes;
   if (s.cluster) options.cluster = emptyCluster(Array.from({ length: s.cluster.nodes }, (_, i) => node(`node-${String(i + 1)}`, 4000, 8192)));
+  if (s.network) options.net = buildNetwork(s.network);
   if (s.images) options.containers = createContainerHost(s.images);
   if (s.sites || s.roots) {
     const web: WebWorld = { sites: s.sites ?? [], roots: s.roots ?? [DEMO_ROOT], today: s.today ?? '2026-10-03', hostname: s.hostname ?? 'arena' };
@@ -202,7 +220,8 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
  */
 export function initialShell(environment: string, setup: unknown): ShellState {
   const s = resolveSetup(environment, setup);
-  let shell = createShellState(shellOptions(environment, setup));
+  // 動いている DNS のサーバは、始めにゾーンファイルを読んでいる
+  let shell = withZones(createShellState(shellOptions(environment, setup)));
   for (const [path, size] of Object.entries(s.sizes ?? {})) shell = { ...shell, vfs: setSize(shell.vfs, path, parseSize(size)) };
   if (!s.run?.length) return shell;
   const registry = createDefaultRegistry();

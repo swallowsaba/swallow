@@ -3,6 +3,7 @@ import {
   restartService, serviceOf, setEnabled, startService, stopService, unitName, type ConfigLoader, type ServiceResult, type ServiceTable,
 } from '../services';
 import { exists, isDir, readFile } from '../vfs';
+import { withZones } from '../dnsZones';
 import { readWebConfig } from '../webConfig';
 import { fromLines } from './args';
 
@@ -84,7 +85,9 @@ function run(shell: ShellState, verb: string, units: readonly string[], op: (t: 
     const said = say?.(u);
     if (said) out.push(said);
   }
-  return { patch: { services: table }, ...(out.length ? { stdout: fromLines(out) } : {}) };
+  // DNS のサーバを動かした・読み直した時は、ゾーンファイルを読んで名前の答えにする
+  const net = withZones({ ...shell, services: table }).net;
+  return { patch: { services: table, ...(net !== shell.net ? { net } : {}) }, ...(out.length ? { stdout: fromLines(out) } : {}) };
 }
 
 /** サービスの設定ファイルを、仮想のファイルから読む */

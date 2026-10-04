@@ -45,7 +45,7 @@ describe('ping', () => {
   it('届けば統計が出る', () => {
     const r = run('ping web.example');
     expect(r.code).toBe(0);
-    expect(r.out).toContain('1 packets transmitted, 1 received');
+    expect(r.out).toContain('4 packets transmitted, 4 received, 0% packet loss');
   });
 
   it('IP でも打てる', () => {
@@ -62,16 +62,15 @@ describe('ping', () => {
     session = createSession({ net: build({ linkUp: false }), vars: { NET_SELF: 'pc1' } });
     const r = run('ping web.example');
     expect(r.code).toBe(1);
-    expect(r.err).toContain('リンクが切れています');
+    expect(r.out).toContain('4 packets transmitted, 0 received, 100% packet loss');
   });
 });
 
 describe('traceroute', () => {
-  it('経路がホップごとに出る', () => {
-    const out = run('traceroute web.example').out;
-    expect(out).toContain('pc1');
-    expect(out).toContain('r1');
-    expect(out).toContain('web');
+  it('通った機器のアドレスが段ごとに出る', () => {
+    const lines = run('traceroute web.example').out.split('\n');
+    expect(lines[1]).toMatch(/^ 1 {2}192\.168\.1\.1 {2}[\d.]+ ms$/);
+    expect(lines[2]).toMatch(/^ 2 {2}10\.0\.0\.20 {2}[\d.]+ ms$/);
   });
 });
 

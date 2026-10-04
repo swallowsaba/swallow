@@ -30,6 +30,8 @@ export interface Service {
   status?: number;
   /** 設定ファイルの場所（動かす時に読む） */
   config?: string;
+  /** DNS のゾーンファイルの場所（動かす・読み直す時に読み、名前の答えになる。src/engines/kernel/dnsZones.ts） */
+  zone?: string;
   /** 設定から決まった待ち受け（動いている間だけ意味がある） */
   listens?: readonly Listen[];
   /** ログ（journalctl で読む） */
