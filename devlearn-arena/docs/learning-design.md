@@ -1,4 +1,4 @@
-﻿# 学習デザイン
+# 学習デザイン
 
 何を教えるかは `docs/curriculum.md`、データの形は `docs/content-spec.md`、各レッスンの中身の設計は `docs/lessons/`。
 この文書は**どう教えるか**を決める。
@@ -75,7 +75,7 @@
 | 形 | 使う場面 | 実装 |
 |---|---|---|
 | 仮想端末 | シェル・Linux・Git・Docker・kubectl | 模擬エンジン（`src/engines/`）。既存のコードが要件を満たせば再利用する（`docs/decisions.md` D-05） |
-| 模擬環境 | ネットワーク・HTTP・TLS・CI/CD・監視 | 状態を持つ模擬（機器・通信・証明書の連鎖・パイプライン・メトリクス）を画面で操作する |
+| 模擬環境 | ネットワーク・HTTP・TLS・CI/CD・監視 | 状態を持つ模擬（機器・通信・証明書の連鎖・パイプライン・メトリクス）を画面で操作する。操作は 5 つの型（つなぐ・並べる・割り振る・設定する・読み取って答える。`docs/content-spec.md` 2.4.1） |
 | ブラウザ内演習 | SQL | ブラウザ内で動く SQLite（`docs/architecture.md`）で本物の SQL を実行する |
 | 設定の編集 | Dockerfile・Kubernetes の YAML・CI の設定 | 画面の編集欄に書き、模擬環境が検証して結果を返す |
 

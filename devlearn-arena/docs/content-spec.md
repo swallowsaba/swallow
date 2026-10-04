@@ -1,4 +1,4 @@
-﻿# コンテンツ仕様
+# コンテンツ仕様
 
 教え方は `docs/learning-design.md`、型の全体は `docs/data-model.md`。
 この文書は**コンテンツのデータの形と置き場所、書き方の規則**を決める。
@@ -117,11 +117,34 @@ type CheckSpec =
   | { kind: 'http'; url: string; status: number }
   | { kind: 'tls'; host: string; trusted: boolean }
   | { kind: 'sql'; query: string; equals: unknown }
-  | { kind: 'answer'; equals: string };        // 原因などを答える形
+  | { kind: 'answer'; equals: string }         // 原因などを答える形
+  | { kind: 'sim'; expr: string };              // 画面で操作する模擬環境（模）の状態。式は 2.4.1（docs/decisions.md D-16）
 ```
 
 - **判定は出力の文字列ではなく、模擬環境の状態で行う**
 - 最後のヒントは、そのまま入力すれば必ず通る（テストで確かめる）
+  - 端末（`terminal`）: `` で囲んだコマンドを順に打つ
+  - 模擬環境（`simulation`）: `` で囲んだ操作の文（2.4.1）を順に与える
+  - 設定の編集（`editor`）: `` で囲んだ中身を、そのまま保存する（ファイル全体）
+  - ブラウザ内 SQL（`sql`）: `` で囲んだ SQL を順に実行する
+
+### 2.4.1 模擬環境（模）の型
+
+「模」の実戦は、5 つの型のどれかで作る（`docs/decisions.md` D-16）。`environment` に型を、`setup` に中身を書く。
+模擬は純粋な TS（`src/engines/sim`）で、画面の操作と操作の文は同じ関数を通る。画面は `docs/ui-design.md` 7.1。
+
+| `environment` | 操作 | 操作の文 | `setup` の中身 | 判定の式（`sim`） |
+|---|---|---|---|---|
+| `sim-connect`（つなぐ） | 部品・機器・サービスを線でつなぐ・外す。止まった機器を動かす | `connect A B` / `cut A B` / `start A` | `nodes`（ID・名前・位置・止まっているか）・`links`（初めの線）・`forbid`（引けない線と、その理由の文） | `link A B`（直接つながる）/ `path A>B>C`（順につながる）/ `reach A B`（動いている機器をたどって届く） |
+| `sim-order`（並べる） | 手順・段・層を並べる。同じ段に並べる（並行）。外す | `order A B,C D`（空白で次の段、`,` で同じ段） | `items`（ID・名前・かかる時間・先に要る物 `needs`・使わなくてよい物 `extra`） | `seq A<B<C`（段の順）/ `with A B`（同じ段）/ `has A` / `deps`（先に要る物が前の段にある）/ `time<=N`（各段の最も長い時間の合計）/ `placed`（`extra` でない物を全て並べた） |
+| `sim-assign`（割り振る・仕分ける） | 札を枠に入れる・出す | `put 札 枠` / `take 札` | `slots`（ID・名前・容量）・`items`（ID・名前・大きさ・枠ごとの時間・複数の枠に入れられるか・`extra`） | `in 札=枠 …` / `count 枠<=N`（`=` `>=` も）/ `fits`（容量の内）/ `time<=N`（枠ごとの時間の合計）/ `placed` |
+| `sim-config`（設定する） | 欄に値を選ぶ・入れる。表に行を足す・消す | `set 欄 値` / `add 表 列=値 …` / `del 表 番号` | `fields`（ID・名前・選べる値・初めの値）・`tables`（ID・名前・列・初めの行） | `field 欄=値 …` / `row 表 列=値 …`（その行がある）/ `rows 表<=N`（`=` `>=` も） |
+| `sim-read`（読み取って答える） | 表・グラフ・ログ・情報を読み、問いに答える | `answer 問い 値` | `questions`（ID・問い・選べる値） | `answered 問い=値 …` |
+
+- 全ての型で、`setup.panels` に画面に示す情報（表・グラフ・ログ・項目と値・文）を置ける（`sim-read` は必須）
+- 式は ` && ` でつなげる。先頭に `!` を付けると否定（例: `!reach 外 db`）。値の比べ方は、前後の空白と英字の大小を無視する
+- 操作の誤り（無い ID・容量を超える・引けない線・もう別の枠に入っている札など）は、エラーの文として返す。エラーの解説（2.5）が `match` で当たり、端末と同じ「エラー → 内容 → 原因候補 → ヒント」を出す
+- ID は空白を含まない語（日本語でよい）。画面には名前を出し、操作の文には ID を書く
 
 ### 2.5 エラーの解説（errorGuides）
 
