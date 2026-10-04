@@ -1,0 +1,314 @@
+{
+  "id": "net.b.07",
+  "domain": "net",
+  "level": "beginner",
+  "theme": "確認",
+  "title": "ping と traceroute",
+  "goal": "到達と経路を確かめられる",
+  "minutes": 15,
+  "prerequisites": [
+    "net.b.03"
+  ],
+  "related": [
+    "trouble.i.02",
+    "linux.i.04"
+  ],
+  "next": [
+    "net.i.01"
+  ],
+  "terms": [
+    "traceroute",
+    "ping",
+    "router",
+    "server",
+    "ip-address"
+  ],
+  "explain": {
+    "what": "{{term:ping}} は、相手に小さな確認の荷物を送り、返事が戻るかと往復の時間を見る道具。{{term:traceroute}} は、相手までの道すじで通る機器（{{term:router}}）を 1 段ずつ表示する道具。",
+    "why": "つながらない時、どこまで届いているかが分かれば、原因の場所を区間に絞れる。思いつきで機器を触るより、ずっと早く原因に着く。",
+    "use": "切り分けの最初の一手に使う。ping で届くかを見て、届かなければ traceroute で、最後に答えた機器を探す。その次の区間を調べればよい。",
+    "when": "店の{{term:server}}につながらないと知らせが来た。サーバが止まったのか、途中の道が切れたのか。どこまで届くかを確かめて、調べる場所を決める。",
+    "figures": [
+      "net-b07-trace"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "切り分けで使う順として、2 つの関係を選ぶ。",
+      "a": "ping で、相手まで届くかを確かめる",
+      "b": "traceroute で、どこまで届くかを確かめる",
+      "answer": "before",
+      "why": "まず届くかを見る。届かない時に、どこまでは届いているかを traceroute で調べる。",
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "traceroute で、3 段目までは機器のアドレスが出て、4 段目から先は全て * * * だった。何が言える？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "3 段目の機器の先（3 段目と 4 段目の間か、その先）で止まっている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "3 段目の機器が壊れている",
+          "correct": false,
+          "whyNot": "3 段目は答えている。3 段目までは届いている。止まっているのは、その先。"
+        },
+        {
+          "id": "c",
+          "text": "パソコンの線が抜けている",
+          "correct": false,
+          "whyNot": "線が抜けていたら、1 段目も答えない。"
+        }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "ある機器に ping を打ったら、4 回とも返事が無かった（100% packet loss）。言えることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "届いていないか、相手が ping に答えないようにしている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "相手の機器は必ず壊れている",
+          "correct": false,
+          "whyNot": "ping に答えない設定の機器もある。返事が無い＝壊れている、とは限らない。"
+        },
+        {
+          "id": "c",
+          "text": "こちらのパソコンが壊れている",
+          "correct": false,
+          "whyNot": "ほかの相手には届くかもしれない。1 つの結果だけでは決められない。"
+        }
+      ],
+      "explanation": "ping の返事が無い理由は、途中で止まった・相手がいない・相手が答えない、のどれか。traceroute やほかの道具で絞り込む。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "context": {
+        "log": "traceroute to shop.example (192.0.2.10), 8 hops max\n 1  10.0.1.1  0.4 ms\n 2  10.0.12.2  1.0 ms\n 3  * * *\n 4  * * *"
+      },
+      "prompt": "この結果から、まず調べる区間は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "2 段目（10.0.12.2）の先の区間",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "1 段目（10.0.1.1）とパソコンの間",
+          "correct": false,
+          "whyNot": "1 段目も 2 段目も答えている。そこまでは届いている。"
+        },
+        {
+          "id": "c",
+          "text": "店のサーバの中",
+          "correct": false,
+          "whyNot": "サーバまで届いたかどうかも分からない。先に、止まった区間を調べる。"
+        }
+      ],
+      "explanation": "最後に答えたのは 2 段目。その先で止まっているので、2 段目の次の区間から調べる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "サーバに ping は届くが、ページの表示がとても遅い。次に見るのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ping の往復の時間（time）が大きくないか",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ケーブルが抜けていないか",
+          "correct": false,
+          "whyNot": "ping が届いているので、線はつながっている。"
+        },
+        {
+          "id": "c",
+          "text": "サーバの {{term:ip-address}}が正しいか",
+          "correct": false,
+          "whyNot": "そのアドレスに ping が届いている。アドレスは合っている。"
+        }
+      ],
+      "explanation": "届くのに遅い時は、往復の時間を見る。時間が大きければ、網の途中が混んでいるか遠回りしている。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "店のサーバ（shop.example）につながらない。ping と traceroute で、どこまで届いているかを調べ、原因の区間を突き止める。",
+    "environment": "net-client",
+    "setup": {
+      "network": {
+        "self": "pc",
+        "devices": [
+          {
+            "name": "pc",
+            "addrs": [
+              "10.0.1.10/24"
+            ],
+            "gateway": "10.0.1.1"
+          },
+          {
+            "name": "r1",
+            "kind": "router",
+            "addrs": [
+              "10.0.1.1/24",
+              "10.0.12.1/30"
+            ],
+            "gateway": "10.0.12.2"
+          },
+          {
+            "name": "r2",
+            "kind": "router",
+            "addrs": [
+              "10.0.12.2/30",
+              "10.0.23.1/30"
+            ],
+            "gateway": "10.0.23.2",
+            "routes": [
+              {
+                "to": "10.0.1.0/24",
+                "via": "10.0.12.1"
+              }
+            ],
+            "silent": true
+          },
+          {
+            "name": "r3",
+            "kind": "router",
+            "addrs": [
+              "10.0.23.2/30",
+              "10.0.34.1/30"
+            ],
+            "gateway": "10.0.34.2",
+            "routes": [
+              {
+                "to": "10.0.1.0/24",
+                "via": "10.0.23.1"
+              },
+              {
+                "to": "10.0.12.0/30",
+                "via": "10.0.23.1"
+              }
+            ]
+          },
+          {
+            "name": "r4",
+            "kind": "router",
+            "addrs": [
+              "10.0.34.2/30",
+              "192.0.2.1/24"
+            ],
+            "gateway": "10.0.34.1"
+          },
+          {
+            "name": "shop",
+            "addrs": [
+              "192.0.2.10/24"
+            ],
+            "gateway": "192.0.2.1",
+            "listen": [
+              80
+            ]
+          }
+        ],
+        "links": [
+          [
+            "pc",
+            "r1"
+          ],
+          [
+            "r1",
+            "r2"
+          ],
+          [
+            "r2",
+            "r3"
+          ],
+          [
+            "r3",
+            "r4",
+            "down"
+          ],
+          [
+            "r4",
+            "shop"
+          ]
+        ],
+        "dns": {
+          "shop.example": "192.0.2.10"
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "ping",
+        "purpose": "shop.example に ping を打ち、返事が何回戻ったかを答える（数だけ）。",
+        "check": {
+          "kind": "answer",
+          "equals": "0"
+        },
+        "afterward": "4 回送って、返事は 0 回。shop.example には届いていない（または返事が戻っていない）。どこで止まるかを調べる。",
+        "hints": [
+          "まず ping で、相手に届くかを確かめる。",
+          "`ping shop.example` を打ち、最後の統計の行の `received` の前の数を読む。",
+          "`ping shop.example` と打つ。4 packets transmitted, 0 received と出るので、答えの欄に `0` と入れる。"
+        ],
+        "expectedErrors": [
+          "net-ping-count"
+        ]
+      },
+      {
+        "id": "trace",
+        "purpose": "traceroute で道すじを見て、最後に答えた機器のアドレスを答える。その次の区間が、原因の区間。",
+        "check": {
+          "kind": "answer",
+          "equals": "10.0.23.2"
+        },
+        "afterward": "3 段目の 10.0.23.2 までは届き、その先で止まっている。調べるのは、3 段目と 4 段目の間の区間。2 段目の * * * は、答えないだけで荷物は通していた（3 段目が答えている）。",
+        "hints": [
+          "道すじは traceroute で見る。* * * は、その段が答えなかった印。",
+          "`traceroute shop.example` を打ち、アドレスが出た段のうち、一番最後の段を探す。途中の * * * の先にも、答えた段があるかを見る。",
+          "`traceroute shop.example` と打つ。最後に答えたのは 3 段目（10.0.23.2）。答えの欄に `10.0.23.2` と入れる。"
+        ],
+        "expectedErrors": [
+          "net-trace-silent"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "ping で届かないことを確かめ、traceroute で最後に答えた機器を見つけて、原因の区間まで絞れた。",
+    "partial": "ヒントを使って区間まで絞れた。次は、途中の * * * がなぜ原因ではないのかを説明してみよう。",
+    "retry": "まだ区間を突き止めていない。traceroute の結果で、アドレスが出た一番最後の段を探そう。"
+  },
+  "summary": {
+    "points": [
+      "ping で届くかを見る",
+      "traceroute でどこまで届くかを見る",
+      "答えない機器もある。最後に答えた段の先を疑う"
+    ],
+    "terms": [
+      "ping",
+      "traceroute",
+      "router"
+    ],
+    "next": [
+      "net.i.01"
+    ]
+  }
+}

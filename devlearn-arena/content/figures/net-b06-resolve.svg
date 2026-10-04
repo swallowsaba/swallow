@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>パソコンが問い合わせ役に名前を問い、問い合わせ役が名前を預かるサーバに聞いて、答え（アドレス）を覚えてから返す</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3ae08a" />
+    </marker>
+  </defs>
+  <g class="el" data-part="pc">
+    <rect x="20" y="100" width="140" height="80" rx="12" fill="#5cc1ff" />
+    <text x="90" y="136" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">パソコン</text>
+    <text x="90" y="160" text-anchor="middle" font-size="13" fill="#0a1424">名前で開きたい</text>
+  </g>
+  <g class="el" data-part="resolver">
+    <rect x="270" y="100" width="160" height="80" rx="12" fill="#f2b632" />
+    <text x="350" y="134" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">問い合わせ役</text>
+    <text x="350" y="158" text-anchor="middle" font-size="13" fill="#0a1424">答えを覚えておく</text>
+  </g>
+  <g class="el" data-part="auth">
+    <rect x="540" y="100" width="140" height="80" rx="12" fill="#3ae08a" />
+    <text x="610" y="134" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">名前を預かる</text>
+    <text x="610" y="156" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">サーバ</text>
+  </g>
+  <g class="el" data-part="ask">
+    <path d="M160 118 H264" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="212" y="108" text-anchor="middle" font-size="13" fill="#eef2f6">1 問う</text>
+    <path d="M430 118 H534" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="482" y="108" text-anchor="middle" font-size="13" fill="#eef2f6">2 聞く</text>
+  </g>
+  <g class="el" data-part="answer">
+    <path d="M540 164 H436" fill="none" stroke="#3ae08a" stroke-width="2" marker-end="url(#ag)" />
+    <text x="488" y="196" text-anchor="middle" font-size="13" fill="#3ae08a">3 答える</text>
+    <path d="M270 164 H166" fill="none" stroke="#3ae08a" stroke-width="2" marker-end="url(#ag)" />
+    <text x="218" y="196" text-anchor="middle" font-size="13" fill="#3ae08a">4 返す</text>
+  </g>
+  <g class="el" data-part="record">
+    <rect x="200" y="226" width="300" height="44" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <text x="350" y="254" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">shop.example → 203.0.113.20</text>
+  </g>
+  <g class="el" data-part="caption">
+    <text x="350" y="50" text-anchor="middle" font-size="14" fill="#9fb0c6">名前 → アドレスの答えをもらってから、アドレスに向けて送る</text>
+  </g>
+</svg>

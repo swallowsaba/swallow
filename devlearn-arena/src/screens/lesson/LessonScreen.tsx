@@ -148,7 +148,7 @@ export function LessonScreen({ session, lessonId, onExit, onLesson, onGlossary }
       <header className="lesson-bar">
         <p className="lesson-where">
           <span className="lesson-facility" data-testid="lesson-facility"><Icon name="facility" size={16} />{facility?.name ?? ''}</span>
-          <span className="lesson-title" data-testid="lesson-title">{entry.title}</span>
+          <span className="lesson-title" data-testid="lesson-title" title={entry.title}>{entry.title}</span>
           <span className="lesson-level">{LEVEL_NAMES[entry.level]}</span>
         </p>
         <ol className="lesson-stages" aria-label="7 段の進み">

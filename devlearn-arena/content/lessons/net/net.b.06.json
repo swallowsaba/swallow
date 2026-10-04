@@ -1,0 +1,280 @@
+{
+  "id": "net.b.06",
+  "domain": "net",
+  "level": "beginner",
+  "theme": "DNS",
+  "title": "名前解決",
+  "goal": "名前から IP を引く流れを説明し、dig で確かめられる",
+  "minutes": 20,
+  "prerequisites": [
+    "net.b.03"
+  ],
+  "related": [
+    "web.b.01",
+    "trouble.i.02"
+  ],
+  "next": [
+    "net.i.05",
+    "web.b.01"
+  ],
+  "terms": [
+    "ip-address",
+    "a-record",
+    "name-resolution",
+    "dns",
+    "app",
+    "web",
+    "server",
+    "dig",
+    "cache",
+    "web-server",
+    "command",
+    "curl",
+    "traceroute",
+    "file"
+  ],
+  "explain": {
+    "what": "{{term:dns}} は、名前（shop.example など）を {{term:ip-address}}に変える仕組み。名前を問うと、名前に結び付いたアドレス（{{term:a-record}}）が返ってくる。この、名前からアドレスを引くことを{{term:name-resolution}}と呼ぶ。",
+    "why": "人は数字の住所を覚えられないので、名前でつなぐ。でも機械が届け先に使うのはアドレス。名前の答えが古い・間違っていると、つないだ先は別の機械になり、届かない。",
+    "use": "{{term:web}}・メール・{{term:app}}の接続先は、ほとんど名前で書く。{{term:server}}を引っ越したら、名前の答えを新しいアドレスに直す。答えが期待どおりかは {{term:dig}} で確かめる。",
+    "when": "アドレスを打てば開くのに、名前では開かない。名前の答え（名前解決）を疑う。答えは問い合わせ役の{{term:cache}}に覚えられるので、直しても少しの間は古い答えが返ることがある。",
+    "figures": [
+      "net-b06-resolve"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "名前でページを開く時の、問い合わせの順に並べる。",
+      "items": [
+        "パソコンが、問い合わせ役に名前を問う",
+        "問い合わせ役が、名前を預かるサーバに聞く",
+        "名前を預かるサーバが、アドレスを答える",
+        "問い合わせ役が答えを覚え、パソコンに返す"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "用語と説明を結ぶ。",
+      "pairs": [
+        [
+          "DNS",
+          "名前をアドレスに変える仕組み"
+        ],
+        [
+          "キャッシュ",
+          "一度引いた答えを、しばらく覚えておくこと"
+        ]
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "ブラウザで 203.0.113.20 と打つと店のページが開く。でも shop.example と打つと開かない。考えやすい原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "名前解決（shop.example の答えが無い・違うアドレスを指している）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "店の {{term:web-server}}が止まっている",
+          "correct": false,
+          "whyNot": "アドレスを打てば開くので、Web サーバは動いている。"
+        },
+        {
+          "id": "c",
+          "text": "パソコンの線が抜けている",
+          "correct": false,
+          "whyNot": "線が抜けていたら、アドレスを打っても開かない。"
+        }
+      ],
+      "explanation": "アドレスなら届くので、網とサーバは動いている。違いは名前を使うかどうか。名前の答えを確かめる。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "context": {
+        "command": "dig +short shop.example"
+      },
+      "prompt": "この{{term:command}}を打つと、何が出る？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "shop.example に結び付いた IP アドレス（例 203.0.113.20）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "店のページの中身",
+          "correct": false,
+          "whyNot": "dig は名前を引くだけ。ページを取りに行くのは {{term:curl}} やブラウザ。"
+        },
+        {
+          "id": "c",
+          "text": "shop.example までの道すじ",
+          "correct": false,
+          "whyNot": "道すじを見るのは {{term:traceroute}}。dig は名前の答えを見る。"
+        }
+      ],
+      "explanation": "dig は名前を DNS に問い合わせる。+short を付けると、答えのアドレスだけが出る。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "名前の答えを新しいアドレスに直した。でも、ある人のパソコンでは古いサーバが開く。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "問い合わせ役のキャッシュの期限が切れるのを待つ（または消す）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "もう一度、同じように答えを直す",
+          "correct": false,
+          "whyNot": "答えはもう直っている。古い答えを覚えたキャッシュが残っているだけ。"
+        },
+        {
+          "id": "c",
+          "text": "新しいサーバを止める",
+          "correct": false,
+          "whyNot": "新しいサーバは正しい。止めると、直った人も開けなくなる。"
+        }
+      ],
+      "explanation": "一度引いた答えは、期限（`TTL`）の間キャッシュに残る。期限が来れば、新しい答えを引き直す。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "店の Web サーバが 203.0.113.20 に引っ越したのに、shop.example では開かない。名前の答えを確かめ、古い値を直して、名前で届くようにする。",
+    "environment": "net-client",
+    "setup": {
+      "user": "root",
+      "cwd": "/root",
+      "dirs": [
+        "/root",
+        "/etc/bind"
+      ],
+      "files": {
+        "/root/memo.txt": "店の Web サーバは 10/1 に 203.0.113.20 へ引っ越した。古い 203.0.113.10 は止めた。\n",
+        "/etc/bind/db.shop.example": "$TTL 300\n$ORIGIN shop.example.\n@    IN  A      203.0.113.10\nwww  IN  CNAME  @\n"
+      },
+      "services": {
+        "named": {
+          "description": "BIND DNS server",
+          "active": true,
+          "enabled": true,
+          "port": 53,
+          "zone": "/etc/bind/db.shop.example"
+        }
+      },
+      "network": {
+        "self": "ns1",
+        "devices": [
+          {
+            "name": "ns1",
+            "addrs": [
+              "10.0.0.53/24"
+            ],
+            "gateway": "10.0.0.1"
+          },
+          {
+            "name": "gw",
+            "kind": "router",
+            "addrs": [
+              "10.0.0.1/24",
+              "203.0.113.1/24"
+            ]
+          },
+          {
+            "name": "web",
+            "addrs": [
+              "203.0.113.20/24"
+            ],
+            "gateway": "203.0.113.1",
+            "listen": [
+              80
+            ],
+            "body": "<h1>港町の店へ、ようこそ</h1>"
+          }
+        ],
+        "links": [
+          [
+            "ns1",
+            "gw"
+          ],
+          [
+            "gw",
+            "web"
+          ]
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "look",
+        "purpose": "shop.example の今の答え（アドレス）を引き、答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "203.0.113.10"
+        },
+        "afterward": "shop.example は 203.0.113.10 を指していた。memo.txt によると、そこは止めた古いサーバ。名前の答えが古いまま残っている。",
+        "hints": [
+          "名前の答えは dig で引く。",
+          "`dig shop.example` を打ち、`ANSWER` `SECTION` の行の、最後のアドレスを読む。+short を付けるとアドレスだけが出る。",
+          "`dig +short shop.example` と打つ。出たアドレス `203.0.113.10` を答えの欄に入れる。"
+        ],
+        "expectedErrors": [
+          "net-dns-answer"
+        ]
+      },
+      {
+        "id": "fix",
+        "purpose": "名前の答えを書いたゾーンファイル（/etc/bind/db.shop.example）の古いアドレスを新しいアドレスに直し、DNS のサーバ（named）に読み直させて、名前で店のページに届くようにする。",
+        "check": {
+          "kind": "net",
+          "expr": "resolve shop.example=203.0.113.20 && reach shop.example:80"
+        },
+        "afterward": "ゾーンファイルを直して読み直させると、shop.example の答えが 203.0.113.20 になり、名前で店のページに届いた。{{term:file}}を直しただけでは、サーバが読み直すまで古い答えのまま。",
+        "hints": [
+          "ゾーンファイルの `A` の行のアドレスを、memo.txt の新しいアドレスに置き換える。その後、DNS のサーバに読み直させる。",
+          "置き換えは `sed -i` で、読み直しは `systemctl reload named`。最後に `curl` でページが出るかを確かめる。",
+          "`sed -i 's/203.0.113.10/203.0.113.20/' /etc/bind/db.shop.example` `systemctl reload named` `curl http://shop.example/` の順に打つ。"
+        ],
+        "expectedErrors": [
+          "net-dns-stale",
+          "enoent"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "名前の答えを dig で確かめ、古い値を直して読み直させ、名前で届くようにできた。",
+    "partial": "ヒントを使って名前の答えを直せた。次は、直した後も古いページが開く人がいたら、何が考えられるかを説明してみよう。",
+    "retry": "まだ名前で店のページに届いていない。dig の答えが 203.0.113.20 になっているか、読み直し（reload）を忘れていないかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "DNS は名前とアドレスの対応表",
+      "dig で名前の答えを確かめる",
+      "直した答えは、読み直しとキャッシュの期限の後に効く"
+    ],
+    "terms": [
+      "dns",
+      "name-resolution",
+      "dig",
+      "a-record",
+      "cache"
+    ],
+    "next": [
+      "net.i.05",
+      "web.b.01"
+    ]
+  }
+}

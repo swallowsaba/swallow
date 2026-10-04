@@ -139,67 +139,67 @@
       "nodes": [
         {
           "id": "pc",
-          "label": "支店のパソコン",
+          "label": "パソコン",
           "icon": "pc",
-          "note": "支店の LAN",
-          "x": 8,
+          "note": "支店",
+          "x": 12,
           "y": 22
         },
         {
           "id": "printer",
-          "label": "支店のプリンタ",
+          "label": "プリンタ",
           "icon": "box",
-          "note": "支店の LAN",
-          "x": 8,
+          "note": "支店",
+          "x": 12,
           "y": 80
         },
         {
           "id": "sw-b",
-          "label": "支店のスイッチ",
+          "label": "スイッチ",
           "icon": "switch",
-          "note": "LAN の中をつなぐ",
-          "x": 25,
-          "y": 50
+          "note": "支店の LAN",
+          "x": 37,
+          "y": 22
         },
         {
           "id": "r-b",
-          "label": "支店のルータ",
+          "label": "ルータ",
           "icon": "router",
           "note": "支店の出入口",
-          "x": 42,
-          "y": 80
+          "x": 63,
+          "y": 22
         },
         {
           "id": "wan",
           "label": "WAN",
           "icon": "cloud",
-          "note": "通信会社の回線",
-          "x": 58,
+          "note": "回線",
+          "x": 88,
           "y": 22
         },
         {
           "id": "r-h",
-          "label": "本社のルータ",
+          "label": "ルータ",
           "icon": "router",
           "note": "本社の出入口",
-          "x": 74,
+          "x": 88,
           "y": 80
         },
         {
           "id": "sw-h",
-          "label": "本社のスイッチ",
+          "label": "スイッチ",
           "icon": "switch",
-          "note": "LAN の中をつなぐ",
-          "x": 91,
-          "y": 50
+          "note": "本社の LAN",
+          "x": 63,
+          "y": 80
         },
         {
           "id": "srv",
-          "label": "本社のサーバ",
+          "label": "サーバ",
           "icon": "server",
-          "note": "本社の LAN",
-          "x": 91,
-          "y": 12
+          "note": "本社",
+          "x": 37,
+          "y": 80
         }
       ],
       "links": [

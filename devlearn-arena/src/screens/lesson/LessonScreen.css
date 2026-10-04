@@ -62,6 +62,7 @@
 }
 .lesson-where {
   display: flex;
+  flex: 1 1 auto;
   align-items: baseline;
   gap: 12px;
   min-width: 0;
@@ -94,6 +95,7 @@
 }
 .lesson-stages {
   display: flex;
+  flex: none;
   gap: 2px;
   margin: 0 0 0 auto;
   padding: 0;
@@ -104,6 +106,8 @@
   align-items: center;
   gap: 6px;
   height: 34px;
+  /* 題名が長くても段の名前は折り返さない（題名の側を省く） */
+  white-space: nowrap;
   padding: 0 12px 0 10px;
   border: none;
   background: var(--hud-bg);
@@ -148,6 +152,8 @@
 }
 .lesson-xp {
   display: flex;
+  flex: none;
+  white-space: nowrap;
   align-items: baseline;
   margin: 0;
   color: var(--gold);
@@ -162,6 +168,8 @@
 }
 .lesson-exit {
   display: flex;
+  flex: none;
+  white-space: nowrap;
   align-items: center;
   gap: 6px;
   height: 34px;

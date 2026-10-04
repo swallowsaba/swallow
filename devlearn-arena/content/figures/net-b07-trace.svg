@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>traceroute は通った機器を 1 段ずつ出す。2 段目は答えない（* * *）が荷物は通す。3 段目の先の線が切れていて、4 段目からは何も返らない</title>
+  <g class="el" data-part="pc">
+    <rect x="12" y="110" width="96" height="64" rx="10" fill="#5cc1ff" />
+    <text x="60" y="140" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">パソコン</text>
+    <text x="60" y="160" text-anchor="middle" font-size="13" fill="#0a1424">送る側</text>
+  </g>
+  <g class="el" data-part="hop1">
+    <rect x="140" y="110" width="96" height="64" rx="10" fill="#f2b632" />
+    <text x="188" y="140" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">1 段目</text>
+    <text x="188" y="160" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#0a1424">10.0.1.1</text>
+    <path d="M108 142 H140" fill="none" stroke="#3ae08a" stroke-width="3" />
+    <text x="188" y="210" text-anchor="middle" font-size="13" fill="#3ae08a">0.4 ms</text>
+  </g>
+  <g class="el" data-part="hop2">
+    <rect x="268" y="110" width="96" height="64" rx="10" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="6 4" />
+    <text x="316" y="140" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">2 段目</text>
+    <text x="316" y="160" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#f2b632">* * *</text>
+    <path d="M236 142 H268" fill="none" stroke="#3ae08a" stroke-width="3" />
+    <text x="316" y="210" text-anchor="middle" font-size="13" fill="#9fb0c6">答えないが通す</text>
+  </g>
+  <g class="el" data-part="hop3">
+    <rect x="396" y="110" width="96" height="64" rx="10" fill="#f2b632" />
+    <text x="444" y="140" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">3 段目</text>
+    <text x="444" y="160" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#0a1424">10.0.23.2</text>
+    <path d="M364 142 H396" fill="none" stroke="#3ae08a" stroke-width="3" />
+    <text x="444" y="210" text-anchor="middle" font-size="13" fill="#3ae08a">1.6 ms</text>
+  </g>
+  <g class="el" data-part="cut">
+    <path d="M492 142 H524 M556 142 H588" fill="none" stroke="#e04a3a" stroke-width="3" stroke-dasharray="4 4" />
+    <text x="540" y="150" text-anchor="middle" font-size="22" font-weight="700" fill="#e04a3a">×</text>
+    <text x="540" y="100" text-anchor="middle" font-size="13" fill="#e04a3a">ここで止まる</text>
+  </g>
+  <g class="el" data-part="server">
+    <rect x="588" y="110" width="100" height="64" rx="10" fill="#9aa9b5" />
+    <text x="638" y="140" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">店のサーバ</text>
+    <text x="638" y="160" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#0a1424">4 段目以降</text>
+  </g>
+  <g class="el" data-part="caption">
+    <text x="350" y="40" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">最後に答えた段の、次の区間を疑う</text>
+    <text x="350" y="262" text-anchor="middle" font-size="13" fill="#9fb0c6">ping は「届くか」、traceroute は「どこまで届くか」を見る</text>
+  </g>
+</svg>
