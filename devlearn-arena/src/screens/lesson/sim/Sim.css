@@ -129,7 +129,9 @@
   font-family: var(--font-mono);
   font-size: var(--fs-13);
   line-height: 1.6;
-  white-space: pre;
+  /* 細い列でも行の終わりを隠さない（横に送らないと読めない行を作らない） */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .sim-chart {
   margin: 0;

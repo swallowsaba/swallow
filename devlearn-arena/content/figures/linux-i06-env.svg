@@ -11,12 +11,12 @@
   </g>
   <g class="el" data-part="table">
     <rect x="40" y="76" width="260" height="40" rx="6" fill="#f2b632" />
-    <text x="52" y="102" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">PATH=/home/learner/bin:/usr/bin</text>
+    <text x="52" y="102" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">PATH=~/bin:/usr/bin</text>
     <rect x="40" y="124" width="260" height="40" rx="6" fill="#f2b632" />
     <text x="52" y="150" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">APP_ENV=staging</text>
     <rect x="40" y="172" width="260" height="40" rx="6" fill="#9aa9b5" />
     <text x="52" y="198" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">TMP_NOTE=memo</text>
-    <text x="52" y="240" font-size="13" fill="#9fb0c6">金色は export した値。灰色はシェルの中だけ</text>
+    <text x="52" y="240" font-size="13" fill="#9fb0c6">金: export した値　灰: シェルの中だけ</text>
   </g>
   <g class="el" data-part="inherit">
     <path d="M320 120 H436" fill="none" stroke="#f2b632" stroke-width="3" marker-end="url(#arrow)" />
