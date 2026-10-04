@@ -35,7 +35,7 @@
 
 ## テスト
 
-- `npm run typecheck` `npm run lint` `npm run test`: 全て通過（145 ファイル・5,152 件）。`npm run e2e` も通過
+- `npm run typecheck` `npm run lint` `npm run test`: 全て通過（144 ファイル・5,144 件）。`npm run e2e` も通過
 - ミッションの判定と報酬
   - 統合テスト（`src/__tests__/missions.test.ts`）: 上の 6 本。達成した後にもう一度通しても報酬は増えない。途中で終えると未達で、報酬も記念碑も無く、挑戦中のまま
   - コンテンツ（`src/content/missions.test.ts`）: 表の 6 本と分野・全てが規則を満たす（おすすめのレッスン・用語・想定エラー・最後のヒントで通る）・報酬の資金は Lv2 に上げる 1 回分・記念碑は 1 本に 1 つ。検証が誤りを見つけること
