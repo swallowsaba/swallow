@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>ファイアウォールの規則は上から順に比べ、最初に当てはまった規則で通すか止めるかが決まる。最後の「全て拒否」は、ほかに当てはまらなかった通信を止める</title>
+  <defs>
+    <marker id="f1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="packet">
+    <rect x="16" y="40" width="170" height="56" rx="10" fill="#f2b632" />
+    <text x="101" y="64" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">届いた通信</text>
+    <text x="101" y="84" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#0a1424">外 → 22 番</text>
+    <path d="M186 68 C 230 68, 230 68, 240 68" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#f1)" />
+  </g>
+  <g class="el" data-part="rule1">
+    <rect x="250" y="40" width="300" height="44" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <text x="270" y="68" font-size="14" fill="#3ae08a">1 許可: 443 番・誰でも</text>
+    <text x="562" y="68" font-size="13" fill="#9fb0c6">当たらない ↓</text>
+  </g>
+  <g class="el" data-part="rule2">
+    <rect x="250" y="96" width="300" height="44" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <text x="270" y="124" font-size="14" fill="#3ae08a">2 許可: 22 番・社内から</text>
+    <text x="562" y="124" font-size="13" fill="#9fb0c6">当たらない ↓</text>
+  </g>
+  <g class="el" data-part="rule3">
+    <rect x="250" y="152" width="300" height="44" rx="6" fill="#e04a3a" />
+    <text x="270" y="180" font-size="14" font-weight="700" fill="#eef2f6">3 拒否: 全て</text>
+    <text x="562" y="180" font-size="14" font-weight="700" fill="#e04a3a">当たる → 止める</text>
+  </g>
+  <g class="el" data-part="order">
+    <path d="M232 52 V190" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#f1)" />
+    <text x="220" y="230" text-anchor="end" font-size="13" fill="#9fb0c6">上から順に比べる</text>
+  </g>
+  <g class="el" data-part="caption">
+    <text x="400" y="246" text-anchor="middle" font-size="14" fill="#eef2f6">最初に当てはまった 1 つで決まる。その下は見ない</text>
+    <text x="400" y="272" text-anchor="middle" font-size="13" fill="#9fb0c6">必要な物だけ許可し、最後に全て拒否を置く</text>
+  </g>
+</svg>

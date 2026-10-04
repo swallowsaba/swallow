@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>TCP の接続は SYN、SYN/ACK、ACK の 3 回のやり取りで始まる。送った側は返事を待つ間 SYN-SENT、受ける側は待ち受けの間 LISTEN、始まった後は両方 ESTABLISHED</title>
+  <defs>
+    <marker id="h1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5cc1ff" />
+    </marker>
+    <marker id="h2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3ae08a" />
+    </marker>
+  </defs>
+  <g class="el" data-part="client">
+    <rect x="40" y="20" width="160" height="44" rx="10" fill="#5cc1ff" />
+    <text x="120" y="48" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">つなぐ側（アプリ）</text>
+    <path d="M120 64 V300" fill="none" stroke="#5cc1ff" stroke-width="2" stroke-dasharray="4 4" />
+  </g>
+  <g class="el" data-part="server">
+    <rect x="500" y="20" width="160" height="44" rx="10" fill="#3ae08a" />
+    <text x="580" y="48" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">待つ側（サーバ）</text>
+    <path d="M580 64 V300" fill="none" stroke="#3ae08a" stroke-width="2" stroke-dasharray="4 4" />
+  </g>
+  <g class="el" data-part="syn">
+    <path d="M120 100 L574 130" fill="none" stroke="#5cc1ff" stroke-width="2" marker-end="url(#h1)" />
+    <text x="330" y="102" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#5cc1ff">1 SYN（始めたい）</text>
+  </g>
+  <g class="el" data-part="synack">
+    <path d="M580 160 L126 190" fill="none" stroke="#3ae08a" stroke-width="2" marker-end="url(#h2)" />
+    <text x="370" y="162" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#3ae08a">2 SYN/ACK（どうぞ）</text>
+  </g>
+  <g class="el" data-part="ack">
+    <path d="M120 220 L574 250" fill="none" stroke="#5cc1ff" stroke-width="2" marker-end="url(#h1)" />
+    <text x="330" y="222" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#5cc1ff">3 ACK（受け取った）</text>
+  </g>
+  <g class="el" data-part="states">
+    <text x="20" y="150" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#f2b632">SYN-SENT</text>
+    <text x="20" y="168" font-size="13" fill="#9fb0c6">返事待ち</text>
+    <text x="596" y="100" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#f2b632">LISTEN</text>
+    <text x="596" y="118" font-size="13" fill="#9fb0c6">待ち受け</text>
+    <text x="350" y="292" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#f2b632">ESTABLISHED（通信中）</text>
+  </g>
+  <g class="el" data-part="caption">
+    <text x="350" y="314" text-anchor="middle" font-size="13" fill="#9fb0c6">返事（2）が来なければ SYN-SENT のまま待ち、やがて時間切れ</text>
+  </g>
+</svg>

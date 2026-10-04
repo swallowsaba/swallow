@@ -1,0 +1,293 @@
+{
+  "id": "net.i.05",
+  "domain": "net",
+  "level": "intermediate",
+  "theme": "DNS",
+  "title": "DNS レコード",
+  "goal": "A/AAAA/CNAME/MX/TXT を使い分けられる",
+  "minutes": 20,
+  "prerequisites": [
+    "net.b.06"
+  ],
+  "related": [
+    "web.b.01",
+    "sec.b.07"
+  ],
+  "next": [
+    "net.i.06"
+  ],
+  "terms": [
+    "aaaa-record",
+    "txt-record",
+    "mx-record",
+    "a-record",
+    "cname",
+    "ipv6",
+    "ipv4",
+    "server",
+    "dns",
+    "service",
+    "web-server"
+  ],
+  "explain": {
+    "what": "{{term:dns}} のレコードは、名前に結び付ける情報で、種類ごとに用途が違う。{{term:a-record}}は {{term:ipv4}} のアドレス、{{term:aaaa-record}}は {{term:ipv6}} のアドレス、{{term:cname}} は別の名前の別名、{{term:mx-record}}はメールを受け取る{{term:server}}、{{term:txt-record}}は自由な文字列。",
+    "why": "用途に合った種類で書かないと、届かない。名前でページを開く時は A レコード（や AAAA レコード）が、メールを届ける時は MX レコードが引かれる。別名を CNAME にすると、アドレスを 1 か所で直せる。",
+    "use": "サイトの公開（A レコードと、www の CNAME）、メールの受け取り（MX レコード）、外の{{term:service}}への持ち主の証明（TXT レコード）に使う。",
+    "when": "shop.example では開くのに、www.shop.example だけ開けない。www という名前のレコードが無い。名前ごとにレコードが要る。",
+    "figures": [
+      "net-i05-records"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "レコードの種類と、用途を結ぶ。",
+      "pairs": [
+        [
+          "A レコード",
+          "名前に IPv4 のアドレスを結ぶ"
+        ],
+        [
+          "CNAME",
+          "名前を、別の名前の別名にする"
+        ],
+        [
+          "MX レコード",
+          "メールを受け取るサーバを示す"
+        ],
+        [
+          "TXT レコード",
+          "名前に自由な文字列（証明など）を結ぶ"
+        ]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "www.shop.example が、shop.example の別名（CNAME）になっている。2 つの関係を選ぶ。",
+      "a": "shop.example の A レコードのアドレスを変える",
+      "b": "www.shop.example の答えも新しいアドレスになる",
+      "answer": "cause",
+      "why": "別名は、元の名前の答えをそのまま使う。元の名前の `A` を直せば、別名の側を直さなくても新しいアドレスになる。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "info@shop.example 宛てのメールを受け取るサーバを示すレコードは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "MX レコード",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "A レコード",
+          "correct": false,
+          "whyNot": "`A` は名前のアドレス。メールの届け先を探す時は、まず `MX` が引かれる。"
+        },
+        {
+          "id": "c",
+          "text": "TXT レコード",
+          "correct": false,
+          "whyNot": "`TXT` は自由な文字列。メールの届け先は示さない。"
+        }
+      ],
+      "explanation": "メールを送る側は、宛先の名前の `MX` を引いて、受け取るサーバを探す。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "shop.example では店のページが開く。でも www.shop.example では「名前が見つからない」と出る。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "www という名前のレコード（`A` か CNAME）が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "店の {{term:web-server}}が止まっている",
+          "correct": false,
+          "whyNot": "shop.example では開くので、サーバは動いている。"
+        },
+        {
+          "id": "c",
+          "text": "MX レコードが無い",
+          "correct": false,
+          "whyNot": "`MX` はメールのため。ページを開く時には使わない。"
+        }
+      ],
+      "explanation": "www.shop.example は、shop.example とは別の名前。www のレコードを足す（別名なら CNAME）。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "外のサービスから「この文字列を、あなたの名前のレコードに置いて、持ち主だと示して」と言われた。どの種類で置く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "TXT レコード",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "CNAME",
+          "correct": false,
+          "whyNot": "CNAME は別の名前を指すための物。自由な文字列は置けない。"
+        },
+        {
+          "id": "c",
+          "text": "A レコード",
+          "correct": false,
+          "whyNot": "`A` に置けるのはアドレスだけ。"
+        }
+      ],
+      "explanation": "自由な文字列は `TXT` に置く。名前の持ち主しかレコードを書けないので、持ち主の証明になる。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "店の名前 shop.example のレコードを整え、shop.example と www.shop.example でページが開き、info@shop.example 宛てのメールが届くようにする。",
+    "environment": "sim-config",
+    "setup": {
+      "tables": [
+        {
+          "id": "zone",
+          "label": "shop.example のレコード",
+          "columns": [
+            {
+              "id": "name",
+              "label": "名前（@ は shop.example）",
+              "options": [
+                "@",
+                "www",
+                "mail"
+              ]
+            },
+            {
+              "id": "type",
+              "label": "種類",
+              "options": [
+                "A",
+                "AAAA",
+                "CNAME",
+                "MX",
+                "TXT"
+              ]
+            },
+            {
+              "id": "value",
+              "label": "値",
+              "options": [
+                "203.0.113.20",
+                "203.0.113.25",
+                "shop.example.",
+                "mail.shop.example."
+              ]
+            }
+          ],
+          "rows": [
+            {
+              "name": "@",
+              "type": "A",
+              "value": "203.0.113.20"
+            },
+            {
+              "name": "mail",
+              "type": "A",
+              "value": "203.0.113.25"
+            }
+          ]
+        }
+      ],
+      "settle": "rows zone>=4",
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "店からの依頼",
+          "rows": [
+            [
+              "ページ",
+              "shop.example と www.shop.example の両方で開く（www は shop.example の別名にして、アドレスを 1 か所で直せるように）"
+            ],
+            [
+              "メール",
+              "info@shop.example 宛てを、メールのサーバ mail.shop.example で受け取る"
+            ]
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "www.shop.example を開いた",
+          "lines": [
+            "名前が見つからない（NXDOMAIN）"
+          ],
+          "when": "!row zone name=www"
+        },
+        {
+          "kind": "log",
+          "title": "info@shop.example へメールを送った",
+          "lines": [
+            "受け取るサーバ（MX）が分からず、送り主に戻された"
+          ],
+          "when": "!row zone type=MX"
+        },
+        {
+          "kind": "log",
+          "title": "確かめた結果",
+          "lines": [
+            "shop.example: 開いた",
+            "www.shop.example → shop.example: 開いた",
+            "info@shop.example: mail.shop.example に届いた"
+          ],
+          "when": "row zone name=www type=CNAME value=shop.example. && row zone name=@ type=MX value=mail.shop.example."
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "records",
+        "purpose": "確かめた記録を読み、足りないレコードを足す。www は shop.example の別名、メールは mail.shop.example で受け取る。",
+        "check": {
+          "kind": "sim",
+          "expr": "row zone name=www type=CNAME value=shop.example. && row zone name=@ type=MX value=mail.shop.example."
+        },
+        "afterward": "www を shop.example の別名（CNAME）にし、メールの受け取り先（`MX`）に mail.shop.example を置いた。ページは 2 つの名前で開き、メールも届く。",
+        "hints": [
+          "記録で、届かない物は 2 つ。www という名前のレコードと、メールの受け取り先のレコードが無い。",
+          "www は種類 CNAME で値 shop.example.、メールは名前 @ に種類 `MX` で値 mail.shop.example.（末尾の . まで書く）。",
+          "`add zone name=www type=CNAME value=shop.example.` `add zone name=@ type=MX value=mail.shop.example.` の順に入れる。"
+        ],
+        "expectedErrors": [
+          "net-dns-records"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "用途ごとに正しい種類のレコードを置き、ページの 2 つの名前とメールが全て届くようにできた。",
+    "partial": "ヒントを使ってレコードを整えられた。次は、www を `A` ではなく CNAME にする良さを説明してみよう。",
+    "retry": "まだ届かない物がある。確かめた記録で、どの名前の、どの種類のレコードが足りないかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "レコードの種類ごとに用途がある",
+      "別名は CNAME",
+      "メールの受け取り先は `MX`"
+    ],
+    "terms": [
+      "a-record",
+      "cname",
+      "mx-record",
+      "txt-record",
+      "aaaa-record"
+    ],
+    "next": [
+      "net.i.06"
+    ]
+  }
+}

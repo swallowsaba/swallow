@@ -1,0 +1,272 @@
+{
+  "id": "net.i.04",
+  "domain": "net",
+  "level": "intermediate",
+  "theme": "TCP",
+  "title": "接続の確立と状態",
+  "goal": "3 ウェイハンドシェイクと ss の状態を読める",
+  "minutes": 20,
+  "prerequisites": [
+    "net.b.05"
+  ],
+  "related": [
+    "trouble.i.02",
+    "web.b.02"
+  ],
+  "next": [
+    "net.a.02"
+  ],
+  "terms": [
+    "handshake",
+    "ack",
+    "syn",
+    "tcp",
+    "ss",
+    "app",
+    "log",
+    "database",
+    "cache",
+    "port",
+    "firewall",
+    "service",
+    "server",
+    "dig"
+  ],
+  "explain": {
+    "what": "{{term:tcp}} の接続は、3 回のやり取り（{{term:handshake}}）で始まる。つなぐ側が {{term:syn}} を送り、待つ側が SYN/{{term:ack}} を返し、つなぐ側が ACK を返す。接続には状態があり、{{term:ss}} で見られる。",
+    "why": "つながらない時、相手が「断った」のか「返事をしない」のかで、原因の場所が違う。断られたなら相手の扉で誰も待っていない。返事が無いなら、途中で止められているか、相手がいない。",
+    "use": "接続の障害の切り分けに使う。ss で、待ち受け・通信中・返事待ちなどの接続の状態を見る。{{term:app}}の{{term:log}}の「拒否された」と「時間切れ」も見分ける。",
+    "when": "アプリが、{{term:database}}にも{{term:cache}}にもつながらないと言っている。2 つは同じ原因とは限らない。片方は断られ、片方は返事が来ていないかもしれない。",
+    "figures": [
+      "net-i04-handshake"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "TCP の接続を始める 3 回のやり取りを、順に並べる。",
+      "items": [
+        "つなぐ側が SYN を送る",
+        "待つ側が SYN/ACK を返す",
+        "つなぐ側が ACK を返す"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "ss に出る接続の状態と、意味を結ぶ。",
+      "pairs": [
+        [
+          "`LISTEN`",
+          "扉で待ち受けている"
+        ],
+        [
+          "`ESTAB`",
+          "接続ができて、通信中"
+        ],
+        [
+          "`SYN-SENT`",
+          "SYN を送って、返事を待っている"
+        ]
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "つなごうとしたら、すぐに `Connection refused`（拒否された）と返った。考えやすい原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "相手の機械には届いたが、その扉（{{term:port}}）で誰も待ち受けていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "途中の{{term:firewall}}に、黙って捨てられた",
+          "correct": false,
+          "whyNot": "黙って捨てられたら、返事が来ないまま時間切れ（timed out）になる。拒否の返事は来ない。"
+        },
+        {
+          "id": "c",
+          "text": "相手の機械が存在しない",
+          "correct": false,
+          "whyNot": "相手がいなければ、拒否の返事をする者もいない。時間切れになる。"
+        }
+      ],
+      "explanation": "拒否（refused）は、相手の機械からの返事。届いてはいるが、その扉で{{term:service}}が待っていない。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "つなごうとしたら、30 秒待たされた後に `Connection timed out` と出た。考えやすい原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "途中で止められているか、相手がいない（返事が戻らない）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "相手の扉で誰も待ち受けていない",
+          "correct": false,
+          "whyNot": "それなら、すぐに拒否（refused）の返事が来る。待たされない。"
+        },
+        {
+          "id": "c",
+          "text": "接続はできたが、データが大きすぎた",
+          "correct": false,
+          "whyNot": "timed out は、接続を始める返事すら来なかった印。"
+        }
+      ],
+      "explanation": "時間切れ（timeout）は、返事が来なかった印。途中で捨てられたか、相手がいないかを、経路やファイアウォールで調べる。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "ss で、ある接続の状態が `ESTAB` と出た。この接続は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "3 回のやり取りが終わり、通信できる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "返事を待っている",
+          "correct": false,
+          "whyNot": "返事待ちは `SYN-SENT`。"
+        },
+        {
+          "id": "c",
+          "text": "待ち受けているだけで、相手はまだいない",
+          "correct": false,
+          "whyNot": "待ち受けは `LISTEN`。"
+        }
+      ],
+      "explanation": "`ESTAB`（`ESTABLISHED`）は、接続ができて通信中の状態。"
+    },
+    {
+      "id": "q4",
+      "kind": "situation",
+      "prompt": "{{term:server}}の接続がおかしい。まず、今の接続の状態の全体を見たい。何を使う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ss で、待ち受けと接続の状態の一覧を見る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "サーバを再起動する",
+          "correct": false,
+          "whyNot": "再起動すると、今の状態という手掛かりが消える。先に見る。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:dig}} で名前を引く",
+          "correct": false,
+          "whyNot": "dig は名前の答えを見る道具。接続の状態は見えない。"
+        }
+      ],
+      "explanation": "ss は、待ち受け（-l）や全ての接続（-a）の状態を一覧にする。切り分けの最初に見る。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "アプリのサーバ（app01）が、データベースにもキャッシュにもつながらない。ログと接続の状態から、待ち受けていない相手と、途中で止められている相手を見分ける。",
+    "environment": "linux-server",
+    "setup": {
+      "hostname": "app01",
+      "address": "10.0.0.5/24",
+      "files": {
+        "/var/log/app.log": "10:02:11 start order-app\n10:02:11 connect db 10.0.0.20:5432: Connection refused\n10:02:11 connect cache 10.0.0.30:6379: connecting...\n10:02:41 connect cache 10.0.0.30:6379: Connection timed out\n10:03:11 connect db 10.0.0.20:5432: Connection refused\n10:03:11 connect cache 10.0.0.30:6379: connecting...\n"
+      },
+      "services": {
+        "app": {
+          "description": "Order app",
+          "active": true,
+          "enabled": true,
+          "port": 8080
+        }
+      },
+      "sockets": [
+        {
+          "state": "ESTAB",
+          "local": "10.0.0.5:8080",
+          "peer": "10.0.0.77:52114"
+        },
+        {
+          "state": "SYN-SENT",
+          "local": "10.0.0.5:41022",
+          "peer": "10.0.0.30:6379"
+        },
+        {
+          "state": "TIME-WAIT",
+          "local": "10.0.0.5:8080",
+          "peer": "10.0.0.77:52088"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "refused",
+        "purpose": "ログで、接続を拒否された（refused）相手を「アドレス:ポート」の形で答える。その扉では、サービスが待ち受けていない。",
+        "check": {
+          "kind": "answer",
+          "equals": "10.0.0.20:5432"
+        },
+        "afterward": "データベース（10.0.0.20:5432）は、すぐに拒否を返していた。機械には届いているが、5432 番で誰も待っていない。データベースのサービスが止まっていないかを、相手の機械で確かめる。",
+        "hints": [
+          "ログの中から、拒否（refused）の行を探す。",
+          "`grep refused /var/log/app.log` を打ち、行の中の「アドレス:ポート」を読む。",
+          "`grep refused /var/log/app.log` と打つ。答えの欄に `10.0.0.20:5432` と入れる。"
+        ],
+        "expectedErrors": [
+          "net-ss-refused"
+        ]
+      },
+      {
+        "id": "timeout",
+        "purpose": "ss で接続の状態の全てを見て、SYN を送ったまま返事を待ち続けている相手を「アドレス:ポート」で答える。そこへの経路のどこかで止められている。",
+        "check": {
+          "kind": "answer",
+          "equals": "10.0.0.30:6379"
+        },
+        "afterward": "キャッシュ（10.0.0.30:6379）へは SYN を送ったまま、返事が来ていない（`SYN-SENT`）。拒否ではなく無返事なので、途中のファイアウォールや経路を調べる。",
+        "hints": [
+          "接続の状態の全ては ss の -a で見る。-t は TCP、-n は番号のまま出す。",
+          "`ss -tan` を打ち、状態の欄が `SYN-SENT` の行の、相手の側（`Peer`）の「アドレス:ポート」を読む。",
+          "`ss -tan` と打つ。返事を待っている行の相手は 10.0.0.30:6379。答えの欄に `10.0.0.30:6379` と入れる。"
+        ],
+        "expectedErrors": [
+          "net-ss-timeout"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "ログと接続の状態から、拒否（待ち受けていない）と無返事（途中で止められている）を見分けられた。",
+    "partial": "ヒントを使って見分けられた。次は、refused と timed out で、調べる場所がどう違うかを説明してみよう。",
+    "retry": "まだ見分けられていない。refused は返事が来た印、timed out と `SYN-SENT` は返事が来ない印、と分けて読もう。"
+  },
+  "summary": {
+    "points": [
+      "接続は 3 回のやり取りで始まる",
+      "refused は待っていない（返事が来る）",
+      "timeout は途中か相手（返事が来ない）"
+    ],
+    "terms": [
+      "tcp",
+      "handshake",
+      "syn",
+      "ack",
+      "ss"
+    ],
+    "next": [
+      "net.a.02"
+    ]
+  }
+}
