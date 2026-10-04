@@ -1,0 +1,358 @@
+{
+  "id": "net.b.01",
+  "domain": "net",
+  "level": "beginner",
+  "theme": "全体像",
+  "title": "ネットワークとは（LAN と WAN）",
+  "goal": "家庭・会社・インターネットのつながりを描ける",
+  "minutes": 15,
+  "prerequisites": [
+    "found.b.07"
+  ],
+  "related": [
+    "found.b.07",
+    "cloud.b.03"
+  ],
+  "next": [
+    "net.b.02"
+  ],
+  "terms": [
+    "lan",
+    "router",
+    "wan",
+    "internet",
+    "isp",
+    "server",
+    "switch"
+  ],
+  "explain": {
+    "what": "近くの機械どうしをつないだ網が {{term:lan}}。家や会社の 1 つの建物の中が多い。離れた場所の LAN どうしを、通信会社の回線でつないだ広い網が {{term:wan}}。LAN の出入口には{{term:router}}があり、外への通信はルータを通る。",
+    "why": "つながらない時、問題が LAN の中か、外か（WAN やその先）かで、調べる場所も、頼む相手も変わる。どこまでが自分の網かを知らないと、見当違いの所を調べてしまう。",
+    "use": "会社の本社と支店を WAN でつなぎ、支店から本社の{{term:server}}を使う。家の LAN は、ルータと{{term:isp}}を通って{{term:internet}}につながる。",
+    "when": "社内の共有フォルダは開けるのに、外のサイトが開けない。LAN の中は動いているので、LAN の出口（ルータ）から外を疑う。",
+    "figures": [
+      "net-b01-lanwan"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "net-b01-lanwan",
+      "prompt": "図で、離れた 2 つの LAN をつなぐ広い網（WAN）を押す。",
+      "answer": [
+        "wan"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "家のルータが止まる",
+      "b": "家の LAN の外へ出られない",
+      "answer": "cause",
+      "why": "ルータは LAN の出入口。止まると外へ出る道が無くなる。LAN の中どうしは、{{term:switch}}でつながっているので話せる。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "LAN とは、どんな網？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "建物の中など、近くの機械どうしをつないだ網",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "離れた場所どうしを、通信会社の回線でつないだ網",
+          "correct": false,
+          "whyNot": "それは WAN。LAN どうしを遠くでつなぐ広い網。"
+        },
+        {
+          "id": "c",
+          "text": "世界中の網をつないだ網",
+          "correct": false,
+          "whyNot": "それはインターネット。LAN も WAN も、その一部になれる。"
+        }
+      ],
+      "explanation": "LAN は近く（`Local`）の網。家や 1 つの事務所の中の機械をつなぐ。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "社内の共有フォルダは開けるのに、外のサイトだけが開けない。最も疑わしいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "LAN から外へ出る出口（ルータ）か、その先",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "自分のパソコンの線が抜けている",
+          "correct": false,
+          "whyNot": "線が抜けていたら、社内の共有フォルダも開けない。LAN の中は動いている。"
+        },
+        {
+          "id": "c",
+          "text": "社内のスイッチが止まっている",
+          "correct": false,
+          "whyNot": "スイッチが止まると、社内どうしもつながらない。共有フォルダが開けるので違う。"
+        }
+      ],
+      "explanation": "LAN の中は通じているので、問題は LAN の外への出口から先。ルータと、その先の回線を確かめる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "網と網（LAN と、その外）をつなぐ機器はどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ルータ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "スイッチ",
+          "correct": false,
+          "whyNot": "スイッチは、同じ LAN の中の機械どうしをつなぐ機器。網の外へは出さない。"
+        },
+        {
+          "id": "c",
+          "text": "プリンタ",
+          "correct": false,
+          "whyNot": "プリンタは LAN につながる機械の 1 つ。網と網はつながない。"
+        }
+      ],
+      "explanation": "ルータは網の出入口。LAN の外へ出る通信は、全てルータを通る。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "支店の LAN と本社の LAN を WAN でつなぎ、支店のパソコンから本社のサーバに届かせる。",
+    "environment": "sim-connect",
+    "setup": {
+      "nodes": [
+        {
+          "id": "pc",
+          "label": "支店のパソコン",
+          "icon": "pc",
+          "note": "支店の LAN",
+          "x": 8,
+          "y": 22
+        },
+        {
+          "id": "printer",
+          "label": "支店のプリンタ",
+          "icon": "box",
+          "note": "支店の LAN",
+          "x": 8,
+          "y": 80
+        },
+        {
+          "id": "sw-b",
+          "label": "支店のスイッチ",
+          "icon": "switch",
+          "note": "LAN の中をつなぐ",
+          "x": 25,
+          "y": 50
+        },
+        {
+          "id": "r-b",
+          "label": "支店のルータ",
+          "icon": "router",
+          "note": "支店の出入口",
+          "x": 42,
+          "y": 80
+        },
+        {
+          "id": "wan",
+          "label": "WAN",
+          "icon": "cloud",
+          "note": "通信会社の回線",
+          "x": 58,
+          "y": 22
+        },
+        {
+          "id": "r-h",
+          "label": "本社のルータ",
+          "icon": "router",
+          "note": "本社の出入口",
+          "x": 74,
+          "y": 80
+        },
+        {
+          "id": "sw-h",
+          "label": "本社のスイッチ",
+          "icon": "switch",
+          "note": "LAN の中をつなぐ",
+          "x": 91,
+          "y": 50
+        },
+        {
+          "id": "srv",
+          "label": "本社のサーバ",
+          "icon": "server",
+          "note": "本社の LAN",
+          "x": 91,
+          "y": 12
+        }
+      ],
+      "links": [
+        [
+          "pc",
+          "sw-b"
+        ],
+        [
+          "printer",
+          "sw-b"
+        ],
+        [
+          "r-b",
+          "wan"
+        ],
+        [
+          "wan",
+          "r-h"
+        ],
+        [
+          "sw-h",
+          "srv"
+        ]
+      ],
+      "forbid": [
+        {
+          "a": "sw-b",
+          "b": "sw-h",
+          "message": "つなげない: 支店と本社は遠く離れている。LAN どうしは、ルータと WAN を通してつなぐ"
+        },
+        {
+          "a": "sw-b",
+          "b": "wan",
+          "message": "つなげない: スイッチは LAN の中をつなぐ機器。網の外へは、ルータが出す"
+        },
+        {
+          "a": "sw-h",
+          "b": "wan",
+          "message": "つなげない: スイッチは LAN の中をつなぐ機器。網の外へは、ルータが出す"
+        },
+        {
+          "a": "pc",
+          "b": "wan",
+          "message": "つなげない: パソコンは LAN のスイッチにつなぐ。外へはルータを通って出る"
+        },
+        {
+          "a": "pc",
+          "b": "srv",
+          "message": "つなげない: 本社のサーバは遠い。間の機器を順に通らないと届かない"
+        }
+      ],
+      "sends": [
+        {
+          "from": "pc",
+          "to": "printer",
+          "label": "支店のプリンタへ送る"
+        },
+        {
+          "from": "pc",
+          "to": "srv",
+          "label": "本社のサーバへ送る"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "網の範囲",
+          "rows": [
+            [
+              "支店の LAN",
+              "パソコン・プリンタ・スイッチ"
+            ],
+            [
+              "本社の LAN",
+              "サーバ・スイッチ"
+            ],
+            [
+              "WAN",
+              "支店と本社のルータの間"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "支店のプリンタ",
+          "body": "印刷できた。支店の LAN の中は動いている。",
+          "when": "sent pc printer"
+        },
+        {
+          "kind": "text",
+          "title": "本社のサーバからの返事",
+          "body": "在庫の表を送ります。支店の皆さん、お疲れさまです。",
+          "when": "sent pc srv"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "inside",
+        "purpose": "まず支店の LAN の中で届くかを確かめる。支店のプリンタへ送る。",
+        "check": {
+          "kind": "sim",
+          "expr": "sent pc printer"
+        },
+        "afterward": "支店の LAN の中では届いた。スイッチでつながった機械どうしは話せる。",
+        "hints": [
+          "つながらない時は、近い所（自分の LAN の中）から確かめる。",
+          "「支店のプリンタへ送る」を押す。",
+          "`send pc printer` と入れる。"
+        ],
+        "expectedErrors": [
+          "net-lan-only"
+        ]
+      },
+      {
+        "id": "wan",
+        "purpose": "本社のサーバへ送り、どこで止まるかを見る。2 つの LAN を WAN につなげて、サーバまで届ける。",
+        "check": {
+          "kind": "sim",
+          "expr": "sent pc srv"
+        },
+        "afterward": "支店の LAN → 支店のルータ → WAN → 本社のルータ → 本社の LAN と通って、サーバまで届いた。LAN の出入口はルータだった。",
+        "hints": [
+          "送ると、どこまで届いたかが知らせに出る。LAN の外へ出る出口はどれかを見よう。",
+          "支店のスイッチと支店のルータ、本社のスイッチと本社のルータが、つながっていない。両方の LAN をルータにつなぐ。",
+          "`connect sw-b r-b` `connect sw-h r-h` `send pc srv` の順に入れる。"
+        ],
+        "expectedErrors": [
+          "net-lan-only",
+          "sim-forbidden"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "LAN の中から確かめ、LAN の出入口のルータと WAN を通して、離れた LAN どうしをつなげた。",
+    "partial": "ヒントを使って本社まで届けた。次は、どこからどこまでが LAN で、どこが WAN かを言ってみよう。",
+    "retry": "まだ本社のサーバに届いていない。送った時の知らせで、届いた最後の機器を見て、その LAN がルータにつながっているかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "LAN は近くの網、WAN は離れた LAN どうしをつなぐ網",
+      "LAN の出入口はルータ",
+      "まず、問題が LAN の中か外かを分ける"
+    ],
+    "terms": [
+      "lan",
+      "wan",
+      "router",
+      "switch"
+    ],
+    "next": [
+      "net.b.02"
+    ]
+  }
+}

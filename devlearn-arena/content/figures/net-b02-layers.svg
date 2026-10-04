@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>TCP/IP の 4 つの層と OSI の 7 つの層の対応。下からリンク（イーサネット）・インターネット（IP）・トランスポート（TCP）・アプリケーション（HTTP）</title>
+  <g class="el" data-part="osi">
+    <text x="90" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#9fb0c6">OSI（7 層）</text>
+    <rect x="20" y="42" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <text x="90" y="62" text-anchor="middle" font-size="13" fill="#eef2f6">7 アプリケーション</text>
+    <rect x="20" y="76" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <text x="90" y="96" text-anchor="middle" font-size="13" fill="#eef2f6">6 プレゼンテーション</text>
+    <rect x="20" y="110" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <text x="90" y="130" text-anchor="middle" font-size="13" fill="#eef2f6">5 セッション</text>
+    <rect x="20" y="152" width="140" height="36" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <text x="90" y="175" text-anchor="middle" font-size="13" fill="#eef2f6">4 トランスポート</text>
+    <rect x="20" y="200" width="140" height="36" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <text x="90" y="223" text-anchor="middle" font-size="13" fill="#eef2f6">3 ネットワーク</text>
+    <rect x="20" y="248" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <text x="90" y="268" text-anchor="middle" font-size="13" fill="#eef2f6">2 データリンク</text>
+    <rect x="20" y="282" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <text x="90" y="302" text-anchor="middle" font-size="13" fill="#eef2f6">1 物理</text>
+  </g>
+  <g class="el" data-part="application">
+    <text x="330" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">TCP/IP（4 層）</text>
+    <rect x="200" y="42" width="260" height="98" rx="8" fill="#7a3fd0" />
+    <text x="330" y="86" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">アプリケーション</text>
+    <text x="330" y="110" text-anchor="middle" font-size="13" fill="#eef2f6">ページの中身・名前</text>
+    <text x="580" y="96" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#eef2f6">HTTP・DNS</text>
+  </g>
+  <g class="el" data-part="transport">
+    <rect x="200" y="152" width="260" height="36" rx="8" fill="#1a6fd6" />
+    <text x="330" y="176" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">トランスポート</text>
+    <text x="580" y="176" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#eef2f6">TCP・UDP</text>
+  </g>
+  <g class="el" data-part="internet">
+    <rect x="200" y="200" width="260" height="36" rx="8" fill="#2fa89b" />
+    <text x="330" y="224" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">インターネット</text>
+    <text x="580" y="224" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#eef2f6">IP</text>
+  </g>
+  <g class="el" data-part="link">
+    <rect x="200" y="248" width="260" height="64" rx="8" fill="#9aa9b5" />
+    <text x="330" y="276" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">リンク</text>
+    <text x="330" y="298" text-anchor="middle" font-size="13" fill="#0a1424">線・電波・スイッチ</text>
+    <text x="580" y="284" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#eef2f6">イーサネット</text>
+  </g>
+  <g class="el" data-part="caption">
+    <text x="580" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#9fb0c6">代表</text>
+  </g>
+</svg>

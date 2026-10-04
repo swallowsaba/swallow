@@ -1,0 +1,281 @@
+{
+  "id": "net.b.04",
+  "domain": "net",
+  "level": "beginner",
+  "theme": "ポート",
+  "title": "ポート",
+  "goal": "1 台の中で通信を届け分ける仕組みを説明できる",
+  "minutes": 15,
+  "prerequisites": [
+    "net.b.03"
+  ],
+  "related": [
+    "linux.i.04",
+    "docker.b.04"
+  ],
+  "next": [
+    "net.b.05",
+    "net.i.03",
+    "web.b.02"
+  ],
+  "terms": [
+    "ip-address",
+    "program",
+    "service",
+    "port",
+    "database",
+    "web",
+    "ssh",
+    "server",
+    "firewall",
+    "https",
+    "http",
+    "ping"
+  ],
+  "explain": {
+    "what": "{{term:port}}は、1 台の機械の中で、届いた通信をどの{{term:program}}に渡すかを決める番号（0〜65535）。{{term:ip-address}}が建物の住所なら、ポートは建物の扉。{{term:service}}は決まった扉で待ち受ける。",
+    "why": "1 台の{{term:server}}で、{{term:web}}・{{term:ssh}}・{{term:database}}を同時に動かす。番号で届け先を分けないと、どのサービス宛ての通信か分からない。1 つの扉で待てるのは 1 つのプログラムだけ。",
+    "use": "サービスを公開する時、決まった番号で待ち受ける。Web は 80 番、暗号化した Web（{{term:https}}）は 443 番、SSH は 22 番が既定。{{term:firewall}}も番号で通す・止めるを決める。",
+    "when": "Web のサーバを動かそうとしたら「使用中（address already in use）」と出て止まった。その扉では、もう別のプログラムが待ち受けている。",
+    "figures": [
+      "net-b04-doors"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "1 台の機械（1 つの IP アドレス）",
+      "b": "たくさんのポート（扉）",
+      "answer": "contains",
+      "why": "1 つの住所の建物に、たくさんの扉が並ぶ。届いた通信は、宛先のポートの扉で待つプログラムに渡る。",
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "既定のポートの番号と、そこで待つ物を結ぶ。",
+      "pairs": [
+        [
+          "22",
+          "SSH（離れた機械の管理）"
+        ],
+        [
+          "80",
+          "Web（{{term:http}}）"
+        ],
+        [
+          "443",
+          "Web（HTTPS）"
+        ]
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "暗号化した Web（HTTPS）の、既定のポートは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "443",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "80",
+          "correct": false,
+          "whyNot": "80 番は暗号化しない Web（HTTP）の既定。"
+        },
+        {
+          "id": "c",
+          "text": "22",
+          "correct": false,
+          "whyNot": "22 番は SSH の既定。"
+        }
+      ],
+      "explanation": "HTTPS は 443 番。ブラウザで https:// と打つと、番号を書かなくても 443 番に届く。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "サーバ自体は動いていて {{term:ping}} も届く。でも Web のページだけがつながらない。考えやすい原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Web の扉（80 番や 443 番）で、誰も待ち受けていない・閉じている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "サーバの IP アドレスが間違っている",
+          "correct": false,
+          "whyNot": "ping がそのアドレスに届いている。住所は合っている。"
+        },
+        {
+          "id": "c",
+          "text": "ケーブルが抜けている",
+          "correct": false,
+          "whyNot": "ケーブルが抜けていたら ping も届かない。"
+        }
+      ],
+      "explanation": "建物（住所）には届いている。開けたい扉（ポート）で、待っているプログラムがいないか、扉が閉じられている。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "80 番で Web のサーバが動いている所に、別の Web のサーバを 80 番で動かそうとする。どうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "後から動かした方が、使用中（`Address already in use`）で失敗する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "2 つが交代で答える",
+          "correct": false,
+          "whyNot": "1 つの扉で待てるのは 1 つのプログラムだけ。交代はしない。"
+        },
+        {
+          "id": "c",
+          "text": "先に動いていた方が止まる",
+          "correct": false,
+          "whyNot": "先に待っている方はそのまま。後から来た方が扉を取れずに止まる。"
+        }
+      ],
+      "explanation": "1 つのポートで待ち受けられるのは 1 つだけ。2 つ目は使用中で失敗する。別の番号にするか、先の物を止める。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "新しいサーバで、3 つのサービスを正しい扉（ポート）で待ち受けさせる。",
+    "environment": "sim-assign",
+    "setup": {
+      "slots": [
+        {
+          "id": "p22",
+          "label": "22 番",
+          "capacity": 1,
+          "full": "bind: 0.0.0.0:22 は使用中（Address already in use）。1 つのポートで待ち受けられるのは 1 つだけ"
+        },
+        {
+          "id": "p80",
+          "label": "80 番",
+          "capacity": 1,
+          "full": "bind: 0.0.0.0:80 は使用中（Address already in use）。1 つのポートで待ち受けられるのは 1 つだけ"
+        },
+        {
+          "id": "p443",
+          "label": "443 番",
+          "capacity": 1,
+          "full": "bind: 0.0.0.0:443 は使用中（Address already in use）。1 つのポートで待ち受けられるのは 1 つだけ"
+        },
+        {
+          "id": "p8080",
+          "label": "8080 番",
+          "capacity": 1,
+          "full": "bind: 0.0.0.0:8080 は使用中（Address already in use）。1 つのポートで待ち受けられるのは 1 つだけ"
+        }
+      ],
+      "items": [
+        {
+          "id": "web",
+          "label": "Web（HTTP）",
+          "size": 1
+        },
+        {
+          "id": "https",
+          "label": "Web（HTTPS）",
+          "size": 1
+        },
+        {
+          "id": "ssh",
+          "label": "SSH（管理）",
+          "size": 1
+        }
+      ],
+      "initial": {
+        "web": "p443"
+      },
+      "panels": [
+        {
+          "kind": "table",
+          "title": "よく使うポート",
+          "columns": [
+            "番号",
+            "使う物"
+          ],
+          "rows": [
+            [
+              "22",
+              "SSH"
+            ],
+            [
+              "80",
+              "Web（HTTP）"
+            ],
+            [
+              "443",
+              "Web（HTTPS）"
+            ],
+            [
+              "8080",
+              "試しの Web によく使う"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "外から確かめた結果",
+          "body": "http://・https://・ssh の 3 つとも、番号を書かずに届いた。",
+          "when": "in web=p80 https=p443 ssh=p22"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "doors",
+        "purpose": "Web（HTTP）・Web（HTTPS）・SSH を、それぞれ既定の番号で待ち受けさせる。443 番には、間違えて Web（HTTP）が入っている。",
+        "check": {
+          "kind": "sim",
+          "expr": "in web=p80 https=p443 ssh=p22"
+        },
+        "afterward": "3 つのサービスが、それぞれ既定の扉で待ち受けた。利用者は番号を書かなくても、ブラウザや ssh が既定の番号に届けてくれる。",
+        "hints": [
+          "既定の番号を思い出す。1 つの扉には 1 つしか入らないので、間違えて入っている物を先に出す。",
+          "HTTP は 80、HTTPS は 443、SSH は 22。443 番の Web（HTTP）を出してから、80 番に入れ直す。",
+          "`take web` `put web p80` `put https p443` `put ssh p22` の順に入れる。"
+        ],
+        "expectedErrors": [
+          "net-port-in-use",
+          "net-port-default"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "3 つのサービスを、重ならないように既定の扉で待ち受けさせられた。",
+    "partial": "ヒントを使って扉を割り振れた。次は、使用中のポートで動かそうとすると何が起きるかを説明してみよう。",
+    "retry": "まだ扉の割り振りが合っていない。表の既定の番号と、1 つの扉に 1 つだけ、を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "ポートは機械の中の扉",
+      "既定の番号: HTTP 80・HTTPS 443・SSH 22",
+      "1 つの扉で待てるのは 1 つのプログラム"
+    ],
+    "terms": [
+      "port",
+      "ip-address",
+      "ssh",
+      "https"
+    ],
+    "next": [
+      "net.b.05",
+      "net.i.03",
+      "web.b.02"
+    ]
+  }
+}

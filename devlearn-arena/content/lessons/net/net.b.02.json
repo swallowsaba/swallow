@@ -1,0 +1,277 @@
+{
+  "id": "net.b.02",
+  "domain": "net",
+  "level": "beginner",
+  "theme": "層",
+  "title": "OSI と TCP/IP の層",
+  "goal": "各層の役割と、どの層の話かを判断できる",
+  "minutes": 15,
+  "prerequisites": [
+    "net.b.01"
+  ],
+  "related": [
+    "web.b.02",
+    "trouble.b.01"
+  ],
+  "next": [
+    "net.b.03"
+  ],
+  "terms": [
+    "internet",
+    "tcp-ip",
+    "osi",
+    "http",
+    "tcp",
+    "port",
+    "ip",
+    "web",
+    "udp",
+    "app",
+    "ping",
+    "server",
+    "ip-address"
+  ],
+  "explain": {
+    "what": "通信の仕事を、下から積み重なる層に分けて考える型がある。{{term:internet}}で使う {{term:tcp-ip}} は 4 つの層、細かく分けた {{term:osi}} は 7 つの層。下の層は線や電波、上へ行くほど、ページの中身に近づく。",
+    "why": "問題がどの層にあるかで、見る所と使う道具が決まる。下の層が壊れると、その上の層は全て動かない。だから下の層から順に確かめれば、早く原因に着く。",
+    "use": "障害の切り分けに使う。線とランプはリンク層、届くかはインターネット層（{{term:ip}}）、{{term:port}}はトランスポート層（{{term:tcp}}）、ページの中身はアプリケーション層（{{term:http}}）で確かめる。",
+    "when": "線はつながっているのに、{{term:web}} のページが開かない。どの層までは動いているのかを、下の層から順に確かめていく。",
+    "figures": [
+      "net-b02-layers"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "TCP/IP の 4 つの層を、下の層から順に並べる。",
+      "items": [
+        "リンク層",
+        "インターネット層",
+        "トランスポート層",
+        "アプリケーション層"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "通信の決まりと、その層を結ぶ。",
+      "pairs": [
+        [
+          "IP",
+          "インターネット層"
+        ],
+        [
+          "TCP",
+          "トランスポート層"
+        ],
+        [
+          "HTTP",
+          "アプリケーション層"
+        ]
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "Web のページを頼む決まり HTTP は、TCP/IP のどの層？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "アプリケーション層",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "トランスポート層",
+          "correct": false,
+          "whyNot": "トランスポート層は TCP・{{term:udp}}。HTTP は、その上に乗る。"
+        },
+        {
+          "id": "c",
+          "text": "インターネット層",
+          "correct": false,
+          "whyNot": "インターネット層は IP。宛先のアドレスまで運ぶ仕事。"
+        }
+      ],
+      "explanation": "HTTP は、ページの頼み方と返し方の決まり。{{term:app}}が使う一番上の層にある。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "{{term:server}}に {{term:ping}} は届く。でも Web のページは開かない。次に確かめるのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "IP より上の層（ポートで待っているか・HTTP の答え）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ケーブルが抜けていないか",
+          "correct": false,
+          "whyNot": "ping が届くなら、線（リンク層）と IP は動いている。下の層は確かめ済み。"
+        },
+        {
+          "id": "c",
+          "text": "サーバの {{term:ip-address}}が正しいか",
+          "correct": false,
+          "whyNot": "ping がそのアドレスに届いている。アドレスは正しい。"
+        }
+      ],
+      "explanation": "ping が届けば、インターネット層までは動いている。残りは、その上のトランスポート層とアプリケーション層。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "パソコンの口のランプが消え、どこにも届かない。原因はどの層の問題？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "一番下のリンク層（線が抜けた・切れた）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "アプリケーション層",
+          "correct": false,
+          "whyNot": "アプリの問題なら、ほかの通信や ping は届く。ランプも点く。"
+        },
+        {
+          "id": "c",
+          "text": "トランスポート層",
+          "correct": false,
+          "whyNot": "ポートの問題は、届いた後の話。ランプが消えているなら、その手前で止まっている。"
+        }
+      ],
+      "explanation": "ランプが消えるのは、線や電波（リンク層）の問題。ここが動かないと、上の層は全て動かない。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "寄せられた 5 つの症状を、原因がある層に仕分ける。",
+    "environment": "sim-assign",
+    "setup": {
+      "slots": [
+        {
+          "id": "link",
+          "label": "リンク層",
+          "note": "線・電波・スイッチ"
+        },
+        {
+          "id": "internet",
+          "label": "インターネット層",
+          "note": "IP・届くか"
+        },
+        {
+          "id": "transport",
+          "label": "トランスポート層",
+          "note": "TCP・UDP・ポート"
+        },
+        {
+          "id": "app",
+          "label": "アプリケーション層",
+          "note": "HTTP・DNS・中身"
+        }
+      ],
+      "items": [
+        {
+          "id": "s1",
+          "label": "ケーブルが抜け、口のランプが消えている"
+        },
+        {
+          "id": "s2",
+          "label": "別の網のサーバに ping が届かない（経路が無い）"
+        },
+        {
+          "id": "s3",
+          "label": "サーバは動くが、その番号のポートで誰も待っていない"
+        },
+        {
+          "id": "s4",
+          "label": "ページを頼むと 404（そのページは無い）が返る"
+        },
+        {
+          "id": "s5",
+          "label": "宛先の IP アドレスを打ち間違えた"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "table",
+          "title": "層と、確かめる道具",
+          "columns": [
+            "層",
+            "代表",
+            "確かめる物"
+          ],
+          "rows": [
+            [
+              "アプリケーション",
+              "HTTP・DNS",
+              "curl の答え・ページの中身"
+            ],
+            [
+              "トランスポート",
+              "TCP・UDP",
+              "ポートで待っているか"
+            ],
+            [
+              "インターネット",
+              "IP",
+              "ping が届くか・アドレス"
+            ],
+            [
+              "リンク",
+              "イーサネット",
+              "線・ランプ"
+            ]
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "sort",
+        "purpose": "5 つの症状を、原因がある層の枠に入れる。",
+        "check": {
+          "kind": "sim",
+          "expr": "in s1=link s2=internet s3=transport s4=app s5=internet"
+        },
+        "afterward": "線の問題はリンク層、届くか・アドレスはインターネット層、ポートはトランスポート層、ページの答えはアプリケーション層。層が分かれば、使う道具が決まる。",
+        "hints": [
+          "下の層から考える。線か、届くか（アドレス）か、ポートか、ページの中身か。",
+          "ping とアドレスはインターネット層。ポートで待っているかはトランスポート層。404 は HTTP の答えなので、アプリケーション層。",
+          "`put s1 link` `put s2 internet` `put s3 transport` `put s4 app` `put s5 internet` の順に入れる。"
+        ],
+        "expectedErrors": [
+          "net-layer-mix"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "症状を、原因がある層に正しく仕分けられた。層で考えると、次に使う道具が決まる。",
+    "partial": "ヒントを使って仕分けられた。次は、それぞれの層を確かめる道具を言ってみよう。",
+    "retry": "まだ仕分けが合っていない。表で、ポート（TCP）とページの答え（HTTP）が別の層であることを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "通信は層の積み重ね",
+      "下の層から順に確かめる",
+      "層ごとに確かめる道具が違う"
+    ],
+    "terms": [
+      "tcp-ip",
+      "osi",
+      "ip",
+      "tcp",
+      "http"
+    ],
+    "next": [
+      "net.b.03"
+    ]
+  }
+}

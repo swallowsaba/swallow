@@ -69,7 +69,7 @@ describe('書き起こしたコンテンツの検証（docs/content-spec.md 6 �
   });
 
   it('ID の違うファイルは読み込みで落ちる。書き起こしていないレッスンは null', async () => {
-    expect(await loadLesson('net.b.01')).toBeNull();
+    expect(await loadLesson('net.a.01')).toBeNull();
     expect(await loadLesson('found.b.04')).toMatchObject({ id: 'found.b.04', domain: 'found' });
   });
 });

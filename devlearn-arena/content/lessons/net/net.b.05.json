@@ -1,0 +1,278 @@
+{
+  "id": "net.b.05",
+  "domain": "net",
+  "level": "beginner",
+  "theme": "TCP/UDP",
+  "title": "TCP と UDP",
+  "goal": "確実さと速さの違い、使い分けを判断できる",
+  "minutes": 15,
+  "prerequisites": [
+    "net.b.04"
+  ],
+  "related": [
+    "web.i.06",
+    "mon.i.01"
+  ],
+  "next": [
+    "net.i.04",
+    "web.i.06"
+  ],
+  "terms": [
+    "tcp",
+    "port",
+    "udp",
+    "file",
+    "web",
+    "dns",
+    "app",
+    "server",
+    "service"
+  ],
+  "explain": {
+    "what": "{{term:tcp}} と {{term:udp}} は、データの送り方の決まり。TCP は届いたかを確かめながら送り、欠けた所は送り直す。UDP は確かめずに、次々と送る。どちらもトランスポート層で、{{term:port}}で届け先を分ける。",
+    "why": "用途によって、確実さと速さのどちらが大事かが違う。1 つも欠けてはいけないデータもあれば、少し欠けても遅れないほうが大事なデータもある。",
+    "use": "{{term:web}} のページや{{term:file}}の転送は TCP。音声の通話や生の動画は UDP。{{term:dns}} の問い合わせは、短い問いと答えの 1 往復で済むので UDP を使う。",
+    "when": "通話で、少し音が途切れても、会話が遅れないほうがよい。確かめて送り直していたら、相手の声が何秒も遅れて届いてしまう。",
+    "figures": [
+      "net-b05-tcpudp"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "届いたかを確かめ、欠けたら送り直す",
+      "b": "届くまでに時間がかかることがある",
+      "answer": "cause",
+      "why": "返事を待ち、欠けたら送り直す分だけ、時間がかかる。確実さと引き換えに、速さを少し手放している。",
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "決まりと、その特徴を結ぶ。",
+      "pairs": [
+        [
+          "TCP",
+          "届いたかを確かめ、欠けたら送り直す"
+        ],
+        [
+          "UDP",
+          "確かめずに、次々と送る"
+        ]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "設計書のファイルを、取引先に送る。どちらを使う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "TCP",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "UDP",
+          "correct": false,
+          "whyNot": "途中が 1 つでも欠けると、ファイルが壊れて開けない。欠けたら送り直す TCP が向く。"
+        }
+      ],
+      "explanation": "ファイルは 1 つも欠けてはいけない。確かめながら送る TCP を使う。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "生の音声通話の{{term:app}}を作る。声のデータは、どちらで送る？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "UDP",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "TCP",
+          "correct": false,
+          "whyNot": "送り直しを待つと、声が遅れて届き、会話にならない。少し欠けても遅れない UDP が向く。"
+        }
+      ],
+      "explanation": "会話は遅れが一番困る。少し欠けても一瞬乱れるだけなので、UDP で送る。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "UDP で送ったデータの一部が、途中で失われた。どうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "送り直されず、その部分は欠けたまま",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "自動で送り直される",
+          "correct": false,
+          "whyNot": "送り直すのは TCP の仕事。UDP は届いたかを確かめない。"
+        },
+        {
+          "id": "c",
+          "text": "全体が届かなくなる",
+          "correct": false,
+          "whyNot": "失われるのは、その部分だけ。ほかの部分は届く。"
+        }
+      ],
+      "explanation": "UDP は確かめも送り直しもしない。欠けて困る場合は、アプリの側で工夫する。"
+    },
+    {
+      "id": "q4",
+      "kind": "cause",
+      "prompt": "生の動画が、ときどき一瞬だけ乱れる。でも止まらずに流れ続ける。考えやすい理由は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "UDP で送っていて、一部のデータが途中で失われた",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "TCP で送っていて、送り直しが起きた",
+          "correct": false,
+          "whyNot": "TCP の送り直しなら、乱れずに、待ち（止まる）が起きる。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:server}}が止まった",
+          "correct": false,
+          "whyNot": "サーバが止まったら、動画は流れ続けない。"
+        }
+      ],
+      "explanation": "欠けた所をそのまま飛ばすので、一瞬乱れる。待たないので、止まらずに流れ続ける。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "4 つの{{term:service}}に、TCP と UDP のどちらを使うかを、理由とともに選ぶ。",
+    "environment": "sim-read",
+    "setup": {
+      "questions": [
+        {
+          "id": "file",
+          "prompt": "ファイルの転送（設計書を送る）",
+          "options": [
+            "TCP・欠けると困る",
+            "TCP・速いから",
+            "UDP・遅れると困る",
+            "UDP・短い問いで済む"
+          ]
+        },
+        {
+          "id": "voice",
+          "prompt": "生の音声通話",
+          "options": [
+            "TCP・欠けると困る",
+            "TCP・速いから",
+            "UDP・遅れると困る",
+            "UDP・短い問いで済む"
+          ]
+        },
+        {
+          "id": "web",
+          "prompt": "Web のページ",
+          "options": [
+            "TCP・欠けると困る",
+            "TCP・速いから",
+            "UDP・遅れると困る",
+            "UDP・短い問いで済む"
+          ]
+        },
+        {
+          "id": "dns",
+          "prompt": "DNS の問い合わせ（名前を引く）",
+          "options": [
+            "TCP・欠けると困る",
+            "TCP・速いから",
+            "UDP・遅れると困る",
+            "UDP・短い問いで済む"
+          ]
+        }
+      ],
+      "panels": [
+        {
+          "kind": "table",
+          "title": "欠けたら・遅れたら、どうなるか",
+          "columns": [
+            "サービス",
+            "一部が欠けたら",
+            "遅れたら"
+          ],
+          "rows": [
+            [
+              "ファイルの転送",
+              "壊れて開けない",
+              "待てばよい"
+            ],
+            [
+              "生の音声通話",
+              "一瞬乱れるだけ",
+              "会話にならない"
+            ],
+            [
+              "Web のページ",
+              "表示が崩れる",
+              "少し待てばよい"
+            ],
+            [
+              "DNS の問い合わせ",
+              "もう一度問えばよい（問いも答えも小さい）",
+              "ページが開くのが遅れる"
+            ]
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "choose",
+        "purpose": "表で「欠けたら」「遅れたら」を読み、4 つのサービスそれぞれに、決まりと理由を選ぶ。",
+        "check": {
+          "kind": "sim",
+          "expr": "answered file=TCP・欠けると困る voice=UDP・遅れると困る web=TCP・欠けると困る dns=UDP・短い問いで済む"
+        },
+        "afterward": "欠けて困る物は TCP、遅れて困る物や、短い問いと答えで済む物は UDP。速さだけで選ばず、欠けた時と遅れた時のどちらが困るかで選んだ。",
+        "hints": [
+          "表の「一部が欠けたら」と「遅れたら」の、どちらが困るかを見る。",
+          "ファイルと Web は欠けると困るので TCP。音声は遅れると困るので UDP。DNS は問いも答えも小さく、欠けたら問い直せば済むので UDP。",
+          "`answer file TCP・欠けると困る` `answer voice UDP・遅れると困る` `answer web TCP・欠けると困る` `answer dns UDP・短い問いで済む` の順に入れる。"
+        ],
+        "expectedErrors": [
+          "net-proto-mix"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "欠けた時と遅れた時のどちらが困るかで、TCP と UDP を使い分けられた。",
+    "partial": "ヒントを使って選べた。次は、ほかのサービス（メール・ゲーム）ならどちらかを考えてみよう。",
+    "retry": "まだ選び方が合っていない。表で、欠けて困る物と、遅れて困る物を分けてみよう。"
+  },
+  "summary": {
+    "points": [
+      "TCP は確かめながら送る（確実）",
+      "UDP は確かめずに送る（速い）",
+      "欠けて困るか、遅れて困るかで選ぶ"
+    ],
+    "terms": [
+      "tcp",
+      "udp",
+      "port"
+    ],
+    "next": [
+      "net.i.04",
+      "web.i.06"
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>192.168.1.10/24 は、前の 24 ビット（192.168.1）が網の部分、残りの 10 が機械の部分</title>
+  <g class="el" data-part="network">
+    <rect x="40" y="90" width="120" height="64" rx="10" fill="#1a6fd6" />
+    <text x="100" y="132" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" fill="#eef2f6">192</text>
+    <rect x="180" y="90" width="120" height="64" rx="10" fill="#1a6fd6" />
+    <text x="240" y="132" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" fill="#eef2f6">168</text>
+    <rect x="320" y="90" width="120" height="64" rx="10" fill="#1a6fd6" />
+    <text x="380" y="132" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" fill="#eef2f6">1</text>
+    <path d="M40 172 H440" fill="none" stroke="#5cc1ff" stroke-width="3" />
+    <text x="240" y="198" text-anchor="middle" font-size="16" font-weight="700" fill="#5cc1ff">網の部分（同じなら同じ網）</text>
+  </g>
+  <g class="el" data-part="boundary">
+    <path d="M460 70 V176" fill="none" stroke="#f2b632" stroke-width="4" stroke-dasharray="8 5" />
+    <text x="460" y="58" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="18" font-weight="700" fill="#f2b632">/24</text>
+  </g>
+  <g class="el" data-part="host">
+    <rect x="480" y="90" width="120" height="64" rx="10" fill="#3ae08a" />
+    <text x="540" y="132" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" fill="#0a1424">10</text>
+    <path d="M480 172 H600" fill="none" stroke="#3ae08a" stroke-width="3" />
+    <text x="540" y="198" text-anchor="middle" font-size="16" font-weight="700" fill="#3ae08a">機械の部分</text>
+  </g>
+  <g class="el" data-part="caption">
+    <text x="350" y="246" text-anchor="middle" font-size="14" fill="#eef2f6">/24 は「前から 24 ビット（数 3 つ）が網の部分」</text>
+    <text x="350" y="272" text-anchor="middle" font-size="13" fill="#9fb0c6">192.168.1.5 と 192.168.1.200 は同じ網。192.168.2.10 は別の網</text>
+  </g>
+</svg>

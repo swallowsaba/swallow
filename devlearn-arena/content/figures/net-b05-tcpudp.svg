@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>TCP は 1 つ送るごとに受け取りの返事（ACK）をもらい、欠けたら送り直す。UDP は返事を待たずに送り続け、欠けた物はそのまま</title>
+  <defs>
+    <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5cc1ff" />
+    </marker>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3ae08a" />
+    </marker>
+    <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="tcp">
+    <text x="170" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#5cc1ff">TCP（確かめながら）</text>
+    <text x="60" y="58" text-anchor="middle" font-size="13" fill="#9fb0c6">送る側</text>
+    <text x="280" y="58" text-anchor="middle" font-size="13" fill="#9fb0c6">受ける側</text>
+    <path d="M60 66 V300 M280 66 V300" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <path d="M60 86 L276 112" fill="none" stroke="#5cc1ff" stroke-width="2" marker-end="url(#a1)" />
+    <text x="150" y="88" font-size="13" fill="#5cc1ff">データ 1</text>
+    <path d="M280 130 L64 156" fill="none" stroke="#3ae08a" stroke-width="2" marker-end="url(#a2)" />
+    <text x="170" y="164" font-size="13" fill="#3ae08a">受け取った</text>
+    <path d="M60 186 L180 200" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <text x="186" y="206" font-size="16" font-weight="700" fill="#e04a3a">×</text>
+    <text x="96" y="182" font-size="13" fill="#5cc1ff">データ 2</text>
+    <path d="M60 246 L276 272" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#a3)" />
+    <text x="110" y="246" font-size="13" fill="#f2b632">返事が無いので送り直す</text>
+  </g>
+  <g class="el" data-part="udp">
+    <text x="530" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="#f2b632">UDP（送りっぱなし）</text>
+    <text x="420" y="58" text-anchor="middle" font-size="13" fill="#9fb0c6">送る側</text>
+    <text x="640" y="58" text-anchor="middle" font-size="13" fill="#9fb0c6">受ける側</text>
+    <path d="M420 66 V300 M640 66 V300" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <path d="M420 86 L636 112" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#a3)" />
+    <text x="500" y="88" font-size="13" fill="#f2b632">データ 1</text>
+    <path d="M420 136 L540 150" fill="none" stroke="#f2b632" stroke-width="2" />
+    <text x="546" y="156" font-size="16" font-weight="700" fill="#e04a3a">×</text>
+    <text x="456" y="132" font-size="13" fill="#f2b632">データ 2</text>
+    <path d="M420 186 L636 212" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#a3)" />
+    <text x="500" y="188" font-size="13" fill="#f2b632">データ 3</text>
+    <text x="530" y="262" text-anchor="middle" font-size="13" fill="#eef2f6">欠けた 2 は送り直さない</text>
+    <text x="530" y="284" text-anchor="middle" font-size="13" fill="#eef2f6">そのぶん待たずに速い</text>
+  </g>
+</svg>

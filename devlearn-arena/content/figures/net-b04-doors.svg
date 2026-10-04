@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>1 台の機械（IP アドレス 10.0.0.5）に、ポートという扉が並ぶ。22 番は SSH、80 番は Web、443 番は HTTPS の Web が待つ</title>
+  <g class="el" data-part="machine">
+    <rect x="200" y="40" width="460" height="230" rx="16" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <text x="430" y="70" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">サーバ 10.0.0.5（建物の住所）</text>
+  </g>
+  <g class="el" data-part="p22">
+    <rect x="230" y="96" width="120" height="44" rx="8" fill="#5cc1ff" />
+    <text x="290" y="124" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="18" fill="#0a1424">22</text>
+    <rect x="230" y="190" width="120" height="56" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <text x="290" y="223" text-anchor="middle" font-size="14" fill="#5cc1ff">SSH（管理）</text>
+    <path d="M290 140 V190" fill="none" stroke="#5cc1ff" stroke-width="2" />
+  </g>
+  <g class="el" data-part="p80">
+    <rect x="370" y="96" width="120" height="44" rx="8" fill="#3ae08a" />
+    <text x="430" y="124" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="18" fill="#0a1424">80</text>
+    <rect x="370" y="190" width="120" height="56" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <text x="430" y="223" text-anchor="middle" font-size="14" fill="#3ae08a">Web（HTTP）</text>
+    <path d="M430 140 V190" fill="none" stroke="#3ae08a" stroke-width="2" />
+  </g>
+  <g class="el" data-part="p443">
+    <rect x="510" y="96" width="120" height="44" rx="8" fill="#f2b632" />
+    <text x="570" y="124" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="18" fill="#0a1424">443</text>
+    <rect x="510" y="190" width="120" height="56" rx="8" fill="none" stroke="#f2b632" stroke-width="2" />
+    <text x="570" y="223" text-anchor="middle" font-size="14" fill="#f2b632">Web（HTTPS）</text>
+    <path d="M570 140 V190" fill="none" stroke="#f2b632" stroke-width="2" />
+  </g>
+  <g class="el" data-part="visitor">
+    <rect x="20" y="96" width="140" height="56" rx="10" fill="#9aa9b5" />
+    <text x="90" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">外の機械</text>
+    <text x="90" y="141" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#0a1424">10.0.0.5:443</text>
+    <path d="M160 118 C 300 30, 470 30, 560 92" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="6 4" />
+  </g>
+  <g class="el" data-part="caption">
+    <text x="90" y="200" text-anchor="middle" font-size="13" fill="#9fb0c6">住所（IP）で建物に着き、</text>
+    <text x="90" y="222" text-anchor="middle" font-size="13" fill="#9fb0c6">扉（ポート）で相手が決まる</text>
+  </g>
+</svg>

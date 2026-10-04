@@ -76,6 +76,22 @@
         "found.b.01",
         "found.b.07"
       ]
+    },
+    {
+      "id": "http",
+      "word": "HTTP",
+      "reading": "えいちてぃーてぃーぴー",
+      "plain": "ブラウザと Web サーバが、ページを頼み・返すための決まり。TCP/IP のアプリケーション層の代表。",
+      "why": "Web の通信の中身を読む時の土台になる。ステータスコードもヘッダも HTTP の決まり。",
+      "related": [
+        "https",
+        "web-server",
+        "tcp"
+      ],
+      "lessons": [
+        "net.b.02",
+        "web.b.02"
+      ]
     }
   ]
 }

@@ -23,7 +23,8 @@
     "service",
     "file",
     "log",
-    "memory"
+    "memory",
+    "cache"
   ],
   "explain": {
     "what": "{{term:log}}は、{{term:program}}が「いつ・何が起きたか」を 1 行ずつ書き残した記録。{{term:service}}のログは {{term:journalctl}} で読み、ほかの記録は /var/log の中の{{term:file}}にある。1 行は、時刻・機械の名前・書いたプログラム・内容の順に並ぶ。",
@@ -136,7 +137,7 @@
         },
         {
           "id": "b",
-          "text": "キャッシュが鍵で閉じられていた",
+          "text": "{{term:cache}}が鍵で閉じられていた",
           "correct": false,
           "whyNot": "それは 02:13:49、落ちた後に動かし直した時の行。最初に落ちた原因ではなく、結果として続いた行。"
         },
