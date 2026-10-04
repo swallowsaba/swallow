@@ -24,6 +24,10 @@ const serviceSetup = z.object({
   enabled: z.boolean().default(false),
   /** 動かそうとすると失敗する理由（ログに出る） */
   broken: z.string().optional(),
+  /** 落ちた後（状態が failed）から始める */
+  failed: z.boolean().optional(),
+  /** それまでのログ（journalctl で読める行。「Oct 03 02:13:44 server web[812]: …」の形） */
+  log: z.array(z.string()).optional(),
   port: z.number().int().optional(),
   body: z.string().optional(),
   /** HTTP で応える状態の番号（無ければ 200） */
@@ -150,13 +154,14 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
     options.services = createServiceTable(Object.entries(s.services).map(([name, v]) => ({
       name,
       description: v.description,
-      active: v.active ? 'active' : 'inactive',
+      active: v.failed ? 'failed' : v.active ? 'active' : 'inactive',
       enabled: v.enabled,
       ...(v.broken !== undefined ? { broken: v.broken } : {}),
       ...(v.port !== undefined ? { port: v.port } : {}),
       ...(v.body !== undefined ? { body: v.body } : {}),
       ...(v.status !== undefined ? { status: v.status } : {}),
       ...(v.config !== undefined ? { config: v.config } : {}),
+      ...(v.log !== undefined ? { log: v.log } : {}),
     })));
   }
   if (s.processes) options.processes = s.processes;

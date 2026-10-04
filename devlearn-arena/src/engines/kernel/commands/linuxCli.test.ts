@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSession, type Session, type SessionOptions } from '../session';
 import { execute } from '../shell';
+import { createServiceTable } from '../services';
 import { exists, readFile, setMeta } from '../vfs';
 
 /**
@@ -197,5 +198,34 @@ describe('プロセスを止める（ほかの利用者のプロセス）', () =
     expect(t.run('kill 100').code).toBe(0);
     expect(t.run('sudo kill 101').code).toBe(0);
     expect(t.run('ps aux').out).not.toContain('sshd');
+  });
+});
+
+describe('ログを読む（journalctl の時刻での絞り込み）', () => {
+  const log = [
+    'Oct 02 21:00:01 server systemd[1]: Started web.service - Web server.',
+    'Oct 02 23:58:10 server web[812]: GET /report 200',
+    'Oct 03 02:13:43 server web[812]: warning: memory usage 7.8G of 8G',
+    'Oct 03 02:13:44 server systemd[1]: web.service: A process of this unit has been killed by the OOM killer.',
+    'Oct 03 02:13:49 server web[820]: error: cache is locked',
+  ];
+  const services = () => createServiceTable([
+    { name: 'web', description: 'Web server', active: 'failed', enabled: true, log },
+    { name: 'db', description: 'Database', active: 'active', enabled: true, log: ['Oct 03 01:00:00 server db[300]: checkpoint complete'] },
+  ]);
+
+  it('--since today は今日（Oct 03）の行だけ。時刻だけなら今日のその時刻から。--until まで', () => {
+    const t = open({ services: services() });
+    expect(t.run('journalctl -u web --since today').out).toBe(`${log.slice(2).join('\n')}\n`);
+    expect(t.run('journalctl -u web --since 02:13:44').out).toBe(`${log.slice(3).join('\n')}\n`);
+    expect(t.run('journalctl -u web --since "2026-10-02 23:00" --until "2026-10-03 02:13:43"').out).toBe(`${log.slice(1, 3).join('\n')}\n`);
+    expect(t.run('journalctl -u web --since yesterday --until today').out).toBe(`${log.slice(0, 2).join('\n')}\n`);
+  });
+
+  it('-u を書かなければ全てのサービスを時刻の順に。-r は新しい順。読めない時刻はエラー', () => {
+    const t = open({ services: services() });
+    expect(t.run('journalctl --since today').out.split('\n')[0]).toContain('checkpoint complete');
+    expect(t.run('journalctl -u web -r -n 1').out).toBe(`${log[4] ?? ''}\n`);
+    expect(t.run('journalctl --since soon').err).toBe('Failed to parse timestamp: soon\n');
   });
 });

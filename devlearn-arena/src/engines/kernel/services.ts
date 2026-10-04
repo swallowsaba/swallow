@@ -40,8 +40,9 @@ export interface ServiceTable {
   tick: number;
 }
 
-export function createServiceTable(seed: readonly Omit<Service, 'log'>[] = []): ServiceTable {
-  return { services: new Map(seed.map((s) => [s.name, { ...s, log: [] }])), tick: 0 };
+/** log を書けば、それまでのログ（journalctl で読める行）を持って始める */
+export function createServiceTable(seed: readonly (Omit<Service, 'log'> & { log?: readonly string[] })[] = []): ServiceTable {
+  return { services: new Map(seed.map((s) => [s.name, { ...s, log: s.log ?? [] }])), tick: 0 };
 }
 
 /** web と web.service のどちらで書いても同じサービスを指す */

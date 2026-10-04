@@ -1,0 +1,249 @@
+{
+  "id": "linux.i.02",
+  "domain": "linux",
+  "level": "intermediate",
+  "theme": "ログ",
+  "title": "ログを読む",
+  "goal": "journalctl と /var/log から手掛かりを探せる",
+  "minutes": 18,
+  "prerequisites": [
+    "linux.i.01"
+  ],
+  "related": [
+    "mon.b.02",
+    "trouble.b.03"
+  ],
+  "next": [
+    "linux.a.01",
+    "mon.b.01"
+  ],
+  "terms": [
+    "journalctl",
+    "program",
+    "service",
+    "file",
+    "log",
+    "memory"
+  ],
+  "explain": {
+    "what": "{{term:log}}は、{{term:program}}が「いつ・何が起きたか」を 1 行ずつ書き残した記録。{{term:service}}のログは {{term:journalctl}} で読み、ほかの記録は /var/log の中の{{term:file}}にある。1 行は、時刻・機械の名前・書いたプログラム・内容の順に並ぶ。",
+    "why": "障害は、誰も見ていない時に起きる。後から何が起きたかを知る手掛かりは、ログしか無い。推測で直すと、本当の原因が残ってまた起きる。",
+    "use": "サービスが落ちた時刻と理由を探す。サービスと時刻で絞り込み、最初に異常が出た行を見つける。",
+    "when": "夜中にサービスが落ちて、朝に「サイトが開かない」と連絡が来た時。何が起きたかを、ログから組み立て直す。",
+    "situation": "朝、web が failed になっていた。ログには、落ちた後に動かし直して失敗した行も続いている。最後の行だけを見ると、本当の原因を見落とす。",
+    "figures": [
+      "linux-i02-line"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "linux-i02-line",
+      "prompt": "ログの 1 行で、どのプログラムが書いたかを示す所を押す。",
+      "answer": [
+        "from"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "下の 3 行のうち、最初の異常はどれ？（02:13:40 処理を始めた／02:13:43 {{term:memory}}を 8G のうち 7.8G 使った／02:13:49 動かし直しに失敗した）",
+      "choices": [
+        {
+          "id": "a",
+          "text": "02:13:43 のメモリの行",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "02:13:49 の動かし直しの失敗",
+          "correct": false,
+          "whyNot": "これは落ちた後に起きたこと。最初の異常の結果として続いた行で、原因ではない。"
+        },
+        {
+          "id": "c",
+          "text": "02:13:40 の処理を始めた行",
+          "correct": false,
+          "whyNot": "処理を始めたのは普段どおりの動き。異常が出たのは、その後の行。"
+        }
+      ],
+      "see": "situation"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "サービス web のログだけを読みたい。どの命令？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`journalctl -u web`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`journalctl`",
+          "correct": false,
+          "whyNot": "全てのサービスの行が混ざって出る。-u でサービスを指定すると、その行だけになる。"
+        },
+        {
+          "id": "c",
+          "text": "`systemctl start web`",
+          "correct": false,
+          "whyNot": "これは動かす命令。動かす前に、落ちた理由をログで確かめる。"
+        }
+      ],
+      "explanation": "-u の後にサービスの名前を書くと、そのサービスのログだけに絞れる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "ログが何万行もある。今日の 9 時からの行だけを見たい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`--since 09:00` を付けて、時刻で絞る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "全部を出して、9 時の行まで送って探す",
+          "correct": false,
+          "whyNot": "何万行もあると、送るうちに見落とす。時刻で絞れば、見る行が減る。"
+        },
+        {
+          "id": "c",
+          "text": "`-n 9` を付ける",
+          "correct": false,
+          "whyNot": "-n 9 は最後の 9 行を出す指定。時刻ではない。"
+        }
+      ],
+      "explanation": "--since はその時刻から、--until はその時刻まで。today や 2026-10-03 02:00 のようにも書ける。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "web が落ちた。下のログから、落ちた原因は？",
+      "context": {
+        "log": "02:13:43 web[812]: warning: memory usage 7.8G of 8G\n02:13:44 systemd[1]: web.service: A process of this unit has been killed by the OOM killer.\n02:13:49 web[820]: error: cache is locked\n02:13:49 systemd[1]: Failed to start web.service - Web server."
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "メモリを使い切り、止められた",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "キャッシュが鍵で閉じられていた",
+          "correct": false,
+          "whyNot": "それは 02:13:49、落ちた後に動かし直した時の行。最初に落ちた原因ではなく、結果として続いた行。"
+        },
+        {
+          "id": "c",
+          "text": "誰かが手で止めた",
+          "correct": false,
+          "whyNot": "手で止めた時は `Stopping` の行が出る。ここでは、メモリを使い切って止められた行がある。"
+        }
+      ],
+      "explanation": "最初の異常は 02:13:43〜44 の行。後の行は連鎖して起きた結果なので、時刻の早い方から読む。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "夜中に落ちた web のログを読み、落ちた時刻と理由を答える。",
+    "environment": "linux-server",
+    "setup": {
+      "services": {
+        "web": {
+          "description": "Web server",
+          "enabled": true,
+          "failed": true,
+          "port": 8080,
+          "log": [
+            "Oct 02 21:00:01 server systemd[1]: Starting web.service - Web server...",
+            "Oct 02 21:00:02 server systemd[1]: Started web.service - Web server.",
+            "Oct 02 23:58:10 server web[812]: GET /report 200",
+            "Oct 03 01:30:02 server web[812]: GET /report 200",
+            "Oct 03 02:13:40 server web[812]: building report cache",
+            "Oct 03 02:13:43 server web[812]: warning: memory usage 7.8G of 8G",
+            "Oct 03 02:13:44 server systemd[1]: web.service: A process of this unit has been killed by the OOM killer.",
+            "Oct 03 02:13:44 server systemd[1]: web.service: Main process exited, code=killed, status=9/KILL",
+            "Oct 03 02:13:44 server systemd[1]: web.service: Failed with result 'oom-kill'.",
+            "Oct 03 02:13:49 server systemd[1]: web.service: Scheduled restart job, restart counter is at 1.",
+            "Oct 03 02:13:49 server web[820]: error: cache is locked (/var/cache/web/lock exists)",
+            "Oct 03 02:13:49 server systemd[1]: web.service: Main process exited, code=exited, status=1/FAILURE",
+            "Oct 03 02:13:49 server systemd[1]: web.service: Failed with result 'exit-code'.",
+            "Oct 03 02:13:49 server systemd[1]: Failed to start web.service - Web server."
+          ]
+        },
+        "db": {
+          "description": "Database",
+          "active": true,
+          "enabled": true,
+          "log": [
+            "Oct 03 01:00:00 server db[300]: checkpoint complete",
+            "Oct 03 02:00:00 server db[300]: checkpoint complete"
+          ]
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "time",
+        "purpose": "web が最初に落ちた時刻を、ログの書き方のまま（時:分:秒）答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "02:13:44"
+        },
+        "afterward": "web は 02:13:44 に落ちた。その後の 02:13:49 の行は、動かし直して失敗した結果。",
+        "hints": [
+          "web のログだけを、今日の分に絞って見る。",
+          "`journalctl -u web --since today` を打ち、普段どおりの行の後に、初めて止まった行を探す。",
+          "`journalctl -u web --since today` と打つ。`killed by the OOM killer` の行が、最初に落ちた所。答えの欄に `02:13:44` と入れる。"
+        ],
+        "expectedErrors": [
+          "linux-crash-time"
+        ]
+      },
+      {
+        "id": "reason",
+        "purpose": "落ちた理由を答える。足りなくなった物を、ログに出てくる英語 1 語（例: disk）で答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "memory"
+        },
+        "afterward": "web はメモリを使い切り、`OOM killer` に止められた。原因は、メモリの足りなさ。",
+        "hints": [
+          "落ちた行と、その直前の行を読む。後から出た行は、落ちた結果。",
+          "02:13:43 の行に、何が 8G のうち 7.8G まで使われていたかが書いてある。",
+          "直前の行は `warning: memory usage 7.8G of 8G`。答えの欄に `memory` と入れる。"
+        ],
+        "expectedErrors": [
+          "linux-chain-misread"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "後から続いた行に惑わされず、最初の原因の行を見つけられた。",
+    "partial": "ヒントを使って原因の行を見つけた。次は、--since と --until で、落ちた前後 1 分だけに絞って読んでみよう。",
+    "retry": "まだ答えが合っていない。ログを時刻の順に読み、普段どおりの行の後で、最初に様子が変わった行を探そう。"
+  },
+  "summary": {
+    "points": [
+      "ログは、後から何が起きたかを知る証拠",
+      "サービス（-u）と時刻（--since）で絞る",
+      "最後の行ではなく、最初の異常の行を探す"
+    ],
+    "next": [
+      "mon.b.01",
+      "trouble.b.03"
+    ],
+    "terms": [
+      "log",
+      "journalctl"
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 280" font-family="&quot;JetBrains Mono&quot;, &quot;Noto Sans JP&quot;, monospace">
+  <title>ログの 1 行は、時刻・機械の名前・書いたプログラム・内容の順に並ぶ</title>
+  <g class="el" data-part="time">
+    <rect x="16" y="40" width="186" height="190" fill="none" pointer-events="all" />
+    <rect x="20" y="60" width="178" height="52" rx="8" fill="#f2b632" />
+    <text x="109" y="93" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">Oct 03 02:13:44</text>
+    <path d="M20 132 H198" stroke="#f2b632" stroke-width="3" />
+    <text x="109" y="162" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">時刻</text>
+    <text x="109" y="190" text-anchor="middle" font-size="13" fill="#9fb0c6">いつ</text>
+  </g>
+  <g class="el" data-part="host">
+    <rect x="206" y="40" width="96" height="190" fill="none" pointer-events="all" />
+    <rect x="210" y="60" width="88" height="52" rx="8" fill="#9aa9b5" />
+    <text x="254" y="93" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">server</text>
+    <path d="M210 132 H298" stroke="#9aa9b5" stroke-width="3" />
+    <text x="254" y="162" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">機械</text>
+    <text x="254" y="190" text-anchor="middle" font-size="13" fill="#9fb0c6">どこで</text>
+  </g>
+  <g class="el" data-part="from">
+    <rect x="306" y="40" width="116" height="190" fill="none" pointer-events="all" />
+    <rect x="310" y="60" width="108" height="52" rx="8" fill="#5cc1ff" />
+    <text x="364" y="93" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">web[812]:</text>
+    <path d="M310 132 H418" stroke="#5cc1ff" stroke-width="3" />
+    <text x="364" y="162" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">プログラム</text>
+    <text x="364" y="190" text-anchor="middle" font-size="13" fill="#9fb0c6">誰が（PID）</text>
+  </g>
+  <g class="el" data-part="message">
+    <rect x="426" y="40" width="262" height="190" fill="none" pointer-events="all" />
+    <rect x="430" y="60" width="254" height="52" rx="8" fill="#3ae08a" />
+    <text x="557" y="93" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">warning: memory usage 7.8G</text>
+    <path d="M430 132 H684" stroke="#3ae08a" stroke-width="3" />
+    <text x="557" y="162" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">内容</text>
+    <text x="557" y="190" text-anchor="middle" font-size="13" fill="#9fb0c6">何が起きたか</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="350" y="256" text-anchor="middle" font-size="14" fill="#9fb0c6">-u で「プログラム」、--since と --until で「時刻」を絞る</text>
+  </g>
+</svg>

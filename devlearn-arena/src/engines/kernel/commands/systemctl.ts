@@ -13,6 +13,33 @@ import { fromLines } from './args';
 
 const NO_SYSTEMD = 'System has not been booted with systemd as init system (PID 1). Can\'t operate.\n';
 
+/** この機械の今日（ログの時刻の年は書かれないので、月と日で比べる） */
+const TODAY = '10-03';
+const YESTERDAY = '10-02';
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** ログの行の先頭の時刻（Oct 03 02:13:44）を、比べられる形（10-03 02:13:44）にする。読めなければ空 */
+function lineTime(line: string): string {
+  const m = /^([A-Z][a-z]{2}) +(\d{1,2}) (\d{2}:\d{2}:\d{2})/.exec(line);
+  const month = m ? MONTHS.indexOf(m[1] ?? '') : -1;
+  if (!m || month < 0) return '';
+  return `${String(month + 1).padStart(2, '0')}-${(m[2] ?? '').padStart(2, '0')} ${m[3] ?? ''}`;
+}
+
+/** --since・--until の時刻（today・yesterday・now・時:分[:秒]・年-月-日[ 時:分[:秒]]。時刻を書かなければ 0 時）。読めなければ null */
+function parseJournalTime(raw: string): string | null {
+  const t = raw.trim();
+  if (t === 'today') return `${TODAY} 00:00:00`;
+  if (t === 'yesterday') return `${YESTERDAY} 00:00:00`;
+  if (t === 'now') return `${TODAY} 23:59:59`;
+  const clock = (hm: string, s: string | undefined): string => `${hm}:${s ?? '00'}`;
+  const time = /^(\d{2}:\d{2})(?::(\d{2}))?$/.exec(t);
+  if (time) return `${TODAY} ${clock(time[1] ?? '00:00', time[2])}`;
+  const date = /^\d{4}-(\d{2}-\d{2})(?: (\d{2}:\d{2})(?::(\d{2}))?)?$/.exec(t);
+  if (date) return `${date[1] ?? ''} ${date[2] === undefined ? '00:00:00' : clock(date[2], date[3])}`;
+  return null;
+}
+
 function unitOf(raw: string): string {
   return `${unitName(raw)}.service`;
 }
@@ -99,8 +126,7 @@ export const systemctlCommands: CommandSpec[] = [
         case 'reload': {
           // 設定を読み直す。動いていなければ読み直せない（本物と同じ）
           const idle = units.find((u) => serviceOf(shell.services, u)?.active !== 'active');
-          if (idle !== undefined && serviceOf(shell.services, idle)) return { stderr: `${unitOf(idle)} is not active, cannot reload.
-`, code: 1 };
+          if (idle !== undefined && serviceOf(shell.services, idle)) return { stderr: `${unitOf(idle)} is not active, cannot reload.\n`, code: 1 };
           return run(shell, 'reload', units, (t, u) => restartService(t, u, loaderOf(shell)));
         }
         case 'enable':
@@ -142,17 +168,33 @@ export const systemctlCommands: CommandSpec[] = [
       const args = argv.slice(1);
       const units: string[] = [];
       let n: number | null = null;
+      let reverse = false;
+      const range: { since?: string; until?: string } = {};
       for (let i = 0; i < args.length; i += 1) {
         const a = args[i] ?? '';
         if (a === '-u' || a === '--unit') units.push(args[(i += 1)] ?? '');
         else if (a.startsWith('-u') && a.length > 2) units.push(a.slice(2));
         else if (/^-[a-z]*u$/.test(a)) units.push(args[(i += 1)] ?? '');
         else if (a === '-n') n = Number(args[(i += 1)] ?? '10');
+        else if (a === '-r' || a === '--reverse') reverse = true;
+        else if (a === '-S' || a === '--since' || a === '-U' || a === '--until') {
+          const raw = args[(i += 1)] ?? '';
+          const key = parseJournalTime(raw);
+          if (key === null) return { stderr: `Failed to parse timestamp: ${raw}\n`, code: 1 };
+          range[a === '-S' || a === '--since' ? 'since' : 'until'] = key;
+        }
       }
       const services = [...shell.services.services.values()].filter((s) => units.length === 0 || units.some((u) => unitName(u) === s.name));
-      const lines = services.flatMap((s) => s.log);
+      // 時刻の順に並べ、--since から --until までに絞る（同じ時刻は書かれた順のまま）
+      let lines = services.flatMap((s) => s.log)
+        .map((line, i) => ({ line, i, key: lineTime(line) }))
+        .sort((x, y) => (x.key < y.key ? -1 : x.key > y.key ? 1 : x.i - y.i))
+        .filter((x) => (range.since === undefined || x.key >= range.since) && (range.until === undefined || x.key <= range.until))
+        .map((x) => x.line);
+      if (n !== null) lines = lines.slice(-n);
+      if (reverse) lines = [...lines].reverse();
       if (lines.length === 0) return { stdout: '-- No entries --\n' };
-      return { stdout: fromLines(n === null ? lines : lines.slice(-n)) };
+      return { stdout: fromLines(lines) };
     },
   },
 ];
