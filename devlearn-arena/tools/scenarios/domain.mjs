@@ -5,6 +5,7 @@
 //
 // レッスンの中身（content/lessons）を読んで正しく答え、7 段を通す: 解説 → 理解 → クイズ → 実戦 → 結果 → まとめ → XP / スキル。
 // 実戦は、各手順の最初に 1 度わざと誤った文（コマンド）を入れてエラーの小窓を撮り、最後のヒントの答えを入れて進める。
+// HINTS=1 を付けると、最初の手順のヒント 3 段を開いた画面（-hints）も撮る。
 // 撮る物: p10-<分野>-explain・-understand・-quiz・-practice・-error・-afterward・-result・-summary・-done（-1280 も）
 const text = (page, sel) => page.evaluate((s) => document.querySelector(s)?.innerText.replace(/\s+/g, ' ') ?? null, sel);
 const next = (page) => page.click('[data-testid="lesson-next"]');
@@ -12,14 +13,16 @@ const wait = (page, ms = 300) => page.waitForTimeout(ms);
 
 /** 画面の字が text と同じボタンを押す（用語の印は画面の語に直して比べる） */
 async function clickText(page, selector, label) {
-  const ok = await page.evaluate(([sel, want]) => {
-    const norm = (s) => s.replace(/\s+/g, ' ').trim();
-    const el = [...document.querySelectorAll(sel)].find((b) => norm(b.innerText) === norm(want));
-    if (!el) return false;
+  const seen = await page.evaluate(([sel, want]) => {
+    // 用語の印の前後に入る空白に左右されないよう、空白を除いて比べる
+    const norm = (s) => s.replace(/\s+/g, '');
+    const all = [...document.querySelectorAll(sel)];
+    const el = all.find((b) => norm(b.innerText) === norm(want));
+    if (!el) return all.map((b) => norm(b.innerText));
     el.click();
-    return true;
+    return null;
   }, [selector, label]);
-  if (!ok) throw new Error(`「${label}」が ${selector} に無い`);
+  if (seen !== null) throw new Error(`「${label}」が ${selector} に無い（あるのは ${seen.join(' ／ ')}）`);
   await wait(page, 120);
 }
 
@@ -47,7 +50,8 @@ export default async function domain(page, shot) {
     }
     return { lesson, words };
   }, [id, dom]);
-  const plain = (s) => s.replace(/\{\{term:([a-z0-9-]+)\}\}/g, (_, t) => data.words[t] ?? t);
+  // 画面に出る字（用語の印は語に、`...` は中身に）
+  const plain = (s) => s.replace(/\{\{term:([a-z0-9-]+)\}\}/g, (_, t) => data.words[t] ?? t).replace(/`([^`]+)`/g, '$1');
   const { lesson } = data;
 
   await page.evaluate((lessonId) => {
@@ -118,6 +122,12 @@ export default async function domain(page, shot) {
   if (!sim) await page.waitForSelector('.term-host .xterm');
   await wait(page, 600);
   await shot(`${tag}-practice`);
+  // HINTS=1 なら、最初の手順のヒントを 3 段とも開いて撮る（そのまま打てる答えの見え方を確かめる。結果は「ヒントを使った」になる）
+  if (process.env.HINTS) {
+    for (let i = 0; i < 3; i += 1) await page.click('[data-testid="practice-hint"]');
+    await wait(page);
+    await shot(`${tag}-hints`);
+  }
   const enter = async (line, answerStep) => {
     if (sim) {
       await page.fill('#sim-command', line);

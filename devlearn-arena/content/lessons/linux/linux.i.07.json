@@ -182,7 +182,7 @@
         "afterward": "check.sh が書けた。1 行目で使用率の数を変数 used に入れ、if で 80 と比べている。",
         "hints": [
           "使用率は `df --output=pcent /` で出る。2 行目の数だけを取り出して変数に入れ、if で比べる。",
-          "数の取り出しは `tail -n 1` と `tr -d ' %'`（空白と % を消す）。比べるのは `[ \"$used\" -gt 80 ]`。ファイルは {{term:cat}} と << '`EOF`' で書ける。",
+          "数の取り出しは `tail -n 1` と `tr -d ' %'`（空白と % を消す）。比べるのは `[ \"$used\" -gt 80 ]`。ファイルは `cat > check.sh << 'EOF'` で書き始め、`EOF` だけの行で閉じる。",
           "`cat > check.sh << 'EOF'\nused=$(df --output=pcent / | tail -n 1 | tr -d ' %')\nif [ \"$used\" -gt 80 ]; then\n  echo \"警告: ディスクを ${used}% 使っている\" > alert.txt\nfi\nEOF` と打つ（最後の行まで、1 行ずつ打つ）。"
         ],
         "expectedErrors": [

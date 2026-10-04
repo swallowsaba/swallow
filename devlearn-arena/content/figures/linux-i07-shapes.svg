@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
-  <title>スクリプトの 3 つの形。変数に値を覚える、if で条件によって分かれる、for で並べた物を 1 つずつ繰り返す</title>
+  <title>スクリプトの 3 つの形。変数に値を覚える、if で条件によって分かれる、for で並べた物を 1 つずつ繰り返す（a、b の順）</title>
   <g class="el" data-part="variable">
     <rect x="16" y="30" width="210" height="250" rx="14" fill="none" stroke="#3ae08a" stroke-width="2" />
     <text x="121" y="62" text-anchor="middle" font-size="18" font-weight="700" fill="#3ae08a">変数</text>
@@ -24,9 +24,9 @@
     <rect x="474" y="30" width="210" height="250" rx="14" fill="none" stroke="#5cc1ff" stroke-width="2" />
     <text x="579" y="62" text-anchor="middle" font-size="18" font-weight="700" fill="#5cc1ff">繰り返し（for）</text>
     <rect x="494" y="84" width="170" height="40" rx="6" fill="#5cc1ff" />
-    <text x="579" y="110" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">for f in a.log b.log</text>
-    <text x="579" y="160" text-anchor="middle" font-size="14" fill="#eef2f6">1 回目 f=a.log</text>
-    <text x="579" y="186" text-anchor="middle" font-size="14" fill="#eef2f6">2 回目 f=b.log</text>
+    <text x="579" y="110" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">for f in a b</text>
+    <text x="579" y="160" text-anchor="middle" font-size="14" fill="#eef2f6">1 回目 f=a</text>
+    <text x="579" y="186" text-anchor="middle" font-size="14" fill="#eef2f6">2 回目 f=b</text>
     <text x="579" y="240" text-anchor="middle" font-size="13" fill="#9fb0c6">do … done</text>
   </g>
 </svg>

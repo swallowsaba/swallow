@@ -20,3 +20,11 @@
   background: var(--hud-bg);
   border: 1px solid var(--hud-line);
 }
+.rich-code.is-block {
+  display: block;
+  margin: 4px 0;
+  padding: 6px 8px;
+  white-space: pre;
+  overflow-x: auto;
+  line-height: 1.5;
+}
