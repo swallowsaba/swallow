@@ -266,7 +266,8 @@ function runCommand(
 
 /**
  * 出力リダイレクトを書いた順に処理する。
- * `> a 2> b` も `&> c` も、起動に失敗したときの文言も、同じ道を通る。
+ * `> a 2> b` も `&> c` も、`> log 2>&1` も、起動に失敗したときの文言も、同じ道を通る。
+ * 先に、標準出力と標準エラーそれぞれの行き先を書いた順に決め（> は開いた時に空にする）、最後に中身を足す
  */
 function applyRedirects(
   initial: ShellState,
@@ -275,39 +276,43 @@ function applyRedirects(
   initialResult: CommandResult,
   name: string,
 ): { state: ShellState; result: CommandResult } {
-  let nextState = initial;
-  let result = initialResult;
-  for (const redirect of command.redirects) {
-    if (redirect.kind === '<') continue;
-    const append = redirect.kind.endsWith('>>');
-    const takesOut = redirect.kind !== '2>' && redirect.kind !== '2>>';
-    const takesErr = redirect.kind.startsWith('2') || redirect.kind.startsWith('&');
-    const path = at(nextState.cwd, expandWord(redirect.target, expandCtx));
-    if (path === DEV_NULL) {
-      // 書いた物は捨てる
-      result = { ...result, ...(takesOut ? { stdout: '' } : {}), ...(takesErr ? { stderr: '' } : {}) };
-      continue;
-    }
-    const text = `${takesOut ? (result.stdout ?? '') : ''}${takesErr ? (result.stderr ?? '') : ''}`;
-    try {
-      const vfs = append
-        ? appendFile(nextState.vfs, path, text)
-        : writeFile(nextState.vfs, path, text);
-      nextState = { ...nextState, vfs };
-      result = {
-        ...result,
-        ...(takesOut ? { stdout: '' } : {}),
-        ...(takesErr ? { stderr: '' } : {}),
-      };
-    } catch (error) {
-      if (error instanceof VfsError) {
-        return { state: nextState, result: { stderr: `${vfsMessage(name, error)}\n`, code: EXIT_ERROR } };
+  /** 行き先。TTY_OUT・TTY_ERR は端末の標準出力・標準エラー、'' は捨てる（/dev/null）、それ以外はファイルの場所 */
+  const TTY_OUT = '\u0000out';
+  const TTY_ERR = '\u0000err';
+  let out = TTY_OUT;
+  let err = TTY_ERR;
+  let vfs = initial.vfs;
+  try {
+    for (const redirect of command.redirects) {
+      if (redirect.kind === '<') continue;
+      if (redirect.kind === '2>&1') {
+        err = out;
+        continue;
       }
-      throw error;
+      if (redirect.kind === '>&2') {
+        out = err;
+        continue;
+      }
+      const path = at(initial.cwd, expandWord(redirect.target, expandCtx));
+      const dest = path === DEV_NULL ? '' : path;
+      // > は開いた時に中身を空にする。>> は後ろに足す（無ければ作る）
+      if (dest !== '') vfs = redirect.kind.endsWith('>>') ? appendFile(vfs, dest, '') : writeFile(vfs, dest, '');
+      if (redirect.kind !== '2>' && redirect.kind !== '2>>') out = dest;
+      if (redirect.kind.startsWith('2') || redirect.kind.startsWith('&')) err = dest;
     }
+    // 同じ所へ行く物は、標準出力・標準エラーの順にまとめる
+    const sent = new Map<string, string>();
+    sent.set(out, (sent.get(out) ?? '') + (initialResult.stdout ?? ''));
+    sent.set(err, (sent.get(err) ?? '') + (initialResult.stderr ?? ''));
+    for (const [path, text] of sent) if (path !== TTY_OUT && path !== TTY_ERR && path !== '' && text !== '') vfs = appendFile(vfs, path, text);
+    const result: CommandResult = { ...initialResult, stdout: sent.get(TTY_OUT) ?? '', stderr: sent.get(TTY_ERR) ?? '' };
+    return { state: { ...initial, vfs }, result };
+  } catch (error) {
+    if (error instanceof VfsError) {
+      return { state: { ...initial, vfs }, result: { stderr: `${vfsMessage(name, error)}\n`, code: EXIT_ERROR } };
+    }
+    throw error;
   }
-
-  return { state: nextState, result };
 }
 
 /**

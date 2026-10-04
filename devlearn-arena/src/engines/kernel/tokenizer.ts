@@ -10,7 +10,9 @@ export type OperatorToken =
   /** 標準エラーの行き先 */
   | '2>' | '2>>'
   /** 両方まとめて */
-  | '&>' | '&>>';
+  | '&>' | '&>>'
+  /** 標準エラーを標準出力と同じ所へ（2>&1）・標準出力を標準エラーへ（>&2） */
+  | '2>&1' | '>&2';
 
 export interface WordPart {
   text: string;
@@ -149,6 +151,18 @@ export function tokenize(input: string): Token[] {
       continue;
     }
 
+    // `2>&1`・`>&2`・`1>&2` は、行き先の付け替え
+    if (!started && (input.startsWith('2>&1', i) || input.startsWith('1>&2', i))) {
+      tokens.push({ type: 'op', value: input[i] === '2' ? '2>&1' : '>&2' });
+      i += 4;
+      continue;
+    }
+    if (ch === '>' && input.startsWith('>&2', i)) {
+      flush();
+      tokens.push({ type: 'op', value: '>&2' });
+      i += 3;
+      continue;
+    }
     // `2>` `2>>` `&>` `&>>` は、単語の途中でなければリダイレクトとして読む
     if (!started && (ch === '2' || ch === '&') && input[i + 1] === '>') {
       const long = input[i + 2] === '>';

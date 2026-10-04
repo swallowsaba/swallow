@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSession, type Session, type SessionOptions } from '../session';
 import { execute } from '../shell';
+import { formatTime, nextMinute, parseTime, weekdayOf } from '../cron';
 import { createServiceTable } from '../services';
 import { exists, readFile, setMeta, setSize } from '../vfs';
 
@@ -342,5 +343,78 @@ describe('環境変数（printenv）', () => {
     expect(t.run('printenv APP_ENV')).toEqual({ out: 'staging\n', err: '', code: 0 });
     expect(t.run('printenv NOPE')).toEqual({ out: '', err: '', code: 1 });
     expect(t.run('printenv').out).toBe(t.run('env').out);
+  });
+});
+
+describe('定期実行（crontab・模擬の時計 timeskip・date）', () => {
+  const files = {
+    '/srv/backup.sh': '#!/bin/sh\ncp /srv/data/db.txt /srv/backup/db.txt\necho "backup done"\n',
+    '/srv/data/db.txt': 'rows\n',
+    '/srv/backup': null,
+    '/var/log': null,
+    '/root': null,
+  };
+  const asRoot = () => {
+    const t = open({ files, vars: { USER: 'root', HOME: '/root' }, cwd: '/root' });
+    t.run('chmod +x /srv/backup.sh');
+    return t;
+  };
+
+  it('crontab - で登録し、crontab -l で見る。登録は /var/spool/cron/crontabs/<利用者> に残る', () => {
+    const t = asRoot();
+    expect(t.run('crontab -l')).toEqual({ out: '', err: 'no crontab for root\n', code: 1 });
+    t.run("echo '0 2 * * * /srv/backup.sh >> /var/log/backup.log 2>&1' | crontab -");
+    expect(t.run('crontab -l').out).toBe('0 2 * * * /srv/backup.sh >> /var/log/backup.log 2>&1\n');
+    expect(readFile(t.s().state.vfs, '/var/spool/cron/crontabs/root')).toContain('0 2 * * *');
+  });
+
+  it('欄の誤りは登録しない（本物と同じく、何行目のどこかを言う）', () => {
+    const t = asRoot();
+    const r = t.run("echo '0 25 * * * /srv/backup.sh' | crontab -");
+    expect(r.err).toContain('bad hour');
+    expect(r.code).toBe(1);
+    expect(t.run('crontab -l').code).toBe(1);
+  });
+
+  it('timeskip で時計を進めると、その間に来た時刻の仕事が動く。date は今の時刻', () => {
+    const t = asRoot();
+    expect(t.run('date +%F_%H:%M').out).toBe('2026-10-03_09:00\n');
+    t.run("echo '0 2 * * * /srv/backup.sh >> /var/log/backup.log 2>&1' | crontab -");
+    expect(t.run('timeskip 01:59').out).not.toContain('CMD');
+    const r = t.run('timeskip 02:01');
+    expect(r.out).toContain('(root) CMD (/srv/backup.sh >> /var/log/backup.log 2>&1)');
+    expect(t.run('date +%F_%H:%M').out).toBe('2026-10-04_02:01\n');
+    expect(readFile(t.s().state.vfs, '/var/log/backup.log')).toBe('backup done\n');
+    expect(readFile(t.s().state.vfs, '/srv/backup/db.txt')).toBe('rows\n');
+  });
+
+  it('cron は短い PATH と、ホームを現在地にして動く。相対のパスや権限の無い物は失敗し、timeskip が知らせる', () => {
+    const t = asRoot();
+    t.run('cp /srv/backup.sh /root/backup.sh');
+    t.run("echo '*/30 * * * * backup.sh >> /var/log/backup.log 2>&1' | crontab -");
+    const r = t.run('timeskip 09:31');
+    expect(r.err).toContain('(root) の仕事が失敗した（終了コード 127）');
+    expect(readFile(t.s().state.vfs, '/var/log/backup.log')).toContain('backup.sh: command not found');
+  });
+});
+
+describe('出力の行き先の付け替え（2>&1・>&2）', () => {
+  it('> log 2>&1 は両方をファイルへ。2>&1 > log は、エラーだけ端末（標準出力の元の行き先）に残る（書いた順に決まる）', () => {
+    const t = open();
+    t.run('ls nope > a.log 2>&1');
+    expect(readFile(t.s().state.vfs, '/home/learner/a.log')).toBe("ls: cannot access 'nope': No such file or directory\n");
+    expect(t.run('ls nope 2>&1 > b.log').out).toContain('cannot access');
+    expect(readFile(t.s().state.vfs, '/home/learner/b.log')).toBe('');
+    expect(t.run('echo oops >&2')).toEqual({ out: '', err: 'oops\n', code: 0 });
+  });
+});
+
+describe('模擬の暦', () => {
+  it('月末・年末・うるう年をまたいで 1 分進み、曜日が合う', () => {
+    expect(formatTime(nextMinute(parseTime('2026-12-31 23:59')))).toBe('2027-01-01 00:00');
+    expect(formatTime(nextMinute(parseTime('2028-02-28 23:59')))).toBe('2028-02-29 00:00');
+    expect(formatTime(nextMinute(parseTime('2026-02-28 23:59')))).toBe('2026-03-01 00:00');
+    expect(weekdayOf(parseTime('2026-10-03 09:00'))).toBe(6);
+    expect(weekdayOf(parseTime('2000-01-01 00:00'))).toBe(6);
   });
 });

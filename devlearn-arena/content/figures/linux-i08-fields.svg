@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>cron の 1 行は、分・時・日・月・曜日の 5 つの欄と、動かすコマンド。0 2 * * * は毎日 2 時 0 分</title>
+  <g class="el" data-part="minute">
+    <rect x="16" y="40" width="94" height="200" fill="none" pointer-events="all" />
+    <rect x="20" y="50" width="86" height="64" rx="10" fill="#f2b632" />
+    <text x="63" y="94" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" font-weight="700" fill="#0a1424">0</text>
+    <text x="63" y="146" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">分</text>
+    <text x="63" y="172" text-anchor="middle" font-size="13" fill="#9fb0c6">0〜59</text>
+  </g>
+  <g class="el" data-part="hour">
+    <rect x="112" y="40" width="94" height="200" fill="none" pointer-events="all" />
+    <rect x="116" y="50" width="86" height="64" rx="10" fill="#f2b632" />
+    <text x="159" y="94" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" font-weight="700" fill="#0a1424">2</text>
+    <text x="159" y="146" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">時</text>
+    <text x="159" y="172" text-anchor="middle" font-size="13" fill="#9fb0c6">0〜23</text>
+  </g>
+  <g class="el" data-part="day">
+    <rect x="208" y="40" width="94" height="200" fill="none" pointer-events="all" />
+    <rect x="212" y="50" width="86" height="64" rx="10" fill="#5cc1ff" />
+    <text x="255" y="94" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" font-weight="700" fill="#0a1424">*</text>
+    <text x="255" y="146" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">日</text>
+    <text x="255" y="172" text-anchor="middle" font-size="13" fill="#9fb0c6">1〜31</text>
+  </g>
+  <g class="el" data-part="month">
+    <rect x="304" y="40" width="94" height="200" fill="none" pointer-events="all" />
+    <rect x="308" y="50" width="86" height="64" rx="10" fill="#5cc1ff" />
+    <text x="351" y="94" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" font-weight="700" fill="#0a1424">*</text>
+    <text x="351" y="146" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">月</text>
+    <text x="351" y="172" text-anchor="middle" font-size="13" fill="#9fb0c6">1〜12</text>
+  </g>
+  <g class="el" data-part="weekday">
+    <rect x="400" y="40" width="94" height="200" fill="none" pointer-events="all" />
+    <rect x="404" y="50" width="86" height="64" rx="10" fill="#5cc1ff" />
+    <text x="447" y="94" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" font-weight="700" fill="#0a1424">*</text>
+    <text x="447" y="146" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">曜日</text>
+    <text x="447" y="172" text-anchor="middle" font-size="13" fill="#9fb0c6">0〜7</text>
+    <text x="447" y="192" text-anchor="middle" font-size="13" fill="#9fb0c6">0 と 7 は日曜</text>
+  </g>
+  <g class="el" data-part="command">
+    <rect x="496" y="40" width="200" height="200" fill="none" pointer-events="all" />
+    <rect x="500" y="50" width="184" height="64" rx="10" fill="#3ae08a" />
+    <text x="592" y="90" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#0a1424">/srv/backup.sh</text>
+    <text x="592" y="146" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">動かすコマンド</text>
+    <text x="592" y="172" text-anchor="middle" font-size="13" fill="#9fb0c6">/ から始まる場所で</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="350" y="276" text-anchor="middle" font-size="14" fill="#9fb0c6">* は「全て」。0 2 * * * は、毎日 2 時 0 分</text>
+  </g>
+</svg>

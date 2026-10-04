@@ -817,6 +817,50 @@
       "lessons": [
         "linux.i.07"
       ]
+    },
+    {
+      "id": "cron",
+      "word": "cron",
+      "reading": "くろん",
+      "plain": "決まった時刻に、決まったコマンドを動かす Linux の仕組み。時刻は分・時・日・月・曜日の 5 つの欄で書く。",
+      "why": "毎晩の控えや片付けを、人が忘れても必ず動かせる。",
+      "related": [
+        "crontab",
+        "systemd-timer",
+        "script"
+      ],
+      "lessons": [
+        "linux.i.08"
+      ]
+    },
+    {
+      "id": "crontab",
+      "word": "crontab",
+      "reading": "くろんたぶ",
+      "plain": "cron に動かしてほしい仕事を、利用者ごとに登録・確認・削除するコマンド。-l で見る、-e で編集する。",
+      "why": "登録の 1 行を読めると、いつ何が動くのかが分かる。",
+      "related": [
+        "cron",
+        "systemd-timer"
+      ],
+      "lessons": [
+        "linux.i.08"
+      ]
+    },
+    {
+      "id": "systemd-timer",
+      "word": "systemd タイマー",
+      "reading": "しすてむでぃーたいまー",
+      "plain": "systemd の仕組みで、決まった時刻にサービスを動かす設定。cron と同じことを、サービスと同じ形で書く。",
+      "why": "動いた記録が journalctl で見られ、状態も systemctl で確かめられる。",
+      "related": [
+        "cron",
+        "systemd",
+        "service"
+      ],
+      "lessons": [
+        "linux.i.08"
+      ]
     }
   ]
 }

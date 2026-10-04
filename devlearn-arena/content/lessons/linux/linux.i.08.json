@@ -1,0 +1,233 @@
+{
+  "id": "linux.i.08",
+  "domain": "linux",
+  "level": "intermediate",
+  "theme": "自動化",
+  "title": "定期実行",
+  "goal": "cron と systemd タイマーで定期処理を設定できる",
+  "minutes": 18,
+  "prerequisites": [
+    "linux.i.07"
+  ],
+  "related": [
+    "devops.b.02",
+    "mon.b.04"
+  ],
+  "next": [
+    "linux.a.01"
+  ],
+  "terms": [
+    "systemd-timer",
+    "cron",
+    "service",
+    "log",
+    "windows",
+    "linux",
+    "script",
+    "env-var",
+    "path-var",
+    "command",
+    "current-directory"
+  ],
+  "explain": {
+    "what": "決まった時刻に、決まった処理を動かす仕組み。{{term:cron}} は、分・時・日・月・曜日の 5 つの欄で時刻を書く。{{term:systemd-timer}}は、{{term:service}}と同じ形の設定で時刻を決める。",
+    "why": "毎晩の控えや、古い{{term:log}}の片付けを人が手で行うと、忘れた日に事故が起きる。仕組みに任せれば、毎日同じ時刻に必ず動く。",
+    "use": "毎晩 2 時の控え、毎週の古いログの片付け、5 分ごとの見回りを動かす。",
+    "when": "人のいない夜中に、毎日データの控えを取りたい時。",
+    "figures": [
+      "linux-i08-fields"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "linux-i08-fields",
+      "prompt": "「毎日 2:00」にする時、2 を書く欄を押す。",
+      "answer": [
+        "hour"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "cron と systemd タイマーの違いとして正しいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "cron は 1 行で手軽に書け、タイマーはサービスと同じ形でログや状態を見やすい",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "cron は 1 回だけ、タイマーは繰り返し動かす",
+          "correct": false,
+          "whyNot": "どちらも繰り返し動かす仕組み。違うのは、書き方と、記録や状態の見やすさ。"
+        },
+        {
+          "id": "c",
+          "text": "タイマーは {{term:linux}} でしか使えず、cron は {{term:windows}} で使う",
+          "correct": false,
+          "whyNot": "どちらも Linux の仕組み。cron の方が古くからある。"
+        }
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "下の 1 行の仕事は、いつ動く？",
+      "context": {
+        "command": "0 2 * * * /srv/backup.sh"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "毎日 2 時 0 分",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "毎時 2 分",
+          "correct": false,
+          "whyNot": "1 つ目の欄が分、2 つ目が時。毎時 2 分なら 2 * * * *。"
+        },
+        {
+          "id": "c",
+          "text": "2 日ごとの 0 時",
+          "correct": false,
+          "whyNot": "3 つ目の欄（日）は * なので、毎日。"
+        }
+      ],
+      "explanation": "欄は左から、分・時・日・月・曜日。* は「全て」。0 2 * * * は毎日 2 時 0 分。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "手で打つと動く{{term:script}}が、cron では失敗する。考えられる原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "cron の{{term:env-var}}（{{term:path-var}} など）が、ログインした時と違う",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "cron は夜中には動かない",
+          "correct": false,
+          "whyNot": "cron は書いた時刻に、昼でも夜でも動く。"
+        },
+        {
+          "id": "c",
+          "text": "cron では echo が使えない",
+          "correct": false,
+          "whyNot": "どの{{term:command}}も使える。ただし PATH が短いので、場所を書かないと見つからないことがある。"
+        }
+      ],
+      "explanation": "cron は短い PATH で、ホームを{{term:current-directory}}にして動く。スクリプトと中の命令は、/ から始まる場所で書く。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "夜中の仕事が動いたか、失敗したなら何と言われたかを、朝に確かめたい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "出力を >> でログに足し、2>&1 でエラーも同じログに残す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "朝に同じスクリプトを手で動かしてみる",
+          "correct": false,
+          "whyNot": "手で動かすと、夜中と環境が違う。夜中に何が起きたかは分からない。"
+        },
+        {
+          "id": "c",
+          "text": "> でログに書く",
+          "correct": false,
+          "whyNot": "> は毎回上書きするので、前の日の記録が消える。エラーも残らない。"
+        }
+      ],
+      "explanation": "毎回の結果を >> で足し、2>&1 でエラーも同じ所へ送ると、後から全てを確かめられる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "毎日 2 時に控えのスクリプト /srv/backup.sh を動かし、結果を /var/log/backup.log に残す。",
+    "environment": "linux-server",
+    "setup": {
+      "hostname": "db01",
+      "dirs": [
+        "/srv/backup"
+      ],
+      "files": {
+        "/srv/backup.sh": "#!/bin/sh\n# データの控えを取る\ncp /srv/data/db.txt /srv/backup/db-$(date +%F).txt\necho \"$(date +%F_%H:%M) backup done\"\n",
+        "/srv/data/db.txt": "id,name\n1,minato\n"
+      },
+      "run": [
+        "chmod +x /srv/backup.sh"
+      ]
+    },
+    "steps": [
+      {
+        "id": "schedule",
+        "purpose": "毎日 2 時 0 分に /srv/backup.sh を動かし、出力とエラーを /var/log/backup.log に足す仕事を登録する。",
+        "check": {
+          "kind": "fs",
+          "path": "/var/spool/cron/crontabs/root",
+          "contains": "0 2 * * * /srv/backup.sh"
+        },
+        "afterward": "仕事が登録された。`crontab -l` で、登録した 1 行が見られる。",
+        "hints": [
+          "時刻は、分・時・日・月・曜日の 5 つの欄。毎日 2 時 0 分なら、分が 0、時が 2、残りは *。スクリプトは / から始まる場所で書く。",
+          "登録の 1 行を echo で出し、| で `crontab -` に渡す。出力は >> でログに足し、2>&1 でエラーも同じ所へ送る。",
+          "`echo '0 2 * * * /srv/backup.sh >> /var/log/backup.log 2>&1' | crontab -` と打つ。"
+        ],
+        "expectedErrors": [
+          "cron-bad"
+        ]
+      },
+      {
+        "id": "verify",
+        "purpose": "模擬の時計を 2 時より後まで進め、仕事が動いて記録が残ったことを確かめる。この機械には、時計を進める timeskip がある（本物の Linux には無い）。",
+        "check": {
+          "kind": "fs",
+          "path": "/var/log/backup.log",
+          "contains": "backup done"
+        },
+        "afterward": "2 時に仕事が動き、/var/log/backup.log に「backup done」が足された。/srv/backup に、今日の日付の控えができている。",
+        "hints": [
+          "今の時刻は `date` で見られる。2 時を過ぎるまで時計を進める。",
+          "`timeskip 02:01` で、次の 2 時 1 分まで進む。進めた後、`cat /var/log/backup.log` で記録を見る。",
+          "`timeskip 02:01` と打つ。"
+        ],
+        "expectedErrors": [
+          "cron-failed"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "人が忘れても毎日動く仕組みを作り、記録で動いたことを確かめられた。",
+    "partial": "ヒントを使って登録できた。次は、`crontab -l` で 1 行を読み、5 つの欄の意味を言えるか試そう。",
+    "retry": "まだ記録が残っていない。`crontab -l` で 1 行を見直し、欄の数とスクリプトの場所（/ から始まるか）を確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "cron は 5 つの欄（分・時・日・月・曜日）で時刻を書く",
+      "スクリプトの場所は / から始めて書く",
+      ">> と 2>&1 で記録を残す"
+    ],
+    "next": [
+      "devops.b.02",
+      "linux.a.01"
+    ],
+    "terms": [
+      "cron",
+      "crontab",
+      "systemd-timer"
+    ]
+  }
+}

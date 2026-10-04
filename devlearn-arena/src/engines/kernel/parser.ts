@@ -9,7 +9,9 @@ export class IncompleteError extends ParseError {
   }
 }
 
-const REDIRECTS = new Set(['>', '>>', '<', '2>', '2>>', '&>', '&>>']);
+const REDIRECTS = new Set(['>', '>>', '<', '2>', '2>>', '&>', '&>>', '2>&1', '>&2']);
+/** 行き先の付け替え。後ろにファイル名を取らない */
+const DUPS = new Set(['2>&1', '>&2']);
 
 /** 読む単位。行の終わり（newline）は ; と同じ区切り。ヒアドキュメントは本文を持つ */
 type Item =
@@ -87,6 +89,10 @@ export function parse(input: string): CommandList {
 
   /** そのリダイレクトの行き先を読む（演算子は読み終えた所から） */
   const readRedirect = (op: string, into: Redirect[]): void => {
+    if (DUPS.has(op)) {
+      into.push({ kind: op as Redirect['kind'], target: { parts: [], raw: '', quoted: false } });
+      return;
+    }
     const next = peek();
     if (next?.type !== 'word') throw new ParseError(`${op} の後にファイル名がありません`);
     into.push({ kind: op as Redirect['kind'], target: toWord(next) });
