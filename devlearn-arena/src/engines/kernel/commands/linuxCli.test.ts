@@ -334,3 +334,13 @@ describe('容量を調べる（df・du・sort -h）', () => {
     expect(big().run('env').out).not.toContain('__DISK_SIZE');
   });
 });
+
+describe('環境変数（printenv）', () => {
+  it('printenv は名前を書けばその値、無ければ何も出さずに 1 で終わる。書かなければ env と同じ', () => {
+    const t = open();
+    t.run('export APP_ENV=staging');
+    expect(t.run('printenv APP_ENV')).toEqual({ out: 'staging\n', err: '', code: 0 });
+    expect(t.run('printenv NOPE')).toEqual({ out: '', err: '', code: 1 });
+    expect(t.run('printenv').out).toBe(t.run('env').out);
+  });
+});

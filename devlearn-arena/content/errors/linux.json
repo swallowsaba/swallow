@@ -337,6 +337,16 @@
         "中のファイルの場所まで答えた。聞いているのは /var のすぐ下のディレクトリ。"
       ],
       "hint": "du -sh /var/* | sort -h の、最後の行の場所を答えよう。"
+    },
+    {
+      "id": "path-not-reloaded",
+      "match": "report: command not found",
+      "meaning": "名前だけで打った report が、PATH のどの場所にも見つからなかった。",
+      "causes": [
+        "設定ファイルに書いただけで、今のシェルに読み直させていない。",
+        "設定ファイルに書いた行の綴りが違う（$HOME/bin の / や : が抜けた）。"
+      ],
+      "hint": "echo $PATH で今の探し場所を見る。/home/learner/bin が無ければ、source ~/.bashrc で読み直そう。"
     }
   ]
 }

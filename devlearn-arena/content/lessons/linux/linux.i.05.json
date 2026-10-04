@@ -164,7 +164,7 @@
     "steps": [
       {
         "id": "usage",
-        "purpose": "ディスク全体の使用率（`Use`% の欄）を、% を付けて答える。",
+        "purpose": "ディスク全体の使用率（`Use%` の欄）を、% を付けて答える。",
         "check": {
           "kind": "answer",
           "equals": "91%"

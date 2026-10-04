@@ -714,6 +714,64 @@
       "lessons": [
         "linux.i.05"
       ]
+    },
+    {
+      "id": "env-var",
+      "word": "環境変数",
+      "reading": "かんきょうへんすう",
+      "plain": "シェルと、そこから動くプログラムに渡す、名前の付いた設定の値。$名前 で値を取り出せる。",
+      "why": "プログラムを書き換えずに、接続先や動き方を環境ごとに変えられる。",
+      "related": [
+        "path-var",
+        "export",
+        "shell"
+      ],
+      "lessons": [
+        "linux.i.06"
+      ]
+    },
+    {
+      "id": "path-var",
+      "word": "PATH",
+      "reading": "ぱす",
+      "plain": "名前だけで打った命令を、どのディレクトリから探すかを : で区切って並べた環境変数。左から順に探す。",
+      "why": "ここに無い場所の命令は、名前だけでは見つからない（command not found）。",
+      "related": [
+        "env-var",
+        "command",
+        "directory"
+      ],
+      "lessons": [
+        "linux.i.06"
+      ]
+    },
+    {
+      "id": "export",
+      "word": "export",
+      "reading": "えくすぽーと",
+      "plain": "環境変数に、そこから動かすプログラムにも渡す印を付けるシェルの命令。export 名前=値 の形で、値を決めて印も付ける。",
+      "why": "印の無い値はシェルの中だけで使われ、動かしたプログラムには届かない。",
+      "related": [
+        "env-var",
+        "path-var"
+      ],
+      "lessons": [
+        "linux.i.06"
+      ]
+    },
+    {
+      "id": "source",
+      "word": "source",
+      "reading": "そーす",
+      "plain": "ファイルに書かれた命令を、今のシェルの中で順に実行するシェルの命令。設定ファイルを読み直す時に使う。",
+      "why": "設定ファイルはシェルが始まる時に読まれる。書き足した後は、source で今のシェルにも効かせる。",
+      "related": [
+        "shell",
+        "env-var"
+      ],
+      "lessons": [
+        "linux.i.06"
+      ]
     }
   ]
 }

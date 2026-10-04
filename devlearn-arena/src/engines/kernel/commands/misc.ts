@@ -1,17 +1,27 @@
 import { displayPath } from '../path';
-import type { CommandSpec } from '../registry';
+import type { CommandSpec, ShellState } from '../registry';
 import { fromLines } from './args';
+
+/** 環境変数の一覧。__ で始まる物は、模擬の機械の中の設定（ディスクの大きさ・アドレス）で、環境変数ではないので出さない */
+function envText(shell: ShellState): string {
+  return fromLines([...shell.vars.entries()].filter(([k]) => !k.startsWith('__')).sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, v]) => `${k}=${v}`));
+}
 
 export const miscCommands: CommandSpec[] = [
   {
     name: 'env',
     summary: '環境変数を一覧する',
-    handler: ({ shell }) => ({
-      stdout: fromLines(
-        // __ で始まる物は、模擬の機械の中の設定（ディスクの大きさ・アドレス）。環境変数ではないので出さない
-        [...shell.vars.entries()].filter(([k]) => !k.startsWith('__')).sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, v]) => `${k}=${v}`),
-      ),
-    }),
+    handler: ({ shell }) => ({ stdout: envText(shell) }),
+  },
+  {
+    name: 'printenv',
+    summary: '環境変数の値を見る（名前を書かなければ全て）',
+    handler: ({ argv, shell }) => {
+      const names = argv.slice(1);
+      if (names.length === 0) return { stdout: envText(shell) };
+      const values = names.map((n) => (n.startsWith('__') ? undefined : shell.vars.get(n)));
+      return { stdout: fromLines(values.filter((v): v is string => v !== undefined)), code: values.every((v) => v !== undefined) ? 0 : 1 };
+    },
   },
   {
     name: 'export',

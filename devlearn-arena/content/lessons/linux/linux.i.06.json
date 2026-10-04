@@ -1,0 +1,235 @@
+{
+  "id": "linux.i.06",
+  "domain": "linux",
+  "level": "intermediate",
+  "theme": "環境",
+  "title": "環境変数とシェル設定",
+  "goal": "PATH と環境変数を理解し設定できる",
+  "minutes": 16,
+  "prerequisites": [
+    "linux.b.05"
+  ],
+  "related": [
+    "k8s.i.01",
+    "cicd.i.03"
+  ],
+  "next": [
+    "linux.i.07"
+  ],
+  "terms": [
+    "directory",
+    "program",
+    "env-var",
+    "path-var",
+    "shell",
+    "home-directory",
+    "export",
+    "process",
+    "permission",
+    "root-user",
+    "database",
+    "config-file",
+    "source"
+  ],
+  "explain": {
+    "what": "{{term:env-var}}は、{{term:shell}}と、そこから動く{{term:program}}に渡す、名前の付いた設定の値。{{term:path-var}} はその 1 つで、名前だけで打った命令を、どの{{term:directory}}から探すかを : で区切って並べたもの。",
+    "why": "同じプログラムでも、書き換えずに、接続先や動き方を環境ごとに変えられる。また PATH に無い場所の命令は、名前だけでは見つからない。",
+    "use": "本番と検証で、つなぐ先を切り替える。自分で作った命令の置き場所を PATH に足し、名前だけで動かせるようにする。",
+    "when": "入れたはずの命令を打ったら、見つからないと言われた時。その場で直しても、次にログインすると元に戻ってしまう時。",
+    "figures": [
+      "linux-i06-env"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "名前と、その意味を結ぶ。",
+      "pairs": [
+        [
+          "PATH",
+          "命令を探すディレクトリの並び"
+        ],
+        [
+          "`HOME`",
+          "自分の{{term:home-directory}}の場所"
+        ],
+        [
+          "{{term:export}}",
+          "そこから動くプログラムにも渡す印を付ける"
+        ]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "export を付けずに決めた値は、そのシェルから動かすプログラムには渡らない。",
+      "answer": true,
+      "why": "export を付けた値だけが、子の{{term:process}}（そこから動かすプログラム）に受け継がれる。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "learner がログインしたシェルで、下の命令を打つと何が出る？",
+      "context": {
+        "command": "echo $HOME"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "/home/learner",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "$`HOME`",
+          "correct": false,
+          "whyNot": "$ を付けた名前は、シェルがその値に置き換えてから echo に渡す。"
+        },
+        {
+          "id": "c",
+          "text": "何も出ない",
+          "correct": false,
+          "whyNot": "ログインした時に、ホームディレクトリの場所が入る。決めていない名前なら空になる。"
+        }
+      ],
+      "explanation": "$ の後に名前を書くと、その値に置き換わる。`HOME` はホームディレクトリの場所。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "~/bin に report という命令を置き、実行の{{term:permission}}も付けた。名前だけで打つと見つからない。原因は？",
+      "context": {
+        "log": "$ report\nreport: command not found\n$ echo $PATH\n/usr/local/bin:/usr/bin:/bin"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "~/bin が PATH に入っていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "report の名前の綴りが違う",
+          "correct": false,
+          "whyNot": "~/bin/report と打てば動くなら、綴りは合っている。名前だけの時に探す場所が足りない。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:root-user}}でないと、自分で作った命令は動かせない",
+          "correct": false,
+          "whyNot": "自分の物で実行の権限があれば動かせる。足りないのは探す場所。"
+        }
+      ],
+      "explanation": "名前だけで打つと、シェルは PATH の場所を順に探す。~/bin が並んでいないので見つからない。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "同じプログラムを、本番と検証で別の{{term:database}}につなぎたい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "つなぐ先を環境変数で渡し、環境ごとに値を変える",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "つなぐ先を書き換えたプログラムを、2 つ作る",
+          "correct": false,
+          "whyNot": "直す時に 2 か所を直すことになり、食い違いが起きる。プログラムは 1 つにして、値だけ変える。"
+        },
+        {
+          "id": "c",
+          "text": "本番のつなぐ先をプログラムに書き、検証の時だけ手で書き換える",
+          "correct": false,
+          "whyNot": "戻し忘れると、検証のつもりで本番を触ってしまう。値は外から渡す。"
+        }
+      ],
+      "explanation": "設定は環境変数で外から渡すと、同じプログラムをどの環境でもそのまま使える。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "~/bin の report を名前だけで動かせるようにし、次にログインした時も効くようにする。",
+    "environment": "linux-basic",
+    "setup": {
+      "files": {
+        "/home/learner/bin/report": "#!/bin/sh\necho \"report ok\" > $HOME/report.txt\necho \"report: done\"\n",
+        "/home/learner/.bashrc": "# ~/.bashrc: ログインした時に、シェルが読む設定\nexport EDITOR=nano\n"
+      },
+      "run": [
+        "chmod +x /home/learner/bin/report"
+      ]
+    },
+    "steps": [
+      {
+        "id": "persist",
+        "purpose": "次にログインした時も効くように、シェルの{{term:config-file}} ~/.bashrc の最後に、~/bin を PATH の先頭に足す行を書く。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/.bashrc",
+          "contains": "export PATH=$HOME/bin:$PATH"
+        },
+        "afterward": "~/.bashrc の最後に、PATH を足す行が書けた。ログインするたびに、この行が読まれる。",
+        "hints": [
+          "`echo $PATH` で今の探し場所を見る。~/bin は入っていない。足す行は、今の PATH の前に $`HOME/bin`: を付けて export する形。",
+          "その行を echo で出し、>> で ~/.bashrc の最後に足す。$ をそのまま書くために、行を ' で囲む。",
+          "`echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc` と打つ。"
+        ],
+        "expectedErrors": [
+          "enoent"
+        ]
+      },
+      {
+        "id": "reload",
+        "purpose": "今のシェルにも設定を読み直させ、report を名前だけで動かす。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/report.txt",
+          "contains": "report ok"
+        },
+        "afterward": "report が名前だけで動いた。PATH の先頭に /home/learner/bin が並んだので、シェルがそこで見つけた。",
+        "hints": [
+          "設定ファイルは、シェルが始まる時に読まれる。今のシェルは、まだ古い PATH のまま。",
+          "{{term:source}} で設定ファイルを読み直してから、名前だけで打つ。",
+          "`source ~/.bashrc` と打ち、`report` と打つ。"
+        ],
+        "expectedErrors": [
+          "path-not-reloaded"
+        ]
+      }
+    ],
+    "dangerous": [
+      {
+        "id": "bashrc-overwrite",
+        "pattern": "[^>]>\\s*~/\\.bashrc",
+        "why": "> は上書き。~/.bashrc にあったほかの設定の行が消える。足す時は >> を使う。"
+      }
+    ]
+  },
+  "result": {
+    "success": "探し場所を足し、設定ファイルにも残せた。次にログインしても名前だけで動く。",
+    "partial": "ヒントを使って足せた。次は、`echo $PATH` で、足す前と後の並びを見比べてみよう。",
+    "retry": "まだ名前だけでは動いていない。`echo $PATH` で、/home/learner/bin が並んでいるかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "設定の値は環境変数で渡す",
+      "PATH は命令を探す場所の並び",
+      "ずっと効かせるなら設定ファイルに書き、source で読み直す"
+    ],
+    "next": [
+      "linux.i.07",
+      "k8s.i.01"
+    ],
+    "terms": [
+      "env-var",
+      "path-var",
+      "export",
+      "source"
+    ]
+  }
+}

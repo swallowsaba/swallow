@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>シェルは環境変数の表を持ち、export した値だけが、そこから動かすプログラムに受け継がれる。PATH は命令を探す場所の並び</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="shell">
+    <rect x="20" y="30" width="300" height="230" rx="14" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <text x="40" y="60" font-size="16" font-weight="700" fill="#3ae08a">シェル</text>
+  </g>
+  <g class="el" data-part="table">
+    <rect x="40" y="76" width="260" height="40" rx="6" fill="#f2b632" />
+    <text x="52" y="102" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">PATH=/home/learner/bin:/usr/bin</text>
+    <rect x="40" y="124" width="260" height="40" rx="6" fill="#f2b632" />
+    <text x="52" y="150" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">APP_ENV=staging</text>
+    <rect x="40" y="172" width="260" height="40" rx="6" fill="#9aa9b5" />
+    <text x="52" y="198" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">TMP_NOTE=memo</text>
+    <text x="52" y="240" font-size="13" fill="#9fb0c6">金色は export した値。灰色はシェルの中だけ</text>
+  </g>
+  <g class="el" data-part="inherit">
+    <path d="M320 120 H436" fill="none" stroke="#f2b632" stroke-width="3" marker-end="url(#arrow)" />
+    <text x="378" y="106" text-anchor="middle" font-size="14" fill="#f2b632">受け継ぐ</text>
+  </g>
+  <g class="el" data-part="child">
+    <rect x="442" y="56" width="238" height="130" rx="14" fill="#5cc1ff" />
+    <text x="561" y="90" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">動かしたプログラム</text>
+    <text x="561" y="122" text-anchor="middle" font-size="14" fill="#0a1424">PATH と APP_ENV が見える</text>
+    <text x="561" y="148" text-anchor="middle" font-size="14" fill="#0a1424">TMP_NOTE は見えない</text>
+  </g>
+  <g class="el" data-part="path">
+    <text x="350" y="236" font-size="14" fill="#eef2f6">名前だけで打った命令は、PATH の場所を</text>
+    <text x="350" y="260" font-size="14" fill="#eef2f6">左から順に探し、最初に見つけた物が動く</text>
+  </g>
+  <g class="el" data-part="persist">
+    <text x="20" y="300" font-size="14" fill="#9fb0c6">ずっと効かせる値は ~/.bashrc に書く（ログインのたびに読まれる）</text>
+  </g>
+</svg>
