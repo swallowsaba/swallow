@@ -1,7 +1,9 @@
 import { resolve } from '../path';
 import { compilePattern } from '../regex';
 import type { CommandSpec, ShellState } from '../registry';
-import { readFile } from '../vfs';
+import { allows } from '../perm';
+import { isDir, list, metaOf, readFile, stat } from '../vfs';
+import { currentGroups, currentUser, denied } from './perm';
 import { fromLines, parseArgs, toLines } from './args';
 
 /** ファイル引数があればそれを、無ければ標準入力を読む。 */
@@ -22,13 +24,11 @@ export const textCommands: CommandSpec[] = [
   },
   {
     name: 'grep',
-    summary: 'パターンに一致する行を抜き出す',
+    summary: 'パターンに一致する行を抜き出す（-r でディレクトリの中まで）',
     handler: ({ argv, shell, stdin }) => {
       const { flags, operands } = parseArgs(argv);
       const pattern = operands[0];
-      if (pattern === undefined) return { stderr: 'usage: grep [-invcEFxn] PATTERN [FILE...]\n', code: 2 };
-      const files = operands.slice(1);
-      const text = readInput(shell, stdin, files);
+      if (pattern === undefined) return { stderr: 'usage: grep [-invcEFxnrlh] PATTERN [FILE...]\n', code: 2 };
       // 既定は基本正規表現（BRE）。-E で拡張、-F で文字どおり
       const compiled = compilePattern(pattern, {
         extended: flags.has('E'),
@@ -41,14 +41,89 @@ export const textCommands: CommandSpec[] = [
       }
       const regex = compiled.regex;
       const invert = flags.has('v');
+      const recursive = flags.has('r') || flags.has('R');
 
-      const hits = toLines(text)
-        .map((line, index) => ({ line, index }))
-        .filter(({ line }) => regex.test(line) !== invert);
+      // 探す物: 標準入力か、ファイル（-r ならディレクトリの中の全てのファイル）
+      const sources: { name: string; text: string }[] = [];
+      const errors: string[] = [];
+      const user = currentUser(shell);
+      const groups = currentGroups(shell);
+      const addFile = (shown: string, full: string): void => {
+        if (!allows(metaOf(shell.vfs, full), user, 'read', groups)) errors.push(`grep: ${shown}: Permission denied`);
+        else sources.push({ name: shown, text: readFile(shell.vfs, full) });
+      };
+      const walk = (shown: string, full: string): void => {
+        if (!allows(metaOf(shell.vfs, full), user, 'read', groups)) {
+          errors.push(`grep: ${shown}: Permission denied`);
+          return;
+        }
+        for (const child of list(shell.vfs, full)) {
+          const childFull = full === '/' ? `/${child}` : `${full}/${child}`;
+          const childShown = shown.endsWith('/') ? `${shown}${child}` : `${shown}/${child}`;
+          if (isDir(shell.vfs, childFull)) walk(childShown, childFull);
+          else addFile(childShown, childFull);
+        }
+      };
+      const files = operands.slice(1);
+      if (files.length === 0) sources.push({ name: '(standard input)', text: stdin });
+      for (const f of files) {
+        const full = resolve(shell.cwd, f);
+        const node = stat(shell.vfs, full);
+        if (!node) errors.push(`grep: ${f}: No such file or directory`);
+        else if (node.kind === 'dir') {
+          if (recursive) walk(f, full);
+          else errors.push(`grep: ${f}: Is a directory`);
+        } else addFile(f, full);
+      }
 
-      if (flags.has('c')) return { stdout: `${String(hits.length)}\n`, code: hits.length > 0 ? 0 : 1 };
-      const out = hits.map(({ line, index }) => (flags.has('n') ? `${String(index + 1)}:${line}` : line));
-      return { stdout: fromLines(out), code: hits.length > 0 ? 0 : 1 };
+      // ファイルが 2 つ以上（または -r）なら、行の前にファイル名を付ける。-h で付けない
+      const named = !flags.has('h') && (recursive || files.length > 1);
+      const out: string[] = [];
+      let total = 0;
+      for (const src of sources) {
+        const hits = toLines(src.text)
+          .map((line, index) => ({ line, index }))
+          .filter(({ line }) => regex.test(line) !== invert);
+        total += hits.length;
+        if (flags.has('l')) {
+          if (hits.length > 0) out.push(src.name);
+          continue;
+        }
+        if (flags.has('c')) {
+          out.push(named ? `${src.name}:${String(hits.length)}` : String(hits.length));
+          continue;
+        }
+        for (const { line, index } of hits) {
+          const numbered = flags.has('n') ? `${String(index + 1)}:${line}` : line;
+          out.push(named ? `${src.name}:${numbered}` : numbered);
+        }
+      }
+      const code = errors.length > 0 && total === 0 ? 2 : total > 0 ? 0 : 1;
+      return {
+        ...(out.length > 0 ? { stdout: fromLines(out) } : {}),
+        ...(errors.length > 0 ? { stderr: fromLines(errors) } : {}),
+        code,
+      };
+    },
+  },
+  {
+    name: 'less',
+    summary: '中身を頁ごとに見る（ここでは全てを出し、終わりの印を付ける）',
+    handler: ({ argv, shell, stdin }) => {
+      const withEnd = (text: string): string => `${text}${text.endsWith('\n') || text === '' ? '' : '\n'}`;
+      const files = argv.slice(1).filter((a) => !a.startsWith('-'));
+      if (files.length === 0) return { stdout: `${withEnd(stdin)}(END)\n` };
+      const out: string[] = [];
+      for (const f of files) {
+        const full = resolve(shell.cwd, f);
+        const node = stat(shell.vfs, full);
+        if (!node) return { stderr: `less: ${f}: No such file or directory\n`, code: 1 };
+        if (node.kind === 'dir') return { stderr: `less: ${f} is a directory\n`, code: 1 };
+        const blocked = denied(shell, f, 'read', 'less');
+        if (blocked) return blocked;
+        out.push(withEnd(node.content));
+      }
+      return { stdout: `${out.join('')}(END)\n` };
     },
   },
   {

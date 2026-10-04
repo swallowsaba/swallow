@@ -1,10 +1,10 @@
 import { globMatch } from '../glob';
 import { basename, HOME, resolve } from '../path';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
-import { formatMode } from '../perm';
+import { allows, formatMode } from '../perm';
 import { copy, list, metaOf, mkdir, move, readFile, remove, setMeta, stat, touch, VfsError } from '../vfs';
 import { fromLines, parseArgs } from './args';
-import { denied, deniedInParent, newFileMode } from './perm';
+import { currentGroups, currentUser, denied, deniedInParent, newFileMode } from './perm';
 
 interface TransferPlan {
   sources: string[];
@@ -241,6 +241,9 @@ export const fsCommands: CommandSpec[] = [
       }
 
       const matches: string[] = [];
+      const errors: string[] = [];
+      const user = currentUser(shell);
+      const groups = currentGroups(shell);
       const walk = (abs: string, display: string): void => {
         const node = stat(shell.vfs, abs);
         if (!node) return;
@@ -251,12 +254,21 @@ export const fsCommands: CommandSpec[] = [
         const nameOk = namePattern === undefined || globMatch(namePattern, basename(abs));
         if (typeOk && nameOk) matches.push(display);
         if (node.kind !== 'dir') return;
+        // 読めないディレクトリの中は探せない（本物と同じく、そう言って先へ進む）
+        if (!allows(metaOf(shell.vfs, abs), user, 'read', groups)) {
+          errors.push(`find: '${display}': Permission denied`);
+          return;
+        }
         for (const child of list(shell.vfs, abs)) {
           walk(`${abs === '/' ? '' : abs}/${child}`, `${display === '/' ? '' : display}/${child}`);
         }
       };
       walk(root, start);
-      return { stdout: fromLines(matches) };
+      return {
+        ...(matches.length > 0 ? { stdout: fromLines(matches) } : {}),
+        ...(errors.length > 0 ? { stderr: fromLines(errors) } : {}),
+        code: errors.length > 0 ? 1 : 0,
+      };
     },
   },
 ];

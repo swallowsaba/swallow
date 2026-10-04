@@ -7,6 +7,7 @@ import type { ShellState, WebWorld } from './kernel/registry';
 import { createServiceTable } from './kernel/services';
 import { createShellState, type SessionOptions } from './kernel/session';
 import { execute } from './kernel/shell';
+import { exists, remove } from './kernel/vfs';
 import { DEMO_ROOT } from './tls/tls';
 
 /**
@@ -138,7 +139,8 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
   const options: SessionOptions = {
     files,
     cwd: s.cwd ?? home,
-    vars: { USER: user, HOME: home, HOSTNAME: s.hostname ?? 'arena' },
+    // 打った行を ~/.bash_history に残す（「打ったことが記録される」を状態で確かめるため。src/engines/kernel/shell.ts）
+    vars: { USER: user, HOME: home, HOSTNAME: s.hostname ?? 'arena', HISTFILE: `${home}/.bash_history` },
   };
   if (s.services) {
     options.services = createServiceTable(Object.entries(s.services).map(([name, v]) => ({
@@ -180,6 +182,8 @@ export function initialShell(environment: string, setup: unknown): ShellState {
     if (out.exitCode !== 0) throw new Error(`setup の run「${line}」が失敗した: ${err}`);
     shell = out.state;
   }
-  // 打った跡（履歴）は残さず、始める場所に戻す
-  return { ...shell, history: [], cwd, lastExit: 0, vars: new Map([...shell.vars, ['PWD', cwd]]) };
+  // 打った跡（履歴と ~/.bash_history）は残さず、始める場所に戻す
+  const histfile = shell.vars.get('HISTFILE');
+  const vfs = histfile !== undefined && exists(shell.vfs, histfile) ? remove(shell.vfs, histfile) : shell.vfs;
+  return { ...shell, vfs, history: [], cwd, lastExit: 0, vars: new Map([...shell.vars, ['PWD', cwd]]) };
 }

@@ -84,12 +84,12 @@ const NEEDED: Record<AccessKind, number> = { read: 4, write: 2, exec: 1 };
 
 /**
  * その利用者がその権限を持つか。
- * root は常に通る（実物の挙動に合わせる）。
+ * root は常に通る（実物の挙動に合わせる）。groups はその利用者が今入っているグループ（無ければ利用者と同じ名前のグループだけ）
  */
-export function allows(meta: FileMeta, user: string, kind: AccessKind): boolean {
+export function allows(meta: FileMeta, user: string, kind: AccessKind, groups: readonly string[] = [user]): boolean {
   if (user === 'root') return true;
   const need = NEEDED[kind];
-  const shift = meta.owner === user ? 6 : meta.group === user ? 3 : 0;
+  const shift = meta.owner === user ? 6 : groups.includes(meta.group) ? 3 : 0;
   return ((meta.mode >> shift) & need) === need;
 }
 

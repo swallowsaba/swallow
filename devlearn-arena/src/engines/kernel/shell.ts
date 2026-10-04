@@ -23,6 +23,8 @@ export interface ExecOutcome {
 }
 
 export const EXIT_NOT_FOUND = 127;
+/** 書いた物を捨て、読むと空のファイル */
+export const DEV_NULL = '/dev/null';
 /** スクリプトの中で入れ子に呼び出せる深さ。無限再帰を止めるため */
 const MAX_SCRIPT_DEPTH = 8;
 export const EXIT_ERROR = 1;
@@ -131,7 +133,7 @@ function runCommand(
   if (inputRedirect) {
     const path = at(state.cwd, expandWord(inputRedirect.target, expandCtx));
     try {
-      stdin = readFile(state.vfs, path);
+      stdin = path === DEV_NULL ? '' : readFile(state.vfs, path);
     } catch (error) {
       if (error instanceof VfsError) {
         return { state, result: { stderr: `${vfsMessage(name, error)}\n`, code: EXIT_ERROR } };
@@ -202,6 +204,11 @@ function applyRedirects(
     const takesOut = redirect.kind !== '2>' && redirect.kind !== '2>>';
     const takesErr = redirect.kind.startsWith('2') || redirect.kind.startsWith('&');
     const path = at(nextState.cwd, expandWord(redirect.target, expandCtx));
+    if (path === DEV_NULL) {
+      // 書いた物は捨てる
+      result = { ...result, ...(takesOut ? { stdout: '' } : {}), ...(takesErr ? { stderr: '' } : {}) };
+      continue;
+    }
     const text = `${takesOut ? (result.stdout ?? '') : ''}${takesErr ? (result.stderr ?? '') : ''}`;
     try {
       const vfs = append
@@ -337,5 +344,20 @@ export function execute(
   }
 
   const outcome = runList(withHistory, list, registry, clock);
-  return { ...outcome, state: { ...outcome.state, lastExit: outcome.exitCode } };
+  return { ...outcome, state: appendHistoryFile({ ...outcome.state, lastExit: outcome.exitCode }, input) };
+}
+
+/**
+ * HISTFILE（~/.bash_history）があれば、打った行を足す。
+ * 実戦の「打ったことが記録される」を、端末の状態（ファイル）で確かめるため。本物は終わる時にまとめて書くが、ここでは打つたびに書く
+ */
+function appendHistoryFile(state: ShellState, input: string): ShellState {
+  const file = state.vars.get('HISTFILE');
+  if (file === undefined || file === '') return state;
+  try {
+    return { ...state, vfs: appendFile(state.vfs, at(state.cwd, file), `${input.trim()}\n`) };
+  } catch (error) {
+    if (error instanceof VfsError) return state;
+    throw error;
+  }
 }

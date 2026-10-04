@@ -65,7 +65,8 @@ const DEFAULT_FILES: Readonly<Record<string, string | null>> = {
 export function createShellState(options: SessionOptions = {}): ShellState {
   if (options.restore) return options.restore;
   const cwd = options.cwd ?? HOME;
-  const vfs: VfsState = createVfs(options.files ?? DEFAULT_FILES);
+  // /dev/null はどの機械にもある（書いた物は捨て、読むと空。src/engines/kernel/shell.ts）
+  const vfs: VfsState = createVfs({ ...(options.files ?? DEFAULT_FILES), '/dev/null': '' });
   const vars = new Map<string, string>(
     Object.entries({
       HOME,

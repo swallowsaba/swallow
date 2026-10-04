@@ -3,7 +3,7 @@ import { createClock } from './kernel/clock';
 import { createDefaultRegistry } from './kernel/commands';
 import { createShellState } from './kernel/session';
 import { execute } from './kernel/shell';
-import { readFile } from './kernel/vfs';
+import { exists, readFile } from './kernel/vfs';
 import { initialShell, resolveSetup, shellOptions } from './environments';
 
 const run = (env: string, setup: unknown, lines: string[]): string => {
@@ -53,6 +53,15 @@ describe('setup の run（始める前に打っておくコマンド）', () => 
     expect(shell.cwd).toBe('/home/learner');
     expect(shell.history).toEqual([]);
     expect(readFile(shell.vfs, '/home/learner/site/index.html')).toBe('hi\n');
+  });
+
+  it('打った行は ~/.bash_history に残る（run の行は残らない）', () => {
+    let shell = initialShell('linux-basic', { run: ['mkdir -p /home/learner/site'] });
+    expect(exists(shell.vfs, '/home/learner/.bash_history')).toBe(false);
+    shell = execute(shell, 'ls -l ~', createDefaultRegistry(), createClock()).state;
+    expect(readFile(shell.vfs, '/home/learner/.bash_history')).toBe('ls -l ~\n');
+    const root = execute(initialShell('linux-server', {}), 'pwd', createDefaultRegistry(), createClock()).state;
+    expect(readFile(root.vfs, '/root/.bash_history')).toBe('pwd\n');
   });
 
   it('run のコマンドが失敗すれば、内容の誤りとして投げる', () => {

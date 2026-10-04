@@ -26,10 +26,11 @@ export function findScript(state: ShellState, name: string): ScriptLookup | null
     const node = stat(state.vfs, path);
     if (node?.kind !== 'file') continue;
     const user = state.vars.get('USER') ?? 'learner';
+    const groups = (state.vars.get('GROUPS') ?? '').split(' ').filter((g) => g !== '');
     return {
       path,
       content: node.content,
-      denied: !allows(metaOf(state.vfs, path), user, 'exec'),
+      denied: !allows(metaOf(state.vfs, path), user, 'exec', groups.length > 0 ? groups : [user]),
     };
   }
   return null;

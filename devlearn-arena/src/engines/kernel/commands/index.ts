@@ -10,6 +10,7 @@ import { netCommands } from './net';
 import { netLabCommands } from './netBuild';
 import { netToolCommands } from './netTools';
 import { permCommands } from './perm';
+import { shellRunCommands } from './shellRun';
 import { procCommands } from './proc';
 import { systemctlCommands } from './systemctl';
 import { miscCommands } from './misc';
@@ -35,6 +36,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...textCommands,
     ...textToolCommands,
     ...permCommands,
+    ...shellRunCommands,
     ...procCommands,
     ...systemctlCommands,
     ...dockerCommands,
@@ -44,5 +46,5 @@ export function createDefaultRegistry(): CommandRegistry {
 
 export {
   editorCommands, fsCommands, ghCommands, gitCommands, kubeadmCommands, kubectlCommands, netCommands,
-  netLabCommands, netToolCommands, permCommands, procCommands, systemctlCommands, textCommands, textToolCommands, miscCommands,
+  netLabCommands, netToolCommands, permCommands, procCommands, shellRunCommands, systemctlCommands, textCommands, textToolCommands, miscCommands,
 };

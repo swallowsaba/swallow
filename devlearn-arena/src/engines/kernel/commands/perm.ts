@@ -11,6 +11,15 @@ export function currentUser(shell: ShellState): string {
   return shell.vars.get('USER') ?? 'learner';
 }
 
+/**
+ * 今のシェルが入っているグループ。GROUPS（空白区切り）が無ければ、利用者と同じ名前のグループだけ。
+ * /etc/group を書き換えても、入り直す（newgrp）まで今のシェルには効かない（本物と同じ）
+ */
+export function currentGroups(shell: ShellState): string[] {
+  const listed = (shell.vars.get('GROUPS') ?? '').split(/\s+/).filter((g) => g !== '');
+  return listed.length > 0 ? listed : [currentUser(shell)];
+}
+
 export function currentUmask(shell: ShellState): number {
   return parseUmask(shell.vars.get('UMASK') ?? '022') ?? 0o022;
 }
@@ -28,7 +37,7 @@ export function denied(
 ): CommandResult | null {
   const full = resolve(shell.cwd, path);
   if (stat(shell.vfs, full) === undefined) return null;
-  if (allows(metaOf(shell.vfs, full), currentUser(shell), kind)) return null;
+  if (allows(metaOf(shell.vfs, full), currentUser(shell), kind, currentGroups(shell))) return null;
   return { stderr: `${command}: ${shown}: Permission denied\n`, code: 1 };
 }
 
@@ -40,7 +49,7 @@ export function deniedInParent(
   shown = path,
 ): CommandResult | null {
   const parent = dirname(resolve(shell.cwd, path));
-  if (allows(metaOf(shell.vfs, parent), currentUser(shell), 'write')) return null;
+  if (allows(metaOf(shell.vfs, parent), currentUser(shell), 'write', currentGroups(shell))) return null;
   return { stderr: `${command}: ${shown}: Permission denied\n`, code: 1 };
 }
 
