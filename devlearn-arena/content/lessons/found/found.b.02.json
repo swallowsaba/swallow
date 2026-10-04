@@ -1,0 +1,142 @@
+{
+  "id": "found.b.02",
+  "domain": "found",
+  "level": "beginner",
+  "theme": "仕組み",
+  "title": "CPU・メモリ・ストレージ",
+  "goal": "速さと容量の違いと役割分担を説明できる",
+  "minutes": 15,
+  "prerequisites": ["found.b.01"],
+  "related": ["found.i.01", "linux.a.02"],
+  "next": ["found.b.03", "found.i.01"],
+  "terms": ["cpu", "memory", "storage", "server", "app", "gb"],
+  "explain": {
+    "what": "{{term:cpu}}は計算する作業者。{{term:memory}}は作業中の物を広げる机。{{term:storage}}は長くしまっておく倉庫。コンピュータは、この 3 つで仕事を分け合っている。",
+    "why": "速い物は高くて小さく、広い物は安いが遅い。全てを速い机にはできないので、今使う物は机、しまう物は倉庫、と役割を分けている。机（メモリ）の中身は、電源を切ると消える。",
+    "use": "{{term:server}}の性能を選ぶ時、計算が多ければ CPU、同時に広げる物が多ければメモリ、しまう物が多ければストレージを大きくする。遅さの原因を考える時も、どこが詰まったかを 3 つで見る。",
+    "when": "{{term:app}}が重い時。CPU が忙しくて計算が追いつかないのか、メモリが足りず倉庫との出し入れが増えているのか。原因によって、打つ手が変わる。",
+    "figures": ["found-b02-desk"]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "found-b02-desk",
+      "prompt": "図で、作業机に当たる物を押す。",
+      "answer": ["memory"],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "メモリとストレージ、データの出し入れが速いのはどっち？",
+      "choices": [
+        { "id": "a", "text": "メモリ", "correct": true },
+        { "id": "b", "text": "ストレージ", "correct": false, "whyNot": "ストレージは広いが、出し入れはメモリよりずっと遅い。だから作業中の物はメモリに置く。" },
+        { "id": "c", "text": "どちらも同じ", "correct": false, "whyNot": "速さが同じなら、役割を分ける必要が無い。速さと広さが違うから、2 つを使い分ける。" }
+      ],
+      "see": "why"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "電源を切ると、メモリの中身は消える。",
+      "answer": true,
+      "why": "メモリは作業机。電源を切ると片付けられてしまう。残したい物は、ストレージに保存する。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "電源を切っても、中身が残るのはどれ？",
+      "choices": [
+        { "id": "a", "text": "ストレージ", "correct": true },
+        { "id": "b", "text": "メモリ", "correct": false, "whyNot": "メモリは、電源を切ると中身が消える。作業中の物を置く机。" },
+        { "id": "c", "text": "CPU", "correct": false, "whyNot": "CPU は計算する所。物をしまっておく場所ではない。" }
+      ],
+      "explanation": "ストレージは倉庫。電源を切っても中身が残るので、文書や写真はストレージに保存する。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "開くアプリを 1 つずつ増やしていったら、ある所から急に遅くなった。原因として考えやすいのは？",
+      "choices": [
+        { "id": "a", "text": "メモリが足りず、倉庫（ストレージ）との出し入れが増えた", "correct": true },
+        { "id": "b", "text": "ストレージが満杯になった", "correct": false, "whyNot": "ストレージが満杯なら保存ができなくなる。開く数を増やした所で急に遅くなるのは、机（メモリ）が足りない時の特徴。" },
+        { "id": "c", "text": "CPU が壊れた", "correct": false, "whyNot": "壊れたなら、開く数に関係なく動かない。数を増やした所で遅くなるのは、机が足りなくなった合図。" }
+      ],
+      "explanation": "机に広げきれない分は、倉庫に出し入れしながら作業することになる。倉庫は遅いので、急に全体が遅くなる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "計算の量がとても多い処理を、速く終わらせたい。まず強くするのは？",
+      "choices": [
+        { "id": "a", "text": "CPU", "correct": true },
+        { "id": "b", "text": "ストレージ", "correct": false, "whyNot": "ストレージを広くしても、計算の速さは変わらない。" },
+        { "id": "c", "text": "画面", "correct": false, "whyNot": "画面は出力の装置。計算の速さには関わらない。" }
+      ],
+      "explanation": "計算するのは CPU。計算が多い処理は、CPU が速いほど早く終わる。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "限られた作業机（メモリ）と倉庫（ストレージ）で、3 つの仕事を制限時間の 3 分以内に終える。",
+    "environment": "sim-assign",
+    "setup": {
+      "slots": [
+        { "id": "desk", "label": "作業机（メモリ）", "capacity": 4, "unit": "GB", "note": "速いが狭い。置いた資料は 1 分で扱える" },
+        { "id": "store", "label": "倉庫（ストレージ）", "capacity": 100, "unit": "GB", "note": "広いが遠い。作業中の資料を置くと、取りに行くたびに時間がかかる" }
+      ],
+      "items": [
+        { "id": "old", "label": "昨日の会議の資料（使い終わった）", "size": 2, "time": { "desk": 0, "store": 0 }, "note": "今日は使わない" },
+        { "id": "sheet", "label": "表計算の資料（今日の仕事）", "size": 2, "time": { "desk": 1, "store": 8 }, "note": "机なら 1 分・倉庫なら 8 分" },
+        { "id": "photo", "label": "写真の加工（今日の仕事）", "size": 2, "time": { "desk": 1, "store": 8 }, "note": "机なら 1 分・倉庫なら 8 分" },
+        { "id": "movie", "label": "去年の動画（保管するだけ）", "size": 6, "time": { "desk": 1, "store": 1 }, "note": "大きい。しまえば終わる" }
+      ],
+      "initial": { "old": "desk" },
+      "panels": [
+        { "kind": "kv", "title": "今日の仕事", "rows": [["仕事 1", "表計算の資料を仕上げる"], ["仕事 2", "写真を加工する"], ["仕事 3", "去年の動画を保管する"], ["制限時間", "合計 3 分以内"]] }
+      ]
+    },
+    "steps": [
+      {
+        "id": "tidy",
+        "purpose": "まず、机の上を片付ける。使い終わった昨日の資料を、倉庫へしまう。",
+        "check": { "kind": "sim", "expr": "in old=store" },
+        "afterward": "机が空いた。使い終わった物をしまうと、今日の仕事に机を使える。",
+        "hints": [
+          "机の上に、今日は使わない物が残っている。机は狭いので、使わない物はしまおう。",
+          "昨日の会議の資料を机から出し、倉庫へ入れる。机の中の札を押すと、置き場に戻る。",
+          "`take old` `put old store` の順に入れる。"
+        ],
+        "expectedErrors": ["sim-taken", "sim-overflow"]
+      },
+      {
+        "id": "work",
+        "purpose": "3 つの仕事の資料を、机か倉庫に置く。今日使う物は机、保管するだけの物は倉庫。かかる時間の合計を 3 分以内にする。",
+        "check": { "kind": "sim", "expr": "in sheet=desk photo=desk movie=store && time<=3" },
+        "afterward": "作業中の 2 つは机で素早く扱い、大きな動画は倉庫にしまえた。3 分で全ての仕事が終わった。",
+        "hints": [
+          "机は速いが 4 {{term:gb}} しか置けない。今日の作業で何度も使う物を、机に置こう。",
+          "表計算と写真は机（1 分ずつ）、大きな動画は倉庫（1 分）に置く。作業中の物を倉庫に置くと 8 分かかる。",
+          "`put sheet desk` `put photo desk` `put movie store` の順に入れる。"
+        ],
+        "expectedErrors": ["sim-overflow", "found-too-slow"]
+      }
+    ]
+  },
+  "result": {
+    "success": "今使う物は机、しまう物は倉庫と、役割の違いで置き分けられた。",
+    "partial": "ヒントを使って 3 分以内に終えた。次は、なぜ机に置くと速いのかを、自分の言葉で言ってみよう。",
+    "retry": "まだ時間内に終わっていない。どの資料を倉庫まで取りに行って待っているか、かかる時間の合計を見直そう。"
+  },
+  "summary": {
+    "points": [
+      "CPU は計算、メモリは作業中の物、ストレージは保存",
+      "メモリは速いが小さく、電源を切ると中身が消える",
+      "遅い時は、どこが詰まったかで見る"
+    ],
+    "next": ["found.b.03"],
+    "terms": ["cpu", "memory", "storage"]
+  }
+}

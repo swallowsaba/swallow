@@ -1,0 +1,125 @@
+{
+  "id": "found.b.05",
+  "domain": "found",
+  "level": "beginner",
+  "theme": "プロセス",
+  "title": "プロセスとは",
+  "goal": "プログラムとプロセスの違い、PID を説明できる",
+  "minutes": 15,
+  "prerequisites": ["found.b.03"],
+  "related": ["linux.b.08", "ctr.i.02"],
+  "next": ["found.i.01", "found.i.02", "linux.b.08"],
+  "terms": ["program", "process", "pid", "app", "cpu", "memory", "file", "terminal", "command", "ps"],
+  "explain": {
+    "what": "{{term:program}}を動かすと、動いている 1 つ 1 つが{{term:process}}になる。プロセスには、{{term:pid}}という番号が 1 つずつ付く。",
+    "why": "同じプログラムでも、いくつも同時に動かせる。どれか 1 つだけを見たり止めたりするには、番号で区別する必要がある。",
+    "use": "重い{{term:app}}を見つけて止める時に使う。プロセスの一覧から、{{term:cpu}}や{{term:memory}}をたくさん使っている物を探し、その PID で指す。",
+    "when": "ブラウザの窓が 1 つだけ固まった時。ほかの窓は動いているので、固まったプロセスだけを PID で指して止めたい。",
+    "figures": ["found-b05-process"]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "プログラムを動かす",
+      "b": "プロセスが生まれる",
+      "answer": "cause",
+      "why": "プログラムは設計図（{{term:file}}）。動かした時に、実際に動く物（プロセス）が生まれる。",
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "同じプログラムから生まれたプロセスは、同じ PID を持つ。",
+      "answer": false,
+      "why": "PID はプロセスごとに違う。同じプログラムでも、動かすたびに別の番号が付く。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "PID とは何？",
+      "choices": [
+        { "id": "a", "text": "プロセスに 1 つずつ付く番号", "correct": true },
+        { "id": "b", "text": "プログラムの名前", "correct": false, "whyNot": "名前は同じでも、PID はプロセスごとに違う。" },
+        { "id": "c", "text": "CPU の速さを表す数", "correct": false, "whyNot": "CPU の速さとは関係ない。PID は、動いているプロセスを見分ける番号。" }
+      ],
+      "explanation": "PID はプロセスの番号。同じ名前のプロセスがいくつあっても、PID で 1 つに決まる。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "ブラウザを 2 つ起動した。ブラウザのプロセスはいくつになる？",
+      "choices": [
+        { "id": "a", "text": "少なくとも 2 つ", "correct": true },
+        { "id": "b", "text": "1 つのまま", "correct": false, "whyNot": "動かすたびに、新しいプロセスが生まれる。" },
+        { "id": "c", "text": "0（ブラウザはプロセスにならない）", "correct": false, "whyNot": "動いているプログラムは、全てプロセスになる。" }
+      ],
+      "explanation": "1 回動かすごとに 1 つ以上のプロセスが生まれる。中で仕事を分けて、もっと多くのプロセスを使うアプリもある。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "同じ名前のアプリが 3 つ動いていて、そのうち 1 つだけが固まった。それだけを止めるのに要る情報は？",
+      "choices": [
+        { "id": "a", "text": "固まったプロセスの PID", "correct": true },
+        { "id": "b", "text": "アプリの名前", "correct": false, "whyNot": "名前は 3 つとも同じ。名前で止めると、動いている 2 つまで止まってしまう。" },
+        { "id": "c", "text": "アプリのファイルの置き場所", "correct": false, "whyNot": "置き場所も 3 つとも同じ。動いている 1 つを指すのは PID。" }
+      ],
+      "explanation": "1 つだけを指すには PID を使う。名前や置き場所は、同じプログラムから生まれたプロセスで共通になる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "{{term:terminal}}で動いているプロセスの一覧を見て、重いプロセスの PID を答える。",
+    "environment": "linux-basic",
+    "setup": {
+      "processes": [
+        { "command": "editor notes.txt", "cpu": 1.2, "memory": 120 },
+        { "command": "browser", "cpu": 4.0, "memory": 2400 },
+        { "command": "video-encode movie.mp4", "cpu": 96.5, "memory": 300 },
+        { "command": "browser", "cpu": 2.1, "memory": 1800 }
+      ]
+    },
+    "steps": [
+      {
+        "id": "heavy",
+        "purpose": "動いているプロセスの一覧を見て、CPU を最も使っているプロセスの PID を、答えの欄に入れる。",
+        "check": { "kind": "answer", "equals": "102" },
+        "afterward": "PID 102 の video-encode が、CPU のほとんどを使っていた。止めたり調べたりする時は、この番号で指す。",
+        "hints": [
+          "動いているプロセスの一覧を見る{{term:command}}は {{term:ps}}。`ps aux` と打つと、全ての利用者のプロセスが出る。",
+          "見出しの `%CPU` の列を上から見て、最も大きい数の行を探す。その行の `PID` の列の数が答え。`%MEM` はメモリの列なので見ない。",
+          "`ps aux` を打つと、video-encode の行の CPU が 96.5 で最も大きい。答えの欄に `102` と入れる。"
+        ],
+        "expectedErrors": ["found-wrong-pid"]
+      },
+      {
+        "id": "count",
+        "purpose": "同じプログラムから、プロセスがいくつ生まれているかを数える。browser のプロセスの数を、答えの欄に入れる。",
+        "check": { "kind": "answer", "equals": "2" },
+        "afterward": "browser は 2 つのプロセスとして動いていて、PID は 101 と 103 で違った。同じプログラムでも、プロセスは別々に動く。",
+        "hints": [
+          "一覧の右端の `COMMAND` の列に、動かしたプログラムの名前が出る。",
+          "`COMMAND` が browser の行を数える。それぞれの PID は違うはず。",
+          "`ps aux` の一覧で browser の行は、PID 101 と 103 の 2 つ。答えの欄に `2` と入れる。"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "プロセスの一覧から、重いプロセスを PID で特定できた。同じプログラムから複数のプロセスが生まれることも確かめた。",
+    "partial": "ヒントを使って PID を特定できた。次は、どの列を見ればよいかを自分で決めてみよう。",
+    "retry": "まだ正しい答えになっていない。一覧の見出しを見て、CPU の列と PID の列を指でたどってみよう。"
+  },
+  "summary": {
+    "points": [
+      "プロセスは、動いているプログラム",
+      "PID で 1 つ 1 つを区別する",
+      "ps でプロセスの一覧を見る"
+    ],
+    "next": ["linux.b.08", "found.i.02"],
+    "terms": ["process", "pid", "ps"]
+  }
+}

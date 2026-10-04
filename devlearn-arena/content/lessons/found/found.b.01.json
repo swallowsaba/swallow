@@ -1,0 +1,149 @@
+{
+  "id": "found.b.01",
+  "domain": "found",
+  "level": "beginner",
+  "theme": "仕組み",
+  "title": "コンピュータは何をしているか",
+  "goal": "入力・処理・出力・記憶の 4 つで説明できる",
+  "minutes": 12,
+  "prerequisites": [],
+  "related": ["found.b.07", "net.b.01"],
+  "next": ["found.b.02", "found.b.07", "found.b.08"],
+  "terms": ["cpu", "storage", "server", "memory", "web"],
+  "explain": {
+    "what": "コンピュータは、受け取る（入力）・計算する（処理）・見せる（出力）・覚えておく（記憶）の 4 つを、休まず繰り返す機械。キーボードから入った文字を{{term:cpu}}が計算し、画面に出し、必要なら{{term:storage}}に残す。",
+    "why": "スマホも{{term:server}}も家電も、中身はこの 4 つの組み合わせ。どこで何が起きているかを 4 つで言えると、動かない時に「どこで流れが止まったか」を追える。",
+    "use": "初めて見る機械や仕組みでも、「何が入力で、どこで処理し、何を出力し、何を記憶するか」と分けると、仕組みがつかめる。この後に学ぶ{{term:memory}}の話も、4 つのどこかの話になる。",
+    "when": "「画面が固まった」と言われた時。処理が詰まって次の仕事に進めないのか、処理は終わったのに出力が画面まで届かないのか。4 つに分けると、確かめる順番が決まる。",
+    "figures": ["found-b01-flow"]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "found-b01-flow",
+      "prompt": "図で、{{term:cpu}}が受け持つ箱を押す。",
+      "answer": ["process"],
+      "see": "what"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "found-b01-flow",
+      "prompt": "図で、画面が受け持つ箱を押す。",
+      "answer": ["output"],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "4 つの働きと説明を結ぶ。",
+      "pairs": [
+        ["入力", "外から情報を受け取る（キーボード）"],
+        ["処理", "受け取った情報で計算する（CPU）"],
+        ["出力", "結果を見せる（画面）"],
+        ["記憶", "あとで使うために残す（ストレージ）"]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "{{term:web}} のページを表示する時、「出力」に当たるのはどれ？",
+      "choices": [
+        { "id": "a", "text": "画面にページを描く", "correct": true },
+        { "id": "b", "text": "見たいページのアドレスを打ち込む", "correct": false, "whyNot": "打ち込むのは、外から情報を受け取る「入力」。" },
+        { "id": "c", "text": "受け取った中身から、ページの形を組み立てる", "correct": false, "whyNot": "組み立てるのは計算なので「処理」。出力は、その結果を見せる所。" }
+      ],
+      "explanation": "出力は、処理の結果を人に見せる（届ける）所。ページの表示なら、画面に描くことが出力になる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "保存したはずの文書が、次の日に開くと消えていた。4 つのうち、まず疑うのはどこ？",
+      "choices": [
+        { "id": "a", "text": "記憶（ストレージ）", "correct": true },
+        { "id": "b", "text": "入力（キーボード）", "correct": false, "whyNot": "文字は打てて、画面にも出ていた。問題は、打った後に残す所にある。" },
+        { "id": "c", "text": "出力（画面）", "correct": false, "whyNot": "画面に出ていたのは、保存する前の作業中の状態かもしれない。次の日に残っていないのは、記憶の問題。" }
+      ],
+      "explanation": "次の日まで残すのは記憶の役目。保存の操作が終わっていたか、どこに保存したかを確かめる。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "処理の部分（CPU）が止まってしまった。キーボードで文字を打つと、どうなる？",
+      "choices": [
+        { "id": "a", "text": "打っても、画面は何も変わらない", "correct": true },
+        { "id": "b", "text": "文字は画面に出るが、保存だけができない", "correct": false, "whyNot": "画面に文字を出すにも、処理が要る。処理が止まれば、入力は出力まで届かない。" },
+        { "id": "c", "text": "文字がストレージに、そのまま保存される", "correct": false, "whyNot": "入力を記憶へ運ぶのも処理の仕事。処理を飛ばして残ることは無い。" }
+      ],
+      "explanation": "入力も出力も記憶も、処理を通ってつながる。処理が止まると、全ての流れが止まる。「固まった」はこの状態のことが多い。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "ばらばらの部品を線でつなぎ、計算機を動かす。計算の結果が画面に出て、記憶に残れば成功。",
+    "environment": "sim-connect",
+    "setup": {
+      "nodes": [
+        { "id": "kb", "label": "キーボード", "icon": "keyboard", "note": "入力", "x": 12, "y": 30 },
+        { "id": "cpu", "label": "CPU", "icon": "cpu", "note": "処理", "x": 50, "y": 30 },
+        { "id": "screen", "label": "画面", "icon": "screen", "note": "出力", "x": 88, "y": 30 },
+        { "id": "disk", "label": "ストレージ", "icon": "disk", "note": "記憶", "x": 50, "y": 80 }
+      ],
+      "forbid": [
+        { "a": "kb", "b": "screen", "message": "つなげない: キーボードの信号は、処理（CPU）で計算しないと画面の文字にならない" },
+        { "a": "kb", "b": "disk", "message": "つなげない: 打った文字を記憶へ運ぶのも処理（CPU）の仕事。キーボードとストレージは直接つながない" },
+        { "a": "screen", "b": "disk", "message": "つなげない: 画面は見せるだけの部品。記憶とのやり取りは処理（CPU）がする" }
+      ],
+      "sends": [
+        { "from": "kb", "to": "screen", "label": "「2+3」を打つ" },
+        { "from": "cpu", "to": "disk", "label": "結果を記憶に残す" }
+      ],
+      "panels": [
+        { "kind": "kv", "title": "計算機の部品", "rows": [["入力", "キーボード"], ["処理", "CPU"], ["出力", "画面"], ["記憶", "ストレージ"]] },
+        { "kind": "text", "title": "画面", "body": "2+3 = 5", "when": "sent kb screen" },
+        { "kind": "text", "title": "ストレージの記録", "body": "計算の記録: 2+3 = 5（電源を切っても残る）", "when": "sent cpu disk" }
+      ]
+    },
+    "steps": [
+      {
+        "id": "flow",
+        "purpose": "入力 → 処理 → 出力 の順に部品をつなぎ、「2+3」を打って、画面に答えが出るのを確かめる。",
+        "check": { "kind": "sim", "expr": "path kb>cpu>screen && sent kb screen" },
+        "afterward": "キーボードの信号が CPU で計算され、画面に 5 が出た。入力 → 処理 → 出力 の流れがつながった。",
+        "hints": [
+          "情報は、入力から出力へ流れる。キーボードの次に通るのは、どの部品だろう。",
+          "キーボードは CPU へ、CPU は画面へつなぐ。つないだら「「2+3」を打つ」を押す。",
+          "`connect kb cpu` `connect cpu screen` `send kb screen` の順に入れる。"
+        ],
+        "expectedErrors": ["found-no-output", "sim-forbidden"]
+      },
+      {
+        "id": "save",
+        "purpose": "計算の結果を、電源を切っても残るように記憶へ残す。処理と記憶をつなぎ、「結果を記憶に残す」を押す。",
+        "check": { "kind": "sim", "expr": "link cpu disk && sent cpu disk" },
+        "afterward": "結果がストレージに残った。次に計算機を動かした時も、この記録を読み出せる。",
+        "hints": [
+          "結果を残すのは記憶の役目。記憶とやり取りするのは、どの部品だろう。",
+          "CPU とストレージをつなぐ。つないだら「結果を記憶に残す」を押す。",
+          "`connect cpu disk` `send cpu disk` の順に入れる。"
+        ],
+        "expectedErrors": ["found-no-output", "sim-forbidden"]
+      }
+    ]
+  },
+  "result": {
+    "success": "部品を入力 → 処理 → 出力の順につなぎ、記憶に結果を残せた。情報の流れで、機械の動きを説明できる。",
+    "partial": "ヒントを使って計算機を動かせた。次は図を見ずに、4 つの箱の流れを言ってみよう。",
+    "retry": "まだ画面に答えが出ていない。図の 4 つの箱で、どの箱の間で流れが途切れているかを探そう。"
+  },
+  "summary": {
+    "points": [
+      "コンピュータは、入力・処理・出力・記憶の 4 つを繰り返す",
+      "動かない時は、どこで流れが止まったかで考える",
+      "次は、処理と記憶の中身（CPU・メモリ・ストレージ）"
+    ],
+    "next": ["found.b.02"],
+    "terms": ["cpu", "memory", "storage"]
+  }
+}

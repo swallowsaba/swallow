@@ -187,7 +187,12 @@
         "storage"
       ],
       "analogy": "工場の作業者。ただし 1 秒に何十億回も手を動かす。",
-      "lessons": []
+      "lessons": [
+        "found.b.01",
+        "found.b.02",
+        "found.b.03",
+        "found.b.05"
+      ]
     },
     {
       "id": "memory",
@@ -199,7 +204,12 @@
         "storage"
       ],
       "analogy": "作業机。広げられる量に限りがあり、帰る時には片付けられる。",
-      "lessons": []
+      "lessons": [
+        "found.b.01",
+        "found.b.02",
+        "found.b.03",
+        "found.b.05"
+      ]
     },
     {
       "id": "storage",
@@ -211,7 +221,11 @@
         "file"
       ],
       "analogy": "倉庫。たくさん置けるが、取りに行くのに時間がかかる。",
-      "lessons": []
+      "lessons": [
+        "found.b.01",
+        "found.b.02",
+        "found.b.03"
+      ]
     },
     {
       "id": "os",
@@ -226,7 +240,9 @@
         "linux"
       ],
       "analogy": "建物の管理人。部屋（資源）の割り当てと、誰が入ってよいかを決める。",
-      "lessons": []
+      "lessons": [
+        "found.b.03"
+      ]
     },
     {
       "id": "app",
@@ -237,7 +253,12 @@
         "os",
         "program"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.02",
+        "found.b.03",
+        "found.b.05",
+        "found.b.07"
+      ]
     },
     {
       "id": "program",
@@ -249,7 +270,11 @@
         "app"
       ],
       "analogy": "料理のレシピ。レシピは 1 枚でも、同時に何皿も作れる。",
-      "lessons": []
+      "lessons": [
+        "found.b.03",
+        "found.b.05",
+        "linux.i.01"
+      ]
     },
     {
       "id": "pid",
@@ -260,7 +285,9 @@
       "related": [
         "process"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.05"
+      ]
     },
     {
       "id": "permission",
@@ -273,7 +300,9 @@
         "group",
         "file"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.06"
+      ]
     },
     {
       "id": "owner",
@@ -285,7 +314,9 @@
         "permission",
         "group"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.06"
+      ]
     },
     {
       "id": "group",
@@ -296,7 +327,9 @@
         "permission",
         "owner"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.06"
+      ]
     },
     {
       "id": "network",
@@ -308,7 +341,9 @@
         "lan",
         "router"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.07"
+      ]
     },
     {
       "id": "internet",
@@ -320,7 +355,9 @@
         "isp",
         "lan"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.07"
+      ]
     },
     {
       "id": "lan",
@@ -332,7 +369,9 @@
         "network",
         "router"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.07"
+      ]
     },
     {
       "id": "router",
@@ -344,7 +383,9 @@
         "network",
         "isp"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.07"
+      ]
     },
     {
       "id": "isp",
@@ -355,7 +396,9 @@
         "internet",
         "router"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.07"
+      ]
     },
     {
       "id": "binary",
@@ -367,7 +410,9 @@
         "bit",
         "byte"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.08"
+      ]
     },
     {
       "id": "bit",
@@ -378,7 +423,9 @@
         "byte",
         "binary"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.08"
+      ]
     },
     {
       "id": "byte",
@@ -389,7 +436,9 @@
         "bit",
         "kb"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.08"
+      ]
     },
     {
       "id": "kb",
@@ -401,7 +450,9 @@
         "byte",
         "mb"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.08"
+      ]
     },
     {
       "id": "mb",
@@ -413,7 +464,9 @@
         "kb",
         "gb"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.08"
+      ]
     },
     {
       "id": "gb",
@@ -426,7 +479,11 @@
         "memory",
         "storage"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.02",
+        "found.b.03",
+        "found.b.08"
+      ]
     },
     {
       "id": "character-encoding",
@@ -441,7 +498,9 @@
         "byte"
       ],
       "analogy": "暗号表。送る側と受ける側が同じ表を使わないと、正しく読めない。",
-      "lessons": []
+      "lessons": [
+        "found.b.08"
+      ]
     },
     {
       "id": "utf-8",
@@ -453,7 +512,9 @@
         "character-encoding",
         "shift-jis"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.08"
+      ]
     },
     {
       "id": "shift-jis",
@@ -465,7 +526,9 @@
         "character-encoding",
         "utf-8"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.08"
+      ]
     },
     {
       "id": "mojibake",
@@ -476,7 +539,9 @@
       "related": [
         "character-encoding"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.08"
+      ]
     },
     {
       "id": "windows",
@@ -489,7 +554,9 @@
         "macos",
         "linux"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.03"
+      ]
     },
     {
       "id": "macos",
@@ -502,7 +569,9 @@
         "windows",
         "linux"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.03"
+      ]
     }
   ]
 }

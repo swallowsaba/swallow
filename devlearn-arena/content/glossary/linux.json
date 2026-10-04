@@ -149,7 +149,9 @@
       "related": [
         "os"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.03"
+      ]
     },
     {
       "id": "ps",
@@ -160,7 +162,9 @@
         "process",
         "pid"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.05"
+      ]
     },
     {
       "id": "ls-l",
@@ -172,7 +176,9 @@
         "permission",
         "owner"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.06"
+      ]
     }
   ]
 }

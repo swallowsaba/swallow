@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>1 つのプログラム（設計図）を 3 回動かすと、PID の違う 3 つのプロセスが生まれる</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="program">
+    <rect x="40" y="130" width="170" height="100" rx="12" fill="#9aa9b5" />
+    <text x="125" y="176" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">プログラム</text>
+    <text x="125" y="198" text-anchor="middle" font-size="13" fill="#0a1424">設計図（ファイル）</text>
+  </g>
+  <g class="el" data-part="p1">
+    <rect x="400" y="30" width="200" height="76" rx="12" fill="#3ae08a" />
+    <text x="500" y="64" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">プロセス</text>
+    <text x="500" y="86" text-anchor="middle" font-size="13" fill="#0a1424">PID 101</text>
+  </g>
+  <g class="el" data-part="p2">
+    <rect x="400" y="142" width="200" height="76" rx="12" fill="#3ae08a" />
+    <text x="500" y="176" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">プロセス</text>
+    <text x="500" y="198" text-anchor="middle" font-size="13" fill="#0a1424">PID 102</text>
+  </g>
+  <g class="el" data-part="p3">
+    <rect x="400" y="254" width="200" height="76" rx="12" fill="#3ae08a" />
+    <text x="500" y="288" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">プロセス</text>
+    <text x="500" y="310" text-anchor="middle" font-size="13" fill="#0a1424">PID 103</text>
+  </g>
+  <g class="el" data-part="run">
+    <path d="M210 160 Q300 70 394 68" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M210 180 H394" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <path d="M210 200 Q300 290 394 292" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <text x="300" y="172" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">動かす</text>
+    <text x="320" y="352" text-anchor="middle" font-size="13" fill="#eef2f6">同じプログラムでも、プロセスごとに番号が違う</text>
+  </g>
+</svg>

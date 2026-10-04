@@ -1,0 +1,138 @@
+{
+  "id": "found.b.03",
+  "domain": "found",
+  "level": "beginner",
+  "theme": "OS",
+  "title": "OS の役割",
+  "goal": "資源の割り振り・ファイル・利用者の管理を説明できる",
+  "minutes": 15,
+  "prerequisites": ["found.b.02"],
+  "related": ["linux.b.00", "cloud.b.01"],
+  "next": ["found.b.04", "found.b.05", "found.i.03"],
+  "terms": ["os", "cpu", "memory", "storage", "app", "file", "program", "windows", "macos", "linux", "server", "gb"],
+  "explain": {
+    "what": "{{term:os}}は、{{term:cpu}}・{{term:memory}}・{{term:storage}}を{{term:app}}に配り、利用者と{{term:file}}を管理する基本の{{term:program}}。アプリは機械を直接触らず、OS に頼んで使う。",
+    "why": "アプリが勝手に機械を使うと、同じメモリを 2 つのアプリが書き換え合うなど、取り合いが起きる。OS が配り役になり、順番と持ち分を決める。",
+    "use": "全てのアプリの土台になる。{{term:windows}}・{{term:macos}}・{{term:linux}}は、どれも OS。{{term:server}}の多くは Linux で動いている。",
+    "when": "2 つのアプリが、同じファイルに同時に書き込もうとした時。OS が片方を待たせるので、中身が混ざって壊れずに済む。",
+    "figures": ["found-b03-os"]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "found-b03-os",
+      "prompt": "図で、「資源の割り振り」「ファイルの管理」「利用者の管理」をする層を押す。",
+      "answer": ["os"],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "OS が無く、アプリが勝手にメモリを使ったら、何が起きる？",
+      "choices": [
+        { "id": "a", "text": "2 つのアプリが同じメモリに書き込み、互いの中身を壊す", "correct": true },
+        { "id": "b", "text": "アプリが速くなるだけで、困ることは無い", "correct": false, "whyNot": "配り役がいないと、どこが空いているかを互いに知らないまま書き込み、中身を壊し合う。" },
+        { "id": "c", "text": "アプリは困るが、ファイルは守られる", "correct": false, "whyNot": "ファイルを守るのも OS の仕事。OS が無ければ、誰でもどのファイルも書き換えられてしまう。" }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "OS の仕事でないものはどれ？",
+      "choices": [
+        { "id": "a", "text": "文書の文章を考える", "correct": true },
+        { "id": "b", "text": "アプリにメモリを配る", "correct": false, "whyNot": "資源をアプリに配るのは、OS の中心の仕事。" },
+        { "id": "c", "text": "ファイルの置き場所を管理する", "correct": false, "whyNot": "ファイルをどこに置き、誰が触れるかを管理するのも OS。" }
+      ],
+      "explanation": "OS は機械の資源・ファイル・利用者を管理する。文章を考えるのは、利用者や文書を作るアプリの側の仕事。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "2 つのアプリが、同じメモリを使いたいと言ってきた。調整するのは？",
+      "choices": [
+        { "id": "a", "text": "OS", "correct": true },
+        { "id": "b", "text": "先に起動したアプリ", "correct": false, "whyNot": "アプリどうしは、互いの事情を知らない。全体を見て配れるのは OS だけ。" },
+        { "id": "c", "text": "CPU", "correct": false, "whyNot": "CPU は計算する所。誰にどれだけ配るかを決めるのは OS。" }
+      ],
+      "explanation": "OS は全てのアプリの要求を見て、空いている資源を配る。取り合いが起きないように順番を決めるのも OS。"
+    },
+    {
+      "id": "q3",
+      "kind": "term",
+      "prompt": "Windows・macOS・Linux の共通点は？",
+      "choices": [
+        { "id": "a", "text": "どれも OS", "correct": true },
+        { "id": "b", "text": "どれもアプリ", "correct": false, "whyNot": "アプリは OS の上で動く物。この 3 つは、アプリを動かす土台の側。" },
+        { "id": "c", "text": "どれも CPU の名前", "correct": false, "whyNot": "CPU は機械の部品。この 3 つは、機械の上で動くプログラム。" }
+      ],
+      "explanation": "3 つとも OS。見た目や使い方は違っても、資源を配り、ファイルと利用者を管理する役目は同じ。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "OS の役になって、3 つのアプリにメモリを配る。取り合いを起こさず、全てのアプリが動けば成功。",
+    "environment": "sim-assign",
+    "setup": {
+      "slots": [
+        { "id": "browser", "label": "ブラウザ", "note": "要求: メモリ 2 つ" },
+        { "id": "sheet", "label": "表計算", "note": "要求: メモリ 1 つ" },
+        { "id": "music", "label": "音楽", "note": "要求: メモリ 1 つ" }
+      ],
+      "items": [
+        { "id": "m1", "label": "メモリ 1 番", "note": "1 GB" },
+        { "id": "m2", "label": "メモリ 2 番", "note": "1 GB" },
+        { "id": "m3", "label": "メモリ 3 番", "note": "1 GB" },
+        { "id": "m4", "label": "メモリ 4 番", "note": "1 GB" }
+      ],
+      "initial": { "m1": "music" },
+      "panels": [
+        { "kind": "table", "title": "アプリの要求", "columns": ["アプリ", "要るメモリ", "今の持ち分"], "rows": [["ブラウザ", "2 つ", "0"], ["表計算", "1 つ", "0"], ["音楽", "1 つ", "1（1 番）"]] },
+        { "kind": "kv", "title": "機械のメモリ", "rows": [["合計", "4 GB（1 GB の区画が 4 つ）"], ["決まり", "1 つの区画は 1 つのアプリだけが使う"]] },
+        { "kind": "text", "title": "動いているアプリ", "body": "ブラウザ・表計算・音楽が、取り合いなく動いている。", "when": "count browser=2 && count sheet=1 && count music=1" }
+      ]
+    },
+    "steps": [
+      {
+        "id": "small",
+        "purpose": "要求の小さい表計算に、空いているメモリを 1 つ配る。音楽が使っている 1 番は配れない。",
+        "check": { "kind": "sim", "expr": "count sheet=1" },
+        "afterward": "表計算が動き出した。空いている区画だけを配ったので、音楽の中身は壊れていない。",
+        "hints": [
+          "まず、どの区画が空いているかを見よう。1 番は、もう音楽が使っている。",
+          "空いている 2 番〜4 番のどれか 1 つを、表計算に入れる。",
+          "`put m2 sheet` と入れる。"
+        ],
+        "expectedErrors": ["os-conflict"]
+      },
+      {
+        "id": "all",
+        "purpose": "残りのメモリを配り、全てのアプリを要求どおりに動かす。",
+        "check": { "kind": "sim", "expr": "count browser=2 && count sheet=1 && count music=1" },
+        "afterward": "3 つのアプリが、それぞれの持ち分で動いている。OS が配り役になると、取り合いが起きない。",
+        "hints": [
+          "ブラウザは 2 つ要る。空いている区画は、あといくつ残っているだろう。",
+          "残りの 3 番と 4 番を、両方ともブラウザに入れる。",
+          "`put m3 browser` `put m4 browser` の順に入れる。"
+        ],
+        "expectedErrors": ["os-conflict", "os-not-enough"]
+      }
+    ]
+  },
+  "result": {
+    "success": "空いている資源だけを要求どおりに配り、取り合いを起こさずに全てのアプリを動かせた。OS の割り振りを体験できた。",
+    "partial": "ヒントを使って全てのアプリを動かせた。次は、なぜ同じ区画を 2 つに配ってはいけないかを考えてみよう。",
+    "retry": "まだ要求どおりに配れていないアプリがある。アプリの要求の表と、各アプリの枠の札の数を見比べよう。"
+  },
+  "summary": {
+    "points": [
+      "OS は、CPU・メモリ・ストレージをアプリに配る配り役",
+      "ファイルと利用者も、OS が管理する",
+      "サーバの OS の多くは Linux"
+    ],
+    "next": ["found.b.04", "linux.b.00"],
+    "terms": ["os", "linux", "memory"]
+  }
+}

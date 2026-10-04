@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>8 ビットで 1 バイト。文字 a は 01100001 で表す。KB・MB・GB は約 1000 倍ずつの階段</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="bits">
+    <rect x="40" y="60" width="40" height="52" rx="8" fill="#9aa9b5" />
+    <text x="60" y="96" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">0</text>
+    <rect x="86" y="60" width="40" height="52" rx="8" fill="#5cc1ff" />
+    <text x="106" y="96" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">1</text>
+    <rect x="132" y="60" width="40" height="52" rx="8" fill="#5cc1ff" />
+    <text x="152" y="96" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">1</text>
+    <rect x="178" y="60" width="40" height="52" rx="8" fill="#9aa9b5" />
+    <text x="198" y="96" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">0</text>
+    <rect x="224" y="60" width="40" height="52" rx="8" fill="#9aa9b5" />
+    <text x="244" y="96" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">0</text>
+    <rect x="270" y="60" width="40" height="52" rx="8" fill="#9aa9b5" />
+    <text x="290" y="96" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">0</text>
+    <rect x="316" y="60" width="40" height="52" rx="8" fill="#9aa9b5" />
+    <text x="336" y="96" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">0</text>
+    <rect x="362" y="60" width="40" height="52" rx="8" fill="#5cc1ff" />
+    <text x="382" y="96" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">1</text>
+    <text x="222" y="136" text-anchor="middle" font-size="13" fill="#eef2f6">1 つの枠 = 1 ビット（0 か 1）</text>
+  </g>
+  <g class="el" data-part="byte">
+    <path d="M40 150 H402" stroke="#f2b632" stroke-width="3" />
+    <text x="222" y="176" text-anchor="middle" font-size="16" font-weight="700" fill="#f2b632">8 ビット = 1 バイト（256 通り）</text>
+  </g>
+  <g class="el" data-part="char">
+    <rect x="450" y="56" width="150" height="120" rx="12" fill="none" stroke="#f2b632" stroke-width="2" />
+    <text x="525" y="112" text-anchor="middle" font-size="48" font-weight="700" fill="#eef2f6">a</text>
+    <text x="525" y="160" text-anchor="middle" font-size="13" fill="#9fb0c6">文字コードで決まる</text>
+  </g>
+  <g class="el" data-part="units">
+    <rect x="40" y="270" width="150" height="75" rx="10" fill="#9aa9b5" />
+    <text x="115" y="300" text-anchor="middle" font-size="22" font-weight="700" fill="#0a1424">KB</text>
+    <text x="115" y="322" text-anchor="middle" font-size="13" fill="#0a1424">約 1000 バイト</text>
+    <rect x="200" y="240" width="150" height="105" rx="10" fill="#9aa9b5" />
+    <text x="275" y="270" text-anchor="middle" font-size="22" font-weight="700" fill="#0a1424">MB</text>
+    <text x="275" y="292" text-anchor="middle" font-size="13" fill="#0a1424">約 1000 KB</text>
+    <rect x="360" y="210" width="150" height="135" rx="10" fill="#9aa9b5" />
+    <text x="435" y="240" text-anchor="middle" font-size="22" font-weight="700" fill="#0a1424">GB</text>
+    <text x="435" y="262" text-anchor="middle" font-size="13" fill="#0a1424">約 1000 MB</text>
+    <text x="600" y="336" text-anchor="end" font-size="13" fill="#eef2f6">右ほど大きい</text>
+  </g>
+</svg>

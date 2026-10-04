@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { accent, domain, hud, state } from '@/ui/tokens';
 import { FONT_SIZES } from '@/ui/tokens';
-import { ENTRIES } from './catalog';
+import { ENTRIES, inFirstRelease } from './catalog';
 import { parseDesign } from './curriculum';
 import { ERROR_GUIDES, TERMS } from './glossary';
 import { AUTHORED, loadAllLessons, loadLesson } from './lessons';
@@ -27,15 +27,24 @@ const ctx: ValidateContext = {
 const navy = '#0a1424';
 const COLORS = new Set([...Object.values(hud), ...Object.values(accent), ...Object.values(state), ...Object.values(domain), navy].filter((c) => c.startsWith('#')).map((c) => c.toLowerCase()));
 
+/** 書き終えた分野（docs/development-plan.md Phase 10 の順に足す） */
+const DONE_DOMAINS = ['found'] as const;
+
 let lessons: Lesson[] = [];
 beforeAll(async () => {
   lessons = await loadAllLessons();
 });
 
 describe('書き起こしたコンテンツの検証（docs/content-spec.md 6 章）', () => {
-  it('最初の 2 本（found.b.04 と linux.i.01）が書き起こされ、形（zod）を通る', () => {
-    expect([...AUTHORED].sort()).toEqual(['found.b.04', 'linux.i.01']);
-    expect(lessons.map((l) => l.id).sort()).toEqual(['found.b.04', 'linux.i.01']);
+  it('書き起こした全てのレッスンが読み込め、形（zod）を通る', () => {
+    expect(lessons.map((l) => l.id).sort()).toEqual([...AUTHORED].sort());
+  });
+
+  it('書き終えた分野は、初回公開の範囲（docs/decisions.md Q-04）のレッスンが全て揃う', () => {
+    for (const d of DONE_DOMAINS) {
+      const missing = ENTRIES.filter((e) => e.domain === d && inFirstRelease(e) && !AUTHORED.has(e.id)).map((e) => e.id);
+      expect(missing, d).toEqual([]);
+    }
   });
 
   it('全レッスンが、目録・設計・置き場所と一致し、7 段の規則と用語の規則を満たす', () => {

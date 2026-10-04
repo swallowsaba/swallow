@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>作業者（CPU）・作業机（メモリ）・倉庫（ストレージ）。机は速いが狭く、倉庫は広いが遠い</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="cpu">
+    <rect x="40" y="40" width="170" height="90" rx="12" fill="#f2b632" />
+    <text x="125" y="81" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">CPU</text>
+    <text x="125" y="103" text-anchor="middle" font-size="13" fill="#0a1424">作業者。計算する</text>
+  </g>
+  <g class="el" data-part="memory">
+    <rect x="250" y="40" width="170" height="90" rx="12" fill="#5cc1ff" />
+    <text x="335" y="81" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">メモリ</text>
+    <text x="335" y="103" text-anchor="middle" font-size="13" fill="#0a1424">作業机。速い・狭い</text>
+  </g>
+  <g class="el" data-part="storage">
+    <rect x="430" y="200" width="170" height="110" rx="12" fill="#9aa9b5" />
+    <text x="515" y="251" text-anchor="middle" font-size="18" font-weight="700" fill="#0a1424">ストレージ</text>
+    <text x="515" y="273" text-anchor="middle" font-size="13" fill="#0a1424">倉庫。広い・遅い</text>
+  </g>
+  <g class="el" data-part="speed">
+    <path d="M210 78 H244" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#arrow)" />
+    <path d="M244 98 H216" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#arrow)" />
+    <path d="M420 110 Q520 120 525 194" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow)" />
+    <text x="600" y="160" text-anchor="end" font-size="13" fill="#eef2f6">出し入れに時間がかかる</text>
+    <text x="227" y="150" text-anchor="middle" font-size="13" fill="#eef2f6">速い</text>
+  </g>
+  <g class="el" data-part="power">
+    <rect x="40" y="200" width="370" height="110" rx="12" fill="none" stroke="#e8b923" stroke-width="2" stroke-dasharray="6 5" />
+    <text x="225" y="235" text-anchor="middle" font-size="14" font-weight="700" fill="#e8b923">電源を切ると</text>
+    <text x="225" y="260" text-anchor="middle" font-size="13" fill="#eef2f6">メモリの中身は消える。ストレージの中身は残る</text>
+    <text x="225" y="285" text-anchor="middle" font-size="13" fill="#eef2f6">速さ: メモリ ≫ ストレージ　広さ: メモリ ≪ ストレージ</text>
+  </g>
+</svg>

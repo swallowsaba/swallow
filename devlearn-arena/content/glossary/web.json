@@ -72,7 +72,10 @@
         "internet",
         "web-server"
       ],
-      "lessons": []
+      "lessons": [
+        "found.b.01",
+        "found.b.07"
+      ]
     }
   ]
 }

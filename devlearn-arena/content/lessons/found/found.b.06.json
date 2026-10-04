@@ -1,0 +1,153 @@
+{
+  "id": "found.b.06",
+  "domain": "found",
+  "level": "beginner",
+  "theme": "権限",
+  "title": "利用者と権限",
+  "goal": "読み・書き・実行と、所有者・グループ・その他を説明できる",
+  "minutes": 15,
+  "prerequisites": ["found.b.04"],
+  "related": ["linux.b.06", "sec.i.04"],
+  "next": ["linux.b.06", "sec.b.01"],
+  "terms": ["permission", "file", "owner", "group", "ls-l"],
+  "explain": {
+    "what": "{{term:permission}}は、{{term:file}}を誰が読み・書き・実行してよいかの決まり。「誰」は、{{term:owner}}（持ち主）・{{term:group}}（仲間）・その他（それ以外の全員）の 3 つに分ける。",
+    "why": "全員が何でもできると、誤って大事なファイルを書き換えたり、他人の資料を盗み見たりできてしまう。権限で、触れる人と、できることを絞る。",
+    "use": "設定を書いたファイルを、管理する人だけが書き換えられるようにする。自分の秘密の資料を、ほかの人に見せないようにする。",
+    "when": "作った手順のファイルを動かそうとしたら、「権限が無い」というエラーで止められた時。そのファイルに、実行してよい印が付いているかを確かめる。",
+    "figures": ["found-b06-perm"]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "権限の印と意味を結ぶ。",
+      "pairs": [
+        ["r", "読んでよい"],
+        ["w", "書いてよい"],
+        ["x", "実行してよい"]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "found-b06-perm",
+      "prompt": "図で、グループの権限を表す 3 文字を押す。",
+      "answer": ["group"],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "あるファイルの「その他」の段に w が付いている。何が起きる？",
+      "choices": [
+        { "id": "a", "text": "持ち主でも仲間でもない誰でも、中身を書き換えられる", "correct": true },
+        { "id": "b", "text": "持ち主だけが書き換えられる", "correct": false, "whyNot": "持ち主が書けるかは、所有者の段が決める。その他の w は、それ以外の全員に書き込みを許す。" },
+        { "id": "c", "text": "誰も読めなくなる", "correct": false, "whyNot": "w は書く権限。読めるかどうかは r が決める。" }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "権限の印 x の意味は？",
+      "choices": [
+        { "id": "a", "text": "実行してよい", "correct": true },
+        { "id": "b", "text": "書いてよい", "correct": false, "whyNot": "書く権限は w。" },
+        { "id": "c", "text": "触ってはいけない", "correct": false, "whyNot": "x は実行を許す印。許さない所は - で表す。" }
+      ],
+      "explanation": "r は読む、w は書く、x は実行する。付いていない所は - になる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "作った手順のファイルを動かそうとしたら、権限が無いと言われて動かない。原因として考えやすいのは？",
+      "choices": [
+        { "id": "a", "text": "そのファイルに、実行の権限（x）が付いていない", "correct": true },
+        { "id": "b", "text": "ファイルの中身が空", "correct": false, "whyNot": "中身が空でも、実行の権限があれば、動かすこと自体は拒まれない。" },
+        { "id": "c", "text": "ファイルの名前が長すぎる", "correct": false, "whyNot": "名前の長さで「権限が無い」とは言われない。権限が無いと言われたら、権限の欄を見る。" }
+      ],
+      "explanation": "動かすには x が要る。読めても実行の権限が無ければ、動かせない。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "自分だけが読める秘密のファイルにしたい。どの権限にする？",
+      "choices": [
+        { "id": "a", "text": "所有者だけに r（と w）を付け、グループとその他には何も付けない", "correct": true },
+        { "id": "b", "text": "全員に r を付ける", "correct": false, "whyNot": "全員に r を付けると、誰でも読めてしまう。" },
+        { "id": "c", "text": "その他だけに r を付ける", "correct": false, "whyNot": "その他は、所有者とグループ以外の全員。秘密にしたいのと逆になる。" }
+      ],
+      "explanation": "所有者の段だけに r と w を付け、ほかの 2 段は - にする。持ち主以外は、読むことも書くこともできない。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "{{term:ls-l}}で権限の欄を読み、3 つのファイルについて、誰が書き込めるかを答える。答えは「所有者だけ」「所有者とグループ」「全員」のどれか。",
+    "environment": "linux-basic",
+    "setup": {
+      "files": {
+        "/home/learner/memo.txt": "買い物: 牛乳と卵\n",
+        "/home/learner/team.txt": "港の班の予定表\n",
+        "/home/learner/board.txt": "町の伝言板\n"
+      },
+      "run": [
+        "chmod 644 /home/learner/memo.txt",
+        "chmod 664 /home/learner/team.txt",
+        "chmod 666 /home/learner/board.txt"
+      ]
+    },
+    "steps": [
+      {
+        "id": "memo",
+        "purpose": "memo.txt に書き込めるのは誰かを答える。",
+        "check": { "kind": "answer", "equals": "所有者だけ" },
+        "afterward": "memo.txt は所有者だけが書ける。グループとその他は r だけなので、読めるが書き換えられない。",
+        "hints": [
+          "`ls -l` を打つと、各行の先頭に 10 文字の権限の欄が出る。",
+          "先頭の 1 文字は種類なので除き、残りを 3 文字ずつ（所有者・グループ・その他）に区切って、w がどの段にあるかを見る。",
+          "memo.txt は `-rw-r--r--`。w は所有者の段だけにある。答えの欄に `所有者だけ` と入れる。"
+        ],
+        "expectedErrors": ["found-perm-misread"]
+      },
+      {
+        "id": "team",
+        "purpose": "team.txt に書き込めるのは誰かを答える。",
+        "check": { "kind": "answer", "equals": "所有者とグループ" },
+        "afterward": "team.txt は所有者とグループが書ける。班の仲間で予定表を直せて、それ以外の人は読むだけ。",
+        "hints": [
+          "team.txt の行の、先頭の 10 文字を見る。",
+          "2〜4 文字目が所有者、5〜7 文字目がグループ、8〜10 文字目がその他。w はどの段にあるだろう。",
+          "team.txt は `-rw-rw-r--`。w は所有者とグループの段にある。答えの欄に `所有者とグループ` と入れる。"
+        ],
+        "expectedErrors": ["found-perm-misread"]
+      },
+      {
+        "id": "board",
+        "purpose": "board.txt に書き込めるのは誰かを答える。",
+        "check": { "kind": "answer", "equals": "全員" },
+        "afterward": "board.txt は 3 つの段の全てに w があり、誰でも書き換えられる。伝言板ならよいが、大事なファイルには付けない。",
+        "hints": [
+          "board.txt の行の、先頭の 10 文字を見る。",
+          "3 つの段（所有者・グループ・その他）の全てを見て、w のある段を数える。",
+          "board.txt は `-rw-rw-rw-`。w は 3 つの段の全てにある。答えの欄に `全員` と入れる。"
+        ],
+        "expectedErrors": ["found-perm-misread"]
+      }
+    ]
+  },
+  "result": {
+    "success": "権限の欄を 3 文字ずつに区切って読み、誰が書けるかを言い当てられた。",
+    "partial": "ヒントを使って権限の欄を読めた。次は、x がある時に何ができるかも考えてみよう。",
+    "retry": "まだ答えが合っていない。図のように、先頭の 1 文字を除き、残りの 9 文字を 3 文字ずつに区切り直そう。"
+  },
+  "summary": {
+    "points": [
+      "r は読む・w は書く・x は実行する",
+      "所有者・グループ・その他の 3 段で決める",
+      "権限が無いと言われたら、権限の欄を確かめる"
+    ],
+    "next": ["linux.b.06", "sec.b.01"],
+    "terms": ["permission", "owner", "group", "ls-l"]
+  }
+}

@@ -35,3 +35,10 @@ export function domainDef(id: DomainId): Domain | undefined {
 
 export const LEVEL_NAMES = { beginner: '初級', intermediate: '中級', advanced: '上級' } as const;
 export const PRACTICE_NAMES = { terminal: '仮想端末', simulation: '模擬環境', sql: 'ブラウザ内 SQL', editor: '設定の編集' } as const;
+
+/** 初回公開で中級まで揃える分野（docs/decisions.md Q-04。ほかの分野は初級だけ） */
+const FIRST_RELEASE_INTERMEDIATE: ReadonlySet<DomainId> = new Set(['linux', 'net', 'web', 'git', 'ctr', 'docker', 'k8s']);
+
+/** 初回公開の範囲のレッスンか（docs/decisions.md Q-04） */
+export const inFirstRelease = (e: Pick<CatalogEntry, 'domain' | 'level'>): boolean =>
+  e.level === 'beginner' || (e.level === 'intermediate' && FIRST_RELEASE_INTERMEDIATE.has(e.domain));
