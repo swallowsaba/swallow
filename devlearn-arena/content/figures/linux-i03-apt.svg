@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>保管庫の一覧を apt update で手元に取り、apt install で nginx を入れると、依存する nginx-common も一緒に入る</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="remote">
+    <rect x="20" y="60" width="170" height="150" rx="14" fill="#9aa9b5" />
+    <text x="105" y="96" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">保管庫</text>
+    <text x="105" y="126" text-anchor="middle" font-size="14" fill="#0a1424">nginx 1.24.0</text>
+    <text x="105" y="150" text-anchor="middle" font-size="14" fill="#0a1424">nginx-common</text>
+    <text x="105" y="174" text-anchor="middle" font-size="14" fill="#0a1424">openssl …</text>
+  </g>
+  <g class="el" data-part="update">
+    <path d="M190 135 H262" fill="none" stroke="#f2b632" stroke-width="3" marker-end="url(#arrow)" />
+    <text x="226" y="118" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">update</text>
+  </g>
+  <g class="el" data-part="index">
+    <rect x="268" y="80" width="150" height="110" rx="12" fill="#5cc1ff" />
+    <text x="343" y="122" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">手元の一覧</text>
+    <text x="343" y="150" text-anchor="middle" font-size="13" fill="#0a1424">何がどの版で</text>
+    <text x="343" y="170" text-anchor="middle" font-size="13" fill="#0a1424">あるかの表</text>
+  </g>
+  <g class="el" data-part="install">
+    <path d="M418 135 H490" fill="none" stroke="#f2b632" stroke-width="3" marker-end="url(#arrow)" />
+    <text x="454" y="118" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">install</text>
+  </g>
+  <g class="el" data-part="installed">
+    <rect x="496" y="40" width="184" height="190" rx="14" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <text x="588" y="70" text-anchor="middle" font-size="16" font-weight="700" fill="#3ae08a">サーバに入った</text>
+    <rect x="516" y="88" width="144" height="44" rx="8" fill="#3ae08a" />
+    <text x="588" y="116" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">nginx</text>
+    <rect x="516" y="164" width="144" height="44" rx="8" fill="#3ae08a" />
+    <text x="588" y="192" text-anchor="middle" font-size="14" fill="#0a1424">nginx-common</text>
+    <path d="M588 132 V158" stroke="#eef2f6" stroke-width="2" stroke-dasharray="4 4" />
+    <text x="600" y="150" font-size="13" fill="#eef2f6">依存</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="350" y="282" text-anchor="middle" font-size="14" fill="#9fb0c6">update は一覧を新しくするだけ。入れる・上げるのは install と upgrade</text>
+  </g>
+</svg>

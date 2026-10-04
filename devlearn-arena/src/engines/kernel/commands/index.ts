@@ -1,5 +1,6 @@
 import { dockerCommands } from '@/engines/docker/cli';
 import { CommandRegistry } from '../registry';
+import { aptCommands } from './apt';
 import { editorCommands } from './editor';
 import { fsCommands } from './fs';
 import { ghCommands } from './gh';
@@ -39,6 +40,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...shellRunCommands,
     ...procCommands,
     ...systemctlCommands,
+    ...aptCommands,
     ...dockerCommands,
     ...miscCommands,
   ]);

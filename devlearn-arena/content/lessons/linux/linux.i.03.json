@@ -1,0 +1,204 @@
+{
+  "id": "linux.i.03",
+  "domain": "linux",
+  "level": "intermediate",
+  "theme": "パッケージ",
+  "title": "パッケージ管理",
+  "goal": "apt で入れる・更新する・消すができる",
+  "minutes": 15,
+  "prerequisites": [
+    "linux.b.07"
+  ],
+  "related": [
+    "sec.a.01",
+    "docker.i.01"
+  ],
+  "next": [
+    "sec.a.01"
+  ],
+  "terms": [
+    "package",
+    "apt",
+    "dependency",
+    "web-server",
+    "server",
+    "web",
+    "root-user",
+    "sudo"
+  ],
+  "explain": {
+    "what": "{{term:package}}は、ソフトと、その設定や説明をひとまとめにした物。{{term:apt}} のようなパッケージ管理の道具は、決まった保管庫からパッケージを探し、入れる・更新する・消すを受け持つ。",
+    "why": "ソフトは、ほかの部品が無いと動かないことが多い。この関係を{{term:dependency}}と呼ぶ。手で集めると、入れ忘れや版の食い違いが起きる。パッケージ管理は依存する物を自動で揃え、直した版も配ってくれる。",
+    "use": "{{term:web-server}}のような新しいソフトを入れる。弱点が見つかって直された版に、入っている物をまとめて上げる。要らなくなった物を消す。",
+    "when": "新しく借りた{{term:server}}に nginx を入れる時。弱点を直した版が出たので、更新を当てるように言われた時。",
+    "figures": [
+      "linux-i03-apt"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "新しいソフトを入れる手順を、正しい順に並べる。",
+      "items": [
+        "保管庫の一覧を手元に取ってくる（apt update）",
+        "パッケージを入れる（apt install）",
+        "入った版を確かめる"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "nginx が nginx-common に依存している",
+      "b": "nginx を入れると、nginx-common も一緒に入る",
+      "answer": "cause",
+      "why": "依存している物が無いと動かないので、パッケージ管理は依存する物を先に入れる。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "apt update は何をする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "保管庫にあるパッケージの一覧を、手元に新しく取ってくる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "入っているパッケージを、新しい版に上げる",
+          "correct": false,
+          "whyNot": "それは apt upgrade。update は一覧を新しくするだけで、入っている物は変えない。"
+        },
+        {
+          "id": "c",
+          "text": "apt そのものを新しい版にする",
+          "correct": false,
+          "whyNot": "update が新しくするのは一覧。名前が似ているので取り違えやすい。"
+        }
+      ],
+      "explanation": "update で一覧を新しくし、install や upgrade はその一覧を見て動く。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "入っているパッケージに弱点が見つかり、直した版が出た。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "apt update で一覧を新しくしてから、apt upgrade で上げる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "apt upgrade だけを打つ",
+          "correct": false,
+          "whyNot": "手元の一覧が古いままだと、直した版があることを知らない。先に update が要る。"
+        },
+        {
+          "id": "c",
+          "text": "そのパッケージを消して、{{term:web}} で探した物を手で入れる",
+          "correct": false,
+          "whyNot": "手で入れると、依存や次の更新を管理できなくなる。保管庫から入れれば、次の更新も届く。"
+        }
+      ],
+      "explanation": "一覧を新しくする（update）→ 上げる（upgrade）の 2 段。定期的に行う。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "新しいサーバで nginx を入れようとしたら、下のように言われた。原因は？",
+      "context": {
+        "log": "$ sudo apt install nginx\nE: Unable to locate package nginx"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "手元の一覧が古い（まだ apt update をしていない）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:root-user}}として実行していない",
+          "correct": false,
+          "whyNot": "{{term:sudo}} を付けているので、管理者として動いている。管理者でない時は、are you root? と言われる。"
+        },
+        {
+          "id": "c",
+          "text": "nginx というソフトは世の中に無い",
+          "correct": false,
+          "whyNot": "nginx は広く使われる Web サーバ。手元の一覧に載っていないだけ。"
+        }
+      ],
+      "explanation": "install は手元の一覧からパッケージを探す。新しいサーバでは一覧が空なので、先に update する。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "新しいサーバに nginx を入れ、入った版を確かめる。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "web01"
+    },
+    "steps": [
+      {
+        "id": "install",
+        "purpose": "保管庫の一覧を新しくしてから、nginx を入れる。",
+        "check": {
+          "kind": "fs",
+          "path": "/usr/sbin/nginx"
+        },
+        "afterward": "nginx と、依存する nginx-common が一緒に入った。入れた物は /var/lib/dpkg/status に記録される。",
+        "hints": [
+          "入れる前に、保管庫の一覧を手元に取ってくる。",
+          "一覧の更新は apt update、導入は apt install。どちらも管理者の操作なので sudo を付ける。",
+          "`sudo apt update && sudo apt install nginx` と打つ。"
+        ],
+        "expectedErrors": [
+          "apt-locate",
+          "apt-lock"
+        ]
+      },
+      {
+        "id": "version",
+        "purpose": "入った nginx の版を確かめ、番号（例: 1.2.3）を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "1.24.0"
+        },
+        "afterward": "入った nginx は 1.24.0。版を控えておくと、弱点の知らせが自分に関係するかを判断できる。",
+        "hints": [
+          "入れた命令に、版を聞く。",
+          "`nginx -v` で版が出る。/ の後ろの数字が版。",
+          "`nginx -v` と打つと nginx/1.24.0 と出る。答えの欄に `1.24.0` と入れる。"
+        ],
+        "expectedErrors": [
+          "linux-wrong-version"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "一覧を新しくしてから、依存も揃えて入れられた。版も確かめられた。",
+    "partial": "ヒントを使って入れられた。次は、apt list --upgradable で、上げられる物があるかも見てみよう。",
+    "retry": "まだ nginx が入っていない。エラーの文を読み、一覧の更新と sudo のどちらが足りないかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "update で一覧を新しくする",
+      "install で入れる（依存も一緒に入る）",
+      "定期的に upgrade で上げる"
+    ],
+    "next": [
+      "sec.a.01"
+    ],
+    "terms": [
+      "package",
+      "apt",
+      "dependency"
+    ]
+  }
+}

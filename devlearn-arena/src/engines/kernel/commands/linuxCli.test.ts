@@ -229,3 +229,39 @@ describe('ログを読む（journalctl の時刻での絞り込み）', () => {
     expect(t.run('journalctl --since soon').err).toBe('Failed to parse timestamp: soon\n');
   });
 });
+
+describe('パッケージ管理（apt）', () => {
+  it('一覧を更新しないと見つからない。更新してから入れると、依存も一緒に入り、命令が使える', () => {
+    const t = open();
+    expect(t.run('sudo apt install nginx').err).toBe('E: Unable to locate package nginx\n');
+    expect(t.run('nginx -v').code).toBe(127);
+    expect(t.run('sudo apt update').out).toContain("2 packages can be upgraded. Run 'apt list --upgradable' to see them.");
+    const r = t.run('sudo apt install nginx');
+    expect(r.out).toContain('The following additional packages will be installed:\n  nginx-common\n');
+    expect(r.out).toContain('Setting up nginx (1.24.0-2ubuntu7) ...');
+    expect(t.run('nginx -v').out).toBe('nginx version: nginx/1.24.0 (Ubuntu)\n');
+    expect(readFile(t.s().state.vfs, '/var/lib/dpkg/status')).toContain('Package: nginx-common\n');
+    expect(t.run('dpkg -l nginx').out).toContain('ii  nginx');
+    expect(t.run('sudo apt install nginx').out).toContain('nginx is already the newest version (1.24.0-2ubuntu7).');
+  });
+
+  it('管理者でなければ、一覧の更新も導入も断られる（本物と同じ文言）。&& の後は打たれない', () => {
+    const t = open();
+    expect(t.run('apt update').err).toBe('E: Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)\nE: Unable to lock directory /var/lib/apt/lists/\n');
+    expect(t.run('apt install nginx && echo ok')).toEqual({
+      out: '', code: 100,
+      err: 'E: Could not open lock file /var/lib/dpkg/lock-frontend - open (13: Permission denied)\nE: Unable to acquire the dpkg frontend lock (/var/lib/dpkg/lock-frontend), are you root?\n',
+    });
+  });
+
+  it('upgrade は、更新した一覧に新しい版がある物を上げる。remove で消す', () => {
+    const t = open();
+    t.run('sudo apt update');
+    expect(t.run('apt list --upgradable').out).toBe('Listing... Done\nlibssl3/noble-updates 3.0.13-0ubuntu3.4 amd64 [upgradable from: 3.0.13-0ubuntu3.1]\nopenssl/noble-updates 3.0.13-0ubuntu3.4 amd64 [upgradable from: 3.0.13-0ubuntu3.1]\n');
+    expect(t.run('sudo apt upgrade -y').out).toContain('2 upgraded');
+    expect(t.run('apt list --upgradable').out).toBe('Listing... Done\n');
+    t.run('sudo apt install -y tree');
+    expect(t.run('sudo apt remove tree').out).toContain('Removing tree ...');
+    expect(t.run('tree').code).toBe(127);
+  });
+});

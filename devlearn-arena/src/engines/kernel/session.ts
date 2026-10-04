@@ -73,7 +73,7 @@ export function createShellState(options: SessionOptions = {}): ShellState {
       PWD: cwd,
       USER: 'learner',
       SHELL: '/bin/devsh',
-      PATH: '/usr/local/bin:/usr/bin:/bin',
+      PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
       ...options.vars,
     }),
   );

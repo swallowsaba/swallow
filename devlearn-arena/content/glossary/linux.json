@@ -599,6 +599,49 @@
       "lessons": [
         "linux.b.08"
       ]
+    },
+    {
+      "id": "package",
+      "word": "パッケージ",
+      "plain": "ソフトと、その設定ファイルや説明をひとまとめにした物。決まった形で配られ、パッケージ管理の道具で入れたり消したりする。",
+      "why": "同じ形で配られるので、どのサーバにも同じ手順で入れられ、更新も届く。",
+      "related": [
+        "apt",
+        "dependency"
+      ],
+      "lessons": [
+        "linux.i.03"
+      ]
+    },
+    {
+      "id": "apt",
+      "word": "apt",
+      "reading": "あぷと",
+      "plain": "Ubuntu や Debian のパッケージ管理の道具。保管庫の一覧を取ってきて（update）、パッケージを入れる（install）・上げる（upgrade）・消す（remove）。",
+      "why": "依存する物を自動で揃え、直した版を安全に当てられる。サーバの準備と保守の基本の道具。",
+      "related": [
+        "package",
+        "dependency",
+        "sudo"
+      ],
+      "lessons": [
+        "linux.i.03"
+      ]
+    },
+    {
+      "id": "dependency",
+      "word": "依存関係",
+      "reading": "いぞんかんけい",
+      "plain": "あるソフトが動くのに、別のソフトや部品が要る、という関係。",
+      "why": "足りない物があると動かない。パッケージ管理は、この関係をたどって要る物を一緒に入れる。",
+      "related": [
+        "package",
+        "apt"
+      ],
+      "lessons": [
+        "linux.i.03"
+      ],
+      "analogy": "料理に下ごしらえした材料が要るように、ソフトにも先に揃えておく部品がある。"
     }
   ]
 }
