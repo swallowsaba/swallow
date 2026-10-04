@@ -4,7 +4,7 @@ import {
   withUmask, type AccessKind,
 } from '../perm';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
-import { list, metaOf, setMeta, stat } from '../vfs';
+import { fileSize, list, metaOf, setMeta, stat } from '../vfs';
 import { gidOf, groupsOfUser, readGroups, writeGroups } from '../users';
 import { fromLines, parseArgs } from './args';
 
@@ -60,7 +60,7 @@ function statLine(shell: ShellState, path: string): string[] {
   if (!node) return [`stat: cannot statx '${path}': No such file or directory`];
   const meta = metaOf(shell.vfs, full);
   const isDir = node.kind === 'dir';
-  const size = node.kind === 'file' ? node.content.length : 4096;
+  const size = node.kind === 'file' ? fileSize(node) : 4096;
   return [
     `  File: ${full}`,
     `  Size: ${String(size)}\t${isDir ? 'directory' : 'regular file'}`,

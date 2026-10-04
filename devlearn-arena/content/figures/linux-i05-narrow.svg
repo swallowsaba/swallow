@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>df でディスク全体の使用率を見て、du で場所ごとの大きさを見て、大きい場所の中の大きいファイルへ絞り込む</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="df">
+    <text x="20" y="40" font-size="16" font-weight="700" fill="#eef2f6">df：全体</text>
+    <rect x="20" y="56" width="200" height="36" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <rect x="22" y="58" width="180" height="32" rx="5" fill="#e04a3a" />
+    <text x="120" y="82" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">91% 使用</text>
+    <text x="20" y="118" font-size="13" fill="#9fb0c6">20G のうち 19G</text>
+  </g>
+  <g class="el" data-part="step1">
+    <path d="M230 74 H276" fill="none" stroke="#f2b632" stroke-width="3" marker-end="url(#arrow)" />
+  </g>
+  <g class="el" data-part="du">
+    <text x="290" y="40" font-size="16" font-weight="700" fill="#eef2f6">du：場所ごと</text>
+    <rect x="290" y="56" width="40" height="28" rx="4" fill="#5cc1ff" />
+    <text x="340" y="76" font-size="14" fill="#eef2f6">/var/cache 300M</text>
+    <rect x="290" y="96" width="110" height="28" rx="4" fill="#5cc1ff" />
+    <text x="410" y="116" font-size="14" fill="#eef2f6">/var/lib 4.0G</text>
+    <rect x="290" y="136" width="200" height="28" rx="4" fill="#f2b632" />
+    <text x="300" y="156" font-size="14" font-weight="700" fill="#0a1424">/var/log 12G</text>
+  </g>
+  <g class="el" data-part="step2">
+    <path d="M440 170 C 470 200, 500 210, 524 214" fill="none" stroke="#f2b632" stroke-width="3" marker-end="url(#arrow)" />
+  </g>
+  <g class="el" data-part="file">
+    <text x="530" y="196" font-size="16" font-weight="700" fill="#eef2f6">中の大きい物</text>
+    <rect x="530" y="206" width="150" height="56" rx="8" fill="#f2b632" />
+    <text x="605" y="230" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">app.log</text>
+    <text x="605" y="250" text-anchor="middle" font-size="13" fill="#0a1424">9.2G</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="296" font-size="14" fill="#9fb0c6">全体 → 場所 → ファイル の順に、大きい物へ絞る</text>
+  </g>
+</svg>

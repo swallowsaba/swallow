@@ -8,7 +8,7 @@ import { createServiceTable } from './kernel/services';
 import { createShellState, type SessionOptions } from './kernel/session';
 import { execute } from './kernel/shell';
 import { GROUP_FILE, groupFileOf } from './kernel/users';
-import { exists, remove } from './kernel/vfs';
+import { exists, remove, setSize } from './kernel/vfs';
 import { DEMO_ROOT } from './tls/tls';
 
 /**
@@ -50,6 +50,15 @@ const siteSetup = z.object({
   routes: z.record(z.object({ status: z.number().int(), body: z.string(), headers: z.record(z.string()).optional() }).strict()),
 }).strict();
 
+const SIZE = /^\d+(\.\d+)?[KMGT]?$/;
+
+/** 9.8G・300M・512K の大きさをバイトにする（1024 ごと） */
+export function parseSize(text: string): number {
+  const m = /^(\d+(?:\.\d+)?)([KMGT]?)$/.exec(text);
+  if (!m) throw new Error(`大きさ ${text} が読めない`);
+  return Math.round(Number(m[1]) * 1024 ** ' KMGT'.indexOf(m[2] || ' '));
+}
+
 /** setup の形。どの環境でも同じ形で書き、使わない項目は書かない */
 export const setupSchema = z.object({
   /** 端末の利用者（プロンプトと whoami） */
@@ -64,6 +73,10 @@ export const setupSchema = z.object({
   dirs: z.array(z.string().startsWith('/')).optional(),
   /** 置いておくファイル（場所 → 中身） */
   files: z.record(z.string().startsWith('/'), z.string()).optional(),
+  /** ファイルの見かけの大きさ（場所 → 9.8G・300M・512K の形）。大きなログや DB を、中身を持たずに表す */
+  sizes: z.record(z.string().startsWith('/'), z.string().regex(SIZE)).optional(),
+  /** 機械のディスクの大きさ（20G の形。df が出す。無ければ 20G） */
+  disk: z.string().regex(SIZE).optional(),
   /** systemd が管理するサービス */
   services: z.record(z.string().regex(/^[a-z][a-z0-9-]*$/), serviceSetup).optional(),
   /** 手元に取ってあるコンテナのイメージ */
@@ -154,7 +167,8 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
     // 打った行を ~/.bash_history に残す（「打ったことが記録される」を状態で確かめるため。src/engines/kernel/shell.ts）
     vars: {
       USER: user, HOME: home, HOSTNAME: s.hostname ?? 'arena', HISTFILE: `${home}/.bash_history`,
-      ...(s.address !== undefined ? { HOST_ADDR: s.address } : {}),
+      ...(s.address !== undefined ? { __HOST_ADDR: s.address } : {}),
+      ...(s.disk !== undefined ? { __DISK_SIZE: String(parseSize(s.disk)) } : {}),
     },
   };
   if (s.services) {
@@ -189,6 +203,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
 export function initialShell(environment: string, setup: unknown): ShellState {
   const s = resolveSetup(environment, setup);
   let shell = createShellState(shellOptions(environment, setup));
+  for (const [path, size] of Object.entries(s.sizes ?? {})) shell = { ...shell, vfs: setSize(shell.vfs, path, parseSize(size)) };
   if (!s.run?.length) return shell;
   const registry = createDefaultRegistry();
   const clock = createClock();

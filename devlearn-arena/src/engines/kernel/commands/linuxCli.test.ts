@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createSession, type Session, type SessionOptions } from '../session';
 import { execute } from '../shell';
 import { createServiceTable } from '../services';
-import { exists, readFile, setMeta } from '../vfs';
+import { exists, readFile, setMeta, setSize } from '../vfs';
 
 /**
  * Linux の初級の実戦に要る端末の振る舞い（docs/lessons/linux.md）。
@@ -274,7 +274,7 @@ describe('IP とポートを確かめる（ip addr・ss）', () => {
   ]);
 
   it('ネットワークの模擬が無い機械でも、ip addr は自分の口（lo と、あれば eth0）を出す', () => {
-    const t = open({ vars: { HOST_ADDR: '10.0.0.5/24' } });
+    const t = open({ vars: { __HOST_ADDR: '10.0.0.5/24' } });
     const out = t.run('ip addr').out;
     expect(out).toContain('1: lo: <LOOPBACK,UP,LOWER_UP>');
     expect(out).toContain('inet 127.0.0.1/8 scope host lo');
@@ -291,5 +291,46 @@ describe('IP とポートを確かめる（ip addr・ss）', () => {
     expect(out).toMatch(/LISTEN\s+0\s+511\s+0\.0\.0\.0:22\s+/);
     expect(out).not.toContain(':5432');
     expect(t.run('ss -tln').out).not.toContain('users:');
+  });
+});
+
+describe('容量を調べる（df・du・sort -h）', () => {
+  const big = () => {
+    const t = open({
+      files: { '/var/log/app/app.log': 'x\n', '/var/lib/db/data.bin': 'd', '/var/cache/apt/pkg.deb': 'p', '/home/learner/memo.txt': 'm\n' },
+      vars: { __DISK_SIZE: String(20 * 1024 ** 3) },
+    });
+    let vfs = t.s().state.vfs;
+    vfs = setSize(vfs, '/var/log/app/app.log', 9 * 1024 ** 3 + 800 * 1024 ** 2);
+    vfs = setSize(vfs, '/var/lib/db/data.bin', 4 * 1024 ** 3);
+    vfs = setSize(vfs, '/var/cache/apt/pkg.deb', 300 * 1024 ** 2);
+    t.s().state = { ...t.s().state, vfs };
+    return t;
+  };
+
+  it('df -h は機械の大きさと使った量・割合を、本物と同じ単位で出す', () => {
+    const out = big().run('df -h').out;
+    expect(out).toMatch(/^Filesystem\s+Size\s+Used\s+Avail\s+Use%\s+Mounted on\n/);
+    expect(out).toMatch(/\/dev\/vda1\s+20G\s+15G\s+6\.0G\s+71%\s+\//);
+  });
+
+  it('du -sh は書いた場所ごとに 1 行（大きさ・タブ・場所）。sort -h で小さい順に並ぶ', () => {
+    const t = big();
+    expect(t.run('du -sh /var/*').out).toBe('300M\t/var/cache\n4.0G\t/var/lib\n9.8G\t/var/log\n');
+    expect(t.run('du -sh /var/* | sort -h').out).toBe('300M\t/var/cache\n4.0G\t/var/lib\n9.8G\t/var/log\n');
+    expect(t.run('du -sh /var/* | sort -rh').out.split('\n')[0]).toBe('9.8G\t/var/log');
+    expect(t.run('ls -lh /var/log/app').out).toContain('9.8G');
+  });
+
+  it('書き直すと大きさは中身の分に戻る。cp は大きさを保つ', () => {
+    const t = big();
+    t.run('cp /var/lib/db/data.bin /home/learner/copy.bin');
+    expect(t.run('du -sh /home/learner/copy.bin').out).toBe('4.0G\t/home/learner/copy.bin\n');
+    t.run('echo > /home/learner/copy.bin');
+    expect(t.run('du -sh /home/learner/copy.bin').out).toBe('4.0K\t/home/learner/copy.bin\n');
+  });
+
+  it('env は機械の中の設定（__ で始まる）を出さない', () => {
+    expect(big().run('env').out).not.toContain('__DISK_SIZE');
   });
 });

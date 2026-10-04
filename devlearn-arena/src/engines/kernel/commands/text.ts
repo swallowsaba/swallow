@@ -7,6 +7,21 @@ import { currentGroups, currentUser, denied } from './perm';
 import { fromLines, parseArgs, toLines } from './args';
 
 /** ファイル引数があればそれを、無ければ標準入力を読む。 */
+/** 行の先頭の数（sort -n）。無ければ 0 */
+function leadingNumber(line: string): number {
+  const m = /^\s*(-?\d+(?:\.\d+)?)/.exec(line);
+  return m ? Number(m[1]) : 0;
+}
+
+const UNIT_POWER: Record<string, number> = { K: 1, M: 2, G: 3, T: 4 };
+
+/** 行の先頭の、単位の付いた数（sort -h）。4.0K・300M・9.8G */
+function humanNumber(line: string): number {
+  const m = /^\s*(-?\d+(?:\.\d+)?)([KMGT]?)/.exec(line);
+  if (!m) return 0;
+  return Number(m[1]) * 1024 ** (UNIT_POWER[m[2] ?? ''] ?? 0);
+}
+
 function readInput(shell: ShellState, stdin: string, files: readonly string[]): string {
   if (files.length === 0) return stdin;
   return files.map((f) => readFile(shell.vfs, resolve(shell.cwd, f))).join('');
@@ -167,9 +182,15 @@ export const textCommands: CommandSpec[] = [
     handler: ({ argv, shell, stdin }) => {
       const { flags, operands } = parseArgs(argv);
       const lines = toLines(readInput(shell, stdin, operands));
-      const sorted = [...lines].sort((a, b) =>
-        flags.has('n') ? Number(a) - Number(b) : a < b ? -1 : a > b ? 1 : 0,
-      );
+      // -n は行の先頭の数、-h は単位の付いた数（4.0K・300M・9.8G）で比べる。数で並ばない行は文字で比べる
+      const key = flags.has('h') ? humanNumber : flags.has('n') ? leadingNumber : null;
+      const sorted = [...lines].sort((a, b) => {
+        if (key) {
+          const d = key(a) - key(b);
+          if (d !== 0) return d;
+        }
+        return a < b ? -1 : a > b ? 1 : 0;
+      });
       if (flags.has('r')) sorted.reverse();
       return { stdout: fromLines(sorted) };
     },

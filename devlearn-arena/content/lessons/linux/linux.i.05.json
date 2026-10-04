@@ -1,0 +1,222 @@
+{
+  "id": "linux.i.05",
+  "domain": "linux",
+  "level": "intermediate",
+  "theme": "ディスク",
+  "title": "容量を調べる",
+  "goal": "df/du で使用量を調べ、原因の場所を特定できる",
+  "minutes": 15,
+  "prerequisites": [
+    "linux.b.05"
+  ],
+  "related": [
+    "trouble.i.01",
+    "db.a.02"
+  ],
+  "next": [
+    "linux.a.02",
+    "linux.a.03",
+    "trouble.i.01"
+  ],
+  "terms": [
+    "directory",
+    "disk",
+    "df",
+    "du",
+    "service",
+    "log",
+    "file",
+    "ls-l",
+    "sort",
+    "rm",
+    "process",
+    "terminal"
+  ],
+  "explain": {
+    "what": "{{term:df}} は、{{term:disk}}全体の大きさ・使った量・空きを見る命令。{{term:du}} は、場所（{{term:directory}}）ごとに、どれだけ使っているかを見る命令。df で全体をつかみ、du で原因の場所へ絞り込む。",
+    "why": "ディスクが一杯になると、{{term:log}}もデータも書けなくなり、{{term:service}}が止まる。どこが大きいかが分からないと、要る物を消してしまったり、片付けても空かなかったりする。",
+    "use": "空きが減った原因の場所を見つける。どれだけ空いているかを見て、ディスクを足す時期を決める。",
+    "when": "サービスのログに「書く場所が無い」と出て止まった時。空きが 10% を切ったと知らせが来た時。",
+    "figures": [
+      "linux-i05-narrow"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "df と du の関係は？",
+      "a": "df（ディスク全体の使った量）",
+      "b": "du（場所ごとの使った量）",
+      "answer": "contains",
+      "why": "全体の中に、場所ごとの使った量が入っている。df で全体を見てから、du で内訳を見る。",
+      "see": "what"
+    },
+    {
+      "kind": "order",
+      "prompt": "容量の原因を探す順に並べる。",
+      "items": [
+        "全体の空きを見る（df）",
+        "大きい場所を見つける（du）",
+        "その中の大きい{{term:file}}を見つける"
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "ディスク全体の空きを、読みやすい単位で見たい。どの命令？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`df -h`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`du -sh /`",
+          "correct": false,
+          "whyNot": "du は使った量を数える。空きは出ない。全てを数えるので時間もかかる。"
+        },
+        {
+          "id": "c",
+          "text": "`ls -l /`",
+          "correct": false,
+          "whyNot": "{{term:ls-l}} のディレクトリの大きさは、中身の合計ではない。空きも出ない。"
+        }
+      ],
+      "explanation": "df は全体の大きさ・使った量・空き・使用率を出す。-h で `G` や `M` の単位になる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "空きが残り 5%。/var の中の、どこが大きいかを知りたい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`du -sh /var/*` で、/var の中の場所ごとの大きさを見る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "/var の中を、古そうな物から順に消していく",
+          "correct": false,
+          "whyNot": "どこが大きいかを見ずに消すと、要る物を消したのに空かない、が起きる。先に du で測る。"
+        },
+        {
+          "id": "c",
+          "text": "`df -h` を何度も打って、変化を見る",
+          "correct": false,
+          "whyNot": "df は全体しか出さない。どの場所が大きいかは du で見る。"
+        }
+      ],
+      "explanation": "-s は場所ごとに合計だけ、-h は読みやすい単位。| {{term:sort}} -h を付けると小さい順に並び、最後の行が最も大きい。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "大きなログを {{term:rm}} で消したのに、df の空きが増えない。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "そのファイルを使い続けている{{term:process}}があり、本当には消えていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "rm したファイルは、ごみ箱に入って残っている",
+          "correct": false,
+          "whyNot": "{{term:terminal}}の rm に、ごみ箱は無い。消えないのは、まだ掴んでいるプロセスがあるから。"
+        },
+        {
+          "id": "c",
+          "text": "df は 1 日に 1 度しか数え直さない",
+          "correct": false,
+          "whyNot": "df はその時の値を出す。掴んでいるプロセスが離すと、すぐに空きが戻る。"
+        }
+      ],
+      "explanation": "書き込み中のファイルは、消しても使っているプロセスが居る間は場所が空かない。そのプロセスを動かし直すと空く。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "ディスクの空きが少ないと知らせが来た。全体の使用率と、容量を圧迫している場所を突き止める。",
+    "environment": "linux-server",
+    "setup": {
+      "hostname": "app01",
+      "disk": "20G",
+      "files": {
+        "/var/log/app/app.log": "2026-10-03 09:00:01 INFO request ok\n",
+        "/var/log/app/app.log.1": "2026-10-02 23:59:59 INFO request ok\n",
+        "/var/lib/db/data.bin": "(DB のデータ)\n",
+        "/var/cache/apt/archives/nginx.deb": "(パッケージ)\n",
+        "/srv/backup/2026-09.tar": "(控え)\n"
+      },
+      "sizes": {
+        "/var/log/app/app.log": "9.2G",
+        "/var/log/app/app.log.1": "2.1G",
+        "/var/lib/db/data.bin": "4G",
+        "/var/cache/apt/archives/nginx.deb": "300M",
+        "/srv/backup/2026-09.tar": "2.6G"
+      }
+    },
+    "steps": [
+      {
+        "id": "usage",
+        "purpose": "ディスク全体の使用率（`Use`% の欄）を、% を付けて答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "91%"
+        },
+        "afterward": "ディスクの 91% を使っている。このまま増えると、書けなくなってサービスが止まる。",
+        "hints": [
+          "全体の大きさと空きを見る命令は df。",
+          "`df -h` を打ち、`Use%` の欄を読む。",
+          "`df -h` と打つ。`Use%` の欄は 91%。答えの欄に `91%` と入れる。"
+        ],
+        "expectedErrors": [
+          "linux-wrong-usage"
+        ]
+      },
+      {
+        "id": "place",
+        "purpose": "/var の中で、最も大きいディレクトリを、/ から始まる場所で答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "/var/log"
+        },
+        "afterward": "/var/log が 12G で最も大きい。中を見ると、ログの app.log が 9.2G ある。古いログを片付ける仕組み（ログの回転）が要る。",
+        "hints": [
+          "場所ごとの大きさは du。-s で合計だけ、-h で読みやすい単位にする。",
+          "`du -sh /var/*` を打ち、sort -h で小さい順に並べる。最後の行が最も大きい。",
+          "`du -sh /var/* | sort -h` と打つ。最後の行は /var/log。答えの欄に `/var/log` と入れる。"
+        ],
+        "expectedErrors": [
+          "linux-wrong-place-du"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "全体から場所へ、大きい順に絞り込み、原因の場所を突き止めた。",
+    "partial": "ヒントを使って場所を突き止めた。次は、du -h /var/log で、その中のどのファイルが大きいかまで追ってみよう。",
+    "retry": "まだ答えが合っていない。df で全体、du で場所、の順に見ているかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "df で全体の空きを見る",
+      "du で場所ごとの大きさを見る",
+      "大きい順に並べて絞り込む"
+    ],
+    "next": [
+      "trouble.i.01",
+      "linux.a.02"
+    ],
+    "terms": [
+      "df",
+      "du",
+      "disk"
+    ]
+  }
+}

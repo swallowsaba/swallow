@@ -2,8 +2,8 @@ import { globMatch } from '../glob';
 import { basename, HOME, resolve } from '../path';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { allows, formatMode } from '../perm';
-import { copy, list, metaOf, mkdir, move, readFile, remove, setMeta, stat, touch, VfsError } from '../vfs';
-import { fromLines, parseArgs } from './args';
+import { copy, fileSize, list, metaOf, mkdir, move, readFile, remove, setMeta, stat, touch, VfsError } from '../vfs';
+import { fromLines, humanSize, parseArgs } from './args';
 import { currentGroups, currentUser, denied, deniedInParent, newFileMode } from './perm';
 
 interface TransferPlan {
@@ -100,9 +100,10 @@ export const fsCommands: CommandSpec[] = [
           const child = stat(shell.vfs, childPath);
           const dir = child?.kind === 'dir';
           if (!long) return dir ? `${name}/` : name;
-          const size = child?.kind === 'file' ? child.content.length : 0;
+          const size = child?.kind === 'file' ? fileSize(child) : 4096;
+          const shown = flags.has('h') ? humanSize(size) : String(size);
           const meta = metaOf(shell.vfs, childPath);
-          return `${formatMode(meta.mode, dir)} 1 ${meta.owner} ${meta.group} ${String(size).padStart(6)} ${name}${dir ? '/' : ''}`;
+          return `${formatMode(meta.mode, dir)} 1 ${meta.owner} ${meta.group} ${shown.padStart(6)} ${name}${dir ? '/' : ''}`;
         });
 
         const header = targets.length > 1 ? `${target}:\n` : '';

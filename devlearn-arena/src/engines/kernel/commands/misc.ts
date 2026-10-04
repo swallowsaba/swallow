@@ -8,7 +8,8 @@ export const miscCommands: CommandSpec[] = [
     summary: '環境変数を一覧する',
     handler: ({ shell }) => ({
       stdout: fromLines(
-        [...shell.vars.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, v]) => `${k}=${v}`),
+        // __ で始まる物は、模擬の機械の中の設定（ディスクの大きさ・アドレス）。環境変数ではないので出さない
+        [...shell.vars.entries()].filter(([k]) => !k.startsWith('__')).sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, v]) => `${k}=${v}`),
       ),
     }),
   },

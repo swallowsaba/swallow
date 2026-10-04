@@ -1,7 +1,8 @@
 import { basename, dirname, normalize, resolve, ROOT } from './path';
 import { defaultMeta, type FileMeta } from './perm';
 
-export type VfsNode = { kind: 'dir' } | { kind: 'file'; content: string };
+/** size は見かけの大きさ（バイト）。中身を持たない大きなファイル（ログ・DB）を表す。無ければ中身の大きさ */
+export type VfsNode = { kind: 'dir' } | { kind: 'file'; content: string; size?: number };
 
 /**
  * 仮想ファイルシステム。
@@ -148,7 +149,23 @@ export function appendFile(state: VfsState, path: string, content: string): VfsS
   const node = state.nodes.get(p);
   if (node?.kind === 'dir') throw new VfsError('EISDIR', p);
   const before = node?.content ?? '';
-  return writeFile(state, p, before + content);
+  const written = writeFile(state, p, before + content);
+  // 見かけの大きさを持つファイルは、足した分だけ大きくなる
+  return node?.size === undefined ? written : setSize(written, p, node.size + new TextEncoder().encode(content).length);
+}
+
+/** ファイルの大きさ（バイト）。見かけの大きさがあればそれ、無ければ中身の大きさ */
+export function fileSize(node: VfsNode | undefined): number {
+  if (node?.kind !== 'file') return 0;
+  return node.size ?? new TextEncoder().encode(node.content).length;
+}
+
+/** 見かけの大きさを決める（中身は変えない）。書き直すと中身の大きさに戻る */
+export function setSize(state: VfsState, path: string, size: number): VfsState {
+  const p = normalize(path);
+  const node = state.nodes.get(p);
+  if (node?.kind !== 'file') throw new VfsError(node ? 'EISDIR' : 'ENOENT', p);
+  return withNodes(state, (n) => n.set(p, { ...node, size }));
 }
 
 /** touch。存在すれば何もしない（内容は変えない）。 */
@@ -190,7 +207,8 @@ export function copy(state: VfsState, from: string, to: string, recursive = fals
   const dest = destNode?.kind === 'dir' ? `${normalize(to)}/${basename(src)}` : normalize(to);
 
   if (node.kind === 'file') {
-    return writeFile(state, dest, node.content);
+    const written = writeFile(state, dest, node.content);
+    return node.size === undefined ? written : setSize(written, dest, node.size);
   }
   if (!recursive) throw new VfsError('EISDIR', src);
   let next = mkdir(state, dest, true);
@@ -199,6 +217,7 @@ export function copy(state: VfsState, from: string, to: string, recursive = fals
     if (!child) continue;
     const mapped = dest + key.slice(src.length);
     next = child.kind === 'dir' ? mkdir(next, mapped, true) : writeFile(next, mapped, child.content, true);
+    if (child.kind === 'file' && child.size !== undefined) next = setSize(next, mapped, child.size);
   }
   return next;
 }

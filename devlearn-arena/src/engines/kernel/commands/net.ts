@@ -10,12 +10,12 @@ import { ipAddr, ipLink, ipRoute } from './netBuild';
 const NO_NET = 'ネットワークが用意されていません。ネットワークの任務を選んでください。\n';
 
 /**
- * ネットワークの模擬が無い機械の ip addr。自分の口だけを出す: lo（127.0.0.1）と、HOST_ADDR（実戦の setup の address）があれば eth0
+ * ネットワークの模擬が無い機械の ip addr。自分の口だけを出す: lo（127.0.0.1）と、__HOST_ADDR（実戦の setup の address）があれば eth0
  */
 function ownAddresses(shell: ShellState, argv: readonly string[]): CommandResult {
   const what = argv[1] ?? 'addr';
   if (!['addr', 'address', 'a'].includes(what) || (argv[2] !== undefined && argv[2] !== 'show')) return { stderr: NO_NET, code: 1 };
-  const own = shell.vars.get('HOST_ADDR');
+  const own = shell.vars.get('__HOST_ADDR');
   return {
     stdout: fromLines([
       '1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536',

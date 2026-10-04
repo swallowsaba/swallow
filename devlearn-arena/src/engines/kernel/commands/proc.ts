@@ -3,8 +3,8 @@ import {
   findByPattern, killMany, normalizeSignal, signal, totalCpu, usedMemory, type Process,
 } from '../process';
 import type { CommandSpec, ShellState } from '../registry';
-import { list, stat } from '../vfs';
-import { fromLines, parseArgs } from './args';
+import { fileSize, list, stat } from '../vfs';
+import { fromLines, humanSize, parseArgs } from './args';
 import { currentUser } from './perm';
 
 function table(rows: string[][]): string {
@@ -35,19 +35,11 @@ function psRows(shell: ShellState, wide: boolean): string {
   return table(rows);
 }
 
-/** バイト数を読みやすい単位にする */
-function human(bytes: number): string {
-  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024 / 1024).toFixed(1)}G`;
-  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)}M`;
-  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)}K`;
-  return String(bytes);
-}
-
 /** そのパス以下の合計バイト数 */
 function sizeOf(shell: ShellState, path: string): number {
   const node = stat(shell.vfs, path);
   if (!node) return 0;
-  if (node.kind === 'file') return node.content.length;
+  if (node.kind === 'file') return fileSize(node);
   let total = 0;
   for (const name of list(shell.vfs, path)) {
     total += sizeOf(shell, path === '/' ? `/${name}` : `${path}/${name}`);
@@ -181,22 +173,16 @@ export const procCommands: CommandSpec[] = [
     name: 'df',
     summary: 'ディスクの使用量を見る',
     handler: ({ argv, shell }) => {
-      const human_ = argv.slice(1).some((a) => a.includes('h'));
-      const capacity = 1024 * 1024 * 20;
-      const used = sizeOf(shell, '/') + heldBytes(shell);
-      const free = Math.max(0, capacity - used);
-      const show = (n: number) => (human_ ? human(n) : String(Math.ceil(n / 1024)));
+      const human = argv.slice(1).some((a) => /^-[a-zA-Z]*h/.test(a));
+      // 機械のディスクの大きさ（実戦の setup の disk。無ければ 20G）
+      const capacity = Number(shell.vars.get('__DISK_SIZE') ?? String(20 * 1024 ** 3));
+      const used = Math.min(capacity, sizeOf(shell, '/') + heldBytes(shell));
+      const free = capacity - used;
+      const show = (n: number): string => (human ? humanSize(n) : String(Math.ceil(n / 1024)));
       return {
         stdout: table([
-          ['Filesystem', 'Size', 'Used', 'Avail', 'Use%', 'Mounted on'],
-          [
-            '/dev/vda1',
-            show(capacity),
-            show(used),
-            show(free),
-            `${String(Math.round((used / capacity) * 100))}%`,
-            '/',
-          ],
+          ['Filesystem', human ? 'Size' : '1K-blocks', 'Used', 'Avail', 'Use%', 'Mounted on'],
+          ['/dev/vda1', show(capacity), show(used), show(free), `${String(Math.ceil((used / capacity) * 100 - 1e-9))}%`, '/'],
         ]),
       };
     },
@@ -204,28 +190,38 @@ export const procCommands: CommandSpec[] = [
 
   {
     name: 'du',
-    summary: 'ディレクトリごとの大きさを見る',
+    summary: 'ディレクトリごとの大きさを見る（-s で合計だけ、-h で読みやすい単位）',
     handler: ({ argv, shell }) => {
       const { flags, operands } = parseArgs(argv);
-      const human_ = flags.has('h');
+      const human = flags.has('h');
       const summarize = flags.has('s');
-      const root = resolve(shell.cwd, operands[0] ?? '.');
-      if (stat(shell.vfs, root) === undefined) {
-        return { stderr: `du: cannot access '${operands[0] ?? '.'}': No such file or directory\n`, code: 1 };
-      }
-      const rows: string[][] = [];
-      const walk = (path: string): void => {
-        if (stat(shell.vfs, path)?.kind === 'dir' && !summarize) {
-          for (const name of list(shell.vfs, path)) {
-            const child = path === '/' ? `/${name}` : `${path}/${name}`;
-            if (stat(shell.vfs, child)?.kind === 'dir') walk(child);
-          }
-        }
-        const size = sizeOf(shell, path);
-        rows.push([human_ ? human(size) : String(Math.ceil(size / 1024)), path]);
+      // ディスクの使用量は 4K の区切りで数える（本物と同じく、小さなファイルも 4.0K）
+      const usage = (path: string): number => {
+        const node = stat(shell.vfs, path);
+        if (node?.kind === 'file') return Math.ceil(fileSize(node) / 4096) * 4096;
+        return list(shell.vfs, path).reduce((a, name) => a + usage(path === '/' ? `/${name}` : `${path}/${name}`), 0);
       };
-      walk(root);
-      return { stdout: fromLines(rows.map((r) => `${(r[0] ?? '').padEnd(7)}${r[1] ?? ''}`)) };
+      const show = (n: number): string => (human ? (n === 0 ? '0' : humanSize(n)) : String(Math.ceil(n / 1024)));
+      const rows: string[] = [];
+      let stderr = '';
+      for (const operand of operands.length > 0 ? operands : ['.']) {
+        const root = resolve(shell.cwd, operand);
+        if (stat(shell.vfs, root) === undefined) {
+          stderr += `du: cannot access '${operand}': No such file or directory\n`;
+          continue;
+        }
+        const walk = (path: string, shown: string): void => {
+          if (stat(shell.vfs, path)?.kind === 'dir' && !summarize) {
+            for (const name of list(shell.vfs, path)) {
+              const child = path === '/' ? `/${name}` : `${path}/${name}`;
+              if (stat(shell.vfs, child)?.kind === 'dir') walk(child, `${shown.replace(/\/$/, '')}/${name}`);
+            }
+          }
+          rows.push(`${show(usage(path))}\t${shown}`);
+        };
+        walk(root, operand);
+      }
+      return { stdout: fromLines(rows), ...(stderr !== '' ? { stderr, code: 1 } : {}) };
     },
   },
 ];
