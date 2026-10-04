@@ -9,7 +9,7 @@ import { resolve } from '@/engines/kernel/path';
 import type { ShellState } from '@/engines/kernel/registry';
 import { serviceOf } from '@/engines/kernel/services';
 import { execute } from '@/engines/kernel/shell';
-import { exists, isDir, readFile } from '@/engines/kernel/vfs';
+import { exists, isDir, metaOf, readFile } from '@/engines/kernel/vfs';
 import { initialShell } from '@/engines/environments';
 import { request } from '@/engines/http/http';
 import { applyStatement, createSim, holds } from '@/engines/sim/sim';
@@ -46,6 +46,22 @@ export interface CheckInput {
 
 const sameAnswer = (a: string, b: string): boolean => a.trim().toLowerCase() === b.trim().toLowerCase();
 
+const WHO_SHIFT: Record<string, number> = { u: 6, g: 3, o: 0 };
+const BIT: Record<string, number> = { r: 4, w: 2, x: 1 };
+
+/** 権限が判定の形に合うか。8 進数ならその値、u+x・go-rwx の形なら、その権限が有る（+）・無い（-） */
+function modeHolds(mode: number, spec: string): boolean {
+  if (/^[0-7]+$/.test(spec)) return (mode & 0o7777) === Number.parseInt(spec, 8);
+  return spec.split(',').every((clause) => {
+    const [, who = '', op = '+', perms = ''] = /^([ugoa]*)([+-])([rwx]+)$/.exec(clause) ?? [];
+    const whos = who === '' || who === 'a' ? ['u', 'g', 'o'] : who.split('');
+    return whos.every((w) => [...perms].every((p) => {
+      const on = ((mode >> (WHO_SHIFT[w] ?? 0)) & (BIT[p] ?? 0)) !== 0;
+      return op === '+' ? on : !on;
+    }));
+  });
+}
+
 /** 達成条件を、模擬環境の今の状態で判定する */
 export function checkState(check: CheckSpec, input: CheckInput): boolean {
   if (check.kind === 'sim') return input.sim !== undefined && holds(input.sim, check.expr);
@@ -60,6 +76,7 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       const there = exists(shell.vfs, path);
       if (check.exists === false) return !there;
       if (!there) return false;
+      if (check.mode !== undefined && !modeHolds(metaOf(shell.vfs, path).mode, check.mode)) return false;
       if (check.contains === undefined) return true;
       return !isDir(shell.vfs, path) && readFile(shell.vfs, path).includes(check.contains);
     }

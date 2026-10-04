@@ -41,6 +41,12 @@ describe('実戦の模擬環境の初期状態（docs/content-spec.md 2.4 の en
     expect(() => shellOptions('sql-sqlite', {})).toThrow('端末の実戦に使えない');
   });
 
+  it('setup の groups を /etc/group に書く。グループに入るには、入り直すまで今のシェルに効かない', () => {
+    const setup = { groups: { web: [] as string[], ops: ['learner'] } };
+    expect(run('linux-basic', setup, ['cat /etc/group'])).toBe('root:x:0:\nlearner:x:1000:\nweb:x:1001:\nops:x:1002:learner\n');
+    expect(run('linux-basic', setup, ['groups learner', 'groups'])).toBe('learner : learner ops\nlearner\n');
+  });
+
   it('同じ setup からは同じ初期状態', () => {
     const setup = { files: { '/home/learner/a.txt': 'a\n' } };
     expect(run('linux-basic', setup, ['ls -l'])).toBe(run('linux-basic', setup, ['ls -l']));

@@ -138,3 +138,50 @@ describe('作る・写す・移す・消す（本物と同じ文言）', () => {
     expect(t.run('cp empty copy').err).toBe("cp: -r not specified; omitting directory 'empty'\n");
   });
 });
+
+describe('権限を変える・グループ', () => {
+  const files = {
+    '/home/learner/deploy.sh': 'echo deployed\n',
+    '/etc/hosts': '127.0.0.1 localhost\n',
+    '/etc/group': 'root:x:0:\nlearner:x:1000:\nweb:x:1001:\n',
+    '/srv/web': null,
+  };
+  const withWeb = (t: ReturnType<typeof open>): void => {
+    t.s().state = { ...t.s().state, vfs: setMeta(t.s().state.vfs, '/srv/web', { mode: 0o775, owner: 'root', group: 'web' }) };
+  };
+
+  it('自分の物でないファイルの権限は変えられない（root は変えられる）', () => {
+    const t = open({ files });
+    t.s().state = { ...t.s().state, vfs: setMeta(t.s().state.vfs, '/etc/hosts', { mode: 0o644, owner: 'root', group: 'root' }) };
+    expect(t.run('chmod 666 /etc/hosts').err).toBe("chmod: changing permissions of '/etc/hosts': Operation not permitted\n");
+    expect(t.run('sudo chmod 640 /etc/hosts').code).toBe(0);
+    expect(t.run('chmod +x deploy.sh').code).toBe(0);
+  });
+
+  it('グループに入れるのは root だけ。/etc/group に足しても、入り直す（newgrp）まで今のシェルには効かない', () => {
+    const t = open({ files });
+    withWeb(t);
+    expect(t.run('touch /srv/web/index.html').err).toBe("touch: cannot touch '/srv/web/index.html': Permission denied\n");
+    expect(t.run('usermod -aG web learner')).toEqual({ out: '', err: 'usermod: Permission denied.\n', code: 1 });
+    expect(t.run('sudo usermod -aG web learner').code).toBe(0);
+    expect(readFile(t.s().state.vfs, '/etc/group')).toContain('web:x:1001:learner\n');
+    expect(t.run('groups').out).toBe('learner\n');
+    expect(t.run('groups learner').out).toBe('learner : learner web\n');
+    expect(t.run('touch /srv/web/index.html').code).toBe(1);
+    expect(t.run('newgrp web').code).toBe(0);
+    expect(t.run('id').out).toBe('uid=1000(learner) gid=1000(learner) groups=1000(learner),1001(web)\n');
+    expect(t.run('touch /srv/web/index.html').code).toBe(0);
+  });
+
+  it('入っていないグループには newgrp できない。無いグループには usermod できない', () => {
+    const t = open({ files });
+    expect(t.run('newgrp web').err).toBe('newgrp: Permission denied.\n');
+    expect(t.run('sudo usermod -aG nope learner').err).toBe("usermod: group 'nope' does not exist\n");
+  });
+
+  it('chgrp でグループを変える（root だけ）', () => {
+    const t = open({ files });
+    expect(t.run('sudo chgrp web /srv/web').code).toBe(0);
+    expect(t.run('ls -ld /srv/web').out).toContain('learner web');
+  });
+});

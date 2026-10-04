@@ -5,6 +5,7 @@ import {
 } from '../perm';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { list, metaOf, setMeta, stat } from '../vfs';
+import { gidOf, groupsOfUser, readGroups, writeGroups } from '../users';
 import { fromLines, parseArgs } from './args';
 
 export function currentUser(shell: ShellState): string {
@@ -103,6 +104,11 @@ export const permCommands: CommandSpec[] = [
         }
         for (const target of targetsOf(shell, path, recursive)) {
           const meta = metaOf(vfs, target);
+          // 権限を変えられるのは、持ち主と root だけ（本物と同じ）
+          const user = currentUser(shell);
+          if (user !== 'root' && meta.owner !== user) {
+            return { stderr: `chmod: changing permissions of '${path}': Operation not permitted\n`, code: 1 };
+          }
           const isDir = stat(vfs, target)?.kind === 'dir';
           const mode = applyModeSpec(meta.mode, spec, isDir);
           if (mode === null) {
@@ -174,10 +180,80 @@ export const permCommands: CommandSpec[] = [
 
   {
     name: 'id',
-    summary: 'いまの利用者を見る',
-    handler: ({ shell }) => {
+    summary: 'いまの利用者と、入っているグループを見る',
+    handler: ({ argv, shell }) => {
+      const asked = argv[1];
+      const user = asked ?? currentUser(shell);
+      const uid = user === 'root' ? 0 : 1000;
+      const gid = gidOf(shell.vfs, user);
+      // 名前を書けば /etc/group の今の値、書かなければ今のシェルが入っているグループ
+      const groups = asked === undefined ? currentGroups(shell) : groupsOfUser(shell.vfs, user);
+      const extra = groups.length > 1 || asked !== undefined || readGroups(shell.vfs).length > 0
+        ? ` groups=${groups.map((g) => `${String(gidOf(shell.vfs, g))}(${g})`).join(',')}`
+        : '';
+      return { stdout: `uid=${String(uid)}(${user}) gid=${String(gid)}(${user})${extra}\n` };
+    },
+  },
+  {
+    name: 'groups',
+    summary: '入っているグループを見る（名前を書くと /etc/group の今の値）',
+    handler: ({ argv, shell }) => {
+      const asked = argv[1];
+      if (asked === undefined) return { stdout: `${currentGroups(shell).join(' ')}\n` };
+      return { stdout: `${asked} : ${groupsOfUser(shell.vfs, asked).join(' ')}\n` };
+    },
+  },
+  {
+    name: 'usermod',
+    summary: '利用者をグループに入れる（-aG グループ 利用者。root だけ）',
+    handler: ({ argv, shell }) => {
+      const { flags, operands } = parseArgs(argv, { withValue: ['G'] });
+      if (currentUser(shell) !== 'root') return { stderr: 'usermod: Permission denied.\n', code: 1 };
+      const g = argv.indexOf('-aG') >= 0 ? argv[argv.indexOf('-aG') + 1] : argv.indexOf('-G') >= 0 ? argv[argv.indexOf('-G') + 1] : undefined;
+      const user = operands[operands.length - 1];
+      if (g === undefined || user === undefined || user === g) return { stderr: 'usage: usermod -aG グループ 利用者\n', code: 2 };
+      const append = argv.includes('-aG') || flags.has('a');
+      let groups = readGroups(shell.vfs);
+      for (const name of g.split(',')) {
+        if (!groups.some((x) => x.name === name)) return { stderr: `usermod: group '${name}' does not exist\n`, code: 6 };
+      }
+      const wanted = new Set(g.split(','));
+      groups = groups.map((x) => {
+        const has = x.members.includes(user);
+        if (wanted.has(x.name)) return has ? x : { ...x, members: [...x.members, user] };
+        // -a が無いと、書かなかったグループからは外れる（本物と同じ落とし穴）
+        if (!append && has) return { ...x, members: x.members.filter((m) => m !== user) };
+        return x;
+      });
+      return { patch: { vfs: writeGroups(shell.vfs, groups) } };
+    },
+  },
+  {
+    name: 'newgrp',
+    summary: '入り直して、新しく入ったグループを今のシェルで使えるようにする',
+    handler: ({ argv, shell }) => {
+      const group = argv[1];
       const user = currentUser(shell);
-      return { stdout: `uid=${user === 'root' ? '0' : '1000'}(${user}) gid=${user === 'root' ? '0' : '1000'}(${user})\n` };
+      const now = groupsOfUser(shell.vfs, user);
+      if (group !== undefined && !now.includes(group) && user !== 'root') return { stderr: 'newgrp: Permission denied.\n', code: 1 };
+      return { patch: { vars: new Map([...shell.vars, ['GROUPS', now.join(' ')]]) } };
+    },
+  },
+  {
+    name: 'chgrp',
+    summary: 'グループを変える（root だけ）',
+    handler: ({ argv, shell }) => {
+      const { operands } = parseArgs(argv);
+      const [group, ...paths] = operands;
+      if (group === undefined || paths.length === 0) return { stderr: 'chgrp: missing operand\n', code: 1 };
+      if (currentUser(shell) !== 'root') return { stderr: `chgrp: changing group of '${paths[0] ?? ''}': Operation not permitted\n`, code: 1 };
+      let vfs = shell.vfs;
+      for (const path of paths) {
+        const full = resolve(shell.cwd, path);
+        if (stat(vfs, full) === undefined) return { stderr: `chgrp: cannot access '${path}': No such file or directory\n`, code: 1 };
+        vfs = setMeta(vfs, full, { ...metaOf(vfs, full), group });
+      }
+      return { patch: { vfs } };
     },
   },
 

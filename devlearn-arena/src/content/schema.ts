@@ -96,7 +96,11 @@ export const quizSchema = z.object({
 }).strict();
 
 export const checkSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('fs'), path: z.string(), exists: z.boolean().optional(), contains: z.string().optional() }).strict(),
+  z.object({
+    kind: z.literal('fs'), path: z.string(), exists: z.boolean().optional(), contains: z.string().optional(),
+    /** 権限。8 進数（600）ならその値、u+x・go-rwx の形なら、その権限が有る（+）・無い（-） */
+    mode: z.string().regex(/^([0-7]{3,4}|[ugoa]*[+-][rwx]+(,[ugoa]*[+-][rwx]+)*)$/).optional(),
+  }).strict(),
   z.object({ kind: z.literal('cwd'), equals: z.string() }).strict(),
   z.object({ kind: z.literal('service'), name: z.string(), active: z.boolean().optional(), enabled: z.boolean().optional() }).strict(),
   z.object({ kind: z.literal('git'), expr: z.string() }).strict(),

@@ -178,6 +178,18 @@ describe('状態による判定の形', () => {
     expect(checkState({ kind: 'fs', path: '/etc/nope', exists: false }, { shell: s })).toBe(true);
   });
 
+  it('fs: 権限（8 進数ならその値、u+x のような形なら、その権限が有る・無い）', () => {
+    const s = shell({ files: { '/home/learner/run.sh': 'echo hi\n', '/home/learner/key': 'secret\n' } });
+    expect(checkState({ kind: 'fs', path: '/home/learner/run.sh', mode: 'u+x' }, { shell: s })).toBe(false);
+    expect(checkState({ kind: 'fs', path: '/home/learner/key', mode: '600' }, { shell: s })).toBe(false);
+    const after = execute(execute(s, 'chmod +x run.sh', createDefaultRegistry(), createClock()).state, 'chmod 600 key', createDefaultRegistry(), createClock()).state;
+    expect(checkState({ kind: 'fs', path: '/home/learner/run.sh', mode: 'u+x' }, { shell: after })).toBe(true);
+    expect(checkState({ kind: 'fs', path: '/home/learner/key', mode: '600' }, { shell: after })).toBe(true);
+    expect(checkState({ kind: 'fs', path: '/home/learner/key', mode: 'go-rwx' }, { shell: after })).toBe(true);
+    expect(checkState({ kind: 'fs', path: '/home/learner/run.sh', mode: 'go-rwx' }, { shell: after })).toBe(false);
+    expect(checkState({ kind: 'fs', path: '/home/learner/nope', mode: '600' }, { shell: after })).toBe(false);
+  });
+
   it('http: 手元で動くサービスの答えの番号', () => {
     const s = shell({ services: { web: { description: 'Web', active: true, port: 80, body: 'hi' } } }, 'linux-server');
     expect(checkState({ kind: 'http', url: 'http://localhost/', status: 200 }, { shell: s })).toBe(true);

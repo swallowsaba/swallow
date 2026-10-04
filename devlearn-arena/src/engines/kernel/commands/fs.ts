@@ -89,12 +89,14 @@ export const fsCommands: CommandSpec[] = [
         // 中身を並べるには読み権が要る
         const blocked = denied(shell, path, 'read', 'ls', target);
         if (blocked) return { ...blocked, code: 2 };
-        let names = node.kind === 'dir' ? list(shell.vfs, path) : [basename(path)];
-        if (all && node.kind === 'dir') names = ['.', '..', ...names];
-        if (!all) names = names.filter((n) => !n.startsWith('.'));
+        // -d はディレクトリの中身でなく、ディレクトリそのものを 1 行で出す
+        const self = flags.has('d') || node.kind !== 'dir';
+        let names = self ? [node.kind === 'dir' ? target : basename(path)] : list(shell.vfs, path);
+        if (all && !self) names = ['.', '..', ...names];
+        if (!all && !self) names = names.filter((n) => !n.startsWith('.'));
 
         const rows = names.map((name) => {
-          const childPath = node.kind === 'dir' ? resolve(path, name) : path;
+          const childPath = self ? path : resolve(path, name);
           const child = stat(shell.vfs, childPath);
           const dir = child?.kind === 'dir';
           if (!long) return dir ? `${name}/` : name;

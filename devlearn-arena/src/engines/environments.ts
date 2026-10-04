@@ -7,6 +7,7 @@ import type { ShellState, WebWorld } from './kernel/registry';
 import { createServiceTable } from './kernel/services';
 import { createShellState, type SessionOptions } from './kernel/session';
 import { execute } from './kernel/shell';
+import { GROUP_FILE, groupFileOf } from './kernel/users';
 import { exists, remove } from './kernel/vfs';
 import { DEMO_ROOT } from './tls/tls';
 
@@ -78,6 +79,8 @@ export const setupSchema = z.object({
     state: z.enum(['R', 'S', 'D', 'Z', 'T']).optional(),
     ignoresTerm: z.boolean().optional(),
   }).strict()).optional(),
+  /** 利用者のグループ（グループ → 入っている利用者）。/etc/group に書く（src/engines/kernel/users.ts） */
+  groups: z.record(z.string().regex(/^[a-z][a-z0-9-]*$/), z.array(z.string())).optional(),
   /** 初期状態を作るために、始める前に打っておくコマンド（リポジトリと履歴を作る、など）。学習者には見せない */
   run: z.array(z.string().min(1)).optional(),
 }).strict();
@@ -136,6 +139,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
   for (const [path, content] of Object.entries(s.files ?? {})) files[path] = content;
   const user = s.user ?? 'learner';
   const home = user === 'root' ? '/root' : `/home/${user}`;
+  if (s.groups) files[GROUP_FILE] = groupFileOf(s.groups, user);
   const options: SessionOptions = {
     files,
     cwd: s.cwd ?? home,
