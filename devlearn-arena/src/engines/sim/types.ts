@@ -91,6 +91,8 @@ export const assignSetupSchema = z.object({
     capacity: z.number().min(0).optional(),
     /** 容量の単位（画面に出す） */
     unit: z.string().optional(),
+    /** 容量を超えて入れようとした時のエラーの文（無ければ「入りきらない」。使用中のポートなど、その場面の言葉で返す） */
+    full: z.string().min(1).optional(),
     note: z.string().optional(),
   }).strict()).min(1),
   items: z.array(z.object({

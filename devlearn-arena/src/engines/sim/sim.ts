@@ -1,3 +1,4 @@
+import { ipToInt, parseCidr } from '@/engines/net/subnet';
 import {
   assignSetupSchema, configSetupSchema, connectSetupSchema, orderSetupSchema, readSetupSchema,
   type AssignState, type ConfigState, type ConnectState, type OrderState, type Panel, type ReadState, type SimOutcome, type SimState,
@@ -282,6 +283,7 @@ function assignOp(s: AssignState, verb: string, args: string[]): SimOutcome {
   if (now.length > 0 && !item.multi) return fail(s, `「${itemId}」は、もう「${now.join('・')}」に入っている。1 つの札は 1 つの枠にだけ入る（先に take で出す）`);
   if (slot.capacity !== undefined) {
     const after = usedOf(s, slotId) + (item.size ?? 0);
+    if (after > slot.capacity && slot.full !== undefined) return fail(s, slot.full);
     if (after > slot.capacity) return fail(s, `「${slotId}」に入りきらない（容量 ${String(slot.capacity)}${slot.unit ?? ''}、入れると ${String(after)}${slot.unit ?? ''}）`);
   }
   return ok({ ...s, placed: { ...s.placed, [itemId]: [...now, slotId] } });
@@ -511,7 +513,9 @@ function evalClause(state: SimState, clause: string): boolean {
         idsOf(s.setup.tables, [c.name], '表');
         return c.op((s.tables[c.name] ?? []).length, c.n);
       }
-      return bad('設定するの式は field・row・rows');
+      if (head === 'samenet') return sameNet(s, args, bad);
+      if (head === 'pool') return poolHolds(s, args, bad);
+      return bad('設定するの式は field・row・rows・samenet・pool');
     }
     case 'read': {
       const s = state;
@@ -521,4 +525,80 @@ function evalClause(state: SimState, clause: string): boolean {
       return ps.every(([q, v]) => same(s.answers[q] ?? '', v));
     }
   }
+}
+
+/* ---------- ネットワークの設定の式（net の分野） ---------- */
+
+/** 欄の ID ならその値、そうでなければ書いた値そのもの（決まったアドレス）。欄でもアドレスでもなければ式の誤り */
+function valueOf(s: ConfigState, ref: string, bad: (why: string) => never): string {
+  if (s.setup.fields?.some((f) => f.id === ref)) return s.fields[ref] ?? '';
+  if (/^[\d.]+(\/\d+)?$/.test(ref)) return ref;
+  return bad(`欄 ${ref} が無い`);
+}
+
+/** IPv4 のアドレスを数にする。読めなければ null */
+function ipNumber(ip: string): bigint | null {
+  try {
+    return /^\d+\.\d+\.\d+\.\d+$/.test(ip.trim()) ? ipToInt(ip.trim()) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * samenet A B …: 全て「アドレス/区切り」の形で、同じ網（網の部分と区切りが同じ）にあり、互いに重ならず、
+ * 網そのもの・全体宛てのアドレスでない（そのまま機械に振って、互いに届く）
+ */
+function sameNet(s: ConfigState, args: string[], bad: (why: string) => never): boolean {
+  if (args.length < 2) bad('samenet 欄 欄 …（2 つ以上）');
+  const values = args.map((a) => valueOf(s, a, bad).trim());
+  const nets = new Set<string>();
+  const seen = new Set<string>();
+  for (const v of values) {
+    if (!/^\d+\.\d+\.\d+\.\d+\/\d+$/.test(v)) return false;
+    let c;
+    try {
+      c = parseCidr(v);
+    } catch {
+      return false;
+    }
+    if (c.prefix > 30 || c.address === c.network || c.address === c.broadcast || seen.has(c.address)) return false;
+    seen.add(c.address);
+    nets.add(`${c.network}/${String(c.prefix)}`);
+  }
+  return nets.size === 1;
+}
+
+/** pool 始め 終わり in=網 size>=N avoid=a,b: 配る範囲が網の中（網そのもの・全体宛てを除く）で、数が足り、固定のアドレスを含まない */
+function poolHolds(s: ConfigState, args: string[], bad: (why: string) => never): boolean {
+  const [startRef = '', endRef = '', ...rest] = args;
+  if (args.length < 3) bad('pool 始め 終わり in=網 size>=N avoid=a,b');
+  const start = ipNumber(valueOf(s, startRef, bad));
+  const end = ipNumber(valueOf(s, endRef, bad));
+  let net: { network: bigint; broadcast: bigint } | null = null;
+  let size: { op: Compare; n: number } | null = null;
+  const avoid: bigint[] = [];
+  for (const a of rest) {
+    if (a.startsWith('in=')) {
+      try {
+        const c = parseCidr(a.slice(3));
+        net = { network: ipToInt(c.network), broadcast: ipToInt(c.broadcast) };
+      } catch {
+        bad(`網 ${a.slice(3)} が読めない（10.0.0.0/8 の形）`);
+      }
+      continue;
+    }
+    if (a.startsWith('avoid=')) {
+      for (const ip of a.slice(6).split(',')) avoid.push(ipNumber(ip) ?? bad(`アドレス ${ip} が読めない`));
+      continue;
+    }
+    const c = comparison(a);
+    if (c?.name === 'size') size = c;
+    else bad(`「${a}」は書けない（in=網・size>=N・avoid=a,b）`);
+  }
+  if (!net) return bad('in=網 が要る');
+  if (start === null || end === null || start > end) return false;
+  if (start <= net.network || end >= net.broadcast) return false;
+  if (avoid.some((x) => x >= start && x <= end)) return false;
+  return size === null || size.op(Number(end - start + 1n), size.n);
 }

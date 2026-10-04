@@ -257,3 +257,66 @@ describe('荷物を送る・結果を見せる情報・設定の出来上がり'
     expect(isSettled(run(s, ['set enc UTF-8']).state)).toBe(true);
   });
 });
+
+describe('ネットワークの設定を判定する式（net の分野）', () => {
+  const office = {
+    fields: [
+      { id: 'pc1', label: '1 台目' },
+      { id: 'pc2', label: '2 台目' },
+      { id: 'start', label: '配る範囲の始め' },
+      { id: 'end', label: '配る範囲の終わり' },
+    ],
+  };
+
+  it('samenet: 全てのアドレスが同じ網にあり、重ならず、網そのものと全体宛てのアドレスでない', () => {
+    const s = sim('sim-config', office);
+    const set = (a: string, b: string) => run(s, [`set pc1 ${a}`, `set pc2 ${b}`]).state;
+    const ok = (st: SimState) => holds(st, 'samenet 192.168.10.1/24 pc1 pc2');
+    expect(ok(set('192.168.10.11/24', '192.168.10.12/24'))).toBe(true);
+    // 網の部分が違う・区切りが違う
+    expect(ok(set('192.168.10.11/24', '192.168.20.12/24'))).toBe(false);
+    expect(ok(set('192.168.10.11/24', '192.168.10.12/16'))).toBe(false);
+    // 重なる（ルータとも）
+    expect(ok(set('192.168.10.11/24', '192.168.10.11/24'))).toBe(false);
+    expect(ok(set('192.168.10.1/24', '192.168.10.12/24'))).toBe(false);
+    // 網そのもの・全体宛て・区切りが無い・読めない
+    expect(ok(set('192.168.10.0/24', '192.168.10.12/24'))).toBe(false);
+    expect(ok(set('192.168.10.255/24', '192.168.10.12/24'))).toBe(false);
+    expect(ok(set('192.168.10.11', '192.168.10.12/24'))).toBe(false);
+    expect(ok(set('192.168.10.300/24', '192.168.10.12/24'))).toBe(false);
+    expect(ok(s)).toBe(false);
+  });
+
+  it('pool: 配る範囲が網の中にあり、数が足り、固定のアドレスと重ならない', () => {
+    const s = sim('sim-config', office);
+    const set = (a: string, b: string) => run(s, [`set start ${a}`, `set end ${b}`]).state;
+    const expr = 'pool start end in=192.168.1.0/24 size>=5 avoid=192.168.1.1,192.168.1.10';
+    expect(holds(set('192.168.1.100', '192.168.1.150'), expr)).toBe(true);
+    expect(holds(set('192.168.1.100', '192.168.1.103'), expr)).toBe(false);
+    expect(holds(set('192.168.1.5', '192.168.1.50'), expr)).toBe(false);
+    expect(holds(set('192.168.1.150', '192.168.1.100'), expr)).toBe(false);
+    expect(holds(set('192.168.2.100', '192.168.2.150'), expr)).toBe(false);
+    expect(holds(set('192.168.1.0', '192.168.1.20'), expr)).toBe(false);
+  });
+
+  it('式の形の誤り（無い欄・読めない網）は内容の誤り', () => {
+    const s = sim('sim-config', office);
+    expect(exprProblems(s, 'samenet pc1 pc9')).not.toEqual([]);
+    expect(exprProblems(s, 'samenet pc1')).not.toEqual([]);
+    expect(exprProblems(s, 'pool start end in=10.0.0.0 size>=5')).not.toEqual([]);
+    expect(exprProblems(s, 'pool start end in=10.0.0.0/8 size>=5')).toEqual([]);
+  });
+});
+
+describe('割り振る: 枠が埋まった時の文', () => {
+  it('枠に full の文があれば、容量を超える時はその文で返す', () => {
+    const s = sim('sim-assign', {
+      slots: [{ id: 'p80', label: '80', capacity: 1, full: 'bind: 80 番は使用中（Address already in use）' }, { id: 'p22', label: '22', capacity: 1 }],
+      items: [{ id: 'web', label: 'Web', size: 1 }, { id: 'ssh', label: 'SSH', size: 1 }],
+    });
+    const r = run(s, ['put web p80', 'put ssh p80']);
+    expect(r.errors).toEqual(['bind: 80 番は使用中（Address already in use）']);
+    expect(holds(r.state, 'in web=p80')).toBe(true);
+    expect(holds(r.state, 'in ssh=p80')).toBe(false);
+  });
+});
