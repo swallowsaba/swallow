@@ -6,25 +6,55 @@
   "title": "2 進数・文字コード・データ量",
   "goal": "ビットとバイト、文字化けの理由を説明できる",
   "minutes": 15,
-  "prerequisites": ["found.b.01"],
-  "related": ["db.b.02", "web.i.02"],
-  "next": ["found.i.01"],
-  "terms": ["binary", "bit", "byte", "character-encoding", "mojibake", "file", "kb", "mb", "gb", "utf-8", "shift-jis"],
+  "prerequisites": [
+    "found.b.01"
+  ],
+  "related": [
+    "db.b.02",
+    "web.i.02"
+  ],
+  "next": [
+    "found.i.01"
+  ],
+  "terms": [
+    "binary",
+    "bit",
+    "byte",
+    "character-encoding",
+    "mojibake",
+    "file",
+    "kb",
+    "mb",
+    "gb",
+    "utf-8",
+    "shift-jis"
+  ],
   "explain": {
     "what": "コンピュータは、全ての情報を 0 と 1 の並び（{{term:binary}}）で表す。0 か 1 の 1 けたを{{term:bit}}、8 ビットのまとまりを{{term:byte}}と呼ぶ。文字も決まった表で 0 と 1 に置き換える。この表が{{term:character-encoding}}。",
     "why": "{{term:file}}の大きさや通信の量は、バイトで数える。文字をどの表で 0 と 1 にしたかが食い違うと、文字が意味の無い記号の並びになる（{{term:mojibake}}）。どちらも、0 と 1 の話が分かると理由が見える。",
     "use": "ファイルの大きさを{{term:kb}}・{{term:mb}}・{{term:gb}}で比べる。日本語の文字を、正しい文字コードで読み書きする。",
     "when": "受け取ったファイルを開いたら、文字が化けていた時。書いた側と読む側で文字コードが違うことが多い。今よく使う{{term:utf-8}}と、昔からある{{term:shift-jis}}の取り違えが典型。",
-    "figures": ["found-b08-bits"]
+    "figures": [
+      "found-b08-bits"
+    ]
   },
   "understand": [
     {
       "kind": "match",
       "prompt": "用語と説明を結ぶ。",
       "pairs": [
-        ["ビット", "0 か 1 の 1 けた"],
-        ["バイト", "8 ビットのまとまり"],
-        ["文字コード", "文字と、0 と 1 の並びの対応表"]
+        [
+          "ビット",
+          "0 か 1 の 1 けた"
+        ],
+        [
+          "バイト",
+          "8 ビットのまとまり"
+        ],
+        [
+          "文字コード",
+          "文字と、0 と 1 の並びの対応表"
+        ]
       ],
       "see": "what"
     },
@@ -42,9 +72,23 @@
       "kind": "predict",
       "prompt": "1 バイト（8 ビット）で表せる 0 と 1 の並びは、何通り？",
       "choices": [
-        { "id": "a", "text": "256 通り", "correct": true },
-        { "id": "b", "text": "8 通り", "correct": false, "whyNot": "8 はビットの数。1 けたごとに 0 か 1 の 2 通りあるので、2 を 8 回掛けた数になる。" },
-        { "id": "c", "text": "16 通り", "correct": false, "whyNot": "16 は 4 ビット分（2 を 4 回掛けた数）。8 ビットなら 256 通り。" }
+        {
+          "id": "a",
+          "text": "256 通り",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "8 通り",
+          "correct": false,
+          "whyNot": "8 はビットの数。1 けたごとに 0 か 1 の 2 通りあるので、2 を 8 回掛けた数になる。"
+        },
+        {
+          "id": "c",
+          "text": "16 通り",
+          "correct": false,
+          "whyNot": "16 は 4 ビット分（2 を 4 回掛けた数）。8 ビットなら 256 通り。"
+        }
       ],
       "explanation": "1 けたで 2 通り、2 けたで 4 通り、と 1 けた増えるごとに 2 倍になる。8 けたなら 2 を 8 回掛けて 256 通り。"
     },
@@ -53,9 +97,23 @@
       "kind": "cause",
       "prompt": "受け取ったファイルの文字が、記号の並びに化けた。原因として考えやすいのは？",
       "choices": [
-        { "id": "a", "text": "書いた時と読む時で、文字コードが違う", "correct": true },
-        { "id": "b", "text": "ファイルが壊れて、中身が消えた", "correct": false, "whyNot": "中身が消えたなら、記号すら出ない。化けた時は、正しい文字コードで読み直すと直ることが多い。" },
-        { "id": "c", "text": "ファイルが大きすぎる", "correct": false, "whyNot": "大きさは、文字の表し方とは関係ない。" }
+        {
+          "id": "a",
+          "text": "書いた時と読む時で、文字コードが違う",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ファイルが壊れて、中身が消えた",
+          "correct": false,
+          "whyNot": "中身が消えたなら、記号すら出ない。化けた時は、正しい文字コードで読み直すと直ることが多い。"
+        },
+        {
+          "id": "c",
+          "text": "ファイルが大きすぎる",
+          "correct": false,
+          "whyNot": "大きさは、文字の表し方とは関係ない。"
+        }
       ],
       "explanation": "0 と 1 の並びは同じでも、違う表で読むと別の文字になる。書いた時の文字コードで読み直せば直る。"
     },
@@ -64,9 +122,23 @@
       "kind": "choice",
       "prompt": "大きい順に正しく並んでいるのはどれ？",
       "choices": [
-        { "id": "a", "text": "GB・MB・KB", "correct": true },
-        { "id": "b", "text": "KB・MB・GB", "correct": false, "whyNot": "これは小さい順。" },
-        { "id": "c", "text": "MB・GB・KB", "correct": false, "whyNot": "GB は MB の約 1000 倍。MB より GB が大きい。" }
+        {
+          "id": "a",
+          "text": "GB・MB・KB",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "KB・MB・GB",
+          "correct": false,
+          "whyNot": "これは小さい順。"
+        },
+        {
+          "id": "c",
+          "text": "MB・GB・KB",
+          "correct": false,
+          "whyNot": "GB は MB の約 1000 倍。MB より GB が大きい。"
+        }
       ],
       "explanation": "KB の約 1000 倍が MB、MB の約 1000 倍が GB。写真 1 枚は数 MB、映画 1 本は数 GB くらい。"
     }
@@ -77,28 +149,92 @@
     "environment": "sim-config",
     "setup": {
       "fields": [
-        { "id": "enc", "label": "読む文字コード", "options": ["Shift_JIS", "UTF-8", "EUC-JP"], "value": "Shift_JIS", "note": "ファイルを読む時に使う表" }
+        {
+          "id": "enc",
+          "label": "読む文字コード",
+          "options": [
+            "Shift_JIS",
+            "UTF-8",
+            "EUC-JP"
+          ],
+          "value": "Shift_JIS",
+          "note": "ファイルを読む時に使う表"
+        }
       ],
       "panels": [
-        { "kind": "kv", "title": "ファイルの情報", "rows": [["名前", "祭りのお知らせ.txt"], ["大きさ", "51 バイト"], ["書いた機械の設定", "文字コード UTF-8 で保存"]] },
-        { "kind": "table", "title": "文字「こ」の 0 と 1", "columns": ["文字コード", "0 と 1 の並び"], "rows": [["UTF-8", "11100011 10000001 10010011"], ["Shift_JIS", "10000010 10110001"]] },
-        { "kind": "text", "title": "表示（Shift_JIS で読んだ）", "body": "縺薙ｓ縺ｫ縺｡縺ｯ縲よｸｯ縺ｮ逾ｭ繧翫・ｯ蝨滓屆譌･縺ｧ縺吶・", "when": "field enc=Shift_JIS" },
-        { "kind": "text", "title": "表示（EUC-JP で読んだ）", "body": "・＜・羝・腑・ャ・с・", "when": "field enc=EUC-JP" },
-        { "kind": "text", "title": "表示（UTF-8 で読んだ）", "body": "こんにちは。港の祭りは土曜日です。", "when": "field enc=UTF-8" }
+        {
+          "kind": "text",
+          "title": "表示（Shift_JIS で読んだ）",
+          "body": "縺薙ｓ縺ｫ縺｡縺ｯ縲よｸｯ縺ｮ逾ｭ繧翫・ｯ蝨滓屆譌･縺ｧ縺吶・",
+          "when": "field enc=Shift_JIS"
+        },
+        {
+          "kind": "text",
+          "title": "表示（EUC-JP で読んだ）",
+          "body": "・＜・羝・腑・ャ・с・",
+          "when": "field enc=EUC-JP"
+        },
+        {
+          "kind": "text",
+          "title": "表示（UTF-8 で読んだ）",
+          "body": "こんにちは。港の祭りは土曜日です。",
+          "when": "field enc=UTF-8"
+        },
+        {
+          "kind": "kv",
+          "title": "ファイルの情報",
+          "rows": [
+            [
+              "名前",
+              "祭りのお知らせ.txt"
+            ],
+            [
+              "大きさ",
+              "51 バイト"
+            ],
+            [
+              "書いた機械の設定",
+              "文字コード UTF-8 で保存"
+            ]
+          ]
+        },
+        {
+          "kind": "table",
+          "title": "文字「こ」の 0 と 1",
+          "columns": [
+            "文字コード",
+            "0 と 1 の並び"
+          ],
+          "rows": [
+            [
+              "UTF-8",
+              "11100011 10000001 10010011"
+            ],
+            [
+              "Shift_JIS",
+              "10000010 10110001"
+            ]
+          ]
+        }
       ]
     },
     "steps": [
       {
         "id": "reread",
         "purpose": "ファイルの情報で、書いた側の文字コードを確かめ、読む文字コードを合わせる。",
-        "check": { "kind": "sim", "expr": "field enc=UTF-8" },
+        "check": {
+          "kind": "sim",
+          "expr": "field enc=UTF-8"
+        },
         "afterward": "書いた時と同じ UTF-8 で読み直すと、本文が正しく出た。ファイルは壊れていなかった。読む表が違っていただけ。",
         "hints": [
           "文字化けは、書いた時と読む時の表の食い違い。まず、書いた側がどの文字コードで保存したかを見よう。",
           "ファイルの情報に「書いた機械の設定」がある。読む文字コードの欄を、それと同じにする。",
           "`set enc UTF-8` と入れる。"
         ],
-        "expectedErrors": ["found-mojibake"]
+        "expectedErrors": [
+          "found-mojibake"
+        ]
       }
     ]
   },
@@ -113,7 +249,15 @@
       "8 ビットで 1 バイト。KB・MB・GB は約 1000 倍ずつ大きくなる",
       "文字化けは、文字コードの食い違い"
     ],
-    "next": ["found.i.01", "db.b.01"],
-    "terms": ["bit", "byte", "character-encoding", "mojibake"]
+    "next": [
+      "found.i.01",
+      "db.b.01"
+    ],
+    "terms": [
+      "bit",
+      "byte",
+      "character-encoding",
+      "mojibake"
+    ]
   }
 }

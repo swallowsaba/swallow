@@ -30,6 +30,7 @@ export function SimConsole({ sim, log, verbs, send, onReset, restored, error }: 
   error: ReactNode;
 }) {
   const [draft, setDraft] = useState('');
+  const panels = shownPanels(sim);
   const logRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
     const el = logRef.current;
@@ -44,8 +45,12 @@ export function SimConsole({ sim, log, verbs, send, onReset, restored, error }: 
         </button>
       </div>
       <div className="sim-body">
-        <Panels panels={shownPanels(sim)} />
-        <SimView sim={sim} send={send} />
+        <div className={`sim-layout${panels.length > 0 ? ' has-panels' : ''}`}>
+          <Panels panels={panels} />
+          <div className="sim-main">
+            <SimView sim={sim} send={send} />
+          </div>
+        </div>
       </div>
       <div className="sim-statements">
         <ol className="sim-log" ref={logRef} aria-label="操作の文の記録" data-testid="sim-log">

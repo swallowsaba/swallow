@@ -6,23 +6,43 @@
   "title": "ネットワークとインターネットの全体像",
   "goal": "端末・ネットワーク・サーバのつながりを説明できる",
   "minutes": 15,
-  "prerequisites": ["found.b.01"],
-  "related": ["net.b.01", "web.b.01"],
-  "next": ["net.b.01"],
-  "terms": ["network", "lan", "internet", "web", "app", "router", "isp", "server"],
+  "prerequisites": [
+    "found.b.01"
+  ],
+  "related": [
+    "net.b.01",
+    "web.b.01"
+  ],
+  "next": [
+    "net.b.01"
+  ],
+  "terms": [
+    "network",
+    "lan",
+    "internet",
+    "web",
+    "app",
+    "router",
+    "isp",
+    "server"
+  ],
   "explain": {
     "what": "機械どうしを線や電波でつないだ網が{{term:network}}。家や会社の中の小さな網を{{term:lan}}と呼ぶ。世界中の網どうしをつないだ「網の網」が{{term:internet}}。",
     "why": "1 台の機械だけでは、できることが限られる。{{term:web}}のページもメールも{{term:app}}の更新も、必ず網を通って届く。届く道筋を知らないと、つながらない時に手が出せない。",
     "use": "Web のページを見る時、データは家の{{term:router}}・{{term:isp}}・インターネットを順に通って、相手の{{term:server}}に届く。返事も同じ道を通って戻ってくる。",
     "when": "「インターネットにつながらない」と言われた時。家の中の網の問題か、外の問題か。近い所から順に確かめると、早く原因に着く。",
-    "figures": ["found-b07-route"]
+    "figures": [
+      "found-b07-route"
+    ]
   },
   "understand": [
     {
       "kind": "figure-pick",
       "figure": "found-b07-route",
       "prompt": "図で、家の中の網と外をつなぐ出入口の機器を押す。",
-      "answer": ["router"],
+      "answer": [
+        "router"
+      ],
       "see": "use"
     },
     {
@@ -40,7 +60,13 @@
       "id": "q1",
       "kind": "order",
       "prompt": "Web のページを見る時、データが通る道を、パソコンから順に並べる。",
-      "order": ["パソコン", "家のルータ", "プロバイダ", "インターネット", "Web のサーバ"],
+      "order": [
+        "パソコン",
+        "家のルータ",
+        "プロバイダ",
+        "インターネット",
+        "Web のサーバ"
+      ],
       "explanation": "家の中から外へ、近い順に通る。返事は逆の順で戻ってくる。"
     },
     {
@@ -48,9 +74,23 @@
       "kind": "cause",
       "prompt": "家のパソコンでインターネットが見られない。調べると、家の中の別のパソコンにもつながらない。どこの問題と考えやすい？",
       "choices": [
-        { "id": "a", "text": "家の中の網（LAN）", "correct": true },
-        { "id": "b", "text": "相手のサーバ", "correct": false, "whyNot": "相手のサーバが止まっても、家の中のパソコンどうしは話せる。家の中でもつながらないなら、家の中を疑う。" },
-        { "id": "c", "text": "プロバイダ", "correct": false, "whyNot": "プロバイダは家の外。家の中どうしの通信には関わらない。" }
+        {
+          "id": "a",
+          "text": "家の中の網（LAN）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "相手のサーバ",
+          "correct": false,
+          "whyNot": "相手のサーバが止まっても、家の中のパソコンどうしは話せる。家の中でもつながらないなら、家の中を疑う。"
+        },
+        {
+          "id": "c",
+          "text": "プロバイダ",
+          "correct": false,
+          "whyNot": "プロバイダは家の外。家の中どうしの通信には関わらない。"
+        }
       ],
       "explanation": "家の中どうしもつながらないなら、問題は家の中にある。ルータが止まっていないか、線が抜けていないかから確かめる。"
     },
@@ -59,9 +99,23 @@
       "kind": "term",
       "prompt": "サーバとは、どんな機械？",
       "choices": [
-        { "id": "a", "text": "頼みを受けて、ページやデータを返す側の機械", "correct": true },
-        { "id": "b", "text": "ページを見る側の機械", "correct": false, "whyNot": "見る側は、頼む側の機械。サーバは、頼まれて返す側。" },
-        { "id": "c", "text": "網と網をつなぐ機械", "correct": false, "whyNot": "網どうしをつなぐのはルータ。" }
+        {
+          "id": "a",
+          "text": "頼みを受けて、ページやデータを返す側の機械",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ページを見る側の機械",
+          "correct": false,
+          "whyNot": "見る側は、頼む側の機械。サーバは、頼まれて返す側。"
+        },
+        {
+          "id": "c",
+          "text": "網と網をつなぐ機械",
+          "correct": false,
+          "whyNot": "網どうしをつなぐのはルータ。"
+        }
       ],
       "explanation": "サーバは、頼まれた物を返す側の機械。Web のサーバなら、頼まれたページを返す。"
     }
@@ -72,53 +126,170 @@
     "environment": "sim-connect",
     "setup": {
       "nodes": [
-        { "id": "pc", "label": "パソコン", "icon": "pc", "note": "家の中", "x": 8, "y": 40 },
-        { "id": "pc2", "label": "家のもう 1 台", "icon": "pc", "note": "家の中", "x": 8, "y": 85 },
-        { "id": "router", "label": "ルータ", "icon": "router", "note": "家の出入口", "x": 30, "y": 40 },
-        { "id": "isp", "label": "プロバイダ", "icon": "net", "note": "接続の会社", "x": 52, "y": 40 },
-        { "id": "internet", "label": "インターネット", "icon": "cloud", "note": "網の網", "x": 72, "y": 40 },
-        { "id": "server", "label": "サーバ", "icon": "server", "note": "港町のページ", "x": 92, "y": 40 }
+        {
+          "id": "pc",
+          "label": "パソコン",
+          "icon": "pc",
+          "note": "家の中",
+          "x": 12,
+          "y": 25
+        },
+        {
+          "id": "pc2",
+          "label": "家のもう 1 台",
+          "icon": "pc",
+          "note": "家の中",
+          "x": 12,
+          "y": 78
+        },
+        {
+          "id": "router",
+          "label": "ルータ",
+          "icon": "router",
+          "note": "家の出入口",
+          "x": 46,
+          "y": 25
+        },
+        {
+          "id": "isp",
+          "label": "プロバイダ",
+          "icon": "net",
+          "note": "接続の会社",
+          "x": 82,
+          "y": 25
+        },
+        {
+          "id": "internet",
+          "label": "インターネット",
+          "icon": "cloud",
+          "note": "網の網",
+          "x": 82,
+          "y": 78
+        },
+        {
+          "id": "server",
+          "label": "サーバ",
+          "icon": "server",
+          "note": "港町のページ",
+          "x": 46,
+          "y": 78
+        }
       ],
-      "links": [["pc", "router"], ["pc2", "router"], ["isp", "internet"], ["internet", "server"]],
+      "links": [
+        [
+          "pc",
+          "router"
+        ],
+        [
+          "pc2",
+          "router"
+        ],
+        [
+          "isp",
+          "internet"
+        ],
+        [
+          "internet",
+          "server"
+        ]
+      ],
       "forbid": [
-        { "a": "pc", "b": "server", "message": "つなげない: サーバは遠い町にある。間の機器を順に通らないと届かない" },
-        { "a": "pc", "b": "isp", "message": "つなげない: 家のパソコンは、家のルータを通って外へ出る" },
-        { "a": "pc", "b": "internet", "message": "つなげない: 家のパソコンは、家のルータを通って外へ出る" }
+        {
+          "a": "pc",
+          "b": "server",
+          "message": "つなげない: サーバは遠い町にある。間の機器を順に通らないと届かない"
+        },
+        {
+          "a": "pc",
+          "b": "isp",
+          "message": "つなげない: 家のパソコンは、家のルータを通って外へ出る"
+        },
+        {
+          "a": "pc",
+          "b": "internet",
+          "message": "つなげない: 家のパソコンは、家のルータを通って外へ出る"
+        }
       ],
       "sends": [
-        { "from": "pc", "to": "pc2", "label": "家のもう 1 台へ送る" },
-        { "from": "pc", "to": "server", "label": "サーバへ送る" }
+        {
+          "from": "pc",
+          "to": "pc2",
+          "label": "家のもう 1 台へ送る"
+        },
+        {
+          "from": "pc",
+          "to": "server",
+          "label": "サーバへ送る"
+        }
       ],
       "panels": [
-        { "kind": "kv", "title": "確かめ方", "rows": [["1", "家の中どうしで届くか"], ["2", "家の外のサーバまで届くか"], ["3", "止まった所の先の線を見る"]] },
-        { "kind": "text", "title": "家のもう 1 台", "body": "届いた。家の中の網（LAN）は動いている。", "when": "sent pc pc2" },
-        { "kind": "text", "title": "サーバからの返事", "body": "ようこそ、港町のページへ。", "when": "sent pc server" }
+        {
+          "kind": "kv",
+          "title": "確かめ方",
+          "rows": [
+            [
+              "1",
+              "家の中どうしで届くか"
+            ],
+            [
+              "2",
+              "家の外のサーバまで届くか"
+            ],
+            [
+              "3",
+              "止まった所の先の線を見る"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "家のもう 1 台",
+          "body": "届いた。家の中の網（LAN）は動いている。",
+          "when": "sent pc pc2"
+        },
+        {
+          "kind": "text",
+          "title": "サーバからの返事",
+          "body": "ようこそ、港町のページへ。",
+          "when": "sent pc server"
+        }
       ]
     },
     "steps": [
       {
         "id": "inside",
         "purpose": "まず近い所から確かめる。家のもう 1 台へ送って、家の中の網で届くかを見る。",
-        "check": { "kind": "sim", "expr": "sent pc pc2" },
+        "check": {
+          "kind": "sim",
+          "expr": "sent pc pc2"
+        },
         "afterward": "家の中では届いた。家の中の網（LAN）は大丈夫。問題は家の外にありそうだ。",
         "hints": [
           "つながらない時は、近い所から確かめる。家の中どうしなら、ルータの手前で済む。",
           "「家のもう 1 台へ送る」を押す。",
           "`send pc pc2` と入れる。"
         ],
-        "expectedErrors": ["not-reached"]
+        "expectedErrors": [
+          "not-reached"
+        ]
       },
       {
         "id": "outside",
         "purpose": "サーバへ送り、どこで止まるかを見る。途切れた区間をつないで、サーバまで届ける。",
-        "check": { "kind": "sim", "expr": "path pc>router>isp>internet>server && sent pc server" },
+        "check": {
+          "kind": "sim",
+          "expr": "path pc>router>isp>internet>server && sent pc server"
+        },
         "afterward": "ルータとプロバイダの間がつながり、データがサーバまで届いた。返事も同じ道を通って戻ってくる。",
         "hints": [
           "「サーバへ送る」を押すと、どこまで届いたかが知らせに出る。そこから先を見よう。",
           "ルータまでは届くが、その先のプロバイダとの線が無い。ルータとプロバイダをつなぐ。",
           "`connect router isp` `send pc server` の順に入れる。"
         ],
-        "expectedErrors": ["not-reached", "sim-forbidden"]
+        "expectedErrors": [
+          "not-reached",
+          "sim-forbidden"
+        ]
       }
     ]
   },
@@ -133,7 +304,15 @@
       "データは機器を順に通って届く",
       "つながらない時は、近い所から確かめる"
     ],
-    "next": ["net.b.01"],
-    "terms": ["network", "internet", "lan", "router", "isp"]
+    "next": [
+      "net.b.01"
+    ],
+    "terms": [
+      "network",
+      "internet",
+      "lan",
+      "router",
+      "isp"
+    ]
   }
 }

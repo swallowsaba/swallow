@@ -30,7 +30,7 @@ export default async function domain(page, shot) {
   const id = process.env.LESSON ?? 'found.b.01';
   const dom = id.split('.')[0];
   const w = String(page.viewportSize()?.width ?? 0);
-  const tag = `p10-${dom}${w === '1920' ? '' : `-${w}`}`;
+  const tag = process.env.TAG ?? `p10-${dom}${w === '1920' ? '' : `-${w}`}`;
   page.on('pageerror', (e) => console.log('PAGEERROR', (e.stack ?? '').split('\n').slice(0, 5).join(' | ')));
 
   // 中身と用語集（用語の印を画面の語に直す）
@@ -77,8 +77,7 @@ export default async function domain(page, shot) {
       const word = { contains: 'を含む', before: 'より先に起きる', cause: 'が原因で' }[u.answer];
       await page.click(`.choice-button >> text=${word}`);
     } else if (u.kind === 'situation') {
-      const right = u.choices.find((c) => c.correct);
-      await clickText(page, '.choice-button', plain(right.text));
+      await page.click(`.choice-button[data-choice="${u.choices.find((c) => c.correct).id}"]`);
     } else if (u.kind === 'match') {
       for (const [a, b] of u.pairs) {
         await clickText(page, '.match-col:first-child .match-item', plain(a));
