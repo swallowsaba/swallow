@@ -1,6 +1,6 @@
 import {
   assignSetupSchema, configSetupSchema, connectSetupSchema, orderSetupSchema, readSetupSchema,
-  type AssignState, type ConfigState, type ConnectState, type OrderState, type ReadState, type SimOutcome, type SimState,
+  type AssignState, type ConfigState, type ConnectState, type OrderState, type Panel, type ReadState, type SimOutcome, type SimState,
 } from './types';
 
 /**
@@ -25,7 +25,7 @@ export const isSimEnvironment = (id: string): id is SimEnvironmentId => Object.h
 
 /** 型ごとの操作の名前（画面の「使える操作」と、誤りの文に出す） */
 export const SIM_VERBS: Record<SimState['type'], string[]> = {
-  connect: ['connect', 'cut', 'start'],
+  connect: ['connect', 'cut', 'start', 'send'],
   order: ['order'],
   assign: ['put', 'take'],
   config: ['set', 'add', 'del'],
@@ -44,7 +44,10 @@ export function createSim(environment: string, setup: unknown): SimState {
       const ids = unique(s.nodes.map((n) => n.id), '部品');
       for (const [a, b] of s.links ?? []) need(ids, [a, b], '線');
       for (const f of s.forbid ?? []) need(ids, [f.a, f.b], '引けない線');
-      return { type: 'connect', setup: s, links: (s.links ?? []).map(([a, b]) => [a, b]), up: [] };
+      for (const x of s.sends ?? []) need(ids, [x.from, x.to], '送れる組');
+      const state: ConnectState = { type: 'connect', setup: s, links: (s.links ?? []).map(([a, b]) => [a, b]), up: [], sent: [] };
+      checkPanels(state);
+      return state;
     }
     case 'order': {
       const s = orderSetupSchema.parse(setup);
@@ -54,6 +57,7 @@ export function createSim(environment: string, setup: unknown): SimState {
       if (s.initial === undefined) return state;
       const r = arrange(state, s.initial);
       if (r.error) throw new Error(`初めの並び: ${r.error}`);
+      checkPanels(r.state);
       return r.state;
     }
     case 'assign': {
@@ -69,6 +73,7 @@ export function createSim(environment: string, setup: unknown): SimState {
           state = r.state;
         }
       }
+      checkPanels(state);
       return state;
     }
     case 'config': {
@@ -85,15 +90,31 @@ export function createSim(environment: string, setup: unknown): SimState {
         for (const row of t.rows ?? []) need(cols, Object.keys(row), `表 ${t.id} の行`);
         tables[t.id] = (t.rows ?? []).map((r) => ({ ...r }));
       }
-      return { type: 'config', setup: s, fields, tables };
+      const state: ConfigState = { type: 'config', setup: s, fields, tables };
+      checkPanels(state);
+      return state;
     }
     case 'read': {
       const s = readSetupSchema.parse(setup);
       unique(s.questions.map((q) => q.id), '問い');
-      return { type: 'read', setup: s, answers: {} };
+      const state: ReadState = { type: 'read', setup: s, answers: {} };
+      checkPanels(state);
+      return state;
     }
   }
 }
+
+/** 情報の when の式が正しいか（誤りは内容の誤りとして投げる） */
+function checkPanels(state: SimState): void {
+  for (const p of state.setup.panels ?? []) {
+    if (p.when === undefined) continue;
+    const problems = exprProblems(state, p.when);
+    if (problems.length > 0) throw new Error(`情報「${p.title}」の when: ${problems.join('・')}`);
+  }
+}
+
+/** 今の状態で示す情報（when を満たす物だけ） */
+export const shownPanels = (state: SimState): Panel[] => (state.setup.panels ?? []).filter((p) => p.when === undefined || holds(state, p.when));
 
 function unique(ids: string[], what: string): Set<string> {
   const set = new Set<string>();
@@ -140,32 +161,40 @@ function connectOp(s: ConnectState, verb: string, args: string[]): SimOutcome {
   const want = verb === 'start' ? 1 : 2;
   if (args.length !== want) return fail(s, verb === 'start' ? '書き方: start 機器' : `書き方: ${verb} 部品 部品（2 つの ID を空白で区切る）`);
   for (const a of args) if (!nodeOf(s, a)) return fail(s, `「${a}」という部品は無い`);
+  if (verb === 'send') {
+    const [from = '', to = ''] = args;
+    if (!isUp(s, from)) return fail(s, `届かない: 送り元の「${from}」が止まっている`);
+    if (!reaches(s, from, to)) {
+      const far = reachable(s, from).filter((x) => x !== from);
+      return fail(s, `届かない: 「${from}」から届くのは ${far.length > 0 ? far.map((x) => `「${x}」`).join('・') : 'どこにも無い'}まで。「${to}」へ進めない`);
+    }
+    return ok({ ...s, sent: [...s.sent.filter(([a, b]) => !(a === from && b === to)), [from, to]] });
+  }
   if (verb === 'start') {
     const [a = ''] = args;
     if (isUp(s, a)) return fail(s, `「${a}」は、もう動いている`);
-    return ok({ ...s, up: [...s.up, a] });
+    return ok({ ...s, up: [...s.up, a], sent: [] });
   }
   const [a = '', b = ''] = args;
   if (a === b) return fail(s, '同じ部品どうしはつなげない');
   const linked = s.links.some((l) => sameLink(s, l, a, b));
   if (verb === 'cut') {
     if (!linked) return fail(s, `「${a}」と「${b}」はつながっていない`);
-    return ok({ ...s, links: s.links.filter((l) => !sameLink(s, l, a, b)) });
+    return ok({ ...s, links: s.links.filter((l) => !sameLink(s, l, a, b)), sent: [] });
   }
   if (linked) return fail(s, `「${a}」と「${b}」は、もうつながっている`);
   const forbid = s.setup.forbid?.find((f) => (f.a === a && f.b === b) || (f.a === b && f.b === a));
   if (forbid) return fail(s, forbid.message);
-  return ok({ ...s, links: [...s.links, [a, b]] });
+  return ok({ ...s, links: [...s.links, [a, b]], sent: [] });
 }
 
-/** 線をたどって届くか（止まった機器は通れない） */
-export function reaches(s: ConnectState, from: string, to: string): boolean {
-  if (!isUp(s, from) || !isUp(s, to)) return false;
+/** 線をたどって届く部品（止まった機器は通れない。送り元を含む） */
+export function reachable(s: ConnectState, from: string): string[] {
+  if (!isUp(s, from)) return [];
   const seen = new Set([from]);
   const queue = [from];
   while (queue.length > 0) {
     const at = queue.shift() ?? '';
-    if (at === to) return true;
     for (const [a, b] of s.links) {
       const next = a === at ? b : !s.setup.directed && b === at ? a : null;
       if (next === null || seen.has(next) || !isUp(s, next)) continue;
@@ -173,8 +202,11 @@ export function reaches(s: ConnectState, from: string, to: string): boolean {
       queue.push(next);
     }
   }
-  return false;
+  return [...seen];
 }
+
+/** 線をたどって届くか（止まった機器は通れない） */
+export const reaches = (s: ConnectState, from: string, to: string): boolean => isUp(s, to) && reachable(s, from).includes(to);
 
 /* 並べる */
 
@@ -313,8 +345,11 @@ export function isSettled(s: SimState): boolean {
     case 'order': return s.setup.items.every((i) => i.extra === true || stageOf(s, i.id) >= 0);
     case 'assign': return s.setup.items.every((i) => i.extra === true || (s.placed[i.id] ?? []).length > 0);
     case 'read': return s.setup.questions.every((q) => (s.answers[q.id] ?? '') !== '');
+    case 'config': {
+      const fields = s.setup.fields ?? [];
+      return fields.length > 0 && fields.every((f) => (s.fields[f.id] ?? '') !== '' && !same(s.fields[f.id] ?? '', f.value ?? ''));
+    }
     case 'connect':
-    case 'config':
       return false;
   }
 }
@@ -393,11 +428,16 @@ function evalClause(state: SimState, clause: string): boolean {
         idsOf(s.setup.nodes, args, '部品');
         return reaches(s, args[0] ?? '', args[1] ?? '');
       }
+      if (head === 'sent') {
+        if (args.length !== 2) bad('sent A B');
+        idsOf(s.setup.nodes, args, '部品');
+        return s.sent.some(([a, b]) => a === args[0] && b === args[1]);
+      }
       if (head === 'up') {
         idsOf(s.setup.nodes, args, '部品');
         return args.every((a) => isUp(s, a));
       }
-      return bad('つなぐの式は link・path・reach・up');
+      return bad('つなぐの式は link・path・reach・sent・up');
     }
     case 'order': {
       const s = state;

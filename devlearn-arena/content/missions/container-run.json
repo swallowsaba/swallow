@@ -1,7 +1,7 @@
 {
   "id": "container-run",
   "title": "コンテナを起動せよ",
-  "story": "港の掲示板アプリを、{{term:container}}で動かしたい。アプリの{{term:image}}（city-board）は掲示の中身を持たず、外から渡す決まりになっている。市民が 8080 番で掲示を見られるようにしよう。",
+  "story": "港の掲示板{{term:app}}を、{{term:container}}で動かしたい。アプリの{{term:image}}（city-board）は掲示の中身を持たず、外から渡す決まりになっている。市民が 8080 番で掲示を見られるようにしよう。",
   "domains": [
     "ctr",
     "docker"

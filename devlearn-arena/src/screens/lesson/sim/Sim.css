@@ -367,6 +367,17 @@
   box-shadow: none;
 }
 
+.sim-sends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sim-tool.is-arrived {
+  color: var(--ok);
+  box-shadow: inset 0 0 0 1px var(--ok);
+}
+
 /* ---------- 並べる ---------- */
 .sim-stages {
   margin: 0;

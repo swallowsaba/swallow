@@ -102,6 +102,18 @@ function ConnectView({ s, send }: { s: ConnectState; send: Send }) {
   return (
     <div className="sim-connect" data-testid="sim-connect">
       <p className="sim-how">部品を 2 つ順に押すと線でつながる。線を押すと外れる。{s.setup.directed ? '線は先に押した方から、後に押した方へ向く。' : ''}</p>
+      {(s.setup.sends ?? []).length > 0 ? (
+        <div className="sim-sends">
+          {(s.setup.sends ?? []).map((x) => {
+            const arrived = s.sent.some(([a, b]) => a === x.from && b === x.to);
+            return (
+              <button key={`${x.from}-${x.to}`} type="button" className={`sim-tool is-strong${arrived ? ' is-arrived' : ''}`} data-send={`${x.from}>${x.to}`} onClick={() => send(`send ${x.from} ${x.to}`)}>
+                {x.label}{arrived ? '（届いた）' : ''}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
       <div className="sim-board">
         <svg className="sim-wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="false" role="group" aria-label="つながり">
           {s.links.map(([a, b]) => {

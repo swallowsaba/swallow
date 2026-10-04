@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { SimState } from '@/engines/sim/types';
 import { Icon } from '@/ui/icons/Icon';
 import { SIM_NAMES } from './simNames';
+import { shownPanels } from '@/engines/sim/sim';
 import { Panels, SimView } from './SimViews';
 import './Sim.css';
 
@@ -12,7 +13,7 @@ import './Sim.css';
 
 /** 型ごとの操作の文の書き方（入力欄の下に出す） */
 const FORMS: Record<SimState['type'], string[]> = {
-  connect: ['connect 部品 部品', 'cut 部品 部品', 'start 機器'],
+  connect: ['connect 部品 部品', 'cut 部品 部品', 'start 機器', 'send 送り元 宛先'],
   order: ['order 札 札,札 札（空白で次の段、, で同じ段）'],
   assign: ['put 札 枠', 'take 札'],
   config: ['set 欄 値', 'add 表 列=値 …', 'del 表 番号'],
@@ -43,7 +44,7 @@ export function SimConsole({ sim, log, verbs, send, onReset, restored, error }: 
         </button>
       </div>
       <div className="sim-body">
-        <Panels panels={sim.setup.panels ?? []} />
+        <Panels panels={shownPanels(sim)} />
         <SimView sim={sim} send={send} />
       </div>
       <div className="sim-statements">

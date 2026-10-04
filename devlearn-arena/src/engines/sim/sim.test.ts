@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyStatement, createSim, exprProblems, holds, isSettled, orderStatement, type SimEnvironmentId } from './sim';
+import { applyStatement, createSim, exprProblems, holds, isSettled, orderStatement, shownPanels, type SimEnvironmentId } from './sim';
 import type { SimState } from './types';
 
 /** 文を順に与える。誤りがあれば、その文を返す */
@@ -218,5 +218,41 @@ describe('出来上がり（isSettled）', () => {
     expect(isSettled(run(read, ['answer q 1', 'answer r 2']).state)).toBe(true);
     const connect = createSim('sim-connect', { nodes: [{ id: 'a', label: 'A', x: 0, y: 0 }, { id: 'b', label: 'B', x: 9, y: 9 }] });
     expect(isSettled(run(connect, ['connect a b']).state)).toBe(false);
+  });
+});
+
+describe('荷物を送る・結果を見せる情報・設定の出来上がり', () => {
+  const route = {
+    nodes: [
+      { id: 'pc', label: 'パソコン', x: 5, y: 50 },
+      { id: 'router', label: 'ルータ', x: 30, y: 50 },
+      { id: 'isp', label: 'プロバイダ', x: 55, y: 50, down: true },
+      { id: 'server', label: 'サーバ', x: 90, y: 50 },
+    ],
+    links: [['pc', 'router'], ['isp', 'server']],
+    sends: [{ from: 'pc', to: 'server', label: 'パソコンからサーバへ送る' }],
+    panels: [{ kind: 'text', title: 'サーバの返事', body: 'ようこそ', when: 'sent pc server' }],
+  };
+
+  it('届かなければ、どこまで届いたかをエラーの文で返す。届けば sent を満たし、返事の情報が出る', () => {
+    const s0 = createSim('sim-connect', route);
+    expect(applyStatement(s0, 'send pc server').error).toBe('届かない: 「pc」から届くのは 「router」まで。「server」へ進めない');
+    const fixed = run(s0, ['connect router isp', 'start isp', 'send pc server']);
+    expect(fixed.errors).toEqual([]);
+    expect(holds(fixed.state, 'sent pc server')).toBe(true);
+    expect(shownPanels(fixed.state).map((p) => p.title)).toEqual(['サーバの返事']);
+    expect(shownPanels(s0)).toEqual([]);
+    // つなぎ直すと、前に届いた記録は消える（今の網で確かめ直す）
+    expect(holds(run(fixed.state, ['cut router isp']).state, 'sent pc server')).toBe(false);
+  });
+
+  it('情報の when の式の誤りは内容の誤り', () => {
+    expect(() => createSim('sim-connect', { ...route, panels: [{ kind: 'text', title: 't', body: 'b', when: 'sent pc moon' }] })).toThrow('when');
+  });
+
+  it('設定する: 全ての欄を初めの値から変えたら出来上がり', () => {
+    const s = createSim('sim-config', { fields: [{ id: 'enc', label: '文字コード', options: ['Shift_JIS', 'UTF-8'], value: 'Shift_JIS' }] });
+    expect(isSettled(s)).toBe(false);
+    expect(isSettled(run(s, ['set enc UTF-8']).state)).toBe(true);
   });
 });

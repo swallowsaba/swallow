@@ -9,9 +9,9 @@
   "prerequisites": ["linux.b.08"],
   "related": ["docker.b.03", "k8s.i.05"],
   "next": ["linux.i.02", "linux.a.04", "trouble.i.01"],
-  "terms": ["server", "service", "web-server", "database", "systemd", "enable", "port", "log", "systemctl", "journalctl"],
+  "terms": ["server", "program", "service", "web-server", "database", "systemd", "enable", "port", "log", "systemctl", "journalctl"],
   "explain": {
-    "what": "{{term:server}}の裏で動き続け、頼みを待ち受けるプログラムを{{term:service}}と呼ぶ。{{term:web-server}}や{{term:database}}がその例。サービスを動かしたり止めたりする管理役が {{term:systemd}}。",
+    "what": "{{term:server}}の裏で動き続け、頼みを待ち受ける{{term:program}}を{{term:service}}と呼ぶ。{{term:web-server}}や{{term:database}}がその例。サービスを動かしたり止めたりする管理役が {{term:systemd}}。",
     "why": "サーバは保守のために再起動することがある。そのたびに人が手でサービスを動かし直すのでは、忘れた時に止まったままになる。systemd に任せれば、起動時に自動で動かし、落ちた時に立て直せる。",
     "use": "Web サーバやデータベースを、いつも動いている状態に保つ。サービスには「今動いているか」と「次の起動で自動で動くか（{{term:enable}}）」の 2 つの状態がある。",
     "when": "サーバを再起動したら、サイトが表示されなくなった。調べると Web サーバが止まったままだった。今動かすだけでなく、次の起動でも動くように登録しておく必要があった。",

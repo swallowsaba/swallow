@@ -10,24 +10,28 @@ const id = z.string().regex(/^[^\s,=<>&!]+$/, 'ID は空白と , = < > & ! を�
 
 /* ---------- 画面に示す情報（全ての型で置ける） ---------- */
 
+/** when（判定の式）を書くと、その式を満たす時だけ示す */
+const when = { when: z.string().min(1).optional() };
+
 export const panelSchema = z.discriminatedUnion('kind', [
   /** 項目と値の並び */
-  z.object({ kind: z.literal('kv'), title: z.string().min(1), rows: z.array(z.tuple([z.string(), z.string()])).min(1) }).strict(),
+  z.object({ kind: z.literal('kv'), title: z.string().min(1), rows: z.array(z.tuple([z.string(), z.string()])).min(1), ...when }).strict(),
   /** 表 */
-  z.object({ kind: z.literal('table'), title: z.string().min(1), columns: z.array(z.string()).min(1), rows: z.array(z.array(z.string())).min(1) }).strict(),
+  z.object({ kind: z.literal('table'), title: z.string().min(1), columns: z.array(z.string()).min(1), rows: z.array(z.array(z.string())).min(1), ...when }).strict(),
   /** ログ（1 行ずつ） */
-  z.object({ kind: z.literal('log'), title: z.string().min(1), lines: z.array(z.string()).min(1) }).strict(),
+  z.object({ kind: z.literal('log'), title: z.string().min(1), lines: z.array(z.string()).min(1), ...when }).strict(),
   /** 折れ線のグラフ（横軸の目盛りと、系列ごとの値） */
   z.object({
     kind: z.literal('chart'), title: z.string().min(1), unit: z.string().optional(),
     x: z.array(z.string()).min(2),
     series: z.array(z.object({ label: z.string().min(1), values: z.array(z.number()) }).strict()).min(1).max(4),
+    ...when,
   }).strict(),
   /** 短い文 */
-  z.object({ kind: z.literal('text'), title: z.string().min(1), body: z.string().min(1) }).strict(),
+  z.object({ kind: z.literal('text'), title: z.string().min(1), body: z.string().min(1), ...when }).strict(),
 ]);
 
-const panels = { panels: z.array(panelSchema).max(6).optional() };
+const panels = { panels: z.array(panelSchema).max(8).optional() };
 
 /* ---------- つなぐ ---------- */
 
@@ -51,6 +55,8 @@ export const connectSetupSchema = z.object({
   directed: z.boolean().optional(),
   /** 引けない線と、引こうとした時のエラーの文 */
   forbid: z.array(z.object({ a: id, b: id, message: z.string().min(1) }).strict()).optional(),
+  /** 荷物を送れる組（画面に「送る」の操作が出る） */
+  sends: z.array(z.object({ from: id, to: id, label: z.string().min(1) }).strict()).optional(),
   ...panels,
 }).strict();
 
@@ -131,7 +137,7 @@ export const readSetupSchema = z.object({
     prompt: z.string().min(1),
     options: z.array(z.string().min(1)).optional(),
   }).strict()).min(1),
-  panels: z.array(panelSchema).min(1).max(6),
+  panels: z.array(panelSchema).min(1).max(8),
 }).strict();
 
 export type Panel = z.infer<typeof panelSchema>;
@@ -143,7 +149,7 @@ export type ReadSetup = z.infer<typeof readSetupSchema>;
 
 /* ---------- 状態（そのまま JSON にでき、途中の保存に使う） ---------- */
 
-export interface ConnectState { type: 'connect'; setup: ConnectSetup; links: [string, string][]; up: string[] }
+export interface ConnectState { type: 'connect'; setup: ConnectSetup; links: [string, string][]; up: string[]; sent: [string, string][] }
 export interface OrderState { type: 'order'; setup: OrderSetup; stages: string[][] }
 export interface AssignState { type: 'assign'; setup: AssignSetup; placed: Record<string, string[]> }
 export interface ConfigState { type: 'config'; setup: ConfigSetup; fields: Record<string, string>; tables: Record<string, Record<string, string>[]> }

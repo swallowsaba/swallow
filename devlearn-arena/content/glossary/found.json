@@ -6,8 +6,13 @@
       "word": "ファイル",
       "plain": "文書・画像・設定などを、名前を付けて保存したひとまとまりのデータ。",
       "why": "コンピュータの中の情報は、ほとんどがファイルとして置かれる。どこに何のファイルがあるかが分かると、設定を直したり記録を探したりできる。",
-      "related": ["directory", "path"],
-      "lessons": ["found.b.04"],
+      "related": [
+        "directory",
+        "path"
+      ],
+      "lessons": [
+        "found.b.04"
+      ],
       "analogy": "紙の資料 1 枚に当たる。ただし中身は文字だけでなく、画像やプログラムのこともある。"
     },
     {
@@ -16,8 +21,14 @@
       "reading": "でぃれくとり",
       "plain": "ファイルや、ほかのディレクトリを入れておく入れ物。フォルダとも呼ぶ。",
       "why": "入れ物の中に入れ物を作ることで、大量のファイルを用途ごとに分けて整理できる。",
-      "related": ["file", "root-directory", "path"],
-      "lessons": ["found.b.04"],
+      "related": [
+        "file",
+        "root-directory",
+        "path"
+      ],
+      "lessons": [
+        "found.b.04"
+      ],
       "analogy": "資料を入れる棚。棚の中にさらに小さな棚を置ける。"
     },
     {
@@ -26,8 +37,13 @@
       "reading": "るーと",
       "plain": "ディレクトリの木のいちばん根もとにあるディレクトリ。/ という 1 文字で表す。",
       "why": "全てのファイルとディレクトリは、ルートからたどって行き着ける。根もとを決めておくと、どの場所も 1 通りの住所で書ける。",
-      "related": ["directory", "absolute-path"],
-      "lessons": ["found.b.04"],
+      "related": [
+        "directory",
+        "absolute-path"
+      ],
+      "lessons": [
+        "found.b.04"
+      ],
       "analogy": "建物の玄関。どの部屋へ行くにも、玄関からの道順で言い表せる。"
     },
     {
@@ -35,8 +51,14 @@
       "word": "パス",
       "plain": "ファイルやディレクトリの場所を、ディレクトリの名前を / で区切って並べて表した住所。",
       "why": "同じ名前のファイルがいくつあっても、パスで書けば 1 つに決まる。取り違えを防げる。",
-      "related": ["absolute-path", "relative-path", "directory"],
-      "lessons": ["found.b.04"],
+      "related": [
+        "absolute-path",
+        "relative-path",
+        "directory"
+      ],
+      "lessons": [
+        "found.b.04"
+      ],
       "analogy": "「県・市・町・番地」と順に書く住所と同じ考え方。"
     },
     {
@@ -45,8 +67,14 @@
       "reading": "ぜったいぱす",
       "plain": "ルート（/）から書き始めるパス。今いる場所に関係なく、同じ場所を指す。",
       "why": "どこにいても意味が変わらないので、設定や手順書には絶対パスで書くと間違えにくい。",
-      "related": ["path", "relative-path", "root-directory"],
-      "lessons": ["found.b.04"]
+      "related": [
+        "path",
+        "relative-path",
+        "root-directory"
+      ],
+      "lessons": [
+        "found.b.04"
+      ]
     },
     {
       "id": "relative-path",
@@ -54,8 +82,14 @@
       "reading": "そうたいぱす",
       "plain": "今いる場所から書き始めるパス。/ で始まらない。",
       "why": "短く書けて便利だが、今いる場所が違うと別の場所を指してしまう。",
-      "related": ["path", "absolute-path", "current-directory"],
-      "lessons": ["found.b.04"]
+      "related": [
+        "path",
+        "absolute-path",
+        "current-directory"
+      ],
+      "lessons": [
+        "found.b.04"
+      ]
     },
     {
       "id": "current-directory",
@@ -63,8 +97,14 @@
       "reading": "げんざいち",
       "plain": "端末で今いるディレクトリ。カレントディレクトリとも呼ぶ。",
       "why": "相対パスやコマンドの多くは、現在地を基準に動く。今どこにいるかを確かめる習慣が、取り違えを防ぐ。",
-      "related": ["relative-path", "pwd", "cd"],
-      "lessons": ["found.b.04"]
+      "related": [
+        "relative-path",
+        "pwd",
+        "cd"
+      ],
+      "lessons": [
+        "found.b.04"
+      ]
     },
     {
       "id": "terminal",
@@ -72,16 +112,26 @@
       "reading": "たんまつ",
       "plain": "文字を打ってコンピュータに指示を出し、結果を文字で受け取る画面。ターミナルとも呼ぶ。",
       "why": "サーバの多くには画面やマウスが無く、端末から操作する。仕事で使う道具の多くも端末で動く。",
-      "related": ["command"],
-      "lessons": ["found.b.04", "linux.b.01"]
+      "related": [
+        "command"
+      ],
+      "lessons": [
+        "found.b.04",
+        "linux.b.01"
+      ]
     },
     {
       "id": "command",
       "word": "コマンド",
       "plain": "端末に打ち込む、コンピュータへの短い指示。1 行に 1 つの指示を書く。",
       "why": "ボタンが無い場面でも、コマンドを打てば同じ操作ができる。手順を文字で残せるので、繰り返しや自動化もしやすい。",
-      "related": ["terminal"],
-      "lessons": ["found.b.04", "linux.b.01"]
+      "related": [
+        "terminal"
+      ],
+      "lessons": [
+        "found.b.04",
+        "linux.b.01"
+      ]
     },
     {
       "id": "server",
@@ -89,16 +139,27 @@
       "reading": "さーば",
       "plain": "ほかの機械からの頼みを受けて、データや機能を返すコンピュータ。",
       "why": "Web ページ・メール・ゲームの対戦など、ネットの向こう側で動く物の多くはサーバの上にある。",
-      "related": ["service", "web-server"],
-      "lessons": ["found.b.07", "linux.i.01"]
+      "related": [
+        "service",
+        "web-server"
+      ],
+      "lessons": [
+        "found.b.07",
+        "linux.i.01"
+      ]
     },
     {
       "id": "process",
       "word": "プロセス",
       "plain": "動いているプログラム 1 つ 1 つのこと。それぞれに番号（PID）が付く。",
       "why": "同じプログラムを複数動かしたり、1 つだけ止めたりするには、プロセスを区別する必要がある。",
-      "related": ["service"],
-      "lessons": ["found.b.05", "linux.b.08"],
+      "related": [
+        "service"
+      ],
+      "lessons": [
+        "found.b.05",
+        "linux.b.08"
+      ],
       "analogy": "プログラムが料理のレシピなら、プロセスは今まさに作っている 1 皿。"
     },
     {
@@ -106,8 +167,342 @@
       "word": "ログ",
       "plain": "プログラムが「いつ・何が起きたか」を書き残した記録。",
       "why": "障害が起きた後で原因を探す時、ログはほぼ唯一の証拠になる。",
-      "related": ["journalctl", "service"],
-      "lessons": ["linux.i.01", "linux.i.02"]
+      "related": [
+        "journalctl",
+        "service"
+      ],
+      "lessons": [
+        "linux.i.01",
+        "linux.i.02"
+      ]
+    },
+    {
+      "id": "cpu",
+      "word": "CPU",
+      "reading": "しーぴーゆー",
+      "plain": "コンピュータの中で、計算と命令の実行を受け持つ部品。",
+      "why": "全ての処理は CPU が実行する。CPU が忙しすぎると、どの操作も待たされて遅くなる。",
+      "related": [
+        "memory",
+        "storage"
+      ],
+      "analogy": "工場の作業者。ただし 1 秒に何十億回も手を動かす。",
+      "lessons": []
+    },
+    {
+      "id": "memory",
+      "word": "メモリ",
+      "plain": "作業中のデータやプログラムを置いておく場所。速いが容量は小さく、電源を切ると中身が消える。",
+      "why": "CPU が直接使えるのはメモリの上の物だけ。足りなくなると、遅いストレージとの出し入れが増えて急に遅くなる。",
+      "related": [
+        "cpu",
+        "storage"
+      ],
+      "analogy": "作業机。広げられる量に限りがあり、帰る時には片付けられる。",
+      "lessons": []
+    },
+    {
+      "id": "storage",
+      "word": "ストレージ",
+      "plain": "データを長く保存しておく場所（SSD やハードディスク）。広いがメモリより遅く、電源を切っても残る。",
+      "why": "ファイルはストレージに置かれる。容量が尽きると保存ができなくなり、サービスが止まることもある。",
+      "related": [
+        "memory",
+        "file"
+      ],
+      "analogy": "倉庫。たくさん置けるが、取りに行くのに時間がかかる。",
+      "lessons": []
+    },
+    {
+      "id": "os",
+      "word": "OS",
+      "reading": "おーえす",
+      "plain": "CPU・メモリ・ストレージをアプリに配り、ファイルと利用者を管理する基本のソフトウェア。オペレーティングシステムの略。",
+      "why": "全てのアプリは OS の上で動く。OS が資源の取り合いを調整するので、いくつものアプリを同時に安全に動かせる。",
+      "related": [
+        "cpu",
+        "memory",
+        "app",
+        "linux"
+      ],
+      "analogy": "建物の管理人。部屋（資源）の割り当てと、誰が入ってよいかを決める。",
+      "lessons": []
+    },
+    {
+      "id": "app",
+      "word": "アプリ",
+      "plain": "文書作り・地図・計算など、利用者の目的のために作られたプログラム。アプリケーションの略。",
+      "why": "アプリは OS に頼んで機械を使う。アプリが重い時は、どの資源を使っているかで原因を考える。",
+      "related": [
+        "os",
+        "program"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "program",
+      "word": "プログラム",
+      "plain": "コンピュータにさせる手順を書いたもの。ストレージにファイルとして置かれる。",
+      "why": "プログラムを動かすとプロセスになる。同じプログラムから、いくつものプロセスを動かせる。",
+      "related": [
+        "process",
+        "app"
+      ],
+      "analogy": "料理のレシピ。レシピは 1 枚でも、同時に何皿も作れる。",
+      "lessons": []
+    },
+    {
+      "id": "pid",
+      "word": "PID",
+      "reading": "ぴーあいでぃー",
+      "plain": "プロセスに 1 つずつ付く番号（プロセス ID）。",
+      "why": "同じ名前のプロセスがいくつあっても、PID で 1 つに決まる。止める・様子を見る時は PID で指す。",
+      "related": [
+        "process"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "permission",
+      "word": "権限",
+      "reading": "けんげん",
+      "plain": "ファイルを誰が読み・書き・実行してよいかの決まり。",
+      "why": "全員が何でもできると、誤って消したり、他人の秘密を見たりできてしまう。必要な人に必要な分だけ許す。",
+      "related": [
+        "owner",
+        "group",
+        "file"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "owner",
+      "word": "所有者",
+      "reading": "しょゆうしゃ",
+      "plain": "そのファイルの持ち主の利用者。権限の 3 つの段（所有者・グループ・その他）の 1 つ目。",
+      "why": "持ち主にだけ書き込みを許す、のように、持ち主を基準に権限を決める。",
+      "related": [
+        "permission",
+        "group"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "group",
+      "word": "グループ",
+      "plain": "利用者をまとめた組。同じグループの人に、まとめて同じ権限を与えられる。",
+      "why": "一人ずつ許すと管理しきれない。チームごとにグループを作り、グループに権限を与える。",
+      "related": [
+        "permission",
+        "owner"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "network",
+      "word": "ネットワーク",
+      "plain": "機械どうしを線や電波でつなぎ、データをやり取りできるようにしたもの。",
+      "why": "Web もメールもアプリの更新も、ネットワークを通って届く。つながらない時は、どこで途切れたかを順に調べる。",
+      "related": [
+        "internet",
+        "lan",
+        "router"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "internet",
+      "word": "インターネット",
+      "plain": "世界中のネットワークどうしをつないだ、ネットワークのネットワーク。",
+      "why": "家や会社の小さなネットワークは、プロバイダを通してインターネットにつながり、遠くのサーバに届く。",
+      "related": [
+        "network",
+        "isp",
+        "lan"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "lan",
+      "word": "LAN",
+      "reading": "らん",
+      "plain": "家や会社の中など、限られた範囲のネットワーク。",
+      "why": "「つながらない」が家の中（LAN）の問題か、外の問題かを分けると、調べる場所が半分になる。",
+      "related": [
+        "network",
+        "router"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "router",
+      "word": "ルータ",
+      "plain": "ネットワークとネットワークの境目に置き、データを次の行き先へ送り出す機器。",
+      "why": "家の LAN をインターネットにつなぐのも、2 つの LAN をつなぐのもルータ。ここが止まると外に出られない。",
+      "related": [
+        "lan",
+        "network",
+        "isp"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "isp",
+      "word": "プロバイダ",
+      "plain": "家や会社のネットワークをインターネットにつなぐ会社（インターネット接続事業者）。",
+      "why": "家のルータの先は、プロバイダの設備を通ってインターネットへ出る。",
+      "related": [
+        "internet",
+        "router"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "binary",
+      "word": "2 進数",
+      "reading": "にしんすう",
+      "plain": "0 と 1 の 2 つだけで数を表す方法。コンピュータの中の情報は全てこの形。",
+      "why": "容量・通信量・文字の扱いは、全て 0 と 1 の並びで決まる。ここを知ると、文字化けや容量の話が読める。",
+      "related": [
+        "bit",
+        "byte"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "bit",
+      "word": "ビット",
+      "plain": "0 か 1 の 1 つ分。情報のいちばん小さな単位。",
+      "why": "通信の速さはビットで数えることが多い（1 秒に何ビット送れるか）。",
+      "related": [
+        "byte",
+        "binary"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "byte",
+      "word": "バイト",
+      "plain": "8 ビットをまとめた単位。256 通りの値を表せる。",
+      "why": "ファイルの大きさや容量はバイトで数える。英字 1 文字はおよそ 1 バイト。",
+      "related": [
+        "bit",
+        "kb"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "kb",
+      "word": "KB",
+      "reading": "きろばいと",
+      "plain": "およそ 1,000 バイト（キロバイト）。短い文書 1 つ分ほど。",
+      "why": "大きさの単位を読み違えると、容量の見積もりが 1,000 倍ずれる。",
+      "related": [
+        "byte",
+        "mb"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "mb",
+      "word": "MB",
+      "reading": "めがばいと",
+      "plain": "およそ 1,000 KB（メガバイト）。写真 1 枚や音楽 1 曲ほど。",
+      "why": "写真・音楽・アプリの大きさはこの単位で表されることが多い。",
+      "related": [
+        "kb",
+        "gb"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "gb",
+      "word": "GB",
+      "reading": "ぎがばいと",
+      "plain": "およそ 1,000 MB（ギガバイト）。メモリやストレージの容量でよく使う。",
+      "why": "メモリやストレージを選ぶ時の基本の単位。",
+      "related": [
+        "mb",
+        "memory",
+        "storage"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "character-encoding",
+      "word": "文字コード",
+      "reading": "もじこーど",
+      "plain": "文字を 0 と 1 の並びに置き換える決まり。UTF-8 や Shift_JIS などがある。",
+      "why": "書いた時と読む時で文字コードが違うと、同じ 0 と 1 が別の文字として読まれ、文字化けが起きる。",
+      "related": [
+        "utf-8",
+        "shift-jis",
+        "mojibake",
+        "byte"
+      ],
+      "analogy": "暗号表。送る側と受ける側が同じ表を使わないと、正しく読めない。",
+      "lessons": []
+    },
+    {
+      "id": "utf-8",
+      "word": "UTF-8",
+      "reading": "ゆーてぃーえふえいと",
+      "plain": "世界中の文字を表せる文字コード。今の Web やサーバで最も広く使われる。",
+      "why": "迷ったら UTF-8 で揃える、が今の基本。日本語は 1 文字 3 バイトになることが多い。",
+      "related": [
+        "character-encoding",
+        "shift-jis"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "shift-jis",
+      "word": "Shift_JIS",
+      "reading": "しふとじす",
+      "plain": "日本語を表すために作られた、古くからある文字コード。",
+      "why": "古いシステムや表計算のファイルで今も使われる。UTF-8 と取り違えると文字化けの原因になる。",
+      "related": [
+        "character-encoding",
+        "utf-8"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "mojibake",
+      "word": "文字化け",
+      "reading": "もじばけ",
+      "plain": "文字が意味の分からない記号の並びになって表示されること。",
+      "why": "ほとんどは、書いた時と読む時の文字コードの食い違いが原因。データが壊れたとは限らない。",
+      "related": [
+        "character-encoding"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "windows",
+      "word": "Windows",
+      "reading": "うぃんどうず",
+      "plain": "パソコンで広く使われている OS の 1 つ。",
+      "why": "OS には種類があり、操作の仕方は違っても、資源を配る役目は同じ。",
+      "related": [
+        "os",
+        "macos",
+        "linux"
+      ],
+      "lessons": []
+    },
+    {
+      "id": "macos",
+      "word": "macOS",
+      "reading": "まっくおーえす",
+      "plain": "Apple のパソコンで使われている OS。",
+      "why": "OS には種類があり、操作の仕方は違っても、資源を配る役目は同じ。",
+      "related": [
+        "os",
+        "windows",
+        "linux"
+      ],
+      "lessons": []
     }
   ]
 }

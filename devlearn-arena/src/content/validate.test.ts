@@ -91,7 +91,7 @@ describe('検証が誤りを見つける', () => {
 
   it('用語集に無い用語や、用語集に無い略語を書いた', () => {
     expect(problems((l) => (l.explain.why += '{{term:no-such-term}}')).join()).toContain('用語集に無い用語 no-such-term');
-    expect(problems((l) => (l.explain.why += 'OS が管理する。')).join()).toContain('「OS」は用語集に無い');
+    expect(problems((l) => (l.explain.why += 'CPU と NIC がある。')).join()).toContain('「NIC」は用語集に無い');
   });
 
   it('前提が目録と違う・存在しないレッスン・無い図・無いエラーの解説', () => {
