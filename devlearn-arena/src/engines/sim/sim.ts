@@ -93,6 +93,8 @@ export function createSim(environment: string, setup: unknown): SimState {
       }
       const state: ConfigState = { type: 'config', setup: s, fields, tables };
       checkPanels(state);
+      const settle = s.settle === undefined ? [] : exprProblems(state, s.settle);
+      if (settle.length > 0) throw new Error(`出来上がりの式（settle）: ${settle.join('・')}`);
       return state;
     }
     case 'read': {
@@ -340,8 +342,8 @@ function readOp(s: ReadState, args: string[]): SimOutcome {
 }
 
 /**
- * 出来上がったか（札を全て並べた・入れた、問いに全て答えた）。出来上がったのに達成条件を満たさなければ、
- * 実戦は「合っていない」と知らせる（src/learning/practice.ts）。つなぐ・設定するには出来上がりが無い
+ * 出来上がったか（札を全て並べた・入れた、問いに全て答えた、欄を全て初めの値から変えた。設定するは settle の式でも決められる）。
+ * 出来上がったのに達成条件を満たさなければ、実戦は「合っていない」と知らせる（src/learning/practice.ts）。つなぐには出来上がりが無い
  */
 export function isSettled(s: SimState): boolean {
   switch (s.type) {
@@ -349,6 +351,7 @@ export function isSettled(s: SimState): boolean {
     case 'assign': return s.setup.items.every((i) => i.extra === true || (s.placed[i.id] ?? []).length > 0);
     case 'read': return s.setup.questions.every((q) => (s.answers[q.id] ?? '') !== '');
     case 'config': {
+      if (s.setup.settle !== undefined) return holds(s, s.setup.settle);
       const fields = s.setup.fields ?? [];
       return fields.length > 0 && fields.every((f) => (s.fields[f.id] ?? '') !== '' && !same(s.fields[f.id] ?? '', f.value ?? ''));
     }

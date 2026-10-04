@@ -128,6 +128,8 @@ export const configSetupSchema = z.object({
     columns: z.array(z.object({ id, label: z.string().min(1), options: z.array(z.string().min(1)).optional() }).strict()).min(1),
     rows: z.array(z.record(id, z.string())).optional(),
   }).strict()).optional(),
+  /** 出来上がりの式（判定の式）。無ければ「全ての欄を初めの値から変えた」。表に行を足す設定で、答えが合っていない時を知らせる */
+  settle: z.string().min(1).optional(),
   ...panels,
 }).strict().refine((s) => (s.fields?.length ?? 0) + (s.tables?.length ?? 0) > 0, '欄か表が 1 つ以上要る');
 

@@ -320,3 +320,18 @@ describe('割り振る: 枠が埋まった時の文', () => {
     expect(holds(r.state, 'in ssh=p80')).toBe(false);
   });
 });
+
+describe('設定する: 出来上がりの式（settle）', () => {
+  it('settle があれば、その式を満たした時が出来上がり（表に行を足す設定でも、答えが合っていない時を知らせられる）', () => {
+    const s = sim('sim-config', {
+      tables: [{ id: 'r1', label: 'R1 の経路表', columns: [{ id: 'dest', label: '宛先' }, { id: 'via', label: '次' }], rows: [{ dest: '10.0.1.0/24', via: '直結' }] }],
+      settle: 'rows r1>=2',
+    });
+    expect(isSettled(s)).toBe(false);
+    expect(isSettled(run(s, ['add r1 dest=10.0.3.0/24 via=10.0.2.2']).state)).toBe(true);
+  });
+
+  it('settle の式の誤りは内容の誤り', () => {
+    expect(() => sim('sim-config', { fields: [{ id: 'a', label: 'A' }], settle: 'rows nope>=1' })).toThrow(/settle/);
+  });
+});
