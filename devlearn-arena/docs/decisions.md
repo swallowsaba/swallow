@@ -132,4 +132,29 @@
 仕様書だけでは決められず、実装を止めている事項。各項目の「判断:」に、採る案（または別の指示）を書き込む。
 判断が書き込まれるまで、その仕様に関わる変更をしない（`CLAUDE.md` 14 章）。
 
-なし。
+### U-09 実戦の「模擬環境（模）」を、どう操作し、どう判定し、どう確かめるか（Phase 10）
+
+- **問題**: 初回公開の範囲（Q-04）のレッスン 131 本のうち 56 本の実戦が「模」（`docs/curriculum.md`・`docs/lessons/`）。しかし、模擬環境の実戦を作るための決まりが仕様書に無い。
+  - **操作**: `docs/learning-design.md` 6 章は「状態を持つ模擬を画面で操作する」とだけ書き、何をどう操作するか（押す・つなぐ・並べる・値を入れる）が、`docs/ui-design.md` 7 章にも `docs/content-spec.md` 2.4 にも無い。`setup` は `unknown`
+  - **判定**: `docs/content-spec.md` 2.4 の `CheckSpec`（`fs・cwd・service・git・k8s・net・http・tls・sql・answer`）に、多くの「模」の達成条件を表す形が無い。
+    例: found.b.01「4 部品が正しい順につながる」・found.b.02「机と倉庫に配って制限時間内に終える」・cicd.b.02「依存を守り時間が最短」・sec.b.02「各役割が必要な操作だけできる」・devops.b.03「届くまでの時間が半分以下」
+  - **最後のヒントで通る**: `docs/content-spec.md` 2.4・6 章は、最後のヒントを模擬環境で実行すると達成条件を満たすことをテストで確かめる、と書く。端末の実戦はヒントの `` の中を打てば確かめられるが、画面で操作する「模」には、ヒントを機械で再生する形が無い
+  - 56 本の中身を見ると、操作は次の 5 つの型に分けられる
+    - つなぐ（部品・機器・サービスを線でつなぐ）: found.b.01・found.b.07・net.b.01・net.b.04・ctr.i.03・ctr.i.05・cloud.b.03・mon.b.01 など
+    - 並べる（手順・段・層の順番）: cicd.b.01・cicd.b.02・cicd.b.04・cicd.b.05・ctr.b.04・sec.b.06・devops.b.01・devops.b.03・trouble.b.01 など
+    - 割り振る・仕分ける（物を枠に入れる）: found.b.02・found.b.03・net.b.02・net.b.05・sec.b.01・sec.b.02・cloud.b.01・cloud.b.02・ctr.b.01・ctr.b.02・ctr.i.01・k8s.b.02・devops.b.02 など
+    - 設定する（設定の欄・表の行に値を入れる）: found.b.08・net.b.03・net.b.08・net.i.01・net.i.02・net.i.03・net.i.05・net.i.06・sec.b.03・sec.b.07・web.b.01・web.b.06・web.i.04・web.i.05・ctr.b.03・ctr.b.05・ctr.i.04・mon.b.04・k8s.b.01・git.b.01・git.i.03・db.b.01 など
+    - 読み取って答える（画面の情報やグラフから答える）: linux.b.00・docker.b.01・cicd.b.03・mon.b.03
+- **影響**: Phase 10 の最初の分野 found（初級 8 本のうち 5 本が「模」）から作れない。net・sec・cicd・ctr・cloud・devops・mon も同じ。
+  端末（62 本）・SQL（4 本）・設定の編集（9 本。書いた中身をファイルとして置き、今の `CheckSpec` で判定できる）は、この判断に関わらずに作れる
+- **変更案**
+  - 案 A（汎用の型）: 上の 5 つの型の模擬環境を、React に依存しない純粋な TS（`src/engines/sim`）と、型ごとの画面 1 つずつで作る。
+    - レッスンは `environment` に型（`sim-connect`・`sim-order`・`sim-assign`・`sim-config`・`sim-read`）を、`setup` にその実戦の部品・枠・設定の欄・表示する情報を書く（型ごとに zod で検証）
+    - 画面の操作 1 つ 1 つに、同じ意味の文の形を持たせる（例: `connect 入力 処理`・`order build test deploy`・`put 計算 CPU`・`set 文字コード UTF-8`）。最後のヒントには、その文を `` で書き、テストは文を順に模擬環境に与えて達成条件を確かめる（画面の操作と同じ関数を通る）
+    - 判定の形に `{ kind: 'sim'; expr: string }` を足す（例: `'linked 入力>処理>出力'`・`'reach pc server'`・`'slot CPU=計算'`・`'total-time<=12'`）。ネットワークの物は、既にある `net` の式で判定する
+    - 直す仕様書: `docs/content-spec.md` 2.4（`CheckSpec` と、型ごとの `setup` の形）・`docs/ui-design.md` 7 章（型ごとの画面と操作）・`docs/architecture.md`（`src/engines/sim`）。`docs/lessons/` の設計は変えない
+  - 案 B（分野ごとの専用の模擬 ＋ 汎用の型）: `docs/learning-design.md` 6 章の表に名前がある「ネットワーク・HTTP・TLS・CI/CD・監視」は、機器・通信・証明書の連鎖・パイプライン・メトリクスを持つ専用の模擬と画面にする（判定は `net`・`http`・`tls` と、新しい `pipeline`・`metric` の式）。
+    それ以外（found・ctr・cloud・sec・devops・k8s・git・db の「模」）は案 A の汎用の型で作る。見た目と体験は良くなるが、作る画面が増える。直す仕様書は案 A と同じに加え、`CheckSpec` に `pipeline`・`metric` を足す
+  - 案 C（今ある形に寄せる）: 「模」の実戦のうち、端末でできる物（net の経路・TLS・コンテナ・git など）は端末の実戦に、それ以外は「画面に模擬の状態を示し、読み取って答える」（判定は `answer`）に書き換える。新しい判定の形と画面は作らない。
+    `docs/lessons/` の 56 本の実戦の設計と、`docs/curriculum.md` の表の記号を直す。作る量は最も少ないが、「画面で操作する」体験はほぼ無くなる
+- **判断**:
