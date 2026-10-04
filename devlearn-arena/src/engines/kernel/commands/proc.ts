@@ -5,6 +5,7 @@ import {
 import type { CommandSpec, ShellState } from '../registry';
 import { list, stat } from '../vfs';
 import { fromLines, parseArgs } from './args';
+import { currentUser } from './perm';
 
 function table(rows: string[][]): string {
   if (rows.length === 0) return '';
@@ -130,7 +131,7 @@ export const procCommands: CommandSpec[] = [
       if (pids.length === 0 || pids.some((n) => !Number.isInteger(n))) {
         return { stderr: 'usage: kill [-signal] <pid>\n', code: 2 };
       }
-      const result = killMany(shell.procs, pids, sig);
+      const result = killMany(shell.procs, pids, sig, currentUser(shell));
       if (result.error !== null) return { stderr: `${result.error}\n`, code: 1 };
       return { patch: { procs: result.table } };
     },
@@ -147,8 +148,13 @@ export const procCommands: CommandSpec[] = [
       const found = findByPattern(shell.procs, pattern);
       if (found.length === 0) return { code: 1 };
       let procs = shell.procs;
-      for (const p of found) procs = signal(procs, p.pid, sig).table;
-      return { patch: { procs } };
+      let stderr = '';
+      for (const p of found) {
+        const r = signal(procs, p.pid, sig, currentUser(shell));
+        if (r.error !== null) stderr += `pkill: killing pid ${String(p.pid)} failed: Operation not permitted\n`;
+        procs = r.table;
+      }
+      return { patch: { procs }, ...(stderr !== '' ? { stderr, code: 1 } : {}) };
     },
   },
 

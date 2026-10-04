@@ -65,9 +65,9 @@ describe('プロセスを止める', () => {
 
   it('SIGTERM を無視する相手は -9 でないと落ちない', () => {
     const pid = run('pgrep sshd').out.trim();
-    run(`kill ${pid}`);
+    run(`sudo kill ${pid}`);
     expect(run('ps aux').out).toContain('sshd');
-    run(`kill -9 ${pid}`);
+    run(`sudo kill -9 ${pid}`);
     expect(run('ps aux').out).not.toContain('sshd');
   });
 

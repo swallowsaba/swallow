@@ -178,6 +178,14 @@ describe('状態による判定の形', () => {
     expect(checkState({ kind: 'fs', path: '/etc/nope', exists: false }, { shell: s })).toBe(true);
   });
 
+  it('fs: /proc/<PID> は、そのプロセスが動いている間だけ有る（本物と同じ）', () => {
+    const s = shell({ processes: [{ command: 'python3 loop.py', cpu: 99 }] });
+    expect(checkState({ kind: 'fs', path: '/proc/100' }, { shell: s })).toBe(true);
+    expect(checkState({ kind: 'fs', path: '/proc/100', exists: false }, { shell: s })).toBe(false);
+    const after = execute(s, 'kill 100', createDefaultRegistry(), createClock()).state;
+    expect(checkState({ kind: 'fs', path: '/proc/100', exists: false }, { shell: after })).toBe(true);
+  });
+
   it('fs: 権限（8 進数ならその値、u+x のような形なら、その権限が有る・無い）', () => {
     const s = shell({ files: { '/home/learner/run.sh': 'echo hi\n', '/home/learner/key': 'secret\n' } });
     expect(checkState({ kind: 'fs', path: '/home/learner/run.sh', mode: 'u+x' }, { shell: s })).toBe(false);

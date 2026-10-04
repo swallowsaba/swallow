@@ -157,6 +157,96 @@
         "Permission denied の行の場所を答えた。"
       ],
       "hint": "find の結果の行（エラーでない行）に出たパスを、そのまま答えよう。"
+    },
+    {
+      "id": "exec-denied",
+      "match": "Permission denied",
+      "meaning": "「権限が無い」と断られた。動かそうとしたファイルに、自分が使える段の実行の x が無い。",
+      "causes": [
+        "ファイルに実行の x が付いていない（作ったばかりのファイルには x が無い）。",
+        "x が付いているのは別の段で、自分の段には無い。"
+      ],
+      "hint": "ls -l で権限の欄を読み、自分の段に x があるかを見る。無ければ chmod +x で足す。"
+    },
+    {
+      "id": "chmod-not-owner",
+      "match": "Operation not permitted",
+      "meaning": "「その操作は許されていない」と言われた。権限を変えられるのは、そのファイルの所有者と管理者だけ。",
+      "causes": [
+        "そのファイルの所有者が自分ではない。",
+        "名前を取り違えて、管理者の物（/etc の中など）を変えようとした。"
+      ],
+      "hint": "ls -l の所有者の欄を見る。自分の物でなければ、持ち主か管理者に頼む。"
+    },
+    {
+      "id": "usermod-denied",
+      "match": "usermod: Permission denied",
+      "meaning": "「権限が無い」と断られた。利用者をグループに入れるのは、管理者にしかできない。",
+      "causes": [
+        "命令の先頭に sudo を付けていない。",
+        "自分の所属なので、自分で変えられると思った（所属は /etc/group にある機械全体の設定で、管理者の物）。"
+      ],
+      "hint": "同じ命令の先頭に sudo を付けて、1 回だけ管理者として実行する。"
+    },
+    {
+      "id": "group-missing",
+      "match": "group '.+' does not exist",
+      "meaning": "「そのグループは無い」と言われた。書いたグループの名前が、/etc/group に見つからなかった。",
+      "causes": [
+        "グループの名前の綴りが違う。",
+        "グループの名前と利用者の名前の順番を逆に書いた（グループが先、利用者が後）。"
+      ],
+      "hint": "ls -ld で、場所のグループの欄に書かれた名前を確かめる。"
+    },
+    {
+      "id": "group-not-yet",
+      "match": "cannot touch .*Permission denied",
+      "meaning": "「権限が無い」と断られた。今のシェルには、その場所に書く権限がまだ無い。",
+      "causes": [
+        "まだグループに入っていない。",
+        "グループに入れたが、入り直していない（今のシェルは、足す前のグループのまま）。"
+      ],
+      "hint": "groups で今のグループを見る。web が無ければ、newgrp web で入り直す。"
+    },
+    {
+      "id": "newgrp-denied",
+      "match": "newgrp: Permission denied",
+      "meaning": "そのグループに入っていないので、そのグループで入り直せない。",
+      "causes": [
+        "先にグループへ足していない（usermod をまだ打っていない）。",
+        "グループの名前の綴りが違う。"
+      ],
+      "hint": "groups learner で、/etc/group に書かれた所属を確かめる。無ければ先に sudo usermod -aG で足す。"
+    },
+    {
+      "id": "no-such-process",
+      "match": "No such process",
+      "meaning": "「その番号のプロセスは無い」と言われた。指定した PID の処理は、今は動いていない。",
+      "causes": [
+        "もう止まっている（前に打った kill で止まった）。",
+        "番号を写し間違えた。"
+      ],
+      "hint": "ps aux か top で、今動いている処理の PID を読み直そう。"
+    },
+    {
+      "id": "kill-not-permitted",
+      "match": "kill: .*Operation not permitted",
+      "meaning": "「その操作は許されていない」と言われた。ほかの利用者（管理者など）の処理は、止められない。",
+      "causes": [
+        "止めたい処理と違う行の PID を書いた（USER の欄が自分でない行）。",
+        "管理者の処理を、一般の利用者のまま止めようとした。"
+      ],
+      "hint": "top の USER の欄を見て、自分の処理の PID かを確かめよう。"
+    },
+    {
+      "id": "linux-wrong-pid",
+      "match": "答えが合っていない",
+      "meaning": "答えた番号は、CPU を最も使っている処理の PID ではない。",
+      "causes": [
+        "%CPU ではなく、メモリの欄で大きい行を選んだ。",
+        "PID の隣の欄（PPID など）の番号を読んだ。"
+      ],
+      "hint": "top の先頭の行（%CPU がいちばん大きい行）の、PID の欄の番号を答えよう。"
     }
   ]
 }

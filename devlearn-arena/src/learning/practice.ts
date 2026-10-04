@@ -73,7 +73,9 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       return shell.cwd === resolve('/', check.equals);
     case 'fs': {
       const path = resolve('/', check.path);
-      const there = exists(shell.vfs, path);
+      // /proc/<PID> は、そのプロセスが動いている間だけ有る（本物と同じ。プロセス表から決める）
+      const pid = /^\/proc\/(\d+)(\/|$)/.exec(path)?.[1];
+      const there = pid !== undefined ? shell.procs.processes.has(Number(pid)) : exists(shell.vfs, path);
       if (check.exists === false) return !there;
       if (!there) return false;
       if (check.mode !== undefined && !modeHolds(metaOf(shell.vfs, path).mode, check.mode)) return false;

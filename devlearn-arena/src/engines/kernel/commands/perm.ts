@@ -272,10 +272,13 @@ export const permCommands: CommandSpec[] = [
         code: outcome.code,
         patch: {
           vfs: outcome.state.vfs,
+          procs: outcome.state.procs,
           git: outcome.state.git,
           cluster: outcome.state.cluster,
           net: outcome.state.net,
           repo: outcome.state.repo,
+          services: outcome.state.services,
+          containers: outcome.state.containers,
         },
       };
     },

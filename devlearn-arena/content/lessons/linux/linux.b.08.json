@@ -1,0 +1,242 @@
+{
+  "id": "linux.b.08",
+  "domain": "linux",
+  "level": "beginner",
+  "theme": "プロセス",
+  "title": "プロセスを見る・止める",
+  "goal": "ps/top/kill を使える",
+  "minutes": 15,
+  "prerequisites": [
+    "found.b.05"
+  ],
+  "related": [
+    "found.b.05",
+    "docker.b.05"
+  ],
+  "next": [
+    "linux.i.01",
+    "ctr.b.01"
+  ],
+  "terms": [
+    "kill",
+    "process",
+    "cpu",
+    "top",
+    "pid",
+    "memory",
+    "ps",
+    "server",
+    "file",
+    "ls-l"
+  ],
+  "explain": {
+    "what": "動いている{{term:process}}を {{term:ps}} と {{term:top}} で見て、{{term:kill}} で止める。ps はその時の一覧、top は {{term:cpu}} や{{term:memory}}を食っている順に並べた一覧。kill は {{term:pid}} を指定して、終わるように合図を送る。",
+    "why": "1 つの処理が CPU を使い切ると、ほかの処理まで遅くなる。どれが原因かを見つけ、その処理だけを止めれば、機械を止めずに立て直せる。",
+    "use": "重くなった時に、どの処理が CPU やメモリを食っているかを調べる。固まった処理や、終わらない処理を止める。",
+    "when": "{{term:server}}の CPU の使用率が 100% のまま下がらず、サイトの表示が遅いと言われた時。",
+    "figures": [
+      "linux-b08-top"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "linux-b08-top",
+      "prompt": "top の画面で、CPU を使っている割合の欄を押す。",
+      "answer": [
+        "cpu"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "止まらない処理を止める時、2 つの関係は？",
+      "a": "kill（終わるように頼む。後片付けをしてから終わる）",
+      "b": "kill -9（後片付けをさせずに、すぐ終わらせる）",
+      "answer": "before",
+      "why": "まず普通の kill で頼む。それでも止まらない時だけ -9 を使う。-9 は書きかけの{{term:file}}を壊すことがある。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "今、CPU を最も使っている処理を見たい。どの命令？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "top",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:ls-l}}",
+          "correct": false,
+          "whyNot": "ls -l はファイルの一覧。動いている処理は出ない。"
+        },
+        {
+          "id": "c",
+          "text": "kill",
+          "correct": false,
+          "whyNot": "kill は止める命令。見る前に止めると、違う処理を止めてしまう。"
+        }
+      ],
+      "explanation": "top は、資源を食っている順に並べて見せる。先頭の行が、今いちばん重い処理。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "暴走した処理を止めたい。どの順で試す？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "まず普通の kill。それでも止まらなければ kill -9",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "最初から kill -9 で止める",
+          "correct": false,
+          "whyNot": "-9 は後片付けをさせない。書きかけのファイルが壊れることがある。まずは普通の kill で頼む。"
+        },
+        {
+          "id": "c",
+          "text": "機械ごと再起動する",
+          "correct": false,
+          "whyNot": "ほかの正常な処理まで止まり、利用者に迷惑がかかる。原因の処理だけを止めれば足りる。"
+        }
+      ],
+      "explanation": "普通の kill は「終わってください」という合図。ほとんどの処理は、これで後片付けをして終わる。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "PID 102 の処理を止めた。続けて ps aux を打つと？",
+      "context": {
+        "command": "kill 102\nps aux"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "PID 102 の行が無くなっている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "PID 102 の行が残り、CPU の欄が 0 になる",
+          "correct": false,
+          "whyNot": "止まった処理は、一覧から消える。行が残っていれば、まだ動いている（止まっていない）。"
+        },
+        {
+          "id": "c",
+          "text": "全ての処理が一覧から消える",
+          "correct": false,
+          "whyNot": "kill が合図を送るのは、指定した PID の処理だけ。"
+        }
+      ],
+      "explanation": "止まった処理は ps の一覧に出なくなる。止めた後に見直して、確かめる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "CPU を使い切っている処理を見つけ、その処理だけを止める。",
+    "environment": "linux-basic",
+    "setup": {
+      "processes": [
+        {
+          "command": "nginx: worker process",
+          "cpu": 1.2,
+          "memory": 48
+        },
+        {
+          "command": "python3 report.py",
+          "cpu": 0.4,
+          "memory": 96
+        },
+        {
+          "command": "python3 resize.py",
+          "cpu": 98.7,
+          "memory": 210
+        },
+        {
+          "command": "/usr/sbin/sshd",
+          "cpu": 0.1,
+          "memory": 12,
+          "user": "root"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "find",
+        "purpose": "CPU を最も使っている処理を見つけ、その PID を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "102"
+        },
+        "afterward": "犯人は python3 resize.py（PID 102）。CPU の 98.7% を使っていた。",
+        "hints": [
+          "資源を食っている順に並べる命令で見る。",
+          "`top` を打ち、%CPU の欄がいちばん大きい行の、PID の欄を読む。",
+          "`top` と打つと、先頭の行が python3 resize.py。答えの欄に `102` と入れる。"
+        ],
+        "expectedErrors": [
+          "linux-wrong-pid"
+        ]
+      },
+      {
+        "id": "stop",
+        "purpose": "見つけた処理だけを止め、一覧から消えたことを確かめる。",
+        "check": {
+          "kind": "fs",
+          "path": "/proc/102",
+          "exists": false
+        },
+        "afterward": "PID 102 が一覧から消え、CPU の使用率が下がった。ほかの処理は動いたまま。",
+        "hints": [
+          "止めるのは、見つけた PID の処理だけ。",
+          "kill の後に PID を書く。まずは -9 を付けない、普通の kill。",
+          "`kill 102` と打つ。"
+        ],
+        "expectedErrors": [
+          "no-such-process",
+          "kill-not-permitted"
+        ]
+      }
+    ],
+    "dangerous": [
+      {
+        "id": "kill-9-first",
+        "pattern": "kill\\s+(-9|-KILL|-SIGKILL)\\b",
+        "why": "-9 は後片付けをさせずに止める。普通の kill で止まる相手には使わない。"
+      },
+      {
+        "id": "pkill-wide",
+        "pattern": "pkill\\s+(-\\S+\\s+)?python",
+        "why": "名前で止めると、同じ名前の別の処理（report.py）まで止まる。PID で 1 つだけ止める。"
+      }
+    ]
+  },
+  "result": {
+    "success": "一覧から原因の処理を見つけ、その処理だけを止められた。",
+    "partial": "ヒントを使って止められた。次は、止める前と後で top を打ち、CPU の使用率の変わり方を見比べてみよう。",
+    "retry": "まだ止まっていない。ps aux で、見つけた PID の行がまだあるかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "ps と top で見る（重い順は top）",
+      "kill は PID を指定して止める",
+      "-9 は最後の手段"
+    ],
+    "next": [
+      "linux.i.01"
+    ],
+    "terms": [
+      "process",
+      "pid",
+      "top",
+      "kill"
+    ]
+  }
+}

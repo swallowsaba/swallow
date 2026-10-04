@@ -31,7 +31,8 @@
     "tail",
     "cat",
     "path",
-    "option"
+    "option",
+    "root-user"
   ],
   "explain": {
     "what": "{{term:grep}}は、{{term:file}}の中から、決めた言葉を含む行を探して出す。{{term:find}}は、{{term:directory}}の木の中から、名前などの条件でファイルを探す。探す相手が「行」か「ファイル」かで使い分ける。",
@@ -198,7 +199,7 @@
           "kind": "answer",
           "equals": "3"
         },
-        "afterward": "読めるログの中に timeout の行は 3 つあった。/var/log/secure は管理者だけが読めるので、`Permission denied` と言われて探せなかった。",
+        "afterward": "読めるログの中に timeout の行は 3 つあった。/var/log/secure は{{term:root-user}}だけが読めるので、`Permission denied` と言われて探せなかった。",
         "hints": [
           "行を探すのは grep。ディレクトリの中まで探す{{term:option}}を付ける。数えるのは {{term:wc}}。",
           "grep -r timeout /var/log の結果を、{{term:pipe}}（|）で `wc -l` に渡すと行の数が出る。",

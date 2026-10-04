@@ -475,6 +475,130 @@
         "pipe"
       ],
       "lessons": []
+    },
+    {
+      "id": "chmod",
+      "word": "chmod",
+      "reading": "しーえいちもっど",
+      "plain": "ファイルやディレクトリの権限（読む・書く・実行）を変えるコマンド。change mode の略。数字（600）でも記号（+x）でも書ける。",
+      "why": "スクリプトを動かせるようにする・秘密の物をほかの人から隠す、のどちらも chmod で直す。",
+      "related": [
+        "permission",
+        "chown",
+        "ls-l"
+      ],
+      "lessons": [
+        "linux.b.06"
+      ]
+    },
+    {
+      "id": "chown",
+      "word": "chown",
+      "reading": "しーえいちおうん",
+      "plain": "ファイルやディレクトリの所有者（とグループ）を変えるコマンド。change owner の略。管理者でないと使えない。",
+      "why": "誰の物かで、どの段の権限が効くかが決まる。持ち主を正しくしてから権限を決める。",
+      "related": [
+        "owner",
+        "group",
+        "chmod"
+      ],
+      "lessons": [
+        "linux.b.06"
+      ]
+    },
+    {
+      "id": "script",
+      "word": "スクリプト",
+      "plain": "コマンドの並びをファイルに書いておき、まとめて実行できるようにした物。",
+      "why": "同じ手順を何度も正確に繰り返せる。動かすには、実行の権限（x）が要る。",
+      "related": [
+        "command",
+        "shell",
+        "chmod"
+      ],
+      "lessons": [
+        "linux.b.06",
+        "linux.i.07"
+      ]
+    },
+    {
+      "id": "secret-key",
+      "word": "秘密鍵",
+      "reading": "ひみつかぎ",
+      "plain": "暗号の鍵の組のうち、持ち主だけが持つ側。これを持つ人が本人として扱われる。",
+      "why": "盗まれると、その人になりすまされる。置いた機械では、持ち主だけが読める権限（600）にする。",
+      "related": [
+        "permission",
+        "certificate",
+        "tls"
+      ],
+      "lessons": [
+        "linux.b.06"
+      ],
+      "analogy": "家の合鍵のような物。ただし、鍵を持つ人が本人と見なされる点がもっと重い。"
+    },
+    {
+      "id": "sudo",
+      "word": "sudo",
+      "reading": "すーどぅー",
+      "plain": "一般の利用者が、後ろに書いた命令 1 つだけを、管理者の権限で実行する仕組み。",
+      "why": "普段は弱い権限で作業し、管理者の力は要る 1 回だけ借りる。事故と悪用を減らす基本の形。",
+      "related": [
+        "root-user",
+        "permission",
+        "group"
+      ],
+      "lessons": [
+        "linux.b.07"
+      ]
+    },
+    {
+      "id": "root-user",
+      "word": "管理者",
+      "reading": "かんりしゃ",
+      "plain": "機械の中で何でもできる特別な利用者。Linux では root という名前で、どのファイルも読み書きでき、権限の決まりを越えられる。",
+      "why": "力が強い分、打ち間違い 1 つで機械を壊せる。普段は使わず、sudo で要る時だけ借りる。",
+      "related": [
+        "sudo",
+        "permission",
+        "owner"
+      ],
+      "lessons": [
+        "linux.b.07",
+        "linux.b.06"
+      ]
+    },
+    {
+      "id": "top",
+      "word": "top",
+      "reading": "とっぷ",
+      "plain": "動いているプロセスを、CPU やメモリを食っている順に並べて見せるコマンド。",
+      "why": "重くなった時に、どの処理が原因かを最初に見つける道具。",
+      "related": [
+        "ps",
+        "process",
+        "cpu",
+        "kill"
+      ],
+      "lessons": [
+        "linux.b.08"
+      ]
+    },
+    {
+      "id": "kill",
+      "word": "kill",
+      "reading": "きる",
+      "plain": "PID を指定して、プロセスに合図を送るコマンド。普通は「終わって」という合図で、-9 を付けると後片付けをさせずに終わらせる。",
+      "why": "暴走した処理や固まった処理を、機械を止めずに止められる。",
+      "related": [
+        "process",
+        "pid",
+        "top",
+        "ps"
+      ],
+      "lessons": [
+        "linux.b.08"
+      ]
     }
   ]
 }

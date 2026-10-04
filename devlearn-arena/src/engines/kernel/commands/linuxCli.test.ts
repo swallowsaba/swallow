@@ -185,3 +185,17 @@ describe('権限を変える・グループ', () => {
     expect(t.run('ls -ld /srv/web').out).toContain('learner web');
   });
 });
+
+describe('プロセスを止める（ほかの利用者のプロセス）', () => {
+  const processes = [{ command: 'python3 report.py', cpu: 99 }, { command: '/usr/sbin/sshd', cpu: 0.1, user: 'root' }];
+
+  it('一般の利用者は、ほかの利用者のプロセスを止められない（本物と同じ文言）。sudo なら止められる', () => {
+    const t = open({ processes });
+    expect(t.run('kill 101')).toEqual({ out: '', err: 'kill: (101) - Operation not permitted\n', code: 1 });
+    expect(t.run('pkill sshd').err).toBe('pkill: killing pid 101 failed: Operation not permitted\n');
+    expect(t.run('ps aux').out).toContain('/usr/sbin/sshd');
+    expect(t.run('kill 100').code).toBe(0);
+    expect(t.run('sudo kill 101').code).toBe(0);
+    expect(t.run('ps aux').out).not.toContain('sshd');
+  });
+});

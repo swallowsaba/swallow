@@ -1,0 +1,278 @@
+{
+  "id": "linux.b.06",
+  "domain": "linux",
+  "level": "beginner",
+  "theme": "権限",
+  "title": "権限を読む・変える",
+  "goal": "ls -l を読み、chmod/chown で直せる",
+  "minutes": 16,
+  "prerequisites": [
+    "found.b.06"
+  ],
+  "related": [
+    "found.b.06",
+    "sec.i.04"
+  ],
+  "next": [
+    "linux.b.07"
+  ],
+  "terms": [
+    "ls-l",
+    "chown",
+    "chmod",
+    "group",
+    "owner",
+    "permission",
+    "script",
+    "secret-key",
+    "config-file",
+    "server",
+    "directory",
+    "file",
+    "mv",
+    "root-user"
+  ],
+  "explain": {
+    "what": "{{term:ls-l}} の先頭の 10 文字で{{term:permission}}を読み、{{term:chmod}} で権限を、{{term:chown}} で{{term:owner}}を変える。権限は、読む r・書く w・実行する x を、所有者・{{term:group}}・その他の 3 段で持つ。1 段を数字 1 つでも書ける（r=4・w=2・x=1 の足し算）。",
+    "why": "作った{{term:script}}が「権限が無い」と断られて動かない。人に見られては困る{{term:secret-key}}を、誰でも読める。どちらも権限の設定から起きる。原因の欄を読み、要る権限だけを与えて直す。",
+    "use": "スクリプトに実行の x を足して、動かせるようにする。秘密鍵や大事な{{term:config-file}}を、所有者だけが読み書きできる 600 にする。",
+    "when": "書いたスクリプトを動かそうとしたら断られた時。{{term:server}}に置いた鍵の権限を確かめるように言われた時。",
+    "figures": [
+      "linux-b06-mode"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "数字と、その段の権限を結ぶ。",
+      "pairs": [
+        [
+          "7（4+2+1）",
+          "rwx（読む・書く・実行）"
+        ],
+        [
+          "5（4+1）",
+          "r-x（読む・実行）"
+        ],
+        [
+          "0",
+          "---（何もできない）"
+        ]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "所有者の自分が deploy.sh を動かそうとしたら、断られた。ls -l の表示は -rw-r--r--。どこを直す？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "所有者の段（2〜4 文字目）に x を足す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "その他の段（8〜10 文字目）に w を足す",
+          "correct": false,
+          "whyNot": "動かすのは自分（所有者）で、要るのは書く権限ではなく実行の x。ほかの人に書かせると危ない。"
+        },
+        {
+          "id": "c",
+          "text": "1 文字目の - を d に変える",
+          "correct": false,
+          "whyNot": "1 文字目は種類（d は{{term:directory}}）で、権限ではない。chmod では変わらない。"
+        }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "下の命令の後、key の権限はどうなる？",
+      "context": {
+        "command": "chmod 600 key"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "所有者だけが読み書きでき、ほかの人は何もできない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "誰でも読み書きできる",
+          "correct": false,
+          "whyNot": "6 は所有者の段だけ。グループとその他の段は 0（何もできない）。誰でも読み書きなら 666。"
+        },
+        {
+          "id": "c",
+          "text": "所有者だけが読めて、書けない",
+          "correct": false,
+          "whyNot": "6 は 4（読む）+2（書く）。読むだけなら 4 で、400 になる。"
+        }
+      ],
+      "explanation": "600 は、所有者の段が 6（rw-）、グループとその他が 0（---）。表示は -rw-------。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "自分で書いたスクリプトを動かすと、断られた。原因は？",
+      "context": {
+        "log": "$ ./deploy.sh\n-bash: ./deploy.sh: Permission denied\n$ ls -l deploy.sh\n-rw-r--r-- 1 learner learner 14 deploy.sh"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "どの段にも実行の x が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:file}}の所有者が自分でない",
+          "correct": false,
+          "whyNot": "所有者の欄は learner で、自分の物。自分の物でも、x が無ければ動かせない。"
+        },
+        {
+          "id": "c",
+          "text": "スクリプトの中身が間違っている",
+          "correct": false,
+          "whyNot": "中身の誤りなら、動いた後に別のエラーが出る。断られたのは、動かす前の権限の確認。"
+        }
+      ],
+      "explanation": "-rw-r--r-- には x が 1 つも無い。動かすには、所有者の段に x を足す。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "サーバに秘密鍵を置いた。権限はどうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "600 にして、所有者だけが読み書きできるようにする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "644 のままにする",
+          "correct": false,
+          "whyNot": "644 は、グループとその他も読める。同じ機械のほかの人に鍵を見られてしまう。"
+        },
+        {
+          "id": "c",
+          "text": "777 にして、誰でも使えるようにする",
+          "correct": false,
+          "whyNot": "誰でも読み書きできてしまう。鍵を盗まれる・書き換えられる危険がいちばん大きい。"
+        }
+      ],
+      "explanation": "秘密鍵は持ち主だけが読めればよい。要る権限だけを与えるのが基本。"
+    },
+    {
+      "id": "q4",
+      "kind": "term",
+      "prompt": "chown は何をする命令？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ファイルの所有者（とグループ）を変える",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ファイルの権限の rwx を変える",
+          "correct": false,
+          "whyNot": "それは chmod。chown の own は owner（所有者）の意味。"
+        },
+        {
+          "id": "c",
+          "text": "ファイルの名前を変える",
+          "correct": false,
+          "whyNot": "名前を変えるのは {{term:mv}}。chown は持ち主を変える。"
+        }
+      ],
+      "explanation": "chown は change owner の略。所有者は{{term:root-user}}でないと変えられない。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "deploy.sh を動かせるようにし、secret.key を所有者だけが読み書きできるようにする。",
+    "environment": "linux-basic",
+    "setup": {
+      "files": {
+        "/home/learner/deploy.sh": "echo deployed\n",
+        "/home/learner/secret.key": "練習用の鍵（本物ではない）\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "exec",
+        "purpose": "ls -l で 2 つのファイルの権限を読み、deploy.sh に実行の x を足す。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/deploy.sh",
+          "mode": "u+x"
+        },
+        "afterward": "deploy.sh の権限が -rwxr-xr-x になった。これで `./deploy.sh` と打つと動く。",
+        "hints": [
+          "まず `ls -l` で、deploy.sh の権限の欄を読む。どの段にも x が無い。",
+          "chmod の後に、足す印 + と実行の x を続け、ファイルの名前を書く。",
+          "`chmod +x deploy.sh` と打つ。"
+        ],
+        "expectedErrors": [
+          "exec-denied",
+          "enoent",
+          "chmod-not-owner"
+        ]
+      },
+      {
+        "id": "secret",
+        "purpose": "secret.key を、所有者だけが読み書きできる権限にする。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/secret.key",
+          "mode": "600"
+        },
+        "afterward": "secret.key の権限が -rw------- になった。グループとその他の段が --- なので、ほかの人は読めない。",
+        "hints": [
+          "所有者は読む・書く、グループとその他は何もできない。3 段を数字で書く。",
+          "読む 4 と書く 2 で、所有者の段は 6。ほかの 2 段は 0。",
+          "`chmod 600 secret.key` と打つ。"
+        ],
+        "expectedErrors": [
+          "enoent",
+          "chmod-not-owner"
+        ]
+      }
+    ],
+    "dangerous": [
+      {
+        "id": "chmod-777",
+        "pattern": "chmod\\s+(-R\\s+)?0?777",
+        "why": "777 は誰でも読み書き・実行できる。動かない時の近道に見えるが、ほかの人に書き換えられる。要る権限だけを足す。"
+      }
+    ]
+  },
+  "result": {
+    "success": "権限の欄を読み、要る権限だけを与えられた。動かす物には x、秘密の物は 600。",
+    "partial": "ヒントを使って直せた。次は、直す前と後で ls -l を打ち、欄の変わり方を見比べてみよう。",
+    "retry": "まだ権限が合っていない。ls -l で 2 つのファイルの欄を読み、所有者の段に何が足りないかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "権限は rwx を 3 段（所有者・グループ・その他）で読む",
+      "数字でも書ける（r=4・w=2・x=1 の足し算）",
+      "秘密の物は 600。777 にしない"
+    ],
+    "next": [
+      "linux.b.07",
+      "linux.a.04"
+    ],
+    "terms": [
+      "permission",
+      "chmod",
+      "chown",
+      "ls-l"
+    ]
+  }
+}

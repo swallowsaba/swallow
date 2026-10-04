@@ -1,0 +1,250 @@
+{
+  "id": "linux.b.07",
+  "domain": "linux",
+  "level": "beginner",
+  "theme": "ユーザー",
+  "title": "ユーザー・グループ・sudo",
+  "goal": "管理者権限の意味と危険を説明できる",
+  "minutes": 16,
+  "prerequisites": [
+    "linux.b.06"
+  ],
+  "related": [
+    "sec.b.02",
+    "sec.i.04"
+  ],
+  "next": [
+    "linux.i.03",
+    "sec.i.04"
+  ],
+  "terms": [
+    "group",
+    "sudo",
+    "root-user",
+    "file",
+    "permission",
+    "config-file",
+    "chmod",
+    "owner",
+    "shell"
+  ],
+  "explain": {
+    "what": "利用者は、機械を使う人ごとの名前。{{term:group}}は、利用者の集まり。{{term:root-user}}（root という名前）は、何でもできる特別な利用者。{{term:sudo}} は、一般の利用者が 1 回だけ、管理者として命令を実行する仕組み。",
+    "why": "管理者は、大事な{{term:file}}も機械ごと消せる。いつも管理者で作業すると、1 つの打ち間違いが大事故になる。普段は一般の利用者で作業し、要る時だけ sudo を付ける。共有の場所は、グループの{{term:permission}}で分け合う。",
+    "use": "{{term:config-file}}の変更やソフトの導入など、管理者にしかできない操作を、その 1 回だけ行う。チームで使う場所を、グループに入った人だけが書けるようにする。",
+    "when": "設定を直そうとしたら、権限が足りずに断られた時。チームの共有の場所に、自分だけ書けない時。",
+    "figures": [
+      "linux-b07-sudo"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "yesno",
+      "prompt": "いつも管理者（root）で作業するのがよい。",
+      "answer": false,
+      "why": "管理者は何でも消せる。打ち間違い 1 つで機械が壊れる。普段は一般の利用者で、要る時だけ sudo を使う。",
+      "see": "why"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "利用者を web グループに入れる",
+      "b": "web グループに許された権限が使える",
+      "answer": "cause",
+      "why": "権限の 2 段目はグループの段。グループに入った人には、その段の権限が効く。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "sudo とは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "一般の利用者が、1 回だけ管理者として命令を実行する仕組み",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "管理者に、ずっと切り替わる命令",
+          "correct": false,
+          "whyNot": "sudo が効くのは、後ろに書いた 1 つの命令だけ。終われば一般の利用者に戻る。"
+        },
+        {
+          "id": "c",
+          "text": "ファイルの権限を変える命令",
+          "correct": false,
+          "whyNot": "それは {{term:chmod}}。sudo は「誰として実行するか」を変える。"
+        }
+      ],
+      "explanation": "sudo の後に命令を書くと、その命令だけが管理者の権限で動く。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "/etc の設定ファイルを直して保存しようとしたら、権限が無いと断られた。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "編集の命令の先頭に sudo を付けて、やり直す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "そのファイルを 777 にして、誰でも書けるようにする",
+          "correct": false,
+          "whyNot": "誰でも設定を書き換えられてしまう。直したいのは 1 回だけなので、sudo で足りる。"
+        },
+        {
+          "id": "c",
+          "text": "管理者で入り直し、その後もずっと管理者で作業する",
+          "correct": false,
+          "whyNot": "直した後も管理者のままだと、別の打ち間違いが大事故になる。要る 1 回だけ sudo を使う。"
+        }
+      ],
+      "explanation": "/etc の中は管理者の物。直す 1 回だけ sudo で管理者の権限を借りる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "チームの共有の場所 /srv/web に、自分だけ書けない。原因は？",
+      "context": {
+        "log": "$ ls -ld /srv/web\ndrwxrwxr-x 2 root web 4096 /srv/web\n$ groups\nlearner"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "自分が web グループに入っていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "/srv/web に、誰も書けない権限が付いている",
+          "correct": false,
+          "whyNot": "グループの段は rwx で、web グループの人は書ける。書けないのは、自分がその段に当たらないから。"
+        },
+        {
+          "id": "c",
+          "text": "/srv/web が満杯になっている",
+          "correct": false,
+          "whyNot": "満杯なら、ほかの人も書けない。自分だけ書けないのは、権限の問題。"
+        }
+      ],
+      "explanation": "groups の結果に web が無い。{{term:owner}}でもないので、その他の段（r-x）が効き、書けない。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "web グループに自分を足した直後に、/srv/web にファイルを作ると？",
+      "context": {
+        "command": "sudo usermod -aG web learner\ntouch /srv/web/index.html"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "まだ権限が無いと断られる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "すぐに作れる",
+          "correct": false,
+          "whyNot": "グループへの所属は、入り直した時に読み込まれる。今の{{term:shell}}は、足す前のグループのまま。"
+        },
+        {
+          "id": "c",
+          "text": "管理者の物として作られる",
+          "correct": false,
+          "whyNot": "sudo が効いたのは usermod の 1 行だけ。touch は一般の利用者として動く。"
+        }
+      ],
+      "explanation": "グループに足したら、入り直す（ログインし直す・newgrp）と効く。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "learner を web グループに入れ、チームの共有の場所 /srv/web に書けるようにする。",
+    "environment": "linux-basic",
+    "setup": {
+      "dirs": [
+        "/srv/web"
+      ],
+      "groups": {
+        "web": []
+      },
+      "run": [
+        "sudo chown root:web /srv/web",
+        "sudo chmod 775 /srv/web"
+      ]
+    },
+    "steps": [
+      {
+        "id": "join",
+        "purpose": "/srv/web の持ち主とグループを確かめ、learner を web グループに入れる。",
+        "check": {
+          "kind": "fs",
+          "path": "/etc/group",
+          "contains": "web:x:1001:learner"
+        },
+        "afterward": "/etc/group の web の行に learner が足された。ただし今のシェルには、まだ効いていない（`groups` で確かめられる）。",
+        "hints": [
+          "`ls -ld /srv/web` で、持ち主とグループの欄を読む。web グループには書く権限 w がある。",
+          "利用者をグループに足すのは usermod -aG。管理者にしかできないので、先頭に sudo を付ける。",
+          "`sudo usermod -aG web learner` と打つ。"
+        ],
+        "expectedErrors": [
+          "usermod-denied",
+          "group-missing"
+        ]
+      },
+      {
+        "id": "write",
+        "purpose": "入り直して web グループを今のシェルで使い、/srv/web に index.html を作る。",
+        "check": {
+          "kind": "fs",
+          "path": "/srv/web/index.html"
+        },
+        "afterward": "web グループの権限で /srv/web に書けた。管理者にならずに、要る場所だけ書けるようになった。",
+        "hints": [
+          "グループに足しても、入り直すまで今のシェルには効かない。`groups` で今のグループを見る。",
+          "newgrp web で入り直してから、touch でファイルを作る。",
+          "`newgrp web` と打ち、`touch /srv/web/index.html` と打つ。"
+        ],
+        "expectedErrors": [
+          "group-not-yet",
+          "newgrp-denied"
+        ]
+      }
+    ],
+    "dangerous": [
+      {
+        "id": "sudo-write",
+        "pattern": "sudo\\s+(touch|cp|mv|tee|chmod\\s+(-R\\s+)?0?777)",
+        "why": "管理者として書くと、管理者の物ができたり、誰でも書ける場所になったりする。グループの権限で書けば足りる。"
+      }
+    ]
+  },
+  "result": {
+    "success": "管理者の権限は 1 回だけ借り、あとはグループの権限で書けた。要る分だけの権限で解決できた。",
+    "partial": "ヒントを使って書けるようになった。次は、足す前と後で `groups` を打ち、所属の変わり方を見てみよう。",
+    "retry": "まだ /srv/web に書けていない。`groups` で今のグループを見て、web が入っているかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "普段は一般の利用者で作業する",
+      "要る時だけ sudo で、1 回だけ管理者になる",
+      "共有の場所はグループで分け合う（足したら入り直す）"
+    ],
+    "next": [
+      "sec.i.04",
+      "linux.i.03"
+    ],
+    "terms": [
+      "sudo",
+      "root-user",
+      "group"
+    ]
+  }
+}

@@ -110,13 +110,14 @@ export function normalizeSignal(raw: string | undefined): string {
  * 合図を送る。
  * SIGKILL は必ず効く。SIGTERM は受け取り側が無視することがある。
  */
-export function signal(table: ProcessTable, pid: number, sig: string): SignalResult {
+/** asUser を書くと、その利用者として送る。root 以外は、自分のプロセスにしか送れない（本物と同じ） */
+export function signal(table: ProcessTable, pid: number, sig: string, asUser?: string): SignalResult {
   const target = table.processes.get(pid);
   if (!target) {
     return { table, killed: [], error: `kill: (${String(pid)}) - No such process` };
   }
-  if (pid === 1) {
-    return { table, killed: [], error: 'kill: (1) - Operation not permitted' };
+  if (pid === 1 || (asUser !== undefined && asUser !== 'root' && target.user !== asUser)) {
+    return { table, killed: [], error: `kill: (${String(pid)}) - Operation not permitted` };
   }
   if (!TERMINATING.has(sig)) {
     return { table, killed: [], error: null };
@@ -134,12 +135,12 @@ export function signal(table: ProcessTable, pid: number, sig: string): SignalRes
   return { table: { ...table, processes }, killed: [pid], error: null };
 }
 
-export function killMany(table: ProcessTable, pids: readonly number[], sig: string): SignalResult {
+export function killMany(table: ProcessTable, pids: readonly number[], sig: string, asUser?: string): SignalResult {
   let current = table;
   const killed: number[] = [];
   let error: string | null = null;
   for (const pid of pids) {
-    const result = signal(current, pid, sig);
+    const result = signal(current, pid, sig, asUser);
     current = result.table;
     killed.push(...result.killed);
     if (result.error !== null && error === null) error = result.error;
