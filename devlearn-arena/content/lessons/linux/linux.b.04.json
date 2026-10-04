@@ -1,0 +1,252 @@
+{
+  "id": "linux.b.04",
+  "domain": "linux",
+  "level": "beginner",
+  "theme": "テキスト",
+  "title": "探す",
+  "goal": "grep と find で目的の行とファイルを見つけられる",
+  "minutes": 18,
+  "prerequisites": [
+    "linux.b.03"
+  ],
+  "related": [
+    "trouble.b.03",
+    "mon.b.02"
+  ],
+  "next": [
+    "linux.b.05",
+    "trouble.b.01"
+  ],
+  "terms": [
+    "grep",
+    "find",
+    "file",
+    "directory",
+    "log",
+    "config-file",
+    "permission",
+    "wc",
+    "pipe",
+    "server",
+    "tail",
+    "cat",
+    "path",
+    "option"
+  ],
+  "explain": {
+    "what": "{{term:grep}}は、{{term:file}}の中から、決めた言葉を含む行を探して出す。{{term:find}}は、{{term:directory}}の木の中から、名前などの条件でファイルを探す。探す相手が「行」か「ファイル」かで使い分ける。",
+    "why": "{{term:server}}には、何万行もの記録と、何千ものファイルがある。目で追っていては見つからない。手掛かりの言葉や名前から、一気に絞り込む。",
+    "use": "{{term:log}}から、エラーや決まった言葉の行だけを拾う。置き場所の分からない{{term:config-file}}を、名前で探し出す。",
+    "when": "「どこかにある app.conf を直して」と頼まれた時や、「夜中のタイムアウトが何回あったか」を数える時。",
+    "figures": [
+      "linux-b04-search"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "situation",
+      "prompt": "grep と find の違いは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "grep はファイルの中の行を探し、find はファイルそのものを探す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "grep は速く、find は遅いだけで、探す物は同じ",
+          "correct": false,
+          "whyNot": "探す物が違う。grep は中身の行、find はファイル（名前や種類）を探す。"
+        },
+        {
+          "id": "c",
+          "text": "grep はディレクトリを、find は行を探す",
+          "correct": false,
+          "whyNot": "逆。中身の行を探すのが grep、木の中のファイルを探すのが find。"
+        }
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "指定と意味を結ぶ。",
+      "pairs": [
+        [
+          "grep の -i",
+          "大文字と小文字を区別しない"
+        ],
+        [
+          "grep の -r",
+          "ディレクトリの中まで探す"
+        ],
+        [
+          "find の -name",
+          "ファイルの名前で探す"
+        ]
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "app.log から、`ERROR` を含む行だけを出したい。どの命令？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`grep ERROR app.log`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`find ERROR app.log`",
+          "correct": false,
+          "whyNot": "find はファイルを探す命令。中の行を探すのは grep。"
+        },
+        {
+          "id": "c",
+          "text": "`tail ERROR app.log`",
+          "correct": false,
+          "whyNot": "{{term:tail}} は末尾を出す命令。言葉で行を選ぶことはできない。"
+        }
+      ],
+      "explanation": "grep の後に探す言葉、その後にファイルを書く。その言葉を含む行だけが出る。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "下の命令は、どの行に当たる？",
+      "context": {
+        "command": "grep -i timeout app.log"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "timeout も `Timeout` も `TIMEOUT` も含む行",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "小文字の timeout を含む行だけ",
+          "correct": false,
+          "whyNot": "それは -i を付けない時。-i は大文字と小文字を区別しない。"
+        },
+        {
+          "id": "c",
+          "text": "timeout を含まない行",
+          "correct": false,
+          "whyNot": "含まない行を出すのは -v。-i は区別しない、の意味。"
+        }
+      ],
+      "explanation": "-i を付けると、大文字と小文字の違いを気にせず一致する。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "名前が app.conf だとだけ分かっている設定ファイルを、サーバのどこかから探したい。",
+      "choices": [
+        {
+          "id": "a",
+          "text": "find / -name app.conf",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "grep app.conf /",
+          "correct": false,
+          "whyNot": "grep はファイルの中の行を探す。ファイルの名前で、置き場所を探すのは find。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:cat}} app.conf",
+          "correct": false,
+          "whyNot": "cat は、今いる場所の app.conf を出すだけ。どこにあるかは探さない。"
+        }
+      ],
+      "explanation": "find の後に探し始める場所（/ は全体）、-name の後に名前を書く。見つかった物の{{term:path}}が出る。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "/var/log の中から timeout を含む行の数を数え、どこかにある app.conf の場所を探す。",
+    "environment": "linux-basic",
+    "setup": {
+      "dirs": [
+        "/var/log/app",
+        "/etc/app",
+        "/root"
+      ],
+      "files": {
+        "/var/log/app/web.log": "02:10:03 ok\n02:14:51 timeout 決済\n03:01:20 ok\n03:40:09 timeout 在庫\n",
+        "/var/log/app/batch.log": "01:00:00 開始\n01:30:44 timeout 集計\n01:45:00 終了\n",
+        "/var/log/secure": "02:00:00 timeout 認証\n",
+        "/etc/app/app.conf": "timeout=30\n",
+        "/root/notes.txt": "管理者の覚え書き\n"
+      },
+      "run": [
+        "sudo chown root:root /var/log/secure /root",
+        "sudo chmod 600 /var/log/secure",
+        "sudo chmod 700 /root"
+      ]
+    },
+    "steps": [
+      {
+        "id": "count",
+        "purpose": "/var/log の中の全てのファイルから timeout を含む行を探し、その行の数を、答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "3"
+        },
+        "afterward": "読めるログの中に timeout の行は 3 つあった。/var/log/secure は管理者だけが読めるので、`Permission denied` と言われて探せなかった。",
+        "hints": [
+          "行を探すのは grep。ディレクトリの中まで探す{{term:option}}を付ける。数えるのは {{term:wc}}。",
+          "grep -r timeout /var/log の結果を、{{term:pipe}}（|）で `wc -l` に渡すと行の数が出る。",
+          "`grep -r timeout /var/log | wc -l` を打つと 3 と出る。答えの欄に `3` と入れる。"
+        ],
+        "expectedErrors": [
+          "perm-denied-search",
+          "linux-wrong-count"
+        ]
+      },
+      {
+        "id": "where",
+        "purpose": "app.conf という名前のファイルを、/ から探す。見つかった場所（パス）を、答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "/etc/app/app.conf"
+        },
+        "afterward": "app.conf は /etc/app/app.conf にあった。/root は見られないので `Permission denied` と出たが、2>/dev/null で捨てれば結果だけが残る。",
+        "hints": [
+          "ファイルを名前で探すのは find。探し始める場所に / を書く。",
+          "find / -name app.conf と打つ。見られない場所の `Permission denied` が混ざるなら、後ろに 2>/dev/null を付けて捨てる。",
+          "`find / -name app.conf 2>/dev/null` を打つと /etc/app/app.conf と出る。答えの欄に `/etc/app/app.conf` と入れる。"
+        ],
+        "expectedErrors": [
+          "perm-denied-search",
+          "linux-wrong-place"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "行は grep、ファイルは find と、2 つの探し方を使い分けられた。見られない場所のエラーも読み分けた。",
+    "partial": "ヒントを使って見つけられた。次は、探す相手が行かファイルかを先に決めてから、命令を選んでみよう。",
+    "retry": "まだ答えが合っていない。探す相手は行（中身）か、ファイル（名前）か。図で、どちらの道具かを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "行を探すのは grep（-i で大文字小文字を問わない）",
+      "ファイルを探すのは find（-name で名前）",
+      "-r でディレクトリの中まで。見られない場所のエラーは 2>/dev/null で捨てられる"
+    ],
+    "next": [
+      "linux.b.05",
+      "trouble.b.01"
+    ],
+    "terms": [
+      "grep",
+      "find"
+    ]
+  }
+}

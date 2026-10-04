@@ -1,0 +1,245 @@
+{
+  "id": "linux.b.01",
+  "domain": "linux",
+  "level": "beginner",
+  "theme": "CLI",
+  "title": "端末とシェル",
+  "goal": "CLI とは何かを説明し、プロンプト・コマンド・引数・オプションを読める",
+  "minutes": 15,
+  "prerequisites": [
+    "linux.b.00",
+    "found.b.04"
+  ],
+  "related": [
+    "found.b.04",
+    "git.b.02"
+  ],
+  "next": [
+    "linux.b.02",
+    "linux.b.03"
+  ],
+  "terms": [
+    "terminal",
+    "shell",
+    "command",
+    "option",
+    "argument",
+    "server",
+    "prompt",
+    "current-directory",
+    "ls",
+    "pwd",
+    "home-directory",
+    "file",
+    "directory",
+    "permission",
+    "ls-l"
+  ],
+  "explain": {
+    "what": "{{term:terminal}}は、文字で命令を打つ画面。打った命令を受け取って実行する役が{{term:shell}}。命令は「{{term:command}} {{term:option}} {{term:argument}}」の順に、空白で区切って書く。",
+    "why": "遠くの{{term:server}}は、たいてい文字でしか操作できない。文字の命令なら、同じ操作を何度でも正確に繰り返せ、手順書にもそのまま書ける。",
+    "use": "サーバの全ての操作に使う。行の先頭に出る{{term:prompt}}は、誰が・どの機械の・どこにいるかを示す。打つ前に、それを確かめる習慣を付ける。",
+    "when": "手順書に書かれた命令を打つ時。どこまでがコマンドで、どこからがオプションと引数かが分かれば、初めて見る命令でも読める。",
+    "figures": [
+      "linux-b01-prompt"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "linux-b01-prompt",
+      "prompt": "図のプロンプトで、今いる場所（{{term:current-directory}}）を表す部分を押す。",
+      "answer": [
+        "cwd"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "linux-b01-prompt",
+      "prompt": "図の命令で、命令が扱う相手（引数）を押す。",
+      "answer": [
+        "argument"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "用語と説明を結ぶ。",
+      "pairs": [
+        [
+          "コマンド",
+          "何をするかの名前（先頭に書く）"
+        ],
+        [
+          "オプション",
+          "動きを変える指定（- で始まる）"
+        ],
+        [
+          "引数",
+          "命令が扱う相手（{{term:file}}や場所）"
+        ]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "下の命令の -l は、3 つのうちのどれ？",
+      "context": {
+        "command": "ls -l /etc"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "オプション",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "引数",
+          "correct": false,
+          "whyNot": "引数は命令が扱う相手。この命令では /etc。"
+        },
+        {
+          "id": "c",
+          "text": "コマンド",
+          "correct": false,
+          "whyNot": "コマンドは先頭の {{term:ls}}。"
+        }
+      ],
+      "explanation": "- で始まる -l はオプションで、{{term:ls}} の出し方を「詳しく」に変える。/etc は引数。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "無いコマンドを打った。何と言われる？",
+      "context": {
+        "command": "lss -l"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "command not found（見つからない）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "似た名前の ls が代わりに動く",
+          "correct": false,
+          "whyNot": "シェルは似た名前を勝手に選ばない。書いた名前のとおりに探し、無ければそう言う。"
+        },
+        {
+          "id": "c",
+          "text": "何も起きず、次の行に進む",
+          "correct": false,
+          "whyNot": "黙って飛ばすことはない。見つからなかったことを知らせる。"
+        }
+      ],
+      "explanation": "シェルは、打たれた名前の命令を探す。無ければ command not found と言う。綴りと大文字小文字を確かめる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "初めて使う命令の、オプションの使い方を知りたい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "命令の後に --help を付けるか、man で説明を読む",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "思いつく文字を次々に付けて試す",
+          "correct": false,
+          "whyNot": "知らないオプションが、消す・上書きするなどの危ない動きをすることもある。先に説明を読む。"
+        },
+        {
+          "id": "c",
+          "text": "使い方は全て覚えておくしかない",
+          "correct": false,
+          "whyNot": "全てを覚える必要は無い。--help や man で、その場で調べられる。"
+        }
+      ],
+      "explanation": "多くの命令は --help で短い説明を、man で詳しい説明を出す。調べながら使えばよい。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "端末で現在地を確かめ、{{term:home-directory}}の中身を詳しく一覧する。",
+    "environment": "linux-basic",
+    "setup": {
+      "dirs": [
+        "/home/learner/photos"
+      ],
+      "files": {
+        "/home/learner/notes.txt": "港の灯台の点検: 毎週月曜\n",
+        "/home/learner/plan.txt": "新しい桟橋の計画\n",
+        "/home/learner/photos/pier.jpg": "(写真)"
+      }
+    },
+    "steps": [
+      {
+        "id": "where",
+        "purpose": "まず、今どこにいるかを確かめる。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/.bash_history",
+          "contains": "pwd"
+        },
+        "afterward": "/home/learner と出た。プロンプトの ~ は、このホームディレクトリのこと。",
+        "hints": [
+          "今いる場所を表示するコマンドは {{term:pwd}}。",
+          "pwd はオプションも引数も要らない。名前だけを打って実行する。",
+          "`pwd` と打つ。"
+        ],
+        "expectedErrors": [
+          "command-not-found"
+        ]
+      },
+      {
+        "id": "list",
+        "purpose": "ホームディレクトリ（~）の中身を、詳しい形で一覧する。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/.bash_history",
+          "contains": "ls -l"
+        },
+        "afterward": "1 行に 1 つずつ、{{term:permission}}・持ち主・大きさ・名前が出た。-l がオプション、~ が引数。photos のように / の付く物は{{term:directory}}。",
+        "hints": [
+          "中身の一覧はコマンド ls。詳しく見るためのオプションを足す。",
+          "ls の後に、詳しく見るオプション -l と、場所を表す ~ を、空白で区切って書く。",
+          "`ls -l ~` と打つ。"
+        ],
+        "expectedErrors": [
+          "command-not-found"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "現在地を確かめてから、オプションと引数を付けて一覧できた。命令の形を読めた。",
+    "partial": "ヒントを使って一覧できた。次は、手順書の命令をコマンド・オプション・引数に分けて読んでみよう。",
+    "retry": "まだ一覧できていない。打った行と、図の「{{term:ls-l}} /etc」の形を並べて見比べよう。"
+  },
+  "summary": {
+    "points": [
+      "端末で打ち、シェルが実行する",
+      "命令は、コマンド・オプション・引数の順に空白で区切る",
+      "分からなければ --help や man で調べる"
+    ],
+    "next": [
+      "linux.b.02",
+      "linux.b.03"
+    ],
+    "terms": [
+      "terminal",
+      "shell",
+      "option",
+      "argument",
+      "prompt"
+    ]
+  }
+}

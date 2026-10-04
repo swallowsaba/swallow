@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>grep の結果を | で sort に、sort の結果を uniq -c に渡し、> で report.txt に書き出す</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="grep">
+    <rect x="20" y="100" width="130" height="80" rx="12" fill="#3ae08a" />
+    <text x="85" y="136" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">grep ERROR</text>
+    <text x="85" y="158" text-anchor="middle" font-size="13" fill="#0a1424">拾う</text>
+  </g>
+  <g class="el" data-part="sort">
+    <rect x="190" y="100" width="130" height="80" rx="12" fill="#5cc1ff" />
+    <text x="255" y="136" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">sort</text>
+    <text x="255" y="158" text-anchor="middle" font-size="13" fill="#0a1424">並べる</text>
+  </g>
+  <g class="el" data-part="uniq">
+    <rect x="360" y="100" width="130" height="80" rx="12" fill="#f2b632" />
+    <text x="425" y="136" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">uniq -c</text>
+    <text x="425" y="158" text-anchor="middle" font-size="13" fill="#0a1424">数える</text>
+  </g>
+  <g class="el" data-part="pipes">
+    <path d="M150 140 H184" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <text x="167" y="126" text-anchor="middle" font-size="18" font-weight="700" fill="#f2b632">|</text>
+    <path d="M320 140 H354" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#arrow-gold)" />
+    <text x="337" y="126" text-anchor="middle" font-size="18" font-weight="700" fill="#f2b632">|</text>
+    <path d="M490 140 H544" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#arrow)" />
+    <text x="517" y="126" text-anchor="middle" font-size="18" font-weight="700" fill="#eef2f6">></text>
+  </g>
+  <g class="el" data-part="file">
+    <rect x="550" y="100" width="130" height="80" rx="12" fill="#9aa9b5" />
+    <text x="615" y="136" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">report.txt</text>
+    <text x="615" y="158" text-anchor="middle" font-size="13" fill="#0a1424">ファイルに残す</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="350" y="240" text-anchor="middle" font-size="14" fill="#eef2f6">| は次の命令へ渡す　> はファイルに上書き　>> は後ろに足す</text>
+  </g>
+</svg>

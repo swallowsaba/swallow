@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>長い文書に対し、全部を出す cat・頁ごとに送る less・先頭の head・末尾の tail の 4 つの見方</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="doc">
+    <rect x="30" y="30" width="140" height="300" rx="12" fill="none" stroke="#9aa9b5" stroke-width="2" />
+    <rect x="46" y="50" width="108" height="10" rx="3" fill="#9fb0c6" />
+    <rect x="46" y="76" width="94" height="10" rx="3" fill="#9fb0c6" />
+    <rect x="46" y="102" width="80" height="10" rx="3" fill="#9fb0c6" />
+    <rect x="46" y="128" width="108" height="10" rx="3" fill="#9fb0c6" />
+    <rect x="46" y="154" width="94" height="10" rx="3" fill="#9fb0c6" />
+    <rect x="46" y="180" width="80" height="10" rx="3" fill="#9fb0c6" />
+    <rect x="46" y="206" width="108" height="10" rx="3" fill="#9fb0c6" />
+    <rect x="46" y="232" width="94" height="10" rx="3" fill="#9fb0c6" />
+    <rect x="46" y="258" width="80" height="10" rx="3" fill="#9fb0c6" />
+    <rect x="46" y="284" width="108" height="10" rx="3" fill="#9fb0c6" />
+    <rect x="46" y="310" width="94" height="10" rx="3" fill="#9fb0c6" />
+    <text x="100" y="350" text-anchor="middle" font-size="13" fill="#9fb0c6">長い文書（ログ）</text>
+  </g>
+  <g class="el" data-part="cat">
+    <rect x="220" y="40" width="180" height="120" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <text x="310" y="92" text-anchor="middle" font-size="22" font-weight="700" fill="#eef2f6">cat</text>
+    <text x="310" y="122" text-anchor="middle" font-size="14" fill="#9fb0c6">全部を出す</text>
+  </g>
+  <g class="el" data-part="less">
+    <rect x="430" y="40" width="180" height="120" rx="12" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <text x="520" y="92" text-anchor="middle" font-size="22" font-weight="700" fill="#eef2f6">less</text>
+    <text x="520" y="122" text-anchor="middle" font-size="14" fill="#9fb0c6">頁ごとに送る</text>
+  </g>
+  <g class="el" data-part="head">
+    <rect x="220" y="190" width="180" height="120" rx="12" fill="none" stroke="#f2b632" stroke-width="2" />
+    <text x="310" y="242" text-anchor="middle" font-size="22" font-weight="700" fill="#eef2f6">head</text>
+    <text x="310" y="272" text-anchor="middle" font-size="14" fill="#9fb0c6">先頭だけ</text>
+  </g>
+  <g class="el" data-part="tail">
+    <rect x="430" y="190" width="180" height="120" rx="12" fill="none" stroke="#e04a3a" stroke-width="2" />
+    <text x="520" y="242" text-anchor="middle" font-size="22" font-weight="700" fill="#eef2f6">tail</text>
+    <text x="520" y="272" text-anchor="middle" font-size="14" fill="#9fb0c6">末尾だけ（最新）</text>
+  </g>
+</svg>

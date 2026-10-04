@@ -32,6 +32,10 @@ function planTransfer(
   }
   const dest = resolve(shell.cwd, operands[operands.length - 1] ?? '');
   const sources = operands.slice(0, -1).map((p) => resolve(shell.cwd, p));
+  const missing = operands.slice(0, -1).find((p) => stat(shell.vfs, resolve(shell.cwd, p)) === undefined);
+  if (missing !== undefined) {
+    return { error: { stderr: `${command}: cannot stat '${missing}': No such file or directory\n`, code: 1 } };
+  }
   if (sources.length > 1 && stat(shell.vfs, dest)?.kind !== 'dir') {
     return {
       error: {
@@ -186,6 +190,10 @@ export const fsCommands: CommandSpec[] = [
           const blocked = deniedInParent(shell, target, 'rm', `cannot remove '${target}'`);
           if (blocked) return blocked;
         }
+        // ディレクトリは空でも -r が要る（本物と同じ）
+        if (!recursive && stat(vfs, path)?.kind === 'dir') {
+          return { stderr: `rm: cannot remove '${target}': Is a directory\n`, code: 1 };
+        }
         try {
           vfs = remove(vfs, path, recursive);
         } catch (error) {
@@ -206,6 +214,9 @@ export const fsCommands: CommandSpec[] = [
       const { flags, operands } = parseArgs(argv);
       const plan = planTransfer(shell, operands, 'cp', 'コピー元とコピー先');
       if ('error' in plan) return plan.error;
+      const recursive = flags.has('r') || flags.has('R');
+      const dir = operands.slice(0, -1).find((p) => stat(shell.vfs, resolve(shell.cwd, p))?.kind === 'dir');
+      if (!recursive && dir !== undefined) return { stderr: `cp: -r not specified; omitting directory '${dir}'\n`, code: 1 };
       let vfs = shell.vfs;
       for (const source of plan.sources) {
         vfs = copy(vfs, source, plan.dest, flags.has('r') || flags.has('R'));

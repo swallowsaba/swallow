@@ -1,0 +1,208 @@
+{
+  "id": "linux.b.05",
+  "domain": "linux",
+  "level": "beginner",
+  "theme": "テキスト",
+  "title": "パイプとリダイレクト",
+  "goal": "コマンドをつなぎ、結果をファイルに残せる",
+  "minutes": 18,
+  "prerequisites": [
+    "linux.b.04"
+  ],
+  "related": [
+    "cicd.b.02",
+    "web.i.02"
+  ],
+  "next": [
+    "linux.i.05",
+    "linux.i.06"
+  ],
+  "terms": [
+    "pipe",
+    "redirect",
+    "command",
+    "file",
+    "grep",
+    "sort",
+    "uniq",
+    "log",
+    "cat"
+  ],
+  "explain": {
+    "what": "{{term:pipe}}（|）は、ある{{term:command}}の結果を、次のコマンドに渡すつなぎ方。{{term:redirect}}（> と >>）は、結果を画面ではなく{{term:file}}に書き出す。> は上書き、>> は後ろに足す。",
+    "why": "1 つ 1 つのコマンドは、拾う・並べる・数える、と小さな仕事しかしない。つなぐと、大きな仕事を 1 行でこなせる。結果をファイルに残せば、後で見たり人に渡したりできる。",
+    "use": "{{term:grep}}で拾った行を{{term:sort}}で並べ、{{term:uniq}}で種類ごとに数え、その結果を報告のファイルに残す。",
+    "when": "「昨日のエラーを種類ごとに数えて、報告して」と頼まれた時。1 行の命令で集計し、そのままファイルにして渡せる。",
+    "figures": [
+      "linux-b05-pipe"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "situation",
+      "prompt": "> と >> の違いは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "> は上書き、>> は後ろに足す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "> は画面へ、>> はファイルへ出す",
+          "correct": false,
+          "whyNot": "どちらもファイルへ書き出す。違いは、元の中身を消すか、後ろに足すか。"
+        },
+        {
+          "id": "c",
+          "text": "> は後ろに足し、>> は上書き",
+          "correct": false,
+          "whyNot": "逆。> は中身を置き換え、>> は後ろに足す。"
+        }
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "order",
+      "prompt": "エラーの種類ごとの件数を数える。命令をつなぐ順に並べる。",
+      "items": [
+        "`grep ERROR app.log`（拾う）",
+        "sort（並べる）",
+        "uniq -c（数える）"
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "下の 2 行を続けて打った。f の中身は？",
+      "context": {
+        "command": "echo a > f\necho a > f"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "a が 1 行だけ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "a が 2 行",
+          "correct": false,
+          "whyNot": "> は上書き。2 回目で 1 回目の中身は消える。2 行にしたいなら >> を使う。"
+        },
+        {
+          "id": "c",
+          "text": "空っぽ",
+          "correct": false,
+          "whyNot": "上書きでも、書いた a は残る。空になるのは、何も書かずに上書きした時。"
+        }
+      ],
+      "explanation": "> は毎回、中身を置き換える。足していきたい時は >> を使う。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "集計した結果を、後で人に渡せるように残したい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "命令の最後に > report.txt を付けて、ファイルに保存する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "画面に出た結果を、手で書き写す",
+          "correct": false,
+          "whyNot": "写し間違いが起きる。リダイレクトなら、出た結果がそのままファイルになる。"
+        },
+        {
+          "id": "c",
+          "text": "命令の最後に | report.txt を付ける",
+          "correct": false,
+          "whyNot": "| は次の命令に渡すつなぎ方。ファイルに書くのは >。"
+        }
+      ],
+      "explanation": "> の後にファイルの名前を書くと、画面に出るはずの結果がそのファイルに入る。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "`grep ERROR app.log | uniq -c` で数えたら、同じ種類が 2 行に分かれて出た。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "sort で並べてから uniq していない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "grep の言葉の綴りが違う",
+          "correct": false,
+          "whyNot": "綴りが違えば、行が出ない。出た行が分かれるのは、まとめ方の問題。"
+        },
+        {
+          "id": "c",
+          "text": "uniq は 1 つの種類しか数えられない",
+          "correct": false,
+          "whyNot": "uniq -c は種類ごとに数えられる。ただし隣り合った同じ行しかまとめない。"
+        }
+      ],
+      "explanation": "uniq は、隣り合った同じ行だけを 1 つにまとめる。先に sort で同じ行を隣に集める。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "app.log のエラーを種類ごとに数え、その結果を report.txt に保存する。",
+    "environment": "linux-basic",
+    "setup": {
+      "files": {
+        "/home/learner/app.log": "ERROR disk full\nINFO started\nERROR net timeout\nERROR disk full\nWARN slow\nERROR disk full\nINFO done\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "report",
+        "purpose": "エラーの行を拾い、並べ、種類ごとに数えて、report.txt に書き出す。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/report.txt",
+          "contains": "3 ERROR disk full"
+        },
+        "afterward": "report.txt に「`3 ERROR disk full`」「`1 ERROR net timeout`」と書けた。並べてから数えたので、同じ種類が 1 行にまとまった。",
+        "hints": [
+          "拾う → 並べる → 数える → 保存する の 4 段。それぞれの命令を | でつなぎ、最後に > で保存する。",
+          "grep でエラーの行を拾い、sort、uniq -c とつなぎ、> report.txt で書き出す。",
+          "`grep ERROR app.log | sort | uniq -c > report.txt` と打つ。"
+        ],
+        "expectedErrors": [
+          "enoent"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "小さな命令をつないで集計し、結果をファイルに残せた。",
+    "partial": "ヒントを使って集計できた。次は、つなぐ前に 1 段ずつ打って、途中の結果を見てみよう。",
+    "retry": "まだ report.txt の中身が合っていない。{{term:cat}} report.txt で中身を見て、同じ種類が分かれていないかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "| で次の命令へ渡す",
+      "> は上書き、>> は後ろに足す",
+      "数える前に並べる（sort してから uniq）"
+    ],
+    "next": [
+      "linux.i.05",
+      "linux.i.06"
+    ],
+    "terms": [
+      "pipe",
+      "redirect",
+      "sort",
+      "uniq"
+    ]
+  }
+}

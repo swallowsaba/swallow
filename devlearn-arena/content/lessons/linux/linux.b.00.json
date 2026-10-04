@@ -1,0 +1,266 @@
+{
+  "id": "linux.b.00",
+  "domain": "linux",
+  "level": "beginner",
+  "theme": "Linux 基礎",
+  "title": "Linux とは",
+  "goal": "OS としての Linux・カーネルとディストリビューション・サーバで使われる理由を説明できる",
+  "minutes": 12,
+  "prerequisites": [
+    "found.b.03"
+  ],
+  "related": [
+    "found.b.03",
+    "ctr.b.02"
+  ],
+  "next": [
+    "linux.b.01"
+  ],
+  "terms": [
+    "linux",
+    "server",
+    "os",
+    "kernel",
+    "distribution",
+    "ubuntu",
+    "web",
+    "web-server",
+    "database",
+    "container",
+    "gui",
+    "cli",
+    "terminal",
+    "network",
+    "service"
+  ],
+  "explain": {
+    "what": "{{term:linux}}は、{{term:server}}で最も使われている{{term:os}}。中心の部分を{{term:kernel}}と呼ぶ。カーネルに道具一式を組み合わせて配る物が{{term:distribution}}で、{{term:ubuntu}}はその 1 つ。",
+    "why": "無料で使え、長い間止まらずに動き、遠くからでも文字だけで操作できる。たくさんのサーバを同じやり方で扱えるので、{{term:web}}の仕組みの多くが選んでいる。",
+    "use": "{{term:web-server}}・{{term:database}}・{{term:container}}の多くは、Linux の上で動く。借りたサーバも、たいてい Linux が入っている。",
+    "when": "借りたサーバに入ると、画面には文字しか出ない（{{term:gui}}が無い）。そこで文字の命令を打つ操作が{{term:cli}}。この先のレッスンで、その打ち方を学ぶ。",
+    "figures": [
+      "linux-b00-layers"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "linux-b00-layers",
+      "prompt": "図で、機械を直接管理する Linux の中心（カーネル）を押す。",
+      "answer": [
+        "kernel"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係を選ぶ。",
+      "a": "ディストリビューション",
+      "b": "カーネル",
+      "answer": "contains",
+      "why": "ディストリビューションは、カーネルに道具一式をまとめた配布物。カーネルを中に含んでいる。",
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "サーバの多くは、画面（GUI）無しで動いている。",
+      "answer": true,
+      "why": "サーバは人が前に座って使う機械ではない。画面を持たず、遠くから文字の命令（CLI）で操作することが多い。",
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "ディストリビューションとは何？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "カーネルと道具一式をまとめた配布物",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Linux の中心の部分",
+          "correct": false,
+          "whyNot": "中心の部分はカーネル。ディストリビューションは、カーネルを含めて配る物の全体。"
+        },
+        {
+          "id": "c",
+          "text": "Linux を動かす機械の名前",
+          "correct": false,
+          "whyNot": "機械ではなく、機械に入れるソフトウェアの配布物。"
+        }
+      ],
+      "explanation": "Ubuntu も、ほかの配布物も、ディストリビューション。どれも中心には同じ Linux のカーネルがある。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "遠くにあるサーバを操作したい。主に使う手段は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:terminal}}で文字の命令を打つ（CLI）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "サーバのある場所まで行って、マウスで操作する",
+          "correct": false,
+          "whyNot": "サーバは遠くにあり、画面も付いていないことが多い。行かずに文字で操作する。"
+        },
+        {
+          "id": "c",
+          "text": "サーバの画面を写真で送ってもらう",
+          "correct": false,
+          "whyNot": "見るだけでは操作できない。それに、サーバには画面が無いことが多い。"
+        }
+      ],
+      "explanation": "サーバは{{term:network}}越しに、文字の命令で操作する。命令なら手順書に書け、何度でも同じように繰り返せる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "Linux の特徴でないものはどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "必ず有料で使う",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "サーバで広く使われている",
+          "correct": false,
+          "whyNot": "これは Linux の特徴。Web の{{term:service}}の多くが Linux で動く。"
+        },
+        {
+          "id": "c",
+          "text": "文字の命令だけで操作できる",
+          "correct": false,
+          "whyNot": "これも特徴。画面が無くても、CLI で全ての操作ができる。"
+        }
+      ],
+      "explanation": "Linux は無料で使える。有料の保守を付けた配布物もあるが、必ず払う物ではない。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "借りたサーバの情報画面を読み、OS・ディストリビューション・その版を答える。",
+    "environment": "sim-read",
+    "setup": {
+      "questions": [
+        {
+          "id": "os",
+          "prompt": "このサーバの OS は？",
+          "options": [
+            "Windows",
+            "Linux",
+            "macOS"
+          ]
+        },
+        {
+          "id": "distro",
+          "prompt": "ディストリビューション（配布物）は？",
+          "options": [
+            "Ubuntu",
+            "Debian",
+            "Fedora"
+          ]
+        },
+        {
+          "id": "version",
+          "prompt": "ディストリビューションの版は？",
+          "options": [
+            "24.04",
+            "6.8.0",
+            "4"
+          ]
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "サーバの情報",
+          "rows": [
+            [
+              "機械の名前",
+              "port-web-01"
+            ],
+            [
+              "OS",
+              "Linux"
+            ],
+            [
+              "カーネル",
+              "6.8.0-45-generic"
+            ],
+            [
+              "配布物",
+              "Ubuntu 24.04 LTS"
+            ],
+            [
+              "CPU",
+              "2 コア"
+            ],
+            [
+              "メモリ",
+              "4 GB"
+            ]
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "/etc/os-release",
+          "lines": [
+            "NAME=\"Ubuntu\"",
+            "VERSION=\"24.04 LTS (Noble Numbat)\"",
+            "ID=ubuntu"
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "read",
+        "purpose": "サーバの情報から、OS・ディストリビューション・ディストリビューションの版の 3 つを答える。",
+        "check": {
+          "kind": "sim",
+          "expr": "answered os=Linux distro=Ubuntu version=24.04"
+        },
+        "afterward": "OS は Linux、配布物は Ubuntu の 24.04。6.8.0 はカーネルの版で、配布物の版とは別の番号。",
+        "hints": [
+          "「OS」の行と「配布物」の行を読もう。カーネルの行は、配布物とは別の物。",
+          "配布物の行は、名前（Ubuntu）の後ろに版の番号（24.04）が続く。2 つに分けて答える。",
+          "`answer os Linux` `answer distro Ubuntu` `answer version 24.04` の順に入れる。"
+        ],
+        "expectedErrors": [
+          "linux-version-mixup"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "情報画面から OS・配布物・版を読み分けられた。カーネルと配布物の違いが分かった。",
+    "partial": "ヒントを使って読み分けられた。次は、カーネルの版と配布物の版がなぜ違うのかを考えてみよう。",
+    "retry": "まだ合っていない所がある。図の 3 つの層（カーネル・配布物・サービス）に、情報画面の行を当てはめてみよう。"
+  },
+  "summary": {
+    "points": [
+      "Linux はサーバで最も使われている OS",
+      "中心のカーネルと、それをまとめて配るディストリビューション",
+      "サーバは画面を持たず、端末の文字の命令で操作する"
+    ],
+    "next": [
+      "linux.b.01"
+    ],
+    "terms": [
+      "linux",
+      "kernel",
+      "distribution",
+      "cli"
+    ]
+  }
+}

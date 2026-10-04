@@ -1,0 +1,218 @@
+{
+  "id": "linux.b.03",
+  "domain": "linux",
+  "level": "beginner",
+  "theme": "テキスト",
+  "title": "中身を見る",
+  "goal": "cat/less/head/tail を使い分けられる",
+  "minutes": 15,
+  "prerequisites": [
+    "linux.b.01"
+  ],
+  "related": [
+    "trouble.b.03",
+    "mon.b.02"
+  ],
+  "next": [
+    "linux.b.04"
+  ],
+  "terms": [
+    "cat",
+    "less",
+    "head",
+    "tail",
+    "file",
+    "config-file",
+    "log",
+    "terminal"
+  ],
+  "explain": {
+    "what": "{{term:file}}の中身を見る命令は 4 つある。{{term:cat}}は全部を出す。{{term:less}}は頁ごとに送りながら読む。{{term:head}}は先頭だけ、{{term:tail}}は末尾だけを出す。",
+    "why": "{{term:config-file}}は短いので全部読めばよい。だが{{term:log}}は何万行にもなり、全部を出すと画面が流れて読めない。見たい部分だけを出す道具を選ぶ。",
+    "use": "設定を読む時は cat か less。ログの最新の行は末尾にあるので tail で見る。ファイルの形（最初に何が書いてあるか）を確かめる時は head。",
+    "when": "今起きたエラーを、ログの末尾で確かめる時。増え続けるログを見張りながら、もう一度操作して、新しく出る行を待つこともある。",
+    "figures": [
+      "linux-b03-views"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "命令と、向いている使い方を結ぶ。",
+      "pairs": [
+        [
+          "cat",
+          "短いファイルを全部出す"
+        ],
+        [
+          "less",
+          "長いファイルを頁ごとに読む"
+        ],
+        [
+          "head",
+          "先頭の数行だけ見る"
+        ],
+        [
+          "tail",
+          "末尾（最新）の数行だけ見る"
+        ]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "1 万行あるログの、最新の 20 行だけを見たい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "tail で末尾の 20 行を出す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "cat で全部出して、上から読む",
+          "correct": false,
+          "whyNot": "1 万行が画面を流れ、最新の行を探すのに時間がかかる。最新の行は末尾にある。"
+        },
+        {
+          "id": "c",
+          "text": "head で先頭の 20 行を出す",
+          "correct": false,
+          "whyNot": "先頭はいちばん古い行。最新の行は末尾にある。"
+        }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "ファイルの末尾の行を見る命令はどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "tail",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "head",
+          "correct": false,
+          "whyNot": "head は先頭の行を出す。"
+        },
+        {
+          "id": "c",
+          "text": "cat",
+          "correct": false,
+          "whyNot": "cat は全部を出す。末尾だけを出すわけではない。"
+        }
+      ],
+      "explanation": "tail は尻尾（末尾）、head は頭（先頭）。ログの最新の行は tail で見る。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "下の命令は、何を出す？",
+      "context": {
+        "command": "head -n 3 app.log"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "app.log の先頭の 3 行",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "app.log の末尾の 3 行",
+          "correct": false,
+          "whyNot": "末尾を出すのは tail。head は先頭。"
+        },
+        {
+          "id": "c",
+          "text": "app.log の 3 行目だけ",
+          "correct": false,
+          "whyNot": "-n 3 は「3 行分」。先頭から 3 行目までの全てを出す。"
+        }
+      ],
+      "explanation": "-n の後の数で、出す行の数を決める。何も書かなければ 10 行。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "増え続けるログを見張り、新しく出た行をその場で見たい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "tail -f で見張る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "cat を何度も打ち直す",
+          "correct": false,
+          "whyNot": "打つたびに全部が出て、新しい行がどれか分かりにくい。-f は新しい行だけを待って出す。"
+        },
+        {
+          "id": "c",
+          "text": "head -f で見張る",
+          "correct": false,
+          "whyNot": "新しい行は末尾に足される。見張るのは末尾の tail。"
+        }
+      ],
+      "explanation": "tail -f は、末尾に行が足されるたびに、その行を出し続ける。止める時は `Ctrl+C`。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "app.log の末尾を見て、最後に出たエラー（`ERROR` の行）の時刻を答える。",
+    "environment": "linux-basic",
+    "setup": {
+      "files": {
+        "/home/learner/app.log": "2026-10-04 08:00:01 INFO 起動した\n2026-10-04 08:00:03 ERROR 設定が読めない（初期値で続ける）\n2026-10-04 08:10:00 INFO 受付を開始\n2026-10-04 09:12:44 INFO 注文 1001\n2026-10-04 10:30:15 WARN 応答が遅い\n2026-10-04 11:02:09 INFO 注文 1002\n2026-10-04 12:45:30 INFO 注文 1003\n2026-10-04 13:20:51 ERROR 決済の接続が切れた\n2026-10-04 13:21:02 INFO 決済に再接続\n2026-10-04 14:05:12 INFO 注文 1004\n2026-10-04 14:58:41 ERROR 在庫の更新に失敗\n2026-10-04 15:00:00 INFO 定時の点検\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "last-error",
+        "purpose": "app.log の末尾の 5 行を出し、その中で最後の `ERROR` の行の時刻（時:分:秒）を、答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "14:58:41"
+        },
+        "afterward": "最後のエラーは 14:58:41 の「在庫の更新に失敗」。先頭の 08:00:03 のエラーは、朝のいちばん古い記録だった。",
+        "hints": [
+          "最新の行はファイルの末尾にある。末尾を出す命令を使おう。",
+          "tail に -n 5 を付けると、末尾の 5 行が出る。その中で `ERROR` と書かれた行を探す。",
+          "`tail -n 5 app.log` を打つと、最後のエラーの行は 14:58:41。答えの欄に `14:58:41` と入れる。"
+        ],
+        "expectedErrors": [
+          "linux-wrong-time",
+          "enoent"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "末尾だけを出して、最新のエラーを素早く見つけられた。",
+    "partial": "ヒントを使って最新のエラーを見つけた。次は、head と tail を使い分ける場面を考えてみよう。",
+    "retry": "まだ最新のエラーの時刻になっていない。いちばん古い行は先頭、最新の行は末尾にある。"
+  },
+  "summary": {
+    "points": [
+      "全部は cat、長い物は less で頁ごとに",
+      "先頭は head、末尾は tail（-n で行数）",
+      "増え続けるログは tail -f で見張る"
+    ],
+    "next": [
+      "linux.b.04"
+    ],
+    "terms": [
+      "cat",
+      "less",
+      "head",
+      "tail"
+    ]
+  }
+}

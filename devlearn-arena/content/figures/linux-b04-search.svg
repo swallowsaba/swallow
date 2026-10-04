@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>grep は文書の中の行を探し、find はディレクトリの木の中のファイルを探す</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="grep">
+    <rect x="30" y="30" width="270" height="300" rx="12" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <text x="165" y="62" text-anchor="middle" font-size="16" font-weight="700" fill="#3ae08a">grep: 文書の中の行</text>
+    <rect x="56" y="84" width="218" height="20" rx="4" fill="#9aa9b5" />
+    <rect x="56" y="114" width="218" height="20" rx="4" fill="#9aa9b5" />
+    <rect x="56" y="144" width="218" height="20" rx="4" fill="#f2b632" />
+    <rect x="56" y="174" width="218" height="20" rx="4" fill="#9aa9b5" />
+    <rect x="56" y="204" width="218" height="20" rx="4" fill="#9aa9b5" />
+    <rect x="56" y="234" width="218" height="20" rx="4" fill="#f2b632" />
+    <rect x="56" y="264" width="218" height="20" rx="4" fill="#9aa9b5" />
+    <text x="165" y="310" text-anchor="middle" font-size="13" fill="#eef2f6">timeout を含む行だけ拾う</text>
+  </g>
+  <g class="el" data-part="find">
+    <rect x="340" y="30" width="270" height="300" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <text x="475" y="62" text-anchor="middle" font-size="16" font-weight="700" fill="#5cc1ff">find: 木の中のファイル</text>
+    <rect x="450" y="86" width="50" height="28" rx="6" fill="#9aa9b5" />
+    <text x="475" y="106" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">/</text>
+    <path d="M475 114 V130 H405 V146 M475 130 H545 V146" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <rect x="370" y="146" width="70" height="28" rx="6" fill="#9aa9b5" />
+    <text x="405" y="166" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">etc</text>
+    <rect x="510" y="146" width="70" height="28" rx="6" fill="#9aa9b5" />
+    <text x="545" y="166" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">var</text>
+    <path d="M405 174 V196" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <rect x="370" y="196" width="70" height="28" rx="6" fill="#9aa9b5" />
+    <text x="405" y="216" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">app</text>
+    <path d="M405 224 V246" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <rect x="352" y="246" width="106" height="30" rx="6" fill="#f2b632" />
+    <text x="405" y="267" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">app.conf</text>
+    <text x="475" y="310" text-anchor="middle" font-size="13" fill="#eef2f6">名前で探して、場所が分かる</text>
+  </g>
+</svg>

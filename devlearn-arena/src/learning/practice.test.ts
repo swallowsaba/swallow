@@ -156,7 +156,7 @@ describe('実戦（docs/learning-design.md 6・7 章）', () => {
   });
 
   it('解説の見つからないエラーにも、内容 → 原因候補 → ヒントの一般的な案内を出す', () => {
-    expect(findGuide('frobnicate: command not found', undefined, ERROR_GUIDES).id).toBe(GENERIC_GUIDE.id);
+    expect(findGuide('frobnicate: the flux capacitor overheated', undefined, ERROR_GUIDES).id).toBe(GENERIC_GUIDE.id);
     expect(GENERIC_GUIDE.causes.length).toBeGreaterThanOrEqual(2);
   });
 

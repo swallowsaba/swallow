@@ -121,3 +121,20 @@ describe('sh と source', () => {
     expect(open({ files }).run('source nope.sh').err).toBe('source: nope.sh: No such file or directory\n');
   });
 });
+
+describe('作る・写す・移す・消す（本物と同じ文言）', () => {
+  const files = { '/home/learner/config.txt': 'port=80\n', '/home/learner/empty': null };
+
+  it('rm は空のディレクトリでも -r が要る', () => {
+    const t = open({ files });
+    expect(t.run('rm empty')).toEqual({ out: '', err: "rm: cannot remove 'empty': Is a directory\n", code: 1 });
+    expect(t.run('rm -r empty').code).toBe(0);
+  });
+
+  it('無い物を写す・移すと cannot stat。ディレクトリを -r 無しで写すと省く', () => {
+    const t = open({ files });
+    expect(t.run('cp nofile.txt backup/').err).toBe("cp: cannot stat 'nofile.txt': No such file or directory\n");
+    expect(t.run('mv nofile.txt b.txt').err).toBe("mv: cannot stat 'nofile.txt': No such file or directory\n");
+    expect(t.run('cp empty copy').err).toBe("cp: -r not specified; omitting directory 'empty'\n");
+  });
+});

@@ -1,0 +1,245 @@
+{
+  "id": "linux.b.02",
+  "domain": "linux",
+  "level": "beginner",
+  "theme": "ファイル操作",
+  "title": "作る・写す・移す・消す",
+  "goal": "mkdir/cp/mv/rm を安全に使える",
+  "minutes": 15,
+  "prerequisites": [
+    "linux.b.01"
+  ],
+  "related": [
+    "found.b.04",
+    "git.b.02"
+  ],
+  "next": [
+    "web.b.07",
+    "git.b.01"
+  ],
+  "terms": [
+    "mkdir",
+    "directory",
+    "cp",
+    "file",
+    "mv",
+    "rm",
+    "config-file",
+    "log",
+    "current-directory",
+    "pwd",
+    "ls",
+    "server",
+    "terminal",
+    "command"
+  ],
+  "explain": {
+    "what": "{{term:mkdir}}は{{term:directory}}を作る。{{term:cp}}は{{term:file}}を写す（元は残る）。{{term:mv}}は移す、または名前を変える（元は無くなる）。{{term:rm}}は消す。どれも{{term:server}}で毎日使う 4 つの操作。",
+    "why": "設定を直す前に控えを取る、置き場所を整える、要らない物を片付ける。どれも手で確実にできないと、直した設定を元に戻せなくなる。",
+    "use": "{{term:config-file}}を直す前に、同じ物を控えのディレクトリへ写しておく。うまくいかなければ、控えから戻せる。古い{{term:log}}は、中身を確かめてから消す。",
+    "when": "サーバの設定を直すよう頼まれた時。まず控えを取り、それから直す。rm はごみ箱に入らずすぐ消えるので、消す前に名前と場所を確かめる。",
+    "figures": [
+      "linux-b02-ops"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "situation",
+      "prompt": "cp と mv の違いは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "cp は元が残り、mv は元が無くなる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "cp はディレクトリ用、mv はファイル用",
+          "correct": false,
+          "whyNot": "どちらもファイルにもディレクトリにも使える。違いは、元が残るかどうか。"
+        },
+        {
+          "id": "c",
+          "text": "違いは無く、どちらも複製する",
+          "correct": false,
+          "whyNot": "mv は複製ではなく移動。終わった後、元の場所には無い。"
+        }
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "rm で消した物は、ごみ箱に入るので後から戻せる。",
+      "answer": false,
+      "why": "{{term:terminal}}の rm にごみ箱は無い。消した物はすぐに無くなる。だから消す前に、名前と場所を確かめる。",
+      "see": "when"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "linux-b02-ops",
+      "prompt": "図で、元のファイルが残る操作を押す。",
+      "answer": [
+        "cp"
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "下の命令を打った後、どうなっている？",
+      "context": {
+        "command": "mv a.txt b.txt"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "a.txt は無く、b.txt がある",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "a.txt も b.txt もある",
+          "correct": false,
+          "whyNot": "それは cp の結果。mv は移す（名前を変える）ので、元の a.txt は残らない。"
+        },
+        {
+          "id": "c",
+          "text": "a.txt が消え、b.txt も作られない",
+          "correct": false,
+          "whyNot": "mv は消すのではなく名前を変える。中身はそのまま b.txt になる。"
+        }
+      ],
+      "explanation": "同じディレクトリの中での mv は、名前の付け替え。中身は変わらない。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "設定ファイルを直す前に、変更前の控えを取りたい。使う命令は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "cp",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "mv",
+          "correct": false,
+          "whyNot": "mv で移すと、元の設定ファイルが無くなってしまう。控えは元を残す cp で取る。"
+        },
+        {
+          "id": "c",
+          "text": "rm",
+          "correct": false,
+          "whyNot": "rm は消す命令。控えを取るのとは逆。"
+        }
+      ],
+      "explanation": "cp で写せば、元はそのまま残り、控えも手に入る。失敗したら控えから戻せる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "rm で空のディレクトリを消そうとしたら、`Is a directory` と言われて消えない。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ディレクトリを消すには -r が要る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ディレクトリは消せない決まりがある",
+          "correct": false,
+          "whyNot": "消せる。rm は誤って中身ごと消さないよう、-r を付けた時だけディレクトリを消す。"
+        },
+        {
+          "id": "c",
+          "text": "名前の綴りが違う",
+          "correct": false,
+          "whyNot": "綴りが違えば `No such file or directory` と言われる。`Is a directory` は、見つかったがディレクトリだったという意味。"
+        }
+      ],
+      "explanation": "rm は、ディレクトリには -r を求める。中身ごと消してよいかを確かめてから付ける。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "控えのディレクトリを作って設定ファイルの控えを置き、要らなくなった古いログを片付ける。",
+    "environment": "linux-basic",
+    "setup": {
+      "files": {
+        "/home/learner/config.txt": "port=80\nname=harbor\n",
+        "/home/learner/old.log": "2026-09-01 古い記録\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "backup",
+        "purpose": "backup というディレクトリを作り、その中に config.txt の控えを写す。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/backup/config.txt",
+          "contains": "port=80"
+        },
+        "afterward": "backup/config.txt に控えができた。元の config.txt もそのまま残っている。これで安心して直せる。",
+        "hints": [
+          "作る・写す の 2 つの操作が要る。先に置き場のディレクトリを作る。",
+          "{{term:mkdir}} で backup を作り、cp で config.txt を backup/ へ写す。",
+          "`mkdir backup` `cp config.txt backup/` の順に打つ。"
+        ],
+        "expectedErrors": [
+          "cannot-stat"
+        ]
+      },
+      {
+        "id": "clean",
+        "purpose": "要らなくなった old.log を消す。消す前に、名前を確かめる。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/old.log",
+          "exists": false
+        },
+        "afterward": "old.log が無くなった。rm で消した物は戻らないので、消す前に ls で名前を確かめるのがよい。",
+        "hints": [
+          "消す{{term:command}}は rm。先に {{term:ls}} で、消す物の名前を確かめよう。",
+          "rm の後に、消すファイルの名前を書く。",
+          "`rm old.log` と打つ。"
+        ],
+        "expectedErrors": [
+          "rm-dir"
+        ]
+      }
+    ],
+    "dangerous": [
+      {
+        "id": "rm-all",
+        "pattern": "rm\\s+(-[a-z]*r[a-z]*\\s+)?(\\*|~|/)(\\s|$)",
+        "why": "全てや、ホームディレクトリ・ルートを丸ごと消す書き方。消す物は名前で 1 つずつ指す。"
+      }
+    ]
+  },
+  "result": {
+    "success": "控えを取ってから片付けられた。直す前に控えを取る、という安全な順番を守れた。",
+    "partial": "ヒントを使って控えと片付けができた。次は、手順を見ずに mkdir・cp・rm の順に打ってみよう。",
+    "retry": "まだ終わっていない手順がある。ls で backup の中身と、old.log が残っていないかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "cp は写す（元が残る）、mv は移す・名前を変える",
+      "rm はごみ箱に入らず、戻せない",
+      "直す前に控えを取る"
+    ],
+    "next": [
+      "linux.b.05",
+      "web.b.07"
+    ],
+    "terms": [
+      "mkdir",
+      "cp",
+      "mv",
+      "rm"
+    ]
+  }
+}

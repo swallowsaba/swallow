@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>プロンプト learner@arena:~$ の利用者名・機械名・現在地と、命令 ls -l /etc のコマンド・オプション・引数</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="user">
+    <rect x="40" y="50" width="150" height="56" rx="8" fill="#3ae08a" />
+    <text x="115" y="86" text-anchor="middle" font-size="22" font-weight="700" fill="#0a1424">learner</text>
+    <text x="115" y="132" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">利用者名</text>
+  </g>
+  <g class="el" data-part="host">
+    <rect x="214" y="50" width="130" height="56" rx="8" fill="#5cc1ff" />
+    <text x="279" y="86" text-anchor="middle" font-size="22" font-weight="700" fill="#0a1424">arena</text>
+    <text x="279" y="132" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">機械名</text>
+  </g>
+  <g class="el" data-part="cwd">
+    <rect x="368" y="50" width="70" height="56" rx="8" fill="#f2b632" />
+    <text x="403" y="86" text-anchor="middle" font-size="22" font-weight="700" fill="#0a1424">~</text>
+    <text x="403" y="132" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">現在地</text>
+  </g>
+  <g class="el" data-part="sign">
+    <text x="201" y="86" text-anchor="middle" font-size="22" font-weight="700" fill="#eef2f6">@</text>
+    <text x="354" y="86" text-anchor="middle" font-size="22" font-weight="700" fill="#eef2f6">:</text>
+    <text x="462" y="86" text-anchor="middle" font-size="22" font-weight="700" fill="#eef2f6">$</text>
+    <text x="560" y="82" text-anchor="middle" font-size="14" fill="#9fb0c6">打ってよい</text>
+    <text x="560" y="102" text-anchor="middle" font-size="14" fill="#9fb0c6">の印</text>
+  </g>
+  <g class="el" data-part="command">
+    <rect x="40" y="210" width="120" height="56" rx="8" fill="#9aa9b5" />
+    <text x="100" y="246" text-anchor="middle" font-size="22" font-weight="700" fill="#0a1424">ls</text>
+    <text x="100" y="292" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">コマンド</text>
+    <text x="100" y="314" text-anchor="middle" font-size="13" fill="#9fb0c6">何をするか</text>
+  </g>
+  <g class="el" data-part="option">
+    <rect x="184" y="210" width="120" height="56" rx="8" fill="#9aa9b5" />
+    <text x="244" y="246" text-anchor="middle" font-size="22" font-weight="700" fill="#0a1424">-l</text>
+    <text x="244" y="292" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">オプション</text>
+    <text x="244" y="314" text-anchor="middle" font-size="13" fill="#9fb0c6">動きを変える</text>
+  </g>
+  <g class="el" data-part="argument">
+    <rect x="328" y="210" width="170" height="56" rx="8" fill="#9aa9b5" />
+    <text x="413" y="246" text-anchor="middle" font-size="22" font-weight="700" fill="#0a1424">/etc</text>
+    <text x="413" y="292" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">引数</text>
+    <text x="413" y="314" text-anchor="middle" font-size="13" fill="#9fb0c6">扱う相手</text>
+  </g>
+</svg>
