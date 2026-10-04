@@ -265,3 +265,31 @@ describe('パッケージ管理（apt）', () => {
     expect(t.run('tree').code).toBe(127);
   });
 });
+
+describe('IP とポートを確かめる（ip addr・ss）', () => {
+  const services = () => createServiceTable([
+    { name: 'web', description: 'Web server', active: 'active', enabled: true, port: 80, address: '127.0.0.1' },
+    { name: 'sshd', description: 'OpenSSH server', active: 'active', enabled: true, port: 22 },
+    { name: 'db', description: 'Database', active: 'inactive', enabled: false, port: 5432 },
+  ]);
+
+  it('ネットワークの模擬が無い機械でも、ip addr は自分の口（lo と、あれば eth0）を出す', () => {
+    const t = open({ vars: { HOST_ADDR: '10.0.0.5/24' } });
+    const out = t.run('ip addr').out;
+    expect(out).toContain('1: lo: <LOOPBACK,UP,LOWER_UP>');
+    expect(out).toContain('inet 127.0.0.1/8 scope host lo');
+    expect(out).toContain('2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP>');
+    expect(out).toContain('inet 10.0.0.5/24 scope global eth0');
+    expect(t.run('ip a').out).toBe(out);
+  });
+
+  it('ss -tlnp は、動いているサービスの待ち受けのアドレス・ポート・プログラムを出す。止まっている物は出ない', () => {
+    const t = open({ services: services(), vars: { USER: 'root' } });
+    const out = t.run('ss -tlnp').out;
+    expect(out.split('\n')[0]).toMatch(/^State\s+Recv-Q\s+Send-Q\s+Local Address:Port\s+Peer Address:Port\s+Process$/);
+    expect(out).toMatch(/LISTEN\s+0\s+511\s+127\.0\.0\.1:80\s+0\.0\.0\.0:\*\s+users:\(\("web",pid=\d+,fd=6\)\)/);
+    expect(out).toMatch(/LISTEN\s+0\s+511\s+0\.0\.0\.0:22\s+/);
+    expect(out).not.toContain(':5432');
+    expect(t.run('ss -tln').out).not.toContain('users:');
+  });
+});

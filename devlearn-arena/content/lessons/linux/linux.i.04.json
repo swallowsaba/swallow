@@ -1,0 +1,220 @@
+{
+  "id": "linux.i.04",
+  "domain": "linux",
+  "level": "intermediate",
+  "theme": "ネットワーク設定",
+  "title": "IP とポートを確かめる",
+  "goal": "ip/ss で自分のアドレスと待ち受けを確かめられる",
+  "minutes": 15,
+  "prerequisites": [
+    "net.b.04"
+  ],
+  "related": [
+    "net.b.04",
+    "docker.b.04"
+  ],
+  "next": [
+    "linux.i.05"
+  ],
+  "terms": [
+    "ip-address",
+    "program",
+    "port",
+    "ip-command",
+    "ss",
+    "server",
+    "web-server",
+    "process",
+    "ps"
+  ],
+  "explain": {
+    "what": "{{term:ip-command}} は、この機械の {{term:ip-address}}を見る命令。{{term:ss}} は、どの{{term:port}}で、どの{{term:program}}が待ち受けているかを見る命令。待ち受けは「アドレス:ポート」の形で出る。",
+    "why": "サイトに届かない時、原因は道の途中にも、{{term:server}}の中にもある。先に自分の側で、正しいアドレスとポートで待っているかを確かめると、調べる範囲を半分にできる。",
+    "use": "サーバのアドレスを確かめる。{{term:web-server}}が 80 番で待っているか、どのアドレスで待っているかを確かめる。",
+    "when": "Web サーバを動かしたのに、外の機械からは開けないと言われた時。",
+    "figures": [
+      "linux-i04-ports"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "linux-i04-ports",
+      "prompt": "図で、80 番のポートで待っているプログラムを押す。",
+      "answer": [
+        "web"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "IP アドレス（どの機械か）",
+      "b": "ポート（その機械の、どの扉か）",
+      "answer": "contains",
+      "why": "1 つのアドレスの機械の中に、番号の違う扉がたくさんある。届け先は、アドレスとポートの組で決まる。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "この機械で、どのポートで何が待っているかの一覧を見たい。どの命令？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`ss -tlnp`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`ip addr`",
+          "correct": false,
+          "whyNot": "ip addr が出すのは、機械のアドレス。どの扉で何が待っているかは出ない。"
+        },
+        {
+          "id": "c",
+          "text": "`ps aux`",
+          "correct": false,
+          "whyNot": "{{term:ps}} は動いている{{term:process}}の一覧。どのポートで待っているかまでは出ない。"
+        }
+      ],
+      "explanation": "ss の -t は通信の種類（`TCP`）、-l は待ち受け、-n は番号のまま、-p はプログラムを出す指定。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "Web サーバは動いているのに、外の機械からは開けない。下の結果から考えられる原因は？",
+      "context": {
+        "log": "$ ss -tlnp\nState  Local Address:Port  Process\nLISTEN 127.0.0.1:80        users:((\"web\",pid=800,fd=6))"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "127.0.0.1 でだけ待っているので、外からは届かない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "80 番のポートを、ほかのプログラムが使っている",
+          "correct": false,
+          "whyNot": "80 番で待っているのは web 自身。ほかのプログラムは並んでいない。"
+        },
+        {
+          "id": "c",
+          "text": "Web サーバが止まっている",
+          "correct": false,
+          "whyNot": "止まっていれば、待ち受けの行に出ない。行があるので動いている。"
+        }
+      ],
+      "explanation": "127.0.0.1 は、その機械自身を指す特別なアドレス。ここで待つと、同じ機械の中からしか届かない。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "アドレスが 10.0.0.5 のサーバで ip addr を打つと、何が出る？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "口ごとのアドレス（lo の 127.0.0.1 と、eth0 の 10.0.0.5）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "10.0.0.5 だけが 1 行出る",
+          "correct": false,
+          "whyNot": "機械には、外とつながる口のほかに、自分自身とつながる口 lo がある。口ごとに出る。"
+        },
+        {
+          "id": "c",
+          "text": "待ち受けているポートの一覧",
+          "correct": false,
+          "whyNot": "待ち受けを出すのは ss。ip addr はアドレスを出す。"
+        }
+      ],
+      "explanation": "lo は機械の中だけの口で、いつも 127.0.0.1。外とつながる口（eth0 など）に、その機械のアドレスが付く。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "web が外から開けない。この機械のアドレスと、web の待ち受けを調べて、理由を突き止める。",
+    "environment": "linux-server",
+    "setup": {
+      "hostname": "web01",
+      "address": "10.0.0.5/24",
+      "services": {
+        "web": {
+          "description": "Web server",
+          "active": true,
+          "enabled": true,
+          "port": 80,
+          "address": "127.0.0.1"
+        },
+        "sshd": {
+          "description": "OpenSSH server",
+          "active": true,
+          "enabled": true,
+          "port": 22
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "addr",
+        "purpose": "この機械の、外とつながる口（eth0）のアドレスを答える（/ の前まで）。",
+        "check": {
+          "kind": "answer",
+          "equals": "10.0.0.5"
+        },
+        "afterward": "この機械のアドレスは 10.0.0.5。外の機械は、このアドレスに向けて送ってくる。",
+        "hints": [
+          "自分のアドレスを見る命令は ip。",
+          "`ip addr` を打ち、eth0 の inet の行を読む。lo は自分の中だけの口。",
+          "`ip addr` と打つ。eth0 の行は inet 10.0.0.5/24。答えの欄に `10.0.0.5` と入れる。"
+        ],
+        "expectedErrors": [
+          "linux-wrong-addr"
+        ]
+      },
+      {
+        "id": "listen",
+        "purpose": "web が待ち受けている「アドレス:ポート」を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "127.0.0.1:80"
+        },
+        "afterward": "web は 127.0.0.1 でだけ待っていた。これは自分自身を指すアドレスなので、10.0.0.5 に来た外からの頼みは届かない。0.0.0.0（全ての口）で待つように直せば届く。",
+        "hints": [
+          "待ち受けを見る命令は ss。",
+          "`ss -tlnp` を打ち、`Process` の欄が web の行の、`Local Address:Port` を読む。",
+          "`ss -tlnp` と打つ。web の行は 127.0.0.1:80。答えの欄に `127.0.0.1:80` と入れる。"
+        ],
+        "expectedErrors": [
+          "linux-wrong-listen"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "外を疑う前に、自分の側のアドレスと待ち受けを確かめ、届かない理由を見つけられた。",
+    "partial": "ヒントを使って理由を見つけた。次は、sshd の行と web の行のアドレスの違いを見比べてみよう。",
+    "retry": "まだ答えが合っていない。ip addr と ss -tlnp の結果の、どの欄を読むかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "ip でアドレスを見る",
+      "ss で待ち受け（アドレス:ポート とプログラム）を見る",
+      "127.0.0.1 で待つと、自分の中からしか届かない"
+    ],
+    "next": [
+      "net.i.03",
+      "trouble.i.02"
+    ],
+    "terms": [
+      "ip-address",
+      "port",
+      "ss"
+    ]
+  }
+}

@@ -22,6 +22,8 @@ export interface Service {
   broken?: string;
   /** 待ち受けるポート（動いている間だけ） */
   port?: number;
+  /** 待ち受けるアドレス（無ければ 0.0.0.0 = 全ての口。127.0.0.1 なら、その機械の中からだけ届く） */
+  address?: string;
   /** HTTP で応える中身 */
   body?: string;
   /** HTTP で応える状態の番号（無ければ 200。準備中の 503 など） */

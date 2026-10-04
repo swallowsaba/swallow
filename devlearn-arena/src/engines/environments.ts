@@ -29,6 +29,8 @@ const serviceSetup = z.object({
   /** それまでのログ（journalctl で読める行。「Oct 03 02:13:44 server web[812]: …」の形） */
   log: z.array(z.string()).optional(),
   port: z.number().int().optional(),
+  /** 待ち受けるアドレス（無ければ 0.0.0.0。127.0.0.1 なら、その機械の中からだけ届く） */
+  address: z.string().regex(/^\d+\.\d+\.\d+\.\d+$/).optional(),
   body: z.string().optional(),
   /** HTTP で応える状態の番号（無ければ 200） */
   status: z.number().int().min(100).max(599).optional(),
@@ -52,6 +54,8 @@ const siteSetup = z.object({
 export const setupSchema = z.object({
   /** 端末の利用者（プロンプトと whoami） */
   user: z.string().regex(/^[a-z][a-z0-9-]*$/).optional(),
+  /** 機械のアドレス（ip addr の eth0。CIDR の形） */
+  address: z.string().regex(/^\d+\.\d+\.\d+\.\d+\/\d+$/).optional(),
   /** 機械の名前（プロンプト） */
   hostname: z.string().regex(/^[a-z][a-z0-9-]*$/).optional(),
   /** 始める場所 */
@@ -148,7 +152,10 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
     files,
     cwd: s.cwd ?? home,
     // 打った行を ~/.bash_history に残す（「打ったことが記録される」を状態で確かめるため。src/engines/kernel/shell.ts）
-    vars: { USER: user, HOME: home, HOSTNAME: s.hostname ?? 'arena', HISTFILE: `${home}/.bash_history` },
+    vars: {
+      USER: user, HOME: home, HOSTNAME: s.hostname ?? 'arena', HISTFILE: `${home}/.bash_history`,
+      ...(s.address !== undefined ? { HOST_ADDR: s.address } : {}),
+    },
   };
   if (s.services) {
     options.services = createServiceTable(Object.entries(s.services).map(([name, v]) => ({
@@ -158,6 +165,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       enabled: v.enabled,
       ...(v.broken !== undefined ? { broken: v.broken } : {}),
       ...(v.port !== undefined ? { port: v.port } : {}),
+      ...(v.address !== undefined ? { address: v.address } : {}),
       ...(v.body !== undefined ? { body: v.body } : {}),
       ...(v.status !== undefined ? { status: v.status } : {}),
       ...(v.config !== undefined ? { config: v.config } : {}),
