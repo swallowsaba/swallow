@@ -8,7 +8,7 @@
     "net"
   ],
   "knowledge": [
-    "{{term:service}}は {{term:systemctl}} で動かす・止める・動かし直す。{{term:enable}} で起動時にも動くようになる。",
+    "{{term:service}}は {{term:systemctl}} で動かす・止める・動かし直す。`systemctl enable`（{{term:enable}}）で起動時にも動くようになる。",
     "{{term:web-server}}が待ち受ける{{term:port}}は{{term:config-file}}に書く。書き換えたら動かし直すまで反映しない。",
     "ブラウザは何も書かなければ 80 番に来る。{{term:curl}} で同じ頼み方をして、答えを確かめられる。"
   ],
