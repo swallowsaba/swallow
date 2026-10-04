@@ -346,8 +346,9 @@ export function replayAnswers(practice: Practice, guides: readonly ErrorGuide[] 
     const lines = answerOf(step);
     if (lines.length === 0) problems.push(`実戦 ${step.id}: 最後のヒントに打つ物（\`...\`）が無い`);
     let answer: string | undefined;
-    for (const line of lines) {
-      if (step.check.kind === 'answer') {
+    for (const [i, line] of lines.entries()) {
+      // 答える手順は、最後の物が答え。その前の物は、調べるために端末で打つコマンド
+      if (step.check.kind === 'answer' && i === lines.length - 1) {
         answer = line;
         continue;
       }

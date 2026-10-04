@@ -20,6 +20,7 @@ const ctx: ValidateContext = {
   catalog: new Map(ENTRIES.map((e) => [e.id, e])),
   terms: new Map(TERMS.map((t) => [t.id, t])),
   errors: new Set(ERROR_GUIDES.map((e) => e.id)),
+  guides: ERROR_GUIDES,
   figures,
   designs,
 };

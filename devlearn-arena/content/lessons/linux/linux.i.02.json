@@ -202,7 +202,7 @@
         "hints": [
           "web のログだけを、今日の分に絞って見る。",
           "`journalctl -u web --since today` を打ち、普段どおりの行の後に、初めて止まった行を探す。",
-          "`journalctl -u web --since today` と打つ。`killed by the OOM killer` の行が、最初に落ちた所。答えの欄に `02:13:44` と入れる。"
+          "`journalctl -u web --since today` と打つ。「killed by the …」で終わる行が、最初に落ちた所。答えの欄に `02:13:44` と入れる。"
         ],
         "expectedErrors": [
           "linux-crash-time"
@@ -219,7 +219,7 @@
         "hints": [
           "落ちた行と、その直前の行を読む。後から出た行は、落ちた結果。",
           "02:13:43 の行に、何が 8G のうち 7.8G まで使われていたかが書いてある。",
-          "直前の行は `warning: memory usage 7.8G of 8G`。答えの欄に `memory` と入れる。"
+          "直前の行は「warning: memory usage 7.8G of 8G」。答えの欄に `memory` と入れる。"
         ],
         "expectedErrors": [
           "linux-chain-misread"

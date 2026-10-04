@@ -228,6 +228,15 @@ describe('状態による判定の形', () => {
     const bad: Practice = { ...practice, steps: [{ ...step, hints: [step.hints[0], step.hints[1], '`cd /srv`'] }] };
     expect(replayAnswers(bad)).toEqual(['実戦 move: 最後のヒントを打っても達成条件を満たさない']);
   });
+
+  it('答える手順でも、答え（最後の物）の前の物は端末で打つコマンドとして確かめる。打てない物（出力の写しなど）はエラーとして見つかる', () => {
+    const answerStep = (hint: string): Practice => ({
+      mode: 'terminal', purpose: '目的', environment: 'linux-basic', setup: { files: { '/home/learner/a.txt': 'x\n' } },
+      steps: [{ id: 'count', purpose: '行の数を答える', check: { kind: 'answer', equals: '1' }, afterward: '1 行', hints: ['方向', '具体', hint] }],
+    });
+    expect(replayAnswers(answerStep('`wc -l a.txt` と打つ。答えの欄に `1` と入れる。'))).toEqual([]);
+    expect(replayAnswers(answerStep('`wc -l a.txt` と打つ。`1 a.txt` と出るので `1` と入れる。')).join()).toContain('答え「1 a.txt」でエラー');
+  });
 });
 
 describe('模擬環境（模）の実戦（docs/content-spec.md 2.4.1、docs/decisions.md D-16）', () => {
