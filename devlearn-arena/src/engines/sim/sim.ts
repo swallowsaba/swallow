@@ -304,6 +304,21 @@ function readOp(s: ReadState, args: string[]): SimOutcome {
   return ok({ ...s, answers: { ...s.answers, [qId]: option ?? value } });
 }
 
+/**
+ * 出来上がったか（札を全て並べた・入れた、問いに全て答えた）。出来上がったのに達成条件を満たさなければ、
+ * 実戦は「合っていない」と知らせる（src/learning/practice.ts）。つなぐ・設定するには出来上がりが無い
+ */
+export function isSettled(s: SimState): boolean {
+  switch (s.type) {
+    case 'order': return s.setup.items.every((i) => i.extra === true || stageOf(s, i.id) >= 0);
+    case 'assign': return s.setup.items.every((i) => i.extra === true || (s.placed[i.id] ?? []).length > 0);
+    case 'read': return s.setup.questions.every((q) => (s.answers[q.id] ?? '') !== '');
+    case 'connect':
+    case 'config':
+      return false;
+  }
+}
+
 /* ---------- 判定の式 ---------- */
 
 type Compare = (a: number, b: number) => boolean;

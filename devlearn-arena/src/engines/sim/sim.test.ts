@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyStatement, createSim, exprProblems, holds, orderStatement, type SimEnvironmentId } from './sim';
+import { applyStatement, createSim, exprProblems, holds, isSettled, orderStatement, type SimEnvironmentId } from './sim';
 import type { SimState } from './types';
 
 /** 文を順に与える。誤りがあれば、その文を返す */
@@ -205,5 +205,18 @@ describe('setup と式の誤りは内容の誤りとして見つかる', () => {
     expect(exprProblems(s, 'seq a<c').join()).toContain('札 c が無い');
     expect(exprProblems(s, 'link a b').join()).toContain('並べるの式は');
     expect(() => holds(s, 'paint a')).toThrow();
+  });
+});
+
+describe('出来上がり（isSettled）', () => {
+  it('札を全て並べた・入れた・全ての問いに答えた時だけ出来上がり。紛れ込ませた札は数えない', () => {
+    const order = createSim('sim-order', { items: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'x', label: 'X', extra: true }] });
+    expect(isSettled(order)).toBe(false);
+    expect(isSettled(run(order, ['order a b']).state)).toBe(true);
+    const read = createSim('sim-read', { panels: [{ kind: 'text', title: 't', body: 'b' }], questions: [{ id: 'q', prompt: 'p' }, { id: 'r', prompt: 'p' }] });
+    expect(isSettled(run(read, ['answer q 1']).state)).toBe(false);
+    expect(isSettled(run(read, ['answer q 1', 'answer r 2']).state)).toBe(true);
+    const connect = createSim('sim-connect', { nodes: [{ id: 'a', label: 'A', x: 0, y: 0 }, { id: 'b', label: 'B', x: 9, y: 9 }] });
+    expect(isSettled(run(connect, ['connect a b']).state)).toBe(false);
   });
 });

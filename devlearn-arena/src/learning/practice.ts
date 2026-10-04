@@ -129,6 +129,18 @@ export const GENERIC_GUIDE: ErrorGuide = {
   hint: 'エラーの文の中の名前を、打った行と見比べよう。分からなければ、左のヒントを 1 段ずつ開ける。',
 };
 
+/** 答えた・全て並べたのに達成条件を満たさない時の文。エラーの解説の match はこの文に当てる */
+export const NOT_YET = '答えが合っていない（全て答えたが、達成条件をまだ満たしていない）';
+
+/** 答えが合っていない時の、一般的な案内（手順で想定した解説が無い時） */
+export const ANSWER_GUIDE: ErrorGuide = {
+  id: 'not-yet',
+  match: NOT_YET,
+  meaning: '答えは受け取ったが、達成条件をまだ満たしていない。どこかが違うようだ。',
+  causes: ['見る場所（列・行・グラフ）を取り違えた。', '似た名前や数を読み違えた。'],
+  hint: '左の手順の目的を読み直し、どの情報を見ればよいかを確かめよう。分からなければヒントを 1 段ずつ開ける。',
+};
+
 function guideMatches(g: ErrorGuide, text: string): boolean {
   try {
     return new RegExp(g.match).test(text);
@@ -197,7 +209,15 @@ export interface CommandOutcome {
 export function afterCommand(
   practice: Practice,
   run: PracticeRun,
-  a: { line: string; stderr: string; shell?: ShellState; sim?: SimState; answer?: string },
+  a: {
+    line: string;
+    stderr: string;
+    shell?: ShellState;
+    sim?: SimState;
+    answer?: string;
+    /** 答える・全て並べるなど、出来上がりを確かめる操作だった（満たさなければ「合っていない」と知らせる） */
+    settled?: boolean;
+  },
   guides: readonly ErrorGuide[],
 ): CommandOutcome {
   const line = a.line.trim();
@@ -222,6 +242,13 @@ export function afterCommand(
     next = { ...next, stepIndex: next.stepIndex + 1, stepsDone: [...next.stepsDone, step.id], errorOpen: false, recovered: next.recovered || self };
   }
   if (done.length > 0) error = null;
+  else if (error === null && (a.answer !== undefined || a.settled === true) && currentStep(practice, next)) {
+    // 答えたのに満たさない: 調べる材料として「合っていない」を出す（ゲームオーバーにしない）
+    const step = currentStep(practice, next);
+    const expected = (step?.expectedErrors ?? []).map((id) => guides.find((g) => g.id === id)).find((g) => g !== undefined && guideMatches(g, NOT_YET));
+    error = expected ?? ANSWER_GUIDE;
+    next = { ...next, errors: [...next.errors, error.id], errorOpen: true };
+  }
   return { run: next, done, error, danger: danger ? { id: danger.id, why: danger.why } : null };
 }
 

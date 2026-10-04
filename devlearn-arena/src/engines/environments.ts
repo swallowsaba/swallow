@@ -68,6 +68,15 @@ export const setupSchema = z.object({
   sql: z.string().optional(),
   /** Kubernetes のクラスタ（Node の数。どれも同じ大きさ） */
   cluster: z.object({ nodes: z.number().int().min(1).max(5) }).strict().optional(),
+  /** 動いているプロセス（ps・top・kill。PID は 100 から順に振る） */
+  processes: z.array(z.object({
+    command: z.string().min(1),
+    cpu: z.number().min(0).max(100).optional(),
+    memory: z.number().min(0).optional(),
+    user: z.string().optional(),
+    state: z.enum(['R', 'S', 'D', 'Z', 'T']).optional(),
+    ignoresTerm: z.boolean().optional(),
+  }).strict()).optional(),
   /** 初期状態を作るために、始める前に打っておくコマンド（リポジトリと履歴を作る、など）。学習者には見せない */
   run: z.array(z.string().min(1)).optional(),
 }).strict();
@@ -144,6 +153,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       ...(v.config !== undefined ? { config: v.config } : {}),
     })));
   }
+  if (s.processes) options.processes = s.processes;
   if (s.cluster) options.cluster = emptyCluster(Array.from({ length: s.cluster.nodes }, (_, i) => node(`node-${String(i + 1)}`, 4000, 8192)));
   if (s.images) options.containers = createContainerHost(s.images);
   if (s.sites || s.roots) {

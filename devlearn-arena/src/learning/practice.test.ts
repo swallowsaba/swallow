@@ -264,3 +264,30 @@ describe('模擬環境（模）の実戦（docs/content-spec.md 2.4.1、docs/dec
     expect(checkState({ kind: 'sim', expr: 'link 入力 処理' }, {})).toBe(false);
   });
 });
+
+describe('答える形と、出来上がったのに満たさない時の知らせ', () => {
+  const practice: Practice = {
+    mode: 'terminal',
+    purpose: '重いプロセスの番号を答える',
+    environment: 'linux-basic',
+    setup: { processes: [{ command: 'editor', cpu: 2 }, { command: 'video-encoder', cpu: 91 }] },
+    steps: [{ id: 'pid', purpose: '答える', check: { kind: 'answer', equals: '101' }, afterward: '分かった', hints: ['a', 'b', '`101` と答える。'] }],
+  };
+
+  it('答えが違えば「合っていない」の解説を出し、正しい答えで手順を満たす', () => {
+    const shell = createShellState(shellOptions(practice.environment, practice.setup));
+    const wrong = afterCommand(practice, startRun(), { line: '（答え）100', stderr: '', shell, answer: '100' }, ERROR_GUIDES);
+    expect(wrong.error?.match).toContain('答えが合っていない');
+    expect(wrong.run.errorOpen).toBe(true);
+    const right = afterCommand(practice, wrong.run, { line: '（答え）101', stderr: '', shell, answer: '101' }, ERROR_GUIDES);
+    expect(right.done.map((s) => s.id)).toEqual(['pid']);
+    expect(right.error).toBeNull();
+    expect(replayAnswers(practice)).toEqual([]);
+  });
+
+  it('setup のプロセスは PID 100 から順に並び、ps で見える', () => {
+    const p = player(practice);
+    p.type('ps aux');
+    expect([...p.shell.procs.processes.values()].find((x) => x.command === 'video-encoder')?.pid).toBe(101);
+  });
+});

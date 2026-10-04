@@ -4,32 +4,32 @@ import { ERROR_GUIDES } from '@/content/glossary';
 import type { ErrorGuide, Practice } from '@/content/schema';
 import { ENVIRONMENTS, initialShell, isEnvironmentId } from '@/engines/environments';
 import { restoreShell, snapshotShell, type SessionOptions, type ShellSnapshotData } from '@/engines/kernel/session';
+import { applyStatement, createSim, isSettled, SIM_VERBS } from '@/engines/sim/sim';
+import type { SimState } from '@/engines/sim/types';
 import type { PracticeAttempt, PracticeSession } from '@/game/types';
 import {
-  afterCommand, attemptOf, commandCandidates, currentStep, isFinished, openHint, startRun, type PracticeRun,
+  afterCommand, attemptOf, commandCandidates, currentStep, isFinished, openHint, startRun, type CommandOutcome, type PracticeRun,
 } from '@/learning/practice';
 import { Icon } from '@/ui/icons/Icon';
 import { nowIso } from '../clock';
 import { Rich } from '../Rich';
+import { SimConsole } from './sim/SimConsole';
+import './sim/Sim.css';
+import { SIM_NAMES } from './sim/simNames';
 import { TerminalView, type TerminalHandle } from './terminal/TerminalView';
 import { useShellSession } from './terminal/useShellSession';
 import { Feedback, Slot, StepButtons, type OnTerm } from './widgets';
 
 /**
- * 実戦（docs/learning-design.md 6・7 章、docs/ui-design.md 7 章）。
+ * 実戦（docs/learning-design.md 6・7 章、docs/ui-design.md 7 章・7.1）。
  *
- * 左に目的と手順（打つ前に何を確かめるか、打った後に何が起きたか）とヒント 3 段、右に仮想端末。
- * エラーが出たら、端末の下に「エラー → 内容 → 原因候補 → ヒント」の小窓を出す（調べる調子で。ゲームオーバーにしない）。
- * 判定は模擬環境の状態で行う（src/learning/practice.ts）。打つたびに途中の状態を保存し、中断して開き直すと続きから。
+ * 左に目的と手順（打つ前に何を確かめるか、打った後に何が起きたか）とヒント 3 段、右に模擬環境（仮想端末か、画面で操作する模擬）。
+ * エラーが出たら、右の下に「エラー → 内容 → 原因候補 → ヒント」の小窓を出す（調べる調子で。ゲームオーバーにしない）。
+ * 判定は模擬環境の状態で行う（src/learning/practice.ts）。操作のたびに途中の状態を保存し、中断して開き直すと続きから。
  * レッスンの実戦とミッションの実戦（docs/game-design.md 8 章: 同じ模擬環境を使う）の両方で使う。
  */
 
-interface Saved {
-  shell: ShellSnapshotData;
-  run: PracticeRun;
-}
-
-export function PracticeStage({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: {
+export interface PracticeStageProps {
   practice: Practice;
   /** 途中の状態を保存する名前（レッスン ID。ミッションは mission:<ID>） */
   sessionId: string;
@@ -43,62 +43,70 @@ export function PracticeStage({ practice: p, sessionId, saved, onSave, onFinish,
   action: HTMLElement | null;
   onBack: () => void;
   backLabel?: string;
-}) {
-  const restored = saved?.engineState as Saved | undefined;
-  const fresh = useMemo<SessionOptions>(() => ({ restore: initialShell(p.environment, p.setup) }), [p]);
-  const shell = useShellSession(restored ? { restore: restoreShell(restored.shell) } : fresh);
-  const [run, setRun] = useState<PracticeRun>(() => restored?.run ?? startRun());
-  const [error, setError] = useState<{ guide: ErrorGuide; said: string; line: string } | null>(null);
+}
+
+export function PracticeStage(props: PracticeStageProps) {
+  return props.practice.mode === 'simulation' ? <SimPractice {...props} /> : <TerminalPractice {...props} />;
+}
+
+type ShownError = { guide: ErrorGuide; said: string; line: string };
+
+/** 実戦の進み（手順・ヒント・エラー・危ない手）。どの模擬環境でも同じ */
+function useRun(p: Practice, initial: PracticeRun | undefined) {
+  const [run, setRun] = useState<PracticeRun>(() => initial ?? startRun());
+  const [error, setError] = useState<ShownError | null>(null);
   const [danger, setDanger] = useState<string | null>(null);
-  const termRef = useRef<TerminalHandle>(null);
   const runRef = useRef(run);
   runRef.current = run;
+  const set = (next: PracticeRun): PracticeRun => {
+    runRef.current = next;
+    setRun(next);
+    return next;
+  };
+  return {
+    run,
+    runRef,
+    error,
+    setError,
+    danger,
+    set,
+    /** 1 つの操作の結果を受け取る */
+    took(r: CommandOutcome, said: string, line: string): PracticeRun {
+      setError(r.error ? { guide: r.error, said: said.trim(), line: line.trim() } : null);
+      if (r.danger) setDanger(r.danger.why);
+      return set(r.run);
+    },
+    hint(): PracticeRun {
+      return set(openHint(p, runRef.current));
+    },
+    restart(): PracticeRun {
+      setError(null);
+      return set({ ...runRef.current, stepIndex: 0, stepsDone: [] });
+    },
+  };
+}
 
-  // 実戦の段に入ったら、すぐ打てるように端末に焦点を置く
-  useEffect(() => {
-    termRef.current?.focus();
-  }, [right]);
-
+/** 左: 目的・手順・ヒント・知らせ。下: 戻る・結果へ */
+function PracticeLeft({ p, run, kind, onHint, danger, onTerm, action, onBack, backLabel, onFinish }: {
+  p: Practice;
+  run: PracticeRun;
+  kind: string;
+  onHint: () => void;
+  danger: string | null;
+  onTerm: OnTerm;
+  action: HTMLElement | null;
+  onBack: () => void;
+  backLabel: string;
+  onFinish: () => void;
+}) {
   const finished = isFinished(p, run);
   const step = currentStep(p, run);
-  const envName = isEnvironmentId(p.environment) ? ENVIRONMENTS[p.environment].name : p.environment;
-
-  const save = (next: PracticeRun): void => {
-    onSave({ lessonId: sessionId, stepIndex: next.stepIndex, engineState: { shell: snapshotShell(shell.getState()), run: next } satisfies Saved, savedAt: nowIso() });
-  };
-
-  const onExecuted = (line: string, _code: number, stderr: string): void => {
-    const r = afterCommand(p, runRef.current, { line, stderr, shell: shell.getState() }, ERROR_GUIDES);
-    runRef.current = r.run;
-    setRun(r.run);
-    setError(r.error ? { guide: r.error, said: stderr.trim(), line: line.trim() } : null);
-    if (r.danger) setDanger(r.danger.why);
-    save(r.run);
-  };
-
-  const hint = (): void => {
-    const next = openHint(p, runRef.current);
-    runRef.current = next;
-    setRun(next);
-    save(next);
-  };
-
-  const reset = (): void => {
-    shell.load(fresh);
-    const next: PracticeRun = { ...runRef.current, stepIndex: 0, stepsDone: [] };
-    runRef.current = next;
-    setRun(next);
-    setError(null);
-    save(next);
-    termRef.current?.focus();
-  };
-
   const shown = step ? (run.hints[step.id] ?? 0) : 0;
-
+  const answerWord = p.mode === 'simulation' ? 'そのまま入れられる答え' : 'そのまま打てる答え';
   return (
     <section className="stage stage-practice" aria-label="実戦" data-testid="stage-practice">
       <p className="stage-count">
-        <span className="stage-kind">{PRACTICE_NAMES[p.mode]}</span>
+        <span className="stage-kind">{kind}</span>
         <span className="stage-count-note">安全な模擬環境で操作する。本物の機械には何もしない</span>
       </p>
       <h2 className="stage-heading">目的</h2>
@@ -134,12 +142,12 @@ export function PracticeStage({ practice: p, sessionId, saved, onSave, onFinish,
             </p>
           ))}
           {shown < 3 ? (
-            <button type="button" className="practice-hint-open" onClick={hint} data-testid="practice-hint">
+            <button type="button" className="practice-hint-open" onClick={onHint} data-testid="practice-hint">
               <Icon name="hint" size={16} />
-              ヒントを見る（{shown + 1} / 3{shown === 2 ? '。そのまま打てる答え' : ''}）
+              ヒントを見る（{shown + 1} / 3{shown === 2 ? `。${answerWord}` : ''}）
             </button>
           ) : null}
-          <p className="stage-hint">ヒントは方向 → 具体 → そのまま打てる答えの順。使っても失敗にはならない。</p>
+          <p className="stage-hint">ヒントは方向 → 具体 → {answerWord}の順。使っても失敗にはならない。</p>
         </div>
       ) : null}
 
@@ -155,6 +163,67 @@ export function PracticeStage({ practice: p, sessionId, saved, onSave, onFinish,
         </Feedback>
       ) : null}
 
+      <Slot to={action}>
+        <StepButtons
+          onBack={onBack}
+          backLabel={backLabel}
+          onNext={onFinish}
+          nextLabel={finished ? '結果へ' : 'ここで終えて結果を見る'}
+          nextTestId={finished ? 'lesson-next' : 'practice-giveup'}
+        />
+      </Slot>
+    </section>
+  );
+}
+
+/* ---------- 仮想端末 ---------- */
+
+interface TerminalSaved {
+  shell: ShellSnapshotData;
+  run: PracticeRun;
+}
+
+function TerminalPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps) {
+  const restored = saved?.engineState as TerminalSaved | undefined;
+  const fresh = useMemo<SessionOptions>(() => ({ restore: initialShell(p.environment, p.setup) }), [p]);
+  const shell = useShellSession(restored ? { restore: restoreShell(restored.shell) } : fresh);
+  const r = useRun(p, restored?.run);
+  const termRef = useRef<TerminalHandle>(null);
+
+  // 実戦の段に入ったら、すぐ打てるように端末に焦点を置く
+  useEffect(() => {
+    termRef.current?.focus();
+  }, [right]);
+
+  const step = currentStep(p, r.run);
+  const envName = isEnvironmentId(p.environment) ? ENVIRONMENTS[p.environment].name : p.environment;
+
+  const save = (next: PracticeRun): void => {
+    onSave({ lessonId: sessionId, stepIndex: next.stepIndex, engineState: { shell: snapshotShell(shell.getState()), run: next } satisfies TerminalSaved, savedAt: nowIso() });
+  };
+
+  const onExecuted = (line: string, _code: number, stderr: string): void => {
+    save(r.took(afterCommand(p, r.runRef.current, { line, stderr, shell: shell.getState() }, ERROR_GUIDES), stderr, line));
+  };
+
+  /** 答える形（answer）の手順の答え。端末の状態は変えない */
+  const onAnswer = (answer: string): void => {
+    const line = `（答え）${answer}`;
+    save(r.took(afterCommand(p, r.runRef.current, { line, stderr: '', shell: shell.getState(), answer }, ERROR_GUIDES), '', line));
+  };
+
+  const reset = (): void => {
+    shell.load(fresh);
+    save(r.restart());
+    termRef.current?.focus();
+  };
+
+  return (
+    <>
+      <PracticeLeft
+        p={p} run={r.run} kind={PRACTICE_NAMES[p.mode]} onHint={() => save(r.hint())} danger={r.danger} onTerm={onTerm}
+        action={action} onBack={onBack} backLabel={backLabel} onFinish={() => onFinish(attemptOf(p, r.runRef.current))}
+      />
       <Slot to={right}>
         <div className="practice-console">
           <div className="practice-console-bar">
@@ -166,8 +235,9 @@ export function PracticeStage({ practice: p, sessionId, saved, onSave, onFinish,
           <div className="practice-term">
             <TerminalView ref={termRef} session={shell} onExecuted={onExecuted} banner={restored ? '中断した所から続ける' : 'help で使えるコマンドの一覧が出る'} />
           </div>
-          {error ? <ErrorGuidePanel error={error} onTerm={onTerm} onClose={() => { setError(null); termRef.current?.focus(); }} /> : null}
-          {step && !error ? (
+          {step?.check.kind === 'answer' ? <AnswerForm key={step.id} onAnswer={onAnswer} /> : null}
+          {r.error ? <ErrorGuidePanel error={r.error} onTerm={onTerm} onClose={() => { r.setError(null); termRef.current?.focus(); }} /> : null}
+          {step && !r.error ? (
             <p className="practice-candidates" data-testid="practice-candidates">
               <span className="practice-candidates-label">今打てるコマンドの候補</span>
               {[...commandCandidates(step), 'help'].map((c) => <code key={c} className="practice-candidate">{c}</code>)}
@@ -175,21 +245,98 @@ export function PracticeStage({ practice: p, sessionId, saved, onSave, onFinish,
           ) : null}
         </div>
       </Slot>
-      <Slot to={action}>
-        <StepButtons
-          onBack={onBack}
-          backLabel={backLabel}
-          onNext={() => onFinish(attemptOf(p, runRef.current))}
-          nextLabel={finished ? '結果へ' : 'ここで終えて結果を見る'}
-          nextTestId={finished ? 'lesson-next' : 'practice-giveup'}
+    </>
+  );
+}
+
+/* ---------- 画面で操作する模擬（模） ---------- */
+
+export interface SimLogEntry {
+  line: string;
+  error: string | null;
+}
+
+interface SimSaved {
+  sim: SimState;
+  log: SimLogEntry[];
+  run: PracticeRun;
+}
+
+function SimPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps) {
+  const restored = saved?.engineState as SimSaved | undefined;
+  const fresh = useMemo(() => createSim(p.environment, p.setup), [p]);
+  const [sim, setSim] = useState<SimState>(restored?.sim ?? fresh);
+  const [log, setLog] = useState<SimLogEntry[]>(restored?.log ?? []);
+  const simRef = useRef(sim);
+  simRef.current = sim;
+  const logRef = useRef(log);
+  logRef.current = log;
+  const r = useRun(p, restored?.run);
+
+  const save = (next: PracticeRun, s: SimState, l: SimLogEntry[]): void => {
+    onSave({ lessonId: sessionId, stepIndex: next.stepIndex, engineState: { sim: s, log: l, run: next } satisfies SimSaved, savedAt: nowIso() });
+  };
+
+  const send = (line: string): void => {
+    const text = line.trim();
+    if (text === '') return;
+    const out = applyStatement(simRef.current, text);
+    const nextLog = [...logRef.current, { line: text, error: out.error }];
+    simRef.current = out.state;
+    logRef.current = nextLog;
+    setSim(out.state);
+    setLog(nextLog);
+    const outcome = afterCommand(p, r.runRef.current, { line: text, stderr: out.error ?? '', sim: out.state, settled: out.error === null && isSettled(out.state) }, ERROR_GUIDES);
+    save(r.took(outcome, out.error ?? '', text), out.state, nextLog);
+  };
+
+  const reset = (): void => {
+    simRef.current = fresh;
+    logRef.current = [];
+    setSim(fresh);
+    setLog([]);
+    save(r.restart(), fresh, []);
+  };
+
+  const kind = SIM_NAMES[sim.type];
+  return (
+    <>
+      <PracticeLeft
+        p={p} run={r.run} kind={`${PRACTICE_NAMES[p.mode]}（${kind}）`} onHint={() => save(r.hint(), simRef.current, logRef.current)} danger={r.danger} onTerm={onTerm}
+        action={action} onBack={onBack} backLabel={backLabel} onFinish={() => onFinish(attemptOf(p, r.runRef.current))}
+      />
+      <Slot to={right}>
+        <SimConsole
+          sim={sim}
+          log={log}
+          verbs={SIM_VERBS[sim.type]}
+          send={send}
+          onReset={reset}
+          restored={restored !== undefined}
+          error={r.error ? <ErrorGuidePanel error={r.error} onTerm={onTerm} onClose={() => r.setError(null)} /> : null}
         />
       </Slot>
-    </section>
+    </>
+  );
+}
+
+/** 答える形の手順の、答えの欄（端末で調べて、ここに答える） */
+function AnswerForm({ onAnswer }: { onAnswer: (answer: string) => void }) {
+  const [draft, setDraft] = useState('');
+  return (
+    <form className="sim-command practice-answer" data-testid="practice-answer" onSubmit={(e) => {
+      e.preventDefault();
+      if (draft.trim() !== '') onAnswer(draft.trim());
+    }}>
+      <label className="sim-command-label" htmlFor="practice-answer">端末で調べて答える</label>
+      <input id="practice-answer" className="sim-input is-command" value={draft} onChange={(e) => setDraft(e.target.value)} spellCheck={false} autoComplete="off" />
+      <button type="submit" className="sim-tool is-strong" disabled={draft.trim() === ''}>答える</button>
+    </form>
   );
 }
 
 /** エラーの小窓（docs/learning-design.md 7 章: エラー → 内容 → 原因候補 → ヒント → 再挑戦） */
-function ErrorGuidePanel({ error, onTerm, onClose }: { error: { guide: ErrorGuide; said: string; line: string }; onTerm: OnTerm; onClose: () => void }) {
+function ErrorGuidePanel({ error, onTerm, onClose }: { error: ShownError; onTerm: OnTerm; onClose: () => void }) {
   const g = error.guide;
   return (
     <section className="practice-error" role="status" aria-label="エラーを調べる" data-testid="practice-error" data-guide={g.id}>
@@ -215,7 +362,7 @@ function ErrorGuidePanel({ error, onTerm, onClose }: { error: { guide: ErrorGuid
           <p><Rich text={g.hint} onTerm={onTerm} /></p>
         </li>
       </ol>
-      <p className="practice-error-retry">確かめたら、もう一度打ってみよう。</p>
+      <p className="practice-error-retry">確かめたら、もう一度やってみよう。</p>
     </section>
   );
 }

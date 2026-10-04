@@ -1,0 +1,607 @@
+/* 実戦の右側の、画面で操作する模擬環境（docs/ui-design.md 7.1・docs/visual-design.md 4 章）。
+   計器の盤の上に、部品・札・枠・欄を置く。色は tokens の変数だけ */
+
+.sim-console {
+  background: var(--navy);
+}
+.sim-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 18px 16px;
+}
+.sim-how {
+  margin: 0 0 10px;
+  font-size: var(--fs-13);
+  line-height: 1.6;
+  color: var(--hud-text-sub);
+}
+
+/* ---------- 示す情報 ---------- */
+.sim-panels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sim-panel {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 8px 12px 10px;
+  border-left: 3px solid var(--info);
+  background: var(--hud-bg);
+}
+.sim-panel.is-chart,
+.sim-panel.is-table,
+.sim-panel.is-log {
+  flex-basis: 100%;
+}
+.sim-panel-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-family: var(--font-heading);
+  font-size: var(--fs-13);
+  font-weight: 700;
+  color: var(--info);
+}
+.sim-panel-text {
+  margin: 0;
+  font-size: var(--fs-14);
+  line-height: 1.6;
+}
+.sim-kv {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+.sim-kv-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 35%) 1fr;
+  gap: 10px;
+  font-size: var(--fs-14);
+}
+.sim-kv-row dt {
+  color: var(--hud-text-sub);
+}
+.sim-kv-row dd {
+  margin: 0;
+  font-family: var(--font-mono);
+}
+.sim-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-13);
+}
+.sim-table th {
+  padding: 4px 8px;
+  text-align: left;
+  color: var(--hud-text-sub);
+  font-weight: 500;
+  border-bottom: 1px solid var(--hud-line);
+}
+.sim-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--hud-bg);
+  font-family: var(--font-mono);
+  vertical-align: middle;
+}
+.sim-table-no {
+  width: 28px;
+  color: var(--hud-text-sub);
+}
+.sim-table-new td {
+  padding-top: 8px;
+}
+.sim-log-lines {
+  margin: 0;
+  max-height: 180px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  line-height: 1.6;
+  white-space: pre;
+}
+.sim-chart {
+  margin: 0;
+}
+.sim-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.sim-chart-axis {
+  stroke: var(--hud-text-sub);
+  stroke-width: 1;
+}
+.sim-chart-label {
+  fill: var(--hud-text-sub);
+  font-family: var(--font-number);
+  font-size: var(--fs-13);
+}
+.sim-chart-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.sim-chart-line.is-s0,
+.sim-chart-key.is-s0 { stroke: var(--gold); color: var(--gold); }
+.sim-chart-line.is-s1,
+.sim-chart-key.is-s1 { stroke: var(--info); color: var(--info); }
+.sim-chart-line.is-s2,
+.sim-chart-key.is-s2 { stroke: var(--ok); color: var(--ok); }
+.sim-chart-line.is-s3,
+.sim-chart-key.is-s3 { stroke: var(--bad); color: var(--bad); }
+.sim-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 4px;
+  font-size: var(--fs-12);
+}
+.sim-chart-key::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+  background: currentColor;
+}
+.sim-chart-unit {
+  color: var(--hud-text-sub);
+}
+
+/* ---------- 部品・札・道具 ---------- */
+.sim-tool {
+  padding: 3px 12px;
+  border: none;
+  background: var(--hud-bg);
+  color: var(--hud-text-sub);
+  font-family: var(--font-body);
+  font-size: var(--fs-12);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--hud-line);
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  cursor: pointer;
+}
+.sim-tool.is-strong {
+  color: var(--gold-light);
+}
+.sim-tool:hover:not(:disabled),
+.sim-tool:focus-visible {
+  outline: none;
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+}
+.sim-tool:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sim-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 110px;
+  padding: 6px 12px 7px 10px;
+  border: none;
+  border-left: 3px solid var(--hud-text-sub);
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-14);
+  text-align: left;
+  box-shadow: inset 0 0 0 1px var(--hud-line);
+  cursor: pointer;
+}
+.sim-card:hover,
+.sim-card:focus-visible {
+  outline: none;
+  border-left-color: var(--gold);
+}
+.sim-card.is-picked {
+  border-left-color: var(--gold);
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+}
+.sim-card.is-in {
+  border-left-color: var(--ok);
+}
+.sim-card-label {
+  font-weight: 700;
+}
+.sim-card-time {
+  font-size: var(--fs-13);
+  color: var(--gold-light);
+}
+.sim-card.is-picked .sim-card-time,
+.sim-card.is-picked .sim-card-needs {
+  color: var(--navy);
+}
+.sim-card-needs {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.sim-pool {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-top: 1px dashed var(--hud-line);
+}
+.sim-pool-label {
+  width: 100%;
+  font-size: var(--fs-12);
+  font-weight: 700;
+  color: var(--hud-text-sub);
+}
+.sim-pool-empty,
+.sim-slot-empty {
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.sim-total {
+  margin: 10px 0 0;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.sim-total .num {
+  font-size: var(--fs-18);
+  color: var(--gold-light);
+}
+
+/* ---------- つなぐ ---------- */
+.sim-board {
+  position: relative;
+  height: 340px;
+  margin: 0 30px 10px;
+}
+.sim-wires {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.sim-wire-hit {
+  stroke: var(--transparent);
+  stroke-width: 4;
+  cursor: pointer;
+}
+.sim-wire-line {
+  stroke: var(--hud-text-sub);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 5;
+  pointer-events: none;
+}
+.sim-wire.is-live .sim-wire-line {
+  stroke: var(--gold);
+  stroke-dasharray: none;
+}
+.sim-wire-hit:hover + .sim-wire-line {
+  stroke: var(--bad);
+}
+.sim-wire-head {
+  fill: var(--gold);
+  pointer-events: none;
+}
+.sim-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-50%, -50%);
+}
+.sim-node-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 96px;
+  padding: 8px 10px 6px;
+  border: none;
+  background: var(--hud-bg-strong);
+  color: var(--hud-text);
+  font-family: var(--font-body);
+  box-shadow: inset 0 0 0 2px var(--hud-line);
+  border-radius: 4px 14px 4px 14px;
+  cursor: pointer;
+}
+.sim-node-button:hover,
+.sim-node-button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+.sim-node.is-picked .sim-node-button {
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+}
+.sim-node.is-down .sim-node-button {
+  color: var(--hud-text-sub);
+  box-shadow: inset 0 0 0 2px var(--bad);
+}
+.sim-node-label {
+  font-size: var(--fs-14);
+  font-weight: 700;
+}
+.sim-node-note,
+.sim-node-id,
+.sim-field-id,
+.sim-slot-id {
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.sim-node-id,
+.sim-field-id,
+.sim-slot-id {
+  font-family: var(--font-mono);
+}
+.sim-field-id {
+  margin-left: 8px;
+}
+.sim-node.is-picked .sim-node-note,
+.sim-node.is-picked .sim-node-id {
+  color: var(--navy);
+}
+.sim-node-start {
+  padding: 1px 10px;
+  border: none;
+  background: var(--hud-bg);
+  color: var(--bad);
+  font-family: var(--font-body);
+  font-size: var(--fs-12);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--bad);
+  cursor: pointer;
+}
+.sim-node-start:hover,
+.sim-node-start:focus-visible {
+  outline: none;
+  color: var(--navy);
+  background: var(--ok);
+  box-shadow: none;
+}
+
+/* ---------- 並べる ---------- */
+.sim-stages {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.sim-stage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--gold);
+  background: var(--hud-bg);
+}
+.sim-stage.is-new {
+  border-left-style: dashed;
+  border-left-color: var(--hud-text-sub);
+  background: var(--transparent);
+}
+.sim-stage-no {
+  flex: none;
+  width: 22px;
+  font-size: var(--fs-18);
+  font-weight: 700;
+  color: var(--gold-light);
+}
+.sim-stage-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+.sim-stage-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* ---------- 割り振る ---------- */
+.sim-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+.sim-slot {
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+  background: var(--hud-bg);
+  box-shadow: inset 0 0 0 1px var(--hud-line);
+  border-radius: 4px 14px 4px 14px;
+}
+.sim-slot-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 1px solid var(--hud-line);
+  background: var(--transparent);
+  color: var(--hud-text);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+.sim-slot-head:disabled {
+  cursor: default;
+}
+.sim-slot.is-target .sim-slot-head:hover,
+.sim-slot.is-target .sim-slot-head:focus-visible {
+  outline: none;
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+}
+.sim-slot-label {
+  font-size: var(--fs-14);
+  font-weight: 700;
+}
+.sim-slot-cap {
+  margin-left: auto;
+  font-size: var(--fs-14);
+  color: var(--ok);
+}
+.sim-slot-cap.is-over {
+  color: var(--bad);
+}
+.sim-slot-note {
+  margin: 6px 12px 0;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.sim-slot-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px 10px;
+}
+
+/* ---------- 設定する・答える ---------- */
+.sim-fields {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sim-field {
+  display: grid;
+  grid-template-columns: minmax(140px, 38%) 1fr;
+  align-items: center;
+  gap: 4px 12px;
+}
+.sim-field-label {
+  font-size: var(--fs-14);
+  font-weight: 700;
+}
+.sim-field-note,
+.sim-field-now {
+  grid-column: 2;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.sim-field-form {
+  display: flex;
+  gap: 8px;
+}
+.sim-input,
+.sim-select {
+  min-width: 0;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  box-shadow: inset 0 0 0 1px var(--hud-line);
+}
+.sim-input:focus,
+.sim-select:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+.sim-select option {
+  background: var(--navy);
+}
+.sim-config-table {
+  margin-top: 6px;
+}
+.sim-question {
+  margin-bottom: 14px;
+  padding: 8px 12px 10px;
+  border-left: 3px solid var(--gold);
+  background: var(--hud-bg);
+}
+.sim-question-prompt {
+  margin: 0 0 8px;
+  font-size: var(--fs-14);
+  font-weight: 700;
+}
+.sim-question-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sim-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border: none;
+  background: var(--hud-bg-strong);
+  color: var(--hud-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-14);
+  box-shadow: inset 0 0 0 1px var(--hud-line);
+  cursor: pointer;
+}
+.sim-option:hover,
+.sim-option:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+.sim-option.is-picked {
+  color: var(--navy);
+  background: linear-gradient(180deg, var(--gold-light), var(--gold));
+}
+
+/* ---------- 操作の文 ---------- */
+.sim-statements {
+  flex: none;
+  border-top: 1px solid var(--hud-line);
+  background: var(--hud-bg-strong);
+}
+.sim-log {
+  max-height: 92px;
+  margin: 0;
+  padding: 6px 16px;
+  overflow-y: auto;
+  list-style: none;
+  font-size: var(--fs-13);
+}
+.sim-log-empty {
+  color: var(--hud-text-sub);
+}
+.sim-log-line code {
+  font-family: var(--font-mono);
+  color: var(--ok);
+}
+.sim-log-line.is-error code {
+  color: var(--info);
+}
+.sim-log-said {
+  margin-left: 10px;
+  color: var(--hud-text-sub);
+}
+.sim-command {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+}
+.sim-command-label {
+  flex: none;
+  font-size: var(--fs-12);
+  font-weight: 700;
+  color: var(--gold);
+}
+.sim-input.is-command {
+  flex: 1;
+}
+.sim-forms {
+  border-top: none;
+  padding-top: 0;
+}
