@@ -242,8 +242,9 @@ describe('荷物を送る・結果を見せる情報・設定の出来上がり'
     expect(holds(fixed.state, 'sent pc server')).toBe(true);
     expect(shownPanels(fixed.state).map((p) => p.title)).toEqual(['サーバの返事']);
     expect(shownPanels(s0)).toEqual([]);
-    // つなぎ直すと、前に届いた記録は消える（今の網で確かめ直す）
+    // 線を外すと、前に届いた記録は消える（今の網で確かめ直す）。線を足す・機器を動かすだけなら、届いた道は残るので消えない
     expect(holds(run(fixed.state, ['cut router isp']).state, 'sent pc server')).toBe(false);
+    expect(holds(run(fixed.state, ['connect pc server']).state, 'sent pc server')).toBe(true);
   });
 
   it('情報の when の式の誤りは内容の誤り', () => {

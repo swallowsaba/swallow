@@ -3,6 +3,7 @@ import type { PracticeAttempt } from '@/game/types';
 import { resultKind, type ResultKind } from '@/learning/practice';
 import { Icon } from '@/ui/icons/Icon';
 import { Rich } from '../Rich';
+import { attemptLines } from './attemptLines';
 import { Figure } from './Figure';
 import { Slot, StepButtons, type OnTerm } from './widgets';
 
@@ -83,8 +84,8 @@ export function ResultStage({ lesson, attempt, onTerm, right, action, onRetry, o
 
       {attempt && attempt.commands.length > 0 ? (
         <>
-          <h3 className="stage-subheading">打ったコマンド</h3>
-          <pre className="result-commands" data-testid="result-commands">{attempt.commands.map((c) => `$ ${c}`).join('\n')}</pre>
+          <h3 className="stage-subheading">{attemptLines(lesson.practice.mode, attempt.commands).title}</h3>
+          <pre className="result-commands" data-testid="result-commands">{attemptLines(lesson.practice.mode, attempt.commands).text}</pre>
         </>
       ) : null}
 

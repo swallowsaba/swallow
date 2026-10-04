@@ -173,7 +173,7 @@ function connectOp(s: ConnectState, verb: string, args: string[]): SimOutcome {
   if (verb === 'start') {
     const [a = ''] = args;
     if (isUp(s, a)) return fail(s, `「${a}」は、もう動いている`);
-    return ok({ ...s, up: [...s.up, a], sent: [] });
+    return ok({ ...s, up: [...s.up, a] });
   }
   const [a = '', b = ''] = args;
   if (a === b) return fail(s, '同じ部品どうしはつなげない');
@@ -185,7 +185,8 @@ function connectOp(s: ConnectState, verb: string, args: string[]): SimOutcome {
   if (linked) return fail(s, `「${a}」と「${b}」は、もうつながっている`);
   const forbid = s.setup.forbid?.find((f) => (f.a === a && f.b === b) || (f.a === b && f.b === a));
   if (forbid) return fail(s, forbid.message);
-  return ok({ ...s, links: [...s.links, [a, b]], sent: [] });
+  // 線を足しても、届いた道は残る（届いた記録を消すのは、線を外した時だけ）
+  return ok({ ...s, links: [...s.links, [a, b]] });
 }
 
 /** 線をたどって届く部品（止まった機器は通れない。送り元を含む） */

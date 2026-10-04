@@ -528,6 +528,31 @@ describe('見本の 2 本を最後まで通せる（docs/development-plan.md Pha
     expect(session.city.getState().city.funds - funds0).toBe(session.progress.getState().progress.xp);
   });
 
+  it('found.b.01（模擬環境）: 操作の文を入れて手順を満たし、結果に「入れた操作の文」を $ を付けずに並べる', async () => {
+    const session = createSession(1);
+    const id = 'found.b.01';
+    const l = await lesson(id);
+    const opened = await toPractice(session, id, l);
+    const { host } = opened;
+    const statement = (line: string): void => {
+      const input = host.querySelector<HTMLInputElement>('[data-testid="sim-command"]');
+      if (!input) throw new Error('文の入力欄が無い');
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, line);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      act(() => input.form?.requestSubmit());
+    };
+    for (const line of ['connect kb cpu', 'connect cpu screen', 'send kb screen', 'connect cpu disk', 'send cpu disk']) statement(line);
+    // 線を足しても、先に画面へ出た答えは消えない
+    expect($(host, '[data-testid="sim-console"]').textContent).toContain('2+3 = 5');
+    next(host);
+    expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('success');
+    expect($(host, '[data-testid="stage-result"]').textContent).toContain('入れた操作の文');
+    expect($(host, '[data-testid="result-commands"]').textContent).toBe(['connect kb cpu', 'connect cpu screen', 'send kb screen', 'connect cpu disk', 'send cpu disk'].join('\n'));
+    throughEnd(opened, session, id, l);
+  });
+
   it('linux.i.01: ヒントを 3 段まで開き、最後のヒントをそのまま打てば通る（結果はヒントあり）', async () => {
     const session = createSession(1);
     const id = 'linux.i.01';

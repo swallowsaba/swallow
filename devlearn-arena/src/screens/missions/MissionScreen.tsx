@@ -11,6 +11,7 @@ import type { PracticeAttempt } from '@/game/types';
 import { statusOf } from '@/learning/library';
 import { missionFacility } from '@/learning/missions';
 import { resultKind } from '@/learning/practice';
+import { attemptLines } from '../lesson/attemptLines';
 import { Icon } from '@/ui/icons/Icon';
 import { nowIso } from '../clock';
 import { backdropOf } from '../lesson/backdrops';
@@ -246,8 +247,8 @@ function MissionResult({ mission: m, attempt, outcome, onTerm, right, action, on
       ) : null}
       {attempt.commands.length > 0 ? (
         <>
-          <h3 className="stage-subheading">打ったコマンド</h3>
-          <pre className="result-commands">{attempt.commands.map((c) => `$ ${c}`).join('\n')}</pre>
+          <h3 className="stage-subheading">{attemptLines(m.practice.mode, attempt.commands).title}</h3>
+          <pre className="result-commands">{attemptLines(m.practice.mode, attempt.commands).text}</pre>
         </>
       ) : null}
 
