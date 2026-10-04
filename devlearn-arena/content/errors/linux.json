@@ -347,6 +347,16 @@
         "設定ファイルに書いた行の綴りが違う（$HOME/bin の / や : が抜けた）。"
       ],
       "hint": "echo $PATH で今の探し場所を見る。/home/learner/bin が無ければ、source ~/.bashrc で読み直そう。"
+    },
+    {
+      "id": "int-expected",
+      "match": "integer expression expected",
+      "meaning": "「数が要る」と言われた。-gt などで比べる物が、数だけになっていない。",
+      "causes": [
+        "% の記号ごと比べた（91% のまま）。",
+        "空白や見出しの行（Use%）まで変数に入った。"
+      ],
+      "hint": "変数に入れる命令を端末で打ち、数だけが出るかを確かめる。tr -d ' %' で空白と % を消し、tail -n 1 で最後の行だけにする。"
     }
   ]
 }

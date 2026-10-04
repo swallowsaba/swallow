@@ -772,6 +772,51 @@
       "lessons": [
         "linux.i.06"
       ]
+    },
+    {
+      "id": "shell-variable",
+      "word": "変数",
+      "reading": "へんすう",
+      "plain": "値に名前を付けて覚えておく入れ物。名前=値 で入れ、$名前 で取り出す。",
+      "why": "同じ値を何度も書かずに済み、途中で得た結果（使用率など）を後の処理で使える。",
+      "related": [
+        "env-var",
+        "script",
+        "shell"
+      ],
+      "lessons": [
+        "linux.i.07"
+      ]
+    },
+    {
+      "id": "if-statement",
+      "word": "if",
+      "reading": "いふ",
+      "plain": "条件のコマンドが成り立つ（0 で終わる）時だけ、then の後を動かすシェルの形。else で成り立たない時の処理も書ける。fi で閉じる。",
+      "why": "決まった時だけ知らせる・直す、のように、状況で動きを変える自動化ができる。",
+      "related": [
+        "script",
+        "shell-variable",
+        "for-loop"
+      ],
+      "lessons": [
+        "linux.i.07"
+      ]
+    },
+    {
+      "id": "for-loop",
+      "word": "for",
+      "reading": "ふぉー",
+      "plain": "並べた物を 1 つずつ変数に入れて、do と done の間を繰り返すシェルの形。",
+      "why": "たくさんのファイルやサーバに、同じ処理をまとめて行える。",
+      "related": [
+        "script",
+        "shell-variable",
+        "if-statement"
+      ],
+      "lessons": [
+        "linux.i.07"
+      ]
     }
   ]
 }

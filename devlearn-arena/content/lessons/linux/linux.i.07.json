@@ -1,0 +1,235 @@
+{
+  "id": "linux.i.07",
+  "domain": "linux",
+  "level": "intermediate",
+  "theme": "自動化",
+  "title": "シェルスクリプト入門",
+  "goal": "変数・条件・繰り返しで小さな自動化を書ける",
+  "minutes": 20,
+  "prerequisites": [
+    "linux.i.06"
+  ],
+  "related": [
+    "devops.b.02",
+    "cicd.i.02"
+  ],
+  "next": [
+    "linux.i.08",
+    "devops.b.02"
+  ],
+  "terms": [
+    "command",
+    "file",
+    "for-loop",
+    "if-statement",
+    "shell-variable",
+    "script",
+    "log",
+    "service",
+    "disk",
+    "permission",
+    "argument",
+    "root-user",
+    "chmod",
+    "cat",
+    "terminal"
+  ],
+  "explain": {
+    "what": "シェルスクリプトは、{{term:command}}の並びを{{term:file}}に書いて、まとめて動かす仕組み。{{term:shell-variable}}で値を覚え、{{term:if-statement}} で条件によって分かれ、{{term:for-loop}} で同じ処理を繰り返せる。",
+    "why": "毎日同じ確認を手で打つと、打ち間違いや打ち忘れが起きる。{{term:script}}にすれば、誰が何度動かしても同じ手順になる。",
+    "use": "毎日の確認や、控えの作成、古い{{term:log}}の片付けを自動にする。決まった条件の時だけ知らせを出す。",
+    "when": "毎朝、{{term:disk}}の空きや{{term:service}}の様子を、5 つのコマンドで確かめている時。",
+    "figures": [
+      "linux-i07-shapes"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "スクリプトを使い始める順に並べる。",
+      "items": [
+        "コマンドの並びをファイルに書く",
+        "そのファイルに実行の{{term:permission}}を付ける",
+        "名前を打って動かす"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "書き方と、その働きを結ぶ。",
+      "pairs": [
+        [
+          "`$1`",
+          "動かす時に渡した、1 つ目の{{term:argument}}"
+        ],
+        [
+          "if",
+          "条件が成り立つ時だけ動かす"
+        ],
+        [
+          "for",
+          "並べた物を 1 つずつ使って繰り返す"
+        ]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "下のスクリプトを動かすと、何が出る？",
+      "context": {
+        "command": "for f in a b; do echo $f; done"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "a と b が 1 行ずつ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "$f が 2 行",
+          "correct": false,
+          "whyNot": "$f は、繰り返しのたびに a、b に置き換わる。"
+        },
+        {
+          "id": "c",
+          "text": "a b が 1 行",
+          "correct": false,
+          "whyNot": "for は、並べた物を 1 つずつ取り出して、そのたびに echo を動かす。"
+        }
+      ],
+      "explanation": "for 変数 in 並び; do 処理; done の形で、並びの物を 1 つずつ変数に入れて処理を繰り返す。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "作ったスクリプトを動かすと、下のように断られた。原因は？",
+      "context": {
+        "log": "$ ./check.sh\n-bash: ./check.sh: Permission denied"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "ファイルに実行の権限 x が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "スクリプトの中の if の書き方が違う",
+          "correct": false,
+          "whyNot": "中身の誤りなら、動いた後に別のエラーが出る。断られたのは、動かす前の権限。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:root-user}}でないと、スクリプトは動かせない",
+          "correct": false,
+          "whyNot": "自分の物で x があれば動かせる。{{term:chmod}} +x で足す。"
+        }
+      ],
+      "explanation": "書いたばかりのファイルには x が無い。chmod +x を付けると、名前で動かせる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "控えを取るスクリプトで、途中のコマンドが失敗したら、その先を動かしたくない。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "スクリプトの最初に set -e を書く",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "失敗しても最後まで動かし、後で結果を見る",
+          "correct": false,
+          "whyNot": "控えに失敗したまま古い控えを消す、のような事故が起きる。失敗した所で止める。"
+        },
+        {
+          "id": "c",
+          "text": "コマンドを全て 1 行に並べる",
+          "correct": false,
+          "whyNot": "; で並べても、失敗した後のコマンドは動いてしまう。"
+        }
+      ],
+      "explanation": "set -e を書くと、失敗したコマンドの所でスクリプトが止まる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "ディスクの使用率が 80% を超えたら（空きが 20% を切ったら）、警告を書き出すスクリプトを作って動かす。",
+    "environment": "linux-basic",
+    "setup": {
+      "disk": "20G",
+      "files": {
+        "/var/log/app/app.log": "2026-10-03 09:00:01 INFO request ok\n"
+      },
+      "sizes": {
+        "/var/log/app/app.log": "18G"
+      }
+    },
+    "steps": [
+      {
+        "id": "write",
+        "purpose": "check.sh に、使用率を変数に入れ、80 より大きい時に alert.txt へ警告を書くスクリプトを書く。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/check.sh",
+          "contains": "-gt 80"
+        },
+        "afterward": "check.sh が書けた。1 行目で使用率の数を変数 used に入れ、if で 80 と比べている。",
+        "hints": [
+          "使用率は `df --output=pcent /` で出る。2 行目の数だけを取り出して変数に入れ、if で比べる。",
+          "数の取り出しは `tail -n 1` と `tr -d ' %'`（空白と % を消す）。比べるのは `[ \"$used\" -gt 80 ]`。ファイルは {{term:cat}} と << '`EOF`' で書ける。",
+          "`cat > check.sh << 'EOF'\nused=$(df --output=pcent / | tail -n 1 | tr -d ' %')\nif [ \"$used\" -gt 80 ]; then\n  echo \"警告: ディスクを ${used}% 使っている\" > alert.txt\nfi\nEOF` と打つ（最後の行まで、1 行ずつ打つ）。"
+        ],
+        "expectedErrors": [
+          "enoent"
+        ]
+      },
+      {
+        "id": "run",
+        "purpose": "check.sh を名前で動かし、警告が書き出されることを確かめる。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/alert.txt",
+          "contains": "警告"
+        },
+        "afterward": "使用率 91% が 80 より大きいので、alert.txt に警告が書かれた。毎日動かせば、空きが減った日に気づける。",
+        "hints": [
+          "書いたばかりのファイルには、実行の x が無い。",
+          "chmod +x で x を足し、./check.sh で動かす。",
+          "`chmod +x check.sh` と打ち、`./check.sh` と打つ。"
+        ],
+        "expectedErrors": [
+          "exec-denied",
+          "int-expected"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "変数・条件を使って、手で打っていた確認を 1 つのスクリプトにできた。",
+    "partial": "ヒントを使って作れた。次は、80 を 95 に変えて動かし、警告が出ないことも確かめてみよう。",
+    "retry": "まだ警告が書き出されていない。`cat check.sh` で中身を見て、1 行目の命令を{{term:terminal}}で打ち、数だけが出るかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "コマンドの並びをファイルにして、x を付けて動かす",
+      "変数で覚え、if で分け、for で繰り返す",
+      "失敗で止めたい時は set -e"
+    ],
+    "next": [
+      "linux.i.08",
+      "devops.b.02"
+    ],
+    "terms": [
+      "script",
+      "shell-variable",
+      "if-statement",
+      "for-loop"
+    ]
+  }
+}
