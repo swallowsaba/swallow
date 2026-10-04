@@ -8,6 +8,7 @@ import type { ShellState } from '@/engines/kernel/registry';
 import { createShellState } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
 import { shellOptions } from '@/engines/environments';
+import { applyStatement, createSim } from '@/engines/sim/sim';
 import {
   afterCommand, answerOf, attemptOf, checkState, commandCandidates, currentStep, findGuide, GENERIC_GUIDE, hintsUsed, isFinished,
   openHint, replayAnswers, resultKind, startRun, type PracticeRun,
@@ -206,5 +207,60 @@ describe('状態による判定の形', () => {
     const step = practice.steps[0] as Practice['steps'][number];
     const bad: Practice = { ...practice, steps: [{ ...step, hints: [step.hints[0], step.hints[1], '`cd /srv`'] }] };
     expect(replayAnswers(bad)).toEqual(['実戦 move: 最後のヒントを打っても達成条件を満たさない']);
+  });
+});
+
+describe('模擬環境（模）の実戦（docs/content-spec.md 2.4.1、docs/decisions.md D-16）', () => {
+  const practice: Practice = {
+    mode: 'simulation',
+    purpose: '部品をつなぐ',
+    environment: 'sim-connect',
+    setup: {
+      nodes: [
+        { id: '入力', label: 'キーボード', x: 10, y: 50 },
+        { id: '処理', label: 'CPU', x: 50, y: 50 },
+        { id: '出力', label: '画面', x: 90, y: 50 },
+      ],
+    },
+    steps: [
+      { id: 'in', purpose: '入力を処理へ', check: { kind: 'sim', expr: 'link 入力 処理' }, afterward: 'つながった', hints: ['向き', '入力から', '`connect 入力 処理` と入れる。'] },
+      { id: 'out', purpose: '処理を出力へ', check: { kind: 'sim', expr: 'path 入力>処理>出力' }, afterward: '画面に出た', hints: ['向き', '処理から', '`connect 処理 出力` と入れる。'] },
+    ],
+  };
+
+  it('操作の文を与えるたびに、模擬の状態で手順を判定する。誤った操作はエラーの解説を出し、ゲームオーバーにしない', () => {
+    let sim = createSim(practice.environment, practice.setup);
+    let run = startRun();
+    const send = (line: string) => {
+      const out = applyStatement(sim, line);
+      sim = out.state;
+      const r = afterCommand(practice, run, { line, stderr: out.error ?? '', sim }, ERROR_GUIDES);
+      run = r.run;
+      return r;
+    };
+    const wrong = send('connect 入力 マウス');
+    expect(wrong.error).not.toBeNull();
+    expect(wrong.done).toEqual([]);
+    expect(send('connect 入力 処理').done.map((s) => s.id)).toEqual(['in']);
+    expect(send('connect 処理 出力').done.map((s) => s.id)).toEqual(['out']);
+    expect(isFinished(practice, run)).toBe(true);
+    // エラーの後、ヒントを開かずに通した
+    expect(attemptOf(practice, run).recoveredFromError).toBe(true);
+  });
+
+  it('最後のヒントの文で通るかを確かめ、通らない答えを見つける', () => {
+    expect(replayAnswers(practice)).toEqual([]);
+    const broken = structuredClone(practice);
+    const step = broken.steps[1];
+    if (step) step.hints = [step.hints[0], step.hints[1], '`connect 入力 出力` と入れる。'];
+    expect(replayAnswers(broken).join()).toContain('最後のヒントを与えても達成条件を満たさない');
+    const typo = structuredClone(practice);
+    const first = typo.steps[0];
+    if (first) first.hints = [first.hints[0], first.hints[1], '`connect 入力 処里` と入れる。'];
+    expect(replayAnswers(typo).join()).toContain('「処里」という部品は無い');
+  });
+
+  it('模擬の状態が無ければ、模擬の判定は満たさない', () => {
+    expect(checkState({ kind: 'sim', expr: 'link 入力 処理' }, {})).toBe(false);
   });
 });

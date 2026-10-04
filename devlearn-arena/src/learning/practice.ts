@@ -12,6 +12,8 @@ import { execute } from '@/engines/kernel/shell';
 import { exists, isDir, readFile } from '@/engines/kernel/vfs';
 import { initialShell } from '@/engines/environments';
 import { request } from '@/engines/http/http';
+import { applyStatement, createSim, holds } from '@/engines/sim/sim';
+import type { SimState } from '@/engines/sim/types';
 import { verify } from '@/engines/tls/tls';
 import type { PracticeAttempt } from '@/game/types';
 
@@ -30,8 +32,14 @@ import type { PracticeAttempt } from '@/game/types';
 /** 端末の実戦で判定できる形。net は、その分野の実戦と一緒に作る（docs/development-plan.md Phase 10） */
 export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'git', 'k8s', 'answer']);
 
+/** 模擬環境（模）の実戦で判定できる形（docs/content-spec.md 2.4.1） */
+export const SIM_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['sim']);
+
+/** 判定に使う模擬環境の今の状態。実戦の形に応じて、どれか 1 つがある */
 export interface CheckInput {
-  shell: ShellState;
+  shell?: ShellState | undefined;
+  /** 画面で操作する模擬（模） */
+  sim?: SimState | undefined;
   /** 原因などを答える形（answer）の、学習者の答え */
   answer?: string | undefined;
 }
@@ -40,7 +48,10 @@ const sameAnswer = (a: string, b: string): boolean => a.trim().toLowerCase() ===
 
 /** 達成条件を、模擬環境の今の状態で判定する */
 export function checkState(check: CheckSpec, input: CheckInput): boolean {
+  if (check.kind === 'sim') return input.sim !== undefined && holds(input.sim, check.expr);
+  if (check.kind === 'answer') return input.answer !== undefined && sameAnswer(input.answer, check.equals);
   const { shell } = input;
+  if (!shell) return false;
   switch (check.kind) {
     case 'cwd':
       return shell.cwd === resolve('/', check.equals);
@@ -80,8 +91,6 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       return gitHolds(shell.git, shell.vfs, check.expr);
     case 'k8s':
       return clusterHolds(shell.cluster, check.expr);
-    case 'answer':
-      return input.answer !== undefined && sameAnswer(input.answer, check.equals);
     case 'sql':
       // DB の実戦は DB の状態で判定する（src/engines/db の matchesExpected）。端末の状態では判定しない
       return false;
@@ -188,7 +197,7 @@ export interface CommandOutcome {
 export function afterCommand(
   practice: Practice,
   run: PracticeRun,
-  a: { line: string; stderr: string; shell: ShellState; answer?: string },
+  a: { line: string; stderr: string; shell?: ShellState; sim?: SimState; answer?: string },
   guides: readonly ErrorGuide[],
 ): CommandOutcome {
   const line = a.line.trim();
@@ -206,7 +215,7 @@ export function afterCommand(
 
   const done: PracticeStep[] = [];
   for (let step = currentStep(practice, next); step; step = currentStep(practice, next)) {
-    if (!checkState(step.check, { shell: a.shell, answer: a.answer })) break;
+    if (!checkState(step.check, { shell: a.shell, sim: a.sim, answer: a.answer })) break;
     done.push(step);
     // 前の操作のエラーの後、ヒントを開かずに満たした
     const self = hadError && (next.hints[step.id] ?? 0) === 0;
@@ -247,6 +256,7 @@ export function resultKind(attempt: Pick<PracticeAttempt, 'success' | 'hintsUsed
  * 答えの途中で出るエラーは、その手順の想定エラー（expectedErrors）に当たる物だけ認める（マージの衝突のように、出会うこと自体が課題の時）
  */
 export function replayAnswers(practice: Practice, guides: readonly ErrorGuide[] = []): string[] {
+  if (practice.mode === 'simulation') return replaySim(practice, guides);
   if (practice.mode !== 'terminal') return [];
   const problems: string[] = [];
   const registry = REGISTRY;
@@ -272,6 +282,32 @@ export function replayAnswers(practice: Practice, guides: readonly ErrorGuide[] 
       if (err.trim() && !expected) problems.push(`実戦 ${step.id}: 答え「${line}」でエラー: ${err.trim()}`);
     }
     if (!checkState(step.check, { shell, answer })) problems.push(`実戦 ${step.id}: 最後のヒントを打っても達成条件を満たさない`);
+  }
+  return problems;
+}
+
+/** 模擬環境（模）の実戦: 最後のヒントの操作の文を順に与え、全ての手順を満たすか */
+function replaySim(practice: Practice, guides: readonly ErrorGuide[]): string[] {
+  const problems: string[] = [];
+  let sim = createSim(practice.environment, practice.setup);
+  for (const step of practice.steps) {
+    if (!SIM_CHECKS.has(step.check.kind)) {
+      problems.push(`実戦 ${step.id}: 判定の形 ${step.check.kind} は模擬環境の実戦で使えない`);
+      continue;
+    }
+    const lines = answerOf(step);
+    if (lines.length === 0) problems.push(`実戦 ${step.id}: 最後のヒントに操作の文（\`...\`）が無い`);
+    for (const line of lines) {
+      const out = applyStatement(sim, line);
+      sim = out.state;
+      const expected = out.error !== null && (step.expectedErrors ?? []).some((id) => guides.some((g) => g.id === id && guideMatches(g, out.error ?? '')));
+      if (out.error !== null && !expected) problems.push(`実戦 ${step.id}: 答え「${line}」でエラー: ${out.error}`);
+    }
+    try {
+      if (!checkState(step.check, { sim })) problems.push(`実戦 ${step.id}: 最後のヒントを与えても達成条件を満たさない`);
+    } catch (e) {
+      problems.push(`実戦 ${step.id}: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
   return problems;
 }

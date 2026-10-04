@@ -106,6 +106,8 @@ export const checkSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('tls'), host: z.string(), trusted: z.boolean() }).strict(),
   z.object({ kind: z.literal('sql'), query: z.string(), equals: z.unknown() }).strict(),
   z.object({ kind: z.literal('answer'), equals: z.string() }).strict(),
+  /** 画面で操作する模擬環境（模）の状態。式は docs/content-spec.md 2.4.1（src/engines/sim） */
+  z.object({ kind: z.literal('sim'), expr: z.string().min(1) }).strict(),
 ]);
 
 export const practiceStepSchema = z.object({

@@ -1,4 +1,5 @@
-import { isEnvironmentId, resolveSetup } from '@/engines/environments';
+import { ENVIRONMENTS, isEnvironmentId, resolveSetup } from '@/engines/environments';
+import { createSim, exprProblems, isSimEnvironment } from '@/engines/sim/sim';
 import { replayAnswers } from '@/learning/practice';
 import { parseRich, termsIn } from './rich';
 import type { CatalogEntry, ErrorGuide, Lesson, Mission, Practice, Term } from './schema';
@@ -137,8 +138,24 @@ function practiceProblems(practice: Practice, ctx: Pick<ValidateContext, 'errors
   const p: string[] = [];
   for (const s of practice.steps) for (const e of s.expectedErrors ?? []) if (!ctx.errors.has(e)) p.push(`実戦 ${s.id}: エラーの解説 ${e} が無い（content/errors）`);
   if (new Set(practice.steps.map((s) => s.id)).size !== practice.steps.length) p.push('実戦の手順の ID が重なる');
+  if (practice.mode === 'simulation') {
+    if (!isSimEnvironment(practice.environment)) {
+      p.push(`実戦: 模擬環境 ${practice.environment} は、模擬環境（模）の型（sim-connect など）でない`);
+      return p;
+    }
+    try {
+      const initial = createSim(practice.environment, practice.setup);
+      for (const s of practice.steps) if (s.check.kind === 'sim') for (const e of exprProblems(initial, s.check.expr)) p.push(`実戦 ${s.id}: ${e}`);
+      p.push(...replayAnswers(practice, ctx.guides));
+    } catch (e) {
+      p.push(`実戦: 初期状態（setup）の形が違う: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    return p;
+  }
   if (!isEnvironmentId(practice.environment)) p.push(`実戦: 模擬環境 ${practice.environment} が無い（src/engines/environments.ts）`);
-  else {
+  else if ((practice.mode === 'sql') !== (practice.environment === 'sql-sqlite') || (practice.mode !== 'sql' && !ENVIRONMENTS[practice.environment].shell)) {
+    p.push(`実戦: 形 ${practice.mode} に、模擬環境 ${practice.environment} は使えない`);
+  } else {
     try {
       resolveSetup(practice.environment, practice.setup);
       // 全実戦の最後のヒントを模擬環境で実行すると、達成条件を満たす
