@@ -108,6 +108,8 @@ export default async function missions(page, shot) {
   await page.evaluate(() => {
     const store = window.__cityStore.getState();
     store.setCity({ ...store.city, funds: store.city.funds + 5000 });
+    // 1280×720 では、置く場所が建設メニューの陰に入らないよう寄せておく
+    window.__city.focusOn(44, 46);
   });
   await facility(page, 'server', [41, 48], 2);
   await facility(page, 'web', [44, 48], 2);
