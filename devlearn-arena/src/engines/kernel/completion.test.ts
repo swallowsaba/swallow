@@ -26,7 +26,7 @@ describe('コマンド名の補完', () => {
     expect(candidates('c')).toContain('cd');
   });
   it('共通接頭辞を計算する', () => {
-    const result = complete('ex', 2, { shell: session.state, registry: session.registry });
+    const result = complete('exp', 3, { shell: session.state, registry: session.registry });
     expect(result.commonPrefix).toBe('export');
   });
 });

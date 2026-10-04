@@ -1,3 +1,4 @@
+import { IncompleteError, parse } from './parser';
 import { tokenize } from './tokenizer';
 
 /**
@@ -27,18 +28,31 @@ export type FeedResult =
   | { kind: 'run'; text: string }
   | { kind: 'more'; pending: PendingInput };
 
+/** if・for・while が閉じていない（fi・done がまだ無い）か。字句の誤りなど、ほかの誤りは実行に回して知らせる */
+export function incomplete(text: string): boolean {
+  try {
+    parse(text);
+    return false;
+  } catch (error) {
+    return error instanceof IncompleteError;
+  }
+}
+
 export function feedLine(pending: PendingInput | null, line: string): FeedResult {
   if (pending === null) {
     // 本文ごと一度に渡されたもの（貼り付けや、画面のボタンから流し込んだもの）はそのまま実行する
     if (line.includes('\n')) return { kind: 'run', text: line };
     const waiting = heredocDelimiters(line);
-    if (waiting.length === 0) return { kind: 'run', text: line };
+    if (waiting.length === 0 && !incomplete(line)) return { kind: 'run', text: line };
     return { kind: 'more', pending: { lines: [line], waiting } };
   }
   const lines = [...pending.lines, line];
   const waiting = line === pending.waiting[0] ? pending.waiting.slice(1) : pending.waiting;
-  if (waiting.length === 0) return { kind: 'run', text: lines.join('\n') };
-  return { kind: 'more', pending: { lines, waiting } };
+  if (waiting.length > 0) return { kind: 'more', pending: { lines, waiting } };
+  // ヒアドキュメントが閉じても、if・for がまだ閉じていなければ続きを待つ
+  const text = lines.join('\n');
+  if (incomplete(text)) return { kind: 'more', pending: { lines, waiting: [] } };
+  return { kind: 'run', text };
 }
 
 /**

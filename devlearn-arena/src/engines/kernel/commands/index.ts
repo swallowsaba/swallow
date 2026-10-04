@@ -1,6 +1,7 @@
 import { dockerCommands } from '@/engines/docker/cli';
 import { CommandRegistry } from '../registry';
 import { aptCommands } from './apt';
+import { builtinCommands } from './builtins';
 import { socketCommands } from './sockets';
 import { editorCommands } from './editor';
 import { fsCommands } from './fs';
@@ -26,6 +27,7 @@ import { textToolCommands } from './textTools';
  */
 export function createDefaultRegistry(): CommandRegistry {
   return new CommandRegistry().registerAll([
+    ...builtinCommands,
     ...fsCommands,
     ...editorCommands,
     ...gitCommands,

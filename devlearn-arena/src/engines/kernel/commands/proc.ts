@@ -179,10 +179,25 @@ export const procCommands: CommandSpec[] = [
       const used = Math.min(capacity, sizeOf(shell, '/') + heldBytes(shell));
       const free = capacity - used;
       const show = (n: number): string => (human ? humanSize(n) : String(Math.ceil(n / 1024)));
+      const pcent = `${String(Math.ceil((used / capacity) * 100 - 1e-9))}%`;
+      // --output=欄,欄 は、その欄だけを出す（スクリプトで数を取り出す時に使う）。値は見出しの幅に右寄せ
+      const output = argv.find((a) => a.startsWith('--output='))?.slice('--output='.length);
+      if (output !== undefined) {
+        const fields: Record<string, [string, string]> = {
+          source: ['Filesystem', '/dev/vda1'], size: [human ? 'Size' : '1K-blocks', show(capacity)], used: ['Used', show(used)],
+          avail: ['Avail', show(free)], pcent: ['Use%', pcent], target: ['Mounted on', '/'],
+        };
+        const picked = output.split(',').map((f) => [f, fields[f]] as const);
+        const unknown = picked.find(([, v]) => v === undefined);
+        if (unknown) return { stderr: `df: option --output: field '${unknown[0]}' unknown\n`, code: 1 };
+        const cols: [string, string][] = picked.map(([, v]) => v ?? ['', '']);
+        const width = cols.map(([h, v]) => Math.max(h.length, v.length));
+        return { stdout: `${cols.map(([h], i) => h.padEnd(width[i] ?? 0)).join(' ').trimEnd()}\n${cols.map(([, v], i) => v.padStart(width[i] ?? 0)).join(' ')}\n` };
+      }
       return {
         stdout: table([
           ['Filesystem', human ? 'Size' : '1K-blocks', 'Used', 'Avail', 'Use%', 'Mounted on'],
-          ['/dev/vda1', show(capacity), show(used), show(free), `${String(Math.ceil((used / capacity) * 100 - 1e-9))}%`, '/'],
+          ['/dev/vda1', show(capacity), show(used), show(free), pcent, '/'],
         ]),
       };
     },

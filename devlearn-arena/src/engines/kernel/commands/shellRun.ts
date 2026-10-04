@@ -1,6 +1,6 @@
 import { resolve } from '../path';
 import type { CommandContext, CommandResult, CommandSpec, ShellState } from '../registry';
-import { scriptLines, withoutPositional, withPositional } from '../script';
+import { scriptText, withoutPositional, withPositional } from '../script';
 import { stat } from '../vfs';
 import { denied } from './perm';
 
@@ -19,18 +19,14 @@ function runFile({ argv, shell, runLine }: CommandContext, keep: boolean): Comma
   const blocked = denied(shell, file, 'read', name);
   if (blocked) return blocked;
 
-  let state: ShellState = withPositional(shell, full, args);
-  let stdout = '';
-  let stderr = '';
-  let code = 0;
-  for (const line of scriptLines(node.content)) {
-    const r = runLine(line, state);
-    state = r.state;
-    stdout += r.stdout;
-    stderr += r.stderr;
-    code = r.code;
-  }
-  const after = withoutPositional(state, shell);
+  // 本文を 1 つのまとまりとして読む（if・for は複数の行にまたがる）
+  const r = runLine(scriptText(node.content), withPositional(shell, full, args));
+  // exit で抜けた印と set -e は、呼んだ側に持ち出さない
+  const vars = new Map(r.state.vars);
+  vars.delete('__EXIT');
+  vars.delete('__ERREXIT');
+  const after = withoutPositional({ ...r.state, vars }, shell);
+  const { stdout, stderr, code } = r;
   const patch: Partial<ShellState> = keep ? after : { ...after, vars: shell.vars, cwd: shell.cwd };
   return { stdout, stderr, code, patch };
 }

@@ -1,11 +1,11 @@
-import type { CommandList, SimpleCommand } from './ast';
+import type { Command, CommandList, CompoundCommand, SimpleCommand, Word } from './ast';
 import type { MutableClock } from './clock';
 import { expandWord, expandWordFields, type ExpandContext } from './expand';
 import { expandBraces } from './brace';
 import { expandGlob, hasMagic } from './glob';
 import { parse } from './parser';
 import type { CommandRegistry, CommandResult, EditorRequest, RunLineResult, ShellState } from './registry';
-import { findScript, scriptLines, withoutPositional, withPositional } from './script';
+import { findScript, scriptText, withoutPositional, withPositional } from './script';
 import { ParseError } from './tokenizer';
 import { appendFile, at, readFile, VfsError, writeFile } from './vfs';
 
@@ -40,6 +40,8 @@ function vfsMessage(command: string, error: VfsError): string {
   return `${command}: ${error.path}: ${map[error.code] ?? error.code}`;
 }
 
+const isCompound = (c: Command): c is CompoundCommand => c.kind !== undefined;
+
 function makeExpandContext(state: ShellState, registry: CommandRegistry, clock: MutableClock): ExpandContext {
   return {
     vars: state.vars,
@@ -52,6 +54,94 @@ function makeExpandContext(state: ShellState, registry: CommandRegistry, clock: 
         .join('');
     },
   };
+}
+
+/** 語を、展開 → 単語分割 → ブレース展開 → パス名展開 の順（bash と同じ順序）で引数の並びにする */
+function expandArgs(words: readonly Word[], state: ShellState, expandCtx: ExpandContext): string[] {
+  const argv: string[] = [];
+  for (const word of words) {
+    for (const field of expandWordFields(word, expandCtx)) {
+      const braced = word.quoted ? [field] : expandBraces(field);
+      for (const item of braced) {
+        if (word.quoted || !hasMagic(item)) {
+          argv.push(item);
+          continue;
+        }
+        const matches = expandGlob(state.vfs, state.cwd, item);
+        // 一致が無ければパターンをそのまま渡す（bash の既定動作）
+        if (matches.length === 0) argv.push(item);
+        else argv.push(...matches);
+      }
+    }
+  }
+  return argv;
+}
+
+/** 終わりの印。exit を打った（その終了コード）。スクリプトと組み立ての形を、そこで抜ける */
+const EXIT_VAR = '__EXIT';
+/** set -e の印。スクリプトの中で、失敗したらそこで止まる */
+const ERREXIT_VAR = '__ERREXIT';
+/** 繰り返しの上限（止まらない while を止める） */
+const MAX_LOOP = 1000;
+
+const exiting = (state: ShellState): boolean => state.vars.has(EXIT_VAR);
+
+function withoutVars(state: ShellState, names: readonly string[]): ShellState {
+  if (names.every((n) => !state.vars.has(n))) return state;
+  const vars = new Map(state.vars);
+  for (const n of names) vars.delete(n);
+  return { ...state, vars };
+}
+
+/** 組み立ての形（if・for・while）を動かす。中の出力はまとめて返し、最後にリダイレクトを当てる */
+function runCompound(
+  command: CompoundCommand,
+  initial: ShellState,
+  registry: CommandRegistry,
+  clock: MutableClock,
+): { state: ShellState; result: CommandResult } {
+  let state = initial;
+  let stdout = '';
+  let stderr = '';
+  let code = 0;
+  const take = (outcome: ExecOutcome): number => {
+    state = outcome.state;
+    for (const c of outcome.chunks) {
+      if (c.stream === 'stdout') stdout += c.text;
+      else stderr += c.text;
+    }
+    return outcome.exitCode;
+  };
+  if (command.kind === 'if') {
+    let ran = false;
+    for (const clause of command.clauses) {
+      const ok = take(runList(state, clause.cond, registry, clock, true)) === 0;
+      if (exiting(state)) break;
+      if (!ok) continue;
+      code = take(runList(state, clause.body, registry, clock));
+      ran = true;
+      break;
+    }
+    if (!ran && !exiting(state) && command.otherwise) code = take(runList(state, command.otherwise, registry, clock));
+  } else if (command.kind === 'for') {
+    const values = command.words === null
+      ? (state.vars.get('@') ?? '').split(' ').filter((v) => v !== '')
+      : expandArgs(command.words, state, makeExpandContext(state, registry, clock));
+    for (const value of values.slice(0, MAX_LOOP)) {
+      state = { ...state, vars: new Map([...state.vars, [command.name, value]]) };
+      code = take(runList(state, command.body, registry, clock));
+      if (exiting(state)) break;
+    }
+  } else {
+    for (let n = 0; n < MAX_LOOP; n += 1) {
+      const holds = take(runList(state, command.cond, registry, clock, true)) === 0;
+      if (exiting(state) || holds === command.until) break;
+      code = take(runList(state, command.body, registry, clock));
+      if (exiting(state)) break;
+    }
+  }
+  const shim: SimpleCommand = { words: [], redirects: command.redirects };
+  return applyRedirects(state, shim, makeExpandContext(state, registry, clock), { stdout, stderr, code }, command.kind);
 }
 
 function applyPatch(state: ShellState, patch: Partial<ShellState> | undefined): ShellState {
@@ -68,23 +158,12 @@ function runCommand(
 ): { state: ShellState; result: CommandResult } {
   const expandCtx = makeExpandContext(state, registry, clock);
 
-  // 展開 → 単語分割 → パス名展開 の順（bash と同じ順序）
-  const argv: string[] = [];
-  for (const word of command.words) {
-    for (const field of expandWordFields(word, expandCtx)) {
-      // ブレース展開 → パス名展開 の順に広げる
-      const braced = word.quoted ? [field] : expandBraces(field);
-      for (const item of braced) {
-        if (word.quoted || !hasMagic(item)) {
-          argv.push(item);
-          continue;
-        }
-        const matches = expandGlob(state.vfs, state.cwd, item);
-        // 一致が無ければパターンをそのまま渡す（bash の既定動作）
-        if (matches.length === 0) argv.push(item);
-        else argv.push(...matches);
-      }
-    }
+  let argv: string[];
+  try {
+    argv = expandArgs(command.words, state, expandCtx);
+  } catch (error) {
+    // 展開の誤り（閉じていない ${・0 で割った $(( )) など）は、その行のエラーにする
+    return { state, result: { stderr: `bash: ${error instanceof Error ? error.message : String(error)}\n`, code: EXIT_ERROR } };
   }
   const name = argv[0];
 
@@ -254,15 +333,23 @@ function runScript(
   let stdout = '';
   let stderr = '';
   let code = 0;
-  for (const line of scriptLines(content)) {
-    const outcome = runList(inner, parse(line), registry, clock);
+  try {
+    const outcome = runList(inner, parse(scriptText(content)), registry, clock);
     inner = outcome.state;
     for (const chunk of outcome.chunks) {
       if (chunk.stream === 'stdout') stdout += chunk.text;
       else stderr += chunk.text;
     }
     code = outcome.exitCode;
+  } catch (error) {
+    if (!(error instanceof ParseError)) throw error;
+    stderr += `${path}: syntax error: ${error.message}\n`;
+    code = 2;
   }
+  // exit で抜けたなら、その番号で終わる。終わりの印と set -e は、呼んだ側に持ち出さない
+  const exited = inner.vars.get(EXIT_VAR);
+  if (exited !== undefined) code = Number(exited);
+  inner = withoutVars(inner, [EXIT_VAR, ERREXIT_VAR]);
 
   const after = withoutPositional(inner, state);
   const vars = new Map(after.vars);
@@ -272,11 +359,13 @@ function runScript(
   return { state: { ...after, vars, cwd: state.cwd }, result: { stdout, stderr, code } };
 }
 
+/** condition は if・while の条件の中（set -e で止めない） */
 function runList(
   initial: ShellState,
   list: CommandList,
   registry: CommandRegistry,
   clock: MutableClock,
+  condition = false,
 ): ExecOutcome {
   let state = initial;
   const chunks: OutputChunk[] = [];
@@ -294,7 +383,9 @@ function runList(
       const entryVars = state.vars;
       for (const [index, command] of item.pipeline.commands.entries()) {
         const isLast = index === item.pipeline.commands.length - 1;
-        const step = runCommand(command, state, registry, clock, pipedStdin);
+        const step = isCompound(command)
+          ? runCompound(command, state, registry, clock)
+          : runCommand(command, state, registry, clock, pipedStdin);
         state = isPipeline ? { ...step.state, cwd: entryCwd, vars: entryVars } : step.state;
         exitCode = step.result.code ?? 0;
         if (step.result.stderr !== undefined && step.result.stderr !== '') {
@@ -308,6 +399,17 @@ function runList(
         }
         if (step.result.editor !== undefined) editor = step.result.editor;
         state = { ...state, lastExit: exitCode };
+        if (exiting(state)) break;
+      }
+      if (exiting(state)) {
+        exitCode = Number(state.vars.get(EXIT_VAR));
+        break;
+      }
+      // set -e: && や || の途中でなく、条件の中でもない所で失敗したら、そこで止まる
+      const chainEnd = item.connector !== '&&' && item.connector !== '||';
+      if (chainEnd && !condition && exitCode !== 0 && state.vars.get(ERREXIT_VAR) === '1') {
+        state = { ...state, vars: new Map([...state.vars, [EXIT_VAR, String(exitCode)]]) };
+        break;
       }
     }
     if (item.connector === '&&') skipNext = exitCode !== 0;
@@ -344,7 +446,9 @@ export function execute(
   }
 
   const outcome = runList(withHistory, list, registry, clock);
-  return { ...outcome, state: appendHistoryFile({ ...outcome.state, lastExit: outcome.exitCode }, input) };
+  // 端末で打った exit と set -e は、その行で終わるだけにする（端末は閉じない）
+  const settled = withoutVars(outcome.state, [EXIT_VAR, ERREXIT_VAR]);
+  return { ...outcome, state: appendHistoryFile({ ...settled, lastExit: outcome.exitCode }, input) };
 }
 
 /**

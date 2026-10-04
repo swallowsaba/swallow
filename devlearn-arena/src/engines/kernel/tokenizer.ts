@@ -71,6 +71,9 @@ export function tokenize(input: string): Token[] {
       continue;
     }
 
+    // 語の頭の # から行の終わりまでは注釈（語の途中の # は、ただの文字）
+    if (ch === '#' && !started) break;
+
     if (ch === '\\') {
       const next = input[i + 1];
       if (next === undefined) throw new ParseError('行末のバックスラッシュは未対応です');

@@ -36,13 +36,11 @@ export function findScript(state: ShellState, name: string): ScriptLookup | null
   return null;
 }
 
-/** shebang と空行・注釈を落として、実行すべき行だけにする */
-export function scriptLines(content: string): string[] {
-  return content
-    .split('\n')
-    .filter((line, index) => !(index === 0 && line.startsWith('#!')))
-    .map((line) => line.trim())
-    .filter((line) => line !== '' && !line.startsWith('#'));
+/** スクリプトの本文から、先頭の shebang（#!）の行を落とす。注釈と組み立ての形（if・for）は、そのまま読む（src/engines/kernel/parser.ts） */
+export function scriptText(content: string): string {
+  if (!content.startsWith('#!')) return content;
+  const end = content.indexOf('\n');
+  return end === -1 ? '' : content.slice(end + 1);
 }
 
 /**

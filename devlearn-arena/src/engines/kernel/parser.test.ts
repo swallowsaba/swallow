@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import type { Command, SimpleCommand } from './ast';
 import { parse } from './parser';
 import { ParseError, wordText } from './tokenizer';
+
+const simple = (c: Command | undefined): SimpleCommand | undefined => (c?.kind === undefined ? c : undefined);
 
 describe('parse', () => {
   it('パイプで1つのパイプラインにまとめる', () => {
@@ -15,14 +18,14 @@ describe('parse', () => {
   });
 
   it('リダイレクトを引数から分離する', () => {
-    const command = parse('echo hi > out.txt')?.items[0]?.pipeline.commands[0];
+    const command = simple(parse('echo hi > out.txt').items[0]?.pipeline.commands[0]);
     expect(command?.words.map((w) => wordText(w.parts))).toEqual(['echo', 'hi']);
     expect(command?.redirects[0]?.kind).toBe('>');
     expect(wordText(command?.redirects[0]?.target.parts ?? [])).toBe('out.txt');
   });
 
   it('ヒアドキュメント本文を取り込む', () => {
-    const command = parse('cat <<EOF\nline1\nline2\nEOF')?.items[0]?.pipeline.commands[0];
+    const command = simple(parse('cat <<EOF\nline1\nline2\nEOF').items[0]?.pipeline.commands[0]);
     expect(command?.heredoc).toBe('line1\nline2\n');
   });
 
