@@ -26,8 +26,8 @@
   <g class="el" data-part="speed">
     <path d="M210 78 H244" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#arrow)" />
     <path d="M244 98 H216" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#arrow)" />
-    <path d="M420 110 Q520 120 525 194" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow)" />
-    <text x="600" y="160" text-anchor="end" font-size="13" fill="#eef2f6">出し入れに時間がかかる</text>
+    <path d="M380 130 L450 194" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow)" />
+    <text x="458" y="162" text-anchor="start" font-size="13" fill="#eef2f6">出し入れに時間がかかる</text>
     <text x="227" y="150" text-anchor="middle" font-size="13" fill="#eef2f6">速い</text>
   </g>
   <g class="el" data-part="power">

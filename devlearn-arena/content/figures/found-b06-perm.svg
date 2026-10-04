@@ -9,6 +9,7 @@
     </marker>
   </defs>
   <g class="el" data-part="type">
+    <rect x="36" y="104" width="48" height="136" fill="none" pointer-events="all" />
     <rect x="40" y="110" width="40" height="56" rx="8" fill="#9fb0c6" />
     <text x="60" y="148" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">-</text>
     <path d="M40 184 H80" stroke="#9fb0c6" stroke-width="3" />
@@ -16,6 +17,7 @@
     <text x="60" y="232" text-anchor="middle" font-size="13" fill="#9fb0c6">- は普通の</text>
   </g>
   <g class="el" data-part="owner">
+    <rect x="106" y="104" width="136" height="136" fill="none" pointer-events="all" />
     <rect x="110" y="110" width="40" height="56" rx="8" fill="#f2b632" />
     <text x="130" y="148" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">r</text>
     <rect x="154" y="110" width="40" height="56" rx="8" fill="#f2b632" />
@@ -27,6 +29,7 @@
     <text x="174" y="232" text-anchor="middle" font-size="13" fill="#9fb0c6">読む・書く</text>
   </g>
   <g class="el" data-part="group">
+    <rect x="256" y="104" width="136" height="136" fill="none" pointer-events="all" />
     <rect x="260" y="110" width="40" height="56" rx="8" fill="#5cc1ff" />
     <text x="280" y="148" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">r</text>
     <rect x="304" y="110" width="40" height="56" rx="8" fill="#5cc1ff" />
@@ -38,6 +41,7 @@
     <text x="324" y="232" text-anchor="middle" font-size="13" fill="#9fb0c6">読むだけ</text>
   </g>
   <g class="el" data-part="other">
+    <rect x="406" y="104" width="136" height="136" fill="none" pointer-events="all" />
     <rect x="410" y="110" width="40" height="56" rx="8" fill="#9aa9b5" />
     <text x="430" y="148" text-anchor="middle" font-size="28" font-weight="700" fill="#0a1424">r</text>
     <rect x="454" y="110" width="40" height="56" rx="8" fill="#9aa9b5" />
