@@ -98,9 +98,24 @@ export const basicSubcommands: Record<string, GitHandler> = {
   log: ({ git, rest, nowSeconds }) => {
     const opts = parseLogArgs(rest, nowSeconds);
     if ('error' in opts) return { stderr: opts.error, code: 128 };
+    // 起点（origin/main など）と、A..B の A（そこから辿れる記録は出さない）
+    const starts: string[] = [];
+    const hidden: string[] = [];
+    for (const rev of opts.revs) {
+      const [from, to] = rev.includes('..') ? rev.split('..') : [undefined, rev];
+      for (const [name, into] of [[from, hidden], [to, starts]] as const) {
+        if (name === undefined) continue;
+        const hash = resolveRef(git, name === '' ? 'HEAD' : name);
+        if (hash === undefined) return { stderr: `fatal: ambiguous argument '${rev}': unknown revision or path not in the working tree.\n`, code: 128 };
+        into.push(hash);
+      }
+    }
     // --all は、全ての参照（枝・タグ・リモートの枝）の先から辿る
-    const tips = opts.all ? [...new Set([...git.refs.values()].map((h) => peel(git, h)))] : undefined;
-    const all = log(git, 50, tips);
+    const tips = opts.all ? [...new Set([...git.refs.values()].map((h) => peel(git, h)))] : starts.length > 0 ? starts : undefined;
+    const exclude = new Set(hidden.length > 0 ? log(git, Number.MAX_SAFE_INTEGER, hidden).map((e) => e.hash) : []);
+    const all = log(git, 50, tips).filter((e) => !exclude.has(e.hash));
+    // 範囲の中に記録が無いのは誤りではない（本物も何も出さずに終わる）
+    if (all.length === 0 && hidden.length > 0) return { stdout: '' };
     if (all.length === 0) {
       return { stderr: 'fatal: your current branch does not have any commits yet\n', code: 128 };
     }

@@ -108,7 +108,7 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       return verify(check.host, site.chain, web.roots, web.today).trusted === check.trusted;
     }
     case 'git':
-      return gitHolds(shell.git, shell.vfs, check.expr);
+      return gitHolds(shell.git, shell.vfs, check.expr, shell.gitServers);
     case 'k8s':
       return clusterHolds(shell.cluster, check.expr);
     case 'sql':

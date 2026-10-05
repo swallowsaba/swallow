@@ -98,3 +98,53 @@ describe('git の達成条件（リポジトリの状態で判定する）', () 
     expect(r.holds('!on:main')).toBe(false);
   });
 });
+
+describe('git の達成条件（サーバのリポジトリと比べる）', () => {
+  const URL = 'https://git.city.example/park/reserve.git';
+  /** 自分の記録を 1 件した後に、ほかの人がサーバに 1 件送った所 */
+  function cloned() {
+    let shell: ShellState = initialShell('linux-basic', {
+      cwd: '/home/learner/reserve',
+      dirs: ['/home/learner/reserve'],
+      run: ['cd /home/learner', `git clone ${URL} reserve`, 'cd reserve', "echo 'memo' > memo.txt", 'git add memo.txt', 'git commit -m "メモを足す"'],
+      gitServers: [{
+        url: URL,
+        run: ["echo '# 予約' > README.md", 'git add README.md', 'git commit -m "作る"'],
+        after: ["echo 'rule' >> README.md", 'git commit -am "決まりを書く"', 'git push'],
+      }],
+    });
+    const registry = createDefaultRegistry();
+    const clock = createClock();
+    const run = (line: string): void => {
+      shell = execute(shell, line, registry, clock).state;
+    };
+    const holds = (expr: string): boolean => gitHolds(shell.git, shell.vfs, expr, shell.gitServers);
+    return { run, holds };
+  }
+
+  it('pushed:<枝> は、手元の枝の先の記録が、origin のサーバの同じ枝に届いている時だけ満たす', () => {
+    const r = cloned();
+    expect(r.holds('pushed:main')).toBe(false);
+    r.run('git push');
+    expect(r.holds('pushed:main')).toBe(false);
+    r.run('git pull');
+    // 取り込んだだけでは、合わせた記録はまだサーバに無い
+    expect(r.holds('pushed:main')).toBe(false);
+    r.run('git push');
+    expect(r.holds('pushed:main clean')).toBe(true);
+  });
+
+  it('branch:origin/main は、取ってきたリモートの枝の控え。merged-into で取り込んだかを見る', () => {
+    const r = cloned();
+    expect(r.holds('branch:origin/main')).toBe(true);
+    r.run('git fetch');
+    expect(r.holds('branch:origin/main merged-into:main')).toBe(false);
+    r.run('git pull');
+    expect(r.holds('branch:origin/main merged-into:main')).toBe(true);
+  });
+
+  it('サーバが無ければ pushed は満たさない', () => {
+    const r = repo();
+    expect(r.holds('pushed:main')).toBe(false);
+  });
+});

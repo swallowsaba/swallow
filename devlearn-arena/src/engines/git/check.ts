@@ -16,12 +16,31 @@ import type { GitState } from './types';
  *   resolved                     今の版のどのファイルにも、衝突の印（<<<<<<< など）が無い
  *   先頭に ! を付けると否定（!committed:memo.txt は、memo.txt が記録に入っていない）
  *   committed:<パス>             今の枝の先の記録に、そのファイル（リポジトリの中のパス）が作業ツリーと同じ中身で入っている
+ *   pushed:<枝>                  手元のその枝の先の記録が、origin のサーバ（setup の gitServers）の同じ枝に届いている
+ *   branch・merged-into の枝は、origin/main のようなリモートの枝の控えでもよい
  */
 
 const MARKERS = /^(<{7}|={7}|>{7})( |$)/m;
 
 function tip(git: GitState, branch: string): string | undefined {
-  return git.refs.get(`refs/heads/${branch}`);
+  return git.refs.get(`refs/heads/${branch}`) ?? git.refs.get(`refs/remotes/${branch}`);
+}
+
+/** サーバのリポジトリ（URL・SSH の場所 → 履歴） */
+export interface ServerRepo {
+  url: string;
+  ssh?: string;
+  state: GitState;
+}
+
+/** 手元のその枝の先が、origin のサーバの同じ枝から辿れるか */
+function pushed(git: GitState, branch: string, servers: ReadonlyMap<string, ServerRepo> | undefined): boolean {
+  const local = git.refs.get(`refs/heads/${branch}`);
+  const url = git.remotes.get('origin')?.url.replace(/\/+$/, '');
+  const server = [...(servers?.values() ?? [])].find((g) => g.url === url || g.ssh === url);
+  const remote = server?.state.refs.get(`refs/heads/${branch}`);
+  if (local === undefined || !server || remote === undefined) return false;
+  return server.state.objects.has(local) && isAncestor(server.state, local, remote);
 }
 
 function countCommits(git: GitState, from: string): number {
@@ -38,7 +57,7 @@ function countCommits(git: GitState, from: string): number {
   return seen.size;
 }
 
-export function gitHolds(git: GitState | null, vfs: VfsState, expr: string): boolean {
+export function gitHolds(git: GitState | null, vfs: VfsState, expr: string, servers?: ReadonlyMap<string, ServerRepo>): boolean {
   if (!git) return false;
   let subject: string | null = null;
   /** 1 つの条件を満たすか（branch は、次の merged-into の主語も決める） */
@@ -59,6 +78,7 @@ export function gitHolds(git: GitState | null, vfs: VfsState, expr: string): boo
       return from !== undefined && into !== undefined && isAncestor(git, from, into);
     }
     if (key === 'on') return currentBranch(git) === value;
+    if (key === 'pushed') return pushed(git, value, servers);
     if (key === 'committed') {
       const head = git.refs.get(`refs/heads/${currentBranch(git) ?? ''}`);
       const path = `${git.root}/${value}`;

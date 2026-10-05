@@ -185,6 +185,8 @@ export interface LogOptions {
   since: number | null;
   until: number | null;
   author: string | null;
+  /** 辿り始める記録（origin/main・HEAD~1 など）。A..B は B から辿れて A から辿れない記録 */
+  revs: string[];
 }
 
 /** --since・--until の日付。「2026-10-01」（その日の 0 時）・「2026-10-01 14:30」・yesterday・「3 days ago」「2.hours.ago」 */
@@ -202,11 +204,13 @@ export function parseApproxDate(text: string, now: number): number | null {
 
 /** git log の引数（-1・-n 2・--max-count=2・-p・--oneline・--author・--since/--after・--until/--before） */
 export function parseLogArgs(rest: readonly string[], now: number): LogOptions | { error: string } {
-  const opts: LogOptions = { oneline: false, all: false, patch: false, max: null, since: null, until: null, author: null };
+  const opts: LogOptions = { oneline: false, all: false, patch: false, max: null, since: null, until: null, author: null, revs: [] };
   for (let i = 0; i < rest.length; i += 1) {
     const arg = rest[i] ?? '';
     const [name = '', inline] = arg.startsWith('--') ? arg.split(/=(.*)/s) : [arg];
     const value = (): string => inline ?? rest[(i += 1)] ?? '';
+    // -- の後はパス（ここでは絞らない）
+    if (arg === '--') break;
     if (arg === '--oneline') opts.oneline = true;
     else if (arg === '--all') opts.all = true;
     else if (arg === '-p' || arg === '--patch') opts.patch = true;
@@ -220,7 +224,7 @@ export function parseLogArgs(rest: readonly string[], now: number): LogOptions |
       if (when === null) return { error: `fatal: invalid date format: ${raw}\n` };
       if (name === '--since' || name === '--after') opts.since = when;
       else opts.until = when;
-    }
+    } else if (!arg.startsWith('-')) opts.revs.push(arg);
   }
   return opts;
 }

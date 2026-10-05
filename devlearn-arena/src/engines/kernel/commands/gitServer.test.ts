@@ -123,6 +123,20 @@ describe('サーバのリポジトリと git clone', () => {
     expect(m.run('git log --oneline').out).toContain('メモを足す');
   });
 
+  it('git log はリモートの枝の控え（origin/main）から辿れ、main..origin/main は手元に無い記録だけを出す', () => {
+    const m = machine({ run: [`git clone ${URL}`] }, {
+      after: ["echo 'rule' >> README.md", 'git commit -am "予約の決まりを書く"', 'git push'],
+    });
+    m.run('cd reserve');
+    m.run('git fetch');
+    expect(m.run('git log --oneline origin/main').out).toMatch(/^[0-9a-f]{7} \(origin\/main\) 予約の決まりを書く\n[0-9a-f]{7} \(HEAD -> main\) 予約システムを作る\n$/);
+    expect(m.run('git log --oneline main..origin/main').out).toMatch(/^[0-9a-f]{7} \(origin\/main\) 予約の決まりを書く\n$/);
+    expect(m.run('git log --oneline origin/main..main').out).toBe('');
+    const bad = m.run('git log nothing');
+    expect(bad.code).toBe(128);
+    expect(bad.err).toContain("fatal: ambiguous argument 'nothing': unknown revision or path not in the working tree.");
+  });
+
   it('保存して戻しても、サーバのリポジトリは残る', () => {
     const m = machine();
     const back = restoreShell(JSON.parse(JSON.stringify(snapshotShell(m.shell()))) as ReturnType<typeof snapshotShell>);
