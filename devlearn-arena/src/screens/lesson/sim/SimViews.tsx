@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { isUp, orderStatement, orderTime, stageOf, usedOf, assignTime } from '@/engines/sim/sim';
 import type { AssignState, ConfigState, ConnectState, OrderState, Panel, ReadState, SimState } from '@/engines/sim/types';
 import { Icon } from '@/ui/icons/Icon';
@@ -23,6 +23,10 @@ export function SimView({ sim, send }: { sim: SimState; send: Send }) {
 
 /* ---------- 画面に示す情報 ---------- */
 
+/** 英数字と記号だけの値（アドレス・番号・コマンド）は等幅で、日本語の文は本文の字で出す。短い物は途中で折らない */
+const CODE = /^[ -~]+$/;
+const codeClass = (v: string): string | undefined => (CODE.test(v) ? (v.length <= 20 ? 'is-code is-whole' : 'is-code') : undefined);
+
 export function Panels({ panels }: { panels: readonly Panel[] }) {
   if (panels.length === 0) return null;
   return (
@@ -39,7 +43,7 @@ export function Panels({ panels }: { panels: readonly Panel[] }) {
           ) : p.kind === 'table' ? (
             <table className="sim-table">
               <thead><tr>{p.columns.map((c) => <th key={c} scope="col">{c}</th>)}</tr></thead>
-              <tbody>{p.rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k}>{c}</td>)}</tr>)}</tbody>
+              <tbody>{p.rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k} className={codeClass(c)}>{c}</td>)}</tr>)}</tbody>
             </table>
           ) : p.kind === 'log' ? (
             <pre className="sim-log-lines">{p.lines.join('\n')}</pre>
@@ -315,10 +319,10 @@ function FieldInput({ id, label, note, options, value, onSet }: { id: string; la
         {label}{id !== label ? <span className="sim-field-id">{id}</span> : null}
       </label>
       {options ? (
-        <select id={`sim-field-${id}`} className="sim-select" value={value} data-field={id} onChange={(e) => onSet(e.target.value)}>
+        <Select id={`sim-field-${id}`} value={value} data-field={id} onChange={onSet}>
           {value === '' ? <option value="">選ぶ</option> : null}
           {options.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
+        </Select>
       ) : (
         <form className="sim-field-form" onSubmit={(e) => {
           e.preventDefault();
@@ -331,6 +335,16 @@ function FieldInput({ id, label, note, options, value, onSet }: { id: string; la
       {note ? <span className="sim-field-note">{note}</span> : null}
       {!options && value !== '' ? <span className="sim-field-now">今の値: <code>{value}</code></span> : null}
     </div>
+  );
+}
+
+/** 選ぶ欄。ブラウザの標準の矢印を消し、自作の印を重ねる */
+function Select({ value, onChange, children, ...rest }: { value: string; onChange: (v: string) => void; children: ReactNode; id?: string; 'aria-label'?: string; 'data-field'?: string }) {
+  return (
+    <span className="sim-select-wrap">
+      <select {...rest} className="sim-select" value={value} onChange={(e) => onChange(e.target.value)}>{children}</select>
+      <Icon name="down" size={14} />
+    </span>
   );
 }
 
@@ -357,7 +371,7 @@ function TableEditor({ table, rows, send }: { table: NonNullable<ConfigState['se
           {rows.map((r, i) => (
             <tr key={i}>
               <td className="sim-table-no num">{i + 1}</td>
-              {table.columns.map((c) => <td key={c.id}><code>{r[c.id] ?? ''}</code></td>)}
+              {table.columns.map((c) => <td key={c.id} className={codeClass(r[c.id] ?? '')}>{r[c.id] ?? ''}</td>)}
               <td><button type="button" className="sim-tool" onClick={() => send(`del ${table.id} ${String(i + 1)}`)}>消す</button></td>
             </tr>
           ))}
@@ -366,10 +380,10 @@ function TableEditor({ table, rows, send }: { table: NonNullable<ConfigState['se
             {table.columns.map((c) => (
               <td key={c.id}>
                 {c.options ? (
-                  <select className="sim-select" aria-label={`新しい行の${c.label}`} value={draft[c.id] ?? ''} onChange={(e) => setDraft({ ...draft, [c.id]: e.target.value })}>
+                  <Select aria-label={`新しい行の${c.label}`} value={draft[c.id] ?? ''} onChange={(v) => setDraft({ ...draft, [c.id]: v })}>
                     <option value="">選ぶ</option>
                     {c.options.map((o) => <option key={o} value={o}>{o}</option>)}
-                  </select>
+                  </Select>
                 ) : (
                   <input className="sim-input" aria-label={`新しい行の${c.label}`} value={draft[c.id] ?? ''} spellCheck={false} autoComplete="off" onChange={(e) => setDraft({ ...draft, [c.id]: e.target.value })} />
                 )}

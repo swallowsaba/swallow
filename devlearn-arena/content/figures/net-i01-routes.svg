@@ -3,33 +3,33 @@
   <g class="el" data-part="head">
     <text x="40" y="44" font-size="16" font-weight="700" fill="#f2b632">ルータの経路表</text>
     <text x="60" y="76" font-size="13" fill="#9fb0c6">宛先の網</text>
-    <text x="250" y="76" font-size="13" fill="#9fb0c6">次に渡す先</text>
-    <path d="M40 86 H420" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <text x="214" y="76" font-size="13" fill="#9fb0c6">次に渡す先</text>
+    <path d="M40 86 H440" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
   </g>
   <g class="el" data-part="row1">
-    <rect x="40" y="96" width="380" height="44" rx="6" fill="#1a6fd6" />
+    <rect x="40" y="96" width="400" height="44" rx="6" fill="#1a6fd6" />
     <text x="60" y="124" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#eef2f6">10.0.1.0/24</text>
-    <text x="250" y="124" font-size="14" fill="#eef2f6">eth0 へ直接（つながった網）</text>
+    <text x="214" y="124" font-size="14" fill="#eef2f6">eth0 へ直接（つながった網）</text>
   </g>
   <g class="el" data-part="row2">
-    <rect x="40" y="148" width="380" height="44" rx="6" fill="#1a6fd6" />
+    <rect x="40" y="148" width="400" height="44" rx="6" fill="#1a6fd6" />
     <text x="60" y="176" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#eef2f6">10.0.2.0/24</text>
-    <text x="250" y="176" font-size="14" fill="#eef2f6">eth1 へ直接（つながった網）</text>
+    <text x="214" y="176" font-size="14" fill="#eef2f6">eth1 へ直接（つながった網）</text>
   </g>
   <g class="el" data-part="row3">
-    <rect x="40" y="200" width="380" height="44" rx="6" fill="#f2b632" />
+    <rect x="40" y="200" width="400" height="44" rx="6" fill="#f2b632" />
     <text x="60" y="228" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#0a1424">default</text>
-    <text x="250" y="228" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">10.0.2.254 へ</text>
+    <text x="214" y="228" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">10.0.2.254 へ</text>
   </g>
   <g class="el" data-part="dest-a">
-    <rect x="500" y="148" width="180" height="44" rx="22" fill="none" stroke="#5cc1ff" stroke-width="2" />
-    <text x="590" y="176" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#5cc1ff">10.0.2.5 宛て</text>
-    <path d="M500 170 H426" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <rect x="512" y="148" width="180" height="44" rx="22" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <text x="602" y="176" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#5cc1ff">10.0.2.5 宛て</text>
+    <path d="M512 170 H446" fill="none" stroke="#5cc1ff" stroke-width="2" />
   </g>
   <g class="el" data-part="dest-b">
-    <rect x="500" y="200" width="180" height="44" rx="22" fill="none" stroke="#f2b632" stroke-width="2" />
-    <text x="590" y="228" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#f2b632">203.0.113.9 宛て</text>
-    <path d="M500 222 H426" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="512" y="200" width="180" height="44" rx="22" fill="none" stroke="#f2b632" stroke-width="2" />
+    <text x="602" y="228" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#f2b632">203.0.113.9 宛て</text>
+    <path d="M512 222 H446" fill="none" stroke="#f2b632" stroke-width="2" />
   </g>
   <g class="el" data-part="caption">
     <text x="350" y="282" text-anchor="middle" font-size="13" fill="#9fb0c6">当てはまる行で渡す先が決まる。どれにも当てはまらなければ default へ</text>

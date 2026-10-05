@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { SimState } from '@/engines/sim/types';
+import type { Panel, SimState } from '@/engines/sim/types';
 import { Icon } from '@/ui/icons/Icon';
 import { SIM_NAMES } from './simNames';
 import { shownPanels } from '@/engines/sim/sim';
@@ -10,6 +10,13 @@ import './Sim.css';
  * 実戦の右側の、画面で操作する模擬環境（docs/ui-design.md 7.1、docs/decisions.md D-16）。
  * 上に示す情報、中に型ごとの画面、下に操作の文の記録と、文で操作する入力欄。エラーの小窓は一番下。
  */
+
+/**
+ * 細い列では読めない情報を含むか（情報の列を広く取る）。
+ * 3 列以上の表は 1 つの欄が 2〜3 字ごとに折れ、長いアドレスの値は途中で折れる
+ */
+const hasWidePanel = (panels: readonly Panel[]): boolean =>
+  panels.some((p) => (p.kind === 'table' && p.columns.length >= 3) || (p.kind === 'kv' && p.rows.some(([, v]) => /^[ -~]{15,}$/.test(v))));
 
 /** 型ごとの操作の文の書き方（入力欄の下に出す） */
 const FORMS: Record<SimState['type'], string[]> = {
@@ -45,7 +52,7 @@ export function SimConsole({ sim, log, verbs, send, onReset, restored, error }: 
         </button>
       </div>
       <div className="sim-body">
-        <div className={`sim-layout${panels.length > 0 ? ' has-panels' : ''}`}>
+        <div className={`sim-layout${panels.length > 0 ? ' has-panels' : ''}${hasWidePanel(panels) ? ' has-wide-panels' : ''}`}>
           <Panels panels={panels} />
           <div className="sim-main">
             <SimView sim={sim} send={send} />

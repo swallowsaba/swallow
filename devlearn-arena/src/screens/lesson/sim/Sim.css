@@ -20,6 +20,10 @@
     gap: 16px;
     height: 100%;
   }
+  /* 3 列以上の表は、細い列では 1 つの欄が 2〜3 字ごとに折れて読めない。情報の列を広く取る */
+  .sim-layout.has-panels.has-wide-panels {
+    grid-template-columns: minmax(290px, 40%) minmax(0, 1fr);
+  }
   .sim-layout.has-panels > .sim-panels {
     flex-direction: column;
     flex-wrap: nowrap;
@@ -96,6 +100,8 @@
 .sim-kv-row dd {
   margin: 0;
   font-family: var(--font-mono);
+  /* 細い列でも値の終わりを隠さない */
+  overflow-wrap: anywhere;
 }
 .sim-table {
   width: 100%;
@@ -103,17 +109,25 @@
   font-size: var(--fs-13);
 }
 .sim-table th {
-  padding: 4px 8px;
+  padding: 4px 6px;
   text-align: left;
   color: var(--hud-text-sub);
   font-weight: 500;
   border-bottom: 1px solid var(--hud-line);
 }
 .sim-table td {
-  padding: 4px 8px;
+  padding: 4px 6px;
   border-bottom: 1px solid var(--hud-bg);
-  font-family: var(--font-mono);
   vertical-align: middle;
+}
+/* 英数字の値（アドレス・番号・コマンド）は等幅。日本語の文は本文の字のまま */
+.sim-table td.is-code {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+/* 短い値（アドレス・番号）は途中で折らない。折るのは日本語の文の欄 */
+.sim-table td.is-whole {
+  white-space: nowrap;
 }
 .sim-table-no {
   width: 28px;
@@ -186,6 +200,8 @@
 /* ---------- 部品・札・道具 ---------- */
 .sim-tool {
   padding: 3px 12px;
+  /* 「設定」「消す」が 1 字ずつ縦に折れない */
+  white-space: nowrap;
   border: none;
   background: var(--hud-bg);
   color: var(--hud-text-sub);
@@ -559,6 +575,29 @@
 .sim-select option {
   background: var(--navy);
 }
+/* 選ぶ欄は、ブラウザの標準の矢印を消して自作の印を重ねる */
+.sim-select-wrap {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+.sim-select {
+  appearance: none;
+  padding-right: 26px;
+  cursor: pointer;
+}
+.sim-select-wrap > svg {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  color: var(--gold);
+  pointer-events: none;
+}
+/* 表の中の選ぶ欄は、細くても「選ぶ」と選んだ値が読める幅を残す */
+.sim-table .sim-select-wrap {
+  min-width: 82px;
+}
 .sim-config-table {
   margin-top: 6px;
 }
@@ -653,6 +692,13 @@
 @media (max-height: 820px) {
   .sim-log {
     max-height: 56px;
+  }
+  /* 割り振るの枠を低くし、置き場の札が送らずに見えるようにする */
+  .sim-slot {
+    min-height: 84px;
+  }
+  .sim-pool {
+    margin-top: 10px;
   }
 }
 

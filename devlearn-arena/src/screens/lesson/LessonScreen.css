@@ -329,7 +329,10 @@
   color: var(--hud-text);
 }
 .stage-kind {
+  flex: none;
   padding: 2px 10px;
+  /* 「模擬環境（設定する）」が 2 行に折れない */
+  white-space: nowrap;
   color: var(--navy);
   background: var(--c);
   font-weight: 700;

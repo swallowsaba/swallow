@@ -28,7 +28,7 @@
   <g class="el" data-part="go">
     <path d="M176 122 H256" fill="none" stroke="#5cc1ff" stroke-width="2" marker-end="url(#n1)" />
     <path d="M412 122 H504" fill="none" stroke="#5cc1ff" stroke-width="2" marker-end="url(#n1)" />
-    <text x="216" y="96" text-anchor="middle" font-size="13" fill="#5cc1ff">送り元 .10</text>
+    <text x="214" y="96" font-size="13" fill="#5cc1ff">送り元 .10</text>
     <text x="460" y="96" text-anchor="middle" font-size="13" fill="#5cc1ff">送り元 203.0.113.5</text>
   </g>
   <g class="el" data-part="back">
