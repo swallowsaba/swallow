@@ -1,0 +1,217 @@
+{
+  "id": "git.b.02",
+  "domain": "git",
+  "level": "beginner",
+  "theme": "commit",
+  "title": "最初の記録",
+  "goal": "init/status/add/commit で変更を記録できる",
+  "minutes": 15,
+  "prerequisites": [
+    "git.b.01"
+  ],
+  "related": [
+    "linux.b.02",
+    "cicd.b.01"
+  ],
+  "next": [
+    "git.b.03",
+    "git.b.04",
+    "git.i.06"
+  ],
+  "terms": [
+    "git",
+    "repository",
+    "working-tree",
+    "staging-area",
+    "commit",
+    "file",
+    "directory",
+    "secret-key",
+    "command"
+  ],
+  "explain": {
+    "what": "{{term:git}}で変更を記録する 4 つの操作。init で{{term:repository}}を作り、status で今の様子を見て、add で記録する物を選び、commit で説明を付けて記録する。",
+    "why": "変えた{{term:file}}を全部まとめて記録すると、関係ない変更や{{term:secret-key}}のような秘密まで混ざり、後から何の記録か分からない。記録する物を選び、意味のある単位で残す。",
+    "use": "全ての変更の管理。{{term:working-tree}}（いつも触っている所）で変えた物を、add で{{term:staging-area}}に置き、commit で台の上の物を{{term:commit}}として履歴に入れる。",
+    "when": "作り始めたプロジェクトを記録したい時。初めの 1 回だけ init、その後は変えるたびに add と commit を繰り返す。迷ったら status で今の様子を見る。",
+    "figures": [
+      "git-b02-stages"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "最初の記録までを、順に並べる。",
+      "items": [
+        "リポジトリを作る（init）",
+        "記録する物を選ぶ（add）",
+        "説明を付けて記録する（commit）"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "add でインデックスに置いた物",
+      "b": "次のコミットの中身",
+      "answer": "cause",
+      "why": "インデックスに置いた物だけが、次のコミットに入る。置いていない変更は、作業ツリーに残ったまま記録されない。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "ファイルを直した後、add せずに commit した。どうなる？",
+      "context": {
+        "command": "git commit -m \"直す\""
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "何も記録されない（記録する物が選ばれていない）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "直したファイルが記録される",
+          "correct": false,
+          "whyNot": "commit が記録するのは、インデックスに置いた物だけ。直しただけでは置かれない。"
+        },
+        {
+          "id": "c",
+          "text": "直したファイルが消える",
+          "correct": false,
+          "whyNot": "ファイルは作業ツリーにそのまま残る。何も記録されないだけ。"
+        }
+      ],
+      "explanation": "Git は「no changes added to commit」と言い、add を促す。記録の前に add で選ぶ。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "どのファイルが記録待ちで、どれがまだ選ばれていないかを見たい。どの{{term:command}}を打つ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git status`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`git log`",
+          "correct": false,
+          "whyNot": "log は記録した後の履歴を出す。まだ記録していない物の様子は出ない。"
+        },
+        {
+          "id": "c",
+          "text": "`git init`",
+          "correct": false,
+          "whyNot": "init はリポジトリを作る。作った後に打っても、様子は出ない。"
+        }
+      ],
+      "explanation": "status は、作業ツリー・インデックス・履歴の違いを出す。迷ったらまず status。"
+    },
+    {
+      "id": "q3",
+      "kind": "term",
+      "prompt": "コミットの説明（-m の後ろ）に書くとよいのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "何をなぜ変えたか（例: 公園の説明を書く）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "変えた日付と時刻",
+          "correct": false,
+          "whyNot": "日付と時刻は Git が自動で記録する。説明には書かなくてよい。"
+        },
+        {
+          "id": "c",
+          "text": "変えた人の名前",
+          "correct": false,
+          "whyNot": "変えた人も Git が自動で記録する。説明には、何をなぜ変えたかを書く。"
+        }
+      ],
+      "explanation": "説明は、後から履歴を読む人（未来の自分を含む）のため。何をなぜ変えたかを短く書く。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "港の公園のプロジェクト（~/park）を、Git で記録し始める。説明の `README.md` だけを記録し、自分用のメモ（`memo.txt`）は記録しない。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev-office",
+      "cwd": "/home/learner/park",
+      "dirs": [
+        "/home/learner/park"
+      ],
+      "files": {
+        "/home/learner/park/README.md": "# 港の公園\n\n入口は北側。駐車場は 40 台。\n",
+        "/home/learner/park/memo.txt": "自分用のメモ: 来週、公園課に電話する\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "init",
+        "purpose": "`~/park` の{{term:directory}}に{{term:repository}}を作り、今の様子を見る。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/park/.git",
+          "exists": true
+        },
+        "afterward": "リポジトリができた。status は、`README.md` と `memo.txt` を`Untracked files`（追跡していない）と言う。まだ何も記録されていない。",
+        "hints": [
+          "記録を始めるには、まず履歴を残す場所（リポジトリ）を作る。",
+          "`git init` で、今いるディレクトリをリポジトリにする。作ったら `git status` で様子を見る。",
+          "`git init` `git status` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "git-not-repo"
+        ]
+      },
+      {
+        "id": "record",
+        "purpose": "`README.md` だけを選び、説明を付けて記録する。`memo.txt` は選ばない。",
+        "check": {
+          "kind": "git",
+          "expr": "commits:main>=1 committed:README.md !committed:memo.txt"
+        },
+        "afterward": "`README.md` が最初の記録（root-commit）になった。`memo.txt` は選ばなかったので、作業ツリーに残ったまま、記録には入っていない。",
+        "hints": [
+          "記録は 2 段。先に記録する物を選び、次に説明を付けて記録する。",
+          "`git add README.md` で選び、`git commit -m \"説明\"` で記録する。`git add .` は `memo.txt` まで選んでしまう。",
+          "`git add README.md` と `git commit -m \"公園の説明を書く\"` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "git-nothing-added",
+          "git-not-repo"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "リポジトリを作り、記録する物を選んで、最初の記録ができた。メモを混ぜなかった。",
+    "partial": "ヒントを使って、最初の記録ができた。次は、add と commit を分けている理由を説明してみよう。",
+    "retry": "まだ `README.md` だけの記録になっていない。`git status` で、選んだ物（`Changes to be committed`）と、選んでいない物を見比べよう。"
+  },
+  "summary": {
+    "points": [
+      "add で選び commit で記録",
+      "status で今を見る",
+      "説明は分かりやすく"
+    ],
+    "next": [
+      "git.b.03",
+      "git.b.04"
+    ],
+    "terms": [
+      "working-tree",
+      "staging-area",
+      "commit"
+    ]
+  }
+}

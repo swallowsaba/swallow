@@ -105,6 +105,35 @@
       "lessons": [
         "git.b.06"
       ]
+    },
+    {
+      "id": "working-tree",
+      "word": "作業ツリー",
+      "reading": "さぎょうつりー",
+      "plain": "リポジトリの中で、いつもファイルを開いて直している所。変えただけでは、まだ記録されていない。",
+      "why": "ここで変えた物を選んで記録する。記録していない変更は、作業ツリーにしか無い。",
+      "related": [
+        "staging-area",
+        "commit",
+        "repository"
+      ],
+      "lessons": [
+        "git.b.02"
+      ]
+    },
+    {
+      "id": "staging-area",
+      "word": "インデックス（ステージ）",
+      "reading": "いんでっくす",
+      "plain": "次のコミットに入れる物を置いておく台。git add で作業ツリーの変更をここに置き、git commit で台の上の物を記録する。",
+      "why": "変えた物の中から、記録する物だけを選べる。関係ない変更や秘密のファイルを混ぜずに、意味のある単位で記録できる。",
+      "related": [
+        "working-tree",
+        "commit"
+      ],
+      "lessons": [
+        "git.b.02"
+      ]
     }
   ]
 }

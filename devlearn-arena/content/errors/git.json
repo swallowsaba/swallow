@@ -28,6 +28,34 @@
       "terms": [
         "commit"
       ]
+    },
+    {
+      "id": "git-not-repo",
+      "match": "not a git repository",
+      "meaning": "今いる場所はリポジトリではない、と言われた。",
+      "causes": [
+        "まだ `git init` をしていない。",
+        "リポジトリの外のディレクトリにいる。"
+      ],
+      "hint": "`pwd` で今いる場所を見て、リポジトリを作ったディレクトリに `cd` で移る。まだ作っていなければ `git init`。",
+      "terms": [
+        "repository"
+      ]
+    },
+    {
+      "id": "git-nothing-added",
+      "match": "nothing added to commit|no changes added to commit|nothing to commit \\(create",
+      "output": true,
+      "meaning": "記録する物が選ばれていないので、何も記録しなかった。",
+      "causes": [
+        "`git add` で選ばずに `git commit` した。",
+        "ファイルを直しただけで、インデックスに置いていない。"
+      ],
+      "hint": "`git status` の「Changes to be committed」に、記録したい物があるかを見る。無ければ `git add ファイル名` で選ぶ。",
+      "terms": [
+        "staging-area",
+        "commit"
+      ]
     }
   ]
 }

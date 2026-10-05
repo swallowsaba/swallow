@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>作業ツリーで変えたファイルを git add でインデックスに選び、git commit で説明を付けて履歴に記録する。git status で 3 か所の様子が見える</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="worktree">
+    <rect x="20" y="60" width="180" height="150" rx="12" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="110" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">作業ツリー</text>
+    <text x="110" y="110" text-anchor="middle" font-size="13" fill="#9fb0c6">いつも触っている所</text>
+    <rect x="44" y="128" width="132" height="30" rx="6" fill="#9aa9b5" />
+    <text x="110" y="148" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#0a1424">README.md</text>
+    <rect x="44" y="166" width="132" height="30" rx="6" fill="none" stroke="#9aa9b5" stroke-width="2" pointer-events="all" />
+    <text x="110" y="186" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">memo.txt</text>
+  </g>
+  <g class="el" data-part="add">
+    <path d="M204 143 H262" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="233" y="130" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#5cc1ff">add</text>
+  </g>
+  <g class="el" data-part="index">
+    <rect x="266" y="60" width="180" height="150" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="356" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#5cc1ff">インデックス</text>
+    <text x="356" y="110" text-anchor="middle" font-size="13" fill="#9fb0c6">次の記録に入れる物</text>
+    <rect x="290" y="128" width="132" height="30" rx="6" fill="#5cc1ff" />
+    <text x="356" y="148" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#0a1424">README.md</text>
+  </g>
+  <g class="el" data-part="commit">
+    <path d="M450 143 H508" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="479" y="130" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#e0457b">commit</text>
+  </g>
+  <g class="el" data-part="history">
+    <rect x="512" y="60" width="168" height="150" rx="12" fill="none" stroke="#e0457b" stroke-width="2" pointer-events="all" />
+    <text x="596" y="88" text-anchor="middle" font-size="16" font-weight="700" fill="#e0457b">履歴</text>
+    <text x="596" y="110" text-anchor="middle" font-size="13" fill="#9fb0c6">説明つきの記録</text>
+    <circle cx="540" cy="150" r="8" fill="#e0457b" />
+    <text x="556" y="146" font-size="13" fill="#eef2f6">公園の説明</text>
+    <text x="556" y="164" font-size="13" fill="#eef2f6">を書く</text>
+  </g>
+  <g class="el" data-part="status">
+    <text x="350" y="252" text-anchor="middle" font-size="14" fill="#eef2f6"><tspan font-family="&quot;JetBrains Mono&quot;, monospace" fill="#3ae08a">git status</tspan> で、3 か所の様子が見える</text>
+    <text x="350" y="276" text-anchor="middle" font-size="13" fill="#9fb0c6">memo.txt は add していないので、記録に入らない</text>
+  </g>
+</svg>
