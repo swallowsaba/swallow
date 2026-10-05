@@ -14,6 +14,12 @@ export const HOOKS_DIR = 'hooks';
 export const REBASE_DIR = 'rebase-merge';
 export const REBASE_TODO = `${REBASE_DIR}/git-rebase-todo`;
 export const REBASE_ONTO = `${REBASE_DIR}/onto`;
+/** 台本を使わない rebase の途中（衝突で止まった所）: 残りの記録・止まった記録・衝突したファイル・枝の名前・元の先 */
+export const REBASE_PLAIN = `${REBASE_DIR}/plain`;
+export const REBASE_STOPPED = `${REBASE_DIR}/stopped-sha`;
+export const REBASE_CONFLICTED = `${REBASE_DIR}/conflicted`;
+export const REBASE_HEAD_NAME = `${REBASE_DIR}/head-name`;
+export const REBASE_ORIG_HEAD = `${REBASE_DIR}/orig-head`;
 export const WORKTREES_DIR = 'worktrees';
 
 export function gitPath(git: GitState, relative: string): string {

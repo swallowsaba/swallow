@@ -236,57 +236,69 @@ export function replayCommit(
   return { git: { ...staged, index }, hash, conflicts };
 }
 
-/** ブランチを onto の上に載せ替える（rebase） */
-export function rebaseOnto(
+/**
+ * 記録 1 つを tip の上に載せる（台本を使わない rebase の 1 手）。ファイルごとに 3 方向で合わせ、
+ * 合えば作者と説明を元のままに新しい記録を作る。同じ行で合わなければ、印の入った中身を返して記録しない
+ */
+export function pickOnto(
   git: GitState,
-  ontoRef: string,
+  commitHash: string,
+  tip: string,
   now: number,
-): { git: GitState; replayed: number; conflicts: string[]; error?: string } {
-  const onto = git.refs.get(`refs/heads/${ontoRef}`) ?? git.objects.resolve(ontoRef) ?? null;
-  const head = headCommit(git);
-  if (onto === null) return { git, replayed: 0, conflicts: [], error: `fatal: invalid upstream '${ontoRef}'` };
-  if (head === null) return { git, replayed: 0, conflicts: [], error: 'fatal: コミットがありません' };
-  if (isAncestor(git, onto, head)) {
-    return { git, replayed: 0, conflicts: [] };
-  }
-  if (isAncestor(git, head, onto)) {
-    return { git: fastForwardTo(git, onto), replayed: 0, conflicts: [] };
-  }
+): { git: GitState; hash: string } | { conflicts: string[]; files: Map<string, string> } {
+  const object = git.objects.read(commitHash);
+  if (!object) return { git, hash: tip };
+  const parsed = parseCommit(object.body);
+  const parent = parsed.parents[0] ?? null;
+  const before = parent === null ? new Map<string, string>() : materialize(git, parent);
+  const after = materialize(git, commitHash);
+  const ours = materialize(git, tip);
+  const subject = parsed.message.trim().split('\n')[0] ?? '';
 
-  const base = mergeBase(git, head, onto);
-  const toReplay: string[] = [];
-  let current: string | null = head;
-  while (current !== null && current !== base) {
-    toReplay.push(current);
-    const object = git.objects.read(current);
-    current = object ? (parseCommit(object.body).parents[0] ?? null) : null;
-  }
-  toReplay.reverse();
-
-  let state = git;
-  let tip = onto;
+  const files = new Map(ours);
   const conflicts: string[] = [];
-  for (const hash of toReplay) {
-    const result = replayCommit(state, hash, tip, now);
-    state = result.git;
-    tip = result.hash;
-    conflicts.push(...result.conflicts);
+  for (const path of new Set([...before.keys(), ...after.keys()])) {
+    const was = before.get(path);
+    const theirs = after.get(path);
+    if (was === theirs) continue;
+    const here = ours.get(path);
+    if (here === was) {
+      if (theirs === undefined) files.delete(path);
+      else files.set(path, theirs);
+      continue;
+    }
+    if (here === theirs) continue;
+    const merged = mergeThreeWay(was ?? '', here ?? '', theirs ?? '', { ours: 'HEAD', theirs: `${commitHash.slice(0, 7)} (${subject})` });
+    files.set(path, merged.content);
+    if (merged.conflicted) conflicts.push(path);
   }
+  if (conflicts.length > 0) return { conflicts, files };
+  return commitFiles(git, files, tip, parsed.message, parsed.author, now);
+}
 
-  const refs = new Map(git.refs);
-  const branch = currentBranch(git);
-  if (branch !== null) refs.set(`refs/heads/${branch}`, tip);
-  return {
-    git: {
-      ...state,
-      refs,
-      head: branch === null ? { type: 'detached', hash: tip } : git.head,
-      origHead: head,
-      reflog: [...git.reflog, { hash: tip, message: `rebase: onto ${ontoRef}` }],
-    },
-    replayed: toReplay.length,
-    conflicts,
-  };
+/** ファイルの並びから、tip を親とする記録を作る（作者はそのまま、記録した時刻は今） */
+export function commitFiles(
+  git: GitState,
+  files: ReadonlyMap<string, string>,
+  tip: string,
+  message: string,
+  author: Signature,
+  now: number,
+): { git: GitState; hash: string } {
+  const index = new Map<string, IndexEntry>();
+  for (const [path, content] of files) {
+    index.set(path, { path, mode: FILE_MODE, hash: git.objects.write('blob', encode(content)) });
+  }
+  const staged: GitState = { ...git, index, head: { type: 'detached', hash: tip } };
+  const tree = writeTreeFromIndex(staged);
+  const hash = git.objects.write('commit', serializeCommit({
+    tree,
+    parents: [tip],
+    author,
+    committer: { ...git.author, timestamp: now },
+    message,
+  }));
+  return { git: staged, hash };
 }
 
 /** 打ち消しコミットを作る（revert） */

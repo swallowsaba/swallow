@@ -1,3 +1,4 @@
+import { REBASE_HEAD_NAME, REBASE_ONTO, REBASE_PLAIN, readGitFile } from '@/engines/git/gitdir';
 import { currentBranch, headCommit, status } from '@/engines/git/repository';
 import { aheadBehind } from '@/engines/git/remote';
 import { parseCommit } from '@/engines/git/objects';
@@ -56,10 +57,16 @@ function readWorktree(git: GitState, shell: ShellState, path: string): string {
 export function formatStatus(git: GitState, shell: ShellState): string {
   const report = status(git, shell.vfs);
   const lines: string[] = [];
+  // 載せ替え（rebase）の途中は、本物と同じくどの枝をどこへ載せ替えているかを言う
+  const rebasing = readGitFile(shell.vfs, git, REBASE_PLAIN) === null
+    ? null
+    : { onto: short((readGitFile(shell.vfs, git, REBASE_ONTO) ?? '').trim()), branch: (readGitFile(shell.vfs, git, REBASE_HEAD_NAME) ?? '').trim() };
   lines.push(
-    report.branch === null
-      ? `HEAD detached at ${short(report.detached ?? '')}`
-      : `On branch ${report.branch}`,
+    rebasing !== null
+      ? `interactive rebase in progress; onto ${rebasing.onto}`
+      : report.branch === null
+        ? `HEAD detached at ${short(report.detached ?? '')}`
+        : `On branch ${report.branch}`,
   );
 
   const branch = report.branch;
@@ -79,9 +86,18 @@ export function formatStatus(git: GitState, shell: ShellState): string {
 
   // 取り込みの途中: 印の残るファイルは「両方が変えた（both modified）」として別に出す
   const markers = /^(<{7}|={7}|>{7})( |$)/m;
-  const conflicted = git.mergeHead === null ? [] : report.unstaged.filter((e) => markers.test(readWorktree(git, shell, e.path)));
+  const conflicted = git.mergeHead === null && rebasing === null ? [] : report.unstaged.filter((e) => markers.test(readWorktree(git, shell, e.path)));
   const unstaged = report.unstaged.filter((e) => !conflicted.includes(e));
-  if (git.mergeHead !== null && conflicted.length > 0) {
+  if (rebasing !== null) {
+    lines.push(`You are currently rebasing branch '${rebasing.branch}' on '${rebasing.onto}'.`);
+    if (conflicted.length > 0) {
+      lines.push('  (fix conflicts and then run "git rebase --continue")');
+      lines.push('  (use "git rebase --skip" to skip this patch)');
+      lines.push('  (use "git rebase --abort" to check out the original branch)');
+    } else {
+      lines.push('  (all conflicts fixed: run "git rebase --continue")');
+    }
+  } else if (git.mergeHead !== null && conflicted.length > 0) {
     lines.push('You have unmerged paths.');
     lines.push('  (fix conflicts and run "git commit")');
   } else if (git.mergeHead !== null) {
@@ -114,7 +130,7 @@ export function formatStatus(git: GitState, shell: ShellState): string {
   }
   if (report.clean) lines.push('', 'nothing to commit, working tree clean');
   // 選んだ物が無い時は、本物と同じく最後に add を促す
-  else if (report.staged.length === 0 && git.mergeHead === null) {
+  else if (report.staged.length === 0 && git.mergeHead === null && rebasing === null) {
     lines.push('', report.unstaged.length > 0
       ? 'no changes added to commit (use "git add" and/or "git commit -a")'
       : 'nothing added to commit but untracked files present (use "git add" to track)');

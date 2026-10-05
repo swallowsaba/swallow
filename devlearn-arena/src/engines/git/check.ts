@@ -18,6 +18,7 @@ import type { GitState } from './types';
  *   committed:<パス>             今の枝の先の記録に、そのファイル（リポジトリの中のパス）が作業ツリーと同じ中身で入っている
  *   pushed:<枝>                  手元のその枝の先の記録が、origin のサーバ（setup の gitServers）の同じ枝に届いている
  *   branch・merged-into の枝は、origin/main のようなリモートの枝の控えでもよい
+ *   linear                       今の枝の履歴に、合流の記録（親が 2 つ）が無い（一直線）
  */
 
 const MARKERS = /^(<{7}|={7}|>{7})( |$)/m;
@@ -41,6 +42,18 @@ function pushed(git: GitState, branch: string, servers: ReadonlyMap<string, Serv
   const remote = server?.state.refs.get(`refs/heads/${branch}`);
   if (local === undefined || !server || remote === undefined) return false;
   return server.state.objects.has(local) && isAncestor(server.state, local, remote);
+}
+
+/** from から辿れる記録に、合流の記録（親が 2 つ以上）が無い */
+function linear(git: GitState, from: string): boolean {
+  for (let hash: string | undefined = from; hash !== undefined;) {
+    const object = git.objects.read(hash);
+    if (!object || object.type !== 'commit') return true;
+    const parents = parseCommit(object.body).parents;
+    if (parents.length > 1) return false;
+    hash = parents[0];
+  }
+  return true;
 }
 
 function countCommits(git: GitState, from: string): number {
@@ -79,6 +92,10 @@ export function gitHolds(git: GitState | null, vfs: VfsState, expr: string, serv
     }
     if (key === 'on') return currentBranch(git) === value;
     if (key === 'pushed') return pushed(git, value, servers);
+    if (term === 'linear') {
+      const head = git.refs.get(`refs/heads/${currentBranch(git) ?? ''}`);
+      return head !== undefined && linear(git, head);
+    }
     if (key === 'committed') {
       const head = git.refs.get(`refs/heads/${currentBranch(git) ?? ''}`);
       const path = `${git.root}/${value}`;
