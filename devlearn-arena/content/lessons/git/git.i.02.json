@@ -1,0 +1,289 @@
+{
+  "id": "git.i.02",
+  "domain": "git",
+  "level": "intermediate",
+  "theme": "同期",
+  "title": "push と pull",
+  "goal": "手元と遠くの履歴を同期できる。fetch との違いを説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "git.i.01"
+  ],
+  "related": [
+    "sec.b.04",
+    "cicd.b.01"
+  ],
+  "next": [
+    "git.i.03"
+  ],
+  "terms": [
+    "push",
+    "pull",
+    "fetch",
+    "remote",
+    "commit",
+    "merge",
+    "conflict",
+    "git-origin",
+    "command",
+    "file",
+    "git",
+    "git-head"
+  ],
+  "explain": {
+    "what": "{{term:push}}は、手元の{{term:commit}}を{{term:remote}}に送ること。{{term:pull}}は、リモートの記録を取り込むこと。pull は、取ってくる（{{term:fetch}}）と、手元の枝に合わせる（{{term:merge}}）の 2 つを続けて行う。",
+    "why": "チームの全員が同じ履歴を持つため。送らなければ、自分の記録はほかの人に見えない。取り込まなければ、ほかの人の記録が手元に来ない。",
+    "use": "共同作業の毎日の流れ。作業の前に取り込み、記録したら送る。fetch は取ってくるだけで、手元の枝も{{term:file}}も変えないので、取り込む前に何が来たかを見る時に使う。",
+    "when": "送ろうとして拒否された時。リモートに、ほかの人が先に送った、手元に無い記録がある。先に取り込み（同じ行を変えていれば{{term:conflict}}を解き）、合わせた記録を送り直す。",
+    "figures": [
+      "git-i02-sync"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "pull（取り込む）",
+      "b": "fetch（取ってくる）",
+      "answer": "contains",
+      "why": "pull は、fetch で取ってきた記録を、そのまま手元の枝に合わせる。fetch だけなら、手元の枝もファイルも変わらない。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "記録を送ろうとしたら拒否された。リモートで何が起きている？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ほかの人が先に送った、手元に無い記録がある",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "リモートが壊れていて、記録を受け取れない",
+          "correct": false,
+          "whyNot": "拒否の理由（fetch first）は、リモートの側に新しい記録があるという意味。壊れてはいない。"
+        },
+        {
+          "id": "c",
+          "text": "自分の記録に、衝突の印が残っている",
+          "correct": false,
+          "whyNot": "印が残っていても、送ることはできてしまう。拒否は、リモートと手元の履歴の食い違いで起きる。"
+        }
+      ],
+      "see": "when"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "git-i02-sync",
+      "prompt": "図の中で、取ってくるだけで、手元の枝を変えない動きを押す。",
+      "answer": [
+        "fetch"
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "`git push` を打つと、次のように言われた。原因は？",
+      "context": {
+        "log": " ! [rejected]        main -> main (fetch first)\nerror: failed to push some refs to 'https://git.city.example/park/reserve.git'\nhint: Updates were rejected because the remote contains work that you do not have locally."
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "リモートに、手元に無い記録がある",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "手元で、まだ何も記録していない",
+          "correct": false,
+          "whyNot": "送る物が無ければ、拒否ではなく `Everything up-to-date`（全て最新）と言われる。"
+        },
+        {
+          "id": "c",
+          "text": "リモートの場所を打ち間違えた",
+          "correct": false,
+          "whyNot": "場所が違えば `not found`（見つからない）と言われる。拒否はつながった後に起きている。"
+        }
+      ],
+      "explanation": "`remote contains work that you do not have locally` は「リモートに、手元に無い作業がある」。上書きして消さないよう、{{term:git}}が止めた。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "送るのを拒否された。次に打つのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git pull` で取り込んでから、`git push`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`git push --force` で上書きする",
+          "correct": false,
+          "whyNot": "リモートにある、ほかの人の記録が消える。共有している枝では使わない。"
+        },
+        {
+          "id": "c",
+          "text": "同じ `git push` を、通るまで何度も打つ",
+          "correct": false,
+          "whyNot": "リモートの記録を取り込むまで、何度打っても同じ理由で拒否される。"
+        }
+      ],
+      "explanation": "先に取り込めば、手元の履歴がリモートの記録を含むので、送れるようになる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "リモートに何が来ているかを、手元の枝を変えずに見たい。使う{{term:command}}は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git fetch`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`git pull`",
+          "correct": false,
+          "whyNot": "pull は取ってきた記録を、そのまま手元の枝に合わせる。見るだけでは済まない。"
+        },
+        {
+          "id": "c",
+          "text": "`git push`",
+          "correct": false,
+          "whyNot": "push は手元の記録を送る。リモートの記録は取ってこない。"
+        }
+      ],
+      "explanation": "fetch で取ってきた記録は `origin/main` に置かれる。`git log main..origin/main` で、手元に無い記録だけを見られる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "予約システムで、テニスコート 1 を月曜は休みにする記録をした（まだ送っていない）。その間に、佐藤さんが同じ行を変えて先に送っていた。拒否された push を、取り込んでから送り直し、自分の記録をリモートに届ける。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev-office",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve"
+      ],
+      "run": [
+        "cd /home/learner",
+        "git clone https://git.city.example/park/reserve.git reserve",
+        "cd reserve",
+        "export GIT_AUTHOR_DATE=\"2026-10-03 08:30\"",
+        "echo 'テニスコート 1: 9:00-17:00（月曜は休み）' > slots.txt",
+        "git commit -am \"テニスコート 1 を月曜は休みにする\"",
+        "unset GIT_AUTHOR_DATE"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/park/reserve.git",
+          "run": [
+            "export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE=\"2026-09-28 10:00\"",
+            "echo '# 公園の予約システム' > README.md",
+            "echo 'テニスコート 1: 9:00-17:00' > slots.txt",
+            "git add README.md slots.txt",
+            "git commit -m \"予約システムを作る\""
+          ],
+          "after": [
+            "export GIT_AUTHOR_NAME=Sato GIT_AUTHOR_EMAIL=sato@city.example GIT_AUTHOR_DATE=\"2026-10-03 08:50\"",
+            "echo 'テニスコート 1: 9:00-18:00' > slots.txt",
+            "git commit -am \"夏の間は 18 時まで開ける\"",
+            "git push"
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "look",
+        "purpose": "自分の記録を送る。拒否されたら、取り込む前に、リモートにある手元に無い記録を取ってきて見て、その説明を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "夏の間は 18 時まで開ける"
+        },
+        "afterward": "佐藤さんが先に送った「夏の間は 18 時まで開ける」が、手元に無かったので拒否された。fetch は取ってくるだけなので、手元の main とファイルはまだ変わっていない。",
+        "hints": [
+          "送るのは `git push`。拒否されたら、手元の枝を変えずに、リモートの記録だけを取ってくる。",
+          "`git fetch` で取ってきた記録は `origin/main` に置かれる。`main..origin/main` は、手元の main に無い記録だけを指す。",
+          "`git push` と `git fetch` と `git log --oneline main..origin/main` を順に打ち、`夏の間は 18 時まで開ける` と答える。"
+        ],
+        "expectedErrors": [
+          "git-push-rejected",
+          "git-other-misread"
+        ]
+      },
+      {
+        "id": "pull",
+        "purpose": "リモートの記録を取り込む。同じ行を変えていて衝突したら、18 時までと月曜の休みの両方が入った 1 行に直す。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/reserve/slots.txt",
+          "contains": "テニスコート 1: 9:00-18:00（月曜は休み）"
+        },
+        "afterward": "取り込むと、同じ行を両方が変えていたので衝突した。「テニスコート 1: 9:00-18:00（月曜は休み）」の 1 行に直し、どちらの意図も残した。",
+        "hints": [
+          "取り込むのは `git pull`。衝突したら、`cat slots.txt` で印の間の 2 つの版を読む。",
+          "上（{{term:git-head}}）が自分の版、下（{{term:git-origin}}/main）が佐藤さんの版。両方を 1 行にまとめ、印の 3 行は残さない。",
+          "`git pull` と `echo 'テニスコート 1: 9:00-18:00（月曜は休み）' > slots.txt` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "git-conflict"
+        ]
+      },
+      {
+        "id": "push",
+        "purpose": "解いたことを伝えて記録し、もう一度送る。",
+        "check": {
+          "kind": "git",
+          "expr": "pushed:main clean resolved"
+        },
+        "afterward": "合わせた記録を送れた。リモートの main に、自分の記録と佐藤さんの記録の両方が入った。",
+        "hints": [
+          "印が残っていないことを確かめたら、`git add` と `git commit` で取り込みを終え、送り直す。",
+          "取り込みの記録ができれば、手元の履歴がリモートの記録を含むので、拒否されない。",
+          "`git add slots.txt` と `git commit -m \"夏の時間と月曜の休みを合わせる\"` と `git push` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "git-push-rejected",
+          "git-nothing-added",
+          "git-leftover-marker"
+        ]
+      }
+    ],
+    "dangerous": [
+      {
+        "id": "push-force",
+        "pattern": "git\\s+push\\b.*\\s(--force|-f)(\\s|$)",
+        "why": "上書きの push は、リモートにある、ほかの人の記録（佐藤さんの 18 時まで）を消す。共有している枝では、先に取り込んでから送る。"
+      }
+    ]
+  },
+  "result": {
+    "success": "拒否の理由を確かめ、取り込んで衝突を解き、両方の記録を消さずに送り直せた。履歴を同期できた。",
+    "partial": "ヒントを使って、送り直せた。次は、fetch と pull の違いを、手元の枝が変わるかどうかで説明してみよう。",
+    "retry": "まだ送れていない。`git log --oneline --all` で、手元の main と origin/main の 2 つの履歴を並べて見よう。"
+  },
+  "summary": {
+    "points": [
+      "push で送る",
+      "pull で取り込む",
+      "拒否されたら先に取り込む"
+    ],
+    "next": [
+      "git.i.03"
+    ],
+    "terms": [
+      "push",
+      "pull",
+      "fetch"
+    ]
+  }
+}

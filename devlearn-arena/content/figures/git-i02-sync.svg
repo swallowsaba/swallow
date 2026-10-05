@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>手元とリモートの同期。push は手元の記録をリモートへ送る。fetch はリモートの記録を origin/main に取ってくるだけ。merge で手元の main に合わせる。pull は fetch と merge を続けて行う</title>
+  <g class="el" data-part="local">
+    <rect x="20" y="60" width="230" height="200" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="40" y="92" font-size="16" font-weight="700" fill="#eef2f6">手元</text>
+    <rect x="40" y="120" width="190" height="40" rx="6" fill="none" stroke="#e0457b" stroke-width="2" pointer-events="all" />
+    <text x="135" y="146" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">main</text>
+    <rect x="40" y="200" width="190" height="40" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="4 4" pointer-events="all" />
+    <text x="135" y="226" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#9fb0c6">origin/main</text>
+  </g>
+  <g class="el" data-part="remote">
+    <rect x="450" y="60" width="230" height="200" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="470" y="92" font-size="16" font-weight="700" fill="#eef2f6">リモート（origin）</text>
+    <rect x="470" y="160" width="190" height="40" rx="6" fill="none" stroke="#e0457b" stroke-width="2" pointer-events="all" />
+    <text x="565" y="186" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">main</text>
+  </g>
+  <g class="el" data-part="push">
+    <rect x="232" y="108" width="236" height="48" fill="none" pointer-events="all" />
+    <path d="M232 140 H452" fill="none" stroke="#f2b632" stroke-width="4" />
+    <path d="M452 128 L470 140 L452 152 Z" fill="#f2b632" transform="translate(-2 0)" />
+    <text x="345" y="128" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#f2b632">push（送る）</text>
+  </g>
+  <g class="el" data-part="fetch">
+    <rect x="232" y="204" width="236" height="52" fill="none" pointer-events="all" />
+    <path d="M470 220 H250" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <path d="M250 208 L232 220 L250 232 Z" fill="#9fb0c6" />
+    <text x="345" y="250" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">fetch（取ってくるだけ）</text>
+  </g>
+  <g class="el" data-part="merge">
+    <rect x="120" y="160" width="80" height="40" fill="none" pointer-events="all" />
+    <path d="M135 198 V164" fill="none" stroke="#e0457b" stroke-width="3" />
+    <path d="M125 172 L135 160 L145 172 Z" fill="#e0457b" />
+    <text x="150" y="186" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#e0457b">merge</text>
+  </g>
+  <g class="el" data-part="pull">
+    <text x="350" y="300" text-anchor="middle" font-size="14" fill="#f2b632">pull ＝ fetch ＋ merge（取ってきて、手元の main に合わせる）</text>
+  </g>
+</svg>

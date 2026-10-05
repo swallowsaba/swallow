@@ -207,6 +207,35 @@
         "remote",
         "git-origin"
       ]
+    },
+    {
+      "id": "git-push-rejected",
+      "match": "\\[rejected\\]",
+      "meaning": "{{term:push}}が拒否された。リモートの枝に、手元に無い記録がある（ほかの人が先に送った）。上書きして消さないよう、Git が止めた。",
+      "causes": [
+        "ほかの人が、先に同じ枝へ送った。",
+        "取ってきた（fetch）だけで、まだ手元の枝に合わせて（pull・merge）いない。"
+      ],
+      "hint": "`git pull` で取り込み、衝突したら解いて記録してから、もう一度 `git push`。`--force` で上書きすると、ほかの人の記録が消える。",
+      "terms": [
+        "push",
+        "pull",
+        "fetch"
+      ]
+    },
+    {
+      "id": "git-other-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、リモートにある、手元に無い記録の説明と合っていない。",
+      "causes": [
+        "自分の記録（月曜を休みにする）の説明を答えた。",
+        "fetch する前の古い控え（origin/main）を見た。"
+      ],
+      "hint": "`git fetch` の後に `git log --oneline main..origin/main` を打つと、手元に無い記録だけが出る。",
+      "terms": [
+        "fetch",
+        "git-origin"
+      ]
     }
   ]
 }

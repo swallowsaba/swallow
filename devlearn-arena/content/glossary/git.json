@@ -242,6 +242,51 @@
       "lessons": [
         "git.i.01"
       ]
+    },
+    {
+      "id": "push",
+      "word": "プッシュ（push）",
+      "reading": "ぷっしゅ",
+      "plain": "手元の記録を、リモートのリポジトリに送ること。`git push` で行う。",
+      "why": "送らなければ、自分の記録はほかの人に見えず、手元の機械が壊れると消える。",
+      "related": [
+        "remote",
+        "pull",
+        "commit"
+      ],
+      "lessons": [
+        "git.i.02"
+      ]
+    },
+    {
+      "id": "pull",
+      "word": "プル（pull）",
+      "reading": "ぷる",
+      "plain": "リモートの記録を取ってきて（fetch）、手元の枝に合わせる（merge）こと。`git pull` で行う。",
+      "why": "作業の前や送る前に取り込むと、ほかの人の記録の上に自分の記録を積める。送りが拒否された時も、先に取り込む。",
+      "related": [
+        "fetch",
+        "merge",
+        "push"
+      ],
+      "lessons": [
+        "git.i.02"
+      ]
+    },
+    {
+      "id": "fetch",
+      "word": "フェッチ（fetch）",
+      "reading": "ふぇっち",
+      "plain": "リモートの記録を取ってくるだけの操作。取ってきた記録は origin/main などに置かれ、手元の枝もファイルも変わらない。",
+      "why": "取り込む前に、何が来たかを確かめられる。`git log main..origin/main` で、手元に無い記録だけを見られる。",
+      "related": [
+        "pull",
+        "git-origin",
+        "remote"
+      ],
+      "lessons": [
+        "git.i.02"
+      ]
     }
   ]
 }
