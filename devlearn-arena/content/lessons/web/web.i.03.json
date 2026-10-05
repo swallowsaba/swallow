@@ -1,0 +1,276 @@
+{
+  "id": "web.i.03",
+  "domain": "web",
+  "level": "intermediate",
+  "theme": "Web サーバ",
+  "title": "仮想ホストとリバースプロキシ",
+  "goal": "1 台で複数サイト、後段への転送を設定できる",
+  "minutes": 20,
+  "prerequisites": [
+    "web.b.07"
+  ],
+  "related": [
+    "k8s.i.04",
+    "net.a.03"
+  ],
+  "next": [
+    "web.a.02",
+    "sec.i.02",
+    "k8s.i.04"
+  ],
+  "terms": [
+    "web-server",
+    "virtual-host",
+    "reverse-proxy",
+    "app",
+    "host",
+    "port",
+    "config-file",
+    "status-code",
+    "api",
+    "url",
+    "document-root",
+    "ip-address",
+    "path",
+    "server",
+    "file"
+  ],
+  "explain": {
+    "what": "{{term:virtual-host}}は、1 台の{{term:web-server}}が、頼まれた名前（{{term:host}}）ごとに別のサイトを出し分ける仕組み。{{term:reverse-proxy}}は、入口で受けた依頼を後ろの{{term:app}}へ中継する仕組み。",
+    "why": "入口を 1 つにまとめると、後ろのアプリを入れ替えても、利用者の{{term:url}}は変わらない。名前は違っても、同じ{{term:ip-address}}と{{term:port}}で受けられる。",
+    "use": "1 台に複数のサイトを同居させる時、アプリ（{{term:api}}など）を公開する時。nginx では、名前を server_name、中継先を proxy_pass で{{term:config-file}}に書く。",
+    "when": "api.example を、後ろで動いているアプリにつなぎたい時。入口は届いても後ろに届かないと、{{term:status-code}} 502 が返る。",
+    "figures": [
+      "web-i03-proxy"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "shop.example と api.example は同じアドレスの同じ 80 番。2 つの出来事の関係は？",
+      "a": "依頼に書かれた名前が api.example",
+      "b": "server_name api.example の server が選ばれる",
+      "answer": "cause",
+      "why": "入口の Web サーバは、依頼に書かれた名前で server を選ぶ。名前が原因で、その server の設定（中継など）が使われる。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "入口の Web サーバは動いているが、後ろのアプリが止まってしまった。api.example を開くとどうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "入口が 502（後ろから返事をもらえなかった）を返す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "つながらない（返事が何も来ない）",
+          "correct": false,
+          "whyNot": "入口は動いているので、返事は来る。入口が「後ろに届かなかった」と答える。"
+        },
+        {
+          "id": "c",
+          "text": "404（見つからない）が返る",
+          "correct": false,
+          "whyNot": "404 は、届いた先に頼んだ物が無い時。後ろに届いていないので、入口は 502 で知らせる。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "api.example を開くと、次の返事が来た。考えやすい原因は？",
+      "context": {
+        "log": "HTTP/1.1 502 Bad Gateway\nServer: nginx"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "入口から後ろのアプリに届かない（中継先の誤り・アプリの停止）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "入口の Web サーバが止まっている",
+          "correct": false,
+          "whyNot": "止まっていれば返事は来ない。`Server: nginx` の返事が来ているので、入口は動いている。"
+        },
+        {
+          "id": "c",
+          "text": "依頼した URL の{{term:path}}の綴りが違う",
+          "correct": false,
+          "whyNot": "パスの誤りなら、後ろのアプリが 404 を返す。502 は後ろに届く前の話。"
+        }
+      ],
+      "explanation": "`502 Bad Gateway` は「中継したが、後ろから正しい返事をもらえなかった」。中継先と、後ろのアプリが動いているかを確かめる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "1 台の{{term:server}}（アドレスは 1 つ）で、shop.example と blog.example の 2 つのサイトを公開したい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "server を 2 つ書き、server_name で名前ごとに振り分ける",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "サーバをもう 1 台用意する",
+          "correct": false,
+          "whyNot": "できるが、要らない。名前で振り分ければ 1 台で足りる。"
+        },
+        {
+          "id": "c",
+          "text": "blog.example だけ 8080 番で待ち受け、URL に :8080 を付けてもらう",
+          "correct": false,
+          "whyNot": "利用者に番号を覚えさせることになる。名前で振り分ければ、どちらも既定の 80 番（443 番）で開ける。"
+        }
+      ],
+      "explanation": "仮想ホスト。同じアドレスとポートでも、依頼に書かれた名前で server を選べる。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "後ろのアプリは 3000 番で待っている。設定に `proxy_pass http://127.0.0.1:3001;` と書いて読み直した。api.example を開くと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "502 が返る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "200 が返る（番号が近いので届く）",
+          "correct": false,
+          "whyNot": "ポートは 1 つ違えば別の扉。3001 番では誰も待っていない。"
+        },
+        {
+          "id": "c",
+          "text": "読み直しが失敗する",
+          "correct": false,
+          "whyNot": "書き方は正しいので、読み直しは通る。誤りが分かるのは、実際に中継しようとした時。"
+        }
+      ],
+      "explanation": "中継先のポートの誤りは、設定の書き方の誤りではないので、読み直しでは気づけない。依頼を送って 502 で分かる。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "港町の店のサーバ（1 台）で、shop.example は今までどおりページを返し、api.example は後ろの在庫アプリ（127.0.0.1:3000）へ中継するように、Web サーバの設定を書く。",
+    "environment": "linux-server",
+    "setup": {
+      "hostname": "harbor",
+      "dirs": [
+        "/var/www/shop"
+      ],
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost shop.example api.example\n",
+        "/etc/nginx/conf.d/site.conf": "server {\n  listen 80;\n  server_name shop.example;\n  root /var/www/shop;\n}\n",
+        "/var/www/shop/index.html": "<html><body><h1>港町の店</h1></body></html>\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/site.conf"
+        },
+        "shop-api": {
+          "description": "在庫のアプリ（後ろのアプリ）",
+          "enabled": true,
+          "port": 3000,
+          "address": "127.0.0.1",
+          "routes": {
+            "/items": {
+              "status": 200,
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "body": "[{\"id\":7,\"name\":\"灯台の模型\",\"stock\":3}]"
+            }
+          }
+        }
+      },
+      "run": [
+        "systemctl start nginx",
+        "systemctl start shop-api"
+      ],
+      "edit": {
+        "path": "/etc/nginx/conf.d/site.conf",
+        "apply": [
+          "nginx -t && systemctl reload nginx",
+          "curl -si http://shop.example/",
+          "curl -si http://api.example/items"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "relay",
+        "purpose": "api.example 用の server を足し、依頼を後ろの在庫アプリ（127.0.0.1:3000）へ中継する。確かめた結果で、http://api.example/items が 200 と在庫を返すことを見る。",
+        "check": {
+          "kind": "http",
+          "url": "http://api.example/items",
+          "status": 200,
+          "contains": "灯台の模型"
+        },
+        "afterward": "api.example の依頼は、名前で選ばれた server から 127.0.0.1:3000 へ中継され、在庫のアプリの返事が戻ってきた。",
+        "hints": [
+          "名前ごとに server を分ける。今の server（shop.example）の下に、server_name api.example の server をもう 1 つ書く。",
+          "中継は location / { … } の中に `proxy_pass http://127.0.0.1:3000;` と書く。文の終わりの ; を忘れない。",
+          "`server {\n  listen 80;\n  server_name shop.example;\n  root /var/www/shop;\n}\n\nserver {\n  listen 80;\n  server_name api.example;\n  location / {\n    proxy_pass http://127.0.0.1:3000;\n  }\n}` と保存する。"
+        ],
+        "expectedErrors": [
+          "web-502",
+          "nginx-emerg",
+          "web-404"
+        ]
+      },
+      {
+        "id": "both",
+        "purpose": "shop.example も、今までどおり{{term:document-root}}の{{term:file}}（港町の店のページ）を返すことを、確かめた結果で見る。返さなければ、shop.example の server を直す。",
+        "check": {
+          "kind": "http",
+          "url": "http://shop.example/",
+          "status": 200,
+          "contains": "港町の店"
+        },
+        "afterward": "1 台の入口で、shop.example はファイル、api.example は後ろのアプリと、名前で出し分けられた。",
+        "hints": [
+          "shop.example の server（server_name shop.example と root）を消したり、中継に書き換えたりしていないか。",
+          "server は 2 つ。shop.example は root でファイルを返し、api.example だけが proxy_pass で中継する。",
+          "`server {\n  listen 80;\n  server_name shop.example;\n  root /var/www/shop;\n}\n\nserver {\n  listen 80;\n  server_name api.example;\n  location / {\n    proxy_pass http://127.0.0.1:3000;\n  }\n}` と保存する。"
+        ],
+        "expectedErrors": [
+          "web-404",
+          "nginx-emerg"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "名前で server を分け、api.example だけを後ろのアプリへ中継して、1 台で 2 つのサイトを出し分けられた。",
+    "partial": "ヒントを使って、入口の振り分けと中継を設定できた。次は、proxy_pass のポートを 3001 にすると何が返るか、試して確かめてみよう。",
+    "retry": "まだ両方の名前で 200 が返っていない。確かめた結果で、どちらの名前がどの server に当たったか（ページか、在庫か、502 か）を見比べよう。"
+  },
+  "summary": {
+    "points": [
+      "名前（server_name）でサイトを出し分ける",
+      "proxy_pass で後ろのアプリへ中継する",
+      "502 は後ろに届いていない"
+    ],
+    "next": [
+      "sec.i.02",
+      "k8s.i.04"
+    ],
+    "terms": [
+      "virtual-host",
+      "reverse-proxy",
+      "web-server"
+    ]
+  }
+}

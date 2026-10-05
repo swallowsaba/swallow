@@ -422,6 +422,36 @@
       "lessons": [
         "web.i.02"
       ]
+    },
+    {
+      "id": "virtual-host",
+      "word": "仮想ホスト",
+      "reading": "かそうほすと",
+      "plain": "1 台の Web サーバで、頼まれた名前（shop.example・api.example など）ごとに別のサイトを出し分ける仕組み。nginx では server_name で名前を書く。",
+      "why": "サイトごとに機械を用意しなくてよい。名前と IP アドレスが同じでも、依頼に書かれた名前で振り分けられる。",
+      "related": [
+        "web-server",
+        "host",
+        "reverse-proxy"
+      ],
+      "lessons": [
+        "web.i.03"
+      ]
+    },
+    {
+      "id": "reverse-proxy",
+      "word": "リバースプロキシ",
+      "reading": "りばーすぷろきし",
+      "plain": "入口で依頼を受け、後ろのアプリへ中継して、その返事を返す Web サーバの働き。nginx では proxy_pass で中継先を書く。",
+      "why": "入口を 1 つにでき、後ろのアプリを入れ替えたり増やしたりしても、利用者の URL は変わらない。",
+      "related": [
+        "web-server",
+        "virtual-host",
+        "port"
+      ],
+      "lessons": [
+        "web.i.03"
+      ]
     }
   ]
 }

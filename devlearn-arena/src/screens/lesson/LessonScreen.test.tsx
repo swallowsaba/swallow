@@ -553,6 +553,46 @@ describe('見本の 2 本を最後まで通せる（docs/development-plan.md Pha
     throughEnd(opened, session, id, l);
   });
 
+  it('web.i.03（設定の編集）: 保存して確かめた結果を出し、誤りには解説を出す。直して保存すると通り、結果に最後に保存した設定を並べる', async () => {
+    const session = createSession(1);
+    const id = 'web.i.03';
+    const l = await lesson(id);
+    const first = await toPractice(session, id, l);
+    const edit = (text: string): void => {
+      const area = $<HTMLTextAreaElement>(first.host, '[data-testid="editor-text"]');
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(area, text);
+        area.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    };
+    const shop = 'server {\n  listen 80;\n  server_name shop.example;\n  root /var/www/shop;\n}\n';
+    const api = (port: number): string => `${shop}\nserver {\n  listen 80;\n  server_name api.example;\n  location / {\n    proxy_pass http://127.0.0.1:${String(port)};\n  }\n}\n`;
+    // 初めは今の設定が編集欄にあり、まだ確かめた結果は無い
+    expect($<HTMLTextAreaElement>(first.host, '[data-testid="editor-text"]').value).toBe(shop);
+    expect($(first.host, '[data-testid="editor-results"]').textContent).toContain('保存すると');
+    edit(api(3001));
+    expect($(first.host, '[data-testid="editor-state"]').textContent).toBe('保存していない変更がある');
+    click($(first.host, '[data-testid="editor-save"]'));
+    expect($(first.host, '[data-testid="editor-results"]').textContent).toContain('$ curl -si http://api.example/items');
+    expect($(first.host, '[data-testid="editor-results"]').textContent).toContain('502 Bad Gateway');
+    expect($(first.host, '[data-testid="practice-error"]').dataset.guide).toBe('web-502');
+    expect($(first.host, '[data-testid="editor-state"]').textContent).toBe('保存した中身と同じ');
+
+    // 中断して開き直すと、保存した設定と確かめた結果から続く
+    edit(api(3000));
+    act(() => first.root.unmount());
+    roots = roots.filter((r) => r !== first.root);
+    const { host } = await open(session, id);
+    expect($<HTMLTextAreaElement>(host, '[data-testid="editor-text"]').value).toBe(api(3000));
+    expect($(host, '[data-testid="editor-results"]').textContent).toContain('502 Bad Gateway');
+    click($(host, '[data-testid="editor-save"]'));
+    expect(host.querySelectorAll('[data-testid="practice-afterward"]')).toHaveLength(2);
+    next(host);
+    expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('success');
+    expect($(host, '[data-testid="stage-result"]').textContent).toContain('最後に保存した設定（保存 2 回）');
+    expect($(host, '[data-testid="result-commands"]').textContent).toBe(api(3000).trimEnd());
+  });
+
   it('linux.i.01: ヒントを 3 段まで開き、最後のヒントをそのまま打てば通る（結果はヒントあり）', async () => {
     const session = createSession(1);
     const id = 'linux.i.01';
