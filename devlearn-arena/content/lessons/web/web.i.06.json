@@ -1,0 +1,280 @@
+{
+  "id": "web.i.06",
+  "domain": "web",
+  "level": "intermediate",
+  "theme": "版",
+  "title": "HTTP/2 と HTTP/3",
+  "goal": "違いと利点を説明できる",
+  "minutes": 15,
+  "prerequisites": [
+    "web.b.02",
+    "net.b.05"
+  ],
+  "related": [
+    "net.b.05",
+    "sec.b.06"
+  ],
+  "next": [
+    "web.a.01"
+  ],
+  "terms": [
+    "http2",
+    "http",
+    "multiplexing",
+    "http3",
+    "tcp",
+    "udp",
+    "html",
+    "css",
+    "server",
+    "web",
+    "https",
+    "header",
+    "curl",
+    "url",
+    "response",
+    "option",
+    "cache"
+  ],
+  "explain": {
+    "what": "{{term:http2}}は、1 本の接続の上で、たくさんの依頼と返事を同時に流す{{term:http}}の版（{{term:multiplexing}}）。{{term:http3}}は、同じやり方を{{term:tcp}}ではなく{{term:udp}}の上で動かす版。",
+    "why": "ページは{{term:html}}・{{term:css}}・画像など、たくさんの部品でできている。HTTP/1.1 は 1 本の接続で 1 つずつ順に受け取るので、前の部品を待つ間、後ろの部品が進まない。同時に流せば待ちが減り、速く表示できる。",
+    "use": "今の{{term:web}}の多くのサイト。ブラウザと{{term:server}}が、つなぐ時に話せる版を決める。{{term:https}}のサイトでは HTTP/2 がよく使われ、HTTP/3 に対応したサーバは、返事の{{term:header}}で「次から HTTP/3 でも話せる」と知らせる。",
+    "when": "部品の多いページの読み込みが遅い時。サイトがどの版で話しているかは、{{term:curl}}で{{term:response}}（返事）の 1 行目を見て確かめる。版が変わっても{{term:url}}は https:// のままなので、URL からは分からない。",
+    "figures": [
+      "web-i06-versions"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "UDP の荷物",
+      "b": "HTTP/3 の依頼と返事",
+      "answer": "contains",
+      "why": "HTTP/3 の依頼と返事は、UDP の荷物の中に入れて運ぶ。HTTP/2 までは、TCP の上で運んでいた。",
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "サイトを HTTP/2 に変えると、URL の書き方も変わる（https2:// のように）。",
+      "answer": false,
+      "why": "URL は https:// のまま。版は、ブラウザとサーバがつなぐ時に決める。利用者も、ページの中のリンクも、書き直さなくてよい。",
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "部品が 50 個あるページを、1 本の接続で読み込む。HTTP/1.1 と HTTP/2 では、どうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "HTTP/2 の方が待ちが少ない（50 個を同時に受け取れる）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "同じ（部品の数が同じだから）",
+          "correct": false,
+          "whyNot": "数は同じでも、受け取り方が違う。HTTP/1.1 は 1 つずつ順に受け取り、前の部品を待つ間、後ろが進まない。"
+        },
+        {
+          "id": "c",
+          "text": "HTTP/1.1 の方が速い（1 つずつ確実に受け取るから）",
+          "correct": false,
+          "whyNot": "どちらも確実に届ける。HTTP/2 も同じ接続の上で、欠けずに全てを受け取る。"
+        }
+      ],
+      "explanation": "HTTP/2 は 1 本の接続で同時に流す（多重化）。部品が多いページほど、順番待ちが減る効き目が大きい。"
+    },
+    {
+      "id": "q2",
+      "kind": "term",
+      "prompt": "1 本の接続の上で、いくつもの依頼と返事を混ぜて同時に流すことを何と呼ぶ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "多重化",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "転送",
+          "correct": false,
+          "whyNot": "転送は、301 などの返事で、別の URL へ行き先を変えること。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:cache}}",
+          "correct": false,
+          "whyNot": "キャッシュは、一度取った物を保存して使い回すこと。同時に流すこととは別。"
+        }
+      ],
+      "explanation": "多重化は、やり取りごとの印を付けて 1 本に混ぜ、受け取る側で分け直す。HTTP/2 と HTTP/3 の速さの元。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "自分たちのサイトが HTTP/2 で話しているかを確かめたい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`curl -I` で返事の頭を出し、1 行目の版を見る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "URL が http2:// で始まるかを見る",
+          "correct": false,
+          "whyNot": "版が変わっても、URL の書き方は同じ（https://）。"
+        },
+        {
+          "id": "c",
+          "text": "ページの HTML の中を読む",
+          "correct": false,
+          "whyNot": "版は本文には書かれない。返事の頭の 1 行目（`HTTP/2 200` など）にある。"
+        }
+      ],
+      "explanation": "返事の 1 行目の最初の語が、実際に話した版。`HTTP/1.1 200 OK` なら 1.1、`HTTP/2 200` なら 2。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "お知らせのサイト（https://news.example）は部品が多く、表示が遅いと言われた。速い店のサイト（https://shop.example）と比べ、それぞれが話す HTTP の版を確かめる。",
+    "environment": "web-client",
+    "setup": {
+      "sites": [
+        {
+          "host": "news.example",
+          "port": 443,
+          "chain": [
+            {
+              "id": "leaf-news.example",
+              "subject": "news.example",
+              "issuer": "Minato Issuing CA",
+              "sans": [
+                "news.example"
+              ],
+              "notBefore": "2026-01-01",
+              "notAfter": "2027-01-01",
+              "ca": false
+            },
+            {
+              "id": "inter",
+              "subject": "Minato Issuing CA",
+              "issuer": "Minato Root CA",
+              "sans": [],
+              "notBefore": "2024-01-01",
+              "notAfter": "2030-01-01",
+              "ca": true
+            }
+          ],
+          "versions": [
+            "1.1"
+          ],
+          "routes": {
+            "/": {
+              "status": 200,
+              "body": "<html><body><h1>港町のお知らせ</h1><p>今週のお知らせ（画像 48 枚）</p></body></html>"
+            }
+          }
+        },
+        {
+          "host": "shop.example",
+          "port": 443,
+          "chain": [
+            {
+              "id": "leaf-shop.example",
+              "subject": "shop.example",
+              "issuer": "Minato Issuing CA",
+              "sans": [
+                "shop.example"
+              ],
+              "notBefore": "2026-01-01",
+              "notAfter": "2027-01-01",
+              "ca": false
+            },
+            {
+              "id": "inter",
+              "subject": "Minato Issuing CA",
+              "issuer": "Minato Root CA",
+              "sans": [],
+              "notBefore": "2024-01-01",
+              "notAfter": "2030-01-01",
+              "ca": true
+            }
+          ],
+          "versions": [
+            "1.1",
+            "2",
+            "3"
+          ],
+          "routes": {
+            "/": {
+              "status": 200,
+              "body": "<html><body><h1>港の店</h1><p>今週のおすすめ（画像 52 枚）</p></body></html>"
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "news",
+        "purpose": "news.example に「HTTP/2 で話したい」と頼み、返事の 1 行目から、実際に話した版を答える（1.1・2・3 のように数で）。",
+        "check": {
+          "kind": "answer",
+          "equals": "1.1"
+        },
+        "afterward": "HTTP/2 を頼んでも、news.example は `HTTP/1.1 200 OK` と返した。HTTP/2 に対応していないので、48 枚の画像を 1 つずつ順に受け取っている。遅さの理由の 1 つになる。",
+        "hints": [
+          "版は返事の頭（1 行目）にある。curl に頭だけを出す{{term:option}}を付ける。",
+          "`--http2` は「HTTP/2 で話したい」という頼み。相手が対応していなければ、1 行目は `HTTP/1.1` のまま返る。",
+          "`curl -I --http2 https://news.example/` と打ち、`1.1` と答える。"
+        ],
+        "expectedErrors": [
+          "web-version-misread"
+        ]
+      },
+      {
+        "id": "shop",
+        "purpose": "shop.example にも同じように頼み、返事を読む。今話した版の次に、見出しで「次からこの版でも話せる」と知らせている版を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "3"
+        },
+        "afterward": "shop.example は `HTTP/2 200` で答え、`alt-svc: h3=\":443\"` で「HTTP/3 でも話せる」と知らせていた。ブラウザはこれを覚え、次からは UDP の上の HTTP/3 で話す。URL はどちらも https:// のまま。",
+        "hints": [
+          "1 行目は今話した版（HTTP/2）。答えるのは、見出しの中で知らせている次の版。",
+          "`alt-svc` の見出しを探す。`h3` は HTTP/3 のこと。",
+          "`curl -I --http2 https://shop.example/` と打ち、`3` と答える。"
+        ],
+        "expectedErrors": [
+          "web-version-misread"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "返事の 1 行目と alt-svc の見出しから、2 つのサイトの版を自分で確かめられた。",
+    "partial": "ヒントを使って、版を確かめられた。次は、--http2 を付けても 1.1 が返る理由を説明してみよう。",
+    "retry": "まだ版を読み取れていない。返事の 1 行目の最初の語（HTTP/1.1・HTTP/2）と、alt-svc の行の h3 を見比べよう。"
+  },
+  "summary": {
+    "points": [
+      "HTTP/2 は 1 本の接続で並行（多重化）",
+      "HTTP/3 は UDP の上で動く",
+      "版が変わっても URL は変わらない"
+    ],
+    "next": [
+      "web.a.01"
+    ],
+    "terms": [
+      "http2",
+      "http3",
+      "multiplexing"
+    ]
+  }
+}
