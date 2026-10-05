@@ -1,0 +1,265 @@
+{
+  "id": "sec.b.06",
+  "domain": "sec",
+  "level": "beginner",
+  "theme": "TLS",
+  "title": "HTTPS と TLS",
+  "goal": "暗号化と相手の確認の 2 つの役割を説明できる",
+  "minutes": 15,
+  "prerequisites": [
+    "web.b.02",
+    "sec.b.04"
+  ],
+  "related": [
+    "web.b.02",
+    "net.b.05"
+  ],
+  "next": [
+    "sec.b.07",
+    "web.b.08",
+    "web.a.01"
+  ],
+  "terms": [
+    "tls",
+    "certificate",
+    "https",
+    "http",
+    "handshake",
+    "server",
+    "web",
+    "app",
+    "url",
+    "ip-address",
+    "name-resolution"
+  ],
+  "explain": {
+    "what": "{{term:tls}}は、通信を暗号化し、相手が本物かを{{term:certificate}}で確かめる仕組み。{{term:https}}は、{{term:http}}のやり取りを TLS で包んだもの。始めに握手（{{term:handshake}}）をして、相手を確かめ、二人だけの鍵を決める。",
+    "why": "途中の網では、中身を読まれたり、書き換えられたりするかもしれない。偽物の{{term:server}}に、本物のふりをされるかもしれない。暗号化だけでは、偽物と暗号で話してしまう。",
+    "use": "{{term:web}}の HTTPS、メールの受け渡し、{{term:app}}が使う窓口。今の公開サイトは、ほぼ全てが HTTPS。",
+    "when": "駅や店の、誰でも使える無線の網でログインする時。HTTPS で、警告が出ていなければ、途中の人には中身が読めず、相手も本物だと確かめられている。",
+    "figures": [
+      "sec-b06-handshake"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "TLS の握手の順に並べる。",
+      "items": [
+        "ブラウザが挨拶し、使える暗号を伝える",
+        "サーバが証明書を見せる",
+        "ブラウザが証明書を確かめる（名前・期限・発行者）",
+        "二人だけの鍵を決める",
+        "暗号化して話す"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "TLS の役割",
+      "b": "暗号化（読まれない）と、相手の確認（偽物でない）",
+      "answer": "contains",
+      "why": "TLS は 2 つの役割を両方持つ。暗号化だけでは、偽物の相手と暗号で話してしまう。相手を確かめるから、暗号化に意味がある。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "TLS の 2 つの役割は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "通信の暗号化と、相手が本物かの確認",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "通信を速くすることと、データを小さくすること",
+          "correct": false,
+          "whyNot": "TLS は守るための仕組み。速さや大きさのための物ではない（握手の分だけ、少し手間が増える）。"
+        },
+        {
+          "id": "c",
+          "text": "名前を {{term:ip-address}}に変えることと、道を選ぶこと",
+          "correct": false,
+          "whyNot": "それは{{term:name-resolution}}と経路の役目。TLS は、つながった後の中身を守る。"
+        }
+      ],
+      "explanation": "暗号化で「読まれない・書き換えられない」、証明書で「偽物ではない」。2 つそろって安全に話せる。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "shop.example を開いたのに、サーバが見せた証明書の名前が other.example だった。どうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ブラウザが警告を出し、そのままでは開かない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "暗号化はされるので、普通に開く",
+          "correct": false,
+          "whyNot": "名前が違うと、偽物の相手かもしれない。暗号化しても、偽物と話しては意味が無いので止める。"
+        },
+        {
+          "id": "c",
+          "text": "http に切り替えて開く",
+          "correct": false,
+          "whyNot": "ブラウザが勝手に暗号化をやめることはない。名前の食い違いは、確かめる段の失敗として警告になる。"
+        }
+      ],
+      "explanation": "確かめる段では、開いた名前と証明書の名前を比べる。食い違えば、本物か分からないので警告で止める。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "駅の、誰でも使える無料の無線の網で、通販のサイトにログインしたい。最低限、何を確かめる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:url}} が https で始まり、警告が出ていないこと",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "無線の電波が強いこと",
+          "correct": false,
+          "whyNot": "電波の強さは、中身が守られるかとは関係ない。途中の人に読まれるかは、暗号化で決まる。"
+        },
+        {
+          "id": "c",
+          "text": "ページの見た目がいつもと同じこと",
+          "correct": false,
+          "whyNot": "偽物のサイトは見た目をそっくりに作れる。見た目では本物か分からない。"
+        }
+      ],
+      "explanation": "https で警告が無ければ、中身は暗号化され、相手は証明書で確かめられている。見た目や電波では分からない。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "ブラウザと店のサーバの間で、TLS の握手を組み立てる。相手を確かめてから鍵を決め、通り道から中身が読めない通信を始める。",
+    "environment": "sim-order",
+    "setup": {
+      "items": [
+        {
+          "id": "hello",
+          "label": "ブラウザが挨拶する",
+          "note": "使える暗号の一覧を伝える"
+        },
+        {
+          "id": "cert",
+          "label": "サーバが証明書を見せる",
+          "note": "名前 shop.example"
+        },
+        {
+          "id": "verify",
+          "label": "ブラウザが証明書を確かめる",
+          "note": "名前・期限・発行者"
+        },
+        {
+          "id": "key",
+          "label": "二人だけの鍵を決める"
+        },
+        {
+          "id": "talk",
+          "label": "暗号化して話す"
+        },
+        {
+          "id": "plain",
+          "label": "パスワードをそのまま送る",
+          "extra": true
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "サーバが見せる証明書",
+          "rows": [
+            [
+              "名前",
+              "shop.example"
+            ],
+            [
+              "期限",
+              "2026-01-01 〜 2027-01-01"
+            ],
+            [
+              "発行者",
+              "Minato Issuing CA（手元が信頼する認証局の下）"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "通り道から見えた中身",
+          "body": "17 03 03 00 4a 9f c2 …（暗号化されていて読めない）",
+          "when": "seq hello<cert<verify<key<talk"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "trust",
+        "purpose": "相手が本物だと分かるところまで、握手の段を順に並べる（挨拶 → 証明書を見せる → 確かめる）。",
+        "check": {
+          "kind": "sim",
+          "expr": "seq hello<cert<verify"
+        },
+        "afterward": "ブラウザは見せられた証明書の名前・期限・発行者を確かめ、相手が本物の shop.example だと分かった。",
+        "hints": [
+          "まず話し始めるのはブラウザ。相手を確かめるには、相手の証明書が要る。",
+          "挨拶 → サーバが証明書を見せる → ブラウザが確かめる、の順。",
+          "`order hello cert verify` と並べる。"
+        ],
+        "expectedErrors": [
+          "sec-handshake-order"
+        ]
+      },
+      {
+        "id": "secure",
+        "purpose": "続けて、鍵を決めて暗号化して話す段を並べ、通り道から中身が読めない通信を始める。",
+        "check": {
+          "kind": "sim",
+          "expr": "seq hello<cert<verify<key<talk && placed && !has plain"
+        },
+        "afterward": "確かめた相手とだけ鍵を決め、暗号化して話し始めた。通り道から見えるのは、意味の分からない数の並びだけ。",
+        "hints": [
+          "鍵は、相手を確かめた後に決める。パスワードは、暗号化した後で送る物。",
+          "確かめる → 鍵を決める → 暗号化して話す。「パスワードをそのまま送る」は並べない。",
+          "`order hello cert verify key talk` と並べる。"
+        ],
+        "expectedErrors": [
+          "sec-handshake-order"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "握手の順を組み立て、TLS の 2 つの役割（相手の確認と暗号化）を確かめられた。",
+    "partial": "ヒントを使って握手を組み立てられた。次は、確かめる段を飛ばすと何が危ないかを説明してみよう。",
+    "retry": "まだ握手が整っていない。相手を確かめる段（証明書）が、鍵を決める段より前にあるかを見直そう。"
+  },
+  "summary": {
+    "points": [
+      "TLS は暗号化と相手の確認",
+      "握手で証明書を確かめ、鍵を決めてから話す",
+      "HTTPS は HTTP を TLS で包んだもの"
+    ],
+    "next": [
+      "sec.b.07",
+      "web.b.08"
+    ],
+    "terms": [
+      "tls",
+      "https",
+      "certificate",
+      "handshake"
+    ]
+  }
+}

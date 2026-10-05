@@ -1,0 +1,235 @@
+{
+  "id": "sec.b.07",
+  "domain": "sec",
+  "level": "beginner",
+  "theme": "証明書",
+  "title": "証明書と認証局",
+  "goal": "サーバ証明書・中間証明書・ルート証明書の関係を説明できる",
+  "minutes": 15,
+  "prerequisites": [
+    "sec.b.06"
+  ],
+  "related": [
+    "net.i.05",
+    "web.b.08"
+  ],
+  "next": [
+    "sec.i.01"
+  ],
+  "terms": [
+    "certificate",
+    "server",
+    "certificate-authority",
+    "intermediate-certificate",
+    "root-certificate",
+    "certificate-chain",
+    "https",
+    "os",
+    "secret-key",
+    "public-key",
+    "file",
+    "name-resolution"
+  ],
+  "explain": {
+    "what": "{{term:certificate}}は、{{term:server}}が「この名前の本物です」と示す身分証。発行した{{term:certificate-authority}}の署名が付く。サーバの証明書 →{{term:intermediate-certificate}}→{{term:root-certificate}}と、発行者をたどれる（{{term:certificate-chain}}）。",
+    "why": "偽物のサイトに、パスワードやカードの番号を送らないため。ブラウザは、信じられる発行者が署名した身分証かを確かめてから話す。",
+    "use": "{{term:https}}の相手の確認。ルート証明書はブラウザや{{term:os}}に初めから入っている。サーバは、自分の証明書と中間証明書を並べて送る。",
+    "when": "「この接続ではプライバシーが保護されません」と警告が出た時。証明書の期限切れ・名前の食い違い・中間証明書の送り忘れ（連鎖が途切れる）を疑う。",
+    "figures": [
+      "sec-b07-chain"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "ブラウザが発行者をたどる順に並べる。",
+      "items": [
+        "サーバの証明書（shop.example）",
+        "中間証明書（`Minato Issuing CA`）",
+        "ルート証明書（`Minato Root CA`。手元にある）"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "サーバの証明書を配る時、対になる{{term:secret-key}}も一緒に配ってよい。",
+      "answer": false,
+      "why": "証明書には{{term:public-key}}が載っていて、誰に見せてもよい。秘密鍵はサーバだけが持つ。秘密鍵を渡すと、誰でもそのサーバのふりができる。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "ルート証明書は、どこに置かれている？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ブラウザや OS の中に、初めから入っている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "サーバが毎回、ほかの証明書と一緒に送る",
+          "correct": false,
+          "whyNot": "サーバから送られたルート証明書を信じると、偽物のルート証明書も信じてしまう。信じる元は、手元に初めからある物だけ。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:name-resolution}}の答えの中",
+          "correct": false,
+          "whyNot": "名前の答えはアドレスを返すだけ。証明書は握手の時に受け取り、手元のルート証明書と照らす。"
+        }
+      ],
+      "explanation": "ルート証明書は信じる元なので、パソコンやブラウザが初めから持つ。サーバが送るのは、自分の証明書と中間証明書。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "あるサイトだけ「発行者が分からない」と警告が出る。サーバはサーバの証明書だけを送っていた。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "中間証明書が無く、ルート証明書まで連鎖が途切れている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ルート証明書を送っていない",
+          "correct": false,
+          "whyNot": "ルート証明書は手元にあるので送らなくてよい。足りないのは、その間をつなぐ中間証明書。"
+        },
+        {
+          "id": "c",
+          "text": "証明書が大きすぎる",
+          "correct": false,
+          "whyNot": "大きさは警告の理由にならない。発行者をたどれるかで決まる。"
+        }
+      ],
+      "explanation": "サーバの証明書の発行者は中間。中間証明書を送らないと、ブラウザは「その発行者を知らない」となり、ルート証明書までたどれない。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "サーバの証明書に書かれている物は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "名前・期限・発行者・公開鍵",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "名前・期限・秘密鍵",
+          "correct": false,
+          "whyNot": "秘密鍵は証明書に載せない。サーバの中だけに置く。"
+        },
+        {
+          "id": "c",
+          "text": "利用者のパスワード",
+          "correct": false,
+          "whyNot": "証明書はサーバの身分証。利用者の情報は入らない。"
+        }
+      ],
+      "explanation": "証明書は「この名前のこの公開鍵は、この期間、この発行者が保証する」という書類。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "港の店のサイトで「発行者が分からない」と警告が出る。サーバが送る証明書の並びを見て、欠けた輪を足し、連鎖を完成させる。",
+    "environment": "sim-order",
+    "setup": {
+      "items": [
+        {
+          "id": "leaf",
+          "label": "サーバの証明書",
+          "note": "名前 shop.example ／ 発行者 Minato Issuing CA"
+        },
+        {
+          "id": "inter",
+          "label": "中間証明書",
+          "note": "名前 Minato Issuing CA ／ 発行者 Minato Root CA"
+        },
+        {
+          "id": "root",
+          "label": "ルート証明書",
+          "note": "名前 Minato Root CA ／ 手元に初めからある",
+          "extra": true
+        },
+        {
+          "id": "other",
+          "label": "別のサイトの証明書",
+          "note": "名前 harbor.example",
+          "extra": true
+        }
+      ],
+      "initial": "leaf",
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "ブラウザが信頼するルート（手元）",
+          "rows": [
+            [
+              "Minato Root CA",
+              "初めから入っている"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "ブラウザの判断",
+          "body": "shop.example の発行者 Minato Issuing CA を知らない。ルートまでたどれないので警告を出す。",
+          "when": "!seq leaf<inter"
+        },
+        {
+          "kind": "text",
+          "title": "ブラウザの判断",
+          "body": "shop.example → Minato Issuing CA → Minato Root CA（手元にある）。連鎖がつながり、警告は出ない。",
+          "when": "seq leaf<inter"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "chain",
+        "purpose": "サーバが送る証明書の並びに欠けた輪を足し、サーバの証明書から順に、ルート証明書までたどれる並びにする。",
+        "check": {
+          "kind": "sim",
+          "expr": "seq leaf<inter && !has other"
+        },
+        "afterward": "サーバの証明書の後ろに中間証明書を並べると、発行者を順にたどって手元のルート証明書に着き、警告が消えた。ルート証明書は手元にあるので、送らなくてよい。",
+        "hints": [
+          "各証明書の「発行者」が、次に並べる証明書の名前になる。shop.example の発行者を探す。",
+          "サーバの証明書の発行者は `Minato Issuing CA`（中間証明書）。サーバの証明書を先頭に、その後ろに中間証明書を並べる。",
+          "`order leaf inter` と並べる。"
+        ],
+        "expectedErrors": [
+          "sec-chain-order"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "発行者をたどって欠けた輪を見つけ、連鎖を完成させられた。",
+    "partial": "ヒントを使って連鎖を完成させた。次は、ルート証明書を送らなくてよい理由を説明してみよう。",
+    "retry": "まだ警告が消えていない。サーバの証明書の発行者の名前と、次に並べた証明書の名前が同じかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "証明書はサーバの身分証",
+      "サーバ → 中間 → ルート証明書と、発行者をたどる",
+      "秘密鍵は渡さない"
+    ],
+    "next": [
+      "sec.i.01"
+    ],
+    "terms": [
+      "certificate",
+      "certificate-authority",
+      "intermediate-certificate",
+      "root-certificate",
+      "certificate-chain"
+    ]
+  }
+}

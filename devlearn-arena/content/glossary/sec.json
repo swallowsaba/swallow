@@ -77,6 +77,37 @@
       "lessons": [
         "sec.b.07"
       ]
+    },
+    {
+      "id": "certificate-authority",
+      "word": "認証局",
+      "reading": "にんしょうきょく",
+      "plain": "証明書を発行し、「この名前の持ち主は本物」と署名する組織。ルートと中間の発行者がいる。",
+      "why": "ブラウザは認証局を信じるから、認証局が署名した証明書も信じる。",
+      "related": [
+        "certificate",
+        "root-certificate",
+        "intermediate-certificate"
+      ],
+      "lessons": [
+        "sec.b.07"
+      ]
+    },
+    {
+      "id": "public-key",
+      "word": "公開鍵",
+      "reading": "こうかいかぎ",
+      "plain": "対になった 2 つの鍵のうち、人に渡してよい方。これで閉じた物は、対の秘密鍵でしか開けない。",
+      "why": "秘密を前もって分け合わなくても、暗号化と本人の確かめができる。証明書にも載っている。",
+      "related": [
+        "secret-key",
+        "certificate",
+        "tls"
+      ],
+      "lessons": [
+        "sec.b.04",
+        "sec.b.06"
+      ]
     }
   ]
 }
