@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>切り分けの型の 6 段。症状 → 範囲 → 仮説 → 確認 → 対処 → 再確認。仮説が外れたら、次の仮説に戻って確かめ直す</title>
+  <g class="el" data-part="symptom">
+    <rect x="20" y="40" width="190" height="80" rx="8" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="40" y="72" font-size="16" fill="#ff8a7a">1 症状</text>
+    <text x="40" y="100" font-size="13" fill="#9fb0c6">何が・いつから起きたか</text>
+    <path d="M210 80 H243" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <path d="M241 74 L253 80 L241 86 Z" fill="#9fb0c6" />
+  </g>
+  <g class="el" data-part="scope">
+    <rect x="255" y="40" width="190" height="80" rx="8" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="275" y="72" font-size="16" fill="#ff8a7a">2 範囲</text>
+    <text x="275" y="100" font-size="13" fill="#9fb0c6">誰に・どこで起きるか</text>
+    <path d="M445 80 H478" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <path d="M476 74 L488 80 L476 86 Z" fill="#9fb0c6" />
+  </g>
+  <g class="el" data-part="hypothesis">
+    <rect x="490" y="40" width="190" height="80" rx="8" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="510" y="72" font-size="16" fill="#ff8a7a">3 仮説</text>
+    <text x="510" y="100" font-size="13" fill="#9fb0c6">原因はここ、と 1 つ決める</text>
+    <path d="M555 120 V188" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <path d="M549 186 L555 198 L561 186 Z" fill="#9fb0c6" />
+  </g>
+  <g class="el" data-part="verify">
+    <rect x="490" y="200" width="190" height="80" rx="8" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="510" y="232" font-size="16" fill="#ff8a7a">4 確認</text>
+    <text x="510" y="260" font-size="13" fill="#9fb0c6">仮説は当たっているか</text>
+    <path d="M490 240 H457" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <path d="M459 234 L447 240 L459 246 Z" fill="#9fb0c6" />
+  </g>
+  <g class="el" data-part="fix">
+    <rect x="255" y="200" width="190" height="80" rx="8" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="275" y="232" font-size="16" fill="#ff8a7a">5 対処</text>
+    <text x="275" y="260" font-size="13" fill="#9fb0c6">原因に合った手で直す</text>
+    <path d="M255 240 H222" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <path d="M224 234 L212 240 L224 246 Z" fill="#9fb0c6" />
+  </g>
+  <g class="el" data-part="recheck">
+    <rect x="20" y="200" width="190" height="80" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="40" y="232" font-size="16" fill="#3ae08a">6 再確認</text>
+    <text x="40" y="260" font-size="13" fill="#9fb0c6">本当に直ったか・知らせる</text>
+  </g>
+  <g class="el" data-part="loop">
+    <path d="M630 200 V132" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="5 4" />
+    <path d="M624 134 L630 122 L636 134 Z" fill="#f2b632" />
+    <text x="540" y="165" text-anchor="end" font-size="13" fill="#f2b632">外れたら、次の仮説へ</text>
+    <text x="350" y="312" text-anchor="middle" font-size="14" fill="#eef2f6">勘で触らず、1 段ずつ確かめて進む</text>
+  </g>
+</svg>
