@@ -1,0 +1,366 @@
+{
+  "id": "trouble.b.02",
+  "domain": "trouble",
+  "level": "beginner",
+  "theme": "読む",
+  "title": "エラーメッセージを読む",
+  "goal": "どこが何と言っているかを読み取れる",
+  "minutes": 15,
+  "prerequisites": [
+    "trouble.b.01"
+  ],
+  "related": [
+    "linux.b.01",
+    "cicd.i.04"
+  ],
+  "next": [
+    "trouble.b.03",
+    "cicd.i.04"
+  ],
+  "terms": [
+    "error-message",
+    "command",
+    "troubleshooting",
+    "permission",
+    "file",
+    "directory",
+    "port",
+    "ls",
+    "ls-l",
+    "root-user",
+    "sudo",
+    "firewall",
+    "disk",
+    "app",
+    "script",
+    "cp",
+    "cat"
+  ],
+  "explain": {
+    "what": "{{term:error-message}}は、失敗した時に{{term:command}}が出す文。多くは「出した物: 対象: 理由」の 3 つの部分でできていて、どこが・何に・なぜ失敗したかを教えてくれる。",
+    "why": "エラーの文は、原因に一番早く届く手掛かり（{{term:troubleshooting}}の症状そのもの）。読まずに閉じて打ち直すと、同じ失敗を繰り返す。理由によく出る言葉を知っていれば、英語が苦手でも原因の種類が分かる。",
+    "use": "全ての障害対応。理由の部分によく出る言葉は決まっていて、「無い」「許されていない」「待ち受けが無い」「時間切れ」の 4 つが代表（図の下）。言葉と意味を結び付けておくと、英語の文でも原因の種類がすぐ分かる。",
+    "when": "英語の長いエラーが出て、読まずに閉じてしまいそうな時。何行も出た時は、最後の行ではなく最初の誤りの行から読む。後の行は、最初の誤りの結果であることが多い。",
+    "figures": [
+      "trouble-b02-parts"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "trouble-b02-parts",
+      "prompt": "図のエラーの文で、なぜ失敗したか（理由）を言っている部分を押す。",
+      "answer": [
+        "reason"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "理由によく出る言葉と、その意味を結ぶ。",
+      "pairs": [
+        [
+          "`No such file or directory`",
+          "その名前の物は無い"
+        ],
+        [
+          "`Permission denied`",
+          "許されていない"
+        ],
+        [
+          "`Connection refused`",
+          "届いたが、待ち受けている物が無い"
+        ],
+        [
+          "`timed out`",
+          "返事が来ないまま時間切れ"
+        ]
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "設定を読もうとしたら、次のように出た。原因は？",
+      "context": {
+        "log": "cat: /etc/app/app.conf: Permission denied"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "{{term:file}}はあるが、読む{{term:permission}}が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "その名前のファイルが無い",
+          "correct": false,
+          "whyNot": "無ければ `No such file or directory` と言う。ここは、ある物を読むのを断られた。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:disk}}がいっぱい",
+          "correct": false,
+          "whyNot": "ディスクがいっぱいなら `No space left on device` と言う。読むだけなら、空きは関係ない。"
+        }
+      ],
+      "explanation": "理由の部分は `Permission denied`（許されていない）。権限の問題。持ち主と権限の欄を確かめる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "手元で動かしている{{term:app}}を確かめたら、次のように出た。原因は？",
+      "context": {
+        "log": "curl: (7) Failed to connect to localhost port 8080: Connection refused"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "8080 番で待ち受けている物が無い（アプリが止まっているなど）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "途中で通信が止められている",
+          "correct": false,
+          "whyNot": "止められているなら、返事が来ずに `timed out` になる。`refused` は、相手が「誰もいない」と返した印。"
+        },
+        {
+          "id": "c",
+          "text": "名前が引けない",
+          "correct": false,
+          "whyNot": "名前が引けなければ `Could not resolve host` と言う。ここは相手まで届いている。"
+        }
+      ],
+      "explanation": "`Connection refused` は、相手の機械までは届いたが、その扉（{{term:port}}）で待ち受けている物が無いという返事。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "英語のエラーが 20 行出た。どこから読む？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "最初に出た誤りの行",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "一番最後の行",
+          "correct": false,
+          "whyNot": "最後の行は、最初の誤りの結果のことが多い。そこだけ直しても、元の原因が残る。"
+        },
+        {
+          "id": "c",
+          "text": "読まずに、もう一度打ち直す",
+          "correct": false,
+          "whyNot": "同じ物を打てば、同じ失敗をする。エラーの文が一番早い手掛かり。"
+        }
+      ],
+      "explanation": "1 つの誤りが、後に続く誤りを引き起こす。最初の誤りを直せば、後の誤りも消えることが多い。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "`cat report.txt` が `No such file or directory` と言った。次の一手として、よいものは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その場所にある名前を `ls` で確かめる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "同じコマンドを、もう一度打つ",
+          "correct": false,
+          "whyNot": "名前か場所が違うので、何度打っても同じ。"
+        },
+        {
+          "id": "c",
+          "text": "`sudo` を付けて打つ",
+          "correct": false,
+          "whyNot": "権限の問題ではない。無い物は、権限を強くしても無い。"
+        }
+      ],
+      "explanation": "「無い」と言われたら、名前の綴りと場所を確かめる。その場所に何があるかは `ls` で分かる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "朝の点検の手順どおりにコマンドを打つと、次々にエラーが出る。5 つのエラーを、出した物・対象・理由に分けて読み、原因の種類と次の一手を答える。",
+    "environment": "net-client",
+    "setup": {
+      "dirs": [
+        "/srv/report"
+      ],
+      "files": {
+        "/srv/report/summary.txt": "先月の利用者数: 1,284 人\n",
+        "/srv/report/daily.log": "10/05 点検: 異常なし\n",
+        "/srv/report/template.txt": "日報 DATE\n",
+        "/srv/report/build.sh": "cp /srv/report/template.txt /srv/report/out/today.txt\nsed -i 's/DATE/10-06/' /srv/report/out/today.txt\ncat /srv/report/out/today.txt\n"
+      },
+      "run": [
+        "chmod 600 /srv/report/summary.txt",
+        "sudo chown root:root /srv/report/summary.txt"
+      ],
+      "network": {
+        "self": "ops",
+        "devices": [
+          {
+            "name": "ops",
+            "addrs": [
+              "10.0.5.10/24"
+            ],
+            "gateway": "10.0.5.1"
+          },
+          {
+            "name": "r1",
+            "kind": "router",
+            "addrs": [
+              "10.0.5.1/24",
+              "10.0.6.1/24",
+              "10.0.7.1/24"
+            ]
+          },
+          {
+            "name": "report",
+            "addrs": [
+              "10.0.6.20/24"
+            ],
+            "gateway": "10.0.6.1",
+            "listen": [
+              22
+            ]
+          },
+          {
+            "name": "api",
+            "addrs": [
+              "10.0.7.30/24"
+            ],
+            "gateway": "10.0.7.1",
+            "listen": [
+              443
+            ],
+            "blocked": [
+              443
+            ]
+          }
+        ],
+        "links": [
+          [
+            "ops",
+            "r1"
+          ],
+          [
+            "r1",
+            "report"
+          ],
+          [
+            "r1",
+            "api"
+          ]
+        ],
+        "dns": {
+          "report.city.example": "10.0.6.20",
+          "api.city.example": "10.0.7.30"
+        }
+      }
+    },
+    "steps": [
+      {
+        "id": "denied",
+        "purpose": "点検の 1 つ目: `cat /srv/report/summary.txt` を打つ。エラーの理由の部分を読み、原因の種類を「権限」「名前」「待ち受け」「時間切れ」から 1 つ選んで答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "権限"
+        },
+        "afterward": "`Permission denied` は「許されていない」。{{term:ls-l}}で見ると、持ち主は root（{{term:root-user}}）で、読めるのは持ち主だけ（`-rw-------`）。読むには、持ち主に頼むか、権限を持つ人が{{term:sudo}}で読む。",
+        "hints": [
+          "エラーを `:` で区切ると、出した物・対象・理由の 3 つに分かれる。最後の部分が理由。",
+          "`Permission denied` は「許されていない」。ファイルはあるが、読む権限が無い。`ls -l` で権限の欄も確かめられる。",
+          "`cat /srv/report/summary.txt` と `ls -l /srv/report/summary.txt` を打つ。答えの欄に `権限` と入れる。"
+        ],
+        "expectedErrors": [
+          "trouble-read-denied",
+          "trouble-kind-misread"
+        ]
+      },
+      {
+        "id": "notfound",
+        "purpose": "2 つ目: `cat /srv/report/dayly.log` を打つ。エラーを読み、次の一手（その場所に何があるか）を確かめて、本当のファイルの名前を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "daily.log"
+        },
+        "afterward": "`No such file or directory` は「その名前の物は無い」。{{term:ls}}で見ると、本当の名前は daily.log。手順書の綴り（dayly）が違っていた。",
+        "hints": [
+          "理由の部分は「無い」と言っている。名前か場所が違う。",
+          "無いと言われたら、その{{term:directory}}にある名前を `ls` で確かめる。",
+          "`cat /srv/report/dayly.log` と `ls /srv/report` を打つ。答えの欄に `daily.log` と入れる。"
+        ],
+        "expectedErrors": [
+          "trouble-read-notfound",
+          "trouble-next-misread"
+        ]
+      },
+      {
+        "id": "network",
+        "purpose": "3 つ目と 4 つ目: `curl http://report.city.example:8080/` と `curl https://api.city.example/` を打つ。どちらもつながらないが、理由が違う。相手には届いたのに、待ち受けている物が無かった方の名前を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "report.city.example"
+        },
+        "afterward": "report.city.example は `Connection refused`。相手の機械までは届き、「その扉（{{term:port}} 8080）には誰もいない」と返された。api.city.example は `Connection timed out`。返事が来ないまま時間切れになった。途中の{{term:firewall}}で止められていることが多い。",
+        "hints": [
+          "2 つのエラーの最後の部分（理由）を比べる。",
+          "`Connection refused` は、相手が「いない」と返した（届いている）。`Connection timed out` は、返事が来なかった（届いたかも分からない）。",
+          "`curl http://report.city.example:8080/` と `curl https://api.city.example/` を打つ。答えの欄に `report.city.example` と入れる。"
+        ],
+        "expectedErrors": [
+          "trouble-read-refused",
+          "trouble-read-timeout",
+          "trouble-refused-misread"
+        ]
+      },
+      {
+        "id": "first",
+        "purpose": "5 つ目: 日報を作る{{term:script}} `sh /srv/report/build.sh` を打つ。エラーが何行も出る。最初の誤りを読み、無かったディレクトリの場所を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "/srv/report/out"
+        },
+        "afterward": "最初の行の cp は、/srv/report/out が無いので today.txt を作れなかった。後の sed と{{term:cat}}の行は、作れなかった today.txt を読もうとした結果。最後の行だけ読むと、today.txt を探して遠回りする。",
+        "hints": [
+          "エラーが何行もある時は、最初の行から読む。後の行は、最初の誤りの結果のことが多い。",
+          "最初の行は{{term:cp}}。作れなかったファイルの、置き場所のディレクトリが無い。",
+          "`sh /srv/report/build.sh` を打つ。答えの欄に `/srv/report/out` と入れる。"
+        ],
+        "expectedErrors": [
+          "trouble-read-first",
+          "trouble-last-line"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "5 つのエラーを、出した物・対象・理由に分けて読み、原因の種類と次の一手を見分けられた。長いエラーも、最初の誤りから読めた。",
+    "partial": "ヒントを使って読めた。次は、`Connection refused` と `timed out` の違いを、自分の言葉で説明してみよう。",
+    "retry": "まだ答えが揃っていない。エラーの最後の部分（理由）を読み、何行もある時は最初の行から読み直そう。"
+  },
+  "summary": {
+    "points": [
+      "出した物・対象・理由に分ける",
+      "よく出る言葉を知る",
+      "長い時は最初の誤りから"
+    ],
+    "next": [
+      "trouble.b.03"
+    ],
+    "terms": [
+      "error-message",
+      "permission"
+    ]
+  }
+}

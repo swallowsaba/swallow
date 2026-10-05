@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>エラーの文を 3 つに分ける。出した物（cat）・対象（/srv/report/summary.txt）・理由（Permission denied）。下は、理由によく出る言葉と、その意味</title>
+  <g class="el" data-part="program">
+    <rect x="20" y="40" width="100" height="56" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="70" y="74" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#eef2f6">cat:</text>
+    <text x="70" y="124" text-anchor="middle" font-size="14" fill="#eef2f6">出した物</text>
+    <text x="70" y="146" text-anchor="middle" font-size="13" fill="#9fb0c6">どのコマンドが</text>
+  </g>
+  <g class="el" data-part="target">
+    <rect x="135" y="40" width="270" height="56" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="270" y="74" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#5cc1ff">/srv/report/summary.txt:</text>
+    <text x="270" y="124" text-anchor="middle" font-size="14" fill="#5cc1ff">対象</text>
+    <text x="270" y="146" text-anchor="middle" font-size="13" fill="#9fb0c6">何に</text>
+  </g>
+  <g class="el" data-part="reason">
+    <rect x="420" y="40" width="260" height="56" rx="8" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="550" y="74" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#ff8a7a">Permission denied</text>
+    <text x="550" y="124" text-anchor="middle" font-size="14" fill="#ff8a7a">理由</text>
+    <text x="550" y="146" text-anchor="middle" font-size="13" fill="#9fb0c6">なぜ失敗したか</text>
+  </g>
+  <g class="el" data-part="words">
+    <path d="M20 175 H680" fill="none" stroke="#9fb0c6" stroke-width="1" />
+    <text x="20" y="200" font-size="14" fill="#f2b632">理由によく出る言葉</text>
+    <text x="20" y="232" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#ff8a7a">No such file or directory</text>
+    <text x="250" y="232" font-size="13" fill="#eef2f6">名前か場所が違う</text>
+    <text x="420" y="232" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#ff8a7a">Permission denied</text>
+    <text x="572" y="232" font-size="13" fill="#eef2f6">権限が無い</text>
+    <text x="20" y="266" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#ff8a7a">Connection refused</text>
+    <text x="250" y="266" font-size="13" fill="#eef2f6">届いたが待ち受けが無い</text>
+    <text x="420" y="266" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#ff8a7a">timed out</text>
+    <text x="572" y="266" font-size="13" fill="#eef2f6">返事が来ない</text>
+    <text x="350" y="310" text-anchor="middle" font-size="14" fill="#eef2f6">: で区切ると 3 つに分かれる。最後の部分が理由</text>
+  </g>
+</svg>

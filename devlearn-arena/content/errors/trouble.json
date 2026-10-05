@@ -40,6 +40,127 @@
       "terms": [
         "troubleshooting"
       ]
+    },
+    {
+      "id": "trouble-read-denied",
+      "match": "Permission denied",
+      "meaning": "理由は `Permission denied`（許されていない）。対象の{{term:file}}はあるが、今の利用者には読む{{term:permission}}が無い。",
+      "causes": [
+        "持ち主だけが読める権限になっている（`-rw-------` など）。",
+        "持ち主が{{term:root-user}}など、ほかの利用者になっている。"
+      ],
+      "hint": "`ls -l` で、対象の持ち主と権限の欄を確かめる。",
+      "terms": [
+        "permission",
+        "error-message"
+      ]
+    },
+    {
+      "id": "trouble-read-notfound",
+      "match": "No such file or directory",
+      "meaning": "理由は `No such file or directory`（その名前の物は無い）。名前か場所が違う。",
+      "causes": [
+        "名前の綴りが違う（1 文字の違い・大文字と小文字）。",
+        "置き場所（{{term:directory}}）が違うか、まだ作られていない。"
+      ],
+      "hint": "その場所にある名前を `ls` で確かめ、綴りを見比べる。",
+      "terms": [
+        "error-message"
+      ]
+    },
+    {
+      "id": "trouble-read-refused",
+      "match": "Connection refused",
+      "meaning": "理由は `Connection refused`。相手の機械までは届いたが、その扉（{{term:port}}）で待ち受けている物が無いと返された。",
+      "causes": [
+        "相手のサービスが止まっている。",
+        "ポートの番号が違う（サービスは別の番号で待っている）。"
+      ],
+      "hint": "番号が合っているか、相手のサービスが動いているかを確かめる。",
+      "terms": [
+        "port",
+        "error-message"
+      ]
+    },
+    {
+      "id": "trouble-read-timeout",
+      "match": "timed out",
+      "meaning": "理由は `timed out`（時間切れ）。返事が来ないまま、待つのをやめた。相手に届いたかどうかも分からない。",
+      "causes": [
+        "途中の{{term:firewall}}が、通信を黙って落としている。",
+        "相手の機械が止まっているか、経路が無い。"
+      ],
+      "hint": "`refused` と違い、相手は何も返していない。途中の経路とファイアウォールを疑う。",
+      "terms": [
+        "firewall",
+        "error-message"
+      ]
+    },
+    {
+      "id": "trouble-read-first",
+      "match": "cannot create regular file",
+      "meaning": "最初の誤り。cp が、行き先のファイルを作れなかった。置き場所のディレクトリが無い。",
+      "causes": [
+        "行き先の{{term:directory}}がまだ作られていない。",
+        "行き先の名前の綴りが違う。"
+      ],
+      "hint": "後に続く誤りは、この結果。最初の行が言う場所を確かめる。",
+      "terms": [
+        "directory",
+        "error-message"
+      ]
+    },
+    {
+      "id": "trouble-kind-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、原因の種類が違う。",
+      "causes": [
+        "理由の部分ではなく、対象（ファイルの名前）を読んで「名前」と答えた。",
+        "`denied` を「無い」と読み違えた。"
+      ],
+      "hint": "エラーを `:` で区切り、最後の部分（理由）だけを読む。`denied` は「断られた」。",
+      "terms": [
+        "error-message"
+      ]
+    },
+    {
+      "id": "trouble-next-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、本当のファイルの名前と違う。",
+      "causes": [
+        "手順書の名前（dayly.log）を、そのまま答えた。",
+        "`ls` で、その場所の中身を確かめていない。"
+      ],
+      "hint": "`ls /srv/report` で並ぶ名前を見て、手順書の綴りと見比べる。",
+      "terms": [
+        "error-message"
+      ]
+    },
+    {
+      "id": "trouble-refused-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、`refused` と `timed out` を取り違えたようだ。",
+      "causes": [
+        "返事が来なかった方（`timed out`）を、届いた方と読んだ。",
+        "2 つのエラーの理由を見比べていない。"
+      ],
+      "hint": "`refused` は相手が「いない」と返した（届いている）。`timed out` は返事が無い（届いたかも分からない）。",
+      "terms": [
+        "error-message"
+      ]
+    },
+    {
+      "id": "trouble-last-line",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、最初の誤りが言っている場所と違う。",
+      "causes": [
+        "最後の行だけ読んだ（today.txt が無い、は結果）。",
+        "エラーの対象のファイルの名前を、そのまま答えた。"
+      ],
+      "hint": "一番上の行（cp の行）を読む。作れなかった物の、置き場所のディレクトリはどこか。",
+      "terms": [
+        "error-message"
+      ]
     }
   ]
 }

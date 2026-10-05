@@ -15,6 +15,19 @@
         "trouble.b.01",
         "trouble.i.01"
       ]
+    },
+    {
+      "id": "error-message",
+      "word": "エラーメッセージ",
+      "plain": "失敗した時に、コマンドやプログラムが出す文。多くは「出した物: 対象: 理由」の形で、どこが・何に・なぜ失敗したかを書いている。",
+      "why": "原因に一番早く届く手掛かり。理由の部分によく出る言葉（`Permission denied` など）を知っていれば、英語が苦手でも原因の種類が分かる。",
+      "related": [
+        "troubleshooting",
+        "log"
+      ],
+      "lessons": [
+        "trouble.b.02"
+      ]
     }
   ]
 }
