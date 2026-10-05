@@ -58,10 +58,38 @@ interface SedCommand {
   action: { kind: 's'; pattern: RegExp; replacement: string } | { kind: 'd' } | { kind: 'p' };
 }
 
+/** スクリプトを ; と改行で命令に分ける。s の 3 つの部分（探す・置き換える・印）の中の ; は区切りにしない（本物と同じ） */
+function splitSedScript(script: string): string[] {
+  const parts: string[] = [];
+  let start = 0;
+  let i = 0;
+  while (i < script.length) {
+    // 番地（行番号・$・/正規表現/）を飛ばす
+    while (i < script.length && /\s/.test(script[i] ?? '')) i += 1;
+    if (script[i] === '/') {
+      for (i += 1; i < script.length && script[i] !== '/'; i += script[i] === '\\' ? 2 : 1);
+      i += 1;
+    } else while (i < script.length && /[\d$]/.test(script[i] ?? '')) i += 1;
+    while (i < script.length && /\s/.test(script[i] ?? '')) i += 1;
+    if (script[i] === 's' && i + 1 < script.length) {
+      const delimiter = script[i + 1] ?? '/';
+      let seen = 0;
+      for (i += 2; i < script.length && seen < 2; i += 1) {
+        if (script[i] === '\\') i += 1;
+        else if (script[i] === delimiter) seen += 1;
+      }
+    }
+    while (i < script.length && script[i] !== ';' && script[i] !== '\n') i += 1;
+    parts.push(script.slice(start, i));
+    i += 1;
+    start = i;
+  }
+  return parts;
+}
+
 /** 対応するのは s/// と d と p だけ。それ以外は黙って無視せずエラーにする。 */
 export function parseSedScript(script: string): SedCommand[] {
-  return script
-    .split(';')
+  return splitSedScript(script)
     .map((part) => part.trim())
     .filter((part) => part !== '')
     .map((part) => {

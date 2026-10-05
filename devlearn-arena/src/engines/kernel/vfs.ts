@@ -198,26 +198,36 @@ export function remove(state: VfsState, path: string, recursive = false): VfsSta
   return dropMeta(withNodes(state, (n) => n.delete(p)), [p]);
 }
 
-export function copy(state: VfsState, from: string, to: string, recursive = false): VfsState {
+/**
+ * コピーする。コピーは元の権限（mode）を持つ（本物の cp と同じ）。keepOwner なら所有者も持っていく（mv と同じ）。
+ * 既定と違う権限を持たない物は、コピーも既定のまま
+ */
+export function copy(state: VfsState, from: string, to: string, recursive = false, keepOwner = false): VfsState {
   const src = normalize(from);
   const node = state.nodes.get(src);
   if (!node) throw new VfsError('ENOENT', src);
   // コピー先が既存ディレクトリなら、その中に同名で入れる
   const destNode = state.nodes.get(normalize(to));
   const dest = destNode?.kind === 'dir' ? `${normalize(to)}/${basename(src)}` : normalize(to);
+  const carry = (next: VfsState, fromPath: string, toPath: string): VfsState => {
+    const own = state.meta.get(fromPath);
+    if (!own) return dropMeta(next, [toPath]);
+    return setMeta(next, toPath, keepOwner ? own : { ...defaultMeta(state.nodes.get(fromPath)?.kind === 'dir'), mode: own.mode });
+  };
 
   if (node.kind === 'file') {
     const written = writeFile(state, dest, node.content);
-    return node.size === undefined ? written : setSize(written, dest, node.size);
+    return carry(node.size === undefined ? written : setSize(written, dest, node.size), src, dest);
   }
   if (!recursive) throw new VfsError('EISDIR', src);
-  let next = mkdir(state, dest, true);
+  let next = carry(mkdir(state, dest, true), src, dest);
   for (const key of descendants(state, src)) {
     const child = state.nodes.get(key);
     if (!child) continue;
     const mapped = dest + key.slice(src.length);
     next = child.kind === 'dir' ? mkdir(next, mapped, true) : writeFile(next, mapped, child.content, true);
     if (child.kind === 'file' && child.size !== undefined) next = setSize(next, mapped, child.size);
+    next = carry(next, key, mapped);
   }
   return next;
 }
@@ -225,7 +235,7 @@ export function copy(state: VfsState, from: string, to: string, recursive = fals
 export function move(state: VfsState, from: string, to: string): VfsState {
   const src = normalize(from);
   if (!state.nodes.has(src)) throw new VfsError('ENOENT', src);
-  const copied = copy(state, src, to, true);
+  const copied = copy(state, src, to, true, true);
   return remove(copied, src, true);
 }
 

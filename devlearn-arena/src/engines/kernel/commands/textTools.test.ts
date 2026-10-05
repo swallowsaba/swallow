@@ -60,6 +60,12 @@ describe('sed', () => {
     expect(r.code).toBe(1);
     expect(r.err).toContain('unsupported command');
   });
+  it('置き換える文の中の ; は区切りにしない（nginx の設定の 1 行を書き込める）。s の外の ; は区切り', () => {
+    run(`sed -i '2s|.*|return 301 https://$host$request_uri;|' old.txt`);
+    expect(run('cat old.txt').out).toBe('alpha\nreturn 301 https://$host$request_uri;\ngamma\n');
+    expect(run('sed "s/alpha/A/;s/gamma/G/" old.txt').out).toBe('A\nreturn 301 https://$host$request_uri;\nG\n');
+    expect(parseSedScript('s/a/b;c/g; 2d').length).toBe(2);
+  });
   it('スクリプトを直接パースできる', () => {
     expect(parseSedScript('s/a/b/g').length).toBe(1);
     expect(() => parseSedScript('q')).toThrow();

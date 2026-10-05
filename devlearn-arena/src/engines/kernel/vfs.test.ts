@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  appendFile, copy, createVfs, exists, isDir, list, mkdir, move, readFile, remove, stat, touch,
+  appendFile, copy, createVfs, exists, isDir, list, metaOf, mkdir, move, readFile, remove, setMeta, stat, touch,
   VfsError, writeFile, type VfsState,
 } from './vfs';
 
@@ -122,6 +122,13 @@ describe('copy / move', () => {
     const next = move(fs, '/home/learner/notes.txt', '/home/learner/renamed.txt');
     expect(exists(next, '/home/learner/notes.txt')).toBe(false);
     expect(readFile(next, '/home/learner/renamed.txt')).toBe('hello\n');
+  });
+  it('コピーは元の権限を持ち（本物の cp と同じ）、move は所有者ごと持っていく', () => {
+    const locked = setMeta(fs, '/home/learner/notes.txt', { mode: 0o600, owner: 'ada', group: 'ada' });
+    expect(metaOf(copy(locked, '/home/learner/notes.txt', '/tmp-notes.txt'), '/tmp-notes.txt').mode).toBe(0o600);
+    expect(metaOf(move(locked, '/home/learner/notes.txt', '/moved.txt'), '/moved.txt')).toEqual({ mode: 0o600, owner: 'ada', group: 'ada' });
+    const tree = setMeta(fs, '/home/learner/work/a.txt', { mode: 0o640, owner: 'learner', group: 'learner' });
+    expect(metaOf(copy(tree, '/home/learner/work', '/backup', true), '/backup/a.txt').mode).toBe(0o640);
   });
   it('無いものは move できない', () => {
     expect(() => move(fs, '/nope', '/x')).toThrow(VfsError);
