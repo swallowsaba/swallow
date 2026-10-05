@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>守る観点の 3 つ。機密性は見られないこと、完全性は書き換えられないこと、可用性は使い続けられること。それぞれ、破られた例と守り方</title>
+  <g class="el" data-part="confidentiality">
+    <rect x="20" y="30" width="205" height="240" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="122" y="64" text-anchor="middle" font-size="18" fill="#5cc1ff">機密性</text>
+    <text x="122" y="90" text-anchor="middle" font-size="14" fill="#eef2f6">見られない</text>
+    <path d="M40 108 H205" fill="none" stroke="#9fb0c6" stroke-width="1" />
+    <text x="40" y="134" font-size="13" fill="#9fb0c6">破られた例</text>
+    <text x="40" y="158" font-size="14" fill="#eef2f6">名簿が誰でも読めた</text>
+    <text x="40" y="206" font-size="13" fill="#9fb0c6">守り方</text>
+    <text x="40" y="230" font-size="14" fill="#eef2f6">読める人を絞る</text>
+    <text x="40" y="252" font-size="14" fill="#eef2f6">通信を暗号化する</text>
+  </g>
+  <g class="el" data-part="integrity">
+    <rect x="248" y="30" width="205" height="240" rx="10" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="350" y="64" text-anchor="middle" font-size="18" fill="#f2b632">完全性</text>
+    <text x="350" y="90" text-anchor="middle" font-size="14" fill="#eef2f6">書き換えられない</text>
+    <path d="M268 108 H433" fill="none" stroke="#9fb0c6" stroke-width="1" />
+    <text x="268" y="134" font-size="13" fill="#9fb0c6">破られた例</text>
+    <text x="268" y="158" font-size="14" fill="#eef2f6">料金表を書き換えられた</text>
+    <text x="268" y="206" font-size="13" fill="#9fb0c6">守り方</text>
+    <text x="268" y="230" font-size="14" fill="#eef2f6">変更の記録を残す</text>
+    <text x="268" y="252" font-size="14" fill="#eef2f6">署名で確かめる</text>
+  </g>
+  <g class="el" data-part="availability">
+    <rect x="476" y="30" width="205" height="240" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="578" y="64" text-anchor="middle" font-size="18" fill="#3ae08a">可用性</text>
+    <text x="578" y="90" text-anchor="middle" font-size="14" fill="#eef2f6">使い続けられる</text>
+    <path d="M496 108 H661" fill="none" stroke="#9fb0c6" stroke-width="1" />
+    <text x="496" y="134" font-size="13" fill="#9fb0c6">破られた例</text>
+    <text x="496" y="158" font-size="14" fill="#eef2f6">大量の通信で止まった</text>
+    <text x="496" y="206" font-size="13" fill="#9fb0c6">守り方</text>
+    <text x="496" y="230" font-size="14" fill="#eef2f6">予備の機械を置く</text>
+    <text x="496" y="252" font-size="14" fill="#eef2f6">通信の量を制限する</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="350" y="310" text-anchor="middle" font-size="14" fill="#eef2f6">事故は、きっかけではなく「何が失われたか」で分ける</text>
+  </g>
+</svg>

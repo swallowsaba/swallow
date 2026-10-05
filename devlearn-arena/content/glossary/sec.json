@@ -108,6 +108,50 @@
         "sec.b.04",
         "sec.b.06"
       ]
+    },
+    {
+      "id": "confidentiality",
+      "word": "機密性",
+      "reading": "きみつせい",
+      "plain": "見てよい人だけが見られること。名簿や鍵が、関係の無い人に見られない状態。",
+      "why": "守る観点の 1 つ。破られると、情報が漏れる。読める人を絞る・通信を暗号化する、で守る。",
+      "related": [
+        "integrity",
+        "availability",
+        "permission"
+      ],
+      "lessons": [
+        "sec.b.01"
+      ]
+    },
+    {
+      "id": "integrity",
+      "word": "完全性",
+      "reading": "かんぜんせい",
+      "plain": "情報が正しいまま、勝手に書き換えられていないこと。",
+      "why": "守る観点の 1 つ。破られると、値や中身が信用できなくなる。変更の記録や署名で、書き換えに気づけるようにする。",
+      "related": [
+        "confidentiality",
+        "availability"
+      ],
+      "lessons": [
+        "sec.b.01"
+      ]
+    },
+    {
+      "id": "availability",
+      "word": "可用性",
+      "reading": "かようせい",
+      "plain": "使いたい時に、使い続けられること。止まらない・止まってもすぐ戻ること。",
+      "why": "守る観点の 1 つ。破られると、サービスが使えなくなる。予備の機械や、押し寄せる通信の制限で守る。",
+      "related": [
+        "confidentiality",
+        "integrity",
+        "server"
+      ],
+      "lessons": [
+        "sec.b.01"
+      ]
     }
   ]
 }

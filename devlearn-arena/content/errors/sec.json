@@ -27,6 +27,36 @@
         "certificate-chain",
         "intermediate-certificate"
       ]
+    },
+    {
+      "id": "sec-cia-mixup",
+      "match": "答えが合っていない",
+      "meaning": "全ての欄を選んだが、事故の分け方が合っていない。",
+      "causes": [
+        "結果ではなく、きっかけ（原因）で分けた（盗まれたパスワードを見て、B を機密性にした）。",
+        "「止まった」と「書き換えられた」を取り違えた。"
+      ],
+      "hint": "事故ごとに、結果として何が失われたか（見られた・書き換えられた・使えなくなった）を読む。",
+      "terms": [
+        "confidentiality",
+        "integrity",
+        "availability"
+      ]
+    },
+    {
+      "id": "sec-protect-mixup",
+      "match": "答えが合っていない",
+      "meaning": "全ての欄を選んだが、観点と守りの手の組が合っていない。",
+      "causes": [
+        "暗号化を、止まる事故（可用性）の守りに選んだ。",
+        "変更の記録を、見られる事故（機密性）の守りに選んだ。"
+      ],
+      "hint": "その手が「見られない」「書き換えに気づく」「止まらない」のどれに効くかを考える。",
+      "terms": [
+        "confidentiality",
+        "integrity",
+        "availability"
+      ]
     }
   ]
 }
