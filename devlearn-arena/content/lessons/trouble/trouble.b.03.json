@@ -1,0 +1,228 @@
+{
+  "id": "trouble.b.03",
+  "domain": "trouble",
+  "level": "beginner",
+  "theme": "読む",
+  "title": "ログを読む",
+  "goal": "時刻と文脈で手掛かりを集められる",
+  "minutes": 15,
+  "prerequisites": [
+    "trouble.b.02"
+  ],
+  "related": [
+    "linux.i.02",
+    "mon.b.02"
+  ],
+  "next": [
+    "web.a.02"
+  ],
+  "terms": [
+    "log",
+    "error-message",
+    "log-level",
+    "server",
+    "app",
+    "database",
+    "disk",
+    "grep",
+    "head",
+    "sort",
+    "troubleshooting",
+    "service",
+    "file"
+  ],
+  "explain": {
+    "what": "{{term:log}}を読むことは、エラーの行だけでなく、その前後の行（文脈）と時刻から手掛かりを集めること。エラーが出る前に何をしていたか、同じ時刻にほかの所で何が起きたかを見る。",
+    "why": "{{term:error-message}}は「何が失敗したか」を言うが、「なぜ」は前の行に書いてあることが多い。1 つの失敗は次々に別の失敗を呼ぶので、目立つエラーの行は、たいてい原因ではなく結果。",
+    "use": "障害の調べ。行の頭の時刻と{{term:log-level}}（普段の記録か・失敗か、などの重さの印）で範囲を絞り、{{term:server}}や{{term:app}}・{{term:database}}など複数のログを時刻で並べて、最初の異常を探す。",
+    "when": "エラーの行だけ見ても原因が分からない時。例えば、アプリが「データベースにつながらない」と言っている時は、同じ時刻のデータベースのログを見る。",
+    "figures": [
+      "trouble-b03-context"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "situation",
+      "prompt": "アプリのログに、つながらないというエラーがずらりと並んでいる。原因の行を探すには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "最初のエラーの直前の行と、同じ時刻のほかのログを見る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "一番多く出ているエラーを原因と見る",
+          "correct": false,
+          "whyNot": "多く出る行は、原因が続いている間の結果のことが多い。数ではなく、順番で見る。"
+        },
+        {
+          "id": "c",
+          "text": "一番最後の行を見る",
+          "correct": false,
+          "whyNot": "最後の行は、失敗が重なった末の結果。原因は、もっと前にある。"
+        }
+      ],
+      "see": "why"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの行の関係は？",
+      "a": "db のログ 10:11:58 「{{term:disk}}がいっぱいで書けない」",
+      "b": "app のログ 10:12:03 「db につながらない」",
+      "answer": "cause",
+      "why": "db が先に書けなくなって止まり、その後で app がつながらなくなった。時刻で並べると、原因と結果の順が分かる。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "エラーの行を読んだが、原因が分からない。次に見るのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "そのエラーより前の行（直前に何をしていたか）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "同じエラーの文を検索して、ほかの人の記事を読む",
+          "correct": false,
+          "whyNot": "記事は一般論。このサーバで直前に何が起きたかは、ログの前の行にしか無い。"
+        },
+        {
+          "id": "c",
+          "text": "ログを消して、もう一度起きるのを待つ",
+          "correct": false,
+          "whyNot": "手掛かりを自分で消してしまう。今あるログを先に読む。"
+        }
+      ],
+      "explanation": "「なぜ」はエラーの前に書いてあることが多い。直前の行で、何をしていた時に失敗したかを見る。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "2 つのログに、同じ時刻の行があった。アプリのエラーの原因として、まず疑うのは？",
+      "context": {
+        "log": "10:20:05 web  restarting (config reloaded)\n10:20:05 app  ERROR upstream closed connection"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "同じ時刻に起きた web の再起動",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "アプリの作りの誤り",
+          "correct": false,
+          "whyNot": "同じ時刻に web が再起動している。アプリだけを疑う前に、つながっている相手の動きを確かめる。"
+        },
+        {
+          "id": "c",
+          "text": "関係は無い。たまたま同じ時刻だった",
+          "correct": false,
+          "whyNot": "同じ時刻は強い手掛かり。偶然と決める前に、関係があるかを確かめる。"
+        }
+      ],
+      "explanation": "相手（web）が再起動すると、つないでいた接続は切れる。同じ時刻の別のログは、関係を疑ってまず確かめる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "ログが何万行もある。範囲を絞るのに、まず使う手掛かりは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "いつ（時刻）と、どれの（{{term:service}}）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "行の長さ",
+          "correct": false,
+          "whyNot": "長い行が大事とは限らない。障害が起きた時刻と、関係するサービスで絞る。"
+        },
+        {
+          "id": "c",
+          "text": "ログの{{term:file}}の名前の順",
+          "correct": false,
+          "whyNot": "名前の順は、出来事の順と関係が無い。時刻で並べる。"
+        }
+      ],
+      "explanation": "「何時ごろから」「どのサービスで」が分かれば、読む行は一気に減る。症状と範囲（切り分けの型）がここで効く。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "予約サイトが 10:12 ごろから使えなくなった。app と db の 2 つのログを時刻で並べ、最初の原因の行を見つける。",
+    "environment": "linux-server",
+    "setup": {
+      "dirs": [
+        "/var/log/app",
+        "/var/log/db"
+      ],
+      "files": {
+        "/var/log/app/app.log": "2026-10-06 10:10:00 app INFO  GET /reserve 200\n2026-10-06 10:11:30 app INFO  GET /reserve 200\n2026-10-06 10:12:03 app ERROR db query failed: connection refused (db:5432)\n2026-10-06 10:12:04 app ERROR db query failed: connection refused (db:5432)\n2026-10-06 10:12:10 app WARN  retrying db connection (1/3)\n2026-10-06 10:12:40 app ERROR giving up: database unavailable\n",
+        "/var/log/db/db.log": "2026-10-06 10:10:00 db  LOG   checkpoint complete\n2026-10-06 10:11:20 db  LOG   import started (reserve_history)\n2026-10-06 10:11:58 db  ERROR could not write to file \"pg_wal/0003\": No space left on device\n2026-10-06 10:12:00 db  FATAL the database system is shutting down\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "app",
+        "purpose": "app のログ（`/var/log/app/app.log`）を読み、最初にエラー（`ERROR`）が出た時刻を、時:分:秒で答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "10:12:03"
+        },
+        "afterward": "app は 10:12:03 から db につながらなくなった（`connection refused`）。その前の 10:11:30 までは普段どおり。app のログには、db がなぜ止まったかは書いていない。",
+        "hints": [
+          "`ERROR` の行を上から順に見る。知りたいのは最初の 1 つ。",
+          "{{term:grep}} で `ERROR` を含む行に絞り、{{term:head}} で最初の 1 行だけを見る。",
+          "`grep ERROR /var/log/app/app.log | head -1` と打つ。答えの欄に `10:12:03` と入れる。"
+        ],
+        "expectedErrors": [
+          "trouble-log-first"
+        ]
+      },
+      {
+        "id": "cause",
+        "purpose": "db のログ（`/var/log/db/db.log`）と時刻で並べ、app の最初のエラーより前に起きた、最初の異常の行の時刻を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "10:11:58"
+        },
+        "afterward": "db は 10:11:58 に{{term:disk}}がいっぱいで書けなくなり（`No space left on device`）、10:12:00 に止まった。app のエラーは、その 5 秒後から。10:12:00 の `FATAL` も app の `ERROR` も、結果の行。",
+        "hints": [
+          "2 つのログを 1 つにして、時刻の順に並べる。行の頭が日付と時刻なので、{{term:sort}}で並べ替えれば時刻の順になる。",
+          "app の最初のエラー（10:12:03）より前に、db で何が起きたか。`FATAL`（止まった）は結果。その前の行を読む。",
+          "`sort /var/log/app/app.log /var/log/db/db.log` と打つ。答えの欄に `10:11:58` と入れる。"
+        ],
+        "expectedErrors": [
+          "trouble-log-result"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "2 つのログを時刻で並べ、目立つエラーの行（結果）ではなく、その前の db のディスクの行（原因）を見つけられた。",
+    "partial": "ヒントを使って見つけられた。次は、`FATAL` の行がなぜ原因ではないのかを、時刻を使って説明してみよう。",
+    "retry": "まだ原因の行に届いていない。2 つのログを時刻の順に並べ、app の最初のエラーより前の行を読み直そう。"
+  },
+  "summary": {
+    "points": [
+      "前後の文脈を見る",
+      "時刻で並べる",
+      "最初の異常を探す"
+    ],
+    "next": [
+      "trouble.i.01"
+    ],
+    "terms": [
+      "log",
+      "log-level"
+    ]
+  }
+}

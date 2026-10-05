@@ -161,6 +161,33 @@
       "terms": [
         "error-message"
       ]
+    },
+    {
+      "id": "trouble-log-first",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、app の最初のエラーの時刻と違う。",
+      "causes": [
+        "最後のエラー（`giving up`）の時刻を答えた。",
+        "`WARN` の行や、普段どおりの `INFO` の行の時刻を答えた。"
+      ],
+      "hint": "`ERROR` を含む行だけに絞り、一番上の行の時刻を読む。",
+      "terms": [
+        "log-level"
+      ]
+    },
+    {
+      "id": "trouble-log-result",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、最初の異常の行と違う。結果の行を原因と見たようだ。",
+      "causes": [
+        "db が止まった `FATAL` の行（結果）を答えた。",
+        "app の `ERROR` の行（もっと後の結果）を答えた。"
+      ],
+      "hint": "2 つのログを時刻の順に並べ、`FATAL` より前で、普段と違う最初の行を探す。",
+      "terms": [
+        "log",
+        "log-level"
+      ]
     }
   ]
 }

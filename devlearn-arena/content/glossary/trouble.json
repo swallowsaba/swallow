@@ -28,6 +28,19 @@
       "lessons": [
         "trouble.b.02"
       ]
+    },
+    {
+      "id": "log-level",
+      "word": "ログレベル",
+      "plain": "ログの 1 行ごとに付く、重さの印。軽い順に `DEBUG`・`INFO`（普段の記録）・`WARN`（気になること）・`ERROR`（失敗）・`FATAL`（止まった）などがある。",
+      "why": "大量のログから、まず `ERROR` 以上の行に絞れる。ただし最初の原因は、`ERROR` の前の `WARN` や普段の行に隠れていることもある。",
+      "related": [
+        "log",
+        "troubleshooting"
+      ],
+      "lessons": [
+        "trouble.b.03"
+      ]
     }
   ]
 }

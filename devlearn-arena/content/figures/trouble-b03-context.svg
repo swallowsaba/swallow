@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>app と db の 2 つのログを時刻で並べた所。前の行は普段どおり、10:11:58 の db の行が最初の異常（原因）、その後の db の停止と app のエラーは結果</title>
+  <g class="el" data-part="before">
+    <text x="40" y="58" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">10:11:20 db  import started</text>
+    <text x="40" y="88" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">10:11:30 app GET /reserve 200</text>
+    <path d="M380 44 V94" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <text x="396" y="68" font-size="14" fill="#eef2f6">前（文脈）</text>
+    <text x="396" y="88" font-size="13" fill="#9fb0c6">直前まで何をしていたか</text>
+  </g>
+  <g class="el" data-part="cause">
+    <rect x="28" y="106" width="340" height="34" rx="6" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="40" y="128" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#ff8a7a">10:11:58 db  ERROR No space left</text>
+    <path d="M380 108 V138" fill="none" stroke="#ff8a7a" stroke-width="2" />
+    <text x="396" y="128" font-size="14" fill="#ff8a7a">原因（最初の異常）</text>
+  </g>
+  <g class="el" data-part="result">
+    <text x="40" y="170" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">10:12:00 db  FATAL shutting down</text>
+    <text x="40" y="200" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">10:12:03 app ERROR connection refused</text>
+    <text x="40" y="230" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">10:12:40 app ERROR giving up</text>
+    <path d="M380 156 V236" fill="none" stroke="#eef2f6" stroke-width="2" />
+    <text x="396" y="190" font-size="14" fill="#eef2f6">結果</text>
+    <text x="396" y="210" font-size="13" fill="#9fb0c6">数が多く目立つが、原因ではない</text>
+  </g>
+  <g class="el" data-part="time">
+    <path d="M18 44 V236" fill="none" stroke="#f2b632" stroke-width="2" />
+    <path d="M12 230 L18 242 L24 230 Z" fill="#f2b632" />
+    <text x="350" y="290" text-anchor="middle" font-size="14" fill="#f2b632">2 つのログを時刻で並べると、原因 → 結果 の順が見える</text>
+  </g>
+</svg>
