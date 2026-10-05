@@ -320,3 +320,30 @@ describe('答える形と、出来上がったのに満たさない時の知ら�
     expect([...p.shell.procs.processes.values()].find((x) => x.command === 'video-encoder')?.pid).toBe(101);
   });
 });
+
+describe('出力に出るエラー（HTTP の 4xx・5xx。docs/content-spec.md 2.5 の output）', () => {
+  const forbidden = { id: 'web-403-test', match: '403 Forbidden', output: true, meaning: '見せられない', causes: ['権限', '置き場所'], hint: '権限を見る' };
+  const failedWord = { id: 'failed-test', match: 'failed', meaning: '失敗', causes: ['a', 'b'], hint: 'c' };
+  const practice: Practice = {
+    mode: 'terminal',
+    purpose: 'ページを公開する',
+    environment: 'linux-basic',
+    steps: [{
+      id: 'serve', purpose: '公開する', check: { kind: 'fs', path: '/tmp/done' }, afterward: '公開した',
+      hints: ['a', 'b', '`touch /tmp/done` と打つ。'], expectedErrors: ['web-403-test', 'failed-test'],
+    }],
+  };
+  const shell = createShellState(shellOptions(practice.environment, practice.setup));
+  const guides = [forbidden, failedWord];
+
+  it('手順の想定エラーで output の物は、標準エラーが空でも出力に当たれば出す', () => {
+    const r = afterCommand(practice, startRun(), { line: 'curl -i http://localhost/', stderr: '', stdout: 'HTTP/1.1 403 Forbidden\n', shell }, guides);
+    expect(r.error?.id).toBe('web-403-test');
+    expect(r.run.errors).toEqual(['web-403-test']);
+  });
+
+  it('output の無い解説は出力に当てない（systemctl status の「failed」でエラーにしない）', () => {
+    const r = afterCommand(practice, startRun(), { line: 'systemctl status web', stderr: '', stdout: 'Active: failed\n', shell }, guides);
+    expect(r.error).toBeNull();
+  });
+});

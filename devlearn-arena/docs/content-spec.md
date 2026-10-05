@@ -161,8 +161,13 @@ interface ErrorGuide {
   causes: Rich[];                // 原因候補（2〜3 個）
   hint: Rich;                    // 次に何を確かめるか
   terms?: string[];
+  output?: boolean;              // 出力（標準出力）にも当てる
 }
 ```
+
+- エラーは、標準エラーに出た文に `match` を当てて探す（手順の想定エラーを先に、無ければ全ての解説から）
+- HTTP の 4xx・5xx のように、失敗でも標準エラーに出ない物（curl は返事の本文と頭を出力に出す）は `output: true` にする。
+  手順の想定エラー（`expectedErrors`）の時だけ、出力にも当てる（`systemctl status` の「failed」のような、出力のただの語でエラーにしない）
 
 実戦でエラーが出たら、`エラー → 内容 → 原因候補 → ヒント → 再挑戦` の順に表示する（`docs/learning-design.md`）。
 

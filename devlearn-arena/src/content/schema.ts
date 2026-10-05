@@ -181,6 +181,8 @@ export const errorGuideSchema = z.object({
   causes: z.array(rich).min(2).max(3),
   hint: rich,
   terms: z.array(termId).optional(),
+  /** 出力（標準出力）にも当てる。HTTP の 4xx・5xx のように、失敗でも標準エラーに出ない物。手順の想定エラー（expectedErrors）の時だけ当てる */
+  output: z.boolean().optional(),
 }).strict();
 
 export const errorFileSchema = z.object({ domain: domainId, errors: z.array(errorGuideSchema) }).strict();

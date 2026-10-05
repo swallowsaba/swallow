@@ -261,6 +261,8 @@ export function afterCommand(
   a: {
     line: string;
     stderr: string;
+    /** 出力（標準出力）。想定エラーのうち output の物だけを当てる（HTTP の 4xx・5xx） */
+    stdout?: string;
     shell?: ShellState;
     sim?: SimState;
     answer?: string;
@@ -280,6 +282,13 @@ export function afterCommand(
   if (a.stderr.trim() !== '') {
     error = findGuide(a.stderr, currentStep(practice, next), guides);
     next = { ...next, errors: [...next.errors, error.id], errorOpen: true };
+  } else if (a.stdout !== undefined && a.stdout.trim() !== '') {
+    const step = currentStep(practice, next);
+    const inOutput = (step?.expectedErrors ?? []).map((id) => guides.find((g) => g.id === id)).find((g) => g?.output === true && guideMatches(g, a.stdout ?? ''));
+    if (inOutput) {
+      error = inOutput;
+      next = { ...next, errors: [...next.errors, inOutput.id], errorOpen: true };
+    }
   }
 
   const done: PracticeStep[] = [];

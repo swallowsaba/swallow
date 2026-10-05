@@ -178,6 +178,15 @@ function PracticeLeft({ p, run, kind, onHint, danger, onTerm, action, onBack, ba
 
 /* ---------- 仮想端末 ---------- */
 
+/** エラーの解説の match（正規表現か文字列）が行に当たるか */
+function safeTest(pattern: string, line: string): boolean {
+  try {
+    return new RegExp(pattern).test(line);
+  } catch {
+    return false;
+  }
+}
+
 interface TerminalSaved {
   shell: ShellSnapshotData;
   run: PracticeRun;
@@ -202,8 +211,12 @@ function TerminalPractice({ practice: p, sessionId, saved, onSave, onFinish, onT
     onSave({ lessonId: sessionId, stepIndex: next.stepIndex, engineState: { shell: snapshotShell(shell.getState()), run: next } satisfies TerminalSaved, savedAt: nowIso() });
   };
 
-  const onExecuted = (line: string, _code: number, stderr: string): void => {
-    save(r.took(afterCommand(p, r.runRef.current, { line, stderr, shell: shell.getState() }, ERROR_GUIDES), stderr, line));
+  const onExecuted = (line: string, _code: number, stderr: string, stdout: string): void => {
+    const outcome = afterCommand(p, r.runRef.current, { line, stderr, stdout, shell: shell.getState() }, ERROR_GUIDES);
+    // 出力に出たエラー（HTTP の 4xx・5xx）は、その行を「言われたこと」として示す
+    const match = outcome.error?.match ?? '';
+    const said = stderr.trim() !== '' || !outcome.error ? stderr : (stdout.split('\n').find((l) => l.includes(match) || safeTest(match, l)) ?? stdout);
+    save(r.took(outcome, said, line));
   };
 
   /** 答える形（answer）の手順の答え。端末の状態は変えない */
