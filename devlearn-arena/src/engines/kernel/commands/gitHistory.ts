@@ -64,7 +64,7 @@ export const historySubcommands: Record<string, GitHandler> = {
 
     if (conflicts.length > 0) {
       return {
-        stdout: `${conflicts.map((p) => `CONFLICT (content): Merge conflict in ${p}`).join('\n')}\n`,
+        stdout: `${conflicts.map((p) => `Auto-merging ${p}\nCONFLICT (content): Merge conflict in ${p}`).join('\n')}\n`,
         stderr: 'Automatic merge failed; fix conflicts and then commit the result.\n',
         code: 1,
         // MERGE_HEAD を覚えておき、解決後の commit をマージコミットにする

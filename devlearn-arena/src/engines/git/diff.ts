@@ -81,3 +81,27 @@ export function diffCommits(git: GitState, before: string | null, after: string)
   }
   return out.join('');
 }
+
+/** 選んだ物（インデックス）と違う、作業ツリーのファイル（パス → 中身） */
+export function changedInWorktree(git: GitState, vfs: VfsState): Map<string, string> {
+  const worktree = walkWorktree(vfs, git.root);
+  const out = new Map<string, string>();
+  for (const [path, entry] of git.index) {
+    const content = worktree.get(path);
+    const object = git.objects.read(entry.hash);
+    if (content !== undefined && content !== (object ? decode(object.body) : '')) out.set(path, content);
+  }
+  return out;
+}
+
+/** 最後の記録と違う、選んだ物（インデックス）のファイル（パス → 中身） */
+export function changedInIndex(git: GitState): Map<string, string> {
+  const committed = treeFiles(git, headCommit(git));
+  const out = new Map<string, string>();
+  for (const [path, entry] of git.index) {
+    if (committed.get(path) === entry.hash) continue;
+    const object = git.objects.read(entry.hash);
+    out.set(path, object ? decode(object.body) : '');
+  }
+  return out;
+}

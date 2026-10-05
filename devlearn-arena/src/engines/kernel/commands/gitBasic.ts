@@ -1,7 +1,7 @@
 import {
   addPaths, branches, commit, createBranch, currentBranch, headCommit, log, stageTracked, status as statusOf, switchBranch,
 } from '@/engines/git/repository';
-import { diffCommits, diffStaged, diffWorktree, unstage } from '@/engines/git/diff';
+import { changedInIndex, changedInWorktree, diffCommits, diffStaged, diffWorktree, unstage } from '@/engines/git/diff';
 import { decode, parseCommit } from '@/engines/git/objects';
 import { peel, resolveObject, resolveRef } from '@/engines/git/refs';
 import { checkoutWorktree } from '@/engines/git/worktree';
@@ -206,6 +206,13 @@ export const basicSubcommands: Record<string, GitHandler> = {
   diff: ({ git, shell, rest }) => {
     const { flags } = parseArgs(['diff', ...rest]);
     const staged = flags.has('staged') || rest.includes('--staged') || rest.includes('--cached');
+    if (rest.includes('--check')) {
+      // 変えたファイルに、衝突の印（<<<<<<< ======= >>>>>>>）の行が残っていないか（本物と同じく、残れば 2 で終わる）
+      const files = staged ? changedInIndex(git) : changedInWorktree(git, shell.vfs);
+      const found = [...files].sort(([a], [b]) => (a < b ? -1 : 1)).flatMap(([path, content]) =>
+        content.split('\n').flatMap((line, i) => (/^(<{7}|={7}|>{7})( |$)/.test(line) ? [`${path}:${String(i + 1)}: leftover conflict marker`] : [])));
+      return { stdout: fromLines(found), code: found.length > 0 ? 2 : 0 };
+    }
     const out = staged ? diffStaged(git) : diffWorktree(git, shell.vfs);
     return { stdout: out, code: 0 };
   },

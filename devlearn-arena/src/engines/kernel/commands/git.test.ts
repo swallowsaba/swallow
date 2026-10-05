@@ -497,3 +497,29 @@ describe('merge（本物と同じ）', () => {
     expect(run('git status').out).toContain('memo.txt');
   });
 });
+
+describe('git diff --check（衝突の印の残り）', () => {
+  it('衝突の印が残った行を「leftover conflict marker」と出し、2 で終わる。印が無ければ何も出さず 0', () => {
+    run('git init');
+    run('echo base > p.txt');
+    run('git add p.txt');
+    run('git commit -m "base"');
+    run('git switch -c topic');
+    run('echo theirs > p.txt');
+    run('git commit -am "topic"');
+    run('git switch main');
+    run('echo ours > p.txt');
+    run('git commit -am "main"');
+    run('git merge topic');
+    const r = run('git diff --check');
+    expect(r.code).toBe(2);
+    expect(r.out).toBe('p.txt:1: leftover conflict marker\np.txt:3: leftover conflict marker\np.txt:5: leftover conflict marker\n');
+    run('git add p.txt');
+    expect(run('git diff --cached --check').out).toContain('p.txt:1: leftover conflict marker');
+    run('echo ours-and-theirs > p.txt');
+    run('git add p.txt');
+    const ok = run('git diff --cached --check');
+    expect(ok.code).toBe(0);
+    expect(ok.out).toBe('');
+  });
+});
