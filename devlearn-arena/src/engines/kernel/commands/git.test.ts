@@ -523,3 +523,34 @@ describe('git diff --check（衝突の印の残り）', () => {
     expect(ok.out).toBe('');
   });
 });
+
+describe('衝突中の git status（本物と同じ）', () => {
+  beforeEach(() => {
+    run('git init');
+    run('echo base > p.txt');
+    run('git add p.txt');
+    run('git commit -m "base"');
+    run('git switch -c topic');
+    run('echo theirs > p.txt');
+    run('git commit -am "topic"');
+    run('git switch main');
+    run('echo ours > p.txt');
+    run('git commit -am "main"');
+    run('git merge topic');
+  });
+
+  it('印の残るファイルは Unmerged paths の both modified に出る', () => {
+    const out = run('git status').out;
+    expect(out).toContain('You have unmerged paths.\n  (fix conflicts and run "git commit")\n');
+    expect(out).toContain('Unmerged paths:\n  (use "git add <file>..." to mark resolution)\n\tboth modified:   p.txt\n');
+    expect(out).not.toContain('Changes not staged for commit');
+  });
+
+  it('直して add すると、全て解けたが取り込みの途中だと言う', () => {
+    run('echo ours-and-theirs > p.txt');
+    run('git add p.txt');
+    const out = run('git status').out;
+    expect(out).toContain('All conflicts fixed but you are still merging.\n  (use "git commit" to conclude merge)\n');
+    expect(out).toContain('Changes to be committed:');
+  });
+});

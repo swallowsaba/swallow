@@ -4,6 +4,7 @@ import { parseCommit } from '@/engines/git/objects';
 import { peel } from '@/engines/git/refs';
 import type { GitState } from '@/engines/git/types';
 import type { CommandResult, RunLineResult, ShellState } from '../registry';
+import { exists, readFile } from '../vfs';
 
 export const NOT_A_REPO =
   'fatal: not a git repository (or any of the parent directories): .git\n';
@@ -46,6 +47,12 @@ export function commitOutput(
   };
 }
 
+/** 作業ツリーのファイルの中身（リポジトリの中のパスで。無ければ空） */
+function readWorktree(git: GitState, shell: ShellState, path: string): string {
+  const full = `${git.root}/${path}`;
+  return exists(shell.vfs, full) ? readFile(shell.vfs, full) : '';
+}
+
 export function formatStatus(git: GitState, shell: ShellState): string {
   const report = status(git, shell.vfs);
   const lines: string[] = [];
@@ -68,9 +75,16 @@ export function formatStatus(git: GitState, shell: ShellState): string {
     }
   }
 
-  if (git.mergeHead !== null) {
+  // 取り込みの途中: 印の残るファイルは「両方が変えた（both modified）」として別に出す
+  const markers = /^(<{7}|={7}|>{7})( |$)/m;
+  const conflicted = git.mergeHead === null ? [] : report.unstaged.filter((e) => markers.test(readWorktree(git, shell, e.path)));
+  const unstaged = report.unstaged.filter((e) => !conflicted.includes(e));
+  if (git.mergeHead !== null && conflicted.length > 0) {
     lines.push('You have unmerged paths.');
     lines.push('  (fix conflicts and run "git commit")');
+  } else if (git.mergeHead !== null) {
+    lines.push('All conflicts fixed but you are still merging.');
+    lines.push('  (use "git commit" to conclude merge)');
   }
 
   if (headCommit(git) === null && report.staged.length === 0) {
@@ -84,9 +98,13 @@ export function formatStatus(git: GitState, shell: ShellState): string {
       lines.push(`\t${label}:   ${entry.path}`);
     }
   }
-  if (report.unstaged.length > 0) {
+  if (conflicted.length > 0) {
+    lines.push('', 'Unmerged paths:', '  (use "git add <file>..." to mark resolution)');
+    for (const entry of conflicted) lines.push(`\tboth modified:   ${entry.path}`);
+  }
+  if (unstaged.length > 0) {
     lines.push('', 'Changes not staged for commit:', '  (use "git add <file>..." to update what will be committed)');
-    for (const entry of report.unstaged) lines.push(`\t${entry.state}:   ${entry.path}`);
+    for (const entry of unstaged) lines.push(`\t${entry.state}:   ${entry.path}`);
   }
   if (report.untracked.length > 0) {
     lines.push('', 'Untracked files:', '  (use "git add <file>..." to include in what will be committed)');
@@ -95,7 +113,7 @@ export function formatStatus(git: GitState, shell: ShellState): string {
   if (report.clean) lines.push('', 'nothing to commit, working tree clean');
   // 選んだ物が無い時は、本物と同じく最後に add を促す
   else if (report.staged.length === 0 && git.mergeHead === null) {
-    lines.push(report.unstaged.length > 0
+    lines.push('', report.unstaged.length > 0
       ? 'no changes added to commit (use "git add" and/or "git commit -a")'
       : 'nothing added to commit but untracked files present (use "git add" to track)');
   }
