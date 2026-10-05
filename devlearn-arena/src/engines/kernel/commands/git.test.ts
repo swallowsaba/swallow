@@ -142,7 +142,7 @@ describe('ブランチ', () => {
   });
 
   it('-b で作成と切り替えを同時にできる', () => {
-    expect(run('git switch -c feature').out).toContain("Switched to branch 'feature'");
+    expect(run('git switch -c feature').out).toBe("Switched to a new branch 'feature'\n");
   });
 
   it('無いブランチには切り替えられない', () => {
@@ -423,9 +423,38 @@ describe('差分と履歴の表示（本物と同じ形）', () => {
     expect(run('git log -p -1').out).toContain('diff --git a/a.txt b/a.txt');
     expect(run('git log --oneline --author=Tanaka').out).toMatch(/^[0-9a-f]{7} first\n$/);
     // 機械の今は 2026-10-03 09:00。yesterday は 24 時間前から
-    expect(run('git log --oneline --since=yesterday').out).toMatch(/^[0-9a-f]{7} second\n$/);
-    expect(run('git log --oneline --since="2026-10-01"').out).toMatch(/^[0-9a-f]{7} second\n$/);
+    expect(run('git log --oneline --since=yesterday').out).toMatch(/^[0-9a-f]{7} \(HEAD -> main\) second\n$/);
+    expect(run('git log --oneline --since="2026-10-01"').out).toMatch(/^[0-9a-f]{7} \(HEAD -> main\) second\n$/);
     expect(run('git log --oneline --until="2026-10-01"').out).toMatch(/^[0-9a-f]{7} first\n$/);
     expect(run('git log --oneline --since="3 days ago"').out.trim().split('\n')).toHaveLength(2);
+  });
+});
+
+describe('枝の見え方（本物と同じ）', () => {
+  beforeEach(() => {
+    run('git init');
+    run('git add a.txt');
+    run('git commit -m "first"');
+  });
+
+  it('git log は、枝の先に (HEAD -> 今の枝, ほかの枝) の印を付ける。--all は全ての枝の記録を出す', () => {
+    run('git switch -c feature');
+    run('echo B >> a.txt');
+    run('git commit -am "second"');
+    expect(run('git log --oneline').out).toMatch(/^[0-9a-f]{7} \(HEAD -> feature\) second\n[0-9a-f]{7} \(main\) first\n$/);
+    expect(run('git log').out).toMatch(/^commit [0-9a-f]{40} \(HEAD -> feature\)\n/);
+    run('git switch main');
+    expect(run('git log --oneline').out).toMatch(/^[0-9a-f]{7} \(HEAD -> main\) first\n$/);
+    expect(run('git log --oneline --all').out).toMatch(/^[0-9a-f]{7} \(feature\) second\n[0-9a-f]{7} \(HEAD -> main\) first\n$/);
+  });
+
+  it('git branch -v は、枝ごとに先の記録の番号と説明を出す', () => {
+    run('git branch feature');
+    expect(run('git branch -v').out).toMatch(/^ {2}feature [0-9a-f]{7} first\n\* main {4}[0-9a-f]{7} first\n$/);
+  });
+
+  it('git status は、選んでいない変更だけの時に「no changes added to commit」で終わる', () => {
+    run('echo B >> a.txt');
+    expect(run('git status').out).toMatch(/no changes added to commit \(use "git add" and\/or "git commit -a"\)\n$/);
   });
 });

@@ -1,6 +1,7 @@
 import { currentBranch, headCommit, status } from '@/engines/git/repository';
 import { aheadBehind } from '@/engines/git/remote';
 import { parseCommit } from '@/engines/git/objects';
+import { peel } from '@/engines/git/refs';
 import type { GitState } from '@/engines/git/types';
 import type { CommandResult, RunLineResult, ShellState } from '../registry';
 
@@ -92,6 +93,12 @@ export function formatStatus(git: GitState, shell: ShellState): string {
     for (const path of report.untracked) lines.push(`\t${path}`);
   }
   if (report.clean) lines.push('', 'nothing to commit, working tree clean');
+  // 選んだ物が無い時は、本物と同じく最後に add を促す
+  else if (report.staged.length === 0 && git.mergeHead === null) {
+    lines.push(report.unstaged.length > 0
+      ? 'no changes added to commit (use "git add" and/or "git commit -a")'
+      : 'nothing added to commit but untracked files present (use "git add" to track)');
+  }
   return `${lines.join('\n')}\n`;
 }
 
@@ -151,6 +158,8 @@ export function formatGitDate(timestamp: number, timezone: string): string {
 
 export interface LogOptions {
   oneline: boolean;
+  /** --all: 全ての枝（とタグ・リモートの枝）の先から辿る */
+  all: boolean;
   patch: boolean;
   max: number | null;
   since: number | null;
@@ -173,12 +182,13 @@ export function parseApproxDate(text: string, now: number): number | null {
 
 /** git log の引数（-1・-n 2・--max-count=2・-p・--oneline・--author・--since/--after・--until/--before） */
 export function parseLogArgs(rest: readonly string[], now: number): LogOptions | { error: string } {
-  const opts: LogOptions = { oneline: false, patch: false, max: null, since: null, until: null, author: null };
+  const opts: LogOptions = { oneline: false, all: false, patch: false, max: null, since: null, until: null, author: null };
   for (let i = 0; i < rest.length; i += 1) {
     const arg = rest[i] ?? '';
     const [name = '', inline] = arg.startsWith('--') ? arg.split(/=(.*)/s) : [arg];
     const value = (): string => inline ?? rest[(i += 1)] ?? '';
     if (arg === '--oneline') opts.oneline = true;
+    else if (arg === '--all') opts.all = true;
     else if (arg === '-p' || arg === '--patch') opts.patch = true;
     else if (/^-\d+$/.test(arg)) opts.max = Number(arg.slice(1));
     else if (/^-n\d+$/.test(arg)) opts.max = Number(arg.slice(2));
@@ -193,4 +203,18 @@ export function parseLogArgs(rest: readonly string[], now: number): LogOptions |
     }
   }
   return opts;
+}
+
+/** git log の枝の印（本物と同じく、端末では既定で付く）。「 (HEAD -> main, tag: v1.0, origin/main, feature)」か空 */
+export function decorationOf(git: GitState, hash: string): string {
+  const current = currentBranch(git);
+  const names: string[] = [];
+  if (current !== null && git.refs.get(`refs/heads/${current}`) === hash) names.push(`HEAD -> ${current}`);
+  else if (current === null && headCommit(git) === hash) names.push('HEAD');
+  // 注釈付きタグは、指している記録まで剥がして比べる
+  const refs = [...git.refs].filter(([, h]) => peel(git, h) === hash).map(([r]) => r).sort();
+  for (const r of refs) if (r.startsWith('refs/tags/')) names.push(`tag: ${r.slice('refs/tags/'.length)}`);
+  for (const r of refs) if (r.startsWith('refs/remotes/')) names.push(r.slice('refs/remotes/'.length));
+  for (const r of refs) if (r.startsWith('refs/heads/') && r !== `refs/heads/${current ?? ''}`) names.push(r.slice('refs/heads/'.length));
+  return names.length === 0 ? '' : ` (${names.join(', ')})`;
 }

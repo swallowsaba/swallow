@@ -294,13 +294,15 @@ export interface LogEntry {
  * マージコミットの第2親も辿るので、統合した側の履歴も出る。
  * 子より先に親が出ないよう位相順に並べ、同じ位置に複数並べるときは新しい方を先にする。
  */
-export function log(git: GitState, limit = 50): LogEntry[] {
+export function log(git: GitState, limit = 50, from?: readonly string[]): LogEntry[] {
   const head = headCommit(git);
-  if (head === null) return [];
+  // from を渡せば、そこから辿る（git log --all は全ての枝の先から）
+  const starts = from ?? (head === null ? [] : [head]);
+  if (starts.length === 0) return [];
 
   const nodes = new Map<string, LogEntry>();
   const discovered: string[] = [];
-  const stack = [head];
+  const stack = [...starts];
   while (stack.length > 0) {
     const hash = stack.pop();
     if (hash === undefined || nodes.has(hash)) continue;
@@ -329,7 +331,8 @@ export function log(git: GitState, limit = 50): LogEntry[] {
   }
 
   const order = new Map(discovered.map((hash, index) => [hash, index]));
-  const ready = [head];
+  // 子の無い記録（辿り始めの先）から出す
+  const ready = [...remaining].filter(([, count]) => count === 0).map(([hash]) => hash);
   const out: LogEntry[] = [];
   while (ready.length > 0 && out.length < limit) {
     let best = 0;

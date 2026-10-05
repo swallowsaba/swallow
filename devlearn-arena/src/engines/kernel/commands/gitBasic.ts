@@ -3,14 +3,14 @@ import {
 } from '@/engines/git/repository';
 import { diffCommits, diffStaged, diffWorktree, unstage } from '@/engines/git/diff';
 import { decode, parseCommit } from '@/engines/git/objects';
-import { resolveObject, resolveRef } from '@/engines/git/refs';
+import { peel, resolveObject, resolveRef } from '@/engines/git/refs';
 import { checkoutWorktree } from '@/engines/git/worktree';
 import { resolve } from '../path';
 import { writeFile } from '../vfs';
 import { fromLines, parseArgs } from './args';
 import { HOOKS_DIR, gitPath } from '@/engines/git/gitdir';
 import { runHook } from './gitRefs';
-import { commitOutput, formatGitDate, formatStatus, parseLogArgs, short, type GitHandler } from './gitShared';
+import { commitOutput, decorationOf, formatGitDate, formatStatus, parseLogArgs, short, type GitHandler } from './gitShared';
 
 /** switch と checkout はブランチ切り替えとしては同じ振る舞いをする */
 const switchTo: GitHandler = ({ git, shell, rest, sub }) => {
@@ -19,7 +19,8 @@ const switchTo: GitHandler = ({ git, shell, rest, sub }) => {
   if (name === undefined) return { stderr: 'fatal: 切り替え先を指定してください\n', code: 128 };
 
   let target = git;
-  if (flags.has('b') || flags.has('c')) {
+  const creating = flags.has('b') || flags.has('c');
+  if (creating) {
     const made = createBranch(git, name);
     if (made.error !== undefined) return { stderr: `${made.error}\n`, code: 128 };
     target = made.git;
@@ -30,7 +31,7 @@ const switchTo: GitHandler = ({ git, shell, rest, sub }) => {
   // 作業ツリーを切り替え先の内容に合わせる
   const vfs = checkoutWorktree(shell.vfs, moved.git, headCommit(git), headCommit(moved.git));
   return {
-    stdout: `Switched to branch '${name}'\n`,
+    stdout: creating ? `Switched to a new branch '${name}'\n` : `Switched to branch '${name}'\n`,
     patch: { git: moved.git, vfs },
   };
 };
@@ -94,7 +95,9 @@ export const basicSubcommands: Record<string, GitHandler> = {
   log: ({ git, rest, nowSeconds }) => {
     const opts = parseLogArgs(rest, nowSeconds);
     if ('error' in opts) return { stderr: opts.error, code: 128 };
-    const all = log(git);
+    // --all は、全ての参照（枝・タグ・リモートの枝）の先から辿る
+    const tips = opts.all ? [...new Set([...git.refs.values()].map((h) => peel(git, h)))] : undefined;
+    const all = log(git, 50, tips);
     if (all.length === 0) {
       return { stderr: 'fatal: your current branch does not have any commits yet\n', code: 128 };
     }
@@ -109,12 +112,12 @@ export const basicSubcommands: Record<string, GitHandler> = {
     if (opts.oneline) {
       // 本物と同じく、--oneline は件名（メッセージの1行目）だけを出す
       return {
-        stdout: entries.map((e) => `${short(e.hash)} ${e.message.split('\n')[0] ?? ''}\n${opts.patch ? patchOf(e.hash, e.parents) : ''}`).join(''),
+        stdout: entries.map((e) => `${short(e.hash)}${decorationOf(git, e.hash)} ${e.message.split('\n')[0] ?? ''}\n${opts.patch ? patchOf(e.hash, e.parents) : ''}`).join(''),
       };
     }
     const out: string[] = [];
     for (const entry of entries) {
-      const lines = [`commit ${entry.hash}`];
+      const lines = [`commit ${entry.hash}${decorationOf(git, entry.hash)}`];
       if (entry.parents.length > 1) lines.push(`Merge: ${entry.parents.map(short).join(' ')}`);
       lines.push(`Author: ${entry.author.name} <${entry.author.email}>`);
       lines.push(`Date:   ${formatGitDate(entry.author.timestamp, entry.author.timezone)}`);
@@ -153,12 +156,21 @@ export const basicSubcommands: Record<string, GitHandler> = {
     return { stdout: `${lines.join('\n')}\n${diff}` };
   },
   branch: ({ git, rest }) => {
-    const { operands } = parseArgs(['branch', ...rest]);
+    const { operands, flags } = parseArgs(['branch', ...rest]);
     const name = operands[0];
     if (name === undefined) {
       const current = currentBranch(git);
+      const names = branches(git);
+      const width = Math.max(0, ...names.map((b) => b.length));
+      // -v は、本物と同じく枝ごとに先の記録の番号と説明の 1 行目を並べる
+      const verbose = (b: string): string => {
+        const tip = git.refs.get(`refs/heads/${b}`) ?? '';
+        const object = git.objects.read(tip);
+        const subject = object?.type === 'commit' ? (parseCommit(object.body).message.trim().split('\n')[0] ?? '') : '';
+        return ` ${b.padEnd(width)} ${short(tip)} ${subject}`;
+      };
       return {
-        stdout: fromLines(branches(git).map((b) => (b === current ? `* ${b}` : `  ${b}`))),
+        stdout: fromLines(names.map((b) => `${b === current ? '*' : ' '}${flags.has('v') ? verbose(b) : ` ${b}`}`)),
       };
     }
     const made = createBranch(git, name);
