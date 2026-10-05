@@ -125,6 +125,33 @@
         "merge",
         "branch"
       ]
+    },
+    {
+      "id": "git-leftover-marker",
+      "match": "leftover conflict marker",
+      "output": true,
+      "meaning": "直したファイルに、衝突の印の行が残っている。",
+      "causes": [
+        "印の間の中身だけを直し、印の行（`<<<<<<<`・`=======`・`>>>>>>>`）を消していない。",
+        "衝突したファイルが 2 つ以上あり、別のファイルを直し忘れた。"
+      ],
+      "hint": "`cat` でファイルを開き、印で始まる行を全て消す。`git diff --check` で何も出なくなれば、印は残っていない。",
+      "terms": [
+        "conflict"
+      ]
+    },
+    {
+      "id": "git-conflict-which",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、衝突したファイルと合っていない。",
+      "causes": [
+        "まだ取り込みをしていない（`git merge feature` を打つと、衝突した所で止まる）。",
+        "`git status` の `both modified` ではない行のファイルを答えた。"
+      ],
+      "hint": "`git status` の `Unmerged paths` の下を見よう。",
+      "terms": [
+        "conflict"
+      ]
     }
   ]
 }

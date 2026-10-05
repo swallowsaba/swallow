@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>衝突したファイルの中。&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD から ======= までが今いる枝の版、======= から &gt;&gt;&gt;&gt;&gt;&gt;&gt; feature までが取り込む枝の版。印の外は衝突していない行</title>
+  <g class="el" data-part="ours">
+    <rect x="20" y="30" width="420" height="78" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="36" y="60" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#5cc1ff">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</text>
+    <text x="36" y="90" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">大人: 350 円</text>
+    <text x="460" y="62" font-size="14" fill="#5cc1ff">今いる枝（main）の版</text>
+    <text x="460" y="84" font-size="13" fill="#9fb0c6">佐藤さん: 値上げ</text>
+  </g>
+  <g class="el" data-part="sep">
+    <text x="36" y="134" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#f2b632">=======</text>
+    <text x="460" y="134" font-size="14" fill="#f2b632">2 つの版の区切り</text>
+  </g>
+  <g class="el" data-part="theirs">
+    <rect x="20" y="150" width="420" height="78" rx="8" fill="none" stroke="#e0457b" stroke-width="2" pointer-events="all" />
+    <text x="36" y="180" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">大人: 300 円（65 歳以上は 150 円）</text>
+    <text x="36" y="210" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#e0457b">&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature</text>
+    <text x="460" y="182" font-size="14" fill="#e0457b">取り込む枝（feature）の版</text>
+    <text x="460" y="204" font-size="13" fill="#9fb0c6">田中さん: 65 歳以上の割引</text>
+  </g>
+  <g class="el" data-part="outside">
+    <text x="36" y="256" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#9fb0c6">子ども: 100 円</text>
+    <text x="460" y="256" font-size="13" fill="#9fb0c6">印の外: 衝突していない</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="300" font-size="14" fill="#3ae08a">直した形: 大人: 350 円（65 歳以上は 150 円）　印の 3 行は全て消す</text>
+  </g>
+</svg>

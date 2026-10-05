@@ -1,0 +1,246 @@
+{
+  "id": "git.b.06",
+  "domain": "git",
+  "level": "beginner",
+  "theme": "conflict",
+  "title": "衝突を解く",
+  "goal": "衝突の印を読み、正しく解消できる",
+  "minutes": 15,
+  "prerequisites": [
+    "git.b.05"
+  ],
+  "related": [
+    "trouble.b.01",
+    "git.i.05"
+  ],
+  "next": [
+    "git.i.01"
+  ],
+  "terms": [
+    "conflict",
+    "branch",
+    "merge",
+    "git-head",
+    "file",
+    "git"
+  ],
+  "explain": {
+    "what": "{{term:conflict}}は、2 つの{{term:branch}}が同じ所を違うように変えていて、{{term:merge}}で自動では合わせられない状態。{{term:file}}に印が入り、2 つの版が並ぶ。",
+    "why": "どちらの版が正しいか（または両方を活かすか）は、中身を知っている人にしか決められない。{{term:git}}は勝手に選ばず、人が決めるまで取り込みを止める。",
+    "use": "共同作業で毎日のように起きる。印の上半分が今いる枝（{{term:git-head}}）の版、下半分が取り込む枝の版。直したら、印の行を全て消し、add と commit で記録する。",
+    "when": "取り込んだら「衝突した」と言われて止まった時。慌てて片方を捨てず、両方の変更の意図を確かめてから、正しい形に直す。",
+    "figures": [
+      "git-b06-markers"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "印と意味を結ぶ。",
+      "pairs": [
+        [
+          "`<<<<<<< HEAD`",
+          "ここから、今いる枝（main）の版"
+        ],
+        [
+          "`=======`",
+          "2 つの版の区切り"
+        ],
+        [
+          "`>>>>>>> feature`",
+          "ここまでが、取り込む枝の版"
+        ]
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "git-b06-markers",
+      "prompt": "図の中で、取り込もうとしている枝（feature）の版を押す。",
+      "answer": [
+        "theirs"
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "main と feature が、料金表の同じ行を別々に書き換えた。main で `git merge feature` を打つと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "衝突が起き、取り込みが途中で止まる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "日付が新しい方の版が自動で選ばれる",
+          "correct": false,
+          "whyNot": "Git はどちらが正しいかを決めない。日付で選ぶこともしない。"
+        },
+        {
+          "id": "c",
+          "text": "feature の版で上書きされる",
+          "correct": false,
+          "whyNot": "どちらかの版を勝手に捨てることはしない。人が決めるまで止まる。"
+        }
+      ],
+      "explanation": "違う行の変更なら自動で合わせられる。同じ行を別々に変えた時だけ衝突する。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "取り込みが衝突で止まった。最初にすることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git status` で、どのファイルが衝突したかを見る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`git commit` で、すぐに記録する",
+          "correct": false,
+          "whyNot": "印が残ったまま記録すると、壊れた中身が履歴に残る。"
+        },
+        {
+          "id": "c",
+          "text": "衝突したファイルを消す",
+          "correct": false,
+          "whyNot": "両方の変更が消えてしまう。印の間を読み、正しい形に直す。"
+        }
+      ],
+      "explanation": "status の `Unmerged paths`（`both modified`）に、衝突したファイルが並ぶ。"
+    },
+    {
+      "id": "q3",
+      "kind": "term",
+      "prompt": "印 `<<<<<<< HEAD` の HEAD は何を指す？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "今いる枝（取り込む側）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "取り込もうとしている枝",
+          "correct": false,
+          "whyNot": "それは `>>>>>>>` の後ろに書かれる名前（feature）。"
+        },
+        {
+          "id": "c",
+          "text": "いちばん最初の記録",
+          "correct": false,
+          "whyNot": "HEAD は今いる枝の先。最初の記録ではない。"
+        }
+      ],
+      "explanation": "上が HEAD（今いる枝）の版、下が取り込む枝の版。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "公園の料金表（`price.txt`）。main では佐藤さんが大人を 350 円に値上げし、feature では田中さんが 65 歳以上の割引を足した。feature を main に取り込み、両方の意図を活かして衝突を解く。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev-office",
+      "cwd": "/home/learner/park-price",
+      "dirs": [
+        "/home/learner/park-price"
+      ],
+      "run": [
+        "git init",
+        "export GIT_AUTHOR_NAME=Sato GIT_AUTHOR_EMAIL=sato@city.example GIT_AUTHOR_DATE=\"2026-09-25 10:00\"",
+        "echo '大人: 300 円' > price.txt",
+        "echo '子ども: 100 円' >> price.txt",
+        "git add price.txt",
+        "git commit -m \"料金表を作る\"",
+        "git switch -c feature",
+        "export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE=\"2026-10-01 11:00\"",
+        "echo '大人: 300 円（65 歳以上は 150 円）' > price.txt",
+        "echo '子ども: 100 円' >> price.txt",
+        "git commit -am \"65 歳以上の割引を足す\"",
+        "git switch main",
+        "export GIT_AUTHOR_NAME=Sato GIT_AUTHOR_EMAIL=sato@city.example GIT_AUTHOR_DATE=\"2026-10-02 14:00\"",
+        "echo '大人: 350 円' > price.txt",
+        "echo '子ども: 100 円' >> price.txt",
+        "git commit -am \"大人を 350 円に値上げする\"",
+        "unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE"
+      ]
+    },
+    "steps": [
+      {
+        "id": "merge",
+        "purpose": "main に feature を取り込む。止まったら、衝突したファイルの名前を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "price.txt"
+        },
+        "afterward": "同じ「大人」の行を両方の枝が変えていたので、取り込みが止まった。`git status` の `both modified` に `price.txt` が出る。",
+        "hints": [
+          "取り込むのは `git merge`。止まったら、どのファイルかを `git status` で見る。",
+          "`git status` の `Unmerged paths` の下、`both modified` の行が衝突したファイル。",
+          "`git merge feature` と `git status` を順に打ち、`price.txt` と答える。"
+        ],
+        "expectedErrors": [
+          "git-conflict",
+          "git-conflict-which"
+        ]
+      },
+      {
+        "id": "fix",
+        "purpose": "印の間の 2 つの版を読み、値上げ（350 円）と 65 歳以上の割引の両方が入った 1 行に直す。印の行は全て消す。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/park-price/price.txt",
+          "contains": "大人: 350 円（65 歳以上は 150 円）"
+        },
+        "afterward": "「大人: 350 円（65 歳以上は 150 円）」の 1 行にまとめた。どちらの意図も消していない。",
+        "hints": [
+          "`cat price.txt` で印の間を読む。上（HEAD）が main の版、下（feature）が取り込む版。",
+          "両方の意図を 1 行にまとめる。`nano price.txt` で直すか、`echo` で書き直す。印の 3 行は残さない。",
+          "`echo '大人: 350 円（65 歳以上は 150 円）' > price.txt` と `echo '子ども: 100 円' >> price.txt` を順に打つ。"
+        ]
+      },
+      {
+        "id": "commit",
+        "purpose": "印が残っていないことを確かめ、解いたことを伝えて記録する。",
+        "check": {
+          "kind": "git",
+          "expr": "branch:feature merged-into:main clean resolved"
+        },
+        "afterward": "印の無い料金表で、取り込みの記録ができた。値上げと割引の両方が main に入った。",
+        "hints": [
+          "記録の前に、印が残っていないかを確かめる。",
+          "`git diff --check` は、残った印の行を教える。何も出なければ、`git add` で解いたことを伝え、`git commit` で記録する。",
+          "`git diff --check` と `git add price.txt` と `git commit -m \"料金表の衝突を解く\"` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "git-leftover-marker",
+          "git-nothing-added"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "印を読んで両方の意図を確かめ、どちらも消さずに 1 つにまとめて記録できた。",
+    "partial": "ヒントを使って、衝突を解けた。次は、`<<<<<<<` と `>>>>>>>` の間のどちらがどの枝の版かを説明してみよう。",
+    "retry": "まだ解けていない。`git diff --check` で残った印を、`git status` で記録の途中かを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "衝突は人が決める合図",
+      "印を消して正しい形に",
+      "add と commit で完了"
+    ],
+    "next": [
+      "git.i.01"
+    ],
+    "terms": [
+      "conflict",
+      "git-head"
+    ]
+  }
+}
