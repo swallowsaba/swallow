@@ -1,0 +1,258 @@
+{
+  "id": "git.i.01",
+  "domain": "git",
+  "level": "intermediate",
+  "theme": "remote",
+  "title": "リモートと複製",
+  "goal": "clone/remote を理解できる",
+  "minutes": 15,
+  "prerequisites": [
+    "git.b.03"
+  ],
+  "related": [
+    "net.b.06",
+    "web.b.01"
+  ],
+  "next": [
+    "git.i.02"
+  ],
+  "terms": [
+    "remote",
+    "clone",
+    "git-origin",
+    "repository",
+    "server",
+    "url",
+    "directory",
+    "file",
+    "ssh",
+    "public-key",
+    "command"
+  ],
+  "explain": {
+    "what": "{{term:remote}}は、手元とは別の場所（{{term:server}}など）にある{{term:repository}}。{{term:clone}}は、リモートを履歴ごと手元に複製すること。",
+    "why": "1 台の機械にしか履歴が無いと、ほかの人と共有できず、その機械が壊れると全て失う。同じ履歴を別の場所にも持てば、共有でき、控えにもなる。",
+    "use": "複製には、リモートの場所（{{term:url}}）を渡す。リポジトリの名前の{{term:directory}}ができ、全ての記録と{{term:file}}が来る。手元は、複製元を{{term:git-origin}}という名前で覚え、名前と場所の一覧をいつでも見られる。",
+    "when": "新しく参加したプロジェクトを手元に持ってくる時。場所の書き方は https と {{term:ssh}} の 2 つ。SSH は、自分の{{term:public-key}}をサーバに登録した人だけが使える。",
+    "figures": [
+      "git-i01-remote"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "`git clone` で複製する",
+      "b": "手元のリポジトリに、origin という名前のリモートができる",
+      "answer": "cause",
+      "why": "clone は、複製元の場所を origin という既定の名前で覚える。後で送る・取ってくる時は、場所を毎回書かずに origin と呼べる。",
+      "see": "use"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "clone すると、最新のファイルだけでなく、これまでの履歴（記録）も手元に来る。",
+      "answer": true,
+      "why": "clone はリポジトリを丸ごと複製する。複製した後は、`git log` で、誰がいつ何を記録したかを手元だけで見られる。",
+      "see": "what"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "git-i01-remote",
+      "prompt": "図の中で、手元のリポジトリが複製元を呼ぶ名前を押す。",
+      "answer": [
+        "origin"
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "サーバにあるリポジトリを、履歴ごと手元に複製する{{term:command}}は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git clone`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`git init`",
+          "correct": false,
+          "whyNot": "init は、今いるディレクトリに空のリポジトリを作る。サーバの記録は来ない。"
+        },
+        {
+          "id": "c",
+          "text": "`git add`",
+          "correct": false,
+          "whyNot": "add は、次の記録に入れるファイルを選ぶ。複製はしない。"
+        }
+      ],
+      "explanation": "`git clone <場所>` で、記録とファイルが全て手元に来て、複製元は origin として覚えられる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "複製したリポジトリが、どこのリモートとつながっているかを確かめたい。打つのは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git remote -v`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`git log`",
+          "correct": false,
+          "whyNot": "log は記録の一覧。リモートの場所は出ない。"
+        },
+        {
+          "id": "c",
+          "text": "`git status`",
+          "correct": false,
+          "whyNot": "status は origin/main と比べた進み具合は言うが、リモートの場所（URL）は出さない。"
+        }
+      ],
+      "explanation": "`-v` を付けると、名前（origin）と場所（URL）が、取ってくる用（fetch）と送る用（push）の 2 行で並ぶ。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "`git clone` した直後に、複製したディレクトリで `git branch` を打つと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "リモートの既定の枝（`* main`）が 1 つ出る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "枝はまだ無いので、何も出ない",
+          "correct": false,
+          "whyNot": "clone は、リモートの既定の枝を手元にも作り、そこに移った状態で終わる。"
+        },
+        {
+          "id": "c",
+          "text": "リモートの全ての枝が、手元の枝として並ぶ",
+          "correct": false,
+          "whyNot": "手元の枝は既定の枝だけ。ほかの枝は、origin/ の付いた名前（リモートの枝の控え）として手元にある。"
+        }
+      ],
+      "explanation": "手元の main は、origin/main（リモートの main の控え）と同じ記録から始まる。`git status` は「up to date with 'origin/main'」と言う。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "公園課の予約システムの開発に加わった。先輩のメモに、リポジトリの場所が 2 つある（https: `https://git.city.example/park/reserve.git` ／ SSH: `git@git.city.example:park/reserve.git`）。SSH は公開鍵をサーバに登録した人だけが使える。手元に複製し、リモートの名前と場所を確かめる。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev-office",
+      "cwd": "/home/learner",
+      "dirs": [
+        "/home/learner",
+        "/home/learner/.ssh"
+      ],
+      "files": {
+        "/home/learner/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILearnerDevOffice learner@dev-office\n"
+      },
+      "gitServers": [
+        {
+          "url": "https://git.city.example/park/reserve.git",
+          "ssh": "git@git.city.example:park/reserve.git",
+          "keys": [
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITanakaParkOffice tanaka@park-office"
+          ],
+          "run": [
+            "export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE=\"2026-09-28 10:00\"",
+            "echo '# 公園の予約システム' > README.md",
+            "git add README.md",
+            "git commit -m \"予約システムを作る\"",
+            "export GIT_AUTHOR_NAME=Sato GIT_AUTHOR_EMAIL=sato@city.example GIT_AUTHOR_DATE=\"2026-10-01 15:00\"",
+            "echo 'テニスコート 1: 9:00-17:00' > slots.txt",
+            "git add slots.txt",
+            "git commit -m \"予約できる時間を書く\""
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "clone",
+        "purpose": "予約システムのリポジトリを、今いる場所（`/home/learner`）に、名前を変えずに複製する。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/reserve/slots.txt",
+          "exists": true
+        },
+        "afterward": "`reserve` ができ、田中さんと佐藤さんの 2 つの記録とファイルが手元に来た。",
+        "hints": [
+          "複製は `git clone` に場所を渡す。SSH の場所は、鍵を登録していないと使えない。",
+          "https の場所なら、鍵が無くても読める。ディレクトリの名前は、場所の最後（`reserve.git` の `.git` を除いた物）になる。",
+          "`git clone https://git.city.example/park/reserve.git` を打つ。"
+        ],
+        "expectedErrors": [
+          "git-ssh-denied",
+          "git-repo-not-found",
+          "git-clone-exists"
+        ]
+      },
+      {
+        "id": "name",
+        "purpose": "複製したリポジトリに入り、リモートの一覧から、リモートの名前を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "origin"
+        },
+        "afterward": "clone した手元は、複製元を `origin` という名前で覚えている。名前は自分で付けていない（既定の名前）。",
+        "hints": [
+          "git は、リポジトリの中でしか使えない。先に複製したディレクトリへ移る。",
+          "`git remote -v` は、行の最初にリモートの名前、次に場所を並べる。",
+          "`cd reserve` と `git remote -v` を順に打ち、`origin` と答える。"
+        ],
+        "expectedErrors": [
+          "git-not-repo",
+          "git-remote-misread"
+        ]
+      },
+      {
+        "id": "place",
+        "purpose": "そのリモートの場所（URL）を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "https://git.city.example/park/reserve.git"
+        },
+        "afterward": "origin は、複製に使った https の場所を指している。取ってくる（fetch）のも送る（push）のも、同じ場所。",
+        "hints": [
+          "リモートの一覧の、名前の右にあるのが場所。",
+          "`(fetch)` と `(push)` の 2 行に、同じ場所が出ている。`.git` まで含めて答える。",
+          "`git remote -v` を打ち、`https://git.city.example/park/reserve.git` と答える。"
+        ],
+        "expectedErrors": [
+          "git-not-repo",
+          "git-remote-misread"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "サーバのリポジトリを履歴ごと複製し、手元が複製元を origin という名前で覚えていることを確かめられた。",
+    "partial": "ヒントを使って、複製とリモートの確認ができた。次は、https と SSH の場所の違い（鍵の登録が要るか）を説明してみよう。",
+    "retry": "まだ確かめ終わっていない。図で、サーバのリポジトリと手元のリポジトリ、その間の origin を見直そう。"
+  },
+  "summary": {
+    "points": [
+      "リモートは別の場所の履歴",
+      "clone で丸ごと複製",
+      "既定の名前は origin"
+    ],
+    "next": [
+      "git.i.02"
+    ],
+    "terms": [
+      "remote",
+      "clone",
+      "git-origin"
+    ]
+  }
+}

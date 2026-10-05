@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>リモートと手元の 2 つのリポジトリ。左はサーバにあるリモート、右は手元。git clone で記録が丸ごと手元に来て、手元は複製元を origin という名前で覚える</title>
+  <g class="el" data-part="remote">
+    <rect x="20" y="40" width="250" height="200" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="40" y="70" font-size="16" font-weight="700" fill="#eef2f6">リモート（サーバ）</text>
+    <text x="40" y="94" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">git.city.example</text>
+    <text x="40" y="112" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">/park/reserve.git</text>
+    <path d="M70 170 H210" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <circle cx="80" cy="170" r="12" fill="#9fb0c6" />
+    <circle cx="140" cy="170" r="12" fill="#9fb0c6" />
+    <circle cx="200" cy="170" r="12" fill="#e0457b" />
+    <text x="145" y="214" text-anchor="middle" font-size="13" fill="#9fb0c6">みんなの記録</text>
+  </g>
+  <g class="el" data-part="clone">
+    <path d="M285 140 H400" fill="none" stroke="#f2b632" stroke-width="4" />
+    <path d="M400 128 L418 140 L400 152 Z" fill="#f2b632" />
+    <text x="350" y="124" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#f2b632">git clone</text>
+    <text x="350" y="176" text-anchor="middle" font-size="13" fill="#eef2f6">履歴ごと複製</text>
+  </g>
+  <g class="el" data-part="local">
+    <rect x="430" y="40" width="250" height="200" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="450" y="70" font-size="16" font-weight="700" fill="#eef2f6">手元（dev-office）</text>
+    <text x="450" y="94" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">~/reserve</text>
+    <path d="M480 170 H620" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <circle cx="490" cy="170" r="12" fill="#9fb0c6" />
+    <circle cx="550" cy="170" r="12" fill="#9fb0c6" />
+    <circle cx="610" cy="170" r="12" fill="#e0457b" />
+    <text x="555" y="214" text-anchor="middle" font-size="13" fill="#9fb0c6">同じ記録が手元にも</text>
+  </g>
+  <g class="el" data-part="origin">
+    <rect x="250" y="262" width="200" height="40" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="350" y="288" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#f2b632">origin</text>
+    <path d="M450 282 C 520 282, 555 270, 555 246" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="4 4" />
+    <path d="M250 282 C 180 282, 145 270, 145 246" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="4 4" />
+    <text x="470" y="306" font-size="13" fill="#9fb0c6">手元が複製元を呼ぶ名前</text>
+  </g>
+</svg>

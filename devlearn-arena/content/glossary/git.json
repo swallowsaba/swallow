@@ -197,6 +197,51 @@
       "lessons": [
         "git.b.05"
       ]
+    },
+    {
+      "id": "remote",
+      "word": "リモート",
+      "reading": "りもーと",
+      "plain": "手元とは別の場所（サーバなど）にあるリポジトリ。手元は、名前（origin など）と場所（URL）で覚えている。",
+      "why": "同じ履歴を別の場所に置くと、ほかの人と共有でき、手元の機械が壊れても履歴が残る。",
+      "related": [
+        "repository",
+        "clone",
+        "git-origin"
+      ],
+      "lessons": [
+        "git.i.01"
+      ]
+    },
+    {
+      "id": "clone",
+      "word": "クローン（複製）",
+      "reading": "くろーん",
+      "plain": "リモートのリポジトリを、全ての記録とファイルごと手元に複製すること。`git clone <場所>` で行う。",
+      "why": "最新のファイルだけでなく履歴も来るので、誰がいつ何を変えたかを手元だけで調べられる。",
+      "related": [
+        "remote",
+        "git-origin",
+        "repository"
+      ],
+      "lessons": [
+        "git.i.01"
+      ]
+    },
+    {
+      "id": "git-origin",
+      "word": "origin",
+      "reading": "おりじん",
+      "plain": "clone した時に、複製元のリモートに付く既定の名前。",
+      "why": "送る・取ってくる時に、長い場所（URL）を毎回書かずに origin と呼べる。origin/main は、リモートの main の手元の控え。",
+      "related": [
+        "remote",
+        "clone",
+        "branch"
+      ],
+      "lessons": [
+        "git.i.01"
+      ]
     }
   ]
 }

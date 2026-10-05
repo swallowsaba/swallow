@@ -152,6 +152,61 @@
       "terms": [
         "conflict"
       ]
+    },
+    {
+      "id": "git-ssh-denied",
+      "match": "Permission denied \\(publickey\\)",
+      "meaning": "{{term:ssh}}の場所でサーバにつなごうとしたが、鍵で認められなかった（認証の失敗）。",
+      "causes": [
+        "自分の{{term:public-key}}（`~/.ssh/id_ed25519.pub`）が、まだサーバに登録されていない。",
+        "登録した鍵と、手元の鍵が違う。"
+      ],
+      "hint": "鍵の登録を頼むか、鍵の要らない https の場所（`https://` で始まる方）を使う。",
+      "terms": [
+        "ssh",
+        "public-key"
+      ]
+    },
+    {
+      "id": "git-repo-not-found",
+      "match": "[Rr]epository .*not found|Repository not found",
+      "meaning": "その場所に{{term:repository}}が見つからない。",
+      "causes": [
+        "場所（{{term:url}}）の打ち間違い（ディレクトリの名前・`.git` の付け忘れなど）。",
+        "別の課のサーバや、別のリポジトリの名前を書いた。"
+      ],
+      "hint": "メモの場所と、打った場所を 1 文字ずつ見比べる。",
+      "terms": [
+        "repository",
+        "url"
+      ]
+    },
+    {
+      "id": "git-clone-exists",
+      "match": "already exists and is not an empty directory",
+      "meaning": "複製先のディレクトリが既にあり、中に物が入っている。上書きを避けるため、複製しなかった。",
+      "causes": [
+        "既に一度 clone している。",
+        "同じ名前の別のディレクトリがある。"
+      ],
+      "hint": "既に複製してあれば、そのディレクトリに `cd` で入って使う。別の名前で複製するなら、`git clone <場所> <名前>`。",
+      "terms": [
+        "clone"
+      ]
+    },
+    {
+      "id": "git-remote-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、リモートの名前・場所と合っていない。",
+      "causes": [
+        "名前と場所を取り違えた（行の最初が名前、次が場所）。",
+        "場所の一部（`.git` など）を書き落とした。"
+      ],
+      "hint": "複製したディレクトリの中で `git remote -v` を打ち、行を左から読もう。",
+      "terms": [
+        "remote",
+        "git-origin"
+      ]
     }
   ]
 }
