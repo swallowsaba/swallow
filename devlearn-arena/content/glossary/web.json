@@ -452,6 +452,83 @@
       "lessons": [
         "web.i.03"
       ]
+    },
+    {
+      "id": "cache-control",
+      "word": "Cache-Control",
+      "reading": "きゃっしゅこんとろーる",
+      "plain": "返事に付ける見出しの 1 つ。ブラウザや途中の中継に、その返事を保存してよいか・どれだけの間使い回してよいかを伝える。",
+      "why": "期限が長すぎると、直しても古い物が出続ける。短すぎると、毎回遠いサーバから取り直して遅くなる。種類ごとに決める。",
+      "related": [
+        "cache",
+        "header",
+        "response"
+      ],
+      "lessons": [
+        "web.i.04",
+        "web.b.05"
+      ]
+    },
+    {
+      "id": "html",
+      "word": "HTML",
+      "reading": "えいちてぃーえむえる",
+      "plain": "Web のページの中身と組み立て（見出し・文・画像の場所など）を書く書き方。<h1>…</h1> のような印で囲んで書く。",
+      "why": "ブラウザは HTML を読んでページを描く。画像や CSS は、HTML の中から URL で呼ばれる部品。",
+      "related": [
+        "css",
+        "web",
+        "url"
+      ],
+      "lessons": [
+        "web.b.07",
+        "web.i.04"
+      ]
+    },
+    {
+      "id": "css",
+      "word": "CSS",
+      "reading": "しーえすえす",
+      "plain": "Web のページの見た目（色・文字の大きさ・並べ方）を決める書き方。HTML とは別のファイルに書くことが多い。",
+      "why": "見た目を HTML から分けておくと、全てのページの見た目を 1 か所で直せる。",
+      "related": [
+        "html",
+        "web"
+      ],
+      "lessons": [
+        "web.i.04"
+      ]
+    },
+    {
+      "id": "cors",
+      "word": "CORS",
+      "reading": "こーす",
+      "plain": "ブラウザが、ある画面から別のサイトのデータを取る時の決まり。相手の返事に許可の見出し（Access-Control-Allow-Origin）が無ければ、ブラウザが中身を画面に渡さない。",
+      "why": "悪いサイトの画面が、利用者のブラウザ（ログインした状態）を使って、勝手に別のサイトのデータを取るのを防ぐ。",
+      "related": [
+        "origin",
+        "header",
+        "api"
+      ],
+      "lessons": [
+        "web.i.05"
+      ]
+    },
+    {
+      "id": "origin",
+      "word": "オリジン（送り元）",
+      "reading": "おりじん",
+      "plain": "画面がどこから来たかを表す、スキーム・ホスト・ポートの組。https://shop.example と http://shop.example は別のオリジン。",
+      "why": "ブラウザはオリジンが同じかどうかで、データを渡してよいかを決める。1 字でも違えば別のサイトとして扱う。",
+      "related": [
+        "cors",
+        "scheme",
+        "host",
+        "port"
+      ],
+      "lessons": [
+        "web.i.05"
+      ]
     }
   ]
 }

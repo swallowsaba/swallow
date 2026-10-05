@@ -1,0 +1,311 @@
+{
+  "id": "web.i.04",
+  "domain": "web",
+  "level": "intermediate",
+  "theme": "性能",
+  "title": "キャッシュ",
+  "goal": "どこで何が保存されるかを説明し、設定できる",
+  "minutes": 15,
+  "prerequisites": [
+    "web.b.05"
+  ],
+  "related": [
+    "net.a.03",
+    "db.i.03"
+  ],
+  "next": [
+    "web.a.01"
+  ],
+  "terms": [
+    "cache",
+    "server",
+    "cache-control",
+    "header",
+    "response",
+    "api",
+    "web-server",
+    "web",
+    "html",
+    "css",
+    "script",
+    "file"
+  ],
+  "explain": {
+    "what": "{{term:cache}}は、一度取った物を近くに保存して使い回す仕組み。{{term:web}}では、ブラウザ・途中の中継・{{term:server}}の手前の 3 か所に保存がある。",
+    "why": "遠いサーバまで取りに行かずに済むので、速く表示でき、サーバの負担も減る。ただし保存した物は、元が変わっても古いまま。",
+    "use": "ページ（{{term:html}}）・画像・{{term:css}}・{{term:script}}・{{term:api}}の返事。どれだけ保存してよいかは、{{term:response}}（返事）の{{term:header}} {{term:cache-control}} で、物の種類ごとに決める。",
+    "when": "ページを直したのに、利用者の画面に古いページが出る時。保存の期限が長すぎるか、どこかの保存が古い物を返している。",
+    "figures": [
+      "web-i04-cache"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの出来事の関係は？",
+      "a": "HTML の保存の期限を 1 年にする",
+      "b": "お知らせを直しても、古いページが出続ける",
+      "answer": "cause",
+      "why": "期限の内は、ブラウザは保存した物を使い、サーバに聞きに行かない。期限の長さが原因で、直した物が届かない。速さと新しさは引き換え。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "サーバのページを直した。自分の画面では新しいのに、利用者の画面には古いページが出る。何が起きている？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "利用者のブラウザか途中の中継が、保存した古いページを返している",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "直した{{term:file}}が、サーバに保存されていない",
+          "correct": false,
+          "whyNot": "自分の画面では新しいので、サーバの物は直っている。古いのは、どこかの保存。"
+        },
+        {
+          "id": "c",
+          "text": "利用者の回線が遅い",
+          "correct": false,
+          "whyNot": "遅くても、届けば新しいページが出る。古いのは、取りに行っていないから。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "お知らせのページを直したのに、半日たっても古いままの利用者がいる。返事の見出しは次の通り。原因は？",
+      "context": {
+        "log": "HTTP/1.1 200 OK\nContent-Type: text/html\nCache-Control: max-age=86400"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "保存の期限が 1 日（86400 秒）と長い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "本文の種類（`Content-Type`）が違う",
+          "correct": false,
+          "whyNot": "text/html は HTML の正しい種類。古いかどうかとは関係しない。"
+        },
+        {
+          "id": "c",
+          "text": "200 が返っているので、問題は無い",
+          "correct": false,
+          "whyNot": "200 は最初に取った時の返事。その後 1 日は、ブラウザは取りに行かずに保存を使う。"
+        }
+      ],
+      "explanation": "max-age=86400 は「1 日は聞かずに使ってよい」。よく変わるページには長すぎる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "会社のロゴの画像は、何年も変わらない（変える時はファイルの名前も変える）。保存の決まりはどうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "長く保存してよい（max-age を 1 年など）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "保存しない（no-store）",
+          "correct": false,
+          "whyNot": "変わらない物を毎回取り直すのは無駄。表示が遅くなり、サーバの負担も増える。"
+        },
+        {
+          "id": "c",
+          "text": "毎回サーバに確かめる（no-cache）",
+          "correct": false,
+          "whyNot": "間違いではないが、変わらないと分かっている物に、毎回の確認は要らない。"
+        }
+      ],
+      "explanation": "変わらない物は長く保存する。変える時に名前を変えれば（logo.v2.png）、別の物として新しく取られる。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "返事に `Cache-Control: no-store` を付けた。ブラウザはどうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "保存しない。次も、サーバから全てを取り直す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "保存するが、使う前にサーバに確かめる",
+          "correct": false,
+          "whyNot": "それは no-cache。名前が紛らわしいが、no-cache は「保存はしてよい」。"
+        },
+        {
+          "id": "c",
+          "text": "1 日だけ保存する",
+          "correct": false,
+          "whyNot": "期限を決めるのは max-age。no-store は一切保存しない。"
+        }
+      ],
+      "explanation": "no-store は保存しない（秘密の情報のページ向け）。no-cache は保存して毎回確かめる。max-age は期限の間は確かめずに使う。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "港町のサイトの保存の決まり（Cache-Control）を、物の種類ごとに決める。お知らせのページ（HTML）は直したらすぐ届き、変わらない画像は速く出るようにする。",
+    "environment": "sim-config",
+    "setup": {
+      "fields": [
+        {
+          "id": "html",
+          "label": "HTML（お知らせのページ）の Cache-Control",
+          "options": [
+            "max-age=31536000",
+            "max-age=600",
+            "no-cache",
+            "no-store"
+          ],
+          "value": "max-age=31536000",
+          "note": "今は 1 年（31536000 秒）保存"
+        },
+        {
+          "id": "image",
+          "label": "画像（ロゴ・写真）の Cache-Control",
+          "options": [
+            "max-age=31536000",
+            "max-age=600",
+            "no-cache",
+            "no-store"
+          ],
+          "value": "no-store",
+          "note": "今は保存しない"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "table",
+          "title": "サイトの部品",
+          "columns": [
+            "部品",
+            "変わる頻度",
+            "大きさ"
+          ],
+          "rows": [
+            [
+              "index.html（お知らせ）",
+              "毎日直す",
+              "12KB"
+            ],
+            [
+              "logo.v3.png（ロゴ）",
+              "変えない（変える時は名前も変える）",
+              "80KB"
+            ],
+            [
+              "port.v1.jpg（港の写真）",
+              "変えない",
+              "900KB"
+            ]
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "利用者の声",
+          "lines": [
+            "お知らせを直したと聞いたのに、昨日の物が出る",
+            "開くたびに、写真が出るまで待たされる"
+          ]
+        },
+        {
+          "kind": "kv",
+          "title": "ブラウザの動き（今の設定）",
+          "rows": [
+            [
+              "HTML",
+              "1 年はサーバに聞かずに、保存した物を出す"
+            ],
+            [
+              "画像",
+              "開くたびに、全てを取り直す"
+            ]
+          ],
+          "when": "field html=max-age=31536000 && field image=no-store"
+        },
+        {
+          "kind": "kv",
+          "title": "ブラウザの動き（直した設定）",
+          "rows": [
+            [
+              "HTML",
+              "毎回サーバに新しいかを確かめる。変わっていなければ、304 で中身を送らずに済む"
+            ],
+            [
+              "画像",
+              "1 年は保存した物を使う。取り直さない"
+            ]
+          ],
+          "when": "field html=no-cache && field image=max-age=31536000"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "html",
+        "purpose": "お知らせのページ（HTML）を、直したらすぐ届くようにする。保存はしてよいが、使う前に毎回サーバに新しいかを確かめる決まりにする。",
+        "check": {
+          "kind": "sim",
+          "expr": "field html=no-cache"
+        },
+        "afterward": "HTML は使う前に毎回サーバに確かめるので、直したお知らせがすぐ届く。変わっていなければ 304（変わっていない）で済み、中身は送らない。",
+        "hints": [
+          "毎日直す物を長く保存すると、直しても届かない。でも、保存を一切やめる必要はない。",
+          "no-cache は「保存してよいが、使う前に毎回確かめる」。no-store は「保存しない」。名前が紛らわしい。",
+          "`set html no-cache` と入れる。"
+        ],
+        "expectedErrors": [
+          "web-cache-mismatch"
+        ]
+      },
+      {
+        "id": "image",
+        "purpose": "変わらない画像（ロゴ・写真）は、長く保存して、開くたびに取り直さないようにする。",
+        "check": {
+          "kind": "sim",
+          "expr": "field html=no-cache && field image=max-age=31536000"
+        },
+        "afterward": "画像は 1 年保存して使い回すので、2 回目からはすぐ出る。変える時は名前を変える（logo.v4.png）ので、古い画像が出続けることもない。",
+        "hints": [
+          "表の「変わる頻度」を見る。変わらない物は、長く保存してよい。",
+          "期限を決めるのは max-age（秒）。最も長い物を選ぶ。",
+          "`set image max-age=31536000` と入れる。"
+        ],
+        "expectedErrors": [
+          "web-cache-mismatch"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "変わる物は毎回確かめ、変わらない物は長く保存して、速さと新しさを両立できた。",
+    "partial": "ヒントを使って、保存の決まりを種類ごとに分けられた。次は、HTML を no-store にした時と no-cache の違いを説明してみよう。",
+    "retry": "まだ両立できていない。表の「変わる頻度」と、ブラウザの動きを見比べ、どこで古い物が保存されているかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "キャッシュは近くに保存して使い回す",
+      "物の種類ごとに保存の期限を決める",
+      "直したのに古い時は、保存を疑う"
+    ],
+    "next": [
+      "web.a.01"
+    ],
+    "terms": [
+      "cache",
+      "cache-control"
+    ]
+  }
+}

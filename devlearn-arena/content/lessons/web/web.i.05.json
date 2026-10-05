@@ -1,0 +1,256 @@
+{
+  "id": "web.i.05",
+  "domain": "web",
+  "level": "intermediate",
+  "theme": "安全",
+  "title": "CORS",
+  "goal": "ブラウザが他のサイトへの通信を止める理由と許可の仕方",
+  "minutes": 15,
+  "prerequisites": [
+    "web.i.01"
+  ],
+  "related": [
+    "sec.b.02",
+    "web.i.01"
+  ],
+  "next": [
+    "web.i.06"
+  ],
+  "terms": [
+    "cors",
+    "origin",
+    "api",
+    "header",
+    "response",
+    "curl",
+    "server",
+    "scheme",
+    "host",
+    "port",
+    "permission",
+    "url",
+    "internet"
+  ],
+  "explain": {
+    "what": "{{term:cors}}は、ある画面から別のサイトの{{term:api}}を呼んだ時、ブラウザが中身を画面に渡すかを決める決まり。相手の{{term:response}}に許可の{{term:header}}が無ければ、ブラウザが止める。",
+    "why": "利用者がログインしたままのブラウザで悪いサイトを開くと、その画面が利用者の{{term:permission}}で、勝手に別のサイトのデータを取れてしまう。それをブラウザが防ぐ。",
+    "use": "画面のサイトと API のサイトが別の構成（画面は shop.example、API は api.example）。API の{{term:server}}が、使ってよい画面の{{term:origin}}（送り元）を返事で伝える。",
+    "when": "画面から API を呼ぶと、ブラウザでだけ失敗する時。{{term:curl}}はこの決まりを持たないので、同じ{{term:url}}でも取れてしまい、原因に気づきにくい。",
+    "figures": [
+      "web-i05-cors"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "yesno",
+      "prompt": "CORS は、API のサーバが知らない相手からの通信を止める仕組みだ。",
+      "answer": false,
+      "why": "止めるのはブラウザ。サーバは返事に「この送り元なら使ってよい」と書くだけ。依頼はサーバに届き、返事も返っている。",
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの出来事の関係は？",
+      "a": "API の返事に `Access-Control-Allow-Origin: https://shop.example` がある",
+      "b": "shop.example の画面で、API の中身が使える",
+      "answer": "cause",
+      "why": "返事の許可の見出しに、画面の送り元が書かれていることが原因で、ブラウザは中身を画面に渡す。書かれていない送り元の画面には渡さない。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "curl で API を呼ぶと取れる。同じ URL を画面から呼ぶと、ブラウザでだけ失敗する。考えやすい原因は？",
+      "context": {
+        "log": "Access to fetch at 'https://api.example/items' from origin 'https://shop.example' has been blocked by CORS policy"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "API の返事に、画面の送り元を許す見出しが無い（CORS）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "API のサーバが止まっている",
+          "correct": false,
+          "whyNot": "止まっていれば curl でも取れない。curl で取れるので、サーバは動いている。"
+        },
+        {
+          "id": "c",
+          "text": "利用者のパソコンが、{{term:internet}}につながっていない",
+          "correct": false,
+          "whyNot": "画面は開けていて、ブラウザは「CORS の決まりで止めた」と言っている。届いた後に止めている。"
+        }
+      ],
+      "explanation": "ブラウザは送り元が違う画面への受け渡しを、許可の見出しが無ければ止める。curl はブラウザではないので止めない。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "API を、自分の画面（https://shop.example）からだけ使えるようにしたい。返事に何を付ける？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`Access-Control-Allow-Origin: https://shop.example`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`Access-Control-Allow-Origin: *`",
+          "correct": false,
+          "whyNot": "* は全ての送り元を許す。自分の画面だけでなく、知らないサイトの画面からも使える。"
+        },
+        {
+          "id": "c",
+          "text": "`Access-Control-Allow-Origin: https://api.example`",
+          "correct": false,
+          "whyNot": "書くのは API 自身ではなく、呼ぶ側の画面の送り元。"
+        }
+      ],
+      "explanation": "許す送り元を 1 つに絞って書く。送り元は{{term:scheme}}・{{term:host}}・{{term:port}}の組で、1 字でも違えば別のサイト。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "ログインした利用者の情報を返す API に `Access-Control-Allow-Origin: *` を付けた。何が危ない？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "誰のどの画面からでも使えるようになる（悪いサイトの画面からも）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "API が遅くなる",
+          "correct": false,
+          "whyNot": "速さは変わらない。問題は、許す相手が広すぎること。"
+        },
+        {
+          "id": "c",
+          "text": "curl から使えなくなる",
+          "correct": false,
+          "whyNot": "curl は CORS の決まりを持たないので、見出しに関係なく使える。"
+        }
+      ],
+      "explanation": "* は「どの画面からでも」。公開してよいデータ以外には使わず、許す送り元を絞る。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "在庫の API（https://api.example）の返事の許可の見出しを設定し、自分の画面（https://shop.example）からは使え、知らないサイトの画面からは使えないようにする。",
+    "environment": "sim-config",
+    "setup": {
+      "fields": [
+        {
+          "id": "allow",
+          "label": "返事に付ける Access-Control-Allow-Origin",
+          "note": "許す送り元（画面のサイト）を書く"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "table",
+          "title": "登場するサイトの送り元",
+          "columns": [
+            "サイト",
+            "送り元（スキーム・ホスト・ポート）"
+          ],
+          "rows": [
+            [
+              "自分の画面",
+              "https://shop.example"
+            ],
+            [
+              "在庫の API",
+              "https://api.example"
+            ],
+            [
+              "知らないサイト",
+              "https://evil.example"
+            ]
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "ブラウザの記録（自分の画面で在庫を開いた時）",
+          "lines": [
+            "GET https://api.example/items → 200（返事は届いた）",
+            "Access to fetch at 'https://api.example/items' from origin 'https://shop.example' has been blocked by CORS policy"
+          ],
+          "when": "!field allow=https://shop.example && !field allow=*"
+        },
+        {
+          "kind": "kv",
+          "title": "ブラウザの判断（全てを許した）",
+          "rows": [
+            [
+              "自分の画面",
+              "使える"
+            ],
+            [
+              "知らないサイトの画面",
+              "使える（利用者の在庫の情報が取られる）"
+            ]
+          ],
+          "when": "field allow=*"
+        },
+        {
+          "kind": "kv",
+          "title": "ブラウザの判断",
+          "rows": [
+            [
+              "自分の画面",
+              "使える"
+            ],
+            [
+              "知らないサイトの画面",
+              "ブラウザが止める"
+            ]
+          ],
+          "when": "field allow=https://shop.example"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "allow",
+        "purpose": "ブラウザの記録を読み、止められた理由を確かめる。返事の許可の見出しに、自分の画面の送り元だけを書く。",
+        "check": {
+          "kind": "sim",
+          "expr": "field allow=https://shop.example"
+        },
+        "afterward": "返事に自分の画面の送り元が書かれたので、ブラウザは shop.example の画面には中身を渡し、evil.example の画面には渡さなくなった。",
+        "hints": [
+          "ブラウザの記録の「blocked by CORS policy」は、返事に許可の見出しが無いという意味。返事は届いている。",
+          "許すのは自分の画面だけ。* は全てを許す。送り元は表から、スキーム（https://）から写し、最後に / を付けない。",
+          "`set allow https://shop.example` と入れる。"
+        ],
+        "expectedErrors": [
+          "web-cors-origin"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "止めているのがブラウザだと見抜き、許す送り元を自分の画面だけに絞れた。",
+    "partial": "ヒントを使って、許可の見出しを設定できた。次は、* にすると知らないサイトの画面から何ができてしまうかを説明してみよう。",
+    "retry": "まだ自分の画面だけを許す形になっていない。表の自分の画面の送り元と、書いた値を 1 字ずつ見比べよう。"
+  },
+  "summary": {
+    "points": [
+      "止めるのはブラウザ",
+      "サーバが許可の見出しを返す",
+      "許す範囲（送り元）を絞る"
+    ],
+    "next": [
+      "web.a.03"
+    ],
+    "terms": [
+      "cors",
+      "origin"
+    ]
+  }
+}

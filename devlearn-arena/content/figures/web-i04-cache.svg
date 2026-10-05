@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>保存は 3 か所にある。ブラウザ、途中の中継、サーバ。返事の Cache-Control が、どこにどれだけ保存してよいかを決める。期限の内なら近くの保存から返り、速いが古いことがある</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="browser">
+    <rect x="20" y="60" width="170" height="120" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <text x="105" y="88" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">ブラウザ</text>
+    <rect x="44" y="104" width="122" height="54" rx="6" fill="#5cc1ff" />
+    <text x="105" y="128" text-anchor="middle" font-size="13" fill="#0a1424">手元の保存</text>
+    <text x="105" y="148" text-anchor="middle" font-size="13" fill="#0a1424">最も速い</text>
+  </g>
+  <g class="el" data-part="relay">
+    <rect x="265" y="60" width="170" height="120" rx="12" fill="none" stroke="#7a3fd0" stroke-width="2" />
+    <text x="350" y="88" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">途中の中継</text>
+    <rect x="289" y="104" width="122" height="54" rx="6" fill="#7a3fd0" />
+    <text x="350" y="128" text-anchor="middle" font-size="13" fill="#eef2f6">みんなで共有</text>
+    <text x="350" y="148" text-anchor="middle" font-size="13" fill="#eef2f6">する保存</text>
+  </g>
+  <g class="el" data-part="server">
+    <rect x="510" y="60" width="170" height="120" rx="12" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <text x="595" y="88" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">サーバ</text>
+    <text x="595" y="128" text-anchor="middle" font-size="13" fill="#eef2f6">元の物（最新）</text>
+    <text x="595" y="150" text-anchor="middle" font-size="13" fill="#9fb0c6">遠い・重い</text>
+  </g>
+  <g class="el" data-part="request">
+    <path d="M190 100 H261" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <path d="M435 100 H506" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="227" y="90" text-anchor="middle" font-size="13" fill="#9fb0c6">依頼</text>
+    <text x="472" y="90" text-anchor="middle" font-size="13" fill="#9fb0c6">無ければ</text>
+  </g>
+  <g class="el" data-part="header">
+    <path d="M506 150 H439" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#ar)" />
+    <path d="M261 150 H194" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#ar)" />
+    <rect x="160" y="210" width="380" height="40" rx="8" fill="none" stroke="#f2b632" stroke-width="2" />
+    <text x="350" y="236" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#f2b632">Cache-Control: max-age=31536000</text>
+  </g>
+  <g class="el" data-part="tradeoff">
+    <text x="350" y="282" text-anchor="middle" font-size="13" fill="#eef2f6">期限が長い → 速い・サーバが楽。でも、直しても古い物が出る</text>
+    <text x="350" y="304" text-anchor="middle" font-size="13" fill="#9fb0c6">no-cache → 保存はするが、使う前に毎回サーバに確かめる</text>
+  </g>
+</svg>
