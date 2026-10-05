@@ -1,0 +1,233 @@
+{
+  "id": "web.b.04",
+  "domain": "web",
+  "level": "beginner",
+  "theme": "ステータス",
+  "title": "ステータスコード",
+  "goal": "2xx〜5xx の意味から次の行動を判断できる",
+  "minutes": 15,
+  "prerequisites": [
+    "web.b.02"
+  ],
+  "related": [
+    "trouble.i.03",
+    "mon.b.03"
+  ],
+  "next": [
+    "web.b.05"
+  ],
+  "terms": [
+    "status-code",
+    "server",
+    "response",
+    "troubleshooting",
+    "app",
+    "web",
+    "web-server",
+    "url",
+    "path",
+    "curl",
+    "header",
+    "option",
+    "log",
+    "permission"
+  ],
+  "explain": {
+    "what": "{{term:status-code}}は、{{term:server}}が{{term:response}}（返事）の 1 行目に付ける 3 桁の数。1 桁目で種類が分かる。2 は成功、3 は転送（別の場所へ）、4 は依頼側の誤り、5 はサーバ側の失敗。",
+    "why": "何が起きたかを、人も機械も同じ数で判断できる。本文の文が英語でも日本語でも、数を見れば、うまくいったか・どちら側を直すかの見当が付く。",
+    "use": "障害の切り分け（{{term:troubleshooting}}）の最初の手がかり。{{term:app}}は数を見て、成功・やり直し・知らせる、の処理を分ける。",
+    "when": "{{term:web}}のページが真っ白、と言われた時。まず数を見る。4xx なら頼み方や場所を、5xx なら{{term:web-server}}や後ろの仕組みを調べる。",
+    "figures": [
+      "web-b04-classes"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "web-b04-classes",
+      "prompt": "図で、404（見つからない）が入る箱を押す。",
+      "answer": [
+        "c4xx"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "4xx が返ったら、サーバが壊れている。",
+      "answer": false,
+      "why": "4xx は依頼側の誤り（場所の綴り・{{term:permission}}・頼み方）。サーバは動いていて、依頼を読んだ上で断っている。サーバ側の失敗は 5xx。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "404 と 403 の違いは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "404 はその場所に資源が無い、403 は資源はあるが見せられない（禁止）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "404 はサーバが止まっている、403 はサーバが混んでいる",
+          "correct": false,
+          "whyNot": "止まり・混雑はサーバ側の失敗で、5xx（503 など）で返る。4xx は依頼側の話。"
+        },
+        {
+          "id": "c",
+          "text": "どちらも同じ意味で、言い方が違うだけ",
+          "correct": false,
+          "whyNot": "直す場所が違う。404 は{{term:url}}の{{term:path}}を、403 は権限を見直す。"
+        }
+      ],
+      "explanation": "`404 Not Found` は「無い」、`403 Forbidden` は「あるが見せない」。どちらも依頼側（場所や権限）を見直す。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "店のページが 503 を返す。最初に何を疑う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "後ろのサーバが止まっているか、混みすぎている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "利用者が URL を打ち間違えた",
+          "correct": false,
+          "whyNot": "打ち間違いなら 404 など 4xx が返る。5xx はサーバ側。"
+        },
+        {
+          "id": "c",
+          "text": "利用者のパソコンの線が抜けている",
+          "correct": false,
+          "whyNot": "線が抜けていたら返事そのものが来ない。503 が返ったなら、サーバまでは届いている。"
+        }
+      ],
+      "explanation": "`503 Service Unavailable` は「今は応えられない」。止まり・準備中・過負荷を疑い、サーバ側の{{term:log}}を見る。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "存在しないパス（/no-such-page）を開くと、どの数が返る？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "404",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "500",
+          "correct": false,
+          "whyNot": "500 はサーバの中の処理が失敗した時。無い場所を頼んだのは依頼側の話。"
+        },
+        {
+          "id": "c",
+          "text": "200",
+          "correct": false,
+          "whyNot": "200 は成功。無い物を頼んで成功にはならない（「見つからない」ページを 200 で返す作りは、誤りに気づきにくくなる）。"
+        }
+      ],
+      "explanation": "無い場所は `404 Not Found`。依頼側の誤りなので 4 で始まる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "店のお知らせに載せた 3 つのページ（urls.txt）のどれかが「開かない」と連絡が来た。返事の数を確かめ、壊れているページと、原因の側（依頼側かサーバ側か）を答える。",
+    "environment": "web-client",
+    "setup": {
+      "files": {
+        "/home/learner/urls.txt": "http://shop.example/\nhttp://shop.example/sale\nhttp://shop.example/stock\n"
+      },
+      "sites": [
+        {
+          "host": "shop.example",
+          "port": 80,
+          "routes": {
+            "/": {
+              "status": 200,
+              "body": "<html><body><h1>港町の店</h1></body></html>"
+            },
+            "/sale": {
+              "status": 302,
+              "body": "<html><body><h1>302 Found</h1></body></html>",
+              "headers": {
+                "Location": "/sale/autumn"
+              }
+            },
+            "/sale/autumn": {
+              "status": 200,
+              "body": "<html><body><h1>秋の大売り出し</h1></body></html>"
+            },
+            "/stock": {
+              "status": 503,
+              "body": "<html><body><h1>503 Service Unavailable</h1></body></html>"
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "find",
+        "purpose": "urls.txt の 3 つの URL に依頼を送って返事の数を見比べ、壊れているページのパス（/ で始まる部分）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "/stock"
+        },
+        "afterward": "/ は 200、/sale は 302（/sale/autumn へ転送。移った先は 200 で見られる）、/stock は 503。失敗しているのは /stock だけ。",
+        "hints": [
+          "本文ではなく、返事の 1 行目の数を見る。見出しだけなら {{term:curl}} の大文字の `-I` が手早い。",
+          "3 つの URL に `curl -I` を打ち、数を並べる。3xx は転送で、失敗ではない。",
+          "`curl -I http://shop.example/` `curl -I http://shop.example/sale` `curl -I http://shop.example/stock` と打ち、`/stock` と答える。"
+        ],
+        "expectedErrors": [
+          "web-302-misread"
+        ]
+      },
+      {
+        "id": "side",
+        "purpose": "壊れているページの数から、原因の側を「依頼側」か「サーバ側」で答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "サーバ側"
+        },
+        "afterward": "503 は 5 で始まるので、サーバ側の失敗。URL の打ち間違いではなく、店の在庫のサーバが止まっているか混んでいる。直すのはサーバの担当。",
+        "hints": [
+          "数の 1 桁目を見る。",
+          "4 で始まれば依頼側、5 で始まればサーバ側。",
+          "`サーバ側` と答える。"
+        ],
+        "expectedErrors": [
+          "web-side-misread"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "返事の数から、壊れているページと原因の側を判断できた。転送（3xx）を失敗と取り違えなかった。",
+    "partial": "ヒントを使って、数から原因の側を判断できた。次は、/sale の転送の先を `-L`（転送に付いていく{{term:option}}）で確かめてみよう。",
+    "retry": "まだ答えがそろっていない。3 つの URL の数を並べ、4xx・5xx だけが失敗、3xx は転送、と見分けよう。"
+  },
+  "summary": {
+    "points": [
+      "4xx は依頼側の誤り（場所・権限・頼み方）",
+      "5xx はサーバ側の失敗（止まり・過負荷）",
+      "3xx は転送。失敗ではなく、移った先で見られる"
+    ],
+    "next": [
+      "web.b.05",
+      "trouble.i.03"
+    ],
+    "terms": [
+      "status-code",
+      "response",
+      "header"
+    ]
+  }
+}

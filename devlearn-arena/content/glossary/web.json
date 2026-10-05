@@ -218,6 +218,74 @@
         "web.b.03",
         "web.i.01"
       ]
+    },
+    {
+      "id": "json",
+      "word": "JSON",
+      "reading": "じぇいそん",
+      "plain": "データを {\"name\":\"灯台\",\"stock\":2} のように、名前と値の組・並びで書く書き方。API の依頼と返事でよく使う。",
+      "why": "人にも機械にも読みやすく、どの言語でも読み書きできる。書き方を 1 字誤るだけで読めなくなる。",
+      "related": [
+        "http",
+        "request",
+        "response"
+      ],
+      "lessons": [
+        "web.b.03",
+        "web.i.02"
+      ]
+    },
+    {
+      "id": "http-get",
+      "word": "GET",
+      "plain": "資源を取るメソッド。中身を変えない。ページを開く時はいつもこれ。",
+      "why": "何度送っても中身が変わらないので、ブラウザは先読みや送り直しで気軽に送る。",
+      "related": [
+        "http-method"
+      ],
+      "lessons": [
+        "web.b.03",
+        "web.i.01"
+      ]
+    },
+    {
+      "id": "http-post",
+      "word": "POST",
+      "plain": "新しく作る（送った中身を受け取ってもらう）メソッド。フォームの送信など。",
+      "why": "送るたびに新しい物ができる。2 回送ると 2 つ増えるので、送り直しに気を付ける。",
+      "related": [
+        "http-method"
+      ],
+      "lessons": [
+        "web.b.03",
+        "web.i.01"
+      ]
+    },
+    {
+      "id": "http-put",
+      "word": "PUT",
+      "plain": "決まった場所の資源を、送った中身で置き換えるメソッド。",
+      "why": "「この中身にする」という依頼なので、何度送っても結果は同じ。",
+      "related": [
+        "http-method"
+      ],
+      "lessons": [
+        "web.b.03",
+        "web.i.01"
+      ]
+    },
+    {
+      "id": "http-delete",
+      "word": "DELETE",
+      "plain": "決まった場所の資源を消すメソッド。",
+      "why": "取るつもりで送ると、データが消える。送る前に場所を確かめる。",
+      "related": [
+        "http-method"
+      ],
+      "lessons": [
+        "web.b.03",
+        "web.i.01"
+      ]
     }
   ]
 }

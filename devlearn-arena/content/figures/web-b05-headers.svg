@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>返事の見出しの例。Content-Type は本文の種類、Cache-Control は保存の決まり、Location は転送先、Set-Cookie はブラウザに預ける札</title>
+  <g class="el" data-part="caption">
+    <text x="350" y="38" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">見出しは「名前: 値」。本文の外の情報を伝える</text>
+  </g>
+  <g class="el" data-part="ctype">
+    <rect x="20" y="64" width="660" height="44" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <text x="36" y="92" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#5cc1ff">Content-Type: image/png</text>
+    <text x="664" y="92" text-anchor="end" font-size="14" fill="#eef2f6">本文の種類（画像か・ページか）</text>
+  </g>
+  <g class="el" data-part="cache">
+    <rect x="20" y="118" width="660" height="44" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <text x="36" y="146" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#3ae08a">Cache-Control: max-age=3600</text>
+    <text x="664" y="146" text-anchor="end" font-size="14" fill="#eef2f6">保存の決まり（何秒使い回すか）</text>
+  </g>
+  <g class="el" data-part="location">
+    <rect x="20" y="172" width="660" height="44" rx="8" fill="none" stroke="#f2b632" stroke-width="2" />
+    <text x="36" y="200" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#f2b632">Location: /menu</text>
+    <text x="664" y="200" text-anchor="end" font-size="14" fill="#eef2f6">転送先（3xx と一緒に）</text>
+  </g>
+  <g class="el" data-part="cookie">
+    <rect x="20" y="226" width="660" height="44" rx="8" fill="none" stroke="#ff8a7a" stroke-width="2" />
+    <text x="36" y="254" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#ff8a7a">Set-Cookie: sid=7f3a</text>
+    <text x="664" y="254" text-anchor="end" font-size="14" fill="#eef2f6">ブラウザに預ける札</text>
+  </g>
+</svg>

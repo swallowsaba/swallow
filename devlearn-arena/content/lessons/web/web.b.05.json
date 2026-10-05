@@ -1,0 +1,258 @@
+{
+  "id": "web.b.05",
+  "domain": "web",
+  "level": "beginner",
+  "theme": "ヘッダ",
+  "title": "HTTP ヘッダ",
+  "goal": "Content-Type・Cache-Control・Location などを読める",
+  "minutes": 15,
+  "prerequisites": [
+    "web.b.02"
+  ],
+  "related": [
+    "web.i.04",
+    "sec.b.06"
+  ],
+  "next": [
+    "web.b.06",
+    "web.i.04"
+  ],
+  "terms": [
+    "header",
+    "request",
+    "response",
+    "server",
+    "cache",
+    "status-code",
+    "curl",
+    "option",
+    "path",
+    "file"
+  ],
+  "explain": {
+    "what": "{{term:header}}は、{{term:request}}（依頼）と{{term:response}}（返事）に付く「名前: 値」の追加の情報。本文の前に 1 行ずつ並ぶ。",
+    "why": "本文だけでは伝わらない事を伝える。これは画像か・ページか（本文の種類）、どのくらい保存して使い回してよいか、どこへ移ったか（転送先）。",
+    "use": "本文の種類の見分け、保存の決まり（{{term:cache}}）、転送、ログインの札の受け渡し。ブラウザは見出しを読んで、表示の仕方や保存の仕方を決める。",
+    "when": "画像が、意味の分からない文字の並びとして表示される時。本文は正しい画像でも、見出しが「これは文字」と伝えていれば、ブラウザは文字として出す。",
+    "figures": [
+      "web-b05-headers"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "見出しの名前と、伝えることを結ぶ。",
+      "pairs": [
+        [
+          "`Content-Type`",
+          "本文の種類"
+        ],
+        [
+          "`Cache-Control`",
+          "保存の決まり"
+        ],
+        [
+          "`Location`",
+          "転送先"
+        ],
+        [
+          "`Set-Cookie`",
+          "ブラウザに預ける札"
+        ]
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "situation",
+      "prompt": "店のロゴの画像を開くと、記号だらけの文字の並びが表示される。どの見出しを疑う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`Content-Type`（本文の種類）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`Cache-Control`（保存の決まり）",
+          "correct": false,
+          "whyNot": "保存の決まりは、いつまで使い回すかの話。表示の仕方は変えない。"
+        },
+        {
+          "id": "c",
+          "text": "`Location`（転送先）",
+          "correct": false,
+          "whyNot": "転送先は、別の場所へ移る時の行き先。画像は届いているので、移る話ではない。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "context": {
+        "log": "HTTP/1.1 200 OK\nContent-Type: text/plain\n\n(ここに画像のデータ)"
+      },
+      "prompt": "logo.png を開くと、文字の並びが表示された。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "本文の種類が `text/plain`（文字）になっている。`image/png` であるべき",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "画像の{{term:file}}が壊れている",
+          "correct": false,
+          "whyNot": "ファイルのデータが壊れていても、種類が画像なら画像として出そうとする。文字として出るのは、見出しが文字と伝えたから。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:status-code}}が 200 だから",
+          "correct": false,
+          "whyNot": "200 は成功。正しく届いたという意味で、表示の仕方とは関係ない。"
+        }
+      ],
+      "explanation": "ブラウザは `Content-Type` を見て、本文をどう表示するかを決める。画像なら image/png のように、種類を正しく伝える。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "context": {
+        "log": "HTTP/1.1 301 Moved Permanently\nLocation: /menu"
+      },
+      "prompt": "ブラウザがこの返事を受け取ると、どうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "/menu に移り、そのページを表示する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "「移動しました」とだけ表示して止まる",
+          "correct": false,
+          "whyNot": "ブラウザは 3xx と `Location` を見ると、自動でその先へ依頼し直す。"
+        },
+        {
+          "id": "c",
+          "text": "エラーとして扱う",
+          "correct": false,
+          "whyNot": "3xx は失敗ではなく転送。行き先が見出しで伝えられている。"
+        }
+      ],
+      "explanation": "301 は「ずっと移った」。`Location` に移った先が書かれ、ブラウザはそこへ依頼し直す。{{term:curl}} は `-L` を付けると付いていく。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "預金の明細のページを、途中の機械やブラウザに保存させたくない。どの見出しを返す？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`Cache-Control: no-store`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`Cache-Control: max-age=3600`",
+          "correct": false,
+          "whyNot": "これは「3600 秒（1 時間）保存して使い回してよい」。保存させてしまう。"
+        },
+        {
+          "id": "c",
+          "text": "`Content-Type: text/html`",
+          "correct": false,
+          "whyNot": "本文の種類を伝えるだけで、保存の決まりは伝えない。"
+        }
+      ],
+      "explanation": "`no-store` は「どこにも保存しない」。秘密の多いページに付ける。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "店の古い献立のページ（http://shop.example/menu-2025）が、新しい場所へ移ったらしい。返事の見出しから、転送先と、新しいページの保存の決まりを読み取る。",
+    "environment": "web-client",
+    "setup": {
+      "sites": [
+        {
+          "host": "shop.example",
+          "port": 80,
+          "routes": {
+            "/menu-2025": {
+              "status": 301,
+              "body": "<html><body><h1>301 Moved Permanently</h1></body></html>",
+              "headers": {
+                "Location": "/menu"
+              }
+            },
+            "/menu": {
+              "status": 200,
+              "body": "<html><body><h1>今週の献立</h1><p>港のカレー（保存の決まりは見出しを見る）</p></body></html>",
+              "headers": {
+                "Cache-Control": "max-age=3600"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "moved",
+        "purpose": "http://shop.example/menu-2025 の返事の見出しから、転送先（移った先の{{term:path}}）を読み取り、答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "/menu"
+        },
+        "afterward": "返事は 301（ずっと移った）で、`Location: /menu` が付いていた。ブラウザは自動で /menu へ依頼し直す。",
+        "hints": [
+          "転送先は本文ではなく見出しにある。見出しを出す{{term:option}}を付ける。",
+          "`curl -I` で頭だけを出し、転送先を伝える見出しの名前（`Location`）の行を探す。",
+          "`curl -I http://shop.example/menu-2025` と打ち、`/menu` と答える。"
+        ],
+        "expectedErrors": [
+          "web-header-body"
+        ]
+      },
+      {
+        "id": "keep",
+        "purpose": "移った先（/menu）の返事の見出しから、何秒の間、保存して使い回してよいかを読み取り、数で答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "3600"
+        },
+        "afterward": "`Cache-Control: max-age=3600` は「3600 秒（1 時間）保存して使い回してよい」。献立を直しても、1 時間は古いページを見る人がいるかもしれない。",
+        "hints": [
+          "保存の決まりを伝える見出しは `Cache-Control`。転送の前ではなく、移った先のページの返事を見る。",
+          "移った先のパス（/menu）に `curl -I` を打つ。`max-age=` の後ろの数が秒。",
+          "`curl -I http://shop.example/menu` と打ち、`3600` と答える。"
+        ],
+        "expectedErrors": [
+          "web-header-body"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "見出しから、転送先と保存の決まりを読み取れた。本文の外の情報を自分で確かめられる。",
+    "partial": "ヒントを使って見出しを読めた。次は、`curl -IL` で、転送の前と後の 2 つの返事の見出しを並べて見てみよう。",
+    "retry": "まだ答えがそろっていない。`curl -I` で頭だけを出し、`Location` と `Cache-Control` の行を探そう。転送の前と後で、返事は別々。"
+  },
+  "summary": {
+    "points": [
+      "ヘッダは本文の外の追加の情報",
+      "種類（`Content-Type`）・保存（`Cache-Control`）・転送（`Location`）",
+      "見出しだけを見るなら `curl -I`"
+    ],
+    "next": [
+      "web.b.06",
+      "web.i.04"
+    ],
+    "terms": [
+      "header",
+      "cache"
+    ]
+  }
+}

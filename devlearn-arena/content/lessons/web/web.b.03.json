@@ -1,0 +1,271 @@
+{
+  "id": "web.b.03",
+  "domain": "web",
+  "level": "beginner",
+  "theme": "メソッド",
+  "title": "HTTP メソッド",
+  "goal": "GET/POST/PUT/DELETE を使い分けられる",
+  "minutes": 15,
+  "prerequisites": [
+    "web.b.02"
+  ],
+  "related": [
+    "web.i.01",
+    "db.b.05"
+  ],
+  "next": [
+    "web.i.01"
+  ],
+  "terms": [
+    "http-method",
+    "request",
+    "url",
+    "server",
+    "app",
+    "web",
+    "http",
+    "status-code",
+    "json",
+    "curl",
+    "option",
+    "path",
+    "http-get",
+    "http-post",
+    "http-put",
+    "http-delete"
+  ],
+  "explain": {
+    "what": "{{term:http-method}}は、{{term:request}}（依頼）の種類。{{term:http-get}} は取る、{{term:http-post}} は作る、{{term:http-put}} は置き換える、{{term:http-delete}} は消す。依頼の 1 行目の先頭に書く。",
+    "why": "同じ {{term:url}} でも、何をしたいかを伝え分けられる。{{term:server}}はメソッドを見て、取るだけか・変えるかを決める。",
+    "use": "フォームの送信（作る）、{{term:app}}からの商品の登録・更新・削除。{{term:web}}のページを開く時は、いつも取る（GET）。",
+    "when": "取るつもりで消してしまう事故を防ぐ時。取る依頼は、ブラウザや検索の仕組みが何度でも気軽に送る。取る依頼で中身が変わる作りだと、知らないうちにデータが変わる。",
+    "figures": [
+      "web-b03-methods"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "メソッドと、することを結ぶ。",
+      "pairs": [
+        [
+          "`GET`",
+          "取る（変えない）"
+        ],
+        [
+          "`POST`",
+          "新しく作る"
+        ],
+        [
+          "`PUT`",
+          "置き換える"
+        ],
+        [
+          "`DELETE`",
+          "消す"
+        ]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "`GET` の依頼を受けた時に、商品の在庫を 1 つ減らす作りにしてよい。",
+      "answer": false,
+      "why": "`GET` は取るための依頼。ブラウザの先読みや送り直しで何度も届くので、`GET` で中身を変えると、知らないうちに在庫が減る。変えるなら `POST` や `PUT` を使う。",
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "店に新しい商品を登録する。どのメソッドを使う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`POST`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`GET`",
+          "correct": false,
+          "whyNot": "`GET` は取るだけ。登録（作る）はできない。"
+        },
+        {
+          "id": "c",
+          "text": "`DELETE`",
+          "correct": false,
+          "whyNot": "`DELETE` は消す依頼。作るのとは逆。"
+        }
+      ],
+      "explanation": "新しく作るのは `POST`。一覧の場所（/items）に送ると、サーバが番号を付けて 1 つ作る。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "通信が途中で切れ、同じ依頼をもう一度送ることになった。送り直しても結果が変わらない（何度送っても同じになる）のはどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`PUT /items/3`（3 番を、決まった中身に置き換える）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`POST /items`（新しく作る）",
+          "correct": false,
+          "whyNot": "`POST` は送るたびに新しい商品ができる。2 回送ると 2 つ増える。"
+        },
+        {
+          "id": "c",
+          "text": "どのメソッドでも、送り直すと結果が変わる",
+          "correct": false,
+          "whyNot": "`GET`・`PUT`・`DELETE` は、何度送っても同じ結果になる。同じ中身に置き換える・もう無い物を消す、は何度やっても同じ。"
+        }
+      ],
+      "explanation": "`PUT` は「この中身にする」という依頼なので、何度送っても結果は同じ。`POST` だけは送るたびに増える。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "context": {
+        "log": "$ curl -i -X DELETE http://shop.example/items\nHTTP/1.1 405 Method Not Allowed\nAllow: GET, POST"
+      },
+      "prompt": "返ってきた{{term:status-code}}は 405。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その場所（一覧の /items）は、消す依頼を受け付けていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "その商品がもう無い",
+          "correct": false,
+          "whyNot": "無い物を頼んだ時は 404（見つからない）が返る。"
+        },
+        {
+          "id": "c",
+          "text": "サーバが止まっている",
+          "correct": false,
+          "whyNot": "止まっていれば返事は来ないか 5xx。405 はサーバが動いて、依頼を読んだ上での返事。"
+        }
+      ],
+      "explanation": "405 は「この場所に、そのメソッドは使えない」。`Allow` の見出しに使えるメソッドが並ぶ。1 つの商品を消すなら /items/番号 に送る。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "港町の店の在庫の窓口（http://shop.example/items）で、商品を 1 つ作り、取り、消す。メソッドを使い分けて、在庫の中身を変える。",
+    "environment": "web-client",
+    "setup": {
+      "sites": [
+        {
+          "host": "shop.example",
+          "port": 80,
+          "routes": {},
+          "api": {
+            "base": "/items",
+            "items": [
+              {
+                "id": 1,
+                "name": "灯台の模型",
+                "stock": 2
+              },
+              {
+                "id": 2,
+                "name": "帆船の栞",
+                "stock": 8
+              },
+              {
+                "id": 3,
+                "name": "貝の置物",
+                "stock": 0
+              }
+            ],
+            "fields": {
+              "name": "string",
+              "stock": "number"
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "make",
+        "purpose": "新しい商品「港の地図」（在庫 5）を、一覧の場所（/items）に作る。",
+        "check": {
+          "kind": "http",
+          "url": "http://shop.example/items/4",
+          "status": 200
+        },
+        "afterward": "201（作った）が返り、`Location` の見出しに新しい商品の場所 /items/4 が書かれた。サーバが番号 4 を付けた。",
+        "hints": [
+          "新しく作るのは `POST`。送る中身は、項目と値の組（{{term:json}}）で書く。",
+          "{{term:curl}} の `-X` でメソッドを、`-d` で送る中身を指定する。中身は `'{\"name\":\"港の地図\",\"stock\":5}'` のように、単引用符で囲む。",
+          "`curl -X POST -d '{\"name\":\"港の地図\",\"stock\":5}' http://shop.example/items` と打つ。"
+        ],
+        "expectedErrors": [
+          "web-405",
+          "web-400"
+        ]
+      },
+      {
+        "id": "read",
+        "purpose": "一覧を取り（`GET`）、商品が 4 つになったことを確かめて、新しい商品の番号（id）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "4"
+        },
+        "afterward": "一覧の最後に、番号 4 の「港の地図」が増えていた。取る依頼（`GET`）は、何度送っても中身を変えない。",
+        "hints": [
+          "取るのは `GET`。curl は何も付けなければ `GET` を送る。",
+          "一覧の場所 /items を取ると、全ての商品が並んで返る。最後の商品の id を読む。",
+          "`curl http://shop.example/items` と打ち、`4` と答える。"
+        ]
+      },
+      {
+        "id": "remove",
+        "purpose": "作った商品（番号 4）を消す。",
+        "check": {
+          "kind": "http",
+          "url": "http://shop.example/items/4",
+          "status": 404
+        },
+        "afterward": "204（中身なしで成功）が返り、番号 4 の商品が消えた。もう一度取ると 404（見つからない）になる。",
+        "hints": [
+          "消すのは `DELETE`。1 つの商品の場所は /items/番号。",
+          "一覧（/items）に `DELETE` を送ると 405 になる。番号まで書いた場所に送る。",
+          "`curl -X DELETE http://shop.example/items/4` と打つ。"
+        ],
+        "expectedErrors": [
+          "web-405"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "作る・取る・消すを、メソッドで使い分けられた。同じ場所でも、メソッドで何が起きるかが変わる。",
+    "partial": "ヒントを使って、メソッドを使い分けられた。次は、`POST` を 2 回送ると何が起きるかを考えてみよう。",
+    "retry": "まだ商品の作成か削除が終わっていない。送ったメソッドと{{term:path}}（一覧か 1 つの商品か）を、`-i` で返事の数字と並べて確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "メソッドは依頼の種類（取る・作る・置き換える・消す）",
+      "`GET` で中身を変えない",
+      "405 は、その場所にそのメソッドが使えないという返事"
+    ],
+    "next": [
+      "web.i.01"
+    ],
+    "terms": [
+      "http-method",
+      "request",
+      "status-code",
+      "http-get",
+      "http-post"
+    ]
+  }
+}
