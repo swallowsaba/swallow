@@ -7,6 +7,7 @@ import {
 } from '@/engines/git/history';
 import { parseCommit } from '@/engines/git/objects';
 import { resolveRef } from '@/engines/git/refs';
+import { changeStats, diffstat, summaryLines } from '@/engines/git/stat';
 import { checkoutWorktree } from '@/engines/git/worktree';
 import { resolve } from '../path';
 import { exists, remove, writeFile } from '../vfs';
@@ -79,7 +80,8 @@ export const historySubcommands: Record<string, GitHandler> = {
     // 衝突で打ち消せない時は、本物と同じく 1 で終わる
     if (result.error !== undefined) return { stderr: `${result.error}\n`, code: result.error.startsWith('CONFLICT') ? 1 : 128 };
     const vfs = checkoutWorktree(shell.vfs, result.git, headCommit(git), result.hash);
-    return { stdout: `[${currentBranch(result.git) ?? 'HEAD'} ${short(result.hash)}] Revert "${subjectOf(git, target)}"\n`, patch: { git: result.git, vfs } };
+    const stats = summaryLines(changeStats(result.git, headCommit(git), result.hash));
+    return { stdout: `[${currentBranch(result.git) ?? 'HEAD'} ${short(result.hash)}] Revert "${subjectOf(git, target)}"\n${stats}`, patch: { git: result.git, vfs } };
   },
   stash: ({ git, shell, rest }) => {
     const action = rest[0] ?? 'push';
@@ -132,7 +134,13 @@ export function mergeWith(git: GitState, shell: ShellState, name: string, nowSec
     const moved = fastForwardTo(git, plan.fastForward);
     const vfs = checkoutWorktree(shell.vfs, moved, headCommit(git), plan.fastForward);
     // 選んだ物は進めた先の記録と同じにする（追跡していないファイルは選ばない）
-    return { stdout: 'Fast-forward\n', patch: { git: indexOf(moved, plan.fastForward), vfs } };
+    // 本物と同じく、動いた範囲と、取り込んだファイルごとの変わった行の数を出す
+    const from = headCommit(git);
+    const stats = diffstat(changeStats(git, from, plan.fastForward));
+    return {
+      stdout: `Updating ${short(from ?? '')}..${short(plan.fastForward)}\nFast-forward\n${stats}`,
+      patch: { git: indexOf(moved, plan.fastForward), vfs },
+    };
   }
   if (plan.files.size === 0) {
     return { stdout: 'Already up to date.\n' };
@@ -165,7 +173,8 @@ export function mergeWith(git: GitState, shell: ShellState, name: string, nowSec
   const into = currentBranch(git);
   const message = `${label ?? `Merge branch '${name}'`}${into === null || into === 'main' || into === 'master' ? '' : ` into ${into}`}`;
   const result = commitMerge(staged.git, plan.theirs, message, nowSeconds);
-  return { stdout: `Merge made by the 'ort' strategy.\n`, patch: { git: result.git, vfs } };
+  const stats = diffstat(changeStats(result.git, headCommit(git), result.hash));
+  return { stdout: `Merge made by the 'ort' strategy.\n${stats}`, patch: { git: result.git, vfs } };
 }
 
 /** 記録の説明の 1 行目 */

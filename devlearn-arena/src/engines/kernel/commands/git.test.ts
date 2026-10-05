@@ -554,3 +554,52 @@ describe('衝突中の git status（本物と同じ）', () => {
     expect(out).toContain('Changes to be committed:');
   });
 });
+
+describe('記録した変更の集計（本物と同じ）', () => {
+  beforeEach(() => {
+    run('git init');
+  });
+
+  it('commit は記録の行の後に、変えたファイルの数・足した行・消した行と、新しいファイルの create mode を出す', () => {
+    run('git add .');
+    expect(run('git commit -m "first"').out).toMatch(
+      /^\[main \(root-commit\) [0-9a-f]{7}\] first\n 2 files changed, 2 insertions\(\+\)\n create mode 100644 a.txt\n create mode 100644 src\/main.ts\n$/,
+    );
+    run('printf "B\\nC\\n" > a.txt');
+    expect(run('git commit -am "second"').out).toMatch(/^\[main [0-9a-f]{7}\] second\n 1 file changed, 2 insertions\(\+\), 1 deletion\(-\)\n$/);
+    expect(run('git revert HEAD').out).toMatch(/^\[main [0-9a-f]{7}\] Revert "second"\n 1 file changed, 1 insertion\(\+\), 2 deletions\(-\)\n$/);
+  });
+
+  it('消したファイルは delete mode、中身の同じまま名前を変えたファイルは rename と出す', () => {
+    run('git add .');
+    run('git commit -m "first"');
+    run('git rm a.txt');
+    expect(run('git commit -m "rm"').out).toMatch(/\] rm\n 1 file changed, 1 deletion\(-\)\n delete mode 100644 a.txt\n$/);
+    run('mv src/main.ts src/app.ts');
+    run('git add .');
+    run('git rm --cached src/main.ts');
+    expect(run('git commit -m "mv"').out).toMatch(/\] mv\n 1 file changed, 0 insertions\(\+\), 0 deletions\(-\)\n rename src\/\{main.ts => app.ts\} \(100%\)\n$/);
+  });
+
+  it('merge は取り込んだファイルごとの変わった行の数と集計を出す。早送りは Updating で始める', () => {
+    run('git add .');
+    run('git commit -m "first"');
+    run('git switch -c topic');
+    run('echo t > t.txt');
+    run('echo B >> a.txt');
+    run('git add .');
+    run('git commit -m "topic"');
+    run('git switch main');
+    expect(run('git merge topic').out).toMatch(
+      /^Updating [0-9a-f]{7}\.\.[0-9a-f]{7}\nFast-forward\n a.txt \| 1 \+\n t.txt \| 1 \+\n 2 files changed, 2 insertions\(\+\)\n create mode 100644 t.txt\n$/,
+    );
+    run('git switch topic');
+    run('echo more >> t.txt');
+    run('git commit -am "more"');
+    run('git switch main');
+    run('echo m > m.txt');
+    run('git add m.txt');
+    run('git commit -m "main"');
+    expect(run('git merge topic').out).toBe("Merge made by the 'ort' strategy.\n t.txt | 1 +\n 1 file changed, 1 insertion(+)\n");
+  });
+});

@@ -3,6 +3,7 @@ import { currentBranch, headCommit, status } from '@/engines/git/repository';
 import { aheadBehind } from '@/engines/git/remote';
 import { parseCommit } from '@/engines/git/objects';
 import { peel } from '@/engines/git/refs';
+import { changeStats, summaryLines } from '@/engines/git/stat';
 import type { GitState } from '@/engines/git/types';
 import type { CommandResult, RunLineResult, ShellState } from '../registry';
 import { exists, readFile } from '../vfs';
@@ -41,9 +42,11 @@ export function commitOutput(
   const branch = currentBranch(git) ?? 'HEAD';
   // 親の無い最初の記録は、本物と同じく (root-commit) と出す
   const object = git.objects.read(hash);
-  const root = object?.type === 'commit' && parseCommit(object.body).parents.length === 0;
+  const parents = object?.type === 'commit' ? parseCommit(object.body).parents : [];
+  // 本物と同じく、変えたファイルの集計と create mode の行が続く（衝突を解いて記録した合わせる記録には出ない）
+  const stats = parents.length > 1 ? '' : summaryLines(changeStats(git, parents[0] ?? null, hash));
   return {
-    stdout: `[${branch}${root ? ' (root-commit)' : ''} ${short(hash)}] ${message}\n`,
+    stdout: `[${branch}${parents.length === 0 ? ' (root-commit)' : ''} ${short(hash)}] ${message}\n${stats}`,
     patch: { git },
   };
 }

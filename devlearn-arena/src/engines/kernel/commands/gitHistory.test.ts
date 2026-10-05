@@ -82,7 +82,7 @@ describe('履歴の作り直し', () => {
     run('git commit -m "hours"');
     const r = run('git revert HEAD~1');
     expect(r.code).toBe(0);
-    expect(r.out).toMatch(/^\[main [0-9a-f]{7}\] Revert "fix price"\n$/);
+    expect(r.out).toMatch(/^\[main [0-9a-f]{7}\] Revert "fix price"\n 1 file changed, 1 insertion\(\+\), 1 deletion\(-\)\n$/);
     expect(run('cat a.txt').out).toBe('A\n');
     // 後の記録の変更は残る
     expect(run('cat hours.txt').out).toBe('open 9\n');
