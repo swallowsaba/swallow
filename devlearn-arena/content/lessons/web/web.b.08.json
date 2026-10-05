@@ -1,0 +1,252 @@
+{
+  "id": "web.b.08",
+  "domain": "web",
+  "level": "beginner",
+  "theme": "HTTPS",
+  "title": "HTTPS（HTTP を安全にする）",
+  "goal": "http と https の違い・443 番・http から https への転送・混在コンテンツを説明し確かめられる",
+  "minutes": 20,
+  "prerequisites": [
+    "web.b.02",
+    "sec.b.06"
+  ],
+  "related": [
+    "sec.b.07",
+    "net.b.04"
+  ],
+  "next": [
+    "web.i.01"
+  ],
+  "terms": [
+    "https",
+    "http",
+    "tls",
+    "port",
+    "certificate",
+    "mixed-content",
+    "status-code",
+    "header",
+    "web-server",
+    "config-file",
+    "script",
+    "url",
+    "curl",
+    "grep",
+    "systemctl"
+  ],
+  "explain": {
+    "what": "{{term:https}}は、{{term:http}}のやり取りを{{term:tls}}で包んだもの。中身の書き方は同じで、待ち受ける{{term:port}}が 80 番から 443 番に変わる。",
+    "why": "http のままだと、通り道の誰でも中身を読めて、書き換えもできる。TLS で包めば読めず、{{term:certificate}}で相手が本物かも確かめられる。",
+    "use": "全ての公開サイト。ログインのページだけでなく、ただの案内のページも https にする。部品（画像・{{term:script}}）が 1 つでも http だと、そこから破られる。",
+    "when": "ブラウザが http のページに「保護されていない」と出す時。https のページでも、中に http の画像が混ざると（{{term:mixed-content}}）、鍵の印に警告が付く。",
+    "figures": [
+      "web-b08-https"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの技術の関係は？",
+      "a": "HTTPS",
+      "b": "TLS",
+      "answer": "contains",
+      "why": "HTTPS は、HTTP の依頼と返事を TLS で包んだもの。TLS が、包む・相手を確かめる役を受け持つ。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "https のページの中に、http で取る画像（`<img src=\"http://…\">`）が混ざっている。何が問題？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その画像だけは包まれずに届くので、途中で読まれたり、別の画像に差し替えられたりする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "画像が届くのが遅くなるだけで、安全には関係しない",
+          "correct": false,
+          "whyNot": "速さの話ではない。包まれていない部品は、途中で中身を変えられる。"
+        },
+        {
+          "id": "c",
+          "text": "ページの文まで全て、包まれずに届いてしまう",
+          "correct": false,
+          "whyNot": "ページ本体は https で包まれている。包まれないのは、http で取る部品だけ。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "https://city.example/ のように、ポートを書かない https の {{term:url}} は、何番のポートにつなぐ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "443 番",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "80 番",
+          "correct": false,
+          "whyNot": "80 番は http の既定。https は別の番号で待ち受ける。"
+        },
+        {
+          "id": "c",
+          "text": "8443 番",
+          "correct": false,
+          "whyNot": "8443 番は https の試験などで使われることがあるが、書かなければ 443 番になる。"
+        }
+      ],
+      "explanation": "書かなければ、http は 80 番、https は 443 番。URL の組み立て（web.b.01）で見た既定のポート。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "https のサイトを作った。でも、古いリンクから http://city.example/ で来る利用者がいる。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "http で来た依頼に 301 を返し、https の同じ場所へ転送する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "http の 80 番を閉じて、つながらないようにする",
+          "correct": false,
+          "whyNot": "古いリンクから来た人が、何も見られずに終わる。転送すれば https へ案内できる。"
+        },
+        {
+          "id": "c",
+          "text": "http のままでも同じページを返し続ける",
+          "correct": false,
+          "whyNot": "http で来た人は、包まれていないページを見続ける。https へ移さないと安全にならない。"
+        }
+      ],
+      "explanation": "301 と、転送先を伝える見出し（`Location`）を返す。ブラウザは自動で https の URL を開き直す。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "https で開いたのに、鍵の印に警告が付いている。証明書は正しい。考えやすい原因は？",
+      "context": {
+        "log": "<img src=\"http://city.example/logo.png\">"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "ページの中に、http で取る部品（画像）が混ざっている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "{{term:web-server}}が 80 番で待ち受けている",
+          "correct": false,
+          "whyNot": "80 番で待ち受けていても、https のページの警告にはならない。80 番は転送に使える。"
+        },
+        {
+          "id": "c",
+          "text": "画像の大きさが大きすぎる",
+          "correct": false,
+          "whyNot": "大きさは警告と関係しない。問題は、画像を取る URL が http なこと。"
+        }
+      ],
+      "explanation": "混在コンテンツ。部品の URL も https にすれば、警告は消える。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "市のサイト city.example を安全にする。http で来た依頼を 301 で https へ転送し、https のページに混ざった http の画像を https に直す。",
+    "environment": "linux-server",
+    "setup": {
+      "hostname": "city-web",
+      "dirs": [
+        "/var/www/html"
+      ],
+      "files": {
+        "/etc/hosts": "127.0.0.1\tlocalhost city.example\n",
+        "/etc/nginx/conf.d/city.conf": "server {\n  listen 80;\n  server_name city.example;\n  root /var/www/html;\n}\n\nserver {\n  listen 443 ssl;\n  server_name city.example;\n  ssl_certificate /etc/nginx/certs/fullchain.crt;\n  root /var/www/html;\n}\n",
+        "/etc/nginx/certs/fullchain.crt": "-----BEGIN CERTIFICATE-----\nsubject: city.example\nissuer: Minato Issuing CA\nnames: city.example\nvalid: 2026-01-01 2027-01-01\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nsubject: Minato Issuing CA\nissuer: Minato Root CA\nvalid: 2024-01-01 2030-01-01\nca: yes\n-----END CERTIFICATE-----\n",
+        "/var/www/html/index.html": "<html><body>\n<img src=\"http://city.example/logo.png\">\n<h1>DevLearn City</h1>\n<p>市の案内ページ</p>\n</body></html>\n",
+        "/var/www/html/logo.png": "PNG\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "enabled": true,
+          "config": "/etc/nginx/conf.d/city.conf"
+        }
+      },
+      "sites": [],
+      "run": [
+        "systemctl start nginx"
+      ]
+    },
+    "steps": [
+      {
+        "id": "redirect",
+        "purpose": "{{term:config-file}}（/etc/nginx/conf.d/city.conf）の 80 番の server の root の行を、https への転送（`return 301 https://$host$request_uri;`）に替え、nginx に読み直させる。",
+        "check": {
+          "kind": "http",
+          "url": "http://city.example/",
+          "status": 301
+        },
+        "afterward": "http://city.example/ への依頼に、301 と`Location: https://city.example/`が返るようになった。ブラウザは自動で https の URL を開き直す。",
+        "hints": [
+          "設定には server が 2 つある。転送を書くのは、80 番で待ち受ける方だけ。443 番の方は今のまま、ページを返す。",
+          "{{term:grep}} -n で root の行の番号を見る。sed の命令の前に行の番号を付けると、その行だけを置き換える。書き換えたら {{term:systemctl}} reload nginx。",
+          "`sed -i '4s|.*|  return 301 https://$host$request_uri;|' /etc/nginx/conf.d/city.conf` `systemctl reload nginx` `curl -I http://city.example/` と打つ。"
+        ],
+        "expectedErrors": [
+          "web-redirect-loop",
+          "nginx-emerg"
+        ]
+      },
+      {
+        "id": "mixed",
+        "purpose": "https のページ（/var/www/html/index.html）の中の、http で取る画像の {{term:url}} を https に直す。https://city.example/ が 200 を返し、画像も https で取ることを確かめる。",
+        "check": {
+          "kind": "http",
+          "url": "https://city.example/",
+          "status": 200,
+          "contains": "src=\"https://city.example/logo.png\""
+        },
+        "afterward": "ページも部品も全て https で取るようになり、鍵の印の警告が消えた。http で来た人も 301 で https へ移り、同じページを見る。",
+        "hints": [
+          "{{term:curl}} https://city.example/ でページの中を見る。img の src が http で始まっていないか。",
+          "index.html の `http://city.example/logo.png` を `https://city.example/logo.png` に置き換える。ページの中身は、置き換えればすぐ反映する（読み直しは要らない）。",
+          "`sed -i 's|http://city.example/logo.png|https://city.example/logo.png|' /var/www/html/index.html` `curl https://city.example/` と打つ。"
+        ],
+        "expectedErrors": [
+          "web-redirect-loop",
+          "enoent"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "http から https への転送と、部品の https 化を自分で行い、警告の無いサイトにできた。",
+    "partial": "ヒントを使って、サイトを https にそろえられた。次は、443 番の server にも転送を書くと何が起きるかを、`curl -L` で確かめてみよう。",
+    "retry": "まだ全てが https になっていない。`curl -I` で http の URL が 301 を返すか、https のページの img が http で始まっていないかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "HTTPS は TLS で包んだ HTTP。既定は 443 番",
+      "http で来た依頼は 301 で https へ転送する",
+      "ページの部品も全て https にする（混在させない）"
+    ],
+    "next": [
+      "sec.b.07",
+      "web.a.01"
+    ],
+    "terms": [
+      "https",
+      "tls",
+      "mixed-content"
+    ]
+  }
+}

@@ -165,6 +165,19 @@
         "document-root",
         "path"
       ]
+    },
+    {
+      "id": "web-redirect-loop",
+      "match": "Maximum \\(\\d+\\) redirects followed",
+      "meaning": "転送をたどり続けて、決まった回数で諦めた。転送の先が、また転送を返している（転送の輪）。",
+      "causes": [
+        "https の server にも、https への転送を書いた（https から https へ、ずっと移り続ける）。",
+        "転送先の URL が、元と同じ場所になっている。"
+      ],
+      "hint": "curl -I で、https の URL の返事が 200 か 301 かを確かめよう。転送は 80 番の server にだけ書く。",
+      "terms": [
+        "https"
+      ]
     }
   ]
 }
