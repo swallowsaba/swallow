@@ -18,6 +18,21 @@
       ]
     },
     {
+      "id": "version-control",
+      "word": "バージョン管理",
+      "reading": "ばーじょんかんり",
+      "plain": "ファイルの変更を、版ごとに日付・変えた人・説明を付けて残し、後から見比べたり前の版に戻したりできるようにすること。",
+      "why": "上書きだけでは前の版が消える。履歴があれば、壊しても戻せ、誰が何をなぜ変えたかが分かる。",
+      "related": [
+        "git",
+        "commit",
+        "repository"
+      ],
+      "lessons": [
+        "git.b.01"
+      ]
+    },
+    {
       "id": "repository",
       "word": "リポジトリ",
       "reading": "りぽじとり",
@@ -28,6 +43,7 @@
         "commit"
       ],
       "lessons": [
+        "git.b.01",
         "git.b.02"
       ]
     },
@@ -42,6 +58,7 @@
         "branch"
       ],
       "lessons": [
+        "git.b.01",
         "git.b.02",
         "git.b.03"
       ],

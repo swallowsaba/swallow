@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>上書きだけで保存すると、前の版は消えて戻れない。履歴を残すと、版が日付と説明つきで並び、どの版にも戻れる</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f2b632" />
+    </marker>
+  </defs>
+  <g class="el" data-part="overwrite">
+    <text x="30" y="34" font-size="16" font-weight="700" fill="#eef2f6">上書きだけ</text>
+    <rect x="58" y="70" width="170" height="44" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="5 5" pointer-events="all" />
+    <text x="76" y="98" font-size="13" fill="#9fb0c6">9/27 の版</text>
+    <rect x="46" y="128" width="170" height="44" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="5 5" pointer-events="all" />
+    <text x="64" y="156" font-size="13" fill="#9fb0c6">9/29 の版</text>
+    <path d="M180 80 L204 104 M180 104 L204 80 M168 138 L192 162 M168 162 L192 138" fill="none" stroke="#e04a3a" stroke-width="3" />
+    <rect x="34" y="200" width="200" height="56" rx="10" fill="#9aa9b5" />
+    <text x="134" y="226" text-anchor="middle" font-size="14" font-weight="700" fill="#0a1424">設計図（今の 1 つだけ）</text>
+    <text x="134" y="246" text-anchor="middle" font-size="13" fill="#0a1424">10/03 に上書き</text>
+    <text x="30" y="290" font-size="14" fill="#e04a3a">前の版は消えて、戻れない</text>
+    <text x="30" y="312" font-size="13" fill="#9fb0c6">誰が何を変えたかも分からない</text>
+  </g>
+  <g class="el" data-part="history">
+    <text x="330" y="34" font-size="16" font-weight="700" fill="#eef2f6">履歴を残す</text>
+    <path d="M352 70 V262" fill="none" stroke="#e0457b" stroke-width="3" />
+    <circle cx="352" cy="70" r="9" fill="#e0457b" />
+    <text x="374" y="75" font-size="14" fill="#eef2f6">10/03 佐藤「駐車場を 50 台に」</text>
+    <circle cx="352" cy="134" r="9" fill="#e0457b" />
+    <text x="374" y="139" font-size="14" fill="#eef2f6">10/01 佐藤「公園を広げる」</text>
+    <circle cx="352" cy="198" r="9" fill="#e0457b" />
+    <text x="374" y="203" font-size="14" fill="#eef2f6">9/29 田中「入口を北へ」</text>
+    <circle cx="352" cy="262" r="9" fill="#e0457b" />
+    <text x="374" y="267" font-size="14" fill="#eef2f6">9/27 田中「最初の案」</text>
+    <text x="374" y="96" font-size="13" fill="#9fb0c6">今の版</text>
+  </g>
+  <g class="el" data-part="back">
+    <path d="M610 82 C 670 110, 670 170, 600 196" fill="none" stroke="#f2b632" stroke-width="2.5" marker-end="url(#ar)" />
+    <text x="560" y="300" font-size="14" fill="#f2b632">どの版にも戻れる</text>
+  </g>
+</svg>
