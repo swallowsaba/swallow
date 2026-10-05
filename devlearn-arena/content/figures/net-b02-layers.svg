@@ -2,19 +2,19 @@
   <title>TCP/IP の 4 つの層と OSI の 7 つの層の対応。下からリンク（イーサネット）・インターネット（IP）・トランスポート（TCP）・アプリケーション（HTTP）</title>
   <g class="el" data-part="osi">
     <text x="90" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#9fb0c6">OSI（7 層）</text>
-    <rect x="20" y="42" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <rect x="20" y="42" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" pointer-events="all" />
     <text x="90" y="62" text-anchor="middle" font-size="13" fill="#eef2f6">7 アプリケーション</text>
-    <rect x="20" y="76" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <rect x="20" y="76" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" pointer-events="all" />
     <text x="90" y="96" text-anchor="middle" font-size="13" fill="#eef2f6">6 プレゼンテーション</text>
-    <rect x="20" y="110" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <rect x="20" y="110" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" pointer-events="all" />
     <text x="90" y="130" text-anchor="middle" font-size="13" fill="#eef2f6">5 セッション</text>
-    <rect x="20" y="152" width="140" height="36" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <rect x="20" y="152" width="140" height="36" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" pointer-events="all" />
     <text x="90" y="175" text-anchor="middle" font-size="13" fill="#eef2f6">4 トランスポート</text>
-    <rect x="20" y="200" width="140" height="36" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <rect x="20" y="200" width="140" height="36" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" pointer-events="all" />
     <text x="90" y="223" text-anchor="middle" font-size="13" fill="#eef2f6">3 ネットワーク</text>
-    <rect x="20" y="248" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <rect x="20" y="248" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" pointer-events="all" />
     <text x="90" y="268" text-anchor="middle" font-size="13" fill="#eef2f6">2 データリンク</text>
-    <rect x="20" y="282" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <rect x="20" y="282" width="140" height="30" rx="5" fill="none" stroke="#9fb0c6" stroke-width="1.5" pointer-events="all" />
     <text x="90" y="302" text-anchor="middle" font-size="13" fill="#eef2f6">1 物理</text>
   </g>
   <g class="el" data-part="application">

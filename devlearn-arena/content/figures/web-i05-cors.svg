@@ -6,7 +6,7 @@
     </marker>
   </defs>
   <g class="el" data-part="browser">
-    <rect x="20" y="40" width="250" height="200" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <rect x="20" y="40" width="250" height="200" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
     <text x="40" y="66" font-size="14" font-weight="700" fill="#eef2f6">ブラウザ</text>
   </g>
   <g class="el" data-part="page">
@@ -15,7 +15,7 @@
     <text x="145" y="132" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#0a1424">https://shop.example</text>
   </g>
   <g class="el" data-part="api">
-    <rect x="460" y="84" width="220" height="64" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="460" y="84" width="220" height="64" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="570" y="110" text-anchor="middle" font-size="13" fill="#eef2f6">別のサイトの API</text>
     <text x="570" y="132" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">https://api.example</text>
   </g>
@@ -25,11 +25,11 @@
   </g>
   <g class="el" data-part="allow">
     <path d="M456 132 H254" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#ar)" />
-    <rect x="290" y="166" width="390" height="40" rx="8" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="290" y="166" width="390" height="40" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="485" y="192" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#f2b632">Access-Control-Allow-Origin: https://shop.example</text>
   </g>
   <g class="el" data-part="block">
-    <rect x="40" y="168" width="210" height="52" rx="8" fill="none" stroke="#e04a3a" stroke-width="2" />
+    <rect x="40" y="168" width="210" height="52" rx="8" fill="none" stroke="#e04a3a" stroke-width="2" pointer-events="all" />
     <text x="145" y="191" text-anchor="middle" font-size="13" fill="#e04a3a">許可が無ければ</text>
     <text x="145" y="210" text-anchor="middle" font-size="13" fill="#e04a3a">ブラウザが止める</text>
   </g>

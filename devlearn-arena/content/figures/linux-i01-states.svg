@@ -26,7 +26,7 @@
   </g>
   <!-- 起動時 -->
   <g class="el" data-part="boot">
-    <rect x="290" y="20" width="150" height="56" rx="14" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="290" y="20" width="150" height="56" rx="14" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="365" y="54" text-anchor="middle" font-size="16" font-weight="700" fill="#f2b632">サーバの起動</text>
   </g>
   <!-- 移り変わり -->

@@ -4,27 +4,27 @@
     <text x="350" y="40" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">1 桁目で、何が起きたかの見当が付く</text>
   </g>
   <g class="el" data-part="c2xx">
-    <rect x="20" y="70" width="152" height="170" rx="12" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="20" y="70" width="152" height="170" rx="12" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="96" y="110" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" font-weight="700" fill="#3ae08a">2xx</text>
     <text x="96" y="142" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">成功</text>
     <text x="96" y="182" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#9fb0c6">200 201 204</text>
   </g>
   <g class="el" data-part="c3xx">
-    <rect x="192" y="70" width="152" height="170" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <rect x="192" y="70" width="152" height="170" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
     <text x="268" y="110" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" font-weight="700" fill="#5cc1ff">3xx</text>
     <text x="268" y="142" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">転送</text>
     <text x="268" y="182" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#9fb0c6">301 302 304</text>
     <text x="268" y="210" text-anchor="middle" font-size="13" fill="#9fb0c6">別の場所へ</text>
   </g>
   <g class="el" data-part="c4xx">
-    <rect x="364" y="70" width="152" height="170" rx="12" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="364" y="70" width="152" height="170" rx="12" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="440" y="110" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" font-weight="700" fill="#f2b632">4xx</text>
     <text x="440" y="142" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">依頼側の誤り</text>
     <text x="440" y="182" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#9fb0c6">400 403 404</text>
     <text x="440" y="210" text-anchor="middle" font-size="13" fill="#9fb0c6">頼み方・場所</text>
   </g>
   <g class="el" data-part="c5xx">
-    <rect x="536" y="70" width="152" height="170" rx="12" fill="none" stroke="#e04a3a" stroke-width="2" />
+    <rect x="536" y="70" width="152" height="170" rx="12" fill="none" stroke="#e04a3a" stroke-width="2" pointer-events="all" />
     <text x="612" y="110" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="28" font-weight="700" fill="#e04a3a">5xx</text>
     <text x="612" y="142" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">サーバ側の失敗</text>
     <text x="612" y="182" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#9fb0c6">500 502 503</text>

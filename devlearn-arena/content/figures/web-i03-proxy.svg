@@ -6,16 +6,16 @@
     </marker>
   </defs>
   <g class="el" data-part="requests">
-    <rect x="16" y="70" width="150" height="44" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <rect x="16" y="70" width="150" height="44" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
     <text x="91" y="97" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">shop.example</text>
-    <rect x="16" y="196" width="150" height="44" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="16" y="196" width="150" height="44" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="91" y="223" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">api.example</text>
     <text x="91" y="156" text-anchor="middle" font-size="13" fill="#9fb0c6">同じ 80 番へ</text>
     <path d="M166 92 L222 142" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
     <path d="M166 218 L222 172" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
   </g>
   <g class="el" data-part="entrance">
-    <rect x="226" y="40" width="200" height="240" rx="12" fill="none" stroke="#7a3fd0" stroke-width="2" />
+    <rect x="226" y="40" width="200" height="240" rx="12" fill="none" stroke="#7a3fd0" stroke-width="2" pointer-events="all" />
     <text x="326" y="64" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">入口の Web サーバ</text>
   </g>
   <g class="el" data-part="vhost-shop">
@@ -31,14 +31,14 @@
   </g>
   <g class="el" data-part="files">
     <path d="M410 112 H476" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
-    <rect x="480" y="80" width="200" height="64" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <rect x="480" y="80" width="200" height="64" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
     <text x="580" y="106" text-anchor="middle" font-size="13" fill="#eef2f6">公開用のディレクトリ</text>
     <text x="580" y="128" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">/var/www/shop</text>
   </g>
   <g class="el" data-part="app">
     <path d="M410 220 H476" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#ar)" />
     <text x="443" y="210" text-anchor="middle" font-size="13" fill="#f2b632">中継</text>
-    <rect x="480" y="188" width="200" height="64" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="480" y="188" width="200" height="64" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="580" y="214" text-anchor="middle" font-size="13" fill="#eef2f6">後ろのアプリ</text>
     <text x="580" y="236" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">127.0.0.1:3000</text>
   </g>

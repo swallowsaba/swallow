@@ -7,10 +7,10 @@
   </defs>
   <g class="el" data-part="frame">
     <text x="170" y="34" text-anchor="middle" font-size="16" font-weight="700" fill="#5cc1ff">依頼（リクエスト）</text>
-    <rect x="20" y="48" width="300" height="160" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <rect x="20" y="48" width="300" height="160" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
     <text x="40" y="132" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#9fb0c6">Host: shop.example</text>
     <text x="530" y="34" text-anchor="middle" font-size="16" font-weight="700" fill="#3ae08a">返事（レスポンス）</text>
-    <rect x="380" y="48" width="300" height="250" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="380" y="48" width="300" height="250" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <path d="M320 90 H374" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
     <text x="170" y="240" text-anchor="middle" font-size="13" fill="#9fb0c6">1 行目: 何をするか・どこを・版</text>
     <text x="170" y="262" text-anchor="middle" font-size="13" fill="#9fb0c6">続けて見出し（ヘッダ）</text>
@@ -38,7 +38,7 @@
     <text x="396" y="182" font-size="13" fill="#9fb0c6">見出し（本文の種類・大きさ）</text>
   </g>
   <g class="el" data-part="body">
-    <rect x="394" y="204" width="272" height="80" rx="6" fill="none" stroke="#eef2f6" stroke-width="1.5" stroke-dasharray="5 4" />
+    <rect x="394" y="204" width="272" height="80" rx="6" fill="none" stroke="#eef2f6" stroke-width="1.5" stroke-dasharray="5 4" pointer-events="all" />
     <text x="410" y="236" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">&lt;h1&gt;港町の店&lt;/h1&gt;</text>
     <text x="410" y="266" font-size="13" fill="#9fb0c6">本文（空の行の後ろ）</text>
   </g>

@@ -7,7 +7,7 @@
   </defs>
   <g class="el" data-part="plain">
     <text x="20" y="44" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#e04a3a">http://</text>
-    <rect x="110" y="24" width="420" height="32" rx="16" fill="none" stroke="#e04a3a" stroke-width="2" />
+    <rect x="110" y="24" width="420" height="32" rx="16" fill="none" stroke="#e04a3a" stroke-width="2" pointer-events="all" />
     <text x="320" y="46" text-anchor="middle" font-size="14" fill="#eef2f6">パスワード: minato123（途中で読める）</text>
   </g>
   <g class="el" data-part="secure">
@@ -20,15 +20,15 @@
     <text x="548" y="110" font-size="13" fill="#9fb0c6">443 番</text>
   </g>
   <g class="el" data-part="redirect">
-    <rect x="20" y="160" width="190" height="44" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <rect x="20" y="160" width="190" height="44" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
     <text x="115" y="187" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">http://city.example/</text>
     <path d="M210 182 H300" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
     <text x="255" y="174" text-anchor="middle" font-size="13" fill="#f2b632">301</text>
-    <rect x="306" y="160" width="200" height="44" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="306" y="160" width="200" height="44" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="406" y="187" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#3ae08a">https://city.example/</text>
   </g>
   <g class="el" data-part="mixed">
-    <rect x="20" y="230" width="486" height="70" rx="10" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="20" y="230" width="486" height="70" rx="10" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="36" y="256" font-size="13" fill="#eef2f6">https のページ</text>
     <text x="36" y="284" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#f2b632">&lt;img src="http://city.example/logo.png"&gt;</text>
   </g>

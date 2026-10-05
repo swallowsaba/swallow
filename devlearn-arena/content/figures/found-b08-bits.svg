@@ -32,7 +32,7 @@
     <text x="222" y="176" text-anchor="middle" font-size="16" font-weight="700" fill="#f2b632">8 ビット = 1 バイト（256 通り）</text>
   </g>
   <g class="el" data-part="char">
-    <rect x="450" y="56" width="150" height="120" rx="12" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="450" y="56" width="150" height="120" rx="12" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="525" y="112" text-anchor="middle" font-size="48" font-weight="700" fill="#eef2f6">a</text>
     <text x="525" y="160" text-anchor="middle" font-size="13" fill="#9fb0c6">文字コードで決まる</text>
   </g>

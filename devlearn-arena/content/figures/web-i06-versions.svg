@@ -12,7 +12,7 @@
   <g class="el" data-part="h1">
     <text x="20" y="74" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" font-weight="700" fill="#eef2f6">HTTP/1.1</text>
     <text x="20" y="96" font-size="13" fill="#9fb0c6">順番に 1 つずつ</text>
-    <rect x="170" y="48" width="510" height="56" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <rect x="170" y="48" width="510" height="56" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
     <rect x="178" y="58" width="118" height="36" rx="6" fill="#5cc1ff" />
     <text x="237" y="81" text-anchor="middle" font-size="13" fill="#0a1424">HTML</text>
     <rect x="302" y="58" width="118" height="36" rx="6" fill="#5cc1ff" />
@@ -25,7 +25,7 @@
   <g class="el" data-part="h2">
     <text x="20" y="170" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" font-weight="700" fill="#eef2f6">HTTP/2</text>
     <text x="20" y="192" font-size="13" fill="#9fb0c6">1 本で同時に</text>
-    <rect x="170" y="122" width="510" height="134" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="170" y="122" width="510" height="134" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <rect x="178" y="130" width="118" height="26" rx="6" fill="#3ae08a" />
     <text x="237" y="148" text-anchor="middle" font-size="13" fill="#0a1424">HTML</text>
     <rect x="178" y="160" width="118" height="26" rx="6" fill="#3ae08a" />

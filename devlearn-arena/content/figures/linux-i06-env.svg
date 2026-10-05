@@ -6,7 +6,7 @@
     </marker>
   </defs>
   <g class="el" data-part="shell">
-    <rect x="20" y="30" width="300" height="230" rx="14" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="20" y="30" width="300" height="230" rx="14" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="40" y="60" font-size="16" font-weight="700" fill="#3ae08a">シェル</text>
   </g>
   <g class="el" data-part="table">

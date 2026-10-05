@@ -9,7 +9,7 @@
     </marker>
   </defs>
   <g class="el" data-part="mkdir">
-    <rect x="30" y="20" width="132" height="320" rx="12" fill="none" stroke="#9aa9b5" stroke-width="2" />
+    <rect x="30" y="20" width="132" height="320" rx="12" fill="none" stroke="#9aa9b5" stroke-width="2" pointer-events="all" />
     <text x="96" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">mkdir backup</text>
     <text x="96" y="66" text-anchor="middle" font-size="13" fill="#9fb0c6">ディレクトリを作る</text>
     <text x="96" y="100" text-anchor="middle" font-size="13" fill="#9fb0c6">前</text>
@@ -20,7 +20,7 @@
     <text x="96" y="259" text-anchor="middle" font-size="13" font-weight="700" fill="#0a1424">backup/</text>
   </g>
   <g class="el" data-part="cp">
-    <rect x="182" y="20" width="132" height="320" rx="12" fill="none" stroke="#9aa9b5" stroke-width="2" />
+    <rect x="182" y="20" width="132" height="320" rx="12" fill="none" stroke="#9aa9b5" stroke-width="2" pointer-events="all" />
     <text x="248" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">cp a.txt b.txt</text>
     <text x="248" y="66" text-anchor="middle" font-size="13" fill="#9fb0c6">写す（元が残る）</text>
     <text x="248" y="100" text-anchor="middle" font-size="13" fill="#9fb0c6">前</text>
@@ -34,7 +34,7 @@
     <text x="248" y="303" text-anchor="middle" font-size="13" font-weight="700" fill="#0a1424">b.txt</text>
   </g>
   <g class="el" data-part="mv">
-    <rect x="334" y="20" width="132" height="320" rx="12" fill="none" stroke="#9aa9b5" stroke-width="2" />
+    <rect x="334" y="20" width="132" height="320" rx="12" fill="none" stroke="#9aa9b5" stroke-width="2" pointer-events="all" />
     <text x="400" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">mv a.txt b.txt</text>
     <text x="400" y="66" text-anchor="middle" font-size="13" fill="#9fb0c6">移す（元は無くなる）</text>
     <text x="400" y="100" text-anchor="middle" font-size="13" fill="#9fb0c6">前</text>
@@ -46,7 +46,7 @@
     <text x="400" y="259" text-anchor="middle" font-size="13" font-weight="700" fill="#0a1424">b.txt</text>
   </g>
   <g class="el" data-part="rm">
-    <rect x="486" y="20" width="132" height="320" rx="12" fill="none" stroke="#9aa9b5" stroke-width="2" />
+    <rect x="486" y="20" width="132" height="320" rx="12" fill="none" stroke="#9aa9b5" stroke-width="2" pointer-events="all" />
     <text x="552" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">rm a.txt</text>
     <text x="552" y="66" text-anchor="middle" font-size="13" fill="#9fb0c6">消す（戻せない）</text>
     <text x="552" y="100" text-anchor="middle" font-size="13" fill="#9fb0c6">前</text>

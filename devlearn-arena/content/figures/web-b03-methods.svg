@@ -11,25 +11,25 @@
     <text x="350" y="178" text-anchor="middle" font-size="14" fill="#eef2f6">3 番の商品（資源）</text>
   </g>
   <g class="el" data-part="get">
-    <rect x="30" y="40" width="170" height="64" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <rect x="30" y="40" width="170" height="64" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
     <text x="115" y="68" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#5cc1ff">GET</text>
     <text x="115" y="92" text-anchor="middle" font-size="13" fill="#eef2f6">取る（変えない）</text>
     <path d="M200 90 L250 128" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
   </g>
   <g class="el" data-part="post">
-    <rect x="500" y="40" width="170" height="64" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="500" y="40" width="170" height="64" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="585" y="68" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#3ae08a">POST /items</text>
     <text x="585" y="92" text-anchor="middle" font-size="13" fill="#eef2f6">作る（送るたびに増える）</text>
     <path d="M500 90 L450 128" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
   </g>
   <g class="el" data-part="put">
-    <rect x="30" y="216" width="170" height="64" rx="10" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="30" y="216" width="170" height="64" rx="10" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="115" y="244" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#f2b632">PUT</text>
     <text x="115" y="268" text-anchor="middle" font-size="13" fill="#eef2f6">置き換える</text>
     <path d="M200 230 L250 192" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
   </g>
   <g class="el" data-part="delete">
-    <rect x="500" y="216" width="170" height="64" rx="10" fill="none" stroke="#e04a3a" stroke-width="2" />
+    <rect x="500" y="216" width="170" height="64" rx="10" fill="none" stroke="#e04a3a" stroke-width="2" pointer-events="all" />
     <text x="585" y="244" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#e04a3a">DELETE</text>
     <text x="585" y="268" text-anchor="middle" font-size="13" fill="#eef2f6">消す</text>
     <path d="M500 230 L450 192" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />

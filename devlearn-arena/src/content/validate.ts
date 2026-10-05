@@ -277,5 +277,11 @@ export function validateFigure(svg: string, allowedColors: ReadonlySet<string>, 
   if (elements === 0) p.push('要素（class="el"）が無い');
   if (elements > 7) p.push(`要素が ${String(elements)} つ（7 つまで）`);
   if (!/<title>[^<]+<\/title>/.test(svg)) p.push('図の説明（title）が無い');
+  // 押す部分の枠（中を塗らない四角）は、中を押しても当たるようにする（字の間の空白を押すと何も起きなかった）
+  for (const g of svg.matchAll(/<g\b[^>]*\bdata-part="([^"]+)"[^>]*>([\s\S]*?)<\/g>/g)) {
+    for (const r of (g[2] ?? '').matchAll(/<rect\b[^>]*>/g)) {
+      if (/\bfill="none"/.test(r[0]) && !/\bpointer-events="all"/.test(r[0])) p.push(`部分 ${g[1] ?? ''}: 中を塗らない四角に pointer-events="all" が無い（中を押しても当たらない）`);
+    }
+  }
   return p;
 }

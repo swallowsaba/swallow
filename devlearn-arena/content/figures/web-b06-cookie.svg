@@ -33,7 +33,7 @@
     <text x="347" y="188" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#ff8a7a">3 GET /cart  Cookie: sid=7f3a</text>
   </g>
   <g class="el" data-part="store">
-    <rect x="530" y="186" width="150" height="84" rx="10" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="530" y="186" width="150" height="84" rx="10" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="605" y="212" text-anchor="middle" font-size="13" font-weight="700" fill="#f2b632">4 帳面（セッション）</text>
     <text x="605" y="236" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">7f3a → 港 さん</text>
     <text x="605" y="258" text-anchor="middle" font-size="13" fill="#9fb0c6">札の番号で見分ける</text>

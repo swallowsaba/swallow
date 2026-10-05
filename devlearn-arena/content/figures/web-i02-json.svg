@@ -6,29 +6,29 @@
     </marker>
   </defs>
   <g class="el" data-part="object">
-    <rect x="20" y="40" width="210" height="110" rx="10" fill="none" stroke="#7a3fd0" stroke-width="2" />
+    <rect x="20" y="40" width="210" height="110" rx="10" fill="none" stroke="#7a3fd0" stroke-width="2" pointer-events="all" />
     <text x="36" y="66" font-size="14" font-weight="700" fill="#eef2f6">{ } オブジェクト</text>
     <text x="36" y="96" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">"store": "港町の店"</text>
     <text x="36" y="126" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#5cc1ff">"items": [ … ]</text>
   </g>
   <g class="el" data-part="array">
     <path d="M230 121 H262" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
-    <rect x="266" y="70" width="110" height="170" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <rect x="266" y="70" width="110" height="170" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
     <text x="282" y="96" font-size="14" font-weight="700" fill="#eef2f6">[ ] 配列</text>
-    <rect x="282" y="112" width="78" height="40" rx="6" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <rect x="282" y="112" width="78" height="40" rx="6" fill="none" stroke="#9fb0c6" stroke-width="1.5" pointer-events="all" />
     <text x="321" y="137" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">[0]</text>
-    <rect x="282" y="176" width="78" height="40" rx="6" fill="none" stroke="#9fb0c6" stroke-width="1.5" />
+    <rect x="282" y="176" width="78" height="40" rx="6" fill="none" stroke="#9fb0c6" stroke-width="1.5" pointer-events="all" />
     <text x="321" y="201" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">[1]</text>
     <path d="M360 132 H416" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
     <path d="M360 196 H416" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
   </g>
   <g class="el" data-part="item0">
-    <rect x="420" y="96" width="260" height="72" rx="10" fill="none" stroke="#7a3fd0" stroke-width="2" />
+    <rect x="420" y="96" width="260" height="72" rx="10" fill="none" stroke="#7a3fd0" stroke-width="2" pointer-events="all" />
     <text x="436" y="124" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">"name": "灯台の模型"</text>
     <text x="436" y="152" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">"stock": 3</text>
   </g>
   <g class="el" data-part="item1">
-    <rect x="420" y="178" width="260" height="72" rx="10" fill="none" stroke="#7a3fd0" stroke-width="2" />
+    <rect x="420" y="178" width="260" height="72" rx="10" fill="none" stroke="#7a3fd0" stroke-width="2" pointer-events="all" />
     <text x="436" y="206" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">"name": "潮見の望遠鏡"</text>
     <text x="436" y="234" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">"stock":</text>
   </g>

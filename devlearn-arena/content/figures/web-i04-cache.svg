@@ -6,21 +6,21 @@
     </marker>
   </defs>
   <g class="el" data-part="browser">
-    <rect x="20" y="60" width="170" height="120" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <rect x="20" y="60" width="170" height="120" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
     <text x="105" y="88" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">ブラウザ</text>
     <rect x="44" y="104" width="122" height="54" rx="6" fill="#5cc1ff" />
     <text x="105" y="128" text-anchor="middle" font-size="13" fill="#0a1424">手元の保存</text>
     <text x="105" y="148" text-anchor="middle" font-size="13" fill="#0a1424">最も速い</text>
   </g>
   <g class="el" data-part="relay">
-    <rect x="265" y="60" width="170" height="120" rx="12" fill="none" stroke="#7a3fd0" stroke-width="2" />
+    <rect x="265" y="60" width="170" height="120" rx="12" fill="none" stroke="#7a3fd0" stroke-width="2" pointer-events="all" />
     <text x="350" y="88" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">途中の中継</text>
     <rect x="289" y="104" width="122" height="54" rx="6" fill="#7a3fd0" />
     <text x="350" y="128" text-anchor="middle" font-size="13" fill="#eef2f6">みんなで共有</text>
     <text x="350" y="148" text-anchor="middle" font-size="13" fill="#eef2f6">する保存</text>
   </g>
   <g class="el" data-part="server">
-    <rect x="510" y="60" width="170" height="120" rx="12" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="510" y="60" width="170" height="120" rx="12" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="595" y="88" text-anchor="middle" font-size="14" font-weight="700" fill="#eef2f6">サーバ</text>
     <text x="595" y="128" text-anchor="middle" font-size="13" fill="#eef2f6">元の物（最新）</text>
     <text x="595" y="150" text-anchor="middle" font-size="13" fill="#9fb0c6">遠い・重い</text>
@@ -34,7 +34,7 @@
   <g class="el" data-part="header">
     <path d="M506 150 H439" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#ar)" />
     <path d="M261 150 H194" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#ar)" />
-    <rect x="160" y="210" width="380" height="40" rx="8" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="160" y="210" width="380" height="40" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="350" y="236" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#f2b632">Cache-Control: max-age=31536000</text>
   </g>
   <g class="el" data-part="tradeoff">

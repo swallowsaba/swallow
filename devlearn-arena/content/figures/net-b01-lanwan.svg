@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
   <title>家の LAN と会社の LAN は、それぞれルータを出口にして、通信会社の回線（WAN）でつながる</title>
   <g class="el" data-part="lan-home">
-    <rect x="16" y="60" width="200" height="190" rx="14" fill="none" stroke="#3ae08a" stroke-width="2" stroke-dasharray="7 5" />
+    <rect x="16" y="60" width="200" height="190" rx="14" fill="none" stroke="#3ae08a" stroke-width="2" stroke-dasharray="7 5" pointer-events="all" />
     <text x="116" y="48" text-anchor="middle" font-size="16" font-weight="700" fill="#3ae08a">家の LAN</text>
     <rect x="36" y="86" width="100" height="44" rx="8" fill="#3ae08a" />
     <text x="86" y="114" text-anchor="middle" font-size="14" fill="#0a1424">パソコン</text>
@@ -14,7 +14,7 @@
     <path d="M136 108 L176 132 M136 208 L176 180" fill="none" stroke="#9fb0c6" stroke-width="2" />
   </g>
   <g class="el" data-part="wan">
-    <rect x="276" y="118" width="148" height="76" rx="38" fill="none" stroke="#5cc1ff" stroke-width="3" />
+    <rect x="276" y="118" width="148" height="76" rx="38" fill="none" stroke="#5cc1ff" stroke-width="3" pointer-events="all" />
     <text x="350" y="152" text-anchor="middle" font-size="18" font-weight="700" fill="#5cc1ff">WAN</text>
     <text x="350" y="176" text-anchor="middle" font-size="13" fill="#9fb0c6">通信会社の回線</text>
     <path d="M256 156 H276 M424 156 H444" fill="none" stroke="#5cc1ff" stroke-width="3" />
@@ -25,7 +25,7 @@
     <path d="M524 132 L564 108 M524 180 L564 208" fill="none" stroke="#9fb0c6" stroke-width="2" />
   </g>
   <g class="el" data-part="lan-office">
-    <rect x="484" y="60" width="200" height="190" rx="14" fill="none" stroke="#5cc1ff" stroke-width="2" stroke-dasharray="7 5" />
+    <rect x="484" y="60" width="200" height="190" rx="14" fill="none" stroke="#5cc1ff" stroke-width="2" stroke-dasharray="7 5" pointer-events="all" />
     <text x="584" y="48" text-anchor="middle" font-size="16" font-weight="700" fill="#5cc1ff">会社の LAN</text>
     <rect x="564" y="86" width="100" height="44" rx="8" fill="#5cc1ff" />
     <text x="614" y="114" text-anchor="middle" font-size="14" fill="#0a1424">サーバ</text>

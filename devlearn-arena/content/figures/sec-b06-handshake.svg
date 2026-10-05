@@ -22,7 +22,7 @@
     <text x="350" y="132" text-anchor="middle" font-size="13" fill="#f2b632">2 証明書を見せる（名前 shop.example）</text>
   </g>
   <g class="el" data-part="verify">
-    <rect x="176" y="156" width="250" height="46" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="176" y="156" width="250" height="46" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="301" y="184" text-anchor="middle" font-size="13" fill="#3ae08a">3 確かめる（名前・期限・発行者）</text>
   </g>
   <g class="el" data-part="key">

@@ -7,7 +7,7 @@
   </defs>
   <g class="el" data-part="df">
     <text x="20" y="40" font-size="16" font-weight="700" fill="#eef2f6">df：全体</text>
-    <rect x="20" y="56" width="200" height="36" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <rect x="20" y="56" width="200" height="36" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
     <rect x="22" y="58" width="180" height="32" rx="5" fill="#e04a3a" />
     <text x="120" y="82" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">91% 使用</text>
     <text x="20" y="118" font-size="13" fill="#9fb0c6">20G のうち 19G</text>

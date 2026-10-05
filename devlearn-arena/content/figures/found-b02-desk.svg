@@ -31,7 +31,7 @@
     <text x="227" y="150" text-anchor="middle" font-size="13" fill="#eef2f6">速い</text>
   </g>
   <g class="el" data-part="power">
-    <rect x="40" y="200" width="370" height="110" rx="12" fill="none" stroke="#e8b923" stroke-width="2" stroke-dasharray="6 5" />
+    <rect x="40" y="200" width="370" height="110" rx="12" fill="none" stroke="#e8b923" stroke-width="2" stroke-dasharray="6 5" pointer-events="all" />
     <text x="225" y="235" text-anchor="middle" font-size="14" font-weight="700" fill="#e8b923">電源を切ると</text>
     <text x="225" y="260" text-anchor="middle" font-size="13" fill="#eef2f6">メモリの中身は消える。ストレージの中身は残る</text>
     <text x="225" y="285" text-anchor="middle" font-size="13" fill="#eef2f6">速さ: メモリ ≫ ストレージ　広さ: メモリ ≪ ストレージ</text>

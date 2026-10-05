@@ -9,7 +9,7 @@
     </marker>
   </defs>
   <g class="el" data-part="grep">
-    <rect x="30" y="30" width="270" height="300" rx="12" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="30" y="30" width="270" height="300" rx="12" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="165" y="62" text-anchor="middle" font-size="16" font-weight="700" fill="#3ae08a">grep: 文書の中の行</text>
     <rect x="56" y="84" width="218" height="20" rx="4" fill="#9aa9b5" />
     <rect x="56" y="114" width="218" height="20" rx="4" fill="#9aa9b5" />
@@ -21,7 +21,7 @@
     <text x="165" y="310" text-anchor="middle" font-size="13" fill="#eef2f6">timeout を含む行だけ拾う</text>
   </g>
   <g class="el" data-part="find">
-    <rect x="340" y="30" width="270" height="300" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <rect x="340" y="30" width="270" height="300" rx="12" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
     <text x="475" y="62" text-anchor="middle" font-size="16" font-weight="700" fill="#5cc1ff">find: 木の中のファイル</text>
     <rect x="450" y="86" width="50" height="28" rx="6" fill="#9aa9b5" />
     <text x="475" y="106" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">/</text>

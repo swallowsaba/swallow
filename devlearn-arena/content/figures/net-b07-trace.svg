@@ -13,7 +13,7 @@
     <text x="188" y="210" text-anchor="middle" font-size="13" fill="#3ae08a">0.4 ms</text>
   </g>
   <g class="el" data-part="hop2">
-    <rect x="268" y="110" width="96" height="64" rx="10" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="6 4" />
+    <rect x="268" y="110" width="96" height="64" rx="10" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
     <text x="316" y="140" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">2 段目</text>
     <text x="316" y="160" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#f2b632">* * *</text>
     <path d="M236 142 H268" fill="none" stroke="#3ae08a" stroke-width="3" />

@@ -34,7 +34,7 @@
     <text x="635" y="168" text-anchor="middle" font-size="13" fill="#0a1424">サービスを出す</text>
   </g>
   <g class="el" data-part="lan">
-    <rect x="10" y="80" width="270" height="140" rx="12" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="6 5" />
+    <rect x="10" y="80" width="270" height="140" rx="12" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="6 5" pointer-events="all" />
     <text x="145" y="68" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">家の中のネットワーク（LAN）</text>
     <path d="M130 150 H154" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#arrow)" />
     <path d="M270 150 H294" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#arrow)" />

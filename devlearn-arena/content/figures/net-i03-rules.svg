@@ -12,12 +12,12 @@
     <path d="M186 68 C 230 68, 230 68, 240 68" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#f1)" />
   </g>
   <g class="el" data-part="rule1">
-    <rect x="250" y="40" width="300" height="44" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="250" y="40" width="300" height="44" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="270" y="68" font-size="14" fill="#3ae08a">1 許可: 443 番・誰でも</text>
     <text x="562" y="68" font-size="13" fill="#9fb0c6">当たらない ↓</text>
   </g>
   <g class="el" data-part="rule2">
-    <rect x="250" y="96" width="300" height="44" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="250" y="96" width="300" height="44" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="270" y="124" font-size="14" fill="#3ae08a">2 許可: 22 番・社内から</text>
     <text x="562" y="124" font-size="13" fill="#9fb0c6">当たらない ↓</text>
   </g>

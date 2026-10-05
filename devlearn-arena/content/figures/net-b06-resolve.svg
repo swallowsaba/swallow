@@ -36,7 +36,7 @@
     <text x="218" y="196" text-anchor="middle" font-size="13" fill="#3ae08a">4 返す</text>
   </g>
   <g class="el" data-part="record">
-    <rect x="200" y="226" width="300" height="44" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="200" y="226" width="300" height="44" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="350" y="254" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">shop.example → 203.0.113.20</text>
   </g>
   <g class="el" data-part="caption">

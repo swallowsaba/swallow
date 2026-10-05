@@ -14,7 +14,7 @@
     <text x="320" y="83" text-anchor="middle" font-size="13" fill="#0a1424">Web サーバ・データベース・コンテナ</text>
   </g>
   <g class="el" data-part="distro">
-    <rect x="40" y="130" width="560" height="110" rx="12" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="40" y="130" width="560" height="110" rx="12" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="320" y="156" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">ディストリビューション（カーネル ＋ 道具一式の配布物）</text>
     <rect x="60" y="172" width="160" height="52" rx="8" fill="#ffd66b" />
     <text x="140" y="204" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">Ubuntu</text>
