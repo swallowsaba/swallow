@@ -21,7 +21,10 @@ const switchTo: GitHandler = ({ git, shell, rest, sub }) => {
   let target = git;
   const creating = flags.has('b') || flags.has('c');
   if (creating) {
-    const made = createBranch(git, name);
+    // git switch -c 名前 起点（HEAD~1・枝・記録の番号）
+    const start = operands[1] === undefined ? undefined : resolveRef(git, operands[1]);
+    if (operands[1] !== undefined && start === undefined) return { stderr: `fatal: invalid reference: ${operands[1]}\n`, code: 128 };
+    const made = createBranch(git, name, start);
     if (made.error !== undefined) return { stderr: `${made.error}\n`, code: 128 };
     target = made.git;
   }

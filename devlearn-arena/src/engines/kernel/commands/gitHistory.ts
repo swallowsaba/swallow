@@ -1,6 +1,6 @@
 import { mergeThreeWay } from '@/engines/git/merge';
 import {
-  addPaths, currentBranch, headCommit,
+  addPaths, currentBranch, headCommit, indexOf,
 } from '@/engines/git/repository';
 import {
   commitMerge, fastForwardTo, planMerge, popStash, pushStash, replayCommit, reset, revertCommit, type ResetMode,
@@ -44,8 +44,8 @@ export const historySubcommands: Record<string, GitHandler> = {
     if (plan.fastForward !== null) {
       const moved = fastForwardTo(git, plan.fastForward);
       const vfs = checkoutWorktree(shell.vfs, moved, headCommit(git), plan.fastForward);
-      const staged = addPaths(moved, vfs, ['.']);
-      return { stdout: 'Fast-forward\n', patch: { git: staged.git, vfs } };
+      // 選んだ物は進めた先の記録と同じにする（追跡していないファイルは選ばない）
+      return { stdout: 'Fast-forward\n', patch: { git: indexOf(moved, plan.fastForward), vfs } };
     }
     if (plan.files.size === 0) {
       return { stdout: 'Already up to date.\n' };
@@ -72,8 +72,12 @@ export const historySubcommands: Record<string, GitHandler> = {
       };
     }
 
-    const staged = addPaths(git, vfs, ['.']);
-    const result = commitMerge(staged.git, plan.theirs, `Merge branch '${name}'`, nowSeconds);
+    // 取り込んだファイルだけを選ぶ（追跡していないファイルは記録に入れない）
+    const staged = addPaths(git, vfs, [...plan.files.keys()]);
+    // 本物と同じく、main（master）以外の枝へ取り込んだ時は「into 枝」を付ける
+    const into = currentBranch(git);
+    const message = into === null || into === 'main' || into === 'master' ? `Merge branch '${name}'` : `Merge branch '${name}' into ${into}`;
+    const result = commitMerge(staged.git, plan.theirs, message, nowSeconds);
     return { stdout: `Merge made by the 'ort' strategy.\n`, patch: { git: result.git, vfs } };
   },
   'cherry-pick': ({ git, shell, rest, nowSeconds }) => {

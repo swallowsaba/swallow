@@ -3,7 +3,7 @@ import {
   decode, encode, hashObject, ObjectStore, parseCommit, parseTree, serializeCommit, serializeTree,
   type Signature, type TreeEntry,
 } from './objects';
-import type { GitState, StatusEntry, StatusReport } from './types';
+import type { GitState, IndexEntry, StatusEntry, StatusReport } from './types';
 
 /**
  * リポジトリの中核。作る・読む・記録する側だけを置く。
@@ -129,6 +129,13 @@ export function addPaths(
     }
   }
   return { git: { ...git, index }, added, missing };
+}
+
+/** 記録の木と同じ中身に、選んだ物（インデックス）を揃える（早送り・取り込みの後。追跡していないファイルは入れない） */
+export function indexOf(git: GitState, commitHash: string): GitState {
+  const index = new Map<string, IndexEntry>();
+  for (const [path, hash] of treeFiles(git, commitHash)) index.set(path, { path, mode: FILE_MODE, hash });
+  return { ...git, index };
 }
 
 /** commit -a と同じく、追跡しているファイルだけを今の中身で選び直す（消したファイルは外す。追跡していないファイルは触らない） */
@@ -370,11 +377,12 @@ export function branches(git: GitState): string[] {
     .sort();
 }
 
-export function createBranch(git: GitState, name: string): { git: GitState; error?: string } {
+export function createBranch(git: GitState, name: string, at?: string): { git: GitState; error?: string } {
   if (git.refs.has(`refs/heads/${name}`)) {
     return { git, error: `fatal: a branch named '${name}' already exists` };
   }
-  const target = headCommit(git);
+  // at を渡せば、その記録から枝を作る（git switch -c 名前 起点）
+  const target = at ?? headCommit(git);
   if (target === null) {
     return { git, error: `fatal: not a valid object name: '${DEFAULT_BRANCH}'` };
   }

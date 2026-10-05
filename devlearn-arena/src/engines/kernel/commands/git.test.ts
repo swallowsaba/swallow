@@ -458,3 +458,42 @@ describe('枝の見え方（本物と同じ）', () => {
     expect(run('git status').out).toMatch(/no changes added to commit \(use "git add" and\/or "git commit -a"\)\n$/);
   });
 });
+
+describe('merge（本物と同じ）', () => {
+  beforeEach(() => {
+    run('git init');
+    run('git add a.txt');
+    run('git commit -m "first"');
+    run('git switch -c feature');
+    run('echo F > f.txt');
+    run('git add f.txt');
+    run('git commit -m "feature"');
+    run('git switch main');
+  });
+
+  it('main 以外の枝へ取り込んだ記録の説明は「into 枝」が付く', () => {
+    run('echo B >> a.txt');
+    run('git commit -am "main"');
+    run('git switch feature');
+    run('git merge main');
+    expect(run('git log --oneline -1').out).toMatch(/^[0-9a-f]{7} \(HEAD -> feature\) Merge branch 'main' into feature\n$/);
+  });
+
+  it('取り込みは、追跡していないファイルを記録にも選んだ物にも入れない（早送りでも、合わせる記録でも）', () => {
+    run('echo memo > memo.txt');
+    run('git merge feature');
+    expect(run('git status').out).toContain('Untracked files');
+    expect(run('git ls-files').out).not.toContain('memo.txt');
+    run('git switch main');
+    run('echo B >> a.txt');
+    run('git commit -am "main"');
+    run('git switch -c side HEAD~1');
+    run('echo S > s.txt');
+    run('git add s.txt');
+    run('git commit -m "side"');
+    run('git switch main');
+    run('git merge side');
+    expect(run('git show --name-only HEAD').out + run('git ls-files').out).not.toContain('memo.txt');
+    expect(run('git status').out).toContain('memo.txt');
+  });
+});
