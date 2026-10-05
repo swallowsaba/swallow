@@ -111,6 +111,20 @@
         "branch",
         "git-head"
       ]
+    },
+    {
+      "id": "git-merge-reversed",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、main に取り込んだ記録の説明と合っていない。",
+      "causes": [
+        "feature にいたまま `git merge main` を打ち、逆に main を feature に取り込んだ（説明が `into feature` になる）。",
+        "取り込む前の記録の説明を答えた。"
+      ],
+      "hint": "`git branch` で今いる枝を確かめる。逆に取り込んだ時は、feature で `git reset --hard HEAD~1` で取り込む前に戻し、main に移ってから `git merge feature`。",
+      "terms": [
+        "merge",
+        "branch"
+      ]
     }
   ]
 }

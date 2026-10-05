@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>取り込みの 2 つの形。左は早送り。main が進んでいなければ、main の名札を feature の先まで進めるだけ。右は合わせる記録。両方が進んでいれば、2 つを合わせる新しい記録ができる</title>
+  <g class="el" data-part="ff">
+    <text x="20" y="34" font-size="16" font-weight="700" fill="#eef2f6">早送り（fast-forward）</text>
+    <text x="20" y="56" font-size="13" fill="#9fb0c6">main が進んでいない時</text>
+    <path d="M50 170 H290" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <circle cx="60" cy="170" r="12" fill="#9fb0c6" />
+    <circle cx="150" cy="170" r="12" fill="#9fb0c6" />
+    <circle cx="240" cy="170" r="12" fill="#e0457b" />
+    <text x="240" y="204" text-anchor="middle" font-size="13" fill="#eef2f6">噴水を足す</text>
+    <rect x="112" y="100" width="76" height="26" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="4 4" pointer-events="all" />
+    <text x="150" y="118" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">main</text>
+    <path d="M192 113 H200" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="202" y="100" width="76" height="26" rx="6" fill="#9fb0c6" />
+    <text x="240" y="118" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#0a1424">main</text>
+    <text x="20" y="250" font-size="14" fill="#f2b632">名札を進めるだけ。新しい記録はできない</text>
+  </g>
+  <g class="el" data-part="merge-commit">
+    <text x="370" y="34" font-size="16" font-weight="700" fill="#eef2f6">合わせる記録（マージコミット）</text>
+    <text x="370" y="56" font-size="13" fill="#9fb0c6">両方が進んでいる時</text>
+    <path d="M390 200 H600" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <path d="M460 200 C 500 200, 500 120, 540 120 C 580 120, 590 200, 620 200" fill="none" stroke="#e0457b" stroke-width="4" />
+    <circle cx="400" cy="200" r="12" fill="#9fb0c6" />
+    <circle cx="460" cy="200" r="12" fill="#9fb0c6" />
+    <circle cx="540" cy="200" r="12" fill="#9fb0c6" />
+    <text x="540" y="234" text-anchor="middle" font-size="13" fill="#9fb0c6">雨の日の開園</text>
+    <circle cx="540" cy="120" r="12" fill="#e0457b" />
+    <text x="540" y="96" text-anchor="middle" font-size="13" fill="#eef2f6">噴水を足す</text>
+    <circle cx="630" cy="200" r="15" fill="#f2b632" />
+    <text x="630" y="240" text-anchor="middle" font-size="13" fill="#f2b632">合わせる記録</text>
+    <text x="370" y="280" font-size="14" fill="#f2b632">親を 2 つ持つ新しい記録ができる</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="350" y="310" text-anchor="middle" font-size="13" fill="#9fb0c6">どちらも、取り込む側（main）に移ってから git merge feature</text>
+  </g>
+</svg>

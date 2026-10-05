@@ -1,0 +1,236 @@
+{
+  "id": "git.b.05",
+  "domain": "git",
+  "level": "beginner",
+  "theme": "merge",
+  "title": "枝を合わせる",
+  "goal": "merge で統合できる",
+  "minutes": 15,
+  "prerequisites": [
+    "git.b.04"
+  ],
+  "related": [
+    "cicd.b.02",
+    "git.i.03"
+  ],
+  "next": [
+    "git.b.06",
+    "git.i.05"
+  ],
+  "terms": [
+    "merge",
+    "branch",
+    "fast-forward",
+    "merge-commit",
+    "commit",
+    "file"
+  ],
+  "explain": {
+    "what": "{{term:merge}}は、別の{{term:branch}}で進めた変更を、今いる枝に取り込むこと。取り込む側の枝に移ってから、取り込みたい枝の名前を指定する。",
+    "why": "枝で試して仕上げた作業を、本番の流れ（main）に戻すため。取り込むまでは、枝の変更は main には入っていない。",
+    "use": "機能の完成・修正の反映。main が進んでいなければ、名札を枝の先まで進めるだけ（{{term:fast-forward}}）。両方が進んでいれば、2 つを合わせる{{term:merge-commit}}ができる。",
+    "when": "feature の作業が終わった時。取り込んだ後は、{{term:file}}の中身と履歴で、変更が入ったことを確かめる。",
+    "figures": [
+      "git-b05-merge"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "main に移って `git merge feature` を打つ",
+      "b": "feature の変更が main に入る",
+      "answer": "cause",
+      "why": "取り込まれるのは、今いる枝（main）。feature で `git merge main` を打つと、逆に main の変更が feature に入る。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "取り込むと、合わせる記録（マージコミット）ができるのはどの時？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "feature を作った後に、main でも別の記録をした時",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "main が、feature を作った時のままの時",
+          "correct": false,
+          "whyNot": "その時は、main の名札を feature の先まで進めるだけ（早送り）。新しい記録はできない。"
+        },
+        {
+          "id": "c",
+          "text": "feature に、まだ記録が無い時",
+          "correct": false,
+          "whyNot": "取り込む物が無いので`Already up to date.`（もう最新）と言われる。"
+        }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "main にいて `git merge feature` を打った。どうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "feature の変更が main に入る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "main の変更が feature に入る",
+          "correct": false,
+          "whyNot": "取り込まれるのは今いる枝（main）。feature は変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "feature の枝が消える",
+          "correct": false,
+          "whyNot": "取り込んでも枝は残る。要らなくなった枝は、別の操作で消す。"
+        }
+      ],
+      "explanation": "「今いる枝に、指定した枝を取り込む」。打つ前に、今いる枝を確かめる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "feature を main に取り込む。打つ前にすることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "main に移り、main を最新にしておく",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "feature の枝を消しておく",
+          "correct": false,
+          "whyNot": "先に消すと、取り込む物の名前が無くなる。消すのは取り込んだ後。"
+        },
+        {
+          "id": "c",
+          "text": "何もしない（どの枝にいても結果は同じ）",
+          "correct": false,
+          "whyNot": "取り込まれるのは今いる枝。どの枝にいるかで結果が変わる。"
+        }
+      ],
+      "explanation": "取り込む側に移り、ほかの人の記録も取り込んで最新にしてから合わせる。"
+    },
+    {
+      "id": "q3",
+      "kind": "term",
+      "prompt": "早送り（fast-forward）の取り込みとは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "main が進んでいない時、main の名札を枝の先まで進めるだけの取り込み",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "合わせる記録を作って取り込むこと",
+          "correct": false,
+          "whyNot": "それはマージコミットを作る取り込み。両方の枝が進んでいる時に起きる。"
+        },
+        {
+          "id": "c",
+          "text": "取り込みを途中でやめること",
+          "correct": false,
+          "whyNot": "早送りは、名札を進めるだけの取り込み。やめることではない。"
+        }
+      ],
+      "explanation": "早送りでは新しい記録はできず、履歴は一直線のまま。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "feature の枝で地図に噴水を足し終えた。その間に main では、同僚の佐藤さんがお知らせに雨の日の開園時刻を足している。feature を main に取り込む。今は feature にいる。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev-office",
+      "cwd": "/home/learner/park-map",
+      "dirs": [
+        "/home/learner/park-map"
+      ],
+      "run": [
+        "git init",
+        "export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE=\"2026-09-28 10:00\"",
+        "echo '入口: 北側' > map.txt",
+        "echo '駐車場: 40 台' >> map.txt",
+        "echo '開園は 9 時' > notice.txt",
+        "git add map.txt notice.txt",
+        "git commit -m \"公園の地図とお知らせを作る\"",
+        "git switch -c feature",
+        "export GIT_AUTHOR_DATE=\"2026-10-01 15:00\"",
+        "echo '入口: 北側' > map.txt",
+        "echo '駐車場: 40 台' >> map.txt",
+        "echo '噴水: 中央' >> map.txt",
+        "git commit -am \"噴水を足す\"",
+        "git switch main",
+        "export GIT_AUTHOR_NAME=Sato GIT_AUTHOR_EMAIL=sato@city.example GIT_AUTHOR_DATE=\"2026-10-02 09:30\"",
+        "echo '開園は 9 時' > notice.txt",
+        "echo '雨の日は 10 時' >> notice.txt",
+        "git commit -am \"雨の日の開園時刻を足す\"",
+        "unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE",
+        "git switch feature"
+      ]
+    },
+    "steps": [
+      {
+        "id": "merge",
+        "purpose": "feature を main に取り込む。取り込んでできた記録の説明（`git log --oneline -1` の説明の部分）を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "Merge branch 'feature'"
+        },
+        "afterward": "main で feature を取り込んだ。両方の枝が進んでいたので、2 つを合わせる記録 `Merge branch 'feature'`ができた。",
+        "hints": [
+          "取り込まれるのは今いる枝。まず取り込む側（main）に移る。",
+          "main に移ってから `git merge feature`。できた記録は `git log --oneline -1` で見る。",
+          "`git switch main` と `git merge feature` と `git log --oneline -1` を順に打ち、`Merge branch 'feature'` と答える。"
+        ],
+        "expectedErrors": [
+          "git-merge-reversed"
+        ]
+      },
+      {
+        "id": "confirm",
+        "purpose": "main の `map.txt` に噴水の行が入り、`notice.txt` の雨の日の行も残っていることを、中身で確かめる。",
+        "check": {
+          "kind": "git",
+          "expr": "on:main branch:feature merged-into:main committed:map.txt committed:notice.txt"
+        },
+        "afterward": "main の地図に噴水が入り、お知らせの雨の日の行もそのまま。両方の作業が 1 つにまとまった。",
+        "hints": [
+          "ファイルの中身は `cat` で見る。",
+          "`cat map.txt` で噴水、`cat notice.txt` で雨の日の行を探す。",
+          "`cat map.txt` と `cat notice.txt` を順に打つ。"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "取り込む側の枝に移ってから取り込み、両方の作業が 1 つにまとまったことを確かめた。",
+    "partial": "ヒントを使って、作業を main に戻せた。次は、早送りと合わせる記録の違いを説明してみよう。",
+    "retry": "まだ main に feature が入っていない。`git log --oneline --all` で、どの枝にどの記録があるかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "取り込む側の枝に移る",
+      "merge で取り込む",
+      "合わせた後に確かめる"
+    ],
+    "next": [
+      "git.b.06"
+    ],
+    "terms": [
+      "merge",
+      "fast-forward",
+      "merge-commit"
+    ]
+  }
+}

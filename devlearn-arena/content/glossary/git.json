@@ -76,7 +76,8 @@
         "merge"
       ],
       "lessons": [
-        "git.b.04"
+        "git.b.04",
+        "git.b.05"
       ]
     },
     {
@@ -164,6 +165,36 @@
       "lessons": [
         "git.b.04",
         "git.b.06"
+      ]
+    },
+    {
+      "id": "fast-forward",
+      "word": "早送り（fast-forward）",
+      "reading": "はやおくり",
+      "plain": "取り込む側の枝が先に進んでいない時の取り込み。枝の名札を、取り込む枝の先まで進めるだけで、新しい記録はできない。",
+      "why": "取り込みの結果、合わせる記録ができるかどうかが分かる。履歴が一直線のまま保たれる。",
+      "related": [
+        "merge",
+        "merge-commit",
+        "branch"
+      ],
+      "lessons": [
+        "git.b.05"
+      ]
+    },
+    {
+      "id": "merge-commit",
+      "word": "マージコミット",
+      "reading": "まーじこみっと",
+      "plain": "2 つの枝を合わせた時にできる、親を 2 つ持つ記録。両方の枝が別々に進んでいた時にできる。",
+      "why": "どの時点で、どの枝を取り込んだかが履歴に残る。取り消す時も、この記録を目印にできる。",
+      "related": [
+        "merge",
+        "fast-forward",
+        "commit"
+      ],
+      "lessons": [
+        "git.b.05"
       ]
     }
   ]
