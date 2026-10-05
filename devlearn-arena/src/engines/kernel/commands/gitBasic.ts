@@ -1,5 +1,5 @@
 import {
-  addPaths, branches, commit, createBranch, currentBranch, headCommit, log, status as statusOf, switchBranch,
+  addPaths, branches, commit, createBranch, currentBranch, headCommit, log, stageTracked, status as statusOf, switchBranch,
 } from '@/engines/git/repository';
 import { diffCommits, diffStaged, diffWorktree, unstage } from '@/engines/git/diff';
 import { decode, parseCommit } from '@/engines/git/objects';
@@ -72,8 +72,7 @@ export const basicSubcommands: Record<string, GitHandler> = {
       }
     }
     if (flags.has('a')) {
-      const staged = addPaths(git, shell.vfs, ['.']);
-      const result = commit(staged.git, message, nowSeconds);
+      const result = commit(stageTracked(git, shell.vfs), message, nowSeconds);
       return commitOutput(result.git, result.hash, result.empty, message);
     }
     if (git.index.size === 0 && headCommit(git) === null) {
@@ -84,6 +83,12 @@ export const basicSubcommands: Record<string, GitHandler> = {
         : { stdout: 'nothing to commit (create/copy files and use "git add" to track)\n', code: 1 };
     }
     const result = commit(git, message, nowSeconds);
+    if (result.empty) {
+      // 選んでいない変更が残っていれば、本物と同じく add を促す
+      const report = statusOf(git, shell.vfs);
+      if (report.unstaged.length > 0) return { stdout: 'no changes added to commit (use "git add" and/or "git commit -a")\n', code: 1 };
+      if (report.untracked.length > 0) return { stdout: 'nothing added to commit but untracked files present (use "git add" to track)\n', code: 1 };
+    }
     return commitOutput(result.git, result.hash, result.empty, message);
   },
   log: ({ git, rest }) => {

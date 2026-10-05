@@ -131,6 +131,18 @@ export function addPaths(
   return { git: { ...git, index }, added, missing };
 }
 
+/** commit -a と同じく、追跡しているファイルだけを今の中身で選び直す（消したファイルは外す。追跡していないファイルは触らない） */
+export function stageTracked(git: GitState, vfs: VfsState): GitState {
+  const worktree = walkWorktree(vfs, git.root);
+  const index = new Map(git.index);
+  for (const path of git.index.keys()) {
+    const content = worktree.get(path);
+    if (content === undefined) index.delete(path);
+    else index.set(path, { path, mode: FILE_MODE, hash: git.objects.write('blob', encode(content)) });
+  }
+  return { ...git, index };
+}
+
 /** インデックスの内容から tree を作り、オブジェクトDBへ書き込む */
 export function writeTreeFromIndex(git: GitState): string {
   interface Node {

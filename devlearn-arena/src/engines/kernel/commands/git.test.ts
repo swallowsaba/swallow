@@ -363,3 +363,29 @@ describe('記録の日付と作者（本物の git の表示と環境変数）',
     expect(r.out + r.err).toContain('nothing added to commit but untracked files present (use "git add" to track)');
   });
 });
+
+describe('commit -a', () => {
+  it('追跡しているファイルの変更だけを記録し、追跡していない新しいファイルは記録しない（本物と同じ）', () => {
+    run('git init');
+    run('git add a.txt');
+    run('git commit -m "first"');
+    run('echo B > a.txt');
+    run('echo memo > memo.txt');
+    run('git commit -am "second"');
+    expect(run('git show --stat HEAD').out + run('git ls-files').out).not.toContain('memo.txt');
+    expect(run('git status').out).toContain('Untracked files');
+    expect(run('git status').out).toContain('memo.txt');
+  });
+});
+
+describe('選ばずに commit した時の文（本物と同じ）', () => {
+  it('追跡しているファイルを直しただけで commit すると「no changes added to commit」', () => {
+    run('git init');
+    run('git add a.txt');
+    run('git commit -m "first"');
+    run('echo B > a.txt');
+    const r = run('git commit -m "x"');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('no changes added to commit (use "git add" and/or "git commit -a")');
+  });
+});

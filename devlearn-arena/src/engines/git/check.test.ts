@@ -78,4 +78,23 @@ describe('git の達成条件（リポジトリの状態で判定する）', () 
     const r = repo();
     expect(() => r.holds('tagged:v1')).toThrow();
   });
+
+  it('committed:<パス> は、今の枝の先の記録に、そのファイルが今の中身で入っている時だけ', () => {
+    const r = repo();
+    expect(r.holds('committed:notice.txt')).toBe(true);
+    r.run("echo 'メモ' > memo.txt");
+    expect(r.holds('committed:memo.txt')).toBe(false);
+    r.run("echo '開館は 8 時' > notice.txt");
+    expect(r.holds('committed:notice.txt')).toBe(false);
+    r.run('git commit -am "平日は 8 時"');
+    expect(r.holds('committed:notice.txt')).toBe(true);
+    expect(r.holds('committed:memo.txt')).toBe(false);
+  });
+
+  it('先頭の ! は否定（その条件を満たさない）', () => {
+    const r = repo();
+    r.run("echo 'メモ' > memo.txt");
+    expect(r.holds('committed:notice.txt !committed:memo.txt')).toBe(true);
+    expect(r.holds('!on:main')).toBe(false);
+  });
 });

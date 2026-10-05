@@ -1,4 +1,4 @@
-import type { VfsState } from '@/engines/kernel/vfs';
+import { exists, readFile, type VfsState } from '@/engines/kernel/vfs';
 import { isAncestor } from './history';
 import { parseCommit } from './objects';
 import { currentBranch, materialize, status } from './repository';
@@ -14,6 +14,8 @@ import type { GitState } from './types';
  *   clean                        記録していない変更が無く、統合の途中でもない
  *   commits:<枝>>=<数>           その枝から辿れるコミットの数
  *   resolved                     今の版のどのファイルにも、衝突の印（<<<<<<< など）が無い
+ *   先頭に ! を付けると否定（!committed:memo.txt は、memo.txt が記録に入っていない）
+ *   committed:<パス>             今の枝の先の記録に、そのファイル（リポジトリの中のパス）が作業ツリーと同じ中身で入っている
  */
 
 const MARKERS = /^(<{7}|={7}|>{7})( |$)/m;
@@ -38,32 +40,36 @@ function countCommits(git: GitState, from: string): number {
 
 export function gitHolds(git: GitState | null, vfs: VfsState, expr: string): boolean {
   if (!git) return false;
-  const terms = expr.trim().split(/\s+/);
   let subject: string | null = null;
-  for (const term of terms) {
+  /** 1 つの条件を満たすか（branch は、次の merged-into の主語も決める） */
+  const holds = (term: string): boolean => {
     const [key = '', value = ''] = term.split(/:(.*)/s);
-    if (term === 'clean') {
-      if (!status(git, vfs).clean || git.mergeHead !== null) return false;
-    } else if (term === 'resolved') {
+    if (term === 'clean') return status(git, vfs).clean && git.mergeHead === null;
+    if (term === 'resolved') {
       const head = git.refs.get(`refs/heads/${currentBranch(git) ?? ''}`);
-      if (!head) return false;
-      for (const content of materialize(git, head).values()) if (MARKERS.test(content)) return false;
-    } else if (key === 'branch') {
-      if (!tip(git, value)) return false;
+      return head !== undefined && ![...materialize(git, head).values()].some((content) => MARKERS.test(content));
+    }
+    if (key === 'branch') {
       subject = value;
-    } else if (key === 'merged-into') {
+      return tip(git, value) !== undefined;
+    }
+    if (key === 'merged-into') {
       const from = subject === null ? undefined : tip(git, subject);
       const into = tip(git, value);
-      if (!from || !into || !isAncestor(git, from, into)) return false;
-    } else if (key === 'on') {
-      if (currentBranch(git) !== value) return false;
-    } else if (key === 'commits') {
+      return from !== undefined && into !== undefined && isAncestor(git, from, into);
+    }
+    if (key === 'on') return currentBranch(git) === value;
+    if (key === 'committed') {
+      const head = git.refs.get(`refs/heads/${currentBranch(git) ?? ''}`);
+      const path = `${git.root}/${value}`;
+      return head !== undefined && exists(vfs, path) && materialize(git, head).get(value) === readFile(vfs, path);
+    }
+    if (key === 'commits') {
       const m = /^([^>=<]+)>=(\d+)$/.exec(value);
       const from = m?.[1] ? tip(git, m[1]) : undefined;
-      if (!m || !from || countCommits(git, from) < Number(m[2])) return false;
-    } else {
-      throw new Error(`git の条件「${term}」は知らない形`);
+      return m !== null && from !== undefined && countCommits(git, from) >= Number(m[2]);
     }
-  }
-  return true;
+    throw new Error(`git の条件「${term}」は知らない形`);
+  };
+  return expr.trim().split(/\s+/).every((term) => (term.startsWith('!') ? !holds(term.slice(1)) : holds(term)));
 }
