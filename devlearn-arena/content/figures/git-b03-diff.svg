@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>左は差分。- で始まる行が前の版、+ で始まる行が後の版、印の無い行は変わっていない周り。右は git log の 1 件。記録の番号・記録した人・日時・説明が並ぶ</title>
+  <g class="el" data-part="context">
+    <text x="20" y="30" font-size="16" font-weight="700" fill="#eef2f6">差分（git diff・git show）</text>
+    <rect x="20" y="46" width="320" height="200" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="36" y="76" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#5cc1ff">@@ -1,3 +1,3 @@</text>
+    <text x="36" y="104" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#9fb0c6"> port=8080</text>
+    <text x="36" y="216" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#9fb0c6"> max_users=100</text>
+    <text x="36" y="236" font-size="13" fill="#9fb0c6">印の無い行: 変わっていない周り</text>
+  </g>
+  <g class="el" data-part="minus">
+    <rect x="30" y="118" width="300" height="34" rx="6" fill="#e04a3a" />
+    <text x="40" y="141" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">-timeout=30</text>
+    <text x="320" y="141" text-anchor="end" font-size="13" fill="#eef2f6">前の版</text>
+  </g>
+  <g class="el" data-part="plus">
+    <rect x="30" y="158" width="300" height="34" rx="6" fill="#3ae08a" />
+    <text x="40" y="181" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">+timeout=3</text>
+    <text x="320" y="181" text-anchor="end" font-size="13" fill="#0a1424">後の版</text>
+  </g>
+  <g class="el" data-part="commit-id">
+    <text x="370" y="30" font-size="16" font-weight="700" fill="#eef2f6">履歴の 1 件（git log）</text>
+    <rect x="370" y="46" width="310" height="200" rx="10" fill="none" stroke="#e0457b" stroke-width="2" pointer-events="all" />
+    <text x="386" y="76" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#f2b632">commit e2a0aaf…</text>
+    <text x="386" y="96" font-size="13" fill="#9fb0c6">記録の番号（左の 7 文字で足りる）</text>
+  </g>
+  <g class="el" data-part="author">
+    <text x="386" y="128" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">Author: Tanaka</text>
+    <text x="386" y="148" font-size="13" fill="#9fb0c6">記録した人</text>
+  </g>
+  <g class="el" data-part="date">
+    <text x="386" y="178" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">Date: Fri Oct 2 11:20</text>
+    <text x="386" y="198" font-size="13" fill="#9fb0c6">記録した日時</text>
+    <text x="386" y="228" font-size="14" fill="#eef2f6">「README の文言を直す」</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="350" y="286" text-anchor="middle" font-size="14" fill="#f2b632">説明と中身が違うこともある。差分まで確かめる</text>
+  </g>
+</svg>
