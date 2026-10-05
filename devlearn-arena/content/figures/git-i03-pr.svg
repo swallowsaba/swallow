@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>依頼（プルリクエスト）の流れ。枝の変更から依頼を作り、レビュー（人の目）と自動の検査（機械の目）の両方を通ってから、main に取り込む。指摘があれば直して、もう一度見てもらう</title>
+  <g class="el" data-part="branch">
+    <rect x="20" y="110" width="120" height="70" rx="8" fill="none" stroke="#e0457b" stroke-width="2" pointer-events="all" />
+    <text x="80" y="140" text-anchor="middle" font-size="14" fill="#eef2f6">自分の枝</text>
+    <text x="80" y="164" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#e0457b">limit</text>
+  </g>
+  <g class="el" data-part="request">
+    <path d="M140 145 H170" fill="none" stroke="#9fb0c6" stroke-width="3" />
+    <rect x="172" y="110" width="130" height="70" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="237" y="140" text-anchor="middle" font-size="14" fill="#f2b632">依頼</text>
+    <text x="237" y="164" text-anchor="middle" font-size="13" fill="#9fb0c6">説明を付ける</text>
+  </g>
+  <g class="el" data-part="check">
+    <path d="M302 145 H332" fill="none" stroke="#9fb0c6" stroke-width="3" />
+    <rect x="334" y="50" width="190" height="190" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <rect x="352" y="72" width="154" height="62" rx="8" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="429" y="98" text-anchor="middle" font-size="14" fill="#eef2f6">レビュー</text>
+    <text x="429" y="120" text-anchor="middle" font-size="13" fill="#9fb0c6">人の目・承認</text>
+    <rect x="352" y="156" width="154" height="62" rx="8" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="429" y="182" text-anchor="middle" font-size="14" fill="#eef2f6">自動の検査</text>
+    <text x="429" y="204" text-anchor="middle" font-size="13" fill="#9fb0c6">テスト</text>
+  </g>
+  <g class="el" data-part="fix">
+    <path d="M429 240 C 429 290, 237 290, 237 186" fill="none" stroke="#e0457b" stroke-width="2" stroke-dasharray="4 4" />
+    <path d="M229 196 L237 182 L245 196 Z" fill="#e0457b" />
+    <text x="330" y="304" text-anchor="middle" font-size="13" fill="#e0457b">指摘を直して、もう一度見てもらう</text>
+  </g>
+  <g class="el" data-part="merge">
+    <path d="M524 145 H556" fill="none" stroke="#f2b632" stroke-width="3" />
+    <path d="M552 135 L568 145 L552 155 Z" fill="#f2b632" />
+    <rect x="570" y="110" width="110" height="70" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="625" y="140" text-anchor="middle" font-size="14" fill="#eef2f6">取り込み</text>
+    <text x="625" y="164" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">main</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="350" y="30" text-anchor="middle" font-size="14" fill="#f2b632">両方を通るまで、main には入らない</text>
+  </g>
+</svg>
