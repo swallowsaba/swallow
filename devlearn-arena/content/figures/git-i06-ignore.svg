@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>管理する物としない物と、v1.0 のタグ。自分で書いた物は管理し、作った物・依存の置き場・秘密は .gitignore に書いて管理しない。リリースした記録には v1.0 のタグを付け、タグは動かない</title>
+  <g class="el" data-part="tracked">
+    <rect x="10" y="30" width="200" height="170" rx="10" fill="none" stroke="#e0457b" stroke-width="2" pointer-events="all" />
+    <text x="30" y="60" font-size="16" font-weight="700" fill="#eef2f6">管理する物</text>
+    <text x="30" y="96" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">src/app.js</text>
+    <text x="30" y="124" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">README.md</text>
+    <text x="30" y="152" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">.gitignore</text>
+    <text x="30" y="184" font-size="13" fill="#9fb0c6">自分で書いた物</text>
+  </g>
+  <g class="el" data-part="ignored">
+    <rect x="230" y="30" width="220" height="170" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="250" y="60" font-size="16" font-weight="700" fill="#eef2f6">管理しない物</text>
+    <text x="250" y="96" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#9fb0c6">dist/</text>
+    <text x="330" y="96" font-size="13" fill="#9fb0c6">作った物</text>
+    <text x="250" y="124" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#9fb0c6">node_modules/</text>
+    <text x="250" y="144" font-size="13" fill="#9fb0c6">依存の置き場</text>
+    <text x="250" y="172" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#e0457b">.env</text>
+    <text x="300" y="172" font-size="13" fill="#e0457b">秘密</text>
+  </g>
+  <g class="el" data-part="history">
+    <path d="M40 260 H520" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <circle cx="60" cy="260" r="12" fill="#9fb0c6" />
+    <circle cx="180" cy="260" r="12" fill="#9fb0c6" />
+    <circle cx="300" cy="260" r="12" fill="#e0457b" />
+    <circle cx="420" cy="260" r="12" fill="#9fb0c6" />
+    <circle cx="520" cy="260" r="12" fill="#9fb0c6" />
+    <text x="520" y="298" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#9fb0c6">main（進む）</text>
+  </g>
+  <g class="el" data-part="tag">
+    <rect x="264" y="206" width="72" height="28" rx="6" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="300" y="225" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#f2b632">v1.0</text>
+    <text x="348" y="225" font-size="13" fill="#f2b632">タグは動かない</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="482" y="66" font-size="13" fill="#9fb0c6">.gitignore に</text>
+    <text x="482" y="86" font-size="13" fill="#9fb0c6">名前を書く</text>
+    <path d="M476 72 H456 M462 66 L456 72 L462 78" fill="none" stroke="#9fb0c6" stroke-width="2" />
+  </g>
+</svg>

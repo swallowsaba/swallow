@@ -388,6 +388,62 @@
         "rebase",
         "conflict"
       ]
+    },
+    {
+      "id": "git-add-ignored",
+      "match": "ignored by one of your .gitignore files",
+      "meaning": "選ぼうとしたファイルは、{{term:gitignore}}に書いた名前に当たるので、選ばなかった。",
+      "causes": [
+        "管理しない物（秘密の .env など）を、名前で `git add` した。",
+        ".gitignore に書く名前が広すぎて、管理したい物まで当たっている。"
+      ],
+      "hint": "管理しない物なら、選ばなくてよい（そのままでよい）。どの行に当たったかは `git check-ignore -v <ファイル>` で見られる。",
+      "terms": [
+        "gitignore",
+        "staging-area"
+      ]
+    },
+    {
+      "id": "git-still-tracked",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、.gitignore に書いたのに一覧に出続けるファイルと合っていない。",
+      "causes": [
+        "追跡していない物の一覧（Untracked files）を見た。.gitignore に書いた物は、そこからは消える。",
+        "まだ .gitignore を書いていない（書く前は、.env も一覧に出る）。"
+      ],
+      "hint": "`git status` の `modified:` の行を見よう。最初の記録で既に追跡しているファイルは、.gitignore が効かない。",
+      "terms": [
+        "gitignore",
+        "commit"
+      ]
+    },
+    {
+      "id": "git-rm-recursive",
+      "match": "recursively without -r",
+      "meaning": "{{term:directory}}を外そうとしたが、中まで外す指定が無いので、何もしなかった。",
+      "causes": [
+        "ディレクトリの名前に、`-r` を付けずに `git rm` した。",
+        "外すのは中の 1 つのファイルだけでよいのに、ディレクトリの名前を書いた。"
+      ],
+      "hint": "ディレクトリごと外す時は `-r` を付ける。手元のファイルを残すなら `--cached` も付ける（`git rm -r --cached <ディレクトリ>`）。",
+      "terms": [
+        "directory",
+        "staging-area"
+      ]
+    },
+    {
+      "id": "git-tag-exists",
+      "match": "tag '.*' already exists",
+      "meaning": "その名前の{{term:git-tag}}は、もうある。",
+      "causes": [
+        "前に付けたタグを、もう一度付けようとした。",
+        "整える前の記録に、先にタグを付けてしまった。"
+      ],
+      "hint": "`git log --oneline` で、タグが今の記録の横にあるかを見る。前の記録に付けてしまった時は、`git tag -d <名前>` で消してから付け直す。",
+      "terms": [
+        "git-tag",
+        "commit"
+      ]
     }
   ]
 }

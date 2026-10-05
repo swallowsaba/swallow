@@ -1,0 +1,293 @@
+{
+  "id": "git.i.06",
+  "domain": "git",
+  "level": "intermediate",
+  "theme": "設定",
+  "title": ".gitignore とタグ",
+  "goal": "管理しない物を決め、版に名前を付けられる",
+  "minutes": 20,
+  "prerequisites": [
+    "git.b.02"
+  ],
+  "related": [
+    "cicd.b.04",
+    "sec.b.05"
+  ],
+  "next": [
+    "git.a.01"
+  ],
+  "terms": [
+    "gitignore",
+    "git-tag",
+    "repository",
+    "file",
+    "branch",
+    "commit",
+    "secret-key",
+    "diff",
+    "directory",
+    "program"
+  ],
+  "explain": {
+    "what": "{{term:gitignore}}は、{{term:repository}}で管理しない{{term:file}}の名前を書いておくファイル。{{term:git-tag}}は、ある記録に「v1.0」のような名前を付ける札。",
+    "why": "作り直せる物（ビルドで作った物・依存の置き場）を入れると、リポジトリが重くなり、{{term:diff}}が読めなくなる。パスワードのような秘密を入れると、履歴から漏れる。リリースした版は、後から「どの記録か」をすぐ指せるようにしたい。",
+    "use": "リポジトリの整理とリリース。.gitignore に名前や形（「.log で終わる物の全て」「dist の{{term:directory}}の中の全て」）を書くと、まだ追跡していない物は状態の一覧に出ず、まとめて選んでも入らない。ただし、既に追跡している物には効かないので、選んだ物から外して記録する。版にはタグを付ける。{{term:branch}}は記録のたびに先へ進むが、タグは同じ記録を指したまま動かない。",
+    "when": "依存の置き場（node_modules）や、作った物、秘密の入った .env がリポジトリに入りそうな時。リリースする時。",
+    "figures": [
+      "git-i06-ignore"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "situation",
+      "prompt": "リポジトリに入れてはいけない物はどれ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "パスワードを書いた .env と、ビルドで作った dist/",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "自分で書いた{{term:program}}（`src/app.js`）",
+          "correct": false,
+          "whyNot": "自分で書いた物こそ、履歴を残して管理する物。"
+        },
+        {
+          "id": "c",
+          "text": "使い方を書いた `README.md`",
+          "correct": false,
+          "whyNot": "説明の文書も、プログラムと一緒に管理する。"
+        }
+      ],
+      "see": "why"
+    },
+    {
+      "kind": "match",
+      "prompt": "用語と説明を結ぶ。",
+      "pairs": [
+        [
+          "タグ",
+          "1 つの記録に付けた、動かない名前"
+        ],
+        [
+          "ブランチ",
+          "記録するたびに、先へ進む名札"
+        ],
+        [
+          ".gitignore",
+          "管理しない物の名前の一覧"
+        ]
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "git-i06-ignore",
+      "prompt": "図の中で、版に付けた名前を押す。",
+      "answer": [
+        "tag"
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "multi",
+      "prompt": ".gitignore に書いて、管理しないのがよい物を全て選ぶ。",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ビルドで作った物（dist/）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "秘密の入った .env",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "依存の置き場（node_modules/）",
+          "correct": true
+        },
+        {
+          "id": "d",
+          "text": "自分で書いたプログラム",
+          "correct": false,
+          "whyNot": "自分で書いた物は、履歴を残して管理する。"
+        }
+      ],
+      "explanation": "作り直せる物（作った物・依存）と、漏れると困る物（秘密）は入れない。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": ".gitignore に `dist/` と書いたのに、`git status` に `modified:   dist/app.min.js` が出続ける。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "dist/app.min.js を、既に記録して追跡している",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": ".gitignore の書き方が間違っている",
+          "correct": false,
+          "whyNot": "`dist/` は正しい書き方。まだ追跡していない dist の中の物なら、出なくなる。"
+        },
+        {
+          "id": "c",
+          "text": ".gitignore を記録していない",
+          "correct": false,
+          "whyNot": ".gitignore は、記録する前から手元で効く。効かないのは、既に追跡している物だけ。"
+        }
+      ],
+      "explanation": "既に追跡している物には .gitignore は効かない。`git rm --cached` で、ファイルを残したまま追跡から外す。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "今日リリースした版を、後からすぐ指せるようにしたい。",
+      "choices": [
+        {
+          "id": "a",
+          "text": "その記録に `v1.0` のタグを付ける",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`v1.0` という枝を作る",
+          "correct": false,
+          "whyNot": "枝は、その上で記録すると先へ進んでしまう。版の名前は、動かないタグにする。"
+        },
+        {
+          "id": "c",
+          "text": "記録の説明に「v1.0」と書いておく",
+          "correct": false,
+          "whyNot": "説明を探して読む必要がある。タグなら `v1.0` の名前で直接指せる。"
+        }
+      ],
+      "explanation": "タグは、付けた記録を指したまま動かない。リリースの版の名前に向く。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "予約システムのリポジトリ。最初の記録で、ビルドで作った dist/ まで記録してしまった。手元には秘密の入った .env と、依存の置き場 node_modules/ もある。管理しない物を外し、整えた記録に v1.0 のタグを付けてリリースする。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev-office",
+      "cwd": "/home/learner/reserve",
+      "dirs": [
+        "/home/learner/reserve",
+        "/home/learner/reserve/src",
+        "/home/learner/reserve/dist",
+        "/home/learner/reserve/node_modules/left-pad"
+      ],
+      "files": {
+        "/home/learner/reserve/README.md": "# 予約システム\n",
+        "/home/learner/reserve/src/app.js": "console.log('予約を受け付ける')\n",
+        "/home/learner/reserve/dist/app.min.js": "console.log('予約')\n",
+        "/home/learner/reserve/node_modules/left-pad/index.js": "module.exports = (s) => s\n",
+        "/home/learner/reserve/.env": "DB_PASSWORD=park-reserve-2026\n"
+      },
+      "run": [
+        "git init",
+        "git add README.md src dist",
+        "git commit -m \"予約システムを作る\"",
+        "echo \"console.log('予約を受け付ける')\" > dist/app.min.js"
+      ]
+    },
+    "steps": [
+      {
+        "id": "ignore",
+        "purpose": "管理しない物（作った物の `dist/`・秘密の `.env`・依存の置き場 `node_modules/`）を、リポジトリの一番上の `.gitignore` に 1 行ずつ書く。",
+        "check": {
+          "kind": "git",
+          "expr": "ignored:.env ignored:dist/app.min.js ignored:node_modules/left-pad/index.js"
+        },
+        "afterward": "`.env` と `node_modules/` は、`git status` の追跡していない物の一覧から消えた。",
+        "hints": [
+          "管理しない物の名前は、リポジトリの一番上の `.gitignore` に 1 行に 1 つ書く。",
+          "ディレクトリは、末尾に `/` を付けて書く。`echo` の `>` で書き始め、`>>` で足す。",
+          "`echo 'dist/' > .gitignore` と `echo '.env' >> .gitignore` と `echo 'node_modules/' >> .gitignore` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "git-add-ignored"
+        ]
+      },
+      {
+        "id": "still",
+        "purpose": "`git status` を見て、`.gitignore` に書いたのに、まだ一覧に出るファイルを答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "dist/app.min.js"
+        },
+        "afterward": "`dist/app.min.js` は最初の記録で既に追跡しているので、`.gitignore` が効かない。ビルドで作り直すたびに、変更として出続ける。",
+        "hints": [
+          "追跡していない物の一覧ではなく、変更の一覧を見る。",
+          "`modified:` の行に、.gitignore に書いた名前の中の物がある。",
+          "`git status` を打ち、`dist/app.min.js` と答える。"
+        ],
+        "expectedErrors": [
+          "git-still-tracked"
+        ]
+      },
+      {
+        "id": "untrack",
+        "purpose": "ファイルは手元に残したまま、dist を追跡から外し、.gitignore と一緒に記録する。",
+        "check": {
+          "kind": "git",
+          "expr": "!committed:dist/app.min.js !committed:.env committed:.gitignore clean"
+        },
+        "afterward": "`dist` は記録から外れ（手元のファイルは残る）、`.gitignore` も記録された。状態の一覧は空になった。",
+        "hints": [
+          "既に追跡している物は、選んだ物から外す。`--cached` を付けると、手元のファイルは消さない。",
+          "ディレクトリごと外すには `-r` が要る。外した後、.gitignore を add して記録する。",
+          "`git rm -r --cached dist` と `git add .gitignore` と `git commit -m \"作った物と秘密を管理から外す\"` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "git-rm-recursive",
+          "git-nothing-added"
+        ]
+      },
+      {
+        "id": "tag",
+        "purpose": "整えた記録に、リリースの版の名前 `v1.0` のタグを付ける。",
+        "check": {
+          "kind": "git",
+          "expr": "tag:v1.0 clean"
+        },
+        "afterward": "今の記録に `v1.0` のタグが付いた。`git log --oneline` の記録の横に `tag: v1.0` と出る。この後に記録しても、`v1.0` は今の記録を指したまま。",
+        "hints": [
+          "版の名前は、動かない札（タグ）にする。",
+          "`git tag <名前>` で、今の記録にタグを付ける。`git tag` で一覧を見られる。",
+          "`git tag v1.0` を打つ。"
+        ],
+        "expectedErrors": [
+          "git-tag-exists"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "管理しない物を外し、既に追跡していた物も追跡から外して、v1.0 のタグでリリースできた。リポジトリを整えた。",
+    "partial": "ヒントを使って、整えられた。次は、.gitignore が効かない物（既に追跡している物）の外し方を説明してみよう。",
+    "retry": "まだ整っていない。`git status` で、どの物が追跡されたままかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "入れない物は .gitignore",
+      "追跡済みは外す必要がある",
+      "版にはタグ"
+    ],
+    "next": [
+      "cicd.b.04"
+    ],
+    "terms": [
+      "gitignore",
+      "git-tag"
+    ]
+  }
+}
