@@ -1,0 +1,225 @@
+{
+  "id": "web.i.02",
+  "domain": "web",
+  "level": "intermediate",
+  "theme": "データ",
+  "title": "JSON",
+  "goal": "JSON を読み書きし、API の応答から値を取り出せる",
+  "minutes": 20,
+  "prerequisites": [
+    "web.i.01"
+  ],
+  "related": [
+    "db.i.05",
+    "linux.b.05"
+  ],
+  "next": [
+    "web.i.03"
+  ],
+  "terms": [
+    "json",
+    "api",
+    "json-object",
+    "json-array",
+    "jq",
+    "curl",
+    "pipe",
+    "config-file",
+    "request",
+    "response",
+    "program",
+    "file",
+    "header",
+    "http"
+  ],
+  "explain": {
+    "what": "{{term:json}}は、データを文字で書く決まった書き方。{ } の{{term:json-object}}（「名前: 値」の組）と、[ ] の{{term:json-array}}（並び）を、入れ子にして組み立てる。",
+    "why": "人が読んでも分かり、機械も迷わず読める。どの言語の{{term:program}}でも読み書きできるので、{{term:api}}の受け渡しの共通の形になった。",
+    "use": "API の{{term:request}}（依頼）と{{term:response}}（返事）の中身、{{term:config-file}}。値の種類は、文字（\" \" で囲む）・数・true と false・null。",
+    "when": "長い返事の中から、1 つの値だけを取り出したい時。値までの道筋（.items[1].stock のように、名前と番号をたどる）が分かれば、確実に取り出せる。",
+    "figures": [
+      "web-i02-json"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "web-i02-json",
+      "prompt": "図で、道筋 `.items[1].stock` がたどり着く値を押す。",
+      "answer": [
+        "target"
+      ],
+      "see": "when"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "`[1, 2, 3,]` のように、並びの最後の値の後にも `,` を付けてよい。",
+      "answer": false,
+      "why": "JSON では、最後の値の後に , を付けると読めなくなる。, は値と値の間にだけ書く。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "`{\"a\":[1,2]}` で、a の 2 番目の値は？（番号は 0 から数える）",
+      "choices": [
+        {
+          "id": "a",
+          "text": "2",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "1",
+          "correct": false,
+          "whyNot": "1 は 1 番目（番号 0）の値。2 番目は番号 1 の値。"
+        },
+        {
+          "id": "c",
+          "text": "取り出せない（エラー）",
+          "correct": false,
+          "whyNot": "a は 2 つの値の並び。2 番目の値は、道筋 .a[1] で取り出せる。"
+        }
+      ],
+      "explanation": "a は [1,2] の並び。番号は 0 から数えるので、2 番目は .a[1] の 2。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "設定の{{term:file}}を読み込ませたら失敗した。原因として考えやすいのは？",
+      "context": {
+        "log": "{ 'name': '港町', 'port': 8080, }"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "引用符が ' になっている・最後の値の後に , がある",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "数の 8080 を \" \" で囲んでいない",
+          "correct": false,
+          "whyNot": "数は囲まずに書く。囲むと文字（\"8080\"）になる。"
+        },
+        {
+          "id": "c",
+          "text": "名前に日本語の値を入れた",
+          "correct": false,
+          "whyNot": "値の文字は日本語でもよい。問題は、囲む記号と , の位置。"
+        }
+      ],
+      "explanation": "JSON の文字は \" \" で囲む（' は使えない）。最後の値の後に , を付けない。1 字の違いで全体が読めなくなる。"
+    },
+    {
+      "id": "q3",
+      "kind": "term",
+      "prompt": "JSON の `[ ]` で囲んだ物を何と呼ぶ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "配列（値の並び）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "オブジェクト（名前と値の組）",
+          "correct": false,
+          "whyNot": "オブジェクトは { } で囲む。中は「名前: 値」の組。"
+        },
+        {
+          "id": "c",
+          "text": "見出し（{{term:header}}）",
+          "correct": false,
+          "whyNot": "見出しは {{term:http}} の依頼と返事に付く情報で、JSON の形ではない。"
+        }
+      ],
+      "explanation": "[ ] は配列。中の値は番号（0 から）で取り出す。{ } はオブジェクトで、名前で取り出す。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "港町の店の在庫 API（http://shop.example/inventory）の返事から、商品の数と、在庫が 0 の商品の名前を取り出す。",
+    "environment": "web-client",
+    "setup": {
+      "sites": [
+        {
+          "host": "shop.example",
+          "port": 80,
+          "routes": {
+            "/inventory": {
+              "status": 200,
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "body": "{\"store\":\"港町の店\",\"updated\":\"2026-10-05\",\"items\":[{\"id\":3,\"name\":\"帆船の栞\",\"stock\":8},{\"id\":7,\"name\":\"灯台の模型\",\"stock\":3},{\"id\":9,\"name\":\"潮見の望遠鏡\",\"stock\":0},{\"id\":12,\"name\":\"貝の置物\",\"stock\":4},{\"id\":15,\"name\":\"港の地図\",\"stock\":6}]}"
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "shape",
+        "purpose": "返事の形（一番外側は何か・商品はどこに並ぶか）を確かめ、商品の並び（items）に何件あるかを答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "5"
+        },
+        "afterward": "一番外側は { } のオブジェクトで、商品は items という名前の配列に 5 件並んでいた。.items で配列に入り、length で数えた。",
+        "hints": [
+          "{{term:curl}} -s で返事の本文だけを取り、{{term:pipe}}で {{term:jq}} . に渡すと、形が整って見える。",
+          "一番外側が { } なら、まず名前（.items）で中へ入る。並びの数は length で数える。",
+          "`curl -s http://shop.example/inventory | jq '.items | length'` と打ち、`5` と答える。"
+        ],
+        "expectedErrors": [
+          "web-jq-object",
+          "web-jq-compile",
+          "web-jq-parse"
+        ]
+      },
+      {
+        "id": "zero",
+        "purpose": "items の中から、在庫（stock）が 0 の商品を選び、その名前を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "潮見の望遠鏡"
+        },
+        "afterward": ".items[] で並びの 1 つ 1 つに入り、select で在庫が 0 の物だけを残して、.name で名前を取り出した。5 件なら目で探せるが、1,000 件でも同じ式で取り出せる。",
+        "hints": [
+          "並びの 1 つ 1 つに入るのは .items[]。.items.stock のように並びにそのまま名前を付けると、エラーになる。",
+          "select(.stock == 0) で条件に合う物だけを残し、| .name で名前を取る。-r を付けると、引用符なしで出る。",
+          "`curl -s http://shop.example/inventory | jq -r '.items[] | select(.stock == 0) | .name'` と打ち、`潮見の望遠鏡` と答える。"
+        ],
+        "expectedErrors": [
+          "web-jq-array",
+          "web-jq-compile",
+          "web-jq-parse"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "JSON の形を確かめ、道筋と条件で、必要な値だけを取り出せた。",
+    "partial": "ヒントを使って、値を取り出せた。次は、在庫が 5 より少ない商品の名前を、同じ形の式で取り出してみよう。",
+    "retry": "まだ答えが合っていない。`jq .` で形を見て、{ } は名前で、[ ] は .[] か番号で入る、の順に道筋をたどろう。"
+  },
+  "summary": {
+    "points": [
+      "JSON はデータの書き方",
+      "{ } のオブジェクトと [ ] の配列を入れ子にする",
+      "引用符や , の 1 字の誤りで読めなくなる"
+    ],
+    "next": [
+      "db.i.05"
+    ],
+    "terms": [
+      "json",
+      "json-object",
+      "json-array",
+      "jq"
+    ]
+  }
+}

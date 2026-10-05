@@ -178,6 +178,61 @@
       "terms": [
         "https"
       ]
+    },
+    {
+      "id": "web-jq-array",
+      "match": "Cannot index array with",
+      "meaning": "配列（[ ] の並び）に、名前で中へ入ろうとした。配列の中の値は、名前ではなく番号か .[] で取り出す。",
+      "causes": [
+        "配列と 1 つの値の取り違え（.items.stock のように、並びにそのまま名前を付けた）。",
+        ".[] を付け忘れた（並びの 1 つ 1 つに入る前に、名前を書いた）。"
+      ],
+      "hint": "jq . で形を見て、[ ] なら .items[] のように 1 つ 1 つに入ってから名前を書こう。",
+      "terms": [
+        "json-array",
+        "jq"
+      ]
+    },
+    {
+      "id": "web-jq-object",
+      "match": "Cannot index object with number|Cannot iterate over object",
+      "meaning": "オブジェクト（{ } の組）に、番号や .[] で入ろうとした。オブジェクトの中は、名前で取り出す。",
+      "causes": [
+        "一番外側が { } なのに、.[] や .[0] から書き始めた。",
+        "名前（.items など）を 1 つ飛ばした。"
+      ],
+      "hint": "jq . で一番外側の形を見よう。{ } なら、まず .名前 で中へ入る。",
+      "terms": [
+        "json-object",
+        "jq"
+      ]
+    },
+    {
+      "id": "web-jq-compile",
+      "match": "jq: \\d+ compile error",
+      "meaning": "jq が式を読めなかった。式の書き方が違う。",
+      "causes": [
+        "式を ' ' で囲んでいない（| や空白で、端末が式を切ってしまう）。",
+        "括弧や引用符の閉じ忘れ、== を = と書いた。"
+      ],
+      "hint": "式の全体を ' ' で囲み、括弧の数と == を確かめよう。",
+      "terms": [
+        "jq"
+      ]
+    },
+    {
+      "id": "web-jq-parse",
+      "match": "parse error: Invalid",
+      "meaning": "jq に渡した物が JSON でなかった。",
+      "causes": [
+        "curl に -i や -v を付けて、見出しまで渡した。",
+        "JSON でない返事（エラーのページなど）を渡した。"
+      ],
+      "hint": "curl -s で本文だけを渡そう。まず jq を付けずに、返事を目で見て確かめる。",
+      "terms": [
+        "json",
+        "jq"
+      ]
     }
   ]
 }

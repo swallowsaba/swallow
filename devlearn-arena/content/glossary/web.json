@@ -348,6 +348,80 @@
       "lessons": [
         "web.b.08"
       ]
+    },
+    {
+      "id": "api",
+      "word": "API",
+      "reading": "えーぴーあい",
+      "plain": "プログラムが、ほかのプログラムの機能やデータを使うための窓口。Web では、決まった URL に HTTP で依頼を送って使う。",
+      "why": "画面を通さずにデータをやり取りでき、別々のシステムを組み合わせられる。",
+      "related": [
+        "rest",
+        "http",
+        "json"
+      ],
+      "lessons": [
+        "web.i.01",
+        "web.i.02"
+      ]
+    },
+    {
+      "id": "rest",
+      "word": "REST",
+      "reading": "れすと",
+      "plain": "Web の API の設計の考え方。扱う物（資源）を URL で、することをメソッド（GET・POST・PUT・DELETE）で表す。",
+      "why": "URL とメソッドを見れば何が起きるかが分かり、使う側が迷わない。",
+      "related": [
+        "api",
+        "http-method",
+        "url"
+      ],
+      "lessons": [
+        "web.i.01"
+      ]
+    },
+    {
+      "id": "json-object",
+      "word": "オブジェクト（JSON）",
+      "reading": "おぶじぇくと",
+      "plain": "JSON で { } に囲んだ、「名前: 値」の組の集まり。名前で中の値を取り出す。",
+      "why": "1 つの物（商品・利用者など）の項目をまとめて表す、JSON の基本の形。",
+      "related": [
+        "json",
+        "json-array"
+      ],
+      "lessons": [
+        "web.i.02"
+      ]
+    },
+    {
+      "id": "json-array",
+      "word": "配列（JSON）",
+      "reading": "はいれつ",
+      "plain": "JSON で [ ] に囲んだ、値の並び。0 番から数える番号で中の値を取り出す。",
+      "why": "同じ種類の物が何個も並ぶ所（商品の一覧など）は配列になる。1 つの値と取り違えると、取り出しに失敗する。",
+      "related": [
+        "json",
+        "json-object"
+      ],
+      "lessons": [
+        "web.i.02"
+      ]
+    },
+    {
+      "id": "jq",
+      "word": "jq",
+      "reading": "じぇいきゅー",
+      "plain": "JSON から値を取り出したり、条件に合う物だけを残したりするコマンド。式（.items[0].name など）で道筋を書く。",
+      "why": "API の返事は長い JSON になりやすい。必要な値だけを、目で探さずに確実に取り出せる。",
+      "related": [
+        "json",
+        "pipe",
+        "curl"
+      ],
+      "lessons": [
+        "web.i.02"
+      ]
     }
   ]
 }

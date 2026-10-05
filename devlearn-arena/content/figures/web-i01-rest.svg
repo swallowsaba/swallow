@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>資源は URL で、操作はメソッドで表す。/items（一覧）には GET と POST、/items/3（1 つの商品）には GET・PUT・DELETE を送る。ほかの組み合わせは 405</title>
+  <g class="el" data-part="head">
+    <text x="246" y="40" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#5cc1ff">GET</text>
+    <text x="368" y="40" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#3ae08a">POST</text>
+    <text x="490" y="40" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#f2b632">PUT</text>
+    <text x="612" y="40" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#e04a3a">DELETE</text>
+    <text x="24" y="104" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#eef2f6">/items</text>
+    <text x="24" y="126" font-size="13" fill="#9fb0c6">商品の一覧</text>
+    <text x="24" y="194" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" fill="#eef2f6">/items/3</text>
+    <text x="24" y="216" font-size="13" fill="#9fb0c6">3 番の商品 1 つ</text>
+    <rect x="434" y="80" width="112" height="56" rx="8" fill="none" stroke="#9fb0c6" stroke-width="1.5" stroke-dasharray="5 4" />
+    <text x="490" y="113" text-anchor="middle" font-size="13" fill="#9fb0c6">405</text>
+    <rect x="556" y="80" width="112" height="56" rx="8" fill="none" stroke="#9fb0c6" stroke-width="1.5" stroke-dasharray="5 4" />
+    <text x="612" y="113" text-anchor="middle" font-size="13" fill="#9fb0c6">405</text>
+    <rect x="312" y="170" width="112" height="56" rx="8" fill="none" stroke="#9fb0c6" stroke-width="1.5" stroke-dasharray="5 4" />
+    <text x="368" y="203" text-anchor="middle" font-size="13" fill="#9fb0c6">405</text>
+  </g>
+  <g class="el" data-part="list-get">
+    <rect x="190" y="80" width="112" height="56" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <text x="246" y="113" text-anchor="middle" font-size="13" fill="#eef2f6">一覧を取る</text>
+  </g>
+  <g class="el" data-part="list-post">
+    <rect x="312" y="80" width="112" height="56" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <text x="368" y="113" text-anchor="middle" font-size="13" fill="#eef2f6">新しく作る</text>
+  </g>
+  <g class="el" data-part="one-get">
+    <rect x="190" y="170" width="112" height="56" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" />
+    <text x="246" y="203" text-anchor="middle" font-size="13" fill="#eef2f6">1 つを取る</text>
+  </g>
+  <g class="el" data-part="one-put">
+    <rect x="434" y="170" width="112" height="56" rx="8" fill="none" stroke="#f2b632" stroke-width="2" />
+    <text x="490" y="203" text-anchor="middle" font-size="13" fill="#eef2f6">置き換える</text>
+  </g>
+  <g class="el" data-part="one-delete">
+    <rect x="556" y="170" width="112" height="56" rx="8" fill="none" stroke="#e04a3a" stroke-width="2" />
+    <text x="612" y="203" text-anchor="middle" font-size="13" fill="#eef2f6">消す</text>
+  </g>
+  <g class="el" data-part="caption">
+    <text x="350" y="272" text-anchor="middle" font-size="13" fill="#9fb0c6">資源（何を）は URL、操作（どうする）はメソッドで表す</text>
+  </g>
+</svg>

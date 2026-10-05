@@ -1,0 +1,245 @@
+{
+  "id": "web.i.01",
+  "domain": "web",
+  "level": "intermediate",
+  "theme": "API",
+  "title": "REST と API",
+  "goal": "資源と操作で API を設計・利用できる",
+  "minutes": 20,
+  "prerequisites": [
+    "web.b.03"
+  ],
+  "related": [
+    "db.b.03",
+    "cicd.b.01"
+  ],
+  "next": [
+    "web.i.02",
+    "web.i.05",
+    "web.a.03"
+  ],
+  "terms": [
+    "api",
+    "rest",
+    "app",
+    "url",
+    "http-method",
+    "http-get",
+    "http-post",
+    "http-put",
+    "http-delete",
+    "json",
+    "status-code",
+    "curl",
+    "header",
+    "program",
+    "web",
+    "server",
+    "service"
+  ],
+  "explain": {
+    "what": "{{term:api}}は、{{term:program}}どうしが {{term:web}}でやり取りする窓口。{{term:rest}}は、扱う物（資源）を{{term:url}}で、すること（操作）を{{term:http-method}}で表す、API の設計の考え方。",
+    "why": "画面を通さずに、データだけをやり取りできる。URL とメソッドを見れば何が起きるかが分かるので、別々の人が作った{{term:app}}どうしでも組み合わせやすい。",
+    "use": "スマホのアプリが{{term:server}}のデータを取る時、外部の{{term:service}}と連携する時。依頼の中身と返事は、多くの場合 {{term:json}} で書く。",
+    "when": "在庫の数を、店の画面ではなく、倉庫の別のシステムから取りたい・書き換えたい時。うまくいったかは、返事の{{term:status-code}}で分かる。",
+    "figures": [
+      "web-i01-rest"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "web-i01-rest",
+      "prompt": "図の表で、3 番の商品の中身（在庫の数など）を丸ごと書き換える操作の欄を押す。",
+      "answer": [
+        "one-put"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの出来事の関係は？",
+      "a": "`PUT /items/7` を送る",
+      "b": "7 番の商品の中身が置き換わる",
+      "answer": "cause",
+      "why": "URL（/items/7）が「どの資源か」を、メソッド（`PUT`）が「どうするか」を決める。この組み合わせが原因で、7 番だけが置き換わる。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "REST の考え方の在庫 API で、3 番の商品を消したい。どの依頼を送る？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`DELETE /items/3`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`DELETE /items`",
+          "correct": false,
+          "whyNot": "/items は一覧（全ての商品）の場所。どの商品かを URL で示さないと、消す物が決まらない（多くの API は 405 を返す）。"
+        },
+        {
+          "id": "c",
+          "text": "`GET /items/3/delete`",
+          "correct": false,
+          "whyNot": "`GET` は取るだけの依頼。消すという操作は、URL の文字ではなくメソッドで伝える。"
+        }
+      ],
+      "explanation": "資源は URL（/items/3）、操作はメソッド（`DELETE`）。2 つを組み合わせて 1 つの依頼にする。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "商品を作る依頼を送ったら、次の返事が来た。考えやすい原因は？",
+      "context": {
+        "log": "HTTP/1.1 400 Bad Request\n{\"error\":\"field \\\"stock\\\" must be a number\"}"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "送った中身の形が違う（在庫の数を \"5\" のように文字で送った）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "サーバが壊れている",
+          "correct": false,
+          "whyNot": "サーバの故障なら 5xx。400 は、依頼の側に誤りがあるという返事。"
+        },
+        {
+          "id": "c",
+          "text": "その場所に作る操作が許されていない",
+          "correct": false,
+          "whyNot": "メソッドが許されていなければ 405 が返る。400 は中身の形の話。"
+        }
+      ],
+      "explanation": "400 は、依頼の中身を受け付けられないという返事。返事の本文の error に、どの項目がおかしいかが書いてある。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "`POST /items` で新しい商品を作る依頼が成功した。どんな返事が来る？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "201 と、新しい商品の場所を書いた `Location` の見出し",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "204 と、空の本文",
+          "correct": false,
+          "whyNot": "204 は「成功したが返す中身は無い」。消した時などに返る。作った時は、作った物の場所を伝える。"
+        },
+        {
+          "id": "c",
+          "text": "301 と、一覧の場所への転送",
+          "correct": false,
+          "whyNot": "301 は場所が移った時の返事。作る依頼の成功とは関係しない。"
+        }
+      ],
+      "explanation": "201（`Created`）。新しい資源の URL（/items/4 など）が `Location` で返る。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "港町の店の在庫 API（http://shop.example/items）で、「灯台の模型」を探し、入荷した 20 個に在庫の数を書き換える。",
+    "environment": "web-client",
+    "setup": {
+      "sites": [
+        {
+          "host": "shop.example",
+          "port": 80,
+          "routes": {},
+          "api": {
+            "base": "/items",
+            "items": [
+              {
+                "id": 3,
+                "name": "帆船の栞",
+                "stock": 8
+              },
+              {
+                "id": 7,
+                "name": "灯台の模型",
+                "stock": 0
+              },
+              {
+                "id": 12,
+                "name": "貝の置物",
+                "stock": 4
+              }
+            ],
+            "fields": {
+              "name": "string",
+              "stock": "number"
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "find",
+        "purpose": "商品の一覧を取り、「灯台の模型」の番号（`id`）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "7"
+        },
+        "afterward": "一覧の中で、灯台の模型は 7 番。1 つの商品の場所は /items/7 になる。番号は順に並ぶとは限らないので、一覧を見て確かめる。",
+        "hints": [
+          "一覧の場所（/items）を取ると、全ての商品が {{term:json}} で並んで返る。",
+          "取るのは `GET`。{{term:curl}} は何も付けなければ `GET` を送る。name が灯台の模型の物の id を読む。",
+          "`curl http://shop.example/items` と打ち、`7` と答える。"
+        ]
+      },
+      {
+        "id": "update",
+        "purpose": "7 番の商品を、名前はそのままで在庫 20 に置き換える。うまくいったかを、返事の数字と、もう一度取った中身で確かめる。",
+        "check": {
+          "kind": "http",
+          "url": "http://shop.example/items/7",
+          "status": 200,
+          "contains": "\"stock\":20"
+        },
+        "afterward": "200 が返り、7 番の在庫が 20 になった。`PUT` は中身を丸ごと置き換えるので、名前も一緒に送った。",
+        "hints": [
+          "置き換えるのは `PUT`。場所は一覧ではなく、1 つの商品の /items/7。",
+          "`PUT` は中身を丸ごと送る。在庫だけを送ると、名前が足りないと 400 になる。数は引用符で囲まず、20 と書く。",
+          "`curl -X PUT -d '{\"name\":\"灯台の模型\",\"stock\":20}' http://shop.example/items/7` と打つ。"
+        ],
+        "expectedErrors": [
+          "web-400",
+          "web-405"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "一覧から資源の場所を見つけ、メソッドを選んで、API で在庫を書き換えられた。",
+    "partial": "ヒントを使って、API で在庫を書き換えられた。次は、在庫だけを送ると何が返るかを試し、400 の本文を読んでみよう。",
+    "retry": "まだ 7 番の在庫が 20 になっていない。送った依頼と返事を並べ、メソッド・URL・中身の形のどこが違うかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "API はプログラムどうしの窓口",
+      "資源は URL、操作はメソッドで表す",
+      "うまくいったかは返事の数字で分かる"
+    ],
+    "next": [
+      "web.i.02",
+      "web.a.03"
+    ],
+    "terms": [
+      "api",
+      "rest",
+      "http-method",
+      "status-code"
+    ]
+  }
+}
