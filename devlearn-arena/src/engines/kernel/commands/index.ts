@@ -8,6 +8,7 @@ import { editorCommands } from './editor';
 import { fsCommands } from './fs';
 import { ghCommands } from './gh';
 import { gitCommands } from './git';
+import { jqCommands } from './jq';
 import { kubeadmCommands } from './kubeadm';
 import { kubectlCommands } from './kubectl';
 import { netCommands } from './net';
@@ -40,6 +41,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...netToolCommands,
     ...textCommands,
     ...textToolCommands,
+    ...jqCommands,
     ...permCommands,
     ...shellRunCommands,
     ...procCommands,

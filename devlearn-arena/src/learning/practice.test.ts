@@ -204,6 +204,12 @@ describe('状態による判定の形', () => {
     expect(checkState({ kind: 'http', url: 'http://localhost:8080/', status: 200 }, { shell: s })).toBe(false);
   });
 
+  it('http: contains を書けば、返事の本文にその文字列があるか（API の資源が変わったか）', () => {
+    const s = shell({ sites: [{ host: 'api.example', port: 80, routes: {}, api: { base: '/items', items: [{ id: 1, name: 'pen', stock: 0 }], fields: { name: 'string', stock: 'number' } } }] }, 'web-client');
+    expect(checkState({ kind: 'http', url: 'http://api.example/items/1', status: 200, contains: '"stock":0' }, { shell: s })).toBe(true);
+    expect(checkState({ kind: 'http', url: 'http://api.example/items/1', status: 200, contains: '"stock":10' }, { shell: s })).toBe(false);
+  });
+
   it('tls: サイトの証明書の連鎖が信頼されるか', () => {
     const inter = { id: 'i', subject: 'Minato Issuing CA', issuer: 'Minato Root CA', sans: [], notBefore: '2024-01-01', notAfter: '2030-01-01', ca: true };
     const leaf = { id: 'l', subject: 'shop.example', issuer: 'Minato Issuing CA', sans: ['shop.example'], notBefore: '2026-01-01', notAfter: '2027-01-01', ca: false };

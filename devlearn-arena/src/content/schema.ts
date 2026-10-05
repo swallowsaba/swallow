@@ -106,7 +106,8 @@ export const checkSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('git'), expr: z.string() }).strict(),
   z.object({ kind: z.literal('k8s'), expr: z.string() }).strict(),
   z.object({ kind: z.literal('net'), expr: z.string() }).strict(),
-  z.object({ kind: z.literal('http'), url: z.string(), status: z.number().int() }).strict(),
+  /** contains を書けば、返事の本文にその文字列がある（API の資源が変わったか） */
+  z.object({ kind: z.literal('http'), url: z.string(), status: z.number().int(), contains: z.string().optional() }).strict(),
   z.object({ kind: z.literal('tls'), host: z.string(), trusted: z.boolean() }).strict(),
   z.object({ kind: z.literal('sql'), query: z.string(), equals: z.unknown() }).strict(),
   z.object({ kind: z.literal('answer'), equals: z.string() }).strict(),

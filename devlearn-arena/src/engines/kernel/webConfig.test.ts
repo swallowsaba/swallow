@@ -176,3 +176,14 @@ describe('Web サーバの公開用のディレクトリと振り分け', () => 
     expect(img).toContain('Content-Type: image/png');
   });
 });
+
+describe('転送が繰り返す', () => {
+  it('http も https も https へ転送すると、curl -L は 50 回で諦めて (47) を返す（本物と同じ）', () => {
+    const conf = 'server {\n  listen 80;\n  return 301 http://$host:8080$request_uri;\n}\nserver {\n  listen 8080;\n  return 301 http://$host$request_uri;\n}\n';
+    const { run } = site(conf);
+    run('systemctl start nginx');
+    const r = run('curl -sL http://shop.example/');
+    expect(r.code).toBe(47);
+    expect(r.out).toContain('curl: (47) Maximum (50) redirects followed');
+  });
+});

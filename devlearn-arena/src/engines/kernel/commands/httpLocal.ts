@@ -228,7 +228,9 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
   let stdout = '';
   const verbose: string[] = [];
   let last: Extract<HttpOutcome, { ok: true }> | null = null;
-  for (let hop = 0; hop < 10; hop += 1) {
+  // 付いていく転送の数の上限（本物の curl の --max-redirs の既定と同じ 50）
+  const MAX_REDIRS = 50;
+  for (let hop = 0; ; hop += 1) {
     const out = request({ ...env, sites }, url, { insecure: a.flags.has('k'), ...(method !== undefined ? { method } : {}), ...(a.data !== undefined ? { data: a.data } : {}), ...(a.version ? { version: a.version } : {}) });
     if (out.url && a.flags.has('v')) verbose.push(`* Trying ${out.url.host}:${String(out.url.port)}...`);
     if (!out.ok) {
@@ -248,12 +250,13 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
     const follow = a.flags.has('L') && r.status >= 300 && r.status < 400 ? nextUrl(out) : null;
     if (a.flags.has('I') || a.flags.has('i')) stdout += `${headOf(out)}\n`;
     if (follow) {
+      if (hop >= MAX_REDIRS) return { stdout, stderr: `${verbose.map((l) => `${l}\n`).join('')}curl: (47) Maximum (${String(MAX_REDIRS)}) redirects followed\n`, code: 47 };
       url = follow;
       continue;
     }
     break;
   }
-  if (!last) return { stderr: 'curl: (47) Maximum (10) redirects followed\n', code: 47 };
+  if (!last) return { stderr: "curl: try 'curl --help' for more information\n", code: 2 };
   const r = last.response;
   let vfs = shell.vfs;
   if (!a.flags.has('I') && r.body !== '') {

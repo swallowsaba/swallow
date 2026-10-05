@@ -92,7 +92,7 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
     }
     case 'http': {
       const r = request(httpEnvOf(shell), check.url);
-      return r.ok && r.response.status === check.status;
+      return r.ok && r.response.status === check.status && (check.contains === undefined || r.response.body.includes(check.contains));
     }
     case 'tls': {
       // 手元（/etc/hosts で手元を指す名前を含む）の Web サーバは、送ってくる証明書で確かめる

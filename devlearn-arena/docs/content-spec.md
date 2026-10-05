@@ -114,7 +114,7 @@ type CheckSpec =
   | { kind: 'git'; expr: string }               // 例: 'branch:feature merged-into:main'
   | { kind: 'k8s'; expr: string }               // 例: 'deployment/web readyReplicas>=3'
   | { kind: 'net'; expr: string }               // 例: 'reach shop.example:443'
-  | { kind: 'http'; url: string; status: number }
+  | { kind: 'http'; url: string; status: number; contains?: string } // contains: 返事の本文にその文字列がある
   | { kind: 'tls'; host: string; trusted: boolean }
   | { kind: 'sql'; query: string; equals: unknown }
   | { kind: 'answer'; equals: string }         // 原因などを答える形
