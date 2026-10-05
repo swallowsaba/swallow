@@ -27,6 +27,11 @@ function readInput(shell: ShellState, stdin: string, files: readonly string[]): 
   return files.map((f) => readFile(shell.vfs, resolve(shell.cwd, f))).join('');
 }
 
+/** head・tail の -5 は -n 5 と同じ（本物と同じ古い書き方） */
+function lineCountArgs(argv: readonly string[]): string[] {
+  return argv.flatMap((a, i) => (i > 0 && /^-\d+$/.test(a) ? ['-n', a.slice(1)] : [a]));
+}
+
 export const textCommands: CommandSpec[] = [
   {
     name: 'echo',
@@ -145,7 +150,7 @@ export const textCommands: CommandSpec[] = [
     name: 'head',
     summary: '先頭の行を出す',
     handler: ({ argv, shell, stdin }) => {
-      const { values, operands } = parseArgs(argv, { withValue: ['n'] });
+      const { values, operands } = parseArgs(lineCountArgs(argv), { withValue: ['n'] });
       const count = Number(values.get('n') ?? 10);
       const text = readInput(shell, stdin, operands);
       return { stdout: fromLines(toLines(text).slice(0, count)) };
@@ -155,7 +160,7 @@ export const textCommands: CommandSpec[] = [
     name: 'tail',
     summary: '末尾の行を出す',
     handler: ({ argv, shell, stdin }) => {
-      const { values, operands } = parseArgs(argv, { withValue: ['n'] });
+      const { values, operands } = parseArgs(lineCountArgs(argv), { withValue: ['n'] });
       const count = Number(values.get('n') ?? 10);
       const lines = toLines(readInput(shell, stdin, operands));
       return { stdout: fromLines(count >= lines.length ? lines : lines.slice(lines.length - count)) };

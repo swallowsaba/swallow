@@ -119,6 +119,17 @@ describe('置き場所が無い時の cp・mv・sed の文（本物と同じ）'
   });
 });
 
+describe('head・tail の数の書き方', () => {
+  const files = { '/home/learner': null, '/home/learner/n.txt': '1\n2\n3\n4\n5\n' };
+
+  it('-1 や -3 は -n 1・-n 3 と同じ（本物と同じ）', () => {
+    const t = open({ files });
+    expect(t.run('head -1 n.txt').out).toBe('1\n');
+    expect(t.run('tail -2 n.txt').out).toBe('4\n5\n');
+    expect(t.run('cat n.txt | head -3').out).toBe('1\n2\n3\n');
+  });
+});
+
 describe('wc（本物と同じ形）', () => {
   const files = { '/home/learner': null, '/home/learner/a.txt': 'one two\nthree\n', '/home/learner/b.txt': 'x\n' };
 
