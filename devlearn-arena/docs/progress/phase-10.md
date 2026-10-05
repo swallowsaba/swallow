@@ -313,3 +313,74 @@ V1・V3・V4・V9・V10 は都市画面の項目で、この分野では都市�
 - web.b.04 の図を押す問題で、「4xx」の箱の字の間（何も塗っていない所）を押すと何も起きなかった（撮影の台本が押せずに止まった）→ 押す部分の、中を塗らない枠に `pointer-events="all"` を足した。同じ形の図が 40 枚・107 か所あったので全て直し、無い図を検証で落とす（先に検証の規則を足して落ちることを確かめてから直した）
 - web.i.04 の欄の注記「今は 1 年保存」が、値を変えた後も残り、今の値と食い違って読めた → 「直す前は」にした
 - web.i.06 の結果の `--http2` が、本文の字で「–http2」のように 1 本の線に見えた → コードの形にした
+
+## git（Git）
+
+記録した日: 2026-10-06
+
+### 作ったもの
+
+範囲のレッスン 12 本（初級 6 本・中級 6 本。上級は Q-04 の範囲外）。
+
+| ID | 題名 | 実戦 | 模擬環境 | 手順 |
+|---|---|---|---|---|
+| git.b.01 | バージョン管理とは | 模 | 設定する（依頼主の電話と、日付・説明の付いた履歴から、入口が北側の 9/29 の版に戻す） | 1 |
+| git.b.02 | 最初の記録 | 端 | linux-basic（~/park をリポジトリにし、README.md だけを選んで記録する。メモは記録しない） | 2 |
+| git.b.03 | 差分と履歴を見る | 端 | linux-basic（昨日以降の記録を数え、説明は README だが中身で timeout を変えた記録を差分で見つける） | 2 |
+| git.b.04 | 枝を分ける | 端 | linux-basic（feature の枝を作って移り、噴水を足して記録し、main が変わっていないことを確かめる） | 3 |
+| git.b.05 | 枝を合わせる | 端 | linux-basic（main に移って feature を取り込み、合わせる記録と両方の変更を確かめる） | 2 |
+| git.b.06 | 衝突を解く | 端 | linux-basic（料金表の同じ行の衝突を、値上げと割引の両方を活かした 1 行に直して記録する） | 3 |
+| git.i.01 | リモートと複製 | 端 | linux-basic（予約システムを https で複製し、リモートの名前と場所を答える。鍵の無い SSH は拒否される） | 3 |
+| git.i.02 | push と pull | 端 | linux-basic（拒否された push の理由を fetch で確かめ、pull の衝突を解いて送り直す） | 3 |
+| git.i.03 | GitHub / GitLab とプルリクエスト | 模 | 設定する（依頼を出し、検査とレビューの指摘を直し、承認を得てから取り込む） | 3 |
+| git.i.04 | 変更を取り消す | 端 | linux-basic（共有済みの誤った記録を git log -p で探し、revert で打ち消して送る） | 3 |
+| git.i.05 | rebase の考え方 | 端 | linux-basic（自分だけの枝を最新の main の上に付け替え、衝突を解いて一直線の履歴にする） | 3 |
+| git.i.06 | .gitignore とタグ | 端 | linux-basic（dist/・.env・node_modules/ を無視し、追跡済みの dist/ を外し、v1.0 のタグを付ける） | 4 |
+
+- 図 12 枚（`content/figures/git-*.svg`）。tokens の色・13px 以上・要素 7 つまで。押す問題の部分は `data-part`
+- 用語集 `content/glossary/git.json` は 29 語（バージョン管理・リポジトリ・コミット・ブランチ・作業ツリー・インデックス・差分・HEAD・早送り・マージコミット・リモート・クローン・origin・push・pull・fetch・プルリクエスト・レビュー・GitHub・GitLab・restore・revert・reset・リベース・.gitignore・タグなど）
+- エラーの解説 32 件（`content/errors/git.json`。リポジトリの外・選ばずに commit・枝が既にある / 無い・取り込みの向きの取り違え・印の残り・鍵の無い SSH・push の拒否・依頼の前後の誤り・共有済みの履歴の reset・rebase の衝突と続け方・無視したファイルの add・追跡済みのまま・タグが既にある・答えの取り違えなど、各実戦に合わせた物）
+- 模擬の git に足した物（分野をまたいで使う。どれも本物の git の出力に寄せた）
+  - 記録の日付を機械の時刻にし、`log`・`show` は本物の日付の形と記録ごとの作者で出す。`GIT_AUTHOR_NAME`・`GIT_AUTHOR_EMAIL`・`GIT_AUTHOR_DATE`。最初の記録は `(root-commit)`。commit・revert・merge の後に変えたファイルの集計（`1 file changed, 1 insertion(+)`・`create mode`）を出し、merge と早送りはファイルごとの変わった行の数も出す
+  - `diff`（`--check` を含む）・`show`（`HEAD~1` の形）・`log`（`-n`・`-p`・`--author`・`--since`・`--until`・`--all`・起点と範囲 `main..origin/main`・枝の印 `(HEAD -> main)`）・`branch -v`
+  - `merge`（main 以外へ取り込んだ時の `into 枝`・本物の順の衝突の文・取り込みの途中の `status`）
+  - 手元の外のサーバ（setup の `gitServers`）と `clone`（https と、公開鍵を登録した時だけ使える SSH）・`remote -v`・`push`（`fetch first`・`non-fast-forward` で拒否）・`fetch`・`pull`、ほかの人の作業（`after`）
+  - `revert`（3 方向で合わせ、同じ行なら止まる）・`reset --hard` の文・`rebase <枝>`（記録ごとに載せ、衝突で止まり `--continue`・`--skip`・`--abort`）
+  - `.gitignore`（`#`・`!`・末尾と途中の `/`・`*` `?` `**`・ディレクトリごと）・`add -f`・`rm`（`--cached`・`-r`）・`check-ignore -v`・`tag -d` の文・`rev-parse --short`
+  - 判定の `committed:`・`pushed:`・`linear`・`ignored:`・`tag:` と、先頭の `!` の否定（`docs/content-spec.md` 2.4）
+  - 設定する（`sim-config`）の欄に `requires`（その値を選ぶ前に満たす条件と、満たさない時に断る文。検査と承認が揃うまで取り込めない、のような手順の前後。`docs/content-spec.md` 2.4.1）
+
+### 完成条件
+
+| 条件 | 結果 |
+|---|---|
+| 範囲内の全レッスンが検証を通る | 合格。12 本が `src/content/validate.test.ts` の全ての規則を通る。範囲の 12 本が全て揃うこともテストで確かめる（`DONE_DOMAINS` に git） |
+| 最後のヒントで通る | 合格。12 本の全ての手順で、最後のヒントの `` の中を順に模擬環境に与えると達成条件を満たす（検証の `replayAnswers`）。画面でも、撮影の台本で 12 本とも最後のヒントの答えを入れて最後まで通した（結果は全て「自分の手で通せた」） |
+
+### テスト
+
+- `npm run typecheck` `npm run lint` `npm run test`: 全て通過（158 ファイル・5,338 件）
+- コンテンツの検証（全件）: 上の通り
+- 模擬の git（`src/engines/git`・`src/engines/kernel/commands/git*.test.ts`）: 上で足した物ごとに、状態の変化と本物と同じ出力・エラーの文をテストで確かめた（日付と作者・差分と履歴の表示・枝の印・取り込みと衝突・サーバと clone / push / pull・revert・rebase・.gitignore とタグ・変更の集計・判定の式）
+- 端末の画面（`src/screens/lesson/terminal/terminalView.test.tsx`）: 端末が高くなっても、一番下を見ていたら一番下のまま。上へ送って読んでいる時は動かさない
+
+### 視覚確認
+
+撮影: 12 本を 1280×720 で全段を通して撮り（`shots/p10-git-<ID>-*.png`）、git.i.06 は 1920×1080 でも全段とヒントを開いた画面を撮った（`shots/p10-git-*.png`）。
+各レッスンの解説（図）と実戦の画面、git.b.01・git.i.04・git.i.06 の全段を開いて確かめた。
+
+| # | 結果 | 確かめたこと |
+|---|---|---|
+| V2 | 合格 | 横長の画面で、左に手順とヒント、右に端末（または模擬環境の操作盤）。端末は git の出力を本物の形で出し、エラーの小窓は端末の下に開く。ウェブページの見た目でない |
+| V5 | 合格 | 標準のボタン・青いリンクが無い。選ぶ欄は自作の印。表は見出しの線だけ |
+| V6 | 合格 | 本文は Noto Sans JP、見出しは M PLUS 1、コマンド・端末・記録の番号は JetBrains Mono、XP は Barlow Condensed |
+| V7 | 合格 | 同じ形の札が 6 枚以上並ぶ画面は無い（図の箱は最大 4 つ） |
+| V8 | 合格 | 全ての段で、後ろに開発オフィスの中（机・画面・本棚）の景色。上の帯に施設名 |
+| V11 | 合格 | 図と画面に絵文字は無い |
+
+V1・V3・V4・V9・V10 は都市画面の項目で、この分野では都市画面を変えていない。
+
+気づいて直したこと:
+
+- git.b.02 などで、`git commit` の出力が記録の行だけで終わり、本物が続けて出す `1 file changed, 1 insertion(+)` と `create mode` の行が無かった → commit・revert・merge の後に変えたファイルの集計を出し、merge と早送りはファイルごとの変わった行の数（`map.txt | 1 +`）も出す。早送りは本物と同じく `Updating` で始める（先にテストを書いて直した）
+- git.i.02・i.04・i.05 で、最後の手順を満たすと端末の下の候補の帯が消えて端末が高くなり、最後のコマンド（`git push`・`git rebase --continue`）の出力とプロンプトが下に隠れた（xterm が送りの位置を古い高さで切り詰めていた。本物のブラウザで送りの位置を測って確かめた）→ 大きさの測り直しを次の描画の番に回し、一番下を見ていた時は一番下を見せる（先にテストを書いて直した）
