@@ -1,0 +1,314 @@
+{
+  "id": "git.i.04",
+  "domain": "git",
+  "level": "intermediate",
+  "theme": "取り消し",
+  "title": "変更を取り消す",
+  "goal": "restore/revert/reset を場面で使い分けられる",
+  "minutes": 20,
+  "prerequisites": [
+    "git.b.03"
+  ],
+  "related": [
+    "db.i.04",
+    "trouble.b.01"
+  ],
+  "next": [
+    "git.a.01",
+    "git.a.03"
+  ],
+  "terms": [
+    "git-restore",
+    "git-revert",
+    "git-reset",
+    "commit",
+    "working-tree",
+    "branch",
+    "remote",
+    "push",
+    "file",
+    "git-head",
+    "command",
+    "repository",
+    "diff",
+    "git-origin"
+  ],
+  "explain": {
+    "what": "取り消しには 3 つの道具がある。{{term:git-restore}}は、まだ記録していない{{term:working-tree}}の変更を捨てて元に戻す。{{term:git-revert}}は、ある{{term:commit}}の逆の変更を、新しい記録として足す。{{term:git-reset}}は、{{term:branch}}の先を前の記録へ動かし、後の記録を枝から外す。",
+    "why": "場面ごとに、安全な戻し方が違う。まだ誰も見ていない手元の変更と、既にほかの人が持っている記録とでは、壊してよい物が違う。",
+    "use": "誤りの修正。記録する前の誤った編集は restore で戻す。{{term:remote}}に{{term:push}}して共有した記録は、履歴を消さずに revert で打ち消す。reset は、まだ送っていない手元だけの記録を整える時に使う。",
+    "when": "共有した記録に誤りが見つかった時。reset で記録を消して送ろうとすると、ほかの人の履歴と食い違って拒否される。打ち消す記録を足せば、誰の履歴も壊さずに直せる。",
+    "figures": [
+      "git-i04-undo"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "誤った記録を、もうリモートに送ってある（共有済み）",
+      "b": "reset ではなく revert で、打ち消す記録を足して直す",
+      "answer": "cause",
+      "why": "共有済みの記録は、ほかの人の手元にもある。消すと履歴が食い違うので、消さずに逆の変更を足す。",
+      "see": "when"
+    },
+    {
+      "kind": "situation",
+      "prompt": "reset で記録を消すと困るのはどの時？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "消す記録を、既にリモートに送ってある時",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "まだ送っていない、手元だけの記録を消す時",
+          "correct": false,
+          "whyNot": "手元だけの記録なら、誰の履歴とも食い違わない。reset で整えてよい。"
+        },
+        {
+          "id": "c",
+          "text": "記録する前の変更を捨てたい時",
+          "correct": false,
+          "whyNot": "その時は restore を使う。記録はまだ無いので、履歴は変わらない。"
+        }
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "git-i04-undo",
+      "prompt": "図の中で、履歴に新しい記録が足される取り消し方を押す。",
+      "answer": [
+        "revert"
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "{{term:file}}を誤って書き換えた。まだ add も commit もしていない。元に戻すには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git restore` でそのファイルを戻す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`git revert` で打ち消す",
+          "correct": false,
+          "whyNot": "revert は記録を打ち消す。まだ記録していない変更には使えない。"
+        },
+        {
+          "id": "c",
+          "text": "`git push` で送り直す",
+          "correct": false,
+          "whyNot": "push は記録を送るだけで、手元の変更は戻らない。"
+        }
+      ],
+      "explanation": "記録する前の変更は restore。最後の記録の版に戻る。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "昨日リモートに送った記録に誤りがあった。チームの全員が既に取り込んでいる。どう直す？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git revert` で打ち消す記録を作って送る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`git reset --hard` で記録を消し、上書きで送る",
+          "correct": false,
+          "whyNot": "全員の手元にある記録をリモートだけから消すと、履歴が食い違い、ほかの人の作業を壊す。"
+        },
+        {
+          "id": "c",
+          "text": "誤りの記録はそのままにして、黙って直す",
+          "correct": false,
+          "whyNot": "手で直す記録を足すのも一つの手だが、何を打ち消したかが履歴に残らない。revert なら `Revert …` として残る。"
+        }
+      ],
+      "explanation": "共有済みの誤りは、消さずに打ち消す。履歴に「何を、いつ取り消したか」も残る。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "まだ記録していない変更があるまま、`git reset --hard HEAD~1` を打つと？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "最後の記録が枝から外れ、記録していない変更も消える",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "最後の記録だけが外れ、記録していない変更は残る",
+          "correct": false,
+          "whyNot": "`--hard` は作業ツリーも、移った先の記録の版に書き換える。記録していない変更は戻せない。"
+        },
+        {
+          "id": "c",
+          "text": "打ち消す記録が 1 つ足される",
+          "correct": false,
+          "whyNot": "それは revert。reset は記録を足さずに、枝の先を動かす。"
+        }
+      ],
+      "explanation": "`--hard` は一番強い戻し方。記録していない変更まで消えるので、打つ前に `git status` を見る。"
+    },
+    {
+      "id": "q4",
+      "kind": "term",
+      "prompt": "revert は何をする{{term:command}}？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ある記録の逆の変更を、新しい記録として足す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ある記録を履歴から消す",
+          "correct": false,
+          "whyNot": "revert は何も消さない。元の記録も、打ち消す記録も、両方が履歴に残る。"
+        },
+        {
+          "id": "c",
+          "text": "記録していない変更を捨てる",
+          "correct": false,
+          "whyNot": "それは restore。"
+        }
+      ],
+      "explanation": "打ち消す記録の説明は `Revert \"元の説明\"` になる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "公園の料金表の{{term:repository}}（リモートと同じ所まで取り込んである）。利用者から「大人の料金が 3500 円になっている」と連絡が来た。誤りの入った記録を探し、共有した履歴を壊さずに打ち消して、リモートに届ける。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev-office",
+      "cwd": "/home/learner/park-price",
+      "dirs": [
+        "/home/learner/park-price"
+      ],
+      "run": [
+        "cd /home/learner",
+        "git clone https://git.city.example/park/price.git park-price"
+      ],
+      "gitServers": [
+        {
+          "url": "https://git.city.example/park/price.git",
+          "run": [
+            "export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE=\"2026-09-25 10:00\"",
+            "echo '大人: 300 円' > price.txt",
+            "echo '子ども: 100 円' >> price.txt",
+            "git add price.txt",
+            "git commit -m \"料金表を作る\"",
+            "export GIT_AUTHOR_NAME=Sato GIT_AUTHOR_EMAIL=sato@city.example GIT_AUTHOR_DATE=\"2026-09-28 14:00\"",
+            "echo '大人: 350 円' > price.txt",
+            "echo '子ども: 100 円' >> price.txt",
+            "git commit -am \"大人を 350 円に値上げする\"",
+            "export GIT_AUTHOR_NAME=Learner GIT_AUTHOR_EMAIL=learner@example.com GIT_AUTHOR_DATE=\"2026-10-01 11:00\"",
+            "echo '大人: 3500 円' > price.txt",
+            "echo '子ども: 100 円' >> price.txt",
+            "git commit -am \"料金の書き方をそろえる\"",
+            "export GIT_AUTHOR_NAME=Sato GIT_AUTHOR_EMAIL=sato@city.example GIT_AUTHOR_DATE=\"2026-10-02 16:00\"",
+            "echo '営業: 9:00-17:00' > hours.txt",
+            "git add hours.txt",
+            "git commit -m \"営業時間を書く\""
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "find",
+        "purpose": "記録ごとの{{term:diff}}を見て、大人の料金を 3500 円にした記録を探す。その記録の説明を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "料金の書き方をそろえる"
+        },
+        "afterward": "「料金の書き方をそろえる」で、350 が 3500 になっていた。`git log` で {{term:git-origin}}/main の印が付いた記録より前にあるので、もうリモートに送ってある（共有済み）。後に佐藤さんの「営業時間を書く」も積まれている。",
+        "hints": [
+          "説明だけでは分からない。記録ごとに、何がどう変わったかを見る。",
+          "`git log -p` は、記録ごとの差分を並べる。`+大人: 3500 円` が足された記録を探す。",
+          "`git log --oneline -p` を打ち、`料金の書き方をそろえる` と答える。"
+        ],
+        "expectedErrors": [
+          "git-undo-misread"
+        ]
+      },
+      {
+        "id": "revert",
+        "purpose": "共有済みの記録なので、消さずに、その記録だけを打ち消す記録を作る。後の「営業時間を書く」は残す。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/park-price/price.txt",
+          "contains": "大人: 350 円"
+        },
+        "afterward": "`Revert \"料金の書き方をそろえる\"` という記録が足され、大人の料金が 350 円に戻った。元の記録も、営業時間の記録も、履歴に残っている。",
+        "hints": [
+          "共有済みの記録は、履歴から消さずに、逆の変更を新しい記録として足す。",
+          "`git revert` に、打ち消す記録の番号（7 桁）を渡す。誤りの記録は、今の記録（{{term:git-head}}）の 1 つ前なので `HEAD~1` でも指せる。",
+          "`git revert HEAD~1` を打つ。"
+        ],
+        "expectedErrors": [
+          "git-revert-conflict"
+        ]
+      },
+      {
+        "id": "push",
+        "purpose": "打ち消した記録をリモートに送る。",
+        "check": {
+          "kind": "git",
+          "expr": "pushed:main clean commits:main>=5 committed:hours.txt"
+        },
+        "afterward": "打ち消す記録がリモートに届いた。ほかの人は取り込むだけで、誰の履歴も壊れずに 350 円に戻る。",
+        "hints": [
+          "手元の履歴がリモートの記録を全て含んでいれば、そのまま送れる。",
+          "reset で記録を消していたら、リモートと食い違って拒否される。`git reset --hard origin/main` でリモートと同じ所に戻してから、打ち消し直す。",
+          "`git push` を打つ。"
+        ],
+        "expectedErrors": [
+          "git-reset-shared",
+          "git-push-rejected"
+        ]
+      }
+    ],
+    "dangerous": [
+      {
+        "id": "push-force",
+        "pattern": "git\\s+push\\b.*\\s(--force|-f)(\\s|$)",
+        "why": "上書きの push は、リモートの記録（ほかの人が持っている履歴）を消す。共有済みの誤りは、revert で打ち消して普通に送る。"
+      }
+    ]
+  },
+  "result": {
+    "success": "共有済みの誤りを、履歴を壊さずに打ち消して届けられた。安全に戻せた。",
+    "partial": "ヒントを使って、打ち消せた。次は、restore・revert・reset を、記録したか・送ったかで使い分けて説明してみよう。",
+    "retry": "まだ届いていない。`git log --oneline --all` で、手元の main と origin/main の履歴がどう変わったかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "記録前は restore",
+      "共有済みは revert",
+      "reset は手元だけで"
+    ],
+    "next": [
+      "git.a.01",
+      "git.a.03"
+    ],
+    "terms": [
+      "git-restore",
+      "git-revert",
+      "git-reset"
+    ]
+  }
+}

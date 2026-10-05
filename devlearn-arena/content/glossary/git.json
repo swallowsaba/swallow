@@ -345,6 +345,51 @@
       "lessons": [
         "git.i.03"
       ]
+    },
+    {
+      "id": "git-restore",
+      "word": "restore",
+      "reading": "りすとあ",
+      "plain": "まだ記録していない変更を捨てて、ファイルを最後の記録の版に戻すこと。`git restore <ファイル>` で行う。",
+      "why": "誤った編集を、履歴を触らずに戻せる。捨てた変更は記録が無いので、戻せない。",
+      "related": [
+        "git-revert",
+        "git-reset",
+        "working-tree"
+      ],
+      "lessons": [
+        "git.i.04"
+      ]
+    },
+    {
+      "id": "git-revert",
+      "word": "revert",
+      "reading": "りばーと",
+      "plain": "ある記録の逆の変更を、新しい記録として足すこと。元の記録は消さない。",
+      "why": "共有済みの記録の誤りを、ほかの人の履歴を壊さずに直せる。何を取り消したかも履歴に残る。",
+      "related": [
+        "git-restore",
+        "git-reset",
+        "commit"
+      ],
+      "lessons": [
+        "git.i.04"
+      ]
+    },
+    {
+      "id": "git-reset",
+      "word": "reset",
+      "reading": "りせっと",
+      "plain": "枝の先を前の記録へ動かすこと。後の記録は枝から外れる。`--hard` は作業ツリーも書き換える。",
+      "why": "手元だけの記録を整えるのに使う。共有済みの記録に使うと、ほかの人の履歴と食い違う。",
+      "related": [
+        "git-revert",
+        "git-restore",
+        "branch"
+      ],
+      "lessons": [
+        "git.i.04"
+      ]
     }
   ]
 }

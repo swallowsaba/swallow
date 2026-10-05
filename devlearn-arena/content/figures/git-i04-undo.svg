@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>3 つの取り消しの前後の履歴。restore は記録していない変更を捨て、履歴は変わらない。revert は打ち消す記録を足し、履歴は伸びる。reset は枝の先を前へ動かし、後の記録が枝から外れる</title>
+  <g class="el" data-part="restore">
+    <rect x="10" y="40" width="220" height="230" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="120" y="70" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#eef2f6">restore</text>
+    <text x="120" y="94" text-anchor="middle" font-size="13" fill="#9fb0c6">記録する前の変更を捨てる</text>
+    <path d="M40 160 H180" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <circle cx="50" cy="160" r="12" fill="#9fb0c6" />
+    <circle cx="110" cy="160" r="12" fill="#9fb0c6" />
+    <circle cx="170" cy="160" r="12" fill="#9fb0c6" />
+    <rect x="148" y="190" width="44" height="30" rx="6" fill="none" stroke="#e0457b" stroke-width="2" stroke-dasharray="4 4" pointer-events="all" />
+    <text x="170" y="210" text-anchor="middle" font-size="13" fill="#e0457b">編集</text>
+    <text x="120" y="252" text-anchor="middle" font-size="13" fill="#f2b632">履歴は変わらない</text>
+  </g>
+  <g class="el" data-part="revert">
+    <rect x="240" y="40" width="220" height="230" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="350" y="70" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#eef2f6">revert</text>
+    <text x="350" y="94" text-anchor="middle" font-size="13" fill="#9fb0c6">打ち消す記録を足す</text>
+    <path d="M265 160 H435" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <circle cx="275" cy="160" r="12" fill="#9fb0c6" />
+    <circle cx="330" cy="160" r="12" fill="#e0457b" />
+    <text x="330" y="196" text-anchor="middle" font-size="13" fill="#e0457b">誤り</text>
+    <circle cx="380" cy="160" r="12" fill="#9fb0c6" />
+    <circle cx="430" cy="160" r="12" fill="#f2b632" />
+    <text x="430" y="196" text-anchor="middle" font-size="13" fill="#f2b632">打ち消し</text>
+    <text x="350" y="252" text-anchor="middle" font-size="13" fill="#f2b632">共有済みでも安全</text>
+  </g>
+  <g class="el" data-part="reset">
+    <rect x="470" y="40" width="220" height="230" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="580" y="70" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#eef2f6">reset</text>
+    <text x="580" y="94" text-anchor="middle" font-size="13" fill="#9fb0c6">枝の先を前へ動かす</text>
+    <path d="M500 160 H560" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <path d="M560 160 H660" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="4 4" />
+    <circle cx="510" cy="160" r="12" fill="#9fb0c6" />
+    <circle cx="560" cy="160" r="12" fill="#9fb0c6" />
+    <circle cx="610" cy="160" r="12" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="3 3" />
+    <circle cx="660" cy="160" r="12" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="3 3" />
+    <text x="560" y="128" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">main</text>
+    <text x="635" y="196" text-anchor="middle" font-size="13" fill="#9fb0c6">外れた記録</text>
+    <text x="580" y="252" text-anchor="middle" font-size="13" fill="#e0457b">手元だけの記録に使う</text>
+  </g>
+</svg>
