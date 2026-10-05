@@ -12,7 +12,10 @@ export function figureOf(id: string): string | undefined {
   return FIGURES.get(id);
 }
 
-/** 図の題（<title>。画面の説明に使う） */
+const ENTITIES: Record<string, string> = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
+
+/** 図の題（<title>。画面の説明に使う）。SVG の文字の参照（&lt; など）は元の字に戻す */
 export function figureTitle(id: string): string {
-  return /<title>([\s\S]*?)<\/title>/.exec(FIGURES.get(id) ?? '')?.[1]?.trim() ?? '';
+  const raw = /<title>([\s\S]*?)<\/title>/.exec(FIGURES.get(id) ?? '')?.[1]?.trim() ?? '';
+  return raw.replace(/&(lt|gt|amp|quot|apos);/g, (_, name: string) => ENTITIES[name] ?? '');
 }
