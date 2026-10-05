@@ -1,5 +1,5 @@
 import { globMatch } from '../glob';
-import { basename, HOME, resolve } from '../path';
+import { basename, dirname, HOME, resolve } from '../path';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { allows, formatMode } from '../perm';
 import { copy, fileSize, list, metaOf, mkdir, move, readFile, remove, setMeta, stat, touch, VfsError } from '../vfs';
@@ -36,13 +36,17 @@ function planTransfer(
   if (missing !== undefined) {
     return { error: { stderr: `${command}: cannot stat '${missing}': No such file or directory\n`, code: 1 } };
   }
+  const destText = operands[operands.length - 1] ?? '';
   if (sources.length > 1 && stat(shell.vfs, dest)?.kind !== 'dir') {
-    return {
-      error: {
-        stderr: `${command}: target '${operands[operands.length - 1] ?? ''}' is not a directory\n`,
-        code: 1,
-      },
-    };
+    return { error: { stderr: `${command}: target '${destText}' is not a directory\n`, code: 1 } };
+  }
+  // 行き先が無く、その置き場所も無い（末尾の / は、無いディレクトリを指す）時は、本物と同じ文で断る
+  if (stat(shell.vfs, dest) === undefined && (destText.endsWith('/') || stat(shell.vfs, dirname(dest))?.kind !== 'dir')) {
+    const why = destText.endsWith('/') && stat(shell.vfs, dirname(dest))?.kind === 'dir' ? 'Not a directory' : 'No such file or directory';
+    const source = operands[0] ?? '';
+    const what = stat(shell.vfs, sources[0] ?? '')?.kind === 'dir' ? 'directory' : 'regular file';
+    const stderr = command === 'mv' ? `mv: cannot move '${source}' to '${destText}': ${why}\n` : `${command}: cannot create ${what} '${destText}': ${why}\n`;
+    return { error: { stderr, code: 1 } };
   }
   return { sources, dest };
 }

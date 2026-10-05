@@ -166,14 +166,30 @@ export const textCommands: CommandSpec[] = [
     summary: '行数・単語数・バイト数を数える',
     handler: ({ argv, shell, stdin }) => {
       const { flags, operands } = parseArgs(argv);
-      const text = readInput(shell, stdin, operands);
-      const lines = toLines(text).length;
-      const words = text.split(/\s+/).filter((w) => w !== '').length;
-      const chars = text.length;
-      if (flags.has('l')) return { stdout: `${String(lines)}\n` };
-      if (flags.has('w')) return { stdout: `${String(words)}\n` };
-      if (flags.has('c')) return { stdout: `${String(chars)}\n` };
-      return { stdout: `${String(lines)} ${String(words)} ${String(chars)}\n` };
+      // 出す数（-l・-w・-c。無ければ 3 つとも）
+      const picked = (['l', 'w', 'c'] as const).filter((f) => flags.has(f));
+      const fields = picked.length > 0 ? picked : (['l', 'w', 'c'] as const);
+      const count = (text: string): number[] => fields.map((f) => (f === 'l' ? toLines(text).length : f === 'w' ? text.split(/\s+/).filter((w) => w !== '').length : text.length));
+      if (operands.length === 0) {
+        // 標準入力は名前を出さない。数を 2 つ以上出す時は、本物と同じく 7 桁に揃える
+        const n = count(stdin);
+        return { stdout: `${n.map((v) => String(v).padStart(n.length > 1 ? 7 : 0)).join(' ')}\n` };
+      }
+      // ファイルは、数の後に名前を出し、複数なら合計の行を足す（本物と同じ）
+      const rows: { n: number[]; name: string }[] = [];
+      let err = '';
+      for (const f of operands) {
+        const node = stat(shell.vfs, resolve(shell.cwd, f));
+        if (node === undefined) {
+          err += `wc: ${f}: No such file or directory\n`;
+          continue;
+        }
+        rows.push({ n: count(node.kind === 'file' ? readFile(shell.vfs, resolve(shell.cwd, f)) : ''), name: f });
+      }
+      if (operands.length > 1) rows.push({ n: fields.map((_, i) => rows.reduce((s, r) => s + (r.n[i] ?? 0), 0)), name: 'total' });
+      const width = Math.max(1, ...rows.flatMap((r) => r.n.map((v) => String(v).length)));
+      const out = rows.map((r) => `${r.n.map((v) => String(v).padStart(width)).join(' ')} ${r.name}\n`).join('');
+      return { stdout: out, ...(err === '' ? {} : { stderr: err, code: 1 }) };
     },
   },
   {

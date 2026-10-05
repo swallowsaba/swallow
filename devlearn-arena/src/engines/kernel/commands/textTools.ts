@@ -2,7 +2,7 @@ import { formatUnified } from '../diff';
 import { resolve } from '../path';
 import { compilePattern } from '../regex';
 import type { CommandSpec, ShellState } from '../registry';
-import { appendFile, readFile, writeFile } from '../vfs';
+import { appendFile, readFile, stat, writeFile } from '../vfs';
 import { fromLines, parseArgs, toLines } from './args';
 
 function readInput(shell: ShellState, stdin: string, files: readonly string[]): string {
@@ -216,6 +216,9 @@ export const textToolCommands: CommandSpec[] = [
       const script = values.get('e') ?? operands[0];
       if (script === undefined) return { stderr: 'sed: no script specified\n', code: 1 };
       const files = values.has('e') ? operands : operands.slice(1);
+      // 読めないファイルは、本物と同じく can't read と言って 2 で終わる
+      const missing = files.find((f) => stat(shell.vfs, resolve(shell.cwd, f)) === undefined);
+      if (missing !== undefined) return { stderr: `sed: can't read ${missing}: No such file or directory\n`, code: 2 };
       const commands = parseSedScript(script);
       const text = readInput(shell, stdin, files);
       const result = applySed(toLines(text), commands, flags.has('n'));

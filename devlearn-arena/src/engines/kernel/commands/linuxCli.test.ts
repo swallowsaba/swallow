@@ -91,6 +91,59 @@ describe('find と権限・/dev/null', () => {
   });
 });
 
+describe('置き場所が無い時の cp・mv・sed の文（本物と同じ）', () => {
+  const files = { '/home/learner': null, '/home/learner/a.txt': 'DATE\n', '/home/learner/docs': null, '/home/learner/docs/b.txt': 'b\n' };
+
+  it('cp の行き先のディレクトリが無ければ cannot create と言い、何も作らない', () => {
+    const t = open({ files });
+    const r = t.run('cp a.txt out/today.txt');
+    expect(r.err).toBe("cp: cannot create regular file 'out/today.txt': No such file or directory\n");
+    expect(r.code).toBe(1);
+    // 末尾の / はディレクトリの印。無いディレクトリなら、ファイルを作らずに断る
+    expect(t.run('cp a.txt out/').err).toBe("cp: cannot create regular file 'out/': Not a directory\n");
+    expect(t.run('ls').out).not.toContain('out');
+    expect(t.run('cp -r docs out/docs').err).toBe("cp: cannot create directory 'out/docs': No such file or directory\n");
+  });
+
+  it('mv の行き先のディレクトリが無ければ cannot move と言い、元を残す', () => {
+    const t = open({ files });
+    expect(t.run('mv a.txt out/a.txt').err).toBe("mv: cannot move 'a.txt' to 'out/a.txt': No such file or directory\n");
+    expect(t.run('cat a.txt').out).toBe('DATE\n');
+  });
+
+  it('sed は読めないファイルを can\'t read と言う', () => {
+    const t = open({ files });
+    const r = t.run("sed -i 's/DATE/10-06/' out/today.txt");
+    expect(r.err).toBe("sed: can't read out/today.txt: No such file or directory\n");
+    expect(r.code).toBe(2);
+  });
+});
+
+describe('wc（本物と同じ形）', () => {
+  const files = { '/home/learner': null, '/home/learner/a.txt': 'one two\nthree\n', '/home/learner/b.txt': 'x\n' };
+
+  it('ファイルを渡すと、数の後にファイルの名前を出す。複数なら合計の行を足す', () => {
+    const t = open({ files });
+    expect(t.run('wc -l a.txt').out).toBe('2 a.txt\n');
+    expect(t.run('wc a.txt').out).toBe(' 2  3 14 a.txt\n');
+    expect(t.run('wc -l a.txt b.txt').out).toBe('2 a.txt\n1 b.txt\n3 total\n');
+  });
+
+  it('標準入力は名前を出さない。数を 3 つ出す時は、本物と同じく 7 桁に揃える', () => {
+    const t = open({ files });
+    expect(t.run('cat a.txt | wc -l').out).toBe('2\n');
+    expect(t.run('cat a.txt | wc').out).toBe('      2       3      14\n');
+  });
+
+  it('無いファイルは本物と同じ文で知らせ、ほかのファイルは数える', () => {
+    const t = open({ files });
+    const r = t.run('wc -l nope.txt b.txt');
+    expect(r.err).toBe('wc: nope.txt: No such file or directory\n');
+    expect(r.out).toBe('1 b.txt\n1 total\n');
+    expect(r.code).toBe(1);
+  });
+});
+
 describe('less', () => {
   it('中身を出し、終わりの印を付ける（画面は送らない）', () => {
     const r = open({ files: { '/home/learner/a.txt': 'one\ntwo\n' } }).run('less a.txt');

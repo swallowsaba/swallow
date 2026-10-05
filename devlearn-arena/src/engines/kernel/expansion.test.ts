@@ -26,7 +26,7 @@ function run(line: string): { out: string; err: string; code: number } {
 describe('単語分割', () => {
   it('クォートしない展開は空白で分割され、複数の引数になる', () => {
     run('export LIST="a.txt b.txt"');
-    expect(run('wc -l $LIST').out).toBe('2\n');
+    expect(run('wc -l $LIST').out).toBe('1 a.txt\n1 b.txt\n2 total\n');
   });
 
   it('分割された結果が別々の引数になる', () => {
