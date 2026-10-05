@@ -86,11 +86,13 @@ export const fsCommands: CommandSpec[] = [
         const path = resolve(shell.cwd, target);
         const node = stat(shell.vfs, path);
         if (!node) return { stderr: `ls: cannot access '${target}': No such file or directory\n`, code: 2 };
-        // 中身を並べるには読み権が要る
-        const blocked = denied(shell, path, 'read', 'ls', target);
-        if (blocked) return { ...blocked, code: 2 };
         // -d はディレクトリの中身でなく、ディレクトリそのものを 1 行で出す
         const self = flags.has('d') || node.kind !== 'dir';
+        // ディレクトリの中身を並べるには、そのディレクトリの読み権が要る。
+        // ファイルそのもの（と -d）は、読めなくても権限の欄まで見える（本物と同じ）
+        if (!self && denied(shell, path, 'read', 'ls', target)) {
+          return { stderr: `ls: cannot open directory '${target}': Permission denied\n`, code: 2 };
+        }
         let names = self ? [node.kind === 'dir' ? target : basename(path)] : list(shell.vfs, path);
         if (all && !self) names = ['.', '..', ...names];
         if (!all && !self) names = names.filter((n) => !n.startsWith('.'));

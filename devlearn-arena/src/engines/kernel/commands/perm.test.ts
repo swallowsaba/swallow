@@ -80,9 +80,19 @@ describe('読めなくする', () => {
     expect(run('cat note.txt').out).toBe('hello\n');
   });
 
-  it('ディレクトリの読み権限を落とすと ls が断られる', () => {
+  it('ディレクトリの読み権限を落とすと ls が断られる（本物と同じ文）', () => {
     run('chmod 000 secret');
-    expect(run('ls secret').err).toContain('Permission denied');
+    const r = run('ls secret');
+    expect(r.err).toBe("ls: cannot open directory 'secret': Permission denied\n");
+    expect(r.code).toBe(2);
+  });
+
+  it('読めないファイルでも、置き場所のディレクトリが読めれば ls -l で権限の欄が見える（本物と同じ）', () => {
+    run('chmod 000 note.txt');
+    const r = run('ls -l note.txt');
+    expect(r.code).toBe(0);
+    expect(r.out).toMatch(/^---------- 1 learner learner +6 note\.txt\n$/);
+    expect(run('ls -l').out).toContain('---------- 1 learner learner');
   });
 
   it('ディレクトリの実行権限を落とすと cd が断られる', () => {
