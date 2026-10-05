@@ -1,0 +1,230 @@
+{
+  "id": "web.b.02",
+  "domain": "web",
+  "level": "beginner",
+  "theme": "HTTP",
+  "title": "リクエストとレスポンス",
+  "goal": "HTTP のやり取りを読み、curl で確かめられる",
+  "minutes": 15,
+  "prerequisites": [
+    "web.b.01",
+    "net.b.04"
+  ],
+  "related": [
+    "net.b.04",
+    "linux.b.03"
+  ],
+  "next": [
+    "web.b.03",
+    "web.b.04",
+    "web.b.05"
+  ],
+  "terms": [
+    "http",
+    "request",
+    "response",
+    "path",
+    "status-code",
+    "app",
+    "web-server",
+    "web",
+    "header",
+    "curl",
+    "http-method",
+    "port",
+    "command",
+    "option",
+    "host",
+    "program",
+    "file"
+  ],
+  "explain": {
+    "what": "{{term:http}} は、{{term:request}}（依頼）と{{term:response}}（返事）を決まった書式でやり取りする決まり。依頼の 1 行目は「何をするか・どの{{term:path}}か・版」、返事の 1 行目は{{term:status-code}}（3 桁の数字）と理由の語。",
+    "why": "ブラウザも{{term:app}}も、同じ書式で{{term:web-server}}と話す。書式が決まっているので、どの道具からでも同じように確かめられる。",
+    "use": "全ての{{term:web}}のページと、{{term:program}}どうしのデータのやり取り。返事には{{term:header}}（見出し）と本文が付き、見出しを見ると本文の種類や大きさが分かる。",
+    "when": "ブラウザでは見えるのに、プログラムでは取れない時。依頼と返事をそのまま並べて見ると、どこが違うかが分かる。この後の実戦で使う {{term:curl}} は、依頼を送り、返事をそのまま見せる。",
+    "figures": [
+      "web-b02-exchange"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "ページを 1 つ取る時の、やり取りの順に並べる。",
+      "items": [
+        "Web サーバの待っている{{term:port}}に接続する",
+        "依頼（リクエスト）を送る",
+        "返事（レスポンス）を受け取る"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "web-b02-exchange",
+      "prompt": "図の依頼の 1 行目で、「何をするか」（取る・作るなど。{{term:http-method}}）を表す部分を押す。",
+      "answer": [
+        "method"
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "返事の 1 行目にある、200 や 404 のような 3 桁の数字を何と呼ぶ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ステータスコード",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ポートの番号",
+          "correct": false,
+          "whyNot": "ポートの番号は、接続する時の待ち口の番号（80 や 443）。返事の中の数字ではない。"
+        },
+        {
+          "id": "c",
+          "text": "版",
+          "correct": false,
+          "whyNot": "版は、1 行目の頭の HTTP/1.1 の部分。3 桁の数字はその後ろ。"
+        }
+      ],
+      "explanation": "返事の 1 行目は「版・ステータスコード・理由の語」。数字で、うまくいったか・何が起きたかが分かる。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "context": {
+        "command": "curl -i http://shop.example/"
+      },
+      "prompt": "この{{term:command}}を打つと、何が出る？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "返事の頭（1 行目と見出し）と、その後ろの本文",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "本文だけ",
+          "correct": false,
+          "whyNot": "本文だけが出るのは、-i を付けない時。-i は頭も含めて出す{{term:option}}。"
+        },
+        {
+          "id": "c",
+          "text": "送った依頼の中身",
+          "correct": false,
+          "whyNot": "-i が出すのは返事。送った依頼まで見たい時は -v（詳しく出す）を使う。"
+        }
+      ],
+      "explanation": "-i（include）は、返事の頭を本文の前に付けて出す。数字と見出しと本文を一度に読める。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "返事の見出しだけを見たい。本文は要らない。どれを使う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`curl -I`（大文字のアイ）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`curl -i`（小文字のアイ）",
+          "correct": false,
+          "whyNot": "小文字の -i は、頭に加えて本文も出す。"
+        },
+        {
+          "id": "c",
+          "text": "`curl -o page.html`",
+          "correct": false,
+          "whyNot": "-o は本文を{{term:file}}に保存する。見出しは出ない。"
+        }
+      ],
+      "explanation": "大文字の `-I` は、本文を頼まず頭だけを取る（取り方の種類を `HEAD` にする）。見出しを手早く確かめる時に使う。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "港町の店のトップページ（http://shop.example/）に curl で依頼を送り、返事のステータスコードと、本文の種類（`Content-Type`）を読み取る。",
+    "environment": "web-client",
+    "setup": {
+      "sites": [
+        {
+          "host": "shop.example",
+          "port": 80,
+          "routes": {
+            "/": {
+              "status": 200,
+              "body": "<html><body><h1>港町の店</h1><p>今週のおすすめ: 灯台の模型</p></body></html>"
+            }
+          }
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "status",
+        "purpose": "http://shop.example/ に依頼を送り、返事の頭も表示して、ステータスコード（3 桁の数字）を答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "200"
+        },
+        "afterward": "返事の 1 行目は `HTTP/1.1 200 OK`。200 は「うまくいった」という意味。頭の後ろに、空の行を挟んで本文が続いた。",
+        "hints": [
+          "返事の頭（1 行目と見出し）は、そのままでは出ない。頭も出す curl のオプションを付ける。",
+          "curl に -i を付けると、本文の前に頭が出る。1 行目の HTTP/1.1 の後ろの数字を読む。",
+          "`curl -i http://shop.example/` と打ち、`200` と答える。"
+        ],
+        "expectedErrors": [
+          "web-resolve"
+        ]
+      },
+      {
+        "id": "type",
+        "purpose": "同じ返事の見出しから、本文の種類（`Content-Type` の値）を読み取り、答えの欄に入れる。",
+        "check": {
+          "kind": "answer",
+          "equals": "text/html"
+        },
+        "afterward": "本文の種類は text/html（Web のページ）。見出しは「名前: 値」の形で、ブラウザはこの値を見て、本文をページとして表示する。",
+        "hints": [
+          "見出しは「名前: 値」の形で、頭の 2 行目から並ぶ。本文の種類を表す名前を探す。",
+          "見出しだけなら `-I` が手早い。`Content-Type` の行の、コロンの後ろを読む。",
+          "`curl -I http://shop.example/` と打ち、`text/html` と答える。"
+        ],
+        "expectedErrors": [
+          "web-resolve"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "curl で依頼を送り、返事の数字と見出しを読み取れた。やり取りの中身を自分の目で確かめられる。",
+    "partial": "ヒントを使って返事を読めた。次は、`-i` と `-I` の違いを、出た物を見比べて説明してみよう。",
+    "retry": "まだ答えがそろっていない。curl -i の出力の 1 行目の数字と、`Content-Type` の行を、もう一度見比べよう。"
+  },
+  "summary": {
+    "points": [
+      "HTTP は依頼（リクエスト）と返事（レスポンス）のやり取り",
+      "返事は、数字（ステータスコード）・見出し（ヘッダ）・本文",
+      "curl で確かめる（`-i` で頭も、`-I` で頭だけ）"
+    ],
+    "next": [
+      "web.b.03",
+      "web.b.04",
+      "web.b.05"
+    ],
+    "terms": [
+      "request",
+      "response",
+      "status-code",
+      "header",
+      "curl"
+    ]
+  }
+}

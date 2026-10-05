@@ -1,0 +1,313 @@
+{
+  "id": "web.b.01",
+  "domain": "web",
+  "level": "beginner",
+  "theme": "URL",
+  "title": "URL の組み立て",
+  "goal": "スキーム・ホスト・ポート・パス・クエリを読める",
+  "minutes": 15,
+  "prerequisites": [
+    "net.b.06"
+  ],
+  "related": [
+    "net.b.06",
+    "web.i.01"
+  ],
+  "next": [
+    "web.b.02"
+  ],
+  "terms": [
+    "url",
+    "web",
+    "scheme",
+    "host",
+    "port",
+    "path",
+    "query",
+    "app",
+    "server",
+    "dns",
+    "ip-address",
+    "https",
+    "http"
+  ],
+  "explain": {
+    "what": "{{term:url}} は、{{term:web}} の上の資源（ページ・画像・データ）の住所。{{term:scheme}}・{{term:host}}・{{term:port}}・{{term:path}}・{{term:query}} の部品を、決まった区切りの記号でつないで 1 行にしたもの。",
+    "why": "どこの機械の、どの資源を、どの決まりで取るかを、1 行で正確に伝えられる。部品が 1 つ違うだけで、別の資源を指すか、どこにも届かない。",
+    "use": "ページのリンク、{{term:app}} が {{term:server}} からデータを取る時の行き先、人に資源を教える時。部品ごとに読めると、URL を見ただけで「どこの何か」が分かる。",
+    "when": "共有された URL が開けない時。部品ごとに見ると、原因の見当が付く。ホストの綴りが違えば名前が引けず、パスが違えば「見つからない」と返ってくる。",
+    "figures": [
+      "web-b01-url"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "web-b01-url",
+      "prompt": "図で、相手の機械の名前（ホスト）の部分を押す。",
+      "answer": [
+        "host"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "URL を開く時の、2 つの出来事の関係は？",
+      "a": "ホストの名前を {{term:dns}} で {{term:ip-address}} に変える",
+      "b": "その IP アドレスの機械に接続して、資源を頼む",
+      "answer": "before",
+      "why": "機械が届け先に使うのはアドレス。ホストの名前は、先に DNS でアドレスに変えてから接続する。",
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "URL の ? の後ろに書く「id=3」のような部分を何と呼ぶ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "クエリ",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "パス",
+          "correct": false,
+          "whyNot": "パスは ? の前の /items の部分。資源の場所を表す。"
+        },
+        {
+          "id": "c",
+          "text": "ポート",
+          "correct": false,
+          "whyNot": "ポートはホストのすぐ後ろの :8443 の部分。待っている番号を表す。"
+        }
+      ],
+      "explanation": "? の後ろはクエリ。「項目=値」の形で、同じ資源から条件に合う物を取り出す。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "https://shop.example/items のように、ポートを書かない {{term:https}} の URL を開くと、何番のポートにつなぐ？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "443 番",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "80 番",
+          "correct": false,
+          "whyNot": "80 番は {{term:http}} の既定。https の既定は 443 番。"
+        },
+        {
+          "id": "c",
+          "text": "8443 番",
+          "correct": false,
+          "whyNot": "8443 番は既定ではない。8443 番で待つサーバなら、URL に :8443 と書く必要がある。"
+        }
+      ],
+      "explanation": "スキームごとに既定のポートがあり、既定なら省ける。https は 443、http は 80。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "https://shop.example/itmes を開くと「見つからない」（404）と返ってきた。考えやすい原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "パスの綴りの誤り（items が itmes になっている）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ホストの綴りの誤り",
+          "correct": false,
+          "whyNot": "ホストが違えば名前が引けず、返事そのものが来ない。返事（404）が来たので、店の機械には届いている。"
+        },
+        {
+          "id": "c",
+          "text": "スキームの誤り",
+          "correct": false,
+          "whyNot": "話し方が違えば、つながらないか、暗号の段で失敗する。「見つからない」は、届いた上で資源が無いという返事。"
+        }
+      ],
+      "explanation": "返事が来たなら、スキーム・ホスト・ポートは合っている。「見つからない」は、その機械の中に、その場所の資源が無いという意味。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "港の店の担当から「在庫の一覧から、3 番の商品を見る URL を作って」と頼まれた。依頼文から部品を選び、完成した URL で商品を取り出す。",
+    "environment": "sim-config",
+    "setup": {
+      "fields": [
+        {
+          "id": "scheme",
+          "label": "スキーム",
+          "options": [
+            "http",
+            "https"
+          ]
+        },
+        {
+          "id": "host",
+          "label": "ホスト",
+          "options": [
+            "shop.example",
+            "www.example",
+            "example.shop"
+          ]
+        },
+        {
+          "id": "port",
+          "label": "ポート",
+          "options": [
+            "80",
+            "443",
+            "8443"
+          ]
+        },
+        {
+          "id": "path",
+          "label": "パス",
+          "options": [
+            "/items",
+            "/items/3",
+            "/stock"
+          ]
+        },
+        {
+          "id": "query",
+          "label": "クエリ",
+          "options": [
+            "id=3",
+            "3",
+            "id:3"
+          ]
+        },
+        {
+          "id": "url",
+          "label": "完成した URL",
+          "value": "",
+          "note": "部品と区切りの記号を、左から順につなぐ"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "依頼文",
+          "rows": [
+            [
+              "店の名前",
+              "shop.example（https で話す）"
+            ],
+            [
+              "待っている番号",
+              "8443 番（既定の 443 ではない）"
+            ],
+            [
+              "資源",
+              "在庫の一覧（/items）"
+            ],
+            [
+              "条件",
+              "id が 3 の商品だけ（項目=値 の形）"
+            ]
+          ]
+        },
+        {
+          "kind": "table",
+          "title": "区切りの記号",
+          "columns": [
+            "場所",
+            "記号"
+          ],
+          "rows": [
+            [
+              "スキームの後ろ",
+              "://"
+            ],
+            [
+              "ホストとポートの間",
+              ":"
+            ],
+            [
+              "パスの頭",
+              "/"
+            ],
+            [
+              "クエリの前",
+              "?"
+            ]
+          ]
+        },
+        {
+          "kind": "text",
+          "title": "取れた資源",
+          "body": "200 OK　3 番の商品: 灯台の模型（在庫 2）",
+          "when": "field url=https://shop.example:8443/items?id=3"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "parts",
+        "purpose": "依頼文を読み、スキーム・ホスト・ポート・パス・クエリの欄に、それぞれ当たる部品を選ぶ。",
+        "check": {
+          "kind": "sim",
+          "expr": "field scheme=https host=shop.example port=8443 path=/items query=id=3"
+        },
+        "afterward": "依頼文の 4 行が、5 つの部品に分かれた。店の名前はホスト、話し方はスキーム、待っている番号はポート、一覧はパス、条件はクエリ。",
+        "hints": [
+          "依頼文を 1 行ずつ、どの部品に当たるかを考える。話し方・相手の名前・待っている番号・資源の場所・条件の順。",
+          "スキームは https、ポートは既定の 443 ではなく 8443。パスは一覧の /items で、3 番の指定は「項目=値」の形のクエリにする。",
+          "`set scheme https` `set host shop.example` `set port 8443` `set path /items` `set query id=3` の順に選ぶ。"
+        ],
+        "expectedErrors": [
+          "web-url-parts"
+        ]
+      },
+      {
+        "id": "url",
+        "purpose": "選んだ部品を区切りの記号でつなぎ、完成した URL を入れて、3 番の商品を取り出す。",
+        "check": {
+          "kind": "sim",
+          "expr": "field url=https://shop.example:8443/items?id=3"
+        },
+        "afterward": "完成した URL で、3 番の商品が取れた（`200 OK`）。ポートが既定でないので :8443 を省けない。クエリは ? の後ろに置く。",
+        "hints": [
+          "部品を左から順に並べ、間に区切りの記号を入れる。",
+          "スキームの後ろに ://、ホストとポートの間に :、クエリの前に ? を置く。パスは / で始まる。",
+          "`set url https://shop.example:8443/items?id=3` と入れる。"
+        ],
+        "expectedErrors": [
+          "web-url-separator"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "依頼文を部品に分け、区切りの記号でつないで、正しい URL を組み立てられた。",
+    "partial": "ヒントを使って URL を組み立てられた。次は、ポートを省いてよい時と、省けない時の違いを説明してみよう。",
+    "retry": "まだ商品が取れていない。部品の欄と依頼文を見比べ、区切りの記号の表のとおりにつないでいるかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "URL は部品（スキーム・ホスト・ポート・パス・クエリ）の組み合わせ",
+      "既定のポート（https は 443、http は 80）なら省ける",
+      "ホストは DNS で IP アドレスに引いてから接続する"
+    ],
+    "next": [
+      "web.b.02"
+    ],
+    "terms": [
+      "url",
+      "scheme",
+      "host",
+      "query",
+      "port"
+    ]
+  }
+}

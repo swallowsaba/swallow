@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>URL https://shop.example:8443/items?id=3 を、スキーム・ホスト・ポート・パス・クエリの 5 つの部品に色分けした図</title>
+  <g class="el" data-part="caption">
+    <text x="350" y="46" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">URL は部品を区切りの記号でつないだ 1 行</text>
+    <text x="350" y="72" text-anchor="middle" font-size="13" fill="#9fb0c6">どの決まりで・どの機械の・どの番号の・どの資源を・どんな条件で</text>
+  </g>
+  <g class="el" data-part="scheme">
+    <rect x="20" y="110" width="124" height="56" rx="8" fill="#5cc1ff" />
+    <text x="82" y="146" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="22" fill="#0a1424">https://</text>
+    <text x="82" y="196" text-anchor="middle" font-size="14" font-weight="700" fill="#5cc1ff">スキーム</text>
+    <text x="82" y="218" text-anchor="middle" font-size="13" fill="#9fb0c6">話し方</text>
+  </g>
+  <g class="el" data-part="host">
+    <rect x="150" y="110" width="180" height="56" rx="8" fill="#f2b632" />
+    <text x="240" y="146" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="22" fill="#0a1424">shop.example</text>
+    <text x="240" y="196" text-anchor="middle" font-size="14" font-weight="700" fill="#f2b632">ホスト</text>
+    <text x="240" y="218" text-anchor="middle" font-size="13" fill="#9fb0c6">相手の機械の名前</text>
+  </g>
+  <g class="el" data-part="port">
+    <rect x="336" y="110" width="88" height="56" rx="8" fill="#3ae08a" />
+    <text x="380" y="146" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="22" fill="#0a1424">:8443</text>
+    <text x="380" y="196" text-anchor="middle" font-size="14" font-weight="700" fill="#3ae08a">ポート</text>
+    <text x="380" y="218" text-anchor="middle" font-size="13" fill="#9fb0c6">待っている番号</text>
+  </g>
+  <g class="el" data-part="path">
+    <rect x="430" y="110" width="100" height="56" rx="8" fill="#ff8a7a" />
+    <text x="480" y="146" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="22" fill="#0a1424">/items</text>
+    <text x="480" y="196" text-anchor="middle" font-size="14" font-weight="700" fill="#ff8a7a">パス</text>
+    <text x="480" y="218" text-anchor="middle" font-size="13" fill="#9fb0c6">資源の場所</text>
+  </g>
+  <g class="el" data-part="query">
+    <rect x="536" y="110" width="92" height="56" rx="8" fill="#8cc63f" />
+    <text x="582" y="146" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="22" fill="#0a1424">?id=3</text>
+    <text x="582" y="196" text-anchor="middle" font-size="14" font-weight="700" fill="#8cc63f">クエリ</text>
+    <text x="582" y="218" text-anchor="middle" font-size="13" fill="#9fb0c6">条件</text>
+    <text x="350" y="266" text-anchor="middle" font-size="13" fill="#9fb0c6">ポートを書かなければ既定の番号（https は 443、http は 80）</text>
+  </g>
+</svg>

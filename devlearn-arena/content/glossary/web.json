@@ -92,6 +92,132 @@
         "net.b.02",
         "web.b.02"
       ]
+    },
+    {
+      "id": "url",
+      "word": "URL",
+      "reading": "ゆーあーるえる",
+      "plain": "Web の上の資源（ページ・画像・データ）の住所。スキーム・ホスト・ポート・パス・クエリの部品を、決まった記号でつないだ 1 行。",
+      "why": "どこの機械の、どの資源を、どの決まりで取るかを、1 行で正確に伝えられる。1 字違うだけで別の資源を指す。",
+      "related": [
+        "scheme",
+        "host",
+        "query",
+        "path",
+        "port"
+      ],
+      "lessons": [
+        "web.b.01",
+        "web.b.02"
+      ],
+      "analogy": "手紙の宛名に似ている。国・町・番地・部屋の順に絞り込むのと同じく、URL も部品で行き先を絞り込む。"
+    },
+    {
+      "id": "scheme",
+      "word": "スキーム",
+      "reading": "すきーむ",
+      "plain": "URL の先頭（https や http）。どの決まりで話すかを表し、:// で区切る。",
+      "why": "同じホストでも、スキームが違えば話し方と既定のポートが変わる（http は 80、https は 443）。",
+      "related": [
+        "url",
+        "http",
+        "https"
+      ],
+      "lessons": [
+        "web.b.01"
+      ]
+    },
+    {
+      "id": "host",
+      "word": "ホスト",
+      "reading": "ほすと",
+      "plain": "URL の中の、相手の機械の名前（shop.example など）。DNS で IP アドレスに変えてから接続する。",
+      "why": "綴りが 1 字違うだけで名前が引けず、どこにも届かない。",
+      "related": [
+        "url",
+        "dns",
+        "ip-address"
+      ],
+      "lessons": [
+        "web.b.01"
+      ]
+    },
+    {
+      "id": "query",
+      "word": "クエリ",
+      "reading": "くえり",
+      "plain": "URL の ? の後ろに書く、「項目=値」の条件。複数あれば & でつなぐ。",
+      "why": "同じ資源（パス）から、条件に合う物だけを取り出せる。",
+      "related": [
+        "url",
+        "path"
+      ],
+      "lessons": [
+        "web.b.01",
+        "web.i.01"
+      ]
+    },
+    {
+      "id": "request",
+      "word": "リクエスト",
+      "reading": "りくえすと",
+      "plain": "HTTP で、ブラウザやプログラムがサーバへ送る依頼。1 行目に「何をするか・どのパスか・版」を書き、見出しと本文が続く。",
+      "why": "依頼の書き方が分かると、サーバに何を頼んだのかを正確に確かめられる。",
+      "related": [
+        "response",
+        "http",
+        "http-method"
+      ],
+      "lessons": [
+        "web.b.02"
+      ]
+    },
+    {
+      "id": "response",
+      "word": "レスポンス",
+      "reading": "れすぽんす",
+      "plain": "HTTP で、サーバが依頼に対して返す返事。1 行目にステータスコード、続いて見出しと本文。",
+      "why": "返事の数字と見出しを読めば、うまくいったか・何が返ったかが分かる。",
+      "related": [
+        "request",
+        "status-code",
+        "header"
+      ],
+      "lessons": [
+        "web.b.02",
+        "web.b.04"
+      ]
+    },
+    {
+      "id": "header",
+      "word": "ヘッダ",
+      "reading": "へっだ",
+      "plain": "HTTP の依頼と返事に付く「名前: 値」の見出し。本文の種類・保存の決まり・転送先などを伝える。",
+      "why": "本文だけでは分からない情報（これは画像か・保存してよいか・どこへ移ったか）を伝える。",
+      "related": [
+        "request",
+        "response",
+        "http"
+      ],
+      "lessons": [
+        "web.b.02",
+        "web.b.05"
+      ]
+    },
+    {
+      "id": "http-method",
+      "word": "メソッド",
+      "reading": "めそっど",
+      "plain": "HTTP の依頼の種類。取る（GET）・作る（POST）・置き換える（PUT）・消す（DELETE）など。",
+      "why": "同じ URL でも、メソッドで「何をしたいか」が変わる。取るつもりで消す事故を防ぐ。",
+      "related": [
+        "request",
+        "http"
+      ],
+      "lessons": [
+        "web.b.03",
+        "web.i.01"
+      ]
     }
   ]
 }
