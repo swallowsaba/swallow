@@ -113,7 +113,8 @@ export function formatStatus(git: GitState, shell: ShellState): string {
     lines.push('', 'Changes to be committed:', '  (use "git restore --staged <file>..." to unstage)');
     for (const entry of report.staged) {
       const label = entry.state === 'added' ? 'new file' : entry.state;
-      lines.push(`\t${label}:   ${entry.path}`);
+      // 本物と同じく、名前の欄を 12 字にそろえる（deleted: の後は空白 4 つ）
+      lines.push(`\t${`${label}:`.padEnd(12)}${entry.path}`);
     }
   }
   if (conflicted.length > 0) {
@@ -122,7 +123,7 @@ export function formatStatus(git: GitState, shell: ShellState): string {
   }
   if (unstaged.length > 0) {
     lines.push('', 'Changes not staged for commit:', '  (use "git add <file>..." to update what will be committed)');
-    for (const entry of unstaged) lines.push(`\t${entry.state}:   ${entry.path}`);
+    for (const entry of unstaged) lines.push(`\t${`${entry.state}:`.padEnd(12)}${entry.path}`);
   }
   if (report.untracked.length > 0) {
     lines.push('', 'Untracked files:', '  (use "git add <file>..." to include in what will be committed)');

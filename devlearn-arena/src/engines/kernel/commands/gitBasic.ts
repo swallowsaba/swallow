@@ -1,12 +1,13 @@
 import {
-  addPaths, branches, commit, createBranch, currentBranch, headCommit, log, stageTracked, status as statusOf, switchBranch,
+  addPaths, branches, commit, createBranch, currentBranch, headCommit, log, stageTracked, status as statusOf, switchBranch, walkWorktree,
 } from '@/engines/git/repository';
+import { ignoreRules, ignoredBy } from '@/engines/git/ignore';
 import { changedInIndex, changedInWorktree, diffCommits, diffStaged, diffWorktree, unstage } from '@/engines/git/diff';
 import { decode, parseCommit } from '@/engines/git/objects';
 import { peel, resolveObject, resolveRef } from '@/engines/git/refs';
 import { checkoutWorktree } from '@/engines/git/worktree';
 import { resolve } from '../path';
-import { writeFile } from '../vfs';
+import { exists, remove, writeFile } from '../vfs';
 import { fromLines, parseArgs } from './args';
 import { HOOKS_DIR, gitPath } from '@/engines/git/gitdir';
 import { runHook } from './gitRefs';
@@ -45,18 +46,65 @@ export const basicSubcommands: Record<string, GitHandler> = {
     return { stdout: formatStatus(git, shell) };
   },
   add: ({ git, shell, rest }) => {
-    const { operands } = parseArgs(['add', ...rest]);
+    const { operands, flags } = parseArgs(['add', ...rest]);
     if (operands.length === 0) {
       return { stderr: 'Nothing specified, nothing added.\n', code: 1 };
     }
-    const result = addPaths(git, shell.vfs, operands);
+    const result = addPaths(git, shell.vfs, operands, { force: flags.has('f') || flags.has('force') });
     if (result.missing.length > 0) {
       return {
         stderr: `fatal: pathspec '${result.missing[0] ?? ''}' did not match any files\n`,
         code: 128,
       };
     }
+    if (result.ignored.length > 0) {
+      // 本物と同じく、ほかの名前は選んだ上で断る
+      return {
+        stderr: `The following paths are ignored by one of your .gitignore files:\n${result.ignored.join('\n')}\nhint: Use -f if you really want to add them.\n`,
+        code: 1,
+        patch: { git: result.git },
+      };
+    }
     return { patch: { git: result.git } };
+  },
+  /** git rm [--cached] [-r] <パス>。選んだ物から外す（--cached でなければファイルも消す） */
+  rm: ({ git, shell, rest }) => {
+    const { operands, flags } = parseArgs(['rm', ...rest]);
+    if (operands.length === 0) return { stderr: 'usage: git rm [--cached] [-r] <pathspec>...\n', code: 129 };
+    const cached = flags.has('cached');
+    const recursive = flags.has('r');
+    const index = new Map(git.index);
+    let vfs = shell.vfs;
+    const removed: string[] = [];
+    for (const raw of operands) {
+      const target = raw.replace(/^\.\//, '').replace(/\/+$/, '');
+      const exact = index.has(target);
+      const under = [...index.keys()].filter((p) => p.startsWith(`${target}/`));
+      if (!exact && under.length === 0) return { stderr: `fatal: pathspec '${raw}' did not match any files\n`, code: 128 };
+      if (!exact && !recursive) return { stderr: `fatal: not removing '${target}' recursively without -r\n`, code: 128 };
+      for (const path of exact ? [target] : under) {
+        index.delete(path);
+        removed.push(path);
+        const full = resolve(git.root, path);
+        if (!cached && exists(vfs, full)) vfs = remove(vfs, full);
+      }
+    }
+    return { stdout: removed.map((p) => `rm '${p}'\n`).join(''), patch: { git: { ...git, index }, vfs } };
+  },
+  /** git check-ignore [-v] <パス>。.gitignore で無視される名前を出す（追跡している物は出さない） */
+  'check-ignore': ({ git, shell, rest }) => {
+    const { operands, flags } = parseArgs(['check-ignore', ...rest]);
+    if (operands.length === 0) return { stderr: 'fatal: no path specified\n', code: 128 };
+    const rules = ignoreRules(walkWorktree(shell.vfs, git.root));
+    const out: string[] = [];
+    for (const raw of operands) {
+      const path = raw.replace(/^\.\//, '').replace(/\/+$/, '');
+      if (git.index.has(path)) continue;
+      const rule = ignoredBy(rules, path);
+      if (rule === null) continue;
+      out.push(flags.has('v') ? `${rule.source}:${String(rule.line)}:${rule.text}\t${raw}` : raw);
+    }
+    return { stdout: fromLines(out), code: out.length > 0 ? 0 : 1 };
   },
   commit: ({ git, shell, rest, nowSeconds, runLine }) => {
     const { values, flags } = parseArgs(['commit', ...rest], { withValue: ['m'] });

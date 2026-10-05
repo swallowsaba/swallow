@@ -1,5 +1,6 @@
 import { exists, readFile, type VfsState } from '@/engines/kernel/vfs';
 import { isAncestor } from './history';
+import { peel } from './refs';
 import { parseCommit } from './objects';
 import { currentBranch, materialize, status } from './repository';
 import type { GitState } from './types';
@@ -19,6 +20,7 @@ import type { GitState } from './types';
  *   pushed:<枝>                  手元のその枝の先の記録が、origin のサーバ（setup の gitServers）の同じ枝に届いている
  *   branch・merged-into の枝は、origin/main のようなリモートの枝の控えでもよい
  *   linear                       今の枝の履歴に、合流の記録（親が 2 つ）が無い（一直線）
+ *   tag:<名前>                   そのタグが、今の枝の先の記録を指している（注釈付きのタグは剥がして比べる）
  */
 
 const MARKERS = /^(<{7}|={7}|>{7})( |$)/m;
@@ -92,6 +94,11 @@ export function gitHolds(git: GitState | null, vfs: VfsState, expr: string, serv
     }
     if (key === 'on') return currentBranch(git) === value;
     if (key === 'pushed') return pushed(git, value, servers);
+    if (key === 'tag') {
+      const tagged = git.refs.get(`refs/tags/${value}`);
+      const head = git.refs.get(`refs/heads/${currentBranch(git) ?? ''}`);
+      return tagged !== undefined && head !== undefined && peel(git, tagged) === head;
+    }
     if (term === 'linear') {
       const head = git.refs.get(`refs/heads/${currentBranch(git) ?? ''}`);
       return head !== undefined && linear(git, head);

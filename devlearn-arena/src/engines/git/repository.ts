@@ -3,6 +3,7 @@ import {
   decode, encode, hashObject, ObjectStore, parseCommit, parseTree, serializeCommit, serializeTree,
   type Signature, type TreeEntry,
 } from './objects';
+import { ignoreRules, ignoredBy } from './ignore';
 import type { GitState, IndexEntry, StatusEntry, StatusReport } from './types';
 
 /**
@@ -106,17 +107,26 @@ export function addPaths(
   git: GitState,
   vfs: VfsState,
   paths: readonly string[],
-): { git: GitState; added: string[]; missing: string[] } {
+  options: { force?: boolean } = {},
+): { git: GitState; added: string[]; missing: string[]; ignored: string[] } {
   const worktree = walkWorktree(vfs, git.root);
   const index = new Map(git.index);
   const added: string[] = [];
   const missing: string[] = [];
+  const ignored: string[] = [];
+  const rules = options.force === true ? [] : ignoreRules(worktree);
 
   for (const raw of paths) {
-    const target = raw === '.' ? '' : raw.replace(/^\.\//, '');
-    const matched = [...worktree.keys()].filter(
+    const target = raw === '.' ? '' : raw.replace(/^\.\//, '').replace(/\/+$/, '');
+    const all = [...worktree.keys()].filter(
       (p) => target === '' || p === target || p.startsWith(`${target}/`),
     );
+    // .gitignore に当たる、まだ追跡していない物は選ばない。名前で指したのに全て当たれば、本物と同じく断る
+    const matched = all.filter((p) => git.index.has(p) || ignoredBy(rules, p) === null);
+    if (all.length > 0 && matched.length === 0) {
+      ignored.push(raw);
+      continue;
+    }
     if (matched.length === 0) {
       missing.push(raw);
       continue;
@@ -128,7 +138,7 @@ export function addPaths(
       added.push(path);
     }
   }
-  return { git: { ...git, index }, added, missing };
+  return { git: { ...git, index }, added, missing, ignored };
 }
 
 /** 記録の木と同じ中身に、選んだ物（インデックス）を揃える（早送り・取り込みの後。追跡していないファイルは入れない） */
@@ -257,11 +267,13 @@ export function status(git: GitState, vfs: VfsState): StatusReport {
     if (!git.index.has(path)) staged.push({ path, state: 'deleted' });
   }
 
+  // .gitignore に当たる物は、追跡していなければ出さない（追跡している物には効かない）
+  const rules = ignoreRules(worktree);
   for (const [path, content] of worktree) {
     const entry = git.index.get(path);
+    // 選んだ物に無いファイルは、記録にあっても追跡していない物（git rm --cached の後。記録からの削除は staged に出る）
     if (!entry) {
-      if (!committed.has(path)) untracked.push(path);
-      else unstaged.push({ path, state: 'modified' });
+      if (ignoredBy(rules, path) === null) untracked.push(path);
       continue;
     }
     if (hashObject('blob', encode(content)) !== entry.hash) {
