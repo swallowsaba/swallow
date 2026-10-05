@@ -28,11 +28,12 @@ function machine(extra: Record<string, unknown> = {}, server: Record<string, unk
   });
   const registry = createDefaultRegistry();
   const clock = createClock();
-  const run = (line: string): { out: string; err: string; code: number } => {
+  const run = (line: string): { out: string; err: string; all: string; code: number } => {
     const o = execute(shell, line, registry, clock);
     shell = o.state;
     const pick = (s: 'stdout' | 'stderr') => o.chunks.filter((c) => c.stream === s).map((c) => c.text).join('');
-    return { out: pick('stdout'), err: pick('stderr'), code: o.exitCode };
+    // all は、画面に出る順のまま
+    return { out: pick('stdout'), err: pick('stderr'), all: o.chunks.map((c) => c.text).join(''), code: o.exitCode };
   };
   return { run, shell: () => shell };
 }
@@ -135,6 +136,19 @@ describe('サーバのリポジトリと git clone', () => {
     const bad = m.run('git log nothing');
     expect(bad.code).toBe(128);
     expect(bad.err).toContain("fatal: ambiguous argument 'nothing': unknown revision or path not in the working tree.");
+  });
+
+  it('pull が衝突すると、本物と同じ順（Auto-merging・CONFLICT・Automatic merge failed）で言い、取ってきた origin/main は残る', () => {
+    const m = machine({ run: [`git clone ${URL}`, 'cd reserve', "echo '# 予約（月曜は休み）' > README.md", 'git commit -am "月曜を休みにする"', 'cd /home/learner'] }, {
+      after: ["echo '# 予約（9 時から）' > README.md", 'git commit -am "9 時から"', 'git push'],
+    });
+    m.run('cd reserve');
+    const r = m.run('git pull');
+    expect(r.code).toBe(1);
+    expect(r.all.indexOf('Auto-merging README.md')).toBeLessThan(r.all.indexOf('CONFLICT (content): Merge conflict in README.md'));
+    expect(r.all.indexOf('CONFLICT (content)')).toBeLessThan(r.all.indexOf('Automatic merge failed'));
+    expect(r.err).toContain('Automatic merge failed; fix conflicts and then commit the result.');
+    expect(m.run('git log --oneline origin/main -1').out).toContain('9 時から');
   });
 
   it('保存して戻しても、サーバのリポジトリは残る', () => {

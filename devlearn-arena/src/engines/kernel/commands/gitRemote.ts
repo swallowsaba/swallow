@@ -84,7 +84,9 @@ export const remoteSubcommands: Record<string, GitHandler> = {
     if (target === undefined || headCommit(next) === target) return { stdout: `${report}Already up to date.\n`, patch: { git: next } };
     const merged = mergeWith(next, shell, `${remoteName}/${branch}`, nowSeconds, `Merge branch '${branch}' of ${fetched.url.replace(/\.git$/, '')}`);
     // 取り込みが衝突で止まっても、取ってきた履歴（origin/main）は残す
-    return { ...merged, stdout: `${report}${merged.stdout ?? ''}`, patch: { git: next, ...merged.patch } };
+    // 衝突で止まった時は、取ってきた知らせも止まった知らせと同じ流れ（標準エラー）に出し、順を保つ
+    const said = merged.code ? { stderr: `${report}${merged.stderr ?? ''}` } : { stdout: `${report}${merged.stdout ?? ''}` };
+    return { ...merged, ...said, patch: { git: next, ...merged.patch } };
   },
 };
 

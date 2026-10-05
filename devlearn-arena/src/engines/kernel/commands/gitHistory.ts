@@ -148,8 +148,8 @@ export function mergeWith(git: GitState, shell: ShellState, name: string, nowSec
 
   if (conflicts.length > 0) {
     return {
-      stdout: `${conflicts.map((p) => `Auto-merging ${p}\nCONFLICT (content): Merge conflict in ${p}`).join('\n')}\n`,
-      stderr: 'Automatic merge failed; fix conflicts and then commit the result.\n',
+      // 本物と同じ順に出す（衝突の行の後に、止まったことを言う）
+      stderr: `${conflicts.map((p) => `Auto-merging ${p}\nCONFLICT (content): Merge conflict in ${p}`).join('\n')}\nAutomatic merge failed; fix conflicts and then commit the result.\n`,
       code: 1,
       // MERGE_HEAD を覚えておき、解決後の commit をマージコミットにする
       patch: { vfs, git: { ...git, mergeHead: plan.theirs } },
