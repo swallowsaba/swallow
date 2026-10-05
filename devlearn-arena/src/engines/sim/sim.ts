@@ -95,6 +95,13 @@ export function createSim(environment: string, setup: unknown): SimState {
       checkPanels(state);
       const settle = s.settle === undefined ? [] : exprProblems(state, s.settle);
       if (settle.length > 0) throw new Error(`出来上がりの式（settle）: ${settle.join('・')}`);
+      for (const f of s.fields ?? []) {
+        for (const r of f.requires ?? []) {
+          if (f.options && !f.options.some((o) => same(o, r.value))) throw new Error(`欄 ${f.id} の条件（requires）: ${r.value} が選べる値に無い`);
+          const problems = exprProblems(state, r.expr);
+          if (problems.length > 0) throw new Error(`欄 ${f.id} の条件（requires）: ${problems.join('・')}`);
+        }
+      }
       return state;
     }
     case 'read': {
@@ -303,6 +310,8 @@ function configOp(s: ConfigState, verb: string, args: string[], line: string): S
     if (value === '') return fail(s, `書き方: set ${fieldId} 値`);
     const option = field.options?.find((o) => same(o, value));
     if (field.options && !option) return fail(s, `「${fieldId}」に「${value}」は選べない（選べる値: ${field.options.join('・')}）`);
+    const blocked = field.requires?.find((r) => same(r.value, value) && !holds(s, r.expr));
+    if (blocked) return fail(s, blocked.message);
     return ok({ ...s, fields: { ...s.fields, [fieldId]: option ?? value } });
   }
   const [tableId = '', ...rest] = args;

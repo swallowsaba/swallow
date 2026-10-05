@@ -121,6 +121,8 @@ export const configSetupSchema = z.object({
     options: z.array(z.string().min(1)).optional(),
     value: z.string().optional(),
     note: z.string().optional(),
+    /** その値を選ぶ前に満たす条件（判定の式）。満たさなければ message の文で断る（検査が通るまで取り込めない、など） */
+    requires: z.array(z.object({ value: z.string().min(1), expr: z.string().min(1), message: z.string().min(1) }).strict()).optional(),
   }).strict()).optional(),
   tables: z.array(z.object({
     id,

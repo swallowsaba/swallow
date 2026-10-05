@@ -335,3 +335,33 @@ describe('設定する: 出来上がりの式（settle）', () => {
     expect(() => sim('sim-config', { fields: [{ id: 'a', label: 'A' }], settle: 'rows nope>=1' })).toThrow(/settle/);
   });
 });
+
+describe('設定する: 値を選ぶ前に満たす条件（requires）', () => {
+  const setup = {
+    fields: [
+      { id: '修正', label: '指摘への対応', options: ['まだ', '直した'], value: 'まだ' },
+      {
+        id: '取り込み', label: '取り込み', options: ['まだ', '取り込む'], value: 'まだ',
+        requires: [{ value: '取り込む', expr: 'field 修正=直した', message: '取り込めない: 必須の検査が失敗している' }],
+      },
+    ],
+  };
+
+  it('条件を満たさない値は、その文で断り、状態を変えない。満たせば選べる', () => {
+    const s = sim('sim-config', setup);
+    const refused = applyStatement(s, 'set 取り込み 取り込む');
+    expect(refused.error).toBe('取り込めない: 必須の検査が失敗している');
+    expect(holds(refused.state, 'field 取り込み=まだ')).toBe(true);
+    // 条件の無い値は、いつでも選べる
+    expect(applyStatement(s, 'set 取り込み まだ').error).toBeNull();
+    const fixed = run(s, ['set 修正 直した', 'set 取り込み 取り込む']);
+    expect(fixed.errors).toEqual([]);
+    expect(holds(fixed.state, 'field 取り込み=取り込む')).toBe(true);
+  });
+
+  it('条件の式の誤り・選べない値を指す条件は内容の誤り', () => {
+    const bad = (requires: unknown) => () => sim('sim-config', { fields: [{ id: 'a', label: 'A', options: ['x', 'y'], requires }] });
+    expect(bad([{ value: 'y', expr: 'field nope=1', message: 'no' }])).toThrow(/requires/);
+    expect(bad([{ value: 'z', expr: 'field a=x', message: 'no' }])).toThrow(/requires/);
+  });
+});
