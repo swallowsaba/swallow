@@ -2,7 +2,8 @@ import { exists, readFile, type VfsState } from '@/engines/kernel/vfs';
 import { isAncestor } from './history';
 import { peel } from './refs';
 import { parseCommit } from './objects';
-import { currentBranch, materialize, status } from './repository';
+import { ignoreRules, ignoredBy } from './ignore';
+import { currentBranch, materialize, status, walkWorktree } from './repository';
 import type { GitState } from './types';
 
 /**
@@ -21,6 +22,7 @@ import type { GitState } from './types';
  *   branch・merged-into の枝は、origin/main のようなリモートの枝の控えでもよい
  *   linear                       今の枝の履歴に、合流の記録（親が 2 つ）が無い（一直線）
  *   tag:<名前>                   そのタグが、今の枝の先の記録を指している（注釈付きのタグは剥がして比べる）
+ *   ignored:<パス>               そのパスが .gitignore の決まりに当たる（追跡しているかは問わない）
  */
 
 const MARKERS = /^(<{7}|={7}|>{7})( |$)/m;
@@ -94,6 +96,7 @@ export function gitHolds(git: GitState | null, vfs: VfsState, expr: string, serv
     }
     if (key === 'on') return currentBranch(git) === value;
     if (key === 'pushed') return pushed(git, value, servers);
+    if (key === 'ignored') return ignoredBy(ignoreRules(walkWorktree(vfs, git.root)), value) !== null;
     if (key === 'tag') {
       const tagged = git.refs.get(`refs/tags/${value}`);
       const head = git.refs.get(`refs/heads/${currentBranch(git) ?? ''}`);

@@ -22,9 +22,10 @@ export const refSubcommands: Record<string, GitHandler> = {
     if (flags.has('d') || flags.has('delete')) {
       const name = operands[0];
       if (name === undefined) return { stderr: 'fatal: タグ名を指定してください\n', code: 129 };
+      const was = git.refs.get(`${TAG_PREFIX}${name}`) ?? '';
       const result = deleteTag(git, name);
       if (result.error !== undefined) return { stderr: `${result.error}\n`, code: 1 };
-      return { stdout: `Deleted tag '${name}'\n`, patch: { git: result.git } };
+      return { stdout: `Deleted tag '${name}' (was ${short(was)})\n`, patch: { git: result.git } };
     }
 
     const name = operands[0];
@@ -229,12 +230,12 @@ export const refSubcommands: Record<string, GitHandler> = {
   },
 
   'rev-parse': ({ git, rest }) => {
-    const { operands } = parseArgs(['rev-parse', ...rest]);
+    const { flags, operands } = parseArgs(['rev-parse', ...rest]);
     const out: string[] = [];
     for (const ref of operands) {
       const hash = resolveRef(git, ref);
       if (hash === undefined) return { stderr: `fatal: ambiguous argument '${ref}'\n`, code: 128 };
-      out.push(hash);
+      out.push(flags.has('short') ? short(hash) : hash);
     }
     return { stdout: fromLines(out) };
   },

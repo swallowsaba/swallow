@@ -100,6 +100,16 @@ describe('.gitignore', () => {
   });
 });
 
+describe('無視の判定', () => {
+  it('ignored:<パス> は、そのパスが .gitignore の決まりに当たる時に満たす（追跡しているかは問わない）', () => {
+    const m = machine();
+    expect(m.holds('ignored:.env')).toBe(false);
+    m.run("echo '.env' > .gitignore");
+    m.run("echo 'dist/' >> .gitignore");
+    expect(m.holds('ignored:.env ignored:dist/app.min.js !ignored:src/app.js')).toBe(true);
+  });
+});
+
 describe('タグの判定', () => {
   it('tag:<名前> は、そのタグが今の枝の先の記録を指す時だけ満たす', () => {
     const m = machine();
@@ -112,5 +122,24 @@ describe('タグの判定', () => {
     expect(m.holds('tag:v1.0')).toBe(false);
     m.run('git tag -a v1.1 -m "1.1"');
     expect(m.holds('tag:v1.1')).toBe(true);
+  });
+});
+
+describe('タグを消す', () => {
+  it('git tag -d は、本物と同じく消したタグが指していた記録の番号を言う', () => {
+    const m = machine();
+    m.run('git tag v1.0');
+    const head = m.run('git rev-parse --short HEAD').out.trim();
+    expect(m.run('git tag -d v1.0').out).toBe(`Deleted tag 'v1.0' (was ${head})\n`);
+    expect(m.run('git tag -d v1.0').err).toBe("error: tag 'v1.0' not found.\n");
+  });
+});
+
+describe('記録の番号を引く', () => {
+  it('git rev-parse --short は、本物と同じく番号の頭 7 字を出す', () => {
+    const m = machine();
+    const full = m.run('git rev-parse HEAD').out.trim();
+    expect(full).toHaveLength(40);
+    expect(m.run('git rev-parse --short HEAD').out).toBe(`${full.slice(0, 7)}\n`);
   });
 });
