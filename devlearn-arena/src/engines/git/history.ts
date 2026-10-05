@@ -4,6 +4,7 @@ import {
   FILE_MODE, commit, currentBranch, headCommit, materialize, treeFiles, walkWorktree,
   writeTreeFromIndex,
 } from './repository';
+import { resolveRef } from './refs';
 import type { GitState, IndexEntry } from './types';
 
 /**
@@ -59,7 +60,8 @@ export interface MergePlan {
 
 export function planMerge(git: GitState, theirsRef: string): MergePlan | { error: string } {
   const ours = headCommit(git);
-  const theirs = git.refs.get(`refs/heads/${theirsRef}`) ?? git.objects.resolve(theirsRef);
+  // 枝・origin/main のようなリモート追跡・ハッシュのどれでも取り込める
+  const theirs = resolveRef(git, theirsRef);
   if (theirs === undefined || theirs === null) {
     return { error: `merge: ${theirsRef} - not something we can merge` };
   }

@@ -100,7 +100,8 @@ export function push(
   const remoteHash = remote.state.refs.get(remoteRef);
   const known = git.refs.get(`refs/remotes/${remote.name}/${branch}`);
 
-  if (remoteHash !== undefined && !isAncestor(remote.state, remoteHash, local)) {
+  // 手元の履歴に、サーバの先の記録が含まれているか（含まれていなければ、ほかの人の記録を先に取り込む必要がある）
+  if (remoteHash !== undefined && !(git.objects.has(remoteHash) && isAncestor(git, remoteHash, local))) {
     if (options.forceWithLease === true && known !== remoteHash) {
       return {
         remote,
@@ -116,10 +117,16 @@ export function push(
         remote,
         git,
         ok: false,
-        message:
-          `! [rejected]        ${branch} -> ${branch} (fetch first)\n` +
-          'hint: Updates were rejected because the remote contains work that you do not have locally.\n' +
-          'hint: You may want to first integrate the remote changes (e.g. git pull) before pushing again.\n',
+        // 本物と同じく、サーバの先の記録を手元が持っていなければ fetch first、持っていて分かれていれば non-fast-forward
+        message: git.objects.has(remoteHash)
+          ? `To ${remote.url}\n ! [rejected]        ${branch} -> ${branch} (non-fast-forward)\n` +
+            `error: failed to push some refs to '${remote.url}'\n` +
+            'hint: Updates were rejected because the tip of your current branch is behind its remote counterpart.\n' +
+            "hint: If you want to integrate the remote changes, use 'git pull' before pushing again.\n"
+          : `To ${remote.url}\n ! [rejected]        ${branch} -> ${branch} (fetch first)\n` +
+            `error: failed to push some refs to '${remote.url}'\n` +
+            'hint: Updates were rejected because the remote contains work that you do not have locally.\n' +
+            'hint: You may want to first integrate the remote changes (e.g. git pull) before pushing again.\n',
       };
     }
   }
@@ -135,7 +142,12 @@ export function push(
     remote: { ...remote, state: { ...remote.state, refs } },
     git: { ...git, refs: localRefs },
     ok: true,
-    message: `To ${remote.url}\n   ${branch} -> ${branch}\n`,
+    // 本物と同じく、新しい枝は [new branch]、進めた時は前と後の番号を出す
+    message: remoteHash === undefined
+      ? `To ${remote.url}\n * [new branch]      ${branch} -> ${branch}\n`
+      : remoteHash === local
+        ? 'Everything up-to-date\n'
+        : `To ${remote.url}\n   ${remoteHash.slice(0, 7)}..${local.slice(0, 7)}  ${branch} -> ${branch}\n`,
   };
 }
 

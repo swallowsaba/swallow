@@ -16,6 +16,8 @@ export interface ShellState {
   procs: ProcessTable;
   /** git リポジトリ。まだ init していなければ null */
   git: GitState | null;
+  /** 手元の外のサーバにあるリポジトリ（git clone・push・fetch の相手。URL → リポジトリ）。無ければ undefined */
+  gitServers?: ReadonlyMap<string, GitServer>;
   /** Kubernetes クラスタ。用意されていなければ null */
   cluster: ClusterState | null;
   /** ネットワークの構成。用意されていなければ null */
@@ -32,6 +34,15 @@ export interface ShellState {
   vars: ReadonlyMap<string, string>;
   lastExit: number;
   history: readonly string[];
+}
+
+/** サーバにあるリポジトリ。https の URL で読め、SSH の URL は登録した公開鍵の持ち主だけが使える */
+export interface GitServer {
+  url: string;
+  ssh?: string;
+  /** 登録された公開鍵（~/.ssh/id_*.pub の中身の 1 行） */
+  keys: readonly string[];
+  state: GitState;
 }
 
 export interface WebWorld {

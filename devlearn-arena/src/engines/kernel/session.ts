@@ -14,7 +14,7 @@ import { createProcessTable, type ProcSeed, type Process, type ProcessTable } fr
 import { createVfs, type VfsNode, type VfsState } from './vfs';
 import type { Service, ServiceTable } from './services';
 import type { ContainerHost } from '@/engines/container/container';
-import type { WebWorld } from './registry';
+import type { GitServer, WebWorld } from './registry';
 
 export interface SessionOptions {
   /** 保存から復元する場合の初期状態 */
@@ -31,6 +31,8 @@ export interface SessionOptions {
   containers?: ContainerHost;
   /** Web のサイトと信頼するルート（HTTP・TLS の実戦） */
   web?: WebWorld;
+  /** サーバにあるリポジトリ（Git のリモートの実戦） */
+  gitServers?: ReadonlyMap<string, GitServer>;
   files?: Readonly<Record<string, string | null>>;
   cwd?: string;
   vars?: Readonly<Record<string, string>>;
@@ -87,6 +89,7 @@ export function createShellState(options: SessionOptions = {}): ShellState {
     services: options.services ?? null,
     containers: options.containers ?? null,
     web: options.web ?? null,
+    ...(options.gitServers ? { gitServers: options.gitServers } : {}),
     cwd,
     vars,
     lastExit: 0,
@@ -108,6 +111,8 @@ export interface ShellSnapshotData {
   services?: { services: Service[]; tick: number } | null;
   containers?: ContainerHost | null;
   web?: WebWorld | null;
+  /** 古い保存には無い */
+  gitServers?: { url: string; ssh?: string; keys: string[]; state: GitSnapshot }[];
 }
 
 /** 保存できる素のデータに落とす */
@@ -138,6 +143,7 @@ export function snapshotShell(state: ShellState): ShellSnapshotData {
     services: state.services === null ? null : { services: [...state.services.services.values()], tick: state.services.tick },
     containers: state.containers,
     web: state.web,
+    ...(state.gitServers ? { gitServers: [...state.gitServers.values()].map((g) => ({ url: g.url, ...(g.ssh !== undefined ? { ssh: g.ssh } : {}), keys: [...g.keys], state: snapshotGit(g.state) })) } : {}),
   };
 }
 
@@ -169,6 +175,7 @@ export function restoreShell(snapshot: ShellSnapshotData): ShellState {
     services: snapshot.services ? { services: new Map(snapshot.services.services.map((s) => [s.name, s])), tick: snapshot.services.tick } : null,
     containers: snapshot.containers ?? null,
     web: snapshot.web ?? null,
+    ...(snapshot.gitServers ? { gitServers: new Map(snapshot.gitServers.map((g) => [g.url, { ...g, state: restoreGit(g.state) }])) } : {}),
     cwd: snapshot.cwd,
     vars: new Map(Object.entries(snapshot.vars)),
     lastExit: 0,

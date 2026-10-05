@@ -8,7 +8,7 @@ import { historySubcommands } from './gitHistory';
 import { plumbingSubcommands } from './gitPlumbing';
 import { rebaseSubcommands } from './gitRebase';
 import { refSubcommands } from './gitRefs';
-import { remoteSubcommands } from './gitRemote';
+import { cloneRepository, remoteSubcommands } from './gitRemote';
 import { NOT_A_REPO, parseLocalTime, type GitHandler } from './gitShared';
 import { START_TIME } from '../cron';
 
@@ -26,7 +26,7 @@ const subcommands: Record<string, GitHandler> = {
   ...remoteSubcommands,
 };
 
-const SUBCOMMAND_NAMES = ['init', ...Object.keys(subcommands)].sort();
+const SUBCOMMAND_NAMES = ['init', 'clone', ...Object.keys(subcommands)].sort();
 
 function runSubcommand(
   sub: string,
@@ -37,8 +37,11 @@ function runSubcommand(
 ): CommandResult {
   const rest = argv.slice(2);
 
+  // 今いる場所がリポジトリの中か（本物と同じく、外では git は使えない。手元に置けるリポジトリは 1 つ）
+  const inside = shell.git !== null && (shell.cwd === shell.git.root || shell.cwd.startsWith(`${shell.git.root}/`));
+
   if (sub === 'init') {
-    if (shell.git !== null) {
+    if (shell.git !== null && inside) {
       return { stdout: `Reinitialized existing Git repository in ${shell.git.root}/.git/\n` };
     }
     const git = initRepository(shell.cwd, { ...defaultAuthor, timestamp: nowSeconds });
@@ -49,9 +52,10 @@ function runSubcommand(
       patch: { git, vfs },
     };
   }
+  if (sub === 'clone') return cloneRepository(shell, rest, nowSeconds);
 
   const git = shell.git;
-  if (git === null) return { stderr: NOT_A_REPO, code: 128 };
+  if (git === null || !inside) return { stderr: NOT_A_REPO, code: 128 };
 
   const handler = subcommands[sub];
   if (handler === undefined) {

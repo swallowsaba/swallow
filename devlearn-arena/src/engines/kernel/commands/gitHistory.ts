@@ -11,6 +11,8 @@ import { resolve } from '../path';
 import { exists, remove, writeFile } from '../vfs';
 import { fromLines, parseArgs } from './args';
 import { short, type GitHandler } from './gitShared';
+import type { GitState } from '@/engines/git/types';
+import type { CommandResult, ShellState } from '../registry';
 
 /** 履歴を作り直す側の操作 */
 export const historySubcommands: Record<string, GitHandler> = {
@@ -38,47 +40,7 @@ export const historySubcommands: Record<string, GitHandler> = {
     const { operands } = parseArgs(['merge', ...rest]);
     const name = operands[0];
     if (name === undefined) return { stderr: 'fatal: マージ元を指定してください\n', code: 128 };
-    const plan = planMerge(git, name);
-    if ('error' in plan) return { stderr: `${plan.error}\n`, code: 128 };
-
-    if (plan.fastForward !== null) {
-      const moved = fastForwardTo(git, plan.fastForward);
-      const vfs = checkoutWorktree(shell.vfs, moved, headCommit(git), plan.fastForward);
-      // 選んだ物は進めた先の記録と同じにする（追跡していないファイルは選ばない）
-      return { stdout: 'Fast-forward\n', patch: { git: indexOf(moved, plan.fastForward), vfs } };
-    }
-    if (plan.files.size === 0) {
-      return { stdout: 'Already up to date.\n' };
-    }
-
-    let vfs = shell.vfs;
-    const conflicts: string[] = [];
-    for (const [path, versions] of plan.files) {
-      const merged = mergeThreeWay(versions.base, versions.ours, versions.theirs, {
-        ours: 'HEAD',
-        theirs: name,
-      });
-      vfs = writeFile(vfs, resolve(git.root, path), merged.content, true);
-      if (merged.conflicted) conflicts.push(path);
-    }
-
-    if (conflicts.length > 0) {
-      return {
-        stdout: `${conflicts.map((p) => `Auto-merging ${p}\nCONFLICT (content): Merge conflict in ${p}`).join('\n')}\n`,
-        stderr: 'Automatic merge failed; fix conflicts and then commit the result.\n',
-        code: 1,
-        // MERGE_HEAD を覚えておき、解決後の commit をマージコミットにする
-        patch: { vfs, git: { ...git, mergeHead: plan.theirs } },
-      };
-    }
-
-    // 取り込んだファイルだけを選ぶ（追跡していないファイルは記録に入れない）
-    const staged = addPaths(git, vfs, [...plan.files.keys()]);
-    // 本物と同じく、main（master）以外の枝へ取り込んだ時は「into 枝」を付ける
-    const into = currentBranch(git);
-    const message = into === null || into === 'main' || into === 'master' ? `Merge branch '${name}'` : `Merge branch '${name}' into ${into}`;
-    const result = commitMerge(staged.git, plan.theirs, message, nowSeconds);
-    return { stdout: `Merge made by the 'ort' strategy.\n`, patch: { git: result.git, vfs } };
+    return mergeWith(git, shell, name, nowSeconds);
   },
   'cherry-pick': ({ git, shell, rest, nowSeconds }) => {
     const { operands } = parseArgs(['cherry-pick', ...rest]);
@@ -154,3 +116,51 @@ export const historySubcommands: Record<string, GitHandler> = {
     return { stdout: 'Saved working directory\n', patch: { git: cleared.git, vfs } };
   },
 };
+
+/**
+ * 今いる枝に name（枝・origin/main など）を取り込む。早送り・合わせる記録・衝突のどれかになる。
+ * label は合わせる記録の説明（無ければ Merge branch 'name'。git pull は Merge branch 'main' of URL）
+ */
+export function mergeWith(git: GitState, shell: ShellState, name: string, nowSeconds: number, label?: string): CommandResult {
+  const plan = planMerge(git, name);
+  if ('error' in plan) return { stderr: `${plan.error}\n`, code: 128 };
+
+  if (plan.fastForward !== null) {
+    const moved = fastForwardTo(git, plan.fastForward);
+    const vfs = checkoutWorktree(shell.vfs, moved, headCommit(git), plan.fastForward);
+    // 選んだ物は進めた先の記録と同じにする（追跡していないファイルは選ばない）
+    return { stdout: 'Fast-forward\n', patch: { git: indexOf(moved, plan.fastForward), vfs } };
+  }
+  if (plan.files.size === 0) {
+    return { stdout: 'Already up to date.\n' };
+  }
+
+  let vfs = shell.vfs;
+  const conflicts: string[] = [];
+  for (const [path, versions] of plan.files) {
+    const merged = mergeThreeWay(versions.base, versions.ours, versions.theirs, {
+      ours: 'HEAD',
+      theirs: name,
+    });
+    vfs = writeFile(vfs, resolve(git.root, path), merged.content, true);
+    if (merged.conflicted) conflicts.push(path);
+  }
+
+  if (conflicts.length > 0) {
+    return {
+      stdout: `${conflicts.map((p) => `Auto-merging ${p}\nCONFLICT (content): Merge conflict in ${p}`).join('\n')}\n`,
+      stderr: 'Automatic merge failed; fix conflicts and then commit the result.\n',
+      code: 1,
+      // MERGE_HEAD を覚えておき、解決後の commit をマージコミットにする
+      patch: { vfs, git: { ...git, mergeHead: plan.theirs } },
+    };
+  }
+
+  // 取り込んだファイルだけを選ぶ（追跡していないファイルは記録に入れない）
+  const staged = addPaths(git, vfs, [...plan.files.keys()]);
+  // 本物と同じく、main（master）以外の枝へ取り込んだ時は「into 枝」を付ける
+  const into = currentBranch(git);
+  const message = `${label ?? `Merge branch '${name}'`}${into === null || into === 'main' || into === 'master' ? '' : ` into ${into}`}`;
+  const result = commitMerge(staged.git, plan.theirs, message, nowSeconds);
+  return { stdout: `Merge made by the 'ort' strategy.\n`, patch: { git: result.git, vfs } };
+}

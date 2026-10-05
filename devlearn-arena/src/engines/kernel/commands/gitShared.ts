@@ -72,6 +72,8 @@ export function formatStatus(git: GitState, shell: ShellState): string {
       lines.push(`Your branch is ahead of 'origin/${branch}' by ${String(gap.ahead)} commit(s).`);
     } else if (gap.behind > 0) {
       lines.push(`Your branch is behind 'origin/${branch}' by ${String(gap.behind)} commit(s).`);
+    } else {
+      lines.push(`Your branch is up to date with 'origin/${branch}'.`);
     }
   }
 

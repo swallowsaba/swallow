@@ -3,7 +3,7 @@ import { createContainerHost } from './container/container';
 import { emptyCluster, node } from './k8s/factory';
 import { createClock } from './kernel/clock';
 import { createDefaultRegistry } from './kernel/commands';
-import type { ShellState, WebWorld } from './kernel/registry';
+import type { GitServer, ShellState, WebWorld } from './kernel/registry';
 import { createServiceTable } from './kernel/services';
 import { createShellState, type SessionOptions } from './kernel/session';
 import { execute } from './kernel/shell';
@@ -131,6 +131,18 @@ export const setupSchema = z.object({
   network: networkSetupSchema.optional(),
   /** 初期状態を作るために、始める前に打っておくコマンド（リポジトリと履歴を作る、など）。学習者には見せない */
   run: z.array(z.string().min(1)).optional(),
+  /**
+   * 手元の外のサーバにあるリポジトリ（git clone・push・fetch の相手）。run で履歴を作る（サーバの中の /srv/repo で打つ）。
+   * after は、学習者の run の後に、ほかの人が複製して打つ（最後に git push して、サーバの履歴を進める）
+   */
+  gitServers: z.array(z.object({
+    url: z.string().regex(/^https:\/\/\S+\.git$/),
+    ssh: z.string().regex(/^git@[^:\s]+:\S+\.git$/).optional(),
+    /** 登録された公開鍵（~/.ssh/id_*.pub の中身の 1 行） */
+    keys: z.array(z.string()).optional(),
+    run: z.array(z.string().min(1)),
+    after: z.array(z.string().min(1)).optional(),
+  }).strict()).optional(),
   /** 設定の編集（editor）の実戦: 編集するファイルと、「保存して確かめる」で保存の後に打つコマンド（docs/content-spec.md 2.4.2） */
   edit: z.object({ path: z.string().startsWith('/'), apply: z.array(z.string().min(1)) }).strict().optional(),
 }).strict();
@@ -225,11 +237,50 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
   if (s.cluster) options.cluster = emptyCluster(Array.from({ length: s.cluster.nodes }, (_, i) => node(`node-${String(i + 1)}`, 4000, 8192)));
   if (s.network) options.net = buildNetwork(s.network);
   if (s.images) options.containers = createContainerHost(s.images);
+  if (s.gitServers) options.gitServers = buildGitServers(s.gitServers);
   if (s.sites || s.roots) {
     const web: WebWorld = { sites: s.sites ?? [], roots: s.roots ?? [DEMO_ROOT], today: s.today ?? '2026-10-03', hostname: s.hostname ?? 'arena' };
     options.web = web;
   }
   return options;
+}
+
+type GitServerSetup = NonNullable<PracticeSetup['gitServers']>[number];
+
+/** setup の行を順に打つ。失敗すれば内容の誤りとして投げる */
+function runLines(shell: ShellState, lines: readonly string[], where: string): ShellState {
+  const registry = createDefaultRegistry();
+  const clock = createClock();
+  let state = shell;
+  for (const line of lines) {
+    const out = execute(state, line, registry, clock);
+    const err = out.chunks.filter((c) => c.stream === 'stderr').map((c) => c.text).join('').trim();
+    if (out.exitCode !== 0) throw new Error(`${where}「${line}」が失敗した: ${err}`);
+    state = out.state;
+  }
+  return state;
+}
+
+/** サーバのリポジトリを、run の行で作る（サーバの中の /srv/repo で打つ） */
+function buildGitServers(list: readonly GitServerSetup[]): Map<string, GitServer> {
+  const servers = new Map<string, GitServer>();
+  for (const g of list) {
+    const shell = runLines(createShellState({ files: { '/srv/repo': null }, cwd: '/srv/repo' }), ['git init', ...g.run], `gitServers（${g.url}）の run`);
+    if (shell.git === null) throw new Error(`gitServers（${g.url}）にリポジトリができない`);
+    servers.set(g.url, { url: g.url, ...(g.ssh !== undefined ? { ssh: g.ssh } : {}), keys: g.keys ?? [], state: shell.git });
+  }
+  return servers;
+}
+
+/** ほかの人の作業（after）: サーバのリポジトリを複製して打ち、push でサーバの履歴を進める */
+function othersWork(shell: ShellState, list: readonly GitServerSetup[]): ShellState {
+  let servers = shell.gitServers;
+  for (const g of list) {
+    if (!g.after?.length || !servers) continue;
+    const other = runLines(createShellState({ files: { '/srv': null }, cwd: '/srv', gitServers: servers }), [`git clone ${g.url} work`, 'cd work', ...g.after], `gitServers（${g.url}）の after`);
+    servers = other.gitServers;
+  }
+  return servers ? { ...shell, gitServers: servers } : shell;
 }
 
 /**
@@ -241,16 +292,9 @@ export function initialShell(environment: string, setup: unknown): ShellState {
   // 動いている DNS のサーバは、始めにゾーンファイルを読んでいる
   let shell = withZones(createShellState(shellOptions(environment, setup)));
   for (const [path, size] of Object.entries(s.sizes ?? {})) shell = { ...shell, vfs: setSize(shell.vfs, path, parseSize(size)) };
-  if (!s.run?.length) return shell;
-  const registry = createDefaultRegistry();
-  const clock = createClock();
+  if (!s.run?.length) return othersWork(shell, s.gitServers ?? []);
   const cwd = shell.cwd;
-  for (const line of s.run) {
-    const out = execute(shell, line, registry, clock);
-    const err = out.chunks.filter((c) => c.stream === 'stderr').map((c) => c.text).join('').trim();
-    if (out.exitCode !== 0) throw new Error(`setup の run「${line}」が失敗した: ${err}`);
-    shell = out.state;
-  }
+  shell = othersWork(runLines(shell, s.run, 'setup の run'), s.gitServers ?? []);
   // 打った跡（履歴と ~/.bash_history）は残さず、始める場所に戻す
   const histfile = shell.vars.get('HISTFILE');
   const vfs = histfile !== undefined && exists(shell.vfs, histfile) ? remove(shell.vfs, histfile) : shell.vfs;
