@@ -1,0 +1,298 @@
+{
+  "id": "web.b.06",
+  "domain": "web",
+  "level": "beginner",
+  "theme": "状態",
+  "title": "Cookie とセッション",
+  "goal": "ログイン状態が保たれる仕組みを説明できる",
+  "minutes": 15,
+  "prerequisites": [
+    "web.b.05"
+  ],
+  "related": [
+    "sec.b.02",
+    "sec.b.03"
+  ],
+  "next": [
+    "web.b.07"
+  ],
+  "terms": [
+    "cookie",
+    "server",
+    "session",
+    "http",
+    "header",
+    "https",
+    "program",
+    "path",
+    "url"
+  ],
+  "explain": {
+    "what": "{{term:cookie}}は、{{term:server}}がブラウザに預ける小さな札。{{term:session}}は、札の番号で利用者を見分け、ログインしている事などをサーバ側で覚えておく仕組み。",
+    "why": "{{term:http}}は 1 回ごとのやり取りが独立していて、前に誰が来たかを覚えていない。札を毎回付けて送ってもらうと、同じ人の続きだと分かる。",
+    "use": "ログインの状態、買い物のカート、表示の設定。札には番号だけを書き、名前やカートの中身はサーバの帳面に置く。札は返事の{{term:header}}で渡され、次からの依頼の見出しに付いて戻ってくる。",
+    "when": "ページを移るとログアウトしてしまう時。札を受け取っていないか、次の依頼に札が付いていない（札の範囲が狭い・期限が切れた）かを疑う。",
+    "figures": [
+      "web-b06-cookie"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "ログインの状態が保たれる流れの順に並べる。",
+      "items": [
+        "ログインの依頼を送る",
+        "返事の見出しで札（`Set-Cookie`）を受け取る",
+        "次の依頼に札（`Cookie`）を付けて送る",
+        "サーバが札の番号で、帳面から利用者を見分ける"
+      ],
+      "see": "use"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "札（Cookie）に、利用者の暗証番号をそのまま書いて預けてよい。",
+      "answer": false,
+      "why": "札はブラウザに置かれ、依頼のたびに通り道を流れる。盗まれると暗証番号まで知られる。札には番号だけを書き、大事な物はサーバ側に置く。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "札 `sid=7f3a` の 7f3a は何？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "サーバの帳面で利用者を見分ける番号（セッションの番号）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "利用者の暗証番号",
+          "correct": false,
+          "whyNot": "暗証番号を札に書くと、盗まれた時に全てが知られる。札には意味の無い番号だけを書く。"
+        },
+        {
+          "id": "c",
+          "text": "開いているページの番号",
+          "correct": false,
+          "whyNot": "ページの場所は {{term:url}} の{{term:path}}で伝える。札は「誰か」を伝えるための物。"
+        }
+      ],
+      "explanation": "札の値はセッションの番号。サーバは番号で帳面を引き、「港 さん、ログイン中」と分かる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "ログインはできるのに、別のページに移るとログアウトしてしまう。考えやすい原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "移った先への依頼に、札（Cookie）が付いて送られていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "サーバが止まっている",
+          "correct": false,
+          "whyNot": "止まっていればページそのものが開かない。ページは開くので、サーバは動いている。"
+        },
+        {
+          "id": "c",
+          "text": "利用者が URL を打ち間違えた",
+          "correct": false,
+          "whyNot": "打ち間違いなら「見つからない」になる。ログアウトするのは、誰か分からなくなったから。"
+        }
+      ],
+      "explanation": "サーバは札が無いと誰か分からず、ログインしていない人として扱う。札の範囲や期限を確かめる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "札が盗まれにくいようにしたい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`Secure`（暗号化した通信だけで送る）と `HttpOnly`（ページの中の{{term:program}}から読めない）の印を付ける",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "札に暗証番号も書いて、確かめやすくする",
+          "correct": false,
+          "whyNot": "盗まれた時の害が大きくなるだけ。盗まれにくくはならない。"
+        },
+        {
+          "id": "c",
+          "text": "札の範囲を /login だけに狭める",
+          "correct": false,
+          "whyNot": "ほかのページで札が付かず、移るたびにログアウトする。安全の印とは別の話。"
+        }
+      ],
+      "explanation": "`Secure` は通り道で盗み見られないため、`HttpOnly` はページに紛れ込んだ悪いプログラムに読まれないため。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "店で「ログインした後、カートに移るとログアウトしてしまう」と苦情が来た。やり取りの記録を読んで札（Cookie）の流れを確かめ、札の設定を直す。",
+    "environment": "sim-config",
+    "setup": {
+      "fields": [
+        {
+          "id": "path",
+          "label": "札の範囲（Path）",
+          "options": [
+            "/login",
+            "/cart",
+            "/"
+          ],
+          "value": "/login",
+          "note": "この場所と、その下への依頼に札を付ける"
+        },
+        {
+          "id": "flags",
+          "label": "安全の印",
+          "options": [
+            "なし",
+            "Secure",
+            "HttpOnly",
+            "Secure+HttpOnly"
+          ],
+          "value": "なし"
+        }
+      ],
+      "settle": "!field path=/login",
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "店のページ",
+          "rows": [
+            [
+              "ログイン",
+              "/login"
+            ],
+            [
+              "カート",
+              "/cart"
+            ],
+            [
+              "注文の履歴",
+              "/orders"
+            ]
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "やり取りの記録",
+          "lines": [
+            "POST /login → 200  Set-Cookie: sid=7f3a; Path=/login",
+            "GET /cart（札なし）→ 200  ログインしてください",
+            "GET /orders（札なし）→ 200  ログインしてください"
+          ],
+          "when": "field path=/login"
+        },
+        {
+          "kind": "log",
+          "title": "やり取りの記録",
+          "lines": [
+            "POST /login → 200  Set-Cookie: sid=7f3a; Path=/cart",
+            "GET /cart  Cookie: sid=7f3a → 200  港 さんのカート（2 点）",
+            "GET /orders（札なし）→ 200  ログインしてください"
+          ],
+          "when": "field path=/cart"
+        },
+        {
+          "kind": "log",
+          "title": "やり取りの記録",
+          "lines": [
+            "POST /login → 200  Set-Cookie: sid=7f3a; Path=/",
+            "GET /cart  Cookie: sid=7f3a → 200  港 さんのカート（2 点）",
+            "GET /orders  Cookie: sid=7f3a → 200  港 さんの注文の履歴"
+          ],
+          "when": "field path=/"
+        },
+        {
+          "kind": "kv",
+          "title": "サーバの帳面（セッション）",
+          "rows": [
+            [
+              "sid=7f3a",
+              "港 さん（10:02 にログイン）"
+            ]
+          ]
+        },
+        {
+          "kind": "kv",
+          "title": "安全の印",
+          "rows": [
+            [
+              "Secure",
+              "暗号化した通信（https）の時だけ札を送る"
+            ],
+            [
+              "HttpOnly",
+              "ページの中のプログラムから札を読めなくする"
+            ]
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "scope",
+        "purpose": "やり取りの記録を読み、札を受け取っているか・次の依頼に札が付いているかを確かめる。札が付かない原因の設定を直し、カートと注文の履歴でもログインのままにする。",
+        "check": {
+          "kind": "sim",
+          "expr": "field path=/"
+        },
+        "afterward": "札の範囲を / にすると、店の全てのページへの依頼に札が付き、カートでも注文の履歴でも「港 さん」と分かった。",
+        "hints": [
+          "記録の 1 行目で札を受け取っている。2 行目から、移った先への依頼に札が付いているかを見る。",
+          "札は受け取れているが、範囲（`Path`）が /login だけなので、/cart と /orders への依頼に付かない。店の全てのページを含む範囲にする。",
+          "`set path /` と選ぶ。"
+        ],
+        "expectedErrors": [
+          "web-cookie-scope"
+        ]
+      },
+      {
+        "id": "flags",
+        "purpose": "札が盗まれにくいように、暗号化した通信だけで送る印と、ページの中のプログラムから読めなくする印を、両方付ける。",
+        "check": {
+          "kind": "sim",
+          "expr": "field flags=Secure+HttpOnly"
+        },
+        "afterward": "札は {{term:https}} の時だけ送られ、ページの中の{{term:program}}からは読めなくなった。札を盗む 2 つの道をふさいだ。",
+        "hints": [
+          "札が盗まれる道は 2 つ。通り道で盗み見られる事と、ページに紛れ込んだ悪いプログラムに読まれる事。",
+          "「安全の印」の表を見る。`Secure` と `HttpOnly` の両方が要る。",
+          "`set flags Secure+HttpOnly` と選ぶ。"
+        ],
+        "expectedErrors": [
+          "web-cookie-flags"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "札の流れを記録から読み取り、範囲と安全の印を直せた。ログインが保たれる仕組みを、自分で確かめられた。",
+    "partial": "ヒントを使って札の設定を直せた。次は、札の範囲を /cart にした時、どのページで切れるかを記録で確かめてみよう。",
+    "retry": "まだログインが保たれていない。記録で、札（Cookie）が付いていない依頼の{{term:path}}を探し、その場所も含む範囲にしよう。"
+  },
+  "summary": {
+    "points": [
+      "HTTP は前のやり取りを覚えない",
+      "Cookie で札を預け、サーバはセッションで利用者を見分ける",
+      "札に安全の印（`Secure`・`HttpOnly`）を付ける"
+    ],
+    "next": [
+      "sec.b.02",
+      "web.b.07"
+    ],
+    "terms": [
+      "cookie",
+      "session"
+    ]
+  }
+}

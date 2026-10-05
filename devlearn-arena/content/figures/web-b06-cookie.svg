@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>ログインすると、サーバが Set-Cookie で札（sid=7f3a）を渡す。以後の依頼にブラウザが札を付けて送り、サーバは帳面で札の番号から利用者を見分ける</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#ff8a7a" />
+    </marker>
+  </defs>
+  <g class="el" data-part="browser">
+    <rect x="20" y="40" width="150" height="230" rx="12" fill="#5cc1ff" />
+    <text x="95" y="76" text-anchor="middle" font-size="16" font-weight="700" fill="#0a1424">ブラウザ</text>
+    <text x="95" y="230" text-anchor="middle" font-size="13" fill="#0a1424">札を預かる</text>
+    <text x="95" y="252" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#0a1424">sid=7f3a</text>
+  </g>
+  <g class="el" data-part="server">
+    <rect x="530" y="40" width="150" height="130" rx="12" fill="#7a3fd0" />
+    <text x="605" y="76" text-anchor="middle" font-size="16" font-weight="700" fill="#eef2f6">サーバ</text>
+    <text x="605" y="102" text-anchor="middle" font-size="13" fill="#eef2f6">1 回ごとに</text>
+    <text x="605" y="122" text-anchor="middle" font-size="13" fill="#eef2f6">前を覚えない</text>
+  </g>
+  <g class="el" data-part="login">
+    <path d="M170 96 H524" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="347" y="88" text-anchor="middle" font-size="13" fill="#eef2f6">1 ログインの依頼</text>
+  </g>
+  <g class="el" data-part="setcookie">
+    <path d="M530 140 H176" fill="none" stroke="#ff8a7a" stroke-width="2" marker-end="url(#ag)" />
+    <text x="347" y="132" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#ff8a7a">2 Set-Cookie: sid=7f3a</text>
+  </g>
+  <g class="el" data-part="cookie">
+    <path d="M170 196 H524" fill="none" stroke="#ff8a7a" stroke-width="2" marker-end="url(#ag)" />
+    <text x="347" y="188" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#ff8a7a">3 GET /cart  Cookie: sid=7f3a</text>
+  </g>
+  <g class="el" data-part="store">
+    <rect x="530" y="186" width="150" height="84" rx="10" fill="none" stroke="#f2b632" stroke-width="2" />
+    <text x="605" y="212" text-anchor="middle" font-size="13" font-weight="700" fill="#f2b632">4 帳面（セッション）</text>
+    <text x="605" y="236" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">7f3a → 港 さん</text>
+    <text x="605" y="258" text-anchor="middle" font-size="13" fill="#9fb0c6">札の番号で見分ける</text>
+  </g>
+  <g class="el" data-part="caption">
+    <text x="350" y="304" text-anchor="middle" font-size="13" fill="#9fb0c6">札には番号だけ。名前やカートの中身はサーバの帳面に置く</text>
+  </g>
+</svg>

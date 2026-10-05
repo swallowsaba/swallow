@@ -1,0 +1,249 @@
+{
+  "id": "web.b.07",
+  "domain": "web",
+  "level": "beginner",
+  "theme": "Web サーバ",
+  "title": "Web サーバの役割",
+  "goal": "静的なファイルを配る流れを説明し、模擬サーバで公開できる",
+  "minutes": 20,
+  "prerequisites": [
+    "web.b.02",
+    "linux.b.02"
+  ],
+  "related": [
+    "linux.i.01",
+    "docker.b.04"
+  ],
+  "next": [
+    "web.i.03"
+  ],
+  "terms": [
+    "web-server",
+    "document-root",
+    "file",
+    "app",
+    "program",
+    "url",
+    "path",
+    "systemctl",
+    "permission",
+    "port",
+    "service",
+    "curl",
+    "ls-l",
+    "config-file",
+    "cp",
+    "cat",
+    "directory",
+    "server"
+  ],
+  "explain": {
+    "what": "{{term:web-server}}は、依頼を待ち続け、{{term:document-root}}の中の{{term:file}}や、後ろの{{term:app}}の結果を返す{{term:program}}。{{term:url}}の{{term:path}}が、公開用のディレクトリの中の場所に当たる。",
+    "why": "サイトを公開するには、いつ来るか分からない依頼を待ち続ける係が要る。公開してよい物だけを 1 つの{{term:directory}}にまとめ、その外は見せない。",
+    "use": "ページや画像の公開、後ろのアプリへの中継。代表的な物に nginx がある。{{term:server}}の上では、動かす・止めるを {{term:systemctl}} で行う。",
+    "when": "作ったページを公開したい時。置き場所を間違えると「見つからない」（404）、Web サーバが読めないと「見せられない」（403）が返る。読めるかは、ファイルの{{term:permission}}で決まる。",
+    "figures": [
+      "web-b07-docroot"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "公開用のディレクトリが /var/www/html の時、2 つの出来事の関係は？",
+      "a": "/about.html を頼む",
+      "b": "/var/www/html/about.html が返る",
+      "answer": "cause",
+      "why": "URL のパスを、公開用のディレクトリの後ろに付けた場所のファイルが返る。パスを頼んだことが原因で、そのファイルが返る。",
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "公開用のディレクトリの外にあるファイル（/root/memo.txt など）も、URL のパスを工夫すれば見られる。",
+      "answer": false,
+      "why": "Web サーバは公開用のディレクトリの中だけを探す。/../ のように上がろうとしても、外へは出さない。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "公開用のディレクトリが /var/www/html の Web サーバに、/about.html を頼む。どのファイルが返る？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "/var/www/html/about.html",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "/about.html（一番上のディレクトリのファイル）",
+          "correct": false,
+          "whyNot": "URL のパスは、機械の一番上からではなく、公開用のディレクトリから数える。"
+        },
+        {
+          "id": "c",
+          "text": "/var/www/html/index.html",
+          "correct": false,
+          "whyNot": "index.html は / （ディレクトリ）を頼んだ時に返す物。/about.html を頼めば about.html が返る。"
+        }
+      ],
+      "explanation": "パスを、公開用のディレクトリの後ろに付けた場所。/about.html → /var/www/html/about.html。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "ファイルは公開用のディレクトリに置いたのに、開くと 403（見せられない）が返る。考えやすい原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Web サーバの働き手が、そのファイルを読む権限が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "置き場所が違う",
+          "correct": false,
+          "whyNot": "置き場所が違えば 404（見つからない）が返る。403 はファイルが在るのに見せられない時。"
+        },
+        {
+          "id": "c",
+          "text": "Web サーバが止まっている",
+          "correct": false,
+          "whyNot": "止まっていれば返事そのものが来ない。403 を返したのは、動いている Web サーバ。"
+        }
+      ],
+      "explanation": "Web サーバは www-data などの利用者で動く。ファイルが rw------- なら持ち主しか読めず、403 になる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "Web サーバを起動したはずなのに、ブラウザから届かない（つながらない）。何から確かめる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "本当に動いているか（{{term:service}}の状態）と、待ち受けている{{term:port}}",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ページの文の誤字",
+          "correct": false,
+          "whyNot": "誤字があってもページは返る。つながらないのは、待ち受けの話。"
+        },
+        {
+          "id": "c",
+          "text": "ファイルの権限",
+          "correct": false,
+          "whyNot": "権限が足りなければ 403 が返る。返事が来ないのは、その手前。"
+        }
+      ],
+      "explanation": "つながらないなら、まず動いているか、どのポートで待っているかを確かめる。返事が来れば、その数で次を考える。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "港の掲示板のページ（下書き /root/site/index.html）を、このサーバの Web サーバ（nginx）で公開する。http://localhost/ で 200 とページが返るようにする。",
+    "environment": "linux-server",
+    "setup": {
+      "hostname": "board",
+      "dirs": [
+        "/var/www/html",
+        "/etc/nginx/conf.d"
+      ],
+      "files": {
+        "/etc/nginx/conf.d/site.conf": "server {\n  listen 80;\n  root /var/www/html;\n  index index.html;\n}\n",
+        "/root/site/index.html": "<html><body><h1>港の掲示板</h1><p>秋祭りは 10 月 20 日</p></body></html>\n",
+        "/root/memo.txt": "下書きは /root/site/index.html。人に見られないよう、自分だけが読める権限（600）にしてある。\n"
+      },
+      "services": {
+        "nginx": {
+          "description": "nginx web server",
+          "config": "/etc/nginx/conf.d/site.conf"
+        }
+      },
+      "run": [
+        "chmod 600 /root/site/index.html"
+      ]
+    },
+    "steps": [
+      {
+        "id": "place",
+        "purpose": "Web サーバの{{term:config-file}}（/etc/nginx/conf.d/site.conf）を読んで公開用のディレクトリを確かめ、下書きの index.html をそこへ写す。",
+        "check": {
+          "kind": "fs",
+          "path": "/var/www/html/index.html"
+        },
+        "afterward": "公開用のディレクトリ /var/www/html に index.html を置いた。/ を頼まれた時に返す索引のファイルになる。",
+        "hints": [
+          "設定の root の行が、公開用のディレクトリ。そこへ下書きを写す。",
+          "{{term:cat}} で設定を読み、{{term:cp}} で下書きを公開用のディレクトリへ写す。",
+          "`cat /etc/nginx/conf.d/site.conf` `cp /root/site/index.html /var/www/html/` と打つ。"
+        ],
+        "expectedErrors": [
+          "enoent",
+          "cannot-stat"
+        ]
+      },
+      {
+        "id": "start",
+        "purpose": "Web サーバ（nginx）を動かし、依頼を待ち受けさせる。",
+        "check": {
+          "kind": "service",
+          "name": "nginx",
+          "active": true
+        },
+        "afterward": "nginx が動き、設定のとおり 80 番で待ち受け始めた。",
+        "hints": [
+          "Web サーバも{{term:service}}の 1 つ。動かすのは systemctl。",
+          "`systemctl start` に、サービスの名前（nginx）を付ける。",
+          "`systemctl start nginx` と打つ。"
+        ],
+        "expectedErrors": [
+          "service-failed",
+          "nginx-emerg"
+        ]
+      },
+      {
+        "id": "serve",
+        "purpose": "{{term:curl}} で http://localhost/ を確かめる。200 とページが返らなければ、返事の数から原因を探して直す。",
+        "check": {
+          "kind": "http",
+          "url": "http://localhost/",
+          "status": 200
+        },
+        "afterward": "ほかの利用者も読める権限（644）にすると、Web サーバの働き手 www-data が読めるようになり、200 とページが返った。下書きの 600 を、写したファイルが引き継いでいた。",
+        "hints": [
+          "curl で確かめる。403 なら、Web サーバの働き手（www-data）がファイルを読めるかを見る。",
+          "{{term:ls-l}} で権限を見る。rw------- は持ち主しか読めない。ほかの利用者も読める 644 にする。",
+          "`chmod 644 /var/www/html/index.html` `curl -i http://localhost/` と打つ。"
+        ],
+        "expectedErrors": [
+          "web-403",
+          "web-404"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "ページを公開用のディレクトリに置き、Web サーバを動かして、403 の原因（権限）まで自分で直せた。",
+    "partial": "ヒントを使ってページを公開できた。次は、置き場所を間違えた時に何番が返るか、試して確かめてみよう。",
+    "retry": "まだ http://localhost/ で 200 が返っていない。設定の root と置いた場所、nginx の状態、ファイルの権限を、順に確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "Web サーバは依頼を待ち、返事をする係",
+      "公開用のディレクトリと URL のパスが対応する",
+      "403 は権限、404 は置き場所を疑う"
+    ],
+    "next": [
+      "web.b.08",
+      "web.i.03"
+    ],
+    "terms": [
+      "web-server",
+      "document-root",
+      "permission"
+    ]
+  }
+}
