@@ -269,16 +269,28 @@ export const TerminalView = forwardRef<TerminalHandle, Props>(function TerminalV
 
     // fit() が端末のサイズを変え、それがまた ResizeObserver を呼ぶ循環を避ける。
     // 実際に行桁が変わるときだけ適用する
-    const observer = new ResizeObserver(() => {
+    const refit = (): void => {
       const dims = fit.proposeDimensions();
       if (!dims) return;
       if (!Number.isFinite(dims.cols) || !Number.isFinite(dims.rows)) return;
       if (dims.cols === term.cols && dims.rows === term.rows) return;
+      // 一番下を見ていた時は、大きさを変えた後も一番下（最後の出力とプロンプト）を見せる
+      const atBottom = term.buffer.active.viewportY >= term.buffer.active.baseY;
       fit.fit();
+      if (atBottom) term.scrollToBottom();
+    };
+    // 大きさを測り直すのは次の描画の番に回す。ResizeObserver の中ですぐ fit() すると、最後の手順を満たして
+    // 下の帯が消え端末が高くなった時、xterm の送りの位置が古い高さで切り詰められ、
+    // 最後の出力とプロンプトが下に隠れたままになっていた
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(refit);
     });
     observer.observe(host);
 
     return () => {
+      cancelAnimationFrame(frame);
       observer.disconnect();
       disposable.dispose();
       // xterm は開いた直後に、表示の大きさを測る処理を次の番に回す。すぐ閉じる（StrictMode の付け外し）と、

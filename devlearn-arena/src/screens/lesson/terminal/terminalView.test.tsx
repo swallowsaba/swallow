@@ -16,16 +16,28 @@ const COLS = 40;
 
 const screens: FakeScreen[] = [];
 const feeds: ((data: string) => void)[] = [];
+/** 送りの位置（viewportY）と一番下の位置（baseY）。端末ごと */
+const buffers: { viewportY: number; baseY: number }[] = [];
+const resizers: (() => void)[] = [];
+/** fit が提案する行の数。undefined なら大きさは変わらない */
+let proposedRows: number | undefined;
 
 vi.mock('@xterm/xterm', () => ({
   Terminal: class {
     cols = COLS;
     rows = 24;
     private screen = new FakeScreen(COLS);
+    buffer = { active: { viewportY: 0, baseY: 0 } };
     constructor() {
       screens.push(this.screen);
+      buffers.push(this.buffer.active);
     }
-    loadAddon(): void {}
+    loadAddon(addon: { term?: unknown }): void {
+      addon.term = this;
+    }
+    scrollToBottom(): void {
+      this.buffer.active.viewportY = this.buffer.active.baseY;
+    }
     open(): void {}
     write(data: string): void {
       this.screen.write(data);
@@ -44,21 +56,37 @@ vi.mock('@xterm/xterm', () => ({
 
 vi.mock('@xterm/addon-fit', () => ({
   FitAddon: class {
-    fit(): void {}
+    term?: { rows: number; buffer: { active: { viewportY: number; baseY: number } } };
+    fit(): void {
+      if (!this.term || proposedRows === undefined) return;
+      // 本物の xterm は、行が増えた後に送りの位置を一番下へ合わせ直さない
+      // （本物のブラウザで測ると、一番下より 3 行ほど上に残る）
+      const grown = proposedRows - this.term.rows;
+      this.term.rows = proposedRows;
+      const buf = this.term.buffer.active;
+      buf.baseY = Math.max(0, buf.baseY - grown);
+      buf.viewportY = Math.max(0, buf.baseY - 3);
+    }
     proposeDimensions() {
-      return undefined;
+      return proposedRows === undefined ? undefined : { cols: COLS, rows: proposedRows };
     }
   },
 }));
 
 beforeAll(() => {
-  if (typeof globalThis.ResizeObserver === 'undefined') {
-    globalThis.ResizeObserver = class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    };
-  }
+  // 測り直しは次の描画の番に回る。テストではすぐ動かす
+  globalThis.requestAnimationFrame = (cb: FrameRequestCallback): number => {
+    cb(0);
+    return 0;
+  };
+  globalThis.ResizeObserver = class {
+    constructor(cb: () => void) {
+      resizers.push(cb);
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
 });
 
 function Shell() {
@@ -146,5 +174,34 @@ describe('端末の行が右端で折り返すとき', () => {
     const lines = screen.lines();
     expect(lines.slice(1, 3).join('')).toBe(`${PROMPT}echo 0123456789012345678901234567890123`);
     expect(lines[3]).toBe('0123456789012345678901234567890123');
+  });
+});
+
+describe('端末の大きさが変わった時', () => {
+  /** 端末を開き、送れる行がある（一番下が 30 行目）状態にする */
+  function openScrolled(viewportY: number) {
+    openTerminal();
+    const buf = buffers[buffers.length - 1];
+    const resize = resizers[resizers.length - 1];
+    if (buf === undefined || resize === undefined) throw new Error('端末が開かなかった');
+    buf.baseY = 30;
+    buf.viewportY = viewportY;
+    return { buf, resize };
+  }
+
+  it('一番下を見ていたら、端末が高くなっても一番下（最後の出力とプロンプト）を見せたまま', () => {
+    const { buf, resize } = openScrolled(30);
+    proposedRows = 27;
+    act(() => resize());
+    proposedRows = undefined;
+    expect(buf.viewportY).toBe(buf.baseY);
+  });
+
+  it('上へ送って前の出力を読んでいる時は、読んでいる所を動かさない', () => {
+    const { buf, resize } = openScrolled(10);
+    proposedRows = 27;
+    act(() => resize());
+    proposedRows = undefined;
+    expect(buf.viewportY).toBeLessThan(buf.baseY);
   });
 });
