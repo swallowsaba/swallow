@@ -106,6 +106,9 @@ export function certText(c: Cert): string {
 
 const emerg = (text: string): string => `nginx: [emerg] ${text}`;
 
+/** listen のポートの後に書ける引数 */
+const LISTEN_PARAMS: ReadonlySet<string> = new Set(['ssl', 'default_server', 'http2', 'reuseport']);
+
 /** 設定の語。`{` `}` `;` は 1 つの語、"…" と '…' は 1 つの語（引用符を外す） */
 interface Token { text: string; line: number; quoted: boolean }
 
@@ -213,6 +216,9 @@ export function readWebConfig(path: string, read: (p: string) => string | null):
       if (d.name === 'listen') {
         const port = Number((d.args[0] ?? '').split(':').pop());
         if (!Number.isInteger(port) || port <= 0 || port > 65535) return { ok: false, error: emerg(`invalid port in "${d.args[0] ?? ''}" of the "listen" directive in ${path}:${String(d.line)}`) };
+        // ; を忘れると、次の文が listen の引数に続く（本物と同じく、知らない引数として止まる）
+        const odd = d.args.slice(1).find((a) => !LISTEN_PARAMS.has(a));
+        if (odd !== undefined) return { ok: false, error: emerg(`invalid parameter "${odd}" in ${path}:${String(d.line)}`) };
         listens.push({ port, ssl: d.args.includes('ssl'), line: d.line, def: d.args.includes('default_server') });
       } else if (d.name === 'server_name') s.names.push(...d.args.map((n) => n.toLowerCase()));
       else if (d.name === 'root') s.root = d.args[0];

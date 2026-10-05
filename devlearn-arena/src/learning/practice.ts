@@ -1,16 +1,16 @@
 import type { CheckSpec, ErrorGuide, Practice, PracticeStep } from '@/content/schema';
 import { parseRich } from '@/content/rich';
-import { createClock } from '@/engines/kernel/clock';
+import { createClock, type MutableClock } from '@/engines/kernel/clock';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
 import { gitHolds } from '@/engines/git/check';
 import { clusterHolds } from '@/engines/k8s/check';
 import { httpEnvOf } from '@/engines/kernel/commands/httpLocal';
 import { resolve } from '@/engines/kernel/path';
-import type { ShellState } from '@/engines/kernel/registry';
+import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { serviceOf } from '@/engines/kernel/services';
 import { execute } from '@/engines/kernel/shell';
-import { exists, isDir, metaOf, readFile } from '@/engines/kernel/vfs';
-import { initialShell } from '@/engines/environments';
+import { exists, isDir, metaOf, readFile, writeFile } from '@/engines/kernel/vfs';
+import { initialShell, resolveSetup } from '@/engines/environments';
 import { request } from '@/engines/http/http';
 import { resolveName, roundTrip } from '@/engines/net/probe';
 import { applyStatement, createSim, holds } from '@/engines/sim/sim';
@@ -342,6 +342,7 @@ export function resultKind(attempt: Pick<PracticeAttempt, 'success' | 'hintsUsed
  */
 export function replayAnswers(practice: Practice, guides: readonly ErrorGuide[] = []): string[] {
   if (practice.mode === 'simulation') return replaySim(practice, guides);
+  if (practice.mode === 'editor') return replayEditor(practice, guides);
   if (practice.mode !== 'terminal') return [];
   const problems: string[] = [];
   const registry = REGISTRY;
@@ -372,6 +373,35 @@ export function replayAnswers(practice: Practice, guides: readonly ErrorGuide[] 
   return problems;
 }
 
+/** 設定の編集（編）の実戦: 最後のヒントの中身を保存して確かめ、全ての手順を満たすか */
+function replayEditor(practice: Practice, guides: readonly ErrorGuide[]): string[] {
+  const edit = editOf(practice);
+  if (!edit) return ['実戦: 設定の編集に、編集するファイル（setup.edit）が無い'];
+  const problems: string[] = [];
+  const registry = REGISTRY;
+  const clock = createClock();
+  let shell = initialShell(practice.environment, practice.setup);
+  for (const step of practice.steps) {
+    if (!SHELL_CHECKS.has(step.check.kind) || step.check.kind === 'answer') {
+      problems.push(`実戦 ${step.id}: 判定の形 ${step.check.kind} は設定の編集の実戦で使えない`);
+      continue;
+    }
+    const answers = answerOf(step);
+    if (answers.length !== 1) {
+      problems.push(`実戦 ${step.id}: 最後のヒントに、保存する中身（\`...\`）がちょうど 1 つ要る`);
+      continue;
+    }
+    const out = saveEdit(shell, edit, answers[0] ?? '', registry, clock);
+    shell = out.state;
+    for (const r of out.results) {
+      const expected = (step.expectedErrors ?? []).some((id) => guides.some((g) => g.id === id && guideMatches(g, r.stderr)));
+      if (r.stderr.trim() && !expected) problems.push(`実戦 ${step.id}: 保存の後の「${r.line}」でエラー: ${r.stderr.trim()}`);
+    }
+    if (!checkState(step.check, { shell })) problems.push(`実戦 ${step.id}: 最後のヒントを保存しても達成条件を満たさない`);
+  }
+  return problems;
+}
+
 /** 模擬環境（模）の実戦: 最後のヒントの操作の文を順に与え、全ての手順を満たすか */
 function replaySim(practice: Practice, guides: readonly ErrorGuide[]): string[] {
   const problems: string[] = [];
@@ -396,4 +426,47 @@ function replaySim(practice: Practice, guides: readonly ErrorGuide[]): string[] 
     }
   }
   return problems;
+}
+
+/* ---------- 設定の編集（編。docs/content-spec.md 2.4.2） ---------- */
+
+/** 編集するファイルと、保存の後に打つコマンド */
+export interface EditSpec {
+  path: string;
+  apply: readonly string[];
+}
+
+/** 「編」の実戦の setup.edit。設定の編集でない実戦と、書いていない時は null */
+export function editOf(practice: Practice): EditSpec | null {
+  if (practice.mode !== 'editor') return null;
+  return resolveSetup(practice.environment, practice.setup).edit ?? null;
+}
+
+/** 保存の後に打った 1 行と、その出力（確かめた結果） */
+export interface EditResult {
+  line: string;
+  stdout: string;
+  stderr: string;
+}
+
+/**
+ * 「保存して確かめる」: 編集欄の中身をファイル全体として保存し、apply のコマンドを順に打つ。
+ * 画面と、最後のヒントの再生（replayAnswers）が同じ関数を通る
+ */
+export function saveEdit(shell: ShellState, edit: EditSpec, content: string, registry: CommandRegistry, clock: MutableClock): { state: ShellState; results: EditResult[] } {
+  const text = content === '' || content.endsWith('\n') ? content : `${content}\n`;
+  let state: ShellState = { ...shell, vfs: writeFile(shell.vfs, edit.path, text, true) };
+  const results: EditResult[] = [];
+  for (const line of edit.apply) {
+    const out = execute(state, line, registry, clock);
+    state = out.state;
+    const of = (stream: 'stdout' | 'stderr'): string => out.chunks.filter((c) => c.stream === stream).map((c) => c.text).join('');
+    results.push({ line, stdout: of('stdout'), stderr: of('stderr') });
+  }
+  return { state, results };
+}
+
+/** 編集するファイルの今の中身（無ければ空） */
+export function editedText(shell: ShellState, edit: EditSpec): string {
+  return exists(shell.vfs, edit.path) && !isDir(shell.vfs, edit.path) ? readFile(shell.vfs, edit.path) : '';
 }

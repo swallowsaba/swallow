@@ -7,11 +7,11 @@ import { createDefaultRegistry } from '@/engines/kernel/commands';
 import type { ShellState } from '@/engines/kernel/registry';
 import { createShellState } from '@/engines/kernel/session';
 import { execute } from '@/engines/kernel/shell';
-import { shellOptions } from '@/engines/environments';
+import { initialShell, shellOptions } from '@/engines/environments';
 import { applyStatement, createSim } from '@/engines/sim/sim';
 import {
   afterCommand, answerOf, attemptOf, checkState, commandCandidates, currentStep, findGuide, GENERIC_GUIDE, hintsUsed, isFinished,
-  openHint, replayAnswers, resultKind, startRun, type PracticeRun,
+  editedText, editOf, openHint, replayAnswers, resultKind, saveEdit, startRun, type PracticeRun,
 } from './practice';
 
 /** 端末で 1 行打ち、実戦を進める（画面と同じ道筋） */
@@ -353,3 +353,60 @@ describe('出力に出るエラー（HTTP の 4xx・5xx。docs/content-spec.md 2
     expect(r.error).toBeNull();
   });
 });
+
+describe('設定の編集（編。docs/content-spec.md 2.4.2）', () => {
+  const conf = '/etc/nginx/conf.d/site.conf';
+  const good = 'server {\n  listen 80;\n  root /var/www/html;\n}\n';
+  const practice: Practice = {
+    mode: 'editor',
+    purpose: 'ページを公開する',
+    environment: 'linux-server',
+    setup: {
+      dirs: ['/var/www/html', '/srv/site'],
+      files: { [conf]: 'server {\n  listen 80;\n  root /srv/empty;\n}\n', '/var/www/html/index.html': '<h1>港</h1>\n' },
+      services: { nginx: { description: 'nginx web server', config: conf } },
+      run: ['systemctl start nginx'],
+      edit: { path: conf, apply: ['systemctl reload nginx', 'curl -si http://localhost/'] },
+    },
+    steps: [{
+      id: 'root', purpose: '公開用のディレクトリを直す', check: { kind: 'http', url: 'http://localhost/', status: 200, contains: '港' }, afterward: '返った',
+      hints: ['a', 'b', `\`${good}\` と保存する。`], expectedErrors: ['service-failed'],
+    }],
+  };
+  const registry = createDefaultRegistry();
+
+  it('保存すると中身をファイル全体として書き、apply のコマンドを順に打って、その出力を確かめた結果として返す', () => {
+    const shell = createShellState(shellOptions(practice.environment, practice.setup));
+    const edit = editOf(practice);
+    if (!edit) throw new Error('edit');
+    const before = initialShellOf(practice);
+    expect(editedText(before, edit)).toContain('/srv/empty');
+    const out = saveEdit(before, edit, good.trimEnd(), registry, createClock());
+    expect(editedText(out.state, edit)).toBe(good);
+    expect(out.results.map((r) => r.line)).toEqual(['systemctl reload nginx', 'curl -si http://localhost/']);
+    expect(out.results[1]?.stdout).toContain('200 OK');
+    expect(checkState(practice.steps[0]!.check, { shell: out.state })).toBe(true);
+    expect(checkState(practice.steps[0]!.check, { shell })).toBe(false);
+  });
+
+  it('設定の誤りは、読み直しのエラーとして確かめた結果に出る（解説が当たる）', () => {
+    const edit = editOf(practice);
+    if (!edit) throw new Error('edit');
+    const out = saveEdit(initialShellOf(practice), edit, 'server {\n  listen 80\n  root /var/www/html;\n}\n', registry, createClock());
+    const err = out.results[0]?.stderr ?? '';
+    expect(err).toContain('nginx');
+    expect(findGuide(err, practice.steps[0], ERROR_GUIDES).id).toBe('service-failed');
+  });
+
+  it('最後のヒントの中身を保存すると達成する。中身が違えば、満たさないと知らせる', () => {
+    expect(replayAnswers(practice, ERROR_GUIDES)).toEqual([]);
+    const wrong: Practice = { ...practice, steps: [{ ...practice.steps[0]!, hints: ['a', 'b', '`server {\n  listen 80;\n  root /srv/site;\n}` と保存する。'] }] };
+    expect(replayAnswers(wrong, ERROR_GUIDES)).toEqual(['実戦 root: 最後のヒントを保存しても達成条件を満たさない']);
+    const noEdit: Practice = { ...practice, setup: { ...(practice.setup as object), edit: undefined } };
+    expect(replayAnswers(noEdit, ERROR_GUIDES)).toEqual(['実戦: 設定の編集に、編集するファイル（setup.edit）が無い']);
+  });
+});
+
+function initialShellOf(practice: Practice): ShellState {
+  return initialShell(practice.environment, practice.setup);
+}

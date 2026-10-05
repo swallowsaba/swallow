@@ -12,7 +12,10 @@ import { fromLines } from './args';
  * 出力の形は本物に寄せる（状態の表示の Loaded と Active の行・失敗の時の案内）。
  */
 
-const NO_SYSTEMD = 'System has not been booted with systemd as init system (PID 1). Can\'t operate.\n';
+/** apt で nginx を入れると置かれる実行ファイル */
+const NGINX_BIN = '/usr/sbin/nginx';
+
+const NO_SYSTEMD ='System has not been booted with systemd as init system (PID 1). Can\'t operate.\n';
 
 /** この機械の今日（ログの時刻の年は書かれないので、月と日で比べる） */
 const TODAY = '10-03';
@@ -198,6 +201,29 @@ export const systemctlCommands: CommandSpec[] = [
       if (reverse) lines = [...lines].reverse();
       if (lines.length === 0) return { stdout: '-- No entries --\n' };
       return { stdout: fromLines(lines) };
+    },
+  },
+  {
+    name: 'nginx',
+    summary: 'Web サーバ nginx の設定を確かめる（nginx -t。動かす・読み直すのは systemctl）',
+    handler: ({ argv, shell, runLine }) => {
+      // 入っていない機械には無い（apt で入れると /usr/sbin/nginx が置かれる。src/engines/kernel/packages.ts）
+      const installed = exists(shell.vfs, NGINX_BIN);
+      const service = serviceOf(shell.services, 'nginx');
+      if (!installed && !service) return { stderr: 'nginx: command not found\n', code: 127 };
+      if (!argv.slice(1).includes('-t')) {
+        // -v などは、入れた実行ファイルに任せる
+        if (installed) {
+          const r = runLine([NGINX_BIN, ...argv.slice(1)].join(' '));
+          return { stdout: r.stdout, stderr: r.stderr, code: r.code };
+        }
+        return { stderr: 'nginx: この模擬では、動かす・止める・読み直すは systemctl で行う（設定を確かめるのは nginx -t）\n', code: 1 };
+      }
+      const config = service?.config ?? '/etc/nginx/nginx.conf';
+      const r = loaderOf(shell)(config);
+      if (!r.ok) return { stderr: `${r.error}\nnginx: configuration file ${config} test failed\n`, code: 1 };
+      // 本物は成功の知らせも標準エラーに出すが、ここでは出力に出す（成功にエラーの解説を当てない）
+      return { stdout: `nginx: the configuration file ${config} syntax is ok\nnginx: configuration file ${config} test is successful\n` };
     },
   },
 ];

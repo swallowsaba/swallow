@@ -131,6 +131,8 @@ export const setupSchema = z.object({
   network: networkSetupSchema.optional(),
   /** 初期状態を作るために、始める前に打っておくコマンド（リポジトリと履歴を作る、など）。学習者には見せない */
   run: z.array(z.string().min(1)).optional(),
+  /** 設定の編集（editor）の実戦: 編集するファイルと、「保存して確かめる」で保存の後に打つコマンド（docs/content-spec.md 2.4.2） */
+  edit: z.object({ path: z.string().startsWith('/'), apply: z.array(z.string().min(1)) }).strict().optional(),
 }).strict();
 
 export type PracticeSetup = z.infer<typeof setupSchema>;

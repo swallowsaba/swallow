@@ -3,12 +3,16 @@ import { PRACTICE_NAMES } from '@/content/catalog';
 import { ERROR_GUIDES } from '@/content/glossary';
 import type { ErrorGuide, Practice } from '@/content/schema';
 import { ENVIRONMENTS, initialShell, isEnvironmentId } from '@/engines/environments';
+import { createClock } from '@/engines/kernel/clock';
+import { createDefaultRegistry } from '@/engines/kernel/commands';
+import type { ShellState } from '@/engines/kernel/registry';
 import { restoreShell, snapshotShell, type SessionOptions, type ShellSnapshotData } from '@/engines/kernel/session';
 import { applyStatement, createSim, isSettled, SIM_VERBS } from '@/engines/sim/sim';
 import type { SimState } from '@/engines/sim/types';
 import type { PracticeAttempt, PracticeSession } from '@/game/types';
 import {
-  afterCommand, attemptOf, commandCandidates, currentStep, isFinished, openHint, startRun, type CommandOutcome, type PracticeRun,
+  afterCommand, attemptOf, commandCandidates, currentStep, editedText, editOf, isFinished, openHint, saveEdit, startRun,
+  type CommandOutcome, type EditResult, type EditSpec, type PracticeRun,
 } from '@/learning/practice';
 import { Icon } from '@/ui/icons/Icon';
 import { nowIso } from '../clock';
@@ -17,6 +21,7 @@ import { SimConsole } from './sim/SimConsole';
 import './sim/Sim.css';
 import { SIM_NAMES } from './sim/simNames';
 import { TerminalView, type TerminalHandle } from './terminal/TerminalView';
+import { useConst } from './terminal/useConst';
 import { useShellSession } from './terminal/useShellSession';
 import { Feedback, Slot, StepButtons, type OnTerm } from './widgets';
 
@@ -46,7 +51,9 @@ export interface PracticeStageProps {
 }
 
 export function PracticeStage(props: PracticeStageProps) {
-  return props.practice.mode === 'simulation' ? <SimPractice {...props} /> : <TerminalPractice {...props} />;
+  if (props.practice.mode === 'simulation') return <SimPractice {...props} />;
+  const edit = editOf(props.practice);
+  return edit ? <EditorPractice {...props} edit={edit} /> : <TerminalPractice {...props} />;
 }
 
 type ShownError = { guide: ErrorGuide; said: string; line: string };
@@ -102,7 +109,7 @@ function PracticeLeft({ p, run, kind, onHint, danger, onTerm, action, onBack, ba
   const finished = isFinished(p, run);
   const step = currentStep(p, run);
   const shown = step ? (run.hints[step.id] ?? 0) : 0;
-  const answerWord = p.mode === 'simulation' ? 'そのまま入れられる答え' : 'そのまま打てる答え';
+  const answerWord = p.mode === 'simulation' ? 'そのまま入れられる答え' : p.mode === 'editor' ? 'そのまま保存できる答え' : 'そのまま打てる答え';
   return (
     <section className="stage stage-practice" aria-label="実戦" data-testid="stage-practice">
       <p className="stage-count">
@@ -328,6 +335,140 @@ function SimPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, 
           restored={restored !== undefined}
           error={r.error ? <ErrorGuidePanel error={r.error} onTerm={onTerm} onClose={() => r.setError(null)} /> : null}
         />
+      </Slot>
+    </>
+  );
+}
+
+/* ---------- 設定の編集（編。docs/content-spec.md 2.4.2、docs/ui-design.md 7.1） ---------- */
+
+interface EditorSaved {
+  shell: ShellSnapshotData;
+  run: PracticeRun;
+  draft: string;
+  results: EditResult[];
+}
+
+/** 確かめた結果のうち、エラーとして示す物: 打った行と、言われたこと（標準エラー。出力に出たエラーは当たった行だけ。端末と同じ） */
+function errorSource(results: readonly EditResult[], guide: ErrorGuide): { line: string; said: string } | undefined {
+  const err = results.find((x) => x.stderr.trim() !== '');
+  if (err) return { line: err.line, said: err.stderr };
+  const out = results.find((x) => safeTest(guide.match, x.stdout));
+  return out ? { line: out.line, said: out.stdout.split('\n').find((l) => safeTest(guide.match, l)) ?? out.stdout } : undefined;
+}
+
+/** 確かめた結果の空の時の文に出す、保存の後に打つコマンドの名前（重ねない） */
+const applyNames = (edit: EditSpec): string => [...new Set(edit.apply.map((a) => a.split(' ')[0] ?? a))].join('・');
+
+function EditorPractice({ practice: p, edit, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps & { edit: EditSpec }) {
+  const restored = saved?.engineState as EditorSaved | undefined;
+  const fresh = useMemo(() => initialShell(p.environment, p.setup), [p]);
+  const registry = useConst(() => createDefaultRegistry());
+  const clock = useConst(() => createClock());
+  const shellRef = useRef<ShellState>(restored ? restoreShell(restored.shell) : fresh);
+  const [draft, setDraft] = useState(() => restored?.draft ?? editedText(fresh, edit));
+  const [savedText, setSavedText] = useState(() => editedText(shellRef.current, edit));
+  const [results, setResults] = useState<EditResult[]>(restored?.results ?? []);
+  const resultsRef = useRef(results);
+  resultsRef.current = results;
+  const r = useRun(p, restored?.run);
+  const gutterRef = useRef<HTMLPreElement>(null);
+  // 模擬環境の写しは、保存して確かめた時と初めに戻した時だけ作り直す（書いている間は、編集欄の中身だけが変わる）
+  const snapRef = useRef<ShellSnapshotData | null>(restored?.shell ?? null);
+
+  const save = (next: PracticeRun, d: string, res: EditResult[]): void => {
+    snapRef.current ??= snapshotShell(shellRef.current);
+    onSave({ lessonId: sessionId, stepIndex: next.stepIndex, engineState: { shell: snapRef.current, run: next, draft: d, results: res } satisfies EditorSaved, savedAt: nowIso() });
+  };
+
+  /** 書いている途中も残す（中断して開き直すと、書きかけの中身から続く） */
+  const write = (text: string): void => {
+    setDraft(text);
+    save(r.runRef.current, text, resultsRef.current);
+  };
+
+  /** 保存して確かめる。編集欄の中身をファイル全体として保存し、読み直しと確かめる依頼を打つ */
+  const check = (): void => {
+    const out = saveEdit(shellRef.current, edit, draft, registry, clock);
+    shellRef.current = out.state;
+    snapRef.current = null;
+    const text = editedText(out.state, edit);
+    setSavedText(text);
+    setDraft(text);
+    setResults(out.results);
+    const stderr = out.results.map((x) => x.stderr).join('');
+    const stdout = out.results.map((x) => x.stdout).join('');
+    const outcome = afterCommand(p, r.runRef.current, { line: text, stderr, stdout, shell: out.state }, ERROR_GUIDES);
+    const src = outcome.error ? errorSource(out.results, outcome.error) : undefined;
+    save(r.took(outcome, src?.said ?? stderr, src?.line ?? edit.path), text, out.results);
+  };
+
+  const reset = (): void => {
+    shellRef.current = fresh;
+    snapRef.current = null;
+    const text = editedText(fresh, edit);
+    setDraft(text);
+    setSavedText(text);
+    setResults([]);
+    save(r.restart(), text, []);
+  };
+
+  // 終わりの改行の後の空の行にも番号を付ける（編集欄と同じ行の数にし、送った時に番号がずれない）
+  const lines = draft.split('\n').length;
+  const changed = draft !== savedText;
+  return (
+    <>
+      <PracticeLeft
+        p={p} run={r.run} kind={PRACTICE_NAMES[p.mode]} onHint={() => save(r.hint(), draft, results)} danger={r.danger} onTerm={onTerm}
+        action={action} onBack={onBack} backLabel={backLabel} onFinish={() => onFinish(attemptOf(p, r.runRef.current))}
+      />
+      <Slot to={right}>
+        <div className="practice-console">
+          <div className="practice-console-bar">
+            <span className="practice-console-name"><Icon name="settings" size={16} />{PRACTICE_NAMES[p.mode]}</span>
+            <code className="editor-path" data-testid="editor-path">{edit.path}</code>
+            <button type="button" className="practice-reset" onClick={reset} title="設定を初めの状態に戻す（ヒントの記録は残る）" data-testid="practice-reset">
+              <Icon name="rotate" size={14} />初めに戻す
+            </button>
+          </div>
+          <div className="editor-area">
+            <pre className="editor-gutter num" ref={gutterRef} aria-hidden="true">{Array.from({ length: lines }, (_, i) => i + 1).join('\n')}</pre>
+            <textarea
+              className="editor-text"
+              value={draft}
+              onChange={(e) => write(e.target.value)}
+              onScroll={(e) => {
+                if (gutterRef.current) gutterRef.current.scrollTop = e.currentTarget.scrollTop;
+              }}
+              wrap="off"
+              spellCheck={false}
+              autoComplete="off"
+              aria-label={`${edit.path} の中身`}
+              data-testid="editor-text"
+            />
+          </div>
+          <div className="editor-actions">
+            <span className={`editor-state${changed ? ' is-changed' : ''}`} data-testid="editor-state">{changed ? '保存していない変更がある' : '保存した中身と同じ'}</span>
+            <button type="button" className="sim-tool is-strong editor-save" onClick={check} data-testid="editor-save">保存して確かめる</button>
+          </div>
+          <section className="editor-results" aria-label="確かめた結果" data-testid="editor-results">
+            <h3 className="editor-results-title">確かめた結果</h3>
+            {results.length === 0 ? (
+              <p className="editor-results-empty">保存すると、ここに確かめた結果（{applyNames(edit)} の出力）が出る。</p>
+            ) : (
+              <pre className="editor-results-lines">
+                {results.map((x, i) => (
+                  <span key={i} className="editor-result">
+                    <span className="editor-result-line">$ {x.line}</span>{'\n'}
+                    {x.stdout}
+                    {x.stderr ? <span className="editor-result-err">{x.stderr}</span> : null}
+                  </span>
+                ))}
+              </pre>
+            )}
+          </section>
+          {r.error ? <ErrorGuidePanel error={r.error} onTerm={onTerm} onClose={() => r.setError(null)} /> : null}
+        </div>
       </Slot>
     </>
   );

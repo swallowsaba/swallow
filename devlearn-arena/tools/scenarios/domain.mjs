@@ -119,7 +119,9 @@ export default async function domain(page, shot) {
   // 実戦
   await page.waitForSelector('[data-testid="stage-practice"]');
   const sim = lesson.practice.mode === 'simulation';
-  if (!sim) await page.waitForSelector('.term-host .xterm');
+  const editor = lesson.practice.mode === 'editor';
+  if (editor) await page.waitForSelector('[data-testid="editor-text"]');
+  else if (!sim) await page.waitForSelector('.term-host .xterm');
   await wait(page, 600);
   await shot(`${tag}-practice`);
   // HINTS=1 なら、最初の手順のヒントを 3 段とも開いて撮る（そのまま打てる答えの見え方を確かめる。結果は「ヒントを使った」になる）
@@ -129,7 +131,11 @@ export default async function domain(page, shot) {
     await shot(`${tag}-hints`);
   }
   const enter = async (line, answerStep) => {
-    if (sim) {
+    if (editor) {
+      // 設定の編集: 中身をファイル全体として書き、保存して確かめる
+      await page.fill('[data-testid="editor-text"]', line);
+      await page.click('[data-testid="editor-save"]');
+    } else if (sim) {
       await page.fill('#sim-command', line);
       await page.press('#sim-command', 'Enter');
     } else if (answerStep) {
@@ -143,11 +149,16 @@ export default async function domain(page, shot) {
     await wait(page, 400);
   };
   for (const [i, step] of lesson.practice.steps.entries()) {
+    // 前の手順の操作で、もう満たした手順（設定の編集は 1 回の保存で全てを満たすことがある）
+    if (i > 0 && (await page.getAttribute(`[data-step="${step.id}"]`, 'data-done')) === 'true') continue;
     const lines = answersOf(step);
     const answerStep = step.check.kind === 'answer';
     if (i === 0) {
       // わざと誤る（無い名前・違う答え）→ エラーの小窓
-      await enter(sim ? `${lines[0].split(' ')[0]} no-such-thing` : answerStep ? 'わからない' : 'cd /no-such-dir', answerStep);
+      // 設定の編集は、WRONG（「誤り=>正しい」の形。無ければ閉じる } の前の ; を 1 つ消す）で誤った中身を保存する
+      const [bad, good] = (process.env.WRONG ?? '').split('=>');
+      const wrong = editor ? (bad ? lines[0].replace(good ?? '', bad) : lines[0].replace(/;(\s*\n\s*\})/, '$1')) : null;
+      await enter(wrong ?? (sim ? `${lines[0].split(' ')[0]} no-such-thing` : answerStep ? 'わからない' : 'cd /no-such-dir'), answerStep);
       console.log('エラー', await page.getAttribute('[data-testid="practice-error"]', 'data-guide'), await text(page, '[data-testid="practice-error"]'));
       await shot(`${tag}-error`);
     }

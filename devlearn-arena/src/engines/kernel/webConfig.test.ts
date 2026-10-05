@@ -22,6 +22,12 @@ describe('Web サーバの設定ファイル（nginx 風）', () => {
     expect(r).toEqual({ ok: false, error: 'nginx: [emerg] directive "listen" is not terminated by ";" in /etc/nginx/conf.d/city.conf:2' });
   });
 
+  it('listen の知らない引数は、ファイルと行を示して失敗する', () => {
+    const r = readWebConfig('/c', files({ '/c': 'server {\n  listen 80 proxy_pass;\n}\n' }));
+    expect(r).toEqual({ ok: false, error: 'nginx: [emerg] invalid parameter "proxy_pass" in /c:2' });
+    expect(readWebConfig('/c', files({ '/c': 'server {\n  listen 80 default_server;\n}\n' })).ok).toBe(true);
+  });
+
   it('ssl のポートは、ssl_certificate のファイルの証明書を（葉 → 中間の順に）送る。ファイルが無ければ失敗する', () => {
     const leaf = leafFor('city.example');
     const conf = 'server {\n  listen 443 ssl;\n  ssl_certificate /certs/full.crt;\n}\n';
@@ -69,6 +75,19 @@ describe('設定ファイルを持つサービス（systemctl と curl）', () =
     expect(checkState({ kind: 'http', url: 'http://localhost/', status: 200 }, { shell: shell() })).toBe(false);
     expect(run('systemctl restart nginx').code).toBe(0);
     expect(checkState({ kind: 'http', url: 'http://localhost/', status: 200 }, { shell: shell() })).toBe(true);
+  });
+
+  it('nginx -t は動かさずに設定を確かめる。誤りはファイルと行を示して 1 で終わる', () => {
+    const ok = server('server {\n  listen 80;\n}\n');
+    expect(ok.run('nginx -t')).toEqual({ out: 'nginx: the configuration file /etc/nginx/conf.d/city.conf syntax is ok\nnginx: configuration file /etc/nginx/conf.d/city.conf test is successful\n', code: 0 });
+    expect(serviceOf(ok.shell().services, 'nginx')?.active).toBe('inactive');
+    const bad = server('server {\n  listen 80\n}\n');
+    expect(bad.run('nginx -t')).toEqual({
+      out: 'nginx: [emerg] directive "listen" is not terminated by ";" in /etc/nginx/conf.d/city.conf:2\nnginx: configuration file /etc/nginx/conf.d/city.conf test failed\n',
+      code: 1,
+    });
+    expect(bad.run('nginx -t && systemctl reload nginx').code).toBe(1);
+    expect(bad.run('nginx').code).toBe(1);
   });
 
   it('設定の誤りでは起動に失敗し、journalctl に理由（ファイルと行）が出る', () => {

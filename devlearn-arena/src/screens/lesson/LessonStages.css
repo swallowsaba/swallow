@@ -186,6 +186,114 @@
   font-size: var(--fs-13);
 }
 
+/* ---------- 実戦: 設定の編集（編） ---------- */
+.editor-path {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  color: var(--hud-text);
+}
+.editor-area {
+  display: flex;
+  flex: 1;
+  min-height: 140px;
+  background: var(--navy);
+}
+.editor-gutter,
+.editor-text {
+  margin: 0;
+  padding: 12px 10px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+}
+.editor-gutter {
+  flex: none;
+  min-width: 44px;
+  overflow: hidden;
+  border-right: 1px solid var(--hud-line);
+  color: var(--hud-text-sub);
+  text-align: right;
+  user-select: none;
+}
+.editor-text {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  border: none;
+  outline: none;
+  background: var(--transparent);
+  color: var(--hud-text);
+  caret-color: var(--gold-light);
+  tab-size: 2;
+}
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--hud-line);
+  background: var(--hud-bg-strong);
+}
+.editor-state {
+  margin-right: auto;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.editor-state.is-changed {
+  color: var(--gold-light);
+}
+.editor-save {
+  padding: 5px 16px;
+  font-size: var(--fs-13);
+}
+.editor-results {
+  flex: none;
+  max-height: 34%;
+  overflow-y: auto;
+  padding: 8px 16px 10px;
+  border-top: 1px solid var(--hud-line);
+}
+.editor-results-title {
+  margin: 0 0 4px;
+  font-size: var(--fs-12);
+  font-weight: 700;
+  color: var(--gold);
+}
+.editor-results-empty {
+  margin: 0;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.editor-results-lines {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  line-height: 1.6;
+  color: var(--hud-text);
+  /* 細い列でも行の終わりを隠さない */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.editor-result-line {
+  color: var(--ok);
+}
+.editor-result-err {
+  color: var(--info);
+}
+/* 縦の低い画面（1280×720 など）では、確かめた結果とエラーの小窓を低くして、編集欄を広く取る */
+@media (max-height: 820px) {
+  .editor-results {
+    max-height: 24%;
+  }
+  .practice-console:has(.editor-area) .practice-error {
+    max-height: 44%;
+  }
+}
+
 /* エラーの小窓（端末の下）。失敗の演出にせず、調べる調子で */
 .practice-error {
   position: relative;
