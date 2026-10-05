@@ -71,6 +71,46 @@
         "diff",
         "commit"
       ]
+    },
+    {
+      "id": "git-branch-exists",
+      "match": "a branch named '.*' already exists",
+      "meaning": "その名前の枝は、もうある。",
+      "causes": [
+        "前に作った枝を、もう一度 `-c` で作ろうとした。",
+        "作った後で、移るだけのつもりだった。"
+      ],
+      "hint": "ある枝へ移るだけなら `-c` を付けずに `git switch 枝の名前`。`git branch` で枝の一覧を見られる。",
+      "terms": [
+        "branch"
+      ]
+    },
+    {
+      "id": "git-invalid-ref",
+      "match": "invalid reference",
+      "meaning": "その名前の枝が見つからない。",
+      "causes": [
+        "まだ枝を作っていない（作って移るのは `git switch -c`）。",
+        "枝の名前の綴りが違う。"
+      ],
+      "hint": "`git branch` で、ある枝の一覧を確かめる。無ければ `git switch -c 名前` で作って移る。",
+      "terms": [
+        "branch"
+      ]
+    },
+    {
+      "id": "git-branch-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、main の履歴と合っていない。",
+      "causes": [
+        "枝を移らずに、main で記録した（記録は今いる枝に付く）。",
+        "main に戻らずに、feature の履歴を数えた。"
+      ],
+      "hint": "`git branch` で今いる枝（* の行）を確かめ、main で `git log --oneline` を数えよう。",
+      "terms": [
+        "branch",
+        "git-head"
+      ]
     }
   ]
 }

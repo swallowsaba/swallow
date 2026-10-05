@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>main の 2 つ目の記録から feature の枝が分かれ、feature で「噴水を足す」を記録した。main は 2 つ目の記録のまま変わらない。HEAD は今いる枝を指す</title>
+  <g class="el" data-part="main">
+    <path d="M70 200 H330" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <circle cx="90" cy="200" r="14" fill="#9fb0c6" />
+    <text x="90" y="240" text-anchor="middle" font-size="13" fill="#9fb0c6">地図を作る</text>
+    <circle cx="300" cy="200" r="14" fill="#9fb0c6" />
+    <text x="300" y="240" text-anchor="middle" font-size="13" fill="#9fb0c6">トイレを書き足す</text>
+    <rect x="352" y="186" width="80" height="28" rx="6" fill="#9fb0c6" />
+    <text x="392" y="205" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#0a1424">main</text>
+    <text x="452" y="205" font-size="13" fill="#9fb0c6">変わらない</text>
+  </g>
+  <g class="el" data-part="feature">
+    <path d="M300 200 C 360 200, 380 100, 460 100" fill="none" stroke="#e0457b" stroke-width="4" />
+    <circle cx="480" cy="100" r="14" fill="#e0457b" />
+    <text x="480" y="70" text-anchor="middle" font-size="13" fill="#eef2f6">噴水を足す</text>
+    <rect x="514" y="86" width="96" height="28" rx="6" fill="#e0457b" />
+    <text x="562" y="105" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#eef2f6">feature</text>
+  </g>
+  <g class="el" data-part="head">
+    <path d="M562 152 V122" fill="none" stroke="#f2b632" stroke-width="2.5" />
+    <path d="M556 130 L562 120 L568 130 z" fill="#f2b632" />
+    <text x="562" y="170" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="14" fill="#f2b632">HEAD</text>
+    <text x="562" y="190" text-anchor="middle" font-size="13" fill="#f2b632">今いる枝</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="30" y="40" font-size="14" fill="#eef2f6">枝は、記録の先に付いた名札。作ってもファイルは複製されない</text>
+    <text x="30" y="282" font-size="13" fill="#9fb0c6">記録は、今いる枝（HEAD が指す枝）にだけ足される</text>
+  </g>
+</svg>

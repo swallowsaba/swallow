@@ -60,7 +60,8 @@
       "lessons": [
         "git.b.01",
         "git.b.02",
-        "git.b.03"
+        "git.b.03",
+        "git.b.04"
       ],
       "analogy": "ゲームのセーブ。セーブした所から何度でもやり直せる。"
     },
@@ -148,6 +149,21 @@
       ],
       "lessons": [
         "git.b.03"
+      ]
+    },
+    {
+      "id": "git-head",
+      "word": "HEAD",
+      "reading": "へっど",
+      "plain": "今いる枝（ブランチ）を指す印。記録すると、HEAD が指す枝の先に足される。",
+      "why": "どの枝で作業しているかを決める。記録の前に、HEAD がどの枝を指しているか（git branch の * の行）を確かめる。",
+      "related": [
+        "branch",
+        "commit"
+      ],
+      "lessons": [
+        "git.b.04",
+        "git.b.06"
       ]
     }
   ]

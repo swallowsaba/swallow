@@ -1,0 +1,230 @@
+{
+  "id": "git.b.04",
+  "domain": "git",
+  "level": "beginner",
+  "theme": "branch",
+  "title": "枝を分ける",
+  "goal": "branch/switch で作業を分けられる",
+  "minutes": 15,
+  "prerequisites": [
+    "git.b.02"
+  ],
+  "related": [
+    "cicd.i.05",
+    "git.a.02"
+  ],
+  "next": [
+    "git.b.05"
+  ],
+  "terms": [
+    "branch",
+    "commit",
+    "git-head",
+    "file",
+    "directory",
+    "repository"
+  ],
+  "explain": {
+    "what": "{{term:branch}}は、履歴を枝分かれさせて、作業の流れを分ける仕組み。枝で{{term:commit}}すると、その枝の履歴だけが進み、ほかの枝は変わらない。",
+    "why": "本番の版（main）を壊さずに、新しいことを試せる。機能の追加と緊急の修正のように、いくつもの作業を並べて進められる。",
+    "use": "機能の追加・不具合の修正・試し。作業ごとに枝を作り、できあがってから main に取り込む。今いる枝は{{term:git-head}}が指す 1 つで、記録はその枝に付く。",
+    "when": "新しい機能を試しながら、main で緊急の修正もしたい時。作業を始める前に、今どの枝にいるかを確かめる習慣が大事。",
+    "figures": [
+      "git-b04-branch"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "feature の枝の履歴",
+      "b": "feature で記録したコミット",
+      "answer": "contains",
+      "why": "枝の履歴は、その枝で記録したコミットを含む。main の履歴には、feature で記録したコミットは入らない。",
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "枝を作ると、全ての{{term:file}}が複製される。",
+      "answer": false,
+      "why": "枝は、今の記録を指す名札を 1 つ作るだけ。ファイルは複製されないので、大きなプロジェクトでも一瞬で作れる。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "新しい枝 feature を作って、そこへ移りたい。どれを使う？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git switch -c feature`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`git switch feature`",
+          "correct": false,
+          "whyNot": "-c が無いと、ある枝へ移るだけ。まだ無い枝には移れない（invalid reference）。"
+        },
+        {
+          "id": "c",
+          "text": "`git branch feature`",
+          "correct": false,
+          "whyNot": "枝は作れるが、移らない。そのまま記録すると、今の枝（main）に付く。"
+        }
+      ],
+      "explanation": "-c は「作って（create）移る」。作るだけなら `git branch 名前`、移るだけなら `git switch 名前`。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "うまくいくか分からない新しい表示を試したい。main は本番で使っている。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "新しい枝を作って、そこで試す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "main で試し、だめなら後で消す",
+          "correct": false,
+          "whyNot": "試している間、本番の版が壊れたままになる。消し忘れや、ほかの人への影響も出る。"
+        },
+        {
+          "id": "c",
+          "text": "プロジェクトの{{term:directory}}を丸ごとコピーして試す",
+          "correct": false,
+          "whyNot": "どちらが新しいか分からなくなり、履歴も分かれてしまう。枝なら同じ{{term:repository}}の中で分けられる。"
+        }
+      ],
+      "explanation": "試す作業は枝で。うまくいけば main に取り込み、だめなら枝ごと捨てられる。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "feature の枝で 1 件記録した後、main に戻って履歴を見る。どうなっている？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "main の履歴は変わらない（feature の記録は入っていない）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "main にも同じ記録が入っている",
+          "correct": false,
+          "whyNot": "記録は今いる枝（feature）にだけ付く。main に入れるには、取り込む操作（merge）が要る。"
+        },
+        {
+          "id": "c",
+          "text": "main の履歴が消えている",
+          "correct": false,
+          "whyNot": "枝で記録しても、ほかの枝の履歴は消えない。"
+        }
+      ],
+      "explanation": "枝ごとに履歴が進む。`git log --oneline --all` で、全ての枝の記録を並べて見られる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "公園の地図（`map.txt`）に噴水を足す案を、main を変えずに試す。feature の枝を作り、そこで記録する。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev-office",
+      "cwd": "/home/learner/park-map",
+      "dirs": [
+        "/home/learner/park-map"
+      ],
+      "run": [
+        "git init",
+        "export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE=\"2026-09-28 10:00\"",
+        "echo '入口: 北側' > map.txt",
+        "echo '駐車場: 40 台' >> map.txt",
+        "git add map.txt",
+        "git commit -m \"公園の地図を作る\"",
+        "export GIT_AUTHOR_DATE=\"2026-10-01 15:00\"",
+        "echo '入口: 北側' > map.txt",
+        "echo '駐車場: 40 台' >> map.txt",
+        "echo 'トイレ: 入口の横' >> map.txt",
+        "git commit -am \"トイレを書き足す\"",
+        "unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE"
+      ]
+    },
+    "steps": [
+      {
+        "id": "branch",
+        "purpose": "feature という枝を作り、そこへ移る。今いる枝を確かめる。",
+        "check": {
+          "kind": "git",
+          "expr": "branch:feature on:feature"
+        },
+        "afterward": "feature の枝ができ、今いる枝（`HEAD`）が feature になった。`git branch` では、feature の行に * が付く。",
+        "hints": [
+          "枝を作って、そこへ移る。作るだけでは移らない。",
+          "`git switch -c` は、作って移る。移った後、`git branch` で * の付いた枝を見る。",
+          "`git switch -c feature` と `git branch` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "git-branch-exists",
+          "git-invalid-ref"
+        ]
+      },
+      {
+        "id": "record",
+        "purpose": "feature の枝で、`map.txt` に「噴水: 中央」の行を足して記録する。",
+        "check": {
+          "kind": "git",
+          "expr": "on:feature commits:feature>=3 committed:map.txt"
+        },
+        "afterward": "feature の枝に「噴水を足す」の記録が足された。`git log --oneline` では、先頭の記録に `(HEAD -> feature)` の印が付く。",
+        "hints": [
+          "行を足すのは `echo` と `>>`。記録は add と commit（`-a` で追跡済みのファイルをまとめて選べる）。",
+          "`echo '噴水: 中央' >> map.txt` の後、`git commit -am \"説明\"`。",
+          "`echo '噴水: 中央' >> map.txt` と `git commit -am \"噴水を足す\"` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "git-nothing-added"
+        ]
+      },
+      {
+        "id": "main",
+        "purpose": "main に戻り、main の記録が何件あるかを数えて答える。feature の記録が main に入っていないことを確かめる。",
+        "check": {
+          "kind": "answer",
+          "equals": "2"
+        },
+        "afterward": "main の記録は 2 件のまま。`map.txt` にも噴水の行は無い。feature の作業は、main を変えずに進められた。",
+        "hints": [
+          "main に移るのは、`-c` を付けずに `git switch`。",
+          "移った後、`git log --oneline` で main の記録を数える。",
+          "`git switch main` と `git log --oneline` を順に打ち、`2` と答える。"
+        ],
+        "expectedErrors": [
+          "git-branch-misread"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "枝を作って移り、そこで記録した。main は変わらないことも自分で確かめた。",
+    "partial": "ヒントを使って、作業を枝に分けられた。次は、枝を移らずに記録すると何が起きるかを説明してみよう。",
+    "retry": "main の履歴に、feature の記録が混ざっているかもしれない。`git log --oneline --all` で、どの枝にどの記録があるかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "枝で作業を分ける",
+      "本番を壊さない",
+      "今どの枝かを確かめる"
+    ],
+    "next": [
+      "git.b.05"
+    ],
+    "terms": [
+      "branch",
+      "git-head"
+    ]
+  }
+}
