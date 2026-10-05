@@ -1,0 +1,251 @@
+{
+  "id": "git.i.05",
+  "domain": "git",
+  "level": "intermediate",
+  "theme": "履歴",
+  "title": "rebase の考え方",
+  "goal": "merge との違いと、使ってはいけない場面を説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "git.b.05"
+  ],
+  "related": [
+    "git.b.05",
+    "git.a.02"
+  ],
+  "next": [
+    "git.i.06"
+  ],
+  "terms": [
+    "rebase",
+    "branch",
+    "commit",
+    "merge",
+    "merge-commit",
+    "conflict",
+    "remote",
+    "push",
+    "git-head",
+    "file",
+    "git",
+    "repository"
+  ],
+  "explain": {
+    "what": "{{term:rebase}}は、{{term:branch}}の付け根を付け替える操作。自分の枝の{{term:commit}}を、最新の main の先の上に、1 つずつ載せ直す。",
+    "why": "{{term:merge}}は、合わせた所に{{term:merge-commit}}を作り、履歴が枝分かれしたまま残る。rebase は合流の記録を作らず、履歴を一直線にして読みやすくする。",
+    "use": "取り込む前の整理。自分だけの枝を最新の main に追いつかせる時に使う。載せ直した記録は中身が同じでも別の記録になり、番号が変わる。同じ行を変えていれば、記録ごとに{{term:conflict}}が起きる。直して続ける。",
+    "when": "main が進んでいて、自分の枝が古い時。ただし、既に{{term:remote}}に{{term:push}}して、ほかの人も使っている枝では行わない。番号が変わり、ほかの人の履歴と食い違う。",
+    "figures": [
+      "git-i05-rebase"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "rebase で、自分の枝を main の先に載せ直す",
+      "b": "載せ直した記録の番号が変わる",
+      "answer": "cause",
+      "why": "記録の番号は、中身と親から決まる。親（付け根）が変わるので、同じ変更でも新しい番号の記録になる。",
+      "see": "use"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "ほかの人も使っている、共有した枝を rebase してよい。",
+      "answer": false,
+      "why": "番号が変わるので、ほかの人の手元の記録と食い違う。共有した枝は merge で合わせる。",
+      "see": "when"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "git-i05-rebase",
+      "prompt": "図の中で、合流の記録を作らずに履歴が一直線になる方を押す。",
+      "answer": [
+        "rebase"
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "自分の枝に 2 つの記録がある。`git rebase main` で載せ替えた後、その 2 つの記録は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "中身と説明は同じで、番号が新しくなる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "番号も含めて、全く同じまま",
+          "correct": false,
+          "whyNot": "親が変わるので、番号も変わる。元の番号の記録は、枝から外れる。"
+        },
+        {
+          "id": "c",
+          "text": "1 つの合流の記録にまとめられる",
+          "correct": false,
+          "whyNot": "rebase は合流の記録を作らない。記録は 1 つずつ載せ直される。"
+        }
+      ],
+      "explanation": "rebase は記録を作り直す。だから、ほかの人が持っている記録には使わない。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "まだ誰にも送っていない、自分だけの作業の枝を、最新の main に追いつかせたい。",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`git rebase main` で載せ替えてよい",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "rebase は危ないので、絶対に使わない",
+          "correct": false,
+          "whyNot": "危ないのは共有した枝の時だけ。自分だけの枝なら、誰の履歴とも食い違わない。"
+        },
+        {
+          "id": "c",
+          "text": "枝を消して、main から作り直す",
+          "correct": false,
+          "whyNot": "自分の記録が消えてしまう。載せ替えれば、記録を残したまま追いつける。"
+        }
+      ],
+      "explanation": "自分だけの枝の整理は rebase の得意な場面。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "チームの枝を rebase して上書きで送った後、ほかの人から「履歴が食い違って送れない」と言われた。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "共有した枝を rebase して、記録の番号を変えた",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ほかの人の手元の{{term:git}}が古い",
+          "correct": false,
+          "whyNot": "道具の版ではなく、履歴の中身が変わったことが原因。"
+        },
+        {
+          "id": "c",
+          "text": "rebase の時に衝突を解き間違えた",
+          "correct": false,
+          "whyNot": "衝突を正しく解いても、番号が変わる限り、ほかの人の履歴とは食い違う。"
+        }
+      ],
+      "explanation": "ほかの人の手元には、元の番号の記録がある。リモートだけ別の番号になると、両方の履歴が分かれてしまう。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "ボート乗り場の案内の{{term:repository}}。自分だけの作業の枝 feature（まだ誰にも送っていない）で 2 つ記録したが、その間に main で佐藤さんが「夏は 17 時まで開ける」を記録した。feature を最新の main の上に付け替え、合流の記録の無い一直線の履歴にする。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev-office",
+      "cwd": "/home/learner/boat",
+      "dirs": [
+        "/home/learner/boat"
+      ],
+      "run": [
+        "git init",
+        "export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE=\"2026-09-25 10:00\"",
+        "echo 'ボート: 10:00-16:00' > boat.txt",
+        "echo '料金: 500 円' >> boat.txt",
+        "git add boat.txt",
+        "git commit -m \"ボート乗り場を作る\"",
+        "git switch -c feature",
+        "export GIT_AUTHOR_NAME=Learner GIT_AUTHOR_EMAIL=learner@example.com GIT_AUTHOR_DATE=\"2026-09-28 10:00\"",
+        "echo '1 回 30 分まで' > rules.txt",
+        "git add rules.txt",
+        "git commit -m \"乗る時の決まりを書く\"",
+        "echo 'ボート: 10:00-16:00（雨の日は休み）' > boat.txt",
+        "echo '料金: 500 円' >> boat.txt",
+        "git commit -am \"雨の日は休みにする\"",
+        "git switch main",
+        "export GIT_AUTHOR_NAME=Sato GIT_AUTHOR_EMAIL=sato@city.example GIT_AUTHOR_DATE=\"2026-10-01 10:00\"",
+        "echo 'ボート: 10:00-17:00' > boat.txt",
+        "echo '料金: 500 円' >> boat.txt",
+        "git commit -am \"夏は 17 時まで開ける\"",
+        "unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE"
+      ]
+    },
+    "steps": [
+      {
+        "id": "start",
+        "purpose": "自分の枝に移り、最新の main の上に付け替える。止まったら、衝突した{{term:file}}の名前を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "boat.txt"
+        },
+        "afterward": "1 つ目の「乗る時の決まりを書く」は別のファイルなので、そのまま載った。2 つ目の「雨の日は休みにする」は、main と同じ行を変えていたので止まった。",
+        "hints": [
+          "付け替えるのは自分の枝。今いる枝を確かめ、feature に移ってから、付け替え先を指定する。",
+          "`git rebase main` は、今の枝を main の先に載せ直す。止まったら `git status` の `both modified` を見る。",
+          "`git switch feature` と `git rebase main` と `git status` を順に打ち、`boat.txt` と答える。"
+        ],
+        "expectedErrors": [
+          "git-rebase-conflict",
+          "git-rebase-which"
+        ]
+      },
+      {
+        "id": "fix",
+        "purpose": "印の間の 2 つの版を読み、17 時までと雨の日の休みの両方が入った 1 行に直す。印の行は全て消す。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/boat/boat.txt",
+          "contains": "ボート: 10:00-17:00（雨の日は休み）"
+        },
+        "afterward": "「ボート: 10:00-17:00（雨の日は休み）」にまとめた。rebase の印は、上（HEAD）が載せ替え先（main の側）、下が載せ直している自分の記録。merge の時と向きが逆に見えるので注意。",
+        "hints": [
+          "`cat boat.txt` で印の間を読む。上（{{term:git-head}}）は載せ替え先（main）の版、下は自分の記録の版。",
+          "両方の意図を 1 行にまとめる。印の 3 行は残さない。",
+          "`echo 'ボート: 10:00-17:00（雨の日は休み）' > boat.txt` と `echo '料金: 500 円' >> boat.txt` を順に打つ。"
+        ]
+      },
+      {
+        "id": "continue",
+        "purpose": "解いたことを伝えて、載せ替えを最後まで続ける。",
+        "check": {
+          "kind": "git",
+          "expr": "on:feature branch:main merged-into:feature linear clean resolved"
+        },
+        "afterward": "feature が main の先に載り、合流の記録の無い一直線の履歴になった。自分の 2 つの記録は、説明は同じで番号が新しくなった。",
+        "hints": [
+          "rebase の途中で解いた時は、commit ではなく、rebase に続けるよう伝える。",
+          "`git add` で解いたことを伝え、`git rebase --continue` で残りを流す。",
+          "`git add boat.txt` と `git rebase --continue` を順に打つ。"
+        ],
+        "expectedErrors": [
+          "git-rebase-not-added",
+          "git-rebase-conflict"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "自分だけの枝を最新の main の上に付け替え、衝突を解いて続け、一直線の履歴に整えた。",
+    "partial": "ヒントを使って、履歴を整えた。次は、merge と rebase で履歴の形がどう違うかを説明してみよう。",
+    "retry": "まだ付け替え終わっていない。図で、merge の後と rebase の後の履歴の形を見比べよう。"
+  },
+  "summary": {
+    "points": [
+      "rebase は付け替え",
+      "記録の番号が変わる",
+      "共有した枝ではしない"
+    ],
+    "next": [
+      "git.a.02"
+    ],
+    "terms": [
+      "rebase"
+    ]
+  }
+}

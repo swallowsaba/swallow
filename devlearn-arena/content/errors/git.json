@@ -346,6 +346,48 @@
         "git-revert",
         "push"
       ]
+    },
+    {
+      "id": "git-rebase-conflict",
+      "match": "could not apply",
+      "meaning": "載せ直している記録が、載せ替え先と同じ行を変えていて、自動では載せられなかった。載せ替えの途中で止まっている。",
+      "causes": [
+        "自分の記録と、main の新しい記録が、同じファイルの同じ行を変えた。",
+        "前の衝突を解かないまま、続けようとした。"
+      ],
+      "hint": "`cat` で印の間を読んで直し、`git add` で解いたことを伝えてから `git rebase --continue`。やめるなら `git rebase --abort`。",
+      "terms": [
+        "rebase",
+        "conflict"
+      ]
+    },
+    {
+      "id": "git-rebase-not-added",
+      "match": "you must edit all merge conflicts",
+      "meaning": "衝突したファイルを、まだ解いたと伝えていないので、続けられない。",
+      "causes": [
+        "ファイルを直したが、`git add` をしていない。",
+        "まだファイルを直していない。"
+      ],
+      "hint": "印を消して直し、`git add <ファイル>` の後に `git rebase --continue`。",
+      "terms": [
+        "rebase",
+        "conflict"
+      ]
+    },
+    {
+      "id": "git-rebase-which",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、載せ替えで衝突したファイルと合っていない。",
+      "causes": [
+        "まだ載せ替えをしていない（feature に移って `git rebase main` を打つと、衝突した所で止まる）。",
+        "衝突せずに載ったファイル（rules.txt）を答えた。"
+      ],
+      "hint": "`git status` の `both modified` の行を見よう。",
+      "terms": [
+        "rebase",
+        "conflict"
+      ]
     }
   ]
 }

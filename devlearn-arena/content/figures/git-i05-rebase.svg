@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>merge と rebase の比較。merge は 2 つの枝を合わせる記録を作り、履歴は枝分かれしたまま残る。rebase は自分の記録を main の先に載せ直し、合流の記録の無い一直線の履歴になる。載せ直した記録は番号が変わる</title>
+  <g class="el" data-part="merge">
+    <rect x="10" y="40" width="330" height="240" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="30" y="72" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#eef2f6">merge</text>
+    <text x="30" y="96" font-size="13" fill="#9fb0c6">合わせる記録を作る</text>
+    <path d="M40 210 H300" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <path d="M100 210 C 130 210, 130 150, 160 150 H220 C 260 150, 270 210, 290 210" fill="none" stroke="#e0457b" stroke-width="4" />
+    <circle cx="50" cy="210" r="12" fill="#9fb0c6" />
+    <circle cx="100" cy="210" r="12" fill="#9fb0c6" />
+    <circle cx="200" cy="210" r="12" fill="#9fb0c6" />
+    <circle cx="160" cy="150" r="12" fill="#e0457b" />
+    <circle cx="220" cy="150" r="12" fill="#e0457b" />
+    <circle cx="295" cy="210" r="15" fill="#f2b632" />
+    <text x="295" y="250" text-anchor="middle" font-size="13" fill="#f2b632">合流の記録</text>
+    <text x="30" y="270" font-size="13" fill="#9fb0c6">枝分かれが残る</text>
+  </g>
+  <g class="el" data-part="rebase">
+    <rect x="360" y="40" width="330" height="240" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="380" y="72" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="16" font-weight="700" fill="#eef2f6">rebase</text>
+    <text x="380" y="96" font-size="13" fill="#9fb0c6">付け根を付け替えて載せ直す</text>
+    <path d="M390 180 H660" fill="none" stroke="#9fb0c6" stroke-width="4" />
+    <circle cx="400" cy="180" r="12" fill="#9fb0c6" />
+    <circle cx="455" cy="180" r="12" fill="#9fb0c6" />
+    <circle cx="510" cy="180" r="12" fill="#9fb0c6" />
+    <text x="510" y="150" text-anchor="middle" font-family="&quot;JetBrains Mono&quot;, monospace" font-size="13" fill="#eef2f6">main</text>
+    <circle cx="575" cy="180" r="12" fill="#e0457b" />
+    <circle cx="640" cy="180" r="12" fill="#e0457b" />
+    <text x="608" y="218" text-anchor="middle" font-size="13" fill="#e0457b">番号が新しくなる</text>
+    <text x="380" y="270" font-size="13" fill="#f2b632">一直線。合流の記録は無い</text>
+  </g>
+</svg>
