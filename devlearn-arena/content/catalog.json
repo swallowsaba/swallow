@@ -1594,7 +1594,7 @@
       "title": "HTTP/2 と HTTP/3",
       "goal": "違いと利点を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "web.b.02",
@@ -1746,7 +1746,7 @@
       "title": "公開鍵と秘密鍵",
       "goal": "鍵の対と、渡してよい鍵・いけない鍵を説明できる",
       "practice": [
-        "simulation"
+        "terminal"
       ],
       "prerequisites": [
         "sec.b.01"
@@ -2506,7 +2506,7 @@
       "title": "複合障害",
       "goal": "複数の原因が重なった障害を順に解ける",
       "practice": [
-        "terminal"
+        "simulation"
       ],
       "prerequisites": [
         "trouble.a.01",

@@ -216,7 +216,7 @@ lab は複数分野の組み合わせ
 | web.i.03 | 中級 | Web サーバ | 仮想ホストとリバースプロキシ | 1 台で複数サイト、後段への転送を設定できる | 編 | web.b.07 | k8s.i.04, net.a.03 | web.a.02, sec.i.02, k8s.i.04 |
 | web.i.04 | 中級 | 性能 | キャッシュ | どこで何が保存されるかを説明し、設定できる | 模 | web.b.05 | net.a.03, db.i.03 | web.a.01 |
 | web.i.05 | 中級 | 安全 | CORS | ブラウザが他のサイトへの通信を止める理由と許可の仕方 | 模 | web.i.01 | sec.b.02, web.i.01 | web.i.06 |
-| web.i.06 | 中級 | 版 | HTTP/2 と HTTP/3 | 違いと利点を説明できる | 模 | web.b.02, net.b.05 | net.b.05, sec.b.06 | web.a.01 |
+| web.i.06 | 中級 | 版 | HTTP/2 と HTTP/3 | 違いと利点を説明できる | 端 | web.b.02, net.b.05 | net.b.05, sec.b.06 | web.a.01 |
 | web.a.01 | 上級 | 性能 | 遅い Web を調べる | 遅延の内訳（DNS・接続・TLS・処理・転送）を切り分けられる | 模 | web.i.04, sec.b.06 | mon.i.01, net.a.02 | web.a.02 |
 | web.a.02 | 上級 | 障害 | 4xx と 5xx を直す | 症状から Web サーバ・アプリ・後段のどこかを特定できる | 端 | web.i.03, trouble.b.03 | trouble.i.03, mon.i.03 | web.a.03 |
 | web.a.03 | 上級 | API | 認証付き API | トークンを使った API 呼び出しと失敗時の扱い | 端 | web.i.01, sec.b.02 | sec.b.02, sec.i.05 | — |
@@ -232,7 +232,7 @@ lab は複数分野の組み合わせ
 | sec.b.01 | 初級 | 基本 | 何を守るのか（機密性・完全性・可用性） | 守る対象と脅威を 3 つの観点で整理できる | 模 | found.b.06 | cloud.i.03, mon.b.01 | sec.b.02, sec.b.04, cloud.i.03 |
 | sec.b.02 | 初級 | 認証と認可 | 認証と認可 | 「誰か」と「何をしてよいか」を区別できる | 模 | sec.b.01 | web.b.06, k8s.i.02 | sec.b.03, web.a.03 |
 | sec.b.03 | 初級 | 認証 | パスワードと多要素認証 | 強いパスワードと多要素の意味を説明できる | 模 | sec.b.02 | web.b.06, sec.b.05 | sec.b.04 |
-| sec.b.04 | 初級 | 暗号 | 公開鍵と秘密鍵 | 鍵の対と、渡してよい鍵・いけない鍵を説明できる | 模 | sec.b.01 | linux.a.04, git.i.02 | sec.b.05, sec.b.06, linux.a.04 |
+| sec.b.04 | 初級 | 暗号 | 公開鍵と秘密鍵 | 鍵の対と、渡してよい鍵・いけない鍵を説明できる | 端 | sec.b.01 | linux.a.04, git.i.02 | sec.b.05, sec.b.06, linux.a.04 |
 | sec.b.05 | 初級 | 秘密情報 | 秘密情報を漏らさない | 鍵やトークンをコードに書かない・コミットしない理由と方法 | 端 | sec.b.04, git.b.02 | git.a.03, cicd.i.03 | sec.i.05, cicd.i.03, k8s.i.02 |
 | sec.b.06 | 初級 | TLS | HTTPS と TLS | 暗号化と相手の確認の 2 つの役割を説明できる | 模 | web.b.02, sec.b.04 | web.b.02, net.b.05 | sec.b.07, web.b.08, web.a.01 |
 | sec.b.07 | 初級 | 証明書 | 証明書と認証局 | サーバ証明書・中間証明書・ルート証明書の関係を説明できる | 模 | sec.b.06 | net.i.05, web.b.08 | sec.i.01 |
@@ -435,7 +435,7 @@ lab は複数分野の組み合わせ
 | trouble.i.02 | 中級 | ネットワーク | 繋がらない | 名前が引けない・経路が無い・ポートが閉じている、を見分けて直せる | 端 | net.i.03 | net.a.01, k8s.a.03 | trouble.i.03 |
 | trouble.i.03 | 中級 | Web | Web の障害 | 4xx/5xx・証明書・リバースプロキシの誤りを直せる | 端 | web.i.03, sec.i.01 | web.a.02, sec.i.01 | trouble.a.01 |
 | trouble.a.01 | 上級 | コンテナ | コンテナと Kubernetes の障害 | 層をまたぐ障害を切り分けて直せる | 端 | k8s.a.02 | docker.a.02, k8s.a.02 | trouble.a.02, lab.a.02 |
-| trouble.a.02 | 上級 | 複合 | 複合障害 | 複数の原因が重なった障害を順に解ける | 端 | trouble.a.01, mon.i.03 | mon.a.02, git.a.01 | trouble.a.03 |
+| trouble.a.02 | 上級 | 複合 | 複合障害 | 複数の原因が重なった障害を順に解ける | 模 | trouble.a.01, mon.i.03 | mon.a.02, git.a.01 | trouble.a.03 |
 | trouble.a.03 | 上級 | 予防 | 再発防止 | 原因に応じた恒久対策を選び、確かめられる | 模 | trouble.a.02, devops.i.03 | devops.i.03, sec.a.03 | — |
 
 ### 4.16 研究（lab）— 研究施設（総合演習）
