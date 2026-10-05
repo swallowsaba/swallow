@@ -272,6 +272,8 @@ export interface LogEntry {
   hash: string;
   message: string;
   timestamp: number;
+  /** 記録した人（log の Author と Date はこれを出す） */
+  author: Signature;
   parents: string[];
 }
 
@@ -297,6 +299,7 @@ export function log(git: GitState, limit = 50): LogEntry[] {
       hash,
       message: parsed.message.trim(),
       timestamp: parsed.author.timestamp,
+      author: parsed.author,
       parents: [...parsed.parents],
     });
     discovered.push(hash);

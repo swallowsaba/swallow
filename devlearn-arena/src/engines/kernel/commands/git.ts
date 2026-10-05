@@ -9,7 +9,8 @@ import { plumbingSubcommands } from './gitPlumbing';
 import { rebaseSubcommands } from './gitRebase';
 import { refSubcommands } from './gitRefs';
 import { remoteSubcommands } from './gitRemote';
-import { NOT_A_REPO, type GitHandler } from './gitShared';
+import { NOT_A_REPO, parseLocalTime, type GitHandler } from './gitShared';
+import { START_TIME } from '../cron';
 
 /**
  * git のサブコマンド表。
@@ -56,7 +57,18 @@ function runSubcommand(
   if (handler === undefined) {
     return { stderr: `git: '${sub}' is not a git command. See 'git help'.\n`, code: 1 };
   }
-  return handler({ git, shell, sub, rest, nowSeconds, runLine });
+  // 記録の作者と日付は、本物と同じく GIT_AUTHOR_NAME・GIT_AUTHOR_EMAIL・GIT_AUTHOR_DATE で変えられる（その時の記録だけ）
+  const vars = shell.vars;
+  const author = { ...git.author, name: vars.get('GIT_AUTHOR_NAME') || git.author.name, email: vars.get('GIT_AUTHOR_EMAIL') || git.author.email };
+  const when = parseLocalTime(vars.get('GIT_AUTHOR_DATE') ?? '') ?? nowSeconds;
+  const result = handler({ git: { ...git, author }, shell, sub, rest, nowSeconds: when, runLine });
+  const next = result.patch?.git;
+  return next ? { ...result, patch: { ...result.patch, git: { ...next, author: git.author } } } : result;
+}
+
+/** 機械の今の時刻（__NOW。無ければ始まりの時刻）に、模擬の時計の経過を足した UNIX 秒 */
+function machineSeconds(shell: ShellState, elapsed: number): number {
+  return (parseLocalTime(shell.vars.get('__NOW') ?? START_TIME) ?? 0) + elapsed;
 }
 
 function usage(): string {
@@ -75,7 +87,7 @@ export const gitCommands: CommandSpec[] = [
     handler: ({ argv, shell, clock, runLine }) => {
       const sub = argv[1];
       if (sub === undefined) return { stdout: usage() };
-      return runSubcommand(sub, argv, shell, Math.floor(clock.nowMs / 1000), runLine);
+      return runSubcommand(sub, argv, shell, machineSeconds(shell, Math.floor(clock.nowMs / 1000)), runLine);
     },
   },
 ];

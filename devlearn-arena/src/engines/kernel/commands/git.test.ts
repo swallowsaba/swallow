@@ -325,3 +325,41 @@ describe('git show', () => {
     expect(r.err).toContain("ambiguous argument 'nope'");
   });
 });
+
+describe('記録の日付と作者（本物の git の表示と環境変数）', () => {
+  beforeEach(() => {
+    run('git init');
+  });
+
+  it('日付は機械の時刻で、本物と同じ形で出る', () => {
+    run('git add a.txt');
+    run('git commit -m "first"');
+    expect(run('git log').out).toMatch(/Date: {3}Sat Oct 3 09:00:\d\d 2026 \+0900\n/);
+    expect(run('git show HEAD').out).toMatch(/Date: {3}Sat Oct 3 09:00:\d\d 2026 \+0900\n/);
+  });
+
+  it('GIT_AUTHOR_NAME・GIT_AUTHOR_EMAIL・GIT_AUTHOR_DATE の記録は、その作者と日付で残り、log はそれぞれの作者を出す', () => {
+    run('export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE="2026-09-29 14:30"');
+    run('git add a.txt');
+    run('git commit -m "first"');
+    run('unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE');
+    run('echo B > a.txt');
+    run('git commit -am "second"');
+    const out = run('git log').out;
+    expect(out).toMatch(/Author: Learner <learner@example\.com>\nDate: {3}Sat Oct 3 09:00:\d\d 2026 \+0900\n\n {4}second/);
+    expect(out).toContain('Author: Tanaka <tanaka@city.example>\nDate:   Tue Sep 29 14:30:00 2026 +0900\n\n    first');
+  });
+
+  it('最初の記録は (root-commit) と出る。2 件目からは出ない', () => {
+    run('git add a.txt');
+    expect(run('git commit -m "first"').out).toMatch(/^\[main \(root-commit\) [0-9a-f]{7}\] first\n/);
+    run('echo B > a.txt');
+    expect(run('git commit -am "second"').out).toMatch(/^\[main [0-9a-f]{7}\] second\n/);
+  });
+
+  it('add していないファイルだけがある時の commit は、本物と同じく「untracked files present」と言う', () => {
+    const r = run('git commit -m "x"');
+    expect(r.code).toBe(1);
+    expect(r.out + r.err).toContain('nothing added to commit but untracked files present (use "git add" to track)');
+  });
+});

@@ -1,5 +1,5 @@
 import {
-  addPaths, branches, commit, createBranch, currentBranch, headCommit, log, switchBranch,
+  addPaths, branches, commit, createBranch, currentBranch, headCommit, log, status as statusOf, switchBranch,
 } from '@/engines/git/repository';
 import { diffCommits, diffStaged, diffWorktree, unstage } from '@/engines/git/diff';
 import { decode, parseCommit } from '@/engines/git/objects';
@@ -10,7 +10,7 @@ import { writeFile } from '../vfs';
 import { fromLines, parseArgs } from './args';
 import { HOOKS_DIR, gitPath } from '@/engines/git/gitdir';
 import { runHook } from './gitRefs';
-import { commitOutput, formatStatus, short, type GitHandler } from './gitShared';
+import { commitOutput, formatGitDate, formatStatus, short, type GitHandler } from './gitShared';
 
 /** switch と checkout はブランチ切り替えとしては同じ振る舞いをする */
 const switchTo: GitHandler = ({ git, shell, rest, sub }) => {
@@ -77,7 +77,11 @@ export const basicSubcommands: Record<string, GitHandler> = {
       return commitOutput(result.git, result.hash, result.empty, message);
     }
     if (git.index.size === 0 && headCommit(git) === null) {
-      return { stderr: 'nothing to commit (create/copy files and use "git add" to track)\n', code: 1 };
+      // 本物と同じく、追跡していないファイルがあれば add を促す
+      const untracked = statusOf(git, shell.vfs).untracked.length > 0;
+      return untracked
+        ? { stdout: 'nothing added to commit but untracked files present (use "git add" to track)\n', code: 1 }
+        : { stdout: 'nothing to commit (create/copy files and use "git add" to track)\n', code: 1 };
     }
     const result = commit(git, message, nowSeconds);
     return commitOutput(result.git, result.hash, result.empty, message);
@@ -100,8 +104,8 @@ export const basicSubcommands: Record<string, GitHandler> = {
     const lines: string[] = [];
     for (const entry of entries) {
       lines.push(`commit ${entry.hash}`);
-      lines.push(`Author: ${git.author.name} <${git.author.email}>`);
-      lines.push(`Date:   ${String(entry.timestamp)}`);
+      lines.push(`Author: ${entry.author.name} <${entry.author.email}>`);
+      lines.push(`Date:   ${formatGitDate(entry.author.timestamp, entry.author.timezone)}`);
       lines.push('');
       for (const line of entry.message.split('\n')) lines.push(`    ${line}`);
       lines.push('');
@@ -126,7 +130,7 @@ export const basicSubcommands: Record<string, GitHandler> = {
     const lines = [`commit ${hash}`];
     if (parsed.parents.length > 1) lines.push(`Merge: ${parsed.parents.map(short).join(' ')}`);
     lines.push(`Author: ${parsed.author.name} <${parsed.author.email}>`);
-    lines.push(`Date:   ${String(parsed.author.timestamp)}`);
+    lines.push(`Date:   ${formatGitDate(parsed.author.timestamp, parsed.author.timezone)}`);
     lines.push('');
     for (const line of parsed.message.trim().split('\n')) lines.push(`    ${line}`);
     lines.push('');
