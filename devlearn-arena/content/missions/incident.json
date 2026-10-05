@@ -25,13 +25,13 @@
     "setup": {
       "hostname": "city-web",
       "files": {
-        "/etc/nginx/conf.d/city.conf": "server {\n  listen 80;\n  root /var/www/city;\n}\n"
+        "/etc/nginx/conf.d/city.conf": "server {\n  listen 80;\n  root /var/www/city;\n}\n",
+        "/var/www/city/index.html": "<html><body><h1>DevLearn City</h1><p>市の案内ページ</p></body></html>\n"
       },
       "services": {
         "nginx": {
           "description": "nginx web server",
-          "config": "/etc/nginx/conf.d/city.conf",
-          "body": "<html><body><h1>DevLearn City</h1><p>市の案内ページ</p></body></html>"
+          "config": "/etc/nginx/conf.d/city.conf"
         },
         "apache2": {
           "description": "The Apache HTTP Server（古いサイト）",

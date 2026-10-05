@@ -20,6 +20,11 @@ import { DEMO_ROOT } from './tls/tls';
  * 端末の実戦（terminal）は、ここから仮想端末のシェルの初期状態を作る。DB の実戦（sql）は setup.sql の文で DB を作る（src/engines/db）。
  */
 
+const routeSetup = z.object({ status: z.number().int().min(100).max(599), body: z.string(), headers: z.record(z.string()).optional() }).strict();
+
+/** 道の答えの鍵: 「/path」（GET と HEAD）か「POST /path」 */
+const routesSetup = z.record(z.string().regex(/^(?:[A-Z]+ )?\/\S*$/), routeSetup);
+
 const serviceSetup = z.object({
   description: z.string().min(1),
   active: z.boolean().default(false),
@@ -36,6 +41,8 @@ const serviceSetup = z.object({
   body: z.string().optional(),
   /** HTTP で応える状態の番号（無ければ 200） */
   status: z.number().int().min(100).max(599).optional(),
+  /** 道ごとの答え（後ろのアプリ。書けば body・status より先に使う） */
+  routes: routesSetup.optional(),
   /** 設定ファイルの場所（nginx 風。動かす時に読み、待ち受けるポートと証明書が決まる。src/engines/kernel/webConfig.ts） */
   config: z.string().startsWith('/').optional(),
   /** DNS のゾーンファイルの場所（動かす・読み直す時に読み、網の名前の答えになる） */
@@ -51,7 +58,15 @@ const siteSetup = z.object({
   host: z.string(),
   port: z.number().int(),
   chain: z.array(certSetup).optional(),
-  routes: z.record(z.object({ status: z.number().int(), body: z.string(), headers: z.record(z.string()).optional() }).strict()),
+  /** 対応する HTTP の版（無ければ 1.1 だけ） */
+  versions: z.array(z.enum(['1.1', '2', '3'])).optional(),
+  routes: routesSetup,
+  /** 資源の集まりを覚えている API（/items と /items/3。src/engines/http） */
+  api: z.object({
+    base: z.string().startsWith('/'),
+    items: z.array(z.record(z.unknown())),
+    fields: z.record(z.enum(['string', 'number', 'boolean'])),
+  }).strict().optional(),
 }).strict();
 
 const SIZE = /^\d+(\.\d+)?[KMGT]?$/;
@@ -198,6 +213,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
       ...(v.address !== undefined ? { address: v.address } : {}),
       ...(v.body !== undefined ? { body: v.body } : {}),
       ...(v.status !== undefined ? { status: v.status } : {}),
+      ...(v.routes !== undefined ? { routes: v.routes } : {}),
       ...(v.config !== undefined ? { config: v.config } : {}),
       ...(v.zone !== undefined ? { zone: v.zone } : {}),
       ...(v.log !== undefined ? { log: v.log } : {}),

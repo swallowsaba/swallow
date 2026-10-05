@@ -9,7 +9,8 @@
  *   設定の誤りでは起動に失敗し、理由をログに書く。待ち受けるポートは設定から決まる
  * - 動いている別のサービスと同じポートでは待ち受けられない（起動に失敗する）
  */
-import type { ConfigResult, Listen } from './webConfig';
+import type { Route } from '@/engines/http/http';
+import type { ConfigResult, Listen, ServerBlock } from './webConfig';
 
 export type ActiveState = 'active' | 'inactive' | 'failed';
 
@@ -28,12 +29,16 @@ export interface Service {
   body?: string;
   /** HTTP で応える状態の番号（無ければ 200。準備中の 503 など） */
   status?: number;
+  /** 道ごとの答え（後ろのアプリ。「/path」か「POST /path」。書けば body・status より先に使う） */
+  routes?: Readonly<Record<string, Route>>;
   /** 設定ファイルの場所（動かす時に読む） */
   config?: string;
   /** DNS のゾーンファイルの場所（動かす・読み直す時に読み、名前の答えになる。src/engines/kernel/dnsZones.ts） */
   zone?: string;
   /** 設定から決まった待ち受け（動いている間だけ意味がある） */
   listens?: readonly Listen[];
+  /** 設定から読んだサイト（server。名前で振り分け、公開用のディレクトリ・転送・中継を決める） */
+  servers?: readonly ServerBlock[];
   /** ログ（journalctl で読む） */
   log: readonly string[];
 }
@@ -108,7 +113,7 @@ export function startService(table: ServiceTable, raw: string, load?: ConfigLoad
   if (s.config && load) {
     const conf = load(s.config);
     if (!conf.ok) return fail(table, s, { from: `${s.name}[${String(800 + table.tick)}]`, text: conf.error });
-    ready = { ...s, listens: conf.listens };
+    ready = { ...s, listens: conf.listens, servers: conf.servers };
   }
   for (const port of portsOf(ready)) {
     const other = [...table.services.values()].find((o) => o.name !== s.name && o.active === 'active' && portsOf(o).includes(port));

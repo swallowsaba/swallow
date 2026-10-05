@@ -13,8 +13,8 @@ const files = (map: Record<string, string>) => (p: string): string | null => map
 
 describe('Web サーバの設定ファイル（nginx 風）', () => {
   it('listen の数が待ち受けるポート。書かなければ 80', () => {
-    expect(readWebConfig('/c', files({ '/c': 'server {\n  listen 8080;\n}\n' }))).toEqual({ ok: true, listens: [{ port: 8080, ssl: false }] });
-    expect(readWebConfig('/c', files({ '/c': 'server {\n  root /srv;\n}\n' }))).toEqual({ ok: true, listens: [{ port: 80, ssl: false }] });
+    expect(readWebConfig('/c', files({ '/c': 'server {\n  listen 8080;\n}\n' }))).toMatchObject({ ok: true, listens: [{ port: 8080, ssl: false }] });
+    expect(readWebConfig('/c', files({ '/c': 'server {\n  root /srv;\n}\n' }))).toMatchObject({ ok: true, listens: [{ port: 80, ssl: false }] });
   });
 
   it('; で終わっていない文は、ファイルと行を示して失敗する（本物と同じ言い方）', () => {
@@ -101,5 +101,78 @@ describe('設定ファイルを持つサービス（systemctl と curl）', () =
     run('systemctl reload nginx');
     expect(run('curl https://city.example/').out).toContain('<h1>city</h1>');
     expect(checkState({ kind: 'tls', host: 'city.example', trusted: true }, { shell: shell() })).toBe(true);
+  });
+});
+
+/** 公開用のディレクトリ・名前の振り分け・転送・中継を持つ Web サーバ（web の実戦） */
+function site(conf: string, more: Record<string, string> = {}, app: { routes?: Record<string, { status: number; body: string }> } | null = null) {
+  let shell: ShellState = initialShell('linux-server', {
+    files: { '/etc/nginx/conf.d/site.conf': conf, '/etc/hosts': '127.0.0.1 localhost shop.example api.example\n', '/srv/www/index.html': '<h1>shop</h1>', ...more },
+    services: {
+      nginx: { description: 'nginx web server', config: '/etc/nginx/conf.d/site.conf', active: false },
+      ...(app ? { app: { description: 'inventory app', port: 3000, active: true, ...(app.routes ? { routes: app.routes } : { body: '{"ok":true}' }) } } : {}),
+    },
+    sites: [],
+  });
+  const registry = createDefaultRegistry();
+  const clock = createClock();
+  const run = (line: string) => {
+    const out = execute(shell, line, registry, clock);
+    shell = out.state;
+    return { out: out.chunks.map((c) => c.text).join(''), code: out.exitCode };
+  };
+  const status = (url: string): number => Number(run(`curl -s -o /dev/null -w "%{http_code}" ${url}`).out);
+  return { run, status, shell: () => shell };
+}
+
+describe('Web サーバの公開用のディレクトリと振り分け', () => {
+  it('root の中のファイルを返す。無ければ 404、www-data が読めなければ 403。root の外へは出られない', () => {
+    const { run, status } = site('server {\n  listen 80;\n  root /srv/www;\n}\n', { '/srv/www/secret.html': 'x', '/srv/other.html': 'y' });
+    run('systemctl start nginx');
+    expect(run('curl -s http://localhost/').out).toBe('<h1>shop</h1>\n');
+    expect(status('http://localhost/about.html')).toBe(404);
+    run('chmod 600 /srv/www/secret.html');
+    expect(status('http://localhost/secret.html')).toBe(403);
+    run('chmod 644 /srv/www/secret.html');
+    expect(status('http://localhost/secret.html')).toBe(200);
+    expect(status('http://localhost/../other.html')).not.toBe(200);
+  });
+
+  it('頼んだ名前で server を選ぶ。合わなければ最初の server', () => {
+    const conf = 'server {\n  listen 80;\n  server_name shop.example;\n  root /srv/www;\n}\nserver {\n  listen 80;\n  server_name api.example;\n  return 200 api;\n}\n';
+    const { run } = site(conf);
+    run('systemctl start nginx');
+    expect(run('curl -s http://api.example/').out).toBe('api\n');
+    expect(run('curl -s http://shop.example/').out).toBe('<h1>shop</h1>\n');
+    expect(run('curl -s http://localhost/').out).toBe('<h1>shop</h1>\n');
+  });
+
+  it('return 301 は $host と $request_uri を置き換えた先へ送る。-L で付いていく', () => {
+    const conf = 'server {\n  listen 80;\n  return 301 http://$host:8080$request_uri;\n}\nserver {\n  listen 8080;\n  root /srv/www;\n}\n';
+    const { run } = site(conf);
+    run('systemctl start nginx');
+    expect(run('curl -sI http://shop.example/index.html').out).toContain('Location: http://shop.example:8080/index.html');
+    expect(run('curl -sL http://shop.example/').out).toBe('<h1>shop</h1>\n');
+  });
+
+  it('proxy_pass は後ろのアプリに中継する。後ろが待ち受けていなければ 502', () => {
+    const conf = 'server {\n  listen 80;\n  location /api/ {\n    proxy_pass http://127.0.0.1:3001/;\n  }\n}\n';
+    const { run, status } = site(conf, {}, { routes: { '/items': { status: 200, body: '[]' } } });
+    run('systemctl start nginx');
+    expect(status('http://localhost/api/items')).toBe(502);
+    run("sed -i 's/3001/3000/' /etc/nginx/conf.d/site.conf");
+    run('systemctl reload nginx');
+    expect(status('http://localhost/api/items')).toBe(200);
+    expect(run('curl -s http://localhost/api/items').out).toBe('[]\n');
+  });
+
+  it('add_header で見出しを足す。location ごとに変えられる', () => {
+    const conf = 'server {\n  listen 80;\n  root /srv/www;\n  add_header Cache-Control no-cache;\n  location /img/ {\n    add_header Cache-Control "max-age=31536000";\n  }\n}\n';
+    const { run } = site(conf, { '/srv/www/img/logo.png': 'png' });
+    run('systemctl start nginx');
+    expect(run('curl -sI http://localhost/').out).toContain('Cache-Control: no-cache');
+    const img = run('curl -sI http://localhost/img/logo.png').out;
+    expect(img).toContain('Cache-Control: max-age=31536000');
+    expect(img).toContain('Content-Type: image/png');
   });
 });

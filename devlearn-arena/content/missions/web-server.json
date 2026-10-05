@@ -31,8 +31,7 @@
       "services": {
         "nginx": {
           "description": "nginx web server",
-          "config": "/etc/nginx/conf.d/city.conf",
-          "body": "<html><body><h1>DevLearn City</h1><p>市の案内ページ</p></body></html>"
+          "config": "/etc/nginx/conf.d/city.conf"
         }
       }
     },
