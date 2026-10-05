@@ -5,6 +5,7 @@ import {
 import {
   commitMerge, fastForwardTo, planMerge, popStash, pushStash, replayCommit, reset, revertCommit, type ResetMode,
 } from '@/engines/git/history';
+import { parseCommit } from '@/engines/git/objects';
 import { resolveRef } from '@/engines/git/refs';
 import { checkoutWorktree } from '@/engines/git/worktree';
 import { resolve } from '../path';
@@ -34,7 +35,8 @@ export const historySubcommands: Record<string, GitHandler> = {
     const vfs = result.worktree === null
       ? shell.vfs
       : checkoutWorktree(shell.vfs, result.git, before, headCommit(result.git));
-    return { patch: { git: result.git, vfs }, stdout: '' };
+    // --hard は本物と同じく、移った先の記録を言う
+    return { patch: { git: result.git, vfs }, stdout: mode === 'hard' ? `HEAD is now at ${short(resolved)} ${subjectOf(git, resolved)}\n` : '' };
   },
   merge: ({ git, shell, rest, nowSeconds }) => {
     const { operands } = parseArgs(['merge', ...rest]);
@@ -74,9 +76,10 @@ export const historySubcommands: Record<string, GitHandler> = {
     const target = resolveRef(git, ref);
     if (target === undefined) return { stderr: `fatal: bad revision '${ref}'\n`, code: 128 };
     const result = revertCommit(git, target, nowSeconds);
-    if (result.error !== undefined) return { stderr: `${result.error}\n`, code: 128 };
+    // 衝突で打ち消せない時は、本物と同じく 1 で終わる
+    if (result.error !== undefined) return { stderr: `${result.error}\n`, code: result.error.startsWith('CONFLICT') ? 1 : 128 };
     const vfs = checkoutWorktree(shell.vfs, result.git, headCommit(git), result.hash);
-    return { stdout: `[${currentBranch(result.git) ?? 'HEAD'} ${short(result.hash)}] Revert\n`, patch: { git: result.git, vfs } };
+    return { stdout: `[${currentBranch(result.git) ?? 'HEAD'} ${short(result.hash)}] Revert "${subjectOf(git, target)}"\n`, patch: { git: result.git, vfs } };
   },
   stash: ({ git, shell, rest }) => {
     const action = rest[0] ?? 'push';
@@ -163,4 +166,10 @@ export function mergeWith(git: GitState, shell: ShellState, name: string, nowSec
   const message = `${label ?? `Merge branch '${name}'`}${into === null || into === 'main' || into === 'master' ? '' : ` into ${into}`}`;
   const result = commitMerge(staged.git, plan.theirs, message, nowSeconds);
   return { stdout: `Merge made by the 'ort' strategy.\n`, patch: { git: result.git, vfs } };
+}
+
+/** 記録の説明の 1 行目 */
+function subjectOf(git: GitState, hash: string): string {
+  const object = git.objects.read(hash);
+  return object?.type === 'commit' ? (parseCommit(object.body).message.trim().split('\n')[0] ?? '') : '';
 }

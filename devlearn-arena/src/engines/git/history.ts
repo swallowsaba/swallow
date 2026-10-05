@@ -4,6 +4,7 @@ import {
   FILE_MODE, commit, currentBranch, headCommit, materialize, treeFiles, walkWorktree,
   writeTreeFromIndex,
 } from './repository';
+import { mergeThreeWay } from './merge';
 import { resolveRef } from './refs';
 import type { GitState, IndexEntry } from './types';
 
@@ -306,12 +307,30 @@ export function revertCommit(
   const currentFiles = materialize(git, head);
 
   const next = new Map(currentFiles);
+  const conflicts: string[] = [];
   for (const path of new Set([...before.keys(), ...after.keys()])) {
     const wasBefore = before.get(path);
     const wasAfter = after.get(path);
     if (wasBefore === wasAfter) continue;
-    if (wasBefore === undefined) next.delete(path);
-    else next.set(path, wasBefore);
+    const now = currentFiles.get(path);
+    // 後の記録がそのファイルを変えていなければ、そのまま前の版に戻す
+    if (now === wasAfter) {
+      if (wasBefore === undefined) next.delete(path);
+      else next.set(path, wasBefore);
+      continue;
+    }
+    // 変えていれば、本物と同じく 3 方向で合わせる（打ち消す記録の後の版を元に、今の版と前の版を合わせる）
+    const merged = mergeThreeWay(wasAfter ?? '', now ?? '', wasBefore ?? '');
+    if (merged.conflicted) conflicts.push(path);
+    else next.set(path, merged.content);
+  }
+  if (conflicts.length > 0) {
+    const subject = parsed.message.trim().split('\n')[0] ?? '';
+    return {
+      git,
+      hash: '',
+      error: `${conflicts.map((p) => `CONFLICT (content): Merge conflict in ${p}`).join('\n')}\nerror: could not revert ${commitHash.slice(0, 7)}... ${subject}\nhint: 後の記録が同じ行を変えている。手で直して記録する`,
+    };
   }
 
   const index = new Map<string, IndexEntry>();

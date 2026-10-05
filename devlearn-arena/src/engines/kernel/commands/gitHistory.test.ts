@@ -74,6 +74,48 @@ describe('履歴の作り直し', () => {
     expect(run('cat new.txt').code).toBe(1);
   });
 
+  it('revert は本物と同じく、打ち消した記録の説明を Revert "…" として言い、古い記録も HEAD~1 の形で指せる', () => {
+    run("echo 'price 3500' > a.txt");
+    run('git commit -am "fix price"');
+    run("echo 'open 9' > hours.txt");
+    run('git add hours.txt');
+    run('git commit -m "hours"');
+    const r = run('git revert HEAD~1');
+    expect(r.code).toBe(0);
+    expect(r.out).toMatch(/^\[main [0-9a-f]{7}\] Revert "fix price"\n$/);
+    expect(run('cat a.txt').out).toBe('A\n');
+    // 後の記録の変更は残る
+    expect(run('cat hours.txt').out).toBe('open 9\n');
+  });
+
+  it('revert は、後の記録が同じファイルの別の行を変えていれば、その変更を残して打ち消す。同じ行なら止まり、何も変えない', () => {
+    run("printf 'a\\nb\\nc\\n' > list.txt");
+    run('git add list.txt');
+    run('git commit -m "list"');
+    run("printf 'A\\nb\\nc\\n' > list.txt");
+    run('git commit -am "upper a"');
+    run("printf 'A\\nb\\nC\\n' > list.txt");
+    run('git commit -am "upper c"');
+    expect(run('git revert HEAD~1').code).toBe(0);
+    expect(run('cat list.txt').out).toBe('a\nb\nC\n');
+    run("printf 'a\\nB\\nC\\n' > list.txt");
+    run('git commit -am "upper b"');
+    run("printf 'a\\nb2\\nC\\n' > list.txt");
+    run('git commit -am "b2"');
+    const r = run('git revert HEAD~1');
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('CONFLICT (content): Merge conflict in list.txt');
+    expect(r.err).toMatch(/error: could not revert [0-9a-f]{7}\.\.\. upper b/);
+    expect(run('cat list.txt').out).toBe('a\nb2\nC\n');
+    expect(run('git log --oneline -1').out).toContain('b2');
+  });
+
+  it('reset --hard は、本物と同じく HEAD is now at と移った先の記録を言う', () => {
+    run('echo B > a.txt');
+    run('git commit -am "second"');
+    expect(run('git reset --hard HEAD~1').out).toMatch(/^HEAD is now at [0-9a-f]{7} base\n$/);
+  });
+
   it('stash で退避して戻せる', () => {
     run('echo wip > a.txt');
     expect(run('git stash').out).toContain('Saved');
