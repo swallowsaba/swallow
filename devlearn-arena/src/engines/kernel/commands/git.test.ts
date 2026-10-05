@@ -389,3 +389,43 @@ describe('選ばずに commit した時の文（本物と同じ）', () => {
     expect(r.out).toContain('no changes added to commit (use "git add" and/or "git commit -a")');
   });
 });
+
+describe('差分と履歴の表示（本物と同じ形）', () => {
+  beforeEach(() => {
+    run('git init');
+    run('export GIT_AUTHOR_NAME=Tanaka GIT_AUTHOR_EMAIL=tanaka@city.example GIT_AUTHOR_DATE="2026-09-30 10:00"');
+    run('git add a.txt');
+    run('git commit -m "first"');
+    run('export GIT_AUTHOR_NAME=Sato GIT_AUTHOR_EMAIL=sato@city.example GIT_AUTHOR_DATE="2026-10-02 18:00"');
+    run('echo B >> a.txt');
+    run('git commit -am "second"');
+    run('unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE');
+  });
+
+  it('git diff は diff --git の行から始まり、ファイル末尾の改行を空の行として数えない。1 行のハンクは数を省く', () => {
+    run('echo C >> a.txt');
+    expect(run('git diff').out).toBe('diff --git a/a.txt b/a.txt\n--- a/a.txt\n+++ b/a.txt\n@@ -1,2 +1,3 @@\n A\n B\n+C\n');
+    run('git add a.txt');
+    expect(run('git diff').out).toBe('');
+    expect(run('git diff --staged').out).toBe('diff --git a/a.txt b/a.txt\n--- a/a.txt\n+++ b/a.txt\n@@ -1,2 +1,3 @@\n A\n B\n+C\n');
+  });
+
+  it('git show は HEAD~1 のような親をたどる書き方も受ける', () => {
+    const out = run('git show HEAD~1').out;
+    expect(out).toContain('    first');
+    expect(out).toContain('+A\n');
+    expect(out).toContain('@@ -0,0 +1 @@');
+  });
+
+  it('git log は -1・-n 2・-p・--author・--since・--until を受ける', () => {
+    expect(run('git log --oneline -1').out.trim().split('\n')).toHaveLength(1);
+    expect(run('git log --oneline -n 2').out.trim().split('\n')).toHaveLength(2);
+    expect(run('git log -p -1').out).toContain('diff --git a/a.txt b/a.txt');
+    expect(run('git log --oneline --author=Tanaka').out).toMatch(/^[0-9a-f]{7} first\n$/);
+    // 機械の今は 2026-10-03 09:00。yesterday は 24 時間前から
+    expect(run('git log --oneline --since=yesterday').out).toMatch(/^[0-9a-f]{7} second\n$/);
+    expect(run('git log --oneline --since="2026-10-01"').out).toMatch(/^[0-9a-f]{7} second\n$/);
+    expect(run('git log --oneline --until="2026-10-01"').out).toMatch(/^[0-9a-f]{7} first\n$/);
+    expect(run('git log --oneline --since="3 days ago"').out.trim().split('\n')).toHaveLength(2);
+  });
+});

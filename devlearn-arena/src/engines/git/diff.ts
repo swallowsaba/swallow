@@ -1,4 +1,4 @@
-import { formatUnified } from '@/engines/kernel/diff';
+import { formatUnified, linesOf } from '@/engines/kernel/diff';
 import type { VfsState } from '@/engines/kernel/vfs';
 import { decode } from './objects';
 import { FILE_MODE, headCommit, treeFiles, walkWorktree } from './repository';
@@ -18,12 +18,7 @@ export function diffWorktree(git: GitState, vfs: VfsState): string {
     const before = object ? decode(object.body) : '';
     const after = worktree.get(path) ?? '';
     if (before === after) continue;
-    out.push(
-      formatUnified(before.split('\n'), after.split('\n'), {
-        from: `a/${path}`,
-        to: `b/${path}`,
-      }),
-    );
+    out.push(`diff --git a/${path} b/${path}\n`, formatUnified(linesOf(before), linesOf(after), { from: `a/${path}`, to: `b/${path}` }));
   }
   return out.join('');
 }
@@ -38,12 +33,9 @@ export function diffStaged(git: GitState): string {
     const object = git.objects.read(entry.hash);
     const after = object ? decode(object.body) : '';
     if (before === after) continue;
-    out.push(
-      formatUnified(before.split('\n'), after.split('\n'), {
-        from: `a/${path}`,
-        to: `b/${path}`,
-      }),
-    );
+    out.push(`diff --git a/${path} b/${path}\n`);
+    if (beforeHash === undefined) out.push('new file mode 100644\n');
+    out.push(formatUnified(linesOf(before), linesOf(after), { from: beforeHash === undefined ? '/dev/null' : `a/${path}`, to: `b/${path}` }));
   }
   return out.join('');
 }
@@ -78,7 +70,7 @@ export function diffCommits(git: GitState, before: string | null, after: string)
     const a = from.get(path);
     const b = to.get(path);
     if (a === b) continue;
-    const body = formatUnified(read(a).split('\n'), read(b).split('\n'), {
+    const body = formatUnified(linesOf(read(a)), linesOf(read(b)), {
       from: a === undefined ? '/dev/null' : `a/${path}`,
       to: b === undefined ? '/dev/null' : `b/${path}`,
     });

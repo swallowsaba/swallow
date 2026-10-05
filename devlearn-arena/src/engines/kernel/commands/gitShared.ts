@@ -146,3 +146,51 @@ export function formatGitDate(timestamp: number, timezone: string): string {
   const weekday = DAYS[(((days + 4) % 7) + 7) % 7] ?? '';
   return `${weekday} ${MONTHS[m - 1] ?? ''} ${String(d)} ${clock} ${String(y)} ${timezone}`;
 }
+
+/* ---- git log の絞り込み ---- */
+
+export interface LogOptions {
+  oneline: boolean;
+  patch: boolean;
+  max: number | null;
+  since: number | null;
+  until: number | null;
+  author: string | null;
+}
+
+/** --since・--until の日付。「2026-10-01」（その日の 0 時）・「2026-10-01 14:30」・yesterday・「3 days ago」「2.hours.ago」 */
+export function parseApproxDate(text: string, now: number): number | null {
+  const t = text.trim().toLowerCase();
+  if (t === 'yesterday') return now - 86400;
+  if (t === 'now') return now;
+  const ago = /^(\d+)[ .](second|minute|hour|day|week)s?[ .]ago$/.exec(t);
+  if (ago) {
+    const unit = { second: 1, minute: 60, hour: 3600, day: 86400, week: 604800 }[ago[2] as 'second'];
+    return now - Number(ago[1]) * unit;
+  }
+  return parseLocalTime(t) ?? parseLocalTime(`${t} 00:00`);
+}
+
+/** git log の引数（-1・-n 2・--max-count=2・-p・--oneline・--author・--since/--after・--until/--before） */
+export function parseLogArgs(rest: readonly string[], now: number): LogOptions | { error: string } {
+  const opts: LogOptions = { oneline: false, patch: false, max: null, since: null, until: null, author: null };
+  for (let i = 0; i < rest.length; i += 1) {
+    const arg = rest[i] ?? '';
+    const [name = '', inline] = arg.startsWith('--') ? arg.split(/=(.*)/s) : [arg];
+    const value = (): string => inline ?? rest[(i += 1)] ?? '';
+    if (arg === '--oneline') opts.oneline = true;
+    else if (arg === '-p' || arg === '--patch') opts.patch = true;
+    else if (/^-\d+$/.test(arg)) opts.max = Number(arg.slice(1));
+    else if (/^-n\d+$/.test(arg)) opts.max = Number(arg.slice(2));
+    else if (arg === '-n' || name === '--max-count') opts.max = Number(value());
+    else if (name === '--author') opts.author = value();
+    else if (name === '--since' || name === '--after' || name === '--until' || name === '--before') {
+      const raw = value();
+      const when = parseApproxDate(raw, now);
+      if (when === null) return { error: `fatal: invalid date format: ${raw}\n` };
+      if (name === '--since' || name === '--after') opts.since = when;
+      else opts.until = when;
+    }
+  }
+  return opts;
+}

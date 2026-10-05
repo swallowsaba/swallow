@@ -3,14 +3,14 @@ import {
 } from '@/engines/git/repository';
 import { diffCommits, diffStaged, diffWorktree, unstage } from '@/engines/git/diff';
 import { decode, parseCommit } from '@/engines/git/objects';
-import { resolveObject } from '@/engines/git/refs';
+import { resolveObject, resolveRef } from '@/engines/git/refs';
 import { checkoutWorktree } from '@/engines/git/worktree';
 import { resolve } from '../path';
 import { writeFile } from '../vfs';
 import { fromLines, parseArgs } from './args';
 import { HOOKS_DIR, gitPath } from '@/engines/git/gitdir';
 import { runHook } from './gitRefs';
-import { commitOutput, formatGitDate, formatStatus, short, type GitHandler } from './gitShared';
+import { commitOutput, formatGitDate, formatStatus, parseLogArgs, short, type GitHandler } from './gitShared';
 
 /** switch と checkout はブランチ切り替えとしては同じ振る舞いをする */
 const switchTo: GitHandler = ({ git, shell, rest, sub }) => {
@@ -91,37 +91,46 @@ export const basicSubcommands: Record<string, GitHandler> = {
     }
     return commitOutput(result.git, result.hash, result.empty, message);
   },
-  log: ({ git, rest }) => {
-    const { flags } = parseArgs(['log', ...rest]);
-    const entries = log(git);
-    if (entries.length === 0) {
+  log: ({ git, rest, nowSeconds }) => {
+    const opts = parseLogArgs(rest, nowSeconds);
+    if ('error' in opts) return { stderr: opts.error, code: 128 };
+    const all = log(git);
+    if (all.length === 0) {
       return { stderr: 'fatal: your current branch does not have any commits yet\n', code: 128 };
     }
-    const oneline = flags.has('oneline') || rest.includes('--oneline');
-    if (oneline) {
+    const entries = all
+      .filter((e) => opts.since === null || e.author.timestamp >= opts.since)
+      .filter((e) => opts.until === null || e.author.timestamp <= opts.until)
+      .filter((e) => opts.author === null || `${e.author.name} <${e.author.email}>`.includes(opts.author))
+      .slice(0, opts.max ?? undefined);
+    const patchOf = (hash: string, parents: readonly string[]): string =>
+      // マージの記録は、本物と同じく -p でも差分を出さない
+      parents.length > 1 ? '' : diffCommits(git, parents[0] ?? null, hash);
+    if (opts.oneline) {
       // 本物と同じく、--oneline は件名（メッセージの1行目）だけを出す
       return {
-        stdout: fromLines(
-          entries.map((e) => `${short(e.hash)} ${e.message.split('\n')[0] ?? ''}`),
-        ),
+        stdout: entries.map((e) => `${short(e.hash)} ${e.message.split('\n')[0] ?? ''}\n${opts.patch ? patchOf(e.hash, e.parents) : ''}`).join(''),
       };
     }
-    const lines: string[] = [];
+    const out: string[] = [];
     for (const entry of entries) {
-      lines.push(`commit ${entry.hash}`);
+      const lines = [`commit ${entry.hash}`];
+      if (entry.parents.length > 1) lines.push(`Merge: ${entry.parents.map(short).join(' ')}`);
       lines.push(`Author: ${entry.author.name} <${entry.author.email}>`);
       lines.push(`Date:   ${formatGitDate(entry.author.timestamp, entry.author.timezone)}`);
       lines.push('');
       for (const line of entry.message.split('\n')) lines.push(`    ${line}`);
       lines.push('');
+      out.push(`${lines.join('\n')}\n${opts.patch ? patchOf(entry.hash, entry.parents) : ''}`);
     }
-    return { stdout: `${lines.join('\n')}\n` };
+    return { stdout: out.join('') };
   },
   /** git show <rev>。コミットの説明と、1つ前からの差分を出す */
   show: ({ git, rest }) => {
     const { operands } = parseArgs(['show', ...rest]);
     const ref = operands[0] ?? 'HEAD';
-    const hash = resolveObject(git, ref);
+    // HEAD~1・main^ のような親をたどる書き方は、たどった先の記録（タグそのものは剥がさずに見せる）
+    const hash = /[~^]/.test(ref) ? resolveRef(git, ref) : resolveObject(git, ref);
     const object = hash === undefined ? undefined : git.objects.read(hash);
     if (hash === undefined || object === undefined) {
       if (ref === 'HEAD') return { stderr: 'fatal: your current branch does not have any commits yet\n', code: 128 };

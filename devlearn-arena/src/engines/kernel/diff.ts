@@ -96,6 +96,19 @@ export function toHunks(ops: readonly DiffOp[], context = 3): Hunk[] {
   return hunks;
 }
 
+/** ハンクの範囲（本物と同じく、1 行なら数を省き、0 行なら前の行の番号と 0） */
+function range(start: number, count: number): string {
+  if (count === 1) return String(start);
+  if (count === 0) return `${String(start - 1)},0`;
+  return `${String(start)},${String(count)}`;
+}
+
+/** ファイルの中身を行に分ける（末尾の改行は、空の行として数えない） */
+export function linesOf(text: string): string[] {
+  if (text === '') return [];
+  return (text.endsWith('\n') ? text.slice(0, -1) : text).split('\n');
+}
+
 export function formatUnified(
   a: readonly string[],
   b: readonly string[],
@@ -106,9 +119,7 @@ export function formatUnified(
   if (hunks.length === 0) return '';
   const out = [`--- ${labels.from}`, `+++ ${labels.to}`];
   for (const hunk of hunks) {
-    out.push(
-      `@@ -${String(hunk.aStart)},${String(hunk.aCount)} +${String(hunk.bStart)},${String(hunk.bCount)} @@`,
-    );
+    out.push(`@@ -${range(hunk.aStart, hunk.aCount)} +${range(hunk.bStart, hunk.bCount)} @@`);
     out.push(...hunk.lines);
   }
   return `${out.join('\n')}\n`;
