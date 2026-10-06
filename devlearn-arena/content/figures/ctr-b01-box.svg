@@ -6,7 +6,7 @@
     </marker>
   </defs>
   <g class="el" data-part="frame">
-    <rect x="20" y="20" width="230" height="250" rx="10" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="8 5" />
+    <rect x="20" y="20" width="230" height="250" rx="10" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="8 5" pointer-events="all" />
     <text x="135" y="46" text-anchor="middle" font-size="16" fill="#f2b632">箱（イメージ）</text>
   </g>
   <g class="el" data-part="app">
@@ -26,15 +26,15 @@
     <text x="269" y="132" text-anchor="middle" font-size="13" fill="#9fb0c6">配る</text>
     <rect x="292" y="40" width="124" height="200" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
     <text x="354" y="66" text-anchor="middle" font-size="14" fill="#eef2f6">開発機</text>
-    <rect x="306" y="82" width="96" height="64" rx="4" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="306" y="82" width="96" height="64" rx="4" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="354" y="120" text-anchor="middle" font-size="13" fill="#f2b632">同じ箱</text>
     <rect x="428" y="40" width="124" height="200" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
     <text x="490" y="66" text-anchor="middle" font-size="14" fill="#eef2f6">検証機</text>
-    <rect x="442" y="82" width="96" height="64" rx="4" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="442" y="82" width="96" height="64" rx="4" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="490" y="120" text-anchor="middle" font-size="13" fill="#f2b632">同じ箱</text>
     <rect x="564" y="40" width="124" height="200" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
     <text x="626" y="66" text-anchor="middle" font-size="14" fill="#eef2f6">本番機</text>
-    <rect x="578" y="82" width="96" height="64" rx="4" fill="none" stroke="#f2b632" stroke-width="2" />
+    <rect x="578" y="82" width="96" height="64" rx="4" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
     <text x="626" y="120" text-anchor="middle" font-size="13" fill="#f2b632">同じ箱</text>
   </g>
   <g class="el" data-part="kernel">

@@ -40,9 +40,9 @@
     <text x="530" y="204" text-anchor="middle" font-size="13" fill="#3ae08a">OS のカーネル（全てのコンテナで共有）</text>
   </g>
   <g class="el" data-part="hw">
-    <rect x="20" y="226" width="300" height="36" rx="4" fill="none" stroke="#9aa9b5" stroke-width="2" />
+    <rect x="20" y="226" width="300" height="36" rx="4" fill="none" stroke="#9aa9b5" stroke-width="2" pointer-events="all" />
     <text x="170" y="250" text-anchor="middle" font-size="13" fill="#9aa9b5">機械（CPU・メモリ・ストレージ）</text>
-    <rect x="380" y="226" width="300" height="36" rx="4" fill="none" stroke="#9aa9b5" stroke-width="2" />
+    <rect x="380" y="226" width="300" height="36" rx="4" fill="none" stroke="#9aa9b5" stroke-width="2" pointer-events="all" />
     <text x="530" y="250" text-anchor="middle" font-size="13" fill="#9aa9b5">機械（CPU・メモリ・ストレージ）</text>
   </g>
   <g class="el" data-part="note">

@@ -19,9 +19,9 @@
   <g class="el" data-part="run">
     <path d="M450 60 L524 44 M450 70 H524 M450 80 L524 96" fill="none" stroke="#9fb0c6" stroke-width="2" />
     <text x="487" y="30" text-anchor="middle" font-size="13" fill="#9fb0c6">pull</text>
-    <rect x="530" y="24" width="150" height="36" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="530" y="24" width="150" height="36" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="605" y="48" text-anchor="middle" font-size="13" fill="#eef2f6">本番のサーバ 1</text>
-    <rect x="530" y="66" width="150" height="36" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" />
+    <rect x="530" y="66" width="150" height="36" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
     <text x="605" y="90" text-anchor="middle" font-size="13" fill="#eef2f6">本番のサーバ 2</text>
   </g>
   <g class="el" data-part="host">
