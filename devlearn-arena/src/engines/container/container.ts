@@ -96,19 +96,39 @@ export const REGISTRY: readonly Image[] = [
   { ref: 'hello-world:latest', id: 'd2c94e258dcb', size: '13.3kB', oneShot: true, startLog: ['Hello from Docker!', 'This message shows that your installation appears to be working correctly.'] },
 ];
 
-/** nginx と nginx:latest は、最新のタグとして同じ物を指す */
+/** タグを省くと latest という名前のタグ（本物と同じ。最新の安定版という意味ではない） */
 export function normalizeRef(raw: string): string {
-  if (raw.includes(':')) return raw;
-  const latest = REGISTRY.filter((i) => i.ref.startsWith(`${raw}:`));
-  return latest.length > 0 ? (latest[latest.length - 1] as Image).ref : `${raw}:latest`;
+  return raw.lastIndexOf(':') > raw.lastIndexOf('/') ? raw : `${raw}:latest`;
+}
+
+/** 置き場で探す。置き場の latest は、その名前の一番新しい版（置き場の並びの最後）と同じ中身（同じ ID） */
+export function fromRegistry(ref: string): Image | undefined {
+  const exact = REGISTRY.find((i) => i.ref === ref);
+  if (exact || tagOf(ref) !== 'latest') return exact;
+  const same = REGISTRY.filter((i) => repoOf(i.ref) === repoOf(ref));
+  const newest = same[same.length - 1];
+  return newest ? { ...newest, ref } : undefined;
+}
+
+/** 名前:タグ の名前（リポジトリ）の側 */
+export function repoOf(ref: string): string {
+  const colon = ref.lastIndexOf(':');
+  return colon > ref.lastIndexOf('/') ? ref.slice(0, colon) : ref;
+}
+
+/** 名前:タグ のタグの側（無ければ latest） */
+export function tagOf(ref: string): string {
+  const colon = ref.lastIndexOf(':');
+  return colon > ref.lastIndexOf('/') ? ref.slice(colon + 1) : 'latest';
 }
 
 export function createContainerHost(images: readonly string[] = []): ContainerHost {
-  return { images: images.map((r) => REGISTRY.find((i) => i.ref === normalizeRef(r))).filter((i): i is Image => i !== undefined), containers: [], seq: 0 };
+  return { images: images.map((r) => fromRegistry(normalizeRef(r))).filter((i): i is Image => i !== undefined), containers: [], seq: 0 };
 }
 
 export type ContainerError =
-  | { kind: 'image-not-found'; ref: string }
+  /** known: 名前（リポジトリ）は置き場にあるが、そのタグが無い（manifest unknown） */
+  | { kind: 'image-not-found'; ref: string; known?: boolean }
   | { kind: 'name-in-use'; name: string; id: string }
   | { kind: 'port-in-use'; port: number }
   | { kind: 'no-such-container'; ref: string }
@@ -120,21 +140,26 @@ export type Result<T> = { ok: true; host: ContainerHost; value: T } | { ok: fals
 const NAMES = ['brave_turing', 'calm_lovelace', 'eager_hopper', 'jolly_ritchie', 'quiet_knuth', 'witty_babbage'];
 
 function idOf(seq: number): string {
-  let h = 2166136261 ^ seq;
+  return hexOf(seq, 12);
+}
+
+/** 通し番号から決まる 16 進の文字列（ID・層・digest。同じ数からは同じ文字列） */
+export function hexOf(seed: number, length: number): string {
+  let h = 2166136261 ^ seed;
   let out = '';
-  for (let i = 0; i < 6; i += 1) {
+  for (let i = 0; i < Math.ceil(length / 2); i += 1) {
     h = Math.imul(h ^ (h >>> 13), 16777619) >>> 0;
     out += (h & 0xff).toString(16).padStart(2, '0');
   }
-  return out;
+  return out.slice(0, length);
 }
 
 export function pull(host: ContainerHost, raw: string): Result<Image> {
   const ref = normalizeRef(raw);
   const have = host.images.find((i) => i.ref === ref);
   if (have) return { ok: true, host, value: have };
-  const image = REGISTRY.find((i) => i.ref === ref);
-  if (!image) return { ok: false, host, error: { kind: 'image-not-found', ref } };
+  const image = fromRegistry(ref);
+  if (!image) return { ok: false, host, error: { kind: 'image-not-found', ref, known: REGISTRY.some((i) => repoOf(i.ref) === repoOf(ref)) } };
   return { ok: true, host: { ...host, images: [...host.images, image] }, value: image };
 }
 

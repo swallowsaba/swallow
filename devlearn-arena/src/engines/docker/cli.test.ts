@@ -25,7 +25,7 @@ describe('コンテナの模型（イメージ・コンテナ・ポート）', (
     let h = createContainerHost();
     const p = pull(h, 'nginx');
     if (!p.ok) throw new Error('取れない');
-    expect(p.value.ref).toBe('nginx:1.27');
+    expect(p.value.ref).toBe('nginx:latest');
     h = p.host;
     const a = run(h, { image: 'nginx', name: 'a', ports: [{ host: 8080, container: 80 }] });
     if (!a.ok) throw new Error('動かない');
@@ -77,13 +77,13 @@ describe('docker（CLI）', () => {
     const { sh } = shell();
     const r = sh('docker run -d --name web -p 8080:80 nginx');
     expect(r.code).toBe(0);
-    expect(r.stdout).toContain("Unable to find image 'nginx:1.27' locally");
+    expect(r.stdout).toContain("Unable to find image 'nginx:latest' locally");
     expect(r.stdout.trim().split('\n').pop()).toMatch(/^[0-9a-f]{64}$/);
     const ps = sh('docker ps').stdout;
     expect(ps).toContain('0.0.0.0:8080->80/tcp');
     expect(ps).toContain('web');
     expect(sh('curl -s http://localhost:8080').stdout).toContain('Welcome to nginx!');
-    expect(sh('docker images').stdout).toMatch(/nginx\s+1\.27\s+3b25b682ea82/);
+    expect(sh('docker images').stdout).toMatch(/nginx\s+latest\s+3b25b682ea82/);
   });
 
   it('コンテナの中のポートを取り違えると、つながっても中身が返らない', () => {
@@ -102,6 +102,22 @@ describe('docker（CLI）', () => {
     expect(sh('docker stop wbe')).toMatchObject({ code: 1, stderr: 'Error response from daemon: No such container: wbe\n' });
     expect(sh('docker rm web').stderr).toContain('container is running: stop the container before removing or force remove');
     expect(sh('docker rm -f web')).toMatchObject({ code: 0, stdout: 'web\n' });
+  });
+
+  it('pull はタグの綴りが違えば manifest unknown、名前が違えば repository does not exist（本物と同じ言い方）。取れたら一覧に出る', () => {
+    const { sh } = shell();
+    const bad = sh('docker pull nginx:1.72');
+    expect(bad.code).toBe(1);
+    expect(bad.stderr).toBe('Error response from daemon: manifest for nginx:1.72 not found: manifest unknown: manifest unknown\n');
+    expect(sh('docker run -d nginx:1.72').stderr).toContain("docker: Error response from daemon: manifest for nginx:1.72 not found: manifest unknown: manifest unknown");
+    expect(sh('docker pull ngnix:1.27').stderr).toContain('pull access denied for ngnix, repository does not exist');
+    const got = sh('docker pull nginx:1.27');
+    expect(got.stdout).toMatch(/^1\.27: Pulling from library\/nginx\n[0-9a-f]{12}: Pull complete\n(?:[0-9a-f]{12}: Pull complete\n)*Digest: sha256:[0-9a-f]{64}\nStatus: Downloaded newer image for nginx:1\.27\ndocker\.io\/library\/nginx:1\.27\n$/);
+    expect(sh('docker pull nginx:1.27').stdout).toContain('Status: Image is up to date for nginx:1.27');
+    expect(sh('docker images').stdout).toMatch(/^REPOSITORY\s+TAG\s+IMAGE ID\s+CREATED\s+SIZE\nnginx\s+1\.27\s+3b25b682ea82\s+2 weeks ago\s+192MB\n$/);
+    // タグを省くと latest という名前のタグを取る。中身（ID）が同じなので、層は取り直さない
+    expect(sh('docker pull nginx').stdout).toMatch(/^Using default tag: latest\nlatest: Pulling from library\/nginx\nDigest: sha256:[0-9a-f]{64}\nStatus: Downloaded newer image for nginx:latest\ndocker\.io\/library\/nginx:latest\n$/);
+    expect(sh('docker images').stdout).toMatch(/\nnginx\s+1\.27\s+3b25b682ea82 .*\nnginx\s+latest\s+3b25b682ea82 /);
   });
 
   it('止めたコンテナは ps -a にだけ出る。logs で記録を読む', () => {

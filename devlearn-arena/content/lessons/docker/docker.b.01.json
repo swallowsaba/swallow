@@ -1,0 +1,172 @@
+{
+  "id": "docker.b.01",
+  "domain": "docker",
+  "level": "beginner",
+  "theme": "Engine",
+  "title": "Docker とは",
+  "goal": "Docker Engine と CLI の関係、コンテナ技術の中での位置を説明できる",
+  "minutes": 15,
+  "prerequisites": ["ctr.b.03"],
+  "related": ["ctr.i.01", "docker.a.03"],
+  "next": ["docker.b.02"],
+  "terms": ["docker", "container", "image", "cli", "command", "docker-engine", "oci", "podman", "app", "container-runtime", "containerd", "runc", "namespace", "cgroups", "registry", "program", "kernel", "kubernetes"],
+  "explain": {
+    "what": "{{term:docker}}は、{{term:container}}を作り・動かし・配る道具。命令を受け付ける {{term:cli}}（docker という{{term:command}}）と、裏で動いて実際に仕事をする本体の {{term:docker-engine}} に分かれる。CLI が頼み、本体が{{term:image}}を取ってきてコンテナを動かす。",
+    "why": "コンテナを扱う代表的な道具で、多くの現場の手順書に出てくる。ただし、コンテナの技術そのものではない。同じ標準（{{term:oci}}）に沿う {{term:podman}} などでも、同じイメージを動かせる。",
+    "use": "開発の機械で{{term:app}}を試す・作ったイメージを配る。本体は、さらに下の{{term:container-runtime}}（{{term:containerd}}・{{term:runc}}）に頼んでコンテナを動かす。",
+    "when": "手順書に「docker run で動かす」と書いてある。打つと「本体につながらない」というエラーが出た。CLI はあるが、裏の本体が動いていない。",
+    "figures": ["docker-b01-engine"]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "docker-b01-engine",
+      "prompt": "図で、命令する側の CLI と、裏で動く本体の Docker Engine を押す。",
+      "answer": ["cli", "engine"],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "コンテナの技術とは、Docker のことだ。",
+      "answer": false,
+      "why": "コンテナは、{{term:namespace}}と {{term:cgroups}} で区切って動かす仕組み。Docker はそれを扱う道具の 1 つで、Podman など別の道具でも同じイメージを動かせる。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "{{term:docker-engine}}とは何か。",
+      "choices": [
+        { "id": "a", "text": "裏で動き続け、イメージやコンテナを実際に扱う本体", "correct": true },
+        { "id": "b", "text": "利用者が打つ docker のコマンドそのもの", "correct": false, "whyNot": "それは CLI。CLI は命令を受け付けて、本体に頼むだけ。" },
+        { "id": "c", "text": "イメージを置いて配る場所", "correct": false, "whyNot": "それは{{term:registry}}。本体はレジストリからイメージを取ってくる側。" }
+      ],
+      "explanation": "CLI は頼む側、本体は裏で動いて仕事をする。2 つは別の{{term:program}}。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "`docker ps` を打つと、次のエラーが出た。原因は？",
+      "context": { "log": "Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?" },
+      "choices": [
+        { "id": "a", "text": "裏の本体（Docker Engine）が動いていない", "correct": true },
+        { "id": "b", "text": "docker のコマンドが入っていない", "correct": false, "whyNot": "コマンドが無ければ command not found になる。このエラーは、CLI が動いて本体に頼もうとした結果。" },
+        { "id": "c", "text": "動いているコンテナが 1 つも無い", "correct": false, "whyNot": "コンテナが無ければ、`docker ps` は空の一覧を出すだけ。エラーにはならない。" }
+      ],
+      "explanation": "daemon（デーモン）は裏で動き続けるプログラムのことで、ここでは本体。CLI が頼む相手が見つからない、と言っている。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "Docker は、コンテナの技術の中でどんな位置にあるか。",
+      "choices": [
+        { "id": "a", "text": "コンテナを扱う道具の 1 つ", "correct": true },
+        { "id": "b", "text": "コンテナという仕組みそのもの", "correct": false, "whyNot": "仕組みは{{term:kernel}}の名前空間と cgroups。Docker はそれを使いやすくした道具。" },
+        { "id": "c", "text": "{{term:kubernetes}} の中だけで使う部品", "correct": false, "whyNot": "Kubernetes は Docker 無しでも、containerd などのランタイムでコンテナを動かせる。Docker は単独で使う道具。" }
+      ],
+      "explanation": "同じ標準（OCI）があるので、道具は入れ替えられる。Docker はその代表。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "CLI はあるが本体が止まった機械で、`docker version` を打つ。どうなるか。",
+      "choices": [
+        { "id": "a", "text": "`Client:`（CLI）の版は出るが、`Server:`（本体）の所でつながらないと言う", "correct": true },
+        { "id": "b", "text": "何も出ない", "correct": false, "whyNot": "CLI は動くので、自分の版は答えられる。答えられないのは本体の側。" },
+        { "id": "c", "text": "`Client:` と `Server:` の両方の版が出る", "correct": false, "whyNot": "`Server:` の版は本体に聞いて出す。止まっていれば聞けない。" }
+      ],
+      "explanation": "version は CLI と本体の両方に版を聞く。片方だけ出れば、どちらが動いていないかが分かる。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "市の 2 台の開発の機械で、docker version と docker info を打った結果がある。CLI と本体の版と状態を読み取って答える。",
+    "environment": "sim-read",
+    "setup": {
+      "questions": [
+        { "id": "client", "prompt": "dev-01 の CLI（Client）の版", "options": ["27.3.1", "26.1.4", "1.7.22", "1.1.14"] },
+        { "id": "engine", "prompt": "dev-01 の本体（Server）の版", "options": ["27.3.1", "26.1.4", "1.7.22", "1.1.14"] },
+        { "id": "running", "prompt": "dev-01 で、今動いているコンテナの数", "options": ["4", "3", "1", "6"] },
+        { "id": "dev02", "prompt": "dev-02 でコンテナを動かせない理由", "options": ["CLIが無い", "Engineが動いていない", "イメージが無い", "版が古い"] }
+      ],
+      "panels": [
+        {
+          "kind": "log",
+          "title": "dev-01 で docker version",
+          "lines": [
+            "Client:",
+            " Version:           27.3.1",
+            " API version:       1.45 (downgraded from 1.47)",
+            "Server: Docker Engine - Community",
+            " Engine:",
+            "  Version:          26.1.4",
+            " containerd:",
+            "  Version:          1.7.22",
+            " runc:",
+            "  Version:          1.1.14"
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "dev-01 で docker info（一部）",
+          "lines": [
+            "Server:",
+            " Containers: 4",
+            "  Running: 3",
+            "  Paused: 0",
+            "  Stopped: 1",
+            " Images: 6"
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "dev-02 で docker version",
+          "lines": [
+            "Client:",
+            " Version:           27.3.1",
+            " API version:       1.47",
+            "Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?"
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "version",
+        "purpose": "dev-01 の docker version から、CLI（`Client:`）と本体（`Server:`）の版を、それぞれ答える。",
+        "check": { "kind": "sim", "expr": "answered client=27.3.1 engine=26.1.4" },
+        "afterward": "CLI は 27.3.1、本体は 26.1.4。2 つは別のプログラムなので、版も別々に上がる。その下で containerd と runc がコンテナを動かしている。",
+        "hints": [
+          "`docker version` は、`Client:` の段に CLI の版、`Server:` の段に本体の版を出す。",
+          "`Client:` の下の `Version` と、`Server:` の `Engine:` の下の `Version` を読む。containerd と runc の版は、さらに下のランタイムの物。",
+          "`answer client 27.3.1` `answer engine 26.1.4` の順に入れる。"
+        ],
+        "expectedErrors": ["docker-engine-misread"]
+      },
+      {
+        "id": "state",
+        "purpose": "dev-01 の docker info から動いているコンテナの数を、dev-02 の結果から動かせない理由を答える。",
+        "check": { "kind": "sim", "expr": "answered running=3 dev02=Engineが動いていない" },
+        "afterward": "dev-01 では 4 つのうち 3 つが動いている（1 つは止まっている）。dev-02 は CLI の版は出たが、本体につながらなかった。裏の本体が動いていない。",
+        "hints": [
+          "`docker info` の `Containers` は作った全ての数。動いている数は `Running` の行。dev-02 は、どこまで出てどこで止まったかを見る。",
+          "dev-02 は `Client:` の版までは出ている。その後の `Cannot connect to the Docker daemon` は、本体（daemon）に届かないという意味。",
+          "`answer running 3` `answer dev02 Engineが動いていない` の順に入れる。"
+        ],
+        "expectedErrors": ["docker-engine-misread"]
+      }
+    ]
+  },
+  "result": {
+    "success": "`docker version` と `docker info` から、CLI と本体の版と状態を読み分けられた。",
+    "partial": "ヒントを使って読み取れた。次は、エラーの文のどこで CLI と本体の区切りが分かるかを、自分の言葉で説明してみよう。",
+    "retry": "まだ答えが合っていない。`docker version` の `Client:` と `Server:` の段を分けて読み直そう。"
+  },
+  "summary": {
+    "points": ["Docker はコンテナを扱う道具", "命令する CLI と、裏で動く本体", "Podman など、ほかの道具もある"],
+    "next": ["docker.b.02"],
+    "terms": ["docker", "docker-engine", "cli"]
+  }
+}

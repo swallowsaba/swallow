@@ -27,6 +27,34 @@
         "port",
         "port-publish"
       ]
+    },
+    {
+      "id": "docker-daemon",
+      "match": "Cannot connect to the Docker daemon",
+      "meaning": "「Docker の本体（daemon）につながらない」と言われた。CLI は動いたが、頼む相手の {{term:docker-engine}} に届かない。",
+      "causes": [
+        "Engine（dockerd）が止まっている、または入っていない。",
+        "Engine に頼む権限が無い（docker のグループに入っていない）。"
+      ],
+      "hint": "`docker version` で、Client の版だけが出て Server の所で止まるかを見る。止まるなら、Engine を動かす（`sudo systemctl start docker`）。",
+      "terms": [
+        "docker-engine"
+      ]
+    },
+    {
+      "id": "docker-engine-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、docker version・docker info の読み方が合っていない。",
+      "causes": [
+        "Client（CLI）と Server（Engine）の段を取り違えた。containerd・runc の版は、さらに下のランタイムの物。",
+        "docker info の Containers（作った全ての数）を、動いている数と読んだ。動いている数は Running の行。",
+        "Engine につながらないエラーを、CLI の問題と読んだ。Client の版は出ている。"
+      ],
+      "hint": "Client: と Server: の段を分けて読む。エラーの行は、どこまで出てから止まったかを見る。",
+      "terms": [
+        "docker-engine",
+        "cli"
+      ]
     }
   ]
 }

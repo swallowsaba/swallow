@@ -28,6 +28,22 @@
       "lessons": [
         "docker.b.04"
       ]
+    },
+    {
+      "id": "docker-engine",
+      "word": "Docker Engine",
+      "reading": "どっかーえんじん",
+      "plain": "Docker の、裏で動き続ける本体（dockerd）。CLI から頼まれて、イメージを取り、コンテナ・網・ボリュームを実際に扱う。",
+      "why": "CLI は頼むだけ。Engine が止まっていると、どのコマンドも「つながらない」と言って何も動かせない。",
+      "related": [
+        "docker",
+        "cli",
+        "container-runtime"
+      ],
+      "lessons": [
+        "docker.b.01"
+      ],
+      "analogy": "窓口（CLI）と、奥で作業する工房（Engine）。窓口が開いていても、工房が閉まっていれば何も作れない。"
     }
   ]
 }

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>Docker の作り。命令を受け付ける CLI（docker コマンド）が、裏で動く本体の Docker Engine に頼む。Engine は containerd と runc を通してコンテナを動かす。Podman など、同じ標準に沿う別の道具もある</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="cli">
+    <rect x="20" y="40" width="150" height="70" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="95" y="70" text-anchor="middle" font-size="16" fill="#5cc1ff">CLI</text>
+    <text x="95" y="94" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">docker …</text>
+    <text x="95" y="132" text-anchor="middle" font-size="13" fill="#9fb0c6">命令する側</text>
+  </g>
+  <g class="el" data-part="ask">
+    <path d="M174 75 H240" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="207" y="64" text-anchor="middle" font-size="13" fill="#9fb0c6">頼む</text>
+  </g>
+  <g class="el" data-part="engine">
+    <rect x="246" y="30" width="190" height="90" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="341" y="64" text-anchor="middle" font-size="16" fill="#f2b632">Docker Engine</text>
+    <text x="341" y="90" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">dockerd</text>
+    <text x="341" y="142" text-anchor="middle" font-size="13" fill="#9fb0c6">裏で動く本体（イメージ・網・データ）</text>
+  </g>
+  <g class="el" data-part="runtime">
+    <path d="M440 75 H496" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <rect x="502" y="40" width="178" height="70" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="591" y="70" text-anchor="middle" font-size="14" fill="#3ae08a">ランタイム</text>
+    <text x="591" y="94" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">containerd → runc</text>
+  </g>
+  <g class="el" data-part="containers">
+    <path d="M591 114 V168" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <rect x="512" y="174" width="74" height="44" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="549" y="201" text-anchor="middle" font-size="13" fill="#eef2f6">コンテナ</text>
+    <rect x="596" y="174" width="74" height="44" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="633" y="201" text-anchor="middle" font-size="13" fill="#eef2f6">コンテナ</text>
+  </g>
+  <g class="el" data-part="others">
+    <rect x="20" y="190" width="300" height="60" rx="8" fill="none" stroke="#9fb0c6" stroke-width="1" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="170" y="216" text-anchor="middle" font-size="14" fill="#eef2f6">Podman など、別の道具</text>
+    <text x="170" y="238" text-anchor="middle" font-size="13" fill="#9fb0c6">同じ標準（OCI）のイメージを動かせる</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="300" font-size="14" fill="#9fb0c6">Engine が止まっていると、CLI は頼む相手が無く、何も動かせない</text>
+  </g>
+</svg>

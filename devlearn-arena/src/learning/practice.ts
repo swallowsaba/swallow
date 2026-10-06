@@ -4,6 +4,7 @@ import { createClock, type MutableClock } from '@/engines/kernel/clock';
 import { createDefaultRegistry } from '@/engines/kernel/commands';
 import { gitHolds } from '@/engines/git/check';
 import { clusterHolds } from '@/engines/k8s/check';
+import { containerHolds } from '@/engines/container/check';
 import { httpEnvOf } from '@/engines/kernel/commands/httpLocal';
 import { resolve } from '@/engines/kernel/path';
 import { matchesExpected, type SqlDb } from '@/engines/db/check';
@@ -33,7 +34,7 @@ import type { PracticeAttempt } from '@/game/types';
 /* ---------- 状態による判定 ---------- */
 
 /** 端末の実戦で判定できる形 */
-export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'git', 'k8s', 'net', 'answer']);
+export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd', 'service', 'http', 'tls', 'git', 'k8s', 'net', 'container', 'answer']);
 
 /** 模擬環境（模）の実戦で判定できる形（docs/content-spec.md 2.4.1） */
 export const SIM_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['sim']);
@@ -122,6 +123,8 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       return clusterHolds(shell.cluster, check.expr);
     case 'net':
       return netHolds(shell, check.expr);
+    case 'container':
+      return containerHolds(shell.containers, check.expr);
   }
 }
 

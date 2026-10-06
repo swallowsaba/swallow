@@ -1,5 +1,5 @@
 import {
-  findContainer, memoryOf, procsOf, pull, remove, removeImage, run, start, stop, type Container, type ContainerError, type ContainerHost, type PortMap,
+  findContainer, hexOf, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, repoOf, run, start, stop, tagOf, type Container, type ContainerError, type ContainerHost, type Image, type PortMap,
 } from '@/engines/container/container';
 import type { CommandResult, CommandSpec } from '@/engines/kernel/registry';
 
@@ -21,9 +21,12 @@ function daemonError(e: ContainerError, verb: string): CommandResult {
   const prefix = verb === 'run' ? 'docker: ' : '';
   switch (e.kind) {
     case 'image-not-found': {
-      const repo = e.ref.split(':')[0] ?? e.ref;
       const head = verb === 'run' ? `Unable to find image '${e.ref}' locally\n` : '';
-      return { stderr: `${head}${prefix}Error response from daemon: pull access denied for ${repo}, repository does not exist or may require 'docker login'.\n`, code: verb === 'run' ? 125 : 1 };
+      // 名前はあるがタグが無い時は manifest unknown、名前も無い時は repository does not exist（本物と同じ）
+      const why = e.known
+        ? `manifest for ${e.ref} not found: manifest unknown: manifest unknown`
+        : `pull access denied for ${repoOf(e.ref)}, repository does not exist or may require 'docker login': denied: requested access to the resource is denied`;
+      return { stderr: `${head}${prefix}Error response from daemon: ${why}${verb === 'run' ? ".\nSee 'docker run --help'." : ''}\n`, code: verb === 'run' ? 125 : 1 };
     }
     case 'name-in-use':
       return { stderr: `${prefix}Error response from daemon: Conflict. The container name "/${e.name}" is already in use by container "${e.id}". You have to remove (or rename) that container to be able to reuse that name.\n`, code: 125 };
@@ -36,6 +39,20 @@ function daemonError(e: ContainerError, verb: string): CommandResult {
     case 'image-in-use':
       return { stderr: `Error response from daemon: conflict: unable to remove repository reference "${e.ref}" (must force) - container ${e.container} is using its referenced image\n`, code: 1 };
   }
+}
+
+/** 置き場の名前（docker.io/library/nginx:1.27。自分の置き場の名前はそのまま） */
+const qualified = (ref: string): string => (repoOf(ref).includes('/') ? (repoOf(ref).split('/')[0]?.includes('.') ? ref : `docker.io/${ref}`) : `docker.io/library/${ref}`);
+
+/** pull の出力（層ごとの Pull complete と digest。層と digest はイメージの ID から決める） */
+function pullLines(image: Image, had: boolean, layersHad = had): string[] {
+  const seed = Number.parseInt(image.id.slice(0, 8), 16);
+  const repo = qualified(image.ref).replace(/^docker\.io\//, '').replace(/:[^:/]+$/, '');
+  const layers = layersHad ? [] : Array.from({ length: image.size.endsWith('kB') ? 1 : 3 }, (_, i) => `${hexOf(seed + i, 12)}: Pull complete`);
+  return [
+    `${tagOf(image.ref)}: Pulling from ${repo}`, ...layers, `Digest: sha256:${hexOf(seed + 99, 64)}`,
+    had ? `Status: Image is up to date for ${image.ref}` : `Status: Downloaded newer image for ${image.ref}`, qualified(image.ref),
+  ];
 }
 
 function status(c: Container): string {
@@ -244,7 +261,8 @@ export const dockerCommands: CommandSpec[] = [
           const had = host.images.some((i) => i.ref === o.image || i.ref === `${o.image ?? ''}:latest` || i.ref.startsWith(`${o.image ?? ''}:`));
           const r = run(host, { image: o.image, ports: o.ports, volumes: o.volumes, env: o.env, ...(o.name ? { name: o.name } : {}), ...(o.memory !== undefined ? { memory: o.memory } : {}) });
           if (!r.ok) return { ...daemonError(r.error, 'run'), patch: { containers: r.host } };
-          const pulled = had ? [] : [`Unable to find image '${r.value.image}' locally`, `${r.value.image.split(':')[1] ?? 'latest'}: Pulling from library/${r.value.image.split(':')[0] ?? ''}`, `Status: Downloaded newer image for ${r.value.image}`];
+          const image = r.host.images.find((i) => i.ref === r.value.image);
+          const pulled = had || !image ? [] : [`Unable to find image '${r.value.image}' locally`, ...pullLines(image, false).slice(0, -1)];
           const out = o.detach ? [...pulled, fullId(r.value)] : [...pulled, ...r.value.log];
           return set(r.host, { stdout: lines(out), code: r.value.state === 'exited' && r.value.exitCode !== 0 && !o.detach ? r.value.exitCode : 0 });
         }
@@ -282,10 +300,12 @@ export const dockerCommands: CommandSpec[] = [
         case 'pull': {
           const ref = rest[0];
           if (!ref) return { stderr: '"docker pull" requires exactly 1 argument.\n', code: 1 };
+          const had = host.images.some((i) => i.ref === normalizeRef(ref));
+          const ids = new Set(host.images.map((i) => i.id));
           const r = pull(host, ref);
-          if (!r.ok) return daemonError(r.error, 'pull');
-          const [repo, tag] = r.value.ref.split(':');
-          return set(r.host, { stdout: lines([`${tag ?? 'latest'}: Pulling from library/${repo ?? ''}`, `Status: Downloaded newer image for ${r.value.ref}`, `docker.io/library/${r.value.ref}`]) });
+          const defaultTag = ref.lastIndexOf(':') > ref.lastIndexOf('/') ? [] : ['Using default tag: latest'];
+          if (!r.ok) return { ...daemonError(r.error, 'pull'), ...(defaultTag.length ? { stdout: lines(defaultTag) } : {}) };
+          return set(r.host, { stdout: lines([...defaultTag, ...pullLines(r.value, had, ids.has(r.value.id))]) });
         }
         case 'stop':
         case 'start':

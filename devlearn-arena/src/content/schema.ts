@@ -106,6 +106,8 @@ export const checkSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('git'), expr: z.string() }).strict(),
   z.object({ kind: z.literal('k8s'), expr: z.string() }).strict(),
   z.object({ kind: z.literal('net'), expr: z.string() }).strict(),
+  /** コンテナの模型の状態（イメージ・コンテナ・網・ボリューム）。式は docs/content-spec.md 2.4（src/engines/container/check.ts） */
+  z.object({ kind: z.literal('container'), expr: z.string().min(1) }).strict(),
   /** contains を書けば、返事の本文にその文字列がある（API の資源が変わったか） */
   z.object({ kind: z.literal('http'), url: z.string(), status: z.number().int(), contains: z.string().optional() }).strict(),
   z.object({ kind: z.literal('tls'), host: z.string(), trusted: z.boolean() }).strict(),

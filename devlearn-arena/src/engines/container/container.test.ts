@@ -13,13 +13,17 @@ describe('コンテナの模型', () => {
     let h = createContainerHost();
     h = ok(run(h, { image: 'nginx', name: 'a' })).host;
     h = ok(run(h, { image: 'nginx', name: 'b' })).host;
-    expect(h.images.map((i) => i.ref)).toEqual(['nginx:1.27']);
-    expect(h.containers.map((c) => [c.name, c.image, c.state])).toEqual([['a', 'nginx:1.27', 'running'], ['b', 'nginx:1.27', 'running']]);
+    expect(h.images.map((i) => i.ref)).toEqual(['nginx:latest']);
+    expect(h.containers.map((c) => [c.name, c.image, c.state])).toEqual([['a', 'nginx:latest', 'running'], ['b', 'nginx:latest', 'running']]);
     expect(new Set(h.containers.map((c) => c.id)).size).toBe(2);
   });
 
-  it('タグを省くと最新のタグ。置き場に無いイメージは取れない', () => {
-    expect(normalizeRef('redis')).toBe('redis:7');
+  it('タグを省くと latest という名前のタグ。置き場の latest は、その名前の新しい版と同じ中身（同じ ID）。置き場に無いイメージは取れない', () => {
+    expect(normalizeRef('redis')).toBe('redis:latest');
+    const latest = ok(pull(createContainerHost(), 'redis')).value;
+    const seven = ok(pull(createContainerHost(), 'redis:7')).value;
+    expect([latest.ref, latest.id]).toEqual(['redis:latest', seven.id]);
+    expect(ok(pull(createContainerHost(), 'nginx')).value.id).toBe(ok(pull(createContainerHost(), 'nginx:1.27')).value.id);
     expect(pull(createContainerHost(), 'no-such-image')).toMatchObject({ ok: false, error: { kind: 'image-not-found', ref: 'no-such-image:latest' } });
   });
 
