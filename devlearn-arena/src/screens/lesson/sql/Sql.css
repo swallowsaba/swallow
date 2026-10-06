@@ -1,0 +1,131 @@
+/* ブラウザ内 SQL（S）の右側（docs/ui-design.md 7.1）。上に表の形、中に実行した文と結果の表、下に SQL の入力欄 */
+.sql-tables {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--hud-line);
+  font-size: var(--fs-13);
+}
+.sql-tables-label {
+  font-size: var(--fs-12);
+  font-weight: 700;
+  color: var(--gold);
+}
+.sql-tables-none {
+  color: var(--hud-text-sub);
+}
+.sql-table-name {
+  font-family: var(--font-mono);
+  color: var(--hud-text);
+}
+.sql-table-cols {
+  color: var(--hud-text-sub);
+}
+.sql-log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 18px;
+  background: var(--navy);
+}
+.sql-log-empty {
+  margin: 0;
+  font-size: var(--fs-13);
+  color: var(--hud-text-sub);
+}
+.sql-entry + .sql-entry {
+  margin-top: 12px;
+}
+.sql-entry-statement {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  color: var(--hud-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sql-prompt {
+  color: var(--gold);
+}
+.sql-entry-error {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  color: var(--info);
+}
+.sql-entry-note,
+.sql-result-count {
+  margin: 2px 0 0;
+  font-size: var(--fs-12);
+  color: var(--hud-text-sub);
+}
+.sql-result {
+  margin-top: 4px;
+  overflow-x: auto;
+}
+/* 結果の表: 見出しの線だけ。値は等幅で、数は右に寄せる */
+.sql-table {
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+}
+.sql-table th {
+  padding: 3px 14px 3px 0;
+  text-align: left;
+  font-weight: 500;
+  color: var(--hud-text-sub);
+  border-bottom: 1px solid var(--hud-line);
+  white-space: nowrap;
+}
+.sql-table td {
+  padding: 3px 14px 3px 0;
+  color: var(--hud-text);
+  white-space: nowrap;
+}
+.sql-table td.num {
+  text-align: right;
+}
+.sql-table td.is-null {
+  color: var(--hud-text-sub);
+}
+.sql-input {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--hud-line);
+}
+.sql-input .sim-command-label {
+  align-self: center;
+}
+.sql-text {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  padding: 6px 8px;
+  border: none;
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  caret-color: var(--gold-light);
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  line-height: 1.5;
+}
+.sql-text:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+/* 縦の低い画面（1280×720 など）では、エラーの小窓を低くして、結果を広く取る */
+@media (max-height: 820px) {
+  .sql-console .practice-error {
+    max-height: 42%;
+    overflow-y: auto;
+  }
+  .sql-text {
+    font-size: var(--fs-13);
+  }
+}

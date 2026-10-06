@@ -8,6 +8,7 @@ import { parseDesign } from './curriculum';
 import { ERROR_GUIDES, TERMS } from './glossary';
 import { AUTHORED, loadAllLessons, loadLesson } from './lessons';
 import { DOMAIN_IDS, type Lesson } from './schema';
+import { replaySqlAnswers } from '@/learning/practice';
 import { validateFigure, validateGlossary, validateLesson, type ValidateContext } from './validate';
 
 /** docs/content-spec.md 6 章の検証を、書き起こした全てのコンテンツに掛ける */
@@ -50,6 +51,10 @@ describe('書き起こしたコンテンツの検証（docs/content-spec.md 6 �
 
   it('全レッスンが、目録・設計・置き場所と一致し、7 段の規則と用語の規則を満たす', () => {
     for (const l of lessons) expect(validateLesson(l, ctx), l.id).toEqual([]);
+  });
+
+  it('ブラウザ内 SQL の実戦は、最後のヒントの SQL を順に実行すると全ての手順を満たす', async () => {
+    for (const l of lessons.filter((x) => x.practice.mode === 'sql')) expect(await replaySqlAnswers(l.practice, ERROR_GUIDES), l.id).toEqual([]);
   });
 
   it('用語集: ID が重ならず、関連する用語とレッスンがある', () => {

@@ -5,7 +5,7 @@
 export type IconName =
   | 'learn' | 'mission' | 'glossary' | 'settings' | 'funds' | 'xp' | 'people' | 'stage' | 'emblem'
   | 'road' | 'zone' | 'facility' | 'park' | 'demolish' | 'rotate' | 'pause' | 'curve' | 'straight' | 'alert'
-  | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check' | 'hint' | 'terminal' | 'upgrade' | 'down';
+  | 'graph' | 'list' | 'search' | 'close' | 'start' | 'check' | 'hint' | 'terminal' | 'upgrade' | 'down' | 'database';
 
 const PATHS: Record<IconName, string> = {
   // 開いた本
@@ -66,6 +66,8 @@ const PATHS: Record<IconName, string> = {
   upgrade: 'M4 21h16 M6 21v-6h12v6 M12 12V3 M8 7l4-4 4 4',
   // 下向きの山（選ぶ欄を開く）
   down: 'M6 9.5l6 6 6-6',
+  // 積んだ円盤（データベース）
+  database: 'M5 6c0-1.4 3.1-2.5 7-2.5s7 1.1 7 2.5-3.1 2.5-7 2.5S5 7.4 5 6Z M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6 M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5',
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

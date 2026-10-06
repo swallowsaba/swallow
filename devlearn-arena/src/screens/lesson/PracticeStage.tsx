@@ -9,6 +9,7 @@ import type { ShellState } from '@/engines/kernel/registry';
 import { restoreShell, snapshotShell, type SessionOptions, type ShellSnapshotData } from '@/engines/kernel/session';
 import { applyStatement, createSim, isSettled, SIM_VERBS } from '@/engines/sim/sim';
 import type { SimState } from '@/engines/sim/types';
+import type { SqlDb } from '@/engines/db/check';
 import type { PracticeAttempt, PracticeSession } from '@/game/types';
 import {
   afterCommand, attemptOf, commandCandidates, currentStep, editedText, editOf, isFinished, openHint, saveEdit, startRun,
@@ -20,6 +21,8 @@ import { Rich } from '../Rich';
 import { SimConsole } from './sim/SimConsole';
 import './sim/Sim.css';
 import { SIM_NAMES } from './sim/simNames';
+import { SqlConsole } from './sql/SqlPractice';
+import { runStatement, setupSqlOf, tablesOf, type SqlLogEntry } from './sql/sqlRun';
 import { TerminalView, type TerminalHandle } from './terminal/TerminalView';
 import { useConst } from './terminal/useConst';
 import { useShellSession } from './terminal/useShellSession';
@@ -52,6 +55,7 @@ export interface PracticeStageProps {
 
 export function PracticeStage(props: PracticeStageProps) {
   if (props.practice.mode === 'simulation') return <SimPractice {...props} />;
+  if (props.practice.mode === 'sql') return <SqlPracticeStage {...props} />;
   const edit = editOf(props.practice);
   return edit ? <EditorPractice {...props} edit={edit} /> : <TerminalPractice {...props} />;
 }
@@ -109,7 +113,7 @@ function PracticeLeft({ p, run, kind, onHint, danger, onTerm, action, onBack, ba
   const finished = isFinished(p, run);
   const step = currentStep(p, run);
   const shown = step ? (run.hints[step.id] ?? 0) : 0;
-  const answerWord = p.mode === 'simulation' ? 'そのまま入れられる答え' : p.mode === 'editor' ? 'そのまま保存できる答え' : 'そのまま打てる答え';
+  const answerWord = p.mode === 'simulation' ? 'そのまま入れられる答え' : p.mode === 'editor' ? 'そのまま保存できる答え' : p.mode === 'sql' ? 'そのまま実行できる答え' : 'そのまま打てる答え';
   return (
     <section className="stage stage-practice" aria-label="実戦" data-testid="stage-practice">
       <p className="stage-count">
@@ -340,6 +344,109 @@ function SimPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, 
   );
 }
 
+/* ---------- ブラウザ内 SQL（S。docs/ui-design.md 7.1） ---------- */
+
+interface SqlSaved {
+  /** 実行した文（誤りも含む。開き直す時に、初期状態から順に実行し直す） */
+  statements: string[];
+  log: SqlLogEntry[];
+  run: PracticeRun;
+}
+
+/** 初期状態の SQL で DB を開き、実行した文を順に実行し直す（SQLite の本体は、ここで初めて読む） */
+async function openPracticeDb(p: Practice, statements: readonly string[]): Promise<SqlDb> {
+  const { openDb } = await import('@/engines/db/db');
+  const db = await openDb(setupSqlOf(p));
+  for (const s of statements) db.exec(s);
+  return db;
+}
+
+function SqlPracticeStage({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps) {
+  const restored = saved?.engineState as SqlSaved | undefined;
+  const [db, setDb] = useState<SqlDb | null>(null);
+  const dbRef = useRef<SqlDb | null>(null);
+  const [log, setLog] = useState<SqlLogEntry[]>(restored?.log ?? []);
+  const logRef = useRef(log);
+  logRef.current = log;
+  const statementsRef = useRef<string[]>(restored?.statements ?? []);
+  const [tables, setTables] = useState<{ name: string; columns: string[] }[]>([]);
+  const r = useRun(p, restored?.run);
+
+  const adopt = (next: SqlDb | null): void => {
+    dbRef.current?.close();
+    dbRef.current = next;
+    setDb(next);
+    setTables(next ? tablesOf(next) : []);
+  };
+
+  useEffect(() => {
+    let alive = true;
+    void openPracticeDb(p, statementsRef.current).then((d) => {
+      if (alive) adopt(d);
+      else d.close();
+    });
+    return () => {
+      alive = false;
+      adopt(null);
+    };
+  }, [p]);
+
+  const save = (next: PracticeRun, l: SqlLogEntry[]): void => {
+    onSave({ lessonId: sessionId, stepIndex: next.stepIndex, engineState: { statements: statementsRef.current, log: l, run: next } satisfies SqlSaved, savedAt: nowIso() });
+  };
+
+  const runSql = (statement: string): void => {
+    const d = dbRef.current;
+    if (!d) return;
+    const { entry } = runStatement(d, statement);
+    statementsRef.current = [...statementsRef.current, statement];
+    const nextLog = [...logRef.current, entry];
+    logRef.current = nextLog;
+    setLog(nextLog);
+    setTables(tablesOf(d));
+    const outcome = afterCommand(p, r.runRef.current, { line: statement, stderr: entry.error ?? '', db: d }, ERROR_GUIDES);
+    save(r.took(outcome, entry.error ?? '', statement), nextLog);
+  };
+
+  /** 答える形（answer）の手順の答え。DB は変えない */
+  const onAnswer = (answer: string): void => {
+    const line = `（答え）${answer}`;
+    save(r.took(afterCommand(p, r.runRef.current, { line, stderr: '', db: dbRef.current ?? undefined, answer }, ERROR_GUIDES), '', line), logRef.current);
+  };
+
+  const step = currentStep(p, r.run);
+
+  const reset = (): void => {
+    statementsRef.current = [];
+    logRef.current = [];
+    setLog([]);
+    adopt(null);
+    save(r.restart(), []);
+    void openPracticeDb(p, []).then((d) => adopt(d));
+  };
+
+  return (
+    <>
+      <PracticeLeft
+        p={p} run={r.run} kind={PRACTICE_NAMES[p.mode]} onHint={() => save(r.hint(), logRef.current)} danger={r.danger} onTerm={onTerm}
+        action={action} onBack={onBack} backLabel={backLabel} onFinish={() => onFinish(attemptOf(p, r.runRef.current))}
+      />
+      <Slot to={right}>
+        <SqlConsole
+          db={db}
+          log={log}
+          tables={tables}
+          onRun={runSql}
+          onReset={reset}
+          restored={restored !== undefined}
+          answer={step?.check.kind === 'answer' ? <AnswerForm key={step.id} onAnswer={onAnswer} label="SQL で調べて答える" /> : null}
+          error={r.error ? <ErrorGuidePanel error={r.error} onTerm={onTerm} onClose={() => r.setError(null)} /> : null}
+        />
+      </Slot>
+    </>
+  );
+}
+
 /* ---------- 設定の編集（編。docs/content-spec.md 2.4.2、docs/ui-design.md 7.1） ---------- */
 
 interface EditorSaved {
@@ -475,14 +582,14 @@ function EditorPractice({ practice: p, edit, sessionId, saved, onSave, onFinish,
 }
 
 /** 答える形の手順の、答えの欄（端末で調べて、ここに答える） */
-function AnswerForm({ onAnswer }: { onAnswer: (answer: string) => void }) {
+function AnswerForm({ onAnswer, label = '端末で調べて答える' }: { onAnswer: (answer: string) => void; label?: string }) {
   const [draft, setDraft] = useState('');
   return (
     <form className="sim-command practice-answer" data-testid="practice-answer" onSubmit={(e) => {
       e.preventDefault();
       if (draft.trim() !== '') onAnswer(draft.trim());
     }}>
-      <label className="sim-command-label" htmlFor="practice-answer">端末で調べて答える</label>
+      <label className="sim-command-label" htmlFor="practice-answer">{label}</label>
       <input id="practice-answer" className="sim-input is-command" value={draft} onChange={(e) => setDraft(e.target.value)} spellCheck={false} autoComplete="off" />
       <button type="submit" className="sim-tool is-strong" disabled={draft.trim() === ''}>答える</button>
     </form>

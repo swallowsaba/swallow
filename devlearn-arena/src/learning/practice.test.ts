@@ -11,7 +11,7 @@ import { initialShell, shellOptions } from '@/engines/environments';
 import { applyStatement, createSim } from '@/engines/sim/sim';
 import {
   afterCommand, answerOf, attemptOf, checkState, commandCandidates, currentStep, findGuide, GENERIC_GUIDE, hintsUsed, isFinished,
-  editedText, editOf, openHint, replayAnswers, resultKind, saveEdit, startRun, type PracticeRun,
+  editedText, editOf, openHint, replayAnswers, replaySqlAnswers, resultKind, saveEdit, startRun, type PracticeRun,
 } from './practice';
 
 /** 端末で 1 行打ち、実戦を進める（画面と同じ道筋） */
@@ -410,3 +410,57 @@ describe('設定の編集（編。docs/content-spec.md 2.4.2）', () => {
 function initialShellOf(practice: Practice): ShellState {
   return initialShell(practice.environment, practice.setup);
 }
+
+describe('ブラウザ内 SQL（S。docs/content-spec.md 2.4 の sql）', () => {
+  const practice: Practice = {
+    mode: 'sql',
+    purpose: '会員の住所を直す',
+    environment: 'sql-sqlite',
+    setup: { sql: "CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT, city TEXT); INSERT INTO members VALUES (1, '青木', '東京'), (2, '石田', '大阪'), (3, '上野', '東京');" },
+    steps: [
+      {
+        id: 'move', purpose: '3 番の会員を大阪へ', check: { kind: 'sql', query: 'SELECT id, city FROM members ORDER BY id', equals: [{ id: 1, city: '東京' }, { id: 2, city: '大阪' }, { id: 3, city: '大阪' }] },
+        afterward: '変わった', hints: ['a', 'b', "`UPDATE members SET city = '大阪' WHERE id = 3` を実行する。"], expectedErrors: ['sql-no-column'],
+      },
+      {
+        id: 'count', purpose: '数える', check: { kind: 'sql', query: 'SELECT COUNT(*) FROM members', equals: 2 },
+        afterward: '消えた', hints: ['a', 'b', '`DELETE FROM members WHERE id = 1` を実行する。'],
+      },
+    ],
+  };
+  const guides = [...ERROR_GUIDES, { id: 'sql-no-column', match: 'no such column', meaning: '列が無い', causes: ['列の名前の誤り', '表の取り違え'], hint: '列を見る' }];
+
+  it('文を実行するたびに、DB の状態で手順を判定する。SQLite のエラーの文には解説を当てる', async () => {
+    const { openDb } = await import('@/engines/db/db');
+    const db = await openDb((practice.setup as { sql: string }).sql);
+    let run = startRun();
+    const bad = db.exec("UPDATE members SET town = '大阪' WHERE id = 3");
+    expect(bad).toEqual({ ok: false, error: 'no such column: town' });
+    let r = afterCommand(practice, run, { line: "UPDATE members SET town = '大阪' WHERE id = 3", stderr: 'no such column: town', db }, guides);
+    expect(r.error?.id).toBe('sql-no-column');
+    expect(r.done).toEqual([]);
+    run = r.run;
+    db.exec("UPDATE members SET city = '大阪' WHERE id = 3");
+    r = afterCommand(practice, run, { line: "UPDATE members SET city = '大阪' WHERE id = 3", stderr: '', db }, guides);
+    expect(r.done.map((s) => s.id)).toEqual(['move']);
+    expect(r.run.recovered).toBe(true);
+    expect(checkState(practice.steps[1]!.check, { db })).toBe(false);
+    expect(checkState(practice.steps[1]!.check, {})).toBe(false);
+    db.close();
+  });
+
+  it('最後のヒントの SQL を順に実行すると全ての手順を満たすかを確かめ、通らない答えを見つける', async () => {
+    expect(await replaySqlAnswers(practice, guides)).toEqual([]);
+    const wrong: Practice = { ...practice, steps: [practice.steps[0]!, { ...practice.steps[1]!, hints: ['a', 'b', '`DELETE FROM members` を実行する。'] }] };
+    expect(await replaySqlAnswers(wrong, guides)).toEqual(['実戦 count: 最後のヒントを実行しても達成条件を満たさない']);
+    const broken: Practice = { ...practice, steps: [{ ...practice.steps[0]!, hints: ['a', 'b', '`UPDATE member SET city = 1` を実行する。'] }] };
+    expect(await replaySqlAnswers(broken, guides)).toContain('実戦 move: 答え「UPDATE member SET city = 1」でエラー: no such table: member');
+  });
+
+  it('取り出すだけの手順は、調べて答える形。最後のヒントの最後の物が答えで、その前の SQL を実行して調べる', async () => {
+    const read: Practice = { ...practice, steps: [{ id: 'tokyo', purpose: '東京の人数', check: { kind: 'answer', equals: '2' }, afterward: '2 人', hints: ['a', 'b', "`SELECT name FROM members WHERE city = '東京'` を実行し、`2` と答える。"] }] };
+    expect(await replaySqlAnswers(read, guides)).toEqual([]);
+    const wrong: Practice = { ...read, steps: [{ ...read.steps[0]!, hints: ['a', 'b', "`SELECT name FROM members WHERE city = '東京'` を実行し、`3` と答える。"] }] };
+    expect(await replaySqlAnswers(wrong, guides)).toEqual(['実戦 tokyo: 最後のヒントを実行しても達成条件を満たさない']);
+  });
+});

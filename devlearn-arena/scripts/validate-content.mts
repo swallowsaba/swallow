@@ -12,6 +12,7 @@ import { loadAllLessons } from '../src/content/lessons';
 import { MISSIONS } from '../src/content/missions';
 import { DOMAIN_IDS } from '../src/content/schema';
 import { validateFigure, validateGlossary, validateLesson, validateMission } from '../src/content/validate';
+import { replaySqlAnswers } from '../src/learning/practice';
 import { LANDMARKS } from '../src/city/facilities';
 import { accent, domain, FONT_SIZES, hud, state } from '../src/ui/tokens';
 
@@ -30,7 +31,11 @@ const ctx = {
 const colors = new Set([...Object.values(hud), ...Object.values(accent), ...Object.values(state), ...Object.values(domain), '#0a1424'].filter((c) => c.startsWith('#')).map((c) => c.toLowerCase()));
 
 const problems: string[] = [];
-for (const l of await loadAllLessons()) problems.push(...validateLesson(l, ctx).map((p) => `${l.id}: ${p}`));
+for (const l of await loadAllLessons()) {
+  problems.push(...validateLesson(l, ctx).map((p) => `${l.id}: ${p}`));
+  // ブラウザ内 SQL の実戦は、SQLite を開いて最後のヒントを実行する（非同期）
+  problems.push(...(await replaySqlAnswers(l.practice, ERROR_GUIDES)).map((p) => `${l.id}: ${p}`));
+}
 for (const m of MISSIONS) problems.push(...validateMission(m, { ...ctx, landmarks: new Set(LANDMARKS.map((l) => l.id)) }).map((p) => `ミッション ${m.id}: ${p}`));
 problems.push(...validateGlossary(TERMS, catalog).map((p) => `用語集: ${p}`));
 for (const [id, svg] of figures) problems.push(...validateFigure(svg, colors, FONT_SIZES).map((p) => `図 ${id}: ${p}`));

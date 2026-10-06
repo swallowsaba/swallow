@@ -6,6 +6,7 @@ import { gitHolds } from '@/engines/git/check';
 import { clusterHolds } from '@/engines/k8s/check';
 import { httpEnvOf } from '@/engines/kernel/commands/httpLocal';
 import { resolve } from '@/engines/kernel/path';
+import { matchesExpected, type SqlDb } from '@/engines/db/check';
 import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { serviceOf } from '@/engines/kernel/services';
 import { execute } from '@/engines/kernel/shell';
@@ -37,6 +38,9 @@ export const SHELL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['fs', 'cwd'
 /** 模擬環境（模）の実戦で判定できる形（docs/content-spec.md 2.4.1） */
 export const SIM_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['sim']);
 
+/** ブラウザ内 SQL（S）の実戦で判定できる形（取り出すだけの SELECT は DB を変えないので、調べて答える形） */
+export const SQL_CHECKS: ReadonlySet<CheckSpec['kind']> = new Set(['sql', 'answer']);
+
 /** 判定に使う模擬環境の今の状態。実戦の形に応じて、どれか 1 つがある */
 export interface CheckInput {
   shell?: ShellState | undefined;
@@ -44,6 +48,8 @@ export interface CheckInput {
   sim?: SimState | undefined;
   /** 原因などを答える形（answer）の、学習者の答え */
   answer?: string | undefined;
+  /** ブラウザ内 SQL（S）の DB */
+  db?: SqlDb | undefined;
 }
 
 const sameAnswer = (a: string, b: string): boolean => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -68,6 +74,8 @@ function modeHolds(mode: number, spec: string): boolean {
 export function checkState(check: CheckSpec, input: CheckInput): boolean {
   if (check.kind === 'sim') return input.sim !== undefined && holds(input.sim, check.expr);
   if (check.kind === 'answer') return input.answer !== undefined && sameAnswer(input.answer, check.equals);
+  // DB の実戦は、確かめる問い合わせの結果が期待する値と一致するか（DB の状態で判定する）
+  if (check.kind === 'sql') return input.db !== undefined && matchesExpected(input.db, check.query, check.equals);
   const { shell } = input;
   if (!shell) return false;
   switch (check.kind) {
@@ -112,9 +120,6 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       return gitHolds(shell.git, shell.vfs, check.expr, shell.gitServers);
     case 'k8s':
       return clusterHolds(shell.cluster, check.expr);
-    case 'sql':
-      // DB の実戦は DB の状態で判定する（src/engines/db の matchesExpected）。端末の状態では判定しない
-      return false;
     case 'net':
       return netHolds(shell, check.expr);
   }
@@ -272,6 +277,7 @@ export function afterCommand(
     shell?: ShellState;
     sim?: SimState;
     answer?: string;
+    db?: SqlDb;
     /** 答える・全て並べるなど、出来上がりを確かめる操作だった（満たさなければ「合っていない」と知らせる） */
     settled?: boolean;
   },
@@ -299,7 +305,7 @@ export function afterCommand(
 
   const done: PracticeStep[] = [];
   for (let step = currentStep(practice, next); step; step = currentStep(practice, next)) {
-    if (!checkState(step.check, { shell: a.shell, sim: a.sim, answer: a.answer })) break;
+    if (!checkState(step.check, { shell: a.shell, sim: a.sim, answer: a.answer, db: a.db })) break;
     done.push(step);
     // 前の操作のエラーの後、ヒントを開かずに満たした
     const self = hadError && (next.hints[step.id] ?? 0) === 0;
@@ -430,6 +436,38 @@ function replaySim(practice: Practice, guides: readonly ErrorGuide[]): string[] 
     } catch (e) {
       problems.push(`実戦 ${step.id}: ${e instanceof Error ? e.message : String(e)}`);
     }
+  }
+  return problems;
+}
+
+/**
+ * ブラウザ内 SQL（S）の実戦: 初期状態の SQL で開いた DB に、最後のヒントの SQL を順に実行し、全ての手順を満たすか。
+ * SQLite の本体（WebAssembly）を読むので非同期。内容の検証（validate.test.ts・scripts/validate-content.mts）が使う
+ */
+export async function replaySqlAnswers(practice: Practice, guides: readonly ErrorGuide[] = []): Promise<string[]> {
+  if (practice.mode !== 'sql') return [];
+  const { openDb } = await import('@/engines/db/db');
+  const problems: string[] = [];
+  const db = await openDb(resolveSetup(practice.environment, practice.setup).sql ?? '');
+  try {
+    for (const step of practice.steps) {
+      if (!SQL_CHECKS.has(step.check.kind)) {
+        problems.push(`実戦 ${step.id}: 判定の形 ${step.check.kind} はブラウザ内 SQL の実戦で使えない`);
+        continue;
+      }
+      const lines = answerOf(step);
+      if (lines.length === 0) problems.push(`実戦 ${step.id}: 最後のヒントに実行する SQL（\`...\`）が無い`);
+      // 答える手順は、最後の物が答え。その前の物は、調べるために実行する SQL
+      const answer = step.check.kind === 'answer' ? lines.at(-1) : undefined;
+      for (const line of step.check.kind === 'answer' ? lines.slice(0, -1) : lines) {
+        const out = db.exec(line);
+        const expected = !out.ok && (step.expectedErrors ?? []).some((id) => guides.some((g) => g.id === id && guideMatches(g, out.error)));
+        if (!out.ok && !expected) problems.push(`実戦 ${step.id}: 答え「${line}」でエラー: ${out.error}`);
+      }
+      if (!checkState(step.check, { db, answer })) problems.push(`実戦 ${step.id}: 最後のヒントを実行しても達成条件を満たさない`);
+    }
+  } finally {
+    db.close();
   }
   return problems;
 }
