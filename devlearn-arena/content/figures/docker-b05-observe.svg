@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>中の様子を見る 2 つの道。コンテナのアプリが出した文（標準出力）は docker logs で外から読む。docker exec は、動いているコンテナの中でコマンドを打つ。止まったコンテナは、logs は読めるが exec はできない</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="running">
+    <rect x="20" y="30" width="250" height="110" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="145" y="58" text-anchor="middle" font-size="14" fill="#3ae08a">動いているコンテナ（web）</text>
+    <text x="40" y="92" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">/etc/nginx/conf.d/…</text>
+    <text x="40" y="118" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">/usr/share/nginx/html/</text>
+  </g>
+  <g class="el" data-part="exec">
+    <path d="M440 85 H276" fill="none" stroke="#5cc1ff" stroke-width="2" marker-end="url(#ar)" />
+    <text x="358" y="74" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#5cc1ff">docker exec</text>
+    <text x="358" y="106" text-anchor="middle" font-size="13" fill="#9fb0c6">中でコマンドを打つ</text>
+  </g>
+  <g class="el" data-part="you">
+    <rect x="446" y="50" width="234" height="70" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="563" y="80" text-anchor="middle" font-size="14" fill="#eef2f6">手元の端末（外）</text>
+    <text x="563" y="104" text-anchor="middle" font-size="13" fill="#9fb0c6">docker の CLI</text>
+  </g>
+  <g class="el" data-part="stopped">
+    <rect x="20" y="180" width="250" height="100" rx="8" fill="none" stroke="#e04a3a" stroke-width="2" pointer-events="all" />
+    <text x="145" y="208" text-anchor="middle" font-size="14" fill="#e04a3a">止まったコンテナ（reserve）</text>
+    <text x="40" y="240" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">reserve: version 2.0.0</text>
+    <text x="40" y="264" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#ff8a7a">Error: missing …</text>
+  </g>
+  <g class="el" data-part="logs">
+    <path d="M276 230 H560 V126" fill="none" stroke="#f2b632" stroke-width="2" marker-end="url(#ar)" />
+    <text x="420" y="220" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#f2b632">docker logs</text>
+    <text x="420" y="252" text-anchor="middle" font-size="13" fill="#9fb0c6">出した文を外から読む</text>
+  </g>
+  <g class="el" data-part="noexec">
+    <text x="420" y="292" text-anchor="middle" font-size="13" fill="#e04a3a">止まった物に exec はできない</text>
+  </g>
+  <text x="20" y="318" font-size="13" fill="#9fb0c6">すぐ止まる時は、logs の最後の方に原因の行がある</text>
+</svg>

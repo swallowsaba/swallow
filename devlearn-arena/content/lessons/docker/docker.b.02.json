@@ -1,0 +1,117 @@
+{
+  "id": "docker.b.02",
+  "domain": "docker",
+  "level": "beginner",
+  "theme": "image",
+  "title": "イメージを取る・見る",
+  "goal": "pull/images でイメージを扱える",
+  "minutes": 15,
+  "prerequisites": ["docker.b.01"],
+  "related": ["ctr.b.05", "ctr.b.03"],
+  "next": ["docker.b.03"],
+  "terms": ["image", "registry", "docker", "cli", "container", "image-tag", "web-server", "db", "command"],
+  "explain": {
+    "what": "{{term:image}}を{{term:registry}}から手元の機械に取ってくるのが pull、手元にあるイメージを一覧するのが images。どちらも {{term:docker}} の {{term:cli}} で頼む。",
+    "why": "{{term:container}}は、手元にあるイメージから作る。動かす前に、使う設計図を手元に用意する。一覧を見れば、どの版を持っているか・どれだけ場所を使っているかが分かる。",
+    "use": "公開されている公式のイメージ（{{term:web-server}}の nginx・{{term:db}} の postgres など）を使う。版は{{term:image-tag}}で指す。",
+    "when": "nginx を動かしたい。手順書には「版 1.27 を使う」とある。まず 1.27 のタグのイメージを取り、一覧で確かめる。",
+    "figures": ["docker-b02-pull"]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "docker-b02-pull",
+      "prompt": "図の一覧の 1 行で、版の名札（タグ）の欄を押す。",
+      "answer": ["tag"],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "1 つのイメージの名前（nginx）",
+      "b": "いくつもの版の名札（1.27・1.27-alpine・latest）",
+      "answer": "contains",
+      "why": "1 つの名前の中に、版ごとのタグがいくつもある。名前:タグ の形で、どの版かを指す。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "レジストリからイメージを手元に取る{{term:command}}は？",
+      "choices": [
+        { "id": "a", "text": "`docker pull`", "correct": true },
+        { "id": "b", "text": "`docker images`", "correct": false, "whyNot": "images は、手元に既にあるイメージを一覧するだけ。取ってはこない。" },
+        { "id": "c", "text": "`docker push`", "correct": false, "whyNot": "push は逆向きで、手元のイメージをレジストリに置く。" }
+      ],
+      "explanation": "pull は引き寄せる、push は押し出す。取ってくるのは pull。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "タグを書かずに `docker pull nginx` と打つ。どのタグの物を取るか。",
+      "choices": [
+        { "id": "a", "text": "latest という名前のタグの物", "correct": true },
+        { "id": "b", "text": "必ず、一番安定した版", "correct": false, "whyNot": "latest は名札の名前にすぎない。安定した版かどうかは、置いた人が何に latest を付けたかで決まる。" },
+        { "id": "c", "text": "手元に既にある版", "correct": false, "whyNot": "タグを省いた時は、手元の物ではなく、latest という名札の物を取りに行く。" }
+      ],
+      "explanation": "タグを省くと latest を指す。最新の安定版という意味ではない（ctr.b.05）。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "本番と同じ版で試したい。どう取る？",
+      "choices": [
+        { "id": "a", "text": "本番と同じタグを書いて取る（`nginx:1.27` のように）", "correct": true },
+        { "id": "b", "text": "タグを省いて取る", "correct": false, "whyNot": "latest が指す物は、置いた人が付け替えれば変わる。同じ版になるとは限らない。" },
+        { "id": "c", "text": "名前だけ合っていれば、どの版でもよい", "correct": false, "whyNot": "版が違えば、動きも違い得る。同じ版で試すにはタグで固定する。" }
+      ],
+      "explanation": "版はタグで固定する。名前:タグ で書けば、いつ取っても同じ物を指す。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "開発の機械に、手順書のとおり版 1.27 の nginx のイメージを取り、一覧で確かめる。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "dev-01"
+    },
+    "steps": [
+      {
+        "id": "pull",
+        "purpose": "レジストリから、nginx の版 1.27（タグ 1.27）のイメージを手元に取る。",
+        "check": { "kind": "container", "expr": "image:nginx:1.27" },
+        "afterward": "層ごとに `Pull complete` と出て、最後に `Downloaded newer image for nginx:1.27`。手元に nginx:1.27 がある。",
+        "hints": [
+          "取るのは `docker pull 名前:タグ`。",
+          "名前は nginx、版の名札（タグ）は 1.27。名前とタグを : でつなぐ。",
+          "`docker pull nginx:1.27` と打つ。"
+        ],
+        "expectedErrors": ["docker-pull-not-found"]
+      },
+      {
+        "id": "list",
+        "purpose": "手元のイメージを一覧し、nginx:1.27 の大きさ（`SIZE` の欄）を答える。",
+        "check": { "kind": "answer", "equals": "192MB" },
+        "afterward": "一覧に nginx・1.27・3b25b682ea82・192MB の行がある。大きさは、このイメージが手元で使う場所。",
+        "hints": [
+          "手元のイメージの一覧は `docker images`。",
+          "`docker images` の nginx・1.27 の行の、一番右の `SIZE` の欄を読む。",
+          "`docker images` と打ち、`192MB` と答える。"
+        ],
+        "expectedErrors": ["docker-images-misread"]
+      }
+    ]
+  },
+  "result": {
+    "success": "名前とタグで指定の版のイメージを取り、一覧で確かめられた。",
+    "partial": "ヒントを使って取れた。次は、タグを書かずに取ると何が来るかを、自分の言葉で説明してみよう。",
+    "retry": "まだ取れていない。`docker images` の一覧に nginx・1.27 の行があるかを見よう。"
+  },
+  "summary": {
+    "points": ["pull で取る", "images で見る", "版はタグで固定"],
+    "next": ["docker.b.03"],
+    "terms": ["image", "image-tag", "registry"]
+  }
+}

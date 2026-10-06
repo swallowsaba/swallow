@@ -1,0 +1,133 @@
+{
+  "id": "docker.b.03",
+  "domain": "docker",
+  "level": "beginner",
+  "theme": "run",
+  "title": "コンテナを動かす",
+  "goal": "run/ps/stop/rm で動かし止められる",
+  "minutes": 15,
+  "prerequisites": ["docker.b.02"],
+  "related": ["linux.i.01", "k8s.b.04"],
+  "next": ["docker.b.04", "docker.b.05", "docker.i.01"],
+  "terms": ["container", "image", "docker", "ps", "rm", "app", "terminal", "command", "log"],
+  "explain": {
+    "what": "{{term:image}}から{{term:container}}を作って動かすのが run、動いている物を一覧するのが {{term:ps}}、止めるのが stop、消すのが {{term:rm}}。この 4 つで、コンテナの一生（作る → 動く → 止まる → 消える）を扱う。",
+    "why": "コンテナは止めても消えない。止まった物は ps の一覧に出ないので、どこにあるか分からなくなりやすい。一生の段階と、段階ごとの見え方を知っておく。",
+    "use": "全ての作業の基本。{{term:app}}を試す・入れ替える・片付ける。名前を付けて動かせば、後から名前で指せる。",
+    "when": "昨日動かしたコンテナを止めた。今日、同じ名前で動かそうとしたら「その名前は使われている」と断られた。止まった物が残っている。",
+    "figures": ["docker-b03-lifecycle"]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "コンテナの一生を、起きる順に並べる。",
+      "items": ["run で作って動かす", "stop で止める", "rm で消す"],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "ps -a に出るコンテナ（止まった物も含む）",
+      "b": "ps に出るコンテナ（動作中だけ）",
+      "answer": "contains",
+      "why": "ps -a は全てのコンテナを見せる。その中の、動いている物だけが ps に出る。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "`docker run -d --name web nginx:1.27` と、-d を付けて動かす。どうなるか。",
+      "choices": [
+        { "id": "a", "text": "コンテナは裏で動き続け、{{term:terminal}}はすぐ次の{{term:command}}を受け付ける", "correct": true },
+        { "id": "b", "text": "コンテナの{{term:log}}が流れ続け、端末が使えなくなる", "correct": false, "whyNot": "それは -d を付けない時。-d（detach）は、コンテナを端末から切り離して裏で動かす。" },
+        { "id": "c", "text": "作るだけで、動かさない", "correct": false, "whyNot": "run は作って動かす。作るだけなら create という別のコマンド。" }
+      ],
+      "explanation": "-d は裏で動かす印。出力は、作ったコンテナの長い番号（`ID`）だけ。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "止めたコンテナも含めて、全てを一覧したい。どう打つ？",
+      "choices": [
+        { "id": "a", "text": "`docker ps -a`", "correct": true },
+        { "id": "b", "text": "`docker ps`", "correct": false, "whyNot": "ps は動いている物だけを見せる。止まった物は出ない。" },
+        { "id": "c", "text": "`docker images`", "correct": false, "whyNot": "images はイメージ（設計図）の一覧。コンテナ（実体）の一覧ではない。" }
+      ],
+      "explanation": "-a（all）で、止まった物まで全てを見せる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "`docker run -d --name web nginx:1.27` が断られた。原因は？",
+      "context": { "log": "docker: Error response from daemon: Conflict. The container name \"/web\" is already in use by container \"3e1f…\". You have to remove (or rename) that container to be able to reuse that name." },
+      "choices": [
+        { "id": "a", "text": "web という名前のコンテナが、止まったまま（または動いたまま）残っている", "correct": true },
+        { "id": "b", "text": "nginx:1.27 のイメージが手元に無い", "correct": false, "whyNot": "イメージが無ければ、取りに行く（pull）。名前の重なりとは別のエラーになる。" },
+        { "id": "c", "text": "同じイメージから 2 つ目のコンテナは作れない", "correct": false, "whyNot": "同じイメージから何個でも作れる。重なってはいけないのは名前。" }
+      ],
+      "explanation": "名前は 1 つのコンテナにしか付けられない。`docker ps -a` で残っている物を探し、要らなければ消す。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "市の案内板の試しに、web という名前で nginx のコンテナを裏で動かす。確かめたら止めて、最後に消して片付ける。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "dev-01",
+      "images": ["nginx:1.27"]
+    },
+    "steps": [
+      {
+        "id": "run",
+        "purpose": "web という名前で、nginx:1.27 のコンテナを裏で（-d）動かす。動いていることを一覧で確かめよう。",
+        "check": { "kind": "container", "expr": "running:web" },
+        "afterward": "長い番号が出て、`docker ps` に web の行（`STATUS` は `Up`）が出た。コンテナは裏で動いている。",
+        "hints": [
+          "動かすのは `docker run`。名前は `--name`、裏で動かすのは `-d`。最後にイメージを書く。",
+          "`docker run -d --name web nginx:1.27` の形。動いた物は `docker ps` で見える。",
+          "`docker run -d --name web nginx:1.27` `docker ps` と打つ。"
+        ],
+        "expectedErrors": ["docker-conflict"]
+      },
+      {
+        "id": "stop",
+        "purpose": "web を止める。止めた後、`docker ps` と `docker ps -a` で見え方の違いを確かめる。",
+        "check": { "kind": "container", "expr": "exited:web" },
+        "afterward": "`docker ps` から web が消えたが、`docker ps -a` には `Exited (0)` で残っている。止めただけでは消えない。",
+        "hints": [
+          "止めるのは `docker stop 名前`。",
+          "`docker stop web` の後、`docker ps` と `docker ps -a` を打ち比べる。",
+          "`docker stop web` `docker ps` `docker ps -a` と打つ。"
+        ],
+        "expectedErrors": ["docker-no-such-container"]
+      },
+      {
+        "id": "rm",
+        "purpose": "止めた web を消して片付ける。イメージは残すので、`docker images` に nginx:1.27 が残ることも確かめる。",
+        "check": { "kind": "container", "expr": "!exists:web image:nginx:1.27" },
+        "afterward": "`docker ps -a` から web が消えた。イメージの nginx:1.27 は手元に残っているので、いつでも作り直せる。",
+        "hints": [
+          "消すのは `docker rm 名前`。動いている物は、先に止めないと消せない。",
+          "`docker rm web` の後、`docker ps -a` と `docker images` で確かめる。",
+          "`docker rm web` `docker ps -a` `docker images` と打つ。"
+        ],
+        "expectedErrors": ["docker-rm-running", "docker-no-such-container"]
+      }
+    ],
+    "dangerous": [
+      { "id": "rmi", "pattern": "docker\\s+rmi\\b", "why": "イメージまで消した。片付けるのはコンテナだけ。作り直す時に、また取りに行くことになる。" }
+    ]
+  },
+  "result": {
+    "success": "名前を付けて動かし、止めて、消すまで、コンテナの一生を扱えた。",
+    "partial": "ヒントを使って片付けまでできた。次は、止まった物が ps に出ない理由を、自分の言葉で説明してみよう。",
+    "retry": "まだ片付けまで届いていない。`docker ps -a` で、web が今どの段階にいるかを見よう。"
+  },
+  "summary": {
+    "points": ["run で動かす", "ps で見る（止まった物は -a）", "stop と rm で止めて消す"],
+    "next": ["docker.b.04", "docker.b.05"],
+    "terms": ["container", "image"]
+  }
+}

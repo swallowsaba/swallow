@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>コンテナの一生。docker run で作って動かす（動作中）→ docker stop で止める（停止）→ docker rm で消す。docker ps は動作中だけ、docker ps -a は止まった物も見せる。イメージは消えずに残る</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="image">
+    <rect x="20" y="50" width="120" height="64" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="80" y="78" text-anchor="middle" font-size="14" fill="#f2b632">イメージ</text>
+    <text x="80" y="100" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">nginx:1.27</text>
+  </g>
+  <g class="el" data-part="run">
+    <path d="M144 82 H206" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="175" y="70" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">run</text>
+  </g>
+  <g class="el" data-part="running">
+    <rect x="212" y="50" width="130" height="64" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="277" y="78" text-anchor="middle" font-size="14" fill="#3ae08a">動作中</text>
+    <text x="277" y="100" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">Up</text>
+  </g>
+  <g class="el" data-part="stop">
+    <path d="M346 82 H408" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="377" y="70" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">stop</text>
+    <rect x="414" y="50" width="130" height="64" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="479" y="78" text-anchor="middle" font-size="14" fill="#eef2f6">停止</text>
+    <text x="479" y="100" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">Exited (0)</text>
+  </g>
+  <g class="el" data-part="rm">
+    <path d="M548 82 H610" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="579" y="70" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">rm</text>
+    <text x="650" y="88" text-anchor="middle" font-size="14" fill="#e04a3a">消える</text>
+  </g>
+  <g class="el" data-part="ps">
+    <rect x="212" y="160" width="130" height="40" rx="6" fill="none" stroke="#5cc1ff" stroke-width="1" pointer-events="all" />
+    <text x="277" y="186" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#5cc1ff">docker ps</text>
+    <text x="400" y="186" font-size="13" fill="#9fb0c6">動作中だけ</text>
+  </g>
+  <g class="el" data-part="psa">
+    <rect x="212" y="214" width="332" height="40" rx="6" fill="none" stroke="#5cc1ff" stroke-width="1" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="378" y="240" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#5cc1ff">docker ps -a（止まった物も）</text>
+  </g>
+  <text x="20" y="300" font-size="14" fill="#9fb0c6">コンテナを消しても、元のイメージは手元に残る。同じイメージから何度でも作り直せる</text>
+</svg>

@@ -120,6 +120,44 @@ describe('docker（CLI）', () => {
     expect(sh('docker images').stdout).toMatch(/\nnginx\s+1\.27\s+3b25b682ea82 .*\nnginx\s+latest\s+3b25b682ea82 /);
   });
 
+  it('要る環境変数が無いアプリは、起動の行を出した後に原因の行を出して止まる（Exited (1)）。ログの最後に原因がある', () => {
+    const { sh } = shell();
+    expect(sh('docker run -d --name reserve city-reserve:2.0').code).toBe(0);
+    expect(sh('docker ps').stdout).not.toContain('reserve');
+    expect(sh('docker ps -a').stdout).toMatch(/city-reserve:2\.0 .*Exited \(1\) .*reserve\n/);
+    const log = sh('docker logs reserve').stdout.split('\n');
+    expect(log.slice(0, 6)).toEqual(['', '> reserve@2.0.0 start', '> node server.js', '', 'reserve: version 2.0.0', 'reserve: reading settings from the environment']);
+    expect(log[6]).toBe('Error: missing environment variable DATABASE_URL');
+    expect(sh('docker logs db').stderr).toBe('Error response from daemon: No such container: db\n');
+  });
+
+  it('外のポートが使用中なら、本物と同じくコンテナは作られて Created のまま残る（同じ名前で作り直すと Conflict）', () => {
+    const { sh } = shell();
+    sh('docker run -d --name web -p 8080:80 nginx:1.27');
+    const r = sh('docker run -d --name web2 -p 8080:80 httpd:2.4');
+    expect(r.code).toBe(125);
+    expect(r.stderr).toMatch(/^docker: Error response from daemon: driver failed programming external connectivity on endpoint web2 \([0-9a-f]{64}\): Bind for 0\.0\.0\.0:8080 failed: port is already allocated\.\n/);
+    expect(sh('docker ps -a').stdout).toMatch(/httpd:2\.4 +"httpd-foreground" .*Created +web2\n/);
+    expect(sh('docker run -d --name web2 -p 8081:80 httpd:2.4').stderr).toContain('Conflict. The container name "/web2" is already in use');
+    sh('docker rm web2');
+    expect(sh('docker run -d --name web2 -p 8081:80 httpd:2.4').code).toBe(0);
+    expect(sh('docker ps').stdout).toMatch(/nginx:1\.27 +"\/docker-entrypoint\.…" .*0\.0\.0\.0:8080->80\/tcp +web\n/);
+  });
+
+  it('exec で中のファイルを読める（cat・ls）。イメージに入っている設定が見える。無い場所は、中の道具の言い方で無いと言う', () => {
+    const { sh } = shell();
+    sh('docker run -d --name web nginx:1.27-alpine');
+    const conf = sh('docker exec web cat /etc/nginx/conf.d/default.conf');
+    expect(conf.code).toBe(0);
+    expect(conf.stdout).toMatch(/^server \{\n {4}listen {7}80;\n/);
+    expect(conf.stdout).toContain('        root   /usr/share/nginx/html;\n');
+    expect(sh('docker exec web ls /usr/share/nginx/html').stdout).toBe('50x.html\nindex.html\n');
+    expect(sh('docker exec web cat /etc/nginx/nginx.cnf').stderr).toBe("cat: can't open '/etc/nginx/nginx.cnf': No such file or directory\n");
+    expect(sh('docker exec web ls /srv').stderr).toBe("ls: /srv: No such file or directory\n");
+    sh('docker run -d --name web2 nginx:1.27');
+    expect(sh('docker exec web2 ls /srv').stderr).toBe("ls: cannot access '/srv': No such file or directory\n");
+  });
+
   it('止めたコンテナは ps -a にだけ出る。logs で記録を読む', () => {
     const { sh } = shell();
     sh('docker run -d --name db postgres:16');

@@ -7,7 +7,8 @@
       "meaning": "「その名前の{{term:container}}は既にある」と言われた。名前は 1 つのコンテナにしか付けられない。",
       "causes": [
         "前に作ったコンテナが、止まったり動いたりしたまま残っている。",
-        "同じ `docker run` を 2 回打った。"
+        "同じ `docker run` を 2 回打った。",
+        "前の `docker run` が、ポートの使用中で断られた。その時に作りかけたコンテナが Created のまま残っている。"
       ],
       "hint": "`docker ps -a` で残っているコンテナを見る。要らなければ `docker rm -f` で消してから作り直す。",
       "terms": [
@@ -20,9 +21,9 @@
       "meaning": "「手元のその{{term:port}}は使用中」と言われた。{{term:port-publish}}で、別のコンテナが同じ番号を使っている。",
       "causes": [
         "前に作ったコンテナが、同じ番号を公開したまま動いている。",
-        "-p の左（手元の番号）を取り違えた。"
+        "-p の左（手元の番号）を取り違えた。左が外（手元）、右が中（コンテナ）。"
       ],
-      "hint": "`docker ps` で動いているコンテナと公開している番号を見る。古い物を止めるか、別の番号にする。",
+      "hint": "`docker ps` で動いているコンテナと公開している番号を見る。古い物を止めるか、別の番号にする。断られたコンテナも Created のまま残るので、`docker ps -a` で見て消してから作り直す。",
       "terms": [
         "port",
         "port-publish"
@@ -54,6 +55,107 @@
       "terms": [
         "docker-engine",
         "cli"
+      ]
+    },
+    {
+      "id": "docker-pull-not-found",
+      "match": "manifest unknown|repository does not exist",
+      "meaning": "「その{{term:image}}は{{term:registry}}に無い」と言われた。manifest unknown は名前はあるがその版（タグ）が無い、repository does not exist は名前そのものが無い。",
+      "causes": [
+        "タグの綴りの誤り（1.27 を 1.72 と書いた など）。",
+        "名前の綴りの誤り（nginx を ngnix と書いた など）。",
+        "自分のレジストリのイメージなのに、ログインしていない・場所を書いていない。"
+      ],
+      "hint": "エラーの文に出た 名前:タグ を、手順書と 1 字ずつ見比べる。manifest unknown ならタグ、repository does not exist なら名前を疑う。",
+      "terms": [
+        "image",
+        "registry",
+        "image-tag"
+      ]
+    },
+    {
+      "id": "docker-images-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、`docker images` の一覧の読み方が合っていない。",
+      "causes": [
+        "別の行（別の名前やタグ）を読んだ。",
+        "別の欄（IMAGE ID・CREATED）を読んだ。大きさは一番右の SIZE。",
+        "まだ取っていない（一覧に行が無い）。"
+      ],
+      "hint": "`docker images` の見出しの行で欄の並びを確かめ、nginx・1.27 の行を横にたどる。",
+      "terms": [
+        "image"
+      ]
+    },
+    {
+      "id": "docker-no-such-container",
+      "match": "No such container",
+      "meaning": "「その名前（または ID）の{{term:container}}は無い」と言われた。",
+      "causes": [
+        "名前の綴りの誤り（web を wed と書いた など）。",
+        "もう消した（rm した）コンテナを指した。",
+        "名前を付けずに動かしたので、別の名前（brave_turing など）が付いている。"
+      ],
+      "hint": "`docker ps -a` で、今あるコンテナの名前（NAMES の欄）を確かめる。",
+      "terms": [
+        "container"
+      ]
+    },
+    {
+      "id": "docker-rm-running",
+      "match": "container is running",
+      "meaning": "「動いている{{term:container}}は消せない」と言われた。消す前に止める決まり。",
+      "causes": [
+        "stop を打つ前に rm を打った。",
+        "止めたつもりが、別の名前のコンテナを止めていた。"
+      ],
+      "hint": "`docker stop 名前` で止めてから `docker rm 名前`。止めずに消すなら `docker rm -f`（動いている物を強制で消す）。",
+      "terms": [
+        "container"
+      ]
+    },
+    {
+      "id": "docker-port-closed",
+      "match": "Failed to connect to localhost port|Empty reply from server",
+      "meaning": "手元のその{{term:port}}で、誰も答えなかった（Failed to connect）か、つながったのに返事が空だった（Empty reply）。",
+      "causes": [
+        "コンテナを{{term:port-publish}}せずに動かした（-p が無い）。",
+        "-p の右（中の番号）が、中のサーバの待ち受けと違う。nginx・httpd は中で 80 番を待ち受ける。",
+        "コンテナが止まっている。"
+      ],
+      "hint": "`docker ps` の PORTS の欄を見る。0.0.0.0:8080->80/tcp のように、外の番号から中の待ち受けの番号へつながっているか確かめる。公開は動いているコンテナに後から足せないので、消して作り直す。",
+      "terms": [
+        "port",
+        "port-publish"
+      ]
+    },
+    {
+      "id": "docker-logs-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、一覧や記録の読み方が合っていない。",
+      "causes": [
+        "最初の起動の行を読んだ。止まった理由は、最後の方の Error の行に出る。",
+        "別のコンテナの行や記録を読んだ（web と reserve を取り違えた）。",
+        "Exited の括弧の数ではなく、CREATED などの別の欄を読んだ。"
+      ],
+      "hint": "`docker ps -a` で名前を確かめ、`docker logs 名前` の最後の方から上へ読む。",
+      "terms": [
+        "log",
+        "container"
+      ]
+    },
+    {
+      "id": "docker-exec-stopped",
+      "match": "is not running",
+      "meaning": "「その{{term:container}}は動いていない」と言われた。exec は動いている物の中でしか打てない。",
+      "causes": [
+        "止まったコンテナ（Exited）に exec した。",
+        "名前を取り違えて、止まった方を指した。"
+      ],
+      "hint": "止まった物は `docker logs 名前` で記録を読む。中を確かめたいなら、動いている物を `docker ps` で選ぶ。",
+      "terms": [
+        "container",
+        "log"
       ]
     }
   ]

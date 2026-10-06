@@ -1,0 +1,120 @@
+{
+  "id": "docker.b.04",
+  "domain": "docker",
+  "level": "beginner",
+  "theme": "公開",
+  "title": "ポートを公開する",
+  "goal": "-p で外から繋がるようにできる",
+  "minutes": 15,
+  "prerequisites": ["docker.b.03", "net.b.04"],
+  "related": ["net.b.04", "k8s.b.06"],
+  "next": ["docker.b.05"],
+  "terms": ["port-publish", "container", "port", "web", "server", "image", "log"],
+  "explain": {
+    "what": "{{term:port-publish}}は、手元の機械（外）の{{term:port}}を、{{term:container}}の中で待ち受けるポートに結ぶこと。作る時に「外の番号:中の番号」で指定する。",
+    "why": "コンテナは閉じた箱で、中の{{term:server}}が待ち受けていても、そのままでは外から届かない。外の入口を、中の待ち受けにつないで初めて届く。",
+    "use": "{{term:web}} のサーバを外に見せる。1 台の機械で同じ種類のサーバを何個も動かす時は、外の番号を分ける（中はどれも 80 でよい）。",
+    "when": "コンテナを起動したのに、ブラウザで開けない。一覧を見ると、外の入口がどこにもつながっていない。",
+    "figures": ["docker-b04-publish"]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "docker-b04-publish",
+      "prompt": "図の -p 8080:80 で、外（手元の機械）の番号を表す部分を押す。",
+      "answer": ["left"],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "-p 8080:80 の左右と、意味を結ぶ。",
+      "pairs": [
+        ["左の 8080", "手元の機械（外）の入口の番号"],
+        ["右の 80", "コンテナの中で待ち受ける番号"]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "-p を付けずに nginx のコンテナを動かし、手元のブラウザで localhost:8080 を開く。どうなるか。",
+      "choices": [
+        { "id": "a", "text": "つながらない（外の入口が無い）", "correct": true },
+        { "id": "b", "text": "nginx の最初のページが出る", "correct": false, "whyNot": "中で 80 番を待ち受けていても、外の入口につないでいない。外からは届かない。" },
+        { "id": "c", "text": "自動で 8080 番につながる", "correct": false, "whyNot": "公開は自動ではない。-p で外の番号を決めて初めてつながる。" }
+      ],
+      "explanation": "コンテナは閉じた箱。外から届けたい物だけを、-p で公開する。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "2 つ目の Web のコンテナを -p 8080:80 で動かすと、断られた。原因は？",
+      "context": { "log": "docker: Error response from daemon: driver failed programming external connectivity on endpoint web2 (…): Bind for 0.0.0.0:8080 failed: port is already allocated." },
+      "choices": [
+        { "id": "a", "text": "外の 8080 番を、別のコンテナが既に使っている", "correct": true },
+        { "id": "b", "text": "中の 80 番を、別のコンテナが使っている", "correct": false, "whyNot": "中の番号はコンテナごとに別。どのコンテナも中で 80 番を使ってよい。重なるのは外の番号。" },
+        { "id": "c", "text": "nginx の{{term:image}}が壊れている", "correct": false, "whyNot": "イメージの問題なら、起動の後に{{term:log}}で分かる。これは外の入口を割り当てる所で断られた。" }
+      ],
+      "explanation": "外の番号は 1 つの機械に 1 つ。2 つ目は 8081 のように別の外の番号にする。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "同じ機械で、2 つ目の Web のコンテナを外に見せたい。どう指定する？",
+      "choices": [
+        { "id": "a", "text": "-p 8081:80（外の番号だけ変える）", "correct": true },
+        { "id": "b", "text": "-p 8080:81（中の番号を変える）", "correct": false, "whyNot": "中のサーバは 80 番を待ち受けている。中の番号を変えると、待ち受けていない所につなぐことになる。" },
+        { "id": "c", "text": "-p 8080:80 のまま、先に動いている方を残す", "correct": false, "whyNot": "外の 8080 番は 1 つにしか使えない。同じ指定では断られる。" }
+      ],
+      "explanation": "変えるのは外の番号。中は、サーバが待ち受ける番号のまま。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "案内板の web（nginx）を動かしたが、ブラウザで開けない。外の 8080 番から見えるようにし、試しの `Apache` のサーバも 2 つ目として外に見せる。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "dev-01",
+      "images": ["nginx:1.27", "httpd:2.4"],
+      "run": ["docker run -d --name web nginx:1.27"]
+    },
+    "steps": [
+      {
+        "id": "publish",
+        "purpose": "web を、外の 8080 番から中の 80 番へつないで動かし直す。`curl http://localhost:8080/` で nginx の最初のページが返ることを確かめよう。",
+        "check": { "kind": "http", "url": "http://localhost:8080/", "status": 200, "contains": "Welcome to nginx!" },
+        "afterward": "`docker ps` の `PORTS` が `0.0.0.0:8080->80/tcp` になり、8080 番に nginx が答えた。公開は作る時に決めるので、作り直した。",
+        "hints": [
+          "今の web は公開していない（`docker ps` の `PORTS` が空）。公開は後から足せないので、消して -p を付けて作り直す。",
+          "`docker rm -f web` で消し、`docker run -d --name web -p 8080:80 nginx:1.27` で作り直す。",
+          "`docker rm -f web` `docker run -d --name web -p 8080:80 nginx:1.27` `curl http://localhost:8080/` と打つ。"
+        ],
+        "expectedErrors": ["docker-port-closed", "docker-conflict"]
+      },
+      {
+        "id": "second",
+        "purpose": "試しの `Apache`（httpd:2.4）を、web2 という名前で動かし、外に見せる。8080 番は web が使っている。`curl` で `It works!` が返ることを確かめる。",
+        "check": { "kind": "http", "url": "http://localhost:8081/", "status": 200, "contains": "It works!" },
+        "afterward": "web2 は外の 8081 番から中の 80 番へ。中の番号はどちらも 80 だが、外の番号を分けたので 2 つとも見える。",
+        "hints": [
+          "外の番号は 1 つのコンテナにしか使えない。2 つ目は別の外の番号にする。中の 80 はそのまま。",
+          "`docker run -d --name web2 -p 8081:80 httpd:2.4` の形。断られて `Created` のまま残った web2 があれば、先に `docker rm web2` で消す。",
+          "`docker run -d --name web2 -p 8081:80 httpd:2.4` `curl http://localhost:8081/` と打つ。"
+        ],
+        "expectedErrors": ["port-allocated", "docker-conflict", "docker-port-closed"]
+      }
+    ]
+  },
+  "result": {
+    "success": "外の番号と中の番号を正しく結び、2 つの Web のコンテナを同じ機械で外に見せられた。",
+    "partial": "ヒントを使って公開できた。次は、-p の左右がそれぞれ何の番号かを、自分の言葉で説明してみよう。",
+    "retry": "まだ外から届いていない。`docker ps` の `PORTS` の欄で、外の番号から中の 80 番へつながっているかを見よう。"
+  },
+  "summary": {
+    "points": ["-p は 外:中", "同じ外の番号は 1 つだけ", "待ち受けと公開の両方を確かめる"],
+    "next": ["docker.b.05", "docker.i.04"],
+    "terms": ["port-publish", "port"]
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "id": "docker.b.05",
+  "domain": "docker",
+  "level": "beginner",
+  "theme": "観察",
+  "title": "ログと中に入る",
+  "goal": "logs/exec で様子を見られる",
+  "minutes": 15,
+  "prerequisites": ["docker.b.03"],
+  "related": ["linux.i.02", "k8s.a.02"],
+  "next": ["docker.a.02"],
+  "terms": ["log", "container", "app", "command", "config-file", "env-var", "image", "cat", "file", "db"],
+  "explain": {
+    "what": "logs は、{{term:container}}の中の{{term:app}}が出した文（{{term:log}}）を、外から読む。exec は、動いているコンテナの中で{{term:command}}を 1 つ打つ。",
+    "why": "コンテナは、失敗するとすぐ止まって消えたように見える。何が起きたかは、アプリが出した文に残っている。動いている物は、中に入って{{term:config-file}}などを確かめられる。",
+    "use": "動かない・すぐ止まる時の調査。止まった物は logs（exec はできない）、動いている物は logs と exec の両方で調べる。",
+    "when": "予約の窓口のコンテナが、起動して 1 秒で止まった。一覧には「止まった」と出るだけで、理由が分からない。",
+    "figures": ["docker-b05-observe"]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "道具と、できることを結ぶ。",
+      "pairs": [
+        ["logs", "アプリが出した文を、外から読む"],
+        ["exec", "動いているコンテナの中で、コマンドを打つ"]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "止まったコンテナにも exec で入って調べられる。",
+      "answer": false,
+      "why": "exec は、動いているコンテナの中でコマンドを打つ。止まった物には打てない。止まった物は logs で、出した文を読む。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "コンテナのアプリが出した文を読むコマンドは？",
+      "choices": [
+        { "id": "a", "text": "`docker logs 名前`", "correct": true },
+        { "id": "b", "text": "`docker ps -a`", "correct": false, "whyNot": "`docker ps -a` は、コンテナの一覧と状態（`Exited` など）を出すだけ。アプリが出した文は出ない。" },
+        { "id": "c", "text": "`docker images`", "correct": false, "whyNot": "`docker images` は{{term:image}}の一覧。コンテナの記録ではない。" }
+      ],
+      "explanation": "logs は、コンテナが止まった後でも読める。調べる時の最初の一手。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "動いている nginx のコンテナで、中の設定ファイルの中身を確かめたい。どうする？",
+      "choices": [
+        { "id": "a", "text": "`docker exec 名前 cat 設定ファイルの場所` で、中で {{term:cat}} を打つ", "correct": true },
+        { "id": "b", "text": "手元の機械で、同じ場所の{{term:file}}を `cat` する", "correct": false, "whyNot": "コンテナの中のファイルは、手元の機械の同じ場所には無い。中は別に区切られている。" },
+        { "id": "c", "text": "`docker logs` で読む", "correct": false, "whyNot": "logs はアプリが出した文だけ。ファイルの中身は出ない。" }
+      ],
+      "explanation": "中のファイルは、中でコマンドを打って読む。exec は 1 つのコマンドを中で動かす。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "起動してすぐ止まるコンテナの logs が、次のとおり。原因はどの行に出ているか。",
+      "context": { "log": "> reserve@2.0.0 start\n> node server.js\nreserve: version 2.0.0\nreserve: reading settings from the environment\nError: missing environment variable DATABASE_URL\n    at loadSettings (/app/settings.js:14:11)" },
+      "choices": [
+        { "id": "a", "text": "`Error` で始まる行（{{term:env-var}} `DATABASE_URL` が無い）", "correct": true },
+        { "id": "b", "text": "一番上の reserve@2.0.0 start の行", "correct": false, "whyNot": "最初の行は、起動を始めたという記録。止まった理由は、その後に出る。" },
+        { "id": "c", "text": "一番下の at loadSettings の行", "correct": false, "whyNot": "at で始まる行は、誤りが起きた場所をたどった記録。何が起きたかは、その上の `Error` の行に書いてある。" }
+      ],
+      "explanation": "すぐ止まる時は、最後の方の `Error` の行が原因。起動の行から読み始めると、原因を見落とす。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "市の機械で、予約の窓口 reserve のコンテナが起動してすぐ止まる。止まった理由を記録から答える。動いている案内板の web は、中に入って設定を確かめる。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "civic-host",
+      "images": ["nginx:1.27-alpine", "city-reserve:2.0"],
+      "run": ["docker run -d --name web -p 8080:80 nginx:1.27-alpine", "docker run -d --name reserve city-reserve:2.0"]
+    },
+    "steps": [
+      {
+        "id": "status",
+        "purpose": "止まった物も含めて一覧し、reserve の状態を確かめる。終わった時の番号（`Exited (…)` の括弧の中）を答える。",
+        "check": { "kind": "answer", "equals": "1" },
+        "afterward": "reserve は `Exited (1)`。0 以外は、うまく終われなかった印。web は `Up` のまま動いている。",
+        "hints": [
+          "止まったコンテナは `docker ps` に出ない。止まった物も見るには -a を付ける。",
+          "`docker ps -a` の reserve の行の `STATUS` の欄に、`Exited (番号)` と出る。",
+          "`docker ps -a` と打ち、`1` と答える。"
+        ],
+        "expectedErrors": ["docker-logs-misread"]
+      },
+      {
+        "id": "logs",
+        "purpose": "reserve の記録を読み、止まった原因の行から、足りない環境変数の名前を答える。",
+        "check": { "kind": "answer", "equals": "DATABASE_URL" },
+        "afterward": "起動の行の後に `Error: missing environment variable DATABASE_URL`。{{term:db}}の場所を受け取れずに止まった。動かす時に -e で渡せば進む。",
+        "hints": [
+          "アプリが出した文は `docker logs 名前` で読める。止まった物でも読める。",
+          "`docker logs reserve` の最後の方の、`Error` で始まる行を読む。上の起動の行や、下の `at` の行ではない。",
+          "`docker logs reserve` と打ち、`DATABASE_URL` と答える。"
+        ],
+        "expectedErrors": ["docker-logs-misread", "docker-exec-stopped"]
+      },
+      {
+        "id": "exec",
+        "purpose": "動いている web の中で、設定ファイル /etc/nginx/conf.d/default.conf を読み、ページを置く場所（`location /` の `root` の値）を答える。",
+        "check": { "kind": "answer", "equals": "/usr/share/nginx/html" },
+        "afterward": "web の中の nginx は、/usr/share/nginx/html からページを配っている。中に入らないと見えない設定を、exec で確かめた。",
+        "hints": [
+          "中でコマンドを打つのは `docker exec 名前 コマンド`。web は動いているので入れる。",
+          "`docker exec web cat /etc/nginx/conf.d/default.conf` で設定を読み、location / の中の root の行を見る。",
+          "`docker exec web cat /etc/nginx/conf.d/default.conf` と打ち、`/usr/share/nginx/html` と答える。"
+        ],
+        "expectedErrors": ["docker-logs-misread", "docker-exec-stopped"]
+      }
+    ]
+  },
+  "result": {
+    "success": "止まった物は logs、動いている物は exec で、中の様子を確かめられた。",
+    "partial": "ヒントを使って調べられた。次は、logs のどの行から読めばよいかを、自分の言葉で説明してみよう。",
+    "retry": "まだ原因まで届いていない。`docker logs reserve` の最後の方の `Error` の行を読もう。"
+  },
+  "summary": {
+    "points": ["logs でアプリの出した文を読む", "exec で中でコマンドを打つ", "止まった物は logs で調べる"],
+    "next": ["docker.a.02"],
+    "terms": ["log", "container"]
+  }
+}

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>イメージを取る。レジストリから docker pull nginx:1.27 で手元に取り、docker images の一覧で確かめる。一覧には名前（REPOSITORY）・版の名札（TAG）・ID・大きさ（SIZE）が並ぶ</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="registry">
+    <rect x="20" y="30" width="190" height="90" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="115" y="62" text-anchor="middle" font-size="16" fill="#f2b632">レジストリ</text>
+    <text x="115" y="88" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">nginx:1.27</text>
+    <text x="115" y="108" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">nginx:1.27-alpine …</text>
+  </g>
+  <g class="el" data-part="pull">
+    <path d="M214 75 H330" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="272" y="62" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">docker pull</text>
+    <text x="272" y="98" text-anchor="middle" font-size="13" fill="#9fb0c6">名前:タグで指す</text>
+  </g>
+  <g class="el" data-part="local">
+    <rect x="336" y="30" width="344" height="90" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="508" y="62" text-anchor="middle" font-size="16" fill="#3ae08a">手元の機械</text>
+    <text x="508" y="90" text-anchor="middle" font-size="13" fill="#9fb0c6">取ったイメージは、何度でも動かせる</text>
+  </g>
+  <g class="el" data-part="repo">
+    <rect x="20" y="170" width="150" height="80" rx="4" fill="none" stroke="#5cc1ff" stroke-width="1" pointer-events="all" />
+    <text x="34" y="196" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">REPOSITORY</text>
+    <text x="34" y="228" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">nginx</text>
+  </g>
+  <g class="el" data-part="tag">
+    <rect x="180" y="170" width="110" height="80" rx="4" fill="none" stroke="#3ae08a" stroke-width="1" pointer-events="all" />
+    <text x="194" y="196" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">TAG</text>
+    <text x="194" y="228" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#3ae08a">1.27</text>
+  </g>
+  <g class="el" data-part="id">
+    <rect x="300" y="170" width="190" height="80" rx="4" fill="none" stroke="#9fb0c6" stroke-width="1" pointer-events="all" />
+    <text x="314" y="196" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">IMAGE ID</text>
+    <text x="314" y="228" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">3b25b682ea82</text>
+  </g>
+  <g class="el" data-part="size">
+    <rect x="500" y="170" width="180" height="80" rx="4" fill="none" stroke="#f2b632" stroke-width="1" pointer-events="all" />
+    <text x="514" y="196" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">SIZE</text>
+    <text x="514" y="228" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#f2b632">192MB</text>
+  </g>
+  <text x="350" y="296" text-anchor="middle" font-size="14" fill="#9fb0c6">docker images の 1 行。タグを省くと latest という名札の物を取る</text>
+</svg>

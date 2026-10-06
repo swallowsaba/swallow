@@ -1,5 +1,5 @@
 import {
-  findContainer, hexOf, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, repoOf, run, start, stop, tagOf, type Container, type ContainerError, type ContainerHost, type Image, type PortMap,
+  filesInside, findContainer, hexOf, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, repoOf, run, start, stop, tagOf, type Container, type ContainerError, type ContainerHost, type Image, type PortMap,
 } from '@/engines/container/container';
 import type { CommandResult, CommandSpec } from '@/engines/kernel/registry';
 
@@ -31,7 +31,10 @@ function daemonError(e: ContainerError, verb: string): CommandResult {
     case 'name-in-use':
       return { stderr: `${prefix}Error response from daemon: Conflict. The container name "/${e.name}" is already in use by container "${e.id}". You have to remove (or rename) that container to be able to reuse that name.\n`, code: 125 };
     case 'port-in-use':
-      return { stderr: `${prefix}Error response from daemon: driver failed programming external connectivity on endpoint: Bind for 0.0.0.0:${String(e.port)} failed: port is already allocated.\n`, code: verb === 'run' ? 125 : 1 };
+      return {
+        stderr: `${prefix}Error response from daemon: driver failed programming external connectivity on endpoint${e.name !== undefined && e.id !== undefined ? ` ${e.name} (${e.id.repeat(6).slice(0, 64)})` : ''}: Bind for 0.0.0.0:${String(e.port)} failed: port is already allocated.\n`,
+        code: verb === 'run' ? 125 : 1,
+      };
     case 'no-such-container':
       return { stderr: `Error response from daemon: No such container: ${e.ref}\n`, code: 1 };
     case 'container-running':
@@ -53,6 +56,15 @@ function pullLines(image: Image, had: boolean, layersHad = had): string[] {
     `${tagOf(image.ref)}: Pulling from ${repo}`, ...layers, `Digest: sha256:${hexOf(seed + 99, 64)}`,
     had ? `Status: Image is up to date for ${image.ref}` : `Status: Downloaded newer image for ${image.ref}`, qualified(image.ref),
   ];
+}
+
+/** docker ps の IMAGE の欄（latest のタグは名前だけで出す） */
+const shownImage = (ref: string): string => (tagOf(ref) === 'latest' ? repoOf(ref) : ref);
+
+/** docker ps の COMMAND の欄（20 字を超えると 19 字と … に詰める。本物と同じ） */
+function commandOf(host: ContainerHost, c: Container): string {
+  const command = host.images.find((i) => i.ref === c.image)?.command ?? '/entrypoint';
+  return `"${command.length > 20 ? `${command.slice(0, 19)}…` : command}"`;
 }
 
 function status(c: Container): string {
@@ -159,7 +171,16 @@ function execIn(host: ContainerHost, c: Container, cmd: readonly string[]): Comm
       const path = args[0] ?? '';
       // cgroups（v2）のメモリの上限。上限が無ければ max
       if (path === '/sys/fs/cgroup/memory.max') return { stdout: `${c.memoryLimit === undefined ? 'max' : String(c.memoryLimit)}\n` };
+      const content = filesInside(host, c)[path];
+      if (content !== undefined) return { stdout: content };
       return { stderr: image?.tools ? `cat: can't open '${path}': No such file or directory\n` : `cat: ${path}: No such file or directory\n`, code: 1 };
+    }
+    case 'ls': {
+      const dir = (args.find((a) => !a.startsWith('-')) ?? '/').replace(/(.)\/+$/, '$1');
+      const prefix = dir === '/' ? '/' : `${dir}/`;
+      const names = [...new Set(Object.keys(filesInside(host, c)).filter((p) => p.startsWith(prefix)).map((p) => p.slice(prefix.length).split('/')[0] ?? ''))].sort();
+      if (names.length === 0) return { stderr: image?.tools ? `ls: ${dir}: No such file or directory\n` : `ls: cannot access '${dir}': No such file or directory\n`, code: image?.tools ? 1 : 2 };
+      return { stdout: lines(names) };
     }
     case 'hostname':
       return { stdout: `${c.id}\n` };
@@ -292,7 +313,7 @@ export const dockerCommands: CommandSpec[] = [
           return inspect(host, rest);
         case 'ps': {
           const all = rest.includes('-a') || rest.includes('--all');
-          const rows = host.containers.filter((c) => all || c.state === 'running').map((c) => [c.id, c.image, '"/entrypoint"', '2 seconds ago', status(c), portsOf(c), c.name]);
+          const rows = host.containers.filter((c) => all || c.state === 'running').map((c) => [c.id, shownImage(c.image), commandOf(host, c), '2 seconds ago', status(c), portsOf(c), c.name]);
           return { stdout: table([['CONTAINER ID', 'IMAGE', 'COMMAND', 'CREATED', 'STATUS', 'PORTS', 'NAMES'], ...rows]) };
         }
         case 'images':
