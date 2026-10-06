@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>イメージのレイヤ。予約のアプリは土台・ライブラリ・設定・コードの 4 層、受付のアプリは土台・ライブラリ・コードの 3 層。土台の層は 2 つのイメージで共有する。変えた層より上だけを作り直す</title>
+  <g class="el" data-part="heads">
+    <text x="160" y="28" text-anchor="middle" font-size="16" fill="#eef2f6">予約のアプリ</text>
+    <text x="470" y="28" text-anchor="middle" font-size="16" fill="#eef2f6">受付のアプリ</text>
+  </g>
+  <g class="el" data-part="code">
+    <rect x="40" y="44" width="240" height="44" rx="4" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="160" y="72" text-anchor="middle" font-size="14" fill="#eef2f6">層 4: アプリのコード</text>
+  </g>
+  <g class="el" data-part="conf">
+    <rect x="40" y="96" width="240" height="44" rx="4" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="160" y="124" text-anchor="middle" font-size="14" fill="#eef2f6">層 3: 設定</text>
+  </g>
+  <g class="el" data-part="lib">
+    <rect x="40" y="148" width="240" height="44" rx="4" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="160" y="176" text-anchor="middle" font-size="14" fill="#eef2f6">層 2: ライブラリ</text>
+  </g>
+  <g class="el" data-part="other">
+    <rect x="350" y="96" width="240" height="44" rx="4" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="470" y="124" text-anchor="middle" font-size="14" fill="#eef2f6">層 3: 受付のコード</text>
+    <rect x="350" y="148" width="240" height="44" rx="4" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="470" y="176" text-anchor="middle" font-size="14" fill="#eef2f6">層 2: 受付のライブラリ</text>
+  </g>
+  <g class="el" data-part="base">
+    <rect x="40" y="200" width="550" height="48" rx="4" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="315" y="230" text-anchor="middle" font-size="14" fill="#3ae08a">層 1: 土台（OS の中身 debian）</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="40" y="284" font-size="14" fill="#eef2f6">変えた層と、その上だけを作り直す。下の層は使い回す</text>
+    <text x="40" y="310" font-size="14" fill="#9fb0c6">変わりやすい物ほど上に積むと、作り直しと転送が小さい</text>
+  </g>
+</svg>

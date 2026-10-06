@@ -1,0 +1,160 @@
+{
+  "id": "ctr.b.04",
+  "domain": "ctr",
+  "level": "beginner",
+  "theme": "レイヤ",
+  "title": "レイヤ",
+  "goal": "重ねて作る仕組みと、共有による節約を説明できる",
+  "minutes": 15,
+  "prerequisites": ["ctr.b.03"],
+  "related": ["docker.i.01", "docker.a.01"],
+  "next": ["ctr.i.01", "ctr.i.04", "docker.i.01"],
+  "terms": ["image", "layer", "os", "library", "app"],
+  "explain": {
+    "what": "{{term:image}}は、{{term:layer}}（層）を下から積み重ねて作る。土台の{{term:os}}の中身、{{term:library}}、設定、{{term:app}}のコードのように重ねる。同じ層は、ほかのイメージと共有できる。",
+    "why": "作り直す時は、変えた層とその上だけを作り直し、下の層は使い回す。配る時も、相手がまだ持っていない層だけを送る。容量・転送・時間を節約できる。",
+    "use": "イメージを小さく、速く作る工夫。変わりやすい物ほど上の層に置く。",
+    "when": "アプリのコードを 1 行直しただけなのに、作り直すたびにライブラリを全て入れ直し、毎回 180MB を送っている。",
+    "figures": ["ctr-b04-layers"]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "ctr-b04-layers",
+      "prompt": "図で、2 つのイメージが共有している層を押す。",
+      "answer": ["base"],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "下の層を変える",
+      "b": "その上の層も、全て作り直しになる",
+      "answer": "cause",
+      "why": "層は下から順に積んで作る。下を変えると、その上は全て作り直す。変わりやすい物を下に置くと、毎回ほぼ全てを作り直す。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "一番上のアプリの層だけを変えて、イメージを作り直した。下の層はどうなる？",
+      "choices": [
+        { "id": "a", "text": "変わっていないので、前の物を使い回す", "correct": true },
+        { "id": "b", "text": "全ての層を、初めから作り直す", "correct": false, "whyNot": "作り直すのは、変えた層とその上だけ。下の層は前の物をそのまま使う。" },
+        { "id": "c", "text": "下の層は消えて、アプリの層だけのイメージになる", "correct": false, "whyNot": "下の層は消えない。前と同じ層を、新しいイメージでも使う。" }
+      ],
+      "explanation": "変えた層より下は使い回す。だから、変わりやすい物を一番上に置くと速い。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "1 日に何度も変わるアプリのコードは、どの層に置くとよいか。",
+      "choices": [
+        { "id": "a", "text": "一番上の層", "correct": true },
+        { "id": "b", "text": "一番下の層", "correct": false, "whyNot": "一番下を変えると、その上の全ての層を作り直す。毎回ほぼ全てを作り直すことになる。" },
+        { "id": "c", "text": "どこに置いても同じ", "correct": false, "whyNot": "変えた層より上は作り直しになる。置く場所で、作り直す量が大きく変わる。" }
+      ],
+      "explanation": "変わる回数の少ない物ほど下、多い物ほど上に積む。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "コードを少し直すたびに、イメージのほぼ全ての層が作り直しになる。原因は？",
+      "choices": [
+        { "id": "a", "text": "変わりやすいコードの層が、下の方にある", "correct": true },
+        { "id": "b", "text": "層の数が少なすぎる", "correct": false, "whyNot": "数ではなく順番の問題。変わる物の上に、変わらない物が積まれている。" },
+        { "id": "c", "text": "作る機械が遅い", "correct": false, "whyNot": "機械が速くても、全ての層を作り直す量は変わらない。直すのは層の順番。" }
+      ],
+      "explanation": "変えた層より上は全て作り直す。変わりやすい物が下にあると、毎回ほぼ全てを作り直す。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "予約のアプリのイメージは、コードを直すたびに 3 分かけて作り直し、180MB を送っている。層の順番を並べ替えて、コードの直しでは一番上の 1 層だけを作り直すようにする。",
+    "environment": "sim-order",
+    "setup": {
+      "items": [
+        { "id": "base", "label": "土台（OS の中身 debian）", "note": "年に数回変わる" },
+        { "id": "lib", "label": "ライブラリを入れる", "note": "月に 1 回変わる", "needs": ["base"] },
+        { "id": "conf", "label": "設定を置く", "note": "週に 1 回変わる", "needs": ["base"] },
+        { "id": "code", "label": "アプリのコードを置く", "note": "1 日に何度も変わる", "needs": ["base"] }
+      ],
+      "initial": "base code conf lib",
+      "panels": [
+        {
+          "kind": "table",
+          "title": "層と、変わる回数",
+          "columns": ["層", "変わる回数", "作り直す時間"],
+          "rows": [
+            ["土台", "年に数回", "1 分"],
+            ["ライブラリ", "月に 1 回", "3 分（180MB）"],
+            ["設定", "週に 1 回", "10 秒"],
+            ["コード", "1 日に何度も", "5 秒（2MB）"]
+          ]
+        },
+        {
+          "kind": "log",
+          "title": "コードを 1 行直して作り直した時",
+          "when": "seq code<lib",
+          "lines": ["コードの層から上を全て作り直した", "ライブラリの層も毎回入れ直す（3 分・転送 180MB）"]
+        },
+        {
+          "kind": "log",
+          "title": "コードを 1 行直して作り直した時",
+          "when": "seq code<conf && !seq code<lib",
+          "lines": ["コードの層と、その上の設定の層を作り直した（15 秒）"]
+        },
+        {
+          "kind": "log",
+          "title": "コードを 1 行直して作り直した時",
+          "when": "seq lib<code && seq conf<code",
+          "lines": ["作り直したのはコードの層だけ（5 秒・転送 2MB）", "下の層は使い回した"]
+        },
+        {
+          "kind": "log",
+          "title": "設定を変えた週",
+          "when": "seq conf<lib",
+          "lines": ["設定の層から上を作り直し、ライブラリも入れ直す（3 分）"]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "top",
+        "purpose": "1 日に何度も変わるアプリのコードを、一番上の層にする。",
+        "check": { "kind": "sim", "expr": "deps && seq lib<code && seq conf<code" },
+        "afterward": "コードが一番上になり、コードを直した時に作り直すのはコードの層だけ（5 秒）になった。",
+        "hints": [
+          "変えた層と、その上が作り直しになる。毎日変わる物の上に、ほかの層を積まない。",
+          "土台を一番下に置き、コードを一番上に置く。",
+          "`order base conf lib code` と入れる。"
+        ],
+        "expectedErrors": ["ctr-layer-order"]
+      },
+      {
+        "id": "order",
+        "purpose": "残りの層も、変わる回数の少ない順に、下から積む。",
+        "check": { "kind": "sim", "expr": "deps && placed && seq base<lib<conf<code" },
+        "afterward": "土台 → ライブラリ → 設定 → コードの順になった。設定を変えた週も、ライブラリを入れ直さずに済む。",
+        "hints": [
+          "表の「変わる回数」を見る。ライブラリと設定では、どちらが変わる回数が少ないか。",
+          "月に 1 回のライブラリを、週に 1 回の設定より下に置く。",
+          "`order base lib conf code` と入れる。"
+        ],
+        "expectedErrors": ["ctr-layer-order"]
+      }
+    ]
+  },
+  "result": {
+    "success": "変わる回数の少ない順に層を積み、コードの直しでは一番上の層だけを作り直すようにできた。",
+    "partial": "ヒントを使って並べ替えられた。次は、なぜ下の層を変えると上が全て作り直しになるのかを、自分の言葉で説明してみよう。",
+    "retry": "まだ、コードを直すたびに大きな層まで作り直している。表の「変わる回数」と、作り直した時の記録を見比べよう。"
+  },
+  "summary": {
+    "points": ["イメージは層の重なり", "下の層を共有", "変わりやすい物は上に"],
+    "next": ["ctr.i.01", "docker.i.01"],
+    "terms": ["layer", "image"]
+  }
+}

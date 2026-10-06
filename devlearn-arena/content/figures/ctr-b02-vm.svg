@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>仮想マシンとコンテナの積み木の比較。仮想マシンはそれぞれが自分の OS（カーネル）を持つ。コンテナは機械の 1 つのカーネルを共有し、アプリと要る物だけを分ける</title>
+  <g class="el" data-part="vm-title">
+    <text x="170" y="28" text-anchor="middle" font-size="16" fill="#5cc1ff">仮想マシン</text>
+    <text x="530" y="28" text-anchor="middle" font-size="16" fill="#3ae08a">コンテナ</text>
+  </g>
+  <g class="el" data-part="vm-apps">
+    <rect x="20" y="46" width="94" height="44" rx="4" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="67" y="74" text-anchor="middle" font-size="13" fill="#eef2f6">アプリ</text>
+    <rect x="123" y="46" width="94" height="44" rx="4" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="170" y="74" text-anchor="middle" font-size="13" fill="#eef2f6">アプリ</text>
+    <rect x="226" y="46" width="94" height="44" rx="4" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="273" y="74" text-anchor="middle" font-size="13" fill="#eef2f6">アプリ</text>
+  </g>
+  <g class="el" data-part="vm-os">
+    <rect x="20" y="98" width="94" height="72" rx="4" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="67" y="128" text-anchor="middle" font-size="13" fill="#5cc1ff">OS</text>
+    <text x="67" y="152" text-anchor="middle" font-size="13" fill="#5cc1ff">カーネル</text>
+    <rect x="123" y="98" width="94" height="72" rx="4" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="170" y="128" text-anchor="middle" font-size="13" fill="#5cc1ff">OS</text>
+    <text x="170" y="152" text-anchor="middle" font-size="13" fill="#5cc1ff">カーネル</text>
+    <rect x="226" y="98" width="94" height="72" rx="4" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="273" y="128" text-anchor="middle" font-size="13" fill="#5cc1ff">OS</text>
+    <text x="273" y="152" text-anchor="middle" font-size="13" fill="#5cc1ff">カーネル</text>
+    <rect x="20" y="178" width="300" height="40" rx="4" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="170" y="204" text-anchor="middle" font-size="13" fill="#9fb0c6">仮想化の土台（機械を分けて見せる）</text>
+  </g>
+  <g class="el" data-part="ct-apps">
+    <rect x="380" y="98" width="70" height="72" rx="4" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="415" y="138" text-anchor="middle" font-size="13" fill="#eef2f6">アプリ</text>
+    <rect x="456" y="98" width="70" height="72" rx="4" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="491" y="138" text-anchor="middle" font-size="13" fill="#eef2f6">アプリ</text>
+    <rect x="532" y="98" width="70" height="72" rx="4" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="567" y="138" text-anchor="middle" font-size="13" fill="#eef2f6">アプリ</text>
+    <rect x="608" y="98" width="72" height="72" rx="4" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="644" y="138" text-anchor="middle" font-size="13" fill="#eef2f6">アプリ</text>
+  </g>
+  <g class="el" data-part="ct-kernel">
+    <rect x="380" y="178" width="300" height="40" rx="4" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="530" y="204" text-anchor="middle" font-size="13" fill="#3ae08a">OS のカーネル（全てのコンテナで共有）</text>
+  </g>
+  <g class="el" data-part="hw">
+    <rect x="20" y="226" width="300" height="36" rx="4" fill="none" stroke="#9aa9b5" stroke-width="2" />
+    <text x="170" y="250" text-anchor="middle" font-size="13" fill="#9aa9b5">機械（CPU・メモリ・ストレージ）</text>
+    <rect x="380" y="226" width="300" height="36" rx="4" fill="none" stroke="#9aa9b5" stroke-width="2" />
+    <text x="530" y="250" text-anchor="middle" font-size="13" fill="#9aa9b5">機械（CPU・メモリ・ストレージ）</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="296" font-size="14" fill="#9fb0c6">重い・起動は数十秒・別の OS も・強く分ける</text>
+    <text x="380" y="296" font-size="14" fill="#9fb0c6">軽い・起動は 1 秒ほど・同じカーネルだけ</text>
+  </g>
+</svg>

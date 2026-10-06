@@ -44,6 +44,193 @@
         "ctr.i.04",
         "docker.i.03"
       ]
+    },
+    {
+      "id": "library",
+      "word": "ライブラリ",
+      "plain": "ほかのプログラムから呼んで使う、決まった仕事をする部品のプログラム。版によって動きが違うことがある。",
+      "why": "アプリは多くのライブラリに頼って動く。機械ごとに入っている版が違うと、同じアプリでも動いたり動かなかったりする。",
+      "related": [
+        "app",
+        "dependency",
+        "container"
+      ],
+      "lessons": [
+        "ctr.b.01"
+      ]
+    },
+    {
+      "id": "vm",
+      "word": "仮想マシン",
+      "reading": "かそうましん",
+      "plain": "1 台の機械の中に、ソフトウェアで作った別の機械。それぞれが自分の OS（カーネルを含む）を持つ。VM とも書く。",
+      "why": "別の OS を動かせ、分け方が強い。その分、重く、起動に時間がかかる。コンテナとの使い分けを考える時に比べる。",
+      "related": [
+        "container",
+        "kernel",
+        "os"
+      ],
+      "lessons": [
+        "ctr.b.02"
+      ]
+    },
+    {
+      "id": "layer",
+      "word": "レイヤ",
+      "plain": "イメージを作る層。土台の OS の中身・ライブラリ・アプリの順に重ねる。同じ層は、ほかのイメージと共有できる。",
+      "why": "変えた層とその上だけを作り直し、下の層は使い回せる。変わりやすい物を上に置くと、作り直しと転送が少なくなる。",
+      "related": [
+        "image",
+        "container"
+      ],
+      "lessons": [
+        "ctr.b.04",
+        "docker.i.01"
+      ]
+    },
+    {
+      "id": "registry",
+      "word": "レジストリ",
+      "plain": "イメージを置いて配る場所。名前とタグでイメージを指して、置いたり（push）取ってきたり（pull）する。",
+      "why": "どの機械からも、同じイメージを同じ名前で取ってこられる。",
+      "related": [
+        "image",
+        "image-tag"
+      ],
+      "lessons": [
+        "ctr.b.05",
+        "docker.i.05"
+      ]
+    },
+    {
+      "id": "image-tag",
+      "word": "イメージのタグ",
+      "plain": "イメージの版を示す名札。名前の後ろに : で付ける（web:1.2 など）。latest も 1 つの名札にすぎない。",
+      "why": "タグを省くと latest という名札の物を取る。いつ何が付け替えられたか分からないので、本番では版を書いて固定する。",
+      "related": [
+        "image",
+        "registry"
+      ],
+      "lessons": [
+        "ctr.b.05"
+      ]
+    },
+    {
+      "id": "container-runtime",
+      "word": "コンテナランタイム",
+      "plain": "コンテナを実際に動かす部品。イメージを開き、カーネルの機能で区切った場所でアプリを動かす。",
+      "why": "使う道具（Docker や Kubernetes）が違っても、下では決まった形のランタイムが動いている。",
+      "related": [
+        "oci",
+        "containerd",
+        "runc"
+      ],
+      "lessons": [
+        "ctr.i.01"
+      ]
+    },
+    {
+      "id": "oci",
+      "word": "OCI",
+      "reading": "オーシーアイ",
+      "plain": "コンテナのイメージの形と、動かし方を決めた標準（Open Container Initiative）。",
+      "why": "標準があるので、ある道具で作ったイメージを、別の道具やランタイムでも動かせる。",
+      "related": [
+        "container-runtime",
+        "image"
+      ],
+      "lessons": [
+        "ctr.i.01"
+      ]
+    },
+    {
+      "id": "containerd",
+      "word": "containerd",
+      "reading": "コンテナディー",
+      "plain": "イメージの取得や、コンテナの起動・停止を受け持つ、高い層のコンテナランタイム。Docker の中でも、Kubernetes の下でも使われる。",
+      "why": "Docker が無くても、Kubernetes は containerd を通してコンテナを動かせる。",
+      "related": [
+        "container-runtime",
+        "runc",
+        "cri"
+      ],
+      "lessons": [
+        "ctr.i.01"
+      ]
+    },
+    {
+      "id": "runc",
+      "word": "runc",
+      "reading": "ランシー",
+      "plain": "カーネルの機能を使って、実際にコンテナのプロセスを作る、低い層のコンテナランタイム。OCI の決まりで動く。",
+      "why": "高い層のランタイム（containerd など）は、最後に runc のような低い層に頼んでコンテナを作る。",
+      "related": [
+        "container-runtime",
+        "containerd",
+        "namespace",
+        "cgroups"
+      ],
+      "lessons": [
+        "ctr.i.01"
+      ]
+    },
+    {
+      "id": "podman",
+      "word": "Podman",
+      "reading": "ポッドマン",
+      "plain": "コンテナを作る・動かすための道具の 1 つ。常に動かしておく親のプログラムを持たず、低い層のランタイムを直接使う。",
+      "why": "Docker と同じイメージを、ほぼ同じ操作で動かせる。コンテナの道具は Docker だけではない。",
+      "related": [
+        "docker",
+        "container-runtime"
+      ],
+      "lessons": [
+        "ctr.i.01"
+      ]
+    },
+    {
+      "id": "cri",
+      "word": "CRI",
+      "reading": "シーアールアイ",
+      "plain": "Kubernetes がコンテナランタイムに仕事を頼むための決まり（Container Runtime Interface）。",
+      "why": "この決まりに合うランタイム（containerd・CRI-O）なら、Kubernetes はどれでも使える。Docker は必要ない。",
+      "related": [
+        "kubernetes",
+        "containerd"
+      ],
+      "lessons": [
+        "ctr.i.01"
+      ]
+    },
+    {
+      "id": "namespace",
+      "word": "名前空間",
+      "reading": "なまえくうかん",
+      "plain": "プロセスから見える範囲（ほかのプロセス・ネットワーク・ファイル・機械の名前）を分ける、カーネルの機能。",
+      "why": "コンテナの中からは、自分のプロセスしか見えない。ほかのコンテナや機械のプロセスに触れない。",
+      "related": [
+        "cgroups",
+        "kernel",
+        "container"
+      ],
+      "lessons": [
+        "ctr.i.02"
+      ]
+    },
+    {
+      "id": "cgroups",
+      "word": "cgroups",
+      "reading": "シーグループ",
+      "plain": "プロセスの集まりごとに、使える CPU やメモリの量に上限を付ける、カーネルの機能。",
+      "why": "1 つのコンテナが機械のメモリを使い切って、ほかを巻き込むのを防ぐ。上限を超えると、そのコンテナだけが止められる。",
+      "related": [
+        "namespace",
+        "kernel",
+        "memory"
+      ],
+      "lessons": [
+        "ctr.i.02"
+      ]
     }
   ]
 }
