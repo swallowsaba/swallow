@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>Dockerfile の流れ。FROM で土台を決め、WORKDIR で場所を決め、COPY で手元のファイルを写し、RUN で作る時に命令を実行し、CMD で動かす時の命令を決める。ファイルを変える命令ごとに層が 1 つ積まれる。CMD は層を作らず、動かす時に使われる</title>
+  <g class="el" data-part="from">
+    <text x="20" y="60" font-size="16" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#f2b632">FROM node:20-alpine</text>
+    <rect x="12" y="38" width="296" height="32" rx="4" fill="none" stroke="#f2b632" stroke-width="1" pointer-events="all" />
+    <text x="330" y="60" font-size="13" fill="#9fb0c6">土台のイメージ</text>
+  </g>
+  <g class="el" data-part="workdir">
+    <text x="20" y="104" font-size="16" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">WORKDIR /app</text>
+    <rect x="12" y="82" width="296" height="32" rx="4" fill="none" stroke="#9fb0c6" stroke-width="1" pointer-events="all" />
+    <text x="330" y="104" font-size="13" fill="#9fb0c6">中で作業する場所</text>
+  </g>
+  <g class="el" data-part="copy">
+    <text x="20" y="148" font-size="16" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#5cc1ff">COPY . .</text>
+    <rect x="12" y="126" width="296" height="32" rx="4" fill="none" stroke="#5cc1ff" stroke-width="1" pointer-events="all" />
+    <text x="330" y="148" font-size="13" fill="#9fb0c6">手元のファイルを中へ写す</text>
+  </g>
+  <g class="el" data-part="run">
+    <text x="20" y="192" font-size="16" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#3ae08a">RUN npm install</text>
+    <rect x="12" y="170" width="296" height="32" rx="4" fill="none" stroke="#3ae08a" stroke-width="1" pointer-events="all" />
+    <text x="330" y="192" font-size="13" fill="#9fb0c6">作る時に 1 度だけ実行</text>
+  </g>
+  <g class="el" data-part="cmd">
+    <text x="20" y="236" font-size="16" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#e0457b">CMD ["node", "server.js"]</text>
+    <rect x="12" y="214" width="296" height="32" rx="4" fill="none" stroke="#e0457b" stroke-width="1" pointer-events="all" />
+    <text x="330" y="236" font-size="13" fill="#9fb0c6">動かす時の命令（層は作らない）</text>
+  </g>
+  <g class="el" data-part="layers">
+    <rect x="530" y="46" width="150" height="34" rx="4" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="605" y="68" text-anchor="middle" font-size="13" fill="#eef2f6">npm の部品</text>
+    <rect x="530" y="86" width="150" height="34" rx="4" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="605" y="108" text-anchor="middle" font-size="13" fill="#eef2f6">アプリのファイル</text>
+    <rect x="530" y="126" width="150" height="34" rx="4" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="605" y="148" text-anchor="middle" font-size="13" fill="#eef2f6">/app</text>
+    <rect x="530" y="166" width="150" height="34" rx="4" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="605" y="188" text-anchor="middle" font-size="13" fill="#eef2f6">node（土台）</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="296" font-size="14" fill="#9fb0c6">右は積まれた層（下から上へ）。同じ Dockerfile からは、誰が作っても同じイメージ</text>
+  </g>
+</svg>

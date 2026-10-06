@@ -1,13 +1,31 @@
 import {
-  filesInside, findContainer, hexOf, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, repoOf, run, start, stop, tagOf, type Container, type ContainerError, type ContainerHost, type Image, type PortMap,
+  filesInside, findContainer, hexOf, longId, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, repoOf, run, start, stop, tagOf, type Container, type ContainerError, type ContainerHost, type Image, type PortMap,
 } from '@/engines/container/container';
+import { build } from '@/engines/container/build';
+import { resolve } from '@/engines/kernel/path';
 import type { CommandResult, CommandSpec } from '@/engines/kernel/registry';
+import { exists, isDir, list, readFile, type VfsState } from '@/engines/kernel/vfs';
 
 /**
  * Docker の CLI（コンテナの模型 src/engines/container の上に作る）。出力とエラーの文は本物に寄せる。
  * 対応: run（-d・--name・-p・-v・-e・-m / --memory）・ps（-a）・images・pull・stop・start・restart・rm（-f）・rmi・logs・
- * exec（ps・cat・hostname）・stats・inspect（-f / --format）
+ * exec（ps・cat・ls・hostname）・stats・inspect（-f / --format）・build（-t・-f。src/engines/container/build.ts）・tag
  */
+
+/** 置き場所（コンテキスト）の中の全てのファイル（置き場所からの相対パス → 中身） */
+function contextFiles(vfs: VfsState, dir: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const walk = (path: string, rel: string): void => {
+    for (const name of list(vfs, path)) {
+      const full = `${path === '/' ? '' : path}/${name}`;
+      const r = rel === '' ? name : `${rel}/${name}`;
+      if (isDir(vfs, full)) walk(full, r);
+      else out[r] = readFile(vfs, full);
+    }
+  };
+  walk(dir, '');
+  return out;
+}
 
 const NO_DOCKER = 'Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?\n';
 const lines = (xs: readonly string[]): string => (xs.length === 0 ? '' : `${xs.join('\n')}\n`);
@@ -32,7 +50,7 @@ function daemonError(e: ContainerError, verb: string): CommandResult {
       return { stderr: `${prefix}Error response from daemon: Conflict. The container name "/${e.name}" is already in use by container "${e.id}". You have to remove (or rename) that container to be able to reuse that name.\n`, code: 125 };
     case 'port-in-use':
       return {
-        stderr: `${prefix}Error response from daemon: driver failed programming external connectivity on endpoint${e.name !== undefined && e.id !== undefined ? ` ${e.name} (${e.id.repeat(6).slice(0, 64)})` : ''}: Bind for 0.0.0.0:${String(e.port)} failed: port is already allocated.\n`,
+        stderr: `${prefix}Error response from daemon: driver failed programming external connectivity on endpoint${e.name !== undefined && e.id !== undefined ? ` ${e.name} (${longId(e.id)})` : ''}: Bind for 0.0.0.0:${String(e.port)} failed: port is already allocated.\n`,
         code: verb === 'run' ? 125 : 1,
       };
     case 'no-such-container':
@@ -76,7 +94,7 @@ function status(c: Container): string {
 const portsOf = (c: Container): string => (c.state === 'running' ? c.ports.map((p) => `0.0.0.0:${String(p.host)}->${String(p.container)}/tcp`).join(', ') : '');
 
 /** 64 字の ID（模型の ID は 12 字。run -d が出す物と同じ） */
-export const fullId = (c: Container): string => c.id.repeat(6).slice(0, 64);
+export const fullId = (c: Container): string => longId(c.id);
 
 /** 大きさの読み方（-m 256m など。単位は b・k・m・g・t。docker の RAMInBytes と同じく 1024 倍ずつ） */
 function parseBytes(raw: string): number | null {
@@ -311,6 +329,38 @@ export const dockerCommands: CommandSpec[] = [
         }
         case 'inspect':
           return inspect(host, rest);
+        case 'build':
+        case 'buildx': {
+          const args = verb === 'buildx' && rest[0] === 'build' ? rest.slice(1) : rest;
+          const tags: string[] = [];
+          let file = 'Dockerfile';
+          const operands: string[] = [];
+          for (let i = 0; i < args.length; i += 1) {
+            const a = args[i] ?? '';
+            if (a === '-t' || a === '--tag') tags.push(args[(i += 1)] ?? '');
+            else if (a.startsWith('--tag=')) tags.push(a.slice('--tag='.length));
+            else if (a === '-f' || a === '--file') file = args[(i += 1)] ?? file;
+            else if (a.startsWith('-')) continue;
+            else operands.push(a);
+          }
+          if (operands.length !== 1) return { stderr: 'ERROR: "docker buildx build" requires exactly 1 argument.\nSee \'docker buildx build --help\'.\n', code: 1 };
+          const dir = resolve(shell.cwd, operands[0] ?? '.');
+          if (!exists(shell.vfs, dir) || !isDir(shell.vfs, dir)) return { stderr: `ERROR: unable to prepare context: path "${operands[0] ?? ''}" not found\n`, code: 1 };
+          const context = contextFiles(shell.vfs, dir);
+          const dfPath = resolve(dir, file);
+          const r = build(host, { dockerfile: exists(shell.vfs, dfPath) && !isDir(shell.vfs, dfPath) ? readFile(shell.vfs, dfPath) : null, context, tags });
+          // 本物の進みの表示は標準エラーに出る。失敗の時は、進みと ERROR の行を同じ流れに出して順を保つ
+          if (!r.ok) return { stderr: `${lines(r.stdout)}ERROR: failed to solve: ${r.error ?? ''}\n`, code: 1 };
+          return set(r.host, { stdout: lines(r.stdout) });
+        }
+        case 'tag': {
+          const [src, target] = rest.filter((a) => !a.startsWith('-'));
+          if (!src || !target) return { stderr: '"docker tag" requires exactly 2 arguments.\nSee \'docker tag --help\'.\n', code: 1 };
+          const image = host.images.find((i) => i.ref === normalizeRef(src) || i.id.startsWith(src));
+          if (!image) return { stderr: `Error response from daemon: No such image: ${src}\n`, code: 1 };
+          const ref = normalizeRef(target);
+          return set({ ...host, images: [...host.images.filter((i) => i.ref !== ref), { ...image, ref }] });
+        }
         case 'ps': {
           const all = rest.includes('-a') || rest.includes('--all');
           const rows = host.containers.filter((c) => all || c.state === 'running').map((c) => [c.id, shownImage(c.image), commandOf(host, c), '2 seconds ago', status(c), portsOf(c), c.name]);
@@ -325,7 +375,10 @@ export const dockerCommands: CommandSpec[] = [
           const ids = new Set(host.images.map((i) => i.id));
           const r = pull(host, ref);
           const defaultTag = ref.lastIndexOf(':') > ref.lastIndexOf('/') ? [] : ['Using default tag: latest'];
-          if (!r.ok) return { ...daemonError(r.error, 'pull'), ...(defaultTag.length ? { stdout: lines(defaultTag) } : {}) };
+          if (!r.ok) {
+            const e = daemonError(r.error, 'pull');
+            return { ...e, stderr: `${lines(defaultTag)}${e.stderr ?? ''}` };
+          }
           return set(r.host, { stdout: lines([...defaultTag, ...pullLines(r.value, had, ids.has(r.value.id))]) });
         }
         case 'stop':

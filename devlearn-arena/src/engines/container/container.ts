@@ -13,6 +13,8 @@
  * ID は通し番号から決める（同じ操作からは同じ ID）。CLI（docker）は src/engines/docker がこの上に作る。
  */
 
+import { runNodeApp } from './app';
+
 export interface Image {
   /** 名前:タグ（nginx:1.27） */
   ref: string;
@@ -33,6 +35,12 @@ export interface Image {
   oneShot?: boolean;
   /** 動いている間のプロセス（先頭が主のプロセス）。memory は使うメモリ（MiB）。無ければ 1 つ・10MiB */
   procs?: readonly { command: string; memory: number; user?: string }[];
+  /** 動かす時の命令（Dockerfile の CMD。node で始まれば中のアプリを動かす。src/engines/container/app.ts） */
+  cmd?: readonly string[];
+  /** 命令を打つ場所（WORKDIR） */
+  workdir?: string;
+  /** 中の環境変数（ENV） */
+  env?: Readonly<Record<string, string>>;
   /** イメージに入っているファイル（場所 → 中身）。docker exec の cat・ls で読める */
   files?: Readonly<Record<string, string>>;
   /** 動かす時に打つ命令（docker ps の COMMAND。無ければ /entrypoint） */
@@ -69,6 +77,8 @@ export interface Container {
   oomKilled?: boolean;
   /** 主のプロセスの、機械から見た PID（動いている間。シムはその 1 つ前） */
   pid: number;
+  /** 中のアプリが待ち受けて答える物（作ったイメージのアプリが動いている時） */
+  app?: { port: number; body: string };
 }
 
 export interface ContainerHost {
@@ -77,6 +87,8 @@ export interface ContainerHost {
   containers: readonly Container[];
   /** ID と名前を決める通し番号 */
   seq: number;
+  /** docker build で作った段の鍵（同じ鍵の段は使い回す） */
+  buildCache?: readonly string[];
 }
 
 /** nginx の公式イメージに入っている設定と最初のページ（本物の default.conf の形） */
@@ -147,6 +159,7 @@ export const REGISTRY: readonly Image[] = [
     },
     startLog: ['reserve: listening on :3000'],
   },
+  { ref: 'node:20-alpine', id: '1f3d7a9c4e21', size: '135MB', tools: true, command: 'docker-entrypoint.sh node', cmd: ['node'], workdir: '/', startLog: [] },
   { ref: 'alpine:3.20', id: '91ef0af61f39', size: '7.8MB', command: '/bin/sh', oneShot: true, startLog: [] },
   { ref: 'hello-world:latest', id: 'd2c94e258dcb', size: '13.3kB', command: '/hello', oneShot: true, startLog: ['Hello from Docker!', 'This message shows that your installation appears to be working correctly.'] },
 ];
@@ -164,6 +177,9 @@ export function fromRegistry(ref: string): Image | undefined {
   const newest = same[same.length - 1];
   return newest ? { ...newest, ref } : undefined;
 }
+
+/** 64 字の ID（docker run -d が出す物。先頭の 12 字が短い ID） */
+export const longId = (id: string): string => `${id}${hexOf(Number.parseInt(id.slice(0, 8), 16) + 7, 52)}`;
 
 /** 名前:タグ の名前（リポジトリ）の側 */
 export function repoOf(ref: string): string {
@@ -235,6 +251,13 @@ const pidOf = (seq: number): number => 2000 + seq * 100 + 1;
 function boot(c: Container, image: Image): Container {
   const head = [...c.log, ...(image.bootLog ?? [])];
   if (image.requiresEnv && !(image.requiresEnv.name in c.env)) return { ...c, state: 'exited', exitCode: 1, log: [...head, ...image.requiresEnv.error] };
+  if (image.cmd) {
+    const app = runNodeApp(image.cmd, image.workdir ?? '/', image.files ?? {});
+    if (app) {
+      if (app.exitCode !== null) return { ...c, state: 'exited', exitCode: app.exitCode, log: [...head, ...app.log] };
+      return { ...c, state: 'running', exitCode: 0, oomKilled: false, log: [...head, ...app.log], ...(app.serves ? { app: app.serves } : {}) };
+    }
+  }
   if (image.oneShot) return { ...c, state: 'exited', exitCode: 0, log: [...c.log, ...image.startLog] };
   if (c.memoryLimit !== undefined && memoryOf(image) * 1024 * 1024 > c.memoryLimit) {
     // 動き出して読み込む途中で、上限を超えて止められる（SIGKILL。128 + 9）
@@ -321,7 +344,7 @@ export function hostProcesses(host: ContainerHost | null): { pid: number; ppid: 
     if (c.state !== 'running') continue;
     const image = host?.images.find((i) => i.ref === c.image);
     const shim = c.pid - 1;
-    out.push({ pid: shim, ppid: 1, user: 'root', command: `/usr/bin/containerd-shim-runc-v2 -namespace moby -id ${c.id.repeat(6).slice(0, 64)} -address /run/containerd/containerd.sock`, memory: 12 });
+    out.push({ pid: shim, ppid: 1, user: 'root', command: `/usr/bin/containerd-shim-runc-v2 -namespace moby -id ${longId(c.id)} -address /run/containerd/containerd.sock`, memory: 12 });
     procsOf(image).forEach((p, i) => {
       out.push({ pid: c.pid + i, ppid: i === 0 ? shim : c.pid, user: p.user === undefined || p.user === 'root' ? 'root' : '101', command: p.command, memory: p.memory });
     });
@@ -347,6 +370,7 @@ export function servedAt(host: ContainerHost | null, port: number, read: (path: 
   if (!c) return null;
   const image = host.images.find((i) => i.ref === c.image);
   const map = c.ports.find((p) => p.host === port);
+  if (c.app) return map?.container === c.app.port ? { container: c, body: c.app.body, status: 200 } : null;
   if (!image?.serves || map?.container !== image.serves.port) return null;
   const root = image.serves.root;
   if (root === undefined) return { container: c, body: image.serves.body, status: 200 };

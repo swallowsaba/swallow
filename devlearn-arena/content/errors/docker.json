@@ -157,6 +157,62 @@
         "container",
         "log"
       ]
+    },
+    {
+      "id": "docker-build-parse",
+      "match": "dockerfile parse error|no build stage in current context",
+      "meaning": "{{term:dockerfile}}を読めなかった。知らない命令がある（unknown instruction）か、最初の命令が FROM でない（no build stage）。",
+      "causes": [
+        "命令の綴りの誤り（COPY を COPPY と書いた など）。did you mean の後に、近い命令が出る。",
+        "FROM より前に、別の命令を書いた。Dockerfile は FROM から始める。"
+      ],
+      "hint": "エラーの文の line の番号の行を見る。命令は FROM・WORKDIR・COPY・RUN・CMD の綴りで書く。",
+      "terms": [
+        "dockerfile"
+      ]
+    },
+    {
+      "id": "docker-build-copy",
+      "match": "failed to calculate checksum|failed to read dockerfile|failed to resolve source metadata",
+      "meaning": "作るのに要る物が見つからなかった。写すファイル（not found）・Dockerfile そのもの・土台の{{term:image}}のどれかが無い。",
+      "causes": [
+        "COPY に書いたファイルの名前の誤り。置き場所（docker build の最後の . の場所）からの相対で書く。",
+        "docker build を、Dockerfile の無いディレクトリで打った。",
+        "FROM の名前やタグの綴りの誤り。"
+      ],
+      "hint": "エラーの文の \"/名前\" や open の後の名前を、置き場所のファイルと見比べる（`ls`）。",
+      "terms": [
+        "dockerfile",
+        "image"
+      ]
+    },
+    {
+      "id": "docker-build-run",
+      "match": "did not complete successfully",
+      "meaning": "RUN の命令が、作る途中で失敗した（exit code が 0 でない）。作るのはそこで止まる。",
+      "causes": [
+        "npm install を、package.json を写す前に書いた（Could not read package.json）。",
+        "土台に無い道具を使った（alpine の土台に apt-get は無い）。"
+      ],
+      "hint": "ERROR の前の ------ で囲まれた所に、RUN の命令が出した文がある。何が無いと言っているかを読み、命令の順を直す。",
+      "terms": [
+        "dockerfile"
+      ]
+    },
+    {
+      "id": "docker-app-down",
+      "match": "Failed to connect to localhost port|Empty reply from server",
+      "meaning": "作ったイメージのコンテナが、8080 番で答えなかった。コンテナがすぐ止まったか、待ち受けていない。",
+      "causes": [
+        "CMD が無い。土台の命令（node だけ）が動き、すぐ終わる。",
+        "CMD のファイルの名前の誤り（Cannot find module '/app/serve.js'）。",
+        "RUN npm install が無く、部品が入っていない（Cannot find module 'express'）。"
+      ],
+      "hint": "確かめた結果の `docker logs hello` を読む。Cannot find module の後の名前が、無いと言われた物。",
+      "terms": [
+        "dockerfile",
+        "log"
+      ]
     }
   ]
 }

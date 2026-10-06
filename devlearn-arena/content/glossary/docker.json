@@ -44,6 +44,107 @@
         "docker.b.01"
       ],
       "analogy": "窓口（CLI）と、奥で作業する工房（Engine）。窓口が開いていても、工房が閉まっていれば何も作れない。"
+    },
+    {
+      "id": "dockerfile",
+      "word": "Dockerfile",
+      "reading": "どっかーふぁいる",
+      "plain": "イメージの作り方を、FROM・COPY・RUN・CMD などの命令で上から順に書いたファイル。docker build で読んでイメージを作る。",
+      "why": "作り方がファイルに残るので、誰がいつ作っても同じイメージになる。変更の履歴も Git で残せる。",
+      "related": [
+        "image",
+        "layer",
+        "build"
+      ],
+      "lessons": [
+        "docker.i.01",
+        "docker.i.02"
+      ],
+      "analogy": "料理の作り方を書いたレシピ。レシピがあれば、誰が作っても同じ料理になる。"
+    },
+    {
+      "id": "dockerfile-from",
+      "word": "FROM",
+      "reading": "ふろむ",
+      "plain": "Dockerfile の最初の命令。土台にするイメージ（node:20-alpine など）を選ぶ。",
+      "why": "全ての層は、この土台の上に積まれる。土台が大きければイメージも大きくなる。",
+      "related": [
+        "dockerfile",
+        "image"
+      ],
+      "lessons": [
+        "docker.i.01"
+      ]
+    },
+    {
+      "id": "dockerfile-workdir",
+      "word": "WORKDIR",
+      "reading": "わーくでぃあ",
+      "plain": "Dockerfile の命令。この後の COPY・RUN・CMD を実行する、中の場所（/app など）を決める。無ければ作る。",
+      "why": "場所を決めておかないと、ファイルが / に散らばり、CMD の相対パスもずれる。",
+      "related": [
+        "dockerfile",
+        "directory"
+      ],
+      "lessons": [
+        "docker.i.01"
+      ]
+    },
+    {
+      "id": "dockerfile-copy",
+      "word": "COPY",
+      "reading": "こぴー",
+      "plain": "Dockerfile の命令。手元の置き場所のファイルを、イメージの中へ写す（COPY 元 先）。",
+      "why": "アプリのファイルは、写さなければイメージに入らない。写した中身が変わると、その層から上を作り直す。",
+      "related": [
+        "dockerfile",
+        "layer"
+      ],
+      "lessons": [
+        "docker.i.01"
+      ]
+    },
+    {
+      "id": "dockerfile-run",
+      "word": "RUN",
+      "reading": "らん",
+      "plain": "Dockerfile の命令。イメージを作る時に 1 度だけ命令を実行し、結果を層に残す（npm install など）。",
+      "why": "部品はイメージを作る時に入れておく。動かすたびに入れ直さない。",
+      "related": [
+        "dockerfile",
+        "dockerfile-cmd"
+      ],
+      "lessons": [
+        "docker.i.01"
+      ]
+    },
+    {
+      "id": "dockerfile-cmd",
+      "word": "CMD",
+      "reading": "しーえむでぃー",
+      "plain": "Dockerfile の命令。コンテナを動かす時に実行する命令を決める。層は作らない。",
+      "why": "書かなければ土台の命令が使われ、自分のアプリは動かない。RUN（作る時）と取り違えやすい。",
+      "related": [
+        "dockerfile",
+        "dockerfile-run"
+      ],
+      "lessons": [
+        "docker.i.01"
+      ]
+    },
+    {
+      "id": "nodejs",
+      "word": "Node.js",
+      "reading": "のーどじぇーえす",
+      "plain": "JavaScript を、ブラウザの外（サーバ）で動かすための仕組み。node コマンドで動かし、部品は npm で入れる。",
+      "why": "Web のアプリでよく使われる。部品（express など）は package.json に書き、npm install で入れる。",
+      "related": [
+        "app",
+        "server"
+      ],
+      "lessons": [
+        "docker.i.01"
+      ]
     }
   ]
 }

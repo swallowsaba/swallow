@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>ビルドとタグ。Dockerfile のある置き場所で docker build -t shop/web:1.2 . と打つと、イメージを作って名前とタグを付ける。版ごとに別のタグを付けるので、1.1 と 1.2 は別のイメージ（ID が違う）として一覧に並ぶ</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="context">
+    <rect x="20" y="40" width="190" height="100" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="115" y="66" text-anchor="middle" font-size="14" fill="#eef2f6">置き場所（.）</text>
+    <text x="40" y="94" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#f2b632">Dockerfile</text>
+    <text x="40" y="118" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">server.js …</text>
+  </g>
+  <g class="el" data-part="build">
+    <path d="M214 90 H300" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="257" y="78" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">build</text>
+  </g>
+  <g class="el" data-part="name">
+    <text x="320" y="98" font-size="22" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#5cc1ff">shop/web</text>
+    <rect x="312" y="68" width="132" height="44" rx="4" fill="none" stroke="#5cc1ff" stroke-width="1" pointer-events="all" />
+    <text x="378" y="136" text-anchor="middle" font-size="13" fill="#5cc1ff">名前</text>
+  </g>
+  <g class="el" data-part="tag">
+    <text x="452" y="98" font-size="22" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#3ae08a">:1.2</text>
+    <rect x="446" y="68" width="74" height="44" rx="4" fill="none" stroke="#3ae08a" stroke-width="1" pointer-events="all" />
+    <text x="483" y="136" text-anchor="middle" font-size="13" fill="#3ae08a">タグ（版）</text>
+  </g>
+  <g class="el" data-part="v11">
+    <rect x="20" y="190" width="320" height="44" rx="6" fill="none" stroke="#9fb0c6" stroke-width="1" pointer-events="all" />
+    <text x="36" y="218" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">shop/web  1.1  ae406359d490</text>
+  </g>
+  <g class="el" data-part="v12">
+    <rect x="20" y="244" width="320" height="44" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="36" y="272" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#3ae08a">shop/web  1.2  27bd9de17044</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="370" y="226" font-size="14" fill="#9fb0c6">版ごとに別のタグ。別のイメージ</text>
+    <text x="370" y="254" font-size="14" fill="#9fb0c6">同じタグに別の中身を上書きすると、</text>
+    <text x="370" y="278" font-size="14" fill="#9fb0c6">どれが本番の物か分からなくなる</text>
+  </g>
+</svg>

@@ -1,0 +1,127 @@
+{
+  "id": "docker.i.02",
+  "domain": "docker",
+  "level": "intermediate",
+  "theme": "build",
+  "title": "ビルドとタグ",
+  "goal": "build/tag でイメージを作り名前を付けられる",
+  "minutes": 20,
+  "prerequisites": ["docker.i.01"],
+  "related": ["cicd.b.04", "git.i.06"],
+  "next": ["docker.i.05"],
+  "terms": ["build", "image", "dockerfile", "image-tag", "rollback", "container", "directory", "file", "app"],
+  "explain": {
+    "what": "{{term:build}}は、{{term:dockerfile}}を読んで{{term:image}}を作ること。作る時に、名前と{{term:image-tag}}（shop/web:1.2 のような版の名札）を付ける。作った後から、別の名前やタグを付け足すこともできる。",
+    "why": "版ごとに別のタグを付けておけば、どのイメージが本番で動いているかが分かり、前の版にも戻せる。同じタグに別の中身を上書きすると、それができなくなる。",
+    "use": "公開（リリース）の準備。版を変えた時に、新しいタグで作る。前の版のイメージは消さずに残し、困った時の{{term:rollback}}に使う。",
+    "when": "本番で動いているのが、直す前の物か後の物か、誰にも分からない。どのイメージにも latest としか付いていなかった。",
+    "figures": ["docker-i02-build"]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "名前（shop/web）",
+      "b": "版ごとのタグ（1.1・1.2）",
+      "answer": "contains",
+      "why": "1 つの名前の中に、版ごとのタグがいくつも並ぶ。名前:タグで、どの版かを指す。",
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "直した物を、前と同じタグ（1.1）で作り直して上書きしてよい。",
+      "answer": false,
+      "why": "同じタグに別の中身を上書きすると、どの機械の 1.1 がどちらの中身か分からなくなる。前の版にも戻せない。版を変えたら、新しいタグを付ける。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "Dockerfile からイメージを作り、shop/web:1.2 と名前を付けるには？",
+      "choices": [
+        { "id": "a", "text": "`docker build -t shop/web:1.2 .`", "correct": true },
+        { "id": "b", "text": "`docker run -t shop/web:1.2 .`", "correct": false, "whyNot": "run はイメージから{{term:container}}を動かす。イメージを作るのは build。" },
+        { "id": "c", "text": "`docker tag shop/web:1.2 .`", "correct": false, "whyNot": "tag は、既にあるイメージに名前を付け足すだけ。作りはしない。" }
+      ],
+      "explanation": "-t で名前:タグを付け、最後の . で置き場所（Dockerfile のある{{term:directory}}）を指す。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "本番に出すイメージに、どんなタグを付ける？",
+      "choices": [
+        { "id": "a", "text": "版ごとに変わる固有のタグ（1.2 など）", "correct": true },
+        { "id": "b", "text": "いつも latest", "correct": false, "whyNot": "latest は付け替えるたびに中身が変わる。どの版が動いているか分からず、前にも戻せない。" },
+        { "id": "c", "text": "タグは付けない", "correct": false, "whyNot": "タグを付けないと latest になる。版を区別できない。" }
+      ],
+      "explanation": "版を固定したタグなら、いつ取っても同じ中身。戻す時も、前のタグを指せばよい。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "直したはずなのに、本番では古い物が動いている。調べると、直す前も後も、同じ shop/web:1.1 で作って上書きしていた。原因は？",
+      "choices": [
+        { "id": "a", "text": "タグを使い回したので、本番の機械は前に取った古い 1.1 をそのまま使っている", "correct": true },
+        { "id": "b", "text": "Dockerfile の直し方が間違っている", "correct": false, "whyNot": "手元で作った 1.1 は直っている。本番の機械が、同じ名前の古い物を手元に持っていて取り直さないのが問題。" },
+        { "id": "c", "text": "build は中身を変えられない", "correct": false, "whyNot": "build は毎回、今の Dockerfile と{{term:file}}から作る。中身は変わる。変わらないのはタグの方。" }
+      ],
+      "explanation": "同じタグなら、手元にある物で足りると見なされやすい。版を変えたらタグも変える。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "商店街の案内の{{term:app}}を v1.2 に直した。前の版は shop/web:1.1 として作ってある。直した物を、1.1 を上書きせずに shop/web:1.2 として作り、別のイメージになったことを確かめる。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "dev-01",
+      "dirs": ["/home/learner/shop"],
+      "files": {
+        "/home/learner/shop/package.json": "{\n  \"name\": \"shop-web\",\n  \"version\": \"1.2.0\",\n  \"dependencies\": { \"express\": \"^4.21.0\" }\n}\n",
+        "/home/learner/shop/server.js": "const express = require('express');\nconst app = express();\napp.get('/', (req, res) => res.send('商店街の案内 v1.1'));\napp.listen(3000, () => console.log('shop-web: listening on :3000'));\n",
+        "/home/learner/shop/Dockerfile": "FROM node:20-alpine\nWORKDIR /app\nCOPY package.json .\nRUN npm install\nCOPY . .\nCMD [\"node\", \"server.js\"]\n"
+      },
+      "run": ["cd /home/learner/shop", "docker build -t shop/web:1.1 .", "sed -i 's/v1.1/v1.2/' server.js"]
+    },
+    "steps": [
+      {
+        "id": "build",
+        "purpose": "Dockerfile のある置き場所（~/shop）で、直した物を shop/web:1.2 として作る。",
+        "check": { "kind": "container", "expr": "image:shop/web:1.2 image:shop/web:1.1" },
+        "afterward": "部品を入れる段までは `CACHED`（前に作った物を使い回し）、直した server.js を写す段だけ作り直して、shop/web:1.2 ができた。1.1 は残っている。",
+        "hints": [
+          "作るのは `docker build -t 名前:タグ 置き場所`。今いる場所（~）には Dockerfile が無い。",
+          "`cd shop` で Dockerfile のある所へ移ってから、`docker build -t shop/web:1.2 .`。最後の . は「今いる所が置き場所」という意味。",
+          "`cd shop` `docker build -t shop/web:1.2 .` と打つ。"
+        ],
+        "expectedErrors": ["docker-build-copy", "docker-build-parse"]
+      },
+      {
+        "id": "compare",
+        "purpose": "一覧で、1.1 と 1.2 が別のイメージ（`IMAGE ID` が違う）になっていることを確かめ、1.2 の `IMAGE ID` を答える。",
+        "check": { "kind": "answer", "equals": "27bd9de17044" },
+        "afterward": "1.1 は ae406359d490、1.2 は 27bd9de17044。中身が違うので番号も違う。本番の機械に 1.2 を指して配れば、確実に直した物が動く。",
+        "hints": [
+          "手元のイメージの一覧は `docker images`。",
+          "shop/web の 1.2 の行の、3 つ目の欄（`IMAGE ID`）を読む。1.1 の行と見比べる。",
+          "`docker images` と打ち、`27bd9de17044` と答える。"
+        ],
+        "expectedErrors": ["docker-images-misread"]
+      }
+    ],
+    "dangerous": [
+      { "id": "overwrite", "pattern": "-t\\s+shop/web:1\\.1\\b", "why": "前の版のタグ（1.1）を、直した物で上書きした。どれが本番の物か分からなくなり、前の版に戻せない。" }
+    ]
+  },
+  "result": {
+    "success": "直した物を新しいタグで作り、前の版を残したまま、別のイメージとして確かめられた。",
+    "partial": "ヒントを使って作れた。次は、タグを使い回すと何が困るかを、自分の言葉で説明してみよう。",
+    "retry": "まだ shop/web:1.2 ができていない。Dockerfile のある所で `docker build` を打ったかを確かめよう。"
+  },
+  "summary": {
+    "points": ["build で作る", "タグで版を付ける", "タグは使い回さない"],
+    "next": ["docker.i.05"],
+    "terms": ["build", "image-tag"]
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "id": "docker.i.01",
+  "domain": "docker",
+  "level": "intermediate",
+  "theme": "Dockerfile",
+  "title": "Dockerfile を書く",
+  "goal": "FROM/COPY/RUN/CMD で自分のイメージを作れる",
+  "minutes": 20,
+  "prerequisites": ["docker.b.03", "ctr.b.04"],
+  "related": ["ctr.b.04", "cicd.b.03"],
+  "next": ["docker.i.02", "docker.a.01"],
+  "terms": ["dockerfile", "image", "app", "file", "layer", "command", "build", "container", "nodejs", "dockerfile-from", "dockerfile-copy", "dockerfile-run", "dockerfile-cmd", "dockerfile-workdir", "server", "shell"],
+  "explain": {
+    "what": "{{term:dockerfile}}は、{{term:image}}の作り方を、上から順に命令で書いた{{term:file}}。土台を選ぶ {{term:dockerfile-from}}、手元のファイルを写す {{term:dockerfile-copy}}、作る時に実行する {{term:dockerfile-run}}、動かす時の命令を決める {{term:dockerfile-cmd}} が基本。",
+    "why": "手で作ったイメージは、同じ物を作り直せない。作り方をファイルに残せば、誰がいつ作っても同じイメージになり、変更の履歴も残せる。",
+    "use": "自分の{{term:app}}を{{term:container}}にする。ファイルを変える命令ごとに{{term:layer}}が 1 つ積まれ、変わっていない層は次に作る時に使い回される。",
+    "when": "市の窓口のアプリ（{{term:nodejs}} で書いた server.js）を作った。手元では動くが、ほかの機械でも同じに動かすため、イメージにしたい。",
+    "figures": ["docker-i01-dockerfile"]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "窓口のアプリの Dockerfile を、上から書く順に並べる。",
+      "items": ["FROM で土台を選ぶ", "{{term:dockerfile-workdir}} で作業する場所を決める", "COPY でアプリのファイルを写す", "RUN で部品を入れる", "CMD で動かす時の命令を決める"],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "命令と役割を結ぶ。",
+      "pairs": [
+        ["FROM", "土台のイメージを選ぶ"],
+        ["RUN", "作る時に 1 度だけ実行する"],
+        ["CMD", "動かす時に実行する命令を決める"]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "土台にするイメージ（node:20-alpine など）を決める命令は？",
+      "choices": [
+        { "id": "a", "text": "FROM", "correct": true },
+        { "id": "b", "text": "COPY", "correct": false, "whyNot": "COPY は、手元のファイルをイメージの中へ写す命令。土台は選ばない。" },
+        { "id": "c", "text": "RUN", "correct": false, "whyNot": "RUN は、作る時に命令を実行する。土台は、最初の FROM で決める。" }
+      ],
+      "explanation": "Dockerfile は FROM から始まる。その上に、命令ごとに層を積む。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "RUN npm install と書いた。この命令はいつ実行されるか。",
+      "choices": [
+        { "id": "a", "text": "イメージを作る時に 1 度だけ。結果がイメージの層に残る", "correct": true },
+        { "id": "b", "text": "コンテナを動かすたびに毎回", "correct": false, "whyNot": "動かすたびに実行するのは CMD。RUN の結果は、作る時にイメージに焼き込まれる。" },
+        { "id": "c", "text": "実行されず、メモとして残るだけ", "correct": false, "whyNot": "RUN は作る時に実際に実行される。失敗すれば、作るのが止まる。" }
+      ],
+      "explanation": "RUN は作る時、CMD は動かす時。取り違えると、部品が入っていない・何も起動しないイメージになる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "コンテナを動かした時に、node server.js を実行させたい。どう書く？",
+      "choices": [
+        { "id": "a", "text": "`CMD [\"node\", \"server.js\"]`", "correct": true },
+        { "id": "b", "text": "`RUN node server.js`", "correct": false, "whyNot": "RUN は作る時に実行する。待ち受ける{{term:server}}を RUN で動かすと、作る所が終わらない。" },
+        { "id": "c", "text": "何も書かない（自動で server.js を探す）", "correct": false, "whyNot": "書かなければ、土台のイメージの命令（node だけ）が使われる。server.js は動かない。" }
+      ],
+      "explanation": "動かす時の命令は CMD。並び（配列）で書くと、{{term:shell}}を通さずにそのまま実行される。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "市の窓口のアプリ（server.js・package.json）のイメージを作る Dockerfile を書く。今の Dockerfile は土台しか書いていないので、作って動かしてもすぐ止まる。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "dev-01",
+      "cwd": "/home/learner/hello",
+      "dirs": ["/home/learner/hello"],
+      "files": {
+        "/home/learner/hello/package.json": "{\n  \"name\": \"hello\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": { \"express\": \"^4.21.0\" }\n}\n",
+        "/home/learner/hello/server.js": "const express = require('express');\nconst app = express();\napp.get('/', (req, res) => res.send('市の窓口: 本日は受付中'));\napp.listen(3000, () => console.log('hello: listening on :3000'));\n",
+        "/home/learner/hello/Dockerfile": "# 窓口のアプリ（server.js）のイメージを作る\nFROM node:20-alpine\n"
+      },
+      "run": ["docker build -t hello:1.0 .", "docker run -d --name hello -p 8080:3000 hello:1.0"],
+      "edit": {
+        "path": "/home/learner/hello/Dockerfile",
+        "apply": ["docker build -t hello:1.0 .", "docker rm -f hello", "docker run -d --name hello -p 8080:3000 hello:1.0", "docker logs hello", "curl -s http://localhost:8080/"]
+      }
+    },
+    "steps": [
+      {
+        "id": "write",
+        "purpose": "/app で作業し、アプリのファイルを写し、`npm install` で部品（express）を入れ、動かす時に `node server.js` を実行する Dockerfile にする。確かめた結果で、8080 番が「本日は受付中」と答えることを見る。",
+        "check": { "kind": "http", "url": "http://localhost:8080/", "status": 200, "contains": "本日は受付中" },
+        "afterward": "作った hello:1.0 から動かしたコンテナが、`hello: listening on :3000` と出して待ち受け、8080 番に答えた。作り方は Dockerfile に残っているので、ほかの機械でも同じイメージを作れる。",
+        "hints": [
+          "FROM の下に、場所を決める WORKDIR、写す COPY、部品を入れる RUN、動かす時の CMD を順に書く。",
+          "`WORKDIR /app` `COPY package.json .` `RUN npm install` `COPY . .` `CMD [\"node\", \"server.js\"]` の 5 行を、FROM の下に足す。npm install は package.json を写した後でないと失敗する。",
+          "`# 窓口のアプリ（server.js）のイメージを作る\nFROM node:20-alpine\nWORKDIR /app\nCOPY package.json .\nRUN npm install\nCOPY . .\nCMD [\"node\", \"server.js\"]` と保存する。"
+        ],
+        "expectedErrors": ["docker-build-parse", "docker-build-copy", "docker-build-run", "docker-app-down"]
+      }
+    ]
+  },
+  "result": {
+    "success": "FROM・WORKDIR・COPY・RUN・CMD で作り方を書き、自分のアプリのイメージを作って動かせた。",
+    "partial": "ヒントを使って書けた。次は、RUN と CMD の違い（いつ実行されるか）を、自分の言葉で説明してみよう。",
+    "retry": "まだ 8080 番が答えていない。確かめた結果の `docker logs hello` に、止まった理由が出ていないかを見よう。"
+  },
+  "summary": {
+    "points": ["作り方をファイルに書く", "命令ごとに層が積まれる", "動かす時の命令は CMD"],
+    "next": ["docker.i.02", "docker.a.01"],
+    "terms": ["dockerfile", "layer"]
+  }
+}
