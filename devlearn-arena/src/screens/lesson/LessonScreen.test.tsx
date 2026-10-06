@@ -528,7 +528,7 @@ describe('見本の 2 本を最後まで通せる（docs/development-plan.md Pha
     expect(session.city.getState().city.funds - funds0).toBe(session.progress.getState().progress.xp);
   });
 
-  it('found.b.01（模擬環境）: 操作の文を入れて手順を満たし、結果に「入れた操作の文」を $ を付けずに並べる', async () => {
+  it('found.b.01（模擬環境）: ヒントを開いても「中断した所から」と言わない。操作の文を入れて手順を満たし、結果に「入れた操作の文」を $ を付けずに並べる', async () => {
     const session = createSession(1);
     const id = 'found.b.01';
     const l = await lesson(id);
@@ -543,13 +543,47 @@ describe('見本の 2 本を最後まで通せる（docs/development-plan.md Pha
       });
       act(() => input.form?.requestSubmit());
     };
+    // ヒントを開くと進みを保存するが、中断していないので「中断した所から続ける」とは言わない
+    click($(host, '[data-testid="practice-hint"]'));
+    expect($(host, '[data-testid="sim-console"]').textContent).not.toContain('中断した所から続ける');
     for (const line of ['connect kb cpu', 'connect cpu screen', 'send kb screen', 'connect cpu disk', 'send cpu disk']) statement(line);
     // 線を足しても、先に画面へ出た答えは消えない
     expect($(host, '[data-testid="sim-console"]').textContent).toContain('2+3 = 5');
     next(host);
-    expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('success');
+    expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('partial');
     expect($(host, '[data-testid="stage-result"]').textContent).toContain('入れた操作の文');
     expect($(host, '[data-testid="result-commands"]').textContent).toBe(['connect kb cpu', 'connect cpu screen', 'send kb screen', 'connect cpu disk', 'send cpu disk'].join('\n'));
+    throughEnd(opened, session, id, l);
+  });
+
+  it('db.b.02（ブラウザ内 SQL）: ヒントを開いても「中断した所から」と言わない。SQL を実行して手順を満たし、結果に「実行した SQL」を $ を付けずに並べる', async () => {
+    const session = createSession(1);
+    const id = 'db.b.02';
+    const l = await lesson(id);
+    const opened = await toPractice(session, id, l);
+    const { host } = opened;
+    const input = (): HTMLTextAreaElement => $<HTMLTextAreaElement>(host, '[data-testid="sql-input"]');
+    await vi.waitFor(() => {
+      if (input().disabled) throw new Error('DB がまだ開いていない');
+    });
+    const statements = [
+      'CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL) STRICT',
+      "INSERT INTO members (id, name, city) VALUES (1, '青木', '東京'), (2, '石田', '大阪'), (3, '上野', '東京')",
+    ];
+    // ヒントを開くと進みを保存するが、中断していないので「中断した所から続ける」とは言わない
+    click($(host, '[data-testid="practice-hint"]'));
+    expect($(host, '[data-testid="sql-log"]').textContent).toContain('SQL を書いて「実行」を押す');
+    for (const sql of statements) {
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(input(), sql);
+        input().dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      click($(host, '[data-testid="sql-run"]'));
+    }
+    next(host);
+    expect($(host, '[data-testid="stage-result"]').dataset.result).toBe('partial');
+    expect($(host, '[data-testid="stage-result"]').textContent).toContain('実行した SQL');
+    expect($(host, '[data-testid="result-commands"]').textContent).toBe(statements.join('\n'));
     throughEnd(opened, session, id, l);
   });
 

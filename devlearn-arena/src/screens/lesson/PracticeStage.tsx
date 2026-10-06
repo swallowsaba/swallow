@@ -287,7 +287,9 @@ interface SimSaved {
 }
 
 function SimPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps) {
-  const restored = saved?.engineState as SimSaved | undefined;
+  // 開いた時の保存だけを見る（保存するたびに saved は新しくなる。ヒントを開いただけで「中断した所から」と言わない）
+  const [restored] = useState(() => saved?.engineState as SimSaved | undefined);
+  const [resumed, setResumed] = useState(restored !== undefined);
   const fresh = useMemo(() => createSim(p.environment, p.setup), [p]);
   const [sim, setSim] = useState<SimState>(restored?.sim ?? fresh);
   const [log, setLog] = useState<SimLogEntry[]>(restored?.log ?? []);
@@ -319,6 +321,7 @@ function SimPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, 
     logRef.current = [];
     setSim(fresh);
     setLog([]);
+    setResumed(false);
     save(r.restart(), fresh, []);
   };
 
@@ -336,7 +339,7 @@ function SimPractice({ practice: p, sessionId, saved, onSave, onFinish, onTerm, 
           verbs={SIM_VERBS[sim.type]}
           send={send}
           onReset={reset}
-          restored={restored !== undefined}
+          restored={resumed}
           error={r.error ? <ErrorGuidePanel error={r.error} onTerm={onTerm} onClose={() => r.setError(null)} /> : null}
         />
       </Slot>
@@ -362,7 +365,9 @@ async function openPracticeDb(p: Practice, statements: readonly string[]): Promi
 }
 
 function SqlPracticeStage({ practice: p, sessionId, saved, onSave, onFinish, onTerm, right, action, onBack, backLabel = 'クイズへ戻る' }: PracticeStageProps) {
-  const restored = saved?.engineState as SqlSaved | undefined;
+  // 開いた時の保存だけを見る（保存するたびに saved は新しくなる。ヒントを開いただけで「中断した所から」と言わない）
+  const [restored] = useState(() => saved?.engineState as SqlSaved | undefined);
+  const [resumed, setResumed] = useState(restored !== undefined);
   const [db, setDb] = useState<SqlDb | null>(null);
   const dbRef = useRef<SqlDb | null>(null);
   const [log, setLog] = useState<SqlLogEntry[]>(restored?.log ?? []);
@@ -420,6 +425,7 @@ function SqlPracticeStage({ practice: p, sessionId, saved, onSave, onFinish, onT
     statementsRef.current = [];
     logRef.current = [];
     setLog([]);
+    setResumed(false);
     adopt(null);
     save(r.restart(), []);
     void openPracticeDb(p, []).then((d) => adopt(d));
@@ -438,7 +444,7 @@ function SqlPracticeStage({ practice: p, sessionId, saved, onSave, onFinish, onT
           tables={tables}
           onRun={runSql}
           onReset={reset}
-          restored={restored !== undefined}
+          restored={resumed}
           answer={step?.check.kind === 'answer' ? <AnswerForm key={step.id} onAnswer={onAnswer} label="SQL で調べて答える" /> : null}
           error={r.error ? <ErrorGuidePanel error={r.error} onTerm={onTerm} onClose={() => r.setError(null)} /> : null}
         />
