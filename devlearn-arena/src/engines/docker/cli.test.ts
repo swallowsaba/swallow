@@ -118,6 +118,56 @@ describe('docker（CLI）', () => {
   });
 });
 
+describe('隔離の仕組み（名前空間と cgroups。ctr.i.02）', () => {
+  it('コンテナの中の ps は自分のプロセスだけを見せ、主のプロセスは PID 1。機械の ps aux には、同じプロセスが機械の PID で出る', () => {
+    const { sh } = shell();
+    sh('docker run -d --name web -p 8080:80 nginx:1.27-alpine');
+    const inside = sh('docker exec web ps').stdout;
+    expect(inside).toMatch(/^PID {3}USER {5}TIME {2}COMMAND\n/);
+    expect(inside).toMatch(/\n {4}1 root {6}0:00 nginx: master process nginx -g daemon off;\n/);
+    expect(inside).not.toContain('/sbin/init');
+    const outside = sh('ps aux').stdout;
+    expect(outside).toContain('/sbin/init');
+    expect(outside).toMatch(/root\s+2101\s+2100\s.*nginx: master process nginx -g daemon off;/);
+    expect(outside).toMatch(/root\s+2100\s+1\s.*containerd-shim-runc-v2 -namespace moby -id [0-9a-f]{64}/);
+    // 中から見える主のプロセスの、機械での PID
+    expect(sh("docker inspect -f '{{.State.Pid}}' web").stdout).toBe('2101\n');
+  });
+
+  it('ps の無いイメージで exec ps は、本物と同じく実行するファイルが無いと言う。止まったコンテナには exec できない', () => {
+    const { sh } = shell();
+    sh('docker run -d --name web nginx:1.27');
+    expect(sh('docker exec web ps')).toMatchObject({ code: 127, stderr: 'OCI runtime exec failed: exec failed: unable to start container process: exec: "ps": executable file not found in $PATH: unknown\n' });
+    sh('docker stop web');
+    expect(sh('docker exec web ps').stderr).toMatch(/^Error response from daemon: container [0-9a-f]{64} is not running\n$/);
+  });
+
+  it('--memory の上限より多く使うコンテナは、起動してすぐ止められる（Exited (137)・OOMKilled）。上限が足りれば動き、stats に上限が出る', () => {
+    const { sh } = shell();
+    expect(sh('docker run -d --name report -p 8081:80 --memory 64m city-report:1.0').code).toBe(0);
+    expect(sh('docker ps').stdout).not.toContain('report');
+    expect(sh('docker ps -a').stdout).toContain('Exited (137)');
+    expect(sh("docker inspect -f '{{.State.OOMKilled}}' report").stdout).toBe('true\n');
+    expect(sh('docker stats --no-stream report').stdout).toMatch(/report\s+0\.00%\s+0B \/ 0B\s+0\.00%/);
+    sh('docker rm report');
+    sh('docker run -d --name report -p 8081:80 -m 256m city-report:1.0');
+    expect(sh('docker ps').stdout).toContain('report');
+    expect(sh('docker stats --no-stream report').stdout).toMatch(/report\s+\S+%\s+182\.4MiB \/ 256MiB\s+71\.25%/);
+    expect(sh('docker exec report cat /sys/fs/cgroup/memory.max').stdout).toBe('268435456\n');
+    expect(sh("docker inspect --format '{{.HostConfig.Memory}}' report").stdout).toBe('268435456\n');
+    expect(sh('curl -s localhost:8081').code).toBe(0);
+  });
+
+  it('上限が無いと、stats の上限は機械の全てのメモリになり、中の memory.max は max。小さすぎる上限は断る', () => {
+    const { sh } = shell();
+    sh('docker run -d --name report city-report:1.0');
+    expect(sh('docker stats --no-stream report').stdout).toContain('182.4MiB / 8GiB');
+    expect(sh('docker exec report cat /sys/fs/cgroup/memory.max').stdout).toBe('max\n');
+    expect(sh('docker run -d --name tiny -m 4m city-report:1.0')).toMatchObject({ code: 125, stderr: 'docker: Error response from daemon: Minimum memory limit allowed is 6MB.\n' });
+    expect(sh('docker run -d --name bad -m lots city-report:1.0')).toMatchObject({ code: 125, stderr: "invalid argument \"lots\" for \"-m, --memory\" flag: invalid size: 'lots'\nSee 'docker run --help'.\n" });
+  });
+});
+
 describe('curl（手元のサービス）', () => {
   it('サービスが動いている間だけ、そのポートで応える', () => {
     const { sh } = shell({ services: createServiceTable([{ name: 'web', description: 'Web server', active: 'inactive', enabled: false, port: 80, body: '<h1>shop</h1>' }]) });

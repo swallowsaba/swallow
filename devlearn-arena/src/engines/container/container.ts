@@ -6,6 +6,9 @@
  * - ポートの公開: 手元のポートを、コンテナの中のポートにつなぐ（-p 8080:80）。同じ手元のポートは 2 つに使えない
  * - ボリューム: コンテナを消しても残す場所を、手元の場所につなぐ（-v）。
  *   中身を読む場所（serves.root）を持つイメージは、そこにつないだ手元の場所の index.html を返す（つないでいなければ 403）
+ * - 隔離（ctr.i.02）: コンテナは名前空間で区切った機械のプロセス。中からは自分のプロセスだけが見え（主のプロセスが PID 1）、
+ *   機械からは同じプロセスが機械の PID で見える（containerd-shim の子）。cgroups のメモリの上限（--memory）より多く使うと、
+ *   起動してすぐカーネルに止められる（終了コード 137 = 128 + SIGKILL の 9、OOMKilled）
  *
  * ID は通し番号から決める（同じ操作からは同じ ID）。CLI（docker）は src/engines/docker がこの上に作る。
  */
@@ -26,7 +29,18 @@ export interface Image {
   startLog: readonly string[];
   /** すぐに終わるイメージ（hello-world など） */
   oneShot?: boolean;
+  /** 動いている間のプロセス（先頭が主のプロセス）。memory は使うメモリ（MiB）。無ければ 1 つ・10MiB */
+  procs?: readonly { command: string; memory: number; user?: string }[];
+  /** 中に ps などの道具がある（alpine の busybox）。無いイメージで docker exec ps は、実行するファイルが無いと言う */
+  tools?: boolean;
 }
+
+/** 動いている間のプロセス */
+export const procsOf = (image: Image | undefined): readonly { command: string; memory: number; user?: string }[] =>
+  image?.procs ?? [{ command: '/entrypoint', memory: 10 }];
+
+/** 動いている間に使うメモリ（MiB） */
+export const memoryOf = (image: Image | undefined): number => procsOf(image).reduce((n, p) => n + p.memory, 0);
 
 export interface PortMap {
   host: number;
@@ -43,6 +57,12 @@ export interface Container {
   volumes: readonly { host: string; container: string }[];
   env: Readonly<Record<string, string>>;
   log: readonly string[];
+  /** メモリの上限（バイト。cgroups の memory.max）。無ければ上限無し */
+  memoryLimit?: number;
+  /** 上限を超えてカーネルに止められた */
+  oomKilled?: boolean;
+  /** 主のプロセスの、機械から見た PID（動いている間。シムはその 1 つ前） */
+  pid: number;
 }
 
 export interface ContainerHost {
@@ -55,9 +75,21 @@ export interface ContainerHost {
 
 /** 模擬のレジストリに置いてあるイメージ（docs/learning-design.md 6 章: 本物は取りに行かない） */
 export const REGISTRY: readonly Image[] = [
+  {
+    ref: 'nginx:1.27-alpine', id: 'b1a2c39e4f7d', size: '48.3MB', tools: true,
+    serves: { port: 80, body: '<!DOCTYPE html>\n<html><head><title>Welcome to nginx!</title></head><body><h1>Welcome to nginx!</h1></body></html>' },
+    startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'],
+    procs: [{ command: 'nginx: master process nginx -g daemon off;', memory: 3.4 }, { command: 'nginx: worker process', memory: 2.6, user: 'nginx' }, { command: 'nginx: worker process', memory: 2.6, user: 'nginx' }],
+  },
   { ref: 'nginx:1.27', id: '3b25b682ea82', size: '192MB', serves: { port: 80, body: '<!DOCTYPE html>\n<html><head><title>Welcome to nginx!</title></head><body><h1>Welcome to nginx!</h1></body></html>' }, startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'] },
   { ref: 'httpd:2.4', id: '9cfd0d8c7a1e', size: '148MB', serves: { port: 80, body: '<html><body><h1>It works!</h1></body></html>' }, startLog: ['AH00558: httpd: Could not reliably determine the server\'s fully qualified domain name', 'Apache/2.4 configured -- resuming normal operations'] },
   { ref: 'city-board:1.0', id: '5c1e7b2a9d40', size: '41MB', serves: { port: 80, body: '', root: '/usr/share/nginx/html' }, startLog: ['city-board: serving /usr/share/nginx/html on port 80'] },
+  {
+    ref: 'city-report:1.0', id: '6d0f3a7c21b8', size: '182MB', tools: true,
+    serves: { port: 80, body: '<html><body><h1>夜の集計</h1><p>予約 1,240 件を集計した</p></body></html>' },
+    startLog: ['report: loading 1,240 reservations into memory', 'report: listening on :80'],
+    procs: [{ command: 'node /app/report.js', memory: 182.4 }],
+  },
   { ref: 'redis:7', id: '7e49ed81b42b', size: '117MB', startLog: ['Redis version=7.2.5, bits=64', 'Ready to accept connections tcp'] },
   { ref: 'postgres:16', id: 'b9390dd1ea18', size: '432MB', requiresEnv: { name: 'POSTGRES_PASSWORD', error: 'Error: Database is uninitialized and superuser password is not specified.' }, startLog: ['database system is ready to accept connections'] },
   { ref: 'alpine:3.20', id: '91ef0af61f39', size: '7.8MB', oneShot: true, startLog: [] },
@@ -115,11 +147,18 @@ function replace(host: ContainerHost, c: Container): ContainerHost {
   return { ...host, containers: host.containers.map((x) => (x.id === c.id ? c : x)) };
 }
 
-/** 動かす（イメージの決まりに合わなければ、すぐに止まる） */
+/** 主のプロセスの、機械から見た PID（コンテナの通し番号から決める。同じ操作からは同じ PID） */
+const pidOf = (seq: number): number => 2000 + seq * 100 + 1;
+
+/** 動かす（イメージの決まりに合わなければ、すぐに止まる。メモリの上限より多く使えば、カーネルに止められる） */
 function boot(c: Container, image: Image): Container {
   if (image.requiresEnv && !(image.requiresEnv.name in c.env)) return { ...c, state: 'exited', exitCode: 1, log: [...c.log, image.requiresEnv.error] };
   if (image.oneShot) return { ...c, state: 'exited', exitCode: 0, log: [...c.log, ...image.startLog] };
-  return { ...c, state: 'running', exitCode: 0, log: [...c.log, ...image.startLog] };
+  if (c.memoryLimit !== undefined && memoryOf(image) * 1024 * 1024 > c.memoryLimit) {
+    // 動き出して読み込む途中で、上限を超えて止められる（SIGKILL。128 + 9）
+    return { ...c, state: 'exited', exitCode: 137, oomKilled: true, log: [...c.log, ...image.startLog.slice(0, 1)] };
+  }
+  return { ...c, state: 'running', exitCode: 0, oomKilled: false, log: [...c.log, ...image.startLog] };
 }
 
 export interface RunOptions {
@@ -128,6 +167,8 @@ export interface RunOptions {
   ports?: readonly PortMap[];
   volumes?: readonly { host: string; container: string }[];
   env?: Readonly<Record<string, string>>;
+  /** メモリの上限（バイト） */
+  memory?: number;
 }
 
 /** 手元のポートを、動いているコンテナが既に使っているか */
@@ -145,7 +186,8 @@ export function run(host0: ContainerHost, o: RunOptions): Result<Container> {
   for (const p of o.ports ?? []) if (portOwner(host, p.host)) return { ok: false, host, error: { kind: 'port-in-use', port: p.host } };
   const c: Container = {
     id: idOf(host.seq + 1), name, image: pulled.value.ref, state: 'created', exitCode: 0,
-    ports: o.ports ?? [], volumes: o.volumes ?? [], env: o.env ?? {}, log: [],
+    ports: o.ports ?? [], volumes: o.volumes ?? [], env: o.env ?? {}, log: [], pid: pidOf(host.seq + 1),
+    ...(o.memory !== undefined ? { memoryLimit: o.memory } : {}),
   };
   host = { ...host, seq: host.seq + 1, containers: [...host.containers, c] };
   const booted = boot(c, pulled.value);
@@ -183,6 +225,25 @@ export function removeImage(host: ContainerHost, raw: string): Result<Image> {
   const user = host.containers.find((c) => c.image === image.ref);
   if (user) return { ok: false, host, error: { kind: 'image-in-use', ref: image.ref, container: user.id.slice(0, 12) } };
   return { ok: true, host: { ...host, images: host.images.filter((i) => i !== image) }, value: image };
+}
+
+/**
+ * 機械から見た、動いているコンテナのプロセス（ps aux に出る物）。
+ * コンテナごとに containerd-shim が親になり、その子が主のプロセス（docker inspect の .State.Pid）。
+ * 機械にいない利用者（nginx）は、番号（101）で出る
+ */
+export function hostProcesses(host: ContainerHost | null): { pid: number; ppid: number; user: string; command: string; memory: number }[] {
+  const out: { pid: number; ppid: number; user: string; command: string; memory: number }[] = [];
+  for (const c of host?.containers ?? []) {
+    if (c.state !== 'running') continue;
+    const image = host?.images.find((i) => i.ref === c.image);
+    const shim = c.pid - 1;
+    out.push({ pid: shim, ppid: 1, user: 'root', command: `/usr/bin/containerd-shim-runc-v2 -namespace moby -id ${c.id.repeat(6).slice(0, 64)} -address /run/containerd/containerd.sock`, memory: 12 });
+    procsOf(image).forEach((p, i) => {
+      out.push({ pid: c.pid + i, ppid: i === 0 ? shim : c.pid, user: p.user === undefined || p.user === 'root' ? 'root' : '101', command: p.command, memory: p.memory });
+    });
+  }
+  return out;
 }
 
 /** 中身を読む場所を持つイメージが、中身を見つけられない時の答え */

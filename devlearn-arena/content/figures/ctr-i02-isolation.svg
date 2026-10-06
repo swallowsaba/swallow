@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>隔離の 2 本柱。名前空間の壁の中からは、自分のプロセスだけが見え、主のプロセスが PID 1。機械からは同じプロセスが PID 2101 で見える。cgroups はメモリの量に上限を付け、超えるとそのコンテナだけが止められる</title>
+  <g class="el" data-part="ns">
+    <text x="20" y="24" font-size="14" fill="#5cc1ff">名前空間（見える範囲を分ける）</text>
+    <rect x="20" y="36" width="320" height="120" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="36" y="62" font-size="13" fill="#9fb0c6">コンテナ web の中から見た ps</text>
+    <text x="36" y="90" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">PID 1  nginx: master process</text>
+    <text x="36" y="114" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">PID 30 nginx: worker process</text>
+    <text x="36" y="140" font-size="13" fill="#9fb0c6">機械やほかのコンテナは見えない</text>
+  </g>
+  <g class="el" data-part="host">
+    <rect x="20" y="176" width="320" height="100" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="36" y="202" font-size="13" fill="#9fb0c6">機械から見た ps aux</text>
+    <text x="36" y="228" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">PID 1    /sbin/init</text>
+    <text x="36" y="252" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">PID 2101 nginx: master process</text>
+  </g>
+  <g class="el" data-part="cg">
+    <text x="380" y="24" font-size="14" fill="#3ae08a">cgroups（使える量に上限）</text>
+    <text x="380" y="62" font-size="13" fill="#9fb0c6">report の上限 256MiB</text>
+    <rect x="380" y="72" width="300" height="30" rx="4" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <rect x="382" y="74" width="212" height="26" rx="3" fill="#3ae08a" />
+    <text x="530" y="124" text-anchor="middle" font-size="13" fill="#eef2f6">使う量 182MiB → 動く</text>
+  </g>
+  <g class="el" data-part="oom">
+    <text x="380" y="168" font-size="13" fill="#9fb0c6">report の上限 64MiB</text>
+    <rect x="380" y="178" width="300" height="30" rx="4" fill="none" stroke="#e04a3a" stroke-width="2" pointer-events="all" />
+    <rect x="382" y="180" width="296" height="26" rx="3" fill="#e04a3a" />
+    <text x="530" y="230" text-anchor="middle" font-size="13" fill="#ff8a7a">超えた → そのコンテナだけ止められる（137）</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="310" font-size="14" fill="#eef2f6">コンテナは、名前空間と cgroups で区切った、機械の普通のプロセス。カーネルは共有する</text>
+  </g>
+</svg>

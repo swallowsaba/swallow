@@ -10,7 +10,10 @@
         "カーネルを箱に入れた。コンテナはカーネルを持たず、動かす機械のカーネルを共有する。"
       ],
       "hint": "アプリ・ライブラリ・設定は箱に入れる。カーネルは機械の物を使う。",
-      "terms": ["container", "kernel"]
+      "terms": [
+        "container",
+        "kernel"
+      ]
     },
     {
       "id": "ctr-vm-mix",
@@ -22,7 +25,10 @@
         "数と速さが要る要件に、仮想マシンを選んだ（1 台ごとに OS を起動するので重い）。"
       ],
       "hint": "表の「持つ OS」「起動」「分け方の強さ」の行を、要件ごとに見比べる。",
-      "terms": ["vm", "container"]
+      "terms": [
+        "vm",
+        "container"
+      ]
     },
     {
       "id": "ctr-container-only",
@@ -33,7 +39,10 @@
         "作り直すたびに中で直す方法を選んだ。直すまでの間と、直し忘れた時に戻る。"
       ],
       "hint": "作り直しても残すには、元の設計図を直し、新しいイメージからコンテナを作る。",
-      "terms": ["image", "container"]
+      "terms": [
+        "image",
+        "container"
+      ]
     },
     {
       "id": "ctr-layer-order",
@@ -44,7 +53,9 @@
         "設定とライブラリの順が逆。変わる回数の少ない物ほど下に置く。"
       ],
       "hint": "変わる回数の少ない順に、下から積む: 土台 → ライブラリ → 設定 → コード。",
-      "terms": ["layer"]
+      "terms": [
+        "layer"
+      ]
     },
     {
       "id": "ctr-pull-not-found",
@@ -56,7 +67,10 @@
         "認証が要るレジストリに、ログインしていない（does not exist or may require login と言われる）。"
       ],
       "hint": "レジストリにあるタグの一覧と、1 字ずつ見比べる。",
-      "terms": ["registry", "image-tag"]
+      "terms": [
+        "registry",
+        "image-tag"
+      ]
     },
     {
       "id": "ctr-latest",
@@ -67,7 +81,9 @@
         "latest がいつ、どの版に付け替えられたかを、表で読んでいない。"
       ],
       "hint": "タグの表で、latest の行が指している版を見る。本番は版を書いて固定する。",
-      "terms": ["image-tag"]
+      "terms": [
+        "image-tag"
+      ]
     },
     {
       "id": "ctr-runtime-path",
@@ -78,7 +94,10 @@
         "道具ごとに、間に入るランタイムが違うことを見落とした（Podman は containerd を使わない）。"
       ],
       "hint": "上の道具から順に、誰に仕事を頼むかをたどる。最後はどれも runc が、カーネルの機能でコンテナを作る。",
-      "terms": ["container-runtime", "cri"]
+      "terms": [
+        "container-runtime",
+        "cri"
+      ]
     },
     {
       "id": "ctr-net-wrong",
@@ -90,7 +109,10 @@
         "DB を外に公開したままにした。"
       ],
       "hint": "同じ網にいれば、相手のコンテナの名前で届く。外に公開するのは web だけ。",
-      "terms": ["port-publish", "network"]
+      "terms": [
+        "port-publish",
+        "network"
+      ]
     },
     {
       "id": "ctr-volume-path",
@@ -101,7 +123,9 @@
         "付けた場所の誤り。DB がデータを書く場所と、ボリュームを付けた場所が違う。"
       ],
       "hint": "DB のコンテナの情報で、データを書く場所を見る。ボリュームは、その場所に付ける。",
-      "terms": ["volume"]
+      "terms": [
+        "volume"
+      ]
     },
     {
       "id": "ctr-split-order",
@@ -112,7 +136,9 @@
         "api か db の、どちらかのコンテナをまだ使わない設定のまま。"
       ],
       "hint": "api に API を、db に DB を入れてから、web を画面だけにする。",
-      "terms": ["container"]
+      "terms": [
+        "container"
+      ]
     },
     {
       "id": "ctr-connect-wrong",
@@ -123,7 +149,53 @@
         "相手のコンテナの名前を取り違えた（web は自分。API は api、DB は db）。"
       ],
       "hint": "画面からは api:3000、API からは db:5432 のように、相手のコンテナの名前で指す。",
-      "terms": ["container", "network"]
+      "terms": [
+        "container",
+        "network"
+      ]
+    },
+    {
+      "id": "ctr-pid-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、見た ps の一覧と合っていない。",
+      "causes": [
+        "中と外を取り違えた。コンテナの中の ps では主のプロセスが 1、機械の ps aux では機械の PID で出る。",
+        "worker process や containerd-shim の行の PID を読んだ。master process の行を読む。"
+      ],
+      "hint": "どこで打った ps かを確かめてから、nginx: master process の行の PID を読む。",
+      "terms": [
+        "namespace",
+        "process"
+      ]
+    },
+    {
+      "id": "ctr-oom",
+      "match": "Exited \\(137\\)",
+      "output": true,
+      "meaning": "コンテナが終了コード 137 で止まっている。137 は 128 + 9（SIGKILL）で、外から強制的に止められた印。メモリの上限を超えると、カーネルがこう止める。",
+      "causes": [
+        "上限が低すぎる。使う量（report は 180MiB ほど）より小さい上限を付けた。",
+        "上限の単位の誤り（256 と書いて 256 バイト、256k と書いて 256KiB）。"
+      ],
+      "hint": "`docker inspect -f '{{.State.OOMKilled}}' 名前` が true なら、上限を超えて止められた。`docker rm` で消し、使う量より大きい上限（256m など）で動かし直す。",
+      "terms": [
+        "cgroups",
+        "memory"
+      ]
+    },
+    {
+      "id": "ctr-limit-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、docker stats の上限（LIMIT）と合っていない。",
+      "causes": [
+        "上限を付けずに動かした（LIMIT が機械の全てのメモリ 8GiB になる）。",
+        "上限が低すぎて止められた（MEM USAGE / LIMIT が 0B / 0B になる）。",
+        "/ の左の、今使っている量（MEM USAGE）を答えた。"
+      ],
+      "hint": "docker stats --no-stream report の MEM USAGE / LIMIT の、/ の右を読む。",
+      "terms": [
+        "cgroups"
+      ]
     }
   ]
 }

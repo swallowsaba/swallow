@@ -1,0 +1,138 @@
+{
+  "id": "ctr.i.02",
+  "domain": "ctr",
+  "level": "intermediate",
+  "theme": "隔離",
+  "title": "隔離の仕組み",
+  "goal": "名前空間と資源制限（cgroups）の役割を説明できる",
+  "minutes": 25,
+  "prerequisites": ["ctr.i.01", "found.a.01"],
+  "related": ["found.a.01", "k8s.i.07"],
+  "next": ["ctr.i.03"],
+  "terms": ["namespace", "process", "network", "file", "kernel", "cgroups", "memory", "container", "vm"],
+  "explain": {
+    "what": "{{term:namespace}}は、{{term:process}}から見える範囲（ほかのプロセス・{{term:network}}・{{term:file}}）を分ける{{term:kernel}}の機能。{{term:cgroups}}は、使える CPU や{{term:memory}}の量に上限を付ける機能。{{term:container}}は、この 2 つで区切られた、機械の普通のプロセス。",
+    "why": "名前空間があるので、コンテナの中からは、ほかのコンテナや機械のプロセスが見えず、触れない。cgroups が無いと、1 つのコンテナがメモリを使い切って、同じ機械のほかの物まで巻き込む。",
+    "use": "コンテナを安全に、安定して並べる。動かす時に、メモリの上限を付けておく。カーネルは共有するので、{{term:vm}}ほど強くは分けない。",
+    "when": "夜の集計のコンテナが、メモリを使い切った。同じ機械で動く予約のサイトまで遅くなり、やがて止まった。",
+    "figures": ["ctr-i02-isolation"]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "仕組みと役割を結ぶ。",
+      "pairs": [
+        ["名前空間", "見える範囲を分ける"],
+        ["cgroups", "使える量に上限を付ける"]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "メモリの上限を付けずにコンテナを並べている。1 つが使い切ると、どうなるか。",
+      "choices": [
+        { "id": "a", "text": "機械のメモリが足りなくなり、ほかのコンテナや機械のプロセスまで遅くなったり止められたりする", "correct": true },
+        { "id": "b", "text": "そのコンテナだけが止まり、ほかには響かない", "correct": false, "whyNot": "上限が無ければ、そのコンテナは機械の全てのメモリまで使える。足りなくなれば、ほかも巻き込む。" },
+        { "id": "c", "text": "コンテナには自動で上限が付くので、何も起きない", "correct": false, "whyNot": "何も指定しなければ、上限は無い。機械の全てのメモリまで使える。" }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "コンテナの中で ps を打つ。何が見える？",
+      "choices": [
+        { "id": "a", "text": "そのコンテナのプロセスだけ（主のプロセスは PID 1）", "correct": true },
+        { "id": "b", "text": "機械の全てのプロセス", "correct": false, "whyNot": "名前空間で区切られているので、中からは機械のプロセスは見えない。" },
+        { "id": "c", "text": "同じ機械の、ほかのコンテナのプロセスも見える", "correct": false, "whyNot": "コンテナごとに名前空間が分かれている。ほかのコンテナのプロセスは見えない。" }
+      ],
+      "explanation": "中からは自分のプロセスだけが見え、番号も 1 から振り直される。機械から見ると、同じプロセスが別の番号で見える。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "1 つのコンテナが、機械のメモリを使い切るのを防ぎたい。どうする？",
+      "choices": [
+        { "id": "a", "text": "そのコンテナに、メモリの上限を付ける（cgroups）", "correct": true },
+        { "id": "b", "text": "名前空間で、ほかのプロセスを見えなくする", "correct": false, "whyNot": "見えなくしても、使う量は減らない。量を制限するのは cgroups。" },
+        { "id": "c", "text": "コンテナの名前を変える", "correct": false, "whyNot": "名前は使う量と関係ない。上限を付けて量を制限する。" }
+      ],
+      "explanation": "見える範囲は名前空間、使える量は cgroups。役割が違う。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "上限を付けて動かしたコンテナが、起動してすぐ「Exited (137)」で止まった。原因は？",
+      "choices": [
+        { "id": "a", "text": "使う量より上限が低く、上限を超えてカーネルに止められた", "correct": true },
+        { "id": "b", "text": "イメージの名前を打ち間違えた", "correct": false, "whyNot": "名前が違えば、イメージが見つからず起動もしない。起動してから止まったのは、中で何かが起きたから。" },
+        { "id": "c", "text": "ポートがほかと重なった", "correct": false, "whyNot": "ポートが重なれば、起動の前に断られる。137 は外から強制的に止められた印。" }
+      ],
+      "explanation": "137 は 128 + 9（SIGKILL）。メモリの上限を超えると、カーネルがそのコンテナのプロセスを止める。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "市の機械で、予約のサイト web（nginx）のコンテナが動いている。中と外で、プロセスの見え方を比べる。次に、夜の集計のコンテナ report を、メモリの上限を付けて動かす。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "civic-host",
+      "images": ["nginx:1.27-alpine", "city-report:1.0"],
+      "processes": [
+        { "command": "/usr/bin/containerd", "user": "root", "memory": 48 },
+        { "command": "/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock", "user": "root", "memory": 82 }
+      ],
+      "run": ["docker run -d --name web -p 8080:80 nginx:1.27-alpine"]
+    },
+    "steps": [
+      {
+        "id": "inside",
+        "purpose": "コンテナ web の中で ps を打ち、中から見えるプロセスを確かめる。nginx: master process の PID を答える。",
+        "check": { "kind": "answer", "equals": "1" },
+        "afterward": "中からは nginx のプロセスと、打った ps だけが見えた。主のプロセスは PID 1。機械の /sbin/init は見えない。",
+        "hints": [
+          "コンテナの中でコマンドを打つには `docker exec 名前 コマンド`。",
+          "`docker exec web ps` で、中から見えるプロセスの一覧が出る。nginx: master process の行の PID を読む。",
+          "`docker exec web ps` と打ち、`1` と答える。"
+        ],
+        "expectedErrors": ["ctr-pid-misread"]
+      },
+      {
+        "id": "outside",
+        "purpose": "機械（外）で ps aux を打ち、同じ nginx: master process が、機械では何番の PID で見えるかを答える。",
+        "check": { "kind": "answer", "equals": "2101" },
+        "afterward": "機械からは、同じ nginx: master process が PID 2101 で見えた。親は containerd-shim。コンテナは、名前空間で区切った機械の普通のプロセス。",
+        "hints": [
+          "機械の上では、コンテナの中のプロセスも、機械のプロセスの 1 つとして見える。",
+          "`ps aux | grep nginx` で、機械から見た nginx を探す。master process の行の PID を読む。",
+          "`ps aux | grep nginx` と打ち、`2101` と答える。"
+        ],
+        "expectedErrors": ["ctr-pid-misread"]
+      },
+      {
+        "id": "limit",
+        "purpose": "集計の report（city-report:1.0）は、メモリを 180MiB ほど使う。8081 番で公開し、256m の上限を付けて動かす。docker stats で、上限（LIMIT）を答える。",
+        "check": { "kind": "answer", "equals": "256MiB" },
+        "afterward": "report は 182.4MiB / 256MiB で動いている。上限は cgroups に書かれ、中の /sys/fs/cgroup/memory.max でも読める。使い切りそうになっても、止められるのは report だけ。",
+        "hints": [
+          "上限は、動かす時の `--memory`（`-m`）で付ける。上限が使う量より低いと、起動してすぐ止められる。",
+          "`docker run -d --name report -p 8081:80 --memory 256m city-report:1.0` で動かし、`docker stats --no-stream report` の MEM USAGE / LIMIT の、/ の右を読む。",
+          "`docker run -d --name report -p 8081:80 --memory 256m city-report:1.0` `docker stats --no-stream report` と打ち、`256MiB` と答える。"
+        ],
+        "expectedErrors": ["ctr-oom", "ctr-limit-misread"]
+      }
+    ]
+  },
+  "result": {
+    "success": "中と外でプロセスの見え方が違う（名前空間）ことを確かめ、メモリの上限（cgroups）を付けてコンテナを動かせた。",
+    "partial": "ヒントを使って確かめられた。次は、名前空間と cgroups の役割の違いを、自分の言葉で説明してみよう。",
+    "retry": "まだ確かめきれていない。中の ps と外の ps aux を見比べ、上限を付けた report を docker stats で見よう。"
+  },
+  "summary": {
+    "points": ["名前空間で見える範囲を分ける", "cgroups で量を制限", "VM ほど強くはない"],
+    "next": ["ctr.a.01", "k8s.i.07"],
+    "terms": ["namespace", "cgroups"]
+  }
+}
