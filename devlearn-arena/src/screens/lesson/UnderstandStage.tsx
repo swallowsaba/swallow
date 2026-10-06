@@ -86,14 +86,26 @@ function ItemView({ lesson, item, index, onTerm, right, onSolved }: {
     if (j.correct) onSolved();
   };
   const figure = item.kind === 'figure-pick' ? item.figure : lesson.explain.figures[0] ?? '';
+  // 答えが図の複数の部分なら、押すたびに選び・外し、「確かめる」で採点する（1 つなら押した時に採点する）
+  const multiPick = item.kind === 'figure-pick' && item.answer.length > 1;
+  const onPick = (part: string): void => {
+    if (!multiPick) {
+      setPicked([part]);
+      check({ kind: 'figure-pick', parts: [part] });
+      return;
+    }
+    setPicked(picked.includes(part) ? picked.filter((p) => p !== part) : [...picked, part]);
+    setJudge(null);
+  };
 
   return (
     <div className="understand" data-testid="understand-item" data-kind={item.kind}>
       <p className="stage-prompt"><Rich text={item.prompt} onTerm={onTerm} /></p>
 
       {item.kind === 'figure-pick' ? (
-        <p className="stage-hint">右の図の中を押す（Tab で選んで Enter でも押せる）</p>
+        <p className="stage-hint">{multiPick ? '右の図で当てはまる所を全て押し、「確かめる」を押す（もう一度押すと外れる。Tab で選んで Enter でも押せる）' : '右の図の中を押す（Tab で選んで Enter でも押せる）'}</p>
       ) : null}
+      {multiPick && !done ? <button type="button" className="stage-check" disabled={picked.length === 0} onClick={() => check({ kind: 'figure-pick', parts: picked })}>確かめる</button> : null}
 
       {item.kind === 'yesno' ? (
         <div className="yesno" role="group" aria-label="はいか、いいえ">
@@ -184,9 +196,9 @@ function ItemView({ lesson, item, index, onTerm, right, onSolved }: {
       <Slot to={right}>
         <Figure
           id={figure}
-          onPick={item.kind === 'figure-pick' && !done ? (part) => { setPicked([part]); check({ kind: 'figure-pick', parts: [part] }); } : undefined}
+          onPick={item.kind === 'figure-pick' && !done ? onPick : undefined}
           picked={item.kind === 'figure-pick' ? picked : []}
-          marks={item.kind === 'figure-pick' && judge ? Object.fromEntries(picked.map((p) => [p, judge.correct ? 'ok' : 'bad'])) : {}}
+          marks={item.kind === 'figure-pick' && judge ? Object.fromEntries(picked.map((p) => [p, judge.correct || !judge.wrong.includes(p) ? 'ok' : 'bad'])) : {}}
         />
       </Slot>
     </div>
@@ -206,7 +218,7 @@ function UnderstandFeedback({ lesson, item, judge, onTerm }: { lesson: Lesson; i
   const back = see ? lesson.explain[see] : null;
   return (
     <Feedback ok={false} title="もう一度考えてみよう">
-      {item.kind === 'situation' ? null : why ? null : <p className="feedback-text">{item.kind === 'order' || item.kind === 'match' ? '印の付いた所が違う。' : '押した所は違う。'}</p>}
+      {item.kind === 'situation' ? null : why ? null : <p className="feedback-text">{item.kind === 'order' || item.kind === 'match' ? '印の付いた所が違う。' : item.kind === 'figure-pick' && item.answer.length > 1 ? (judge.wrong.length > 0 ? '印の付いた所が違う。' : 'まだ押していない所がある。') : '押した所は違う。'}</p>}
       {back && see ? (
         <div className="feedback-see" data-testid="feedback-see">
           <p className="feedback-see-title">解説の「{EXPLAIN_TITLES[see]}」</p>

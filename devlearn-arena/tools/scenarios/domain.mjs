@@ -75,6 +75,8 @@ export default async function domain(page, shot) {
     await page.waitForSelector('[data-testid="understand-item"]');
     if (u.kind === 'figure-pick') {
       for (const part of u.answer) await page.click(`[data-testid="lesson-figure"] [data-part="${part}"]`);
+      // 答えが複数の部分なら、全て押してから「確かめる」
+      if (u.answer.length > 1) await page.click('.stage-check');
     } else if (u.kind === 'yesno') {
       await clickText(page, '.yesno-button', u.answer ? 'はい' : 'いいえ');
     } else if (u.kind === 'relation') {

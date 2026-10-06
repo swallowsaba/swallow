@@ -263,6 +263,32 @@ describe('理解（採点しない。docs/learning-design.md 4 章）', () => {
     expect(session.progress.getState().progress.xp).toBe(0);
   });
 
+  it('答えが図の複数の部分なら、押した部分を選び直せて、「確かめる」で採点する（cicd.b.02）', async () => {
+    const { host } = await open(createSession(1), 'cicd.b.02');
+    throughExplain(host);
+    const pick = (part: string): void => {
+      act(() => {
+        $(host, `[data-testid="lesson-figure"] [data-part="${part}"]`).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
+    };
+    // 1 つ押しただけでは採点しない
+    pick('build');
+    expect(host.querySelector('[data-testid="feedback"]')).toBeNull();
+    pick('unit');
+    click($(host, '.stage-check'));
+    expect($(host, '[data-testid="feedback"]').textContent).toContain('印の付いた所が違う');
+    expect(nextEnabled(host)).toBe(false);
+    // もう一度押すと選びから外れる
+    pick('build');
+    pick('lint');
+    click($(host, '.stage-check'));
+    expect($(host, '[data-testid="feedback"]').textContent).toContain('まだ押していない所がある');
+    pick('e2e');
+    click($(host, '.stage-check'));
+    expect($(host, '[data-testid="feedback"]').textContent).toContain('その通り');
+    expect(nextEnabled(host)).toBe(true);
+  });
+
   it('図の部分はキーボードでも押せる', async () => {
     const { host } = await open(createSession(1), 'found.b.04');
     throughExplain(host);
