@@ -6,6 +6,8 @@
   z-index: 40;
   display: grid;
   grid-template-rows: auto 1fr auto;
+  /* 長い題名（折り返さない）の幅に引かれて、画面より広がらないように */
+  grid-template-columns: minmax(0, 1fr);
   background: var(--navy);
   color: var(--hud-text);
   overflow: hidden;
