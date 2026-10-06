@@ -143,6 +143,16 @@ export const setupSchema = z.object({
     run: z.array(z.string().min(1)),
     after: z.array(z.string().min(1)).optional(),
   }).strict()).optional(),
+  /** SSH で入るサーバ（ssh-keygen・ssh-copy-id・ssh の相手。src/engines/kernel/commands/ssh.ts） */
+  sshHosts: z.array(z.object({
+    host: z.string().regex(/^[a-z][a-z0-9.-]*$/),
+    user: z.string().regex(/^[a-z][a-z0-9-]*$/),
+    /** 初めの登録のために、仮のパスワードでも入れる */
+    password: z.boolean().optional(),
+    /** 初めから登録されている公開鍵 */
+    authorized: z.array(z.string()).optional(),
+    motd: z.string().optional(),
+  }).strict()).optional(),
   /** 設定の編集（editor）の実戦: 編集するファイルと、「保存して確かめる」で保存の後に打つコマンド（docs/content-spec.md 2.4.2） */
   edit: z.object({ path: z.string().startsWith('/'), apply: z.array(z.string().min(1)) }).strict().optional(),
 }).strict();
@@ -238,6 +248,11 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
   if (s.network) options.net = buildNetwork(s.network);
   if (s.images) options.containers = createContainerHost(s.images);
   if (s.gitServers) options.gitServers = buildGitServers(s.gitServers);
+  if (s.sshHosts) {
+    options.sshHosts = new Map(s.sshHosts.map((h) => [h.host, {
+      host: h.host, user: h.user, password: h.password ?? false, authorized: h.authorized ?? [], keyLogins: [], ...(h.motd !== undefined ? { motd: h.motd } : {}),
+    }]));
+  }
   if (s.sites || s.roots) {
     const web: WebWorld = { sites: s.sites ?? [], roots: s.roots ?? [DEMO_ROOT], today: s.today ?? '2026-10-03', hostname: s.hostname ?? 'arena' };
     options.web = web;

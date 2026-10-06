@@ -18,6 +18,8 @@ export interface ShellState {
   git: GitState | null;
   /** 手元の外のサーバにあるリポジトリ（git clone・push・fetch の相手。URL → リポジトリ）。無ければ undefined */
   gitServers?: ReadonlyMap<string, GitServer>;
+  /** SSH で入るサーバ（名前 → サーバ）。無ければ undefined */
+  sshHosts?: ReadonlyMap<string, SshHost>;
   /** Kubernetes クラスタ。用意されていなければ null */
   cluster: ClusterState | null;
   /** ネットワークの構成。用意されていなければ null */
@@ -43,6 +45,21 @@ export interface GitServer {
   /** 登録された公開鍵（~/.ssh/id_*.pub の中身の 1 行） */
   keys: readonly string[];
   state: GitState;
+}
+
+/** SSH で入るサーバ（setup の sshHosts）。登録された公開鍵と、鍵で入った記録だけを持つ */
+export interface SshHost {
+  host: string;
+  /** 入れる利用者 */
+  user: string;
+  /** 初めの登録の時のために、仮のパスワードでも入れる（練習の端末が代わりに入れる） */
+  password: boolean;
+  /** その利用者の ~/.ssh/authorized_keys の行 */
+  authorized: readonly string[];
+  /** 鍵で入った利用者 */
+  keyLogins: readonly string[];
+  /** 入った時の案内 */
+  motd?: string;
 }
 
 export interface WebWorld {

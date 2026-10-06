@@ -9,6 +9,7 @@ import { resolve } from '@/engines/kernel/path';
 import type { CommandRegistry, ShellState } from '@/engines/kernel/registry';
 import { serviceOf } from '@/engines/kernel/services';
 import { execute } from '@/engines/kernel/shell';
+import { sshHolds } from '@/engines/kernel/commands/ssh';
 import { exists, isDir, metaOf, readFile, writeFile } from '@/engines/kernel/vfs';
 import { initialShell, resolveSetup } from '@/engines/environments';
 import { request } from '@/engines/http/http';
@@ -121,18 +122,23 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
 
 /**
  * 網の判定の式（端末の機械から見て）。` && ` でつなぎ、先頭の `!` で否定。
- * `reach 名前[:ポート]`（行きも帰りも通る。ポートを書けば、そこで待ち受けている）/ `resolve 名前=アドレス`（名前の答え）。
+ * `reach 名前[:ポート]`（行きも帰りも通る。ポートを書けば、そこで待ち受けている）/ `resolve 名前=アドレス`（名前の答え）/
+ * `ssh 利用者@名前`（手元の秘密鍵で入った記録があり、今も鍵で入れて、サーバに秘密鍵が置かれていない。setup の sshHosts）。
  * 網の無い機械や、式の誤りは投げる（内容の誤り）
  */
 export function netHolds(shell: ShellState, expr: string): boolean {
-  const net = shell.net;
-  if (net === null) throw new Error('判定の net: この実戦の機械に網（setup の network）が無い');
   const self = shell.vars.get('NET_SELF') ?? '';
   return expr.split('&&').every((raw) => {
     const c = raw.trim();
     const negate = c.startsWith('!');
     const [head = '', arg = '', ...rest] = (negate ? c.slice(1) : c).trim().split(/\s+/);
-    if (rest.length > 0 || arg === '') throw new Error(`判定の net の式「${c}」: reach 名前[:ポート] か resolve 名前=アドレス`);
+    if (rest.length > 0 || arg === '') throw new Error(`判定の net の式「${c}」: reach 名前[:ポート] か resolve 名前=アドレス か ssh 利用者@名前`);
+    if (head === 'ssh') {
+      if (!shell.sshHosts) throw new Error('判定の net: この実戦の機械に SSH のサーバ（setup の sshHosts）が無い');
+      return sshHolds(shell, arg) !== negate;
+    }
+    const net = shell.net;
+    if (net === null) throw new Error('判定の net: この実戦の機械に網（setup の network）が無い');
     let value: boolean;
     if (head === 'reach') {
       const [host = '', port] = arg.split(':');
@@ -142,7 +148,7 @@ export function netHolds(shell: ShellState, expr: string): boolean {
       const [name = '', want = ''] = arg.split('=');
       value = resolveName(net, name) === want;
     } else {
-      throw new Error(`判定の net の式「${c}」: reach か resolve`);
+      throw new Error(`判定の net の式「${c}」: reach か resolve か ssh`);
     }
     return negate ? !value : value;
   });

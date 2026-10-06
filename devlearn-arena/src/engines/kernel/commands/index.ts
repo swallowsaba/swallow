@@ -16,6 +16,7 @@ import { netLabCommands } from './netBuild';
 import { netToolCommands } from './netTools';
 import { permCommands } from './perm';
 import { shellRunCommands } from './shellRun';
+import { sshCommands } from './ssh';
 import { procCommands } from './proc';
 import { systemctlCommands } from './systemctl';
 import { miscCommands } from './misc';
@@ -49,6 +50,7 @@ export function createDefaultRegistry(): CommandRegistry {
     ...aptCommands,
     ...cronCommands,
     ...socketCommands,
+    ...sshCommands,
     ...dockerCommands,
     ...miscCommands,
   ]);
