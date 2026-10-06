@@ -152,6 +152,126 @@
       "lessons": [
         "sec.b.01"
       ]
+    },
+    {
+      "id": "authentication",
+      "word": "認証",
+      "reading": "にんしょう",
+      "plain": "来た人が「誰か」を確かめること。パスワード・鍵・確認のコードなどで確かめる。",
+      "why": "誰か分からないと、何を許すかも決められない。破られると、他人になりすまして入られる。",
+      "related": [
+        "authorization",
+        "permission"
+      ],
+      "lessons": [
+        "sec.b.02",
+        "sec.b.03"
+      ]
+    },
+    {
+      "id": "authorization",
+      "word": "認可",
+      "reading": "にんか",
+      "plain": "認証で誰か分かった人に、「何をしてよいか」を決めること。役割ごとに、してよい操作を割り当てる。",
+      "why": "本人だと分かっても、何でもしてよいわけではない。欠けると、入れた人が他人の情報や管理の操作に手を出せる。",
+      "related": [
+        "authentication",
+        "permission"
+      ],
+      "lessons": [
+        "sec.b.02"
+      ]
+    },
+    {
+      "id": "authentication-factor",
+      "word": "認証の要素",
+      "reading": "にんしょうのようそ",
+      "plain": "誰かを確かめる材料の種類。知っている物（パスワード）・持っている物（スマホ）・本人の特徴（指紋）の 3 種類がある。",
+      "why": "同じ種類を 2 つ重ねても、同じ漏れ方で破られる。種類の違う物を組み合わせると強くなる。",
+      "related": [
+        "authentication",
+        "mfa"
+      ],
+      "lessons": [
+        "sec.b.03"
+      ]
+    },
+    {
+      "id": "mfa",
+      "word": "多要素認証",
+      "reading": "たようそにんしょう",
+      "plain": "種類の違う認証の要素を 2 つ以上組み合わせて、誰かを確かめること。例: パスワードと、スマホに届く確認コード。",
+      "why": "パスワードが漏れても、もう 1 つの要素が無ければ入れない。管理画面やクラウドの入口では、必須にするのが基本。",
+      "related": [
+        "authentication",
+        "authentication-factor",
+        "password-reuse"
+      ],
+      "lessons": [
+        "sec.b.03"
+      ]
+    },
+    {
+      "id": "password-reuse",
+      "word": "パスワードの使い回し",
+      "reading": "パスワードのつかいまわし",
+      "plain": "同じパスワードを、いくつものサイトやサービスで使うこと。",
+      "why": "1 つのサイトから漏れると、同じパスワードの全ての所に入られる。漏れた一覧を使って、ほかのサイトで試す攻め方は多い。",
+      "related": [
+        "mfa",
+        "authentication"
+      ],
+      "lessons": [
+        "sec.b.03"
+      ]
+    },
+    {
+      "id": "key-pair",
+      "word": "鍵の対",
+      "reading": "かぎのつい",
+      "plain": "一緒に作る 2 つの鍵。公開鍵と秘密鍵で、片方で閉じた物はもう片方でしか開かない。",
+      "why": "渡すのは公開鍵だけで、暗号化と本人の確かめができる。SSH・TLS・署名の土台。",
+      "related": [
+        "public-key",
+        "secret-key",
+        "signature"
+      ],
+      "lessons": [
+        "sec.b.04"
+      ]
+    },
+    {
+      "id": "signature",
+      "word": "署名",
+      "reading": "しょめい",
+      "plain": "秘密鍵で作る、持ち主にしか作れない印。誰でも公開鍵で、その印が本物かを確かめられる。",
+      "why": "誰が作ったか・途中で書き換えられていないかを確かめられる。SSH で入る時の本人の確かめや、証明書にも使う。",
+      "related": [
+        "key-pair",
+        "secret-key",
+        "public-key",
+        "integrity"
+      ],
+      "lessons": [
+        "sec.b.04",
+        "sec.b.01",
+        "sec.b.07"
+      ]
+    },
+    {
+      "id": "authorized-keys",
+      "word": "authorized_keys",
+      "reading": "オーソライズド・キーズ",
+      "plain": "サーバの利用者の家（ホーム）の .ssh の中にあるファイル。その利用者として鍵で入ってよい人の公開鍵を、1 行に 1 つずつ並べる。",
+      "why": "ここに公開鍵がある人だけが、鍵で入れる。秘密鍵は書かない。辞めた人の行を消せば、その人は入れなくなる。",
+      "related": [
+        "public-key",
+        "ssh",
+        "key-pair"
+      ],
+      "lessons": [
+        "sec.b.04"
+      ]
     }
   ]
 }

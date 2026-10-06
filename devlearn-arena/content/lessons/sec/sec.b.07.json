@@ -28,10 +28,11 @@
     "secret-key",
     "public-key",
     "file",
-    "name-resolution"
+    "name-resolution",
+    "signature"
   ],
   "explain": {
-    "what": "{{term:certificate}}は、{{term:server}}が「この名前の本物です」と示す身分証。発行した{{term:certificate-authority}}の署名が付く。サーバの証明書 →{{term:intermediate-certificate}}→{{term:root-certificate}}と、発行者をたどれる（{{term:certificate-chain}}）。",
+    "what": "{{term:certificate}}は、{{term:server}}が「この名前の本物です」と示す身分証。発行した{{term:certificate-authority}}の{{term:signature}}が付く。サーバの証明書 →{{term:intermediate-certificate}}→{{term:root-certificate}}と、発行者をたどれる（{{term:certificate-chain}}）。",
     "why": "偽物のサイトに、パスワードやカードの番号を送らないため。ブラウザは、信じられる発行者が署名した身分証かを確かめてから話す。",
     "use": "{{term:https}}の相手の確認。ルート証明書はブラウザや{{term:os}}に初めから入っている。サーバは、自分の証明書と中間証明書を並べて送る。",
     "when": "「この接続ではプライバシーが保護されません」と警告が出た時。証明書の期限切れ・名前の食い違い・中間証明書の送り忘れ（連鎖が途切れる）を疑う。",

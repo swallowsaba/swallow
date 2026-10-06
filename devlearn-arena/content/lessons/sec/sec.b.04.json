@@ -1,0 +1,133 @@
+{
+  "id": "sec.b.04",
+  "domain": "sec",
+  "level": "beginner",
+  "theme": "暗号",
+  "title": "公開鍵と秘密鍵",
+  "goal": "鍵の対と、渡してよい鍵・いけない鍵を説明できる",
+  "minutes": 20,
+  "prerequisites": ["sec.b.01"],
+  "related": ["linux.a.04", "git.i.02"],
+  "next": ["sec.b.05", "sec.b.06", "linux.a.04"],
+  "terms": ["key-pair", "public-key", "secret-key", "signature", "ssh", "tls", "server", "https", "program", "repository", "file", "terminal", "command", "authorized-keys", "permission"],
+  "explain": {
+    "what": "対になった 2 つの鍵を{{term:key-pair}}という。{{term:public-key}}は人に渡してよい。{{term:secret-key}}は持ち主だけが持ち、誰にも渡さない。片方で閉じた物は、もう片方でしか開かない。",
+    "why": "合言葉を前もって分け合うと、分け合う途中で漏れる。鍵の対なら、渡すのは公開鍵だけで、暗号化と本人の確かめ（{{term:signature}}）ができる。秘密鍵は一度も外に出ない。",
+    "use": "{{term:ssh}}で{{term:server}}に入る時の本人の確かめ、{{term:tls}}（{{term:https}}）の暗号化、{{term:program}}や記録への署名。どれも、公開鍵を相手に置き、秘密鍵を手元に残す。",
+    "when": "新しく配属され、サーバに入れるようにしてもらう。担当から「公開鍵を登録して」と言われた。送るのは公開鍵だけ。秘密鍵を送ると、それを持つ誰でもあなたとして入れてしまう。",
+    "figures": ["sec-b04-keypair"]
+  },
+  "understand": [
+    {
+      "kind": "match",
+      "prompt": "どちらで閉じ・押し、どちらで開け・確かめるか。",
+      "pairs": [
+        ["公開鍵で閉じた箱", "秘密鍵でだけ開く"],
+        ["秘密鍵で押した印", "公開鍵で確かめる"]
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "相手のサーバに入れてもらうため、秘密鍵を相手に渡してよい。",
+      "answer": false,
+      "why": "秘密鍵を持つ人は、あなたとして扱われる。相手に渡すのは公開鍵。秘密鍵は手元から出さない。",
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "サーバに SSH で鍵で入れるようにする。サーバに登録するのは？",
+      "choices": [
+        { "id": "a", "text": "公開鍵（`id_ed25519.pub` の中身）", "correct": true },
+        { "id": "b", "text": "秘密鍵（`id_ed25519` の中身）", "correct": false, "whyNot": "秘密鍵を置くと、サーバに入れる人なら誰でも、あなたとして別の所に入れる。サーバは公開鍵で、あなたの印を確かめる。" },
+        { "id": "c", "text": "両方", "correct": false, "whyNot": "サーバに要るのは、確かめるための公開鍵だけ。秘密鍵まで置く理由は無く、漏れる所が増えるだけ。" }
+      ],
+      "explanation": "サーバには公開鍵を登録する。入る時、手元の秘密鍵で印を作り、サーバは登録した公開鍵でそれを確かめる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "公開の{{term:repository}}の中に、次の{{term:file}}が見つかった。何が起きているか。",
+      "context": { "log": "deploy/id_ed25519\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAA..." },
+      "choices": [
+        { "id": "a", "text": "秘密鍵の漏えい。誰でもこの鍵の持ち主としてサーバに入れる", "correct": true },
+        { "id": "b", "text": "公開鍵が置かれているだけで、問題は無い", "correct": false, "whyNot": "`PRIVATE KEY` と書いてある。公開鍵は `ssh-ed25519 AAAA…` の 1 行で始まる。" },
+        { "id": "c", "text": "鍵が暗号化されているので、読まれても問題は無い", "correct": false, "whyNot": "これは秘密鍵そのもの。手に入れた人は、そのまま使える。すぐに登録を外し、鍵を作り直す。" }
+      ],
+      "explanation": "秘密鍵が外に出た。サーバの登録からこの鍵を外し、新しい鍵の対を作り直す（漏れた鍵は、もう本人の証明にならない）。"
+    },
+    {
+      "id": "q3",
+      "kind": "term",
+      "prompt": "{{term:signature}}とは何か。",
+      "choices": [
+        { "id": "a", "text": "秘密鍵で押した、持ち主にしか作れない印。公開鍵で確かめられる", "correct": true },
+        { "id": "b", "text": "公開鍵で中身を閉じて、読めなくすること", "correct": false, "whyNot": "それは暗号化。署名は「誰が作ったか」と「書き換えられていないか」を確かめるための印。" },
+        { "id": "c", "text": "パスワードを紙に書いて、印を押した物", "correct": false, "whyNot": "鍵の署名は、秘密鍵で計算して作る印。紙やパスワードは関係が無い。" }
+      ],
+      "explanation": "署名は秘密鍵で作り、公開鍵で確かめる。作れるのは秘密鍵の持ち主だけなので、本人の印になる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "図書館の予約システムのサーバ `web01` に、利用者 `deploy` として鍵で入れるようにする。担当の山本さんのメモ:「最初の登録の 1 回だけ、仮のパスワードで入れる（練習の{{term:terminal}}では、パスワードは代わりに入る）。鍵で入れたら、パスワードは止める」",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "pc",
+      "sshHosts": [
+        { "host": "web01", "user": "deploy", "password": true, "motd": "Welcome to web01（図書館の予約システム）" }
+      ]
+    },
+    "steps": [
+      {
+        "id": "pair",
+        "purpose": "手元の機械（`pc`）で、鍵の対を作る。種類は `ed25519`、置き場所は聞かれた既定の場所（`~/.ssh`）にする。",
+        "check": { "kind": "fs", "path": "/home/learner/.ssh/id_ed25519.pub", "exists": true },
+        "afterward": "`~/.ssh` に 2 つのファイルができた。`id_ed25519` が秘密鍵（持ち主だけが読める 600）、`id_ed25519.pub` が公開鍵。名前の最後の `.pub` が、渡してよい方の印。",
+        "hints": [
+          "鍵の対は `ssh-keygen` で作る。種類は `-t` で選ぶ。",
+          "置き場所を聞かれたら、そのまま（既定の `~/.ssh/id_ed25519`）でよい。",
+          "`ssh-keygen -t ed25519` を打つ。"
+        ],
+        "expectedErrors": ["sec-keygen-exists"]
+      },
+      {
+        "id": "register",
+        "purpose": "公開鍵だけをサーバに登録し、鍵で入れることを確かめる。パスワードを聞かれずに入れれば、鍵で入れている。",
+        "check": { "kind": "net", "expr": "ssh deploy@web01" },
+        "afterward": "公開鍵がサーバの `~/.ssh/authorized_keys` に足された。次からは、手元の秘密鍵で作った印を、サーバが公開鍵で確かめて入れる。パスワードは聞かれない。",
+        "hints": [
+          "登録するのは片方だけ。`ssh-copy-id` は、サーバの `authorized_keys` に公開鍵を足す道具。",
+          "送るのは `.pub` の付いた方。登録できたら `ssh 利用者@サーバ` で入り、パスワードを聞かれないかを見る。",
+          "`ssh-copy-id -i ~/.ssh/id_ed25519.pub deploy@web01` と `ssh deploy@web01` を順に打つ。"
+        ],
+        "expectedErrors": ["sec-ssh-unprotected", "sec-ssh-password", "sec-ssh-denied", "sec-ssh-resolve", "sec-ssh-no-key"]
+      },
+      {
+        "id": "verify",
+        "purpose": "サーバの `.ssh/authorized_keys` に置かれた鍵を表示し、手元のどのファイルと同じ中身かを答える（ファイルの名前だけ）。",
+        "check": { "kind": "answer", "equals": "id_ed25519.pub" },
+        "afterward": "サーバにあるのは公開鍵の 1 行だけで、手元の `id_ed25519.pub` と同じ。秘密鍵 `id_ed25519` は手元から一度も出ていない。",
+        "hints": [
+          "`ssh` の後ろに{{term:command}}を書くと、サーバで打てる。場所はサーバの家（ホーム）から数える。",
+          "サーバの `.ssh/authorized_keys` と、手元の `~/.ssh` の 2 つのファイルの中身を見比べる。",
+          "`ssh deploy@web01 cat .ssh/authorized_keys` と `cat ~/.ssh/id_ed25519.pub` を打ち、`id_ed25519.pub` と答える。"
+        ],
+        "expectedErrors": ["sec-ssh-password", "sec-key-answer"]
+      }
+    ]
+  },
+  "result": {
+    "success": "鍵の対を作り、公開鍵だけをサーバに登録して、鍵で入れた。秘密鍵は手元から出していない。",
+    "partial": "ヒントを使って鍵で入れた。次は、サーバに秘密鍵を置いてはいけない理由を、自分の言葉で説明してみよう。",
+    "retry": "まだ鍵で入れていない。公開鍵（`.pub`）をサーバに登録したか、手元の秘密鍵の{{term:permission}}が持ち主だけ（600）かを見直そう。"
+  },
+  "summary": {
+    "points": ["公開鍵は渡してよい", "秘密鍵は渡さない", "暗号化と署名の両方に使う"],
+    "next": ["sec.b.05", "sec.b.06"],
+    "terms": ["key-pair", "public-key", "secret-key", "signature"]
+  }
+}

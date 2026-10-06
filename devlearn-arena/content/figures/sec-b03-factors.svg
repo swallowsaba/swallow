@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 340" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>認証の要素の 3 種類（知っている物・持っている物・本人の特徴）。種類の違う 2 つ以上を組み合わせた入口が多要素認証</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="know">
+    <rect x="20" y="24" width="250" height="84" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="40" y="56" font-size="16" fill="#5cc1ff">知っている物</text>
+    <text x="40" y="86" font-size="14" fill="#eef2f6">パスワード・秘密の質問</text>
+  </g>
+  <g class="el" data-part="have">
+    <rect x="20" y="126" width="250" height="84" rx="10" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="40" y="158" font-size="16" fill="#f2b632">持っている物</text>
+    <text x="40" y="188" font-size="14" fill="#eef2f6">スマホの確認コード・鍵の機器</text>
+  </g>
+  <g class="el" data-part="are">
+    <rect x="20" y="228" width="250" height="84" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="40" y="260" font-size="16" fill="#3ae08a">本人の特徴</text>
+    <text x="40" y="290" font-size="14" fill="#eef2f6">指紋・顔</text>
+  </g>
+  <g class="el" data-part="combine">
+    <path d="M276 66 C330 66 340 150 392 162" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <path d="M276 168 H392" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  </g>
+  <g class="el" data-part="gate">
+    <rect x="400" y="110" width="280" height="116" rx="10" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="540" y="144" text-anchor="middle" font-size="18" fill="#eef2f6">多要素認証の入口</text>
+    <text x="540" y="174" text-anchor="middle" font-size="14" fill="#eef2f6">種類の違う 2 つ以上</text>
+    <text x="540" y="204" text-anchor="middle" font-size="13" fill="#9fb0c6">パスワードが漏れても、スマホが無ければ入れない</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="540" y="276" text-anchor="middle" font-size="14" fill="#c0392b">パスワード＋秘密の質問は、</text>
+    <text x="540" y="300" text-anchor="middle" font-size="14" fill="#c0392b">どちらも「知っている物」で 1 種類</text>
+  </g>
+</svg>

@@ -25,7 +25,8 @@
     "server",
     "file",
     "config-file",
-    "permission"
+    "permission",
+    "signature"
   ],
   "explain": {
     "what": "情報を守る時の観点は 3 つ。見てよい人だけが見られる{{term:confidentiality}}、勝手に書き換えられない{{term:integrity}}、使いたい時に使い続けられる{{term:availability}}。",
@@ -105,7 +106,7 @@
           "whyNot": "可用性は、使い続けられること。書き換えとは別の観点。"
         }
       ],
-      "explanation": "完全性は、情報が正しいまま、勝手に変えられていないこと。変更の記録や署名で守る。"
+      "explanation": "完全性は、情報が正しいまま、勝手に変えられていないこと。変更の記録や{{term:signature}}で守る。"
     },
     {
       "id": "q2",

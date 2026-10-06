@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 340" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>鍵の対。公開鍵で閉じた箱は、対の秘密鍵でしか開かない（暗号化）。秘密鍵で押した印は、公開鍵で確かめられる（署名）。公開鍵は渡してよく、秘密鍵は渡さない</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="public">
+    <rect x="20" y="24" width="300" height="60" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="40" y="52" font-size="16" fill="#3ae08a">公開鍵</text>
+    <text x="40" y="74" font-size="13" fill="#eef2f6">渡してよい（サーバに登録する）</text>
+  </g>
+  <g class="el" data-part="private">
+    <rect x="380" y="24" width="300" height="60" rx="10" fill="none" stroke="#c0392b" stroke-width="2" pointer-events="all" />
+    <text x="400" y="52" font-size="16" fill="#c0392b">秘密鍵</text>
+    <text x="400" y="74" font-size="13" fill="#eef2f6">渡さない（手元だけ・持ち主だけが読める）</text>
+  </g>
+  <g class="el" data-part="encrypt">
+    <text x="20" y="128" font-size="14" fill="#5cc1ff">暗号化</text>
+    <rect x="20" y="140" width="190" height="56" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="115" y="174" text-anchor="middle" font-size="14" fill="#eef2f6">公開鍵で箱を閉じる</text>
+    <path d="M214 168 H480" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="347" y="160" text-anchor="middle" font-size="13" fill="#9fb0c6">途中で見られても開かない</text>
+    <rect x="486" y="140" width="194" height="56" rx="8" fill="none" stroke="#c0392b" stroke-width="2" pointer-events="all" />
+    <text x="583" y="174" text-anchor="middle" font-size="14" fill="#eef2f6">秘密鍵でだけ開く</text>
+  </g>
+  <g class="el" data-part="sign">
+    <text x="20" y="236" font-size="14" fill="#f2b632">署名</text>
+    <rect x="20" y="248" width="190" height="56" rx="8" fill="none" stroke="#c0392b" stroke-width="2" pointer-events="all" />
+    <text x="115" y="282" text-anchor="middle" font-size="14" fill="#eef2f6">秘密鍵で印を押す</text>
+    <path d="M214 276 H480" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="347" y="268" text-anchor="middle" font-size="13" fill="#9fb0c6">持ち主にしか押せない</text>
+    <rect x="486" y="248" width="194" height="56" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="583" y="282" text-anchor="middle" font-size="14" fill="#eef2f6">公開鍵で印を確かめる</text>
+  </g>
+</svg>
