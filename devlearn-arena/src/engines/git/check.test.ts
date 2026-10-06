@@ -147,4 +147,20 @@ describe('git の達成条件（サーバのリポジトリと比べる）', () 
     const r = repo();
     expect(r.holds('pushed:main')).toBe(false);
   });
+
+  it('history は、今の枝の履歴のどこかの記録に、その文字列を含むファイルがあるか。消して記録し直しても前の記録に残る', () => {
+    const r = repo();
+    expect(r.holds('!history:wt_live_9fK2')).toBe(true);
+    r.run("echo 'TOKEN=wt_live_9fK2' > app.sh");
+    expect(r.holds('history:wt_live_9fK2')).toBe(false);
+    r.run('git add app.sh');
+    r.run('git commit -m "鍵を書いた"');
+    expect(r.holds('history:wt_live_9fK2')).toBe(true);
+    r.run("echo 'TOKEN=$WEATHER_TOKEN' > app.sh");
+    r.run('git commit -am "鍵を消した"');
+    expect(r.holds('history:wt_live_9fK2')).toBe(true);
+    // 別の枝の履歴には無い
+    r.run('git switch holiday');
+    expect(r.holds('history:wt_live_9fK2')).toBe(false);
+  });
 });

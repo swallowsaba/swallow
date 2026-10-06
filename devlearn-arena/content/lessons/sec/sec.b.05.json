@@ -1,0 +1,157 @@
+{
+  "id": "sec.b.05",
+  "domain": "sec",
+  "level": "beginner",
+  "theme": "秘密情報",
+  "title": "秘密情報を漏らさない",
+  "goal": "鍵やトークンをコードに書かない・コミットしない理由と方法",
+  "minutes": 20,
+  "prerequisites": ["sec.b.04", "git.b.02"],
+  "related": ["git.a.03", "cicd.i.03"],
+  "next": ["sec.i.05", "cicd.i.03", "k8s.i.02"],
+  "terms": ["secret-info", "token", "repository", "commit", "env-var", "secret-store", "gitignore", "log", "api", "app", "database", "file", "git", "terminal"],
+  "explain": {
+    "what": "鍵・{{term:token}}・パスワードのような{{term:secret-info}}を、コードに書かず、{{term:repository}}にも入れない扱い方。コードには名前だけを書き、値は{{term:env-var}}や{{term:secret-store}}から読む。",
+    "why": "一度{{term:commit}}した秘密は、消してコミットし直しても履歴に残る。公開されれば、誰かがすぐに見つけて悪用する。取り消せないので、最初から入れないことが一番の守り。",
+    "use": "全ての開発。{{term:app}}の設定・{{term:api}}の鍵・{{term:database}}のパスワード・自動の作業の鍵。リポジトリに入るのはコードと「どの名前で読むか」だけにする。",
+    "when": "天気の窓口（API）の鍵を書いた設定の{{term:file}}を、いつもの手順で丸ごと記録しそうになった。入れる前に気づけば、何も漏れない。",
+    "figures": ["sec-b05-secrets"]
+  },
+  "understand": [
+    {
+      "kind": "situation",
+      "prompt": "鍵を書いた設定のファイルを開いたまま、会議で画面を共有し、録画もした。鍵はどうなったか。",
+      "choices": [
+        { "id": "a", "text": "漏れた。見た人と録画の全てに残るので、鍵を無効にして新しい鍵に換える", "correct": true },
+        { "id": "b", "text": "社内の会議なので、漏れていない", "correct": false, "whyNot": "録画は後から誰が見るか分からない。画面に映った時点で、秘密ではなくなった。" },
+        { "id": "c", "text": "録画を消せば、元どおり安全", "correct": false, "whyNot": "消す前に見た人や、写した人がいるかもしれない。消すことより、鍵を無効にすることが先。" }
+      ],
+      "see": "why"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "誰にも公開していないリポジトリなら、コードに鍵を書いてよい。",
+      "answer": false,
+      "why": "非公開でも、入れる人は多く、後で公開に変わることもある。複製した全ての人の手元にも残る。非公開かどうかに関係なく書かない。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "記録しようとしたら、窓口の鍵を書いた設定のファイルが含まれていた。どうするか。",
+      "choices": [
+        { "id": "a", "text": "そのファイルを {{term:gitignore}} に足して外し、値は環境変数で渡す", "correct": true },
+        { "id": "b", "text": "記録した後で、次の記録でファイルを消す", "correct": false, "whyNot": "前の記録に残り、履歴から誰でも読める。入れる前に外す。" },
+        { "id": "c", "text": "鍵の値を逆さに書いて、分からないようにする", "correct": false, "whyNot": "読める人には元に戻せる。隠したことにならない。値はリポジトリの外に置く。" }
+      ],
+      "explanation": "秘密のファイルは .gitignore で記録の対象から外し、値は環境変数や秘密の保管場所から読む。コードには名前だけが残る。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "アプリの{{term:log}}を共有の場所に送ったら、次の行があった。何が問題か。",
+      "context": { "log": "09:00:12 GET https://api.weather.example/today?token=wt_live_9fK2mQ7xR4 200" },
+      "choices": [
+        { "id": "a", "text": "ログに書く時に、鍵の値を伏せていない", "correct": true },
+        { "id": "b", "text": "窓口の返事が 200 で、成功している", "correct": false, "whyNot": "成功したかではなく、鍵の値がそのまま記録に出ていることが問題。ログを読める人全員に漏れた。" },
+        { "id": "c", "text": "時刻が秒まで書いてある", "correct": false, "whyNot": "時刻は調べる時に役立つ。問題は、読める人が多い記録に秘密が出ていること。" }
+      ],
+      "explanation": "ログは多くの人や仕組みが読む。鍵は「wt_live_****」のように伏せて書く。出てしまった鍵は無効にして換える。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "鍵を書いた `app.sh` を記録してしまった。鍵の行を消して、もう一度記録した。鍵はどうなるか。",
+      "choices": [
+        { "id": "a", "text": "前の記録に残っていて、履歴から誰でも読める", "correct": true },
+        { "id": "b", "text": "新しい記録で消えたので、もう読めない", "correct": false, "whyNot": "{{term:git}}は前の記録も全て残す。`git log -p` で、消す前の中身が読める。" },
+        { "id": "c", "text": "記録を 2 つ重ねると、前の中身は暗号化される", "correct": false, "whyNot": "そのような仕組みは無い。記録は全て、そのままの中身で残る。" }
+      ],
+      "explanation": "消してコミットし直しても履歴に残る。送って（push）しまったら、まず鍵を無効にして新しい鍵に換える。履歴から消す方法は git.a.03 で学ぶ。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "同僚が、天気の掲示板を作る `app.sh` を書いた。天気の窓口（API）に入るための鍵が、コードにそのまま書いてある。記録する前に、鍵をコードとリポジトリから外し、環境変数で渡す形に直す。",
+    "environment": "linux-basic",
+    "setup": {
+      "hostname": "dev-office",
+      "cwd": "/home/learner/board",
+      "dirs": ["/home/learner/board"],
+      "files": {
+        "/home/learner/board/README.md": "# 天気の掲示板\n",
+        "/home/learner/board/app.sh": "#!/bin/bash\n# 天気の掲示板を作る。TOKEN は天気の窓口（API）に入るための鍵\nTOKEN=wt_live_9fK2mQ7xR4\nif [ -z \"$TOKEN\" ]; then\n  echo \"app.sh: TOKEN が無い（環境変数 WEATHER_TOKEN で渡す）\" >&2\n  exit 1\nfi\necho \"港区の天気: 晴れ\" > board.txt\necho \"掲示板を作った\"\n"
+      },
+      "run": [
+        "export GIT_AUTHOR_NAME=Kato GIT_AUTHOR_EMAIL=kato@city.example GIT_AUTHOR_DATE=\"2026-10-05 17:00\"",
+        "git init",
+        "git add README.md",
+        "git commit -m \"天気の掲示板を始める\"",
+        "chmod +x app.sh",
+        "unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_AUTHOR_DATE"
+      ]
+    },
+    "steps": [
+      {
+        "id": "read-env",
+        "purpose": "`app.sh` から鍵の値を消し、環境変数 `WEATHER_TOKEN` から読む形に直す。",
+        "check": { "kind": "fs", "path": "/home/learner/board/app.sh", "contains": "TOKEN=$WEATHER_TOKEN" },
+        "afterward": "コードには `WEATHER_TOKEN` という名前だけが残った。値を知らなくても、コードは読める・直せる。今 `./app.sh` を動かすと、鍵が無いと言って止まる。",
+        "hints": [
+          "コードには値を書かず、環境変数の名前だけを書く。`cat app.sh` で、値が書いてある行を探す。",
+          "`TOKEN=wt_live_…` の行を `TOKEN=$WEATHER_TOKEN` に置き換える。`sed -i` の `s/前/後/` が使える。`$` が消えないよう、全体を `'` で囲む。",
+          "`sed -i 's/^TOKEN=.*/TOKEN=$WEATHER_TOKEN/' app.sh` を打つ。"
+        ],
+        "expectedErrors": ["sec-token-missing"]
+      },
+      {
+        "id": "keep-out",
+        "purpose": "鍵の値は、リポジトリに入れない `.env` に置く。`.env` を `.gitignore` に足して、記録の対象から外す。",
+        "check": { "kind": "git", "expr": "ignored:.env" },
+        "afterward": "`.env` は Git に無視され、`git status` にも出ない。値は手元の `.env` にだけある。",
+        "hints": [
+          "値の置き場所は、リポジトリの外に出すファイル。Git に無視させるには、`.gitignore` に名前を書く。",
+          "`.env` に `export WEATHER_TOKEN=値` の 1 行を書き、`.gitignore` に `.env` の 1 行を足す。",
+          "`echo 'export WEATHER_TOKEN=wt_live_9fK2mQ7xR4' > .env` と `echo .env >> .gitignore` を順に打つ。"
+        ],
+        "expectedErrors": []
+      },
+      {
+        "id": "run",
+        "purpose": "`.env` の値を環境変数に読み込んで、`app.sh` が動くことを確かめる（掲示板 `board.txt` ができる）。",
+        "check": { "kind": "fs", "path": "/home/learner/board/board.txt", "contains": "港区の天気" },
+        "afterward": "環境変数で渡した鍵で、アプリが動いた。別の機械や自動の作業では、`.env` の代わりに秘密の保管場所から同じ名前で渡す。",
+        "hints": [
+          "`app.sh` は環境変数から鍵を読む。動かす前に、今の{{term:terminal}}の環境変数に入れておく。",
+          "`source .env` で、`.env` の `export` の行を今の端末に読み込む。",
+          "`source .env` と `./app.sh` を順に打つ。"
+        ],
+        "expectedErrors": ["sec-token-missing"]
+      },
+      {
+        "id": "commit",
+        "purpose": "直した `app.sh` と `.gitignore` だけを記録する。記録にも履歴にも、鍵の値が入っていない状態にする。",
+        "check": { "kind": "git", "expr": "committed:app.sh committed:.gitignore !committed:.env !history:wt_live_9fK2mQ7xR4" },
+        "afterward": "リポジトリに入ったのは、名前だけを書いたコードと `.gitignore`。鍵の値は、記録にも履歴にも無い。もし鍵を書いたまま一度でも記録していたら、消して記録し直しても履歴に残る（`git log -p` で読める）。",
+        "hints": [
+          "記録するのは、コードと `.gitignore` だけ。`.env` は入れない。",
+          "`git add` にファイルの名前を書いて足す（`git add .` でも `.env` は無視される）。記録した後、`git status` に `.env` が出ないことを見る。",
+          "`git add app.sh .gitignore` と `git commit -m \"鍵を環境変数から読む\"` を順に打つ。"
+        ],
+        "expectedErrors": ["sec-ignored-add", "sec-secret-history"]
+      }
+    ]
+  },
+  "result": {
+    "success": "鍵の値をコードとリポジトリから外し、環境変数で渡してアプリを動かせた。記録にも履歴にも、鍵は無い。",
+    "partial": "ヒントを使って、秘密を外に出さない形にできた。次は、一度記録した鍵を消しても安全にならない理由を説明してみよう。",
+    "retry": "まだ鍵がどこかに残っている。`app.sh` の中・記録の中（`git show`）・履歴の中（`git log -p`）を順に見よう。"
+  },
+  "summary": {
+    "points": ["秘密はコードに書かない", "リポジトリに入れない", "漏れたら無効化が先"],
+    "next": ["cicd.i.03", "git.a.03"],
+    "terms": ["secret-info", "env-var", "secret-store", "gitignore"]
+  }
+}

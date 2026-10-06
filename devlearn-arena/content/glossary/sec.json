@@ -272,6 +272,53 @@
       "lessons": [
         "sec.b.04"
       ]
+    },
+    {
+      "id": "secret-info",
+      "word": "秘密情報",
+      "reading": "ひみつじょうほう",
+      "plain": "知られると、誰かがあなたや仕組みになりすませる値。鍵・トークン・パスワード・秘密鍵など。",
+      "why": "一度漏れると取り消せない。コードやリポジトリ・ログ・画面に出さず、漏れたら無効にして換える。",
+      "related": [
+        "token",
+        "secret-store",
+        "env-var",
+        "secret-key"
+      ],
+      "lessons": [
+        "sec.b.05",
+        "sec.i.05"
+      ]
+    },
+    {
+      "id": "token",
+      "word": "トークン",
+      "reading": "トークン",
+      "plain": "仕組みに入るための、長い文字列の鍵。API の窓口などに、パスワードの代わりに渡す。",
+      "why": "持っている人は、その持ち主として扱われる。パスワードと同じく秘密情報で、コードに書かない。",
+      "related": [
+        "secret-info",
+        "api",
+        "authentication"
+      ],
+      "lessons": [
+        "sec.b.05"
+      ]
+    },
+    {
+      "id": "secret-store",
+      "word": "秘密の保管場所",
+      "reading": "ひみつのほかんばしょ",
+      "plain": "秘密情報だけを預ける専用の置き場所。読める人を絞り、誰がいつ読んだかを記録する。CI や Kubernetes の Secrets など。",
+      "why": "コードと秘密を分けて置ける。動かす時にだけ、名前で値を渡す。取り換えも 1 か所で済む。",
+      "related": [
+        "secret-info",
+        "env-var"
+      ],
+      "lessons": [
+        "sec.b.05",
+        "sec.i.05"
+      ]
     }
   ]
 }

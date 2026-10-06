@@ -23,6 +23,7 @@ import type { GitState } from './types';
  *   linear                       今の枝の履歴に、合流の記録（親が 2 つ）が無い（一直線）
  *   tag:<名前>                   そのタグが、今の枝の先の記録を指している（注釈付きのタグは剥がして比べる）
  *   ignored:<パス>               そのパスが .gitignore の決まりに当たる（追跡しているかは問わない）
+ *   history:<文字列>             今の枝の履歴のどこかの記録に、その文字列を含むファイルがある（消して記録し直しても、前の記録に残る）
  */
 
 const MARKERS = /^(<{7}|={7}|>{7})( |$)/m;
@@ -46,6 +47,22 @@ function pushed(git: GitState, branch: string, servers: ReadonlyMap<string, Serv
   const remote = server?.state.refs.get(`refs/heads/${branch}`);
   if (local === undefined || !server || remote === undefined) return false;
   return server.state.objects.has(local) && isAncestor(server.state, local, remote);
+}
+
+/** from から辿れる記録のどれかに、その文字列を含むファイルがある */
+function inHistory(git: GitState, from: string, text: string): boolean {
+  const seen = new Set<string>();
+  const stack = [from];
+  while (stack.length > 0) {
+    const hash = stack.pop();
+    if (hash === undefined || seen.has(hash)) continue;
+    seen.add(hash);
+    const object = git.objects.read(hash);
+    if (!object || object.type !== 'commit') continue;
+    if ([...materialize(git, hash).values()].some((content) => content.includes(text))) return true;
+    stack.push(...parseCommit(object.body).parents);
+  }
+  return false;
 }
 
 /** from から辿れる記録に、合流の記録（親が 2 つ以上）が無い */
@@ -110,6 +127,10 @@ export function gitHolds(git: GitState | null, vfs: VfsState, expr: string, serv
       const head = git.refs.get(`refs/heads/${currentBranch(git) ?? ''}`);
       const path = `${git.root}/${value}`;
       return head !== undefined && exists(vfs, path) && materialize(git, head).get(value) === readFile(vfs, path);
+    }
+    if (key === 'history') {
+      const head = git.refs.get(`refs/heads/${currentBranch(git) ?? ''}`);
+      return head !== undefined && value !== '' && inHistory(git, head, value);
     }
     if (key === 'commits') {
       const m = /^([^>=<]+)>=(\d+)$/.exec(value);

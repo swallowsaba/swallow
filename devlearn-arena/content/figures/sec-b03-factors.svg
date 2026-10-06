@@ -28,7 +28,7 @@
     <rect x="400" y="110" width="280" height="116" rx="10" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
     <text x="540" y="144" text-anchor="middle" font-size="18" fill="#eef2f6">多要素認証の入口</text>
     <text x="540" y="174" text-anchor="middle" font-size="14" fill="#eef2f6">種類の違う 2 つ以上</text>
-    <text x="540" y="204" text-anchor="middle" font-size="13" fill="#9fb0c6">パスワードが漏れても、スマホが無ければ入れない</text>
+    <text x="540" y="204" text-anchor="middle" font-size="13" fill="#9fb0c6">漏れても、スマホが無ければ入れない</text>
   </g>
   <g class="el" data-part="note">
     <text x="540" y="276" text-anchor="middle" font-size="14" fill="#c0392b">パスワード＋秘密の質問は、</text>

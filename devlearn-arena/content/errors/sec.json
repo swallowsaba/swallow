@@ -207,6 +207,48 @@
         "public-key",
         "authorized-keys"
       ]
+    },
+    {
+      "id": "sec-token-missing",
+      "match": "TOKEN が無い",
+      "meaning": "app.sh が、環境変数から鍵を読めずに止まった。",
+      "causes": [
+        "まだ環境変数に鍵を入れていない（source .env をしていない）。",
+        ".env の行に export が無く、動かしたアプリに渡らない。"
+      ],
+      "hint": "source .env の後に ./app.sh を動かす。.env の中身は cat .env で見る。",
+      "terms": [
+        "env-var"
+      ]
+    },
+    {
+      "id": "sec-ignored-add",
+      "match": "paths are ignored by one of your .gitignore files",
+      "meaning": ".gitignore で外したファイルを、記録に足そうとした。Git が止めた。",
+      "causes": [
+        "秘密を置いた .env を git add に書いた。",
+        "-f を付けると無理に足せるが、秘密が記録に入ってしまう。"
+      ],
+      "hint": ".env は足さなくてよい。記録するのは app.sh と .gitignore だけ。",
+      "terms": [
+        "gitignore",
+        "secret-info"
+      ]
+    },
+    {
+      "id": "sec-secret-history",
+      "match": "\\+TOKEN=wt_live_",
+      "output": true,
+      "meaning": "表示した変更の中に、鍵の値（wt_live_…）が入っている。",
+      "causes": [
+        "既にコミットされていた（履歴に残っている。消して記録し直しても、前の記録から読める）。",
+        "鍵を書いたままの app.sh を、git add で記録の予定に入れた。"
+      ],
+      "hint": "まだ送って（push）いなければ、git reset HEAD~1 で最後の記録を取り消してから直す。送った後なら、まず鍵を無効にして換える（履歴から消す方法は git.a.03）。",
+      "terms": [
+        "commit",
+        "secret-info"
+      ]
     }
   ]
 }
