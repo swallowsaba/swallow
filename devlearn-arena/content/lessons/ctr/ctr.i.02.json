@@ -11,7 +11,7 @@
   "next": ["ctr.i.03"],
   "terms": ["namespace", "process", "network", "file", "kernel", "cgroups", "cpu", "memory", "container", "vm", "ps", "pid", "image", "port", "command"],
   "explain": {
-    "what": "{{term:namespace}}は、{{term:process}}から見える範囲（ほかのプロセス・{{term:network}}・{{term:file}}）を分ける{{term:kernel}}の機能。{{term:cgroups}}は、使える{{term:cpu}}や{{term:memory}}の量に上限を付ける機能。{{term:container}}は、この 2 つで区切られた、機械の普通のプロセス。",
+    "what": "{{term:namespace}}は、{{term:process}}から見える範囲（ほかのプロセス・{{term:network}}・{{term:file}}）を分ける{{term:kernel}}の機能。{{term:cgroups}}は、使える {{term:cpu}} や{{term:memory}}の量に上限を付ける機能。{{term:container}}は、この 2 つで区切られた、機械の普通のプロセス。",
     "why": "名前空間があるので、コンテナの中からは、ほかのコンテナや機械のプロセスが見えず、触れない。cgroups が無いと、1 つのコンテナがメモリを使い切って、同じ機械のほかの物まで巻き込む。",
     "use": "コンテナを安全に、安定して並べる。動かす時に、メモリの上限を付けておく。カーネルは共有するので、{{term:vm}}ほど強くは分けない。",
     "when": "夜の集計のコンテナが、メモリを使い切った。同じ機械で動く予約のサイトまで遅くなり、やがて止まった。",
@@ -42,9 +42,9 @@
     {
       "id": "q1",
       "kind": "predict",
-      "prompt": "コンテナの中で{{term:ps}}を打つ。何が見える？",
+      "prompt": "コンテナの中で {{term:ps}} を打つ。何が見える？",
       "choices": [
-        { "id": "a", "text": "そのコンテナのプロセスだけ（主のプロセスは{{term:pid}} 1）", "correct": true },
+        { "id": "a", "text": "そのコンテナのプロセスだけ（主のプロセスは {{term:pid}} 1）", "correct": true },
         { "id": "b", "text": "機械の全てのプロセス", "correct": false, "whyNot": "名前空間で区切られているので、中からは機械のプロセスは見えない。" },
         { "id": "c", "text": "同じ機械の、ほかのコンテナのプロセスも見える", "correct": false, "whyNot": "コンテナごとに名前空間が分かれている。ほかのコンテナのプロセスは見えない。" }
       ],
