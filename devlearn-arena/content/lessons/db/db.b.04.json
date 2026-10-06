@@ -1,0 +1,239 @@
+{
+  "id": "db.b.04",
+  "domain": "db",
+  "level": "beginner",
+  "theme": "SQL",
+  "title": "絞り込み・並べ替え・集計",
+  "goal": "WHERE/ORDER BY/GROUP BY を使える",
+  "minutes": 20,
+  "prerequisites": [
+    "db.b.03"
+  ],
+  "related": [
+    "linux.b.04",
+    "mon.b.02"
+  ],
+  "next": [
+    "db.i.01",
+    "db.i.03"
+  ],
+  "terms": [
+    "where",
+    "order-by",
+    "group-by",
+    "aggregate-function",
+    "select",
+    "record",
+    "db",
+    "sql"
+  ],
+  "explain": {
+    "what": "{{term:where}}で行を絞り、{{term:group-by}}で同じ値の行をまとめ、{{term:aggregate-function}}で数え、{{term:order-by}}で並べる。{{term:select}}の 1 つの文の中に、この順で書き足していく。",
+    "why": "報告や判断に要るのは、全ての{{term:record}}ではなく「地域ごとの人数」「多い順」のような形。{{term:db}}にまとめて頼めば、何万行でも一度で正しく数えられる。",
+    "use": "地域ごとの会員数・日ごとの売上・よく借りられる本の順位。監視の数字の集計にも同じ考え方を使う。",
+    "when": "図書館の運営会議で「在籍している会員は、どの地域に多いか。多い順に」と聞かれた。退会した人まで数えると、順位が変わってしまう。",
+    "figures": [
+      "db-b04-flow"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "地域ごとの人数を多い順に出す。処理の順に並べる。",
+      "items": [
+        "在籍の行に絞る（`WHERE`）",
+        "地域ごとにまとめて数える（`GROUP BY`・`COUNT`）",
+        "多い順に並べる（`ORDER BY … DESC`）"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "集計関数と、することを結ぶ。",
+      "pairs": [
+        [
+          "`COUNT`",
+          "行の数を数える"
+        ],
+        [
+          "`SUM`",
+          "値を合計する"
+        ],
+        [
+          "`AVG`",
+          "値の平均を出す"
+        ]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "会員が 20 人、地域が 5 つある。`SELECT city, COUNT(*) FROM members GROUP BY city` の結果は何行か。",
+      "choices": [
+        {
+          "id": "a",
+          "text": "5 行（地域ごとに 1 行）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "20 行（会員ごとに 1 行）",
+          "correct": false,
+          "whyNot": "GROUP BY city で、同じ地域の行が 1 つにまとまる。"
+        },
+        {
+          "id": "c",
+          "text": "1 行（全員の数）",
+          "correct": false,
+          "whyNot": "全員を 1 つに数えるのは GROUP BY が無い時。まとめる列があると、組ごとに 1 行になる。"
+        }
+      ],
+      "explanation": "GROUP BY は、まとめた組ごとに 1 行を返す。`COUNT(*)` は、その組の行の数。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "数の多い順に並べたい。`ORDER BY n` の後ろに何を付けるか。",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`DESC`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`ASC`",
+          "correct": false,
+          "whyNot": "`ASC` は小さい順（何も付けない時と同じ）。多い順は `DESC`。"
+        },
+        {
+          "id": "c",
+          "text": "`MAX`",
+          "correct": false,
+          "whyNot": "`MAX` は一番大きい値を 1 つ出す集計関数。並べる向きではない。"
+        }
+      ],
+      "explanation": "`DESC` は大きい順（降順）。何も書かなければ小さい順（昇順）になる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "地域ごとの在籍の会員数を出したのに、名簿で数えた数より大阪が 4 人多い。考えられる原因は？",
+      "context": {
+        "command": "SELECT city, COUNT(*) AS n FROM members GROUP BY city ORDER BY n DESC"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "絞り込みの漏れ（退会した人も数えている）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "並べる向きが逆",
+          "correct": false,
+          "whyNot": "向きが逆なら順位が変わるだけで、人数は変わらない。"
+        },
+        {
+          "id": "c",
+          "text": "`COUNT` は 1 人を 2 回数えることがある",
+          "correct": false,
+          "whyNot": "`COUNT(*)` は行の数を正しく数える。数が多いのは、数える行の範囲が広いから。"
+        }
+      ],
+      "explanation": "WHERE で在籍の行に絞っていない。数える前に絞る（WHERE は GROUP BY の前に書く）。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "運営会議のために、会員の表 `members`（id・name・city・status）を集計する。`status` は「在籍」か「退会」。結果を見て答える。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL, status TEXT NOT NULL) STRICT; INSERT INTO members VALUES (1, '青木', '東京', '在籍'), (2, '石田', '大阪', '在籍'), (3, '上野', '東京', '在籍'), (4, '遠藤', '横浜', '在籍'), (5, '小川', '東京', '在籍'), (6, '加藤', '大阪', '在籍'), (7, '木村', '札幌', '在籍'), (8, '久保', '東京', '在籍'), (9, '小林', '横浜', '在籍'), (10, '斎藤', '福岡', '在籍'), (11, '佐藤', '大阪', '退会'), (12, '鈴木', '東京', '在籍'), (13, '高橋', '横浜', '在籍'), (14, '田中', '大阪', '在籍'), (15, '千葉', '福岡', '在籍'), (16, '土屋', '大阪', '退会'), (17, '中村', '横浜', '在籍'), (18, '西田', '大阪', '退会'), (19, '野口', '大阪', '退会'), (20, '原田', '東京', '退会');"
+    },
+    "steps": [
+      {
+        "id": "count",
+        "purpose": "在籍している会員だけを数える。何人かを答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "15"
+        },
+        "afterward": "在籍は 15 人。表には 20 行あるが、退会の 5 人を WHERE で外した。`COUNT(*)` は、絞った後の行を数える。",
+        "hints": [
+          "数えるのは集計関数の `COUNT(*)`。在籍の行だけにするのは `WHERE`。",
+          "`SELECT COUNT(*) FROM 表 WHERE 列 = 値` の形。値は `'在籍'`。",
+          "`SELECT COUNT(*) FROM members WHERE status = '在籍'` を実行し、`15` と答える。"
+        ],
+        "expectedErrors": [
+          "db-no-column",
+          "db-unrecognized",
+          "db-syntax",
+          "db-group-misread"
+        ]
+      },
+      {
+        "id": "group",
+        "purpose": "在籍の会員を地域ごとにまとめて数え、多い順に並べる。一番多い地域を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "東京"
+        },
+        "afterward": "在籍の会員が一番多いのは東京（5 人）。退会の人まで数えると大阪が 7 人で一番になり、会議の判断を誤らせるところだった。",
+        "hints": [
+          "地域ごとにまとめるのは `GROUP BY city`。SELECT には、まとめた列と `COUNT(*)` だけを並べる。",
+          "数に `AS n` で名前を付けると、`ORDER BY n DESC` で多い順に並べられる。WHERE は GROUP BY の前に書く。",
+          "`SELECT city, COUNT(*) AS n FROM members WHERE status = '在籍' GROUP BY city ORDER BY n DESC` を実行し、`東京` と答える。"
+        ],
+        "expectedErrors": [
+          "db-no-column",
+          "db-unrecognized",
+          "db-syntax",
+          "db-group-misread"
+        ]
+      },
+      {
+        "id": "second",
+        "purpose": "同じ結果で、2 番目に多い地域を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "横浜"
+        },
+        "afterward": "2 番目は横浜（4 人）。多い順に並べておけば、上から読むだけで順位が分かる。",
+        "hints": [
+          "前の手順の結果の、上から 2 行目を読む。",
+          "並べる向きが逆（少ない順）だと、上から 2 行目は福岡になる。`DESC` が付いているかを見る。",
+          "`SELECT city, COUNT(*) AS n FROM members WHERE status = '在籍' GROUP BY city ORDER BY n DESC` を実行し、`横浜` と答える。"
+        ],
+        "expectedErrors": [
+          "db-group-misread"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "絞る・まとめて数える・並べるを 1 つの SELECT で書き、会議に要る形の数を出せた。",
+    "partial": "ヒントを使って集計できた。次は、WHERE を GROUP BY の前に書く理由を説明してみよう。",
+    "retry": "まだ数が合っていない。WHERE で在籍に絞ったか、`DESC` で多い順に並べたかを見直そう。"
+  },
+  "summary": {
+    "points": [
+      "WHERE で絞る",
+      "GROUP BY で数える",
+      "ORDER BY で並べる"
+    ],
+    "next": [
+      "db.i.01",
+      "db.i.03"
+    ],
+    "terms": [
+      "where",
+      "group-by",
+      "aggregate-function",
+      "order-by"
+    ]
+  }
+}

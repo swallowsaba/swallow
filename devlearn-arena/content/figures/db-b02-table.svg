@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 340" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>members テーブル。1 件の会員が 1 行（レコード）、id・name・city の項目が列（カラム）。id は行を 1 つに決める主キー</title>
+  <g class="el" data-part="name">
+    <text x="190" y="40" font-size="16" fill="#f2b632">テーブル members（会員）</text>
+  </g>
+  <g class="el" data-part="pk">
+    <rect x="190" y="60" width="90" height="196" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="235" y="86" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#3ae08a">id</text>
+    <text x="235" y="130" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">1</text>
+    <text x="235" y="176" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">2</text>
+    <text x="235" y="222" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">3</text>
+    <text x="235" y="282" text-anchor="middle" font-size="13" fill="#3ae08a">主キー（同じ値は無い）</text>
+  </g>
+  <g class="el" data-part="header">
+    <path d="M190 100 H520" fill="none" stroke="#9fb0c6" stroke-width="1" />
+    <text x="340" y="86" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">name</text>
+    <text x="460" y="86" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">city</text>
+  </g>
+  <g class="el" data-part="column">
+    <rect x="400" y="60" width="120" height="196" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="460" y="130" text-anchor="middle" font-size="14" fill="#eef2f6">東京</text>
+    <text x="460" y="176" text-anchor="middle" font-size="14" fill="#eef2f6">大阪</text>
+    <text x="460" y="222" text-anchor="middle" font-size="14" fill="#eef2f6">東京</text>
+    <text x="580" y="160" font-size="14" fill="#5cc1ff">列（カラム）</text>
+    <text x="580" y="184" font-size="13" fill="#9fb0c6">項目の 1 つ</text>
+  </g>
+  <g class="el" data-part="row">
+    <rect x="186" y="152" width="338" height="36" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="340" y="176" text-anchor="middle" font-size="14" fill="#eef2f6">石田</text>
+    <text x="20" y="166" font-size="14" fill="#f2b632">行（レコード）</text>
+    <text x="20" y="188" font-size="13" fill="#9fb0c6">1 件のデータ</text>
+  </g>
+  <g class="el" data-part="others">
+    <text x="340" y="130" text-anchor="middle" font-size="14" fill="#eef2f6">青木</text>
+    <text x="340" y="222" text-anchor="middle" font-size="14" fill="#eef2f6">上野</text>
+  </g>
+</svg>

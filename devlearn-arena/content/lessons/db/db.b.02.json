@@ -1,0 +1,125 @@
+{
+  "id": "db.b.02",
+  "domain": "db",
+  "level": "beginner",
+  "theme": "テーブル",
+  "title": "テーブル・行・列",
+  "goal": "表の形でデータを整理できる",
+  "minutes": 20,
+  "prerequisites": ["db.b.01"],
+  "related": ["found.b.08", "web.i.02"],
+  "next": ["db.b.03"],
+  "terms": ["table", "record", "column", "primary-key", "data-type", "database", "db", "insert", "sql", "dbms", "sqlite"],
+  "explain": {
+    "what": "{{term:database}}は、データを表の形の{{term:table}}で持つ。1 件のデータが 1 つの{{term:record}}、名前や住所のような項目が 1 つの{{term:column}}になる。行を 1 つに決める列を{{term:primary-key}}という。",
+    "why": "形を決めておくと、探す・並べる・数えるが簡単で速い。列ごとに{{term:data-type}}（整数・文字）を決めれば、数の列に文字が混ざるような誤りも、入れる時に断れる。",
+    "use": "全ての表の形の{{term:db}}（リレーショナルデータベース）。会員・商品・注文を、それぞれ 1 つのテーブルにする。",
+    "when": "図書館の会員の一覧を作る。同じ名前の人がいても区別できるように、会員番号（id）を主キーにする。",
+    "figures": ["db-b02-table"]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "db-b02-table",
+      "prompt": "1 人の会員のデータ（1 件）を表す所を押す。",
+      "answer": ["row"],
+      "see": "what"
+    },
+    {
+      "kind": "match",
+      "prompt": "言葉と説明を結ぶ。",
+      "pairs": [
+        ["主キー", "行を 1 つに決める列"],
+        ["行（レコード）", "1 件のデータ"],
+        ["列（カラム）", "名前や住所のような項目"]
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "会員 1 人分のデータは、テーブルのどこに入るか。",
+      "choices": [
+        { "id": "a", "text": "1 つの行（レコード）", "correct": true },
+        { "id": "b", "text": "1 つの列（カラム）", "correct": false, "whyNot": "列は、全員の「名前」や「住所」のような 1 つの項目。1 人分は横に並ぶ 1 行。" },
+        { "id": "c", "text": "1 つのテーブル", "correct": false, "whyNot": "テーブルは会員全員の表。1 人ごとにテーブルを作ると、探す・数えるが難しくなる。" }
+      ],
+      "explanation": "1 件のデータが 1 行。全員の同じ項目が縦に並んで 1 列になる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "会員の中に、同じ名前・同じ住所の人が 2 人いる。2 人を区別するには、どの列を主キーにするか。",
+      "choices": [
+        { "id": "a", "text": "会員ごとに違う番号を振った id", "correct": true },
+        { "id": "b", "text": "名前の列（name）", "correct": false, "whyNot": "同じ名前の人がいるので、名前では 1 人に決まらない。" },
+        { "id": "c", "text": "住所の列（city）", "correct": false, "whyNot": "同じ住所の人は大勢いる。主キーは、行ごとに必ず違う値の列にする。" }
+      ],
+      "explanation": "主キーは、行ごとに必ず違う値を持つ列。番号を振った id がよく使われる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "会員の表を見ると、次のようになっていた。何が足りないか。",
+      "context": { "log": "id | name | city\n 7 | 青木 | 東京\n 7 | 石田 | 大阪" },
+      "choices": [
+        { "id": "a", "text": "id が主キーになっていない（同じ値を断っていない）", "correct": true },
+        { "id": "b", "text": "city の列のデータ型が違う", "correct": false, "whyNot": "city には文字が正しく入っている。問題は、別の人に同じ id が付いていること。" },
+        { "id": "c", "text": "テーブルの名前が無い", "correct": false, "whyNot": "名前の問題ではない。7 番が 2 人いて、どちらの会員か決められない。" }
+      ],
+      "explanation": "id を主キーにしていれば、同じ値を入れる時に{{term:dbms}}が断る。主キーが無いと、1 件に決められない。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "図書館の会員の表 `members` を作り、3 人の会員を入れる。会員: 1 番 青木（東京）・2 番 石田（大阪）・3 番 上野（東京）。",
+    "environment": "sql-sqlite",
+    "setup": { "sql": "" },
+    "steps": [
+      {
+        "id": "create",
+        "purpose": "`members` テーブルを、`id`（整数・主キー）・`name`（文字）・`city`（文字）の 3 つの列で作る。型の違う値を断るように、最後に `STRICT` を付ける（{{term:sqlite}} で型を守らせる書き方）。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT (SELECT group_concat(name || ':' || upper(type) || ':' || pk, ',') FROM pragma_table_info('members')) || '/' || (SELECT strict FROM pragma_table_list WHERE name = 'members')",
+          "equals": "id:INTEGER:1,name:TEXT:0,city:TEXT:0/1"
+        },
+        "afterward": "画面の上の「表」に `members（id, name, city）` が出た。まだ行は無い、空の表。",
+        "hints": [
+          "表は `CREATE TABLE 名前 (列 型, 列 型, …)` で作る。整数は `INTEGER`、文字は `TEXT`。",
+          "主キーにする列の型の後ろに `PRIMARY KEY` を付ける。空にできない列には `NOT NULL`。かっこの後ろに `STRICT`。",
+          "`CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL) STRICT` を実行する。"
+        ],
+        "expectedErrors": ["db-syntax", "db-table-exists", "db-unrecognized"]
+      },
+      {
+        "id": "insert",
+        "purpose": "3 人の会員を、表の行として入れる。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT id, name, city FROM members ORDER BY id",
+          "equals": [{ "id": 1, "name": "青木", "city": "東京" }, { "id": 2, "name": "石田", "city": "大阪" }, { "id": 3, "name": "上野", "city": "東京" }]
+        },
+        "afterward": "`members` に 3 行が入った。`SELECT * FROM members` で、表の形のまま見られる。",
+        "hints": [
+          "行は {{term:insert}} で入れる: `INSERT INTO 表 (列, …) VALUES (値, …)`。文字の値は `'` で囲む。",
+          "`VALUES` の後ろに、かっこの組を `,` で並べると、何行もまとめて入れられる。列の並びと値の並びを合わせる。",
+          "`INSERT INTO members (id, name, city) VALUES (1, '青木', '東京'), (2, '石田', '大阪'), (3, '上野', '東京')` を実行する。"
+        ],
+        "expectedErrors": ["db-type", "db-unique", "db-not-null", "db-no-column", "db-syntax", "db-unrecognized", "db-no-table"]
+      }
+    ]
+  },
+  "result": {
+    "success": "主キーとデータ型を決めた表を作り、3 人の会員を行として入れられた。",
+    "partial": "ヒントを使って表を作れた。次は、id を主キーにした理由を説明してみよう。",
+    "retry": "まだ表が揃っていない。`SELECT * FROM members` で、表の中身を見てみよう。"
+  },
+  "summary": {
+    "points": ["テーブル・行・列", "主キーで区別する", "列ごとにデータ型"],
+    "next": ["db.b.03"],
+    "terms": ["table", "record", "column", "primary-key", "data-type"]
+  }
+}

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>WHERE の有無で変わる範囲。WHERE id = 3 を付けた UPDATE は 3 番の 1 行だけを変える。WHERE の無い UPDATE は全ての行を変える</title>
+  <g class="el" data-part="with">
+    <text x="20" y="34" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">UPDATE … WHERE id = 3</text>
+    <text x="20" y="58" font-size="13" fill="#3ae08a">条件に合う 1 行だけ変わる</text>
+  </g>
+  <g class="el" data-part="with-rows">
+    <rect x="20" y="76" width="280" height="34" rx="4" fill="none" stroke="#9fb0c6" stroke-width="1" pointer-events="all" />
+    <text x="36" y="99" font-size="14" fill="#eef2f6">1 青木 東京</text>
+    <rect x="20" y="116" width="280" height="34" rx="4" fill="none" stroke="#9fb0c6" stroke-width="1" pointer-events="all" />
+    <text x="36" y="139" font-size="14" fill="#eef2f6">2 石田 大阪</text>
+    <rect x="20" y="156" width="280" height="34" rx="4" fill="none" stroke="#3ae08a" stroke-width="3" pointer-events="all" />
+    <text x="36" y="179" font-size="14" fill="#3ae08a">3 上野 横浜（変わった）</text>
+    <rect x="20" y="196" width="280" height="34" rx="4" fill="none" stroke="#9fb0c6" stroke-width="1" pointer-events="all" />
+    <text x="36" y="219" font-size="14" fill="#eef2f6">4 遠藤 横浜</text>
+  </g>
+  <g class="el" data-part="without">
+    <text x="400" y="34" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">UPDATE …（WHERE 無し）</text>
+    <text x="400" y="58" font-size="13" fill="#c0392b">全ての行が変わる</text>
+  </g>
+  <g class="el" data-part="without-rows">
+    <rect x="400" y="76" width="280" height="34" rx="4" fill="none" stroke="#c0392b" stroke-width="3" pointer-events="all" />
+    <text x="416" y="99" font-size="14" fill="#c0392b">1 青木 横浜</text>
+    <rect x="400" y="116" width="280" height="34" rx="4" fill="none" stroke="#c0392b" stroke-width="3" pointer-events="all" />
+    <text x="416" y="139" font-size="14" fill="#c0392b">2 石田 横浜</text>
+    <rect x="400" y="156" width="280" height="34" rx="4" fill="none" stroke="#c0392b" stroke-width="3" pointer-events="all" />
+    <text x="416" y="179" font-size="14" fill="#c0392b">3 上野 横浜</text>
+    <rect x="400" y="196" width="280" height="34" rx="4" fill="none" stroke="#c0392b" stroke-width="3" pointer-events="all" />
+    <text x="416" y="219" font-size="14" fill="#c0392b">4 遠藤 横浜</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="350" y="276" text-anchor="middle" font-size="14" fill="#eef2f6">変える前に、同じ WHERE で SELECT して、当たる行を確かめる</text>
+    <text x="350" y="302" text-anchor="middle" font-size="13" fill="#9fb0c6">DELETE も同じ。WHERE を忘れると全ての行が消える</text>
+  </g>
+</svg>

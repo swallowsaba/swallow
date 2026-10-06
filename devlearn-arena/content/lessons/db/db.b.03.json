@@ -1,0 +1,127 @@
+{
+  "id": "db.b.03",
+  "domain": "db",
+  "level": "beginner",
+  "theme": "SQL",
+  "title": "SELECT",
+  "goal": "必要な列と行を取り出せる",
+  "minutes": 15,
+  "prerequisites": ["db.b.02"],
+  "related": ["web.i.01", "sec.i.03"],
+  "next": ["db.b.04", "db.b.05", "sec.i.03"],
+  "terms": ["select", "where", "column", "table", "db", "record", "sql", "app"],
+  "explain": {
+    "what": "{{term:select}}は、{{term:table}}から必要な{{term:column}}と{{term:record}}だけを取り出す命令。どの列を・どの表から・どの条件（{{term:where}}）で、の 3 つを書く。",
+    "why": "{{term:db}}で一番多く使う操作。全てを取り出して目で探すと、行が増えるほど遅く、見落としも出る。欲しい物だけを頼めば、DB が速く正しく探す。",
+    "use": "会員の一覧・検索の画面・在庫の確かめ。{{term:app}}の画面の多くは、裏で SELECT を出している。",
+    "when": "広報の担当から「東京の会員の名前だけほしい」と頼まれた。全員の住所や電話番号まで渡す必要は無い。",
+    "figures": ["db-b03-select"]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "db-b03-select",
+      "prompt": "取り出す行を絞る部分を押す。",
+      "answer": ["where"],
+      "see": "what"
+    },
+    {
+      "kind": "order",
+      "prompt": "SELECT の文を、書く順に並べる。",
+      "items": ["`SELECT` 取り出す列", "`FROM` どの表から", "`WHERE` どの行か"],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "会員の表 `members`（id・name・city）に `SELECT name FROM members` を実行すると？",
+      "choices": [
+        { "id": "a", "text": "全員の、名前の列だけが出る", "correct": true },
+        { "id": "b", "text": "全員の、全ての列が出る", "correct": false, "whyNot": "SELECT の後ろに name とだけ書いた。出るのは name の列だけ。" },
+        { "id": "c", "text": "name という名前の会員 1 人が出る", "correct": false, "whyNot": "name は列の名前。行を絞る条件（WHERE）は書いていないので、全員分が出る。" }
+      ],
+      "explanation": "SELECT の後ろは列。WHERE が無ければ、全ての行が対象になる。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "全ての列を取り出したい。SELECT の後ろに何を書くか。",
+      "choices": [
+        { "id": "a", "text": "`*`", "correct": true },
+        { "id": "b", "text": "`all`", "correct": false, "whyNot": "{{term:sql}}で全ての列を表すのは `*`。all という列を探してしまう。" },
+        { "id": "c", "text": "何も書かない", "correct": false, "whyNot": "SELECT の後ろの列は省けない。書かないと、書き方の誤りになる。" }
+      ],
+      "explanation": "`SELECT * FROM members` で全ての列。表の中身を確かめる時によく使う。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "次のように言われた。原因は？",
+      "context": { "command": "SELECT nam FROM members", "log": "no such column: nam" },
+      "choices": [
+        { "id": "a", "text": "列の名前の誤り（name を nam と書いた）", "correct": true },
+        { "id": "b", "text": "表の名前の誤り", "correct": false, "whyNot": "表が無い時は no such table と言われる。今回は列（column）が無い。" },
+        { "id": "c", "text": "表に行が 1 つも無い", "correct": false, "whyNot": "行が無くてもエラーにはならず、0 行が返る。" }
+      ],
+      "explanation": "no such column は、その名前の列が無いという意味。表の列の名前と 1 文字ずつ見比べる。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "図書館の会員の表 `members` から、広報に渡す名前を取り出す。取り出すだけで表は変えないので、結果を見て答える。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL) STRICT; INSERT INTO members VALUES (1, '青木', '東京'), (2, '石田', '大阪'), (3, '上野', '東京'), (4, '遠藤', '横浜'), (5, '小川', '東京'), (6, '加藤', '大阪'), (7, '木村', '札幌'), (8, '久保', '東京'), (9, '小林', '横浜'), (10, '斎藤', '大阪');"
+    },
+    "steps": [
+      {
+        "id": "names",
+        "purpose": "会員全員の、名前の列だけを取り出す。何人分の名前が出たかを答える。",
+        "check": { "kind": "answer", "equals": "10" },
+        "afterward": "名前の列だけが 10 行出た。住所や番号は出ていない。WHERE を書かないと、全ての行が対象になる。",
+        "hints": [
+          "`SELECT 列 FROM 表` の形。列は `name`、表は `members`。",
+          "結果の表の下に、何行出たかが出る。",
+          "`SELECT name FROM members` を実行し、`10` と答える。"
+        ],
+        "expectedErrors": ["db-no-column", "db-no-table", "db-syntax", "db-count-misread"]
+      },
+      {
+        "id": "tokyo",
+        "purpose": "東京の会員の名前だけを取り出す。何人いるかを答える。",
+        "check": { "kind": "answer", "equals": "4" },
+        "afterward": "東京の 4 人だけが出た。WHERE で city の値が「東京」の行に絞った。",
+        "hints": [
+          "行を絞るのは `WHERE 列 = 値`。文字の値は `'` で囲む。",
+          "絞る列は `city`、値は表の中の書き方のまま `'東京'`。0 行なら、値の綴りを `SELECT *` で確かめる。",
+          "`SELECT name FROM members WHERE city = '東京'` を実行し、`4` と答える。"
+        ],
+        "expectedErrors": ["db-no-column", "db-unrecognized", "db-syntax", "db-count-misread"]
+      },
+      {
+        "id": "two",
+        "purpose": "東京の会員の `id` と名前の 2 つの列を取り出す。小川さんの `id` を答える。",
+        "check": { "kind": "answer", "equals": "5" },
+        "afterward": "列は `,` で区切って並べられる。小川さんは 5 番。名前が同じ人がいても、id で 1 人に決められる。",
+        "hints": [
+          "取り出す列を 2 つにするには、SELECT の後ろに `,` で並べる。",
+          "条件は前と同じ東京。出た表の中から、小川さんの行の id を読む。",
+          "`SELECT id, name FROM members WHERE city = '東京'` を実行し、`5` と答える。"
+        ],
+        "expectedErrors": ["db-no-column", "db-unrecognized", "db-syntax", "db-count-misread"]
+      }
+    ]
+  },
+  "result": {
+    "success": "必要な列と行だけを、SELECT と WHERE で取り出せた。",
+    "partial": "ヒントを使って取り出せた。次は、WHERE を書かないと何が出るかを説明してみよう。",
+    "retry": "まだ答えが合っていない。`SELECT * FROM members` で表の中身を見て、条件の値の書き方を確かめよう。"
+  },
+  "summary": {
+    "points": ["SELECT で取り出す", "WHERE で絞る", "列の名前は正確に"],
+    "next": ["db.b.04", "sec.i.03"],
+    "terms": ["select", "where"]
+  }
+}

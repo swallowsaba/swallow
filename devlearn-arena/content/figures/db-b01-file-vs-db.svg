@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 340" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>ファイルと DB の比べ。2 つの窓口が同時に共有のファイルを直すと、後から保存した方が上書きして数が食い違う。DB は同時に来た更新を 1 つずつ順に処理するので、数が合う</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="file-side">
+    <text x="20" y="34" font-size="16" fill="#c0392b">共有のファイルで管理</text>
+    <rect x="20" y="50" width="120" height="44" rx="8" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="80" y="77" text-anchor="middle" font-size="14" fill="#eef2f6">窓口 1</text>
+    <rect x="20" y="150" width="120" height="44" rx="8" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="80" y="177" text-anchor="middle" font-size="14" fill="#eef2f6">窓口 2</text>
+  </g>
+  <g class="el" data-part="file">
+    <path d="M146 72 L214 112 M146 172 L214 132" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <rect x="220" y="96" width="110" height="52" rx="6" fill="none" stroke="#c0392b" stroke-width="2" pointer-events="all" />
+    <text x="275" y="118" text-anchor="middle" font-size="13" fill="#eef2f6">在庫.xlsx</text>
+    <text x="275" y="138" text-anchor="middle" font-size="13" fill="#eef2f6">残り 4</text>
+  </g>
+  <g class="el" data-part="file-note">
+    <text x="20" y="232" font-size="13" fill="#9fb0c6">2 人とも「残り 5」を開いて 1 枚売り、</text>
+    <text x="20" y="254" font-size="13" fill="#9fb0c6">「4」で保存。後の保存が前を上書きした</text>
+    <text x="20" y="282" font-size="14" fill="#c0392b">本当は 3。食い違った</text>
+  </g>
+  <g class="el" data-part="db-side">
+    <text x="380" y="34" font-size="16" fill="#3ae08a">DB で管理</text>
+    <rect x="380" y="50" width="120" height="44" rx="8" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="440" y="77" text-anchor="middle" font-size="14" fill="#eef2f6">窓口 1</text>
+    <rect x="380" y="150" width="120" height="44" rx="8" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="440" y="177" text-anchor="middle" font-size="14" fill="#eef2f6">窓口 2</text>
+  </g>
+  <g class="el" data-part="db">
+    <path d="M506 72 L574 112 M506 172 L574 132" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <rect x="580" y="90" width="100" height="64" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="630" y="116" text-anchor="middle" font-size="14" fill="#eef2f6">DB</text>
+    <text x="630" y="140" text-anchor="middle" font-size="13" fill="#eef2f6">残り 3</text>
+  </g>
+  <g class="el" data-part="db-note">
+    <text x="380" y="232" font-size="13" fill="#9fb0c6">同時に来た「1 枚減らす」を、</text>
+    <text x="380" y="254" font-size="13" fill="#9fb0c6">1 つずつ順に処理する（5 → 4 → 3）</text>
+    <text x="380" y="282" font-size="14" fill="#3ae08a">数が合う（整合性）</text>
+  </g>
+</svg>

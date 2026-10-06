@@ -1,0 +1,151 @@
+{
+  "domain": "db",
+  "errors": [
+    {
+      "id": "db-syntax",
+      "match": "syntax error|incomplete input",
+      "meaning": "SQL の書き方が読めない、と言われた。near の後ろの語の近くで、形が崩れている。",
+      "causes": [
+        "命令の綴りの誤り（SELEC・FORM など）。",
+        "文が途中で終わっている（ORDER BY の後ろの列が無い・かっこが閉じていない）。",
+        "区切りの , が多い・少ない。"
+      ],
+      "hint": "near の後ろに出た語の前後を、ヒントの形と 1 語ずつ見比べる。",
+      "terms": ["sql"]
+    },
+    {
+      "id": "db-unrecognized",
+      "match": "unrecognized token",
+      "meaning": "SQL の中に、読めない記号の並びがある、と言われた。",
+      "causes": [
+        "文字の値を囲む ' が閉じていない（'東京 のように片方だけ）。",
+        "' の代わりに、全角の ‘ や ” を使った。"
+      ],
+      "hint": "文字の値は、半角の ' で前と後ろを囲む（'東京'）。",
+      "terms": ["sql"]
+    },
+    {
+      "id": "db-no-column",
+      "match": "no such column",
+      "meaning": "その名前の列（カラム）は無い、と言われた。",
+      "causes": [
+        "列の名前の綴りが違う（nam・citty など）。",
+        "文字の値を ' で囲んでいない（東京 を列の名前として読まれた）。",
+        "別のテーブルの列の名前を書いた。"
+      ],
+      "hint": "画面の上の「表」に出ている列の名前と見比べる。文字の値は ' で囲む。",
+      "terms": ["column"]
+    },
+    {
+      "id": "db-no-table",
+      "match": "no such table",
+      "meaning": "その名前のテーブルは無い、と言われた。",
+      "causes": [
+        "テーブルの名前の綴りが違う（member と members）。",
+        "まだテーブルを作っていない。"
+      ],
+      "hint": "画面の上の「表」に出ているテーブルの名前と見比べる。",
+      "terms": ["table"]
+    },
+    {
+      "id": "db-table-exists",
+      "match": "already exists",
+      "meaning": "同じ名前のテーブルが、もうある。作り直さずに止まった。",
+      "causes": [
+        "前に作ったテーブルが残っている。",
+        "同じ CREATE TABLE を 2 回実行した。"
+      ],
+      "hint": "表はもうあるので、次の手順（行を入れる）へ進めばよい。作り直したい時は「初めに戻す」。",
+      "terms": ["table"]
+    },
+    {
+      "id": "db-type",
+      "match": "datatype mismatch|cannot store",
+      "meaning": "列のデータ型と、入れようとした値の種類が合わない、と言われた。",
+      "causes": [
+        "列の型と値が合わない（整数の列に '一' のような文字を入れた）。",
+        "値の並びが、列の並びとずれている（名前の場所に番号を書いた）。"
+      ],
+      "hint": "INSERT の列の並びと VALUES の値の並びを、1 つずつ対にして見比べる。",
+      "terms": ["data-type", "column"]
+    },
+    {
+      "id": "db-unique",
+      "match": "UNIQUE constraint failed",
+      "meaning": "主キー（など、同じ値を許さない列）に、もうある値を入れようとした、と言われた。",
+      "causes": [
+        "同じ id の行を 2 回入れた。",
+        "前に入れた行が残っている（入れ直しは要らない）。"
+      ],
+      "hint": "SELECT で今ある行を見て、使っていない id にする。",
+      "terms": ["primary-key"]
+    },
+    {
+      "id": "db-not-null",
+      "match": "NOT NULL constraint failed|has \\d+ columns but \\d+ values",
+      "meaning": "入れる値が足りない、と言われた。空にできない列がある。",
+      "causes": [
+        "列を書き漏らした（city の値が無い）。",
+        "VALUES の値の数が、列の数と合わない。"
+      ],
+      "hint": "テーブルの列の数と、VALUES の値の数を数えて合わせる。",
+      "terms": ["column"]
+    },
+    {
+      "id": "db-file-still",
+      "match": "答えが合っていない",
+      "meaning": "全ての欄を選んだが、まだ残りの数が食い違う。",
+      "causes": [
+        "ファイルにも書いている（ファイルと DB の両方に書くと、2 つの記録が食い違う）。",
+        "片方の窓口だけを DB に移した。"
+      ],
+      "hint": "2 つの窓口の記録先を、両方とも DB だけにする。結果の情報で、残りの数がどう変わるかを見る。",
+      "terms": ["consistency"]
+    },
+    {
+      "id": "db-remain-misread",
+      "match": "答えが合っていない",
+      "meaning": "選んだ残りの数が、DB で記録した結果と合っていない。",
+      "causes": [
+        "共有のファイルで記録した時の数（4）を選んだ。",
+        "2 つ目の更新（4 → 3）を読み落とした。"
+      ],
+      "hint": "「DB で記録した結果」の記録を、最後の処理まで読む。",
+      "terms": ["consistency"]
+    },
+    {
+      "id": "db-count-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、取り出した結果と合っていない。",
+      "causes": [
+        "0 件だった（条件の値の綴りが、表の中の値と違う。'東京都' と '東京' など）。",
+        "列の名前を取り違え、別の列で絞った。"
+      ],
+      "hint": "結果の表の下の「何行」を見る。0 行なら、SELECT * で表の中の値の書き方を確かめる。",
+      "terms": ["where"]
+    },
+    {
+      "id": "db-group-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、集計の結果と合っていない。",
+      "causes": [
+        "GROUP BY に無い列を選んだ（組の中のどれか 1 行の値が出て、意味の無い値になる）。",
+        "絞り込みの漏れ（退会した人まで数えた）。",
+        "並べる向きの取り違え（DESC を付けず、少ない順に並んだ）。"
+      ],
+      "hint": "SELECT に並べる物は、まとめた列と集計関数だけにする。条件と並べる向きも見直す。",
+      "terms": ["group-by", "aggregate-function"]
+    },
+    {
+      "id": "db-wrong-range",
+      "match": "答えが合っていない",
+      "meaning": "変えるつもりの行と、変わった行が違う。",
+      "causes": [
+        "条件の誤り（WHERE の id の値が違う・WHERE を書き忘れた）。",
+        "先に SELECT で、同じ条件で何行が当たるかを確かめていない。"
+      ],
+      "hint": "変える前に、同じ WHERE で SELECT して、当たる行が 1 行だけかを見る。全員が変わったら「初めに戻す」でやり直す。",
+      "terms": ["where", "update"]
+    }
+  ]
+}

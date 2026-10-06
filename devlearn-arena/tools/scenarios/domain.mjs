@@ -120,8 +120,10 @@ export default async function domain(page, shot) {
   await page.waitForSelector('[data-testid="stage-practice"]');
   const sim = lesson.practice.mode === 'simulation';
   const editor = lesson.practice.mode === 'editor';
+  const sql = lesson.practice.mode === 'sql';
   if (editor) await page.waitForSelector('[data-testid="editor-text"]');
-  else if (!sim) await page.waitForSelector('.term-host .xterm');
+  else if (sql) await page.waitForSelector('[data-testid="sql-input"]:not([disabled])');
+  else if (!sim && !sql) await page.waitForSelector('.term-host .xterm');
   await wait(page, 600);
   await shot(`${tag}-practice`);
   // HINTS=1 なら、最初の手順のヒントを 3 段とも開いて撮る（そのまま打てる答えの見え方を確かめる。結果は「ヒントを使った」になる）
@@ -141,6 +143,10 @@ export default async function domain(page, shot) {
     } else if (answerStep) {
       await page.fill('#practice-answer', line);
       await page.press('#practice-answer', 'Enter');
+    } else if (sql) {
+      // ブラウザ内 SQL: 書いて「実行」
+      await page.fill('#sql-input', line);
+      await page.click('[data-testid="sql-run"]');
     } else {
       await page.click('.term-host');
       await page.keyboard.type(line, { delay: 10 });
@@ -158,7 +164,9 @@ export default async function domain(page, shot) {
       // 設定の編集は、WRONG（「誤り=>正しい」の形。無ければ閉じる } の前の ; を 1 つ消す）で誤った中身を保存する
       const [bad, good] = (process.env.WRONG ?? '').split('=>');
       const wrong = editor ? (bad ? lines[0].replace(good ?? '', bad) : lines[0].replace(/;(\s*\n\s*\})/, '$1')) : null;
-      await enter(wrong ?? (sim ? `${lines[0].split(' ')[0]} no-such-thing` : answerStep ? 'わからない' : 'cd /no-such-dir'), answerStep);
+      // ブラウザ内 SQL は、最初の語の綴りを誤った文（syntax error）
+      const sqlWrong = sql && !answerStep ? lines[0].replace(/^(\w+)\w/, '$1') : null;
+      await enter(wrong ?? sqlWrong ?? (sim ? `${lines[0].split(' ')[0]} no-such-thing` : answerStep ? 'わからない' : 'cd /no-such-dir'), answerStep);
       console.log('エラー', await page.getAttribute('[data-testid="practice-error"]', 'data-guide'), await text(page, '[data-testid="practice-error"]'));
       await shot(`${tag}-error`);
     }

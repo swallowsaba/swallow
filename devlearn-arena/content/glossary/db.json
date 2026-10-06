@@ -6,8 +6,282 @@
       "word": "データベース",
       "plain": "大量のデータを整理して保存し、素早く探したり書き換えたりできるようにした仕組み。DB と略す。",
       "why": "会員・注文・在庫など、アプリの大事なデータの多くはデータベースに置かれる。",
-      "related": ["service", "server"],
-      "lessons": ["db.b.01", "linux.i.01"]
+      "related": [
+        "service",
+        "server"
+      ],
+      "lessons": [
+        "db.b.01",
+        "linux.i.01"
+      ]
+    },
+    {
+      "id": "db",
+      "word": "DB",
+      "reading": "ディービー",
+      "plain": "データベース（database）の略。",
+      "why": "現場では「DB に入れる」「DB を見る」のように、略して呼ぶことが多い。",
+      "related": [
+        "database",
+        "dbms"
+      ],
+      "lessons": [
+        "db.b.01"
+      ]
+    },
+    {
+      "id": "dbms",
+      "word": "DBMS",
+      "reading": "ディービーエムエス",
+      "plain": "データベースを動かし、管理する仕組み（ソフトウェア）。データの出し入れの依頼を受け、順番と正しさを守って処理する。例: SQLite・PostgreSQL・MySQL。",
+      "why": "同時に来た依頼を 1 つずつ正しく処理するのは DBMS の仕事。アプリは DBMS に頼むだけでよい。",
+      "related": [
+        "database",
+        "sql",
+        "consistency"
+      ],
+      "lessons": [
+        "db.b.01"
+      ],
+      "analogy": "図書館の司書のような物。利用者は本棚を直接いじらず、司書に頼む。"
+    },
+    {
+      "id": "sqlite",
+      "word": "SQLite",
+      "reading": "エスキューライト",
+      "plain": "1 つのファイルで動く、小さな DBMS。サーバを立てずに使え、この練習ではブラウザの中で動いている。",
+      "why": "スマホのアプリやブラウザの中など、身近な所で広く使われている。SQL の書き方は、ほかの DBMS とほぼ同じ。",
+      "related": [
+        "dbms",
+        "sql"
+      ],
+      "lessons": [
+        "db.b.02"
+      ]
+    },
+    {
+      "id": "sql",
+      "word": "SQL",
+      "reading": "エスキューエル",
+      "plain": "データベースに「取り出して」「入れて」「変えて」と頼むための言葉。多くのデータベースで共通に使える。",
+      "why": "どの製品でもほぼ同じ書き方で頼める。データを扱う仕事の基本の道具。",
+      "related": [
+        "dbms",
+        "select",
+        "insert"
+      ],
+      "lessons": [
+        "db.b.01",
+        "db.b.02",
+        "db.b.03"
+      ]
+    },
+    {
+      "id": "consistency",
+      "word": "整合性",
+      "reading": "せいごうせい",
+      "plain": "データどうしが食い違わず、正しくそろっていること。例: 売った数と残りの数の合計が、仕入れた数と合う。",
+      "why": "食い違ったデータは、どれが正しいか分からなくなる。DBMS は同時の更新を順に処理して、整合性を守る。",
+      "related": [
+        "dbms",
+        "integrity"
+      ],
+      "lessons": [
+        "db.b.01"
+      ]
+    },
+    {
+      "id": "table",
+      "word": "テーブル",
+      "reading": "テーブル",
+      "plain": "データベースの中で、データを表の形で持つ物。1 件が 1 行（レコード）、項目が 1 列（カラム）になる。",
+      "why": "形が決まっているので、探す・並べる・数えるが速く正しくできる。",
+      "related": [
+        "record",
+        "column",
+        "primary-key"
+      ],
+      "lessons": [
+        "db.b.02"
+      ]
+    },
+    {
+      "id": "record",
+      "word": "行（レコード）",
+      "reading": "レコード",
+      "plain": "テーブルの 1 行。1 件のデータ（1 人の会員・1 つの注文）を表す。",
+      "why": "数える・探す・変える時の 1 単位になる。",
+      "related": [
+        "table",
+        "column"
+      ],
+      "lessons": [
+        "db.b.02"
+      ]
+    },
+    {
+      "id": "column",
+      "word": "列（カラム）",
+      "reading": "カラム",
+      "plain": "テーブルの 1 列。名前・住所のような項目で、列ごとに名前とデータ型を決める。",
+      "why": "列の名前で、取り出す項目や条件を書く。名前を 1 文字でも間違えると動かない。",
+      "related": [
+        "table",
+        "record",
+        "data-type"
+      ],
+      "lessons": [
+        "db.b.02",
+        "db.b.03"
+      ]
+    },
+    {
+      "id": "primary-key",
+      "word": "主キー",
+      "reading": "しゅキー",
+      "plain": "テーブルの中で、行を 1 つに決めるための列。会員番号のように、同じ値が 2 つあってはいけない。",
+      "why": "同じ名前の人がいても、主キーで区別できる。同じ値を入れようとすると DBMS が断る。",
+      "related": [
+        "table",
+        "record"
+      ],
+      "lessons": [
+        "db.b.02"
+      ]
+    },
+    {
+      "id": "data-type",
+      "word": "データ型",
+      "reading": "データがた",
+      "plain": "その列に入れてよい値の種類。整数（INTEGER）・文字（TEXT）など。",
+      "why": "数の列に文字が混ざると、足したり並べたりできない。型を決めると、間違った値を入口で断れる。",
+      "related": [
+        "column",
+        "table"
+      ],
+      "lessons": [
+        "db.b.02"
+      ]
+    },
+    {
+      "id": "select",
+      "word": "SELECT",
+      "reading": "セレクト",
+      "plain": "SQL で、テーブルからデータを取り出す命令。どの列を、どの表から、どの条件で取り出すかを書く。",
+      "why": "データベースで一番多く使う操作。一覧・検索・集計は全てこれで行う。",
+      "related": [
+        "sql",
+        "where",
+        "table"
+      ],
+      "lessons": [
+        "db.b.03",
+        "db.b.04"
+      ]
+    },
+    {
+      "id": "where",
+      "word": "WHERE",
+      "reading": "ウェア",
+      "plain": "SQL で、条件に合う行だけに絞る書き方。例: city が東京の行だけ。",
+      "why": "取り出す時は欲しい行だけに、変える・消す時は変えたい行だけに絞る。書き忘れると全ての行が対象になる。",
+      "related": [
+        "select",
+        "update",
+        "delete"
+      ],
+      "lessons": [
+        "db.b.03",
+        "db.b.04",
+        "db.b.05"
+      ]
+    },
+    {
+      "id": "order-by",
+      "word": "ORDER BY",
+      "reading": "オーダーバイ",
+      "plain": "SQL で、取り出した行を並べる書き方。DESC を付けると大きい順。",
+      "why": "並べないと、行の順は決まっていない。多い順・新しい順を見る時に使う。",
+      "related": [
+        "select",
+        "group-by"
+      ],
+      "lessons": [
+        "db.b.04"
+      ]
+    },
+    {
+      "id": "group-by",
+      "word": "GROUP BY",
+      "reading": "グループバイ",
+      "plain": "SQL で、同じ値の行を 1 つにまとめる書き方。まとめた組ごとに数えたり合計したりする。",
+      "why": "地域ごとの人数・日ごとの売上のように、組ごとの数を出す時に使う。",
+      "related": [
+        "aggregate-function",
+        "order-by"
+      ],
+      "lessons": [
+        "db.b.04"
+      ]
+    },
+    {
+      "id": "aggregate-function",
+      "word": "集計関数",
+      "reading": "しゅうけいかんすう",
+      "plain": "いくつもの行から 1 つの値を出す SQL の関数。COUNT（数える）・SUM（合計）・AVG（平均）など。",
+      "why": "GROUP BY と組み合わせると、組ごとの数や合計が 1 行で出る。",
+      "related": [
+        "group-by",
+        "select"
+      ],
+      "lessons": [
+        "db.b.04"
+      ]
+    },
+    {
+      "id": "insert",
+      "word": "INSERT",
+      "reading": "インサート",
+      "plain": "SQL で、テーブルに新しい行を入れる命令。",
+      "why": "会員の登録・注文の受付など、データが増える時に使う。",
+      "related": [
+        "sql",
+        "update",
+        "delete"
+      ],
+      "lessons": [
+        "db.b.02",
+        "db.b.05"
+      ]
+    },
+    {
+      "id": "update",
+      "word": "UPDATE",
+      "reading": "アップデート",
+      "plain": "SQL で、テーブルの行の値を書き換える命令。WHERE で書き換える行を絞る。",
+      "why": "住所の変更・在庫の数の更新に使う。WHERE を忘れると、全ての行が同じ値になる。",
+      "related": [
+        "where",
+        "insert",
+        "delete"
+      ],
+      "lessons": [
+        "db.b.05"
+      ]
+    },
+    {
+      "id": "delete",
+      "word": "DELETE",
+      "reading": "デリート",
+      "plain": "SQL で、テーブルから行を消す命令。WHERE で消す行を絞る。",
+      "why": "退会・取り消しに使う。WHERE を忘れると全ての行が消え、元に戻せない。",
+      "related": [
+        "where",
+        "update"
+      ],
+      "lessons": [
+        "db.b.05"
+      ]
     }
   ]
 }

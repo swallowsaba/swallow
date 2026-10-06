@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>集計の流れ。WHERE で在籍の行に絞り、GROUP BY で地域ごとにまとめて COUNT で数え、ORDER BY で多い順に並べる</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="where">
+    <rect x="20" y="40" width="190" height="96" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="115" y="72" text-anchor="middle" font-size="16" fill="#3ae08a">1 絞る</text>
+    <text x="115" y="100" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">WHERE</text>
+    <text x="115" y="124" text-anchor="middle" font-size="13" fill="#9fb0c6">在籍の会員だけ</text>
+  </g>
+  <g class="el" data-part="group">
+    <path d="M214 88 H248" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <rect x="254" y="40" width="190" height="96" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="349" y="72" text-anchor="middle" font-size="16" fill="#5cc1ff">2 まとめて数える</text>
+    <text x="349" y="100" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">GROUP BY・COUNT</text>
+    <text x="349" y="124" text-anchor="middle" font-size="13" fill="#9fb0c6">地域ごとに 1 行</text>
+  </g>
+  <g class="el" data-part="order">
+    <path d="M448 88 H482" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <rect x="488" y="40" width="192" height="96" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="584" y="72" text-anchor="middle" font-size="16" fill="#f2b632">3 並べる</text>
+    <text x="584" y="100" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">ORDER BY … DESC</text>
+    <text x="584" y="124" text-anchor="middle" font-size="13" fill="#9fb0c6">多い順</text>
+  </g>
+  <g class="el" data-part="result">
+    <text x="254" y="182" font-size="14" fill="#eef2f6">結果</text>
+    <path d="M254 206 H444" fill="none" stroke="#9fb0c6" stroke-width="1" />
+    <text x="264" y="200" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">city</text>
+    <text x="400" y="200" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">n</text>
+    <text x="264" y="230" font-size="14" fill="#eef2f6">東京</text>
+    <text x="400" y="230" font-size="14" fill="#eef2f6">5</text>
+    <text x="264" y="256" font-size="14" fill="#eef2f6">横浜</text>
+    <text x="400" y="256" font-size="14" fill="#eef2f6">4</text>
+    <text x="264" y="282" font-size="14" fill="#eef2f6">…</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="200" font-size="13" fill="#9fb0c6">集計関数</text>
+    <text x="20" y="226" font-size="13" fill="#eef2f6">COUNT 数える</text>
+    <text x="20" y="250" font-size="13" fill="#eef2f6">SUM 合計</text>
+    <text x="20" y="274" font-size="13" fill="#eef2f6">AVG 平均</text>
+  </g>
+</svg>

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>SELECT の形。SELECT で取り出す列、FROM でどの表から、WHERE でどの行かを決める。書く順は SELECT・FROM・WHERE</title>
+  <g class="el" data-part="select">
+    <rect x="20" y="40" width="210" height="64" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="125" y="80" text-anchor="middle" font-size="18" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">SELECT name</text>
+    <text x="125" y="134" text-anchor="middle" font-size="14" fill="#5cc1ff">取り出す列</text>
+    <text x="125" y="158" text-anchor="middle" font-size="13" fill="#9fb0c6">全ての列なら *</text>
+  </g>
+  <g class="el" data-part="from">
+    <rect x="245" y="40" width="200" height="64" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="345" y="80" text-anchor="middle" font-size="18" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">FROM members</text>
+    <text x="345" y="134" text-anchor="middle" font-size="14" fill="#f2b632">どの表から</text>
+  </g>
+  <g class="el" data-part="where">
+    <rect x="460" y="40" width="220" height="64" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="570" y="80" text-anchor="middle" font-size="16" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">WHERE city = '東京'</text>
+    <text x="570" y="134" text-anchor="middle" font-size="14" fill="#3ae08a">どの行か（条件）</text>
+    <text x="570" y="158" text-anchor="middle" font-size="13" fill="#9fb0c6">書かなければ全ての行</text>
+  </g>
+  <g class="el" data-part="result">
+    <text x="20" y="206" font-size="14" fill="#eef2f6">結果: 東京の会員の、名前の列だけ</text>
+    <path d="M20 242 H220" fill="none" stroke="#9fb0c6" stroke-width="1" />
+    <text x="30" y="236" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">name</text>
+    <text x="30" y="266" font-size="14" fill="#eef2f6">青木</text>
+    <text x="30" y="292" font-size="14" fill="#eef2f6">上野</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="320" y="240" font-size="13" fill="#9fb0c6">文字の値は ' で囲む。列や表の名前は</text>
+    <text x="320" y="264" font-size="13" fill="#9fb0c6">1 文字でも違うと、無いと言われる</text>
+  </g>
+</svg>

@@ -1,0 +1,235 @@
+{
+  "id": "db.b.05",
+  "domain": "db",
+  "level": "beginner",
+  "theme": "SQL",
+  "title": "追加・更新・削除",
+  "goal": "INSERT/UPDATE/DELETE を安全に使える",
+  "minutes": 20,
+  "prerequisites": [
+    "db.b.03"
+  ],
+  "related": [
+    "web.b.03",
+    "db.i.04"
+  ],
+  "next": [
+    "db.i.04"
+  ],
+  "terms": [
+    "insert",
+    "update",
+    "delete",
+    "where",
+    "select",
+    "record",
+    "db",
+    "primary-key"
+  ],
+  "explain": {
+    "what": "データを変える命令は 3 つ。{{term:insert}}は行を入れ、{{term:update}}は値を書き換え、{{term:delete}}は行を消す。どの{{term:record}}を変えるかは、取り出す時と同じく{{term:where}}で絞る。",
+    "why": "変える命令は、{{term:db}}の中身をすぐに書き換える。WHERE を忘れたり条件を誤ったりすると、1 人のつもりが全員を変え・消してしまい、簡単には戻せない。",
+    "use": "会員の登録（INSERT）・住所の変更（UPDATE）・退会（行を消す）。画面の「保存」「削除」のボタンの裏で動いている。",
+    "when": "1 人の会員の住所を変えるつもりで、WHERE を付け忘れた。全ての会員の住所が同じになり、問い合わせの電話が止まらなくなった。",
+    "figures": [
+      "db-b05-range"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "yesno",
+      "prompt": "WHERE を書かない UPDATE は、表の最初の 1 行だけを変える。",
+      "answer": false,
+      "why": "WHERE が無いと、全ての行が対象になる。1 行だけを変えたい時は、{{term:primary-key}}などで 1 行に決まる条件を書く。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "3 番の会員の住所を変える。安全な手順はどれか。",
+      "choices": [
+        {
+          "id": "a",
+          "text": "同じ WHERE で {{term:select}} して 1 行だけ当たると確かめてから、UPDATE する",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "すぐに UPDATE して、後で全体を見直す",
+          "correct": false,
+          "whyNot": "条件を誤っていたら、見直す時にはもう別の人のデータが変わっている。変える前に確かめる。"
+        },
+        {
+          "id": "c",
+          "text": "表を全て消して、正しい値で入れ直す",
+          "correct": false,
+          "whyNot": "1 行を変えるために全てを消すと、入れ直しの誤りや、その間の注文の取りこぼしが起きる。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "`UPDATE members SET city = '大阪'` を実行すると？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "全ての会員の city が大阪になる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "大阪の会員だけが変わる",
+          "correct": false,
+          "whyNot": "`SET` は「この値にする」で、条件ではない。条件は WHERE に書く。WHERE が無いので全員が変わる。"
+        },
+        {
+          "id": "c",
+          "text": "条件が無いので、何も変わらない",
+          "correct": false,
+          "whyNot": "WHERE が無いのは「全ての行」の意味。エラーにも、何もしないにもならない。"
+        }
+      ],
+      "explanation": "WHERE の無い UPDATE は、全ての行を書き換える。画面に「6 行が変わった」のように出たら、すぐに気づける。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "退会した 5 番の会員の行を消す。`DELETE` を実行する前にすることは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`SELECT * FROM members WHERE id = 5` で、消える行を見る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`SELECT COUNT(*) FROM members` で、全体の人数を数える",
+          "correct": false,
+          "whyNot": "全体の人数では、どの行が消えるかは分からない。`DELETE` と同じ条件で見る。"
+        },
+        {
+          "id": "c",
+          "text": "何もしない。`DELETE` は 1 行ずつしか消さない",
+          "correct": false,
+          "whyNot": "`DELETE` も、条件に当たる全ての行を消す。条件が広ければ何行でも消える。"
+        }
+      ],
+      "explanation": "変える・消す前に、同じ WHERE の SELECT で当たる行を見る。思った行だけなら、そのまま SELECT の所を `DELETE` に変える。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "次の 1 行を実行したら、会員が 1 人もいなくなった。原因は？",
+      "context": {
+        "command": "DELETE FROM members",
+        "log": "6 行が変わった"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "WHERE が無く、全ての行が対象になった",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`DELETE` は表ごと消す命令だから",
+          "correct": false,
+          "whyNot": "表そのものは残っている（行が 0 になっただけ）。表を消すのは `DROP TABLE` という別の命令。"
+        },
+        {
+          "id": "c",
+          "text": "主キーが無かったから",
+          "correct": false,
+          "whyNot": "主キーがあっても、WHERE が無ければ全ての行が消える。"
+        }
+      ],
+      "explanation": "WHERE の無い `DELETE` は全ての行を消す。消す行を決める条件を必ず書き、先に SELECT で確かめる。"
+    }
+  ],
+  "practice": {
+    "mode": "sql",
+    "purpose": "会員の表 `members` を、届いた 2 つの連絡のとおりに直す。①3 番の上野さんが横浜へ引っ越した ②5 番の小川さんが退会した。ほかの会員は変えない。",
+    "environment": "sql-sqlite",
+    "setup": {
+      "sql": "CREATE TABLE members (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL) STRICT; INSERT INTO members VALUES (1, '青木', '東京'), (2, '石田', '大阪'), (3, '上野', '東京'), (4, '遠藤', '横浜'), (5, '小川', '東京'), (6, '加藤', '大阪');"
+    },
+    "steps": [
+      {
+        "id": "move",
+        "purpose": "3 番の会員の住所（`city`）だけを横浜に変える。変える前に、同じ条件の SELECT で 1 行だけ当たることを確かめる。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT group_concat(id || ':' || city, ',') FROM (SELECT id, city FROM members WHERE id <> 5 ORDER BY id)",
+          "equals": "1:東京,2:大阪,3:横浜,4:横浜,6:大阪"
+        },
+        "afterward": "「1 行が変わった」と出た。3 番だけが横浜になり、ほかの会員はそのまま。先に SELECT で見たので、当たる行が分かっていた。",
+        "hints": [
+          "変えるのは `UPDATE 表 SET 列 = 値 WHERE 条件`。1 人に決まる条件は、主キーの `id`。",
+          "先に `SELECT * FROM members WHERE id = 3` で 1 行だけ出ることを見る。同じ WHERE のまま UPDATE にする。",
+          "`SELECT * FROM members WHERE id = 3` と `UPDATE members SET city = '横浜' WHERE id = 3` を順に実行する。"
+        ],
+        "expectedErrors": [
+          "db-no-column",
+          "db-unrecognized",
+          "db-syntax",
+          "db-type"
+        ]
+      },
+      {
+        "id": "leave",
+        "purpose": "5 番の会員の行だけを消す。消す前に、同じ条件の SELECT で消える行を見る。",
+        "check": {
+          "kind": "sql",
+          "query": "SELECT group_concat(id || ':' || city, ',') FROM (SELECT id, city FROM members ORDER BY id)",
+          "equals": "1:東京,2:大阪,3:横浜,4:横浜,6:大阪"
+        },
+        "afterward": "5 番の行だけが消え、会員は 5 人になった。2 つの連絡のとおりに、その 2 件だけが変わった。",
+        "hints": [
+          "消すのは `DELETE FROM 表 WHERE 条件`。条件は、前と同じく主キーで 1 行に決める。",
+          "先に `SELECT * FROM members WHERE id = 5` で、小川さんの 1 行だけが出ることを見る。",
+          "`SELECT * FROM members WHERE id = 5` と `DELETE FROM members WHERE id = 5` を順に実行する。"
+        ],
+        "expectedErrors": [
+          "db-no-column",
+          "db-syntax"
+        ]
+      }
+    ],
+    "dangerous": [
+      {
+        "id": "update-all",
+        "pattern": "^\\s*[Uu][Pp][Dd][Aa][Tt][Ee]\\b(?![\\s\\S]*\\b[Ww][Hh][Ee][Rr][Ee]\\b)",
+        "why": "WHERE の無い UPDATE は、全ての会員を書き換える。条件の誤り（WHERE の付け忘れ）。「初めに戻す」でやり直し、同じ条件の SELECT で当たる行を確かめてから変える。"
+      },
+      {
+        "id": "delete-all",
+        "pattern": "^\\s*[Dd][Ee][Ll][Ee][Tt][Ee]\\b(?![\\s\\S]*\\b[Ww][Hh][Ee][Rr][Ee]\\b)",
+        "why": "WHERE の無い `DELETE` は、全ての会員を消す。本物の DB なら元に戻せない。「初めに戻す」でやり直し、消す行を WHERE で 1 行に決める。"
+      }
+    ]
+  },
+  "result": {
+    "success": "変える前に同じ条件の SELECT で確かめ、連絡のあった 2 件だけを安全に変えられた。",
+    "partial": "ヒントを使って直せた（または、WHERE の無い命令を使った）。次は、変える前の SELECT が何を防ぐかを説明してみよう。",
+    "retry": "まだ表が連絡のとおりになっていない。`SELECT * FROM members` で、変わった範囲を見てみよう。"
+  },
+  "summary": {
+    "points": [
+      "変える前に SELECT",
+      "WHERE を忘れない",
+      "変わった範囲を確かめる"
+    ],
+    "next": [
+      "db.i.04"
+    ],
+    "terms": [
+      "insert",
+      "update",
+      "delete",
+      "where"
+    ]
+  }
+}
