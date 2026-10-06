@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>コンテナとデータ。コンテナの中の書き込み層は作り直すと消える。ボリューム db-data をコンテナの中の /var/lib/postgresql/data に付けると、そこに書いたデータは作り直しても残る</title>
+  <g class="el" data-part="container">
+    <rect x="20" y="30" width="360" height="230" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="40" y="58" font-size="16" fill="#5cc1ff">DB のコンテナ（postgres:16）</text>
+  </g>
+  <g class="el" data-part="image">
+    <rect x="40" y="196" width="320" height="44" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="200" y="224" text-anchor="middle" font-size="13" fill="#9fb0c6">イメージの層（読むだけ。変わらない）</text>
+  </g>
+  <g class="el" data-part="writable">
+    <rect x="40" y="76" width="150" height="104" rx="6" fill="none" stroke="#e04a3a" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="115" y="112" text-anchor="middle" font-size="14" fill="#eef2f6">書き込み層</text>
+    <text x="115" y="138" text-anchor="middle" font-size="13" fill="#ff8a7a">作り直すと消える</text>
+  </g>
+  <g class="el" data-part="mount">
+    <rect x="206" y="76" width="154" height="104" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="283" y="106" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">/var/lib/</text>
+    <text x="283" y="126" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">postgresql/data</text>
+    <text x="283" y="156" text-anchor="middle" font-size="13" fill="#3ae08a">DB が書く場所</text>
+  </g>
+  <g class="el" data-part="volume">
+    <path d="M364 128 H470" fill="none" stroke="#3ae08a" stroke-width="3" />
+    <text x="417" y="116" text-anchor="middle" font-size="13" fill="#3ae08a">付ける</text>
+    <rect x="476" y="80" width="204" height="96" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="578" y="118" text-anchor="middle" font-size="16" fill="#3ae08a">ボリューム db-data</text>
+    <text x="578" y="146" text-anchor="middle" font-size="13" fill="#9fb0c6">コンテナの外。残る</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="292" font-size="14" fill="#eef2f6">残すデータは、DB が書く場所にボリュームを付ける。違う場所に付けると、残らない</text>
+  </g>
+</svg>

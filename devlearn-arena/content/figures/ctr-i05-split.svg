@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>1 つのコンテナに全てを入れた形と、役割ごとに web・api・db の 3 つのコンテナに分けた形。分けた形では、画面は api:3000 に、API は db:5432 に、相手の名前で届く</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="one">
+    <text x="20" y="26" font-size="14" fill="#ff8a7a">1 つに全部</text>
+    <rect x="20" y="40" width="190" height="190" rx="10" fill="none" stroke="#e04a3a" stroke-width="2" pointer-events="all" />
+    <text x="115" y="96" text-anchor="middle" font-size="14" fill="#eef2f6">画面</text>
+    <text x="115" y="140" text-anchor="middle" font-size="14" fill="#eef2f6">API</text>
+    <text x="115" y="184" text-anchor="middle" font-size="14" fill="#eef2f6">DB</text>
+  </g>
+  <g class="el" data-part="web">
+    <text x="280" y="26" font-size="14" fill="#3ae08a">役割で分ける</text>
+    <rect x="280" y="40" width="120" height="70" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="340" y="70" text-anchor="middle" font-size="14" fill="#eef2f6">web</text>
+    <text x="340" y="94" text-anchor="middle" font-size="13" fill="#9fb0c6">画面</text>
+  </g>
+  <g class="el" data-part="api">
+    <path d="M404 75 H460" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="432" y="64" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#3ae08a">api:3000</text>
+    <rect x="466" y="40" width="120" height="70" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="526" y="70" text-anchor="middle" font-size="14" fill="#eef2f6">api</text>
+    <text x="526" y="94" text-anchor="middle" font-size="13" fill="#9fb0c6">API（×3 に増やせる）</text>
+  </g>
+  <g class="el" data-part="db">
+    <path d="M526 114 V156" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="540" y="140" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#3ae08a">db:5432</text>
+    <rect x="466" y="162" width="120" height="70" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="526" y="192" text-anchor="middle" font-size="14" fill="#eef2f6">db</text>
+    <text x="526" y="216" text-anchor="middle" font-size="13" fill="#9fb0c6">DB</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="276" font-size="14" fill="#eef2f6">1 つのコンテナに 1 つの役割。別々に更新し、忙しい物だけ増やせる</text>
+    <text x="20" y="304" font-size="14" fill="#9fb0c6">相手は、localhost ではなくコンテナの名前で指す</text>
+  </g>
+</svg>

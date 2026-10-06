@@ -1,0 +1,147 @@
+{
+  "id": "ctr.i.04",
+  "domain": "ctr",
+  "level": "intermediate",
+  "theme": "ストレージ",
+  "title": "コンテナとデータ",
+  "goal": "消える領域と残す領域（ボリューム）を使い分けられる",
+  "minutes": 20,
+  "prerequisites": ["ctr.b.04"],
+  "related": ["docker.i.03", "k8s.i.03"],
+  "next": ["ctr.i.05", "docker.i.03", "k8s.i.03"],
+  "terms": ["container", "image", "volume", "db", "file", "directory"],
+  "explain": {
+    "what": "{{term:container}}の中には、{{term:image}}の層の上に、書き込める層がある。中で書いた物はこの層に入り、コンテナを作り直すと消える。残したい物は{{term:volume}}に置く。ボリュームはコンテナの外にあり、中の決まった場所に付けて使う。",
+    "why": "コンテナは、更新や故障のたびに作り直す前提で使う。データを中に置くと、作り直すたびに消える。ボリュームに置けば、作り直しても残り、新しいコンテナに付け直せる。",
+    "use": "{{term:db}}のデータ、利用者が上げた{{term:file}}、記録。消えて困る物は、全てボリュームに置く。",
+    "when": "予約の DB のコンテナを新しい版に入れ替えたら、全ての予約が消えていた。データは、コンテナの中に書かれていた。",
+    "figures": ["ctr-i04-volume"]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "コンテナを作り直す",
+      "b": "書き込み層に書いた物が消える",
+      "answer": "cause",
+      "why": "作り直すと、イメージから新しい書き込み層ができる。前の書き込み層は、前のコンテナと一緒に捨てられる。",
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "DB のデータは、コンテナの中に置いておけばよい。",
+      "answer": false,
+      "why": "コンテナは作り直す前提。中に置いたデータは作り直すと消える。DB のデータはボリュームに置く。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "ボリュームを付けずに動かしていた DB のコンテナを、作り直した。データはどうなる？",
+      "choices": [
+        { "id": "a", "text": "消える", "correct": true },
+        { "id": "b", "text": "イメージに保存されて残る", "correct": false, "whyNot": "イメージは読むだけの設計図。コンテナで書いた物は、イメージには入らない。" },
+        { "id": "c", "text": "新しいコンテナに自動で写る", "correct": false, "whyNot": "前の書き込み層は写されない。新しいコンテナは、イメージの中身から始まる。" }
+      ],
+      "explanation": "書き込み層はコンテナと一緒に消える。残すにはボリュームに置く。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "利用者が上げた写真を、コンテナを作り直しても残したい。どこに置く？",
+      "choices": [
+        { "id": "a", "text": "コンテナに付けたボリューム", "correct": true },
+        { "id": "b", "text": "コンテナの中の /tmp", "correct": false, "whyNot": "/tmp も書き込み層の中。作り直すと消える。" },
+        { "id": "c", "text": "イメージの中", "correct": false, "whyNot": "イメージは作る時に固める物で、動いている間には書き足せない。" }
+      ],
+      "explanation": "消えて困る物はボリュームへ。コンテナの外にあるので、作り直しても残る。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "DB のコンテナを新しい版に入れ替えたら、データが消えた。一番考えられる原因は？",
+      "choices": [
+        { "id": "a", "text": "データを、ボリュームではなくコンテナの中に書いていた", "correct": true },
+        { "id": "b", "text": "新しい版のイメージが壊れていた", "correct": false, "whyNot": "イメージが壊れていたら、起動しない。動いたのに空なら、データの置き場所を疑う。" },
+        { "id": "c", "text": "コンテナの名前を変えなかった", "correct": false, "whyNot": "名前は関係ない。データが残るかは、ボリュームに置いたかで決まる。" }
+      ],
+      "explanation": "入れ替え（作り直し）で消えたなら、データはコンテナの中にあった。ボリュームに置けば残る。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "新しく動かす予約の DB のコンテナ（postgres:16）で、データが作り直しても残るようにする。試しに 3 件の予約を入れてから、作り直して確かめる。",
+    "environment": "sim-config",
+    "setup": {
+      "fields": [
+        { "id": "ボリューム", "label": "付けるボリューム", "options": ["付けない", "db-data"], "value": "付けない" },
+        { "id": "場所", "label": "付ける場所（コンテナの中）", "options": ["/data", "/var/lib/postgresql/data"], "value": "/data" },
+        { "id": "操作", "label": "操作", "options": ["そのまま", "作り直す"], "value": "そのまま" }
+      ],
+      "settle": "field 操作=作り直す",
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "DB のコンテナ（postgres:16）",
+          "rows": [["データを書く場所", "/var/lib/postgresql/data"], ["試しに入れた予約", "3 件"]]
+        },
+        {
+          "kind": "log",
+          "title": "作り直した結果",
+          "when": "field 操作=作り直す && field ボリューム=付けない",
+          "lines": ["postgres:16 から作り直した", "予約: 0 件（データは書き込み層にあり、前のコンテナと一緒に消えた）"]
+        },
+        {
+          "kind": "log",
+          "title": "作り直した結果",
+          "when": "field 操作=作り直す && field ボリューム=db-data && field 場所=/data",
+          "lines": ["postgres:16 から作り直し、db-data を /data に付けた", "予約: 0 件（DB が書くのは /var/lib/postgresql/data。/data には何も書いていない）"]
+        },
+        {
+          "kind": "log",
+          "title": "作り直した結果",
+          "when": "field 操作=作り直す && field ボリューム=db-data && field 場所=/var/lib/postgresql/data",
+          "lines": ["postgres:16 から作り直し、db-data を /var/lib/postgresql/data に付けた", "予約: 3 件（データは db-data に残っていた）"]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "mount",
+        "purpose": "DB がデータを書く場所に、ボリューム db-data を付ける。",
+        "check": { "kind": "sim", "expr": "field ボリューム=db-data 場所=/var/lib/postgresql/data" },
+        "afterward": "db-data を、DB がデータを書く /var/lib/postgresql/data に付けた。そこに書いた物は、コンテナの外の db-data に入る。",
+        "hints": [
+          "DB のコンテナの情報で、データを書く場所を見る。",
+          "ボリュームは、DB がデータを書く場所そのものに付ける。違う場所に付けても、DB はそこに書かない。",
+          "`set ボリューム db-data` `set 場所 /var/lib/postgresql/data` の順に入れる。"
+        ],
+        "expectedErrors": ["ctr-volume-path"]
+      },
+      {
+        "id": "recreate",
+        "purpose": "コンテナを作り直して、試しに入れた 3 件が残るかを確かめる。",
+        "check": { "kind": "sim", "expr": "field ボリューム=db-data 場所=/var/lib/postgresql/data 操作=作り直す" },
+        "afterward": "作り直しても 3 件が残った。データはコンテナの外の db-data にあり、新しいコンテナに付け直された。",
+        "hints": [
+          "残ったかは、作り直してみないと分からない。",
+          "操作の欄で、作り直す方を選ぶ。",
+          "`set 操作 作り直す` と入れる。"
+        ],
+        "expectedErrors": ["ctr-volume-path"]
+      }
+    ]
+  },
+  "result": {
+    "success": "DB が書く場所にボリュームを付け、作り直してもデータが残ることを確かめられた。",
+    "partial": "ヒントを使って残せた。次は、ボリュームを違う場所に付けると、なぜ残らないのかを説明してみよう。",
+    "retry": "まだ作り直すとデータが消える。DB のデータを書く場所と、ボリュームを付けた場所を見比べよう。"
+  },
+  "summary": {
+    "points": ["中は消える", "残す物はボリューム", "付ける場所を正しく"],
+    "next": ["docker.i.03", "k8s.i.03"],
+    "terms": ["volume"]
+  }
+}

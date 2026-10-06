@@ -1,0 +1,309 @@
+{
+  "id": "ctr.i.01",
+  "domain": "ctr",
+  "level": "intermediate",
+  "theme": "ランタイム",
+  "title": "コンテナランタイム",
+  "goal": "OCI の標準と、ランタイム（containerd など）と Docker の位置関係を説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "ctr.b.04"
+  ],
+  "related": [
+    "docker.a.03",
+    "k8s.b.03"
+  ],
+  "next": [
+    "ctr.i.02",
+    "docker.a.03"
+  ],
+  "terms": [
+    "container-runtime",
+    "container",
+    "containerd",
+    "runc",
+    "oci",
+    "docker",
+    "kubernetes",
+    "cri",
+    "podman",
+    "image",
+    "kernel",
+    "config-file"
+  ],
+  "explain": {
+    "what": "{{term:container-runtime}}は、{{term:container}}を実際に動かす部品。{{term:image}}の取得や起動を受け持つ高い層（{{term:containerd}}など）と、{{term:kernel}}の機能でコンテナを作る低い層（{{term:runc}}など）がある。イメージの形と動かし方は、{{term:oci}}という標準で決まっている。",
+    "why": "標準があるので、道具やランタイムが違っても、同じイメージを動かせる。{{term:docker}}は道具の 1 つにすぎない。{{term:kubernetes}}は Docker 無しで、{{term:cri}}という決まりを通して containerd などを使う。",
+    "use": "道具どうしの関係を整理する時。Docker・{{term:podman}}・Kubernetes のどれを使っても、OCI の形の{{term:image}}は同じように動く。",
+    "when": "本番の Kubernetes の機械には、Docker が入っていない。それでも、開発のパソコンの Docker で作ったイメージが、そのまま動いている。",
+    "figures": [
+      "ctr-i01-runtime"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "ctr-i01-runtime",
+      "prompt": "図で、{{term:kernel}}の機能を使って実際にコンテナを作る、低い層のランタイムを押す。",
+      "answer": [
+        "runc"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "イメージと動かし方の標準（OCI）がある",
+      "b": "道具やランタイムが違っても、同じイメージを動かせる",
+      "answer": "cause",
+      "why": "どの道具も、同じ標準の形のイメージを、同じ決まりで動かす。だから道具を入れ替えても、イメージを作り直さなくてよい。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "{{term:oci}}とは何か。",
+      "choices": [
+        {
+          "id": "a",
+          "text": "コンテナのイメージの形と、動かし方を決めた標準",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Docker を作った会社の製品の名前",
+          "correct": false,
+          "whyNot": "OCI は特定の製品ではなく、多くの会社が一緒に決めた標準。Docker も、この標準に合わせている。"
+        },
+        {
+          "id": "c",
+          "text": "Kubernetes の{{term:config-file}}の書き方",
+          "correct": false,
+          "whyNot": "Kubernetes の設定とは別の話。OCI は、イメージとコンテナの動かし方の標準。"
+        }
+      ],
+      "explanation": "OCI はイメージの形と動かし方の標準。標準に合っていれば、どの道具やランタイムでも動かせる。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "開発のパソコンの Docker で作ったイメージを、Docker の入っていない Kubernetes で動かす。どうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "動く。OCI の形なので、containerd が動かせる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "動かない。Docker で作った物は Docker が要る",
+          "correct": false,
+          "whyNot": "Docker が作るイメージは OCI の標準の形。標準に合うランタイムなら、Docker が無くても動かせる。"
+        },
+        {
+          "id": "c",
+          "text": "Kubernetes 用の形に、イメージを作り直せば動く",
+          "correct": false,
+          "whyNot": "作り直す必要は無い。同じ標準の形なので、そのまま動く。"
+        }
+      ],
+      "explanation": "イメージは OCI の形。Kubernetes は CRI を通して containerd などに頼み、そのまま動かす。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "Kubernetes が、コンテナを動かすためによく使う物はどれか。",
+      "choices": [
+        {
+          "id": "a",
+          "text": "CRI に合ったランタイム（containerd など）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Docker（必ず入れておく）",
+          "correct": false,
+          "whyNot": "今の Kubernetes は、Docker を間に挟まない。CRI に合うランタイムに直接頼む。"
+        },
+        {
+          "id": "c",
+          "text": "runc だけを、kubelet が直接使う",
+          "correct": false,
+          "whyNot": "kubelet は CRI で高い層のランタイムに頼み、高い層が runc のような低い層を使う。"
+        }
+      ],
+      "explanation": "Kubernetes は CRI という決まりで、containerd などの高い層のランタイムに頼む。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "市の 3 つの環境（開発・本番・検証）で、使う道具からカーネルまで、誰が誰に仕事を頼むかの構成図を完成させる。",
+    "environment": "sim-connect",
+    "setup": {
+      "directed": true,
+      "nodes": [
+        {
+          "id": "docker",
+          "label": "Docker",
+          "icon": "app",
+          "x": 12,
+          "y": 14,
+          "note": "開発"
+        },
+        {
+          "id": "kubelet",
+          "label": "kubelet",
+          "icon": "app",
+          "x": 46,
+          "y": 14,
+          "note": "本番の Kubernetes"
+        },
+        {
+          "id": "podman",
+          "label": "Podman",
+          "icon": "app",
+          "x": 86,
+          "y": 14,
+          "note": "検証"
+        },
+        {
+          "id": "containerd",
+          "label": "containerd",
+          "icon": "box",
+          "x": 24,
+          "y": 52,
+          "note": "高い層"
+        },
+        {
+          "id": "runc",
+          "label": "runc",
+          "icon": "box",
+          "x": 70,
+          "y": 52,
+          "note": "低い層"
+        },
+        {
+          "id": "kernel",
+          "label": "カーネル",
+          "icon": "cpu",
+          "x": 70,
+          "y": 90,
+          "note": "名前空間・cgroups"
+        }
+      ],
+      "forbid": [
+        {
+          "a": "kubelet",
+          "b": "docker",
+          "message": "kubelet は CRI で話す。Kubernetes 1.24 から、Docker を間に挟む仕組み（dockershim）は無い"
+        },
+        {
+          "a": "podman",
+          "b": "containerd",
+          "message": "Podman は containerd を使わない。低い層のランタイム（runc など）を直接使う"
+        },
+        {
+          "a": "docker",
+          "b": "runc",
+          "message": "Docker は containerd に頼み、containerd が runc を使う"
+        }
+      ],
+      "panels": [
+        {
+          "kind": "kv",
+          "title": "3 つの環境に入っている物",
+          "rows": [
+            [
+              "開発",
+              "Docker・containerd・runc"
+            ],
+            [
+              "本番",
+              "Kubernetes の kubelet・containerd・runc（Docker は無い）"
+            ],
+            [
+              "検証",
+              "Podman・runc（常に動く親が無い）"
+            ]
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "dev",
+        "purpose": "開発のパソコン: Docker から、カーネルまでの頼む順をつなぐ。",
+        "check": {
+          "kind": "sim",
+          "expr": "path docker>containerd>runc>kernel"
+        },
+        "afterward": "Docker → containerd → runc → カーネル。Docker は、中で containerd に仕事を頼んでいる。",
+        "hints": [
+          "表の「入っている物」を上から順にたどる。道具は高い層に、高い層は低い層に頼む。",
+          "Docker は containerd に、containerd は runc に、runc はカーネルの機能に頼む。",
+          "`connect docker containerd` `connect containerd runc` `connect runc kernel` の順に入れる。"
+        ],
+        "expectedErrors": [
+          "ctr-runtime-path"
+        ]
+      },
+      {
+        "id": "prod",
+        "purpose": "本番: Docker の入っていない Kubernetes が、どこに頼むかをつなぐ。",
+        "check": {
+          "kind": "sim",
+          "expr": "path kubelet>containerd>runc>kernel"
+        },
+        "afterward": "kubelet は CRI で containerd に頼む。下は開発と同じ containerd → runc → カーネル。Docker は要らない。",
+        "hints": [
+          "本番には Docker が入っていない。kubelet は CRI という決まりで、ランタイムに直接頼む。",
+          "kubelet の頼む先は、開発でも使っていた高い層のランタイム。",
+          "`connect kubelet containerd` と入れる。"
+        ],
+        "expectedErrors": [
+          "ctr-runtime-path"
+        ]
+      },
+      {
+        "id": "test",
+        "purpose": "検証: Podman が、どこに頼むかをつなぐ。",
+        "check": {
+          "kind": "sim",
+          "expr": "path podman>runc>kernel"
+        },
+        "afterward": "Podman は containerd を通さず、runc を直接使う。道具が違っても、同じ OCI の形のイメージが動く。",
+        "hints": [
+          "表の検証の「入っている物」には、containerd が無い。",
+          "Podman は低い層のランタイムを直接使う。",
+          "`connect podman runc` と入れる。"
+        ],
+        "expectedErrors": [
+          "ctr-runtime-path"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "3 つの環境で、道具からカーネルまでの頼む順をつなげた。Docker は道具の 1 つで、Kubernetes も Podman も同じ標準の上で動くことを確かめた。",
+    "partial": "ヒントを使って構成図を作れた。次は、なぜ Docker が無くても Kubernetes が動くのかを、OCI と CRI の言葉で説明してみよう。",
+    "retry": "まだ構成図がつながっていない。表の「入っている物」を、上の層から順にたどろう。"
+  },
+  "summary": {
+    "points": [
+      "標準があるから入れ替えられる",
+      "Docker は道具の 1 つ",
+      "Kubernetes は Docker 無しでも動く"
+    ],
+    "next": [
+      "ctr.i.02",
+      "docker.a.03"
+    ],
+    "terms": [
+      "container-runtime",
+      "oci",
+      "cri"
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>コンテナのネットワーク。仮想の網 front-net に web と db のコンテナがいて、web は名前 db で DB に届く。外からは公開した 8080 番だけが web の 80 番に届き、db は公開しない</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="net">
+    <rect x="250" y="30" width="430" height="200" rx="10" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="8 5" pointer-events="all" />
+    <text x="270" y="54" font-size="14" fill="#f2b632">仮想の網 front-net</text>
+  </g>
+  <g class="el" data-part="web">
+    <rect x="280" y="90" width="150" height="80" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="355" y="124" text-anchor="middle" font-size="16" fill="#eef2f6">web</text>
+    <text x="355" y="150" text-anchor="middle" font-size="13" fill="#9fb0c6">80 番で待つ</text>
+  </g>
+  <g class="el" data-part="db">
+    <path d="M434 130 H504" fill="none" stroke="#3ae08a" stroke-width="2" marker-end="url(#ar)" />
+    <text x="470" y="118" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#3ae08a">db:5432</text>
+    <rect x="510" y="90" width="150" height="80" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="585" y="124" text-anchor="middle" font-size="16" fill="#eef2f6">db</text>
+    <text x="585" y="150" text-anchor="middle" font-size="13" fill="#9fb0c6">5432 番で待つ</text>
+  </g>
+  <g class="el" data-part="outside">
+    <rect x="20" y="96" width="140" height="68" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="90" y="136" text-anchor="middle" font-size="14" fill="#eef2f6">外（利用者）</text>
+  </g>
+  <g class="el" data-part="publish">
+    <path d="M164 130 H274" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="218" y="118" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">8080→80</text>
+    <text x="218" y="152" text-anchor="middle" font-size="13" fill="#9fb0c6">公開</text>
+  </g>
+  <g class="el" data-part="nopub">
+    <text x="585" y="200" text-anchor="middle" font-size="13" fill="#ff8a7a">外には公開しない</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="270" font-size="14" fill="#eef2f6">同じ網のコンテナには、相手の名前で届く</text>
+    <text x="20" y="298" font-size="14" fill="#9fb0c6">コンテナの中の localhost は、そのコンテナ自身を指す</text>
+  </g>
+</svg>

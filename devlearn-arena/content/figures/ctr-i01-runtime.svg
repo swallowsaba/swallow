@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>コンテナを動かす部品の層。使う道具（Docker・Kubernetes・Podman）から、高い層のランタイム containerd、低い層のランタイム runc、カーネルの機能（名前空間・cgroups）へと頼む。イメージと動かし方は OCI の標準で決まる</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="tools">
+    <text x="20" y="22" font-size="13" fill="#9fb0c6">使う道具</text>
+    <rect x="20" y="32" width="170" height="44" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="105" y="60" text-anchor="middle" font-size="14" fill="#eef2f6">Docker</text>
+    <rect x="250" y="32" width="200" height="44" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="350" y="60" text-anchor="middle" font-size="14" fill="#eef2f6">Kubernetes（kubelet）</text>
+    <rect x="510" y="32" width="170" height="44" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="595" y="60" text-anchor="middle" font-size="14" fill="#eef2f6">Podman</text>
+  </g>
+  <g class="el" data-part="links">
+    <path d="M105 80 L200 120 M350 80 L270 120 M235 166 L320 206 M595 80 L420 206 M370 252 V272" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="322" y="104" font-size="13" fill="#9fb0c6">CRI</text>
+  </g>
+  <g class="el" data-part="high">
+    <text x="122" y="152" text-anchor="end" font-size="13" fill="#9fb0c6">高い層</text>
+    <rect x="130" y="124" width="210" height="44" rx="6" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="235" y="152" text-anchor="middle" font-size="14" fill="#eef2f6">containerd</text>
+  </g>
+  <g class="el" data-part="runc">
+    <text x="262" y="238" text-anchor="end" font-size="13" fill="#9fb0c6">低い層</text>
+    <rect x="270" y="210" width="200" height="44" rx="6" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="370" y="238" text-anchor="middle" font-size="14" fill="#eef2f6">runc</text>
+  </g>
+  <g class="el" data-part="kernel">
+    <rect x="20" y="276" width="660" height="40" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="350" y="302" text-anchor="middle" font-size="14" fill="#3ae08a">カーネルの機能（名前空間・cgroups）</text>
+  </g>
+  <g class="el" data-part="oci">
+    <text x="490" y="232" font-size="13" fill="#9fb0c6">イメージの形と動かし方は</text>
+    <text x="490" y="254" font-size="13" fill="#9fb0c6">OCI の標準で決まる</text>
+  </g>
+</svg>

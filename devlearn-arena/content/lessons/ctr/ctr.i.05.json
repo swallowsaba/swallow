@@ -1,0 +1,162 @@
+{
+  "id": "ctr.i.05",
+  "domain": "ctr",
+  "level": "intermediate",
+  "theme": "複数",
+  "title": "複数コンテナで 1 つのサービス",
+  "goal": "役割を分けて組み合わせる設計ができる",
+  "minutes": 20,
+  "prerequisites": ["ctr.i.03", "ctr.i.04"],
+  "related": ["docker.i.06", "k8s.a.01"],
+  "next": ["ctr.a.01"],
+  "terms": ["container", "web", "api", "db", "service", "kubernetes", "program"],
+  "explain": {
+    "what": "1 つの{{term:service}}を、役割ごとに別々の{{term:container}}に分けて組み合わせる設計。画面（{{term:web}}）・{{term:api}}・{{term:db}}をそれぞれ 1 つのコンテナにし、網の中で名前でつなぐ。",
+    "why": "分けておくと、1 つだけを更新でき、忙しい役割だけを増やせる。1 つが壊れても、影響する範囲が狭い。全てを 1 つに入れると、画面の 1 行の直しでも DB ごと止めることになる。",
+    "use": "Web のサービスの多くの構成。コンテナを組み合わせて動かす道具（{{term:kubernetes}}など）も、この分け方を前提にしている。",
+    "when": "画面の文字を 1 つ直すだけでも、API と DB ごと止めて作り直している。夕方は API だけが忙しいのに、全部を増やすしかない。",
+    "figures": ["ctr-i05-split"]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "役割ごとにコンテナを分ける",
+      "b": "API だけを更新したり、増やしたりできる",
+      "answer": "cause",
+      "why": "役割が別のコンテナなら、そのコンテナだけを作り直し、そのコンテナだけを増やせる。ほかの役割は止まらない。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "画面・API・DB を 1 つのコンテナに入れていると、何が困るか。",
+      "choices": [
+        { "id": "a", "text": "画面の小さな直しでも、DB ごと止めて作り直すことになる", "correct": true },
+        { "id": "b", "text": "コンテナが 1 つなので、管理が楽になる", "correct": false, "whyNot": "数は少ないが、どこを直しても全体が止まり、忙しい所だけを増やせない。" },
+        { "id": "c", "text": "画面から API に届かなくなる", "correct": false, "whyNot": "同じコンテナの中なので届きはする。困るのは、更新と増やし方が全体でしかできないこと。" }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "夕方だけ API が忙しい。API だけを 3 つに増やしたい。どうしておく？",
+      "choices": [
+        { "id": "a", "text": "API を、画面や DB とは別のコンテナにしておく", "correct": true },
+        { "id": "b", "text": "1 つのコンテナのまま、全体を 3 つにする", "correct": false, "whyNot": "DB まで 3 つになり、データが 3 か所に分かれてしまう。忙しくない画面も増える。" },
+        { "id": "c", "text": "API の{{term:program}}を、DB のコンテナに入れる", "correct": false, "whyNot": "DB と一緒では、API だけを増やせない。役割ごとに分けておく。" }
+      ],
+      "explanation": "役割ごとに分けておけば、忙しい役割のコンテナだけを増やせる。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "1 つのコンテナに入れる単位として、よいものはどれか。",
+      "choices": [
+        { "id": "a", "text": "1 つの役割（画面・API・DB のどれか 1 つ）", "correct": true },
+        { "id": "b", "text": "1 つのサービスの全て", "correct": false, "whyNot": "全てを入れると、更新も増やすのも全体でしかできない。" },
+        { "id": "c", "text": "同じ日に作った物", "correct": false, "whyNot": "作った日ではなく、役割で分ける。別々に更新し、増やすため。" }
+      ],
+      "explanation": "1 つのコンテナに 1 つの役割。分けた物どうしを、網の中で名前でつなぐ。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "3 つに分けた構成で、DB のコンテナだけが止まった。どうなる？",
+      "choices": [
+        { "id": "a", "text": "画面は表示されるが、予約の一覧や登録のような、データを使う機能が止まる", "correct": true },
+        { "id": "b", "text": "全てのコンテナが同時に止まる", "correct": false, "whyNot": "別々のコンテナなので、画面と API は動き続ける。止まるのは DB を使う所。" },
+        { "id": "c", "text": "何も起きない", "correct": false, "whyNot": "API は DB に問い合わせて答える。DB が止まれば、データを使う機能は答えられない。" }
+      ],
+      "explanation": "分けておくと、壊れた所の影響が狭い。画面は出て、何が止まっているかを知らせられる。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "予約のサービスは、画面・API・DB を全て 1 つのコンテナ web に入れている。役割ごとに web・api・db の 3 つに分け、同じ網の中でつなぐ。",
+    "environment": "sim-config",
+    "setup": {
+      "fields": [
+        { "id": "api", "label": "コンテナ api に入れる物", "options": ["使わない", "API"], "value": "使わない" },
+        { "id": "db", "label": "コンテナ db に入れる物", "options": ["使わない", "DB"], "value": "使わない" },
+        {
+          "id": "web", "label": "コンテナ web に入れる物", "options": ["画面・API・DB", "画面"], "value": "画面・API・DB",
+          "requires": [
+            { "value": "画面", "expr": "field api=API db=DB", "message": "API と DB の置き場所が無い。先に api と db のコンテナを用意する" }
+          ]
+        },
+        { "id": "画面から", "label": "画面が API を指す宛先", "options": ["localhost:3000", "web:3000", "api:3000"], "value": "localhost:3000" },
+        { "id": "APIから", "label": "API が DB を指す宛先", "options": ["localhost:5432", "db:5432"], "value": "localhost:5432" }
+      ],
+      "panels": [
+        {
+          "kind": "text",
+          "title": "今の困りごと",
+          "body": "画面の 1 行を直すだけでも、API と DB ごと止めて作り直している。夕方は API だけが忙しいのに、全部を増やすしかない。"
+        },
+        {
+          "kind": "log",
+          "title": "画面 → API",
+          "when": "field web=画面 && field 画面から=localhost:3000",
+          "lines": ["localhost:3000: Connection refused（localhost は web 自身。API は別のコンテナ api にいる）"]
+        },
+        {
+          "kind": "log",
+          "title": "画面 → API",
+          "when": "field web=画面 && field 画面から=web:3000",
+          "lines": ["web:3000: Connection refused（web は画面のコンテナ自身。API がいるのは api）"]
+        },
+        {
+          "kind": "log",
+          "title": "API → DB",
+          "when": "field web=画面 && field APIから=localhost:5432",
+          "lines": ["localhost:5432: Connection refused（DB は別のコンテナ db にいる）"]
+        },
+        {
+          "kind": "log",
+          "title": "3 つで動かした結果",
+          "when": "field web=画面 api=API db=DB 画面から=api:3000 APIから=db:5432",
+          "lines": ["画面 → api:3000: つながった", "API → db:5432: つながった", "画面の直しは web だけを作り直す。夕方は api だけを 3 つに増やせる"]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "split",
+        "purpose": "画面・API・DB を、それぞれ別のコンテナ（web・api・db）に分ける。",
+        "check": { "kind": "sim", "expr": "field web=画面 api=API db=DB" },
+        "afterward": "web には画面だけ、api には API、db には DB が入った。それぞれを別々に作り直せる。",
+        "hints": [
+          "1 つのコンテナに 1 つの役割。先に、API と DB の置き場所を作る。",
+          "api に API を、db に DB を入れてから、web を画面だけにする。",
+          "`set api API` `set db DB` `set web 画面` の順に入れる。"
+        ],
+        "expectedErrors": ["ctr-split-order"]
+      },
+      {
+        "id": "connect",
+        "purpose": "分けたコンテナどうしを、正しい宛先でつなぐ。",
+        "check": { "kind": "sim", "expr": "field web=画面 api=API db=DB 画面から=api:3000 APIから=db:5432" },
+        "afterward": "画面は api:3000 に、API は db:5432 に、相手のコンテナの名前で届いた。3 つが 1 つのサービスとして動いている。",
+        "hints": [
+          "分けた後は、localhost では相手に届かない。localhost は自分のコンテナ。",
+          "相手のコンテナの名前で指す。画面からは API のいる api、API からは DB のいる db。",
+          "`set 画面から api:3000` `set APIから db:5432` の順に入れる。"
+        ],
+        "expectedErrors": ["ctr-connect-wrong"]
+      }
+    ]
+  },
+  "result": {
+    "success": "画面・API・DB を 3 つのコンテナに分け、相手の名前でつないで 1 つのサービスとして動かせた。",
+    "partial": "ヒントを使って分けられた。次は、分けると何が良くなるかを、更新と増やし方の両方で説明してみよう。",
+    "retry": "まだ 3 つがつながっていない。画面 → API・API → DB の記録で、どこを指しているかを見よう。"
+  },
+  "summary": {
+    "points": ["1 つの役割に 1 つのコンテナ", "別々に更新・拡大", "つながりを設計"],
+    "next": ["docker.i.06", "k8s.b.01"],
+    "terms": ["container", "service"]
+  }
+}
