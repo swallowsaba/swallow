@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>パイプラインの形。ステージ 1 で組み立て、ステージ 2 で 3 つの検査のジョブを並べて動かし、ステージ 3 で配る。かかる時間は、各ステージで一番長いジョブの和</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="stages">
+    <text x="95" y="30" text-anchor="middle" font-size="14" fill="#f2b632">ステージ 1</text>
+    <text x="340" y="30" text-anchor="middle" font-size="14" fill="#f2b632">ステージ 2（並んで動く）</text>
+    <text x="605" y="30" text-anchor="middle" font-size="14" fill="#f2b632">ステージ 3</text>
+  </g>
+  <g class="el" data-part="build">
+    <rect x="20" y="114" width="150" height="64" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="95" y="142" text-anchor="middle" font-size="16" fill="#eef2f6">組み立て</text>
+    <text x="95" y="166" text-anchor="middle" font-size="13" fill="#9fb0c6">4 分</text>
+  </g>
+  <g class="el" data-part="unit">
+    <path d="M174 146 L234 78" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <rect x="240" y="50" width="200" height="56" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="340" y="84" text-anchor="middle" font-size="14" fill="#eef2f6">単体の検査　3 分</text>
+  </g>
+  <g class="el" data-part="lint">
+    <path d="M174 146 H234" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <rect x="240" y="118" width="200" height="56" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="340" y="152" text-anchor="middle" font-size="14" fill="#eef2f6">書き方の検査　1 分</text>
+  </g>
+  <g class="el" data-part="e2e">
+    <path d="M174 146 L234 214" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <rect x="240" y="186" width="200" height="56" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="340" y="220" text-anchor="middle" font-size="14" fill="#eef2f6">画面の検査　6 分</text>
+  </g>
+  <g class="el" data-part="deploy">
+    <path d="M444 78 L524 140 M444 146 H524 M444 214 L524 152" fill="none" stroke="#9fb0c6" stroke-width="2" />
+    <rect x="530" y="114" width="150" height="64" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="605" y="142" text-anchor="middle" font-size="16" fill="#eef2f6">配布</text>
+    <text x="605" y="166" text-anchor="middle" font-size="13" fill="#9fb0c6">2 分</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="284" font-size="14" fill="#eef2f6">かかる時間 = 各ステージで一番長いジョブの和: 4 + 6 + 2 = 12 分</text>
+    <text x="20" y="312" font-size="14" fill="#ff8a7a">検査が 1 つでも失敗すると、ステージ 3 の配布は動かない</text>
+  </g>
+</svg>

@@ -1,0 +1,164 @@
+{
+  "id": "cicd.b.01",
+  "domain": "cicd",
+  "level": "beginner",
+  "theme": "考え方",
+  "title": "CI と CD とは",
+  "goal": "手作業の配布の危うさと、自動化で何が良くなるかを説明できる",
+  "minutes": 15,
+  "prerequisites": ["git.b.02"],
+  "related": ["devops.b.01", "git.b.02"],
+  "next": ["cicd.b.02", "devops.b.01"],
+  "terms": ["ci", "continuous-delivery", "commit", "build", "test", "deploy", "web", "app", "server"],
+  "explain": {
+    "what": "{{term:ci}}は、変更を{{term:commit}}して送るたびに、自動で組み立て（{{term:build}}）、検査（{{term:test}}）をする仕組み。{{term:continuous-delivery}}は、検査を通った物を、自動で本番まで届ける（{{term:deploy}}）仕組み。",
+    "why": "手順書を見ながら人が手で配ると、手順の抜けや打ち間違いが起きる。人によってやり方も違い、時間もかかる。自動にすれば、毎回同じ順で、早く、抜けなく進む。壊れた物は検査で止まり、本番に届かない。",
+    "use": "全てのチーム開発。{{term:web}}のサイト、スマホの{{term:app}}、社内の仕組み。1 日に何度も変更を届けるチームの土台になる。",
+    "when": "金曜の夜、担当が手順書を見ながら、予約サイトの新しい版を手で本番に配った。検査の手順を 1 つ飛ばしていて、本番だけ予約のボタンが動かなくなった。",
+    "figures": ["cicd-b01-flow"]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "CI（組み立てと検査）",
+      "b": "CD（本番へ届ける）",
+      "answer": "before",
+      "why": "CD は、CI の検査を通った物を届ける。検査より先に届けると、壊れた物が本番に出る。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "手作業の配布で、起きやすい失敗はどれか。",
+      "choices": [
+        { "id": "a", "text": "手順を 1 つ飛ばし、検査していない物を本番に配った", "correct": true },
+        { "id": "b", "text": "自動の流れで、毎回同じ順に配った", "correct": false, "whyNot": "自動の流れは、毎回同じ順で動く。手順を飛ばすことは起きない。" },
+        { "id": "c", "text": "検査が失敗して、配布が止まった", "correct": false, "whyNot": "それは自動の流れが正しく働いた結果。壊れた物が本番に届かずに済んだ。" }
+      ],
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "{{term:ci}}とは何か。",
+      "choices": [
+        { "id": "a", "text": "変更のたびに、自動で組み立てて検査する仕組み", "correct": true },
+        { "id": "b", "text": "変更を、手順書のとおりに人が確かめる決まり", "correct": false, "whyNot": "CI は自動で動く。人が手順書を読んで確かめるのは、手作業の確かめ方。" },
+        { "id": "c", "text": "本番の{{term:server}}を、毎日決まった時刻に動かし直す仕組み", "correct": false, "whyNot": "動かし直すことは CI の仕事ではない。CI は、変更が来るたびに組み立てと検査をする。" }
+      ],
+      "explanation": "CI は変更のたびに動く。組み立てと検査を毎回同じ順で行い、壊れた変更にすぐ気づかせる。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "予約サイトの変更を、1 日に何度も本番に届けたい。手順は毎回同じ。どうするか。",
+      "choices": [
+        { "id": "a", "text": "手順を自動の流れに書き、変更のたびに自動で動かす", "correct": true },
+        { "id": "b", "text": "手順書をもっと詳しくして、毎回人が読みながら打つ", "correct": false, "whyNot": "読み飛ばしや打ち間違いは残る。回数が増えるほど、誤りも増える。" },
+        { "id": "c", "text": "届ける回数を、月に 1 回に減らす", "correct": false, "whyNot": "変更がたまり、一度に届ける量が増える。壊れた時に、どの変更が原因かを探しにくい。" }
+      ],
+      "explanation": "毎回同じ手順は、自動にするのが一番。早く、抜けなく、何度でも同じ結果になる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "開発の機械では動くのに、本番だけ壊れた。手順書を見ながら手で配っていた。一番考えられる原因は？",
+      "choices": [
+        { "id": "a", "text": "本番で、手順の 1 つを抜かした", "correct": true },
+        { "id": "b", "text": "自動の流れを使っていたから", "correct": false, "whyNot": "手で配っていたので、自動の流れは使っていない。自動なら、毎回同じ手順で動く。" },
+        { "id": "c", "text": "開発の機械の画面が小さいから", "correct": false, "whyNot": "画面の大きさは、本番の動きと関係ない。違いは、配る時の手順にある。" }
+      ],
+      "explanation": "手作業では、場所や人によって手順がずれる。本番だけ壊れたら、まず本番で行った手順を疑う。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "予約サイトの新しい版を本番に届ける手作業の手順を、自動の流れに並べ直す。今の手順書の並びでは、検査の前に本番へ配っていて、壊れた版が本番に出た。",
+    "environment": "sim-order",
+    "setup": {
+      "items": [
+        { "id": "get", "label": "最新の変更を取ってくる" },
+        { "id": "build", "label": "組み立てる（ビルド）" },
+        { "id": "test", "label": "検査する（テスト）" },
+        { "id": "deploy", "label": "本番に配る（デプロイ）" },
+        { "id": "print", "label": "手順書を印刷して読む", "extra": true }
+      ],
+      "initial": "print deploy get test build",
+      "panels": [
+        {
+          "kind": "text",
+          "title": "流す変更 #42",
+          "body": "予約のボタンの文字を変えた。ボタンが押せなくなる誤りが入っている。"
+        },
+        {
+          "kind": "log",
+          "title": "変更 #42 を流した結果",
+          "when": "has deploy && seq deploy<test",
+          "lines": ["配布: 本番に配った", "検査: 失敗（予約のボタンが押せない）", "本番: 壊れた版が出てしまった。検査より先に配っている"]
+        },
+        {
+          "kind": "log",
+          "title": "検査の順",
+          "when": "has test && seq test<build",
+          "lines": ["検査: 失敗（検査する物がまだ無い。組み立てる前に検査している）"]
+        },
+        {
+          "kind": "log",
+          "title": "人がする作業が混ざっている",
+          "when": "has print",
+          "lines": ["「手順書を印刷して読む」は人の作業。自動の流れでは要らない（流れそのものが手順になる）"]
+        },
+        {
+          "kind": "log",
+          "title": "変更 #42 を流した結果",
+          "when": "seq get<build<test && !has deploy && !has print",
+          "lines": ["取得: 成功", "組み立て: 成功", "検査: 失敗（予約のボタンが押せない）。ここで止まった"]
+        },
+        {
+          "kind": "log",
+          "title": "変更 #42 を流した結果",
+          "when": "seq get<build<test<deploy && !has print",
+          "lines": ["取得: 成功", "組み立て: 成功", "検査: 失敗（予約のボタンが押せない）。ここで止まった", "配布: 動かず。本番は前の版のまま、予約を受け付けている"]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "id": "ci",
+        "purpose": "まず、変更を取ってきて、組み立てて、検査する所（CI）を、正しい順に並べる。人の作業は流れに入れない。",
+        "check": { "kind": "sim", "expr": "seq get<build<test && !has print" },
+        "afterward": "取ってくる → 組み立てる → 検査する、の順になった。#42 の誤りは、検査で見つかって止まった。",
+        "hints": [
+          "検査するには、組み立てた物が要る。組み立てるには、最新の変更が要る。",
+          "「取ってくる」「組み立てる」「検査する」の 3 つを、この順に並べる。印刷は人の作業なので並べない。",
+          "`order get build test` と入れる。"
+        ],
+        "expectedErrors": ["cicd-order-wrong"]
+      },
+      {
+        "id": "cd",
+        "purpose": "検査を通った物だけが本番に届くように、配る所（CD）を流れに加える。",
+        "check": { "kind": "sim", "expr": "seq get<build<test<deploy && placed && !has print" },
+        "afterward": "配るのは検査の後になった。#42 は検査で止まり、本番には届かなかった。本番は前の版のまま、予約を受け付けている。",
+        "hints": [
+          "検査を通らなかった物は、本番に届けたくない。",
+          "「本番に配る」は、検査の後の一番最後に置く。",
+          "`order get build test deploy` と入れる。"
+        ],
+        "expectedErrors": ["cicd-order-wrong"]
+      }
+    ]
+  },
+  "result": {
+    "success": "手作業の手順を、取ってくる → 組み立てる → 検査する → 配る の自動の流れにできた。壊れた変更は検査で止まり、本番に届かなかった。",
+    "partial": "ヒントを使って流れを作れた。次は、検査より先に配ると何が起きるかを、自分の言葉で説明してみよう。",
+    "retry": "まだ流れの順が合っていない。結果の記録で、どこで壊れた物が本番に出たかを見よう。"
+  },
+  "summary": {
+    "points": ["CI は組み立てと検査", "CD は届ける", "手作業の誤りを無くす"],
+    "next": ["cicd.b.02", "devops.b.01"],
+    "terms": ["ci", "continuous-delivery", "build", "test", "deploy"]
+  }
+}

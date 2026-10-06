@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>デプロイの流れ。新しい版を配った後、動作を確かめる。成功なら完了、失敗なら残しておいた前の版に戻す（切り戻し）</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="deploy">
+    <rect x="20" y="96" width="160" height="72" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="100" y="128" text-anchor="middle" font-size="16" fill="#eef2f6">1 配る</text>
+    <text x="100" y="152" text-anchor="middle" font-size="13" fill="#9fb0c6">新しい版 v1.5</text>
+  </g>
+  <g class="el" data-part="verify">
+    <path d="M184 132 H226" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <rect x="232" y="96" width="190" height="72" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="327" y="128" text-anchor="middle" font-size="16" fill="#f2b632">2 確かめる</text>
+    <text x="327" y="152" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">/health が 200 か</text>
+  </g>
+  <g class="el" data-part="ok">
+    <path d="M426 116 L494 70" fill="none" stroke="#3ae08a" stroke-width="2" marker-end="url(#ar)" />
+    <text x="452" y="82" text-anchor="middle" font-size="13" fill="#3ae08a">成功</text>
+    <rect x="500" y="36" width="180" height="56" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="590" y="70" text-anchor="middle" font-size="16" fill="#eef2f6">完了（v1.5）</text>
+  </g>
+  <g class="el" data-part="rollback">
+    <path d="M426 148 L494 194" fill="none" stroke="#e04a3a" stroke-width="2" marker-end="url(#ar)" />
+    <text x="452" y="196" text-anchor="middle" font-size="13" fill="#ff8a7a">失敗</text>
+    <rect x="500" y="172" width="180" height="56" rx="8" fill="none" stroke="#e04a3a" stroke-width="2" pointer-events="all" />
+    <text x="590" y="206" text-anchor="middle" font-size="16" fill="#eef2f6">3 前の版 v1.4 へ</text>
+  </g>
+  <g class="el" data-part="keep">
+    <text x="20" y="270" font-size="14" fill="#eef2f6">配っただけでは、動いている証拠にならない。確かめてから完了にする</text>
+    <text x="20" y="298" font-size="14" fill="#9fb0c6">戻すには、前の版を消さずに残しておく</text>
+  </g>
+</svg>

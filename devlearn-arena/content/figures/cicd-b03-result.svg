@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>パイプラインの結果の画面。組み立ては成功し、検査のステージで単体の検査だけが失敗したので、配布は動かなかった。失敗したジョブのログに、期待と実際の値が出る</title>
+  <g class="el" data-part="head">
+    <text x="20" y="28" font-size="14" fill="#9fb0c6">パイプライン #59（料金の変更）</text>
+  </g>
+  <g class="el" data-part="build">
+    <rect x="20" y="44" width="170" height="52" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="105" y="76" text-anchor="middle" font-size="14" fill="#eef2f6">組み立て　<tspan fill="#3ae08a">成功</tspan></text>
+  </g>
+  <g class="el" data-part="unit">
+    <rect x="230" y="44" width="220" height="44" rx="8" fill="none" stroke="#e04a3a" stroke-width="2" pointer-events="all" />
+    <text x="340" y="72" text-anchor="middle" font-size="14" fill="#eef2f6">単体の検査　<tspan fill="#ff8a7a">失敗</tspan></text>
+  </g>
+  <g class="el" data-part="lint">
+    <rect x="230" y="96" width="220" height="44" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="340" y="124" text-anchor="middle" font-size="14" fill="#eef2f6">書き方の検査　<tspan fill="#3ae08a">成功</tspan></text>
+  </g>
+  <g class="el" data-part="e2e">
+    <rect x="230" y="148" width="220" height="44" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="340" y="176" text-anchor="middle" font-size="14" fill="#eef2f6">画面の検査　<tspan fill="#3ae08a">成功</tspan></text>
+  </g>
+  <g class="el" data-part="deploy">
+    <rect x="490" y="44" width="190" height="52" rx="8" fill="none" stroke="#9aa9b5" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="585" y="76" text-anchor="middle" font-size="14" fill="#9aa9b5">配布　動かず</text>
+  </g>
+  <g class="el" data-part="log">
+    <text x="20" y="232" font-size="13" fill="#9fb0c6">単体の検査のログ（失敗したジョブを押して開く）</text>
+    <text x="20" y="260" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#ff8a7a">FAIL 料金: 大人 2 人で 7000 円</text>
+    <text x="20" y="284" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">  期待: 7000　実際: 6000</text>
+    <text x="20" y="308" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#9fb0c6">  at test/price.test.ts:8</text>
+  </g>
+</svg>
