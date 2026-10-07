@@ -1,10 +1,13 @@
 import { z } from 'zod';
 import { REGISTRY, addContext, addRegistry, createContainerHost, repoOf } from './container/container';
 import { CONTROL_PLANE_TAINT } from './k8s/bootstrap';
-import { emptyCluster, node } from './k8s/factory';
+import { advanceCluster } from './k8s/controllers';
+import { emptyCluster, node, service } from './k8s/factory';
+import { tickPods } from './k8s/kubelet';
 import type { ClusterState, Node } from './k8s/types';
 import { createClock } from './kernel/clock';
 import { createDefaultRegistry } from './kernel/commands';
+import { applyManifestText } from './kernel/commands/kubectlOps';
 import type { GitServer, ShellState, WebWorld } from './kernel/registry';
 import { createServiceTable } from './kernel/services';
 import { createShellState, type SessionOptions } from './kernel/session';
@@ -128,6 +131,8 @@ export const setupSchema = z.object({
     notReady: z.array(z.string().regex(/^node-\d$/)).optional(),
     /** クラスタを作ってから経った日数（AGE に出る） */
     ageDays: z.number().int().min(0).max(800).optional(),
+    /** 初めからクラスタに在る物（マニフェストの YAML。--- で複数）。前から動いている形で置く */
+    manifests: z.string().min(1).optional(),
   }).strict().optional(),
   /** 動いているプロセス（ps・top・kill。PID は 100 から順に振る） */
   processes: z.array(z.object({
@@ -258,7 +263,32 @@ function clusterOf(c: NonNullable<PracticeSetup['cluster']>): ClusterState {
   const nodes = c.controlPlane === true ? [{ ...cp, spec: { ...cp.spec, taints: [{ ...CONTROL_PLANE_TAINT }] } }, ...workers] : workers;
   // 取れるイメージは、模擬の置き場（REGISTRY）にある物と、その名前の latest
   const images = [...new Set(REGISTRY.flatMap((i) => [i.ref, `${repoOf(i.ref)}:latest`]))];
-  return { ...emptyCluster(nodes), server: API_SERVER, images };
+  // 窓口そのものの Service（本物のクラスタには必ずある。セレクタは無く、宛先は制御の側の 6443 番）
+  const api = service('kubernetes', {}, { port: 443, targetPort: 6443 });
+  let cluster: ClusterState = {
+    ...emptyCluster(nodes), server: API_SERVER, images,
+    services: new Map([['default/kubernetes', { ...api, metadata: { ...api.metadata, labels: { component: 'apiserver', provider: 'kubernetes' }, createdAt: born }, status: { endpoints: ['10.0.0.10'] } }]]),
+  };
+  if (c.manifests === undefined) return cluster;
+  const applied = applyManifestText(cluster, c.manifests);
+  if ('error' in applied) throw new Error(`setup の cluster.manifests が読めない: ${applied.error}`);
+  // 前から動いている形にする: 落ち着くまで時間を進め、作った時刻をクラスタと同じにし、古い知らせを消す（本物も 1 時間で消える）
+  cluster = applied.cluster;
+  for (let i = 0; i < 20; i += 1) cluster = advanceCluster(cluster, tickPods);
+  return { ...rebirth(cluster, born), events: [] };
+}
+
+/** 全ての資源の作った時刻を揃える（setup で前から在った物にする） */
+function rebirth(cluster: ClusterState, born: number): ClusterState {
+  const out: Record<string, unknown> = { ...cluster };
+  for (const [k, v] of Object.entries(cluster)) {
+    if (!(v instanceof Map)) continue;
+    out[k] = new Map([...(v as Map<string, unknown>)].map(([id, r]) => {
+      const meta = (r as { metadata?: { createdAt?: number } }).metadata;
+      return [id, meta?.createdAt === undefined ? r : { ...(r as object), metadata: { ...meta, createdAt: born } }];
+    }));
+  }
+  return out as unknown as ClusterState;
 }
 
 /** 端末の実戦の、シェルの初期状態（src/engines/kernel/session の createShellState に渡す） */

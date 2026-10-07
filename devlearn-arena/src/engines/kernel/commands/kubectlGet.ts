@@ -98,15 +98,29 @@ export function renderTable(
     }
 
     case 'services': {
-      const rows = [['NAME', 'TYPE', 'CLUSTER-IP', 'PORT(S)', 'ENDPOINTS']];
+      // 本物と同じ欄。NodePort は 80:30080/TCP の形、LoadBalancer の外の住所は配られるまで <pending>
+      const rows = [['NAME', 'TYPE', 'CLUSTER-IP', 'EXTERNAL-IP', 'PORT(S)', 'AGE']];
       for (const s of items as Service[]) {
         rows.push([
           s.metadata.name,
           s.spec.type,
           s.spec.clusterIP,
-          s.spec.ports.map((p) => `${String(p.port)}/TCP`).join(','),
-          s.status.endpoints.length === 0 ? '<none>' : s.status.endpoints.join(','),
+          s.spec.type === 'LoadBalancer' ? '<pending>' : '<none>',
+          s.spec.ports.map((p) => `${String(p.port)}${p.nodePort === null ? '' : `:${String(p.nodePort)}`}/TCP`).join(','),
+          at(s.metadata.createdAt),
         ]);
+      }
+      return table(rows);
+    }
+
+    case 'endpoints': {
+      // 宛先の住所:番号。4 つ目からは「+ N more...」にまとめる（本物と同じ）
+      const rows = [['NAME', 'ENDPOINTS', 'AGE']];
+      for (const s of items as Service[]) {
+        const port = s.spec.ports[0]?.targetPort ?? 80;
+        const all = s.status.endpoints.map((ip) => `${ip}:${String(port)}`);
+        const shown = all.length > 3 ? `${all.slice(0, 3).join(',')} + ${String(all.length - 3)} more...` : all.join(',');
+        rows.push([s.metadata.name, all.length === 0 ? '<none>' : shown, at(s.metadata.createdAt)]);
       }
       return table(rows);
     }

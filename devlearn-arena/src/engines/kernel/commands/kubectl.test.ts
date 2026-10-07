@@ -62,8 +62,9 @@ describe('kubectl get', () => {
     expect(run('kubectl get deploy').out).toContain('2/2');
   });
 
-  it('Service の Endpoints が出る', () => {
-    expect(run('kubectl get svc').out).toContain('10.244.0.');
+  it('Service の宛先（Endpoints）は get endpoints で出る（get svc には出ない。本物と同じ）', () => {
+    expect(run('kubectl get endpoints').out).toMatch(/^web +10\.244\.0\.\d+:80,/m);
+    expect(run('kubectl get svc').out).toMatch(/^NAME +TYPE +CLUSTER-IP +EXTERNAL-IP +PORT\(S\) +AGE$/m);
   });
 
   it('ノードが一覧になる', () => {
@@ -157,10 +158,10 @@ describe('セレクタとラベルの修正', () => {
     session = { ...session, state: { ...session.state, cluster: { ...cluster, services } } };
 
     run('kubectl wait 2');
-    expect(run('kubectl get svc').out).toContain('<none>');
+    expect(run('kubectl get endpoints web').out).toMatch(/^web +<none> +/m);
     run('kubectl set selector svc web app=web');
     run('kubectl wait 2');
-    expect(run('kubectl get svc').out).toContain('10.244.0.');
+    expect(run('kubectl get endpoints web').out).toContain('10.244.0.');
   });
 
   it('無い Service には設定できない', () => {

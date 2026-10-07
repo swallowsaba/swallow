@@ -3,7 +3,7 @@ import { realNames, templateHash } from '@/engines/k8s/controllers';
 import { REVISION_KEY } from '@/engines/k8s/rollout';
 import { isReady } from '@/engines/k8s/kubelet';
 import { resolveEnv } from '@/engines/k8s/storage';
-import type { ClusterState, ContainerSpec, ContainerStatus, Deployment, Node, Pod, Probe, ReplicaSet } from '@/engines/k8s/types';
+import type { ClusterState, ContainerSpec, ContainerStatus, Deployment, Node, Pod, Probe, ReplicaSet, Service } from '@/engines/k8s/types';
 import { age } from './kubectlShared';
 
 /**
@@ -276,6 +276,34 @@ export function describeReplicaSet(cluster: ClusterState, rs: ReplicaSet): strin
     ...multi('Pods Status', [`${String(count('Running'))} Running / ${String(count('Waiting'))} Waiting / ${String(count('Succeeded'))} Succeeded / ${String(count('Failed'))} Failed`], w),
     ...podTemplate(rs.spec.template),
     ...eventsOf(cluster, `replicaset/${rs.metadata.name}`, w),
+  ];
+  return `${lines.join('\n')}\n`;
+}
+
+export function describeService(cluster: ClusterState, s: Service): string {
+  const w = 26;
+  const port = s.spec.ports[0];
+  const endpoints = s.status.endpoints.map((ip) => `${ip}:${String(port?.targetPort ?? 80)}`);
+  const lines = [
+    ...multi('Name', [s.metadata.name], w),
+    ...multi('Namespace', [s.metadata.namespace], w),
+    ...multi('Labels', labelText(s.metadata.labels), w),
+    ...multi('Annotations', [], w),
+    ...multi('Selector', [labelText(s.spec.selector).join(',') || '<none>'], w),
+    ...multi('Type', [s.spec.type], w),
+    ...multi('IP Family Policy', ['SingleStack'], w),
+    ...multi('IP Families', ['IPv4'], w),
+    ...multi('IP', [s.spec.clusterIP], w),
+    ...multi('IPs', [s.spec.clusterIP], w),
+    ...s.spec.ports.flatMap((p) => [
+      ...multi('Port', [`<unset>  ${String(p.port)}/TCP`], w),
+      ...multi('TargetPort', [`${String(p.targetPort)}/TCP`], w),
+      ...(p.nodePort === null ? [] : multi('NodePort', [`<unset>  ${String(p.nodePort)}/TCP`], w)),
+    ]),
+    `${'Endpoints:'.padEnd(w)}${endpoints.join(',')}`.trimEnd(),
+    ...multi('Session Affinity', ['None'], w),
+    ...multi('Internal Traffic Policy', ['Cluster'], w),
+    ...eventsOf(cluster, `service/${s.metadata.name}`, w),
   ];
   return `${lines.join('\n')}\n`;
 }

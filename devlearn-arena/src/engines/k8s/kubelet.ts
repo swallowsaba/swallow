@@ -46,6 +46,12 @@ interface ContainerContext {
   elapsed: number;
 }
 
+/** Node の番号（node-2 なら 2。制御の側などは 0） */
+function nodeIndex(name: string): number {
+  const m = /-(\d+)$/.exec(name);
+  return m && !name.startsWith('cp-') ? Number(m[1]) : 0;
+}
+
 /** 置き場での正式な名前（docker.io/library/nginx:latest の形。containerd の言い方） */
 export function fullImageRef(image: string): string {
   const tagged = image.lastIndexOf(':') > image.lastIndexOf('/') ? image : `${image}:latest`;
@@ -148,7 +154,8 @@ export function tickPods(state: ClusterState): TickResult {
         continue;
       }
 
-      const result = schedule(state, pod);
+      // 同じ時刻に先に置いた Pod も数に入れる（入れないと、全てが同じ Node に寄る）
+      const result = schedule({ ...state, pods }, pod);
       if (result.nodeName === null) {
         if (pod.status.message !== result.reason) {
           record(events, tick, 'Warning', 'FailedScheduling', pod, result.reason ?? '');
@@ -161,7 +168,8 @@ export function tickPods(state: ClusterState): TickResult {
       pod.status = {
         ...pod.status,
         nodeName: result.nodeName,
-        podIP: `10.244.0.${String(ipCounter)}`,
+        // 本物は Node ごとに Pod の網（10.244.<Node の番号>.0/24）を持つ。本物の形の名前を使うクラスタだけ、その形にする
+        podIP: state.server === undefined ? `10.244.0.${String(ipCounter)}` : `10.244.${String(nodeIndex(result.nodeName))}.${String(ipCounter + 1)}`,
         phase: 'ContainerCreating',
         message: null,
         startedAt: tick,

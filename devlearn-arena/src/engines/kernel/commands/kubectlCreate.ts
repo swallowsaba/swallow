@@ -224,21 +224,28 @@ export const expose: KubectlHandler = (ctx) => {
     return { stderr: 'usage: kubectl expose (deployment|pod) <名前> --port=<番号>\n', code: 1 };
   }
   let selector: Record<string, string> | null = null;
+  // 本物と同じく、--port が無ければ相手のコンテナの待ち受けの番号を使い、相手の札を Service にも付ける
+  let introspected: number | undefined;
+  let labels: Record<string, string> = {};
   if (['deployment', 'deployments', 'deploy'].includes(kind)) {
     const found = cluster.deployments.get(key(namespace, target));
     if (found === undefined) return { stderr: `Error from server (NotFound): deployments.apps "${target}" not found\n`, code: 1 };
     selector = { ...found.spec.selector };
+    introspected = found.spec.template.containers.flatMap((c) => c.ports)[0];
+    labels = { ...found.metadata.labels };
   } else if (['pod', 'pods', 'po'].includes(kind)) {
     const found = cluster.pods.get(key(namespace, target));
     if (found === undefined) return { stderr: `Error from server (NotFound): pods "${target}" not found\n`, code: 1 };
     selector = { ...found.metadata.labels };
+    introspected = found.spec.containers.flatMap((c) => c.ports)[0];
+    labels = { ...found.metadata.labels };
   } else {
     return { stderr: `error: cannot expose a ${kind}\n`, code: 1 };
   }
   if (Object.keys(selector).length === 0) {
     return { stderr: `error: couldn't retrieve selectors via --selector flag or introspection: ${kind} "${target}" has no labels\n`, code: 1 };
   }
-  const port = Number(values.get('port') ?? NaN);
+  const port = Number(values.get('port') ?? introspected ?? NaN);
   if (!Number.isInteger(port) || port <= 0) {
     return { stderr: 'error: couldn\'t find port via --port flag or introspection\n', code: 1 };
   }
@@ -248,7 +255,8 @@ export const expose: KubectlHandler = (ctx) => {
   if (exists(cluster, 'services', id)) return alreadyThere('services', name);
   const typeFlag = (values.get('type') ?? 'ClusterIP').toLowerCase();
   const type = typeFlag === 'nodeport' ? 'NodePort' : typeFlag === 'loadbalancer' ? 'LoadBalancer' : 'ClusterIP';
-  const made = service(name, selector, { namespace, port, targetPort, type });
+  const plain = service(name, selector, { namespace, port, targetPort, type });
+  const made = { ...plain, metadata: { ...plain.metadata, labels, createdAt: cluster.tick } };
   return {
     stdout: `service/${name} exposed\n`,
     patch: { cluster: { ...cluster, services: new Map([...cluster.services, [id, made]]) } },

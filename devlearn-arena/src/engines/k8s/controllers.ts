@@ -40,6 +40,13 @@ export function templateHash(template: Deployment['spec']['template'], real = fa
 /** 本物の Kubernetes が名前の印に使う字（読み違えやすい母音・0・1・3 を除いた 27 字） */
 const SAFE = 'bcdfghjklmnpqrstvwxz2456789';
 
+/** Service の住所（10.96.0.0/12 の中。名前から決める。kube-dns の 10.96.0.10 などの決まった住所は避ける） */
+function clusterIPFor(id: string): string {
+  let h = 2166136261;
+  for (const c of id) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+  return `10.${String(96 + (h % 16))}.${String((h >>> 4) % 256)}.${String(((h >>> 12) % 250) + 2)}`;
+}
+
 /** 本物の形の名前を使うクラスタか（クラスタを操作する機械。窓口の住所を持つ） */
 export const realNames = (state: ClusterState): boolean => state.server !== undefined;
 
@@ -260,6 +267,14 @@ export function reconcile(state: ClusterState): ReconcileResult {
 
   // 5. Service → Endpoints（Ready な Pod だけが載る）
   for (const [id, service] of services) {
+    // 本物の形の名前を使うクラスタでは、Service ごとに住所（ClusterIP）を配る（10.96.0.1 は窓口の kubernetes の物）
+    if (real && service.spec.clusterIP === '10.96.0.1' && id !== 'default/kubernetes') {
+      services.set(id, { ...service, spec: { ...service.spec, clusterIP: clusterIPFor(id) } });
+    }
+  }
+  for (const [id, service] of services) {
+    // セレクタの無い Service（kubernetes など）は、宛先を手で持つ（本物と同じく、係は触らない）
+    if (Object.keys(service.spec.selector).length === 0) continue;
     const endpoints = [...pods.values()]
       .filter(
         (p) =>

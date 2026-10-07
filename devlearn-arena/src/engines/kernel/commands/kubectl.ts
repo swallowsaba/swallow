@@ -1,10 +1,10 @@
 import { advanceCluster } from '@/engines/k8s/controllers';
 import { tickPods } from '@/engines/k8s/kubelet';
-import type { ClusterState, Deployment, Node, Pod, ReplicaSet, Resource } from '@/engines/k8s/types';
+import type { ClusterState, Deployment, Node, Pod, ReplicaSet, Resource, Service } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
-import { describeDeployment, describeNode, describePod, describeReplicaSet } from './kubectlDescribe';
+import { describeDeployment, describeNode, describePod, describeReplicaSet, describeService } from './kubectlDescribe';
 import { describeResource, renderTable } from './kubectlGet';
 import { create, expose, run } from './kubectlCreate';
 import { nodeCtl, taint } from './kubectlNodes';
@@ -117,6 +117,21 @@ function deleteOne(cluster: ClusterState, kind: string, namespace: string, name:
 const coreSubcommands: Record<string, KubectlHandler> = {
   get: ({ cluster, namespace, operands, output, values, flags }) => {
     const { kind, name, raw } = parseTarget(operands);
+    if (raw === 'all' && name === undefined) {
+      // 本物の get all: Pod・Service・Deployment・ReplicaSet の表を、種類を前に付けた名前で並べる
+      const sections = ([['pods', 'pod'], ['services', 'service'], ['deployments', 'deployment.apps'], ['replicasets', 'replicaset.apps']] as const)
+        .map(([k, prefix]) => {
+          const items = listOf(cluster, k, namespace);
+          if (items.length === 0) return '';
+          const lines = renderTable(cluster, k, items, false).trimEnd().split('\n');
+          const rows = lines.slice(1).map((l) => `${prefix}/${l}`);
+          // 前に付けた分だけ、欄の頭がずれないように見出しを揃え直す
+          return table([lines[0] ?? '', ...rows].map((l) => l.split(/ {2,}/)));
+        })
+        .filter((s) => s !== '');
+      if (sections.length === 0) return { stdout: `No resources found in ${namespace} namespace.\n` };
+      return { stdout: sections.join('\n') };
+    }
     if (kind === '') {
       return { stderr: `error: the server doesn't have a resource type "${raw}"\n`, code: 1 };
     }
@@ -158,6 +173,7 @@ const coreSubcommands: Record<string, KubectlHandler> = {
         : kind === 'nodes' ? describeNode(cluster, resource as Node)
           : kind === 'deployments' ? describeDeployment(cluster, resource as Deployment)
             : kind === 'replicasets' ? describeReplicaSet(cluster, resource as ReplicaSet)
+              : kind === 'services' ? describeService(cluster, resource as Service)
           : describeResource(cluster, kind, resource);
     if (name !== undefined) {
       const found = findOne(cluster, kind, namespace, name);

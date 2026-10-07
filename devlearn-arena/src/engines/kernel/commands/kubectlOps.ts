@@ -36,6 +36,31 @@ const KIND_TO_PLURAL: Record<string, string> = {
   HorizontalPodAutoscaler: 'horizontalpodautoscalers',
 };
 
+/** マニフェスト（YAML。--- で複数）をクラスタに書き込む。kubectl apply と、実戦の setup の cluster.manifests が使う */
+export function applyManifestText(cluster: ClusterState, text: string): { cluster: ClusterState; lines: string[] } | { error: string } {
+  const parsed = parseManifests(text);
+  const errors = parsed.filter(isParseError);
+  if (errors.length > 0) return { error: errors.map((e) => e.error).join('\n') };
+  let next = cluster;
+  const lines: string[] = [];
+  for (const resource of parsed) {
+    if (isParseError(resource)) continue;
+    const plural = KIND_TO_PLURAL[resource.kind];
+    if (plural === undefined) return { error: `error: 未対応の kind です: ${resource.kind}` };
+    const id = idFor(plural, resource.metadata.namespace, resource.metadata.name);
+    const collection = next[FIELD_OF[plural] ?? 'pods'];
+    const existed = collection instanceof Map && collection.has(id);
+    next = upsert(next, plural, resource);
+    // CNI の DaemonSet を入れると、ノードに Pod 網の設定が書かれる。
+    // 実物でも設定が書かれた時点でノードが Ready になる。
+    if (resource.kind === 'DaemonSet' && CNI_NAMES.has(resource.metadata.name)) {
+      next = { ...next, controlPlane: { ...next.controlPlane, cni: resource.metadata.name } };
+    }
+    lines.push(`${resource.kind.toLowerCase()}/${resource.metadata.name} ${existed ? 'configured' : 'created'}`);
+  }
+  return { cluster: next, lines };
+}
+
 export const opsSubcommands: Record<string, KubectlHandler> = {
   apply: ({ cluster, shell, values, flags }) => {
     const file = values.get('f');
@@ -61,26 +86,9 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
       };
     }
 
-    let next = cluster;
-    const lines: string[] = [];
-    for (const resource of parsed) {
-      if (isParseError(resource)) continue;
-      const plural = KIND_TO_PLURAL[resource.kind];
-      if (plural === undefined) {
-        return { stderr: `error: 未対応の kind です: ${resource.kind}\n`, code: 1 };
-      }
-      const id = idFor(plural, resource.metadata.namespace, resource.metadata.name);
-      const collection = next[FIELD_OF[plural] ?? 'pods'];
-      const existed = collection instanceof Map && collection.has(id);
-      next = upsert(next, plural, resource);
-      // CNI の DaemonSet を入れると、ノードに Pod 網の設定が書かれる。
-      // 実物でも設定が書かれた時点でノードが Ready になる。
-      if (resource.kind === 'DaemonSet' && CNI_NAMES.has(resource.metadata.name)) {
-        next = { ...next, controlPlane: { ...next.controlPlane, cni: resource.metadata.name } };
-      }
-      lines.push(`${resource.kind.toLowerCase()}/${resource.metadata.name} ${existed ? 'configured' : 'created'}`);
-    }
-    return { stdout: fromLines(lines), patch: { cluster: next } };
+    const applied = applyManifestText(cluster, node.content);
+    if ('error' in applied) return { stderr: `${applied.error}\n`, code: 1 };
+    return { stdout: fromLines(applied.lines), patch: { cluster: applied.cluster } };
   },
 
   rollout: ({ cluster, rest, namespace, operands }) => {

@@ -30,6 +30,7 @@ export const KINDS: Record<string, string> = {
   deploy: 'deployments', deployment: 'deployments', deployments: 'deployments',
   rs: 'replicasets', replicaset: 'replicasets', replicasets: 'replicasets',
   svc: 'services', service: 'services', services: 'services',
+  ep: 'endpoints', endpoints: 'endpoints',
   ev: 'events', event: 'events', events: 'events',
   cm: 'configmaps', configmap: 'configmaps', configmaps: 'configmaps',
   secret: 'secrets', secrets: 'secrets',
@@ -118,6 +119,8 @@ export function collectionOf(cluster: ClusterState, kind: string): ReadonlyMap<s
     case 'deployments': return cluster.deployments;
     case 'replicasets': return cluster.replicaSets;
     case 'services': return cluster.services;
+    // Endpoints は Service ごとに 1 つ（同じ名前）。模擬は Service の宛先から作る
+    case 'endpoints': return cluster.services;
     case 'configmaps': return cluster.configMaps;
     case 'secrets': return cluster.secrets;
     case 'statefulsets': return cluster.statefulSets;
