@@ -58,7 +58,7 @@ describe('クラスタを組み立てる', () => {
     expect(run(`kubeadm join cp-1:6443 --token ${token} --node-name node-2`).code).toBe(0);
     expect(run('kubectl get nodes').out).not.toContain(' Ready');
 
-    expect(run('kubectl apply -f flannel.yaml').out).toContain('daemonset/kube-flannel-ds created');
+    expect(run('kubectl apply -f flannel.yaml').out).toContain('daemonset.apps/kube-flannel-ds created');
     const nodes = run('kubectl get nodes').out;
     expect(nodes).not.toContain('NotReady');
     expect(nodes.match(/Ready/g)?.length).toBe(3);

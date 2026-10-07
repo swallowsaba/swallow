@@ -1,6 +1,6 @@
 import { backoffMs } from '@/engines/kernel/clock';
 import { schedule } from './scheduler';
-import { volumesReady } from './storage';
+import { liveEnv, missingEnvRef, volumesReady } from './storage';
 import type { ClusterState, ContainerSpec, ContainerStatus, EventRecord, Pod, Probe } from './types';
 
 /** 1 tick の長さ（ミリ秒）。バックオフの計算に使う */
@@ -183,7 +183,7 @@ export function tickPods(state: ClusterState): TickResult {
     const started = pod.status.startedAt ?? tick;
     const elapsed = tick - started;
 
-    const containers = pod.status.containerStatuses.map((status, i) => {
+    const advance = (status: ContainerStatus, i: number): ContainerStatus => {
       const spec = pod.spec.containers[i];
       if (!spec) return status;
       const ctx: ContainerContext = { spec, status, tick, elapsed };
@@ -200,6 +200,16 @@ export function tickPods(state: ClusterState): TickResult {
           record(events, tick, 'Warning', 'Failed', pod, `Error: ${next.waitingReason ?? 'ErrImagePull'}`);
         }
         return next;
+      }
+
+      // 環境変数の参照先（ConfigMap・Secret とそのキー）が無ければ、コンテナを作れずに待つ（作られれば動き出す）
+      const configFailure = missingEnvRef(state, pod, spec);
+      if (configFailure !== null) {
+        if (status.waitingReason !== 'CreateContainerConfigError') {
+          record(events, tick, 'Normal', 'Pulled', pod, `Successfully pulled image "${spec.image}" in 1.2s (1.2s including waiting)`);
+          record(events, tick, 'Warning', 'Failed', pod, `Error: ${configFailure}`);
+        }
+        return { ...status, ready: false, started: false, waitingReason: 'CreateContainerConfigError', restartAt: null };
       }
 
       if (spec.crashing) {
@@ -265,6 +275,14 @@ export function tickPods(state: ClusterState): TickResult {
         return { ...status, ready: true, started: true, waitingReason: null, restartAt: null };
       }
       return status;
+    };
+    // 動かし始めた時（作り直した時）に環境変数を引いて持つ。後から ConfigMap を変えても、作り直すまで変わらない（本物と同じ）
+    const containers = pod.status.containerStatuses.map((status, i) => {
+      const next = advance(status, i);
+      const spec = pod.spec.containers[i];
+      if (!spec || !next.started) return next;
+      const kept = status.started && status.env !== undefined && next.restartCount === status.restartCount;
+      return kept ? next : { ...next, env: liveEnv(state, pod, spec) };
     });
 
     const allReady = containers.length > 0 && containers.every((c) => c.ready);

@@ -1,5 +1,5 @@
 import type {
-  AccessMode, ClusterState, EventRecord, PersistentVolume, PersistentVolumeClaim, Pod,
+  AccessMode, ClusterState, ContainerSpec, EventRecord, PersistentVolume, PersistentVolumeClaim, Pod,
 } from './types';
 import { key } from './types';
 import { meta } from './factory';
@@ -146,10 +146,8 @@ export function volumesReady(state: ClusterState, pod: Pod): { ok: boolean; reas
   return { ok: true, reason: null };
 }
 
-/** ConfigMap / Secret から取り込まれる環境変数を、実際に解決して返す */
-export function resolveEnv(state: ClusterState, pod: Pod, containerName: string): Record<string, string> {
-  const spec = pod.spec.containers.find((c) => c.name === containerName);
-  if (spec === undefined) return {};
+/** 今の ConfigMap / Secret から、そのコンテナに入る環境変数を引く（コンテナを動かす時に kubelet が使う） */
+export function liveEnv(state: ClusterState, pod: Pod, spec: ContainerSpec): Record<string, string> {
   const out: Record<string, string> = {};
 
   for (const ref of spec.envFrom) {
@@ -168,4 +166,29 @@ export function resolveEnv(state: ClusterState, pod: Pod, containerName: string)
   }
   // 直接書いた env が最後に勝つ（本物と同じ）
   return { ...out, ...spec.env };
+}
+
+/**
+ * 環境変数の参照先が無い時の、本物の kubelet の文（揃っていれば null）。
+ * 無ければコンテナを作れず、CreateContainerConfigError で待つ
+ */
+export function missingEnvRef(state: ClusterState, pod: Pod, spec: ContainerSpec): string | null {
+  for (const ref of spec.envFrom) {
+    const ns = pod.metadata.namespace;
+    const source = ref.kind === 'ConfigMap' ? state.configMaps.get(key(ns, ref.name))?.data : state.secrets.get(key(ns, ref.name))?.data;
+    const word = ref.kind === 'ConfigMap' ? 'configmap' : 'secret';
+    if (source === undefined) return `${word} "${ref.name}" not found`;
+    if (ref.key !== undefined && source[ref.key] === undefined) return `couldn't find key ${ref.key} in ${ref.kind} ${ns}/${ref.name}`;
+  }
+  return null;
+}
+
+/**
+ * そのコンテナの環境変数。本物と同じく、コンテナを動かした時に引いた値のまま（後から ConfigMap を変えても変わらない）。
+ * まだ動いていなければ、今の値を引く
+ */
+export function resolveEnv(state: ClusterState, pod: Pod, containerName: string): Record<string, string> {
+  const spec = pod.spec.containers.find((c) => c.name === containerName);
+  if (spec === undefined) return {};
+  return pod.status.containerStatuses.find((c) => c.name === containerName)?.env ?? liveEnv(state, pod, spec);
 }

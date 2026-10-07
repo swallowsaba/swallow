@@ -85,6 +85,8 @@ export interface ContainerStatus {
   started: boolean;
   /** イメージを取りに行って失敗した回数（本物と同じく、再起動の回数には数えない） */
   pulls?: number;
+  /** コンテナを動かした時に引いた環境変数（後から ConfigMap を変えても、作り直すまで変わらない） */
+  env?: Record<string, string>;
 }
 
 export interface Pod {

@@ -79,10 +79,11 @@ describe('kubectl apply と YAML', () => {
     expect(run('kubectl get cm').out).toContain('app-config');
   });
 
-  it('2回目は configured になる', () => {
+  it('2回目は、変えていれば configured、同じなら unchanged になる（本物と同じ）', () => {
     const yaml = 'kind: ConfigMap\nmetadata:\n  name: c1\ndata:\n  A: "1"\n';
     apply('c.yaml', yaml);
-    expect(apply('c.yaml', yaml).out).toContain('configured');
+    expect(apply('c.yaml', yaml).out).toBe('configmap/c1 unchanged\n');
+    expect(apply('c.yaml', yaml.replace('"1"', '"2"')).out).toBe('configmap/c1 configured\n');
   });
 
   it('壊れた YAML は読めないと言う', () => {

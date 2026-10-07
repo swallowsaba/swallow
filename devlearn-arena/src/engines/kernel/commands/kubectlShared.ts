@@ -1,4 +1,5 @@
 import type { ClusterState, Pod, Resource } from '@/engines/k8s/types';
+import { isReady } from '@/engines/k8s/kubelet';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, ShellState } from '../registry';
 import { exists } from '../vfs';
@@ -216,6 +217,7 @@ export function podFor(cluster: ClusterState, namespace: string, target: string)
   if (kind === 'pods') return cluster.pods.get(key(namespace, name));
   const owned = [...cluster.pods.values()]
     .filter((p) => p.metadata.namespace === namespace && p.metadata.name.startsWith(`${name}-`))
-    .sort((a, b) => (a.metadata.name < b.metadata.name ? -1 : 1));
+    // 本物と同じく、動いている（Ready の）Pod を先に選ぶ。入れ替えの途中で止まった新しい Pod より、動いている古い Pod
+    .sort((a, b) => (isReady(a) !== isReady(b) ? (isReady(a) ? -1 : 1) : a.metadata.name < b.metadata.name ? -1 : 1));
   return owned[0];
 }

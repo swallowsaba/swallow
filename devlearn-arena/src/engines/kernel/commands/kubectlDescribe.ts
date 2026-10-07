@@ -2,7 +2,6 @@ import { nodeCondition } from '@/engines/k8s/bootstrap';
 import { realNames, templateHash } from '@/engines/k8s/controllers';
 import { REVISION_KEY } from '@/engines/k8s/rollout';
 import { isReady } from '@/engines/k8s/kubelet';
-import { resolveEnv } from '@/engines/k8s/storage';
 import type { ClusterState, ContainerSpec, ContainerStatus, Deployment, Node, Pod, Probe, ReplicaSet, Service } from '@/engines/k8s/types';
 import { age } from './kubectlShared';
 
@@ -149,7 +148,6 @@ export function describePod(cluster: ClusterState, pod: Pod): string {
   ];
   for (const spec of pod.spec.containers) {
     const status = pod.status.containerStatuses.find((c) => c.name === spec.name);
-    const env = Object.entries(resolveEnv(cluster, pod, spec.name));
     const rows: [string, string][] = [
       ['Image', spec.image],
       ['Port', spec.ports.length === 0 ? '<none>' : spec.ports.map((p) => `${String(p)}/TCP`).join(', ')],
@@ -163,9 +161,7 @@ export function describePod(cluster: ClusterState, pod: Pod): string {
     if (spec.livenessProbe) rows.push(['Liveness', probeLine(spec.livenessProbe, spec)]);
     if (spec.readinessProbe) rows.push(['Readiness', probeLine(spec.readinessProbe, spec)]);
     if (spec.startupProbe) rows.push(['Startup', probeLine(spec.startupProbe, spec)]);
-    rows.push(['Environment', env.length === 0 ? '<none>' : '']);
-    lines.push(`  ${spec.name}:`, ...fields(rows, '    '));
-    for (const [k, v] of env) lines.push(`      ${k}:  ${v}`);
+    lines.push(`  ${spec.name}:`, ...fields(rows, '    '), ...envBlock(spec, '    '));
     lines.push('    Mounts:');
     for (const m of spec.volumeMounts) lines.push(`      ${m.mountPath} from ${m.name}`);
     if (spec.volumeMounts.length === 0) lines.push('      <none>');
@@ -195,6 +191,22 @@ export function describePod(cluster: ClusterState, pod: Pod): string {
   return `${lines.join('\n')}\n`;
 }
 
+/**
+ * 環境変数の欄。本物の describe と同じく、書いた形で見せる（受け取る ConfigMap・Secret の名前と、直接書いた値）。
+ * 中で引いた値を見るのは、コンテナの中の printenv
+ */
+function envBlock(c: ContainerSpec, indent: string): string[] {
+  const from = c.envFrom.filter((r) => r.key === undefined).map((r) => `${indent}  ${r.name}  ${r.kind}  Optional: false`);
+  const env = [
+    ...Object.entries(c.env).map(([k, v]) => `${indent}  ${k}:  ${v}`),
+    ...c.envFrom.filter((r) => r.key !== undefined).map((r) => `${indent}  ${r.as ?? r.key ?? ''}:  <set to the key '${r.key ?? ''}' ${r.kind === 'ConfigMap' ? 'of config map' : 'in secret'} '${r.name}'>  Optional: false`),
+  ];
+  return [
+    ...(from.length === 0 ? [] : [`${indent}Environment Variables from:`, ...from]),
+    ...(env.length === 0 ? [`${indent}Environment:  <none>`] : [`${indent}Environment:`, ...env]),
+  ];
+}
+
 const labelText = (labels: Record<string, string>): string[] => Object.entries(labels).map(([k, v]) => `${k}=${v}`);
 
 /** Pod の雛形（Deployment・ReplicaSet の Pod Template） */
@@ -205,9 +217,7 @@ function podTemplate(template: Deployment['spec']['template']): string[] {
       ['Image', c.image],
       ['Port', c.ports.length === 0 ? '<none>' : c.ports.map((p) => `${String(p)}/TCP`).join(', ')],
       ['Host Port', c.ports.length === 0 ? '<none>' : c.ports.map(() => '0/TCP').join(', ')],
-      ['Environment', Object.keys(c.env).length === 0 && c.envFrom.length === 0 ? '<none>' : Object.entries(c.env).map(([k, v]) => `${k}=${v}`).join(', ')],
-      ['Mounts', c.volumeMounts.length === 0 ? '<none>' : c.volumeMounts.map((m) => `${m.mountPath} from ${m.name}`).join(', ')],
-    ], '    '));
+    ], '    '), ...envBlock(c, '    '), `    Mounts:  ${c.volumeMounts.length === 0 ? '<none>' : c.volumeMounts.map((m) => `${m.mountPath} from ${m.name}`).join(', ')}`);
   }
   lines.push(...fields([['Volumes', '<none>'], ['Node-Selectors', labelText(template.nodeSelector).join(',') || '<none>'], ['Tolerations', '<none>']], '  '));
   return lines;

@@ -7,6 +7,7 @@ import { revisionsOf, rolloutStatus, rolloutUndo } from '@/engines/k8s/rollout';
 import { resolveEnv } from '@/engines/k8s/storage';
 import type { ClusterState, Deployment, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
+import type { CommandResult } from '../registry';
 import { resolve } from '../path';
 import { stat } from '../vfs';
 import { fromLines } from './args';
@@ -37,7 +38,43 @@ const KIND_TO_PLURAL: Record<string, string> = {
   HorizontalPodAutoscaler: 'horizontalpodautoscalers',
 };
 
-/** マニフェスト（YAML。--- で複数）をクラスタに書き込む。kubectl apply と、実戦の setup の cluster.manifests が使う */
+/** apply の出力に付ける API の組（本物と同じく、core の物は付けない。deployment.apps/web の形） */
+const GROUP_OF: Record<string, string> = {
+  Deployment: 'apps', ReplicaSet: 'apps', StatefulSet: 'apps', DaemonSet: 'apps',
+  Job: 'batch', CronJob: 'batch',
+  Ingress: 'networking.k8s.io', NetworkPolicy: 'networking.k8s.io',
+  StorageClass: 'storage.k8s.io', HorizontalPodAutoscaler: 'autoscaling',
+  Role: 'rbac.authorization.k8s.io', ClusterRole: 'rbac.authorization.k8s.io',
+  RoleBinding: 'rbac.authorization.k8s.io', ClusterRoleBinding: 'rbac.authorization.k8s.io',
+};
+
+/** 書いた形（望む状態）だけを比べるための文字列。作った時刻・版・状態・配った住所は比べない */
+function desired(resource: Resource): string {
+  const { name, namespace, labels } = resource.metadata;
+  const body: Record<string, unknown> = { ...resource, metadata: { name, namespace, labels } };
+  delete body['status'];
+  if (resource.kind === 'Service') body['spec'] = { ...resource.spec, clusterIP: '' };
+  return JSON.stringify(body);
+}
+
+/** 前から在る物に書き重ねる。作った時刻・状態・配った住所は前のまま */
+function merged(existing: Resource, resource: Resource): Resource {
+  const metadata = {
+    ...resource.metadata,
+    createdAt: existing.metadata.createdAt,
+    resourceVersion: existing.metadata.resourceVersion + 1,
+    annotations: { ...existing.metadata.annotations, ...resource.metadata.annotations },
+  };
+  const next = { ...resource, metadata };
+  if ('status' in existing && 'status' in next) (next as { status: unknown }).status = existing.status;
+  if (existing.kind === 'Service' && next.kind === 'Service') return { ...next, spec: { ...next.spec, clusterIP: existing.spec.clusterIP } };
+  return next;
+}
+
+/**
+ * マニフェスト（YAML。--- で複数）をクラスタに書き込む。kubectl apply と、実戦の setup の cluster.manifests が使う。
+ * 本物と同じく、無ければ created、書いた形が変われば configured、同じなら unchanged
+ */
 export function applyManifestText(cluster: ClusterState, text: string): { cluster: ClusterState; lines: string[] } | { error: string } {
   const parsed = parseManifests(text);
   const errors = parsed.filter(isParseError);
@@ -50,20 +87,50 @@ export function applyManifestText(cluster: ClusterState, text: string): { cluste
     if (plural === undefined) return { error: `error: 未対応の kind です: ${resource.kind}` };
     const id = idFor(plural, resource.metadata.namespace, resource.metadata.name);
     const collection = next[FIELD_OF[plural] ?? 'pods'];
-    const existed = collection instanceof Map && collection.has(id);
+    const existing = collection instanceof Map ? (collection.get(id) as Resource | undefined) : undefined;
     // 区画の一覧を持つクラスタでは、無い区画には作れない（本物と同じ断り方）
     if (!CLUSTER_SCOPED.has(plural) && missingNamespace(next, resource.metadata.namespace)) {
       return { error: `Error from server (NotFound): error when creating: namespaces "${resource.metadata.namespace}" not found` };
     }
-    next = upsert(next, plural, resource);
+    const group = GROUP_OF[resource.kind];
+    const label = `${resource.kind.toLowerCase()}${group === undefined ? '' : `.${group}`}/${resource.metadata.name}`;
+    if (existing !== undefined && desired(existing) === desired(resource)) {
+      lines.push(`${label} unchanged`);
+      continue;
+    }
+    const born = { ...resource, metadata: { ...resource.metadata, createdAt: next.tick } };
+    next = upsert(next, plural, existing === undefined ? born : merged(existing, resource));
     // CNI の DaemonSet を入れると、ノードに Pod 網の設定が書かれる。
     // 実物でも設定が書かれた時点でノードが Ready になる。
     if (resource.kind === 'DaemonSet' && CNI_NAMES.has(resource.metadata.name)) {
       next = { ...next, controlPlane: { ...next.controlPlane, cni: resource.metadata.name } };
     }
-    lines.push(`${resource.kind.toLowerCase()}/${resource.metadata.name} ${existed ? 'configured' : 'created'}`);
+    lines.push(`${label} ${existing === undefined ? 'created' : 'configured'}`);
   }
   return { cluster: next, lines };
+}
+
+/** 入れ替えの期限（本物の progressDeadlineSeconds の既定。秒 = tick） */
+const PROGRESS_DEADLINE = 600;
+
+/**
+ * rollout status（クラスタを操作する機械）: 本物と同じく、入れ替えが終わるまで時間を進めて待ち、進みが変わるたびに 1 行足す。
+ * 期限までに終わらなければ、期限を過ぎたと言って 1 で終わる
+ */
+function waitRollout(cluster: ClusterState, id: string): CommandResult {
+  const lines: string[] = [];
+  let next = cluster;
+  for (let i = 0; i <= PROGRESS_DEADLINE; i += 1) {
+    const deployment = next.deployments.get(id);
+    if (deployment === undefined) break;
+    const status = rolloutStatus(next, deployment);
+    if (lines[lines.length - 1] !== status.message) lines.push(status.message);
+    // 終わった時は、Deployment の数の記録（READY の欄）も揃えてから返す（本物はその記録を見て終わりを知る）
+    if (status.done) return { stdout: fromLines(lines), patch: { cluster: advanceCluster(next, tickPods) } };
+    next = advanceCluster(next, tickPods);
+  }
+  const name = id.slice(id.indexOf('/') + 1);
+  return { stdout: fromLines(lines), stderr: `error: deployment "${name}" exceeded its progress deadline\n`, code: 1, patch: { cluster: next } };
 }
 
 export const opsSubcommands: Record<string, KubectlHandler> = {
@@ -104,7 +171,8 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
 
     if (action === 'status') {
       const status = rolloutStatus(cluster, deployment);
-      return { stdout: `${status.message}\n`, code: status.done ? 0 : 1 };
+      if (cluster.server === undefined) return { stdout: `${status.message}\n`, code: status.done ? 0 : 1 };
+      return waitRollout(cluster, key(namespace, target));
     }
 
     if (action === 'history') {
@@ -256,12 +324,23 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
     const dashdash = rest.indexOf('--');
     const command = dashdash === -1 ? [] : rest.slice(dashdash + 1);
     const spec = pod.spec.containers[0];
-    if (command[0] === 'env' && spec !== undefined) {
-      return {
-        stdout: fromLines(
-          Object.entries(resolveEnv(cluster, pod, spec.name)).map(([k, v]) => `${k}=${v}`),
-        ),
+    if ((command[0] === 'env' || command[0] === 'printenv') && spec !== undefined) {
+      // 本物と同じく、決まった変数（PATH・HOSTNAME・窓口の Service の場所・HOME）の間に、書いた変数が入る
+      const env: Record<string, string> = {
+        PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+        HOSTNAME: name,
+        ...resolveEnv(cluster, pod, spec.name),
+        KUBERNETES_SERVICE_HOST: '10.96.0.1',
+        KUBERNETES_SERVICE_PORT: '443',
+        HOME: '/root',
       };
+      // printenv 名前: その値だけ。無い名前は何も出さずに 1 で終わる（本物と同じ）
+      const names = command[0] === 'printenv' ? command.slice(1) : [];
+      if (names.length > 0) {
+        const found = names.filter((n) => env[n] !== undefined);
+        return { stdout: fromLines(found.map((n) => env[n] ?? '')), code: found.length === names.length ? 0 : 1 };
+      }
+      return { stdout: fromLines(Object.entries(env).map(([k, v]) => `${k}=${v}`)) };
     }
     if (command[0] === 'cat' && spec !== undefined) {
       const path = command[1] ?? '';
