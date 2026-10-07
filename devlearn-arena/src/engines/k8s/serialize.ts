@@ -40,6 +40,7 @@ export interface ClusterSnapshot {
   nameCounter: number;
   server?: string;
   images?: string[];
+  namespaces?: { name: string; createdAt: number }[];
 }
 
 export function snapshotCluster(cluster: ClusterState): ClusterSnapshot {
@@ -74,6 +75,7 @@ export function snapshotCluster(cluster: ClusterState): ClusterSnapshot {
     nameCounter: cluster.nameCounter,
     ...(cluster.server === undefined ? {} : { server: cluster.server }),
     ...(cluster.images === undefined ? {} : { images: [...cluster.images] }),
+    ...(cluster.namespaces === undefined ? {} : { namespaces: [...cluster.namespaces] }),
   };
 }
 
@@ -109,5 +111,6 @@ export function restoreCluster(snapshot: ClusterSnapshot): ClusterState {
     nameCounter: snapshot.nameCounter,
     ...(snapshot.server === undefined ? {} : { server: snapshot.server }),
     ...(snapshot.images === undefined ? {} : { images: snapshot.images }),
+    ...(snapshot.namespaces === undefined ? {} : { namespaces: snapshot.namespaces }),
   };
 }

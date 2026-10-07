@@ -10,8 +10,9 @@ import { key } from '@/engines/k8s/types';
 import { resolve } from '../path';
 import { stat } from '../vfs';
 import { fromLines } from './args';
+import { missingNamespace } from './kubectlNamespace';
 import {
-  FIELD_OF, KINDS, idFor, listOf, notFound, podFor, table, type KubectlHandler,
+  CLUSTER_SCOPED, FIELD_OF, KINDS, idFor, listOf, notFound, podFor, table, type KubectlHandler,
 } from './kubectlShared';
 
 /** 資源を、その種別のコレクションに書き込んだ新しいクラスタを返す */
@@ -50,6 +51,10 @@ export function applyManifestText(cluster: ClusterState, text: string): { cluste
     const id = idFor(plural, resource.metadata.namespace, resource.metadata.name);
     const collection = next[FIELD_OF[plural] ?? 'pods'];
     const existed = collection instanceof Map && collection.has(id);
+    // 区画の一覧を持つクラスタでは、無い区画には作れない（本物と同じ断り方）
+    if (!CLUSTER_SCOPED.has(plural) && missingNamespace(next, resource.metadata.namespace)) {
+      return { error: `Error from server (NotFound): error when creating: namespaces "${resource.metadata.namespace}" not found` };
+    }
     next = upsert(next, plural, resource);
     // CNI の DaemonSet を入れると、ノードに Pod 網の設定が書かれる。
     // 実物でも設定が書かれた時点でノードが Ready になる。

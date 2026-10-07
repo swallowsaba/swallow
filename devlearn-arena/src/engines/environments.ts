@@ -7,6 +7,7 @@ import { tickPods } from './k8s/kubelet';
 import type { ClusterState, Node } from './k8s/types';
 import { createClock } from './kernel/clock';
 import { createDefaultRegistry } from './kernel/commands';
+import { BUILTIN_NAMESPACES } from './kernel/commands/kubectlNamespace';
 import { applyManifestText } from './kernel/commands/kubectlOps';
 import type { GitServer, ShellState, WebWorld } from './kernel/registry';
 import { createServiceTable } from './kernel/services';
@@ -133,6 +134,8 @@ export const setupSchema = z.object({
     ageDays: z.number().int().min(0).max(800).optional(),
     /** 初めからクラスタに在る物（マニフェストの YAML。--- で複数）。前から動いている形で置く */
     manifests: z.string().min(1).optional(),
+    /** 初めから在る区画（default などの決まった区画のほかに） */
+    namespaces: z.array(z.string().regex(/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/)).optional(),
   }).strict().optional(),
   /** 動いているプロセス（ps・top・kill。PID は 100 から順に振る） */
   processes: z.array(z.object({
@@ -267,6 +270,7 @@ function clusterOf(c: NonNullable<PracticeSetup['cluster']>): ClusterState {
   const api = service('kubernetes', {}, { port: 443, targetPort: 6443 });
   let cluster: ClusterState = {
     ...emptyCluster(nodes), server: API_SERVER, images,
+    namespaces: [...BUILTIN_NAMESPACES, ...(c.namespaces ?? [])].map((name) => ({ name, createdAt: born })),
     services: new Map([['default/kubernetes', { ...api, metadata: { ...api.metadata, labels: { component: 'apiserver', provider: 'kubernetes' }, createdAt: born }, status: { endpoints: ['10.0.0.10'] } }]]),
   };
   if (c.manifests === undefined) return cluster;

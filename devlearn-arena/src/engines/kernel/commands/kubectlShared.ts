@@ -31,6 +31,7 @@ export const KINDS: Record<string, string> = {
   rs: 'replicasets', replicaset: 'replicasets', replicasets: 'replicasets',
   svc: 'services', service: 'services', services: 'services',
   ep: 'endpoints', endpoints: 'endpoints',
+  ns: 'namespaces', namespace: 'namespaces', namespaces: 'namespaces',
   ev: 'events', event: 'events', events: 'events',
   cm: 'configmaps', configmap: 'configmaps', configmaps: 'configmaps',
   secret: 'secrets', secrets: 'secrets',

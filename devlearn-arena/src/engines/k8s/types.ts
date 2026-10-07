@@ -238,6 +238,8 @@ export interface ClusterState {
   readonly server?: string;
   /** 置き場から取れるイメージ（名前:タグ）。あれば、これに無いイメージは取れない（ErrImagePull） */
   readonly images?: readonly string[];
+  /** 区画（Namespace）の一覧。あれば、無い区画には作れない */
+  readonly namespaces?: readonly { name: string; createdAt: number }[];
 }
 
 export function key(namespace: string, name: string): string {

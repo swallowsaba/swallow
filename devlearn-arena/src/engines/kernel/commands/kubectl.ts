@@ -4,6 +4,7 @@ import type { ClusterState, Deployment, Node, Pod, ReplicaSet, Resource, Service
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
+import { deleteNamespace, getNamespaces, missingNamespace } from './kubectlNamespace';
 import { describeDeployment, describeNode, describePod, describeReplicaSet, describeService } from './kubectlDescribe';
 import { describeResource, renderTable } from './kubectlGet';
 import { create, expose, run } from './kubectlCreate';
@@ -12,7 +13,7 @@ import { setProbe, setResources } from './kubectlSet';
 import { opsSubcommands } from './kubectlOps';
 import { parseOutput, renderResources } from './kubectlOutput';
 import {
-  CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, canReach, idFor, listOf, matchesSelector, notFound, parseTarget, podReady, podStatus, restarts, table, age,
+  CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, canReach, collectionOf, idFor, listOf, matchesSelector, notFound, parseTarget, podReady, podStatus, restarts, table, age,
   type KubectlContext, type KubectlHandler,
 } from './kubectlShared';
 
@@ -92,10 +93,10 @@ function deleteOne(cluster: ClusterState, kind: string, namespace: string, name:
       ...cluster2,
       replicaSets: new Map(
         [...cluster.replicaSets].filter(
-          ([, rs]) => !rs.metadata.ownerReferences.some((o) => o.name === name),
+          ([, rs]) => rs.metadata.namespace !== namespace || !rs.metadata.ownerReferences.some((o) => o.name === name),
         ),
       ),
-      pods: new Map([...cluster.pods].filter(([, p]) => !p.metadata.name.startsWith(`${name}-`))),
+      pods: new Map([...cluster.pods].filter(([, p]) => p.metadata.namespace !== namespace || !p.metadata.name.startsWith(`${name}-`))),
     };
   }
   if (kind === 'statefulsets' || kind === 'daemonsets' || kind === 'jobs') {
@@ -104,13 +105,15 @@ function deleteOne(cluster: ClusterState, kind: string, namespace: string, name:
       ...cluster2,
       pods: new Map(
         [...cluster.pods].filter(
-          ([, p]) => !p.metadata.ownerReferences.some((o) => o.kind === ownerKind && o.name === name),
+          ([, p]) => p.metadata.namespace !== namespace || !p.metadata.ownerReferences.some((o) => o.kind === ownerKind && o.name === name),
         ),
       ),
     };
   }
 
-  const label = CLUSTER_SCOPED.has(kind) ? kind.replace(/s$/, '') : kind.replace(/s$/, '');
+  // 本物と同じく、apps の仲間（Deployment など）は deployment.apps のように書く
+  const single = kind.replace(/s$/, '');
+  const label = ['deployments', 'replicasets', 'statefulsets', 'daemonsets'].includes(kind) ? `${single}.apps` : single;
   return { stdout: `${label} "${name}" deleted\n`, patch: { cluster: cluster2 } };
 }
 
@@ -136,6 +139,19 @@ const coreSubcommands: Record<string, KubectlHandler> = {
       return { stderr: `error: the server doesn't have a resource type "${raw}"\n`, code: 1 };
     }
     const format = parseOutput(output);
+    if (kind === 'namespaces') return getNamespaces(cluster, name);
+
+    // 全ての区画（-A）: 先頭に NAMESPACE の欄を足し、区画・名前の順に並べる（本物と同じ）
+    const allNs = flags.has('A') || flags.has('all-namespaces');
+    if (allNs && name === undefined && format.kind === 'table' && !CLUSTER_SCOPED.has(kind)) {
+      const collection = collectionOf(cluster, kind);
+      const all = [...(collection?.values() ?? [])]
+        .filter((r) => values.get('l') === undefined || matchesSelector(r.metadata.labels, values.get('l') ?? ''))
+        .sort((a, b) => (a.metadata.namespace === b.metadata.namespace ? (a.metadata.name < b.metadata.name ? -1 : 1) : a.metadata.namespace < b.metadata.namespace ? -1 : 1));
+      if (all.length === 0) return { stdout: 'No resources found\n' };
+      const lines = renderTable(cluster, kind, all, format.wide).trimEnd().split('\n');
+      return { stdout: table(lines.map((l, i) => [i === 0 ? 'NAMESPACE' : (all[i - 1]?.metadata.namespace ?? ''), ...l.split(/ {2,}/)])) };
+    }
 
     // events と machines は Resource の形をしていないので、表の側で組み立てる
     const synthetic = kind === 'events' || kind === 'machines';
@@ -208,6 +224,7 @@ const coreSubcommands: Record<string, KubectlHandler> = {
       }
       return { stdout: out.join(''), patch: { cluster: current } };
     }
+    if (kind === 'namespaces' && name !== undefined) return deleteNamespace(cluster, name);
     if (kind === '' || name === undefined) {
       return { stderr: 'error: 種別と名前を指定してください\n', code: 1 };
     }
@@ -415,7 +432,7 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
   const rest = argv.slice(2);
   const { flags, values, operands } = parseArgs([sub, ...rest], {
     withValue: [
-      'o', 'n', 'l', 'f', 'as', 'image', 'replicas', 'tcp', 'requests', 'limits', 'succeeds-after',
+      'o', 'n', 'namespace', 'l', 'f', 'as', 'image', 'replicas', 'tcp', 'requests', 'limits', 'succeeds-after',
       'port', 'target-port', 'type', 'name', 'labels',
     ],
   });
@@ -425,12 +442,23 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
     return { stderr: `error: unknown command "${sub}" for "kubectl"\n`, code: 1 };
   }
 
+  const namespace = values.get('n') ?? values.get('namespace') ?? 'default';
+  // 区画の一覧を持つクラスタでは、無い区画には作れない（本物と同じ断り方）
+  const what = operands[0] ?? '';
+  const creating = sub === 'run' || sub === 'expose' || (sub === 'create' && !['namespace', 'ns'].includes(what));
+  if (creating && missingNamespace(cluster, namespace)) {
+    const stderr = sub === 'create'
+      ? `error: failed to create ${what}: namespaces "${namespace}" not found\n`
+      : `Error from server (NotFound): namespaces "${namespace}" not found\n`;
+    return { stderr, code: 1, patch: { cluster } };
+  }
+
   const ctx: KubectlContext = {
     cluster,
     shell,
     sub,
     rest,
-    namespace: values.get('n') ?? 'default',
+    namespace,
     output: values.get('o') ?? '',
     flags,
     values,

@@ -1,4 +1,5 @@
 import { realNames } from '@/engines/k8s/controllers';
+import { createNamespace } from './kubectlNamespace';
 import { container, deployment, pod, service } from '@/engines/k8s/factory';
 import type { ClusterState, ConfigMap, Secret, ServiceAccount } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
@@ -152,6 +153,8 @@ const MAKERS: Record<string, (ctx: Parameters<KubectlHandler>[0]) => CommandResu
   secret: createSecret,
   serviceaccount: createServiceAccount,
   sa: createServiceAccount,
+  namespace: createNamespace,
+  ns: createNamespace,
 };
 
 /**

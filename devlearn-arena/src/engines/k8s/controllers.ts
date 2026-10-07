@@ -100,6 +100,7 @@ export function reconcile(state: ClusterState): ReconcileResult {
     const rsId = key(deployment.metadata.namespace, rsName);
 
     const mine = [...replicaSets.values()].filter((rs) =>
+      rs.metadata.namespace === deployment.metadata.namespace &&
       rs.metadata.ownerReferences.some(
         (o) => o.kind === 'Deployment' && o.name === deployment.metadata.name,
       ),
@@ -246,6 +247,7 @@ export function reconcile(state: ClusterState): ReconcileResult {
   // 4. Deployment の status
   for (const [id, deployment] of deployments) {
     const mine = [...replicaSets.values()].filter((rs) =>
+      rs.metadata.namespace === deployment.metadata.namespace &&
       rs.metadata.ownerReferences.some(
         (o) => o.kind === 'Deployment' && o.name === deployment.metadata.name,
       ),
