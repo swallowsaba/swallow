@@ -6,6 +6,7 @@
 // レッスンの中身（content/lessons）を読んで正しく答え、7 段を通す: 解説 → 理解 → クイズ → 実戦 → 結果 → まとめ → XP / スキル。
 // 実戦は、各手順の最初に 1 度わざと誤った文（コマンド）を入れてエラーの小窓を撮り、最後のヒントの答えを入れて進める。
 // FIRST='docker logs web' を付けると、わざと誤る代わりにその行を入れる（出力に当てる想定エラーの小窓を撮る）。
+// FIRST_STEP=手順の ID を付けると、最初の手順の代わりにその手順でわざと誤る。
 // 答える手順で FIRST を端末に打つ時は FIRST_TERM=1 を付ける。
 // HINTS=1 を付けると、最初の手順のヒント 3 段を開いた画面（-hints）も撮る。
 // 撮る物: p10-<分野>-explain・-understand・-quiz・-practice・-error・-afterward・-result・-summary・-done（-1280 も）
@@ -163,7 +164,7 @@ export default async function domain(page, shot) {
     if (i > 0 && (await page.getAttribute(`[data-step="${step.id}"]`, 'data-done')) === 'true') continue;
     const lines = answersOf(step);
     const answerStep = step.check.kind === 'answer';
-    if (i === 0) {
+    if (step.id === (process.env.FIRST_STEP ?? lesson.practice.steps[0].id)) {
       // わざと誤る（無い名前・違う答え）→ エラーの小窓
       // 設定の編集は、WRONG（「誤り=>正しい」の形。無ければ閉じる } の前の ; を 1 つ消す）で誤った中身を保存する
       const [bad, good] = (process.env.WRONG ?? '').split('=>');

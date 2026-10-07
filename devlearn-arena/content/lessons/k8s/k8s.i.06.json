@@ -1,0 +1,274 @@
+{
+  "id": "k8s.i.06",
+  "domain": "k8s",
+  "level": "intermediate",
+  "theme": "規模",
+  "title": "スケーリング",
+  "goal": "手動と自動で数を変えられる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.b.05"
+  ],
+  "related": [
+    "cloud.i.02",
+    "mon.b.03"
+  ],
+  "next": [
+    "k8s.i.07"
+  ],
+  "terms": [
+    "scaling",
+    "pod",
+    "hpa",
+    "cpu",
+    "metrics-server",
+    "k8s-requests",
+    "container",
+    "deployment",
+    "command",
+    "kubectl",
+    "k8s-service"
+  ],
+  "explain": {
+    "what": "{{term:scaling}}は、{{term:pod}} の数を変えること。手で変える（あるべき数を書き換える）か、{{term:hpa}} で負荷に合わせて自動で変える。HPA は {{term:cpu}} の使用率を目標（例: 50%）と比べ、決めた範囲（最小〜最大）の中で増やしたり減らしたりする。",
+    "why": "利用者の数は時間で変わる。一番混む時に合わせて多く置くと、空いている時間は無駄になる。少なく置くと、混む時に遅くなる。混む時だけ増やし、空いたら減らせば、両方を避けられる。",
+    "use": "負荷の変化への対応。HPA は、{{term:metrics-server}} が集めた使用量を、{{term:k8s-requests}}（{{term:container}}が求める量）で割った割合で見る。requests を書かないと割合が出ず、HPA は増やせない。",
+    "when": "市の売店（web）は、昼だけ利用者が 10 倍になる。朝は 2 つで足りるが、昼は遅くなる。今は人が毎日、昼の前に手で増やし、夕方に減らしている。",
+    "figures": [
+      "k8s-i06-hpa"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "使用率が目標（50%）を大きく超えた",
+      "b": "HPA が Pod を増やす",
+      "answer": "cause",
+      "why": "HPA は使用率を目標と比べ、必要な数 = 今の数 × 使用率 ÷ 目標 で増やす。増えて使用率が目標に近づけば止まる。",
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "HPA は、コンテナの資源の要求（requests）を書かなくても、CPU の使用率で増減できる。",
+      "answer": false,
+      "why": "使用率は「使った量 ÷ 要求した量」。要求が無いと割合を出せず、`TARGETS` は `<unknown>` のまま増えない。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "昼の前に、web を手で 5 つにしたい。打つ{{term:command}}は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`kubectl scale deployment web --replicas=5`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`kubectl autoscale deployment web --max=5`",
+          "correct": false,
+          "whyNot": "それは自動の拡縮を作る命令。上限を 5 にするだけで、今すぐ 5 つにはしない。"
+        },
+        {
+          "id": "c",
+          "text": "`kubectl create deployment web --replicas=5`",
+          "correct": false,
+          "whyNot": "それは新しく作る命令。もうある web には、同じ名前があると断られる。"
+        }
+      ],
+      "explanation": "手で数を変えるのは `kubectl scale`。あるべき数を書き換え、{{term:deployment}} が足りない分を作る。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "利用者の数が日によって違い、いつ混むか分からない。数をどう変える？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "HPA で、使用率を目標に保つよう自動で増減させる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "一番混んだ日に合わせて、いつも多く置く",
+          "correct": false,
+          "whyNot": "空いている日は無駄になる。混み方が読めない時こそ、自動が向く。"
+        },
+        {
+          "id": "c",
+          "text": "混んだと気づいたら、人が手で増やす",
+          "correct": false,
+          "whyNot": "気づくまでの間は遅いまま。夜中や休みの日は間に合わない。"
+        }
+      ],
+      "explanation": "混む時が読めないなら、使用率を見て自動で増減させる。範囲（最小〜最大）で、増えすぎと減りすぎを防ぐ。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "HPA を作って負荷を掛けたのに、Pod が増えない。原因は？",
+      "context": {
+        "log": "NAME   REFERENCE        TARGETS              MINPODS   MAXPODS   REPLICAS   AGE\nweb    Deployment/web   cpu: <unknown>/50%   2         10        2          3m"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "コンテナに CPU の要求（requests）を書いていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "最大の数（`MAXPODS`）が小さすぎる",
+          "correct": false,
+          "whyNot": "最大に届いているなら、`TARGETS` には使用率の数が出る。`<unknown>` は、使用率そのものを出せていない印。"
+        },
+        {
+          "id": "c",
+          "text": "負荷が軽すぎる",
+          "correct": false,
+          "whyNot": "軽いなら `0%` のような数が出る。`<unknown>` は、計算できていない印。"
+        }
+      ],
+      "explanation": "`<unknown>` なら `kubectl describe hpa` を見る。`missing request for cpu` とあれば、要求を書けば計算できるようになる。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "負荷が止んで、使用率が 0% になった。HPA（本物の既定の設定）はどうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "すぐには減らさず、5 分様子を見てから最小の数まで減らす",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "すぐに最小の数まで減らす",
+          "correct": false,
+          "whyNot": "すぐ減らすと、また混んだ時に作り直しを繰り返す。既定では、過去 5 分の計算の一番多い数を保つ。"
+        },
+        {
+          "id": "c",
+          "text": "0 にする",
+          "correct": false,
+          "whyNot": "最小の数（`MINPODS`）より少なくはしない。"
+        }
+      ],
+      "explanation": "増やすのは速く、減らすのはゆっくり。混み方が揺れても、数が上下し続けないようにしている。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "市の売店（web）は、昼だけ利用者が 10 倍になる。まず手で数を変え、次に CPU の使用率 50% を目標に、2〜10 の範囲で自動で増減させる。利用者の波は、置いてある道具 crowd（初めは 0）を 1 つにすると起き、0 に戻すと止む。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n  ports:\n  - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: crowd\nspec:\n  replicas: 0\n  selector:\n    matchLabels:\n      app: crowd\n  template:\n    metadata:\n      labels:\n        app: crowd\n    spec:\n      containers:\n      - name: crowd\n        image: city-crowd:1.0\n        env:\n        - name: TARGET_URL\n          value: http://web\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "manual",
+        "purpose": "昼の前に、web を手で 4 つに増やす。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web readyReplicas=4"
+        },
+        "afterward": "`deployment.apps/web scaled`。あるべき数が 4 になり、Deployment が足りない 2 つを作った。手で変えた数は、次に誰かが変えるまでそのまま。",
+        "hints": [
+          "数を手で変えるのは `kubectl scale`。",
+          "`--replicas=数` で、あるべき数を書く。名前は web。",
+          "`kubectl scale deployment web --replicas=4` と打ち、`kubectl get pods -w` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-notfound",
+          "k8s-no-connection"
+        ]
+      },
+      {
+        "id": "autoscale",
+        "purpose": "web に HPA を付ける。目標は CPU の使用率 50%、数は 2〜10。",
+        "check": {
+          "kind": "k8s",
+          "expr": "hpa/web min=2 max=10 target=50"
+        },
+        "afterward": "`horizontalpodautoscaler.autoscaling/web autoscaled`。HPA web ができた。これから 15 秒ごとに使用率を見て、数を決める。",
+        "hints": [
+          "自動の拡縮を付けるのは `kubectl autoscale deployment 名前`。",
+          "目標は `--cpu-percent=50`、範囲は `--min=2` と `--max=10` で書く。",
+          "`kubectl autoscale deployment web --cpu-percent=50 --min=2 --max=10` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-hpa-max",
+          "k8s-hpa-exists",
+          "k8s-notfound"
+        ]
+      },
+      {
+        "id": "grow",
+        "purpose": "利用者の波を起こし（crowd を 1 つに）、HPA が web を 6 つ以上に増やすことを確かめる。",
+        "check": {
+          "kind": "k8s",
+          "expr": "hpa/web replicas>=6 && deployment/crowd readyReplicas=1"
+        },
+        "afterward": "要求を書くと web の Pod が作り直され、使用率を測れるようになった。波で使用率が 88% に上がり、HPA は使用率を見ながら Pod を 8 つまで増やした。8 つで分けると使用率は 44% に下がり、数はそこで止まった。",
+        "hints": [
+          "`kubectl get hpa web` の `TARGETS` が `<unknown>` なら、使用率を計算できていない。使用率は、使った量を要求（requests）で割った割合。",
+          "要求は `kubectl set resources deployment web --requests=cpu=200m` で書く（200m は CPU 0.2 個分）。波は `kubectl scale deployment crowd --replicas=1` で起こし、`kubectl get hpa web -w` で数を見る。",
+          "`kubectl set resources deployment web --requests=cpu=200m` と打ち、`kubectl scale deployment crowd --replicas=1` と打ってから、`kubectl get hpa web -w` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-hpa-unknown",
+          "k8s-hpa-idle",
+          "k8s-quantity",
+          "k8s-notfound"
+        ]
+      },
+      {
+        "id": "shrink",
+        "purpose": "波を止め（crowd を 0 に）、web が 2 つまで減ることを確かめる。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/crowd replicas=0 && hpa/web replicas=2 && deployment/web readyReplicas=2"
+        },
+        "afterward": "使用率はすぐ 0% になったが、数はすぐには減らなかった。HPA は減らす時、過去 5 分の計算の一番大きい数を保つ（混み方が揺れても、作り直しを繰り返さない）。5 分たって、最小の 2 つまで減った。",
+        "hints": [
+          "波は crowd の数で起きる。0 にすると止む。",
+          "`kubectl scale deployment crowd --replicas=0` で止め、`kubectl get hpa web -w` で数を見続ける。すぐには減らない。",
+          "`kubectl scale deployment crowd --replicas=0` と打ち、`kubectl get hpa web -w` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-notfound"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "手で数を変え、HPA で使用率に合わせて自動で増やし、波が止むと様子を見てから減ることを確かめた。",
+    "partial": "ヒントを使って確かめた。次は、要求（requests）が無いと HPA がなぜ増やせないかを、自分の言葉で説明してみよう。",
+    "retry": "まだ確かめ終わっていない。`kubectl get hpa web` の `TARGETS` と `REPLICAS` を見て、使用率が出ているか、数がどう移ったかを確かめよう。"
+  },
+  "summary": {
+    "points": [
+      "数は手でも（scale）、負荷に合わせて自動でも（HPA）変えられる",
+      "HPA は目標の使用率と、数の範囲（最小・最大）を決める",
+      "使用率は要求（requests）に対する割合。要求が無いと増えない"
+    ],
+    "next": [
+      "k8s.i.07",
+      "cloud.i.02"
+    ],
+    "terms": [
+      "scaling",
+      "hpa",
+      "k8s-requests"
+    ]
+  }
+}

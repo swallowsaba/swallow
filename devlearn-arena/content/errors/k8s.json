@@ -509,6 +509,75 @@
       "terms": [
         "health-check"
       ]
+    },
+    {
+      "id": "k8s-hpa-unknown",
+      "match": "cpu: <unknown>/\\d+% +\\d+ +\\d+ +\\d+ +\\S+\\n$",
+      "output": true,
+      "meaning": "HPA の `TARGETS` が `<unknown>`。CPU の使用率を計算できていないので、HPA は数を決められず、増やさない。",
+      "causes": [
+        "web のコンテナに、CPU の要求（requests）を書いていない。使用率は「使った量 ÷ 要求した量」なので、要求が無いと割合が出ない。",
+        "要求を書いたばかりで、新しい Pod がまだ測られていない（使用量は 15 秒ごとに測る）。"
+      ],
+      "hint": "`kubectl describe hpa web` の Conditions と Events を見る。`missing request for cpu` とあれば、`kubectl set resources deployment web --requests=cpu=200m` で要求を書く。",
+      "terms": [
+        "hpa",
+        "k8s-requests"
+      ]
+    },
+    {
+      "id": "k8s-hpa-idle",
+      "match": "cpu: \\d%/\\d+% +\\d+ +\\d+ +\\d+ +\\S+\\n$",
+      "output": true,
+      "meaning": "使用率が一桁で、目標よりずっと低い。HPA には増やす理由が無い。",
+      "causes": [
+        "利用者の波を起こしていない（crowd が 0 のまま）。",
+        "波を起こしたばかりで、まだ測られていない（使用量は 15 秒ごとに測る）。"
+      ],
+      "hint": "`kubectl get deployment crowd` で波の道具の数を見る。0 なら `kubectl scale deployment crowd --replicas=1`。起こしたばかりなら、`kubectl get hpa web -w` で待つ。",
+      "terms": [
+        "hpa",
+        "metrics-server"
+      ]
+    },
+    {
+      "id": "k8s-hpa-max",
+      "match": "--max=MAXPODS",
+      "meaning": "自動で増やす数の上限（`--max`）が無いか、下限（`--min`）より小さい。",
+      "causes": [
+        "`--max` を書き忘れた（上限は必ず要る）。",
+        "`--min` と `--max` を逆に書いた。"
+      ],
+      "hint": "`--min=2 --max=10` のように、下限と上限を両方書く。",
+      "terms": [
+        "hpa"
+      ]
+    },
+    {
+      "id": "k8s-hpa-exists",
+      "match": "horizontalpodautoscalers\\.autoscaling \"[^\"]+\" already exists",
+      "meaning": "その名前の HPA は既にある。1 つの Deployment に付ける HPA は 1 つ。",
+      "causes": [
+        "前に `kubectl autoscale` を打った。",
+        "目標や範囲を変えようとして、同じ命令をもう一度打った。"
+      ],
+      "hint": "`kubectl get hpa` で今の目標と範囲を見る。変えるなら `kubectl delete hpa web` で消してから作り直す。",
+      "terms": [
+        "hpa"
+      ]
+    },
+    {
+      "id": "k8s-quantity",
+      "match": "quantities must match the regular expression",
+      "meaning": "量の書き方が違う。CPU は `200m`（CPU 0.2 個分）や `0.5`、メモリは `256Mi` のように書く。",
+      "causes": [
+        "単位を誤った（`200 m`・`200mc` など）。",
+        "`cpu=` の後に数を書いていない。"
+      ],
+      "hint": "`--requests=cpu=200m` の形で書く。m は CPU 1 個の 1000 分の 1。",
+      "terms": [
+        "k8s-requests"
+      ]
     }
   ]
 }

@@ -511,6 +511,68 @@
       "lessons": [
         "k8s.i.05"
       ]
+    },
+    {
+      "id": "scaling",
+      "word": "スケーリング",
+      "plain": "Pod などの数を、負荷に合わせて変えること。手で変える（kubectl scale）か、HPA で自動で変える。",
+      "why": "混む時に足りず、空いた時に余る、を避けられる。止めずに数だけを変えられるのが、コンテナを束ねる仕組みの強み。",
+      "related": [
+        "hpa",
+        "deployment",
+        "pod"
+      ],
+      "lessons": [
+        "k8s.i.06"
+      ]
+    },
+    {
+      "id": "hpa",
+      "word": "HPA",
+      "reading": "えいち・ぴー・えー",
+      "plain": "Pod の数を、CPU の使用率などに合わせて自動で増減する仕組み（HorizontalPodAutoscaler）。目標の使用率と、数の範囲（最小・最大）を決める。",
+      "why": "人が昼の前に増やし、夕方に減らさなくてよい。15 秒ごとに使用率を見て、目標に近づくように数を決める。",
+      "related": [
+        "scaling",
+        "k8s-requests",
+        "metrics-server",
+        "deployment"
+      ],
+      "lessons": [
+        "k8s.i.06"
+      ]
+    },
+    {
+      "id": "k8s-requests",
+      "word": "requests",
+      "reading": "りくえすつ",
+      "plain": "コンテナが最低限ほしい CPU とメモリの量（resources.requests）。CPU の 200m は CPU 0.2 個分、メモリの 256Mi は 256 メビバイト。",
+      "why": "Pod を置く Node を選ぶ目安になる。HPA の使用率は、この量に対する割合で出すので、書かないと HPA は数を決められない。",
+      "related": [
+        "hpa",
+        "pod",
+        "cpu",
+        "memory"
+      ],
+      "lessons": [
+        "k8s.i.06",
+        "k8s.i.07"
+      ]
+    },
+    {
+      "id": "metrics-server",
+      "word": "metrics-server",
+      "reading": "めとりくす・さーば",
+      "plain": "クラスタの Pod の CPU とメモリの使用量を、15 秒ごとに集める係。kubectl top と HPA は、この値を読む。",
+      "why": "使用量が分からなければ、自動の拡縮は判断できない。動き出したばかりの Pod は、まだ測られていない。",
+      "related": [
+        "hpa",
+        "kubectl",
+        "pod"
+      ],
+      "lessons": [
+        "k8s.i.06"
+      ]
     }
   ]
 }
