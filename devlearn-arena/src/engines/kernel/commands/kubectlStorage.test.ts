@@ -52,7 +52,8 @@ function console_() {
     const r = execute(shell, line, registry, clock);
     shell = r.state;
     const pick = (s: 'stdout' | 'stderr'): string => r.chunks.filter((c) => c.stream === s).map((c) => c.text).join('');
-    return { out: pick('stdout'), err: pick('stderr'), code: r.exitCode };
+    // all: 端末に出る順（標準出力と標準エラーを混ぜた物）
+    return { out: pick('stdout'), err: pick('stderr'), all: r.chunks.map((c) => c.text).join(''), code: r.exitCode };
   };
   const apply = (text: string) => {
     shell = { ...shell, vfs: writeFile(shell.vfs, '/home/learner/db.yaml', text, true) };
@@ -151,6 +152,8 @@ describe('PV と PVC（DB のデータの置き場所）', () => {
     c.apply(PVC('10Gi') + DB('/var/lib/postgresql/data'));
     const again = c.apply(PVC('1Gi') + DB('/var/lib/postgresql/data'));
     expect(again.code).toBe(1);
+    // 本物と同じく、書き込めた物の行の後に断りが出る
+    expect(again.all).toMatch(/^deployment\.apps\/db unchanged\nThe PersistentVolumeClaim/);
     expect(again.out).toBe('deployment.apps/db unchanged\n');
     expect(again.err).toMatch(/^The PersistentVolumeClaim "db-data" is invalid: spec: Forbidden: spec is immutable after creation except resources\.requests and volumeAttributesClassName for bound claims\n/);
     expect(again.err).toContain('- \t\tRequests: core.ResourceList{s"storage": {i: resource.int64Amount{value: 10737418240}, s: "10Gi", Format: "BinarySI"}},\n');

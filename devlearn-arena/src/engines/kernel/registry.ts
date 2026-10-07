@@ -96,6 +96,8 @@ export interface CommandResult {
   stderr?: string;
   /** 省略時は 0 */
   code?: number;
+  /** 標準エラーを標準出力の後に出す（進みの行を出してから、最後に断る命令。kubectl rollout status など） */
+  stderrLast?: boolean;
   /** 変更したシェル状態（差分） */
   patch?: Partial<ShellState>;
   /** 画面側にエディタを開かせる要求 */

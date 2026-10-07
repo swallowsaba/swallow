@@ -24,7 +24,8 @@ function console_() {
     const r = execute(shell, line, registry, clock);
     shell = r.state;
     const pick = (s: 'stdout' | 'stderr'): string => r.chunks.filter((c) => c.stream === s).map((c) => c.text).join('');
-    return { out: pick('stdout'), err: pick('stderr'), code: r.exitCode };
+    // all: 端末に出る順（標準出力と標準エラーを混ぜた物）
+    return { out: pick('stdout'), err: pick('stderr'), all: r.chunks.map((c) => c.text).join(''), code: r.exitCode };
   };
   const apply = (text: string) => {
     shell = { ...shell, vfs: writeFile(shell.vfs, '/home/learner/guide.yaml', text, true) };
@@ -65,7 +66,8 @@ describe('liveness と readiness（本物の httpGet の確かめ）', () => {
   it('liveness の待つ時間が読み込みより短いと、読み込みの途中で作り直され続ける（CrashLoopBackOff）', () => {
     const c = console_();
     c.apply(GUIDE([...READY(), ...LIVE(0, 5)]));
-    expect(c.run('kubectl rollout status deployment/guide').err).toContain('exceeded its progress deadline');
+    // 本物と同じく、進みの行（標準出力）の後に、期限を過ぎた断り（標準エラー）が出る
+    expect(c.run('kubectl rollout status deployment/guide').all).toMatch(/^Waiting for deployment "guide" rollout to finish: .*\nerror: deployment "guide" exceeded its progress deadline\n$/s);
     expect(c.run('kubectl get pods').out).toMatch(/^guide-\S+ +0\/1 +CrashLoopBackOff +\d+ \(\S+ ago\) +\S+$/m);
     expect(c.run('kubectl describe pod -l app=guide').out).toMatch(/Liveness probe failed: Get "http:\/\/\S+:8080\/healthz": dial tcp \S+:8080: connect: connection refused/);
   });

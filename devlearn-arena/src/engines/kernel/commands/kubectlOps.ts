@@ -219,7 +219,7 @@ function waitRollout(cluster: ClusterState, id: string): CommandResult {
     next = advanceCluster(next, tickPods);
   }
   const name = id.slice(id.indexOf('/') + 1);
-  return { stdout: fromLines(lines), stderr: `error: deployment "${name}" exceeded its progress deadline\n`, code: 1, patch: { cluster: next } };
+  return { stdout: fromLines(lines), stderr: `error: deployment "${name}" exceeded its progress deadline\n`, stderrLast: true, code: 1, patch: { cluster: next } };
 }
 
 /** 1 つの Pod のログ（行）か、まだ動いたことが無いと断る文 */
@@ -347,7 +347,7 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
     if ('error' in applied) return { stderr: `${applied.error}\n`, code: 1 };
     const stdout = fromLines(applied.lines);
     const patch = { cluster: applied.cluster };
-    if (applied.failures.length > 0) return { stdout, stderr: fromLines(applied.failures), code: 1, patch };
+    if (applied.failures.length > 0) return { stdout, stderr: fromLines(applied.failures), stderrLast: true, code: 1, patch };
     return { stdout, patch };
   },
 

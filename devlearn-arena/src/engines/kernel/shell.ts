@@ -393,15 +393,16 @@ function runList(
           : runCommand(command, state, registry, clock, pipedStdin);
         state = isPipeline ? { ...step.state, cwd: entryCwd, vars: entryVars } : step.state;
         exitCode = step.result.code ?? 0;
-        if (step.result.stderr !== undefined && step.result.stderr !== '') {
-          chunks.push({ stream: 'stderr', text: step.result.stderr });
-        }
+        const stderr = step.result.stderr ?? '';
+        const late = step.result.stderrLast === true;
+        if (stderr !== '' && !late) chunks.push({ stream: 'stderr', text: stderr });
         const stdout = step.result.stdout ?? '';
         if (isLast) {
           if (stdout !== '') chunks.push({ stream: 'stdout', text: stdout });
         } else {
           pipedStdin = stdout;
         }
+        if (stderr !== '' && late) chunks.push({ stream: 'stderr', text: stderr });
         if (step.result.editor !== undefined) editor = step.result.editor;
         state = { ...state, lastExit: exitCode };
         if (exiting(state)) break;
