@@ -466,6 +466,51 @@
       "lessons": [
         "k8s.i.04"
       ]
+    },
+    {
+      "id": "health-check",
+      "word": "ヘルスチェック",
+      "reading": "へるすちぇっく",
+      "plain": "動いている物が、ちゃんと働いているかを決まった間隔で確かめること。Kubernetes では、Pod のコンテナに liveness と readiness の 2 つの確かめを付ける。",
+      "why": "動いているように見えても、固まっていたり準備の途中だったりする。確かめが無いと、答えられない Pod に頼みが送られ続ける。",
+      "related": [
+        "liveness-probe",
+        "readiness-probe",
+        "pod"
+      ],
+      "lessons": [
+        "k8s.i.05"
+      ]
+    },
+    {
+      "id": "liveness-probe",
+      "word": "liveness",
+      "reading": "らいぶねす",
+      "plain": "コンテナが生きているか（固まっていないか）の確かめ（livenessProbe）。決まった回数続けて通らなければ、kubelet がコンテナを作り直す。",
+      "why": "固まったアプリを、人が気づく前に作り直せる。ただし起動に時間のかかるアプリでは、待つ時間（initialDelaySeconds）を短くすると、起動の途中で作り直され続ける。",
+      "related": [
+        "readiness-probe",
+        "health-check",
+        "kubelet"
+      ],
+      "lessons": [
+        "k8s.i.05"
+      ]
+    },
+    {
+      "id": "readiness-probe",
+      "word": "readiness",
+      "reading": "れでぃねす",
+      "plain": "コンテナに頼みを送ってよいか（準備ができたか）の確かめ（readinessProbe）。通るまで、Pod は Service の宛先に入らない。通らなくなれば外れる（作り直しはしない）。",
+      "why": "起動の途中や、一時的に答えられない Pod に頼みを送らずに済む。入れ替えの時も、準備のできた Pod から順に切り替わる。",
+      "related": [
+        "liveness-probe",
+        "k8s-endpoints",
+        "k8s-service"
+      ],
+      "lessons": [
+        "k8s.i.05"
+      ]
     }
   ]
 }

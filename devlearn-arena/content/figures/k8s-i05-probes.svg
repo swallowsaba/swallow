@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 340" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>readiness は、通るまで Pod を Service の宛先に入れず、通らなくなれば外す。liveness は、決まった回数続けて通らなければコンテナを作り直す。liveness は、起動の読み込みより長く待ってから始める</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <text x="14" y="32" font-size="13" fill="#9fb0c6">時間</text>
+  <line x1="120" y1="28" x2="684" y2="28" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <text x="124" y="50" font-size="13" fill="#eef2f6">動き出す</text>
+  <text x="300" y="50" font-size="13" fill="#eef2f6">20 秒: 読み込み終わり</text>
+  <text x="520" y="50" font-size="13" fill="#ff8a7a">固まった</text>
+  <text x="14" y="104" font-size="16" fill="#5cc1ff">readiness</text>
+  <text x="14" y="124" font-size="13" fill="#9fb0c6">送ってよいか</text>
+  <g class="el" data-part="ready-wait">
+    <rect x="120" y="76" width="176" height="64" rx="6" fill="none" stroke="#ff8a7a" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="208" y="104" text-anchor="middle" font-size="13" fill="#eef2f6">通らない</text>
+    <text x="208" y="126" text-anchor="middle" font-size="13" fill="#9fb0c6">宛先に入らない</text>
+  </g>
+  <g class="el" data-part="ready-ok">
+    <rect x="300" y="76" width="212" height="64" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="406" y="104" text-anchor="middle" font-size="13" fill="#eef2f6">通る（Ready）</text>
+    <text x="406" y="126" text-anchor="middle" font-size="13" fill="#9fb0c6">宛先に入り、頼みが届く</text>
+  </g>
+  <g class="el" data-part="ready-fail">
+    <rect x="516" y="76" width="168" height="64" rx="6" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="600" y="104" text-anchor="middle" font-size="13" fill="#eef2f6">通らなくなる</text>
+    <text x="600" y="126" text-anchor="middle" font-size="13" fill="#9fb0c6">宛先から外す</text>
+  </g>
+  <text x="14" y="204" font-size="16" fill="#f2b632">liveness</text>
+  <text x="14" y="224" font-size="13" fill="#9fb0c6">生きているか</text>
+  <g class="el" data-part="live-wait">
+    <rect x="120" y="176" width="236" height="64" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="238" y="204" text-anchor="middle" font-size="13" fill="#eef2f6">待つ（initialDelaySeconds）</text>
+    <text x="238" y="226" text-anchor="middle" font-size="13" fill="#9fb0c6">読み込みより長く</text>
+  </g>
+  <g class="el" data-part="live-ok">
+    <rect x="360" y="176" width="152" height="64" rx="6" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="436" y="214" text-anchor="middle" font-size="13" fill="#eef2f6">通る</text>
+  </g>
+  <g class="el" data-part="live-kill">
+    <rect x="516" y="176" width="168" height="64" rx="6" fill="none" stroke="#ff8a7a" stroke-width="2" pointer-events="all" />
+    <text x="600" y="204" text-anchor="middle" font-size="13" fill="#eef2f6">3 回続けて通らない</text>
+    <text x="600" y="226" text-anchor="middle" font-size="13" fill="#ff8a7a">作り直す</text>
+  </g>
+  <path d="M600 242 L600 290 L208 290 L208 146" fill="none" stroke="#ff8a7a" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ar)" />
+  <text x="404" y="314" text-anchor="middle" font-size="13" fill="#9fb0c6">作り直した Pod は、また読み込みから。待つ時間が短いと、読み込みの途中で作り直され続ける</text>
+</svg>

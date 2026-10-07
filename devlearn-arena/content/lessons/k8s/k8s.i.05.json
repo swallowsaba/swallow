@@ -1,0 +1,248 @@
+{
+  "id": "k8s.i.05",
+  "domain": "k8s",
+  "level": "intermediate",
+  "theme": "健全性",
+  "title": "ヘルスチェック",
+  "goal": "liveness と readiness を設定し違いを説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.b.05"
+  ],
+  "related": [
+    "mon.b.04",
+    "linux.i.01"
+  ],
+  "next": [
+    "k8s.a.02"
+  ],
+  "terms": [
+    "health-check",
+    "liveness-probe",
+    "readiness-probe",
+    "pod",
+    "k8s-service",
+    "kubelet",
+    "container",
+    "deployment",
+    "app",
+    "port",
+    "path",
+    "http",
+    "status-code",
+    "kubectl",
+    "yaml",
+    "k8s-endpoints",
+    "service",
+    "url"
+  ],
+  "explain": {
+    "what": "{{term:health-check}}は、{{term:pod}} の{{term:container}}が働いているかを、決まった間隔で確かめる仕組み。{{term:liveness-probe}}は「生きているか（固まっていないか）」、{{term:readiness-probe}}は「頼みを受け付けてよいか（準備ができたか）」を確かめる。",
+    "why": "動いているように見えても、固まっていたり、準備の途中だったりする。readiness が通らない Pod には {{term:k8s-service}} が頼みを送らず、liveness が通らない Pod は {{term:kubelet}} が作り直す。",
+    "use": "止まらない{{term:service}}。起動に時間のかかる{{term:app}}を、準備ができてから宛先に入れ、固まったら人が気づく前に作り直す。",
+    "when": "市の案内のアプリは、動き出してから地図を 20 秒かけて読み込む。入れ替えの直後に頼むとエラーが返り、ときどき固まったまま答えなくなる。",
+    "figures": [
+      "k8s-i05-probes"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "readiness の確かめが通らない",
+      "b": "Pod は作り直されずに、Service の宛先から外れる",
+      "answer": "cause",
+      "why": "readiness は「送ってよいか」の確かめ。通らなければ送らないだけで、作り直すのは liveness の役目。",
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "{{term:deployment}} を入れ替えた直後だけ、利用者にエラーが返る。アプリは起動に 20 秒かかる。何が起きている？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "readiness の確かめが無く、読み込みの途中の Pod に頼みが送られている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "liveness の確かめが、Pod を作り直している",
+          "correct": false,
+          "whyNot": "作り直しは、liveness を付けた時にだけ起きる。確かめが無いのに送られる方が先の問題。"
+        },
+        {
+          "id": "c",
+          "text": "Service の名前が間違っている",
+          "correct": false,
+          "whyNot": "名前が違えば、入れ替えの直後に限らず、いつでも届かない。"
+        }
+      ],
+      "see": "when"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "起動の途中の Pod には、頼みを送りたくない。どちらの確かめを付ける？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "readiness",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "liveness",
+          "correct": false,
+          "whyNot": "liveness は、通らなければ作り直す確かめ。起動の途中で通らないと、作り直されてしまう。"
+        }
+      ],
+      "explanation": "readiness が通るまで、Pod は Service の宛先に入らない。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "アプリがときどき固まり、そのまま答えなくなる。自動で作り直したい。どちらの確かめを付ける？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "liveness",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "readiness",
+          "correct": false,
+          "whyNot": "readiness は宛先から外すだけで、作り直さない。固まった Pod は外れたまま残る。"
+        }
+      ],
+      "explanation": "liveness が決まった回数続けて通らなければ、kubelet がコンテナを作り直す。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "liveness を付けたら、Pod が何度も作り直されるようになった（`RESTARTS` が増え続け、`CrashLoopBackOff`）。アプリは起動に 20 秒かかる。原因は？",
+      "context": {
+        "log": "livenessProbe:\n  httpGet:\n    path: /healthz\n    port: 8080\n  initialDelaySeconds: 0\n  periodSeconds: 5"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "liveness が厳しすぎる。読み込みの 20 秒を待たずに確かめ始め、途中で作り直している",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "readiness が無い",
+          "correct": false,
+          "whyNot": "readiness は作り直しに関わらない。作り直すのは liveness。"
+        },
+        {
+          "id": "c",
+          "text": "Pod の数が多すぎる",
+          "correct": false,
+          "whyNot": "数は関係ない。1 つの Pod でも、待つ時間が短ければ作り直され続ける。"
+        }
+      ],
+      "explanation": "liveness の待つ時間（`initialDelaySeconds`）は、起動にかかる時間より長くする。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "3 つの Pod のうち 1 つで、readiness が通らなくなった。その Pod はどうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "動き続けるが、Service の宛先（{{term:k8s-endpoints}}）から外れ、頼みが届かなくなる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "すぐに作り直される",
+          "correct": false,
+          "whyNot": "作り直すのは liveness。readiness は宛先から外すだけ。"
+        },
+        {
+          "id": "c",
+          "text": "Service の全ての Pod に、頼みが届かなくなる",
+          "correct": false,
+          "whyNot": "外れるのは通らない Pod だけ。残りの 2 つには届き続ける。"
+        }
+      ],
+      "explanation": "readiness は Pod ごとに見る。通らない Pod だけが宛先から外れ、通るようになれば戻る。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "市の案内（guide）の {{term:deployment}} には、確かめが無い。アプリは動き出してから地図を 20 秒読み込み、それから 8080 番で答える。ときどき固まる。readiness と liveness を付け、読み込みの途中には頼みを送らず、固まったら作り直されるようにする。保存すると、送って入れ替えを待ち、1 つの Pod のアプリを止めて（`kill -STOP 1`）、作り直されるまでを見る。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cwd": "/home/learner/guide",
+      "dirs": [
+        "/home/learner/guide"
+      ],
+      "files": {
+        "/home/learner/guide/guide.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: guide\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: guide\n  template:\n    metadata:\n      labels:\n        app: guide\n    spec:\n      containers:\n      - name: guide\n        image: city-guide:1.0\n        ports:\n        - containerPort: 8080\n"
+      },
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: guide\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: guide\n  template:\n    metadata:\n      labels:\n        app: guide\n    spec:\n      containers:\n      - name: guide\n        image: city-guide:1.0\n        ports:\n        - containerPort: 8080\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: guide\nspec:\n  selector:\n    app: guide\n  ports:\n  - port: 80\n    targetPort: 8080\n"
+      },
+      "edit": {
+        "path": "/home/learner/guide/guide.yaml",
+        "apply": [
+          "kubectl apply -f guide.yaml",
+          "kubectl rollout status deployment/guide",
+          "kubectl get pods",
+          "kubectl exec deploy/guide -- kill -STOP 1",
+          "kubectl get pods -w"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "probes",
+        "purpose": "コンテナに readiness（8080 番の /ready）と liveness（8080 番の /healthz）を付ける。読み込みの途中は `Ready` にならず、止めた Pod が作り直されて `Ready` に戻ればよい。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/guide readyUpdated=2 restarts>=1 early=0"
+        },
+        "afterward": "新しい Pod は、読み込みが終わるまで `0/1` で、Service の宛先に入らなかった。止めた Pod は、readiness に落ちて宛先から外れ（`0/1`）、liveness に 3 回続けて落ちて作り直され（`RESTARTS` が 1）、読み込みの後にまた `1/1` に戻った。",
+        "hints": [
+          "確かめの {{term:url}}: アプリは 8080 番の `/ready`（受け付けてよいか）と `/healthz`（生きているか）に答える。コンテナの `ports:` と同じ深さに `readinessProbe:` と `livenessProbe:` を書き、どちらも `httpGet:` で `path:` と `port:` を指す。",
+          "待つ時間: アプリは動き出してから 20 秒読み込む。liveness は `initialDelaySeconds: 30` のように読み込みより長く待ってから始め、`periodSeconds: 10` ごとに確かめる。readiness は待たなくてよい（通らない間は宛先に入らないだけ）ので、`periodSeconds: 5` だけ書く。",
+          "`apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: guide\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: guide\n  template:\n    metadata:\n      labels:\n        app: guide\n    spec:\n      containers:\n      - name: guide\n        image: city-guide:1.0\n        ports:\n        - containerPort: 8080\n        readinessProbe:\n          httpGet:\n            path: /ready\n            port: 8080\n          periodSeconds: 5\n        livenessProbe:\n          httpGet:\n            path: /healthz\n            port: 8080\n          initialDelaySeconds: 30\n          periodSeconds: 10\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-probe-not-ready",
+          "k8s-probe-no-readiness",
+          "k8s-probe-no-liveness",
+          "k8s-probe-none",
+          "k8s-yaml"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "readiness で読み込みの途中に頼みを送らず、liveness で固まった Pod を作り直す確かめを付けられた。",
+    "partial": "ヒントを使って付けられた。次は、liveness の待つ時間を短くするとどうなるかを、自分の言葉で説明してみよう。",
+    "retry": "まだ付けられていない。確かめた結果の `kubectl get pods -w` で、止めた Pod の `READY` と `RESTARTS` がどう移ったかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "readiness は「送ってよいか」。通らなければ宛先から外す",
+      "liveness は「生きているか」。通らなければ作り直す",
+      "liveness の待つ時間は、起動にかかる時間に合わせる"
+    ],
+    "next": [
+      "mon.b.04"
+    ],
+    "terms": [
+      "liveness-probe",
+      "readiness-probe"
+    ]
+  }
+}

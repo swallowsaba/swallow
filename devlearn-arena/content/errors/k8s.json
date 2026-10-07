@@ -453,6 +453,62 @@
         "ingress",
         "k8s-service"
       ]
+    },
+    {
+      "id": "k8s-probe-not-ready",
+      "match": "exceeded its progress deadline",
+      "meaning": "新しい Pod が `Ready` にならず、入れ替えが期限までに終わらなかった。確かめが通らないか、通る前に作り直されている。",
+      "causes": [
+        "liveness の待つ時間（`initialDelaySeconds`）が、アプリの読み込みの 20 秒より短い。読み込みの途中で作り直され続ける（`RESTARTS` が増え、`CrashLoopBackOff`）。",
+        "確かめの道（`path:`）かポート（`port:`）が違い、通らない（`404` や `connection refused`）。アプリは 8080 番の /ready と /healthz に答える。"
+      ],
+      "hint": "`kubectl describe pod` の Events の `Liveness probe failed`・`Readiness probe failed` の文を見る。作り直しが続くなら、liveness の `initialDelaySeconds` を 20 秒より長くする。",
+      "terms": [
+        "liveness-probe",
+        "readiness-probe"
+      ]
+    },
+    {
+      "id": "k8s-probe-no-readiness",
+      "match": "\\n\\S+ +1/1 +Running +0 +\\ds\\n",
+      "output": true,
+      "meaning": "作ってから数秒の Pod が、もう `1/1`（`Ready`）になっている。アプリは読み込みに 20 秒かかるので、答えられないうちから頼みが送られている。",
+      "causes": [
+        "readiness の確かめ（`readinessProbe`）を書いていない。確かめが無いと、コンテナが動き出した時に `Ready` になる。",
+        "`readinessProbe:` の字下げがずれて、コンテナの項目になっていない（`ports:` と同じ深さに書く）。"
+      ],
+      "hint": "コンテナに `readinessProbe:` を書き、`httpGet:` で `/ready` と `8080` を指す。",
+      "terms": [
+        "readiness-probe"
+      ]
+    },
+    {
+      "id": "k8s-probe-no-liveness",
+      "match": "0/1 +Running +0 +\\S+\\n$",
+      "output": true,
+      "meaning": "止めた（固まった）Pod が `0/1` のまま、作り直されない。readiness が宛先から外したが、生き返らせる確かめが無い。",
+      "causes": [
+        "liveness の確かめ（`livenessProbe`）を書いていない。",
+        "`livenessProbe:` の字下げがずれて、コンテナの項目になっていない（`ports:` と同じ深さに書く）。"
+      ],
+      "hint": "コンテナに `livenessProbe:` を書き、`httpGet:` で `/healthz` と `8080` を指す。読み込みの 20 秒より長く待つ（`initialDelaySeconds`）。",
+      "terms": [
+        "liveness-probe"
+      ]
+    },
+    {
+      "id": "k8s-probe-none",
+      "match": "1/1 +Running +0 +\\S+\\n$",
+      "output": true,
+      "meaning": "止めた（固まった）Pod が `1/1` のまま。固まったことに誰も気づかず、答えない Pod に頼みが送られ続けている。",
+      "causes": [
+        "確かめ（`readinessProbe`・`livenessProbe`）を 1 つも書いていない。",
+        "書いた確かめが、Deployment の Pod の設計図のコンテナに入っていない（字下げの誤り）。"
+      ],
+      "hint": "コンテナの `ports:` と同じ深さに、`readinessProbe:` と `livenessProbe:` を書く。",
+      "terms": [
+        "health-check"
+      ]
     }
   ]
 }
