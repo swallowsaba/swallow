@@ -254,6 +254,20 @@
       "lessons": [
         "k8s.b.04"
       ]
+    },
+    {
+      "id": "replicaset",
+      "word": "ReplicaSet",
+      "reading": "れぷりかせっと",
+      "plain": "決めた数の Pod を保つ係。Deployment が作り、ReplicaSet が実際に Pod を作ったり消したりして数を合わせる。",
+      "why": "Pod の名前の真ん中の印は、この ReplicaSet の名前。Pod を消しても、ReplicaSet が足りない分を作り直す。",
+      "related": [
+        "deployment",
+        "pod"
+      ],
+      "lessons": [
+        "k8s.b.05"
+      ]
     }
   ]
 }

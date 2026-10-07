@@ -151,6 +151,21 @@
         "kubelet",
         "k8s-event"
       ]
+    },
+    {
+      "id": "k8s-pod-name",
+      "match": "pods \"[^\"]+\" not found",
+      "meaning": "「その名前の Pod が見つからない」と言われた。Deployment が作った Pod の名前は、Deployment の名前そのものではない。",
+      "causes": [
+        "Deployment の名前（web）で Pod を指した。Pod の名前は web-印-5 字 の形。",
+        "ヒントの例の名前をそのまま打った。名前は作るたびに変わる。"
+      ],
+      "hint": "`kubectl get pods` で今ある Pod の名前を見て、その名前をそのまま書き写す。",
+      "terms": [
+        "pod",
+        "deployment",
+        "replicaset"
+      ]
     }
   ]
 }

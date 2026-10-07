@@ -1,0 +1,227 @@
+{
+  "id": "k8s.b.05",
+  "domain": "k8s",
+  "level": "beginner",
+  "theme": "Deployment",
+  "title": "Deployment",
+  "goal": "あるべき数を保つ仕組みを確かめられる",
+  "minutes": 15,
+  "prerequisites": [
+    "k8s.b.04"
+  ],
+  "related": [
+    "cloud.i.01",
+    "ctr.i.05"
+  ],
+  "next": [
+    "k8s.b.06",
+    "k8s.i.01",
+    "k8s.i.05"
+  ],
+  "terms": [
+    "deployment",
+    "pod",
+    "declarative",
+    "replicaset",
+    "k8s-node",
+    "kubectl",
+    "cluster",
+    "image",
+    "service",
+    "pod-status"
+  ],
+  "explain": {
+    "what": "{{term:deployment}} は、「この {{term:pod}} をいつも 3 つ」のように、あるべき数を{{term:declarative}}に伝えておく物。Deployment が {{term:replicaset}}（数を合わせる係）を作り、その係が今の数とあるべき数を比べて、足りなければ作り、多ければ消す。",
+    "why": "Pod を手で 1 つずつ作ると、消えた時に人が気づいて作り直すまで、数が欠けたままになる。夜中の故障に間に合わない。",
+    "use": "止まらない{{term:service}}を動かす時。数を変える（増やす・減らす）のも、新しい版に入れ替えるのも、Deployment に伝え直すだけで済む。",
+    "when": "web の Pod が 1 つ、何かの拍子で消えた。人が起きて作り直さなくても、3 つに戻っていてほしい。",
+    "figures": [
+      "k8s-b05-deployment"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "Pod が 1 つ消えた時、元の数に戻るまでの動きを、順に並べる。",
+      "items": [
+        "Pod が 1 つ消える",
+        "係が、今の数（2）があるべき数（3）より少ないと気づく",
+        "係が、足りない 1 つを作る",
+        "3 つに戻る"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "figure-pick",
+      "figure": "k8s-b05-deployment",
+      "prompt": "図で、Pod を実際に作ったり消したりして、数を合わせている係を押す。",
+      "answer": [
+        "replicaset"
+      ],
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "Deployment が 3 つで動かしている web の Pod を、1 つ消した。少し後の Pod の数は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "3 つ（別の名前の Pod が 1 つ作り直される）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "2 つのまま",
+          "correct": false,
+          "whyNot": "あるべき数は 3 と伝えてある。係が差に気づいて、足りない 1 つを作る。"
+        },
+        {
+          "id": "c",
+          "text": "0 になる（全て止まる）",
+          "correct": false,
+          "whyNot": "消したのは 1 つだけ。ほかの 2 つはそのまま動き、足りない分が足される。"
+        }
+      ],
+      "explanation": "Deployment に伝えたのは手順でなく、あるべき数。消えても、係が数を戻す。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "混む時間に備えて、web を 3 つから 5 つにしたい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`kubectl scale deployment web --replicas=5` で、あるべき数を 5 にする",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`kubectl run` で Pod を 2 つ足す",
+          "correct": false,
+          "whyNot": "手で足した Pod は Deployment の数に入らない。消えても誰も作り直さない。"
+        },
+        {
+          "id": "c",
+          "text": "Deployment を消して、5 つで作り直す",
+          "correct": false,
+          "whyNot": "消した間、web が全て止まる。あるべき数を伝え直すだけでよい。"
+        }
+      ],
+      "explanation": "数を変えるのも宣言の変更。`kubectl scale` であるべき数を変えると、係が差を埋める。"
+    },
+    {
+      "id": "q3",
+      "kind": "term",
+      "prompt": "宣言的とは？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "あるべき形を伝え、仕組みに合わせ続けてもらうやり方",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "1 つずつ手順を打って、形を作るやり方",
+          "correct": false,
+          "whyNot": "それは手続きの書き方。宣言的は、手順ではなく結果の形を伝える。"
+        },
+        {
+          "id": "c",
+          "text": "作った後は、形を変えられないやり方",
+          "correct": false,
+          "whyNot": "伝え直せば、形はいつでも変えられる。仕組みが新しい形に合わせる。"
+        }
+      ],
+      "explanation": "宣言的に伝えると、仕組みが今の形と比べて差を埋め続ける。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "{{term:cluster}}に、web を 3 つで動かす Deployment を作る。Pod を 1 つ消して、3 つに戻ることを確かめる。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console"
+    },
+    "steps": [
+      {
+        "id": "create",
+        "purpose": "nginx の{{term:image}}で、web という Deployment を、あるべき数 3 で作る。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web replicas=3"
+        },
+        "afterward": "`deployment.apps/web created`。Deployment が ReplicaSet を作り、ReplicaSet が 3 つの Pod を一度に作った。",
+        "hints": [
+          "Deployment を作るのは `kubectl create deployment 名前 --image=イメージ`。数は `--replicas` で伝える。",
+          "名前は web、イメージは nginx、数は 3。",
+          "`kubectl create deployment web --image=nginx --replicas=3` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-no-image",
+          "k8s-exists",
+          "k8s-no-connection"
+        ]
+      },
+      {
+        "id": "ready",
+        "purpose": "3 つの Pod が全て動き出した（Deployment の `READY` が 3/3）ことを確かめる。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web readyReplicas=3"
+        },
+        "afterward": "3 つとも `Running`。Pod の名前は web-印-5 字 の形で、真ん中の印は ReplicaSet の名前。`kubectl get deployment web` でも `READY` が 3/3。",
+        "hints": [
+          "{{term:pod-status}}は `kubectl get pods` で見る。時間がたつと変わる。",
+          "3 つが `Running` になるまで見る。変わるたびに見たい時は `-w` を付ける。",
+          "`kubectl get pods -w` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-image-pull",
+          "k8s-no-connection"
+        ]
+      },
+      {
+        "id": "heal",
+        "purpose": "web の Pod を 1 つ消し、別の名前の Pod が作り直されて、また 3 つが動くことを確かめる。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web readyReplicas=3 made>=4"
+        },
+        "afterward": "消した Pod は一覧から消え、代わりに別の名前の Pod が作られて `Running` になった。人は数を戻す手順を打っていない。ReplicaSet が、あるべき 3 と今の 2 の差を埋めた。",
+        "hints": [
+          "Pod を消すのは `kubectl delete pod 名前`。名前は `kubectl get pods` の一覧から書き写す。",
+          "Deployment の名前（web）ではなく、Pod の名前（web-印-5 字）を書く。消した後、また `kubectl get pods -w` で見る。",
+          "`kubectl get pods` で名前を見て、`kubectl delete pod web-7b57d9ff65-686cb` のように 1 つを消し（名前は一覧の物に置き換える）、`kubectl get pods -w` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-pod-name",
+          "k8s-no-connection"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "あるべき数を Deployment で伝え、Pod を消しても 3 つに戻ることを確かめた。",
+    "partial": "ヒントを使って確かめた。次は `kubectl scale` で数を 5 にすると何が起きるか、試してみよう。",
+    "retry": "まだ 3 つに戻ったことを確かめていない。`kubectl get pods` で Pod の名前を見て、1 つを消してから、もう一度一覧を見よう。"
+  },
+  "summary": {
+    "points": [
+      "数を宣言すると保ち続ける",
+      "消えても作り直す",
+      "数は scale で変える"
+    ],
+    "next": [
+      "k8s.b.06",
+      "k8s.i.06"
+    ],
+    "terms": [
+      "deployment",
+      "replicaset",
+      "declarative"
+    ]
+  }
+}
