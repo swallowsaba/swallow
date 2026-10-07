@@ -1,5 +1,6 @@
 import { advanceCluster } from '@/engines/k8s/controllers';
 import { tickPods } from '@/engines/k8s/kubelet';
+import { settling } from '@/engines/k8s/probes';
 import type { ClusterState, Deployment, Ingress, Node, PersistentVolume, PersistentVolumeClaim, Pod, ReplicaSet, Resource, Service } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
@@ -13,7 +14,7 @@ import { setProbe, setResources } from './kubectlSet';
 import { opsSubcommands } from './kubectlOps';
 import { parseOutput, renderResources } from './kubectlOutput';
 import {
-  CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, canReach, collectionOf, idFor, listOf, matchesSelector, notFound, parseTarget, podReady, podStatus, restarts, table, age,
+  CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, canReach, collectionOf, idFor, listOf, matchesSelector, notFound, parseTarget, podReady, podStatus, restarts, restartsText, table, age,
   type KubectlContext, type KubectlHandler,
 } from './kubectlShared';
 
@@ -37,14 +38,15 @@ export const TYPING_TICKS = 2;
 /** get pods -w: 状態が変わるたびに 1 行ずつ足す（本物は Ctrl-C まで続く。模擬は落ち着いたら終える） */
 function watchPods(cluster: ClusterState, namespace: string, name: string | undefined): { stdout: string; cluster: ClusterState } {
   const pick = (c: ClusterState): Pod[] => (listOf(c, 'pods', namespace) as Pod[]).filter((p) => name === undefined || p.metadata.name === name);
-  const cells = (c: ClusterState, p: Pod): string[] => [p.metadata.name, podReady(p), podStatus(p), String(restarts(p)), age(c.tick, p.metadata.createdAt)];
+  const cells = (c: ClusterState, p: Pod): string[] => [p.metadata.name, podReady(p), podStatus(p), restartsText(p, c.tick), age(c.tick, p.metadata.createdAt)];
   const seen = new Map<string, string>();
   const rows = [['NAME', 'READY', 'STATUS', 'RESTARTS', 'AGE']];
   const note = (c: ClusterState): boolean => {
     let changed = false;
     for (const p of pick(c)) {
       const row = cells(c, p);
-      const state = row.slice(1, 4).join(' ');
+      // 本物と同じく、Pod が変わった時だけ 1 行足す（「(5s ago)」の時間が進んだだけでは足さない）
+      const state = [podReady(p), podStatus(p), String(restarts(p))].join(' ');
       if (seen.get(p.metadata.name) === state) continue;
       seen.set(p.metadata.name, state);
       rows.push(row);
@@ -54,9 +56,11 @@ function watchPods(cluster: ClusterState, namespace: string, name: string | unde
   };
   note(cluster);
   let next = cluster;
-  for (let i = 0, quiet = 0; i < 60 && quiet < 8; i += 1) {
+  // 確かめの失敗が続いている・止められている・作り直しを待つ Pod があれば、変わるまで（180 秒まで）見続ける
+  const busy = (c: ClusterState): boolean => pick(c).some((p) => settling(c, p));
+  for (let i = 0, quiet = 0; (i < 60 || (i < 180 && busy(next))) && quiet < 8; i += 1) {
     next = advanceCluster(next, tickPods);
-    quiet = note(next) ? 0 : quiet + 1;
+    quiet = note(next) || busy(next) ? 0 : quiet + 1;
   }
   return { stdout: table(rows), cluster: next };
 }

@@ -1,6 +1,7 @@
 import { backoffMs } from '@/engines/kernel/clock';
 import { initFiles, TABLES_FILE } from '@/engines/container/pg';
 import { appExit } from './apps';
+import { advanceLive, liveApp } from './probes';
 import { pgOf, readAt, writeAt } from './volumes';
 import { schedule } from './scheduler';
 import { liveEnv, missingEnvRef, volumesReady } from './storage';
@@ -230,6 +231,10 @@ export function tickPods(state: ClusterState): TickResult {
         return next;
       }
 
+      // 待ち受けるまでの時間を持つアプリは、本物の確かめ（httpGet）で見る（src/engines/k8s/probes.ts）
+      const app = liveApp(state, spec);
+      if (app !== undefined) return advanceLive(app, pod, spec, status, tick, elapsed, (type, reason, message) => record(events, tick, type, reason, pod, message));
+
       // startupProbe。通るまで他のプローブは見ない
       if (spec.startupProbe !== null && !status.started) {
         if (probeExhausted(spec.startupProbe, elapsed)) {
@@ -310,6 +315,7 @@ export function tickPods(state: ClusterState): TickResult {
 
     const allReady = containers.length > 0 && containers.every((c) => c.ready);
     const anyWaiting = containers.some((c) => c.waitingReason !== null);
+    const liveStarted = containers.some((c, i) => c.runningSince !== undefined && pod.spec.containers[i] !== undefined && liveApp(state, pod.spec.containers[i]) !== undefined);
 
     // Job の Pod（restartPolicy が Always でない）は、Ready になったら終わったとみなす
     const isBatch = pod.spec.restartPolicy !== 'Always';
@@ -323,7 +329,8 @@ export function tickPods(state: ClusterState): TickResult {
     pod.status = {
       ...pod.status,
       containerStatuses: containers,
-      phase: allReady ? 'Running' : anyWaiting ? 'Pending' : 'ContainerCreating',
+      // 本物の確かめで見るアプリは、一度動き出せば Running（Ready でなくても、作り直しを待っていても）
+      phase: allReady || liveStarted ? 'Running' : anyWaiting ? 'Pending' : 'ContainerCreating',
     };
     pods.set(id, pod);
   }

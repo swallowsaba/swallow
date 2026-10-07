@@ -109,6 +109,13 @@ export function restarts(pod: Pod): number {
   return pod.status.containerStatuses.reduce((n, c) => n + c.restartCount, 0);
 }
 
+/** RESTARTS の欄。作り直した時刻を持つコンテナは、本物と同じく最後の作り直しからの時間を添える（1 (5s ago)） */
+export function restartsText(pod: Pod, tick: number): string {
+  const n = restarts(pod);
+  const last = Math.max(...pod.status.containerStatuses.map((c) => c.lastRestartAt ?? -Infinity));
+  return n > 0 && Number.isFinite(last) ? `${String(n)} (${age(tick, last)} ago)` : String(n);
+}
+
 export function notFound(kind: string, name: string): CommandResult {
   return { stderr: `Error from server (NotFound): ${kind} "${name}" not found\n`, code: 1 };
 }

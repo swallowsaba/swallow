@@ -5,7 +5,7 @@ import type {
   RoleBinding, Secret, Service, ServiceAccount, StatefulSet, StorageClass,
 } from '@/engines/k8s/types';
 import { NODE_SYSTEM, nodeAddress } from './kubectlDescribe';
-import { age, podReady, podStatus, restarts, table } from './kubectlShared';
+import { age, podReady, podStatus, restartsText, table } from './kubectlShared';
 
 /** 一覧の使い方の略し方（本物の kubectl と同じ） */
 const MODE_SHORT: Readonly<Record<string, string>> = {
@@ -33,7 +33,7 @@ export function renderTable(
           pod.metadata.name,
           podReady(pod),
           podStatus(pod),
-          String(restarts(pod)),
+          restartsText(pod, cluster.tick),
           at(pod.metadata.createdAt),
         ];
         if (wide) row.push(pod.status.podIP ?? '<none>', pod.status.nodeName ?? '<none>');

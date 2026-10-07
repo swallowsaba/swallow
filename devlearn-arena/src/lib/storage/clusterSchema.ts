@@ -20,6 +20,7 @@ const probeSchema = z.object({
   periodSeconds: z.number().int(),
   failureThreshold: z.number().int(),
   succeedsAfter: z.number().int().nullable(),
+  httpGet: z.object({ path: z.string(), port: z.number().int() }).optional(),
 });
 
 const containerSpecSchema = z.object({
@@ -81,6 +82,12 @@ const podSchema = z.object({
         env: stringMap.optional(),
         files: stringMap.optional(),
         fresh: z.boolean().optional(),
+        runningSince: z.number().int().optional(),
+        lastRestartAt: z.number().int().optional(),
+        frozen: z.boolean().optional(),
+        liveFails: z.number().int().optional(),
+        readyFails: z.number().int().optional(),
+        early: z.number().int().optional(),
       }),
     ),
     message: z.string().nullable(),

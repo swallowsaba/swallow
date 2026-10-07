@@ -44,6 +44,19 @@ export function asStringMap(value: unknown): Record<string, string> {
 export function toProbe(value: unknown): Probe | null {
   const raw = asRecord(value);
   if (Object.keys(raw).length === 0) return null;
+  // 本物の確かめ（httpGet）は、本物の既定（10 秒ごと・3 回続けて失敗で落ちる）で、アプリの振る舞いで決まる
+  const http = asRecord(raw['httpGet']);
+  if (Object.keys(http).length > 0) {
+    return {
+      ...probe({
+        initialDelaySeconds: asNumber(raw['initialDelaySeconds'], 0),
+        periodSeconds: asNumber(raw['periodSeconds'], 10),
+        failureThreshold: asNumber(raw['failureThreshold'], 3),
+        succeedsAfter: null,
+      }),
+      httpGet: { path: asString(http['path'], '/'), port: asNumber(http['port'], 80) },
+    };
+  }
   // 「いつ通るようになるか」は succeedsAfter で明示する。書かれていなければすぐ通る
   const succeeds = raw['succeedsAfter'];
   return probe({

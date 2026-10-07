@@ -122,7 +122,8 @@ export function eventsOf(cluster: ClusterState, object: string, w: number): stri
 
 /** 確かめ（プローブ）の 1 行。本物の describe の Liveness・Readiness・Startup の形 */
 function probeLine(probe: Probe, spec: ContainerSpec): string {
-  return `http-get http://:${String(spec.ports[0] ?? 80)}/ delay=${String(probe.initialDelaySeconds)}s timeout=1s period=${String(probe.periodSeconds)}s #success=1 #failure=${String(probe.failureThreshold)}`;
+  const target = probe.httpGet === undefined ? `:${String(spec.ports[0] ?? 80)}/` : `:${String(probe.httpGet.port)}${probe.httpGet.path}`;
+  return `http-get http://${target} delay=${String(probe.initialDelaySeconds)}s timeout=1s period=${String(probe.periodSeconds)}s #success=1 #failure=${String(probe.failureThreshold)}`;
 }
 
 /** コンテナの今の状態（State と、その下の Reason・Exit Code） */

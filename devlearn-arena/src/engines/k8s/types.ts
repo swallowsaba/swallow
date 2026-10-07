@@ -25,8 +25,10 @@ export interface Probe {
   initialDelaySeconds: number;
   periodSeconds: number;
   failureThreshold: number;
-  /** コンテナ起動から何 tick 後に成功するようになるか。null なら失敗し続ける */
+  /** コンテナ起動から何 tick 後に成功するようになるか。null なら失敗し続ける（httpGet の確かめでは使わない） */
   succeedsAfter: number | null;
+  /** 本物の確かめ（その道とポートに HTTP で頼み、200〜399 なら通る）。置き場のイメージのアプリの振る舞いで決まる（src/engines/k8s/probes.ts） */
+  httpGet?: { path: string; port: number };
 }
 
 export interface EnvFromRef {
@@ -91,6 +93,17 @@ export interface ContainerStatus {
   files?: Record<string, string>;
   /** DB のイメージが、データを書く場所が空の状態で動き出した（最初の表を作った） */
   fresh?: boolean;
+  /** 今のプロセスが動き出した tick（アプリが待ち受けるまでの時間を数える。src/engines/k8s/probes.ts） */
+  runningSince?: number;
+  /** 最後に作り直した tick（RESTARTS の「(5s ago)」） */
+  lastRestartAt?: number;
+  /** プロセスが止められている（kill -STOP 1）。頼みに答えない */
+  frozen?: boolean;
+  /** 続けて失敗した確かめの数（liveness・readiness） */
+  liveFails?: number;
+  readyFails?: number;
+  /** アプリが待ち受ける前に Ready だった（頼みが送られた）tick の数 */
+  early?: number;
 }
 
 export interface Pod {

@@ -15,6 +15,7 @@ import { key, type ClusterState, type Deployment, type Pod } from './types';
  *   deployment/web env.DB_HOST=db-staging-2 from.DB_HOST
  *   namespace/dev
  *   deployment/db rows.reservations=4 && pvc/db-data status=Bound
+ *   deployment/guide readyReplicas=2 restarts>=1 early=0
  * 比べ方は >= <= =（status・env・from は = で語を比べる）。比べ方を書かない欄は、値があるかどうか。区画を省けば default。` && ` で別の資源の条件をつなぐ
  */
 
@@ -76,6 +77,12 @@ function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, fi
     if (field.startsWith('rows.')) {
       const pod = readyPodsOf(cluster, d)[0];
       return pod === undefined ? undefined : pgTables(cluster, pod)?.[field.slice(5)]?.rows.length;
+    }
+    // restarts: 今の設計図の Pod の、作り直した数の合計。early: 今の設計図の Pod が、アプリの待ち受ける前に Ready だった（頼みが送られた）秒数の合計
+    if (field === 'restarts' || field === 'early') {
+      const hash = templateHash(d.spec.template, realNames(cluster));
+      const current = [...cluster.pods.values()].filter((p) => p.metadata.namespace === ns && p.metadata.labels['pod-template-hash'] === hash && matches(p.metadata.labels, d.spec.selector));
+      return current.flatMap((p) => p.status.containerStatuses).reduce((n, c) => n + (field === 'restarts' ? c.restartCount : (c.early ?? 0)), 0);
     }
     if (field === 'made') {
       const sets = new Set([...cluster.replicaSets.values()].filter((rs) => rs.metadata.namespace === ns && rs.metadata.ownerReferences.some((o) => o.kind === 'Deployment' && o.name === name)).map((rs) => `replicaset/${rs.metadata.name}`));

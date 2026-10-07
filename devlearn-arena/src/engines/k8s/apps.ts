@@ -20,9 +20,10 @@ export function appExit(state: ClusterState, spec: ContainerSpec, env: Readonly<
  * 最後に動かした時のログ（起動の行と、止まった原因か動き出した時の行）。置き場のイメージでなければ null。
  * DB のイメージは、データを書く場所が空だった（fresh）なら最初の表を作った行、あれば作らずに使った行を先に出す
  */
-export function appLog(state: ClusterState, spec: ContainerSpec, env: Readonly<Record<string, string>>, fresh?: boolean): string[] | null {
+export function appLog(state: ClusterState, spec: ContainerSpec, env: Readonly<Record<string, string>>, fresh?: boolean, warming = false): string[] | null {
   const image = imageOf(state, spec);
   if (image === undefined) return null;
   const pg = image.pg === undefined || fresh === undefined ? [] : fresh ? PG_INIT : PG_SKIP;
-  return [...(image.bootLog ?? []), ...pg, ...(appExit(state, spec, env) ?? image.startLog)];
+  // 待ち受けるまでの読み込みの途中なら、起動の行だけ
+  return [...(image.bootLog ?? []), ...pg, ...(appExit(state, spec, env) ?? (warming ? [] : image.startLog))];
 }

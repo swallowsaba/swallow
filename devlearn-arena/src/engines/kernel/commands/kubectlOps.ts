@@ -7,6 +7,7 @@ import { revisionsOf, rolloutStatus, rolloutUndo } from '@/engines/k8s/rollout';
 import { psql, TABLES_FILE } from '@/engines/container/pg';
 import { appLog } from '@/engines/k8s/apps';
 import { ingressError } from '@/engines/k8s/ingress';
+import { listening, liveApp } from '@/engines/k8s/probes';
 import { pgOf, pgTables, writeAt } from '@/engines/k8s/volumes';
 import { resolveEnv } from '@/engines/k8s/storage';
 import type { ClusterState, Deployment, PersistentVolumeClaim, Pod, Resource } from '@/engines/k8s/types';
@@ -235,7 +236,9 @@ function podLogs(cluster: ClusterState, pod: Pod): { lines: string[] } | { stder
     if (waiting !== null) {
       return { stderr: `Error from server (BadRequest): container "${spec.name}" in pod "${pod.metadata.name}" is waiting to start: ${waiting}\n` };
     }
-    const log = appLog(cluster, spec, resolveEnv(cluster, pod, spec.name), status?.fresh);
+    const app = liveApp(cluster, spec);
+    const warming = app !== undefined && status !== undefined && !listening(app, { ...status, frozen: false }, cluster.tick);
+    const log = appLog(cluster, spec, resolveEnv(cluster, pod, spec.name), status?.fresh, warming);
     if (log !== null) return { lines: log };
   }
 
@@ -296,6 +299,22 @@ function psqlIn(cluster: ClusterState, pod: Pod, args: readonly string[]): Comma
   const pods = new Map(cluster.pods);
   pods.set(key(pod.metadata.namespace, pod.metadata.name), written.pod);
   return { stdout: r.out ?? '', patch: { cluster: { ...cluster, pods, persistentVolumes: written.volumes } } };
+}
+
+/**
+ * コンテナの中の kill。PID 1（アプリ）に STOP を送ると止まって頼みに答えなくなり、CONT で動き出す（確かめの練習。k8s.i.05）。
+ * ほかの合図や番号は、この練習の模擬では扱わない
+ */
+function killIn(cluster: ClusterState, pod: Pod, args: readonly string[]): CommandResult {
+  const [sig = '', pid = ''] = args.length === 1 ? ['-TERM', args[0] ?? ''] : args;
+  const stop = ['-STOP', '-SIGSTOP', '-19', '-s STOP'].includes(sig);
+  const cont = ['-CONT', '-SIGCONT', '-18'].includes(sig);
+  if (pid !== '1') return { stderr: `sh: can't kill pid ${pid}: No such process\ncommand terminated with exit code 1\n`, code: 1 };
+  if (!stop && !cont) return { stderr: 'この練習の模擬では、kill -STOP 1（止める）と kill -CONT 1（動かす）だけを扱う\n', code: 1 };
+  const statuses = pod.status.containerStatuses.map((c, i) => (i === 0 ? { ...c, frozen: stop } : c));
+  const pods = new Map(cluster.pods);
+  pods.set(key(pod.metadata.namespace, pod.metadata.name), { ...pod, status: { ...pod.status, containerStatuses: statuses } });
+  return { stdout: '', patch: { cluster: { ...cluster, pods } } };
 }
 
 export const opsSubcommands: Record<string, KubectlHandler> = {
@@ -536,6 +555,7 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
       }
       return { stderr: `cat: ${path}: No such file or directory\n`, code: 1 };
     }
+    if (command[0] === 'kill' && spec !== undefined) return killIn(cluster, pod, command.slice(1));
     return { stdout: `（${command.join(' ') || 'sh'} を実行しました）\n` };
   },
 

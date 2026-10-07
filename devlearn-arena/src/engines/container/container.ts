@@ -37,6 +37,11 @@ export interface Image {
     routes?: Readonly<Record<string, { status: number; body: string }>>;
     /** 道が無い時の答えの形（express は Node.js の Express の Cannot GET。無ければ nginx の 404） */
     notFound?: 'express';
+    /**
+     * 動き出してから待ち受けるまでの秒数（データを読み込む間は、ポートで待ち受けない）。
+     * あれば、クラスタの Pod は本物の確かめ（httpGet の liveness・readiness）でこのアプリを見る（src/engines/k8s/probes.ts）
+     */
+    warmup?: number;
   };
   /** 動かすのに要る環境変数（無いと止まる） */
   requiresEnv?: { name: string; error: readonly string[] };
@@ -226,6 +231,20 @@ export const REGISTRY: readonly Image[] = [
       },
     },
     startLog: ['api: version 1.0.0', 'api: listening on :3000'],
+  },
+  {
+    // 市の案内（Node.js）。動き出してから地図のデータを 20 秒かけて読み込み、それから 8080 番で待ち受ける（k8s.i.05）
+    ref: 'city-guide:1.0', id: '5f0c2b8e7a34', size: '164MB', command: 'docker-entrypoint.sh node server.js',
+    serves: {
+      port: 8080, body: '', notFound: 'express', warmup: 20,
+      routes: {
+        '/': { status: 200, body: '<!DOCTYPE html>\n<html><head><title>市の案内</title></head><body><h1>市の案内</h1><p>図書館・公園・駅の地図</p></body></html>\n' },
+        '/healthz': { status: 200, body: '{"status":"ok"}' },
+        '/ready': { status: 200, body: '{"ready":true}' },
+      },
+    },
+    bootLog: ['guide: version 1.0.0', 'guide: loading map data (about 20s)'],
+    startLog: ['guide: map data loaded (1,812 places)', 'guide: listening on :8080'],
   },
   { ref: 'redis:7', id: '7e49ed81b42b', size: '117MB', command: 'docker-entrypoint.sh redis-server', startLog: ['Redis version=7.2.5, bits=64', 'Ready to accept connections tcp'] },
   {
