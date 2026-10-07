@@ -1,7 +1,7 @@
 {
   "id": "k8s-app",
   "title": "Kubernetes 上でアプリを動かせ",
-  "story": "市の予約サイトは利用者が多く、1 台では支えきれない。{{term:kubernetes}}のクラスタで 3 つ並べて動かし、1 つの入口から使えるようにしよう。",
+  "story": "市の予約サイトは利用者が多く、1 台では支えきれない。{{term:kubernetes}}の{{term:cluster}}で 3 つ並べて動かし、1 つの入口から使えるようにしよう。",
   "domains": [
     "k8s",
     "ctr"

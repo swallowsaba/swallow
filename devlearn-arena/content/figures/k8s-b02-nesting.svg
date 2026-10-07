@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>入れ子の関係。クラスタの中に Node（機械）があり、Node の上で Pod が動き、Pod の中にコンテナが入る。1 つの Pod に、コンテナを 2 つ入れることもできる（本体と、ログを集める付き添い）</title>
+  <g class="el" data-part="cluster">
+    <rect x="16" y="16" width="668" height="298" rx="12" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="36" y="44" font-size="16" fill="#9fb0c6">クラスタ（機械の集まり）</text>
+  </g>
+  <g class="el" data-part="node1">
+    <rect x="36" y="60" width="410" height="234" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="56" y="88" font-size="16" fill="#5cc1ff">Node（node-1。Pod を動かす機械）</text>
+  </g>
+  <g class="el" data-part="pod">
+    <rect x="56" y="104" width="370" height="170" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="76" y="132" font-size="16" fill="#3ae08a">Pod（web。動かす最小の単位）</text>
+  </g>
+  <g class="el" data-part="main">
+    <rect x="76" y="150" width="160" height="100" rx="6" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="156" y="192" text-anchor="middle" font-size="14" fill="#f2b632">コンテナ</text>
+    <text x="156" y="218" text-anchor="middle" font-size="13" fill="#eef2f6">nginx（本体）</text>
+  </g>
+  <g class="el" data-part="side">
+    <rect x="248" y="150" width="160" height="100" rx="6" fill="none" stroke="#f2b632" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="328" y="192" text-anchor="middle" font-size="14" fill="#f2b632">コンテナ</text>
+    <text x="328" y="218" text-anchor="middle" font-size="13" fill="#eef2f6">ログを集める付き添い</text>
+  </g>
+  <g class="el" data-part="node2">
+    <rect x="466" y="60" width="198" height="234" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="486" y="88" font-size="16" fill="#5cc1ff">Node（node-2）</text>
+    <text x="486" y="124" font-size="13" fill="#9fb0c6">ここにも Pod を置ける</text>
+    <text x="486" y="150" font-size="13" fill="#9fb0c6">Node が止まると、</text>
+    <text x="486" y="172" font-size="13" fill="#9fb0c6">上の Pod も止まる</text>
+  </g>
+</svg>

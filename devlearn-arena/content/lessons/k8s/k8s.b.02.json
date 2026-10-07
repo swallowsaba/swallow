@@ -1,0 +1,125 @@
+{
+  "id": "k8s.b.02",
+  "domain": "k8s",
+  "level": "beginner",
+  "theme": "関係",
+  "title": "コンテナとの関係",
+  "goal": "コンテナ・Pod・Node の包含関係を説明できる",
+  "minutes": 15,
+  "prerequisites": ["k8s.b.01"],
+  "related": ["ctr.b.03", "docker.b.03"],
+  "next": ["k8s.b.03"],
+  "terms": ["kubernetes", "container", "pod", "k8s-node", "cluster", "web", "log", "registry", "image"],
+  "explain": {
+    "what": "{{term:kubernetes}}では、{{term:container}}を{{term:pod}}という包みに入れ、Pod を{{term:k8s-node}}（機械）の上で動かす。Node の集まりが{{term:cluster}}。大きい順に、クラスタ・Node・Pod・コンテナ。",
+    "why": "どれが何の中にあるかが分かれば、困った時にどこを見ればよいかが分かる。Pod が動かないのか、Node が止まったのか、中のコンテナが落ちたのか。",
+    "use": "全ての操作の土台。Kubernetes に頼むのは Pod の単位で、Node を選ぶのは Kubernetes。Pod には、いつも一緒に動くコンテナをまとめて入れられる。",
+    "when": "「予約の Pod が動かない」と言われた。Pod とコンテナと Node のどれの話なのか、分からなかった。",
+    "figures": ["k8s-b02-nesting"]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "大きい物から順に並べる（外側から内側へ）。",
+      "items": ["クラスタ", "Node", "Pod", "コンテナ"],
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "1 つの Pod に入れられるコンテナは、必ず 1 つだけ。",
+      "answer": false,
+      "why": "いつも一緒に動く物なら、2 つ以上入れられる。例えば{{term:web}}の本体と、その{{term:log}}を集める付き添いのコンテナ。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "term",
+      "prompt": "Pod とは？",
+      "choices": [
+        { "id": "a", "text": "コンテナを入れて動かす、Kubernetes の最小の単位", "correct": true },
+        { "id": "b", "text": "コンテナを動かす機械", "correct": false, "whyNot": "それは Node。Pod は、機械の上で動く包みの方。" },
+        { "id": "c", "text": "機械の集まり全体", "correct": false, "whyNot": "それはクラスタ。Pod はその中で動く、いちばん小さな単位。" }
+      ],
+      "explanation": "Kubernetes が作る・消す・数えるのは Pod の単位。中のコンテナは、Pod と一緒に動く。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "Node の役目は？",
+      "choices": [
+        { "id": "a", "text": "Pod（の中のコンテナ）を実際に動かす機械", "correct": true },
+        { "id": "b", "text": "コンテナを入れる包み", "correct": false, "whyNot": "それは Pod。Node は、Pod を載せて動かす機械。" },
+        { "id": "c", "text": "{{term:image}}を置いておく置き場", "correct": false, "whyNot": "それは{{term:registry}}。Node は、取ってきたイメージからコンテナを動かす側。" }
+      ],
+      "explanation": "Node は機械。その上に、Kubernetes が選んだ Pod が載る。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "node-1 が止まった。node-1 の上で動いていた web の Pod と、その中のコンテナは？",
+      "choices": [
+        { "id": "a", "text": "Pod も中のコンテナも止まる", "correct": true },
+        { "id": "b", "text": "Pod は止まるが、中のコンテナは動き続ける", "correct": false, "whyNot": "コンテナは Pod の中、Pod は Node の上。外側が止まれば、内側も止まる。" },
+        { "id": "c", "text": "何も起きない", "correct": false, "whyNot": "動かしていた機械そのものが止まった。上の物は全て止まる。" }
+      ],
+      "explanation": "外側が止まれば内側も止まる。だから Kubernetes は、止まった Node の Pod を、ほかの Node に作り直す。"
+    }
+  ],
+  "practice": {
+    "mode": "simulation",
+    "purpose": "予約の窓口を動かすクラスタの構成図が、ばらばらになっている。5 枚の札を、正しい入れ子の場所に入れて構成図を完成させる。",
+    "environment": "sim-assign",
+    "setup": {
+      "slots": [
+        { "id": "クラスタ", "label": "クラスタ（city-cluster）の中", "capacity": 2, "full": "クラスタの中に置ける機械は、この図では 2 台まで", "note": "機械の集まり" },
+        { "id": "Node", "label": "node-1 の上", "capacity": 1, "full": "node-1 の上には、この図では Pod を 1 つだけ置く", "note": "Pod を動かす機械" },
+        { "id": "Pod", "label": "web の Pod の中", "capacity": 2, "full": "web の Pod の中には、この図ではコンテナを 2 つまで入れる", "note": "動かす最小の単位" }
+      ],
+      "items": [
+        { "id": "node-1", "label": "node-1（機械）", "size": 1 },
+        { "id": "node-2", "label": "node-2（機械）", "size": 1 },
+        { "id": "web-pod", "label": "web の Pod", "size": 1 },
+        { "id": "nginx", "label": "nginx のコンテナ（本体）", "size": 1 },
+        { "id": "logger", "label": "ログを集めるコンテナ", "size": 1 }
+      ]
+    },
+    "steps": [
+      {
+        "id": "outer",
+        "purpose": "大きい物から置く。2 台の機械をクラスタの中に、web の Pod を node-1 の上に置く。",
+        "check": { "kind": "sim", "expr": "in node-1=クラスタ node-2=クラスタ web-pod=Node" },
+        "afterward": "クラスタに 2 台の Node、node-1 の上に web の Pod。Pod を置く Node は、本当は Kubernetes が選ぶ。",
+        "hints": [
+          "外側から決める。機械はクラスタの中、Pod は機械（Node）の上。",
+          "node-1 と node-2 は「クラスタの中」、web の Pod は「node-1 の上」。",
+          "`put node-1 クラスタ` `put node-2 クラスタ` `put web-pod Node` の順に入れる。"
+        ],
+        "expectedErrors": ["sim-overflow", "k8s-nesting-mixed"]
+      },
+      {
+        "id": "inner",
+        "purpose": "2 つのコンテナを、web の Pod の中に入れる。",
+        "check": { "kind": "sim", "expr": "in nginx=Pod logger=Pod" },
+        "afterward": "web の Pod の中に、本体とログを集める付き添いの 2 つのコンテナ。2 つは同じ Pod なので、いつも同じ Node で一緒に動く。",
+        "hints": [
+          "コンテナは、Node に直に置かない。必ず Pod の中に入る。",
+          "nginx のコンテナも、ログを集めるコンテナも「web の Pod の中」。1 つの Pod に 2 つ入れてよい。",
+          "`put nginx Pod` `put logger Pod` の順に入れる。"
+        ],
+        "expectedErrors": ["sim-overflow", "k8s-nesting-mixed"]
+      }
+    ]
+  },
+  "result": {
+    "success": "クラスタ・Node・Pod・コンテナの入れ子の構成図を完成させた。",
+    "partial": "ヒントを使って完成させた。次は、Node が止まると何が止まるかを、入れ子から説明してみよう。",
+    "retry": "まだ入れ子が合っていない。外側から、クラスタ → Node → Pod → コンテナの順に確かめよう。"
+  },
+  "summary": {
+    "points": ["クラスタ ⊃ Node ⊃ Pod ⊃ コンテナ", "Pod が動かす最小の単位", "Node は Pod を動かす機械"],
+    "next": ["k8s.b.03"],
+    "terms": ["pod", "k8s-node"]
+  }
+}

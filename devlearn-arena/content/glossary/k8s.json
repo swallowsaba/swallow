@@ -73,6 +73,51 @@
       "lessons": [
         "k8s.b.06"
       ]
+    },
+    {
+      "id": "cluster",
+      "word": "クラスタ",
+      "reading": "くらすた",
+      "plain": "何台もの機械を束ねて、1 つの大きな置き場として扱う物。Kubernetes では、全体を管理する制御の側と、Pod を動かす Node の集まり。",
+      "why": "1 台に頼らず、どれかが止まってもほかの機械で動かし続けられる。",
+      "related": [
+        "kubernetes",
+        "k8s-node"
+      ],
+      "lessons": [
+        "k8s.b.01",
+        "k8s.b.03"
+      ]
+    },
+    {
+      "id": "k8s-node",
+      "word": "Node",
+      "reading": "のーど",
+      "plain": "クラスタの中で、Pod（コンテナ）を実際に動かす 1 台の機械。",
+      "why": "Node が止まると、その上の Pod も止まる。Kubernetes は、ほかの Node に作り直して数を保つ。",
+      "related": [
+        "cluster",
+        "pod"
+      ],
+      "lessons": [
+        "k8s.b.02",
+        "k8s.b.03"
+      ]
+    },
+    {
+      "id": "declarative",
+      "word": "宣言的",
+      "reading": "せんげんてき",
+      "plain": "「どう動かすか」の手順ではなく、「どうなっていてほしいか」（あるべき形）を伝えるやり方。仕組みが今の形と比べて、差を埋め続ける。",
+      "why": "夜中に何かが壊れても、人が手順を打たなくても、仕組みがあるべき形に戻す。",
+      "related": [
+        "kubernetes",
+        "deployment"
+      ],
+      "lessons": [
+        "k8s.b.01",
+        "k8s.b.05"
+      ]
     }
   ]
 }

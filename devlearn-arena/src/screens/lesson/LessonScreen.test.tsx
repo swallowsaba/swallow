@@ -180,9 +180,9 @@ describe('レッスン画面の枠（docs/ui-design.md 7 章）', () => {
 
   it('中身をまだ書き起こしていないレッスンは「準備中」と出し、学習中として記録しない', async () => {
     const session = createSession(1);
-    const { host } = await open(session, 'k8s.b.01');
+    const { host } = await open(session, 'k8s.a.04');
     expect(host.querySelector('[data-testid="lesson-preparing"]')).not.toBeNull();
-    expect(session.progress.getState().progress.lessons['k8s.b.01']).toBeUndefined();
+    expect(session.progress.getState().progress.lessons['k8s.a.04']).toBeUndefined();
     expect($(host, '[data-testid="lesson-backdrop"]').dataset.facility).toBe('cluster');
   });
 
