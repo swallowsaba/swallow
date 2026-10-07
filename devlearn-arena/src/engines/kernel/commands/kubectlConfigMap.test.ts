@@ -29,9 +29,9 @@ const DEPLOY = (env: string): string => [
   env,
   '',
 ].join('\n');
-const DIRECT = '        env:\n        - name: DB_HOST\n          value: db-staging';
+const DIRECT = '        env:\n        - name: DATABASE_URL\n          value: db-staging';
 const FROM = (name: string): string => `        envFrom:\n        - configMapRef:\n            name: ${name}`;
-const CONFIG = (name: string, host: string): string => `apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: ${name}\ndata:\n  DB_HOST: ${host}\n---\n`;
+const CONFIG = (name: string, host: string): string => `apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: ${name}\ndata:\n  DATABASE_URL: ${host}\n---\n`;
 
 /** クラスタを操作する機械。web は前から動いている */
 function console_() {
@@ -61,16 +61,16 @@ describe('ConfigMap を環境変数で渡す', () => {
 
   it('rollout status は入れ替わりが終わるまで待ち、Pod は ConfigMap の値を環境変数に持つ', () => {
     const c = console_();
-    expect(c.run('kubectl exec deploy/web -- printenv DB_HOST').out).toBe('db-staging\n');
-    expect(c.holds('deployment/web env.DB_HOST=db-staging')).toBe(true);
-    expect(c.holds('deployment/web from.DB_HOST')).toBe(false);
+    expect(c.run('kubectl exec deploy/web -- printenv DATABASE_URL').out).toBe('db-staging\n');
+    expect(c.holds('deployment/web env.DATABASE_URL=db-staging')).toBe(true);
+    expect(c.holds('deployment/web from.DATABASE_URL')).toBe(false);
     c.apply(CONFIG('web-config', 'db-staging') + DEPLOY(FROM('web-config')));
     const status = c.run('kubectl rollout status deployment/web');
     expect(status.out).toMatch(/^Waiting for deployment "web" rollout to finish: /m);
     expect(status.out).toMatch(/^deployment "web" successfully rolled out\n$/m);
     expect(status.code).toBe(0);
-    expect(c.holds('deployment/web readyReplicas=2 env.DB_HOST=db-staging from.DB_HOST=web-config')).toBe(true);
-    expect(c.run('kubectl exec deploy/web -- printenv DB_HOST').out).toBe('db-staging\n');
+    expect(c.holds('deployment/web readyReplicas=2 env.DATABASE_URL=db-staging from.DATABASE_URL=web-config')).toBe(true);
+    expect(c.run('kubectl exec deploy/web -- printenv DATABASE_URL').out).toBe('db-staging\n');
   });
 
   it('ConfigMap の値だけを変えても、動いている Pod の環境変数は変わらない。参照を変えて作り直すと変わる', () => {
@@ -79,21 +79,21 @@ describe('ConfigMap を環境変数で渡す', () => {
     c.run('kubectl rollout status deployment/web');
     c.apply(CONFIG('web-config', 'db-staging-2') + DEPLOY(FROM('web-config')));
     expect(c.run('kubectl rollout status deployment/web').out).toBe('deployment "web" successfully rolled out\n');
-    expect(c.run('kubectl exec deploy/web -- printenv DB_HOST').out).toBe('db-staging\n');
-    expect(c.holds('deployment/web env.DB_HOST=db-staging-2')).toBe(false);
+    expect(c.run('kubectl exec deploy/web -- printenv DATABASE_URL').out).toBe('db-staging\n');
+    expect(c.holds('deployment/web env.DATABASE_URL=db-staging-2')).toBe(false);
 
     c.apply(CONFIG('web-config-2', 'db-staging-2') + DEPLOY(FROM('web-config-2')));
     c.run('kubectl rollout status deployment/web');
-    expect(c.run('kubectl exec deploy/web -- printenv DB_HOST').out).toBe('db-staging-2\n');
-    expect(c.holds('deployment/web readyReplicas=2 env.DB_HOST=db-staging-2 from.DB_HOST')).toBe(true);
+    expect(c.run('kubectl exec deploy/web -- printenv DATABASE_URL').out).toBe('db-staging-2\n');
+    expect(c.holds('deployment/web readyReplicas=2 env.DATABASE_URL=db-staging-2 from.DATABASE_URL')).toBe(true);
   });
 
   it('直接書いた env は ConfigMap より勝つ', () => {
     const c = console_();
     c.apply(CONFIG('web-config', 'db-prod') + DEPLOY(`${DIRECT}\n${FROM('web-config')}`));
     c.run('kubectl rollout status deployment/web');
-    expect(c.run('kubectl exec deploy/web -- printenv DB_HOST').out).toBe('db-staging\n');
-    expect(c.holds('deployment/web from.DB_HOST')).toBe(false);
+    expect(c.run('kubectl exec deploy/web -- printenv DATABASE_URL').out).toBe('db-staging\n');
+    expect(c.holds('deployment/web from.DATABASE_URL')).toBe(false);
   });
 
   it('参照した ConfigMap が無いと CreateContainerConfigError で止まり、rollout status は期限を過ぎて失敗する。作れば動き出す', () => {
@@ -104,18 +104,18 @@ describe('ConfigMap を環境変数で渡す', () => {
     expect(status.code).toBe(1);
     expect(c.run('kubectl get pods').out).toMatch(/^web-\S+ +0\/1 +CreateContainerConfigError +0 +\S+$/m);
     // 古い Pod は残って動き続ける（止まらずに済む）
-    expect(c.run('kubectl exec deploy/web -- printenv DB_HOST').out).toBe('db-staging\n');
+    expect(c.run('kubectl exec deploy/web -- printenv DATABASE_URL').out).toBe('db-staging\n');
     const pod = /^(web-\S+) +0\/1/m.exec(c.run('kubectl get pods').out)?.[1] ?? '';
     expect(c.run(`kubectl describe pod ${pod}`).out).toMatch(/Warning +Failed +.*Error: configmap "web-config" not found/);
 
     c.apply(CONFIG('web-config', 'db-staging') + DEPLOY(FROM('web-config')));
     expect(c.run('kubectl rollout status deployment/web').code).toBe(0);
-    expect(c.holds('deployment/web readyReplicas=2 from.DB_HOST=web-config')).toBe(true);
+    expect(c.holds('deployment/web readyReplicas=2 from.DATABASE_URL=web-config')).toBe(true);
   });
 
   it('ConfigMap に無いキーを指すと、そのキーが無いと言う', () => {
     const c = console_();
-    const ref = '        env:\n        - name: DB_HOST\n          valueFrom:\n            configMapKeyRef:\n              name: web-config\n              key: DB_NAME';
+    const ref = '        env:\n        - name: DATABASE_URL\n          valueFrom:\n            configMapKeyRef:\n              name: web-config\n              key: DB_NAME';
     c.apply(CONFIG('web-config', 'db-staging') + DEPLOY(ref));
     c.run('kubectl get pods');
     const pod = /^(web-\S+) +0\/1 +CreateContainerConfigError/m.exec(c.run('kubectl get pods').out)?.[1] ?? '';
@@ -124,7 +124,7 @@ describe('ConfigMap を環境変数で渡す', () => {
 
   it('describe は環境変数を書いた形で見せる（受け取る ConfigMap の名前と、直接書いた値）', () => {
     const c = console_();
-    expect(c.run('kubectl describe deployment web').out).toMatch(/^ {4}Environment:\n {6}DB_HOST: {2}db-staging$/m);
+    expect(c.run('kubectl describe deployment web').out).toMatch(/^ {4}Environment:\n {6}DATABASE_URL: {2}db-staging$/m);
     c.apply(CONFIG('web-config', 'db-staging') + DEPLOY(FROM('web-config')));
     c.run('kubectl rollout status deployment/web');
     const pod = /^(web-\S+) +1\/1/m.exec(c.run('kubectl get pods').out)?.[1] ?? '';
@@ -133,9 +133,9 @@ describe('ConfigMap を環境変数で渡す', () => {
       '      web-config  ConfigMap  Optional: false',
       '    Environment:  <none>',
     ].join('\n'));
-    const ref = '        env:\n        - name: DB_HOST\n          valueFrom:\n            configMapKeyRef:\n              name: web-config\n              key: DB_HOST';
+    const ref = '        env:\n        - name: DATABASE_URL\n          valueFrom:\n            configMapKeyRef:\n              name: web-config\n              key: DATABASE_URL';
     c.apply(CONFIG('web-config', 'db-staging') + DEPLOY(ref));
-    expect(c.run('kubectl describe deployment web').out).toContain("      DB_HOST:  <set to the key 'DB_HOST' of config map 'web-config'>  Optional: false");
+    expect(c.run('kubectl describe deployment web').out).toContain("      DATABASE_URL:  <set to the key 'DATABASE_URL' of config map 'web-config'>  Optional: false");
   });
 
   it('YAML として読めないファイルは、本物と同じく読めなくなった行を言い、何も変えない', () => {
@@ -151,7 +151,7 @@ describe('ConfigMap を環境変数で渡す', () => {
 
   it('printenv は名前を省くと全てを、無い名前は何も出さずに 1 で終わる', () => {
     const c = console_();
-    expect(c.run('kubectl exec deploy/web -- printenv').out).toMatch(/^DB_HOST=db-staging$/m);
+    expect(c.run('kubectl exec deploy/web -- printenv').out).toMatch(/^DATABASE_URL=db-staging$/m);
     const none = c.run('kubectl exec deploy/web -- printenv NOPE');
     expect(none.out).toBe('');
     expect(none.code).toBe(1);

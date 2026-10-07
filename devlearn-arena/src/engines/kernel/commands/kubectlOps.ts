@@ -4,6 +4,7 @@ import { isReady, tickPods } from '@/engines/k8s/kubelet';
 import { isParseError, parseManifests } from '@/engines/k8s/manifest';
 import { canI } from '@/engines/k8s/policy';
 import { revisionsOf, rolloutStatus, rolloutUndo } from '@/engines/k8s/rollout';
+import { appLog } from '@/engines/k8s/apps';
 import { resolveEnv } from '@/engines/k8s/storage';
 import type { ClusterState, Deployment, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
@@ -288,6 +289,22 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
     const target = operands[0];
     const pod = target === undefined ? undefined : podFor(cluster, namespace, target);
     if (pod === undefined || target === undefined) return notFound('pods', target ?? '');
+
+    // 置き場を持つクラスタ: 本物と同じく、まだ動いたことの無いコンテナはログが無いと断り、動いたコンテナはアプリのログを出す
+    if (cluster.images !== undefined) {
+      const spec = pod.spec.containers[0];
+      const status = pod.status.containerStatuses[0];
+      if (spec === undefined) return { stdout: '' };
+      const reason = pod.status.phase === 'ContainerCreating' || pod.status.nodeName === null ? 'ContainerCreating' : status?.waitingReason;
+      const waiting = reason === 'ContainerCreating' || reason === 'CreateContainerConfigError' ? reason
+        : reason === 'ImagePullBackOff' ? 'trying and failing to pull image'
+          : reason === 'ErrImagePull' ? "image can't be pulled" : null;
+      if (waiting !== null) {
+        return { stderr: `Error from server (BadRequest): container "${spec.name}" in pod "${pod.metadata.name}" is waiting to start: ${waiting}\n`, code: 1 };
+      }
+      const log = appLog(cluster, spec, resolveEnv(cluster, pod, spec.name));
+      if (log !== null) return { stdout: fromLines(log) };
+    }
 
     const lines: string[] = [];
     for (const spec of pod.spec.containers) {

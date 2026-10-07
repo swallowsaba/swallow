@@ -55,12 +55,13 @@ function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, fi
       const values = new Set(readyPodsOf(cluster, d).map((p) => resolveEnv(cluster, p, p.spec.containers[0]?.name ?? '')[field.slice(4)] ?? '<none>'));
       return values.size === 1 ? [...values][0] : values.size === 0 ? undefined : '<mixed>';
     }
-    // from.名前: その環境変数を、設計図（template）の最初のコンテナが受け取る ConfigMap の名前（直接書いた env が勝つ時は無い）
+    // from.名前: その環境変数を、設計図（template）の最初のコンテナが受け取る ConfigMap か Secret の名前（直接書いた env が勝つ時は無い）
     if (field.startsWith('from.')) {
       const name = field.slice(5);
       const c = d.spec.template.containers[0];
       if (c === undefined || c.env[name] !== undefined) return undefined;
-      const ref = [...c.envFrom].reverse().find((r) => r.kind === 'ConfigMap' && (r.key === undefined ? cluster.configMaps.get(key(ns, r.name))?.data[name] !== undefined : (r.as ?? r.key) === name));
+      const dataOf = (r: (typeof c.envFrom)[number]) => (r.kind === 'ConfigMap' ? cluster.configMaps : cluster.secrets).get(key(ns, r.name))?.data;
+      const ref = [...c.envFrom].reverse().find((r) => (r.key === undefined ? dataOf(r)?.[name] !== undefined : (r.as ?? r.key) === name));
       return ref?.name;
     }
     if (field === 'made') {
@@ -89,7 +90,7 @@ export function clusterHolds(cluster: ClusterState | null, expr: string): boolea
   const ns = m?.[3] ?? 'default';
   if (!exists(cluster, k, ns, name)) return false;
   for (const c of conds) {
-    const f = /^([a-zA-Z]+(?:\.[A-Za-z_][A-Za-z0-9_]*)?)(?:(>=|<=|=)([A-Za-z0-9._:/-]+))?$/.exec(c);
+    const f = /^([a-zA-Z]+(?:\.[A-Za-z_][A-Za-z0-9_]*)?)(?:(>=|<=|=)([A-Za-z0-9._:/@-]+))?$/.exec(c);
     if (!f?.[1]) throw new Error(`k8s の条件「${c}」は知らない形`);
     const v = fieldOf(cluster, k, ns, name, f[1]);
     if (v === undefined) return false;

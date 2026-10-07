@@ -1,4 +1,5 @@
 import { backoffMs } from '@/engines/kernel/clock';
+import { appExit } from './apps';
 import { schedule } from './scheduler';
 import { liveEnv, missingEnvRef, volumesReady } from './storage';
 import type { ClusterState, ContainerSpec, ContainerStatus, EventRecord, Pod, Probe } from './types';
@@ -212,7 +213,8 @@ export function tickPods(state: ClusterState): TickResult {
         return { ...status, ready: false, started: false, waitingReason: 'CreateContainerConfigError', restartAt: null };
       }
 
-      if (spec.crashing) {
+      // 起動はするがすぐ落ちる（壊れた設定の再現か、イメージのアプリが要る環境変数が無くて止まる）
+      if (spec.crashing || appExit(state, spec, liveEnv(state, pod, spec)) !== null) {
         const next = crashBackoff(ctx);
         if (next.restartCount !== status.restartCount) {
           record(

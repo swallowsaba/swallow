@@ -87,7 +87,7 @@
     {
       "id": "q2",
       "kind": "predict",
-      "prompt": "ConfigMap の `DB_HOST` を db-2 に変えて保存し、{{term:kubectl}} で送った（Deployment は変えていない）。前から動いている web の Pod の中で、`DB_HOST` の値は？",
+      "prompt": "ConfigMap の `DATABASE_URL` の DB の名前を db-2 に変えて保存し、{{term:kubectl}} で送った（Deployment は変えていない）。前から動いている web の Pod の中で、`DATABASE_URL` の値は？",
       "context": {
         "command": "kubectl apply -f web.yaml",
         "log": "configmap/web-config configured\ndeployment.apps/web unchanged"
@@ -169,7 +169,7 @@
   ],
   "practice": {
     "mode": "editor",
-    "purpose": "予約の窓口 web は、接続先の DB（`DB_HOST`）を web.yaml に直書きしている。接続先を ConfigMap に移し、値を変えて反映させる。この練習では、ConfigMap も web.yaml に `---` で区切って書く。保存すると、送って入れ替えを待ち、Pod の中の `DB_HOST` を確かめる。",
+    "purpose": "予約の窓口 web は、接続先の DB（`DATABASE_URL`）を web.yaml に直書きしている。接続先を ConfigMap に移し、値を変えて反映させる。この練習では、ConfigMap も web.yaml に `---` で区切って書く。保存すると、送って入れ替えを待ち、Pod の中の `DATABASE_URL` を確かめる。",
     "environment": "k8s-cluster",
     "setup": {
       "hostname": "console",
@@ -178,12 +178,12 @@
         "/home/learner/web"
       ],
       "files": {
-        "/home/learner/web/web.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        env:\n        - name: DB_HOST\n          value: db-staging\n"
+        "/home/learner/web/web.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        env:\n        - name: DATABASE_URL\n          value: postgres://reserve@db-staging:5432/reserve\n"
       },
       "cluster": {
         "nodes": 2,
         "ageDays": 3,
-        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        env:\n        - name: DB_HOST\n          value: db-staging\n"
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        env:\n        - name: DATABASE_URL\n          value: postgres://reserve@db-staging:5432/reserve\n"
       },
       "edit": {
         "path": "/home/learner/web/web.yaml",
@@ -191,23 +191,23 @@
           "kubectl apply -f web.yaml",
           "kubectl rollout status deployment/web",
           "kubectl get pods",
-          "kubectl exec deploy/web -- printenv DB_HOST"
+          "kubectl exec deploy/web -- printenv DATABASE_URL"
         ]
       }
     },
     "steps": [
       {
         "id": "move",
-        "purpose": "接続先 `DB_HOST: db-staging` を ConfigMap web-config に移し、web はそこから値を受け取るようにする。値は前と同じ db-staging のまま。",
+        "purpose": "接続先 `DATABASE_URL` を ConfigMap web-config に移し、web はそこから値を受け取るようにする。値は前と同じ（DB は db-staging）のまま。",
         "check": {
           "kind": "k8s",
-          "expr": "deployment/web readyReplicas=2 env.DB_HOST=db-staging from.DB_HOST=web-config"
+          "expr": "deployment/web readyReplicas=2 env.DATABASE_URL=postgres://reserve@db-staging:5432/reserve from.DATABASE_URL=web-config"
         },
-        "afterward": "`configmap/web-config created` と `deployment.apps/web configured`。設計図が変わったので Pod が作り直され、新しい Pod は動き出す時に web-config から `DB_HOST` を読んだ。",
+        "afterward": "`configmap/web-config created` と `deployment.apps/web configured`。設計図が変わったので Pod が作り直され、新しい Pod は動き出す時に web-config から `DATABASE_URL` を読んだ。",
         "hints": [
           "ConfigMap は `kind: ConfigMap` と、値を並べる `data:` を持つ。Deployment の前に書いて `---` で区切る。コンテナは `env:` の代わりに `envFrom:` で ConfigMap を指す。",
-          "ConfigMap の `name:` は web-config、`data:` に `DB_HOST: db-staging`。コンテナの `env:` の 3 行を消し、`envFrom:`・`- configMapRef:`・`name: web-config` を書く。",
-          "`apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: web-config\ndata:\n  DB_HOST: db-staging\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: web-config\n` と保存する。"
+          "ConfigMap の `name:` は web-config、`data:` に、`env:` の `value:` と同じ値で `DATABASE_URL:` を書く。コンテナの `env:` の 3 行を消し、`envFrom:`・`- configMapRef:`・`name: web-config` を書く。",
+          "`apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: web-config\ndata:\n  DATABASE_URL: postgres://reserve@db-staging:5432/reserve\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: web-config\n` と保存する。"
         ],
         "expectedErrors": [
           "k8s-config-not-used",
@@ -217,16 +217,16 @@
       },
       {
         "id": "switch",
-        "purpose": "検証の DB が、新しい機械 db-staging-2 に移った。web の Pod が、新しい接続先 db-staging-2 を持って動くようにする。",
+        "purpose": "検証の DB が、新しい機械 db-staging-2 に移った。web の Pod が、新しい接続先 `postgres://reserve@db-staging-2:5432/reserve` を持って動くようにする。",
         "check": {
           "kind": "k8s",
-          "expr": "deployment/web readyReplicas=2 env.DB_HOST=db-staging-2 from.DB_HOST"
+          "expr": "deployment/web readyReplicas=2 env.DATABASE_URL=postgres://reserve@db-staging-2:5432/reserve from.DATABASE_URL"
         },
         "afterward": "名前を変えた ConfigMap を指したので、Deployment の設計図が変わり、Pod が作り直された。新しい Pod は動き出す時に db-staging-2 を読んだ。",
         "hints": [
           "ConfigMap の値を変えるだけでは、動いている Pod は古い値のまま（環境変数は、動き出す時に読む）。Deployment の設計図を変えると、Pod が作り直される。",
-          "ConfigMap の `name:` を web-config-2 にして、値を db-staging-2 にする。`envFrom` の `name:` も web-config-2 にする。",
-          "`apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: web-config-2\ndata:\n  DB_HOST: db-staging-2\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: web-config-2\n` と保存する。"
+          "ConfigMap の `name:` を web-config-2 にして、値の DB の名前を db-staging-2 にする。`envFrom` の `name:` も web-config-2 にする。",
+          "`apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: web-config-2\ndata:\n  DATABASE_URL: postgres://reserve@db-staging-2:5432/reserve\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: web-config-2\n` と保存する。"
         ],
         "expectedErrors": [
           "k8s-config-stale",
