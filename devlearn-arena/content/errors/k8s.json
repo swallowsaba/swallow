@@ -65,6 +65,49 @@
         "pod",
         "k8s-node"
       ]
+    },
+    {
+      "id": "k8s-no-connection",
+      "match": "connection to the server localhost:8080 was refused",
+      "meaning": "kubectl が窓口（API サーバ）に頼めなかった。接続先の設定（kubeconfig）が読めず、既定の localhost:8080 に頼んで断られた。",
+      "causes": [
+        "`sudo` を付けて打った。root になると root のホーム（/root）の設定を探し、自分の `~/.kube/config` は読まない。",
+        "接続先の設定（`~/.kube/config`）を動かした・消した。"
+      ],
+      "hint": "`sudo` を付けずに打つ。`ls ~/.kube` で、接続先の設定 config があるかも確かめる。",
+      "terms": [
+        "kubectl",
+        "kubeconfig",
+        "api-server",
+        "sudo"
+      ]
+    },
+    {
+      "id": "k8s-nodes-count-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、Pod を動かす Node の台数が合っていない。",
+      "causes": [
+        "制御の側の cp-1（ROLES の欄が control-plane）まで数えた。",
+        "使えない Node を数えなかった。台数は STATUS に関係なく、一覧の行で数える。"
+      ],
+      "hint": "`kubectl get nodes` の ROLES の欄で、`<none>` の行を数える。",
+      "terms": [
+        "control-plane",
+        "k8s-node"
+      ]
+    },
+    {
+      "id": "k8s-nodes-status-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、使えない Node の名前が合っていない。",
+      "causes": [
+        "ROLES の欄を見た。control-plane は役目の名前で、使えないという意味ではない。",
+        "別の行を読んだ。"
+      ],
+      "hint": "`kubectl get nodes` の STATUS の欄で、Ready でない行（NotReady）を探す。",
+      "terms": [
+        "k8s-node"
+      ]
     }
   ]
 }

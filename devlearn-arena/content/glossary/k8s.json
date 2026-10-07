@@ -118,6 +118,112 @@
         "k8s.b.01",
         "k8s.b.05"
       ]
+    },
+    {
+      "id": "control-plane",
+      "word": "コントロールプレーン",
+      "reading": "こんとろーるぷれーん",
+      "plain": "クラスタ全体を管理する制御の側。頼みを受け、あるべき形を記録し、Pod の置き場所を決め、差を埋める役がいる。",
+      "why": "ここが指示と判断を受け持つので、Node は Pod を動かすことに専念できる。止まるとクラスタに頼めなくなる。",
+      "related": [
+        "cluster",
+        "api-server",
+        "etcd",
+        "k8s-scheduler",
+        "k8s-controller"
+      ],
+      "lessons": [
+        "k8s.b.03"
+      ]
+    },
+    {
+      "id": "api-server",
+      "word": "API サーバ",
+      "reading": "えーぴーあいさーば",
+      "plain": "コントロールプレーンの窓口。kubectl からの頼みも、Node の kubelet からの知らせも、全てここが受ける。",
+      "why": "クラスタへの出入りは全てここを通る。kubectl がつながらない時は、まず窓口に届いているかを疑う。",
+      "related": [
+        "control-plane",
+        "kubectl",
+        "kubeconfig"
+      ],
+      "lessons": [
+        "k8s.b.03"
+      ]
+    },
+    {
+      "id": "etcd",
+      "word": "etcd",
+      "reading": "えとせでぃー",
+      "plain": "コントロールプレーンの台帳。クラスタのあるべき形と今の状態を記録しておく保管庫。",
+      "why": "Kubernetes の全ての記録がここにある。窓口は台帳を読み書きして答える。",
+      "related": [
+        "control-plane",
+        "api-server"
+      ],
+      "lessons": [
+        "k8s.b.03"
+      ]
+    },
+    {
+      "id": "k8s-scheduler",
+      "word": "スケジューラ",
+      "reading": "すけじゅーら",
+      "plain": "コントロールプレーンの配置係。まだ置き場所の決まっていない Pod を、どの Node に置くか決める。",
+      "why": "空きの足りない Node や使えない Node を避けて置く。置ける Node が無いと、Pod は Pending のまま待つ。",
+      "related": [
+        "control-plane",
+        "k8s-node",
+        "pod"
+      ],
+      "lessons": [
+        "k8s.b.03"
+      ]
+    },
+    {
+      "id": "k8s-controller",
+      "word": "コントローラ",
+      "reading": "こんとろーら",
+      "plain": "コントロールプレーンの監督。あるべき形と今の形を見比べ、差を埋める動きを続ける仕組み。",
+      "why": "Pod が減れば作り直し、止まった Node の Pod をほかへ移す。宣言的に任せられるのは、監督が見張り続けるから。",
+      "related": [
+        "control-plane",
+        "declarative",
+        "deployment"
+      ],
+      "lessons": [
+        "k8s.b.03"
+      ]
+    },
+    {
+      "id": "kubelet",
+      "word": "kubelet",
+      "reading": "きゅーぶれっと",
+      "plain": "各 Node で動く係。置かれた Pod のコンテナを動かし、Node と Pod の様子を窓口に知らせ続ける。",
+      "why": "kubelet からの知らせが途絶えると、その Node は NotReady になり、新しい Pod が置かれなくなる。",
+      "related": [
+        "k8s-node",
+        "api-server",
+        "pod"
+      ],
+      "lessons": [
+        "ctr.i.01",
+        "k8s.b.03"
+      ]
+    },
+    {
+      "id": "kubeconfig",
+      "word": "kubeconfig",
+      "reading": "きゅーぶこんふぃぐ",
+      "plain": "kubectl の接続先の設定。どのクラスタの窓口に、誰として頼むかを書いたファイル（ふつうは ~/.kube/config）。",
+      "why": "これが読めないと、kubectl は既定の localhost:8080 に頼んで断られる。sudo を付けると root の設定を探すので読めない。",
+      "related": [
+        "kubectl",
+        "api-server"
+      ],
+      "lessons": [
+        "k8s.b.03"
+      ]
     }
   ]
 }

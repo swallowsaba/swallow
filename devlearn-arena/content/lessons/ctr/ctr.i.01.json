@@ -29,7 +29,8 @@
     "podman",
     "image",
     "kernel",
-    "config-file"
+    "config-file",
+    "kubelet"
   ],
   "explain": {
     "what": "{{term:container-runtime}}は、{{term:container}}を実際に動かす部品。{{term:image}}の取得や起動を受け持つ高い層（{{term:containerd}}など）と、{{term:kernel}}の機能でコンテナを作る低い層（{{term:runc}}など）がある。イメージの形と動かし方は、{{term:oci}}という標準で決まっている。",
@@ -129,7 +130,7 @@
         },
         {
           "id": "c",
-          "text": "runc だけを、kubelet が直接使う",
+          "text": "runc だけを、{{term:kubelet}} が直接使う",
           "correct": false,
           "whyNot": "kubelet は CRI で高い層のランタイムに頼み、高い層が runc のような低い層を使う。"
         }

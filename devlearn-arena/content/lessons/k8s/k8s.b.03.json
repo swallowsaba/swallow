@@ -1,0 +1,221 @@
+{
+  "id": "k8s.b.03",
+  "domain": "k8s",
+  "level": "beginner",
+  "theme": "クラスタ",
+  "title": "クラスタと Node",
+  "goal": "制御する側と動かす側の役割を説明し、kubectl get nodes を読める",
+  "minutes": 15,
+  "prerequisites": [
+    "k8s.b.02"
+  ],
+  "related": [
+    "ctr.i.01",
+    "cloud.b.03"
+  ],
+  "next": [
+    "k8s.b.04",
+    "k8s.b.07"
+  ],
+  "terms": [
+    "cluster",
+    "control-plane",
+    "k8s-node",
+    "api-server",
+    "etcd",
+    "k8s-scheduler",
+    "k8s-controller",
+    "kubectl",
+    "kubeconfig",
+    "kubelet",
+    "pod",
+    "container"
+  ],
+  "explain": {
+    "what": "{{term:cluster}}は、全体を管理する制御の側（{{term:control-plane}}）と、{{term:pod}} を動かす {{term:k8s-node}} たちに分かれる。制御の側には、頼みを受ける窓口（{{term:api-server}}）・あるべき形を記録する台帳（{{term:etcd}}）・Pod を置く Node を決める配置係（{{term:k8s-scheduler}}）・差を見て埋める監督（{{term:k8s-controller}}）がいる。",
+    "why": "指示を受けて決める所と、実際に動かす所を分けている。Node が 1 台止まっても、制御の側が気づいて、ほかの Node に作り直せる。Node を足せば、置ける場所が増える。",
+    "use": "状態は {{term:kubectl}} で確かめる。kubectl は {{term:kubeconfig}}（接続先の設定）に書かれた窓口に頼み、窓口が台帳を読んで答える。Node では {{term:kubelet}} が Pod を動かし、様子を窓口に知らせ続ける。",
+    "when": "夜中の当番を引き継いだ。クラスタに何台の機械があり、全て使える状態かを、まず確かめる。",
+    "figures": [
+      "k8s-b03-control-plane"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "k8s-b03-control-plane",
+      "prompt": "図で、制御の側（コントロールプレーン）にいる 4 つの役を全て押す。",
+      "answer": [
+        "api",
+        "etcd",
+        "scheduler",
+        "controller"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "kubectl で「Node の一覧を見せて」と頼む",
+      "b": "窓口（API サーバ）が台帳を読んで答える",
+      "answer": "before",
+      "why": "kubectl は Node に直接聞きに行かない。頼みは全て窓口が受け、台帳に記録された状態を答える。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "クラスタにある Node の一覧と、それぞれの状態を見るには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`kubectl get nodes`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`kubectl get pods`",
+          "correct": false,
+          "whyNot": "それは Pod の一覧。Pod を動かす機械（Node）の一覧ではない。"
+        },
+        {
+          "id": "c",
+          "text": "`docker ps`",
+          "correct": false,
+          "whyNot": "1 台の機械の上の{{term:container}}の一覧。クラスタ全体の Node は分からない。"
+        }
+      ],
+      "explanation": "Node の一覧は `kubectl get nodes`。`STATUS` の欄で、使える状態か（`Ready`）が分かる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "node-2 の `STATUS` が `NotReady`。何が分かる？",
+      "context": {
+        "log": "NAME     STATUS     ROLES    AGE   VERSION\nnode-1   Ready      <none>   45d   v1.31.2\nnode-2   NotReady   <none>   45d   v1.31.2"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "node-2 は今、Pod を置くのに使えない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "node-2 は準備中で、少し待てば必ず `Ready` に戻る",
+          "correct": false,
+          "whyNot": "`NotReady` は「使える状態だという知らせが来ていない」こと。止まった機械は、待っても戻らないことがある。"
+        },
+        {
+          "id": "c",
+          "text": "クラスタ全体が止まっている",
+          "correct": false,
+          "whyNot": "node-1 は `Ready`。使えないのは node-2 だけ。"
+        }
+      ],
+      "explanation": "`NotReady` の Node には、新しい Pod が置かれない。理由は `kubectl describe node node-2` で詳しく見る。"
+    },
+    {
+      "id": "q3",
+      "kind": "term",
+      "prompt": "配置係（スケジューラ）の役目は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "新しい Pod を、どの Node に置くか決める",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "あるべき形を記録しておく",
+          "correct": false,
+          "whyNot": "それは台帳（etcd）。配置係は、置き場所を決める係。"
+        },
+        {
+          "id": "c",
+          "text": "Node の上で、Pod のコンテナを実際に動かす",
+          "correct": false,
+          "whyNot": "それは各 Node の kubelet。配置係は、どこに置くかを決めるだけ。"
+        }
+      ],
+      "explanation": "配置係は、空きのある使える Node を選んで Pod を置く。動かすのは、選ばれた Node の kubelet。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "夜中の当番を引き継いだ。クラスタの Node の一覧を見て、Pod を動かせる機械の台数と、使えない機械を確かめる。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cluster": {
+        "nodes": 3,
+        "controlPlane": true,
+        "notReady": [
+          "node-2"
+        ],
+        "ageDays": 45
+      }
+    },
+    "steps": [
+      {
+        "id": "count",
+        "purpose": "Node の一覧を出し、Pod を動かす側の Node（`ROLES` の欄が `<none>`）が何台あるかを答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "3"
+        },
+        "afterward": "一覧には 4 台。`cp-1` は `ROLES` が `control-plane` の制御の側で、Pod は置かない。Pod を動かす Node は node-1〜node-3 の 3 台。",
+        "hints": [
+          "クラスタの Node の一覧は `kubectl get nodes`。",
+          "一覧の `ROLES` の欄を見る。`control-plane` の行（`cp-1`）は制御の側なので数えない。",
+          "`kubectl get nodes` と打ち、`3` と答える。"
+        ],
+        "expectedErrors": [
+          "k8s-no-connection",
+          "k8s-nodes-count-misread"
+        ]
+      },
+      {
+        "id": "status",
+        "purpose": "`STATUS` の欄から、今使えない Node の名前を答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "node-2"
+        },
+        "afterward": "node-2 だけが `NotReady`。`kubectl describe node node-2` では、`Ready` の状態が `Unknown` で、`Kubelet stopped posting node status.`（kubelet からの知らせが途絶えた）。この Node には新しい Pod が置かれない。",
+        "hints": [
+          "使えるかどうかは `STATUS` の欄。`Ready` なら使える。",
+          "`kubectl get nodes` の `STATUS` の欄で、`Ready` でない行を探す。",
+          "`kubectl get nodes` と打ち、`node-2` と答える。"
+        ],
+        "expectedErrors": [
+          "k8s-no-connection",
+          "k8s-nodes-status-misread"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "Node の一覧から、制御の側と Pod を動かす Node を見分け、使えない Node を見つけられた。",
+    "partial": "ヒントを使って読めた。次は、`NotReady` の Node に何が起きているかを、`kubectl describe node` で確かめてみよう。",
+    "retry": "まだ答えが合っていない。`kubectl get nodes` の `ROLES` と `STATUS` の欄を、行ごとに横にたどろう。"
+  },
+  "summary": {
+    "points": [
+      "制御の側と Node に分かれる",
+      "kubectl は窓口に頼む",
+      "get nodes の `STATUS` で状態"
+    ],
+    "next": [
+      "k8s.b.04",
+      "k8s.b.07"
+    ],
+    "terms": [
+      "control-plane",
+      "api-server",
+      "kubelet"
+    ]
+  }
+}

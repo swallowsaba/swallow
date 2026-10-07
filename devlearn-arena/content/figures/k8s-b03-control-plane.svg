@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 372" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>クラスタの形。左の kubectl は、制御の側（コントロールプレーン）の窓口（API サーバ）に頼む。制御の側には、窓口・台帳（etcd）・配置係（スケジューラ）・監督（コントローラ）の 4 つの役がいて、どれも窓口を通してやり取りする。右の Node たちでは kubelet が Pod を動かし、様子を窓口に知らせる</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="kubectl">
+    <rect x="12" y="150" width="112" height="70" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="68" y="180" text-anchor="middle" font-size="14" fill="#f2b632" font-family="&quot;JetBrains Mono&quot;, monospace">kubectl</text>
+    <text x="68" y="204" text-anchor="middle" font-size="13" fill="#9fb0c6">頼む人の道具</text>
+  </g>
+  <g class="el" data-part="cp">
+    <rect x="148" y="16" width="334" height="308" rx="12" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="166" y="42" font-size="14" fill="#9fb0c6">制御の側（コントロールプレーン）</text>
+  </g>
+  <g class="el" data-part="api">
+    <rect x="164" y="60" width="120" height="246" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="224" y="160" text-anchor="middle" font-size="16" fill="#5cc1ff">窓口</text>
+    <text x="224" y="188" text-anchor="middle" font-size="13" fill="#eef2f6">API サーバ</text>
+    <text x="224" y="216" text-anchor="middle" font-size="13" fill="#9fb0c6">頼みを</text>
+    <text x="224" y="238" text-anchor="middle" font-size="13" fill="#9fb0c6">全て受ける</text>
+  </g>
+  <g class="el" data-part="etcd">
+    <rect x="298" y="60" width="170" height="72" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="383" y="88" text-anchor="middle" font-size="14" fill="#5cc1ff">台帳（etcd）</text>
+    <text x="383" y="114" text-anchor="middle" font-size="13" fill="#9fb0c6">あるべき形を記録</text>
+  </g>
+  <g class="el" data-part="scheduler">
+    <rect x="298" y="147" width="170" height="72" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="383" y="175" text-anchor="middle" font-size="14" fill="#5cc1ff">配置係（スケジューラ）</text>
+    <text x="383" y="201" text-anchor="middle" font-size="13" fill="#9fb0c6">置く Node を決める</text>
+  </g>
+  <g class="el" data-part="controller">
+    <rect x="298" y="234" width="170" height="72" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="383" y="262" text-anchor="middle" font-size="14" fill="#5cc1ff">監督（コントローラ）</text>
+    <text x="383" y="288" text-anchor="middle" font-size="13" fill="#9fb0c6">差を見て埋める</text>
+  </g>
+  <g class="el" data-part="nodes">
+    <rect x="506" y="16" width="182" height="308" rx="12" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="524" y="42" font-size="14" fill="#3ae08a">Node たち</text>
+    <rect x="522" y="60" width="150" height="116" rx="8" fill="none" stroke="#3ae08a" stroke-width="1.5" pointer-events="all" />
+    <text x="597" y="96" text-anchor="middle" font-size="14" fill="#eef2f6">node-1</text>
+    <text x="597" y="124" text-anchor="middle" font-size="13" fill="#9fb0c6" font-family="&quot;JetBrains Mono&quot;, monospace">kubelet</text>
+    <text x="597" y="150" text-anchor="middle" font-size="13" fill="#9fb0c6">Pod を動かす</text>
+    <rect x="522" y="190" width="150" height="116" rx="8" fill="none" stroke="#3ae08a" stroke-width="1.5" pointer-events="all" />
+    <text x="597" y="226" text-anchor="middle" font-size="14" fill="#eef2f6">node-2</text>
+    <text x="597" y="254" text-anchor="middle" font-size="13" fill="#9fb0c6" font-family="&quot;JetBrains Mono&quot;, monospace">kubelet</text>
+    <text x="597" y="280" text-anchor="middle" font-size="13" fill="#9fb0c6">Pod を動かす</text>
+  </g>
+  <line x1="126" y1="185" x2="160" y2="185" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <line x1="286" y1="96" x2="296" y2="96" stroke="#9fb0c6" stroke-width="2" />
+  <line x1="286" y1="183" x2="296" y2="183" stroke="#9fb0c6" stroke-width="2" />
+  <line x1="286" y1="270" x2="296" y2="270" stroke="#9fb0c6" stroke-width="2" />
+  <path d="M224 310 V340 H597 V312" fill="none" stroke="#9fb0c6" stroke-width="2" marker-start="url(#ar)" marker-end="url(#ar)" />
+  <text x="410" y="362" text-anchor="middle" font-size="13" fill="#9fb0c6">窓口と kubelet がやり取りする（様子を知らせる・置かれた Pod を知る）</text>
+</svg>
