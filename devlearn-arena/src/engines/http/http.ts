@@ -15,6 +15,8 @@ export interface Route {
   status: number;
   body: string;
   headers?: Readonly<Record<string, string>>;
+  /** 状態の行の理由の語（無ければ決まった語。ingress-nginx の 503 は Service Temporarily Unavailable） */
+  reason?: string;
 }
 
 export type FieldType = 'string' | 'number' | 'boolean';
@@ -64,6 +66,11 @@ export interface HttpEnv {
   /** 手元を指す名前 */
   localNames: readonly string[];
   local: (port: number) => LocalListener | null;
+  /**
+   * 手元の外で、名前（/etc/hosts）か住所で届く物（クラスタの入口など）。知らない名前なら undefined（sites を探す）、
+   * 知っている住所でもそのポートで待ち受けていなければ null
+   */
+  remote?: (host: string, port: number) => LocalListener | null | undefined;
 }
 
 export interface Url {
@@ -110,6 +117,8 @@ export interface RequestOptions {
   data?: string;
   /** 話したい版（--http1.1・--http2・--http3）。無ければ curl の既定 */
   version?: HttpVersion;
+  /** 送る Host の見出し（-H 'Host: 名前'）。無ければ URL の名前 */
+  host?: string;
 }
 
 const REASONS: Record<number, string> = {
@@ -132,7 +141,7 @@ function respond(route: Route, server: string, method: string, version: HttpVers
     ...(route.status === 204 ? {} : { 'Content-Type': json ? 'application/json' : 'text/html', 'Content-Length': String(new TextEncoder().encode(route.body).length) }),
     ...route.headers,
   };
-  return { status: route.status, reason: reasonOf(route.status), version, headers, body: method === 'HEAD' ? '' : route.body };
+  return { status: route.status, reason: route.reason ?? reasonOf(route.status), version, headers, body: method === 'HEAD' ? '' : route.body };
 }
 
 const pathOnly = (path: string): string => path.split('?')[0] ?? '/';
@@ -242,8 +251,15 @@ export function request(env: HttpEnv, raw: string, opts: RequestOptions = {}): H
       // https で待ち受けるポートに、暗号化せずに頼んだ
       return { ok: true, url, response: respond({ status: 400, body: '<html><body><h1>400 Bad Request</h1><p>The plain HTTP request was sent to HTTPS port</p></body></html>' }, l.server, method, '1.1') };
     }
-    const route = l.respond({ scheme: url.scheme, host: url.host, port: url.port, method, path: url.path });
+    const route = l.respond({ scheme: url.scheme, host: opts.host ?? url.host, port: url.port, method, path: url.path });
     return { ok: true, url, response: respond(route, l.server, method, '1.1'), ...(tls ? { tls } : {}) };
+  }
+  const remote = env.remote?.(url.host, url.port);
+  if (remote !== undefined) {
+    if (remote === null) return { ok: false, url, error: { kind: 'refused', host: url.host, port: url.port } };
+    if ('reset' in remote || url.scheme === 'https') return { ok: false, url, error: { kind: 'empty-reply' } };
+    const route = remote.respond({ scheme: url.scheme, host: opts.host ?? url.host, port: url.port, method, path: url.path });
+    return { ok: true, url, response: respond(route, remote.server, method, '1.1') };
   }
   const named = env.sites.filter((s) => s.host === url.host);
   if (named.length === 0) return { ok: false, url, error: { kind: 'resolve', host: url.host } };

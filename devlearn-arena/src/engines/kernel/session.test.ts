@@ -4,6 +4,7 @@ import { findMission } from '@/engines/lesson/missions';
 import { createDefaultRegistry } from './commands';
 import { createClock } from './clock';
 import { execute } from './shell';
+import { initialShell } from '@/engines/environments';
 import { createShellState, restoreShell, snapshotShell } from './session';
 import type { ShellState } from './registry';
 
@@ -60,6 +61,22 @@ describe('シェルの保存と復元', () => {
     ]);
     expect(restored.repo?.protections.find((p) => p.branch === 'main')?.requiredChecks).toContain('Build');
     expect(restored.repo?.pulls.length ?? 0).toBeGreaterThan(0);
+  });
+
+  it('レッスンのクラスタ（窓口・置き場・区画・入口の係・PV の中身・コンテナの環境変数と書いた物）もそのまま戻る', () => {
+    const manifests = [
+      'apiVersion: v1\nkind: PersistentVolume\nmetadata:\n  name: pv-db-1\nspec:\n  capacity:\n    storage: 5Gi\n  accessModes:\n  - ReadWriteOnce\n  storageClassName: manual\n  hostPath:\n    path: /srv/pv/db-1\n',
+      'apiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: db-data\nspec:\n  storageClassName: manual\n  accessModes:\n  - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n',
+      'apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: postgres\n        image: city-db:1.0\n        env:\n        - name: TZ\n          value: Asia/Tokyo\n        volumeMounts:\n        - name: data\n          mountPath: /var/lib/postgresql/data\n      volumes:\n      - name: data\n        persistentVolumeClaim:\n          claimName: db-data\n',
+      'apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  rules:\n  - host: city.example\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: db\n            port:\n              number: 80\n',
+    ].join('---\n');
+    const clock = createClock();
+    let state = initialShell('k8s-cluster', { cluster: { nodes: 2, namespaces: ['dev'], ingress: { address: '203.0.113.10' }, manifests } });
+    state = execute(state, 'kubectl exec deploy/db -- psql -U postgres -d reserve -c "INSERT INTO reservations (name) VALUES (\'x\')"', registry, clock).state;
+    const before = state.cluster;
+    const parsed = shellSnapshotSchema.parse(JSON.parse(JSON.stringify(snapshotShell(state))));
+    const after = restoreShell(parsed).cluster;
+    expect(after).toEqual(before);
   });
 
   it('クラスタを進めた結果もそのまま戻る', () => {

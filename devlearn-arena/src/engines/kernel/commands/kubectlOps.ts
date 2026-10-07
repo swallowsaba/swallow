@@ -6,6 +6,7 @@ import { canI } from '@/engines/k8s/policy';
 import { revisionsOf, rolloutStatus, rolloutUndo } from '@/engines/k8s/rollout';
 import { psql, TABLES_FILE } from '@/engines/container/pg';
 import { appLog } from '@/engines/k8s/apps';
+import { ingressError } from '@/engines/k8s/ingress';
 import { pgOf, pgTables, writeAt } from '@/engines/k8s/volumes';
 import { resolveEnv } from '@/engines/k8s/storage';
 import type { ClusterState, Deployment, PersistentVolumeClaim, Pod, Resource } from '@/engines/k8s/types';
@@ -173,7 +174,7 @@ export function applyManifestText(cluster: ClusterState, text: string, source = 
       lines.push(`${label} unchanged`);
       continue;
     }
-    const badMount = mountError(resource);
+    const badMount = mountError(resource) ?? (resource.kind === 'Ingress' ? ingressError(resource) : null);
     if (badMount !== null) {
       failures.push(badMount);
       continue;

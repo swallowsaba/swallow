@@ -1,11 +1,11 @@
 import { advanceCluster } from '@/engines/k8s/controllers';
 import { tickPods } from '@/engines/k8s/kubelet';
-import type { ClusterState, Deployment, Node, PersistentVolume, PersistentVolumeClaim, Pod, ReplicaSet, Resource, Service } from '@/engines/k8s/types';
+import type { ClusterState, Deployment, Ingress, Node, PersistentVolume, PersistentVolumeClaim, Pod, ReplicaSet, Resource, Service } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
 import { deleteNamespace, getNamespaces, missingNamespace } from './kubectlNamespace';
-import { describeClaim, describeDeployment, describeNode, describePod, describeReplicaSet, describeService, describeVolume } from './kubectlDescribe';
+import { describeClaim, describeDeployment, describeIngress, describeNode, describePod, describeReplicaSet, describeService, describeVolume } from './kubectlDescribe';
 import { describeResource, renderTable } from './kubectlGet';
 import { create, expose, run } from './kubectlCreate';
 import { nodeCtl, taint } from './kubectlNodes';
@@ -192,6 +192,7 @@ const coreSubcommands: Record<string, KubectlHandler> = {
               : kind === 'services' ? describeService(cluster, resource as Service)
                 : kind === 'persistentvolumeclaims' ? describeClaim(cluster, resource as PersistentVolumeClaim)
                   : kind === 'persistentvolumes' ? describeVolume(cluster, resource as PersistentVolume)
+                    : kind === 'ingresses' ? describeIngress(cluster, resource as Ingress)
           : describeResource(cluster, kind, resource);
     if (name !== undefined) {
       const found = findOne(cluster, kind, namespace, name);

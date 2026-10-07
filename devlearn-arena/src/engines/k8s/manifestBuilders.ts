@@ -207,11 +207,14 @@ export const BUILDERS: Record<string, Builder> = {
           return asArray(http['paths']).map((p) => {
             const path = asRecord(p);
             const backend = asRecord(asRecord(path['backend'])['service']);
+            const port = asRecord(backend['port']);
             return {
               host,
               path: asString(path['path'], '/'),
+              pathType: asString(path['pathType'], ''),
               serviceName: asString(backend['name']),
-              servicePort: asNumber(asRecord(backend['port'])['number'], 80),
+              servicePort: asNumber(port['number'], 0),
+              ...(port['name'] === undefined ? {} : { portName: asString(port['name']) }),
             };
           });
         }),

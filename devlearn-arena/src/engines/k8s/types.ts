@@ -248,6 +248,8 @@ export interface ClusterState {
   readonly images?: readonly string[];
   /** 区画（Namespace）の一覧。あれば、無い区画には作れない */
   readonly namespaces?: readonly { name: string; createdAt: number }[];
+  /** 入口の係（ingress-nginx）。受け持つ種類（IngressClass）と、外から届く住所 */
+  readonly ingressController?: { className: string; address: string };
 }
 
 export function key(namespace: string, name: string): string {

@@ -77,6 +77,10 @@ const podSchema = z.object({
         waitingReason: z.string().nullable(),
         restartAt: z.number().int().nullable(),
         started: z.boolean(),
+        pulls: z.number().int().optional(),
+        env: stringMap.optional(),
+        files: stringMap.optional(),
+        fresh: z.boolean().optional(),
       }),
     ),
     message: z.string().nullable(),
@@ -122,6 +126,7 @@ const templateSchema = z.object({
   labels: stringMap,
   containers: z.array(containerSpecSchema),
   nodeSelector: stringMap,
+  volumes: z.array(podVolumeSchema).optional(),
 });
 
 const deploymentSchema = z.object({
@@ -204,11 +209,13 @@ const pvSchema = z.object({
     storageClassName: z.string(),
     reclaimPolicy: reclaimSchema,
     nodeName: z.string().nullable(),
+    hostPath: z.string().optional(),
   }),
   status: z.object({
     phase: z.enum(['Available', 'Bound', 'Released', 'Failed']),
     claim: z.string().nullable(),
   }),
+  data: stringMap.optional(),
 });
 
 const pvcSchema = z.object({
@@ -298,8 +305,11 @@ const ingressSchema = z.object({
       z.object({
         host: z.string(),
         path: z.string(),
+        // 前の版の保存には pathType が無い（その頃は文字の頭で合わせていた）
+        pathType: z.string().default('ImplementationSpecific'),
         serviceName: z.string(),
         servicePort: z.number().int(),
+        portName: z.string().optional(),
       }),
     ),
   }),
@@ -411,4 +421,8 @@ export const clusterSnapshotSchema = z.object({
   }),
   ipCounter: z.number().int(),
   nameCounter: z.number().int(),
+  server: z.string().optional(),
+  images: z.array(z.string()).optional(),
+  namespaces: z.array(z.object({ name: z.string(), createdAt: z.number().int() })).optional(),
+  ingressController: z.object({ className: z.string(), address: z.string() }).optional(),
 });

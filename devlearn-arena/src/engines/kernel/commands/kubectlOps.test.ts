@@ -323,6 +323,7 @@ describe('Ingress と NetworkPolicy', () => {
         '      http:',
         '        paths:',
         '          - path: /',
+        '            pathType: Prefix',
         '            backend:',
         '              service:',
         '                name: web',
@@ -331,9 +332,9 @@ describe('Ingress と NetworkPolicy', () => {
         '',
       ].join('\n'),
     );
-    const out = run('kubectl get ing').out;
-    expect(out).toContain('shop.example');
-    expect(out).toContain('web:80');
+    // 本物と同じく、一覧には名前（HOSTS）、宛先の Service は describe に出る
+    expect(run('kubectl get ing').out).toMatch(/^site +nginx +shop\.example +80 /m);
+    expect(run('kubectl describe ing site').out).toMatch(/^ +\/ +web:80 \(/m);
   });
 
   it('NetworkPolicy の一覧に対象と種別が出る', () => {

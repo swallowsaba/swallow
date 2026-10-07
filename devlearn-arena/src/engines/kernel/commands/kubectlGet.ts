@@ -253,14 +253,16 @@ export function renderTable(
     }
 
     case 'ingresses': {
-      const rows = [['NAME', 'CLASS', 'HOSTS', 'PATHS', 'BACKEND']];
+      // 本物の欄。名前を書かない規則があれば *。住所は、入口の係が受け持つまで空
+      const rows = [['NAME', 'CLASS', 'HOSTS', 'ADDRESS', 'PORTS', 'AGE']];
       for (const i of items as Ingress[]) {
         rows.push([
           i.metadata.name,
-          i.spec.className,
-          [...new Set(i.spec.rules.map((r) => r.host))].join(',') || '*',
-          i.spec.rules.map((r) => r.path).join(',') || '/',
-          i.spec.rules.map((r) => `${r.serviceName}:${String(r.servicePort)}`).join(','),
+          i.spec.className === '' ? '<none>' : i.spec.className,
+          [...new Set(i.spec.rules.map((r) => r.host || '*'))].join(',') || '*',
+          i.status.address ?? '',
+          '80',
+          at(i.metadata.createdAt),
         ]);
       }
       return table(rows);

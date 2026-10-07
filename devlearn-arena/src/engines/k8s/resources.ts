@@ -144,8 +144,13 @@ export interface Ingress {
   metadata: ObjectMeta;
   spec: {
     className: string;
-    rules: { host: string; path: string; serviceName: string; servicePort: number }[];
+    /**
+     * 名前（host。空ならどの名前でも）と道ごとの宛先の Service。pathType は Prefix（/ で区切った頭が合う）・
+     * Exact（全く同じ）・ImplementationSpecific（入口の作りに任せる。nginx は文字の頭が合う）。書かなければ空（apply で断られる）
+     */
+    rules: { host: string; path: string; pathType: string; serviceName: string; servicePort: number; portName?: string }[];
   };
+  /** 入口の係（Ingress controller）が受け持つと、外の住所が入る */
   status: { address: string | null };
 }
 

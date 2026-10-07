@@ -136,6 +136,8 @@ export const setupSchema = z.object({
     manifests: z.string().min(1).optional(),
     /** 初めから在る区画（default などの決まった区画のほかに） */
     namespaces: z.array(z.string().regex(/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/)).optional(),
+    /** 入れてある入口の係（ingress-nginx。種類 nginx を受け持つ）と、外から届く住所 */
+    ingress: z.object({ address: z.string().regex(/^\d+\.\d+\.\d+\.\d+$/) }).strict().optional(),
   }).strict().optional(),
   /** 動いているプロセス（ps・top・kill。PID は 100 から順に振る） */
   processes: z.array(z.object({
@@ -256,7 +258,8 @@ export function resolveSetup(environment: string, setup: unknown): PracticeSetup
 
 /** setup の cluster から、組み上がったクラスタを作る（Node は node-1〜。制御の側は cp-1） */
 function clusterOf(c: NonNullable<PracticeSetup['cluster']>): ClusterState {
-  const born = -(c.ageDays ?? 0) * 86400;
+  // 0 - … にして、日数が 0 の時に -0 にしない（保存すると 0 に変わる）
+  const born = 0 - (c.ageDays ?? 0) * 86400;
   const at = (n: Node): Node => ({ ...n, metadata: { ...n.metadata, createdAt: born } });
   const workers = Array.from({ length: c.nodes }, (_, i) => {
     const n = at(node(`node-${String(i + 1)}`, 4000, 8192));
@@ -271,6 +274,7 @@ function clusterOf(c: NonNullable<PracticeSetup['cluster']>): ClusterState {
   let cluster: ClusterState = {
     ...emptyCluster(nodes), server: API_SERVER, images,
     namespaces: [...BUILTIN_NAMESPACES, ...(c.namespaces ?? [])].map((name) => ({ name, createdAt: born })),
+    ...(c.ingress === undefined ? {} : { ingressController: { className: 'nginx', address: c.ingress.address } }),
     services: new Map([['default/kubernetes', { ...api, metadata: { ...api.metadata, labels: { component: 'apiserver', provider: 'kubernetes' }, createdAt: born }, status: { endpoints: ['10.0.0.10'] } }]]),
   };
   if (c.manifests === undefined) return cluster;

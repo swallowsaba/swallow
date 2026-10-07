@@ -1,4 +1,5 @@
 import { portOwner, servedAt } from '@/engines/container/container';
+import { ingressAnswer } from '@/engines/k8s/ingress';
 import { curlError, pageOf, parseUrl, request, routeFor, type HttpEnv, type HttpOutcome, type HttpVersion, type LocalListener, type LocalRequest, type Route } from '@/engines/http/http';
 import { normalize } from '../path';
 import { allows } from '../perm';
@@ -16,6 +17,28 @@ function hostsLocalNames(shell: ShellState): string[] {
     const [addr, ...names] = line.replace(/#.*$/, '').trim().split(/\s+/);
     return addr === '127.0.0.1' || addr === '::1' ? names.map((n) => n.toLowerCase()) : [];
   });
+}
+
+/** /etc/hosts で名前が指す住所（無ければ null） */
+function hostsAddress(shell: ShellState, name: string): string | null {
+  const path = '/etc/hosts';
+  if (!exists(shell.vfs, path) || isDir(shell.vfs, path)) return null;
+  for (const line of readFile(shell.vfs, path).split('\n')) {
+    const [addr, ...names] = line.replace(/#.*$/, '').trim().split(/\s+/);
+    if (addr && names.some((n) => n.toLowerCase() === name)) return addr;
+  }
+  return null;
+}
+
+/** クラスタの入口（ingress-nginx）の住所に届いた頼み。80 番で待ち受け、Ingress の規則で振り分ける */
+function clusterRemote(shell: ShellState, host: string, port: number): LocalListener | null | undefined {
+  const cluster = shell.cluster;
+  const address = cluster?.ingressController?.address;
+  if (!cluster || address === undefined) return undefined;
+  const ip = /^\d+\.\d+\.\d+\.\d+$/.test(host) ? host : hostsAddress(shell, host);
+  if (ip !== address) return undefined;
+  if (port !== 80) return null;
+  return { server: 'nginx', respond: (req) => ingressAnswer(cluster, req.host, req.method, req.path) };
 }
 
 /** Web サーバの働き手（nginx の worker）の利用者。公開するファイルは、この利用者が読めなければ 403 */
@@ -95,6 +118,7 @@ export function httpEnvOf(shell: ShellState): HttpEnv {
     roots: web?.roots ?? [],
     today: web?.today ?? '2026-10-03',
     localNames: ['localhost', '127.0.0.1', ...(web?.hostname ? [web.hostname] : []), ...hostsLocalNames(shell)],
+    remote: (host, port) => clusterRemote(shell, host, port),
     local: (port): LocalListener | null => {
       for (const s of shell.services?.services.values() ?? []) {
         if (s.active !== 'active') continue;
@@ -231,7 +255,9 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
   // 付いていく転送の数の上限（本物の curl の --max-redirs の既定と同じ 50）
   const MAX_REDIRS = 50;
   for (let hop = 0; ; hop += 1) {
-    const out = request({ ...env, sites }, url, { insecure: a.flags.has('k'), ...(method !== undefined ? { method } : {}), ...(a.data !== undefined ? { data: a.data } : {}), ...(a.version ? { version: a.version } : {}) });
+    // -H 'Host: 名前' は、届け先（URL の名前か住所）を変えずに、名乗る名前だけを変える
+    const hostHeader = a.headers.map((h) => /^host:\s*(\S+)/i.exec(h)?.[1]).find((h) => h !== undefined)?.toLowerCase();
+    const out = request({ ...env, sites }, url, { insecure: a.flags.has('k'), ...(method !== undefined ? { method } : {}), ...(a.data !== undefined ? { data: a.data } : {}), ...(a.version ? { version: a.version } : {}), ...(hostHeader !== undefined && hop === 0 ? { host: hostHeader } : {}) });
     if (out.url && a.flags.has('v')) verbose.push(`* Trying ${out.url.host}:${String(out.url.port)}...`);
     if (!out.ok) {
       const e = curlError(out.error, out.url?.host ?? '');
@@ -245,7 +271,7 @@ export function localCurl(argv: readonly string[], shell: ShellState): CommandRe
       verbose.push(`* Connected to ${out.url.host} port ${String(out.url.port)}`);
       if (out.tls?.trusted) verbose.push(`* SSL certificate verify ok.`, ...out.tls.path.map((c, i) => `*  ${i === 0 ? 'subject' : 'issuer'}: CN=${c.subject}`));
       if (r.version !== '1.1') verbose.push(`* using HTTP/${r.version}`);
-      verbose.push(`> ${method ?? (a.data !== undefined ? 'POST' : 'GET')} ${out.url.path} HTTP/${r.version}`, `> Host: ${out.url.host}`, ...a.headers.map((h) => `> ${h}`), '>', ...headOf(out).trimEnd().split('\n').map((l) => `< ${l}`), '<');
+      verbose.push(`> ${method ?? (a.data !== undefined ? 'POST' : 'GET')} ${out.url.path} HTTP/${r.version}`, ...(hostHeader === undefined ? [`> Host: ${out.url.host}`] : []), ...a.headers.map((h) => `> ${h}`), '>', ...headOf(out).trimEnd().split('\n').map((l) => `< ${l}`), '<');
     }
     const follow = a.flags.has('L') && r.status >= 300 && r.status < 400 ? nextUrl(out) : null;
     if (a.flags.has('I') || a.flags.has('i')) stdout += `${headOf(out)}\n`;

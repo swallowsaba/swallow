@@ -1,3 +1,4 @@
+import { rulesByHost } from './ingress';
 import type {
   ContainerSpec, Deployment, ObjectMeta, Pod, PodVolume, Probe, ReplicaSet, Resource, Service,
 } from './types';
@@ -204,6 +205,24 @@ export function toManifest(resource: Resource): Plain {
       return { ...head, ...replicaSetOf(resource) };
     case 'Service':
       return { ...head, ...serviceOf(resource) };
+    case 'Ingress':
+      return {
+        ...head,
+        spec: {
+          ingressClassName: resource.spec.className,
+          rules: rulesByHost(resource).map((r) => compact({
+            host: r.host === '' ? undefined : r.host,
+            http: {
+              paths: r.paths.map((p) => ({
+                backend: { service: { name: p.serviceName, port: p.portName === undefined ? { number: p.servicePort } : { name: p.portName } } },
+                path: p.path,
+                pathType: p.pathType,
+              })),
+            },
+          })),
+        },
+        status: { loadBalancer: resource.status.address === null ? {} : { ingress: [{ ip: resource.status.address }] } },
+      };
     default: {
       // ほかの資源は中の形のまま出す。metadata だけ本物に揃える
       const rest: Plain = { ...resource };

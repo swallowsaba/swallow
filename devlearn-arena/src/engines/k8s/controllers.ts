@@ -1,6 +1,7 @@
 import { pod as makePod } from './factory';
 import { isReady } from './kubelet';
 import { CHANGE_CAUSE_KEY, REVISION_KEY } from './rollout';
+import { syncIngresses } from './ingress';
 import { bindClaims } from './storage';
 import { reconcileWorkloads } from './workloads';
 import type { ClusterState, Deployment, EventRecord, PersistentVolume, Pod, ReplicaSet } from './types';
@@ -346,8 +347,10 @@ export function advanceCluster(state: ClusterState, tickPods: (s: ClusterState) 
 
   const reconciled = reconcile(withWorkloads);
   const ticked = tickPods(reconciled.state);
+  const entry = syncIngresses(reconciled.state);
   return {
     ...reconciled.state,
+    ingresses: entry.ingresses,
     tick: state.tick + 1,
     pods: ticked.pods,
     ipCounter: ticked.ipCounter,
@@ -358,6 +361,7 @@ export function advanceCluster(state: ClusterState, tickPods: (s: ClusterState) 
       ...workloads.events,
       ...reconciled.events,
       ...ticked.events,
+      ...entry.events,
     ].slice(-200),
   };
 }

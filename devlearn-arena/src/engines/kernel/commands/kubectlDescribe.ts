@@ -3,8 +3,9 @@ import { realNames, templateHash } from '@/engines/k8s/controllers';
 import { REVISION_KEY } from '@/engines/k8s/rollout';
 import { isReady } from '@/engines/k8s/kubelet';
 import type {
-  ClusterState, ContainerSpec, ContainerStatus, Deployment, Node, PersistentVolume, PersistentVolumeClaim, Pod, PodVolume, Probe, ReplicaSet, Service,
+  ClusterState, ContainerSpec, ContainerStatus, Deployment, Ingress, Node, PersistentVolume, PersistentVolumeClaim, Pod, PodVolume, Probe, ReplicaSet, Service,
 } from '@/engines/k8s/types';
+import { backendText, rulesByHost } from '@/engines/k8s/ingress';
 import { age } from './kubectlShared';
 
 /**
@@ -98,6 +99,7 @@ function sourceOf(reason: string): string {
   if (reason === 'Scheduled' || reason === 'FailedScheduling') return 'default-scheduler';
   if (reason === 'ScalingReplicaSet') return 'deployment-controller';
   if (reason === 'SuccessfulCreate' || reason === 'SuccessfulDelete') return 'replicaset-controller';
+  if (reason === 'Sync') return 'nginx-ingress-controller';
   return 'kubelet';
 }
 
@@ -384,6 +386,32 @@ export function describeVolume(cluster: ClusterState, v: PersistentVolume): stri
     'Source:',
     ...(v.spec.hostPath === undefined ? [] : fields([['Type', 'HostPath (bare host directory volume)'], ['Path', v.spec.hostPath], ['HostPathType', '']], '    ')),
     ...eventsOf(cluster, `persistentvolume/${v.metadata.name}`, w),
+  ];
+  return `${lines.join('\n')}\n`;
+}
+
+export function describeIngress(cluster: ClusterState, ing: Ingress): string {
+  const w = 18;
+  const groups = rulesByHost(ing);
+  const hostW = Math.max(4, ...groups.map((g) => (g.host || '*').length));
+  const pathW = Math.max(4, ...ing.spec.rules.map((r) => r.path.length));
+  const rows = groups.flatMap((g) => [
+    `  ${(g.host || '*').padEnd(hostW)}  `,
+    ...g.paths.map((r) => `  ${' '.repeat(hostW)}  ${r.path.padEnd(pathW)}  ${backendText(cluster, ing, r)}`),
+  ]);
+  const lines = [
+    ...multi('Name', [ing.metadata.name], w),
+    ...multi('Labels', labelText(ing.metadata.labels), w),
+    ...multi('Namespace', [ing.metadata.namespace], w),
+    `${'Address:'.padEnd(w)}${ing.status.address ?? ''}`.trimEnd(),
+    ...multi('Ingress Class', [ing.spec.className === '' ? '<none>' : ing.spec.className], w),
+    ...multi('Default backend', ['<default>'], w),
+    'Rules:',
+    `  ${'Host'.padEnd(hostW)}  ${'Path'.padEnd(pathW)}  Backends`,
+    `  ${'----'.padEnd(hostW)}  ${'----'.padEnd(pathW)}  --------`,
+    ...rows,
+    ...multi('Annotations', Object.entries(ing.metadata.annotations).map(([k, v]) => `${k}: ${v}`), w),
+    ...eventsOf(cluster, `ingress/${ing.metadata.name}`, w),
   ];
   return `${lines.join('\n')}\n`;
 }

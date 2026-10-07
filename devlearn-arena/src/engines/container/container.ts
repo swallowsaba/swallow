@@ -31,7 +31,13 @@ export interface Image {
    * 動かした時に待ち受けるポートと、応える中身（Web サーバのイメージ）。
    * root があれば、コンテナの中のその場所から中身を読む（ボリュームでつないだ手元の場所の index.html。無ければ 403）
    */
-  serves?: { port: number; body: string; root?: string };
+  serves?: {
+    port: number; body: string; root?: string;
+    /** 道ごとの答え（「/道」か「METHOD /道」）。あれば body ではなく、これで答える（クラスタの Ingress から届いた頼み） */
+    routes?: Readonly<Record<string, { status: number; body: string }>>;
+    /** 道が無い時の答えの形（express は Node.js の Express の Cannot GET。無ければ nginx の 404） */
+    notFound?: 'express';
+  };
   /** 動かすのに要る環境変数（無いと止まる） */
   requiresEnv?: { name: string; error: readonly string[] };
   /** 動き出してすぐ、要る物を確かめる前に出すログ（起動の行。原因の行はこの後に出る） */
@@ -180,6 +186,9 @@ const NGINX_FILES: Readonly<Record<string, string>> = {
   '/usr/share/nginx/html/50x.html': '<!DOCTYPE html>\n<html><head><title>Error</title></head><body><h1>An error occurred.</h1></body></html>\n',
 };
 
+/** 市の売店の画面（city-shop:1.0） */
+const SHOP_PAGE = '<!DOCTYPE html>\n<html><head><title>市の売店</title></head><body><h1>市の売店</h1><p>図書館の本・公園の地図・記念の品</p></body></html>\n';
+
 /** 模擬のレジストリに置いてあるイメージ（docs/learning-design.md 6 章: 本物は取りに行かない） */
 export const REGISTRY: readonly Image[] = [
   {
@@ -196,6 +205,27 @@ export const REGISTRY: readonly Image[] = [
     serves: { port: 80, body: '<html><body><h1>夜の集計</h1><p>予約 1,240 件を集計した</p></body></html>' },
     startLog: ['report: loading 1,240 reservations into memory', 'report: listening on :80'],
     procs: [{ command: 'node /app/report.js', memory: 182.4 }],
+  },
+  {
+    // 市の売店の画面（nginx が置いた HTML を返す。k8s.i.04）
+    ref: 'city-shop:1.0', id: '2a7c5e91f3d8', size: '43.6MB', command: "/docker-entrypoint.sh nginx -g 'daemon off;'",
+    serves: {
+      port: 80, body: SHOP_PAGE,
+      routes: { '/': { status: 200, body: SHOP_PAGE }, '/index.html': { status: 200, body: SHOP_PAGE } },
+    },
+    startLog: ['/docker-entrypoint.sh: Configuration complete; ready for start up', 'nginx: start worker processes'],
+  },
+  {
+    // 市の施設の空きを答える API（Node.js の Express。/api の下で答える。k8s.i.04）
+    ref: 'city-api:1.0', id: '8e3b0d6a4c17', size: '151MB', command: 'docker-entrypoint.sh node server.js',
+    serves: {
+      port: 3000, body: '', notFound: 'express',
+      routes: {
+        '/api/rooms': { status: 200, body: '[{"id":1,"name":"図書館の会議室","free":true},{"id":2,"name":"体育館","free":false},{"id":3,"name":"公民館の和室","free":true}]' },
+        '/api/health': { status: 200, body: '{"status":"ok"}' },
+      },
+    },
+    startLog: ['api: version 1.0.0', 'api: listening on :3000'],
   },
   { ref: 'redis:7', id: '7e49ed81b42b', size: '117MB', command: 'docker-entrypoint.sh redis-server', startLog: ['Redis version=7.2.5, bits=64', 'Ready to accept connections tcp'] },
   {

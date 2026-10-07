@@ -41,6 +41,7 @@ export interface ClusterSnapshot {
   server?: string;
   images?: string[];
   namespaces?: { name: string; createdAt: number }[];
+  ingressController?: { className: string; address: string };
 }
 
 export function snapshotCluster(cluster: ClusterState): ClusterSnapshot {
@@ -76,6 +77,7 @@ export function snapshotCluster(cluster: ClusterState): ClusterSnapshot {
     ...(cluster.server === undefined ? {} : { server: cluster.server }),
     ...(cluster.images === undefined ? {} : { images: [...cluster.images] }),
     ...(cluster.namespaces === undefined ? {} : { namespaces: [...cluster.namespaces] }),
+    ...(cluster.ingressController === undefined ? {} : { ingressController: { ...cluster.ingressController } }),
   };
 }
 
@@ -112,5 +114,6 @@ export function restoreCluster(snapshot: ClusterSnapshot): ClusterState {
     ...(snapshot.server === undefined ? {} : { server: snapshot.server }),
     ...(snapshot.images === undefined ? {} : { images: snapshot.images }),
     ...(snapshot.namespaces === undefined ? {} : { namespaces: snapshot.namespaces }),
+    ...(snapshot.ingressController === undefined ? {} : { ingressController: snapshot.ingressController }),
   };
 }
