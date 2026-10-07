@@ -408,6 +408,51 @@
         "pvc",
         "pod"
       ]
+    },
+    {
+      "id": "k8s-ingress-invalid",
+      "match": "The Ingress \"\\S+\" is invalid",
+      "meaning": "Ingress を断られた。言われた場所（`spec.rules[0].http.paths[0]` は、1 つ目の規則の 1 つ目の道）の書き方が、決まりに合っていない。",
+      "causes": [
+        "道の合わせ方（`pathType:`）を書いていない。Prefix・Exact・ImplementationSpecific のどれかを書く決まり。",
+        "規則（`rules:`）が 1 つも無い。",
+        "道（`path:`）が `/` で始まっていない。"
+      ],
+      "hint": "言われた欄を見る。道ごとに `path: /…` と `pathType: Prefix` を書き、`backend:` の `service:` に `name:` と `port:` の `number:` を書く。",
+      "terms": [
+        "ingress",
+        "path"
+      ]
+    },
+    {
+      "id": "k8s-ingress-404",
+      "match": "404 Not Found",
+      "output": true,
+      "meaning": "入口から `404 Not Found` が返った。頼みの名前と道に合う規則が無い。",
+      "causes": [
+        "規則の名前（`host:`）の綴りが、頼んだ名前 city.example と違う。",
+        "その道（/api など）の規則が無く、ほかの規則（`/`）の宛先に届いて、そこにも無かった。"
+      ],
+      "hint": "`host:` の綴りを、頼んだ名前と 1 字ずつ見比べる。道ごとの規則が、`paths:` の下に並んでいるかを確かめる。",
+      "terms": [
+        "ingress",
+        "host"
+      ]
+    },
+    {
+      "id": "k8s-ingress-503",
+      "match": "503 Service Temporarily Unavailable",
+      "output": true,
+      "meaning": "入口から `503 Service Temporarily Unavailable` が返った。規則には合ったが、宛先の Service の後ろに、届けられる Pod が無い。",
+      "causes": [
+        "宛先の Service の名前（`name:`）の綴りが違い、その Service が無い。",
+        "宛先のポート（`number:`）が、Service のポート（80）と違う。Pod の待ち受けるポート（3000）ではなく、Service のポートを書く。"
+      ],
+      "hint": "`kubectl get svc` の名前とポートを、規則の `name:` と `number:` に合わせる。",
+      "terms": [
+        "ingress",
+        "k8s-service"
+      ]
     }
   ]
 }

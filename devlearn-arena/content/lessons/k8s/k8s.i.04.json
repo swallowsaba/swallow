@@ -1,0 +1,280 @@
+{
+  "id": "k8s.i.04",
+  "domain": "k8s",
+  "level": "intermediate",
+  "theme": "公開",
+  "title": "Ingress",
+  "goal": "名前やパスで振り分けて外に公開できる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.b.06",
+    "web.i.03"
+  ],
+  "related": [
+    "web.i.03",
+    "sec.i.02"
+  ],
+  "next": [
+    "k8s.a.01",
+    "k8s.a.03"
+  ],
+  "terms": [
+    "ingress",
+    "ingress-controller",
+    "k8s-service",
+    "pod",
+    "host",
+    "path",
+    "https",
+    "certificate",
+    "cluster",
+    "api",
+    "reverse-proxy",
+    "curl",
+    "status-code",
+    "port",
+    "yaml",
+    "url",
+    "web",
+    "k8s-secret",
+    "image",
+    "deployment",
+    "json",
+    "app"
+  ],
+  "explain": {
+    "what": "{{term:ingress}} は、{{term:cluster}}の外からの頼みを受ける入口。頼みの名前（{{term:host}}）と道（{{term:path}}）ごとに、どの {{term:k8s-service}} に渡すかを規則に書く。実際に振り分けるのは、入っている{{term:ingress-controller}}。",
+    "why": "Service ごとに外への扉を作ると、扉と住所が Service の数だけ増える。入口を 1 つにまとめ、名前と道で振り分ければ、外に見せる住所は 1 つで済む。",
+    "use": "1 つの名前の下に、画面と {{term:api}} を並べて出す。{{term:https}} の{{term:certificate}}も入口でまとめて扱える。働きは {{term:web}} の{{term:reverse-proxy}}と同じ。",
+    "when": "市の売店の画面（shop）と、施設の空きを答える API（api）を、同じ city.example の入口から出したい。今は、どちらもクラスタの中からしか届かない。",
+    "figures": [
+      "k8s-i04-ingress"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "k8s-i04-ingress",
+      "prompt": "図で、`city.example/api/rooms` の頼みが選ぶ規則と、届く Service を押す。",
+      "answer": [
+        "rule-api",
+        "svc-api"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "入口（Ingress）が、頼みの名前と道に合う規則を選ぶ",
+      "b": "選んだ規則に書いた Service が、後ろの {{term:pod}} に頼みを届ける",
+      "answer": "before",
+      "why": "Ingress は宛先を選ぶだけで、Pod は知らない。Pod に届けるのは、規則に書いた Service。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "Ingress を作ったのに、`curl http://city.example/` が 404 を返した。原因は？",
+      "context": {
+        "command": "curl -si http://city.example/",
+        "log": "HTTP/1.1 404 Not Found\nServer: nginx\n...\n<center><h1>404 Not Found</h1></center>"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "頼みの名前と道に合う規則が無い（`host:` の綴りが違うなど）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Pod が止まっている",
+          "correct": false,
+          "whyNot": "規則には合ったのに Pod が無い時は、503 が返る。404 は、合う規則が無い時。"
+        },
+        {
+          "id": "c",
+          "text": "Service の{{term:port}}が違う",
+          "correct": false,
+          "whyNot": "宛先のポートが違う時も、届けられる先が無いので 503。404 は、宛先を選ぶ前に外れている。"
+        }
+      ],
+      "explanation": "404 は「どの規則にも合わない」。名前（`host:`）と道（`path:`）を、頼んだ {{term:url}} と見比べる。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "`/api/rooms` の頼みに、入口が `503 Service Temporarily Unavailable` を返した。原因は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "規則には合ったが、宛先の Service の後ろに、届けられる Pod が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "/api の規則が無い",
+          "correct": false,
+          "whyNot": "規則が無ければ 404。503 は、規則に合った後で、届ける先が無い時。"
+        },
+        {
+          "id": "c",
+          "text": "入口の係が入っていない",
+          "correct": false,
+          "whyNot": "係が入っていなければ、そもそも入口の住所に届かない。503 を返しているのは係。"
+        }
+      ],
+      "explanation": "503 なら、宛先の Service の名前とポート、後ろの Pod が `Ready` かを確かめる。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "city.example を HTTPS で出したい。どこに証明書を置く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Ingress に、証明書を入れた {{term:k8s-secret}} を書く（入口でまとめて暗号化を解く）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Pod ごとに、同じ証明書を入れた{{term:image}}を作る",
+          "correct": false,
+          "whyNot": "証明書を替えるたびに、全てのイメージを作り直すことになる。入口でまとめれば 1 か所で済む。"
+        },
+        {
+          "id": "c",
+          "text": "Service を、外から届く種類に変える",
+          "correct": false,
+          "whyNot": "外から届くようになっても、暗号化は付かない。証明書を扱うのは入口。"
+        }
+      ],
+      "explanation": "HTTPS の終わりは入口に置ける。Ingress の `tls:` に名前と証明書の Secret を書く。"
+    },
+    {
+      "id": "q4",
+      "kind": "predict",
+      "prompt": "`/` だけだった規則に、`/api` → Service api の規則を足した。`/api/rooms` の頼みはどうなる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "より長く合う `/api` の規則が選ばれ、api の Service に届く（道は `/api/rooms` のまま）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "先に書いた `/` の規則が選ばれ、shop に届く",
+          "correct": false,
+          "whyNot": "書いた順ではなく、より長く合う道が選ばれる。/api/rooms には /api の方が長く合う。"
+        },
+        {
+          "id": "c",
+          "text": "api に `/rooms` として届く",
+          "correct": false,
+          "whyNot": "道は書き換えずに渡す。api は /api の下で答えるように作ってある。"
+        }
+      ],
+      "explanation": "Ingress は、合う規則の中から一番長い道を選ぶ。道はそのまま後ろに渡る。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "クラスタには、売店（shop）と API（api）の {{term:deployment}} と Service がある。入口の係（ingress-nginx）は入っていて、名前 city.example は入口の住所 203.0.113.10 を指す。ingress.yaml に規則を書き、city.example の `/` を shop に、`/api` を api に振り分ける。保存すると、送って Ingress を見て、2 つの道に {{term:curl}} で頼む。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cwd": "/home/learner/city",
+      "dirs": [
+        "/home/learner/city"
+      ],
+      "files": {
+        "/etc/hosts": "127.0.0.1 localhost\n203.0.113.10 city.example\n",
+        "/home/learner/city/ingress.yaml": "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n"
+      },
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "ingress": {
+          "address": "203.0.113.10"
+        },
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: shop\n  template:\n    metadata:\n      labels:\n        app: shop\n    spec:\n      containers:\n      - name: shop\n        image: city-shop:1.0\n        ports:\n        - containerPort: 80\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: shop\nspec:\n  selector:\n    app: shop\n  ports:\n  - port: 80\n    targetPort: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: api\n  template:\n    metadata:\n      labels:\n        app: api\n    spec:\n      containers:\n      - name: api\n        image: city-api:1.0\n        ports:\n        - containerPort: 3000\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: api\nspec:\n  selector:\n    app: api\n  ports:\n  - port: 80\n    targetPort: 3000\n"
+      },
+      "edit": {
+        "path": "/home/learner/city/ingress.yaml",
+        "apply": [
+          "kubectl apply -f ingress.yaml",
+          "kubectl get ingress city",
+          "curl -s http://city.example/",
+          "curl -s http://city.example/api/rooms"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "shop",
+        "purpose": "名前 city.example の道 `/` を、Service shop の 80 番に渡す規則を書く。売店の画面が返ればよい。",
+        "check": {
+          "kind": "http",
+          "url": "http://city.example/",
+          "status": 200,
+          "contains": "市の売店"
+        },
+        "afterward": "入口の係が Ingress を受け持ち、`kubectl get ingress` の `ADDRESS` に 203.0.113.10 が入った。`/` の規則は、ほかのどの道にも合うので、`/api/rooms` もまだ shop に届き、shop には無いので 404 が返る。",
+        "hints": [
+          "`spec:` の下に `rules:` を書く。規則は、名前（`host:`）と、`http:` の `paths:` に並べる道ごとの宛先で書く。",
+          "`rules:` の下に `- host: city.example`。`http:` の `paths:` に `- path: /`・`pathType: Prefix`、`backend:` の `service:` に `name: shop` と `port:` の `number: 80`。",
+          "`apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - host: city.example\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: shop\n            port:\n              number: 80\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-ingress-invalid",
+          "k8s-ingress-503",
+          "k8s-ingress-404",
+          "k8s-yaml"
+        ]
+      },
+      {
+        "id": "api",
+        "purpose": "同じ名前の道 `/api` を、Service api の 80 番に渡す規則を足す。施設の空き（{{term:json}}）が返ればよい。",
+        "check": {
+          "kind": "http",
+          "url": "http://city.example/api/rooms",
+          "status": 200,
+          "contains": "図書館の会議室"
+        },
+        "afterward": "`/api/rooms` には `/` より `/api` の方が長く合うので、api に届いた。道は書き換えずに渡り、api は `/api/rooms` で施設の空きを答えた。入口は 1 つのまま、2 つの{{term:app}}を出せた。",
+        "hints": [
+          "同じ名前の `paths:` に、2 つ目の道を足す。宛先は Service api。ポートは Service のポート（80）を書く。",
+          "`paths:` の `- path: /` の組の下に、同じ字下げで `- path: /api`・`pathType: Prefix`・`backend:` の `service:` に `name: api` と `port:` の `number: 80` を足す（Pod の待ち受ける 3000 ではない）。",
+          "`apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n  rules:\n  - host: city.example\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: shop\n            port:\n              number: 80\n      - path: /api\n        pathType: Prefix\n        backend:\n          service:\n            name: api\n            port:\n              number: 80\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-ingress-invalid",
+          "k8s-ingress-503",
+          "k8s-ingress-404",
+          "k8s-yaml"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "1 つの入口（city.example）で、`/` を売店に、`/api` を API に振り分けて出せた。",
+    "partial": "ヒントを使って振り分けられた。次は、404 と 503 の違いを、自分の言葉で説明してみよう。",
+    "retry": "まだ振り分けられていない。確かめた結果の `curl` の答えが 404 なら規則の名前と道を、503 なら宛先の Service の名前とポートを見よう。"
+  },
+  "summary": {
+    "points": [
+      "{{term:ingress}} は、クラスタの入口を 1 つにまとめる",
+      "名前と道で、宛先の Service を選ぶ（一番長く合う道）",
+      "後ろは Service。404 は規則、503 は宛先を疑う"
+    ],
+    "next": [
+      "k8s.a.01",
+      "k8s.a.03"
+    ],
+    "terms": [
+      "ingress",
+      "ingress-controller"
+    ]
+  }
+}

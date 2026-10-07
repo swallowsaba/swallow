@@ -86,6 +86,8 @@ describe('Ingress（名前と道で振り分ける入口）', () => {
     const c = console_();
     expect(c.apply(INGRESS({ pathType: '' })).err).toBe('The Ingress "city" is invalid: spec.rules[0].http.paths[0].pathType: Required value: pathType must be specified\n');
     expect(c.apply(INGRESS().replace('- path: /api', '- path: api')).err).toBe('The Ingress "city" is invalid: spec.rules[0].http.paths[1].path: Invalid value: "api": must be an absolute path\n');
+    const empty = 'apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: city\nspec:\n  ingressClassName: nginx\n';
+    expect(c.apply(empty).err).toBe('The Ingress "city" is invalid: spec: Invalid value: []networking.IngressRule(nil): either `defaultBackend` or `rules` must be specified\n');
     expect(c.run('kubectl get ingress').out).toBe('No resources found in default namespace.\n');
   });
 

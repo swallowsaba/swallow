@@ -132,6 +132,8 @@ export function rulesByHost(ing: Ingress): { host: string; paths: Ingress['spec'
 /** 書いた Ingress の誤り（本物の API サーバの断り方。無ければ null） */
 export function ingressError(ing: Ingress): string | null {
   const head = `The Ingress "${ing.metadata.name}" is invalid: `;
+  // 既定の宛先（defaultBackend）は模していないので、規則が 1 つも無ければ本物と同じく断る
+  if (ing.spec.rules.length === 0) return `${head}spec: Invalid value: []networking.IngressRule(nil): either \`defaultBackend\` or \`rules\` must be specified`;
   for (const [i, rule] of rulesByHost(ing).entries()) {
     for (const [j, p] of rule.paths.entries()) {
       const at = `spec.rules[${String(i)}].http.paths[${String(j)}]`;

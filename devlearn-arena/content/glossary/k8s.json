@@ -434,6 +434,38 @@
       "lessons": [
         "k8s.i.03"
       ]
+    },
+    {
+      "id": "ingress",
+      "word": "Ingress",
+      "reading": "いんぐれす",
+      "plain": "クラスタの外からの頼みを受ける入口の決まり。頼みの名前（ホスト）と道（パス）ごとに、どの Service に渡すかを規則に書く。",
+      "why": "Service ごとに外への扉を作らず、入口を 1 つにまとめられる。HTTPS の証明書も入口でまとめて扱える。",
+      "related": [
+        "k8s-service",
+        "ingress-controller",
+        "host",
+        "path",
+        "reverse-proxy"
+      ],
+      "analogy": "大きな建物の受付。来た人の行き先（名前と道）を見て、担当の窓口（Service）へ案内する。",
+      "lessons": [
+        "k8s.i.04"
+      ]
+    },
+    {
+      "id": "ingress-controller",
+      "word": "Ingress コントローラ",
+      "reading": "いんぐれすこんとろーら",
+      "plain": "Ingress の規則を読んで、実際に頼みを振り分ける係（ingress-nginx など）。外から届く住所を持ち、受け持った Ingress にその住所を書く。",
+      "why": "Ingress は決まりを書いただけの物で、係が入っていなければ何も振り分けない。どの種類（IngressClass）の係が受け持つかを ingressClassName で選ぶ。",
+      "related": [
+        "ingress",
+        "k8s-controller"
+      ],
+      "lessons": [
+        "k8s.i.04"
+      ]
     }
   ]
 }
