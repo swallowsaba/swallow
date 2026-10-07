@@ -9,6 +9,9 @@
  *   コンテナの中で書いた物は、名前付きボリュームをつないだ場所ならボリュームに、それ以外はコンテナの書き込みの層に入り、コンテナを消すと一緒に消える
  * - 網（docker.i.04）: 何も指定しないで動かしたコンテナは既定の網（bridge）に入る。そこではアドレスで届くが、名前は引けない。
  *   自分で作った網（docker network create）の中では、コンテナの名前で届く（Docker の中の DNS が、動いているコンテナのアドレスを答える）
+ * - 置き場（docker.i.05）: 公開の置き場（REGISTRY）のほかに、自分たちの置き場（registry.city.example など）を持てる。
+ *   名前の先頭が住所（. を含む）なら、その置き場に向かう。自分たちの置き場は、ログインした利用者だけが取れて・置ける
+ * - 別の機械の Engine（docker --context）: CLI は手元のまま、頼む先の Engine だけを変える。置き場とログインは手元（CLI の側）の物を使う
  * - 隔離（ctr.i.02）: コンテナは名前空間で区切った機械のプロセス。中からは自分のプロセスだけが見え（主のプロセスが PID 1）、
  *   機械からは同じプロセスが機械の PID で見える（containerd-shim の子）。cgroups のメモリの上限（--memory）より多く使うと、
  *   起動してすぐカーネルに止められる（終了コード 137 = 128 + SIGKILL の 9、OOMKilled）
@@ -124,6 +127,29 @@ export interface ContainerHost {
   made?: Readonly<Record<string, number>>;
   /** 自分で作った網 */
   networks?: readonly Network[];
+  /** 自分たちの置き場（手元の CLI の側だけが持つ） */
+  registries?: readonly PrivateRegistry[];
+  /** ログインした置き場（住所 → 利用者。手元の CLI の側だけが持つ） */
+  logins?: Readonly<Record<string, string>>;
+  /** 頼む先の Engine（docker context。手元の CLI の側だけが持つ） */
+  contexts?: readonly EngineContext[];
+  /** 今の頼む先（無ければ default = 手元の Engine） */
+  context?: string;
+}
+
+/** 自分たちの置き場。置けるのは、ログインした利用者（user）だけ */
+export interface PrivateRegistry {
+  server: string;
+  user: string;
+  images: readonly Image[];
+}
+
+/** 頼む先の、別の機械の Engine */
+export interface EngineContext {
+  name: string;
+  endpoint: string;
+  description: string;
+  host: ContainerHost;
 }
 
 /** nginx の公式イメージに入っている設定と最初のページ（本物の default.conf の形） */
@@ -260,7 +286,14 @@ export type ContainerError =
   | { kind: 'network-builtin'; name: string }
   | { kind: 'network-in-use'; name: string; id: string }
   | { kind: 'already-connected'; name: string; network: string }
-  | { kind: 'not-connected'; id: string; network: string };
+  | { kind: 'not-connected'; id: string; network: string }
+  /** 置き場の住所が引けない */
+  | { kind: 'registry-unknown'; server: string }
+  | { kind: 'push-no-image'; ref: string }
+  /** 住所の無い名前（Docker Hub）に置こうとした。この練習には Docker Hub の利用者は無い */
+  | { kind: 'push-denied'; ref: string }
+  | { kind: 'push-unauthorized'; ref: string }
+  | { kind: 'login-failed'; server: string };
 
 export type Result<T> = { ok: true; host: ContainerHost; value: T } | { ok: false; host: ContainerHost; error: ContainerError };
 
@@ -281,10 +314,25 @@ export function hexOf(seed: number, length: number): string {
   return out.slice(0, length);
 }
 
+/** 名前の先頭の置き場の住所（registry.city.example/shop/web:1.2 の registry.city.example）。住所が無ければ null（Docker Hub） */
+export function serverOf(ref: string): string | null {
+  const first = ref.split('/')[0] ?? '';
+  return ref.includes('/') && (first.includes('.') || first.includes(':') || first === 'localhost') ? first : null;
+}
+
 export function pull(host: ContainerHost, raw: string): Result<Image> {
   const ref = normalizeRef(raw);
   const have = host.images.find((i) => i.ref === ref);
   if (have) return { ok: true, host, value: have };
+  const server = serverOf(ref);
+  if (server !== null) {
+    const reg = host.registries?.find((r) => r.server === server);
+    if (!reg) return { ok: false, host, error: { kind: 'registry-unknown', server } };
+    // ログインしていなければ、あるかどうかも教えない（本物と同じ）
+    const image = host.logins?.[server] === undefined ? undefined : reg.images.find((i) => i.ref === ref);
+    if (!image) return { ok: false, host, error: { kind: 'image-not-found', ref, known: host.logins?.[server] !== undefined } };
+    return { ok: true, host: { ...host, images: [...host.images, image] }, value: image };
+  }
   const image = fromRegistry(ref);
   if (!image) return { ok: false, host, error: { kind: 'image-not-found', ref, known: REGISTRY.some((i) => repoOf(i.ref) === repoOf(ref)) } };
   return { ok: true, host: { ...host, images: [...host.images, image] }, value: image };
@@ -534,6 +582,62 @@ export function disconnectNetwork(host: ContainerHost, netRef: string, ref: stri
   const addresses = Object.fromEntries(Object.entries(c.addresses ?? {}).filter(([n]) => n !== net.name));
   const next: Container = { ...c, networks: networksOf(c).filter((n) => n !== net.name), addresses };
   return { ok: true, host: replace(host, next), value: next };
+}
+
+/** 置く（docker push）。名前に置き場の住所があり、そこにログインしていれば置ける。同じ名前:タグは置き換わる */
+export function push(host: ContainerHost, raw: string): Result<Image> {
+  const ref = normalizeRef(raw);
+  const image = host.images.find((i) => i.ref === ref);
+  if (!image) return { ok: false, host, error: { kind: 'push-no-image', ref } };
+  const server = serverOf(ref);
+  if (server === null) return { ok: false, host, error: { kind: 'push-denied', ref } };
+  const reg = host.registries?.find((r) => r.server === server);
+  if (!reg) return { ok: false, host, error: { kind: 'registry-unknown', server } };
+  if (host.logins?.[server] === undefined) return { ok: false, host, error: { kind: 'push-unauthorized', ref } };
+  const next: PrivateRegistry = { ...reg, images: [...reg.images.filter((i) => i.ref !== ref), image] };
+  return { ok: true, host: { ...host, registries: (host.registries ?? []).map((r) => (r === reg ? next : r)) }, value: image };
+}
+
+/** ログインする（練習の端末が、置き場の利用者とパスワードを代わりに入れる。違う利用者は断られる） */
+export function login(host: ContainerHost, server: string, user?: string): Result<string> {
+  const reg = host.registries?.find((r) => r.server === server);
+  if (!reg) return { ok: false, host, error: { kind: 'registry-unknown', server } };
+  if (user !== undefined && user !== reg.user) return { ok: false, host, error: { kind: 'login-failed', server } };
+  return { ok: true, host: { ...host, logins: { ...host.logins, [server]: reg.user } }, value: reg.user };
+}
+
+export function logout(host: ContainerHost, server: string): ContainerHost {
+  return { ...host, logins: Object.fromEntries(Object.entries(host.logins ?? {}).filter(([k]) => k !== server)) };
+}
+
+/** 自分たちの置き場を足す（setup の registries） */
+export function addRegistry(host: ContainerHost, server: string, user: string): ContainerHost {
+  return { ...host, registries: [...(host.registries ?? []), { server, user, images: [] }] };
+}
+
+/** 頼む先の Engine を足す（setup の contexts） */
+export function addContext(host: ContainerHost, name: string, endpoint: string, description: string, images: readonly string[] = []): ContainerHost {
+  return { ...host, contexts: [...(host.contexts ?? []), { name, endpoint, description, host: createContainerHost(images) }] };
+}
+
+/** 頼む先の Engine から見た模型（置き場とログインは手元の物）。無い名前は null */
+export function engineOf(world: ContainerHost, name: string): ContainerHost | null {
+  if (name === 'default') return world;
+  const ctx = world.contexts?.find((c) => c.name === name);
+  if (!ctx) return null;
+  return { ...ctx.host, ...(world.registries ? { registries: world.registries } : {}), ...(world.logins ? { logins: world.logins } : {}) };
+}
+
+/** 頼む先の Engine で変わった物を、手元の模型に戻す */
+export function withEngine(world: ContainerHost, name: string, engine: ContainerHost): ContainerHost {
+  if (name === 'default') return engine;
+  const { registries, logins, ...own } = engine;
+  return {
+    ...world,
+    ...(registries ? { registries } : {}),
+    ...(logins ? { logins } : {}),
+    contexts: (world.contexts ?? []).map((c) => (c.name === name ? { ...c, host: own } : c)),
+  };
 }
 
 /** 機械にいない、コンテナの中の利用者の番号 */

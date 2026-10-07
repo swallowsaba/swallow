@@ -292,6 +292,44 @@
       ],
       "hint": "`docker network ls` で、ある網の名前を確かめる。",
       "terms": []
+    },
+    {
+      "id": "docker-push-denied",
+      "match": "denied: requested access to the resource is denied|unauthorized: authentication required",
+      "meaning": "{{term:registry}}に「置かせない」と断られた。unauthorized は「誰か分からない（ログインしていない）」、denied は「その場所に置く権限が無い」。",
+      "causes": [
+        "置き場にログインしていない（`docker login 住所` の前に送った）。",
+        "名前の先頭に置き場の住所が無い。住所の無い名前は Docker Hub に向かい、そこには置く権限が無い。",
+        "ログインした利用者に、その名前の場所へ置く権限が無い。"
+      ],
+      "hint": "出た文の最初の行 The push refers to repository [ ] の中が、送ろうとした先。住所から始まっているか、その住所にログインしたかを確かめる。",
+      "terms": [
+        "registry"
+      ]
+    },
+    {
+      "id": "docker-push-no-tag",
+      "match": "An image does not exist locally with the tag",
+      "meaning": "「その名前の{{term:image}}は手元に無い」と言われた。送れるのは、手元にある名前:タグだけ。",
+      "causes": [
+        "置き場の住所を付けた名前を、まだ付けていない（docker tag をしていない）。",
+        "名前やタグの綴りの誤り。"
+      ],
+      "hint": "`docker images` で手元の名前とタグを確かめる。無ければ `docker tag 今の名前:タグ 住所/名前:タグ` で付け足してから送る。",
+      "terms": [
+        "image"
+      ]
+    },
+    {
+      "id": "docker-registry-host",
+      "match": "dial tcp: lookup .+: no such host",
+      "meaning": "置き場の住所が見つからなかった。名前の先頭（最初の / の前）を、置き場の住所として読んでいる。",
+      "causes": [
+        "置き場の住所の綴りの誤り（registry.city.example を registy.city.example と書いた など）。",
+        "住所の無い名前のつもりで、. を含む語を先頭に書いた。"
+      ],
+      "hint": "エラーの文の lookup の後の名前を、手順に書いた住所と 1 字ずつ比べる。",
+      "terms": []
     }
   ]
 }

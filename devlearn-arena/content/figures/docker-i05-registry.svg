@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>レジストリに置いて配る。手元で docker login した後、住所を付けた名前 registry.city.example/shop/web:1.2 を push で置き、本番の機械が同じ名前を pull で取って動かす。名前の先頭の住所が、置き場所を決める</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="local">
+    <rect x="20" y="40" width="180" height="110" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="110" y="70" text-anchor="middle" font-size="16" fill="#5cc1ff">手元（開発の機械）</text>
+    <text x="110" y="100" text-anchor="middle" font-size="13" fill="#eef2f6">① docker login</text>
+    <text x="110" y="124" text-anchor="middle" font-size="13" fill="#eef2f6">② 住所を付けて tag</text>
+  </g>
+  <g class="el" data-part="push">
+    <path d="M204 95 H266" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="235" y="84" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">push</text>
+  </g>
+  <g class="el" data-part="registry">
+    <rect x="270" y="40" width="160" height="110" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="350" y="70" text-anchor="middle" font-size="16" fill="#3ae08a">レジストリ</text>
+    <text x="350" y="100" text-anchor="middle" font-size="13" fill="#9fb0c6">shop/web:1.1</text>
+    <text x="350" y="124" text-anchor="middle" font-size="13" fill="#3ae08a">shop/web:1.2</text>
+  </g>
+  <g class="el" data-part="pull">
+    <path d="M434 95 H496" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+    <text x="465" y="84" text-anchor="middle" font-size="13" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">pull</text>
+  </g>
+  <g class="el" data-part="prod">
+    <rect x="500" y="40" width="180" height="110" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="590" y="70" text-anchor="middle" font-size="16" fill="#f2b632">本番の機械</text>
+    <text x="590" y="100" text-anchor="middle" font-size="13" fill="#eef2f6">同じ名前で取る</text>
+    <text x="590" y="124" text-anchor="middle" font-size="13" fill="#eef2f6">同じ中身が動く</text>
+  </g>
+  <g class="el" data-part="name">
+    <text x="40" y="214" font-size="16" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#3ae08a">registry.city.example<tspan fill="#eef2f6">/shop/web</tspan><tspan fill="#f2b632">:1.2</tspan></text>
+    <text x="141" y="242" text-anchor="middle" font-size="13" fill="#3ae08a">置き場の住所</text>
+    <text x="283" y="242" text-anchor="middle" font-size="13" fill="#eef2f6">名前</text>
+    <text x="344" y="242" text-anchor="middle" font-size="13" fill="#f2b632">タグ</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="420" y="206" font-size="14" fill="#9fb0c6">住所の無い名前は Docker Hub に</text>
+    <text x="420" y="230" font-size="14" fill="#9fb0c6">向かう。自分たちの置き場には、</text>
+    <text x="420" y="254" font-size="14" fill="#9fb0c6">名前の先頭に住所を付ける</text>
+  </g>
+</svg>

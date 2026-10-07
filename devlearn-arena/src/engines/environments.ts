@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createContainerHost } from './container/container';
+import { addContext, addRegistry, createContainerHost } from './container/container';
 import { emptyCluster, node } from './k8s/factory';
 import { createClock } from './kernel/clock';
 import { createDefaultRegistry } from './kernel/commands';
@@ -100,6 +100,15 @@ export const setupSchema = z.object({
   services: z.record(z.string().regex(/^[a-z][a-z0-9-]*$/), serviceSetup).optional(),
   /** 手元に取ってあるコンテナのイメージ */
   images: z.array(z.string()).optional(),
+  /** 自分たちの置き場（docker login・push の相手。住所と、ログインできる利用者。初めは空。run の push で置く） */
+  registries: z.array(z.object({ server: z.string().regex(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/), user: z.string().regex(/^[a-z][a-z0-9-]*$/) }).strict()).optional(),
+  /** 頼む先の、別の機械の Engine（docker --context 名前）。images はその機械に取ってあるイメージ */
+  contexts: z.array(z.object({
+    name: z.string().regex(/^[a-z][a-z0-9-]*$/),
+    endpoint: z.string().min(1),
+    description: z.string().min(1),
+    images: z.array(z.string()).optional(),
+  }).strict()).optional(),
   /** 名前で引ける Web のサイト */
   sites: z.array(siteSetup).optional(),
   /** 手元が信頼するルート証明書（無ければ練習用のルート 1 枚） */
@@ -246,7 +255,12 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
   if (s.processes) options.processes = s.processes;
   if (s.cluster) options.cluster = emptyCluster(Array.from({ length: s.cluster.nodes }, (_, i) => node(`node-${String(i + 1)}`, 4000, 8192)));
   if (s.network) options.net = buildNetwork(s.network);
-  if (s.images) options.containers = createContainerHost(s.images);
+  if (s.images) {
+    let host = createContainerHost(s.images);
+    for (const r of s.registries ?? []) host = addRegistry(host, r.server, r.user);
+    for (const c of s.contexts ?? []) host = addContext(host, c.name, c.endpoint, c.description, c.images ?? []);
+    options.containers = host;
+  }
   if (s.gitServers) options.gitServers = buildGitServers(s.gitServers);
   if (s.sshHosts) {
     options.sshHosts = new Map(s.sshHosts.map((h) => [h.host, {

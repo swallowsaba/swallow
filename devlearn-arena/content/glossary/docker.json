@@ -188,6 +188,34 @@
       "lessons": [
         "docker.i.04"
       ]
+    },
+    {
+      "id": "docker-context",
+      "word": "コンテキスト",
+      "reading": "こんてきすと",
+      "plain": "docker の CLI が頼む先の Docker Engine の登録（名前と住所）。docker --context prod ps のように付けると、手元の CLI から別の機械の Engine に頼める。",
+      "why": "本番の機械に入らなくても、手元から本番の Engine に pull や run を頼める。どこに頼んでいるかを、名前で取り違えないようにする。",
+      "related": [
+        "docker-engine",
+        "cli"
+      ],
+      "lessons": [
+        "docker.i.05"
+      ]
+    },
+    {
+      "id": "docker-hub",
+      "word": "Docker Hub",
+      "reading": "どっかーはぶ",
+      "plain": "Docker の会社が運営する、公開のレジストリ。nginx などの公式のイメージが置いてある。名前の先頭に置き場の住所を書かないと、ここを指す。",
+      "why": "住所を書き忘れると、自分たちの置き場ではなく Docker Hub に取りに行ったり、置こうとして断られたりする。",
+      "related": [
+        "registry",
+        "image"
+      ],
+      "lessons": [
+        "docker.i.05"
+      ]
     }
   ]
 }

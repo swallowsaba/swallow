@@ -1,18 +1,19 @@
 import {
-  allNetworks, connectNetwork, createNetwork, createVolume, disconnectNetwork, filesInside, findContainer, findNetwork, networksOf, removeNetwork, hexOf, isVolumeName, longId, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, removeVolume, repoOf, run, start, stop, tagOf, writeInside,
+  allNetworks, connectNetwork, createNetwork, createVolume, disconnectNetwork, engineOf, login, logout, push, withEngine, filesInside, findContainer, findNetwork, serverOf, networksOf, removeNetwork, hexOf, isVolumeName, longId, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, removeVolume, repoOf, run, start, stop, tagOf, writeInside,
   type Container, type ContainerError, type ContainerHost, type Image, type PortMap,
 } from '@/engines/container/container';
 import { psql, readTables, TABLES_FILE } from '@/engines/container/pg';
 import { build } from '@/engines/container/build';
 import { resolve } from '@/engines/kernel/path';
-import type { CommandResult, CommandSpec } from '@/engines/kernel/registry';
+import type { CommandResult, CommandSpec, ShellState } from '@/engines/kernel/registry';
 import { exists, isDir, list, readFile, type VfsState } from '@/engines/kernel/vfs';
 
 /**
  * Docker の CLI（コンテナの模型 src/engines/container の上に作る）。出力とエラーの文は本物に寄せる。
  * 対応: run（-d・--name・-p・-v・-e・-m / --memory）・ps（-a）・images・pull・stop・start・restart・rm（-f）・rmi・logs・
  * exec（ps・cat・ls・hostname・psql -c）・stats・inspect（-f / --format）・build（-t・-f。src/engines/container/build.ts）・tag・
- * volume（create・ls・inspect・rm）・network（create・ls・inspect・connect・disconnect・rm）。run の --network
+ * volume（create・ls・inspect・rm）・network（create・ls・inspect・connect・disconnect・rm）。run の --network・
+ * login・logout・push・context（ls・use・show）と --context（頼む先の Engine。src/engines/container/container.ts）
  */
 
 /** 置き場所（コンテキスト）の中の全てのファイル（置き場所からの相対パス → 中身） */
@@ -33,9 +34,10 @@ function contextFiles(vfs: VfsState, dir: string): Record<string, string> {
 const NO_DOCKER = 'Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?\n';
 const lines = (xs: readonly string[]): string => (xs.length === 0 ? '' : `${xs.join('\n')}\n`);
 
+/** 表（本物の docker と同じ tabwriter の形: 欄の間は 3 字、欄の幅は 10 字以上） */
 function table(rows: string[][]): string {
-  const widths = (rows[0] ?? []).map((_, i) => Math.max(...rows.map((r) => (r[i] ?? '').length)));
-  return lines(rows.map((r) => r.map((c, i) => (i === r.length - 1 ? c : c.padEnd((widths[i] ?? 0) + 3))).join('').trimEnd()));
+  const widths = (rows[0] ?? []).map((_, i) => Math.max(10, ...rows.map((r) => (r[i] ?? '').length + 3)));
+  return lines(rows.map((r) => r.map((c, i) => (i === r.length - 1 ? c : c.padEnd(widths[i] ?? 0))).join('').trimEnd()));
 }
 
 function daemonError(e: ContainerError, verb: string): CommandResult {
@@ -80,6 +82,14 @@ function daemonError(e: ContainerError, verb: string): CommandResult {
       return { stderr: `Error response from daemon: endpoint with name ${e.name} already exists in network ${e.network}\n`, code: 1 };
     case 'not-connected':
       return { stderr: `Error response from daemon: container ${e.id} is not connected to network ${e.network}\n`, code: 1 };
+    case 'registry-unknown':
+      return { stderr: `${prefix}Error response from daemon: Get "https://${e.server}/v2/": dial tcp: lookup ${e.server}: no such host\n`, code: verb === 'run' ? 125 : 1 };
+    case 'login-failed':
+      return { stderr: `Error response from daemon: Get "https://${e.server}/v2/": unauthorized: incorrect username or password\n`, code: 1 };
+    case 'push-no-image':
+    case 'push-denied':
+    case 'push-unauthorized':
+      return { stderr: `Error response from daemon: ${e.kind}: ${e.ref}\n`, code: 1 };
   }
 }
 
@@ -89,7 +99,8 @@ const qualified = (ref: string): string => (repoOf(ref).includes('/') ? (repoOf(
 /** pull の出力（層ごとの Pull complete と digest。層と digest はイメージの ID から決める） */
 function pullLines(image: Image, had: boolean, layersHad = had): string[] {
   const seed = Number.parseInt(image.id.slice(0, 8), 16);
-  const repo = qualified(image.ref).replace(/^docker\.io\//, '').replace(/:[^:/]+$/, '');
+  const server = serverOf(image.ref);
+  const repo = (server === null ? qualified(image.ref).replace(/^docker\.io\//, '') : image.ref.slice(server.length + 1)).replace(/:[^:/]+$/, '');
   const layers = layersHad ? [] : Array.from({ length: image.size.endsWith('kB') ? 1 : 3 }, (_, i) => `${hexOf(seed + i, 12)}: Pull complete`);
   return [
     `${tagOf(image.ref)}: Pulling from ${repo}`, ...layers, `Digest: sha256:${hexOf(seed + 99, 64)}`,
@@ -434,14 +445,86 @@ function inspect(host: ContainerHost, args: readonly string[]): CommandResult {
   return { stdout: `${JSON.stringify(json, null, 4)}\n` };
 }
 
+/** docker context（ls・use・show）。頼む先の Engine を選ぶ */
+function contextCommand(world: ContainerHost, args: readonly string[]): CommandResult {
+  const [sub, name] = args;
+  const current = world.context ?? 'default';
+  switch (sub) {
+    case 'ls':
+    case 'list': {
+      const rows = [
+        ['NAME', 'DESCRIPTION', 'DOCKER ENDPOINT'],
+        [`default${current === 'default' ? ' *' : ''}`, 'Current DOCKER_HOST based configuration', 'unix:///var/run/docker.sock'],
+        ...(world.contexts ?? []).map((c) => [`${c.name}${current === c.name ? ' *' : ''}`, c.description, c.endpoint]),
+      ];
+      return { stdout: table(rows) };
+    }
+    case 'show':
+      return { stdout: `${current}\n` };
+    case 'use': {
+      if (name === undefined) return { stderr: '"docker context use" requires exactly 1 argument.\n', code: 1 };
+      if (!engineOf(world, name)) return { stderr: `context "${name}" does not exist\n`, code: 1 };
+      return { stdout: `${name}\n`, patch: { containers: { ...world, context: name } } };
+    }
+    default:
+      return {
+        stdout: lines(['Usage:  docker context COMMAND', '', 'Manage contexts', '', 'Commands:', '  ls          List contexts', '  show        Print the name of the current context', '  use         Set the current docker context']),
+        ...(sub === undefined ? {} : { stderr: `docker context: '${sub}' is not a docker context command.\n`, code: 1 }),
+      };
+  }
+}
+
+/** docker login・logout（手元の CLI の側。練習の端末が、置き場の利用者とパスワードを代わりに入れる） */
+function loginCommand(world: ContainerHost, verb: 'login' | 'logout', args: readonly string[]): CommandResult {
+  let user: string | undefined;
+  const operands: string[] = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i] ?? '';
+    if (a === '-u' || a === '--username') user = args[(i += 1)];
+    else if (a.startsWith('--username=')) user = a.slice('--username='.length);
+    else if (a === '-p' || a === '--password') i += 1;
+    else if (!a.startsWith('-')) operands.push(a);
+  }
+  const server = operands[0];
+  if (verb === 'logout') {
+    if (server === undefined) return { stderr: 'この練習の端末には Docker Hub の利用者は無い。置き場の住所を書く（docker logout 住所）\n', code: 1 };
+    return { stdout: `Removing login credentials for ${server}\n`, patch: { containers: logout(world, server) } };
+  }
+  if (server === undefined) return { stderr: 'この練習の端末には Docker Hub の利用者は無い。置き場の住所を書く（docker login 住所）\n', code: 1 };
+  const r = login(world, server, user);
+  if (!r.ok) return daemonError(r.error, 'login');
+  return { stdout: `${user === undefined ? `Username: ${r.value}\n` : ''}Password: \nLogin Succeeded\n`, patch: { containers: r.host } };
+}
+
 export const dockerCommands: CommandSpec[] = [
   {
     name: 'docker',
     summary: 'コンテナを動かす・止める・一覧する（Docker）',
     handler: ({ argv, shell }) => {
-      const host = shell.containers;
-      if (host === null) return { stderr: NO_DOCKER, code: 1 };
-      const [verb, ...rest] = argv.slice(1);
+      const world = shell.containers;
+      if (world === null) return { stderr: NO_DOCKER, code: 1 };
+      // 頼む先の Engine（--context 名前・-c 名前。無ければ docker context use で選んだ物）
+      let args = argv.slice(1);
+      let name = world.context ?? 'default';
+      while (args[0] === '--context' || args[0] === '-c' || args[0]?.startsWith('--context=') === true) {
+        const a = args[0];
+        name = a.startsWith('--context=') ? a.slice('--context='.length) : (args[1] ?? '');
+        args = args.slice(a.startsWith('--context=') ? 1 : 2);
+      }
+      const [verb, ...rest] = args;
+      if (verb === 'context') return contextCommand(world, rest);
+      if (verb === 'login' || verb === 'logout') return loginCommand(world, verb, rest);
+      const engine = engineOf(world, name);
+      if (!engine) return { stderr: `context "${name}" does not exist\n`, code: 1 };
+      const r = dockerOn(engine, verb, rest, shell);
+      const changed = r.patch?.containers;
+      return changed ? { ...r, patch: { ...r.patch, containers: withEngine(world, name, changed) } } : r;
+    },
+  },
+];
+
+/** 1 つの Engine に頼む（docker の後の命令） */
+function dockerOn(host: ContainerHost, verb: string | undefined, rest: readonly string[], shell: ShellState): CommandResult {
       const set = (h: ContainerHost, extra: CommandResult = {}): CommandResult => ({ ...extra, patch: { containers: h } });
       switch (verb) {
         case undefined:
@@ -584,9 +667,23 @@ export const dockerCommands: CommandSpec[] = [
           if (!c) return daemonError({ kind: 'no-such-container', ref }, 'logs');
           return { stdout: lines(c.log) };
         }
+        case 'push': {
+          const ref = rest.filter((a) => !a.startsWith('-'))[0];
+          if (!ref) return { stderr: '"docker push" requires exactly 1 argument.\n', code: 1 };
+          const r = push(host, ref);
+          if (!r.ok && r.error.kind === 'push-no-image') return { stderr: `An image does not exist locally with the tag: ${repoOf(r.error.ref)}\n`, code: 1 };
+          const image = host.images.find((i) => i.ref === normalizeRef(ref));
+          const seed = Number.parseInt(image?.id.slice(0, 8) ?? '0', 16);
+          const layers = [0, 1, 2].map((i) => hexOf(seed + 50 + i, 12));
+          const head = `The push refers to repository [${qualified(normalizeRef(ref)).replace(/:[^:/]+$/, '')}]`;
+          if (!r.ok) {
+            const why = r.error.kind === 'push-unauthorized' ? 'unauthorized: authentication required' : r.error.kind === 'push-denied' ? 'denied: requested access to the resource is denied' : null;
+            if (why === null) return daemonError(r.error, 'push');
+            return { stdout: lines([head, ...layers.map((l) => `${l}: Preparing`)]), stderr: `${why}\n`, code: 1 };
+          }
+          return set(r.host, { stdout: lines([head, ...layers.map((l) => `${l}: Pushed`), `${tagOf(r.value.ref)}: digest: sha256:${hexOf(seed + 98, 64)} size: 1570`]) });
+        }
         default:
-          return { stderr: `docker: '${verb}' is not a docker command.\nSee 'docker --help'\n`, code: 1 };
+          return { stderr: `docker: '${verb ?? ''}' is not a docker command.\nSee 'docker --help'\n`, code: 1 };
       }
-    },
-  },
-];
+}

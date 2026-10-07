@@ -1,4 +1,4 @@
-import { filesInside, findContainer, findNetwork, networksOf, normalizeRef, resolveName, type ContainerHost } from './container';
+import { engineOf, filesInside, findContainer, findNetwork, networksOf, normalizeRef, resolveName, serverOf, type ContainerHost } from './container';
 import { readTables, TABLES_FILE } from './pg';
 
 /**
@@ -8,7 +8,9 @@ import { readTables, TABLES_FILE } from './pg';
  *   image:名前:タグ（手元にある。タグを省けば最新のタグ）/ running:名前・exited:名前（コンテナの状態）/ exists:名前（コンテナがある）/
  *   volume:名前（名前付きボリュームがある）/ mount:コンテナ=つなぐ物:中の場所 / rows:コンテナ/表=数（DB の表の行の数）/
  *   made:名前>=数・made:名前=数（その名前でコンテナを作った回数）/ network:名前（網がある）/ on:コンテナ=網（網に入っている）/
- *   reach:A>B（A から B に名前で届く。どちらも動いていて、同じ自作の網にいる）
+ *   reach:A>B（A から B に名前で届く。どちらも動いていて、同じ自作の網にいる）/ from:コンテナ=名前:タグ（そのイメージから作った）/
+ *   pushed:住所/名前:タグ（自分たちの置き場にある）/ login:住所（ログインしている）。
+ *   @名前 で、それより後ろの条件を、その頼む先（docker context）の Engine で判定する（@default で手元に戻る）
  */
 
 function termHolds(host: ContainerHost, term: string): boolean {
@@ -47,6 +49,16 @@ function termHolds(host: ContainerHost, term: string): boolean {
     }
     case 'network':
       return findNetwork(host, arg)?.name === arg;
+    case 'from':
+      // from:コンテナ=名前:タグ（そのイメージから作ったコンテナ）
+      return findContainer(host, arg.split('=')[0] ?? '')?.image === normalizeRef(arg.slice(arg.indexOf('=') + 1));
+    case 'pushed': {
+      // pushed:住所/名前:タグ（自分たちの置き場に置いてある）
+      const ref = normalizeRef(arg);
+      return host.registries?.find((r) => r.server === serverOf(ref))?.images.some((i) => i.ref === ref) === true;
+    }
+    case 'login':
+      return host.logins?.[arg] !== undefined;
     case 'on': {
       // on:コンテナ=網（そのコンテナが網に入っている）
       const [ref = '', net = ''] = arg.split('=');
@@ -76,8 +88,17 @@ export function containerHolds(host: ContainerHost | null, expr: string): boolea
   // 知らない形は、機械に Docker が無くても内容の誤りとして投げる
   const results = terms.map((t) => (t.startsWith('!') ? { neg: true, term: t.slice(1) } : { neg: false, term: t }));
   if (!host) {
-    for (const r of results) termHolds({ images: [], containers: [], seq: 0 }, r.term);
+    for (const r of results) if (!r.term.startsWith('@')) termHolds({ images: [], containers: [], seq: 0 }, r.term);
     return false;
   }
-  return results.every((r) => termHolds(host, r.term) !== r.neg);
+  let at: ContainerHost = host;
+  return results.every((r) => {
+    if (r.term.startsWith('@')) {
+      const engine = engineOf(host, r.term.slice(1));
+      if (!engine) throw new Error(`コンテナの条件「${r.term}」: 頼む先が無い`);
+      at = engine;
+      return true;
+    }
+    return termHolds(at, r.term) !== r.neg;
+  });
 }

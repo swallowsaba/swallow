@@ -1,0 +1,153 @@
+{
+  "id": "docker.i.05",
+  "domain": "docker",
+  "level": "intermediate",
+  "theme": "registry",
+  "title": "レジストリに置く",
+  "goal": "push/pull で配れる",
+  "minutes": 20,
+  "prerequisites": ["docker.i.02", "ctr.b.05"],
+  "related": ["ctr.b.05", "cicd.b.04"],
+  "next": ["docker.i.06"],
+  "terms": ["image", "registry", "image-tag", "app", "docker-hub", "dockerfile", "authentication", "docker-engine", "cli", "docker-context", "terminal"],
+  "explain": {
+    "what": "push は、手元で作った{{term:image}}を{{term:registry}}（置き場）に置くこと。pull は、置き場から取ってくること。自分たちの置き場に置く時は、名前の先頭に置き場の住所を付ける（registry.city.example/shop/web:1.2）。",
+    "why": "手元で作ったイメージは、手元の機械にしか無い。置き場に置けば、本番の機械でも、ほかの人の機械でも、同じ名前で同じ中身を取って動かせる。",
+    "use": "作った{{term:app}}を配る。名前と{{term:image-tag}}を決めて置けば、本番の機械はそのタグで取るだけで、手元で確かめた物と同じ物が動く。",
+    "when": "手元で直した 1.2 を、本番の機械で動かしたい。本番の機械で docker run しても「そのイメージは無い」と言われる。",
+    "figures": ["docker-i05-registry"]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "手元のイメージを、自分たちの置き場に置く順に並べる。",
+      "items": ["置き場にログインする", "置き場の住所を付けた名前を付け足す（tag）", "その名前で置く（push）"],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "registry.city.example/shop/web:1.2 という名前",
+      "b": "置き場の住所（registry.city.example）",
+      "answer": "contains",
+      "why": "名前の先頭に置き場の住所が入っている。住所・名前・タグの 3 つで、どこの何のどの版かが決まる。住所が無ければ{{term:docker-hub}}を指す。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "`docker push registry.city.example/shop/web:1.2` と打つと、`unauthorized: authentication required` と断られた。原因は？",
+      "choices": [
+        { "id": "a", "text": "置き場にログインしていない（誰が送ったか分からない）", "correct": true },
+        { "id": "b", "text": "イメージが大きすぎる", "correct": false, "whyNot": "大きさで断られる時は、別の言い方になる。unauthorized は「誰か分からない」という{{term:authentication}}の失敗。" },
+        { "id": "c", "text": "タグ 1.2 が古い", "correct": false, "whyNot": "タグの新しさは関係が無い。置き場は、ログインした利用者にしか置かせない。" }
+      ],
+      "explanation": "自分たちの置き場は、ログインした利用者だけが置ける。docker login 住所 で入ってから送る。"
+    },
+    {
+      "id": "q2",
+      "kind": "situation",
+      "prompt": "手元の shop/web:1.2 を、自分たちの置き場 registry.city.example に置きたい。どんな名前で送る？",
+      "choices": [
+        { "id": "a", "text": "registry.city.example/shop/web:1.2（先頭に住所を付けた名前）", "correct": true },
+        { "id": "b", "text": "shop/web:1.2 のまま", "correct": false, "whyNot": "住所の無い名前は Docker Hub に向かう。自分たちの置き場には届かない。" },
+        { "id": "c", "text": "shop/web:latest", "correct": false, "whyNot": "住所が無く、タグも版を表さない。どこの何のどの版かが分からなくなる。" }
+      ],
+      "explanation": "置き場は、名前の先頭の住所で決まる。docker tag で住所を付けた名前を足してから push する。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "手元で確かめた registry.city.example/shop/web:1.2 を置いた。本番の機械で同じ名前を pull して動かすと、動くのは？",
+      "choices": [
+        { "id": "a", "text": "手元で確かめた物と同じ中身", "correct": true },
+        { "id": "b", "text": "本番の機械で、{{term:dockerfile}}から作り直した物", "correct": false, "whyNot": "pull は作り直さない。置き場に置いた物を、そのまま取ってくる。" },
+        { "id": "c", "text": "置き場で最新の物（latest）", "correct": false, "whyNot": "タグ 1.2 を指して取れば、1.2 として置いた物が来る。latest とは別。" }
+      ],
+      "explanation": "置き場に置いた名前:タグを指せば、どの機械でも同じ中身が取れる。手元で確かめた物が、そのまま本番で動く。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "商店街の案内を v1.2 に直し、手元で shop/web:1.2 として作ってある。本番の機械では、自分たちの置き場 registry.city.example の 1.1 が、shop という名前で動いている。1.2 を置き場に置き、本番の shop を 1.2 に入れ替える。本番の{{term:docker-engine}}には、手元の{{term:cli}}から `--context prod` を付けて頼む（{{term:docker-context}}は設定してある）。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "dev-01",
+      "dirs": ["/home/learner/shop"],
+      "files": {
+        "/home/learner/shop/package.json": "{\n  \"name\": \"shop-web\",\n  \"version\": \"1.2.0\",\n  \"dependencies\": { \"express\": \"^4.21.0\" }\n}\n",
+        "/home/learner/shop/server.js": "const express = require('express');\nconst app = express();\napp.get('/', (req, res) => res.send('商店街の案内 v1.1'));\napp.listen(3000, () => console.log('shop-web: listening on :3000'));\n",
+        "/home/learner/shop/Dockerfile": "FROM node:20-alpine\nWORKDIR /app\nCOPY package.json .\nRUN npm install\nCOPY . .\nCMD [\"node\", \"server.js\"]\n"
+      },
+      "images": [],
+      "registries": [{ "server": "registry.city.example", "user": "learner" }],
+      "contexts": [{ "name": "prod", "endpoint": "ssh://deploy@prod-01", "description": "本番の機械" }],
+      "run": [
+        "cd /home/learner/shop",
+        "docker build -t shop/web:1.1 .",
+        "docker login registry.city.example",
+        "docker tag shop/web:1.1 registry.city.example/shop/web:1.1",
+        "docker push registry.city.example/shop/web:1.1",
+        "docker --context prod run -d --name shop -p 80:3000 registry.city.example/shop/web:1.1",
+        "docker logout registry.city.example",
+        "sed -i 's/v1.1/v1.2/' server.js",
+        "docker build -t shop/web:1.2 .",
+        "cd /home/learner"
+      ]
+    },
+    "steps": [
+      {
+        "id": "login",
+        "purpose": "自分たちの置き場 registry.city.example にログインする（利用者は learner。パスワードは練習の{{term:terminal}}が代わりに入れる）。",
+        "check": { "kind": "container", "expr": "login:registry.city.example" },
+        "afterward": "`Login Succeeded`。この CLI から、registry.city.example に置いたり取ったりできるようになった。",
+        "hints": [
+          "置き場に入るのは `docker login` の後に、置き場の住所を書く。",
+          "住所を書かないと Docker Hub に向かう。`docker login registry.city.example` の形。",
+          "`docker login registry.city.example` と打つ。"
+        ],
+        "expectedErrors": ["docker-registry-host"]
+      },
+      {
+        "id": "push",
+        "purpose": "手元の shop/web:1.2 に、置き場の住所を付けた名前（registry.city.example/shop/web:1.2）を付け足し、その名前で置く。",
+        "check": { "kind": "container", "expr": "pushed:registry.city.example/shop/web:1.2 pushed:registry.city.example/shop/web:1.1" },
+        "afterward": "置き場に 1.2 が置かれた（1.1 も残っている）。最後の行の digest は、置いた中身を表す番号。同じ名前:タグを取れば、この中身が来る。",
+        "hints": [
+          "名前を付け足すのは `docker tag 今の名前 新しい名前`。置くのは `docker push 名前`。",
+          "`docker tag shop/web:1.2 registry.city.example/shop/web:1.2` で住所を付けた名前を足し、その名前を `docker push` する。",
+          "`docker tag shop/web:1.2 registry.city.example/shop/web:1.2` `docker push registry.city.example/shop/web:1.2` と打つ。"
+        ],
+        "expectedErrors": ["docker-push-denied", "docker-push-no-tag", "docker-registry-host"]
+      },
+      {
+        "id": "deploy",
+        "purpose": "本番の機械で 1.2 を取り、動いている shop（1.1。外の 80 番を中の 3000 番に公開）を、同じ動かし方の 1.2 に入れ替える。",
+        "check": { "kind": "container", "expr": "@prod running:shop from:shop=registry.city.example/shop/web:1.2" },
+        "afterward": "本番の shop が 1.2 で動いた。先に取っておけば、入れ替えの間に待つのは消して動かすだけ。困った時は、置き場に残した 1.1 で同じように戻せる。",
+        "hints": [
+          "本番の Docker Engine に頼むのは、`docker` の直後に `--context prod` を付ける。`docker --context prod ps` で、今の shop の動かし方（`PORTS` の欄）が見える。",
+          "`docker --context prod pull 住所/shop/web:1.2` で先に取り、`docker --context prod rm -f shop` で 1.1 を消し、同じ `-p 80:3000` で 1.2 を `run` する。",
+          "`docker --context prod pull registry.city.example/shop/web:1.2` `docker --context prod rm -f shop` `docker --context prod run -d --name shop -p 80:3000 registry.city.example/shop/web:1.2` と打つ。"
+        ],
+        "expectedErrors": ["docker-pull-not-found", "docker-conflict", "port-allocated", "docker-registry-host"]
+      }
+    ],
+    "dangerous": [
+      { "id": "overwrite", "pattern": "(push|tag)\\s+.*shop/web:1\\.1\\b", "why": "置き場の 1.1 を上書きした。本番で困った時に戻す先（前の版）が無くなる。" },
+      { "id": "local-run", "pattern": "^docker\\s+run\\b.*registry\\.city\\.example/shop/web", "why": "手元の機械で動かした。入れ替えるのは本番の機械（--context prod）の shop。" }
+    ]
+  },
+  "result": {
+    "success": "置き場にログインして 1.2 を置き、本番の機械で同じ名前を取って、shop を入れ替えられた。",
+    "partial": "ヒントを使って配れた。次は、名前の先頭の住所が何を決めるかを、自分の言葉で説明してみよう。",
+    "retry": "まだ本番の shop が 1.2 になっていない。置き場に置けたか（push の最後の digest の行）、本番に `--context prod` で頼んだかを確かめよう。"
+  },
+  "summary": {
+    "points": ["push で置く", "pull で取る", "名前の先頭に置き場の住所を含める"],
+    "next": ["docker.i.06"],
+    "terms": ["registry", "docker-context"]
+  }
+}
