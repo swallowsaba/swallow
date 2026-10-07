@@ -53,3 +53,15 @@ describe('Kubernetes の達成条件（クラスタの状態で判定する）',
     expect(() => c.holds('service/web color=3')).toThrow();
   });
 });
+
+describe('Kubernetes の達成条件を && でつなぐ', () => {
+  it('別の資源の条件を並べ、全てを満たした時だけ達成', () => {
+    const c = cluster();
+    c.run('kubectl create deployment web --image=nginx:1.27 --replicas=2');
+    c.run('kubectl wait --for=condition=available deployment/web');
+    expect(c.holds('deployment/web readyReplicas=2 && service/web')).toBe(false);
+    c.run('kubectl expose deployment web --port=80');
+    c.run('kubectl get pods');
+    expect(c.holds('deployment/web readyReplicas=2 && service/web endpoints=2')).toBe(true);
+  });
+});

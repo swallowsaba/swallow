@@ -68,7 +68,9 @@
       "why": "Pod は作り直されるとアドレスが変わる。Service を通せば、利用者は入口だけ知っていればよい。",
       "related": [
         "pod",
-        "deployment"
+        "deployment",
+        "k8s-selector",
+        "k8s-endpoints"
       ],
       "lessons": [
         "k8s.b.06"
@@ -267,6 +269,65 @@
       ],
       "lessons": [
         "k8s.b.05"
+      ]
+    },
+    {
+      "id": "k8s-label",
+      "word": "ラベル（札）",
+      "reading": "らべる",
+      "plain": "Kubernetes の物に付ける「名前=値」の札（app=web など）。いくつでも付けられる。",
+      "why": "Service や Deployment は、名前ではなく札で相手の Pod を選ぶ。札が合わないと、相手として選ばれない。",
+      "related": [
+        "k8s-selector",
+        "pod",
+        "k8s-service"
+      ],
+      "lessons": [
+        "k8s.b.06"
+      ]
+    },
+    {
+      "id": "k8s-selector",
+      "word": "セレクタ",
+      "reading": "せれくた",
+      "plain": "「この札の付いた物」を選ぶ条件。Service のセレクタ app=web は、札 app=web の Pod を宛先に選ぶ。",
+      "why": "Pod が入れ替わっても、札さえ合えば自動で宛先に入る。札と食い違うと、宛先が空になる。",
+      "related": [
+        "k8s-label",
+        "k8s-service",
+        "k8s-endpoints"
+      ],
+      "lessons": [
+        "k8s.b.06"
+      ]
+    },
+    {
+      "id": "k8s-endpoints",
+      "word": "Endpoints",
+      "reading": "えんどぽいんつ",
+      "plain": "Service が今振り分けている宛先の一覧。セレクタに合う、Ready の Pod の 住所:番号 が並ぶ。",
+      "why": "Service に届かない時は、まずここを見る。空なら、札の食い違いか、Ready の Pod が無い。",
+      "related": [
+        "k8s-service",
+        "k8s-selector",
+        "pod"
+      ],
+      "lessons": [
+        "k8s.b.06"
+      ]
+    },
+    {
+      "id": "cluster-ip",
+      "word": "ClusterIP",
+      "reading": "くらすたあいぴー",
+      "plain": "Service に配られる、クラスタの中だけで使える住所。Service を消さない限り変わらない。",
+      "why": "Pod の住所は作り直すたびに変わるが、Service の住所は変わらない。呼ぶ側はこの住所（か Service の名前）に送る。",
+      "related": [
+        "k8s-service",
+        "ip-address"
+      ],
+      "lessons": [
+        "k8s.b.06"
       ]
     }
   ]

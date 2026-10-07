@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 340" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>Service は変わらない入口。呼ぶ側は Service の名前と住所に送り、Service は札（app=web）の合う、準備のできた（Ready の）Pod にだけ振り分ける。準備中の Pod と、札の違う Pod には送らない</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="client">
+    <rect x="12" y="130" width="120" height="80" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="72" y="164" text-anchor="middle" font-size="14" fill="#eef2f6">呼ぶ側</text>
+    <text x="72" y="190" text-anchor="middle" font-size="13" fill="#9fb0c6">名前 web に送る</text>
+  </g>
+  <g class="el" data-part="service">
+    <rect x="166" y="110" width="176" height="120" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="254" y="140" text-anchor="middle" font-size="16" fill="#f2b632">Service（web）</text>
+    <text x="254" y="168" text-anchor="middle" font-size="13" fill="#eef2f6" font-family="&quot;JetBrains Mono&quot;, monospace">10.107.155.174:80</text>
+    <text x="254" y="196" text-anchor="middle" font-size="13" fill="#9fb0c6">選ぶ札 app=web</text>
+    <text x="254" y="218" text-anchor="middle" font-size="13" fill="#9fb0c6">住所は変わらない</text>
+  </g>
+  <g class="el" data-part="ready1">
+    <rect x="404" y="16" width="200" height="66" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="420" y="44" font-size="14" fill="#3ae08a">Pod（Ready）</text>
+    <text x="420" y="68" font-size="13" fill="#9fb0c6">札 app=web</text>
+  </g>
+  <g class="el" data-part="ready2">
+    <rect x="404" y="96" width="200" height="66" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="420" y="124" font-size="14" fill="#3ae08a">Pod（Ready）</text>
+    <text x="420" y="148" font-size="13" fill="#9fb0c6">札 app=web</text>
+  </g>
+  <g class="el" data-part="notready">
+    <rect x="404" y="176" width="200" height="66" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="420" y="204" font-size="14" fill="#9fb0c6">Pod（準備中）</text>
+    <text x="420" y="228" font-size="13" fill="#9fb0c6">札 app=web。まだ送らない</text>
+  </g>
+  <g class="el" data-part="other">
+    <rect x="404" y="256" width="200" height="66" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="420" y="284" font-size="14" fill="#9fb0c6">Pod（Ready）</text>
+    <text x="420" y="308" font-size="13" fill="#9fb0c6">札 app=api。札が違う</text>
+  </g>
+  <line x1="134" y1="170" x2="162" y2="170" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <path d="M344 150 L372 150 L372 49 L400 49" fill="none" stroke="#3ae08a" stroke-width="2" marker-end="url(#ar)" />
+  <path d="M344 160 L386 160 L386 129 L400 129" fill="none" stroke="#3ae08a" stroke-width="2" marker-end="url(#ar)" />
+  <text x="620" y="56" font-size="13" fill="#3ae08a">送る</text>
+  <text x="620" y="136" font-size="13" fill="#3ae08a">送る</text>
+</svg>

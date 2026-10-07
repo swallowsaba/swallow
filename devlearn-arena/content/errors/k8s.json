@@ -166,6 +166,48 @@
         "deployment",
         "replicaset"
       ]
+    },
+    {
+      "id": "k8s-endpoints-empty",
+      "match": "ENDPOINTS\\s+AGE\\n\\S+\\s+<none>",
+      "output": true,
+      "meaning": "Service の宛先（Endpoints）が空。今この入口に送っても、受け取る Pod が無い。",
+      "causes": [
+        "Service のセレクタと Pod の札（ラベル）が食い違っている。",
+        "Pod が作り直しの途中で、まだ Ready でない。"
+      ],
+      "hint": "`kubectl describe svc 名前` の Selector と、`kubectl get pods --show-labels` の札を見比べる。作り直しの途中なら、`kubectl get pods -w` で Ready になるのを待ってから、もう一度見る。",
+      "terms": [
+        "k8s-endpoints",
+        "k8s-selector",
+        "k8s-label"
+      ]
+    },
+    {
+      "id": "k8s-endpoints-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、宛先の数が合っていない。",
+      "causes": [
+        "kubernetes の行（窓口の宛先）まで数えた。",
+        "住所:番号 の区切り（,）を数え違えた。"
+      ],
+      "hint": "`kubectl get endpoints web` の web の行だけを見て、住所:番号 がいくつ並んでいるかを数える。",
+      "terms": [
+        "k8s-endpoints"
+      ]
+    },
+    {
+      "id": "k8s-cluster-ip-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、Service の住所が合っていない。",
+      "causes": [
+        "Pod の住所（10.244. で始まる物）を答えた。Pod の住所は作り直すと変わる。",
+        "kubernetes の行（10.96.0.1）を読んだ。"
+      ],
+      "hint": "`kubectl get svc web` の web の行の、CLUSTER-IP の欄を読む。",
+      "terms": [
+        "cluster-ip"
+      ]
     }
   ]
 }

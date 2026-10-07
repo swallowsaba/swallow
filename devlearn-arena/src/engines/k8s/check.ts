@@ -53,6 +53,8 @@ function fieldOf(cluster: ClusterState, kind: Kind, name: string, field: string)
 
 export function clusterHolds(cluster: ClusterState | null, expr: string): boolean {
   if (!cluster) return false;
+  // ` && ` でつないだ式は、全てを満たせば達成（別の資源の条件を並べる）
+  if (expr.includes(' && ')) return expr.split(' && ').every((part) => clusterHolds(cluster, part));
   const [target = '', ...conds] = expr.trim().split(/\s+/);
   const [kind, name] = target.split('/');
   const k = KINDS.find((x) => x === kind);

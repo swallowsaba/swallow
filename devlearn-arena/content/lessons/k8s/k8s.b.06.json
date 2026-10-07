@@ -1,0 +1,253 @@
+{
+  "id": "k8s.b.06",
+  "domain": "k8s",
+  "level": "beginner",
+  "theme": "Service",
+  "title": "Service",
+  "goal": "入れ替わる Pod に一定の入口を与えられる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.b.05",
+    "net.b.04"
+  ],
+  "related": [
+    "net.a.03",
+    "docker.b.04"
+  ],
+  "next": [
+    "k8s.i.04",
+    "mon.i.01",
+    "cloud.a.01"
+  ],
+  "terms": [
+    "k8s-service",
+    "pod",
+    "ip-address",
+    "k8s-label",
+    "k8s-selector",
+    "k8s-endpoints",
+    "cluster-ip",
+    "deployment",
+    "app",
+    "port",
+    "cluster",
+    "api",
+    "db",
+    "container"
+  ],
+  "explain": {
+    "what": "{{term:k8s-service}} は、入れ替わる {{term:pod}} の前に置く、変わらない入口。Service は {{term:k8s-label}}で宛先の Pod を選び（{{term:k8s-selector}}）、準備のできた Pod にだけ振り分ける。今の宛先の一覧が {{term:k8s-endpoints}}。",
+    "why": "Pod は作り直されるたびに{{term:ip-address}}が変わる。Pod の住所を直接指していると、作り直しのたびにつながらなくなる。Service の住所（{{term:cluster-ip}}）と名前は、Service を消さない限り変わらない。",
+    "use": "{{term:app}}どうしの通信（画面から {{term:api}} へ、API から {{term:db}} へ）。呼ぶ側は Service の名前か住所だけを知っていればよく、裏で Pod が増えても入れ替わっても困らない。",
+    "when": "予約の画面が、web の Pod の住所を直接書いていた。夜中に Pod が作り直されて住所が変わり、画面がつながらなくなった。",
+    "figures": [
+      "k8s-b06-service"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "Pod の札（app=web）が、Service のセレクタ（app=web）と合っている",
+      "b": "その Pod が、Service の宛先の一覧に入る",
+      "answer": "cause",
+      "why": "Service は名前ではなく札で宛先を選ぶ。札が合う Pod は、新しく作られた物でも自動で宛先に入る。",
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "Service は、札の合う Pod なら、準備中（`Ready` でない）の物にも送る。",
+      "answer": false,
+      "why": "送るのは `Ready` の Pod だけ。準備中の Pod に送ると、受け取れずに失敗するから。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "web の Pod が全て作り直されて、住所が全部変わった。Service web の住所（`CLUSTER-IP`）は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "変わらない。宛先だけが新しい Pod の住所に入れ替わる",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "新しい Pod に合わせて変わる",
+          "correct": false,
+          "whyNot": "Service の住所は、Service を消さない限り変わらない。変わるのは裏の宛先の一覧。"
+        },
+        {
+          "id": "c",
+          "text": "Service も消えて、作り直しが要る",
+          "correct": false,
+          "whyNot": "Service は Pod とは別の物。Pod が作り直されても残る。"
+        }
+      ],
+      "explanation": "入口は変わらず、宛先が入れ替わる。だから呼ぶ側は Service だけを知っていればよい。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "Service api に送っても届かない。宛先の一覧を見ると空だった。考えられる原因は？",
+      "context": {
+        "log": "NAME   ENDPOINTS   AGE\napi    <none>      5m"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "Service のセレクタと、Pod の札が食い違っている",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Service の住所が変わった",
+          "correct": false,
+          "whyNot": "Service の住所は変わらない。空なのは、選ばれた宛先が無いということ。"
+        },
+        {
+          "id": "c",
+          "text": "Pod が多すぎる",
+          "correct": false,
+          "whyNot": "多ければ宛先も多く並ぶ。空なのは、札の合う `Ready` の Pod が 1 つも無い時。"
+        }
+      ],
+      "explanation": "宛先が空なら、まず札とセレクタを見比べる。札が合っていても、`Ready` の Pod が無ければ空になる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "Service が今どの Pod に送っているか（宛先の一覧）を見るには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`kubectl get endpoints web`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`kubectl get svc web`",
+          "correct": false,
+          "whyNot": "Service の一覧は、入口の住所と番号まで。宛先は出ない。"
+        },
+        {
+          "id": "c",
+          "text": "`kubectl get nodes`",
+          "correct": false,
+          "whyNot": "それは機械の一覧。Service の宛先とは関係ない。"
+        }
+      ],
+      "explanation": "宛先の一覧は Endpoints。`kubectl describe svc web` の Endpoints の行にも出る。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "3 日前から動いている web（Pod が 3 つ）に、変わらない入口の Service を付ける。Pod を全て作り直しても、入口の住所は変わらず、宛先が入れ替わることを確かめる。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\n  labels:\n    app: web\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: nginx\n        image: nginx:1.27\n        ports:\n        - containerPort: 80\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "expose",
+        "purpose": "web の {{term:deployment}} に、80 番の入口の Service を付ける。",
+        "check": {
+          "kind": "k8s",
+          "expr": "service/web endpoints=3"
+        },
+        "afterward": "`service/web exposed`。Deployment の札（app=web）を写したセレクタで、Service web ができた。札の合う 3 つの Pod が宛先に入った。",
+        "hints": [
+          "Deployment に入口を付けるのは `kubectl expose deployment 名前`。",
+          "名前は web。入口の番号は `--port=80` で書く（書かなければ、{{term:container}}の待ち受けの番号を使う）。",
+          "`kubectl expose deployment web --port=80` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-exists",
+          "k8s-notfound",
+          "k8s-no-connection"
+        ]
+      },
+      {
+        "id": "endpoints",
+        "purpose": "Service web の宛先の一覧を見て、宛先がいくつあるかを答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "3"
+        },
+        "afterward": "宛先は 住所:番号 の形で 3 つ。どれも Pod の住所（10.244. で始まる）で、Service はこの 3 つに振り分ける。",
+        "hints": [
+          "宛先の一覧は Endpoints。`kubectl get endpoints 名前` で見る。",
+          "`kubectl get endpoints web` の `ENDPOINTS` の欄で、住所:番号 の数を数える。",
+          "`kubectl get endpoints web` と打ち、`3` と答える。"
+        ],
+        "expectedErrors": [
+          "k8s-endpoints-empty",
+          "k8s-endpoints-misread"
+        ]
+      },
+      {
+        "id": "replace",
+        "purpose": "web の Pod を札でまとめて消して作り直させ、Service の宛先が新しい Pod の住所に入れ替わって、また 3 つになることを確かめる。",
+        "check": {
+          "kind": "k8s",
+          "expr": "service/web endpoints=3 && deployment/web made>=3"
+        },
+        "afterward": "消した直後は宛先が空（`<none>`）になり、新しい Pod が `Ready` になると、その住所が宛先に入った。住所は前と違う。Service web は、そのまま同じ入口。",
+        "hints": [
+          "札の合う Pod をまとめて消すのは `kubectl delete pod -l 札`。",
+          "web の Pod の札は app=web。消した後、作り直されるのを `kubectl get pods -w` で待ち、`kubectl get endpoints web` で宛先を見る。",
+          "`kubectl delete pod -l app=web` と打ち、`kubectl get pods -w` と打ってから、`kubectl get endpoints web` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-endpoints-empty",
+          "k8s-no-connection"
+        ]
+      },
+      {
+        "id": "ip",
+        "purpose": "Service web の住所（`CLUSTER-IP`）を見て答える。Pod を全て作り直した後も、この住所は Service を作った時のまま。",
+        "check": {
+          "kind": "answer",
+          "equals": "10.107.155.174"
+        },
+        "afterward": "Service web の住所は 10.107.155.174 のまま。呼ぶ側はこの住所か、名前 web に送ればよい。Pod の住所が変わっても、入口は変わらない。",
+        "hints": [
+          "Service の一覧は `kubectl get svc`。",
+          "web の行の `CLUSTER-IP` の欄を読む。kubernetes の行は窓口の物。",
+          "`kubectl get svc web` と打ち、`10.107.155.174` と答える。"
+        ],
+        "expectedErrors": [
+          "k8s-cluster-ip-misread"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "web に変わらない入口を付け、Pod が全て入れ替わっても入口の住所が同じで、宛先だけが入れ替わることを確かめた。",
+    "partial": "ヒントを使って確かめた。次は、Service のセレクタと Pod の札がずれると宛先がどうなるかを、自分の言葉で説明してみよう。",
+    "retry": "まだ確かめ終わっていない。`kubectl get endpoints web` で宛先を、`kubectl get svc web` で入口の住所を見よう。"
+  },
+  "summary": {
+    "points": [
+      "Service は変わらない入口",
+      "札（ラベル）で宛先を選ぶ",
+      "宛先は Endpoints で確かめる"
+    ],
+    "next": [
+      "k8s.i.04",
+      "k8s.a.03"
+    ],
+    "terms": [
+      "k8s-service",
+      "k8s-selector",
+      "k8s-endpoints"
+    ]
+  }
+}
