@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>Pod の状態の順。作った直後は Pending（置く Node を配置係が決めるのを待つ）。Node が決まると ContainerCreating（その Node の kubelet がイメージを取り、コンテナを作る）。コンテナが動くと Running。Node が見つからなければ Pending のまま、イメージが取れなければ ImagePullBackOff で止まる</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="pending">
+    <rect x="16" y="30" width="196" height="118" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="114" y="62" text-anchor="middle" font-size="16" fill="#f2b632" font-family="&quot;JetBrains Mono&quot;, monospace">Pending</text>
+    <text x="114" y="94" text-anchor="middle" font-size="13" fill="#eef2f6">置く Node を待つ</text>
+    <text x="114" y="122" text-anchor="middle" font-size="13" fill="#9fb0c6">配置係が決める</text>
+  </g>
+  <g class="el" data-part="creating">
+    <rect x="252" y="30" width="196" height="118" rx="8" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="350" y="62" text-anchor="middle" font-size="14" fill="#5cc1ff" font-family="&quot;JetBrains Mono&quot;, monospace">ContainerCreating</text>
+    <text x="350" y="94" text-anchor="middle" font-size="13" fill="#eef2f6">イメージを取り、作る</text>
+    <text x="350" y="122" text-anchor="middle" font-size="13" fill="#9fb0c6">Node の kubelet</text>
+  </g>
+  <g class="el" data-part="running">
+    <rect x="488" y="30" width="196" height="118" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="586" y="62" text-anchor="middle" font-size="16" fill="#3ae08a" font-family="&quot;JetBrains Mono&quot;, monospace">Running</text>
+    <text x="586" y="94" text-anchor="middle" font-size="13" fill="#eef2f6">コンテナが動いている</text>
+    <text x="586" y="122" text-anchor="middle" font-size="13" fill="#9fb0c6">READY 1/1</text>
+  </g>
+  <g class="el" data-part="stuck">
+    <rect x="16" y="196" width="196" height="104" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="114" y="228" text-anchor="middle" font-size="14" fill="#eef2f6">Pending のまま</text>
+    <text x="114" y="256" text-anchor="middle" font-size="13" fill="#9fb0c6">置ける Node が無い</text>
+    <text x="114" y="280" text-anchor="middle" font-size="13" fill="#9fb0c6">（空きが足りない）</text>
+  </g>
+  <g class="el" data-part="pullerror">
+    <rect x="252" y="196" width="196" height="104" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="350" y="228" text-anchor="middle" font-size="14" fill="#eef2f6" font-family="&quot;JetBrains Mono&quot;, monospace">ImagePullBackOff</text>
+    <text x="350" y="256" text-anchor="middle" font-size="13" fill="#9fb0c6">イメージが取れない</text>
+    <text x="350" y="280" text-anchor="middle" font-size="13" fill="#9fb0c6">（名前・版の誤り）</text>
+  </g>
+  <line x1="214" y1="89" x2="248" y2="89" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <line x1="450" y1="89" x2="484" y2="89" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <line x1="114" y1="150" x2="114" y2="192" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#ar)" />
+  <line x1="350" y1="150" x2="350" y2="192" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#ar)" />
+  <text x="586" y="232" text-anchor="middle" font-size="13" fill="#9fb0c6">止まった所の理由は</text>
+  <text x="586" y="258" text-anchor="middle" font-size="13" fill="#9fb0c6" font-family="&quot;JetBrains Mono&quot;, monospace">kubectl describe pod</text>
+  <text x="586" y="282" text-anchor="middle" font-size="13" fill="#9fb0c6">の Events で見る</text>
+</svg>

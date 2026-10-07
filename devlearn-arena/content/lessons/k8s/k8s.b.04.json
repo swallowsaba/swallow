@@ -1,0 +1,225 @@
+{
+  "id": "k8s.b.04",
+  "domain": "k8s",
+  "level": "beginner",
+  "theme": "Pod",
+  "title": "Pod",
+  "goal": "Pod を作り、状態（Pending・Running）を読める",
+  "minutes": 15,
+  "prerequisites": [
+    "k8s.b.03"
+  ],
+  "related": [
+    "docker.b.03",
+    "linux.b.08"
+  ],
+  "next": [
+    "k8s.b.05",
+    "k8s.i.03"
+  ],
+  "terms": [
+    "kubernetes",
+    "pod",
+    "container",
+    "k8s-node",
+    "k8s-scheduler",
+    "kubelet",
+    "image",
+    "k8s-event",
+    "kubectl",
+    "cluster",
+    "app",
+    "pod-status"
+  ],
+  "explain": {
+    "what": "{{term:pod}} は、{{term:kubernetes}} で動かす最小の単位。{{term:container}}を包んで {{term:k8s-node}} の上で動かす。作った Pod は、置く Node を待つ段 → {{term:image}}を取ってコンテナを作る段 → 動いている段の順に進む。今どの段かが{{term:pod-status}}。",
+    "why": "Kubernetes の作業は、ほぼ全て Pod の状態を見ることから始まる。どの段で止まっているかが読めれば、どこを調べればよいかが分かる。",
+    "use": "{{term:app}}を動かす時。Pod を作ると、{{term:k8s-scheduler}}（配置係）が置く Node を決め、その Node の {{term:kubelet}} がイメージを取ってコンテナを動かす。止まった理由は、係たちが残す{{term:k8s-event}}に書いてある。",
+    "when": "新しい Pod を作ったのに、いつまでも動き出さない。どの段で止まっているのか、なぜなのかを確かめたい。",
+    "figures": [
+      "k8s-b04-states"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "作った Pod が動き出すまでの状態を、順に並べる。",
+      "items": [
+        "`Pending`（置く Node を待つ）",
+        "`ContainerCreating`（イメージを取り、コンテナを作る）",
+        "`Running`（コンテナが動いている）"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "situation",
+      "prompt": "作った Pod の `STATUS` が `Pending` のまま。今どの段にいる？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "まだ置く Node が決まっていない",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "イメージを取っている途中",
+          "correct": false,
+          "whyNot": "イメージを取るのは、置く Node が決まった後の `ContainerCreating` の段。"
+        },
+        {
+          "id": "c",
+          "text": "コンテナは動いているが、外からは見えない",
+          "correct": false,
+          "whyNot": "コンテナが動いていれば `Running`。`Pending` はまだどの Node にも置かれていない。"
+        }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "Pod を作った。最初の状態は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`Pending`（置く Node を待つ）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`Running`",
+          "correct": false,
+          "whyNot": "動き出すまでに、置く Node を決め、イメージを取り、コンテナを作る段がある。"
+        },
+        {
+          "id": "c",
+          "text": "`ContainerCreating`",
+          "correct": false,
+          "whyNot": "コンテナを作るのは、置く Node が決まってから。決まる前は `Pending`。"
+        }
+      ],
+      "explanation": "Pod は `Pending` から始まる。配置係が Node を決めると `ContainerCreating`、コンテナが動くと `Running`。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "5 分たっても `Pending` のまま。考えられる原因は？",
+      "context": {
+        "log": "NAME   READY   STATUS    RESTARTS   AGE\nweb    0/1     Pending   0          5m"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "置ける Node が無い（空きが足りない・使える Node が無い）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "イメージの名前が違う",
+          "correct": false,
+          "whyNot": "イメージを取るのは、置く Node が決まった後。名前の誤りなら `ErrImagePull` や `ImagePullBackOff` になる。"
+        },
+        {
+          "id": "c",
+          "text": "コンテナの中のアプリが落ちた",
+          "correct": false,
+          "whyNot": "それは動き出した後の話。`Pending` は、まだどの Node にも置かれていない。"
+        }
+      ],
+      "explanation": "`Pending` のままなのは、配置係が置ける Node を見つけられない時。理由はイベントに書かれる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "Pod がなぜその状態なのかを、詳しく調べるには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`kubectl describe pod web`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`kubectl get pods`",
+          "correct": false,
+          "whyNot": "一覧は今の状態だけ。そうなった理由までは出ない。"
+        },
+        {
+          "id": "c",
+          "text": "`kubectl logs web`",
+          "correct": false,
+          "whyNot": "それはコンテナの中のアプリの出力。まだ動いていないコンテナには、何も無い。"
+        }
+      ],
+      "explanation": "`kubectl describe` の一番下の `Events` に、配置係や kubelet の知らせが時刻順に並ぶ。止まった理由はそこで読む。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "{{term:cluster}}に、nginx のイメージで web という Pod を 1 つ作り、`Running` になるまで状態を追う。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console"
+    },
+    "steps": [
+      {
+        "id": "run",
+        "purpose": "nginx のイメージで、web という名前の Pod を作る。",
+        "check": {
+          "kind": "k8s",
+          "expr": "pod/web"
+        },
+        "afterward": "`pod/web created`。クラスタに頼みが届き、web の Pod ができた。まだ動いてはいない（これから置く Node が決まり、その Node でコンテナが作られる）。",
+        "hints": [
+          "Pod を 1 つ作るのは `kubectl run 名前 --image=イメージ`。",
+          "名前は web、イメージは nginx。",
+          "`kubectl run web --image=nginx` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-no-image",
+          "k8s-pod-exists",
+          "k8s-no-connection"
+        ]
+      },
+      {
+        "id": "running",
+        "purpose": "状態を追い、web が `Running`（`READY` が 1/1）になったことを確かめる。",
+        "check": {
+          "kind": "k8s",
+          "expr": "pod/web status=Running ready=1"
+        },
+        "afterward": "`STATUS` が `ContainerCreating` から `Running` に変わり、`READY` が 1/1。`kubectl describe pod web` の `Events` には、置いた（`Scheduled`）・イメージを取った（`Pulling`・`Pulled`）・作った（`Created`）・動かした（`Started`）が順に並ぶ。",
+        "hints": [
+          "状態は `kubectl get pods` で見る。時間がたつと変わる。",
+          "`STATUS` の欄が `ContainerCreating` → `Running` と進む。変わるたびに見たい時は `-w` を付ける。",
+          "`kubectl get pods -w` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-image-pull",
+          "k8s-no-connection"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "Pod を作り、`ContainerCreating` から `Running` まで状態を追えた。",
+    "partial": "ヒントを使って追えた。次は `kubectl describe pod web` の `Events` で、どの係が何をしたかを読んでみよう。",
+    "retry": "まだ `Running` になっていない。`kubectl get pods` の `STATUS` を見て、止まっていれば `kubectl describe pod web` の `Events` を読もう。"
+  },
+  "summary": {
+    "points": [
+      "Pod が最小の単位",
+      "`Pending` → `ContainerCreating` → `Running`",
+      "理由は describe の `Events`"
+    ],
+    "next": [
+      "k8s.b.05"
+    ],
+    "terms": [
+      "pod",
+      "k8s-event"
+    ]
+  }
+}

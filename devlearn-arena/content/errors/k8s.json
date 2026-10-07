@@ -108,6 +108,49 @@
       "terms": [
         "k8s-node"
       ]
+    },
+    {
+      "id": "k8s-no-image",
+      "match": "required flag\\(s\\) \"image\" not set",
+      "meaning": "Pod を作るのに必要な「どのイメージで動かすか」（`--image`）が書かれていない。",
+      "causes": [
+        "`--image=` を書き忘れた。",
+        "`--image` の綴りが違う（`-image` など）。"
+      ],
+      "hint": "`kubectl run 名前 --image=イメージ` の形で、名前の後ろに `--image=` を付ける。",
+      "terms": [
+        "image",
+        "pod"
+      ]
+    },
+    {
+      "id": "k8s-pod-exists",
+      "match": "pods \"[^\"]+\" already exists",
+      "meaning": "「その名前の Pod は既にある」と言われた。同じ名前の Pod は 1 つしか作れない。",
+      "causes": [
+        "前に作った Pod が残っている。",
+        "イメージを直そうとして、消さずに作り直した。"
+      ],
+      "hint": "`kubectl get pods` で今ある Pod を見る。作り直すなら、先に `kubectl delete pod 名前` で消す。",
+      "terms": [
+        "pod"
+      ]
+    },
+    {
+      "id": "k8s-image-pull",
+      "match": "ErrImagePull|ImagePullBackOff",
+      "output": true,
+      "meaning": "Node の kubelet が、コンテナのイメージを置き場から取れなかった。取り直すたびに間を空けて待っている（BackOff）。",
+      "causes": [
+        "イメージの名前の綴りが違う（`ngnix` など）。",
+        "その版（タグ）が置き場に無い。"
+      ],
+      "hint": "`kubectl describe pod 名前` の Events の Failed の行で、取れなかった名前と理由を読む。名前を直すには、`kubectl delete pod 名前` で消してから作り直す。",
+      "terms": [
+        "image",
+        "kubelet",
+        "k8s-event"
+      ]
     }
   ]
 }

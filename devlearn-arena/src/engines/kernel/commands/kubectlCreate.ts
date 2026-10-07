@@ -186,7 +186,7 @@ export const run: KubectlHandler = (ctx) => {
   const name = operands[0];
   const image = values.get('image');
   if (name === undefined || image === undefined) {
-    return { stderr: 'error: required flag(s) "image" not set\nusage: kubectl run <名前> --image=<イメージ>\n', code: 1 };
+    return { stderr: 'error: required flag(s) "image" not set\n', code: 1 };
   }
   const id = key(namespace, name);
   if (cluster.pods.has(id)) return alreadyThere('pods', name);

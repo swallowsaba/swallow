@@ -224,6 +224,36 @@
       "lessons": [
         "k8s.b.03"
       ]
+    },
+    {
+      "id": "k8s-event",
+      "word": "イベント（Kubernetes）",
+      "reading": "いべんと",
+      "plain": "Kubernetes の係（配置係・kubelet など）が残す知らせ。いつ・誰が・何をしたか・何に失敗したかが時刻順に並ぶ。",
+      "why": "Pod が止まっている理由は、たいていここに書いてある。kubectl describe の一番下の Events で読む。",
+      "related": [
+        "pod",
+        "kubelet",
+        "k8s-scheduler"
+      ],
+      "lessons": [
+        "k8s.b.04"
+      ]
+    },
+    {
+      "id": "pod-status",
+      "word": "Pod の状態",
+      "reading": "ぽっどのじょうたい",
+      "plain": "Pod が今どの段にいるか。kubectl get pods の STATUS の欄に出る。Pending（置く Node を待つ）→ ContainerCreating（イメージを取り、コンテナを作る）→ Running（動いている）。",
+      "why": "止まっている段が分かれば、調べる所が分かる。Pending なら置き場所、ImagePullBackOff ならイメージの名前。",
+      "related": [
+        "pod",
+        "k8s-scheduler",
+        "kubelet"
+      ],
+      "lessons": [
+        "k8s.b.04"
+      ]
     }
   ]
 }
