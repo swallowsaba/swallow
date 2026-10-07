@@ -5,6 +5,7 @@ import type {
   NetworkPolicy, Node, PersistentVolume, PersistentVolumeClaim, Pod, ReplicaSet, Resource, Role,
   RoleBinding, Secret, Service, ServiceAccount, StatefulSet, StorageClass,
 } from '@/engines/k8s/types';
+import { NODE_SYSTEM, nodeAddress } from './kubectlDescribe';
 import { age, podReady, podStatus, restarts, table } from './kubectlShared';
 
 /** 種別ごとの一覧表。全て状態から導く（作り置きの文字列は持たない） */
@@ -38,7 +39,7 @@ export function renderTable(
 
     case 'nodes': {
       const head = ['NAME', 'STATUS', 'ROLES', 'AGE', 'VERSION'];
-      const rows = [wide ? [...head, 'CPU', 'MEMORY'] : head];
+      const rows = [wide ? [...head, 'INTERNAL-IP', 'EXTERNAL-IP', 'OS-IMAGE', 'KERNEL-VERSION', 'CONTAINER-RUNTIME'] : head];
       for (const node of items as Node[]) {
         // 本物と同じく、Ready/NotReady と SchedulingDisabled は並べて出す
         const state = isNodeReady(cluster, node) ? 'Ready' : 'NotReady';
@@ -49,7 +50,7 @@ export function renderTable(
           age(cluster.tick, node.metadata.createdAt),
           node.status.version,
         ];
-        rows.push(wide ? [...row, `${String(node.status.allocatable.cpu)}m`, `${String(node.status.allocatable.memory)}Mi`] : row);
+        rows.push(wide ? [...row, nodeAddress(node), '<none>', NODE_SYSTEM.os, NODE_SYSTEM.kernel, NODE_SYSTEM.runtime] : row);
       }
       return table(rows);
     }

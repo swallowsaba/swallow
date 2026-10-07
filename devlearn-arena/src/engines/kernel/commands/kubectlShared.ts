@@ -1,10 +1,26 @@
 import type { ClusterState, Pod, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, ShellState } from '../registry';
+import { exists } from '../vfs';
 import { fromLines } from './args';
+import { currentUser } from './perm';
 
 export const NO_CLUSTER =
   'The connection to the server localhost:8080 was refused - did you specify the right host or port?\n';
+
+/**
+ * 接続先の設定（kubeconfig）の場所。$KUBECONFIG か、ホームの .kube/config。
+ * sudo で root になると、本物（Ubuntu の sudo）と同じくホームは /root になり、利用者の設定は読まない
+ */
+export function kubeconfigPath(shell: ShellState): string {
+  const home = currentUser(shell) === 'root' ? '/root' : (shell.vars.get('HOME') ?? `/home/${currentUser(shell)}`);
+  return shell.vars.get('KUBECONFIG') ?? `${home}/.kube/config`;
+}
+
+/** 窓口の住所を持つクラスタは、接続先の設定が無いと頼めない（本物は既定の localhost:8080 に頼んで断られる） */
+export function canReach(shell: ShellState, cluster: ClusterState): boolean {
+  return cluster.server === undefined || exists(shell.vfs, kubeconfigPath(shell));
+}
 
 /** 短縮名 → 正式な複数形 */
 export const KINDS: Record<string, string> = {
@@ -48,17 +64,30 @@ export interface KubectlContext {
 
 export type KubectlHandler = (ctx: KubectlContext) => CommandResult;
 
+/** 経った時間（1 tick = 1 秒）を、本物の kubectl の AGE と同じ形で（duration.HumanDuration: 90s・5m30s・45m・3h20m・2d4h・45d・2y10d） */
 export function age(tick: number, createdAt: number): string {
-  const seconds = Math.max(0, tick - createdAt);
-  if (seconds < 60) return `${String(seconds)}s`;
-  return `${String(Math.floor(seconds / 60))}m`;
+  const s = Math.max(0, tick - createdAt);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(s / 3600);
+  const d = Math.floor(h / 24);
+  const unit = (n: number, u: string, rest: number, ru: string): string => `${String(n)}${u}${rest === 0 ? '' : `${String(rest)}${ru}`}`;
+  if (s < 120) return `${String(s)}s`;
+  if (m < 10) return unit(m, 'm', s % 60, 's');
+  if (m < 180) return `${String(m)}m`;
+  if (h < 8) return unit(h, 'h', m % 60, 'm');
+  if (h < 48) return `${String(h)}h`;
+  if (h < 24 * 8) return unit(d, 'd', h % 24, 'h');
+  if (h < 24 * 365 * 2) return `${String(d)}d`;
+  if (h < 24 * 365 * 8) return unit(Math.floor(d / 365), 'y', d % 365, 'd');
+  return `${String(Math.floor(d / 365))}y`;
 }
 
+/** 表（本物の kubectl と同じ tabwriter の形: 欄の間は 3 字、欄の幅は 6 字以上） */
 export function table(rows: string[][]): string {
   if (rows.length === 0) return '';
-  const widths = (rows[0] ?? []).map((_, i) => Math.max(...rows.map((r) => (r[i] ?? '').length)));
+  const widths = (rows[0] ?? []).map((_, i) => Math.max(6, ...rows.map((r) => (r[i] ?? '').length + 3)));
   return fromLines(
-    rows.map((row) => row.map((cell, i) => cell.padEnd(widths[i] ?? 0)).join('   ').trimEnd()),
+    rows.map((row) => row.map((cell, i) => (i === row.length - 1 ? cell : cell.padEnd(widths[i] ?? 0))).join('').trimEnd()),
   );
 }
 

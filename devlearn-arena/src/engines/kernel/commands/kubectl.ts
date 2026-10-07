@@ -1,7 +1,8 @@
-import type { ClusterState, Pod, Resource } from '@/engines/k8s/types';
+import type { ClusterState, Node, Pod, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
+import { describeNode } from './kubectlDescribe';
 import { describePod, describeResource, renderTable } from './kubectlGet';
 import { create, expose, run } from './kubectlCreate';
 import { nodeCtl, taint } from './kubectlNodes';
@@ -9,7 +10,7 @@ import { setProbe, setResources } from './kubectlSet';
 import { opsSubcommands } from './kubectlOps';
 import { parseOutput, renderResources } from './kubectlOutput';
 import {
-  CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, idFor, listOf, matchesSelector, notFound, parseTarget,
+  CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, canReach, idFor, listOf, matchesSelector, notFound, parseTarget,
   type KubectlContext, type KubectlHandler,
 } from './kubectlShared';
 
@@ -114,7 +115,9 @@ const coreSubcommands: Record<string, KubectlHandler> = {
       return { stderr: 'usage: kubectl describe <type> [<name>]\n', code: 1 };
     }
     const one = (resource: Resource): string =>
-      kind === 'pods' ? describePod(cluster, resource as Pod) : describeResource(cluster, kind, resource);
+      kind === 'pods' ? describePod(cluster, resource as Pod)
+        : kind === 'nodes' ? describeNode(cluster, resource as Node)
+          : describeResource(cluster, kind, resource);
     if (name !== undefined) {
       const found = findOne(cluster, kind, namespace, name);
       if (found === null) return notFound(kind, name);
@@ -350,7 +353,7 @@ const NAMES = [...new Set([...Object.keys(subcommands), ...Object.keys(ALIASES)]
 
 function runSub(sub: string, argv: readonly string[], shell: ShellState): CommandResult {
   const cluster = shell.cluster;
-  if (cluster === null) return { stderr: NO_CLUSTER, code: 1 };
+  if (cluster === null || !canReach(shell, cluster)) return { stderr: NO_CLUSTER, code: 1 };
   const rest = argv.slice(2);
   const { flags, values, operands } = parseArgs([sub, ...rest], {
     withValue: [

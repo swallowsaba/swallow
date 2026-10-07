@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { addContext, addRegistry, createContainerHost } from './container/container';
+import { CONTROL_PLANE_TAINT } from './k8s/bootstrap';
 import { emptyCluster, node } from './k8s/factory';
+import type { ClusterState, Node } from './k8s/types';
 import { createClock } from './kernel/clock';
 import { createDefaultRegistry } from './kernel/commands';
 import type { GitServer, ShellState, WebWorld } from './kernel/registry';
@@ -118,7 +120,15 @@ export const setupSchema = z.object({
   /** DB の初期状態（表を作り、行を入れる SQL） */
   sql: z.string().optional(),
   /** Kubernetes のクラスタ（Node の数。どれも同じ大きさ） */
-  cluster: z.object({ nodes: z.number().int().min(1).max(5) }).strict().optional(),
+  cluster: z.object({
+    nodes: z.number().int().min(1).max(5),
+    /** 制御の側（コントロールプレーン）の Node（cp-1）も並べる。Pod は置かない（本物と同じ印 NoSchedule） */
+    controlPlane: z.boolean().optional(),
+    /** 止まっている（kubelet が様子を知らせない）Node の名前。NotReady になる */
+    notReady: z.array(z.string().regex(/^node-\d$/)).optional(),
+    /** クラスタを作ってから経った日数（AGE に出る） */
+    ageDays: z.number().int().min(0).max(800).optional(),
+  }).strict().optional(),
   /** 動いているプロセス（ps・top・kill。PID は 100 から順に振る） */
   processes: z.array(z.object({
     command: z.string().min(1),
@@ -177,6 +187,29 @@ interface EnvironmentDef {
 }
 
 /** 模擬環境の土台。ID は content の practice.environment に書く */
+/** クラスタの窓口（API サーバ）の住所。制御の側（cp-1）の 6443 番 */
+const API_SERVER = 'https://10.0.0.10:6443';
+
+/** 操作する機械の、接続先の設定（kubeconfig）。kubectl はこれを読んで窓口に頼む */
+const KUBECONFIG = [
+  'apiVersion: v1',
+  'kind: Config',
+  'clusters:',
+  '- name: city-cluster',
+  '  cluster:',
+  `    server: ${API_SERVER}`,
+  'contexts:',
+  '- name: learner@city-cluster',
+  '  context:',
+  '    cluster: city-cluster',
+  '    user: learner',
+  'current-context: learner@city-cluster',
+  'users:',
+  '- name: learner',
+  '  user: {}  # 本物はここに利用者の証明書が入る（練習では省く）',
+  '',
+].join('\n');
+
 export const ENVIRONMENTS = {
   /** 一般の利用者の端末（ファイルとディレクトリ・権限・プロセス） */
   'linux-basic': { name: '練習用の機械', shell: true, defaults: { user: 'learner', hostname: 'arena', cwd: '/home/learner', dirs: ['/home/learner', '/tmp'] } },
@@ -189,7 +222,7 @@ export const ENVIRONMENTS = {
   /** 網の中の機械。ping・traceroute・dig・curl で、届くか・どこで止まるか・名前の答えを確かめる */
   'net-client': { name: 'ネットワークを確かめる機械', shell: true, defaults: { user: 'learner', cwd: '/home/learner', dirs: ['/home/learner'] } },
   /** Kubernetes のクラスタ（Node 2 台）を kubectl で操作する機械 */
-  'k8s-cluster': { name: 'クラスタを操作する機械', shell: true, defaults: { user: 'learner', hostname: 'console', cwd: '/home/learner', dirs: ['/home/learner'], cluster: { nodes: 2 } } },
+  'k8s-cluster': { name: 'クラスタを操作する機械', shell: true, defaults: { user: 'learner', hostname: 'console', cwd: '/home/learner', dirs: ['/home/learner', '/home/learner/.kube'], files: { '/home/learner/.kube/config': KUBECONFIG }, cluster: { nodes: 2 } } },
   /** ブラウザ内の SQLite（SQL の実戦） */
   'sql-sqlite': { name: 'ブラウザ内の DB', shell: false, defaults: { sql: '' } },
 } as const satisfies Record<string, EnvironmentDef>;
@@ -211,6 +244,19 @@ export function resolveSetup(environment: string, setup: unknown): PracticeSetup
     files: { ...base.files, ...own.files },
     ...(base.services || own.services ? { services: { ...base.services, ...own.services } } : {}),
   };
+}
+
+/** setup の cluster から、組み上がったクラスタを作る（Node は node-1〜。制御の側は cp-1） */
+function clusterOf(c: NonNullable<PracticeSetup['cluster']>): ClusterState {
+  const born = -(c.ageDays ?? 0) * 86400;
+  const at = (n: Node): Node => ({ ...n, metadata: { ...n.metadata, createdAt: born } });
+  const workers = Array.from({ length: c.nodes }, (_, i) => {
+    const n = at(node(`node-${String(i + 1)}`, 4000, 8192));
+    return c.notReady?.includes(n.metadata.name) === true ? { ...n, status: { ...n.status, kubeletHealthy: false } } : n;
+  });
+  const cp = at(node('cp-1', 2000, 4096, {}, { role: 'control-plane' }));
+  const nodes = c.controlPlane === true ? [{ ...cp, spec: { ...cp.spec, taints: [{ ...CONTROL_PLANE_TAINT }] } }, ...workers] : workers;
+  return { ...emptyCluster(nodes), server: API_SERVER };
 }
 
 /** 端末の実戦の、シェルの初期状態（src/engines/kernel/session の createShellState に渡す） */
@@ -253,7 +299,7 @@ export function shellOptions(environment: string, setup: unknown): SessionOption
     })));
   }
   if (s.processes) options.processes = s.processes;
-  if (s.cluster) options.cluster = emptyCluster(Array.from({ length: s.cluster.nodes }, (_, i) => node(`node-${String(i + 1)}`, 4000, 8192)));
+  if (s.cluster) options.cluster = clusterOf(s.cluster);
   if (s.network) options.net = buildNetwork(s.network);
   if (s.images) {
     let host = createContainerHost(s.images);

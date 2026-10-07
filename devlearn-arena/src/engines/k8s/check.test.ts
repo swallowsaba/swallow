@@ -7,7 +7,7 @@ import { execute } from '@/engines/kernel/shell';
 import { clusterHolds } from './check';
 
 function cluster() {
-  let shell: ShellState = initialShell('linux-basic', { cluster: { nodes: 2 } });
+  let shell: ShellState = initialShell('k8s-cluster', { cluster: { nodes: 2 } });
   const registry = createDefaultRegistry();
   const clock = createClock();
   const run = (line: string) => {

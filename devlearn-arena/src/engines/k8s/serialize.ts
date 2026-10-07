@@ -38,6 +38,7 @@ export interface ClusterSnapshot {
   events: EventRecord[];
   ipCounter: number;
   nameCounter: number;
+  server?: string;
 }
 
 export function snapshotCluster(cluster: ClusterState): ClusterSnapshot {
@@ -70,6 +71,7 @@ export function snapshotCluster(cluster: ClusterState): ClusterSnapshot {
     events: [...cluster.events],
     ipCounter: cluster.ipCounter,
     nameCounter: cluster.nameCounter,
+    ...(cluster.server === undefined ? {} : { server: cluster.server }),
   };
 }
 
@@ -103,5 +105,6 @@ export function restoreCluster(snapshot: ClusterSnapshot): ClusterState {
     events: snapshot.events,
     ipCounter: snapshot.ipCounter,
     nameCounter: snapshot.nameCounter,
+    ...(snapshot.server === undefined ? {} : { server: snapshot.server }),
   };
 }

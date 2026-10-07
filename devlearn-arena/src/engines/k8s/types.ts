@@ -232,6 +232,8 @@ export interface ClusterState {
   /** IP 払い出しの連番。乱数を使わない */
   readonly ipCounter: number;
   readonly nameCounter: number;
+  /** 窓口（API サーバ）の住所。あれば kubectl は接続先の設定（kubeconfig）を読んで、ここへ頼む */
+  readonly server?: string;
 }
 
 export function key(namespace: string, name: string): string {
