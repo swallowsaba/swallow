@@ -77,7 +77,9 @@ describe('取得に失敗するイメージ', () => {
     const state = advance(place(base, [broken]), 10);
     const status = state.pods.get('default/bad')?.status.containerStatuses[0];
     expect(status?.waitingReason).toBe('ImagePullBackOff');
-    expect(status?.restartCount).toBeGreaterThan(1);
+    // 本物と同じく、取りに行った回数は再起動の回数（RESTARTS）に数えない
+    expect(status?.pulls).toBeGreaterThan(1);
+    expect(status?.restartCount).toBe(0);
   });
 
   it('再試行の間隔が伸びる（指数バックオフ）', () => {
@@ -86,7 +88,7 @@ describe('取得に失敗するイメージ', () => {
     let lastCount = 0;
     for (let i = 0; i < 40; i += 1) {
       state = advance(state, 1);
-      const count = state.pods.get('default/bad')?.status.containerStatuses[0]?.restartCount ?? 0;
+      const count = state.pods.get('default/bad')?.status.containerStatuses[0]?.pulls ?? 0;
       if (count !== lastCount) {
         gaps.push(state.tick);
         lastCount = count;

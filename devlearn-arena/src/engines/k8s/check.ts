@@ -8,14 +8,29 @@ import { key, type ClusterState } from './types';
  * expr は `<種類>/<名前>` の後に、空白で区切った `<欄><比べ方><数>` を並べる（全てを満たせば達成。欄が無ければ、あるかどうか）:
  *   deployment/web replicas>=3 readyReplicas>=3
  *   service/web endpoints>=3
- * 比べ方は >= <= =。名前空間は default
+ *   pod/web ready=1 status=Running
+ * 比べ方は >= <= =（status は = で語を比べる）。名前空間は default
  */
 
-type Kind = 'deployment' | 'service';
+type Kind = 'deployment' | 'service' | 'pod';
 
-function fieldOf(cluster: ClusterState, kind: Kind, name: string, field: string): number | undefined {
+const KINDS: readonly Kind[] = ['deployment', 'service', 'pod'];
+
+function exists(cluster: ClusterState, kind: Kind, name: string): boolean {
   const id = key('default', name);
-  if (kind === 'deployment') {
+  return kind === 'deployment' ? cluster.deployments.has(id) : kind === 'service' ? cluster.services.has(id) : cluster.pods.has(id);
+}
+
+function fieldOf(cluster: ClusterState, kind: Kind, name: string, field: string): number | string | undefined {
+  const id = key('default', name);
+  if (kind === 'pod') {
+    const p = cluster.pods.get(id);
+    if (!p) return undefined;
+    // ready: Ready のコンテナの数（get pods の READY の左）。status: get pods の STATUS の欄と同じ語
+    if (field === 'ready') return isReady(p) ? p.status.containerStatuses.length : p.status.containerStatuses.filter((c) => c.ready).length;
+    if (field === 'restarts') return p.status.containerStatuses.reduce((n, c) => n + c.restartCount, 0);
+    if (field === 'status') return p.status.containerStatuses.find((c) => c.waitingReason !== null)?.waitingReason ?? p.status.phase;
+  } else if (kind === 'deployment') {
     const d = cluster.deployments.get(id);
     if (!d) return undefined;
     if (field === 'replicas') return d.spec.replicas;
@@ -35,15 +50,19 @@ export function clusterHolds(cluster: ClusterState | null, expr: string): boolea
   if (!cluster) return false;
   const [target = '', ...conds] = expr.trim().split(/\s+/);
   const [kind, name] = target.split('/');
-  if ((kind !== 'deployment' && kind !== 'service') || !name) throw new Error(`k8s の条件「${target}」は知らない形`);
-  const there = kind === 'deployment' ? cluster.deployments.has(key('default', name)) : cluster.services.has(key('default', name));
-  if (!there) return false;
+  const k = KINDS.find((x) => x === kind);
+  if (k === undefined || !name) throw new Error(`k8s の条件「${target}」は知らない形`);
+  if (!exists(cluster, k, name)) return false;
   for (const c of conds) {
-    const m = /^([a-zA-Z]+)(>=|<=|=)(\d+)$/.exec(c);
-    if (!m?.[1] || !m[2]) throw new Error(`k8s の条件「${c}」は知らない形`);
-    const v = fieldOf(cluster, kind, name, m[1]);
-    const want = Number(m[3]);
+    const m = /^([a-zA-Z]+)(>=|<=|=)(\d+|[A-Za-z]+)$/.exec(c);
+    if (!m?.[1] || !m[2] || !m[3]) throw new Error(`k8s の条件「${c}」は知らない形`);
+    const v = fieldOf(cluster, k, name, m[1]);
     if (v === undefined) return false;
+    if (typeof v === 'string' || !/^\d+$/.test(m[3])) {
+      if (m[2] !== '=' || String(v) !== m[3]) return false;
+      continue;
+    }
+    const want = Number(m[3]);
     if (m[2] === '>=' ? v < want : m[2] === '<=' ? v > want : v !== want) return false;
   }
   return true;

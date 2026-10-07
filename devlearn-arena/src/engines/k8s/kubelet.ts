@@ -46,17 +46,48 @@ interface ContainerContext {
   elapsed: number;
 }
 
+/** 置き場での正式な名前（docker.io/library/nginx:latest の形。containerd の言い方） */
+export function fullImageRef(image: string): string {
+  const tagged = image.lastIndexOf(':') > image.lastIndexOf('/') ? image : `${image}:latest`;
+  const parts = tagged.split('/');
+  if (parts.length === 1) return `docker.io/library/${tagged}`;
+  return /[.:]/.test(parts[0] ?? '') || parts[0] === 'localhost' ? tagged : `docker.io/${tagged}`;
+}
+
+/**
+ * イメージが取れない理由（取れるなら null）。本物の containerd の文の形。
+ * クラスタに取れるイメージの一覧（images）があれば、それに無い物は取れない。名前はあるがタグが無ければ not found、名前ごと無ければ断られる
+ */
+export function pullError(state: ClusterState, spec: ContainerSpec): string | null {
+  const ref = fullImageRef(spec.image);
+  const head = `failed to pull and unpack image "${ref}": failed to resolve reference "${ref}"`;
+  if (spec.failing) return `${head}: ${ref}: not found`;
+  if (state.images === undefined) return null;
+  const known = new Set(state.images.map(fullImageRef));
+  if (known.has(ref)) return null;
+  const repo = ref.slice(0, ref.lastIndexOf(':'));
+  if ([...known].some((k) => k.slice(0, k.lastIndexOf(':')) === repo)) return `${head}: ${ref}: not found`;
+  return `${head}: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed`;
+}
+
+/** コンテナを動かし始めた時の、本物の kubelet の知らせ（取った・作った・動かした） */
+function startedEvents(events: EventRecord[], tick: number, pod: Pod, spec: ContainerSpec): void {
+  record(events, tick, 'Normal', 'Pulled', pod, `Successfully pulled image "${spec.image}" in 1.2s (1.2s including waiting)`);
+  record(events, tick, 'Normal', 'Created', pod, `Created container ${spec.name}`);
+  record(events, tick, 'Normal', 'Started', pod, `Started container ${spec.name}`);
+}
+
 /** イメージが取れないコンテナ。待つほど間隔が伸びる */
 function pullBackoff({ status, tick }: ContainerContext): ContainerStatus {
   if (status.restartAt !== null && tick < status.restartAt) return status;
-  const restartCount = status.restartCount + 1;
-  const waitTicks = Math.ceil(backoffMs(restartCount, 2 * TICK_MS, 60 * TICK_MS) / TICK_MS);
+  const pulls = (status.pulls ?? 0) + 1;
+  const waitTicks = Math.ceil(backoffMs(pulls, 2 * TICK_MS, 60 * TICK_MS) / TICK_MS);
   return {
     ...status,
     ready: false,
     started: false,
-    restartCount,
-    waitingReason: restartCount >= 2 ? 'ImagePullBackOff' : 'ErrImagePull',
+    pulls,
+    waitingReason: pulls >= 2 ? 'ImagePullBackOff' : 'ErrImagePull',
     restartAt: tick + waitTicks,
   };
 }
@@ -135,7 +166,8 @@ export function tickPods(state: ClusterState): TickResult {
         message: null,
         startedAt: tick,
       };
-      record(events, tick, 'Normal', 'Scheduled', pod, `Successfully assigned to ${result.nodeName}`);
+      record(events, tick, 'Normal', 'Scheduled', pod, `Successfully assigned ${pod.metadata.namespace}/${pod.metadata.name} to ${result.nodeName}`);
+      for (const c of pod.spec.containers) record(events, tick, 'Normal', 'Pulling', pod, `Pulling image "${c.image}"`);
       pods.set(id, pod);
       continue;
     }
@@ -148,10 +180,16 @@ export function tickPods(state: ClusterState): TickResult {
       if (!spec) return status;
       const ctx: ContainerContext = { spec, status, tick, elapsed };
 
-      if (spec.failing) {
+      const pullFailure = pullError(state, spec);
+      if (pullFailure !== null) {
         const next = pullBackoff(ctx);
-        if (next.restartCount !== status.restartCount) {
-          record(events, tick, 'Warning', 'Failed', pod, `Failed to pull image "${spec.image}": not found`);
+        if (next.pulls !== status.pulls) {
+          if (next.waitingReason === 'ErrImagePull') {
+            record(events, tick, 'Warning', 'Failed', pod, `Failed to pull image "${spec.image}": ${pullFailure}`);
+          } else {
+            record(events, tick, 'Normal', 'BackOff', pod, `Back-off pulling image "${spec.image}"`);
+          }
+          record(events, tick, 'Warning', 'Failed', pod, `Error: ${next.waitingReason ?? 'ErrImagePull'}`);
         }
         return next;
       }
@@ -183,7 +221,7 @@ export function tickPods(state: ClusterState): TickResult {
           };
         }
         if (!probePasses(spec.startupProbe, elapsed)) return { ...status, ready: false };
-        record(events, tick, 'Normal', 'Started', pod, `Started container ${spec.name}`);
+        startedEvents(events, tick, pod, spec);
         return { ...status, started: true, waitingReason: null, restartAt: null };
       }
 
@@ -215,7 +253,7 @@ export function tickPods(state: ClusterState): TickResult {
 
       if (status.ready) return status;
       if (elapsed >= spec.readyAfter) {
-        record(events, tick, 'Normal', 'Started', pod, `Started container ${spec.name}`);
+        startedEvents(events, tick, pod, spec);
         return { ...status, ready: true, started: true, waitingReason: null, restartAt: null };
       }
       return status;

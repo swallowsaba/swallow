@@ -1,16 +1,18 @@
+import { advanceCluster } from '@/engines/k8s/controllers';
+import { tickPods } from '@/engines/k8s/kubelet';
 import type { ClusterState, Node, Pod, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
-import { describeNode } from './kubectlDescribe';
-import { describePod, describeResource, renderTable } from './kubectlGet';
+import { describeNode, describePod } from './kubectlDescribe';
+import { describeResource, renderTable } from './kubectlGet';
 import { create, expose, run } from './kubectlCreate';
 import { nodeCtl, taint } from './kubectlNodes';
 import { setProbe, setResources } from './kubectlSet';
 import { opsSubcommands } from './kubectlOps';
 import { parseOutput, renderResources } from './kubectlOutput';
 import {
-  CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, canReach, idFor, listOf, matchesSelector, notFound, parseTarget,
+  CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, canReach, idFor, listOf, matchesSelector, notFound, parseTarget, podReady, podStatus, restarts, table, age,
   type KubectlContext, type KubectlHandler,
 } from './kubectlShared';
 
@@ -23,6 +25,39 @@ function findOne(
 ): Resource | null {
   const items = listOf(cluster, kind, namespace);
   return items.find((r) => r.metadata.name === name) ?? null;
+}
+
+/**
+ * 打つ間に経つ時間（tick = 秒）。窓口の住所を持つクラスタ（クラスタを操作する機械。docs/content-spec.md 2.4）では、
+ * 本物と同じく、コマンドを打つたびに時間が流れて Pod の状態が進む
+ */
+export const TYPING_TICKS = 2;
+
+/** get pods -w: 状態が変わるたびに 1 行ずつ足す（本物は Ctrl-C まで続く。模擬は落ち着いたら終える） */
+function watchPods(cluster: ClusterState, namespace: string, name: string | undefined): { stdout: string; cluster: ClusterState } {
+  const pick = (c: ClusterState): Pod[] => (listOf(c, 'pods', namespace) as Pod[]).filter((p) => name === undefined || p.metadata.name === name);
+  const cells = (c: ClusterState, p: Pod): string[] => [p.metadata.name, podReady(p), podStatus(p), String(restarts(p)), age(c.tick, p.metadata.createdAt)];
+  const seen = new Map<string, string>();
+  const rows = [['NAME', 'READY', 'STATUS', 'RESTARTS', 'AGE']];
+  const note = (c: ClusterState): boolean => {
+    let changed = false;
+    for (const p of pick(c)) {
+      const row = cells(c, p);
+      const state = row.slice(1, 4).join(' ');
+      if (seen.get(p.metadata.name) === state) continue;
+      seen.set(p.metadata.name, state);
+      rows.push(row);
+      changed = true;
+    }
+    return changed;
+  };
+  note(cluster);
+  let next = cluster;
+  for (let i = 0, quiet = 0; i < 60 && quiet < 8; i += 1) {
+    next = advanceCluster(next, tickPods);
+    quiet = note(next) ? 0 : quiet + 1;
+  }
+  return { stdout: table(rows), cluster: next };
 }
 
 /** 表の右端に LABELS の列を足す（--show-labels） */
@@ -102,6 +137,10 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     }
 
     if (format.kind !== 'table') return { stdout: renderResources(items, format) };
+    if (kind === 'pods' && (flags.has('w') || flags.has('watch'))) {
+      const watched = watchPods(cluster, namespace, name);
+      return { stdout: watched.stdout, patch: { cluster: watched.cluster } };
+    }
     if (items.length === 0 && !synthetic) {
       return { stdout: `No resources found in ${namespace} namespace.\n` };
     }
@@ -352,8 +391,9 @@ const ALIASES: Record<string, string> = { 'api-resources': 'api' };
 const NAMES = [...new Set([...Object.keys(subcommands), ...Object.keys(ALIASES)])].sort();
 
 function runSub(sub: string, argv: readonly string[], shell: ShellState): CommandResult {
-  const cluster = shell.cluster;
-  if (cluster === null || !canReach(shell, cluster)) return { stderr: NO_CLUSTER, code: 1 };
+  if (shell.cluster === null || !canReach(shell, shell.cluster)) return { stderr: NO_CLUSTER, code: 1 };
+  let cluster = shell.cluster;
+  if (cluster.server !== undefined) for (let i = 0; i < TYPING_TICKS; i += 1) cluster = advanceCluster(cluster, tickPods);
   const rest = argv.slice(2);
   const { flags, values, operands } = parseArgs([sub, ...rest], {
     withValue: [
@@ -378,7 +418,9 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
     values,
     operands,
   };
-  return handler(ctx);
+  const result = handler(ctx);
+  // 何も変えないコマンドでも、流れた時間は残す
+  return cluster === shell.cluster || result.patch?.cluster !== undefined ? result : { ...result, patch: { ...result.patch, cluster } };
 }
 
 export const kubectlCommands: CommandSpec[] = [

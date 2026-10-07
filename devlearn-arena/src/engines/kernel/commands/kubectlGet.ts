@@ -1,5 +1,4 @@
 import { isNodeReady, nodeCondition } from '@/engines/k8s/bootstrap';
-import { resolveEnv } from '@/engines/k8s/storage';
 import type {
   ClusterState, ConfigMap, CronJob, DaemonSet, Deployment, HorizontalPodAutoscaler, Ingress, Job,
   NetworkPolicy, Node, PersistentVolume, PersistentVolumeClaim, Pod, ReplicaSet, Resource, Role,
@@ -304,67 +303,6 @@ export function renderTable(
     default:
       return '';
   }
-}
-
-/** kubectl describe pod。イベントと、解決済みの環境変数まで見せる */
-export function describePod(cluster: ClusterState, pod: Pod): string {
-  const lines = [
-    `Name:         ${pod.metadata.name}`,
-    `Namespace:    ${pod.metadata.namespace}`,
-    `Node:         ${pod.status.nodeName ?? '<none>'}`,
-    `Status:       ${podStatus(pod)}`,
-    `IP:           ${pod.status.podIP ?? '<none>'}`,
-    `ServiceAccount: ${pod.spec.serviceAccountName}`,
-    `Labels:       ${
-      Object.entries(pod.metadata.labels).map(([k, v]) => `${k}=${v}`).join(',') || '<none>'
-    }`,
-    'Containers:',
-  ];
-  for (const spec of pod.spec.containers) {
-    const status = pod.status.containerStatuses.find((c) => c.name === spec.name);
-    lines.push(`  ${spec.name}:`);
-    lines.push(`    Image:      ${spec.image}`);
-    lines.push(`    Ready:      ${status?.ready === true ? 'True' : 'False'}`);
-    lines.push(`    Restarts:   ${String(status?.restartCount ?? 0)}`);
-    lines.push(`    Requests:   cpu=${String(spec.requests.cpu)}m memory=${String(spec.requests.memory)}Mi`);
-    if (spec.livenessProbe !== null) lines.push('    Liveness:   設定あり');
-    if (spec.readinessProbe !== null) lines.push('    Readiness:  設定あり');
-    if (spec.startupProbe !== null) lines.push('    Startup:    設定あり');
-    const env = resolveEnv(cluster, pod, spec.name);
-    if (Object.keys(env).length > 0) {
-      lines.push('    Environment:');
-      for (const [k, v] of Object.entries(env)) lines.push(`      ${k}: ${v}`);
-    }
-    if (spec.volumeMounts.length > 0) {
-      lines.push('    Mounts:');
-      for (const m of spec.volumeMounts) lines.push(`      ${m.mountPath} from ${m.name}`);
-    }
-  }
-  if (pod.spec.volumes.length > 0) {
-    lines.push('Volumes:');
-    for (const v of pod.spec.volumes) {
-      const detail =
-        v.kind === 'configMap' ? `ConfigMap (${v.configMap})`
-          : v.kind === 'secret' ? `Secret (${v.secret})`
-            : v.kind === 'persistentVolumeClaim' ? `PVC (${v.claimName})`
-              : 'EmptyDir';
-      lines.push(`  ${v.name}: ${detail}`);
-    }
-  }
-  if (pod.status.message !== null) lines.push('', `Message:      ${pod.status.message}`);
-
-  const events = cluster.events.filter((e) => e.object === `pod/${pod.metadata.name}`).slice(-10);
-  lines.push('', 'Events:');
-  if (events.length === 0) lines.push('  <none>');
-  else {
-    lines.push('  TYPE      REASON              AGE   MESSAGE');
-    for (const e of events) {
-      lines.push(
-        `  ${e.type.padEnd(9)} ${e.reason.padEnd(19)} ${age(cluster.tick, e.tick).padEnd(5)} ${e.message}`,
-      );
-    }
-  }
-  return `${lines.join('\n')}\n`;
 }
 
 /** Pod 以外の describe。共通の見出しと、その資源の要点を出す */

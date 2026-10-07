@@ -193,7 +193,7 @@ export const run: KubectlHandler = (ctx) => {
   // 本物の kubectl run と同じく、run=<名前> のラベルを付ける
   const labels = labelsOf(values.get('labels')) ?? { run: name };
   const port = Number(values.get('port') ?? NaN);
-  const made = pod(name, [container(name, image, Number.isFinite(port) ? { ports: [port] } : {})], {
+  const made = pod(name, [container(name, image, { ports: Number.isFinite(port) ? [port] : [] })], {
     namespace,
     labels,
     createdAt: cluster.tick,

@@ -83,6 +83,8 @@ export interface ContainerStatus {
   restartAt: number | null;
   /** startupProbe が通ったか。通るまで liveness / readiness は評価しない */
   started: boolean;
+  /** イメージを取りに行って失敗した回数（本物と同じく、再起動の回数には数えない） */
+  pulls?: number;
 }
 
 export interface Pod {
@@ -234,6 +236,8 @@ export interface ClusterState {
   readonly nameCounter: number;
   /** 窓口（API サーバ）の住所。あれば kubectl は接続先の設定（kubeconfig）を読んで、ここへ頼む */
   readonly server?: string;
+  /** 置き場から取れるイメージ（名前:タグ）。あれば、これに無いイメージは取れない（ErrImagePull） */
+  readonly images?: readonly string[];
 }
 
 export function key(namespace: string, name: string): string {

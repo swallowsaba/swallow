@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { addContext, addRegistry, createContainerHost } from './container/container';
+import { REGISTRY, addContext, addRegistry, createContainerHost, repoOf } from './container/container';
 import { CONTROL_PLANE_TAINT } from './k8s/bootstrap';
 import { emptyCluster, node } from './k8s/factory';
 import type { ClusterState, Node } from './k8s/types';
@@ -256,7 +256,9 @@ function clusterOf(c: NonNullable<PracticeSetup['cluster']>): ClusterState {
   });
   const cp = at(node('cp-1', 2000, 4096, {}, { role: 'control-plane' }));
   const nodes = c.controlPlane === true ? [{ ...cp, spec: { ...cp.spec, taints: [{ ...CONTROL_PLANE_TAINT }] } }, ...workers] : workers;
-  return { ...emptyCluster(nodes), server: API_SERVER };
+  // 取れるイメージは、模擬の置き場（REGISTRY）にある物と、その名前の latest
+  const images = [...new Set(REGISTRY.flatMap((i) => [i.ref, `${repoOf(i.ref)}:latest`]))];
+  return { ...emptyCluster(nodes), server: API_SERVER, images };
 }
 
 /** 端末の実戦の、シェルの初期状態（src/engines/kernel/session の createShellState に渡す） */

@@ -39,6 +39,7 @@ export interface ClusterSnapshot {
   ipCounter: number;
   nameCounter: number;
   server?: string;
+  images?: string[];
 }
 
 export function snapshotCluster(cluster: ClusterState): ClusterSnapshot {
@@ -72,6 +73,7 @@ export function snapshotCluster(cluster: ClusterState): ClusterSnapshot {
     ipCounter: cluster.ipCounter,
     nameCounter: cluster.nameCounter,
     ...(cluster.server === undefined ? {} : { server: cluster.server }),
+    ...(cluster.images === undefined ? {} : { images: [...cluster.images] }),
   };
 }
 
@@ -106,5 +108,6 @@ export function restoreCluster(snapshot: ClusterSnapshot): ClusterState {
     ipCounter: snapshot.ipCounter,
     nameCounter: snapshot.nameCounter,
     ...(snapshot.server === undefined ? {} : { server: snapshot.server }),
+    ...(snapshot.images === undefined ? {} : { images: snapshot.images }),
   };
 }
