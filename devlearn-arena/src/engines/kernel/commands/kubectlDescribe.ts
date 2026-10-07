@@ -3,7 +3,7 @@ import { realNames, templateHash } from '@/engines/k8s/controllers';
 import { REVISION_KEY } from '@/engines/k8s/rollout';
 import { isReady } from '@/engines/k8s/kubelet';
 import type {
-  ClusterState, ContainerSpec, ContainerStatus, Deployment, Ingress, Node, PersistentVolume, PersistentVolumeClaim, Pod, PodVolume, Probe, ReplicaSet, Service,
+  ClusterState, ContainerSpec, ContainerStatus, Deployment, HorizontalPodAutoscaler, Ingress, Node, PersistentVolume, PersistentVolumeClaim, Pod, PodVolume, Probe, ReplicaSet, Service,
 } from '@/engines/k8s/types';
 import { backendText, rulesByHost } from '@/engines/k8s/ingress';
 import { age } from './kubectlShared';
@@ -103,6 +103,7 @@ function sourceOf(reason: string): string {
   if (reason === 'ScalingReplicaSet') return 'deployment-controller';
   if (reason === 'SuccessfulCreate' || reason === 'SuccessfulDelete') return 'replicaset-controller';
   if (reason === 'Sync') return 'nginx-ingress-controller';
+  if (['SuccessfulRescale', 'FailedGetResourceMetric', 'FailedComputeMetricsReplicas', 'FailedGetScale'].includes(reason)) return 'horizontal-pod-autoscaler';
   return 'kubelet';
 }
 
@@ -420,6 +421,33 @@ export function describeIngress(cluster: ClusterState, ing: Ingress): string {
     ...rows,
     ...multi('Annotations', Object.entries(ing.metadata.annotations).map(([k, v]) => `${k}: ${v}`), w),
     ...eventsOf(cluster, `ingress/${ing.metadata.name}`, w),
+  ];
+  return `${lines.join('\n')}\n`;
+}
+
+/**
+ * describe hpa（本物の v1.31 の形）。Metrics の今の値は「175% (350m)」、測れない間は <unknown>。
+ * Conditions は、HPA が最後に計算した時の 3 つの欄（まだ一度も計算していなければ無い）
+ */
+export function describeAutoscaler(cluster: ClusterState, h: HorizontalPodAutoscaler): string {
+  const w = 55;
+  const now = h.status.currentCpuPercent === null
+    ? '<unknown>'
+    : `${String(h.status.currentCpuPercent)}% (${formatCpu(h.status.currentCpuAverage ?? 0)})`;
+  const conditions = h.status.conditions ?? [];
+  const lines = [
+    ...multi('Name', [h.metadata.name], w),
+    ...multi('Namespace', [h.metadata.namespace], w),
+    ...multi('Labels', labelText(h.metadata.labels), w),
+    ...multi('Annotations', [], w),
+    ...multi('Reference', [`Deployment/${h.spec.targetName}`], w),
+    ...multi('Metrics', ['( current / target )'], w),
+    ...multi('  resource cpu on pods  (as a percentage of request)', [`${now} / ${String(h.spec.targetCpuPercent)}%`], w),
+    ...multi('Min replicas', [String(h.spec.minReplicas)], w),
+    ...multi('Max replicas', [String(h.spec.maxReplicas)], w),
+    ...multi('Deployment pods', [`${String(h.status.currentReplicas ?? 0)} current / ${String(h.status.desiredReplicas)} desired`], w),
+    ...(conditions.length === 0 ? [] : ['Conditions:', ...grid(['Type', 'Status', 'Reason', 'Message'], conditions.map((c) => [c.type, c.status, c.reason, c.message]))]),
+    ...eventsOf(cluster, `horizontalpodautoscaler/${h.metadata.name}`, w),
   ];
   return `${lines.join('\n')}\n`;
 }

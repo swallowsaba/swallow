@@ -69,6 +69,11 @@ export interface Image {
   pg?: { dataDir: string; db: string; seed: Tables };
   /** 動き出す時に DB につなぐアプリ: DB の場所（postgres://利用者@名前:ポート/DB）を受け取る環境変数 */
   database?: { env: string };
+  /**
+   * 動いている間、環境変数の URL（http://Service の名前）に頼みを送り続ける道具（クラスタの負荷）。
+   * millicores は、受ける側の Ready の Pod 全体に掛かる CPU の仕事の量（m。Pod の数で等しく分ける。src/engines/k8s/metrics.ts）
+   */
+  sends?: { env: string; millicores: number };
 }
 
 /** 網（決まって在る bridge・host・none と、自分で作った網） */
@@ -245,6 +250,13 @@ export const REGISTRY: readonly Image[] = [
     },
     bootLog: ['guide: version 1.0.0', 'guide: loading map data (about 20s)'],
     startLog: ['guide: map data loaded (1,812 places)', 'guide: listening on :8080'],
+  },
+  {
+    // 市の利用者の波を作る道具（k8s.i.06）。TARGET_URL の Service に頼みを送り続け、受ける側の Pod 全体に CPU 700m の仕事を掛ける
+    ref: 'city-crowd:1.0', id: 'c4d81e2b9f60', size: '12.4MB', command: '/crowd',
+    requiresEnv: { name: 'TARGET_URL', error: ['crowd: TARGET_URL is not set'] },
+    sends: { env: 'TARGET_URL', millicores: 700 },
+    startLog: ['crowd: sending about 40 requests per second'],
   },
   { ref: 'redis:7', id: '7e49ed81b42b', size: '117MB', command: 'docker-entrypoint.sh redis-server', startLog: ['Redis version=7.2.5, bits=64', 'Ready to accept connections tcp'] },
   {

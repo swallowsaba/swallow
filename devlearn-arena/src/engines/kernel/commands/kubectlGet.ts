@@ -14,6 +14,22 @@ const MODE_SHORT: Readonly<Record<string, string>> = {
 const shortMode = (mode: string): string => MODE_SHORT[mode] ?? mode;
 
 /** 種別ごとの一覧表。全て状態から導く（作り置きの文字列は持たない） */
+/** get hpa の欄（本物の v1.31 の形。TARGETS は「cpu: 今/目標」で、測れない間は <unknown>。REPLICAS は最後に見た数） */
+export const HPA_HEAD = ['NAME', 'REFERENCE', 'TARGETS', 'MINPODS', 'MAXPODS', 'REPLICAS', 'AGE'] as const;
+
+export function hpaRow(cluster: ClusterState, h: HorizontalPodAutoscaler): string[] {
+  const now = h.status.currentCpuPercent === null ? '<unknown>' : `${String(h.status.currentCpuPercent)}%`;
+  return [
+    h.metadata.name,
+    `Deployment/${h.spec.targetName}`,
+    `cpu: ${now}/${String(h.spec.targetCpuPercent)}%`,
+    String(h.spec.minReplicas),
+    String(h.spec.maxReplicas),
+    String(h.status.currentReplicas ?? h.status.desiredReplicas),
+    age(cluster.tick, h.metadata.createdAt),
+  ];
+}
+
 export function renderTable(
   cluster: ClusterState,
   kind: string,
@@ -308,17 +324,8 @@ export function renderTable(
     }
 
     case 'horizontalpodautoscalers': {
-      const rows = [['NAME', 'REFERENCE', 'TARGETS', 'MINPODS', 'MAXPODS', 'REPLICAS']];
-      for (const h of items as HorizontalPodAutoscaler[]) {
-        rows.push([
-          h.metadata.name,
-          `Deployment/${h.spec.targetName}`,
-          `${String(h.status.currentCpuPercent)}%/${String(h.spec.targetCpuPercent)}%`,
-          String(h.spec.minReplicas),
-          String(h.spec.maxReplicas),
-          String(h.status.desiredReplicas),
-        ]);
-      }
+      const rows: string[][] = [[...HPA_HEAD]];
+      for (const h of items as HorizontalPodAutoscaler[]) rows.push(hpaRow(cluster, h));
       return table(rows);
     }
 

@@ -92,6 +92,7 @@ const podSchema = z.object({
     ),
     message: z.string().nullable(),
     startedAt: z.number().int().nullable(),
+    readySince: z.number().int().optional(),
   }),
 });
 
@@ -377,8 +378,18 @@ const hpaSchema = z.object({
     targetCpuPercent: z.number(),
   }),
   status: z.object({
-    currentCpuPercent: z.number(),
+    currentCpuPercent: z.number().nullable(),
+    currentCpuAverage: z.number().nullable().optional(),
+    currentReplicas: z.number().int().optional(),
     desiredReplicas: z.number().int(),
+    lastSync: z.number().int().optional(),
+    recommendations: z.array(z.object({ tick: z.number().int(), replicas: z.number().int() })).optional(),
+    conditions: z.array(z.object({
+      type: z.enum(['AbleToScale', 'ScalingActive', 'ScalingLimited']),
+      status: z.enum(['True', 'False']),
+      reason: z.string(),
+      message: z.string(),
+    })).optional(),
   }),
 });
 

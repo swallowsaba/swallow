@@ -1,17 +1,18 @@
 import { advanceCluster } from '@/engines/k8s/controllers';
 import { tickPods } from '@/engines/k8s/kubelet';
 import { settling } from '@/engines/k8s/probes';
-import type { ClusterState, Deployment, Ingress, Node, PersistentVolume, PersistentVolumeClaim, Pod, ReplicaSet, Resource, Service } from '@/engines/k8s/types';
+import type { ClusterState, Deployment, HorizontalPodAutoscaler, Ingress, Node, PersistentVolume, PersistentVolumeClaim, Pod, ReplicaSet, Resource, Service } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
 import { deleteNamespace, getNamespaces, missingNamespace } from './kubectlNamespace';
-import { describeClaim, describeDeployment, describeIngress, describeNode, describePod, describeReplicaSet, describeService, describeVolume } from './kubectlDescribe';
+import { describeAutoscaler, describeClaim, describeDeployment, describeIngress, describeNode, describePod, describeReplicaSet, describeService, describeVolume } from './kubectlDescribe';
 import { describeResource, renderTable } from './kubectlGet';
 import { create, expose, run } from './kubectlCreate';
 import { nodeCtl, taint } from './kubectlNodes';
 import { setProbe, setResources } from './kubectlSet';
 import { opsSubcommands } from './kubectlOps';
+import { autoscale, top, watchHpa } from './kubectlAutoscale';
 import { parseOutput, renderResources } from './kubectlOutput';
 import {
   CLUSTER_SCOPED, FIELD_OF, KINDS, NO_CLUSTER, canReach, collectionOf, idFor, listOf, matchesSelector, notFound, parseTarget, podReady, podStatus, restarts, restartsText, table, age,
@@ -117,7 +118,7 @@ function deleteOne(cluster: ClusterState, kind: string, namespace: string, name:
 
   // 本物と同じく、apps の仲間（Deployment など）は deployment.apps のように書く
   const single = kind.replace(/s$/, '');
-  const label = ['deployments', 'replicasets', 'statefulsets', 'daemonsets'].includes(kind) ? `${single}.apps` : single;
+  const label = ['deployments', 'replicasets', 'statefulsets', 'daemonsets'].includes(kind) ? `${single}.apps` : kind === 'horizontalpodautoscalers' ? `${single}.autoscaling` : single;
   return { stdout: `${label} "${name}" deleted\n`, patch: { cluster: cluster2 } };
 }
 
@@ -176,6 +177,10 @@ const coreSubcommands: Record<string, KubectlHandler> = {
       const watched = watchPods(cluster, namespace, name);
       return { stdout: watched.stdout, patch: { cluster: watched.cluster } };
     }
+    if (kind === 'horizontalpodautoscalers' && (flags.has('w') || flags.has('watch'))) {
+      const watched = watchHpa(cluster, namespace, name);
+      return { stdout: watched.stdout, patch: { cluster: watched.cluster } };
+    }
     if (items.length === 0 && !synthetic) {
       return { stdout: `No resources found in ${namespace} namespace.\n` };
     }
@@ -197,6 +202,7 @@ const coreSubcommands: Record<string, KubectlHandler> = {
                 : kind === 'persistentvolumeclaims' ? describeClaim(cluster, resource as PersistentVolumeClaim)
                   : kind === 'persistentvolumes' ? describeVolume(cluster, resource as PersistentVolume)
                     : kind === 'ingresses' ? describeIngress(cluster, resource as Ingress)
+                      : kind === 'horizontalpodautoscalers' ? describeAutoscaler(cluster, resource as HorizontalPodAutoscaler)
           : describeResource(cluster, kind, resource);
     if (name !== undefined) {
       const found = findOne(cluster, kind, namespace, name);
@@ -425,7 +431,7 @@ coreSubcommands['taint'] = taint;
 coreSubcommands['node-down'] = nodeCtl;
 coreSubcommands['node-up'] = nodeCtl;
 
-const subcommands: Record<string, KubectlHandler> = { ...coreSubcommands, ...opsSubcommands };
+const subcommands: Record<string, KubectlHandler> = { ...coreSubcommands, ...opsSubcommands, autoscale, top };
 
 /** `kubectl api-resources` を `api` に寄せる（引数の形が特殊なため） */
 const ALIASES: Record<string, string> = { 'api-resources': 'api' };
@@ -440,7 +446,7 @@ function runSub(sub: string, argv: readonly string[], shell: ShellState): Comman
   const { flags, values, operands } = parseArgs([sub, ...rest], {
     withValue: [
       'o', 'n', 'namespace', 'l', 'f', 'as', 'image', 'replicas', 'tcp', 'requests', 'limits', 'succeeds-after',
-      'port', 'target-port', 'type', 'name', 'labels',
+      'port', 'target-port', 'type', 'name', 'labels', 'cpu-percent', 'min', 'max',
     ],
   });
 

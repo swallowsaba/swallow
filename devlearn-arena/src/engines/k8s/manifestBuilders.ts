@@ -295,9 +295,11 @@ export const BUILDERS: Record<string, Builder> = {
         targetName: asString(target['name']),
         minReplicas: asNumber(spec['minReplicas'], 1),
         maxReplicas: asNumber(spec['maxReplicas'], 10),
-        targetCpuPercent: asNumber(utilization['averageUtilization'], 80),
+        // autoscaling/v2 の metrics と、autoscaling/v1 の targetCPUUtilizationPercentage のどちらでも。書かなければ本物の既定の 80%
+        targetCpuPercent: asNumber(utilization['averageUtilization'], asNumber(spec['targetCPUUtilizationPercentage'], 80)),
       },
-      status: { currentCpuPercent: 0, desiredReplicas: asNumber(spec['minReplicas'], 1) },
+      // 本物と同じく、作った直後は測っておらず（<unknown>）、数も 0
+      status: { currentCpuPercent: null, currentReplicas: 0, desiredReplicas: 0 },
     } satisfies HorizontalPodAutoscaler;
   },
 };

@@ -1,4 +1,5 @@
 import { meta, pod as makePod } from './factory';
+import { reconcileAutoscalers } from './autoscaler';
 import { isReady } from './kubelet';
 import type {
   ClusterState, CronJob, DaemonSet, EventRecord, HorizontalPodAutoscaler, Job,
@@ -251,30 +252,8 @@ export function reconcileWorkloads(state: ClusterState): WorkloadResult {
     cronJobs.set(id, { ...cron, status: { lastScheduleTick: tick, createdCount: count } });
   }
 
-  // 5. HPA。観測した負荷と目標の比から必要な数を出し、Deployment の replicas を動かす
-  for (const [id, hpa] of autoscalers) {
-    const targetId = key(hpa.metadata.namespace, hpa.spec.targetName);
-    const target = deployments.get(targetId);
-    if (target === undefined) continue;
-    const current = state.load.get(targetId) ?? 0;
-    const ratio = hpa.spec.targetCpuPercent === 0 ? 1 : current / hpa.spec.targetCpuPercent;
-    const desired = Math.min(
-      hpa.spec.maxReplicas,
-      Math.max(hpa.spec.minReplicas, Math.ceil(target.spec.replicas * ratio)),
-    );
-    autoscalers.set(id, {
-      ...hpa,
-      status: { currentCpuPercent: current, desiredReplicas: desired },
-    });
-    if (desired !== target.spec.replicas) {
-      deployments.set(targetId, { ...target, spec: { ...target.spec, replicas: desired } });
-      events.push({
-        tick, type: 'Normal', reason: 'SuccessfulRescale',
-        object: `horizontalpodautoscaler/${hpa.metadata.name}`,
-        message: `New size: ${String(desired)}; reason: cpu resource utilization above target`,
-      });
-    }
-  }
+  // 5. HPA。15 秒ごとに Pod の CPU の使用量を要求と比べ、Deployment の replicas を動かす（src/engines/k8s/autoscaler.ts）
+  reconcileAutoscalers(state, tick, autoscalers, deployments, events);
 
   return {
     pods, statefulSets, daemonSets, jobs, cronJobs,

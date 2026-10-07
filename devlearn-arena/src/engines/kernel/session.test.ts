@@ -79,6 +79,21 @@ describe('シェルの保存と復元', () => {
     expect(after).toEqual(before);
   });
 
+  it('HPA の計算の記録（使用率・推奨の数・状態の欄）と、Pod が Ready になった時刻もそのまま戻る', () => {
+    const manifests = [
+      'apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-shop:1.0\n        resources:\n          requests:\n            cpu: 200m\n',
+      'apiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n  ports:\n  - port: 80\n',
+      'apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: crowd\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: crowd\n  template:\n    metadata:\n      labels:\n        app: crowd\n    spec:\n      containers:\n      - name: crowd\n        image: city-crowd:1.0\n        env:\n        - name: TARGET_URL\n          value: http://web\n',
+    ].join('---\n');
+    const clock = createClock();
+    let state = initialShell('k8s-cluster', { cluster: { nodes: 2, manifests } });
+    for (const line of ['kubectl autoscale deployment web --cpu-percent=50 --min=2 --max=10', 'kubectl get hpa -w']) state = execute(state, line, registry, clock).state;
+    const before = state.cluster;
+    expect([...(before?.autoscalers.values() ?? [])][0]?.status.conditions?.length).toBe(3);
+    const parsed = shellSnapshotSchema.parse(JSON.parse(JSON.stringify(snapshotShell(state))));
+    expect(restoreShell(parsed).cluster).toEqual(before);
+  });
+
   it('クラスタを進めた結果もそのまま戻る', () => {
     const mission = findMission('k8s/07/boss-service-no-endpoint');
     if (!mission) throw new Error('missing');

@@ -16,6 +16,7 @@ import { key, type ClusterState, type Deployment, type Pod } from './types';
  *   namespace/dev
  *   deployment/db rows.reservations=4 && pvc/db-data status=Bound
  *   deployment/guide readyUpdated=2 restarts>=1 early=0
+ *   hpa/web min=2 max=10 target=50
  * 比べ方は >= <= =（status・env・from は = で語を比べる）。比べ方を書かない欄は、値があるかどうか。区画を省けば default。` && ` で別の資源の条件をつなぐ
  */
 
@@ -27,14 +28,15 @@ function readyPodsOf(cluster: ClusterState, d: Deployment): Pod[] {
   return [...cluster.pods.values()].filter((p) => p.metadata.namespace === d.metadata.namespace && p.metadata.ownerReferences.some((o) => o.kind === 'ReplicaSet' && sets.has(o.name)) && isReady(p));
 }
 
-type Kind = 'deployment' | 'service' | 'pod' | 'namespace' | 'pvc';
+type Kind = 'deployment' | 'service' | 'pod' | 'namespace' | 'pvc' | 'hpa';
 
-const KINDS: readonly Kind[] = ['deployment', 'service', 'pod', 'namespace', 'pvc'];
+const KINDS: readonly Kind[] = ['deployment', 'service', 'pod', 'namespace', 'pvc', 'hpa'];
 
 function exists(cluster: ClusterState, kind: Kind, ns: string, name: string): boolean {
   const id = key(ns, name);
   if (kind === 'namespace') return cluster.namespaces?.some((n) => n.name === name) ?? false;
   if (kind === 'pvc') return cluster.persistentVolumeClaims.has(id);
+  if (kind === 'hpa') return cluster.autoscalers.has(id);
   return kind === 'deployment' ? cluster.deployments.has(id) : kind === 'service' ? cluster.services.has(id) : cluster.pods.has(id);
 }
 
@@ -96,6 +98,15 @@ function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, fi
     // status: get pvc の STATUS の欄（Bound・Pending）。volume: 結ばれた PV の名前
     if (field === 'status') return c.status.phase;
     if (field === 'volume') return c.status.volumeName ?? undefined;
+  } else if (kind === 'hpa') {
+    const h = cluster.autoscalers.get(id);
+    if (!h) return undefined;
+    // target・min・max: 書いた目標の使用率と数の範囲。cpu: 今の使用率（測れない間は無い）。replicas: 最後に見た数（get hpa の REPLICAS）
+    if (field === 'target') return h.spec.targetCpuPercent;
+    if (field === 'min') return h.spec.minReplicas;
+    if (field === 'max') return h.spec.maxReplicas;
+    if (field === 'cpu') return h.status.currentCpuPercent ?? undefined;
+    if (field === 'replicas') return h.status.currentReplicas ?? h.status.desiredReplicas;
   } else if (kind === 'service') {
     const s = cluster.services.get(id);
     if (!s) return undefined;

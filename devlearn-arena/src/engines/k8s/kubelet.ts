@@ -326,11 +326,14 @@ export function tickPods(state: ClusterState): TickResult {
       continue;
     }
 
+    const phase = allReady || liveStarted ? 'Running' : anyWaiting ? 'Pending' : 'ContainerCreating';
+    const { readySince, ...rest } = pod.status;
     pod.status = {
-      ...pod.status,
+      ...rest,
       containerStatuses: containers,
       // 本物の確かめで見るアプリは、一度動き出せば Running（Ready でなくても、作り直しを待っていても）
-      phase: allReady || liveStarted ? 'Running' : anyWaiting ? 'Pending' : 'ContainerCreating',
+      phase,
+      ...(phase === 'Running' && allReady ? { readySince: readySince ?? tick } : {}),
     };
     pods.set(id, pod);
   }

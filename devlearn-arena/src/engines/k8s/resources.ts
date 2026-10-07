@@ -204,8 +204,25 @@ export interface HorizontalPodAutoscaler {
     targetCpuPercent: number;
   };
   status: {
-    /** 観測した平均 CPU 使用率(%)。負荷は load コマンドで与える */
-    currentCpuPercent: number;
+    /** 観測した平均 CPU 使用率（要求に対する %）。測れない間は null（<unknown>）。任務では load コマンドで与える */
+    currentCpuPercent: number | null;
+    /** 観測した Pod ごとの平均の使用量（m）。describe の「175% (350m)」 */
+    currentCpuAverage?: number | null;
+    /** 最後に見た時の、対象の数 */
+    currentReplicas?: number;
     desiredReplicas: number;
+    /** 最後に数を計算した tick（本物と同じく 15 秒ごと） */
+    lastSync?: number;
+    /** 計算した数の記録（縮める時は、過去 5 分の一番大きい数を使う） */
+    recommendations?: { tick: number; replicas: number }[];
+    conditions?: HpaCondition[];
   };
+}
+
+/** HPA の状態の欄（本物の AbleToScale・ScalingActive・ScalingLimited） */
+export interface HpaCondition {
+  type: 'AbleToScale' | 'ScalingActive' | 'ScalingLimited';
+  status: 'True' | 'False';
+  reason: string;
+  message: string;
 }

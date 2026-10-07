@@ -126,6 +126,8 @@ export interface Pod {
     /** 配置できない理由 */
     message: string | null;
     startedAt: number | null;
+    /** Ready になった tick（Ready でない間は無い。HPA が、Ready になったばかりの Pod の値を使わないために見る） */
+    readySince?: number;
   };
 }
 

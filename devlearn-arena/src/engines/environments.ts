@@ -284,7 +284,12 @@ function clusterOf(c: NonNullable<PracticeSetup['cluster']>): ClusterState {
   // 前から動いている形にする: 落ち着くまで時間を進め、作った時刻をクラスタと同じにし、古い知らせを消す（本物も 1 時間で消える）
   cluster = applied.cluster;
   for (let i = 0; i < 20; i += 1) cluster = advanceCluster(cluster, tickPods);
-  return { ...rebirth(cluster, born), events: [] };
+  const aged = rebirth(cluster, born);
+  // 動いている Pod は、前から動いていて Ready だった（metrics-server も前から測っている）
+  const pods = new Map([...aged.pods].map(([id, p]) => [id, p.status.startedAt === null ? p : {
+    ...p, status: { ...p.status, startedAt: born, ...(p.status.readySince === undefined ? {} : { readySince: born }) },
+  }]));
+  return { ...aged, pods, events: [] };
 }
 
 /** 全ての資源の作った時刻を揃える（setup で前から在った物にする） */
