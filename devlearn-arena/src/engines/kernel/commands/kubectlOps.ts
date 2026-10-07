@@ -8,7 +8,7 @@ import { psql, TABLES_FILE } from '@/engines/container/pg';
 import { appLog } from '@/engines/k8s/apps';
 import { pgOf, pgTables, writeAt } from '@/engines/k8s/volumes';
 import { resolveEnv } from '@/engines/k8s/storage';
-import type { ClusterState, Deployment, Pod, Resource } from '@/engines/k8s/types';
+import type { ClusterState, Deployment, PersistentVolumeClaim, Pod, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult } from '../registry';
 import { resolve } from '../path';
@@ -86,16 +86,69 @@ function base64Error(value: string): number | null {
   return value.length % 4 === 0 ? null : value.length - (value.length % 4);
 }
 
+/** 大きさ（Gi）の、go-cmp の差分の中の書き方 */
+const quantity = (gi: number): string => `{i: resource.int64Amount{value: ${String(gi * 1024 ** 3)}}, s: "${String(gi)}Gi", Format: "BinarySI"}`;
+
+/**
+ * PVC の中身は、作った後に変えられない（結ばれた PVC の大きさを増やすことだけ、領域が広げられる種類なら許される）。
+ * 変えようとした時の、本物の API サーバの断り方（変えられなければ null）
+ */
+function claimUpdateError(old: PersistentVolumeClaim, next: PersistentVolumeClaim): string | null {
+  const modes = (c: PersistentVolumeClaim): string => `{${c.spec.accessModes.map((m) => `"${m}"`).join(', ')}}`;
+  const cls = (c: PersistentVolumeClaim): string => (c.spec.storageClassName === '' ? 'nil' : `&"${c.spec.storageClassName}"`);
+  const bound = old.status.phase === 'Bound';
+  const sameButSize = modes(old) === modes(next) && cls(old) === cls(next);
+  if (sameButSize && old.spec.requestGi === next.spec.requestGi) return null;
+  const head = `The PersistentVolumeClaim "${old.metadata.name}" is invalid: `;
+  if (bound && sameButSize) {
+    if (next.spec.requestGi < old.spec.requestGi) return `${head}spec.resources.requests.storage: Forbidden: field can not be less than previous value`;
+    return `Error from server (Forbidden): error when applying patch: persistentvolumeclaims "${old.metadata.name}" is forbidden: only dynamically provisioned pvc can be resized and the storageclass that provisions the pvc must support resize`;
+  }
+  const line = (same: boolean, indent: string, label: string, a: string, b: string): string[] =>
+    same ? [`  ${indent}${label}${a},`] : [`- ${indent}${label}${a},`, `+ ${indent}${label}${b},`];
+  return [
+    `${head}spec: Forbidden: spec is immutable after creation except resources.requests and volumeAttributesClassName for bound claims`,
+    '  core.PersistentVolumeClaimSpec{',
+    ...line(modes(old) === modes(next), '\t', 'AccessModes: ', modes(old), modes(next)),
+    '  \tSelector:    nil,',
+    '  \tResources: core.VolumeResourceRequirements{',
+    '  \t\tLimits: nil,',
+    ...line(bound || old.spec.requestGi === next.spec.requestGi, '\t\t', 'Requests: ', `core.ResourceList{s"storage": ${quantity(old.spec.requestGi)}}`, `core.ResourceList{s"storage": ${quantity(next.spec.requestGi)}}`),
+    '  \t},',
+    `  \tVolumeName:       "${old.status.volumeName ?? ''}",`,
+    ...line(cls(old) === cls(next), '\t', 'StorageClassName: ', cls(old), cls(next)),
+    '  \t... // 4 identical fields',
+    '  }',
+  ].join('\n');
+}
+
+/** コンテナの volumeMounts の name が、Pod の volumes に無い時の、本物の API サーバの断り方（揃っていれば null） */
+function mountError(resource: Resource): string | null {
+  const [containers, volumes, path] = resource.kind === 'Pod' ? [resource.spec.containers, resource.spec.volumes, 'spec']
+    : resource.kind === 'Deployment' ? [resource.spec.template.containers, resource.spec.template.volumes ?? [], 'spec.template.spec']
+      : [[], [], ''];
+  for (const [i, c] of containers.entries()) {
+    for (const [j, m] of c.volumeMounts.entries()) {
+      if (!volumes.some((v) => v.name === m.name)) {
+        return `The ${resource.kind} "${resource.metadata.name}" is invalid: ${path}.containers[${String(i)}].volumeMounts[${String(j)}].name: Not found: "${m.name}"`;
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * マニフェスト（YAML。--- で複数）をクラスタに書き込む。kubectl apply と、実戦の setup の cluster.manifests が使う。
- * 本物と同じく、無ければ created、書いた形が変われば configured、同じなら unchanged
+ * 本物と同じく、無ければ created、書いた形が変われば configured、同じなら unchanged。
+ * 断られた物（failures）があっても、本物と同じく残りは書き込む
  */
-export function applyManifestText(cluster: ClusterState, text: string, source = '-'): { cluster: ClusterState; lines: string[] } | { error: string } {
+export function applyManifestText(cluster: ClusterState, text: string, source = '-'): { cluster: ClusterState; lines: string[]; failures: string[] } | { error: string } {
   const parsed = parseManifests(text);
   const errors = parsed.filter(isParseError);
   if (errors.length > 0) return { error: errors.map((e) => e.error).join('\n') };
   let next = cluster;
   const lines: string[] = [];
+  const failures: string[] = [];
   for (const resource of parsed) {
     if (isParseError(resource)) continue;
     const plural = KIND_TO_PLURAL[resource.kind];
@@ -120,6 +173,18 @@ export function applyManifestText(cluster: ClusterState, text: string, source = 
       lines.push(`${label} unchanged`);
       continue;
     }
+    const badMount = mountError(resource);
+    if (badMount !== null) {
+      failures.push(badMount);
+      continue;
+    }
+    if (existing?.kind === 'PersistentVolumeClaim' && resource.kind === 'PersistentVolumeClaim') {
+      const refused = claimUpdateError(existing, resource);
+      if (refused !== null) {
+        failures.push(refused);
+        continue;
+      }
+    }
     const born = { ...resource, metadata: { ...resource.metadata, createdAt: next.tick } };
     next = upsert(next, plural, existing === undefined ? born : merged(existing, resource));
     // CNI の DaemonSet を入れると、ノードに Pod 網の設定が書かれる。
@@ -129,7 +194,7 @@ export function applyManifestText(cluster: ClusterState, text: string, source = 
     }
     lines.push(`${label} ${existing === undefined ? 'created' : 'configured'}`);
   }
-  return { cluster: next, lines };
+  return { cluster: next, lines, failures };
 }
 
 /** 入れ替えの期限（本物の progressDeadlineSeconds の既定。秒 = tick） */
@@ -260,7 +325,10 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
 
     const applied = applyManifestText(cluster, node.content, file);
     if ('error' in applied) return { stderr: `${applied.error}\n`, code: 1 };
-    return { stdout: fromLines(applied.lines), patch: { cluster: applied.cluster } };
+    const stdout = fromLines(applied.lines);
+    const patch = { cluster: applied.cluster };
+    if (applied.failures.length > 0) return { stdout, stderr: fromLines(applied.failures), code: 1, patch };
+    return { stdout, patch };
   },
 
   rollout: ({ cluster, rest, namespace, operands }) => {
@@ -416,8 +484,15 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
     const pod = target === undefined ? undefined : podFor(cluster, namespace, target);
     if (pod === undefined || target === undefined) return notFound('pods', target ?? '');
     const name = pod.metadata.name;
-    if (!isReady(pod)) {
-      return { stderr: `error: pod ${name} is not running\n`, code: 1 };
+    // 本物の断り方: 置き場所（Node）が決まっていない・終わった・コンテナがまだ動いていない
+    if (pod.status.nodeName === null) return { stderr: `Error from server (BadRequest): pod ${name} does not have a host assigned\n`, code: 1 };
+    if (pod.status.phase === 'Succeeded' || pod.status.phase === 'Failed') {
+      return { stderr: `error: cannot exec into a container in a completed pod; current phase is ${pod.status.phase}\n`, code: 1 };
+    }
+    const first = pod.status.containerStatuses[0];
+    // 動いていて受け付けの確かめ（readiness）だけが通らない（NotReady）コンテナには、本物と同じく入れる
+    if (first?.started !== true || (first.waitingReason !== null && first.waitingReason !== 'NotReady')) {
+      return { stderr: `error: unable to upgrade connection: container not found ("${pod.spec.containers[0]?.name ?? ''}")\n`, code: 1 };
     }
     const dashdash = rest.indexOf('--');
     const command = dashdash === -1 ? [] : rest.slice(dashdash + 1);

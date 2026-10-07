@@ -276,6 +276,7 @@ function clusterOf(c: NonNullable<PracticeSetup['cluster']>): ClusterState {
   if (c.manifests === undefined) return cluster;
   const applied = applyManifestText(cluster, c.manifests);
   if ('error' in applied) throw new Error(`setup の cluster.manifests が読めない: ${applied.error}`);
+  if (applied.failures.length > 0) throw new Error(`setup の cluster.manifests が断られた: ${applied.failures.join(' ')}`);
   // 前から動いている形にする: 落ち着くまで時間を進め、作った時刻をクラスタと同じにし、古い知らせを消す（本物も 1 時間で消える）
   cluster = applied.cluster;
   for (let i = 0; i < 20; i += 1) cluster = advanceCluster(cluster, tickPods);

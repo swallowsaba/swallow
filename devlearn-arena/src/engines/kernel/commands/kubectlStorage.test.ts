@@ -146,6 +146,44 @@ describe('PV と PVC（DB のデータの置き場所）', () => {
     expect(big.run('kubectl describe pvc db-data').out).toMatch(/^ {2}Warning +ProvisioningFailed +\S+ \(x\d+ over \S+\) +persistentvolume-controller +storageclass\.storage\.k8s\.io "manual" not found$/m);
   });
 
+  it('PVC の中身は作った後に変えられず、本物と同じく断られる（ほかの物は書き込まれる）。名前を変えれば申請し直せる', () => {
+    const c = console_();
+    c.apply(PVC('10Gi') + DB('/var/lib/postgresql/data'));
+    const again = c.apply(PVC('1Gi') + DB('/var/lib/postgresql/data'));
+    expect(again.code).toBe(1);
+    expect(again.out).toBe('deployment.apps/db unchanged\n');
+    expect(again.err).toMatch(/^The PersistentVolumeClaim "db-data" is invalid: spec: Forbidden: spec is immutable after creation except resources\.requests and volumeAttributesClassName for bound claims\n/);
+    expect(again.err).toContain('- \t\tRequests: core.ResourceList{s"storage": {i: resource.int64Amount{value: 10737418240}, s: "10Gi", Format: "BinarySI"}},\n');
+    expect(c.holds('pvc/db-data status=Pending')).toBe(true);
+    const renamed = (PVC('1Gi') + DB('/var/lib/postgresql/data')).replace(/db-data/g, 'db-data-2');
+    expect(c.apply(renamed).out).toBe('persistentvolumeclaim/db-data-2 created\ndeployment.apps/db configured\n');
+    expect(c.run('kubectl rollout status deployment/db').code).toBe(0);
+    expect(c.recreate()).toContain('     4\n');
+    expect(c.holds('pvc/db-data-2 status=Bound volume=pv-db-1 && pvc/db-data status=Pending')).toBe(true);
+  });
+
+  it('volumeMounts の名前が volumes に無ければ、本物と同じく Deployment を断る', () => {
+    const c = console_();
+    const r = c.apply(PVC() + DB('/var/lib/postgresql/data').replace('    - name: data\n        persistentVolumeClaim', '    - name: db-data\n        persistentVolumeClaim'));
+    expect(r.out).toBe('persistentvolumeclaim/db-data created\n');
+    expect(r.err).toBe('The Deployment "db" is invalid: spec.template.spec.containers[0].volumeMounts[0].name: Not found: "data"\n');
+  });
+
+  it('結ばれた PVC の大きさは減らせない', () => {
+    const c = console_();
+    c.apply(PVC('2Gi') + DB());
+    c.run('kubectl get pvc');
+    expect(c.apply(PVC('1Gi') + DB()).err).toBe('The PersistentVolumeClaim "db-data" is invalid: spec.resources.requests.storage: Forbidden: field can not be less than previous value\n');
+  });
+
+  it('置き場所の決まらない Pod には exec できない（本物の断り方）', () => {
+    const c = console_();
+    c.apply(PVC('10Gi') + DB('/var/lib/postgresql/data'));
+    c.run('kubectl delete pod -l app=db');
+    c.run('kubectl get pods');
+    expect(c.run(PSQL('SELECT count(*) FROM reservations')).err).toMatch(/^Error from server \(BadRequest\): pod db-\S+ does not have a host assigned\n$/);
+  });
+
   it('psql の誤りは本物の形', () => {
     const c = console_();
     expect(c.run(PSQL('SELECT count(*) FROM reservation')).err).toContain('ERROR:  relation "reservation" does not exist');
