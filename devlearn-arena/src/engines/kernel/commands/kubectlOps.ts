@@ -6,7 +6,7 @@ import { canI } from '@/engines/k8s/policy';
 import { revisionsOf, rolloutStatus, rolloutUndo } from '@/engines/k8s/rollout';
 import { appLog } from '@/engines/k8s/apps';
 import { resolveEnv } from '@/engines/k8s/storage';
-import type { ClusterState, Deployment, Resource } from '@/engines/k8s/types';
+import type { ClusterState, Deployment, Pod, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult } from '../registry';
 import { resolve } from '../path';
@@ -14,7 +14,7 @@ import { stat } from '../vfs';
 import { fromLines } from './args';
 import { missingNamespace } from './kubectlNamespace';
 import {
-  CLUSTER_SCOPED, FIELD_OF, KINDS, idFor, listOf, notFound, podFor, table, type KubectlHandler,
+  CLUSTER_SCOPED, FIELD_OF, KINDS, idFor, listOf, matchesSelector, notFound, podFor, table, type KubectlHandler,
 } from './kubectlShared';
 
 /** 資源を、その種別のコレクションに書き込んだ新しいクラスタを返す */
@@ -72,11 +72,20 @@ function merged(existing: Resource, resource: Resource): Resource {
   return next;
 }
 
+/** base64 として読めない時の、読めなくなった位置（Go の base64 と同じ数え方）。読めれば null */
+function base64Error(value: string): number | null {
+  const at = value.search(/[^A-Za-z0-9+/=]/);
+  if (at !== -1) return at;
+  const pad = value.indexOf('=');
+  if (pad !== -1 && !/^=*$/.test(value.slice(pad))) return pad;
+  return value.length % 4 === 0 ? null : value.length - (value.length % 4);
+}
+
 /**
  * マニフェスト（YAML。--- で複数）をクラスタに書き込む。kubectl apply と、実戦の setup の cluster.manifests が使う。
  * 本物と同じく、無ければ created、書いた形が変われば configured、同じなら unchanged
  */
-export function applyManifestText(cluster: ClusterState, text: string): { cluster: ClusterState; lines: string[] } | { error: string } {
+export function applyManifestText(cluster: ClusterState, text: string, source = '-'): { cluster: ClusterState; lines: string[] } | { error: string } {
   const parsed = parseManifests(text);
   const errors = parsed.filter(isParseError);
   if (errors.length > 0) return { error: errors.map((e) => e.error).join('\n') };
@@ -92,6 +101,13 @@ export function applyManifestText(cluster: ClusterState, text: string): { cluste
     // 区画の一覧を持つクラスタでは、無い区画には作れない（本物と同じ断り方）
     if (!CLUSTER_SCOPED.has(plural) && missingNamespace(next, resource.metadata.namespace)) {
       return { error: `Error from server (NotFound): error when creating: namespaces "${resource.metadata.namespace}" not found` };
+    }
+    // Secret の data: は base64 にした値を書く決まり（そのままの値は stringData:）。読めなければ本物と同じく断る
+    if (resource.kind === 'Secret') {
+      const bad = Object.values(resource.data).map(base64Error).find((n) => n !== null);
+      if (bad !== undefined) {
+        return { error: `Error from server (BadRequest): error when creating "${source}": Secret in version "v1" cannot be handled as a Secret: illegal base64 data at input byte ${String(bad)}` };
+      }
     }
     const group = GROUP_OF[resource.kind];
     const label = `${resource.kind.toLowerCase()}${group === undefined ? '' : `.${group}`}/${resource.metadata.name}`;
@@ -134,6 +150,49 @@ function waitRollout(cluster: ClusterState, id: string): CommandResult {
   return { stdout: fromLines(lines), stderr: `error: deployment "${name}" exceeded its progress deadline\n`, code: 1, patch: { cluster: next } };
 }
 
+/** 1 つの Pod のログ（行）か、まだ動いたことが無いと断る文 */
+function podLogs(cluster: ClusterState, pod: Pod): { lines: string[] } | { stderr: string } {
+  // 置き場を持つクラスタ: 本物と同じく、まだ動いたことの無いコンテナはログが無いと断り、動いたコンテナはアプリのログを出す
+  if (cluster.images !== undefined) {
+    const spec = pod.spec.containers[0];
+    const status = pod.status.containerStatuses[0];
+    if (spec === undefined) return { lines: [] };
+    const reason = pod.status.phase === 'ContainerCreating' || pod.status.nodeName === null ? 'ContainerCreating' : status?.waitingReason;
+    const waiting = reason === 'ContainerCreating' || reason === 'CreateContainerConfigError' ? reason
+      : reason === 'ImagePullBackOff' ? 'trying and failing to pull image'
+        : reason === 'ErrImagePull' ? "image can't be pulled" : null;
+    if (waiting !== null) {
+      return { stderr: `Error from server (BadRequest): container "${spec.name}" in pod "${pod.metadata.name}" is waiting to start: ${waiting}\n` };
+    }
+    const log = appLog(cluster, spec, resolveEnv(cluster, pod, spec.name));
+    if (log !== null) return { lines: log };
+  }
+
+  const lines: string[] = [];
+  for (const spec of pod.spec.containers) {
+    const status = pod.status.containerStatuses.find((c) => c.name === spec.name);
+    if (spec.failing) {
+      lines.push(`Error: ImagePullBackOff（イメージ "${spec.image}" を取得できていません）`);
+      continue;
+    }
+    if (spec.crashing) {
+      lines.push(`starting ${spec.name}...`);
+      lines.push('fatal: 起動直後に終了しました（再起動 ' + String(status?.restartCount ?? 0) + ' 回目）');
+      continue;
+    }
+    if (pod.status.nodeName === null) {
+      lines.push('（まだ配置されていないのでログはありません）');
+      continue;
+    }
+    lines.push(`starting ${spec.name} (${spec.image})`);
+    for (const [k, v] of Object.entries(resolveEnv(cluster, pod, spec.name))) {
+      lines.push(`env ${k}=${v}`);
+    }
+    lines.push(status?.ready === true ? 'listening' : 'still warming up');
+  }
+  return { lines };
+}
+
 export const opsSubcommands: Record<string, KubectlHandler> = {
   apply: ({ cluster, shell, values, flags }) => {
     const file = values.get('f');
@@ -160,7 +219,7 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
       };
     }
 
-    const applied = applyManifestText(cluster, node.content);
+    const applied = applyManifestText(cluster, node.content, file);
     if ('error' in applied) return { stderr: `${applied.error}\n`, code: 1 };
     return { stdout: fromLines(applied.lines), patch: { cluster: applied.cluster } };
   },
@@ -285,50 +344,32 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
     return { stdout: `no\n${decision.reason}\n`, code: 1 };
   },
 
-  logs: ({ cluster, namespace, operands }) => {
+  logs: ({ cluster, namespace, operands, values, flags }) => {
+    const selector = values.get('l');
     const target = operands[0];
+    // -l: 札の合う Pod のログを、名前の順に全て並べる。--prefix で行の頭に [pod/名前/コンテナ] を付ける（本物と同じ）
+    if (target === undefined && selector !== undefined) {
+      const pods = (listOf(cluster, 'pods', namespace) as Pod[])
+        .filter((p) => matchesSelector(p.metadata.labels, selector))
+        .sort((a, b) => (a.metadata.name < b.metadata.name ? -1 : 1));
+      if (pods.length === 0) return { stdout: `No resources found in ${namespace} namespace.\n` };
+      let stdout = '';
+      let stderr = '';
+      for (const pod of pods) {
+        const got = podLogs(cluster, pod);
+        if ('stderr' in got) {
+          stderr += got.stderr;
+          continue;
+        }
+        const head = flags.has('prefix') ? `[pod/${pod.metadata.name}/${pod.spec.containers[0]?.name ?? ''}] ` : '';
+        stdout += fromLines(got.lines.map((l) => `${head}${l}`));
+      }
+      return stderr === '' ? { stdout } : { stdout, stderr, code: 1 };
+    }
     const pod = target === undefined ? undefined : podFor(cluster, namespace, target);
     if (pod === undefined || target === undefined) return notFound('pods', target ?? '');
-
-    // 置き場を持つクラスタ: 本物と同じく、まだ動いたことの無いコンテナはログが無いと断り、動いたコンテナはアプリのログを出す
-    if (cluster.images !== undefined) {
-      const spec = pod.spec.containers[0];
-      const status = pod.status.containerStatuses[0];
-      if (spec === undefined) return { stdout: '' };
-      const reason = pod.status.phase === 'ContainerCreating' || pod.status.nodeName === null ? 'ContainerCreating' : status?.waitingReason;
-      const waiting = reason === 'ContainerCreating' || reason === 'CreateContainerConfigError' ? reason
-        : reason === 'ImagePullBackOff' ? 'trying and failing to pull image'
-          : reason === 'ErrImagePull' ? "image can't be pulled" : null;
-      if (waiting !== null) {
-        return { stderr: `Error from server (BadRequest): container "${spec.name}" in pod "${pod.metadata.name}" is waiting to start: ${waiting}\n`, code: 1 };
-      }
-      const log = appLog(cluster, spec, resolveEnv(cluster, pod, spec.name));
-      if (log !== null) return { stdout: fromLines(log) };
-    }
-
-    const lines: string[] = [];
-    for (const spec of pod.spec.containers) {
-      const status = pod.status.containerStatuses.find((c) => c.name === spec.name);
-      if (spec.failing) {
-        lines.push(`Error: ImagePullBackOff（イメージ "${spec.image}" を取得できていません）`);
-        continue;
-      }
-      if (spec.crashing) {
-        lines.push(`starting ${spec.name}...`);
-        lines.push('fatal: 起動直後に終了しました（再起動 ' + String(status?.restartCount ?? 0) + ' 回目）');
-        continue;
-      }
-      if (pod.status.nodeName === null) {
-        lines.push('（まだ配置されていないのでログはありません）');
-        continue;
-      }
-      lines.push(`starting ${spec.name} (${spec.image})`);
-      for (const [k, v] of Object.entries(resolveEnv(cluster, pod, spec.name))) {
-        lines.push(`env ${k}=${v}`);
-      }
-      lines.push(status?.ready === true ? 'listening' : 'still warming up');
-    }
-    return { stdout: fromLines(lines) };
+    const got = podLogs(cluster, pod);
+    return 'stderr' in got ? { stderr: got.stderr, code: 1 } : { stdout: fromLines(got.lines) };
   },
 
   exec: ({ cluster, namespace, operands, rest }) => {

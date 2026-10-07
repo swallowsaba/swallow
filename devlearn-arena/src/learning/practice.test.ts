@@ -178,6 +178,14 @@ describe('状態による判定の形', () => {
     expect(checkState({ kind: 'fs', path: '/etc/nope', exists: false }, { shell: s })).toBe(true);
   });
 
+  it('fs: lacks の文字列をどれも含まない（秘密の値がファイルに残っていない）', () => {
+    const s = shell({ files: { '/srv/db.yaml': 'name: db\npassword: UmVzZXJ2ZQ==\n' } });
+    expect(checkState({ kind: 'fs', path: '/srv/db.yaml', lacks: ['Reserve'] }, { shell: s })).toBe(true);
+    expect(checkState({ kind: 'fs', path: '/srv/db.yaml', lacks: ['Reserve', 'UmVzZXJ2ZQ=='] }, { shell: s })).toBe(false);
+    expect(checkState({ kind: 'fs', path: '/srv/db.yaml', contains: 'name: db', lacks: ['Reserve'] }, { shell: s })).toBe(true);
+    expect(checkState({ kind: 'fs', path: '/srv/nope.yaml', lacks: ['Reserve'] }, { shell: s })).toBe(false);
+  });
+
   it('fs: /proc/<PID> は、そのプロセスが動いている間だけ有る（本物と同じ）', () => {
     const s = shell({ processes: [{ command: 'python3 loop.py', cpu: 99 }] });
     expect(checkState({ kind: 'fs', path: '/proc/100' }, { shell: s })).toBe(true);

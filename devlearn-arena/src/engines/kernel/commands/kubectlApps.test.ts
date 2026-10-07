@@ -73,6 +73,15 @@ describe('クラスタの Pod は、置き場のイメージの振る舞いの�
     expect(c.run('kubectl get secret db-secret -o yaml').out).toContain('password: UmVzZXJ2ZS1QYXNzLTIwMjY=');
   });
 
+  it('Secret の data: に base64 でない値を書くと、本物と同じく何バイト目が読めないかを言って断る', () => {
+    const c = console_();
+    const plain = c.apply(SECRET.replace('stringData:', 'data:') + DB(KEY_REF('password')));
+    expect(plain.err).toBe('Error from server (BadRequest): error when creating "db.yaml": Secret in version "v1" cannot be handled as a Secret: illegal base64 data at input byte 7\n');
+    expect(plain.code).toBe(1);
+    expect(c.run('kubectl get secrets').out).toBe('No resources found in default namespace.\n');
+    expect(c.apply(SECRET.replace('stringData:', 'data:').replace('Reserve-Pass-2026', 'UmVzZXJ2ZS1QYXNzLTIwMjY=') + DB(KEY_REF('password'))).code).toBe(0);
+  });
+
   it('Secret に無いキーを指すと CreateContainerConfigError で待ち、ログは待っていると断る', () => {
     const c = console_();
     c.apply(SECRET + DB(KEY_REF('POSTGRES_PASSWORD')));
@@ -81,6 +90,35 @@ describe('クラスタの Pod は、置き場のイメージの振る舞いの�
     const logs = c.run('kubectl logs deploy/db');
     expect(logs.err).toMatch(/^Error from server \(BadRequest\): container "postgres" in pod "db-\S+" is waiting to start: CreateContainerConfigError\n$/);
     expect(logs.code).toBe(1);
+  });
+
+  it('判定の env.名前 は今の設計図の Pod だけで見る。入れ替えの途中で古い Pod が同じ値を持っていても、新しい Pod が動くまでは満たさない', () => {
+    const c = console_(DB('        env:\n        - name: POSTGRES_PASSWORD\n          value: Reserve-Pass-2026'));
+    expect(c.holds('deployment/db readyReplicas=1 env.POSTGRES_PASSWORD=Reserve-Pass-2026')).toBe(true);
+    c.apply(SECRET + DB(KEY_REF('POSTGRES_PASSWORD')));
+    c.run('kubectl rollout status deployment/db');
+    // 古い Pod は動き続けている（Ready は 1）が、新しい Pod はキーが無くて動けない
+    expect(c.holds('deployment/db readyReplicas=1')).toBe(true);
+    expect(c.holds('deployment/db env.POSTGRES_PASSWORD=Reserve-Pass-2026')).toBe(false);
+    // 無いキーを指していれば、受け取る先とは言わない
+    expect(c.holds('deployment/db from.POSTGRES_PASSWORD')).toBe(false);
+    c.apply(SECRET + DB(KEY_REF('password')));
+    c.run('kubectl rollout status deployment/db');
+    expect(c.holds('deployment/db readyReplicas=1 env.POSTGRES_PASSWORD=Reserve-Pass-2026 from.POSTGRES_PASSWORD=db-secret')).toBe(true);
+  });
+
+  it('logs -l は札の合う Pod のログを全て並べ、--prefix で行の頭に Pod とコンテナの名前を付ける', () => {
+    const c = console_(DB('        env:\n        - name: POSTGRES_PASSWORD\n          value: Reserve-Pass-2026'));
+    c.apply(`${SECRET}${DB('        envFrom:\n        - secretRef:\n            name: db-secret')}`);
+    c.run('kubectl get pods -w');
+    const pods = [...c.run('kubectl get pods').out.matchAll(/^(db-\S+)/gm)].map((m) => m[1] ?? '').sort();
+    expect(pods).toHaveLength(2);
+    const logs = c.run('kubectl logs -l app=db --prefix');
+    expect(logs.out).toContain(`[pod/${pods[0] ?? ''}/postgres] `);
+    expect(logs.out).toMatch(/^\[pod\/db-\S+\/postgres\] database system is ready to accept connections$/m);
+    expect(logs.out).toMatch(/^\[pod\/db-\S+\/postgres\] Error: Database is uninitialized and superuser password is not specified\.$/m);
+    expect(c.run('kubectl logs -l app=db').out).toMatch(/^Error: Database is uninitialized/m);
+    expect(c.run('kubectl logs -l app=nope').out).toBe('No resources found in default namespace.\n');
   });
 
   it('Secret を丸ごと受け取ると、キーの名前（password）がそのまま変数の名前になり、POSTGRES_PASSWORD は空のまま', () => {

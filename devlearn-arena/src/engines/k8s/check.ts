@@ -1,4 +1,4 @@
-import { matches } from './controllers';
+import { matches, realNames, templateHash } from './controllers';
 import { isReady } from './kubelet';
 import { resolveEnv } from './storage';
 import { key, type ClusterState, type Deployment, type Pod } from './types';
@@ -50,10 +50,14 @@ function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, fi
     if (field === 'readyReplicas') return d.status.readyReplicas;
     if (field === 'updatedReplicas') return d.status.updatedReplicas;
     // made: その Deployment の ReplicaSet が作った Pod の数（消された Pod を作り直したことを確かめる）
-    // env.名前: Ready の Pod の全てが持つ、その環境変数の値（動かした時に引いた値。Pod ごとに違えば <mixed>）
+    // env.名前: Ready の Pod の全てが持つ、その環境変数の値（動かした時に引いた値。Pod ごとに違えば <mixed>）。
+    // 今の設計図の Pod が 1 つも動いていなければ無い（入れ替えの途中で、古い Pod だけが同じ値を持っている時に満たさない）
     if (field.startsWith('env.')) {
-      const values = new Set(readyPodsOf(cluster, d).map((p) => resolveEnv(cluster, p, p.spec.containers[0]?.name ?? '')[field.slice(4)] ?? '<none>'));
-      return values.size === 1 ? [...values][0] : values.size === 0 ? undefined : '<mixed>';
+      const ready = readyPodsOf(cluster, d);
+      const hash = templateHash(d.spec.template, realNames(cluster));
+      if (!ready.some((p) => p.metadata.labels['pod-template-hash'] === hash)) return undefined;
+      const values = new Set(ready.map((p) => resolveEnv(cluster, p, p.spec.containers[0]?.name ?? '')[field.slice(4)] ?? '<none>'));
+      return values.size === 1 ? [...values][0] : '<mixed>';
     }
     // from.名前: その環境変数を、設計図（template）の最初のコンテナが受け取る ConfigMap か Secret の名前（直接書いた env が勝つ時は無い）
     if (field.startsWith('from.')) {
@@ -61,7 +65,8 @@ function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, fi
       const c = d.spec.template.containers[0];
       if (c === undefined || c.env[name] !== undefined) return undefined;
       const dataOf = (r: (typeof c.envFrom)[number]) => (r.kind === 'ConfigMap' ? cluster.configMaps : cluster.secrets).get(key(ns, r.name))?.data;
-      const ref = [...c.envFrom].reverse().find((r) => (r.key === undefined ? dataOf(r)?.[name] !== undefined : (r.as ?? r.key) === name));
+      // キーを指す時は、そのキーが実在する時だけ（無いキーを指せば、コンテナは動けない）
+      const ref = [...c.envFrom].reverse().find((r) => (r.key === undefined ? dataOf(r)?.[name] !== undefined : (r.as ?? r.key) === name && dataOf(r)?.[r.key] !== undefined));
       return ref?.name;
     }
     if (field === 'made') {

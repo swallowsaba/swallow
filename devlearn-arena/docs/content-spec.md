@@ -108,7 +108,7 @@ interface PracticeStep {
   expectedErrors?: string[];           // 想定エラーの ID（content/errors）
 }
 type CheckSpec =
-  | { kind: 'fs'; path: string; exists?: boolean; contains?: string; mode?: string } // mode: 権限。'600' ならその値、'u+x'・'go-rwx' ならその権限が有る・無い
+  | { kind: 'fs'; path: string; exists?: boolean; contains?: string; lacks?: string[]; mode?: string } // lacks: どれも含まない（秘密の値が残っていない）。mode: 権限。'600' ならその値、'u+x'・'go-rwx' ならその権限が有る・無い
   | { kind: 'cwd'; equals: string }
   | { kind: 'service'; name: string; active?: boolean; enabled?: boolean }
   | { kind: 'git'; expr: string }               // 例: 'branch:feature merged-into:main'

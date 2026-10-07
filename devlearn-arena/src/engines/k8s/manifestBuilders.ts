@@ -74,7 +74,7 @@ export const BUILDERS: Record<string, Builder> = {
     const plain = asStringMap(doc['stringData']);
     const encoded = asStringMap(doc['data']);
     // stringData で書かれたものは base64 にして持つ。中身が読めることを見せるため
-    for (const [k, v] of Object.entries(plain)) encoded[k] = btoa(v);
+    for (const [k, v] of Object.entries(plain)) encoded[k] = btoa(String.fromCharCode(...new TextEncoder().encode(v)));
     return {
       kind: 'Secret',
       metadata: meta(name, { namespace, labels }),

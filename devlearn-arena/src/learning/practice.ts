@@ -90,8 +90,10 @@ export function checkState(check: CheckSpec, input: CheckInput): boolean {
       if (check.exists === false) return !there;
       if (!there) return false;
       if (check.mode !== undefined && !modeHolds(metaOf(shell.vfs, path).mode, check.mode)) return false;
-      if (check.contains === undefined) return true;
-      return !isDir(shell.vfs, path) && readFile(shell.vfs, path).includes(check.contains);
+      if (check.contains === undefined && check.lacks === undefined) return true;
+      if (isDir(shell.vfs, path)) return false;
+      const text = readFile(shell.vfs, path);
+      return (check.contains === undefined || text.includes(check.contains)) && (check.lacks ?? []).every((x) => !text.includes(x));
     }
     case 'service': {
       const s = serviceOf(shell.services, check.name);

@@ -151,7 +151,22 @@ export function reconcile(state: ClusterState): ReconcileResult {
     const desired = deployment.spec.replicas;
     const { maxSurge, maxUnavailable } = deployment.spec.strategy;
     const current = replicaSets.get(rsId);
-    const olds = mine.filter((rs) => rs.metadata.name !== rsName && rs.spec.replicas > 0);
+    // 古い側の、動けていない（Ready でない）Pod の分は先に縮める（本物の cleanupUnhealthyReplicas）。
+    // 止まった入れ替え（設定の誤り）を直して送り直した時、止まった世代の Pod が枠を塞がない
+    for (const rs of mine) {
+      if (rs.metadata.name === rsName || rs.spec.replicas === 0) continue;
+      const unready = ownedPods({ ...state, pods }, rs).filter((p) => !isReady(p)).length;
+      if (unready === 0) continue;
+      const to = Math.max(0, rs.spec.replicas - unready);
+      replicaSets.set(key(rs.metadata.namespace, rs.metadata.name), { ...rs, spec: { ...rs.spec, replicas: to } });
+      if (real) events.push({
+        tick, type: 'Normal', reason: 'ScalingReplicaSet', object: `deployment/${deployment.metadata.name}`,
+        message: `Scaled down replica set ${rs.metadata.name} from ${String(rs.spec.replicas)} to ${String(to)}`,
+      });
+    }
+    const olds = mine
+      .map((rs) => replicaSets.get(key(rs.metadata.namespace, rs.metadata.name)) ?? rs)
+      .filter((rs) => rs.metadata.name !== rsName && rs.spec.replicas > 0);
 
     if (current) {
       const oldReplicas = olds.reduce((n, rs) => n + rs.spec.replicas, 0);
