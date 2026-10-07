@@ -7,6 +7,12 @@ import type {
 import { NODE_SYSTEM, nodeAddress } from './kubectlDescribe';
 import { age, podReady, podStatus, restarts, table } from './kubectlShared';
 
+/** 一覧の使い方の略し方（本物の kubectl と同じ） */
+const MODE_SHORT: Readonly<Record<string, string>> = {
+  ReadWriteOnce: 'RWO', ReadOnlyMany: 'ROX', ReadWriteMany: 'RWX', ReadWriteOncePod: 'RWOP',
+};
+const shortMode = (mode: string): string => MODE_SHORT[mode] ?? mode;
+
 /** 種別ごとの一覧表。全て状態から導く（作り置きの文字列は持たない） */
 export function renderTable(
   cluster: ClusterState,
@@ -194,31 +200,39 @@ export function renderTable(
     }
 
     case 'persistentvolumes': {
-      const rows = [['NAME', 'CAPACITY', 'ACCESS MODES', 'RECLAIM', 'STATUS', 'CLAIM', 'STORAGECLASS']];
+      // 本物の欄（1.31 から VOLUMEATTRIBUTESCLASS が入った）。結ばれていない PV の CLAIM は空
+      const rows = [['NAME', 'CAPACITY', 'ACCESS MODES', 'RECLAIM POLICY', 'STATUS', 'CLAIM', 'STORAGECLASS', 'VOLUMEATTRIBUTESCLASS', 'REASON', 'AGE']];
       for (const v of items as PersistentVolume[]) {
         rows.push([
           v.metadata.name,
           `${String(v.spec.capacityGi)}Gi`,
-          v.spec.accessModes.join(','),
+          v.spec.accessModes.map(shortMode).join(','),
           v.spec.reclaimPolicy,
           v.status.phase,
-          v.status.claim ?? '<none>',
+          v.status.claim ?? '',
           v.spec.storageClassName,
+          '<unset>',
+          '',
+          at(v.metadata.createdAt),
         ]);
       }
       return table(rows);
     }
 
     case 'persistentvolumeclaims': {
-      const rows = [['NAME', 'STATUS', 'VOLUME', 'CAPACITY', 'ACCESS MODES', 'STORAGECLASS']];
+      // 大きさと使い方は、結ばれた PV の物（Pending の間は空）
+      const rows = [['NAME', 'STATUS', 'VOLUME', 'CAPACITY', 'ACCESS MODES', 'STORAGECLASS', 'VOLUMEATTRIBUTESCLASS', 'AGE']];
       for (const c of items as PersistentVolumeClaim[]) {
+        const pv = c.status.volumeName === null ? undefined : cluster.persistentVolumes.get(c.status.volumeName);
         rows.push([
           c.metadata.name,
           c.status.phase,
-          c.status.volumeName ?? '<none>',
-          `${String(c.spec.requestGi)}Gi`,
-          c.spec.accessModes.join(','),
+          c.status.volumeName ?? '',
+          pv === undefined ? '' : `${String(pv.spec.capacityGi)}Gi`,
+          pv === undefined ? '' : pv.spec.accessModes.map(shortMode).join(','),
           c.spec.storageClassName,
+          '<unset>',
+          at(c.metadata.createdAt),
         ]);
       }
       return table(rows);

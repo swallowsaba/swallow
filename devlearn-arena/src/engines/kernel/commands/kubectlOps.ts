@@ -4,7 +4,9 @@ import { isReady, tickPods } from '@/engines/k8s/kubelet';
 import { isParseError, parseManifests } from '@/engines/k8s/manifest';
 import { canI } from '@/engines/k8s/policy';
 import { revisionsOf, rolloutStatus, rolloutUndo } from '@/engines/k8s/rollout';
+import { psql, TABLES_FILE } from '@/engines/container/pg';
 import { appLog } from '@/engines/k8s/apps';
+import { pgOf, pgTables, writeAt } from '@/engines/k8s/volumes';
 import { resolveEnv } from '@/engines/k8s/storage';
 import type { ClusterState, Deployment, Pod, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
@@ -54,6 +56,8 @@ function desired(resource: Resource): string {
   const { name, namespace, labels } = resource.metadata;
   const body: Record<string, unknown> = { ...resource, metadata: { name, namespace, labels } };
   delete body['status'];
+  // PV の中に書かれた物は、書いた形ではない
+  if (resource.kind === 'PersistentVolume') delete body['data'];
   if (resource.kind === 'Service') body['spec'] = { ...resource.spec, clusterIP: '' };
   return JSON.stringify(body);
 }
@@ -68,6 +72,7 @@ function merged(existing: Resource, resource: Resource): Resource {
   };
   const next = { ...resource, metadata };
   if ('status' in existing && 'status' in next) (next as { status: unknown }).status = existing.status;
+  if (existing.kind === 'PersistentVolume' && next.kind === 'PersistentVolume' && existing.data !== undefined) return { ...next, data: existing.data };
   if (existing.kind === 'Service' && next.kind === 'Service') return { ...next, spec: { ...next.spec, clusterIP: existing.spec.clusterIP } };
   return next;
 }
@@ -164,7 +169,7 @@ function podLogs(cluster: ClusterState, pod: Pod): { lines: string[] } | { stder
     if (waiting !== null) {
       return { stderr: `Error from server (BadRequest): container "${spec.name}" in pod "${pod.metadata.name}" is waiting to start: ${waiting}\n` };
     }
-    const log = appLog(cluster, spec, resolveEnv(cluster, pod, spec.name));
+    const log = appLog(cluster, spec, resolveEnv(cluster, pod, spec.name), status?.fresh);
     if (log !== null) return { lines: log };
   }
 
@@ -191,6 +196,40 @@ function podLogs(cluster: ClusterState, pod: Pod): { lines: string[] } | { stder
     lines.push(status?.ready === true ? 'listening' : 'still warming up');
   }
   return { lines };
+}
+
+/**
+ * DB の Pod の中の psql（-U 利用者・-d DB・-c 文）。表は、データを書く場所（PVC で付けた PV か、コンテナの書き込みの層）に読み書きする。
+ * 中のコマンドが失敗すると、本物の kubectl と同じく command terminated with exit code を足す
+ */
+function psqlIn(cluster: ClusterState, pod: Pod, args: readonly string[]): CommandResult {
+  const spec = pod.spec.containers[0];
+  const pg = spec === undefined ? undefined : pgOf(cluster, spec);
+  if (pg === undefined) {
+    return { stderr: 'error: Internal error occurred: OCI runtime exec failed: exec failed: unable to start container process: exec: "psql": executable file not found in $PATH: unknown\ncommand terminated with exit code 126\n', code: 126 };
+  }
+  let db = 'postgres';
+  let user = 'postgres';
+  let sql: string | null = null;
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i] ?? '';
+    const value = (long: string): string => (a.startsWith(`${long}=`) ? a.slice(long.length + 1) : (args[(i += 1)] ?? ''));
+    if (a === '-U' || a.startsWith('--username')) user = value('--username');
+    else if (a === '-d' || a.startsWith('--dbname')) db = value('--dbname');
+    else if (a === '-c' || a.startsWith('--command')) sql = value('--command');
+  }
+  const failed = (text: string, code: number): CommandResult => ({ stderr: `${text}command terminated with exit code ${String(code)}\n`, code });
+  const fatal = (why: string): CommandResult => failed(`psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  ${why}\n`, 2);
+  if (user !== 'postgres') return fatal(`role "${user}" does not exist`);
+  if (db !== pg.db) return fatal(`database "${db}" does not exist`);
+  if (sql === null) return { stderr: 'この練習の端末では、psql の対話の画面は開けない。-c "文" の形で、1 つずつ打つ\n', code: 1 };
+  const r = psql(pgTables(cluster, pod) ?? {}, sql);
+  if (r.err !== undefined) return failed(r.err, 1);
+  if (!r.tables) return { stdout: r.out ?? '' };
+  const written = writeAt(cluster, pod, 0, { [`${pg.dataDir}/${TABLES_FILE}`]: `${JSON.stringify(r.tables)}\n` });
+  const pods = new Map(cluster.pods);
+  pods.set(key(pod.metadata.namespace, pod.metadata.name), written.pod);
+  return { stdout: r.out ?? '', patch: { cluster: { ...cluster, pods, persistentVolumes: written.volumes } } };
 }
 
 export const opsSubcommands: Record<string, KubectlHandler> = {
@@ -397,10 +436,12 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
       const names = command[0] === 'printenv' ? command.slice(1) : [];
       if (names.length > 0) {
         const found = names.filter((n) => env[n] !== undefined);
-        return { stdout: fromLines(found.map((n) => env[n] ?? '')), code: found.length === names.length ? 0 : 1 };
+        const out = fromLines(found.map((n) => env[n] ?? ''));
+        return found.length === names.length ? { stdout: out } : { stdout: out, stderr: 'command terminated with exit code 1\n', code: 1 };
       }
       return { stdout: fromLines(Object.entries(env).map(([k, v]) => `${k}=${v}`)) };
     }
+    if (command[0] === 'psql' && spec !== undefined) return psqlIn(cluster, pod, command.slice(1));
     if (command[0] === 'cat' && spec !== undefined) {
       const path = command[1] ?? '';
       const mount = spec.volumeMounts.find((m) => path.startsWith(`${m.mountPath}/`));

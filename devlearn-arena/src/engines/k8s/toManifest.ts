@@ -115,6 +115,7 @@ function templateOf(template: Deployment['spec']['template']): Plain {
     spec: compact({
       containers: template.containers.map(containerOf),
       nodeSelector: template.nodeSelector,
+      volumes: template.volumes?.map(volumeOf),
     }),
   };
 }

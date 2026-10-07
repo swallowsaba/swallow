@@ -374,14 +374,14 @@ function boot(c: Container, image: Image): Container {
 }
 
 /** DB（PostgreSQL）がデータを書く場所を初めて作った時のログ（本物の docker-entrypoint.sh の形を詰めた物） */
-const PG_INIT = [
+export const PG_INIT = [
   'The files belonging to this database system will be owned by user "postgres".', 'This user must also own the server process.', '',
   'fixing permissions on existing directory /var/lib/postgresql/data ... ok', 'creating subdirectories ... ok', 'creating configuration files ... ok', '',
   'Success. You can now start the database server.', '', '/usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/reserve.sql',
   'CREATE TABLE', 'INSERT 0 3', '', 'PostgreSQL init process complete; ready for start up.', '',
 ];
 /** データを書く場所に、もう DB がある時のログ */
-const PG_SKIP = ['', 'PostgreSQL Database directory appears to contain a database; Skipping initialization', ''];
+export const PG_SKIP = ['', 'PostgreSQL Database directory appears to contain a database; Skipping initialization', ''];
 
 /**
  * DB の場所（postgres://利用者@名前:ポート/DB）につなぐ。名前は、同じ自作の網にいる動いているコンテナの名前なら引ける。

@@ -87,6 +87,10 @@ export interface ContainerStatus {
   pulls?: number;
   /** コンテナを動かした時に引いた環境変数（後から ConfigMap を変えても、作り直すまで変わらない） */
   env?: Record<string, string>;
+  /** コンテナの書き込みの層に書いた物（中の絶対パス → 中身）。Pod を作り直すと消える */
+  files?: Record<string, string>;
+  /** DB のイメージが、データを書く場所が空の状態で動き出した（最初の表を作った） */
+  fresh?: boolean;
 }
 
 export interface Pod {
@@ -144,6 +148,8 @@ export interface Deployment {
       labels: Record<string, string>;
       containers: ContainerSpec[];
       nodeSelector: Record<string, string>;
+      /** 作る Pod に付けるボリューム（PVC・ConfigMap など）。書かなければ無い */
+      volumes?: PodVolume[];
     };
     strategy: { maxSurge: number; maxUnavailable: number };
   };

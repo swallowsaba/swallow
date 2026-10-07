@@ -49,6 +49,14 @@ export function bindClaims(state: ClusterState): BindResult {
 
     if (chosen === undefined) {
       const storageClass = state.storageClasses.get(claim.spec.storageClassName);
+      if (claim.spec.storageClassName === '') {
+        // 種類を書かず、合う PV も無い（本物の言い方）
+        if (claim.status.message === null || claim.status.phase !== 'Pending') claims.set(id, {
+          ...claim,
+          status: { phase: 'Pending', volumeName: null, message: 'no persistent volumes available for this claim and no storage class is set' },
+        });
+        continue;
+      }
       if (storageClass === undefined) {
         claims.set(id, {
           ...claim,
@@ -103,13 +111,7 @@ export function bindClaims(state: ClusterState): BindResult {
       ...claim,
       status: { phase: 'Bound', volumeName: chosen.metadata.name, message: null },
     });
-    events.push({
-      tick,
-      type: 'Normal',
-      reason: 'Bound',
-      object: `persistentvolumeclaim/${claim.metadata.name}`,
-      message: `Bound to ${chosen.metadata.name}`,
-    });
+    // 本物と同じく、結んだこと自体は知らせ（Event）にしない
   }
 
   return { persistentVolumes: volumes, persistentVolumeClaims: claims, events, nameCounter };

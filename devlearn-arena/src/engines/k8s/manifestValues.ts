@@ -155,10 +155,12 @@ export function toTemplate(value: unknown, fallbackLabels: Record<string, string
   const templateMeta = asRecord(template['metadata']);
   const templateSpec = asRecord(template['spec']);
   const labels = asStringMap(templateMeta['labels']);
+  const volumes = toVolumes(templateSpec['volumes']);
   return {
     labels: Object.keys(labels).length === 0 ? fallbackLabels : labels,
     containers: toContainers(templateSpec['containers']),
     nodeSelector: asStringMap(templateSpec['nodeSelector']),
+    ...(volumes.length > 0 ? { volumes } : {}),
   };
 }
 

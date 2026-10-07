@@ -1,6 +1,7 @@
 import { matches, realNames, templateHash } from './controllers';
 import { isReady } from './kubelet';
 import { resolveEnv } from './storage';
+import { pgTables } from './volumes';
 import { key, type ClusterState, type Deployment, type Pod } from './types';
 
 /**
@@ -13,6 +14,7 @@ import { key, type ClusterState, type Deployment, type Pod } from './types';
  *   deployment/web@dev readyReplicas=1
  *   deployment/web env.DB_HOST=db-staging-2 from.DB_HOST
  *   namespace/dev
+ *   deployment/db rows.reservations=4 && pvc/db-data status=Bound
  * 比べ方は >= <= =（status・env・from は = で語を比べる）。比べ方を書かない欄は、値があるかどうか。区画を省けば default。` && ` で別の資源の条件をつなぐ
  */
 
@@ -24,13 +26,14 @@ function readyPodsOf(cluster: ClusterState, d: Deployment): Pod[] {
   return [...cluster.pods.values()].filter((p) => p.metadata.namespace === d.metadata.namespace && p.metadata.ownerReferences.some((o) => o.kind === 'ReplicaSet' && sets.has(o.name)) && isReady(p));
 }
 
-type Kind = 'deployment' | 'service' | 'pod' | 'namespace';
+type Kind = 'deployment' | 'service' | 'pod' | 'namespace' | 'pvc';
 
-const KINDS: readonly Kind[] = ['deployment', 'service', 'pod', 'namespace'];
+const KINDS: readonly Kind[] = ['deployment', 'service', 'pod', 'namespace', 'pvc'];
 
 function exists(cluster: ClusterState, kind: Kind, ns: string, name: string): boolean {
   const id = key(ns, name);
   if (kind === 'namespace') return cluster.namespaces?.some((n) => n.name === name) ?? false;
+  if (kind === 'pvc') return cluster.persistentVolumeClaims.has(id);
   return kind === 'deployment' ? cluster.deployments.has(id) : kind === 'service' ? cluster.services.has(id) : cluster.pods.has(id);
 }
 
@@ -69,10 +72,21 @@ function fieldOf(cluster: ClusterState, kind: Kind, ns: string, name: string, fi
       const ref = [...c.envFrom].reverse().find((r) => (r.key === undefined ? dataOf(r)?.[name] !== undefined : (r.as ?? r.key) === name && dataOf(r)?.[r.key] !== undefined));
       return ref?.name;
     }
+    // rows.表: Ready の Pod の DB（PostgreSQL のイメージ）の、その表の行の数。DB でない・表が無い・動いていなければ無い
+    if (field.startsWith('rows.')) {
+      const pod = readyPodsOf(cluster, d)[0];
+      return pod === undefined ? undefined : pgTables(cluster, pod)?.[field.slice(5)]?.rows.length;
+    }
     if (field === 'made') {
       const sets = new Set([...cluster.replicaSets.values()].filter((rs) => rs.metadata.namespace === ns && rs.metadata.ownerReferences.some((o) => o.kind === 'Deployment' && o.name === name)).map((rs) => `replicaset/${rs.metadata.name}`));
       return cluster.events.filter((e) => e.reason === 'SuccessfulCreate' && sets.has(e.object)).length;
     }
+  } else if (kind === 'pvc') {
+    const c = cluster.persistentVolumeClaims.get(id);
+    if (!c) return undefined;
+    // status: get pvc の STATUS の欄（Bound・Pending）。volume: 結ばれた PV の名前
+    if (field === 'status') return c.status.phase;
+    if (field === 'volume') return c.status.volumeName ?? undefined;
   } else if (kind === 'service') {
     const s = cluster.services.get(id);
     if (!s) return undefined;

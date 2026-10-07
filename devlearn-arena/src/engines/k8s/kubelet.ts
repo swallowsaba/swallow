@@ -1,8 +1,10 @@
 import { backoffMs } from '@/engines/kernel/clock';
+import { initFiles, TABLES_FILE } from '@/engines/container/pg';
 import { appExit } from './apps';
+import { pgOf, readAt, writeAt } from './volumes';
 import { schedule } from './scheduler';
 import { liveEnv, missingEnvRef, volumesReady } from './storage';
-import type { ClusterState, ContainerSpec, ContainerStatus, EventRecord, Pod, Probe } from './types';
+import type { ClusterState, ContainerSpec, ContainerStatus, EventRecord, PersistentVolume, Pod, Probe } from './types';
 
 /** 1 tick の長さ（ミリ秒）。バックオフの計算に使う */
 export const TICK_MS = 1000;
@@ -11,6 +13,8 @@ export interface TickResult {
   pods: Map<string, Pod>;
   events: EventRecord[];
   ipCounter: number;
+  /** DB が動き出す時に、データを書く場所（PVC で付けた PV）に最初の表を作った後の PV */
+  persistentVolumes?: Map<string, PersistentVolume>;
 }
 
 function record(
@@ -126,6 +130,7 @@ export function tickPods(state: ClusterState): TickResult {
   const pods = new Map(state.pods);
   const events: EventRecord[] = [];
   let ipCounter = state.ipCounter;
+  let volumes = new Map(state.persistentVolumes);
 
   for (const [id, original] of state.pods) {
     const pod: Pod = {
@@ -279,13 +284,29 @@ export function tickPods(state: ClusterState): TickResult {
       return status;
     };
     // 動かし始めた時（作り直した時）に環境変数を引いて持つ。後から ConfigMap を変えても、作り直すまで変わらない（本物と同じ）
-    const containers = pod.status.containerStatuses.map((status, i) => {
+    let containers = pod.status.containerStatuses.map((status, i) => {
       const next = advance(status, i);
       const spec = pod.spec.containers[i];
       if (!spec || !next.started) return next;
       const kept = status.started && status.env !== undefined && next.restartCount === status.restartCount;
       return kept ? next : { ...next, env: liveEnv(state, pod, spec) };
     });
+    // DB のイメージは、動き出す時にデータを書く場所を見て、空なら最初の表を作る（init）。あればそのまま使う
+    for (const [i, spec] of pod.spec.containers.entries()) {
+      const pg = pgOf(state, spec);
+      const was = pod.status.containerStatuses[i];
+      const now = containers[i];
+      if (pg === undefined || now === undefined || !now.started || was?.started === true) continue;
+      const fresh = readAt(state, pod, i, `${pg.dataDir}/${TABLES_FILE}`, volumes) === undefined;
+      let next = { ...now, fresh };
+      if (fresh) {
+        const files = Object.fromEntries(Object.entries(initFiles(pg.seed)).map(([rel, text]) => [`${pg.dataDir}/${rel}`, text]));
+        const written = writeAt(state, { ...pod, status: { ...pod.status, containerStatuses: containers } }, i, files, volumes);
+        volumes = written.volumes;
+        next = { ...(written.pod.status.containerStatuses[i] ?? now), fresh };
+      }
+      containers = containers.map((c, j) => (j === i ? next : c));
+    }
 
     const allReady = containers.length > 0 && containers.every((c) => c.ready);
     const anyWaiting = containers.some((c) => c.waitingReason !== null);
@@ -307,7 +328,7 @@ export function tickPods(state: ClusterState): TickResult {
     pods.set(id, pod);
   }
 
-  return { pods, events, ipCounter };
+  return { pods, events, ipCounter, persistentVolumes: volumes };
 }
 
 /** Pod が Ready か（Service の Endpoints に載る条件） */

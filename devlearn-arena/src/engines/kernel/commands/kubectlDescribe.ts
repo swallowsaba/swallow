@@ -2,7 +2,9 @@ import { nodeCondition } from '@/engines/k8s/bootstrap';
 import { realNames, templateHash } from '@/engines/k8s/controllers';
 import { REVISION_KEY } from '@/engines/k8s/rollout';
 import { isReady } from '@/engines/k8s/kubelet';
-import type { ClusterState, ContainerSpec, ContainerStatus, Deployment, Node, Pod, Probe, ReplicaSet, Service } from '@/engines/k8s/types';
+import type {
+  ClusterState, ContainerSpec, ContainerStatus, Deployment, Node, PersistentVolume, PersistentVolumeClaim, Pod, PodVolume, Probe, ReplicaSet, Service,
+} from '@/engines/k8s/types';
 import { age } from './kubectlShared';
 
 /**
@@ -129,6 +131,19 @@ function stateOf(pod: Pod, status: ContainerStatus | undefined): [string, string
   return [['State', 'Waiting'], ['  Reason', 'ContainerCreating']];
 }
 
+/** Volumes の欄の中身（種類ごとの本物の言い方） */
+function volumeLines(volumes: readonly PodVolume[], indent: string): string[] {
+  if (volumes.length === 0) return [`${indent}<none>`];
+  return volumes.flatMap((v) => {
+    const rows: [string, string][] = v.kind === 'configMap' ? [['Type', 'ConfigMap (a volume populated by a ConfigMap)'], ['Name', v.configMap]]
+      : v.kind === 'secret' ? [['Type', 'Secret (a volume populated by a Secret)'], ['SecretName', v.secret]]
+        : v.kind === 'persistentVolumeClaim' ? [['Type', 'PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)'], ['ClaimName', v.claimName], ['ReadOnly', 'false']]
+          : [['Type', 'EmptyDir (a temporary directory that shares a pod\'s lifetime)'], ['Medium', '']];
+    // 中の欄は、Pod でも雛形でも 4 字下げ（本物の形）
+    return [`${indent}${v.name}:`, ...fields(rows, '    ')];
+  });
+}
+
 export function describePod(cluster: ClusterState, pod: Pod): string {
   const w = 18;
   const node = pod.status.nodeName === null ? undefined : cluster.nodes.get(pod.status.nodeName);
@@ -175,15 +190,7 @@ export function describePod(cluster: ClusterState, pod: Pod): string {
     ['ContainersReady', ready ? 'True' : 'False'],
     ['PodScheduled', scheduled ? 'True' : 'False'],
   ]));
-  lines.push('Volumes:');
-  for (const v of pod.spec.volumes) {
-    const [type, detail] = v.kind === 'configMap' ? ['ConfigMap (a volume populated by a ConfigMap)', ['Name', v.configMap]]
-      : v.kind === 'secret' ? ['Secret (a volume populated by a Secret)', ['SecretName', v.secret]]
-        : v.kind === 'persistentVolumeClaim' ? ['PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)', ['ClaimName', v.claimName]]
-          : ['EmptyDir (a temporary directory that shares a pod\'s lifetime)', ['Medium', '']];
-    lines.push(`  ${v.name}:`, ...fields([['Type', type], detail as [string, string]], '    '));
-  }
-  if (pod.spec.volumes.length === 0) lines.push('  <none>');
+  lines.push('Volumes:', ...volumeLines(pod.spec.volumes, '  '));
   const qos = pod.spec.containers.every((c) => c.limits !== null && c.limits.cpu === c.requests.cpu && c.limits.memory === c.requests.memory) ? 'Guaranteed' : 'Burstable';
   lines.push(...multi('QoS Class', [qos], 29), ...multi('Node-Selectors', [], 29));
   lines.push(...multi('Tolerations', ['node.kubernetes.io/not-ready:NoExecute op=Exists for 300s', 'node.kubernetes.io/unreachable:NoExecute op=Exists for 300s'], 29));
@@ -219,7 +226,10 @@ function podTemplate(template: Deployment['spec']['template']): string[] {
       ['Host Port', c.ports.length === 0 ? '<none>' : c.ports.map(() => '0/TCP').join(', ')],
     ], '    '), ...envBlock(c, '    '), `    Mounts:  ${c.volumeMounts.length === 0 ? '<none>' : c.volumeMounts.map((m) => `${m.mountPath} from ${m.name}`).join(', ')}`);
   }
-  lines.push(...fields([['Volumes', '<none>'], ['Node-Selectors', labelText(template.nodeSelector).join(',') || '<none>'], ['Tolerations', '<none>']], '  '));
+  const volumes = template.volumes ?? [];
+  if (volumes.length === 0) lines.push('  Volumes:         <none>');
+  else lines.push('  Volumes:', ...volumeLines(volumes, '   '));
+  lines.push(...fields([['Node-Selectors', labelText(template.nodeSelector).join(',') || '<none>'], ['Tolerations', '<none>']], '  '));
   return lines;
 }
 
@@ -314,6 +324,66 @@ export function describeService(cluster: ClusterState, s: Service): string {
     ...multi('Session Affinity', ['None'], w),
     ...multi('Internal Traffic Policy', ['Cluster'], w),
     ...eventsOf(cluster, `service/${s.metadata.name}`, w),
+  ];
+  return `${lines.join('\n')}\n`;
+}
+
+const MODE_SHORT: Readonly<Record<string, string>> = { ReadWriteOnce: 'RWO', ReadOnlyMany: 'ROX', ReadWriteMany: 'RWX', ReadWriteOncePod: 'RWOP' };
+
+/** PV の束ねの係（persistentvolume-controller）が、結べない PVC を見直す間隔（秒） */
+const BIND_RESYNC = 15;
+
+export function describeClaim(cluster: ClusterState, c: PersistentVolumeClaim): string {
+  const w = 15;
+  const pv = c.status.volumeName === null ? undefined : cluster.persistentVolumes.get(c.status.volumeName);
+  const usedBy = [...cluster.pods.values()]
+    .filter((p) => p.metadata.namespace === c.metadata.namespace && p.spec.volumes.some((v) => v.kind === 'persistentVolumeClaim' && v.claimName === c.metadata.name))
+    .map((p) => p.metadata.name);
+  const lines = [
+    ...multi('Name', [c.metadata.name], w),
+    ...multi('Namespace', [c.metadata.namespace], w),
+    `${'StorageClass:'.padEnd(w)}${c.spec.storageClassName}`.trimEnd(),
+    ...multi('Status', [c.status.phase], w),
+    `${'Volume:'.padEnd(w)}${c.status.volumeName ?? ''}`.trimEnd(),
+    ...multi('Labels', labelText(c.metadata.labels), w),
+    ...multi('Annotations', pv === undefined ? [] : ['pv.kubernetes.io/bind-completed: yes', 'pv.kubernetes.io/bound-by-controller: yes'], w),
+    ...multi('Finalizers', ['[kubernetes.io/pvc-protection]'], w),
+    `${'Capacity:'.padEnd(w)}${pv === undefined ? '' : `${String(pv.spec.capacityGi)}Gi`}`.trimEnd(),
+    `${'Access Modes:'.padEnd(w)}${pv === undefined ? '' : pv.spec.accessModes.map((m) => MODE_SHORT[m] ?? m).join(',')}`.trimEnd(),
+    ...multi('VolumeMode', ['Filesystem'], w),
+    ...multi('Used By', usedBy, w),
+  ];
+  // 結べない間は、係が見直すたびに理由を知らせる（同じ知らせは 1 行にまとめる）
+  if (c.status.phase === 'Pending' && c.status.message !== null) {
+    const since = c.metadata.createdAt;
+    const count = Math.floor(Math.max(0, cluster.tick - since) / BIND_RESYNC) + 1;
+    const last = since + (count - 1) * BIND_RESYNC;
+    const [type, reason] = c.status.message.startsWith('storageclass') ? ['Warning', 'ProvisioningFailed'] : ['Normal', 'FailedBinding'];
+    const when = count === 1 ? age(cluster.tick, last) : `${age(cluster.tick, last)} (x${String(count)} over ${age(cluster.tick, since)})`;
+    lines.push('Events:', ...grid(['Type', 'Reason', 'Age', 'From', 'Message'], [[type, reason, when, 'persistentvolume-controller', c.status.message]]));
+  } else lines.push(...eventsOf(cluster, `persistentvolumeclaim/${c.metadata.name}`, w));
+  return `${lines.join('\n')}\n`;
+}
+
+export function describeVolume(cluster: ClusterState, v: PersistentVolume): string {
+  const w = 17;
+  const lines = [
+    ...multi('Name', [v.metadata.name], w),
+    ...multi('Labels', labelText(v.metadata.labels), w),
+    ...multi('Annotations', v.status.claim === null ? [] : ['pv.kubernetes.io/bound-by-controller: yes'], w),
+    ...multi('Finalizers', ['[kubernetes.io/pv-protection]'], w),
+    `${'StorageClass:'.padEnd(w)}${v.spec.storageClassName}`.trimEnd(),
+    ...multi('Status', [v.status.phase], w),
+    `${'Claim:'.padEnd(w)}${v.status.claim ?? ''}`.trimEnd(),
+    ...multi('Reclaim Policy', [v.spec.reclaimPolicy], w),
+    ...multi('Access Modes', [v.spec.accessModes.map((m) => MODE_SHORT[m] ?? m).join(',')], w),
+    ...multi('VolumeMode', ['Filesystem'], w),
+    ...multi('Capacity', [`${String(v.spec.capacityGi)}Gi`], w),
+    ...multi('Node Affinity', [], w),
+    'Message:',
+    'Source:',
+    ...(v.spec.hostPath === undefined ? [] : fields([['Type', 'HostPath (bare host directory volume)'], ['Path', v.spec.hostPath], ['HostPathType', '']], '    ')),
+    ...eventsOf(cluster, `persistentvolume/${v.metadata.name}`, w),
   ];
   return `${lines.join('\n')}\n`;
 }

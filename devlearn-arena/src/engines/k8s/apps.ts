@@ -1,4 +1,4 @@
-import { fromRegistry, normalizeRef, type Image } from '@/engines/container/container';
+import { fromRegistry, normalizeRef, PG_INIT, PG_SKIP, type Image } from '@/engines/container/container';
 import type { ClusterState, ContainerSpec } from './types';
 
 /**
@@ -16,9 +16,13 @@ export function appExit(state: ClusterState, spec: ContainerSpec, env: Readonly<
   return (env[need.name] ?? '') === '' ? need.error : null;
 }
 
-/** 最後に動かした時のログ（起動の行と、止まった原因か動き出した時の行）。置き場のイメージでなければ null */
-export function appLog(state: ClusterState, spec: ContainerSpec, env: Readonly<Record<string, string>>): string[] | null {
+/**
+ * 最後に動かした時のログ（起動の行と、止まった原因か動き出した時の行）。置き場のイメージでなければ null。
+ * DB のイメージは、データを書く場所が空だった（fresh）なら最初の表を作った行、あれば作らずに使った行を先に出す
+ */
+export function appLog(state: ClusterState, spec: ContainerSpec, env: Readonly<Record<string, string>>, fresh?: boolean): string[] | null {
   const image = imageOf(state, spec);
   if (image === undefined) return null;
-  return [...(image.bootLog ?? []), ...(appExit(state, spec, env) ?? image.startLog)];
+  const pg = image.pg === undefined || fresh === undefined ? [] : fresh ? PG_INIT : PG_SKIP;
+  return [...(image.bootLog ?? []), ...pg, ...(appExit(state, spec, env) ?? image.startLog)];
 }

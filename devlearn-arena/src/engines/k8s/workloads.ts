@@ -43,7 +43,7 @@ function spawn(
     nodeSelector: template.nodeSelector,
     owner,
     createdAt: tick,
-    volumes: extra.volumes,
+    volumes: template.volumes === undefined && extra.volumes === undefined ? undefined : [...(template.volumes ?? []), ...(extra.volumes ?? [])],
   });
 }
 

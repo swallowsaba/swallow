@@ -49,12 +49,16 @@ export interface PersistentVolume {
     reclaimPolicy: ReclaimPolicy;
     /** ノードに固定されている場合（hostPath など） */
     nodeName: string | null;
+    /** 実体が Node の中の場所（hostPath）の時、その場所 */
+    hostPath?: string;
   };
   status: {
     phase: 'Available' | 'Bound' | 'Released' | 'Failed';
     /** 束ねられている PVC の id（namespace/name） */
     claim: string | null;
   };
+  /** 中に書かれたファイル（PV の中の場所 → 中身）。Pod を作り直しても残る */
+  data?: Record<string, string>;
 }
 
 export interface PersistentVolumeClaim {

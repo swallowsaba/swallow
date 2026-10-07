@@ -3,7 +3,7 @@ import { isReady } from './kubelet';
 import { CHANGE_CAUSE_KEY, REVISION_KEY } from './rollout';
 import { bindClaims } from './storage';
 import { reconcileWorkloads } from './workloads';
-import type { ClusterState, Deployment, EventRecord, Pod, ReplicaSet } from './types';
+import type { ClusterState, Deployment, EventRecord, PersistentVolume, Pod, ReplicaSet } from './types';
 import { key } from './types';
 
 /** ラベルがセレクタを満たすか */
@@ -29,6 +29,8 @@ export function templateHash(template: Deployment['spec']['template'], real = fa
       c.livenessProbe, c.readinessProbe, c.startupProbe, c.volumeMounts,
     ]),
     template.nodeSelector,
+    // ボリュームは書いた時だけ混ぜる（書かない設計図の世代の名前を変えない）
+    ...(template.volumes === undefined ? [] : [template.volumes]),
   ]);
   let hash = 5381;
   for (let i = 0; i < text.length; i += 1) hash = ((hash * 33) ^ text.charCodeAt(i)) >>> 0;
@@ -223,6 +225,7 @@ export function reconcile(state: ClusterState): ReconcileResult {
           namespace: rs.metadata.namespace,
           labels: rs.spec.template.labels,
           nodeSelector: rs.spec.template.nodeSelector,
+          volumes: rs.spec.template.volumes,
           owner: { kind: 'ReplicaSet', name: rs.metadata.name },
           createdAt: tick,
         });
@@ -317,6 +320,7 @@ export function advanceCluster(state: ClusterState, tickPods: (s: ClusterState) 
   pods: Map<string, Pod>;
   events: EventRecord[];
   ipCounter: number;
+  persistentVolumes?: Map<string, PersistentVolume>;
 }): ClusterState {
   const bound = bindClaims(state);
   const withStorage: ClusterState = {
@@ -347,6 +351,7 @@ export function advanceCluster(state: ClusterState, tickPods: (s: ClusterState) 
     tick: state.tick + 1,
     pods: ticked.pods,
     ipCounter: ticked.ipCounter,
+    persistentVolumes: ticked.persistentVolumes ?? reconciled.state.persistentVolumes,
     events: [
       ...state.events,
       ...bound.events,

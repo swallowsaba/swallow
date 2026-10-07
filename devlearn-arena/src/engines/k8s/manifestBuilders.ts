@@ -100,9 +100,11 @@ export const BUILDERS: Record<string, Builder> = {
       spec: {
         capacityGi: asNumber(asRecord(spec['capacity'])['storage'], 1),
         accessModes: asArray(spec['accessModes']).map((m) => asString(m, 'ReadWriteOnce')) as PersistentVolume['spec']['accessModes'],
-        storageClassName: asString(spec['storageClassName'], 'standard'),
+        // 書かなければ種類の無い PV（本物と同じく、種類を書かない PVC とだけ結ばれる）
+        storageClassName: asString(spec['storageClassName'], ''),
         reclaimPolicy: (asString(spec['persistentVolumeReclaimPolicy'], 'Retain') as StorageClass['reclaimPolicy']),
         nodeName: spec['nodeName'] === undefined ? null : asString(spec['nodeName']),
+        ...(spec['hostPath'] === undefined ? {} : { hostPath: asString(asRecord(spec['hostPath'])['path']) }),
       },
       status: { phase: 'Available', claim: null },
     }) satisfies PersistentVolume,
@@ -114,7 +116,8 @@ export const BUILDERS: Record<string, Builder> = {
       spec: {
         requestGi: asNumber(asRecord(asRecord(spec['resources'])['requests'])['storage'], 1),
         accessModes: asArray(spec['accessModes']).map((m) => asString(m, 'ReadWriteOnce')) as PersistentVolumeClaim['spec']['accessModes'],
-        storageClassName: asString(spec['storageClassName'], 'standard'),
+        // 書かなければ種類は空（決まった種類の無いクラスタで、本物と同じく種類の無い PV とだけ結ばれる）
+        storageClassName: asString(spec['storageClassName'], ''),
       },
       status: { phase: 'Pending', volumeName: null, message: null },
     }) satisfies PersistentVolumeClaim,

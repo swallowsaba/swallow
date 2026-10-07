@@ -155,5 +155,6 @@ describe('ConfigMap を環境変数で渡す', () => {
     const none = c.run('kubectl exec deploy/web -- printenv NOPE');
     expect(none.out).toBe('');
     expect(none.code).toBe(1);
+    expect(none.err).toBe('command terminated with exit code 1\n');
   });
 });
