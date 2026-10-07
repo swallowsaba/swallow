@@ -684,3 +684,76 @@ V1・V3・V4・V9・V10 は都市画面の項目で、この分野では都市�
 - ctr.i.02 の目安の時間が 25 分で、目録の読み込みで落ちていた（上限は 20 分。`docs/content-spec.md` 2 章）→ 20 分にした。用語の初出の印（CPU・ps・PID など）と、用語集に無い語（`Exited (137)`・`SIGKILL`・`LIMIT`）の等幅も足りなかったので直した
 - ctr.i.02 のクイズで、用語の印の前後に空白が無く「中でpsを打つ」と詰まって見えた → 英字の用語の前後に空白を入れた
 - ctr.b.04 の情報の表が 1280×720 で細く、「ライブラ／リ」「1 日に何度／も」と語の途中で折れた → 転送の量は目的とログにあるので表から外し、「毎日何度も」にした
+
+## docker（Docker）
+
+記録した日: 2026-10-07
+
+### 作ったもの
+
+範囲のレッスン 11 本（初級 5 本・中級 6 本。docker の上級は Q-04 の範囲外）。
+
+| ID | 題名 | 実戦 | 模擬環境 | 手順 |
+|---|---|---|---|---|
+| docker.b.01 | Docker とは | 模 | 読み取って答える（2 台の docker version と docker info から、CLI と本体（Docker Engine）の版・動いているコンテナの数・本体につながらない理由を答える） | 2 |
+| docker.b.02 | イメージを取る・見る | 端 | container-host（nginx:1.27 を pull し、docker images で大きさを読む） | 2 |
+| docker.b.03 | コンテナを動かす | 端 | container-host（web を run -d で動かし、stop して ps と ps -a の違いを見て、rm で片付ける） | 3 |
+| docker.b.04 | ポートを公開する | 端 | container-host（公開せずに動いていた web を -p 8080:80 で作り直し、2 つ目の Apache を外の 8081 番で見せる） | 2 |
+| docker.b.05 | ログと中に入る | 端 | container-host（すぐ止まる予約の窓口を ps -a の終了コードと logs の Error の行から調べ、web の中の設定を exec で読む） | 3 |
+| docker.i.01 | Dockerfile を書く | 編 | container-host（土台だけの Dockerfile に WORKDIR・COPY・RUN npm install・CMD を足し、作ったイメージを 8080 番で答えさせる） | 1 |
+| docker.i.02 | ビルドとタグ | 端 | container-host（v1.2 に直した物を、1.1 を上書きせずに shop/web:1.2 として作り、別のイメージ ID を確かめる） | 2 |
+| docker.i.03 | ボリューム | 端 | container-host（db-data を作って DB の書く場所に付けて作り直し、予約を足してもう一度作り直しても残ることを確かめて数を答える） | 4 |
+| docker.i.04 | ネットワーク | 端 | container-host（既定の網で止まった web のため、city-net を作って db を後から入れ、web を --network で作り直して名前で届かせる） | 3 |
+| docker.i.05 | レジストリに置く | 端 | container-host（置き場にログインし、1.2 に住所を付けて置き、本番の機械（--context prod）の shop を 1.1 から 1.2 に入れ替える） | 3 |
+| docker.i.06 | Compose で複数コンテナ | 編 | container-host（web だけで DB の場所が localhost の compose.yaml に db を足し、サービス名で指し、depends_on とボリュームを書く） | 2 |
+
+- 図 11 枚（`content/figures/docker-*.svg`）。i.06 の図は compose.yaml の字下げをそのまま見せる（SVG は行の頭の空白を詰めるので、字下げの分だけ x をずらした）
+- 用語集 `content/glossary/docker.json` は 17 語（Docker・ポートの公開・Docker Engine・Dockerfile・FROM・WORKDIR・COPY・RUN・CMD・Node.js・名前付きボリューム・PostgreSQL・既定の網・コンテキスト・Docker Hub・Compose・YAML）
+- エラーの解説 26 件（`content/errors/docker.json`）。出力に当てる物（`output`）は、ログの getaddrinfo ENOTFOUND と ECONNREFUSED 127.0.0.1（`docker logs` は標準出力に出すため）
+- 模擬に足した物（`src/engines/container`・`src/engines/docker`。どれも本物の出力と誤りの文に寄せた）
+  - build・tag（i.01・i.02）: Dockerfile を段に分けて作り、同じ中身の段は CACHED。作った Node.js のアプリは CMD のファイルを読んで待ち受ける
+  - 名前付きボリューム（i.03）: docker volume（create・ls・inspect・rm。使用中は消せない）と -v 名前:中の場所（無ければ作る）。中で書いた物は、名前付きボリュームをつないだ場所ならボリュームに、それ以外は書き込みの層に入り、コンテナを消すと消える。予約の DB（city-db:1.0。PostgreSQL 16 の形）はデータを書く場所が空なら最初の表を作り（init process complete）、あれば使う（Skipping initialization）。docker exec の psql -c で数え・足す
+  - 網（i.04）: docker network（create・ls・inspect・connect・disconnect・rm）と run の --network。既定の網（bridge）では名前が引けず、自作の網の中では動いているコンテナの名前（と Compose のサービス名）が引ける。予約の窓口（city-reserve:2.0）は DATABASE_URL の DB につなぎ、引けなければ ENOTFOUND、localhost なら ECONNREFUSED 127.0.0.1 で止まる。つながれば 3000 番で予約の数を答える
+  - 置き場と別の機械（i.05）: 自分たちの置き場（setup の registries）への login・logout・push。名前の先頭が住所ならその置き場に向かい、ログインしていなければ置けず（unauthorized）・取れない（pull access denied）。住所の無い名前は Docker Hub に向かって断られる（denied）。docker context と --context で、手元の CLI から別の機械の Engine（setup の contexts）に頼む（置き場とログインは手元の物）
+  - Compose（i.06）: docker compose（up -d・down・ps・logs）。網 <構成>_default・ボリューム <構成>_<名前>・コンテナ <構成>-<サービス>-1。depends_on の順に動かし、もう一度 up すると設定の変わったサービスだけ作り直す
+  - 表（ps・images・network ls など）は本物の tabwriter と同じく、欄の間を 3 字・欄の幅を 10 字以上にした（これまでは欄の幅の最小が無く、空の表の見出しが本物より詰まっていた）
+- 実戦の達成条件（container）に、volume:・mount:・rows:・made:・network:・on:・reach:・from:・pushed:・login: と、頼む先を変える @名前 を足した（`docs/content-spec.md` 2.4）
+- 撮影の台本 `tools/scenarios/domain.mjs` に FIRST（わざと誤る代わりに最初に入れる行）を足した。出力に当てる想定エラーの小窓（docker logs web の ENOTFOUND）を撮るため
+
+### 完成条件
+
+| 条件 | 結果 |
+|---|---|
+| 範囲内の全レッスンが検証を通る | 合格。docker の 11 本が `src/content/validate.test.ts` の全ての規則を通る。範囲の 11 本が全て揃うこともテストで確かめる（`DONE_DOMAINS` に docker） |
+| 最後のヒントで通る | 合格。11 本の全ての手順で、最後のヒントの `` の中を順に模擬環境に与えると達成条件を満たす（検証の `replayAnswers`）。画面でも、撮影の台本で 11 本とも最後のヒントの答えを入れて最後まで通した（結果は全て「自分の手で通せた」） |
+
+### テスト
+
+- `npm run typecheck` `npm run lint` `npm run test`: 全て通過（試し台を除いて 166 ファイル・5,409 件）
+- `npm run content:check`: 目録 211 本・用語 299・図 106 に問題なし
+- 模擬のテスト: `src/engines/docker/volume.test.ts`（psql の出力と誤り・ボリューム無しで作り直すと消える・名前付きボリュームなら残る・違う場所に付けると残らない・止めて動かし直すだけなら残る・inspect の Mounts・volume ls/inspect/rm）・`network.test.ts`（既定の網で ENOTFOUND・自作の網で名前で届く・止まった web を網に入れて動かし直す・localhost は自分自身・network ls/inspect/rm の形と誤り・inspect のアドレス）・`registry.test.ts`（ログイン無しの push は unauthorized・住所の無い名前は denied・login → tag → push・context ls/use/show と --context・ログアウトすると本番でも取れない・住所が引けない）・`compose.test.ts`（up の順と出力・サービス名で届いて予約の数を答える・localhost で止まる・変えたサービスだけ作り直す・down でボリュームは残る・ファイルが無い/YAML の誤り/知らない項目/宣言していないボリューム）
+
+### 視覚確認
+
+撮影: 11 本を 1280×720 で全段を通して撮り（`shots/p10-docker-<b01〜i06>-*.png`）、i.06 は 1920×1080 でも全段とヒントを開いた画面を撮った（`shots/p10-docker-i06h-*.png`）。
+i.04 は最初に `docker logs web` を入れ、出力に当てる想定エラーの小窓（名前が引けない）を撮った（`shots/p10-docker-i04f-error.png`）。
+各レッスンの実戦の画面と、i.06 の全段を開いて確かめた。
+
+| # | 結果 | 確かめたこと |
+|---|---|---|
+| V2 | 合格 | 横長の画面で、左に目的・手順・ヒント、右に端末・編集欄と確かめた結果・模擬環境の操作盤。ウェブページの見た目でない |
+| V5 | 合格 | 標準のボタン・青いリンクが無い。選ぶ欄は自作の印 |
+| V6 | 合格 | 本文は Noto Sans JP、見出しは M PLUS 1、コマンド・端末・編集欄・図の YAML は JetBrains Mono、XP は Barlow Condensed |
+| V7 | 合格 | 同じ形の札が 6 枚以上並ぶ画面は無い（i.06 の図の部分は 6 つの枠だが、中身は YAML の行で札ではない） |
+| V8 | 合格 | 全ての段で、後ろにコンテナ施設の中（積んだコンテナ・クレーン・机）の景色。上の帯に施設名 |
+| V11 | 合格 | 図と画面に絵文字は無い。Compose の進みの印（✔）は本物の出力の文字で、端末の等幅の文字として出る |
+
+V1・V3・V4・V9・V10 は都市画面の項目で、この分野では都市画面を変えていない。
+
+気づいて直したこと:
+
+- i.03 の理解（関係性）が「コンテナを消す」と「ボリュームとその中のデータ」の順序（before）になり、意味が通らなかった → 「書く場所にボリュームを付けて作る」が原因で「作り直しても予約が残る」が結果（cause）にした
+- i.05 の図で、住所・名前・タグを別々の文字の要素に置いたため、間に隙間が空いて 1 つの名前に見えなかった → 1 つの文字の要素の中で色だけ変えた
+- i.06 の図で、compose.yaml の字下げが消えていた（SVG は行の頭の空白を詰める）→ 字下げの分だけ x をずらした。長い行が枠に触れたので枠を広げた
+- i.01 の撮影でわざと `RUN npm instal` と書いたら、作れたのに部品が入らずアプリが止まった。本物の npm では instal は install の別名で、部品が入る → install の別名（i・instal・add など）で部品を入れ、知らない npm の命令は本物と同じく Unknown command で止めるようにした（先に失敗するテストを書いた）。撮影は `RUN npm instll` で RUN の失敗の小窓を撮った
+- 本番の機械の空の一覧（docker images）で、見出しの欄の間が本物より詰まっていた（テストで気づいた）→ 表の欄の幅を本物と同じく 10 字以上にした

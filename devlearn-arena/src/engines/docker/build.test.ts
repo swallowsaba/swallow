@@ -97,6 +97,19 @@ describe('docker build', () => {
     expect(r.stderr).toMatch(/\nERROR: failed to solve: process "\/bin\/sh -c npm install" did not complete successfully: exit code: 254\n$/);
   });
 
+  it('npm の install の別名（i・instal など）でも部品が入る。知らない npm の命令は、本物と同じく Unknown command で止まる', () => {
+    for (const alias of ['i', 'instal', 'add']) {
+      const s = shell(GOOD.replace('RUN npm install', `RUN npm ${alias}`));
+      expect(s.sh('docker build -t hello:1.0 .').code).toBe(0);
+      s.sh('docker run -d --name hello -p 8080:3000 hello:1.0');
+      expect(s.sh('docker logs hello').stdout).toContain('hello: listening on :3000');
+    }
+    const r = shell(GOOD.replace('RUN npm install', 'RUN npm instll')).sh('docker build -t hello:1.0 .');
+    expect(r.code).toBe(1);
+    expect(r.stderr).toContain('Unknown command: "instll"');
+    expect(r.stderr).toMatch(/did not complete successfully: exit code: 1\n$/);
+  });
+
   it('作ったアプリの誤りは、動かした時に node の言い方で止まる（CMD のファイルが無い・npm install をしていない・CMD が無い）', () => {
     const wrongCmd = shell('FROM node:20-alpine\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD ["node", "serve.js"]\n');
     wrongCmd.sh('docker build -t hello:1.0 .');

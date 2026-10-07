@@ -5,7 +5,7 @@ import { fromRegistry, hexOf, normalizeRef, type ContainerHost, type Image } fro
  *
  * - 命令: FROM・WORKDIR・COPY（ADD も同じ）・RUN・CMD・ENV・EXPOSE・USER・LABEL・ARG。FROM と、ファイルを変える WORKDIR・COPY・RUN が段になる
  * - 段ごとに、前の段と命令と写す中身から鍵を作る。同じ鍵の段は前に作った物を使い回す（CACHED。ctr.b.04 のレイヤ）
- * - RUN は、よく使う物だけを模す: npm install / npm ci（package.json の dependencies を node_modules に入れる）・apk add・mkdir・echo。ほかは /bin/sh が見つからないと言う
+ * - RUN は、よく使う物だけを模す: npm install（i・instal などの別名も）/ npm ci（package.json の dependencies を node_modules に入れる。知らない npm の命令は Unknown command で止まる）・apk add・mkdir・echo。ほかは /bin/sh が見つからないと言う
  * - 誤りは本物（BuildKit）と同じ言い方: 知らない命令・FROM が無い・土台が無い・写す物が無い・RUN の失敗・Dockerfile が無い
  */
 
@@ -114,12 +114,22 @@ interface Stage {
   installed: boolean;
 }
 
+/** npm で部品を入れる命令と、その別名（本物の npm と同じ） */
+const NPM_INSTALL = new Set(['install', 'i', 'in', 'ins', 'inst', 'insta', 'instal', 'isnt', 'isnta', 'isntal', 'isntall', 'add', 'ci', 'clean-install', 'ic', 'install-clean', 'isntall-clean']);
+/** 部品を入れない、よく使う npm の命令（何もしないで終わる） */
+const NPM_OTHER = new Set(['run', 'run-script', 'test', 't', 'start', 'prune', 'cache', 'config', 'set', 'audit', 'version', '--version', '-v']);
+
 /** RUN の 1 つの命令。出力と終わりの番号 */
 function runOne(stage: Stage, line: string, alpine: boolean): { out: string[]; code: number } {
   const [bin = '', ...args] = line.trim().split(/\s+/);
   switch (bin) {
     case 'npm': {
-      if (args[0] !== 'install' && args[0] !== 'ci' && args[0] !== 'i') return { out: [], code: 0 };
+      const sub = args[0] ?? '';
+      if (!NPM_INSTALL.has(sub)) {
+        if (NPM_OTHER.has(sub)) return { out: [], code: 0 };
+        // 本物の npm と同じく、知らない命令は Unknown command で止まる
+        return { out: [`Unknown command: "${sub}"`, '', 'To see a list of supported npm commands, run:', '  npm help'], code: 1 };
+      }
       const path = join(stage.workdir, 'package.json');
       const pkg = stage.files[path];
       if (pkg === undefined) {
