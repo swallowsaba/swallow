@@ -343,6 +343,21 @@
       "lessons": [
         "k8s.b.07"
       ]
+    },
+    {
+      "id": "configmap",
+      "word": "ConfigMap",
+      "reading": "こんふぃぐまっぷ",
+      "plain": "設定の値（接続先・機能の入り切りなど）を、名前と値の組で持つ Kubernetes の物。Pod には環境変数か、ファイルとして渡す。",
+      "why": "設定をイメージから切り離せる。確かめた同じイメージを、検証と本番で値だけ変えて使える。",
+      "related": [
+        "env-var",
+        "pod",
+        "deployment"
+      ],
+      "lessons": [
+        "k8s.i.01"
+      ]
     }
   ]
 }

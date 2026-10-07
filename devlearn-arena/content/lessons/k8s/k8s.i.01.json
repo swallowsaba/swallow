@@ -1,0 +1,258 @@
+{
+  "id": "k8s.i.01",
+  "domain": "k8s",
+  "level": "intermediate",
+  "theme": "設定",
+  "title": "ConfigMap",
+  "goal": "設定をイメージから切り離せる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.b.05"
+  ],
+  "related": [
+    "linux.i.06",
+    "docker.i.01"
+  ],
+  "next": [
+    "k8s.i.02"
+  ],
+  "terms": [
+    "configmap",
+    "pod",
+    "env-var",
+    "file",
+    "image",
+    "deployment",
+    "db",
+    "yaml",
+    "kubectl",
+    "permission",
+    "config-file",
+    "k8s-node",
+    "container"
+  ],
+  "explain": {
+    "what": "{{term:configmap}} は、設定の値を、名前と値の組で持つ物。{{term:pod}} には{{term:env-var}}か、{{term:file}}として渡す。{{term:image}}には設定を入れずに済む。",
+    "why": "設定をイメージに入れると、値を 1 つ変えるたびにイメージを作り直すことになる。値を外に出せば、確かめた同じイメージを、検証でも本番でも使える。",
+    "use": "接続先・機能の入り切りなど、場所ごとに変わる値に使う。{{term:deployment}} は ConfigMap の名前を指して値を受け取る。環境変数は、Pod が動き出す時に読む。",
+    "when": "検証と本番で、接続先の {{term:db}} だけが違う。設定を書いたファイルを 2 つ持ち、片方だけ直し忘れて、本番が検証の DB につながった。",
+    "figures": [
+      "k8s-i01-configmap"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "接続先を ConfigMap に置き、Deployment はそこから受け取る",
+      "b": "同じイメージを、検証でも本番でも使える",
+      "answer": "cause",
+      "why": "場所ごとに変わる値がイメージの外にあるので、場所ごとに ConfigMap の値だけを変えればよい。",
+      "see": "why"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "DB のパスワードも、ConfigMap に入れてよい。",
+      "answer": false,
+      "why": "ConfigMap の値は、見る{{term:permission}}のある人なら誰でもそのまま読める。パスワードのような秘密は、秘密を扱う物（`Secret`）に分け、見られる人を絞る。次のレッスンで扱う。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "検証と本番で、web の接続先の DB だけが違う。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "接続先を ConfigMap に置き、Deployment はそこから受け取る。検証と本番で ConfigMap の値だけを変える",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "接続先ごとにイメージを作り分ける",
+          "correct": false,
+          "whyNot": "値が 1 つ変わるたびにイメージを作り直すことになる。検証で確かめたイメージと、本番で動くイメージが別物になる。"
+        },
+        {
+          "id": "c",
+          "text": "動いている Pod の中に入って、設定を書き換える",
+          "correct": false,
+          "whyNot": "Pod は作り直されると元に戻る。誰が何を変えたかの記録も残らない。"
+        }
+      ],
+      "explanation": "場所ごとに変わる値は ConfigMap に置く。イメージと Deployment は、検証と本番で同じ物を使える。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "ConfigMap の `DB_HOST` を db-2 に変えて保存し、{{term:kubectl}} で送った（Deployment は変えていない）。前から動いている web の Pod の中で、`DB_HOST` の値は？",
+      "context": {
+        "command": "kubectl apply -f web.yaml",
+        "log": "configmap/web-config configured\ndeployment.apps/web unchanged"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "前の値のまま",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "db-2 に変わる",
+          "correct": false,
+          "whyNot": "環境変数は、Pod が動き出す時に一度だけ読む。動いている Pod には届かない。"
+        },
+        {
+          "id": "c",
+          "text": "空になる",
+          "correct": false,
+          "whyNot": "値を変えただけで、ConfigMap は消えていない。前に読んだ値が残る。"
+        }
+      ],
+      "explanation": "環境変数を変えるには、Pod を作り直す。Deployment は設計図が変わった時に Pod を作り直す。"
+    },
+    {
+      "id": "q3",
+      "kind": "multi",
+      "prompt": "ConfigMap の値を Pod に渡す形は？（当てはまる物を全て）",
+      "choices": [
+        {
+          "id": "a",
+          "text": "環境変数として渡す",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ファイルとして、Pod の中の場所に置く",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "イメージの中のファイルを書き換える",
+          "correct": false,
+          "whyNot": "ConfigMap はイメージを変えない。イメージの外から、動いている Pod に値を渡す。"
+        }
+      ],
+      "explanation": "環境変数か、ファイルとして渡す。ファイルにすると、{{term:config-file}}の中身をまるごと渡せる。"
+    },
+    {
+      "id": "q4",
+      "kind": "cause",
+      "prompt": "web.yaml を送ったら、新しい Pod が動き出さない。原因は？",
+      "context": {
+        "command": "kubectl get pods",
+        "log": "NAME                   READY   STATUS                       RESTARTS   AGE\nweb-5d9c7b8f4-x2k8p    0/1     CreateContainerConfigError   0          40s"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "Deployment が指す ConfigMap が無い（名前の綴りが違う）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "イメージの名前を間違えた",
+          "correct": false,
+          "whyNot": "イメージが取れない時は `ErrImagePull` や `ImagePullBackOff` になる。"
+        },
+        {
+          "id": "c",
+          "text": "Pod を置ける {{term:k8s-node}} が無い",
+          "correct": false,
+          "whyNot": "置けない時は `Pending` のまま。この Pod は Node に置かれ、{{term:container}}を作る所で止まっている。"
+        }
+      ],
+      "explanation": "`CreateContainerConfigError` は、コンテナに渡す設定が揃わない時の状態。指した ConfigMap の名前を見比べる。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "予約の窓口 web は、接続先の DB（`DB_HOST`）を web.yaml に直書きしている。接続先を ConfigMap に移し、値を変えて反映させる。この練習では、ConfigMap も web.yaml に `---` で区切って書く。保存すると、送って入れ替えを待ち、Pod の中の `DB_HOST` を確かめる。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cwd": "/home/learner/web",
+      "dirs": [
+        "/home/learner/web"
+      ],
+      "files": {
+        "/home/learner/web/web.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        env:\n        - name: DB_HOST\n          value: db-staging\n"
+      },
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        env:\n        - name: DB_HOST\n          value: db-staging\n"
+      },
+      "edit": {
+        "path": "/home/learner/web/web.yaml",
+        "apply": [
+          "kubectl apply -f web.yaml",
+          "kubectl rollout status deployment/web",
+          "kubectl get pods",
+          "kubectl exec deploy/web -- printenv DB_HOST"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "move",
+        "purpose": "接続先 `DB_HOST: db-staging` を ConfigMap web-config に移し、web はそこから値を受け取るようにする。値は前と同じ db-staging のまま。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web readyReplicas=2 env.DB_HOST=db-staging from.DB_HOST=web-config"
+        },
+        "afterward": "`configmap/web-config created` と `deployment.apps/web configured`。設計図が変わったので Pod が作り直され、新しい Pod は動き出す時に web-config から `DB_HOST` を読んだ。",
+        "hints": [
+          "ConfigMap は `kind: ConfigMap` と、値を並べる `data:` を持つ。Deployment の前に書いて `---` で区切る。コンテナは `env:` の代わりに `envFrom:` で ConfigMap を指す。",
+          "ConfigMap の `name:` は web-config、`data:` に `DB_HOST: db-staging`。コンテナの `env:` の 3 行を消し、`envFrom:`・`- configMapRef:`・`name: web-config` を書く。",
+          "`apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: web-config\ndata:\n  DB_HOST: db-staging\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: web-config\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-config-not-used",
+          "k8s-config-missing",
+          "k8s-yaml"
+        ]
+      },
+      {
+        "id": "switch",
+        "purpose": "検証の DB が、新しい機械 db-staging-2 に移った。web の Pod が、新しい接続先 db-staging-2 を持って動くようにする。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web readyReplicas=2 env.DB_HOST=db-staging-2 from.DB_HOST"
+        },
+        "afterward": "名前を変えた ConfigMap を指したので、Deployment の設計図が変わり、Pod が作り直された。新しい Pod は動き出す時に db-staging-2 を読んだ。",
+        "hints": [
+          "ConfigMap の値を変えるだけでは、動いている Pod は古い値のまま（環境変数は、動き出す時に読む）。Deployment の設計図を変えると、Pod が作り直される。",
+          "ConfigMap の `name:` を web-config-2 にして、値を db-staging-2 にする。`envFrom` の `name:` も web-config-2 にする。",
+          "`apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: web-config-2\ndata:\n  DB_HOST: db-staging-2\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: web\n        image: city-reserve:2.0\n        ports:\n        - containerPort: 3000\n        envFrom:\n        - configMapRef:\n            name: web-config-2\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-config-stale",
+          "k8s-config-missing",
+          "k8s-yaml"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "接続先を ConfigMap に移し、名前を変えた ConfigMap を指し直して、Pod に新しい値を読ませられた。",
+    "partial": "ヒントを使って反映できた。次は、値を変えただけでは Pod の環境変数が変わらない理由を、自分の言葉で説明してみよう。",
+    "retry": "まだ新しい値で動いていない。確かめた結果の `deployment.apps/web` の行（`configured` か `unchanged` か）と、`printenv` の値を見比べよう。"
+  },
+  "summary": {
+    "points": [
+      "設定はイメージと分ける",
+      "環境変数かファイルで渡す",
+      "環境変数は Pod を作り直すと変わる"
+    ],
+    "next": [
+      "k8s.i.02"
+    ],
+    "terms": [
+      "configmap",
+      "env-var"
+    ]
+  }
+}

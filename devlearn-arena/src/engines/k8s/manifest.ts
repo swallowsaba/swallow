@@ -1,4 +1,4 @@
-import { load, loadAll } from 'js-yaml';
+import { load, loadAll, YAMLException } from 'js-yaml';
 import { BUILDERS } from './manifestBuilders';
 import { asRecord, asString, asStringMap } from './manifestValues';
 import type { Resource } from './types';
@@ -43,13 +43,21 @@ export function buildResource(doc: Record<string, unknown>): Resource | ParseErr
   return built;
 }
 
+/** YAML の誤りを、本物の kubectl の言い方（yaml: line 行: 理由）にする */
+function yamlError(error: unknown): ParseError {
+  if (error instanceof YAMLException && error.mark !== undefined) {
+    return { error: `error: error converting YAML to JSON: yaml: line ${String(error.mark.line + 1)}: ${error.reason}` };
+  }
+  return { error: `error: error converting YAML to JSON: ${String(error)}` };
+}
+
 /** YAML の1文書を資源にする */
 export function parseManifest(text: string): Resource | ParseError {
   let doc: unknown;
   try {
     doc = load(text);
   } catch (error) {
-    return { error: `error: YAML を読めませんでした: ${String(error)}` };
+    return yamlError(error);
   }
   return buildResource(asRecord(doc));
 }
@@ -60,7 +68,7 @@ export function parseManifests(text: string): (Resource | ParseError)[] {
   try {
     docs = loadAll(text);
   } catch (error) {
-    return [{ error: `error: YAML を読めませんでした: ${String(error)}` }];
+    return [yamlError(error)];
   }
   return docs
     .filter((d) => d !== null && d !== undefined)

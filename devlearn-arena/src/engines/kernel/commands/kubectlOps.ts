@@ -145,7 +145,8 @@ export const opsSubcommands: Record<string, KubectlHandler> = {
     const parsed = parseManifests(node.content);
     const errors = parsed.filter(isParseError);
     if (errors.length > 0) {
-      return { stderr: `${errors.map((e) => e.error).join('\n')}\n`, code: 1 };
+      // 本物と同じく、どのファイルを読めなかったかを頭に付ける
+      return { stderr: `${errors.map((e) => e.error.replace(/^error: error converting/, `error: error parsing ${file}: error converting`)).join('\n')}\n`, code: 1 };
     }
 
     if (flags.has('dry-run')) {

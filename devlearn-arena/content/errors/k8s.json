@@ -261,6 +261,64 @@
       "terms": [
         "k8s-namespace"
       ]
+    },
+    {
+      "id": "k8s-config-not-used",
+      "match": "deployment\\.apps/web unchanged",
+      "output": true,
+      "meaning": "ConfigMap は書けたが、Deployment は変わっていない（`unchanged`）と言われた。Pod は作り直されず、web はまだ ConfigMap を使っていない。",
+      "causes": [
+        "コンテナの `env:` を、ConfigMap を指す `envFrom:` に書き換えていない。",
+        "ConfigMap だけを足して、Deployment の部分はそのまま保存した。"
+      ],
+      "hint": "Deployment のコンテナの `env:` の 3 行を消し、`envFrom:`・`- configMapRef:`・`name: web-config` を書く。",
+      "terms": [
+        "configmap",
+        "deployment"
+      ]
+    },
+    {
+      "id": "k8s-config-stale",
+      "match": "deployment\\.apps/web unchanged",
+      "output": true,
+      "meaning": "ConfigMap の値は変わった（`configured`）が、Deployment は変わっていない（`unchanged`）。Pod は作り直されず、古い値を持ったまま動いている。",
+      "causes": [
+        "環境変数は、Pod が動き出す時に ConfigMap から読む。後から値を変えても、動いている Pod には届かない。",
+        "Deployment の設計図（`template`）が変わらないので、Deployment は Pod を作り直さない。"
+      ],
+      "hint": "設計図を変えて、Pod を作り直させる。ConfigMap の名前を web-config-2 に変え、`envFrom` の `name:` も同じ名前にする。",
+      "terms": [
+        "configmap",
+        "env-var"
+      ]
+    },
+    {
+      "id": "k8s-config-missing",
+      "match": "CreateContainerConfigError|exceeded its progress deadline",
+      "output": true,
+      "meaning": "新しい Pod が動き出せない（`CreateContainerConfigError`）。受け取る ConfigMap が見つからず、コンテナを作れない。入れ替えは期限までに終わらなかった。",
+      "causes": [
+        "`envFrom` の `name:` と、ConfigMap の `metadata` の `name:` の綴りが違う。",
+        "ConfigMap を書き忘れた。"
+      ],
+      "hint": "2 つの名前を見比べる。古い Pod は動き続けているので、直して保存し直せばよい。",
+      "terms": [
+        "configmap",
+        "pod"
+      ]
+    },
+    {
+      "id": "k8s-yaml",
+      "match": "error converting YAML to JSON",
+      "meaning": "ファイルを YAML として読めなかった。`line` の後の数が、読めなくなった行。",
+      "causes": [
+        "字下げがそろっていない（同じ深さの項目は、同じ数の空白で始める）。",
+        "`---` を書き忘れ、2 つの物の項目が 1 つに混ざった（`duplicated mapping key`）。"
+      ],
+      "hint": "言われた行と、その前の行の字下げを見比べる。字下げは空白で書く。",
+      "terms": [
+        "yaml"
+      ]
     }
   ]
 }

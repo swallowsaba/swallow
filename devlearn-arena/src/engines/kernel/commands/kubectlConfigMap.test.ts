@@ -138,6 +138,17 @@ describe('ConfigMap を環境変数で渡す', () => {
     expect(c.run('kubectl describe deployment web').out).toContain("      DB_HOST:  <set to the key 'DB_HOST' of config map 'web-config'>  Optional: false");
   });
 
+  it('YAML として読めないファイルは、本物と同じく読めなくなった行を言い、何も変えない', () => {
+    const c = console_();
+    const broken = c.apply(`${CONFIG('web-config', 'db-staging')}${DEPLOY(FROM('web-config')).replace('      - name: web', '     - name: web')}`);
+    expect(broken.err).toMatch(/^error: error parsing web\.yaml: error converting YAML to JSON: yaml: line \d+: \S/);
+    expect(broken.code).toBe(1);
+    expect(c.run('kubectl get configmaps').out).not.toContain('web-config');
+    // --- を忘れると、2 つの物の項目が 1 つに混ざる
+    const mixed = c.apply(CONFIG('web-config', 'db-staging').replace('---\n', '') + DEPLOY(FROM('web-config')));
+    expect(mixed.err).toMatch(/yaml: line \d+: duplicated mapping key/);
+  });
+
   it('printenv は名前を省くと全てを、無い名前は何も出さずに 1 で終わる', () => {
     const c = console_();
     expect(c.run('kubectl exec deploy/web -- printenv').out).toMatch(/^DB_HOST=db-staging$/m);

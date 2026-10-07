@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 340" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>設定の値は ConfigMap に置き、イメージには入れない。Pod は ConfigMap の値を、環境変数か、ファイルとして受け取る。環境変数は、Pod が動き出す時に読む</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9fb0c6" />
+    </marker>
+  </defs>
+  <g class="el" data-part="configmap">
+    <rect x="12" y="40" width="210" height="120" rx="8" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="117" y="72" text-anchor="middle" font-size="16" fill="#f2b632">ConfigMap</text>
+    <text x="117" y="96" text-anchor="middle" font-size="13" fill="#9fb0c6">web-config</text>
+    <text x="117" y="134" text-anchor="middle" font-size="13" fill="#eef2f6" font-family="&quot;JetBrains Mono&quot;, monospace">DB_HOST: db-staging</text>
+  </g>
+  <g class="el" data-part="image">
+    <rect x="12" y="210" width="210" height="100" rx="8" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="117" y="242" text-anchor="middle" font-size="14" fill="#eef2f6">イメージ</text>
+    <text x="117" y="266" text-anchor="middle" font-size="13" fill="#9fb0c6" font-family="&quot;JetBrains Mono&quot;, monospace">city-reserve:2.0</text>
+    <text x="117" y="290" text-anchor="middle" font-size="13" fill="#9fb0c6">設定は入れない</text>
+  </g>
+  <g class="el" data-part="env">
+    <rect x="270" y="24" width="190" height="76" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="365" y="54" text-anchor="middle" font-size="14" fill="#3ae08a">環境変数として</text>
+    <text x="365" y="80" text-anchor="middle" font-size="13" fill="#eef2f6" font-family="&quot;JetBrains Mono&quot;, monospace">DB_HOST=db-staging</text>
+  </g>
+  <g class="el" data-part="file">
+    <rect x="270" y="120" width="190" height="76" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="365" y="150" text-anchor="middle" font-size="14" fill="#3ae08a">ファイルとして</text>
+    <text x="365" y="176" text-anchor="middle" font-size="13" fill="#eef2f6" font-family="&quot;JetBrains Mono&quot;, monospace">/etc/web/DB_HOST</text>
+  </g>
+  <g class="el" data-part="pod">
+    <rect x="510" y="24" width="178" height="286" rx="8" fill="none" stroke="#eef2f6" stroke-width="2" pointer-events="all" />
+    <text x="599" y="56" text-anchor="middle" font-size="16" fill="#eef2f6">Pod（web）</text>
+    <text x="599" y="150" text-anchor="middle" font-size="13" fill="#9fb0c6">動き出す時に</text>
+    <text x="599" y="172" text-anchor="middle" font-size="13" fill="#9fb0c6">値を読む</text>
+    <text x="599" y="270" text-anchor="middle" font-size="13" fill="#9fb0c6">同じイメージを</text>
+    <text x="599" y="292" text-anchor="middle" font-size="13" fill="#9fb0c6">どこでも使う</text>
+  </g>
+  <path d="M224 80 L266 62" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <path d="M224 120 L266 158" fill="none" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+  <line x1="462" y1="62" x2="506" y2="62" stroke="#3ae08a" stroke-width="2" marker-end="url(#ar)" />
+  <line x1="462" y1="158" x2="506" y2="158" stroke="#3ae08a" stroke-width="2" marker-end="url(#ar)" />
+  <line x1="224" y1="260" x2="506" y2="260" stroke="#9fb0c6" stroke-width="2" marker-end="url(#ar)" />
+</svg>
