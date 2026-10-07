@@ -194,7 +194,7 @@
         "hints": [
           "Pod を消すのは `kubectl delete pod 名前`。名前は `kubectl get pods` の一覧から書き写す。",
           "Deployment の名前（web）ではなく、Pod の名前（web-印-5 字）を書く。消した後、また `kubectl get pods -w` で見る。",
-          "`kubectl get pods` で名前を見て、`kubectl delete pod web-7b57d9ff65-686cb` のように 1 つを消し（名前は一覧の物に置き換える）、`kubectl get pods -w` と打つ。"
+          "`kubectl get pods` で名前を見て、`kubectl delete pod web-77bfcfdff-vpcvj` のように 1 つを消し（名前は一覧の物に置き換える）、`kubectl get pods -w` と打つ。"
         ],
         "expectedErrors": [
           "k8s-pod-name",

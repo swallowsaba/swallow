@@ -1,4 +1,5 @@
 import { probe as makeProbe } from '@/engines/k8s/factory';
+import { cpuMillis, memoryMi } from '@/engines/k8s/quantity';
 import type { ContainerSpec, Deployment } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult } from '../registry';
@@ -20,16 +21,17 @@ export function targetOf(operands: readonly string[], at: number): TargetRef {
   return { kind: KINDS[head] ?? '', name: operands[at + 1] ?? '', slash: false };
 }
 
-/** `cpu=200m,memory=256Mi` を読む */
-function parseQuantities(text: string): { cpu?: number; memory?: number } {
+/** 本物の kubectl が数量として受ける形 */
+const QUANTITY = /^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$/;
+
+/** `cpu=200m,memory=256Mi` を読む。数量として読めなければ null */
+function parseQuantities(text: string): { cpu?: number; memory?: number } | null {
   const out: { cpu?: number; memory?: number } = {};
   for (const part of text.split(',')) {
     const [k, v = ''] = part.split('=');
-    if (k === 'cpu') {
-      out.cpu = v.endsWith('m') ? Number(v.slice(0, -1)) : Number(v) * 1000;
-    } else if (k === 'memory') {
-      out.memory = Number(v.replace(/(Mi|M)$/, ''));
-    }
+    if (!QUANTITY.test(v)) return null;
+    if (k === 'cpu') out.cpu = cpuMillis(v);
+    else if (k === 'memory') out.memory = memoryMi(v);
   }
   return out;
 }
@@ -39,6 +41,7 @@ function updateContainers(
   ref: TargetRef,
   change: (c: ContainerSpec) => ContainerSpec,
   note: string,
+  done = `${note} updated`,
 ): CommandResult {
   const { cluster, namespace } = ctx;
   if (ref.kind !== 'deployments') {
@@ -60,7 +63,7 @@ function updateContainers(
     },
   });
   return {
-    stdout: `deployment.apps/${ref.name} ${note} updated\n`,
+    stdout: `deployment.apps/${ref.name} ${done}\n`,
     patch: { cluster: { ...cluster, deployments } },
   };
 }
@@ -71,10 +74,13 @@ export function setResources(ctx: KubectlContext): CommandResult {
   const requests = ctx.values.get('requests');
   const limits = ctx.values.get('limits');
   if (requests === undefined && limits === undefined) {
-    return { stderr: 'error: --requests か --limits を指定してください\n', code: 1 };
+    return { stderr: 'error: you must specify an update to requests or limits (in the form of --requests/--limits)\n', code: 1 };
   }
   const wantRequests = requests === undefined ? null : parseQuantities(requests);
   const wantLimits = limits === undefined ? null : parseQuantities(limits);
+  if ((requests !== undefined && wantRequests === null) || (limits !== undefined && wantLimits === null)) {
+    return { stderr: `error: quantities must match the regular expression '${QUANTITY.source}'\n`, code: 1 };
+  }
   return updateContainers(
     ctx,
     ref,
@@ -96,6 +102,7 @@ export function setResources(ctx: KubectlContext): CommandResult {
             },
     }),
     'resources',
+    'resource requirements updated',
   );
 }
 

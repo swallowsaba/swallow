@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { container, deployment, emptyCluster, node, service } from './factory';
+import { container, deployment, emptyCluster, node, quantity, service } from './factory';
 import { advanceCluster, matches, reconcile, templateHash } from './controllers';
 import { tickPods } from './kubelet';
 import type { ClusterState } from './types';
@@ -84,7 +84,7 @@ describe('Deployment の収束', () => {
 
   it('容量が足りなければ配置されずに理由が残る', () => {
     const small = emptyCluster([node('n1', 150, 256)]);
-    const state = run(withDeployment(small, deployment('web', 3, [container('c', 'nginx')])), 6);
+    const state = run(withDeployment(small, deployment('web', 3, [container('c', 'nginx', { requests: quantity(100, 128) })])), 6);
     const pending = [...state.pods.values()].filter((p) => p.status.nodeName === null);
     expect(pending.length).toBeGreaterThan(0);
     expect(pending[0]?.status.message).toContain('Insufficient');

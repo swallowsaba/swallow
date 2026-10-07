@@ -7,6 +7,7 @@ import type {
 } from '@/engines/k8s/types';
 import { backendText, rulesByHost } from '@/engines/k8s/ingress';
 import { age } from './kubectlShared';
+import { formatCpu, formatMemory, qosClass } from '@/engines/k8s/quantity';
 
 /**
  * kubectl describe の、本物と同じ形の出力（種類ごと）。日時の欄（CreationTimestamp・LastHeartbeatTime など）は、
@@ -62,13 +63,15 @@ export function describeNode(cluster: ClusterState, node: Node): string {
   const pods = [...cluster.pods.values()].filter((p) => p.status.nodeName === node.metadata.name && p.status.phase !== 'Succeeded' && p.status.phase !== 'Failed');
   const { cpu, memory } = node.status.allocatable;
   const pct = (n: number, of: number): string => `${String(Math.round((n / of) * 100))}%`;
+  // 本物と同じく、書いていない量は 0 (0%)
+  const share = (n: number, of: number, format: (v: number) => string): string => (n === 0 ? '0 (0%)' : `${format(n)} (${pct(n, of)})`);
   const podRows = pods.map((p) => {
     const req = p.spec.containers.reduce((a, s) => ({ cpu: a.cpu + s.requests.cpu, memory: a.memory + s.requests.memory }), { cpu: 0, memory: 0 });
     const lim = p.spec.containers.reduce((a, s) => ({ cpu: a.cpu + (s.limits?.cpu ?? 0), memory: a.memory + (s.limits?.memory ?? 0) }), { cpu: 0, memory: 0 });
     return [
       p.metadata.namespace, p.metadata.name,
-      `${String(req.cpu)}m (${pct(req.cpu, cpu)})`, lim.cpu === 0 ? '0 (0%)' : `${String(lim.cpu)}m (${pct(lim.cpu, cpu)})`,
-      `${String(req.memory)}Mi (${pct(req.memory, memory)})`, lim.memory === 0 ? '0 (0%)' : `${String(lim.memory)}Mi (${pct(lim.memory, memory)})`,
+      share(req.cpu, cpu, formatCpu), share(lim.cpu, cpu, formatCpu),
+      share(req.memory, memory, formatMemory), share(lim.memory, memory, formatMemory),
       age(cluster.tick, p.metadata.createdAt),
     ];
   });
@@ -174,8 +177,13 @@ export function describePod(cluster: ClusterState, pod: Pod): string {
       ['Ready', status?.ready === true ? 'True' : 'False'],
       ['Restart Count', String(status?.restartCount ?? 0)],
     ];
-    if (spec.limits) rows.push(['Limits', ''], ['  cpu', `${String(spec.limits.cpu)}m`], ['  memory', `${String(spec.limits.memory)}Mi`]);
-    rows.push(['Requests', ''], ['  cpu', `${String(spec.requests.cpu)}m`], ['  memory', `${String(spec.requests.memory)}Mi`]);
+    // 本物と同じく、書いた量だけを出す（何も書かなければ Limits も Requests も無い）
+    for (const [title, q] of [['Limits', spec.limits], ['Requests', spec.requests]] as const) {
+      const shown: [string, string][] = [];
+      if (q !== null && q.cpu !== 0) shown.push(['  cpu', formatCpu(q.cpu)]);
+      if (q !== null && q.memory !== 0) shown.push(['  memory', formatMemory(q.memory)]);
+      if (shown.length > 0) rows.push([title, ''], ...shown);
+    }
     if (spec.livenessProbe) rows.push(['Liveness', probeLine(spec.livenessProbe, spec)]);
     if (spec.readinessProbe) rows.push(['Readiness', probeLine(spec.readinessProbe, spec)]);
     if (spec.startupProbe) rows.push(['Startup', probeLine(spec.startupProbe, spec)]);
@@ -194,8 +202,7 @@ export function describePod(cluster: ClusterState, pod: Pod): string {
     ['PodScheduled', scheduled ? 'True' : 'False'],
   ]));
   lines.push('Volumes:', ...volumeLines(pod.spec.volumes, '  '));
-  const qos = pod.spec.containers.every((c) => c.limits !== null && c.limits.cpu === c.requests.cpu && c.limits.memory === c.requests.memory) ? 'Guaranteed' : 'Burstable';
-  lines.push(...multi('QoS Class', [qos], 29), ...multi('Node-Selectors', [], 29));
+  lines.push(...multi('QoS Class', [qosClass(pod)], 29), ...multi('Node-Selectors', [], 29));
   lines.push(...multi('Tolerations', ['node.kubernetes.io/not-ready:NoExecute op=Exists for 300s', 'node.kubernetes.io/unreachable:NoExecute op=Exists for 300s'], 29));
   lines.push(...eventsOf(cluster, `pod/${pod.metadata.name}`, w));
   return `${lines.join('\n')}\n`;

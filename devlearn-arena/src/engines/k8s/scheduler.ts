@@ -23,6 +23,33 @@ export function requestOf(pod: Pod): ResourceQuantity {
   );
 }
 
+/**
+ * 点数付けに使う要求量。本物の kube-scheduler と同じく、要求を書かないコンテナも
+ * CPU 100m・メモリ 200MB を求める物として数える（要求の無い Pod も 1 台に寄らず散らばる）。入るかどうかは実際の要求で決める
+ */
+const NONZERO_CPU = 100;
+const NONZERO_MEMORY = 200_000_000 / 2 ** 20;
+function nonZero(containers: readonly { requests: ResourceQuantity }[]): ResourceQuantity {
+  return containers.reduce(
+    (sum, c) => ({ cpu: sum.cpu + (c.requests.cpu || NONZERO_CPU), memory: sum.memory + (c.requests.memory || NONZERO_MEMORY) }),
+    { cpu: 0, memory: 0 },
+  );
+}
+
+/** そのノードに既に載っている Pod の、点数付けに使う要求量の合計 */
+function scoredOn(state: ClusterState, nodeName: string): ResourceQuantity {
+  let cpu = 0;
+  let memory = 0;
+  for (const pod of state.pods.values()) {
+    if (pod.status.nodeName !== nodeName) continue;
+    if (pod.status.phase === 'Succeeded' || pod.status.phase === 'Failed') continue;
+    const q = nonZero(pod.spec.containers);
+    cpu += q.cpu;
+    memory += q.memory;
+  }
+  return { cpu, memory };
+}
+
 export interface Fit {
   node: Node;
   /** 空き容量。大きいほど優先 */
@@ -41,6 +68,7 @@ export interface ScheduleResult {
  */
 export function schedule(state: ClusterState, pod: Pod): ScheduleResult {
   const request = requestOf(pod);
+  const scored = nonZero(pod.spec.containers);
   const reasons: string[] = [];
   const fits: Fit[] = [];
 
@@ -85,7 +113,11 @@ export function schedule(state: ClusterState, pod: Pod): ScheduleResult {
       reasons.push('Insufficient memory');
       continue;
     }
-    fits.push({ node, free: freeCpu + freeMemory });
+    const counted = scoredOn(state, node.metadata.name);
+    fits.push({
+      node,
+      free: node.status.allocatable.cpu - counted.cpu - scored.cpu + (node.status.allocatable.memory - counted.memory - scored.memory),
+    });
   }
 
   if (fits.length === 0) {

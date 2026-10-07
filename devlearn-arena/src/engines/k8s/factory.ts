@@ -35,7 +35,7 @@ export function container(name: string, image: string, options: Partial<Containe
   return {
     name,
     image,
-    requests: options.requests ?? quantity(100, 128),
+    requests: options.requests ?? quantity(0, 0),
     limits: options.limits ?? null,
     env: options.env ?? {},
     envFrom: options.envFrom ?? [],

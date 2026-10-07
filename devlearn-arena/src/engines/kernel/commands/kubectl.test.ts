@@ -88,7 +88,9 @@ describe('kubectl describe', () => {
     const out = run(`kubectl describe pod ${name}`).out;
     expect(out).toContain('Events:');
     expect(out).toContain('Scheduled');
-    expect(out).toContain('Requests:');
+    // 要求も上限も書いていない Pod は、本物と同じく Requests の欄が無く、BestEffort
+    expect(out).not.toContain('Requests:');
+    expect(out).toMatch(/^QoS Class: +BestEffort$/m);
   });
 
   it('無い Pod は NotFound', () => {
@@ -198,5 +200,21 @@ describe('名前を知らなくても指せる', () => {
     const r = run('kubectl logs deploy/web');
     expect(r.code).toBe(0);
     expect(r.out).toContain('starting');
+  });
+});
+
+describe('kubectl set resources', () => {
+  it('本物と同じ文で要求と上限を書き、Pod は書いた量で作り直される（上限と要求が同じなら Guaranteed）', () => {
+    expect(run('kubectl set resources deployment web --requests=cpu=200m,memory=128Mi --limits=cpu=200m,memory=128Mi').out).toBe('deployment.apps/web resource requirements updated\n');
+    for (let i = 0; i < 20; i += 1) session = { ...session, state: { ...session.state, cluster: advanceCluster(session.state.cluster ?? ready(0), tickPods) } };
+    const name = run('kubectl get pods').out.split('\n')[1]?.split(' ')[0] ?? '';
+    const out = run(`kubectl describe pod ${name}`).out;
+    expect(out).toMatch(/ +Limits:\n +cpu: +200m\n +memory: +128Mi\n +Requests:\n +cpu: +200m\n +memory: +128Mi\n/);
+    expect(out).toMatch(/^QoS Class: +Guaranteed$/m);
+  });
+
+  it('量を書かない・数量として読めない時は、本物と同じく断る', () => {
+    expect(run('kubectl set resources deployment web').err).toBe('error: you must specify an update to requests or limits (in the form of --requests/--limits)\n');
+    expect(run('kubectl set resources deployment web --requests=cpu=lots').err).toBe("error: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'\n");
   });
 });

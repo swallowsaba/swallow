@@ -1,6 +1,7 @@
+import { formatCpu, formatMemory } from './quantity';
 import { rulesByHost } from './ingress';
 import type {
-  ContainerSpec, Deployment, ObjectMeta, Pod, PodVolume, Probe, ReplicaSet, Resource, Service,
+  ContainerSpec, Deployment, ObjectMeta, Pod, PodVolume, Probe, ReplicaSet, Resource, ResourceQuantity, Service,
 } from './types';
 
 /**
@@ -27,6 +28,11 @@ export function apiVersionOf(kind: string): string {
 type Plain = Record<string, unknown>;
 
 /** 空の値を落とす。本物も既定値や空の欄は出さない */
+function quantities(q: ResourceQuantity | null): Plain | undefined {
+  if (q === null) return undefined;
+  return compact({ cpu: q.cpu === 0 ? undefined : formatCpu(q.cpu), memory: q.memory === 0 ? undefined : formatMemory(q.memory) });
+}
+
 function compact(value: Plain): Plain {
   const out: Plain = {};
   for (const [k, v] of Object.entries(value)) {
@@ -86,10 +92,8 @@ function containerOf(c: ContainerSpec): Plain {
     ports: c.ports.map((containerPort) => ({ containerPort })),
     env,
     envFrom,
-    resources: compact({
-      requests: { cpu: `${String(c.requests.cpu)}m`, memory: `${String(c.requests.memory)}Mi` },
-      limits: c.limits === null ? undefined : { cpu: `${String(c.limits.cpu)}m`, memory: `${String(c.limits.memory)}Mi` },
-    }),
+    // 本物と同じく、書いていない量は出さない
+    resources: compact({ limits: quantities(c.limits), requests: quantities(c.requests) }),
     livenessProbe: probeOf(c.livenessProbe),
     readinessProbe: probeOf(c.readinessProbe),
     startupProbe: probeOf(c.startupProbe),

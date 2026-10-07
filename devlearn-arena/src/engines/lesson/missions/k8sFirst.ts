@@ -164,16 +164,16 @@ export const k8sFirstPod: LessonCore = {
       assert: ({ shell }) =>
         shell.cluster?.deployments.has('default/web') === true && readyOwned(shell) === 2,
       explain:
-        'Pod の名前が web-b0xusf-00001 のように長くなった。Deployment が ReplicaSet（数を合わせる係）を作り、その係が Pod を作ったので、名前に印が付いている。',
+        'Pod の名前が web-1ccgmi-00001 のように長くなった。Deployment が ReplicaSet（数を合わせる係）を作り、その係が Pod を作ったので、名前に印が付いている。',
     },
     {
       prompt: 'Deployment の Pod を 1 つ消し、時間を進めて、今度は作り直されることを確かめよ。',
       check: 'Deployment の Pod を消したあと、また 2 つ Ready になっていること',
       hints: [
         'kubectl get pods で名前を確かめ、kubectl delete pod <名前> で 1 つ消す。そのあと kubectl wait で時間を進める',
-        'kubectl delete pod web-b0xusf-00001\nkubectl wait 10',
+        'kubectl delete pod web-1ccgmi-00001\nkubectl wait 10',
       ],
-      solution: ['kubectl delete pod web-b0xusf-00001', 'kubectl wait 10'],
+      solution: ['kubectl delete pod web-1ccgmi-00001', 'kubectl wait 10'],
       diagram: 'desired-vs-actual',
       assert: ({ shell, timeline }) => ownedPodWasRemoved(timeline) && readyOwned(shell) === 2,
       diagnose: ({ shell, timeline }) => {

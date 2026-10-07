@@ -1,3 +1,4 @@
+import { cpuMillis, memoryMi } from './quantity';
 import { container, probe } from './factory';
 import type { EnvFromRef, PodTemplate, PodVolume, Probe, VolumeMount } from './types';
 
@@ -119,14 +120,12 @@ export function toContainers(value: unknown): ReturnType<typeof container>[] {
     const limits = asRecord(resources['limits']);
     const { env, refs } = toEnv(c['env']);
     return container(asString(c['name'], `c${String(i)}`), asString(c['image'], 'nginx'), {
+      // 本物と同じく、要求を書かず上限だけを書いた物は、上限と同じ量を要求する
       requests: {
-        cpu: asNumber(requests['cpu'], 100),
-        memory: asNumber(requests['memory'], 128),
+        cpu: cpuMillis(requests['cpu']) || cpuMillis(limits['cpu']),
+        memory: memoryMi(requests['memory']) || memoryMi(limits['memory']),
       },
-      limits:
-        Object.keys(limits).length === 0
-          ? null
-          : { cpu: asNumber(limits['cpu'], 200), memory: asNumber(limits['memory'], 256) },
+      limits: Object.keys(limits).length === 0 ? null : { cpu: cpuMillis(limits['cpu']), memory: memoryMi(limits['memory']) },
       env,
       envFrom: [...toEnvFrom(c['envFrom']), ...refs],
       readyAfter: asNumber(c['readyAfter'], 2),

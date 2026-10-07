@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dump } from 'js-yaml';
-import { container, deployment, pod, service } from './factory';
+import { container, deployment, pod, quantity, service } from './factory';
 import { isParseError, parseManifest } from './manifest';
 import { toManifest } from './toManifest';
 
@@ -22,10 +22,22 @@ describe('本物の -o yaml と同じ形にする', () => {
     expect(shown.spec.template.spec.containers[0]?.image).toBe('nginx');
   });
 
-  it('requests は単位付きで出る', () => {
-    const shown = JSON.stringify(toManifest(deployment('web', 1, [container('web', 'nginx')])));
-    expect(shown).toContain('"cpu":"100m"');
-    expect(shown).toContain('"memory":"128Mi"');
+  it('requests・limits は本物の書き方で出て、書いていない量は出さない', () => {
+    const shown = JSON.stringify(toManifest(deployment('web', 1, [container('web', 'nginx', { requests: quantity(250, 128), limits: quantity(1000, 0) })])));
+    expect(shown).toContain('"resources":{"limits":{"cpu":"1"},"requests":{"cpu":"250m","memory":"128Mi"}}');
+    expect(JSON.stringify(toManifest(deployment('web', 1, [container('web', 'nginx')])))).not.toContain('resources');
+  });
+
+  it('YAML の数量を本物と同じく読む（0.5 は 500m、1Gi は 1024Mi。要求を書かず上限だけなら、上限と同じ量を要求する）', () => {
+    const parsed = parseManifest([
+      'apiVersion: v1', 'kind: Pod', 'metadata:', '  name: p', 'spec:', '  containers:', '  - name: c', '    image: nginx', '    resources:',
+      '      limits:', '        cpu: 0.5', '        memory: 1Gi', '      requests:', '        memory: 512M', '',
+    ].join('\n'));
+    if (isParseError(parsed)) throw new Error(parsed.error);
+    const c = parsed.kind === 'Pod' ? parsed.spec.containers[0] : undefined;
+    expect(c?.limits).toEqual({ cpu: 500, memory: 1024 });
+    expect(c?.requests.cpu).toBe(500);
+    expect(c?.requests.memory).toBeCloseTo(488.28, 2);
   });
 
   it('練習場の内側だけの欄（createdAt など）は出さない', () => {
