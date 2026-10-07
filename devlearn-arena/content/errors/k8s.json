@@ -349,6 +349,65 @@
         "k8s-secret",
         "base64"
       ]
+    },
+    {
+      "id": "k8s-pvc-immutable",
+      "match": "spec is immutable after creation",
+      "meaning": "PVC を書き直そうとして、断られた（`spec is immutable after creation`）。PVC の中身は、作った後に変えられない。ほかの物（Deployment など）は書き込まれた。",
+      "causes": [
+        "前に保存した PVC と、大きさ・使い方・種類のどれかが違う中身で保存した。",
+        "合わずに `Pending` になった PVC を、直して出し直そうとした。申請は、直すのではなく新しく出し直す。"
+      ],
+      "hint": "PVC の `name:` を新しい名前（db-data-2 など）にして出し直し、Deployment の `claimName:` も同じ名前にする。合わなかった古い申請は Pending のまま残るが、どの Pod も使わない。「初めに戻す」で、PVC を出す前の状態からやり直してもよい。",
+      "terms": [
+        "pvc"
+      ]
+    },
+    {
+      "id": "k8s-pvc-pending",
+      "match": "exceeded its progress deadline|does not have a host assigned|unbound immediate PersistentVolumeClaims|\\n\\S+ +Pending ",
+      "output": true,
+      "meaning": "PVC が、合う PV と結ばれずに `Pending` のまま。結ばれていない PVC を付けた新しい DB の Pod は Node に置けず、入れ替えは期限までに終わらなかった。",
+      "causes": [
+        "PVC の大きさ（`storage:`）が、PV の 5Gi より大きい。",
+        "PVC の種類（`storageClassName:`）が manual でない。書き忘れると、種類の無い PV を探す。",
+        "PVC の使い方（`accessModes:`）が、PV の ReadWriteOnce と違う。"
+      ],
+      "hint": "確かめた結果の `kubectl get pvc` を見て、PVC の大きさ・使い方・種類を、PV（5Gi・ReadWriteOnce・manual）と見比べる。PVC は作った後に直せないので、直した物は新しい名前で出し直す。",
+      "terms": [
+        "pvc",
+        "pv",
+        "storage-class"
+      ]
+    },
+    {
+      "id": "k8s-mount-name",
+      "match": "volumeMounts\\[\\d+\\]\\.name: Not found",
+      "meaning": "Deployment を断られた。コンテナの `volumeMounts:` の `name:` と同じ名前の物が、`volumes:` に無い。",
+      "causes": [
+        "`volumeMounts:` と `volumes:` で、`name:` の綴りが違う。",
+        "`volumes:` の `name:` に、PVC の名前（`claimName:` の値）を書いた。2 つの `name:` は、Pod の中だけで使う呼び名。"
+      ],
+      "hint": "`volumeMounts:` の `name:` と `volumes:` の `name:` を同じ呼び名（data など）にそろえる。PVC の名前は `claimName:` に書く。",
+      "terms": [
+        "pvc",
+        "volume"
+      ]
+    },
+    {
+      "id": "k8s-pvc-not-mounted",
+      "match": "-------\\n +3\\n\\(1 row\\)",
+      "output": true,
+      "meaning": "Pod を作り直した後に数えたら、予約は 3 件。足した予約（市民ホール）が消えた。DB はまだ、データを Pod の中に書いている。",
+      "causes": [
+        "PVC を書いていない。または、Deployment に付けていない（`volumes:` と `volumeMounts:`）。",
+        "付けた場所（`mountPath:`）が、DB がデータを書く場所 `/var/lib/postgresql/data` と違う。"
+      ],
+      "hint": "Pod の設計図に `volumes:`（`claimName:` に PVC の名前）を、コンテナに `volumeMounts:`（`mountPath: /var/lib/postgresql/data`）を書く。",
+      "terms": [
+        "pvc",
+        "pod"
+      ]
     }
   ]
 }

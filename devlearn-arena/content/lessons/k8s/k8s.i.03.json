@@ -1,0 +1,228 @@
+{
+  "id": "k8s.i.03",
+  "domain": "k8s",
+  "level": "intermediate",
+  "theme": "保存",
+  "title": "Volume（PV と PVC）",
+  "goal": "データを残す Pod を作れる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.b.04",
+    "ctr.i.04"
+  ],
+  "related": [
+    "docker.i.03",
+    "db.a.01"
+  ],
+  "next": [
+    "k8s.a.01"
+  ],
+  "terms": [
+    "pv",
+    "pvc",
+    "storage-class",
+    "pod",
+    "db",
+    "volume",
+    "postgresql",
+    "deployment",
+    "k8s-node",
+    "cluster",
+    "kubectl",
+    "yaml",
+    "storage",
+    "docker",
+    "file",
+    "container",
+    "log"
+  ],
+  "explain": {
+    "what": "{{term:pv}} は、データを残すための実際の領域。{{term:pvc}} は、「この大きさで、こう使える領域がほしい」という申請。PVC は条件の合う PV と結ばれ、{{term:pod}} は PVC を通して PV にデータを書く。",
+    "why": "Pod は作り直される物。消された・止まった・入れ替えた、のたびに新しい Pod になり、Pod の中に書いた物は消える。残したいデータは、Pod の外の PV に置く。",
+    "use": "{{term:db}} のデータ・利用者が上げた{{term:file}}など、Pod が入れ替わっても残したい物。{{term:docker}} の{{term:volume}}と同じ考え方を、{{term:cluster}}の中で使う。",
+    "when": "予約の DB の Pod を作り直したら、その日に足した予約が消えていた。データを、Pod の中に書いていた。",
+    "figures": [
+      "k8s-i03-pvc"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "order",
+      "prompt": "データを残す領域を、DB の Pod が使うまでの順に並べる。",
+      "items": [
+        "係が、実際の領域（PV）を用意する",
+        "大きさと使い方を書いた申請（PVC）を出す",
+        "条件の合う PV と、PVC が結ばれる（`Bound`）",
+        "Pod の設計図に PVC を書き、データを書く場所に付ける"
+      ],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "PVC に書いた大きさ・使い方・種類に合う PV がある",
+      "b": "PVC が PV と結ばれ（`Bound`）、Pod から使える",
+      "answer": "cause",
+      "why": "PVC は申請で、合う PV が見つかった時に結ばれる。合う物が無ければ、PVC は `Pending` のまま待つ。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "DB のデータを書く場所に PVC を付けて動かし、予約を 1 件足した。その後、DB の Pod を消して作り直させた。予約は？",
+      "context": {
+        "command": "kubectl delete pod -l app=db"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "残る。新しい Pod も同じ PVC を通して、同じ PV を使う",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "消える。Pod を作り直すと、中に書いた物は全て消える",
+          "correct": false,
+          "whyNot": "消えるのは、Pod の中に書いた物。PVC を付けた場所に書いた物は、Pod の外の PV にある。"
+        },
+        {
+          "id": "c",
+          "text": "PV が前の Pod に結ばれたままなので、新しい Pod は動けない",
+          "correct": false,
+          "whyNot": "PV と結ばれるのは PVC で、Pod ではない。新しい Pod は、同じ PVC の名前を書いているので、そのまま使える。"
+        }
+      ],
+      "explanation": "Pod は入れ替わっても、PVC と PV は残る。新しい Pod は同じ申請を通して、同じ領域のデータを読む。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "PVC db-data が `Pending` のまま変わらない。係の PV は `pv-db-1`（5Gi・`RWO`・manual）で、空いている（`Available`）。原因は？",
+      "context": {
+        "command": "kubectl get pvc",
+        "log": "NAME      STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE\ndb-data   Pending                                      manual         <unset>                 2m"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "PVC の大きさが PV より大きい（10Gi を求めた）など、条件に合う PV が無い",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "PV が空いているので、使う Pod がまだ無い",
+          "correct": false,
+          "whyNot": "PVC と PV が結ばれるのに、Pod は要らない。結ばれないのは、条件が合わないから。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:kubectl}} の表示が遅れている",
+          "correct": false,
+          "whyNot": "時間が経っても `Pending` のまま。表示の遅れではなく、合う相手がいない。"
+        }
+      ],
+      "explanation": "PVC は、大きさ・使い方・種類が合う PV とだけ結ばれる。`Pending` なら、PVC と PV の 3 つを見比べる。"
+    },
+    {
+      "id": "q3",
+      "kind": "choice",
+      "prompt": "PVC（申請）に書く物は？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "ほしい大きさと、使い方（1 つの {{term:k8s-node}} から読み書き、など）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "データを置く、Node の中の実際の場所",
+          "correct": false,
+          "whyNot": "実際の場所は PV の側に書く。PVC は「何がほしいか」だけを書き、どこにあるかは知らなくてよい。"
+        },
+        {
+          "id": "c",
+          "text": "使う Pod の名前",
+          "correct": false,
+          "whyNot": "向きが逆。Pod の設計図の側に、使う PVC の名前を書く。"
+        }
+      ],
+      "explanation": "PVC は申請。大きさ（`storage`）と使い方（`accessModes`）、要れば種類（`storageClassName`）を書く。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "予約の DB（db）の {{term:deployment}} は、データを Pod の中に書いている。係が用意した PV `pv-db-1`（5Gi・`ReadWriteOnce`・種類 manual）を申請して DB に付け、Pod を作り直しても予約が残るようにする。保存すると、送って入れ替えを待ち、予約を 1 件足して Pod を消し、作り直された Pod で予約を数える。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cwd": "/home/learner/db",
+      "dirs": [
+        "/home/learner/db"
+      ],
+      "files": {
+        "/home/learner/db/db.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: postgres\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n"
+      },
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "manifests": "apiVersion: v1\nkind: PersistentVolume\nmetadata:\n  name: pv-db-1\nspec:\n  capacity:\n    storage: 5Gi\n  accessModes:\n  - ReadWriteOnce\n  storageClassName: manual\n  hostPath:\n    path: /srv/pv/db-1\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: postgres\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n"
+      },
+      "edit": {
+        "path": "/home/learner/db/db.yaml",
+        "apply": [
+          "kubectl apply -f db.yaml",
+          "kubectl rollout status deployment/db",
+          "kubectl get pvc",
+          "kubectl exec deploy/db -- psql -U postgres -d reserve -c \"INSERT INTO reservations (name) VALUES ('市民ホール')\"",
+          "kubectl delete pod -l app=db",
+          "kubectl rollout status deployment/db",
+          "kubectl exec deploy/db -- psql -U postgres -d reserve -c \"SELECT count(*) FROM reservations\""
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "keep",
+        "purpose": "PVC db-data を書いて pv-db-1 と結び、DB のデータを書く場所（`/var/lib/postgresql/data`）に付ける。作り直した後に数えて、足した予約が残っていれば（4 件）よい。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/db readyReplicas=1 rows.reservations>=4"
+        },
+        "afterward": "PVC は pv-db-1 と結ばれ（`Bound`）、DB のデータを書く場所に付いた。新しい DB の Pod は、空の PV に最初の表を作った（{{term:log}}の `init process complete`）。予約を足して Pod を消しても、作り直された Pod は同じ PV を読み、予約は 4 件のまま残った。",
+        "hints": [
+          "PVC は `kind: PersistentVolumeClaim`。`spec:` に、使い方（`accessModes:`）・大きさ（`resources:` の `requests:` の `storage:`）・種類（`storageClassName:`）を書く。3 つとも、係の PV に合わせる（大きさは 5Gi 以下）。",
+          "Deployment の Pod の設計図（`template` の `spec:`）に `volumes:` を書き、`persistentVolumeClaim:` の `claimName: db-data` を指す。{{term:container}}には `volumeMounts:` で `mountPath: /var/lib/postgresql/data` を書く。2 つは同じ `name:` でつなぐ。",
+          "`apiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: db-data\nspec:\n  storageClassName: manual\n  accessModes:\n  - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: postgres\n        image: city-db:1.0\n        ports:\n        - containerPort: 5432\n        volumeMounts:\n        - name: data\n          mountPath: /var/lib/postgresql/data\n      volumes:\n      - name: data\n        persistentVolumeClaim:\n          claimName: db-data\n` と保存する。前に違う中身の PVC を保存して断られる時は、先に「初めに戻す」を押す。"
+        ],
+        "expectedErrors": [
+          "k8s-pvc-immutable",
+          "k8s-pvc-pending",
+          "k8s-mount-name",
+          "k8s-pvc-not-mounted",
+          "k8s-yaml"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "PVC で領域を申請して DB に付け、Pod を作り直しても予約が残ることを確かめられた。",
+    "partial": "ヒントを使って残せた。次は、PVC が `Pending` の時に何を見比べるかを、自分の言葉で説明してみよう。",
+    "retry": "まだ残せていない。確かめた結果の `kubectl get pvc` の `STATUS` と、作り直した後の予約の数を見よう。`Bound` で 3 件なら、付けた場所を見直す。"
+  },
+  "summary": {
+    "points": [
+      "{{term:pvc}} で、ほしい領域を申請する",
+      "{{term:pv}} が実際の領域で、Pod の外にある",
+      "付けたら、作り直して残るかを確かめる"
+    ],
+    "next": [
+      "k8s.a.01"
+    ],
+    "terms": [
+      "pv",
+      "pvc"
+    ]
+  }
+}

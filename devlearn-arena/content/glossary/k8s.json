@@ -388,6 +388,52 @@
       "lessons": [
         "k8s.i.02"
       ]
+    },
+    {
+      "id": "pv",
+      "word": "PV",
+      "reading": "ぴーぶい",
+      "plain": "PersistentVolume の略。Kubernetes で、データを残すための実際の領域。大きさ・使い方・種類を持ち、Pod の外にある。係が用意するか、申請に応じて自動で作られる。",
+      "why": "Pod は作り直されるたびに中身が消える。残したいデータは、Pod が入れ替わっても残る PV に置く。",
+      "related": [
+        "pvc",
+        "volume",
+        "storage"
+      ],
+      "analogy": "貸し倉庫の 1 区画。借りた人（Pod）が入れ替わっても、中の荷物は残る。",
+      "lessons": [
+        "k8s.i.03"
+      ]
+    },
+    {
+      "id": "pvc",
+      "word": "PVC",
+      "reading": "ぴーぶいしー",
+      "plain": "PersistentVolumeClaim の略。「この大きさで、こう使える領域がほしい」という申請。条件の合う PV と結ばれる（`Bound`）と、Pod の設計図から名前で指して使える。合う物が無ければ `Pending` のまま待つ。",
+      "why": "Pod の側は、領域がどこにあるかを知らずに、申請の名前だけで使える。作った後は中身を変えられないので、合わなければ出し直す。",
+      "related": [
+        "pv",
+        "storage-class",
+        "pod"
+      ],
+      "analogy": "倉庫の借り入れの申込書。広さと使い方を書いて出すと、合う区画が割り当てられる。",
+      "lessons": [
+        "k8s.i.03"
+      ]
+    },
+    {
+      "id": "storage-class",
+      "word": "StorageClass",
+      "reading": "すとれーじくらす",
+      "plain": "領域（PV）の種類の名前（manual・standard など）。PVC は `storageClassName` に書いた種類の PV とだけ結ばれる。種類によっては、申請に応じて PV を自動で作る。",
+      "why": "速さや値段の違う領域を、名前で選び分けられる。種類を書き違えると、合う PV が見つからずに `Pending` のままになる。",
+      "related": [
+        "pv",
+        "pvc"
+      ],
+      "lessons": [
+        "k8s.i.03"
+      ]
     }
   ]
 }
