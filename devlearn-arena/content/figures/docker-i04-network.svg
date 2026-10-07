@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>網と名前。既定の網（bridge）にいる web と db は、IP アドレスでは届くが、db という名前は引けない。docker network create city-net で作った網に 2 つを入れると、web から db という名前で届く</title>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3ae08a" />
+    </marker>
+  </defs>
+  <g class="el" data-part="bridge">
+    <rect x="20" y="30" width="310" height="170" rx="10" fill="none" stroke="#9fb0c6" stroke-width="2" stroke-dasharray="6 4" pointer-events="all" />
+    <text x="40" y="58" font-size="16" fill="#9fb0c6">既定の網（bridge）</text>
+    <rect x="44" y="84" width="100" height="48" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="94" y="114" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">web</text>
+    <rect x="206" y="84" width="100" height="48" rx="6" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="256" y="114" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#eef2f6">db</text>
+  </g>
+  <g class="el" data-part="unresolved">
+    <path d="M148 108 H202" fill="none" stroke="#e04a3a" stroke-width="2" stroke-dasharray="4 4" />
+    <text x="175" y="164" text-anchor="middle" font-size="13" fill="#ff8a7a">「db」が引けない</text>
+    <text x="175" y="186" text-anchor="middle" font-size="13" fill="#9fb0c6">（アドレスなら届く）</text>
+  </g>
+  <g class="el" data-part="usernet">
+    <rect x="370" y="30" width="310" height="170" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="390" y="58" font-size="16" fill="#3ae08a">自作の網（city-net）</text>
+    <rect x="394" y="84" width="100" height="48" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="444" y="114" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#5cc1ff">web</text>
+    <rect x="556" y="84" width="100" height="48" rx="6" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="606" y="114" text-anchor="middle" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#5cc1ff">db</text>
+  </g>
+  <g class="el" data-part="resolved">
+    <path d="M498 108 H550" fill="none" stroke="#3ae08a" stroke-width="2" marker-end="url(#ar)" />
+    <text x="525" y="164" text-anchor="middle" font-size="13" fill="#3ae08a">名前「db」で届く</text>
+    <text x="525" y="186" text-anchor="middle" font-size="13" fill="#9fb0c6">Docker の中の DNS が答える</text>
+  </g>
+  <g class="el" data-part="create">
+    <text x="20" y="246" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#f2b632">docker network create city-net</text>
+    <text x="20" y="270" font-size="13" fill="#9fb0c6">網を作る</text>
+  </g>
+  <g class="el" data-part="join">
+    <text x="370" y="246" font-size="14" font-family="&quot;JetBrains Mono&quot;, monospace" fill="#f2b632">--network city-net</text>
+    <text x="370" y="270" font-size="13" fill="#9fb0c6">作る時に入れる（後からは network connect）</text>
+  </g>
+  <g class="el" data-part="note">
+    <text x="20" y="310" font-size="14" fill="#eef2f6">名前で届くのは、同じ自作の網の中だけ。作り直してアドレスが変わっても、名前なら届く</text>
+  </g>
+</svg>

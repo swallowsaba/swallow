@@ -7,6 +7,8 @@
  * - ボリューム: コンテナを消しても残す場所を、コンテナの中の場所につなぐ（-v）。手元の場所（/srv/board）か、名前付きボリューム（db-data）。
  *   中身を読む場所（serves.root）を持つイメージは、そこにつないだ手元の場所の index.html を返す（つないでいなければ 403）。
  *   コンテナの中で書いた物は、名前付きボリュームをつないだ場所ならボリュームに、それ以外はコンテナの書き込みの層に入り、コンテナを消すと一緒に消える
+ * - 網（docker.i.04）: 何も指定しないで動かしたコンテナは既定の網（bridge）に入る。そこではアドレスで届くが、名前は引けない。
+ *   自分で作った網（docker network create）の中では、コンテナの名前で届く（Docker の中の DNS が、動いているコンテナのアドレスを答える）
  * - 隔離（ctr.i.02）: コンテナは名前空間で区切った機械のプロセス。中からは自分のプロセスだけが見え（主のプロセスが PID 1）、
  *   機械からは同じプロセスが機械の PID で見える（containerd-shim の子）。cgroups のメモリの上限（--memory）より多く使うと、
  *   起動してすぐカーネルに止められる（終了コード 137 = 128 + SIGKILL の 9、OOMKilled）
@@ -51,6 +53,17 @@ export interface Image {
   tools?: boolean;
   /** DB（PostgreSQL）のイメージ: データを書く場所・DB の名前・最初の表（src/engines/container/pg.ts） */
   pg?: { dataDir: string; db: string; seed: Tables };
+  /** 動き出す時に DB につなぐアプリ: DB の場所（postgres://利用者@名前:ポート/DB）を受け取る環境変数 */
+  database?: { env: string };
+}
+
+/** 網（決まって在る bridge・host・none と、自分で作った網） */
+export interface Network {
+  name: string;
+  id: string;
+  driver: 'bridge' | 'host' | 'null';
+  /** アドレスの 2 つ目の数（172.18.0.0/16 の 18）。アドレスを持たない網は 0 */
+  subnet: number;
 }
 
 /** 名前付きボリューム（コンテナを消しても残る。files はボリュームの中からの相対パス → 中身） */
@@ -91,6 +104,10 @@ export interface Container {
   app?: { port: number; body: string };
   /** 書き込みの層（中で書いたファイル。場所 → 中身）。コンテナを消すと一緒に消える */
   files?: Readonly<Record<string, string>>;
+  /** 入っている網の名前（無ければ既定の網 bridge だけ） */
+  networks?: readonly string[];
+  /** 網ごとのアドレス */
+  addresses?: Readonly<Record<string, string>>;
 }
 
 export interface ContainerHost {
@@ -105,6 +122,8 @@ export interface ContainerHost {
   volumes?: readonly Volume[];
   /** 名前ごとに、コンテナを作った回数（作り直したことを確かめる） */
   made?: Readonly<Record<string, number>>;
+  /** 自分で作った網 */
+  networks?: readonly Network[];
 }
 
 /** nginx の公式イメージに入っている設定と最初のページ（本物の default.conf の形） */
@@ -184,6 +203,7 @@ export const REGISTRY: readonly Image[] = [
       ],
     },
     startLog: ['reserve: listening on :3000'],
+    database: { env: 'DATABASE_URL' },
   },
   { ref: 'node:20-alpine', id: '1f3d7a9c4e21', size: '135MB', tools: true, command: 'docker-entrypoint.sh node', cmd: ['node'], workdir: '/', startLog: [] },
   { ref: 'alpine:3.20', id: '91ef0af61f39', size: '7.8MB', command: '/bin/sh', oneShot: true, startLog: [] },
@@ -234,7 +254,13 @@ export type ContainerError =
   | { kind: 'image-in-use'; ref: string; container: string }
   | { kind: 'no-such-volume'; name: string }
   /** ids: つないでいるコンテナ（止まった物も） */
-  | { kind: 'volume-in-use'; name: string; ids: readonly string[] };
+  | { kind: 'volume-in-use'; name: string; ids: readonly string[] }
+  | { kind: 'no-such-network'; ref: string }
+  | { kind: 'network-exists'; name: string }
+  | { kind: 'network-builtin'; name: string }
+  | { kind: 'network-in-use'; name: string; id: string }
+  | { kind: 'already-connected'; name: string; network: string }
+  | { kind: 'not-connected'; id: string; network: string };
 
 export type Result<T> = { ok: true; host: ContainerHost; value: T } | { ok: false; host: ContainerHost; error: ContainerError };
 
@@ -305,9 +331,37 @@ const PG_INIT = [
 /** データを書く場所に、もう DB がある時のログ */
 const PG_SKIP = ['', 'PostgreSQL Database directory appears to contain a database; Skipping initialization', ''];
 
-/** 動かす。DB のイメージは、データを書く場所が空なら最初の表を作り（init）、あればそのまま使う */
+/**
+ * DB の場所（postgres://利用者@名前:ポート/DB）につなぐ。名前は、同じ自作の網にいる動いているコンテナの名前なら引ける。
+ * localhost はコンテナ自身。届いた先が DB（5432 番で待ち受け）でなければ断られる。出す文は Node.js の pg の物
+ */
+function connectDb(host: ContainerHost, c: Container, url: string): { target: string; error?: string[] } {
+  const m = /^[a-z]+:\/\/(?:[^@/]*@)?([^:/]+)(?::(\d+))?/.exec(url);
+  const name = m?.[1] ?? url;
+  const port = Number(m?.[2] ?? 5432);
+  const target = `${name}:${String(port)}`;
+  const refused = (ip: string): string[] => [`Error: connect ECONNREFUSED ${ip}:${String(port)}`, '    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16)'];
+  if (name === 'localhost' || name === '127.0.0.1') return { target, error: refused('127.0.0.1') };
+  const to = /^\d+\.\d+\.\d+\.\d+$/.test(name) ? reachableAt(host, c, name) : resolveName(host, c, name);
+  if (!to) {
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(name)) return { target, error: [`Error: connect ETIMEDOUT ${name}:${String(port)}`, '    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1555:16)'] };
+    return { target, error: [`Error: getaddrinfo ENOTFOUND ${name}`, '    at GetAddrInfoReqWrap.onlookup [as oncomplete] (node:dns:107:26)'] };
+  }
+  const listens = host.images.find((i) => i.ref === to.c.image)?.pg !== undefined && port === 5432;
+  return listens ? { target } : { target, error: refused(to.ip) };
+}
+
+/** 動かす。DB のイメージは、データを書く場所が空なら最初の表を作り（init）、あればそのまま使う。DB につなぐアプリは、つなげなければ止まる */
 function bootIn(host: ContainerHost, c: Container, image: Image): Result<Container> {
   const booted = boot(c, image);
+  if (image.database && booted.state === 'running') {
+    const r = connectDb(host, booted, c.env[image.database.env] ?? '');
+    const head = [...c.log, ...(image.bootLog ?? []), `reserve: connecting to the database at ${r.target}`];
+    const next: Container = r.error
+      ? { ...booted, state: 'exited', exitCode: 1, log: [...head, ...r.error] }
+      : { ...booted, log: [...head, `reserve: connected to the database at ${r.target}`, ...image.startLog] };
+    return { ok: true, host: replace(host, next), value: next };
+  }
   if (!image.pg || booted.state !== 'running') return { ok: true, host: replace(host, booted), value: booted };
   const dir = image.pg.dataDir;
   const fresh = filesInside(host, booted)[`${dir}/PG_VERSION`] === undefined;
@@ -327,6 +381,8 @@ export interface RunOptions {
   env?: Readonly<Record<string, string>>;
   /** メモリの上限（バイト） */
   memory?: number;
+  /** 入る網（無ければ bridge） */
+  network?: string;
 }
 
 /** 手元のポートを、動いているコンテナが既に使っているか */
@@ -341,11 +397,13 @@ export function run(host0: ContainerHost, o: RunOptions): Result<Container> {
   const name = o.name ?? `${NAMES[host.seq % NAMES.length] ?? 'box'}${host.seq >= NAMES.length ? String(host.seq) : ''}`;
   const same = host.containers.find((c) => c.name === name);
   if (same) return { ok: false, host, error: { kind: 'name-in-use', name, id: same.id } };
-  const c: Container = {
+  const net = findNetwork(host, o.network ?? 'bridge');
+  if (!net) return { ok: false, host, error: { kind: 'no-such-network', ref: o.network ?? '' } };
+  const c: Container = join(host, {
     id: idOf(host.seq + 1), name, image: pulled.value.ref, state: 'created', exitCode: 0,
-    ports: o.ports ?? [], volumes: o.volumes ?? [], env: o.env ?? {}, log: [], pid: pidOf(host.seq + 1),
+    ports: o.ports ?? [], volumes: o.volumes ?? [], env: o.env ?? {}, log: [], pid: pidOf(host.seq + 1), networks: [],
     ...(o.memory !== undefined ? { memoryLimit: o.memory } : {}),
-  };
+  }, net);
   // つなぐ名前付きボリュームが無ければ作る（本物と同じ）
   const have = new Set((host.volumes ?? []).map((v) => v.name));
   const added = c.volumes.filter((v) => isVolumeName(v.host) && !have.has(v.host)).map((v) => ({ name: v.host, files: {} }));
@@ -389,6 +447,93 @@ export function removeImage(host: ContainerHost, raw: string): Result<Image> {
   const user = host.containers.find((c) => c.image === image.ref);
   if (user) return { ok: false, host, error: { kind: 'image-in-use', ref: image.ref, container: user.id.slice(0, 12) } };
   return { ok: true, host: { ...host, images: host.images.filter((i) => i !== image) }, value: image };
+}
+
+/** 決まって在る網 */
+export const BUILTIN_NETWORKS: readonly Network[] = [
+  { name: 'bridge', id: hexOf(9001, 64), driver: 'bridge', subnet: 17 },
+  { name: 'host', id: hexOf(9002, 64), driver: 'host', subnet: 0 },
+  { name: 'none', id: hexOf(9003, 64), driver: 'null', subnet: 0 },
+];
+
+/** 全ての網（名前の順。docker network ls と同じ） */
+export const allNetworks = (host: ContainerHost): Network[] => [...BUILTIN_NETWORKS, ...(host.networks ?? [])].sort((a, b) => a.name.localeCompare(b.name));
+
+/** 名前か ID（先頭の数文字でよい）で網を探す */
+export function findNetwork(host: ContainerHost, ref: string): Network | undefined {
+  const all = allNetworks(host);
+  return all.find((n) => n.name === ref) ?? (ref.length >= 3 ? all.find((n) => n.id.startsWith(ref)) : undefined);
+}
+
+/** コンテナの入っている網（無ければ既定の網だけ） */
+export const networksOf = (c: Container): readonly string[] => c.networks ?? ['bridge'];
+
+/** 網に入れる。アドレスは、その網で空いている一番小さい 172.<網>.0.<2〜> */
+function join(host: ContainerHost, c: Container, net: Network): Container {
+  const networks = [...networksOf(c).filter((n) => n !== net.name), net.name];
+  if (net.subnet === 0) return { ...c, networks };
+  const used = new Set(host.containers.filter((x) => x.id !== c.id).map((x) => x.addresses?.[net.name]));
+  let n = 2;
+  while (used.has(`172.${String(net.subnet)}.0.${String(n)}`)) n += 1;
+  return { ...c, networks, addresses: { ...c.addresses, [net.name]: `172.${String(net.subnet)}.0.${String(n)}` } };
+}
+
+/** 自分で作る網か（名前が引けるのは、この網の中だけ） */
+const userDefined = (name: string): boolean => !BUILTIN_NETWORKS.some((n) => n.name === name);
+
+/** from から name を引く: 同じ自作の網にいる、動いているコンテナの名前なら、その網のアドレス */
+export function resolveName(host: ContainerHost, from: Container, name: string): { c: Container; ip: string } | null {
+  for (const net of networksOf(from).filter(userDefined)) {
+    const to = host.containers.find((x) => x.name === name && x.state === 'running' && networksOf(x).includes(net));
+    const ip = to?.addresses?.[net];
+    if (to && ip !== undefined) return { c: to, ip };
+  }
+  return null;
+}
+
+/** from からアドレスで届く、動いているコンテナ（同じ網にいれば、既定の網でも届く） */
+function reachableAt(host: ContainerHost, from: Container, ip: string): { c: Container; ip: string } | null {
+  const to = host.containers.find((x) => x.state === 'running' && networksOf(x).some((n) => networksOf(from).includes(n) && x.addresses?.[n] === ip));
+  return to ? { c: to, ip } : null;
+}
+
+export function createNetwork(host: ContainerHost, name: string): Result<Network> {
+  if (findNetwork(host, name)?.name === name) return { ok: false, host, error: { kind: 'network-exists', name } };
+  const subnet = Math.max(17, ...(host.networks ?? []).map((n) => n.subnet)) + 1;
+  const net: Network = { name, id: hexOf(7000 + subnet, 64), driver: 'bridge', subnet };
+  return { ok: true, host: { ...host, networks: [...(host.networks ?? []), net] }, value: net };
+}
+
+/** 網を消す（動いているコンテナが入っていれば消せない。決まって在る網は消せない） */
+export function removeNetwork(host: ContainerHost, ref: string): Result<Network> {
+  const net = findNetwork(host, ref);
+  if (!net) return { ok: false, host, error: { kind: 'no-such-network', ref } };
+  if (!userDefined(net.name)) return { ok: false, host, error: { kind: 'network-builtin', name: net.name } };
+  if (host.containers.some((c) => c.state === 'running' && networksOf(c).includes(net.name))) return { ok: false, host, error: { kind: 'network-in-use', name: net.name, id: net.id } };
+  return { ok: true, host: { ...host, networks: (host.networks ?? []).filter((n) => n !== net) }, value: net };
+}
+
+/** 網に入れる（docker network connect）。止まっているコンテナも入れられる */
+export function connectNetwork(host: ContainerHost, netRef: string, ref: string): Result<Container> {
+  const net = findNetwork(host, netRef);
+  if (!net) return { ok: false, host, error: { kind: 'no-such-network', ref: netRef } };
+  const c = findContainer(host, ref);
+  if (!c) return { ok: false, host, error: { kind: 'no-such-container', ref } };
+  if (networksOf(c).includes(net.name)) return { ok: false, host, error: { kind: 'already-connected', name: c.name, network: net.name } };
+  const next = join(host, c, net);
+  return { ok: true, host: replace(host, next), value: next };
+}
+
+/** 網から外す（docker network disconnect） */
+export function disconnectNetwork(host: ContainerHost, netRef: string, ref: string): Result<Container> {
+  const net = findNetwork(host, netRef);
+  if (!net) return { ok: false, host, error: { kind: 'no-such-network', ref: netRef } };
+  const c = findContainer(host, ref);
+  if (!c) return { ok: false, host, error: { kind: 'no-such-container', ref } };
+  if (!networksOf(c).includes(net.name)) return { ok: false, host, error: { kind: 'not-connected', id: longId(c.id), network: net.name } };
+  const addresses = Object.fromEntries(Object.entries(c.addresses ?? {}).filter(([n]) => n !== net.name));
+  const next: Container = { ...c, networks: networksOf(c).filter((n) => n !== net.name), addresses };
+  return { ok: true, host: replace(host, next), value: next };
 }
 
 /** 機械にいない、コンテナの中の利用者の番号 */

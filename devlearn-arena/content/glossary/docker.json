@@ -173,6 +173,21 @@
       "lessons": [
         "docker.i.03"
       ]
+    },
+    {
+      "id": "default-bridge",
+      "word": "既定の網",
+      "reading": "きていのあみ",
+      "plain": "Docker で、網を指定せずに動かしたコンテナが入る網（名前は bridge）。中のコンテナどうしは IP アドレスでは届くが、コンテナの名前は引けない。",
+      "why": "名前で届くのは自分で作った網（docker network create）の中だけ。既定の網のまま Web と DB を動かすと、名前で DB を指しても見つからない。",
+      "related": [
+        "network",
+        "container",
+        "name-resolution"
+      ],
+      "lessons": [
+        "docker.i.04"
+      ]
     }
   ]
 }

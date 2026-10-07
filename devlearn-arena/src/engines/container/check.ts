@@ -1,4 +1,4 @@
-import { filesInside, findContainer, normalizeRef, type ContainerHost } from './container';
+import { filesInside, findContainer, findNetwork, networksOf, normalizeRef, resolveName, type ContainerHost } from './container';
 import { readTables, TABLES_FILE } from './pg';
 
 /**
@@ -7,7 +7,8 @@ import { readTables, TABLES_FILE } from './pg';
  * expr は空白で区切った条件を並べる（全てを満たせば達成）。先頭の `!` で否定:
  *   image:名前:タグ（手元にある。タグを省けば最新のタグ）/ running:名前・exited:名前（コンテナの状態）/ exists:名前（コンテナがある）/
  *   volume:名前（名前付きボリュームがある）/ mount:コンテナ=つなぐ物:中の場所 / rows:コンテナ/表=数（DB の表の行の数）/
- *   made:名前>=数・made:名前=数（その名前でコンテナを作った回数）
+ *   made:名前>=数・made:名前=数（その名前でコンテナを作った回数）/ network:名前（網がある）/ on:コンテナ=網（網に入っている）/
+ *   reach:A>B（A から B に名前で届く。どちらも動いていて、同じ自作の網にいる）
  */
 
 function termHolds(host: ContainerHost, term: string): boolean {
@@ -43,6 +44,20 @@ function termHolds(host: ContainerHost, term: string): boolean {
       const pg = host.images.find((i) => i.ref === c?.image)?.pg;
       if (!c || !pg) return false;
       return readTables(filesInside(host, c)[`${pg.dataDir}/${TABLES_FILE}`])[m[2] ?? '']?.rows.length === Number(m[3]);
+    }
+    case 'network':
+      return findNetwork(host, arg)?.name === arg;
+    case 'on': {
+      // on:コンテナ=網（そのコンテナが網に入っている）
+      const [ref = '', net = ''] = arg.split('=');
+      const c = findContainer(host, ref);
+      return c !== undefined && networksOf(c).includes(net);
+    }
+    case 'reach': {
+      // reach:A>B（A から B に、名前で届く。どちらも動いていて、同じ自作の網にいる）
+      const [from = '', to = ''] = arg.split('>');
+      const a = findContainer(host, from);
+      return a?.state === 'running' && resolveName(host, a, to) !== null;
     }
     case 'made': {
       // made:名前>=数（その名前でコンテナを作った回数。作り直したことを確かめる）

@@ -253,6 +253,45 @@
       ],
       "hint": "エラーの文の \" \" の中の名前を、手順の名前と 1 字ずつ比べる。",
       "terms": []
+    },
+    {
+      "id": "docker-name-unresolved",
+      "match": "getaddrinfo ENOTFOUND|bad address|Could not resolve host",
+      "meaning": "「その名前が見つからない」と言われた。アプリが、相手のコンテナの名前から IP アドレスを引けなかった（{{term:name-resolution}}の失敗）。",
+      "causes": [
+        "2 つのコンテナが{{term:default-bridge}}（bridge）にいる。既定の網では、コンテナの名前は引けない。",
+        "2 つが別々の網にいる。名前で届くのは、同じ自作の網の中だけ。",
+        "相手のコンテナが止まっている、または名前の綴りが違う。"
+      ],
+      "hint": "`docker network inspect 網の名前` の Containers に、2 つとも並んでいるかを確かめる。いなければ `docker network connect` で入れるか、`--network` を付けて作り直す。",
+      "terms": [
+        "name-resolution",
+        "default-bridge"
+      ],
+      "output": true
+    },
+    {
+      "id": "docker-db-localhost",
+      "match": "ECONNREFUSED 127\\.0\\.0\\.1",
+      "meaning": "自分自身（127.0.0.1）につなごうとして断られた。DB の場所に localhost を書くと、そのコンテナ自身を指す。",
+      "causes": [
+        "DB の場所（DATABASE_URL）に localhost と書いた。コンテナの中の localhost は、そのコンテナ自身で、そこに DB はいない。",
+        "手元の機械で動かしていた時の設定を、そのまま使った。"
+      ],
+      "hint": "DB の場所には、DB のコンテナの名前を書く（同じ自作の網の中なら名前で届く）。",
+      "terms": [],
+      "output": true
+    },
+    {
+      "id": "docker-network-not-found",
+      "match": "network .+ not found",
+      "meaning": "「その網は無い」と言われた。",
+      "causes": [
+        "網の名前の綴りの誤り。",
+        "まだ網を作っていない（docker network create の前に使った）。"
+      ],
+      "hint": "`docker network ls` で、ある網の名前を確かめる。",
+      "terms": []
     }
   ]
 }

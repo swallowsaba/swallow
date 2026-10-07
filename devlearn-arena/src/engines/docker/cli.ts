@@ -1,5 +1,5 @@
 import {
-  createVolume, filesInside, findContainer, hexOf, isVolumeName, longId, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, removeVolume, repoOf, run, start, stop, tagOf, writeInside,
+  allNetworks, connectNetwork, createNetwork, createVolume, disconnectNetwork, filesInside, findContainer, findNetwork, networksOf, removeNetwork, hexOf, isVolumeName, longId, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, removeVolume, repoOf, run, start, stop, tagOf, writeInside,
   type Container, type ContainerError, type ContainerHost, type Image, type PortMap,
 } from '@/engines/container/container';
 import { psql, readTables, TABLES_FILE } from '@/engines/container/pg';
@@ -12,7 +12,7 @@ import { exists, isDir, list, readFile, type VfsState } from '@/engines/kernel/v
  * Docker の CLI（コンテナの模型 src/engines/container の上に作る）。出力とエラーの文は本物に寄せる。
  * 対応: run（-d・--name・-p・-v・-e・-m / --memory）・ps（-a）・images・pull・stop・start・restart・rm（-f）・rmi・logs・
  * exec（ps・cat・ls・hostname・psql -c）・stats・inspect（-f / --format）・build（-t・-f。src/engines/container/build.ts）・tag・
- * volume（create・ls・inspect・rm）
+ * volume（create・ls・inspect・rm）・network（create・ls・inspect・connect・disconnect・rm）。run の --network
  */
 
 /** 置き場所（コンテキスト）の中の全てのファイル（置き場所からの相対パス → 中身） */
@@ -66,6 +66,20 @@ function daemonError(e: ContainerError, verb: string): CommandResult {
       return { stderr: `Error response from daemon: get ${e.name}: no such volume\n`, code: 1 };
     case 'volume-in-use':
       return { stderr: `Error response from daemon: remove ${e.name}: volume is in use - [${e.ids.join(', ')}]\n`, code: 1 };
+    case 'no-such-network':
+      return verb === 'run'
+        ? { stderr: `docker: Error response from daemon: network ${e.ref} not found.\nSee 'docker run --help'.\n`, code: 125 }
+        : { stderr: `Error response from daemon: network ${e.ref} not found\n`, code: 1 };
+    case 'network-exists':
+      return { stderr: `Error response from daemon: network with name ${e.name} already exists\n`, code: 1 };
+    case 'network-builtin':
+      return { stderr: `Error response from daemon: ${e.name} is a pre-defined network and cannot be removed\n`, code: 1 };
+    case 'network-in-use':
+      return { stderr: `Error response from daemon: error while removing network: network ${e.name} id ${e.id} has active endpoints\n`, code: 1 };
+    case 'already-connected':
+      return { stderr: `Error response from daemon: endpoint with name ${e.name} already exists in network ${e.network}\n`, code: 1 };
+    case 'not-connected':
+      return { stderr: `Error response from daemon: container ${e.id} is not connected to network ${e.network}\n`, code: 1 };
   }
 }
 
@@ -130,6 +144,7 @@ interface RunArgs {
   volumes: { host: string; container: string }[];
   env: Record<string, string>;
   memory?: number;
+  network?: string;
   image?: string;
   error?: string;
 }
@@ -142,6 +157,7 @@ function parseRun(args: readonly string[]): RunArgs {
     if (a === '-d' || a === '--detach') out.detach = true;
     else if (a === '--rm' || a === '-it' || a === '-i' || a === '-t') continue;
     else if (a === '--name' || a.startsWith('--name=')) out.name = value('--name');
+    else if (a === '--network' || a === '--net' || a.startsWith('--network=') || a.startsWith('--net=')) out.network = value(a.startsWith('--net=') ? '--net' : '--network');
     else if (a === '-p' || a === '--publish' || a.startsWith('--publish=')) {
       const m = /^(?:[\d.]+:)?(\d+):(\d+)(?:\/tcp)?$/.exec(value('--publish'));
       if (!m) return { ...out, error: 'invalid publish' };
@@ -239,6 +255,67 @@ function psqlIn(host: ContainerHost, c: Container, pg: NonNullable<Image['pg']>,
   return { stdout: r.out ?? '', patch: { containers: writeInside(host, c, { [path]: `${JSON.stringify(r.tables)}\n` }) } };
 }
 
+/** docker network（create・ls・inspect・connect・disconnect・rm） */
+function networkCommand(host: ContainerHost, args: readonly string[]): CommandResult {
+  const [sub, ...rest] = args;
+  const names = rest.filter((a) => !a.startsWith('-'));
+  const set = (h: ContainerHost, stdout: string): CommandResult => ({ stdout, patch: { containers: h } });
+  switch (sub) {
+    case 'create': {
+      const name = names[0];
+      if (!name) return { stderr: '"docker network create" requires exactly 1 argument.\n', code: 1 };
+      const r = createNetwork(host, name);
+      return r.ok ? set(r.host, `${r.value.id}\n`) : daemonError(r.error, 'network');
+    }
+    case 'ls':
+    case 'list':
+      return { stdout: table([['NETWORK ID', 'NAME', 'DRIVER', 'SCOPE'], ...allNetworks(host).map((n) => [n.id.slice(0, 12), n.name, n.driver, 'local'])]) };
+    case 'inspect': {
+      if (names.length === 0) return { stderr: '"docker network inspect" requires at least 1 argument.\n', code: 1 };
+      const found = [];
+      for (const ref of names) {
+        const n = findNetwork(host, ref);
+        if (!n) return daemonError({ kind: 'no-such-network', ref }, 'network');
+        const members = host.containers.filter((c) => c.state === 'running' && networksOf(c).includes(n.name));
+        found.push({
+          Name: n.name, Id: n.id, Scope: 'local', Driver: n.driver,
+          IPAM: { Driver: 'default', Config: n.subnet === 0 ? [] : [{ Subnet: `172.${String(n.subnet)}.0.0/16`, Gateway: `172.${String(n.subnet)}.0.1` }] },
+          Containers: Object.fromEntries(members.map((c) => [fullId(c), { Name: c.name, IPv4Address: c.addresses?.[n.name] === undefined ? '' : `${c.addresses[n.name] ?? ''}/16` }])),
+        });
+      }
+      return { stdout: `${JSON.stringify(found, null, 4)}\n` };
+    }
+    case 'connect':
+    case 'disconnect': {
+      const [net, ref] = names;
+      if (!net || !ref) return { stderr: `"docker network ${sub}" requires exactly 2 arguments.\n`, code: 1 };
+      const r = sub === 'connect' ? connectNetwork(host, net, ref) : disconnectNetwork(host, net, ref);
+      return r.ok ? set(r.host, '') : daemonError(r.error, 'network');
+    }
+    case 'rm':
+    case 'remove': {
+      if (names.length === 0) return { stderr: '"docker network rm" requires at least 1 argument.\n', code: 1 };
+      let h = host;
+      const out: string[] = [];
+      for (const ref of names) {
+        const r = removeNetwork(h, ref);
+        if (!r.ok) return { ...daemonError(r.error, 'network'), ...(out.length ? { stdout: lines(out), patch: { containers: h } } : {}) };
+        h = r.host;
+        out.push(ref);
+      }
+      return set(h, lines(out));
+    }
+    default:
+      return {
+        stdout: lines([
+          'Usage:  docker network COMMAND', '', 'Manage networks', '', 'Commands:', '  connect     Connect a container to a network', '  create      Create a network',
+          '  disconnect  Disconnect a container from a network', '  inspect     Display detailed information on one or more networks', '  ls          List networks', '  rm          Remove one or more networks',
+        ]),
+        ...(sub === undefined ? {} : { stderr: `docker network: '${sub}' is not a docker network command.\n`, code: 1 }),
+      };
+  }
+}
+
 /** docker volume（create・ls・inspect・rm） */
 function volumeCommand(host: ContainerHost, args: readonly string[]): CommandResult {
   const [sub, ...rest] = args;
@@ -307,6 +384,7 @@ function inspectFields(c: Container): Record<string, string> {
     '.State.OOMKilled': String(c.oomKilled === true),
     '.State.Pid': String(c.state === 'running' ? c.pid : 0),
     '.HostConfig.Memory': String(c.memoryLimit ?? 0),
+    '.NetworkSettings.IPAddress': c.addresses?.bridge ?? '',
   };
 }
 
@@ -346,6 +424,7 @@ function inspect(host: ContainerHost, args: readonly string[]): CommandResult {
       State: { Status: c.state, Running: c.state === 'running', OOMKilled: c.oomKilled === true, ExitCode: c.exitCode, Pid: Number(f['.State.Pid']) },
       Config: { Image: c.image },
       HostConfig: { Memory: c.memoryLimit ?? 0 },
+      NetworkSettings: { IPAddress: c.addresses?.bridge ?? '', Networks: Object.fromEntries(networksOf(c).map((n) => [n, { IPAddress: c.addresses?.[n] ?? '' }])) },
       // つないだ場所（名前付きボリュームは volume、手元の場所は bind）
       Mounts: c.volumes.map((m) => (isVolumeName(m.host)
         ? { Type: 'volume', Name: m.host, Source: `/var/lib/docker/volumes/${m.host}/_data`, Destination: m.container, RW: true }
@@ -373,7 +452,7 @@ export const dockerCommands: CommandSpec[] = [
               '  ps       List containers', '  images   List images', '  pull     Download an image from a registry', '  stop     Stop one or more running containers',
               '  start    Start one or more stopped containers', '  rm       Remove one or more containers', '  rmi      Remove one or more images', '  logs     Fetch the logs of a container',
               '  stats    Display a live stream of container(s) resource usage statistics', '  inspect  Return low-level information on Docker objects',
-              '  build    Build an image from a Dockerfile', '  volume   Manage volumes',
+              '  build    Build an image from a Dockerfile', '  volume   Manage volumes', '  network  Manage networks',
             ]),
           };
         case 'run': {
@@ -382,7 +461,7 @@ export const dockerCommands: CommandSpec[] = [
           if (!o.image) return { stderr: '"docker run" requires at least 1 argument.\n', code: 125 };
           if (o.memory !== undefined && o.memory < MIN_MEMORY) return { stderr: 'docker: Error response from daemon: Minimum memory limit allowed is 6MB.\n', code: 125 };
           const had = host.images.some((i) => i.ref === o.image || i.ref === `${o.image ?? ''}:latest` || i.ref.startsWith(`${o.image ?? ''}:`));
-          const r = run(host, { image: o.image, ports: o.ports, volumes: o.volumes, env: o.env, ...(o.name ? { name: o.name } : {}), ...(o.memory !== undefined ? { memory: o.memory } : {}) });
+          const r = run(host, { image: o.image, ports: o.ports, volumes: o.volumes, env: o.env, ...(o.name ? { name: o.name } : {}), ...(o.memory !== undefined ? { memory: o.memory } : {}), ...(o.network !== undefined ? { network: o.network } : {}) });
           if (!r.ok) return { ...daemonError(r.error, 'run'), patch: { containers: r.host } };
           const image = r.host.images.find((i) => i.ref === r.value.image);
           const pulled = had || !image ? [] : [`Unable to find image '${r.value.image}' locally`, ...pullLines(image, false).slice(0, -1)];
@@ -415,6 +494,8 @@ export const dockerCommands: CommandSpec[] = [
           return inspect(host, rest);
         case 'volume':
           return volumeCommand(host, rest);
+        case 'network':
+          return networkCommand(host, rest);
         case 'build':
         case 'buildx': {
           const args = verb === 'buildx' && rest[0] === 'build' ? rest.slice(1) : rest;

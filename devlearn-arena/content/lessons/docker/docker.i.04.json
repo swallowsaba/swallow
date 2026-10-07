@@ -1,0 +1,130 @@
+{
+  "id": "docker.i.04",
+  "domain": "docker",
+  "level": "intermediate",
+  "theme": "network",
+  "title": "ネットワーク",
+  "goal": "自作ネットワークでコンテナどうしを名前で繋げる",
+  "minutes": 20,
+  "prerequisites": ["ctr.i.03"],
+  "related": ["ctr.i.03", "net.b.06"],
+  "next": ["docker.i.06"],
+  "terms": ["docker", "container", "network", "default-bridge", "ip-address", "web", "db", "name-resolution", "dns", "log", "image", "port", "port-publish", "env-var"],
+  "explain": {
+    "what": "{{term:docker}}では、{{term:container}}を{{term:network}}（網）に入れてつなぐ。網は自分で作れる。自作の網の中では、相手のコンテナの名前で届く。何も指定しないと入る{{term:default-bridge}}では、名前は引けない。",
+    "why": "コンテナは作り直すたびに{{term:ip-address}}が変わる。名前で指せば、作り直しても届く。また、網を分ければ、つながる必要のないコンテナどうしを切り離せる。",
+    "use": "{{term:web}}と{{term:db}}のように、組になって動くコンテナ。同じ網に入れ、Web は DB をコンテナの名前で指す。名前からアドレスを引く（{{term:name-resolution}}）のは、Docker の中の{{term:dns}}。",
+    "when": "Web と DB を別々に動かしたら、Web が「DB が見つからない」と言って止まった。2 つとも、網を指定せずに動かしていた。",
+    "figures": ["docker-i04-network"]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "2 つのコンテナが、同じ自作の網にいる",
+      "b": "相手をコンテナの名前で指して届く",
+      "answer": "cause",
+      "why": "同じ自作の網の中では、Docker の中の DNS が、コンテナの名前にアドレスを答える。網が違えば、名前は引けない。",
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "網を指定せずに動かした 2 つのコンテナ（既定の網）でも、相手の名前で届く。",
+      "answer": false,
+      "why": "既定の網（bridge）では、アドレスでは届くが、名前は引けない。名前で届かせるには、自作の網に入れる。",
+      "see": "what"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "cause",
+      "prompt": "web は city-net に、db は既定の網にいる。web の{{term:log}}に `getaddrinfo ENOTFOUND db` と出て止まった。原因は？",
+      "choices": [
+        { "id": "a", "text": "2 つが別の網にいて、web から db の名前が引けない", "correct": true },
+        { "id": "b", "text": "db の{{term:image}}が壊れている", "correct": false, "whyNot": "`ENOTFOUND` は「名前が見つからない」。相手に届く前の、名前を引く所で失敗している。" },
+        { "id": "c", "text": "web の{{term:port}}を公開していない", "correct": false, "whyNot": "{{term:port-publish}}は、外から web に届かせるための物。web から db へ届くかとは関係が無い。" }
+      ],
+      "explanation": "名前で届くのは、同じ自作の網の中だけ。db も city-net に入れれば、web から db という名前で届く。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "city-net という名前の網を作るのは？",
+      "choices": [
+        { "id": "a", "text": "`docker network create city-net`", "correct": true },
+        { "id": "b", "text": "`docker run --network city-net`", "correct": false, "whyNot": "--network は、作る時にコンテナを網に入れる指定。網そのものは先に作っておく。" },
+        { "id": "c", "text": "`docker network connect city-net`", "correct": false, "whyNot": "connect は、ある網にコンテナを入れる物。網を作りはしない。" }
+      ],
+      "explanation": "網は docker network create で作る。コンテナは、作る時に --network で入れるか、後から docker network connect で入れる。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "web と db を同じ自作の網に入れた。db を消して作り直し、アドレスが 172.18.0.2 から 172.18.0.3 に変わった。web の設定（DB の場所）は db のまま。web から db に届く？",
+      "choices": [
+        { "id": "a", "text": "届く（名前から、今のアドレスが引ける）", "correct": true },
+        { "id": "b", "text": "届かない（アドレスが変わった）", "correct": false, "whyNot": "web はアドレスでなく名前で指している。名前を引くたびに、今のアドレスが返る。" },
+        { "id": "c", "text": "web も作り直せば届く", "correct": false, "whyNot": "作り直さなくても届く。名前で指す良さは、相手のアドレスが変わっても設定を変えなくてよいこと。" }
+      ],
+      "explanation": "名前で指しておけば、相手を作り直してアドレスが変わっても届く。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "予約の窓口（web）は、DB の場所を{{term:env-var}} `DATABASE_URL` で受け取り、db という名前で DB につなぐ。web と db を網を指定せずに動かしたら、web は動き出してすぐ止まった（`docker logs web` で理由が読める）。網を作って 2 つを入れ、web から db に名前で届くようにする。",
+    "environment": "container-host",
+    "setup": {
+      "images": ["city-db:1.0", "city-reserve:2.0"],
+      "run": ["docker run -d --name db city-db:1.0", "docker run -d --name web -e DATABASE_URL=postgres://postgres@db:5432/reserve city-reserve:2.0"]
+    },
+    "steps": [
+      {
+        "id": "create",
+        "purpose": "web と db を入れるための網を、city-net という名前で作る。",
+        "check": { "kind": "container", "expr": "network:city-net" },
+        "afterward": "city-net ができた。`docker network ls` には、決まって在る bridge・host・none と並んで出る。まだ中にコンテナはいない。",
+        "hints": [
+          "網を扱うのは `docker network` の後に、やること（作る・一覧・入れる）を続ける。",
+          "作るのは `docker network create 名前`。",
+          "`docker network create city-net` と打つ。"
+        ],
+        "expectedErrors": ["docker-name-unresolved"]
+      },
+      {
+        "id": "db",
+        "purpose": "動いている db を、作り直さずに city-net に入れる（DB は止めたくない）。",
+        "check": { "kind": "container", "expr": "on:db=city-net running:db" },
+        "afterward": "db は既定の網に入ったまま、city-net にも入った（`docker network inspect city-net` の `Containers` に db）。city-net の中では、db という名前で届く。",
+        "hints": [
+          "動いているコンテナを後から網に入れるのは `docker network connect`。",
+          "`docker network connect 網の名前 コンテナの名前` の順に書く。",
+          "`docker network connect city-net db` と打つ。"
+        ],
+        "expectedErrors": ["docker-network-not-found", "docker-name-unresolved"]
+      },
+      {
+        "id": "web",
+        "purpose": "止まった web を消し、city-net に入れて作り直す。DB の場所は前と同じ（postgres://postgres@db:5432/reserve）。",
+        "check": { "kind": "container", "expr": "running:web reach:web>db" },
+        "afterward": "web が動き続けた。ログは `connected to the database at db:5432`。同じ網の中で、db という名前からアドレスが引けた。",
+        "hints": [
+          "作る時に網に入れるのは `docker run` の `--network 網の名前`。名前が同じ web が残っているので、先に消す。",
+          "`docker rm web` の後、前と同じ `-e DATABASE_URL=...` に `--network city-net` を足して `docker run -d --name web` で作る。",
+          "`docker rm web` `docker run -d --name web --network city-net -e DATABASE_URL=postgres://postgres@db:5432/reserve city-reserve:2.0` と打つ。"
+        ],
+        "expectedErrors": ["docker-name-unresolved", "docker-db-localhost", "docker-conflict", "docker-network-not-found"]
+      }
+    ]
+  },
+  "result": {
+    "success": "網を作って web と db を入れ、web から db に名前で届くようにできた。",
+    "partial": "ヒントを使ってつなげた。次は、既定の網では名前が引けないことを、自分の言葉で説明してみよう。",
+    "retry": "まだ web から db に名前で届いていない。2 つが同じ自作の網にいるかを `docker network inspect city-net` で確かめよう。"
+  },
+  "summary": {
+    "points": ["網を作る", "同じ網に入れる", "名前で届く（既定の網では届かない）"],
+    "next": ["docker.i.06"],
+    "terms": ["default-bridge", "name-resolution"]
+  }
+}
