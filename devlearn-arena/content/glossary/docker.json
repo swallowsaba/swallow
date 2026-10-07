@@ -145,6 +145,34 @@
       "lessons": [
         "docker.i.01"
       ]
+    },
+    {
+      "id": "named-volume",
+      "word": "名前付きボリューム",
+      "reading": "なまえつきぼりゅーむ",
+      "plain": "Docker が置き場所を受け持つ、名前を付けたボリューム（db-data など）。docker volume create で作り、-v 名前:中の場所 でコンテナに付ける。",
+      "why": "手元のどの場所かを気にせずに、名前だけでデータを残せる。コンテナを消しても残り、作り直したコンテナに同じ名前で付け直せる。",
+      "related": [
+        "volume",
+        "container"
+      ],
+      "lessons": [
+        "docker.i.03"
+      ]
+    },
+    {
+      "id": "postgresql",
+      "word": "PostgreSQL",
+      "reading": "ぽすとぐれすきゅーえる",
+      "plain": "広く使われている、無料の DB（データベース）の 1 つ。表の形でデータを持ち、SQL で読み書きする。psql という道具で中に頼みごとを送る。",
+      "why": "Web のサービスの裏で、予約や会員などのデータを持つ DB として、よく使われる。コンテナでもよく動かす。",
+      "related": [
+        "database",
+        "sql"
+      ],
+      "lessons": [
+        "docker.i.03"
+      ]
     }
   ]
 }

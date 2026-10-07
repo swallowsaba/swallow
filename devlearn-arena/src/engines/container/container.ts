@@ -4,8 +4,9 @@
  * - イメージ: アプリと動くのに要る物を固めた、読み取り専用の型。レジストリ（置き場）から取ってくる（pull）
  * - コンテナ: イメージから作った、動いている（または止まった）1 つの実体。同じイメージから何個でも作れる
  * - ポートの公開: 手元のポートを、コンテナの中のポートにつなぐ（-p 8080:80）。同じ手元のポートは 2 つに使えない
- * - ボリューム: コンテナを消しても残す場所を、手元の場所につなぐ（-v）。
- *   中身を読む場所（serves.root）を持つイメージは、そこにつないだ手元の場所の index.html を返す（つないでいなければ 403）
+ * - ボリューム: コンテナを消しても残す場所を、コンテナの中の場所につなぐ（-v）。手元の場所（/srv/board）か、名前付きボリューム（db-data）。
+ *   中身を読む場所（serves.root）を持つイメージは、そこにつないだ手元の場所の index.html を返す（つないでいなければ 403）。
+ *   コンテナの中で書いた物は、名前付きボリュームをつないだ場所ならボリュームに、それ以外はコンテナの書き込みの層に入り、コンテナを消すと一緒に消える
  * - 隔離（ctr.i.02）: コンテナは名前空間で区切った機械のプロセス。中からは自分のプロセスだけが見え（主のプロセスが PID 1）、
  *   機械からは同じプロセスが機械の PID で見える（containerd-shim の子）。cgroups のメモリの上限（--memory）より多く使うと、
  *   起動してすぐカーネルに止められる（終了コード 137 = 128 + SIGKILL の 9、OOMKilled）
@@ -14,6 +15,7 @@
  */
 
 import { runNodeApp } from './app';
+import { initFiles, type Tables } from './pg';
 
 export interface Image {
   /** 名前:タグ（nginx:1.27） */
@@ -47,6 +49,14 @@ export interface Image {
   command?: string;
   /** 中に ps などの道具がある（alpine の busybox）。無いイメージで docker exec ps は、実行するファイルが無いと言う */
   tools?: boolean;
+  /** DB（PostgreSQL）のイメージ: データを書く場所・DB の名前・最初の表（src/engines/container/pg.ts） */
+  pg?: { dataDir: string; db: string; seed: Tables };
+}
+
+/** 名前付きボリューム（コンテナを消しても残る。files はボリュームの中からの相対パス → 中身） */
+export interface Volume {
+  name: string;
+  files: Readonly<Record<string, string>>;
 }
 
 /** 動いている間のプロセス */
@@ -79,6 +89,8 @@ export interface Container {
   pid: number;
   /** 中のアプリが待ち受けて答える物（作ったイメージのアプリが動いている時） */
   app?: { port: number; body: string };
+  /** 書き込みの層（中で書いたファイル。場所 → 中身）。コンテナを消すと一緒に消える */
+  files?: Readonly<Record<string, string>>;
 }
 
 export interface ContainerHost {
@@ -89,6 +101,10 @@ export interface ContainerHost {
   seq: number;
   /** docker build で作った段の鍵（同じ鍵の段は使い回す） */
   buildCache?: readonly string[];
+  /** 名前付きボリューム */
+  volumes?: readonly Volume[];
+  /** 名前ごとに、コンテナを作った回数（作り直したことを確かめる） */
+  made?: Readonly<Record<string, number>>;
 }
 
 /** nginx の公式イメージに入っている設定と最初のページ（本物の default.conf の形） */
@@ -144,6 +160,16 @@ export const REGISTRY: readonly Image[] = [
       ],
     },
     startLog: ['database system is ready to accept connections'],
+  },
+  {
+    // 市の予約の DB（PostgreSQL 16 に、予約の表を最初から入れた物）。データを書く場所が空なら、最初に作る（docker.i.03）
+    ref: 'city-db:1.0', id: '8c2e5f1a7d36', size: '438MB', command: 'docker-entrypoint.sh postgres',
+    pg: {
+      dataDir: '/var/lib/postgresql/data', db: 'reserve',
+      seed: { reservations: { columns: ['id', 'name'], rows: [['1', '図書館の会議室'], ['2', '体育館'], ['3', '公民館の和室']] } },
+    },
+    startLog: ['LOG:  starting PostgreSQL 16.4 on x86_64-pc-linux-gnu', 'LOG:  listening on IPv4 address "0.0.0.0", port 5432', 'LOG:  database system is ready to accept connections'],
+    procs: [{ command: 'postgres', memory: 28.6, user: 'postgres' }],
   },
   {
     // 予約の窓口のアプリ（Node.js）。DB の場所を環境変数 DATABASE_URL で受け取る
@@ -205,7 +231,10 @@ export type ContainerError =
   | { kind: 'port-in-use'; port: number; name?: string; id?: string }
   | { kind: 'no-such-container'; ref: string }
   | { kind: 'container-running'; name: string }
-  | { kind: 'image-in-use'; ref: string; container: string };
+  | { kind: 'image-in-use'; ref: string; container: string }
+  | { kind: 'no-such-volume'; name: string }
+  /** ids: つないでいるコンテナ（止まった物も） */
+  | { kind: 'volume-in-use'; name: string; ids: readonly string[] };
 
 export type Result<T> = { ok: true; host: ContainerHost; value: T } | { ok: false; host: ContainerHost; error: ContainerError };
 
@@ -266,6 +295,30 @@ function boot(c: Container, image: Image): Container {
   return { ...c, state: 'running', exitCode: 0, oomKilled: false, log: [...head, ...image.startLog] };
 }
 
+/** DB（PostgreSQL）がデータを書く場所を初めて作った時のログ（本物の docker-entrypoint.sh の形を詰めた物） */
+const PG_INIT = [
+  'The files belonging to this database system will be owned by user "postgres".', 'This user must also own the server process.', '',
+  'fixing permissions on existing directory /var/lib/postgresql/data ... ok', 'creating subdirectories ... ok', 'creating configuration files ... ok', '',
+  'Success. You can now start the database server.', '', '/usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/reserve.sql',
+  'CREATE TABLE', 'INSERT 0 3', '', 'PostgreSQL init process complete; ready for start up.', '',
+];
+/** データを書く場所に、もう DB がある時のログ */
+const PG_SKIP = ['', 'PostgreSQL Database directory appears to contain a database; Skipping initialization', ''];
+
+/** 動かす。DB のイメージは、データを書く場所が空なら最初の表を作り（init）、あればそのまま使う */
+function bootIn(host: ContainerHost, c: Container, image: Image): Result<Container> {
+  const booted = boot(c, image);
+  if (!image.pg || booted.state !== 'running') return { ok: true, host: replace(host, booted), value: booted };
+  const dir = image.pg.dataDir;
+  const fresh = filesInside(host, booted)[`${dir}/PG_VERSION`] === undefined;
+  const next = { ...booted, log: [...c.log, ...(fresh ? PG_INIT : PG_SKIP), ...image.startLog] };
+  if (!fresh) return { ok: true, host: replace(host, next), value: next };
+  const files = Object.fromEntries(Object.entries(initFiles(image.pg.seed)).map(([k, v]) => [`${dir}/${k}`, v]));
+  const h = writeInside(replace(host, next), next, files);
+  const value = h.containers.find((x) => x.id === c.id) ?? next;
+  return { ok: true, host: h, value };
+}
+
 export interface RunOptions {
   image: string;
   name?: string;
@@ -293,11 +346,17 @@ export function run(host0: ContainerHost, o: RunOptions): Result<Container> {
     ports: o.ports ?? [], volumes: o.volumes ?? [], env: o.env ?? {}, log: [], pid: pidOf(host.seq + 1),
     ...(o.memory !== undefined ? { memoryLimit: o.memory } : {}),
   };
-  host = { ...host, seq: host.seq + 1, containers: [...host.containers, c] };
+  // つなぐ名前付きボリュームが無ければ作る（本物と同じ）
+  const have = new Set((host.volumes ?? []).map((v) => v.name));
+  const added = c.volumes.filter((v) => isVolumeName(v.host) && !have.has(v.host)).map((v) => ({ name: v.host, files: {} }));
+  host = {
+    ...host, seq: host.seq + 1, containers: [...host.containers, c],
+    ...(added.length > 0 || host.volumes ? { volumes: [...(host.volumes ?? []), ...added] } : {}),
+    made: { ...host.made, [name]: (host.made?.[name] ?? 0) + 1 },
+  };
   // 外のポートが使用中なら、作ったコンテナは Created のまま残る
   for (const p of c.ports) if (portOwner(host, p.host)) return { ok: false, host, error: { kind: 'port-in-use', port: p.host, name: c.name, id: c.id } };
-  const booted = boot(c, pulled.value);
-  return { ok: true, host: replace(host, booted), value: booted };
+  return bootIn(host, c, pulled.value);
 }
 
 export function stop(host: ContainerHost, ref: string): Result<Container> {
@@ -313,8 +372,7 @@ export function start(host: ContainerHost, ref: string): Result<Container> {
   if (c.state === 'running') return { ok: true, host, value: c };
   for (const p of c.ports) if (portOwner(host, p.host)) return { ok: false, host, error: { kind: 'port-in-use', port: p.host } };
   const image = host.images.find((i) => i.ref === c.image);
-  const next = image ? boot(c, image) : c;
-  return { ok: true, host: replace(host, next), value: next };
+  return image ? bootIn(host, c, image) : { ok: true, host, value: c };
 }
 
 export function remove(host: ContainerHost, ref: string, force = false): Result<Container> {
@@ -333,10 +391,13 @@ export function removeImage(host: ContainerHost, raw: string): Result<Image> {
   return { ok: true, host: { ...host, images: host.images.filter((i) => i !== image) }, value: image };
 }
 
+/** 機械にいない、コンテナの中の利用者の番号 */
+const UIDS: Readonly<Record<string, string>> = { nginx: '101', postgres: '999' };
+
 /**
  * 機械から見た、動いているコンテナのプロセス（ps aux に出る物）。
  * コンテナごとに containerd-shim が親になり、その子が主のプロセス（docker inspect の .State.Pid）。
- * 機械にいない利用者（nginx）は、番号（101）で出る
+ * 機械にいない利用者（nginx・postgres）は、番号（101・999）で出る
  */
 export function hostProcesses(host: ContainerHost | null): { pid: number; ppid: number; user: string; command: string; memory: number }[] {
   const out: { pid: number; ppid: number; user: string; command: string; memory: number }[] = [];
@@ -346,15 +407,63 @@ export function hostProcesses(host: ContainerHost | null): { pid: number; ppid: 
     const shim = c.pid - 1;
     out.push({ pid: shim, ppid: 1, user: 'root', command: `/usr/bin/containerd-shim-runc-v2 -namespace moby -id ${longId(c.id)} -address /run/containerd/containerd.sock`, memory: 12 });
     procsOf(image).forEach((p, i) => {
-      out.push({ pid: c.pid + i, ppid: i === 0 ? shim : c.pid, user: p.user === undefined || p.user === 'root' ? 'root' : '101', command: p.command, memory: p.memory });
+      out.push({ pid: c.pid + i, ppid: i === 0 ? shim : c.pid, user: p.user === undefined || p.user === 'root' ? 'root' : (UIDS[p.user] ?? '1000'), command: p.command, memory: p.memory });
     });
   }
   return out;
 }
 
-/** コンテナの中から見えるファイル（イメージに入っている物） */
+/** 名前付きボリュームの名前か（手元の場所は / や . で始まる） */
+export const isVolumeName = (s: string): boolean => /^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(s);
+
+const trimSlash = (p: string): string => p.replace(/(.)\/+$/, '$1');
+
+/** 中の場所 path を受け持つ名前付きボリュームと、その中からの相対パス */
+function volumeAt(c: Container, path: string): { name: string; rel: string } | null {
+  for (const v of c.volumes) {
+    const dir = trimSlash(v.container);
+    if (isVolumeName(v.host) && path.startsWith(`${dir}/`)) return { name: v.host, rel: path.slice(dir.length + 1) };
+  }
+  return null;
+}
+
+/** コンテナの中から見えるファイル（イメージに入っている物・書き込みの層・つないだ名前付きボリュームの中身） */
 export function filesInside(host: ContainerHost, c: Container): Readonly<Record<string, string>> {
-  return host.images.find((i) => i.ref === c.image)?.files ?? {};
+  const out: Record<string, string> = { ...host.images.find((i) => i.ref === c.image)?.files, ...c.files };
+  for (const m of c.volumes) {
+    const v = isVolumeName(m.host) ? host.volumes?.find((x) => x.name === m.host) : undefined;
+    for (const [rel, text] of Object.entries(v?.files ?? {})) out[`${trimSlash(m.container)}/${rel}`] = text;
+  }
+  return out;
+}
+
+/** コンテナの中で書く（名前付きボリュームをつないだ場所ならボリュームに、それ以外は書き込みの層に） */
+export function writeInside(host: ContainerHost, c: Container, files: Readonly<Record<string, string>>): ContainerHost {
+  let volumes = host.volumes ?? [];
+  const layer: Record<string, string> = { ...c.files };
+  for (const [path, text] of Object.entries(files)) {
+    const at = volumeAt(c, path);
+    if (at) volumes = volumes.map((v) => (v.name === at.name ? { ...v, files: { ...v.files, [at.rel]: text } } : v));
+    else layer[path] = text;
+  }
+  return replace({ ...host, ...(host.volumes ? { volumes } : {}) }, { ...c, files: layer });
+}
+
+/** 名前付きボリュームを作る（もうあれば、そのまま） */
+export function createVolume(host: ContainerHost, name: string): Result<Volume> {
+  const have = host.volumes?.find((v) => v.name === name);
+  if (have) return { ok: true, host, value: have };
+  const v: Volume = { name, files: {} };
+  return { ok: true, host: { ...host, volumes: [...(host.volumes ?? []), v] }, value: v };
+}
+
+/** 名前付きボリュームを消す（つないでいるコンテナがあれば、止まっていても消せない） */
+export function removeVolume(host: ContainerHost, name: string): Result<Volume> {
+  const v = host.volumes?.find((x) => x.name === name);
+  if (!v) return { ok: false, host, error: { kind: 'no-such-volume', name } };
+  const users = host.containers.filter((c) => c.volumes.some((m) => m.host === name));
+  if (users.length > 0) return { ok: false, host, error: { kind: 'volume-in-use', name, ids: users.map((c) => longId(c.id)) } };
+  return { ok: true, host: { ...host, volumes: (host.volumes ?? []).filter((x) => x !== v) }, value: v };
 }
 
 /** 中身を読む場所を持つイメージが、中身を見つけられない時の答え */

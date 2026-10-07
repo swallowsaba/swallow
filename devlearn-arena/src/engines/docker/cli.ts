@@ -1,6 +1,8 @@
 import {
-  filesInside, findContainer, hexOf, longId, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, repoOf, run, start, stop, tagOf, type Container, type ContainerError, type ContainerHost, type Image, type PortMap,
+  createVolume, filesInside, findContainer, hexOf, isVolumeName, longId, memoryOf, normalizeRef, procsOf, pull, remove, removeImage, removeVolume, repoOf, run, start, stop, tagOf, writeInside,
+  type Container, type ContainerError, type ContainerHost, type Image, type PortMap,
 } from '@/engines/container/container';
+import { psql, readTables, TABLES_FILE } from '@/engines/container/pg';
 import { build } from '@/engines/container/build';
 import { resolve } from '@/engines/kernel/path';
 import type { CommandResult, CommandSpec } from '@/engines/kernel/registry';
@@ -9,7 +11,8 @@ import { exists, isDir, list, readFile, type VfsState } from '@/engines/kernel/v
 /**
  * Docker の CLI（コンテナの模型 src/engines/container の上に作る）。出力とエラーの文は本物に寄せる。
  * 対応: run（-d・--name・-p・-v・-e・-m / --memory）・ps（-a）・images・pull・stop・start・restart・rm（-f）・rmi・logs・
- * exec（ps・cat・ls・hostname）・stats・inspect（-f / --format）・build（-t・-f。src/engines/container/build.ts）・tag
+ * exec（ps・cat・ls・hostname・psql -c）・stats・inspect（-f / --format）・build（-t・-f。src/engines/container/build.ts）・tag・
+ * volume（create・ls・inspect・rm）
  */
 
 /** 置き場所（コンテキスト）の中の全てのファイル（置き場所からの相対パス → 中身） */
@@ -59,6 +62,10 @@ function daemonError(e: ContainerError, verb: string): CommandResult {
       return { stderr: `Error response from daemon: cannot remove container "/${e.name}": container is running: stop the container before removing or force remove\n`, code: 1 };
     case 'image-in-use':
       return { stderr: `Error response from daemon: conflict: unable to remove repository reference "${e.ref}" (must force) - container ${e.container} is using its referenced image\n`, code: 1 };
+    case 'no-such-volume':
+      return { stderr: `Error response from daemon: get ${e.name}: no such volume\n`, code: 1 };
+    case 'volume-in-use':
+      return { stderr: `Error response from daemon: remove ${e.name}: volume is in use - [${e.ids.join(', ')}]\n`, code: 1 };
   }
 }
 
@@ -202,8 +209,80 @@ function execIn(host: ContainerHost, c: Container, cmd: readonly string[]): Comm
     }
     case 'hostname':
       return { stdout: `${c.id}\n` };
+    case 'psql':
+      return image?.pg ? psqlIn(host, c, image.pg, args) : missing();
     default:
       return missing();
+  }
+}
+
+/** DB のコンテナの中の psql（-U 利用者・-d DB・-c 文）。表は、データを書く場所のファイルに読み書きする */
+function psqlIn(host: ContainerHost, c: Container, pg: NonNullable<Image['pg']>, args: readonly string[]): CommandResult {
+  let db = 'postgres';
+  let user = 'postgres';
+  let sql: string | null = null;
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i] ?? '';
+    const value = (long: string): string => (a.startsWith(`${long}=`) ? a.slice(long.length + 1) : (args[(i += 1)] ?? ''));
+    if (a === '-U' || a.startsWith('--username')) user = value('--username');
+    else if (a === '-d' || a.startsWith('--dbname')) db = value('--dbname');
+    else if (a === '-c' || a.startsWith('--command')) sql = value('--command');
+  }
+  const fatal = (why: string): CommandResult => ({ stderr: `psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  ${why}\n`, code: 2 });
+  if (user !== 'postgres') return fatal(`role "${user}" does not exist`);
+  if (db !== pg.db) return fatal(`database "${db}" does not exist`);
+  if (sql === null) return { stderr: 'この練習の端末では、psql の対話の画面は開けない。-c "文" の形で、1 つずつ打つ\n', code: 1 };
+  const path = `${pg.dataDir}/${TABLES_FILE}`;
+  const r = psql(readTables(filesInside(host, c)[path]), sql);
+  if (r.err !== undefined) return { stderr: r.err, code: 1 };
+  if (!r.tables) return { stdout: r.out ?? '' };
+  return { stdout: r.out ?? '', patch: { containers: writeInside(host, c, { [path]: `${JSON.stringify(r.tables)}\n` }) } };
+}
+
+/** docker volume（create・ls・inspect・rm） */
+function volumeCommand(host: ContainerHost, args: readonly string[]): CommandResult {
+  const [sub, ...rest] = args;
+  const names = rest.filter((a) => !a.startsWith('-'));
+  const set = (h: ContainerHost, stdout: string): CommandResult => ({ stdout, patch: { containers: h } });
+  switch (sub) {
+    case 'create': {
+      const name = names[0] ?? hexOf(host.seq + 501, 64);
+      if (!isVolumeName(name)) {
+        return { stderr: `Error response from daemon: create ${name}: "${name}" includes invalid characters for a local volume name, only "[a-zA-Z0-9][a-zA-Z0-9_.-]" are allowed. If you intended to pass a host directory, use absolute path\n`, code: 1 };
+      }
+      const r = createVolume(host, name);
+      return r.ok ? set(r.host, `${name}\n`) : daemonError(r.error, 'volume');
+    }
+    case 'ls':
+    case 'list':
+      return { stdout: lines(['DRIVER    VOLUME NAME', ...(host.volumes ?? []).map((v) => `local     ${v.name}`)]) };
+    case 'inspect': {
+      if (names.length === 0) return { stderr: '"docker volume inspect" requires at least 1 argument.\n', code: 1 };
+      const found = [];
+      for (const name of names) {
+        if (!host.volumes?.some((v) => v.name === name)) return daemonError({ kind: 'no-such-volume', name }, 'volume');
+        found.push({ Driver: 'local', Labels: null, Mountpoint: `/var/lib/docker/volumes/${name}/_data`, Name: name, Options: null, Scope: 'local' });
+      }
+      return { stdout: `${JSON.stringify(found, null, 4)}\n` };
+    }
+    case 'rm':
+    case 'remove': {
+      if (names.length === 0) return { stderr: '"docker volume rm" requires at least 1 argument.\n', code: 1 };
+      let h = host;
+      const out: string[] = [];
+      for (const name of names) {
+        const r = removeVolume(h, name);
+        if (!r.ok) return { ...daemonError(r.error, 'volume'), ...(out.length ? { stdout: lines(out), patch: { containers: h } } : {}) };
+        h = r.host;
+        out.push(name);
+      }
+      return set(h, lines(out));
+    }
+    default:
+      return {
+        stdout: lines(['Usage:  docker volume COMMAND', '', 'Manage volumes', '', 'Commands:', '  create      Create a volume', '  inspect     Display detailed information on one or more volumes', '  ls          List volumes', '  rm          Remove one or more volumes']),
+        ...(sub === undefined ? {} : { stderr: `docker volume: '${sub}' is not a docker volume command.\n`, code: 1 }),
+      };
   }
 }
 
@@ -267,6 +346,10 @@ function inspect(host: ContainerHost, args: readonly string[]): CommandResult {
       State: { Status: c.state, Running: c.state === 'running', OOMKilled: c.oomKilled === true, ExitCode: c.exitCode, Pid: Number(f['.State.Pid']) },
       Config: { Image: c.image },
       HostConfig: { Memory: c.memoryLimit ?? 0 },
+      // つないだ場所（名前付きボリュームは volume、手元の場所は bind）
+      Mounts: c.volumes.map((m) => (isVolumeName(m.host)
+        ? { Type: 'volume', Name: m.host, Source: `/var/lib/docker/volumes/${m.host}/_data`, Destination: m.container, RW: true }
+        : { Type: 'bind', Source: m.host, Destination: m.container, RW: true })),
     };
   });
   return { stdout: `${JSON.stringify(json, null, 4)}\n` };
@@ -290,6 +373,7 @@ export const dockerCommands: CommandSpec[] = [
               '  ps       List containers', '  images   List images', '  pull     Download an image from a registry', '  stop     Stop one or more running containers',
               '  start    Start one or more stopped containers', '  rm       Remove one or more containers', '  rmi      Remove one or more images', '  logs     Fetch the logs of a container',
               '  stats    Display a live stream of container(s) resource usage statistics', '  inspect  Return low-level information on Docker objects',
+              '  build    Build an image from a Dockerfile', '  volume   Manage volumes',
             ]),
           };
         case 'run': {
@@ -329,6 +413,8 @@ export const dockerCommands: CommandSpec[] = [
         }
         case 'inspect':
           return inspect(host, rest);
+        case 'volume':
+          return volumeCommand(host, rest);
         case 'build':
         case 'buildx': {
           const args = verb === 'buildx' && rest[0] === 'build' ? rest.slice(1) : rest;

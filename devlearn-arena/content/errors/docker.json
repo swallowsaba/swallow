@@ -213,6 +213,46 @@
         "dockerfile",
         "log"
       ]
+    },
+    {
+      "id": "docker-volume-lost",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、作り直した後の予約の数が、足した後の数になっていない。足した予約が、作り直しで消えたようだ。",
+      "causes": [
+        "{{term:volume}}を付けた中の場所が、DB がデータを書く場所（/var/lib/postgresql/data）と違う。データは書き込みの層に入り、消すと一緒に消えた。",
+        "作り直す時に -v を付け忘れた。DB は空の場所に、最初の表を作り直した。",
+        "作り直す前（足す前）の数を答えた。"
+      ],
+      "hint": "`docker logs db` の終わりを読む。「init process complete」なら空から作り直した、「Skipping initialization」なら前のデータを見つけた。付けた場所は `docker inspect db` の Mounts の Destination で確かめる。",
+      "terms": [
+        "volume",
+        "log"
+      ]
+    },
+    {
+      "id": "docker-volume-in-use",
+      "match": "volume is in use",
+      "meaning": "「この{{term:volume}}は使用中」と言われた。付けている{{term:container}}がある間は、ボリュームを消せない。",
+      "causes": [
+        "動いている、または止まったまま残っているコンテナが、そのボリュームを付けている。",
+        "消すつもりのボリュームを取り違えた。中のデータは、消すと戻らない。"
+      ],
+      "hint": "[ ] の中の番号が、付けているコンテナ。`docker ps -a` で確かめる。データを残すなら、ボリュームは消さない。",
+      "terms": [
+        "volume",
+        "container"
+      ]
+    },
+    {
+      "id": "docker-psql-connect",
+      "match": "FATAL:  (database|role) \".+\" does not exist",
+      "meaning": "DB の道具（psql）が、「その DB（または利用者）は無い」と言って、つながらなかった。",
+      "causes": [
+        "-d の DB の名前の綴りの誤り（reserve を reserv と書いた など）。",
+        "-U の利用者の名前の誤り。この DB の利用者は postgres。"
+      ],
+      "hint": "エラーの文の \" \" の中の名前を、手順の名前と 1 字ずつ比べる。",
+      "terms": []
     }
   ]
 }

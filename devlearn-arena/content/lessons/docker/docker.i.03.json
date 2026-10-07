@@ -1,0 +1,147 @@
+{
+  "id": "docker.i.03",
+  "domain": "docker",
+  "level": "intermediate",
+  "theme": "volume",
+  "title": "ボリューム",
+  "goal": "データを残すコンテナを作れる",
+  "minutes": 20,
+  "prerequisites": ["ctr.i.04"],
+  "related": ["ctr.i.04", "k8s.i.03"],
+  "next": ["docker.i.06"],
+  "terms": ["volume", "named-volume", "docker", "container", "db", "postgresql", "layer", "log", "image"],
+  "explain": {
+    "what": "{{term:volume}}は、{{term:container}}を消しても残る、データの置き場所。{{term:docker}}では{{term:named-volume}}（db-data のように名前を付けた物）を作り、コンテナを作る時に、中の決まった場所へ付ける。",
+    "why": "コンテナは、版を上げる時や壊れた時に、消して作り直す。中に書いたデータは、消すと一緒に消える。ボリュームに書けば、作り直したコンテナに同じボリュームを付けて、前のデータをそのまま使える。",
+    "use": "{{term:db}}のデータ。DB の道具（{{term:postgresql}} など）は、データを書く場所が決まっている。その場所にボリュームを付ける。",
+    "when": "予約の DB のコンテナを新しい版に作り直したら、それまでの予約が全て消えていた。データは、コンテナの中に書かれていた。",
+    "figures": ["docker-i03-volume"]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "DB の書く場所にボリュームを付けて作る",
+      "b": "コンテナを消して作り直しても、予約が残る",
+      "answer": "cause",
+      "why": "データがコンテナの外のボリュームに書かれるから。ボリュームの寿命はコンテナと別で、コンテナを消しても残り、作り直したコンテナに付け直せる。",
+      "see": "why"
+    },
+    {
+      "kind": "situation",
+      "prompt": "ボリュームを付けて作り直したのに、予約が消えた。付けた場所は /data で、DB は /var/lib/postgresql/data に書く。何が起きた？",
+      "choices": [
+        { "id": "a", "text": "DB は /var/lib/postgresql/data に書き続け、そこは書き込みの{{term:layer}}だったので、消すと一緒に消えた", "correct": true },
+        { "id": "b", "text": "ボリュームは、作り直すと中身が空になる", "correct": false, "whyNot": "ボリュームの中身は、作り直しても残る。残らなかったのは、DB がボリュームに書いていなかったから。" },
+        { "id": "c", "text": "/data に付けたので、DB は /data に書くよう切り替わった", "correct": false, "whyNot": "DB の書く場所は、付けた場所に合わせては変わらない。DB の決まった場所に付ける。" }
+      ],
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "predict",
+      "prompt": "DB のコンテナに、データを書く場所へボリューム db-data を付けて動かし、予約を 1 件足した。このコンテナを消し、同じ db-data を同じ場所に付けて作り直すと、足した予約は？",
+      "choices": [
+        { "id": "a", "text": "残っている", "correct": true },
+        { "id": "b", "text": "消えている", "correct": false, "whyNot": "データはボリュームに書かれている。ボリュームはコンテナを消しても残り、新しいコンテナから同じ中身が見える。" },
+        { "id": "c", "text": "作り直すたびに 2 件に増える", "correct": false, "whyNot": "同じボリュームを、新しいコンテナが読むだけ。データが写されて増えることはない。" }
+      ],
+      "explanation": "残す物はボリュームに書く。作り直しても、同じボリュームを同じ場所に付ければ、前のデータが見える。"
+    },
+    {
+      "id": "q2",
+      "kind": "choice",
+      "prompt": "db-data という名前のボリュームを作るのは？",
+      "choices": [
+        { "id": "a", "text": "`docker volume create db-data`", "correct": true },
+        { "id": "b", "text": "`docker create db-data`", "correct": false, "whyNot": "docker create は、{{term:image}}からコンテナを作る（動かさずに）物。ボリュームは作らない。" },
+        { "id": "c", "text": "`mkdir db-data`", "correct": false, "whyNot": "手元の機械に場所を作るだけ。Docker の名前付きボリュームにはならない。" }
+      ],
+      "explanation": "ボリュームは docker volume create で作り、`docker run` の `-v 名前:中の場所` で付ける。付ける時に無ければ、その名前で作られる。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "`-v db-data:/data` を付けて DB を作り直したのに、予約が消えた。{{term:log}}には「PostgreSQL init process complete」と出ている。原因は？",
+      "choices": [
+        { "id": "a", "text": "付けた中の場所が、DB の書く場所（/var/lib/postgresql/data）と違う", "correct": true },
+        { "id": "b", "text": "ボリュームの名前が長すぎる", "correct": false, "whyNot": "名前は db-data で正しく付いている。付けた場所の方が違う。" },
+        { "id": "c", "text": "ボリュームは DB には使えない", "correct": false, "whyNot": "DB のデータこそ、ボリュームに置く代表。場所を合わせれば残る。" }
+      ],
+      "explanation": "init process complete は、DB が空の場所から作り直した印。データを書く場所にボリュームが付いていなかった。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "予約の DB（city-db:1.0）を、db という名前で動かしている。版を上げる時はコンテナを作り直すが、今のままでは予約が消える。名前付きボリュームを付けて作り直し、もう一度作り直しても予約が残ることを確かめる。",
+    "environment": "container-host",
+    "setup": {
+      "images": ["city-db:1.0"],
+      "run": ["docker run -d --name db city-db:1.0"]
+    },
+    "steps": [
+      {
+        "id": "create",
+        "purpose": "予約を残すためのボリュームを、db-data という名前で作る。",
+        "check": { "kind": "container", "expr": "volume:db-data" },
+        "afterward": "db-data ができた。まだどのコンテナにも付いていない、空の置き場所。`docker volume ls` の一覧に出る。",
+        "hints": [
+          "ボリュームを扱うのは `docker volume` の後に、やること（作る・一覧・消す）を続ける。",
+          "作るのは `docker volume create 名前`。",
+          "`docker volume create db-data` と打つ。"
+        ]
+      },
+      {
+        "id": "attach",
+        "purpose": "今の db を消し、db-data を付けて、同じ名前（db）で作り直す。この DB は、データを /var/lib/postgresql/data に書く。今の予約は、最初から入っている 3 件だけ（作り直しても同じ 3 件ができる）。",
+        "check": { "kind": "container", "expr": "running:db mount:db=db-data" },
+        "afterward": "db が db-data を付けて動いた。付けた場所が空だったので、DB は最初の表（予約 3 件）をボリュームの中に作った（`docker logs db` に `init process complete`）。",
+        "hints": [
+          "ボリュームは、コンテナを作る時にだけ付けられる。動いている db に後から付けることはできないので、消してから作り直す。",
+          "`docker rm -f db` で消し、`docker run -d --name db -v ボリュームの名前:中の場所 city-db:1.0` で作り直す。中の場所は、DB がデータを書く場所。",
+          "`docker rm -f db` `docker run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0` と打つ。"
+        ],
+        "expectedErrors": ["docker-conflict"]
+      },
+      {
+        "id": "add",
+        "purpose": "予約を 1 件（市民ホール）足す。DB へ頼むのは、コンテナの中の psql という道具。",
+        "check": { "kind": "container", "expr": "rows:db/reservations=4" },
+        "afterward": "予約の表（reservations）に 1 行足した（`INSERT 0 1`）。今は 4 件。この行は、ボリュームの中に書かれた。",
+        "hints": [
+          "動いているコンテナの中で道具を使うのは `docker exec`。`docker exec db psql -U postgres -d reserve -c \"文\"` の形で、DB に 1 つずつ頼む。",
+          "足す文は `INSERT INTO reservations (name) VALUES ('市民ホール')`。今の数は `SELECT count(*) FROM reservations` で数えられる。",
+          "`docker exec db psql -U postgres -d reserve -c \"INSERT INTO reservations (name) VALUES ('市民ホール')\"` と打つ。"
+        ],
+        "expectedErrors": ["docker-psql-connect"]
+      },
+      {
+        "id": "keep",
+        "purpose": "もう一度、db を消して作り直す（版を上げた時と同じ）。作り直した db で予約の数を数え、その数を答える。",
+        "check": { "kind": "answer", "equals": "4" },
+        "afterward": "作り直した db のログは「`Skipping initialization`」（前のデータを見つけた）。足した市民ホールも残って 4 件。版を上げる時も、同じボリュームを同じ場所に付ければ、予約は消えない。",
+        "hints": [
+          "作り直す時も、同じ `-v` を付ける。付け忘れると、DB は空の場所に最初の表を作り直す。",
+          "`docker rm -f db` → `-v db-data:/var/lib/postgresql/data` を付けた `docker run` → `SELECT count(*) FROM reservations` で数える、の順。",
+          "`docker rm -f db` `docker run -d --name db -v db-data:/var/lib/postgresql/data city-db:1.0` `docker exec db psql -U postgres -d reserve -c \"SELECT count(*) FROM reservations\"` と打ち、`4` と答える。"
+        ],
+        "expectedErrors": ["docker-volume-lost", "docker-conflict", "docker-psql-connect"]
+      }
+    ],
+    "dangerous": [
+      { "id": "volume-rm", "pattern": "volume\\s+(rm|remove|prune)\\b", "why": "ボリュームを消すと、中の予約も一緒に消えて戻らない。データを残すためのボリュームは、消さない。" }
+    ]
+  },
+  "result": {
+    "success": "名前付きボリュームを DB の書く場所に付け、作り直しても予約が残ることを確かめられた。",
+    "partial": "ヒントを使って残せた。次は、付ける中の場所を誤るとなぜ消えるのかを、自分の言葉で説明してみよう。",
+    "retry": "まだ予約が残ることを確かめられていない。作り直す時に、同じ `-v` を同じ中の場所に付けたかを確かめよう。"
+  },
+  "summary": {
+    "points": ["残す物はボリュームに置く", "付ける中の場所を正しく", "作り直して残ることを確かめる"],
+    "next": ["docker.i.06"],
+    "terms": ["volume", "named-volume"]
+  }
+}
