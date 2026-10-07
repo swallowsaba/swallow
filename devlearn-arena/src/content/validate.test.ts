@@ -30,7 +30,7 @@ const navy = '#0a1424';
 const COLORS = new Set([...Object.values(hud), ...Object.values(accent), ...Object.values(state), ...Object.values(domain), navy].filter((c) => c.startsWith('#')).map((c) => c.toLowerCase()));
 
 /** 書き終えた分野（docs/development-plan.md Phase 10 の順に足す） */
-const DONE_DOMAINS = ['found', 'linux', 'net', 'web', 'git', 'trouble', 'sec', 'db', 'cicd', 'ctr'] as const;
+const DONE_DOMAINS = ['found', 'linux', 'net', 'web', 'git', 'trouble', 'sec', 'db', 'cicd', 'ctr', 'docker'] as const;
 
 let lessons: Lesson[] = [];
 beforeAll(async () => {

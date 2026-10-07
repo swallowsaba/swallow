@@ -1,0 +1,128 @@
+{
+  "id": "docker.i.06",
+  "domain": "docker",
+  "level": "intermediate",
+  "theme": "Compose",
+  "title": "Compose で複数コンテナ",
+  "goal": "compose.yaml で Web と DB を一緒に動かせる",
+  "minutes": 20,
+  "prerequisites": ["docker.i.04", "docker.i.03"],
+  "related": ["ctr.i.05", "k8s.a.01"],
+  "next": ["lab.a.01"],
+  "terms": ["compose", "container", "image", "port", "volume", "file", "yaml", "service", "web", "db", "network", "env-var", "named-volume"],
+  "explain": {
+    "what": "{{term:compose}}は、複数の{{term:container}}の構成（どの{{term:image}}を、どの{{term:port}}で、どの{{term:volume}}を付けて動かすか）を compose.yaml に書き、まとめて動かす道具。{{term:file}}は{{term:yaml}}の形で、動かす物 1 つずつを{{term:service}}と呼ぶ。",
+    "why": "長い docker run を何本も打つと、打ち間違いや付け忘れが起きる。ファイルに書けば、誰が動かしても同じ構成になり、構成そのものを共有・記録できる。",
+    "use": "{{term:web}}と{{term:db}}を一緒に動かす開発の環境や、小さな本番。Compose は構成ごとに{{term:network}}を作り、サービスどうしはサービスの名前で届く。",
+    "when": "Web と DB を、毎朝 docker run を何本も打って動かしている。新しく来た人は、どの順で何を打てばよいか分からない。",
+    "figures": ["docker-i06-compose"]
+  },
+  "understand": [
+    {
+      "kind": "figure-pick",
+      "figure": "docker-i06-compose",
+      "prompt": "DB のデータを、コンテナを作り直しても残すための部分を押す。",
+      "answer": ["volumes"],
+      "see": "what"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "web と db を、同じ compose.yaml のサービスとして書く",
+      "b": "web から db という名前で DB に届く",
+      "answer": "cause",
+      "why": "Compose は構成ごとに網を作り、全てのサービスを入れる。その網の中では、サービスの名前（db）が引ける。",
+      "see": "use"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "compose.yaml に書いた全てのサービスを、裏でまとめて動かすのは？",
+      "choices": [
+        { "id": "a", "text": "`docker compose up -d`", "correct": true },
+        { "id": "b", "text": "`docker run compose.yaml`", "correct": false, "whyNot": "docker run は、イメージから 1 つのコンテナを動かす。ファイルの構成は読まない。" },
+        { "id": "c", "text": "`docker compose ps`", "correct": false, "whyNot": "`docker compose ps` は、この構成のコンテナの一覧を見るだけ。動かしはしない。" }
+      ],
+      "explanation": "up は、網・ボリューム・コンテナを、書いた構成のとおりに作って動かす。-d で裏で動かす。止めて片付けるのは down。"
+    },
+    {
+      "id": "q2",
+      "kind": "predict",
+      "prompt": "同じ compose.yaml に web と db を書き、web の{{term:env-var}} `DATABASE_URL` に `postgres://postgres@db:5432/reserve` と書いた。web から DB に届く？",
+      "choices": [
+        { "id": "a", "text": "届く（同じ構成の網の中で、db という名前が引ける）", "correct": true },
+        { "id": "b", "text": "届かない（網を作っていない）", "correct": false, "whyNot": "網は Compose が作る（構成の名前_default）。全てのサービスがそこに入る。" },
+        { "id": "c", "text": "届かない（アドレスを書いていない）", "correct": false, "whyNot": "アドレスは作り直すと変わる。サービスの名前で指せば、今のアドレスが引ける。" }
+      ],
+      "explanation": "同じ構成のサービスどうしは、サービスの名前で届く。DB の場所には、DB のサービスの名前を書く。"
+    },
+    {
+      "id": "q3",
+      "kind": "cause",
+      "prompt": "up のたびに、web が先に動き出して DB を探し、見つけられずに止まることがある。原因と直し方は？",
+      "choices": [
+        { "id": "a", "text": "動かす順を決めていない。web に depends_on: db を書き、db を先に動かす", "correct": true },
+        { "id": "b", "text": "ports が足りない。db にも ports を書く", "correct": false, "whyNot": "ports は外から届かせる設定。サービスどうしは、ports が無くても網の中で届く。" },
+        { "id": "c", "text": "サービスが 2 つでは多すぎる", "correct": false, "whyNot": "数の問題ではない。順を決めていないので、web が db より先に動くことがある。" }
+      ],
+      "explanation": "depends_on に書いたサービスが、先に動く。DB の準備が終わるまで待つには、さらに準備の確かめ（healthcheck）を使う。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "予約の窓口（web）と DB を、~/reserve の compose.yaml で動かしたい。今は web だけが書いてあり、DB の場所が localhost になっている。web が DB を使って 8080 番に答え、DB のデータが残る構成にする。保存すると `docker compose up -d` で動かし、様子と 8080 番の答えを確かめる。",
+    "environment": "container-host",
+    "setup": {
+      "hostname": "dev-01",
+      "cwd": "/home/learner/reserve",
+      "dirs": ["/home/learner/reserve"],
+      "files": {
+        "/home/learner/reserve/compose.yaml": "# 予約の窓口（web）と DB（db）を一緒に動かす\nservices:\n  web:\n    image: city-reserve:2.0\n    ports:\n      - \"8080:3000\"\n    environment:\n      DATABASE_URL: postgres://postgres@localhost:5432/reserve\n"
+      },
+      "images": ["city-reserve:2.0", "city-db:1.0"],
+      "run": ["docker compose up -d"],
+      "edit": {
+        "path": "/home/learner/reserve/compose.yaml",
+        "apply": ["docker compose up -d", "docker compose ps -a", "docker compose logs web", "curl -s http://localhost:8080/"]
+      }
+    },
+    "steps": [
+      {
+        "id": "connect",
+        "purpose": "db のサービス（city-db:1.0）を足し、web の DB の場所をサービスの名前 db で指す。db を先に動かす。確かめた結果で、8080 番が「予約 3 件」と答えることを見る。",
+        "check": { "kind": "http", "url": "http://localhost:8080/", "status": 200, "contains": "予約 3 件" },
+        "afterward": "web が db という名前で DB につながり（logs に `connected to the database at db:5432`）、8080 番で予約の数を答えた。網（reserve_default）は Compose が作った。",
+        "hints": [
+          "services の下に、web と同じ深さで db を足す。web の localhost は web 自身のこと。DB の場所は、DB のサービスの名前で指す。",
+          "db には `image: city-db:1.0`。web の `DATABASE_URL` の localhost を db に変え、web に `depends_on:` と `- db` を足す。字下げは web の項目とそろえる。",
+          "`# 予約の窓口（web）と DB（db）を一緒に動かす\nservices:\n  web:\n    image: city-reserve:2.0\n    ports:\n      - \"8080:3000\"\n    environment:\n      DATABASE_URL: postgres://postgres@db:5432/reserve\n    depends_on:\n      - db\n  db:\n    image: city-db:1.0\n    volumes:\n      - db-data:/var/lib/postgresql/data\nvolumes:\n  db-data:` と保存する。"
+        ],
+        "expectedErrors": ["docker-compose-web-down", "docker-compose-file", "docker-db-localhost", "docker-name-unresolved"]
+      },
+      {
+        "id": "keep",
+        "purpose": "DB のデータを書く場所（/var/lib/postgresql/data）に、{{term:named-volume}} db-data を付ける。名前付きボリュームは、一番外の volumes: にも書く。",
+        "check": { "kind": "container", "expr": "running:reserve-db-1 mount:reserve-db-1=reserve_db-data:/var/lib/postgresql/data" },
+        "afterward": "Compose は reserve_db-data というボリュームを作り、db に付けた。docker compose down で片付けても、ボリュームは残る（消すのは down -v の時だけ）。",
+        "hints": [
+          "db の下に volumes: を書き、ボリュームの名前:中の場所 を並べる。使う名前は、一番外の volumes: でも宣言する。",
+          "db に `volumes:` と `- db-data:/var/lib/postgresql/data`、ファイルの一番外（services と同じ深さ）に `volumes:` と `db-data:`。",
+          "`# 予約の窓口（web）と DB（db）を一緒に動かす\nservices:\n  web:\n    image: city-reserve:2.0\n    ports:\n      - \"8080:3000\"\n    environment:\n      DATABASE_URL: postgres://postgres@db:5432/reserve\n    depends_on:\n      - db\n  db:\n    image: city-db:1.0\n    volumes:\n      - db-data:/var/lib/postgresql/data\nvolumes:\n  db-data:` と保存する。"
+        ],
+        "expectedErrors": ["docker-compose-file", "docker-compose-web-down"]
+      }
+    ]
+  },
+  "result": {
+    "success": "web と db の構成を compose.yaml に書き、1 回の up で、DB を使って答え、データも残る形で動かせた。",
+    "partial": "ヒントを使って構成を書けた。次は、web の DB の場所に localhost と書くとなぜ届かないかを、自分の言葉で説明してみよう。",
+    "retry": "まだ構成が揃っていない。確かめた結果の `docker compose logs web` の `Error` の行と、db の volumes を確かめよう。"
+  },
+  "summary": {
+    "points": ["構成を 1 つのファイルに書く", "up で一度に動かす", "サービスの名前で届く"],
+    "next": ["lab.a.01"],
+    "terms": ["compose", "yaml", "service"]
+  }
+}

@@ -216,6 +216,34 @@
       "lessons": [
         "docker.i.05"
       ]
+    },
+    {
+      "id": "compose",
+      "word": "Compose",
+      "reading": "こんぽーず",
+      "plain": "Docker Compose。複数のコンテナの構成（イメージ・ポート・ボリューム・環境変数）を compose.yaml に書き、docker compose up でまとめて動かす道具。",
+      "why": "長い docker run を何本も打たずに済み、構成をファイルとして共有・記録できる。誰が動かしても同じ構成になる。",
+      "related": [
+        "container",
+        "yaml",
+        "service"
+      ],
+      "lessons": [
+        "docker.i.06"
+      ]
+    },
+    {
+      "id": "yaml",
+      "word": "YAML",
+      "reading": "やむる",
+      "plain": "設定を書くための書き方の 1 つ。「名前: 値」を行に並べ、字下げ（行の頭の空白）で入れ子を表す。- で始まる行は並び（リスト）。",
+      "why": "Compose・Kubernetes・CI の設定など、多くの道具の設定ファイルがこの形。字下げが 1 つずれるだけで意味が変わる。",
+      "related": [
+        "config-file"
+      ],
+      "lessons": [
+        "docker.i.06"
+      ]
     }
   ]
 }

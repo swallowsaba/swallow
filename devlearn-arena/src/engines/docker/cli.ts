@@ -4,6 +4,7 @@ import {
 } from '@/engines/container/container';
 import { psql, readTables, TABLES_FILE } from '@/engines/container/pg';
 import { build } from '@/engines/container/build';
+import { composeCommand } from './compose';
 import { resolve } from '@/engines/kernel/path';
 import type { CommandResult, CommandSpec, ShellState } from '@/engines/kernel/registry';
 import { exists, isDir, list, readFile, type VfsState } from '@/engines/kernel/vfs';
@@ -13,7 +14,7 @@ import { exists, isDir, list, readFile, type VfsState } from '@/engines/kernel/v
  * 対応: run（-d・--name・-p・-v・-e・-m / --memory）・ps（-a）・images・pull・stop・start・restart・rm（-f）・rmi・logs・
  * exec（ps・cat・ls・hostname・psql -c）・stats・inspect（-f / --format）・build（-t・-f。src/engines/container/build.ts）・tag・
  * volume（create・ls・inspect・rm）・network（create・ls・inspect・connect・disconnect・rm）。run の --network・
- * login・logout・push・context（ls・use・show）と --context（頼む先の Engine。src/engines/container/container.ts）
+ * login・logout・push・context（ls・use・show）と --context（頼む先の Engine。src/engines/container/container.ts）・compose（./compose.ts）
  */
 
 /** 置き場所（コンテキスト）の中の全てのファイル（置き場所からの相対パス → 中身） */
@@ -535,7 +536,7 @@ function dockerOn(host: ContainerHost, verb: string | undefined, rest: readonly 
               '  ps       List containers', '  images   List images', '  pull     Download an image from a registry', '  stop     Stop one or more running containers',
               '  start    Start one or more stopped containers', '  rm       Remove one or more containers', '  rmi      Remove one or more images', '  logs     Fetch the logs of a container',
               '  stats    Display a live stream of container(s) resource usage statistics', '  inspect  Return low-level information on Docker objects',
-              '  build    Build an image from a Dockerfile', '  volume   Manage volumes', '  network  Manage networks',
+              '  build    Build an image from a Dockerfile', '  volume   Manage volumes', '  network  Manage networks', '  compose  Docker Compose',
             ]),
           };
         case 'run': {
@@ -579,6 +580,8 @@ function dockerOn(host: ContainerHost, verb: string | undefined, rest: readonly 
           return volumeCommand(host, rest);
         case 'network':
           return networkCommand(host, rest);
+        case 'compose':
+          return composeCommand(host, rest, shell, (c) => [shownImage(c.image), commandOf(host, c), status(c), portsOf(c)]);
         case 'build':
         case 'buildx': {
           const args = verb === 'buildx' && rest[0] === 'build' ? rest.slice(1) : rest;

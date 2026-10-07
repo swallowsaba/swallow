@@ -20,7 +20,7 @@
  */
 
 import { runNodeApp } from './app';
-import { initFiles, type Tables } from './pg';
+import { initFiles, readTables, TABLES_FILE, type Tables } from './pg';
 
 export interface Image {
   /** 名前:タグ（nginx:1.27） */
@@ -111,6 +111,10 @@ export interface Container {
   networks?: readonly string[];
   /** 網ごとのアドレス */
   addresses?: Readonly<Record<string, string>>;
+  /** 自作の網の中で、名前のほかに引ける別名（Compose のサービス名） */
+  aliases?: readonly string[];
+  /** 札（Compose の構成の名前・サービス・設定の指紋） */
+  labels?: Readonly<Record<string, string>>;
 }
 
 export interface ContainerHost {
@@ -383,7 +387,7 @@ const PG_SKIP = ['', 'PostgreSQL Database directory appears to contain a databas
  * DB の場所（postgres://利用者@名前:ポート/DB）につなぐ。名前は、同じ自作の網にいる動いているコンテナの名前なら引ける。
  * localhost はコンテナ自身。届いた先が DB（5432 番で待ち受け）でなければ断られる。出す文は Node.js の pg の物
  */
-function connectDb(host: ContainerHost, c: Container, url: string): { target: string; error?: string[] } {
+function connectDb(host: ContainerHost, c: Container, url: string): { target: string; error?: string[]; db?: Container } {
   const m = /^[a-z]+:\/\/(?:[^@/]*@)?([^:/]+)(?::(\d+))?/.exec(url);
   const name = m?.[1] ?? url;
   const port = Number(m?.[2] ?? 5432);
@@ -396,7 +400,7 @@ function connectDb(host: ContainerHost, c: Container, url: string): { target: st
     return { target, error: [`Error: getaddrinfo ENOTFOUND ${name}`, '    at GetAddrInfoReqWrap.onlookup [as oncomplete] (node:dns:107:26)'] };
   }
   const listens = host.images.find((i) => i.ref === to.c.image)?.pg !== undefined && port === 5432;
-  return listens ? { target } : { target, error: refused(to.ip) };
+  return listens ? { target, db: to.c } : { target, error: refused(to.ip) };
 }
 
 /** 動かす。DB のイメージは、データを書く場所が空なら最初の表を作り（init）、あればそのまま使う。DB につなぐアプリは、つなげなければ止まる */
@@ -405,9 +409,15 @@ function bootIn(host: ContainerHost, c: Container, image: Image): Result<Contain
   if (image.database && booted.state === 'running') {
     const r = connectDb(host, booted, c.env[image.database.env] ?? '');
     const head = [...c.log, ...(image.bootLog ?? []), `reserve: connecting to the database at ${r.target}`];
+    // つながったら、3000 番で待ち受け、DB にある予約の数を答える
+    const pg = r.db ? host.images.find((i) => i.ref === r.db?.image)?.pg : undefined;
+    const count = r.db && pg ? (readTables(filesInside(host, r.db)[`${pg.dataDir}/${TABLES_FILE}`]).reservations?.rows.length ?? 0) : 0;
     const next: Container = r.error
       ? { ...booted, state: 'exited', exitCode: 1, log: [...head, ...r.error] }
-      : { ...booted, log: [...head, `reserve: connected to the database at ${r.target}`, ...image.startLog] };
+      : {
+        ...booted, log: [...head, `reserve: connected to the database at ${r.target}`, ...image.startLog],
+        app: { port: 3000, body: `<html><body><h1>市の予約の窓口</h1><p>予約 ${String(count)} 件</p></body></html>` },
+      };
     return { ok: true, host: replace(host, next), value: next };
   }
   if (!image.pg || booted.state !== 'running') return { ok: true, host: replace(host, booted), value: booted };
@@ -431,6 +441,8 @@ export interface RunOptions {
   memory?: number;
   /** 入る網（無ければ bridge） */
   network?: string;
+  aliases?: readonly string[];
+  labels?: Readonly<Record<string, string>>;
 }
 
 /** 手元のポートを、動いているコンテナが既に使っているか */
@@ -451,6 +463,8 @@ export function run(host0: ContainerHost, o: RunOptions): Result<Container> {
     id: idOf(host.seq + 1), name, image: pulled.value.ref, state: 'created', exitCode: 0,
     ports: o.ports ?? [], volumes: o.volumes ?? [], env: o.env ?? {}, log: [], pid: pidOf(host.seq + 1), networks: [],
     ...(o.memory !== undefined ? { memoryLimit: o.memory } : {}),
+    ...(o.aliases ? { aliases: o.aliases } : {}),
+    ...(o.labels ? { labels: o.labels } : {}),
   }, net);
   // つなぐ名前付きボリュームが無ければ作る（本物と同じ）
   const have = new Set((host.volumes ?? []).map((v) => v.name));
@@ -532,7 +546,7 @@ const userDefined = (name: string): boolean => !BUILTIN_NETWORKS.some((n) => n.n
 /** from から name を引く: 同じ自作の網にいる、動いているコンテナの名前なら、その網のアドレス */
 export function resolveName(host: ContainerHost, from: Container, name: string): { c: Container; ip: string } | null {
   for (const net of networksOf(from).filter(userDefined)) {
-    const to = host.containers.find((x) => x.name === name && x.state === 'running' && networksOf(x).includes(net));
+    const to = host.containers.find((x) => (x.name === name || x.aliases?.includes(name) === true) && x.state === 'running' && networksOf(x).includes(net));
     const ip = to?.addresses?.[net];
     if (to && ip !== undefined) return { c: to, ip };
   }

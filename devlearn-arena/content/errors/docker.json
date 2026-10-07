@@ -330,6 +330,34 @@
       ],
       "hint": "エラーの文の lookup の後の名前を、手順に書いた住所と 1 字ずつ比べる。",
       "terms": []
+    },
+    {
+      "id": "docker-compose-web-down",
+      "match": "Failed to connect to localhost port 8080",
+      "meaning": "8080 番に答えが無かった。web のコンテナが、動き出してすぐ止まったようだ（docker compose ps -a の STATUS が Exited）。",
+      "causes": [
+        "DB の場所（DATABASE_URL）に localhost と書いた。コンテナの中の localhost は web 自身で、そこに DB はいない（logs に ECONNREFUSED 127.0.0.1）。",
+        "db のサービスが無い、またはサービスの名前と DB の場所の名前が違う（logs に ENOTFOUND）。",
+        "ports の左右を取り違えた。外の 8080 番を、中の 3000 番につなぐ（\"8080:3000\"）。"
+      ],
+      "hint": "確かめた結果の `docker compose logs web` の最後の Error の行を読む。DB の場所には、DB のサービスの名前（db）を書く。",
+      "terms": [
+        "env-var"
+      ]
+    },
+    {
+      "id": "docker-compose-file",
+      "match": "^yaml: line|additional properties .+ not allowed|invalid compose project",
+      "meaning": "compose.yaml を読めなかった、または書いてある構成がおかしいと言われた。コンテナは 1 つも動かしていない。",
+      "causes": [
+        "{{term:yaml}}の字下げがずれている（同じ深さの項目は、行の頭の空白の数をそろえる）。",
+        "項目の名前の綴りの誤り（image を imag と書いた など）。",
+        "サービスで使う名前付きボリュームを、一番外の volumes: に書いていない。"
+      ],
+      "hint": "エラーの文の line の数か、services.名前 の後の語が、直す場所。",
+      "terms": [
+        "yaml"
+      ]
     }
   ]
 }
