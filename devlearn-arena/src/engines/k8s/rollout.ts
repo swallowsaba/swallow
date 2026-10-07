@@ -1,4 +1,4 @@
-import { templateHash } from './controllers';
+import { realNames, templateHash } from './controllers';
 import { isReady } from './kubelet';
 import type { ClusterState, Deployment, ReplicaSet } from './types';
 import { key } from './types';
@@ -49,7 +49,7 @@ export interface RolloutStatus {
  */
 export function rolloutStatus(state: ClusterState, deployment: Deployment): RolloutStatus {
   const { replicas } = deployment.spec;
-  const hash = templateHash(deployment.spec.template);
+  const hash = templateHash(deployment.spec.template, realNames(state));
   const current = [...state.pods.values()].filter(
     (p) =>
       p.metadata.namespace === deployment.metadata.namespace &&
@@ -88,7 +88,7 @@ export function rolloutUndo(
   toRevision: number | null,
 ): UndoResult {
   const revisions = revisionsOf(state, deployment);
-  const currentHash = templateHash(deployment.spec.template);
+  const currentHash = templateHash(deployment.spec.template, realNames(state));
   const current = revisions.find((r) => r.replicaSet.metadata.labels['pod-template-hash'] === currentHash);
 
   const target =

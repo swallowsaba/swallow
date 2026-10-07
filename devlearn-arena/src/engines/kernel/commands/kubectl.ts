@@ -1,10 +1,10 @@
 import { advanceCluster } from '@/engines/k8s/controllers';
 import { tickPods } from '@/engines/k8s/kubelet';
-import type { ClusterState, Node, Pod, Resource } from '@/engines/k8s/types';
+import type { ClusterState, Deployment, Node, Pod, ReplicaSet, Resource } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
 import type { CommandResult, CommandSpec, ShellState } from '../registry';
 import { fromLines, parseArgs } from './args';
-import { describeNode, describePod } from './kubectlDescribe';
+import { describeDeployment, describeNode, describePod, describeReplicaSet } from './kubectlDescribe';
 import { describeResource, renderTable } from './kubectlGet';
 import { create, expose, run } from './kubectlCreate';
 import { nodeCtl, taint } from './kubectlNodes';
@@ -156,6 +156,8 @@ const coreSubcommands: Record<string, KubectlHandler> = {
     const one = (resource: Resource): string =>
       kind === 'pods' ? describePod(cluster, resource as Pod)
         : kind === 'nodes' ? describeNode(cluster, resource as Node)
+          : kind === 'deployments' ? describeDeployment(cluster, resource as Deployment)
+            : kind === 'replicasets' ? describeReplicaSet(cluster, resource as ReplicaSet)
           : describeResource(cluster, kind, resource);
     if (name !== undefined) {
       const found = findOne(cluster, kind, namespace, name);

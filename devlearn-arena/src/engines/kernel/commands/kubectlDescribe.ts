@@ -1,7 +1,9 @@
 import { nodeCondition } from '@/engines/k8s/bootstrap';
+import { realNames, templateHash } from '@/engines/k8s/controllers';
+import { REVISION_KEY } from '@/engines/k8s/rollout';
 import { isReady } from '@/engines/k8s/kubelet';
 import { resolveEnv } from '@/engines/k8s/storage';
-import type { ClusterState, ContainerSpec, ContainerStatus, Node, Pod, Probe } from '@/engines/k8s/types';
+import type { ClusterState, ContainerSpec, ContainerStatus, Deployment, Node, Pod, Probe, ReplicaSet } from '@/engines/k8s/types';
 import { age } from './kubectlShared';
 
 /**
@@ -92,7 +94,10 @@ export function describeNode(cluster: ClusterState, node: Node): string {
 
 /** 知らせ（Event）を出した物。本物の describe の From の欄 */
 function sourceOf(reason: string): string {
-  return reason === 'Scheduled' || reason === 'FailedScheduling' ? 'default-scheduler' : 'kubelet';
+  if (reason === 'Scheduled' || reason === 'FailedScheduling') return 'default-scheduler';
+  if (reason === 'ScalingReplicaSet') return 'deployment-controller';
+  if (reason === 'SuccessfulCreate' || reason === 'SuccessfulDelete') return 'replicaset-controller';
+  return 'kubelet';
 }
 
 /** describe の一番下の Events。本物と同じ欄（Type・Reason・Age・From・Message） */
@@ -187,5 +192,90 @@ export function describePod(cluster: ClusterState, pod: Pod): string {
   lines.push(...multi('QoS Class', [qos], 29), ...multi('Node-Selectors', [], 29));
   lines.push(...multi('Tolerations', ['node.kubernetes.io/not-ready:NoExecute op=Exists for 300s', 'node.kubernetes.io/unreachable:NoExecute op=Exists for 300s'], 29));
   lines.push(...eventsOf(cluster, `pod/${pod.metadata.name}`, w));
+  return `${lines.join('\n')}\n`;
+}
+
+const labelText = (labels: Record<string, string>): string[] => Object.entries(labels).map(([k, v]) => `${k}=${v}`);
+
+/** Pod の雛形（Deployment・ReplicaSet の Pod Template） */
+function podTemplate(template: Deployment['spec']['template']): string[] {
+  const lines = ['Pod Template:', ...multi('  Labels', labelText(template.labels), 11), '  Containers:'];
+  for (const c of template.containers) {
+    lines.push(`   ${c.name}:`, ...fields([
+      ['Image', c.image],
+      ['Port', c.ports.length === 0 ? '<none>' : c.ports.map((p) => `${String(p)}/TCP`).join(', ')],
+      ['Host Port', c.ports.length === 0 ? '<none>' : c.ports.map(() => '0/TCP').join(', ')],
+      ['Environment', Object.keys(c.env).length === 0 && c.envFrom.length === 0 ? '<none>' : Object.entries(c.env).map(([k, v]) => `${k}=${v}`).join(', ')],
+      ['Mounts', c.volumeMounts.length === 0 ? '<none>' : c.volumeMounts.map((m) => `${m.mountPath} from ${m.name}`).join(', ')],
+    ], '    '));
+  }
+  lines.push(...fields([['Volumes', '<none>'], ['Node-Selectors', labelText(template.nodeSelector).join(',') || '<none>'], ['Tolerations', '<none>']], '  '));
+  return lines;
+}
+
+/** その持ち主の ReplicaSet（新しい世代から） */
+function replicaSetsOf(cluster: ClusterState, d: Deployment): ReplicaSet[] {
+  return [...cluster.replicaSets.values()]
+    .filter((rs) => rs.metadata.namespace === d.metadata.namespace && rs.metadata.ownerReferences.some((o) => o.kind === 'Deployment' && o.name === d.metadata.name))
+    .sort((a, b) => Number(b.metadata.annotations[REVISION_KEY] ?? 0) - Number(a.metadata.annotations[REVISION_KEY] ?? 0));
+}
+
+/** ReplicaSet が持つ Pod */
+function podsOf(cluster: ClusterState, rs: ReplicaSet): Pod[] {
+  return [...cluster.pods.values()].filter((p) => p.metadata.namespace === rs.metadata.namespace && p.metadata.ownerReferences.some((o) => o.kind === 'ReplicaSet' && o.name === rs.metadata.name));
+}
+
+export function describeDeployment(cluster: ClusterState, d: Deployment): string {
+  const w = 24;
+  const sets = replicaSetsOf(cluster, d);
+  const hash = templateHash(d.spec.template, realNames(cluster));
+  const current = sets.find((rs) => rs.metadata.labels['pod-template-hash'] === hash);
+  const all = sets.flatMap((rs) => podsOf(cluster, rs));
+  const available = all.filter(isReady).length;
+  const updated = current ? podsOf(cluster, current).length : 0;
+  const created = (rs: ReplicaSet): string => `${rs.metadata.name} (${String(podsOf(cluster, rs).length)}/${String(rs.spec.replicas)} replicas created)`;
+  const olds = sets.filter((rs) => rs !== current && rs.spec.replicas > 0);
+  const annotations = Object.entries(d.metadata.annotations).map(([k, v]) => `${k}: ${v}`);
+  const revision = current?.metadata.annotations[REVISION_KEY];
+  const lines = [
+    ...multi('Name', [d.metadata.name], w),
+    ...multi('Namespace', [d.metadata.namespace], w),
+    ...multi('Labels', labelText(d.metadata.labels), w),
+    ...multi('Annotations', revision === undefined ? annotations : [`${REVISION_KEY}: ${revision}`, ...annotations], w),
+    ...multi('Selector', [labelText(d.spec.selector).join(',')], w),
+    ...multi('Replicas', [`${String(d.spec.replicas)} desired | ${String(updated)} updated | ${String(all.length)} total | ${String(available)} available | ${String(Math.max(0, all.length - available))} unavailable`], w),
+    ...multi('StrategyType', ['RollingUpdate'], w),
+    ...multi('MinReadySeconds', ['0'], w),
+    ...multi('RollingUpdateStrategy', [`${String(d.spec.strategy.maxUnavailable)} max unavailable, ${String(d.spec.strategy.maxSurge)} max surge`], w),
+    ...podTemplate(d.spec.template),
+    'Conditions:',
+    ...grid(['Type', 'Status', 'Reason'], [
+      ['Available', available >= d.spec.replicas - d.spec.strategy.maxUnavailable ? 'True' : 'False', available >= d.spec.replicas - d.spec.strategy.maxUnavailable ? 'MinimumReplicasAvailable' : 'MinimumReplicasUnavailable'],
+      ['Progressing', 'True', updated >= d.spec.replicas && olds.length === 0 ? 'NewReplicaSetAvailable' : 'ReplicaSetUpdated'],
+    ]),
+    ...multi('OldReplicaSets', olds.map(created), 17),
+    ...multi('NewReplicaSet', current ? [created(current)] : [], 17),
+    ...eventsOf(cluster, `deployment/${d.metadata.name}`, w),
+  ];
+  return `${lines.join('\n')}\n`;
+}
+
+export function describeReplicaSet(cluster: ClusterState, rs: ReplicaSet): string {
+  const w = 16;
+  const pods = podsOf(cluster, rs);
+  const count = (phase: string): number => pods.filter((p) => (phase === 'Running' ? p.status.phase === 'Running' : phase === 'Waiting' ? p.status.phase !== 'Running' && p.status.phase !== 'Succeeded' && p.status.phase !== 'Failed' : p.status.phase === phase)).length;
+  const owner = rs.metadata.ownerReferences[0];
+  const lines = [
+    ...multi('Name', [rs.metadata.name], w),
+    ...multi('Namespace', [rs.metadata.namespace], w),
+    ...multi('Selector', [labelText(rs.spec.selector).join(',')], w),
+    ...multi('Labels', labelText(rs.metadata.labels), w),
+    ...multi('Annotations', Object.entries(rs.metadata.annotations).map(([k, v]) => `${k}: ${v}`), w),
+    ...multi('Controlled By', [owner ? `${owner.kind}/${owner.name}` : '<none>'], w),
+    ...multi('Replicas', [`${String(pods.length)} current / ${String(rs.spec.replicas)} desired`], w),
+    ...multi('Pods Status', [`${String(count('Running'))} Running / ${String(count('Waiting'))} Waiting / ${String(count('Succeeded'))} Succeeded / ${String(count('Failed'))} Failed`], w),
+    ...podTemplate(rs.spec.template),
+    ...eventsOf(cluster, `replicaset/${rs.metadata.name}`, w),
+  ];
   return `${lines.join('\n')}\n`;
 }

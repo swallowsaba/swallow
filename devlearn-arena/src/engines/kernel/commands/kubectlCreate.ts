@@ -1,3 +1,4 @@
+import { realNames } from '@/engines/k8s/controllers';
 import { container, deployment, pod, service } from '@/engines/k8s/factory';
 import type { ClusterState, ConfigMap, Secret, ServiceAccount } from '@/engines/k8s/types';
 import { key } from '@/engines/k8s/types';
@@ -51,7 +52,12 @@ function createDeployment(ctx: Parameters<KubectlHandler>[0]): CommandResult {
   if (!Number.isInteger(replicas) || replicas < 0) {
     return { stderr: `error: invalid replicas: ${values.get('replicas') ?? ''}\n`, code: 1 };
   }
-  const made = deployment(name, replicas, [container(name, image)], { namespace });
+  // 本物と同じく、コンテナの名前はイメージの名前（置き場の住所とタグを除いた所。nginx:1.27 なら nginx）
+  const base = image.replace(/[:@][^/]*$/, '').split('/').pop() ?? name;
+  // 本物は --port が無ければ待ち受けの番号を持たない
+  const port = Number(values.get('port') ?? NaN);
+  const real = realNames(cluster);
+  const made = deployment(name, replicas, [container(real && base !== '' ? base : name, image, real ? { ports: Number.isFinite(port) ? [port] : [] } : {})], { namespace });
   return {
     stdout: `deployment.apps/${name} created\n`,
     patch: {

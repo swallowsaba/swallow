@@ -6,7 +6,7 @@ import { key, type ClusterState } from './types';
  * 実戦の達成条件 `{ kind: 'k8s', expr }`（docs/content-spec.md 2.4）を、クラスタの状態で判定する。純粋な関数。
  *
  * expr は `<種類>/<名前>` の後に、空白で区切った `<欄><比べ方><数>` を並べる（全てを満たせば達成。欄が無ければ、あるかどうか）:
- *   deployment/web replicas>=3 readyReplicas>=3
+ *   deployment/web replicas>=3 readyReplicas>=3 made>=4
  *   service/web endpoints>=3
  *   pod/web ready=1 status=Running
  * 比べ方は >= <= =（status は = で語を比べる）。名前空間は default
@@ -36,6 +36,11 @@ function fieldOf(cluster: ClusterState, kind: Kind, name: string, field: string)
     if (field === 'replicas') return d.spec.replicas;
     if (field === 'readyReplicas') return d.status.readyReplicas;
     if (field === 'updatedReplicas') return d.status.updatedReplicas;
+    // made: その Deployment の ReplicaSet が作った Pod の数（消された Pod を作り直したことを確かめる）
+    if (field === 'made') {
+      const sets = new Set([...cluster.replicaSets.values()].filter((rs) => rs.metadata.namespace === 'default' && rs.metadata.ownerReferences.some((o) => o.kind === 'Deployment' && o.name === name)).map((rs) => `replicaset/${rs.metadata.name}`));
+      return cluster.events.filter((e) => e.reason === 'SuccessfulCreate' && sets.has(e.object)).length;
+    }
   } else {
     const s = cluster.services.get(id);
     if (!s) return undefined;

@@ -20,7 +20,7 @@ export function matches(labels: Record<string, string>, selector: Record<string,
  * 拾い漏らすと「設定を変えたのに古い Pod のまま」という嘘の挙動になるので、
  * 効き目のある欄は並び順を固定して全て混ぜる。
  */
-export function templateHash(template: Deployment['spec']['template']): string {
+export function templateHash(template: Deployment['spec']['template'], real = false): string {
   const text = JSON.stringify([
     template.labels,
     template.containers.map((c) => [
@@ -32,7 +32,27 @@ export function templateHash(template: Deployment['spec']['template']): string {
   ]);
   let hash = 5381;
   for (let i = 0; i < text.length; i += 1) hash = ((hash * 33) ^ text.charCodeAt(i)) >>> 0;
+  // 本物の形: 数を 10 進の字にし、1 字ずつ安全な字（SAFE）に置き換える（7c5ddbdf54 のような形）
+  if (real) return [...String(hash)].map((d) => SAFE[d.charCodeAt(0) % SAFE.length] ?? 'b').join('');
   return hash.toString(36).slice(0, 6);
+}
+
+/** 本物の Kubernetes が名前の印に使う字（読み違えやすい母音・0・1・3 を除いた 27 字） */
+const SAFE = 'bcdfghjklmnpqrstvwxz2456789';
+
+/** 本物の形の名前を使うクラスタか（クラスタを操作する機械。窓口の住所を持つ） */
+export const realNames = (state: ClusterState): boolean => state.server !== undefined;
+
+/** ReplicaSet が作る Pod の名前の後ろの 5 字。本物は乱数。模擬は名前と通し番号から決める（同じ操作から同じ名前） */
+function podSuffix(rsName: string, counter: number): string {
+  let h = 2166136261;
+  for (const c of `${rsName}#${String(counter)}`) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+  let out = '';
+  for (let i = 0; i < 5; i += 1) {
+    h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
+    out += SAFE[h % SAFE.length] ?? 'b';
+  }
+  return out;
 }
 
 function ownedPods(state: ClusterState, rs: ReplicaSet): Pod[] {
@@ -64,9 +84,11 @@ export function reconcile(state: ClusterState): ReconcileResult {
   let nameCounter = state.nameCounter;
   const tick = state.tick;
 
+  const real = realNames(state);
+
   // 1. Deployment → ReplicaSet
   for (const deployment of [...deployments.values()]) {
-    const hash = templateHash(deployment.spec.template);
+    const hash = templateHash(deployment.spec.template, real);
     const rsName = `${deployment.metadata.name}-${hash}`;
     const rsId = key(deployment.metadata.namespace, rsName);
 
@@ -107,7 +129,8 @@ export function reconcile(state: ClusterState): ReconcileResult {
         status: { replicas: 0, readyReplicas: 0 },
       };
       replicaSets.set(rsId, created);
-      events.push({
+      // 本物の Deployment は「作った」とは知らせず、数を合わせた時に知らせる（下の Scaled up）
+      if (!real) events.push({
         tick,
         type: 'Normal',
         reason: 'ScalingReplicaSet',
@@ -135,7 +158,14 @@ export function reconcile(state: ClusterState): ReconcileResult {
 
       // 新しい側を、上限を超えない範囲で増やす
       let newReplicas = current.spec.replicas;
-      if (newReplicas < desired && newReplicas + oldReplicas < totalAllowed) {
+      if (real && oldReplicas === 0 && newReplicas !== desired) {
+        // 入れ替える古い側が無ければ、本物と同じく一度にあるべき数にする
+        events.push({
+          tick, type: 'Normal', reason: 'ScalingReplicaSet', object: `deployment/${deployment.metadata.name}`,
+          message: `Scaled ${newReplicas < desired ? 'up' : 'down'} replica set ${rsName} from ${String(newReplicas)} to ${String(desired)}`,
+        });
+        newReplicas = desired;
+      } else if (newReplicas < desired && newReplicas + oldReplicas < totalAllowed) {
         newReplicas += 1;
       } else if (newReplicas > desired) {
         // replicas を減らされたときは、新しい側も 1 tick ずつ目標まで縮める
@@ -165,7 +195,7 @@ export function reconcile(state: ClusterState): ReconcileResult {
     if (diff > 0) {
       for (let i = 0; i < diff; i += 1) {
         nameCounter += 1;
-        const name = `${rs.metadata.name}-${nameCounter.toString(36).padStart(5, '0')}`;
+        const name = `${rs.metadata.name}-${real ? podSuffix(rs.metadata.name, nameCounter) : nameCounter.toString(36).padStart(5, '0')}`;
         const created = makePod(name, rs.spec.template.containers, {
           namespace: rs.metadata.namespace,
           labels: rs.spec.template.labels,
@@ -214,7 +244,7 @@ export function reconcile(state: ClusterState): ReconcileResult {
       ),
     );
     const all = mine.flatMap((rs) => ownedPods({ ...state, pods }, rs));
-    const hash = templateHash(deployment.spec.template);
+    const hash = templateHash(deployment.spec.template, real);
     const updated = mine
       .filter((rs) => rs.metadata.labels['pod-template-hash'] === hash)
       .flatMap((rs) => ownedPods({ ...state, pods }, rs));
