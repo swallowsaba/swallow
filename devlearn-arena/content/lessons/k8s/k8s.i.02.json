@@ -1,0 +1,243 @@
+{
+  "id": "k8s.i.02",
+  "domain": "k8s",
+  "level": "intermediate",
+  "theme": "秘密",
+  "title": "Secret",
+  "goal": "秘密情報を扱い、その限界を説明できる",
+  "minutes": 20,
+  "prerequisites": [
+    "k8s.i.01",
+    "sec.b.05"
+  ],
+  "related": [
+    "sec.i.05",
+    "cicd.i.03"
+  ],
+  "next": [
+    "k8s.i.03"
+  ],
+  "terms": [
+    "k8s-secret",
+    "secret-info",
+    "pod",
+    "configmap",
+    "base64",
+    "permission",
+    "db",
+    "api",
+    "git",
+    "repository",
+    "yaml",
+    "env-var",
+    "deployment",
+    "kubectl",
+    "file",
+    "image",
+    "cluster",
+    "log"
+  ],
+  "explain": {
+    "what": "{{term:k8s-secret}} は、パスワードなどの{{term:secret-info}}を {{term:pod}} に渡す物。渡し方は {{term:configmap}} と同じ。秘密を、皆で見る設定と分けて置く。",
+    "why": "分ければ、設定は皆で見て直し、秘密は係だけが扱える。ただし保存は {{term:base64}} の符号にすぎず、読めれば誰でも元に戻せる。見られる人を{{term:permission}}で絞る。",
+    "use": "{{term:db}} のパスワード・{{term:api}} の鍵など。設定を書いた{{term:file}}は {{term:git}} に入れて皆で見るので、秘密の値はファイルに残さない。",
+    "when": "DB のパスワードを、DB の設定のファイルに直書きしていた。そのファイルは{{term:repository}}に入っていて、関係の無い人まで読める。",
+    "figures": [
+      "k8s-i02-secret"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "yesno",
+      "prompt": "Secret の値は暗号化されているので、誰が見てもよい。",
+      "answer": false,
+      "why": "保存は base64 の符号で、鍵が無くても誰でも元に戻せる。Secret を読める人を、権限で絞る。",
+      "see": "why"
+    },
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "Secret を読める人を、権限で DB の係だけにする",
+      "b": "ほかの人は、DB のパスワードを見られない",
+      "answer": "cause",
+      "why": "base64 は誰でも戻せるので、守りは「読めるかどうか」で決まる。読める人を絞ると、値を知る人も絞られる。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "situation",
+      "prompt": "DB のパスワードを Pod に渡したい。どこに置く？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "Secret に置き、読める人を権限で絞る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "ConfigMap に、ほかの設定と一緒に置く",
+          "correct": false,
+          "whyNot": "ConfigMap は、皆で見て直す設定のための物。秘密を混ぜると、設定を見る人に全て見える。"
+        },
+        {
+          "id": "c",
+          "text": "{{term:image}}の中のファイルに書く",
+          "correct": false,
+          "whyNot": "イメージを取れる人なら、誰でも中を読める。値を変えるたびに作り直しにもなる。"
+        }
+      ],
+      "explanation": "秘密は Secret に分け、読める人を絞る。Pod には、ConfigMap と同じく{{term:env-var}}かファイルで渡す。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "リポジトリの db.yaml を見ただけの人が、DB のパスワードを知ってしまった。原因は？",
+      "context": {
+        "log": "env:\n- name: POSTGRES_PASSWORD\n  value: Reserve-Pass-2026"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "パスワードを {{term:yaml}} に直書きし、そのままリポジトリに入れた",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Secret から受け取る形にしていた",
+          "correct": false,
+          "whyNot": "Secret から受け取る形なら、db.yaml には Secret の名前とキーしか書かない。値は載らない。"
+        },
+        {
+          "id": "c",
+          "text": "DB の Pod の数が多すぎた",
+          "correct": false,
+          "whyNot": "数は関係ない。値を書いたファイルを、読める人が多いことが問題。"
+        }
+      ],
+      "explanation": "リポジトリに入った値は、読める人全てに見え、履歴にも残る。値は Secret に置き、YAML には名前だけを書く。"
+    },
+    {
+      "id": "q3",
+      "kind": "predict",
+      "prompt": "Secret の中身を見たら `password: UmVzZXJ2ZS1QYXNzLTIwMjY=` とあった。これを base64 として戻すと？",
+      "context": {
+        "command": "kubectl get secret db-secret -o yaml"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "元のパスワード（`Reserve-Pass-2026`）が出る",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "戻せない（暗号だから）",
+          "correct": false,
+          "whyNot": "base64 は符号の決まりで、暗号ではない。決まりどおりに、誰でも戻せる。"
+        },
+        {
+          "id": "c",
+          "text": "戻すには、{{term:cluster}}の鍵が要る",
+          "correct": false,
+          "whyNot": "鍵を使うのは暗号。base64 は、鍵無しで誰でも同じやり方で戻せる。"
+        }
+      ],
+      "explanation": "Secret を読める人は、値を知ることができる。だから Secret を読める人を絞る。"
+    }
+  ],
+  "practice": {
+    "mode": "editor",
+    "purpose": "DB（db）の {{term:deployment}} は、パスワードを db.yaml に直書きしている。db.yaml は Git に入れて皆で見るファイル。パスワードを Secret に移して DB に渡し、db.yaml に値が残らないようにする。保存すると、送って入れ替えを待ち、DB の{{term:log}}を確かめる。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cwd": "/home/learner/db",
+      "dirs": [
+        "/home/learner/db"
+      ],
+      "files": {
+        "/home/learner/db/db.yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: postgres\n        image: postgres:16\n        ports:\n        - containerPort: 5432\n        env:\n        - name: POSTGRES_PASSWORD\n          value: Reserve-Pass-2026\n"
+      },
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 3,
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: postgres\n        image: postgres:16\n        ports:\n        - containerPort: 5432\n        env:\n        - name: POSTGRES_PASSWORD\n          value: Reserve-Pass-2026\n"
+      },
+      "edit": {
+        "path": "/home/learner/db/db.yaml",
+        "apply": [
+          "kubectl apply -f db.yaml",
+          "kubectl rollout status deployment/db",
+          "kubectl get pods",
+          "kubectl get secrets",
+          "kubectl logs -l app=db --prefix"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "id": "move",
+        "purpose": "Secret db-secret を作り、パスワードを `password` というキーで入れる。DB はそこから `POSTGRES_PASSWORD` を受け取る。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/db readyReplicas=1 from.POSTGRES_PASSWORD=db-secret env.POSTGRES_PASSWORD=Reserve-Pass-2026"
+        },
+        "afterward": "`secret/db-secret created`。DB は Secret から値を受け取って動き出し、ログに `database system is ready to accept connections` と出た。ただ、まだ db.yaml の中にパスワードがある。",
+        "hints": [
+          "Secret は `kind: Secret`。値は `stringData:` に キー: 値 の形で書く（保存の時に base64 になる）。Deployment は `valueFrom:` の `secretKeyRef:` で、Secret の名前とキーを指す。",
+          "Secret の `name:` は db-secret、`stringData:` に `password: Reserve-Pass-2026`。`env:` の `value:` の行を、`valueFrom:`・`secretKeyRef:`・`name: db-secret`・`key: password` の 4 行に替える。",
+          "`apiVersion: v1\nkind: Secret\nmetadata:\n  name: db-secret\ntype: Opaque\nstringData:\n  password: Reserve-Pass-2026\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: postgres\n        image: postgres:16\n        ports:\n        - containerPort: 5432\n        env:\n        - name: POSTGRES_PASSWORD\n          valueFrom:\n            secretKeyRef:\n              name: db-secret\n              key: password\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-secret-base64",
+          "k8s-yaml",
+          "k8s-secret-key"
+        ]
+      },
+      {
+        "id": "clean",
+        "purpose": "Secret はもうクラスタにある。db.yaml から Secret の部分を外し、ファイルにパスワードが残らないようにする（base64 にした値も残さない）。DB は動き続ける。",
+        "check": {
+          "kind": "fs",
+          "path": "/home/learner/db/db.yaml",
+          "contains": "secretKeyRef",
+          "lacks": [
+            "Reserve-Pass-2026",
+            "UmVzZXJ2ZS1QYXNzLTIwMjY="
+          ]
+        },
+        "afterward": "`deployment.apps/db unchanged`。apply は、ファイルから消した物をクラスタから消さない。Secret は残り、DB は値を受け取ったまま動く。db.yaml には、Secret の名前とキーしか無い。",
+        "hints": [
+          "`---` より上の、Secret の部分を消す。apply はファイルに無い物を消さないので、クラスタの Secret は残る。",
+          "`apiVersion: v1` から `---` までの 8 行を消し、Deployment だけにする。`secretKeyRef` の 4 行は残す。",
+          "`apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: db\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n      - name: postgres\n        image: postgres:16\n        ports:\n        - containerPort: 5432\n        env:\n        - name: POSTGRES_PASSWORD\n          valueFrom:\n            secretKeyRef:\n              name: db-secret\n              key: password\n` と保存する。"
+        ],
+        "expectedErrors": [
+          "k8s-yaml",
+          "k8s-secret-key"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "パスワードを Secret に移して DB に渡し、Git に入れる db.yaml から値を消せた。",
+    "partial": "ヒントを使って移せた。次は、base64 が暗号でない理由を、自分の言葉で説明してみよう。",
+    "retry": "まだ移せていない。確かめた結果の `kubectl get pods` の `STATUS` と、DB のログの `Error` の行を見よう。"
+  },
+  "summary": {
+    "points": [
+      "秘密は Secret に置く",
+      "base64 の符号は暗号ではない",
+      "読める人を権限で絞る"
+    ],
+    "next": [
+      "k8s.i.03"
+    ],
+    "terms": [
+      "k8s-secret",
+      "base64"
+    ]
+  }
+}

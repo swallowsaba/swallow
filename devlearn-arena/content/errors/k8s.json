@@ -319,6 +319,36 @@
       "terms": [
         "yaml"
       ]
+    },
+    {
+      "id": "k8s-secret-key",
+      "match": "exceeded its progress deadline|CreateContainerConfigError|superuser password is not specified",
+      "output": true,
+      "meaning": "DB の Pod が動き出せない。パスワードを受け取れていない（`CreateContainerConfigError`）か、`POSTGRES_PASSWORD` が空で DB が止まった。",
+      "causes": [
+        "`secretKeyRef` の `key:` が、Secret の中のキー（`password`）と違う。",
+        "`envFrom` で Secret を丸ごと受け取った。キーの名前 `password` がそのまま変数の名前になり、`POSTGRES_PASSWORD` は空のまま。",
+        "`secretKeyRef` の `name:` が、Secret の名前と違う。"
+      ],
+      "hint": "Secret の `stringData:` のキーと、Deployment の `secretKeyRef` の `name:`・`key:` を見比べる。",
+      "terms": [
+        "k8s-secret",
+        "env-var"
+      ]
+    },
+    {
+      "id": "k8s-secret-base64",
+      "match": "illegal base64 data",
+      "meaning": "Secret の値を読めないと断られた。`data:` には、base64 にした値を書く決まり。",
+      "causes": [
+        "そのままの値を `data:` に書いた。そのままの値は `stringData:` に書く（保存の時に base64 になる）。",
+        "base64 にした値を写し間違えた（途中で切れた・余計な文字が入った）。"
+      ],
+      "hint": "そのままの値なら、`data:` を `stringData:` に替える。base64 にした値なら、写し直す。",
+      "terms": [
+        "k8s-secret",
+        "base64"
+      ]
     }
   ]
 }

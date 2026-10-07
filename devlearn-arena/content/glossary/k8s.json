@@ -358,6 +358,36 @@
       "lessons": [
         "k8s.i.01"
       ]
+    },
+    {
+      "id": "k8s-secret",
+      "word": "Secret",
+      "reading": "しーくれっと",
+      "plain": "パスワードや鍵などの秘密の値を持ち、Pod に渡す Kubernetes の物。渡し方は ConfigMap と同じ。",
+      "why": "設定と秘密を分け、秘密を読める人を権限で絞れる。保存は base64 の符号なので、絞らなければ読める人は誰でも元の値を知る。",
+      "related": [
+        "configmap",
+        "secret-info",
+        "base64",
+        "permission"
+      ],
+      "lessons": [
+        "k8s.i.02"
+      ]
+    },
+    {
+      "id": "base64",
+      "word": "base64",
+      "reading": "べーすろくじゅうよん",
+      "plain": "データを、英数字と + / の 64 種の文字（と埋めの =）で書き表す決まり。鍵が無くても、誰でも元に戻せる。",
+      "why": "暗号と取り違えやすい。base64 にしただけの値は、隠したことにならない。",
+      "related": [
+        "k8s-secret",
+        "character-encoding"
+      ],
+      "lessons": [
+        "k8s.i.02"
+      ]
     }
   ]
 }
