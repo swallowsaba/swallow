@@ -1,0 +1,241 @@
+{
+  "id": "k8s.b.07",
+  "domain": "k8s",
+  "level": "beginner",
+  "theme": "Namespace",
+  "title": "Namespace",
+  "goal": "区画を分けて管理できる",
+  "minutes": 15,
+  "prerequisites": [
+    "k8s.b.03"
+  ],
+  "related": [
+    "net.i.06",
+    "sec.i.04"
+  ],
+  "next": [
+    "k8s.i.01"
+  ],
+  "terms": [
+    "k8s-namespace",
+    "cluster",
+    "pod",
+    "deployment",
+    "kubectl",
+    "image"
+  ],
+  "explain": {
+    "what": "{{term:k8s-namespace}} は、1 つの{{term:cluster}}の中を分ける区画。{{term:pod}} や {{term:deployment}} の名前は区画ごとに別々で、区画が違えば同じ名前を使える。",
+    "why": "チームや用途ごとに区画を分けると、名前がぶつからず、別の区画の物をうっかり消すことも防げる。区画を指さずに操作すると、決まった区画（default）を指す。",
+    "use": "開発と本番を分ける・チームごとに分ける時。同じ設定の web を、開発の区画と本番の区画に 1 つずつ置ける。",
+    "when": "開発の人が web を消したつもりが、本番の web を消してしまった。開発と本番が、同じ場所に同じ名前で並んでいた。",
+    "figures": [
+      "k8s-b07-namespaces"
+    ]
+  },
+  "understand": [
+    {
+      "kind": "relation",
+      "prompt": "2 つの関係は？",
+      "a": "区画 dev",
+      "b": "dev の中の Deployment web",
+      "answer": "contains",
+      "why": "区画は入れ物で、その中に物が入る。dev の web と prod の web は、名前が同じでも別の物。",
+      "see": "what"
+    },
+    {
+      "kind": "yesno",
+      "prompt": "{{term:kubectl}} で `-n` を省くと、いつも全ての区画を見る。",
+      "answer": false,
+      "why": "省くと default の区画だけを見る。全ての区画を見る時は `-A` を付ける。",
+      "see": "why"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "kind": "choice",
+      "prompt": "区画 dev の Pod の一覧を見るには？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "`kubectl get pods -n dev`",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "`kubectl get pods dev`",
+          "correct": false,
+          "whyNot": "それは「dev という名前の Pod」を探す形。区画は `-n` で指す。"
+        },
+        {
+          "id": "c",
+          "text": "`kubectl get namespaces`",
+          "correct": false,
+          "whyNot": "それは区画そのものの一覧。区画の中の Pod は出ない。"
+        }
+      ],
+      "explanation": "区画は `-n 区画`（`--namespace 区画`）で指す。全ての区画なら `-A`。"
+    },
+    {
+      "id": "q2",
+      "kind": "cause",
+      "prompt": "本番の web を見ようとしたら、見つからないと言われた。本番の web は区画 prod にある。原因は？",
+      "context": {
+        "command": "kubectl get deployment web-shop",
+        "log": "Error from server (NotFound): deployments.apps \"web-shop\" not found"
+      },
+      "choices": [
+        {
+          "id": "a",
+          "text": "区画を指していない（`-n prod` が無く、default を探した）",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "web-shop が消えている",
+          "correct": false,
+          "whyNot": "決めつける前に、区画を合わせて探す。default に無いだけかもしれない。"
+        },
+        {
+          "id": "c",
+          "text": "kubectl がクラスタにつながっていない",
+          "correct": false,
+          "whyNot": "つながっていなければ、接続のエラーになる。`NotFound` は、探した区画に無かったということ。"
+        }
+      ],
+      "explanation": "見つからない時は、まず区画を疑う。`-n prod` を付けるか、`-A` で全ての区画から探す。"
+    },
+    {
+      "id": "q3",
+      "kind": "situation",
+      "prompt": "同じクラスタで、開発と本番の web を動かしたい。どうする？",
+      "choices": [
+        {
+          "id": "a",
+          "text": "区画 dev と prod を作り、それぞれに web を置く",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "名前を web-dev と web-prod に変えて、同じ区画に置く",
+          "correct": false,
+          "whyNot": "動きはするが、開発の操作が本番の物に届いてしまう。区画で分ければ、操作の範囲も分かれる。"
+        },
+        {
+          "id": "c",
+          "text": "開発用に、もう 1 つクラスタを作る",
+          "correct": false,
+          "whyNot": "作れなくはないが、機械も手間も 2 倍になる。分けたいだけなら区画で足りる。"
+        }
+      ],
+      "explanation": "区画で分けると、同じ名前のまま、名前のぶつかりと誤操作を防げる。"
+    }
+  ],
+  "practice": {
+    "mode": "terminal",
+    "purpose": "default の区画に前から web がある。開発の区画 dev と本番の区画 prod を作り、それぞれに web を置いて、同じ名前の web が 3 つの区画に並ぶことを確かめる。",
+    "environment": "k8s-cluster",
+    "setup": {
+      "hostname": "console",
+      "cluster": {
+        "nodes": 2,
+        "ageDays": 30,
+        "manifests": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\n  labels:\n    app: web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n      - name: nginx\n        image: nginx:1.27\n"
+      }
+    },
+    "steps": [
+      {
+        "id": "namespaces",
+        "purpose": "区画 dev と prod を作る。",
+        "check": {
+          "kind": "k8s",
+          "expr": "namespace/dev && namespace/prod"
+        },
+        "afterward": "`namespace/dev created` と `namespace/prod created`。`kubectl get namespaces` に、決まった 4 つの区画と並んで dev と prod が出る。",
+        "hints": [
+          "区画を作るのは `kubectl create namespace 名前`。",
+          "dev と prod の 2 つを、1 つずつ作る。",
+          "`kubectl create namespace dev` と `kubectl create namespace prod` を打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-ns-exists",
+          "k8s-no-connection"
+        ]
+      },
+      {
+        "id": "dev",
+        "purpose": "区画 dev に、nginx の{{term:image}}で web という Deployment を作る。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web@dev"
+        },
+        "afterward": "`deployment.apps/web created`。default にも web があるが、区画が違うので同じ名前で作れた。",
+        "hints": [
+          "Deployment は `kubectl create deployment 名前 --image=イメージ`。区画は `-n 区画` で指す。",
+          "名前は web、イメージは nginx、区画は dev。`-n` を忘れると default を指し、前から在る web とぶつかる。",
+          "`kubectl create deployment web --image=nginx -n dev` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-exists-in-default",
+          "k8s-ns-missing",
+          "k8s-no-image"
+        ]
+      },
+      {
+        "id": "prod",
+        "purpose": "区画 prod にも、同じく web という Deployment を作る。",
+        "check": {
+          "kind": "k8s",
+          "expr": "deployment/web@prod"
+        },
+        "afterward": "prod にも web ができた。dev の web と prod の web は、名前は同じでも別の物。dev で何をしても、prod の web には届かない。",
+        "hints": [
+          "前の手順と同じ形で、区画だけを変える。",
+          "区画は prod。`-n prod` を付ける。",
+          "`kubectl create deployment web --image=nginx -n prod` と打つ。"
+        ],
+        "expectedErrors": [
+          "k8s-exists-in-default",
+          "k8s-ns-missing",
+          "k8s-no-image"
+        ]
+      },
+      {
+        "id": "count",
+        "purpose": "全ての区画の Deployment を一覧し、web という名前の Deployment がいくつあるかを答える。",
+        "check": {
+          "kind": "answer",
+          "equals": "3"
+        },
+        "afterward": "default・dev・prod に 1 つずつ、計 3 つの web。`-A` を付けると、先頭に `NAMESPACE`（区画）の欄が付いて全ての区画が並ぶ。",
+        "hints": [
+          "全ての区画を見る時は `-A` を付ける。",
+          "`kubectl get deployments -A` の `NAME` が web の行を数える。",
+          "`kubectl get deployments -A` と打ち、`3` と答える。"
+        ],
+        "expectedErrors": [
+          "k8s-ns-count-misread"
+        ]
+      }
+    ]
+  },
+  "result": {
+    "success": "区画 dev と prod を作り、同じ名前の web をそれぞれに置いて、区画ごとに分かれていることを確かめた。",
+    "partial": "ヒントを使って分けられた。次は `-n` を省いて操作すると、どの区画に届くかを、自分の言葉で説明してみよう。",
+    "retry": "まだ揃っていない。`kubectl get deployments -A` で、どの区画に web があるかを見よう。"
+  },
+  "summary": {
+    "points": [
+      "区画で分ける",
+      "名前は区画ごと",
+      "区画は `-n` で指す・全ては `-A`"
+    ],
+    "next": [
+      "k8s.i.01"
+    ],
+    "terms": [
+      "k8s-namespace"
+    ]
+  }
+}

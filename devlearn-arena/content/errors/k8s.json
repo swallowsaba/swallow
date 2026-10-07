@@ -208,6 +208,59 @@
       "terms": [
         "cluster-ip"
       ]
+    },
+    {
+      "id": "k8s-ns-missing",
+      "match": "namespaces \"[^\"]+\" not found",
+      "meaning": "「その区画（Namespace）が無い」と言われた。無い区画には、物を作れない。",
+      "causes": [
+        "区画をまだ作っていない（前の手順を飛ばした）。",
+        "区画の名前の綴りが違う。"
+      ],
+      "hint": "`kubectl get namespaces` で今ある区画を見る。無ければ `kubectl create namespace 名前` で先に作る。",
+      "terms": [
+        "k8s-namespace"
+      ]
+    },
+    {
+      "id": "k8s-ns-exists",
+      "match": "namespaces \"[^\"]+\" already exists",
+      "meaning": "「その区画は既にある」と言われた。同じ名前の区画は 1 つしか作れない。",
+      "causes": [
+        "同じ `kubectl create namespace` を 2 回打った。",
+        "前の手順で、もう作ってある。"
+      ],
+      "hint": "`kubectl get namespaces` で確かめる。既にあるなら、そのまま使える。",
+      "terms": [
+        "k8s-namespace"
+      ]
+    },
+    {
+      "id": "k8s-exists-in-default",
+      "match": "deployments.apps \"[^\"]+\" already exists",
+      "meaning": "「その名前の Deployment は、その区画に既にある」と言われた。",
+      "causes": [
+        "区画の指定（`-n`）を忘れた。省くと default を指し、default には前から web がある。",
+        "同じ区画に 2 回作ろうとした。"
+      ],
+      "hint": "作りたい区画を `-n 区画` で指す。どの区画に何があるかは `kubectl get deployments -A` で見る。",
+      "terms": [
+        "k8s-namespace",
+        "deployment"
+      ]
+    },
+    {
+      "id": "k8s-ns-count-misread",
+      "match": "答えが合っていない",
+      "meaning": "答えは受け取ったが、web の数が合っていない。",
+      "causes": [
+        "`-A` を付けずに見た。省くと default の区画だけを見る。",
+        "前から在る default の web を数えなかった。"
+      ],
+      "hint": "`kubectl get deployments -A` で全ての区画を並べ、NAME が web の行を数える。",
+      "terms": [
+        "k8s-namespace"
+      ]
     }
   ]
 }

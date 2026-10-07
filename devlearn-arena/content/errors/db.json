@@ -49,7 +49,7 @@
     },
     {
       "id": "db-table-exists",
-      "match": "already exists",
+      "match": "table [^ ]+ already exists",
       "meaning": "同じ名前のテーブルが、もうある。作り直さずに止まった。",
       "causes": [
         "前に作ったテーブルが残っている。",

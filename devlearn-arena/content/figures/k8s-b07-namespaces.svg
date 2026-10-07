@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="&quot;Noto Sans JP&quot;, sans-serif">
+  <title>1 つのクラスタの中を、区画（Namespace）に分ける。default・dev・prod の 3 つの区画に、同じ名前の web がそれぞれある。区画が違えば同じ名前を使え、-n で区画を指して操作する</title>
+  <g class="el" data-part="cluster">
+    <rect x="12" y="12" width="676" height="296" rx="12" fill="none" stroke="#9fb0c6" stroke-width="2" pointer-events="all" />
+    <text x="32" y="40" font-size="16" fill="#9fb0c6">クラスタ（1 つ）</text>
+  </g>
+  <g class="el" data-part="default">
+    <rect x="32" y="60" width="200" height="200" rx="10" fill="none" stroke="#5cc1ff" stroke-width="2" pointer-events="all" />
+    <text x="52" y="88" font-size="14" fill="#5cc1ff">区画 default</text>
+    <rect x="52" y="110" width="160" height="70" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="132" y="140" text-anchor="middle" font-size="14" fill="#3ae08a">web</text>
+    <text x="132" y="164" text-anchor="middle" font-size="13" fill="#9fb0c6">前から在る物</text>
+    <text x="52" y="236" font-size="13" fill="#9fb0c6" font-family="&quot;JetBrains Mono&quot;, monospace">-n を省いた時</text>
+  </g>
+  <g class="el" data-part="dev">
+    <rect x="250" y="60" width="200" height="200" rx="10" fill="none" stroke="#f2b632" stroke-width="2" pointer-events="all" />
+    <text x="270" y="88" font-size="14" fill="#f2b632">区画 dev（開発）</text>
+    <rect x="270" y="110" width="160" height="70" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="350" y="140" text-anchor="middle" font-size="14" fill="#3ae08a">web</text>
+    <text x="350" y="164" text-anchor="middle" font-size="13" fill="#9fb0c6">試している版</text>
+    <text x="270" y="236" font-size="13" fill="#9fb0c6" font-family="&quot;JetBrains Mono&quot;, monospace">-n dev</text>
+  </g>
+  <g class="el" data-part="prod">
+    <rect x="468" y="60" width="200" height="200" rx="10" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="488" y="88" font-size="14" fill="#3ae08a">区画 prod（本番）</text>
+    <rect x="488" y="110" width="160" height="70" rx="8" fill="none" stroke="#3ae08a" stroke-width="2" pointer-events="all" />
+    <text x="568" y="140" text-anchor="middle" font-size="14" fill="#3ae08a">web</text>
+    <text x="568" y="164" text-anchor="middle" font-size="13" fill="#9fb0c6">利用者が使う版</text>
+    <text x="488" y="236" font-size="13" fill="#9fb0c6" font-family="&quot;JetBrains Mono&quot;, monospace">-n prod</text>
+  </g>
+  <text x="350" y="292" text-anchor="middle" font-size="13" fill="#9fb0c6">同じ名前 web でも、区画が違えば別の物。開発の操作が本番に届かない</text>
+</svg>
